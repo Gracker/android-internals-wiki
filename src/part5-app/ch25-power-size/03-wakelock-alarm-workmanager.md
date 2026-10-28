@@ -4,8 +4,8 @@ chapter: '25.3'
 section: '25.3'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_verified_against: Android Developers WakeLock, AlarmManager, exact-alarm and Android Vitals docs retrieved 2026-08-15 + AOSP android-17.0.0_r1
 confidence: high
 consolidated_from:
@@ -76,7 +76,7 @@ last_consolidated_at: '2026-08-24'
 
 # WakeLock、Alarm（系统定时通知） 与 WorkManager 调度
 
-WakeLock 阻止设备进入部分休眠状态，Alarm 决定未来的唤醒时刻，WorkManager 在系统约束下安排可延迟的工作。三者搭配出错的代价，就是频繁唤醒、锁未释放和任务积压。
+WakeLock 阻止设备进入部分休眠状态，Alarm 安排未来的时间通知，只有唤醒型 Alarm 才请求唤醒设备，WorkManager 在系统约束下安排可延迟的工作。三者搭配出错的代价，就是频繁唤醒、锁未释放和任务积压。
 
 ## 唤醒锁、定时器与系统休眠
 
@@ -102,16 +102,12 @@ WakeLock（唤醒锁）和 Alarm（定时通知）解决两个不同阶段的问
 
 这张关系图把应用接口、系统服务和内核的职责放在同一视图里。
 
-```mermaid
-flowchart LR
-    A["PowerManager.WakeLock"] --> B["PowerManagerService"]
-    B --> C["kernel wakeup source"]
-    D["AlarmManager"] --> E["AlarmManagerService"]
-    E --> F["kernel alarmtimer"]
-    E --> G["分发 Alarm 回调"]
-    G --> H["系统持有 *alarm* WakeLock"]
-    H --> B
-```
+WakeLock 的休眠阻止与 Alarm 的未来投递经不同系统路径管理；系统共享锁只保护有界投递。
+
+<!-- gracker-diagram: a276-02-framework-wake-alarm-boundaries -->
+![两条系统路径分别管理休眠阻止与未来投递](../../assets/diagrams/ch25/a276-02-framework-wake-alarm-boundaries.png)
+
+图：系统在投递前持锁，按完成或超时减少在途计数；最后一笔完成后才物理释放共享锁。
 
 我们按这层分工往下看：`PowerManagerService` 汇总框架层的 WakeLock 并更新电源状态，`AlarmManagerService` 负责 Alarm 的分组、权限、空闲策略和分发。内核的 wakeup source（唤醒源）与 alarmtimer（定时唤醒机制）只提供阻止休眠和定时唤醒这两种底层能力，看不到 `PendingIntent`（由系统在未来代应用执行操作的凭据）、精确 Alarm 权限或应用业务。也正因为系统可以合并多个 Alarm、设备可能因其他来源已经处于唤醒状态，一次 Alarm 触发未必对应一次内核唤醒。
 
@@ -120,11 +116,6 @@ flowchart LR
 - [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java) 与 [`PowerManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java)
 - [`AlarmManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java) 与 [`AlarmManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)
 - [`drivers/base/power/wakeup.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c) 与 [`kernel/time/alarmtimer.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/time/alarmtimer.c)
-
-<!-- gracker-diagram: a276-02-framework-wake-alarm-boundaries -->
-![两条系统路径分别管理休眠阻止与未来投递](../../assets/diagrams/ch25/a276-02-framework-wake-alarm-boundaries.png)
-
-图：系统在投递前持锁，按完成或超时减少在途计数；最后一笔完成后才物理释放共享锁。
 
 ### WakeLock 类型与使用规范
 
@@ -202,7 +193,12 @@ WakeLock 默认使用引用计数：每次 `acquire()` 增加一次计数，每�
 
 排查时还会遇到另一种情况：应用从未直接调用 `PowerManager.newWakeLock()`，却看到归因到自身的锁——AlarmManager、JobScheduler、WorkManager、位置、FCM（Firebase Cloud Messaging，云消息推送）和媒体接口都可能在系统或库内部持锁。官方的[WakeLock 来源对照](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls)会随平台和库版本更新，诊断时应以当前系统显示的名称为起点。
 
-AlarmManager 分发广播时会持有名为 `*alarm*` 的 WakeLock，并将它归因给设置 Alarm 的应用。该锁只覆盖 `BroadcastReceiver.onReceive()`，方法返回后系统就可以释放锁。接收器里要启动异步工作时，先把输入持久化，交给 WorkManager 或其他合适的接口——`*alarm*` 的保护到此为止。
+AlarmManager 分发广播时会持有名为 `*alarm*` 的 WakeLock，并将它归因给设置 Alarm 的应用。对普通同步接收器，`onReceive()` 返回会完成该次接收；源码实际通过 `onSendFinished()`、in-flight 计数及最后一笔投递完成来释放共享锁。使用 `goAsync()` 时，广播完成改由有界异步处理后的 `PendingResult.finish()` 表达，不能简单按方法返回时刻判断；它仍受广播超时约束，不是长任务窗口。耗时工作应先持久化输入，再交给 WorkManager 等接口，不依赖接收器外的任意线程继续受保护。
+
+<!-- gracker-diagram: a276-04-alarm-shared-lock-delivery -->
+![Alarm投递完成与共享锁释放分别记账](../../assets/diagrams/ch25/a276-04-alarm-shared-lock-delivery.png)
+
+图：goAsync只延后有界广播完成，不是长任务通道；任意接收器外线程不自动继承保护。
 
 Android Vitals 的判定门槛和豁免规则决定线上哪些锁会被记为过度使用，具体判定规则见「WakeLock 与 Alarm 功耗回归守门」。
 
@@ -213,17 +209,12 @@ Android Vitals 的判定门槛和豁免规则决定线上哪些锁会被记为�
 | `wakelock_tag` | 对应系统统计和 `dumpsys power` 输出 |
 | `source_module` | 区分业务来源，避免同一标签被多个模块复用 |
 | `trigger_source` | 记录来自用户动作、推送、Alarm、WorkManager 还是重试 |
-| `acquire_uptime_ms` / `release_uptime_ms` | 计算持锁时长，不受系统时间调整影响 |
+| `acquire_elapsed_realtime_ms` / `release_elapsed_realtime_ms` | 计算经过时间，包含深度睡眠且不受墙钟调整影响；另记 uptime 可分析实际清醒区间 |
 | `timeout_ms` | 判断是否依赖超时兜底释放 |
 | `visible_to_user` | 区分用户感知任务和静默后台任务 |
 | `failure_reason` | 记录异常、取消、超时、进程退出等释放路径 |
 
 新增 WakeLock 应通过统一封装：标签固定且可定位，超时来自业务上限，每一条退出路径都能释放。单次时长和累计时长阈值应从具体场景的稳定版本与服务目标推导——下载、媒体、导航和短同步各有各的数字。
-
-<!-- gracker-diagram: a276-04-alarm-shared-lock-delivery -->
-![Alarm投递完成与共享锁释放分别记账](../../assets/diagrams/ch25/a276-04-alarm-shared-lock-delivery.png)
-
-图：goAsync只延后有界广播完成，不是长任务通道；任意接收器外线程不自动继承保护。
 
 ### AlarmManager 最佳实践
 
@@ -247,7 +238,7 @@ Doze 指设备空闲时的低功耗模式。选择接口时，要同时判断是
 
 #### 先选时间基准，再选是否唤醒
 
-- `RTC` / `RTC_WAKEUP` 使用墙上时钟，也就是用户可见且会受校时、时区和夏令时影响的系统时间，适合按当地时间提醒。用户修改时间、时区或夏令时规则时，应用要重新核对下一次触发。
+- `RTC` / `RTC_WAKEUP` 使用基于 Unix epoch 的墙钟毫秒，可能受用户改时间或系统校时影响。时区与夏令时不会直接改写 epoch 数值，但会改变“当地几点”的换算；按当地时间提醒时，要在时间、时区或相关规则变化后重新计算下一次触发。
 - `ELAPSED_REALTIME` / `ELAPSED_REALTIME_WAKEUP` 使用 `SystemClock.elapsedRealtime()` 表示开机后持续递增的单调时间，不受墙上时钟调整影响，适合同一次开机内的延迟。
 - 带 `WAKEUP` 的类型可以唤醒休眠设备；不带 `WAKEUP` 的类型会等设备下次清醒后分发。业务允许等待时，选择不唤醒设备的类型。
 
@@ -328,7 +319,7 @@ fun scheduleProcessLocalIdleAlarm(
 
 `OnAlarmListener` 版本不要求 `SCHEDULE_EXACT_ALARM`，只在当前进程内有效。调用进程没有活动的 `Activity`、`Service` 或 `ContentProvider` 后，系统可以取消它；组件结束时也应调用 `alarmManager.cancel(listener)`。它仍受允许空闲分发的频率限制，不适合循环安排高频回调。需要在进程死亡或组件结束后仍然触发时，使用 `PendingIntent` 版本并满足精确 Alarm 权限。示例中的 `@RequiresApi` 来自 `androidx.annotation.RequiresApi`。
 
-使用这个重载需同时满足四个条件：活跃组件仍在、设备空闲时需要唤醒、回调能快速同步完成、回调丢失后能够恢复。Android 17 的 AlarmManager 会在投递回调前获取共享 WakeLock，`onAlarm()` 返回后完成投递并释放，所以回调里通常不必再取应用 WakeLock。把工作另起异步线程后立即返回，会失去这段系统保护。
+使用这个重载需同时满足四个条件：活跃组件仍在、设备空闲时需要唤醒、回调能快速同步完成、回调丢失后能够恢复。Android 17 的 AlarmManager 会在投递前获取共享 WakeLock；`ListenerWrapper` 在 `onAlarm()` 返回后的 `finally` 中报告完成，系统再按 in-flight 计数释放。但保护有上限：r1 的 `listener_timeout` 默认 5 秒且可配置，从系统投递起计，Executor 排队也会占用；超时后即使回调尚未结束，系统仍可完成这笔投递的持锁统计。因此回调必须短小，不能把保护理解为覆盖任意长回调，更不能另起线程后立即返回并假定仍受保护。
 
 `OnAlarmListener` 通过进程内 Binder（Android 进程间通信机制） 回调交付。应用进程进入 cached（缓存进程） 或 frozen（冻结） 状态、监听器对应的 Binder 失效，或者拥有该监听器的组件结束时，系统都可以移除 Alarm；进程死亡后仍需交付的提醒，应使用 `PendingIntent`。
 
@@ -351,7 +342,7 @@ Android 17 为这类 Listener 型 Alarm 单独维护允许空闲分发的配额�
 
 `USE_EXACT_ALARM` 会自动授予，用户也撤不掉，但用途受限，并受 Google Play 政策约束，适合核心功能就是闹钟或日历的应用。`SCHEDULE_EXACT_ALARM` 是用户可授予和撤销的特殊访问权限，适用范围更广。两者都不该为普通同步任务声明。
 
-精确 Alarm 到达属于 FGS 后台启动限制的豁免场景，但 FGS 类型、类型权限和使用中权限（while-in-use permission）三项检查照样要过——它们一般只在应用可见或对应 FGS 满足条件时放行。普通后台任务想靠精确 Alarm 拿到启动资格，这条路是堵死的。
+用户请求的操作所触发的精确 Alarm，才属于官方列举的 FGS 后台启动豁免场景，但 FGS 类型、类型权限和使用中权限（while-in-use permission）三项检查照样要过——它们一般只在应用可见或对应 FGS 满足条件时放行。普通后台任务想靠精确 Alarm 拿到启动资格，这条路是堵死的。
 
 使用基于 `PendingIntent` 的 `setExact()`、`setExactAndAllowWhileIdle()` 或 `setAlarmClock()` 前，应通过 `canScheduleExactAlarms()` 检查资格。这个示例只负责安排 Alarm，并向调用层返回需要权限的结果；它不会从后台突然打开系统设置页。
 
@@ -390,16 +381,26 @@ fun scheduleExactReminder(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    alarmManager.setExactAndAllowWhileIdle(
-        AlarmManager.RTC_WAKEUP,
-        triggerAtMillis,
-        pendingIntent,
-    )
+    try {
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerAtMillis,
+            pendingIntent,
+        )
+    } catch (e: SecurityException) {
+        // 查询与安排之间资格可能变化；只将确认的权限缺失转成降级结果。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !alarmManager.canScheduleExactAlarms()
+        ) {
+            return ExactAlarmScheduleResult.PERMISSION_REQUIRED
+        }
+        throw e
+    }
     return ExactAlarmScheduleResult.SCHEDULED
 }
 ```
 
-UI 层收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精确时刻，再由用户动作打开 `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM`。用户拒绝时，根据业务改用 `setWindow()`、WorkManager 或下次进入应用时补偿；权限分支要靠前面的资格检查来判定，把 `SecurityException` 当作权限分支属于误用。
+UI 层收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精确时刻，再由用户动作打开 `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM`。用户拒绝时，根据业务改用 `setWindow()`、WorkManager 或下次进入应用时补偿；前置资格检查决定正常权限分支；查询与安排之间仍可能变化，调用处按示例捕获后重查。只有确认资格缺失时才降级，其他 `SecurityException` 应保留给诊断，不把所有安全异常一概当成未授权。
 
 权限状态还影响已安排的 Alarm：
 
@@ -486,7 +487,7 @@ Android 17 的 Listener 版 `setExactAndAllowWhileIdle()` 可以在进程内组�
 
 必须精确定时的事件才使用 Alarm，可延迟工作交给 WorkManager。交出去之后我们要盯住的，是约束怎么表达、执行时机由谁决定、重试怎么退避，以及 Worker 内部的 WakeLock、网络和重试总量。
 
-> 源码基线：Android 17 / API 37 / `android-17.0.0_r1`；WorkManager 2.11.2 稳定版。
+> 平台源码基线：Android 17 / API 37 / `android-17.0.0_r1`；WorkManager 示例固定为 2.11.2（2026-03-25 发布的稳定版）。截至 2026-10-25，官方当前稳定版已是 2.12.0（2026-09-23），其 minSdk 升至 24；下文保留 2.11.x 的 API 23 兼容说明，不把它外推到 2.12。
 
 WorkManager 2.11.x 的 `minSdk`（库支持的最低 Android API 级别） 是 23，因此本文不再讨论旧版本库在 API 14–22 上使用 `AlarmManager` 的兼容路径；它还要求 `compileSdk`（编译时使用的 Android API 级别） 至少为 33。
 
@@ -499,7 +500,7 @@ WorkManager 是 Jetpack 的持久后台任务调度库，适合应用进程退�
 | 持续提供用户可感知能力 | 前台服务（Foreground Service，FGS） | 任务生命周期和通知由应用明确管理 |
 | 用户发起、需要进度通知的大文件传输 | 用户发起的数据传输任务（User-Initiated Data Transfer，UIDT）或直接前台服务 | Android 16 以后，长时 Worker 仍会消耗系统任务调度器 JobScheduler 的配额 |
 
-对持久化调度，我们的预期要放准。它承诺的是「进程退出后任务还在」，完成仍要满足条件：用户强行停止应用、应用被卸载、业务主动取消任务，任务都会停下；依赖的网络、账户或权限长期不可用时，它会一直等待或失败。
+对持久化调度，我们的预期要放准。普通进程退出不会自动删除持久工作；force-stop 会阻止执行，用户再次启动应用后才可能恢复调度，这与卸载清除数据、业务取消工作不同。依赖的网络、账户或权限长期不可用时，也不能保证任务最终完成。
 
 ### 依赖与版本
 
@@ -546,15 +547,18 @@ class ProfileSyncWorker(
             ?: return@withContext Result.failure()
 
         try {
+            val operation = profileRepository.loadPendingSyncOperation(accountId)
+                ?: return@withContext Result.success()
             profileRepository.sync(
                 accountId = accountId,
-                idempotencyKey = id.toString(),
+                idempotencyKey = operation.id,
             )
+            profileRepository.markSyncOperationComplete(operation.id)
             Result.success()
         } catch (e: AuthenticationRequiredException) {
             Result.failure()
         } catch (e: IOException) {
-            if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()
+            if (runAttemptCount < MAX_ATTEMPTS - 1) Result.retry() else Result.failure()
         }
     }
 
@@ -565,7 +569,7 @@ class ProfileSyncWorker(
 }
 ```
 
-三种返回值对应三条出路：`success()` 进入成功终态，`failure()` 进入失败终态，`retry()` 让同一个 WorkSpec 按退避策略再次运行——退避就是失败后逐步延长重试间隔。代码只捕获能分类处理的异常；`CancellationException` 会继续传播，使 WorkManager 的停止信号可以取消协程。
+三种返回值对应三条出路：`success()` 进入成功终态，`failure()` 进入失败终态，`retry()` 让同一个 WorkSpec 按退避策略再次运行——退避就是失败后逐步延长重试间隔。`profileRepository` 是应用自有接口骨架：业务先持久化待同步操作和唯一 ID，`loadPendingSyncOperation()` 读取同一未确认操作；`sync()` 使用该 ID 向服务端去重，确认后才标记完成。下轮新的业务操作分配新 ID。尤其是周期任务，WorkRequest UUID 跨轮次不变，不能把 `id.toString()` 当成所有轮次共用的业务幂等键。代码只捕获可分类异常；`CancellationException` 继续传播，底层阻塞 I/O 仍需支持取消。
 
 #### 一次性任务与周期任务
 
@@ -688,7 +692,7 @@ WorkManager 在需要以前台服务承载加急工作时调用它。返回的 `
 
 需要超过普通上限时，WorkManager 支持长时 Worker：调用 `setForeground()` 后，由 WorkManager 管理前台服务和通知。目标版本为 API 34 及以上时，必须声明与工作内容相符的前台服务类型和权限，并在 `ForegroundInfo` 中传入类型。
 
-长时 Worker 也要面对平台上限：在 Android 15 及以上系统中，目标版本 35 及以上应用的 `dataSync` 与 `mediaProcessing` 前台服务各自在滚动 24 小时窗口内共享六小时额度；同一应用内相同类型的服务共同消耗对应额度。参见 [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout) 与 §25.2。
+长时 Worker 也要面对平台上限：在 Android 15 及以上系统中，目标版本 35 及以上应用的 `dataSync` 与 `mediaProcessing` 前台服务各自在后台的 24 小时额度窗口内共享六小时运行时间（用户回到前台会重置；固定源码也有窗口重置规则）；同一应用内相同类型的服务共同消耗对应额度。参见 [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout) 与 §25.2。
 
 这个清单为数据同步型长时 Worker 补充服务类型：
 
@@ -760,7 +764,7 @@ val upload = OneTimeWorkRequestBuilder<UploadWorker>()
     .build()
 ```
 
-Worker 返回 `Result.retry()` 后才会使用这项配置。`setBackoffCriteria()` 会把输入限制在 `WorkRequest.MIN_BACKOFF_MILLIS` 与 `MAX_BACKOFF_MILLIS` 支持的范围内；业务应使用这两个公开常量，不要依赖内部的 `WorkSpec` 常量。认证失效、参数非法等永久错误应返回 `failure()`，避免无意义地消耗后台配额。
+普通主动重试在 Worker 返回 `Result.retry()` 后使用这项配置；2.11.0 起的实验性 `setBackoffForSystemInterruptions()` 显式启用后，也会将同一策略应用于系统中断。`setBackoffCriteria()` 会把输入限制在 `WorkRequest.MIN_BACKOFF_MILLIS` 与 `MAX_BACKOFF_MILLIS` 支持的范围内；业务应使用这两个公开常量，不要依赖内部的 `WorkSpec` 常量。认证失效、参数非法等永久错误应返回 `failure()`，避免无意义地消耗后台配额。
 
 重试次数没有自动的业务上限。应结合 `runAttemptCount`、HTTP 状态、服务器 `Retry-After` 和业务截止时间决定何时结束。周期工作的某一轮返回 `failure()` 也不会取消整个周期任务，后续周期仍可运行。
 
@@ -943,7 +947,7 @@ WorkManager 使用自己的 WorkRequest UUID（通用唯一标识符），系统
 
 ### 初始化与执行资源
 
-默认情况下，AndroidX Startup（Jetpack 组件自动初始化库）会通过 `WorkManagerInitializer` 初始化 WorkManager。需要自定义线程池、日志级别、WorkerFactory（Worker 实例创建工厂） 或默认进程时，优先让 `Application` 实现 `Configuration.Provider`，不要在自动初始化仍启用时再次调用 `WorkManager.initialize()`。
+默认情况下，AndroidX Startup（Jetpack 组件自动初始化库）会通过 `WorkManagerInitializer` 初始化 WorkManager。需要自定义线程池、日志级别、WorkerFactory（Worker 实例创建工厂） 或默认进程时，应先移除 WorkManager 的默认初始化项，再让 `Application` 实现 `Configuration.Provider`；仅实现 Provider 而保留默认 `WorkManagerInitializer`，自定义配置不会生效。也不要在自动初始化仍启用时再次调用 `WorkManager.initialize()`。
 
 这项配置把同步 `Worker` 和 `CoroutineWorker` 的执行资源都设为应用级固定线程池：
 
@@ -963,7 +967,7 @@ class App : Application(), Configuration.Provider {
 
 数字 4 只是示例，本身没有推荐含义。我们定线程数的依据是：Worker 是否阻塞、同一时间的网络连接数、数据库写竞争、CPU 核心数和实测队列等待。`setExecutor()` 只配置执行资源，系统调度与 WorkManager 内部状态还会进一步限制同时运行的 Worker 数量。
 
-如果采用按需初始化，必须从清单中移除 AndroidX Startup 下的 WorkManager 初始化项。这条合并规则只移除 WorkManager，不影响其他 Startup initializer（初始化器）：
+采用这里的 `Configuration.Provider` 自定义/按需初始化时，必须从清单中移除 AndroidX Startup 下的 WorkManager 初始化项。这条合并规则只移除 WorkManager，不影响其他 Startup initializer（初始化器）：
 
 ```xml
 <provider

@@ -19,9 +19,9 @@ related_chapters:
 confidence: high
 consolidated_from:
 - src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md
-last_verified: 2026-08-15
-last_source_verified_at: 2026-08-15
-last_verified_against: Current Android Developers PowerManager / thermal headroom listener / SystemHealthManager / ADPF Thermal API / Game Mode docs and AOSP Thermal mitigation guide retrieved 2026-08-15; AOSP android-17.0.0_r1 ThermalManagerService / ThermalStatusRestriction / Thermal AIDL v1-v3
+last_verified: 2026-10-25
+last_source_verified_at: 2026-10-25
+last_verified_against: Current Android Developers PowerManager / thermal headroom listener / SystemHealthManager / ADPF Thermal API / Game Mode docs and AOSP Thermal mitigation guide retrieved 2026-10-25; AOSP android-17.0.0_r1 ThermalManagerService / ThermalStatusRestriction / Thermal AIDL v1-v3
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/os/PowerManager.java@android-17.0.0_r1
@@ -88,32 +88,12 @@ last_rework_at: 2026-08-15 16:58:28+08:00
 
 先看应用可见信号和系统内部动作的关系。图里的 governor（调节器） 是内核选择冷却档位的策略，vendor daemon（厂商常驻进程） 执行厂商策略，firmware policy（固件策略） 运行在设备固件中：
 
-```mermaid
-flowchart TB
-    SENSOR["传感器、虚拟 skin 模型、固件信号"]
-    POLICY["内核 thermal governor<br/>vendor daemon / firmware policy"]
-    CDEV["Cooling actions<br/>cpufreq、devfreq、充电、亮度等"]
-    HAL["Thermal HAL<br/>AIDL IThermal / 旧 HIDL 兼容"]
-    TMS["ThermalManagerService<br/>system_server"]
-    STATUS["全局 thermal status<br/>SKIN severity 最大值"]
-    HEADROOM["Thermal headroom<br/>当前值、预测、threshold map"]
-    PM["PowerManager 公开 API"]
-    APP["应用 workload policy"]
-    TRACE["dumpsys、Perfetto、频率与帧时间"]
+应用可见信号与底层限制动作分属两条路径：底层策略可以先限制资源，Framework再把热状态与headroom送到应用。下图给出默认设备的边界。
 
-    SENSOR --> POLICY
-    POLICY --> CDEV
-    POLICY --> HAL
-    HAL --> TMS
-    TMS --> STATUS
-    TMS --> HEADROOM
-    STATUS --> PM
-    HEADROOM --> PM
-    PM --> APP
-    CDEV --> TRACE
-    TMS --> TRACE
-    APP --> TRACE
-```
+<!-- gracker-diagram: a282-01-thermal-policy-actions-and-public-signals -->
+![底层热限制先执行，应用接收信号再减少自身工作](../../assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.png)
+
+图：应用读取热压力，不指定MHz、冷却档位或通用画质参数；Thermal HAL与Power HAL接口各自独立。
 
 限制 CPU/GPU、充电或屏幕的动作通常发生在内核、固件和厂商策略层，不需要等应用回调。`PowerManager` 递给应用的是产品级热压力信号，应用拿它决定减多少自己的工作量。
 
@@ -140,12 +120,7 @@ AIDL 用来生成稳定的 Binder 接口，HIDL 是更早一代的 HAL 接口体
 
 “冷却设备”是 Thermal HAL 对限制执行器的抽象，未必是风扇：CPU 限频、GPU 限频、充电限流或屏幕亮度限制都可以表现为冷却设备。Framework 侧的原始温度、热事件与冷却设备 Binder 方法都需要特权权限 `DEVICE_POWER`，所以普通应用拿不到逐个传感器的摄氏温度，也读不到冷却档位或功率上限。
 
-HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：0 表示未限制，值越高限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定，适合系统调试和 statsd（Android 的系统指标收集服务） 这类系统指标服务使用，不适合作为普通应用的兼容协议。
-
-<!-- gracker-diagram: a282-01-thermal-policy-actions-and-public-signals -->
-![底层热限制先执行，应用接收信号再减少自身工作](../../assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.png)
-
-图：应用读取热压力，不指定MHz、冷却档位或通用画质参数；Thermal HAL与Power HAL接口各自独立。
+HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：0 表示未限制，值越高限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定，适合系统调试和 statsd（Android的系统指标收集服务）使用，不适合作为普通应用的兼容协议。
 
 ## 全局热状态的含义
 
@@ -170,7 +145,7 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 
 这张表定义响应强度，不给通用产品参数。游戏从 120 FPS 调到 90、60 还是 30，视频是否降低分辨率，要由目标设备的帧时间、功耗、温升和质量实验决定；某个状态换算不成固定的频率或画质档位。
 
-任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态） 原因请求关机，BATTERY（续航优先） 传感器则使用 battery-thermal（电池过热） 原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾要赶在这一档之前开始。
+任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态） 原因请求关机，BATTERY（电池温度）传感器则使用 battery-thermal（电池过热） 原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾要赶在这一档之前开始。
 
 <!-- gracker-diagram: a282-02-skin-global-status-and-shutdown -->
 ![全局状态只聚合SKIN，关机安全检查还覆盖其他热源](../../assets/diagrams/ch25/a282-02-skin-global-status-and-shutdown.png)
@@ -194,7 +169,12 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 
 `forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提，预测时间越远越容易受场景切换影响，所以别把一次预测值当成未来温度的承诺。
 
-没有 HAL 预测时，Framework 的回退实现每秒读取表面温度，每个传感器最多保留 30 个样本，至少有三个样本后用线性回归拟合近期变化并外推，连续 10 秒没有查询就停止采样。若 HAL v3 支持 `forecastSkinTemperature()` 且设备只报告一组 SKIN 阈值，服务会改用 HAL 预测；应用不需要识别内部来源，按短期趋势信号处理即可。
+没有 HAL 预测时，Framework 的回退实现每秒读取表面温度，每个传感器最多保留 30 个样本，至少有三个样本后用线性回归拟合近期变化并外推，连续10秒没有查询就停止采样。样本不足3个时，r1可以返回当前温度的归一化值，而不是成熟的未来外推；所以拿到非NaN也不能证明预测已经完成预热。若相应功能开关开启、HAL v3支持 `forecastSkinTemperature()` 且设备只报告一组SKIN阈值，服务会改用 HAL 预测；应用不需要识别内部来源，按短期趋势信号处理即可。
+
+<!-- gracker-diagram: a282-04-forecast-hal-versus-framework-regression -->
+![预测可能由HAL提供，也可能是近期温度外推](../../assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.png)
+
+图：forecastSeconds为0读当前位置；更远预测更易受场景变化影响，不能用一次值承诺未来温度。
 
 ### 使用厂商提供的阈值映射表
 
@@ -208,28 +188,24 @@ API 35 的 [`getThermalHeadroomThresholds()`](https://developer.android.com/refe
 
 `addThermalHeadroomListener()` 的回调带当前 headroom、预测 headroom、预测秒数和阈值映射表。它在表面温度跨过限制等级阈值，或温度、阈值变化足够明显时触发，并不是周期性的预测数据流。
 
-服务端对相似回调使用 5 秒最小间隔，并以 headroom 差值 0.03、阈值表数值差 0.01 判断显著变化。这些数值是 `android-17.0.0_r1` 的实现常量，公开 API 没有把它们承诺给所有版本。
-
-要持续拿到提前预测，仍要按保守间隔调用 `getThermalHeadroom()`。官方游戏兼容建议按 10 秒量级轮询，可减少旧设备因调用过快返回 `NaN` 的情况。
-
-<!-- gracker-diagram: a282-04-forecast-hal-versus-framework-regression -->
-![预测可能由HAL提供，也可能是近期温度外推](../../assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.png)
-
-图：forecastSeconds为0读当前位置；更远预测更易受场景变化影响，不能用一次值承诺未来温度。
+服务端仅在“数据没有显著变化，且距上次回调不足5秒”时抑制通知；显著变化可以在5秒内再次通知，不能把5秒写成所有回调的硬下限。r1 用headroom差值0.03、阈值表数值差0.01等判断显著变化。这些数值是 `android-17.0.0_r1` 的实现常量，公开 API 没有把它们承诺给所有版本。
 
 <!-- gracker-diagram: a282-05-headroom-callback-significance-and-throttle -->
 ![5秒只抑制相似回调，显著变化可以更快通知](../../assets/diagrams/ch25/a282-05-headroom-callback-significance-and-throttle.png)
 
 图：API36监听不能完整替代getThermalHeadroom；不要根据缺少回调断言热压力不再变化。
 
+要持续拿到提前预测，仍要按保守间隔调用 `getThermalHeadroom()`。官方游戏兼容建议按 10 秒量级轮询，可减少旧设备因调用过快返回 `NaN` 的情况。
+
 ## 应用监听器的安全封装
 
-下面的 Kotlin 示例只注册一次热状态监听器；API 36 起再注册 headroom 监听器，API 30—35 由外部调度器以低频调用 `pollForecast()`。阅读时先看 `start()` 里的版本分支，再对照 `stop()` 里成对的注销：
+下面的 Kotlin 示例只注册一次热状态监听器；API 36起再尝试注册headroom监听器，API 30+在需要持续预测时仍由统一外部调度器低频调用 `pollForecast()`，包含API 36监听注册失败或仅有稀疏事件的情况。阅读时先看 `start()` 里的版本分支，再对照 `stop()` 里成对的注销：
 
 ```kotlin
 import android.content.Context
 import android.os.Build
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.annotation.RequiresApi
 import java.util.concurrent.Executor
 
@@ -239,6 +215,7 @@ data class ThermalSignals(
     val forecastHeadroom: Float,
     val forecastSeconds: Int,
     val thresholds: Map<Int, Float>,
+    val forecastTimestampMillis: Long,
 )
 
 @RequiresApi(29)
@@ -248,92 +225,112 @@ class AppThermalObserver(
     private val onChanged: (ThermalSignals) -> Unit,
 ) {
     private val powerManager =
-        context.getSystemService(PowerManager::class.java)
+        checkNotNull(context.getSystemService(PowerManager::class.java))
 
-    @Volatile private var status = powerManager.currentThermalStatus
-    @Volatile private var headroom = Float.NaN
-    @Volatile private var forecastHeadroom = Float.NaN
-    @Volatile private var forecastSeconds = 0
-    @Volatile private var thresholds: Map<Int, Float> = emptyMap()
+    // start/stop/pollForecast与回调均在同一串行控制执行器上运行。
+    private var status = powerManager.currentThermalStatus
+    private var headroom = Float.NaN
+    private var forecastHeadroom = Float.NaN
+    private var forecastSeconds = 0
+    private var forecastTimestampMillis = 0L
+    private var thresholds: Map<Int, Float> = emptyMap()
     private var started = false
+    private var generation = 0L
+    private var statusListener: PowerManager.OnThermalStatusChangedListener? = null
     private var headroomListenerToken: Any? = null
-
-    private val statusListener =
-        PowerManager.OnThermalStatusChangedListener { newStatus ->
-            status = newStatus
-            publish()
-        }
 
     fun start() {
         if (started) return
+        val currentGeneration = ++generation
+        status = powerManager.currentThermalStatus
+        val listener = PowerManager.OnThermalStatusChangedListener { newStatus ->
+            if (started && generation == currentGeneration) {
+                status = newStatus
+                publish()
+            }
+        }
         started = true
-        powerManager.addThermalStatusListener(
-            callbackExecutor,
-            statusListener,
-        )
+        try {
+            powerManager.addThermalStatusListener(callbackExecutor, listener)
+            statusListener = listener
+        } catch (error: RuntimeException) {
+            started = false
+            ++generation
+            throw error
+        }
 
         if (Build.VERSION.SDK_INT >= 36) {
             headroomListenerToken = runCatching {
-                Api36.register(
-                    powerManager,
-                    callbackExecutor,
-                ) { current, forecast, seconds, map ->
-                    headroom = current
-                    forecastHeadroom = forecast
-                    forecastSeconds = seconds
-                    thresholds = map
-                    publish()
+                Api36.register(powerManager, callbackExecutor) {
+                        current, forecast, seconds, map ->
+                    if (started && generation == currentGeneration) {
+                        headroom = current
+                        forecastHeadroom = forecast
+                        forecastSeconds = seconds
+                        forecastTimestampMillis =
+                            if (forecast.isFinite()) SystemClock.elapsedRealtime() else 0L
+                        thresholds = map.toMap()
+                        publish()
+                    }
                 }
             }.getOrNull()
         } else if (Build.VERSION.SDK_INT >= 35) {
             thresholds = runCatching {
-                Api35.readThresholds(powerManager)
+                Api35.readThresholds(powerManager).toMap()
             }.getOrDefault(emptyMap())
         }
     }
 
     @RequiresApi(30)
     fun pollForecast(seconds: Int = 10) {
+        if (!started) return
         val clampedSeconds = seconds.coerceIn(0, 60)
         val value = runCatching {
             powerManager.getThermalHeadroom(clampedSeconds)
         }.getOrDefault(Float.NaN)
-        if (!value.isNaN()) {
-            forecastHeadroom = value
-            forecastSeconds = clampedSeconds
-            publish()
-        }
+        forecastHeadroom = if (value.isFinite()) value else Float.NaN
+        forecastSeconds = clampedSeconds
+        forecastTimestampMillis =
+            if (value.isFinite()) SystemClock.elapsedRealtime() else 0L
+        if (clampedSeconds == 0) headroom = forecastHeadroom
+        publish() // NaN也发布，使策略不再沿用旧预测。
     }
 
     fun stop() {
         if (!started) return
-        headroomListenerToken?.let { token ->
-            if (Build.VERSION.SDK_INT >= 36) {
-                Api36.unregister(powerManager, token)
+        started = false
+        ++generation // 已排队的旧回调即使随后到达也不能更新新会话。
+        val oldHeadroomToken = headroomListenerToken
+        val oldStatusListener = statusListener
+        headroomListenerToken = null
+        statusListener = null
+        headroom = Float.NaN
+        forecastHeadroom = Float.NaN
+        forecastTimestampMillis = 0L
+        thresholds = emptyMap()
+        try {
+            if (Build.VERSION.SDK_INT >= 36 && oldHeadroomToken != null) {
+                Api36.unregister(powerManager, oldHeadroomToken)
+            }
+        } finally {
+            if (oldStatusListener != null) {
+                powerManager.removeThermalStatusListener(oldStatusListener)
             }
         }
-        headroomListenerToken = null
-        powerManager.removeThermalStatusListener(statusListener)
-        started = false
     }
 
     private fun publish() {
         onChanged(
             ThermalSignals(
-                status,
-                headroom,
-                forecastHeadroom,
-                forecastSeconds,
-                thresholds,
+                status, headroom, forecastHeadroom, forecastSeconds,
+                thresholds, forecastTimestampMillis,
             ),
         )
     }
 
     @RequiresApi(35)
     private object Api35 {
-        fun readThresholds(
-            powerManager: PowerManager,
-        ): Map<Int, Float> =
+        fun readThresholds(powerManager: PowerManager): Map<Int, Float> =
             powerManager.getThermalHeadroomThresholds()
     }
 
@@ -342,37 +339,17 @@ class AppThermalObserver(
         fun register(
             powerManager: PowerManager,
             executor: Executor,
-            callback: (
-                Float,
-                Float,
-                Int,
-                Map<Int, Float>,
-            ) -> Unit,
+            callback: (Float, Float, Int, Map<Int, Float>) -> Unit,
         ): Any {
-            val listener =
-                PowerManager.OnThermalHeadroomChangedListener {
-                        current,
-                        forecast,
-                        seconds,
-                        thresholds ->
-                    callback(
-                        current,
-                        forecast,
-                        seconds,
-                        thresholds,
-                    )
-                }
-            powerManager.addThermalHeadroomListener(
-                executor,
-                listener,
-            )
+            val listener = PowerManager.OnThermalHeadroomChangedListener {
+                    current, forecast, seconds, thresholds ->
+                callback(current, forecast, seconds, thresholds)
+            }
+            powerManager.addThermalHeadroomListener(executor, listener)
             return listener
         }
 
-        fun unregister(
-            powerManager: PowerManager,
-            token: Any,
-        ) {
+        fun unregister(powerManager: PowerManager, token: Any) {
             powerManager.removeThermalHeadroomListener(
                 token as PowerManager.OnThermalHeadroomChangedListener,
             )
@@ -381,14 +358,14 @@ class AppThermalObserver(
 }
 ```
 
-API 36 的类型被隔离在 `Api36` 中，旧系统不会进入对应分支。使用时我们把 observer（状态观察对象） 绑定到明确的生命周期，避免重复注册；`callbackExecutor` 宜用串行执行器，`pollForecast()` 也进同一控制队列，免得多个回调同时改写状态。回调中只更新状态并投递轻量事件，画质重建、编码器重配交给业务线程。
-
-API 30—35 的 `pollForecast()` 每次只发起一次 headroom 查询。调度器统一管理调用频率，避免多个模块各自轮询；若连续得到 `NaN`，策略回退到热状态监听器，不要用无间隔循环反复查询。
+API 36 的类型被隔离在 `Api36` 中，旧系统不会进入对应分支。使用时我们把 observer（状态观察对象） 绑定到明确的生命周期，避免重复注册；示例要求 `callbackExecutor` 为串行控制执行器，`start()`、`stop()` 和 `pollForecast()` 也必须投递到同一队列；这才保证整组信号快照与生命周期一致，单独给字段加 `volatile` 不能提供组合原子性。回调中只更新状态并投递轻量事件，画质重建、编码器重配交给业务线程。
 
 <!-- gracker-diagram: a282-06-observer-generation-and-fresh-forecast -->
 ![监听器生命周期与预测新鲜度都进入同一控制队列](../../assets/diagrams/ch25/a282-06-observer-generation-and-fresh-forecast.png)
 
 图：API30+均可按需要低频轮询；调用失败清预测时间戳，停止后不继续查询，不能把NaN当设备已冷却。
+
+API 30+的 `pollForecast()` 每次只发起一次headroom查询；失败或NaN会发布不可用状态并清除预测时间戳，不继续把旧值当当前预测。调度器统一管理调用频率，避免多个模块各自轮询；若连续得到 `NaN`，策略回退到热状态监听器，不要用无间隔循环反复查询。
 
 ## 从信号映射到工作量档位
 
@@ -402,13 +379,21 @@ enum class WorkloadTier {
     SURVIVAL,
 }
 
-fun requestedTier(signals: ThermalSignals): WorkloadTier {
+fun requestedTier(
+    signals: ThermalSignals,
+    nowElapsedMillis: Long,
+    maxForecastAgeMillis: Long,
+): WorkloadTier {
+    require(maxForecastAgeMillis > 0L)
     val moderateThreshold =
         signals.thresholds[PowerManager.THERMAL_STATUS_MODERATE]
     val severeThreshold =
         signals.thresholds[PowerManager.THERMAL_STATUS_SEVERE] ?: 1.0f
     val forecast = signals.forecastHeadroom
-    val forecastValid = !forecast.isNaN()
+    val forecastTimestamp = signals.forecastTimestampMillis
+    val forecastValid = forecast.isFinite() && forecast >= 0f &&
+        forecastTimestamp > 0L && nowElapsedMillis >= forecastTimestamp &&
+        nowElapsedMillis - forecastTimestamp <= maxForecastAgeMillis
 
     return when {
         signals.status >= PowerManager.THERMAL_STATUS_CRITICAL ->
@@ -431,7 +416,12 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 }
 ```
 
-这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量（margin）用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应从产品实验里取值，套用平台常量行不通。
+调用方传入当前 `SystemClock.elapsedRealtime()` 和按轮询节奏/业务风险设置的 `maxForecastAgeMillis`；过期或不可用预测只退回热状态，不能据此断言设备已冷却。这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量（margin）用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应从产品实验里取值，套用平台常量行不通。
+
+<!-- gracker-diagram: a282-07-tier-hysteresis-and-cooldown -->
+![降载可快速，恢复必须有退出余量与冷却驻留](../../assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.png)
+
+图：映射函数只给目标；恢复有状态、滞回和驻留要求，避免未知预测或短暂回落触发质量振荡。
 
 每个档位对应一组不可拆分的配置，所有相关模块在同一次状态切换中采用同一档位，避免渲染已经降载、相机或推理仍维持高负载的错位：
 
@@ -444,11 +434,6 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 | 后台任务 | 延迟索引、压缩、清理 | 保存检查点，等待调度条件恢复 |
 
 实时处理管线还需要主动丢弃过期输入。热限制把处理速度压低后，相机帧、渲染命令或推理请求若继续无限排队，端到端延迟会一路上升，这时减少工作量也来不及降低当前功耗。
-
-<!-- gracker-diagram: a282-07-tier-hysteresis-and-cooldown -->
-![降载可快速，恢复必须有退出余量与冷却驻留](../../assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.png)
-
-图：映射函数只给目标；恢复有状态、滞回和驻留要求，避免未知预测或短暂回落触发质量振荡。
 
 <!-- gracker-diagram: a282-08-shared-tier-and-stale-queue-discard -->
 ![热降载同时改变生产速率、消费能力与积压队列](../../assets/diagrams/ch25/a282-08-shared-tier-and-stale-queue-discard.png)
@@ -506,7 +491,7 @@ Thermal HAL 指南要求设备把会限制性能的电池功率约束也报告�
 
 ## Thermal API、ADPF 与 Game Mode 的分工
 
-ADPF（Android Dynamic Performance Framework（Android 动态性能框架），Android 动态性能框架）把 Thermal API、Performance Hint、Game Mode 和容量余量这些协作接口收在一起。它们各提供一组不同维度的信号或意图，都不会替代系统的热安全限制。
+ADPF（Android Dynamic Performance Framework，Android 动态性能框架）把 Thermal API、Performance Hint、Game Mode 和容量余量这些协作接口收在一起。它们各提供一组不同维度的信号或意图，都不会替代系统的热安全限制。
 
 ### Performance Hint Session
 
@@ -516,7 +501,7 @@ ADPF（Android Dynamic Performance Framework（Android 动态性能框架），A
 
 API 36 的 CPU/GPU capacity headroom（容量余量）位于 [`SystemHealthManager`](https://developer.android.com/reference/android/os/health/SystemHealthManager)：
 
-- `getCpuHeadroom()` / `getGpuHeadroom()` 返回 0—100，0 表示没有更多可分配容量；
+- `getCpuHeadroom()` / `getGpuHeadroom()` 的有效值为0—100，0表示没有更多可分配容量；暂时无数据可为NaN，不支持则抛 `UnsupportedOperationException`，CPU参数/TID/亲和性错误还要按对应异常处理；
 - thermal headroom 的数值方向与 capacity headroom 相反：越高越接近严重热限制；
 - capacity headroom 概括近期的 CPU/GPU 可用容量，低值可能来自高负载、调度或其他约束，不一定由温度造成，也不是未来容量预测；
 - 每次有效查询至少执行一次同步 Binder 调用，可能超过 1 毫秒；调用方应遵守系统报告的最小间隔，并避开渲染等关键线程。
@@ -525,7 +510,7 @@ API 36 的 CPU/GPU capacity headroom（容量余量）位于 [`SystemHealthManag
 
 ### Game Mode
 
-Game Mode 表达用户选择的偏好：`PERFORMANCE`（性能优先） 性能优先，`BATTERY` 续航优先，`STANDARD`（标准） 标准。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
+Game Mode 表达用户选择的偏好：`PERFORMANCE`（性能优先）、`BATTERY`（续航优先）、`STANDARD`（标准）。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
 
 续航优先模式（Battery Game Mode）只影响游戏自己的策略，与系统省电模式是两回事。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
 
@@ -548,7 +533,7 @@ API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负�
 
 限制等级越高，可运行范围越窄：
 
-- `LIGHT` 开始限制 MIN priority，以及部分未运行或 overtime 的 LOW priority job；
+- `LIGHT` 对 `bias >= BIAS_FOREGROUND_SERVICE` 的Job不施加这条热限制；其余Job限制MIN priority，以及未运行或已overtime的LOW priority；
 - `MODERATE` 放行 user-initiated job；expedited job 仅在首次尝试，且若已运行则尚未进入 overtime 时放行；HIGH priority job 仅在已运行且未进入 overtime 时放行；
 - `SEVERE` 及以上限制所有非 TOP_APP job；
 - TOP_APP bias 不受这条限制规则影响。
@@ -579,7 +564,7 @@ Doze（设备空闲节电）、App Standby、Battery Saver（系统省电模式�
 - 目标 FPS / 实际 FPS、FrameTimeline 卡顿帧（jank）、编码或推理延迟；
 - 设备型号、系统构建版本、应用版本和实验组。
 
-`elapsedRealtime` 只随设备运行时间递增，不受用户改时间或网络校时影响，适合计算状态持续时间。回调日志要做去重，只记录转换和区间持续时间；headroom 适合按区间统计或抽样，不适合高频逐点上传。恢复阶段也要记录，这样才能发现策略在 LIGHT 与 MODERATE 之间反复切换。
+`elapsedRealtime` 在同次开机内单调递增并计入深度睡眠，不受用户改时间或网络校时影响，适合计算状态持续时间；跨重启的样本要另行切分。回调日志要做去重，只记录转换和区间持续时间；headroom 适合按区间统计或抽样，不适合高频逐点上传。恢复阶段也要记录，这样才能发现策略在 LIGHT 与 MODERATE 之间反复切换。
 
 我们在线上看板里按热状态和工作量档位拆分统计。把所有状态混在一起，热机样本会拉高尾延迟，冷机与热机的不同退化模式就看不清了。
 

@@ -4,9 +4,10 @@ chapter: '15.17'
 section: '15.17'
 status: finalized
 applicable_versions: Android 17 (API 37)；AGP 9.3.0+，或旧 AGP 替换为 R8 9.3.7-dev+；更旧 R8 只能做启发式规则审查
-last_verified: '2026-10-17'
-last_verified_against: R8 Configuration Analyzer、enable-app-optimization、full-mode、Choose libraries wisely、keep-rule-examples、add-keep-rules、CONFIGURATION-ANALYZER 与 r8-analyzer skill（2026-10-17 在线核验）；平台基线维持 android-17.0.0_r1 / android17-6.18-2026-06_r6
-last_source_verified_at: '2026-10-17'
+last_verified: '2026-10-26'
+last_verified_against: Official R8 optimization guides checked 2026-10-26; android/skills r8-analyzer metadata 2026-09-22, SKILL blob 91d33cac2d78f6d38ae040a55af4737f389ea44d; R8 9.4.14 build b1e20dd52788b7a226f83e24d49d0a53108bc84a and emitted report; README dd02d74abc0747a05914a5c32b9aaf4f4d7454a4; platform context android-17.0.0_r1 / android17-6.18-2026-06_r6
+verification_scope_note: Current primary guides and targeted R8 source contracts; actual JBR21/R8 CLI classfile fixtures, protobuf decode, javap and host JVM, plus emitted-report pure JS helper checks. No AGP/Gradle task, optimization DSL, APK/AAB, resource shrinker, Android device, native JNI integration or app performance validation.
+last_source_verified_at: '2026-10-26'
 last_idle_audit_at: '2026-10-17T18:37:02+08:00'
 confidence: high
 sources:
@@ -27,13 +28,13 @@ sources:
 - type: official
   path: https://developer.android.com/studio/debug/apk-analyzer
 - type: r8
-  path: https://r8.googlesource.com/r8/+/refs/heads/main/README.md
+  path: https://r8.googlesource.com/r8/+/dd02d74abc0747a05914a5c32b9aaf4f4d7454a4/README.md
 - type: aosp
   path: https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Makefile
 - type: official
-  path: https://developer.android.com/agents/skills/performance/r8-analyzer/references/CONFIGURATION-ANALYZER
+  path: https://github.com/android/skills/blob/main/performance/r8-analyzer/references/CONFIGURATION-ANALYZER.md
 - type: official
   path: https://developer.android.com/agents/skills/performance/r8-analyzer/references/CONFIGURATION
 - type: blog
@@ -103,9 +104,9 @@ AGP 9.3.0 及以上提供一个独立任务，适合本地迭代 keep 规则：
 ./gradlew :app:analyzeReleaseR8Config
 ```
 
-这个任务跳过 APK/AAB 生成，供人查看的报告写入 `app/build/reports/r8/r8-config-analyzer-release.html`。最新官方 `r8-analyzer` skill 还会读取同目录的 `r8-config-analyzer-release.pb`，把 Protocol Buffers（protobuf，二进制结构化数据）转换成 JSON 后做定量汇总。HTML 和这份 JSON 都只反映规则影响，拿不到最终包体，也做不了运行时验证。
+这个任务跳过 APK/AAB 生成，供人查看的报告写入 `app/build/reports/r8/r8-config-analyzer-release.html`。当前官方 `r8-analyzer` 工作流还引用同目录的 `r8-config-analyzer-release.pb`，把 Protocol Buffers（protobuf，二进制结构化数据）转换成 JSON 后做定量汇总；这是该工作流描述的处理路径，转换入口和 schema 仍需版本核验。HTML 和这份 JSON 都只反映规则影响，拿不到最终包体，也做不了运行时验证。
 
-完整 release 构建会自动生成报告：
+启用 R8 的完整 release 构建会自动生成报告：
 
 ```bash
 ./gradlew :app:assembleRelease
@@ -154,31 +155,30 @@ android {
 
 ## 报告里哪些字段该看
 
-报告首页的三类分数衡量“仍允许 R8 处理的类、字段和方法占比”，不能当作已经获得的字节或性能收益，也不能跨 R8 版本直接比较绝对值。
-
-表格里的 full mode 指 R8 full mode（完整模式）：AGP 8.0 起默认启用的优化模式，它允许 R8 做更积极的全程序分析与代码改写。
-
-| 指标 | 它衡量什么 | 分数下降时先看哪里 |
-| --- | --- | --- |
-| Shrinking score | 类、字段、方法中仍允许被删除的比例 | 包级 keep、`-dontshrink`、过宽的 `-keep class ** { *; }` |
-| Optimization score | 仍允许被内联、类合并、访问级别调整等优化处理的比例 | `-dontoptimize`、未加 `allowoptimization` 的宽规则、为兼容 full mode 添加的临时宽规则 |
-| Obfuscation score | 仍允许被重命名的比例 | `-dontobfuscate`、协议字段名和反射类名被整包固定 |
-
-这三个分数要结合规则列表读。shrinking score 下降，原因可能是 App 新增了一条宽规则，也可能是第三方 SDK 更新后扩大了 consumer rules 的匹配范围。报告里的 source（来源）字段可区分 App 规则、library consumer rules 和 AGP 默认规则：App 规则能直接改；库规则应优先通过升级 SDK 或反馈库作者处理；AGP 默认规则只做识别，不应改动。
-
-多条 keep 规则的限制会叠加：App 再添加一条窄规则，抵消不了 AAR 已经带入的宽规则。必须临时验证潜在收益时，AGP 8.4 及以上可通过 `optimization.keepRules.ignoreFrom("group:artifact")` 过滤指定 Maven 坐标的依赖规则，再由 App 补回确有运行时需要的部分；AGP 7.3～8.3 的旧接口名是 `ignoreExternalDependencies()`。过滤会改变库作者声明的运行时契约（反射、JNI 等路径依赖的名称、成员和元数据约束），只适合隔离实验和有完整回归覆盖的受控构建。
-
-`impactful rules`（高影响规则）按每条 keep 规则涉及的类、字段和方法数量聚合，用来排优先级。先看影响范围最大的规则，再确认它是否对应真实的反射、JNI 或动态加载入口。
-
-`subsumed rules` 指匹配范围已被另一条规则包含的规则。典型例子是同一个包里同时存在下面两条声明：
-
-```proguard
+报告首页的三类分数衡量“仍允许 R8 处理的类、字段和方法占比”，不能当作已经获得的字节或性能收益，也不能跨 R8 版本直接比较绝对值。以本次核对的 R8 9.4.14 HTML 为例，overall 分母是分析时的 live class、field、method 个数之和，每项权重均为 1；同一元素只要被任一规则施加对应限制就计入受限数，多条规则约束同一元素不重复累加。分数按 `100 × (1 - 受限元素数 / live元素数)` 解释，适用于分母大于 0 的情况；全局 `-dont*` 选项会把对应能力的分数置为 0。它统计的是分析图中的元素数量，不是最终 DEX 字节，也不是已删除代码的比例。
 
 <!-- gracker-diagram: ch15-17-06-score-counting -->
 ![三类分数的数量分母与去重](../../assets/diagrams/ch15/ch15-17-06-score-counting.png)
 
 图：在固定R89.4.14实现中，按live元素个数和对应受限元素数解释overall分数。 每个类/字段/方法各计1项；任意规则限制即受限，同一元素不因多条规则重复计数；分母须大于0。
 
+表格里的 full mode 指 R8 full mode（完整模式）：AGP 8.0 起默认启用的优化模式，它允许 R8 做更积极的全程序分析与代码改写。
+
+| 指标 | 它衡量什么 | 分数下降时先看哪里 |
+| --- | --- | --- |
+| Shrinking score | 类、字段、方法中仍允许被删除的比例 | 包级 keep、<code>-dontshrink</code>、过宽的 <code>-keep class ** { *; }</code> |
+| Optimization score | 仍允许被内联、类合并、访问级别调整等优化处理的比例 | <code>-dontoptimize</code>、未加 <code>allowoptimization</code> 的宽规则、为兼容 full mode 添加的临时宽规则 |
+| Obfuscation score | 仍允许被重命名的比例 | <code>-dontobfuscate</code>、协议字段名和反射类名被整包固定 |
+
+这三个分数要结合规则列表读。shrinking score 下降，原因可能是 App 新增了一条宽规则，也可能是第三方 SDK 更新后扩大了 consumer rules 的匹配范围。可通过报告里的来源文件和依赖信息区分 App 规则、library consumer rules 和 AGP 默认规则。不要把序列化数据的 `source` 当作文件或 Maven 坐标：在已核对的 R8 9.4.14 中，它保存规则原文，来源另经 `origin`、文件表和 Maven 信息关联。处理顺序是：App 规则能直接改；库规则应优先通过升级 SDK 或反馈库作者处理；AGP 默认规则只做识别，不应直接修改。另要区分规则是否真正生效：AGP 9.0+ 会过滤 library consumer rules 中的全局选项，例如 `-dontobfuscate`；App 自己声明的全局规则仍需检查，不能把库中已被过滤的声明当成当前优化受限的原因。
+
+多条 keep 规则的限制会叠加：App 再添加一条窄规则，抵消不了 AAR 已经带入的宽规则。必须临时验证潜在收益时，AGP 8.4 及以上可通过 `optimization.keepRules.ignoreFrom("group:artifact")` 过滤指定 Maven 坐标的依赖规则，再由 App 补回确有运行时需要的部分；AGP 7.3～8.3 的旧接口名是 `ignoreExternalDependencies()`。过滤会改变库作者声明的运行时契约（反射、JNI 等路径依赖的名称、成员和元数据约束），只适合隔离实验和有完整回归覆盖的受控构建。
+
+`impactful rules`（高影响规则）按每条 keep 规则涉及的类、字段和方法数量聚合，用来排优先级。先看影响范围最大的规则，再确认它是否对应真实的反射、JNI 或动态加载入口。
+
+`subsumed rules` 要结合当前工具的比较条件理解。已复核的 R8 9.4.14 只有在两条规则的 modifiers（例如 `allowoptimization`）相同，且类、字段、方法三组匹配集合都分别被包含时，才报告对应的 subsumed 关系；仅凭包名模式更宽或匹配数量更多，不能断定报告一定会标成 subsumed。典型例子是同一个包里同时存在下面两条声明：
+
+```proguard
 # 规则 A：保留整个包
 -keep class com.example.package.** { *; }
 
@@ -211,10 +211,10 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 
 | 规则影响 | 常见触发方式 | 典型后果 | 修正方向 |
 | --- | --- | --- | --- |
-| 阻止 shrinking | `-keep class com.foo.** { *; }`、`-dontshrink` | 未使用类和成员留在 DEX 中 | 改成精确类、接口实现、注解匹配或成员级规则 |
-| 阻止 obfuscation | 直接 `-keep` 类名或字段名 | DEX 字符串池保留较长名称，短名压缩空间减少 | 确认运行时是否依赖名字；不依赖就加 `allowobfuscation` |
-| 阻止 optimization | 宽规则未放开 optimization、`-dontoptimize` | 方法内联、类合并、访问级别调整受限 | 不用全局禁用；对安全范围加 `allowoptimization` |
-| attribute 保留不足 | full mode 下只写 `-keepattributes Signature` | 反射框架读不到泛型、内部类或注解等 class file attribute（类文件元数据） | 同时 keep 关联类、字段或方法，并尽量放开混淆和优化 |
+| 阻止 shrinking | <code>-keep class com.<wbr>foo.<wbr>** { *; }</code>、<code>-dontshrink</code> | 未使用类和成员留在 DEX 中 | 改成精确类、接口实现、注解匹配或成员级规则 |
+| 阻止 obfuscation | 直接 <code>-keep</code> 类名或字段名 | DEX 字符串池保留较长名称，短名压缩空间减少 | 确认运行时是否依赖名字；不依赖就加 <code>allowobfuscation</code> |
+| 阻止 optimization | 宽规则未放开 optimization、<code>-dontoptimize</code> | 方法内联、类合并、访问级别调整受限 | 不用全局禁用；对安全范围加 <code>allowoptimization</code> |
+| attribute 保留不足 | full mode 下只写 <code>-keepattributes Signature</code> | 反射框架读不到泛型、内部类或注解等 class file attribute（类文件元数据） | 同时 keep 关联类、字段或方法，并尽量放开混淆和优化 |
 
 `allowshrinking`、`allowobfuscation`、`allowoptimization` 分别允许 R8 删除、重命名或改写匹配项。是否能加这些修饰符，取决于运行时契约依赖什么：
 
@@ -242,7 +242,7 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 }
 ```
 
-第一条是默认优化规则中的 JNI downcall（Java/Kotlin 调 C/C++）保护；第二条面向 upcall（C/C++ 回调 Java/Kotlin），前提是 `NativeBridge` 已由 Java/Kotlin 代码实例化并在该构建中保留。`-keepclassmembers` 不会单独保留桥接类；如果桥接类本身也只从 native 侧访问，还需单独保留该类，并保护 native 按名查找的构造函数或成员。
+第一条是默认优化规则中的 JNI downcall（Java/Kotlin 调 C/C++）保护。`-keepclasseswithmembernames` 仍允许 shrinking，不能独自保住完全未被使用的 native 类或方法；它保护最终仍存活的匹配类、成员及相关描述符类型的命名契约；未添加 `allowoptimization` 时，还会限制对应优化。第二条面向 upcall（C/C++ 回调 Java/Kotlin），前提是 `NativeBridge` 已由 Java/Kotlin 代码实例化并在该构建中保留。`-keepclassmembers` 不会单独保留桥接类；如果桥接类本身也只从 native 侧访问，还需单独保留该类，并保护 native 按名查找的构造函数或成员。
 
 `includedescriptorclasses` 会把方法 descriptor（参数与返回值组成的 JVM 签名）中的应用类型一并纳入保护。若 native 代码还按名字访问 `NativePayload` 的构造函数或字段，这些成员需要单独规则。遗漏 native 查找的类或成员可能导致 `UnsatisfiedLinkError` 或 `NoSuchMethodError`，应使用启用 R8 的 release 包覆盖这些调用。二者都比 `-keep class com.example.bridge.** { *; }` 窄。
 
@@ -259,7 +259,7 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 2. **反射框架规则**：Gson、Moshi、Jackson、反射式路由、插件化框架要区分“依赖类名”“依赖字段名”“依赖泛型签名”三种契约。只读字段名就保字段；读泛型就保 `Signature` 和相关类型；不要保留整个数据模型包。
 3. **代码生成与自带规则的库**：Room、Hilt、Moshi codegen（代码生成）通过注解处理器或 KSP（Kotlin Symbol Processing）让 R8 看见静态引用；Gson 2.11.0+、Retrofit 2.10.0+ 自带关键 consumer rules。App 新增大范围临时规则前，先看库版本、AAR 内容和最终 `configuration.txt`。
 4. **JNI 入口**：Java/Kotlin 调 native 的 `native <methods>` 通常由默认优化规则覆盖；native 回调 Java/Kotlin 的 upcall 才需要项目补规则。规则要精确到 bridge（桥接）类或方法签名。
-5. **ServiceLoader 和可选依赖**：Java `ServiceLoader` 会按 `META-INF/services/` 中记录的实现类名加载 provider（服务实现）；这类路径要保留 provider 类和所需构造函数。如果运行时代码直接传递 `Class` 对象，通常不需要保留原始类名。
+5. **ServiceLoader 和可选依赖**：先判断 R8 能否识别并改写服务加载路径。固定 R8 9.4.14 的 rewriter 支持受限的双参数形式，例如 `ServiceLoader.load(Service.class, Service.class.getClassLoader())`，并结合打包的 `META-INF/services/` 建立 provider 引用；可见的标准路径不一定需要额外 keep。动态 class loader、外部 provider、动态 feature 等路径另查；只有 R8 无法推导的加载契约才按实际需求保留 provider、构造函数和名称，不能看到 ServiceLoader 就保整包。
 6. **注解和泛型签名**：R8 full mode 下，attribute 是否保留与被 keep 的类、字段、方法有关。只写 `-keepattributes` 可能不够，必须确认读取 attribute 的对象也被规则匹配。
 
 排查时同步查看 `build/outputs/mapping/<variant>/` 下的四个文件：`configuration.txt` 是最终合并配置，`mapping.txt` 记录改名前后的对应关系，`seeds.txt` 列出被规则阻止删除的元素，`usage.txt` 列出被删除的元素。只有四个文件和 Analyzer 报告来自同一次构建，才能判断规则收窄之后包体有没有变小。
@@ -275,7 +275,7 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 
 Configuration Analyzer 适合放在 full mode 迁移后的第二轮：第一轮先让 release 包跑完 smoke test（关键路径的基础冒烟测试），第二轮再检查临时宽规则的影响。报告里排名靠前的规则，常来自迁移期间为了先恢复功能而添加的配置。处理时把运行时契约分成可单独验证的单元：
 
-- Gson `TypeToken` 依赖 `Signature`，规则要保留泛型签名和相关 `TypeToken` 类型；Gson 2.11.0+ 已带 full mode 所需 consumer rules，旧版本才考虑 App 侧补规则。
+- Gson `TypeToken` 依赖 `Signature` 与关联类型；Gson 2.11.0+ 已内置这部分 full mode consumer rules。模型字段还要符合规则的匹配条件，例如使用 `@SerializedName`；升级库并不意味着所有未注解模型、构造与自定义反射路径都自动受保护，仍需补 App 特有契约。
 - 反射构造只需要无参构造函数时，保构造函数，不要保整个类的所有字段和方法。
 - 注解扫描只需要运行时注解时，保 `RuntimeVisibleAnnotations` 和被扫描成员，不要把包内所有类都固定。
 - native upcall 只需要固定被 native 查找的方法签名时，保 bridge 方法，不要禁用整包混淆和优化。
@@ -297,11 +297,11 @@ CI 里至少归档这些产物：
 
 | 产物 | 建议路径 | 用途 |
 | --- | --- | --- |
-| analyzer HTML | `build/reports/r8/r8-config-analyzer-<variant>.html`、`build/outputs/mapping/<variant>/configanalyzer.html` 或手动输出目录 | 查看三类分数及 impactful、subsumed、unused、identical rules |
-| `configuration.txt` | `build/outputs/mapping/<variant>/configuration.txt` | 追踪最终合并后的规则来源 |
-| `mapping.txt` | `build/outputs/mapping/<variant>/mapping.txt` | 判断 obfuscation 是否生效，支持 crash 还原 |
-| `seeds.txt` | `build/outputs/mapping/<variant>/seeds.txt` | 查看被 keep 的类、字段、方法 |
-| `usage.txt` | `build/outputs/mapping/<variant>/usage.txt` | 查看被删除的类、字段、方法 |
+| analyzer HTML | <code>build/<wbr>reports/<wbr>r8/<wbr>r8-config-analyzer-&lt;variant&gt;.<wbr>html</code>、<code>build/<wbr>outputs/<wbr>mapping/<wbr>&lt;variant&gt;/<wbr>configanalyzer.<wbr>html</code> 或手动输出目录 | 查看三类分数及 impactful、subsumed、unused、identical rules |
+| <code>configuration.<wbr>txt</code> | <code>build/<wbr>outputs/<wbr>mapping/<wbr>&lt;variant&gt;/<wbr>configuration.<wbr>txt</code> | 追踪最终合并后的规则来源 |
+| <code>mapping.<wbr>txt</code> | <code>build/<wbr>outputs/<wbr>mapping/<wbr>&lt;variant&gt;/<wbr>mapping.<wbr>txt</code> | 判断 obfuscation 是否生效，支持 crash 还原 |
+| <code>seeds.<wbr>txt</code> | <code>build/<wbr>outputs/<wbr>mapping/<wbr>&lt;variant&gt;/<wbr>seeds.<wbr>txt</code> | 查看被 keep 的类、字段、方法 |
+| <code>usage.<wbr>txt</code> | <code>build/<wbr>outputs/<wbr>mapping/<wbr>&lt;variant&gt;/<wbr>usage.<wbr>txt</code> | 查看被删除的类、字段、方法 |
 | APK / AAB size diff | CI artifact（持续集成归档制品） | 对照 DEX、resources、native 体积变化 |
 
 独立任务不生成 APK、AAB、mapping、seeds 或 usage；表中的编译产物来自完整 R8 build，并且必须和被比较的 APK/AAB 属于同一次构建。mapping 会被后续构建覆盖，发布时应按制品校验值归档。
@@ -321,7 +321,7 @@ CI 里至少归档这些产物：
 - DEX 体积增长和 Analyzer 分数下降同时出现，且增长集中在同一个业务包或 SDK 包。
 - 新版 SDK 带入 consumer rules 后，subsumed rules 数量明显增加。
 
-官方 `r8-analyzer` skill 在 2026-08-06 版本中明确分成三条路径：AGP 9.3.0 及以上运行独立任务；旧 AGP 搭配 R8 9.3.7-dev 及以上生成定量数据；更旧 R8 只做启发式规则审查。skill 适合生成报告摘要和候选清单，但不会修改 keep 规则。规则背后是运行时契约，最终仍要由工程师确认反射、JNI、序列化和插件化路径是否被覆盖。
+当前仓库的官方 `r8-analyzer` 文档元数据为 2026-09-22，它分成三条路径：AGP 9.3.0 及以上运行独立任务；旧 AGP 搭配 R8 9.3.7-dev 及以上生成定量数据；更旧 R8 只做启发式规则审查。该工作流定位是生成摘要和候选清单，不修改 keep 规则。但当前仓库只有 `SKILL.md` 和 `references/`，文档引用的 `scripts/convert_pb_to_json.py` 与 `scripts/analyze.py` 未随目录提供；不能直接承诺这些命令可执行。参考文件包含内嵌转换和统计示例，其中转换入口存在缩进问题，自动选择 proto 也只是按文件名排序，不能作为“最新构建”的可靠判据。复用时应从已固定版本的明确输入文件开始，先校验转换器、schema 与统计输出，再接入 CI。规则背后是运行时契约，反射、JNI、序列化和插件化路径仍要由工程师确认覆盖。
 
 <!-- gracker-diagram: ch15-17-14-workflow-and-schema-validation -->
 ![工作流入口与数据契约先验收](../../assets/diagrams/ch15/ch15-17-14-workflow-and-schema-validation.png)
@@ -353,10 +353,10 @@ R8 Configuration Analyzer 适合回答：
 
 | 运行时契约 | 需要保护的内容 | 可以尝试放开的能力 | 验证重点 |
 | --- | --- | --- | --- |
-| `Class.forName()` 使用固定字符串 | 类名、类本身、被反射构造的构造函数 | 只在字符串随 mapping 改写时考虑 obfuscation | 动态注册、插件入口、可选实现 |
-| 代码直接传递 `Class` 对象 | 被反射调用的构造函数或成员 | `allowobfuscation`；未使用实现可 `allowshrinking` | 每个实现类与低频分支 |
+| 无法被 R8 静态识别的 <code>Class.<wbr>for<wbr>Name()</code> 名称 | 按实际契约保护类名、类及反射调用的成员 | 能被 R8 解析的字面量调用可能被改写，不必一概固定名字 | 外部下发名称、动态注册、插件入口、可选实现 |
+| 代码直接传递 <code>Class</code> 对象 | 被反射调用的构造函数或成员 | <code>allowobfuscation</code>；未使用实现可 <code>allowshrinking</code> | 每个实现类与低频分支 |
 | 按字段名序列化 | 对应字段名和字段 | 未被协议读取的成员仍可 shrink/optimize | 旧数据、缺省值、混淆后协议兼容 |
-| 读取泛型或注解 | `Signature`、运行时注解及其关联类/成员 | 不依赖名字的对象可 obfuscate | 泛型返回值、匿名 `TypeToken`、suspend 接口 |
+| 读取泛型或注解 | <code>Signature</code>、运行时注解及其关联类/成员 | 不依赖名字的对象可 obfuscate | 泛型返回值、匿名 <code>Type<wbr>Token</code>、suspend 接口 |
 | Room、Hilt、Moshi codegen | 生成代码和静态引用 | 通常不需要 App 侧保留整个包 | 生成器版本、增量构建、consumer rules |
 | JNI upcall | 被回调成员、descriptor 中的应用类型、native 按名访问的成员 | 只放开 native 不依赖的名称和成员 | ABI（二进制接口）、注册方式、构造函数、回调签名 |
 
@@ -390,8 +390,12 @@ R8 Analyzer skill 可以汇总分数、影响较大的规则和重叠关系，�
 - [Choose libraries wisely](https://developer.android.com/topic/performance/app-optimization/choose-libraries-wisely)
 - [Troubleshoot R8 optimization](https://developer.android.com/topic/performance/app-optimization/troubleshoot-the-optimization)
 - [Analyze a build with APK Analyzer](https://developer.android.com/studio/debug/apk-analyzer)
-- [R8 source and AGP replacement instructions](https://r8.googlesource.com/r8/+/refs/heads/main/README.md)
+- [R8 source and AGP replacement instructions](https://r8.googlesource.com/r8/+/dd02d74abc0747a05914a5c32b9aaf4f4d7454a4/README.md)
+- [R8 9.4.14 subsumption 实现：相同 modifiers 与三组集合包含](https://r8.googlesource.com/r8/+/b1e20dd52788b7a226f83e24d49d0a53108bc84a/src/main/java/com/android/tools/r8/keepradius/KeepRuleSubsumptionAnalysis.java)
+- [R8 9.4.14 ServiceLoader 改写条件](https://r8.googlesource.com/r8/+/b1e20dd52788b7a226f83e24d49d0a53108bc84a/src/main/java/com/android/tools/r8/ir/optimize/ServiceLoaderRewriter.java)
+- [R8 9.4.14 可解析反射的改写](https://r8.googlesource.com/r8/+/b1e20dd52788b7a226f83e24d49d0a53108bc84a/src/main/java/com/android/tools/r8/ir/optimize/ReflectionOptimizer.java)
+- [R8 9.4.14 官方预构建制品](https://storage.googleapis.com/r8-releases/raw/9.4.14/r8lib.jar)
 - [Official r8-analyzer skill](https://github.com/android/skills/blob/main/performance/r8-analyzer/SKILL.md)
-- [Configuration Analyzer data generation](https://developer.android.com/agents/skills/performance/r8-analyzer/references/CONFIGURATION-ANALYZER)
+- [Configuration Analyzer data generation](https://github.com/android/skills/blob/main/performance/r8-analyzer/references/CONFIGURATION-ANALYZER.md)
 - [Android 17 platform manifest](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml)
 - [Android 17 common kernel 6.18 Makefile](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Makefile)

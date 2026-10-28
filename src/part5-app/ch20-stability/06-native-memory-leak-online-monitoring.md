@@ -19,8 +19,8 @@ related_chapters:
 - '23.3'
 - '26.13'
 last_draft_polish_at: '2026-08-03T15:35:11+08:00'
-last_verified: '2026-08-29'
-last_verified_against: Android 17 public docs (Memory Limiter AOSP fetched 2026-08-28; App memory limits updated 2026-08-13) / android-17.0.0_r1 / android17-6.18-2026-06_r6
+last_verified: '2026-10-25'
+last_verified_against: Android 17 public docs verified 2026-10-25 / android-17.0.0_r1 / android17-6.18-2026-06_r6
 last_review_finalize_at: '2026-08-29T12:35:17+08:00'
 last_body_apply_at: '2026-08-29T11:19:37+08:00'
 confidence: high
@@ -53,9 +53,9 @@ sources:
 
 ## 1. Android 17 的 App Memory Limits
 
-Android 17 引入了 App Memory Limits（应用内存限制），它让异常增长更早地变成进程退出。这套机制对运行在 Android 17 上的所有应用生效，不取决于 `targetSdkVersion`，但只在实施该机制的设备上启用；限制值由设备内存和厂商配置决定，平台没有向应用承诺统一的字节阈值。
+Android 17 引入了 App Memory Limits（应用内存限制），它让异常增长更早地变成进程退出。这套机制对运行在 Android 17 上的所有应用生效，不取决于 `targetSdkVersion`，但只在实施该机制的设备上启用；现行 [AOSP 指南](https://source.android.com/docs/core/perf/memory-limiter) 已列出按设备 MemTotal 与可见状态划分的标准限制；应用仍没有运行时查询自身上限的公开 API。固定 r1 标签、后续标准配置和具体设备镜像需分别核对，不能把某一档的数值当作所有设备的通用上限。
 
-AOSP Memory Limiter 文档把目标写成限制单个应用占用过量系统内存，从而降低整体内存压力，并避免关键前台或缓存进程被激进低内存回收。它解释的是系统的保护目标；至于应用侧可以读取的固定配额，这份文档并没有给出。[来源: 03-memory-limiter-body.txt]
+AOSP Memory Limiter 文档把目标写成限制单个应用占用过量系统内存，从而降低整体内存压力，并避免关键前台或缓存进程被激进低内存回收。它解释的是系统的保护目标；文档给出了标准档位，但没有提供应用在运行时读取实际生效上限的公开 API。[AOSP Memory Limiter 指南](https://source.android.com/docs/core/perf/memory-limiter)
 
 在启用该机制的构建中，`MemoryLimiter` 跟随 AMS（Activity Manager Service，活动管理服务） 的进程生命周期和状态变化调整限制。AOSP 文档写明默认监控应用进程（UID >= 10000），核心系统进程为稳定性而豁免。
 
@@ -64,11 +64,16 @@ AOSP Memory Limiter 文档把目标写成限制单个应用占用过量系统内
 
 图：Android17所有target范围内应用都可能受约束，仍取决于设备是否启用；核心系统进程与应用范围不同。
 
-`android-17.0.0_r1` 的状态表把进程状态归成几档：`PERSISTENT`/`PERSISTENT_UI` 归为 unrestricted，`TOP`/`BOUND_TOP`/`IMPORTANT_FOREGROUND`/`TOP_SLEEPING` 归为 visible，`FOREGROUND_SERVICE`、`IMPORTANT_BACKGROUND`、`SERVICE`、`RECEIVER`、`HOME`、`LAST_ACTIVITY` 等归为 not visible，`CACHED_*` 归为 cached。cached 状态下进程会先被冻结，再被最大化回收。[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1]
+`android-17.0.0_r1` 的状态表把进程状态归成几档：`PERSISTENT`/`PERSISTENT_UI` 归为 unrestricted，`TOP`/`BOUND_TOP`/`IMPORTANT_FOREGROUND`/`TOP_SLEEPING` 归为 visible，`FOREGROUND_SERVICE`、`IMPORTANT_BACKGROUND`、`SERVICE`、`RECEIVER`、`HOME`、`LAST_ACTIVITY` 等归为 not visible，`CACHED_*` 归为 cached。cached 状态下进程会先被冻结，再被最大化回收。[AOSP Memory Limiter 指南](https://source.android.com/docs/core/perf/memory-limiter)；[Android 17 r1 源码](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
 
-配置路径上有一处版本差异需要单独记下。AOSP 文档把标准配置文件写成 `/system/etc/memory-limiter-config.xml`，XML 数值单位为 MiB；首个 AOSP 标签 `android-17.0.0_r1` 的 `MemoryLimiter.CONFIG_PATH` 则硬编码 `/vendor/etc/memory-limiter-config.xml`。所以调试时我们先记录设备 build fingerprint（系统构建指纹），用设备上的 `am memory-limiter status` 和镜像里的实际文件核对，再决定以哪条路径为准——两条路径在不同构建上未必一致。[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1]
+配置路径上有一处版本差异需要单独记下。AOSP 文档把标准配置文件写成 `/system/etc/memory-limiter-config.xml`，XML 数值单位为 MiB；首个 AOSP 标签 `android-17.0.0_r1` 的 `MemoryLimiter.CONFIG_PATH` 则硬编码 `/vendor/etc/memory-limiter-config.xml`。所以调试时我们先记录设备 build fingerprint（系统构建指纹），用设备上的 `am memory-limiter status` 和镜像里的实际文件核对，再决定以哪条路径为准——两条路径在不同构建上未必一致。[AOSP Memory Limiter 指南](https://source.android.com/docs/core/perf/memory-limiter)；[Android 17 r1 源码](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
 
-具体执行靠 JNI（Java Native Interface，Java 与 C/C++ 的调用桥） 操纵进程所属的 cgroup v2，也就是 Linux 按进程组统计和约束 CPU、内存等资源的接口。`r1` 中可观察的 cgroup 文件名如下，调试时可以直接引用：[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp @ android-17.0.0_r1]
+<!-- gracker-diagram: a212-02-limiter-config -->
+![公开配置说明与固定 r1 实现分别保留](../../assets/diagrams/ch20/a212-02-limiter-config.png)
+
+图：记录系统构建指纹和镜像配置，不能把固定源码的shell实现差异泛化到所有Android17设备。
+
+具体执行靠 JNI（Java Native Interface，Java 与 C/C++ 的调用桥） 操纵进程所属的 cgroup v2，也就是 Linux 按进程组统计和约束 CPU、内存等资源的接口。`r1` 中可观察的 cgroup 文件名如下，调试时可以直接引用：[AOSP Memory Limiter 指南](https://source.android.com/docs/core/perf/memory-limiter)；[Android 17 r1 源码](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)
 
 - `memory.high`：设置内存高水位；越过后会触发直接回收并减慢新的内存分配，但允许用量短时超过该值；
 - `memory.swap.max`：设置 swap 用量上限；swap 是被换出的匿名页，Android 设备通常由压缩内存设备 zram 承载；
@@ -76,21 +81,22 @@ AOSP Memory Limiter 文档把目标写成限制单个应用占用过量系统内
 - `memory.stat`：读取 `anon`（匿名内存）与 `shmem`（共享内存）；
 - `memory.events`：观察 `memory.high` 事件。
 
-越过 `memory.high` 之后，最先发生的是清洁文件页回收、非活跃匿名页换出和临时执行节流；只有匿名内存持续增长并耗尽可用 swap 这类极端情况，才会走向分配失败或进程退出。所以线上上报要分清两件事：发生过 high 事件，和已经证明某类资源泄漏——前者只是征兆，后者才是结论。[来源: 03-memory-limiter-body.txt]
+越过 `memory.high` 之后，最先发生的是清洁文件页回收、非活跃匿名页换出和临时执行节流；只有匿名内存持续增长并耗尽可用 swap 这类极端情况，才会走向分配失败或进程退出。所以线上上报要分清两件事：发生过 high 事件，和已经证明某类资源泄漏——前者只是征兆，后者才是结论。[AOSP Memory Limiter 指南](https://source.android.com/docs/core/perf/memory-limiter)
 
 还有一处容易踩的坑：源码里部分 Java 注释和日志仍把该文件称作 `memory.swap.high`，JNI 实际写入的却是 `memory.swap.max`。应用侧别依赖具体的 cgroup 文件名。
 
-那系统怎么判定异常？`memory.stat` 中的 `anon + shmem` 再加上 `memory.swap.current` 一旦超过组合阈值，系统就会上报 `TRIGGER_TYPE_ANOMALY`。应用若已通过 `ProfilingManager`（系统剖析服务的应用接口） 注册该触发器，在后台 trace（带时间轴的性能记录） 正在运行、配额也允许的情况下，系统会保存诊断资料；`r1` 的 `MemoryLimiter` 随后延迟 30 秒结束进程。
+那系统怎么判定异常？固定 `r1` 的 native 监测进入 `isRed()` 状态后，会轮询 `memory.stat` 中的 `anon + shmem` 与 `memory.swap.current` 的合计值；越过组合阈值时进入 Java 的 `onLimitExceeded()`。尝试报告 `TRIGGER_TYPE_ANOMALY` 还需要相应功能开关与包名等条件；应用注册触发器后，能否取得结果仍受正在运行的 trace、配额和系统资源限制。无论剖析是否成功，这条固定 `r1` 路径都会安排约 30 秒后的进程结束，不能把一次指标越界理解为必然立即取得 profile。
 
 历史退出记录可以通过 `ApplicationExitInfo`（系统保存的进程退出元数据）识别：
 
 - `ApplicationExitInfo.reason == REASON_OTHER`；
 - `ApplicationExitInfo.description` 包含 `MemoryLimiter:AnonSwap`。
 
-下面的代码用于应用下次启动时识别最近一次是否受到 Android 17 MemoryLimiter 影响：
+下面的代码在 Android 17 及以上检索最多 16 条退出记录中的首个 MemoryLimiter 匹配；它不等于断言最近一次进程退出就是该原因。上报还需核对进程名、时间和应用版本，并持久化已消费记录，避免后续启动重复上报同一条历史记录：
 
 ```kotlin
 fun findRecentMemoryLimiterExit(context: Context): ApplicationExitInfo? {
+    if (android.os.Build.VERSION.SDK_INT < 37) return null
     val am = context.getSystemService(ActivityManager::class.java)
     return am.getHistoricalProcessExitReasons(
         context.packageName,
@@ -119,16 +125,11 @@ adb shell am memory-limiter ignore <uid>
 adb shell am memory-limiter ignore none
 ```
 
-截至 2026-08-13 的 Android 17 官方文档规定，`manual` 后面的数字是整数 MB，所以上例表示 512 MB。`manual <pid> max` 移除该 PID（进程 ID）的全部内存限制，`manual <pid> none` 清除手动覆盖并恢复系统默认限制；`ignore none` 只清除 UID（Android 用户标识符）维度的忽略设置。
+截至 2026-10-25 复核的 Android 17 官方文档规定，`manual` 后面的数字是整数 MB，所以上例表示 512 MB。`manual <pid> max` 移除该 PID（进程 ID）的全部内存限制，`manual <pid> none` 清除手动覆盖并恢复系统默认限制；`ignore none` 只清除 UID（Android 用户标识符）维度的忽略设置。
 
 不过首个 AOSP 标签 `android-17.0.0_r1` 与这份公开契约存在实现差异：shell help 把数字写成总 RAM 百分比，执行路径却按 MiB（1,048,576 字节）放大；parser（命令参数解析器） 不接受 `max`，还会先把 `none` 对应的 `-1` 乘以 `1 MiB`，导致 native 层忽略这次更新。这是 `r1` 的源码审计结论，后续 Android 17 构建未必相同，测试前先记录设备 build fingerprint，用设备上的 help 与 `status` 核对实际实现。若使用基于 `r1` 的调试镜像，重启目标进程可让新 PID 重新取得默认限制。
 
 这些命令在未启用 MemoryLimiter 的设备上没有效果。测试要确认的两件事是：监控数据能在退出前解释增长，重启后能关联上退出原因。压低阈值后出现的退出，别急着归类为泄漏。
-
-<!-- gracker-diagram: a212-02-limiter-config -->
-![公开配置说明与固定 r1 实现分别保留](../../assets/diagrams/ch20/a212-02-limiter-config.png)
-
-图：记录系统构建指纹和镜像配置，不能把固定源码的shell实现差异泛化到所有Android17设备。
 
 ## 2. 先分清各类“内存”
 
@@ -175,7 +176,7 @@ Scudo 的 C 包装层按以下方式填充主要字段：
 
 这些数字是 allocator 统计；进程的 RSS/PSS 是另一套数字。bionic 头文件把 `mallinfo()` 和 `mallinfo2()` 标为“inherently unreliable”，并建议需要更多信息时改用 `malloc_info()`，用意是提醒调用方别依赖跨 allocator 的精确语义。只要 allocator 和配置保持一致，我们仍能用这些计数器观察趋势。
 
-下面的 C++ 代码用于低频采集当前 allocator 的三个基础指标：
+下面的 C++20 示例用指定成员初始化，低频采集当前 allocator 的三个基础指标；使用更早的 C++ 标准时应改成相应的普通初始化写法：
 
 ```cpp
 #include <malloc.h>
@@ -208,7 +209,7 @@ Java 层的 `Debug.getNativeHeapAllocatedSize()` 看到的是同一套统计。`
 
 ### 3.2 sanitizer（内存错误检测工具） 与 hook 会改变可观测结果
 
-bionic 通过 `MallocDispatch` 转发 `mallinfo`、`malloc_info` 和 `mallopt`。heapprofd（文件描述符）、GWP-ASan（对少量堆分配启用保护检查的低开销工具） 或其他受支持的 malloc dispatch 一旦处于工作状态，统计就由当前 dispatch 路径提供。换到 HWASan（Hardware-assisted AddressSanitizer，硬件辅助内存错误检测工具） 路径上，`__sanitizer_malloc_info()` 会返回 `-1`，把 `errno`（C 接口保存最近一次错误原因的线程局部变量） 设为 `ENOTSUP`，相关统计可能拿不到。
+bionic 通过 `MallocDispatch` 转发 `mallinfo`、`malloc_info` 和 `mallopt`。heapprofd（Native 堆采样器）、GWP-ASan（对少量堆分配启用保护检查的低开销工具） 或其他受支持的 malloc dispatch 一旦处于工作状态，统计就由当前 dispatch 路径提供。换到 HWASan（Hardware-assisted AddressSanitizer，硬件辅助内存错误检测工具） 路径上，`__sanitizer_malloc_info()` 会返回 `-1`，把 `errno`（C 接口保存最近一次错误原因的线程局部变量） 设为 `ENOTSUP`，相关统计可能拿不到。
 
 所以采集端必须允许“无数据”：
 
@@ -273,7 +274,7 @@ VMA 名称会随版本和 allocator 变化。解析器要保留原始名称，�
 线上告警可以同时观察：
 
 - `allocated_bytes` 的稳态斜率；
-- `RSS - Java committed` 的增长斜率；这里的 Java committed 是虚拟机已经为 Java 堆承诺、可以直接使用的容量，和当前存活对象大小是两回事；
+- 按 VMA 分类后的 allocator、匿名映射、线程栈与文件驻留量变化；不能用 `RSS - Java committed` 当成 Native 驻留量：Java committed 是虚拟机提交容量，与 RSS 的实际驻留口径不同；
 - 多轮场景后的回落幅度；
 - owner counter 与 allocator 增量是否一致；
 - 相同版本、设备档位、ABI 和场景下的分位数变化。
@@ -323,7 +324,7 @@ Android 8 以后，linker namespace（动态链接器的库隔离空间） 会�
 其中 `realloc` 尤其容易写错：
 
 - 输入指针为 `nullptr` 时等价于分配；
-- 失败返回 `nullptr` 时，旧分配仍然有效；
+- 请求 size 大于 0 而分配失败返回 `nullptr` 时，旧分配仍然有效；
 - 成功时地址可能不变，也可能搬迁；
 - size 为 0 的行为不宜脱离当前 libc 契约自行假定。
 
@@ -346,7 +347,7 @@ Android 8 以后，linker namespace（动态链接器的库隔离空间） 会�
 - 少量原始 PC，或仅记录返回地址；
 - 单独消费者线程；
 - 离线按 Build ID 符号化，也就是把指令地址还原成对应版本的函数和源码位置；
-- 缓冲区满时丢弃并计数，不阻塞分配线程。
+- 缓冲区满时丢弃并计数，不阻塞分配线程；发生丢弃后标记该诊断窗口账本不完整，未匹配释放量不能再当作精确泄漏字节。
 
 完整调用栈必须在线采集时，要结合 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md) 评估 unwind 的安全性与成本。hook 自身还应有远程关闭、时限、进程白名单和崩溃熔断；这里的熔断指诊断功能引发异常达到阈值后自动关闭，避免把故障面扩大。
 
@@ -357,16 +358,16 @@ Android 8 以后，linker namespace（动态链接器的库隔离空间） 会�
 
 ### 5.4 按事件计数采样的偏向
 
-“每 1000 次取 1 次”这类固定按事件计数采样会偏向高频小对象：一次 64 MiB 分配和一次 32 B 分配有相同的入样概率。要估算字节归因，我们可以按尺寸分层，也可以用以分配字节为权重的随机采样，服务端再用每条记录的采样概率反推总体规模。
+按事件随机采样时，一次 64 MiB 分配和一次 32 B 分配可具有相同入样概率，样本通常更容易被高频小对象主导，低频大对象的估计方差也可能很大；固定每 1000 次取一次还可能与业务周期重合。相同概率的随机样本若正确加权，并非必然产生字节总量的系统偏差。要估算字节归因，我们可以按尺寸分层，也可以用以分配字节为权重的随机采样，服务端再用每条记录的采样概率反推总体规模。
 
-低采样率还会带来配对问题。释放事件采到了、分配事件没采到时，账本里这个对象就对不上账，先留在账上；只对分配采样时，要给入样对象建立专用追踪状态，释放时查询这一状态。任何估算都要附带样本数和采样概率。
-
-自建 PLT hook 适用于模块已知、做受控灰度（仅向小比例设备启用）和复现特定问题的场景。需要通用的 sampled allocation stack（采样分配调用栈）时，平台的 heapprofd 通常更可靠。
+低采样率还会带来配对问题。释放事件采到了、分配事件没采到时，应记录为未匹配释放或窗口外事件，不能凭空保留一个“存活分配”或计成泄漏；只对分配采样时，要给入样对象建立专用追踪状态，释放时查询这一状态。任何估算都要附带样本数和采样概率。
 
 <!-- gracker-diagram: a212-12-sampling-accounting -->
 ![采样概率与释放配对决定估计能否成立](../../assets/diagrams/ch20/a212-12-sampling-accounting.png)
 
 图：区分估计方差、固定间隔周期偏差和事件丢失；任何估计都附样本数、窗口和概率。
+
+自建 PLT hook 适用于模块已知、做受控灰度（仅向小比例设备启用）和复现特定问题的场景。需要通用的 sampled allocation stack（采样分配调用栈）时，平台的 heapprofd 通常更可靠。
 
 ## 6. heapprofd：按触发采样调用栈
 
@@ -376,7 +377,7 @@ heapprofd 是 Perfetto 的 Native 堆采样器，从 Android 10 起提供；Andr
 
 heapprofd 能提供：
 
-- 采样分配与释放的 Native 调用栈；
+- 入样分配的调用栈，以及用于更新其存活状态的释放记录；不是每次 `free()` 的调用栈；
 - 分配大小、进程、线程和时间信息；
 - 按栈聚合的 allocated（已分配）、freed（已释放）与 unreleased（采样窗口内尚未匹配到释放）视图；
 - Perfetto trace 中与进程时间线的关联。
@@ -411,7 +412,7 @@ Android 15 / API 35 起，普通应用可以通过 `ProfilingManager` 请求受�
 | HWASan | 自动化测试、fuzz（模糊测试）、dogfood（团队内部试用） | 高覆盖 UAF、越界和栈错误 | 不是低开销线上泄漏监控 |
 | MTE（Memory Tagging Extension，内存标签扩展） | 支持硬件与系统配置的 64 位设备 | 用硬件内存标签辅助发现或缓解内存破坏 | 不提供泄漏引用图 |
 | ASan（AddressSanitizer，内存错误检测工具） | HWASan 不可用的测试场景 | 传统地址检查 | 已被替代，不适合线上 |
-| heapprofd | 灰度或异常触发的采样窗口 | malloc 分配/释放调用栈 | 可定位未释放增长，但结论需结合生命周期 |
+| heapprofd | 灰度或异常触发的采样窗口 | 入样分配栈、释放与存活记录 | 可定位入样分配的未释放增长，结论需结合生命周期 |
 
 有三处版本差异值得单独说明：
 
@@ -481,7 +482,7 @@ malloc 之外的分配是另一块盲区：游戏引擎、数据库、媒体栈�
 
 图：heapprofd平稳而图形或映射增长时，应换到对应资源域继续取证；提高malloc采样率补不回这些盲区。
 
-截至 2026-08-14，在 Android 公开 NDK、Perfetto 文档和 AOSP Android 17 源码中，没有找到名为“Kohanakai / Android 14+ mmap tracking”的工具或 API 可供应用使用。缺少明确的源码路径、接口契约和发布说明时，别把这个名称写进生产设计。可验证的做法是 owner 侧 mmap 记账、`smaps`/VMA 分类、Perfetto RSS 数据和组件自身统计。
+对直接 `mmap` 的资源，先建立 owner 侧申请与释放账本，再与 `smaps`/VMA 分类、Perfetto RSS 数据和组件计数器对照。新的追踪工具只有在源码、公开接口契约和支持范围均可验证时才进入方案，不能用未确认的工具名称补足观测盲区。
 
 ## 10. 三类常见案例怎样建立证据
 
@@ -609,7 +610,7 @@ heapprofd 平稳而 graphics/dmabuf 上升时，要转向 buffer queue（生产�
 - [Android：Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
 - [Android NDK：Memory error debugging and mitigation](https://developer.android.com/ndk/guides/memory-debug)
 - [AOSP：Scudo](https://source.android.com/docs/security/test/scudo)
-- [Android 游戏内存管理](https://developer.android.com/games/optimize/memory-allocation)
+- [Android 游戏内存管理](https://developer.android.com/games/optimize/memory-overview)
 - [Android 游戏：Low memory killers 与诊断工具](https://developer.android.com/games/optimize/vitals/lmk)
 - [Android 应用内存管理](https://developer.android.com/topic/performance/memory-management)
 

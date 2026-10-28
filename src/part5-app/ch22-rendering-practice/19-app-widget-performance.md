@@ -13,9 +13,9 @@ related_chapters:
 - '2.9'
 - '22.3'
 - '14.1'
-last_verified: '2026-10-18'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1；Jetpack Glance 1.2.0 源码 JAR 与官方文档
-last_source_verified_at: '2026-10-18T18:39:38+08:00'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-18T18:39:38+08:00'
 last_body_apply_at: '2026-08-31T07:18:51+08:00'
 last_review_finalize_at: '2026-08-31T08:38:03+08:00'
@@ -73,7 +73,7 @@ sources:
 
 App Widget 的界面绘制发生在宿主进程：提供方生成 `RemoteViews` 交给 `system_server`（承载多数系统服务的系统进程） 校验和缓存，再由 Launcher（桌面启动器）、SystemUI（系统界面进程） 或其他实现了 `AppWidgetHost` 的宿主创建 View、执行属性动作并绘制。我们在这套 IPC 模型下做优化，重点就是减少重复更新和无效动作，控制布局创建、集合数据与图像内存的成本。
 
-> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；Glance 以 1.2.0 为准。文中讨论的更新、缓存和宿主应用逻辑都发生在 Android 框架与 Jetpack 库中，不延伸到内核实现。
+> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；Glance 以 1.2.0 为准。文中讨论的更新、缓存和宿主应用逻辑都发生在 Android 框架与 Jetpack 库中，不延伸到内核实现。 截至2026-10-25，Google Maven 与发布页的最新稳定版仍是 Glance 1.2.0（2026-08-26），另有1.3.0-alpha02；本文不把预览版能力套到1.2.0。
 
 ## 一、执行模型：一次更新穿过三个进程
 
@@ -87,7 +87,7 @@ App Widget 的界面绘制发生在宿主进程：提供方生成 `RemoteViews` 
 - `system_server` 负责检查调用者、更新缓存、检查图像内存，再把有效快照通知给宿主，快照就是一份描述 Widget 某一时刻界面状态的 `RemoteViews`；
 - 宿主进程承担布局加载、动作应用、测量、布局、绘制等 UI 工作。
 
-还有一点要留意：提供方完成 `updateAppWidget()` 调用时，桌面像素往往还没刷新。旧式集合适配器的兼容转换开启时，主线程调用还可能先把转换工作投递到后台执行器，再由后台提交更新——这时函数返回，连“系统服务已收到新快照”都保证不了。
+还有一点要留意：提供方完成 `updateAppWidget()` 调用时，桌面像素往往还没刷新。旧式集合适配器的兼容转换开启时，主线程调用还可能先把转换工作投递到后台执行器，再由后台提交更新——这时函数返回，连“系统服务已收到新快照”都保证不了。 转换由 CompletableFuture 链提交，非主线程调用也不能只凭函数返回认定服务已接收；转换失败可只写日志。业务应保留数据版本与提交/宿主观察的阶段证据，不能把调用返回当成功显示回执。
 
 这张时序图定位的是不含旧式集合转换的一次完整更新；兼容转换开启时，提供方还会在提交前收集集合项。
 
@@ -124,7 +124,12 @@ sequenceDiagram
 
 ### 2. `apply()` 与 `reapply()` 由宿主选择
 
-`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容。宿主配置了异步 `Executor`（执行任务的线程调度接口） 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方手里没有能强制宿主执行 `reapply()` 的公开接口。
+`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容。宿主配置了异步 `Executor`（执行任务的线程调度接口） 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方手里没有能强制宿主执行 `reapply()` 的公开接口。 即便判断可复用，reapply 抛 RuntimeException 后同步路径仍会尝试重新 apply；异步路径也有失败恢复。异步执行器只分担可异步的加载/初始化，最终 View 应用及界面帧仍由宿主管理，不代表测量、布局和绘制全在后台完成。
+
+<!-- gracker-diagram: a250-02-host-apply-branches -->
+![宿主决定复用，失败时仍可能重建](../../assets/diagrams/ch22/a250-02-host-apply-branches.png)
+
+图：提供方没有强制宿主reapply的公开接口。
 
 下面这些变化容易让复用条件失效，或增加宿主的工作量：
 
@@ -136,16 +141,11 @@ sequenceDiagram
 
 提供方应减少无意义的布局切换，并把稳定结构留在 XML 中。我们验证性能时还要看宿主侧的 Perfetto 系统跟踪，确认 `apply`、测量和绘制耗时；只测提供方函数，会漏掉桌面侧开销。
 
-<!-- gracker-diagram: a250-02-host-apply-branches -->
-![宿主决定复用，失败时仍可能重建](../../assets/diagrams/ch22/a250-02-host-apply-branches.png)
-
-图：提供方没有强制宿主reapply的公开接口。
-
 ### 3. Launcher 插件卡片与标准 App Widget 的分界
 
 车机或定制桌面常把可插拔业务视图也叫“Widget”，但这类 Launcher 插件卡片走的通常不是 `AppWidgetManager`、`AppWidgetServiceImpl` 和 `RemoteViews` 缓存这条链路。以一篇移植 SystemUI Plugin Framework 的车机 Launcher 实践为例：插件 APK 在 manifest 中把实现类声明成带 action 的 `service`，宿主用 `PackageManager.queryIntentServices()` 发现候选组件，再通过自定义 `WidgetViewPlugin` 接口取得插件提供的普通 View；`PluginActionManager` 源码里也保留着“这并不是真的 service、不应启动，只是便于用 PackageManager 管理插件”的注释。[来源: https://juejin.cn/post/7678556373495971883][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1]
 
-这个插件模型的加载与隔离方式也不同：`PluginActionManager` 在加载前检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，再通过 `createApplicationContext()` 加载插件资源。它提供的是类可见性与资源上下文隔离；插件实例仍在宿主进程里执行，和 AppWidget 跨进程 `RemoteViews` 的进程级隔离是两回事。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1]
+这个插件模型的加载与隔离方式也不同：`PluginActionManager` 在加载前检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，再通过 `createApplicationContext()` 加载插件资源。它提供的是类可见性与资源上下文隔离；插件实例仍在宿主进程里执行，和 AppWidget 跨进程 `RemoteViews` 的进程级隔离是两回事。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1] ClassLoaderFilter 不是不可信代码的安全沙箱，也不会隔离插件在宿主线程中的阻塞、崩溃或内存开销；实际生产加载还受非调试构建的特权名单等规则限制。
 
 所以，排查这类自定义 Launcher 卡片时，`adb shell dumpsys appwidget`、`partiallyUpdateAppWidget()` 和 `RemoteViews` 图像上限通常解释不了它的加载与刷新成本，应改看 Launcher 进程内的插件发现、类加载、资源加载、接口回调和 View 绘制。只有通过标准 `AppWidgetProvider` 或 Glance 发布到系统 AppWidget 服务的桌面组件，才适用本文后续的更新语义、缓存和 IPC 分析。[来源: https://juejin.cn/post/7678556373495971883][已验证: frameworks/base/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java@android-17.0.0_r1]
 
@@ -225,7 +225,7 @@ fun updateWidgetTimestamp(
 }
 ```
 
-局部更新省下的是提供方发送的动作和参数；宿主仍要接收更新并执行对应动作，收益要结合更新频率、动作大小和宿主实现来测。业务状态容易偏离完整数据时，可以在配置变化、数据版本迁移这类明确事件后重新提交完整快照，让界面回到一致状态——这是一项工程策略，系统并没有要求按固定周期执行。
+局部更新省下的是提供方发送的动作和参数；Android17服务合并后通知宿主的是 `widget.getEffectiveViewsLocked()` 的快照副本，不能假定宿主只收本次delta或仅执行新增动作，收益要结合更新频率、动作大小和宿主实现来测。业务状态容易偏离完整数据时，可以在配置变化、数据版本迁移这类明确事件后重新提交完整快照，让界面回到一致状态——这是一项工程策略，系统并没有要求按固定周期执行。 `mergeRemoteViews()` 按动作 unique key 和 mergeBehavior 做替换、追加或忽略；相同属性常会替换，追加型动作则可能累积。局部更新并不天然保证缓存动作数恒定。
 
 <!-- gracker-diagram: a250-06-partial-merge-effective-snapshot -->
 ![局部更新缩小提供方负载，宿主收到合并结果](../../assets/diagrams/ch22/a250-06-partial-merge-effective-snapshot.png)
@@ -247,7 +247,12 @@ Android 12 / API 31 增加了 `RemoteViews.setRemoteAdapter(viewId, RemoteCollec
 
 图：兼容转换由实际平台flag控制，不能只按API level猜。
 
-转换时，内部方法 `RemoteViewsFactory.getRemoteCollectionItems()` 会顺序读取项目，达到序列化数据或位图容量限制时停止收集。较大的集合要检查实际交付的项目数量；排查列表缺项时，同样要检查转换阶段的容量限制。[已验证: frameworks/base/core/java/android/widget/RemoteViewsService.java@android-17.0.0_r1]
+转换时，内部方法 `RemoteViewsFactory.getRemoteCollectionItems()` 会顺序读取项目，达到序列化数据或位图容量限制时停止收集。较大的集合要检查实际交付的项目数量；排查列表缺项时，同样要检查转换阶段的容量限制。[已验证: frameworks/base/core/java/android/widget/RemoteViewsService.java@android-17.0.0_r1] 固定源码中，单项序列化后 `dataSize > capSize` 或位图累计 `>= capBitmapSize` 会在加入当前项之前停止；`getViewAt()` 返回 null 也会结束本次收集。这些内部限制不是应用可依赖的完整交付协议，应核对实际item数并提供有界数据。
+
+<!-- gracker-diagram: a250-08-collection-capacity-stop -->
+![集合转换在加入超限当前项之前停止](../../assets/diagrams/ch22/a250-08-collection-capacity-stop.png)
+
+图：尾部缺项可由转换容量触发，不能只检查factory总行数。
 
 维护集合 Widget 时，我们可以按数据规模判断：
 
@@ -255,20 +260,15 @@ Android 12 / API 31 增加了 `RemoteViews.setRemoteAdapter(viewId, RemoteCollec
 - 项目较多、取数需要服务生命周期：维护 `RemoteViewsService` 旧实现时，核对兼容转换是否开启，并测量收集整份快照的耗时与容量，传统按需加载模型在这里套不上。
 - 无论使用哪条路径，都要限制单项动作和图像体积。集合会把一次更新的成本放大到多个项目。
 
-<!-- gracker-diagram: a250-08-collection-capacity-stop -->
-![集合转换在加入超限当前项之前停止](../../assets/diagrams/ch22/a250-08-collection-capacity-stop.png)
-
-图：尾部缺项可由转换容量触发，不能只检查factory总行数。
-
 ### 4. 集合项的优化位置
 
 `RemoteViewsFactory.getViewAt(position)` 返回的是单项 `RemoteViews`。我们可以在 `onDataSetChanged()` 中完成一次数据快照，然后让 `getViewAt()` 只做确定性的映射：
 
 1. 在后台完成数据库查询、排序和业务计算。
-2. 生成不可变的数据列表，并在回调结束前原子替换旧快照——一次发布整份新引用，读取方不会看到只更新了一半的数据。
+2. 生成不可变的数据列表，并在回调结束前通过 AtomicReference、volatile 引用或锁安全发布整份不可变新快照，读取方不会看到只更新了一半的数据。
 3. `getViewAt()` 只读取快照，设置文本、资源和点击模板所需的填充参数。
 4. 对相同内容复用资源引用，避免为每一项重复创建相同位图。
-5. 数据暂不可用时返回稳定的加载或空状态，避免宿主反复收到结构差异很大的布局。
+5. 数据暂不可用时返回稳定的加载或空状态，避免宿主反复收到结构差异很大的布局。 跨线程发布不仅要求引用写入不可分割，还要求可见性；不要在发布后继续修改列表或项目内部可变数据。
 
 官方文档允许 `onDataSetChanged()` 和 `getViewAt()` 执行较重的同步工作，总延迟仍要自己盯：桌面滚动时项目迟迟交不出来，表现就是空白、占位或更新滞后。
 
@@ -305,19 +305,19 @@ Widget 的更新频率应来自产品语义。天气摘要、日历倒计时、�
 
 ### 2. `AppWidgetProvider` 广播入口的返回时限
 
-`AppWidgetProvider` 继承 `BroadcastReceiver`。系统文档要求接收器通常在约 10 秒内完成，网络访问、批量图片解码或大型数据库迁移都要放到 `onUpdate()` 之外。合适的处理顺序是：
+`AppWidgetProvider` 继承 `BroadcastReceiver`。官方 API 用约10秒说明应迅速完成的一般原则，但不能把它写成所有广播固定ANR门槛：Android14及以上的前台优先广播通常为10–20秒，后台优先广播为60–120秒，取决于CPU饥饿等条件；冷启动也计入超时。`goAsync()` 仍受广播超时约束，必须及时 `PendingResult.finish()`。这些上限不是可使用的业务计算预算，网络、批量解码和大型迁移应放到 `onUpdate()` 之外。合适的处理顺序是：
+
+<!-- gracker-diagram: a250-11-receiver-budget-and-finish -->
+![广播必须及时结束，goAsync仍有超时](../../assets/diagrams/ch22/a250-11-receiver-budget-and-finish.png)
+
+图：冷启动也计入广播超时，执行器排队同样消耗预算。
 
 1. 读取已经缓存的轻量状态；
 2. 尽快提交可显示的 `RemoteViews`；
 3. 需要联网或持久化计算时，登记受系统约束的后台任务；
 4. 任务完成后根据最新 Widget ID 再提交一次更新。
 
-WorkManager 是 Jetpack 的可延迟后台任务调度器，可以表达网络、电量、充电等约束，也能把一次性任务去重。它不保证精确执行时刻，周期任务还受最小周期、应用待机分桶（按活跃度分档限制后台）、省电模式和执行配额影响；把它当成精确定时器，就会误判数据时效。
-
-<!-- gracker-diagram: a250-11-receiver-budget-and-finish -->
-![广播必须及时结束，goAsync仍有超时](../../assets/diagrams/ch22/a250-11-receiver-budget-and-finish.png)
-
-图：冷启动也计入广播超时，执行器排队同样消耗预算。
+WorkManager 是 Jetpack 的可延迟后台任务调度器，可以表达网络、电量、充电等约束，也能把一次性任务去重。它不保证精确执行时刻，周期任务还受最小周期、应用待机分桶（按活跃度分档限制后台）、省电模式和执行配额影响；把它当成精确定时器，就会误判数据时效。 `PeriodicWorkRequest` 的最小重复间隔为15分钟，这也只是允许的请求参数，不是数据每15分钟必定刷新的SLA。离线、约束未满足或系统延期时，应继续显示最近可用值和更新时间。
 
 <!-- gracker-diagram: a250-10-refresh-scheduling-contract -->
 ![更新周期、后台任务与数据时效分开](../../assets/diagrams/ch22/a250-10-refresh-scheduling-contract.png)
@@ -332,7 +332,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 这个入口可以把回调交给指定执行器，适合某个 `Activity`、`Service` 或 `ContentProvider` 仍在运行期间的一次性短期任务。源码和 API 文档都说明：监听器闹钟要求请求进程持续运行，进程没有运行中的组件或进入缓存状态后，系统可能取消或丢弃回调。
 
-监听器形式免去了 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受这条进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`。进程死亡后仍要触发更新的场景，改用 `PendingIntent` 形式——它由系统代应用保存、可在应用进程不存在时触发，其精确闹钟形式需要满足对应的访问规则。允许延迟时，优先使用 WorkManager 或系统的非精确周期机制。
+监听器形式免去了 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受这条进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`。进程死亡后仍要触发更新的场景，改用 `PendingIntent` 形式——它由系统代应用保存、可在应用进程不存在时触发，其精确闹钟形式需要满足对应的访问规则。允许延迟时，优先使用 WorkManager 或系统的非精确周期机制。 allow-while-idle 仍受平台配额和调度规则约束，Executor 排队也会推迟业务执行；API37这个重载不是无配额的常驻Widget秒级刷新机制。
 
 <!-- gracker-diagram: a250-12-listener-alarm-lifetime -->
 ![监听器闹钟免特殊访问，仍依赖组件存活](../../assets/diagrams/ch22/a250-12-listener-alarm-lifetime.png)
@@ -349,7 +349,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 - 用户主动刷新可以提升优先级，但要做点击去重；
 - 失败时保留最近一次可用快照，并显示可理解的时间戳或错误状态。
 
-媒体播放进度一类高频信息，还要优先考虑系统已有的媒体会话和宿主能力。用周期 Binder 更新模拟每一帧进度，会同时增加提供方、`system_server` 和 Launcher 的工作。
+媒体播放进度一类高频信息，还要优先考虑系统已有的媒体会话和宿主能力。用周期 Binder 更新模拟每一帧进度，会同时增加提供方、`system_server` 和 Launcher 的工作。 对可由宿主本地计时表达的倒计时或时钟，还可使用 RemoteViews 支持的 Chronometer / TextClock；Chronometer 的base使用elapsedRealtime时基，不能直接填墙上时间。它们减少逐秒IPC，但不替代业务数据刷新。
 
 <!-- gracker-diagram: a250-13-freshness-and-local-clock -->
 ![数据新鲜度、可见性与本地计时分别设计](../../assets/diagrams/ch22/a250-13-freshness-and-local-clock.png)
@@ -366,16 +366,16 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 `mMaxWidgetBitmapMemory = 6 × displayWidth × displayHeight`
 
-源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID（Android 用来标识应用身份的 Linux 用户编号） 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。
-
-所以我们要把普通位图与 `Icon` 合并起来估算内存，仅凭“没有抛异常”判断快照大小，会漏掉只告警的超限。
-
-这个上限随设备显示尺寸变化，写死成 1 MB、8 MB 或某个机型的实测值都套不上。设计时仍应让峰值显著低于系统上限——同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。
+源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID（Android 用来标识应用身份的 Linux 用户编号） 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。 这里取的是提供方 ActivityInfo 中的 targetSdk，和Launcher的targetSdk无关；同一Android17源码还写有 targetSdk>37 时按 Bitmap+Icon 总量强制检查的分支。检查单位是合并/替换后的该Widget快照，不是提供方传入delta本身，也不是整个进程的总内存预算。
 
 <!-- gracker-diagram: a250-15-provider-target-memory-branch -->
 ![图像强制上限由提供方targetSdk决定](../../assets/diagrams/ch22/a250-15-provider-target-memory-branch.png)
 
 图：Launcher的targetSdk不会替代提供方target判断。
+
+所以我们要把普通位图与 `Icon` 合并起来估算内存，仅凭“没有抛异常”判断快照大小，会漏掉只告警的超限。
+
+这个上限随设备显示尺寸变化，写死成 1 MB、8 MB 或某个机型的实测值都套不上。设计时仍应让峰值显著低于系统上限——同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。 位图估算采用缓存内 Bitmap.getAllocationByteCount()，不能用网络压缩图字节数、JPEG文件大小或动作Parcel大小代替；布局变体和集合图片也要纳入总量。
 
 <!-- gracker-diagram: a250-14-bitmap-and-binder-limits -->
 ![Binder事务与Widget图像预算是两套限制](../../assets/diagrams/ch22/a250-14-bitmap-and-binder-limits.png)
@@ -388,7 +388,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 - 网络图片按 Widget 实际显示尺寸解码，避免把相机原图缩放后再塞入 `RemoteViews`。
 - 相同位图在一次快照中尽量复用，避免内容相同却创建多个对象。
 - 使用内容 URI（统一资源标识符） 时确认目标宿主具备读权限，并保证 URI 生命周期覆盖显示周期。
-- 提交新图片前先取消已经过时的下载或解码任务，防止旧请求覆盖新状态。
+- 提交新图片前先取消已经过时的下载或解码任务，并在完成回调重新核对用户、实例和数据版本；取消未必及时生效，仅靠取消不能阻止旧结果晚到覆盖新状态。
 - 集合中的缩略图要按总量估算，只盯着单项大小会漏算。
 
 服务端会遍历 `RemoteViews` 中的 URI：`content://` 要求调用 UID 自己具有读权限，`android.resource://` 可以通过，`file://` 和其他 URI 方案会被拒绝。宿主一侧的读权限，仍要提供方自己安排。URI 可以减少在动作中直接携带大位图的压力，但宿主权限、文件存活和读取耗时同样影响性能与正确性。
@@ -408,7 +408,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 - 多个实例内容相同且接口允许时，使用 `int[]` 批量提交；
 - 避免在每次更新中重复设置从未变化的点击动作、可见性和资源。
 
-批量提交减少提供方发起调用和重复构造的次数，但系统仍要逐个维护 Widget 实例并通知相应宿主，一次 API 调用的工作量要按多次宿主工作来估算。
+批量提交减少提供方发起调用和重复构造的次数，但系统仍要逐个维护 Widget 实例并通知相应宿主，一次 API 调用的工作量要按多次宿主工作来估算。 上述批量接口不是跨实例的事务提交：某实例的权限、内存或宿主状态失败时，不应假定所有实例一起成功或一起回滚。业务保留每个实例的状态与重试范围。
 
 <!-- gracker-diagram: a250-17-action-growth-and-batch -->
 ![动作合并与批量实例更新都有剩余成本](../../assets/diagrams/ch22/a250-17-action-growth-and-batch.png)
@@ -436,7 +436,7 @@ Glance 1.2.0 的 `GlanceAppWidget` 会在 WorkManager 的协程工作单元 `Cor
 
 图：Glance不用Compose UI LayoutNode绘制桌面，但仍承担IPC和宿主工作。
 
-同一个 `provideGlance()` 仍在运行时，再次调用 `update()` 不会重启它。需要展示的新数据应先写入 Glance 能观察到的状态，由现有会话重新组合；反复调用 `update()` 替代不了状态同步。
+同一个 `provideGlance()` 仍在运行时，再次调用 `update()` 不会重启它。需要展示的新数据应先写入 Glance 能观察到的状态，由现有会话重新组合；反复调用 `update()` 替代不了状态同步。 1.2.0的活跃组合通常只维持约45秒，并可因交互/更新请求延长，不是常驻桌面重组循环。外部完成持久状态写入后仍应调用update，以在会话已结束时启动新worker；会话仍活跃时，它会通过事件重读Glance状态，而非重新执行整个provideGlance。
 
 <!-- gracker-diagram: a250-19-glance-session-state -->
 ![活跃会话重新读状态，结束后再启动worker](../../assets/diagrams/ch22/a250-19-glance-session-state.png)
@@ -457,7 +457,7 @@ Glance 利用 Compose Runtime 计算声明式内容，最终交付单位仍受 `
 
 Android 12 / API 31 通过 `OPTION_APPWIDGET_SIZES` 向提供方暴露宿主支持的尺寸集合。平台 `RemoteViews` 可以为不同尺寸保存变体；Glance 提供 `SizeMode.Responsive` 和 `SizeMode.Exact`。
 
-尺寸能归纳为几个明确阈值时，`SizeMode.Responsive` 可以预先生成有限布局，这里的阈值就是响应式设计常说的尺寸断点。Android 12 及以上版本会为传入的响应式尺寸分别生成内容，再由框架选择合适变体。`SizeMode.Exact` 会在每次尺寸变化时按精确尺寸重新创建内容，官方文档提示它可能增加开销，并造成调整大小时的界面跳变。布局连续依赖精确宽高、有限断点表达不了时，再选用 `SizeMode.Exact`。
+尺寸能归纳为几个明确阈值时，`SizeMode.Responsive` 可以预先生成有限布局，这里的阈值就是响应式设计常说的尺寸断点。Android 12 及以上版本会为传入的响应式尺寸分别生成内容，再由框架选择合适变体。`SizeMode.Exact` 会在每次尺寸变化时按精确尺寸重新创建内容，官方文档提示它可能增加开销，并造成调整大小时的界面跳变。布局连续依赖精确宽高、有限断点表达不了时，再选用 `SizeMode.Exact`。 多尺寸会并发运行各自的内容组合，remember状态每个尺寸各有一份；相同默认lambda key可触发多个尺寸的对应动作，副作用也会按尺寸运行。共享网络、写库、支付等外部操作必须去重/幂等，不能按组合份数重复执行。API31+平台按尺寸映射的RemoteViews最多接受16个变体，断点不是越多越好。
 
 <!-- gracker-diagram: a250-20-glance-size-modes -->
 ![有限断点与精确尺寸各有组合成本](../../assets/diagrams/ch22/a250-20-glance-size-modes.png)
@@ -504,7 +504,7 @@ Glance 更适合集中维护声明式状态，手写 `RemoteViews` 对更新类�
 
 图：不能依赖资料移除后应用一定再执行一次清理。
 
-把一个整数 ID 复制到另一份资料中，定位不到另一侧实例；工作资料暂停、锁定或移除后，提供方还要停止任务并清理对应缓存。
+把一个整数 ID 复制到另一份资料中，定位不到另一侧实例；资料暂停或移除时应用可能无法继续执行代码；系统负责相应进程/组件约束，应用应在可收到的生命周期事件及恢复启动时校验实例、停止失效工作并整理可访问缓存，不能依赖“移除后必跑一次清理”。
 
 ### 3. 保留最近可用快照
 
@@ -516,7 +516,7 @@ Widget 更新涉及多个进程，任何一段都可能暂时不可用。稳健�
 - 图片加载失败时使用稳定资源占位；
 - 收到删除回调后取消该实例不再需要的工作。
 
-这套策略也能缩短广播入口的执行时间，避免每次启动都等待网络再提交首屏。
+这套策略也能缩短广播入口的执行时间，避免每次启动都等待网络再提交首屏。 这属于产品恢复策略；Glance1.2.0的默认onCompositionError会发布错误布局并关闭该会话，errorUiLayout为0时会重新抛错。需要保留最近业务状态或自定义错误UI时，必须明确实现对应回调与恢复路径。
 
 <!-- gracker-diagram: a250-23-last-good-and-glance-error -->
 ![最近可用数据策略与Glance默认错误UI分开](../../assets/diagrams/ch22/a250-23-last-good-and-glance-error.png)
@@ -541,7 +541,7 @@ Widget 更新涉及多个进程，任何一段都可能暂时不可用。稳健�
 adb shell dumpsys appwidget
 ```
 
-输出适合确认实例归属、`updatePeriodMillis`、宿主和提供方状态；耗时分析它给不了，仍要与系统跟踪、应用日志以及 Launcher 行为对应。
+输出适合确认实例归属、`updatePeriodMillis`、宿主和提供方状态；耗时分析它给不了，仍要与系统跟踪、应用日志以及 Launcher 行为对应。 为每次业务更新附带用户/实例/数据版本，在可控宿主记录收到与完成应用的标记；不可控Launcher缺少回执时，明确只能观察到哪一层，不能把API返回时间补写为屏幕刷新时间。
 
 <!-- gracker-diagram: a250-24-three-process-measurement -->
 ![按同次业务版本关联三段测量](../../assets/diagrams/ch22/a250-24-three-process-measurement.png)
@@ -627,5 +627,8 @@ Glance 改善的是状态到界面描述的组织方式，最终仍要生成 `Re
 - [精确闹钟调度指南](https://developer.android.com/develop/background-work/services/alarms)
 - [PeriodicWorkRequest API 参考](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest)
 - [【车载 Android】从 AAR 到 Plugin：Launcher 卡片插件化解耦实践](https://juejin.cn/post/7678556373495971883)
+- [广播ANR的版本与优先级边界](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [TransactionTooLargeException](https://developer.android.com/reference/android/os/TransactionTooLargeException)
+- [Chronometer时基](https://developer.android.com/reference/android/widget/Chronometer)：宿主本地计时。
 
 本文的平台判断固定到 `android-17.0.0_r1`，Glance 判断固定到 1.2.0。升级 Android 或 Glance 后，应重新核对局部更新缓存、图像上限、集合适配器弃用状态、`GlanceAppWidget` 的会话执行方式和尺寸模式实现。

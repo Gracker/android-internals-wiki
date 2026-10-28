@@ -1194,7 +1194,7 @@ Hibernation 与 Standby Bucket 可以同时存在，AOSP 也没有“必须先�
 
 ### 职责分层
 
-下面这张图区分“策略决策”“状态与动作”“再次使用后的恢复”三个阶段：
+下面这张图区分未使用应用的策略筛选，以及休眠处理和权限重置两条执行支线；再次使用后的恢复见后文。
 
 <!-- gracker-diagram: ch05-03-hibernation-policy-state-permission-branches -->
 ![策略选出未使用包后，休眠与权限重置走两条支线](../../assets/diagrams/ch05/ch05-03-hibernation-policy-state-permission-branches.png)

@@ -18,10 +18,10 @@ related_chapters:
 - '21.3'
 - '8.2'
 - '1.16'
-last_verified: '2026-10-20'
-last_source_verified_at: '2026-10-20'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-20T18:40:10+08:00'
-last_verified_against: AOSP android-17.0.0_r1 ActivityThread; Dagger/Hilt dagger-2.60.1 source and official docs; Koin 4.2.2 source and 4.2 docs; Android Developers Hilt, KSP, AGP 9 and Profile docs checked 2026-10-20
+last_verified_against: AOSP android-17.0.0_r1 ActivityThread; Dagger/Hilt dagger-2.60.1 source and official docs; Koin 4.2.2 source and 4.2 docs; Android Developers Hilt, KSP, AGP 9 and Profile docs checked 2026-10-25
 confidence: high
 sources:
 - type: aosp
@@ -48,7 +48,7 @@ sources:
 
 # 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化
 
-依赖注入（Dependency Injection，DI）把一个对象需要的依赖从外部提供给它，避免对象自己查找或创建依赖。一次注入至少包含四类工作：创建 container/component（保存依赖规则与生命周期缓存的容器）、建立 `Provider` 工厂、解析 binding（某个类型应怎样获得实例的绑定规则），以及执行对象构造和初始化。
+依赖注入（Dependency Injection，DI）把一个对象需要的依赖从外部提供给它，避免对象自己查找或创建依赖。分析 DI 可拆成四类工作：创建 container/component（保存规则与生命周期缓存的容器）、建立工厂、解析 binding（类型与创建规则的绑定），以及执行对象构造和初始化。这些工作分属不同阶段；一次命中缓存的请求不会重新创建容器、工厂和对象。
 
 Dagger/Hilt 在编译期分析依赖关系并生成 Java 代码；Koin 4.2 的经典 DSL 会在运行时注册 definition（Koin 对创建规则的描述）并按 key 查找。两者把成本放在不同阶段，不过启动长尾通常来自被 DI 拉起的重构造函数、`@Provides` 方法或 definition lambda，而非一次轻量查找本身。这里的“长尾”指 P90/P99（分别有 90%、99% 样本不超过的耗时）明显高于中位数。
 
@@ -119,7 +119,12 @@ eager 表示在 component/container 启动阶段主动创建实例；direct inje
 | `Provider<T>` | 每次 `get()` 时向 Dagger 请求 | unscoped（无 scope）binding 通常每次新建；scoped binding 仍返回 scope 缓存 |
 | `@Singleton T` | 第一次被请求时 | 在该 `SingletonComponent` 内复用 |
 
-同一个 `dagger.Lazy<T>` 实例会缓存一次结果，但分别注入的两个 `Lazy<T>` 各自独立；若需要所有调用者共享同一对象，仍应由正确的 scope 保证。
+同一个 `dagger.Lazy<T>` 会缓存一次结果；对 unscoped binding，分别创建的 Lazy 包装器各自缓存，不能据此保证调用者拿到同一对象。scoped binding 则仍共享对应 scope 的实例，包装器本身也未必不同：2.60.1 的 [`DoubleCheck.lazy()`](https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java) 会直接复用已经实现 `Lazy` 的 provider。需要共享对象时应由正确的 scope 保证，不能依赖包装器身份。
+
+<!-- gracker-diagram: a229-05-lazy-scope-cache -->
+![Lazy 缓存语义与 scope 的实例身份分别判断](../../assets/diagrams/ch21/a229-05-lazy-scope-cache.png)
+
+图：直接字段在宿主注入时请求；Provider.get 每次请求图，但 scoped 结果仍复用。
 
 `@Inject lateinit var` 只是由 Hilt 稍后赋值的 Kotlin 字段，不具备“第一次业务使用时再注入”的语义。若 Application 直接注入 `Analytics`，Hilt 会在 Application 注入时构造 `Analytics` 及其递归依赖。
 
@@ -134,14 +139,9 @@ fun onConsentGranted() {
 }
 ```
 
-Hilt 在 Application 注入时只提供 `Lazy` wrapper（包装器）；`Analytics` 在 `get()` 时创建并由该 wrapper 缓存。若启动路径仍在首帧前调用 `get()`，这项修改不会减少启动成本。
+Hilt 在 Application 注入时提供延迟访问入口，不会仅因给该字段赋值就创建 `Analytics`。第一次 `get()` 解析目标 binding；unscoped 值由该 Lazy 缓存，scoped 值还受原 scope 的缓存约束。若启动路径仍在首帧前调用 `get()`，这项修改不会减少启动成本。
 
 `UnstableClass` 不是 Dagger/Hilt 的标准延迟机制。需要延迟时应使用 `dagger.Lazy<T>`、`Provider<T>`，或把整个 feature 的入口移出启动路径。
-
-<!-- gracker-diagram: a229-05-lazy-scope-cache -->
-![Lazy 缓存语义与 scope 的实例身份分别判断](../../assets/diagrams/ch21/a229-05-lazy-scope-cache.png)
-
-图：直接字段在宿主注入时请求；Provider.get 每次请求图，但 scoped 结果仍复用。
 
 ### `@Provides` 也不是自动 eager
 
@@ -172,7 +172,7 @@ Hilt 不直接支持给 `ContentProvider` 添加 `@AndroidEntryPoint`。`Content
 
 ## HiltViewModel 的成本边界
 
-`@HiltViewModel` 不会随进程无条件创建。首屏调用 `ViewModelProvider` 或 Compose `hiltViewModel()` 时，`HiltViewModelFactory` 才创建对应 `ViewModelComponent` 并解析构造参数。它是否属于启动成本，取决于首屏何时请求。
+`@HiltViewModel` 不会随进程无条件创建。首屏通过 `ViewModelProvider` 或 Compose `hiltViewModel()` 请求实例时，若对应 owner/key 已有 ViewModel，就复用它；需要新建时才由 `HiltViewModelFactory` 建立 `ViewModelComponent` 并解析构造参数。它是否属于启动成本，取决于首屏何时首次创建，不能把每次获取都计作一次构造。实现见 [Hilt View Models](https://dagger.dev/hilt/view-model.html)。
 
 排查 ViewModel 时要分开测：
 
@@ -260,7 +260,12 @@ kapt（Kotlin Annotation Processing Tool）通过生成 Java stub（供处理器
 
 这项迁移的收益主要体现在 clean build（全量构建）、incremental build（增量构建）的时间和构建进程内存。官方所说“最高约两倍”描述的是 symbol processing，不是 App 运行速度。KSP 与 kapt 可能产生不同中间文件；在 DI 图、编译选项和发布产物都等价前，不能把处理器提速换算成冷启动收益。
 
-若项目使用 AGP 9 的 built-in Kotlin（Android Gradle Plugin 内置 Kotlin 支持），`org.jetbrains.kotlin.kapt` 插件不兼容；仍未支持 KSP 的 processor 需要按官方迁移指南放在使用 `com.android.legacy-kapt` 的 Gradle module 中。Data Binding 目前也没有 KSP 迁移计划。这个限制属于构建系统兼容性，与设备运行时的 DI 性能分开评估。
+若项目使用 AGP 9 的 built-in Kotlin（Android Gradle Plugin 内置 Kotlin 支持），`org.jetbrains.kotlin.kapt` 插件不兼容；仍未支持 KSP 的 processor 可保留原 `kapt` 依赖，并在所在 Gradle module 应用 `com.android.legacy-kapt`；指南并未要求为此额外拆一个 module。Data Binding 目前也没有 KSP 迁移计划。这个限制属于构建系统兼容性，与设备运行时的 DI 性能分开评估。
+
+<!-- gracker-diagram: a229-12-ksp-build-boundary -->
+![KSP 优化构建处理，不直接改变设备上的 DI 工作](../../assets/diagrams/ch21/a229-12-ksp-build-boundary.png)
+
+图：KSP 迁移按 clean / 增量构建验证；只有发布产物或布局变化，才另测运行时影响。
 
 迁移应这样验收：
 
@@ -269,11 +274,6 @@ kapt（Kotlin Annotation Processing Tool）通过生成 Java stub（供处理器
 - 检查生成图、qualifier、nullability 和 processor 参数是否一致。
 - 运行同一套 DI 测试和 release Macrobenchmark。
 - 若 APK/DEX layout 发生变化，把它当独立变量解释，不预设会变快。
-
-<!-- gracker-diagram: a229-12-ksp-build-boundary -->
-![KSP 优化构建处理，不直接改变设备上的 DI 工作](../../assets/diagrams/ch21/a229-12-ksp-build-boundary.png)
-
-图：KSP 迁移按 clean / 增量构建验证；只有发布产物或布局变化，才另测运行时影响。
 
 ## 作用域与内存生命周期
 
@@ -325,7 +325,7 @@ override fun onCreate() {
 
 1. 使用 minified、non-debuggable（关闭调试能力）、profileable（允许受控性能分析）的 release 等价构建。
 2. 固定设备、Android build、安装来源、compiler filter（ART 实际采用的编译强度）、账号与启动入口。
-3. 同时看 TTID（首次显示时间）、TTFD（主要内容完整可用时间）、trace section、自身 CPU 时间、Java allocated bytes 和首帧后首交互。
+3. 同时看 TTID、TTFD、trace section、自身 CPU 时间、Java allocated bytes 和首帧后首交互。TTFD 需记录工具及版本，并区分业务就绪报告与工具识别的显示帧终点，不能仅凭一段初始化 trace 结束就认为内容已显示。
 4. 对 Koin 区分 module registration 与 first resolution；对 Hilt 区分 component/injection 与对象构造。
 5. 用 P50/P90/P99 判断；它们分别表示有 50%、90%、99% 样本不超过的耗时，不能用一次本地毫秒数决定框架迁移。
 

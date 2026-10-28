@@ -4,9 +4,9 @@ chapter: '20.4'
 section: '20.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-19'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1; Android Developers ANR diagnosis, API 37 warning, API 36 profiling, FGS timeout and migrated Android vitals docs; kotlinx.coroutines 1.11.0 launch/invokeOnCompletion API contracts
-last_source_verified_at: '2026-10-19'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-19'
 confidence: medium-high
 consolidated_from:
@@ -135,6 +135,8 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 | 以 Android 15 及以上为目标平台的 `dataSync` / `mediaProcessing` | 应用处于后台时，每种类型在 24 小时内累计约 6 小时；用户把应用带到前台会重置额度 | 收到 `onTimeout()` 后仍不停止会抛出内部 `RemoteServiceException` 并导致崩溃，不能归类为 ANR。 |
 
 这些默认值来自 `android-17.0.0_r1` 源码，产品代码仍应在业务可接受的时间内结束工作；拿系统超时减去一小段时间当日常预算，执行时仍贴着系统上限，稍有波动就越界。
+
+版本边界必须保留：本篇固定标签里的 `ActiveServices.serviceForegroundTimeout()` 停止服务后，延迟进入 `serviceForegroundTimeoutANR()`；当前 [FGS 故障排查文档](https://developer.android.com/develop/background-work/services/fgs/troubleshooting) 仍说明 `ForegroundServiceDidNotStartInTimeException` 崩溃路径。旧版本或厂商实现不能直接套用本表的 Android 17 默认值与结果，报告分类应结合系统构建、退出原因和实际堆栈确认。
 
 <!-- gracker-diagram: a210-02-fgs-boundaries -->
 ![FGS 的三套时限对应不同结果](../../assets/diagrams/ch20/a210-02-fgs-boundaries.png)
@@ -316,11 +318,11 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 下面这个顺序单进程审查很容易漏，跨进程看才明显：
 
 1. 应用主线程持有锁 A，同步调用远端服务。
-2. 远端服务处理请求时回调应用 Binder 接口。
+2. 远端服务把回调交给另一工作线程发起，并同步等待该任务完成；该回调不沿原嵌套 Binder 事务链重入应用主线程。
 3. 应用 Binder 线程处理回调时也需要锁 A。
 4. 主线程等远端返回，Binder 线程等主线程释放锁 A。
 
-这里锁 A 只存在于应用进程，等待环却跨过了 Binder。规则还是那条：持锁期间不调用未知代码，也不做同步 IPC（inter-process communication）。
+这里锁 A 只存在于应用进程，等待环却跨过了 Binder。规则还是那条：持锁期间不调用未知代码，也不做同步 IPC（inter-process communication）。 普通同步嵌套事务可能由 Binder 重入原调用线程，Java monitor 又允许同线程重入，因此不能仅凭“服务端会回调”就断言形成上述环；要确认实际回调线程与等待关系，见 [Binder 线程与嵌套事务](https://source.android.com/docs/core/architecture/ipc/binder-threading)。
 
 <!-- gracker-diagram: a210-07-binder-lock-cycle -->
 ![一把应用内锁也能形成跨进程等待环](../../assets/diagrams/ch20/a210-07-binder-lock-cycle.png)
@@ -392,7 +394,7 @@ trace 只负责测量，初始化不会因此变快，决定预算的是 `instal
 
 ### BroadcastReceiver：`goAsync()` 不增加时间
 
-静态注册的 receiver 通常由主线程执行，用 [`registerReceiver(..., scheduler)`](https://developer.android.com/reference/android/content/BroadcastReceiver) 可以通过 `Handler` 指定接收线程。换到后台线程保护了 UI 响应，但 receiver 仍受广播期限约束，线程池排队也要消耗时间——线程换掉了，期限没换。
+清单注册的 receiver 通常由主线程执行；动态注册时，可通过 `Context.registerReceiver()` 的 `scheduler: Handler` 参数指定接收线程，见 [BroadcastReceiver 线程说明](https://developer.android.com/reference/android/content/BroadcastReceiver)。换到后台线程保护了 UI 响应，但 receiver 仍受广播期限约束，线程池排队也要消耗时间——线程换掉了，期限没换。
 
 `goAsync()` 返回的 `PendingResult` 允许 `onReceive()` 返回后继续处理，但计时起点仍是广播分发那一刻，直到 `PendingResult.finish()` 为止，异步工作沿用原有截止时间。进程在 receiver 完成后也可能被回收，需要在进程重建后继续的工作交给 WorkManager 或 JobScheduler。
 
@@ -466,6 +468,11 @@ class MainLooperWatchdog(
     private val onStall: (MainStallSample) -> Unit,
 ) : Thread("main-looper-watchdog") {
 
+    init {
+        require(pollMillis > 0) { "pollMillis must be positive" }
+        require(stallThresholdMillis > 0) { "stallThresholdMillis must be positive" }
+    }
+
     private val mainHandler = Handler(Looper.getMainLooper())
     private val mainThread = Looper.getMainLooper().thread
     private val nextToken = AtomicLong(0L)
@@ -514,7 +521,7 @@ class MainLooperWatchdog(
 }
 ```
 
-旧 `Runnable` 的 token 与当前 token 不同时，`compareAndSet()` 不会替新周期盖章；当前 token 未完成前也不再投递探针（供主线程执行的轻量 `Runnable`）。示例省略了重复调用 `start()` 时防止创建多个线程的保护、应用退出处理、采样频率上限和持久队列。`onStall` 是发现长时间无响应后的回调，里面别同步做网络或大文件写入。
+旧 `Runnable` 的 token 与当前 token 不同时，`compareAndSet()` 不会替新周期盖章；当前 token 未完成前也不再投递探针（供主线程执行的轻量 `Runnable`）。同一个 `Thread` 实例只能 `start()` 一次，重复调用会抛出 `IllegalThreadStateException`；应用仍需统一管理实例，防止创建多个独立 Watchdog。示例省略了应用退出处理、采样频率上限和持久队列。`onStall` 是发现长时间无响应后的回调，里面别同步做网络或大文件写入。
 
 <!-- gracker-diagram: a210-12-watchdog-token -->
 ![单探针避免堆积与旧探针误确认](../../assets/diagrams/ch20/a210-12-watchdog-token.png)
@@ -598,7 +605,7 @@ class AnrWarningCollector(
 
 `AnrWarningResult` 给出 `anrId`、`anrType`、已消耗时间和总时限，已消耗时间用的就是 `uptimeMillis()` 那套基准。`description` 面向诊断且格式不稳定，存下来或给相似报告分组可以，解析成长期协议不行。监听器里只采集有限信息、追加到预分配或有界存储，远端上报留给进程恢复后再做。
 
-如果预警最终发展成 ANR，`anrId` 可与 API 37 的 `ApplicationExitInfo.AnrInfo.getAnrId()` 关联。`AnrInfo` 还包含 ANR 类型、系统等待时限和 `isUserPerceptible()`。这里的 user-perceptible（用户可感知）按系统是否展示 ANR 对话框定义，Google Play 的 user-perceived core vital（用户可感知的主要质量指标）当前只统计 input dispatch ANR，两个统计的算法不同，对照数据时留意。
+如果预警最终发展成 ANR，可用 `anrType + anrId` 与 API 37 的 `ApplicationExitInfo.AnrInfo` 关联；官方只保证 `anrId` 在同一 ANR 类型内唯一，不能把 ID 单独作为全局主键。读取退出记录时还要处理 `getAnrInfo()` 返回 `null` 的情况。`AnrInfo` 还包含 ANR 类型、系统等待时限和 `isUserPerceptible()`。这里的 user-perceptible（用户可感知）按系统是否展示 ANR 对话框定义，Google Play 的 user-perceived core vital（用户可感知的主要质量指标）当前只统计 input dispatch ANR，两个统计的算法不同，对照数据时留意。
 
 ### Android 16 及以上：ANR Profiling Trigger
 
@@ -612,7 +619,7 @@ API 36 的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在系统识别 ANR 后、可能�
 | `AnrWarningResult` | API 37，接近系统时限 | 系统正在观察哪种 ANR、已经消耗多少预算 |
 | `ApplicationExitInfo.AnrInfo` / profiling 结果 | 系统认定 ANR 后，或进程退出后 | ANR 类型、ID、系统时限、用户可感知状态和 system trace |
 
-同一个事件用 `anrId`、进程启动标识、单调时钟时间和堆栈签名关联。这里用单调时钟是有讲究的：Wall clock 是可被用户或网络校时调整的日历时间，单调时钟只向前累计，计算同一进程内的时间间隔更适合用它。
+同一个事件用 `anrType + anrId`、进程启动标识、单调时钟时间和堆栈签名关联。单调时钟的绝对值不能跨设备重启直接比较，关联进程重启前后的记录时还要保存启动会话或其他时钟锚点。这里用单调时钟是有讲究的：Wall clock 是可被用户或网络校时调整的日历时间，单调时钟只向前累计，计算同一进程内的时间间隔更适合用它。
 
 <!-- gracker-diagram: a210-14-warning-evidence -->
 ![三类信号提供不同阶段的互补证据](../../assets/diagrams/ch20/a210-14-warning-evidence.png)
@@ -631,7 +638,7 @@ Binder 监测优先在自有接口的调用点记录开始、结束和请求 ID�
 
 谈差异化治理之前，我们先把前台、后台和 Google Play 三套统计的算法分开说清，混在一起会把问题规模看错。
 
-Google Play 当前提供三项以 DAU（daily active users，当日活跃用户）为分母的指标：
+Google Play 当前提供三项以 DAU（daily active users，当日活跃用户）为分母的指标。这里按用户与设备组合计数：同一人在同一天使用两台设备，两台都会贡献活跃用户数，不能当作跨设备去重的人数：
 
 - **ANR rate**：当天至少经历一次任意类型 ANR 的活跃用户占比。
 - **User-perceived ANR rate**：当天至少经历一次 user-perceived ANR 的活跃用户占比；当前只把 `Input dispatching timed out` 计入该指标。

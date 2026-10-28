@@ -4,8 +4,8 @@ chapter: '20.2'
 section: '20.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers crash docs; kotlinx.coroutines 1.11.0 API and exception-handling docs current on 2026-08-14
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1; Android Developers crash docs; kotlinx.coroutines 1.11.0 API and exception-handling docs current on 2026-10-25
 confidence: medium-high
 sources:
 - type: clippings-structure-ref
@@ -237,7 +237,7 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 致命异常处理器内只尝试写入：
 
 - 墙上时钟时间（可对应日志中的日期）与单调时间（只向前递增，适合计算耗时）；
-- 进程名、线程名和线程 ID（用于把崩溃记录匹配到准确二进制和符号文件的版本标识）；
+- 进程名、线程名和线程 ID（用于区分进程中的线程；二进制与符号版本另用构建 ID 匹配）；
 - 异常类、限制长度的消息、原因链（cause（异常原因链））与附加异常（suppressed）摘要；
 - 已准备好的 breadcrumb；
 - 完整性字段，如长度、版本和校验值。
@@ -326,7 +326,7 @@ R8 混淆映射文件必须和产生 Crash 的构建一一对应。重复使用�
 
 #### `NullPointerException`
 
-NPE 的栈顶只说明在哪里解引用（binding）了 `null`，未必说明它为什么变成 `null`。我们排查时按来源拆分：
+NPE 的栈顶只说明在哪里解引用（dereference）了 `null`，未必说明它为什么变成 `null`。我们排查时按来源拆分：
 
 - **边界数据**：服务端字段、数据库迁移、Intent/Bundle 参数是否声明可空，缺失时是拒绝、默认还是降级；
 - **初始化顺序**：依赖是否在多进程、延迟初始化或冷启动竞态中尚未准备；
@@ -610,10 +610,10 @@ monitor owner 是当前持有对象 monitor 的线程，held lock 是线程在�
   - waiting to lock <0x01234567> held by thread 23
 
 "cache-writer" ... tid=23 TimedWaiting
-  at com.example.Cache.refresh(Cache.kt:132)
-  - locked <0x01234567>
   at java.lang.Object.wait(Native method)
   - waiting on <0x07654321>
+  at com.example.Cache.refresh(Cache.kt:132)
+  - locked <0x01234567>
 ```
 
 我们拿这份样本读一遍：它支持“main 正在等待 thread 23 持有的第一个 monitor”。第二个 `waiting on` 表示 `cache-writer` 在等待通知或超时，第二个对象是否被某线程长期持有，从这里看不出来。`held by thread 23` 应与同一份 ART dump 头部的 Java `tid=23` 对应；`sysTid` 才是 Linux 内核线程 ID，两个编号要分开用。
@@ -656,11 +656,11 @@ OOM 路径需要把操作压到最少。`getAllStackTraces()` 会创建 `Map` �
 
 #### 4.2 Native 致命信号下的采集约束
 
-`SIGSEGV`、`SIGABRT`、`SIGBUS` 等同步致命信号发生时，故障可能位于 allocator（内存分配器）、GC、JNI、线程栈或 ART 自身。下面这些工作，要全部挡在应用 signal handler 之外：
+`SIGSEGV`、`SIGABRT`、`SIGBUS` 等致命信号发生时，故障可能位于 allocator（内存分配器）、GC、JNI、线程栈或 ART 自身。下面这些工作，要全部挡在应用 signal handler 之外：
 
 - 调 JNI 或 Java 方法，包括 `Thread.getAllStackTraces()`；
 - 通过偏移寻找 `Runtime::instance_`、`ThreadList`、`ManagedStack` 或 `ArtMethod`；
-- 调 `SuspendAll()`、`SuspendThreadByPeer()`，或构造 ART handle scope（保护托管对象引用的内部作用域） 保护托管对象引用；
+- 调 `SuspendAll()`、`SuspendThreadByPeer()`，或构造 ART handle scope（保护托管对象引用的内部作用域）；
 - 使用 `malloc/new`、STL（C++ 标准库） 容器扩容、普通 mutex（互斥锁）、数据库和网络；
 - 用 `sigsetjmp/siglongjmp` 非局部跳转越过错误并继续运行应用。
 
@@ -691,7 +691,7 @@ Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空
 
 1. 查询 `ApplicationExitInfo`，按时间、进程名、PID（进程 ID）、reason 和 status 去重。
 2. 区分 ANR 文本 trace 与 API 31+ Native tombstone protobuf，前者按文本、后者按二进制解析。
-3. 用进程启动时生成的 session ID（本次进程生命周期的唯一标识） 关联 Crash 前 breadcrumb、资源水位和业务阶段。
+3. 用进程启动时生成的 `process_start_id`（本次进程生命周期的唯一标识）关联 Crash 前 breadcrumb、资源水位和业务阶段。
 4. 保存“系统证据”“端侧预判”“服务端推断”三种来源，不用一个字段混写。
 
 没有拿到 trace 时，应记录缺失原因和采集版本。退出时间附近的一条普通日志只能作为旁证，写不成“完整线程现场”。
@@ -755,7 +755,7 @@ Perfetto 没记录到锁竞争事件，竞争仍可能存在；trace 配置、�
 
 #### 6.1 正常运行期
 
-- 维护固定容量 breadcrumb、进程 session ID、页面或任务阶段，以及内存、线程数、文件描述符等资源水位。
+- 维护固定容量 breadcrumb、`process_start_id`、页面或任务阶段，以及内存、线程数、文件描述符等资源水位。
 - 对主线程卡顿使用有线程数、频率和总字节上限且可关闭的选定线程采样。
 - 对关键业务锁记录等待开始、获得、释放和稳定的逻辑锁名；不要上传对象地址。
 - 记录线程名时同时保留稳定角色，例如 main、render、binder-worker、业务 executor（线程池执行器）。
@@ -854,6 +854,9 @@ Java monitor 的解释到 ART 为止，套不到内核上：`android17-6.18-2026
 
 下面这张图把故障后的工作分成两段。图中用到的 crash envelope（最小崩溃记录） 有严格的大小上限，只保存关联和诊断字段，与完整业务快照是两回事。
 
+<details>
+<summary>恢复架构图 1 的 Mermaid 源码</summary>
+
 ```mermaid
 flowchart LR
   A["Java 未捕获异常"] --> D["最小 crash envelope"]
@@ -868,6 +871,8 @@ flowchart LR
   I -->|是| K["进入应用级 SafeMode"]
   K --> J
 ```
+
+</details>
 
 Crash handler（未捕获异常处理器） 所在的左半段只适合做有上限的同步写入。数据库查询、网络请求、动态配置拉取、复杂序列化和线程切换都放到右半段。尚未完成的异步任务会在默认处理器结束进程时一并消失。
 
@@ -978,9 +983,9 @@ API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回近期进
 | 资源或依赖变化 | `REASON_LOW_MEMORY`、`REASON_DEPENDENCY_DIED` | 单独统计，不直接触发代码降级 |
 | 需要更多证据 | `REASON_UNKNOWN`、`REASON_SIGNALED`、`REASON_EXCESSIVE_RESOURCE_USAGE`、`REASON_OTHER` | 结合公开的退出状态 `status`、进程重要级 `importance`、现场记录 `trace` 和本地最小崩溃记录判断 |
 
-部分设备不支持准确报告 `REASON_LOW_MEMORY`。官方 API 要求先检查 `ActivityManager.isLowMemoryKillReportSupported()`；不支持时，LMK 可能表现为 `REASON_SIGNALED` 与 `SIGKILL`。因此，单凭 `SIGKILL` 断定不了是 Native Crash 还是业务主动结束。
+部分设备不支持准确报告 `REASON_LOW_MEMORY`。官方 API 要求先检查 `ActivityManager.isLowMemoryKillReportSupported()`；不支持时，LMK 可能表现为 `REASON_SIGNALED` 与 `SIGKILL`。因此，单凭 `SIGKILL` 不能区分 LMK、系统或用户终止以及其他信号来源，也不能把它直接归为 Native Crash。
 
-API 37 的 `ApplicationExitInfo.getAnrInfo()` 只在 `reason == REASON_ANR` 时返回结构化 `AnrInfo`。`getDescription()` 是面向人的不稳定文本，长期分类协议要以结构化字段为准。
+API 37 的 `ApplicationExitInfo.getAnrInfo()` 只在 `reason == REASON_ANR` 时可能返回结构化 `AnrInfo`；该返回值仍需判空，其他 reason 返回 `null`。`getDescription()` 是面向人的不稳定文本，长期分类协议要以结构化字段为准。
 
 <!-- gracker-diagram: a208-17-exit-reason-policy -->
 ![启动失败计数先按退出 reason 分类](../../assets/diagrams/ch20/a208-17-exit-reason-policy.png)
@@ -1058,6 +1063,9 @@ fun isCorrelatedStartupFailure(
 
 SafeMode 至少需要区分正常、观察、受限和试运行状态。下面是一套可按产品调整的状态关系：
 
+<details>
+<summary>恢复架构图 2 的 Mermaid 源码</summary>
+
 ```mermaid
 stateDiagram-v2
   [*] --> Normal
@@ -1069,6 +1077,8 @@ stateDiagram-v2
   Probation --> Safe: 再次相关启动失败
   Safe --> Safe: 兜底模式继续可用
 ```
+
+</details>
 
 `Suspected` 避免一次偶发故障直接关闭大量功能；`Probation` 避免兜底页能启动就被误判为原问题已经修复。只有在完整模式或逐步恢复的模块集合下成功，才能消除对应失败计数。
 
@@ -1253,10 +1263,10 @@ override fun onRenderProcessGone(
 - 暂停提高新版本的发布比例，保留当前样本继续判断故障来源；
 - 只把服务端配置或实验恢复到变更前的状态；
 - 停止向特定设备、API 或 ABI 发布新版本；
-- 通过 Google Play 发布修复版本或回退到已验证构建；
+- 通过 Google Play 发布更高 `versionCode` 的修复构建；需要恢复旧逻辑时，用已验证源码重建并提高版本号；
 - 启用已随 APK 交付的本地降级实现。
 
-“暂停 staged rollout（分阶段发布）”只阻止更多用户获得该版本，已安装的设备并不会自动退回旧包。SafeMode 和服务端开关用于保护已经安装新版本的设备，新包用于修复代码。
+“暂停 staged rollout（分阶段发布）”只阻止更多用户获得该版本，已安装的设备并不会自动退回旧包。恢复旧逻辑也需要发布更高版本号的新构建，见[Android 版本号与降级保护](https://developer.android.com/studio/publish/versioning)和[暂停分阶段发布的官方说明](https://support.google.com/googleplay/android-developer/answer/6346149?hl=en)。SafeMode 和服务端开关用于保护已经安装新版本的设备，新包用于修复代码。
 
 <!-- gracker-diagram: a208-23-release-recovery -->
 ![暂停放量、保护已安装用户与修复代码分别执行](../../assets/diagrams/ch20/a208-23-release-recovery.png)

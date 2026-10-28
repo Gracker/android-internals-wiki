@@ -4,9 +4,9 @@ chapter: '26.1'
 section: '26.1'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android vitals / startup / rendering / SystemClock / ProfilingManager / ProfilingTrigger / privacy docs, Firebase Performance Monitoring, OpenTelemetry Logs, and AOSP android-17.0.0_r1 sources retrieved 2026-08-15
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Current Android vitals / startup / rendering / SystemClock / ProfilingManager / ProfilingTrigger / privacy docs, Firebase Performance Monitoring, OpenTelemetry Logs, and AOSP android-17.0.0_r1 sources reviewed 2026-10-25; StatsD SystemApi/pull direction, libmeminfo fallback, LeakCanary2.14 provider install and trim callback version boundaries rechecked; no device profiling or monitoring benchmark
 confidence: high
 sources:
 - type: clipping
@@ -61,6 +61,8 @@ sources:
   path: https://developer.android.com/reference/android/os/Debug
 - type: official
   path: https://developer.android.com/reference/android/os/Debug.MemoryInfo
+- type: official
+  path: https://developer.android.com/reference/android/content/ComponentCallbacks2
 - type: legacy-reference-preserved
   path: https://android.googlesource.com/platform/system/memory/+/refs/tags/android-17.0.0_r1/libmeminfo/
 - type: source
@@ -126,9 +128,9 @@ consolidated_from:
 | 日志（Logs） | 业务日志、诊断日志、Crash 附加信息、用户反馈时间窗日志 | 这个用户的操作路径、请求参数摘要、错误码、降级原因 | 长期保存全部明细并做高频聚合 |
 | 追踪（Traces） | Perfetto（Android 系统追踪工具）数据、方法耗时片段、网络阶段耗时、会话时间线 | 一次启动、卡顿或网络请求慢在哪个阶段 | 替代日常指标看板，或面向全部用户长期采集 |
 
-先看指标这一侧。Android vitals 在用户允许采集的前提下，由 Google Play 汇总稳定性、性能、电量和权限等质量数据；当前核心指标包括用户感知崩溃率（user-perceived crash rate）、用户感知 ANR 率（user-perceived ANR rate）和部分唤醒锁使用过量（excessive partial wake locks）。评估窗口是最近 28 天，Play 每天检查一次 28 天平均值。我们把它当作 Play 分发侧的质量基线；页面、场景、构建版本与渠道这些内部维度，仍要团队自己补。[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)
+先看指标这一侧。Android vitals 在用户允许采集的前提下，由 Google Play 汇总稳定性、性能、电量和权限等质量数据；当前核心指标包括用户感知崩溃率（user-perceived crash rate）、用户感知 ANR 率（user-perceived ANR rate）、部分唤醒锁使用过量（excessive partial wake locks）、内存使用（Anonymous RSS + Swap）及位图内存使用；表盘应用另有电池使用过量指标。内存指标按RAM层和应用状态区分阈值，不能用PSS替代；相关内存与代码优化指标的商店可见性影响按当前官方说明从2027年2月开始。评估窗口是最近 28 天，Play 每天检查一次 28 天平均值。我们把它当作 Play 分发侧的质量基线；页面、场景、构建版本与渠道这些内部维度，仍要团队自己补。[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)
 
-Firebase Performance Monitoring 更接近应用内部性能观测：自动采集启动、HTTP/S 请求和按屏幕统计的渲染数据，也允许添加自定义代码追踪（custom code trace）、自定义指标（custom metrics）与筛选属性（attributes）。注意它说的 trace 指两个时间点之间的任务记录及其指标，和 Perfetto 文件是两回事；attributes 可按国家、设备、应用版本和系统版本筛选数据。[Firebase Performance Monitoring 官方说明](https://firebase.google.com/docs/perf-mon)
+Firebase Performance Monitoring 更接近应用内部性能观测：自动采集启动、HTTP/S 请求和按屏幕统计的渲染数据，也允许添加自定义代码追踪（custom code trace）、自定义指标（custom metrics）与筛选属性（attributes）。注意它说的 trace 指两个时间点之间的任务记录及其指标，和 Perfetto 文件是两回事；控制台可按国家、设备、应用版本和系统版本等内置维度筛选，自定义 trace 还可添加受限制的自定义 attributes；这两类属性不要混为一谈。[Firebase Performance Monitoring 官方说明](https://firebase.google.com/docs/perf-mon)
 
 所以应用自建体系通常组合两类数据：Android vitals 提供 Play 侧质量结果，自建指标补充内部维度，日志和追踪提供现场证据。只看 vitals，能发现质量变化；要解释变化出现在哪个业务场景、由什么触发，还得靠后者。
 
@@ -167,7 +169,7 @@ Firebase Performance Monitoring 更接近应用内部性能观测：自动采集
 }
 ```
 
-我们给每条事件同时带两种时间。`wall_time_ms` 是现实时间（wall clock），用于和发布、告警对时，但用户或网络都可能调整它；会话内排序与耗时计算用单调递增的 `elapsed_realtime_ns`。`SystemClock.elapsedRealtimeNanos()` 包含深度睡眠时间，适合测量间隔，但设备重启后会归零——所以还要靠 `session_id`（会话标识）和 `scene_seq`（场景内顺序号）划定会话与场景的范围。剩下三个字段各管一件事：`event_id` 用于重试去重，`trace_id` 用于关联不同信号，`schema_version` 表示事件结构版本。
+我们给每条事件同时带两种时间。`wall_time_ms` 是现实时间（wall clock），用于和发布、告警对时，但用户或网络都可能调整它；会话内排序与耗时计算用单调递增的 `elapsed_realtime_ns`。`SystemClock.elapsedRealtimeNanos()` 包含深度睡眠时间，适合测量间隔，但设备重启后会归零——所以还要靠 `session_id`（会话标识）和 `scene_seq`（场景内顺序号）划定范围，并在重启后开启新的时钟区间。持久化跨重启会话时另记录可重置的开机/进程序列；不同设备或不同开机区间的 elapsed 值不能直接相减。剩下三个字段各管一件事：`event_id` 用于重试去重，`trace_id` 用于关联不同信号，`schema_version` 表示事件结构版本。
 
 接着看启动事件的指标片段。为节省篇幅，`$common` 只保留 `event_type`；生产事件仍应携带完整公共信封。
 
@@ -262,18 +264,12 @@ Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求系统�
 
 下图展示采集、缓冲、存储、上传和远程控制之间的数据方向：
 
-```mermaid
-graph TD
-  A[业务代码 / 系统回调] --> B[采集 API]
-  B --> C[轻量事件模型]
-  C --> D[有界内存队列]
-  D --> E[本地分片存储]
-  E --> F[批量上传 Worker]
-  F --> G[服务端接入]
-  H[远程配置与采样策略] --> B
-  H --> F
-  I[SDK 自监控] --> F
-```
+端侧数据主路径是轻量采集、有界队列、分级持久化与批量上传；远程配置和自监控分别控制预算与记录管道健康，Crash最小保全路径独立。
+
+<!-- gracker-diagram: a286-04-bounded-client-data-and-control-plane -->
+![端侧按数据流串联，配置与自监控另走控制面](../../assets/diagrams/ch26/a286-04-bounded-client-data-and-control-plane.png)
+
+图：UI/回调线程只读最小安全快照；编码、压缩、写盘和网络转交后台，mmap也可能缺页或回写。
 
 端侧至少分成五层：
 
@@ -286,11 +282,6 @@ graph TD
 执行上还有两条纪律。主线程只提交原始事件；分析和聚合通常放到服务端，端侧只做必要的聚合、压缩、脱敏和失败恢复。另外 `mmap`（内存映射）也会带来首次缺页、文件扩容、同步和存储压力，主线程写入的开销只是相对小，并不是零。17.12 节说明了 APM SDK 的持久化、编码协议、网络投递和自监控实现。
 
 Crash 还要走一条独立于普通异步队列的最小保全路径：进程异常退出时，后台线程可能来不及消费队列，而 Java 未捕获异常（uncaught exception）与原生信号（native signal）能安全执行的操作也不同。实现上应预分配必要结构，避开原生信号处理器中不具备异步信号安全性（async-signal-safe）的调用，并在下次启动时校验和补传未完成记录。具体分工见 26.2。
-
-<!-- gracker-diagram: a286-04-bounded-client-data-and-control-plane -->
-![端侧按数据流串联，配置与自监控另走控制面](../../assets/diagrams/ch26/a286-04-bounded-client-data-and-control-plane.png)
-
-图：UI/回调线程只读最小安全快照；编码、压缩、写盘和网络转交后台，mmap也可能缺页或回写。
 
 ### 从采集到告警的完整数据路径
 
@@ -432,11 +423,11 @@ StatsD 模块位于 `packages/modules/StatsD`。它的 statsd 后台守护进程
 
 #### 1.1 StatsManager 客户端 API
 
-Android 17 (`android-17.0.0_r1`) 中，与性能指标订阅、读取和 pull 数据提供相关的 `StatsManager` 公开 API 主要是三组方法：
+Android 17 (`android-17.0.0_r1`) 中，`StatsManager` 类标记 `@hide` / `@SystemApi`；以下是源码中与配置、读取和 pull 数据提供相关的 public 方法子集，属于系统API，不是普通应用可编译使用的公共SDK API：
 
 ```java
 // packages/modules/StatsD/framework/java/android/app/StatsManager.java
-// Android 17 公开 API 子集
+// Android 17 System API 源码子集（非普通App公共SDK）
 
 // 注册 pull atom 数据提供方（客户端向 statsd 提供自定义 pulled atom）
 public void setPullAtomCallback(int atomTag, @Nullable PullAtomMetadata metadata,
@@ -456,9 +447,9 @@ public byte[] getReports(long configId)
 
 注意 `setPullAtomCallback()` 的方向：它注册的是数据提供方，即客户端向 statsd 提供自定义 pulled atom 数据；读取 statsd 聚合指标要走其他接口。
 
-拉取的具体过程是：statsd 需要某个原子事件时，调用已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，其中 atom tag 是原子事件编号；客户端把 `StatsEvent` 加入 `data` 列表并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果，`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 把结果交回 statsd。
+拉取的具体过程是：statsd 需要某个原子事件时，调用已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，其中 atom tag 是原子事件编号；客户端把 `StatsEvent` 加入 `data` 列表并返回 `StatsManager.PULL_SUCCESS` / `StatsManager.PULL_SKIP` 等结果，`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 把结果交回 statsd。
 
-`PullAtomMetadata` 的默认冷却间隔为 1000 ms、超时为 1500 ms，用来限制按需拉取频率；回调由 statsd 按需触发，周期性定时回调这一形态并不存在。
+`PullAtomMetadata` 的默认冷却间隔为1000 ms、超时为1500 ms，分别控制拉取冷却和允许等待时间，并不是应用侧固定采样周期。回调由statsd依据配置、事件或定时拉取需要触发；配置可以导致周期性拉取，但不能把这两个默认值当成每秒或每1.5秒必定回调的承诺。
 
 再看三个接口。`addConfig()` 返回 `void`（而非 boolean），用于向 statsd 注册 `StatsdConfig`，该配置描述要收集的原子事件与聚合方式；`getReports(long configId)` 读取 statsd 已收集的报告，是特权 App 获取聚合数据的主要接口；`query()` 需要 `READ_RESTRICTED_STATS` 权限，签名为 `query(long configKey, String configPackage, StatsQuery query, Executor executor, OutcomeReceiver<StatsCursor, StatsQueryException> outcomeReceiver)`。
 
@@ -514,8 +505,7 @@ StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data) → statsd 
 
 以 `AppStartOccurred`（`app_start_occurred`）为例，字段包含 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，没有 `latencyMillis` 字段。
 
-**StatsCompanionService 的职责：**
-`StatsCompanionService` 运行在 system_server 中，是通过 `IStatsd` 接口与 statsd 守护进程交互的辅助服务，主要处理配置管理和数据拉取方注册。事件写入与它无关：`StatsLog` 通过 `libstatssocket` 直接连 statsd 的本地套接字（socket）；从 `/dev/socket/statsdw` 读取事件流的 JNI（Java Native Interface，Java 原生接口）桥接层同样另有其人。
+`StatsCompanionService` 运行在system_server，通过`IStatsd`辅助statsd设置/接收拉取和订阅告警、交换UID/包信息并处理连接与死亡重连。配置注册、报告读取和pull provider注册由`StatsManagerService`等桥接给statsd，不能把它们概括成StatsCompanionService的主要职责。事件写入经`StatsLog`的JNI/生成日志代码与`libstatssocket`进入本地socket；守护进程侧由`StatsSocketListener`或所选io_uring监听器读取并送入`LogEventQueue`，这不是system_server里一个读取`statsdw`的JNI桥。[已验证: StatsCompanionService.java、StatsManagerService.java、StatsD main.cpp @ android-17.0.0_r1]
 
 #### 1.3 系统指标采集边界与 App 侧替代方案
 
@@ -551,7 +541,7 @@ Debug.MemoryInfo[] info = am.getProcessMemoryInfo(new int[]{Process.myPid()});
 int totalPss = info[0].getTotalPss();
 ```
 
-返回值的 UID（用户标识）与频率限制详见 §3；这段代码只能读到自己的进程，轮询其他应用是做不到的。
+UID（用户标识）与频率限制详见§3；这段代码只请求当前PID，接口边界是同UID进程，而不是只能传自己的PID。普通应用不能借它轮询其他UID应用。
 
 **路径 3：Firebase Performance / 自建 APM SDK**
 
@@ -670,7 +660,7 @@ enum CompactProfile {
 **对监控采集的三类影响：**
 
 1. **指标含义不同**：PSS 按共享页面比例分摊；cgroup memory charge（记入该控制组的内存用量）、anon（匿名内存）与 swap（换出到交换空间的内存）采用另一套归属规则。PSS 未达到某个数值，进程也可能已经触及限制。
-2. **越界后可能先采性能剖析数据再终止**：`LIMIT_TYPE_ANON_SWAP` 分支会触发异常性能剖析（anomaly profiling），并通过 `KILL_DELAY_MS` 延迟终止请求，为系统剖析器留出完成时间。这个延迟不属于 App 的轮询或上传时限。
+2. **越界后可能先采性能剖析数据再终止**：`LIMIT_TYPE_ANON_SWAP` 分支在额外剖析开关开启且包信息可用时请求异常性能剖析（anomaly profiling），并通过`KILL_DELAY_MS`排队延迟终止请求；剖析不保证成功，真正终止还受disable-kill等控制，不能把延迟理解为已确认完成剖析。这个延迟不属于 App 的轮询或上传时限。
 3. **退出原因要读记录，不要预设**：进程恢复后查询 `ApplicationExitInfo`，记录实际 `reason`、`status`、描述和可用 trace，再与 SDK 样本关联；把所有 MemoryLimiter 终止预先写成 `REASON_LOW_MEMORY` 会掩盖真实原因。
 
 <!-- gracker-diagram: a286-12-memory-limiter-kernel-throttle-system-kill -->
@@ -686,26 +676,27 @@ enum CompactProfile {
 
 ```cpp
 struct graphics_memory_pss {
-    int graphics;    // 图形内存（SurfaceFlinger 等）
-    int gl;          // GL 内存（OpenGL/Vulkan）
-    int other;       // 其他内存（Ashmem 等）
+    int graphics;    // memtrack GRAPHICS类别
+    int gl;          // memtrack GL类别
+    int other;       // memtrack OTHER类别，不等于全部Ashmem
 };
 ```
 
 这三个值来自 memtrack HAL 和驱动实现。HAL（Hardware Abstraction Layer，硬件抽象层）把设备相关实现接到 Android 框架，因此分类精度和可用性因设备而异，跨机型恒定的数值拿不到。
 
-下面的片段展示 `ProcMemInfo` 优先读取 `smaps_rollup` 并在不可用时回退到 `smaps` 的意图。
+下面的片段调用`ProcMemInfo::SmapsOrRollup()`。固定r1实现先在当前读取者的`/proc/self/smaps_rollup`探测支持并缓存结果，据此选择目标PID的`smaps_rollup`或`smaps`；选定文件读取失败时返回false，并不会在每次目标PID读取失败后自动重试另一文件。
 
 ```cpp
 ::android::meminfo::ProcMemInfo proc_mem(pid);
 ::android::meminfo::MemUsage stats;
 if (proc_mem.SmapsOrRollup(&stats)) {
     pss += stats.pss;
-    // 失败时自动回退到传统 smaps
+} else {
+    // 目标读取失败：标记本次不可用，不能用0伪造样本。
 }
 ```
 
-回退让旧读取方式继续可用，但各厂商图形内存分类的精度未必相同。
+支持性探测让不支持rollup的环境选择传统smaps；读取失败仍需单独处理。图形memtrack则是另一条统计路径，厂商分类精度和可用性不能由smaps选路推导。
 
 | Android 版本 | 内存分类口径 | 说明 |
 |-------------|--------------|------|
@@ -714,9 +705,9 @@ if (proc_mem.SmapsOrRollup(&stats)) {
 
 #### 3.5 `libmeminfo` 与 `libmemevents` 的系统侧边界
 
-`Debug.getMemoryInfo()` 的 JNI 最终用 `libmeminfo` 汇总进程内存。`ProcMemInfo::SmapsOrRollup()` 优先读取 `smaps_rollup`，不可用时退回逐 VMA 的 `smaps`；VMA（Virtual Memory Area，虚拟内存区域）是进程地址空间中属性连续的一段映射。平台组件还可以用 pagemap、kpageflags 与 kpagecount 做成本更高的 VMA 或 working set（近期活跃内存页集合）诊断。这些 Native 类服务的是平台代码、厂商组件与 APEX（可独立更新的系统组件包格式）模块集成，普通 App 的对象跟踪 API 里没有它们；应用侧继续以 `Debug.MemoryInfo`、`ActivityManager.MemoryInfo` 和调试工具为兼容范围。
+`Debug.getMemoryInfo()` 的 JNI 最终用 `libmeminfo` 汇总进程内存。`ProcMemInfo::SmapsOrRollup()` 根据缓存的支持性探测选择`smaps_rollup`或逐VMA的`smaps`，目标文件读取失败返回false；VMA（Virtual Memory Area，虚拟内存区域）是进程地址空间中属性连续的一段映射。平台组件还可以用 pagemap、kpageflags 与 kpagecount 做成本更高的 VMA 或 working set（近期活跃内存页集合）诊断。这些 Native 类服务的是平台代码、厂商组件与 APEX（可独立更新的系统组件包格式）模块集成，普通 App 的对象跟踪 API 里没有它们；应用侧继续以 `Debug.MemoryInfo`、`ActivityManager.MemoryInfo` 和调试工具为兼容范围。
 
-Android 14 相关源码中的 `libmemevents` 用 eBPF 环形缓冲区接收 OOM killer 选中的进程、直接内存回收、内核回收线程 kswapd 与厂商低内存终止机制（LMK）等事件，Android 17 仍保留这条系统路径。eBPF 是在内核受控环境中运行观测程序的机制，环形缓冲区把事件按固定容量传给读取方。
+本轮确认的`android-17.0.0_r1`源码中，`libmemevents`用eBPF环形缓冲区接收 OOM killer 选中的进程、直接内存回收、内核回收线程 kswapd 与厂商低内存终止机制（LMK）等事件；这些是固定17r1系统路径的能力，不构成Android14–17所有设备都提供同一事件集合的保证。eBPF 是在内核受控环境中运行观测程序的机制，环形缓冲区把事件按固定容量传给读取方。
 
 这条路径依赖内核 tracepoint（事件观测点）、BPF 能力、受信任的加载器和 SELinux（Android 强制访问控制机制）策略。设备上有这份源码，普通 App 也订阅不了，各台 Android 14–17 设备暴露的事件也未必相同。所以线上 SDK 只保存自身公开指标，把这类事件与 App 快照放到同一时间线的，只能是平台或设备厂商（OEM）组件。
 
@@ -873,7 +864,7 @@ LeakCanary 官方建议通过 `debugImplementation` 引入完整的 `leakcanary-
 
 #### 7.2 架构特点
 
-- **自动安装**：库通过 AndroidX Startup 和应用清单（manifest）组件完成默认观察器安装，正常接入不要求在 `Application.onCreate()` 前手动调用配置。
+- **自动安装**：以官方当前示例的LeakCanary 2.14为例，默认`leakcanary-object-watcher-android`通过清单中的`MainProcessAppWatcherInstaller` ContentProvider安装观察器；另有可选的AndroidX Startup集成artifact，不能把它说成默认依赖路径，正常接入不要求在 `Application.onCreate()` 前手动调用配置。
 - **分析与停顿分开看**：Shark 可以在后台执行分析，但生成堆转储时会暂停虚拟机（VM），全程“非阻塞”的说法不成立。
 - **结果需要人工解释**：retained object 是候选证据；已知库泄漏（library leak）、测试框架持有和应用自身泄漏需要结合引用链分类。
 
@@ -938,14 +929,14 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 | Restart / Resume（重启 / 恢复） | 查询退出记录、注册性能剖析结果监听、读取待传队列 | 标记不可观测区间，去重并恢复 | 先传关键摘要，再按预算传附件 |
 | Memory pressure observed（观察到内存压力） | 停止高成本性能剖析与大对象采集 | 缩小缓冲区、拒绝新批次、保存丢弃计数 | 不因压力立即制造额外网络工作 |
 
-状态转换只由实际生命周期、任务开始/停止和公开系统结果驱动。App 查询“当前是否被冻结”没有可靠途径——被冻结时本身就没有执行代码的机会；恢复后我们只能承认这段数据缺失，记录 `unsupported`、`not_scheduled`、`frozen_gap`、`budget_exhausted` 等原因，拿零填充只会骗过看板。
-
----
+状态转换只由实际生命周期、任务开始/停止和公开系统结果驱动。App 查询“当前是否被冻结”没有可靠途径——被冻结时本身就没有执行代码的机会；恢复后我们只能承认这段数据缺失，记录`unsupported`、`not_scheduled`、`unobserved_gap`、`budget_exhausted`等已知状态；只有关联到系统冻结证据时才进一步标记`frozen_gap`，拿零填充只会骗过看板。
 
 <!-- gracker-diagram: a286-18-lifecycle-constraint-and-unobserved-intervals -->
 ![采集按真实执行机会降级，冻结间隔不补零](../../assets/diagrams/ch26/a286-18-lifecycle-constraint-and-unobserved-intervals.png)
 
 图：内存压力时拒绝大附件并缩缓冲；不能为了诊断压力马上制造大量分配和网络。
+
+---
 
 ### 9. 数据处理与上报策略
 
@@ -1030,7 +1021,7 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 
 Android 14–17 都可以用 `Debug.MemoryInfo` 采集同 UID 进程的低频内存快照，这条路径跨版本一致，没必要为 Android 17 单写一条内容相同的版本分支。采样记录至少包含系统日期时间（wall clock）、不受系统校时影响的单调时间 `elapsedRealtime`、进程启动序列、前后台状态和最近一次内存压力等级（trim level）。长时间没有样本，说明的只是进程没执行采样，原因可能是冻结、调度延迟、进程退出或任务被取消。
 
-`ComponentCallbacks2.onTrimMemory()` 是内存压力提示，每次回收或每次 compaction 都收到通知可指望不上。收到回调时记录 level 和业务状态，减少可回收缓存；运行时核心逻辑的决定权，留给明确的运行时状态而非高频 PSS 轮询。
+`ComponentCallbacks2.onTrimMemory()`应按版本和level解释。API34起，RUNNING_*、MODERATE、COMPLETE等若干旧内存压力等级不再通知，并在API35弃用；不能在Android14–17把最近一次旧trim level当作持续、实时压力信号。UI_HIDDEN等回调描述生命周期/可释放资源机会，也不证明每次回收或compaction发生。按实际收到的适用level和业务状态释放可重建缓存；运行策略依赖明确生命周期与可用公开信号，不靠高频PSS轮询推断系统事件。[已验证: https://developer.android.com/reference/android/content/ComponentCallbacks2]
 
 #### 11.2 Android 17 新字段与退出补偿
 

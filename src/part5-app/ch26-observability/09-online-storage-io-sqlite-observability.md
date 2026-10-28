@@ -4,9 +4,9 @@ chapter: '26.9'
 section: '26.9'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-30'
-last_source_verified_at: '2026-09-30'
-last_verified_against: Android 17 android-17.0.0_r1 SQLite and libcore sources; AndroidX SQLite 2.7.1 and Room 2.8.5 release notes; current Android SQLite performance, StrictMode, Room API, and SQLite EXPLAIN QUERY PLAN docs, retrieved 2026-09-30
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Android 17 android-17.0.0_r1 SQLite and libcore sources; AndroidX SQLite 2.7.1 and Room 2.8.5 release notes; current Android SQLite performance, StrictMode, Room API, and SQLite EXPLAIN QUERY PLAN docs, reviewed 2026-10-25; fixed Room 2.8.5 Android sources, instrumentation scope, clocks, AtomicFile and EQP boundaries also verified; documentation/source review only
 confidence: high
 sources:
 - type: clipping
@@ -90,11 +90,11 @@ AndroidX SQLite、Room 和 Matrix（腾讯开源的性能诊断工具集）是�
 | 业务文件损坏 | `file_validation_failure` | 格式版本、校验阶段、校验类型、文件类别、最近写入状态、恢复结果 | 区分下载不完整、写入中断、版本不兼容和内容损坏 |
 | 资源未关闭 | `resource_leak_signal` | 资源类型、创建调用点、进程 fd（file descriptor，文件描述符）数量、发现方式 | 定位 Cursor、stream、ParcelFileDescriptor 等生命周期问题 |
 
-两种时间要分开记。wall time 很长而当前线程 CPU time 很短，可能是调度、锁或 I/O 等待；两者都高，更像应用代码在计算。我们用这个对比选下一步排查方向；要认定内核 I/O 是原因，还要靠开发设备上的 trace。
+两种时间分开记：区间耗时用同一单调时钟，不用可校准的日历时间；并记录是否包含设备深睡。只有同步操作的首尾位于同一OS线程时，当前线程CPU时间差才可与该区间比较。DAO协程跨线程或把工作交给其他线程时，首尾当前线程CPU差不代表整个操作；应另采分线程运行片段或明确范围的进程CPU指标。在线程范围成立时，wall高而CPU低可能来自调度、锁或I/O等待，仍不能单独证明磁盘慢，需trace补证据。
 
 事件还要标清观测范围。围绕 DAO（data access object，数据访问对象） 方法计时，得到的是调用端到端时长，其中可能含协程调度和连接等待；在 driver 执行处计时，更接近 SQLite 操作本身；Native（本地 C/C++ 层） `read()`/`write()` Hook 看到的是系统调用，页缓存回写有一部分在它的视野之外。字段里只写 `duration` 的话，聚合端会把不同 scope 的数据混到一起。
 
-路径、SQL 和文件内容都可能带用户数据。默认只采集稳定类别、受控指纹（用于聚合同类对象）和应用调用点，受控指纹用来把同类对象聚合到一起；需要原始证据时走 26.3 的受限诊断流程，常规事件维持较低的敏感数据采集范围。
+路径、SQL 和文件内容都可能带用户数据。默认只采集稳定类别、用于聚合同类对象的受控指纹和应用调用点；需要原始证据时走 26.3 的受限诊断流程，常规事件维持较低的敏感数据采集范围。
 
 <!-- gracker-diagram: a294-01-measurement-clocks-and-thread-scopes -->
 ![同一耗时区间，先固定时钟与线程范围](../../assets/diagrams/ch26/a294-01-measurement-clocks-and-thread-scopes.png)
@@ -108,7 +108,7 @@ AndroidX SQLite、Room 和 Matrix（腾讯开源的性能诊断工具集）是�
 | 路径 | 能看到什么 | 看不到什么 | 建议使用范围 |
 |---|---|---|---|
 | 应用封装或库提供的回调 | 自有文件组件、Okio/FileSystem、缓存组件、导入导出任务 | 绕过封装的三方库和系统内部调用 | 生产环境长期采集的主路径 |
-| 编译期插桩（构建时在字节码中加入观测代码） | 自有字节码中的文件入口、DAO 调用、事务方法 | Native、反射调用、已编译三方库和系统内部 I/O | 可控模块的低采样观测；升级 Android Gradle Plugin（AGP）时做字节码回归 |
+| 编译期插桩（构建时在字节码中加入观测代码） | 被选中并实际转换的文件入口、DAO和事务字节码；应用变体用AGP InstrumentationScope.ALL还可含库依赖 | Native、系统内部I/O、未转换或运行时生成的代码；反射是否可见取决于目标方法/调用点是否被插桩 | PROJECT仅本项目；ALL含依赖但不适用于library项目；记录实际scope/排除项并回归AGP与打包 |
 | StrictMode / BlockGuard | 经 libcore（Android Java 核心库）OS 层上报的线程磁盘读写，以及未缓冲 I/O、SQLite/Closable 泄漏信号 | 三方 Native 代码直接调用 libc 的全部 I/O；精确字节数和设备耗时 | debug（调试版）、自动化测试、dogfood（团队内测）；生产仅在评估成本后受控开启 |
 | Native interposition（函数替换）/ Hook | 命中的 libc（C 运行库接口）或目标库 I/O 符号，可覆盖部分 Java 与 Native 路径 | 内联调用、直接 syscall（系统调用）、未命中符号、`mmap`（内存映射）后缺页、异步回写 | 只向少量用户启用的专项灰度；必须按 API、ABI（应用二进制接口）、加载顺序和目标库验证 |
 | Android Debug Bridge（adb）+ Perfetto | 调度状态、频率、应用 trace、database atrace（数据库追踪事件），以及设备允许的 ftrace（内核追踪框架）、block（块设备请求）和 filemap（文件页缓存）数据 | 没有启用或无权限的数据源；一次 trace 之外的长期分布 | 实验室复现和开发设备诊断 |
@@ -164,7 +164,7 @@ Native Hook 不在 Android 平台的兼容性保证范围内。就算某个版�
 - 路径、fd 生命周期和调用栈采集是否线程安全，卸载或失败时能否回到原函数。
 - 远程关闭、采样和崩溃隔离是否在 Hook 初始化前可用。
 
-Hook 覆盖不完整，数据照样有用，前提是事件带上 `collector` 和 `coverage（本次覆盖范围）_version`：靠这两个字段，才能把业务回归和采集器升级造成的数量变化区分开。
+Hook 覆盖不完整，数据照样有用，前提是事件带上 `collector` 和 `coverage_version`（本次覆盖范围的版本）：靠这两个字段，才能把业务回归和采集器升级造成的数量变化区分开。
 
 ## 不良 I/O 规则模板
 
@@ -211,7 +211,9 @@ SQLite 可观测性要把执行、事务、连接等待、错误和恢复分开�
 
 `RoomDatabase.QueryCallback#onQuery()` 在查询执行时提供 SQL 和可用的绑定参数。官方文档明确提示它有少量额外成本，应按需启用，避免在生产包中长期全量使用。回调本身没有开始时间和结束时间；在回调的 Executor 里计时，量到的只是处理这次回调所花的时间。
 
-这段代码只用来生成 SQL 指纹和参数类型，不保存参数值；实际工程还要限制队列长度，并对回调自身做采样。
+下面的lambda对当前fun interface有效，示例采用未配置SQLiteDriver的SupportSQLiteOpenHelper路径。固定Room2.8.5源码在配置SQLiteDriver后会拒绝QueryCallback，不能直接把该回调接到BundledSQLiteDriver；需要在自有driver/DAO封装上观测。拦截器会复制或缓存bind参数，并在调用delegate前派发协程：回调到达不表示SQL执行成功，也不保证早于SQL完成。只记录参数类型并不消除Room内部暂时持有原始SQL/参数的事实。
+
+示例依赖项目提供的normalizer、queryObserver和queryCallbackExecutor。生产实现应让归一化/记录失败止于诊断路径，记录丢弃原因；限制上游启用范围和派发积压并测量参数保留成本。仅在回调内采样，不能避免此前拦截、复制和派发成本。
 
 ```kotlin
 val callback = RoomDatabase.QueryCallback { sql, bindArgs ->
@@ -231,7 +233,7 @@ Room.databaseBuilder(context, AppDatabase::class.java, "main.db")
 
 图：fun interface允许lambda，但不能推导所有Room driver都有回调覆盖；仅回调采样也不免除上游成本。
 
-SQL 文本本身也可能通过字符串拼接带上账号、搜索词或 URL，光丢弃 `bindArgs` 还不够。`normalizer`（归一化器） 要先把 SQL 的等价写法归一、删掉敏感字面量，再算受控指纹。用 DAO 外围计时的话，字段名明确写成 `dao_end_to_end`，免得与 driver 执行耗时混在一起。
+SQL 文本本身也可能通过字符串拼接带上账号、搜索词或 URL，光丢弃 `bindArgs` 还不够。`normalizer`应使用与目标SQLite语法匹配的词法/解析器，先去除可能带数据的注释，并替换字符串、数值和BLOB字面量，再做受控归一化指纹；不能靠简单正则覆盖引号与转义。解析失败时只记unknown/错误类别，不回退上传原始SQL。用 DAO 外围计时的话，字段名明确写成 `dao_end_to_end`，免得与 driver 执行耗时混在一起。
 
 <!-- gracker-diagram: a294-07-sql-fingerprint-and-parser-failure -->
 ![SQL 指纹先去数据，再保留受控结构](../../assets/diagrams/ch26/a294-07-sql-fingerprint-and-parser-failure.png)
@@ -249,7 +251,7 @@ private static final long LONG_OPERATION_THRESHOLD_MS = 2_000;
 
 这段实现只服务于 framework 调试和 dump（诊断信息输出），普通 App 没有对应的采集接口。那个 2 秒是 framework 内部的“long operation”分类值，业务慢查询门槛要另行制定。源码还保存最近 10 条长操作，并对相关日志做限速；“20 条最近操作”“10 条长操作”和累计长操作数是三个不同的概念。
 
-[`SQLiteConnectionPool#getStatementCacheMissRate()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java#1248) 从各可用连接的 prepared statement cache（预编译语句缓存） 命中与未命中次数算出 miss rate（未命中率），也就是未命中率，但该方法带 `@hide`。[`SQLiteDatabaseConfiguration`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java#70) 里，每个 framework connection 的默认 cache size 是 25，公开的 `SQLiteDatabase#setMaxSqlCacheSize()` 允许上限 100。对应用来说，有两件事要避开：通过隐藏方法读取 miss rate，以及在缺少内存与命中率证据时把 cache 直接调到上限。
+[`SQLiteConnectionPool#getStatementCacheMissRate()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java#1248) 从各可用连接的 prepared statement cache（预编译语句缓存） 命中与未命中次数算出miss rate（未命中率），但该方法带 `@hide`。[`SQLiteDatabaseConfiguration`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java#70) 里，每个 framework connection 的默认 cache size 是 25，公开的 `SQLiteDatabase#setMaxSqlCacheSize()` 允许上限 100。对应用来说，有两件事要避开：通过隐藏方法读取 miss rate，以及在缺少内存与命中率证据时把 cache 直接调到上限。
 
 开发设备上用 `adb shell dumpsys meminfo <package>` 能看到 SQLite 的 cache hit、miss、cache size 和部分连接统计，Android 官方 SQLite 性能文档给出了这条命令的输出。Android 17 的 `POOL STATS cache size` 表示缓存中的预编译语句总数；较早版本的同名字段等于 hit 与 miss 之和，按缓存容量解读会读错。这条命令适合复现时观察，普通应用没有对应的免权限生产 API。
 
@@ -264,7 +266,7 @@ Android 17 仍提供 lookaside（小对象内存复用区）和空闲连接超�
 
 ### 查询计划的验证环境
 
-我们用这条 SQL 检查筛选与排序是否拿到合适的访问计划。占位符要在同一 schema（数据库结构定义）、有代表性数据量的副本上绑定。
+我们用这条 SQL 检查筛选与排序是否拿到合适的访问计划。占位符应在同一SQLite实现、同一schema且有代表性数据与统计信息的一致副本上绑定。使用引擎支持的备份/受控快照流程；WAL数据库不能只复制正在写入的.db而漏掉已提交的WAL内容。
 
 ```sql
 EXPLAIN QUERY PLAN
@@ -278,7 +280,7 @@ LIMIT 50;
 
 输出里的 `SCAN` 是扫描，`SEARCH ... USING INDEX` 是走索引，`USE TEMP B-TREE` 说明排序、分组或去重可能要建临时的 B-tree（平衡树结构）。这些计划节点只是线索：小表扫描可能合理，索引会增加写入和空间成本，复合索引的列顺序还要结合过滤、排序和选择性来判断。
 
-Android 官方建议用目标设备上的 `adb shell sqlite3`，因为不同 Android 版本带的 SQLite revision（源码修订版） 不一样。用 `BundledSQLiteDriver`（例如 `BundledSQLiteDriver`） 时，应用携带自己的 SQLite 实现，设备自带的 `sqlite3` 可能对应另一个实现；这时要在同一 driver、同一 schema 的测试工具里跑执行计划。
+Android 官方建议用目标设备上的 `adb shell sqlite3`，因为不同 Android 版本带的 SQLite revision（源码修订版） 不一样。用`BundledSQLiteDriver`时，应用携带自己的 SQLite 实现，设备自带的 `sqlite3` 可能对应另一个实现；这时要在同一 driver、同一 schema 的测试工具里跑执行计划。
 
 <!-- gracker-diagram: a294-09-eqp-consistency-and-versioned-analysis -->
 ![执行计划复现依赖一致副本与同一 SQLite 实现](../../assets/diagrams/ch26/a294-09-eqp-consistency-and-versioned-analysis.png)
@@ -289,7 +291,7 @@ Android 官方建议用目标设备上的 `adb shell sqlite3`，因为不同 And
 
 `busy`/`locked` 指向并发或锁状态，`full` 指向写入空间不足，`IOERR` 指向 I/O 路径，`CORRUPT`/`NOTADB` 才更接近数据库内容或格式问题。我们按错误码分类；只搜异常 message（消息文本） 里的 “corrupt”，容易把不同的错误并到一起。
 
-事件至少记录数据库别名、driver、库版本、异常类、driver 提供时的主/扩展错误码（driver 提供时）、事务状态、WAL/SHM 是否存在及大小、剩余空间、恢复动作和恢复结果；SHM 是 WAL 模式下供进程协调访问的共享内存文件。异常 message 也可能带 SQL 或路径，进日志前先脱敏。
+事件至少记录数据库别名、driver、库版本、异常类、driver可提供的主/扩展错误码、事务状态、WAL/SHM 是否存在及大小、剩余空间、恢复动作和恢复结果；SHM 是 WAL 模式下供进程协调访问的共享内存文件。异常 message 也可能带 SQL 或路径，进日志前先脱敏。
 
 完整 `PRAGMA integrity_check` 会读取大量页面，不适合在前台或每次启动执行。要验证时，放在维护窗口、数据库副本或用户明确发起的诊断流程里运行，并记录检查覆盖了哪些部分。恢复策略先分清三类数据：可再生缓存、可从服务器重建的数据、唯一用户数据；默认删除数据库的做法，会让“恢复成功”盖住数据丢失。
 
@@ -311,7 +313,7 @@ Android 官方建议用目标设备上的 `adb shell sqlite3`，因为不同 And
 
 上传前先做“目录树剪枝”，跳过不需要继续深入的分支，再配上受控样本，比上传完整路径更安全。每层保留聚合后的最大目录类别，其他节点归入 `other`；业务必须关联同一对象时，可以用服务端持有密钥的 keyed digest（带密钥摘要），并设置密钥轮换周期。对可枚举的短路径，普通 SHA-256 截断达不到可靠匿名化。
 
-业务文件的损坏检测要和写入协议一起设计。每种格式定义好 magic、版本、长度和校验范围；事件记录写入阶段、临时文件状态和恢复来源。应用私有的可替换文件可以用 `AtomicFile`，或者采用“先写临时文件，成功后以 rename 替换目标”的协议；数据库文件交给 SQLite 的事务与 journal/WAL 日志机制，我们不自行拼装，也不远程删除 `.db`、`-wal`、`-shm` 文件。
+业务文件的损坏检测要和写入协议一起设计。每种格式定义好 magic、版本、长度和校验范围；事件记录写入阶段、临时文件状态和恢复来源。应用私有可替换文件可按AtomicFile的startWrite/finishWrite/failWrite协议处理；finishWrite会关闭、sync并提交，但AtomicFile不提供线程或进程间锁，调用者须串行化访问。自行实现临时文件+rename时，rename只提供命名替换边界，不能单独承诺断电持久化；按需求处理写入/同步失败、文件fsync和父目录fsync，并验证目标文件系统。数据库交给SQLite事务与journal/WAL，不自行拼装或远程删除.db、-wal、-shm。
 
 远程清理是破坏性能力，要有固定 allowlist、规则版本、dry-run（只统计而不执行删除）、幂等执行（重复运行结果一致）和远程关闭这几道约束。未知文件、唯一用户数据、正在打开的数据库文件，以及现有规则识别不了的目录，都要排除在“疑似缓存”之外。
 
@@ -362,18 +364,18 @@ SQLiteLint 的 wiki 明确说明，其系统 SQLite 路径通过 Hook 向 C 层 
 
 接入评审至少要求：固定 Matrix revision（源码修订号）；列出支持的 API/ABI/driver；在目标构建工具中运行启动、查询、并发、进程退出和崩溃测试；验证关闭开关；对采集前后 CPU、内存、I/O 与崩溃率做对照。达不到这些条件时，可以复用规则思想，在应用封装或 Room/driver 回调上重新实现。
 
-自动分析 `EXPLAIN QUERY PLAN` 也要允许例外。小表的 `SCAN`、联接的外层扫描和一次性迁移未必需要索引；看到 `SEARCH`，我们仍要单独看结果集、排序和回表（按索引记录再查一次原表）的成本。规则输出应包含 schema 版本、表行数范围、计划文本和人工处置状态。
+自动分析 `EXPLAIN QUERY PLAN` 也要允许例外。小表的 `SCAN`、联接的外层扫描和一次性迁移未必需要索引；看到 `SEARCH`，我们仍要单独看结果集、排序和回表（按索引记录再查一次原表）的成本。EQP输出格式不是稳定的机器接口，SQLite官方明确警告其可能随版本改变；自动规则应固定SQLite版本、维护解析兼容性，未知格式输出unknown，不能当“无问题”。规则还应保留schema版本、表行数范围、计划文本和人工处置状态。
 
 ## 扩展：AndroidX SQLite/Room 新版本诊断能力
 
-截至 2026 年 9 月 30 日，AndroidX SQLite 稳定版是 2.7.1，Room 稳定版是 2.8.5。这两个版本号独立于 Android 17 / API 37：Room 主版本与系统版本、AndroidX SQLite 版本各自独立演进。这里讨论与存储可观测性直接相关的稳定版能力：Room 2.8.4 引入连接池 prepared statement cache，Room 2.8.5 仍在同一 2.8 稳定线上；SQLite 2.7.1 只表示 SQLite 库版本，别当成 Room 版本。
+截至2026年10月25日，AndroidX SQLite 稳定版是 2.7.1，Room 稳定版是 2.8.5。这两个版本号独立于 Android 17 / API 37：Room 主版本与系统版本、AndroidX SQLite 版本各自独立演进。这里讨论与存储可观测性直接相关的稳定版能力：Room 2.8.4 引入连接池 prepared statement cache，Room 2.8.5 仍在同一 2.8 稳定线上；SQLite 2.7.1 只表示 SQLite 库版本，别当成 Room 版本。
 
 与观测直接相关的变化包括：
 
 - AndroidX SQLite 2.6.2 为 `BundledSQLiteDriver` 创建的连接启用 extended error codes（扩展错误码），并用 `@FastNative` 降低部分 JNI（Java 与本地代码调用接口） 成本。
 - AndroidX SQLite 2.7.1 是当前稳定版，修复了 web 和 suspending drivers 在事务中取消协程后、数据库和连接可能就此不可用的问题。Android App 是否升级，按发布说明、目标平台和回归测试决定；版本更新本身不构成替换生产环境 driver 的理由。
 - Room 2.8.4 为 Room 连接池增加 prepared statement cache，适用于 `SQLiteDriver` 内部没有连接池的场景，例如 `BundledSQLiteDriver`；Room 2.8.5 调整了数据库关闭后的挂起查询和 invalidation tracker（失效追踪器）操作，数据库关闭后这类操作会抛出 `IllegalStateException`。Room 的连接池 cache 与 Android 17 framework connection 自带的 cache 分属两层。
-- `RoomDatabase.QueryCallback` 仍会为每条执行的查询触发回调，官方继续提示它的运行成本；开启前我们先按实际查询量测一遍。
+- Room2.8.5的QueryCallback用于SupportSQLiteOpenHelper路径，不能与已配置的SQLiteDriver组合；它通知SQL调用，不提供成功状态或执行区间。官方仍提示成本，启用前应核对版本、覆盖、派发积压与参数保留。
 
 线上事件建议保留 `room_version`、`androidx_sqlite_version`、driver 类型、SQLite 是否随应用打包、journal mode（日志模式） 和 schema version（数据库结构版本）。从系统 `AndroidSQLiteDriver` 换到 `BundledSQLiteDriver` 或其他实现后，性能基线和错误码能力都可能变化，时间序列上应标记切换点。
 

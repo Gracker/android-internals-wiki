@@ -3,9 +3,9 @@ title: Perfetto 指标自动化与分析平台
 chapter: '14.4'
 section: '14.4'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-22'
+last_verified: '2026-10-25'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1 (Perfetto ece66975738007dd0978b911d8a2077e49b8f31e); Perfetto Trace Processor v57.2-da1d152cf; android17-6.18-2026-06_r6; perfetto.dev (2026-10-22)
-last_source_verified_at: '2026-10-22'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-22'
 confidence: medium
 sources:
@@ -46,15 +46,15 @@ sources:
 - type: github
   path: https://github.com/Gracker/SmartPerfetto
 - type: internal
-  path: src/part3-tools/ch14-perfetto/09-perfetto-sql-cookbook.md
+  path: src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md
 - type: internal
-  path: src/part3-tools/ch14-perfetto/15-agent-perfetto-analysis-protocol.md
+  path: src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md
 - type: internal
-  path: src/part3-tools/ch14-perfetto/16-perfetto-sdk-in-app-tracing.md
+  path: src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md
 - type: internal
-  path: src/part5-app/ch26-observability/03-performance-collection.md
+  path: src/part5-app/ch26-observability/01-app-observability-performance-collection.md
 - type: internal
-  path: src/part5-app/ch26-observability/06-ab-testing-regression.md
+  path: src/part5-app/ch26-observability/04-ab-testing-regression.md
 tags:
   - perfetto
   - smartperfetto
@@ -131,6 +131,7 @@ v1 指标要求每个团队维护独立的输出 protobuf（消息类型由 `.pr
 ```textproto
 metric_spec {
   id: "memory_per_process"
+  dimensions: "upid"
   dimensions: "process_name"
   value: "avg_rss_and_swap"
   unit: BYTES
@@ -140,6 +141,7 @@ metric_spec {
     }
     referenced_modules: "linux.memory.process"
     group_by {
+      column_names: "upid"
       column_names: "process_name"
       aggregates {
         column_name: "rss_and_swap"
@@ -157,6 +159,8 @@ metric_spec {
 ![持续时间加权与普通样本平均的区别](../../assets/diagrams/ch14/ch14-04-02-weighted-intervals.png)
 
 图：以区间持续时间作为权重，计算 Σ(value × dur) / Σ(dur)。 9∶1 是正文的教学例子；缺失区间与 NULL 的覆盖另行检查。
+
+规格同时按 `upid` 和名称分组，避免同名进程、重启或 PID 复用被合并；`upid` 只在当前 Trace 内有效，跨 Trace 要另行对齐业务身份。这里求的是模块中可用内存区间的 `Σ(value × dur) / Σ(dur)`，没有限定某个业务窗口，也不等于缺失采样区间已被测量。固定 Android 17 模块中 anon/file RSS 缺失会传播为 NULL，shmem/swap 则按模块约定可补零；上线前应另外检查覆盖时间与数据源，不能把所有缺项都补成零。
 
 这份规格可以用子命令接口执行：
 
@@ -178,11 +182,12 @@ trace_processor summarize \
 
 ```python
 from pathlib import Path
-from perfetto.trace_processor import TraceProcessor
+from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
+config = TraceProcessorConfig(bin_path="tools/perfetto/trace_processor")
 spec_text = Path("spec.textproto").read_text(encoding="utf-8")
 
-with TraceProcessor(trace="trace.perfetto-trace") as tp:
+with TraceProcessor(trace="trace.perfetto-trace", config=config) as tp:
     summary = tp.trace_summary(
         specs=[spec_text],
         metric_ids=["memory_per_process"],
@@ -219,6 +224,7 @@ message ProcessCpuInfo {
   optional string process_name = 1;
   optional int64 cpu_time_ms = 2;
   optional uint32 scheduled_thread_count = 3;
+  optional int64 upid = 4;
 }
 
 message TopFiveProcesses {
@@ -242,6 +248,7 @@ extend TraceMetrics {
 ```sql
 CREATE PERFETTO VIEW top_five_processes_by_cpu AS
 SELECT
+  p.upid,
   p.name AS process_name,
   CAST(SUM(s.dur) / 1e6 AS INT64) AS cpu_time_ms,
   COUNT(DISTINCT t.utid) AS scheduled_thread_count
@@ -251,7 +258,7 @@ JOIN process AS p USING (upid)
 WHERE s.dur > 0
   AND t.is_idle = 0
 GROUP BY p.upid, p.name
-ORDER BY cpu_time_ms DESC
+ORDER BY SUM(s.dur) DESC, p.upid
 LIMIT 5;
 
 CREATE PERFETTO VIEW top_five_processes_output AS
@@ -260,6 +267,7 @@ SELECT TopFiveProcesses(
   (
     SELECT RepeatedField(
       ProcessCpuInfo(
+        'upid', upid,
         'process_name', process_name,
         'cpu_time_ms', cpu_time_ms,
         'scheduled_thread_count', scheduled_thread_count
@@ -272,7 +280,12 @@ SELECT TopFiveProcesses(
 
 `upid` 是 Perfetto 在当前 Trace 内分配的进程唯一标识。按 `upid` 分组，可以避开系统进程号 PID 复用和同名进程合并的问题。`thread.is_idle` 标识内核空闲任务（Linux 上 PID 为 0），示例用 `t.is_idle = 0` 将它排除，避免把 CPU 空闲时间列入进程 CPU 消耗榜。
 
-`scheduled_thread_count` 统计的是 Trace 中出现过已完成 `sched` 时间片的非空闲线程，进程创建过的全部线程要另行统计；`top_five_processes_output` 必须采用 `{TraceMetrics 扩展字段名}_output` 的形式，Trace Processor 靠这个命名约定找到根消息。
+榜单按原始纳秒总量排序，`cpu_time_ms` 只在展示时截为整数毫秒；多核上并行运行的 CPU 时间会相加，可能大于 Trace 的墙钟时长。`scheduled_thread_count` 统计的是 Trace 中出现过正时长、已闭合 `sched` 时间片的非空闲线程，进程创建过的全部线程要另行统计；`top_five_processes_output` 必须采用 `{TraceMetrics 扩展字段名}_output` 的形式，Trace Processor 靠这个命名约定找到根消息。
+
+<!-- gracker-diagram: ch14-04-05-cpu-ranking -->
+![CPU 榜单保留实例与排序精度](../../assets/diagrams/ch14/ch14-04-05-cpu-ranking.png)
+
+图：闭合调度时间按实例求和，用原始精度排序，再输出展示值。 多核 CPU 时间可以相加超过墙钟；调度线程数不是进程全部线程数。
 
 工具提供两套等价命令，新子命令的参数更容易发现：
 
@@ -287,19 +300,14 @@ trace_processor metrics \
 
 `--dev` 开启的是可能随时变化的本地开发功能，生产流水线默认不要打开。升级主机工具时，先在固定测试 Trace 上对比新旧输出，再更新锁定版本。
 
-<!-- gracker-diagram: ch14-04-05-cpu-ranking -->
-![CPU 榜单保留实例与排序精度](../../assets/diagrams/ch14/ch14-04-05-cpu-ranking.png)
-
-图：闭合调度时间按实例求和，用原始精度排序，再输出展示值。 多核 CPU 时间可以相加超过墙钟；调度线程数不是进程全部线程数。
-
 #### 指标空结果与采集条件
 
-SQL 返回空表时，我们先从采集条件查起：空表说明这次没有拿到足够的数据，测得零是另一回事。常见原因包括：
+查询成功但返回空表，表示没有匹配记录；它可能源于场景未发生，也可能源于采集或过滤条件。测得零、SQL NULL、空表和执行失败应分开处理。常见检查项包括：
 
 - 采集配置没有启用指标所依赖的数据源；
 - 轨迹在目标事件发生前结束；
 - 目标进程未被 `atrace_apps` 允许；
-- 工具版本缺少规格引用的标准库模块；
+- 工具版本缺少规格引用的标准库模块，这通常导致执行失败，应保留错误；
 - 数据质量表已经记录丢包、截断或时钟问题；
 - 进程名、包名或启动模式与查询条件不一致。
 
@@ -327,7 +335,7 @@ RETURNS TableOrSubquery AS
 (
   SELECT ts, dur, name, track_id
   FROM $input
-  WHERE dur >= $min_dur
+  WHERE dur >= 0 AND dur >= $min_dur
 );
 
 SELECT ts, dur, name
@@ -368,8 +376,8 @@ Perfetto UI 的宏是命名后的稳定命令序列。当前配置入口为 `Set
       {
         "id": "dev.perfetto.AddDebugSliceTrackWithPivot",
         "args": [
-          "SELECT s.ts, s.dur, s.name, COALESCE(p.name, '[unnamed]') AS process_name FROM slice AS s JOIN thread_track AS tt ON s.track_id = tt.id JOIN thread AS t USING (utid) JOIN process AS p USING (upid) WHERE t.tid = p.pid AND s.dur >= 8000000",
-          "process_name",
+          "SELECT s.ts, s.dur, s.name, printf('%s [upid=%d]', COALESCE(p.name, '[unnamed]'), p.upid) AS process_key FROM slice AS s JOIN thread_track AS tt ON s.track_id = tt.id JOIN thread AS t USING (utid) JOIN process AS p USING (upid) WHERE t.tid = p.pid AND s.dur >= 8000000",
+          "process_key",
           "Long main-thread slices"
         ]
       }
@@ -378,16 +386,16 @@ Perfetto UI 的宏是命名后的稳定命令序列。当前配置入口为 `Set
 ]
 ```
 
-`AddDebugSliceTrackWithPivot` 要求查询返回 `ts`、`dur`、`name` 和分组列。Pivot 表示按某列的不同取值拆成多条调试轨道；示例用 `process_name` 按进程分组。一条命令失败，宏里后续命令仍会继续执行，所以共享前我们要用团队的代表性 Trace 把每一步都检查一遍。命令 ID 还要出现在 Perfetto 的稳定自动化参考中，避免依赖插件私有命令。
-
-宏可以保存在本地设置中。个人使用时，把 JSON 存入仓库并提供安装说明即可；固定录制流程还可以用 `record_android_trace --ui-startup-commands`、带参数的深链接或浏览器窗口消息接口 `postMessage` 注入允许的启动命令。
-
-多人共享更适合使用 Perfetto 扩展服务器。当前接口能分发宏、SQL 模块和 protobuf descriptor（描述字段结构的类型信息），既支持 GitHub 仓库，也支持带认证的 HTTPS 端点。服务器要声明反向域名命名空间，例如 `com.example.perfetto`；宏 ID 和 SQL 模块名必须以该命名空间开头，避免不同服务器重名。扩展加载失败时 UI 照样能打开 Trace，所以团队仍要把服务端清单、源码和已发布版本纳入版本控制，分析结果要能对应到固定的提交。
+`AddDebugSliceTrackWithPivot` 要求查询返回 `ts`、`dur`、`name` 和分组列。Pivot 表示按某列的不同取值拆成多条调试轨道；示例用包含 `upid` 的 `process_key` 区分当前 Trace 内的进程实例。固定 Android 17 UI 的 `registerMacro()` 逐条 `await runCommand()`，没有逐条捕获异常：命令抛错或返回 rejected Promise 时，当前宏会中断；若命令内部自行处理错误并正常返回，才会继续。因此共享前要用代表性 Trace 检查每一步及失败路径。命令 ID 还要出现在 Perfetto 的稳定自动化参考中，避免依赖插件私有命令。
 
 <!-- gracker-diagram: ch14-04-08-ui-command-sequence -->
 ![UI 宏逐条等待执行并传播异常](../../assets/diagrams/ch14/ch14-04-08-ui-command-sequence.png)
 
 图：折叠、固定和创建调试轨道按顺序执行，分组键保留实例身份。 固定 Android 17 的宏遇抛错或 rejected Promise 会中断；内部吞错另论。
+
+宏可以保存在本地设置中。个人使用时，把 JSON 存入仓库并提供安装说明即可；固定录制流程还可以用 `record_android_trace --ui-startup-commands`、带参数的深链接或浏览器窗口消息接口 `postMessage` 注入允许的启动命令。
+
+多人共享更适合使用 Perfetto 扩展服务器。当前接口能分发宏、SQL 模块和 protobuf descriptor（描述字段结构的类型信息），既支持 GitHub 仓库，也支持带认证的 HTTPS 端点。服务器要声明反向域名命名空间，例如 `com.example.perfetto`；宏 ID 和 SQL 模块名必须以该命名空间开头，避免不同服务器重名。扩展加载失败时 UI 照样能打开 Trace，所以团队仍要把服务端清单、源码和已发布版本纳入版本控制，分析结果要能对应到固定的提交。
 
 #### 单轨迹仪表板与跨轨迹仪表板
 
@@ -413,9 +421,14 @@ Perfetto UI 擅长对一份轨迹做交互诊断。工作区、查询页和调�
 
 #### 固定二进制与工具版本记录
 
-Python 侧的入口是 `pip`：`pip install perfetto` 会安装 Perfetto Python 客户端。客户端可以下载与包版本匹配的 Trace Processor，也允许显式指定二进制。CI（持续集成） 更适合固定 Python 依赖和二进制摘要；摘要就是用来确认文件内容未变的哈希值，应与版本一起写入报告。
+Python 侧的入口是 `pip`：`pip install perfetto` 会安装 Perfetto Python 客户端。客户端默认按包内 prebuilt manifest 下载固定的 Trace Processor，也允许显式指定二进制；Python 包版本号与原生二进制版本号不保证相同。例如本次复核的 `perfetto==0.57.2` 包内清单固定的是原生 v56.1，不能据此声称实际运行 v57.2。本文示例的 `tools/perfetto/trace_processor` 应放置并验证所选 v57.2 二进制；Pandas 示例还需安装 `pandas`。CI（持续集成） 更适合固定 Python 依赖和二进制摘要；摘要就是用来确认文件内容未变的哈希值，应与版本一起写入报告。
 
-下面的示例使用指定二进制查询最长的用户态时间片：
+<!-- gracker-diagram: ch14-04-10-python-native-pinning -->
+![Python 包与原生工具分别锁定](../../assets/diagrams/ch14/ch14-04-10-python-native-pinning.png)
+
+图：显式选择原生二进制，并把实际版本与摘要写入报告。 perfetto 0.57.2 的包内清单固定 v56.1；包号不能证明运行的是 v57.2。
+
+下面的示例使用指定二进制查询 `slice` 表中最长的正时长事件：
 
 ```python
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
@@ -441,24 +454,26 @@ with TraceProcessor(
 
 `with` 上下文管理器会在代码块结束时关闭 Trace Processor 子进程。`as_pandas_dataframe()` 把结果复制成 Pandas DataFrame（带列名的内存表格），适合后续统计；只需逐行处理少量结果时，直接遍历查询结果能少保留一份表格数据。
 
-<!-- gracker-diagram: ch14-04-10-python-native-pinning -->
-![Python 包与原生工具分别锁定](../../assets/diagrams/ch14/ch14-04-10-python-native-pinning.png)
-
-图：显式选择原生二进制，并把实际版本与摘要写入报告。 perfetto 0.57.2 的包内清单固定 v56.1；包号不能证明运行的是 v57.2。
-
 #### 批量查询
 
 `BatchTraceProcessor` 为每份 Trace 启动独立实例，并行执行同一查询：`query()` 返回每份 Trace 各自的数据表，`query_and_flatten()` 把这些表纵向合并，再由 resolver（把 URI 或路径解析成数据来源的组件） 组件补上来源列。
 
-下面的代码统计每份轨迹中的用户态时间片数量和总时长：
+下面的代码统计每份轨迹中 `slice` 行数及正时长切片的累计时长。`slice` 可包含线程、设备、IRQ、GPU 等轨道，嵌套和并行区间会重复覆盖同一墙钟时间；这里的累加值用于检查数据规模，不能当作 CPU 消耗、互斥业务耗时或 Trace 时长：
 
 ```python
 from glob import glob
-from perfetto.batch_trace_processor.api import BatchTraceProcessor
+from perfetto.trace_processor import TraceProcessorConfig
+from perfetto.batch_trace_processor.api import (
+    BatchTraceProcessor, BatchTraceProcessorConfig,
+)
 
 trace_paths = sorted(glob("traces/*.perfetto-trace"))
 
-with BatchTraceProcessor(trace_paths) as batch:
+config = BatchTraceProcessorConfig(
+    tp_config=TraceProcessorConfig(bin_path="tools/perfetto/trace_processor"),
+)
+
+with BatchTraceProcessor(trace_paths, config=config) as batch:
     summary = batch.query_and_flatten("""
         SELECT
           COUNT(*) AS slice_count,
@@ -473,21 +488,21 @@ with BatchTraceProcessor(trace_paths) as batch:
 
 图：slice 是通用事件视图，嵌套与并行会重复覆盖相同墙钟。 图中条长只示意包含关系；SUM(dur) 不自动得到业务独占耗时。
 
-来源列的名称取决于所用 Trace 地址 resolver，读取结果的代码要先确认实际列名，再决定怎么引用 `source` 这类名字。每份 Trace 解析后的数据都驻留内存，并发数要按 Trace 内容和机器内存实测，压缩文件大小只能作为参考。官方文档给出的 `2 × 平均文件大小 × Trace 数量` 适合粗略起步，数据类型和压缩率会让实际占用明显偏离。
-
-批量规模超过单机资源后，可评估 Bigtrace。它是分布式 Trace Processor 服务，用 Kubernetes（容器集群编排系统） 调度多个工作进程，适合已经具备对象存储和集群运维能力的团队。单纯为了几十份 Trace 引入 Bigtrace，运维成本通常高于收益。
+来源列的名称取决于所用 Trace 地址 resolver，读取结果的代码要先确认实际列名，再决定怎么引用 `source` 这类名字。`BatchTraceProcessor` 会加载并保留本批所有 Trace 实例；限制加载或查询 worker 数量不等于限制驻留实例数。内存不足时应先拆分输入批次，完成一批并关闭实例后再处理下一批。单批规模与并发数要按 Trace 内容和机器内存实测，压缩文件大小只能作为参考。官方文档给出的 `2 × 平均文件大小 × Trace 数量` 适合粗略起步，数据类型和压缩率会让实际占用明显偏离。
 
 <!-- gracker-diagram: ch14-04-12-batch-memory -->
 ![批处理实例与结果合并的生命周期](../../assets/diagrams/ch14/ch14-04-12-batch-memory.png)
 
 图：每份 Trace 各有一个驻留实例，结果表再纵向合并。 worker 限额不限制驻留实例总数；内存不足需拆分输入批次。
 
+批量规模超过单机资源后，可评估 Bigtrace。它是分布式 Trace Processor 服务，用 Kubernetes（容器集群编排系统） 调度多个工作进程，适合已经具备对象存储和集群运维能力的团队。单纯为了几十份 Trace 引入 Bigtrace，运维成本通常高于收益。
+
 #### 远程 Trace Processor 服务
 
 v57.2 与 Android 17 标签都已提供服务子命令。下面的命令在本机 9001 端口启动原生 Trace Processor，开放 RPC（Remote Procedure Call，远程过程调用） 接口供 Perfetto UI 探测：
 
 ```bash
-trace_processor server http trace.perfetto-trace
+trace_processor server http --ip-address 127.0.0.1 --port 9001 trace.perfetto-trace
 ```
 
 旧写法 `trace_processor --httpd trace.perfetto-trace` 在 v57.2 中仍完整支持。原生进程绕开浏览器 WebAssembly（浏览器内的沙箱二进制执行环境） 的内存限制，但 Trace 解析后的内存仍可能显著大于文件大小。
@@ -544,12 +559,13 @@ Gradle（Android 项目常用的构建系统） 会把 Benchmark JSON 和每次�
 
 “变慢 10%”或“p 值小于 0.05”这类通用数字，我们要先问它在自己的设备上是否成立。p 值来自假设检验，只有结合实验设计、样本数和预先选择的检验方法才有意义。做法是在固定设备和固定构建条件下反复运行未改代码，测出设备与场景自身的自然波动，再为每个场景制定阈值和复测策略。
 
-下面的脚本读取 Macrobenchmark 官方 JSON 结构，先检查当前报告和基线是否来自同一系统指纹（精确标识系统构建的 build fingerprint），再比较指定指标的中位数。这里的基线指已批准、用于比较的历史结果，中位数是样本排序后的中间值。阈值由调用者从版本库中的场景策略传入。
+下面的脚本只读取 Macrobenchmark JSON 中 `metrics.<指标>.runs` 的每次迭代标量，例如非负、越低越好的启动耗时；帧采样等 `sampledMetrics.<指标>.runs` 是嵌套数组，需要单独的聚合与实验单位设计。脚本先检查当前报告和基线的机型与系统指纹，再比较指定标量指标的中位数。这里的基线指已批准、用于比较的历史结果，中位数是样本排序后的中间值。阈值由调用者从版本库中的场景策略传入。
 
 ```python
 #!/usr/bin/env python3
 import argparse
 import json
+import math
 import statistics
 import sys
 from pathlib import Path
@@ -568,9 +584,16 @@ def load_report(path, benchmark_name, metric_name):
         )
 
     metric = matches[0]["metrics"][metric_name]
-    runs = [float(value) for value in metric["runs"]]
-    if not runs:
-        raise ValueError(f"{path}: metric {metric_name!r} has no samples")
+    values = metric["runs"]
+    if not isinstance(values, list) or not values:
+        raise ValueError(f"{path}: expected nonempty scalar runs")
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        or not math.isfinite(value) or value < 0
+        for value in values
+    ):
+        raise ValueError(f"{path}: samples must be finite nonnegative numbers")
+    runs = [float(value) for value in values]
     return report["context"], runs
 
 
@@ -582,6 +605,8 @@ def main():
     parser.add_argument("--metric", required=True)
     parser.add_argument("--max-regression-ratio", required=True, type=float)
     args = parser.parse_args()
+    if not math.isfinite(args.max_regression_ratio) or args.max_regression_ratio < 0:
+        raise ValueError("threshold must be finite and nonnegative")
 
     current_context, current_runs = load_report(
         args.current, args.benchmark, args.metric
@@ -598,7 +623,11 @@ def main():
 
     current_median = statistics.median(current_runs)
     baseline_median = statistics.median(baseline_runs)
+    if baseline_median <= 0:
+        raise ValueError("baseline median must be positive")
     ratio = current_median / baseline_median - 1.0
+    if not math.isfinite(ratio):
+        raise ValueError("regression ratio is not finite")
 
     print(
         json.dumps(
@@ -612,6 +641,7 @@ def main():
                 "baseline_sample_count": len(baseline_runs),
             },
             ensure_ascii=False,
+            allow_nan=False,
             indent=2,
         )
     )
@@ -622,7 +652,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-脚本自身不内置百分比，只拒绝完全没有样本的报告，业务要求的最小样本数要由正式流水线另行校验。比值计算适用于“数值越低越好”且基线中位数大于零的指标；基线为零、可能为负或方向相反的指标要改用对应规则。首次超过阈值后，应在同一设备复测，并把两轮报告与 Trace 一起交给评审，场景参数、编译模式和样本数的校验也放在正式流水线里。
+脚本不内置阈值，拒绝空样本、非数值/非有限/负样本、非法阈值与零基线中位数；无效输入以非零状态失败，超过阈值返回 2，通过返回 0。业务要求的最小样本数要由正式流水线另行校验。比值计算适用于“数值越低越好”且基线中位数大于零的指标；基线为零、可能为负或方向相反的指标要改用对应规则。首次超过阈值后，应在同一设备复测，并把两轮报告与 Trace 一起交给评审，场景参数、编译模式和样本数的校验也放在正式流水线里。
 
 <!-- gracker-diagram: ch14-04-15-finite-gate -->
 ![标量门禁先验证输入，再比较中位数](../../assets/diagrams/ch14/ch14-04-15-finite-gate.png)
@@ -796,18 +826,18 @@ void RenderFrame() {
 }
 ```
 
-`kSystemBackend` 连接系统中的 Perfetto 追踪服务 `traced`，采集会话由外部 Perfetto 客户端控制。该模式适合能控制设备和部署的本地调试或实验室环境。`kInProcessBackend`（进程内后端） 只生成当前进程自己的 Trace，不会自行带上系统调度数据；两种后端可以同时注册，但采集权限和输出读取规则不同。
+`kSystemBackend` 连接系统中的 Perfetto 追踪服务 `traced`，采集会话由外部 Perfetto 客户端控制。`Initialize()` 与 `Register()` 只注册能力，外部会话还需启用 `track_event` 数据源并允许相应 category；前面的 `linux.ftrace/atrace_apps` 配置只针对平台 ATrace，不能代替 TrackEvent 配置。该模式适合能控制设备和部署的本地调试或实验室环境。`kInProcessBackend`（进程内后端） 还需在本进程创建、配置并启动 tracing session，所得 Trace 只包含本进程数据，不会自行带上系统调度；两种后端可以同时注册，各自会话不会因此自动合成同一输出。
+
+<!-- gracker-diagram: ch14-04-21-sdk-backends -->
+![ATrace、system SDK 与进程内 SDK 的会话边界](../../assets/diagrams/ch14/ch14-04-21-sdk-backends.png)
+
+图：事件接口、数据源和会话控制者要成套匹配。 SDK 注册本身不会开始采集；两个后端也不会自动合并输出。
 
 TrackEvent 已支持时间片、计数器、Flow（事件之间的因果连线） 和调试注解（附加的键值信息）。Android 17 所带 Perfetto 还支持 TrackEvent protobuf descriptor；需要强类型业务字段时，可以把字段类型描述嵌入 Trace，让 Trace Processor 自动把数据解码到 `args` 表。
 
 自定义 `perfetto::DataSource<T>` 的门槛更高。它能写自定义数据包，但 Trace Processor 也要具备对应导入逻辑。
 
 只定义一个独立 `.proto`，指望代码生成器产生的 setter（字段写入方法） 自动进入上游 `TracePacket`，这条路走不通；`TracePacket` 是 Perfetto Trace 的顶层数据包容器，缺少平台 protobuf 扩展、descriptor 或自定义导入器，这类代码就形成不了可查询的结构化数据。
-
-<!-- gracker-diagram: ch14-04-21-sdk-backends -->
-![ATrace、system SDK 与进程内 SDK 的会话边界](../../assets/diagrams/ch14/ch14-04-21-sdk-backends.png)
-
-图：事件接口、数据源和会话控制者要成套匹配。 SDK 注册本身不会开始采集；两个后端也不会自动合并输出。
 
 <!-- gracker-diagram: ch14-04-22-typed-import -->
 ![结构化业务字段需要可识别的导入路径](../../assets/diagrams/ch14/ch14-04-22-typed-import.png)
@@ -889,11 +919,11 @@ perfetto-analysis/
 
 知识库的评审重点应放在语义变化。格式调整可以自动化；指标定义、时间窗口、连接键（JOIN 的匹配字段）、阈值和采集依赖的变化，必须由熟悉该领域的工程师确认。
 
-
 <!-- gracker-diagram: ch14-04-24-golden-knowledge -->
 ![查询知识库随工具与语义一起回归](../../assets/diagrams/ch14/ch14-04-24-golden-knowledge.png)
 
 图：把查询、规格、宏、策略和固定测试 Trace 作为版本化资产。 窗口、JOIN、单位和阈值变化属于语义变更，需要领域复核。
+
 
 ## 分析平台的任务、证据与版本治理
 
@@ -901,7 +931,7 @@ perfetto-analysis/
 
 这个要求来自很现实的处境：一条 Perfetto trace 可以回答很多问题，但换一位分析者、隔一周再查，或者升级一次工具，同一个问题的过滤条件、单位和计算方法都可能变了。SmartPerfetto 用一条统一流程连接 Perfetto UI、`trace_processor_shell`、YAML Skill、场景策略、模型运行时、证据字段和报告存储：SQL 可以重跑，结论可以回查，多次分析可以按同一组指标比较。
 
-下文涉及字段、阈值、runtime（调用模型和工具的执行适配层） 选择和企业迁移的实现细节，固定在 SmartPerfetto v1.3.0、提交 `24eba544cebf231524294aa50def33ee0e267c9e`，该版本固定使用 Perfetto v57.2 的 host 侧 `trace_processor_shell`。截至 2026-08-13，最新公开版本已经是 v1.5.4、提交 `0ea90aec784ca865d9f952502f87b86dc688bbe5`；v1.4～v1.5 的新增行为，不会自动套用到这份 v1.3.0 快照上。
+下文涉及字段、阈值、runtime（调用模型和工具的执行适配层） 选择和企业迁移的实现细节，固定在 SmartPerfetto v1.3.0、提交 `24eba544cebf231524294aa50def33ee0e267c9e`，该版本固定使用 Perfetto v57.2 的 host 侧 `trace_processor_shell`。截至 2026-10-25 查询公开 release，最新版本为 v1.16.2（2026-10-14 发布）；本文仍只解释上述 v1.3.0 快照，新版本的新增或修复行为需另读对应版本源码。
 
 Android 版本与 host 工具版本是两条独立的版本线，要分开对待：Android 版本决定设备能采到哪些数据源，host 侧 Perfetto 版本决定 trace 解析器、SQL schema 和 stdlib（PerfettoSQL 标准库）能力。用 v57.2 分析 Android 10～17 的 trace，设备端未必也在运行 v57.2。
 
@@ -942,18 +972,18 @@ SmartPerfetto 处理的是单条和少量 trace，线上性能平台另有分工
 | `full` | 完整工具、必须完成的计划与质量检查、notes 和 artifact | 因果链较长或需要逐层排除的问题 |
 | `auto` | 由硬规则和轻量分类器决定；无法可靠分类时走 `full` | 日常入口 |
 
-引用 reference（对照 trace） trace（对照 trace）、已注册源码或私有知识源时，后端会把 `fast` / `auto` 解析为 `full`，以便调用这些材料所需的工具。
+引用 reference trace（对照轨迹）、已注册源码或私有知识源时，后端会把 `fast` / `auto` 解析为 `full`，以便调用这些材料所需的工具。
+
+<!-- gracker-diagram: ch14-04-27-analysis-modes -->
+![分析模式决定工具与预算，场景另行选择](../../assets/diagrams/ch14/ch14-04-27-analysis-modes.png)
+
+图：fast、full 与 auto 选择运行深度，私有来源或对照轨迹需要完整工具。 Smart Profile 的 preview 选择场景，不等同于 fast / full 模式。
 
 Smart Profile 负责选择分析场景：preview 阶段先识别可分析的时间段，用户选中启动、滑动、点击、导航、设备状态或 ANR 后，系统再创建对应的深度分析 run（一次分析执行）。Smart Profile 决定“分析哪段场景”，`fast` / `full` 决定“投入多少工具和运行时间”，两者是不同设置。
 
 模型并不直接读取整份 trace 字节。后端先通过 `trace_processor_shell`、SQL 和 Skill 取数，再把结构化结果、经过行列截断的表格片段、选区上下文及允许使用的报告片段交给 runtime；这样既限制了模型上下文大小，也让诊断先经过查询接口。数据外发的风险仍然存在：工具结果可能包含进程名、线程名、slice 文本或业务标识，使用外部 provider 前要评估脱敏与合规要求。
 
 复核时要记录 Result ID（一次分析结果的标识）、`evidenceRefId`（证据引用标识）、表格行列、查询限制和 runtime 身份。只反馈“回答不对”不足以定位缺陷；这些字段能帮维护者区分 SQL 条件或单位错误、Skill 兼容问题、trace 数据源缺失、模型推断过度，以及报告展示错误。
-
-<!-- gracker-diagram: ch14-04-27-analysis-modes -->
-![分析模式决定工具与预算，场景另行选择](../../assets/diagrams/ch14/ch14-04-27-analysis-modes.png)
-
-图：fast、full 与 auto 选择运行深度，私有来源或对照轨迹需要完整工具。 Smart Profile 的 preview 选择场景，不等同于 fast / full 模式。
 
 ### YAML Skill 与场景策略的分层设计
 
@@ -1029,23 +1059,23 @@ SmartPerfetto 支持两类对比。raw reference trace 对比要求当前会话�
 - CPU：主线程 Running/Runnable、大核占比、平均频率；
 - 环境：trace 时长、设备型号、Android 版本和抓取配置摘要。
 
-标准回填的范围更窄，只包含 `startup.total_ms`、`scrolling.avg_fps`、`scrolling.frame_count`、`scrolling.jank_count` 和 `scrolling.jank_rate_pct`。TTFD（Time to Full Display，完全显示耗时）、PSS（按共享比例分摊的内存）、Java/Native Heap、DMA-BUF（Linux 设备驱动间共享的缓冲区）、bitmap、RSS 和 swap 等指标可以由 Skill、SQL 或报告模板提供，不在 v1.3.0 的内置回填集合里。缺失字段要显示为 missing metric，按零值参与比较会制造假象。
-
-v1.3.0 的变化高亮同时使用相对阈值和按单位设置的绝对阈值。通用相对阈值为 5%；`ms` 为 5 ms，`fps` 为 1 fps，百分比为 1 个百分点，计数为 1，字节为 1 MiB，纳秒为 5,000,000 ns。时间、FPS、字节等指标通常要同时达到绝对阈值与相对阈值；百分比和计数满足其中一个即可。无单位且只有相对变化时采用 5%。
-
-这些规则只决定界面是否高亮；统计显著性检验和 26.4 节中的置信区间、样本量、实验设计是另一回事，需要时仍以后者为准。
-
-例如，发现启动 P90 上升后，我们可以分别抽取改动前的 baseline（改动前基线） 与改动后的 candidate（改动后候选版本） 两份 trace，生成 snapshot，再比较启动阶段、主线程状态、Binder、I/O 和首帧提交记录。若设备、温控、编译状态或抓取配置不一致，先标注环境差异再比较；把不可比样本的变化直接解释为代码回归，容易得出错误结论。
+标准回填的范围更窄，只包含 `startup.total_ms`、`scrolling.avg_fps`、`scrolling.frame_count`、`scrolling.jank_count` 和 `scrolling.jank_rate_pct`。特别要注意 v1.3.0 的默认回填 SQL：启动从整份 Trace 的 `android_startups` 中取最大非 NULL `dur`，没有包名或场景窗口过滤；滑动读取整份 Trace 所有正时长 `actual_frame_timeline_slice`，没有进程、Layer、token 去重或场景窗口限制。因此这些回填值只能先作为全局候选，不能直接命名为“目标应用启动耗时”或“某次滑动 FPS”。正式回归要改用已校验身份、窗口和帧口径的 Skill/SQL，并在 golden Trace 上验证。TTFD（Time to Full Display，完全显示耗时）、PSS（按共享比例分摊的内存）、Java/Native Heap、DMA-BUF（Linux 设备驱动间共享的缓冲区）、bitmap、RSS 和 swap 等指标可以由 Skill、SQL 或报告模板提供，不在 v1.3.0 的内置回填集合里。缺失字段要显示为 missing metric，按零值参与比较会制造假象。
 
 <!-- gracker-diagram: ch14-04-33-global-backfill -->
 ![v1.3.0 默认回填是全局候选](../../assets/diagrams/ch14/ch14-04-33-global-backfill.png)
 
 图：默认 SQL 未限制应用、Layer 和业务窗口，需验证后才可用于场景回归。 启动取全局最大 dur，帧统计可混入多进程、多 Layer 与 SF 行。
 
+v1.3.0 的变化高亮同时使用相对阈值和按单位设置的绝对阈值。通用相对阈值为 5%；`ms` 为 5 ms，`fps` 为 1 fps，百分比为 1 个百分点，计数为 1，字节为 1 MiB，纳秒为 5,000,000 ns。规则比较绝对变化幅度和相对变化幅度，增加与减少都可能高亮。当数值有效且 assessment 不是 `same/unknown` 时，时间、FPS、字节与纳秒指标需达到绝对阈值，并在相对变化有限时同时达到 5%；相对变化为 NULL 或非有限数时仅检查绝对阈值。百分比和计数满足绝对或相对幅度阈值之一即可。未匹配绝对单位时，有有限相对变化用 5%，否则用绝对变化幅度大于 `1e-9` 的兜底。
+
 <!-- gracker-diagram: ch14-04-34-highlight-threshold -->
 ![变化高亮按单位选择判断分支](../../assets/diagrams/ch14/ch14-04-34-highlight-threshold.png)
 
 图：有效变化先按单位检查绝对与相对阈值，再决定界面高亮。 这是 UI 变化规则，不是统计显著性检验；NULL 和 unknown 分支需保留。
+
+这些规则只决定界面是否高亮；统计显著性检验和 26.4 节中的置信区间、样本量、实验设计是另一回事，需要时仍以后者为准。
+
+例如，发现启动 P90 上升后，我们可以分别抽取改动前的 baseline（改动前基线） 与改动后的 candidate（改动后候选版本） 两份 trace，生成 snapshot，再比较启动阶段、主线程状态、Binder、I/O 和首帧提交记录。若设备、温控、编译状态或抓取配置不一致，先标注环境差异再比较；把不可比样本的变化直接解释为代码回归，容易得出错误结论。
 
 ### Provider Manager：模型服务与执行适配层
 
@@ -1076,7 +1106,12 @@ v1.3.0 注册了五种可用于正式运行的 runtime：
 
 Qoder SDK 不随默认 Docker、portable 或 npm 安装提供，启用前要审阅它的独立条款，并显式安装 optional peer（可选的同级依赖） 依赖。Pi、OpenCode、Qoder 在 SmartPerfetto 里拿到的只是按请求生成的分析工具，别按通用 coding agent 的文件、shell 或网络权限去理解。
 
-新建 session 时，系统依次检查请求指定的 `providerId`、Provider Manager 当前 active provider、`SMARTPERFETTO_AGENT_RUNTIME`，最后回到默认的 `claude-agent-sdk`。请求明确指定的 provider 不存在时会 fail-fast，即立即返回明确错误。
+新建 session 时，系统依次检查请求指定的 `providerId`、Provider Manager 当前 active provider、`SMARTPERFETTO_AGENT_RUNTIME`，最后回到默认的 `claude-agent-sdk`。请求明确指定的 provider 不存在时会 fail-fast，即立即返回明确错误。这段顺序针对未传 `runtimeOverride`、未显式传 `providerId: null`、未启用 experimental runtime 的常规新请求；选择器对这些显式选项另有分支。
+
+<!-- gracker-diagram: ch14-04-36-new-session-priority -->
+![常规新会话的 provider 与 runtime 优先级](../../assets/diagrams/ch14/ch14-04-36-new-session-priority.png)
+
+图：普通新请求按显式 provider、active、env、默认顺序选择执行身份。 显式无效 provider 立即失败；null、runtimeOverride 与实验路径另走分支。
 
 恢复历史 session 时，系统使用会话中保存的 provider/runtime：已保存的 provider 仍优先；env/default session 的 `runtimeOverride` 优先于当前环境变量；后来切换的 active provider 影响不到旧会话。已绑定的 provider 被删除时会立即报错并明确提示，避免静默改用另一个 provider。
 
@@ -1088,11 +1123,6 @@ v1.3.0 的会话快照还有一个缺口。常规 runtime 选择器已经接受 
 图：恢复固定 provider/runtime 身份，已删除的绑定 provider 应明确失败。 v1.3.0 的纯 env Qoder 快照存在缺口，应在修复版本回归或新建会话。
 
 排障时要读取需要鉴权的 `GET /api/runtime-health`，检查 runtime、模型和 credential source（凭证来源）。公开的 `GET /health` 只表示服务进程存活；要确认分析 runtime 已按预期切换，仍以 `GET /api/runtime-health` 的结果为准。
-
-<!-- gracker-diagram: ch14-04-36-new-session-priority -->
-![常规新会话的 provider 与 runtime 优先级](../../assets/diagrams/ch14/ch14-04-36-new-session-priority.png)
-
-图：普通新请求按显式 provider、active、env、默认顺序选择执行身份。 显式无效 provider 立即失败；null、runtimeOverride 与实验路径另走分支。
 
 ### 运行分发、权限与隐私
 
@@ -1191,7 +1221,7 @@ SmartPerfetto 的企业迁移阶段决定 trace metadata（文件路径、归属
 
 图：先双写并核对数据，再把读写权威切换到数据库。 cutover 确认开关不是数据一致性证明；回退依赖已验证快照。
 
-这项启动检查要求运维人员已经完成 filesystem 与 DB 的 reconciliation（逐项比对并处理不一致记录），并验证可用于恢复的快照。
+该启动检查只验证确认开关，不能证明数据已经一致。运维人员应在设置确认开关前完成 filesystem 与 DB 的 reconciliation（逐项比对并处理不一致记录），并验证可用于恢复的快照。
 
 诊断环境阶段时，可用下面的命令只打印两个迁移开关，不要把数据库口令或 provider key 写入工单：
 
@@ -1275,3 +1305,9 @@ Perfetto 自动化要从一条可复用 SQL 开始，再逐步扩展到 Trace Su
 - [显著变化阈值](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/services/comparisonSignificance.ts)
 - [企业迁移状态机与快照恢复](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/services/enterpriseMigration.ts)
 - [企业 trace metadata 的 scoped 读取](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/services/traceMetadataStore.ts)
+
+- [内存区间与 NULL 约定](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/memory/process.sql)
+- [UI 宏顺序执行与异常传播](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/ui/src/core/command_manager.ts)
+- [Python v57.2 包内原生工具清单](https://github.com/google/perfetto/blob/v57.2/python/perfetto/prebuilts/manifests/trace_processor_shell.py)
+- [Python 批处理实例生命周期](https://github.com/google/perfetto/blob/v57.2/python/perfetto/batch_trace_processor/api.py)
+- [最新 release 查询](https://github.com/Gracker/SmartPerfetto/releases/tag/v1.16.2)

@@ -4,8 +4,8 @@ section: '14.3'
 chapter: '14.3'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-13'
-last_verified_against: AOSP android-17.0.0_r1 external/perfetto, android17-6.18-2026-06_r6, perfetto.dev (2026-08-13)
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 external/perfetto, android17-6.18-2026-06_r6, perfetto.dev (2026-10-25); host Trace Processor v54.0/v57.2/v58.2 synthetic traces
 confidence: high
 sources:
 - type: blog
@@ -65,7 +65,7 @@ related_chapters:
 
 图：先固定业务窗口和对象，再结合状态与独立证据定位等待或执行。 状态名称本身不能指出应用函数、锁或具体设备。
 
-本文核对的源码基线是 Android 17 / API 37 / `android-17.0.0_r1` 的 Perfetto 导入逻辑和 `android17-6.18-2026-06_r6` 内核。旧平台也有调度事件，但字段、内核符号和标准库模块可能不同。
+本文核对的源码基线是 Android 17 / API 37 / `android-17.0.0_r1` 的 Perfetto 导入逻辑和 `android17-6.18-2026-06_r6` 内核。另以主机版 Trace Processor v54.0、v57.2、v58.2 解析合成 Trace，复核状态转换、四段 SQL 和数据缺失边界；这不是目标设备采集或性能测量，也不表示这些发布版与 Android 17 tag 完全相同。旧平台也有调度事件，但字段、内核符号和标准库模块可能不同。
 
 ## 14.3.1 状态从哪里来
 
@@ -81,7 +81,7 @@ Linux 6.18 的 `include/linux/sched.h` 把 `TASK_RUNNING` 定义为 0。这个�
 Perfetto 依靠事件补出时间线：
 
 - `sched_switch` 说明前一个线程何时离开 CPU、下一个线程何时进入 CPU。Perfetto 把下一个线程记为 `Running`，并用 `prev_state` 为离开的线程打开后续状态区间。
-- `sched_waking` 说明某个事件正在把线程变为可运行。Perfetto 关闭原来的阻塞区间，打开 `R`，并尽量记录 `waker_utid`、`waker_id` 和 `irq_context`。
+- `sched_waking` 记录唤醒动作。正常的阻塞到可运行转换中，Perfetto 关闭旧阻塞区间并打开 `R`；首次观察到线程时也可直接打开 `R`。重复唤醒与 `R+` 的导入边界见 14.3.5，不能把每条 waking 都当作一次新的睡眠结束。
 - 下一次 `sched_switch` 选中该线程时，Perfetto 关闭 `R` 或 `R+`，打开 `Running`。
 
 <!-- gracker-diagram: ch14-03-03-event-state-transition -->
@@ -89,26 +89,21 @@ Perfetto 依靠事件补出时间线：
 
 图：切出打开后继状态，正常唤醒打开 R，重新切入打开 Running。 首次观察、重复 waking、R+ 分段和丢失事件要另行核对。
 
-`utid` 是 Perfetto 在一份 Trace 内分配的线程唯一标识，`upid` 则是进程唯一标识；它们用于区分操作系统进程号（PID）或线程号（TID）被复用后的不同实例。`waker_utid` 标识执行唤醒动作的线程，`waker_id` 指向该唤醒线程当时的 `thread_state` 行，`irq_context` 标记唤醒是否发生在中断环境。这些标识只在当前 Trace 内有效。
-
-`sched_slice` 从 CPU 视角记录“哪个 `utid` 在哪个 CPU 上运行多久，切出时是什么状态”。`thread_state` 从线程视角记录连续状态，并附带 CPU、I/O 等待、阻塞函数和唤醒者等可选字段。两张表中的 `dur = -1` 表示区间没有结束时间，常见于 Trace 结束或数据丢失；聚合时应排除。
+`utid` 是 Perfetto 在一份 Trace 内分配的线程唯一标识，`upid` 则是进程唯一标识；它们用于区分操作系统进程号（PID）或线程号（TID）被复用后的不同实例。`waker_utid` 标识执行唤醒动作的线程；只有导入器还能找到该唤醒线程当时的 Running 行时，才会填充指向它的 `waker_id`。两者可能只存在前者。`irq_context` 来自唤醒记录所保留的中断标志；这些标识只在当前 Trace 内有效。
 
 <!-- gracker-diagram: ch14-03-04-identity-and-waker -->
 ![线程身份与唤醒状态行的关联](../../assets/diagrams/ch14/ch14-03-04-identity-and-waker.png)
 
 图：用 utid / upid 区分实例；waker_utid 与 waker_id 提供不同层级的关联。 只有能找到唤醒者当时 Running 行时才有 waker_id，关系不保证完整。
 
+`sched_slice` 从 CPU 视角记录“哪个 `utid` 在哪个 CPU 上运行多久，切出时是什么状态”。`thread_state` 从线程视角重建状态区间，并附带 CPU、I/O 等待、阻塞函数和唤醒者等可选字段；缺少事件时不能保证覆盖连续完整。两张表中的 `dur = -1` 表示没有可靠的结束时间，常见于 Trace 尾部或数据丢失，不能按负时长加入聚合。本文区间函数只统计 `dur > 0` 的已闭合状态，同时报告未覆盖时间；排除未知区间不等于证明它耗时为零。
+
 <!-- gracker-diagram: ch14-03-05-cpu-vs-thread -->
 ![同一调度事实的 CPU 与线程视角](../../assets/diagrams/ch14/ch14-03-05-cpu-vs-thread.png)
 
 图：sched_slice 回答 CPU 由谁运行，thread_state 回答线程的状态与可用线索。 状态重建可能有缺口；dur = −1 不能作为负时长加入统计。
 
-<!-- gracker-diagram: ch14-03-06-state-version-decoding -->
-![状态字符随报告编码与输入格式解释](../../assets/diagrams/ch14/ch14-03-06-state-version-decoding.png)
-
-图：先核对内核版本和输入格式，再解释特殊状态或复合字符串。 当前 6.18 报告掩码与旧布局不同，颜色也不是稳定语义。
-
-### Android 17 中可见的状态
+### 常见状态与跨版本字符
 
 | Perfetto 状态 | 含义 | 能直接得出的事实 |
 | --- | --- | --- |
@@ -119,10 +114,16 @@ Perfetto 依靠事件补出时间线：
 | `D` | Uninterruptible Sleep | 线程处于不可中断睡眠 |
 | `T` | Stopped | 线程被停止 |
 | `t` | Traced | 线程受跟踪控制 |
-| `X` / `Z` / `x` | 退出、僵尸或死亡相关状态 | 线程处于退出流程 |
-| `I` / `P` / `W` / `K` / `N` | Idle（空闲任务）、Parked（停驻）、Waking（正在唤醒）、Wake Kill（可由致命信号唤醒）、No Load（不计入负载） | 特殊调度状态，按原始事件解释 |
+| `X` / `Z` | 退出 / 僵尸状态 | 线程处于退出流程 |
+| `I` / `P` | `TASK_IDLE` 的报告态 / Parked（停驻） | 特殊任务状态；`I` 不等于 CPU idle 轨道，也不能据此认定为 swapper 线程 |
+| `W` / `K` / `N` / `x` 等兼容字符 | Waking / Wake Kill / No Load / Task Dead | 来自旧内核位布局或文本输入等兼容路径，不保证出现在当前 6.18 二进制调度事件中 |
 
-状态名称应以详情面板或 SQL 字段为准。Perfetto UI 的颜色会受版本、主题和选中状态影响，不能把某种颜色当作稳定接口。
+状态名称应以详情面板或 SQL 字段为准。内核 `__state` 位、`sched_switch.prev_state` 的报告编码、Perfetto 解析后的字符串是三个层次：当前内核会掩码并重编码部分状态，不能把所有 `TASK_*` 数值直接塞进 `prev_state`。Perfetto 的二进制解码还依赖 Trace 中记录的内核版本；缺失时该 tag 回退到旧布局。Perfetto UI 的颜色会受版本、主题和选中状态影响，不能把某种颜色当作稳定接口。
+
+<!-- gracker-diagram: ch14-03-06-state-version-decoding -->
+![状态字符随报告编码与输入格式解释](../../assets/diagrams/ch14/ch14-03-06-state-version-decoding.png)
+
+图：先核对内核版本和输入格式，再解释特殊状态或复合字符串。 当前 6.18 报告掩码与旧布局不同，颜色也不是稳定语义。
 
 ### `R+` 的源码边界
 
@@ -200,7 +201,12 @@ data_sources {
 }
 ```
 
-`RING_BUFFER` 表示缓冲区写满后覆盖最早的数据，因此事件突增时可能丢掉 Trace 开头。
+这里的 `buffers.size_kb` 配置 Perfetto 服务端 Trace buffer；`RING_BUFFER` 写满会覆盖最早的数据，因此事件突增时可能丢掉 Trace 开头。它不同于内核每 CPU 的 ftrace ring buffer；后者由 `ftrace_config.buffer_size_kb` 等控制，增大服务端 buffer 不能自动消除内核 overrun。
+
+<!-- gracker-diagram: ch14-03-09-two-ring-buffers -->
+![服务端 Trace buffer 与内核 ftrace buffer](../../assets/diagrams/ch14/ch14-03-09-two-ring-buffers.png)
+
+图：分别排查服务端覆盖和内核每 CPU overrun。 只扩大服务端 buffers.size_kb 不会自动扩大内核 ftrace 缓冲。
 
 三个调度事件分工不同：`sched_switch` 是构建 Running 和切出状态的基础，`sched_waking` 补充唤醒与 Runnable 起点，`sched_blocked_reason` 补充 D 状态的 `io_wait` 和睡眠函数。
 
@@ -209,9 +215,26 @@ data_sources {
 
 图：调度切换、唤醒、阻塞原因提供互补信息。 配置请求不等于设备实际支持，也不保证符号和事件完整。
 
-`compact_sched` 使用紧凑格式记录高频调度事件，减少 Trace 体积。`symbolize_ksyms` 把内核地址解析成函数名；它要求 Perfetto 的特权采集进程 `traced_probes` 具备 root（超级用户）权限，或设备放宽 `kptr_restrict`（内核地址可见性限制）。权限不足时，调度状态仍可用，`blocked_function` 可能为空。
+`compact_sched` 对 `sched_switch` / `sched_waking` 使用紧凑编码；格式不兼容时可回退到逐事件编码，不能理解为所有 ftrace 事件都被压缩。在这个 Android 17 导入路径中，紧凑 waking 保留的 `common_flags` 才会传给线程状态的 `irq_context`，逐事件 `ParseSchedWaking()` 不传该参数，因此 NULL 不能解释为“非中断”。
 
-设备可能缺少某些 Tracepoint，量产构建也可能限制内核符号。录制后应检查 Trace Processor 自诊断用的 `stats` 表，重点看 `unknown_ftrace_events`、`failed_ftrace_events` 和 ftrace 丢包；如果同时启用了 `linux.perf`，还要看 Perf 采样丢失。空字段只能说明证据缺失，不能直接解释为“没有发生”。
+<!-- gracker-diagram: ch14-03-11-compact-irq-flags -->
+![紧凑唤醒记录决定中断标志是否保留](../../assets/diagrams/ch14/ch14-03-11-compact-irq-flags.png)
+
+图：该固定导入路径中，紧凑 waking 传递 common_flags，逐事件路径不传。 irq_context 的 NULL 表示未知，不能当成 0；紧凑编码也可回退。
+
+`symbolize_ksyms` 尝试把内核地址解析成函数名。Android 平台构建可使用 init 预先打开并继承的 `/proc/kallsyms` 文件描述符；Linux / 独立构建还可依赖 capabilities（进程能力）、root 或允许读取地址的 sysctl 配置。不能把“traced_probes 必须是 root”写成所有 Android 设备的前提。无论采用哪条路径，都应检查符号实际可读、Tracepoint 是否采到和导入结果；无法解析时 `blocked_function` 可能为空。
+
+<!-- gracker-diagram: ch14-03-12-symbol-resolution -->
+![从睡眠地址到 blocked_function 的条件](../../assets/diagrams/ch14/ch14-03-12-symbol-resolution.png)
+
+图：从原始睡眠地址到采集端符号索引，再到导入器的 blocked_function。 Trace 中的 caller 不能直接当原始内核地址；关联行、索引与符号映射都必须有效。
+
+设备可能缺少某些 Tracepoint，量产构建也可能限制内核符号。录制后检查 `stats` 表中 `name = 'ftrace_setup_errors'` 的统计值，并查看该 Android 17 tag 的 `metadata` 表中同名条目的详情。`unknown_ftrace_events` / `failed_ftrace_events` 是 Trace 内 `FtraceStats` 消息的字段，不是这两个同名 `stats` 行。另查 `ftrace_cpu_has_data_loss`、`ftrace_cpu_overrun_delta` 等丢失证据；若启用 `linux.perf`，还要看 `perf_cpu_lost_records` 等统计。不同发布版可能调整详情的保存位置，应以所用处理器的表结构为准。空字段只能说明证据不足，不能直接解释为“没有发生”。
+
+<!-- gracker-diagram: ch14-03-13-capture-diagnostics -->
+![采集失败、事件损失与空字段的诊断顺序](../../assets/diagrams/ch14/ch14-03-13-capture-diagnostics.png)
+
+图：先读 setup 错误详情，再查丢失统计，最后解释字段覆盖。 unknown_ftrace_events / failed_ftrace_events 是消息字段，不是同名 stats 行。
 
 在 UI 中有两个互补入口：
 
@@ -219,26 +242,6 @@ data_sources {
 - 进程下的 `Thread State` 轨道按线程展示 `thread_state`。选中状态可查看持续时间、CPU、`io_wait`、`blocked_function`、唤醒者和中断环境。
 
 分析关键路径时，先固定业务 Slice 或 FrameTimeline 帧，再看该时间范围内的线程状态。FrameTimeline 是 Android 12 起记录预期帧与实际帧时间线的机制；Looper 是 Android 线程处理消息队列的循环。整条线程生命周期的状态占比通常会被 Looper 的正常睡眠主导，对一次掉帧或启动没有直接解释力。
-
-<!-- gracker-diagram: ch14-03-09-two-ring-buffers -->
-![服务端 Trace buffer 与内核 ftrace buffer](../../assets/diagrams/ch14/ch14-03-09-two-ring-buffers.png)
-
-图：分别排查服务端覆盖和内核每 CPU overrun。 只扩大服务端 buffers.size_kb 不会自动扩大内核 ftrace 缓冲。
-
-<!-- gracker-diagram: ch14-03-11-compact-irq-flags -->
-![紧凑唤醒记录决定中断标志是否保留](../../assets/diagrams/ch14/ch14-03-11-compact-irq-flags.png)
-
-图：该固定导入路径中，紧凑 waking 传递 common_flags，逐事件路径不传。 irq_context 的 NULL 表示未知，不能当成 0；紧凑编码也可回退。
-
-<!-- gracker-diagram: ch14-03-12-symbol-resolution -->
-![从睡眠地址到 blocked_function 的条件](../../assets/diagrams/ch14/ch14-03-12-symbol-resolution.png)
-
-图：从原始睡眠地址到采集端符号索引，再到导入器的 blocked_function。 Trace 中的 caller 不能直接当原始内核地址；关联行、索引与符号映射都必须有效。
-
-<!-- gracker-diagram: ch14-03-13-capture-diagnostics -->
-![采集失败、事件损失与空字段的诊断顺序](../../assets/diagrams/ch14/ch14-03-13-capture-diagnostics.png)
-
-图：先读 setup 错误详情，再查丢失统计，最后解释字段覆盖。 unknown_ftrace_events / failed_ftrace_events 是消息字段，不是同名 stats 行。
 
 <!-- gracker-diagram: ch14-03-14-ui-reading-order -->
 ![从业务窗口进入 CPU 与线程状态视图](../../assets/diagrams/ch14/ch14-03-14-ui-reading-order.png)
@@ -289,14 +292,14 @@ CPU 编号与大小核布局由 SoC（System on Chip，系统级芯片）决定�
 
 图：先确认设备拓扑，再读取当时频率与相对容量。 CPU 编号不通用，高频不等于高负载，相同频率也不代表相同吞吐。
 
-手工绑核会缩小调度器可选 CPU 集合，还会受 cpuset、在线 CPU 和权限限制。亲和性（affinity）限定线程可以在哪些 CPU 上运行，cpuset 用控制组给一组任务划定可用 CPU，uclamp 则限制调度器看到的任务利用率提示范围。
-
-普通应用不应依赖 CPU 编号或固定亲和性。平台侧若要调整这些参数，应使用同场景 Trace 验证延迟、能耗和热稳定性。
+手工绑核会缩小调度器可选 CPU 集合，还会受 cpuset、在线 CPU 和权限限制。亲和性（affinity）限定线程可以在哪些 CPU 上运行，cpuset 用控制组给一组任务划定可用 CPU。uclamp 限定调度器使用的有效利用率提示上下界，可影响容量选择和调频决策；它不是另一个 CPU 允许掩码，也不保证固定核心或频率。
 
 <!-- gracker-diagram: ch14-03-19-eligibility-vs-hints -->
 ![affinity、cpuset 与 uclamp 的作用边界](../../assets/diagrams/ch14/ch14-03-19-eligibility-vs-hints.png)
 
 图：允许集合、CPU 在线状态与利用率提示共同影响调度结果。 uclamp 不直接定义 CPU 允许掩码，也不承诺固定核心或频点。
+
+普通应用不应依赖 CPU 编号或固定亲和性。平台侧若要调整这些参数，应使用同场景 Trace 验证延迟、能耗和热稳定性。
 
 ## 14.3.4 Runnable：测量唤醒到运行的等待
 
@@ -305,7 +308,7 @@ Runnable 区间表示线程具备运行条件却未在 CPU 上执行。对由 `s
 Runnable 变长常见于：
 
 - 所有合适的 CPU 都在运行其他任务，或高调度优先级、实时任务和 IRQ 持续占用。
-- 线程的调度类（如普通公平调度或实时调度）、nice（普通调度任务的相对优先级）、cpuset、亲和性、uclamp 或厂商策略限制了可用 CPU 与竞争顺序。
+- 调度类（如普通公平调度或实时调度）、nice（普通调度任务的相对优先级）和厂商策略影响竞争；cpuset / 亲和性约束可用 CPU；uclamp 等利用率提示影响容量与调频决策。这些机制并非都直接限制 CPU 集合。
 - CPU 离线、热限制、频率降低或设备容量不足，使队列消化速度下降。
 - 唤醒放置（线程被唤醒时选择目标 CPU）与负载均衡暂时保留线程所在 CPU，避免跨核迁移成本。
 - cgroup（Linux 控制组）的 CPU 带宽配额、实时节流（限制实时任务持续占用 CPU）或其他资源控制延后执行。
@@ -326,6 +329,9 @@ INCLUDE PERFETTO MODULE sched.latency;
 
 SELECT
   p.upid,
+  t.utid,
+  running.id AS running_state_id,
+  runnable.id AS runnable_state_id,
   running.ts AS running_ts,
   runnable.state AS runnable_state,
   ROUND(l.latency_dur / 1e6, 3) AS latency_ms,
@@ -351,11 +357,14 @@ LEFT JOIN process AS wp
   ON wp.upid = wt.upid
 WHERE p.name = 'com.android.systemui'
   AND t.is_main_thread
-ORDER BY l.latency_dur DESC
+  AND runnable.dur >= 0
+  AND running.dur >= 0
+  AND runnable.ts + runnable.dur = running.ts
+ORDER BY l.latency_dur DESC, running.ts, running.id
 LIMIT 20;
 ```
 
-查询按 `upid` 区分同名进程的不同实例。`waker_process` 为空可能来自 `R+`、Trace 开头、数据丢失或缺少 `sched_waking`。`irq_context = 1` 表示唤醒事件发生在 HardIRQ 或 SoftIRQ 环境，此时当前任务名称通常不能代表业务上的唤醒发起者。
+查询可跨同名进程实例列出结果，输出用 `upid` / `utid` 和状态行 ID 区分；分析某次复现时应进一步限定现场实例与时间窗。邻接条件要求 Runnable 的结束恰好等于 Running 的开始，避免缺唤醒事件时把历史上的旧 `R` 误连过来；未闭合 Running 不在结果里，所以“没有结果”不等于“没有调度延迟”。`waker_process` 为空可能来自保持可运行的切出、Trace 边界、数据丢失或缺少 waking。`irq_context = 1` 表示记录的 HardIRQ / SoftIRQ 标志置位，当前任务名通常不能代表业务唤醒源；NULL 表示未保留该信息。
 
 <!-- gracker-diagram: ch14-03-21-latency-sql-adjacency -->
 ![Runnable 延迟查询必须复核邻接关系](../../assets/diagrams/ch14/ch14-03-21-latency-sql-adjacency.png)
@@ -371,7 +380,7 @@ LIMIT 20;
 
 图：从切出标志追到同 CPU 竞争者，再判断是否影响业务截止。 次数或占比高不能独立证明优先级配置错误。
 
-`R` 包含唤醒后的排队，也可能来自线程保持可运行状态时的切出。具备 `waker_utid` 的 `R` 才能沿 UI 中的 Woken by（由谁唤醒）关系查看唤醒线程。唤醒者负责把线程变为可运行，不一定是锁持有者、Binder 服务端或设备中断的源头；这层业务关系还需 Binder Flow（Binder 事务的跨线程因果连线）、锁事件或代码路径确认。
+`R` 包含唤醒后的排队，也可能来自线程保持可运行状态时的切出。`waker_utid` 可供 SQL 追查执行唤醒者，但该 tag 的 UI Woken by（由谁唤醒）引用依赖可用的 `waker_id`；仅有 `waker_utid` 不保证能跳转到唤醒者状态。中断标志为真时 UI 可只显示 Interrupt，标志未知时也可能提示 maybe interrupt。唤醒者负责把线程变为可运行，不一定是锁持有者、Binder 服务端或设备中断的源头；这层业务关系还需 Binder Flow（Binder 事务的跨线程因果连线）、锁事件或代码路径确认。
 
 ## 14.3.5 Sleeping：找到等待条件和唤醒者
 
@@ -400,7 +409,19 @@ LIMIT 20;
 
 ### Woken by 的边界
 
-Woken by 是 Perfetto UI 对唤醒来源的展示。Android 17 的 `ThreadStateTracker::PushWakingEvent()` 仅在被唤醒线程原本处于阻塞状态时关闭旧状态并打开 `R`。线程已处于 Running 或 Runnable 时收到的重复唤醒会进入 `spurious_sched_wakeup`（无须改变状态的重复唤醒记录），不会重写当前状态。
+Woken by 是 Perfetto UI 对唤醒来源的展示。该 Android 17 tag 的 `PushWakingEvent()` 在没有历史行时直接打开 `R`；已有历史行且状态为 `Running` 或恰好为 `R` 时，把重复唤醒写入 `spurious_sched_wakeup`，保留当前状态。正常阻塞状态则被关闭并新开 `R`。
+
+<!-- gracker-diagram: ch14-03-24-waking-state-branches -->
+![固定导入器对 waking 的不同分支](../../assets/diagrams/ch14/ch14-03-24-waking-state-branches.png)
+
+图：首次观察打开 R；已有 Running 或恰好 R 时保留当前状态并记录重复唤醒。 该 tag 对 R+ 的处理另有例外，不能泛化为所有 Runnable 均不变。
+
+这里有一个实现边界：该 tag 的 `IsRunnable()` 只比较字符串 `R`，不包含 `R+`。因此若 `R+` 区间内又收到 waking，它会被截断并转成带新唤醒线索的 `R`；不能断言“所有 Runnable 重复唤醒都不改状态”，也不能用新 `R` 的时长代替完整抢占等待。主机 v54.0 / v57.2 / v58.2 的合成输入也复现了这一分段结果；它是所核对导入器的行为，不是内核规定线程必须如此转换。
+
+<!-- gracker-diagram: ch14-03-25-rplus-wake-split -->
+![R+ 内再次 waking 可把原区间分成两段](../../assets/diagrams/ch14/ch14-03-25-rplus-wake-split.png)
+
+图：该 tag 的 IsRunnable 只识别 R，R+ 内的 waking 会截断原行并打开 R。 这是经固定源码与主机合成输入复核的导入行为，不是内核强制规则。
 
 Woken by 记录的是执行唤醒动作的线程：
 
@@ -417,16 +438,6 @@ Woken by 记录的是执行唤醒动作的线程：
 复杂等待可使用 UI 的 Critical Path（关键路径）视图辅助查看跨线程依赖。该视图根据唤醒关系推导路径，结果受 Trace 完整性影响，仍需回到原始状态、Slice 与代码确认。
 
 Perfetto 官方的调度阻塞案例还展示了事件触发调用栈：用 `linux.perf` 在 `sched_switch` 和 `sched_waking` 发生时采样，并用 `prev_comm`、`next_comm` 或 `comm` 过滤目标线程；这里的 `comm` 是内核记录的任务名。若对全系统每次调度切换都取栈，采样器很快会跟不上事件速度，因此必须限制过滤范围并检查丢样统计。
-
-<!-- gracker-diagram: ch14-03-24-waking-state-branches -->
-![固定导入器对 waking 的不同分支](../../assets/diagrams/ch14/ch14-03-24-waking-state-branches.png)
-
-图：首次观察打开 R；已有 Running 或恰好 R 时保留当前状态并记录重复唤醒。 该 tag 对 R+ 的处理另有例外，不能泛化为所有 Runnable 均不变。
-
-<!-- gracker-diagram: ch14-03-25-rplus-wake-split -->
-![R+ 内再次 waking 可把原区间分成两段](../../assets/diagrams/ch14/ch14-03-25-rplus-wake-split.png)
-
-图：该 tag 的 IsRunnable 只识别 R，R+ 内的 waking 会截断原行并打开 R。 这是经固定源码与主机合成输入复核的导入行为，不是内核强制规则。
 
 <!-- gracker-diagram: ch14-03-27-event-sampling -->
 ![事件触发调用栈需要限制目标与检查丢样](../../assets/diagrams/ch14/ch14-03-27-event-sampling.png)
@@ -453,14 +464,16 @@ __entry->caller = (void *)__get_wchan(tsk);
 __entry->io_wait = tsk->in_iowait;
 ```
 
-`io_wait` 来自任务的 `in_iowait` 记账标志。值为 1 时，这次等待更可能是 I/O 等待，但这个字段不含文件名、设备、请求类型或业务调用方；值为 0 也不能直接判定为“内核锁”。`caller` 来自 `__get_wchan()`，其中 wchan（wait channel）表示内核观察到的睡眠位置，不保证等于最初发起等待的应用函数或锁持有者。
-
-Android 17 的 `FtraceParser::ParseSchedBlockedReason()` 把这两个字段写入最近的阻塞 `thread_state` 行。只有采集了该 Tracepoint 才会有 `io_wait`；只有内核符号成功解析时才会有 `blocked_function`。
+`io_wait` 来自任务的 `in_iowait` 记账标志。值为 1 表明内核把该任务标为 I/O 等待记账，不是对某类设备或业务原因的概率判断；字段不含文件名、设备、请求类型或调用方，值为 0 也不能直接判定为“内核锁”。`caller` 来自 `__get_wchan()`，其中 wchan（wait channel）表示内核观察到的睡眠位置，不保证等于最初发起等待的应用函数或锁持有者。
 
 <!-- gracker-diagram: ch14-03-29-blocked-fields -->
 ![io_wait 与睡眠函数分别提供什么线索](../../assets/diagrams/ch14/ch14-03-29-blocked-fields.png)
 
 图：io_wait 是内核记账标志，caller / wchan 是观察到的睡眠位置。 两者都不直接提供业务文件、锁持有者或完整调用因果。
+
+Android 17 的 `ParseSchedBlockedReason()` 交给 `ThreadStateTracker`，在仍能找到对应最近阻塞行时补写 `io_wait` 与可解析的睡眠函数。这条 ftrace 路径需要采到该 Tracepoint，并成功关联阻塞行；函数名还需要有效地址及符号映射。缺事件、时序边界、0 地址或符号不足都可能留下 NULL，不能把“配置过该事件”当作字段必有值。
+
+还要区分采集前后的 `caller`：内核原始事件记录睡眠地址，Perfetto 采集端会把内核地址改写为索引，并把可解析名称放入 `InternedData.kernel_symbols`。导入器用该索引查名字，不是拿 Trace 中的数值直接当原始内核地址；缺索引映射时也会没有 `blocked_function`。
 
 <!-- gracker-diagram: ch14-03-30-blocked-row-association -->
 ![阻塞原因字段需要成功关联状态行](../../assets/diagrams/ch14/ch14-03-30-blocked-row-association.png)
@@ -474,6 +487,8 @@ Android 17 的 `FtraceParser::ParseSchedBlockedReason()` 把这两个字段写�
 ```sql
 SELECT
   p.upid,
+  t.utid,
+  ts.id AS thread_state_id,
   ts.ts,
   ROUND(ts.dur / 1e6, 3) AS duration_ms,
   ts.io_wait,
@@ -487,11 +502,11 @@ WHERE p.name = 'com.android.systemui'
   AND t.is_main_thread
   AND ts.state = 'D'
   AND ts.dur > 0
-ORDER BY ts.dur DESC
+ORDER BY ts.dur DESC, ts.ts, ts.id
 LIMIT 20;
 ```
 
-非 Running 状态没有“正在执行的 CPU”，需要从相邻调度区间或相关设备事件确定 CPU。`blocked_function` 为空时，应检查 Tracepoint、符号权限、数据丢失和工具版本；不能由空值推断“没有内核阻塞”。
+此查询严格匹配 `state = 'D'`；若输入是旧版或文本 Trace，应另行核对是否存在 `D|K` 等复合字符串，并保留原值。非 Running 状态没有“正在执行的 CPU”，相邻 CPU 和 waking 的目标 CPU 只能补充放置线索，不能算作线程在阻塞期间的执行归属。`blocked_function` 为空时，应检查 Tracepoint、符号权限、数据丢失和工具版本；不能由空值推断“没有内核阻塞”。
 
 归因 D 区间时，可按证据选择方向：
 
@@ -516,7 +531,7 @@ D 状态不会直接触发 ANR（Application Not Responding，应用无响应）
 
 `T` 常见于 `SIGSTOP`（强制暂停进程的信号）、Shell 作业控制或调试操作，`t` 表示被调试器等工具跟踪。它们在调试会话中可能完全符合预期。`Z` 表示退出后等待父进程回收的僵尸状态，短暂出现也不等于性能故障；持续堆积才需要检查父进程的回收逻辑。
 
-`X`、`x`、`I`、`P`、`W`、`K`、`N` 属于退出或特殊调度状态。Perfetto 官方文档提醒，不是所有字符组合都有意义。遇到复合状态时，应保留原始 `end_state`，再对照锚点内核的 `TASK_*` 定义和产生该事件的代码。
+`X`、`I`、`P` 以及兼容路径中的 `x`、`W`、`K`、`N` 需要按输入格式与内核版本解释。Perfetto 官方文档提醒，不是所有字符组合都有意义。遇到复合状态时，同时保留 `thread_state.state` / `sched_slice.end_state`；先核对 `sched_switch` 的报告编码，再查对应版本的 `TASK_*`，不能把旧字符表当作 6.18 的完整可达状态集合。
 
 <!-- gracker-diagram: ch14-03-33-special-state-format -->
 ![特殊状态保留原值并按版本解释](../../assets/diagrams/ch14/ch14-03-33-special-state-format.png)
@@ -546,14 +561,14 @@ ORDER BY SUM(s.dur) DESC
 LIMIT 30;
 ```
 
-Android 17 的 Ftrace 导入器分别用 `cpu_irq` 和 `cpu_softirq` 轨道保存这些区间。汇总只能找出高频或长中断候选；判断它是否拖慢业务，还要计算中断区间与关键路径的时间交集，并结合网络、存储、显示或定时器对应的设备驱动和业务动作。
-
-`ksoftirqd/<cpu>` 是每个 CPU 对应的可调度内核线程，它的 Running 会直接出现在 CPU Scheduling 轨道。统计时要区分 SoftIRQ 在中断返回路径中的执行与 `ksoftirqd` 执行，避免重复计算。
+Android 17 的 Ftrace 导入器分别用 `cpu_irq` 和 `cpu_softirq` 轨道保存这些区间。这里按类型和名称跨 CPU 汇总，`SUM(dur)` 是已记录区间的包含式时长之和；不同 CPU 的并行区间、嵌套 HardIRQ 与 SoftIRQ 都可能重叠，它不是业务墙钟时间，也不能整表相加后直接从某线程 Running 中扣除。归因时先限定业务窗口、目标线程实际运行的同一 CPU 和交集，再对重叠中断区间取并集，结合对应设备驱动与业务动作验证。
 
 <!-- gracker-diagram: ch14-03-34-irq-window-union -->
 ![IRQ 汇总候选需要同 CPU 裁剪和并集](../../assets/diagrams/ch14/ch14-03-34-irq-window-union.png)
 
 图：整表 SUM 只能找候选，业务归因需与目标 Running 在同 CPU 上求交。 跨 CPU 并行和嵌套 IRQ 可重叠，不能把整表 SUM 直接从 Running 中扣掉。
+
+`ksoftirqd/<cpu>` 是对应 CPU 的可调度内核线程，其 Running 会出现在 CPU Scheduling 轨道，内部也可能有 SoftIRQ Slice。用 CPU 调度时间和 SoftIRQ 事件统计同一份工作时要核对重叠；不能把 `ksoftirqd` 的全部 Running 与其中 SoftIRQ 时长再相加。实际部署中的 CPU 在线状态、线程化中断和内核配置也要一并核对。
 
 <!-- gracker-diagram: ch14-03-35-ksoftirqd-overlap -->
 ![ksoftirqd 的调度时间可包住 SoftIRQ Slice](../../assets/diagrams/ch14/ch14-03-35-ksoftirqd-overlap.png)
@@ -567,43 +582,67 @@ Android 17 的 Ftrace 导入器分别用 `cpu_irq` 和 `cpu_softirq` 轨道保�
 ```sql
 INCLUDE PERFETTO MODULE sched.time_in_state;
 
-WITH target AS MATERIALIZED (
-  SELECT
-    s.ts,
-    s.dur,
-    t.utid,
-    p.upid
+WITH process_choice AS MATERIALIZED (
+  SELECT upid
+  FROM process
+  WHERE name = 'com.android.systemui'
+    AND (SELECT COUNT(*) FROM process
+         WHERE name = 'com.android.systemui') = 1
+), target AS MATERIALIZED (
+  SELECT s.id AS slice_id, s.ts, s.dur, t.utid, p.upid
   FROM slice AS s
-  JOIN thread_track AS tt
-    ON s.track_id = tt.id
-  JOIN thread AS t
-    USING (utid)
-  JOIN process AS p
-    USING (upid)
-  WHERE p.name = 'com.android.systemui'
-    AND t.is_main_thread
+  JOIN thread_track AS tt ON s.track_id = tt.id
+  JOIN thread AS t USING (utid)
+  JOIN process_choice AS p USING (upid)
+  WHERE t.is_main_thread
     AND s.name GLOB 'Choreographer#doFrame*'
     AND s.dur > 0
-  ORDER BY s.dur DESC
+  ORDER BY s.dur DESC, s.ts, s.id
   LIMIT 1
+), states AS MATERIALIZED (
+  SELECT x.state, x.io_wait, x.blocked_function, x.dur
+  FROM target
+  JOIN sched_time_in_state_for_thread_in_interval(
+    target.ts, target.dur, target.utid
+  ) AS x
+), coverage AS (
+  SELECT target.*,
+    COALESCE((SELECT SUM(dur) FROM states), 0) AS observed_ns
+  FROM target
 )
 SELECT
-  target.upid,
-  state,
-  io_wait,
-  blocked_function,
-  ROUND(SUM(x.dur) / 1e6, 3) AS state_ms
-FROM target
-JOIN sched_time_in_state_for_thread_in_interval(
-  target.ts,
-  target.dur,
-  target.utid
-) AS x
-GROUP BY target.upid, state, io_wait, blocked_function
-ORDER BY SUM(x.dur) DESC;
+  c.upid, c.utid, c.slice_id,
+  ROUND(c.dur / 1e6, 3) AS window_ms,
+  ROUND(c.observed_ns / 1e6, 3) AS observed_ms,
+  ROUND((c.dur - c.observed_ns) / 1e6, 3) AS unobserved_ms,
+  x.state, x.io_wait, x.blocked_function,
+  ROUND(x.dur / 1e6, 3) AS state_ms
+FROM coverage AS c
+LEFT JOIN states AS x ON TRUE
+ORDER BY x.dur DESC, x.state, x.io_wait, x.blocked_function;
+
 ```
 
-`MATERIALIZED` 让 Trace Processor 先求值并复用 `target` 这段公共表表达式，`GLOB` 则按通配符匹配 Slice 名称。查询使用具体进程和 Slice，执行前应确认录制中确有 SystemUI 帧。`doFrame` 最长不等于最差用户体验帧；Android 12 及以上可以先由 FrameTimeline 的 overrun 选中错过 deadline 的 `frame_id`，再把帧区间交给状态函数。
+`MATERIALIZED` 让 Trace Processor 求值并复用公共表表达式，`GLOB` 按通配符匹配名称。此示例只在包名恰好对应一个 `upid` 时选择最长且闭合的候选 Slice；同名实例超过一个或没有匹配 Slice 时返回空结果，应先确认现场实例，将 `process_choice` 改为准确的 `upid` 条件。输出的 `slice_id` / `utid` 用于回查，最长 `doFrame` 只是候选，并不等于最差用户体验帧。
+
+<!-- gracker-diagram: ch14-03-36-window-target-selection -->
+![业务状态查询先消除进程实例与 Slice 歧义](../../assets/diagrams/ch14/ch14-03-36-window-target-selection.png)
+
+图：只有明确实例和业务区间后，状态分解才有可回查的对象。 同名进程多实例或无匹配时返回空结果；最长 doFrame 只是候选。
+
+函数按半开区间 `[ts, ts + dur)` 裁剪，只累计正时长且已闭合的状态。`observed_ms` 为这些状态的覆盖时长，`unobserved_ms` 是业务窗口减去覆盖；未闭合尾部或数据缺口会留在未知部分。目标存在而无已知状态时保留一行，`state_ms` 为 NULL，不能解释为某状态耗时为零。覆盖超过窗口、出现负的未知值或明显断裂时，应先排查输入和区间重叠，不能继续当作有效占比。
+
+<!-- gracker-diagram: ch14-03-37-known-unknown-coverage -->
+![已知状态与未知覆盖分别报告](../../assets/diagrams/ch14/ch14-03-37-known-unknown-coverage.png)
+
+图：半开裁剪后累计闭合正时长，并报告业务窗口中未覆盖的部分。 未闭合尾部或缺口不能按零耗时处理；覆盖异常先检查输入。
+
+Android 12 及以上可先在 FrameTimeline 中确定目标进程、Layer、Actual / Expected 的 token 与完整区间，再按其截止超时和 jank 分类选择帧；表内 row id、应用 token、display token 不能统称同一个 `frame_id`。把选定窗口及明确的目标 `utid` 交给状态函数，只能解释该线程在此窗口的状态，不能替代 GPU / SurfaceFlinger 的整帧归因。该 tag 的这些区间函数面向少量窗口；批量分析大量 Slice 时应查看 `slices.time_in_state` 等相应标准库。
+
+<!-- gracker-diagram: ch14-03-38-frame-object-coordinates -->
+![FrameTimeline 选帧后明确目标线程窗口](../../assets/diagrams/ch14/ch14-03-38-frame-object-coordinates.png)
+
+图：帧对象、token、完整窗口与 utid 都要明确，再解释该线程的状态。 row id、应用 token 和 display token 不能混为 frame_id，单线程状态也不等于整帧耗时。
 
 ### 从状态走到修改点
 
@@ -617,21 +656,6 @@ ORDER BY SUM(x.dur) DESC;
 | IRQ / SoftIRQ 高 | 中断名称、CPU、设备驱动、业务时间范围 | 中断处理占用了多少关键区间 |
 
 状态只是分析入口。结论至少应包含业务区间、`upid` / `utid`、状态持续时间、至少一种能够解释原因的独立旁证，以及修改前后的同条件对照。
-
-<!-- gracker-diagram: ch14-03-36-window-target-selection -->
-![业务状态查询先消除进程实例与 Slice 歧义](../../assets/diagrams/ch14/ch14-03-36-window-target-selection.png)
-
-图：只有明确实例和业务区间后，状态分解才有可回查的对象。 同名进程多实例或无匹配时返回空结果；最长 doFrame 只是候选。
-
-<!-- gracker-diagram: ch14-03-37-known-unknown-coverage -->
-![已知状态与未知覆盖分别报告](../../assets/diagrams/ch14/ch14-03-37-known-unknown-coverage.png)
-
-图：半开裁剪后累计闭合正时长，并报告业务窗口中未覆盖的部分。 未闭合尾部或缺口不能按零耗时处理；覆盖异常先检查输入。
-
-<!-- gracker-diagram: ch14-03-38-frame-object-coordinates -->
-![FrameTimeline 选帧后明确目标线程窗口](../../assets/diagrams/ch14/ch14-03-38-frame-object-coordinates.png)
-
-图：帧对象、token、完整窗口与 utid 都要明确，再解释该线程的状态。 row id、应用 token 和 display token 不能混为 frame_id，单线程状态也不等于整帧耗时。
 
 <!-- gracker-diagram: ch14-03-39-state-to-fix -->
 ![从状态分解走到可验证修改点](../../assets/diagrams/ch14/ch14-03-39-state-to-fix.png)
@@ -662,7 +686,7 @@ D 覆盖多种不可中断等待，`in_iowait` 也是内核记账标志。应用
 
 ### “把各进程 CPU 利用率相加后应小于 100%”
 
-CPU 时间若以 Trace 墙钟时间为分母，多核进程可以超过 100%，全系统上限接近在线 CPU 数乘以 100%。报告必须写清百分比的分母：是按单核墙钟时间归一化、按设备总 CPU 容量归一化，还是直接报告 CPU 时间。
+CPU 时间若以窗口墙钟时长为分母，多线程进程并行运行时可以超过 100%；单条线程在有效且不重叠的调度记录中至多贡献一份该窗口 CPU 时间。在线 CPU 数恒定时，全系统这个口径的理论上限为 CPU 数乘以 100%；在线数变化时，上限改为该窗口平均在线 CPU 数乘以 100%。若要报告占设备可用 CPU 时间的比例，则另以窗口内在线 CPU 时间的积分作为分母。按核秒归一化也不等于按异构 CPU capacity 加权，报告必须写清窗口、对象、是否含 IRQ、分母和是否做容量加权，或直接报告原始 CPU 时间。
 
 <!-- gracker-diagram: ch14-03-40-cpu-percent-denominator -->
 ![CPU 百分比先说明对象与分母](../../assets/diagrams/ch14/ch14-03-40-cpu-percent-denominator.png)
@@ -682,6 +706,11 @@ CPU 时间若以 Trace 墙钟时间为分母，多核进程可以超过 100%，�
 - [Android 17 / Linux 6.18 `TASK_*` 定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched.h)
 - [Android 17 / Linux 6.18 调度 Tracepoint 定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
 - [Android 17 / Linux 6.18 调度器主流程](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)
+- [Android 17 任务状态编码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/types/task_state.cc)
+- [Android 17 采集错误统计](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/storage/stats.h)
+- [Android 17 内核符号读取](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/kallsyms/lazy_kernel_symbolizer.cc)
+- [Android 17 紧凑调度事件导入](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_sched_event_tracker.cc)
+- [Android 17 Runnable 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/sched/runnable.sql)
 - [高爷：Android Perfetto 系列 9，CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - [高爷：Systrace Runnable 分析](https://www.androidperformance.com/2022/01/21/android-systrace-cpu-state-runnable/)
 - [高爷：Systrace Running 分析](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/)

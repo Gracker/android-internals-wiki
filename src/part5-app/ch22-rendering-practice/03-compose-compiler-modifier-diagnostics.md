@@ -4,17 +4,17 @@ chapter: '22.3'
 section: '22.3'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-31'
-last_source_verified_at: '2026-10-17'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-17T10:39:27+08:00'
-verification_scope_note: '2026-10-17 source spot-check: Kotlin release lifecycle, 2.3.20/2.4.10 CSV writer, Compose BOM 2026.08.00, Foundation 1.12.0 prefetch/cache-window, UI 1.12.0 Node lifecycle and View interop, runtime-tracing 1.12.0, Strong Skipping, and Firebase Auth 24.2.0 artifact signatures; no new device benchmarks or compiler sample reruns.'
+verification_scope_note: '2026-10-25: fixed Runtime/Foundation/UI 1.12.0 sources, Kotlin 2.3.20 and 2.4.10 exact minimal compiler report reruns, report parser malformed-input checks, real API compilation and Firebase Auth 24.2.0 signature audit; no device performance measurements.'
 last_verified_against: 'Compose BOM 2026.08.00 (Runtime/Foundation/UI/runtime-tracing 1.12.0), Kotlin/Compose compiler 2.4.10, Android 17 android-17.0.0_r1; historical checks: Compose 1.10.0 and Foundation 1.10.6'
 confidence: high
 sources:
 - type: androidx
-  path: platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt
+  path: androidx.compose.runtime:runtime:1.12.0 sources.jar (PausableComposition.kt)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-compose-release/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt
+  path: androidx.compose.foundation:foundation:1.12.0 sources.jar (LazyLayoutCacheWindow.kt)
 - type: official
   path: https://developer.android.com/develop/ui/compose/performance/stability/diagnose
 - type: official
@@ -129,7 +129,7 @@ last_body_apply_at: '2026-08-31T11:18:58+08:00'
 
 Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadline（必须完成提交的截止点），以及哪些状态（能被 Compose 观察的快照状态）或输入让这段工作反复发生。只统计重组次数，容易漏掉 Layout、Drawing、RenderThread（执行渲染命令的专用线程） 和显示系统；只看整帧耗时，又定位不到具体的 Composable。
 
-> 源码基线，截至 2026-08-31：Android 17 / API 37 / `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；Compose BOM `2026.08.00`，POM 把 Runtime、Foundation、UI 约束到 `1.12.0`，另保留 BOM `2025.12.00` / Compose `1.10.0` 与 Foundation `1.10.6`，用于 Pausable Composition 的历史变化和复现实验；Compose Compiler 随 Kotlin `2.4.10` Gradle plugin 使用。
+> 源码基线，复核于 2026-10-25：Android 17 / API 37 / `android-17.0.0_r1`，内核参考标签 `android17-6.18-2026-06_r6`（不代表所有设备的内核）；Compose BOM `2026.08.00`，POM 把 Runtime、Foundation、UI 约束到 `1.12.0`，另保留 BOM `2025.12.00` / Compose `1.10.0` 与 Foundation `1.10.6`，用于 Pausable Composition 的历史变化和复现实验；Compose Compiler 随 Kotlin `2.4.10` Gradle plugin 使用。
 
 普通 `ComposeView` 不会单独创建 Surface，内容仍由当前应用窗口的 HWUI（Android 硬件加速 UI 渲染器）路径输出。我们顺着这条路径走一遍：UI 线程完成 Composition（根据状态生成或更新 UI 树）、Layout（测量与摆放）和 Drawing（记录绘制命令），经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread；随后图形缓冲区经 BLAST BufferQueue 提交、SurfaceFlinger 合成，再交给 HWC（Hardware Composer，硬件合成器）上屏。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，还要跟踪这些组件自己的图像生产者（producer）和 Surface layer（合成图层）。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md) 阅读。
 
@@ -196,7 +196,7 @@ fun ParallaxHeader(
 
 Kotlin 2.0.20 起默认启用 Strong Skipping，本文基线 Kotlin `2.4.10` 已经不用再设置旧选项 `enableStrongSkippingMode`。它改变两项编译结果：
 
-- 所有 restartable（可单独重新执行）的 Composable 默认也可标记为 skippable（参数满足条件时可跳过）；non-restartable（运行时可单独重新执行） 函数仍不可跳过，`@NonSkippableComposable` 可以显式禁止跳过。
+- 所有 restartable（可单独重新执行）的 Composable 默认也可标记为 skippable（参数满足条件时可跳过）；non-restartable（没有独立重启组）函数仍不可跳过，`@NonSkippableComposable` 可以显式禁止跳过。
 - Composable 内部创建的 lambda 会自动 memoize。捕获值用作缓存 key：stable 捕获值按 `equals()` 比较，unstable 捕获值按 `===` 比较。`@DontMemoize` 可以让某个 lambda 退出自动缓存。
 
 Stability（稳定性）是编译器对“参数能否可靠比较、属性变化能否被观察”的判定。进入重组时，skippable 函数还要比较本次与上次的参数：`stable` 参数使用 `equals()`，`unstable` 参数使用实例相等 `===`。参数相等拦住的只是父级重组向下传播；函数内部读取的 Snapshot 状态或动态 `CompositionLocal`（沿 Composition 树向下提供的值） 发生变化时，对应重组作用域仍会失效。
@@ -208,7 +208,7 @@ Strong Skipping 之后，Stability 依然在起作用：它决定参数采用哪
 
 图：Kotlin 2.0.20 起默认强跳过；标签是允许条件，实际跳过需运行时证据。
 
-- 普通 `List`、`Set`、`Map` 接口仍被编译器视为 unstable。同一个可变集合实例原地修改时，实例比较可能让调用被跳过，集合本身也不会发送 Snapshot 通知。
+- 普通 `List`、`Set`、`Map` 接口并不能保证底层不可变。本文 2.3.20 样例被判为已知 unstable，而 2.4.10 新产物中的集合与 `Snack` 出现 runtime / `Uncertain` 分类；应区分已知不稳定与运行时不确定，不能把旧报告标签直接套到当前编译器。同一个可变集合实例原地修改时，实例比较可能让调用被跳过，集合本身也不会发送 Snapshot 通知。稳定类型的 `equals()` 也有成本：为大集合加包装或稳定注解后，结构相等比较可能逐项扫描，未必比实例比较或局部重组便宜，仍须以目标热点测量。
 - `SnapshotStateList`、`SnapshotStateMap` 能通知运行时；不可变 UI 数据模型配合新集合实例，则能提供边界清晰的新旧快照。
 - `@Stable` 与 `@Immutable` 是开发者向编译器作出的契约。对象含有不可观察的可变字段时，就要避开这两个注解；错误契约可能让 UI 漏掉更新。
 - 手写 `remember` lambda 可能包含特定 key 或生命周期语义，升级 Kotlin 后也应对照编译器生成规则和调用方需求逐处确认，再决定去留。
@@ -332,7 +332,7 @@ Strong Skipping 不管理 producer 协程。跳过规则作用于 Composable 调
 
 #### `key` 保持列表项身份，`contentType` 约束复用兼容性
 
-Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基本等同于位置身份。列表头部插入或中间删除后，后续列表项会被视作换了身份，`remember` / `rememberSaveable` 状态和组合复用都可能受到影响。
+Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基本等同于位置身份。列表头部插入或中间删除后，位置身份本身仍可能保留，但同一位置对应了另一业务实体，`remember` / `rememberSaveable` 状态可能跟错数据；不能推导成所有后续组合都销毁。
 
 业务 key 应稳定且唯一。列表项使用 `rememberSaveable` 时，key 还要满足 Android `Bundle` 可保存类型的要求。`contentType` 用于告诉 Lazy 布局哪些列表项的组合结构可以复用；广告、标题、普通卡片结构不同，就应使用不同类型。
 
@@ -354,7 +354,7 @@ Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基
 
 图：不要由 targetSdk 或 Compose 大版本推断开关；现场先查最终依赖树。
 
-这项能力的覆盖面也要记牢：普通首帧 Composition、常规重组和非 Lazy 子树都在它的服务范围之外。拆分重组作用域、降低列表项的组合成本、提供稳定 key 和控制状态读取范围，这些手段仍然有效。
+这项能力的覆盖面要限定到本文讨论的 Foundation 默认 Lazy 预取路径：它不会自动把普通首帧 Composition、常规重组或非 Lazy 子树切分。Runtime 的公开可暂停子组合 API 可被其他调度器使用，不能据此说该 API 只能用于 Lazy。拆分重组作用域、降低列表项的组合成本、提供稳定 key 和控制状态读取范围，这些手段仍然有效。
 
 #### `LazyLayoutCacheWindow` 同时控制 ahead 与 behind
 
@@ -494,7 +494,7 @@ LazyColumn {
 
 `produceState` 由 `remember` 保留的 `MutableState` 和带 key 的 `LaunchedEffect` 组成，这套实现与 key 语义前面已经交代；它的生命周期还留有两个盲区。长期 Flow 依靠 `collect` 自身的取消与 `finally` 结束，无限收集不会自然返回，把 `awaitDispose` 写在它后面就永远执行不到；需要在切换用户或请求时立即显示“加载中”，producer 必须显式赋值，key 变化本身不会把 `State` 重置成 `initialValue`。
 
-`State` 的 conflation（合并更新） 只会过滤相等结果，或让观察者跳过来不及读取的中间值；上游的网络请求、解析和每次赋值一点都不会少。高频源要在数据层明确采用 `sample`（按周期取样） 按周期取样、`conflate`（消费跟不上时只保留较新值） 在消费跟不上时只保留较新值、`distinctUntilChanged`（过滤连续相等值） 过滤连续相等值，或做领域聚合。多个数据源必须共同满足一条业务约束时，应先在 ViewModel 产出一份不可变 `UiState`，别指望两个独立 producer 恰好在同一帧完成。
+`State` 的 conflation（合并更新） 只会过滤相等结果，或让观察者跳过来不及读取的中间值；上游的网络请求、解析和每次赋值一点都不会少。高频源要在数据层按语义选择 `sample`（按周期取样）、`conflate`（消费跟不上时保留较新值）、`distinctUntilChanged`（过滤连续相等值），或做领域聚合。这些操作只影响其下游；若要少做昂贵解析或转换，要把合适的节流放在重工作之前。多个数据源必须共同满足一条业务约束时，应先在 ViewModel 产出一份不可变 `UiState`，别指望两个独立 producer 恰好在同一帧完成。
 
 Strong Skipping 只改变可组合调用和 lambda 的跳过机会；作用域中的 Job、Effect key、状态变更策略（State mutation policy，判断新旧值是否等价）和 producer 取消语义都不受它影响。Pausable Composition 也只切分尚未 apply 的 Composition，已经启动的网络请求、Flow 收集协程和回调不会随它自动暂停。
 
@@ -522,7 +522,7 @@ BOM 只约束它声明的 Compose artifacts（依赖模块），不会自动添�
 
 Kotlin/Compose 升级验收还应记录第三方 AAR/JAR 的 POM 与 class 签名：`firebase-auth:24.2.0` 的 Google Maven POM 未声明 `org.checkerframework` / `checker-qual`，但其 `classes.jar` 中至少 `FirebaseAuth$IdTokenListener.class`、`FirebaseAuth.class`、`zzbm.class`、`zzca.class` 和 `zzcj.class` 的签名字符串包含 `org/checkerframework/checker/initialization/qual/UnknownInitialization`。[已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom；已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.aar；来源: https://juejin.cn/post/7678586341090803748]
 
-在 FlutterFire `firebase_auth 6.6.0` 的 Kotlin 重写中，`FirebaseAuth.IdTokenListener { auth -> ... }` 这类 Java SAM lambda 让 `auth` 参数由 Kotlin 推断；材料记录 Kotlin 2.4 会把缺失注解类导致的 “inferred type is inaccessible” 路径表现为编译错误，而 Kotlin 2.3 主要表现为警告。[来源: https://juejin.cn/post/7678586341090803748]
+以下 FlutterFire 故障经过来自二手案例记录，本文没有复现其完整构建矩阵，不能据此泛化所有 Kotlin 2.4 项目。在 FlutterFire `firebase_auth 6.6.0` 的 Kotlin 重写中，`FirebaseAuth.IdTokenListener { auth -> ... }` 这类 Java SAM lambda 让 `auth` 参数由 Kotlin 推断；材料记录 Kotlin 2.4 会把缺失注解类导致的 “inferred type is inaccessible” 路径表现为编译错误，而 Kotlin 2.3 主要表现为警告。[来源: https://juejin.cn/post/7678586341090803748]
 
 把这个故障算到 Compose Runtime、Stability 或 `Modifier.Node` 头上是误诊：它是 Kotlin 前端读取依赖 class 元数据时暴露出的 classpath / 发布元数据问题，排查顺序是先锁定 Kotlin、AGP、Firebase 与 FlutterFire 版本，再看报错中的 annotation class、来源 artifact 和 POM 依赖。[来源: https://juejin.cn/post/7678586341090803748；已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom]
 
@@ -735,7 +735,7 @@ fun NonUnitResult(
 ): Int = count
 ```
 
-`Set` 和 `List` 的声明类型说明不了底层实现不可变，因此 `Snack` 和 `snacks` 会进入不稳定路径。函数类型由编译器按稳定类型处理。
+`Set` 和 `List` 的声明类型说明不了底层实现不可变。下列输出固定来自 2.3.20，其中 `Snack` 和 `snacks` 被判为已知不稳定；2.4.10 的运行时不确定分类见后面的实际对照。函数类型由编译器按稳定类型处理。
 
 #### 2. `composables.txt` 的实测输出
 
@@ -777,7 +777,7 @@ fun lab.NonUnitResult(
 
 #### 3. `classes.txt` 的实测输出
 
-同一编译任务对 `Snack` 产生以下记录。
+同一 Kotlin 2.3.20 编译任务对 `Snack` 产生以下记录。
 
 ```text
 unstable class lab.Snack {
@@ -788,6 +788,18 @@ unstable class lab.Snack {
 ```
 
 `val` 固定的是引用本身，引用指向的对象仍可能被修改。`Set<String>` 是接口，运行时对象仍可能是可变集合，所以编译器证明不了它不可变。
+
+2026-10-25 以同一最小源码、默认功能开关和各自同版本标准库重新编译，Kotlin 2.4.10 的实际类报告为：
+
+```text
+runtime class lab.Snack {
+  stable val id: Long
+  runtime val tags: Set<String>
+  <runtime stability> = Uncertain(Set)
+}
+```
+
+函数报告中的 `snacks` 行变成 `snacks: List<Snack>`，没有静态 `stable` / `unstable` 前缀；`UnstableList` 这个示例函数名不代表当前推断结果。模块的 `inferredUnstableClasses` 从 1 变为 0，`inferredUncertainClasses` 从 0 变为 1。CSV 表头、模块字段和四项默认 `featureFlags` 保持一致，四个函数的 restartable / skippable 标签也保持不变。生成字节码对该参数包含按稳定性位选择 `changed()` 或 `changedInstance()` 的分支，因此不应对所有 2.4.10 集合统一声称“必定引用比较”。分类变了也不代表普通可变集合突然具有 Snapshot 通知能力。
 
 <!-- gracker-diagram: a234-35-report-version-diff -->
 ![同一源码在两个编译器中的稳定性报告不同](../../assets/diagrams/ch22/a234-35-report-version-diff.png)
@@ -827,11 +839,11 @@ package,name,composable,skippable,restartable,readonly,inline,isLambda,hasDefaul
 
 - 稳定参数使用对象相等，即 `equals()`。
 - 不稳定参数使用引用相等，即 `===`。
-- 所有参数均满足各自的“未变化”条件时，函数体才会被跳过。
+- 父级调用传播到未被自身状态失效的可跳过作用域时，各参数还须满足各自的“未变化”条件；内部读取的 Snapshot 状态已经使该组失效时，不能只凭参数相等跳过。
 
 这组规则带出两个容易漏掉的边界。
 
-传入一个内容相同但新创建的 `List`，引用不同，`UnstableList` 仍会重组。每次在调用点执行 `items.map { ... }` 或 `items.toList()`，都可能制造新容器。
+在 2.3.20 这个已知不稳定参数样例中，传入内容相同但新创建的 `List`，引用不同，`UnstableList` 仍会重组。2.4.10 的运行时不确定参数还需结合稳定性位与生成代码判断，不能只由集合接口名推断比较分支。每次在调用点执行 `items.map { ... }` 或 `items.toList()`，都可能制造新容器。
 
 把普通 `MutableList` 原地修改后继续传入同一引用，引用比较可能允许跳过；普通集合的修改又不会通知 Snapshot 系统，界面可能保留旧内容。解决方向是不可变 UI 模型、可观察的 Snapshot 状态或明确的新值流转；用虚假的稳定性注解盖住可变对象，只是把问题藏起来。
 
@@ -877,7 +889,7 @@ Lambda 是可以作为值传递的函数表达式；它引用外部变量时，�
 
 #### 2. 集合与跨模块模型
 
-标准库的 `List`、`Set`、`Map` 都是接口，Compose 编译器按不稳定类型处理。我们常用的处理方式包括：
+标准库的 `List`、`Set`、`Map` 都是接口，不能证明底层不可变；精确报告可能是已知不稳定，也可能像本篇 2.4.10 样例一样标为运行时不确定，具体按该编译器的产物核对。我们常用的处理方式包括：
 
 - 在 UI 边界转换为持久不可变集合；
 - 用满足不可变契约的包装类型承载集合；
@@ -1126,6 +1138,13 @@ def read_csv(path: Path, root: Path) -> dict:
         rows = list(reader)
 
     for row in rows:
+        if None in row or any(value is None for value in row.values()):
+            raise ValueError(f"{path}: malformed CSV row: {row!r}")
+        if row[""] != "" or not row["package"] or not row["name"]:
+            raise ValueError(f"{path}: invalid identity or trailing field")
+        for column in ("groups", "calls"):
+            if not row[column].isascii() or not row[column].isdecimal():
+                raise ValueError(f"{path}: {column} must be a nonnegative integer")
         for column in BOOLEAN_COLUMNS:
             if row[column] not in {"0", "1"}:
                 raise ValueError(
@@ -1155,6 +1174,15 @@ def read_module(path: Path, root: Path) -> dict:
         missing.append("featureFlags")
     if missing:
         raise ValueError(f"{path}: missing fields: {missing}")
+    for key in MODULE_KEYS:
+        if type(data[key]) is not int or data[key] < 0:
+            raise ValueError(f"{path}: {key} must be a nonnegative integer")
+    flags = data["featureFlags"]
+    if not isinstance(flags, dict) or not all(
+        isinstance(key, str) and type(value) is bool
+        for key, value in flags.items()
+    ):
+        raise ValueError(f"{path}: featureFlags must map names to booleans")
     return {
         "file": relative(path, root),
         "metrics": {key: data[key] for key in MODULE_KEYS},
@@ -1189,7 +1217,12 @@ if __name__ == "__main__":
     main()
 ```
 
-脚本在表头变化时直接失败，避免 Kotlin 升级后继续产出看似正常的错误统计。它列出“可重启但不可跳过”的函数供评审，不把这类函数自动判为失败。
+脚本在表头、行列数、布尔编码或计数类型不符时直接失败，避免 Kotlin 升级或产物损坏后继续生成错误统计。CSV 的函数全名仍不能独自区分所有重载，因此此脚本保留行计数，不能把函数名集合当作完整签名索引。它列出“可重启但不可跳过”的函数供评审，不把这类函数自动判为失败。
+
+<!-- gracker-diagram: a234-19-ci-schema -->
+![报告快照要先验证格式再比较语义](../../assets/diagrams/ch22/a234-19-ci-schema.png)
+
+图：字段相同不等于代码生成相同；快照不是运行时 Snapshot，也不是自动性能评分。
 
 下面的命令用于从应用构建目录生成快照。
 
@@ -1200,11 +1233,6 @@ python3 tools/compose_metrics_snapshot.py \
 ```
 
 示例假设团队把脚本保存为 `tools/compose_metrics_snapshot.py`。输出仍是诊断产物；是否阻断合入应由项目基线、函数变化原因和运行时回归共同决定。
-
-<!-- gracker-diagram: a234-19-ci-schema -->
-![报告快照要先验证格式再比较语义](../../assets/diagrams/ch22/a234-19-ci-schema.png)
-
-图：字段相同不等于代码生成相同；快照不是运行时 Snapshot，也不是自动性能评分。
 
 #### 3. 合理的门禁规则
 
@@ -1326,7 +1354,7 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 - [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
 - [本知识库：Android 17 FrameTimeline](../../part1-fundamentals/ch02-rendering/12-android17-frametimeline-composition-boundary.md)
 
-当前工具链与运行时结论核查于 2026-08-31。编译器报告样例来自 Kotlin 2.3.20 对最小源码的实测输出，2.4.10 源码核对用于确认 CSV 与模块 JSON 结构仍一致；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
+当前工具链与运行时结论复核于 2026-10-25。最小源码已分别用 Kotlin/Compose Compiler 2.3.20 与 2.4.10 重新编译，正文的 2.3.20 关键报告与新产物一致，2.4.10 的 CSV 与模块 JSON 字段也已核对；升级 Kotlin 或 Compose 后，仍应重新生成报告并复核字段、功能开关与跟踪名称。
 
 ### 常见误判
 
@@ -1558,7 +1586,7 @@ fun Modifier.bottomStripe(
 Node 有四个生命周期入口需要区分：
 
 - `create()` 创建对象；Node 此时尚未附着。
-- `onAttach()` 表示 Node 已进入 UI 树，可以访问 `owner` 和 `coroutineScope`；实现相应消费接口后也可读取 `CompositionLocal`。此时同一轮更新中的其他节点不一定都已处理完，需要观察整棵树的最终状态时，应通过 `sideEffect` 延后执行。
+- `onAttach()` 表示 Node 已进入 UI 树，可以使用附着期 API 和 `coroutineScope`；实现相应消费接口后也可读取 `CompositionLocal`。此时同一轮更新中的其他节点不一定都已处理完，需要观察整棵树的最终状态时，应通过 `sideEffect` 延后执行。
 - `onDetach()` 在 Node 离开当前 UI 树前调用；之后节点协程作用域会被取消。
 - `onReset()` 在 Node 即将随布局进入复用池时调用，例如采用可复用内容机制的 Lazy 列表项滚出视口。调用发生时 Node 仍处于附着状态，随后才解除附着；未进入复用流程的普通离屏变化则未必触发 `onReset()`。
 
@@ -1662,7 +1690,7 @@ private class LocalBackgroundNode :
 }
 ```
 
-`currentValueOf()` 本身不会像 `CompositionLocal.current` 那样让调用处参与重组。在 `measure()`、`draw()` 等受快照观察的阶段内调用时，Compose 会记录读取依赖；对应 `CompositionLocal` 改变后，只使读取它的阶段失效。
+`currentValueOf()` 本身不会像 `CompositionLocal.current` 那样让调用处参与重组。在 `measure()`、`draw()` 等受快照观察的阶段内调用时，Compose 会记录读取依赖；对应 `CompositionLocal` 改变后，该阶段会失效。若同时存在组合读取者、静态 Local 的 Provider 更新或结构变化，仍可能发生组合等其他工作，不能据此保证整棵子树只绘制而不重组。
 
 如果读取发生在这些阶段之外，需要同时实现 `ObserverModifierNode`，并在每次通知后重新进入 `observeReads`。
 
@@ -1717,13 +1745,13 @@ private class HorizontalInsetNode(
         constraints: Constraints,
     ): MeasureResult {
         val insetPx = inset.roundToPx()
-        val horizontal = insetPx * 2
+        val horizontal = Math.multiplyExact(insetPx, 2)
         val childConstraints =
             constraints.offset(horizontal = -horizontal)
         val placeable = measurable.measure(childConstraints)
 
         val width =
-            constraints.constrainWidth(placeable.width + horizontal)
+            constraints.constrainWidth(Math.addExact(placeable.width, horizontal))
         val height =
             constraints.constrainHeight(placeable.height)
 
@@ -1746,12 +1774,12 @@ private data class HorizontalInsetElement(
 }
 
 fun Modifier.horizontalInset(inset: Dp): Modifier {
-    require(inset.value >= 0f)
+    require(inset.value.isFinite() && inset.value >= 0f)
     return this then HorizontalInsetElement(inset)
 }
 ```
 
-默认自动失效会在 `inset` 更新后安排重新测量。示例限制了非负值；生产实现还要根据产品允许的最大尺寸防止像素加法溢出。
+默认自动失效会在 `inset` 更新后安排重新测量。示例只接受有限非负 Dp，并用精确整数运算拒绝像素乘加溢出；生产实现还应按产品允许尺寸限制范围，避免无法表示或不合理的测量结果。
 
 这段代码用于解释测量协议。业务仅需水平内边距时，应直接使用 `Modifier.padding(horizontal = inset)`；只有内置 Modifier 表达不了这种布局语义时，才值得保留自定义节点。
 

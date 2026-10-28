@@ -4,8 +4,10 @@ chapter: '1.23'
 section: '1.23'
 status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
-last_verified: '2026-08-18'
-last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6 / Android Developers notification docs checked 2026-08-18
+last_verified: '2026-10-27'
+last_verified_against: AOSP android-17.0.0_r1 notification client/NMS/SystemUI sources and Android Developers notification docs checked 2026-10-27; kernel baseline android17-6.18-2026-06_r6 unchanged
+last_source_verified_at: '2026-10-27'
+last_idle_audit_at: '2026-10-27'
 confidence: high
 sources:
 - type: aosp
@@ -500,7 +502,7 @@ NMS 也会对未正确分组的多条通知执行自动聚合。自动 summary �
 
 ### POST_NOTIFICATIONS 运行时权限
 
-Android 13 / API 33 起，非豁免通知受 `POST_NOTIFICATIONS` 运行时权限控制。应用仍可以调用 `notify()`；NMS 会创建和检查记录，并在 post 阶段根据包权限与渠道状态决定是否抑制显示。“权限拒绝后通知完全不进入 NMS”的说法并不准确。
+Android 13 / API 33 起，非豁免通知受 `POST_NOTIFICATIONS` 运行时权限控制。应用调用 `notify()` 后，请求仍可能进入 NMS；`enqueueNotificationInternal()` 创建记录后，会在同步调用的 `checkDisqualifyingFeatures()` 中检查包权限与渠道状态。不通过时直接拒绝，不会投递 `EnqueueNotificationRunnable`。通过同步检查的记录在 `PostNotificationRunnable` 中还会再次核验，处理两阶段之间的权限或渠道变化。排查权限拒绝时，需要区分同步阶段拒绝与 post 阶段复核失败。
 
 对普通通知，权限被拒绝时通常不会因为这项拒绝向 `notify()` 调用抛出异常，通知也不会进入通知栏。参数非法、包身份错误、危险 PendingIntent 或无效 FGS 通知仍可能抛异常，不能把 `notify()` 当成永不失败。
 
@@ -660,7 +662,7 @@ Android 17 的 Live Update 可以使用标准系统样式（Standard Style）、
 - manifest 声明非运行时权限 `android.permission.POST_PROMOTED_NOTIFICATIONS`；
 - 调用 `setRequestPromotedOngoing(true)`；
 - 通知处于进行中；
-- 提供 content title（内容标题）；
+- 满足样式对应的标题条件：普通样式提供 content title（内容标题），`BigTextStyle` 也可使用展开标题，`CallStyle` 使用通话对象姓名；Android 17 的 `MetricStyle` 可由指标满足该条件，无需额外调用 `setContentTitle()`；
 - 不使用 custom content view（自定义内容视图）；
 - 不是 group summary（组摘要）；
 - 不请求 colorized（整张通知使用强调色背景）；

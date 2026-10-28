@@ -4,8 +4,8 @@ chapter: '21.9'
 section: '21.9'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: Compose BOM 2026.08.00 (Compose 1.12.0), AOSP androidx-compose-release@963bf914
+last_verified: '2026-10-25'
+last_verified_against: Compose BOM 2026.08.00 (Compose 1.12.0), AOSP AndroidX fixed commit 963bf914f78b389bdddef0da7f36bee19d897274; official docs checked 2026-10-25
 confidence: medium-high
 tags:
 - compose
@@ -22,9 +22,9 @@ related_chapters:
 - '13.8'
 sources:
 - type: androidx
-  path: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt
+  path: platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt
 - type: androidx
-  path: platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt
+  path: platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/overview
 - type: clippings-structure
@@ -37,7 +37,7 @@ sources:
 
 # Compose 首次组合开销与启动性能
 
-Jetpack Compose（下文简称 Compose） 的首屏比传统 View 页面多一个阶段：组合（composition）。组合执行 `@Composable` UI 描述，并把结果记录成一份后续可以继续更新的结构。这个阶段值多少钱，我们先对比两边各做哪些事：View 页面要执行 XML inflate（读取布局 XML 并创建 View 对象）、对象绑定、测量、布局和绘制；Compose 要执行 UI 描述，维护 Slot Table（保存调用分组、参数和 `remember` 槽位的运行时表），创建 UI 节点，再完成布局和绘制。Slot Table 是 runtime 维护的一张表，记录调用分组、参数和 `remember` 槽位。两种 UI 工具包的成本结构不同，差值要放在设备、构建类型、编译状态和页面内容的具体背景下才有意义。
+Jetpack Compose（下文简称 Compose） 的首屏比传统 View 页面多一个阶段：组合（composition）。组合执行 `@Composable` UI 描述，并把结果记录成一份后续可以继续更新的结构。这个阶段值多少钱，我们先对比两边各做哪些事：View 页面要执行 XML inflate（读取布局 XML 并创建 View 对象）、对象绑定、测量、布局和绘制；Compose 要执行 UI 描述，维护 Slot Table（保存调用分组、参数和 `remember` 槽位的运行时表），创建 UI 节点，再完成布局和绘制。两种 UI 工具包的成本结构不同，差值要放在设备、构建类型、编译状态和页面内容的具体背景下才有意义。
 
 > 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`。
 
@@ -50,7 +50,7 @@ Compose 仍是随应用发布的 AndroidX 库，没有并入 Android 17 framewor
 我们从入口看起。AndroidX 的 `ComponentActivity.setContent` 扩展函数会先检查 `android.R.id.content` 的第一个子 View 是不是 `ComposeView`；没有可复用实例时，它会：
 
 1. 创建 `ComposeView`；
-2. 设置父 `CompositionContext`（让子组合继承调度关系和环境值） 与 content lambda（声明 UI 的 `@Composable` 根函数）：前者让子组合继承调度关系和环境值，后者声明 UI 的 `@Composable` 根函数；
+2. 设置父 `CompositionContext`（继承调度关系和环境值）与 content lambda（声明 UI 的 `@Composable` 根函数）；
 3. 把提供生命周期、ViewModel 存储和状态恢复能力的 `LifecycleOwner`、`ViewModelStoreOwner`、`SavedStateRegistryOwner` 安装到 decor view，也就是窗口最外层的 View；
 4. 调用 Activity 的 `setContentView()`。
 
@@ -77,10 +77,10 @@ Compose 仍是随应用发布的 AndroidX 库，没有并入 Android 17 framewor
 
 图：图中顺序表示逐级回退查找，前一来源存在时不再访问后续来源；不是四个 Recomposer 依次建立。
 
-- Lifecycle 至少到 `STARTED` 时，frame clock（向动画和重组提供帧时间的时钟） 才持续提供可见帧，它向动画和重组提供帧时间；
+- `ON_CREATE` 启动 recomposer 的运行循环；到 `STARTED` 时才恢复 frame clock 的帧时间分发。frame clock 为动画等工作提供时间，不代表像素已经显示，也不是初始 composition 必须等到 STARTED 的门槛；
 - `ON_STOP` 会暂停 frame clock；
 - `ON_DESTROY` 会取消对应 `Recomposer`；
-- 宿主从窗口 detach 时，窗口级 `Recomposer` 也会被取消；
+- 窗口级 `Recomposer` 所依附的根宿主 View 从窗口 detach 时，该 Recomposer 会被取消；这不等同于窗口中任意一个 item 的 `ComposeView` detach 都取消整个窗口调度器；
 - 找不到必需的 View tree owner 时，当前实现会抛出异常，不会安静等待一个不确定时长。
 
 <!-- gracker-diagram: a230-04-lifecycle-clock -->
@@ -100,8 +100,8 @@ Fragment 中使用 `ComposeView` 时，我们要让 View 树 owner 与组合释�
 
 - 初始组合没有上一轮结果可复用，也就没有“靠上一轮参数跳过”这回事；
 - 条件分支没有选中的内容不会执行；
-- Lazy layout（按需组合可见项的布局） 按需组合可见项，尚未请求的 item 不会因为数据集合存在就全部执行；
-- 已进入 group 中 `remember { ... }` 的 calculation（花括号内的计算），也就是花括号内的计算，会执行一次；
+- Lazy layout 按布局请求组合 item；请求范围可以包含预取、超出可见区域或保留的项，尚未请求的 item 不会因为数据集合存在就全部执行；
+- 已进入 group 中 `remember { ... }` 的 calculation 会在首次执行时计算；
 - 一个 composable 可以不产生布局节点，也可以产生多个节点，函数调用数与 UI 节点数没有换算关系。
 
 所以首次成本更适合按几部分加总来估计，`N × M` 这样的层数公式套不上：被进入的 composable 工作量；创建的布局节点、modifier 节点和 semantics 节点；业务计算、子组合、文本与图片处理；以及应用变更、测量、布局和绘制。其中 modifier 节点承载布局、绘制或输入行为，semantics 节点保存无障碍和测试所需的语义信息。
@@ -119,7 +119,7 @@ Fragment 中使用 `ComposeView` 时，我们要让 View 树 owner 与组合释�
 2. `onLayout()` 完成节点放置，并派发位置回调；
 3. `dispatchDraw()`/内部 draw 路径记录绘制命令；
 4. HWUI 与 `RenderThread` 处理 display list（已记录的绘制命令）、GPU 工作和图形 buffer 提交；
-5. SurfaceFlinger（系统显示合成服务） 合成各窗口图层后，像素才出现在屏幕上。
+5. SurfaceFlinger 组织窗口图层合成，经 HWC/GPU 与显示提交、实际呈现后，像素才出现在屏幕上；不能把组合结束或一次 buffer 提交直接等同屏幕显示。
 
 组合只是首帧中的一段。若 Perfetto 系统 trace 显示组合很短，而主线程 I/O（磁盘或网络输入输出）、文本测量、图片解码、View traversal 或 RenderThread 很长，我们该去处理对应的那一段；继续删 composable 层级帮不上忙。
 
@@ -130,7 +130,7 @@ Fragment 中使用 `ComposeView` 时，我们要让 View 树 owner 与组合释�
 
 ## 2. 初始 composition 与重组不能混为一谈
 
-初始组合和重组是两件事，优化手段也各有归属。重组（recomposition）是状态变化后重新执行受影响 UI 描述的过程：重组优化看“输入改变后，哪些 group 可以跳过”，初始组合看“首屏第一次要建立多少内容”。稳定类型、Strong Skipping（参数和状态允许时跳过可跳过调用的编译器策略）、延后状态读取等能力主要减少后续重复工作；Strong Skipping 指参数和状态允许时跳过可跳过调用的编译器策略。首屏要进入的根内容，不在这些能力的节省范围内。
+初始组合和重组是两件事，优化手段也各有归属。重组（recomposition）是状态变化后重新执行受影响 UI 描述的过程：重组优化看“输入改变后，哪些 group 可以跳过”，初始组合看“首屏第一次要建立多少内容”。稳定类型、Strong Skipping（参数和状态允许时跳过可跳过调用的编译器策略）、延后状态读取等能力主要减少后续重复工作。首屏要进入的根内容，不在这些能力的节省范围内。
 
 `remember` 只缓存当前组合后续可复用的结果。下面的写法可以避免每次重组都重新排序，但排序仍处于初始组合的首帧路径。
 
@@ -145,9 +145,9 @@ fun HomeScreen(items: List<Item>) {
 }
 ```
 
-这段代码适合计算规模可控、结果只服务 UI 的场景。数据量大或排序涉及 I/O 时，我们把排序挪到数据准备阶段完成——repository（封装数据来源的层） 封装数据来源，use case（封装一项业务操作的层） 封装一项业务操作，ViewModel 也可以承担——再把准备好的 UI state（可直接用于渲染的页面状态），也就是可直接用于渲染的页面状态，传入首屏。把代码从 Activity 移进 ViewModel 并不会自动延迟它：只要首屏同步创建 ViewModel 并等待结果，这段工作仍属于首帧显示时间（TTID） TTID（Time to Initial Display，首帧显示时间） 或完整显示时间（TTFD） TTFD（Time to Full Display，完整显示时间） 的统计路径。
+这段代码适合计算规模可控、结果只服务 UI 的场景。数据量大或伴随 I/O 时，把工作放到 repository、use case 或 ViewModel 的数据准备阶段，向首屏提供可直接渲染的 UI state。位置变化不会自动延迟工作：首屏若仍同步创建 ViewModel 并等待结果，成本依旧落在 TTID（首次显示）或 TTFD（充分显示）的统计路径上。
 
-`remember(LazyThreadSafetyMode.NONE)` 并不存在于 Compose API：`remember` 的公开重载接收 calculation 和可选 keys，`LazyThreadSafetyMode` 参数属于 Kotlin `lazy()`。它也关不掉 Snapshot 对状态读取和失效通知的跟踪。
+`remember(LazyThreadSafetyMode.NONE) { ... }` 可以匹配 `key1: Any?` 重载，但这个枚举只会被当作缓存 key，不会配置线程安全模式。线程安全模式参数属于 Kotlin `lazy()`；Compose `remember` 不因此关闭 Snapshot 状态读取或失效跟踪。
 
 <!-- gracker-diagram: a230-07-remember-key-boundary -->
 ![remember 可避免重复计算，首次成本仍在组合里](../../assets/diagrams/ch21/a230-07-remember-key-boundary.png)
@@ -169,7 +169,7 @@ fun HomeScreen(items: List<Item>) {
 
 “Compose Runtime 有多少个类”“解释器比 AOT 慢几倍”这类数字，落到本项目首帧时间上还隔着好几层：AOT 是安装期或安装后的提前编译；R8 是 release 构建使用的代码压缩与优化工具，会改变类和方法布局；Baseline Profile 是一组随应用交付的热点类与方法规则，会改变安装后的编译状态；设备的存储、CPU、刷新率和热状态也各不相同。所以固定毫秒数只能作为某次实验的结果，引用时要连同设备型号、系统版本、APK、启动模式、编译模式和样本分布一起保存。
 
-`ComponentActivity` 与 `AppCompatActivity` 之间的差值同样要实测。只需要 Activity 基础能力的纯 Compose 页面可以优先评估 `ComponentActivity`；依赖 AppCompat delegate、旧主题或兼容能力的页面保留 `AppCompatActivity`。迁移是否有收益，要比较同一 release APK 的 Macrobenchmark（从应用进程外测量完整用户流程的基准测试） 结果；Macrobenchmark 从应用进程外测量完整用户流程，基类名称代替不了证据。
+`ComponentActivity` 与 `AppCompatActivity` 之间的差值同样要实测。只需要 Activity 基础能力的纯 Compose 页面可以优先评估 `ComponentActivity`；依赖 AppCompat delegate、旧主题或兼容能力的页面保留 `AppCompatActivity`。迁移是否有收益，要比较同一 release APK 的 Macrobenchmark（从应用进程外测量完整用户流程的基准测试） 结果；基类名称代替不了证据。
 
 ## 4. Baseline Profile 与 Startup Profile 各优化什么
 
@@ -229,7 +229,7 @@ Compose UI 1.11 起提供 `ComposeViewContext`，可让尚未 attach 的 `Compos
 
 `remember` 适合缓存 UI 局部对象；阻塞工作放进 `remember`，安全性问题依然存在。`rememberSaveable` 会把值接入实例状态保存与恢复，适合承载小而能稳定序列化的值；大对象或无法稳定序列化的业务模型应放在别处。
 
-`LaunchedEffect` 会在进入组合后启动协程，“首帧后免费执行”的印象要打折扣：它的启动、主线程片段以及切换 dispatcher（决定协程在哪类线程执行的调度器） 前的代码，仍可能与首帧竞争；dispatcher 决定协程在哪类线程执行。首屏必需数据应有明确的 loading/ready 状态，也就是区分“仍在准备”和“已经可显示”；非必需任务交给受生命周期管理的后台工作，并用 trace 验证调度位置。
+`LaunchedEffect` 会在进入组合后启动协程，“首帧后免费执行”的印象要打折扣：它的启动、主线程片段以及切换 dispatcher 前的代码，仍可能与首帧竞争。首屏必需数据应有明确的 loading/ready 状态（仍在准备 / 已可显示）；非必需任务交给受生命周期管理的后台工作，并用 trace 验证调度位置。
 
 <!-- gracker-diagram: a230-10-effects-and-data -->
 ![缓存、后台数据与 Effect 都有各自的成本归属](../../assets/diagrams/ch21/a230-10-effects-and-data.png)
@@ -269,7 +269,7 @@ Lazy 首屏还要注意：
 如果首帧先用旧值绘制，布局回调再写状态、触发下一帧组合，就形成了“后一个阶段把结果写回前一个阶段”的循环，常被称为 phase feedback（阶段反馈）：
 
 - `onSizeChanged()` / `onGloballyPositioned()` 得到尺寸；
-- 把尺寸写进 `MutableState`（会触发 Compose 失效通知的可变状态）——这类可变状态会触发 Compose 失效通知；
+- 把尺寸写进 `MutableState`，触发失效通知；
 - 在同一布局关系中把该状态读成 `padding`、`height` 或子节点位置。
 
 若父子关系可以在同一次测量中求解，应使用现有布局组件或自定义 `Layout`。自适应页面也应从当前 constraints 或窗口尺寸类别派生结构，避免把一次布局结果绕回组合。
@@ -354,17 +354,23 @@ class HomeStartupBenchmark {
             setupBlock = { pressHome() }
         ) {
             startActivityAndWait()
+            // 目标页面须将完成态 home_ready 标记导出为 UiAutomator resource id。
+            check(device.wait(Until.hasObject(By.res("home_ready")), 10_000)) {
+                "Home did not reach the benchmark's interactive completion state"
+            }
         }
     }
 }
 ```
 
-`CompilationMode.Partial(Require)` 会要求目标 APK 同时包含可安装的 Baseline Profile 与 ProfileInstaller，缺少任意一项都会在编译准备阶段报错。它会按 profile 做部分 AOT 编译，适合验证应用的 profile 交付是否完整。另建 `CompilationMode.None()` 场景会清除编译 profile，不做预编译，并允许代码在运行中 JIT（即时编译）；它用于观察通常偏慢的最差条件，性能下界和用户默认安装状态都不是它的定位。比较前要固定设备、系统、APK、启动入口、数据集、网络替身和温控条件，并查看多轮的中位数与分布。
+骨架中的 `home_ready` 是目标页面提供的稳定测试标记，不是系统自带 ID；Compose 可用 `testTag` 并通过 `testTagsAsResourceId` 导出，且只有业务完成态才应出现。测试模块需导入 UiAutomator 的 `By`/`Until`，并使用 `By.res("home_ready")`；带 package 的双参数 `By.res` 会加上资源前缀，与 Compose testTag 不匹配。`startActivityAndWait()` 本身不等待任意异步业务完成；要采集 TTFD，须在测量块内等到与 `ReportDrawnWhen` 同义的完成标记，合法空态、错误页和离线页也应按既定口径释放它。
 
 <!-- gracker-diagram: a230-17-benchmark-window -->
 ![启动采集同时固定编译条件与业务等待边界](../../assets/diagrams/ch21/a230-17-benchmark-window.png)
 
 图：稳定标记必须只在与 ReportDrawnWhen 同义的完成态出现；双参数 By.res 会添加 package:id/ 前缀。
+
+`CompilationMode.Partial(Require)` 会要求目标 APK 同时包含可安装的 Baseline Profile 与 ProfileInstaller，缺少任意一项都会在编译准备阶段报错。它会按 profile 做部分 AOT 编译，适合验证应用的 profile 交付是否完整。另建 `CompilationMode.None()` 场景会清除编译 profile，不做预编译，并允许代码在运行中 JIT（即时编译）；它用于观察通常偏慢的最差条件，性能下界和用户默认安装状态都不是它的定位。比较前要固定设备、系统、APK、启动入口、数据集、网络替身和温控条件，并查看多轮的中位数与分布。
 
 ### 8.3 Perfetto 负责归因
 
@@ -414,7 +420,7 @@ Macrobenchmark 会产出 system trace，也就是把系统与应用多个线程�
 - 是否明确初始组合只执行进入的分支与被请求的 Lazy 内容？
 - 是否理解 `remember` 的 calculation 在初始组合中仍要执行？
 - 是否把 Baseline Profile 的 AOT 编译和 Startup Profile 的构建期 DEX 布局分开？
-- 是否避免 `Class.forName()` 预热、后台自行驱动 composition 和无效的 `remember(LazyThreadSafetyMode.NONE)`？
+- 是否避免无证据的 `Class.forName()` 预热、后台自行驱动 composition，并明确 `remember(LazyThreadSafetyMode.NONE) { ... }` 只把枚举当 key？
 - 是否按内容规模选择 `Column`/`Row` 或 Lazy layout，并避免 0 像素 item？
 - 是否只在子内容依赖 constraints 时使用子组合，并确认普通 `Box` 不属于这一路径？
 - 是否用 release-like Macrobenchmark 同时记录 TTID/TTFD，并以 Perfetto 做阶段归因？
@@ -427,12 +433,12 @@ Compose 首次组合只是启动首帧中的一个阶段：业务 composable 建
 
 ## 参考资料
 
-- [AndroidX `ComponentActivity.setContent` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt)
-- [AndroidX `ComposeView` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt)
-- [AndroidX `WindowRecomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt)
-- [AndroidX `Recomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt)
-- [AndroidX `remember` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt)
-- [AndroidX `Box` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/foundation/foundation-layout/src/commonMain/kotlin/androidx/compose/foundation/layout/Box.kt)
+- [AndroidX `ComponentActivity.setContent` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt)
+- [AndroidX `ComposeView` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt)
+- [AndroidX `WindowRecomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt)
+- [AndroidX `Recomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt)
+- [AndroidX `remember` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt)
+- [AndroidX `Box` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation-layout/src/commonMain/kotlin/androidx/compose/foundation/layout/Box.kt)
 - [本轮 AndroidX 源码提交 `963bf914`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274)
 - [Compose BOM 与库版本映射](https://developer.android.com/develop/ui/compose/bom/bom-mapping)
 - [`ComposeViewContext` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeViewContext)

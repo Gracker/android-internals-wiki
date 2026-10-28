@@ -4,8 +4,8 @@ chapter: '14.10'
 section: '14.10'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-13'
-last_verified_against: Perfetto FrameTimeline docs; AOSP android-17.0.0_r1 BufferQueueProducer/Consumer/Core, BLASTBufferQueue, BufferReleaseChannel and BufferStuffing; android-15/16 release comparison for BUFFER_RELEASE_CHANNEL boundary
+last_verified: '2026-10-25'
+last_verified_against: Fixed17 BQP/BQC/Core/BLAST/release channel, Choreographer recovery flags and SurfaceFrame actual endpoint; fixed15/16 wait transport comparison; public FrameTimeline/state schema and native57/58 synthetic SQL validation (2026-10-25)
 confidence: medium
 sources:
 - type: material
@@ -85,7 +85,12 @@ BufferQueue 的 slot 与 fence 细节见 2.8；标准窗口、SurfaceView、Text
 
 ## 从 FrameTimeline 找到目标 Surface
 
-Android 12 起，FrameTimeline 在 App 和 SurfaceFlinger 两侧提供 Expected / Actual Timeline：Expected 表示系统期望的帧时序，Actual 表示实际执行时序。App `Actual Timeline` slice 从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 GPU 完成与提交到 SurfaceFlinger 两者中较晚的时刻。
+Android 12 起，FrameTimeline 在 App 和 SurfaceFlinger 两侧提供 Expected / Actual Timeline。Expected 是预测时序；App Actual 从 `Choreographer#doFrame` 或原生 vsync callback 对应的软件起点开始。固定 Android17 的 `SurfaceFrame::setAcquireFenceTime()` 通常取 acquire fence signal 与提交 queue time 的较大值；若 fence 仍为 `SIGNAL_TIME_PENDING`，暂取 queue time。因此 Actual end 不是无条件的GPU完成证明，更不是屏幕光学显示时刻。SF DisplayFrame 与 App SurfaceFrame 是不同对象。
+
+<!-- gracker-diagram: ch14-10-04-frame-end-identity -->
+![App Actual结束点与帧身份分别核对](../../assets/diagrams/ch14/ch14-10-04-frame-end-identity.png)
+
+图：App Actual通常取queue与acquire signal较晚者，pending时固定实现回退queue。 Actual end不无条件证明GPU完成或物理显示；关联保留upid、Layer和Actual行ID。
 
 排查时先读取四组字段：
 
@@ -96,16 +101,11 @@ Android 12 起，FrameTimeline 在 App 和 SurfaceFlinger 两侧提供 Expected 
 | `jank_type` | 帧分类字符串 | 筛选 `Buffer Stuffing` |
 | `layer_name` | 该帧对应的 Layer / Surface | 区分主窗口、视频、Camera、SurfaceView 等独立 Surface |
 
-`upid` 是 Trace Processor 在该 trace 中分配的唯一进程 ID，token 是 FrameTimeline 给帧分配的关联 ID。先按 `jank_type` 找候选帧，再用 `upid`、`layer_name` 和两个 token 追 App SurfaceFrame 与 DisplayFrame。同名 layer 可能来自不同实例或生命周期，能够取得 layer id、track id、BufferQueue 名或 frame number 时要一并记录。
+`upid` 是 Trace 内部进程实例ID，token 用于关联帧。先发现候选，再固定实际 `upid`、精确 `layer_name` 与 Actual slice ID；同一token可以涉及多个Layer/Surface，不能只按token去重。随后用App/SF token、track、Layer ID、BufferQueue名称及frame number联系证据。同名Layer也可能跨生命周期，名称加同进程仍不自动构成唯一队列身份。
 
-FrameTimeline 文档明确标注 SurfaceView 尚未完整支持。SurfaceView 主体内容应优先使用独立 child layer、对应 Producer、BufferQueue frame number、acquire/release fence 和 SurfaceFlinger present 复原；不能因为缺少 App Actual Timeline slice 就判定它没有更新。
+固定 Perfetto FrameTimeline 文档仍标注 SurfaceView 未完整支持；这限定本文的文档基线，不能据一页文档推断所有新版本或厂商实现。SurfaceView主体内容优先沿独立child Layer、实际Producer、BufferQueue frame number、fence和SF present重建。缺少App Actual不能证明没有更新。
 
 TextureView 的 App FrameTimeline 主要描述宿主窗口，外部 SurfaceTexture 输入帧仍要另行关联。UI 颜色会随版本与主题调整，报告中应保存 `jank_type` 原始字符串。
-
-<!-- gracker-diagram: ch14-10-04-frame-end-identity -->
-![App Actual结束点与帧身份分别核对](../../assets/diagrams/ch14/ch14-10-04-frame-end-identity.png)
-
-图：App Actual通常取queue与acquire signal较晚者，pending时固定实现回退queue。 Actual end不无条件证明GPU完成或物理显示；关联保留upid、Layer和Actual行ID。
 
 <!-- gracker-diagram: ch14-10-05-coverage-identity -->
 ![FrameTimeline覆盖不足时沿真实队列补证](../../assets/diagrams/ch14/ch14-10-05-coverage-identity.png)
@@ -129,7 +129,12 @@ TextureView 的 App FrameTimeline 主要描述宿主窗口，外部 SurfaceTextu
 
 图：通用队列等条件变量，BLAST专用队列等socket，eventfd中断可促使重查slot。 socket携带ID/fence/max acquired；收到句柄不等于fence signal，超时或中断不是成功回收证明。
 
-非阻塞或 async 模式满足源码条件时返回 `WOULD_BLOCK`。Producer 已经 dequeue 到上限时返回 `INVALID_OPERATION`，这和等待空闲 slot 是不同分支。Android 17 的 BLAST 覆盖函数带有 `ATRACE_CALL()`，因此外层 `dequeueBuffer` 内可能出现嵌套的 `waitForBufferRelease` slice；通用队列未必有这条内层 slice。
+需要重试时，仅当 `(mDequeueBufferCannotBlock || mAsyncMode)` 且 `acquiredCount <= mMaxAcquiredBufferCount` 才直接返回 `WOULD_BLOCK`，超额临时acquire等条件下仍可等待。`mBufferHasBeenQueued` 且Producer已dequeue到上限时，返回 `INVALID_OPERATION`；等待超时另返回 `TIMED_OUT`。这些返回分支都不等于一次GPU超时。固定17 BLAST覆盖函数有 `ATRACE_CALL()`，因此外层dequeue内可见waitForBufferRelease；通用实现未必记录此内层slice。
+
+<!-- gracker-diagram: ch14-10-06-slot-predicate -->
+![等待、非阻塞与超额dequeue是不同分支](../../assets/diagrams/ch14/ch14-10-06-slot-predicate.png)
+
+图：缺可用buffer或队列超限时重试，非阻塞返回还受acquired数量条件约束。 简化主要非shared分支；已有queued且dequeue到上限先报INVALID_OPERATION，唤醒不保证获得slot。
 
 在下面的信号中，acquire 表示 Consumer 取走 buffer，latch 表示 SurfaceFlinger 为目标显示帧选中该 buffer，composition 表示合成多个 layer，present 表示把最终帧送到显示设备，release 表示该 layer buffer 已可交还复用。acquire fence 通知 Consumer 何时可以读取，release fence 通知 Producer 何时可以复写。Trace 中应组合检查：
 
@@ -139,21 +144,16 @@ TextureView 的 App FrameTimeline 主要描述宿主窗口，外部 SurfaceTextu
 - SurfaceFlinger 侧的 acquire、latch、composition、present 或 release 能解释 buffer 何时返回；
 - App/SF deadline 字段与 `present_type` 能排除单纯的 App CPU 超时。
 
-CPU 采样主要覆盖线程正在运行的时段，通常无法给睡眠区间提供完整用户态调用栈。它适合观察进入等待前的执行路径；等待点本身应依赖明确的 slice、`thread_state`、内核阻塞原因或可符号化的调试 trace。
-
-`AppDeadlineMissed` 常见于主线程、RenderThread 或 GPU 工作超过预算。BufferQueue 背压的观察点更靠近 buffer 获取、提交和回收，但两者可以同时出现：下游合成变慢会把压力传回 Producer，Producer 等待又会扩大 App 帧时长。
-
-Android 17 还把 BLAST 的等待时长回调到 `Choreographer.onWaitForBufferRelease()`。等待超过上一帧间隔的一半时，Choreographer 会标记 stuffed 状态；后续 `doFrame()` 可以主动延迟一帧，让排队深度下降，并在恢复期间调整动画时间。Perfetto 中可搜索 `Buffer stuffing recovery`、`buffer stuffed` 和 `Negative offset`。这些事件说明系统正在降低生产节奏，不代表 CPU 执行变慢。
-
-<!-- gracker-diagram: ch14-10-06-slot-predicate -->
-![等待、非阻塞与超额dequeue是不同分支](../../assets/diagrams/ch14/ch14-10-06-slot-predicate.png)
-
-图：缺可用buffer或队列超限时重试，非阻塞返回还受acquired数量条件约束。 简化主要非shared分支；已有queued且dequeue到上限先报INVALID_OPERATION，唤醒不保证获得slot。
+外层 `dequeueBuffer` 的墙钟时长可包含执行、mutex竞争、等待正在进行的分配、slot重试、调度排队以及新buffer分配，不能全部记为“等slot”。BLAST内层等待还包含release读取后的回调处理；外层与嵌套内层时间重叠，不可相加。CPU周期采样主要覆盖Running，睡眠中的等待点需明确slice、thread_state、内核原因或可符号化调试trace补证。
 
 <!-- gracker-diagram: ch14-10-08-walltime-not-slot-time -->
 ![外层与嵌套等待的墙钟不能相加](../../assets/diagrams/ch14/ch14-10-08-walltime-not-slot-time.png)
 
 图：dequeue可含执行、锁、分配、排队和slot重试；内层也含回调处理。 先用状态与明确等待点拆分；嵌套slice重叠，不能跨层相加当总睡眠。
+
+`App Deadline Missed` 是App帧时间超过分类截止的结果，时间中可以包含CPU/GPU工作、Runnable或BufferQueue及其他等待；它不专指CPU执行超时。背压与该分类可以同时出现。固定17 legacy Buffer Stuffing分类还参考前一latch和预测时间，并可调整判定App是否按时完成的截止，不能把on_time_finish直接当成原始Expected预算比较。
+
+Android17 BLAST成功读到release并处理回调后，可把这次 `waitForBufferRelease` 调用的经过时长传给Choreographer；超时、被中断或错误返回路径不会都上报。`durationNanos > mLastFrameIntervalNanos / 2` 时标记stuffed，随后doFrame可返回DELAY_FRAME以等下次Vsync，并在恢复中施加动画offset。实际是否多次恢复、是否达到累计延迟阈值还受 `bufferStuffingMultiRecovery()` / `bufferStuffingRecoveryThreshold()` 等flag控制。`Buffer stuffing recovery`、`buffer stuffed`、`Negative offset` 是恢复路径线索，不等同FrameTimeline分类，也不表示CPU执行变慢；设计说明中的“一次动画仅一次”不覆盖启用multi-recovery的代码路径。
 
 <!-- gracker-diagram: ch14-10-09-stuffing-recovery -->
 ![Choreographer恢复由回调、时长与flag共同决定](../../assets/diagrams/ch14/ch14-10-09-stuffing-recovery.png)
@@ -166,22 +166,22 @@ Android 17 的 `BLASTBufferQueue.cpp` 为每个实例建立 `QueuedBuffer - <nam
 
 `mNumFrameAvailable + mNumAcquired - mPendingRelease.size()`
 
-这个计数器描述 App 进程内 BLAST 的内部状态，不等同于 `BufferQueueCore::mQueue.size()`。公式中的 `mNumFrameAvailable` 是等待 BLAST 消费的可用 frame 数，`mNumAcquired` 是 BLAST 已取得的 buffer 数，`mPendingRelease` 是 BLAST 暂存的 release 回调。相减后的值不能直接翻译成 QUEUED slot 数。
+这个计数器描述 App 进程内 BLAST 的内部状态，不等同于 `BufferQueueCore::mQueue.size()`。公式中的 `mNumFrameAvailable` 是等待 BLAST 消费的可用 frame 数，`mNumAcquired` 是 BLAST 已取得的 buffer 数，`mPendingRelease` 保存已收到release、但按策略尚待归还本地队列的buffer记录（ID与fence）。相减后的值不能直接翻译成 QUEUED slot 数。
 
 另一个常见计数器是 SurfaceFlinger 侧的 `BufferTX - <layerName>`。这里的 buffer transaction 是 App 向 SurfaceFlinger 提交、携带新 buffer 的 layer 状态更新。`Layer` 在 transaction 到达服务端时增加该值，在 latch 或 drop 时减少。它描述尚未 latch/drop 的服务端 buffer transaction，也不是 App BufferQueue 的 slot 数。
 
 | 信号 | 所在层 | 能回答什么 |
 |---|---|---|
-| FrameTimeline `Buffer Stuffing` | App SurfaceFrame 分类 | App 持续生产而前帧尚未 present，输入延迟已经增加 |
+| FrameTimeline `Buffer Stuffing` | App SurfaceFrame分类 | 提示排队/延迟状态，不能直接当作目标队列长度或输入延迟实测 |
 | `QueuedBuffer - <name>BLAST#<id>` | App 进程 BLAST | BLAST 内部 available、acquired 与 pending-release 的组合变化 |
 | `BufferTX - <layerName>` | SurfaceFlinger `Layer` | buffer transaction 到达服务端后是否及时 latch 或 drop |
-| `BufferQueueCore::mQueue.size()` | 某条 BufferQueue 内部 | 该队列的 queued `BufferItem` 数；常规 Perfetto trace 不直接给出这个成员 |
+| `BufferQueueCore::mQueue.size()` | 某条BufferQueue内部 | queued BufferItem数；固定源码在queueBuffer、acquireBuffer等路径以consumer名称记录ATRACE_INT，是否采到及能否唯一识别需现场确认 |
 
 结合源码公式判读 `QueuedBuffer`：
 
-- 计数器上升：可用帧或 acquired buffer 数量增加，释放进度没有同步抵消；
+- 计数器上升：先按 `Δavailable + Δacquired - ΔpendingRelease` 解释组合变化，并回查具体方法；单条曲线不能唯一反推出某个成员或queued slot增加；
 - 计数器长时间高位：BLAST 处理、SurfaceFlinger 消费或 release 回调可能落后，也要检查等待一组更新同时提交的同步 transaction 是否暂时阻止 BLAST 消费；
-- 计数器上升后 `dequeueBuffer` 变长：下游积压已经向 Producer 传导；
+- 计数器上升后dequeue变长：是传导候选，仍需同队列身份、实际slot等待和release时序；分配、锁竞争或Runnable也会放大外层时长；
 - 计数器已回落而渲染仍停顿：检查 release fence、GPU/driver 等待、线程调度和应用锁。
 
 多个 Surface 同时更新时，应把计数器名、`layer_name`、layer id、BufferQueue 名和 frame token 配对。主窗口的 `Buffer Stuffing` 不能自动归因给同进程的视频 layer。
@@ -201,29 +201,26 @@ Android 17 的 `BLASTBufferQueue.cpp` 为每个实例建立 `QueuedBuffer - <nam
 图：本地BLAST把buffer送到SF，回收按ID和fence返回，不是当前帧present后的固定下一步。 drop/替换也可回收，BLAST可能暂存已回调buffer；释放通知与fence signal分别检查。
 
 ```text
-App / RenderThread Producer
-  dequeueBuffer → 绘制或提交 GPU 命令 → queueBuffer(buffer, acquire fence)
-      ↓
-App 进程 / BLASTBufferQueue Consumer
-  onFrameAvailable → acquireBuffer → 写入 SurfaceControl.Transaction
-      ↓
-SurfaceFlinger / 目标 Layer
-  接收 buffer transaction → 判断可用性 / latch → composition → present
-      ↓
-RenderEngine / HWC
-  返回该 layer 的 release fence；display 另有 present fence
-      ↓
-SurfaceFlinger → BufferReleaseChannel
-  ReleaseCallbackId + release fence + max acquired count
-      ↓
-App 进程 / BLASTBufferQueue
-  releaseBufferCallback → BufferQueueConsumer::releaseBuffer
-      ↓
-App / Producer
-  slot 可复用；dequeueBuffer 返回 release fence，复写前遵守 fence
+App Producer → 本地BufferQueue → App内BLAST Consumer
+  dequeue / 遵守上次release fence / 绘制 → queue(buffer, acquire fence)
+  BLAST acquire → 向SF提交带buffer的Transaction
+
+SF目标Layer处理buffer：
+  接收 → readiness / latch → composition → display present反馈
+  分支：可能在未显示前drop或被替换，并返回相应release依赖
+
+buffer回收分支（以ReleaseCallbackId对应的buffer/帧为准）：
+  SF发送release fence句柄，消息本身不保证fence已signal
+    → BufferReleaseChannel → BLAST releaseBufferCallback
+    → 可能暂存mPendingRelease，按持有策略释放
+    → BufferQueueConsumer::releaseBuffer → 通知Producer重查slot
+    → Producer取得slot后，复写前继续遵守返回的release fence
+
+display present fence 与 per-layer release fence 分开关联；
+回收不是“当前buffer present以后立即返回”的固定串行步骤。
 ```
 
-`BufferQueueConsumer::releaseBuffer()` 会把非 shared slot 从 `mActiveBuffers` 移到 `mFreeBuffers`，随后调用 `notifyBufferReleased()`。通用 `BufferQueueCore` 用它唤醒 `mDequeueCondition`；BLAST 专用 `BBQBufferQueueCore` 用它中断 `BufferReleaseReader`，促使等待方重新检查 slot。`BufferQueueCore` 维护 `mFreeSlots`、`mFreeBuffers`、`mActiveBuffers` 和 `mQueue`，任何唤醒都不保证当前线程立刻拿到 slot。
+`BufferQueueConsumer::releaseBuffer()` 在有效非shared状态下把slot从active移到free buffer列表并通知；acquire时drop旧buffer、队列计数变化或其他条件也可通知。通用Core唤醒条件变量，BBQ专用Core中断release reader，等待者拿回锁后重新检查谓词；通知不保证本线程立刻取得slot。BLAST releaseBufferCallback还可按EGL/当前max acquired策略把已回调buffer暂存mPendingRelease，消息到达不一定立即执行底层releaseBuffer。
 
 release fence 还要单独理解。slot 回到 Producer 后可能携带尚未 signal 的 fence；图形栈在复写 buffer 前必须遵守该 fence。slot 等待回答“有没有可复用 buffer”，fence 等待回答“这个 buffer 何时安全可写”，两种等待在 trace 中不能混为一类。
 
@@ -232,7 +229,7 @@ release fence 还要单独理解。slot 回到 Producer 后可能携带尚未 si
 
 图：slot归还后dequeue可返回仍未signal的release fence，复写前必须满足依赖。 present fence与per-layer release fence分别关联；不能仅凭S/D判定是哪一种等待。
 
-present fence 与 per-layer release fence 也不能合并。present fence 描述本次 display present 的完成边界；per-layer release fence 描述 HWC 或 RenderEngine 不再读取某个 layer buffer 的边界。若 SF 对应帧及时 present、release 消息很快返回，`dequeueBuffer` 长窗口就要继续查 fence、调度或应用同步。若 buffer transaction 到达后长期未 latch、App 与 SurfaceFlinger 两侧计数器同期升高且 release 明显延后，这组信号才足以支持 BufferQueue 背压判断。
+present fence描述display present的同步边界，per-layer release fence描述某个buffer在复写前必须满足的读取完成依赖；二者可经不同路径返回，不能假定时间相同或一律先present后release。release消息可携带尚未signal的fence。SF及时present或消息很快到达，只能削弱相应阶段的假设，不能单独排除旧buffer持有、fence、调度、分配或应用同步；仍要按buffer/frame身份连接等待与回收证据。
 
 ## 多 Surface 场景
 
@@ -255,7 +252,7 @@ present fence 与 per-layer release fence 也不能合并。present fence 描述
 
 ## 容易混淆的四类等待
 
-1. **App 执行超时**：`doFrame`、`performTraversals`、RecyclerView bind 或 Binder 回调超过预算，dequeue 窗口没有明显等待。
+1. **App工作主导**：doFrame、traversal、bind或回调窗口长且缺少明确slot等待时，继续拆Running、Runnable、应用锁与同步；长slice本身仍不是纯CPU执行时间。
 2. **GPU 或 fence 等待**：GPU 写入、SF/HWC 读取或 release fence 尚未完成，证据落在 fence、GPU timeline 和 driver wait。
 3. **SF/HWC 合成慢**：SF Actual Timeline 变长，jank type 指向 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 或 `DisplayHAL`。Producer 等待可能是下游变慢的反馈。
 4. **应用同步或 Binder 等待**：渲染相关线程卡在应用锁、Binder 进程间调用或资源加载，时间窗与 BufferQueue release 对不上。
@@ -265,7 +262,7 @@ present fence 与 per-layer release fence 也不能合并。present fence 描述
 
 图：长帧和长dequeue可由App工作、fence、SF/HWC或应用同步形成，先分解证据。 类别可并存；App Deadline Missed和S/D状态都不是唯一根因判据。
 
-BufferQueue 背压需要同一 layer 上的成组证据：`Buffer Stuffing`、BLAST 计数器高位、Producer 等待以及可解释的 acquire/present/release 延迟。报告应逐项列出目标 layer/BufferQueue 身份、候选帧 token、`QueuedBuffer` 与 `BufferTX` 变化、等待 slice、线程状态、latch/present/release 时间，并为每个数值附上 SQL 行、时间区间或截图。缺少队列身份时只能写“同进程等待与该帧重叠”，不能写成目标 Surface 已经确认阻塞。
+背压判断需要同一队列上的成组证据：Producer缺少可用buffer/slot的等待，和下游持有、acquire/drop、release或相关计数变化相互吻合。FrameTimeline Buffer Stuffing、BLAST QueuedBuffer、SF BufferTX都是可用的补充，不能要求所有队列都同时具备这些轨道；缺FrameTimeline的SurfaceView也可沿真实slot/fence/回收路径验证。缺少队列身份时，只能报告同进程候选重叠，并列出待补证据。
 
 ## Android 15、16、17 的源码边界
 
@@ -289,25 +286,25 @@ Android 17 的通道消息带有明确的 `ReleaseCallbackId` 与 release fence�
 这条查询从 App Actual Timeline 中筛出 Buffer Stuffing，并保留进程、layer 与两个 token：
 
 ```sql
-SELECT
-  afts.ts,
-  afts.dur,
-  afts.upid,
-  afts.surface_frame_token AS app_token,
-  afts.display_frame_token AS sf_token,
-  afts.jank_type,
-  afts.on_time_finish,
-  afts.present_type,
-  afts.layer_name,
-  process.name AS process_name
+SELECT afts.id AS actual_slice_id, afts.track_id, afts.arg_set_id,
+       afts.ts, afts.dur, afts.upid,
+       afts.surface_frame_token AS app_token,
+       afts.display_frame_token AS sf_token,
+       afts.jank_type, afts.on_time_finish, afts.present_type,
+       afts.layer_name, p.name AS process_name,
+       EXTRACT_ARG(afts.arg_set_id, 'Is Buffer?') AS is_buffer,
+       CASE WHEN afts.dur = -1 THEN 'open'
+            WHEN afts.dur = 0 THEN 'zero'
+            WHEN afts.dur > 0 THEN 'closed-positive'
+            ELSE 'invalid' END AS duration_status
 FROM actual_frame_timeline_slice AS afts
-LEFT JOIN process USING (upid)
+LEFT JOIN process AS p USING (upid)
 WHERE afts.surface_frame_token != 0
   AND LOWER(afts.jank_type) GLOB '*buffer*stuff*'
-ORDER BY afts.ts;
+ORDER BY afts.ts, afts.id;
 ```
 
-查询结果回答哪个进程、哪个 layer、哪些 token 进入候选集合。`GLOB` 是 SQLite 的通配符匹配运算。`on_time_finish = 1` 也可能出现 `Buffer Stuffing`，因为 App 可以按期完成，但排队使帧延迟 present。`jank_type` 仍要原样保留，便于核对分析器版本和 UI 展示。
+此发现查询保留全部候选和原始jank字符串，并标出开放/零时长。`Is Buffer?` 来自args，固定公开表没有同名列，值为Yes/No/Unspecified；NULL或Unspecified不当成已证实buffer，No不纳入下面的buffer候选。on_time_finish与Buffer Stuffing可同时出现，还需核对固定分类算法与工具版本。只有dur>0的已闭合记录适合下面的正时长求交；不能先把-1尾段当成负时间或0。
 
 <!-- gracker-diagram: ch14-10-16-sql-candidate-quality -->
 ![候选发现保留Actual行身份与质量](../../assets/diagrams/ch14/ch14-10-16-sql-candidate-quality.png)
@@ -316,60 +313,44 @@ ORDER BY afts.ts;
 
 ## PerfettoSQL：关联同进程的 dequeue slice
 
-以下查询把 Producer 等待限制到同一 `upid`，并要求 slice 与 App Actual Timeline 精确重叠。它同时覆盖 Android 17 的外层 `dequeueBuffer`、BLAST 内层 `waitForBufferRelease` 和 Android 16 release 通道路径的 `waiting for free buffer`：
+先从上一查询选定实际upid和精确Layer名称，替换下面123与REPLACE_WITH_LAYER_NAME。结果固定目标进程实例与Layer候选，分别保留Actual和等待slice的ID/track/parent/depth，同时返回完整slice墙钟与窗口内交集时长。它覆盖固定17外层dequeue/内层waitForBufferRelease以及固定16通道路径的waiting for free buffer；这些名称只是发现规则。
 
 ```sql
-WITH stuffing AS (
-  SELECT
-    ts,
-    dur,
-    surface_frame_token AS app_token,
-    display_frame_token AS sf_token,
-    layer_name,
-    upid
+WITH target_frames AS (
+  SELECT *, EXTRACT_ARG(arg_set_id, 'Is Buffer?') AS is_buffer
   FROM actual_frame_timeline_slice
-  WHERE LOWER(jank_type) GLOB '*buffer*stuff*'
-),
-producer_wait AS (
-  SELECT
-    slice.ts,
-    slice.dur,
-    slice.name,
-    thread.utid,
-    thread.name AS thread_name,
-    process.name AS process_name,
-    process.upid
-  FROM slice
-  JOIN thread_track ON slice.track_id = thread_track.id
-  JOIN thread USING (utid)
-  JOIN process USING (upid)
-  WHERE slice.dur > 0
-    AND (
-      LOWER(slice.name) GLOB '*dequeuebuffer*' OR
-      LOWER(slice.name) GLOB '*waitforbufferrelease*' OR
-      LOWER(slice.name) GLOB '*waiting for free buffer*'
-    )
+  WHERE upid = 123 AND layer_name = 'REPLACE_WITH_LAYER_NAME'
+    AND surface_frame_token != 0 AND dur > 0
+    AND LOWER(jank_type) GLOB '*buffer*stuff*'
+    AND EXTRACT_ARG(arg_set_id, 'Is Buffer?') IS NOT 'No'
+), producer_wait AS (
+  SELECT s.id AS wait_slice_id, s.track_id AS wait_track_id,
+         s.parent_id, s.depth, s.ts, s.dur, s.name,
+         t.utid, t.upid, t.name AS thread_name, p.name AS process_name
+  FROM slice AS s JOIN thread_track AS tt ON s.track_id = tt.id
+  JOIN thread AS t USING (utid)
+  LEFT JOIN process AS p ON p.upid = t.upid
+  WHERE t.upid = 123 AND s.dur > 0
+    AND (LOWER(s.name) GLOB '*dequeuebuffer*'
+      OR LOWER(s.name) GLOB '*waitforbufferrelease*'
+      OR LOWER(s.name) GLOB '*waiting for free buffer*')
 )
-SELECT
-  stuffing.ts AS stuffing_ts,
-  stuffing.dur / 1e6 AS stuffing_dur_ms,
-  stuffing.layer_name,
-  stuffing.app_token,
-  stuffing.sf_token,
-  producer_wait.utid,
-  producer_wait.process_name,
-  producer_wait.thread_name,
-  producer_wait.name AS wait_slice,
-  producer_wait.dur / 1e6 AS wait_ms
-FROM stuffing
-JOIN producer_wait
-  ON producer_wait.upid = stuffing.upid
- AND producer_wait.ts < stuffing.ts + stuffing.dur
- AND stuffing.ts < producer_wait.ts + producer_wait.dur
-ORDER BY stuffing.ts, producer_wait.dur DESC;
+SELECT f.id AS actual_slice_id, f.track_id AS actual_track_id,
+       f.upid, f.layer_name, f.surface_frame_token AS app_token,
+       f.display_frame_token AS sf_token, f.is_buffer,
+       f.ts AS frame_ts, f.dur / 1e6 AS frame_ms,
+       w.wait_slice_id, w.wait_track_id, w.parent_id, w.depth,
+       w.utid, w.process_name, w.thread_name, w.name AS wait_slice,
+       w.ts AS wait_ts, w.dur / 1e6 AS full_slice_ms,
+       MAX(f.ts, w.ts) AS overlap_ts,
+       (MIN(f.ts + f.dur, w.ts + w.dur) - MAX(f.ts, w.ts)) / 1e6
+         AS overlap_ms
+FROM target_frames AS f JOIN producer_wait AS w
+  ON w.upid = f.upid AND w.ts < f.ts + f.dur AND f.ts < w.ts + w.dur
+ORDER BY f.ts, f.id, overlap_ms DESC, w.wait_slice_id;
 ```
 
-只比较 slice 起点会漏掉从窗口前开始、持续到窗口内的等待；不约束 `upid` 会误关联其他进程的同名 slice。查询结果仍是候选集：同一进程可能拥有多个窗口、SurfaceView 或 TextureView 队列，厂商渲染后端也可能使用不同的 slice 名称。还要用 layer、BLAST id、thread track、frame number 和相邻计数器确认队列身份。
+交集按半开区间计算，能找到从帧窗口之前开始的等待；相邻端点不算正时长重叠。`full_slice_ms` 是完整调用墙钟，`overlap_ms` 才是该帧窗口内的部分，两者均不是已经证实的slot睡眠时长。外层dequeue与内层等待可同时返回，同一等待也可能命中重叠帧，不能直接跨行求和。同进程/同Layer名称仍需BLAST ID、原始track、buffer/frame和回收证据确认队列；未知is_buffer保留并标明，No被排除。
 
 <!-- gracker-diagram: ch14-10-17-sql-overlap-window -->
 ![完整调用时长与帧内重叠分别计量](../../assets/diagrams/ch14/ch14-10-17-sql-overlap-window.png)
@@ -378,81 +359,72 @@ ORDER BY stuffing.ts, producer_wait.dur DESC;
 
 ## PerfettoSQL：核对线程状态
 
-这条查询直接裁切每个候选等待 slice 对应的线程状态，不再用固定线程名或人为时间窗口：
+从上一步选择一个明确的wait_slice_id，替换下面12345；该值是slice内部ID，不是线程ID或PID。查询只裁切这一个已闭合slice，按同utid的闭合thread_state求交，保留无匹配行并报告状态覆盖与被排除的开放状态；不把trace尾部未知状态补成睡眠。
 
 ```sql
-WITH producer_wait AS (
-  SELECT
-    slice.id AS wait_slice_id,
-    slice.ts,
-    slice.dur,
-    slice.name AS wait_slice,
-    thread_track.utid
-  FROM slice
-  JOIN thread_track ON slice.track_id = thread_track.id
-  WHERE slice.dur > 0
-    AND (
-      LOWER(slice.name) GLOB '*dequeuebuffer*' OR
-      LOWER(slice.name) GLOB '*waitforbufferrelease*' OR
-      LOWER(slice.name) GLOB '*waiting for free buffer*'
-    )
-),
-intersection AS (
-  SELECT
-    producer_wait.wait_slice_id,
-    producer_wait.wait_slice,
-    producer_wait.utid,
-    thread_state.state,
-    thread_state.io_wait,
-    thread_state.blocked_function,
-    MIN(producer_wait.ts + producer_wait.dur,
-        thread_state.ts + thread_state.dur) -
-      MAX(producer_wait.ts, thread_state.ts) AS overlap_dur
-  FROM producer_wait
-  JOIN thread_state
-    ON thread_state.utid = producer_wait.utid
-   AND thread_state.dur > 0
-   AND thread_state.ts < producer_wait.ts + producer_wait.dur
-   AND producer_wait.ts < thread_state.ts + thread_state.dur
+WITH target_wait AS (
+  SELECT s.id AS wait_slice_id, s.track_id, s.parent_id, s.depth,
+         s.ts, s.dur, s.name AS wait_slice, tt.utid
+  FROM slice AS s JOIN thread_track AS tt ON s.track_id = tt.id
+  WHERE s.id = 12345 AND s.dur > 0
+), clipped_states AS (
+  SELECT st.id AS state_id, w.wait_slice_id,
+         st.state, st.io_wait, st.blocked_function,
+         MAX(w.ts, st.ts) AS ts,
+         MIN(w.ts + w.dur, st.ts + st.dur) AS end_ts
+  FROM target_wait AS w JOIN thread_state AS st
+    ON st.utid = w.utid AND st.dur > 0
+   AND st.ts < w.ts + w.dur AND w.ts < st.ts + st.dur
+), checked_states AS (
+  SELECT *, MAX(end_ts) OVER (
+    PARTITION BY wait_slice_id ORDER BY ts, state_id
+    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+  ) AS previous_max_end
+  FROM clipped_states
+), coverage AS (
+  SELECT w.*,
+    (SELECT SUM(end_ts - ts) FROM clipped_states) AS covered_dur,
+    (SELECT COUNT(*) FROM checked_states WHERE ts < previous_max_end)
+      AS overlap_errors,
+    (SELECT COUNT(*) FROM thread_state AS st
+     WHERE st.utid = w.utid AND st.dur = -1
+       AND st.ts < w.ts + w.dur AND w.ts < trace_end()) AS open_state_records
+  FROM target_wait AS w
+), state_groups AS (
+  SELECT wait_slice_id, state, io_wait, blocked_function,
+         SUM(end_ts - ts) AS dur
+  FROM clipped_states
+  GROUP BY wait_slice_id, state, io_wait, blocked_function
 )
-SELECT
-  intersection.wait_slice_id,
-  intersection.wait_slice,
-  thread.utid,
-  thread.name AS thread_name,
-  process.name AS process_name,
-  intersection.state,
-  intersection.io_wait,
-  intersection.blocked_function,
-  SUM(intersection.overlap_dur) / 1e6 AS overlap_ms
-FROM intersection
-JOIN thread USING (utid)
-JOIN process USING (upid)
-WHERE intersection.overlap_dur > 0
-GROUP BY
-  intersection.wait_slice_id,
-  intersection.wait_slice,
-  thread.utid,
-  thread.name,
-  process.name,
-  intersection.state,
-  intersection.io_wait,
-  intersection.blocked_function
-ORDER BY intersection.wait_slice_id, overlap_ms DESC;
+SELECT c.wait_slice_id, c.track_id, c.parent_id, c.depth,
+       c.utid, t.upid, t.name AS thread_name, p.name AS process_name,
+       c.wait_slice, c.ts, c.dur / 1e6 AS full_slice_ms,
+       c.open_state_records, c.overlap_errors,
+       CASE WHEN c.overlap_errors = 0 THEN c.covered_dur / 1e6 END
+         AS closed_state_ms,
+       CASE WHEN c.overlap_errors = 0
+            THEN ROUND(100.0 * c.covered_dur / c.dur, 2) END AS state_coverage_pct,
+       g.state, g.io_wait, g.blocked_function,
+       CASE WHEN c.overlap_errors = 0 THEN g.dur / 1e6 END AS overlap_ms
+FROM coverage AS c
+LEFT JOIN state_groups AS g USING (wait_slice_id)
+LEFT JOIN thread AS t ON t.utid = c.utid
+LEFT JOIN process AS p ON p.upid = t.upid
+ORDER BY overlap_ms DESC, g.state;
 ```
 
-`Running` 表示正在 CPU 上执行，`R` 表示可运行但等待 CPU，`R+` 表示被抢占后的可运行状态，`S` 表示可中断睡眠，`D` 表示不可中断睡眠。Android 17 的 release 通道使用 `epoll_wait`，通用条件变量通常落在 futex（用户态同步所用的内核等待机制）路径，两者常见状态都是 `S`。
-
-`blocked_function` 主要来自内核 `sched_blocked_reason` 事件，对 `D` 状态更有帮助。字段为 `NULL` 可能是线程处于可中断睡眠、事件未采集或内核符号不可见，不能反向证明没有等待。线程状态只说明调度层发生了什么，仍需和等待 slice、release 消息与目标队列相互印证。
+`Running`、R、R+、S、D分别表示运行、可运行、被抢占后可运行、可中断睡眠、不可中断睡眠。epoll/条件变量常见S，但fence等待也可因调用方式不同表现为S或D，不能按状态字母唯一识别机制。`state_coverage_pct` 的分母是所选完整slice时长；开放状态被排除，NULL是没有闭合匹配而非0ms睡眠。`overlap_errors>0` 时统计列置NULL，先检查合并/解析或模型；不能把各层候选slice的结果继续相加。
 
 <!-- gracker-diagram: ch14-10-18-sql-state-coverage -->
 ![线程状态裁切要报告闭合覆盖与开放缺口](../../assets/diagrams/ch14/ch14-10-18-sql-state-coverage.png)
 
 图：合成外层slice45ms中，闭合状态30ms：Running10、S17、R3，覆盖率66.67%。 首段5ms无状态、末段10ms开放状态被排除；缺匹配保留NULL，输入重叠时数值置NULL先排错。
 
+`blocked_function` 主要来自内核 `sched_blocked_reason` 事件，对 `D` 状态更有帮助。字段为 `NULL` 可能是线程处于可中断睡眠、事件未采集或内核符号不可见，不能反向证明没有等待。线程状态只说明调度层发生了什么，仍需和等待 slice、release 消息与目标队列相互印证。 本轮仅做固定源码核对、native Trace Processor57.2/58.2受控合成导入及SQL校验；未运行Android设备录制、系统/内核构建、release通道实机或GPU/display性能测量。
+
 ## 小结
 
-BufferQueue 背压需要多项信号在同一时间线上相互吻合：FrameTimeline 提供排队状态，layer 与 BLAST id 确认目标队列，Producer 线程暴露等待，`QueuedBuffer` / `BufferTX` 描述两侧积压，SurfaceFlinger、HWC 和 release 通道解释 buffer 返回过程。缺少队列身份、release 或 display 时序时，应写成“疑似 BufferQueue 背压”，并列出还需补采的数据。
+BufferQueue背压需要同一队列的Producer等待和下游持有/回收证据相互吻合。标准窗口可联合FrameTimeline、BLAST ID、QueuedBuffer、BufferTX与display时序；其他队列按实际Producer/Consumer和slot/fence链路验证。缺少足以连接等待与回收的身份或时序证据时，报告疑似背压和待补数据；不能把某一特有轨道缺失当作没有背压的证明。
 
 <!-- gracker-diagram: ch14-10-19-evidence-verdict -->
 ![按目标队列连接等待与回收后再给结论](../../assets/diagrams/ch14/ch14-10-19-evidence-verdict.png)

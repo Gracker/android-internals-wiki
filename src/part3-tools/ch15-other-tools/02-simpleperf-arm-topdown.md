@@ -5,8 +5,8 @@ section: '15.2'
 status: finalized
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
 version_boundary: '[已验证] API 21–37；工具行为按 NDK r29 与 android-17.0.0_r1，内核示例按 android17-6.18-2026-06_r6'
-last_verified: '2026-08-13'
-last_verified_against: NDK r29（当前稳定版）+ AOSP system/extras/simpleperf（android-17.0.0_r1）+ Perfetto android-17.0.0_r1 导入器与 linux.perf 源码
+last_verified: '2026-10-25'
+last_verified_against: NDK r29（固定参考版本）+ AOSP system/extras/simpleperf（android-17.0.0_r1）+ Perfetto android-17.0.0_r1 导入器与 linux.perf 源码
 confidence: medium
 sources:
 - type: official
@@ -75,7 +75,7 @@ consolidated_from:
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。下文以“A17”简称这份平台源码；设备可能使用其他内核分支，较早版本只用于说明兼容范围，旧设备行为以当时的版本为准。
 
-堆内存泄漏、Java 对象分配、完整系统调用时序和整机功耗归因各有专门工具：Heap Dump/LeakCanary、Allocation Tracking、Perfetto ftrace 和 Power Profiler。Simpleperf 也能读 PMU（Performance Monitoring Unit，处理器性能监控单元） 的硬件计数器，但这些计数单独换算不出可靠的能耗。在这些采样能力之上，微架构分析把事件归入四类槽位：前端（Frontend Bound）、后端（Backend Bound）、错误推测（Bad Speculation）和退休（Retiring）。Topdown 结论要落在设备 PMU（Performance Monitoring Unit，硬件性能监控单元） 支持和可复现负载上，这是全篇的前提。
+堆内存泄漏、Java 对象分配、完整系统调用时序和整机功耗归因各有专门工具：Heap Dump/LeakCanary、Allocation Tracking、Perfetto ftrace 和 Power Profiler。Simpleperf 也能读 PMU（Performance Monitoring Unit，处理器性能监控单元） 的硬件计数器，但这些计数单独换算不出可靠的能耗。在这些计数与采样能力之上，Topdown 用 CPU 专属公式描述四类流水线 slot：前端（Frontend Bound）、后端（Backend Bound）、错误推测（Bad Speculation）和退休（Retiring）。Topdown 结论要落在设备 PMU 支持和可复现负载上，这是全篇的前提。
 
 ## 采样、调用图与硬件事件基础
 
@@ -83,15 +83,12 @@ consolidated_from:
 
 一次采样从内核事件开始，在主机报告结束。下面的图用于定位每一层负责的数据。
 
-```mermaid
-flowchart LR
-    A["应用线程或原生进程"] --> B["perf_event_open 创建事件"]
-    B --> C["内核 PMU 或软件事件计数"]
-    C --> D["内核 perf 环形缓冲区"]
-    D --> E["Simpleperf record 读取并补充进程、映射和符号信息"]
-    E --> F["perf.data"]
-    F --> G["主机端 report.py、report_html.py 或 report-sample"]
-```
+采集链路从 Simpleperf 配置目标并调用 `perf_event_open()` 开始，目标应用线程是被观测对象。内核记录事件后，Simpleperf 保存样本和元数据，主机报告再解析符号。
+
+<!-- gracker-diagram: ch15-02-01-sampling-pipeline -->
+![目标线程、内核采样与主机报告的分工](../../assets/diagrams/ch15/ch15-02-01-sampling-pipeline.png)
+
+图：Simpleperf 配置事件并观测目标线程，内核产出记录，主机报告解析地址与符号。 样本是离散事件位置；报告 Overhead 取决于所选事件权重，不等于每次调用或墙钟时长。
 
 内核决定事件能否打开、何时产生样本，以及样本进入哪个 perf ring buffer（环形缓冲区，一块循环复用的内存队列）；Simpleperf 负责配置事件、持续读取记录、处理调用栈并保存分析所需的元数据；报告工具再把地址映射到库、函数和源码行。三段分工读报告时都要用到。
 
@@ -102,11 +99,6 @@ flowchart LR
 - 函数地址要配上 build ID 匹配的符号文件才能还原名称；build ID 是写在 ELF（Executable and Linkable Format，Android 原生二进制格式） 二进制中的构建标识。采样本身完整而符号缺失时，报告里仍会出现大量 `[unknown]`。
 
 内核实现入口可从 [`kernel/events/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/events/core.c) 和 [`include/uapi/linux/perf_event.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h) 查看。实际能打开哪些事件，还要看产品内核配置、SELinux 强制访问控制策略、PMU 型号和厂商限制，源码标签替代不了在目标设备上探测。
-
-<!-- gracker-diagram: ch15-02-01-sampling-pipeline -->
-![目标线程、内核采样与主机报告的分工](../../assets/diagrams/ch15/ch15-02-01-sampling-pipeline.png)
-
-图：Simpleperf 配置事件并观测目标线程，内核产出记录，主机报告解析地址与符号。 样本是离散事件位置；报告 Overhead 取决于所选事件权重，不等于每次调用或墙钟时长。
 
 ### 版本与权限边界
 
@@ -122,7 +114,7 @@ flowchart LR
 | Android 16（API 36）起 | 应用采样优先由 `simpleperf_app_runner` 启动设备内置 Simpleperf；侧载二进制不再拥有获取内核样本所需的权限 |
 | Android 17（API 37） | 沿用 `simpleperf_app_runner` 路径；以 `android-17.0.0_r1` 的实现为准 |
 
-另外要分清 Java 支持和 ART method tracing：method tracing 记录方法进入和退出，Simpleperf 则始终按 CPU 事件抽样，两边的“热点”含义不同。Android 9 起，解释器、JIT 与 AOT 代码都能进入采样调用栈。
+另外要分清 Java 支持和 ART method tracing：method tracing 记录方法进入和退出，这里比较的 Simpleperf 普通 CPU 采样模式则按所选事件抽样，两边的“热点”含义不同。Android 9 起，解释器、JIT 与 AOT 代码都能进入采样调用栈。
 
 #### 三种常见授权场景
 
@@ -161,7 +153,7 @@ NDK 发行包把设备端程序、主机端程序和 Python 脚本放在顶层 `
 
 这份输出才是当前设备的能力清单。事件名列在里面，只代表工具认识它，当前 UID 未必有权打开；采集时报的 `permission denied`、`not supported` 和 `event not found` 分别指向权限、内核或硬件支持、事件名称三类问题。
 
-Android 16/17 上应使用同一版本 NDK 附带的脚本发起应用采样。脚本会优先选择 `simpleperf_app_runner`，由它在受控应用上下文中启动设备内置 Simpleperf。手工 `adb push` 一个二进制再执行，或许还能显示帮助信息，内核样本是拿不到的。
+Android 16/17 上应保持主机采集与报告脚本来自同一套 NDK，并单独记录设备内置 Simpleperf 的版本。应用采样入口在这些系统上优先选择 `simpleperf_app_runner`，由它在受控应用上下文中启动设备内置程序；升级 NDK 不会同时升级设备上的这个程序。A17 源码指出侧载程序获取内核态样本的权限受限，不能把“二进制可执行”当成目标事件可采集的证明；最终仍以运行器、当前 UID 与事件打开结果为准。
 
 <!-- gracker-diagram: ch15-02-02-authorization-gates -->
 ![目标授权、运行器与事件权限的三道门](../../assets/diagrams/ch15/ch15-02-02-authorization-gates.png)
@@ -422,7 +414,7 @@ simpleperf record -a --duration 10
 
 ### 丢样、截断栈与缓冲区
 
-采样数据要经过内核 `perf` 环形缓冲区和 Simpleperf 用户态记录缓冲区两级。内核缓冲区溢出会增加 `kernelspace` 丢失记录；对栈数据超过 1 KiB 的 DWARF 样本，A17 会在用户态缓冲区紧张时先缩短栈、再丢弃样本，把容量留给 mmap（内存映射）和 fork（创建子进程）这些还原地址空间必需的记录。
+采样数据要经过内核 `perf` 环形缓冲区和 Simpleperf 用户态记录缓冲区两级。内核缓冲区溢出会增加 `kernelspace` 丢失记录；当配置的单样本用户栈容量大于 1 KiB 时，A17 会在用户态缓冲区低水位把保存的有效栈上限缩至 1 KiB，低于临界水位则直接丢弃此类 sample 记录，把容量留给 mmap（内存映射）和 fork（创建子进程）这些还原地址空间必需的记录。
 
 看到丢样不要同时增大所有参数，按下列顺序定位：
 
@@ -445,14 +437,14 @@ A17 的非全系统记录默认使用 64 MiB 或 256 MiB 用户态缓冲区：�
   -r "-e task-clock:u -f 1000 --duration 10 -g --user-buffer-size ${USER_BUFFER_SIZE}"
 ```
 
-缓冲区增大是有代价的：分析进程的内存占用随之上涨。系统内存紧张、采样目标很多或栈很深时，要同时观察被测业务是否受到了分析工具的干扰。A17 用户态缓冲区可用空间低于低水位时，会把 DWARF 样本中超过 1 KiB 的有效栈数据裁到 1 KiB；低于临界水位时，直接丢弃这类样本——结束日志能区分这两种结果。
-
-Android 17 的 [`RecordReadThread`](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/RecordReadThread.h) 用独立读取线程把内核缓冲区读取与主线程处理分开，以降低 DWARF 采样的丢失概率。它解决的是排队时间；过高频率、权限限制或硬件事件溢出还要单独处理。
+缓冲区增大是有代价的：分析进程的内存占用随之上涨。系统内存紧张、采样目标很多或栈很深时，要同时观察被测业务是否受到了分析工具的干扰。对于配置用户栈容量大于 1 KiB 的样本，A17 在低水位时把保存的有效栈上限缩至 1 KiB；低于临界水位时，在检查实际有效栈长度前就丢弃该 sample 记录——结束日志能区分这两种结果。
 
 <!-- gracker-diagram: ch15-02-09-buffer-pressure -->
 ![两级缓冲与大栈样本的压力处理](../../assets/diagrams/ch15/ch15-02-09-buffer-pressure.png)
 
 图：分别定位内核丢记录与用户态容量压力，再按日志区分栈裁剪和样本丢弃。 图中为配置用户栈容量大于 1 KiB 的分支；其他预留失败也可能丢记录，阈值按源码与配置计算。
+
+Android 17 的 [`RecordReadThread`](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/RecordReadThread.h) 用独立读取线程把内核缓冲区读取与主线程处理分开，以降低 DWARF 采样的丢失概率。它解决的是排队时间；过高频率、权限限制或硬件事件溢出还要单独处理。
 
 ### 报告与时间线工具
 
@@ -637,7 +629,7 @@ bool prefer_simpleperf_app_runner = GetAndroidVersion() >= kAndroidVersion16;
 | SPE 统计采样 | CPU 生成的 SPE packet | 哪些指令与访存、TLB、分支事件相关 | 依赖可选硬件和 AUX 缓冲；当前解码器只使用部分字段 |
 | ETM/ETE 指令 trace | 控制流 trace | 执行过哪些分支路径，如何生成 AutoFDO profile | 数据量大，容易因 sink 与缓冲压力丢失 trace |
 
-几个词先说清：SPE packet 是硬件写出的一条采样记录；TLB（Translation Lookaside Buffer）是缓存虚拟地址到物理地址转换结果的结构；AUX 是 Linux perf 为大体积硬件 trace 准备的辅助缓冲区。SPE 从 Armv8.2-A 起成为可选扩展，运行在 AArch64（64 位 Arm 执行状态）中，不以 Armv9 为前提。
+几个词先说清：SPE packet 是硬件输出流中的一个编码单元，一条采样 record 可由事件、地址、上下文、结束标记等多个 packet 组成；TLB（Translation Lookaside Buffer）是缓存虚拟地址到物理地址转换结果的结构；AUX 是 Linux perf 为大体积硬件 trace 准备的辅助缓冲区。SPE 从 Armv8.2-A 起成为可选扩展，运行在 AArch64（64 位 Arm 执行状态）中，不以 Armv9 为前提。
 
 ETM（Embedded Trace Macrocell）和 ETE（Embedded Trace Extension）是 CoreSight 中的指令控制流 trace 源；CoreSight 是 Arm 的片上硬件跟踪框架，sink 指接收并保存 trace 的终点。TRBE（Trace Buffer Extension）是每 CPU 的内存 sink，ETR（Embedded Trace Router）则可把 trace 写入系统内存——后两者都不负责生成 SPE 微架构样本。
 
@@ -678,12 +670,13 @@ adb shell su root simpleperf list | grep arm_spe
 adb shell 'ls -d /sys/bus/event_source/devices/arm_spe* 2>/dev/null'
 ```
 
-`su root` 表示切换为超级用户。两条命令都没有输出，说明当前内核没有向 perf 子系统注册 SPE PMU；sysfs 存在而 `record` 失败时，再检查 root、SELinux 强制访问控制策略、perf 权限和事件配置。
+`su root` 表示切换为超级用户。先确认命令本身执行成功，且 sysfs 路径可见；确认没有匹配节点后，才能判断本次可见的内核设备列表未注册 SPE PMU。没有输出也可能来自 `su` 不可用、权限错误或命令失败。sysfs 存在而 `record` 失败时，再检查 root、SELinux 强制访问控制策略、perf 权限和事件配置。
 
 目标设备支持通用 `arm_spe` 事件后，可以用以下流程采集一个已经运行的应用进程：
 
 ```bash
 target_pid=$(adb shell pidof -s com.example.app)
+test -n "$target_pid" || { printf 'target process not found\n' >&2; exit 1; }
 adb shell su root simpleperf record \
   -e arm_spe -p "$target_pid" --duration 10 \
   -o /data/local/tmp/spe.data
@@ -796,6 +789,9 @@ background_pid=$(adb shell '
     -p "$target_pid" --duration 60 \
     -o /data/local/tmp/app-perf.data
 ')
+case "$background_pid" in
+  ''|*[!0-9]*) printf 'invalid simpleperf background pid\n' >&2; exit 1 ;;
+esac
 printf 'simpleperf background pid: %s\n' "$background_pid"
 ```
 
@@ -812,7 +808,7 @@ adb shell ls -l /data/local/tmp/app-perf.data
 
 ### `--app` 与新进程跟踪
 
-`--app <package>` 在 Android 16 已经存在。它让 Simpleperf 等待包对应的初始进程；非 root 场景依赖 `run-as`，目标 APK 必须允许调试。Android 16 的 `NewThreadMonitor` 已能扫描初始 PID 集合中的新线程。Android 17 的增量是让 `stat` 在 `--app` 场景继续发现同包名进程：
+`--app <package>` 在 Android 16 已经存在。它让 Simpleperf 等待包对应的初始进程；非 root 场景通过 `RunInAppContext()` 选择受控运行器，目标可为 debuggable 或获准由 shell 分析的 profileable App。A17 帮助文本仍保留“必须 debuggable，因为使用 run-as”的旧描述，这里按 `environment.cpp` 的实际分支解释。Android 16 的 `NewThreadMonitor` 已能扫描初始 PID 集合中的新线程。Android 17 的增量是让 `stat` 在 `--app` 场景继续发现同包名进程：
 
 - 只有启用 `--monitor-new-thread` 时才持续扫描新进程与线程。
 - 扫描器遍历 `/proc` 进程信息，读取进程对应的应用包名，把新出现且包名匹配的进程加入监控。
@@ -1092,7 +1088,7 @@ SPE 也顶替不了一级 Topdown 公式；它的位置是在 Backend Bound 已�
 
 #### 步骤二：在设备上发现能力
 
-下面三条命令分别确认原始事件、硬件计数器数量和 SPE 设备；它们只读取能力，不会开始长时间采集。
+下面三条命令分别列举原始事件、探测硬件计数器数量和检查 SPE 设备。`--print-hw-counter` 会尝试打开性能事件来探测可用计数器，仍受权限和 PMU 占用约束；这些命令不启动本文的长时间 workload 录制。
 
 ```bash
 adb shell simpleperf list raw
@@ -1186,7 +1182,7 @@ Topdown 只给调查方向。下一轮要选择能区分原因的证据。表中
 ```bash
 app_id=com.example.app
 pid=$(adb shell pidof -s "$app_id")
-test -n "$pid"
+test -n "$pid" || { printf 'target process not found\n' >&2; exit 1; }
 
 adb shell simpleperf record \
   -p "$pid" \
@@ -1275,11 +1271,11 @@ DVFS（Dynamic Voltage and Frequency Scaling）动态调整电压与频率。线
 
 优化后 Backend Bound 百分比可能上升，同时总 cycles 大幅下降——这也可能是其他类别下降得更快。所以每轮都要同时保存墙钟耗时、cycles、instructions、绝对事件数和派生百分比。
 
-
 <!-- gracker-diagram: ch15-02-22-absolute-and-relative -->
 ![百分比升高与绝对成本下降可以同时发生](../../assets/diagrams/ch15/ch15-02-22-absolute-and-relative.png)
 
 图：同一 CPU 的 Backend Bound 比例升高时，绝对 stall slot 仍可能减少。 归一化数字只作公式示意，非设备测量；实际验收还要比较相同工作量的墙钟时延。
+
 
 ## 结论
 
@@ -1310,7 +1306,7 @@ Android 17 上可执行的可靠路径是：
 - [`app_profiler.py`（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/scripts/app_profiler.py)
 - [`<profileable>` Manifest 元素（Android Developers）](https://developer.android.com/guide/topics/manifest/profileable-element)
 - [Android Studio Callstack Sample（Android Developers）](https://developer.android.com/studio/profile/sample-callstack)
-- [Perfetto 调用栈采样](https://perfetto.dev/docs/quickstart/callstack-sampling)
+- [Perfetto 调用栈采样](https://perfetto.dev/docs/getting-started/cpu-profiling)
 - [Perfetto 导入 Simpleperf 数据](https://perfetto.dev/docs/getting-started/other-formats)
 - [Perfetto `PerfEventConfig`（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)
 - [Perfetto perf 事件枚举（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/common/perf_events.proto)

@@ -98,7 +98,7 @@ bytes ≈ width × height × bytesPerPixel
 
 解码前先读尺寸，不直接创建像素内存。`BitmapFactory.Options.inJustDecodeBounds = true` 时，解码方法返回 `null`，但会填充 `outWidth`、`outHeight` 和 `outMimeType`。这一步适合放在所有本地文件、资源图、网络图落盘后的统一解码入口。
 
-这段代码只做采样率计算。两次 decode 中，第一次只取边界，第二次才分配像素内存。
+这段示例先读取边界，再计算 2 的幂采样率并解码；第一次 decode 只取边界，第二次才分配像素。算法在降采样时尽量让宽高都不低于请求尺寸，不保证精确匹配 View；若其中一维本来就小于目标，也可能保持 `inSampleSize = 1`。它没有处理 EXIF 旋转或镜像、密度换算及最终适配或裁剪，生产入口需补齐这些步骤（[降采样指南](https://developer.android.com/topic/performance/graphics/load-bitmap)、[EXIF API](https://developer.android.com/reference/androidx/exifinterface/media/ExifInterface)）。
 
 ```kotlin
 fun decodeSampledBitmap(
@@ -156,7 +156,7 @@ API 28 及以上使用 `ImageDecoder` 时，可在 `OnHeaderDecodedListener` 里
 
 ## Android 8.0+：Bitmap 像素内存位于原生堆
 
-Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本位于原生内存；Android 3.0 到 7.1 随 Bitmap 对象位于 Dalvik 堆；Android 8.0 及以上又回到原生堆。本文覆盖 Android 10 到 Android 17：普通软件 Bitmap 的像素分配按原生堆排查，`Config.HARDWARE` 的像素分配按图形缓冲区排查。
+Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本位于原生内存；Android 3.0 到 7.1 位于托管堆（早期为 Dalvik，之后为 ART）；Android 8.0 及以上又回到原生堆。本文覆盖 Android 10 到 Android 17：普通软件 Bitmap 的像素分配按原生堆排查，`Config.HARDWARE` 的像素分配按图形缓冲区排查。
 
 AOSP `Bitmap.java` 中，Bitmap 的 Java 对象通过 `mNativePtr` 指向原生 Bitmap。`NativeAllocationRegistry` 用来把 Java 对象关联的原生分配量和释放函数登记给 ART。
 
@@ -167,7 +167,7 @@ Android 17 的 `registerNativeAllocation()` 使用两个登记器：一个以空
 
 图：Android 17 使用两项登记分别处理像素分配记账和原生 Bitmap 释放；不是重复分配两份像素。
 
-- **Bitmap 对象仍受 Java 可达性影响**：Java 层对象被 Activity、Adapter、缓存或回调引用时，原生像素内存也会被保留。Bitmap 泄漏的根不一定在原生层，常常是 Java 引用链没有断开。
+- **Bitmap 对象仍受 Java 可达性影响**：在普通、尚未 `recycle()` 的路径中，Java 层对象被 Activity、Adapter、缓存或回调引用时，关联像素也会被保留；显式 `recycle()` 则可在 Java 包装对象仍存在时先释放像素。Bitmap 泄漏的根不一定在原生层，常常是 Java 引用链没有断开。
 - **原生堆变大不等于 JNI 泄漏**：Android 8.0 之后，图片加载增加会直接推高原生堆。用 `dumpsys meminfo` 或线上内存指标看到原生堆上升时，先区分 Bitmap 分配与 JNI（Java 和原生代码之间的调用接口）或 `.so` 原生库分配，不能直接归因于 JNI 泄漏。
 
 `recycle()` 只能作为明确失效后的提前释放手段，不适合替代生命周期管理。官方文档对旧版本建议过引用计数式 `recycle()`，但也提醒：Bitmap 被回收后再绘制会触发 “Canvas: trying to use a recycled bitmap”。在 Android 10+ 项目里，更稳的策略是让图片请求跟随页面生命周期取消，让缓存有上限，让不可见页面及时释放强引用；只有超大图编辑、一次性解码、离屏处理这类边界清楚的场景，才考虑显式 `recycle()`。
@@ -330,7 +330,7 @@ Hardware Bitmap 的限制集中在可变性和绘制路径：它不能作为 `in
 
 ## 案例：在第一次像素分配前限制尺寸
 
-货拉拉公开复盘记录过一个图片发送峰值：发送前后原生内存突增，内存分类显示这部分增长来自大 Bitmap，代码检查发现旋转逻辑先完整解码原图，再做缩放与方向变换。输出图片即使很小，峰值阶段仍可能同时持有原图像素和变换后的中间结果。
+[货拉拉公开复盘](https://mp.weixin.qq.com/s?__biz=MzI0MjIxNjE0OQ==&mid=2247490141&idx=1&sn=645139e24e5424bc0acdb6209d329360)记录过一个图片发送峰值：发送前后原生内存突增，内存分类显示这部分增长来自大 Bitmap，代码检查发现图片旋转时直接把原图加载为 Bitmap。原始复盘没有交代完整的缩放和方向处理顺序。**[推断]** 即使最终输出很小，若变换产生新的像素存储，峰值阶段仍可能同时持有原图与中间结果。
 
 这类问题要在第一次像素分配之前限制尺寸：先读取边界与 EXIF 方向，根据上传或展示目标计算采样尺寸，再解码、旋转或裁剪。验收至少覆盖处理前基线、解码峰值、变换峰值、上传结束和页面退出后的回落，并使用接近业务允许上限的图片尺寸与方向组合。只比较操作结束后的平均值，会漏掉触发 OOM 的瞬时峰值。
 

@@ -333,19 +333,27 @@ View 体系的 traversal 按窗口和脏状态按需执行 measure、layout、dr
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
-SELECT
-  upid, pid, tid, event_channel, event_seq, input_event_id,
-  event_type, event_action, event_time, read_time,
-  dispatch_ts, receive_ts,
-  dispatch_latency_dur / 1e6 AS dispatch_ms,
-  handling_latency_dur / 1e6 AS app_handling_ms,
-  ack_latency_dur / 1e6 AS ack_ms,
+
+WITH candidates AS (
+  SELECT *, COUNT(*) OVER (
+    PARTITION BY upid, event_channel, event_seq, dispatch_ts, receive_ts
+  ) AS attachment_row_count
+  FROM android_input_events
+)
+SELECT upid, pid, process_name, thread_name AS finish_thread_name,
+  event_channel, event_seq, dispatch_ts, receive_ts, receive_track_id,
+  input_event_id AS candidate_input_event_id,
+  event_action AS candidate_action,
   total_latency_dur / 1e6 AS dispatch_to_ack_ms,
   end_to_end_latency_dur / 1e6 AS candidate_read_to_present_ms,
-  frame_id, is_speculative_frame
-FROM android_input_events
+  frame_id AS candidate_surface_frame_token, is_speculative_frame,
+  attachment_row_count,
+  CASE WHEN attachment_row_count > 1 THEN 'ambiguous_attachment'
+       WHEN frame_id IS NULL THEN 'missing_frame_candidate'
+       ELSE 'unverified_stdlib_candidate' END AS association_status
+FROM candidates
 WHERE process_name = 'com.example.app'
-ORDER BY total_latency_dur DESC
+ORDER BY total_latency_dur DESC, upid, dispatch_ts, event_channel
 LIMIT 50;
 ```
 
@@ -354,7 +362,7 @@ LIMIT 50;
 <!-- gracker-diagram: ch08-01-sql-latency-origins -->
 ![Perfetto 两种延迟列的起止点](../../assets/diagrams/ch08/ch08-01-sql-latency-origins.png)
 
-图：往返时间解释输入协议处理，read 到候选呈现解释软件链路候选。列名相似不代表可以直接做差得到渲染时间。
+图：往返时间解释输入协议处理，read 到候选呈现解释软件链路候选。列名相似不代表可以直接做差得到渲染时间。示例列出原始候选附件；附件歧义可放大行数，统计往返需另按消息身份去重。
 
 r1 还存在实现限制：最终帧连接只按 `event_seq`，未同时约束 channel；选择非丢弃显示帧的子查询缺少进程过滤与显式排序。多窗口、多个通道、丢帧或并发输入时必须回查完整身份与实际采用的 buffer，不能把本查询直接作为产品验收指标。此处说明固定版本的实现，其他 processor 版本应重新核对。
 
@@ -367,8 +375,8 @@ r1 还存在实现限制：最终帧连接只按 `event_seq`，未同时约束 c
 
 Perfetto UI 中可按以下顺序核对：
 
-1. 用 input event id 或时间范围定位 InputReader、InputDispatcher 和应用接收事件。
-2. 查看接收线程的 thread state（线程状态），区分 Running、Runnable、Sleeping 和不可中断 I/O。
+1. 用进程实例、通道、序号与原始消息时间定位 InputDispatcher 和应用接收事件；input event id 在此属于待核验附件，不能独立充当全局身份。
+2. 沿 `receive_track_id → thread_track.utid → thread` 找到实际接收线程，再查看 thread state（线程状态）；公开 `thread_name` 来自应用发送 FINISHED 的线程，不能默认就是接收线程。区分 Running、Runnable、Sleeping 和不可中断 I/O。
 3. 展开应用 FrameTimeline 的 expected / actual 轨道，确认关联的 frame id 和 jank type。
 4. 查看 `Choreographer#doFrame`、`performTraversals`、RenderThread `DrawFrame`、GPU 工作与 fence。
 5. 延伸到 SurfaceFlinger 和 HWC，确认应用 buffer 是否被该显示帧采用。

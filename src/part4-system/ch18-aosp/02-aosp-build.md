@@ -3,8 +3,8 @@ title: AOSP 源码编译与调试环境
 chapter: '18.2'
 status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 + android-latest-release pointing to android17-release + current Android 17 build/Cuttlefish docs + android17-6.18-2026-06_r6
+last_verified: '2026-10-26'
+last_verified_against: AOSP android-17.0.0_r1 + android-latest-release pointing to android17-release + official build/Cuttlefish docs checked 2026-10-26 + android17-6.18-2026-06_r6
 confidence: high
 sources:
 - type: official
@@ -88,7 +88,7 @@ sudo apt-get install git-core gnupg flex bison build-essential \
   xsltproc unzip fontconfig repo
 ```
 
-安装完成后运行 `repo version`，确认 Repo launcher（负责初始化源码工作区并下载完整 Repo 工具的启动脚本）可以工作。官方当前要求 Repo 2.4 或以上；团队环境里最好记录各主机的实际版本，避免差异过大的 launcher 混用。
+安装完成后运行 `repo version`，确认 Repo launcher（负责初始化源码工作区并下载完整 Repo 工具的启动脚本）可以工作。官方页面检查的是 Repo launcher 版本至少 2.4；还应保存 `repo version` 中实际下载的完整 Repo 工具与 Python 版本，不能把 launcher 与完整客户端混为同一版本。
 
 <!-- gracker-diagram: ch18-02-02-host-baseline -->
 ![编译主机与虚拟设备运行条件分开](../../assets/diagrams/ch18/ch18-02-02-host-baseline.png)
@@ -97,7 +97,7 @@ sudo apt-get install git-core gnupg flex bison build-essential \
 
 ## 固定 Android 17 源码
 
-官方面向日常构建和贡献工作推荐 `android-latest-release`。它是供 Repo 使用的 manifest branch（清单分支），指向最新的公开 release branch；截至 2026-08-14，这个分支是 `android17-release`。指向会随时间移动：跟进最新代码时用它合适，复现固定版本的结论要用下面的固定 tag。
+官方面向日常构建和贡献工作推荐 `android-latest-release`。它是供 Repo 使用的 manifest branch（清单分支），指向最新的公开 release branch；本次 2026-10-26 读取该 manifest 的默认 revision 是 `android17-release`。指向会随时间移动：跟进最新代码时用它合适，复现固定版本的结论要用下面的固定 tag。
 
 下面的命令创建固定在 `android-17.0.0_r1` 的平台 checkout：
 
@@ -108,7 +108,7 @@ repo init --partial-clone --no-use-superproject \
 repo sync -c -j8
 ```
 
-manifest 是一份 XML 清单，描述各个 Git 项目、存放位置和 revision（项目版本）。`--partial-clone` 减少初始对象下载，`-c` 只同步当前 manifest 分支。`-j8` 来自官方示例，并发数可以按网络、文件系统和服务器响应调整，“CPU 核数的数倍”只是经验参考。
+manifest 是一份 XML 清单，描述各个 Git 项目、存放位置和 revision（项目版本）。`--partial-clone` 请求按需获取对象，后续构建或 Git 操作仍可补下载；`repo sync -c` 限制项目获取的 revision/分支范围，不是只检出一个 Git 仓库，也不冻结移动分支。`-j8` 来自官方示例，并发数可以按网络、文件系统和服务器响应调整，“CPU 核数的数倍”只是经验参考。
 
 要让构建可复现，我们还需要一份解析到具体 revision 的 manifest。下面的命令把每个项目解析到具体提交：
 
@@ -117,7 +117,7 @@ repo manifest -r -o pinned-manifest.xml
 git -C build describe --tags --always
 ```
 
-`pinned-manifest.xml` 应与实验记录一起归档。即便有它，本地的 cherry-pick（把选定提交应用到当前分支）、未提交修改或后来单独切换的项目仍可能漏掉，所以还要保存 `repo status` 和补丁集标识。
+`pinned-manifest.xml` 保存可复取的项目 revision，但不包含未提交文件、未跟踪输入或外部二进制内容。`repo status` 只列状态，不能还原修改；归档对应 patch/本地提交与未跟踪构建输入，另存预编译依赖和工具摘要。cherry-pick 若已在项目 HEAD 中，应由 `repo manifest -r` 捕获其提交，而不是一律视为遗漏。
 
 <!-- gracker-diagram: ch18-02-03-pin-checkout -->
 ![移动 manifest、固定项目与本地改动](../../assets/diagrams/ch18/ch18-02-03-pin-checkout.png)
@@ -142,6 +142,8 @@ m nothing
 
 这个目标只解析并验证构建结构，产物留到真正构建时生成。通过之后仍要编译受影响的模块：类型检查、链接和生成代码的错误，要到对应 action 真正执行时才会暴露。
 
+Android 17 的平台构建还会限制 action 写源码树。生成代码、缓存和中间产物应写到构建输出目录；出现只读错误时先修复生成路径和依赖声明，不默认关闭源码只读保护。
+
 平台构建文档把 `Android.bp` 描述为语法接近 Bazel BUILD 文件。平台的常规构建入口仍是 Soong；Android Common Kernel 走的是 Kleaf（基于 Bazel 的 Android 内核构建规则）。在平台树里看到 Bazel 文件时，构建命令仍按平台这一套来用。
 
 <!-- gracker-diagram: ch18-02-04-build-roles -->
@@ -149,12 +151,14 @@ m nothing
 
 图：Soong 与 Kati 负责各自规则，平台入口组合依赖图，再由 Ninja 执行具体 action。 m nothing 只验证结构，不替代编译和链接；Android 17 的生成产物应写构建输出目录。
 
-## lunch 的三段式 target
+## lunch 的产品、发布配置与构建变体
 
-lunch 的 target 由三段组成：
+固定 r1 的 `lunch` 推荐显式传入三个空格分开的参数；旧的连字符格式仍作为兼容语法保留：
 
 ```text
-product_name-release_config-build_variant
+lunch product_name release_config build_variant
+# Legacy syntax is still accepted:
+lunch product_name-release_config-build_variant
 ```
 
 - `product_name` 选择产品，例如 `aosp_cf_x86_64_only_phone`。
@@ -165,13 +169,13 @@ product_name-release_config-build_variant
 
 ```bash
 source build/envsetup.sh
-lunch aosp_cf_x86_64_only_phone-aosp_current-userdebug
+lunch aosp_cf_x86_64_only_phone aosp_current userdebug
 m
 ```
 
 `envsetup.sh` 会把 `lunch`、`m` 等命令加载到当前 shell，所以每个新 shell 都要重新执行一次。`m` 在未指定 `-j` 时会自行选择并发度；先采用默认值，等主机上有了实测数据再调 `-jN`。
 
-固定 tag 里有哪些产品和 release config，以 checkout 内的定义为准；从其他分支直接抄 `trunk_staging` target，可能拼出在这里并不存在的组合。拿不准时，跑一次无参数 `lunch` 查看常用 target，再核对输出里的 `TARGET_PRODUCT`、`TARGET_BUILD_VARIANT`、`BUILD_ID` 和 `OUT_DIR`。
+固定 tag 中产品与 release config 以 checkout 定义为准。r1 的无参数 `lunch` 会报 `No target specified`，交互菜单已移除；用 `lunch --help` 查看语法，并按提示使用 `list_products`、`list_releases`、`list_variants` 查候选。省略 release/variant 时，r1 默认 `trunk_staging`/`eng`；实验显式指定 `aosp_current`/`userdebug`，不要因帮助中的默认值就认定该组合适合当前产品。固定 r1 的 release map 将 `aosp_current` 解析到 `cp2a`，移动分支上可能不同。核对实际 `TARGET_PRODUCT`、`TARGET_RELEASE`、`TARGET_BUILD_VARIANT`、`BUILD_ID` 与 `OUT_DIR`。r1 的 lunch 在 `_lunch_meat` 后仍调用保存 leftovers 的步骤，后者的状态可能覆盖前者失败码；不能只凭外层退出码为 0 就认定目标配置成功，须核对错误输出和最终变量。
 
 ### 三种 build variant 怎么选
 
@@ -197,7 +201,7 @@ m services
 m surfaceflinger
 ```
 
-模块名来自 `Android.bp` 的 `name`，和文件路径是两回事。同一个 Java 文件可能进入开机时加载的 boot jar（开机时加载的 Framework Java 包）、可独立更新的 APEX（系统组件包），或同时进入多个变体。改之前我们先看同目录的 `Android.bp` 和依赖，确认文件属于哪个模块、装进哪个分区。
+模块名来自 `Android.bp` 的 `name`，和文件路径是两回事。同一个 Java 文件可能进入开机时加载的 boot jar（开机时加载的 Framework Java 包）、可独立更新的 APEX（系统组件包），或同时进入多个变体。改之前我们沿父目录、filegroup、defaults 与生成输入追踪 `Android.bp` 及依赖，确认文件属于哪个模块、装进哪个分区。
 
 常见源码位置包括：
 
@@ -225,17 +229,22 @@ Cuttlefish 是 AOSP 的标准虚拟设备。验证纯 AOSP 的 Framework 行为�
 启动 Cuttlefish 之前，先确认 KVM 就绪：
 
 ```bash
-test -e /dev/kvm
+test -c /dev/kvm && test -r /dev/kvm && test -w /dev/kvm
 ls -l /dev/kvm
 ```
 
-两条命令分别检查设备节点是否存在、当前用户是否具有权限。x86_64 主机还可以看 CPU 的 `vmx` 或 `svm` 硬件虚拟化标志；ARM64 主机直接以 `/dev/kvm` 为准。
+检查 `/dev/kvm` 是否为可访问的字符设备，并核对所属组与 ACL；`ls -l` 展示权限，不会替用户完成可用性测试。x86_64 的 `vmx`/`svm` 仅说明 CPU 暴露虚拟化特征，节点或特征存在也不保证 KVM ioctl、嵌套虚拟化与运行权限都可用，最终以虚拟设备成功启动为准。
 
 ARM64 Linux 主机可以运行匹配架构的 Cuttlefish 预编译镜像；平台源码构建文档对编译主机的要求仍是 x86_64。在这类主机上，“运行预编译虚拟设备”和“本地编译完整 AOSP”要分开记录。
 
-用 Android CI（持续集成系统）产物时，`cvd-host_package.tar.gz` 和设备 image 必须来自同一个 build，也就是同一次 CI 构建记录。主机包、镜像和分支混搭会引入协议或配置层面的兼容性问题；判断一个组合是否受支持，依据是三者同源，“能启动”只说明问题还没暴露，支撑不了这个组合。
+启动前还需按官方指南安装 Cuttlefish host Debian 包（如 cuttlefish-base、cuttlefish-user），配置 kvm/cvdnetwork/render 等所需组并使组权限和 udev 规则生效；只解压 host tarball 不能代替这层主机准备。Android CI 的 `cvd-host_package.tar.gz` 与设备 images 要取自同一 build、匹配架构；这解决用户态工具与镜像配对，不替代主机驱动、KVM、依赖和网络验证。
 
-解压 host package 后，在该目录启动 Cuttlefish，再用包内的 ADB（Android Debug Bridge，主机与设备通信工具） 检查设备。两个命令的主体如下，`HOME` 的处理放在代码块后说明：
+<!-- gracker-diagram: ch18-02-07-kvm-host -->
+![Cuttlefish 的 KVM、主机包和权限准备](../../assets/diagrams/ch18/ch18-02-07-kvm-host.png)
+
+图：Cuttlefish 先准备主机 Debian 包、组与 udev，再验证 KVM 运行能力。 节点、权限位和 CPU 特征只是前置检查；完整运行能力仍须通过实际启动验证。
+
+解压 host package 后，在该目录启动 Cuttlefish，再用包内的 ADB（Android Debug Bridge，主机与设备通信工具） 检查设备。以下只展示两个可执行文件的主体；完整运行目录设置须结合后文官方示例与同 build 说明：
 
 ```bash
 ./bin/launch_cvd --daemon
@@ -246,12 +255,7 @@ ARM64 Linux 主机可以运行匹配架构的 Cuttlefish 预编译镜像；平�
 
 Cuttlefish 启动后会自动向 ADB 注册设备，手工连接 `0.0.0.0:6520` 通常可以省略；`0.0.0.0` 表示监听地址，作为客户端目标时要填实际地址。多实例环境下，TCP 端口会随实例号变化。
 
-默认启动会打开 WebRTC（浏览器实时音视频与控制协议）界面，用浏览器访问 `https://localhost:8443` 就能看到设备。跨主机访问时，还要配置防火墙、TLS 加密连接，以及 WebRTC 使用的 TCP/UDP 端口；本地开发端口只暴露给可信网络。
-
-<!-- gracker-diagram: ch18-02-07-kvm-host -->
-![Cuttlefish 的 KVM、主机包和权限准备](../../assets/diagrams/ch18/ch18-02-07-kvm-host.png)
-
-图：Cuttlefish 先准备主机 Debian 包、组与 udev，再验证 KVM 运行能力。 节点、权限位和 CPU 特征只是前置检查；完整运行能力仍须通过实际启动验证。
+默认启动以 `--start_webrtc` 启用 WebRTC 服务（浏览器实时音视频与控制协议），不等于自动打开浏览器，用浏览器访问 `https://localhost:8443` 就能看到设备。跨主机访问时，还要配置防火墙、TLS 加密连接，以及 WebRTC 使用的 TCP/UDP 端口；本地开发端口只暴露给可信网络。
 
 <!-- gracker-diagram: ch18-02-08-pair-launch -->
 ![同 build 主机工具与设备镜像配对启动](../../assets/diagrams/ch18/ch18-02-08-pair-launch.png)
@@ -260,22 +264,23 @@ Cuttlefish 启动后会自动向 ADB 注册设备，手工连接 `0.0.0.0:6520` 
 
 ### 编译、同步、重启
 
-下面的命令展示 system 分区内模块的常见同步流程：
+下面针对同一 lunch 输出、匹配的 userdebug/eng 设备，且已完成 root/remount 准备的 system 模块示意同步。多设备时给每条 adb 命令选择同一 serial；remount 若要求重启，先按提示重启并重新准备，不能失败后仍继续同步。
 
 ```bash
-m services
-adb root
-adb remount
-adb sync system
-adb shell stop
-adb shell start
+m services && \
+  adb root && \
+  adb wait-for-device && \
+  adb remount && \
+  adb shell stop && \
+  adb sync system && \
+  adb shell start
 ```
 
-`adb sync` 的参数是分区名，`system`、`system_ext`、`product`、`vendor` 等都可以；`framework` 这类模块名要换成它所在的分区再同步。改动落在 APEX、vendor 或其他分区时，同步对应分区即可；涉及 boot image、内核、APEX 激活或早期启动代码时，完整的 `adb reboot` 更稳妥。
+`adb sync system` 同步当前产品输出中的对应分区文件；`framework` 不是分区名，主机模块名也不能直接当参数。对 vendor/system_ext/product 等目标先确认真实安装路径。APEX 不只是复制到分区：已安装在 /data 的更新可能覆盖系统预装版本，签名、版本、staged 安装与激活条件均要核对；普通路径按 `adb install <apex>` 后重启并确认活动版本，只有满足明确 rebootless 条件时才走非 staged 更新。boot image、内核和 early-boot 修改需匹配整套镜像并完整重启。
 
-`stop` / `start` 会重启 Zygote 和依赖它的 Java 进程，设备界面会暂时消失——Zygote 负责孵化 App 的 Java 进程。这一步之后，bootloader、`init`（用户空间首个进程）和 early-boot 路径仍停在上次开机的状态；研究系统启动时延，必须执行完整重启。
+固定 r1 的无参数 `stop`/`start` 经 `ctl.stop`/`ctl.start` 控制默认服务组，包含 netd、SurfaceFlinger、audioserver、zygote，双架构时还可能包含 zygote_secondary；并非只重启 Java 进程。它会中断网络、显示、音频和应用状态，但 bootloader、kernel、init 与 early-boot 路径没有重新执行。系统启动时延必须用完整重启，服务重新注册也不等于业务就绪，采样前另等明确 ready 条件。
 
-Native（C/C++）服务可以单独重启，前提是先确认 `init` 配置和依赖。SurfaceFlinger 崩溃或退出后通常由 `init` 拉起；这类操作会中断显示，还可能让当前测试状态失效，自动化脚本要等服务重新注册后再开始采样。
+Native 服务能否单独重启，要核对 init 配置、依赖和 onrestart 动作。r1 的 surfaceflinger.rc 含 `onrestart restart --only-if-running zygote`，因此重启 SurfaceFlinger 还可能连带重启原本运行中的 zygote。自动化需重新确认进程、服务、窗口与业务 ready 状态后采样，不能假设显示服务恢复便保留了原测试状态。
 
 <!-- gracker-diagram: ch18-02-09-sync-activation -->
 ![编译、同步、激活与就绪的不同边界](../../assets/diagrams/ch18/ch18-02-09-sync-activation.png)
@@ -296,7 +301,7 @@ Native（C/C++）服务可以单独重启，前提是先确认 `init` 配置和�
 atest FrameworksServicesTests
 ```
 
-`atest` 是 AOSP 的定向测试入口，会按测试配置构建、安装并执行。模块名要从目标目录的 `Android.bp` 或 `TEST_MAPPING`（声明目录相关测试的文件）确认；跑通了大型聚合测试，改动附近的单元测试仍然要补上。
+`atest` 是 AOSP 的定向测试入口，会按测试配置选择 host/device、构建和运行步骤；纯 host 测试不需要设备安装。模块名要从目标目录的 `Android.bp` 或 `TEST_MAPPING`（声明目录相关测试的文件）确认；跑通了大型聚合测试，改动附近的单元测试仍然要补上。
 
 <!-- gracker-diagram: ch18-02-10-test-loop -->
 ![模块、定向测试和干净实例形成回归闭环](../../assets/diagrams/ch18/ch18-02-10-test-loop.png)
@@ -309,7 +314,7 @@ atest FrameworksServicesTests
 
 在高频路径上加 Log 会改变锁竞争、调度和 I/O；Choreographer、Binder（Android 进程间调用机制）、SurfaceFlinger 这些路径尤其敏感。我们通常用临时日志确认控制流，进入测量阶段就把它移除，或改成受控的 trace 点。
 
-动态日志级别的前提，是目标代码确实读取了这个属性，且属性策略允许：`setprop log.tag.Choreographer VERBOSE` 只影响遵循 log tag 属性的调用，其余 Choreographer 诊断是否打开，要看对应代码是否读取它。日志时间戳还要先与 Perfetto（Android 系统性能追踪工具） 的时钟域对齐，再做关联分析。
+动态日志级别要求目标代码读取相应属性且策略允许。`log.tag.Choreographer` 只影响遵循该 log-tag 机制的调用，编译期固定的 DEBUG 常量或其他诊断开关不因此启用；属性可能被缓存，修改后是否立即生效要看消费者读取时机。日志、trace 与额外抓栈分别记录开销，时间戳对齐到明确时钟域后才做关联。
 
 <!-- gracker-diagram: ch18-02-11-logging-gates -->
 ![日志属性、编译常量和读取时机分别核对](../../assets/diagrams/ch18/ch18-02-11-logging-gates.png)
@@ -330,7 +335,7 @@ atest FrameworksServicesTests
 4. 优先用 `.sysprop` 描述文件和 `sysprop_library` 构建模块生成 Java、C++、Rust 类型安全 API。
 5. 补充 API 文件、单元测试和拒绝访问测试。
 
-低层 `android.os.SystemProperties` 仍可用，官方建议在可行时改用 Sysprop API。读一个现有属性之前，先找到它的定义和消费者；`getprop` 里有值，只说明属性当前存在，目标代码是否会在运行时重新读取，要看代码本身。
+平台内部低层 `android.os.SystemProperties` 仍可用，但不是普通应用可依赖的公开 SDK，官方建议在可行时改用 Sysprop API。读一个现有属性之前，先找到它的定义和消费者；`getprop` 里有值，只说明属性当前存在，目标代码是否会在运行时重新读取，要看代码本身。
 
 <!-- gracker-diagram: ch18-02-12-sysprop-contract -->
 ![新增系统属性从 owner 到类型安全 API](../../assets/diagrams/ch18/ch18-02-12-sysprop-contract.png)
@@ -369,7 +374,7 @@ adb root
 adb remount
 ```
 
-动态分区和只读文件系统的修改通常经 OverlayFS 落盘：只读下层保持原样，修改写进可写上层；重刷、清理 overlay 或切换镜像后，这些修改就消失了。
+是否使用直接 remount 或 OverlayFS，由文件系统类型、空间和设备支持决定。OverlayFS 保留只读 lower，将修改写到可写 upper，通常可跨普通重启继续覆盖原内容。`adb enable-verity` 等受支持的恢复流程会清理覆盖层；重刷、切镜像、scratch 清理的具体结果依工具与布局，不要假定任意 reboot 或换镜像都会自动清掉旧改动。保存并核查覆盖层状态，避免旧 upper 掩盖新 lower。
 
 单文件 push 的风险高于分区同步：类路径里可能还留着 dexpreopt（构建期 DEX 预编译）产物、架构变体、映射表或关联 APEX。稳妥的做法是先确认 Soong 的安装路径，用对应分区的 `adb sync`，再按组件的激活条件执行重启。
 
@@ -387,26 +392,26 @@ SoC 调度、热、GPU、相机和功耗的量产结论只能来自真机。把�
 3. bootloader 和 radio 固件满足该系统镜像要求。
 4. 设备允许 OEM unlocking（解锁引导加载程序），且已备份全部数据。
 
-官方的说明是：AOSP 可以直接运行在 Cuttlefish 上，物理硬件则需要设备专用闭源库。driver binaries 以自解压脚本提供，接受许可证后把文件和 Make 配置安装到 `vendor/`。驱动页面出现某个 Pixel 型号，只说明 Google 提供过相应二进制；当前 tag 里是否存在对应的产品配置，还要单独检查。
-
-解锁和全量刷写的官方命令如下：
-
-```bash
-adb reboot bootloader
-fastboot flashing unlock
-fastboot flashall -w
-```
-
-`fastboot flashing unlock` 和 `fastboot flashall -w` 都会涉及数据清除；前者由设备端再次确认，后者的 `-w` 会清除 `/data` 分区。刷写前记下 factory image（官方出厂镜像），并准备官方恢复路径；平台调试设备上，个人数据和生产凭据一律提前清掉。
+AOSP 可直接面向 Cuttlefish 构建；物理设备还需要与产品、系统 build 和固件匹配的专用支持文件。当前 Pixel drivers 页面同时提供 vendor image 等不同形式，历史包也可能是带许可证的自解压脚本；按该包说明处理，不能一律认为执行脚本就会向源码 vendor/ 安装完整支持。页面出现型号只说明提供过某些版本二进制，不能证明固定 Android 17 tag 有对应产品配置。
 
 <!-- gracker-diagram: ch18-02-15-physical-gates -->
 ![Pixel 刷写前的四个匹配条件](../../assets/diagrams/ch18/ch18-02-15-physical-gates.png)
 
 图：产品配置、专用二进制、固件启动链和解锁恢复条件都满足后，才按匹配输出刷写真机。 drivers 页面有型号不证明 r1 存在产品；vendor image 与历史自解压包也不是同一种交付形式。
 
-## Android 17 内核必须单独构建
+完成上述匹配、备份与恢复准备，并在已选择正确产品输出和设备的构建 shell 中，解锁与全量刷写的顺序如下；这些命令不是探测设备能力的只读检查：
 
-AOSP 平台树里主要是预编译 kernel binary；完整的 kernel 源码、工具链和构建规则在独立的 kernel checkout 里。Android 17 的 GKI（Generic Kernel Image，通用内核镜像）新分支是 `android17-6.18`，对应的 release tag 为 `android17-6.18-2026-06_r6`。
+```bash
+adb reboot bootloader && \
+  fastboot flashing unlock && \
+  fastboot flashall -w
+```
+
+`fastboot flashing unlock` 和 `fastboot flashall -w` 都会涉及数据清除；前者由设备端再次确认，后者的 `-w` 请求清除用户数据，实际擦除/格式化分区以该 fastboot 与设备实现为准。刷写前记下 factory image（官方出厂镜像），并准备官方恢复路径；平台调试设备上，个人数据和生产凭据一律提前清掉。
+
+## 修改 Android 17 内核时使用独立构建
+
+AOSP 平台树里主要是预编译 kernel binary；完整的 kernel 源码、工具链和构建规则在独立的 kernel checkout 里。Android 17 的 GKI（Generic Kernel Image，通用内核镜像）新分支是 `android17-6.18`，本文选择的分析/复现实验快照为 `android17-6.18-2026-06_r6`，不是该分支唯一或最新 release。
 
 Android 13 起的现代 Android Common Kernel 使用 Bazel/Kleaf，`build.sh` 在 Android 14 及以上不再受支持。典型的 GKI arm64 distribution target 是：
 
@@ -431,12 +436,12 @@ Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的�
 
 | 类别 | 字段 |
 | --- | --- |
-| 平台源码 | manifest、tag、local diff、build ID |
-| 构建配置 | product、release config、variant、关键 aconfig（平台功能开关配置）与 build flags |
-| 运行设备 | serial、build fingerprint、页大小、SELinux/verity 状态 |
-| 运行时 | ART/Mainline 模块版本、是否 remount、是否有额外日志 |
-| 内核 | `uname -a`、GKI tag、vendor modules、启动参数 |
-| 测试 | 用例 revision、数据集、轮次、温度与电源条件 |
+| <span style="white-space:nowrap">平台源码</span> | manifest、tag、local diff、build ID |
+| <span style="white-space:nowrap">构建配置</span> | product、release config、variant、关键 aconfig（平台功能开关配置）与 build flags |
+| <span style="white-space:nowrap">运行设备</span> | serial、build fingerprint、页大小、SELinux/verity 状态 |
+| <span style="white-space:nowrap">运行时</span> | ART/Mainline 模块版本、是否 remount、是否有额外日志 |
+| <span style="white-space:nowrap">内核</span> | `uname -a`、GKI tag、vendor modules、启动参数 |
+| <span style="white-space:nowrap">测试</span> | 用例 revision、数据集、轮次、温度与电源条件 |
 
 `userdebug`、Cuttlefish、remount、附加 Log、关闭 verity 都会改变环境。把这些信息留在报告里，其他人才能判断结果适合功能验证、方向判断，还是量产性能结论。
 
@@ -449,7 +454,7 @@ Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的�
 
 ### `lunch` 找不到 target
 
-先检查命令是否来自当前 shell 的 `envsetup.sh`，再核对三段式的 product、release config 和 variant。旧文章里的两段式 target 或其他分支的 `trunk_staging`，要对照当前 tag 里实际存在的组合改过再用。
+先确认本 shell 已加载当前 checkout 的 envsetup，再用 `lunch --help` 与候选列表核对 product/release/variant。固定 r1 的空格参数和旧三段式都可用，无参数菜单已经移除；省略参数的默认值和其他分支配置不能替代当前产品的有效组合。
 
 ### `m` 没有重编修改文件
 
@@ -470,6 +475,12 @@ Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的�
 
 ## 参考资料
 
+- [r1 envsetup：lunch 参数、默认值与菜单移除](https://android.googlesource.com/platform/build/+/android-17.0.0_r1/envsetup.sh)
+- [r1 release 配置映射](https://android.googlesource.com/platform/build/release/+/android-17.0.0_r1/release_config_map.textproto)
+- [r1 OverlayFS 与 remount](https://android.googlesource.com/platform/system/fs/fs_mgr/+/android-17.0.0_r1/README.overlayfs.md)
+- [r1 stop/start 服务组](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/toolbox/start.cpp)
+- [APEX 安装与激活](https://source.android.com/docs/core/ota/apex)
+- [Atest](https://source.android.com/docs/core/tests/development/atest)
 - [AOSP 构建主机要求](https://source.android.com/docs/setup/start/requirements)
 - [下载 Android 源码](https://source.android.com/docs/setup/download)
 - [AOSP FAQ：android-latest-release](https://source.android.com/docs/setup/about/faqs)

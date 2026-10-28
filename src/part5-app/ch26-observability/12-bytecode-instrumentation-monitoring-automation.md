@@ -4,9 +4,9 @@ chapter: '26.12'
 section: '26.12'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: AGP 9.3.1 artifact metadata, release notes, and Gradle API references; AOSP android-17.0.0_r1 Trace source; Android Trace, JankStats, Compose tracing, and ProfilingManager docs; ASM 9.10.1 release record, retrieved 2026-08-15
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: fixed AGP 9.3.3 API baseline including POST_COMPILATION_CLASSES; current metadata (latest stable 9.4.1), ASM 9.11.1 and visitor contracts; android-17.0.0_r1 Trace and current official UI/profiling docs; reviewed 2026-10-25 with host JVM visitor fixture verification only
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -75,7 +75,7 @@ last_rework_at: '2026-08-15T22:34:03+08:00'
 
 平台语义以 Android 17 / API 37 / `android-17.0.0_r1` 为准。
 
-AGP（Android Gradle Plugin）是把 Android 模块接入 Gradle 构建流程的插件。本文的构建入口以 2026 年 8 月稳定版 AGP 9.3.1 的 Instrumentation API（AGP 在构建期为单个 class 注册字节码变换的接口）为准；AGP 9.3 系列支持的最高 API 为 37，并要求 Gradle 9.5 和 JDK 17。
+AGP（Android Gradle Plugin）是把 Android 模块接入 Gradle 构建流程的插件。本文固定AGP9.3.3的Instrumentation API基线，以覆盖本页使用的POST_COMPILATION_CLASSES。2026年10月25日metadata中最新无预览后缀的稳定版是9.4.1，release标签则可能指向9.6.0-alpha01，不能据该标签选择生产稳定版。本文9.3系列支持最高API37，要求Gradle9.5.0和JDK17；升级版本应另核兼容表。
 
 Android 17 没有改变 App 构建期 `.class` 插桩的基本边界。运行时证据仍来自公开 Trace API、Perfetto（系统级跟踪的采集与分析工具）、JankStats、网络库接口和业务指标。
 
@@ -124,7 +124,7 @@ D8/R8 再执行 desugar（把较新的 Java 字节码特性转换成旧 Android 
 
 图：新增class先读POST_COMPILATION_CLASSES再append到CLASSES，避免同时消费和生成同一产物形成环。
 
-## AGP 9.3.1 的插桩入口
+## AGP 9.3.3 的插桩入口
 
 Instrumentation API 是 AGP 为逐 class 注册 ASM visitor 的公开接口。它支持增量处理，也允许 AGP 并行准备不同依赖。visitor 只能看到有限的 classpath（编译当前 class 时可查询的类集合），不能假设所有 class 已完成其他 visitor 的变换。
 
@@ -134,7 +134,7 @@ Instrumentation API 是 AGP 为逐 class 注册 ASM visitor 的公开接口。�
 
 - 独立处理每个 class：使用 `variant.instrumentation.transformClassesWith()`。
 - 读取或变换整组 class：使用 `variant.artifacts.forScope()` 和 [`ScopedArtifact.CLASSES`](https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.CLASSES)。
-- 在编译后生成新 class 且还要读取已编译 class：读取 `ScopedArtifact.POST_COMPILATION_CLASSES`，再把生成目录追加到 `ScopedArtifact.CLASSES`，避免任务同时消费和生成同一个产物形成循环依赖。`POST_COMPILATION_CLASSES` 在 9.3.1 才加入且标有 `@Incubating`，使用它的插件应固定 AGP 版本并保留升级集成测试。
+- 在编译后生成新 class 且还要读取已编译 class：读取 `ScopedArtifact.POST_COMPILATION_CLASSES`，再把生成目录追加到 `ScopedArtifact.CLASSES`，避免任务同时消费和生成同一个产物形成循环依赖。`POST_COMPILATION_CLASSES`在9.3.3才加入且标有 `@Incubating`，使用它的插件应固定 AGP 版本并保留升级集成测试。
 
 ### 注册 AsmClassVisitorFactory
 
@@ -237,7 +237,7 @@ abstract class TraceClassVisitorFactory :
 }
 ```
 
-截至 2026-08-15，上游 ASM 最新版是 9.10.1，但插件不应把这个数字直接写进 visitor。代码使用 `instrumentationContext.apiVersion`，是为了服从 AGP 实际内置的 ASM API 版本，避免插件声明的版本高于构建环境。
+截至2026年10月25日，上游ASM最新版本为9.11.1（10月17日发布），但插件不应把这个数字直接写进 visitor。代码使用 `instrumentationContext.apiVersion`，是为了服从 AGP 实际内置的 ASM API 版本，避免插件声明的版本高于构建环境。
 
 `ClassData.className` 使用点分隔的全限定类名。过滤逻辑需要覆盖 `R` 的内部类，并按工程情况排除生成代码、Data Binding、Hilt、Compose synthetic（编译器合成的方法或类）以及监控 SDK 自身。
 
@@ -258,26 +258,32 @@ abstract class TraceClassVisitorFactory :
 
 稳妥做法是给原方法体增加 catch-all handler（捕获所有传播到方法边界的 `Throwable` 的异常处理块），语义等价于 `try/finally`：正常返回前调用 `endSection()`；异常路径由 handler 调用 `endSection()` 后原样抛出。
 
-构造方法必须等父类构造调用完成，才能执行通用入口代码。ASM `AdviceAdapter` 是专门在方法进入与退出位置插入指令的辅助类，已经处理这项限制。
+构造器涉及未初始化this及this()/super()构造链，不能照搬普通方法入口。AdviceAdapter能协助处理入口位置，但捕获所有异常时还必须保留原异常表优先级并遵守visitTryCatchBlock先于相关label的访问契约。
 
-下面的 visitor 用于演示这一控制流。它跳过抽象、native、synthetic 方法以及构造器，避免示例同时引入构造器语义和编译器生成方法。
+下面采用逐方法MethodNode缓冲：先读取完整指令与原异常表，把catch-all追加为最后一项，再由MethodNode按合法顺序输出。这样同时保留原catch/finally优先级和label访问约束，代价是该方法树的内存。示例跳过abstract、native、synthetic和构造器，加入不可见版本标记，使同规则二次处理不重复注入。
+
+<!-- gracker-diagram: a297-05-normal-return-and-propagating-exception -->
+![先保留原 catch/finally，最后的 catch-all 才清理逃逸异常](../../assets/diagrams/ch26/a297-05-normal-return-and-propagating-exception.png)
+
+图：方法树输出会先发异常表再发相关label；只处理RETURN/ATHROW不能覆盖调用点隐式异常退出。
 
 ```kotlin
 import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.Type
-import org.objectweb.asm.commons.AdviceAdapter
-import org.objectweb.asm.commons.Method
+import org.objectweb.asm.tree.AnnotationNode
+import org.objectweb.asm.tree.InsnList
+import org.objectweb.asm.tree.InsnNode
+import org.objectweb.asm.tree.LabelNode
+import org.objectweb.asm.tree.LdcInsnNode
+import org.objectweb.asm.tree.MethodInsnNode
+import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.TryCatchBlockNode
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
-class TraceClassVisitor(
-    api: Int,
-    next: ClassVisitor
-) : ClassVisitor(api, next) {
-    private var ownerInternalName: String = ""
+class TraceClassVisitor(api: Int, next: ClassVisitor) : ClassVisitor(api, next) {
+    private var ownerInternalName = ""
 
     override fun visit(
         version: Int,
@@ -297,69 +303,68 @@ class TraceClassVisitor(
         descriptor: String,
         signature: String?,
         exceptions: Array<out String>?
-    ): MethodVisitor {
-        val next = super.visitMethod(
-            access, name, descriptor, signature, exceptions
-        )
-        val unsupported = access and (
-            Opcodes.ACC_ABSTRACT or
-                Opcodes.ACC_NATIVE or
-                Opcodes.ACC_SYNTHETIC
-            ) != 0
+    ): MethodVisitor? {
+        val next = super.visitMethod(access, name, descriptor, signature, exceptions)
+            ?: return null
+        val excluded = access and (
+            Opcodes.ACC_ABSTRACT or Opcodes.ACC_NATIVE or Opcodes.ACC_SYNTHETIC
+        ) != 0
+        if (excluded || name == "<init>" || name == "<clinit>") return next
 
-        if (unsupported || name == "<init>" || name == "<clinit>") {
-            return next
+        val traceTag = buildTraceTag(ownerInternalName, name, descriptor)
+        // Buffer one method so existing exception handlers keep their priority.
+        return object : MethodNode(api, access, name, descriptor, signature, exceptions) {
+            override fun visitEnd() {
+                super.visitEnd()
+                val marked = invisibleAnnotations.orEmpty().any {
+                    it.desc == MARKER_DESCRIPTOR
+                }
+                if (!marked) instrumentMethod(this, traceTag)
+                // MethodNode emits the full exception table before its labels.
+                accept(next)
+            }
         }
-
-        return TraceMethodVisitor(
-            api = api,
-            next = next,
-            access = access,
-            name = name,
-            descriptor = descriptor,
-            traceTag = buildTraceTag(ownerInternalName, name, descriptor)
-        )
-    }
-}
-
-private class TraceMethodVisitor(
-    api: Int,
-    next: MethodVisitor,
-    access: Int,
-    name: String,
-    descriptor: String,
-    private val traceTag: String
-) : AdviceAdapter(api, next, access, name, descriptor) {
-    private val bodyStart = Label()
-    private val bodyEnd = Label()
-
-    override fun onMethodEnter() {
-        visitLdcInsn(traceTag)
-        invokeStatic(TRACE_TYPE, BEGIN_SECTION)
-        visitLabel(bodyStart)
-    }
-
-    override fun onMethodExit(opcode: Int) {
-        if (opcode != ATHROW) {
-            invokeStatic(TRACE_TYPE, END_SECTION)
-        }
-    }
-
-    override fun visitMaxs(maxStack: Int, maxLocals: Int) {
-        val handler = Label()
-        visitTryCatchBlock(bodyStart, bodyEnd, handler, null)
-        visitLabel(bodyEnd)
-        visitLabel(handler)
-        invokeStatic(TRACE_TYPE, END_SECTION)
-        throwException()
-        super.visitMaxs(maxStack, maxLocals)
     }
 
     companion object {
-        private val TRACE_TYPE = Type.getObjectType("android/os/Trace")
-        private val BEGIN_SECTION =
-            Method("beginSection", "(Ljava/lang/String;)V")
-        private val END_SECTION = Method("endSection", "()V")
+        private const val MARKER_DESCRIPTOR =
+            "Lcom/example/monitor/TraceInstrumentedV1;"
+        private const val TRACE_OWNER = "android/os/Trace"
+
+        private fun endSection() = MethodInsnNode(
+            Opcodes.INVOKESTATIC, TRACE_OWNER, "endSection", "()V", false
+        )
+
+        private fun instrumentMethod(method: MethodNode, tag: String) {
+            val bodyStart = LabelNode()
+            val bodyEnd = LabelNode()
+            val handler = LabelNode()
+            // Insert cleanup only before normal returns. ATHROW is handled once
+            // by the catch-all, including exceptions thrown by callees.
+            for (instruction in method.instructions.toArray()) {
+                if (instruction.opcode in Opcodes.IRETURN..Opcodes.RETURN) {
+                    method.instructions.insertBefore(instruction, endSection())
+                }
+            }
+            method.instructions.insert(InsnList().apply {
+                add(LdcInsnNode(tag))
+                add(MethodInsnNode(
+                    Opcodes.INVOKESTATIC, TRACE_OWNER, "beginSection",
+                    "(Ljava/lang/String;)V", false
+                ))
+                add(bodyStart)
+            })
+            method.instructions.add(bodyEnd)
+            method.instructions.add(handler)
+            method.instructions.add(endSection())
+            method.instructions.add(InsnNode(Opcodes.ATHROW))
+            // Existing handlers stay first; only otherwise-escaping Throwable
+            // reaches this last handler.
+            method.tryCatchBlocks.add(TryCatchBlockNode(bodyStart, bodyEnd, handler, null))
+            val annotations = method.invisibleAnnotations ?: mutableListOf()
+            annotations.add(AnnotationNode(MARKER_DESCRIPTOR))
+            method.invisibleAnnotations = annotations
+        }
     }
 }
 
@@ -394,25 +399,20 @@ private fun String.takeUtf16Safely(maxCodeUnits: Int): String {
 }
 ```
 
-正常返回路径由 `onMethodExit()` 写入 `endSection()`；显式与隐式异常由新增 handler 处理，所以同一个异常不会结束两次。`visitMaxs()` 增加了一条异常控制流边，注册阶段必须选择能重新计算 frame 的模式。
+正常return前插入endSection，显式与隐式传播异常由排在原异常表之后的catch-all处理。MethodNode先输出异常表再输出label，新增控制流后仍需注册重新计算frame。此例假定Trace调用正常；生产桥接必须独立隔离自身故障，不能因诊断失败替换业务返回或异常。同步方法的自动monitor获取发生在方法体之前，本例section也不包含那段锁等待。
 
-生产 visitor 还要根据注解、方法大小、访问标志和业务规则缩小范围，并为 trace tag（section 名称）截断、UTF-16 代理对和哈希冲突编写测试。UTF-16 代理对是 Java `String` 用两个 16 位单元表示部分 Unicode 字符的编码方式，截断时不能从中间切开。
+<!-- gracker-diagram: a297-06-tree-emission-marker-and-scope -->
+![MethodNode 同时解决输出顺序、handler 优先级与重复处理](../../assets/diagrams/ch26/a297-06-tree-emission-marker-and-scope.png)
+
+图：自动monitor进入在同步方法体之前；section测方法体执行范围，不自动包含锁获取等待。
+
+生产visitor还需按注解、大小、访问标志和业务规则缩小范围。示例V1标记只保证同规则重复处理；规则升级应从未插桩输入重建或明确拒绝旧标记，不能累叠。tag截断/UTF-16代理对需测试，短哈希也不是无冲突证明；构建产出的完整ID映射须检查重复ID，不同方法冲突则失败或扩展ID。UTF-16 代理对是 Java `String` 用两个 16 位单元表示部分 Unicode 字符的编码方式，截断时不能从中间切开。
 
 Android 17 的 [`android.os.Trace`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)与公开 [Trace API](https://developer.android.com/reference/android/os/Trace)规定：同步 section 必须在同一线程成对并正确嵌套，名称上限为 127 个 UTF-16 code unit。code unit 是 Java `String` 的一个 16 位编码单元，它与用户看到的字符数并不总是一一对应。
 
 示例在构建期生成固定 tag，把竖线、换行和空字符替换掉，避免每次调用时拼接字符串。若 tag 包含业务参数、URL、账号或内容摘要，trace 文件也会携带这些信息，因此只应使用低敏感度的稳定标识。
 
 `Trace.isEnabled()` 从 API 29 提供。固定字符串的 `beginSection()` 可以直接调用，因为平台内部会检查 tracing 状态；只有运行时需要构造临时对象或格式化字符串时，才值得先调用 `isEnabled()` 避免无效分配。
-
-<!-- gracker-diagram: a297-05-normal-return-and-propagating-exception -->
-![先保留原 catch/finally，最后的 catch-all 才清理逃逸异常](../../assets/diagrams/ch26/a297-05-normal-return-and-propagating-exception.png)
-
-图：方法树输出会先发异常表再发相关label；只处理RETURN/ATHROW不能覆盖调用点隐式异常退出。
-
-<!-- gracker-diagram: a297-06-tree-emission-marker-and-scope -->
-![MethodNode 同时解决输出顺序、handler 优先级与重复处理](../../assets/diagrams/ch26/a297-06-tree-emission-marker-and-scope.png)
-
-图：自动monitor进入在同步方法体之前；section测方法体执行范围，不自动包含锁获取等待。
 
 <!-- gracker-diagram: a297-07-trace-tag-unicode-and-id-mapping -->
 ![Trace tag 在构建期生成并按 UTF-16 限长](../../assets/diagrams/ch26/a297-07-trace-tag-unicode-and-id-mapping.png)
@@ -481,7 +481,7 @@ OkHttp 已提供 application interceptor、network interceptor 和 `EventListene
 
 帧问题优先使用：
 
-- [JankStats](https://developer.android.com/topic/performance/jankstats)：按 `Window` 提供帧时长、jank 判断和 App UI 状态；jank 指一帧未在设备当时的时间预算内完成而出现的卡顿；
+- [JankStats](https://developer.android.com/topic/performance/jankstats)：按Window提供帧时长、库自身的jank启发式判断和App UI状态；该标记不直接等于SurfaceFlinger实际呈现deadline miss；
 - `FrameMetrics` / `FrameMetricsAggregator`：面向 View 窗口的帧阶段数据；
 - Macrobenchmark 与 Perfetto：Macrobenchmark 会在设备上重复运行用户场景，再分析 UI thread（执行界面逻辑的主线程）、RenderThread、SurfaceFlinger 和系统调度；
 - Android vitals：观察用户侧慢会话与 jank 分布。
@@ -503,7 +503,7 @@ Kotlin 默认参数、`inline`、`suspend`、lambda 和 synthetic accessor 会�
 
 协程函数的主要执行逻辑可能位于生成的 `ContinuationImpl.invokeSuspend()`，一次源码调用也可能跨线程恢复多次。仅按源码函数名插入同步 `Trace.beginSection()`，无法表达跨线程生命周期。
 
-协程需要异步 trace，或使用支持关联信息传播的 tracing API。关联信息传播是让同一个标识跟随协程切换线程；并发实例还要分配不会冲突的 cookie 或 flow 标识，用来把不同线程上的开始与结束事件配成一组。
+要描述跨挂起/跨线程的逻辑协程生命周期时，用异步trace或能传播关联信息的tracing API；同步section仍可记录每次物理线程执行片段，但多个片段不能当成一个连续生命周期。关联信息传播是让同一个标识跟随协程切换线程；并发实例还要分配不会冲突的 cookie 或 flow 标识，用来把不同线程上的开始与结束事件配成一组。
 
 同步 section 只描述当前线程上的一段执行。
 

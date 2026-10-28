@@ -4,8 +4,10 @@ chapter: '5.7'
 section: '5.7'
 status: finalized
 applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
-last_verified: '2026-08-23'
+last_verified: '2026-10-27'
 last_verified_against: AOSP android-17.0.0_r1 + Android Source sensors docs
+last_source_verified_at: '2026-10-27'
+last_idle_audit_at: '2026-10-27'
 confidence: medium-high
 sources:
 - type: official
@@ -16,6 +18,8 @@ sources:
   path: https://source.android.com/docs/core/interaction/sensors/sensor-stack
 - type: official
   path: https://source.android.com/docs/core/interaction/sensors/sensors-hal2
+- type: official
+  path: https://source.android.com/docs/core/interaction/sensors/sensors-aidl-hal
 - type: aosp
   path: frameworks/base/core/java/android/hardware/SensorManager.java
 - type: aosp
@@ -43,7 +47,7 @@ related_chapters:
 
 SensorService 的功耗问题常被简化为“采样频率越低越省电”，但这只覆盖传感器本体的一部分成本。
 
-一次传感器请求还会使用传感器中枢（sensor hub，用低功耗处理器代替主处理器收集和处理传感器数据）及其先进先出缓冲区（First In, First Out，FIFO），还可能唤醒应用处理器（Application Processor，AP），并让 `system_server`（承载 Android 核心系统服务的进程）、原生 SensorService 和应用回调线程参与数据交付。
+一次传感器请求可能使用传感器中枢（sensor hub，用低功耗处理器代替主处理器收集和处理传感器数据）及其先进先出缓冲区（First In, First Out，FIFO），还可能唤醒应用处理器（Application Processor，AP），并让 `system_server`（承载 Android 核心系统服务的进程）、原生 SensorService 和应用回调线程参与数据交付。Sensor hub 是可选组件，部分 sensor 也可以绕过它；硬件 FIFO 与 hub 缓冲能力需要按设备查询。
 
 本文按照 Android 17 / API 37 / `android-17.0.0_r1` 核对源码，分析采样周期、批量延迟、唤醒（wake-up）属性、多客户端请求聚合和 AP 挂起（suspend）之间的关系。
 
@@ -262,6 +266,8 @@ Non-wake-up FIFO 在容量足够的有限挂起窗口内可以保留全部事件
 - one-shot wake-up 事件触发。
 
 正数 `maxReportLatencyUs` 可以让多个 wake-up 事件共用一次 AP resume。如果使用不支持 batching 参数的 listener 重载，或将最大延迟设为 0，事件会更接近实时交付，唤醒成本也更高。
+
+连续模式的 wake-up sensor 有一项持锁例外：官方 Batching 文档允许驱动在 `maxReportLatency` 小于 1 秒时持有 wake lock。因此，即使最大延迟为正数，也不能据此认定 AP 会在批次之间进入 suspend；需要结合 suspend / resume 与 wake lock 时间线判断设备的实际行为。
 
 设备从 suspend 恢复时，平台会尽量交付 FIFO 中的全部内容，包括尚未达到各自延迟的批次，从而减少 AP 刚回到 suspend 后又被另一批事件唤醒的概率。
 
@@ -487,22 +493,22 @@ Battery Historian 或 `dumpsys batterystats` 可以观察 UID 的 sensor 使用�
 
 WakeLock、Doze 和后台限制决定 AP / 应用能否继续运行；SensorService batching 决定 sensor 事件如何生成、缓存和交付。三类机制需要放在同一时间线中分析。
 
-## 发布前检查清单
+## 实机验证清单
 
-- [ ] 平台源码结论已按 `android-17.0.0_r1` 复核；
-- [ ] 增大 `samplingPeriodUs` 与降低频率的方向没有写反；
-- [ ] sampling 与 batching 的功耗收益分开；
-- [ ] reporting mode 已确认；
-- [ ] wake-up / non-wake-up 以当前 Sensor 实例为准；
-- [ ] FIFO reserved / max 与共享 FIFO 边界已记录；
-- [ ] `dumpsys sensorservice` selected 参数与应用请求一致；
-- [ ] 200 Hz 限制标注为 Android 12 起的规则；
-- [ ] microphone privacy 对高采样率的影响已测试；
-- [ ] Direct Channel 没有被写成通用节能开关；
-- [ ] frozen-PID 行为标注为由 flag 控制，未承诺补发事件；
-- [ ] AP suspend、wakeup、SensorService wake lock 与回调时间已对齐；
+- [ ] 记录设备 build，区分 `android-17.0.0_r1` 源码行为与产品配置；
+- [ ] 核对 `samplingPeriodUs`，用增大周期的配置测试降低请求频率；
+- [ ] 分开比较降低采样率与 batching 的功耗收益；
+- [ ] 查询当前 sensor 的 reporting mode；
+- [ ] 通过当前 Sensor 实例确认 wake-up / non-wake-up 属性；
+- [ ] 记录 FIFO reserved / max，并检查共享 FIFO 的影响；
+- [ ] 对照应用请求与 `dumpsys sensorservice` selected 参数；
+- [ ] 请求高于 200 Hz 时，检查 Android 12 起的 target SDK 与权限条件；
+- [ ] 测试 microphone privacy 对高采样率的影响；
+- [ ] 比较 Direct Channel 与普通 listener 的实测能耗，不预设前者更省电；
+- [ ] 检查 frozen-PID 的产品 flag，解冻后核对事件缺口；
+- [ ] 对齐 AP suspend、wakeup、SensorService wake lock 与回调时间；
 - [ ] 功耗测试断开 USB，并固定温度和后台条件；
-- [ ] 结果同时包含事件完整性与能耗。
+- [ ] 同时记录事件完整性与能耗。
 
 ## Android 17 源码索引
 

@@ -1,6 +1,6 @@
 # 第 22 章：渲染优化实战
 
-渲染优化需要把布局、绘制、动画、图片、列表和页面切换放进同一帧预算中分析。帧预算是当前刷新周期留给一帧按时完成的时间：60 Hz 下约为 16.7 ms，120 Hz 下约为 8.3 ms；设备采用动态刷新率时，应以实际帧时间线为准。改动要用 Perfetto 或 System Trace（记录线程、渲染和系统事件的时间线）以及线上卡顿率验证。
+渲染优化需要把布局、绘制、动画、图片、列表和页面切换放进同一帧预算中分析。60 Hz、120 Hz 的刷新间隔分别约为 16.7 ms、8.3 ms；具体帧的可用渲染时间由调度和流水线决定，应检查 [FrameTimeline 的 Expected Timeline](https://perfetto.dev/docs/data-sources/frametimeline) 与对应的 actual frame，而不是把所有 App 的 deadline 都固定为一个刷新间隔。设备采用动态刷新率时，还要记录当前生效的显示模式与帧率策略。改动要用 Perfetto 或 System Trace（记录线程、渲染和系统事件的时间线）以及线上卡顿率验证。
 
 [第 2 章](../../part1-fundamentals/ch02-rendering/README.md)和[第 13 章](../../part2-performance/ch13-rendering-pipelines/README.md)分析系统渲染管线，[第 7 章](../../part2-performance/ch07-smoothness/README.md)讨论卡顿定位；这里聚焦 View、Jetpack Compose、WebView、Flutter、视频播放和 CameraX 等 App 侧场景。
 

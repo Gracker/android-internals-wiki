@@ -4,8 +4,9 @@ chapter: '15.14'
 section: '15.14'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-20'
-last_verified_against: AOSP android-17.0.0_r1 + android-17.0.0_r1 + android17-6.18-2026-06_r6
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; CameraX 1.6.1 published source artifacts; current official Perfetto and GFXReconstruct documentation retrieved 2026-10-25
 confidence: medium
 sources:
 - type: internal-reference
@@ -92,7 +93,7 @@ related_chapters:
 - '14.7'
 - '11.2'
 - '4.2'
-- '13.9'
+- '13.10'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/32-camera-hal3-buffer-management.md
 - src/part1-fundamentals/ch02-rendering/33-camerax-zsl-hal-mapping.md
@@ -108,7 +109,7 @@ Camera 性能问题通常横跨 App、Framework、HAL（Hardware Abstraction Lay
 
 ## 基线、设备边界与四类问题
 
-> 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
+> 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。CameraX 机制按已发布的 `1.6.1` source artifacts 核对；它独立于平台发布，实际实验仍记录所用库版本。GFXReconstruct 的动态 dev 文档仅代表本轮取回内容，复现时固定工具构建。
 
 Camera provider（向 framework 枚举并打开相机设备的 HAL 服务）、sensor driver（传感器驱动）、ISP（Image Signal Processor，图像信号处理器） 固件、算法库和 vendor tracepoint（厂商自定义追踪点） 都由设备厂商提供，这几部分的行为要以目标设备为准。AOSP 定义的是 framework 与 HAL 之间的公共接口；接口以内是什么样，还要靠目标设备上的实测来回答。
 
@@ -119,12 +120,12 @@ Camera provider（向 framework 枚举并打开相机设备的 HAL 服务）、s
 
 图：按输出流区分预览、录像、分析和拍照，各自追踪consumer与完成条件。 实际request只选择部分或全部配置输出；共享ISP与带宽可使回压跨流传导。
 
-| 现象 | 测量边界 | 容易混入的其他耗时 |
+| <span style="white-space:nowrap">现象</span> | 测量边界 | 容易混入的其他耗时 |
 |---|---|---|
-| 预览卡顿 | camera frame ready → preview carrier（预览承载路径）→ SF latch（SurfaceFlinger 取得待合成缓冲）→ display present（显示提交） | 宿主 UI、TextureView 采样、HWC（Hardware Composer，硬件合成器）、显示节奏 |
-| 拍照延迟 | 点击/业务触发 → request → shutter（快门时刻通知）→ image buffer → 编码/保存 | 3A（自动对焦、曝光和白平衡）、长曝光、ZSL（Zero Shutter Lag，零快门延迟）、多帧算法、存储 |
-| 录像丢帧 | camera record stream → encoder input → 编码输出 → muxer（封装器）/storage | codec（编解码器）、码率、热限制和 I/O |
-| 内存压力 | stream buffer、HAL cache、中间图、metadata（捕获元数据）与业务队列 | dma-buf（Linux 设备间共享缓冲框架）、native heap、Java 可达对象和 vendor pool |
+| <span style="white-space:nowrap">预览卡顿</span> | camera frame ready → preview carrier（预览承载路径）→ SF latch（SurfaceFlinger 取得待合成缓冲）→ display present（显示栈呈现反馈） | 宿主 UI、TextureView 采样、HWC（Hardware Composer，硬件合成器）、显示节奏 |
+| <span style="white-space:nowrap">拍照延迟</span> | 点击/业务触发 → request → shutter（快门时刻通知）→ image buffer → 编码/保存 | 3A（自动对焦、曝光和白平衡）、长曝光、ZSL（Zero Shutter Lag，零快门延迟）、多帧算法、存储 |
+| <span style="white-space:nowrap">录像丢帧</span> | camera record stream → encoder input → 编码输出 → muxer（封装器）/storage | codec（编解码器）、码率、热限制和 I/O |
+| <span style="white-space:nowrap">内存压力</span> | stream buffer、HAL cache、中间图、metadata（捕获元数据）与业务队列 | dma-buf（Linux 设备间共享缓冲框架）、native heap、Java 可达对象和 vendor pool |
 
 这类问题的合格线要逐项来定：目标 fps、显示刷新率、曝光时间、timestamp base（时间戳所在的时钟域） 和产品交互预算共同决定 deadline（最晚完成时间），“帧间隔超过 40 ms 即 Camera 故障”或“标准差超过 5 ms 即用户可见”这样的固定判据，换一台设备、换一个场景就未必成立。30 fps 只给出约 33.33 ms 的名义周期；看到某个间隔偏长，我们还要判断下一帧有没有补回、显示端有没有重复上一帧，以及问题发生在哪一路 output（输出）。
 
@@ -154,10 +155,10 @@ flowchart TD
 
     App --> Server --> HAL --> Sensor --> Result
     Result --> Server
-    Result --> Preview
-    Result --> Record
-    Result --> Analysis
-    Result --> Still
+    Server --> Preview
+    Server --> Record
+    Server --> Analysis
+    Server --> Still
     Preview --> SV --> SF
     Preview --> TV --> SF
     Preview --> Custom --> SF
@@ -188,7 +189,7 @@ Camera2/CameraX 的调用经 Binder（Android 跨进程通信机制） 进入 `c
 | HAL 随 result 返回的 release fence | 图像写入何时完成，consumer 可以开始读取 | BufferQueue、ImageReader、codec、App GPU |
 | SF/HWC 对 preview layer 的 release fence | 显示 consumer 何时不再读取该 buffer | BufferQueue 与后续 producer |
 
-display present（提交给显示设备） fence 描述一轮显示帧何时完成 present。analysis、record 和 still buffer 可能始终不上屏，也就没有对应的 display present fence。所以分析时要把 HAL release fence 和 display present fence 当成两件事，混写成一个事件会掩盖 SurfaceFlinger/HWC 之后的等待。
+display present fence 提供一轮显示帧的呈现时间反馈；它不等于提交调用返回，也不是光学测得的像素点亮时刻。analysis、record 和 still buffer 可能始终不上屏，也就没有对应的 display present fence。所以分析时要把 HAL release fence 和 display present fence 当成两件事，混写成一个事件会掩盖 SurfaceFlinger/HWC 之后的等待。
 
 <!-- gracker-diagram: ch15-14-03-three-fence-roles -->
 ![复用前、HAL 写完与 consumer 读完](../../assets/diagrams/ch15/ch15-14-03-three-fence-roles.png)
@@ -228,7 +229,7 @@ Camera HAL3 buffer management（HAL 缓冲管理） 从 Android 10 起允许 req
 
 回压就是 consumer 处理速度低于产帧速度时，未归还的 buffer 向上游传导形成的阻塞。
 
-`ImageReader.acquireNextImage()` 保留顺序，consumer 跟不上时容易占满 `maxImages`；只关心最新结果时，`acquireLatestImage()` 可以丢掉旧帧。两个接口都要求持有者在处理结束后调用 `Image.close()`。
+`ImageReader.acquireNextImage()` 保留顺序，consumer 跟不上时容易占满 `maxImages`；只关心最新结果时，`acquireLatestImage()` 可以丢掉旧帧。两个接口都要求持有者在处理结束后调用 `Image.close()`。 `acquireLatestImage()` 要有至少两个可 acquire 的余量（`maxImages - currentAcquiredImages >= 2`）才能按预期丢弃旧图；余量不足或长期持有图像时，不能仅凭接口名认定队列已经排空。
 
 CameraX `ImageAnalysis` 的 `STRATEGY_KEEP_ONLY_LATEST` 使用 latest-only（只保留最新帧） 的非阻塞策略；`STRATEGY_BLOCK_PRODUCER` 会在队列满时阻塞 camera device 范围内的其他 use case。`ImageProxy.close()` 才是把底层图像归还 CameraX 的接口，不要直接关闭包装对象中的 `Media.Image`。
 
@@ -293,7 +294,7 @@ data_sources {
 
 data_sources {
   config {
-    name: "android.surfaceflinger.frame"
+    name: "android.surfaceflinger.frametimeline"
   }
 }
 
@@ -315,24 +316,24 @@ AOSP 侧常用的搜索线索包括：
 
 | 线索 | 源码语义 | 不能替代的边界 |
 |---|---|---|
-| `connectHelper` | CameraService 接入与 client 初始化范围 | App 点击到 Binder 到达、预览首帧 |
-| `configureStreams` / `beginConfigure` / `endConfigure` | stream 配置与 HAL configure | 首个 request 和首帧显示 |
-| `sendRequestsBatch` | RequestThread 调入 HAL 提交一批 request | sensor/ISP 完成 |
-| `frame capture` | 以 frame number 为 cookie（异步事件的配对标识）的 request 完成区间 | 单个 preview stream 的上屏时间 |
-| `still capture` | still intent 对应 request 的异步区间 | JPEG/HEIC 保存完成 |
-| `Stream N: first full buffer` | 某 stream 配置后首次把有效 output buffer 送往 consumer 的时间点 | SF latch 与 display present |
-| `PreviewSpacer-<streamId>` | 固定帧率预览可能使用的显示节奏线程 | 所有设备的稳定 ABI |
+| <code>connect<wbr>Helper</code> | CameraService 接入与 client 初始化范围 | App 点击到 Binder 到达、预览首帧 |
+| <code>configure<wbr>Streams</code> / <code>begin<wbr>Configure</code> / <code>end<wbr>Configure</code> | stream 配置与 HAL configure | 首个 request 和首帧显示 |
+| <code>send<wbr>Requests<wbr>Batch</code> | RequestThread 调入 HAL 提交一批 request | sensor/ISP 完成 |
+| <code>frame capture</code> | 以 frame number 为 cookie 的提交至 framework 完成条件区间 | 单个 preview stream 的上屏时间 |
+| <code>still capture</code> | still intent 对应 request 的异步区间 | JPEG/HEIC 保存完成 |
+| <code>Stream N: first full buffer</code> | 某 stream 首次有效 output buffer 进入 consumer 入队尝试前的标记 | SF latch 与 display present |
+| <code>Preview<wbr>Spacer-&lt;stream<wbr>Id&gt;</code> | 固定帧率预览可能使用的显示节奏线程 | 所有设备的稳定 ABI |
 
-`frame capture` 从 `sendRequestsBatch()` 之前开始，直到 framework 确认该 request 的 result metadata、shutter 与全部 buffer 都已就绪才结束。它适合观察 request-to-result（请求提交到结果闭合） 分布；预览画面有没有显示，要另外去看 preview 交付相关的 slice。`Stream N: first full buffer` 由一个很短的 `ATRACE_NAME` 产生，可用的是时间戳，slice 时长不含阶段耗时信息。
-
-CamX/CHI（高通 Camera 软件栈常见的实现名）、MtkCam 及 P1/P2（联发科管线常见的阶段名）、ISP、JPEG 等 vendor 名称只能当作目标设备线索，它们不在 Android 公共 ABI（Application Binary Interface，二进制接口） 里。要先把 frame number、sensor timestamp、request id、stream id、buffer id 与 AOSP slice 对齐，再去解释 vendor node。
-
-SurfaceFlinger 的 `BufferTX - <layer>` counter 表示 server 收到 pending buffer update（待处理缓冲更新） 的变化，把它当作到达信号就好，latch 和 present 要另查。SurfaceView preview 的 App FrameTimeline（应用帧时序数据） 通常比标准 App Window 简略；对独立 layer，我们要继续追 BufferQueue、fence、composition type 和 display present。
+`frame capture` 的异步 begin 位于 `sendRequestsBatch()` 内、调用 HAL 批量提交之前。成功请求在 metadata、shutter 和全部 input/output buffer 返回条件满足时结束；失败请求可走错误通知与跳过 metadata 的分支。这里的 buffer 返回仍可携带未完成的 release fence，不能理解成像素已可读或 consumer 已消费完。`still capture` 的 begin 更早，位于 still intent 的请求准备阶段，两者不是相同起点。`Stream N: first full buffer` 的短 `ATRACE_NAME` 位于首次有效 buffer 的 consumer 入队尝试之前，可用的是这个尝试的时间戳；它不证明 queue 成功、fence 已完成或图像已显示。
 
 <!-- gracker-diagram: ch15-14-09-marker-boundaries -->
 ![三类 Camera 标记的起止语义](../../assets/diagrams/ch15/ch15-14-09-marker-boundaries.png)
 
 图：分别解释请求闭合、still准备起点与首buffer入队尝试标记。 成功与错误分支分别识别；buffer返回可携未完成fence，这些标记均不证明已显示。
+
+CamX/CHI（高通 Camera 软件栈常见的实现名）、MtkCam 及 P1/P2（联发科管线常见的阶段名）、ISP、JPEG 等 vendor 名称只能当作目标设备线索，它们不在 Android 公共 ABI（Application Binary Interface，二进制接口） 里。要先把 frame number、sensor timestamp、request id、stream id、buffer id 与 AOSP slice 对齐，再去解释 vendor node。
+
+SurfaceFlinger 的 `BufferTX - <layer>` counter 表示 server 收到 pending buffer update（待处理缓冲更新） 的变化，把它当作到达信号就好，latch 和 present 要另查。官方 FrameTimeline 文档明确列出 SurfaceView 不受支持的限制，不能假定独立 preview layer 一定有可用的 App FrameTimeline。应继续追 BufferQueue、layer、fence、composition type 与 display present；某设备出现相关轨道时仍须确认其实际覆盖对象。
 
 ### SQL：先发现 Track，再算指标
 
@@ -366,32 +367,28 @@ ORDER BY samples DESC, s.track_id;
 
 ### SQL：量化帧间隔
 
-下面以 track id `1234` 为示例。把它改成上一条查询确认的单一 preview 事件 track；同一 track 上还含其他 `queueBuffer` 时，应为 `name` 增加更具体的过滤条件。
+下面以 track id `1234` 为示例。把它改成上一条查询确认的单一 preview 事件 track；把示例的精确 `name = 'queueBuffer'` 改成发现查询中的实际事件名；同名事件仍涉及多路输出时，还需按 stream/layer 等身份进一步拆分，不能把一个通用线程 track 当成单路预览。
 
 ```sql
 WITH ordered AS (
   SELECT
     ts,
-    ts - LAG(ts) OVER (ORDER BY ts) AS gap_ns
+    ts - LAG(ts) OVER (ORDER BY ts, id) AS gap_ns
   FROM slice
   WHERE track_id = 1234
-    AND name GLOB '*queueBuffer*'
-),
-gaps AS (
-  SELECT gap_ns
-  FROM ordered
-  WHERE gap_ns IS NOT NULL
+    AND name = 'queueBuffer'
 )
 SELECT
-  COUNT(*) + 1 AS frame_count,
+  COUNT(*) AS frame_count,
+  COUNT(gap_ns) AS interval_count,
   1e9 / NULLIF(AVG(gap_ns), 0) AS average_fps,
   AVG(gap_ns) / 1e6 AS average_gap_ms,
   MIN(gap_ns) / 1e6 AS min_gap_ms,
   MAX(gap_ns) / 1e6 AS max_gap_ms
-FROM gaps;
+FROM ordered;
 ```
 
-`average_fps` 只有在所选事件与目标 preview buffer 一一对应时才成立。该查询假定 track 上至少有一条匹配事件；如果一条都没有，`COUNT(*) + 1` 仍会显示 `frame_count=1`，所以先用上一条查询确认样本数。写报告时我们还要保留 gap 分布与原始时间窗，只给平均值会隐藏长间隔与随后补帧。
+`average_fps` 只有在所选事件与目标 preview buffer 一一对应时才成立。空集合返回 `frame_count=0`、`interval_count=0`，只有一个事件时帧数为1而间隔指标为NULL；这两种情况都不能推导帧率。重复时间戳或多流混合应先检查事件选择。报告保留 gap 分布和原始时间窗，平均值会隐藏长间隔与随后补帧。
 
 <!-- gracker-diagram: ch15-14-11-frame-count-edge-cases -->
 ![帧数与相邻间隔的 SQL 边界](../../assets/diagrams/ch15/ch15-14-11-frame-count-edge-cases.png)
@@ -440,7 +437,7 @@ ORDER BY s.ts;
 
 ### SQL：观察 request-to-result
 
-下面的查询汇总 AOSP `frame capture` 与 `still capture` 已闭合区间。
+下面的查询按已发现的目标 track 汇总 AOSP `frame capture` 或 `still capture` 已闭合区间。替换 `1234`，分别选择各自 track；正常与错误请求须结合日志/参数分类，不能仅凭事件名当成成功样本。
 
 ```sql
 SELECT
@@ -450,12 +447,13 @@ SELECT
   MIN(dur) / 1e6 AS min_ms,
   MAX(dur) / 1e6 AS max_ms
 FROM slice
-WHERE name IN ('frame capture', 'still capture')
-  AND dur > 0
+WHERE track_id = 1234
+  AND name IN ('frame capture', 'still capture')
+  AND dur >= 0
 GROUP BY name;
 ```
 
-这里的 duration 覆盖 framework request 提交到 request 完成条件，包含 HAL/sensor/ISP 与 buffer 返回等待；consumer 后续处理、preview present 和文件保存都在这段之外。跨场景比较前，我们要保持 output 组合、曝光、算法模式和热状态一致。
+`frame capture` 量的是 HAL 批量提交前到 framework 请求移出 in-flight 的条件区间；`still capture` 还包含更早的 still 请求准备。两者都不能代替 HAL release fence 完成、consumer 处理结束、preview present 或文件保存时间。回压可能影响请求提交和 buffer 归还路径，不能把所有 consumer 影响一概排除在外。跨场景比较前，我们要保持 output 组合、曝光、算法模式和热状态一致。
 
 <!-- gracker-diagram: ch15-14-13-async-duration-scope -->
 ![同步提交、异步请求与下游完成](../../assets/diagrams/ch15/ch15-14-13-async-duration-scope.png)
@@ -476,21 +474,29 @@ from perfetto.trace_processor import TraceProcessor
 parser = argparse.ArgumentParser()
 parser.add_argument("trace")
 parser.add_argument("track_id", type=int)
+parser.add_argument("slice_name", help="发现查询确认的精确事件名")
 args = parser.parse_args()
 
+sql_name = args.slice_name.replace("'", "''")
 tp = TraceProcessor(trace=args.trace)
-rows = tp.query(
-    f"""
-    SELECT ts
-    FROM slice
-    WHERE track_id = {args.track_id}
-    ORDER BY ts
-    """
-)
-timestamps_ns = [row.ts for row in rows]
+try:
+    rows = tp.query(
+        f"""
+        SELECT ts
+        FROM slice
+        WHERE track_id = {args.track_id}
+          AND name = '{sql_name}'
+        ORDER BY ts, id
+        """
+    )
+    timestamps_ns = [row.ts for row in rows]
+finally:
+    tp.close()
 
 if len(timestamps_ns) < 2:
-    raise RuntimeError("所选 track 少于两个事件，无法计算帧间隔")
+    raise RuntimeError("所选 track 与事件名少于两个样本，无法计算帧间隔")
+if any(right <= left for left, right in zip(timestamps_ns, timestamps_ns[1:])):
+    raise RuntimeError("事件时间戳未严格递增，先排除重复事件或多流混合")
 
 gaps_ms = [
     (right - left) / 1e6
@@ -505,7 +511,7 @@ print(f"p95_gap_ms={ordered[p95_index]:.3f}")
 print(f"max_gap_ms={ordered[-1]:.3f}")
 ```
 
-事件选得对不对，脚本替我们判断不了；把它接入自动化回归前，先在 Perfetto UI 里抽查该 track，确认每个事件都对应同一路 preview buffer。输出的 p95 是帧间隔的第 95 百分位，用来观察长尾，合格线仍要按设备与产品预算另定。Trace Processor 版本也要随报告记录；升级 Python 包可能同时升级 SQL 引擎。
+事件选得对不对，脚本替我们判断不了；把它接入自动化回归前，先在 Perfetto UI 里抽查该 track，确认精确事件名的每个样本都对应同一路 preview buffer。命令行依次传入 trace、track id 和完整事件名。输出的 p95 是帧间隔的第 95 百分位，用来观察长尾，合格线仍要按设备与产品预算另定。Trace Processor 版本也要随报告记录；升级 Python 包可能同时升级 SQL 引擎。
 
 <!-- gracker-diagram: ch15-14-14-python-analysis -->
 ![批量分析的精确过滤与资源清理](../../assets/diagrams/ch15/ch15-14-14-python-analysis.png)
@@ -566,18 +572,18 @@ Camera 启动建议按下面的时间点分段：
 
 | 阶段 | 起点 | 终点 | 说明 |
 |---|---|---|---|
-| 交互到 API | App 自定义点击/业务 marker（trace 标记） | `openCamera` 调用或 Binder flow（跨进程调用链） | 业务与主线程 |
-| service open | CameraService `connectHelper` 入口 | `connectHelper` 返回 | 权限、仲裁、provider/HAL open、client 初始化 |
+| 交互到 API | App 自定义点击/业务 marker（trace 标记） | <code>open<wbr>Camera</code> 调用或 Binder flow（跨进程调用链） | 业务与主线程 |
+| service open | CameraService <code>connect<wbr>Helper</code> 入口 | <code>connect<wbr>Helper</code> 返回 | 权限、仲裁、provider/HAL open、client 初始化 |
 | session configure | App 创建 session | HAL configure 返回 | stream negotiation（输出组合协商）、buffer 与 pipeline 配置 |
-| first request | configure 完成 | 首次 `sendRequestsBatch` | App/CameraX 控制与 RequestThread |
-| first stream buffer | 首次 request | `Stream N: first full buffer` | sensor/ISP/HAL 与 output stream |
+| first request | configure 完成 | 首次 <code>send<wbr>Requests<wbr>Batch</code> | App/CameraX 控制与 RequestThread |
+| first stream buffer | 首次 request | <code>Stream N: first full buffer</code> | sensor/ISP/HAL 与 output stream |
 | first visible preview | first buffer | SF latch → HWC/display present | preview carrier 与显示 |
 
 产品定义的“启动”起点很难从系统 slice 里看出来，应用要主动写入点击、open、session configured、first capture result 和 preview streaming marker。
 
-`CameraService::connectHelper()` 在入口记录 `systemTime()`，返回前计算 `openLatencyMs` 并交给 `CameraServiceProxyWrapper::logOpen()`。这个值覆盖的是 service 入口到返回这一段，App 点击到 Binder 到达、session configure 和首帧都在它外面，对照分段表时要把这几段另外补上。
+`CameraService::connectHelper()` 在入口记录 `systemTime()`，成功接入路径返回前计算 `openLatencyMs` 并交给 `CameraServiceProxyWrapper::logOpen()`；早退的错误路径不一定产生这条成功 open 统计。这个值覆盖的是 service 入口到返回这一段，App 点击到 Binder 到达、session configure 和首帧都在它外面，对照分段表时要把这几段另外补上。
 
-`Camera3OutputStream` 的 `Stream N: first full buffer` 标记出现在首个有效 output buffer 进入 consumer 路径时；SurfaceFlinger 有没有 latch、display 有没有 present，要接着往下追：SurfaceView 追独立 layer，TextureView 追宿主 HWUI 和 App Window。
+`Camera3OutputStream` 的 `Stream N: first full buffer` 标记出现在首个有效 output buffer 的 consumer 入队尝试之前；SurfaceFlinger 有没有 latch、display 有没有 present，要接着往下追：SurfaceView 追独立 layer，TextureView 追宿主 HWUI 和 App Window。
 
 <!-- gracker-diagram: ch15-14-17-startup-milestones -->
 ![Camera 启动的六个测量边界](../../assets/diagrams/ch15/ch15-14-17-startup-milestones.png)
@@ -586,11 +592,11 @@ Camera 启动建议按下面的时间点分段：
 
 ### AOSP 内部统计怎样解释
 
-`SessionStatsBuilder` 按 stream 记录 requested frame（已请求帧）、dropped frame（丢弃帧）、capture latency histogram（捕获延迟直方图），以及第一个未 drop request 的 capture latency。这里的 capture latency 由 request time 到 framework 处理该 output buffer 的时间差计算，直方图的固定 bin（分箱边界） 为 100、200、300、400、500、700、900、1300、2100 ms。
+`SessionStatsBuilder` 按 stream 记录 requested frame（已请求帧）、dropped frame（丢弃帧）、capture latency histogram（捕获延迟直方图），以及第一个未 drop request 的 capture latency。这里的 capture latency 由 request time 到 `stream->returnBuffer()` 返回后的 framework 时间差计算，直方图的固定 bin（分箱边界） 为 100、200、300、400、500、700、900、1300、2100 ms。
 
-这些 bin 只是平台统计结构，体验合格线要另外定义。`mStartLatencyMs` 是该统计窗口内首个未 drop buffer 的 request-to-buffer latency，量的是另一段路径，和点击到首帧显示不是一回事。设备进入 idle（当前捕获已处理完） 时，这组统计经 listener（回调接收方） 上报；能否直接查看、怎么导出，依系统组件、权限和设备实现而定。
+这些 bin 只是平台统计结构，体验合格线要另外定义。`mStartLatencyMs` 是该统计窗口内首个未 drop buffer 的 request-to-buffer latency，量的是另一段路径，和点击到首帧显示不是一回事。设备进入 idle（当前捕获已处理完） 时，这组统计经 listener（回调接收方） 上报；能否直接查看、怎么导出，依系统组件、权限和设备实现而定。 `incCounter()` 还会把 dropped 样本写入同一 histogram，部分错误归还可用0ms计数；因此不能把直方图直接当作成功捕获延迟分布。
 
-RequestThread 还用 `mRequestLatency` 记录 `sendRequestsBatch()` 调入 HAL 的耗时，并以 `ProcessCaptureRequest latency histogram` 标签 dump。它量的是同步提交调用范围，后续 sensor/ISP 运行都在这段之外。`dumpsys media.camera` 里的 histogram 可以辅助判断 HAL 入队调用有没有长尾；阈值应来自同设备正常基线与产品预算。
+RequestThread 还用 `mRequestLatency` 记录 `sendRequestsBatch()` 调入 HAL 的耗时，并以 `ProcessCaptureRequest latency histogram` 标签 dump。它量的是 `sendRequestsBatch()` 同步调用范围，包含 HAL 批量提交和函数内的后处理；不能据此量出完整 sensor/ISP 执行，但其中等待可能与设备流水线重叠。`dumpsys media.camera` 里的 histogram 可以辅助判断 HAL 入队调用有没有长尾；阈值应来自同设备正常基线与产品预算。
 
 <!-- gracker-diagram: ch15-14-18-platform-statistics -->
 ![三种 AOSP 内部统计口径](../../assets/diagrams/ch15/ch15-14-18-platform-statistics.png)
@@ -618,14 +624,14 @@ RequestThread 还用 `mRequestLatency` 记录 `sendRequestsBatch()` 调入 HAL �
 建议分别统计下面三个量；变量名保留英文，便于直接用于日志和分析脚本：
 
 ```text
-source_age = shutter_event_time - sensor_timestamp
-callback_latency = callback_time - shutter_event_time
-save_latency = file_complete_time - callback_time
+source_age = user_trigger_time - source_sensor_timestamp
+callback_latency = image_callback_time - user_trigger_time
+save_latency = file_complete_time - image_callback_time
 ```
 
-这三个量回答的问题不同，我们要分开看。`source_age > 0` 表示图像来自按键前；回调快不快，要看 `callback_latency`，它包含重处理、JPEG 编码和调度时间；`save_latency` 主要属于应用收到结果后的文件 I/O 路径。
+这里的 `user_trigger_time` 是应用记录的按键/业务触发时刻，`image_callback_time` 是图像交付回调进入时刻，二者都用 `elapsedRealtimeNanos()`；`source_sensor_timestamp` 来自最终图像对应的源帧。`source_age > 0` 表示源曝光早于用户触发，负值则表示触发后曝光。HAL shutter/`onCaptureStarted()` 的 timestamp 对普通请求表示曝光开始，对 reprocess 请求表示输入图像的曝光开始，不能当作用户按键时刻。`callback_latency` 量触发到图像交付，可能含重处理、编码、排队和调度；`save_latency` 才量该回调之后到文件完成的阶段。使用本来就在文件保存后回调的 API 时，不能再把这个差值解释成完整保存耗时。
 
-只有 `SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` 才能把 `SENSOR_TIMESTAMP` 直接与 `elapsedRealtimeNanos()` 比较。时间戳来源为 `UNKNOWN` 时，两者可能不在同一个时钟域，要先在设备上完成校准，才能计算 `source_age`。
+只有 `SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` 才能把 `SENSOR_TIMESTAMP` 直接与 `elapsedRealtimeNanos()` 比较。时间戳来源为 `UNKNOWN` 时，两者可能不在同一个时钟域，要先在设备上完成校准，才能把它与应用触发时刻相减。REALTIME 只允许对齐同一时钟域，仍要确认使用的是所选历史源帧的 timestamp，而不是另一帧或被转换过 timestamp base 的预览 buffer。
 
 <!-- gracker-diagram: ch15-14-20-zsl-time-definitions -->
 ![source age、回调延迟与保存延迟](../../assets/diagrams/ch15/ch15-14-20-zsl-time-definitions.png)
@@ -659,7 +665,7 @@ dma-buf、sync_file（把 fence 封装为文件描述符的内核机制）、调
 - [11.2 App 耗电优化与案例](../../part2-performance/ch11-power/02-app-power-optimization-cases.md)：功耗实验与归因；
 - [14.7 Perfetto SQL、SPAN_JOIN 与 Jank CUJ](../ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md)：Track、slice、counter 和 SQL；
 - [13.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md)：多流、ZSL、timestamp base、secure path 与显示拓扑；
-- [13.3 SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md) 与 [13.3 SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md)：两种 preview carrier 的显示路径。
+- [13.3 SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md)：两种 preview carrier 的显示路径。
 
 ## Camera2 与 CameraX 的性能差异
 
@@ -675,12 +681,12 @@ CameraX 的开销随配置浮动，写不成固定的“多 80–150 ms”：差
 | 维度 | Camera2 | CameraX |
 |---|---|---|
 | session 控制 | App 直接配置，能力与错误处理工作较多 | 库管理 use case 与生命周期 |
-| preview carrier | App 明确提供 SurfaceView、TextureView 或自研 Surface | `PreviewView` 按 implementation mode 与兼容条件选择 |
+| preview carrier | App 明确提供 SurfaceView、TextureView 或自研 Surface | <code>Preview<wbr>View</code> 按 implementation mode 与兼容条件选择 |
 | analysis 回压 | App 管理 ImageReader 与线程 | 提供 KEEP_ONLY_LATEST / BLOCK_PRODUCER |
 | 设备兼容 | App 维护 capability 与 workaround | CameraX quirk 和版本参与 |
 | 诊断记录 | 平台 build 与 App 配置 | 还要记录 CameraX artifact 版本与实际 carrier |
 
-截至本次核验日期（2026-08-13），Android 17 发布说明没有规定某个 CameraX 最低版本。就算平台固定在 API 37，CameraX 行为仍随库版本变化；所以报告中要记录实际 artifact（Maven 库构件） 版本，库升级后重跑启动、预览、拍照与分析回归。
+本轮核对的 Android 17 公开变更与 CameraX 发布说明没有给出本章场景通用的 CameraX 最低版本；该结论限于这些资料和场景。就算平台固定在 API 37，CameraX 行为仍随库版本变化；所以报告中要记录实际 artifact（Maven 库构件） 版本，库升级后重跑启动、预览、拍照与分析回归。
 
 ## HAL3 管线延迟的深度分析
 
@@ -703,7 +709,7 @@ CameraX 的开销随配置浮动，写不成固定的“多 80–150 ms”：差
 - consumer acquire/release；
 - preview layer、SF latch、composition type 和 present。
 
-`frame capture` duration 增大时，接着看 `RequestThread` 处在 Running（正在 CPU 上运行）、Runnable（已就绪但在等 CPU） 还是 blocked（等锁、fence、Binder 或其他事件） 状态。同步 `sendRequestsBatch` 区间较长，候选原因包括 HAL Binder/AIDL 调用和 HAL 入队；调用很短但 result 晚，候选原因转向 sensor/ISP/vendor queue、曝光、算法和 output buffer；result 按时但画面晚，就到 consumer 或显示端去找。
+`frame capture` 是跨线程的异步请求区间，多笔请求还可重叠。区间变长时，分别定位提交阶段的 `RequestThread`、provider/HAL 与 result/buffer 回调线程，检查各段的 Running、Runnable 和等待；RequestThread 当时处理的可能已是另一笔请求，不能把它的整段线程状态直接归给这帧。同步 `sendRequestsBatch` 区间较长，候选原因包括 HAL Binder/AIDL 调用和 HAL 入队；调用很短但 result 晚，候选原因转向 sensor/ISP/vendor queue、曝光、算法和 output buffer；result 按时但画面晚，就到 consumer 或显示端去找。
 
 厂商 slice 的 node 名与拓扑不在 Android ABI 范围内。高通 CamX/CHI（高通 Camera 软件栈中常见的实现名）、MTK P1/P2（联发科管线中常见的阶段名） 或其他 ISP stage 要用 frame number、SOF、request/result 与 buffer 对齐。没有 vendor ATrace 时，Binder flow、thread state、fence、dma-buf、HAL dump 和 camera event log 仍能划出时间范围。
 
@@ -731,7 +737,12 @@ Android 17 / API 37 与 Camera 性能相关的公开变化包括：
 
 GFXReconstruct 在 Android 上通过 `VK_LAYER_LUNARG_gfxreconstruct` 这个 Vulkan layer（夹在 App 与驱动之间的拦截层）捕获和回放 Vulkan API 调用。它适用于自研 Vulkan 预览，或 camera `AHardwareBuffer`（Android 跨组件共享的 native 图形缓冲）已进入 Vulkan 的阶段，可以检查 image import（外部图像导入）、format、layout（Vulkan image 布局）、barrier（GPU 同步屏障）、descriptor（shader 资源绑定） 和 draw/compute 调用。
 
-它的视野是 Vulkan API 调用，OpenGL ES、sensor、ISP、Camera HAL 或 SurfaceView 直送 SF/HWC 的内部工作都在视野之外。外部 producer 写入的 `AHardwareBuffer` 内容、protected memory（不允许普通 CPU/工具读取的内存）和厂商 extension 还会限制回放。`gfxrecon-convert --include-binaries` 会导出 capture 内记录的 Vulkan binary 参数，但通用的 YUV plane dump（亮度/色度平面转储）还做不了，Camera HAL 生产的像素未必拿得到。
+它的视野是 Vulkan API 调用，OpenGL ES、sensor、ISP、Camera HAL 或 SurfaceView 直送 SF/HWC 的内部工作都在视野之外。外部 producer 写入的 `AHardwareBuffer` 内容、protected memory（不允许普通 CPU/工具读取的内存）和厂商 extension 还会限制回放。`gfxrecon-convert --include-binaries` 导出 capture 中记录的二进制参数，并在 JSON 中引用相应文件；它不是通用 Camera HAL YUV plane 导出接口。GFXReconstruct 还支持重放时的资源 dump，按命令、对象和 aspect 选择资源，不能转成32-bit RGBA的图像可输出 `.bin`。这也不保证捕获到了外部 Camera producer 的每一帧像素；protected memory、格式、同步和工具/驱动支持仍要分别验证。
+
+<!-- gracker-diagram: ch15-14-25-vulkan-capture-boundary -->
+![GFXReconstruct 在 Camera 链上的位置](../../assets/diagrams/ch15/ch15-14-25-vulkan-capture-boundary.png)
+
+图：图形capture从App的Vulkan调用观察导入、同步和采样，外部Camera像素另行验证。 不覆盖sensor、ISP或SurfaceView直送内部；捕获层会改变性能，先保留无layer基线。
 
 花屏排查按怀疑的位置选工具：
 
@@ -745,11 +756,6 @@ GFXReconstruct 在 Android 上通过 `VK_LAYER_LUNARG_gfxreconstruct` 这个 Vul
 
 捕获 layer 会带来额外记录开销，因而改变时序和内存。我们先用未注入 layer 的 Perfetto 建立性能基线，再用短窗口图形 capture 检查 API 与资源状态。
 
-<!-- gracker-diagram: ch15-14-25-vulkan-capture-boundary -->
-![GFXReconstruct 在 Camera 链上的位置](../../assets/diagrams/ch15/ch15-14-25-vulkan-capture-boundary.png)
-
-图：图形capture从App的Vulkan调用观察导入、同步和采样，外部Camera像素另行验证。 不覆盖sensor、ISP或SurfaceView直送内部；捕获层会改变性能，先保留无layer基线。
-
 <!-- gracker-diagram: ch15-14-26-dump-tool-differences -->
 ![HAL plane、参数二进制与重放资源导出](../../assets/diagrams/ch15/ch15-14-26-dump-tool-differences.png)
 
@@ -759,16 +765,16 @@ GFXReconstruct 在 Android 上通过 `VK_LAYER_LUNARG_gfxreconstruct` 这个 Vul
 
 | 误区 | 修正方法 |
 |---|---|
-| `frame capture` 的频率就是预览显示 fps | 它描述 request 完成；继续查目标 preview stream、carrier 与 display |
-| `first full buffer` 表示首帧已经上屏 | 继续查 Surface/SurfaceTexture、SF latch、HWC 与 present |
-| Camera preview 固定使用 3–4 个 buffer | 读取 HAL configure 的 `maxBuffers`、session 模式、consumer 与 vendor pool |
+| <code>frame capture</code> 的频率就是预览显示 fps | 它描述 request 完成；继续查目标 preview stream、carrier 与 display |
+| <code>first full buffer</code> 表示首帧已经上屏 | 继续查 Surface/SurfaceTexture、SF latch、HWC 与 present |
+| Camera preview 固定使用 3–4 个 buffer | 读取 HAL configure 的 <code>max<wbr>Buffers</code>、session 模式、consumer 与 vendor pool |
 | SurfaceView 一定走 HWC overlay | 查看当前整组 layer 的 composition type |
 | TextureView 每帧把 YUV 从 CPU 上传到 GL | 常见路径由 SurfaceTexture/GLConsumer（外部纹理 consumer）直接采样；自定义 CPU 转换要另行确认 |
-| `Image.close()` 只影响内存 | 它决定 consumer buffer 能否归池，可能反压整个 session |
+| <code>Image.<wbr>close()</code> 只影响内存 | 它决定 consumer buffer 能否归池，可能反压整个 session |
 | CameraX 自动选择的配置一定最快 | 记录库版本和协商结果，在同设备做等价配置对照 |
 | Binder 调用固定只耗 1–2 ms | 用 sched（线程调度）与 binder flow 测目标设备，不写固定延迟 |
-| `onCaptureCompleted()` 表示所有 output 都已消费 | metadata 与 buffer 可分批返回，consumer 处理和显示仍在后面 |
-| `CameraMetadataNative` RSS 增长只能等 GC | 查 result 引用队列、native allocation、dma-buf 与 vendor pool |
+| <code>on<wbr>Capture<wbr>Completed()</code> 表示所有 output 都已消费 | metadata 与 buffer 可分批返回，consumer 处理和显示仍在后面 |
+| <code>Camera<wbr>Metadata<wbr>Native</code> RSS 增长只能等 GC | 查 result 引用队列、native allocation、dma-buf 与 vendor pool |
 | GFXReconstruct 可以抓 Camera 的任意 YUV | 它面向 Vulkan API；HAL/SurfaceView 与外部像素内容有明确边界 |
 | Android 17 新 Camera API 会自动改善延迟 | 公开变化主要扩展能力发现与格式，性能仍由配置和设备实现决定 |
 
@@ -791,5 +797,7 @@ GFXReconstruct 在 Android 上通过 `VK_LAYER_LUNARG_gfxreconstruct` 这个 Vul
 - [Android 17 `CameraMetadataNative.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraMetadataNative.java)
 - [Android 17 Camera HAL AIDL](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/)
 - [GFXReconstruct Android usage](https://github.com/LunarG/gfxreconstruct/blob/dev/USAGE_android.md)
+- [GFXReconstruct resource dumping](https://github.com/LunarG/gfxreconstruct/blob/dev/vulkan_dump_resources.md)
+- [GFXReconstruct convert tool](https://github.com/LunarG/gfxreconstruct/blob/a20d3dbf83df4f8e02d52e42f19f0ea060708237/tools/convert/README.md)
 - [Kernel `dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)
 - [Kernel `sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)

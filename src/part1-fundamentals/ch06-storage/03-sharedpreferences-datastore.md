@@ -316,13 +316,13 @@ public static void waitToFinish() {
 - **pre-Honeycomb Activity**：面向 Android 3.0（API 11）之前行为的兼容路径仍在 `handlePauseActivity()` 调用；现代 App 的主路径要按 `handleStopActivity()` 理解，不要写成 `onPause()`。
 - **Service**：`handleServiceArgs()` 在命令处理后等待，`handleStopService()` 在销毁清理后等待。
 
+- **BroadcastReceiver**：`PendingResult.finish()` 不直接调用 `waitToFinish()`。仅 TYPE_COMPONENT 分支在 hasPendingWork() 为真时把 sendFinished() 排在队尾；其他类型或没有 pending work 时直接发送。这个检查只看尚在 sWork 中的任务，不等同于统计所有 in-flight 写盘。排队分支会使 AMS（ActivityManagerService，系统的 Activity 管理服务） 收到完成回执的时间随之推迟。
+
+
 <!-- gracker-diagram: ch06-03-component-wait-points -->
 ![Activity 与 Service 的 SP 收尾点](../../assets/diagrams/ch06/ch06-03-component-wait-points.png)
 
 图：现代 Activity 在 stop 路径等待，pre-Honeycomb 兼容路径在 pause；Service 命令和销毁清理后也有等待点。
-
-- **BroadcastReceiver**：`PendingResult.finish()` 不直接调用 `waitToFinish()`。仅 TYPE_COMPONENT 分支在 hasPendingWork() 为真时把 sendFinished() 排在队尾；其他类型或没有 pending work 时直接发送。这个检查只看尚在 sWork 中的任务，不等同于统计所有 in-flight 写盘。排队分支会使 AMS（ActivityManagerService，系统的 Activity 管理服务） 收到完成回执的时间随之推迟。
-
 <!-- gracker-diagram: ch06-03-broadcast-finish-gates -->
 ![广播完成回执的条件排队](../../assets/diagrams/ch06/ch06-03-broadcast-finish-gates.png)
 

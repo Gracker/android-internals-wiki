@@ -18,8 +18,10 @@ related_chapters:
 - '1.10'
 - '5.1'
 - '5.3'
-last_verified: '2026-08-23'
+last_verified: '2026-10-27'
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6
+last_source_verified_at: '2026-10-27'
+last_idle_audit_at: '2026-10-27'
 confidence: high
 sources:
 - type: aosp
@@ -42,6 +44,8 @@ sources:
   path: https://source.android.com/docs/core/perf/cgroups
 - type: kernel
   path: Documentation/admin-guide/cgroup-v2.rst (android17-6.18-2026-06_r6)
+- type: kernel
+  path: mm/memcontrol-v1.c, Documentation/admin-guide/cgroup-v1/memory.rst (android17-6.18-2026-06_r6)
 ---
 
 # Android 17 cgroup v1/v2 混合层级与进程资源隔离机制
@@ -142,7 +146,7 @@ UID < AID_APP_START：
 
 ### 2.3 `cgroup.subtree_control` 的作用边界
 
-cgroup v2 controller 默认不会自动在子层级生效。父 cgroup 只能启用 `cgroup.controllers` 中列出的 controller，并且要满足 top-down（子层不能启用父层未启用的控制器）和 no-internal-process（启用域控制器的内部节点不能同时直接承载进程）约束。Android 的 `NeedsActivation`、`MaxActivationDepth` 和 `ActivateControllers()` 封装了这部分操作。
+cgroup v2 controller 默认不会自动在子层级生效。父 cgroup 只能启用 `cgroup.controllers` 中列出的 controller，并且要满足 top-down（子层不能启用父层未启用的控制器）和 no-internal-process（非根 cgroup 向子层分配域控制器资源时，自身不能直接承载进程）约束。根 cgroup 不受后一条限制。Android 的 `NeedsActivation`、`MaxActivationDepth` 和 `ActivateControllers()` 封装了这部分操作。
 
 freezer 不走上面这条路径。`cgroup.freeze` 是 cgroup v2 的核心接口，存在于非根 cgroup；它不作为 `+freezer` 写入 `cgroup.subtree_control`。AOSP 在 `cgroups.json` 中把它命名为 `freezer`，是为了让 task profile 通过统一的 controller/attribute 抽象找到文件。
 
@@ -170,7 +174,7 @@ Android 17 支持按产品首发 API、vendor 和 `system_ext` 覆盖或追加�
 
 Android 17 的 action 不限于移动 cgroup：
 
-- `JoinCgroup`：把线程或进程加入指定 controller 的子组；
+- `JoinCgroup`：把线程或进程加入指定 v1 controller 的子组；`TaskProfiles::Load()` 对 v2 controller 的这类 action 会记录警告并忽略；
 - `SetAttribute`：通过 attribute 名查找进程/线程对应文件并写值；
 - `WriteFile`：写指定路径；
 - `SetTimerSlack`：写 `/proc/<tid>/timerslack_ns`，设置定时器允许合并唤醒的时间余量；
@@ -207,7 +211,7 @@ CPUSET_SP_TOP_APP
     + MaxIoPriority + TimerSlackNormal
 ```
 
-线程 API 的命名也按这个区别划分：只设置 scheduling group 的入口不会自动修改 cpuset；“group and cpuset”或进程级入口使用包含 `ProcessCapacity*` 的 aggregate profile。
+对于这里的 top-app 配置，`SCHED_SP_TOP_APP` 不移动 cpuset，`CPUSET_SP_TOP_APP` 包含 `ProcessCapacityMax`。其他组要逐个展开 aggregate profile；例如 `SCHED_SP_COMPUTE` 也包含 `ProcessCapacityHigh`，会改变 cpuset，不能只凭入口或 `SCHED_SP_*` 前缀判断。
 
 ## 4. Java/JNI 到 task profile 的调用链
 
@@ -236,7 +240,7 @@ service zygote /system/bin/app_process64 ...
     task_profiles ProcessCapacityHigh MaxPerformance
 ```
 
-`Service::Start()` 在子进程执行 `exec` 前应用这些 profile。Android 12 起，`task_profiles` 替代直接写 `writepid /dev/.../tasks` 的旧写法。profile 名稳定后，产品可以改变底层 controller 或路径而不修改 service 定义。
+`Service::Start()` 在子进程执行 `exec` 前应用这些 profile。Android 12 起，`task_profiles` 替代直接写 `writepid /dev/.../tasks` 的旧写法；`writepid` 在 Android 12 已弃用。profile 名稳定后，产品可以改变底层 controller 或路径而不修改 service 定义，但仍要满足对应 action 的版本限制。
 
 ## 5. OomAdjuster 如何决定应用的调度组
 
@@ -308,10 +312,10 @@ UClamp 限定调度器采用的利用率上下界，会影响选核与调频决�
 
 `cpu.weight` 和 `cpu.max` 是 cgroup v2 CPU controller 接口。内核 `6.18` 中：
 
-- `cpu.weight` 以 1～10000 的权重在活跃兄弟 cgroup 间分配 fair-class（普通公平调度类）CPU 时间；
-- `cpu.max` 用 `$MAX $PERIOD` 限制带宽，`max` 表示不设上限。
+- `cpu.weight` 在非 idle 组中以 1～10000 的权重，在活跃兄弟 cgroup 间分配 fair-class（普通公平调度类）CPU 时间；`cpu.idle=1` 时读到的权重为 0；
+- `cpu.max` 用 `$MAX $PERIOD` 限制公平调度类的 CPU 带宽，`max` 表示不设上限；该接口不限制实时调度类。
 
-Android 17 AOSP 默认把 CPU controller 挂在 v1 `/dev/cpuctl`，不能用这两个 v2 文件解释平台基线。厂商若通过 `cgroups.json` 把 CPU 改为 v2，才需要核对 `cpu.weight`、`cpu.max` 与 subtree activation。具体产品是否这样配置，应从设备文件和 mountinfo 判断。
+Android 17 AOSP 默认把 CPU controller 挂在 v1 `/dev/cpuctl`，不能用这两个 v2 文件解释平台基线。厂商若把 CPU 改为 v2，需要同时核对控制器配置、`cpu.weight`、`cpu.max`、subtree activation 和任务归属的实现。只修改 `cgroups.json` 不会让原有 `JoinCgroup cpu/top-app` 继续生效：Android 17 的 `TaskProfiles::Load()` 会忽略指向 v2 controller 的 `JoinCgroup`。应结合加载警告、设备文件、mountinfo 和 `/proc/<tid>/cgroup` 确认实际行为。
 
 ## 7. v2 memory controller
 
@@ -327,7 +331,9 @@ Android 17 的 `task_profiles.json` 为 memory controller 定义了：
 - `SwapMax` → `memory.swap.max`；
 - `MemUsage` 等兼容 attribute。
 
-`MemLimit`、`MemSoftLimit` 在 JSON 中同时声明 `File` 与 `FileV2`：当前 memory controller 处于 v2 时使用 v2 文件，处于 v1 时回退到 v1 文件。`MemHigh`、`MemEvents`、`MemStats`、`SwapMax` 仅声明 v2 文件名，cgroup v1 拓扑下这些 action 不会成功执行。
+`MemLimit`、`MemSoftLimit` 在 JSON 中同时声明 `File` 与 `FileV2`。`ProfileAttribute::file_name()` 只在 controller 为 v2 且 `FileV2` 非空时选用后者，其余情况都使用 `File`；字段名 `File` 本身不表示 v1 专用。`MemStats` 的 `memory.stat` 在 v1 和 v2 中都存在，但统计字段与含义需要分别解释。`MemHigh`、`MemEvents`、`SwapMax` 指向 v2 接口，不能直接沿用到 v1 memory controller。
+
+固定内核版本的 `mm/memcontrol-v1.c` 仍在 `mem_cgroup_legacy_files` 中注册 `stat`。配套的 v1 memory 文档开头提醒内容陈旧、细节应查当前源码，并将 `memory.soft_limit_in_bytes` 标为弃用，且说明该接口不适用于 `CONFIG_PREEMPT_RT`。这里的 v1 路径用于识别兼容配置，不能据此把 soft limit 与 v2 的 `memory.low` 视为相同机制。
 
 memory controller 在默认 `cgroups.json` 中标为 optional。设备不支持、没有启用或被 vendor 改为其他布局时，不能假定相应配置动作会沿 AOSP 路径成功执行。
 
@@ -449,7 +455,7 @@ Perfetto 中看到大核迁移或频率上升，只能作为结果证据。要�
 审计时按以下顺序收集证据：
 
 1. 查看 mountinfo，确认 controller 版本和挂载点；
-2. 读取 system、API-level、`system_ext` 的实际 JSON；
+2. 按加载顺序读取 system、产品首发 API-level、vendor 的实际 JSON；task profile 还要读取最后加载的 `system_ext` 文件；
 3. 展开 aggregate profile，列出每个 action；
 4. 对照目标 PID/TID 的 `/proc/.../cgroup`；
 5. 读取目标组的当前文件值；

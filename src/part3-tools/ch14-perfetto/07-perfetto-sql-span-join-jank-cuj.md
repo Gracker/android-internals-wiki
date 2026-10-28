@@ -12,8 +12,8 @@ tags:
   - trace-processor
   - frame-analysis
   - datagrid
-last_verified: '2026-08-13'
-last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Perfetto Trace Processor v57.2 standard library and official docs (2026-08-13)
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Perfetto Trace Processor v57.2 standard library and official docs (2026-10-25)
 confidence: medium
 sources:
 - type: official
@@ -93,21 +93,38 @@ consolidated_from:
 
 Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问题：某一帧错过了多少时间预算，主线程在分析窗口内运行了多久，Binder（Android 的进程间通信机制） 客户端时间由哪些调度状态组成，一次 GC（垃圾回收） 从开始到结束的实际耗时中有多少时间在等待 CPU。我们把这种实际经过的时间称为“墙上时间”，其中既有线程运行时间，也有等待时间。
 
-查询结果只覆盖 Trace 里已经采集到的事件。FrameTimeline（帧的期望与实际时间线）、调度、Binder（Android 进程间通信） 或 ART（Android Runtime） 事件缺失时，空表说明的是“Trace 里没有这条数据”，系统是否发生过对应行为要结合采集配置判断；我们先检查数据源，再下结论。
+查询结果只覆盖 Trace 里已经采集到的事件。FrameTimeline（帧的期望与实际时间线）、调度、Binder（Android 进程间通信） 或 ART（Android Runtime） 事件缺失时，空表只说明“Trace 里没有这条数据”；系统里到底有没有发生过对应行为，要结合采集配置判断。我们拿到一份 Trace，总是先检查数据源，再下结论。
 
-> 源码基线：Android 17 / API 37 / `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。查询已按该版源码中的表结构复核，主机侧验证版本固定为 Trace Processor v57.2，换版本时需重新检查模块、列和查询结果。
+<!-- gracker-diagram: ch14-07-02-coverage-before-absence -->
+![空结果先检查采集与解析覆盖](../../assets/diagrams/ch14/ch14-07-02-coverage-before-absence.png)
 
-本文示例优先使用 Android 17 Perfetto SQL 标准库，需要理解原始数据时再回到 `slice`（时间轴区间事件）、`sched`、`thread_state` 和 `counter` 等基础表。做法上，我们先用表和视图筛出问题窗口，再通过时间跨度关联把线程、帧、调度和业务事件放到同一窗口；Jank CUJ 标准库提供现成语义，DataGrid 负责交互查询和结果检查。
+图：无结果可能来自未采集、数据丢失、未解析或没有匹配事件。 不能单凭空表证明平台没有发生对应行为。
+
+> 源码基线：Android 17 / API 37 / `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`；查询按该版表结构复核，主机侧固定 Trace Processor v57.2，换版本需重新检查。
+
+> 本轮核验使用 native Trace Processor 57.2 与 58.2：39 段 SQL 的空 Trace schema 检查，加上合成调度/ATrace/CUJ、区间算子、兼容模型表和配置片段检查，共 164 项。固定 Android 17 顶层 SQL 模块的导入依赖仍来自所用 native 版本；模型表测试不等同于平台解析回归。Java 强转仅作等价算术复现。本章未声称完成 Android/ART 构建、真实设备采集或性能测量。
+
+本文示例优先使用 Perfetto SQL 标准库，需要理解原始数据时再回到 `slice`（时间轴区间事件）、`sched`、`thread_state` 和 `counter` 等基础表。做法上，我们先用表和视图筛出问题窗口，再通过时间跨度关联把线程、帧、调度和业务事件放到同一窗口；Jank CUJ 标准库提供现成语义，DataGrid 负责交互查询和结果检查。
+
+<!-- gracker-diagram: ch14-07-01-analysis-route -->
+![从可疑窗口到可复查结论](../../assets/diagrams/ch14/ch14-07-01-analysis-route.png)
+
+图：先固定对象和问题窗口，再用语义表与区间交集拆解时间。 排名和时间相关性用于提出候选原因，结论仍需原始事件、源码及对照。
 
 ## 数据模型、窗口选择与基础查询
 
 ### 查询前先固定分析对象与窗口
 
-PerfettoSQL 是基于 SQLite 扩展的 SQL 方言，增加了 `INCLUDE PERFETTO MODULE`、`CREATE PERFETTO TABLE`、`SPAN_JOIN` 等追踪分析能力；其中 `SPAN_JOIN` 用于计算两组时间区间的交集。
+PerfettoSQL 是基于 SQLite 扩展的 SQL 方言，`INCLUDE PERFETTO MODULE`、`CREATE PERFETTO TABLE`、`SPAN_JOIN` 等追踪分析能力都由它提供，其中 `SPAN_JOIN` 用于计算两组时间区间的交集，后文的时间关联基本都落在它身上。
 
-标准库模块会创建已经整理好的表、视图和函数。以 Binder 为例，`android.binder` 通过 flow（连接相关区间的事件关系）配对客户端事务与服务端回复，并区分同步调用和 `oneway` 单向异步调用；直接用 `slice.name GLOB '*binder*'` 做通配匹配，拿不到这些语义。
+标准库模块会创建整理好的表、视图和函数。以 Binder 为例，`android.binder` 通过 flow（连接相关区间的事件关系）配对客户端事务与服务端回复，并区分同步调用和 `oneway` 单向异步调用；这些语义用 `slice.name GLOB '*binder*'` 做通配匹配拿不到，所以我们优先走标准库。
 
-标准库随 Trace Processor 二进制发布，版本由分析侧决定：设备运行 Android 17，主机上用的 Trace Processor 仍可能是任意年代的老版本。团队查询应固定 Trace Processor 版本；升级二进制时，要重新执行语法测试与基准 Trace 回归。
+标准库随 Trace Processor 二进制发布，版本由分析侧决定：设备运行 Android 17，主机上用的 Trace Processor 仍可能是任意年代的老版本。所以团队查询应固定 Trace Processor 版本；升级二进制时，重新执行语法测试与基准 Trace 回归。
+
+<!-- gracker-diagram: ch14-07-03-version-layers -->
+![设备、分析引擎与界面分别固定版本](../../assets/diagrams/ch14/ch14-07-03-version-layers.png)
+
+图：设备平台、Trace Processor 标准库和 Perfetto UI 是不同版本维度。 设备运行 Android 17 不会自动让主机分析库或网页更新。
 
 #### 四类标识的分工
 
@@ -115,7 +132,7 @@ PerfettoSQL 是基于 SQLite 扩展的 SQL 方言，增加了 `INCLUDE PERFETTO 
 
 - `pid`（进程 ID）、`tid`（线程 ID）是操作系统可见编号，进程或线程退出后可能复用。
 - `upid`、`utid` 是 Trace Processor 在一份 Trace 内为进程和线程分配的唯一标识，关联表时优先使用它们。
-- `track_id` 表示事件所在轨道。它不能替代帧号、Binder 事务号或 `slice.id`。
+- `track_id` 表示事件所在轨道；要指认具体事件，还得用帧号、Binder 事务号或 `slice.id` 这些各自的标识。
 - `slice.id`、`frame_id`、`binder_txn_id` 属于对应事件模型，只在该模型规定的关系中关联。
 
 <!-- gracker-diagram: ch14-07-04-identity-domains -->
@@ -149,7 +166,7 @@ WHERE thread.is_main_thread = 1
 ORDER BY process.start_ts, thread.start_ts;
 ```
 
-结果可能有多行：同一个包名在采集期间重启时，会出现多个 `upid`。查询中的 `OR` 只是用 `tid = pid` 兼容 `is_main_thread` 信息缺失的 Trace，同一线程同时满足两个条件也只会返回一行。正式查询应选定与问题时段相交的 `upid`，并确认主线程候选唯一；只按进程名对整份 Trace 聚合，会把多个实例混在一起。
+结果可能有多行：同一个包名在采集期间重启时，会出现多个 `upid`。查询中的 `OR` 只是用 `tid = pid` 兼容 `is_main_thread` 信息缺失的 Trace，同一线程同时满足两个条件也只会返回一行。所以正式查询应选定与问题时段相交的 `upid`，并确认主线程候选唯一。下文直接分析进程的 SQL 使用 `123` 作为 upid 占位，必须替换成这条发现查询的实际结果；它不是 Android PID。`10000000000` 到 `15000000000` 同样只是原始纳秒窗口参数，须替换成目标 Trace 中的有效窗口。按包名选择启动实例、按 ErrorId 选择 ANR 与系统 CUJ 的查询另保留各自稳定身份。
 
 <!-- gracker-diagram: ch14-07-05-choose-instance -->
 ![同名进程先拆成不同实例](../../assets/diagrams/ch14/ch14-07-05-choose-instance.png)
@@ -158,7 +175,12 @@ ORDER BY process.start_ts, thread.start_ts;
 
 #### 时间、开放区间与窗口裁剪
 
-`ts` 和 `dur` 的单位都是纳秒。毫秒换算使用 `dur / 1e6`，秒换算使用 `dur / 1e9`。`trace_start()` 与 `trace_end()` 返回 Trace 的时间边界。部分正在进行的 `slice` 或调度状态会以 `dur = -1` 表示未闭合，计算结束时间前要把它裁到 `trace_end()`。
+`ts` 和 `dur` 的单位都是纳秒。毫秒换算使用 `dur / 1e6`，秒换算使用 `dur / 1e9`。`trace_start()` 与 `trace_end()` 返回 Trace 的时间边界。部分正在进行的 `slice` 或调度状态会以 `dur = -1` 表示未闭合。若分析覆盖时长，可暂按窗口末端和 `trace_end()` 裁剪，并保留 `is_open` / `end_basis`：这个终点是分析假设，不能冒充观测到的完成时刻。延迟分位数只纳入已闭合事件，并另报未闭合数量。
+
+<!-- gracker-diagram: ch14-07-06-open-interval-boundary -->
+![开放区间的裁剪终点是分析假设](../../assets/diagrams/ch14/ch14-07-06-open-interval-boundary.png)
+
+图：闭合事件使用观测结束时间；开放状态可裁到窗口与 Trace 末端。 保留 is_open/end_basis，不能把裁剪假设作为实际完成时刻。
 
 时间窗口采用半开区间 `[start_ts, end_ts)`，也就是包含起点、不包含终点，这样更容易处理首尾相接的事件。两个区间相交的条件是 `a.ts < b.end_ts AND a.end_ts > b.ts`，交集长度为 `MIN(a.end_ts, b.end_ts) - MAX(a.ts, b.ts)`。先按 `upid`、`utid` 与窗口过滤，再做区间关联，可以大幅减少大 Trace 的计算量。
 
@@ -171,22 +193,23 @@ ORDER BY process.start_ts, thread.start_ts;
 
 ```sql
 WITH
-  settings(process_name, start_ts, end_ts) AS (
+  settings(target_upid, start_ts, end_ts) AS (
     VALUES (
-      'com.example.app',
+      123,
       10000000000,
       15000000000
     )
   ),
   target_main_thread AS (
-    SELECT thread.utid
+    SELECT MIN(thread.utid) AS utid
     FROM settings
     JOIN process
-      ON process.name = settings.process_name
+      ON process.upid = settings.target_upid
     JOIN thread
       USING (upid)
     WHERE thread.is_main_thread = 1
        OR thread.tid = process.pid
+    HAVING COUNT(*) = 1
   ),
   states AS (
     SELECT
@@ -203,6 +226,9 @@ SELECT
   states.utid,
   states.state,
   states.io_wait,
+  states.dur = -1 AS is_open,
+  CASE WHEN states.dur = -1 THEN 'assumed_to_window_or_trace_end'
+       ELSE 'observed_end' END AS end_basis,
   states.blocked_function,
   MAX(states.ts, settings.start_ts) AS ts,
   MIN(states.state_end_ts, settings.end_ts)
@@ -216,14 +242,9 @@ ORDER BY ts;
 
 输出中的每一行都已经裁到目标窗口。需要反复使用结果时，可以用 `CREATE PERFETTO TABLE` 先计算并保存，也就是把查询结果物化；这适合几十秒以上且包含全量调度事件的 Trace。一次性检查则保留 CTE（Common Table Expression，由 `WITH` 定义的临时结果集）即可。
 
-<!-- gracker-diagram: ch14-07-06-open-interval-boundary -->
-![开放区间的裁剪终点是分析假设](../../assets/diagrams/ch14/ch14-07-06-open-interval-boundary.png)
-
-图：闭合事件使用观测结束时间；开放状态可裁到窗口与 Trace 末端。 保留 is_open/end_basis，不能把裁剪假设作为实际完成时刻。
-
 #### 指标的分母、对照与帧时间量
 
-“主线程 CPU 占用 80%”没有窗口就没法复查；“Binder 超过 1 ms 就慢”同样忽略了接口语义、设备负载与调用是否同步。SQL 可以稳定地产生 P50、P90、P99：P50 是中位数，P90 和 P99 分别表示 90% 与 99% 的样本落在该值以内。分位数依旧需要同场景、同设备配置、同采集配置的对照组。
+读指标先看分母和对照：“主线程 CPU 占用 80%”必须带上窗口才能复查；“Binder 超过 1 ms 就慢”还要交代接口语义、设备负载与调用是否同步。SQL 可以稳定地产生 P50、P90、P99：P50 是中位数，P90 和 P99 分别表示 90% 与 99% 的样本落在该值以内；而分位数要说明问题，还需要同场景、同设备配置、同采集配置的对照组。
 
 帧分析还要区分三个量：
 
@@ -234,12 +255,7 @@ ORDER BY ts;
 
 - `Choreographer#doFrame` 的 `dur` 是 UI 线程回调区间，可用于定位 UI 线程工作。
 - FrameTimeline（系统记录的帧期望与实际时间线） 的期望/实际区间用于判断帧是否按期呈现。
-- 刷新周期会随显示模式和可变刷新率变化，固定的 16.67 ms 或 8.33 ms 代替不了每帧截止时间。
-
-<!-- gracker-diagram: ch14-07-03-version-layers -->
-![设备、分析引擎与界面分别固定版本](../../assets/diagrams/ch14/ch14-07-03-version-layers.png)
-
-图：设备平台、Trace Processor 标准库和 Perfetto UI 是不同版本维度。 设备运行 Android 17 不会自动让主机分析库或网页更新。
+- 刷新周期会随显示模式和可变刷新率变化，判断某帧是否超期要以该帧的截止时间为准，固定的 16.67 ms 或 8.33 ms 只能当周期参考。
 
 ### 帧时间与卡顿分析
 
@@ -255,23 +271,26 @@ INCLUDE PERFETTO MODULE slices.with_context;
 WITH do_frames AS (
   SELECT
     id,
+    upid,
     ts,
     dur,
     name
   FROM thread_slice
-  WHERE process_name = 'com.example.app'
+  WHERE upid = 123
     AND is_main_thread = 1
     AND name GLOB 'Choreographer#doFrame*'
     AND dur >= 0
 )
 SELECT
+  upid,
   COUNT(*) AS frame_count,
   ROUND(AVG(dur) / 1e6, 3) AS avg_do_frame_ms,
   ROUND(PERCENTILE(dur / 1e6, 50), 3) AS p50_do_frame_ms,
   ROUND(PERCENTILE(dur / 1e6, 90), 3) AS p90_do_frame_ms,
   ROUND(PERCENTILE(dur / 1e6, 99), 3) AS p99_do_frame_ms,
   ROUND(MAX(dur) / 1e6, 3) AS max_do_frame_ms
-FROM do_frames;
+FROM do_frames
+GROUP BY upid;
 ```
 
 这些分位数描述主线程回调的墙上时间，其中可能同时包含 `Running`、`Runnable`、睡眠和锁等待。若 P99 变长，我们继续用 `thread_state` 分解长帧，确认时间去了哪里，再谈是不是业务代码计算量增加。
@@ -285,20 +304,38 @@ FROM do_frames;
 
 FrameTimeline 从 Android 12 / API 31 开始提供每帧的期望与实际时间线。`actual_frame_timeline_slice` 包含 `jank_type`、`jank_severity_type`、`on_time_finish` 和 `present_type` 等平台判定；`android.frames.timeline` 会把 UI 线程的 `Choreographer#doFrame`、RenderThread（应用渲染线程） 的 `DrawFrame` 与时间线事件整理为 `android_frames`。
 
-`android_frames` 目前有几个已知限制：同一帧可能关联多个 `layer`（由系统合成的显示图层），表会聚合它们；当前实现只选第一个 `DrawFrame`，源码保留了对应待改进项；缺失或重复时间线事件时，`actual_frame_timeline_count` 与 `draw_frame_count` 会暴露异常。自动化统计应保留这些完整性列，避免把关联异常算成正常帧。
+`android_frames` 目前有几个已知限制：同一帧可能关联多个 `layer`（由系统合成的显示图层），表会聚合它们；当前实现只选第一个 `DrawFrame`，源码保留了对应待改进项；`actual_frame_timeline_count` 与 `draw_frame_count` 只计入标准库实际关联的不同 slice ID，多层和多次绘制也可能合法；它们不是自动判错字段。固定源码把 `expected_frame_timeline_count` 直接写成常数 1，不能用它发现 expected 缺失或重复，需检查具体 ID 并按原始 expected 表的 `(upid, name)` 另计数。自动化统计应保留关联 ID、数量与数据缺口，且上游 INNER JOIN 已经排除的帧不会由这些列补回。
 
-逐帧列出平台判定和截止时间超额量，并以 `actual_frame_timeline_id` 精确关联 `actual_frame_timeline_slice`。按 `track_id` 或模糊名称配对容易产生重复。
+<!-- gracker-diagram: ch14-07-10-frame-model-quality -->
+![android_frames 的数量列不是完整采集证明](../../assets/diagrams/ch14/ch14-07-10-frame-model-quality.png)
+
+图：帧模型会聚合图层并选择代表 ID，原始关联数量必须连同具体 ID 解读。 固定 expected_count 是常数 1；多条 actual/DrawFrame 可能合法，INNER JOIN 排除的帧也不在表内。
+
+下面按标准库帧模型列出代表层的平台判定和 legacy 超额量。`actual_frame_timeline_id` 精确指向模型选中的一行，但多层时固定实现选最小 actual slice ID，不能把该行标签当成所有层的共同判定。`android_frames_overrun` 另按 `frame_id` 对 actual 与 expected 做全局分组并选代表 ID，它不等于这里这行 actual 必然对应的逐层差值；严谨的逐层报告应直接核对 `android_frames_layers` 与原始 expected/actual ID。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
 INCLUDE PERFETTO MODULE android.frames.per_frame_metrics;
 
+WITH raw_actual_counts AS (
+  SELECT CAST(name AS INTEGER) AS frame_id, COUNT(*) AS raw_actual_count
+  FROM actual_frame_timeline_slice GROUP BY CAST(name AS INTEGER)
+),
+raw_expected_counts AS (
+  SELECT CAST(name AS INTEGER) AS frame_id, COUNT(*) AS raw_expected_count
+  FROM expected_frame_timeline_slice GROUP BY CAST(name AS INTEGER)
+)
 SELECT
+  actual.id AS representative_actual_id,
+  expected.id AS representative_expected_id,
+  raw_actual_count, raw_expected_count,
   frames.upid,
   frames.frame_id,
   frames.ts,
   ROUND(frames.dur / 1e6, 3) AS frame_wall_ms,
-  ROUND(overrun.overrun / 1e6, 3) AS deadline_overrun_ms,
+  ROUND((CASE WHEN actual.dur >= 0 AND expected.dur >= 0
+    AND raw_actual_count = 1 AND raw_expected_count = 1
+    THEN overrun.overrun END) / 1e6, 3) AS deadline_overrun_ms,
   actual.jank_type,
   actual.jank_severity_type,
   actual.on_time_finish,
@@ -311,39 +348,65 @@ SELECT
 FROM android_frames AS frames
 LEFT JOIN actual_frame_timeline_slice AS actual
   ON actual.id = frames.actual_frame_timeline_id
+LEFT JOIN expected_frame_timeline_slice AS expected
+  ON expected.id = frames.expected_frame_timeline_id
+LEFT JOIN raw_actual_counts USING (frame_id)
+LEFT JOIN raw_expected_counts USING (frame_id)
 LEFT JOIN android_frames_overrun AS overrun
   USING (frame_id)
-WHERE frames.process_name = 'com.example.app'
+WHERE frames.upid = 123
 ORDER BY frames.ts;
 ```
 
-`deadline_overrun_ms > 0` 表示实际结束时间晚于期望结束时间，负值表示仍有余量。`jank_type` 由平台记录，可继续区分应用、SurfaceFlinger（Android 的显示合成服务）、调度等类别。表为空时，应检查采集配置、Android 版本与目标进程是否产生了 FrameTimeline 数据。
+本查询只在原始 expected/actual 对该 frame_id 各有一条、且模型指针对应的区间均已闭合时显示 `deadline_overrun_ms`；否则保留 NULL。正值表示该唯一配对的 actual 结束晚于 expected，负值表示该配对仍有余量。下面的分布另外报告 verified_single_pair_overrun_samples 与 excluded_or_missing_overrun_samples；排除的多层、开放或缺失帧仍保留平台标签行，不能归为“无卡顿”。`jank_type` 由平台记录，可继续区分应用、SurfaceFlinger（Android 的显示合成服务）、调度等类别。表为空时，先检查采集配置、Android 版本与目标进程是否产生了 FrameTimeline 数据。
 
-按平台标签聚合帧数与超额分布，适合比较同一测试方案的多次运行。查询不设置跨设备通用的“卡顿率及格线”。
+<!-- gracker-diagram: ch14-07-11-overrun-guard -->
+![超额量先通过唯一闭合配对检查](../../assets/diagrams/ch14/ch14-07-11-overrun-guard.png)
+
+图：本例只对原始 expected/actual 各一条且指针对应区间闭合的配对计算分布。 多层、开放和缺失样本保持 NULL 并报告排除数量，平台标签仍保留。
+
+按平台标签聚合帧数与超额分布，适合比较同一测试方案的多次运行。跨设备通用的“卡顿率及格线”这里不设，需要阈值时结合对照数据另行确定，查询只负责把分布算出来。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
 INCLUDE PERFETTO MODULE android.frames.per_frame_metrics;
 
-WITH frame_results AS (
+WITH raw_actual_counts AS (
+  SELECT CAST(name AS INTEGER) AS frame_id, COUNT(*) AS raw_actual_count
+  FROM actual_frame_timeline_slice GROUP BY CAST(name AS INTEGER)
+),
+raw_expected_counts AS (
+  SELECT CAST(name AS INTEGER) AS frame_id, COUNT(*) AS raw_expected_count
+  FROM expected_frame_timeline_slice GROUP BY CAST(name AS INTEGER)
+),
+frame_results AS (
   SELECT
     frames.upid,
     frames.frame_id,
     actual.jank_type,
     actual.jank_severity_type,
-    overrun.overrun
+    CASE WHEN actual.dur >= 0 AND expected.dur >= 0
+    AND raw_actual_count = 1 AND raw_expected_count = 1
+    THEN overrun.overrun END AS overrun,
+    raw_actual_count, raw_expected_count
   FROM android_frames AS frames
   LEFT JOIN actual_frame_timeline_slice AS actual
     ON actual.id = frames.actual_frame_timeline_id
+  LEFT JOIN expected_frame_timeline_slice AS expected
+    ON expected.id = frames.expected_frame_timeline_id
+  LEFT JOIN raw_actual_counts USING (frame_id)
+  LEFT JOIN raw_expected_counts USING (frame_id)
   LEFT JOIN android_frames_overrun AS overrun
     USING (frame_id)
-  WHERE frames.process_name = 'com.example.app'
+  WHERE frames.upid = 123
 )
 SELECT
   upid,
   COALESCE(jank_type, 'Missing FrameTimeline verdict') AS jank_type,
   COALESCE(jank_severity_type, 'Unknown severity') AS severity,
   COUNT(*) AS frame_count,
+  COUNT(overrun) AS verified_single_pair_overrun_samples,
+  SUM(CASE WHEN overrun IS NULL THEN 1 ELSE 0 END) AS excluded_or_missing_overrun_samples,
   ROUND(PERCENTILE(overrun / 1e6, 50), 3) AS p50_overrun_ms,
   ROUND(PERCENTILE(overrun / 1e6, 90), 3) AS p90_overrun_ms,
   ROUND(MAX(overrun) / 1e6, 3) AS max_overrun_ms
@@ -352,17 +415,7 @@ GROUP BY upid, jank_type, severity
 ORDER BY frame_count DESC;
 ```
 
-缺少平台判定的行应单独保留。把它们合入“无卡顿”会掩盖采集不完整或关联失败；比较版本时也应同步记录缺失比例。
-
-<!-- gracker-diagram: ch14-07-10-frame-model-quality -->
-![android_frames 的数量列不是完整采集证明](../../assets/diagrams/ch14/ch14-07-10-frame-model-quality.png)
-
-图：帧模型会聚合图层并选择代表 ID，原始关联数量必须连同具体 ID 解读。 固定 expected_count 是常数 1；多条 actual/DrawFrame 可能合法，INNER JOIN 排除的帧也不在表内。
-
-<!-- gracker-diagram: ch14-07-11-overrun-guard -->
-![超额量先通过唯一闭合配对检查](../../assets/diagrams/ch14/ch14-07-11-overrun-guard.png)
-
-图：本例只对原始 expected/actual 各一条且指针对应区间闭合的配对计算分布。 多层、开放和缺失样本保持 NULL 并报告排除数量，平台标签仍保留。
+缺少平台判定的行应单独保留。这一类行可能来自采集不完整或关联失败，合入“无卡顿”会把这两种情况掩盖掉；比较版本时也应同步记录缺失比例。
 
 <!-- gracker-diagram: ch14-07-12-missing-verdict -->
 ![平台判定缺失与无卡顿分开统计](../../assets/diagrams/ch14/ch14-07-12-missing-verdict.png)
@@ -373,15 +426,15 @@ ORDER BY frame_count DESC;
 
 #### `sched` 回答线程何时占用 CPU
 
-`sched` 的一行表示某个线程在一个 CPU 上连续运行的区间。`dur` 累加后得到 CPU 运行时间；除以明确的墙上时间窗口，才得到该线程在此窗口内的 CPU 占用比例。单线程占用比例通常位于 0% 到 100% 之间，多线程进程的各线程比例相加可以超过 100%。
+`sched` 的一行表示某个线程在一个 CPU 上连续运行的区间，把 `dur` 累加起来就是 CPU 运行时间，再除以明确的墙上时间窗口，才得到该线程在此窗口内的 CPU 占用比例。单线程的占用比例通常位于 0% 到 100% 之间，多线程进程把各线程比例相加可以超过 100%。
 
 按线程统计目标进程在指定窗口中的 CPU 运行时间，可以把“CPU 很忙”转换成带窗口的线程排名。
 
 ```sql
 WITH
-  settings(process_name, start_ts, end_ts) AS (
+  settings(target_upid, start_ts, end_ts) AS (
     VALUES (
-      'com.example.app',
+      123,
       10000000000,
       15000000000
     )
@@ -393,13 +446,14 @@ WITH
       thread.name AS thread_name
     FROM settings
     JOIN process
-      ON process.name = settings.process_name
+      ON process.upid = settings.target_upid
     JOIN thread
       USING (upid)
   ),
   clipped_sched AS (
     SELECT
       target_threads.utid,
+      sched.dur = -1 AS is_open,
       target_threads.tid,
       target_threads.thread_name,
       MAX(sched.ts, settings.start_ts) AS ts,
@@ -422,6 +476,7 @@ WITH
 SELECT
   tid,
   thread_name,
+  SUM(CASE WHEN is_open THEN 1 ELSE 0 END) AS assumed_end_intervals,
   ROUND(SUM(dur) / 1e6, 3) AS cpu_time_ms,
   ROUND(
     100.0 * SUM(dur) / (settings.end_ts - settings.start_ts),
@@ -433,7 +488,7 @@ GROUP BY utid, tid, thread_name
 ORDER BY SUM(dur) DESC;
 ```
 
-`one_core_occupancy_pct` 以单个 CPU 核心在查询中的 5 秒可用时间为分母。高占用只说明线程经常运行；函数热点仍需结合采样栈、调用栈或 `slice`。低占用伴随长延迟时，应检查 `Runnable` 排队、睡眠、I/O 与同步等待。
+`one_core_occupancy_pct` 以单个 CPU 核心在查询中的 5 秒可用时间为分母。高占用说明线程经常在运行，要把责任落到函数热点，还需结合采样栈、调用栈或 `slice`；低占用伴随长延迟时，我们把注意力转向 `Runnable` 排队、睡眠、I/O 与同步等待。
 
 <!-- gracker-diagram: ch14-07-13-sched-occupancy -->
 ![按窗口内 sched 计算单核口径占比](../../assets/diagrams/ch14/ch14-07-13-sched-occupancy.png)
@@ -449,31 +504,38 @@ ORDER BY SUM(dur) DESC;
 - `S`：可中断睡眠，常见于等待事件、条件变量或 Binder 回复。
 - `D`：不可中断睡眠；`io_wait = 1` 时可进一步判断为内核 I/O 等待。
 - `blocked_function`：采集并完成内核符号化时，记录阻塞所在的内核函数。
-- `waker_utid`：记录唤醒方，但并非每行都可用。
+- `waker_utid`：记录唤醒方，部分行可能缺失。
+
+<!-- gracker-diagram: ch14-07-14-state-interpretation -->
+![运行、排队与阻塞用不同证据解释](../../assets/diagrams/ch14/ch14-07-14-state-interpretation.png)
+
+图：thread_state 分离实际执行、可运行排队和不同睡眠状态。 S、D 或 blocked_function 仍需业务与内核证据，不能单一归因。
 
 汇总目标主线程在窗口内的调度状态，可以区分 CPU 计算、等待 CPU、等待 I/O 与其他阻塞时间。
 
 ```sql
 WITH
-  settings(process_name, start_ts, end_ts) AS (
+  settings(target_upid, start_ts, end_ts) AS (
     VALUES (
-      'com.example.app',
+      123,
       10000000000,
       15000000000
     )
   ),
   main_thread AS (
-    SELECT thread.utid
+    SELECT MIN(thread.utid) AS utid
     FROM settings
     JOIN process
-      ON process.name = settings.process_name
+      ON process.upid = settings.target_upid
     JOIN thread
       USING (upid)
     WHERE thread.is_main_thread = 1
        OR thread.tid = process.pid
+    HAVING COUNT(*) = 1
   ),
   clipped AS (
     SELECT
+      thread_state.dur = -1 AS is_open,
       thread_state.state,
       thread_state.io_wait,
       thread_state.blocked_function,
@@ -498,6 +560,7 @@ SELECT
   io_wait,
   COALESCE(blocked_function, '<no blocked function>') AS blocked_function,
   COUNT(*) AS interval_count,
+  SUM(CASE WHEN is_open THEN 1 ELSE 0 END) AS assumed_end_intervals,
   ROUND(SUM(dur) / 1e6, 3) AS total_ms,
   ROUND(MAX(dur) / 1e6, 3) AS longest_ms
 FROM clipped
@@ -511,13 +574,15 @@ ORDER BY SUM(dur) DESC;
 
 ```sql
 WITH target_main_thread AS (
-  SELECT thread.utid
+  SELECT MIN(thread.utid) AS utid
   FROM process
   JOIN thread USING (upid)
-  WHERE process.name = 'com.example.app'
+  WHERE process.upid = 123
     AND (thread.is_main_thread = 1 OR thread.tid = process.pid)
+  HAVING COUNT(*) = 1
 )
 SELECT
+  state.utid,
   state.ts,
   ROUND(state.dur / 1e6, 3) AS runnable_ms,
   state.state,
@@ -541,11 +606,6 @@ LIMIT 30;
 
 `waker_utid` 为空时，先考虑字段缺失：旧 Trace、缺少 wakeup 事件、数据丢失和内核路径差异都会造成这种情况，唤醒本身仍可能发生过。`sched_switch` 与 `sched_waking` 这两个内核追踪点提供原始事件，Trace Processor 再把它们整理成这里的状态区间。
 
-<!-- gracker-diagram: ch14-07-14-state-interpretation -->
-![运行、排队与阻塞用不同证据解释](../../assets/diagrams/ch14/ch14-07-14-state-interpretation.png)
-
-图：thread_state 分离实际执行、可运行排队和不同睡眠状态。 S、D 或 blocked_function 仍需业务与内核证据，不能单一归因。
-
 <!-- gracker-diagram: ch14-07-15-waker-evidence -->
 ![唤醒方标识缺失不代表没有唤醒](../../assets/diagrams/ch14/ch14-07-15-waker-evidence.png)
 
@@ -559,7 +619,7 @@ LIMIT 30;
 
 `interface`、`method_name` 与 `aidl_name` 依赖 AIDL（Android Interface Definition Language） 或 HIDL（硬件抽象层接口定义语言）追踪 `slice`。字段为空时，事务配对仍可能有效，只是 Trace 里缺少接口名。
 
-`client_monotonic_dur` 和 `server_monotonic_dur` 使用剔除全机休眠时间的单调时钟计时；分析用户感知延迟时仍要保留墙上时间对照。
+`client_monotonic_dur` 和 `server_monotonic_dur` 通过端点的 `to_monotonic()` 映射计算，不包含全机休眠；时钟映射不足时可能为空。分析用户感知延迟仍要保留 Trace 时间域的跨度及其时钟依据。
 
 按接口、方法和同步类型统计目标进程发起的 Binder 事务，可以找出高频接口和少量最慢的调用，同时保留样本量。
 
@@ -571,6 +631,7 @@ SELECT
   is_sync,
   COALESCE(interface, '<unresolved interface>') AS interface,
   COALESCE(method_name, '<unresolved method>') AS method_name,
+  server_upid,
   server_process,
   COUNT(*) AS call_count,
   ROUND(PERCENTILE(client_dur / 1e6, 50), 3) AS p50_client_ms,
@@ -578,9 +639,9 @@ SELECT
   ROUND(PERCENTILE(client_dur / 1e6, 99), 3) AS p99_client_ms,
   ROUND(MAX(client_dur) / 1e6, 3) AS max_client_ms
 FROM android_binder_txns
-WHERE client_process = 'com.example.app'
+WHERE client_upid = 123
   AND client_dur >= 0
-GROUP BY client_upid, is_sync, interface, method_name, server_process
+GROUP BY client_upid, is_sync, interface, method_name, server_upid, server_process
 ORDER BY p99_client_ms DESC, call_count DESC;
 ```
 
@@ -614,7 +675,7 @@ SELECT
 FROM android_binder_txns AS binder
 JOIN android_sync_binder_thread_state_by_txn AS states
   USING (binder_txn_id)
-WHERE binder.client_process = 'com.example.app'
+WHERE binder.client_upid = 123
   AND binder.is_sync = 1
 ORDER BY binder.client_dur DESC, binder.binder_txn_id, state_ms DESC;
 ```
@@ -626,7 +687,7 @@ ORDER BY binder.client_dur DESC, binder.binder_txn_id, state_ms DESC;
 
 图：客户端和服务端各自的事务区间需要关联各自线程状态。 客户端睡眠可能是正常等待回复；服务端 Runnable 才是服务线程排队线索。
 
-所谓“Binder 线程池利用率”也要给出容量与窗口。只累加 Binder 线程 CPU 时间，得到的是运行时间，反映不出多少线程正在占用、还有多少空闲。线程池可能睡眠等待工作，也可能在处理非 Binder `slice`；要判断线程池是否饱和（缺少空闲线程接收新事务），应同时观察服务端并发事务数、可用 Binder 线程数、事务排队与各线程状态。
+所谓“Binder 线程池利用率”也要给出容量与窗口。只累加 Binder 线程 CPU 时间，得到的是运行时间；线程池可能睡眠等待工作，也可能在处理非 Binder `slice`，线程池是否饱和（缺少空闲线程接收新事务），要靠服务端并发事务数、可用 Binder 线程数、事务排队与各线程状态一起判断。
 
 <!-- gracker-diagram: ch14-07-18-binder-pool-capacity -->
 ![线程池饱和需要容量和并发证据](../../assets/diagrams/ch14/ch14-07-18-binder-pool-capacity.png)
@@ -661,7 +722,7 @@ SELECT
   ROUND(min_heap_mb, 3) AS min_heap_mb,
   ROUND(max_heap_mb, 3) AS max_heap_mb
 FROM android_garbage_collection_events
-WHERE process_name = 'com.example.app'
+WHERE upid = 123
 ORDER BY gc_ts;
 ```
 
@@ -679,13 +740,15 @@ ORDER BY gc_ts;
 ```sql
 SELECT
   process.upid,
+  counter.id AS counter_id,
+  counter.track_id,
   counter.ts,
   ROUND(counter.value / 1024.0, 3) AS heap_mib,
   ROUND(
     (
       LEAD(counter.ts) OVER (
         PARTITION BY counter.track_id
-        ORDER BY counter.ts
+        ORDER BY counter.ts, counter.id
       ) - counter.ts
     ) / 1e6,
     3
@@ -695,9 +758,9 @@ JOIN process_counter_track AS track
   ON track.id = counter.track_id
 JOIN process
   USING (upid)
-WHERE process.name = 'com.example.app'
+WHERE process.upid = 123
   AND track.name = 'Heap size (KB)'
-ORDER BY counter.ts;
+ORDER BY counter.ts, counter.id;
 ```
 
 这里用 1024 把 KiB 换成 MiB。标准库中的列名采用 `*_mb`，该模块按自身约定换算；跨报表比较时应标明单位，避免把 MB 与 MiB 混在一列。
@@ -733,6 +796,7 @@ SELECT
   ROUND(startups.dur / 1e6, 3) AS startup_interval_ms,
   ROUND(display.time_to_initial_display / 1e6, 3) AS ttid_ms,
   ROUND(display.time_to_full_display / 1e6, 3) AS ttfd_ms,
+  display.upid AS display_upid,
   display.ttid_frame_id,
   display.ttfd_frame_id,
   processes.upid,
@@ -746,7 +810,7 @@ WHERE startups.package = 'com.example.app'
 ORDER BY startups.ts;
 ```
 
-TTFD 依赖应用调用 `reportFullyDrawn()` 以及对应追踪事件，空值表示未测得，计算时按缺失处理。进程在启动期间死亡并重建时，一个 `startup_id` 可能关联多个进程，查询会保留每个 `upid`，但 TTID / TTFD 仍是该启动实例的一组显示时间，会在这些进程行中重复；要确认标准库最终用哪个进程匹配首帧，同时查看 `android_startup_time_to_display.upid`。
+TTFD 依赖应用调用 `reportFullyDrawn()` 以及对应追踪事件，空值表示未测得，计算时按缺失处理。进程在启动期间死亡并重建时，一个 `startup_id` 可能关联多个进程，查询会保留每个 `upid`，但 TTID / TTFD 仍是该启动实例的一组显示时间，会在这些进程行中重复。要确认标准库最终用哪个进程匹配首帧，同时查看 `android_startup_time_to_display.upid`。
 
 <!-- gracker-diagram: ch14-07-22-startup-multiple-processes -->
 ![一次启动可能映射多个进程实例](../../assets/diagrams/ch14/ch14-07-22-startup-multiple-processes.png)
@@ -802,7 +866,9 @@ SELECT
   COALESCE(binder.interface, '<unresolved interface>') AS interface,
   COALESCE(binder.method_name, '<unresolved method>') AS method_name,
   COUNT(*) AS call_count,
-  ROUND(SUM(binder.client_dur) / 1e6, 3) AS summed_client_ms,
+  ROUND(SUM(binder.client_dur) / 1e6, 3) AS summed_full_client_ms,
+  ROUND(SUM(MIN(binder.client_ts + binder.client_dur, startup.ts_end)
+    - MAX(binder.client_ts, startup.ts)) / 1e6, 3) AS summed_overlap_ms,
   ROUND(MAX(binder.client_dur) / 1e6, 3) AS max_client_ms
 FROM android_startups AS startup
 JOIN android_startup_processes AS startup_process
@@ -820,10 +886,10 @@ GROUP BY
   binder.server_process,
   binder.interface,
   binder.method_name
-ORDER BY startup.startup_id, summed_client_ms DESC;
+ORDER BY startup.startup_id, summed_overlap_ms DESC;
 ```
 
-各事务可能互相重叠，`summed_client_ms` 是事务时长之和，与启动区间内的独占时间是两个概念；同步主线程事务更接近直接阻塞候选，后台线程或异步事务需要继续核对依赖关系。
+各事务可能互相重叠，`summed_full_client_ms` 累加完整事务跨度，`summed_overlap_ms` 只累加与启动窗口的交集；两者都可能因并发或嵌套重复覆盖，均不等于启动窗口内的独占阻塞时间；同步主线程事务更接近直接阻塞候选，后台线程或异步事务需要继续核对依赖关系。
 
 <!-- gracker-diagram: ch14-07-24-startup-binder-intersection -->
 ![跨启动边界的 Binder 只按交集计窗口时间](../../assets/diagrams/ch14/ch14-07-24-startup-binder-intersection.png)
@@ -843,7 +909,12 @@ ORDER BY startup.startup_id, summed_client_ms DESC;
 
 `android.anrs` 模块会从 `system_server` 的 ErrorId、Subject 与计时事件中解析 `anr_type`、`anr_dur_ms` 和 `default_anr_dur_ms`；源码也明确标注默认值仅对应 AOSP（Android Open Source Project） / Pixel 的常见配置。
 
-查询 Trace 中的 ANR，可以检查解析出的类型、主题和时长。这个入口比按日志文字模糊搜索更可靠。
+查询 Trace 中的 ANR，可以集中查看派生的类型、主题和时长，但不能把每列都当成唯一现场事实。固定源码按 PID 连接 process，没有限制生存期；最近 timer 也是 PID 与时间上的候选，未知主题的 duration 还可能回退为 0。应按 ErrorId 检查重复与身份歧义，再核对平台日志、计时器和实际配置。
+
+<!-- gracker-diagram: ch14-07-26-anr-identity-resolution -->
+![ANR 的 PID 连接与最近 timer 只是候选](../../assets/diagrams/ch14/ch14-07-26-anr-identity-resolution.png)
+
+图：按 ErrorId 去重并重新检查进程实例、生存期与主线程唯一性。 固定表按 PID 连接 process，最近 timer 也不自动证明因果；未知 duration 可能回退 0。
 
 ```sql
 INCLUDE PERFETTO MODULE android.anrs;
@@ -867,11 +938,6 @@ ORDER BY ts;
 
 该表依赖对应平台事件被写入 Trace。表为空时，可以另查 `android_logs` 或外部 `bugreport` 诊断包，但日志与 Trace 需要有可校准的时间基准。`default_anr_dur_ms` 适合解释平台默认路径；设备现场的超时配置，以现场记录为准。
 
-<!-- gracker-diagram: ch14-07-26-anr-identity-resolution -->
-![ANR 的 PID 连接与最近 timer 只是候选](../../assets/diagrams/ch14/ch14-07-26-anr-identity-resolution.png)
-
-图：按 ErrorId 去重并重新检查进程实例、生存期与主线程唯一性。 固定表按 PID 连接 process，最近 timer 也不自动证明因果；未知 duration 可能回退 0。
-
 #### 从 ANR 时刻向前检查主线程
 
 分析窗口应由 ANR 类型和现场信息决定。下面的模板选择目标进程最近一次 ANR，并向前查看 10 秒、向后查看 1 秒。两个窗口值是分析参数，运行前应按 `anr_dur_ms`、事件类型和 Trace 覆盖范围修改。
@@ -881,63 +947,58 @@ INCLUDE PERFETTO MODULE android.anrs;
 
 WITH
   settings(process_name, lookback_ns, after_ns) AS (
-    VALUES (
-      'com.example.app',
-      10000000000,
-      1000000000
-    )
+    VALUES ('com.example.app', 10000000000, 1000000000)
   ),
   chosen_anr AS (
-    SELECT android_anrs.*
-    FROM android_anrs
-    JOIN settings
-      ON settings.process_name = android_anrs.process_name
-    ORDER BY android_anrs.ts DESC
-    LIMIT 1
+    SELECT DISTINCT a.process_name, a.pid, a.error_id, a.ts
+    FROM android_anrs a JOIN settings s ON s.process_name = a.process_name
+    ORDER BY a.ts DESC, a.error_id LIMIT 1
+  ),
+  resolved AS (
+    SELECT a.*, CASE WHEN COUNT(p.upid) = 1 THEN MIN(p.upid) END AS resolved_upid,
+      COUNT(p.upid) AS process_candidates,
+      MIN(p.start_ts IS NOT NULL AND p.end_ts IS NOT NULL) AS all_bounds_known
+    FROM chosen_anr a LEFT JOIN process p
+      ON p.pid = a.pid AND p.name = a.process_name
+     AND (p.start_ts IS NULL OR p.start_ts <= a.ts)
+     AND (p.end_ts IS NULL OR a.ts < p.end_ts)
+    GROUP BY a.process_name, a.pid, a.error_id, a.ts
   ),
   main_thread AS (
-    SELECT thread.utid
-    FROM chosen_anr
-    JOIN thread
-      ON thread.upid = chosen_anr.upid
-    WHERE thread.is_main_thread = 1
-       OR thread.tid = chosen_anr.pid
+    SELECT MIN(t.utid) AS utid, COUNT(t.utid) AS main_candidates
+    FROM resolved a JOIN thread t ON t.upid = a.resolved_upid
+    WHERE a.process_candidates = 1
+      AND (t.is_main_thread = 1 OR t.tid = a.pid)
   ),
-  state_intersections AS (
-    SELECT
-      thread_state.state,
-      thread_state.io_wait,
-      thread_state.blocked_function,
-      MIN(
-        CASE
-          WHEN thread_state.dur = -1 THEN trace_end()
-          ELSE thread_state.ts + thread_state.dur
-        END,
-        chosen_anr.ts + settings.after_ns
-      ) - MAX(
-        thread_state.ts,
-        chosen_anr.ts - settings.lookback_ns
-      ) AS overlap_dur
-    FROM thread_state
-    JOIN main_thread USING (utid)
-    CROSS JOIN chosen_anr
-    CROSS JOIN settings
-    WHERE thread_state.ts < chosen_anr.ts + settings.after_ns
-      AND CASE
-            WHEN thread_state.dur = -1 THEN trace_end()
-            ELSE thread_state.ts + thread_state.dur
-          END > chosen_anr.ts - settings.lookback_ns
+  intersections AS (
+    SELECT st.state, st.io_wait, st.blocked_function,
+      st.dur = -1 AS is_open,
+      MIN(CASE WHEN st.dur = -1 THEN trace_end() ELSE st.ts + st.dur END,
+          a.ts + settings.after_ns, trace_end())
+        - MAX(st.ts, a.ts - settings.lookback_ns, trace_start()) AS overlap_dur
+    FROM resolved a CROSS JOIN settings CROSS JOIN main_thread mt
+    JOIN thread_state st ON st.utid = mt.utid AND mt.main_candidates = 1
+    WHERE a.process_candidates = 1
+      AND st.ts < MIN(a.ts + settings.after_ns, trace_end())
+      AND CASE WHEN st.dur = -1 THEN trace_end() ELSE st.ts + st.dur END
+        > MAX(a.ts - settings.lookback_ns, trace_start())
+  ),
+  totals AS (
+    SELECT state, io_wait, blocked_function, COUNT(*) AS interval_count,
+      SUM(CASE WHEN is_open THEN 1 ELSE 0 END) AS assumed_end_intervals,
+      SUM(overlap_dur) / 1e6 AS total_ms, MAX(overlap_dur) / 1e6 AS longest_ms
+    FROM intersections WHERE overlap_dur > 0
+    GROUP BY state, io_wait, blocked_function
   )
-SELECT
-  state,
-  io_wait,
-  COALESCE(blocked_function, '<no blocked function>') AS blocked_function,
-  COUNT(*) AS interval_count,
-  ROUND(SUM(overlap_dur) / 1e6, 3) AS total_ms,
-  ROUND(MAX(overlap_dur) / 1e6, 3) AS longest_ms
-FROM state_intersections
-GROUP BY state, io_wait, blocked_function
-ORDER BY SUM(overlap_dur) DESC;
+SELECT a.error_id, a.ts AS anr_ts, a.pid, a.resolved_upid,
+  a.process_candidates, mt.main_candidates, a.all_bounds_known,
+  CASE WHEN a.process_candidates = 0 THEN 'no_compatible_process'
+       WHEN a.process_candidates > 1 THEN 'ambiguous_process'
+       WHEN mt.main_candidates != 1 THEN 'missing_or_ambiguous_main'
+       ELSE 'single_compatible_candidate' END AS identity_status,
+  totals.*
+FROM resolved a CROSS JOIN main_thread mt LEFT JOIN totals ON 1
+ORDER BY total_ms DESC;
 ```
 
 结果的解释依赖状态：大量 `Running` 要结合调用栈和 `slice` 找 CPU 工作；大量 `R` / `R+` 指向调度排队；`D` 且 `io_wait = 1` 指向内核 I/O 等待；`S` 还需检查 Binder 回复、`futex`（用户空间同步原语发生争用时使用的内核等待机制）、monitor contention 与应用等待事件。`blocked_function` 记录的是内核侧阻塞点，Java 层持锁者不在它的视野内。
@@ -977,13 +1038,13 @@ SELECT
   is_blocking_thread_main,
   binder_reply_id
 FROM android_monitor_contention
-WHERE process_name = 'com.example.app'
+WHERE upid = 123
   AND dur >= 0
 ORDER BY dur DESC
 LIMIT 30;
 ```
 
-`waiter_count` 使用从零开始的序号：值为 0 表示当前线程是第一个等待者，线程池总等待人数要另行统计。`binder_reply_id` 有值时，持锁工作可能发生在 Binder 服务线程，应继续检查对应事务和持锁线程状态。
+`waiter_count` 来自 ART 在竞争入口执行 `num_waiters_.fetch_add(1)` 得到的旧计数，0 表示当时此前没有等待者；它不是固定排队编号，也不能当作整个线程池的等待人数。`binder_reply_id` 有值时，持锁工作可能发生在 Binder 服务线程，应继续检查对应事务和持锁线程状态。
 
 <!-- gracker-diagram: ch14-07-28-monitor-owner-information -->
 ![锁竞争保留持锁方、竞争方与记录语义](../../assets/diagrams/ch14/ch14-07-28-monitor-owner-information.png)
@@ -992,7 +1053,7 @@ LIMIT 30;
 
 #### 锁等待与帧的交集关联
 
-锁等待可能从 `doFrame` 开始前延续到回调内，也可能在回调结束后继续。只用“contention 完全包含于 `doFrame`”会漏掉两端跨界事件。正确做法是计算两个半开区间的交集。
+锁等待可能从 `doFrame` 开始前一直延续到回调内，也可能在回调结束后仍然存在，边界并不整齐。按“contention 完全包含于 `doFrame`”过滤会漏掉两端跨界的事件；我们直接计算两个半开区间的交集，把跨界的部分也接住。
 
 统计每个应用帧的 `doFrame` 中，UI 线程被 monitor 锁竞争覆盖的时间，可以识别锁等待与慢帧的时间相关性。查询不预设固定毫秒阈值。
 
@@ -1018,7 +1079,7 @@ WITH lock_overlap AS (
     ON contention.blocked_utid = frames.ui_thread_utid
    AND contention.ts < do_frame.ts + do_frame.dur
    AND contention.ts + contention.dur > do_frame.ts
-  WHERE frames.process_name = 'com.example.app'
+  WHERE frames.upid = 123
     AND frames.dur >= 0
     AND do_frame.dur >= 0
     AND contention.dur >= 0
@@ -1037,7 +1098,7 @@ JOIN lock_overlap
   USING (upid, frame_id)
 LEFT JOIN android_frames_overrun AS overrun
   USING (frame_id)
-WHERE frames.process_name = 'com.example.app'
+WHERE frames.upid = 123
 GROUP BY
   frames.upid,
   frames.frame_id,
@@ -1068,65 +1129,40 @@ ORDER BY lock_overlap_ms DESC;
 CPU 运行区间和 CPU 频率区间是典型用法。`sched` 已按 CPU 给出不重叠运行片段；`counter` 需要用下一采样点补出 `dur`。把两者交给 `SPAN_JOIN`，可计算目标进程每个线程在各 CPU 频率上的运行时间。
 
 ```sql
-CREATE PERFETTO VIEW cookbook_sched AS
-SELECT
-  ts,
-  dur,
-  cpu,
-  utid
-FROM sched
-WHERE dur >= 0;
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
 
-CREATE PERFETTO TABLE cookbook_frequency (
-  ts TIMESTAMP,
-  dur DURATION,
-  cpu LONG,
-  freq_khz LONG
-) AS
-SELECT
-  counter.ts,
-  COALESCE(
-    LEAD(counter.ts) OVER (
-      PARTITION BY counter.track_id
-      ORDER BY counter.ts
-    ),
-    trace_end()
-  ) - counter.ts AS dur,
-  cpu_counter_track.cpu,
-  CAST(counter.value AS INTEGER) AS freq_khz
-FROM counter
-JOIN cpu_counter_track
-  ON cpu_counter_track.id = counter.track_id
-WHERE cpu_counter_track.name = 'cpufreq';
+CREATE PERFETTO VIEW cookbook_sched AS
+SELECT ts, dur, ucpu, utid FROM sched
+WHERE dur > 0 AND ucpu IS NOT NULL;
+
+CREATE PERFETTO VIEW cookbook_frequency AS
+SELECT ts, dur, ucpu, cpu, track_id AS frequency_track_id, freq AS freq_khz
+FROM cpu_frequency_counters
+WHERE dur > 0 AND freq IS NOT NULL
+  AND ucpu IN (
+    SELECT ucpu FROM cpu_frequency_counters
+    GROUP BY ucpu HAVING COUNT(DISTINCT track_id) = 1
+  );
 
 CREATE VIRTUAL TABLE cookbook_sched_with_frequency
 USING SPAN_JOIN(
-  cookbook_sched PARTITIONED cpu,
-  cookbook_frequency PARTITIONED cpu
+  cookbook_sched PARTITIONED ucpu,
+  cookbook_frequency PARTITIONED ucpu
 );
 
-SELECT
-  process.name AS process_name,
-  thread.name AS thread_name,
-  cookbook_sched_with_frequency.cpu,
-  cookbook_sched_with_frequency.freq_khz,
-  ROUND(SUM(cookbook_sched_with_frequency.dur) / 1e6, 3) AS running_ms
-FROM cookbook_sched_with_frequency
-JOIN thread
-  USING (utid)
-JOIN process
-  USING (upid)
-WHERE process.name = 'com.example.app'
-GROUP BY
-  process.name,
-  thread.utid,
-  thread.name,
-  cookbook_sched_with_frequency.cpu,
-  cookbook_sched_with_frequency.freq_khz
+SELECT process.upid, thread.utid, thread.tid,
+  process.name AS process_name, thread.name AS thread_name,
+  joined.ucpu, joined.cpu, joined.frequency_track_id, joined.freq_khz,
+  ROUND(SUM(joined.dur) / 1e6, 3) AS running_ms
+FROM cookbook_sched_with_frequency AS joined
+JOIN thread USING (utid) JOIN process USING (upid)
+WHERE process.upid = 123
+GROUP BY process.upid, thread.utid, thread.tid, process.name, thread.name,
+  joined.ucpu, joined.cpu, joined.frequency_track_id, joined.freq_khz
 ORDER BY running_ms DESC;
 ```
 
-该脚本会在当前 SQL 会话创建对象，重复执行前要删除对象或更换名称。`cpufreq` 只在频率事件或轮询数据存在时有结果；事件驱动采集还可能缺失 Trace 开头的初始频率。空结果先怀疑频率数据缺失，CPU 可能仍在运行。
+该脚本会在当前 SQL 会话创建对象，重复执行前要删除对象或更换名称。它只接受每个 ucpu 一条频率轨道；多轨 CPU 被排除，先用 `COUNT(DISTINCT track_id)` 检查被排除范围，并保留覆盖率，不能把无输出当成没有运行。`cpufreq` 只在频率事件或轮询数据存在时有结果；事件驱动采集还可能缺失 Trace 开头的初始频率。空结果先怀疑频率数据缺失，CPU 可能仍在运行。
 
 <!-- gracker-diagram: ch14-07-32-sched-frequency -->
 ![调度与频率按 ucpu 关联驻留时间](../../assets/diagrams/ch14/ch14-07-32-sched-frequency.png)
@@ -1135,7 +1171,12 @@ ORDER BY running_ms DESC;
 
 #### 哪些区间流适合做交集
 
-被 monitor 锁竞争阻塞的线程在等待期间没有运行。同一个 `utid` 上，锁等待区间与 `sched` 的 `Running` 区间按定义互斥。对两者执行 `SPAN_JOIN` 得到空集属于正确结果，用它分析“锁等待时的 CPU 频率”在语义上也没有价值。
+monitor contention slice 覆盖 ART 记录的整段竞争过程，并不等于内核中纯睡眠的区间。固定 `Monitor::Lock()` 在改变线程状态、获取锁之前开始 ATrace，在恢复可运行并更新持锁信息后结束；因此同一 `utid` 的 contention slice 可与 `Running` 相交。先与 `thread_state` 分解运行、Runnable 和睡眠，再只给实际 Running 片段关联 CPU 频率。空交集只描述本次窗口，不能据此制定“锁竞争与运行必然互斥”的规则。
+
+<!-- gracker-diagram: ch14-07-30-monitor-includes-running -->
+![monitor contention 不是纯睡眠区间](../../assets/diagrams/ch14/ch14-07-30-monitor-includes-running.png)
+
+图：ART 的竞争 Slice 包住阻塞前后处理，可能与 Running、Runnable 和睡眠相交。 不能预设 contention 与 sched 互斥；只对实际 Running 交集关联频率。
 
 帧分析可以按以下关系组织：
 
@@ -1165,7 +1206,7 @@ WITH
     FROM android_frames AS frames
     JOIN slice AS do_frame
       ON do_frame.id = frames.do_frame_id
-    WHERE frames.process_name = 'com.example.app'
+    WHERE frames.upid = 123
       AND frames.dur >= 0
       AND do_frame.dur >= 0
   ),
@@ -1245,8 +1286,8 @@ SELECT
     state_totals.interruptible_sleep_dur / 1e6,
     3
   ) AS interruptible_sleep_ms,
-  COALESCE(lock_totals.contention_count, 0) AS contention_count,
-  ROUND(COALESCE(lock_totals.lock_overlap_dur, 0) / 1e6, 3) AS lock_ms
+  COALESCE(lock_totals.contention_count, 0) AS observed_contention_count,
+  ROUND(COALESCE(lock_totals.lock_overlap_dur, 0) / 1e6, 3) AS observed_lock_ms
 FROM target_frames AS frames
 LEFT JOIN android_frames_overrun AS overrun
   USING (frame_id)
@@ -1257,12 +1298,7 @@ LEFT JOIN lock_totals
 ORDER BY overrun.overrun DESC, frames.ts;
 ```
 
-状态总量接近 `do_frame_ms`，说明调度事件覆盖较完整；差值较大时应检查 Trace 是否从区间中途开始、是否有数据丢失，或 UI 线程标识是否正确。锁时间是睡眠时间的一个具体原因，与各状态相加会把同一段时间算两次。
-
-<!-- gracker-diagram: ch14-07-30-monitor-includes-running -->
-![monitor contention 不是纯睡眠区间](../../assets/diagrams/ch14/ch14-07-30-monitor-includes-running.png)
-
-图：ART 的竞争 Slice 包住阻塞前后处理，可能与 Running、Runnable 和睡眠相交。 不能预设 contention 与 sched 互斥；只对实际 Running 交集关联频率。
+状态总量接近 `do_frame_ms`，说明调度事件覆盖较完整；差值较大时应检查 Trace 是否从区间中途开始、是否有数据丢失，或 UI 线程标识是否正确。锁竞争是与调度状态相交的业务原因维度，记录区间还可能包含 Running 和 Runnable；不能直接与各状态时长相加。没有匹配到锁 slice 只表示“未观察到”，还需核对 ART 采集与解析覆盖。
 
 ### I/O：把线程等待与块设备活动分开
 
@@ -1275,9 +1311,14 @@ adb shell 'cat /sys/kernel/tracing/available_events' \
   | grep -E '^(block|f2fs|ext4|erofs):'
 ```
 
-设备输出决定 `ftrace_events` 能配置哪些事件。采集结束后还要检查 Trace Processor 自诊断表 `stats` 中的 `unknown_ftrace_events` 与 `failed_ftrace_events`，它们分别表示事件名未知和事件启用失败；否则容易把未启用的数据源误读成“没有 I/O”。
+设备输出决定 `ftrace_events` 能配置哪些事件。采集结束后先查 `stats` 中 `name = 'ftrace_setup_errors'` 的汇总，再查看 `metadata` 中同名详情。`unknown_ftrace_events` 与 `failed_ftrace_events` 是 setup 报告字段，不是固定 `stats.name`；还要另查 per-CPU overrun 等录制期间丢数。否则容易把未启用或丢失的数据误读成“没有 I/O”。
 
-Android 17 的 `linux.block_io` 模块可以按设备查看仍在队列或设备中的活动请求：
+<!-- gracker-diagram: ch14-07-35-setup-versus-record-loss -->
+![启用错误和录制丢数分别检查](../../assets/diagrams/ch14/ch14-07-35-setup-versus-record-loss.png)
+
+图：ftrace_setup_errors 统计和 metadata 详情用于启用诊断，运行期丢数另看 CPU 统计。 unknown/failed_ftrace_events 是 setup 报告字段，不是固定 stats.name。
+
+标准库的 `linux.block_io` 模块可以按设备查看仍在队列或设备中的活动请求：
 
 ```sql
 INCLUDE PERFETTO MODULE linux.block_io;
@@ -1308,11 +1349,6 @@ ORDER BY ts;
 
 全量 `raw_syscalls/sys_enter` / `sys_exit` 事件率很高，只应在短窗口、足够大的缓冲区和明确复现场景下启用。
 
-<!-- gracker-diagram: ch14-07-35-setup-versus-record-loss -->
-![启用错误和录制丢数分别检查](../../assets/diagrams/ch14/ch14-07-35-setup-versus-record-loss.png)
-
-图：ftrace_setup_errors 统计和 metadata 详情用于启用诊断，运行期丢数另看 CPU 统计。 unknown/failed_ftrace_events 是 setup 报告字段，不是固定 stats.name。
-
 ### 功耗：联合频率、空闲、Suspend 与唤醒锁
 
 CPU 频率高只表示策略选择了较高频点，是否在持续执行大量工作要看运行时间。调度负载、Governor（动态选择 CPU 频率的策略）、Boost（短时提高性能档位的机制）、热限制、CPU 容量和任务所在核心集群都会影响频率。功耗分析至少要联合 CPU 运行时间、频率、空闲状态、Suspend（整机进入低功耗休眠）和唤醒锁；唤醒锁用于要求系统保持唤醒。
@@ -1322,7 +1358,7 @@ CPU 频率高只表示策略选择了较高频点，是否在持续执行大量�
 
 图：CPU 频率是策略结果，功耗解释还需要执行量、空闲、Suspend 与唤醒锁。 高频可能空闲，低频也可能持续执行，频点本身不是能量测量。
 
-下面的配置片段采集频率、空闲、系统休眠和内核唤醒锁；buffer 与时长仍需按目标设备的数据率调整：
+下面的配置片段面向单机器 Trace，采集频率、空闲、系统休眠和内核唤醒锁；buffer 与时长仍需按目标设备的数据率调整。后续 suspend/唤醒锁模板在多机器输入上停止输出，需先拆分来源；频率模板则显式保留 ucpu。
 
 ```protobuf
 data_sources {
@@ -1361,16 +1397,18 @@ WITH power_summary AS (
     power_state AS item,
     SUM(dur) AS total_dur
   FROM android_suspend_state
+  WHERE machine_id = 0 AND (SELECT COUNT(*) FROM machine) = 1
   GROUP BY power_state
 
   UNION ALL
 
   SELECT
-    'wakelock' AS category,
+    'wakelock:' || type AS category,
     name AS item,
     SUM(held_dur) AS total_dur
   FROM android_kernel_wakelocks
-  GROUP BY name
+  WHERE (SELECT COUNT(*) FROM machine) = 1
+  GROUP BY name, type
 )
 SELECT
   category,
@@ -1380,7 +1418,12 @@ FROM power_summary
 ORDER BY category, total_dur DESC;
 ```
 
-`android_suspend_state` 将 Trace 时间补成 `awake` 与 `suspended` 区间。`android_kernel_wakelocks` 的每一行对应一个采样区间，`held_dur` 表示该区间内唤醒锁实际持有的累计时间。唤醒锁持有与耗电相关，但仍需找到持有者和同一区间中的实际工作。
+`android_suspend_state` 从已有 suspend 事件派生区间，再补出 awake 空档；主机器完全没有有效 suspend slice 时，会把整段 Trace 回退为 awake，这不能证明采集完整或设备从未休眠。`android_kernel_wakelocks.held_dur` 来自相邻累计计数值之差，描述采样区间内累计持有时间，不能还原每一次 acquire/release 的确切时刻；末点、缺口、重置和同名不同 type 都需单列。唤醒锁持有与耗电相关，但仍需找到持有者和同一区间中的实际工作。
+
+<!-- gracker-diagram: ch14-07-37-suspend-fallback -->
+![没有 suspend 记录时的 awake 是回退模型](../../assets/diagrams/ch14/ch14-07-37-suspend-fallback.png)
+
+图：标准库补出 awake 空档，主机器无有效 suspend Slice 时可整段回退为 awake。 这不能证明设备从未休眠；唤醒锁 held_dur 是累计 Counter 差值。
 
 CPU 频率应按区间做时间加权；直接平均离散采样点，会让持续时间不同的频点获得相同权重：
 
@@ -1388,22 +1431,18 @@ CPU 频率应按区间做时间加权；直接平均离散采样点，会让持�
 INCLUDE PERFETTO MODULE linux.cpu.frequency;
 
 SELECT
+  ucpu,
   cpu,
-  ROUND(SUM(freq * dur) / SUM(dur) / 1000.0, 1) AS weighted_avg_mhz,
+  ROUND(SUM(1.0 * freq * dur) / SUM(dur) / 1000.0, 1) AS weighted_avg_mhz,
   ROUND(MAX(freq) / 1000.0, 1) AS max_mhz,
   ROUND(SUM(dur) / 1e9, 3) AS covered_s
 FROM cpu_frequency_counters
 WHERE freq IS NOT NULL AND dur > 0
-GROUP BY cpu
-ORDER BY cpu;
+GROUP BY ucpu, cpu
+ORDER BY ucpu, cpu;
 ```
 
 `freq` 的单位是 kHz。加权平均频率适合比较相同设备和场景中的策略结果，做能量估算还不够：CPU 可能高频空闲，也可能低频持续运行。还要关联 `cpu_idle_counters`、`sched`、功率轨（芯片不同供电域的测量通道）和电池电流。系统进不了 Suspend 时，再按时间顺序检查显示状态、用户空间 / 内核唤醒锁、活跃定时器和 `android.wakeups` 给出的唤醒或休眠失败原因。
-
-<!-- gracker-diagram: ch14-07-37-suspend-fallback -->
-![没有 suspend 记录时的 awake 是回退模型](../../assets/diagrams/ch14/ch14-07-37-suspend-fallback.png)
-
-图：标准库补出 awake 空档，主机器无有效 suspend Slice 时可整段回退为 awake。 这不能证明设备从未休眠；唤醒锁 held_dur 是累计 Counter 差值。
 
 <!-- gracker-diagram: ch14-07-38-frequency-weight -->
 ![频率平均按持续时间加权](../../assets/diagrams/ch14/ch14-07-38-frequency-weight.png)
@@ -1456,6 +1495,8 @@ SQL 排名适合缩小范围，性能结论仍要经过时间、线程、事件�
 - [Android 17 `android.startup.startups` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/startups.sql)
 - [Android 17 `android.startup.time_to_display` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/time_to_display.sql)
 - [Android 17 `android.anrs` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql)
+- [Android 17 ART Monitor 的实际竞争区间](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/monitor.cc)
+- [Android 17 ftrace setup 自诊断字段](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/storage/stats.h)
 - [Android 17 `android.monitor_contention` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql)
 - [Android 17 `linux.block_io` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql)
 - [Android 17 `android.suspend` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/suspend.sql)
@@ -1465,11 +1506,11 @@ SQL 排名适合缩小范围，性能结论仍要经过时间、线程、事件�
 
 ## 时间跨度关联与窗口函数
 
-基础查询定位对象后，SPAN_JOIN 用重叠区间回答多个轨道在同一时刻发生了什么；窗口函数用于排序、累计和相邻事件计算。
+基础查询定位对象之后，我们用 SPAN_JOIN 的重叠区间回答多个轨道在同一时刻发生了什么；排序、累计和相邻事件计算则交给窗口函数。
 
 区间关联最容易出现“SQL 能运行，数字却多算或少算”的问题。帧、线程调度状态和锁等待已经用 `ts` 与 `dur` 定义区间，结束时间才写成 `ts + dur`；CPU 频率、内存等计数器只有采样时刻，要先补出有效区间。输入区间一旦重叠、分区键选错或末端边界没有定义，`SPAN_JOIN` 不会替查询者修正语义。
 
-本节示例使用 Android 17 PerfettoSQL 标准库和该版本的 `span_join_operator` 约束，主机侧文档复核到 Trace Processor v57.2，源码与内核基线见文首。分析历史版本时，按对应字段差异调整查询；结论也不套用高于目标版本的平台假设。
+本节示例基于文首基线的 PerfettoSQL 标准库与 `span_join_operator` 约束。分析历史版本时，按对应字段差异调整查询，结论也不套用高于目标版本的平台假设。
 
 ### `SPAN_JOIN` 处理区间交集
 
@@ -1577,7 +1618,7 @@ ORDER BY part_id, ts;
 
 - 底层算子要求两侧都有 `ts`，且至少一侧有 `dur`。缺少 `dur` 的一侧只按采样时刻参与匹配，不会自动延续到下一条记录；区间分析应为两侧都显式提供 `dur`。
 - `dur` 应大于零；`dur = -1` 的开放区间要先裁到查询窗口或 `trace_end()`。
-- 分区列必须是整数。两侧都分区时，列名必须相同。
+- 分区列必须是整数且不能为空；固定算子会跳过 NULL 分区行，字符串分区会报错。两侧都分区时，列名必须相同；除 `ts`、`dur` 和共同分区键外，两侧同名输出列会使创建失败，需先重命名。
 - 分区键必须表达同一种实体，例如 `ucpu` 对 `ucpu`、`utid` 对 `utid`。
 - 只给一侧分区也受支持，未分区表会分别与每个分区求交。
 
@@ -1587,17 +1628,23 @@ ORDER BY part_id, ts;
 
 计数器在 `ts` 处记录“数值从此刻开始变为 `value`”。所谓前向有效区间，是把这个值视为从当前 `ts` 持续到下一条记录，即 `[当前 ts, 下一条 ts)`；同一轨道的末条记录延续到明确的窗口末端。
 
-窗口函数 `LEAD()` 读取排序后的下一行，必须按 `track_id` 分组计算，否则一个 CPU 的频率点会被另一个 CPU 的采样时刻截断。
+窗口函数 `LEAD()` 必须按 `track_id` 分组，并按 `(ts, id)` 稳定排序。同轨同时间戳的较早记录生成零时长，保留该时刻最后一条记录向前延续；若项目不能接受此 tie-break，需把重复时间戳标成歧义。按 `ucpu` 做交集前，还须确认每个 ucpu 只有一条已选择的频率轨道，避免多轨重叠。
+
+<!-- gracker-diagram: ch14-07-44-counter-leading-interval -->
+![计数器点还原成前向保持区间](../../assets/diagrams/ch14/ch14-07-44-counter-leading-interval.png)
+
+图：同轨按 ts/id 稳定排序，从当前点延续到下一点，再按窗口裁剪。 同时间戳较早记录形成零时长；若不接受最后 ID 规则，应标成歧义。
 
 手工把 `cpufreq` 计数器转成前向区间，并通过 `cpu` 表取得跨机器 Trace 也唯一的 `ucpu`，可以核对标准库的输入语义。
 
 ```sql
 WITH frequency_points AS (
   SELECT
+    counter.id AS counter_id,
     counter.ts,
     LEAD(counter.ts) OVER (
       PARTITION BY counter.track_id
-      ORDER BY counter.ts
+      ORDER BY counter.ts, counter.id
     ) AS next_ts,
     counter.track_id,
     cpu_desc.ucpu,
@@ -1612,6 +1659,7 @@ WITH frequency_points AS (
   WHERE track.name = 'cpufreq'
 )
 SELECT
+  counter_id, track_id,
   ts,
   COALESCE(next_ts, trace_end()) - ts AS dur,
   ucpu,
@@ -1635,6 +1683,7 @@ ORDER BY ucpu, ts;
 INCLUDE PERFETTO MODULE linux.cpu.frequency;
 
 SELECT
+  id AS counter_id, track_id,
   ts,
   dur,
   ucpu,
@@ -1646,11 +1695,6 @@ ORDER BY ucpu, ts;
 ```
 
 频率表为空时，应检查 `power/cpu_frequency` ftrace 内核追踪事件或 `linux.sys_stats` 的 CPU 频率定时读取是否启用。事件驱动采集可能在 Trace 开头缺少初始频率；`SPAN_JOIN` 会保留这个数据缺口，不会猜测频率。
-
-<!-- gracker-diagram: ch14-07-44-counter-leading-interval -->
-![计数器点还原成前向保持区间](../../assets/diagrams/ch14/ch14-07-44-counter-leading-interval.png)
-
-图：同轨按 ts/id 稳定排序，从当前点延续到下一点，再按窗口裁剪。 同时间戳较早记录形成零时长；若不接受最后 ID 规则，应标成歧义。
 
 ### `PARTITIONED` 前的输入验证
 
@@ -1683,7 +1727,7 @@ WITH
       candidate_span.*,
       MAX(ts + dur) OVER (
         PARTITION BY utid
-        ORDER BY ts, dur
+        ORDER BY ts, dur, id
         ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
       ) AS previous_max_end
     FROM candidate_span
@@ -1715,7 +1759,7 @@ WITH target_intervals AS (
     upid,
     utid
   FROM thread_slice
-  WHERE process_name = 'com.example.app'
+  WHERE upid = 123
     AND name GLOB 'Choreographer#doFrame*'
     AND dur > 0
 )
@@ -1744,7 +1788,12 @@ ORDER BY upid, utid, ts;
 
 异构 SoC（System on a Chip，系统级芯片）上，不同 CPU 簇的频率范围与每 MHz 性能不同，把所有 CPU 的 kHz 混成一个平均值没有可比性。查询输出每帧、每个 `ucpu`、每个频点的运行驻留时间，也就是线程在该频点累计运行了多久；解释性能时再结合 CPU capacity（核心的相对计算能力）、簇信息和同设备基线。
 
-下面的完整脚本先关联调度与频率，再按 `utid` 将结果裁进 `doFrame`。两个 `SPAN_JOIN` 的输入在各自分区内均为互斥区间。
+下面的脚本以两次交集的输入互斥为前提：先对候选 `cookbook_do_frames` 按 utid 检查前序最大结束时间，再检查同一 ucpu 的频率轨道数量与区间重叠。有重叠时先处理或停止计算；不能因为它们来自标准表，就假设目标 Trace 的两层输入一定有效。满足前提后，先关联调度与频率，再按 utid 裁进 doFrame。
+
+<!-- gracker-diagram: ch14-07-48-frame-frequency-two-stages -->
+![每帧频率驻留分两次交集](../../assets/diagrams/ch14/ch14-07-48-frame-frequency-two-stages.png)
+
+图：先将 sched 与频率按 ucpu 求交，再把运行片段按 utid 裁进 doFrame。 两个输入阶段都必须互斥；帧或频率轨道异常时先停止或明确排除。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
@@ -1756,6 +1805,7 @@ CREATE PERFETTO TABLE cookbook_do_frames (
   utid LONG,
   upid LONG,
   frame_id LONG,
+  do_frame_id LONG,
   frame_wall_dur DURATION
 ) AS
 SELECT
@@ -1764,11 +1814,12 @@ SELECT
   frames.ui_thread_utid AS utid,
   frames.upid,
   frames.frame_id,
+  do_frame.id AS do_frame_id,
   frames.dur AS frame_wall_dur
 FROM android_frames AS frames
 JOIN slice AS do_frame
   ON do_frame.id = frames.do_frame_id
-WHERE frames.process_name = 'com.example.app'
+WHERE frames.upid = 123
   AND do_frame.dur > 0
   AND frames.dur > 0;
 
@@ -1792,10 +1843,17 @@ JOIN (
 WHERE sched.dur > 0
   AND sched.ucpu IS NOT NULL;
 
+CREATE PERFETTO VIEW cookbook_selected_frequency AS
+SELECT * FROM cpu_frequency_counters
+WHERE dur > 0 AND freq IS NOT NULL AND ucpu IN (
+  SELECT ucpu FROM cpu_frequency_counters
+  GROUP BY ucpu HAVING COUNT(DISTINCT track_id) = 1
+);
+
 CREATE VIRTUAL TABLE cookbook_sched_frequency
 USING SPAN_JOIN(
   cookbook_ui_sched PARTITIONED ucpu,
-  cpu_frequency_counters PARTITIONED ucpu
+  cookbook_selected_frequency PARTITIONED ucpu
 );
 
 CREATE VIRTUAL TABLE cookbook_frame_running_frequency
@@ -1807,6 +1865,7 @@ USING SPAN_JOIN(
 SELECT
   upid,
   frame_id,
+  do_frame_id,
   ROUND(frame_wall_dur / 1e6, 3) AS frame_wall_ms,
   ROUND(
     SUM(SUM(dur)) OVER (PARTITION BY upid, frame_id) / 1e6,
@@ -1825,6 +1884,7 @@ FROM cookbook_frame_running_frequency
 GROUP BY
   upid,
   frame_id,
+  do_frame_id,
   frame_wall_dur,
   ucpu,
   cpu,
@@ -1840,11 +1900,6 @@ ORDER BY upid, frame_id, ucpu, freq;
 图：频率驻留比例的分母只包含同时具有调度和频率证据的运行时间。 缺失频率或被排除多轨 CPU 会降低覆盖，百分比不能代替总 CPU 占比。
 
 频率低未必是调频故障：线程可能运行在能效核，短任务也可能在升频前完成；温控、ADPF（应用提交性能提示的框架）、线程优先级、CPU affinity（限定线程可用的核心）和厂商调度策略都可能影响选择。判断时应比较同一设备、同一场景和同一采集配置，并把 `ucpu` 映射到 CPU capacity 或簇。
-
-<!-- gracker-diagram: ch14-07-48-frame-frequency-two-stages -->
-![每帧频率驻留分两次交集](../../assets/diagrams/ch14/ch14-07-48-frame-frequency-two-stages.png)
-
-图：先将 sched 与频率按 ucpu 求交，再把运行片段按 utid 裁进 doFrame。 两个输入阶段都必须互斥；帧或频率轨道异常时先停止或明确排除。
 
 ### 帧 × Binder / 锁 / GC 的交叉分析
 
@@ -1875,7 +1930,7 @@ WITH
     FROM android_frames AS frames
     JOIN slice AS do_frame
       ON do_frame.id = frames.do_frame_id
-    WHERE frames.process_name = 'com.example.app'
+    WHERE frames.upid = 123
       AND do_frame.dur > 0
   ),
   binder_overlap AS (
@@ -1967,14 +2022,14 @@ GROUP BY upid, frame_id, event_kind
 ORDER BY upid, frame_id, covered_ms DESC;
 ```
 
-三类覆盖时间彼此可能重叠，直接相加得不到“总阻塞时间”。同步 Binder 的客户端区间包含等待回复，异步事务的客户端区间只描述发送；monitor 锁竞争直接说明 UI 线程在等锁；`gc_activity` 覆盖整个标准库 GC 事件，包含并发工作与等待，与 stop-the-world（暂停应用受管线程执行）阶段是两个量。
-
-确定因果关系还要检查 `thread_state` 和事件层级。帧内出现 GC 活动，只说明时间相关；主线程在同一时段是否停顿，要看主线程状态和 ART 暂停事件。合并后的表也不再保留原始事务或 GC `id`，追踪单个事件时应回查标准库源表。
+三类覆盖时间彼此可能重叠，直接相加得不到“总阻塞时间”。同步 Binder 的客户端区间包含等待回复，异步事务的客户端区间只描述发送；monitor 记录的是 UI 线程的竞争过程，纯等待时间仍要用调度状态拆分；`gc_activity` 覆盖整个标准库 GC 事件，包含并发工作与等待，与 stop-the-world（暂停应用受管线程执行）阶段是两个量。
 
 <!-- gracker-diagram: ch14-07-51-causal-dimensions-overlap -->
 ![不同原因维度的覆盖不可直接相加](../../assets/diagrams/ch14/ch14-07-51-causal-dimensions-overlap.png)
 
 图：Binder、锁竞争与 GC 活动可能与同一帧时间重叠。 这些量不是互斥状态；GC 活动也不等于主线程暂停。
+
+确定因果关系还要检查 `thread_state` 和事件层级。帧内出现 GC 活动，只说明时间相关；主线程在同一时段是否停顿，要看主线程状态和 ART 暂停事件。合并后的表也不再保留原始事务或 GC `id`，追踪单个事件时应回查标准库源表。
 
 ### 与 Trace Processor 标准库配合
 
@@ -2055,7 +2110,7 @@ ORDER BY ts;
 
 图：左连接把左区间按右侧覆盖切开，未覆盖部分的右侧业务列为 NULL。 影子时间段是算子补出的占位，不能当作采集到的右侧事件。
 
-分区表为空时有一个已记录的特殊行为：空分区表参加 `SPAN_OUTER_JOIN`，或作为 `SPAN_LEFT_JOIN` 的右表时，即便另一侧非空，也不会输出时间段；官方文档将其归因于分区影子区间的定义。依赖未匹配区间的自动化查询要加入空表测试，普通 SQL 外连接的直觉在这里并不适用。
+空表行为要区分分区形状：固定实现中，只有一侧分区的 mixed partitioning 场景里，空的分区侧参加 SPAN_OUTER_JOIN，或它是 SPAN_LEFT_JOIN 的右侧时，才会使结果为空。两侧按同名键分区时，右表全空仍可保留左侧区间并令右侧业务列为 NULL；未分区右表为空也可保留左侧。固定源码的 InitialEofBehavior 分支和 native 57.2/58.2 合成表测试都区分这些情况，官方文档的概括不能扩展成“所有空分区表都没有输出”。依赖未匹配区间的自动化查询应按实际分区组合测试。
 
 <!-- gracker-diagram: ch14-07-54-empty-partition-shapes -->
 ![空分区要分 mixed 与双侧同名分区](../../assets/diagrams/ch14/ch14-07-54-empty-partition-shapes.png)
@@ -2141,11 +2196,11 @@ trace_processor_shell \
 
 ## Jank CUJ 标准库与交互验证
 
-自定义 SQL 提供灵活性，标准库统一常见 CUJ 语义。DataGrid 适合检查中间结果；我们最终留下的结论，仍要能回到 SQL 和 Trace 中的具体位置。
+自定义 SQL 胜在灵活，标准库则把常见 CUJ 语义统一起来。这一节我们沿标准库把系统交互的卡顿分析走一遍：中间结果用 DataGrid 检查，最终留下的结论仍要能回到 SQL 和 Trace 中的具体位置。
 
-CUJ 是 Critical User Journey，指系统重点监控的一段用户交互；Jank 指帧未按期完成所表现出的卡顿。本节的分析基准是文首的 Android 17 源码标签及其中的 Perfetto。
+CUJ 是 Critical User Journey，指系统重点监控的一段用户交互；Jank 指帧未按期完成所表现出的卡顿。本节的分析基准是文首的源码标签及其中的 Perfetto。
 
-上游 Perfetto v54.0 只作为版本演进参照：它引入了 DataGrid 改进、Jank CUJ 相关线程、基于计数器的加权卡顿、`heap_graph_stats` 和两种采样格式导入能力。Android 17 的 Perfetto 已包含 v54 之后的改动，两者之间画等号会出错。
+上游 Perfetto v54.0 在这里只作为版本演进的参照：它引入了 DataGrid 改进、Jank CUJ 相关线程、基于计数器的加权卡顿、`heap_graph_stats` 和两种采样格式导入能力。Android 17 的 Perfetto 已包含 v54 之后的改动，把两者画等号会出错。
 
 分析时要区分三层：
 
@@ -2158,7 +2213,7 @@ CUJ 是 Critical User Journey，指系统重点监控的一段用户交互；Jan
 
 图：Data Explorer 组织查询图，Trace Processor 执行结构化查询，DataGrid 显示结果。 图形界面帮助筛选，不替代字段语义与原始 Trace 证据。
 
-界面有助于缩小范围，SQL、trace 和源码用于验证结论是否成立。
+界面帮我们缩小范围，SQL、trace 和源码负责验证结论是否成立。
 
 ### DataGrid 与 Data Explorer 的版本差异
 
@@ -2173,12 +2228,12 @@ v54.0 标签中已经存在节点式查询插件，插件标识为 `dev.perfetto
 
 图：执行服务把节点转成结构化查询，通过 summarizer 管理物化结果。 临时表名和界面状态不作长期稳定接口，UI 与 TP 版本分别保存。
 
-截至 Perfetto v57.2，Data Explorer 仍以节点图组织筛选、聚合、连接和时间区间相交，并用 data grid 展示结果。当前标准库继续公开 `android.cujs.base`、`android_jank_cuj` 和 `android_jank_cuj_render_thread`，同时增加了 CUJ summary 及 jank/latency 组合表。下面的 SQL 固定面向 Android 17；换用新版 Trace Processor 时，先查配套 schema，新字段要确认存在后再用。
+本节分别核对 v54.0 ExplorePage 与 Android 17 DataExplorer 的源码；UI 与 Trace Processor 可以独立更新，不能仅从分析二进制版本推出当前网页的界面能力。下面只依赖固定 Android 17 的 `android.cujs.base`、`android.cujs.threads` 等明确入口；换用其他 Trace Processor 时，先查配套 schema 并运行样本回归。
 
 这套执行方式带来两个工程约束：
 
 - 节点图生成的 SQL、物化表名和界面状态可能随 UI 版本变化，报告要记录 Perfetto UI 与 Trace Processor 版本；
-- 需要长期保存并复用的是输入 trace、明确的 SQL、字段单位和源码 tag，不能依赖某个自动生成的物化表名。
+- 需要长期保存并复用的是输入 trace、明确的 SQL、字段单位和源码 tag；自动生成的物化表名可能随 UI 版本变化，只当作临时结果看待。
 
 DataGrid 最适合承载“窄表”：一行表示一个 CUJ、一帧或一段线程状态，一列表示一个可解释维度。宽表通常列多、连接关系也更复杂；未经约束便直接做透视，重复行和多层 FrameTimeline 数据很容易放大计数。
 
@@ -2214,7 +2269,7 @@ HWUI（Android 硬件加速 UI 渲染器） 的 C++ `JankTracker` 是另一套�
 - CUJ 必须是 `process_track` 上持续时间大于零、名称匹配 `J<*>` 的 slice（有开始和结束时间的事件区间）；
 - 进程名必须匹配 `com.android.*` 或 `com.google.android*`；
 - `FT#end`、`FT#cancel`、begin/end vsync、layer id 和 UI thread 标记用于修正状态与边界；
-- `android_jank_cuj.state` 的实际输出是 `completed`、`canceled` 或 `NULL`。
+- 内部 CASE 可生成 `completed`、`canceled` 或 NULL，但公共 `android_jank_cuj` 随后过滤掉 canceled，并过滤持续时间不超过 4 ms 的未知状态 CUJ；实际保留 completed 及部分 NULL。它不是所有交互尝试的完整分母。
 
 第三方 App 即使写出同名标记，也不会自动进入这张表：过滤发生在 Android 17 标准库源码里，与 DataGrid 的显示条件无关。[Android 17 `android.cujs.base`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/cujs/base.sql)
 
@@ -2232,6 +2287,7 @@ INCLUDE PERFETTO MODULE android.cujs.base;
 INCLUDE PERFETTO MODULE android.cujs.threads;
 
 SELECT
+  c.upid, c.ui_thread, c.slice_id,
   c.cuj_id,
   c.cuj_name,
   c.process_name,
@@ -2240,6 +2296,7 @@ SELECT
   c.dur,
   c.begin_vsync,
   c.end_vsync,
+  COUNT(r.utid) OVER (PARTITION BY c.cuj_id) AS render_thread_candidates,
   r.utid AS render_thread_utid,
   r.track_id AS render_thread_track_id
 FROM android_jank_cuj AS c
@@ -2247,18 +2304,18 @@ LEFT JOIN android_jank_cuj_render_thread AS r USING (cuj_id)
 ORDER BY c.ts;
 ```
 
-`LEFT JOIN` 会保留没有 RenderThread 记录的 CUJ。缺失可能来自场景没有走对应 HWUI 路径、线程名不匹配、CUJ 被截断或采集数据不足，先按这几种情况排查，再谈 RenderThread 是否参与。
+`LEFT JOIN` 会保留没有 RenderThread 记录的 CUJ；但同一进程有多条同名线程或 track 时可能返回多行，所以本查询仍是候选关联表。`render_thread_candidates` 大于 1 时，应结合生存期与实际 DrawFrame 轨道选定，不能直接按结果行数统计 CUJ。缺失可能来自场景没有走对应 HWUI 路径、线程名不匹配、CUJ 被截断或采集数据不足；我们先按这几种情况排查，再谈 RenderThread 是否参与。
+
+<!-- gracker-diagram: ch14-07-64-cuj-render-candidates -->
+![CUJ 与 RenderThread 的关联仍可能一对多](../../assets/diagrams/ch14/ch14-07-64-cuj-render-candidates.png)
+
+图：公共线程模块按同进程线程名和 track 关联，报告保留候选数。 候选数大于1时要结合生存期与实际 DrawFrame 轨道，不能按结果行数统计 CUJ。
 
 `cuj_id` 是 trace 内的 CUJ 编号，`upid` 和 `utid` 分别是 Trace Processor 在该 trace 中分配的唯一进程与线程 ID，`track_id` 标识承载事件的轨道。它们与操作系统原始的 PID、TID 不属于同一标识域。
 
 `android.cujs.threads` 的公共入口包括 `android_jank_cuj_app_thread(thread_name)` 和 `android_jank_cuj_render_thread`。GPU completion（GPU 完成相关线程）、HWC release（Hardware Composer 释放栅栏相关线程）、SurfaceFlinger main、SurfaceFlinger GPU completion 与 RenderEngine（SurfaceFlinger 的渲染引擎）等表由 `android/android_jank_cuj.sql` 的指标初始化过程继续创建。
 
 需要长期维护的脚本不要直接依赖 `_android_sf_process`、`_android_sf_thread()` 这类下划线开头的内部对象；它们没有公共兼容承诺。
-
-<!-- gracker-diagram: ch14-07-64-cuj-render-candidates -->
-![CUJ 与 RenderThread 的关联仍可能一对多](../../assets/diagrams/ch14/ch14-07-64-cuj-render-candidates.png)
-
-图：公共线程模块按同进程线程名和 track 关联，报告保留候选数。 候选数大于1时要结合生存期与实际 DrawFrame 轨道，不能按结果行数统计 CUJ。
 
 ### 基于计数器的加权卡顿
 
@@ -2268,38 +2325,106 @@ Java `FrameTracker.finishTraced()` 在 CUJ 收尾后写出：
 - `maxSuccessiveMissedFrames`、`maxFrameTimeMillis`、`totalAnimTime`；
 - `weightedAppJank`、`weightedSfJank`。
 
-计数器名称是 `J<CUJ_NAME>#COUNTER_NAME`。标准库先按 `upid` 和 CUJ 名找轨道，再由指标脚本把计数器匹配到对应 CUJ；相邻的同名 CUJ 会用下一个 CUJ 的结束时间限制搜索范围。`com.android.*` 与 Pixel Launcher 从 CUJ 结束时刻开始找计数器，其他被标准库纳入的 Google 进程允许向前回看 4 ms。这是 Android 17 SQL 中的兼容规则，第三方 App 不宜照搬成通用时序约定。
+计数器名称是 `J<CUJ_NAME>#COUNTER_NAME`。固定标准库先用 upid 筛出具备 CUJ 的进程轨道，但取值函数只按 CUJ 名、counter 名和时间查值，没有 upid 参数；下一次 CUJ 结束时间也只按 CUJ 名分区。同名交互跨进程且时间相邻时可串值：合成 Trace 中两个 Google 进程本应分别读到 7 和 11，原指标却都读到 11。报告查询应显式用 `(upid, cuj_id)` 隔离并检查候选计数。`com.android.*` 与 Pixel Launcher 从 CUJ 结束时刻开始找计数器，其他被标准库纳入的 Google 进程允许向前回看 4 ms。这是 Android 17 SQL 中的兼容规则，第三方 App 不宜照搬成通用时序约定。
 
-这条查询运行 Jank CUJ 指标，并把加权速率换算成当前 CUJ 窗口内的加权丢帧总量。
+<!-- gracker-diagram: ch14-07-65-cuj-counter-cross-process -->
+![同名 CUJ 的计数器必须按 upid 隔离](../../assets/diagrams/ch14/ch14-07-65-cuj-counter-cross-process.png)
+
+图：固定取值函数只有名称和时间参数，跨进程同名 CUJ 可能串值。 合成测试本应读取7和11，原指标都读到11；报告改用 upid 与 cuj_id。
+
+下面的查询按进程与 CUJ 实例读取计数器，保留原始记录、匹配候选数量及加权速率。存在歧义时不输出唯一计数；不使用下述有截断风险的时长计数器反推“总量”。
 
 ```sql
-SELECT RUN_METRIC('android/android_jank_cuj.sql');
+INCLUDE PERFETTO MODULE android.cujs.base;
 
-SELECT
-  cuj_id,
-  cuj_name,
-  state,
-  total_frames,
-  missed_frames,
-  missed_app_frames,
-  missed_sf_frames,
-  weighted_missed_app_frames * anim_duration_ms / 1000.0
-    AS weighted_missed_app_frames_total,
-  weighted_missed_sf_frames * anim_duration_ms / 1000.0
-    AS weighted_missed_sf_frames_total,
-  frame_dur_max / 1e6 AS frame_dur_max_ms
-FROM android_jank_cuj_counter_metrics
-ORDER BY
-  COALESCE(weighted_missed_app_frames_total, 0) +
-  COALESCE(weighted_missed_sf_frames_total, 0) DESC
-LIMIT 20;
+WITH
+  settings(max_counter_delay_ns) AS (VALUES (200000000)),
+  ordered AS (
+    SELECT *, LEAD(ts_end) OVER (
+      PARTITION BY upid, cuj_name ORDER BY ts_end, ts, cuj_id
+    ) AS next_cuj_end
+    FROM android_jank_cuj
+  ),
+  windows AS (
+    SELECT ordered.*,
+      CASE WHEN process_name GLOB 'com.android.*'
+              OR process_name = 'com.google.android.apps.nexuslauncher'
+           THEN ts_end ELSE MAX(ts, ts_end - 4000000) END AS search_start,
+      MIN(COALESCE(next_cuj_end, trace_end()),
+          ts_end + max_counter_delay_ns, trace_end()) AS search_end
+    FROM ordered CROSS JOIN settings
+  ),
+  candidates AS (
+    SELECT w.cuj_id, t.name AS counter_track_name,
+      SUBSTR(t.name, LENGTH(w.cuj_slice_name) + 2) AS counter_name,
+      c.id AS counter_id, c.ts AS counter_ts, c.value
+    FROM windows w
+    JOIN process_counter_track t ON t.upid = w.upid
+    JOIN counter c ON c.track_id = t.id
+    WHERE t.name IN (
+      w.cuj_slice_name || '#totalFrames',
+      w.cuj_slice_name || '#missedFrames',
+      w.cuj_slice_name || '#missedAppFrames',
+      w.cuj_slice_name || '#missedSfFrames',
+      w.cuj_slice_name || '#maxSuccessiveMissedFrames',
+      w.cuj_slice_name || '#weightedAppJank',
+      w.cuj_slice_name || '#weightedSfJank',
+      w.cuj_slice_name || '#totalAnimTime',
+      w.cuj_slice_name || '#maxFrameTimeMillis'
+    ) AND c.ts >= w.search_start AND c.ts < w.search_end
+  ),
+  per_counter AS (
+    SELECT cuj_id, counter_name, COUNT(*) AS n,
+      CASE WHEN COUNT(*) = 1 THEN MAX(value) END AS value,
+      GROUP_CONCAT(counter_id || '@' || counter_ts) AS candidate_keys
+    FROM candidates GROUP BY cuj_id, counter_name
+  )
+SELECT w.upid, w.cuj_id, w.cuj_name, w.state,
+  w.ts, w.dur, w.search_start, w.search_end,
+  CASE WHEN COUNT(p.counter_name) = 0 THEN 'missing'
+       WHEN MAX(p.n) > 1 THEN 'ambiguous'
+       WHEN COUNT(p.counter_name) < 9 THEN 'partial_single_candidates'
+       ELSE 'single_candidates_only' END AS counter_quality,
+  GROUP_CONCAT(p.counter_name || ':' || p.n || '[' || p.candidate_keys || ']')
+    AS counter_candidates,
+  MAX(CASE WHEN p.counter_name = 'totalFrames' THEN p.value END) AS total_frames,
+  MAX(CASE WHEN p.counter_name = 'missedFrames' THEN p.value END) AS missed_frames,
+  MAX(CASE WHEN p.counter_name = 'missedAppFrames' THEN p.value END) AS missed_app_frames,
+  MAX(CASE WHEN p.counter_name = 'missedSfFrames' THEN p.value END) AS missed_sf_frames,
+  MAX(CASE WHEN p.counter_name = 'weightedAppJank' THEN p.value END) / 1000.0
+    AS weighted_app_jank_per_s,
+  MAX(CASE WHEN p.counter_name = 'weightedSfJank' THEN p.value END) / 1000.0
+    AS weighted_sf_jank_per_s,
+  MAX(CASE WHEN p.counter_name = 'totalAnimTime' THEN p.value END)
+    AS reported_anim_duration_ms,
+  MAX(CASE WHEN p.counter_name = 'maxFrameTimeMillis' THEN p.value END)
+    AS reported_max_frame_ms
+FROM windows w LEFT JOIN per_counter p USING (cuj_id)
+GROUP BY w.upid, w.cuj_id, w.cuj_name, w.state,
+  w.ts, w.dur, w.search_start, w.search_end
+ORDER BY w.ts, w.upid, w.cuj_id;
 ```
 
-`weighted_missed_app_frames` 与 `weighted_missed_sf_frames` 在表中是速率：原始整数计数器除以 `1000` 后按 jank/s 解释。乘以 `anim_duration_ms / 1000` 才得到该次 CUJ 的加权总量。
+原始 weighted 计数器记录“加权分数 / totalAnimationTime × 10^9 × 1000”的整数化结果，除以 1000 后才是 jank/s。这个分母由帧间隔及非负 present delay 累加，不等于 CUJ slice 的墙上时间。更关键的是，固定 FrameTracker 写 totalAnimTime 时先把纳秒 long 强转 int，再除以 10^6：2.2 秒会得到 -2094 ms；回绕后也可能是正数。因此不能把该计数器无条件用于反推精确加权总量，改版是否修复须另查设备源码。
 
-两个 `*_total` 是查询别名，不是表字段。[Android 17 计数器指标](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/internal/counters.sql) [Android 17 指标输出](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
+<!-- gracker-diagram: ch14-07-68-java-duration-narrowing -->
+![totalAnimTime 的强转顺序会使纳秒回绕](../../assets/diagrams/ch14/ch14-07-68-java-duration-narrowing.png)
 
-加权总量适合排序严重程度，根因还要靠展开 FrameTimeline、相关线程和调用栈：一次高分可能来自一个很重的超时，也可能来自连续多帧延迟。
+图：固定 Java 代码先把纳秒 long 转成32位 int，再换算毫秒。 2.2秒得到 -2094ms；回绕后也可能为正，不能无条件用它反推精确加权总量。
+
+本查询的 `*_jank_per_s`、候选数与质量标记是报告别名，不是原始 metric 表字段。200 ms 是可修改的报告搜索上限，不是平台保证；4 ms 回看沿用固定 SQL 的兼容候选规则。搜索窗采用半开区间，多条候选保留键且该字段为 NULL。即使只有一条候选也只确认“本搜索窗内唯一”，同进程同名交互重叠、迟到或漏采时仍需人工核对归属。[Android 17 计数器指标](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/internal/counters.sql) [Android 17 指标输出](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
+
+<!-- gracker-diagram: ch14-07-66-cuj-counter-search-window -->
+![计数器窗口保留候选和歧义](../../assets/diagrams/ch14/ch14-07-66-cuj-counter-search-window.png)
+
+图：限定进程和 CUJ 实例后，再检查有界搜索窗中的 Counter 候选数量。 200 ms 是报告参数，4 ms 回看是兼容启发式；单候选也只确认窗内唯一。
+
+加权速率、逐帧分数和 missed frame 数是不同统计量；缺失或歧义样本应先分类，不能 COALESCE 成零参与排名。固定 FrameTracker 的 missed 计数使用 experimental 分类，而 weighted 累加受 useNewJankClassificationForJps 标志选择，报告还需记录分类版本；根因仍要展开具体帧、线程与调用栈。
+
+<!-- gracker-diagram: ch14-07-67-weighted-jank-rate -->
+![加权速率、帧数与逐帧分数是不同量](../../assets/diagrams/ch14/ch14-07-67-weighted-jank-rate.png)
+
+图：weighted Counter 除以1000得到 jank/s，missed frame数和逐帧分数另有统计口径。 固定 FrameTracker 的 weighted 分类受标志控制，不能直接与 experimental missed计数等同。
 
 指标同时提供计数器指标、trace 指标与时间线指标：
 
@@ -2309,26 +2434,6 @@ LIMIT 20;
 
 三者不一致时，要检查标记、计数器、FrameTimeline、回调漏采、trace 截断和分类版本；挑一个数盖过另外两个，会把问题掩盖起来。
 
-<!-- gracker-diagram: ch14-07-65-cuj-counter-cross-process -->
-![同名 CUJ 的计数器必须按 upid 隔离](../../assets/diagrams/ch14/ch14-07-65-cuj-counter-cross-process.png)
-
-图：固定取值函数只有名称和时间参数，跨进程同名 CUJ 可能串值。 合成测试本应读取7和11，原指标都读到11；报告改用 upid 与 cuj_id。
-
-<!-- gracker-diagram: ch14-07-68-java-duration-narrowing -->
-![totalAnimTime 的强转顺序会使纳秒回绕](../../assets/diagrams/ch14/ch14-07-68-java-duration-narrowing.png)
-
-图：固定 Java 代码先把纳秒 long 转成32位 int，再换算毫秒。 2.2秒得到 -2094ms；回绕后也可能为正，不能无条件用它反推精确加权总量。
-
-<!-- gracker-diagram: ch14-07-66-cuj-counter-search-window -->
-![计数器窗口保留候选和歧义](../../assets/diagrams/ch14/ch14-07-66-cuj-counter-search-window.png)
-
-图：限定进程和 CUJ 实例后，再检查有界搜索窗中的 Counter 候选数量。 200 ms 是报告参数，4 ms 回看是兼容启发式；单候选也只确认窗内唯一。
-
-<!-- gracker-diagram: ch14-07-67-weighted-jank-rate -->
-![加权速率、帧数与逐帧分数是不同量](../../assets/diagrams/ch14/ch14-07-67-weighted-jank-rate.png)
-
-图：weighted Counter 除以1000得到 jank/s，missed frame数和逐帧分数另有统计口径。 固定 FrameTracker 的 weighted 分类受标志控制，不能直接与 experimental missed计数等同。
-
 <!-- gracker-diagram: ch14-07-69-cuj-metric-differences -->
 ![计数器、trace模型与时间线指标分别核对](../../assets/diagrams/ch14/ch14-07-69-cuj-metric-differences.png)
 
@@ -2336,7 +2441,12 @@ LIMIT 20;
 
 ### 从异常 CUJ 展开到异常帧
 
-以下查询列出指标判断为 App missed 或 SF missed 的帧，并保留回调漏采标记。
+以下查询列出指标模型保留下来的 App missed 或 SF missed 帧，并保留回调漏采标记；它不是全部帧的完整分母。固定 frames.sql 的 frame_base 要求 doFrame、DrawFrame 及匹配 GPU fence，WHERE 条件会排除未匹配的 fence 行，前面的丢失不会由最终回调标记补回。完整性应另从原始 FrameTimeline 和源表核对。
+
+<!-- gracker-diagram: ch14-07-70-cuj-frame-model-filters -->
+![CUJ 帧模型会排除未匹配的关键回调](../../assets/diagrams/ch14/ch14-07-70-cuj-frame-model-filters.png)
+
+图：固定 frame_base 要求 doFrame、DrawFrame 与匹配 GPU fence，最终帧表不是全部帧分母。 LEFT JOIN 后的 WHERE 可排除无 fence 行，最终回调标记不能补回这些帧。
 
 ```sql
 SELECT RUN_METRIC('android/android_jank_cuj.sql');
@@ -2361,23 +2471,18 @@ ORDER BY f.jank_score DESC, f.dur DESC
 LIMIT 50;
 ```
 
-`app_missed` 与 `sf_missed` 来自 FrameTimeline `jank_type` 的分类函数。它们提供 App 侧或 SurfaceFlinger 侧的责任线索，还没有定位到具体函数、锁、调度或 GPU 等待。`sf_callback_missed` / `hwui_callback_missed` 表示 trace 没捕获到预期回调，与 SurfaceFlinger 或 HWUI 自身掉帧是两回事。
+`app_missed` 与 `sf_missed` 来自 FrameTimeline `jank_type` 的分类函数。它们给出 App 侧或 SurfaceFlinger 侧的责任线索；要落到具体函数、锁、调度或 GPU 等待，还需要继续展开。`sf_callback_missed` / `hwui_callback_missed` 表示 trace 没捕获到预期回调，与 SurfaceFlinger 或 HWUI 自身掉帧是两回事。
 
-Android 17 指标在 expected timeline 缺失时，会用 `16.6 ms` 作为 `dur_expected` 的兼容回退；这个值来自指标源码，设备当时是否运行在 60 Hz，从这里看不出来。报告中遇到该回退，应把 expected timeline 缺失列为采集限制。
-
-FrameTimeline 的 `on_time_finish` 同样只是判据之一：Buffer Stuffing（buffer queue 中积压了过多帧）可能在 App 按期完成时仍被标为 jank；Prediction Error 表示 FrameTimeline 的时序预测出现偏差，语义也与普通超时不同。
-
-优先使用 `jank_type`、`jank_score`、expected/actual 时间线和标准库聚合结果。[Android 17 FrameTimeline 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/frametimeline.md) [Android 17 jank type 分类](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/jank_type.sql)
-
-<!-- gracker-diagram: ch14-07-70-cuj-frame-model-filters -->
-![CUJ 帧模型会排除未匹配的关键回调](../../assets/diagrams/ch14/ch14-07-70-cuj-frame-model-filters.png)
-
-图：固定 frame_base 要求 doFrame、DrawFrame 与匹配 GPU fence，最终帧表不是全部帧分母。 LEFT JOIN 后的 WHERE 可排除无 fence 行，最终回调标记不能补回这些帧。
+Android 17 指标在 expected timeline 缺失时，会用 `16.6 ms` 作为 `dur_expected` 的兼容回退；这个值来自指标源码，设备当时是否运行在 60 Hz，从这里看不出来。所以报告中遇到该回退，应把 expected timeline 缺失列为采集限制。
 
 <!-- gracker-diagram: ch14-07-71-cuj-expected-fallback -->
 ![16.6ms 是 expected 缺失时的模型回退](../../assets/diagrams/ch14/ch14-07-71-cuj-expected-fallback.png)
 
 图：固定 CUJ 指标在 expected duration 缺失时使用16.6 ms兼容值。 不能从该回退推断设备正在60Hz运行，报告必须注明 expected 缺口。
+
+FrameTimeline 的 `on_time_finish` 同样只是判据之一：Buffer Stuffing（buffer queue 中积压了过多帧）可能在 App 按期完成时仍被标为 jank；Prediction Error 表示 FrameTimeline 的时序预测出现偏差，语义也与普通超时不同。
+
+优先使用 `jank_type`、`jank_score`、expected/actual 时间线和标准库聚合结果。[Android 17 FrameTimeline 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/frametimeline.md) [Android 17 jank type 分类](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/jank_type.sql)
 
 ### 用 thread_state 判断时间花在哪里
 
@@ -2446,7 +2551,7 @@ UI 线程只是应用侧的一部分。RenderThread 要改用 `android_jank_cuj_
 
 ### 第三方 App 的分析路径
 
-第三方 App 不在 `android_jank_cuj` 默认进程过滤范围。写 `J<*>` slice 或 `J<*>#*` 计数器也不会绕过 `JOIN android_jank_cuj USING (upid)`。单纯模仿系统计数器名称会混淆数据来源，数据仍由应用自己的 `Trace` 调用产生。
+第三方 App 不在 `android_jank_cuj` 的默认进程过滤范围内：写 `J<*>` slice 或 `J<*>#*` 计数器，也绕不过 `JOIN android_jank_cuj USING (upid)` 这道关联。单纯模仿系统计数器名称只会混淆数据来源，数据仍由应用自己的 `Trace` 调用产生。
 
 第三方 App 更适合组合三种能力：
 
@@ -2478,17 +2583,20 @@ INCLUDE PERFETTO MODULE android.frames.per_frame_metrics;
 
 WITH custom_cuj AS (
   SELECT
+    id AS custom_cuj_id, track_id AS custom_cuj_track_id,
     ts,
     dur,
     name,
     upid,
     process_name
   FROM thread_or_process_slice
-  WHERE process_name = 'com.example.app'
+  WHERE upid = 123
     AND name = 'myapp.cuj.feed_scroll'
     AND dur > 0
 )
 SELECT
+  c.custom_cuj_id, c.custom_cuj_track_id, c.upid,
+  c.ts AS custom_cuj_ts, c.dur AS custom_cuj_dur,
   c.name AS custom_cuj_name,
   f.frame_id,
   f.ts,
@@ -2502,10 +2610,10 @@ JOIN android_frames AS f
  AND f.ts < c.ts + c.dur
  AND c.ts < f.ts + f.dur
 LEFT JOIN android_frames_overrun AS o USING (frame_id)
-ORDER BY f.ts;
+ORDER BY c.custom_cuj_id, f.ts;
 ```
 
-把包名和标记名称替换为目标 App。`overrun > 0` 表示 actual frame end 晚于 expected frame end；`NULL` 表示没有形成对应的 overrun，要按缺失处理，与零区分开。这条路径不依赖系统 CUJ 进程白名单，也不会自动获得 Java FrameTracker 的加权计数器。
+把 upid 占位 123 和标记名称替换为目标实例。每行保留 custom_cuj_id：同一帧可与多个自定义交互窗口相交，不能忽略交互身份后累加行数。这里的 overrun 仍是前文说明的 legacy frame_id 模型值，多层、开放及缺失配对需单独核对；NULL 不能当零。时间相交只表示窗口内相关，不自动证明该交互导致卡顿。这条路径不依赖系统 CUJ 进程白名单，也不会自动获得 Java FrameTracker 的加权计数器。
 
 <!-- gracker-diagram: ch14-07-73-app-custom-interactions -->
 ![第三方交互用自有标记和帧证据组合](../../assets/diagrams/ch14/ch14-07-73-app-custom-interactions.png)
@@ -2522,6 +2630,7 @@ Jank 伴随内存上涨时，可以单独引入 `android.memory.heap_graph.heap_
 INCLUDE PERFETTO MODULE android.memory.heap_graph.heap_graph_stats;
 
 SELECT
+  h.upid,
   p.name AS process_name,
   h.graph_sample_ts,
   h.total_heap_size / 1024.0 / 1024.0 AS total_heap_mib,
@@ -2536,16 +2645,16 @@ JOIN process AS p USING (upid)
 ORDER BY h.graph_sample_ts;
 ```
 
-模块为 OOM adj、RSS/swap 与 DMA-BUF 查找覆盖 heap dump 时刻的区间；没有覆盖时，允许选择 dump 之后 `500 ms` 内最近的数据点。
-
-各字段可能为 `NULL`，也不构成同一时刻的原子快照。trace 没有 ART heap graph 时，表自然为空。[Android 17 heap graph stats](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
-
-Java heap 稳定而 DMA-BUF RSS 上涨时，应继续检查图形 buffer、解码、Surface 生命周期和跨进程持有，单凭这个变化还定位不到泄漏对象；Java heap 与 DMA-BUF 同时上涨时，也要分别验证对象可达路径和图形资源所有权。
+模块把“覆盖 dump 时刻的区间”和“dump 之后 500 ms 内的数据点”一起作为候选，再按区间起点与 dump 的绝对距离排序；它没有先保证覆盖候选优先。已有一个较早开始且仍覆盖 dump 的区间时，也可能选中更近的未来点；边界还使用含终点的 BETWEEN。报告应保留时间偏移与来源口径，不能称为严格同时刻的快照。
 
 <!-- gracker-diagram: ch14-07-74-heap-closest-future -->
 ![heap_graph_stats 可能选更近的未来点](../../assets/diagrams/ch14/ch14-07-74-heap-closest-future.png)
 
 图：覆盖 dump 的区间和未来500 ms候选一起按起点距离排序，未优先保证覆盖。 结果不是原子快照；原始时间偏移、采样缺口和字段NULL要保留。
+
+各字段可能为 `NULL`，也不构成同一时刻的原子快照。trace 没有 ART heap graph 时，表自然为空。[Android 17 heap graph stats](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
+
+Java heap 稳定而 DMA-BUF RSS 上涨时，我们继续检查图形 buffer、解码、Surface 生命周期和跨进程持有，单凭这个变化还定位不到泄漏对象；Java heap 与 DMA-BUF 同时上涨时，也要分别验证对象可达路径和图形资源所有权。
 
 ### v54 表结构变化的迁移
 
@@ -2584,7 +2693,7 @@ v54.0 增加了 Collapsed Stack 和 Firefox Profiler preprocessed JSON 导入：
 1. 记录 Android 构建、Perfetto UI、Trace Processor、采集配置和负载条件。
 2. 查询标记、计数器、FrameTimeline、sched 与相关线程是否存在，列出采集缺口。
 3. 区分系统 InteractionJankMonitor CUJ 与第三方 App 自定义窗口。
-4. 生成一行一个 CUJ 的窄表，用加权总量、丢帧数和最大帧时排序。
+4. 按 `(upid, cuj_id)` 生成窄表，核对线程与计数器关联数量、取消过滤、缺失和分类版本，再按已验证的加权速率、丢帧数和最大帧时比较。
 5. 展开异常帧，分别查看 App / SF 分类、回调漏采与 expected timeline 回退。
 6. 对 UI、RenderThread、GPU/HWC 和 SurfaceFlinger 线程做时间交集，再结合函数采样、GPU fence、Binder 进程间通信或内存证据。
 7. 在报告中分开写观测、推断、采集限制和经过对照实验确认的根因。
@@ -2611,13 +2720,3 @@ DataGrid 和 Data Explorer 负责提高浏览效率。提交审阅的结论应�
 - [Android 17 Jank CUJ frames](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/frames.sql)
 - [Android 17 InteractionJankMonitor](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/jank/InteractionJankMonitor.java)
 - [Android 17 Trace API](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)
-
-<!-- gracker-diagram: ch14-07-02-coverage-before-absence -->
-![空结果先检查采集与解析覆盖](../../assets/diagrams/ch14/ch14-07-02-coverage-before-absence.png)
-
-图：无结果可能来自未采集、数据丢失、未解析或没有匹配事件。 不能单凭空表证明平台没有发生对应行为。
-
-<!-- gracker-diagram: ch14-07-01-analysis-route -->
-![从可疑窗口到可复查结论](../../assets/diagrams/ch14/ch14-07-01-analysis-route.png)
-
-图：先固定对象和问题窗口，再用语义表与区间交集拆解时间。 排名和时间相关性用于提出候选原因，结论仍需原始事件、源码及对照。

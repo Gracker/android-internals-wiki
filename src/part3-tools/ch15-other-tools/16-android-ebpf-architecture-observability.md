@@ -4,9 +4,9 @@ chapter: '15.16'
 section: '15.16'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-10-23'
+last_verified: '2026-10-25'
 last_rework_at: '2026-10-23T13:36:37+08:00'
-last_source_verified_at: '2026-10-23'
+last_source_verified_at: '2026-10-25'
 verification_scope_note: 2026-10-23 按固定 tag 复核加载链、descriptor 与错误策略、timeInState 和 GPU 消费端、UprobeStats、四组扩展程序、Perfetto 配置、heapprofd 及内核事件定义；历史迁移仅对照 Android 15/16 tag。sched_ext ABI、bpffs 读取和锁竞争配对边界已与同一内核 tag 核对，未进行设备侧加载、权限或开销实测。
 last_verified_against: AOSP android-17.0.0_r1 (system/bpf, system/bpfprogs, system/memory/libmeminfo, packages/modules/UprobeStats, frameworks/native, external/perfetto); Android common kernel android17-6.18-2026-06_r6 (include/trace/events, kernel/bpf, kernel/locking/mutex.c, kernel/sched/ext.c, drivers/base/power/wakeup.c, Documentation/bpf/ringbuf.rst, Documentation/scheduler/sched-ext.rst, Documentation/filesystems/proc.rst); historical comparison only android-15.0.0_r1 / android-16.0.0_r1 / android-16.0.0_r4
 confidence: high
@@ -156,7 +156,7 @@ consolidated_from:
 
 eBPF（extended Berkeley Packet Filter，内核源码通常仍简称 BPF）允许一段受 verifier（验证器） 检查的程序在内核事件发生时执行。verifier 会在加载阶段拒绝越界访问、终止性得不到证明的控制流这类不安全代码。
 
-程序可以在调度、系统调用、网络、内存和用户态函数等位置采集上下文，再通过 map、ring buffer 或 perf buffer 把结果交给用户态。map 是内核与用户态共享的键值存储。BPF ring buffer 通常让多个 CPU 写入同一个环形队列，perf buffer 一般按 CPU 分流；两者在空间不足时都可能丢事件，顺序与合并方式也不同。
+程序可以在调度、系统调用、网络、内存和用户态函数等位置采集上下文，再通过 map、ring buffer 或 perf buffer 把结果交给用户态。map 是内核提供、可由获授权用户态访问的数据对象；HASH、ARRAY 等常见类型提供键值访问，RINGBUF 等类型则有专用接口，并非每种 map 都支持 lookup/update/delete。BPF ring buffer 通常让多个 CPU 写入同一个环形队列，perf buffer 一般按 CPU 分流；两者在空间不足时都可能丢事件，顺序与合并方式也不同。
 
 > 源码基线：平台 Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 Android common tag `android17-6.18-2026-06_r6`。Android common 是 Android 使用的公共内核代码线，与某台设备最终交付的 vendor kernel 是两回事。
 
@@ -179,9 +179,9 @@ Android eBPF 程序在内核事件处采集低开销信号，由 bpfloader 按�
 
 | 使用层级 | 能做什么 | 常见入口 | 约束 |
 |---|---|---|---|
-| AOSP 平台或 vendor 组件 | 随系统构建 BPF 对象，由启动阶段的 loader 加载、pin 和附加 | `system/bpf`、`system/bpfprogs`、Connectivity、GPU Service | 需要产品构建、SELinux、UID/GID、内核版本和程序元数据配合 |
-| userdebug / eng / root 设备 | 检查已 pin 的对象，使用内核工具做受控实验 | `bpftool`、tracefs、内核自带示例 | 量产 user build 往往缺少权限或工具，结果不能直接代表应用可部署能力 |
-| 普通应用 | 读取公开 API 暴露的数据，或使用获准的系统分析工具 | Perfetto、simpleperf、Android Studio Profiler、ProfilingManager | 不能自行执行 `BPF_PROG_LOAD`、附加任意 kprobe/uprobe，也不能遍历系统 BPF map |
+| AOSP 平台或 vendor 组件 | 随系统构建 BPF 对象，由启动阶段的 loader 加载、pin 和附加 | <code>system/<wbr>bpf</code>、<code>system/<wbr>bpfprogs</code>、Connectivity、GPU Service | 需要产品构建、SELinux、UID/GID、内核版本和程序元数据配合 |
+| userdebug / eng / root 设备 | 检查已 pin 的对象，使用内核工具做受控实验 | <code>bpftool</code>、tracefs、内核自带示例 | 量产 user build 往往缺少权限或工具，结果不能直接代表应用可部署能力 |
+| 普通应用 | 读取公开 API 暴露的数据，或使用获准的系统分析工具 | Perfetto、simpleperf、Android Studio Profiler、ProfilingManager | 不能自行执行 <code>BPF_<wbr>PROG_<wbr>LOAD</code>、附加任意 kprobe/uprobe，也不能遍历系统 BPF map |
 
 这张表里有几个词会一路用到：loader 是把 BPF 对象送进内核的用户态加载器；pin（固定） 是把程序、map 或 link 固定在 BPF 文件系统 bpffs 中，让其他进程能通过 `/sys/fs/bpf` 路径找到它。SELinux 再按安全域限制谁能操作这些对象，UID/GID 则用于传统的所有者和组权限。
 
@@ -217,7 +217,7 @@ flowchart LR
 
 #### bpfloader 做了什么
 
-先看平台侧的入口：`platform/system/bpf` 以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限；对象还可以声明内核版本范围、构建类型限制以及是否自动附加。Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`，这个函数来自旧 C++ loader，负责为兼容旧接入方式而保留的 vendor BPF 对象。
+先看平台侧的入口：`platform/system/bpf` 以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限；descriptor 还可以声明内核版本范围、构建类型限制以及是否自动附加；这些条件来自 Android loader 的注册清单，不能仅凭任意 ELF 自带元数据推定会被加载。Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`，这个函数来自旧 C++ loader，负责为兼容旧接入方式而保留的 vendor BPF 对象。
 
 两条路径都属于启动期的特权加载流程，`/sys/fs/bpf` 下的名称由对象前缀和元数据决定，各版本的命名格式未必一致。进程划分、对象清单和权限规则的完整展开放在后文《bpfloader、对象组织与权限》。把一个 `.o` 文件 push 到设备后通常还加载不起来，系统侧还要准备构建规则、SELinux 规则、loader 清单、map 权限和兼容性声明。
 
@@ -227,10 +227,10 @@ flowchart LR
 
 | 组件 | 附加位置或数据来源 | 输出 | 消费者或用途 |
 |---|---|---|---|
-| `timeInState.bpf` | `sched_switch`、`cpu_frequency`、`sched_process_free` | UID 的频点累计时间，以及受跟踪 TGID 按任务聚合键统计的时间等 map | 电量与 CPU 时间记账 |
-| `gpuMem.bpf` | `gpu_mem/gpu_mem_total` | 以 GPU ID 和 PID 组合键记录的 GPU 内存 | GPU Service |
-| `gpuWork.bpf` | `power/gpu_work_period` | 按 GPU ID 与 UID 聚合的 active/inactive 时间 map | GPU 能耗与工作量统计 |
-| `bpfMemEvents.bpf` | OOM、直接回收、kswapd、vendor LMK 等事件 | 分别面向 AMS、lmkd 的 ring buffer | 内存压力诊断和策略 |
+| <code>time<wbr>In<wbr>State.<wbr>bpf</code> | <code>sched_<wbr>switch</code>、<code>cpu_<wbr>frequency</code>、<code>sched_<wbr>process_<wbr>free</code> | UID 的频点累计时间，以及受跟踪 TGID 按任务聚合键统计的时间等 map | 电量与 CPU 时间记账 |
+| <code>gpu<wbr>Mem.<wbr>bpf</code> | <code>gpu_<wbr>mem/<wbr>gpu_<wbr>mem_<wbr>total</code> | 以 GPU ID 和 PID 组合键记录的 GPU 内存 | GPU Service |
+| <code>gpu<wbr>Work.<wbr>bpf</code> | <code>power/<wbr>gpu_<wbr>work_<wbr>period</code> | 按 GPU ID 与 UID 聚合的 active/inactive 时间 map | GPU 能耗与工作量统计 |
+| <code>bpf<wbr>Mem<wbr>Events.<wbr>bpf</code> | OOM、直接回收、kswapd、vendor LMK 等事件 | 分别面向 AMS、lmkd 的 ring buffer | 内存压力诊断和策略 |
 | Connectivity BPF | cgroup、socket、traffic-control（tc）等网络 hook | 按 UID、tag、接口等维度的流量和策略 map | netd、NetworkStats、Connectivity |
 | UprobeStats | 用户态 ELF 文件偏移对应的 uprobe | ring buffer、StatsD atom、bridge event | 受 statsd 配置控制的系统诊断 |
 
@@ -244,12 +244,12 @@ flowchart LR
 
 BPF 程序的 `ctx` 是内核传给探针的上下文指针，没有统一布局——参数怎么取，由 ELF section（对象文件分区） 名称、程序类型和目标事件共同决定。我们尤其要注意，代码能通过 C 编译，运行时布局仍可能对不上。
 
-| 附加方式 | section 示例 | `ctx` 的含义 | 适用场景 |
+| 附加方式 | section 示例 | <code>ctx</code> 的含义 | 适用场景 |
 |---|---|---|---|
-| 常规 tracepoint | `tracepoint/raw_syscalls/sys_enter` | 目标 tracepoint 的生成结构；该事件常见为 `trace_event_raw_sys_enter`，包含 `id` 和 `args[6]` | 需要稳定事件字段，接受 tracepoint 数据准备开销 |
-| raw tracepoint | `raw_tracepoint/sys_enter` | `bpf_raw_tracepoint_args`；元素对应内核 tracepoint 原始原型 | 需要更低层的原始参数，代码必须理解该 tracepoint 的内核原型 |
-| kprobe / kretprobe | `kprobe/vmalloc`、`kretprobe/vmalloc` | `pt_regs`，入口参数和返回值按目标架构 ABI 读取 | 内核函数级实验；符号、内联和版本变化都会影响稳定性 |
-| uprobe / uretprobe | 由用户态二进制、偏移和 perf event 建立 | `pt_regs`，参数按用户态 ABI 读取 | native 函数入口/返回；需正确换算 ELF 文件偏移并跟踪二进制版本 |
+| 常规 tracepoint | <code>tracepoint/<wbr>raw_<wbr>syscalls/<wbr>sys_<wbr>enter</code> | 目标 tracepoint 的生成结构；该事件常见为 <code>trace_<wbr>event_<wbr>raw_<wbr>sys_<wbr>enter</code>，包含 <code>id</code> 和 <code>args[6]</code> | 需要稳定事件字段，接受 tracepoint 数据准备开销 |
+| raw tracepoint | <code>raw_<wbr>tracepoint/<wbr>sys_<wbr>enter</code> | <code>bpf_<wbr>raw_<wbr>tracepoint_<wbr>args</code>；元素对应内核 tracepoint 原始原型 | 需要更低层的原始参数，代码必须理解该 tracepoint 的内核原型 |
+| kprobe / kretprobe | <code>kprobe/<wbr>vmalloc</code>、<code>kretprobe/<wbr>vmalloc</code> | <code>pt_<wbr>regs</code>，入口参数和返回值按目标架构 ABI 读取 | 内核函数级实验；符号、内联和版本变化都会影响稳定性 |
+| uprobe / uretprobe | 由用户态二进制、偏移和 perf event 建立 | <code>pt_<wbr>regs</code>，参数按用户态 ABI 读取 | native 函数入口/返回；需正确换算 ELF 文件偏移并跟踪二进制版本 |
 | cgroup / socket / tc | 由具体 BPF program type 定义 | socket buffer、socket、cgroup 等专用上下文 | Android 网络统计和策略 |
 
 表中反复出现的 `pt_regs` 是内核保存寄存器现场的结构，参数和返回值放在哪些寄存器或栈位置，由 ABI（application binary interface） 规定。这几种附加方式里，tracepoint 是内核显式定义的事件接口，kprobe/uprobe 则分别在内核函数和用户态二进制位置放置动态探针；perf event（性能计数事件） 是 Linux 性能事件接口，uprobe 可借它完成附加。
@@ -354,7 +354,7 @@ UprobeStats 在 API 37 上以 lazy Binder service `uprobestats_service` 运行�
 
 init service 仍带 `disabled`、`oneshot` 属性：`disabled` 表示不会随 class 自动启动，`oneshot` 表示退出后 init 不会自动重启它。这两个属性说明不了“只读一次配置文件、没有 Binder 服务”；只有兼容 API 37 以前的平台路径时，代码才会回退读取 `/data/misc/uprobestats-configs/config`。
 
-UprobeStats 面向平台控制的系统诊断，第三方应用拿不到任意插桩能力。量产 user build 还会按 allowlist（允许列表） 检查可插桩的方法。init 为守护进程配置了 `SYS_ADMIN`、`PERFMON` Linux capability；capability 把 root 权限拆成若干独立特权位。专用 UID/GID、SELinux 策略和这些 capability 一起划出权限范围。
+UprobeStats 面向平台控制的系统诊断，第三方应用拿不到任意插桩能力。量产 user build 的 guardrail 默认按完整方法名的允许前缀检查；遇到指定的 `prog_Accessibility_uprobe_dispatch_gesture` 程序还有提前返回允许的分支，不能概括成所有探针逐一经过方法白名单。该 tag 的函数注释把 user 条件写反，判断应以 `if !is_user_build { return Ok(true) }` 等实际控制流为准。init 为守护进程配置了 `SYS_ADMIN`、`PERFMON` Linux capability；capability 把 root 权限拆成若干独立特权位。专用 UID/GID、SELinux 策略和这些 capability 一起划出权限范围。
 
 <!-- gracker-diagram: ch15-16-06-uprobestats-task-lifecycle -->
 ![UprobeStats 从订阅到回收](../../assets/diagrams/ch15/ch15-16-06-uprobestats-task-lifecycle.png)
@@ -409,7 +409,7 @@ Android 的网络 BPF 由 Connectivity 与 netd 体系管理。netd 是系统网
 |---|---|
 | 应用 Java/Kotlin 堆增长 | Java heap dump、Android Studio allocation tracking/sampling |
 | native heap 增长 | heapprofd、malloc debug；可重编译目标时评估 LeakSanitizer |
-| 系统内存压力、回收和 LMK | Perfetto memory/ftrace、lmkd/AMS 事件、`bpfMemEvents` 平台数据 |
+| 系统内存压力、回收和 LMK | Perfetto memory/ftrace、lmkd/AMS 事件、<code>bpf<wbr>Mem<wbr>Events</code> 平台数据 |
 | dma-buf 或图形缓冲增长 | dma-buf 统计、GPU memory、SurfaceFlinger/BufferQueue |
 | 某个内核函数疑似泄漏 | 受控设备上的 tracepoint；没有稳定事件时再评估 kprobe |
 
@@ -513,7 +513,7 @@ BPF ring buffer 在空间不足时，reserve（预留写入空间） 会直接�
 - verifier、struct_ops 注册和运行时检查都通过；
 - 产品策略允许该调度器运行。
 
-当没有 BPF scheduler 加载时，系统仍由常规调度类工作。sched_ext 调度器发生错误或卡死时，内核会中止它，并把相关任务交回 fair-class scheduler（Linux 的普通分时调度类）。支持该接口的调试环境可从这些节点检查状态：
+当没有 BPF scheduler 加载时，系统仍由常规调度类工作。sched_ext 调度器发生错误或 runnable 任务长期停滞时，内核会中止它，并把相关任务交回 fair-class scheduler（Linux 的普通分时调度类）。是否接管所有普通任务还取决于 `SCX_OPS_SWITCH_PARTIAL`：开启 partial 时只接管 `SCHED_EXT` 任务；未开启时还接管 `SCHED_NORMAL`、`SCHED_BATCH` 和 `SCHED_IDLE`，RT/DL 等其他调度类另有规则。支持该接口的调试环境可从这些节点检查状态：
 
 ```text
 /sys/kernel/sched_ext/state
@@ -538,8 +538,8 @@ sched_ext 的接口也有版本限制。该内核 tag 的官方文档明确说�
 |---|---|---|
 | Android 9–11 | 网络统计和策略逐步迁移到 BPF | 具体 hook 和旧的 qtaguid 内核流量记账接口随版本、内核而变 |
 | Android 12–13 | CPU time-in-state、GPU memory 等系统记账场景扩展 | map 是否加载取决于设备内核与产品配置 |
-| Android 15–16 | Android 15 tag 中可见 UprobeStats 系统二进制；Android 16 tag 中可见独立的 UprobeStats APEX，以及 Rust 平台 loader；平台 BPF 程序继续扩展 | Android 16 的 APEX 由 `RELEASE_UPROBESTATS_MODULE` 构建开关控制；模块版本与平台发布分开核对，不能据源码存在推断产品已启用 |
-| Android 17 / API 37 | 正式 tag 中可见 Rust 平台 loader、legacy vendor loader、lazy Binder UprobeStats，以及 CPU time-in-state、GPU memory/work、memory events 等对象 | 结论锚定 `android-17.0.0_r1`，不拿 main 分支代替 release tag |
+| Android 15–16 | Android 15 tag 中可见 UprobeStats 系统二进制；Android 16 tag 中可见独立的 UprobeStats APEX，以及 Rust 平台 loader；平台 BPF 程序继续扩展 | Android 16 的 APEX 由 <code>RELEASE_<wbr>UPROBESTATS_<wbr>MODULE</code> 构建开关控制；模块版本与平台发布分开核对，不能据源码存在推断产品已启用 |
+| Android 17 / API 37 | 正式 tag 中可见 Rust 平台 loader、legacy vendor loader、lazy Binder UprobeStats，以及 CPU time-in-state、GPU memory/work、memory events 等对象 | 结论锚定 <code>android-17.<wbr>0.<wbr>0_<wbr>r1</code>，不拿 main 分支代替 release tag |
 | Android common 6.18 | sched_ext、ring buffer、BTF/CO-RE 等内核能力继续演进 | 内核 tag 不能代替设备 Kconfig 和 vendor kernel 验证 |
 
 Mainline 是 Android 可通过模块更新独立发布部分系统组件的机制，OTA 则通常指整机系统更新。GKI（Generic Kernel Image） 是 Android 的通用内核镜像方案，但设备仍可能带不同内核分支、模块和 vendor 改动。
@@ -612,6 +612,7 @@ tracepoint 通常比函数符号稳定，但不属于 Android SDK API。自研�
 - [Android 17 UprobeStats 守护进程入口](https://android.googlesource.com/platform/packages/modules/UprobeStats/+/refs/tags/android-17.0.0_r1/daemon/uprobestats.rs)
 - [Android 17 UprobeStats lazy service 配置](https://android.googlesource.com/platform/packages/modules/UprobeStats/+/refs/tags/android-17.0.0_r1/apex/UprobeStats-service-mainline.rc)
 - [Android 17 UprobeStats 任务执行与 ring buffer 读取](https://android.googlesource.com/platform/packages/modules/UprobeStats/+/refs/tags/android-17.0.0_r1/daemon/android/task.rs)
+- [Android 17 UprobeStats user guardrail：方法允许前缀与指定程序提前返回](https://android.googlesource.com/platform/packages/modules/UprobeStats/+/refs/tags/android-17.0.0_r1/daemon/core/config_resolver/guardrail.rs)
 - [Android 17 Perfetto DataSourceConfig](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/data_source_config.proto)
 - [Android common 6.18 syscall tracepoint 定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/syscalls.h)
 - [Android common 6.18 sched_ext 实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c)
@@ -683,15 +684,15 @@ netbpfload done
 
 加载进程异常退出时，等待条件不会满足；service 的 `reboot_on_failure` 还会让设备以 `bpfloader-failed` 原因重启。这类故障会阻断关键启动序列。
 
-单个 Rust 对象加载失败却未必终止整个进程。`load_libbpf_progs()` 只在该对象的 `critical=true` 时触发 panic；`critical=false` 时记录错误并继续加载后续对象。因此，`bpf.progs_loaded=1` 表示加载链执行到了完成阶段，不能证明清单里的每个对象都加载成功。核对某项能力时，还要检查对应对象的错误日志、pin 路径和 attach 状态。
+单个 Rust 对象加载失败却未必终止整个进程。`load_libbpf_progs()` 只在该对象的 `critical=true` 时触发 panic；`critical=false` 时记录错误并继续加载后续对象。因此，`bpf.progs_loaded=1` 表示加载链执行到了完成阶段，不能证明清单里的每个对象都加载成功。`libbpf_worker()` 逐项 pin，没有对象级回滚；中途失败时还可能留下此前已 pin 的部分对象，目录存在也不能代替整组成功日志。核对某项能力时，还要检查对应对象的错误日志、pin 路径和 attach 状态。
 
 #### 三类对象由谁装载
 
 | 对象来源 | Android 17 装载方 | 典型安装目录 | 说明 |
 | --- | --- | --- | --- |
-| Connectivity Mainline | Connectivity APEX 的 `netbpfload` | `/apex/com.android.tethering/etc/bpf/mainline/` | 包含 netd、clatd、offload 等网络 BPF 对象 |
-| 平台 system image | Rust `bpfloader.rs` + `libbpf-rs` | `/system/etc/bpf/` 及其子目录 | 文件必须登记在 Rust descriptor 中 |
-| 厂商分区 | `Loader.cpp::vendorBpfLoader()` | `/vendor/etc/bpf/*.o` | 保留 Android 旧式对象格式和加载规则 |
+| Connectivity Mainline | Connectivity APEX 的 <code>netbpfload</code> | <code>/<wbr>apex/<wbr>com.<wbr>android.<wbr>tethering/<wbr>etc/<wbr>bpf/<wbr>mainline/<wbr></code> | 包含 netd、clatd、offload 等网络 BPF 对象 |
+| 平台 system image | Rust <code>bpfloader.<wbr>rs</code> + <code>libbpf-rs</code> | <code>/<wbr>system/<wbr>etc/<wbr>bpf/<wbr></code> 及其子目录 | 文件必须登记在 Rust descriptor 中 |
+| 厂商分区 | <code>Loader.<wbr>cpp::vendor<wbr>Bpf<wbr>Loader()</code> | <code>/<wbr>vendor/<wbr>etc/<wbr>bpf/<wbr>*.<wbr>o</code> | 保留 Android 旧式对象格式和加载规则 |
 
 表里的几个词也交代一下：clatd 负责 IPv4/IPv6 地址转换，offload 指把部分网络处理交给内核或硬件；system image（系统镜像） 是平台系统分区，vendor partition 是厂商分区。
 
@@ -703,11 +704,11 @@ netbpfload done
 
 Rust 化发生在 Android 16，Android 17 完成了更多平台对象的迁移：
 
-| 平台版本 | 平台入口 | `timeInState` 构建方式 | `fuseMedia` 构建方式 |
+| 平台版本 | 平台入口 | <code>time<wbr>In<wbr>State</code> 构建方式 | <code>fuse<wbr>Media</code> 构建方式 |
 | --- | --- | --- | --- |
-| Android 15 | `BpfLoader.cpp` | `bpf { name: "timeInState.o" }` | `fuseMedia.o` |
-| Android 16 | `bpfloader.rs` | 同时构建 `.o` 与 `.bpf` | `fuseMedia.o` |
-| Android 17 | `bpfloader.rs` | 只构建 `timeInState.bpf` | 只构建 `fuseMedia.bpf` |
+| Android 15 | <code>Bpf<wbr>Loader.<wbr>cpp</code> | <code>bpf { name: &quot;time<wbr>In<wbr>State.<wbr>o&quot; }</code> | <code>fuse<wbr>Media.<wbr>o</code> |
+| Android 16 | <code>bpfloader.<wbr>rs</code> | 同时构建 <code>.<wbr>o</code> 与 <code>.<wbr>bpf</code> | <code>fuse<wbr>Media.<wbr>o</code> |
+| Android 17 | <code>bpfloader.<wbr>rs</code> | 只构建 <code>time<wbr>In<wbr>State.<wbr>bpf</code> | 只构建 <code>fuse<wbr>Media.<wbr>bpf</code> |
 
 Android 16 的双构建用于迁移 libbpf/CO-RE 路径，CO-RE 利用 BTF 重定位字段访问，以兼容一组内核版本。
 
@@ -753,11 +754,11 @@ Android 17 中的例子：
 
 | 对象 | loader 是否自动附着 | 后续责任 |
 | --- | --- | --- |
-| `timeInState.bpf` | 否 | `libtimeinstate` 附着三个程序 |
-| `gpuMem.bpf` | 否 | GpuService 附着 `gpu_mem/gpu_mem_total` |
-| `kernelWakelockDuration.bpf` | 是 | loader pin link |
-| `dmabufIter.bpf` | 是 | loader pin iterator link |
-| `bpfLockContention.bpf` | 是 | loader 在内核 6.1+ pin 两个 tracepoint link |
+| <code>time<wbr>In<wbr>State.<wbr>bpf</code> | 否 | <code>libtimeinstate</code> 附着三个程序 |
+| <code>gpu<wbr>Mem.<wbr>bpf</code> | 否 | GpuService 附着 <code>gpu_<wbr>mem/<wbr>gpu_<wbr>mem_<wbr>total</code> |
+| <code>kernel<wbr>Wakelock<wbr>Duration.<wbr>bpf</code> | 是 | loader pin link |
+| <code>dmabuf<wbr>Iter.<wbr>bpf</code> | 是 | loader pin iterator link |
+| <code>bpf<wbr>Lock<wbr>Contention.<wbr>bpf</code> | 是 | loader 在内核 6.1+ pin 两个 tracepoint link |
 
 “program 已 pin”只能证明加载阶段完成。map 始终为空时，还要检查消费者是否启动、attach 是否成功，以及对应内核 tracepoint 是否有事件。
 
@@ -808,10 +809,10 @@ Rust `MapDesc::new()` 把 owner 固定为 `AID_ROOT`，descriptor 传入的是 g
 
 | 用途 | map |
 | --- | --- |
-| CPU 与时间状态 | `cpu_last_pid_map`、`cpu_last_update_map`、`nr_active_map`、`policy_nr_active_map` |
-| CPU policy 与频率索引 | `cpu_policy_map`、`freq_to_idx_map`、`policy_freq_idx_map` |
-| UID 与整机累计 | `uid_time_in_state_map`、`uid_concurrent_times_map`、`uid_last_update_map`、`total_time_in_state_map` |
-| 进程跟踪 | `pid_tracked_hash_map`、`pid_tracked_map`、`pid_task_aggregation_map`、`pid_time_in_state_map` |
+| CPU 与时间状态 | <code>cpu_<wbr>last_<wbr>pid_<wbr>map</code>、<code>cpu_<wbr>last_<wbr>update_<wbr>map</code>、<code>nr_<wbr>active_<wbr>map</code>、<code>policy_<wbr>nr_<wbr>active_<wbr>map</code> |
+| CPU policy 与频率索引 | <code>cpu_<wbr>policy_<wbr>map</code>、<code>freq_<wbr>to_<wbr>idx_<wbr>map</code>、<code>policy_<wbr>freq_<wbr>idx_<wbr>map</code> |
+| UID 与整机累计 | <code>uid_<wbr>time_<wbr>in_<wbr>state_<wbr>map</code>、<code>uid_<wbr>concurrent_<wbr>times_<wbr>map</code>、<code>uid_<wbr>last_<wbr>update_<wbr>map</code>、<code>total_<wbr>time_<wbr>in_<wbr>state_<wbr>map</code> |
+| 进程跟踪 | <code>pid_<wbr>tracked_<wbr>hash_<wbr>map</code>、<code>pid_<wbr>tracked_<wbr>map</code>、<code>pid_<wbr>task_<wbr>aggregation_<wbr>map</code>、<code>pid_<wbr>time_<wbr>in_<wbr>state_<wbr>map</code> |
 
 map 的 PERCPU、HASH、ARRAY 类型以 `timeInState.c` 中的 `DEFINE_BPF_MAP_*` 声明为准。PERCPU 为每个逻辑 CPU 保存独立 value，HASH 用稀疏 key 查找，ARRAY 使用固定整数索引。
 
@@ -826,9 +827,9 @@ map 的 PERCPU、HASH、ARRAY 类型以 `timeInState.c` 中的 `DEFINE_BPF_MAP_*
 
 | program | 内核触发点 | 工作 |
 | --- | --- | --- |
-| `tracepoint_sched_sched_switch` | `sched/sched_switch` | 结算刚被切出的任务在当前频率上的时间，更新 UID、总量、并发度和可选进程统计 |
-| `tracepoint_power_cpu_frequency` | `power/cpu_frequency` | 把 CPU policy 的当前频率更新为内部索引 |
-| `tracepoint_sched_sched_process_free` | raw tracepoint `sched_process_free` | 清理退出 PID 的跟踪 slot 与聚合映射 |
+| <code>tracepoint_<wbr>sched_<wbr>sched_<wbr>switch</code> | <code>sched/<wbr>sched_<wbr>switch</code> | 结算刚被切出的任务在当前频率上的时间，更新 UID、总量、并发度和可选进程统计 |
+| <code>tracepoint_<wbr>power_<wbr>cpu_<wbr>frequency</code> | <code>power/<wbr>cpu_<wbr>frequency</code> | 把 CPU policy 的当前频率更新为内部索引 |
+| <code>tracepoint_<wbr>sched_<wbr>sched_<wbr>process_<wbr>free</code> | raw tracepoint <code>sched_<wbr>process_<wbr>free</code> | 清理退出 PID 的跟踪 slot 与聚合映射 |
 
 三个触发点都能在 `android17-6.18-2026-06_r6` 的 common kernel 源码中找到：`sched_switch`、`sched_process_free` 位于 `include/trace/events/sched.h`，CPU frequency 事件位于 `include/trace/events/power.h`。
 
@@ -846,14 +847,16 @@ map 的 PERCPU、HASH、ARRAY 类型以 `timeInState.c` 中的 `DEFINE_BPF_MAP_*
 
 结算用到的几个量：CPU policy 是共享同一调频策略的一组 CPU，frequency bucket 是把频点映射成的紧凑索引，`ktime` 是内核单调时钟时间，delta 则是本次与上次事件的时间差。
 
-SDK sandbox 是 Android 为第三方 SDK 提供的隔离进程环境。它的 UID 有一段专门逻辑：运行时间会记到对应 App UID，也会记到保留的 `AID_SDK_SANDBOX` 聚合 UID；framework 侧计算系统总量时要处理这份重复记录。
-
-函数返回的 `ALLOW=1` 是该 Android tracepoint BPF wrapper 与 simpleperf 共存所需的返回值，不是 Linux 调度器的任务准入结果。
+这里还有一个源码边界：该 tag 的 `cpu_frequency` handler 只更新 policy 的频点索引，不结算运行区间；下一次有效 `sched_switch` 把整个 `time-old_last` 记到当时的索引。若两次切换之间发生调频，这段时间没有按调频时刻拆分，不能把结果解释成逐段精确积分的频率驻留时间。
 
 <!-- gracker-diagram: ch15-16-19-switch-accounting -->
 ![sched_switch 的记账顺序与精度](../../assets/diagrams/ch15/ch15-16-19-switch-accounting.png)
 
 图：有效切换通过身份与初始化检查后，将delta归入当前频点和并发bucket。 调频handler只改索引，切换间调频不拆段；SDK sandbox双归因须避免框架总量重复统计。
+
+SDK sandbox 是 Android 为第三方 SDK 提供的隔离进程环境。它的 UID 有一段专门逻辑：运行时间会记到对应 App UID，也会记到保留的 `AID_SDK_SANDBOX` 聚合 UID；framework 侧计算系统总量时要处理这份重复记录。
+
+函数返回的 `ALLOW=1` 是该 Android tracepoint BPF wrapper 与 simpleperf 共存所需的返回值，不是 Linux 调度器的任务准入结果。
 
 #### 初始化、附着与读取都在 `libtimeinstate`
 
@@ -866,12 +869,14 @@ SDK sandbox 是 Android 为第三方 SDK 提供的隔离进程环境。它的 UI
 
 `system_server` 中的 `KernelCpuBpfTracking` 通过 JNI（Java Native Interface）调用 `isTrackingUidTimesSupported()`、`startTrackingUidTimes()` 和 `getCpuFreqs()`，更高层的 BPF map reader 再使用这些入口。
 
-这证明 framework 可以接入 `libtimeinstate`；而 `dumpsys batterystats` 里的某个 CPU 字段要落到具体 BPF map，还得沿各自的数据链路核对。
+`startTrackingUidTimes()` 的注释还明确要求调用进程存活：调用者死亡后，需要活进程再次启动跟踪。program 的 pin 不会自动保住这条由消费者建立的 attach 生命周期；重复初始化也可能造成记账错误。
 
 <!-- gracker-diagram: ch15-16-20-timeinstate-consumer -->
 ![libtimeinstate 的初始化和附着](../../assets/diagrams/ch15/ch15-16-20-timeinstate-consumer.png)
 
 图：消费者建立policy与频率映射、初始化状态并保持三组探针附着，再读取累计结果。 查询supported不等于已启动；调用者退出需重新跟踪，重复初始化可能破坏记账。
+
+这证明 framework 可以接入 `libtimeinstate`；而 `dumpsys batterystats` 里的某个 CPU 字段要落到具体 BPF map，还得沿各自的数据链路核对。
 
 ### gpuMem：loader、GpuService 与 Perfetto 的分工
 
@@ -926,10 +931,16 @@ adb shell find /sys/fs/bpf -maxdepth 3 -print
 
 #### 2. 在 debuggable 构建查看内核对象
 
-`bpftool` 是内核配套的 BPF 对象检查工具，也是 `bpfloader` 在 debuggable 产品中的 required 模块。userdebug/eng 设备取得 root 后，可用以下命令核对 program 与 map 元数据：
+`bpftool` 是内核配套的 BPF 对象检查工具，也是 `bpfloader` 在 debuggable 产品中的 required 模块。userdebug/eng 设备取得 root 后，可用以下命令核对 program 与 map 元数据；脚本在重连或实际 uid 检查失败时停止：
 
 ```bash
+#!/usr/bin/env bash
+set -euo pipefail
 adb root
+adb wait-for-device
+bpf_uid=$(adb shell id -u)
+bpf_uid=${bpf_uid//$'\r'/}
+[[ "$bpf_uid" == 0 ]] || { printf '%s\n' 'adbd未取得root，停止检查' >&2; exit 1; }
 adb shell bpftool prog show
 adb shell bpftool map show
 adb shell bpftool prog show pinned \
@@ -958,12 +969,12 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 
 | 现象 | 优先检查 |
 | --- | --- |
-| `bpf.progs_loaded` 不是 `1` | `NetBpfLoad`、`BpfLoader-rs`、verifier 日志，文件缺失与启动重启原因 |
-| 对象文件存在但没有 pin | descriptor 名称是否与 ELF section 一致、内核版本门槛、verifier 拒绝原因 |
+| <code>bpf.<wbr>progs_<wbr>loaded</code> 不是 <code>1</code> | <code>Net<wbr>Bpf<wbr>Load</code>、<code>Bpf<wbr>Loader-rs</code>、verifier 日志，文件缺失与启动重启原因 |
+| 对象文件存在但没有 pin | descriptor 的 map/program 名称是否与 ELF 对象中的对应名称一致、内核版本门槛、verifier 拒绝原因 |
 | program 已 pin，map 一直为空 | 消费者是否执行 attach、tracepoint 是否存在、驱动是否发出事件 |
 | root 可读，shell 不可读 | pin 的 mode、group 与 SELinux；不要把它误判为加载失败 |
-| 测试对象在 user build 缺失 | 检查 `skip_on_user`，这是预期行为 |
-| `bpftool` 命令不存在 | 量产 user build 未安装该调试模块 |
+| 测试对象在 user build 缺失 | 检查 <code>skip_<wbr>on_<wbr>user</code>，这是预期行为 |
+| <code>bpftool</code> 命令不存在 | 量产 user build 未安装该调试模块 |
 
 我们排查 verifier 失败时，从日志末尾向前找到第一个被拒绝的 program，再核对它依赖的 helper、context 字段、BTF 与内核版本；只看到上层“load failed”定位不到原因。
 
@@ -1003,10 +1014,10 @@ adb shell ls /sys/kernel/tracing/events/power/cpu_frequency
 
 | 程序 | 构建与加载条件 | attach 点 | 输出 | 明确不提供 |
 |---|---|---|---|---|
-| `cyclePerUid` | 仅 x86_64；还需 `x86_cpu_energy_attribution` flag | `tp_btf/sched_switch`，由用户态库按需 attach | 每个 UID、每个 CPU 的累计 cycles；desync（归因序列不同步）次数 | 进程维度、调用栈、ARM 统计 |
-| `dmabufIter` | riscv64 之外构建；需 `load_dmabuf_iterator` flag | `iter/dmabuf`，启动时自动 attach | inode、size、name、exporter 四个字段的全局快照 | attachment 数量、引用进程、UID、持续事件 |
-| `kernelWakelockDuration` | 需 `kernel_wakelock_duration` flag | `raw_tp/wakeup_source_activate` / `deactivate`，自动 attach | 系统至少有一个 active kernel wakelock 时的时间并集 | wakelock 名称、单个 wakeup source、UID |
-| `bpfLockContention` | riscv64 之外构建；内核至少 6.1；需 `load_bpf_lock_contention` flag | `tp/lock/contention_begin` / `end`，自动 attach | TGID × 白名单锁的 sum/count/min/max | 任意锁、持有时长、owner、调用栈、用户态锁 |
+| <code>cycle<wbr>Per<wbr>Uid</code> | 仅 x86_64；还需 <code>x86_<wbr>cpu_<wbr>energy_<wbr>attribution</code> flag | <code>tp_<wbr>btf/<wbr>sched_<wbr>switch</code>，由用户态库按需 attach | 每个 UID、每个 CPU 的累计 cycles；desync（归因序列不同步）次数 | 进程维度、调用栈、ARM 统计 |
+| <code>dmabuf<wbr>Iter</code> | riscv64 之外构建；需 <code>load_<wbr>dmabuf_<wbr>iterator</code> flag | <code>iter/<wbr>dmabuf</code>，启动时自动 attach | inode、size、name、exporter 四个字段的全局快照 | attachment 数量、引用进程、UID、持续事件 |
+| <code>kernel<wbr>Wakelock<wbr>Duration</code> | 需 <code>kernel_<wbr>wakelock_<wbr>duration</code> flag | <code>raw_<wbr>tp/<wbr>wakeup_<wbr>source_<wbr>activate</code> / <code>deactivate</code>，自动 attach | 系统至少有一个 active kernel wakelock 时的时间并集 | wakelock 名称、单个 wakeup source、UID |
+| <code>bpf<wbr>Lock<wbr>Contention</code> | riscv64 之外构建；内核至少 6.1；需 <code>load_<wbr>bpf_<wbr>lock_<wbr>contention</code> flag | <code>tp/<wbr>lock/<wbr>contention_<wbr>begin</code> / <code>end</code>，自动 attach | TGID × 白名单锁的 sum/count/min/max | 任意锁、持有时长、owner、调用栈、用户态锁 |
 
 `aconfig` 是 Android 的功能开关配置机制。`android.bpfprogs.flags` 中的三个声明分别控制 wakelock、DMA-BUF 和 lock contention 程序。`cyclePerUid` 的构建限制写在 `Android.bp`，加载还由 `backstage_power_flags::x86_cpu_energy_attribution()` 控制。`progs.aconfig` 只声明开关，某款产品最终采用什么值要看各自的配置。
 
@@ -1053,11 +1064,11 @@ ANDROID_SH
 
 | map | 类型 | 作用 |
 |---|---|---|
-| `last_recorded_cycle_map` | `PERCPU_ARRAY` | 保存每个 CPU 上一次读取的 cycle 值 |
-| `last_running_pid_map` | `PERCPU_ARRAY` | 保存每个 CPU 上一次切入的 PID |
-| `uid_cpu_cycle_map` | `LRU_PERCPU_HASH` | 按 UID 保存各 CPU 的累计 cycle，最多 1024 个 UID |
-| `tsc_events` | `PERF_EVENT_ARRAY` | 保存每个 CPU 的 perf event fd |
-| `desync_counter` | `PERCPU_ARRAY` | 记录上下文切换序列不连续的次数 |
+| <code>last_<wbr>recorded_<wbr>cycle_<wbr>map</code> | <code>PERCPU_<wbr>ARRAY</code> | 保存每个 CPU 上一次读取的 cycle 值 |
+| <code>last_<wbr>running_<wbr>pid_<wbr>map</code> | <code>PERCPU_<wbr>ARRAY</code> | 保存每个 CPU 上一次切入的 PID |
+| <code>uid_<wbr>cpu_<wbr>cycle_<wbr>map</code> | <code>LRU_<wbr>PERCPU_<wbr>HASH</code> | 按 UID 保存各 CPU 的累计 cycle，最多 1024 个 UID |
+| <code>tsc_<wbr>events</code> | <code>PERF_<wbr>EVENT_<wbr>ARRAY</code> | 保存每个 CPU 的 perf event fd |
+| <code>desync_<wbr>counter</code> | <code>PERCPU_<wbr>ARRAY</code> | 记录上下文切换序列不连续的次数 |
 
 程序附加到 `tp_btf/sched_switch`；`sched_switch` 是调度器切换当前运行任务时触发的 tracepoint。每次上下文切换时，程序读取当前 CPU 的 cycle 计数，用本次值减去上次值，再把差值记到被切出任务的 UID。`last_running_pid_map` 用来识别 suspend/resume（系统挂起/恢复） 附近可能重复出现的 idle 切换；PID 序列对不上时，本次归因会被跳过，并增加 `desync_counter`。
 
@@ -1101,7 +1112,7 @@ Rust FFI 通过 C ABI（Application Binary Interface，二进制接口） 导出
 3. `dma_buf::name`
 4. `dma_buf::exp_name`
 
-`inode` 是 DMA-BUF 所对应文件对象的 inode 编号，`size` 是字节数，`name` 是可选名称，`exp_name` 则标识导出这个缓冲区的驱动或子系统。每个字段单独占一行，每个 DMA-BUF 固定四行。`name` 可以为空，也可能来自用户态；程序会把其中的换行替换为空格，避免破坏记录边界。
+`inode` 是 DMA-BUF 所对应文件对象的 inode 编号，`size` 是字节数，`name` 是可选名称，`exp_name` 则标识导出这个缓冲区的驱动或子系统。每条成功输出的记录有四行。`name` 可以为空，也可能来自用户态；该程序用 32 字节本地数组读取名字，最多保留 31 字节和终止符，并把换行替换为空格。字段读取失败时返回错误，不能只按输出文件非空判断完整性。
 
 已加载的 iterator link 会固定在下面的 bpffs 路径。打开这个 link 会触发一次遍历并返回文本记录：
 
@@ -1112,14 +1123,17 @@ Rust FFI 通过 C ABI（Application Binary Interface，二进制接口） 导出
 在支持读取 pinned iterator link 的 root 调试环境中，可以用下面的命令抓取快照，并在主机端把每四行合成一行：
 
 ```bash
-adb shell su root cat \
+#!/usr/bin/env bash
+set -euo pipefail
+adb shell -T su root cat \
   /sys/fs/bpf/dmabuf/prog_dmabufIter_iter_dmabuf \
   > dmabuf.snapshot
 
+awk 'END { exit (NR % 4 != 0) }' dmabuf.snapshot
 paste - - - - < dmabuf.snapshot
 ```
 
-第一条命令中的重定向由主机 shell 执行，因此 `dmabuf.snapshot` 保存在主机上；`paste - - - -` 再把连续四行拼成一行。合并后的列顺序是 inode、bytes、name、exporter（导出方）。我们诊断时至少采集两个时间点，按 inode 对比新增、消失和大小变化；单次快照只能描述读取当时仍存活的 DMA-BUF。
+第一条命令中的重定向由主机 shell 执行，因此 `dmabuf.snapshot` 保存在主机上；`paste - - - -` 再把连续四行拼成一行。合并后的列顺序是 inode、bytes、name、exporter（导出方）。我们诊断时至少采集两个时间点，按 inode 对比新增、消失和大小变化；单次结果来自一段遍历期间仍可取得引用的 DMA-BUF；内核按对象推进遍历，没有冻结整个集合，也不保证所有字段属于同一时刻的原子快照。四行检查仅检查文本边界，空输出、缺失记录和遍历期间变化仍需分别确认。名字中的 tab 等字符也可能影响拼接后列对齐，保留原始四行数据。
 
 #### 能做与不能做
 
@@ -1158,7 +1172,7 @@ Linux 电源管理用 wakeup source（唤醒源） 阻止或记录系统挂起�
 
 active 数量从 0 变为 1 时，程序从 `timer_state_ns` 中减去 `bpf_ktime_get_boot_ns()`；从 1 变为 0 时再加回当前时间。这个 BPF helper（内核提供给 BPF program 的辅助函数） 返回以纳秒计的 boot time，即包含系统 suspend 时间的启动后时钟。读取 map 时如果值为负，说明当前仍有 active wakelock；用户态应使用同一时钟域计算 `timer_state_ns + 当前 CLOCK_BOOTTIME 纳秒值`，得到截至读取时刻的累计值。
 
-累计值只覆盖 `program_state` map 创建并开始处理事件后的时段；设备重启或 map 重建会归零。计算某个采集窗口的增量时，应先把窗口两端的负值状态分别换算成累计时长，再用结束值减去开始值。
+累计值从首次被处理的有效初始化事件起算；attach 前或首次事件之前已经 active 的那一段不会被追补。`program_state` map 重建和重新初始化也会影响基线；设备重启或 map 重建会归零。计算某个采集窗口的增量时，应先把窗口两端的负值状态分别换算成累计时长，再用结束值减去开始值。
 
 动态 attach 时，不同 CPU 上先前触发的事件可能晚于首个初始化事件到达。程序先保存首个事件的 `combined_event_count`，再用高低位和 16 位回绕距离判断后续事件是否更旧；已完成计数向前推进超过 64 后，`program_init` 才会写入 `UINT64_MAX`，表示初始化完成。初始化阶段判定为旧的事件会被跳过，避免它们污染累计值。
 
@@ -1235,10 +1249,10 @@ adb shell su root bpftool map dump pinned \
 
 | 问题 | 程序 | 仍需补充的观测 |
 |---|---|---|
-| 哪个 UID 消耗 x86 CPU cycles | `cyclePerUid` | `simpleperf` 细化到进程、线程、函数；调度 trace 解释等待 |
-| 哪些 DMA-BUF 仍然存活 | `dmabufIter` | fdinfo/sysfs/服务状态用于进程和子系统归因 |
-| 系统被 kernel wakelock 阻止休眠多久 | `kernelWakelockDuration` | wakeup source 统计或 ftrace 用于名称归因 |
-| 指定内核锁等待多久 | `bpfLockContention` | `perf` 采样、调度 trace、源码路径用于解释调用者和影响 |
+| 哪个 UID 消耗 x86 CPU cycles | <code>cycle<wbr>Per<wbr>Uid</code> | <code>simpleperf</code> 细化到进程、线程、函数；调度 trace 解释等待 |
+| 哪些 DMA-BUF 仍然存活 | <code>dmabuf<wbr>Iter</code> | fdinfo/sysfs/服务状态用于进程和子系统归因 |
+| 系统被 kernel wakelock 阻止休眠多久 | <code>kernel<wbr>Wakelock<wbr>Duration</code> | wakeup source 统计或 ftrace 用于名称归因 |
+| 指定内核锁等待多久 | <code>bpf<wbr>Lock<wbr>Contention</code> | <code>perf</code> 采样、调度 trace、源码路径用于解释调用者和影响 |
 
 四组程序都没有在自身源码中写入 Perfetto packet（trace 中的协议消息），也没有定义 Perfetto data source。平台上的其他消费者可以读取 map 或 iterator，再转写到 Perfetto trace；所以只看到 BPF 程序已加载，推不出 Perfetto UI 中会出现对应 track。
 
@@ -1274,6 +1288,7 @@ adb shell su root bpftool map dump pinned \
 - [frameworks/native cpucycleperuid/lib.rs：x86 cycle、RAPL 与 C FFI](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/cpucycleperuid/lib.rs)
 - [frameworks/native cpucycleperuid/Android.bp：x86_64 构建限制](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/cpucycleperuid/Android.bp)
 - [Android 17 kernel dmabuf_iter.c：`iter/dmabuf` 内核实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/bpf/dmabuf_iter.c)
+- [Android 17 kernel dma-buf.c：逐对象取引用与列表锁边界](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)
 - [Android 17 kernel wakeup.c：`combined_event_count` 语义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c)
 - [Android 17 kernel lock.h：contention begin/end tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/lock.h)
 - [Android BPF 官方文档：加载、权限与调试基础](https://source.android.com/docs/core/architecture/kernel/bpf)

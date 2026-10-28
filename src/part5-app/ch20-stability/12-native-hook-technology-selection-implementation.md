@@ -16,7 +16,7 @@ related_chapters:
 - '20.3'
 - '15.10'
 confidence: medium-high
-last_verified: '2026-08-14'
+last_verified: '2026-10-25'
 sources:
 - type: deepresearch
   path: DeepResearch/2026-07-14-android17-native-hook-three-schools-inlinhook-arm64.md
@@ -105,7 +105,7 @@ case DT_PLTGOT:
   break;
 ```
 
-随后 `link_image()` 调用 `relocate()`。`process_relocation（重定位）_impl<RelocMode::General>()` 的 fast path（常见类型的快速处理分支） 负责常见类型的快速处理，把 `R_GENERIC_JUMP_SLOT` 的解析结果写入对应的 GOT 槽位：
+随后 `link_image()` 调用 `relocate()`。`process_relocation_impl<RelocMode::General>()` 中的常见类型分支，把 `R_GENERIC_JUMP_SLOT` 的解析结果写入对应的 GOT 槽位：
 
 ```cpp
 if (r_type == R_GENERIC_JUMP_SLOT) {
@@ -159,11 +159,11 @@ bool soinfo::link_image(...) {
 
 待修改的函数地址可能位于 `.got.plt`、`.data` 或 `.data.rel.ro`。它有没有落进 `PT_GNU_RELRO`、当前页是什么权限，按目标 ELF 和运行时映射逐项判断。
 
-装载完成后，落入 RELRO 的槽位已经只读。普通应用通常要到 `dlopen()` 返回后才能看到新 ELF，所以我们要先确认页边界和原权限，再决定是否用 `mprotect()` 临时加写权限。这次调用可能因地址、长度、映射类型或进程安全策略而失败，失败要走进可观测的降级分支。
+重定位并应用 RELRO 后，相应槽位已经只读。若方案在 `dlopen()` 返回后才刷新模块，这时再安装 Hook，需要先确认页边界和当前权限，再决定是否用 `mprotect()` 临时加写权限。不要把这个观测时机当作 ELF 最早可枚举的时刻；构造函数可以重入 linker，框架私有回调也可能更早介入。这次调用可能因地址、长度、映射类型或进程安全策略而失败，失败要走进可观测的降级分支。
 
 监听 `dlopen()` 解决的只是“何时重新扫描”；linker 从重定位结束到 `protect_relro()` 之间并没有公开插入点，要卡这个时机就得 Hook linker 私有实现，版本风险随之增加。
 
-ByteHook 的当前实现会记录 program header（程序头） 推导出的原页权限，对不可写槽加 `PROT_WRITE`，先回调原函数地址，再用原子写替换 GOT。它的权限恢复语句在源码里目前是被注释掉的，所以“写完是否恢复原权限”要作为框架策略显式记录，别指望库自动恢复。可靠的 PLT/GOT Hook 涵盖 ELF 解析、权限处理、发布顺序和错误恢复，扫一遍 `/proc/self/maps` 再写一个指针远远不够。
+本轮固定 ByteHook `a8bd254f6e53`：`bh_elf_get_protect()` 先把落入 `PT_GNU_RELRO` 的地址视为 `PROT_READ`，再由 `PT_LOAD` 推导其他权限。这是按 ELF 结构推导的值，不是实时查询所有权限变更。安装时先回调原函数地址，再对推导为不可写的槽加 `PROT_WRITE`，最后用原子写替换 GOT；权限恢复语句在该提交中被注释。因此必须显式记录框架策略，不能默认写完自动恢复，也不能把 ELF 推导值当作并发变更后的当前权限。可靠的 PLT/GOT Hook 涵盖 ELF 解析、权限处理、发布顺序和错误恢复，扫一遍 `/proc/self/maps` 再写一个指针远远不够。
 
 <!-- gracker-diagram: a218-03-relro-publication -->
 ![GOT 改写要明确权限策略与原函数发布顺序](../../assets/diagrams/ch20/a218-03-relro-publication.png)
@@ -209,7 +209,7 @@ Inline Hook 发生在库装载完成后，由进程自己调 `mprotect()` 改内
 - 处理“改写跨页”以及一页内存在其他函数的情况；
 - 不把 `4096`、`PAGE_SIZE` 或 4 KB 掩码写死。
 
-ShadowHook 和 ByteHook 的当前源码都通过 `getpagesize()` 初始化页大小，再据此计算保护区间。自研实现同样取 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 的运行时结果，编译期常量替代不了它。
+本轮固定 ShadowHook `9b8b4407c9b0` 与 ByteHook `a8bd254f6e53`，两者均通过 `getpagesize()` 初始化页大小，再据此计算保护区间。自研实现同样取 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 的运行时结果，编译期常量替代不了它。
 
 <!-- gracker-diagram: a218-05-page-size-vs-isa -->
 ![系统页、指令宽度与 ADRP 粒度不能互相替代](../../assets/diagrams/ch20/a218-05-page-size-vs-isa.png)
@@ -283,7 +283,12 @@ orig 指代理函数继续调用的原目标地址，它必须先于新槽值发
 
 ### 4.4 动态装载和多框架共存
 
-`dlopen()` 成功后，新 ELF 才进入普通应用可枚举的模块集合，此时它的 relocation 和构造函数都已执行完；我们再装 Hook，覆盖的就只有后续调用，构造函数里的调用补采不回来。若框架声称能在构造函数之前介入，就要检查它是否依赖 linker 私有路径以及适配范围。
+对新装载 ELF，若等外层 `dlopen()` 成功返回后再扫描，其 relocation 和构造函数已经执行完；这时安装只覆盖后续调用，无法补采构造函数中的调用。这不意味着构造前或构造过程中绝不可能枚举到模块，判断依据应是框架实际介入的时点。若框架声称能在构造函数之前介入，就要检查它是否依赖 linker 私有路径以及适配范围。
+
+<!-- gracker-diagram: a218-08-dlopen-observation -->
+![安装发生的时点决定能否观察构造函数调用](../../assets/diagrams/ch20/a218-08-dlopen-observation.png)
+
+图：外层dlopen返回后安装无法补采构造函数中的调用；ShadowHook固定手册提供构造前pending任务与回调。
 
 ByteHook 会在动态装载后刷新 ELF 管理器；ShadowHook 也能为尚未装载的目标保存 pending task（等待目标出现的安装任务），等目标出现再安装。无论选哪种，都要把新装载、卸载和重复装载纳入生命周期测试。
 
@@ -293,11 +298,6 @@ ByteHook 会在动态装载后刷新 ELF 管理器；ShadowHook 也能为尚未�
 - 不分配内存的最小记录器；
 - 统一使用 proxy 调度入口，避免多个 SDK 互相覆盖槽；
 - unhook 前确认槽仍指向本框架入口，发现第三方改写时拒绝盲目恢复。
-
-<!-- gracker-diagram: a218-08-dlopen-observation -->
-![安装发生的时点决定能否观察构造函数调用](../../assets/diagrams/ch20/a218-08-dlopen-observation.png)
-
-图：外层dlopen返回后安装无法补采构造函数中的调用；ShadowHook固定手册提供构造前pending任务与回调。
 
 ## 5. Inline Hook：指令搬迁比跳转更难
 
@@ -330,23 +330,23 @@ AArch64 Inline Hook 一般需要完成：
 图：复制原字节不能自动保留PC-relative语义；发布入口之前，trampoline和返回路径都必须已准备。
 
 ```text
-原始指令：   ADRP   X0, page_of(sym)        ; page 是 PC-relative
-             ADD    X0, X0, #lo12_of(sym)
-移到 trampoline 后：page_of(sym) 表达的是 "PC+page*4096"
-                     PC 变了 → page_of(sym) 必须重算，
-                     否则 X0 指向错误页（典型 4K 偏差，多线程场景下崩在不可预期位点）
+原始指令： ADRP X0, page_of(sym)
+           ADD  X0, X0, #lo12_of(sym)
+ADRP 结果 = AlignDown(PC, 4096) + SignExtend(imm21) * 4096
+搬迁后：以原 PC 解出目标 4KB 页，再相对新 PC 重编码，或改写为等价序列。
+        保留后续 ADD 的低 12 位语义；不能只复制原 ADRP 编码。
 ```
 
-示例中的“典型 4K 偏差”只用于展示错误现象；`ADRP` 按 4 KB 地址页计算，搬迁错误造成的最终偏差却取决于新旧 PC，要按实际重算，照搬 4 KB 会出错。
-
-步骤 7 同样必做。代码经数据写入路径更新后，其他核心取指前必须看到新指令；Android NDK 代码中通常使用 `__builtin___clear_cache(begin, end)`。bionic 只在 32 位 `__arm__` 下声明 `cacheflush()`，头文件也建议新代码改用跨架构的 builtin。
-
-ShadowHook 的 arm64 重写器显式识别 `B`、`BL`、`B.cond`、`ADR`、`ADRP`、literal load、`CBZ/CBNZ`、`TBZ/TBNZ` 等类型，每类指令都有独立的长度计算和 rewrite 分支；“复制几条指令后跳回去”这样的做法，离可靠实现还很远。
+这里的 4 KB 是 `ADRP` 编码规定的地址粒度，与内核实际使用 4 KB 还是 16 KB 翻译页无关。保护区间使用运行时页大小，解码 ADRP 仍清除 PC 的低 12 位；把两者混用会产生错误。搬迁后的目标还须检查编码范围，超出范围时使用已验证的等价序列，不能强行截断立即数。
 
 <!-- gracker-diagram: a218-10-adrp-target -->
 ![ADRP 搬迁的目标地址保持不变，编码依新 PC 改变](../../assets/diagrams/ch20/a218-10-adrp-target.png)
 
 图：算例只展示地址计算，无真实设备故障；ADRP目标=原PC对齐4KB后加signed immediate×4096。
+
+步骤 7 同样必做。代码经数据写入路径更新后，其他核心取指前必须看到新指令；Android NDK 代码中通常使用 `__builtin___clear_cache(begin, end)`。bionic 只在 32 位 `__arm__` 下声明 `cacheflush()`，头文件也建议新代码改用跨架构的 builtin。
+
+ShadowHook 的 arm64 重写器显式识别 `B`、`BL`、`B.cond`、`ADR`、`ADRP`、literal load、`CBZ/CBNZ`、`TBZ/TBNZ` 等类型，每类指令都有独立的长度计算和 rewrite 分支；“复制几条指令后跳回去”这样的做法，离可靠实现还很远。
 
 ### 5.2 branch island 与并发改写
 
@@ -390,7 +390,7 @@ arm64 软件断点通常用 `BRK` 指令触发 `SIGTRAP`。信号可能来自软
 - 从 `ucontext_t` 读取并按 ABI 修改寄存器与 PC；
 - 保证处理路径满足 async-signal-safe（异步信号安全）约束，即只调用 POSIX 明确允许在信号处理函数中使用的操作；
 - 处理嵌套信号、线程退出、unhook 和断点表并发；
-- 对非本框架事件调用前序 handler 或恢复默认处置；
+- 非本框架事件按完整 signal disposition 转发：区分 `SA_SIGINFO` 与单参数 handler、`SIG_DFL`、`SIG_IGN`，维护 mask 和重入语义；不能把 `SIG_DFL` / `SIG_IGN` 当函数地址调用，也不能无条件恢复默认处置；
 - 与 ptrace 调试器、采样器、崩溃 SDK 和 native bridge（跨架构 Native 转换层）一起测试。
 
 debuggerd 在 `debuggerd_init()` 中为 `SIGTRAP` 等致命信号注册处理函数，并设置 `SA_SIGINFO | SA_ONSTACK | SA_RESTART | SA_EXPOSE_TAGBITS`：
@@ -408,7 +408,7 @@ debuggerd_register_handlers(&action);
 
 `debuggerd_signal_handler()` 处理 `SIGTRAP`、`SIGSEGV`、`SIGBUS`、`SIGFPE`、`SIGILL`、`SIGABRT` 等信号。致命路径会暂时允许 `crash_dump` 用 `ptrace` 读取进程，通过 `clone()` 建立共享地址空间的 pseudothread（分派崩溃转储的轻量线程），再由 `crash_dump` 暂停线程、生成 tombstone（Native 崩溃转储）。可恢复 GWP-ASan 和 permissive MTE（记录后继续执行的宽松模式）这类特定路径可能在记录后返回，其余致命路径会重新发出信号。
 
-应用消费自有 `SIGTRAP` 时未必生成 tombstone，结果取决于 signal chain（信号处理函数调用顺序） 的串接顺序、`si_code`、调试器状态，以及事件是否继续传给 debuggerd。在 ART 进程中，sigchain（ART 的信号串接库）还可能把平台 special handler（优先运行的特殊处理函数） 和用户 handler 组合起来。别把一次 `sigaction()` 调用当作拿到了 `SIGTRAP` 的独占控制权。
+应用消费自有 `SIGTRAP` 时未必生成 tombstone，结果取决于 signal chain（信号处理函数调用顺序） 的串接顺序、`si_code`、调试器状态，以及事件是否继续传给 debuggerd。在 ART 进程中，sigchain（ART 的信号串接库）还可能把平台 special handler（优先运行的特殊处理函数） 和用户 handler 组合起来。别把一次 `sigaction()` 调用当作拿到了 `SIGTRAP` 的独占控制权。固定 ART sigchain 对 `SA_NODEFER` 有 mask 调整，但源码仍把 `SA_RESETHAND` 标为未实现；应测试具体 flags 的端到端行为，不能因存在 sigchain 就承诺完整 POSIX 透明转发。
 
 这条链路给我们两条硬约束：
 
@@ -456,7 +456,7 @@ ssize_t proxy_read(int fd, void* buffer, size_t count) {
 }
 ```
 
-这个示例仍省略了 cancellation point（pthread 取消的响应点）、异常退出、信号重入和多线程同时初始化的竞态。
+这个示例仍省略了记录器异常退出、信号重入和多线程同时初始化的竞态；`g_orig_read` 必须在入口发布前完成同步初始化，记录器应避免异常越过代理边界。Android Bionic 不支持 `pthread_cancel`，不能把其他 POSIX 实现的取消点机制套到这里。
 
 `thread_local` 标记只能约束当前线程的常规递归，记录函数的异步信号安全要另行保证。生产代码里我们用 RAII（让对象析构时自动执行清理） 或等价的 scope guard（退出当前作用域时自动清理） 兜住每条返回路径，清理线程局部状态，并逐项确认代理声明与目标导出声明一致。
 
@@ -491,7 +491,7 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 
 恢复 GOT 指针之后，旧 proxy 可能仍有人在执行；恢复函数入口之后，线程也可能仍走在 proxy、原函数 trampoline 或被覆盖区间里，trampoline 要等这些调用都退出才能释放。
 
-风险较低的关闭方式是保留稳定入口，只用原子开关让 proxy 直接调用原函数。若必须物理 unhook，我们就配上活动调用计数、grace period（等旧调用退出的宽限期）或暂停线程的协议，并确认目标 ELF 尚未卸载、槽或指令仍属于本框架。
+风险较低的关闭方式是保留稳定入口，只用原子开关让 proxy 直接调用原函数。若必须物理 unhook，先阻止新调用进入待回收路径，再用匹配入口发布协议的活动调用跟踪、grace period（等旧调用退出的宽限期）或线程协调确认没有仍可进入或执行的线程，最后回收 trampoline。某一瞬间计数为零并不充分；还要确认目标 ELF 未卸载、槽或指令仍属于本框架。
 
 <!-- gracker-diagram: a218-16-retire-trampoline -->
 ![物理卸载先关闭新入口，再等待旧执行退出](../../assets/diagrams/ch20/a218-16-retire-trampoline.png)
@@ -503,7 +503,7 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 安装记录至少包括：
 
 - Android API 与 ABI；
-- 目标 ELF 路径、Build ID、load bias；
+- 目标 ELF 路径、Build ID、load bias 与装载代次（本次 load/unload 生命周期身份）；
 - 符号名、相对偏移、原地址和 proxy 地址；
 - relocation type 或被覆盖的原指令；
 - 页大小、原权限、改写结果；
@@ -534,14 +534,14 @@ FD 即 file descriptor（文件描述符）。这类方案适合辅助定位 FD 
 
 ### 9.4 新 ELF 装载
 
-若采集目标包含插件、动态特性或运行时 `dlopen()` 的 SDK，只扫描一次进程模块必然漏报。应订阅框架提供的装载回调或在安全时点刷新模块，并对同一路径、Build ID 和 load bias 做幂等处理；幂等表示同一对象被重复通知时不会重复安装。
-
-自行 Hook linker 私有 `soinfo` 字段会把回调机制绑定到内部结构。ShadowHook 手册也说明，相关偏移需要按 Android 版本扫描和适配；采用这条路径时，适配表、失败停用和回滚策略都要随框架发布。
+若采集目标包含插件、动态特性或运行时 `dlopen()` 的 SDK，只扫描一次进程模块必然漏报。应订阅框架提供的装载回调或在安全时点刷新模块；同一装载代次内按路径、Build ID、load bias 和目标项去重。卸载时先失效旧任务，再建立新代次：同一路径、同一 Build ID 甚至同一地址都可能被重新装载，不能把地址复用当成旧实例仍存活。这里的装载代次是框架维护的生命周期标识，不是公开 NDK 提供的通用 generation 字段。
 
 <!-- gracker-diagram: a218-17-module-generation -->
 ![同路径、Build ID 和地址也可能属于不同装载代次](../../assets/diagrams/ch20/a218-17-module-generation.png)
 
 图：generation是框架自己的生命周期身份；Build ID识别二进制内容，不能独自证明实例仍存活。
+
+自行 Hook linker 私有 `soinfo` 字段会把回调机制绑定到内部结构。ShadowHook 手册也说明，相关偏移需要按 Android 版本扫描和适配；采用这条路径时，适配表、失败停用和回滚策略都要随框架发布。
 
 ### 9.5 API level 与二进制身份校验
 
@@ -614,8 +614,12 @@ API level 只适合作为第一层筛选。安装前还要检查：
 
 工程实现与平台规则：
 
-- [ShadowHook manual](https://github.com/bytedance/android-inline-hook/blob/main/doc/manual.md) 与 [arm64 指令重写源码](https://github.com/bytedance/android-inline-hook/blob/main/shadowhook/src/main/cpp/arch/arm64/sh_a64.c)：指令重写、动态装载任务和当前实现行为。
-- [ByteHook 原理说明](https://github.com/bytedance/bhook/blob/main/doc/overview.zh-CN.md) 与 [GOT 重定位写入源码](https://github.com/bytedance/bhook/blob/main/bytehook/src/main/cpp/bh_elf_relocator.c)：原函数发布、页权限调整与 GOT 原子写。
+- [ShadowHook manual](https://github.com/bytedance/android-inline-hook/blob/9b8b4407c9b0b8fcfbb09aad77bfb32ea44bc237/doc/manual.md) 与 [arm64 指令重写源码](https://github.com/bytedance/android-inline-hook/blob/9b8b4407c9b0b8fcfbb09aad77bfb32ea44bc237/shadowhook/src/main/cpp/arch/arm64/sh_a64.c)：指令重写、动态装载任务和当前实现行为。
+- [ByteHook 原理说明](https://github.com/bytedance/bhook/blob/a8bd254f6e53022b65136f40d10ae3763b6ef8ad/doc/overview.zh-CN.md) 与 [GOT 重定位写入源码](https://github.com/bytedance/bhook/blob/a8bd254f6e53022b65136f40d10ae3763b6ef8ad/bytehook/src/main/cpp/bh_elf_relocator.c)：原函数发布、页权限调整与 GOT 原子写。
+- [ShadowHook 写入与页大小源码](https://github.com/bytedance/android-inline-hook/blob/9b8b4407c9b0b8fcfbb09aad77bfb32ea44bc237/shadowhook/src/main/cpp/common/sh_util.c)、[ByteHook 权限推导](https://github.com/bytedance/bhook/blob/a8bd254f6e53022b65136f40d10ae3763b6ef8ad/bytehook/src/main/cpp/bh_elf.c) 与 [页大小源码](https://github.com/bytedance/bhook/blob/a8bd254f6e53022b65136f40d10ae3763b6ef8ad/bytehook/src/main/cpp/bh_util.c)。
+- [Bionic POSIX 状态](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/docs/status.md)：不支持 pthread 取消。
+- [Android ABI](https://developer.android.com/ndk/guides/abis#arm64-v8a) 与 [Clang CFI](https://clang.llvm.org/docs/ControlFlowIntegrity.html)。
+- [Arm A64 指令概览](https://developer.arm.com/-/media/Files/pdf/graphics-and-multimedia/ARMv8_InstructionSetOverview.pdf)：PC-relative 地址粒度与范围。
 - [Android 16 KB page size 指南](https://developer.android.com/guide/practices/page-sizes)。
 - [Android 7.0 非公开 Native 库限制](https://developer.android.com/about/versions/nougat/android-7.0-changes)。
 - [Android linker namespace](https://source.android.com/docs/core/permissions/namespaces_libraries)。

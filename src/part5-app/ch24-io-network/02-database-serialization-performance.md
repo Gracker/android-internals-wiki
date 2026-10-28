@@ -144,21 +144,26 @@ consolidated_from:
 ---
 # 数据库与序列化性能
 
-数据持久化链路上的每一环都有成本：对象序列化、数据库事务、索引查询（也称 `keyset` 分页，以上一页末行的排序键作为下一页边界）、结果反序列化。我们排查“数据库慢”时，SQL 本身往往只是嫌疑之一，格式转换、对象分配和主线程等待占掉主要时间的情况同样常见。
+数据持久化链路上的每一环都有成本：对象序列化、数据库事务、索引查询、结果反序列化。我们排查“数据库慢”时，SQL 本身往往只是嫌疑之一，格式转换、对象分配和主线程等待占掉主要时间的情况同样常见。
 
 ## 事务、索引、查询计划与并发
 
 ### 数据库性能问题的等待位置
 
-> 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；涉及 WAL 同步与文件持久性时，内核基线为 `android17-6.18-2026-06_r6`，见 [24.1 文件 I/O、SAF 与 ContentResolver 性能](01-file-io-saf-contentresolver.md)。Room 是独立发布的 AndroidX 组件，行为以项目锁定的 Room 版本为准。
+> 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；涉及 WAL 同步与文件持久性时，内核基线为 `android17-6.18-2026-06_r6`，见 [24.1 文件 I/O、SAF 与 ContentResolver 性能](01-file-io-saf-contentresolver.md)。Room 是独立发布的 AndroidX 组件，行为以项目锁定的 Room 版本为准。 本文的实现细节固定到 Room 2.8.4、Room 3.0.1 与 SQLite 2.7.0 的源码包，不表示最新发布版本。2026-10-25 核对，当前稳定版分别为 [Room 2.8.5](https://developer.android.com/jetpack/androidx/releases/room)、[Room 3.0.3](https://developer.android.com/jetpack/androidx/releases/room3) 和 [SQLite 2.7.1](https://developer.android.com/jetpack/androidx/releases/sqlite)；升级后应重新核对实现与基线。
 
-数据库慢很少表现为 CPU 满载，线程多数时间在等：主线程等查询返回，工作线程排队等连接，首次打开被 Migration（数据库迁移）拖长，或者列表滚动时 `CursorWindow`（承载查询结果的内存窗口）反复重填。落到 Perfetto 和线程栈上，常见的名字是 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、Room 生成的 DAO（Data Access Object，数据访问对象） 代码，以及 `ContentResolver.query()` 的 Binder 跨进程等待。
+数据库慢不一定表现为 CPU 满载，也可能停在等待路径：主线程等查询返回，工作线程排队等连接，首次打开被 Migration（数据库迁移）拖长，或者列表滚动时 `CursorWindow`（承载查询结果的内存窗口）反复重填。落到 Perfetto 和线程栈上，常见的名字是 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、Room 生成的 DAO（Data Access Object，数据访问对象） 代码，以及 `ContentResolver.query()` 的 Binder 跨进程等待。
 
 我们排查的第一步，是确认线程停在哪一种等待上：执行 SQL、等连接、等 Binder，还是等数据库首次打开。位置确定后，再结合 SQLite 并发、`CursorWindow`（分段保存查询结果的内存窗口）、Room 执行模型和 ANR 现场决定动什么——日志模式、查询、索引、事务或迁移。
 
 ### SQLite WAL 模式与并发优化
 
-回滚日志模式的思路，是先把旧内容保存下来再修改主库页；写事务需要排除读者时，锁状态（仍有活跃事务阻止完全推进）就限制了新的读写访问。WAL（Write-Ahead Logging，预写式日志）换了一个方向：新页追加进 `-wal` 文件。读事务记下自己的 end mark（当前快照可见的 WAL 终点），再用主库加上该位置之前的 WAL frame（记录一次数据库页变更的帧）拼出一致快照；读者还在读旧快照时，写者可以继续追加。两种模式都只有一个活跃写者——WAL 给的是读写并发，写入始终是串行的。
+回滚日志模式的思路，是先把旧内容保存下来再修改主库页；提交阶段需要取得排他锁时，读写访问可能相互等待。WAL（Write-Ahead Logging，预写式日志）换了一个方向：新页追加进 `-wal` 文件。读事务记下自己的 end mark（当前快照可见的 WAL 终点），再用主库加上该位置之前的 WAL frame（记录一次数据库页变更的帧）拼出一致快照；读者还在读旧快照时，写者可以继续追加。两种模式都只有一个活跃写者——WAL 给的是读写并发，写入始终是串行的。
+
+<!-- gracker-diagram: a262-01-wal-snapshot -->
+![WAL 的单写者与读快照](../../assets/diagrams/ch24/a262-01-wal-snapshot.png)
+
+图：读者按各自 end mark 读取一致快照，写者继续追加；增加读连接不会增加同库并行写者。
 
 Android 官方性能文档的建议是：除 `ATTACH DATABASE` 场景外启用 WAL，并在 WAL 下使用 `synchronous=NORMAL`。代价在持久性上：应用进程崩溃后事务仍可恢复，但设备断电或内核崩溃可能回滚已经返回成功的事务。订单、支付或跨库依赖这类场景，我们先把这一点的优先级放到吞吐量前面，再选同步级别。
 
@@ -191,7 +196,7 @@ Android 9 引入 Compatibility WAL 时，[官方历史文档](https://source.and
 
 #### Checkpoint（检查点）、长读事务与生效值
 
-checkpoint 负责把已提交的 WAL frame 写回主库，`PASSIVE` checkpoint 可以推进到活跃读事务允许的位置；持有较老 end mark 的长读事务会让它提前停下，而后续写入还在继续追加，`-wal` 文件于是可能持续增长。要止住这种增长，先得找到迟迟不结束的读事务和生命周期过长的 Cursor——调小自动 checkpoint 阈值结束不了它们。
+checkpoint 负责把已提交的 WAL frame 写回主库，`PASSIVE` checkpoint 可以推进到活跃读事务允许的位置；持有较老 end mark 的长读事务会让它提前停下，而后续写入还在继续追加，`-wal` 文件于是可能持续增长。要止住这种增长，先得找到迟迟不结束的读事务或仍持有活动语句的连接，调小自动 checkpoint 阈值结束不了它们。Cursor 对象长期存在本身不是证据：framework 的 [SQLiteSession.executeForCursorWindow()](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteSession.java)在填窗后会走 `finally` 释放本次连接使用，是否仍持有事务还取决于外层事务和实际驱动。
 
 ```sql
 PRAGMA journal_mode;
@@ -200,7 +205,7 @@ PRAGMA wal_autocheckpoint;
 PRAGMA wal_checkpoint(PASSIVE);
 ```
 
-`wal_checkpoint` 的结果给出三样东西：busy 状态——仍有活跃事务阻止完全推进；WAL frame 总数；已写回主库的 frame 数。后两者长期拉开时，要把长读事务、写入批次和 checkpoint 时机放在一起看。普通 checkpoint 靠 WAL 共享内存中的写锁、checkpoint 锁与读标记协调，说它“先取得主数据库 EXCLUSIVE 锁”并不准确；切换日志模式、恢复和带截断语义的操作，走的是另外的加锁路径。
+`wal_checkpoint` 返回三列：第一列表示调用是否遇到阻止完成的 busy 情况，后两列分别为 WAL frame 总数与已写回主库的 frame 数。**`PASSIVE` 不等待所有读者，第一列为 `0` 也可能没有全部写回**；FULL、RESTART 或 TRUNCATE 被阻止完成时才可能以第一列 `1` 报告 busy。没有 WAL 时后两列可能为 `-1`。因此后两列长期拉开时，要结合长读事务、写入批次和 checkpoint 时机判断，不能只看第一列（[SQLite PRAGMA 契约](https://sqlite.org/pragma.html#pragma_wal_checkpoint)）。普通 checkpoint 使用 WAL 相关锁和读标记协调，并非先取得主库 EXCLUSIVE 锁；日志模式切换、恢复或截断的加锁路径应另行核对。
 
 <!-- gracker-diagram: a262-02-checkpoint-progress -->
 ![PASSIVE checkpoint 的忙标志与推进差额](../../assets/diagrams/ch24/a262-02-checkpoint-progress.png)
@@ -241,6 +246,8 @@ WAL 下，平台池用非主连接服务只读工作，写事务通常走主连�
 
 图：先确认驱动、source set 和生效日志模式，再解释连接等待；长事务与慢查询优先于扩池。
 
+2026-10-25 核对[SQLite WAL 文档](https://sqlite.org/wal.html#the_wal_reset_bug)，上游还记录了多连接同时写入与 checkpoint 特定竞态下可能造成损坏的 WAL-reset bug。修复进入 SQLite 3.51.3 及以后版本，并回移到 3.44.6、3.50.7 等分支。部署前应核对实际引擎及厂商补丁；不能只凭 Android API、Room 版本或连接池数量认定已修复，也不能假定所有较旧分支都未回移补丁。
+
 WAL 的应用侧检查项：
 
 - 在目标设备读取实际生效的日志/同步模式，Builder 选项只是意图，运行结果以设备为准。
@@ -250,11 +257,6 @@ WAL 的应用侧检查项：
 - 连接池等待先查长事务、慢查询和连接持有者，再考虑改变池大小。
 
 [官方文档：[SQLite 性能建议](https://developer.android.com/topic/performance/sqlite-performance-best-practices)、[`RoomDatabase.JournalMode`](https://developer.android.com/reference/androidx/room/RoomDatabase.JournalMode)、[SQLite WAL](https://sqlite.org/wal.html)]
-
-<!-- gracker-diagram: a262-01-wal-snapshot -->
-![WAL 的单写者与读快照](../../assets/diagrams/ch24/a262-01-wal-snapshot.png)
-
-图：读者按各自 end mark 读取一致快照，写者继续追加；增加读连接不会增加同库并行写者。
 
 ### Room 执行模型与常见性能问题
 
@@ -312,7 +314,7 @@ interface MessageDao {
 
 图：distinctUntilChanged 减少相同结果的下游发射，省不掉已经发生的 SQL 与对象构造。
 
-事务范围画在不可分割的数据变更上：批量插入、删除和状态切换适合放进一个事务，网络请求、文件读取和复杂计算留在事务外。Room 同时最多执行一个事务，事务内等待外部工作，后续事务就得持续排队，需要连接的查询也可能被拖住。
+事务范围画在不可分割的数据变更上：批量插入、删除和状态切换适合放进一个事务，网络请求、文件读取和复杂计算留在事务外。同一个 RoomDatabase 的 `withTransaction` 等写事务入口会串行调度；事务内等待外部工作，会让后续写事务持续排队，需要连接的查询也可能被拖住。这不等于 WAL 下所有只读事务都不能并行，实际读写连接与作用域仍由所用驱动和连接池决定。
 
 下面的代码展示批量替换的事务范围。传入的 `rows` 应在进入事务前完成网络读取、解码和业务校验。
 
@@ -672,7 +674,7 @@ Room 3 移除了 Room 接口中的 `SupportSQLiteDatabase`、`SupportSQLiteOpenH
 
 图：数据库结构升级后，应用回退必须能再次打开新结构，或拥有验证过的降级路径；删回依赖版本无济于事。
 
-Room 3 支持 JavaScript 与 WasmJS（以 WebAssembly 为目标的 Kotlin/JS 运行方式）。SQLite 2.7.0 的 `WebWorkerSQLiteDriver` 可把数据库操作放进 Web Worker，并将文件保存到 OPFS（浏览器为站点提供的私有文件系统），Worker 脚本符合消息协议这一项由项目自行提供。Web 与非 Web 平台共用代码时，可以评估异步 SQLite 接口 `androidx.sqlite:sqlite-async:2.7.0`；Android、Web、Apple 与桌面 JVM 分别建立性能基线——共享 DAO 消不掉驱动、文件系统和线程模型的差异。
+Room 3 支持 JavaScript 与 WasmJS（面向浏览器等 JavaScript 环境的 Kotlin/Wasm 目标，区别于编译为 JavaScript 的 Kotlin/JS）。SQLite 2.7.0 的 `WebWorkerSQLiteDriver` 可把数据库操作放进 Web Worker，并将文件保存到 OPFS（浏览器为站点提供的私有文件系统），Worker 脚本符合消息协议这一项由项目自行提供。Web 与非 Web 平台共用代码时，可以评估异步 SQLite 接口 `androidx.sqlite:sqlite-async:2.7.0`；Android、Web、Apple 与桌面 JVM 分别建立性能基线——共享 DAO 消不掉驱动、文件系统和线程模型的差异。
 
 迁移性能分段观察：应用启动、数据库首次打开、每段 `Migration`、首个关键 DAO、稳定期查询和连接等待。为这些阶段添加自定义 trace 区段（可在 Perfetto 时间轴上定位的事件区间），再用固定数据集的 Macrobenchmark（宏基准测试）、Perfetto、查询计划和数据库测试交叉验证。
 

@@ -4,9 +4,9 @@ chapter: '25.6'
 section: '25.6'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1 WebView loader + Android Developers WebView, power and Android vitals docs retrieved 2026-08-15 + arXiv:2308.16734
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 WebView loader + Android Developers WebView, power and Android vitals docs retrieved 2026-10-25 + arXiv:2308.16734
 confidence: medium
 tags:
 - webview
@@ -72,16 +72,16 @@ Hybrid 页面的能耗来自 WebView 进程、JavaScript、网络、媒体和原
 
 ## Hybrid 页的功耗构成
 
-Hybrid（混合开发）页面通常由原生应用里的 WebView 承载。同一次用户操作会经过应用进程、提供 WebView 实现的 provider 包、执行网页代码的 Chromium renderer（渲染进程）以及 JavaScript。页面资源和连接网页与原生代码的 JSBridge（JavaScript bridge，JS 桥）也在同一条执行路径上。电量百分比只能反映整机变化，无法指出耗电来自页面脚本、容器生命周期、网络请求还是原生代码。
-
-版本基线为 Android 17（API 37）和 `android-17.0.0_r1`，用于比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 包版本持续验证的指标。
-
-WebView 渲染管线见 13.10 节，优化实战见 22.16 节，内存持续增长的分类诊断见 10.1 节，Hybrid APM（Application Performance Monitoring，应用性能监控）见 17.11 节。功耗分析与技术选型会复用这些章节的指标和结论。
+Hybrid（混合开发）页面通常由原生应用里的 WebView 承载。WebView provider 是提供实现代码的安装包，不能把包名当作一个独立进程：容器及其加载的实现代码运行在宿主应用进程；多进程模式下，网页代码、JavaScript 等在 Chromium renderer（渲染进程）中执行。单进程配置没有独立 renderer 进程。页面资源和连接网页与原生代码的 JSBridge（JavaScript bridge，JS 桥）也在同一条执行路径上。电量百分比只能反映整机变化，无法指出耗电来自页面脚本、容器生命周期、网络请求还是原生代码。
 
 <!-- gracker-diagram: a279-01-provider-code-host-and-renderer -->
 ![WebView provider是实现包，不能按包名数进程](../../assets/diagrams/ch25/a279-01-provider-code-host-and-renderer.png)
 
 图：provider版本、宿主进程和renderer活动分别记录；一个页面不固定对应一个独立进程。
+
+版本基线为 Android 17（API 37）和 `android-17.0.0_r1`，用于比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 包版本持续验证的指标。
+
+WebView 渲染管线见 13.10 节，优化实战见 22.16 节，内存持续增长的分类诊断见 10.1 节，Hybrid APM（Application Performance Monitoring，应用性能监控）见 17.11 节。功耗分析与技术选型会复用这些章节的指标和结论。
 
 ## 原生 App、Web App、Hybrid 页面的能耗边界
 
@@ -129,14 +129,14 @@ WebView 的成本通常分成四类看。
 - **CPU**：JavaScript、DOM（页面节点树）与 CSS（样式和布局规则）计算、图片解码、滚动合成，以及 JSBridge 消息在两端的编码与还原都会使用 CPU。桥调用过密时，还会增加应用主线程或业务线程的调度与等待。
 - **内存**：WebView 使用 Chromium renderer。多个 WebView 可能共享同一个 renderer，也可能使用不同 renderer；共享只发生在同一应用进程内，不能按“一个页面等于一个进程”估算。`android-17.0.0_r1` 的 [`loader.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/webview/loader/loader.cpp) 会用 `mmap(PROT_NONE)` 预留 `libwebviewchromium.so` 的虚拟地址空间，并命名为 `libwebview reservation`。`PROT_NONE` 表示这段地址暂时不可读写执行；这段预留区（reservation）占用虚拟地址范围，不等于同等大小的 PSS（私有常驻页加按比例分摊的共享常驻页）、RSS（进程映射的常驻物理内存总量）或实际物理页。32 位进程的地址范围较小，还要关注空闲地址被切成许多不连续区间的地址空间碎片。
 - **网络与存储**：页面可能包含重定向、第三方脚本、字体和多种图片。HTTP 缓存、Cookie、DOM storage（`localStorage`、`sessionStorage` 等浏览器键值存储）、Service Worker（可拦截请求并管理离线缓存的浏览器后台脚本）与应用自己的离线包分属不同存储层；清理其中一层不能证明其他层也已清空。
-- **生命周期**：页面离屏（不再可见）后仍可能保留 renderer、音视频和定时任务。容器要把可见性映射到 `WebView.onPause()` / `onResume()`，不再复用时从 View 树（界面节点层级）移除并调用 `destroy()`。`pauseTimers()` / `resumeTimers()` 会影响当前进程中的所有 WebView，不适合作为单页面通用开关；`clearCache()` 也不是页面退出时的清理接口。
-
-功耗记录至少包含页面类型、provider 包版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。本地诊断可用 Perfetto（Android 系统跟踪工具）或 `ps` 按 renderer PID（进程编号）关联数据；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
+- **生命周期**：页面离屏（不再可见）后仍可能保留 renderer、音视频和定时任务。容器要把可见性映射到 `WebView.onPause()` / `onResume()`；`onPause()` 只是尽力暂停可安全暂停的处理，不会暂停 JavaScript，也不能据此推断音视频、网络或桥接任务均已停止。页面和原生侧仍须按业务生命周期显式停止持续工作，不再复用时从 View 树（界面节点层级）移除并调用 `destroy()`。`pauseTimers()` / `resumeTimers()` 会影响当前进程中的所有 WebView，不适合作为单页面通用开关；`clearCache()` 也不是页面退出时的清理接口。
 
 <!-- gracker-diagram: a279-04-virtual-reservation-not-resident-memory -->
 ![WebView地址预留与物理常驻内存分开诊断](../../assets/diagrams/ch25/a279-04-virtual-reservation-not-resident-memory.png)
 
 图：看到大块reservation先核对映射权限与常驻页；不能把虚拟大小直接计入物理泄漏。
+
+功耗记录至少包含页面类型、provider 包版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。本地诊断可用 Perfetto（Android 系统跟踪工具）或 `ps` 按 renderer PID（进程编号）关联数据；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
 
 <!-- gracker-diagram: a279-05-visibility-script-and-destruction -->
 ![页面离屏后按生命周期停止持续工作](../../assets/diagrams/ch25/a279-05-visibility-script-and-destruction.png)
@@ -171,7 +171,7 @@ adb bugreport bugreport-hybrid-power.zip
 
 `netstats` 是累计统计，要按目标 UID 计算前后差值，不能比较两个完整文件的总字节数。系统按时间区间聚合数据，最近一段统计可能尚未写入，因此还要考虑聚合与写入延迟。Android 8 设备可能使用旧网络记账实现，Android 17 设备使用的底层实现不同，但应用层基准应统一通过 NetworkStats API（按 UID 查询网络流量）或 `dumpsys netstats` 取数，不把 `/proc/net/xt_qtaguid/stats` 当作跨版本接口。
 
-外部浏览器对照组要替换被测包名和启动入口，并记录浏览器主进程与 renderer；不能把 `com.example.app` 的统计当作浏览器结果。
+这组 `meminfo --package` 只提供对应包的内存快照，不能假定它已经覆盖全部独立 renderer；要用本地进程关联补齐 renderer，并避免共享 renderer 重复计数。外部浏览器对照组要替换被测包名和启动入口，并记录浏览器主进程与 renderer；不能把 `com.example.app` 的统计当作浏览器结果。UID 网络统计、宿主内存快照与整机能量也不能直接相加或相互替代。
 
 这组数据要与 Perfetto、Android Studio [Power Profiler](https://developer.android.com/studio/profile/power-profiler) 或 Jetpack Macrobenchmark（宏基准测试框架）的 [`PowerMetric`](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#powermetric) 交叉使用。ODPM（On Device Power Rails Monitor，设备上的电源轨监测）按硬件子系统记录整机能耗，并不按应用分摊。`PowerMetric` 仍是实验性 API，也返回整机而非单应用能耗；当前官方支持 Pixel 6、Pixel 6 Pro 及更新的实体 Pixel 设备。使用整机能耗工具时，还要固定其他进程、温度与屏幕状态。
 
@@ -227,12 +227,12 @@ Hybrid 功耗监控要按页面记录。只按应用维度看耗电，无法区�
 - 成本指标：页面驻留时长、前后台状态、CPU 时间、PSS/RSS、网络请求数、上下行字节数、桥调用次数、帧耗时、温度区间。
 - 结束与故障信息：用户返回、容器销毁、renderer 异常终止、renderer 被系统回收、LMK（Low Memory Killer，低内存终止机制）结束应用进程、ANR（Application Not Responding，应用无响应）、应用进程退出原因。
 
-Android Vitals 是 Play Console 汇总的应用质量指标。当前核心指标包括用户可感知崩溃、用户可感知 ANR 和过量部分唤醒锁；过量唤醒、后台网络、启动、慢渲染和用户可感知 LMK 等指标也可用于排查问题，但都不能自动定位到某个 URL。页面级 APM 负责建立 URL、容器版本与这些异常的时间关联；`ApplicationExitInfo`（API 30+ 的应用进程退出记录）用于补充应用进程退出原因，不能代替 WebView 的 renderer 回调。
+Android Vitals 是 Play Console 汇总的应用质量指标。截至本次核对，官网核心指标还列出内存用量与 Bitmap 内存用量，以及用户可感知崩溃、用户可感知 ANR 和过量部分唤醒锁；过量唤醒、后台网络、启动、慢渲染和用户可感知 LMK 等指标也可用于排查问题，但都不能自动定位到某个 URL。页面级 APM 负责建立 URL、容器版本与这些异常的时间关联；`ApplicationExitInfo`（API 30+ 的应用进程退出记录）用于补充应用进程退出原因，不能代替 WebView 的 renderer 回调。
 
 WebView renderer 的版本边界如下：
 
-- **API 26+**：实现 `WebViewClient.onRenderProcessGone()`。通过 `RenderProcessGoneDetail.didCrash()` 区分异常终止与系统回收；失去 renderer 的 WebView 必须从 View 树移除并销毁，不能复用。
-- **API 29+**：再实现 `WebViewRenderProcessClient.onRenderProcessUnresponsive()` 与 `onRenderProcessResponsive()`，分别接收 renderer 持续无响应和恢复响应的通知。无响应回调可能以不短于 5 秒的间隔重复，告警要去重；若主动终止 renderer，必须能处理共享该 renderer 的所有 WebView。
+- **API 26+**：实现 `WebViewClient.onRenderProcessGone()`。通过 `RenderProcessGoneDetail.didCrash()` 区分异常终止与系统回收；失去 renderer 的 WebView 必须从 View 树移除并销毁，不能复用；清理回调参数指定的实例及其引用，处理完成后返回 `true`，否则应用可能崩溃或被终止。共享 renderer 时每个受影响实例都会收到回调，不要据单个回调盲目销毁其他实例。
+- **API 29+**：再实现 `WebViewRenderProcessClient.onRenderProcessUnresponsive()` 与 `onRenderProcessResponsive()`，分别接收 renderer 持续无响应和恢复响应的通知。无响应回调可能以不短于 5 秒的间隔重复，告警要去重；若多进程模式下主动终止 renderer，必须能处理共享该 renderer 的所有 WebView 的退出回调；单进程模式传入的 `renderer` 可为 `null`，不能直接调用终止方法。
 - **API 26–28**：平台没有标准的 renderer 无响应回调。页面加载或交互超时只能作为用户体验故障信号，不能据此断言 renderer 已失去响应。
 
 <!-- gracker-diagram: a279-09-renderer-unresponsive-exit-and-recovery -->

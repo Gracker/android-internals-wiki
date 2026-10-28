@@ -20,14 +20,14 @@ related_chapters:
 - '26.12'
 - '26.14'
 - '15.1'
-last_verified: '2026-09-09'
-last_source_verified_at: '2026-09-09'
-last_verified_against: arXiv:2512.21555v1 submission history and venue metadata checked 2026-09-09; AOSP android-17.0.0_r1 ART instrumentation/trace/JVMTI sources spot-checked 2026-09-09; Android Developers Debug, method tracing, ProfilingManager, Android 17 features and profileable docs spot-checked 2026-09-09; selected ARTEMIS performance/stability material read 2026-09-09
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: fixed arXiv:2512.21555v1 and ICSE2026 SEIP official program reviewed 2026-10-25; fixed android-17.0.0_r1 ART tracing/instrumentation/JVMTI sources and current official API docs audited; published GC agent compiled with host JBR21 headers and fake-VM failure/concurrency tests only; no Android device/NDK validation
 confidence: medium
 sources:
 - type: paper
   path: https://arxiv.org/abs/2512.21555
-  note: 'XTrace: A Non-Invasive Dynamic Tracing Framework for Android Applications in Production; arXiv v1 submitted 2025-12-25; no public venue metadata as of 2026-09-09'
+  note: 'XTrace arXiv v1 submitted 2025-12-25; ICSE2026 official SEIP program lists 2026-04-15 talk; reviewed 2026-10-25; method and numeric discussion pinned to v1'
 - type: legacy-reference-preserved
   path: DeepResearch/XTrace：字节跳动生产级 Android 动态追踪系统深度解析.md
 - type: legacy-reference-preserved
@@ -104,19 +104,19 @@ consolidated_from:
 
 动态方法追踪会在程序运行时记录指定方法的进入、退出或异常事件。XTrace 论文针对一个生产诊断难题：事故发生后才知道要观察哪个方法，希望无需重新发版就能下发目标，同时避免全量方法追踪拖慢用户设备。
 
-公开材料目前只有论文，可下载的 XTrace SDK 或源码都还没有。要判断这项方案，我们需要分开回答三个问题：
+本篇以公开arXiv v1为机制和实验数字基线；ICSE2026官方SEIP议程也已列出该报告。所核论文和会议页面未提供可下载SDK、源码或可复现实验脚本，不能据此独立复现内部实现。要判断这项方案，我们需要分开回答三个问题：
 
 - 论文公开了哪些机制和实验结果；
 - 这些机制与 `android-17.0.0_r1` 的 ART 源码是否一致；
 - 普通应用可以采用哪些受支持的方案，哪些能力只能由自研基础设施或系统镜像提供。
 
-ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级信号。XTrace 关注生产环境中的低开销动态选择，JVMTI Agent 提供标准实验入口，但受 profileable、debuggable 和去优化范围限制。
+ART动态方法追踪可通过运行时插桩或JVMTI事件获得方法级信号。XTrace研究生产环境动态选择；普通App的JVMTI运行期attach要求debuggable，profileable不能替代这一授权，事件选择还决定去优化范围。
 
 ## 动态选择、插桩与生产开销
 
 ### 证据范围
 
-截至 2026-09-09，arXiv 提交历史仍只有 2025-12-25 上传的 [arXiv v1 手稿](https://arxiv.org/abs/2512.21555)。arXiv 页面只提供 arXiv-issued DataCite DOI，会议或期刊元数据缺席；PDF 上的 `Conference’17, July 2017, Washington, DC, USA`、假 ISBN 和模板 DOI 都来自 ACM 模板，当作正式发表证据用不上。
+截至2026-10-25，arXiv提交历史仍列2025-12-25的[固定v1手稿](https://arxiv.org/html/2512.21555v1)，其页面仅列arXiv DOI；但[ICSE2026官方议程](https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti)明确列出2026-04-15的SEIP报告。因此“没有公开会议记录”的原判断应撤回；本篇继续把v1中的机制/数字与会议议程的存在分开引用，不把旧稿模板页眉当作正式出版信息。
 
 论文同样没有附带 XTrace 源码、SDK、符号表或可复现实验脚本。所以我们把文中的结论按三类证据区分：
 
@@ -218,9 +218,9 @@ runtime->GetInstrumentation()->EnableMethodTracing(
 
 `EnableMethodTracing()` 因而选择 `kInstrumentWithEntryExitHooks`，跳过了 `kInstrumentWithInterpreter`。普通 method tracing 由此优先使用方法进入/退出 hook，把所有方法统一交给解释器执行的做法留在了过去。
 
-method tracing 仍不适合长期运行在生产环境，因为普通 tracing 路径一启动就会做这些事：
+下面只描述普通、非sampling、未走内部low-overhead分支的tracing路径；不把Trace::Start的所有模式混成同一路径。对原本非Java-debuggable进程，启用时会切换运行时状态并执行相应代码失效/boot-image处理；已处于该状态则不重复该条件分支。它还会配置已加载方法与记录事件：
 
-- 切换到 Java-debuggable 状态，使 JIT 编译代码缓存（`code cache`）失效，并对 boot image 做反优化；boot image 是预加载核心类及其编译结果的运行时镜像；
+- 若此前非Java-debuggable，切换状态、使JIT code cache失效并反优化boot image（预加载核心类及编译结果的运行时镜像）；
 - `ConfigureStubs()` 进入 `UpdateStubs()` 后，通过 `ClassLinker::VisitClasses()` 检查已加载方法；
 - 现有代码不支持 entry/exit hook 时，把非 native 方法入口改到解释器桥；解释器桥会从已编译入口转入字节码解释执行；
 - 为每次方法进入、退出或异常展开记录事件。
@@ -262,7 +262,7 @@ stub 是负责保存现场、调用追踪逻辑并恢复执行的一小段入口
 MethodEntryProxy 只处理配置命中的方法
 ```
 
-公开论文没有给出 hook 引擎、符号解析、方法重载消歧、入口写入同步或卸载代码。直接把伪代码翻成 native hook，会遗漏暂停线程、原子更新入口、处理 JIT 重编译和恢复原入口等进程安全条件。
+所核v1没有公开hook引擎、符号解析、重载消歧、入口同步或卸载代码；会议议程的存在不会补足这些实现输入。直接把伪代码翻成 native hook，会遗漏暂停线程、原子更新入口、处理 JIT 重编译和恢复原入口等进程安全条件。
 
 <!-- gracker-diagram: a300-05-targeted-entry-and-proxy-dispatch -->
 ![XTrace v1：选择目标入口，再由事件代理处理命中方法](../../assets/diagrams/ch26/a300-05-targeted-entry-and-proxy-dispatch.png)
@@ -291,7 +291,7 @@ DAU（Daily Active Users）是每日活跃用户数。论文报告了一次持�
 | Crash User Rate | 0.018490% | 0.018501% | +0.0595% | 0.615817 | 通过论文设定的 +0.5% 非劣界值 |
 | ANR Rate | 0.025480% | 0.025510% | +0.1177% | 0.551651 | 通过论文设定的 +0.8% 非劣界值 |
 
-非劣界值是实验预先允许的最大相对恶化幅度，95% 置信区间表示样本估计的不确定范围。论文表中的区间上界低于 Crash 的 +0.5% 和 ANR 的 +0.8% 界值，因此按其规则判为通过。p 值高于 0.05 只表示本次检验没有观察到统计显著差异；要下“两组完全等价”的结论，还得看区间和界值，单靠 p 值不够。
+非劣界值用于约束允许的相对恶化；论文列出Crash +0.5%、ANR +0.8%和相应区间，表内结论为Pass。公开v1没有给出原始事件数、去重/日聚合与区间计算细节，也未说明界值是否预注册，因此这里仅转录作者的检验结论，不声称已重算或独立证明非劣。p 值高于 0.05 只表示本次检验没有观察到统计显著差异；要下“两组完全等价”的结论，还得看区间和界值，单靠 p 值不够。
 
 这些结果支持的只是该应用、该配置和该统计口径；目标方法数量、命中频率、机型分布或采集动作一变，风险就要重新实验。
 
@@ -394,7 +394,7 @@ XTrace 配置命中该注册方法并记录调用栈。论文展示的调用路�
 - interceptor 必须防止递归，也就是采集过程中触发同一目标时直接旁路；记录日志、序列化或上报路径都可能造成再次命中；
 - 阻塞 I/O 要避开主线程、Binder 线程、GC 临界区和持锁路径；GC（Garbage Collection，垃圾回收）负责回收不可达对象，临界区则是运行时要求保持特定锁或线程状态的一段代码；
 - 事件缓存必须有容量上限和丢弃策略；
-- 正常退出、异常展开、进程终止与配置撤销都要恢复入口和监听器状态；恢复失败时应关闭该设备上的后续动态配置。
+- 正常退出、异常展开和配置撤销需按协议恢复入口/监听器；进程被杀时地址空间直接消失，不能依赖执行恢复代码或OnUnload。下次启动从干净状态重新核验，恢复失败的存活进程应关闭后续动态配置。
 
 #### 数据是否超出诊断目的
 
@@ -432,11 +432,11 @@ XTrace 配置命中该注册方法并记录调用栈。论文展示的调用路�
 
 用自动化控制器驱动 jank、启动或 soak 实验时，实验记录应把外部刺激也写入证据：输入注入路径，人手点击还是自动化点击，连续点击间隔，弹窗 Safety Net/自愈是否改变冷启动或首帧路径，`ARTEMIS_KEEP_DEVICE_AWAKE` 是否保持唤醒，以及 `DeviceExecutionLock` 是否让单设备同一时刻只有一个任务运行。[来源: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md] 这些字段回答的是“这次复现如何施加负载”；ART/JVMTI、Perfetto 和编译期插桩回答的是“目标进程和系统当时发生了什么”。材料还提醒，自动化决策时延会叠在 UI 动画与网络上；因此两类证据要用时间戳或步骤编号对齐；对齐之后，外部控制时延归外部账，应用方法耗时与 ART 事件开销各记各的。[来源: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md]
 
-
 <!-- gracker-diagram: a300-11-automation-stimulus-and-runtime-evidence -->
 ![自动化操作与运行时事件分别保留证据，再关联步骤](../../assets/diagrams/ch26/a300-11-automation-stimulus-and-runtime-evidence.png)
 
 图：章内ARTEMIS材料只是操作与诊断面说明，未声明已实现具体Perfetto集成或本机复现性能。
+
 
 ## JVMTI 事件、Attach 与去优化边界
 
@@ -549,7 +549,7 @@ fun attachGcCounterAgent() {
 
 detach 指在进程继续运行时解除 agent；而 JVMTI 没有与 attach 对称的通用卸载接口。
 
-ART 运行时关闭时会调用 `Agent_OnUnload`，这份源码明确不执行 `dlclose()`，因为已有 agent 可能假设库不会在运行中卸载。agent 自己可以停用事件、停掉工作线程并调用 `DisposeEnvironment()` 释放 JVMTI 环境，但 `.so` 仍留在进程地址空间；需要无 agent 的干净基线时，重启目标进程即可。
+ART 运行时关闭时会调用 `Agent_OnUnload`，这份源码明确不执行 `dlclose()`，因为已有 agent 可能假设库不会在运行中卸载。agent可停用事件、停止工作线程后DisposeEnvironment释放环境；但它不等待已经运行的callback结束，也不自动恢复该环境挂起的线程、Deallocate内存或销毁raw monitor，这些都要自行处理。固定Android17的.so仍留在地址空间；需要无 agent 的干净基线时，重启目标进程即可。
 
 <!-- gracker-diagram: a300-13-onload-onattach-onunload-and-dispose -->
 ![agent 生命周期没有通用的对称 detach 操作](../../assets/diagrams/ch26/a300-13-onload-onattach-onunload-and-dispose.png)
@@ -565,13 +565,18 @@ C++ 示例保留 `GetEnv → capability → callbacks → enable` 这条最小�
 ```cpp
 #include <atomic>
 #include <cstdint>
+#include <mutex>
 #include <jni.h>
 #include <jvmti.h>
 
 namespace {
 
+// 本示例只为64位原子计数可无锁的目标ABI构建，不回退到隐藏锁。
+static_assert(std::atomic<uint64_t>::is_always_lock_free);
 std::atomic<uint64_t> g_gc_start_count{0};
 std::atomic<uint64_t> g_gc_finish_count{0};
+std::mutex g_init_mutex;  // 仅初始化使用，GC回调不取此锁。
+jvmtiEnv* g_running_env = nullptr;
 
 void JNICALL OnGcStart(jvmtiEnv*) {
   g_gc_start_count.fetch_add(1, std::memory_order_relaxed);
@@ -581,68 +586,76 @@ void JNICALL OnGcFinish(jvmtiEnv*) {
   g_gc_finish_count.fetch_add(1, std::memory_order_relaxed);
 }
 
+struct PendingEnvironment {
+  jvmtiEnv* env;
+  bool committed = false;
+  ~PendingEnvironment() {
+    if (!committed) {
+      // DisposeEnvironment同时清理该环境的capability和事件。
+      // 正式工具还应记录清理错误；此示例只返回初始化失败。
+      env->DisposeEnvironment();
+    }
+  }
+};
+
 jint StartAgent(JavaVM* vm) {
+  std::lock_guard<std::mutex> lock(g_init_mutex);
+  if (g_running_env != nullptr) return JNI_OK;  // 重复attach不再建环境。
+
   jvmtiEnv* jvmti = nullptr;
-  if (vm->GetEnv(
-          reinterpret_cast<void**>(&jvmti),
-          JVMTI_VERSION_1_0) != JNI_OK ||
-      jvmti == nullptr) {
+  if (vm->GetEnv(reinterpret_cast<void**>(&jvmti), JVMTI_VERSION_1_0)
+          != JNI_OK || jvmti == nullptr) {
     return JNI_ERR;
   }
+  PendingEnvironment pending{jvmti};
 
   jvmtiCapabilities potential{};
   if (jvmti->GetPotentialCapabilities(&potential) != JVMTI_ERROR_NONE ||
       potential.can_generate_garbage_collection_events == 0) {
     return JNI_ERR;
   }
-
   jvmtiCapabilities requested{};
   requested.can_generate_garbage_collection_events = 1;
   if (jvmti->AddCapabilities(&requested) != JVMTI_ERROR_NONE) {
     return JNI_ERR;
   }
-
   jvmtiEventCallbacks callbacks{};
   callbacks.GarbageCollectionStart = &OnGcStart;
   callbacks.GarbageCollectionFinish = &OnGcFinish;
   if (jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks))
-      != JVMTI_ERROR_NONE) {
+          != JVMTI_ERROR_NONE) {
     return JNI_ERR;
   }
-
-  if (jvmti->SetEventNotificationMode(
-          JVMTI_ENABLE,
-          JVMTI_EVENT_GARBAGE_COLLECTION_START,
-          nullptr) != JVMTI_ERROR_NONE) {
+  if (jvmti->SetEventNotificationMode(JVMTI_ENABLE,
+          JVMTI_EVENT_GARBAGE_COLLECTION_START, nullptr) != JVMTI_ERROR_NONE) {
     return JNI_ERR;
   }
-  if (jvmti->SetEventNotificationMode(
-          JVMTI_ENABLE,
-          JVMTI_EVENT_GARBAGE_COLLECTION_FINISH,
-          nullptr) != JVMTI_ERROR_NONE) {
-    jvmti->SetEventNotificationMode(
-        JVMTI_DISABLE,
-        JVMTI_EVENT_GARBAGE_COLLECTION_START,
-        nullptr);
-    return JNI_ERR;
+  if (jvmti->SetEventNotificationMode(JVMTI_ENABLE,
+          JVMTI_EVENT_GARBAGE_COLLECTION_FINISH, nullptr) != JVMTI_ERROR_NONE) {
+    return JNI_ERR;  // pending销毁时释放整个未提交环境，包含已启用START。
   }
+  g_running_env = jvmti;
+  pending.committed = true;
   return JNI_OK;
 }
 
 }  // namespace
 
-extern "C" JNIEXPORT jint JNICALL Agent_OnAttach(
-    JavaVM* vm, char*, void*) {
+extern "C" JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char*, void*) {
   return StartAgent(vm);
 }
 
-extern "C" JNIEXPORT jint JNICALL Agent_OnLoad(
-    JavaVM* vm, char*, void*) {
+extern "C" JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* vm, char*, void*) {
   return StartAgent(vm);
 }
 ```
 
-示例省略了事件停用、环境释放、计数导出和重复 attach 防护，离可直接投产的成品还有距离。`jvmtiError` 是 JVMTI API 返回的错误码，完整的调试工具要逐项检查并记录。
+示例用C++17为64位原子无锁的目标ABI构建；初始化失败释放未提交环境，初始化互斥与缓存环境避免重复attach再创建。GC回调只接触进程全局原子计数，不使用可能已被释放的env。它仍省略运行期stop/restart、计数导出、options解析和清理错误上报；成功后保留环境至进程结束，不能把它当完整生产agent。`jvmtiError` 是 JVMTI API 返回的错误码，完整的调试工具要逐项检查并记录。
+
+<!-- gracker-diagram: a300-14-gc-agent-initialization-transaction -->
+![GC 计数 agent：初始化提交前失败就释放新环境](../../assets/diagrams/ch26/a300-14-gc-agent-initialization-transaction.png)
+
+图：Dispose会停用本环境事件但不等在途callback；示例全局计数在callback继续时保持存活。
 
 工具还要保存 agent 状态机（对“未初始化、运行、停用、释放”等合法状态及转换条件的明确记录），并保证停用时没有 callback 与销毁操作并发；原子计数则保证多个线程更新同一计数器时不产生数据竞争。
 
@@ -671,12 +684,7 @@ HotSpot 是 OpenJDK 在桌面和服务器环境中常用的虚拟机实现，它
 
 phase 是 JVMTI 对虚拟机生命周期阶段的划分，例如加载、启动、正常运行和结束阶段。函数与事件各自规定了允许使用的 phase；在错误阶段调用会失败，事件也可能不会发出。
 
-回调通常在触发事件的线程上执行。回调参数中的 JNI 局部引用和指针一般只在回调返回前有效，所以 agent 要把仍需使用的数据复制出来再交给异步线程；消费者线程就是从有界缓冲区取出记录、完成解析、符号化或文件写入的 agent 工作线程。
-
-<!-- gracker-diagram: a300-14-gc-agent-initialization-transaction -->
-![GC 计数 agent：初始化提交前失败就释放新环境](../../assets/diagrams/ch26/a300-14-gc-agent-initialization-transaction.png)
-
-图：Dispose会停用本环境事件但不等在途callback；示例全局计数在callback继续时保持存活。
+回调通常在触发事件的线程上执行。回调参数中的局部引用/临时指针不能直接排队给异步线程。原始值可按契约复制；需保留Java对象时仅在该回调允许JNI且线程状态合适时建立/释放global reference，GC暂停等受限回调不能套用此法；消费者线程就是从有界缓冲区取出记录、完成解析、符号化或文件写入的 agent 工作线程。
 
 ### 启用事件会怎样影响 ART
 
@@ -795,7 +803,7 @@ commit（源码版本标识）、NDK（Native Development Kit，Android 的 C/C+
 - potential / requested / granted capability，即运行时可申请、agent 请求和最终取得的功能位；
 - 启用的事件、线程过滤器、开始与停止时刻；
 - 无 agent、已 attach 但未开事件、开启目标事件三组对照；
-- wall time、CPU time、帧、内存、GC、JIT 状态和丢弃事件数；wall time 是日历经过时间，CPU time 是线程实际占用处理器的累计时间；
+- wall time、CPU time、帧、内存、GC、JIT 状态和丢弃事件数；wall time指以明确单调时钟测得的实耗时间并注明是否计深睡，非可回拨日历时间戳；CPU time是线程实际占用处理器的累计时间；
 - 进程重启后的恢复结果。
 
 实验结论要限定范围：OEM 指设备或系统构建厂商，Android 17 AOSP 源码能解释参考实现机制，目标 OEM 镜像上的可用性仍要用同一个 agent 验证；一次真机成功，证明的也只是该构建加该配置。
@@ -815,7 +823,7 @@ XTrace 的主要贡献是把“只选择少量目标方法”和“尽量保留�
 - 论文展示的 ARM64 instrumentation 入口已经变化，适配工作远多于替换符号名；
 - Perfetto、调用栈采样、`ProfilingManager` 和编译期插桩各有可覆盖的生产场景。
 
-XTrace 目前是一份尚无法独立复现的系统设计研究。目标注入、自适应入口和生产控制流程可为诊断设施设计提供参考；源码、设备覆盖和失败恢复验证齐备后，才具备进入线上进程的工程前提。
+按本篇核到的公开输入，XTrace仍是一项无法独立复现内部实现的系统设计研究，已有ICSE2026 SEIP官方议程记录。目标注入、自适应入口和生产控制流程可为诊断设施设计提供参考；源码、设备覆盖和失败恢复验证齐备后，才具备进入线上进程的工程前提。
 
 JVMTI/ART TI 提供标准的运行时实验入口，可以验证方法事件、GC、对象 tag 和类重定义，但 attach 只对 `debuggable` 应用开放，事件启用还可能触发有限、线程级或全量去优化。它适合 IDE、实验室与专用调试构建；XTrace 那种生产能力依旧要靠私有基础设施，线上应用仍应优先选择 `ProfilingManager`、Perfetto、调用栈采样或编译期插桩。
 
@@ -833,3 +841,4 @@ JVMTI/ART TI 提供标准的运行时实验入口，可以验证方法事件、G
 9. Perfetto：[Tracing documentation](https://perfetto.dev/docs/)。
 10. [26.12 编译期字节码插桩与监控自动化](12-bytecode-instrumentation-monitoring-automation.md)。
 11. DeepResearch：`2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md`。
+12. [固定XTrace arXiv v1全文](https://arxiv.org/html/2512.21555v1)；[ICSE2026 SEIP官方议程](https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti)（2026-04-15报告）。

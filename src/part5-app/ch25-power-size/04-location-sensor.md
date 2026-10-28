@@ -4,8 +4,8 @@ chapter: '25.4'
 section: '25.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_verified_against: Android Developers location, sensors, FGS, GNSS, Wi-Fi RTT and BLE docs retrieved 2026-08-15 + Google Play services LocationRequest docs + AOSP android-17.0.0_r1
 confidence: high
 consolidated_from:
@@ -84,7 +84,7 @@ last_review_finalize_at: '2026-08-15T14:39:53+08:00'
 | 借用系统已有位置 | `PRIORITY_PASSIVE` | 不保证有结果，也不保证新鲜 | 业务窗口结束 |
 | 姿态或运动趋势 | 最低可用采样率 + 批处理 | 按事件时间处理，允许批量到达 | 生命周期结束或前台服务停止 |
 
-`getLastLocation()` 不主动计算新位置，返回值可能为空也可能过时。判断新鲜度时，我们优先比较 `Location.elapsedRealtimeNanos` 与当前 elapsed realtime（设备开机后持续递增的单调时间）——两者都从开机起单调递增；墙上时钟会被用户、网络校时或时区改变，不用它做这类判断。需要一次较新的结果时，用 `getCurrentLocation()` 并传入取消条件，别为一次查询留下长期注册的回调。
+`getLastLocation()` 不主动计算新位置，返回值可能为空也可能过时。判断新鲜度时，我们优先比较 `Location.elapsedRealtimeNanos` 与当前 elapsed realtime（设备开机后持续递增的单调时间）——两者都从开机起单调递增；墙钟可能被用户改时间或系统校时调整，时区只改变本地时间展示而不直接改写 epoch；单机位置年龄不依赖墙钟，应确认位置与当前 elapsed realtime 属于同次开机。需要一次较新的结果时，用 `getCurrentLocation()` 并传入取消条件，别为一次查询留下长期注册的回调。
 
 <!-- gracker-diagram: a277-01-location-shape-by-freshness -->
 ![按精度、新鲜度与持续时间选择位置形态](../../assets/diagrams/ch25/a277-01-location-shape-by-freshness.png)
@@ -260,7 +260,7 @@ fun buildPassiveLocationRequest(
 定位层的公开资料包括 [Geofencing 指南](https://developer.android.com/develop/sensors-and-location/location/geofencing)、[后台定位权限](https://developer.android.com/develop/sensors-and-location/location/permissions/background) 和 [`Priority.PRIORITY_PASSIVE`](https://developers.google.com/android/reference/com/google/android/gms/location/Priority)。下面的 `android-17.0.0_r1` 源码可用于核对平台实现：
 
 - [`LocationManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/LocationManagerService.java) 提供系统位置服务入口。
-- [`LocationProviderManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/provider（位置数据提供器）/LocationProviderManager.java) 管理 provider 的注册、请求和交付。
+- [`LocationProviderManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java) 管理 provider 的注册、请求和交付。
 - [`LocationFudger.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/fudger/LocationFudger.java) 处理粗略位置。
 - [`LocationRequest.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/location/java/android/location/LocationRequest.java) 定义平台请求参数；它与 Google Play services 的同名类不是同一个类型。
 
@@ -270,17 +270,14 @@ fun buildPassiveLocationRequest(
 
 下面的流程图给出传感器事件从硬件到应用的主要层次。批处理发生在 HAL 之前的 sensor hub 或硬件 FIFO，`SensorService` 负责连接、权限、速率调整和事件分发。
 
-```mermaid
-flowchart LR
-    A["传感器硬件"] --> B["sensor hub / 硬件 FIFO"]
-    B --> C["Sensors HAL"]
-    C --> D["Android 17 SensorService"]
-    D --> E["SystemSensorManager / JNI"]
-    E --> F["SensorEventListener2"]
-    F --> G["应用计算、存储、网络"]
-```
+事件在 sensor hub/FIFO 暂存后经 HAL 和 SensorService 分发；采样与交付分别设预算。
 
-这条链路上有两个独立的功耗问题：批量交付能减少应用处理器唤醒；要减少事件生成与融合计算，得调低 `samplingPeriodUs` 对应的采样频率。回调后逐条写库或立即上报，还会抵消批处理带来的收益。
+<!-- gracker-diagram: a277-05-sensor-hardware-to-app -->
+![传感器采样、FIFO批交付与应用计算分开预算](../../assets/diagrams/ch25/a277-05-sensor-hardware-to-app.png)
+
+图：增大采样周期才能减少生成与融合计算；批量交付主要减少应用处理器唤醒。
+
+这条链路上有两个独立的功耗问题：批量交付能减少应用处理器唤醒；要减少事件生成与融合计算，应增大 `samplingPeriodUs`（降低采样频率）。回调后逐条写库或立即上报，还会抵消批处理带来的收益。
 
 应用侧的注册入口是 `SensorManager.registerListener(listener（监听器）, sensor, samplingPeriodUs, maxReportLatencyUs)`：
 
@@ -289,7 +286,7 @@ flowchart LR
 - `Sensor.getFifoMaxEventCount()` 为零表示该传感器不使用 FIFO，此时带最大延迟的重载与普通注册没有批处理差异。
 - FIFO 可能由多个传感器共享。某个传感器的最大延迟到期或 FIFO 提前填满时，同一 FIFO 的其他事件也可能提前交付。
 
-把这些参数组装起来是 `registerBatchedSensor()`：它注册可批处理的 continuous（连续上报型） 或 on-change（数值变化时上报型） 传感器，采样周期和最大交付延迟由调用方按业务语义传入。调用方还要持有同一个 `SensorEventListener2`，因为 flush（立即交付缓冲事件） 的完成通知只会回到这个实例。
+把这些参数组装起来是 `registerBatchedSensor()`：它注册使用普通监听接口的非 one-shot 传感器，包括 continuous（连续上报型）或 on-change（数值变化时上报型）；具体报告模式仍按该传感器契约处理，采样周期和最大交付延迟由调用方按业务语义传入。调用方还要持有同一个 `SensorEventListener2`，因为 flush（立即交付缓冲事件） 的完成通知只会回到这个实例。
 
 ```kotlin
 fun registerBatchedSensor(
@@ -314,7 +311,12 @@ fun registerBatchedSensor(
 
 返回 `false` 表示传感器不受支持或启用失败，注册之后要检查返回值。one-shot（触发一次后自动停用） 传感器要走 `requestTriggerSensor()`。如果 `fifoMaxEventCount` 为零，应用可以继续接收事件，只是 `maxReportLatencyUs` 提供不了硬件批处理能力。
 
-flush 的作用是把缓冲里的事件取出来：`SensorManager.flush(listener)` 是异步操作，调用后，FIFO 中已有事件按正常回调送达，随后才调用 `SensorEventListener2.onFlushCompleted()`。我们要保存尾部事件时，应在 flush 成功后等完成回调、再注销 listener，还要准备超时退出。`flush()` 返回 `false` 表示该监听器没有已注册传感器，或至少一个 flush 请求失败。硬件没有原生 flush 支持时，框架仍可以发送一个简单的完成事件。
+flush 的作用是把缓冲里的事件取出来：`SensorManager.flush(listener)` 是异步操作，调用后，FIFO 中已有事件按正常回调送达，随后才调用 `SensorEventListener2.onFlushCompleted()`。要保存尾部事件时，先固定本次需要 flush 的已注册传感器集合；同一个 listener 注册多个传感器时，`onFlushCompleted(sensor)` 按传感器分别到达，不能收到第一项就注销整个 listener。应等待目标集合全部完成，或在失败/超时路径按已定义的数据丢弃策略清理，所有路径最终注销监听。`flush()` 返回 `false` 表示该监听器没有已注册传感器，或至少一个 flush 请求失败。硬件没有原生 flush 支持时，框架仍可以发送一个简单的完成事件。
+
+<!-- gracker-diagram: a277-07-flush-per-sensor-completion -->
+![同一listener的flush必须逐传感器等待](../../assets/diagrams/ch25/a277-07-flush-per-sensor-completion.png)
+
+图：只收到第一个onFlushCompleted不能注销整个listener；失败与超时路径也必须回收注册。
 
 ### wake-up（唤醒型）、non-wake-up（非唤醒型）与后台状态
 
@@ -352,7 +354,7 @@ Android 17 的 `SystemSensorManager` 用 5000 微秒作为 200 Hz 的周期判�
 - 在 Android 16（API 36）及以上系统中，目标版本 36 及以上的应用改用 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION` 等细分权限；后台读取对应健康数据需要 `READ_HEALTH_DATA_IN_BACKGROUND`。
 - `ACTIVITY_RECOGNITION` 或清单中的 `HIGH_SAMPLING_RATE_SENSORS` 也可以满足 health FGS 的一种启动先决条件，但只能访问各自授权范围内的数据。
 
-这套规则延续到 Android 17（API 37）。前台服务解决的是长时运行的合规问题；最低采样率、允许批处理、持续通知，以及用户停止会话后及时结束服务，这些优化动作仍然要做。
+这套规则延续到 Android 17（API 37）。手机应用迁移到细分健康权限时，还要按 Android 16 官方要求声明展示隐私政策/权限说明的 Activity，缺少说明可能导致权限撤销。前台服务解决的是长时运行的合规问题；最低采样率、允许批处理、持续通知，以及用户停止会话后及时结束服务，这些优化动作仍然要做。
 
 <!-- gracker-diagram: a277-09-location-health-resource-gates -->
 ![运行身份、资源权限与生命周期共同决定采样](../../assets/diagrams/ch25/a277-09-location-health-resource-gates.png)
@@ -367,16 +369,6 @@ Android 17 的 `SystemSensorManager` 用 5000 微秒作为 200 Hz 的周期判�
 - [AOSP（Android 开源项目） Sensors batching](https://source.android.com/docs/core/interaction/sensors/batching)：FIFO、报告延迟、suspend 与 wake-up/non-wake-up 契约。
 
 传感器驱动和 sensor hub 固件通常由设备厂商实现，通用 AOSP 给不出一条适用于所有设备的 Linux 驱动路径，我们在这里不据此推断内核行为；后续若引用通用内核实现，统一以 `android17-6.18-2026-06_r6` 为准，旧内核分支解释不了 Android 17 设备。
-
-<!-- gracker-diagram: a277-05-sensor-hardware-to-app -->
-![传感器采样、FIFO批交付与应用计算分开预算](../../assets/diagrams/ch25/a277-05-sensor-hardware-to-app.png)
-
-图：增大采样周期才能减少生成与融合计算；批量交付主要减少应用处理器唤醒。
-
-<!-- gracker-diagram: a277-07-flush-per-sensor-completion -->
-![同一listener的flush必须逐传感器等待](../../assets/diagrams/ch25/a277-07-flush-per-sensor-completion.png)
-
-图：只收到第一个onFlushCompleted不能注销整个listener；失败与超时路径也必须回收注册。
 
 ## 后台定位、前台服务与定位现场
 
@@ -419,7 +411,7 @@ adb shell dumpsys powerstats
 最后看三类更底层的测量 API。它们采集的是测量值，定位本身仍交给普通定位流程；精度和功耗也没有跨设备固定的值。Wi-Fi RTT 指 round-trip time（往返时间）测距；BLE 指 Bluetooth Low Energy（低功耗蓝牙）。
 
 - GNSS 原始测量需要 `ACCESS_FINE_LOCATION`。API 31 新增的 [full tracking](https://developer.android.com/reference/android/location/GnssMeasurementRequest.Builder) 会要求芯片关闭占空比，也就是停止周期性休眠，只在算法确需连续载波相位时开启。看到某个载波频率只说明本次观测包含该信号，说明不了定位解算用没用双频。
-- Wi-Fi RTT 从扫描得到的真实 `ScanResult` 构建请求。目标版本 33 及以上使用 `NEARBY_WIFI_DEVICES`，回调按 MAC（媒体访问控制） 地址关联；Android 17 的 [`STATUS_BUSY_TRY_LATER`](https://developer.android.com/reference/android/net/wifi/rtt/RangingResult) 表示对端忙，要等 `getRetryAfterDurationMillis()` 给出的时间再重试，别立刻循环请求。
+- Wi-Fi RTT 从扫描得到的真实 `ScanResult` 构建请求。目标版本 33 及以上使用 `NEARBY_WIFI_DEVICES`；测距需应用可见或运行 FGS，并核对设备RTT能力、位置/Wi-Fi扫描开关与权限。若应用从 Wi-Fi API 推导实际位置，不能声明 `neverForLocation`，精确位置功能仍要按用途保留相应授权。回调按 MAC（媒体访问控制）地址关联；Android 17 的 [`STATUS_BUSY_TRY_LATER`](https://developer.android.com/reference/android/net/wifi/rtt/RangingResult) 表示对端忙，要等 `getRetryAfterDurationMillis()` 给出的时间再重试，别立刻循环请求。
 - BLE RSSI（接收信号强度指示）受人体遮挡、姿态、天线和多径影响，适合区域判定或排序，不要用它承诺米级距离。后台运行不会自动把扫描改成 `SCAN_MODE_LOW_POWER`；使用 `ScanCallback`（扫描回调对象） 的无过滤扫描会在熄屏时暂停，进程结束后就收不到回调了。需要在进程未运行时接收匹配结果，可使用带过滤条件的 [`PendingIntent` 扫描](https://developer.android.com/develop/connectivity/bluetooth/ble/background)。所有扫描都要设置结束条件，并用原 `ScanCallback` 显式调用 `stopScan()`。
 
 门店场景我们可以先用地理围栏缩小候选区域，再在用户进入相关功能或满足后台条件时启动有界 RTT 或 BLE 会话。每个测量会话都要记录能力检查、权限、开始、停止、样本数、失败和重试，别让定位结束后扫描还在跑。

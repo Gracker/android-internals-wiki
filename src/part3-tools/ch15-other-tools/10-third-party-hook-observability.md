@@ -4,8 +4,9 @@ chapter: '15.10'
 section: '15.10'
 status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-10-06'
-last_verified_against: AOSP android-17.0.0_r1 + AndroidX metrics / Android Vitals docs + Android page-size docs + GitHub upstream releases and READMEs + btrace 3.1.0 + Measure Android 0.19.0 / server 0.12.1 + ByteHook 1.1.2 / ShadowHook 2.0.1
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 + AndroidX metrics / Android Vitals docs + Android page-size docs + GitHub upstream releases and READMEs + btrace 3.1.0 + Measure Android 0.22.0 / self-hosted platform 0.13.0; native headers ByteHook 1.1.2 / ShadowHook 2.0.1 and manuals; source review 2026-10-25 + ByteHook 1.1.2 / ShadowHook 2.0.1
 confidence: medium
 last_idle_audit_at: '2026-10-06T14:35:34+08:00'
 sources:
@@ -134,24 +135,24 @@ consolidated_from:
 库名会变，采集位置决定了它能看到什么、风险落在哪里，所以我们先按采集位置把工具分个类。
 
 | 位置 | 代表方案 | 能解决的问题 | 不能替代的能力 |
-|---|---|---|
+|---|---|---|---|
 | 系统与实验室工具 | Perfetto、Simpleperf、Profiler、系统 dump | 高保真时间线、采样、堆与系统状态 | 大规模线上采样与会话聚合 |
 | App 进程内探针（嵌入进程的采集代码） | Matrix、KOOM、LeakCanary、btrace | 方法、Looper、堆、线程、I/O 或 Trace 线索 | 系统全局因果关系 |
 | 构建期改写 | Booster、Matrix Gradle 插件 | 字节码检查、替换和构建产物检查 | 运行时耗时与设备差异 |
 | 研发侧工具箱 | DoKit、Rabbit、BlockCanary | 开发和测试设备上的快速反馈 | 生产采样、后端聚合和告警 |
 | 可观测性平台 | Firebase Performance、Measure | 上传、聚合、筛选、会话关联 | 本地源码级定位 |
 
-截至 2026 年 8 月 13 日，几个项目的版本基线如下。AGP 是 Android Gradle Plugin；R8（Android 构建中的代码压缩、优化与混淆工具）是构建链里的压缩与优化器。发布版本只说明上游交付了什么；它与当前项目的 AGP、R8、ROM 和安全策略是否相容，要靠我们自己的验证来回答。
+截至 2026 年 10 月 25 日，几个项目的版本基线如下。AGP 是 Android Gradle Plugin；R8（Android 构建中的代码压缩、优化与混淆工具）是构建链里的压缩与优化器。发布版本只说明上游交付了什么；它与当前项目的 AGP、R8、ROM 和安全策略是否相容，要靠我们自己的验证来回答。
 
 | 项目 | 可核对的上游版本 | 接入前应关注的状态 |
 |---|---|---|
-| Matrix | `v2.1.0` | README 仍声明 Gradle 插件支持 AGP 3.5/4.0/4.1 |
-| KOOM | `v2.2.2` | Java 模块支持 API 21+；Native/Thread 模块限 API 24+、arm64 |
-| Booster | `v5.1.0` | 发布版 README 兼容表止于 AGP 8.2；主分支已有更高 AGP 适配代码 |
-| btrace | `v3.1.0` | Android 8.0+、64 位；对象分配监控暂不支持 Android 15+ |
-| LeakCanary | 稳定线 `2.14`；最新预览版 `3.0-alpha-9` | 官方稳定接入示例使用 `debugImplementation`；不能把 3.x Alpha 当成稳定升级 |
-| Measure | Android SDK `0.19.0`；自托管平台 `0.12.1` | SDK、Gradle 插件与服务端各自发版；升级前要按兼容说明配套验证 |
-| ByteHook / ShadowHook | `v1.1.2` / `v2.0.1` | 两者都声明覆盖 API 16–37；Hook 框架兼容不等于上层工具已经适配 |
+| Matrix | <code>v2.<wbr>1.<wbr>0</code> | README 仍声明 Gradle 插件支持 AGP 3.5/4.0/4.1 |
+| KOOM | <code>v2.<wbr>2.<wbr>2</code> | Java 模块支持 API 21+；Native/Thread 模块限 API 24+、arm64 |
+| Booster | <code>v5.<wbr>1.<wbr>0</code> | 发布版 README 兼容表止于 AGP 8.2；主分支已有更高 AGP 适配代码 |
+| btrace | <code>v3.<wbr>1.<wbr>0</code> | Android 8.0+、64 位；对象分配监控暂不支持 Android 15+ |
+| LeakCanary | 稳定线 <code>2.<wbr>14</code>；最新预览版 <code>3.<wbr>0-alpha-9</code> | 官方稳定接入示例使用 <code>debug<wbr>Implementation</code>；不能把 3.x Alpha 当成稳定升级 |
+| Measure | Android SDK <code>0.<wbr>22.<wbr>0</code>；自托管平台 <code>0.<wbr>13.<wbr>0</code> | SDK、Gradle 插件与服务端各自发版；升级前要按兼容说明配套验证 |
+| ByteHook / ShadowHook | <code>v1.<wbr>1.<wbr>2</code> / <code>v2.<wbr>0.<wbr>1</code> | 两者都声明覆盖 API 16–37；Hook 框架兼容不等于上层工具已经适配 |
 
 ### Matrix：接近客户端 APM 的插件框架
 
@@ -224,7 +225,7 @@ PLT Hook 的覆盖有一条清楚的线：它拦住的是经过目标 ELF 重定
 
 - **主线程 I/O**：检查文件操作是否来自主线程，并结合连续读写耗时等条件分类。文件 I/O 在 Perfetto 里可能表现为 Running、Runnable、Sleeping 或 Uninterruptible Sleep，要按实际 trace 看，别预设是 D 状态。
 - **小缓冲区**：默认阈值为 4096 B，但源码还要求操作次数大于 20、平均每次读写小于阈值，并且连续读写耗时达到 13 ms——它找的是“频繁小 I/O 已形成可观测成本”，单次 2 KB `read()` 不会触发报警。
-- **短时重复读取**：同一路径、相同调用信息在短窗口内达到默认重复次数 5 后报告；写操作会清掉对应观察记录。报告是缓存缺失的候选线索，也可能来自格式探测或刻意的分段读取。
+- **短时重复读取**：新路径首先要满足连续读写成本门槛（默认 13 ms）才进入观察；随后在源码的 17 ms 窗口逻辑内，路径、Java 线程、调用栈、文件大小和操作字节数相同的记录达到默认 5 次才报告。写操作会清掉对应观察记录。报告是缓存缺失的候选线索，也可能来自格式探测或刻意的分段读取。
 
 Java 侧 `CloseGuardHooker` 通过反射替换 `dalvik.system.CloseGuard.Reporter`，用于发现未关闭资源。它依赖非 SDK 实现细节，所以要覆盖 user（量产）与 userdebug（可调试系统）构建、代码混淆、隐藏 API 策略和 OEM（设备厂商）ROM 各组合。反射失败时就降级并记录能力缺失，让业务启动照常进行——这是监控组件要守住的底线。
 
@@ -258,7 +259,7 @@ Java 模块的触发、兼容范围和资源提示见 [`koom-java-leak/README.md
 
 #### Native 堆泄漏检测
 
-`koom-native（本地机器码）-leak` 采用“分配元数据 + 保守可达性扫描”的方案，其中保守扫描会把任何形似指针的值都暂时当作引用。我们把工作过程分成三步：
+`koom-native-leak` 采用“分配元数据 + 保守可达性扫描”的方案，其中保守扫描会把任何形似指针的值都暂时当作引用。我们把工作过程分成三步：
 
 1. 通过 PLT Hook 记录 `malloc` / `free` 等分配路径的地址、大小和分配栈。
 
@@ -298,7 +299,7 @@ Booster 把工作放在构建期：检查或改写编译后的 class 与安装�
 
 这里有两个容易混淆的“Transform”。早期 Booster 建立在 AGP 的 `com.android.build.api.transform.Transform` 接口上，该接口从 AGP 8.0 起已经删除；而 Booster 文档里的 “Transform based modules” 是它自己对字节码转换模块的分类，名称延续到了 5.x。据此推断 5.x 仍调用旧 AGP Transform API，是把分类名读成了接口名。
 
-当前主分支的 `BoosterPlugin.registerTransform()` 在 `androidComponents.onVariants` 中注册任务，再通过 `variant.artifact（可下载依赖）s.forScope(ScopedArtifacts.Scope.ALL).toTransform(ScopedArtifact.CLASSES, ...)` 接入 class 产物——这属于 Android Components / Scoped Artifacts 路径，可读写指定构建变体的一组 class 产物。
+当前主分支的 `BoosterPlugin.registerTransform()` 在 `androidComponents.onVariants` 中注册任务，再通过 `variant.artifacts.forScope(ScopedArtifacts.Scope.ALL).toTransform(ScopedArtifact.CLASSES, ...)` 接入 class 产物——这属于 Android Components / Scoped Artifacts 路径，可读写指定构建变体的一组 class 产物。
 
 若只需逐 class 处理，也可以用 `variant.instrumentation.transformClassesWith()` 注册 ASM 字节码访问器。两类 API 的输入范围、增量粒度和 classpath（编译时类搜索路径）能力各有取舍，按需要选。
 
@@ -313,7 +314,7 @@ Booster 以独立模块提供检查、替换和产物处理能力；生产项目
 - **资源索引内联**：`booster-transform-r-inline` 从 symbol list（资源符号表）解析资源 id，把字节码中的 `GETSTATIC R$*.field` 换成常量，并清理部分 R class 字段。AGP 的 non-final / non-transitive R、动态特性、资源 shrink、资源稳定 ID 和 library R 都会影响正确性；应比较改写报告、APK/AAB（应用包/应用发布包）、安装后资源访问和 R8 结果。
 - **系统缺陷兼容模块**：Toast 模块把 `Toast.show()` 调用改写为 `ShadowToast.show(toast)`。在 API 25 上，wrapper 尝试替换 Toast 内部 Handler callback / runnable 来捕获 `BadTokenException`；它不是简单地给每个调用点包一层 `try-catch`，在其他 API 上则要另行确认内部字段。
 
-non-final R 表示资源 ID 不是编译期常量，non-transitive R 表示模块只能直接看到自身或直接依赖暴露的资源，resource shrink 则会删除未使用资源。
+non-final R 表示资源 ID 不是编译期常量，non-transitive R 表示每个模块生成的 R 类只包含自身资源，访问依赖资源需使用依赖的 R 类，resource shrink 则会删除未使用资源。
 
 这些模块和 Trace Canary 恰好构成静态与动态两类证据：Booster 报告“代码中存在某种调用或改写”，运行时 Trace 回答“调用是否发生、位于哪条路径、成本多大”。读结果时我们把两类分开下结论。
 
@@ -332,7 +333,7 @@ Booster `v5.1.0` README 的发布版兼容表列出：
 |---|---|---|
 | 7.x 及更早 | 4.x | 按表选择最低 Booster 版本 |
 | 8.0 / 8.1 / 8.2 | 5.0.0+ | 5.x 支持字节码转换模块；多数旧 Task 模块已移除 |
-| 8.3—8.5 | 表中为 N/A | `v5.1.0` 不能按发布表宣称支持 |
+| 8.3—8.5 | 表中为 N/A | <code>v5.<wbr>1.<wbr>0</code> 不能按发布表宣称支持 |
 | 8.6 及以上 | 发布表没有对应行 | 不能从主分支 adapter 推断 5.1.0 artifact 已支持 |
 
 2026 年的主分支已经出现 AGP 8.3—8.12 adapter 和集成测试，说明上游正在扩展范围；但这些代码晚于 `v5.1.0`，Maven Central 的 5.1.0 是否包含它们，要以发布产物为准。接入策略应同时核对已发布 artifact、对应 commit（源码提交）与项目 CI 实测；AGP 9 项目还要核对上游主分支移除 AGP 9 substitute module 的提交——模块名本身说明不了兼容性。
@@ -396,7 +397,7 @@ Firebase Performance Monitoring 的 Android SDK 会自动采集 app start、前�
 
 #### Measure：更完整的平台视角
 
-Measure 同时提供客户端 SDK、后端与 Web UI，可托管也可自托管。当前 Android SDK 为 `0.19.0`，自托管平台为 `0.12.1`，两边版本号要配套核对。它以 session timeline（按时间排列的会话事件）组织点击、导航、HTTP、log、crash、ANR、Trace 和 bug report，并提供 app health 与 adaptive capture（服务端动态调整采集量）。
+Measure 同时提供客户端 SDK、后端与 Web UI，可托管也可自托管。截至本轮核对，Android SDK 为 `0.22.0`，自托管平台为 `0.13.0`，两边版本号要配套核对。它以 session timeline（按时间排列的会话事件）组织点击、导航、HTTP、log、crash、ANR、Trace 和 bug report，并提供 app health 与 adaptive capture（服务端动态调整采集量）。
 
 平台化的代价在运维和数据模型复杂度。评估时我们逐项验证：采样决策能否远程下发、会话数据如何脱敏、离线缓存上限、用于还原混淆栈的符号表和 mapping 保留期、服务端升级，以及一次事故要关联的字段能否稳定落在同一个 session。
 
@@ -485,7 +486,7 @@ Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0�
 
 **Hook 链会冲突。** 两个库同时改写 `open`、`malloc` 或 ART 符号时，链顺序、原函数指针、unhook（撤销 Hook）和递归保护可能互相破坏——递归保护就是用来防止 Hook 回调再次调用同一被拦截函数的。ByteHook 支持同一函数挂多个 Hook，这一点 xHook fork 或另一套 Inline Hook 未必具备，混用前要单独验证。接入清单里应画出每个符号由哪个模块负责、链顺序如何，再通过故障注入（主动模拟初始化失败等异常）验证任一模块关闭时其余模块仍工作。
 
-**数据需要共同主键。** 卡顿、OOM、网络和启动数据若各自使用不同 session、时间源、版本号与用户匿名标识，事后就关联不起来。monotonic clock（单调时钟）是只递增、不受手动校时影响的运行时钟，wall clock 是日历时间，平台应统一两者的换算，并统一 process start id、session id、build id、mapping id（混淆映射版本）、ABI、page size 和采样配置——这件事比统一 UI 更优先。
+**数据需要共同主键。** 卡顿、OOM、网络和启动数据若各自使用不同 session、时间源、版本号与用户匿名标识，事后就关联不起来。monotonic clock（单调时钟）不倒退、不受手动校时影响；不同单调时钟对休眠的计入方式仍可能不同。wall clock 是日历时间，平台应记录具体 clock ID、单位和时钟关联信息，并统一 process start id、session id、build id、mapping id（混淆映射版本）、ABI、page size 和采样配置——这件事比统一 UI 更优先。
 
 **监控必须可关闭。** 远程开关要支持按模块、版本、设备层级和采样组关闭，并设置本地最大磁盘、内存、CPU 时间、上传次数与超时上限。监控代码自己发生崩溃、ANR 或 OOM 时，我们要能判断它有没有参与事故。
 
@@ -495,10 +496,10 @@ Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0�
 
 | 信号 | 适合回答的问题 | 主要边界 |
 |---|---|---|
-| `JankStats` | Window 每帧的 jank（未按预期时序完成的帧）判断和 UI 状态 | 不负责上传、聚合、告警或生成 Trace |
-| `FrameMetrics` | API 24+ 的 measure/layout（测量/布局）、draw（绘制）、sync/swap（同步/提交）、deadline 等原始阶段耗时 | 低版本回退、jank 判断和状态管理要自行实现 |
-| `ApplicationExitInfo` | API 30+ 的进程退出 reason、importance、PSS/RSS（按比例分摊/常驻物理内存）与可选 Trace | 历史条数有限，Trace 可能为空；隐藏 subreason（更细的退出子原因）不是公开契约 |
-| `ProfilingManager` | API 35+ 由系统代采 system Trace、heap dump/profile 和 stack Trace | 请求受频率限制且不保证执行；采集时机和交付由系统控制，详见 ProfilingManager 专章 |
+| <code>Jank<wbr>Stats</code> | Window 每帧的 jank（未按预期时序完成的帧）判断和 UI 状态 | 不负责上传、聚合、告警或生成 Trace |
+| <code>Frame<wbr>Metrics</code> | API 24+ 的 measure/layout、draw、sync/swap 等原始阶段耗时；GPU duration 与 deadline 从 API 31 才加入 | 低版本回退、jank 判断和状态管理要自行实现 |
+| <code>Application<wbr>Exit<wbr>Info</code> | API 30+ 的进程退出 reason、importance、PSS/RSS（按比例分摊/常驻物理内存）与可选 Trace | 历史条数有限，Trace 可能为空；隐藏 subreason（更细的退出子原因）不是公开契约 |
+| <code>Profiling<wbr>Manager</code> | API 35+ 由系统代采 system Trace、native heap profile、Java heap graph 和 stack sampling | 请求受频率限制且不保证执行；采集时机和交付由系统控制，详见 ProfilingManager 专章 |
 | Android Vitals | Google Play 聚合的线上稳定性、性能与功耗基线 | 聚合定义不替代单次故障的本地证据 |
 
 平台内的数据也要分层：metric 是低成本数值，event 是一次离散事实，span 表示有起止的操作，profile 是较大的深度诊断产物，snapshot 则是 HPROF、tombstone（Native 崩溃记录）、ANR Trace 或截图。这几种数据要分开命名、分别设计采样策略，都叫“Trace”会把处理方式也混在一起。
@@ -537,8 +538,8 @@ Hook 适合补上现有观测手段看不到的调用处。例如 Perfetto 已�
 - Java/Kotlin 业务阶段可用 `android.os.Trace`、AndroidX Tracing 或 Perfetto SDK Track Event（轨道事件）；
 - native 自有代码可用 ATrace NDK API 或 Perfetto SDK；NDK 是 Android Native Development Kit；
 - CPU 热点可用 `simpleperf`、Android Studio Profiler 或 Perfetto callstack sampling（调用栈采样）；
-- native 分配可用 heapprofd（file descriptor，文件描述符）；Java 对象留存关系用 heap dump，分配热点可用 Perfetto 的 ART allocation profiling；
-- API 35 及以上可用 [`ProfilingManager`](07-profiling-manager.md) 请求 system trace、native heap profile、stack sampling 或 Java heap dump；
+- native 分配可用 heapprofd（Perfetto 的堆分配采样器）；Java 对象留存关系用 heap dump，分配热点可用 Perfetto 的 ART allocation profiling；
+- API 35 及以上可用 [`ProfilingManager`](07-profiling-manager.md) 请求 system trace、native heap profile、stack sampling 或 Java heap graph；其 Java heap 结果是 Perfetto 协议格式，不是 HPROF；
 - 自有字节码可在构建期使用 AGP instrumentation API 和 ASM 插桩，ASM 是 Java 字节码读写库。
 
 这些入口都有文档化契约，升级成本通常低于运行时修改 ELF 或 ART 内部状态。Hook 适合的场景因此比较具体：目标范围有限、现有工具缺少所需字段、团队能维护兼容组合，三者齐备再考虑。
@@ -552,7 +553,7 @@ Hook 适合补上现有观测手段看不到的调用处。例如 Perfetto 已�
 | 构建期字节码插桩 | 自有 class 的字节码 | 已参与构建的 Java/Kotlin 方法 | 增加构建复杂度，不能覆盖系统和 native 代码 |
 | PLT/GOT Hook | 调用方 ELF 的动态重定位槽 | 经该槽调用的外部 native 符号 | 逐调用方生效，绕过 PLT 的调用不会命中 |
 | Inline Hook | 目标函数入口或指定指令 | 到达被改写地址的 native 调用 | 要重定位指令并管理可执行内存，架构适配复杂 |
-| ART 内部方法 Hook | `ArtMethod`、入口点或运行时调度状态 | Java/Kotlin 运行时方法 | 依赖私有实现，还受解释器、JIT、AOT、内联和 deoptimization（去优化）影响 |
+| ART 内部方法 Hook | <code>Art<wbr>Method</code>、入口点或运行时调度状态 | Java/Kotlin 运行时方法 | 依赖私有实现，还受解释器、JIT、AOT、内联和 deoptimization（去优化）影响 |
 
 表里的缩写先摆出来：PLT（Procedure Linkage Table，过程链接表）与 GOT（Global Offset Table，全局偏移表）用于动态链接调用；JIT 是运行时即时编译，AOT 是安装期或构建期预编译。家族归属也要看清：Xposed、Dexposed、SandHook 和 Epic 属于运行时方法 Hook，与构建期 ASM 工具是两类东西。一个工具还可以组合多种介入方式——Matrix TraceCanary 的方法耗时用构建期插桩，Looper 和帧监控用运行时公开或反射入口。
 
@@ -602,7 +603,7 @@ flowchart LR
 
 `bionic/linker/linker.cpp` 在处理 `DT_PLTGOT` 时明确写着 `RTLD_LAZY is not supported`：`link_image()` 调用 `relocate()` 填充跳转槽，随后调用 `protect_relro()` 把 GNU RELRO（Relocation Read-Only，重定位后只读）区域设为只读。也就是说，Android 上没有 glibc 风格的“第一次调用时再解析”窗口。
 
-这带来两个直接推论。Hook 无需赶在 `dlopen()` 返回前完成，但必须先取得 GOT 所在内存页的写权限：ByteHook `v1.1.2` 的 `bh_elf_get_protect()` 识别 `PT_GNU_RELRO`，`bh_util_set_addr_protect()` 按运行时页大小对齐后调用 `mprotect()（修改内存页权限）` 加上写权限。同版本里“写完恢复原权限”的调用仍被注释，改写后未必恢复只读——评估时应单独记录这一实现选择；反过来，把 GOT 描述成始终可写，又会漏掉 full RELRO（所有可保护重定位区都转只读）的常见情况。
+这带来两个直接推论。若只要求拦截安装后的调用，Hook 可以在 `dlopen()` 返回后执行；若要覆盖构造函数或 `.init_array` 内的调用，就必须赶在这些调用之前完成。改槽时仍必须先取得 GOT 所在内存页的写权限：ByteHook `v1.1.2` 的 `bh_elf_get_protect()` 识别 `PT_GNU_RELRO`，`bh_util_set_addr_protect()` 按运行时页大小对齐后调用 `mprotect()（修改内存页权限）` 加上写权限。同版本里“写完恢复原权限”的调用仍被注释，改写后未必恢复只读——评估时应单独记录这一实现选择；反过来，把 GOT 描述成始终可写，又会漏掉 full RELRO（所有可保护重定位区都转只读）的常见情况。
 
 IFUNC（indirect function，间接函数）用 resolver（解析函数）在装载时选择具体实现：Android linker 执行 resolver 后，把结果写入相应重定位位置。PLT Hook 能否命中，仍取决于调用路径是否经过被改写的槽，只看符号类型还不够。
 
@@ -613,11 +614,12 @@ IFUNC（indirect function，间接函数）用 resolver（解析函数）在装�
 
 #### ByteHook 的调用方模型
 
-ByteHook 提供 single、partial 和 all 三种任务，分别选择单个调用方、由 `caller_allow_filter` 回调筛选部分调用方，或选择全部调用方 DSO；上游还会在新 ELF 加载后继续执行尚未完成的任务。这比只扫描一次 `/proc/self/maps`（当前进程的虚拟内存映射清单）更适合存在动态特性模块或晚加载 SDK 的进程。版本方面，`v1.1.2` 的 release 说明新增 Android 17 兼容性，但其测试只写到 Android 17 QPR1 Beta 4；QPR 是 Quarterly Platform Release（季度平台更新），这份上游测试代替不了具体量产设备的验证。
+ByteHook 提供 single、partial 和 all 三种任务，分别选择单个调用方、由 `caller_allow_filter` 回调筛选部分调用方，或选择全部调用方 DSO；上游还会在新 ELF 加载后继续执行尚未完成的任务；partial / all 会持续匹配后续调用方，single 在目标调用方找到并执行后结束。这比只扫描一次 `/proc/self/maps`（当前进程的虚拟内存映射清单）更适合存在动态特性模块或晚加载 SDK 的进程。版本方面，`v1.1.2` 的 release 说明新增 Android 17 兼容性，但其测试只写到 Android 17 QPR1 Beta 4；QPR 是 Quarterly Platform Release（季度平台更新），这份上游测试代替不了具体量产设备的验证。
 
 下面代码展示 `pthread_create` 代理的 API 形状。计数函数必须无分配、无锁或能证明不会再次触发目标调用。
 
 ```c
+#include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -635,23 +637,29 @@ static int proxy_pthread_create(
     const pthread_attr_t *attr,
     void *(*start_routine)(void *),
     void *arg) {
-  __atomic_fetch_add(&g_thread_create_count, 1, __ATOMIC_RELAXED);
+  int incoming_errno = errno;
+  atomic_fetch_add_explicit(
+      &g_thread_create_count, 1, memory_order_relaxed);
+  errno = incoming_errno;
   int result = BYTEHOOK_CALL_PREV(
       proxy_pthread_create, pthread_create_t,
       thread, attr, start_routine, arg);
+  int result_errno = errno;
   BYTEHOOK_POP_STACK();
+  errno = result_errno;
   return result;
 }
 
-static bool install_hook(void) {
+static bool register_hook_task(void) {
+  if (g_stub != NULL) return true;
   g_stub = bytehook_hook_all(
       "libc.so", "pthread_create",
       (void *)proxy_pthread_create, NULL, NULL);
-  return g_stub != NULL;
+  return g_stub != NULL;  // 任务句柄，不是命中证明
 }
 ```
 
-这段代码只展示代理 API 的形状：假定 ByteHook 已完成初始化，也省略了计数读取和 unhook。`BYTEHOOK_CALL_PREV()` 获取当前代理链中的前一个实现，`BYTEHOOK_POP_STACK()` 维护代理栈状态；C++ 代码可在函数开头使用 `BYTEHOOK_STACK_SCOPE()`，让作用域退出时自动清理，多个 return 分支就不会漏掉 `POP_STACK`。示例只做计数——在线上回调里打印日志或抓完整栈，会明显改变线程创建路径。
+这段代码只展示代理 API 的形状：假定 ByteHook 已以 automatic 模式完成初始化，控制线程串行调用登记函数，也省略了计数读取和 unhook。启用前应确认该 ABI 上 `atomic_is_lock_free(&g_thread_create_count)` 为真；否则更换计数方式或停用该探针，不能把 C11 原子自动等同无锁。返回非空 stub 只表示拿到任务句柄，生产实现还需传入 `hooked` 回调、按调用方记录 `status_code`，并用已知调用验证代理命中；计数统计尝试次数，不代表线程创建成功数。`BYTEHOOK_CALL_PREV()` 获取当前代理链中的前一个实现，`BYTEHOOK_POP_STACK()` 维护代理栈状态；C++ 代码可在函数开头使用 `BYTEHOOK_STACK_SCOPE()`，让作用域退出时自动清理，多个 return 分支就不会漏掉 `POP_STACK`。示例只做计数——在线上回调里打印日志或抓完整栈，会明显改变线程创建路径。
 
 <!-- gracker-diagram: ch15-10-17-bytehook-task-and-proxy -->
 ![ByteHook 任务、逐调用方结果与命中](../../assets/diagrams/ch15/ch15-10-17-bytehook-task-and-proxy.png)
@@ -685,6 +693,7 @@ ShadowHook `v2.0.1` 可以按函数地址或“库名 + 符号名”安装 Hook�
 
 ```c
 #include <stdbool.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include "shadowhook.h"
 
@@ -697,33 +706,43 @@ static pid_t proxy_getpid(void) {
   return g_orig_getpid();
 }
 
-static bool install_getpid_hook(void) {
-  g_getpid_stub = shadowhook_hook_sym_name(
+static bool register_getpid_hook(void) {
+  if (g_getpid_stub != NULL) return true;
+  g_getpid_stub = shadowhook_hook_sym_name_2(
       "libc.so", "getpid",
       (void *)proxy_getpid,
-      (void **)&g_orig_getpid);
-  return g_getpid_stub != NULL;
+      (void **)&g_orig_getpid,
+      SHADOWHOOK_HOOK_WITH_UNIQUE_MODE);
+  return g_getpid_stub != NULL;  // 还需区分 OK 与 pending
 }
 
 static bool uninstall_getpid_hook(void) {
-  return g_getpid_stub != NULL &&
-         shadowhook_unhook(g_getpid_stub) == 0;
+  if (g_getpid_stub == NULL) return true;
+  int result = shadowhook_unhook(g_getpid_stub);
+  int error = result == 0 ? 0 : shadowhook_get_errno();
+  if (result == 0 || error == SHADOWHOOK_ERRNO_UNHOOK_ON_ERROR ||
+      error == SHADOWHOOK_ERRNO_UNHOOK_ON_UNFINISHED) {
+    g_getpid_stub = NULL;  // 这两种 pending 终态也已释放任务
+  }
+  return result == 0;
 }
 ```
 
-示例假定 ShadowHook 已完成库级初始化。代理函数的参数、返回值和 ABI 必须与目标一致；安装成功也只说明框架写入了跳转，目标路径是否真经过该地址，还要用命中计数和对照调用验证。符号被内联、目标调用经过别名，或调用点持有另一个地址时，计数可能为零。
-
-再看实现细节。ShadowHook `v2.0.1` 的 release 配置仍优先使用 branch island，目标地址只需改写一条相对跳转，减少了多指令分步写入的窗口；分配器先尝试在分支范围内用 `mmap()` 创建匿名内存页，再尝试目标 ELF 的空隙，地址范围、页权限或可用空隙不足都可能让安装失败。`v2.0.1` 还修复了 `v2.0.0` 引入的并发 `dlclose()` ANR 和 arm64 可执行段尾部越界等问题，所以 2.0.0 的稳定性测试外推不到当前版本。业务代码仍要处理失败并继续运行——Hook 安装失败时，进程照常启动。
+示例假定 ShadowHook 已完成库级初始化，并串行执行登记和卸载；这里按 Hook 指定 unique 模式，才直接调用 `orig_addr`。unique 不允许同地址同时挂另一个 Hook，也没有 shared 的自动循环递归保护；若改用 shared，必须改为 `SHADOWHOOK_CALL_PREV` 加 `SHADOWHOOK_POP_STACK` / `SHADOWHOOK_STACK_SCOPE`，直接调用 orig 会绕过后续代理。不要在卸载后清空原函数指针：并发中的代理仍可能需要它。
 
 <!-- gracker-diagram: ch15-10-19-shadowhook-mode-contract -->
 ![ShadowHook 三种代理调用契约](../../assets/diagrams/ch15/ch15-10-19-shadowhook-mode-contract.png)
 
 图：unique、multi 和 shared 的原函数调用与代理链契约不同，不能只改安装参数。 本例显式 unique；改 shared 必须用 CALL_PREV 和栈清理，multi 的 orig 存储还要长期保持可读写。
 
+按符号名登记得到非空 stub 后，还要立即读取 `shadowhook_get_errno()`：0 才表示完成，1 表示目标 ELF 尚未加载、任务 pending；生产实现可使用 `shadowhook_hook_sym_name_callback_2` 接收后续结果。示例中的 libc 已加载，通常同步完成，但这不能推广到任意 DSO。卸载 pending 终态 32/33 时任务也已释放，示例清句柄但仍返回 false，保留“没有实际执行撤销”的结果。跳转写入成功之后，目标路径是否真经过该地址，还要用命中计数和对照调用验证。符号被内联、目标调用经过别名，或调用点持有另一个地址时，计数可能为零。
+
 <!-- gracker-diagram: ch15-10-20-shadowhook-pending -->
 ![非空任务句柄与实际改写状态](../../assets/diagrams/ch15/ch15-10-20-shadowhook-pending.png)
 
 图：按库名和符号名登记时，还需区分同步完成、等待装载和失败。 pending 的后续结果由 callback 确认；安装完成后仍需已知调用验证命中，卸载32/33终态也会释放任务。
+
+再看实现细节。ShadowHook `v2.0.1` 的 release 配置仍优先使用 branch island，目标地址只需改写一条相对跳转，减少了多指令分步写入的窗口；分配器先尝试在分支范围内用 `mmap()` 创建匿名内存页，再尝试目标 ELF 的空隙，地址范围、页权限或可用空隙不足都可能让安装失败。`v2.0.1` 还修复了 `v2.0.0` 引入的并发 `dlclose()` ANR 和 arm64 可执行段尾部越界等问题，所以 2.0.0 的稳定性测试外推不到当前版本。业务代码仍要处理失败并继续运行——Hook 安装失败时，进程照常启动。
 
 #### 可执行内存、W^X 与 SELinux
 
@@ -814,12 +833,12 @@ ShadowHook `v2.0.1` 的构建脚本为 arm64 设置 `-Wl,-z,max-page-size=16384`
 | 项目 | AArch64 | AArch32 |
 |---|---|---|
 | 指令宽度 | 固定 4 字节 | ARM 4 字节，Thumb 可含 2/4 字节 |
-| 参数寄存器 | `x0`–`x7` | `r0`–`r3` |
-| 返回地址 | `x30` | `r14` |
-| 直接分支范围 | `B`/`BL` 约 ±128 MiB | 随 ARM/Thumb 编码变化 |
+| 整数/指针参数通用寄存器 | <code>x0</code>–<code>x7</code> | <code>r0</code>–<code>r3</code> |
+| 返回地址 | <code>x30</code> | <code>r14</code> |
+| 直接分支范围 | <code>B</code>/<code>BL</code> 约 ±128 MiB | 随 ARM/Thumb 编码变化 |
 | 函数地址最低位 | 正常为 0 | 1 可表示 Thumb 状态 |
 
-一个 ABI 上通过的 trampoline，推导不出另一个 ABI 也安全；发布包保留 32 位 ABI 时，测试组合必须覆盖 ARM/Thumb 切换、栈展开和混合 Java/native 调用。
+这张表只列常见整数/指针调用的通用寄存器；浮点/向量寄存器、结构体返回、栈传参与变参还需分别核对 AAPCS。一个 ABI 上通过的 trampoline，推导不出另一个 ABI 也安全；发布包保留 32 位 ABI 时，测试组合必须覆盖 ARM/Thumb 切换、栈展开和混合 Java/native 调用。
 
 #### 多进程
 
@@ -857,7 +876,7 @@ Matrix TraceCanary 没有通过 PLT Hook 拦截 `MessageQueue.next()`。当前�
 - `UIThreadMonitor` 结合 Choreographer 回调拆分 input、animation 和 traversal；
 - `LooperAnrTracer`、`EvilMethodTracer` 和 `FrameTracer` 消费这些时间与方法记录。
 
-它也没有用 `Method.invoke()` 包装 `MessageQueue.next()`；用“2 秒 × 3 次”或“默认 700 ms”替代源码中的配置与 tracer 逻辑，同样是错的。截至 2026-08-14，GitHub 最新 release 仍为 `v2.1.0`（2023-03-21），早于 Android 17——AGP/R8 插桩、Compose、多模块和 release mapping 要自行验证，光看仓库示例判断不了兼容性。
+它也没有用 `Method.invoke()` 包装 `MessageQueue.next()`；用“2 秒 × 3 次”或“默认 700 ms”替代源码中的配置与 tracer 逻辑，同样是错的。截至 2026-10-25，GitHub 最新 release 仍为 `v2.1.0`（2023-03-21），早于 Android 17——AGP/R8 插桩、Compose、多模块和 release mapping 要自行验证，光看仓库示例判断不了兼容性。
 
 #### KOOM
 
@@ -869,21 +888,21 @@ Matrix TraceCanary 没有通过 PLT Hook 拦截 `MessageQueue.next()`。当前�
 
 `libmemunreachable` 不是 NDK 公共 API；KOOM 源码还注明这条路径在 release APK 中会受 `ptrace`（进程检查系统调用）和 dumpable（进程是否允许被转储或跟踪的属性）限制，Native LeakMonitor 的 Java 入口只在 API 24 及以上的 arm64 进程启用。仓库里的实验路径，离“可向所有线上用户开启”还隔着发布与合规验证。Java HPROF 裁剪路径 Hook `open`/`write` 来缩减 dump 文件，属于 dump 实现细节，和用 native 分配 Hook 判断 Java 对象泄漏是两回事。FD 触发条件可结合 [20.7 FD 耗尽监控与故障排查](../../part5-app/ch20-stability/07-fd-resource-monitoring.md) 理解。
 
-截至 2026-08-14，KOOM 最新 release 是 `v2.2.2`（2024-04-16），而 master 已包含 2025/2026 年的 fast-dump 修改，评估时必须区分发布 AAR 与 master 源码。各模块还要分别测暂停时间、峰值内存、CPU、磁盘、误报率，以及 Android 17、16 KB page size、MTE 的兼容性。
+截至 2026-10-25，KOOM 最新 release 是 `v2.2.2`（2024-04-16），而 master 已包含 2025/2026 年的 fast-dump 修改，评估时必须区分发布 AAR 与 master 源码。各模块还要分别测暂停时间、峰值内存、CPU、磁盘、误报率，以及 Android 17、16 KB page size、MTE 的兼容性。
 
 ### 把 Hook 数据放进 Perfetto
 
 Hook 回调不要直接写 `/sys/kernel/tracing/trace_marker`：普通应用通常没有稳定的 tracefs 写权限，手写格式也容易与平台演进脱节。我们改用 `android.os.Trace`、ATrace NDK API 或 Perfetto SDK，让受支持的入口处理权限、编码和 data source（数据源）注册。
 
-低频阶段事件可以写 slice（带开始和结束的时间区间）；高频函数更适合在进程内聚合成 counter（随时间变化的数值）、直方图或少量异常样本，再与 Perfetto 时间轴对齐——否则 trace 体积和写入开销会反过来改变被测路径。
+低频阶段事件可以在实际执行线程上写 slice（带开始和结束的时间区间）；高频函数更适合在进程内聚合成 counter（随时间变化的数值）、直方图或少量异常样本，再与 Perfetto 时间轴对齐——否则 trace 体积和写入开销会反过来改变被测路径。后台再调用 [Trace.beginSection](https://developer.android.com/reference/android/os/Trace) 记录的是后台线程与发出时刻，不能回填原线程的历史执行；要重建原样本轨道，应使用支持显式 timestamp / track 的 [Perfetto Track Event 接口](https://perfetto.dev/docs/instrumentation/track-events)，保留原时钟域并遵守同一轨道的事件顺序。
 
 我们要求一条有诊断价值的 Hook 记录至少带上：
 
-- monotonic clock 时间戳和线程 ID；
+- 时间戳、具体 clock ID、单位、时钟关联信息与线程 ID；
 - 目标 DSO build ID、符号或稳定事件 ID；
 - 采集配置版本与采样率；
 - 是否递归跳过、buffer 丢弃和安装失败；
-- 参数只保留分类或哈希，避免路径、URL、账号和文件内容泄漏。
+- 参数按允许清单保留必要分类或经审查的脱敏值；普通哈希不保证匿名，低熵路径、账号等仍可能被字典还原。
 
 时间轴对齐之后，我们才能把代理记录与 sched（调度事件）、Binder、VSync（显示垂直同步）、I/O 和 CPU frequency 交叉验证；只凭一条“函数耗时 40 ms”，分不出真正执行、被抢占、page fault（缺页异常）和锁等待。
 
@@ -931,8 +950,8 @@ Hook 回调不要直接写 `/sys/kernel/tracing/trace_marker`：普通应用通�
 | 自有 Java/Kotlin 方法耗时 | 构建期 ASM 或采样 profiler | 构建无法介入且环境受控 |
 | 自有 native 阶段 | ATrace / Perfetto Track Event | 缺少源码或要观察第三方 DSO 边界 |
 | 某个外部 native 符号的调用方 | ByteHook/xHook 类 PLT Hook | 调用确认经过动态重定位槽 |
-| native 函数所有入口 | ShadowHook 类 Inline Hook | 团队能验证指令重定位与设备兼容性 |
-| Java 对象留存与引用链 | Java heap dump、`ProfilingManager`、KOOM Java 模块 | Hook 仅用于 dump 的专项实现细节 |
+| 到达已改写入口地址的 native 调用 | ShadowHook 类 Inline Hook | 团队能验证指令重定位与设备兼容性 |
+| Java 对象留存与引用链 | Java heap dump、<code>Profiling<wbr>Manager</code>、KOOM Java 模块 | Hook 仅用于 dump 的专项实现细节 |
 | Java 分配热点与 churn | Perfetto ART allocation profiling | 需要额外参数但公开采样仍缺字段 |
 | native 泄漏 | heapprofd、采样分配器、KOOM Native 模块 | 需要线上专项且有采样与关闭机制 |
 | 方法运行时实验 | JVMTI、调试器、受控注入环境 | 不进入普通线上发布路径 |
@@ -989,6 +1008,12 @@ churn 指对象在短时间内大量创建又回收。选方案时写清五个�
 
 
 ## 参考资料
+
+- [ByteHook 1.1.2 Native 手册](https://github.com/bytedance/bhook/blob/a8bd254f6e53022b65136f40d10ae3763b6ef8ad/doc/native_manual.zh-CN.md)
+- [ShadowHook 2.0.1 模式、pending 与卸载契约](https://github.com/bytedance/android-inline-hook/blob/854c775c2c3676e57a0f383597ebf420b5204161/doc/manual.md)
+- [Measure Android SDK 0.22.0 发布](https://github.com/measure-sh/measure/releases/tag/android-v0.22.0)
+- [Measure 自托管平台 0.13.0 发布](https://github.com/measure-sh/measure/releases/tag/v0.13.0)
+- [FrameMetrics API 与字段版本](https://developer.android.com/reference/android/view/FrameMetrics)
 
 - [Matrix](https://github.com/Tencent/matrix)
 - [KOOM](https://github.com/KwaiAppTeam/KOOM)

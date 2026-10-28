@@ -40,7 +40,7 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/vitals/lmk
 - type: official
-  path: https://developer.android.com/games/sdk/memory-advice/overview
+  path: https://developer.android.com/games/optimize/memory-overview
 - type: official
   path: https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/cb0cf2c186b9a70a15057bdf8d998eab38f74fa1/include/memory_advice/memory_advice.h
 - type: aosp
@@ -333,7 +333,7 @@ fun classifyHeapPressure(
 | `profile_result` | 系统返回成功或错误 | 结果类型、错误码、文件大小、策略版本 |
 | `previous_memory_exit` | 重启后发现 LMK 或 Memory Limiter | 退出原因、描述标记、上次采样 PSS/RSS |
 
-`used/max` 表示 Java Heap 已用字节数除以上限；分组键用来区分版本、设备、进程和场景，由这些字段组合而成。LMK 是 Low Memory Killer（低内存终止），Android 的 `lmkd` 守护进程会在全设备内存压力下选择低优先级进程终止。Memory Limiter 则是 Android 17 在部分设备上启用的单应用内存限制，两者需要分开统计。事件名决定后续处理流程：趋势回归进入版本比较，压力事件进入资源降级，退出事件进入重启后取证，`profile_requested` 和 `profile_result` 进入敏感文件治理。
+`used/max` 表示 Java Heap 已用字节数除以上限；分组键用来区分版本、设备、进程和场景，由这些字段组合而成。LMK 是 Low Memory Killer（低内存终止），Android 的 `lmkd` 守护进程会在全设备内存压力下选择低优先级进程终止。Memory Limiter 则是 Android 17 在部分设备上启用的按进程施加的应用内存限制，两者需要分开统计。事件名决定后续处理流程：趋势回归进入版本比较，压力事件进入资源降级，退出事件进入重启后取证，`profile_requested` 和 `profile_result` 进入敏感文件治理。
 
 事件里保存页面类别或业务阶段即可，完整 URL、搜索词、对象字符串或用户标识默认不上传。监控维度越细，越需要在客户端先转换成有限枚举并删除多余字段。
 
@@ -349,7 +349,7 @@ fun classifyHeapPressure(
 
 ### 重启后核对退出原因
 
-Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。我们只挑出两类记录：LMK，以及 `android-17.0.0_r1` 定义的 Memory Limiter。
+Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。下面只筛出明确标记的 LMK，以及 `android-17.0.0_r1` 定义的 Memory Limiter。先检查 `ActivityManager.isLowMemoryKillReportSupported()`：部分设备不能报告 `REASON_LOW_MEMORY`，内存压力终止可能只记录为 `REASON_SIGNALED` + `SIGKILL`。因此这段筛选不是完整 LMK 计数；信号退出应单独保留并结合日志与 Vitals 补证据，不能把所有 `SIGKILL` 都判为 LMK。
 
 ```kotlin
 import android.app.ActivityManager
@@ -415,7 +415,7 @@ fun readRecentMemoryExits(
 
 ### Memory Advice 的过渡角色
 
-Memory Advice API 已结束 Beta 测试，官方文档在 2026 年 2 月将该库标记为 deprecated（已弃用）。新项目不要再引入这项依赖；已接入的游戏或引擎可以在迁移期间把它保留为一项压力信号。
+Memory Advice API beta 已被[官方内存管理概述](https://developer.android.com/games/optimize/memory-overview)标记为 deprecated（已弃用），不再推荐使用。新项目不要再引入这项依赖；已接入的游戏或引擎可以在迁移期间把它保留为一项压力信号。
 
 Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形式提供，不由 Android framework 服务管理。公开 C API `MemoryAdvice_getAvailableMemory()` 返回“可安全分配字节数”的估算。Memory Advice 2.1.0 的 AOSP 实现用预测可用百分比乘以初始化时记录的设备总内存；这个值与 `/proc/meminfo` 的 `MemAvailable` 是两回事，系统当前也未必有同样多的空闲页。`OK`、`APPROACHING_LIMIT`、`CRITICAL` 是模型和规则给出的建议状态，预测不了下一次分配、`lmkd` 或 Android 17 Memory Limiter 的结果。
 
@@ -449,7 +449,7 @@ Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形�
 
 图：轻量指标先选方向，再按持有、分配或时序问题选择产物，减少无效诊断文件。
 
-`Debug.dumpHprof（记录 Java 堆对象与引用关系的快照文件）Data()` 可以把当前进程 Java Heap 写成 Hprof 快照文件，其中记录了堆对象与引用关系。`Debug.java` 的注释指出该操作可能触发 GC，并可能抛出 `UnsupportedOperationException` 或 `IOException`。它适合本地、内部构建或受控诊断，内存已经很紧张时不要由普通线上规则直接调用。
+`Debug.dumpHprofData()` 可以把当前进程 Java Heap 写成 Hprof 快照文件，其中记录了堆对象与引用关系。`Debug.java` 的注释指出该操作可能触发 GC，并可能抛出 `UnsupportedOperationException` 或 `IOException`。它适合本地、内部构建或受控诊断，内存已经很紧张时不要由普通线上规则直接调用。
 
 `ActivityManager.setWatchHeapLimit()` 也不是生产监控接口。源码和 API 注释明确要求应用为 debuggable（允许调试），或设备使用 userdebug/eng（带调试能力的系统构建）；它适合开发阶段验证 PSS 阈值与 heap dump 流程。
 
@@ -504,7 +504,7 @@ fun registerMemoryProfilingTriggers(
 }
 ```
 
-`unregisterForAllProfilingResults(listener)` 只停止向该监听器交付结果，不会删除已经注册的触发器。要停止监控，还要调用 `removeProfilingTriggersByType()` 删除指定类型，或调用 `clearProfilingTriggers()` 清空本应用的触发器。
+`unregisterForAllProfilingResults(listener)` 只停止向该监听器交付结果，不会删除已经注册的触发器。要停止监控，还要调用 `removeProfilingTriggersByType()` 删除指定类型，或调用 `clearProfilingTriggers()` 清空本进程注册的触发器；多进程场景应分别管理注册与清理。
 
 系统触发器受随机设备采样与系统限流影响，不保证每次事件都有产物。触发器结果只能通过全局监听器接收；如果采集时进程已经退出，系统会在应用再次启动并注册监听器后尝试交付。多个软件包共用同一 UID 且都注册异常触发器时，某些异常可能没有产物。
 
@@ -537,7 +537,7 @@ Java heap dump 可能包含对象字符串、用户输入、请求响应、缓�
 
 预算同样要写完整，只给应用一个 MB 数是不够的。每条记录至少包含平台与构建、设备档位、进程、场景与采样时点、Java Heap、native allocator、Graphics 与总 PSS、样本量与分位数、负责人、处置和回滚。`memoryClass` 是系统为当前应用提供的 Java Heap 近似上限，不是进程 PSS 预算。
 
-货拉拉公开复盘可拆成三类不同记录，笼统合并成“图片模块增长”会掩盖差别：
+[货拉拉公开复盘](https://mp.weixin.qq.com/s?__biz=MzI0MjIxNjE0OQ==&mid=2247490141&idx=1&sn=645139e24e5424bc0acdb6209d329360)可拆成三类不同记录，笼统合并成“图片模块增长”会掩盖差别：
 
 | 场景 | 主要证据 | 根因方向 | 验收重点 |
 | --- | --- | --- | --- |
@@ -600,6 +600,6 @@ Java heap dump 可能包含对象字符串、用户输入、请求响应、缓�
 - [AOSP Profiling `ProfilingTrigger.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
 - [Kernel `/proc/<pid>/status` @ `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)
 - [Kernel `smaps_rollup` @ `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c)
-- [Memory Advice overview（已弃用）](https://developer.android.com/games/sdk/memory-advice/overview)
+- [About memory management（含 Memory Advice 弃用说明）](https://developer.android.com/games/optimize/memory-overview)
 - [AOSP Memory Advice 2.1.0 C API 头文件](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/cb0cf2c186b9a70a15057bdf8d998eab38f74fa1/include/memory_advice/memory_advice.h)
 - [AOSP Memory Advice 2.1.0 `GetAvailableMemory()` 实现](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/cb0cf2c186b9a70a15057bdf8d998eab38f74fa1/games-memory-advice/core/memory_advice_impl.cpp)

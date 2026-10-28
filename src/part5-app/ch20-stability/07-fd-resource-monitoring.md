@@ -17,8 +17,8 @@ related_chapters:
 - '15.10'
 consolidated_from:
 - src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md
-last_verified: '2026-10-01'
-last_verified_against: AOSP android-17.0.0_r1 bionic, libcore, and ART sources; android17-6.18-2026-06_r6 procfs documentation; current Android Developers API, ApplicationExitInfo API 30 availability, and Android 11 fdsan guidance through 2026-10-01
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 bionic, libcore, and ART sources; android17-6.18-2026-06_r6 procfs documentation; current Android Developers API, ApplicationExitInfo API 30 availability, and Android 11 fdsan guidance through 2026-10-25
 confidence: medium-high
 sources:
 - type: aosp-legacy
@@ -153,20 +153,20 @@ fun collectFdSnapshot(): FdSnapshot {
 }
 ```
 
-`readlink()` 读取符号链接目标；读取前 FD 可能已经关闭，所以失败并不罕见。调用方要保留 `complete`（快照是否完整）和 `skipped`（跳过条目数），不能把缺少条目的快照解释为资源已恢复。
-
-`classifyFd()` 可区分文件或目录、`socket:`、`pipe:`、`anon_inode:`（没有普通文件路径的内核对象）、ashmem 和 memfd 等类型。`normalizeFdTarget()` 应把应用私有文件归入稳定的目录或资源类别，并去掉文件名、用户 ID、URI 和查询参数。
-
-需要进一步判断少量可疑 FD 时，再读取 `/proc/self/fdinfo/<fd>`。普通文件至少包含当前位置 `pos`、打开标志 `flags`、挂载点编号 `mnt_id` 和 inode（文件系统对象编号）；eventfd、epoll 等对象还会提供各自字段。逐个读取所有 FD 的 `fdinfo` 成本较高，不适合高频采样。
+`readlink()` 读取符号链接目标；读取前 FD 可能已经关闭，所以失败并不罕见。调用方要保留 `complete`（快照是否完整）和 `skipped`（跳过条目数），不能把缺少条目的快照解释为资源已恢复。这里的 `complete` 只表示枚举出的数字条目均成功读取链接，并不保证枚举与读取来自同一原子时刻；期间新增或复用的 FD 仍可能漏掉或改变对象。
 
 <!-- gracker-diagram: a213-02-snapshot-quality -->
 ![低频计数后按需读取链接，明确快照的数据质量](../../assets/diagrams/ch20/a213-02-snapshot-quality.png)
 
 图：complete只描述已枚举条目的读取结果，并非原子完整快照；目录枚举本身可能占一个FD，不能机械减一。
 
+`classifyFd()` 可区分文件或目录、`socket:`、`pipe:`、`anon_inode:`（没有普通文件路径的内核对象）、ashmem 和 memfd 等类型。`normalizeFdTarget()` 应把应用私有文件归入稳定的目录或资源类别，并去掉文件名、用户 ID、URI 和查询参数。
+
+需要进一步判断少量可疑 FD 时，再读取 `/proc/self/fdinfo/<fd>`。普通文件至少包含当前位置 `pos`、打开标志 `flags`、挂载点编号 `mnt_id` 和 inode（文件系统对象编号）；eventfd、epoll 等对象还会提供各自字段。逐个读取所有 FD 的 `fdinfo` 成本较高，不适合高频采样。
+
 ## FD 限额和 FD_SET 是两条边界
 
-`RLIMIT_NOFILE` 的取值比进程可打开的最大 FD 编号大 1；由于内核通常分配最小可用编号，它也约束同时打开的 FD 数量。soft limit 是当前生效上限，hard limit 是普通进程可提高 soft limit 的最大值。
+`RLIMIT_NOFILE` 的软限制规定新分配 FD 编号的上界：内核需要找到小于该值的空闲编号；通常分配最小可用编号，所以它也限制可同时分配的数量。降低软限制不会自动关闭已有高编号 FD，不能简单用当前最大编号或总数反推该限制。soft limit 是当前生效上限，hard limit 是普通进程可提高 soft limit 的最大值。
 
 新建 FD 会超出 soft limit 时，调用通常返回 `EMFILE`；`ENFILE` 表示系统级打开文件表承受压力。限额取决于设备与进程环境，不应写死统一数值。采样时可以读取 `/proc/self/limits`，或在 Native 层调用 `getrlimit(RLIMIT_NOFILE)`。
 
@@ -200,7 +200,12 @@ eventfd、epoll、inotify 和 timerfd 都是通过 FD 暴露能力的内核接�
 
 Hook 指在运行时拦截函数调用。如果只拦截 `open()` 与 `close()`，事件表必然缺少其他入口；在所有用户进程长期启用一组 libc（C 标准库）Hook，开销和兼容风险也很高。
 
-事件表可以使用 `fd + generation` 作为本地键。每次成功创建或复制，都为目标编号递增 generation；`dup2()` / `dup3()` 成功覆盖目标编号时，要先结束该编号的旧记录，再建立新记录。每条事件至少包含操作、结果、类型、单调时间、线程 ID、来源 ID，以及按采样规则选取的调用栈。
+事件表可以使用 `fd + generation` 作为本地键。每次成功创建或复制，都为目标编号递增 generation；`dup2()` / `dup3()` 成功覆盖不同的目标编号时，要先结束目标编号的旧记录，再建立新记录；但 `dup2(oldfd, oldfd)` 在源 FD 有效时是成功的无操作，不关闭也不产生新 generation，`dup3(oldfd, oldfd, flags)` 则失败并返回 `EINVAL`。每条事件至少包含操作、结果、类型、单调时间、线程 ID、来源 ID，以及按采样规则选取的调用栈。
+
+<!-- gracker-diagram: a213-05-dup-rules -->
+![复制与覆盖按返回语义更新创建代次](../../assets/diagrams/ch20/a213-05-dup-rules.png)
+
+图：复制描述符可共享底层open file description，但每个描述符各有所有权与关闭责任。
 
 Hook 实现还要处理：
 
@@ -211,7 +216,7 @@ Hook 实现还要处理：
 
 - 使用 thread-local（每线程独立）标志防止重入，避免展开调用栈、写日志或分配内存时再次打开 FD；
 - 设置固定容量和淘汰规则，避免诊断表自身无限增长；
-- 只在系统调用成功后更新状态；
+- 创建、复制和关闭分别按契约更新：失败的创建不建立记录；`dup2` 同编号成功不换代；Linux `close()` 除 `EBADF` 外即使晚报 I/O 错误，FD 也可能已释放，不可保留成确定存活或盲目重试。固定 Bionic 的普通 `close()` 还把底层 `EINTR` 转成成功，见 [Bionic EINTR 说明](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/docs/EINTR.md)；
 - 记录未拦截的创建 API、直接 syscall（系统调用）与 hook 加载顺序造成的盲区；
 - 验证与其他 Native Hook SDK 的兼容性；
 - 在 16 KB 页设备上验证 ELF 对齐、内存权限和运行时页计算；
@@ -219,18 +224,13 @@ Hook 实现还要处理：
 
 ### fdsan 与 fdtrack 的准确用途
 
-Android 10 引入 fdsan（file descriptor sanitizer，文件描述符检查器），Android 11 起默认在检测到所有权错误时中止进程。fdsan 用 owner tag（所有者标签）发现关闭后使用、重复关闭和错误所有者关闭。
+Android 10 引入 fdsan（file descriptor sanitizer，文件描述符检查器），Android 11 起默认在检测到所有权错误时中止进程。fdsan 用 owner tag（所有者标签）在所有权交换及关闭时检查标签，能发现由重复关闭、错误所有者关闭等引起的所有权错误；它并不在每次 `read/write` 时检查标签，不能当作覆盖所有关闭后使用的通用检测器。
 
 只有参与标签协议的 FD 才能获得完整检查，fdsan 也不负责统计泄漏数量。若 tombstone 显示 “fdsan: attempted to close file descriptor ...”，应修正所有权与关闭协议，不要通过降低错误级别隐藏问题。
 
 AOSP（Android Open Source Project，Android 开源项目）还包含 fdtrack。bionic 内部 Hook 接收 FD 创建与关闭事件，`libfdtrack` 使用 unwindstack（Native 调用栈展开库）保存最多 32 帧的创建栈。这个实现需要为事件展开调用栈，并维护固定的 FD 表，适合系统镜像、可调试构建和短时诊断。
 
 `libfdtrack.so` 与 `android_fdtrack_compare_exchange_hook` 属于平台内部接口，不能作为跨 Android 版本稳定可用的 App SDK。线上方案应使用经过验证、开销有上限的自有诊断组件，或采用低频 `/proc` 快照并在资源封装层记录所有者。
-
-<!-- gracker-diagram: a213-05-dup-rules -->
-![复制与覆盖按返回语义更新创建代次](../../assets/diagrams/ch20/a213-05-dup-rules.png)
-
-图：复制描述符可共享底层open file description，但每个描述符各有所有权与关闭责任。
 
 <!-- gracker-diagram: a213-07-fdsan-fdtrack -->
 ![所有权校验与创建栈追踪提供不同证据](../../assets/diagrams/ch20/a213-07-fdsan-fdtrack.png)
@@ -331,7 +331,7 @@ FD 持续增长且接近上限时，可按影响范围采取以下动作：
 1. 平时把低成本趋势写入固定容量环形缓冲区，写满后覆盖最旧记录；
 2. 阈值触发时预生成有大小上限的 FD 摘要；
 3. 如果已有预留并验证过的低成本写入通道，崩溃现场只写摘要 ID 和少量计数；
-4. Android 11（API 30）及以上，下一次启动可用 `ApplicationExitInfo`、tombstone 与本地摘要核对；更低版本可用 tombstone 与本地摘要核对；
+4. Android 11（API 30）及以上，下一次启动先用 `ApplicationExitInfo` 退出元数据与本地摘要核对；API 31+ 的 Native crash 还可尝试通过其 `getTraceInputStream()` 取得允许为空的 protobuf tombstone。系统 tombstone 目录并非普通应用可直接读取；其他版本或无系统 trace 时，用已有 SDK 记录、本地摘要或有权限的调试材料补充；
 5. 后台再上传、符号化和聚合；符号化是把机器地址还原为函数名与源码位置。
 
 证据文件要使用原子替换，确保读取方只能看到完整旧版本或完整新版本；还要限制总容量，并为格式设置版本号。Crash/ANR 证据包见 26.2、26.3；Java/Native handler 的职责边界见 20.2、20.3。

@@ -1,6 +1,6 @@
 # 第 18 章：AOSP 性能优化
 
-AOSP（Android Open Source Project）是 Android 开源平台源码。system service 指运行在系统进程、向 App 或其他系统组件提供能力的服务；本章所说的 ROM，指设备厂商基于 AOSP 构建并发布的系统软件。做这类平台侧优化时，可以直接修改系统代码、配置和调度策略。
+AOSP（Android Open Source Project）是 Android 开源平台源码。system service 指系统向 App 或其他系统组件提供能力的服务：既可以位于 system_server，也可以由独立的 native 或 Rust 进程承载；本章所说的 ROM，指设备厂商基于 AOSP 构建并发布的系统软件。做这类平台侧优化时，可以直接修改系统代码、配置和调度策略。
 
 App 侧优化通常只能在现有接口和系统策略内降低自身成本。系统侧改动会影响多个 App 或整台设备，因此还要评估设计约束、兼容性、整机收益，以及改动让原有功能或性能退步的回归风险。
 
@@ -39,6 +39,7 @@ App 侧优化通常只能在现有接口和系统策略内降低自身成本。�
 - release notes（版本说明）、behavior changes（行为变更文档）与 SDK 文档用于确定对开发者公开承诺的接口和行为边界；固定 tag 源码用于核对该版本的实现。设备上的 build（具体系统构建）、flag（功能开关）、模块版本和 trace（运行轨迹）用于证明目标设备实际启用了什么。
 - 社区文章和研究论文可以提供问题线索或原型数据，不能替代平台源码、官方文档和目标设备实验。
 - 每篇正文保留与主题直接相关的来源，通用入口用于定位资料，具体结论仍需关联到对应实现或公开契约。
+
 
 <!-- gracker-diagram: ch18-index-03-evidence-chain -->
 ![公开契约、固定源码与设备证据共同约束结论](../../assets/diagrams/ch18/ch18-index-03-evidence-chain.png)

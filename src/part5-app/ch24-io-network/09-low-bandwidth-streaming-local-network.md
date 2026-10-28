@@ -4,8 +4,8 @@ chapter: '24.9'
 section: '24.9'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37); Android 16 QPR2 约束卫星网络能力；低带宽/高时延网络场景
-last_verified: '2026-08-15'
-last_verified_against: Android constrained satellite network guide current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 source; FCM REST and Firebase Admin docs; current T-Satellite product pages
+last_verified: '2026-10-25'
+last_verified_against: Android constrained satellite network, FCM, Media3, local-network and NDK docs reviewed 2026-10-25; Android 17 / API 37 fixed android-17.0.0_r1 source; T-Satellite product pages checked
 confidence: high
 tags:
   - network
@@ -89,6 +89,8 @@ sources:
   path: https://developer.android.com/reference/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter
 - type: official
   path: https://developer.android.com/privacy-and-security/security-config
+- type: official
+  path: https://developer.android.com/ndk/reference/group/networking
 - type: research-feed
   path: intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md
 - type: daily-info
@@ -220,16 +222,18 @@ class ConstrainedNetworkMonitor(
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
+            if (!registered) return
             current = network
             latestCaps = null
             blocked = null
+            onChanged(null)
         }
 
         override fun onCapabilitiesChanged(
             network: Network,
             caps: NetworkCapabilities,
         ) {
-            if (network != current) return
+            if (!registered || network != current) return
             latestCaps = caps
             publish(network)
         }
@@ -238,7 +242,7 @@ class ConstrainedNetworkMonitor(
             network: Network,
             blocked: Boolean,
         ) {
-            if (network != current) return
+            if (!registered || network != current) return
             this@ConstrainedNetworkMonitor.blocked = blocked
             publish(network)
         }
@@ -272,7 +276,7 @@ class ConstrainedNetworkMonitor(
         }
 
         override fun onLost(network: Network) {
-            if (network == current) {
+            if (registered && network == current) {
                 current = null
                 latestCaps = null
                 blocked = null
@@ -304,26 +308,27 @@ class ConstrainedNetworkMonitor(
         current = null
         latestCaps = null
         blocked = null
+        onChanged(null)
     }
 }
 ```
 
 `NetworkRequest.Builder` 默认只匹配“不受带宽约束”的网络，代码里显式移除该能力，约束网络才能进入匹配范围。
 
-`onAvailable()` 之后先等按序到达的 `onCapabilitiesChanged()`，再等 `onBlockedStatusChanged()` 报告的应用身份限制状态，两样都到齐才发布快照，避免回调与同步查询读取到不同时间点的状态；UID 是系统分配给应用的 Linux 用户标识，这里的 `blocked` 状态表示系统当前限制该 UID 使用这条网络。
-
-自动传输还要确认网络已通过公网验证、没有暂停，且当前 UID 未被限制。`onLost()` 只清除当前网络，防止旧网络的丢失事件覆盖刚出现的新网络。
-
-`start()`、`close()` 和回调共享同一 `Handler` 线程，避免生命周期字段被多个线程同时修改。若调用方拥有 `HandlerThread`，也就是带消息循环的后台线程，应先注销回调，再退出线程。当前 [`ConnectivityManager`](https://developer.android.com/reference/android/net/ConnectivityManager) 文档规定，每个 UID 通过该类 API 提交且尚未释放的网络请求与回调合计最多 100 个；重复注册却不注销会达到上限并触发运行时异常。
-
-这段实现面向 Android 17；放到旧系统上要同时核对编译 SDK、设备 API 级别与 SDK 扩展版本：编译 SDK 决定代码能否引用符号，API 级别和扩展版本决定运行设备是否提供该能力。不支持该能力的平台继续使用默认网络回调和应用实测指标。官方指南允许在较低版本上直接使用常量数值，但项目若没有跨 QPR 验证环境，这些数值就留在适配层，别放进业务逻辑。另外，Android 16 设备注册回调时要按官方建议处理 `ConnectivityManager` 抛出的异常。
-
-`registerBestMatchingNetworkCallback()` 反映的是请求的最佳匹配网络。若应用把某个 `Network` 显式绑定到专用客户端，我们应读取该绑定网络自己的能力，全局快照照搬过去会出错。VPN 也可能改变应用的实际出站路径，测试中要覆盖 VPN 开关。
+`onAvailable()` 先发布 `null` 使旧网络预算失效，消费者此时应暂停依赖预算的自动传输；随后等按序到达的 `onCapabilitiesChanged()`，再等 `onBlockedStatusChanged()` 报告的应用身份限制状态，两样都到齐才发布快照，避免回调与同步查询读取到不同时间点的状态；UID 是系统分配给应用的 Linux 用户标识，这里的 `blocked` 状态表示系统当前限制该 UID 使用这条网络。
 
 <!-- gracker-diagram: a269-03-coherent-budget-publication -->
 ![切网先失效旧预算再合并回调快照](../../assets/diagrams/ch24/a269-03-coherent-budget-publication.png)
 
 图：null 表示暂时没有可用预算；消费者暂停自动传输，不能将旧 Network 快照继续当作当前状态。
+
+自动传输还要确认网络已通过公网验证、没有暂停，且当前 UID 未被限制。`onLost()` 只清除当前网络，防止旧网络的丢失事件覆盖刚出现的新网络。
+
+`start()`、`close()` 和回调共享同一 `Handler` 线程，避免生命周期字段被多个线程同时修改；`registered` 守卫还会忽略注销后已经排队的迟到回调，`close()` 通过 `null` 通知读者停用旧预算。若调用方拥有 `HandlerThread`，也就是带消息循环的后台线程，应先注销回调，再退出线程。当前 [`ConnectivityManager`](https://developer.android.com/reference/android/net/ConnectivityManager) 文档规定，每个 UID 通过该类 API 提交且尚未释放的网络请求与回调合计最多 100 个；重复注册却不注销会达到上限并触发运行时异常。
+
+这段实现面向 Android 17；放到旧系统上要同时核对编译 SDK、设备 API 级别与 SDK 扩展版本：编译 SDK 决定代码能否引用符号，API 级别和扩展版本决定运行设备是否提供该能力。不支持该能力的平台继续使用默认网络回调和应用实测指标。官方指南允许在较低版本上直接使用常量数值，但项目若没有跨 QPR 验证环境，这些数值就留在适配层，别放进业务逻辑。另外，Android 16 设备注册回调时要按官方建议处理 `ConnectivityManager` 抛出的异常。
+
+`registerBestMatchingNetworkCallback()` 反映的是请求的最佳匹配网络。若应用把某个 `Network` 显式绑定到专用客户端，我们应读取该绑定网络自己的能力，全局快照照搬过去会出错。请求还保留默认的 `NOT_VPN` 等能力，最佳匹配结果不保证就是应用默认网络或某个现有套接字的实际路径。VPN 场景不能把这个非 VPN 候选快照直接当作隧道真实预算；应结合默认网络回调、绑定关系和实际路径验证，测试覆盖 VPN 开关。
 
 ### NTN（非地面网络） 状态与数据网络能力的分工
 
@@ -492,7 +497,7 @@ HTTP/1.1、HTTP/2、HTTP/3、gRPC 和 WebSocket 的表现取决于代理、网�
 | --- | --- | --- |
 | 平台能力 | 是否卫星、是否约束、是否具备 `NET_CAPABILITY_VALIDATED`、是否计费、网络切换序号 | 解释为何进入低数据模式；网络切换序号由应用在当前 `Network` 变化时递增，用于关联同一条路径上的事件 |
 | 带宽提示 | 首跳上下行估算值、值是否未知 | 观察平台提示，避免当成设备到服务端的实际测速 |
-| 请求阶段 | 域名解析（DNS）、连接、TLS 加密握手、首字节等待时间（TTFB）、上传、下载、总耗时 | 定位高时延出现在哪一段；TTFB 是发出请求后等到响应首个字节的时间 |
+| 请求阶段 | DNS、连接尝试、TLS、请求结束至响应头事件的等待、上传、下载、总耗时 | 明确各库事件边界；HTTPS 的连接阶段可能已包含 TLS，响应头事件差只是首字节等待的代理指标，不能重复累计 |
 | 数据预算 | 请求与响应字节、压缩后字节、重试额外字节 | 检查降级是否减少流量 |
 | 队列状态 | 待发送数量、最老任务年龄、合并数、丢弃原因 | 判断离线队列是否可恢复 |
 | 用户结果 | 用户关键操作成功率、取消率、手动重试率 | 判断策略是否影响任务完成 |
@@ -688,7 +693,7 @@ ABR 至少有三类输入。Media3 是 AndroidX 的媒体播放库，ExoPlayer �
 | `BandwidthMeter` 估计 | 最近媒体传输样本推导的可用吞吐 | 分片传输持续更新 | 播放中的升降档 |
 | 缓冲与播放状态 | 已缓冲时长、卡顿、直播延迟和解码能力 | 播放会话内更新 | 是否允许升档、是否快速降档 |
 
-截至 2026-08-15 的 Media3 API 参考中，`AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION` 为 `0.7f`，表示轨道选择默认只使用估算带宽的 70%；`DefaultBandwidthMeter.DEFAULT_INITIAL_BITRATE_ESTIMATE` 为 `1_000_000` bps（bits per second，每秒比特），用于离线或网络类型未知时的初始估计。两者都是库版本相关的默认参数，性能基线必须记录播放器和 Media3 的精确版本。
+2026-10-25 核对的 Media3 API 参考中，`AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION` 为 `0.7f`，表示轨道选择默认只使用估算带宽的 70%；`DefaultBandwidthMeter.DEFAULT_INITIAL_BITRATE_ESTIMATE` 为 `1_000_000` bps（bits per second，每秒比特），用于离线或网络类型未知时的初始估计。两者都是库版本相关的默认参数，性能基线必须记录播放器和 Media3 的精确版本。
 
 运营商上限覆盖的是一轮完整的媒体会话，视频轨道只占其中一部分：音频、封装格式、媒体清单、加密、请求头、重传和质量探测都要从这份预算里出。候选轨道是同一内容提供的不同码率或分辨率版本。我们按下面的顺序处理：
 
@@ -704,7 +709,7 @@ ABR 至少有三类输入。Media3 是 AndroidX 的媒体播放库，ExoPlayer �
 
 图：计划上限、路径测量和缓冲是不同输入；库默认 0.7 与 1Mbps 是参数，不是普适性能目标。
 
-点播与直播下行可以约束候选视频轨道，RTC 或直播推流则使用上行接口约束编码目标。信令、小型控制请求和鉴权走的是控制路径，不占媒体码率预算；上行速率未知时照样可以建连。
+点播与直播下行可以约束候选视频轨道，RTC 或直播推流则使用上行接口约束编码目标。信令、小型控制请求和鉴权走控制路径，不应被直接设成视频轨道或编码器的码率目标；它们仍消耗整体网络流量和链路容量，应在应用数据预算中预留成本。上行速率未知不等于禁止建连。
 
 若服务端参与清晰度选择，客户端只需上传离散的预算档位或受控区间。服务端仍要保留兼容的媒体清单和切换能力。HLS 和 DASH 是两种常见的分段流媒体协议，它们用媒体清单列出可选轨道；一次上报只反映当时的预算，低质量轨道要继续保留。
 
@@ -771,7 +776,7 @@ NSD 是 Network Service Discovery 的缩写，即 Android 的网络服务发现 
 
 这里的 T 指 Android 13，SDK Extension 是系统模块更新带来的 API 版本，让设备在不升级完整 Android 大版本的情况下也可能获得新接口。运行在可接收模块更新的旧平台时，应检查 T 扩展版本；示例只展示 Android 17 直接路径。
 
-这段代码发起一次系统 NSD 设备选择，我们要在页面或控制器里保存回调对象，并在生命周期结束时调用 `unregisterServiceInfoCallback()` 取消注册。
+这段代码发起一次系统 NSD 设备选择，我们要在页面或控制器里保存回调对象，并在生命周期结束时调用 `unregisterServiceInfoCallback()` 取消注册。示例的 `onServiceLost()` 留空只为展示选择器签名；接入实际连接时，应在服务丢失后关闭失效连接并更新界面。
 
 ```kotlin
 @RequiresApi(37)
@@ -871,7 +876,7 @@ private fun startLanFeature() {
 
 Android 17 官方迁移文档把 `android_getnetworkblockedreason(sockFd)` 称为 NDK API。C/C++ 网络代码可在 TCP 套接字失败后查询它。只有返回 `ANDROID_NETWORK_BLOCKED_REASON_LNP`，才能把该连接归因到本地网络保护（Local Network Protection，LNP）。
 
-截至 2026-08-15，NDK 公开参考页尚未列出这个符号；网络库要按构建所用 NDK 和设备版本检查声明与符号是否可用，旧版本能否直接链接以检查结果为准。普通 Java/Kotlin TCP 超时没有同等精确的公开错误码，见到超时就归成权限拒绝属于误判。
+截至 2026-10-25，NDK 的 [Networking 公开参考](https://developer.android.com/ndk/reference/group/networking) 已列出该符号及 `NetworkBlockedReason`，声明位于 `android/multinetwork.h`。查询会返回并清除套接字已记录的阻断原因；负值表示 POSIX 错误，`NONE` 也可能只是没有可用记录。网络库仍应按构建所用 NDK、部署设备与符号可用性选择兼容链接方式，不能由当前文档反推旧设备都可直接链接。普通 Java/Kotlin TCP 超时没有同等精确的公开错误码，见到超时就归成权限拒绝属于误判。
 
 `android-17.0.0_r1` 的实现里有两处可以直接核对：
 
@@ -894,7 +899,7 @@ Android 17 官方迁移文档把 `android_getnetworkblockedreason(sockFd)` 称�
 
 本地网络权限被拒绝时，受影响的是局域网路径，让所有互联网请求跟着降级就扩大了范围；蜂窝数据计划上限同样管不到 Wi-Fi 局域网控制。
 
-Android 17 为目标 API 37 及以上应用把 ECH 默认模式设为 `enabled`。这项配置只对已经集成 ECH 的网络库生效，远端服务器也必须发布可用配置；HttpEngine、WebView 或 OkHttp 等库的具体版本仍需单独确认。协商条件不满足时，支持该机制的客户端会发送内容随机的 ECH GREASE 扩展，避免中间设备只接受未携带 ECH 的固定握手格式。
+Android 17 为目标 API 37 及以上应用把 ECH 默认模式设为 `enabled`。这项配置只对已经集成 ECH 的网络库生效，远端服务器也必须发布可用配置；HttpEngine、WebView 或 OkHttp 等库的具体版本仍需单独确认。未获得可用 ECH 配置时，支持该机制的客户端可能发送内容随机的 ECH GREASE 扩展，避免中间设备只接受未携带该扩展的固定握手格式。GREASE 的出现不能证明服务器接受了真正的 ECH；已有配置被拒绝后的重试还必须遵守对应网络库的验证规则。
 
 `<domainEncryption>` 控制全局或指定域名的 ECH 模式，它不授予局域网访问，也不改变 `ACCESS_LOCAL_NETWORK` 的判定。相关配置细节见 [24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)。
 

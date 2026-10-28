@@ -1,6 +1,6 @@
 # 第 12 章：网络性能
 
-本章讲一次请求从应用代码进入 Android 网络栈之后的端到端成本，按处理阶段看依次是请求排队、DNS（Domain Name System，域名系统）解析、连接复用、传输协议和 TLS（Transport Layer Security，传输层安全）握手。`netd`（Android 网络管理守护进程）和每个网络各自的 DNS 状态是另一类观察对象。系统的网络选择和 `NetworkCallback` 回调的语义另见 1.22。
+本章讲 Android 应用网络请求的端到端成本：业务排队、必要的路由与 DNS 解析、新传输连接和 TLS 握手、HTTP 交换、响应消费与应用处理。缓存、连接复用、并行尝试和流式处理会让部分阶段跳过或交叠，不能把它们都画成固定串行耗时。系统侧还要区分 netd 的网络/路由管理与 DNS Resolver 的每网络配置、缓存和 Private DNS；网络选择与 NetworkCallback 语义见 [1.22](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
 
 排查时先按阶段分析一次请求，再根据证据进入 TLS 或 DNS 专项。Wi-Fi 图标、系统网络验证、DNS 可用性和目标服务可达性分别代表不同状态，不能合并成一个“网络正常”或“网络异常”的结论。
 
@@ -22,7 +22,7 @@
 
 ### 系统网络栈排查
 
-先读 1.22，确定 `NetworkRequest`、`NetworkCallback`、网络排序、rematch（重新匹配网络请求）和 linger（旧网络短暂保留期）的语义，再用 12.2 检查 `netd` 路由与每网络 DNS 状态。Wi-Fi、蜂窝、卫星或 VPN 切换时的业务恢复策略继续参阅第 24 章。
+先读 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)，确定 NetworkRequest、NetworkCallback、网络排序、rematch 和 linger 的语义，再用 12.2 检查 netd 路由与每网络 DNS。业务连接恢复与容灾见 [24.5](../../part5-app/ch24-io-network/05-mobile-network-connection-resilience.md)，Wi-Fi 网络选择与切换性能见 [24.8](../../part5-app/ch24-io-network/08-wifi-connectivity-selection.md)。
 
 <!-- gracker-diagram: ch12-index-02-chapter-reading-map -->
 ![按应用阶段与系统网络问题选择专项](../../assets/diagrams/ch12/ch12-index-02-chapter-reading-map.png)
@@ -31,7 +31,7 @@
 
 ## 版本边界
 
-正文统一以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为当前平台锚点。涉及 HTTP 客户端、TLS provider（安全协议实现提供方）和协议实现时，以各文章记录的依赖版本与来源为准。版本演进段落用于解释旧设备行为，不能用旧版整数网络分数或已经退出主路径的 API 推导 Android 17 的系统行为。
+各文以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为当前核验锚点，并分别说明适用范围。HTTP 客户端、TLS provider 与 Mainline 模块版本仍须单独记录；targetSdk、运行系统与服务端配置共同影响结果。12.1 已分别披露 ECH 当前文档与固定 r1 默认策略的差异，12.2 也区分普通查询与组合查询超时的回调路径。版本历史不能替代实际模块与连接证据，也不能用旧版网络分数或退出主路径的 API 推导当前行为。
 
 <!-- gracker-diagram: ch12-index-03-network-version-boundaries -->
 ![系统、模块与实际连接的版本边界](../../assets/diagrams/ch12/ch12-index-03-network-version-boundaries.png)

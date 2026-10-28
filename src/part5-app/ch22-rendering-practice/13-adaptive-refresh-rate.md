@@ -3,9 +3,9 @@ title: 自适应刷新率与帧率策略实战
 chapter: '22.13'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-10-18'
+last_verified: '2026-10-25'
 last_verified_against: Android Developers ARR、Media frame rate、Display 与 Window API，AOSP Android 17 android-17.0.0_r1
-last_source_verified_at: '2026-10-18'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-18T22:40:02+08:00'
 confidence: high
 sources:
@@ -54,18 +54,18 @@ related_chapters:
 
 图：同样的平均fps可能有不同呈现间隔；系统接收偏好后仍按所有可见内容决策。
 
-`fps` 表示每秒生成的画面数，`Hz` 表示显示设备每秒刷新的次数。60 fps 的应用可以运行在 120 Hz 显示设备上，每个应用帧保持两个刷新周期，画面仍然均匀。应用平均达到 60 fps，也可能因为提交间隔忽快忽慢而出现卡顿。帧率平均值、呈现间隔和输入延迟回答的是不同问题。
-
-应用要负责两件事：控制生成一帧的成本和节奏，并向系统准确描述内容偏好。ARR 不会缩短应用生成一帧要花的 CPU、GPU 或解码时间，也不会修复主线程超时、`RenderThread` 堵塞、GPU 迟完成、视频时间戳错误或 `BufferQueue` 中待显示缓冲区堆积。
-
-本文的平台实现基线是 Android 17、API 37 和 `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；应用想用上完整能力，系统需为 Android 15 QPR1 或更高版本，设备还要实现相应的 Composer3 硬件抽象层（Hardware Abstraction Layer，HAL）能力。系统版本符合要求，并不表示每块显示设备都支持 ARR。
-
-ARR 配置下，显示设备的垂直同步（VSync）或面板 TE（Tearing Effect，面板扫描时序信号）可以与内容刷新节奏分开：面板在同一个显示模式内，按 TE 周期的离散倍数选择呈现时机。这样既减少了只为改变刷新率而切换显示模式的次数，也缩短了静态内容和低频动画占用高刷新率的时间。平台侧的选择链、ARR 与 MRR 的分支判断，以及 Choreographer 的反馈回路见 [2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)；本文只负责应用接入、跨设备实验和回退策略。
+`fps` 表示每秒生成的画面数，`Hz` 表示显示设备每秒刷新的次数。60 fps 的应用可以运行在 120 Hz 显示设备上，在均匀产帧、及时呈现且无其他调度干扰时，每个应用帧可保持两个刷新周期。应用平均达到 60 fps，也可能因为提交间隔忽快忽慢而出现卡顿。帧率平均值、呈现间隔和输入延迟回答的是不同问题。
 
 <!-- gracker-diagram: a244-02-uniform-hold-cadence -->
 ![60fps内容与120Hz刷新的均匀保持](../../assets/diagrams/ch22/a244-02-uniform-hold-cadence.png)
 
 图：60fps内容在120Hz条件下可每帧保持两个刷新周期；此图仅示意均匀且按时呈现的情况。
+
+应用要负责两件事：控制生成一帧的成本和节奏，并向系统准确描述内容偏好。ARR 不会缩短应用生成一帧要花的 CPU、GPU 或解码时间，也不会修复主线程超时、`RenderThread` 堵塞、GPU 迟完成、视频时间戳错误或 `BufferQueue` 中待显示缓冲区堆积。
+
+本文的平台实现基线是 Android 17、API 37 和 `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；应用想用上完整能力，系统需为 Android 15 QPR1 或更高版本，设备还要实现Composer3 AIDL 第 3 版所需的硬件抽象层（Hardware Abstraction Layer，HAL）接口与配套系统/内核支持。系统版本符合要求，并不表示每块显示设备都支持 ARR。
+
+ARR 配置下，显示设备的垂直同步（VSync）或面板 TE（Tearing Effect，面板扫描时序信号）可以与内容刷新节奏分开：面板在同一个显示模式内，按 TE 周期的离散倍数选择呈现时机。这样既减少了只为改变刷新率而切换显示模式的次数，也缩短了静态内容和低频动画占用高刷新率的时间。平台侧的选择链、ARR 与 MRR 的分支判断，以及 Choreographer 的反馈回路见 [2.2 帧率、刷新率与显示模式选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)；本文只负责应用接入、跨设备实验和回退策略。
 
 <!-- gracker-diagram: a244-03-arr-te-constraints -->
 ![ARR在同一模式内选择呈现节奏](../../assets/diagrams/ch22/a244-03-arr-te-constraints.png)
@@ -96,6 +96,8 @@ ARR 配置下，显示设备的垂直同步（VSync）或面板 TE（Tearing Eff
 | 速度—帧率映射 | `Display.getFrameRateVelocityMapping()` | API 37 | 返回当前显示设备的滚动速度映射；换屏或显示设备变化后要重新读取 |
 
 `getSuggestedFrameRate()` 返回设备为指定类别配置的建议值。它不是当前刷新率，系统也不保证采用这个值。`getSupportedRefreshRates()` 从 API 21 就已存在，只在 API 36 更新了返回语义，不能把它写成 Android 16 新增的方法。
+
+表中只列当前公开 SDK 的接入入口。固定 Android 17 源码中还可见带特性开关的 `Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 草案；当前公开 API 文档与本次 API 37 SDK stub 未暴露它们，不能因源码类声明为 `public` 就按可调用的稳定 API 使用。
 
 下面的封装只读取能力，不替业务选择固定的 60 Hz 或 120 Hz。
 
@@ -159,7 +161,12 @@ Android 17 的 `getFrameRateVelocityMapping()` 主要服务滚动组件。`setFr
 
 图：局部请求只表达当前内容偏好，不会把屏幕锁定到所写数值。
 
-`ViewGroup.setRequestedFrameRate()` 在 API 35 不会自动传给子 `View`。API 36 增加的接口是 `ViewGroup.propagateRequestedFrameRate(frameRate, forceOverride)`：调用方要明确提供帧率值；`forceOverride=false` 保留子 `View` 已明确设置的值，`true` 则允许覆盖；恢复时传入 `DEFAULT` 类别。给页面根节点长期请求 `HIGH` 会扩大高刷新率范围，进度条、视频卡片、列表与静态正文也更难按各自节奏工作。
+`ViewGroup.setRequestedFrameRate()` 不会自动传给子 `View`，API 36—37 仍然如此。API 36 增加的接口是 `ViewGroup.propagateRequestedFrameRate(frameRate, forceOverride)`：调用方要明确提供帧率值；`forceOverride=false` 保留子 `View` 已明确设置的值，`true` 则允许覆盖；撤销传播时传入 `DEFAULT` 类别，但这不保存或恢复此前被强制覆盖的每个子 View 自定义值；需要恢复的业务值应由调用方另行保存和重设。给页面根节点长期请求 `HIGH` 会扩大高刷新率范围，进度条、视频卡片、列表与静态正文也更难按各自节奏工作。
+
+<!-- gracker-diagram: a244-08-group-propagation-reset -->
+![ViewGroup设置、传播与撤销](../../assets/diagrams/ch22/a244-08-group-propagation-reset.png)
+
+图：强制覆盖前需要由业务保存子View自定义偏好，撤销传播后按需重设。
 
 场景策略可以按下面的边界制定：
 
@@ -173,7 +180,7 @@ Android 17 的 `getFrameRateVelocityMapping()` 主要服务滚动组件。`setFr
 | 自定义滚动容器 | 惯性滚动或平滑滚动的每个绘制帧上报速度 | 速度值、帧回调与滚动位移同步 |
 | 视频卡片 | 视频 Surface 表达源帧率，宿主控件单独提交请求 | 视频帧节奏与宿主界面分开观察 |
 
-下面的例子从 `OverScroller` 读取当前惯性滚动速度，并在每个绘制帧更新提示。
+下面只展示惯性滚动的速度提示接线：调用 `startVerticalFling()` 才会启动示例中的 `OverScroller`。真正的滚动容器还需实现内容绘制、触摸/嵌套滚动、边界与取消处理，不能把这个普通 `View` 骨架当成完整容器。
 
 ```kotlin
 class ArrAwareScrollView @JvmOverloads constructor(
@@ -181,6 +188,14 @@ class ArrAwareScrollView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
 ) : View(context, attrs) {
     private val scroller = OverScroller(context)
+
+    fun startVerticalFling(velocityY: Int, maxScrollY: Int) {
+        scroller.fling(
+            scrollX, scrollY, 0, velocityY,
+            0, 0, 0, maxScrollY.coerceAtLeast(0),
+        )
+        postInvalidateOnAnimation()
+    }
 
     override fun computeScroll() {
         if (!scroller.computeScrollOffset()) {
@@ -196,19 +211,14 @@ class ArrAwareScrollView @JvmOverloads constructor(
 }
 ```
 
-`currVelocity` 已经是非负值，单位是像素/秒。`setFrameContentVelocity()` 的值只对下一个绘制帧有效，所以一次手势只写一次无法覆盖完整的惯性滚动。触摸按住期间仍由触摸升帧保持较高节奏；速度映射用于松手后的减速阶段。
-
-ARR 只改变目标节拍。若滚动仍出现“应用错过帧截止时间”（`app deadline missed`），应继续检查布局、数据绑定、图片处理、预取、`RenderThread` 和 GPU。相关 `RecyclerView` 方法见 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md)。
-
-<!-- gracker-diagram: a244-08-group-propagation-reset -->
-![ViewGroup设置、传播与撤销](../../assets/diagrams/ch22/a244-08-group-propagation-reset.png)
-
-图：强制覆盖前需要由业务保存子View自定义偏好，撤销传播后按需重设。
+`currVelocity` 已经是非负值，单位是像素/秒。`setFrameContentVelocity()` 的值只对下一个绘制帧有效，所以一次手势只写一次无法覆盖完整的惯性滚动。触摸按住期间，开启的触摸升帧可参与提高节奏，实际结果仍受显示能力与系统策略约束；速度映射用于松手后的减速阶段。
 
 <!-- gracker-diagram: a244-09-fling-velocity-lifecycle -->
 ![惯性滚动与逐帧速度提示](../../assets/diagrams/ch22/a244-09-fling-velocity-lifecycle.png)
 
 图：仅写一次速度提示不能覆盖完整减速过程；示例仍需由真实容器补足触摸、内容与取消处理。
+
+ARR 只改变目标节拍。若滚动仍出现“应用错过帧截止时间”（`app deadline missed`），应继续检查布局、数据绑定、图片处理、预取、`RenderThread` 和 GPU。相关 `RecyclerView` 方法见 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md)。
 
 ## Window 开关属于回退手段
 
@@ -279,6 +289,9 @@ fun Surface.setVideoFrameRate(frameRate: Float) {
     if (Build.VERSION.SDK_INT < 30) {
         return
     }
+    require(frameRate.isFinite() && frameRate > 0f) {
+        "Video frame rate must be finite and positive"
+    }
     if (Build.VERSION.SDK_INT >= 31) {
         setFrameRate(
             frameRate,
@@ -295,6 +308,8 @@ fun Surface.setVideoFrameRate(frameRate: Float) {
 ```
 
 只有在长时间播放且产品接受可见切换时，才评估 `CHANGE_FRAME_RATE_ALWAYS`。非无缝切换还要求用户在系统的「匹配内容帧率」设置中允许此类切换；`ALWAYS` 只表示应用侧接受，不能绕过用户偏好。
+
+源帧率应保留实际的小数值，例如 23.976、29.97 fps，不要为了“匹配显示档位”先四舍五入。提示的 Surface 还必须由显示合成器消费；编码器等非显示消费者不靠此 API 控制输出速率。Surface 的创建、替换和销毁仍由生产方 owner 串行管理，避免向已经释放的对象写请求。
 
 视频暂停或播放结束后，若 `Surface` 仍可见且不再提交新帧，应清除帧率请求；API 34 及以上调用 `clearFrameRate()`，API 30—33 可用 `setFrameRate(0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)` 恢复默认。`Surface` 复用或内容帧率改变时，应按新内容更新请求。调用成功只表示提示已提交，不表示显示设备已选择 24 Hz 或 120 Hz。
 
@@ -325,7 +340,12 @@ View 层先汇总当前绘制帧的类别或具体值。Surface 级请求和帧�
 
 图：请求类型、面积、焦点、目标显示、功耗和无缝条件共同约束候选。
 
-Android 17 的 `RefreshRateSelector` 用一组内部类型区分请求语义：`ExplicitDefault` 表示默认值，`ExplicitExactOrMultiple` 表示精确值或其整数倍，`ExplicitExact` 表示精确值，`ExplicitGte` 表示不低于给定值，`ExplicitCategory` 表示类别请求，`Heuristic` 表示系统根据历史推断。`FRAME_RATE_COMPATIBILITY_AT_LEAST` 对应最低值请求，与固定源的精确值或整数倍诉求采用不同评分。触摸状态和空闲状态也有提前结束选择及延后升帧分支，不能概括成“触摸必定拉满，固定若干秒后降频”。
+Android 17 的 `RefreshRateSelector` 用一组内部类型区分请求语义：`ExplicitDefault` 表示 `DEFAULT` 兼容性语义的显式帧率请求，并非“没有偏好”或恢复默认状态，`ExplicitExactOrMultiple` 表示精确值或其整数倍，`ExplicitExact` 表示精确值，`ExplicitGte` 表示不低于给定值，`ExplicitCategory` 表示类别请求，`Heuristic` 表示系统根据历史推断。`FRAME_RATE_COMPATIBILITY_AT_LEAST` 对应最低值请求，与固定源的精确值或整数倍诉求采用不同评分。触摸状态和空闲状态也有提前结束选择及延后升帧分支，不能概括成“触摸必定拉满，固定若干秒后降频”。
+
+<!-- gracker-diagram: a244-17-explicit-vote-types -->
+![内部票型保留不同请求语义](../../assets/diagrams/ch22/a244-17-explicit-vote-types.png)
+
+图：ExplicitDefault包含显式数值请求，不能理解为“没有任何偏好”。
 
 Composer3 的设备能力位于另一层。`DisplayConfiguration.vrrConfig` 非空时，该显示配置才属于 ARR；`DisplayConfiguration.vsyncPeriod` 表示 VSync/TE 周期，`VrrConfig.minFrameIntervalNs` 约束两帧之间允许的最短间隔。设备若提供 `DisplayConfiguration.vrrConfig.notifyExpectedPresentConfig`，Android 框架可以通过 `IComposerClient.notifyExpectedPresent()` 提前告知预计呈现时间和后续的 `frameIntervalNs` 帧间隔。厂商仍可按面板与功耗策略决定具体行为。
 
@@ -335,11 +355,6 @@ Composer3 的设备能力位于另一层。`DisplayConfiguration.vrrConfig` 非�
 图：Composer3 AIDL第3版所需接口和设备配套支持共同决定能力，通用内核不能推出具体面板策略。
 
 通用 Android 内核 `android17-6.18-2026-06_r6` 的 `drivers/gpu/drm/drm_vblank.c` 提供 DRM（Direct Rendering Manager，Linux 显示子系统）的垂直消隐（VBlank）计数、事件和时间戳机制。Android 设备不保证采用相同的 DRM 显示路径，面板 TE、最低刷新率、硬件显示平面、带宽与厂商 HWC 策略都不能只从通用内核推出。定位到 HWC 后，还要结合目标设备的 Composer、显示驱动和厂商跟踪数据。
-
-<!-- gracker-diagram: a244-17-explicit-vote-types -->
-![内部票型保留不同请求语义](../../assets/diagrams/ch22/a244-17-explicit-vote-types.png)
-
-图：ExplicitDefault包含显式数值请求，不能理解为“没有任何偏好”。
 
 ## Perfetto 验收：把请求、生产和呈现放在一起
 
@@ -363,12 +378,19 @@ ARR 验收至少同时覆盖四条证据：
 
 1. `queueBuffer`（缓冲区入队）；
 2. `BufferTX`（图层事务）；
-3. `acquire fence`（缓冲区就绪同步）；
-4. `latch`（SurfaceFlinger 接收缓冲区）；
+3. `latch`（SurfaceFlinger 采纳候选缓冲区），并关联它的 `acquire fence`；
+4. 检查 acquire fence 何时真正发出就绪信号、合成何时可以使用内容；
 5. HWC 合成；
 6. `present`（送显）。
 
 View 请求不等于独立图层请求。普通 `View` 和 `TextureView` 的结果通常要在宿主应用窗口上验证；`SurfaceView` 内容则要找到它自己的 BLAST 缓冲区图层。Perfetto 的计数器（counter）是随时间记录数值的轨道；只看到刷新率计数器下降，无法证明是哪项应用策略触发，也无法证明交互没有受损。
+
+上述项目是取证关联顺序，不是一条所有设备都严格串行执行的时序。BufferTX、latch 与 fence 的事件先后由实际轨迹确认；acquire fence 可在采纳缓冲区时仍未就绪，CLIENT 合成由 RenderEngine GPU 参与，最终还要核对目标显示设备的 present fence。
+
+<!-- gracker-diagram: a244-20-producer-fence-dependencies -->
+![独立生产方的缓冲区与栅栏依赖](../../assets/diagrams/ch22/a244-20-producer-fence-dependencies.png)
+
+图：候选缓冲区的采纳与内容就绪是两个时点；实际latch、fence和present顺序从轨迹确认。
 
 系统刷新率设置属于测试环境变量，且键名和生效方式会受 OEM 影响。需要强制档位做实验时，应保存原值并保证脚本退出后恢复。下面的脚本要求调用者传入目标设备已支持的 peak 值。
 
@@ -392,12 +414,23 @@ restore_setting() {
 }
 
 restore_all() {
+    local exit_status=$?
+    trap - EXIT
+    set +e
     restore_setting peak_refresh_rate "$PEAK_BEFORE"
+    local peak_status=$?
     restore_setting min_refresh_rate "$MIN_BEFORE"
+    local min_status=$?
+    if (( peak_status != 0 || min_status != 0 )); then
+        echo "Failed to restore refresh settings; verify both values manually." >&2
+        if (( exit_status == 0 )); then exit_status=1; fi
+    fi
+    exit "$exit_status"
 }
 
 trap restore_all EXIT
-trap 'exit 130' INT TERM
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 adb shell settings put system peak_refresh_rate "$TEST_PEAK"
 adb shell settings put system min_refresh_rate 0.0
@@ -415,11 +448,6 @@ read -r -p "Record the Perfetto trace, then press Enter to restore settings."
 图：脚本只修改实验环境；恢复测试覆盖缺失原值、正常退出、信号和部分恢复失败。
 
 线上应用可以记录 `displayId`、API 版本、`hasArrSupport()`、应用提交的策略、窗口模式、`FrameMetrics`/卡顿指标和交互时延。普通应用拿不到通用、可信的面板刷新率驻留统计；请求值或 `Display.getRefreshRate()` 也不能代替面板功耗证据。刷新率驻留时间、CPU/GPU 工作频点和耗电应通过实验室跟踪数据、功耗仪或设备提供的可靠计数器验证。
-
-<!-- gracker-diagram: a244-20-producer-fence-dependencies -->
-![独立生产方的缓冲区与栅栏依赖](../../assets/diagrams/ch22/a244-20-producer-fence-dependencies.png)
-
-图：候选缓冲区的采纳与内容就绪是两个时点；实际latch、fence和present顺序从轨迹确认。
 
 ## 跨设备实验与回退
 
@@ -453,7 +481,9 @@ read -r -p "Record the Perfetto trace, then press Enter to restore settings."
 
 游戏的帧率目标通常可以跟随设备和负载变化，使用 `DEFAULT`，并由引擎或 AGDK Frame Pacing（帧节奏库）控制逻辑节拍、预计呈现时间，以及在途帧深度（已经提交但尚未呈现的帧数）。Surface 帧率请求不会替游戏限制产帧速度，也不会修复缓冲区队列塞入过多帧的 `queue stuffing`。非 View 渲染还要结合引擎帧时间、Perfetto 和对应游戏质量指标。
 
-Compose 从 1.9 起提供 `Modifier.preferredFrameRate(Float)` 和 `Modifier.preferredFrameRate(FrameRateCategory)`，本文核验基线为 Compose UI 1.12.0。帧率请求应靠近持续变化的可组合函数。给整屏统一设置 `High` 会扩大高刷新率范围；`LazyList` 应优先使用当前 Compose/AndroidX 自带的滚动支持，再用跟踪数据判断是否还需局部调整。ARR 也不会减少重组（recomposition）、布局（layout）或绘制（draw）本身的工作量。
+Compose 从 1.9 起提供 `Modifier.preferredFrameRate(Float)` 和 `Modifier.preferredFrameRate(FrameRateCategory)`，本文固定实现核验基线为 Compose UI 1.12.0；2026-10-25 当前稳定版为 1.12.1。帧率请求应靠近持续变化的可组合函数。给整屏统一设置 `High` 会扩大高刷新率范围；`LazyList` 应优先使用当前 Compose/AndroidX 自带的滚动支持，再用跟踪数据判断是否还需局部调整。ARR 也不会减少重组（recomposition）、布局（layout）或绘制（draw）本身的工作量。
+
+固定 1.12.0 实现会增加 `graphicsLayer()` 并在 draw 节点更新/传播图形层偏好；这不是新增 SurfaceFlinger 独立图层。请求只在内容参与绘制时起作用；数值重载用 `0f` 清除偏好，类别重载可用 `FrameRateCategory.Default` 恢复框架默认。不要仅为持续维持“投票”而主动制造重绘。
 
 <!-- gracker-diagram: a244-23-compose-preferred-layer -->
 ![Compose帧率偏好的图形层路径](../../assets/diagrams/ch22/a244-23-compose-preferred-layer.png)
@@ -487,3 +517,8 @@ ARR 策略从内容对象出发：普通 View 和 Compose 在宿主窗口内提�
 - [`Scheduler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)、[`LayerHistory.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp) 与 [`RefreshRateSelector.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)
 - [`DisplayConfiguration.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl)、[`VrrConfig.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl) 与 [`IComposerClient.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl)
 - 内核 [`drm_vblank.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c) 与 [`drm_vblank.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/drm/drm_vblank.h)
+
+- [AOSP：同步框架与 acquire/present fence](https://source.android.com/docs/core/graphics/sync)
+- [Compose UI 1.12.0 发布源码包（FrameRate.kt / FrameRateCategory.kt）](https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar)
+- [Compose UI 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui)
+- [Bash 维护者发布的手册：set / trap / 退出状态](https://tiswww.case.edu/php/chet/bash/bash.html)

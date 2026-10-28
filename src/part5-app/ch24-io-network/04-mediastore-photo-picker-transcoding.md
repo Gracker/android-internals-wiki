@@ -4,8 +4,8 @@ chapter: '24.4'
 section: '24.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37); queryDeletedFiles API 37.1 / S Extension 23
-last_verified: '2026-08-15'
-last_verified_against: Android and AOSP docs current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 MediaProvider source; AndroidX Activity 1.11.0 Photo Picker docs; current Google Play All files access policy
+last_verified: '2026-10-25'
+last_verified_against: Android and AOSP docs accessed 2026-10-25; fixed android-17.0.0_r1 MediaProvider source; examples retain Activity 1.11.0 and embedded PhotoPicker alpha02 baseline; checked Activity 1.13.0 and PhotoPicker alpha03 release notes; API 37.1 / S Extension 23; current Google Play All files access policy
 confidence: high
 tags:
   - mediastore
@@ -160,7 +160,7 @@ for (volume in volumes) {
 
 `projection` 决定查询返回哪些列，只应包含当前阶段需要的数据。媒体网格通常先取 `_ID`、时间、MIME 类型、宽高、视频时长和 `generation`；MIME 类型用 `image/jpeg` 这类值标识内容格式，详情页再读取 EXIF 拍摄信息或打开文件。查询返回 `Cursor` 后，我们把列表需要的字段复制到小型数据对象中再关闭 `Cursor`，避免界面长期占用 `MediaProvider` 的查询资源。
 
-大图库翻页不宜用不断增长的 `OFFSET`：它先跳过指定行数再返回，较早页面一旦发生插入或删除，按行数跳过就可能重复或遗漏，`MediaProvider` 也仍可能扫描这些行。更稳妥的做法是保存上一页末尾的“排序值 + `_ID`”，下一页从该位置继续查询。下面的代码按 `DATE_ADDED` 和 `_ID` 倒序读取图片，`_ID` 用于区分同一秒加入的多条记录：
+大图库翻页不宜用不断增长的 `OFFSET`：它先跳过指定行数再返回，较早页面一旦发生插入或删除，按行数跳过就可能重复或遗漏，`MediaProvider` 也仍可能扫描这些行。更稳妥的做法是保存上一页末尾的“排序值 + `_ID`”，下一页从该位置继续查询。下面的代码按 `DATE_ADDED` 和 `_ID` 倒序读取图片，`_ID` 用于区分同一秒加入的多条记录： 示例投影包含 API 30 起的 `GENERATION_MODIFIED`，应在 Android 11 及以上调用；Android 10 需移除此列，并使用全量或可见 ID 对账等降级同步方案。
 
 ```kotlin
 data class PageAnchor(
@@ -219,7 +219,7 @@ fun queryImagePage(
 }
 ```
 
-这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version`（整体版本标识） 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。
+这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version` 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。复合锚点也不构成跨多次查询的一致快照：正在插入、删除或修改的媒体仍需后续刷新或增量同步补偿。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。
 
 <!-- gracker-diagram: a264-03-keyset-pagination -->
 ![媒体分页用排序值与ID定位](../../assets/diagrams/ch24/a264-03-keyset-pagination.png)
@@ -297,7 +297,7 @@ Android 17 的 `MediaStore.java` 对两者给出了不同契约：
 
 `generation` 比 `DATE_ADDED` 和 `DATE_MODIFIED` 更适合做增量判断，因为文件时间可能被 `setLastModified()` 或系统时钟变化改动。它只描述 `MediaProvider` 的索引变化；要判断内容本身，仍需按文件字节计算的内容哈希。反过来，元数据变了，文件字节也未必变。
 
-这段代码先取得本轮结束序号，再把增量查询限制在“上次检查点之后、本轮结束序号之前”的区间：
+以下代码使用 API 30 起的 `getGeneration()` 与 generation 列，先取得本轮结束序号，再把增量查询限制在“上次检查点之后、本轮结束序号及其之前”的区间：
 
 ```kotlin
 data class VolumeCheckpoint(
@@ -399,7 +399,7 @@ AOSP 文档记录过一组调优 Pixel 2 的对照测试：通过文件路径和
 
 图：路径访问仍有系统开销和权限边界；Photo Picker 与云 URI 不承诺提供 DATA 路径。
 
-#### 批量用户请求有 2000 项输入上限
+#### targetSdk 36 起的批量请求有 2000 项输入上限
 
 Android 11 及以上提供四种系统确认请求：
 
@@ -423,7 +423,7 @@ fun createDeleteRequestForItems(
 ): PendingIntent {
     require(itemUris.isNotEmpty())
     require(itemUris.size <= 2_000) {
-        "Android 17 allows at most 2000 item URIs per request"
+        "This helper caps requests at 2000 item URIs (platform cap for targetSdk >= 36)"
     }
     require(itemUris.all { uri ->
         uri.authority == MediaStore.AUTHORITY &&
@@ -480,7 +480,7 @@ fun loadMediaThumbnail(
 - 媒体 `Uri`。
 - `GENERATION_MODIFIED` 或应用能够验证的内容版本。
 - 目标物理像素宽高。
-- 裁剪、旋转、色彩和 HDR（High Dynamic Range，高动态范围）/SDR（Standard Dynamic Range，标准动态范围） 处理参数；HDR 是高动态范围，SDR 是标准动态范围。
+- 裁剪、旋转、色彩和 HDR（High Dynamic Range，高动态范围）/SDR（Standard Dynamic Range，标准动态范围）处理参数。
 
 同一 `Uri` 的小网格图和详情预览尺寸不同，缓存键里必须带上尺寸，否则两种用途会错拿同一张图。`generation` 改变时，只让对应媒体的派生图缓存失效；`version` 改变时，重新校验整个 `MediaStore` 缓存索引。
 
@@ -558,7 +558,7 @@ Perfetto 采集至少包含应用进程和 `com.android.providers.media.module` 
 
 ```bash
 adb shell dumpsys activity providers \
-  com.android.providers.media.module/.MediaProvider
+  com.android.providers.media.module/com.android.providers.media.MediaProvider
 ```
 
 这条命令用于确认设备上的包名、组件名、进程和发布状态。OEM（设备制造商）修改组件名时，可先运行 `adb shell dumpsys activity providers | grep -i media` 查找设备上的实际组件。
@@ -567,7 +567,7 @@ adb shell dumpsys activity providers \
 
 ```bash
 adb shell dumpsys activity provider \
-  com.android.providers.media.module/.MediaProvider
+  com.android.providers.media.module/com.android.providers.media.MediaProvider
 ```
 
 Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、卷与用户缓存、转码辅助器、Photo Picker 数据库与同步控制器、访问日志等状态。这些字段属于调试实现，不构成应用 API；不同 Mainline `MediaProvider` 版本可能变化。
@@ -619,7 +619,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 ### 拥有 `MANAGE_EXTERNAL_STORAGE` 权限的应用仍要限制扫描
 
-`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，都算不上申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework（由系统文件选择器和文档提供方组成的授权框架），也就是由系统文件选择器和文档提供方组成的那套授权框架。
+`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，都算不上申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework（由系统文件选择器和文档提供方组成的授权框架）。
 
 这项权限不会让目录遍历或随机 I/O 自动变快，也不会取消 FUSE 的所有工作。可见范围扩大后，待扫描条目更多，启动时全盘遍历会增加 I/O、电量、温度和隐私成本。
 
@@ -656,7 +656,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 - [Android API：`MediaStore`](https://developer.android.com/reference/android/provider/MediaStore)
 - [Android API：`ContentResolver`](https://developer.android.com/reference/android/content/ContentResolver)
 - [Android API：`ApplicationMediaCapabilities`](https://developer.android.com/reference/android/media/ApplicationMediaCapabilities)
-- [AndroidX API：Photo Picker `MediaCapabilities`](https://developer.android.com/reference/androidx/activity/result/contract/Activity（承载一个界面的 Android 组件）ResultContracts.PickVisualMedia.MediaCapabilities)
+- [AndroidX API：Photo Picker `MediaCapabilities`](https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.PickVisualMedia.MediaCapabilities)
 - [Android Developers：管理设备上的所有文件](https://developer.android.com/training/data-storage/manage-all-files)
 - [Google Play：All files access 权限政策](https://support.google.com/googleplay/android-developer/answer/10467955)
 - [Android API：`ContentObserver`](https://developer.android.com/reference/android/database/ContentObserver)
@@ -773,7 +773,7 @@ fun openSelectedMedia(
 
 调用方拥有返回的描述符，使用后必须关闭。用户取消任务、页面退出或新选择替代旧选择时调用 `signal.cancel()`。云端失败、权限取消、Provider 崩溃和媒体被删除都应作为可恢复的读取失败处理。
 
-Picker URI 可查询 `SIZE`、`DISPLAY_NAME`、`MIME_TYPE`、`DURATION_MILLIS`、`WIDTH`、`HEIGHT`、`ORIENTATION` 等只读列，其中 MIME type（媒体类型标识，例如 `video/mp4`） 标识媒体类型，例如 `video/mp4`。`SIZE` 和路径信息只能作为提示：云媒体可能依赖网络，拼装文件路径别指望 `DATA`。
+Picker URI 可查询 `SIZE`、`DISPLAY_NAME`、`MIME_TYPE`、`DURATION_MILLIS`、`WIDTH`、`HEIGHT`、`ORIENTATION` 等只读列，其中 MIME type 是媒体类型标识，例如 `video/mp4`。`SIZE` 和路径信息只能作为提示：云媒体可能依赖网络，拼装文件路径别指望 `DATA`。
 
 #### 临时授权与持久授权
 
@@ -834,7 +834,7 @@ SDK Extension 是模块化系统组件的功能版本号，同一 Android 大版
 
 嵌入式 Photo Picker 把系统媒体网格放进应用页面的 `SurfaceView`：`SurfaceView` 为独立图形表面预留显示区域，`setChildSurfacePackage()` 再把系统进程提供的 `SurfacePackage` 接入该区域。宿主 Activity 保持 Resumed（可交互的前台生命周期）状态，可以连续接收选择与取消选择事件；媒体内容的授权范围与标准 Picker 相同。
 
-该能力要求 Android 14 及以上，且 U SDK Extension 至少为 15。平台类从 API 36 公开，也通过扩展提供给 Android 14。当前 Jetpack `androidx.photopicker` 版本为 1.0.0-alpha02，API 仍标记 `ExperimentalPhotoPickerApi`；Alpha 阶段允许接口变化，升级依赖时应复核回调和生命周期行为。不满足条件或会话打开失败时，使用标准 Photo Picker。
+该能力要求 Android 14 及以上，且 U SDK Extension 至少为 15。平台类从 API 36 公开，也通过扩展提供给 Android 14。本文嵌入式 API 说明固定以 Jetpack `androidx.photopicker` 1.0.0-alpha02 为基线，API 标记 `ExperimentalPhotoPickerApi`；Alpha 阶段允许接口变化，升级依赖时应复核回调和生命周期行为。不满足条件或会话打开失败时，使用标准 Photo Picker。 截至 2026-10-25，版本说明已列出 1.0.0-alpha03：嵌入式 artifact/package 改名为 `photopicker-embedded` / `androidx.photopicker.embedded` 系列，选择合约迁入 `photopicker-activity`，并有会话状态接口调整。升级应以该版迁移记录与 API 为准，不要直接混用本篇旧基线签名。
 
 嵌入式路径需要单独处理四类成本：
 
@@ -936,7 +936,12 @@ Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准�
 
 同一版本的 `PhotoPickerTranscodeHelper.java` 把 Picker HDR 转码结果放在 `/storage/emulated/<user>/.picker_transcoded/`，按媒体提供方 authority 与媒体 ID 生成缓存名，并提供按容量、全量和单项清理入口；缓存名中的 host 是被 Picker URI 包装的媒体提供方 authority。两种目录都由 MediaProvider 模块管理，但服务于不同的请求路径，应用访问它们的唯一途径是持有仍然有效的 URI。
 
-系统设备空闲维护不会处理应用的 `cacheDir`、草稿数据库和失败上传。应用应给每个私有临时文件记录：
+MediaProvider 的转码缓存维护不负责管理应用的草稿数据库、上传状态和私有副本；`cacheDir` 仍可能被系统其他存储回收机制清理。应用应给每个私有临时文件记录：
+
+<!-- gracker-diagram: a264-14-three-cache-owners -->
+![系统两种转码缓存与应用副本分别管理](../../assets/diagrams/ch24/a264-14-three-cache-owners.png)
+
+图：系统缓存与应用任务文件所有权不同；不能把持久 URI 授权当作转码结果永久保存承诺。
 
 - 所属草稿、消息或编辑任务的 ID。
 - 原始 picker URI 与持久授权状态。
@@ -969,12 +974,7 @@ selected
   → completed / retryable-failure / abandoned
 ```
 
-状态名依次表示已选择、已持久授权、正在打开、正在复制或转换、内容就绪、正在上传，以及三种终态：完成、可重试失败和放弃。保留这些英文短名，便于直接用作数据库枚举和日志字段。数据库事务是一组要么全部生效、要么全部回滚的状态写入；每次状态变化与文件重命名完成后再提交事务，恢复逻辑便能判断应继续任务还是删除不再被记录引用的文件。
-
-<!-- gracker-diagram: a264-14-three-cache-owners -->
-![系统两种转码缓存与应用副本分别管理](../../assets/diagrams/ch24/a264-14-three-cache-owners.png)
-
-图：系统缓存与应用任务文件所有权不同；不能把持久 URI 授权当作转码结果永久保存承诺。
+状态名依次表示已选择、已持久授权、正在打开、正在复制或转换、内容就绪、正在上传，以及完成、可重试失败和放弃。保留这些英文短名，便于直接用作数据库枚举和日志字段。数据库事务只保证数据库内状态写入一起提交或回滚，不能把文件重命名纳入同一个原子事务。应用可在文件写完校验并重命名后提交 `ready`，但两步之间仍可能进程终止；恢复逻辑须对账任务与文件，识别仍活跃的 partial、已完成但尚未标记 ready 的文件，以及没有任务引用的残留，分别继续、补记或删除。
 
 <!-- gracker-diagram: a264-15-recoverable-private-copy -->
 ![媒体准备以持久状态恢复文件窗口](../../assets/diagrams/ch24/a264-15-recoverable-private-copy.png)

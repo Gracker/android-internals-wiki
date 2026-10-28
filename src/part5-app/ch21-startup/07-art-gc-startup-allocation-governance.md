@@ -18,8 +18,8 @@ related_chapters:
 - '21.2'
 - '23.1'
 - '4.5'
-last_verified: '2026-10-17'
-last_source_verified_at: '2026-10-17T01:48:00+08:00'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-17T01:48:00+08:00'
 last_verified_against: AOSP android-17.0.0_r1 heap.cc (PostForkChildAction, GetNativeBytes, CheckGCForNative), heap-inl.h, TaskProcessor, StartupCompletedTask, VMRuntime/Daemons/ActivityThread/runtime.cc; current Android Developers memory and allocation-recording docs including API 26+ profiler native-memory warning; current Perfetto tracing docs including Android R+ UI recording availability
 confidence: high
@@ -46,7 +46,7 @@ sources:
 
 # ART GC（Garbage Collection，垃圾回收） 启动期开销与分配治理
 
-ART 负责执行 Android 字节码，也管理 Java heap（存放 Java/Kotlin 对象的堆内存）——进程里存放 Java/Kotlin 对象的堆。GC 找出已经不可达的对象并回收它们占用的空间；对第三方 App 来说，受支持的“暂停 ART GC”接口并不存在。所以本文说的 GC 抑制，指的是降低启动阶段的分配速率和存活对象规模，让 ART 更少达到 GC 触发条件。
+ART 负责执行 Android 字节码，也管理进程内存放 Java/Kotlin 对象的 Java heap。GC 找出已经不可达的对象并回收它们占用的空间；对第三方 App 来说，受支持的“暂停 ART GC”接口并不存在。所以本文说的 GC 抑制，指的是降低启动阶段的分配速率和存活对象规模，让 ART 更少达到 GC 触发条件。
 
 > 源码基线：AOSP `android-17.0.0_r1`。
 
@@ -135,13 +135,13 @@ Daemons.HeapTaskDaemon.runInternal()
 
 判断 GC 与启动的因果关系，我们主要靠 Perfetto，Android 的系统级时间线追踪工具。采集配置至少要包含 scheduler 事件（`sched_switch`、`sched_wakeup`）、CPU frequency/idle（频率与空闲状态），以及 `am`、`view`、`dalvik` 等 atrace 类别，并为目标包启用 App trace。可用的 atrace 类别随系统版本变化，采集前先在 Perfetto UI 或命令行里确认设备支持哪些；官方 Perfetto UI 录制流程要求 Android 11（API 30）及更高版本，本章覆盖的 Android 8—10 要用 `record_android_trace` 等命令行流程。配置方法见 [Recording system traces](https://perfetto.dev/docs/getting-started/system-tracing) 和 [CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)。
 
-拿到 trace 后，我们先标出四个边界：进程创建、`bindApplication`（framework 把 App 绑定到新进程并开始初始化的阶段）、首帧、fully drawn（App 报告主要内容已完整可用）。`bindApplication` 是 framework 把 App 绑定到新进程并开始初始化的阶段，fully drawn 由 App 报告主要内容已完整可用。然后再看 GC 是否与启动关键路径重叠。
+拿到 trace 后，先标出进程创建、`bindApplication`（framework 绑定新 App 进程并开始初始化）、首帧显示与充分绘制报告四个边界。记录 TTID/TTFD 所用工具与版本后，再看 GC 是否与启动关键路径重叠；业务就绪报告与工具识别的显示帧结束点要分别对齐。
 
 推荐按下面的顺序判断：
 
 1. 在 App 进程中找到 `HeapTaskDaemon`，确认它在启动窗口内是否 Running。
 2. 查看同一窗口的 ART/GC slice，区分 concurrent GC（并发回收）、blocking GC（调用线程要等它结束）、trim 与其他 heap task。
-3. 检查主线程在重叠区间是 Running、Runnable（就绪但在等 CPU）、Sleeping，还是卡在 suspend/wait slice。长时间 Runnable（已具备运行条件但在等 CPU） 更支持 CPU 竞争的解释；要有明确的 GC wait slice，才能证明线程在等回收完成。
+3. 检查主线程在重叠区间是 Running、Runnable（就绪但在等 CPU）、Sleeping，还是卡在 suspend/wait slice。长时间 Runnable 更支持 CPU 竞争的解释，但还不能证明竞争来自 GC。判断线程是否在等回收，应把明确的 GC 等待区间、线程状态或调用栈与当次 GC 对齐，不能仅凭 daemon Running 或主线程 Runnable 下结论。
 4. 对照 TTID/TTFD，确认事件落在关键路径上；首帧之后发生的 GC，解释不了 TTID 变慢。
 5. 再用对象分配记录定位制造短命对象或保留大量对象的代码。
 
@@ -152,6 +152,7 @@ WITH bounds(start_ns, end_ns) AS (
   VALUES (123000000000, 126000000000)
 )
 SELECT
+  p.upid AS process_upid,
   p.name AS process_name,
   SUM(
     MAX(
@@ -166,19 +167,20 @@ CROSS JOIN bounds b
 WHERE p.name = 'com.example.app'
   AND t.name = 'HeapTaskDaemon'
   AND ts.state = 'Running'
+  AND ts.dur >= 0
   AND ts.ts < b.end_ns
   AND ts.ts + ts.dur > b.start_ns
-GROUP BY p.name;
+GROUP BY p.upid, p.name;
 ```
 
-这条查询求的是时间窗口与 Running 区间的交集，回答的是该 daemon 消耗了多少 CPU 时间；具体在跑哪类 heap task，它区分不了，要回到前面的 slice 看。若目标是 `:remote` 等子进程，把包名换成对应进程名。“超过启动窗口 10% 就要抑制”这样适用于所有 App 的阈值并不存在，判断依据应是同一设备、同一构建和同一启动入口的 A/B（只改变一个条件的对照实验） 对照实验（只改变一个条件）结果。
-
-Logcat 中的 ART GC 行可以补充 cause、freed bytes（回收字节数）、heap 大小、pause 和 total duration。`Heap::LogGC()` 默认只保证记录符合条件的显式或慢 GC，快速的普通 GC 可能不打印；日志为空时，启动期间是否发生过 GC，要回到 trace 确认。
+这条查询只统计已知非负时长的 Running 区间与窗口的交集，并按 trace 内的 `upid` 区分同名进程的不同生命周期。`dur < 0` 的未定时长区间被排除，Trace 截断或调度事件丢失时这个已观测总量可能偏低；没有匹配行也不能直接当作零。它回答 daemon 已观测的 CPU 时间，区分不了具体 heap task，要回到对应 slice 和采集完整性检查。字段定义见 [`thread_state` 表](https://perfetto.dev/docs/analysis/sql-tables#thread_state)。若目标是 `:remote` 等子进程，把包名换成对应进程名。“超过启动窗口 10% 就要抑制”这样适用于所有 App 的阈值并不存在，判断依据应是同一设备、同一构建和同一启动入口的 A/B 单变量对照结果。
 
 <!-- gracker-diagram: a228-07-running-intersection -->
 ![SQL 只累加 Running 区间与启动窗口的交集](../../assets/diagrams/ch21/a228-07-running-intersection.png)
 
 图：SQL 以 utid/upid 关联线程和进程，并按 upid 拆分同名进程生命周期；统计的是 daemon CPU 时间。
+
+Logcat 中的 ART GC 行可以补充 cause、freed bytes（回收字节数）、heap 大小、pause 和 total duration。`Heap::LogGC()` 默认只保证记录符合条件的显式或慢 GC，快速的普通 GC 可能不打印；日志为空时，启动期间是否发生过 GC，要回到 trace 确认。
 
 <!-- gracker-diagram: a228-06-gc-causal-tracks -->
 ![把 GC、主线程状态与关键路径放在同一窗口](../../assets/diagrams/ch21/a228-06-gc-causal-tracks.png)
@@ -258,14 +260,14 @@ trace 和分配记录都拿到手之后，我们按下面的顺序治理：先�
 
 native 侧的压力统计把两笔账加在一起：系统 malloc 已用字节数，加上显式登记的字节数。`Heap::GetNativeBytes()` 把 `mallinfo().uordblks` 与 `native_bytes_registered_` 相加，所以 native SDK 走系统 malloc 分配的内存即使没有逐笔登记，也可能参与 GC 压力判断。Bitmap、字体和解码器的占用，同样要按实际分配与记账路径检查；自行 `mmap` 的区域、文件页缓存和 graphics buffer（图形缓冲区） 能否纳入统计，取决于具体的分配与登记方式，从进程 PSS 推算不出结果。
 
-`RegisterNativeAllocation()` 按字节补记 malloc 统计覆盖不到的非 malloc 分配；累计登记达到检查间隔或出现大额登记时会调用 `CheckGCForNative()`，`NotifyNativeAllocations()` 也会触发检查。检查把原生内存计数与 Java 堆占用放在一起判断压力，满足条件时以 `kGcCauseForNativeAlloc` 请求或执行 GC。统计范围和检查时机是两回事：原生内存增长之后，回收要等检查发生、条件满足才会到来。
-
-Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折算的驻留内存）、native heap、graphics 分类和对应调用栈。这些数据衡量的是进程总内存压力，并不等同于 ART heap 的触发阈值；`Runtime.totalMemory() - freeMemory()` 只给出 Java heap 的一个瞬时近似值，代表不了进程总内存，也不适合设置跨设备统一的百分比告警。
+`RegisterNativeAllocation()` 按字节补记 malloc 统计覆盖不到的非 malloc 分配，同时将登记次数计数加一；该次数触及 `kNotifyNativeInterval` 周期，或单次登记字节数超过 `kCheckImmediatelyThreshold` 时，才会调用 `CheckGCForNative()`。前者按次数检查，不是累计登记字节阈值；`NotifyNativeAllocations()` 也会触发检查。检查把原生内存计数与 Java 堆占用放在一起判断压力，满足条件时以 `kGcCauseForNativeAlloc` 请求或执行 GC。统计范围和检查时机是两回事：原生内存增长之后，回收要等检查发生、条件满足才会到来。
 
 <!-- gracker-diagram: a228-12-native-check-triggers -->
 ![Native 分配检查区分次数周期与单次字节数](../../assets/diagrams/ch21/a228-12-native-check-triggers.png)
 
 图：登记次数周期与单次分配大小是两条检查门槛；检查并不保证一定发生回收。
+
+Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折算的驻留内存）、native heap、graphics 分类和对应调用栈。这些数据衡量的是进程总内存压力，并不等同于 ART heap 的触发阈值；`Runtime.totalMemory() - freeMemory()` 只给出 Java heap 的一个瞬时近似值，代表不了进程总内存，也不适合设置跨设备统一的百分比告警。
 
 <!-- gracker-diagram: a228-11-native-accounting -->
 ![ART native 压力不是进程 PSS 的同义词](../../assets/diagrams/ch21/a228-11-native-accounting.png)
@@ -297,7 +299,7 @@ Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折
 
 `VMRuntime.registerSensitiveThread()` 的 native 实现调用 `Thread::SetJitSensitiveThread()`，给当前线程设置 JIT（Just-In-Time，运行时即时编译） sensitive 标记；`ActivityThread.handleBindApplication()` 已为 UI 线程调用过它。这个标记与“优先分配”“提高 heap 配额”“减少 GC 阻塞”都不相干。
 
-`requestConcurrentGC()`、`setTargetHeapUtilization()` 和 `notifyStartupCompleted()` 都是 hidden 或 module-only API，只供系统平台或 ART 模块代码使用，第三方 SDK 拿不到入口；反射调用还会受到非 SDK 接口限制。
+`requestConcurrentGC()`、`setTargetHeapUtilization()` 和 `notifyStartupCompleted()` 都是 hidden 或 module-only API，不能作为第三方 SDK 的受支持接口；反射调用还会受到非 SDK 接口限制，绕过限制也不产生兼容与正确性契约。
 
 `notifyStartupCompleted()` 只是把一个立即执行的 `StartupCompletedTask` 放进 heap 任务队列。任务首次生效时释放 startup dex cache/linear alloc；只有在非 debuggable、没有 AOT（Ahead-Of-Time，提前编译） 机器码且没有可用 App Image 等条件同时满足时，它才会尝试写 runtime app image（运行时类元数据快照）。它不是供 App 自选时机的 GC 控制器。
 
@@ -335,7 +337,7 @@ Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折
 
 线上没有通用的 GC CPU、heap 使用率或 pause 告警阈值，阈值应来自应用自身按设备档位建立的基线。我们至少联合观察：
 
-- TTID、TTFD 与 P50/P90/P99（耗时分位值，指 50%、90%、99% 的样本分别不超过这三个值） 耗时分位值，即 50%、90%、99% 的样本分别不超过这三个值；
+- TTID、TTFD 与 P50/P90/P99（分别有 50%、90%、99% 的样本不超过的耗时分位值）；
 - 启动阶段 Java allocated bytes、Allocation Recording 的 Remaining Size，以及 heap dump 的 retained/live bytes 实验室基线；
 - GC 与关键路径重叠时长；
 - 启动后首个交互的慢帧；

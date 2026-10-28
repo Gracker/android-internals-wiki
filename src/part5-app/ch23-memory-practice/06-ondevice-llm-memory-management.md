@@ -5,13 +5,13 @@ section: '23.6'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-08-15'
-last_verified_against: Android 17 / API 37; LiteRT 2.1.0 documentation; MediaPipe LLM Inference maintenance-only; Memory Advice beta deprecated
+last_verified_against: Android 17 / API 37; LiteRT 2.3.0 documentation; MediaPipe LLM Inference maintenance-only; Memory Advice beta deprecated
 confidence: high
 sources:
 - type: official
   path: developer.android.com/ndk/guides/neuralnetworks
 - type: official
-  path: developer.android.com/games/sdk/memory-advice/overview
+  path: https://developer.android.com/games/optimize/memory-overview
 - type: official
   path: ai.google.dev/edge/litert/android
 - type: aosp
@@ -59,11 +59,11 @@ last_draft_polish_at: '2026-08-15T09:04:59+08:00'
 ---
 # 端侧大模型推理的内存管理
 
-我们做端侧大模型，内存风险很少只来自模型文件本身。权重、KV（把缓存切成固定页块管理） 缓存（`Key/Value Cache`）、prefill（预填充） 阶段的临时张量、运行时编译产物、GPU/NPU 缓冲区，再加上应用自身的 Java 与 native 内存，会在不同阶段叠加出不同的峰值。所以模型能加载，还只是第一步：长上下文生成、并发会话、后台切换能否稳住，要分开验证。
+我们做端侧大模型，内存风险很少只来自模型文件本身。权重、KV 缓存（`Key/Value Cache`，保留注意力计算的历史键和值）、prefill（预填充） 阶段的临时张量、运行时编译产物、GPU/NPU 缓冲区，再加上应用自身的 Java 与 native 内存，会在不同阶段叠加出不同的峰值。所以模型能加载，还只是第一步：长上下文生成、并发会话、后台切换能否稳住，要分开验证。
 
 > 源码基线：AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；平台为 Android 17 / API 37。
 
-LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要按项目锁定的库版本和目标设备验证，Android API 级别推不出这些库的能力。本文复核时，LiteRT `CompiledModel` Kotlin 文档对应 2.1.0，MediaPipe LLM Inference 已进入维护模式。虚拟地址与物理内存指标的区别可参阅 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)。设备可能使用其他内核分支。
+LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要按项目锁定的库版本和目标设备验证，Android API 级别推不出这些库的能力。2026-10-25 复核时，LiteRT `CompiledModel` Kotlin 文档示例依赖为 2.3.0，MediaPipe LLM Inference 已进入维护模式。虚拟地址与物理内存指标的区别可参阅 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)。设备可能使用其他内核分支。
 
 ## 1. 先把内存分项记清楚
 
@@ -93,7 +93,7 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 `weight_min_bytes = P × b ÷ 8`
 
-下表按十进制参数量计算，再换算成 GiB，覆盖的只有权重数据本身；scale（量化缩放因子）、zero-point（非对称量化的零点偏移）、分组索引、padding（对齐填充）、词表、运行时副本和编译产物都要另算：
+下表按十进制参数量计算，再换算成 GiB，覆盖的只有权重数据本身；scale（量化缩放因子）、zero-point（非对称量化的零点偏移）、分组索引、padding（对齐填充）、分词器词表元数据、运行时副本和编译产物都要另算（embedding 权重若已计入参数量 P，不应再作为额外权重重复计数）：
 
 | 参数量 | FP16 下限 | 8-bit 下限 | 4-bit 下限 |
 |---:|---:|---:|---:|
@@ -141,7 +141,7 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 所以我们观察内存时要分开记账，逐项看：模型文件映射的 VSS、RSS/PSS；native heap 与匿名映射；图形统计、DMA-BUF（跨设备共享缓冲区的内核对象） 或 memtrack（硬件内存记账）能看到的设备缓冲区；delegate 初始化前后的增量；第一次推理前后的增量。
 
-还有一点容易算错：把模型文件大小、native heap 和 GPU 缓冲区直接相加，可能重复计算同一物理页。跨进程或跨设备比较时优先用进程 PSS，各分类留作归因线索。
+还有一点容易算错：把模型文件大小、native heap 和 GPU 缓冲区直接相加，可能重复计算同一物理页。比较应用多进程总成本时，可用同一口径的 PSS 加总来分摊共享驻留页；PSS 可能不能完整覆盖 GPU/NPU 私有缓冲，仍须结合驱动、memtrack/DMA-BUF 与运行时统计，各分类用于归因而不机械相加。
 
 <!-- gracker-diagram: a258-04-mapping-and-copies -->
 ![文件映射与后端副本分别记账](../../assets/diagrams/ch23/a258-04-mapping-and-copies.png)
@@ -175,7 +175,7 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 这三个字段说的都是系统整体状态，应用自己能分到多少额度，它们回答不了。`availMem >= model_file_size × 1.5` 这类固定公式也会漏掉应用基线、KV 缓存、后端副本、进程优先级和并发工作集，做上线准入条件是不够的。
 
-系统侧的控制在 `system_server` 与系统守护进程内：[`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 LMKD/OOM-adj 控制都在那里，LMKD 是低内存终止守护进程，OOM-adj 是系统衡量进程可终止优先级的分值。普通应用没有公共 API 为自己设置 `memory.high`、`memory.swap（换出）.high` 或 OOM-adj，也不要通过反射或 shell 权限绕过系统策略。
+系统侧的控制在 `system_server` 与系统守护进程内：[`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 LMKD/OOM-adj 控制都在那里，LMKD 是低内存终止守护进程，OOM-adj 是系统衡量进程可终止优先级的分值。普通应用没有公共 API 为自己设置 `memory.high`、`memory.swap.max` 或 OOM-adj，也不要通过反射或 shell 权限绕过系统策略。
 
 ### 2.2 为每个模型变体建立设备档案
 
@@ -259,7 +259,7 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 ### 4.1 Memory Advice 的弃用状态
 
-挑选平台压力信号时，先排掉一个已经过时的选项。[Memory Advice API](https://developer.android.com/games/sdk/memory-advice/overview) 的 beta 测试已结束，库已被官方标记为 deprecated（已弃用）；它属于 AGDK（Android Game Development Kit）的实验性 native 库，也不是 Android 17 新增的平台内存接口。现有项目可以在迁移期保留观测；新推理管线的准入与降级信号，应建立在平台维护的接口上。接口状态与迁移去向详见 [内存监控与线上治理](07-memory-monitoring.md)。
+挑选平台压力信号时，先排掉一个已经过时的选项。[官方内存管理概述](https://developer.android.com/games/optimize/memory-overview)已将 Memory Advice API beta 标记为 deprecated（已弃用），不再推荐使用；它属于 AGDK（Android Game Development Kit）的实验性 native 库，也不是 Android 17 新增的平台内存接口。现有项目可以在迁移期保留观测；新推理管线的准入与降级信号，应建立在平台维护的接口上。接口状态与迁移去向详见 [内存监控与线上治理](07-memory-monitoring.md)。
 
 ### 4.2 `onTrimMemory()` 的释放语义
 
@@ -298,14 +298,14 @@ Android 17 的 [`ProfilingTrigger`](https://developer.android.com/reference/andr
 
 后端选择上，NNAPI 已不再是新方案。[NNAPI 在 Android 15 / API 35 已 deprecated](https://developer.android.com/ndk/guides/neuralnetworks/migration-guide)，Android 17 仍保留接口用于兼容，但官方说明未来设备可能更多回到 CPU 后端，并建议迁移到可独立更新的高层运行时。新项目要避免通过 NNAPI 枚举设备来设计长期 NPU 调度。
 
-当前 [LiteRT `CompiledModel` API](https://developers.google.com/edge/litert/next/android_kotlin) 提供 CPU、GPU 和 NPU 路径，复核时文档中的 Maven 版本为 2.1.0；具体 NPU 支持仍依赖 SoC、运行时包、delegate、模型算子和分发方式。选择 `Accelerator.NPU` 之后，我们要记录子图分区、回退、初始化峰值和首轮峰值，整张计算图是否都在 NPU 上运行，就靠这些记录来回答。
-
-对较大且目标 SoC 已知的模型，[部分 LiteRT NPU 路径](https://developers.google.com/edge/litert/android/npu/qualcomm) 与当前 [LiteRT NPU 编译和分发文档](https://developers.google.com/edge/litert/next/qualcomm) 都提供 AOT 方案，用来减少设备侧初始化编译。当前路径还支持设备侧编译及编译缓存，缓存是否命中会显著改变初始化时间和内存。另外，AOT 产物、原始模型、AI Pack（按设备投递的 Play 资产包）和厂商运行时库可能在安装或加载阶段同时存在，这一阶段的峰值仍要按对应 SoC 与运行时版本测量。
+当前 [LiteRT `CompiledModel` API](https://developers.google.com/edge/litert/next/android_kotlin) 提供 CPU、GPU 和 NPU 路径，2026-10-25 复核时文档中的 Maven 示例版本为 2.3.0；具体 NPU 支持仍依赖 SoC、运行时包、delegate、模型算子和分发方式。选择 `Accelerator.NPU` 之后，我们要记录子图分区、回退、初始化峰值和首轮峰值，整张计算图是否都在 NPU 上运行，就靠这些记录来回答。
 
 <!-- gracker-diagram: a258-08-backend-fallback -->
 ![后端选择仍要看分区与回退](../../assets/diagrams/ch23/a258-08-backend-fallback.png)
 
 图：选择 NPU 不证明整图都在 NPU 执行；失败回退要避免旧后端与新后端资源同时驻留。
+
+对较大且目标 SoC 已知的模型，[部分 LiteRT NPU 路径](https://developers.google.com/edge/litert/android/npu/qualcomm) 与当前 [LiteRT NPU 编译和分发文档](https://developers.google.com/edge/litert/next/qualcomm) 都提供 AOT 方案，用来减少设备侧初始化编译。当前路径还支持设备侧编译及编译缓存，缓存是否命中会显著改变初始化时间和内存。另外，AOT 产物、原始模型、AI Pack（按设备投递的 Play 资产包）和厂商运行时库可能在安装或加载阶段同时存在，这一阶段的峰值仍要按对应 SoC 与运行时版本测量。
 
 ### 5.2 共享缓冲区的导入条件
 
@@ -329,7 +329,7 @@ OpenCL 同样要小心：Android NDK 并未把它纳入面向所有设备的稳�
 
 ### 6.1 `VmRSS` 与 `VmHWM` 的含义
 
-测量峰值时最容易混用的两个值是 `VmRSS` 与 `VmHWM`。[`Debug.getRss()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java) 是带 flags 参数的当前 RSS 查询，它不返回历史峰值；`/proc/self/status` 中 `VmRSS` 是当前 RSS，`VmHWM` 是进程生命周期内的 RSS high-water mark（历史峰值）。推理前后各读一次当前 RSS 再取差值，区间内冲上去又落回来的峰值会整段漏掉。
+测量峰值时最容易混用的两个值是 `VmRSS` 与 `VmHWM`。[`Debug.getRss()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java) 在 r1 源码中有无参数的当前进程查询，以及 `@hide` 的 `getRss(int pid, long[] outMemtrack)` 重载，并不是带 flags 参数的接口；它不返回历史峰值；`/proc/self/status` 中 `VmRSS` 是当前 RSS，`VmHWM` 是进程生命周期内的 RSS high-water mark（历史峰值）。推理前后各读一次当前 RSS 再取差值，区间内冲上去又落回来的峰值会整段漏掉。
 
 这个 Kotlin 函数用于低频读取关键的 `/proc/self/status` 字段。内存字段的单位是 KiB，`Threads` 表示线程数量：
 
@@ -360,7 +360,7 @@ fun readProcessStatus(): Map<String, Long> =
     }
 ```
 
-该函数适合在阶段交界处或异常触发时采样，不要在每生成一个 token 时调用。`VmHWM` 不能重置；需要比较单阶段峰值时，可在独立测试进程中运行场景，或用足够频率的 RSS/PSS 采样配合 Perfetto 时间线。
+该函数适合在阶段交界处或异常触发时采样，不要在每生成一个 token 时调用。`VmHWM` 默认累计历史峰值，不会在每次推理时自动清零。固定内核的 `proc.rst` 也提供向 `/proc/<pid>/clear_refs` 写 `5`，把高水位重设为当前 RSS 的能力；实际可用性取决于内核配置、权限与 SELinux，不能假定所有应用设备都允许。比较单阶段峰值时，可用独立测试进程，或有明确阶段标记的 RSS/PSS 采样配合 Perfetto；若使用重置，需记录操作与重置时的基线。
 
 <!-- gracker-diagram: a258-09-rss-and-high-water -->
 ![当前 RSS 与历史峰值的采样边界](../../assets/diagrams/ch23/a258-09-rss-and-high-water.png)
@@ -386,7 +386,7 @@ fun readProcessStatus(): Map<String, Long> =
 
 - `adb shell dumpsys meminfo <package>` 的 Graphics、GL、DMA/memtrack 分类；
 - Perfetto 的进程、内存和可用 GPU 计数器；
-- [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler（性能采样器）)（native 堆采样器）定位 native 分配调用栈；
+- [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler)（native 堆采样器）定位 native 分配调用栈；
 - delegate 或运行时自带的 profiler；
 - SoC 厂商工具，用于只在对应设备上解释驱动内存。
 
@@ -413,7 +413,7 @@ Native heap 统计与 Scudo 分配器的职责划分详见 [23.3 Native 与虚�
 
 ## 8. 多进程的隔离收益与总账
 
-把推理引擎放入私有子进程，收益是两个：原生代码或驱动崩溃不会直接破坏 UI 进程；结束子进程可以一次释放它拥有的运行时与映射。代价则包括第二套 ART 与 native 内存基线、Binder 调用与序列化成本、模型可能重复映射，以及更复杂的恢复协议。进程隔离的通用取舍可参阅 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
+把推理引擎放入私有子进程，收益是两个：推理子进程中的用户态原生崩溃通常可以隔离于 UI 进程；进程退出时会释放它拥有的运行时与映射。GPU/NPU 驱动故障、系统服务故障或整机资源压力仍可能跨进程影响 UI，进程边界并非对此的保证。代价则包括第二套 ART 与 native 内存基线、Binder 调用与序列化成本、模型可能重复映射，以及更复杂的恢复协议。进程隔离的通用取舍可参阅 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
 
 评估多进程时，我们要盯住总账：把所有应用进程的 PSS 加总起来看，主进程的下降往往只是内存发生了转移，总成本要靠这套加总数字说话。模型只在需要的进程初始化；大输入优先传文件描述符、`SharedMemory` 或受控的 `HardwareBuffer`，避免 Binder 内复制大数组。子进程死亡、任务幂等（同一请求重复执行不会产生额外副作用）、结果去重和版本不匹配，都要预先定义处理方式；用前台服务或频繁绑定服务提高进程存活率、来掩盖过高的内存，这条路也不要走。
 
@@ -471,7 +471,7 @@ Native heap 统计与 Scudo 分配器的职责划分详见 [23.3 Native 与虚�
 - [Android 17 LMKD](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/)
 - [Android 17 common kernel `/proc` documentation](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
 - [Manage your app's memory](https://developer.android.com/topic/performance/memory)
-- [Memory Advice API overview](https://developer.android.com/games/sdk/memory-advice/overview)
+- [About memory management（含 Memory Advice 弃用说明）](https://developer.android.com/games/optimize/memory-overview)
 - [NNAPI migration guide](https://developer.android.com/ndk/guides/neuralnetworks/migration-guide)
 - [LiteRT `CompiledModel` Kotlin API](https://developers.google.com/edge/litert/next/android_kotlin)
 - [MediaPipe LLM Inference for Android](https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/android)

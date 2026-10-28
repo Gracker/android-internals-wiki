@@ -79,7 +79,7 @@ consolidated_from:
 | shallow size / retained size | shallow size 是对象自身占用；retained size 是该对象一旦回收后可随之释放的对象集合大小。 |
 | dominator | 若到达某组对象的所有路径都必须经过某个对象，该对象支配这些对象；工具用它计算 retained size。 |
 | heap dump / HPROF | heap dump 是某一时刻的 Java 对象图快照；HPROF 是 Android 常见的完整堆转储文件格式。 |
-| HeapGraph / allocation profile | HeapGraph 是 Perfetto trace 中的 Java 堆图数据；allocation profile 记录一段时间内的分配、释放及调用栈。两者都不是完整 HPROF 的别名。 |
+| HeapGraph / allocation profile | HeapGraph 是 Perfetto trace 中的 Java 堆图数据；allocation profile 记录一段时间内的分配采样及创建调用栈：native heapprofd 可根据 free 更新存活信息，ART allocation profiling 不追踪对象删除或 GC。两者都不是完整 HPROF 的别名。 |
 | RSS / PSS | RSS 是进程驻留页总量；PSS 会按共享者数量分摊共享页。它们是进程内存统计，不是某一个堆的大小。 |
 | fork / COW | fork 创建子进程；COW（Copy-on-Write，写时复制）让父子进程先共享物理页，任一方写入时才复制对应页。 |
 
@@ -245,7 +245,7 @@ Fragment 有两个生命周期：本体可以留在 back stack（返回栈） �
 ```kotlin
 @Composable
 fun NetworkState(source: NetworkStateSource) {
-    var connected by remember { mutableStateOf(source.isConnected()) }
+    var connected by remember(source) { mutableStateOf(source.isConnected()) }
 
     DisposableEffect(source) {
         val listener = NetworkStateListener { connected = it }
@@ -299,9 +299,9 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 ### 2.8 JNI 引用与显式关闭资源
 
-原生代码通过 `NewGlobalRef()` 创建的引用会让 Java 对象跨调用持续可达。每条成功创建的 global reference 都要有明确持有者，并在会话结束、模块卸载或原生对象析构时调用 `DeleteGlobalRef()`。local reference 只在当前原生方法调用范围内有效，调用结束之后再持有它就会出问题；跨线程或跨调用时，我们要分清 local、global 与 weak global reference（局部、全局与弱全局引用）。
+原生代码通过 `NewGlobalRef()` 创建的引用会让 Java 对象跨调用持续可达。每条成功创建的 global reference 都要有明确持有者，并在会话结束、模块卸载或原生对象析构时调用 `DeleteGlobalRef()`。从 Java 进入的一次 JNI 方法调用中，local reference 通常在返回时自动释放，不能带到其他线程或后续调用继续使用。自行 `AttachCurrentThread()` 的原生线程没有同样的逐次方法返回清理点，local reference 需用 `DeleteLocalRef()` 或 `PushLocalFrame()` / `PopLocalFrame()` 控制，并在退出前 `DetachCurrentThread()`。跨线程或跨调用持有对象时，应按业务所有权选择 global 或 weak global reference。
 
-`Cursor`、`ParcelFileDescriptor`、`MediaCodec`、`Image`、`Surface` 等对象还带有显式关闭协议。Java wrapper（包装对象） 本身可能很小，背后连着的却是原生分配、图形缓冲区或内核对象。持有者应通过 `use`、try-with-resources 或对应的 `close()` 在业务生命周期终点释放；finalizer 或 Cleaner 只能当延迟兜底，资源的及时归还靠显式关闭。
+`Cursor`、`ParcelFileDescriptor`、`MediaCodec`、`Image`、`Surface` 等对象还带有显式关闭协议。Java wrapper（包装对象） 本身可能很小，背后连着的却是原生分配、图形缓冲区或内核对象。持有者应按各自 API 在业务生命周期终点显式释放：`Cursor`、`ParcelFileDescriptor`、`Image` 使用 `close()`，支持 `Closeable` / `AutoCloseable` 的对象可配合 `use` 或 try-with-resources；[`MediaCodec.release()`](https://developer.android.com/reference/android/media/MediaCodec#release()) 与 [`Surface.release()`](https://developer.android.com/reference/android/view/Surface#release()) 则调用各自的释放方法。finalizer 或 Cleaner 只能当延迟兜底，资源的及时归还靠显式关闭。
 
 <!-- gracker-diagram: a254-05-jni-resource-ownership -->
 ![JNI 引用和底层资源有各自的释放协议](../../assets/diagrams/ch23/a254-05-jni-resource-ownership.png)
@@ -312,9 +312,13 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 我们拿货拉拉司机端公开复盘过的首页弹窗问题收尾：它正好完整走了一遍“业务事件—对象增长—引用链—生命周期缺口”的链路。
 
-测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后，观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字描述的是当时版本和当时的测试条件，要坐实泄漏，还得往下看引用链。
+[原始复盘](https://mp.weixin.qq.com/s?__biz=MzI0MjIxNjE0OQ==&mid=2247490141&idx=1&sn=645139e24e5424bc0acdb6209d329360)中，测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后，观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字描述的是当时版本和当时的测试条件，要坐实泄漏，还得往下看引用链。
 
-heap dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，一条引用链从弹窗 `mView` 经 `LifecycleRegistry.mObserverMap` 到常驻 `MainActivity`。代码审查确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。
+heap dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，原图的 References 面板从弹窗 `mView` 等子对象向 `LifecycleRegistry.mObserverMap`、常驻 `MainActivity` 回溯持有者。按强引用方向应读作：`MainActivity → LifecycleRegistry → mObserverMap → Dialog（观察者）→ mView → 布局对象`。
+
+> ⚠️ 矛盾：旧稿沿分析器回溯方向描述引用链，容易被理解为弹窗持有 Activity 才导致弹窗泄漏。本例的保留原因是常驻 Activity 的观察者表仍持有已关闭的 Dialog；原图中更靠近 Root 的路径另含系统单例，本文链路为简化表示。
+
+代码审查确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。
 
 修复后应使用同一事件序列复测，确认观察者、旧 Dialog/View 和布局对象不再随展示次数累积。
 
@@ -428,7 +432,7 @@ LeakCanary 给出的 leak trace 是定位入口，修复前还要确认：
 
 到生产环境，我们再看 KOOM 这类线上方案。KOOM 官方仓库提供 Java Heap、Native Heap 和 Thread 三类监控模块。Java leak 模块包含基于 fork/COW 的 heap dump 方案；native 模块和 thread 模块则通过 hook（拦截目标函数以记录事件） 来记录事件，各有自己的分析路径。
 
-截至 2026-08-15，KOOM 仓库未归档，默认分支最近一次推送为 2026-01-12，GitHub 最新正式版仍是 2024-04-16 发布的 v2.2.2。这段空窗期本身不携带兼容性信息；接入时固定版本或提交，并在目标 Android 版本、ABI 和厂商设备上实测。
+截至 2026-10-25，KOOM 仓库仍未归档，GitHub 仓库元数据的 `pushed_at` 为 2026-10-20，最新正式版仍是 2024-04-16 发布的 v2.2.2。仓库级推送时间并不指明默认分支具体提交，也不证明某个系统版本已经兼容；接入时固定版本或提交，并在目标 Android 版本、ABI 和厂商设备上实测。
 
 把 KOOM 简化成“计数器推断泄漏”，或者用一张固定的“精度高低”表格给 KOOM 和 LeakCanary 排名，都偏离了选型该做的事。是否接入取决于：
 
@@ -464,7 +468,7 @@ Android 17 / API 37 新增了与内存诊断直接相关的 trigger：
 
 Native heapprofd 走另一条数据源和 `__SIGRTMIN + 4`；Java HeapGraph 能采集，native profile 的权限和运行条件仍要单独确认。
 
-完整 HPROF 的写出分两遍：先遍历堆计算输出长度，第二遍才写出，segment（输出分段） 以最多 128 个对象或 4 KiB 为边界。直接流式写入避免了为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 这边同样有 fork、页表、COW、trace buffer（轨迹缓冲区） 和子进程序列化的成本。
+完整 HPROF 的写出分两遍：先遍历堆计算输出长度，第二遍才写出，segment（输出分段）通过 `CheckHeapSegmentConstraints()` 检查：当前对象数达到 128 或当前输出长度达到 4096 字节时开启新段。它是在对象记录之间检查的切段阈值，不把大数组等单条记录硬拆成不超过 4 KiB 的块，因此不能据此宣称每段最多 4 KiB。直接流式写入避免了为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 这边同样有 fork、页表、COW、trace buffer（轨迹缓冲区） 和子进程序列化的成本。
 
 两类产物的采集限定在调试、灰度或系统受控触发下；常规高频监控交给轻量信号。
 
@@ -519,7 +523,7 @@ class MemoryProfileRegistrar(
 }
 ```
 
-应用应在稳定的进程入口尽早注册全局 listener，否则可能错过先前事件的结果交付。上传任务还要检查文件存在性、网络与电量条件、用户同意和服务端去重。不要在回调线程同步上传大型产物。
+应用应在稳定的进程入口尽早注册全局 listener，否则可能错过先前事件的结果交付。示例的 `unregister()` 只解除结果 listener，不删除触发配置；若业务要停止特定类型的触发式采集，还应按目标 API 调用 `removeProfilingTriggersByType(intArrayOf(...))`。上传任务还要检查文件存在性、网络与电量条件、用户同意和服务端去重。不要在回调线程同步上传大型产物。
 
 同一种 trigger 只能保留一个注册项；重复添加会覆盖先前配置。业务若设置 `setRateLimitingPeriodHours()`，该限制会叠加在系统 rate limiter 之上，数值应由样本预算和事件频率确定。
 

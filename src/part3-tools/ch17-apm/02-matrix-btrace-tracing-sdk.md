@@ -4,8 +4,8 @@ chapter: '17.2'
 section: '17.2'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: Tencent Matrix v2.1.0 README/source + Maven Central metadata + GitHub repository/commit metadata + AGP API removal tracker + Android 16 KB page-size guidance updated 2026-08-05
+last_verified: '2026-10-26'
+last_verified_against: Fixed Matrix v2.1.0 and btrace 2ae621f2 source; Android 17 r1 ART/Trace; actual AndroidX 1.3.0/2.0.0 and Matrix/Rhea AAR bytes; current official release notes and Maven metadata; AGP API and 16 KB guidance
 confidence: medium
 tags:
 - apm
@@ -88,25 +88,27 @@ androidx.tracing（记录程序运行时间线） 提供应用侧的埋点入口
 
 #### 核验基线
 
-截至 2026-08-14，核验采用的版本如下：
+截至 2026-10-26，最新发布状态与本文固定机制分析版本分别如下：
 
 | 对象 | 核验锚点 | 已核实的边界 |
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `android.os.Trace` 的同步 section、异步 section、counter 与 Java Native Interface（JNI）路径 |
-| AndroidX 稳定线 | `androidx.tracing:tracing:2.0.0` | 发布于 2026-08-12；Android 变体最低 API 23；同时包含经典 API 与新的进程内 tracing API |
+| AndroidX 当前稳定线 / 固定分析线 | 当前 `2.0.5`；下文固定 `2.0.0` | 2.0.5 发布于 2026-10-21；2.0.0 发布于 2026-08-12，其 Android 制品最低 API 23，包含经典 API 与进程内 tracing API |
 | AndroidX 兼容线 | `androidx.tracing:tracing:1.3.0` | 发布于 2025-04-23；Android 变体最低 API 21，供仍需覆盖 API 21-22 的应用使用 |
 | Tracing Wire | `androidx.tracing:tracing-wire:2.0.0` | 给 2.0 进程内 API 提供 Perfetto 格式的 `TraceSink` 实现 |
 | Tracing Perfetto | `androidx.tracing:tracing-perfetto:1.0.1` | 独立的 Perfetto SDK 接入组件，不等同于经典 `Trace.beginSection()`，也不等同于 `tracing-wire` |
-| AndroidX Benchmark | 稳定版 `1.4.1`；预发布版 `1.5.0-rc01` | 1.5 预发布线可采集并合并目标包的进程内 trace |
+| AndroidX Benchmark | 当前稳定版 `1.5.0`；预发布版 `1.6.0-alpha01`；本文固定研究 `1.4.1` 的指标实现 | 1.5.0 于 2026-09-09 稳定；1.5 线可采集并合并目标包的进程内 trace |
 | Kernel | `android17-6.18-2026-06_r6` | 仅在联读 CPU 调度、唤醒等 kernel（操作系统内核）事件时作为源码锚点 |
 
-API 23+ 项目当前应使用稳定坐标 `androidx.tracing:tracing:2.0.0`。如果应用仍需运行在 API 21-22，可继续使用 1.3.0 兼容线；下面保留的是这种低版本依赖写法。
+API 23+ 项目当前稳定坐标为 `androidx.tracing:tracing:2.0.5`；下文的源码、签名和 SHA 检查固定在 2.0.0，不把新版行为直接套到旧制品上。如果应用仍需运行在 API 21-22，可继续使用 1.3.0 兼容线；下面保留的是这种低版本依赖写法。
 
 ```kotlin
 dependencies {
     implementation("androidx.tracing:tracing:1.3.0")
 }
 ```
+
+固定 2.0.0 AAR 的内联函数字节码目标为 JVM 11；消费模块的 Kotlin `jvmTarget` 至少要匹配 11，并与 Java 编译目标一致。这是构建字节码目标，不能与 Android API 下限混写。
 
 Gradle 会为 Android 目标选择对应版本的 `tracing-android` variant（针对 Android 的发布变体），这里的 artifact 指 Maven 仓库中的发布组件。自 1.3.0 起，原 `tracing-ktx` 实现已并入主 artifact；用 1.3.0 或 2.0.0 都不必再单独添加 `tracing-ktx`。
 
@@ -131,6 +133,11 @@ Gradle 会为 Android 目标选择对应版本的 `tracing-android` variant（�
 一条长期 slice 应当对应一个稳定业务阶段。需要知道循环处理了多少项时，用 counter 或离线统计；不要为每一项创建不同名称的 slice。
 
 ### 三种事件：同步 slice、异步 slice、counter
+
+<!-- gracker-diagram: ch17-02-02-event-contracts -->
+![三类事件分别表达时间与状态](../../assets/diagrams/ch17/ch17-02-02-event-contracts.png)
+
+图：同步section、异步section和counter各有不同的配对合同。 区间是经过时长，counter是时点数值；三者都不能直接当作CPU工作量。
 
 #### 同步 slice：同一线程上的嵌套区间
 
@@ -179,7 +186,7 @@ void decodeThumbnail(byte[] encoded) {
 
 异步 section 靠“名称 + `Int` cookie”配对：cookie 是区分同名并发任务的整数标识，开始和结束可以落在不同线程，也不要求按栈嵌套，只要同名且时间重叠的任务使用不同 cookie。一次跨线程加载、一次远端请求、一段会挂起的协程任务，都适合用它表达。
 
-AndroidX Tracing 2.0.0 保留了 suspend `traceAsync()`；suspend 表示这个 Kotlin 函数可以挂起后再恢复。下面的例子让一个异步 span（跨线程表达同一逻辑工作的区间） 覆盖完整的加载过程，线程内部的工作仍由 I/O 线程和主线程各自的同步 slice 记录。
+AndroidX Tracing 2.0.0 保留了 suspend `traceAsync()`；suspend 表示这个 Kotlin 函数可以挂起后再恢复。下面的例子让一个异步 span（跨线程表达同一逻辑工作的区间） 覆盖请求、取得数据和调用列表提交接口的过程，线程内部的工作仍由 I/O 线程和主线程各自的同步 slice 记录。
 
 ```kotlin
 import androidx.tracing.trace
@@ -209,23 +216,23 @@ suspend fun loadFirstFeed(): List<FeedItem> {
 }
 ```
 
-`traceAsync()` 的 2.0.0 源码仍在 `try-finally` 中结束异步 section，所以正常返回、异常和协程取消都会走关闭路径。Perfetto 里，`Home#loadFirstFeed` 给出的是整个墙上时间跨度；`Home#requestFirstFeed` 要到 I/O 线程的轨道上查看，`Home#submitFirstFeed` 要到主线程的轨道上查看。整体跨度之外，线程内的工作还得分别回到这两条轨道确认。
+`traceAsync()` 的 2.0.0 源码仍在 `try-finally` 中结束异步 section，所以正常返回、异常和协程取消都会走关闭路径。Perfetto 里，`Home#loadFirstFeed` 给出的是整个墙上时间跨度；`Home#requestFirstFeed` 要到 I/O 线程的轨道上查看，`Home#submitFirstFeed` 要到主线程的轨道上查看。整体跨度之外，线程内的工作还得分别回到这两条轨道确认。 `adapter.submitList()` 可能异步计算 diff 和应用结果，因此这里的终点只是提交调用返回，不是列表提交完成或首屏可见。若要测量后者，应另定义完成信号和 async 生命周期；被后续列表取代的提交，其 commit callback 可能不执行，不能把它作为所有路径唯一的关闭点。
 
-同步 `trace {}` 只适合包住不含挂起点的代码；一旦代码里有 `delay()`、`withContext()` 或其他挂起点，协程恢复后可能换线程，而同步 section 要求 begin/end 位于同一线程。即使某次测试恰好恢复到原线程，那也只是调度上的巧合，别当成 API 保证。
+<!-- gracker-diagram: ch17-02-04-async-terminals -->
+![异步跨度与实际提交终点](../../assets/diagrams/ch17/ch17-02-04-async-terminals.png)
+
+图：异步跨度覆盖请求、线程切换和提交接口返回，线程内工作另作同步标记。 submitList返回不等于diff完成或画面可见；关闭点须覆盖成功、失败、取消和拒绝。
+
+同步 `trace {}` 只适合包住不含挂起点的代码；一旦代码里有 `delay()`、`withContext()` 或其他挂起点，协程恢复后可能换线程，而同步 section 要求 begin/end 位于同一线程。即使总恢复到同一线程，挂起期间其他协程也可能插入 section，破坏栈嵌套；同线程恢复仍不足以保证同步 section 的正确性。
 
 线程池、回调、消息队列也是同样的规则：
 
 1. 提交任务前生成 cookie 并开始异步 section。
 2. 在任务的唯一终态关闭同名、同 cookie 的 section。
 3. 提交被拒绝、任务取消、回调不再投递时也要关闭。
-4. 每条实际执行线程再用同步 section 标记 CPU 工作。
+4. 每条实际执行线程再用同步 section 标记执行区间；其中的 CPU 工作仍要联读调度数据。
 
 如果现有抽象保证不了“每个 begin 恰好对应一次 end”，我们先修正任务生命周期，再加 async trace；用多个 `catch` 和回调分别关闭，很容易漏关或重复关闭。
-
-<!-- gracker-diagram: ch17-02-04-async-terminals -->
-![异步跨度与实际提交终点](../../assets/diagrams/ch17/ch17-02-04-async-terminals.png)
-
-图：异步跨度覆盖请求、线程切换和提交接口返回，线程内工作另作同步标记。 submitList返回不等于diff完成或画面可见；关闭点须覆盖成功、失败、取消和拒绝。
 
 #### Counter：观察随时间变化的值
 
@@ -243,23 +250,18 @@ fun onDecodeQueueChanged(pendingCount: Int) {
 
 在 Perfetto 中搜索 `Image#decodeQueueDepth`，应当看到一条随时间变化的 counter 轨道。AndroidX 1.3.0 只有 `Int` 参数；2.0.0 保留这个重载，并增加 API 29+ 可用的 `Long` 重载。Android 17 平台 `android.os.Trace.setCounter()` 接受 `long`。写公共库时要注明所依赖的 AndroidX 版本和最低 API，别把三者混写成同一个签名。
 
-<!-- gracker-diagram: ch17-02-02-event-contracts -->
-![三类事件分别表达时间与状态](../../assets/diagrams/ch17/ch17-02-02-event-contracts.png)
-
-图：同步section、异步section和counter各有不同的配对合同。 区间是经过时长，counter是时点数值；三者都不能直接当作CPU工作量。
-
 ### 命名是一份可维护的诊断协议
 
 建议统一使用 `Module#Action`，必要时再加一个固定层级，如 `Module#Stage.Step`。名称描述业务阶段，不绑定类名、方法名或当前架构。
 
-| 场景 | 推荐名称 | 不推荐 | 原因 |
+| <span style="white-space:nowrap">场景</span> | 推荐名称 | 不推荐 | 原因 |
 |---|---|---|---|
-| 应用启动 | `Startup#loadConfig` | `ConfigRepositoryImpl.loadV3` | 实现重构后仍可比较 |
-| 首页首屏 | `Home#loadFirstFeed` | `feed_4938102` | 避免高基数，即避免名称数量随请求或内容数量增长 |
-| 详情页 | `Detail#renderContent` | `Detail#render/sku-123` | 不写业务 ID |
-| 支付提交 | `Checkout#submit` | `pay/alice@example.com` | 不写用户数据 |
-| 图片解码 | `Image#decodeThumbnail` | 完整图片 URL | 避免隐私与超长名称 |
-| 数据库查询 | `Database#loadTimeline` | 完整 SQL | 防止敏感参数进入 trace |
+| <span style="white-space:nowrap">应用启动</span> | <code>Startup#<wbr>loadConfig</code> | <code>ConfigRepositoryImpl<wbr>.<wbr>loadV3</code> | 实现重构后仍可比较 |
+| <span style="white-space:nowrap">首页首屏</span> | <code>Home#<wbr>loadFirstFeed</code> | <code>feed_<wbr>4938102</code> | 避免高基数，即避免名称数量随请求或内容数量增长 |
+| <span style="white-space:nowrap">详情页</span> | <code>Detail#<wbr>renderContent</code> | <code>Detail#<wbr>render/<wbr>sku-<wbr>123</code> | 不写业务 ID |
+| <span style="white-space:nowrap">支付提交</span> | <code>Checkout#<wbr>submit</code> | <code>pay/<wbr>alice@example.<wbr>com</code> | 不写用户数据 |
+| <span style="white-space:nowrap">图片解码</span> | <code>Image#<wbr>decodeThumbnail</code> | 完整图片 URL | 避免隐私与超长名称 |
+| <span style="white-space:nowrap">数据库查询</span> | <code>Database#<wbr>loadTimeline</code> | 完整 SQL | 防止敏感参数进入 trace |
 
 团队可以按下面四条规则评审名称：
 
@@ -305,14 +307,14 @@ androidx.tracing.trace("Home#submitFeed")
 
 下表中的 non-debuggable 表示应用关闭调试能力，profileable 表示应用允许 shell 等受控工具进行性能采集。
 
-| 平台范围 | 非 debuggable 进程的允许条件 | AndroidX 经典 async/counter 路径 |
+| <span style="white-space:nowrap">平台范围</span> | 非 debuggable 进程的允许条件 | AndroidX 经典 async/counter 路径 |
 |---|---|---|
-| API 21-22 | 只能使用 1.3.0；应用启动早期调用 `Trace.forceEnableAppTracing()` | 反射平台隐藏的 `asyncTraceBegin`、`asyncTraceEnd`、`traceCounter` |
-| API 23-28 | 1.3.0 或 2.0.0；应用启动早期调用 `Trace.forceEnableAppTracing()` | 反射同一组平台隐藏方法 |
-| API 29-30 | manifest 设置 `<profileable android:shell="true"/>`，或调用 `forceEnableAppTracing()` | 调用 API 29 新增的公开平台方法 |
-| API 31-37 | 默认允许；显式设置 `<profileable android:enabled="false"/>` 或 `android:shell="false"` 会限制该能力 | 调用公开平台方法；`forceEnableAppTracing()` 在这一范围无操作 |
+| <span style="white-space:nowrap">API 21-22</span> | 只能使用 1.3.0；应用启动早期调用 <code>Trace.<wbr>forceEnableAppTracing()</code> | 反射平台隐藏的 <code>asyncTraceBegin</code>、<code>asyncTraceEnd</code>、<code>traceCounter</code> |
+| <span style="white-space:nowrap">API 23-28</span> | 1.3.0 或 2.0.0；应用启动早期调用 <code>Trace.<wbr>forceEnableAppTracing()</code> | 反射同一组平台隐藏方法 |
+| <span style="white-space:nowrap">API 29-30</span> | manifest 设置 <code>&lt;profileable android:shell<wbr>=<wbr>&quot;true&quot;/<wbr>&gt;</code>，或调用 <code>forceEnableAppTracing()</code> | 调用 API 29 新增的公开平台方法 |
+| <span style="white-space:nowrap">API 31-37</span> | 默认允许；显式设置 <code>&lt;profileable android:enabled<wbr>=<wbr>&quot;false&quot;/<wbr>&gt;</code> 或 <code>android:shell=<wbr>&quot;false&quot;</code> 会限制该能力 | 调用公开平台方法；<code>forceEnableAppTracing()</code> 在这一范围无操作 |
 
-当前稳定版 `tracing-android:2.0.0` 的 `minSdkVersion` 是 23；兼容线 1.3.0 的下限是 21。两版源码都保留了更低平台的兼容分支说明，但发布物 manifest 会先把依赖范围限住，别据此宣称 artifact 支持 API 18。
+固定检查的 `tracing-android:2.0.0` 制品 `minSdkVersion` 是 23；兼容线 1.3.0 的下限是 21。两版源码都保留了更低平台的兼容分支说明，但发布物 manifest 会先把依赖范围限住，别据此宣称 artifact 支持 API 18。
 
 采集侧也要包含目标应用：
 
@@ -324,6 +326,8 @@ androidx.tracing.trace("Home#submitFeed")
 ![制品下限、进程允许与采集会话](../../assets/diagrams/ch17/ch17-02-07-visibility-and-versions.png)
 
 图：事件可见要同时核对依赖制品、进程允许条件和采集配置。 API31+默认允许不等于一直采集；旧版本反射入口也不保证目标机成功。
+
+API 29 以前的 `forceEnableAppTracing()` 和 async/counter 兼容分支依赖反射，可能受隐藏 API 策略或厂商实现影响；表中有入口不保证目标机上可用。
 
 正式性能结论宜来自 non-debuggable、profileable 且接近发布配置的构建。debuggable 包的调试设施、编译选项和运行时行为可能改变时间分布。
 
@@ -403,34 +407,34 @@ Perfetto 会把 `Video#decodeFrame` 放在执行 `DecodeFrame()` 的 native 线�
 | 经典 `Trace.*` / `trace {}`（2.0.0；API 21-22 用 1.3.0） | 长期保留少量业务 section、async span、counter | 写入系统 trace；不上传、不聚合；官方仍推荐用于低频事件 |
 | `Tracer` + `tracing-wire:2.0.0` | 进程内 Perfetto 格式 trace、分类、metadata（键值附注）、flow 与协程上下文传播 | 最低 API 23；要设计 `TraceDriver`、`TraceSink`、文件和丢事件生命周期 |
 | `tracing-perfetto:1.0.1` | 通过独立 Perfetto SDK 组件记录应用事件 | 有自己的 native binary 与启用握手（handshake），与经典 API、`tracing-wire` 都是不同接入路径 |
-| btrace / RheaTrace | 专项抓取方法级调用现场，即记录大量方法进入和退出 | 数据量和侵入面更大，适合定向诊断 |
-| Macrobenchmark 1.4.1 / 1.5.0-rc01 | 在测试侧启动、交互并采集 trace；1.5 预发布线可合并进程内 trace | `TraceSectionMetric` 是实验 API；默认只看目标包；1.5.0-rc01 尚未成为稳定版 |
+| btrace / RheaTrace | 专项抓取Hook附近的方法栈样本与上下文 | 数据量和侵入面更大，适合定向诊断 |
+| Macrobenchmark：当前 1.5.0；固定指标分析 1.4.1 | 在测试侧启动、交互并采集 trace；1.5 线可合并进程内 trace | 下文指标签名、实验标记和默认 mode 按固定 1.4.1；升级后重新核对 |
 | Perfetto UI / Trace Processor | 人工或 SQL 联读系统与应用证据 | 工具负责展示和查询，不替应用补业务语义 |
 
 AndroidX 2.0.0 的新 `Tracer` API 与经典 `Trace.beginSection()` 是两条用途不同的接口面。经典 API 仍写系统 trace，也没有被弃用。
 
-新路径上，`TraceDriver` 持有 `Tracer` 并管理一次 tracing 生命周期，`TraceSink` 决定事件如何序列化和输出，`tracing-wire` 给出 Perfetto 格式的实现。筛选事件靠 category（要启用的一组 trace 事件），metadata 给事件附加键值信息，instant event 表示没有持续时间的瞬时点；counter、Perfetto flow 和 `traceCoroutine()` 也都在支持之列。
-
-Android Studio System Trace 目前不会直接采集这条进程内路径，Benchmark 1.5.0-rc01 的 `PerfettoCapture` / `PerfettoTraceRule` 可以采集并在事后合并目标包的进程内 trace。即使 2.0.0 已稳定，接入新路径时仍要设计采集启动方式、文件生命周期、丢事件策略、体积与工具兼容性。
-
-Benchmark 稳定版 1.4.1 的 `TraceSectionMetric(sectionName)` 仍是实验 API，默认使用 `Mode.Sum`，输出全部匹配 section 的总时长与次数；只有显式选择 `Mode.First` 才取第一条。这里的 mode 是把多条同名 section 汇成指标的方式。它默认只读取目标包。用于基准指标的 section 要把生命周期和 mode 写清楚，并用生成的 trace 复核所选区间。
+新路径上，核心模块声明 `AbstractTraceDriver`、`AbstractTraceSink` 和 `Tracer`；固定 `tracing-wire:2.0.0` 提供 `androidx.tracing.wire.TraceDriver` / `TraceSink` 具体实现。driver 持有 tracer 并管理生命周期，sink 决定事件如何序列化和输出，不能把这两组同名接口层次混写。筛选事件靠 category（要启用的一组 trace 事件），metadata 给事件附加键值信息，instant event 表示没有持续时间的瞬时点；counter、Perfetto flow 和 `traceCoroutine()` 也都在支持之列。
 
 <!-- gracker-diagram: ch17-02-10-inprocess-output -->
 ![系统标记与进程内输出的生命周期](../../assets/diagrams/ch17/ch17-02-10-inprocess-output.png)
 
 图：经典Trace写系统事件；进程内路径由抽象接口与wire具体实现组织输出。 core的AbstractTraceDriver/Sink与wire的TraceDriver/Sink分包区分；文件和上传需自行管理。
 
+Android Studio System Trace 目前不会直接采集这条进程内路径，Benchmark 1.5 线的 `PerfettoCapture` / `PerfettoTraceRule` 可以采集并在事后合并目标包的进程内 trace。本文固定的 2.0.0 用于机制复核；当前发布说明记录了 2.0.4 的 flush 竞态修复，以及 2.0.5 的 pool 管理竞态/潜在死锁修复，接入时应评估当前稳定线。仍要设计采集启动方式、文件生命周期、丢事件策略、体积与工具兼容性。
+
+固定分析版本 Benchmark 1.4.1 的 `TraceSectionMetric(sectionName)` 仍是实验 API，默认使用 `Mode.Sum`，输出全部匹配 section 的总时长与次数；只有显式选择 `Mode.First` 才取第一条。这里的 mode 是把多条同名 section 汇成指标的方式。它默认只读取目标包。用于基准指标的 section 要把生命周期和 mode 写清楚，并用生成的 trace 复核所选区间。
+
 ### 与线上指标建立同名索引
 
 经典 `androidx.tracing` 不会把事件送到线上；2.0 进程内 API 也只负责本地记录，上传仍需应用自行设计。我们可以用一张受版本控制的阶段表，让 Perfetto slice、JankStats context 和 APM（应用性能监控）span 指向同一个业务语义。
 
-| 业务阶段 | Perfetto slice | JankStats state | APM 事件 |
+| <span style="white-space:nowrap">业务阶段</span> | Perfetto slice | JankStats state | APM 事件 |
 |---|---|---|---|
-| 应用初始化 | `Startup#appOnCreate` | `phase=startup_init` | `startup.app_on_create` |
-| 首屏数据 | `Home#loadFirstFeed` | `phase=first_feed_load` | `home.first_feed_load` |
-| 首页提交 | `Home#submitFirstFeed` | `phase=first_feed_submit` | `home.first_feed_submit` |
-| 详情内容可见 | `Detail#renderContent` | `phase=content_render` | `detail.content_render` |
-| 支付提交 | `Checkout#submit` | `phase=checkout_submit` | `checkout.submit` |
+| <span style="white-space:nowrap">应用初始化</span> | <code>Startup#<wbr>appOnCreate</code> | <code>phase=<wbr>startup_<wbr>init</code> | <code>startup.<wbr>app_<wbr>on_<wbr>create</code> |
+| <span style="white-space:nowrap">首屏数据</span> | <code>Home#<wbr>loadFirstFeed</code> | <code>phase=<wbr>first_<wbr>feed_<wbr>load</code> | <code>home.<wbr>first_<wbr>feed_<wbr>load</code> |
+| <span style="white-space:nowrap">首页提交</span> | <code>Home#<wbr>submitFirstFeed</code> | <code>phase=<wbr>first_<wbr>feed_<wbr>submit</code> | <code>home.<wbr>first_<wbr>feed_<wbr>submit</code> |
+| <span style="white-space:nowrap">详情内容可见</span> | <code>Detail#<wbr>renderContent</code> | <code>phase=<wbr>content_<wbr>render</code> | <code>detail.<wbr>content_<wbr>render</code> |
+| <span style="white-space:nowrap">支付提交</span> | <code>Checkout#<wbr>submit</code> | <code>phase=<wbr>checkout_<wbr>submit</code> | <code>checkout.<wbr>submit</code> |
 
 映射表只保存稳定阶段。请求 ID、trace ID 等关联字段可进入受控的日志或 APM（Application Performance Monitoring，应用性能监控） 字段，别拼进 Perfetto slice 名称。
 
@@ -457,23 +461,26 @@ JankStats 的 `PerformanceMetricsState` 是状态，不是瞬时事件。进入�
 ```sql
 SELECT
   s.ts / 1e6 AS start_ms,
-  s.dur / 1e6 AS duration_ms,
-  t.name AS thread_name
+  CASE WHEN s.dur >= 0 THEN s.dur / 1e6 END AS duration_ms,
+  s.dur AS raw_duration_ns,
+  p.upid, p.pid, p.name AS process_name,
+  t.tid, t.name AS thread_name
 FROM slice AS s
 JOIN thread_track AS tt ON s.track_id = tt.id
 JOIN thread AS t ON tt.utid = t.utid
+LEFT JOIN process AS p ON t.upid = p.upid
 WHERE s.name = 'Home#submitFirstFeed'
 ORDER BY s.ts;
 ```
 
-这条查询只列出 thread track 上的同步 slice。`ts` 和 `dur` 的原始单位是纳秒，除以 `1e6` 后得到毫秒；`utid` 是 Trace Processor 内部的线程关联键，不等同于 Linux `tid`。异步 slice 可能落在其他 track，这条查询查不到它，先别当成事件没有被采到。`dur = -1` 通常意味着区间未闭合，或采集结束时仍在进行，这时要回查 begin/end 生命周期。
-
-CPU 调度与唤醒的线索来自系统和 kernel trace 数据源。查这类实现时，kernel 侧以 `android17-6.18-2026-06_r6` 为准；应用自定义 slice 的 Java/JNI 行为以 `android-17.0.0_r1` 为准，两套源码对号入座，别混着用。
+这条查询只列出 thread track 上的同步 slice。`ts` 是 trace 时钟域中的时间戳，不是 Unix 墙钟日期。`ts` 和有效 `dur` 的单位为纳秒，除以 `1e6` 后得到毫秒；未闭合的 `dur = -1` 在查询中保留原值并把 `duration_ms` 留空，不输出负耗时。多进程或多应用 trace 应另按已确认的 `upid` 筛选；`utid` 是 Trace Processor 内部的线程关联键，不等同于 Linux `tid`。异步 slice 可能落在其他 track，这条查询查不到它，先别当成事件没有被采到。`dur = -1` 通常意味着区间未闭合，或采集结束时仍在进行，这时要回查 begin/end 生命周期。
 
 <!-- gracker-diagram: ch17-02-12-reading-and-sql -->
 ![slice身份、未闭合区间与CPU归因](../../assets/diagrams/ch17/ch17-02-12-reading-and-sql.png)
 
 图：先按进程、线程与名称定位，再检查dur和系统状态；SQL只覆盖线程同步轨道。 ts属于trace时钟；dur=-1不输出负耗时，查不到async轨道不等于没有事件。
+
+CPU 调度与唤醒的线索来自系统和 kernel trace 数据源。查这类实现时，kernel 侧以 `android17-6.18-2026-06_r6` 为准；应用自定义 slice 的 Java/JNI 行为以 `android-17.0.0_r1` 为准，两套源码对号入座，别混着用。
 
 ### 常见错误与修正
 
@@ -494,24 +501,24 @@ CPU 调度与唤醒的线索来自系统和 kernel trace 数据源。查这类�
 
 相关结论来自官方文档、AOSP 源码和已发布 artifact 的交叉核对：
 
-- AndroidX Tracing 发布说明与 Google Maven metadata：2.0.0 stable、1.3.0 兼容线与 Tracing Perfetto 1.0.1 的版本范围。
+- AndroidX Tracing 发布说明与 Google Maven metadata：当前稳定 2.0.5，固定研究 2.0.0、1.3.0 兼容线，以及 Tracing Perfetto 1.0.1。
 - `android-17.0.0_r1` 的 `android.os.Trace`：127 code unit 限制、同步同线程约束、异步 name/cookie 配对和公开 API。
 - `android-17.0.0_r1` 的 `android_os_Trace.cpp`：JNI 进入 `tracing_perfetto::traceBegin()`、`traceEnd()`、`traceAsyncBegin()` 等实现。
 - `tracing-android:2.0.0` sources：AndroidX 名称截断、API 29 前反射兼容路径、`forceEnableAppTracing()`、`Long` counter 重载与 suspend `traceAsync()` 的 `finally` 配对。
 - AndroidX Tracing 2.0 发布说明与 `tracing-wire` POM：进程内 `Tracer`、Perfetto 格式 `TraceSink`、Studio System Trace 的采集范围，以及 Benchmark 1.5 的事后合并能力。
-- AndroidX Benchmark 发布说明与 `TraceSectionMetric` API：1.4.1 stable、1.5.0-rc01、实验 API 标记和 mode 语义。
+- AndroidX Benchmark 发布说明：当前稳定 1.5.0、预发布 1.6.0-alpha01；1.4.1 的实际 sources 用于复核本文指标实验标记和 mode 语义。
 - Android NDK tracing reference：同步 API 从 23 可用，异步与 counter 从 29 可用。
 
 为便于复核，下载件的 SHA-256 如下：
 
 | 文件 | SHA-256 |
 |---|---|
-| `tracing-android-2.0.0.aar` | `b21800b83ed0e3e214742c8a94edee90130e0a9970c85e59161d161546f5fe9a` |
-| `tracing-android-2.0.0-sources.jar` | `3e8834bc1448680390709e1379de6fcae6170920ebc9b8a569d00c5e735df51d` |
-| `tracing-android-1.3.0.aar` | `f59782bbe3470a6b0c531cef262dd1fc9d9a0233490bb5e6d553e1fe6a1816b2` |
-| `tracing-android-1.3.0-sources.jar` | `a3a9c1b46707208a024ab3939fc93dd56978f5c0e5928ec808e21df9e139cc5d` |
-| `tracing-android-2.0.0-beta01.aar` | `a5596bdc3870afcede0c8a4b99685eea692bfed9b583679b3a07e9598750feb8` |
-| `tracing-android-2.0.0-beta01-sources.jar` | `3e8834bc1448680390709e1379de6fcae6170920ebc9b8a569d00c5e735df51d` |
+| `tracing-android-2.0.0.aar` | <code>b21800b83ed0e3e2<wbr>14742c8a94edee90<wbr>130e0a9970c85e59<wbr>161d161546f5fe9a</code> |
+| `tracing-android-2.0.0-sources.jar` | <code>3e8834bc14486803<wbr>90709e1379de6fca<wbr>e6170920ebc9b8a5<wbr>69d00c5e735df51d</code> |
+| `tracing-android-1.3.0.aar` | <code>f59782bbe3470a6b<wbr>0c531cef262dd1fc<wbr>9d9a0233490bb5e6<wbr>d553e1fe6a1816b2</code> |
+| `tracing-android-1.3.0-sources.jar` | <code>a3a9c1b46707208a<wbr>024ab3939fc93dd5<wbr>6978f5c0e5928ec8<wbr>08e21df9e139cc5d</code> |
+| `tracing-android-2.0.0-beta01.aar` | <code>a5596bdc3870afce<wbr>de0c8a4b99685eea<wbr>692bfed9b583679b<wbr>3a07e9598750feb8</code> |
+| `tracing-android-2.0.0-beta01-sources.jar` | <code>3e8834bc14486803<wbr>90709e1379de6fca<wbr>e6170920ebc9b8a5<wbr>69d00c5e735df51d</code> |
 
 2.0.0 与 beta01 的 sources JAR 内容哈希相同，已发布 AAR（Android 库归档） 的哈希不同；表中同时保留两组值，避免复核历史文章时把两个产物混为一谈。
 
@@ -524,14 +531,14 @@ CPU 调度与唤醒的线索来自系统和 kernel trace 数据源。查这类�
 
 btrace 是字节跳动开源的跨平台 tracing 项目，Android 侧代码仍沿用 `RheaTrace3`、`rhea-inhouse` 等历史命名。它把应用线程的 Java 方法栈样本转换成 Perfetto protobuf（Protocol Buffers 编码的 trace 数据），并在 `perfetto` 模式下与系统 trace 合并，方法现场和调度、Binder、I/O、渲染时间线就落在同一条时钟轴上。
 
-截至 2026-08-14，仓库最新 tag 和 GitHub release 仍是 [`v3.1.0`](https://github.com/bytedance/btrace/tree/v3.1.0)，对应 2026-06-09 的 commit `2ae621f2d84ad54b2811d675d86ba2815006adb（Android Debug Bridge）3`。这个 tag 加入了 HarmonyOS，Android 子工程的 `POM_VERSION_NAME`、README 依赖和脚本表仍停在 `3.0.0`。[Maven Central 元数据](https://repo.maven.apache.org/maven2/com/bytedance/btrace/rhea-inhouse/maven-metadata.xml)显示 Android 产物最新是 `3.0.1-alpha01`，稳定版仍是 `3.0.0`。仓库 tag 与 Android Maven 版本是两套发布状态，Android 依赖没有 `3.1.0` 这个版本可写。
+截至 2026-10-26，仓库最新 tag 和 GitHub release 仍是 [`v3.1.0`](https://github.com/bytedance/btrace/tree/v3.1.0)，对应 2026-06-09 的 commit `2ae621f2d84ad54b2811d675d86ba2815006adb3`。这个 tag 加入了 HarmonyOS，Android 子工程的 `POM_VERSION_NAME`、README 依赖和脚本表仍停在 `3.0.0`。[Maven Central 元数据](https://repo.maven.apache.org/maven2/com/bytedance/btrace/rhea-inhouse/maven-metadata.xml)显示 Android 产物最新是 `3.0.1-alpha01`，稳定版仍是 `3.0.0`。仓库 tag 与 Android Maven 版本是两套发布状态，Android 依赖没有 `3.1.0` 这个版本可写。
 
 当前开源 Android 实现离 Android 17 / API 37 兼容还有一段距离，原因落在源码和产物两端：
 
-- btrace 解析旧的 `art::StackVisitor::WalkStack<CountTransitions::kNo>(bool)` C++ 符号。Android 17 的 [`StackVisitor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/stack.h) 已给 `WalkStack` 增加第二个模板参数。`android-17.0.0_r1` 显式实例化的新 mangled symbol（编译器编码后的符号名）与 btrace 写死的旧名称不同。旧符号解析失败时，核心 `StackVisitor::init()` 返回 false，后续方法采样会失败。
+- btrace 写死了旧 C++ 符号 `_ZN3art12StackVisitor9WalkStackILNS0_16CountTransitionsE0EEEvb`，其中只有一个模板参数且枚举值为 0。按固定 Android 17 `stack.h` 的枚举声明，0 对应 `CountTransitions::kYes`，不是 `kNo`。Android 17 的 [`StackVisitor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/stack.h) 已给 `WalkStack` 增加第二个模板参数。`android-17.0.0_r1` 显式实例化的新 mangled symbol（编译器编码后的符号名）与 btrace 写死的旧名称不同。若目标 ART 二进制没有兼容的旧符号，核心 `StackVisitor::init()` 会返回 false，后续方法采样失败。固定源码说明了符号和 ABI 风险；它不等于逐台验证过厂商 ART 符号表。
 - 上游只声明 Java 对象创建监控未适配 Android 15+，这不是唯一的高版本风险。同步抓栈、JNI、锁、GC（垃圾回收）、park/wait 等路径都会 Hook 或解析 ART 私有实现，没有公开 SDK/NDK ABI（应用二进制接口） 的稳定保证。
 - Android 子工程仍用 compileSdk 30、targetSdk 30、AGP（Android Gradle Plugin） 4.1.0、NDK `21.1.6352462`。这组版本只描述上游构建环境，证明不了 API 37 行为。
-- 实测 `3.0.1-alpha01` AAR 中的 `librheatrace.so（ELF 格式的共享库）` 和随包 `libc++_shared.so`，ELF `LOAD` segment（加载段） 都是 `2**12`，即 4096 字节对齐。`npth_dl.c` 还用 `0xfff` / `0x1000` 计算 ELF section 的 `mmap`（内存映射） 偏移。这些都与 Android 17 严格 16 KB 运行环境的要求不符。
+- 静态检查实际 `3.0.1-alpha01` 和 `3.0.0` AAR 中 arm64-v8a、armeabi-v7a 的 `librheatrace.so`（ELF 共享库）及随包 `libc++_shared.so`，ELF `LOAD` segment（加载段） 都是 `2**12`，即 4096 字节对齐。`npth_dl.c` 还用 `0xfff` / `0x1000` 计算 ELF section 的 `mmap`（内存映射） 偏移。这些是 16 KB 兼容性整改项。静态检查未运行目标设备，也未检查最终 APK 的 ZIP 对齐；不能据此推断所有兼容模式下的加载结果。
 
 在 Android 17 设备上，我们可能仍会得到一份只有系统轨道的 `.pb`，这样一份文件证明不了 btrace 方法采样成功。采用方需要维护 source fork（自有维护分支），修复 ART 符号、16 KB ELF 对齐和页大小假设，再把“采样记录数大于零、方法能正确符号化”设为自动验收条件。符号化就是把方法指针或地址还原成可读的方法名。团队没有维护私有 ART Hook 的能力时，可直接使用 Perfetto、`androidx.tracing`、Perfetto SDK、simpleperf 或 Android Studio Profiler。
 
@@ -561,31 +568,20 @@ btrace 2.0 依靠 Gradle 插件和编译期字节码插桩记录方法进入与�
 这也解释了两个常见配置误区：
 
 - btrace 3.0 没有 2.0 那种方法 include/exclude 插桩表。`-m` 接收的是 ProGuard/R8 mapping，即“混淆后名称 → 原始类/方法名”的映射，用于反混淆；它不是 btrace 2.0 的 method mapping。
-- `-sampleInterval` 是同一线程两次同步抓栈之间的最小间隔，默认 `1,000,000 ns`，也就是 1 ms。它不会启动一个严格每 1 ms 唤醒的定时采样器；没有经过 Hook 点，就不会产生对应样本。
+- `-sampleInterval` 是同一线程两次同步抓栈之间的最小间隔，默认 `1,000,000 ns`，也就是 1 ms。它不会启动一个严格每 1 ms 唤醒的定时采样器。常规自动样本依赖 Hook 点；SDK 还提供手动 `captureStackTrace(force)`，其中 `force` 可以绕过间隔检查，二者要分别解释。
 
 ### 从构建到 Perfetto 的采集链
 
 采集过程跨 App、adb、PC 脚本和 Perfetto 四段，任何一段失败都可能出现“文件已经生成，数据却不完整”。下面这张图标出数据与控制路径：
 
-```mermaid
-flowchart LR
-    A["App 集成 rhea-inhouse"] --> B["attachBaseContext 初始化"]
-    C["PC rhea-trace-shell"] --> D["adb setprop / force-stop / start"]
-    C --> E["启动 Perfetto 或 simple capture"]
-    D --> B
-    C --> F["adb forward 到 App NanoHTTPD"]
-    F --> G["start / stop / download"]
-    B --> H["ART Hook 点同步抓栈"]
-    H --> I["App ring buffer + 方法指针"]
-    G --> J["sampling + sampling-mapping"]
-    I --> J
-    E --> K["系统 trace"]
-    J --> L["PC 解码与反混淆"]
-    K --> M["合并输出 output.pb"]
-    L --> M
-```
+采集链中，PC 控制路径与 App 样本路径分别走到停止、下载和解码，再与系统 trace 合并；下图按这两条路径展开。
 
-冷启动时，PC 先写 `debug.rhea3.startWhenAppLaunch=1` 系统属性，再用 `force-stop` 终止现有 App 进程并启动 Launcher Activity（点击桌面图标时进入的 Activity）；App 在 `attachBaseContext()` 读取属性并开始采样。非重启采集则通过 `adb forward` 把 PC 端口转发到设备端，再访问 App 内嵌的 NanoHTTPD 轻量 HTTP server，发送 start/stop/download。设备端口记录、HTTP server、采样文件、mapping 文件或系统 trace 任一缺失，PC 都可能超时或只留下部分数据。
+<!-- gracker-diagram: ch17-02-15-capture-control-data -->
+![PC控制、App样本与系统trace合并](../../assets/diagrams/ch17/ch17-02-15-capture-control-data.png)
+
+图：PC控制启动/停止和下载；App样本解码后才与独立系统trace合并。 设备端口、server、dump、mapping与系统文件分别验收；完成回调0也可能掩盖单项dump失败。
+
+冷启动时，PC 先写 `debug.rhea3.startWhenAppLaunch=1` 系统属性，再用 `force-stop` 终止现有 App 进程并启动 Launcher Activity（点击桌面图标时进入的 Activity）；App 在 `attachBaseContext()` 读取属性并开始采样。非重启采集则通过 `adb forward` 把 PC 端口转发到设备端，再访问 App 内嵌的 NanoHTTPD 轻量 HTTP server，发送 start/stop/download。设备端口记录、HTTP server、采样文件、mapping 文件或系统 trace 任一缺失，PC 都可能超时或只留下部分数据。固定 `TraceManager.stopTracing()` 对单个 ability 的 dump 失败只记日志，循环结束后仍可通知 `onTraceDumpFinished(0, ...)`；因此成功回调和文件存在均不能代替内容完整性检查。
 
 #### 接入包要有明确开关
 
@@ -613,7 +609,7 @@ protected void attachBaseContext(Context base) {
 }
 ```
 
-`RheaTrace3.init()` 会直接跳过非主进程，所以官方 3.0 采集不到 remote Service（运行在独立进程中的 Android Service）。初始化还会启动 App 内的 HTTP server；真实依赖别在所有生产构建中无条件常驻，只放进 internal（内部测试） 测试包或专项诊断包，更容易限制可访问范围和性能变量。
+`RheaTrace3.init()` 会直接跳过非主进程，所以此官方入口不覆盖 remote Service（运行在独立进程中的 Android Service）。初始化还会启动 App 内的 HTTP server，入口没有重复初始化保护，应用应保证只调用一次；真实依赖别在所有生产构建中无条件常驻，只放进 internal（内部测试） 测试包或专项诊断包，更容易限制可访问范围和性能变量。
 
 <!-- gracker-diagram: ch17-02-16-btrace-package-switch -->
 ![真实库、noop与初始化范围](../../assets/diagrams/ch17/ch17-02-16-btrace-package-switch.png)
@@ -635,11 +631,6 @@ java -jar rhea-trace-processor-3.0.0.jar \
 ```
 
 `-r` 表示重启 App，`sched` 是传给系统 trace 脚本的 category（要启用的 trace 事件组），两者作用不同。源码在没有提供 category 时也会补 `sched`，但复现记录里显式写出更清楚。采集前先用 `--list` 查看设备支持的 category；要分析 Binder、磁盘或 CPU 频率，还要确认对应事件确已进入 trace。看到 `.pb` 文件存在，先别认定所需轨道齐全。
-
-<!-- gracker-diagram: ch17-02-15-capture-control-data -->
-![PC控制、App样本与系统trace合并](../../assets/diagrams/ch17/ch17-02-15-capture-control-data.png)
-
-图：PC控制启动/停止和下载；App样本解码后才与独立系统trace合并。 设备端口、server、dump、mapping与系统文件分别验收；完成回调0也可能掩盖单项dump失败。
 
 ### perfetto 与 simple 模式
 
@@ -671,7 +662,7 @@ README 还说 `simple` 模式能带系统 atrace，当前 `LiteCapture` 源码�
 | `-m` | ProGuard/R8 混淆映射文件 | 必须与 APK 构建完全匹配；3.0 不再使用 2.0 method mapping |
 | `-mode` | 强制 `perfetto` 或 `simple` | perfetto 启动失败时会缺系统文件；simple 没有调度证据 |
 | `-sampleInterval` | 同线程抓栈最小间隔，纳秒 | 调小会增加 CPU 和 buffer 压力，也不能保证固定周期 |
-| `-maxAppTraceBufferSize` | ring buffer 可保存的抓栈条数，默认 200000 | 满后旧记录被覆盖；停止时要检查脚本打印的 usage |
+| <code>-maxAppTrace<wbr>BufferSize</code> | ring buffer 可保存的抓栈条数，默认 200000 | 满后旧记录被覆盖；停止时要检查脚本打印的 usage |
 | `-waitTraceTimeout` | 等待端侧 dump 完成的秒数，默认 20 | 加大只改变等待时间，不能修复端侧 dump 失败 |
 | `-s` | 指定 adb serial（设备序列号） | 由 `Adb.init()` 单独读取并附加到后续 adb 命令；多设备环境应显式指定 |
 
@@ -706,7 +697,7 @@ README 还说 `simple` 模式能带系统 atrace，当前 `LiteCapture` 源码�
 
 ### 冷启动案例
 
-现象：版本升级后，热启动稳定，冷启动 P95 增加 300 ms，慢的那一端被拉长了。采集时使用同一台设备和一致的冷启动定义，运行 10～15 秒 `perfetto` 模式，并保留 `sched`、CPU 频率和所需 atrace category。
+以下是诊断推演示例，数字不是本次设备测量结果。假设版本升级后热启动稳定，冷启动 P95 增加 300 ms，慢的那一端被拉长了。采集时使用同一台设备和一致的冷启动定义，运行 10～15 秒 `perfetto` 模式，并保留 `sched`、CPU 频率和所需 atrace category。
 
 Zygote fork 出应用进程后，`ActivityThread` 从 `bindApplication` 开始把新进程绑定到应用；此时 btrace SDK 还没全部初始化，冷启动前半段必须依赖系统 trace：
 
@@ -720,7 +711,7 @@ Zygote fork 出应用进程后，`ActivityThread` 从 `bindApplication` 开始�
 | 首帧 | Java 提交前的方法候选 | FrameTimeline、RenderThread、SurfaceFlinger |
 | 首帧后 | 延迟任务与后台并发 | 主线程是否被后台工作抢占 |
 
-判断时，我们先看增加的 300 ms 落在哪个阶段。若 `Application.onCreate()` 的 wall time 增长，主线程却长期 `Runnable`，方法名只代表采样时所在的调用栈；下一步可减少启动并发或调整线程优先级，并用只改变“后台任务是否开启”这一项的 A/B trace 做对照。若主线程一直 `Running`，多个样本稳定落在同一同步 I/O 路径，再用 StrictMode（主线程磁盘/网络违规检测）、文件事件或局部计时确认具体调用。
+判断时，我们先看增加的 300 ms 落在哪个阶段。若 `Application.onCreate()` 的 wall time 增长，主线程却长期 `Runnable`，方法名只代表采样时所在的调用栈；下一步可减少启动并发或调整线程优先级，并用只改变“后台任务是否开启”这一项的 A/B trace 做对照。若该窗口的 on-CPU 时间也明显增加，多个样本稳定落在同一路径，再检查实际 CPU 工作与相关调用；若样本在同步 I/O 路径，还须分别核对运行和阻塞区间。StrictMode（主线程磁盘/网络违规检测）、文件事件或局部计时可帮助确认调用，方法名本身不证明存储等待。
 
 <!-- gracker-diagram: ch17-02-20-cold-start-coverage -->
 ![SDK初始化前后的冷启动覆盖](../../assets/diagrams/ch17/ch17-02-20-cold-start-coverage.png)
@@ -729,7 +720,7 @@ Zygote fork 出应用进程后，`ActivityThread` 从 `bindApplication` 开始�
 
 ### 列表滑动案例
 
-现象：120 Hz 设备滑动列表时连续掉帧；每帧预算约为 8.33 ms。采集前先在关键业务位置加几个低基数 trace marker，也就是名称稳定、取值有限的时间线标记，方便把 btrace 样本对应到具体列表阶段：
+另一个推演示例：120 Hz 设备滑动列表时连续掉帧。8.33 ms 是固定 120 Hz 的显示周期近似值；实际帧 deadline 与流水线安排要看 FrameTimeline，不能一律视为主线程独占预算。采集前先在关键业务位置加几个低基数 trace marker，也就是名称稳定、取值有限的时间线标记，方便把 btrace 样本对应到具体列表阶段：
 
 ```kotlin
 trace("Feed#submitList") {
@@ -741,27 +732,27 @@ trace("Feed#bindViewHolder") {
 }
 ```
 
-这些 marker 提供精确的业务区间，btrace 在区间里补方法栈候选。marker 名不要带用户 ID、URL 或 item 内容，否则名称会大量增殖、变成高基数，还可能把隐私数据写入 trace。
+这些 marker 只标记代码块的实际调用区间：`Feed#submitList` 覆盖提交调用返回前的时间，异步 diff、结果应用和呈现可能在之后；`Feed#bindViewHolder` 也不代表完整显示。btrace 在可覆盖的区间补方法栈候选。marker 名不要带用户 ID、URL 或 item 内容，否则名称会大量增殖、变成高基数，还可能把隐私数据写入 trace。
 
 读图时按帧边界处理：
 
 - Main thread 的 `doFrame`/FrameTimeline 是否越过 deadline（这一帧应完成的期限）；`bindViewHolder`、diff、图片解码回调和曝光逻辑是否反复出现在超时窗口。
 - RenderThread 是否及时拿到 CPU，还是在同步、提交或等待 buffer。RenderThread 慢和 Java bind 慢是两回事。
 - 后台解码、JSON、数据库任务是否同时占满大核；主线程若 Runnable 却不上 CPU，应先处理并发竞争。
-- 同一操作抓 5～10 次，比较卡顿帧与正常帧。单个样本里的最长栈，代表不了稳定根因。
-
-修复后用同样的数据集、手势脚本、刷新率和设备复测，并比较 missed frame（未按期限完成的帧）、Main/RenderThread on-CPU 时间和对应方法样本占比。
+- 同一操作可先抓 5～10 次作探索，再比较卡顿帧与正常帧；这只是起始规划，不保证尾部分位数精度或稀有问题覆盖。单个样本里的最长栈，代表不了稳定根因。
 
 <!-- gracker-diagram: ch17-02-21-frame-window -->
 ![列表提交、Java工作与呈现分阶段](../../assets/diagrams/ch17/ch17-02-21-frame-window.png)
 
 图：围绕实际deadline分别检查Main、RenderThread和系统呈现证据。 120Hz约8.33ms是周期；submitList标记只到调用返回，Java栈不能回答GPU完成时点。
 
+修复后用同样的数据集、手势脚本、刷新率和设备复测，并比较 missed frame（未按期限完成的帧）、Main/RenderThread on-CPU 时间和对应方法样本占比。
+
 ### 工具怎么搭配
 
 | 工具 | 更擅长回答的问题 | 主要边界 |
 |---|---|---|
-| btrace 3.0 | 系统时间线中的 Java 栈候选、锁/wait/park 等 Hook 上下文 | 私有 ART 符号、事件驱动采样、当前只采主进程；API 37 未适配 |
+| btrace 3.0 | 系统时间线中的 Java 栈候选、锁/wait/park 等 Hook 上下文 | 私有 ART 符号、事件驱动采样、官方初始化只采主进程；固定源码存在 API 37 符号/ABI 风险 |
 | `androidx.tracing` / `Trace` | 已知业务区间何时开始、结束 | 需要手工标注，未标注的方法没有语义 |
 | Perfetto SDK | 自定义结构化 track event（时间线事件）与应用数据源 | 需要设计 schema（字段结构）和采集策略，不自动生成完整方法栈 |
 | Perfetto 系统 trace | 调度、频率、Binder、I/O、FrameTimeline 等全局现场 | 方法语义取决于已有 atrace/SDK marker |
@@ -780,7 +771,7 @@ trace("Feed#bindViewHolder") {
 3. 对 `StackVisitor` 构造、vptr（指向虚函数表的指针） 替换和 2048-byte holder（为私有对象预留的内存） 做 ABI、对齐、析构与 inlined frame（被编译器内联的方法帧） 测试。vptr 指向虚函数表，holder 是为私有对象预留的内存，inlined frame 是被编译器内联的方法帧，而私有类布局没有稳定承诺。
 4. 单独适配或关闭 Java object allocation listener（对象分配监听器）；别把“API 30+ 使用同一 listener vtable（虚函数表）”直接延伸到 API 37。
 5. 用 NDK r28+ 重编 `librheatrace.so` 和 C++ runtime，移除 `npth_dl.c` 的 4 KB 常量，所有映射偏移都按 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 返回的运行时 page size 计算。
-6. 对最终 APK 中的 `librheatrace.so`、`libc++_shared.so`、ShadowHook 和其他 native 库执行 16 KB ELF/ZIP 对齐检查，并在 Android 17 的 `fatal` 模式下关闭 16 KB 兼容后运行；该模式会让不兼容二进制在加载时立即终止。
+6. 对最终 APK 中的 `librheatrace.so`、`libc++_shared.so`、ShadowHook 和其他 native 库执行 16 KB ELF/ZIP 对齐检查，并在 Android 17 的 `fatal` 模式下关闭 16 KB 兼容后运行；该模式针对 16 KB 不兼容二进制触发立即中止；它不代替 ART Hook 行为测试。
 7. 启动后主动采一条已知 Java 栈，断言记录数、栈深、方法名、线程名和时间戳；解析失败必须明确报错，只输出系统 trace 不算通过。
 8. 覆盖冷启动、前台采集、停止、再次采集、buffer 覆盖、mapping 错配、设备端 dump 超时、adb 中断和多 Launcher 场景。
 9. 量化关闭/开启采集时的启动耗时、帧时间、CPU、内存、包体和 crash/ANR（Application Not Responding，应用无响应）。1 ms 是同一线程两次采样的默认最小间隔，不是通用安全配置。
@@ -793,13 +784,13 @@ llvm-objdump -p path/to/librheatrace.so | grep LOAD
 zipalign -c -P 16 -v 4 app-internal.apk
 ```
 
-`LOAD` segment 应达到 `2**14`，也就是 16384 字节；ZIP 检查要针对最终安装的 APK。通过对齐检查只能证明二进制满足装载条件，ART 私有符号和 Hook 行为仍要在 API 37 真机或模拟器单独验收。
-
+目标 16 KB 对齐的 `LOAD` segment alignment 应至少为 `2**14`，也就是 16384 字节；ZIP 检查要针对最终安装的 APK。通过这两项检查只验证相应 ELF/ZIP 静态对齐，不能覆盖所有装载和运行条件；ART 私有符号和 Hook 行为仍要在 API 37 真机或模拟器单独验收。
 
 <!-- gracker-diagram: ch17-02-22-porting-acceptance -->
 ![私有Hook移植的交付门槛](../../assets/diagrams/ch17/ch17-02-22-porting-acceptance.png)
 
 图：移植需同时满足符号/ABI、制品/页大小和目标采集内容三类条件。 这里只给验收机制；没有执行API37 Hook、设备运行、捕获率或开销实验。
+
 
 ## Matrix 的插件架构与诊断能力
 
@@ -809,7 +800,7 @@ zipalign -c -P 16 -v 4 app-internal.apk
 
 Matrix 是微信团队开源的客户端 APM 框架，提供可选的 plugin（插件）、数据采集器和部分离线分析工具；由供应商维护的上传、查询、聚合、告警、工单服务不在其中。接入方拿到的是一组可改造的客户端组件，服务端的数据协议、存储和查询系统要自行建设。
 
-截至 2026-08-14，Maven Central 中 `matrix-android-lib` 的最新正式版仍是 `2.1.0`，元数据更新时间为 2023-03-21。GitHub `master` 顶部提交仍是 2023-07-31 的 README 更新；仓库元数据记录的最后 push 时间是 2024-07-23。提交时间指代码历史中的具体变更，push 时间还可能来自其他分支或标签，两者要分开读；放在一起看，公开维护已经明显放缓。官方 README 只声明 Matrix Gradle 插件可配合 AGP 3.5.0、4.0.0、4.1.0 使用。因此，采用时应更保守：
+截至 2026-10-26，Maven Central 中 `matrix-android-lib` 的最新正式版仍是 `2.1.0`，元数据更新时间为 2023-03-21。GitHub `master` 顶部提交仍是 2023-07-31 的 README 更新；仓库元数据记录的最后 push 时间是 2024-07-23。提交时间指代码历史中的具体变更，push 时间还可能来自其他分支或标签，两者要分开读；放在一起看，公开维护已经明显放缓。官方 README 只声明 Matrix Gradle 插件可配合 AGP 3.5.0、4.0.0、4.1.0 使用。因此，采用时应更保守：
 
 - 已有 Matrix 项目可以继续维护，但要把自有分支、工具链升级和设备验证视为产品代码的一部分。
 - 新项目若采用 AGP 8+，把官方 2.1.0 插件直接加进构建就指望它编译通过，是行不通的；运行时模块与构建插件要分开评估。
@@ -826,7 +817,7 @@ Matrix 是微信团队开源的客户端 APM 框架，提供可选的 plugin（�
 | Trace Canary | 编译期方法插桩（修改字节码并加入探针）、`AppMethodBeat`、主线程 Looper（消息循环）与帧回调 | 哪段主线程调用路径耗时、启动阶段分布、FPS（每秒帧数）分桶、部分 ANR（Application Not Responding，应用无响应）现场 | 线程为何没获得 CPU、Binder（Android 跨进程调用机制）对端为何慢、锁由谁长期持有 |
 | IO Canary | 对指定 Java 运行库的 `open/read/write/close` 做 PLT hook；替换 `CloseGuard` reporter | 主线程文件 I/O 的路径、Java 栈、次数、大小、耗时；未关闭的 `Closeable` | 任意 native 库或后台线程的全部 I/O；SQL 语句质量 |
 | Resource Canary | Activity 销毁后用弱引用重检；可选 Hprof dump/分析 | 哪类 Activity 销毁后长期存活、小比例样本中的引用链 | 所有 Fragment/View 泄漏；一次存活必然是永久泄漏 |
-| 重复 Bitmap 分析 | Hprof 离线分析器 | 堆快照中内容相同的 Bitmap 与引用链 | 图片为何重复解码、线上每次分配的调用现场 |
+| <span style="white-space:nowrap">重复 Bitmap</span><br>分析 | Hprof 离线分析器 | 堆快照中内容相同的 Bitmap 与引用链 | 图片为何重复解码、线上每次分配的调用现场 |
 | SQLite Lint | 独立 SQLite Lint 插件，hook 或业务回调提供 SQL | SQL 规则问题、索引与查询质量风险 | 某次页面卡顿一定由该 SQL 引起 |
 | Battery Canary | 线程活动、系统 API 使用和 `HealthStats`（系统累计的进程健康计数）等采样 | WakeLock、Alarm、定位、网络、线程等可疑行为 | 单个行为对应的精确耗电量、系统归因的因果关系 |
 | Memory Hook | `alloc/free`（申请/释放 native 内存）的 PLT hook 与 native backtrace（本地调用栈回溯） | native 分配未释放的候选与聚合 | 每个候选一定是泄漏 |
@@ -852,7 +843,7 @@ Battery Canary、Memory Hook、MemGuard 和 Pthread Hook 都不宜面向全部�
 AGP 8.0 删除了整个 `com.android.build.api.transform` 包。Matrix 2.1.0 的构建插件仍依赖以下旧接口：
 
 - `MatrixPlugin` 把 Gradle 中名为 `android` 的 extension（扩展配置对象） 强制转换为旧的 `AppExtension`。
-- `MatrixTraceInjection` 在透明 Transform 模式下会注册 `MatrixTraceTransform`，即旧 Transform API 下的字节码处理任务。
+- `MatrixTraceInjection.inject()` 先无条件调用 `injectTransparentTransform()`，注册旧 API 的 `MatrixTraceTransform`；之后才在 `afterEvaluate` 中按配置选择 task injection 或 transform injection。切换 task 模式不会免除这次旧 Transform 注册。
 - `MatrixTraceTransform` 继承已经删除的 `Transform`，并使用未承诺兼容性的 AGP 内部 pipeline 类型。
 - 源码中的 task injection（把自定义任务直接接到旧 variant/task 对象上） 仍把自定义任务直接挂到旧的 variant（如 `debug`、`release`）/task 对象上，依赖 `BaseVariant`、`DexArchiveBuilderTask` 等旧 API，也没有改用 Android Components Instrumentation API。
 
@@ -871,7 +862,7 @@ AGP 8.0 删除了整个 `com.android.build.api.transform` 包。Matrix 2.1.0 的
 
 #### 预编译 native 库与 16 KB page size
 
-page size（内存页大小）是内核管理虚拟内存映射的基本粒度。Android 15 起，AOSP 支持采用 16 KB page size 的设备；Android 17 还能把 16 KB 兼容模式设为 `fatal`，让不兼容的二进制在加载时立即终止，适合在测试环境暴露问题。Matrix 的 IO Canary、SQLite Lint、Memory Hook、MemGuard、Pthread Hook、Backtrace 等模块都包含 native 代码，Java 层初始化成功证明不了这些本地库兼容 16 KB。
+page size（内存页大小）是内核管理虚拟内存映射的基本粒度。Android 15 起，AOSP 支持采用 16 KB page size 的设备；Android 17 还能把 16 KB 兼容模式设为 `fatal`，让不兼容的二进制在加载时立即终止，适合在测试环境暴露问题。Matrix 的 IO Canary、SQLite Lint、Memory Hook、MemGuard、Pthread Hook、Backtrace 等模块都包含 native 代码，Java 层初始化成功证明不了这些本地库兼容 16 KB。本次对实际 Matrix 2.1.0 AAR 的静态检查覆盖 Trace Canary 的 2 个和 IO Canary 的 4 个 `.so`，其全部 `LOAD` alignment 都为 4096；其他模块未在本次逐一检查，不能外推其值。
 
 采用 2023 年发布的预编译产物前，要检查 APK/AAB 中每个 Matrix `.so` 的 ELF `LOAD` segment alignment（加载段的内存对齐值）和包内 ZIP alignment（未压缩 `.so` 在 APK 中的起始位置对齐值），再在 16 KB 模式的 Android 17 设备或模拟器上覆盖安装、启动、hook、停止 hook 和异常回调。Android 官方当前建议使用 AGP 8.5.1 以上处理打包对齐，NDK r28 以上默认生成 16 KB 对齐的 ELF；预编译依赖仍需逐个验证。这与 Matrix 官方 Gradle 插件依赖旧 AGP 的现状直接冲突。工程上通常要分别处理：移植构建插件并重编 native 模块，或选用已经提供现代工具链产物和验证记录的维护分支。
 
@@ -880,22 +871,25 @@ page size（内存页大小）是内核管理虚拟内存映射的基本粒度�
 
 图：构建API迁移、最终二进制对齐和目标运行需要各自通过。 本次只静态检查Trace/IO的6个ELF；对齐不证明私有Hook、映射假设或停止恢复正确。
 
+### 接入结构：注册、build 初始化、安装单例、启动
+
+运行时顺序是：`Matrix.Builder.plugin()` 把实例加入 `HashSet`，`pluginListener()` 设置接收 `Issue`（统一报告对象）的监听器；`builder.build()` 构造 Matrix，同时初始化 lifecycle、ProcessSupervisor 并逐个执行 `plugin.init()`；`Matrix.init()` 只安装进程内单例，随后才启动插件。集合不保证注册或启动顺序，有依赖的插件应显式安排。源码以 2.1.0 的 `Matrix.java` 为准：其中没有 `patchListener()`，准确 API 是 `pluginListener()`。
+
 <!-- gracker-diagram: ch17-02-26-matrix-lifecycle -->
 ![Matrix build与安装单例的不同副作用](../../assets/diagrams/ch17/ch17-02-26-matrix-lifecycle.png)
 
 图：注册、build初始化、安装单例和start是独立阶段，重复build会先产生副作用。 插件集合为HashSet，无注册/启动顺序保证；示例守卫和锁只保护单一应用入口。
 
-### 接入结构：先注册，再初始化，再启动
-
-运行时框架的顺序很直接：`Matrix.Builder.plugin()` 把插件实例加入集合，`pluginListener()` 接收插件产生的 `Issue`（Matrix 的统一报告对象），`Matrix.init()` 安装进程内单例，随后再启动所需插件。源码以 2.1.0 的 `Matrix.java` 为准：其中没有 `patchListener()`，准确 API 是 `pluginListener()`。
-
 下面的骨架只演示 Matrix 2.1.0 中存在的运行时 API。它假设调用方已经完成进程筛选，并且构建期 Trace 插桩器已在当前工具链上通过验证：
 
 ```java
 public final class MatrixInstaller {
-    public static void install(
+    public static synchronized void install(
             Application app,
             IDynamicConfig dynamicConfig) {
+        if (Matrix.isInstalled()) {
+            return;
+        }
         TraceConfig traceConfig = new TraceConfig.Builder()
                 .dynamicConfig(dynamicConfig)
                 .enableFPS(true)
@@ -929,49 +923,32 @@ public final class MatrixInstaller {
 }
 ```
 
-这里的 `MatrixReportQueue` 是应用自建的上传队列，不属于 Matrix API。注册顺序也有实际约束：未加入 `builder.plugin(...)` 的实例不会进入 Matrix 的插件集合，`getPluginByClass()` 也找不到它。示例没有表达采样和远程开关；项目代码应在构造插件前完成进程允许列表和实验分组，并让动态配置接口 `IDynamicConfig` 返回当前生效的采集策略。
+这里的 `MatrixReportQueue` 是应用自建的上传队列，不属于 Matrix API。应用应把此安装器作为主线程上的唯一安装入口；这里的锁只保护此入口。重复调用 `Matrix.init()` 会忽略新实例，但新实例先经 `build()` 产生的初始化副作用不会回滚。插件成员资格也有实际约束：未加入 `builder.plugin(...)` 的实例不会进入 Matrix 的插件集合，`getPluginByClass()` 也找不到它。示例没有表达采样和远程开关；项目代码应在构造插件前完成进程允许列表和实验分组，并让动态配置接口 `IDynamicConfig` 返回当前生效的采集策略。
 
 多进程应用不要在每个 `Application` 中照搬同一配置。主进程可开启 Trace；WebView、推送、下载或短命进程只选择能回答该进程问题的模块。还要分别记录“未安装”“安装失败”“已停止”三种状态，否则没有报告时，分不清是没发现问题，还是监控压根没在工作。
 
 ### Trace Canary：插桩记录与 Looper 窗口如何配合
 
-构建期的 `MethodCollector` 为选中的方法分配整数 ID，并写出 `methodMapping.txt`；修改后的字节码在方法进入和退出处分别调用 `AppMethodBeat.i(id)` 与 `AppMethodBeat.o(id)`。运行时的 `AppMethodBeat` 用 ring buffer 记录 ID、进出标志和相对时间。主线程 Looper 每次 dispatch 的开始与结束，则界定了一条消息的分析窗口。
+构建期的 `MethodCollector` 为选中的方法分配整数 ID，并写出 `methodMapping.txt`；修改后的字节码在方法进入和退出处分别调用 `AppMethodBeat.i(id)` 与 `AppMethodBeat.o(id)`。运行时的 `AppMethodBeat` 主要向主线程 ring buffer 记录 ID、进出标志和相对时间；非主线程不会进入这条相同的 buffer 记录分支。打包格式使用第 63 位记录进入标志、从第 43 位起编码方法 ID，低 43 位保存相对时间。时间来自缓存的 `uptimeMillis() - sDiffTime`，由更新时间线程与 dispatch 边界更新，不是逐方法读取纳秒时钟。主线程 Looper 每次 dispatch 的开始与结束，则界定了一条消息的分析窗口。
 
-下面的时序图说明构建产物和运行时报告之间的依赖：
-
-```mermaid
-sequenceDiagram
-    participant Build as "Matrix 构建插件"
-    participant Bytecode as "业务字节码"
-    participant Main as "Main Looper"
-    participant Trace as "Trace Canary"
-    participant AppAPM as "自建 APM"
-
-    Build->>Build: "分配 method id，输出 methodMapping.txt"
-    Build->>Bytecode: "插入 AppMethodBeat.i/o"
-    Main->>Trace: "dispatch begin"
-    Bytecode->>Trace: "记录 method id、进出标志、相对时间"
-    Main->>Trace: "dispatch end"
-    Trace->>Trace: "整理调用树、cost、stackKey、scene"
-    Trace->>AppAPM: "PluginListener.onReportIssue(Issue)"
-```
-
-这条时序暴露了两个常见故障。第一，没保存与该 App 构建一一对应的 `methodMapping.txt`，服务端就还原不出可靠的方法名。第二，插桩器失效后，Looper/FPS 信号可能仍然存在，方法树却会缺失；这时别下“主线程没执行过业务方法”的结论。
-
-Trace Canary 会生成不同的 tag（报告类别标识）。2.1.0 源码中包括 `Trace_FPS`、`Trace_EvilMethod` 和 `Trace_StartUp`；payload（报告正文）常见字段有 `scene`、`cost`、`stack`、`stackKey`、`detail` 和启动阶段耗时。服务端应按 `tag + type + payload schema version` 解码，其中 schema version 表示字段结构版本；所有 `Issue` 不会共享完全相同的字段集合。
-
-阈值应按场景配置，不要把一个固定毫秒数写成通用标准。卡顿窗口、冷启动、热启动和 FPS 分桶使用不同信号。方法插桩替代不了逐帧指标：JankStats/FrameMetrics 适合确认 jank（未按显示节奏完成的慢帧） 及当时的界面状态，Trace Canary 的方法树适合解释较长的主线程工作；需要判断调度、锁、Binder 或 I/O 等系统原因时，再转到 Perfetto。
+构建期映射与运行时消息窗口共同决定方法树的可还原性，下图按构建产物、记录窗口和报告解码展开。
 
 <!-- gracker-diagram: ch17-02-27-method-map-window -->
 ![方法映射、缓存时钟与消息窗口](../../assets/diagrams/ch17/ch17-02-27-method-map-window.png)
 
 图：构建映射与插桩产物进入主线程记录，再按Looper窗口分析和解码。 固定AppMethodBeat使用缓存uptime毫秒时间，不是逐方法纳秒计时；缓冲、状态与插桩失败可缺记录。
 
+这条依赖链暴露了两个常见故障。第一，没保存与该 App 构建一一对应的 `methodMapping.txt`，服务端就还原不出可靠的方法名。第二，插桩器失效后，Looper/FPS 信号可能仍然存在，方法树却会缺失；这时别下“主线程没执行过业务方法”的结论。
+
+Trace Canary 会生成不同的 tag（报告类别标识）。2.1.0 源码中包括 `Trace_FPS`、`Trace_EvilMethod` 和 `Trace_StartUp`；payload（报告正文）常见字段有 `scene`、`cost`、`stack`、`stackKey`、`detail` 和启动阶段耗时。服务端应按 `tag + type + payload schema version` 解码，其中 schema version 表示字段结构版本；所有 `Issue` 不会共享完全相同的字段集合。
+
+阈值应按场景配置，不要把一个固定毫秒数写成通用标准。卡顿窗口、冷启动、热启动和 FPS 分桶使用不同信号。方法插桩替代不了逐帧指标：JankStats/FrameMetrics 适合确认 jank（未按显示节奏完成的慢帧） 及当时的界面状态，Trace Canary 的方法树适合解释较长的主线程工作；需要判断调度、锁、Binder 或 I/O 等系统原因时，再转到 Perfetto。
+
 ### IO Canary 的覆盖范围
 
 2.1.0 的 native 实现通过 xHook（改写 ELF 函数导入入口的库）查找 `libopenjdkjvm.so`、`libjavacore.so`、`libopenjdk.so`。它会在这些库中代理 `open/open64/close`；`read/write` 及其 `_chk` 变体只在 `libjavacore.so` 分支处理。代理函数发现当前线程不在主线程时会直接调用原函数，不进入收集器。因此，它主要覆盖经这些 Java 运行库路径发生的主线程文件 I/O，覆盖范围小于“进程中任意库、任意线程的 I/O 审计”。
 
-一次被跟踪的文件从 `open` 开始保存路径、线程名和 Java 栈；`read/write` 累加操作次数、请求大小与耗时；`close` 时补文件大小并运行三类 detector：
+一次成功且可跟踪的 `open` 保存路径、线程名和当时的 Java 栈；`read/write` 累加操作次数、请求大小与耗时；`close` 时补文件大小并运行三类 detector。`opSize` 累加的是请求大小，不是每次实际返回字节数；`opType` 只记录首次读写类型，不能代表混合操作序列。文件从 open 到 close 的跨度与 read/write 调用累计耗时也要分开解释：
 
 - Main-thread detector（主线程检测器）关注单次很慢或连续读写超过阈值的 I/O。
 - Small-buffer detector（小缓冲检测器）按操作次数、平均请求大小和连续读写耗时判断。
@@ -982,22 +959,22 @@ Trace Canary 会生成不同的 tag（报告类别标识）。2.1.0 源码中包
 
 图：指定Java运行库的主线程IO被代理，成功open建立生命周期，close汇总检测。 请求大小不是实际返回字节，首次opType不是混合序列；open栈也不是每次read/write栈。
 
-`Closeable` 泄漏走另一条路径：`CloseGuardHooker` 通过反射替换 `dalvik.system.CloseGuard$Reporter`，再把 `Throwable` 栈转换成 type 4 的 `Issue`。这依赖 Android 的隐藏实现，必须单独验证 hook 成功率，以及停止后能否恢复原 reporter。源码虽预留 network I/O、cursor leak 的常量，常量本身证明不了 2.1.0 已完整实现对应 detector。
+`Closeable` 泄漏走另一条路径：`CloseGuardHooker` 通过反射替换 `dalvik.system.CloseGuard$Reporter`，再把 `Throwable` 栈转换成 type 4 的 `Issue`。这依赖 Android 隐藏实现。`hook()` 失败后仍置尝试标记，不能把该标记当成功状态；`unHook()` 虽尝试恢复 reporter，却把 CloseGuard enabled 设为 false，并没有保存/恢复原 enabled 值。必须验证与其他使用者共存、失败重试及停止后的完整状态。源码虽预留 network I/O、cursor leak 的常量，常量本身证明不了 2.1.0 已完整实现对应 detector。
+
+<!-- gracker-diagram: ch17-02-29-closeguard-state -->
+![CloseGuard安装尝试与停止状态](../../assets/diagrams/ch17/ch17-02-29-closeguard-state.png)
+
+图：CloseGuard反射替换reporter与文件IO代理是独立路径，安装和恢复需分别观察。 尝试标记失败后也可置位；unHook恢复reporter却强制enabled=false，未恢复原enabled值。
 
 Perfetto 与 IO Canary 给我们的信息不同。数据源和权限允许时，Perfetto 能显示调度、I/O、文件描述符或系统调用线索；Matrix 报告保留的是应用层路径、Java 栈以及一次文件生命周期内的聚合字段。一次主线程 I/O 报告可按以下顺序读：
 
-1. 用 `thread`、`scene`（业务场景标识）和时间窗口判断它是否处在启动或交互路径。
+1. 用插件线程字段及接入层补充的 `scene`（业务场景标识）、时间窗口判断它是否处在启动或交互路径；不要假定 native IO payload 原生含有 scene。
 2. 查看 `path`、`opType`、`op`、`opSize`、`buffer`、`cost` 与 `repeat`，区分单次慢、连续小块操作和重复读取。
 3. 从 Java 栈找到调用入口，但不要把 `open` 时的栈当作每次 `read/write` 的精确栈。
 4. 在 Perfetto 中检查相同窗口内主线程是在运行、等待 I/O、等待锁、等待 Binder，还是因调度压力未及时运行。
 5. 若路径属于 SQLite，转去检查 SQL、索引、事务和 SQLite Lint 结果；文件路径本身指不出哪条 SQL 有问题。
 
 上报前不要上传原始私有目录、数据库名、账号、URL query（问号后的查询参数） 或缓存 key。受控的路径类型与稳定哈希通常已经足够聚合同类问题；原始路径只留在用户授权的本地调试或受限的小比例测试环境。
-
-<!-- gracker-diagram: ch17-02-29-closeguard-state -->
-![CloseGuard安装尝试与停止状态](../../assets/diagrams/ch17/ch17-02-29-closeguard-state.png)
-
-图：CloseGuard反射替换reporter与文件IO代理是独立路径，安装和恢复需分别观察。 尝试标记失败后也可置位；unHook恢复reporter却强制enabled=false，未恢复原enabled值。
 
 ### Resource Canary：Activity 观察和 Hprof 分开看
 
@@ -1077,9 +1054,14 @@ Matrix 的 `Issue` 只有 `type`、`tag`、`key`、`content` 和 `plugin`。进�
 }
 ```
 
-服务端收到它后，要按 `app_build_id + method_map_id` 找到同一构建的映射文件，再解码 Matrix 的整数方法栈。`stack_signature` 只用于聚合同类样本，代替不了原始栈；`sample_policy_id` 记录样本选择规则，因此统计出的发生率只在对应采样方案下有意义。
+服务端收到它后，要按 `app_build_id + method_map_id` 找到同一构建的映射文件，再解码 Matrix 的整数方法栈。`stack_signature` 只用于聚合同类样本，代替不了原始栈；`sample_policy_id` 记录样本选择规则，但它本身不能产生总体发生率；还需相同窗口的合格人群或机会数分母，并解释未采样、采集失败和上传丢失。
 
-IO 事件可以复用同一外层协议，在 payload 中只放经过筛选的字段。下面给出一个已经对路径分类并做哈希的例子：
+<!-- gracker-diagram: ch17-02-32-issue-envelope -->
+![Issue外层协议、符号与采样分母](../../assets/diagrams/ch17/ch17-02-32-issue-envelope.png)
+
+图：原始Issue套入有版本的协议，与精确构建映射、采样与上传状态共同解释。 stack_signature只用于聚合；sample_policy_id不能代替合格分母，也不能校正所有条件丢失。
+
+IO 事件可以复用同一外层协议，在 payload 中只放经过筛选的字段。下面是路径分类、哈希和单位归一化后的合成协议示例，数值不是本次采集结果；`cost_ms` 必须明确映射哪个原字段并按原单位转换：
 
 ```json
 {
@@ -1099,12 +1081,7 @@ IO 事件可以复用同一外层协议，在 payload 中只放经过筛选的�
 }
 ```
 
-这个例子只支持“冷启动主线程在短窗口内反复小块读取某类文件”的判断。它证明不了 86 ms 全部消耗在存储等待上，也保证不了增大 buffer 就能消除首屏慢；下结论仍要结合调用栈、缓存策略和系统时间线。
-
-<!-- gracker-diagram: ch17-02-32-issue-envelope -->
-![Issue外层协议、符号与采样分母](../../assets/diagrams/ch17/ch17-02-32-issue-envelope.png)
-
-图：原始Issue套入有版本的协议，与精确构建映射、采样与上传状态共同解释。 stack_signature只用于聚合；sample_policy_id不能代替合格分母，也不能校正所有条件丢失。
+如果真实数据满足相同采集范围和字段合同，这组字段可提示“冷启动主线程在短窗口内反复小块请求读取某类文件”；示例本身不证明发生过该事件。它证明不了 86 ms 全部消耗在存储等待上，也保证不了增大 buffer 就能消除首屏慢；下结论仍要结合调用栈、缓存策略和系统时间线。
 
 <!-- gracker-diagram: ch17-02-33-io-envelope -->
 ![IO协议中的观测量与推断边界](../../assets/diagrams/ch17/ch17-02-33-io-envelope.png)
@@ -1130,6 +1107,11 @@ Perfetto 复现不到线上样本时，保留 Matrix 的 scene、构建 ID、设
 
 ### 上线前检查表
 
+<!-- gracker-diagram: ch17-02-35-release-contract -->
+![从构建归档到关闭恢复的上线闭环](../../assets/diagrams/ch17/ch17-02-35-release-contract.png)
+
+图：构建、符号、目标采集、失败恢复和有界交付共同构成发布合同。 检查表是待执行工程要求；本次源码/编译/静态检查不能冒充Android17或生产验收。
+
 - [ ] 明确使用官方 2.1.0、哪个 fork revision（派生分支提交），以及每个补丁的维护人。
 - [ ] 当前 AGP、Gradle、Kotlin、R8、Java、动态特性模块和增量构建均有 CI（持续集成）回归覆盖。
 - [ ] Trace 插桩失败会让构建失败或产生显式诊断，不会静默发布空方法栈。
@@ -1142,11 +1124,6 @@ Perfetto 复现不到线上样本时，保留 Matrix 的 scene、构建 ID、设
 - [ ] 路径、SQL、URL、Hprof、native dump 与日志按隐私等级裁剪、哈希、加密和授权。
 - [ ] 每个模块有远程停止方式，并验证停止后 hook、listener、线程和文件状态。
 - [ ] 后端区分“无问题”“未采样”“安装失败”“采集被关闭”“上传失败”。
-
-<!-- gracker-diagram: ch17-02-35-release-contract -->
-![从构建归档到关闭恢复的上线闭环](../../assets/diagrams/ch17/ch17-02-35-release-contract.png)
-
-图：构建、符号、目标采集、失败恢复和有界交付共同构成发布合同。 检查表是待执行工程要求；本次源码/编译/静态检查不能冒充Android17或生产验收。
 
 ### 源码与版本依据
 

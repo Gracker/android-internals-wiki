@@ -41,10 +41,10 @@ related_chapters:
 - '1.19'
 - '8.3'
 - '21.1'
-last_verified: '2026-10-13'
-last_source_verified_at: '2026-10-13'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-13'
-last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0 AAR and sources; Android Developers 2026-10-13
+last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0 AAR and sources; Android Developers 2026-10-25
 ---
 
 # Splash Screen 与感知启动速度
@@ -61,7 +61,12 @@ last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0 
 
 ## 1. 先区分三种画面
 
-启动期间可能连续出现三类画面。第一类是系统在 App 窗口可显示前临时展示的 starting surface（起始表面），它不一定是带品牌图标的 Splash。TTID（Time to Initial Display）结束于 App 第一帧，TTFD（Time to Full Display）结束于主要内容可见且可交互时：
+<!-- gracker-diagram: a226-01-three-surfaces -->
+![系统起始画面、App 首帧与完整内容](../../assets/diagrams/ch21/a226-01-three-surfaces.png)
+
+图：画面创建者与证据不同；系统反馈更早，不表示 App 初始化或内容加载已经更快。
+
+启动期间可能连续出现三类画面。第一类是系统在 App 窗口可显示前临时展示的 starting surface（起始表面），它不一定是带品牌图标的 Splash。TTID（Time to Initial Display）衡量 App 首帧显示；TTFD（Time to Full Display）依赖应用在主要内容和关键交互就绪后报告充分绘制。具体结束点要写明工具口径，例如 Macrobenchmark 使用报告所对应帧的完成点，不能把业务状态改变、方法调用与帧完成都视为同一时刻：
 
 | 画面 | 创建者 | 出现阶段 | 主要职责 |
 | --- | --- | --- | --- |
@@ -87,11 +92,6 @@ Android 17 可以按启动条件在这些形态之间选择：
 
 “点击图标后看见了一张图”还不足以判断系统走了哪条路径；要解释 Perfetto trace（系统与应用事件的时间线记录），先确认启动类型和 starting window 类型。
 
-<!-- gracker-diagram: a226-01-three-surfaces -->
-![系统起始画面、App 首帧与完整内容](../../assets/diagrams/ch21/a226-01-three-surfaces.png)
-
-图：画面创建者与证据不同；系统反馈更早，不表示 App 初始化或内容加载已经更快。
-
 ## 2. Android 17 的系统链路
 
 ### 2.1 system_server 负责条件和数据
@@ -107,6 +107,11 @@ Android 17 的 `ActivityRecord` 是 system_server 内部保存 Activity 运行�
 选择 Splash 路径后，`ActivityRecord` 创建保存主题和类型参数的 `SplashScreenStartingData`。[`SplashScreenStartingData`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/SplashScreenStartingData.java)再调用 [`StartingSurfaceController.createSplashScreenStartingSurface()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/StartingSurfaceController.java)，通过 TaskOrganizer 这条任务管理接口把创建请求交给 Shell。
 
 ### 2.2 WM Shell 负责类型细化和绘制
+
+<!-- gracker-diagram: a226-03-system-shell -->
+![系统条件判断到 Shell 表面创建](../../assets/diagrams/ch21/a226-03-system-shell.png)
+
+图：system_server 传递条件和数据，Shell 根据类型创建 Splash、Snapshot 或 windowless 表面。
 
 下面是 Android 17 上的主要调用关系。向下的箭头表示请求继续交给下一层，末端分支是负责创建不同表面的组件：
 
@@ -137,16 +142,11 @@ StartingSurfaceDrawer
 1. Splash 由系统在 App 第一帧前创建，不需要 App 进程先 `inflate`（从 XML 创建 View 树）一张启动页。
 2. App 主题只是输入之一，最终类型还受任务、进程、snapshot、窗口状态和系统策略影响。
 
-<!-- gracker-diagram: a226-03-system-shell -->
-![系统条件判断到 Shell 表面创建](../../assets/diagrams/ch21/a226-03-system-shell.png)
-
-图：system_server 传递条件和数据，Shell 根据类型创建 Splash、Snapshot 或 windowless 表面。
-
 ### 2.3 移除与退出动画
 
 App 内容可以显示时，system_server 请求 Shell 移除 starting window。若应用注册了退出动画，系统可以把 `SplashScreenView` 复制一份交给 App 继续播放。Android 17 的 [`SplashscreenWindowCreator`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java)包含视图复制、窗口移除和 `SurfaceControlViewHost` 释放路径；这里的 host 是跨进程承载动画图标 View 的容器。
 
-不要把“App 已提交第一帧”“starting window 已移除”“退出动画已完成”视为同一个时间点。自定义动画会在 App 内容已经准备显示后继续覆盖它一段时间。
+退出回调表示 Splash 已准备好被移除，不是首帧已经显示完成的证明。不要把“App 已提交第一帧”“starting window 已移除”“退出动画已完成”视为同一个时间点。自定义动画会在 App 内容准备显示后继续覆盖它一段时间，仍需结合帧时间线验证实际交接。
 
 <!-- gracker-diagram: a226-15-exit-overlap -->
 ![首帧准备、系统起始表面与退出覆盖分别观测](../../assets/diagrams/ch21/a226-15-exit-overlap.png)
@@ -157,7 +157,7 @@ App 内容可以显示时，system_server 请求 Shell 移除 starting window。
 
 ### 3.1 版本边界
 
-截至 2026-08-14，`androidx.core:core-splashscreen:1.2.0` 仍是稳定版。它的兼容边界如下：
+截至 2026-10-25，官方版本表仍列 `androidx.core:core-splashscreen:1.2.0` 为稳定版。它的兼容边界如下：
 
 | 系统版本 | 实现方式 | 重要差异 |
 | --- | --- | --- |
@@ -327,9 +327,16 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Lifecycle
 
 // Register inside ComponentActivity.onCreate().
 splashScreen.setOnExitAnimationListener { provider ->
+    // A delayed callback can arrive after this Activity has been destroyed.
+    if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
+        provider.remove()
+        return@setOnExitAnimationListener
+    }
+
     val animator = provider.view.animate()
         .alpha(0f)
         .setDuration(160L)
@@ -365,7 +372,12 @@ splashScreen.setOnExitAnimationListener { provider ->
 }
 ```
 
-正常结束、动画取消和 Activity 销毁都调用同一个幂等清理函数，移除 Splash View 并注销监听。销毁路径先取消动画，再显式清理；系统动画缩放关闭、动画立即结束时也会执行结束回调。`ViewPropertyAnimator.withEndAction` 在动画取消时不会执行，因此不能单独用它保证 `provider.remove()`。
+回调入口先处理 Activity 已销毁的情况，因为向已处于 `DESTROYED` 的 Lifecycle 添加观察者不会补发 `onDestroy()`。其余正常结束、动画取消和后续 Activity 销毁都调用同一个幂等清理函数，移除 Splash View 并注销监听；这些状态检查与注册在主线程完成。销毁路径先取消动画，再显式清理；系统动画缩放关闭、动画立即结束时也会执行结束回调。`ViewPropertyAnimator.withEndAction` 在动画取消时不会执行，因此不能单独用它保证 `provider.remove()`。
+
+<!-- gracker-diagram: a226-10-exit-cleanup -->
+![退出动画的所有路径都移除 Splash View](../../assets/diagrams/ch21/a226-10-exit-cleanup.png)
+
+图：晚到回调不能依赖已经结束的生命周期补发 onDestroy；所有清理分支均在主线程处理。
 
 退出动画有三条约束：
 
@@ -374,11 +386,6 @@ splashScreen.setOnExitAnimationListener { provider ->
 - 低端机、系统动画缩放关闭和减少动态效果的无障碍偏好下也要有合理行为。
 
 动画只改变画面交接。若主线程仍在执行长任务，动画结束后照样会掉帧或无响应。
-
-<!-- gracker-diagram: a226-10-exit-cleanup -->
-![退出动画的所有路径都移除 Splash View](../../assets/diagrams/ch21/a226-10-exit-cleanup.png)
-
-图：晚到回调不能依赖已经结束的生命周期补发 onDestroy；所有清理分支均在主线程处理。
 
 ## 6. 从旧方案迁移
 
@@ -478,7 +485,7 @@ Splash 不解决 JIT（Just-In-Time，运行时即时编译）预热、第三方
 | --- | --- | --- |
 | starting surface 首见时间 | 用户看见系统反馈 | 点击后是否快速得到视觉响应 |
 | TTID | App 第一帧完成 | App 多久开始显示自己的 UI |
-| TTFD | App 调用 `reportFullyDrawn()` | 主要内容多久达到可用状态 |
+| TTFD | 应用就绪后报告充分绘制；Macrobenchmark 使用该报告所对应帧的完成点 | 主要内容多久达到定义好的可用状态 |
 
 starting surface 首见时间通常来自录屏或 trace，是分析主观感受时的观察点，并非 Android vitals 的标准启动指标。Splash 显示得早，不会自动缩短 TTID。骨架屏可以形成更稳定的第一帧，却不等于内容已可用；TTFD 包含 TTID，要等主要内容与关键交互都就绪后上报。
 
@@ -496,7 +503,7 @@ lifecycleScope.launch {
 
 这段代码的“可用”条件要由具体页面定义。若自定义 Splash 退出动画仍遮住内容并阻止交互，也应把动画结束纳入可用条件。
 
-如果在系统检测到 TTID 前调用 `reportFullyDrawn()`，系统会把 TTFD 记为 TTID。这样的数据不能说明异步内容已经完成。
+按官方启动指标说明，首帧之前就报告充分绘制时，TTFD 会折合为 TTID；这不能证明异步内容已经完成。Macrobenchmark 的 `timeToFullDisplayMs` 看报告对应帧，原始 `ApplicationStartInfo` 的 `FULLY_DRAWN` 时间戳则记录报告处理点。分析时应固定工具与版本，不能把后者直接当成显示帧完成时间；详见 [21.1 启动路径与度量](01-app-startup-path-monitoring.md)。
 
 <!-- gracker-diagram: a226-14-startup-metrics -->
 ![感知观察点、显示指标与原始时间戳](../../assets/diagrams/ch21/a226-14-startup-metrics.png)

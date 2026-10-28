@@ -4,7 +4,7 @@ section: '18.1'
 chapter: '18.1'
 status: finalized
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
-last_verified: '2026-08-14'
+last_verified: '2026-10-26'
 last_verified_against: AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + current Android 17 behavior-change, Mainline, GKI and ART documentation
 confidence: high
 tags:
@@ -146,11 +146,11 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 | 现象 | 更像应用问题的证据 | 更像平台问题的证据 |
 | --- | --- | --- |
-| 冷启动慢 | 主线程业务初始化、同步 I/O、依赖注入占主导 | 多个应用共同等待 system service、ART 或存储公共路径 |
-| 掉帧 | View 遍历、图片解码、每帧分配集中在单个应用 | 同机多应用出现相同合成、调度或驱动等待 |
-| Binder 延迟 | 调用次数过多、事务过大、服务端业务锁 | 多个调用方同时遇到线程池、driver 或公共服务拥塞 |
-| 内存压力 | 单个进程缓存、泄漏或对象峰值异常 | reclaim、LMKD、freezer 或产品参数使整机工作集反复失效 |
-| 后台任务延迟 | 约束、配额或生命周期使用错误 | 平台 controller、时钟或状态传播出现回归 |
+| <span style="white-space:nowrap">冷启动慢</span> | 主线程业务初始化、同步 I/O、依赖注入占主导 | 多个应用共同等待 system service、ART 或存储公共路径 |
+| <span style="white-space:nowrap">掉帧</span> | View 遍历、图片解码、每帧分配集中在单个应用 | 同机多应用出现相同合成、调度或驱动等待 |
+| <span style="white-space:nowrap">Binder 延迟</span> | 调用次数过多、事务过大、服务端业务锁 | 多个调用方同时遇到线程池、driver 或公共服务拥塞 |
+| <span style="white-space:nowrap">内存压力</span> | 单个进程缓存、泄漏或对象峰值异常 | reclaim、LMKD、freezer 或产品参数使整机工作集反复失效 |
+| <span style="white-space:nowrap">后台任务延迟</span> | 约束、配额或生命周期使用错误 | 平台 controller、时钟或状态传播出现回归 |
 
 表里的几个术语先交代一下：system service 指运行在系统进程、向 App 或其他系统组件提供能力的服务，reclaim 是内核回收内存页，freezer（系统冻结进程的机制） 会暂时冻结适合的后台进程，LMKD（Low Memory Killer Daemon） 则在内存压力下选择要终止的进程。platform controller 是判断后台任务何时满足运行条件（依赖何时算就绪）的控制模块。
 
@@ -165,13 +165,13 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 判断归到平台之后，我们要按一个稳定的顺序往下读。平台性能路径可以分成五层，每一层帮我们确认成本和对外行为落在哪里；这五层是纯技术分层，团队的组织架构是另一回事。
 
-1. **应用与公开 API**：调用频率、参数规模、target（AOSP 编译所选的设备产品目标） SDK（App 声明适配到的 API 级别） 和公开行为约定。
+1. **应用与公开 API**：调用频率、参数规模、`targetSdkVersion`（App 声明适配到的 API 级别） 和公开行为约定。
 2. **Framework 与 system service**：Java/Kotlin 状态机、Binder 服务、锁和生命周期。
 3. **Native service 与运行时**：ART、SurfaceFlinger（显示合成服务）、media、netd（网络管理服务）、libbinder 等原生进程或库。
 4. **Kernel 与驱动**：调度、内存、Binder driver（Binder 的内核驱动）、文件系统、block I/O（面向存储块设备的读写） 和设备驱动。
 5. **硬件与产品策略**：SoC（System on Chip，片上系统）、固件、Power/Thermal HAL（电源与温控的硬件抽象层）、显示和厂商配置。
 
-一次等待还可能跨越多层。比如同步 Binder 的调用方在 trace 里处于 `Sleeping`，这只说明它在等回复；真正耗时的地方，可能是目标线程的 runnable delay（线程已可运行、却仍在调度队列等待的时间），也可能是服务端锁、TEE（Trusted Execution Environment，可信执行环境）、块设备或驱动。所以我们分析时要同时保留调用方、目标进程、内核等待和硬件状态，把等待定位到具体一层，再决定修改落在哪层。
+一次等待还可能跨越多层。同步 Binder 的调用方等待回复时可能显示为 `Sleeping`，但单凭线程状态还不能确认它等的是 Binder，更不能确认根因在调用方。结合事务关联和调用栈确定同步等待后，再追目标线程的 runnable delay（已可运行但仍等 CPU）、服务端锁、TEE（可信执行环境）、块设备或驱动。保留调用方、目标进程、内核等待和硬件状态，把成本落实到具体依赖，再决定修改哪层。
 
 <!-- gracker-diagram: ch18-01-02-layers -->
 ![五层坐标与跨层等待的根因追踪](../../assets/diagrams/ch18/ch18-01-02-layers.png)
@@ -188,7 +188,7 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 #### 固定版本源码
 
-第二类材料是固定版本的源码，它回答实现、gate（决定代码路径是否启用的开关）、默认值和失败路径这类问题。平台结论我们固定到 `android-17.0.0_r1`，内核结论固定到 `android17-6.18-2026-06_r6`：tag 是可复查的固定源码版本，main 是持续变化的开发分支。GKI（Generic Kernel Image，通用内核镜像）还有多条受支持的分支，读其他分支可以看出机制如何演进，但设备行为还是要以固定 tag 为准。
+第二类材料是固定版本源码，用于核查实现、gate（路径启用条件）、默认值和失败路径。本文分析固定到 `android-17.0.0_r1` 与 `android17-6.18-2026-06_r6`；tag 是可复查快照，main 是持续变化分支。设备结论还须对应其实际 build、内核 revision、最终配置与运行状态；不能因本文固定了 tag，就认定所有受测设备运行同一实现。
 
 #### 设备运行证据
 
@@ -209,11 +209,11 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 | --- | --- | --- |
 | Framework / system image | 整机 OTA | build ID、产品 overlay、target SDK 行为 |
 | Mainline 模块 | APEX/APK 系统更新 | 模块版本、激活状态、回滚记录 |
-| GKI / vendor kernel | boot/vendor_boot 或 OTA | 精确 tag、最终 `.config`、vendor module 与启动参数 |
+| GKI / vendor kernel | 内核镜像与模块随相应分区更新或 OTA 交付 | 实际 revision、最终 `.config`、模块与启动参数；核对设备分区布局 |
 | Vendor service / HAL | vendor 分区或厂商 OTA | 接口版本、SoC/固件、产品配置 |
 | 应用编译输入 | APK/AAB、DM、Profile | 安装来源、compiler filter、产物位置 |
 
-表里的载体也有几个术语要交代：OTA（Over-the-Air）指设备通过网络接收的系统更新，product overlay 是产品对平台资源或配置的覆盖；`boot`/`vendor_boot` 是启动相关分区，最终 `.config` 记录实际构建进内核的选项；APK 是 App 安装包，AAB 是供应用商店生成设备适配 APK 的 Android App Bundle；DM（Dex Metadata）和 Profile 为 ART 提供安装或编译输入，compiler filter 决定只做验证，还是采用不同强度的 AOT（Ahead-of-Time，运行前编译）。
+表里的载体也有几个术语要交代：OTA（Over-the-Air）指设备通过网络接收的系统更新，product overlay 是产品对平台资源或配置的覆盖；`boot` 通常承载内核，`vendor_boot` 承载 vendor ramdisk、DTB 等启动数据，模块还可能位于 `system_dlkm`/`vendor_dlkm`；具体依设备布局，最终 `.config` 记录实际构建进内核的选项；APK 是 App 安装包，AAB 是供应用商店生成设备适配 APK 的 Android App Bundle；DM（Dex Metadata）和 Profile 为 ART 提供安装或编译输入，compiler filter 决定只做验证，还是采用不同强度的 AOT（Ahead-of-Time，运行前编译）。
 
 再看版本轴本身：Android 17 的官方兼容矩阵包含多条受支持的 GKI 分支，光看大版本推不出设备内核版本；ART 又能作为 Mainline 模块独立更新，版本要单独读取。target SDK 37 只开启文档明确绑定 target 的行为，影响所有 Android 17 App 的变化还要查另一份行为变更清单。所以跨版本实验应把 OS、target、Mainline、kernel 和产品配置当作独立变量记录。
 
@@ -228,7 +228,7 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 #### 1. 定义用户动作和完成边界
 
-我们用可重复的动作描述问题，例如“点击图标到首个可交互页面”“触摸事件到对应帧 present（提交上屏）”“提交安装会话到包可启动”，并把起点和终点写进指标定义。CPU 利用率、函数耗时或某个 trace slice（轨迹中的一个时间区间） 都替代不了用户体感指标，它们只作辅助证据。
+我们用可重复的动作描述问题，例如“点击图标到首个可交互页面”“触摸事件到对应帧的 present feedback（显示栈呈现反馈）”“提交安装会话到包可启动”，并把起点和终点写进指标定义。若测触摸到发光，还需外部光学测量；present feedback 不等于面板像素已经完成响应。CPU 利用率、函数耗时或 trace slice（轨迹中的时间区间）只作阶段证据，不能替代所定义的端到端边界。
 
 #### 2. 保存可复现实验环境
 
@@ -240,7 +240,7 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 #### 4. 一次只改变一个主要变量
 
-平台、kernel、vendor、配置和 App 同时变化时，结果归因就乱了。能用 compat change、feature flag（运行时功能开关）、build flag（构建时开关） 或小补丁在同一设备上做 A/B 对照时，优先做改动前后成对比较的实验；实在隔离不了变量，报告就要相应降低结论强度。
+平台、kernel、vendor、配置和 App 同时变化时，结果归因就乱了。能用 compat change、feature flag（功能开关，是否可在运行时修改取决于实现）、build flag（构建时开关） 或小补丁在同一设备上做 A/B 对照时，优先做改动前后成对比较的实验；实在隔离不了变量，报告就要相应降低结论强度。
 
 #### 5. 同时检查副作用
 
@@ -361,7 +361,7 @@ Android 12 的性能相关变化集中在后台执行的可达性上，我们先
 
 #### 后台启动前台服务
 
-运行在 Android 12 及以上且 target 31 的 App，从后台启动前台服务时会受到限制，未命中官方豁免条件时 `startForegroundService()` 会抛出 `ForegroundService（无界面组件）StartNotAllowedException`。它改变的是后台采集、上传和周期维护任务的可达性，仅用“变慢”来描述会漏掉这层变化。
+运行在 Android 12 及以上且 target 31 的 App，从后台启动前台服务时会受到限制，未命中官方豁免条件时 `startForegroundService()` 会抛出 `ForegroundServiceStartNotAllowedException`。它改变的是后台采集、上传和周期维护任务的可达性，仅用“变慢”来描述会漏掉这层变化。
 
 迁移方案要按任务语义选择：
 
@@ -374,9 +374,9 @@ expedited work 是 WorkManager 中希望尽快执行、但会消耗系统配额�
 
 #### 精确闹钟
 
-target 31 的 App 使用精确闹钟时，需要声明 `SCHEDULE_EXACT_ALARM` 并检查特殊应用访问状态。周期遥测通常允许时间窗口，我们优先采用非精确闹钟或 WorkManager。只有业务语义要求精确触发时，才接受权限、配额和省电策略带来的成本。
+Android 12 上 target 31 及以上应用使用受保护的精确闹钟路径，应声明 `SCHEDULE_EXACT_ALARM` 并检查特殊访问授权或平台豁免。到 API 33 及以上，符合用途的闹钟/日历类应用还可按政策使用 `USE_EXACT_ALARM`。Android 14 起 `OnAlarmListener` 重载无需前一权限，但依赖活跃组件生命周期，不能代替进程退出后仍须交付的 `PendingIntent` 路径。周期遥测优先评估非精确闹钟或 WorkManager；精确触发只服务确有需要的用户可见功能。
 
-Android 14 又调整了新安装 App 的默认授权状态。所以我们排查闹钟延迟时，要同时记录安装来源、授权状态和目标版本。
+Android 14 对大多数新安装且 target 33 及以上、未命中豁免的应用，不再预授予 `SCHEDULE_EXACT_ALARM`；已有授权的系统升级与备份恢复也有不同结果。排查延迟时记录系统/target、所用重载、安装与恢复路径、授权及豁免状态。
 
 #### 通知跳板
 
@@ -409,7 +409,7 @@ ART 可以作为 Mainline 模块通过 Google Play 系统更新变化，设备�
 
 Android 13 优化了断字实现，官方文档给出的上限描述是“最多约 200%”。开发者可按排版质量与成本选择 `fullFast` 或 `normalFast` 两种快速断字频率。这个百分比来自平台说明，换一段文本、字体或语言就未必复现；正文排版性能还是要在目标语料上量。
 
-Choreographer（协调 UI 帧回调的系统类） 和 NDK（Native Development Kit，原生开发工具包）的 `ASurfaceControl` 在 Android 13 获得 FrameTimeline 相关能力，FrameTimeline 描述一帧预期与实际显示的时序。一个应用帧可能对应多个 timeline；Vsync ID 是垂直同步周期的标识，能把 App 侧帧工作与 SurfaceFlinger（系统显示合成服务）、显示流水线里的同一帧关联起来。我们排查卡顿时应以帧标识对齐各阶段，少用时间戳邻近关系去猜对应。
+Android 13 为 Choreographer（UI 帧回调协调类）和 NDK `ASurfaceControl` 增加公开帧时间线能力：应用可读取多个候选呈现时间及对应 deadline，再把选择传给 SurfaceFlinger。Vsync ID 用于关联相应应用帧与显示流水线记录，不是跨进程、跨显示器通用的唯一端到端帧号。Perfetto 的系统 FrameTimeline 早在 Android 12 已出现；API 33 的扩展不能写成整个机制首次出现。按进程、Surface/Layer 和 token 的作用域对齐记录，避免仅凭时间戳邻近猜对应。
 
 <!-- gracker-diagram: ch18-01-10-android13 -->
 ![Android 13 的权限、模块与帧关联](../../assets/diagrams/ch18/ch18-01-10-android13.png)
@@ -438,7 +438,7 @@ target 34 的 App 若在 `JobService.onStartJob()` 或 `onStopJob()` 里阻塞�
 
 #### 非线性字体缩放
 
-Android 14 将字体最大缩放提高到 200%，并采用非线性缩放：大字号文本增长更明显，已经较大的文本增长较缓。性能测试应同时检查布局重排、文本测量次数、截断和滚动范围，看到缩放后的布局抖动，先别直接判定是绘制器的问题。
+Android 14 支持最高 200% 的字体缩放，并采用非线性曲线：较小文字获得较大相对放大，原本较大的字号增长较缓，以免标题过大。不能用统一 `fontScale` 乘数还原所有 sp 到 px 的转换；使用平台转换 API，并在最大字体下检查布局、测量次数、截断和滚动范围，先定位排版与布局再归因绘制。
 
 <!-- gracker-diagram: ch18-01-11-android14 -->
 ![Android 14 生命周期与执行回调的边界](../../assets/diagrams/ch18/ch18-01-11-android14.png)
@@ -451,7 +451,7 @@ Android 15 交到我们手里的东西有两件：进程内 Profiling 把取数�
 
 #### ProfilingManager
 
-`ProfilingManager` 在 API 35 加入公开 SDK，App 通过 `requestProfiling()` 可以请求四种产物：Java heap dump（Java 堆中对象与引用的快照）、heap profile（按时间或调用栈统计分配）、stack sampling（定期抽样线程调用栈）和 system trace（系统运行轨迹），结果经监听器返回。要注意，只注册监听器并不会开始采集，调用方还必须显式调用 `requestProfiling()`，否则会一直等一个从未发起的结果。
+`ProfilingManager` 在 API 35 加入公开 SDK，`requestProfiling()` 可主动请求 Java heap dump、Native heap profile、stack sampling 或 system trace。Native heap profile 面向原生堆分配采样，不等同于 Java 对象堆快照。只注册结果 listener 不会开始采集，结果还受速率、设备与服务状态约束；独立产物也不会自动并入另一场 Perfetto 会话。
 
 它适合在用户同意、产品采样策略也允许的场景里取现场数据。系统仍会做速率限制，也可能拒绝请求，所以调用方要把“请求成功提交”“收到结果”“超时或失败”记成三种不同的状态。
 
@@ -499,7 +499,7 @@ Android 16 的主题是补全诊断信息：触发式 Profiling、启动组件�
 
 `ApplicationStartInfo.getStartComponent()` 在 API 36 加入，用于标识触发进程启动的组件类型。启动性能数据我们按 Activity、Service、BroadcastReceiver、ContentProvider（数据提供组件） 等入口分组，避免把不同启动原因混进同一组分位数。
 
-`FrameMetrics.FRAME_TIME（输入法）LINE_VSYNC_ID` 也在 API 36 提供，返回当前帧 timeline 的 Vsync ID，用来关联 HWUI（Android 的硬件加速 UI 渲染管线）、SurfaceFlinger（系统图形合成服务） 和 Perfetto（Android 系统性能追踪工具） 里的帧记录。设备或窗口条件不支持时，分析工具要保留缺失值。
+`FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 也在 API 36 提供，返回当前帧 timeline 的 Vsync ID，用来关联 HWUI（Android 的硬件加速 UI 渲染管线）、SurfaceFlinger（系统图形合成服务） 和 Perfetto（Android 系统性能追踪工具） 里的帧记录。设备或窗口条件不支持时，分析工具要保留缺失值。
 
 `JobScheduler.getPendingJobReasons()` 返回一个作业当前可能存在的多个等待原因，`getPendingJobReasonsHistory()` 返回近期的约束变化。约束包括 App 显式要求的网络、电量条件，也包括系统隐式施加的配额或待机限制。后台任务“没运行”时，我们先读约束历史，再查配额、网络、电量和待机状态，比只看一次当前状态更可靠。
 
@@ -507,7 +507,7 @@ Android 16 的主题是补全诊断信息：触发式 Profiling、启动组件�
 
 Android 16 在 `SystemHealthManager` 提供 CPU 和 GPU headroom API，headroom 是指定时间窗口内还能使用多少处理能力的估计值。返回值适合让画质、工作量或并发度逐步调整，但既当不了固定频率预算，也顶替不了 Thermal API（系统温度与热节流接口）。
 
-调用方需要遵守系统给出的最小查询间隔，处理设备不支持和无可用样本，并对连续读数做平滑。按单次读数立刻切换重负载档位，容易让工作量在两个档位间反复变化。
+调用方应读取 CPU/GPU 各自的最小查询间隔；API 不支持可抛 `UnsupportedOperationException`，暂时无有效样本可返回 `NaN`，两者与真实的零余量分别处理。合法 headroom 在 0～100，0 表示没有更多资源可授予。对连续读数平滑并设滞回和静态回退，避免根据一个读数反复切换重负载档位。
 
 <!-- gracker-diagram: ch18-01-14-android16-diagnostics -->
 ![Android 16 的诊断 API 各回答什么](../../assets/diagrams/ch18/ch18-01-14-android16-diagnostics.png)
@@ -559,13 +559,13 @@ Android 17 发布的 ART Concurrent Mark-Compact（并发标记压缩，下文�
 
 Android 17 扩充系统触发式 Profiling，新增的 `ProfilingTrigger` 覆盖冷启动、OOM（Out of Memory，内存耗尽）、异常 CPU 占用、平台识别的异常行为和未来版本兼容问题，各触发类型对应的产物在后文「ProfilingManager」一节列出。
 
-冷启动采集持续到 App 调用 `Activity.reportFullyDrawn()`，默认上限为 5 秒，并使用 discard buffer：缓冲区写满后丢弃新事件，从而保留较早的启动轨迹。未调用 `reportFullyDrawn()` 会失去业务就绪的分界点，只能靠超时停止。
+冷启动 trigger 会尽早开始采集，但开始前仍可能有延迟，不能保证覆盖进程创建和最早的启动事件。采集持续到 `reportFullyDrawn()`，未调用时默认 5 秒停止；discard buffer 满后丢新事件，保留的是采集开始后已捕获的较早事件。未上报业务就绪时只能靠超时收尾。
 
 OOM 触发要求自定义 `Thread.UncaughtExceptionHandler` 调用默认异常处理器。若异常链被截断，系统触发就走不完，App 只能另行调用 `requestProfiling()` 请求 heap dump。
 
 #### App 内存限制
 
-Android 17 对所有 App 引入按设备总 RAM 设定的保守内存限制，具体是否实施因设备而异。命中限制后，`ApplicationExitInfo` 的 reason 为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap（AnonSwap 指匿名内存及其交换空间口径）`。只按 reason 聚合会把它和其他 `REASON_OTHER` 混在一起，排查时要认准这个标记；查看状态、复现限制和抓取 heap dump 的具体命令见后文「运行在 Android 17 时还要检查的项目」。
+Android 17 对所有 App 引入按设备总 RAM 设定的保守内存限制，具体是否实施因设备而异。命中限制后，`ApplicationExitInfo` 的 reason 为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap`（AnonSwap 是该限制器的匿名内存与 swap 计量口径）。只按 reason 聚合会把它和其他 `REASON_OTHER` 混在一起，排查时要认准这个标记；查看状态、复现限制和抓取 heap dump 的具体命令见后文「运行在 Android 17 时还要检查的项目」。
 
 #### Android 17 的 NPU 与 NNAPI 边界
 
@@ -582,17 +582,17 @@ NNAPI（Neural Networks API）的 NDK App 接口从 Android 15 起已废弃，NN
 
 ### 新增性能 API 的演进脉络
 
-| API | 加入版本 | 用途 | 使用边界 |
+| API | <span style="white-space:nowrap">加入版本</span> | 用途 | 使用边界 |
 | --- | --- | --- | --- |
-| `PerformanceHintManager` | API 31 | 线程组工作时长提示 | 提示不等于频点命令 |
-| FrameTimeline / Vsync ID 能力 | API 33 起扩展 | 跨渲染阶段关联帧 | 以设备和具体 API 可用性为准 |
-| `ProfilingManager.requestProfiling()` | API 35 | App 主动请求 profile | 有速率限制，注册监听器不会发起采集 |
-| `ApplicationStartInfo` | API 35 | 结构化启动信息 | 时间点和字段可能缺失 |
-| `Session.setPreferPowerEfficiency()` | API 35 | 表达功耗优先偏好 | 由系统决定响应 |
-| `ProfilingManager.addProfilingTriggers()` | API 36 | 注册系统事件采集 | 触发类型跨 36、36.1、37 扩展 |
-| `FRAME_TIMELINE_VSYNC_ID` | API 36 | 关联窗口帧与系统帧 | 缺失时保留 unknown（未知）值 |
-| CPU/GPU headroom | API 36 | 估计资源余量 | 设备可选，限制查询频率 |
-| Android 17 新 ProfilingTrigger | API 37 | 冷启动、OOM、异常 CPU 等现场数据 | 受事件条件和速率限制 |
+| <code>Performance<wbr>Hint<wbr>Manager</code> | <span style="white-space:nowrap">API 31</span> | 线程组工作时长提示 | 提示不等于频点命令 |
+| FrameTimeline / Vsync ID 能力 | <span style="white-space:nowrap">API 33 起扩展</span> | 跨渲染阶段关联帧 | 以设备和具体 API 可用性为准 |
+| <code>Profiling<wbr>Manager.<wbr>request<wbr>Profiling()</code> | <span style="white-space:nowrap">API 35</span> | App 主动请求 profile | 有速率限制，注册监听器不会发起采集 |
+| <code>Application<wbr>Start<wbr>Info</code> | <span style="white-space:nowrap">API 35</span> | 结构化启动信息 | 时间点和字段可能缺失 |
+| <code>Session.<wbr>set<wbr>Prefer<wbr>Power<wbr>Efficiency()</code> | <span style="white-space:nowrap">API 35</span> | 表达功耗优先偏好 | 由系统决定响应 |
+| <code>Profiling<wbr>Manager.<wbr>add<wbr>Profiling<wbr>Triggers()</code> | <span style="white-space:nowrap">API 36</span> | 注册系统事件采集 | 触发类型跨 36、36.1、37 扩展 |
+| <code>FRAME_<wbr>TIMELINE_<wbr>VSYNC_<wbr>ID</code> | <span style="white-space:nowrap">API 36</span> | 关联窗口帧与系统帧 | 缺失时保留 unknown（未知）值 |
+| CPU/GPU headroom | <span style="white-space:nowrap">API 36</span> | 估计资源余量 | 设备可选，限制查询频率 |
+| Android 17 新 ProfilingTrigger | <span style="white-space:nowrap">API 37</span> | 冷启动、OOM、异常 CPU 等现场数据 | 受事件条件和速率限制 |
 
 API 级别检查只解决符号可用性。设备能力、服务是否存在、权限、配额和厂商实现仍要单独探测。
 
@@ -619,7 +619,7 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 
 `windowOptOutEdgeToEdgeEnforcement` 在 target 36 且运行 Android 16 时已经失效，替代路径是完整处理窗口 insets。`elegantTextHeight` 也在 target 36 时被忽略；受影响文字系统需要重新验证字形高度、基线、行距和裁切。
 
-废弃标记只说明 API 不会立刻消失。迁移顺序应由目标版本行为、调用频率、故障风险和替代方案成熟度共同决定。
+废弃标记表示该接口不再推荐继续依赖；是否仍有效、已成 no-op 或抛错，要逐项查目标版本契约。迁移顺序由 target 行为、调用频率、故障风险和替代方案成熟度决定，不能从“尚能编译”推断仍保留旧行为。
 
 ### targetSdkVersion 升级检查表
 
@@ -649,7 +649,7 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 
 #### target 36
 
-- 在 600dp 及以上窗口测试 resize、旋转、多窗口和状态恢复。
+- 在显示配置最小宽度至少 600dp 的设备上覆盖 resize、旋转、多窗口和状态恢复；当前窗口宽度不单独决定该平台门槛。
 - 迁移预测性返回，覆盖 back-to-home、跨任务和跨 Activity。
 - 删除对 edge-to-edge 退出属性和 `elegantTextHeight` 的依赖。
 - 检查 fixed-rate 定期任务是否依赖恢复后连续补跑。
@@ -681,13 +681,13 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 - ProfilingManager 生成独立的 profile 产物，别假设它会自动出现在当前 Perfetto 会话里。
 - 前台服务配额、权限拒绝和 JobScheduler 等待原因要结合 `dumpsys`、API 返回和系统日志，trace 只覆盖其中一部分。
 
-一次可复核的跨版本实验要固定 APK、数据集、操作序列、设备温度和电源条件，并记录 OS build fingerprint（标识具体系统构建的一组属性）、target、ART/Mainline 模块、页大小和内核版本。Android 17 的内核字段若是 6.18，还要记录精确 tag，核对标签就是 `android17-6.18-2026-06_r6`。
-
+一次跨版本实验固定 APK、数据集、操作、温度与电源条件，记录实际 OS build fingerprint、target、ART/Mainline、页大小和内核构建。本文内核分析快照是 `android17-6.18-2026-06_r6`，设备若运行另一 revision，应记录并比对差异；不能要求所有 6.18 设备都与该标签一致。
 
 <!-- gracker-diagram: ch18-01-19-trace-evidence -->
 ![Perfetto 与平台诊断数据相互补证](../../assets/diagrams/ch18/ch18-01-19-trace-evidence.png)
 
 图：队列、GC、帧、Job 与权限分别匹配其可观测证据，再对齐实验版本轴。 没有对应 slice 不等于功能未启用；独立 profiling 产物也不自动加入当前会话。
+
 
 ## Android 17 行为、开关与适配验证
 
@@ -699,10 +699,10 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 
 | 类别 | 触发条件 | 涉及项目 |
 |:---|:---|:---|
-| target SDK 行为 | Android 17 上运行且 `targetSdkVersion >= 37` | 新 `MessageQueue`、`static final` 写保护、ECH、CT、原生动态加载、局域网权限、大屏约束 |
-| Android 17 平台行为 | 运行在 Android 17；文档未声明 target SDK 门槛 | 部分设备的 app memory limits、后台音频基础限制、特定配置变化不再重建 Activity |
-| API 与运行时能力 | API 37 或 Android 17 的系统组件提供能力 | `ProfilingTrigger`、`JobScheduler.getPendingJobReasonStats()`、ART 分代 CMC |
-| 延续性兼容要求 | 早于 Android 17 已出现，升级时仍需满足 | 16KB 页面大小 |
+| <span style="white-space:nowrap">target SDK</span><br><span style="white-space:nowrap">行为</span> | Android 17 上运行且 <code>target<wbr>Sdk<wbr>Version >= 37</code> | 新 <code>Message<wbr>Queue</code>、<code>static final</code> 写保护、ECH、CT、原生动态加载、局域网权限、大屏约束 |
+| <span style="white-space:nowrap">Android 17</span><br><span style="white-space:nowrap">平台行为</span> | 运行在 Android 17；文档未声明 target SDK 门槛 | 部分设备的 app memory limits、后台音频基础限制、特定配置变化不再重建 Activity |
+| <span style="white-space:nowrap">API 与</span><br><span style="white-space:nowrap">运行时能力</span> | API 37 或 Android 17 的系统组件提供能力 | <code>Profiling<wbr>Trigger</code>、<code>Job<wbr>Scheduler.<wbr>get<wbr>Pending<wbr>Job<wbr>Reason<wbr>Stats()</code>、ART 分代 CMC |
+| <span style="white-space:nowrap">延续性</span><br><span style="white-space:nowrap">兼容要求</span> | 早于 Android 17 已出现，升级时仍需满足 | 16KB 页面大小 |
 
 这四类变化的验证方法也不同：行为开关要做兼容性 A/B，也就是在同一应用上分别启用和关闭开关；公开 API 要检查返回值范围；ART 与图形实现要读 trace；16KB 要检查每个 ELF（Executable and Linkable Format，原生可执行文件和共享库格式） 及其打包对齐。
 
@@ -729,18 +729,7 @@ Android 17 对 target SDK 37 及以上应用启用新的 lock-free `MessageQueue
 
 官方把这套设计称为 DeliQueue。下图只表达职责分离：producer 指投递消息的线程，consumer 指取出消息的 Looper 线程；图中出现的名称在 r1 里未必有同名 Java 类。
 
-```text
-background producer threads
-      │  VarHandle CAS
-      ▼
-Treiber-style StackNode 链
-      │  Looper 调用 nextMessage() 时 drain
-      ▼
-普通消息有序集合 + 异步消息有序集合
-      │  when / insertSeq
-      ▼
-Looper 选择可交付消息
-```
+具体数据流见下图；图中另标出 Looper 自投递的直接写入路径。
 
 后台 producer 通过 CAS（compare-and-set，比较并交换）把消息压入 Treiber stack——一种用 CAS 更新栈顶的无锁链栈。Looper 端把栈中的一批节点 drain 到有序集合，再按投递时间和序号选择消息；Looper 线程给自己的队列投递时，另有直接写入有序集合的快速路径。同步屏障是队列中的特殊标记，可让异步消息越过暂时被拦住的普通消息，因此仍会影响两类消息的选择。
 
@@ -751,7 +740,7 @@ Android Developers Blog 用 “Treiber stack + single-threaded min-heap” 解�
 `android-17.0.0_r1` 的 Java 源码组织与早期说明不同：
 
 - `StackNode`、`MessageNode`、`StateNode`、`QuittingNode` 是 `MessageQueue.java` 的嵌套类。
-- `VarHandle` 是 Java 提供的底层变量访问句柄，源码用 `sState` 对 `mStateValue` 做原子读写。成功的 CAS 决定本次入队何时生效，这个瞬间就是并发语义中的线性化点；CAS 失败的线程重读状态后重试。
+- `VarHandle` 是 Java 提供的底层变量访问句柄，源码用 `sState` 对 `mStateValue` 做原子读写。跨线程入队的成功 CAS 将节点发布到并发栈；失败者重读后重试。同一 `when` 的顺序另由预先分配的 `insertSeq` 决定，不能把 CAS 完成先后直接当成交付 FIFO。
 - Looper 线程自身入队时直接调用 `insertIntoPriorityQueue()`；其他线程走并发栈。
 - drain 后的普通消息与异步消息分别存入两个 `ConcurrentSkipListSet<Message>`：`mPriorityQueue` 和 `mAsyncPriorityQueue`。该类型是基于 skip list（跳表）的并发有序集合。
 - 同一 `when` 下用 `insertSeq` 保持顺序；`sendMessageAtFrontOfQueue()` 使用递减序号维持队首投递语义。
@@ -782,7 +771,7 @@ drain 是批量转移点，也是看 trace 时的分界线：producer 的 CAS �
 
 为维持二进制兼容，Android 17 仍保留 `mMessages` 字段，并发实现启用时该字段恒为 `null`。字段存在归存在，旧链表此时已经不在工作了。
 
-官方给出的测试库基线是 Espresso 3.7.0 及以上、Robolectric 4.17 及以上。Robolectric 测试还要从 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`；自研空闲判断改用公开同步机制，或使用 Android 16 引入的 `TestLooperManager` 能力。
+官方给出的测试库基线是 Espresso 3.7.0 及以上、Robolectric 4.17 及以上。Robolectric 测试还要从 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`；自研空闲判断改用公开同步机制，或在 instrumentation 测试中通过 `Instrumentation.acquireLooperManager()` 使用 `TestLooperManager`。该类始于 API 26；API 36 新增 `poll()`、`peekWhen()` 和 `isBlockedOnSyncBarrier()` 等能力，不是 Android 16 才出现整类。
 
 以下命令用于在可调试应用上做同包 A/B。
 
@@ -854,31 +843,36 @@ ART 在 Android 10 已有分代 Concurrent Copying（CC，并发复制）回收�
 
 #### Generational CMC 的启用门槛
 
-下面的等价表达式用于说明 `android-17.0.0_r1` 的启用关系，变量名与源码一致。
+下面是合并 `runtime.cc` 与 `mark_compact.cc` 判断关系的可编译示意；参数使用简化名称，不是逐行源码摘录。
 
 ```cpp
-use_generational_gc =
-    (kUseBakerReadBarrier || gUseUserfaultfd)
-    && xgc_option.generational_gc
-    && ShouldUseGenerationalGC();
-
-if (gUseUserfaultfd && !flags::use_generational_cmc()) {
-    return false;
+// Schematic: combines runtime.cc and mark_compact.cc, not a source excerpt.
+bool shouldUseGenerationalGC(bool useUffd, bool generationalCmcFlag,
+                             bool propertyEnabled) {
+    if (useUffd && !generationalCmcFlag) return false;
+    return propertyEnabled; // Android property default: true
 }
-return GetBoolProperty(
-    "persist.device_config.runtime_native_boot.use_generational_gc", true);
+
+bool useGenerationalGC(bool bakerReadBarrier, bool useUffd,
+                       bool gcOptionEnabled, bool generationalCmcFlag,
+                       bool propertyEnabled) {
+    return (bakerReadBarrier || useUffd)
+        && gcOptionEnabled
+        && shouldUseGenerationalGC(useUffd, generationalCmcFlag,
+                                   propertyEnabled);
+}
 ```
 
-顶层是三项 AND：可兼容的 read barrier（对象引用读取屏障）或 userfaultfd 路径、运行时 GC 选项、`ShouldUseGenerationalGC()`。`use_generational_cmc` 只在 `gUseUserfaultfd` 为真时形成额外门槛；device-config 系统属性的默认值是 `true`，所以 `device_config get` 返回空值，据此判断功能已关闭并不可靠。
-
-应用这边别去修改 ART 的 device-config，也别假定所有 Android 17 设备用同一个 collector：OEM 配置、ART Mainline 和运行时选项都可能改变选择，而且 Android 17 的 ART 改进还能通过 Google Play 系统更新覆盖到 Android 12 及以上版本。
-
-验证时我们以目标进程的 GC 事件、暂停分布、分配速率和 RSS 为依据。对同一测试负载，对比 young/full collection 次数、GC CPU 时间、mutator stall（应用线程因 GC 停顿的时间）与峰值 RSS，比只查一个属性更可靠。需要展开回收器与暂停分析时，参阅 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)。
+顶层是三项 AND：Baker read barrier 或 userfaultfd 路径、GC 选项、`ShouldUseGenerationalGC()` 的结果。userfaultfd 为真时还要求 `use_generational_cmc` flag；`persist.device_config.runtime_native_boot.use_generational_gc` 默认 true。属性未设置不表示关闭，返回 true 也不能单独证明最终选择了 CMC，仍须核对 collector 与设备事件。
 
 <!-- gracker-diagram: ch18-01-24-gc-gates -->
 ![分代回收的三项顶层门槛与 CMC 附加条件](../../assets/diagrams/ch18/ch18-01-24-gc-gates.png)
 
 图：Baker 或 userfaultfd、GC 选项和 ShouldUseGenerationalGC 三项共同决定分代资格。 userfaultfd 路径还需 CMC flag 与默认 true 的属性；资格为真不能独立证明进程选中了 CMC。
+
+应用这边别去修改 ART 的 device-config，也别假定所有 Android 17 设备用同一个 collector：OEM 配置、ART Mainline 和运行时选项都可能改变选择，而且 Android 17 的 ART 改进还能通过 Google Play 系统更新覆盖到 Android 12 及以上版本。
+
+验证时我们以目标进程的 GC 事件、暂停分布、分配速率和 RSS 为依据。对同一测试负载，对比 young/full collection 次数、GC CPU 时间、mutator stall（应用线程因 GC 停顿的时间）与峰值 RSS，比只查一个属性更可靠。需要展开回收器与暂停分析时，参阅 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)。
 
 ### ProfilingManager：系统事件提供采集时机
 
@@ -888,36 +882,40 @@ Android 17 为 `ProfilingManager` 增加多种系统 trigger，也就是由特�
 
 | trigger | 触发条件 | API 37 定义的产物或边界 |
 |:---|:---|:---|
-| `TRIGGER_TYPE_COLD_START` | `ApplicationStartInfo.START_TYPE_COLD` | 新启动的 system trace（系统级 Perfetto 轨迹）+ stack sampling（调用栈采样）；持续到 `reportFullyDrawn()`，未调用时默认 5 秒停止 |
-| `TRIGGER_TYPE_OOM` | 未捕获 `OutOfMemoryError` | Java heap dump（堆转储）；自定义 uncaught handler（未捕获异常处理器）必须继续调用默认 handler |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | 进程因过量 CPU 被杀，exit reason 为 `REASON_EXCESSIVE_RESOURCE_USAGE` | 正在运行的 system trace 快照 |
-| `TRIGGER_TYPE_ANOMALY` | 系统识别到资源或性能异常 | 产物随 anomaly 类型变化，`ProfilingResult.getTag()` 提供类型信息 |
-| `TRIGGER_TYPE_APP_COMPAT` | 系统识别到未来版本将不支持的行为 | 产物随问题变化，tag 提供兼容问题信息 |
+| <code>TRIGGER_<wbr>TYPE_<wbr>COLD_<wbr>START</code> | <code>Application<wbr>Start<wbr>Info.<wbr>START_<wbr>TYPE_<wbr>COLD</code> | 新启动 system trace + stack sampling；采集可能延迟开始，至 <code>report<wbr>Fully<wbr>Drawn()</code> 或默认 5 秒超时 |
+| <code>TRIGGER_<wbr>TYPE_<wbr>OOM</code> | 未捕获 <code>Out<wbr>Of<wbr>Memory<wbr>Error</code> | Java heap dump（堆转储）；自定义 uncaught handler（未捕获异常处理器）必须继续调用默认 handler |
+| <code>TRIGGER_<wbr>TYPE_<wbr>KILL_<wbr>EXCESSIVE_<wbr>CPU_<wbr>USAGE</code> | 进程因过量 CPU 被杀，exit reason 为 <code>REASON_<wbr>EXCESSIVE_<wbr>RESOURCE_<wbr>USAGE</code> | 正在运行的 system trace 快照 |
+| <code>TRIGGER_<wbr>TYPE_<wbr>ANOMALY</code> | 系统识别到资源或性能异常 | 产物随 anomaly 类型变化，<code>Profiling<wbr>Result.<wbr>get<wbr>Tag()</code> 提供类型信息 |
+| <code>TRIGGER_<wbr>TYPE_<wbr>APP_<wbr>COMPAT</code> | 系统识别到未来版本将不支持的行为 | 产物随问题变化，tag 提供兼容问题信息 |
 
 `TRIGGER_TYPE_ANOMALY` 注册在 shared UID 场景时，部分异常可能不给产物；shared UID 指多个 package 共用同一个 Linux 用户 ID。OOM trigger 若被自定义 uncaught handler 截断，也不会完成预期 heap dump。接入阶段必须测试这些失败分支。
 
-下面的示例展示最小注册顺序，重点是先注册全局 listener（监听器），再添加 trigger。
+下面的代码置于应用初始化方法，示意先注册全局 listener，再添加 trigger。`profilingExecutor` 由进程统一持有，负责有限、非阻塞的回调调度；成功/失败处理函数由应用实现，重型解析和上传进入有界后台工作。注册冷启动规则不保证补采本次启动早段，也不能假设进程初始化之前已完成注册。
 
 ```java
 if (Build.VERSION.SDK_INT >= 37) {
-    ProfilingManager profiling =
-            getSystemService(ProfilingManager.class);
+    ProfilingManager profiling = getSystemService(ProfilingManager.class);
+    if (profiling != null) {
+        profiling.registerForAllProfilingResults(
+                profilingExecutor,
+                result -> {
+                    if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
+                        handleProfilingResult(result);
+                    } else {
+                        handleProfilingFailure(result);
+                    }
+                });
 
-    profiling.registerForAllProfilingResults(
-            getMainExecutor(),
-            result -> handleProfilingResult(result));
-
-    ProfilingTrigger coldStart =
-            new ProfilingTrigger.Builder(
-                    ProfilingTrigger.TRIGGER_TYPE_COLD_START)
-                    .setRateLimitingPeriodHours(24)
-                    .build();
-
-    profiling.addProfilingTriggers(List.of(coldStart));
+        ProfilingTrigger coldStart =
+                new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_COLD_START)
+                        .setRateLimitingPeriodHours(24)
+                        .build();
+        profiling.addProfilingTriggers(List.of(coldStart));
+    }
 }
 ```
 
-`setRateLimitingPeriodHours(24)` 是应用提出的最短间隔，系统仍可延后或不交付。回调中要先检查 `getErrorCode()`，成功后再读取 `getResultFilePath()`、`getTriggerType()` 与 `getTag()`；系统 trigger 的结果只交给全局 listener。
+`setRateLimitingPeriodHours(24)` 表达应用的最短采集间隔，系统仍可能更严格或无产物。规则按进程注册，结果交给全局 listener；回调仅在 `ERROR_NONE` 时读取文件路径，并根据 trigger/tag 分型，失败与超时另记状态。不要把空路径当成功，也不要因注册成功就宣称每次事件都有产物。
 
 把 trigger 当作线上证据入口，不要把它写成常驻采样器。产物可能包含堆对象、调用栈和业务标识，上传与保留策略要遵守隐私、权限和数据最小化要求。完整使用方式参阅 [15.7 ProfilingManager](../../part3-tools/ch15-other-tools/07-profiling-manager.md)。
 
@@ -932,13 +930,13 @@ API 36 已能查到当前 pending reasons（任务暂时执行不了的原因）
 
 `Map<Integer, Duration> JobScheduler.getPendingJobReasonStats(int jobId)`
 
-返回值把 `PENDING_JOB_REASON_*` 映射到该 job 从调度到结束的生命周期内，因该原因 pending 的累计时长。多个原因可能同时成立，各项 `Duration` 之和常会超过总等待时间。
+返回值把 `PENDING_JOB_REASON_*` 映射到该 job 在当前记录生命周期内，因该原因 pending 的累计时长。多个原因可能同时成立，各项 `Duration` 之和常会超过总等待时间。
 
 这些统计不跨重启持久化；job 成功完成或取消时也会清空。传入的 ID 若不是当前 pending job，API 会抛出 `IllegalArgumentException`。诊断顺序我们按“当前 reasons → history → stats”推进：
 
 - current reasons 回答此刻卡在哪里。
 - history 回答约束在何时变化。
-- stats 回答长期占比最高的约束；wall time 也就是实际流逝的等待时间，要另行读取，把各项相加算不出它。
+- stats 比较各原因累计阻塞时长；若要算占比，另取同口径 wall time（实际流逝的等待时间）。原因可重叠，各项占比不必合计 100%，把 Duration 相加也算不出 wall time。
 
 WorkManager 场景还要建立 `WorkSpec` 与系统 job ID 的映射；`WorkSpec` 是 WorkManager 保存的一条内部任务记录。否则，拿错 job ID 会把调度问题变成数据对齐问题。后台调度机制参阅 [5.3 后台执行、任务调度与 App Hibernation](../../part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md)。
 
@@ -980,7 +978,7 @@ target SDK 37 应用运行在 smallest width（配置中的最小可用宽度）
 
 大屏约束由 target SDK 37 触发，下面的 Activity 重建优化则是另一类 Android 17 平台默认规则。官方运行时配置指南没有为它声明 target SDK 门槛：keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及进出 desk UI mode 时，系统默认不再销毁重建 Activity，而是保留实例并调用 `onConfigurationChanged()`。
 
-`android-17.0.0_r1` 的 `attrs_manifest.xml` 允许 `android:recreateOnConfigChanges` 使用 touchscreen、keyboard、keyboardHidden、navigation、colorMode，以及 Android 8 已有的 mcc、mnc（移动国家码与移动网络码）；往 `android:configChanges` 里写同一个标志是行不通的。
+`android-17.0.0_r1` 的 `attrs_manifest.xml` 允许 `android:recreateOnConfigChanges` 使用 touchscreen、keyboard、keyboardHidden、navigation、colorMode，以及 Android 8 已有的 mcc、mnc（移动国家码与移动网络码）；仅写入 `android:configChanges` 不能恢复重建；同一标志若同时出现在两属性中，`configChanges` 的自行处理语义优先，仍不会重建。
 
 该属性没有 `uiMode` 取值，因此进出 desk UI mode（桌面停靠模式）时要由应用更新资源和组件。下面的示例只为确有重建依赖的五类 Android 17 事件恢复旧行为。
 
@@ -990,7 +988,7 @@ target SDK 37 应用运行在 smallest width（配置中的最小可用宽度）
     android:recreateOnConfigChanges="keyboard|keyboardHidden|navigation|colorMode|touchscreen" />
 ```
 
-这五类事件发生时，该属性会让 Activity 执行完整的 stop、destroy、recreate 周期。没有重建依赖时，应在 `onConfigurationChanged()` 中更新非 Compose 状态与嵌入组件；Compose 中读取 `LocalConfiguration.current` 的部分会重组，`AndroidView`、`AndroidFragment` 等嵌入对象仍需应用自行刷新。
+这五类事件发生且没有在 `configChanges` 声明自行处理时，该属性恢复完整的 stop、destroy、recreate 周期。没有重建依赖时，应在 `onConfigurationChanged()` 中更新非 Compose 状态与嵌入组件；Compose 中读取 `LocalConfiguration.current` 的部分会重组，`AndroidView`、`AndroidFragment` 等嵌入对象仍需应用自行刷新。
 
 <!-- gracker-diagram: ch18-01-28-configuration -->
 ![大屏约束与配置变化重建的不同条件](../../assets/diagrams/ch18/ch18-01-28-configuration.png)
@@ -999,9 +997,9 @@ target SDK 37 应用运行在 smallest width（配置中的最小可用宽度）
 
 #### Network Security Configuration、ECH 与 CT
 
-Android 17 计划在未来版本弃用 manifest 级 `usesCleartextTraffic`，当前版本尚未删除该属性。Network Security Configuration 是声明式 XML 配置，可把仍需保留的 HTTP 例外限制到具体域名。若 `minSdkVersion >= 24`，可只使用这份配置；若最低支持版本低于 24，官方建议同时保留 `usesCleartextTraffic="true"` 和网络安全配置文件。
+Android 17 尚未删除 manifest 的 `usesCleartextTraffic`；当前官方清单文档说明它将对 target 38 及以上忽略。Android 7.0/API 24 起优先用 Network Security Configuration 按域名配置明文例外，并在 manifest 指向该 XML。仍支持更早系统时还需为旧系统设置合适的 `usesCleartextTraffic` 值；不是一律设 true，取决于产品是否允许明文。升级验证同时固定 OS、target 与实际网络库是否遵循该策略。
 
-对 target SDK 37 应用，Android 17 为 TLS 连接启用 Encrypted Client Hello（ECH），用来加密 ClientHello 中的 SNI（Server Name Indication，服务器名称指示）。生效还要求应用的网络库已接入 ECH、服务端也支持协商；协商不成功时客户端发送 ECH GREASE，即带随机内容的占位扩展，以减少中间网络设备对固定握手格式的依赖。
+Android 17 为 target 37 及以上应用默认启用 ECH 配置模式。ECH 加密 ClientHello 的敏感字段（包括真实 SNI），但只有接入 ECH 的网络库才遵循该配置；有可用 ECH 配置时尝试真实 ECH，没有配置时发送 GREASE 占位扩展。不能把任何协商失败都概括成自动退回 GREASE，失败与重试细节由协议、库和服务端共同决定。
 
 Network Security Configuration 新增 `<domainEncryption>`，可在 `<base-config>` 或 `<domain-config>` 中按全局或域名设置 `enabled`、`disabled` 等模式。
 
@@ -1016,7 +1014,7 @@ Network Security Configuration 新增 `<domainEncryption>`，可在 `<base-confi
 </network-security-config>
 ```
 
-`enabled` 表示客户端拿到 ECH 配置时启用 ECH，拿不到时发送 ECH GREASE；它没有提供 fail-closed 语义，也就是不会因服务端缺少 ECH 支持而直接拒绝连接。平台支持、客户端库接入、携带 ECH 配置的 DNS HTTPS 记录和服务端部署都会影响协商。排障要记录网络库版本、DNS 结果和 TLS handshake，不要给 ECH 写固定时延收益。
+`enabled` 表示有 ECH 配置时使用 ECH，无配置时允许 GREASE；因此该模式本身不承诺每次连接都加密真实 SNI。平台、客户端库、DNS HTTPS 记录和服务端部署都影响实际结果。有配置后的服务端拒绝、重试或失败应按网络库与 TLS 日志排查，不能从该 XML 独自推出统一回退方式或固定时延收益。
 
 target SDK 37 应用还会默认启用 Certificate Transparency（CT，证书透明度）。网络栈按 Network Security Configuration 执行 CT 时，证书链或 SCT（Signed Certificate Timestamp，证书已记入日志的签名凭据）不满足策略会使 TLS 连接失败。
 
@@ -1102,7 +1100,7 @@ target SDK 37 应用在后台还有一层要求：foreground service（前台服
 
 target SDK 37 后，Android 14 对 DEX/JAR 的 Safer Dynamic Code Loading 保护扩展到 native library。经 `System.load()` 加载的 native 文件必须为只读，否则抛出 `UnsatisfiedLinkError`。
 
-优先移除网络下载并执行 native code 的设计。确有动态加载需求时，文件应位于应用私有目录，完成来源与签名或散列校验，并在 `System.load()` 前设置只读。更新时写入独立临时文件，关闭写句柄并校验，设置只读后再原子替换；不要在已加载路径上边写边执行。只读标志满足平台加载检查，签名或散列才用于确认文件来源和内容。
+优先避免下载并执行 native code。确需动态加载时，在私有目录创建独立文件，检查写入/关闭错误、验证可信签名或已认证的期望 hash，并在 `System.load()` 前设为只读。hash 若与文件一起来自不可信来源，不能证明身份。替换使用独立版本与受控名称切换，不覆盖正在加载/执行的文件；还要防止并发写句柄和路径替换。只读属性满足加载检查，不保证文件今后无法被同 UID 改写。
 
 <!-- gracker-diagram: ch18-01-34-native-load -->
 ![原生动态加载的来源、写权限与替换顺序](../../assets/diagrams/ch18/ch18-01-34-native-load.png)
@@ -1117,8 +1115,8 @@ target SDK 37 后，Android 14 对 DEX/JAR 的 Safer Dynamic Code Loading 保护
 
 - `onWaitForBufferRelease(durationNanos)` 在等待超过上一帧间隔一半时设置 stuffed 状态。
 - `updateBufferStuffingState()` 可能选择 `DELAY_FRAME`，主动等下一次 vsync（垂直同步信号）给 buffer queue 回落机会。
-- recovery 进行中可选择 `OFFSET`，把动画时间线向前偏移一个 frame interval，也就是一次垂直同步周期。
-- 多次 recovery 与最长累计延迟受 feature flag 控制；r1 常量 `MAX_BUFFER_STUFFING_DELAY_NS` 为 100ms。
+- recovery 中可选择 `OFFSET`，把动画计算时间戳减去一个 frame interval，即按前一个垂直同步周期的时刻计算。
+- 多次 recovery 与累计阈值由不同 feature flag 控制；r1 的 `MAX_BUFFER_STUFFING_DELAY_NS` 为 100ms，按追加前的累计值决定是否再延迟一帧，最后一次追加可能跨过阈值，并非精确总延迟上限。
 - trace 中可出现 `Buffer stuffing recovery`、`buffer stuffed` 和记录负偏移量的事件。
 
 `onWaitForBufferRelease()` 是隐藏接口，应用别把它当自定义调度 API。看到 recovery slice（trace 中带持续时间的事件片段）时，应继续查看 `dequeueBuffer` 等待、SurfaceFlinger、GPU completion、buffer 数量与主线程产出速率。recovery 是缓解 buffer stuffing 的时序策略，也可能主动延迟一帧；根因是否消失，要从这些证据另行确认。
@@ -1162,17 +1160,17 @@ DeliQueue 处理 Java 消息投递争用，Buffer Stuffing Recovery 处理图形
 
 系统与内核的分工参阅 [18.3 Android 17 Kernel 6.18 与 ARM64 安全开销](03-android17-kernel-arm64-security.md)，其中内核版本固定为 `android17-6.18-2026-06_r6`。这是 18.3 为复现实验固定的快照标签，后续发布序列已有更新；API 行为由 kernel tag 单独推导不出来。
 
-
 <!-- gracker-diagram: ch18-01-36-final-acceptance -->
 ![迁移和性能回归按证据轨道分别验收](../../assets/diagrams/ch18/ch18-01-36-final-acceptance.png)
 
 图：迁移先覆盖契约与失败分支，再分别对齐队列、GC、图形、网络和调度证据。 固定分析快照与设备现场分开；官方收益百分比、单一开关或平均帧时间不能替代本场景验收。
 
+
 ## 常见误区
 
 ### “只升级 compileSdk，不改 target，不会影响性能”
 
-compileSdk 只决定编译时可见 API。运行在新系统上的所有 App 变更仍会生效，例如 Android 14 的 cached 进程资源管理和 Android 17 部分设备的内存限制。
+`compileSdk` 决定编译时平台 API/资源可见范围；只有在最终 APK、依赖和其他输入可比时，才讨论它是否单独改变运行结果。即使 target 不变，新系统的所有 App 变更仍可能生效，例如 Android 14 cached 进程管理和 Android 17 部分设备内存限制。
 
 ### “升 target 后的回归都是平台优化失败”
 
@@ -1197,9 +1195,16 @@ userfaultfd 是 Concurrent Mark-Compact 的一条实现路径，分代是对象�
 
 ## 参考资料
 
+- [TestLooperManager：类和新增方法版本](https://developer.android.com/reference/android/os/TestLooperManager)
+- [Android 14 非线性字体缩放](https://developer.android.com/about/versions/14/features)
+- [精确闹钟权限与重载](https://developer.android.com/develop/background-work/services/alarms/schedule)
+- [SystemHealthManager headroom 契约](https://developer.android.com/reference/android/os/health/SystemHealthManager)
+- [应用清单 usesCleartextTraffic](https://developer.android.com/guide/topics/manifest/application-element)
+- [Boot partitions](https://source.android.com/docs/core/architecture/bootloader/partitions)
 - [Android app performance overview](https://developer.android.com/topic/performance/overview)
 - [Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)
 - [Mainline modules](https://source.android.com/docs/core/ota/modular-system)
+- [Android 17 发布：分代 CMC 与 ART 回迁范围](https://developer.android.com/blog/posts/android-17-is-here)
 - [Configure ART](https://source.android.com/docs/core/runtime/configure)
 - [Android common kernels](https://source.android.com/docs/core/architecture/kernel/android-common)
 - [`android-17.0.0_r1` SystemServer](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)

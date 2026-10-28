@@ -24,8 +24,8 @@ sources:
   path: https://developer.android.com/topic/libraries/architecture/datastore
 - type: official
   path: https://developer.android.com/reference/android/content/SharedPreferences.Editor
-- type: legacy-reference-preserved
-  path: https://developer.android.com/reference/android/app/QueuedWork
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java
 - type: official
   path: https://developer.android.com/reference/kotlin/androidx/datastore/core/MultiProcessDataStoreFactory
 - type: official
@@ -144,7 +144,12 @@ class App : Application() {
 
 文件之外，应用里最常见的持久化是键值存储。SharedPreferences（SP）的性能风险集中在首次读取和写入完成阶段：`getString()`、`getAll()` 等 API 会进入 `awaitLoadedLocked()`，后台 XML 加载未完成时，调用线程就在这里等待。写入时，`apply()` 先提交内存变更，再把磁盘任务交给框架内部、未纳入公开 SDK 的 `QueuedWork`；`commit()` 等待 `writtenToDiskLatch`（写盘完成同步信号），并返回本次持久化结果。
 
-这里最容易误判的一点是：`apply()` 调用点很快返回，后续组件切换却仍可能要等它。`apply()` 会向 `QueuedWork` 登记 finisher（等待磁盘任务完成的收尾回调），`ActivityThread` 对 Android 3.0（Honeycomb）及之后的 Activity 在 `handleStopActivity()` 中等待，对更早版本的 Activity 则在 `handlePauseActivity()` 中等待；Service 命令完成和 Service 停止等位置也会调用 `QueuedWork.waitToFinish()`。框架 API 文档明确警告：未完成的 `apply()` 可能在 Activity 或 Service 状态切换时阻塞主线程。所以页面里连续写入许多状态，代价可能集中出现在稍后的 Activity 停止或 Service 收尾时。
+这里最容易误判的一点是：`apply()` 调用点很快返回，后续组件切换却仍可能要等它。`apply()` 会向 `QueuedWork` 登记 finisher（等待磁盘任务完成的收尾回调），`ActivityThread` 根据应用的 `targetSdkVersion` 分支：目标版本不低于 Android 3.0（Honeycomb，API 11）时在 `handleStopActivity()` 中等待，低于 API 11 时在 `handlePauseActivity()` 中等待；Service 命令完成和 Service 停止等位置也会调用 `QueuedWork.waitToFinish()`。框架 API 文档明确警告：未完成的 `apply()` 可能在 Activity 或 Service 状态切换时阻塞主线程。所以页面里连续写入许多状态，代价可能集中出现在稍后的 Activity 停止或 Service 收尾时。
+
+<!-- gracker-diagram: a261-02-apply-lifecycle-wait -->
+![apply 的快速返回与后续生命周期等待](../../assets/diagrams/ch24/a261-02-apply-lifecycle-wait.png)
+
+图：apply 把写盘移到后台，但 finisher 会在稍后的 Activity/Service 收尾处等待；调用点快不代表不会影响主线程。
 
 [源码锚点：[`SharedPreferencesImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)、[`QueuedWork.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java)、[`ActivityThread.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)]
 
@@ -208,11 +213,6 @@ ANR 出现在页面停止、应用进入后台或 Service 回调结束时，我�
 治理时先按数据语义决定迁移方向：小型设置进入 Preferences/Proto DataStore，结构化和可查询数据进入 Room，高频瞬时状态尽量只保留在内存，需要确认的用户操作必须暴露持久化失败，跨进程数据使用明确支持跨进程一致性的存储或单进程服务。持久化保证要来自明确的提交结果，固定防抖时间窗顶多算延迟写入；只有“中间状态可丢，只需保留较新值”的数据才允许合并写入，并且要写明进程终止后的恢复规则。
 
 验收要选公开观测得到的指标：同一偏好文件的大小、键值条目数和写入次数，生命周期结束前后的写入分布，Perfetto 中 `queued-work-looper` 与主线程等待，以及 `QueuedWork.waitToFinish()` 相关 ANR 数量除以会话数或活跃用户数后的比例；同一报表要固定分母。“`apply()` 完成耗时”公开观测拿不到，就先排除在指标外。回归场景至少覆盖冷启动首次读取、连续修改后立即切后台、Service 停止、进程终止、存储压力、升级迁移和多进程误用。
-
-<!-- gracker-diagram: a261-02-apply-lifecycle-wait -->
-![apply 的快速返回与后续生命周期等待](../../assets/diagrams/ch24/a261-02-apply-lifecycle-wait.png)
-
-图：apply 把写盘移到后台，但 finisher 会在稍后的 Activity/Service 收尾处等待；调用点快不代表不会影响主线程。
 
 ### MMKV 的原理与适用场景
 
@@ -415,7 +415,7 @@ Photo Picker 返回的媒体 URI 也可以为长任务持久化逐项读取权�
 
 ### `DocumentFile` 的性能成本来自哪里
 
-AndroidX 官方文档将 `DocumentFile` 定义为模仿 `File` 的便利封装，并明确提示它会增加较多开销。我们把它用在少量文件的便利操作上；需要批量读取元数据或使用完整的文档能力时，直接调用 `DocumentsContract`。截至 2026 年 8 月，稳定版本仍是 `androidx.documentfile:documentfile:1.1.0`。
+AndroidX 官方文档将 `DocumentFile` 定义为模仿 `File` 的便利封装，并明确提示它会增加较多开销。我们把它用在少量文件的便利操作上；需要批量读取元数据或使用完整的文档能力时，直接调用 `DocumentsContract`。2026-10-25 核对[官方发布页](https://developer.android.com/jetpack/androidx/releases/documentfile)，稳定版本仍是 `androidx.documentfile:documentfile:1.1.0`。
 
 #### `listFiles()` 是一次查询
 
@@ -541,7 +541,7 @@ fun queryChildren(
 
 查询授权根目录时，`parentId` 取 `DocumentsContract.getTreeDocumentId(treeUri)`；查询某个子目录时，使用上一轮结果中的 `documentId`。文档 ID 只应交回同一个 `authority`，不参与路径拼接。
 
-这段代码消除了列表页的逐项属性查询。分页和排序仍由 Provider 决定是否支持。`QUERY_ARG_LIMIT`、`QUERY_ARG_OFFSET` 和结构化排序参数都属于可选查询能力；客户端要检查 `Cursor` 附加数据（`getExtras()`）中的 `EXTRA_HONORED_ARGS`，确认哪些参数已被接受。若 Provider 不支持分页，客户端分批遍历 `Cursor` 只能压低自身的峰值内存；Provider 生成整个结果集的成本，这一侧省不下来。
+这段代码消除了列表页的逐项属性查询，但 `buildList` 仍把完整结果收集到内存，适合规模可控的目录；大目录还需设计分批消费或可用的 Provider 分页，不能把“一次 query”当作低内存保证。分页和排序仍由 Provider 决定是否支持。`QUERY_ARG_LIMIT`、`QUERY_ARG_OFFSET` 和结构化排序参数都属于可选查询能力；客户端要检查 `Cursor` 附加数据（`getExtras()`）中的 `EXTRA_HONORED_ARGS`，确认哪些参数已被接受。若 Provider 不支持分页，客户端分批遍历 `Cursor` 只能压低自身的峰值内存；Provider 生成整个结果集的成本，这一侧省不下来。
 
 #### `canWrite()` 与 `COLUMN_FLAGS`
 
@@ -579,14 +579,12 @@ fun copyDocumentBytes(
     target: Uri,
     isCancelled: () -> Boolean,
 ): Long {
-    val input = requireNotNull(resolver.openInputStream(source)) {
-        "Provider returned no input stream"
-    }
-    val output = requireNotNull(resolver.openOutputStream(target, "wt")) {
-        "Provider returned no output stream"
-    }
+    val input = resolver.openInputStream(source)
+        ?: throw IOException("Provider returned no input stream")
 
     return input.use { from ->
+        val output = resolver.openOutputStream(target, "wt")
+            ?: throw IOException("Provider returned no output stream")
         output.use { to ->
             val bytes = ByteArray(DEFAULT_BUFFER_SIZE)
             var total = 0L
@@ -604,7 +602,7 @@ fun copyDocumentBytes(
 }
 ```
 
-`openFileDescriptor(uri, mode, CancellationSignal)` 可以取消尚未完成的打开请求。描述符返回后，`CancellationSignal` 不会自动中断普通流读取，所以读写循环仍要主动检查取消状态。
+`openFileDescriptor(uri, mode, CancellationSignal)` 可以取消尚未完成的打开请求。描述符返回后，`CancellationSignal` 不会自动中断普通流读取，所以读写循环仍要主动检查取消状态。循环检查只在两次读写之间生效：如果 `read()` 已阻塞等待云端或管道生产方，取消并不会立即返回。需要及时中断时，应按 Provider 与所有权约定设计关闭描述符、可取消源或超时，并覆盖阻塞中的取消测试；不能在消费者仍使用资源时无协调地关闭。
 
 复制失败后，目标文档可能留下部分内容。应用要记录任务状态，并在适当时机删除未完成的目标。原子复制要求操作失败时不留下部分结果；两个 Provider 之间没有这项保证。
 

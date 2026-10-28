@@ -9,9 +9,9 @@ tags:
   - nfc
 related_chapters:
 - '5.2'
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Android 17/API 37 official NFC docs updated through 2026-08-03 and AOSP packages/modules/Nfc android-17.0.0_r1 source anchors
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Android 17/API 37 official NFC docs reviewed 2026-10-25 and AOSP packages/modules/Nfc android-17.0.0_r1 source anchors
 confidence: high
 last_deep_review_at: '2026-07-27T12:35:27+08:00'
 last_rework_at: '2026-08-09T03:14:43+08:00'
@@ -42,6 +42,12 @@ sources:
   ref: android17-6.18-2026-06_r6
   status: boundary-reference
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6
+- type: upstream-docs
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html
+- type: aosp-source
+  path: https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java
+- type: aosp-source
+  path: https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/RegisteredAidCache.java
 - type: routed-material
   ref: DeepResearch/2026-07-05-background-audio-hardening-power.md
   status: rejected-unrelated-to-nfc-payment
@@ -74,26 +80,14 @@ NFC 框架和系统服务的源码在 `packages/modules/Nfc`；旧路径 `framew
 
 下面这张流程图把 HCE 与 off-host 分流的位置标了出来。图里的 NFCC 指 NFC 控制器，负责射频收发和底层协议；ISO-DEP 是其上基于 ISO/IEC 14443-4 的数据交换协议：
 
-```mermaid
-flowchart LR
-    R["NFC 终端 / Reader"] --> RF["RF 激活与 ISO-DEP"]
-    RF --> C["NFCC 与固件"]
-    C --> A{"NFCC 路由目的地"}
-    A -->|Host| N["NfcService"]
-    N --> D{"Host 侧 AID 解析"}
-    D --> H["HostEmulationManager"]
-    H --> B["Binder / Messenger"]
-    B --> S["HostApduService"]
-    S --> B
-    A -->|Off-host| E["eSE / UICC"]
-```
-
-顺着图看路由：NFCC 路由表先把用于选择应用的 `SELECT AID` 命令指向 host 或 SE。走 host 的一路进入 `NfcService`，由 `RegisteredAidCache` 与 `HostEmulationManager` 从已注册的 HCE 服务里挑出目标组件；走 off-host 的一路直接把 APDU 交给 SE。off-host 省掉了应用处理这一环，但端到端延迟仍由终端、射频、SE 中的卡应用和支付协议共同决定。
+Host 路径经过 Android 服务和应用；off-host 路径在安全元件里处理交易 APDU。
 
 <!-- gracker-diagram: a272-01-host-and-se-routing -->
 ![NFCC路由将主机HCE与安全元件交易分流](../../assets/diagrams/ch24/a272-01-host-and-se-routing.png)
 
 图：交易 APDU 是否经过应用，是两条路径的关键边界；off-host 的声明服务并不参与逐条交易处理。
+
+顺着图看路由：NFCC 路由表先把用于选择应用的 `SELECT AID` 命令指向 host 或 SE。走 host 的一路进入 `NfcService`，由 `RegisteredAidCache` 与 `HostEmulationManager` 从已注册的 HCE 服务里挑出目标组件；走 off-host 的一路直接把 APDU 交给 SE。off-host 省掉了应用处理这一环，但端到端延迟仍由终端、射频、SE 中的卡应用和支付协议共同决定。
 
 ## 2. HCE 交易的延迟来自哪些阶段
 
@@ -112,7 +106,12 @@ flowchart LR
 - 系统解析 `SELECT AID`；已有服务连接时立即转发，没有连接时保存该 APDU，并进入等待服务的 `STATE_W4_SERVICE`。
 - `onServiceConnected()` 收到绑定结果后，再发送缓存的 `SELECT AID`。
 - APDU 转发时进入传输状态 `STATE_XFER`；只有当前活动服务返回的非空响应才会交给 `NfcService.sendData()`。
-- 射频链路断开或 AID 切换时，系统调用 `onDeactivated()` 并清理活动服务状态。
+- 射频链路断开，或新 `SELECT AID` 被解析为另一服务时，系统调用 `onDeactivated()` 并清理活动服务状态。同一服务承接另一 AID 时未必触发停用，不能只用这个回调划分所有协议交易。
+
+<!-- gracker-diagram: a272-03-host-manager-state-flow -->
+![HostEmulationManager缓存首条命令等待服务就绪](../../assets/diagrams/ch24/a272-03-host-manager-state-flow.png)
+
+图：服务预绑定、普通绑定和应用处理分别记录；没有SELECT回调时先核对AID、角色与解锁条件。
 
 有了这六个阶段，排查就有了分流判据：首个 APDU 慢而后续正常，先查进程启动和服务绑定；每个 APDU 都慢，就去查应用计算、锁竞争、存储访问和异步依赖。
 
@@ -126,11 +125,6 @@ flowchart LR
 `HostEmulationManager.bindPaymentServiceLocked()` 用 `BIND_AUTO_CREATE` 预绑定当前首选支付服务，并保留独立的 `mPaymentService` 连接；普通服务则可能要等 AID 命中后才临时绑定。服务死亡后系统会尝试重新绑定，但进程重建、内存状态丢失和支付令牌（token，用来代替真实卡号的受限凭据）失效这些事，仍要应用自己处理。
 
 从 Android 15 开始，`CATEGORY_PAYMENT` 类别（category）通常由默认钱包角色持有者（Wallet role holder）处理；前台 Activity 也可以用 `CardEmulation.setPreferredService()` 临时指定服务。AID 组是一组必须整体路由到同一服务的标识符，系统同一时刻只启用一个支付类别 AID 组。所以 HCE 服务收不到命令时，我们先核对钱包角色、AID 和用户选择——配置错了，APDU 在路由层就走丢了，再快的应用也接不到。
-
-<!-- gracker-diagram: a272-03-host-manager-state-flow -->
-![HostEmulationManager缓存首条命令等待服务就绪](../../assets/diagrams/ch24/a272-03-host-manager-state-flow.png)
-
-图：服务预绑定、普通绑定和应用处理分别记录；没有SELECT回调时先核对AID、角色与解锁条件。
 
 ## 3. Android 17 / API 37 的 NFC 变化
 
@@ -178,7 +172,7 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 
 `DISPATCH_NFC_MESSAGE` 写在 Activity 的 `android:permission` 上，意思是：要启动该组件的调用方必须持有这项签名级权限。它由 Android NFC 系统服务持有，普通应用既无需申请，在普通运行时权限体系里也拿不到它。
 
-`NfcDispatcher.isMatchAdditionalActivityFilters()` 会检查目标 SDK、应用的 stopped 标志和 Activity 声明。尚未被用户启动过、或被强行停止（force-stop）的应用处于 stopped 状态，收不到 NFC `Intent`；用户手动启动一次之后，这个状态才解除。
+`NfcDispatcher.isMatchAdditionalActivityFilters()` 会检查目标 SDK、应用的 stopped 标志和 Activity 声明。尚未被用户启动过、或被强行停止（force-stop）的应用处于 stopped 状态；对上述目标 API 37 及以上的附加过滤，系统拒绝向其分发 NFC `Intent`。用户手动启动可解除 stopped 状态，不能把这段 target 门控外推到所有旧目标应用。
 
 `ACTION_TAG_DISCOVERED` 是前两种分发都未命中时的宽泛后备入口，API 37 已将它废弃；应用优先匹配具体的 NDEF MIME 类型、URI 或标签技术列表。
 
@@ -224,16 +218,16 @@ class ReaderActivity : AppCompatActivity(), NfcAdapter.ReaderCallback {
 
 Reader Mode 只在 Activity 位于前台时有效。API 并未承诺 `ReaderCallback` 在主线程执行，所以界面更新要派发回主线程；`TagTechnology.connect()` 和 `transceive()` 这类可能阻塞的 I/O 操作，放到应用自己的工作线程。
 
-`Tag`、`TagTechnology` 的连接对象同样别存到 Activity 生命周期之外。
-
-标签离场、手机移动和射频噪声都可能让 `connect()` 或 `transceive()` 抛出 I/O 异常；`onTagLost()` 管的是任务取消和界面清理这一层，每次 I/O 自己的异常处理仍然要写。
-
-`FLAG_READER_SKIP_NDEF_CHECK` 留给明确无需 NDEF 解析的专有协议。启用后平台跳过 NDEF 检查，也不像常规流程那样枚举 `Ndef` 标签技术；对原本依赖 NDEF 的标签，无条件开启可能让它们处理不了。
+`Tag`、`TagTechnology` 的连接对象同样别存到 Activity 生命周期之外。上述代码只示范注册骨架；生产实现还需在 `onPause()`、标签离场或任务结束时停用旧任务并调用相应 `TagTechnology.close()` 释放连接，后者也会取消其他线程上阻塞的 `connect()` 等 I/O。仅 `disableReaderMode()` 不能替代应用自己的任务与资源清理。
 
 <!-- gracker-diagram: a272-05-reader-lifecycle-and-io -->
 ![ReaderMode按前台生命周期管理Tag任务](../../assets/diagrams/ch24/a272-05-reader-lifecycle-and-io.png)
 
 图：SKIP_NDEF_CHECK 仅用于无需NDEF的协议；开启后不枚举Ndef，不能当所有标签的通用加速开关。
+
+标签离场、手机移动和射频噪声都可能让 `connect()` 或 `transceive()` 抛出 I/O 异常；`onTagLost()` 管的是任务取消和界面清理这一层，每次 I/O 自己的异常处理仍然要写。
+
+`FLAG_READER_SKIP_NDEF_CHECK` 留给明确无需 NDEF 解析的专有协议。启用后平台跳过 NDEF 检查，也不像常规流程那样枚举 `Ndef` 标签技术；对原本依赖 NDEF 的标签，无条件开启可能让它们处理不了。
 
 ## 4. HCE 服务：注册、路由与 APDU 延迟敏感路径
 
@@ -286,18 +280,24 @@ Reader Mode 只在 Activity 位于前台时有效。API 并未承诺 `ReaderCall
 class DemoApduService : HostApduService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val transactionEpoch = AtomicLong(0L)
+    private val commandEpoch = AtomicLong(0L)
 
     override fun processCommandApdu(
         commandApdu: ByteArray,
         extras: Bundle?
     ): ByteArray? {
+        val commandId = commandEpoch.incrementAndGet()
         parseCheapCommand(commandApdu)?.let { return buildImmediateResponse(it) }
 
         val epoch = transactionEpoch.get()
         scope.launch {
             val response = buildResponseFromLocalState(commandApdu)
-            if (transactionEpoch.get() == epoch) {
-                sendResponseApdu(response)
+            withContext(Dispatchers.Main.immediate) {
+                if (transactionEpoch.get() == epoch
+                    && commandEpoch.get() == commandId
+                ) {
+                    sendResponseApdu(response)
+                }
             }
         }
         return null
@@ -315,14 +315,16 @@ class DemoApduService : HostApduService() {
 }
 ```
 
-这个骨架只表达线程与生命周期关系，支付协议本身没有实现。`transactionEpoch` 是本地交易代号，每次服务被停用时递增，把旧交易的异步结果挡在新交易之外；对非活动服务或错误状态下的响应，系统侧同样会丢弃。
+这个骨架只表达线程与生命周期关系，支付协议本身没有实现。`transactionEpoch` 实际标记服务停用代次，每次 `onDeactivated()` 递增；`commandEpoch` 标记同一服务收到的新命令。后台结果回到主线程后，与停用回调串行检查两者，再提交响应，避免在后台检查后被已处理的停用或新命令取代。
 
-生产实现还要校验 APDU 长度与字段：CLA 是命令类别，INS 是指令，P1/P2 是指令参数，Lc 是命令数据长度，Le 是期望响应长度；返回值要带协议状态字，密钥隔离、重放防护和认证要求也一样要满足。
+这只是应用提交前的失效检查。固定 `android-17.0.0_r1` 的 `sendResponseApdu()` 还会把响应排入服务自己的 `Handler`，公开接口既不携带交易 ID，也没有撤回已入队响应的操作。系统只检查活动服务、Messenger 和传输状态；同一服务被新交易再次使用时，这些条件不构成旧响应的交易隔离保证。生产协议仍须关联当前命令与交易、拒绝迟到或重放结果，不能把本例当作完整支付实现。
 
 <!-- gracker-diagram: a272-06-async-apdu-submission-boundary -->
 ![异步APDU发送前失效检查与框架排队边界](../../assets/diagrams/ch24/a272-06-async-apdu-submission-boundary.png)
 
 图：停用递增交易代次并取消工作；应用发送前检查不能替代协议对迟到响应、当前命令和交易的验证。
+
+生产实现还要校验 APDU 长度与字段：CLA 是命令类别，INS 是指令，P1/P2 是指令参数，Lc 是命令数据长度，Le 是期望响应长度；返回值要带协议状态字，密钥隔离、重放防护和认证要求也一样要满足。
 
 ### 4.3 APDU 路径的优化顺序
 
@@ -362,7 +364,8 @@ NFC 终端会循环发送轮询帧（polling frames），找附近可用的卡�
 
 `NfcAdapter.allowOneTransaction()` 会临时关闭 Observe Mode，让一笔 HCE 交易继续。`NfcService` 会检查：
 
-- 特权进程的 UID（Linux 用户标识）可以调用。
+- NFC 适配器必须已开启，当前状态不可用时直接返回。
+- 特权进程的 UID（Linux 用户标识）可以通过调用资格检查。
 - 普通应用的 UID 必须属于当前用户的默认钱包或前台首选支付服务。
 - HCE 交易已经激活时，调用会被拒绝。
 - `HostEmulationManager` 会在交易结束后恢复（suspend/resume） Observe Mode；交易开始前射频场消失时也会恢复。
@@ -442,7 +445,9 @@ OMAPI（Open Mobile API）是应用访问 SE 的另一套接口，访问规则�
 | `T_response_rx` | 外部读卡器 | 终端何时收到 R-APDU |
 | `T_deactivate` | 应用与系统日志 | 链路何时结束、为何结束 |
 
-`T_apdu_in - T_select_tx` 覆盖 Android 路由和可能的服务绑定；`T_response_ready - T_apdu_in` 是应用生成响应的区间；`T_response_rx - T_response_ready` 覆盖 Binder、NCI、NFCC 和射频回传。两端时钟对不上时，就用同一测试动作的序号和相对间隔把记录关联起来——亚毫秒精度已经超出这些记录能支撑的范围。
+先用外部读卡器自己的时钟计算 `T_response_rx - T_select_tx`，用应用同一单调时钟计算 `T_response_ready - T_apdu_in`。只有建立并校准两端时钟映射后，才可用 `T_apdu_in - T_select_tx` 估算包含射频入站、NFCC、Android 路由与可能绑定的区间、用 `T_response_rx - T_response_ready` 估算包含应用/系统排队、Binder、NCI、NFCC 与射频的回传区间。
+
+未建立映射时，同一测试序号只能关联事件和各端相对间隔，不能直接相减两个设备的时间戳得到单向分段。时间精度应报告工具、时间戳位置与同步误差，不能一概断言某个亚毫秒精度必然可达或必然不可达。
 
 <!-- gracker-diagram: a272-10-two-clock-measurement -->
 ![外部往返与应用处理可各用本端时钟测量](../../assets/diagrams/ch24/a272-10-two-clock-measurement.png)
@@ -528,7 +533,7 @@ HCE 服务由 `BIND_NFC_SERVICE` 保护，只有 Android 系统能绑定，APDU 
 
 - 不把密钥、PAN、完整 APDU、动态密码或可关联账户的支付令牌写入日志；
 - 不为减少一次 I/O 而延长支付令牌有效期、复用计数器或跳过状态校验；
-- 不在 `onDeactivated()` 后发送旧交易的响应；
+- 停用后不再主动提交旧结果，并由协议识别已入队的迟到响应；
 - 不把服务端失败映射成成功状态字；
 - 不因追求冷启动速度而导出无保护组件、放宽 `BIND_NFC_SERVICE` 或解锁要求；
 - 按支付方案的认证要求和目标终端集合验证性能版本；两台 Android 手机之间的对测，当不了唯一依据。
@@ -541,7 +546,7 @@ HCE 服务由 `BIND_NFC_SERVICE` 保护，只有 Android 系统能绑定，APDU 
 - [ ] Reader Mode 只注册必要技术，正确处理 I/O 异常与 `onTagLost()`。
 - [ ] HCE 服务声明 `BIND_NFC_SERVICE`，AID 组、类别和钱包角色正确。
 - [ ] `processCommandApdu()` 主线程无磁盘、数据库和网络阻塞。
-- [ ] 异步响应能在 `onDeactivated()` 后取消，不会跨交易发送。
+- [ ] 异步工作在 `onDeactivated()` 后失效；发送前检查与已入队无法撤回的边界已明确，协议能拒绝迟到或重放响应。
 - [ ] Observe Mode、退出帧、注释帧和节电模式都经过能力与权限判断。
 - [ ] 外部读卡器与 Android Trace 同时采样，首次绑定与已绑定场景分别统计。
 - [ ] 日志不含支付敏感数据，缓存策略没有削弱认证和防重放。

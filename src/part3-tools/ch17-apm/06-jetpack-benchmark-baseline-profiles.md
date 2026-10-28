@@ -2,9 +2,9 @@
 title: Jetpack Benchmark：Microbenchmark、Macrobenchmark 与测量协议
 chapter: '17.6'
 section: '17.6'
-applicable_versions: Benchmark 1.4.1 Microbenchmark：Android 5.0+（API 21+）；Macrobenchmark：Android 6.0+（API 23+）；Benchmark 1.5.0-rc01：API 24+；Baseline Profile 生成需 API 33+ 或 rooted API 28+；收益验证需 API 24+
-last_verified: '2026-08-14'
-last_verified_against: AndroidX Benchmark 1.4.1 stable and 1.5.0-rc01 artifacts + BlackHole / BenchmarkState / BaselineProfileRule / CompilationMode / Metric sources + Android Developers Benchmark docs
+applicable_versions: 固定示例 Benchmark 1.4.1：Micro API 21+、Macro API 23+；当前稳定版 1.5.0：二者 API 24+；Profile 生成非 root API 33+ 或 rooted API 28+；收益验证 API 24+
+last_verified: '2026-10-26'
+last_verified_against: Benchmark 1.4.1 / 1.5.0-rc01 / 1.5.0 AAR、POM 与 sources；ProfileInstaller 1.4.1；UiAutomator 2.3.0 sources；当前发布说明与 CI 指南；宿主 Kotlin 编译和纯函数边界验证，未运行 Android 设备基准
 confidence: medium
 tags:
 - apm
@@ -52,6 +52,18 @@ sources:
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc
 - type: source
   path: https://github.com/androidx/androidx/blob/androidx-main/profileinstaller/profileinstaller/src/main/AndroidManifest.xml
+- type: artifact
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0.aar
+- type: source
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0-sources.jar
+- type: source
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar
+- type: source
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-junit4/1.4.1/benchmark-junit4-1.4.1-sources.jar
+- type: source
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-gradle-plugin/1.4.1/benchmark-gradle-plugin-1.4.1-sources.jar
+- type: source
+  path: https://dl.google.com/dl/android/maven2/androidx/test/uiautomator/uiautomator/2.3.0/uiautomator-2.3.0-sources.jar
 status: finalized
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -61,7 +73,12 @@ consolidated_from:
 
 # Jetpack Benchmark：Microbenchmark、Macrobenchmark 与测量协议
 
-Microbenchmark 测量可重复的局部工作，Macrobenchmark 从外部进程测量启动与完整交互。可比较的结果依赖实验结构、编译状态、指标定义、噪声控制和 CI 门禁；BaselineProfileRule 生成的 Profile 可以作为实验输入，但测量时仍需显式控制编译状态。Profile 的生成、打包、渠道交付和 ART 状态验证见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline（基准版本）-startup-cloud-profile.md)。
+Microbenchmark 测量可重复的局部工作，Macrobenchmark 从外部进程测量启动与完整交互。可比较的结果依赖实验结构、编译状态、指标定义、噪声控制和 CI 门禁；BaselineProfileRule 生成的 Profile 可以作为实验输入，但测量时仍需显式控制编译状态。Profile 的生成、打包、渠道交付和 ART 状态验证见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
+
+<!-- gracker-diagram: ch17-06-01-measurement-contract -->
+![可重复实验的五个条件](../../assets/diagrams/ch17/ch17-06-01-measurement-contract.png)
+
+图：同一业务路径固定输入、设备、编译状态与指标，再用 JSON 和 trace 解释差值。 受控实验的数值不能直接代替线上用户分布。
 
 ## Microbenchmark、Macrobenchmark 与测量协议
 
@@ -86,21 +103,21 @@ Jetpack Benchmark 回答的是一个受约束的问题：同一场景、同一�
 
 ### 2026 年版本与平台锚点
 
-截至 2026-08-14，AndroidX Benchmark 的稳定版是 `1.4.1`，预发布版是 `1.5.0-rc01`。本文示例统一用 stable 1.4.1，平台以 Android 17 / API 37 / `android-17.0.0_r1` 为准。
+截至 2026-10-26，AndroidX Benchmark 当前稳定版为 `1.5.0`，最新预发布版为 `1.6.0-alpha01`。本文保留 **1.4.1 作为固定历史复现基线**，后文未另注的实现与代码都指这一版本；不能把它的 API 下限或默认行为套到当前 1.5.0。Android 17 / API 37 的系统源码采用 `android-17.0.0_r1`，设备结果另记实际 fingerprint 与内核构建。
 
-| 能力 | stable 1.4.1 的运行下限 | 使用边界 |
+| 能力 | 固定 1.4.1 下限 | 使用边界 |
 |---|---:|---|
-| Microbenchmark | API 21 | 进程内、可重复调用的局部代码 |
-| Macrobenchmark | API 23 | 独立测试进程驱动目标应用 |
-| `CompilationMode.None` / `Partial` | API 24 | API 23 仅支持 `Full` |
-| `BaselineProfileRule` 生成 | 非 root API 33+；rooted API 28+ | 生成环境与收益验证环境分开 |
-| Baseline Profile 收益验证 | API 24+ | `Partial(BaselineProfileMode.Require)` 与 `None()` 对照 |
-| `FrameTimingMetric.frameOverrunMs` | API 31+ | Android 17 可直接使用 |
-| `PowerMetric` | API 29+ | 还要检查设备是否支持所选 power rail |
+| Microbenchmark | <span style="white-space:nowrap">API 21</span> | 进程内、可重复调用的局部代码 |
+| Macrobenchmark | <span style="white-space:nowrap">API 23</span> | 独立测试进程驱动目标应用 |
+| <code>Compilation<wbr>Mode.<wbr>None</code> / <code>Partial</code> | <span style="white-space:nowrap">API 24</span> | API 23 仅支持 <code>Full</code> |
+| <code>Baseline<wbr>Profile<wbr>Rule</code> 生成 | <span style="white-space:nowrap">非 root API 33+</span><br><span style="white-space:nowrap">rooted API 28+</span> | 生成环境与收益验证环境分开 |
+| Baseline Profile 收益验证 | <span style="white-space:nowrap">API 24+</span> | <code>Partial(<wbr>Baseline<wbr>Profile<wbr>Mode.<wbr>Require)</code> 与 <code>None(<wbr>)</code> 对照 |
+| <code>Frame<wbr>Timing<wbr>Metric.<wbr>frame<wbr>Overrun<wbr>Ms</code> | <span style="white-space:nowrap">API 31+</span> | Android 17 可直接使用 |
+| <code>Power<wbr>Metric</code> | <span style="white-space:nowrap">API 29+</span> | 还要检查设备是否支持所选 power rail |
 
-旧资料中常见的“Microbenchmark 支持 API 14”，在当前 stable 的 Maven 发布件上已经不成立：`benchmark-common:1.4.1` 与 `benchmark-junit4:1.4.1` 的 AAR manifest 都声明 `minSdkVersion=21`，Macrobenchmark 两个 Android AAR 则声明 `minSdkVersion=23`。
+旧资料中常见的“Microbenchmark 支持 API 14”，在本文固定的 1.4.1 Maven 发布件上也不成立：`benchmark-common:1.4.1` 与 `benchmark-junit4:1.4.1` 的 AAR manifest 都声明 `minSdkVersion=21`，Macrobenchmark 两个 Android AAR 则声明 `minSdkVersion=23`。
 
-Benchmark 1.5.0-rc01 的四个 Android AAR 都把 `minSdkVersion` 提到 24；这条预发布线还采用 UiAutomator 2.4，稳定化 `BlackHole`，并支持采集和合并 AndroidX Tracing 2.0 的进程内 trace。stable 1.4.1 的 `BlackHole` 仍标注为 experimental，代码需要显式 opt-in（主动接受实验 API）；描述稳定版 API 时，以稳定版的标注为准。
+当前稳定版 1.5.0 的四个 Android AAR 均声明 `minSdkVersion=24`，与此前 1.5.0-rc01 一致。1.5 线采用 UiAutomator 2.4、稳定化 `BlackHole`，并支持合并 AndroidX Tracing 2.0 的进程内 trace。固定 1.4.1 的 `BlackHole` 仍带 experimental 注解，代码需要显式 opt-in。1.5.0 还默认要求 Microbenchmark 已 AOT 编译、普通 `measureRepeated` 不在主线程运行；实际参数名分别是 `androidx.benchmark.requireAot` 与 `androidx.benchmark.throwOnMainThreadMeasureRepeated`。迁移时要连同 minSdk、依赖、选择器和实验条件一起验证。
 
 <!-- gracker-diagram: ch17-06-03-version-minsdk -->
 ![历史复现基线与当前版本](../../assets/diagrams/ch17/ch17-06-03-version-minsdk.png)
@@ -133,7 +150,7 @@ Benchmark 1.5.0-rc01 的四个 Android AAR 都把 `minSdkVersion` 提到 24；�
 `BenchmarkRule` 自己会执行 warmup（预热，先重复运行以稳定运行时状态） 和测量阶段，我们不要再在 `measureRepeated` 里套手工次数循环。实验采用哪种编译状态，取决于工程配置：
 
 - 使用 Benchmark `1.3.0-beta01+`、Android Gradle Plugin（AGP）`8.4.0+` 并应用 `androidx.benchmark` Gradle 插件时，Microbenchmark APK 默认 full AOT，目标是减少 JIT 稳定时间和结果波动。
-- 设置 `androidx.benchmark.forceaotcompilation=false` 会退出这一默认行为，结果更接近 warmup 后的 JIT 状态。
+- 在 Gradle 属性中设置 `androidx.benchmark.forceaotcompilation=false` 会关闭插件的强制 AOT 配置；它本身不保证卸载旧 APK、清除既有编译产物或恢复某种特定 JIT 状态。1.5.0 还需显式处理默认的 `requireAot` 检查。
 - 两组结果只在编译配置一致时才可比较。报告要记录 Benchmark、AGP、Kotlin、R8 代码优化/压缩工具和该开关。
 
 full AOT 让实验更稳定，但用户设备上的常态编译状态未必是这样。局部优化若依赖 JIT 行为，我们应再补一组关闭强制 AOT 的实验，并在报告里写清这组结果对应的编译条件。
@@ -182,7 +199,12 @@ class FeedParserBenchmark {
 }
 ```
 
-这个测试里，被测对象是 `parser.parse(payload)`，准备数据固定为 seed 42，循环交给 Benchmark 管理，指标是执行时间和库采集到的分配信息。准备阶段会校验条目数，解析异常直接让测试失败；`BlackHole.consume()` 挡住编译器和 R8，让未使用的结果不至于连同计算一起被删掉。结论的适用范围也随之收窄：它只说明这一固定输入下的局部解析成本。
+这个测试量的是固定输入下、经过预热的局部解析；`@Before` 的一次校验也已提前触发解析路径，不代表首次冷调用。循环执行解析与 `BlackHole.consume()`，并由 Benchmark 管理重复次数和指标。准备阶段校验条目数、异常会使测试失败，但不证明所有输出字段正确；正式场景还需在计量外验证结果语义。BlackHole 用于保留计算结果，不应把它理解成任意构建配置下绝对零开销的证明。
+
+<!-- gracker-diagram: ch17-06-06-parser-cost -->
+![固定解析输入与测量循环](../../assets/diagrams/ch17/ch17-06-06-parser-cost.png)
+
+图：准备与正确性验证在计量外，循环保留解析及结果消费。 这是预热后的固定输入成本，准备阶段已提前调用解析。
 
 可变状态要在每轮恢复，而恢复的成本要留在算法时间之外。下面的片段演示对原数组做副本，再只测排序。
 
@@ -192,16 +214,11 @@ benchmarkRule.measureRepeated {
         fixture.copyOf()
     }
     sorter.sort(working)
-    BlackHole.consume(working[0])
+    BlackHole.consume(working)
 }
 ```
 
-stable 1.4.1 推荐使用 `runWithMeasurementDisabled()`；旧名 `runWithTimingDisabled()` 已弃用，因为它暂停的是整个 measurement（测量指标），计时只是其中一部分。暂停区也会反复执行，里面仍应保持轻量和确定性。
-
-<!-- gracker-diagram: ch17-06-06-parser-cost -->
-![固定解析输入与测量循环](../../assets/diagrams/ch17/ch17-06-06-parser-cost.png)
-
-图：准备与正确性验证在计量外，循环保留解析及结果消费。 这是预热后的固定输入成本，准备阶段已提前调用解析。
+固定 1.4.1 推荐使用 `runWithMeasurementDisabled()`；旧名 `runWithTimingDisabled()` 已弃用，因为它暂停的是整个 measurement（测量指标），计时只是其中一部分。暂停区也会反复执行，里面仍应保持轻量和确定性。 该方法是泛型并返回 block 的值，所以上例可以直接取得数组副本；暂停指标不会撤销分配、GC、缓存和热状态对后续排序的影响。
 
 <!-- gracker-diagram: ch17-06-07-mutable-reset -->
 ![暂停测量与恢复可变输入](../../assets/diagrams/ch17/ch17-06-07-mutable-reset.png)
@@ -214,11 +231,11 @@ stable 1.4.1 推荐使用 `runWithMeasurementDisabled()`；旧名 `runWithTiming
 |---|---|---|
 | 循环内生成随机数据 | 随机数和分配成本 | 固定 seed，在 `@Before` 准备 fixture |
 | 循环内打印日志 | I/O、锁和 Logcat 成本 | 移除日志 |
-| 循环内做断言 | 断言与异常消息准备 | 只校验末次结果 |
+| 循环内做断言 | 断言与异常消息准备 | 在计量外覆盖结果语义与边界，按需检查末次结果 |
 | 返回值无人使用 | 计算可能被编译器或 R8 删除 | 1.4.1 用 opt-in 后的 `BlackHole.consume()` |
 | 原地排序同一个数组 | 首轮后输入已排序 | 每轮在 measurement 外复制 |
 | 手工执行一万次 | 多套循环与 Benchmark 的 warmup 混在一起 | 每个 `measureRepeated` block 表示一次操作 |
-| 在主线程调用普通 `measureRepeated` | 长测量可能触发 ANR（应用无响应） | UI microbenchmark 使用 `measureRepeatedOnMainThread()` |
+| 在主线程调用普通 `measureRepeated` | 长测量可能触发 ANR（应用无响应） | 需要主线程的代码使用 `measureRepeatedOnMainThread()`，测试调用本身仍从非主线程发起 |
 | 只测缓存命中却声称代表冷路径 | 结论对象错位 | 明确 cache state（缓存是否已有数据），必要时改用 Macrobenchmark |
 
 Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` 驱动旧式循环；Kotlin 代码应使用 `measureRepeated {}`，减少忘记结束状态机或错误暂停计量的风险。
@@ -228,8 +245,8 @@ Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` �
 要测启动、滚动、转场、动画和关键用户旅程这类完整路径时，我们用 Macrobenchmark：它通过单独安装的 test APK（只包含测试与控制代码的应用包） 控制目标应用。它的控制流可以概括为：
 
 ```text
-重置目标应用的编译状态
-  -> 按 CompilationMode 编译或安装 profile
+按 CompilationMode 决定是否重置编译状态
+  -> 安装 profile / 预编译 / 需要时运行不计量的 warmup
   -> repeat(iterations) {
        setupBlock：把应用放到统一起点，不计入 metrics
        开始 Perfetto 采集
@@ -238,7 +255,12 @@ Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` �
      }
 ```
 
-`setupBlock` 决定每轮起点是否一致，本身不计入指标；`measureBlock` 里任何等待都会进入 trace 的测量窗口，而某项 metric 是否计入这段等待，由它自己的定义决定。
+`setupBlock` 决定每轮起点是否一致，本身不计入指标；`measureBlock` 里任何等待都会进入 trace 的测量窗口，而某项 metric 是否计入这段等待，由它自己的定义决定。 `Partial` 的 warmup 和 `WARM` / `HOT` 的首次非计量预热也可能执行这些 block，所以脚本必须可重复、可恢复，不能把调用次数当作 measured iteration 数。
+
+<!-- gracker-diagram: ch17-06-08-macro-window -->
+![Macrobenchmark的迭代窗口](../../assets/diagrams/ch17/ch17-06-08-macro-window.png)
+
+图：编译阶段之后，每轮先准备，再采集并执行 measureBlock，最后提取指标。 编译或启动预热可额外执行用户block；等待是否计入数值由metric定义。
 
 #### `StartupMode` 只描述进程和 Activity 起点
 
@@ -253,7 +275,7 @@ Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` �
 
 图：COLD、WARM、HOT 描述进程与 Activity 起点，数据和编译状态还要另行控制。 模式名不保证缓存命中，也不等于首次安装。
 
-冷启动实验还要另外记录登录态、数据库、磁盘缓存、shader cache（图形着色器编译缓存） 和编译状态；报告里只写 `StartupMode.COLD`，这些条件就丢了，实验也就复现不了。
+固定 1.4.1 的 `COLD` 每轮先执行用户 `setupBlock`，随后默认清 shader cache、杀目标进程、尝试清 kernel page cache，最后确认进程不在运行。API 31+ 通过 `perf.drop_caches` 并检查完成；更旧的非 root 设备可能只记录清页缓存失败。shader 清理也有参数与失败策略，报告必须记录实际结果。它仍不会自动清登录态、数据库和应用数据，也不等于首次安装。
 
 <!-- gracker-diagram: ch17-06-10-cold-cache-order -->
 ![COLD每轮的真实准备顺序](../../assets/diagrams/ch17/ch17-06-10-cold-cache-order.png)
@@ -266,12 +288,12 @@ Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` �
 
 | 模式 | API 24-37 行为 | 用途 |
 |---|---|---|
-| `DEFAULT` | `Partial(BaselineProfileMode.UseIfAvailable)` | 模拟安装后可用 profile 的默认体验；profile 缺失时不失败 |
-| `None()` | 清除预编译，运行时可发生 JIT | 看 fresh install（刚安装且尚无 profile）无 Baseline Profile 的较差口径 |
-| `Partial(Require)` | 安装 APK 内 Baseline Profile，并以 `speed-profile` 编译清单命中的方法 | 验证 profile 能否安装和使用 |
-| `Partial(Disable, warmupIterations=N)` | 用 N 次 warmup 生成运行时 profile 后部分编译 | 模拟使用一段时间后的 profile-guided 状态 |
-| `Full()` | 以 `speed` 全量 AOT 编译方法 | 稳定性或上限对照；不代表现代用户设备常态 |
-| `Ignore()` | 不重置、不改变外部准备的编译状态 | 由脚本管理编译时使用 |
+| <code>DEFAULT</code> | <code>Partial(<wbr>Baseline<wbr>Profile<wbr>Mode.<wbr>Use<wbr>If<wbr>Available)</code> | 模拟安装后可用 profile 的默认体验；profile 缺失时不失败 |
+| <code>None(<wbr>)</code> | 重置编译状态，不主动预编译；运行时仍可发生 JIT | 无预编译对照；不是所有真实首次安装条件的复刻 |
+| <code>Partial(<wbr>Require)</code> | 要求安装 APK 内 Baseline Profile，再请求 <code>speed-<wbr>profile</code> 编译 | 核对安装与请求路径；具体方法是否编译仍受 ART 策略影响 |
+| <code>Partial(<wbr>Disable,<wbr> warmup<wbr>Iterations=<wbr>N)</code> | 用 N 次 warmup 生成运行时 profile 后部分编译 | 模拟使用一段时间后的 profile-guided 状态 |
+| <code>Full(<wbr>)</code> | 请求 <code>speed</code> 编译方法 | AOT 对照；不能预设性能上限，也不代表现代用户设备常态 |
+| <code>Ignore(<wbr>)</code> | 跳过编译重置和主动编译 | 外部脚本控制编译；仍有测试进程管理和 ProfileInstaller skip-file 操作 |
 
 API 23 只有 `Full()`，而 `Full()` 也未必更快：已编译代码变大后，磁盘读取和 instruction cache（CPU 存放近期执行指令的缓存） 的压力都可能跟着上来。验证 Baseline Profile 时，我们用 `Partial(BaselineProfileMode.Require)` 与 `None()` 成对比较；`DEFAULT` 留给模拟默认体验，严格的收益验证要靠这一对。
 
@@ -280,12 +302,7 @@ API 23 只有 `Full()`，而 `Full()` 也未必更快：已编译代码变大后
 
 图：用 None 与要求 Baseline Profile 的 Partial 成对评估，Full 另作 AOT 对照。 DEFAULT允许缺profile；Full并不是性能上限，安装成功也不保证每条规则都编译。
 
-版本上还有一个前提要留意：Android 14 / API 34 之前，Macrobenchmark 为重置编译状态可能重装目标 APK，从而丢失应用数据。依赖预置账号或数据库的场景要在每次重装后重新准备，或者由外部脚本控制编译并使用 `CompilationMode.Ignore()`。Android 14 及以上才适合在这一步保留应用状态。
-
-<!-- gracker-diagram: ch17-06-08-macro-window -->
-![Macrobenchmark的迭代窗口](../../assets/diagrams/ch17/ch17-06-08-macro-window.png)
-
-图：编译阶段之后，每轮先准备，再采集并执行 measureBlock，最后提取指标。 编译或启动预热可额外执行用户block；等待是否计入数值由metric定义。
+重置能否保留应用数据取决于版本和权限。API 34+ 使用新的 profile reset 路径；API 34 前非 root 环境通常靠卸载重装重置，因此会丢失应用数据，rooted 环境则可走 `cmd package compile --reset`。预置账号或数据库要在可能重装后重新准备；外部脚本也可配合 `Ignore()` 管理编译。不要把“Android 14 之前”一律等同“必须重装”。
 
 <!-- gracker-diagram: ch17-06-12-reset-data-branches -->
 ![重置编译时是否保留数据](../../assets/diagrams/ch17/ch17-06-12-reset-data-branches.png)
@@ -497,18 +514,18 @@ class StartupBenchmark {
 }
 ```
 
-这个测试量的是完整启动过程：从 launch intent（启动 Activity 的意图） 一路到首帧和 `reportFullyDrawn()`。每轮由 `StartupMode.COLD` 杀进程，应用数据不自动清除；指标是 TTID（Time to Initial Display，首帧显示时间），以及可用时的 TTFD（Time to Full Display，完整内容显示时间）。找不到就绪标记、没有启动事件或超时，测试都会失败。10 轮够我们看 median 和逐次 trace；要稳定估计 P95 还得加样本，CI 若使用 P95，需要从 JSON 的 `runs` 计算。
-
-`startActivityAndWait()` 只保证启动 Activity 并等待平台可观察的启动完成；下一轮会不会在异步数据还没加载完时就开始，要靠额外的 `home_ready` 检查来防住。TTFD 是否正确，仍取决于应用报告 fully drawn（应用报告完整内容已显示） 的时机。
+这个测试把 launch、首帧与业务就绪等待放进测量窗口。指标是 TTID，以及可获得且被应用正确报告的 TTFD；`home_ready` 不出现会超时失败，但不能据此认定每轮都生成了有效 TTID/TTFD。固定 1.4.1 的单值指标合并会跳过字段不全的迭代，整体无指标才失败。CI 还应检查 JSON 中每项 `runs` 数量等于预期轮数，并逐轮核对 trace；10 轮可看 median，P95 接近极值，不能声称稳定估计尾部。
 
 <!-- gracker-diagram: ch17-06-16-startup-readiness -->
 ![冷启动、业务就绪与缺样检查](../../assets/diagrams/ch17/ch17-06-16-startup-readiness.png)
 
 图：启动窗口同时等待业务就绪，随后还需核对每项指标的 runs 与逐轮 trace。 home_ready超时能失败，但不能保证每轮TTID/TTFD完整。
 
+`startActivityAndWait()` 只保证启动 Activity 并等待平台可观察的启动完成；下一轮会不会在异步数据还没加载完时就开始，要靠额外的 `home_ready` 检查来防住。TTFD 是否正确，仍取决于应用报告 fully drawn（应用报告完整内容已显示） 的时机。
+
 ### 示例二：只把列表滚动放进测量窗口
 
-滚动实验里，启动、登录和网络等待都要留在 `FrameTimingMetric` 的测量窗口之外。下面的 benchmark 用 deep link 载入固定 1000 条本地数据并回到列表顶部，这些准备动作放在 `setupBlock`；测量窗口里只有一次向下 fling（带惯性的快速滚动）。
+滚动实验里，启动、登录和网络等待都要留在 `FrameTimingMetric` 的测量窗口之外。下面的 benchmark 用 deep link 载入固定 1000 条本地数据并回到列表顶部，这些准备动作放在 `setupBlock`；测量窗口执行一次向下 fling（带惯性的快速滚动），并等待受测 fixture 发出明确完成标记。
 
 ```kotlin
 import android.content.Intent
@@ -552,16 +569,23 @@ class FeedScrollBenchmark {
                     5_000
                 )
             )
+            check(!device.hasObject(By.res(PACKAGE_NAME, "feed_fling_done")))
         }
     ) {
         val list = checkNotNull(
             device.findObject(By.res(PACKAGE_NAME, "feed_list"))
         )
         list.setGestureMargin(device.displayWidth / 5)
-        check(list.fling(Direction.DOWN)) {
-            "Feed list could not fling down"
+        // 返回值表示该方向是否还能继续滚动，不表示手势成功。
+        list.fling(Direction.DOWN)
+        check(
+            device.wait(
+                Until.hasObject(By.res(PACKAGE_NAME, "feed_fling_done")),
+                5_000
+            )
+        ) {
+            "Feed did not move and become idle within 5 seconds"
         }
-        device.waitForIdle()
     }
 
     private companion object {
@@ -570,14 +594,14 @@ class FeedScrollBenchmark {
 }
 ```
 
-被测对象是确定数据集上的一次 fling；每轮准备同一 deep link 和列表起点；指标是 frame duration、API 31+ 的 frame overrun 以及 frame count；页面未就绪、列表不存在或手势失败会中止测试。`device.waitForIdle()` 位于测量窗口，因此列表滚动到静止的全过程都会被 trace 覆盖。
-
-在这个回归测试里，网络要作为受控输入。需要覆盖网络解析时，应使用本地 mock server（按预设响应请求的测试服务器）、固定响应、固定延迟策略，并把“网络实验”和“渲染实验”分成不同场景。
+被测对象是固定数据上的一次 fling 与完成等待。fixture 每次打开 deep link 都回到顶部，并移除 `feed_fling_done`；只有确认列表位置已改变、随后收到滚动 idle 状态，才显示该 resource id。若未移动或未结束，测试超时失败。UiAutomator 2.3.0 的 `fling()` 返回值只表示该方向还能否滚动，到末端返回 false 不等于失败；`waitForIdle()` 只等无障碍事件空闲，也不能证明渲染或所有动画已经静止。完成标记自身的固定 UI 开销也在窗口内；用 trace 核对所需尾帧确实被覆盖。
 
 <!-- gracker-diagram: ch17-06-17-fling-done -->
 ![列表手势与明确完成条件](../../assets/diagrams/ch17/ch17-06-17-fling-done.png)
 
 图：每轮回到顶部并清旧标记，手势后等待已移动且 idle 的新标记。 fling返回能否继续滚动；accessibility idle不证明渲染已结束。
+
+在这个回归测试里，网络要作为受控输入。需要覆盖网络解析时，应使用本地 mock server（按预设响应请求的测试服务器）、固定响应、固定延迟策略，并把“网络实验”和“渲染实验”分成不同场景。
 
 ### 指标要按定义阅读
 
@@ -597,11 +621,11 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 #### `FrameTimingMetric`
 
-它输出每帧样本并在多次迭代后形成分位数：
+它从 trace 匹配每帧数据，多轮样本合并后计算分位数；不是先算每轮分位数再取平均。不同轮的帧数不同，会改变合并样本权重：
 
-- `frameDurationCpuMs`：UI thread 和 RenderThread 产出一帧所用的 CPU duration（RenderThread 负责提交绘制命令）；API 31 前未计入 `Choreographer#doFrame` 开始前的时间。
-- `frameOverrunMs`：API 31+ 相对帧 deadline（系统给这一帧分配的时间预算） 的超期或余量；正值表示超过 deadline，负值表示仍有余量。
-- `frameCount`：测量窗口内产出的帧数，用来解释“删掉无效帧后分位数上升”之类的样本变化。
+- `frameDurationCpuMs`：固定 1.4.1 计算 `RenderThread slice 结束 − UI doFrame slice 开始`。这是经过时间，包含等待和抢占，不是两线程实际占用 CPU 的时长之和；API 31+ 仍使用这个公式，也没有把 Expected frame start 到 doFrame 的延迟加进来。
+- `frameOverrunMs`：API 31+ 计算 `max(Actual frame 结束, RenderThread slice 结束) − Expected frame 结束`；正值超过 deadline，负值有余量。取 max 是这版对 Actual 过早结束问题的补偿。
+- `frameCount`：本轮成功匹配到的 `FrameData` 条数。API 31+ 需要 UI、RenderThread、Expected、Actual 关联成功；查询还排除非正 duration。它不是设备显示的全部物理帧数，样本减少可能来自少画帧，也可能来自关联或采集缺失。
 
 变刷新率设备上，我们优先用 `frameOverrunMs` 判断 deadline 表现。定位根因时，把它与 FrameTimeline（记录每帧生命周期的系统时间线）、主线程、RenderThread 和 GPU 轨道放在一起读；单看一个分位数是不够的。
 
@@ -612,7 +636,7 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 #### `TraceSectionMetric`
 
-stable 1.4.1 中它仍标注为 `ExperimentalMetricApi`。默认 `mode` 是 `Mode.Sum`，会输出匹配 slice 的总时长和次数；还可以选择 `First`、`Min`、`Max`、`Count`、`Average`。默认只匹配目标包，未闭合且 `dur = -1` 的 slice 会被忽略。
+固定 1.4.1 中它仍标注为 `ExperimentalMetricApi`。默认 `mode` 是 `Mode.Sum`，会输出匹配 slice 的总时长和次数；还可以选择 `First`、`Min`、`Max`、`Count`、`Average`。默认只匹配目标包，未闭合且 `dur = -1` 的 slice 会被忽略。
 
 使用时必须明确 mode。`First` 只取第一条；`Sum` 遇到递归或重入 section 时可能把重叠时间重复相加。业务 trace 名称要稳定，且要打开每轮 Perfetto trace 确认选中了预期 section。
 
@@ -624,8 +648,8 @@ stable 1.4.1 中它仍标注为 `ExperimentalMetricApi`。默认 `mode` 是 `Mod
 #### `PowerMetric`、`MemoryUsageMetric` 与 `ArtMetric`
 
 - `PowerMetric` 从 API 29 可用，仍是 experimental。高精度 energy/power 依赖设备的 power rail（硬件分项能耗计数）；使用前检查 `deviceSupportsHighPrecisionTracking()` 与最低电量。
-- `MemoryUsageMetric` 可查询 heap、RSS（进程驻留在物理内存中的大小）、GPU 等子指标，适合固定操作窗口；线上 OOM（内存不足） 和 LMKD（系统低内存终止进程） 的证据还要从线上来。
-- `ArtMetric` 从 API 24 可用，可观察 ART 的 JIT compilation、类加载和校验情况，适合验证 Baseline Profile 是否减少启动期运行时工作。
+- `MemoryUsageMetric` 仍属 experimental，构造时显式选 `Mode.Last` 或 `Mode.Max`，读取最后可用样本或最大采样值；不是精确的连续峰值。heap、RSS、GPU 等计数的采样来源不同，缺失与单位要分别核对，不能单独证明泄漏、OOM 或 LMKD。
+- `ArtMetric` 从 API 24 可用，但部分字段还要求相应 ART Mainline 版本与 tracepoint；不支持时可能没有该字段。固定 1.4.1 的类加载匹配还可能漏掉顶层重打包类，1.5 线已修复。它可辅助解释 JIT、类加载和校验变化，零值或缺字段都不能单独证明 Profile 生效或启动更快。
 
 功耗实验需要固定设备、亮度、网络、温度、电池电量和操作时长。短场景的功耗差异常被采样噪声掩盖，需延长稳定阶段并用相同物理设备比较。
 
@@ -638,34 +662,34 @@ stable 1.4.1 中它仍标注为 `ExperimentalMetricApi`。默认 `mode` 是 `Mod
 
 每份报告至少记录以下信息：
 
-| 类别 | 必填字段 |
+| <span style="white-space:nowrap">类别</span> | 必填字段 |
 |---|---|
-| 代码 | baseline SHA、candidate SHA（两次提交的内容哈希）、applicationId、version、variant、R8 配置 |
-| 工具 | Benchmark、AGP、Kotlin、JDK、ProfileInstaller 版本 |
-| 设备 | model、device codename、系统构建 fingerprint、API、kernel tag、是否 root |
-| 运行 | `CompilationMode`、`StartupMode`、iterations、fixture seed、账号和缓存状态 |
-| 环境 | 电量、充电状态、thermal sleep（因设备过热而等待降温的时间）、刷新率、动画设置、网络模式 |
-| 结果 | metric、方向、runs、median、适用时的 p90/p95/p99、基线差值 |
-| 证据 | benchmark JSON、每轮 Perfetto trace、测试日志 |
+| <span style="white-space:nowrap">代码</span> | baseline SHA、candidate SHA（两次提交的内容哈希）、applicationId、version、variant、R8 配置 |
+| <span style="white-space:nowrap">工具</span> | Benchmark、AGP、Kotlin、JDK、ProfileInstaller 版本 |
+| <span style="white-space:nowrap">设备</span> | model、device codename、系统构建 fingerprint、API、kernel tag、是否 root |
+| <span style="white-space:nowrap">运行</span> | `CompilationMode`、`StartupMode`、iterations、fixture seed、账号和缓存状态 |
+| <span style="white-space:nowrap">环境</span> | 电量、充电状态、thermal sleep（因设备过热而等待降温的时间）、刷新率、动画设置、网络模式 |
+| <span style="white-space:nowrap">结果</span> | metric、方向、runs、median、适用时的 p90/p95/p99、基线差值 |
+| <span style="white-space:nowrap">证据</span> | benchmark JSON、每轮 Perfetto trace、测试日志 |
 
-Android 17 设备的报告应记录 `android-17.0.0_r1` 对应系统构建信息。若结论涉及 Perfetto 中的 CPU 调度或唤醒事件，kernel 源码核验统一使用 `android17-6.18-2026-06_r6`；Benchmark 库行为仍以 AndroidX 1.4.1 源码为准。
-
-还要固定这些实验条件：
-
-- 性能门禁用物理设备。模拟器可以跑 smoke test（只验证流程可运行的快速检查） 验证流程，但数字受宿主机影响。
-- 同一对比只使用相同型号、系统 fingerprint 和刷新率。
-- 关闭省电模式，避免后台同步与系统更新，控制设备散热。
-- Microbenchmark 可在 rooted 设备使用 `lockClocks`；官方 CI 指南明确说明该措施只用于 Microbenchmark。
-- Macrobenchmark 让库处理温控降频等待；报告保留 `thermalThrottleSleepSeconds`。
-- UI 场景使用稳定 resource id 或 Compose `testTagAsResourceId`，不要依赖文本和屏幕坐标。
-- 每轮数据、登录态、页面起点与网络响应一致。
-
-系统动画是否关闭取决于测试目标。若要测应用转场动画，关闭动画会改变被测对象；若只想测布局与列表工作，可关闭系统级无关动画。报告必须写明选择。
+系统源码 tag 是分析基线，实际运行设备必须记录 fingerprint、内核版本与厂商补丁；涉及调度和唤醒时，再匹配该设备对应的内核源码。`android17-6.18-2026-06_r6` 只能作为某个固定内核快照，不能统一代表所有 Android 17 设备。Benchmark 库行为则继续绑定本文的 1.4.1 发布物。
 
 <!-- gracker-diagram: ch17-06-22-report-source-device -->
 ![代码、设备与证据的可追溯关系](../../assets/diagrams/ch17/ch17-06-22-report-source-device.png)
 
 图：报告把代码SHA、工具发布物、设备构建与原始结果一起保存，内核源码匹配实际设备。 统一Android版本或某个kernel tag不能代表全部厂商设备。
+
+还要固定这些实验条件：
+
+- 性能门禁用物理设备。模拟器可以跑 smoke test（只验证流程可运行的快速检查） 验证流程，但数字受宿主机影响。
+- 同一对比优先在同一台物理设备交错运行 baseline 与 candidate，并固定 fingerprint 和刷新率；跨设备先分别建立基线，不能只凭型号相同直接混合数值。
+- 关闭省电模式，避免后台同步与系统更新，控制设备散热。
+- Microbenchmark 可在 rooted 设备使用 `lockClocks`；官方 CI 指南说锁频只对 microbenchmarks 有必要，并没有禁止其他实验使用。锁频会改变运行条件，报告必须标明，不能把它当真实用户功耗状态。
+- Macrobenchmark 让库处理温控降频等待；报告保留 `thermalThrottleSleepSeconds`。
+- UI 场景使用稳定 resource id 或 Compose `testTagAsResourceId`，不要依赖文本和屏幕坐标。
+- 每轮数据、登录态、页面起点与网络响应一致。
+
+系统动画是否关闭取决于测试目标。若要测应用转场动画，关闭动画会改变被测对象；若只想测布局与列表工作，可关闭系统级无关动画。报告必须写明选择。
 
 <!-- gracker-diagram: ch17-06-23-noise-control -->
 ![同设备配对与环境控制](../../assets/diagrams/ch17/ch17-06-23-noise-control.png)
@@ -680,9 +704,9 @@ Benchmark 结果是连续数值，一次 pass/fail 判断不了回归；门禁�
 
 1. 固定一小组物理设备，建立每台设备自己的历史序列。
 2. 对 main 分支定时运行，估计每个 metric 的自然波动带。
-3. PR 在同型号、同 fingerprint 设备上运行 baseline 与 candidate。
+3. PR 在同一台设备按交错顺序运行 baseline 与 candidate，记录各次温度、顺序与 fingerprint。
 4. 只有差值同时超过业务容忍值和历史噪声带时，才判为回归。
-5. 首次越界自动在同一设备重跑；两轮方向一致再阻断。
+5. 首次越界自动在同一设备重跑；方向一致可进入复核或按既定策略阻断，但两轮一致本身不是统计显著性的证明。
 6. 保留 raw JSON 与 trace，人工复核测试起点、样本数和异常系统负载。
 
 对“越小越好”的耗时指标，可以使用如下门槛：
@@ -709,7 +733,7 @@ Benchmark 结果是连续数值，一次 pass/fail 判断不了回归；门禁�
 
 官方 Gradle 运行会把 JSON 和 trace 复制到 `build/outputs/connected_android_test_additional_output/...`。Macrobenchmark 每个 measured iteration（计入指标的一轮）生成一份 Perfetto trace；Microbenchmark 每个测试通常生成一份覆盖全部迭代的 trace。控制台摘要不够用，CI 应按 commit、设备和场景归档原始 JSON 与 trace。
 
-`androidx.benchmark.suppressErrors` 会把 debuggable、模拟器、低电量等配置错误降为警告。它适合只检查脚本能否跑通的 smoke job（快速验证任务）；性能门禁里不要出现它。
+`androidx.benchmark.suppressErrors` 只抑制显式列出的错误 ID，并不统一忽略所有错误。它可供 smoke job 检查脚本流程；性能门禁应保留环境检查并处理实际根因，避免把不可靠结果当作回归证据。
 
 <!-- gracker-diagram: ch17-06-26-raw-artifact-archive -->
 ![原始JSON与trace归档](../../assets/diagrams/ch17/ch17-06-26-raw-artifact-archive.png)
@@ -745,7 +769,7 @@ Baseline Profile 是随 APK 发布的热点方法和类清单，ART 可据此提
 
 图：producer 收集受控旅程规则，consumer 把规则用于当前发布 APK，收益验证独立进行。 规则文件存在不等于安装、编译或收益已得到证明。
 
-生成启动 profile 的最小测试如下。`includeInStartupProfile = true` 会把启动入口到应用报告 fully drawn 的路径纳入启动 profile；普通滚动或二级页面旅程应另建 `collect()` 并保持为 `false`。
+下面的测试生成启动旅程规则。`includeInStartupProfile=true` 让这次完整受控旅程的规则以 Startup Profile 输入文件（`startup-prof`）输出，并不会在 `reportFullyDrawn()` 处自动截断采集；收集范围由 `collect` block 实际执行的路径决定。启动旅程应停在业务就绪处，滚动与二级页面另建 `collect()`，保持该参数为 false，避免把非启动代码也纳入启动布局规则。
 
 ```kotlin
 import androidx.benchmark.macro.junit4.BaselineProfileRule
@@ -788,6 +812,13 @@ class BaselineProfileGenerator {
 
 图：collect block 的实际路径决定收集范围，true 把这次规则输出为 startup-prof。 fullyDrawn不自动结束收集；滚动旅程另建collect且保持false。
 
+`strictStability=true` 在默认最多 15 轮中要求规则集合连续 3 轮一致，否则失败；比较的是过滤前规则集合，不是耗时稳定或业务覆盖率。它也不检查过滤后的规则必然非空，生成结果仍需检查内容与旅程覆盖。
+
+<!-- gracker-diagram: ch17-06-30-profile-stability -->
+![规则集合稳定与性能收益分开](../../assets/diagrams/ch17/ch17-06-30-profile-stability.png)
+
+图：最多15轮中要求过滤前规则集合连续3轮一致，严格模式不满足就失败。 集合稳定不证明场景覆盖、过滤后非空或性能改善。
+
 生成环境要求非 root 设备 API 33+，或 rooted 设备 API 28+；这只是 profile 收集的门槛。收益验证要回到实际发布的设备段，并至少成对运行：
 
 - `CompilationMode.None()`：无预编译对照。
@@ -795,47 +826,51 @@ class BaselineProfileGenerator {
 
 两组测试使用相同目标 APK、fixture、设备和 iteration。`Partial(Require)` 需要 API 24+、APK 由 AGP 7.0+ 打包 profile，并包含 ProfileInstaller；当前工程宜使用 AGP 8.2+ 模板与 ProfileInstaller 1.4.1。API 23 只能运行 `Full()`，这组收益对照在那里凑不齐。
 
-生成后的 profile 要跟着工程走：关键用户旅程、R8 映射（压缩后名称与原始名称的对应关系）、启动依赖或大版本任一变化，都应重新生成。文件存在只说明产物被创建；`Partial(Require)`、`ArtMetric` 与启动/滚动指标才能证明它在当前 APK 和设备上发挥作用。
-
-应用侧 producer/consumer 配置、`baseline.prof`/`baseline.profm` 位置、ProfileInstaller/Verifier 状态、Cloud Profile 与 DM 边界见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
-
-<!-- gracker-diagram: ch17-06-30-profile-stability -->
-![规则集合稳定与性能收益分开](../../assets/diagrams/ch17/ch17-06-30-profile-stability.png)
-
-图：最多15轮中要求过滤前规则集合连续3轮一致，严格模式不满足就失败。 集合稳定不证明场景覆盖、过滤后非空或性能改善。
+生成后的 profile 要跟着工程走：关键用户旅程、R8 映射（压缩后名称与原始名称的对应关系）、启动依赖或大版本任一变化，都应重新生成。文件存在只说明产物被创建。先确认规则与当前 APK 匹配、安装与编译状态，再把 `Partial(Require)` / `None()` 对照、可用的 `ArtMetric` 和启动/滚动指标结合起来评估收益；安装成功本身不保证变快。
 
 <!-- gracker-diagram: ch17-06-31-profile-benefit-evidence -->
 ![Profile安装与收益的分层验证](../../assets/diagrams/ch17/ch17-06-31-profile-benefit-evidence.png)
 
 图：同 APK、输入和设备先核对规则与安装编译状态，再配对评估启动、帧与可用 ART 指标。 Require只要求安装路径成功；运行时间和覆盖仍需独立证据。
 
+应用侧 producer/consumer 配置、`baseline.prof`/`baseline.profm` 位置、ProfileInstaller/Verifier 状态、Cloud Profile 与 DM 边界见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
+
 ### 源码核验记录
 
-以下内容对 stable 1.4.1 的已发布 AAR 和 sources 做了交叉核对，并用 1.5.0-rc01 发布物确认了预发布线的适用范围：
+本轮对固定 1.4.1、历史预发布 1.5.0-rc01 与当前稳定 1.5.0 的已发布 AAR、POM、sources 做交叉核对；源码契约与宿主编译不等于已在 Android 17 设备完成测量：
 
 - `benchmark-common` / `benchmark-junit4` manifest：`minSdkVersion=21`。
 - `benchmark-macro` / `benchmark-macro-junit4` manifest：`minSdkVersion=23`。
 - `CompilationMode.kt`：API 23 仅 `Full`，API 24+ 才有 `None` / `Partial`，`DEFAULT` 使用 `UseIfAvailable`。
 - `Metric.kt`：Frame、Startup、TraceSection、Power、Memory 与 Art 指标的字段和 API 限制。
 - `BaselineProfileRule.kt`：非 root API 33+ 或 rooted API 28+，以及 stability 参数。
-- `BlackHole.kt`：stable 1.4.1 仍带 `ExperimentalBlackHoleApi`。
-- `benchmark-*:1.5.0-rc01` Android AAR manifest：Microbenchmark 与 Macrobenchmark 下限统一为 API 24。
+- `BlackHole.kt`：固定 1.4.1 仍带 `ExperimentalBlackHoleApi`；`runWithMeasurementDisabled` 为泛型并返回 block 结果。
+- `benchmark-*:1.5.0-rc01` 与 `1.5.0` 的四个 Android AAR manifest：下限均为 API 24。
 - `benchmark-common:1.5.0-rc01` sources：`BlackHole` 已取消 `ExperimentalBlackHoleApi` 注解。
-- AndroidX Benchmark 发布说明：1.4.1 stable、1.5.0-rc01，以及 1.5 预发布线的 UiAutomator 2.4 与进程内 trace 合并能力。
+- `MacrobenchmarkPhase` / `MetricResultExtensions`：setup 与测量窗口、缺单值迭代跳过、逐帧样本池化；`FrameTimingQuery`：经过时间、deadline 与帧关联。
+- UiAutomator 2.3.0：`fling` 的返回值是能否继续滚动，accessibility idle 不是渲染完成。
+- AndroidX 当前发布信息：1.5.0 stable、1.6.0-alpha01；ProfileInstaller 仍为 1.4.1。
 
-stable 1.4.1 下载件的 SHA-256 如下：
+固定 1.4.1 下载件的 SHA-256 如下（不是当前稳定版）：
 
 | 文件 | SHA-256 |
 |---|---|
-| `benchmark-common-1.4.1.aar` | `54fad42120f3c4a9319c9b11ad37733a22a0dca92977ce4bfa33be6e6313c2b9` |
-| `benchmark-junit4-1.4.1.aar` | `035c2393aa416b98ed8979d751119518a03da0a00f4a5529eb21a3eeed6b0183` |
-| `benchmark-macro-1.4.1.aar` | `d99732de5d713fea47fe7caa3b18438fe615bbb1225e3c6cf0fac48ec350943c` |
-| `benchmark-macro-junit4-1.4.1.aar` | `41595999e2dad5a3e61b9ad74c18d73700c21060b7845df05f28a8fbc9a08b15` |
-| `benchmark-common-1.4.1-sources.jar` | `55d075a7fede74c60c4ca8a9c9a86cfd067e7e55ee4e33e3f5c7e285a298e930` |
-| `benchmark-macro-1.4.1-sources.jar` | `7eee75b0a5982329906d2ae074c5cc05e4d25500a35d580a3401bb97dbfce2c4` |
+| <code>benchmark-<wbr>common-<wbr>1.<wbr>4.<wbr>1.<wbr>aar</code> | <code>54fad421<wbr>20f3c4a9<wbr>319c9b11<wbr>ad37733a<wbr>22a0dca9<wbr>2977ce4b<wbr>fa33be6e<wbr>6313c2b9</code> |
+| <code>benchmark-<wbr>junit4-<wbr>1.<wbr>4.<wbr>1.<wbr>aar</code> | <code>035c2393<wbr>aa416b98<wbr>ed8979d7<wbr>51119518<wbr>a03da0a0<wbr>0f4a5529<wbr>eb21a3ee<wbr>ed6b0183</code> |
+| <code>benchmark-<wbr>macro-<wbr>1.<wbr>4.<wbr>1.<wbr>aar</code> | <code>d99732de<wbr>5d713fea<wbr>47fe7caa<wbr>3b18438f<wbr>e615bbb1<wbr>225e3c6c<wbr>f0fac48e<wbr>c350943c</code> |
+| <code>benchmark-<wbr>macro-<wbr>junit4-<wbr>1.<wbr>4.<wbr>1.<wbr>aar</code> | <code>41595999<wbr>e2dad5a3<wbr>e61b9ad7<wbr>4c18d737<wbr>00c21060<wbr>b7845df0<wbr>5f28a8fb<wbr>c9a08b15</code> |
+| <code>benchmark-<wbr>common-<wbr>1.<wbr>4.<wbr>1-<wbr>sources.<wbr>jar</code> | <code>55d075a7<wbr>fede74c6<wbr>0c4ca8a9<wbr>c9a86cfd<wbr>067e7e55<wbr>ee4e33e3<wbr>f5c7e285<wbr>a298e930</code> |
+| <code>benchmark-<wbr>macro-<wbr>1.<wbr>4.<wbr>1-<wbr>sources.<wbr>jar</code> | <code>7eee75b0<wbr>a5982329<wbr>906d2ae0<wbr>74c5cc05<wbr>e4d25500<wbr>a35d580a<wbr>3401bb97<wbr>dbfce2c4</code> |
 
 
 ## 参考资料
+
+- [benchmark-common-1.5.0.aar](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0.aar)
+- [benchmark-common-1.5.0-sources.jar](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0-sources.jar)
+- [benchmark-macro-1.4.1-sources.jar](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar)
+- [benchmark-junit4-1.4.1-sources.jar](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-junit4/1.4.1/benchmark-junit4-1.4.1-sources.jar)
+- [benchmark-gradle-plugin-1.4.1-sources.jar](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-gradle-plugin/1.4.1/benchmark-gradle-plugin-1.4.1-sources.jar)
+- [uiautomator-2.3.0-sources.jar](https://dl.google.com/dl/android/maven2/androidx/test/uiautomator/uiautomator/2.3.0/uiautomator-2.3.0-sources.jar)
 
 - [AndroidX Benchmark release notes](https://developer.android.com/jetpack/androidx/releases/benchmark)
 - [Google Maven：Benchmark metadata](https://dl.google.com/android/maven2/androidx/benchmark/benchmark-common/maven-metadata.xml)
@@ -870,8 +905,3 @@ stable 1.4.1 下载件的 SHA-256 如下：
 - [`android-17.0.0_r1` `artd.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/artd/artd.cc)
 - [`android-17.0.0_r1` `profman.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/profman/profman.cc)
 - [`android-17.0.0_r1` `dex2oat.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc)
-
-<!-- gracker-diagram: ch17-06-01-measurement-contract -->
-![可重复实验的五个条件](../../assets/diagrams/ch17/ch17-06-01-measurement-contract.png)
-
-图：同一业务路径固定输入、设备、编译状态与指标，再用 JSON 和 trace 解释差值。 受控实验的数值不能直接代替线上用户分布。

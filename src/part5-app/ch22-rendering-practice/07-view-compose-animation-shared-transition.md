@@ -4,7 +4,7 @@ chapter: '22.7'
 section: '22.7'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1; Lottie 6.7.1; ConstraintLayout 2.2.2
 confidence: high
 sources:
@@ -150,7 +150,7 @@ ValueAnimator.ofInt(startWidth, targetWidth).apply {
 
 `updateLayoutParams` 会把新参数重新设置给 View，并触发 `requestLayout()`。受影响范围由父容器、约束与测量缓存决定，重排可能波及当前 View 之外。
 
-如果这段展开只是视觉上的，布局占位与触摸区域都能保持目标尺寸，我们就可以用变换属性表达同一段视觉过程：
+如果这段展开只是视觉上的，同级布局占位可以保持目标尺寸，并且已定义好动画期间的点击与无障碍行为，我们就可以用变换属性表达视觉过程：
 
 ```kotlin
 view.pivotX = 0f
@@ -160,7 +160,7 @@ view.animate()
     .start()
 ```
 
-`scale（缩放）X` 改变的是绘制变换：measured width（测量宽度）、layout bounds（摆放边界）、触摸命中区域和无障碍节点边界都维持原值。反过来，产品要求周围内容随宽度移动、收起后不可点击，或无障碍边界同步变化时，我们就要更新布局和交互状态，并通过 trace（时间轴） 确认参与重排的子树及其耗时——这类几何语义要靠布局更新完成。
+`scaleX` 改变绘制矩阵，不改变 measured width（测量宽度）、layout bounds（摆放边界）或同级布局占位。标准 `ViewGroup` 触摸分发会用子 View 的逆矩阵把触点映射到局部坐标；`View` 的无障碍屏幕边界也会计入变换和裁剪，不能说两者始终保持原值。父级裁剪、自定义 `TouchDelegate` 或无障碍节点还会改变结果。产品要求周围内容随宽度移动时，需要更新布局；收起后不可操作则要显式管理可见性、点击和无障碍状态，不能仅靠 `alpha=0` 或缩放。再用 trace 确认重排子树与耗时。参见 [`ViewGroup` 输入坐标转换](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java) 与 [`View` 无障碍屏幕边界](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)。
 
 <!-- gracker-diagram: a238-03-scale-input-coordinates -->
 ![缩放的布局、触摸与无障碍坐标](../../assets/diagrams/ch22/a238-03-scale-input-coordinates.png)
@@ -201,7 +201,7 @@ view.animate()
 
 在 Android 10—17 上，第一个和第三个兼容分支不会命中，主要自动切换条件是 mask / matte 总数超过 4。源码注释说明这个阈值只试过少量动画，要求开发者手动比较两种模式；第 5 个 mask 是否更慢、哪种模式更适合目标设备，都要以实测为准。软件模式会把内容绘制到 Lottie 管理的 Bitmap，复杂动画仍可能产生较高的 CPU 与内存成本。
 
-`LottieAnimationView` 的 `cacheComposition`（Compose 生成并维护 UI 树的组合阶段） 默认开启。常规 assets 目录资源、raw 资源和 URL 加载通过 `LottieCompositionFactory` 返回异步任务，编辑器预览分支仍有同步解析。异步加载只把动画模型的解析与构建移出当前调用，播放期间的进度传播、动态属性回调和 Canvas 绘制仍要计入帧成本。
+`LottieAnimationView` 的 `cacheComposition` 默认开启；这里缓存的是 Lottie 解析后的动画模型，与 Jetpack Compose 的组合阶段无关。常规 assets 目录资源、raw 资源和 URL 加载通过 `LottieCompositionFactory` 返回异步任务，编辑器预览分支仍有同步解析。异步加载只把动画模型的解析与构建移出当前调用，播放期间的进度传播、动态属性回调和 Canvas 绘制仍要计入帧成本。
 
 Lottie 6.7.1 还提供 `setPerformanceTrackingEnabled()` 与 `getPerformanceTracker()`，用于观察各图层的渲染时间。`AsyncUpdates` 在该版本被标为实验 API，`AUTOMATIC` 的注释写明当前按禁用处理；节点更新是否离开 UI 线程，要看项目是否显式启用并验证过。
 
@@ -239,6 +239,11 @@ class BlurController(
 ) {
     enum class State { OFF, COMPACT, EXPANDED }
 
+    init {
+        require(compactRadiusPx.isFinite() && compactRadiusPx > 0f)
+        require(expandedRadiusPx.isFinite() && expandedRadiusPx > 0f)
+    }
+
     private val compact = RenderEffect.createBlurEffect(
         compactRadiusPx,
         compactRadiusPx,
@@ -262,14 +267,14 @@ class BlurController(
 }
 ```
 
-这个示例避免在每帧重复创建相同效果，并保留 `null` 清理路径。半径由视觉目标与实机数据决定，关闭状态直接传 `null`。动画必须连续改变半径时，每帧输入都在变化，这时应缩小 View 的输入面积，并比较关闭效果前后的 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线）、RenderThread、GPU 和功耗差值。
-
-`RenderThread DrawFrame` 变长时，先别急着写成“GPU 慢”：这段时间可能包含 RenderThread 的 CPU 工作、runnable（线程已就绪但仍在等 CPU） 时间、`dequeueBuffer` 等待、驱动调用或 GPU 同步。我们要接着检查线程状态、调度延迟、`dequeueBuffer` / `queueBuffer` 耗时、GPU slice（时间轴上的工作区间） 和 fence；UI 与 RenderThread 都按时而 present 偏晚时，再往下看 BLAST 的缓冲区积压、SurfaceFlinger 的 latch（接收本帧缓冲区）与合成、HWC 和显示反馈。
+这个示例把两个开启档位限定为有限正半径，避免在每帧重复创建相同效果，并保留 `null` 清理路径。半径由视觉目标与实机数据决定，关闭状态直接传 `null`。动画必须连续改变半径时，每帧输入都在变化，这时应缩小 View 的输入面积，并比较关闭效果前后的 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线）、RenderThread、GPU 和功耗差值。
 
 <!-- gracker-diagram: a238-07-effect-fixed-states -->
 ![RenderEffect 固定档位与关闭路径](../../assets/diagrams/ch22/a238-07-effect-fixed-states.png)
 
 图：固定状态避免重复创建相同效果；连续半径动画仍要逐帧评估输入面积和 GPU 工作。
+
+`RenderThread DrawFrame` 变长时，先别急着写成“GPU 慢”：这段时间可能包含 RenderThread 的 CPU 工作、runnable（线程已就绪但仍在等 CPU） 时间、`dequeueBuffer` 等待、驱动调用或 GPU 同步。我们要接着检查线程状态、调度延迟、`dequeueBuffer` / `queueBuffer` 耗时、GPU slice（时间轴上的工作区间） 和 fence；UI 与 RenderThread 都按时而 present 偏晚时，再往下看 BLAST 的缓冲区积压、SurfaceFlinger 的 latch（接收本帧缓冲区）与合成、HWC 和显示反馈。
 
 ### 动画与 UI 线程：按显示阶段归因
 
@@ -345,7 +350,7 @@ Perfetto 中遇到动画帧间隔异常时，可搜索 `Buffer stuffing recovery
 
 ### AnimatedVectorDrawable：先确认运行线程再优化
 
-`AnimatedVectorDrawable`（AVD）默认使用 `VectorDrawableAnimatorRT`，API 25 起可以在 RenderThread 推进动画。动画尚未启动、却先绘制到软件 Canvas 时，源码会调用 `fallbackOntoUI()` 切到 UI 线程实现；平台内部也保留强制 UI 动画的入口。
+`AnimatedVectorDrawable`（AVD）默认使用 `VectorDrawableAnimatorRT`，API 25 起可以在 RenderThread 推进动画。软件 Canvas 绘制时，只有当前 RT 动画尚未运行且存在待处理动画操作（`mPendingAnimationActions` 非空），源码才调用 `fallbackOntoUI()` 切到 UI 实现；单独绘制一张尚无待处理动画的静态矢量不满足这个分支。平台内部也保留强制 UI 动画的入口。
 
 `Animatable2.AnimationCallback` 不会让动画退回 UI 线程——RenderThread 动画完成后，结束回调经 Handler 返回 UI 侧，而且可能比 RenderThread 完成晚一帧。因此排查时要在 Perfetto 中分别查看主线程、RenderThread 和 GPU；主线程看不到逐帧更新，说明不了动画是否按期 present，还要结合 GPU 与显示侧确认。
 
@@ -471,7 +476,7 @@ fun FadingPanel(
 
 ### 2. 动画时钟与帧时间
 
-Compose 1.12.0 的 `AndroidUiFrameClock.withFrameNanos()` 会注册 `Choreographer.FrameCallback`。`Transition` 和 `Animatable` 的逐帧循环，都通过 `withFrameNanos` 一类接口等待下一帧；Android 上也就没有一套脱离 `Choreographer`、按固定间隔自行计时的 Compose 界面时钟。
+Compose 1.12.0 的 `AndroidUiFrameClock.withFrameNanos()` 会注册 `Choreographer.FrameCallback`。`Transition` 和 `Animatable` 的逐帧循环，都通过 `withFrameNanos` 一类接口等待下一帧；这是标准 Android UI 协程上下文的帧时钟；测试或调用方提供的自定义 `MonotonicFrameClock` 可以替换它，不能据此断言所有 Compose 上下文都只能直接使用 `Choreographer`。
 
 主线程及时收到回调时，动画按本次帧时间计算已经播放的时长；主线程一旦被阻塞，回调就会延迟，下一次执行看到更大的时间差，动画值随之向前跳。Compose 不会补画所有错过的中间帧，用户通常看到的是画面停顿后直接跳到较后的状态。
 
@@ -488,7 +493,7 @@ Perfetto 里的 `Choreographer#doFrame` slice 覆盖应用主线程回调，不�
 
 `Animatable<T, V>` 内部持有 `AnimationState`，其 `value` 由 `mutableStateOf` 保存，由此拿到数值连续性、取值范围约束、速度信息和互斥控制；至于失效发生在哪个阶段，仍由读取位置决定。
 
-同一个 `Animatable` 启动新的 `animateTo`、`animateDecay`、`snapTo` 或 `stop` 时，`MutatorMutex` 会取消正在运行的变更。新的 `animateTo` 从当前值继续，spring（弹簧动画）还会延续当前速度。取消会以 `CancellationException` 沿协程父子关系传播，需要释放的资源应在 `finally` 中清理。
+同一个 `Animatable` 启动新的 `animateTo`、`animateDecay`、`snapTo` 或 `stop` 时，`MutatorMutex` 会取消正在运行的变更。新的 `animateTo` 从当前值继续，spring（弹簧动画）还会延续当前速度。旧动画的调用协程会收到 `CancellationException`，同一协程中后续语句不会继续执行，需要释放的资源应在 `finally` 中清理。正常的子协程取消本身不会作为失败自动取消父协程；如果要继续其他工作，应按结构化并发设计各动画的协程作用域。
 
 拖动期间想让手指位置直接跟随时，适合使用 `snapTo`，松手后再用 `animateDecay` 或 `animateTo` 收尾。要是每个触摸采样点都调用 `animateTo`，就会连续取消前一个动画，产生与输入延迟、动画参数和采样频率有关的追赶效果；若产品需要这种柔性跟随，可以保留，只是它仍有逐帧更新和协程取消的成本。
 
@@ -538,7 +543,7 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 - 展开和收缩会产生尺寸动画。
 - 子内容自身的尺寸变化、`animateContentSize` 或自定义布局修饰符还可能增加布局工作。
 
-如果父布局无须跟随内容伸缩，可以给外层稳定约束，并在内部使用淡入淡出、缩放或滑动。裁剪（clip（裁剪））只限制绘制范围，不会阻止尺寸变化传给父布局。
+如果父布局无须跟随内容伸缩，可以给外层稳定约束，并在内部使用淡入淡出、缩放或滑动。裁剪（clip）只限制绘制范围，不会阻止尺寸变化传给父布局。
 
 退出时，界面内容会保留到内建进入/退出动画，以及注册在 `AnimatedVisibilityScope.transition` 上的自定义动画全部完成。保留期间有以下生命周期行为：
 
@@ -578,7 +583,7 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 ### 7. produceState、snapshotFlow 与 derivedStateOf
 
-`produceState` 用 `remember { mutableStateOf(initialValue) }` 保存结果，并由 `LaunchedEffect` 启动一个协程来生产状态值，提供无键、单键和多键重载。这里的键是决定协程何时重启的输入，把实现概括成固定的 `LaunchedEffect(Unit)` 会看错重启时机：键改变时，旧协程取消并启动新协程，离开组合时同样取消。对回调式数据源，我们用 `awaitDispose` 注销回调。
+`produceState` 用 `remember { mutableStateOf(initialValue) }` 保存结果，并由 `LaunchedEffect` 启动一个协程来生产状态值，提供无键、单键和多键重载。这里的键是决定协程何时重启的输入，把实现概括成固定的 `LaunchedEffect(Unit)` 会看错重启时机：键改变时，旧协程取消并启动新协程，离开组合时同样取消。结果状态由无键的 `remember` 保留，换键本身不会把当前结果自动重置为 `initialValue`；需要重置时由生产逻辑显式写入。对回调式数据源，我们用 `awaitDispose` 注销回调。
 
 返回的 `State` 会合并相等值，写入与当前值相等的结果不会触发重组；不同值若按帧更新，下游仍会按其读取阶段失效。所以 `produceState` 适合把外部异步或订阅式数据转成 Compose `State`，外部数据频率高并不构成误用——判断依据是界面是否需要每个样本，以及读取位置是否合适。
 
@@ -604,7 +609,7 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 落实到写法上，较省工作的方式是捕获稳定的 `State` 持有者，在布局、绘制或 `graphicsLayer` 回调内读取其值；如果我们先在可组合函数体中把 `State` 读取成每帧变化的标量，再让回调捕获这个标量，组合阶段就已经建立了高频读取关系。
 
-不要为了动画批量添加 `@NonRestartableComposable`（可组合函数） 等编译器注解。它们会改变重组入口和可跳过性，只有编译器报告、基准数据和明确热点同时支持时才值得调整。
+不要为了动画批量添加 `@NonRestartableComposable`（不可重启可组合函数） 等编译器注解。它们会改变重组入口和可跳过性，只有编译器报告、基准数据和明确热点同时支持时才值得调整。
 
 ### 9. Lazy 列表中的动画所有权
 
@@ -671,11 +676,14 @@ class ExpandAnimationBenchmark {
         startupMode = StartupMode.WARM,
         setupBlock = {
             startActivityAndWait()
-            device.findObject(By.res("reset_collapsed")).click()
-            device.waitForIdle()
+            requireNotNull(device.findObject(By.res("reset_collapsed"))).click()
+            check(device.wait(
+                Until.hasObject(By.res("animation_idle_collapsed")),
+                2_000,
+            ))
         },
     ) {
-        device.findObject(By.res("toggle_animation")).click()
+        requireNotNull(device.findObject(By.res("toggle_animation"))).click()
         check(
             device.wait(
                 Until.hasObject(By.res("animation_idle_expanded")),
@@ -686,16 +694,16 @@ class ExpandAnimationBenchmark {
 }
 ```
 
-`toggle_animation`、`reset（被复用）_collapsed` 和完成标记需要通过 `testTagAsResourceId` 或真实资源 ID 暴露。完成标记应在目标状态达到且 `Transition` 空闲后出现，避免只测到动画起点。每轮准备阶段都回到同一初始状态，测量区间只包含目标交互。
-
-我们看结果时，应同时关注 `frameOverrunMs` 的 P50/P90/P95/P99、`frameDurationCpuMs` 和 `frameCount`。`frameOverrunMs` 在 API 31 及以上按每帧截止时间计算，能适应高刷新率和可变帧率；`frameDurationCpuMs` 只覆盖界面线程与 `RenderThread` 生成一帧所用的 CPU 时间。`frameCount` 是辅助指标：它变化时，可能表示实现减少或增加了请求帧数量，耗时分位值之外要一并看它。`FrameTimingMetric` 不提供通用的 `jankFrameCount`，按固定 16.6 ms 自行推导卡顿帧数同样站不住。
-
-Baseline Profile（基准配置文件（Baseline Profile））可以让 ART 提前编译关键用户流程覆盖的应用与库代码，减少首次运行时的解释执行和 JIT 成本。GPU 着色器预编译、离屏合成的消除、Snapshot 失效范围，都在它的能力之外。用同一组 Macrobenchmark 对比应用基准配置文件前后的数据，才能判断当前动画是否受编译状态影响。
+`toggle_animation`、`reset_collapsed`、`animation_idle_collapsed` 与 `animation_idle_expanded` 需要通过根语义上的 `testTagsAsResourceId = true` 或真实资源 ID 暴露。Compose test tag 对应用例中的 `By.res("tag")`，不要擅自补包名前缀。完成标记应在对应目标状态达到且 `Transition` 空闲后出现，并及时移除旧标记；`UiDevice.waitForIdle()` 本身不证明动画已经结束。每轮准备阶段都等待同一折叠状态，测量区间只包含目标交互。
 
 <!-- gracker-diagram: a238-22-benchmark-protocol -->
 ![可重复动画基准要等待两个空闲边界](../../assets/diagrams/ch22/a238-22-benchmark-protocol.png)
 
 图：UiAutomator 事件空闲不证明 Compose 动画结束，测试标记要同时验证目标和 Transition 空闲。
+
+我们看结果时，应同时关注 `frameOverrunMs` 的 P50/P90/P95/P99、`frameDurationCpuMs` 和 `frameCount`。`frameOverrunMs` 在 API 31 及以上按每帧截止时间计算，能适应高刷新率和可变帧率；按本文核对的 Macrobenchmark 1.5.0 查询口径，`frameDurationCpuMs` 是从 UI 帧区间开始到对应 RenderThread 区间结束的墙钟跨度（`rtSlice.endTs - uiSlice.ts`），其中可能包含等待和线程未获调度的时间；它不是两条线程 Running 时间的加总，也不覆盖 GPU 完成和最终 present。`frameCount` 是辅助指标：它变化时，可能表示实现减少或增加了请求帧数量，耗时分位值之外要一并看它。`FrameTimingMetric` 不提供通用的 `jankFrameCount`，按固定 16.6 ms 自行推导卡顿帧数同样站不住。
+
+Baseline Profile（基准配置文件（Baseline Profile））可以让 ART 提前编译关键用户流程覆盖的应用与库代码，减少首次运行时的解释执行和 JIT 成本。GPU 着色器预编译、离屏合成的消除、Snapshot 失效范围，都在它的能力之外。用同一组 Macrobenchmark 对比应用基准配置文件前后的数据，才能判断当前动画是否受编译状态影响。
 
 ### 13. 无限动画、VectorConverter 与资源动画
 
@@ -1015,7 +1023,7 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 
 #### 7.4 共享过渡与列表滚动同时进行
 
-列表仍在惯性滚动时启动共享过渡，会同时发生 Lazy layout（只布局可见项及预取项）、图片请求、Lookahead、approach placement 和窗口绘制。motion frame of reference 能处理滚动坐标，却不会消除这些工作。
+列表仍在惯性滚动时启动共享过渡，会同时发生 Lazy layout（按需布局，并管理预取、缓存及保留项）、图片请求、Lookahead、approach placement 和窗口绘制。motion frame of reference 能处理滚动坐标，却不会消除这些工作。
 
 产品交互允许时，可以结束 fling（松手后的惯性滚动）再切换详情；需要并行时，要保证 item key（列表项身份） 稳定、图片已命中缓存，并减少 `AnimatedSize`、`RemeasureToBounds` 和大面积渐变的叠加。
 
@@ -1053,9 +1061,9 @@ Predictive Back（预测性返回）让用户在返回手势完成前预览目�
 
 - Navigation 3 各版本支持 Predictive Back；
 - Navigation Compose 2 使用 2.8.0 或更高版本；
-- Android 15 及以上不再提供 Predictive Back 开发者开关；应用仍需使用受支持的返回 API。`targetSdk >= 35` 时无需把 `enableOnBackInvokedCallback` 设为 `true`，`targetSdk <= 34` 时仍需显式开启；
+- Android 15 及以上不再提供 Predictive Back 开发者开关；系统版本、`targetSdk`、manifest 配置与实际启用的返回回调应分别核对。低目标版本迁移时按官方指南显式设置 `enableOnBackInvokedCallback="true"`；不要仅凭 `targetSdk >= 35` 推断所有设备和 Activity 都已启用，Activity 配置还可以覆盖 application 默认值；
 - Android 14 设备还要在开发者选项中启用 Predictive Back；
-- 应用运行在 Android 16 及以上且 `targetSdk >= 36` 时，系统预测性返回动画默认启用；迁移期间仍可按官方说明临时选择退出。
+- 应用运行在 Android 16 及以上且 `targetSdk >= 36` 时，系统预测性返回动画默认启用；迁移期间仍可在 application 或 activity 显式设为 `false` 临时退出；此时系统忽略平台 `OnBackInvokedCallback`，AndroidX `OnBackPressedCallback` 仍可工作。
 
 Android 17 沿用这套标准机制，没有独立的 SharedTransitionLayout 帧同步平台 API。手势事件、Compose 过渡状态、Choreographer 与 HWUI 提交，仍要在 Perfetto 中按同一条 FrameTimeline 检查。
 
@@ -1210,7 +1218,7 @@ Compose Shared Transition 只在同一个 `SharedTransitionScope` 内匹配。�
 
 ### API 版本由 Compose 依赖决定
 
-Shared Transition API 在 Compose Animation 1.7 以实验 API 形式发布，到 1.10 转为稳定 API。截至 2026 年 8 月 15 日，Google Maven 中最新稳定版是 1.12.0；1.13.0-alpha01 属于预览版。1.12.0 继续提供实验性的共享元素可视化调试能力。
+Shared Transition API 在 Compose Animation 1.7 以实验 API 形式发布，到 1.10 转为稳定 API。本文固定使用 2026 年 8 月 15 日复核的 1.12.0 稳定基线与 1.13.0-alpha01 预览记录；后续已有 1.12.1 稳定补丁，不能把 1.12.0 继续称作当前最新稳定版；本文的具体实现结论仍只对照固定的 1.12.0 源码。1.12.0 继续提供实验性的共享元素可视化调试能力。
 
 这套 API 没有 Android 15 / API 35 的平台门槛。只要应用使用的 Compose 版本及其 Android 最低版本满足要求，就能使用共享元素。Android 15 起取消了 Predictive Back 开发者开关；应用迁移到受支持的返回 API 后可以获得对应系统动画。这与 `SharedTransitionLayout` 的引入版本无关。
 
@@ -1275,7 +1283,7 @@ SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的�
 - [Navigation with shared elements](https://developer.android.com/develop/ui/compose/animation/shared-elements/navigation)：Navigation 2/3 与 Predictive Back 集成。
 - [Compose Animation release notes](https://developer.android.com/jetpack/androidx/releases/compose-animation)：1.7 实验发布、1.10 稳定与后续版本变化。
 - [Google Maven：Compose Animation 版本元数据](https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/maven-metadata.xml)：核对 1.12.0 稳定版与 1.13.0-alpha01 预览版。
-- [`SharedTransitionScope.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain（Kotlin Multiplatform 的公共源码集）/kotlin/androidx/compose/animation/SharedTransitionScope.kt)：scope、overlay、`key` 匹配和公开 API。
+- [`SharedTransitionScope.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt)：scope、overlay、`key` 匹配和公开 API。
 - [`SharedContentNode.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt)：Lookahead/approach measure、`GraphicsLayer` 记录与释放。
 - [`SharedElementEntry.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedElementEntry.kt)：原位/overlay 选择和图形层状态。
 - [`SharedTransitionScope.kt`（Compose 1.11.4 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt)：保留旧版锚点，便于比较 API 与实现变化。

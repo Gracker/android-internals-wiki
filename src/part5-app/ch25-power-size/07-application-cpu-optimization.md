@@ -11,10 +11,10 @@ tags:
 related_chapters:
 - '5.1'
 - '5.4'
-last_verified: '2026-10-22'
-last_source_verified_at: '2026-10-22'
-last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; ThreadPoolExecutor, ScheduledThreadPoolExecutor, Runtime, bionic sysconf/sysinfo/time, Process/SystemClock, ART monitor, ActivityManager and Profiling sources; Android Developers Android 16 fixed-rate behavior / Android 17 Profiling APIs / PerformanceHintManager / WorkManager and kotlinx.coroutines IO/limitedParallelism docs retrieved 2026-10-22
-verification_scope_note: 2026-10-22 已通读全文并核验关键机制与官方 API 级别、异常及限频边界；线程池与协程边界经 JDK 21 / kotlinx.coroutines 1.8.0 主机复现，原样 C++17 示例经主机编译与 UBSan 检查。Android API 使用显式故障注入或编译适配器，未执行 Android SDK/NDK 构建或设备测试；Profiling 产物类型的官方说明差异保留于正文。
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; ThreadPoolExecutor, ScheduledThreadPoolExecutor, Runtime, bionic sysconf/sysinfo/time, Process/SystemClock, ART monitor, ActivityManager and Profiling sources; Android Developers Android 16 fixed-rate behavior / Android 17 Profiling APIs / PerformanceHintManager / WorkManager and kotlinx.coroutines IO/limitedParallelism docs retrieved 2026-10-25
+verification_scope_note: 2026-10-22 已通读全文并核验关键机制与官方 API 级别、异常及限频边界；线程池与协程边界经 JDK 21 / kotlinx.coroutines 1.8.0 主机复现，原样 C++17 示例经主机编译与 UBSan 检查。Android API 使用显式故障注入或编译适配器，未执行 Android SDK/NDK 构建或设备测试；Profiling 产物类型的官方说明差异保留于正文。 2026-10-25 配图校勘重新通读并对照官方/固定源码；前述主机复现属于2026-10-22历史验证，本轮未重新执行这些编译与故障注入，也未做Android设备实测。
 confidence: medium-high
 last_idle_audit_at: '2026-10-12T22:39:42+08:00'
 consolidated_from:
@@ -419,7 +419,7 @@ std::optional<double> EquivalentCores(
 
 ## 周期任务：避免固定频率补跑制造恢复尖峰
 
-`scheduleAtFixedRate()` 按预定起点维持固定节拍，而 `scheduleWithFixedDelay()` 从上一次执行结束后再等待指定间隔。任务因进程冻结、长时间未获调度或单次执行过长而错过周期后，旧实现可能连续补跑；面向 Android 16、API 36 及以上版本的应用默认启用 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，回到可执行的进程生命周期后最多立即补一次，详见官方[行为变更说明](https://developer.android.com/about/versions/16/behavior-changes-16)。`android-17.0.0_r1` 的 [`ScheduledThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java) 已直接采用这套时间校正逻辑，不再保留按 target SDK 分支选择旧行为的代码。
+`scheduleAtFixedRate()` 按预定起点维持固定节拍，而 `scheduleWithFixedDelay()` 从上一次执行结束后再等待指定间隔。任务因进程冻结、长时间未获调度或单次执行过长而错过周期后，旧实现可能连续补跑；面向 Android 16、API 36 及以上版本的应用默认启用 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，回到可执行的进程生命周期后跳过中间漏期，官方概括为“最多立即补一次”，详见官方[行为变更说明](https://developer.android.com/about/versions/16/behavior-changes-16)。`android-17.0.0_r1` 的 [`ScheduledThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java) 已直接采用这套时间校正逻辑，不再保留按 target SDK 分支选择旧行为的代码。 当前已到期的调用仍会执行；如果单次工作持续超过周期，后续项仍可能连续处于到期状态。跳过历史漏期不能保证恢复后只调用一次，也不能替代业务限流与取消。
 
 进程冻结和整机深度睡眠要分开判断：此执行器用 `System.nanoTime()` 维护到期时间，Android 上这个时间基准不计深度睡眠，见 [`SystemClock.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java#58)。不能把设备睡眠的墙钟时长直接算成漏掉的周期数。
 
@@ -546,7 +546,7 @@ class WorkDispatchers(
 
 ### ADPF 是持续负载的协作接口
 
-持续负载还有一条协作通道：ADPF（Android Dynamic Performance Framework，Android 动态性能框架），应用向系统反馈持续负载的性能目标就靠它。API 31 起，`PerformanceHintManager` 允许应用为一组工作线程创建 hint session（性能提示会话），持续报告目标工作时长和实际工作时长；设备不支持 hint session，或线程不属于本应用时，创建调用可以返回 `null`。游戏、相机、音视频这类有重复工作周期且能反馈实际耗时的负载最适合它：系统据此调整资源策略，但它不是核心绑定或固定频率接口。接口语义见 [`PerformanceHintManager`](https://developer.android.com/reference/android/os/PerformanceHintManager)。
+持续负载还有一条协作通道：ADPF（Android Dynamic Performance Framework，Android 动态性能框架），应用向系统反馈持续负载的性能目标就靠它。API 31 起，`PerformanceHintManager` 允许应用为一组工作线程创建 hint session（性能提示会话），持续报告目标工作时长和实际工作时长；设备不支持 hint session，或线程不属于本应用时，创建调用可以返回 `null`；线程列表为空或初始目标时长不为正则会抛 `IllegalArgumentException`，不能都按“不支持”处理。游戏、相机、音视频这类有重复工作周期且能反馈实际耗时的负载最适合它：系统据此调整资源策略，但它不是核心绑定或固定频率接口。接口语义见 [`PerformanceHintManager`](https://developer.android.com/reference/android/os/PerformanceHintManager)。
 
 如果工作没有明确周期、线程集合不稳定，或应用难以可靠报告实际时长，先减少工作与并发通常更有效。使用 ADPF 后，仍要在多档设备、持续温升和前后台切换条件下测量。
 

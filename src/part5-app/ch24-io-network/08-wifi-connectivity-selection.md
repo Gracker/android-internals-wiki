@@ -4,8 +4,8 @@ chapter: '24.8'
 section: '24.8'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-02'
-last_verified_against: AOSP android-17.0.0_r1 (Wifi, Connectivity and NetworkStack); Android Developers connectivity and Cronet docs current through 2026-10-02; OkHttp 5.5.0 source and changelog
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 (Wifi, Connectivity and NetworkStack); Android Developers connectivity and Cronet docs reviewed 2026-10-25; OkHttp 5.5.0 source and fixed parent-5.5.1 changelog
 confidence: high
 sources:
 - type: aosp
@@ -46,6 +46,12 @@ sources:
   path: https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
 - type: upstream
   path: https://github.com/lysine-dev/okhttp/blob/main/CHANGELOG.md
+- type: upstream
+  path: https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md
+- type: official
+  path: https://developer.android.com/privacy-and-security/risks/bad-dns
+- type: official
+  path: https://security.googleblog.com/2022/07/dns-over-http3-in-android.html
 - type: blog
   path: DeepResearch/2026-05-14-android-wifi-scoring-connectivity-service.md
 - type: book_structure
@@ -121,7 +127,7 @@ Wi-Fi 扫描结果
 
 #### 扫描结果怎样过滤、候选怎样提名
 
-`WifiNetworkSelector.filterScanResults()` 先做排除，低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO（Multi Band Operation）/OCE（Optimized Connectivity Experience） 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果，都进不了候选。MBO 与 OCE 是 Wi-Fi 联盟定义的接入管理和连接优化能力。在这些过滤条件生效前，已连接的当前 BSSID 会先保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
+`WifiNetworkSelector.filterScanResults()` 先做排除，低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO（Multi Band Operation）/OCE（Optimized Connectivity Experience） 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果，都进不了候选。MBO 与 OCE 是 Wi-Fi 联盟定义的接入管理和连接优化能力。源码先排除空 SSID；在其后的这些过滤条件生效前，已连接的当前 BSSID 会先保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
 
 `getCandidatesFromScan()` 调用已注册的 nominator（候选提名器） 产生候选，包括已保存网络、应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等，并把当前连接留在候选集合中。`selectNetwork()` 再把候选交给当时活动的 `CandidateScorer`（候选评分器） 选出结果，并应用兼容旧版用户选择的逻辑。系统预设的评分器是 `ThroughputScorer`。
 
@@ -145,7 +151,7 @@ Wi-Fi 扫描结果
 | 历史无互联网、IP 配置超时 | 降低或清除部分奖励 | 与当前回调中的 `VALIDATED` 不是同一项状态 |
 | 近期用户选择 | 在配置窗口内获得显著奖励 | 保护时间与强度可被设备配置改变 |
 
-这些参数由 `ScoringParams` 和资源覆盖（设备厂商对 AOSP 默认资源值的替换）控制，资源覆盖指设备厂商对 AOSP 默认资源值的替换，两者决定入网阈值、足够 RSSI、吞吐奖励和多个优先级参数。所以旧资料里的固定阈值只说明特定版本的 AOSP 默认配置，跨版本、跨厂商参考时，要以目标设备的实际配置为准。
+这些参数由 `ScoringParams` 和资源覆盖（设备厂商对 AOSP 默认资源值的替换）控制，两者决定入网阈值、足够 RSSI、吞吐奖励和多个优先级参数。所以旧资料里的固定阈值只说明特定版本的 AOSP 默认配置，跨版本、跨厂商参考时，要以目标设备的实际配置为准。
 
 <!-- gracker-diagram: a268-03-scoring-buckets -->
 ![候选评分先区分优先区间再比较无线奖励](../../assets/diagrams/ch24/a268-03-scoring-buckets.png)
@@ -194,7 +200,7 @@ Wi-Fi 模块选出自己的网络之后，轮到 Connectivity 排序：先保留
 | 新默认网络通知 | `onAvailable(new)` | 紧随其后的 `onCapabilitiesChanged(new)` | 应用收到选择结果后，何时拿到完整的能力记录 |
 | 验证状态变化 | 新网络第一次能力记录 | 同一网络取得或失去 `VALIDATED` | 系统公网探测状态如何变化 |
 | 异步排队 | `dispatcherQueueStart` | `dispatcherQueueEnd` | 请求是否在 OkHttp 异步调度器中等待 |
-| DNS、TCP、TLS | 每组对应的 `start` | 同组 `end` 或 `failed` | 新解析、路由尝试和握手发生在哪一段 |
+| DNS、连接尝试、TLS | 同一解析或尝试对应的 `start` | 对应的 `end`，或该阶段可观测的失败事件 | HTTPS 的 connect 阶段包含 TLS；DNS 失败可能只表现为 Call 失败，缺失 end 不能记零 |
 | 响应头等待 | 同一次交换的请求结束事件 | `responseHeadersStart` | 上传、网络往返、网关和服务端共同等待 |
 | 业务恢复 | 业务操作进入等待或失败 | 首次满足业务语义的成功结果 | 用户可感知的中断时间 |
 
@@ -207,7 +213,7 @@ Wi-Fi 模块选出自己的网络之后，轮到 Connectivity 排序：先保留
 
 OkHttp 的事件序列要整段保留，压成“每种事件只留一个时间戳”会丢掉中间过程。重试、重定向和认证会在同一个 `Call` 中产生多组 DNS、连接、请求和响应事件；复用既有连接时没有 DNS 与 `connect` 事件；双工请求的收发事件还可能交错。
 
-下面这段监听器按 OkHttp 5.5.0 的接口签名编写，并保留原始单调时钟时间线：单调时钟只随设备运行时间前进，不受用户改时间或系统校时影响。`defaultGeneration` 是我们为每次默认网络变化分配的递增序号，用来关联一次切网期间的事件：
+下面这段监听器按 OkHttp 5.5.0 的接口签名编写，示范保留部分事件的原始单调时钟时间线：单调时钟只随设备运行时间前进，不受用户改时间或系统校时影响。`defaultGeneration` 是我们为每次默认网络变化分配的递增序号，用来关联一次切网期间的事件：
 
 ```kotlin
 data class CallMark(
@@ -321,9 +327,9 @@ class TimelineEventListener(
 }
 ```
 
-截至 2026-10-02，OkHttp 最新稳定版本为 5.5.0，示例用的就是这一版的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；升级依赖后，仍以对应版本的 `EventListener` 源码为准。
+示例固定使用 OkHttp 5.5.0 的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；截至 2026-10-25，已发布 5.5.1（2026-10-22），这里不随最新版本自动改写示例。升级依赖后，以对应版本的 `EventListener` 源码为准。
 
-监听器由 `EventListener.Factory` 为每个 `Call` 单独创建。一次 `Call` 可能因重试或重定向包含多次 HTTP 交换，也就是多轮请求与响应；我们在分析端要按完整事件序列分组，末次 `dnsEnd` 与第一次 `dnsStart` 不能直接相减。
+监听器由 `EventListener.Factory` 为每个 `Call` 单独创建。一次 `Call` 可能因重试或重定向包含多次 HTTP 交换，也就是多轮请求与响应；我们在分析端要按完整事件序列分组，末次 `dnsEnd` 与第一次 `dnsStart` 不能直接相减。上面的名称与时间戳也不足以精确配对并行连接尝试；生产埋点还应记录地址、代理、连接与交换标识，补齐 `connectFailed`、`requestFailed`、`responseFailed` 等失败事件及所需的起止回调。取消事件可能发生在 Call 起止范围外，不能把 `canceled` 无条件视为唯一终点。
 
 `defaultGenerationAtStart` 只说明请求开始时的默认网络是哪一个：复用连接可能建立在更早的默认网络上，显式绑定的客户端还可能使用其他 `Network`。要确认套接字实际经过哪条网络，还要结合绑定配置、系统追踪数据或网络数据包捕获结果。
 
@@ -351,7 +357,7 @@ class TimelineEventListener(
 
 图：业务可用性由真实请求证明；计费和传输集合同时记录，不能用 Wi-Fi 标记代替未计费判断。
 
-`NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HTTPS 探测，并根据成功、登录门户、部分连通等结果更新 Connectivity。探测 URL、代理、Private DNS（Android 对 DNS-over-TLS 的系统配置） 与设备配置都可能影响结果，其中 Private DNS 指 Android 对 DNS-over-TLS 的系统配置。据此有一组处理原则：
+`NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HTTPS 探测，并根据成功、登录门户、部分连通等结果更新 Connectivity。探测 URL、代理、Private DNS（系统级加密解析配置）与设备配置都可能影响结果。Private DNS 不能一概解释为仅使用 DNS-over-TLS；受支持的系统更新与解析服务组合还可能使用 DNS-over-HTTP/3。据此有一组处理原则：
 
 - 没有应用默认网络时，普通默认绑定请求建不了新连接；显式请求的其他网络要单独判断。
 - 有 `INTERNET` 但没有 `VALIDATED` 时，可展示离线数据并降低后台重试，把可用的操作留给用户。
@@ -367,11 +373,11 @@ class TimelineEventListener(
 
 #### 1. 用 NetworkCallback 维护网络状态记录
 
-`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STA（同时工作的两个 Wi-Fi 终端接口）TE`。
+`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STATE`。
 
 Android 开发者指南在机制概述中说明，使用 `NetworkCallback` 等方式观察连接状态没有统一的额外权限；同一段也要求按具体方法文档检查权限，`registerDefaultNetworkCallback()` 所需的声明，仍以该方法自己的文档为准。
 
-从 Android 8.0、API 26 起，新默认网络触发 `onAvailable()` 后，系统会紧接着按序发送 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 和 `onBlockedStatusChanged()` 的初始状态。不要在这些回调中同步查询 `getNetworkCapabilities()` 或 `getLinkProperties()`：网络状态可能在收到回调与发起查询之间变化，查询结果会过期或为 `null`。这段追踪器把回调放到调用方提供的 `Handler` 消息队列，并为每次新默认网络分配递增序号：
+从 Android 8.0、API 26 起，新默认网络触发 `onAvailable()` 后，系统会紧接着按序发送 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 的初始状态；`onBlockedStatusChanged()` 是 API 29 新增的公开回调，在本文适用的 API 29–37 范围还会紧随其后提供初始阻塞状态。不要在这些回调中同步查询 `getNetworkCapabilities()` 或 `getLinkProperties()`：网络状态可能在收到回调与发起查询之间变化，查询结果会过期或为 `null`。这段追踪器把回调放到调用方提供的 `Handler` 消息队列，并为每次新默认网络分配递增序号：
 
 ```kotlin
 sealed interface DefaultNetworkEvent {
@@ -503,9 +509,9 @@ class DefaultNetworkTracker(
 
 连接层附近的失败要区分原因。官方文档说明，新连接在默认网络变化后使用新网络，旧默认网络上的既有连接稍后会被系统终止；应用不需要在每次 `onAvailable()` 时销毁共享 `OkHttpClient` 或清空整个连接池，这么做还会破坏仍可复用的健康连接。
 
-- DNS 返回多个地址时保留全部结果，让 OkHttp 的路由重试与 `fast fallback`（错开尝试备用地址，以较快成功的连接继续） 有选择空间；fast fallback 会错开尝试备用地址，以较快成功的连接继续。
-- HTTPS URL 始终保留原主机名；把 URL 改成 IP 会破坏 SNI（Server Name Indication，TLS 握手中携带目标主机名的扩展）、证书校验和虚拟主机路由，SNI 指 TLS 握手中携带目标主机名的扩展。
-- GET 等可安全重试的操作由网络库按配置恢复；POST、支付和提交操作需要幂等键或查询结果接口。幂等键让服务端把相同标识的重复提交识别为同一次操作。
+- DNS 返回多个地址时保留全部结果，让 OkHttp 的路由重试与 `fast fallback`（错开尝试备用地址，以较快成功的连接继续） 有选择空间。
+- HTTPS URL 始终保留原主机名；把 URL 改成 IP 会破坏 SNI（Server Name Indication，TLS 握手中携带目标主机名的扩展）、证书校验和虚拟主机路由，这不是只替换 HTTP Host 请求头就能补救的。
+- GET 等可安全重试的操作由网络库按配置恢复；OkHttp 的自动恢复并非统一按 HTTP 方法幂等性禁止重放，可重放的 POST 请求也可能被重试。支付和提交操作仍需服务端幂等键或查询结果接口。幂等键让服务端把相同标识的重复提交识别为同一次操作。
 - WebSocket、流式响应和上传任务保存应用层进度，在一次调用明确失败后按协议重连。
 - 可延后的后台任务使用 WorkManager（持久后台任务调度库） 的网络约束，避免常驻监听器自行轮询。
 
@@ -587,7 +593,7 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 - 应用追踪事件（写入系统追踪时间线的自定义记录）标记 `onAvailable`、能力变化、OkHttp 事件和业务恢复；
 - 流量字节使用应用或系统中已经核对过定义和单位的统计源，不假设每台设备都提供某个 Perfetto 网络计数器。
 
-应用事件、系统追踪与服务端日志至少要共享请求编号，并记录单调时钟与墙上时钟的对应关系。缺少这种关联时，我们最多知道“切网和超时发生在相近时间”，因果关系要靠这条关联才能确认。
+应用事件、系统追踪与服务端日志至少要共享请求编号，并记录单调时钟与墙上时钟的对应关系。缺少这种关联时，我们最多知道“切网和超时发生在相近时间”，这些关联是定位前提；确认因果还需结合实际失败阶段、系统状态和可控复现，时间接近或共享编号本身都不足以证明切网导致超时。
 
 <!-- gracker-diagram: a268-10-evidence-correlate -->
 ![系统与请求证据按编号和时钟对齐](../../assets/diagrams/ch24/a268-10-evidence-correlate.png)
@@ -604,7 +610,7 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 - `notifyScoreUpdate()` 的数值只用于 Wi-Fi 统计，不直接驱动网络选择；
 - `notifyStatusUpdate()` 可报告当前连接是否可用；
-- `requestNudOperation()` 请求一次 NUD（neighbor unreachability detection，邻居不可达检测），即邻居不可达检测，用来确认同一链路上的网关等邻居是否仍可达；
+- `requestNudOperation()` 请求一次 NUD（neighbor unreachability detection，邻居不可达检测），用来确认同一链路上的网关等邻居是否仍可达；
 - `blocklistCurrentBssid()` 建议暂时阻止当前 BSSID；
 - 受功能标志控制的 `setPreEvaluationEnabled()` 可让下一次连接先进入受限预评估，再决定是否向其他应用开放。功能标志是系统构建或运行时用来开关一项行为的配置。
 
@@ -627,7 +633,7 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 ### HTTP/3、QUIC 与网络切换
 
-本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.5.0 为准。OkHttp 自带的传输实现支持 HTTP/1.1 与 HTTP/2，要 HTTP/3 需要另外的方案：HTTP/3 运行在 QUIC 传输协议之上，可选路径包括 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库） 或官方提供的 Cronet Transport for OkHttp 集成；Cronet 是 Chromium 网络栈的 Android 库。
+本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.5.0 为准。OkHttp 自带的传输实现支持 HTTP/1.1 与 HTTP/2，要 HTTP/3 需要另外的方案：HTTP/3 运行在 QUIC 传输协议之上，可选路径包括 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库） 或官方提供的 Cronet Transport for OkHttp 集成。
 
 QUIC 用连接 ID 标识一条逻辑连接，连接身份没有完全绑在原来的 IP 地址和端口上，这是连接迁移的协议基础。但迁移并不会因为用了 HTTP/3 就自动发生：`HttpEngine` 和 Cronet 都提供连接迁移选项，只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会在网络变化后继续；允许迁往非默认网络还可能用到按量计费的流量。
 

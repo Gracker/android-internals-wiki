@@ -4,7 +4,7 @@ chapter: '21.6'
 section: '21.6'
 status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
-last_verified: '2026-08-14'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1 SDK sandbox, Topics, Ad Selection, Custom Audience and Measurement sources; current Android API 37, Privacy Sandbox phaseout, SDK Runtime compatibility and AndroidX alpha19 release docs
 confidence: high
 sources:
@@ -114,7 +114,7 @@ Android 17 Framework 源码里的行为更具体：
 
 | 系统 / 工具 | 状态 | 工程决策 |
 | --- | --- | --- |
-| Android 13 / API 33 | 加入 `SdkSandboxManager` 与状态查询；平台 `loadSdk()` 尚未加入 | 只用于识别旧 API 表面与兼容层，不视作平台 SDK 加载能力 |
+| Android 13 / API 33 | 基础 API 提供 manager 与状态查询；`loadSdk()` 文档另列 Ad Services Extensions 4，不能只看基础 API 级别推断完整可用性 | 本文维护策略限定 API 34–36；扩展设备另行核对接口、状态与供应方支持 |
 | Android 14–16 / API 34–36 | 平台 `loadSdk()` 的历史支持区间；设备状态与可独立更新的 Ad Services 扩展版本仍会影响可用性 | 只维护已发布产品，必须检查能力并准备失败降级 |
 | Android 17 / API 37 | 平台 API deprecated，官方说明 SDK sandbox 不再受支持 | 停止新接入；遗留代码在 API 37 明确关闭 |
 | AndroidX `privacysandbox-sdkruntime` | 预发布版 `1.0.0-alpha19` 已 deprecated，release note 说明不会再更新 | 不作为 Android 17 替代方案；现有使用方制定移除计划 |
@@ -179,7 +179,7 @@ App process
 
 ### 2.3 遗留能力探测
 
-维护 Android 14–16 时，能力判断需要同时约束系统版本和 sandbox 状态。下面的代码只用于现有迁移层：面向 API 37 编译时会产生 deprecated 警告，所以用局部 `Suppress` 抑制，并把这段仍需移除的兼容代码标成技术债。
+维护 Android 14–16 时，能力判断需要同时约束系统版本和 sandbox 状态。下面的 `34..36` 是本文迁移层主动维护的基础系统区间，不是完整的 SDK Extensions 能力矩阵：官方 `loadSdk()` 参考同时列出基础 API 34 和 Ad Services Extensions 4，扩展版本元数据也不保证每台旧设备实际可用。若产品必须覆盖其他扩展设备，应另行验证扩展、接口和供应方支持；API 37 仍明确关闭旧路径。下面的代码只用于现有迁移层：面向 API 37 编译时会产生 deprecated 警告，所以用局部 `Suppress` 抑制，并把这段仍需移除的兼容代码标成技术债。
 
 ```kotlin
 @Suppress("DEPRECATION")
@@ -261,7 +261,7 @@ SDK Runtime 退场后，广告 SDK 的常见形态回到宿主进程：AAR、dyn
 
 SDK init（初始化）收口到一处：广告网关持有 App 级状态，把同时到达的多次请求合并成同一个任务，失败则保存为调用方可以读取的结果，页面不再各自发起。
 
-下面的状态机把初始化收敛为四个状态：`Idle`（未开始）、`Initializing`（进行中）、`Ready`（可用）、`Failed`（会话失败）。所有调用方共享同一个 `Deferred`，也就是稍后产生结果、可以被多个协程等待的对象。示例没有假设 SDK 能在后台线程初始化，具体 `initializer` 要按供应方要求切到正确线程：
+下面的状态机把初始化收敛为四个状态：`Idle`（未开始）、`Initializing`（进行中）、`Ready`（可用）、`Failed`（会话失败）。网关内部共享同一个 `Deferred`，也就是可以被多个协程等待的结果；页面只调用 `prewarm()` 或 `awaitReady()`，不拿到可被任意调用方 `cancel()` 的共享任务。示例没有假设 SDK 能在后台线程初始化，具体 `initializer` 要按供应方要求切到正确线程：
 
 ```kotlin
 sealed interface AdSdkState {
@@ -275,6 +275,12 @@ class AdSdkGateway(
     private val appScope: CoroutineScope,
     private val initializer: suspend () -> AdClient,
 ) {
+    init {
+        require(appScope.coroutineContext[Job] != null) {
+            "appScope must have an owned Job"
+        }
+    }
+
     private val mutex = Mutex()
     private var inFlight: Deferred<Result<AdClient>>? = null
 
@@ -282,48 +288,69 @@ class AdSdkGateway(
         MutableStateFlow<AdSdkState>(AdSdkState.Idle)
     val state: StateFlow<AdSdkState> = _state.asStateFlow()
 
-    suspend fun start(): Deferred<Result<AdClient>> =
-        mutex.withLock {
+    private suspend fun start(): Deferred<Result<AdClient>> {
+        val task = mutex.withLock {
+            appScope.coroutineContext.ensureActive()
             inFlight?.let { return@withLock it }
 
-            appScope.async {
-                _state.value = AdSdkState.Initializing
-                runCatching { initializer() }
-                    .also { result ->
-                        _state.value = result.fold(
-                            onSuccess = AdSdkState::Ready,
-                            onFailure = AdSdkState::Failed,
-                        )
-                    }
-            }.also { inFlight = it }
+            _state.value = AdSdkState.Initializing
+            val created = appScope.async(start = CoroutineStart.LAZY) {
+                try {
+                    val client = initializer()
+                    currentCoroutineContext().ensureActive()
+                    _state.value = AdSdkState.Ready(client)
+                    Result.success(client)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    _state.value = AdSdkState.Failed(failure)
+                    Result.failure(failure)
+                }
+            }
+            inFlight = created
+            created.invokeOnCompletion { cause ->
+                if (cause != null) {
+                    // Also runs when cancelled before the body ever starts.
+                    _state.value = AdSdkState.Failed(cause)
+                }
+            }
+            created
         }
+        // Publish the shared task before executing supplier code; no Mutex held.
+        task.start()
+        return task
+    }
 
-    suspend fun awaitReady(
-        timeoutMillis: Long,
-    ): Result<AdClient>? =
-        withTimeoutOrNull(timeoutMillis) {
+    suspend fun prewarm() {
+        start()
+    }
+
+    suspend fun awaitReady(timeoutMillis: Long): Result<AdClient>? {
+        require(timeoutMillis > 0)
+        return withTimeoutOrNull(timeoutMillis) {
             start().await()
         }
+    }
 }
 ```
 
-`appScope` 是由 App 生命周期管理的协程作用域，应使用 `SupervisorJob`，避免一个 SDK 子任务失败时取消同作用域的无关任务。
+`appScope` 由 App 管理并包含受控的 `Job`，通常使用 `SupervisorJob`。普通初始化异常作为 `Result.failure` 缓存；`CancellationException` 继续传播，致命 `Error` 不被包装成普通业务失败。完成钩子也处理“任务体尚未开始就取消”的情况，避免状态停在 `Initializing`。`StateFlow` 更新可在线程安全的完成钩子中进行，钩子里不调用 SDK 或操作 UI。
 
-调用方等待超时后得到 `null`，共享初始化仍然继续；如果产品需要取消，SDK 必须提供可验证的取消协议。
-
-示例把失败留作进程会话级的状态。若允许重试，也由网关按错误类型和逐次延长的等待间隔重置；重试权收在网关手里，页面不各自循环触发。
-
-若供应方要求主线程调用 init，`initializer` 可以只在主线程提交轻量入口，后续重工作是否异步仍由 trace 验证。`Dispatchers.IO` 是 Kotlin 协程面向阻塞 I/O 的共享线程池；把整个 gateway 切到这里，也改不了内部实现不可见的 SDK 自己的线程行为。
+调用方自己的等待超时返回 `null`，共享初始化仍由 `appScope` 持有；调用方取消或共享任务取消则传播取消异常，不能统统计成普通超时。这个 deadline 依赖协作式取消，不能中断供应方在主线程上的阻塞调用，也不能承诺页面一定按时放行。如果产品需要停止真实 SDK 工作，供应方必须提供可验证的取消协议。
 
 <!-- gracker-diagram: a227-10-shared-waiters -->
 ![页面等待有自己的时限，共享初始化由 App 持有](../../assets/diagrams/ch21/a227-10-shared-waiters.png)
 
 图：页面只得到等待结果，不得到可任意取消的共享任务；某个页面超时不会自动终止 SDK 初始化。
 
+示例把失败与已取消任务都保留在本会话内，不自动重试；`Failed.cause` 仍要区分普通错误与取消。代码没有公开 reset 接口，若业务允许重试，应由网关在旧任务完全终止后按错误类型和退避策略开启新会话。`Ready` 仅表示初始化成功，后续请求仍须处理 SDK 生命周期和远端死亡；`initializer` 不得递归等待同一网关的 `awaitReady()`。
+
 <!-- gracker-diagram: a227-09-gateway-states -->
 ![网关只创建一次初始化任务并缓存会话结果](../../assets/diagrams/ch21/a227-09-gateway-states.png)
 
 图：只有普通 Exception 包装为 Result.failure；取消与致命 Error 从 await 传播，Failed.cause 保留分类。
+
+若供应方要求主线程调用 init，`initializer` 可以只在主线程提交轻量入口，后续重工作是否异步仍由 trace 验证。`Dispatchers.IO` 是 Kotlin 协程面向阻塞 I/O 的共享线程池；把整个 gateway 切到这里，也改不了内部实现不可见的 SDK 自己的线程行为。
 
 <!-- gracker-diagram: a227-11-timeout-cancellation -->
 ![超时、取消与初始化失败有不同返回语义](../../assets/diagrams/ch21/a227-11-timeout-cancellation.png)
@@ -469,7 +496,7 @@ A/B 实验是随机把条件相同的用户分到基准组与改动组，再对�
 
 - [ ] 搜索 `TopicsManager`、`AdSelectionManager`、`CustomAudienceManager` 与 `MeasurementManager` 的调用点、权限、配置和依赖。
 - [ ] 用远程开关停止新请求，页面布局和广告填充不再等待这些结果。
-- [ ] 区分已废弃（deprecated） deprecated、不支持（unsupported） unsupported、已关闭（disabled） disabled、权限/安全拒绝（security） security、频率受限（rate limit） rate limit、网络错误与调用方本地超时；永久废弃错误不进入重试队列。
+- [ ] 区分已废弃（deprecated）、不支持（unsupported）、已关闭（disabled）、权限/安全拒绝（security）、频率受限（rate limit）、网络错误、调用方本地超时与取消；永久废弃错误不进入重试队列。
 - [ ] 盘点 registration、bidding（竞价）、trusted-data（竞价所需可信数据） 与 reporting endpoint（报告地址） 的剩余流量，确认旧后台任务和数据库记录的删除范围。
 - [ ] 只记录受控的功能名、调用位置、平台/Ad Services extension 版本、结果分类、端到端时间和备用路径；不上传 topic、audience、竞价信号或完整 registration URI。
 - [ ] 替代广告、归因和标识方案分别完成合规评审，不把 GAID 当作默认回退。

@@ -4,9 +4,9 @@ chapter: '26.14'
 section: '26.14'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-16'
-last_source_verified_at: '2026-08-15'
-last_verified_against: WOOTdroid arXiv:2604.27830 v1, current Android eBPF and ProfilingManager docs, AOSP android-17.0.0_r1 system/bpf, and android17-6.18-2026-06_r39 Binder sources retrieved 2026-08-15; the cited r6 Binder files are byte-identical to r39
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: WOOTdroid arXiv:2604.27830 v1, current Android eBPF and ProfilingManager docs, AOSP android-17.0.0_r1 system/bpf, and android17-6.18-2026-06_r39 Binder sources reviewed 2026-10-25; Profilo fixed at 5a66b9372c137be036403d9c6f89a57ce4111d0a; AndroidX Tracing 2.0.5 release and in-process auto-initialization audited; r6/r39 Binder bytes independently matched; source/host checks only
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -34,11 +34,11 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/drivers/android/binder_trace.h
 - type: internal
-  path: src/part3-tools/ch15-other-tools/23-ebpf-performance-analysis.md
+  path: src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md
 - type: internal
-  path: src/part1-fundamentals/ch01-architecture/04-binder.md
+  path: src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md
 - type: internal
-  path: src/part5-app/ch26-observability/05-online-troubleshooting.md
+  path: src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md
 - type: legacy-reference-preserved
   path: frameworks/native/cmds/atrace/atrace.cpp (android-17.0.0_r1)
 - type: legacy-reference-preserved
@@ -178,7 +178,7 @@ Android 平台自己就在用 eBPF。按 AOSP 文档的说法，系统镜像中�
 WDSys 的论文原型可以拆成五个阶段：
 
 1. **入口**：论文作者在 Pixel 7 和 Pixel 9 上没有找到可用的逐系统调用 tracepoint，于是改挂 `raw_syscalls:sys_enter` 与 `raw_syscalls:sys_exit`，再按 syscall id（系统调用编号）分派。这个观察只代表这两台设备；Android 12～17 的其他内核是什么情况，部署前要先枚举目标内核实际提供哪些 tracepoint 才知道。
-2. **过滤与配对**：enter 事件保存参数，exit 事件保存返回值。过滤器按 UID（应用或系统主体标识）、TGID（Linux 线程组标识，通常对应进程）、syscall id 和项目规则筛掉无关事件。配对并不总成功：线程提前退出、tail call（从一个 BPF 程序直接跳到另一个程序） 失败，或 map 更新与查询失败，都可能让记录只剩进入或退出一侧。
+2. **过滤与配对**：enter 事件保存参数，exit 事件保存返回值。过滤器按UID、TGID（线程组/通常为进程）、syscall id与项目规则筛选；TGID只是筛选维度，不能单独作为enter/exit配对键。实现还须保留线程TID、进程/线程生命周期与调用实例，防止同进程并发线程覆盖状态或TID复用串线。配对并不总成功：线程提前退出、tail call（从一个 BPF 程序直接跳到另一个程序） 失败，或 map 更新与查询失败，都可能让记录只剩进入或退出一侧。
 3. **复杂度分段**：论文用 program array（一张保存 BPF 程序引用的 map） 和 tail call 拆分逻辑，以满足 verifier 的限制——verifier 是内核在加载前执行的安全检查器，对栈空间和程序复杂度设有上限。tail call 只是这个原型的程序组织方式，Android 系统调用追踪协议并没有规定必须这样实现。
 4. **传输**：WOOTdroid 使用 perf buffer，论文也称它 perf ring buffer。`BPF_MAP_TYPE_RINGBUF` 是另一种 BPF map 类型；两者在空间预留、事件提交、跨 CPU 顺序和丢失统计上都不同，设计文档应写明用的是哪一种。
 5. **用户态消费**：读取进程负责拼接分片、统一时间表示、落盘和审计。内核程序成功输出，只说明事件进了传输缓冲区；读取进程有没有消费并持久化这些数据，还要单独确认。
@@ -369,7 +369,7 @@ WDBind v1 不处理 reply，ioctl enter / exit 又可能混合 write 与 read，
 - [Android 17 common kernel 6.18 `binder.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/android/binder.h)：原文保留的 r6 历史锚点；复核时与 r39 内容一致。
 - [Android 17 common kernel 6.18 `binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)：原文保留的 r6 历史锚点；复核时与 r39 内容一致。
 - [Android 17 common kernel 6.18 `binder_trace.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)：原文保留的 r6 历史锚点；复核时与 r39 内容一致。
-- [WOOTdroid v1](https://arxiv.org/abs/2604.27830)：WDSys/WDBind 设计、Android 16 实验数据和作者列出的限制。
+- [WOOTdroid v1](https://arxiv.org/html/2604.27830v1)：WDSys/WDBind 设计、Android 16 实验数据和作者列出的限制。
 - [Android Developers：App-driven profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)：`ProfilingManager` profile 类型、频控和配置边界。
 - [Android Developers：Log Info Disclosure](https://developer.android.com/privacy-and-security/risks/log-info-disclosure)：日志敏感数据泄露风险与端侧处理建议。
 
@@ -444,9 +444,9 @@ Profilo 包含多个协作组件。官方[架构文档](https://github.com/faceb
 
 ### ATrace 事件的写入路径
 
-ATrace 事件最终写入内核 ftrace 的 `trace_marker`——用户态向 ftrace 提交文本事件的接口文件；这一段的平台源码是 AOSP `android-17.0.0_r1`。初始化代码见 [`libcutils/trace-dev.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp)：它优先打开 `/sys/kernel/tracing/trace_marker`，失败后再尝试 `/sys/kernel/debug/tracing/trace_marker`。
+先看libcutils的ATrace兼容写入路径：它向内核ftrace的trace_marker提交文本事件；这不代表Android17所有公共Trace调用最终都会写这个文件，后面的tracing_perfetto还可能走Track Event。平台基线为android-17.0.0_r1。初始化代码见 [`libcutils/trace-dev.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp)：它优先打开 `/sys/kernel/tracing/trace_marker`，失败后再尝试 `/sys/kernel/debug/tracing/trace_marker`。
 
-状态定义见 [`trace-dev.inc`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.inc)，其中保存 `atrace_marker_fd` 与 `atrace_enabled_tags`，再用 `write()` 写入格式化事件；`fd` 是进程标识已打开文件的整数句柄，`atrace_marker_fd` 存的就是该接口文件的句柄。
+状态定义见 [`trace-dev.inc`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.inc)，其中保存 `atrace_marker_fd` 与 `atrace_enabled_tags`，再用 `write()` 写入格式化事件；`fd`是进程内标识已打开文件的整数句柄，`atrace_marker_fd` 存的就是该接口文件的句柄。
 
 用户态格式包含以下前缀：
 
@@ -492,7 +492,7 @@ val result = traceSection("Feed.bindVisibleItems") {
 
 ### Profilo ATrace provider 的精确行为
 
-native 捕获逻辑位于 [`cpp/atrace/Atrace.cpp`](https://github.com/facebookarchive/profilo/blob/main/cpp/atrace/Atrace.cpp)。
+下述上游行为固定在Profilo提交`5a66b9372c137be036403d9c6f89a57ce4111d0a`，native逻辑见[该提交Atrace.cpp](https://github.com/facebookarchive/profilo/blob/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp)；移动main链接仅用于导航。
 
 Java 生命周期入口见 [`SystraceProvider.java`](https://github.com/facebookarchive/profilo/blob/main/java/main/com/facebook/profilo/provider/atrace/SystraceProvider.java)。
 
@@ -533,13 +533,13 @@ hook 对 `S/F/G/H/I/N/C` 同样返回成功，对应记录却没有写进 Profil
 
 先回答一个常见疑问：这套 hook 能看到哪些进程？PLT relocation 是动态加载器填入的函数地址槽位，Profilo 修改的是当前应用进程内 `libcutils.so` 的这个槽位；其他进程各有自己的地址空间，不会随之改变。
 
-把 tag mask 设为全 1，放行的也只是当前进程内 framework、ART、HWUI 或 native library 执行到的 ATrace 点；承载系统服务的 `system_server`、负责显示合成的 SurfaceFlinger、窗口管理服务 WindowManager，它一个都触达不了，`sched`、Binder、块 I/O 这些内核 tracepoint 也不会记录。
+tag mask全1也只改变本进程状态；framework、ART、HWUI或native事件还必须实际经过被hook的libcutils入口才可能捕获，直接Track Event或其他写入路径不会自动被拦截；承载系统服务的 `system_server`、负责显示合成的 SurfaceFlinger、窗口管理服务 WindowManager，它一个都触达不了，`sched`、Binder、块 I/O 这些内核 tracepoint 也不会记录。
 
-所以 Profilo ATrace trace 只是一份“当前进程同步 slice 的应用内副本”。systrace 是 Android 早期系统追踪工具和格式的常用称呼；完整的系统时间线还需要跨进程事件与内核调度数据，碰到跨进程因果关系，我们改采 Perfetto system trace。
+所以这只是“本进程、命中hook路径、被保存的B/E同步slice记录”；还须核对名称记录完整性与缓冲覆盖，不能承诺覆盖本进程所有同步slice。systrace 是 Android 早期系统追踪工具和格式的常用称呼；完整的系统时间线还需要跨进程事件与内核调度数据，碰到跨进程因果关系，我们改采 Perfetto system trace。
 
 #### B/E 如何配对
 
-Profilo 在 hook 执行时直接调用 `threadID()`。TID 是内核分配给线程的标识；Profilo 把 `B` 转成 `MARK_PUSH`，把 `E` 转成 `MARK_POP`，并在每条记录中保存 TID。解析器按 TID 分别维护调用栈，无需借助 `sched_switch` 推断事件属于哪个线程：
+Profilo 在 hook 执行时直接调用 `threadID()`。TID 是内核分配给线程的标识；Profilo 把 `B` 转成 `MARK_PUSH`，把 `E` 转成 `MARK_POP`，并在每条记录中保存 TID。解析器按进程实例和线程生命周期中的TID分别维护调用栈；TID来自写入记录，无需借sched_switch猜归属。长窗口若不能识别TID复用，应在生命周期/缺失边界截断，避免与旧线程栈拼接：
 
 ```text
 tid 4101: PUSH Activity.onCreate
@@ -551,7 +551,7 @@ tid 4178: PUSH decodeThumbnail
 tid 4178: POP
 ```
 
-每个 TID 的 `PUSH` 与 `POP` 独立配对。缓冲区回绕指写指针走完一圈后复用旧槽位，可能盖掉还没读取的开始事件；采集正好从一段未结束 slice 的中间开始、进程异常退出，或调用方漏掉配对调用，栈同样会不平衡。分析端要把对应区间标成不完整数据，时长一律不补造。
+每个进程/线程生命周期内的PUSH与POP按嵌套独立配对。缓冲区回绕指写指针走完一圈后复用旧槽位，可能盖掉还没读取的开始事件；采集正好从一段未结束 slice 的中间开始、进程异常退出，或调用方漏掉配对调用，栈同样会不平衡。分析端要把对应区间标成不完整数据，时长一律不补造。
 
 <!-- gracker-diagram: a299-12-thread-lifetime-stack-and-partial -->
 ![B/E 栈按线程生命周期隔离，缺事件就保留不完整](../../assets/diagrams/ch26/a299-12-thread-lifetime-stack-and-partial.png)
@@ -671,17 +671,17 @@ RSS 是进程当前驻留在物理内存中的页总量。P50、P95、P99 分别
 
 #### 只需要公共业务标记
 
-Java/Kotlin 可使用 `android.os.Trace` 或 AndroidX Tracing，native 可使用 NDK ATrace。这些 API 负责发出标记，不会自行启动或保存一份 trace；采集端启用对应类别后，标记才会出现在 Perfetto system trace 中。
+只写系统轨迹标记时，Java/Kotlin可用android.os.Trace或AndroidX旧Trace兼容API，native用NDK ATrace；它们本身不启动保存system trace，需采集端启用对应类别。AndroidX 2.0的Tracer/tracing-wire应用内链路另有自动初始化，不能把“不自动采集”一概套给它。
 
-截至 2026-08-16，[AndroidX Tracing release notes](https://developer.android.com/jetpack/androidx/releases/tracing)列出的稳定版是 `1.3.0`。它适合通过公共 API 写系统 trace 标记，维护范围比私有变量与 PLT hook 清晰。
+截至2026-10-25，[AndroidX Tracing release notes](https://developer.android.com/jetpack/androidx/releases/tracing)列出的最新稳定版为2.0.5（2026-10-21）；2.0.0已于2026-08-12稳定发布。1.3.0保留为旧Trace兼容路径的版本背景，不再称当前最新稳定版。
 
 #### 需要线上应用内 trace
 
 官方用法见 [AndroidX Tracing 的 in-process tracing](https://developer.android.com/topic/performance/tracing/in-process-tracing)。
 
-`2.0.0-beta01` 提供可插拔 backend 与 sink，并可把应用内事件写成 Perfetto trace packet。trace packet 是 Perfetto 文件中承载事件、时间戳与关联字段的序列化记录单元。
+稳定版2.0.5提供可插拔backend与sink，可把应用内事件写成Perfetto trace packet。trace packet 是 Perfetto 文件中承载事件、时间戳与关联字段的序列化记录单元。
 
-它目前仍是预发布版本。采用方要把 API 变更、依赖升级和回归测试纳入计划。
+Android应用若加入tracing-wire，默认通过AndroidX Startup自动建立TraceDriver与全局Tracer，把文件写到noBackupFilesDir/perfetto_traces；可用AbstractTraceDriver.Factory定制。仅引入轻量tracing API不等于已经配置输出；部署时核对实际初始化、sink路径、flush与关闭行为。2.0.5修复并发flush/release包池潜在死锁，升级仍需回归。
 
 [Perfetto Tracing SDK 的 in-process backend](https://perfetto.dev/docs/instrumentation/tracing-sdk) 面向 C++17 客户端，也能由应用自行控制采集。
 
@@ -710,7 +710,7 @@ API 35 及更高版本的 [ProfilingManager](https://developer.android.com/refer
 |---|---|
 | 已有维护多年的 Profilo fork 和配套后端 | 保留架构，按 Android 17 清单重新验证；把 ATrace B/E 子集和失效条件写进协议 |
 | 只想复用上游 AAR 快速上线 | 不建议；仓库已归档，Android 17 与 OEM 兼容性没有维护方保证 |
-| 新建 Java/Kotlin 应用内 trace | 评估 AndroidX Tracing `2.0.0-beta01`，并接受预发布 API 风险 |
+| 新建 Java/Kotlin 应用内 trace | 评估稳定版AndroidX Tracing 2.0.5；核对tracing-wire初始化、sink、flush与应用预算 |
 | 新建 native 应用内 trace | 评估 Perfetto SDK in-process backend |
 | 线下或实验室定位跨进程问题 | 使用 Perfetto system trace，不用 Profilo trace 代替系统时间线 |
 | 只需持续指标与异常触发 | 优先做聚合指标和短窗口触发，命中后再采集受控 trace |

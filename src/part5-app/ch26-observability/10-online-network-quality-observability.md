@@ -4,9 +4,9 @@ chapter: '26.10'
 section: '26.10'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-04'
-last_source_verified_at: '2026-10-04'
-last_verified_against: Android network-state guide updated 2026-10-01; Android 17 android-17.0.0_r1 Connectivity sources; TrafficStats and NetworkCapabilities API references; OkHttp 5.5.0 Maven metadata and EventListener source; Cronet references updated 2026-07-31, API 143.7445.0, and 500.1.0 artifact migration POMs, retrieved 2026-10-04
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Android network-state guide updated 2026-10-01; Android 17 android-17.0.0_r1 Connectivity sources; TrafficStats and NetworkCapabilities API references; OkHttp 5.5.0 Maven metadata and EventListener source; Cronet references updated 2026-07-31, API 143.7445.0, and 500.1.0 artifact migration POMs, reviewed 2026-10-25; OkHttp metadata now release 5.5.1, pinned 5.5.1 EventListener also compared; route/exchange pairing and clock/TTFB boundaries audited; documentation/artifact review only
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -86,7 +86,7 @@ last_rework_at: '2026-08-15T21:22:20+08:00'
 | 接入层日志 | 请求是否到达入口、入口流量是否下跌、服务端处理耗时、状态码分布 | 客户端 DNS 失败、建连失败、被代理/VPN 拦截的请求可能看不到 | 秒级告警、定位入口集群/CDN/域名异常 |
 | 系统网络状态 | 默认网络、传输类型、VPN、计费网络、互联网验证、受限网络 | App 拿不到无线驱动、基站、运营商内部路由的完整状态 | 解释网络切换、Captive Portal（需要网页认证的受限网络）、代理/VPN 干扰 |
 
-三套记录各管一段：客户端样本解释用户侧经历，接入层日志显示已到达入口的请求，系统状态说明 App 当时可见的默认网络。我们把它们关联（四层请求 ID 的定义见下文「客户端阶段耗时采集」）起来，靠的是 `trace_id`、`request_id` 和 `attempt_id`，四层请求 ID 的定义见下文「客户端阶段耗时采集」。其中有一类记录要特别留意：DNS、connect 或 TLS 阶段失败的 attempt 根本到不了服务器，服务端自然没有同名 ID。对账时这类只在客户端出现的记录必须保留，丢了它们，入口前失败就成了盲区。
+三套记录各管一段：客户端样本解释用户侧经历，接入层日志显示已到达入口的请求，系统状态说明 App 当时可见的默认网络。三层记录通过trace_id、request_id和实际发出的exchange_id候选关联，端侧再保留attempt与所选连接的关系；四层ID定义见下文。其中有一类记录要特别留意：DNS、connect 或 TLS 阶段失败的 attempt 根本到不了服务器，服务端自然没有同名 ID。对账时这类只在客户端出现的记录必须保留，丢了它们，入口前失败就成了盲区。
 
 <!-- gracker-diagram: a295-01-client-edge-and-network-evidence -->
 ![客户端、入口与系统状态各自留下不同的盲区](../../assets/diagrams/ch26/a295-01-client-edge-and-network-evidence.png)
@@ -104,11 +104,21 @@ last_rework_at: '2026-08-15T21:22:20+08:00'
 
 这四层 ID 规定了怎么把多个事件归到同一次用户操作。同一个 `request_id` 里可能发生多次 DNS、connect 或 `connectionAcquired`，也可能因为复用已有连接，完全没有 DNS、connect 和 TLS 事件。这就带来一个问题：如果采集器只为每个阶段保留一个开始时间，后一次路由尝试就会覆盖前一次失败，算出来的分段之和也可能和调用总耗时对不上。
 
-落到具体采集器，先看 OkHttp。截至 2026 年 10 月 4 日，`com.squareup.okhttp3:okhttp` 的 Maven metadata 标记 release 为 5.5.0；其 [`EventListener` 5.5.0 源码](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 一致。
+落到具体采集器，先看 OkHttp。截至2026年10月25日，com.squareup.okhttp3:okhttp的Maven metadata标记release为5.5.1；本轮还核对了固定tag parent-5.5.1的EventListener，其内容与下述5.5.0/5.4.0文件相同。既有固定基线的 [`EventListener` 5.5.0 源码](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 一致。
 
-从 dispatcher（请求调度器） 排队，到 DNS、建连、安全连接、连接获取、请求发送和响应读取，这些事件都属于同一个 `Call`。事件序列并不总是一样的，要看路由情况：connect 系列事件可能因候选路由与 Fast Fallback 重复出现——Fast Fallback 会交错尝试多个地址，免得在一条迟迟建不起连接的路径上干等；`connectionAcquired` 也可能在一个 `Call` 中出现多次；反过来，连接复用时 DNS、connect 和 TLS 事件又可能缺席。所以采集器要保存有序事件和对应的 attempt/exchange，序列长什么样，就按什么样子记。
+<!-- gracker-diagram: a295-02-trace-call-route-and-exchange -->
+![四层身份中，连接尝试与 HTTP 交换不是一对一](../../assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.png)
 
-Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.Listener`。本文逐方法核验的 API 版本为 `143.7445.0`；[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、建连、SSL、发送、响应开始和请求结束时间戳，以及套接字复用、TTFB（time to first byte，收到首个响应字节）、总耗时和可空的传输字节数。没有发生、或者采集不到的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 均为空。还有一个容易误读的点：DNS 命中本地缓存但没有复用 socket 时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”离“访问了远端 DNS”还差一步，要区分开。
+图：attempt是本文端侧模型；公开回调未给所有阶段提供唯一句柄，未知归属应保留。
+
+从 dispatcher（请求调度器） 排队，到 DNS、建连、安全连接、连接获取、请求发送和响应读取，这些事件都属于同一个 `Call`。事件序列并不总是一样的，要看路由情况：connect 系列事件可能因候选路由与 Fast Fallback 重复出现——Fast Fallback 会交错尝试多个地址，免得在一条迟迟建不起连接的路径上干等；`connectionAcquired` 也可能在一个 `Call` 中出现多次；反过来，连接复用时 DNS、connect 和 TLS 事件又可能缺席。采集器应保存带单调时间与序号的原始事件，按回调提供的地址/代理等公共参数配对。Fast Fallback可能并发，只有Call参数的回调未必足以唯一归属某次建连；这种情况保留unknown或候选关联，不靠“最后一次开始”硬配。各阶段可嵌套/重叠，不能直接相加推导总耗时；复用连接没有本次建连attempt也属正常。
+
+<!-- gracker-diagram: a295-03-fast-fallback-and-exchange-tracks -->
+![Fast Fallback、胜出连接与后续交换保留各自时间范围](../../assets/diagrams/ch26/a295-03-fast-fallback-and-exchange-tracks.png)
+
+图：路由A失败与路由B成功可在时间上重叠；HTTP发送只发生在选定连接上，回调仍需按其提供的参数配对。
+
+Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.Listener`。本文逐方法核验的 API 版本为 `143.7445.0`；[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、建连、SSL、发送、响应开始和请求结束时间戳，以及套接字复用、TTFB（time to first byte，收到首个响应字节）、总耗时和可空的传输字节数。没有发生、或者采集不到的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 均为空。Metrics的Date时间戳按请求开始时的系统时钟锚定，内部保证相对差值不倒退；请求中途校准系统时间后，后续Date不必等于当时的日历时钟，不能与其他时钟域直接相减。另须区分getTtfbMs（请求开始至响应头首字节）和getResponseStart（响应头全部收完）；后者减requestStart不是精确TTFB。DNS命中本地缓存但没有复用socket时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”离“访问了远端 DNS”还差一步，要区分开。
 
 还有一个版本陷阱：Google Maven 目前把 `cronet-api:500.1.0` 标为 release，但其 [`POM`](https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/500.1.0/cronet-api-500.1.0.pom) 明确说明这是已废弃的过渡空工件，只负责引入 `org.chromium.net:cronet:500.1.0`；新项目应直接依赖 `cronet`。所以 `cronet-api` 元数据里的最新版本号，离实际引擎版本还差一层，据此假定 143.7445.0 的方法语义原样延续，是靠不住的。事件里应同时记录依赖坐标、API 版本、`provider`（实现提供方） 和引擎版本，升级后重新核对可空字段与字节统计。
 
@@ -121,28 +131,18 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 
 图：公开API工件已逐方法检查；字段可用性、Socket复用与统计范围单独保存。
 
-自研网络库应把阶段事件纳入接口设计。下表用 `observed` 表示采集器看到了该阶段，`not_observed` 表示该阶段未发生或未被回调覆盖，`unsupported` 表示当前库不提供该字段。
+自研网络库应把阶段事件纳入接口设计。下表用observed表示看到了阶段，not_applicable表示已知无需发生（如确定复用连接而无建连），not_observed表示没拿到事件且原因未知，unsupported表示库无此能力；需要时另记采集失败/丢弃，不把这些状态混成0ms。
 
 | 字段组 | 示例字段 | 说明 |
 | --- | --- | --- |
 | 请求身份 | `trace_id`、`request_id`、`attempt_id`、`exchange_id`、`scene_id`、`endpoint_id` | `endpoint_id` 来自受控的主机名与路径模板，不上传完整 URL 与查询参数 |
 | 实现信息 | `engine`、`engine_version`、`negotiated_protocol`、`collector_version` | 区分平台、网络库和采集器升级引起的口径变化 |
-| 阶段时间 | `queue_ms`、`dns_ms`、`connect_ms`、`secure_handshake_ms`、`ttfb_ms`、`body_ms`、`total_ms` | 每个阶段同时记录 `observed`、`not_observed` 或 `unsupported`；连接复用时阶段未发生，不能记成 0 ms |
+| 阶段时间 | `queue_ms`、`dns_ms`、`connect_ms`、`secure_handshake_ms`、`ttfb_ms`、`body_ms`、`total_ms` | 每阶段保存observed/not_applicable/not_observed/unsupported等可用性；复用时已知未发生的建连不记0ms |
 | 网络现场 | `network_snapshot_id`、`transports`、`validated`、`metered`、`vpn`、`proxy_present` | `network_snapshot_id` 是端侧短期关联键，不上传原始 `Network` 标识 |
 | 失败与重试 | `error_domain`、`error_code`、`http_code`、`route_index`、`retry_reason`、`peer_group_id` | Java 异常未必暴露稳定 errno（操作系统错误号）；错误类和库内枚举优先于解析异常文案 |
 | 上报状态 | `sample_rate`、`upload_channel`、`upload_delay_ms`、`dropped_reason` | 网络故障时，上报失败本身也是证据 |
 
 这张表和 26.1 的性能指标模型保持一致：事件回调只记录轻量时间戳、枚举和引用，序列化、压缩、写入本地文件与上传交给后台任务。我们尤其要守住一条底线：在主线程、OkHttp callback（回调函数） 或 Cronet listener（监听器） 里做磁盘 I/O，会直接干扰被测请求。
-
-<!-- gracker-diagram: a295-02-trace-call-route-and-exchange -->
-![四层身份中，连接尝试与 HTTP 交换不是一对一](../../assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.png)
-
-图：attempt是本文端侧模型；公开回调未给所有阶段提供唯一句柄，未知归属应保留。
-
-<!-- gracker-diagram: a295-03-fast-fallback-and-exchange-tracks -->
-![Fast Fallback、胜出连接与后续交换保留各自时间范围](../../assets/diagrams/ch26/a295-03-fast-fallback-and-exchange-tracks.png)
-
-图：路由A失败与路由B成功可在时间上重叠；HTTP发送只发生在选定连接上，回调仍需按其提供的参数配对。
 
 ## QUIC / HTTP/3 指标口径
 
@@ -183,7 +183,7 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 
 网络状态要按样本发生的时刻记录。使用 `registerDefaultNetworkCallback()` 时，Android 8.0 及以上会在 `onAvailable()` 后立即给出 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`，所以在 `onAvailable()` 里同步查询新网络属性会撞上竞态，等后两个回调到了再读。默认网络回调的 `onLost()` 同样要读准：它只说明这张网络不再是 App 的默认网络，它未必已经断开。
 
-默认网络回调运行在 App 的 `ConnectivityManager` 专用线程，所以回调里只更新创建后不再修改的内存快照，耗时计算与上传放到工作线程，并在不再使用时注销该回调。`Network` 对象也一样有生命周期：它仅在该次连接存续期内有效，同一接入点重连后也会得到新对象，端侧短期关联够用，跨会话的设备或网络标识要另想办法。
+无Handler重载的默认网络回调通常在应用的ConnectivityManager连接线程派发；传入Handler的重载则在指定Handler线程派发。两种情况下，所以回调里只更新创建后不再修改的内存快照，耗时计算与上传放到工作线程，并在不再使用时注销该回调。`Network` 对象也一样有生命周期：它仅在该次连接存续期内有效，同一接入点重连后也会得到新对象，端侧短期关联够用，跨会话的设备或网络标识要另想办法。
 
 <!-- gracker-diagram: a295-07-network-callback-snapshot-and-selected-network -->
 ![网络快照绑定请求所选网络，不把默认变化当断网](../../assets/diagrams/ch26/a295-07-network-callback-snapshot-and-selected-network.png)
@@ -220,9 +220,9 @@ PLT（Procedure Linkage Table，过程链接表）保存动态函数的跳转入
 | 入口秒级异常 | 客户端样本延迟到达或上报失败 | 入口流量、错误率、处理耗时秒级变化 | 服务端发布、入口集群、CDN、机房、限流策略 |
 | 客户端维度更丰富 | 某机型/系统/版本/网络类型集中异常 | 入口只看到域名、状态码、地域或 IP 段 | App 版本、设备兼容、网络库升级、代理/VPN、运营商 |
 
-对账 ID 必须在客户端发起请求前生成：`trace_id` 描述完整业务请求路径，`request_id` 描述网络库调用，`attempt_id` 描述客户端路由或重试。两边各记各的账：只有请求头成功发到入口时，服务端才可能读到这些 ID，DNS、connect、TLS 阶段失败的 attempt 只存在于客户端；接入层记录收到的 ID、入口节点、协商协议、状态码、服务端处理耗时和响应字节数，客户端记录相同 ID 对应的阶段与 attempt 结局。
+trace_id/request_id在逻辑请求前建立；route attempt_id在端侧建立，exchange_id对应真正发送的HTTP交换。并发建连的失败候选不会发送HTTP头，复用连接的exchange也没有本次新建连attempt；因此不要假设每个attempt_id都能被写入请求头。对支持的请求路径，交换发送前注入受控request/exchange标识，客户端保存exchange到所选连接/候选attempt的关联；无法唯一关联时保留unknown。接入层只记录实际收到的标识及入口节点、协议、状态、耗时、字节；入口前失败继续留在客户端账本。
 
-对账的第一步，我们先把两边记录按 `request_id + attempt_id` 对起来，区分出三种集合：两侧都有记录、只有客户端记录、只有接入层记录。第一类可比较端到端耗时与服务端耗时；第二类用于分析入口前失败；第三类提示客户端采样、ID 注入或上报丢失。重定向和重试还要按 `exchange_id` 或接入层生成的 span（分布式追踪中的单段操作）区分，避免把多次响应的字节数、状态码和耗时相加后误认为一次请求。
+对账先按实际透传的request_id + exchange_id（或约定的入口span）关联；attempt_id用于端侧路由账本，只有明确传输与映射契约时才作为额外键。再在相同采样、时间窗和入口覆盖下，区分出三种集合：两侧都有记录、只有客户端记录、只有接入层记录。第一类可比较端到端耗时与服务端耗时；第二类用于分析入口前失败；第三类提示客户端采样、ID 注入或上报丢失。重定向和重试还要按 `exchange_id` 或接入层生成的 span（分布式追踪中的单段操作）区分，避免把多次响应的字节数、状态码和耗时相加后误认为一次请求。
 
 未到达入口的样本同样有价值，仍应保存受控的字段，例如候选地址数量、脱敏后的 peer（对端节点） 分组、库级错误枚举、TLS 错误类别、代理/VPN 标记和网络快照。哪些字段留在端侧、哪些能进通用遥测，要划清楚：原始 DNS 列表、完整 IP、完整 URL、查询参数、代理地址与系统 `Network` 标识，都留在通用遥测之外。
 
@@ -287,4 +287,4 @@ Android 官方的 [Read network state](https://developer.android.com/develop/con
 
 ## 全文小结
 
-回到开头的三个问题。一套可用的网络质量系统，手里要有三份记录：客户端保存逻辑调用、attempt、exchange、阶段可用性和请求所用网络的快照；接入层保存已经到达入口的事实；遥测通道报告自身的延迟与缺口。三侧记录用 `trace_id`/`request_id`/`attempt_id` 对账，再结合协议、网络分组和库版本解释差异。这样得到的结论既能指出时间花在哪一段，也会明确哪些阶段没有观测到、哪些请求从未到达服务器。
+回到开头的三个问题。一套可用的网络质量系统，手里要有三份记录：客户端保存逻辑调用、attempt、exchange、阶段可用性和请求所用网络的快照；接入层保存已经到达入口的事实；遥测通道报告自身的延迟与缺口。三侧按实际透传的trace_id/request_id/exchange_id及候选attempt关系对账，再结合协议、网络分组和库版本解释差异。这样得到的结论既能指出时间花在哪一段，也会明确哪些阶段没有观测到、哪些请求从未到达服务器。

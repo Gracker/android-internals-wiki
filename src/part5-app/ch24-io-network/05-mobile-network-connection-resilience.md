@@ -111,8 +111,8 @@ sources:
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md
 - type: clipping-structure
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md
-last_verified: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers network state, background transfer, UIDT and long-running WorkManager docs; OkHttp 5.4.0 source and changelog; RFC 9110, RFC 6585 and RFC 7233
+last_verified: '2026-10-25'
+last_verified_against: fixed AOSP android-17.0.0_r1 and OkHttp 5.4.0 sources including RealCall, Dispatcher and FastFallbackExchangeFinder; Android Developers network state, transfer, HttpEngine timing and security docs accessed 2026-10-25; RFC 9110, RFC 6585, RFC 7233, RFC 9000 and RFC 9114
 related_chapters:
 - '24.6'
 - '12.1'
@@ -207,7 +207,7 @@ fun executeText(client: OkHttpClient, request: Request): String {
 }
 ```
 
-`use` 在离开作用域时关闭响应体。响应体一旦漏关，套接字和 HTTP/2 逻辑流就一直被占着，连接池配置得再对也复用不起来。流式下载不要先调用 `string()`，消费结束、取消或异常时同样要关闭响应体。
+`use` 在离开作用域时关闭响应体。响应体未正确消费或关闭时，可能持续占用套接字、HTTP/2 流和其他资源，降低复用能力；是否仍能复用还取决于内容是否读完、协议和关闭方式，不能只靠池配置修复。流式下载不要先调用 `string()`，消费结束、取消或异常时同样要关闭响应体。
 
 <!-- gracker-diagram: a265-02-response-ownership -->
 ![响应体消费和关闭控制连接占用](../../assets/diagrams/ch24/a265-02-response-ownership.png)
@@ -249,7 +249,7 @@ class NetworkEventListener : EventListener() {
 
 连接池命中时，DNS 与建连事件可能全部缺席；重定向、认证和连接路径重试，又可能让同一组事件出现多次。所以采集时要以一次逻辑 `Call` 为父级，再为每次 DNS、建连和交换分配事件序号；第一组事件只对应第一次尝试，把它当成整次调用的唯一阶段，时间线就会读错。
 
-一次请求在进入 DNS 之前，还可能先停在业务队列、OkHttp Dispatcher 或缓存判定里，所以端到端时间线要从业务入队开始，覆盖异步排队、直接或条件缓存命中、DNS、每次连接与 TLS 尝试、请求写入、TTFB（Time to First Byte，收到响应首字节的等待）、响应体消费以及解码入库。其中 TTFB（Time to First Byte，从请求发出到收到响应首部的等待）与“解析响应头所花的时间”是两个概念；流式上传、双工请求和长连接还要单独定义起止。
+一次请求在进入 DNS 之前，还可能先停在业务队列、OkHttp Dispatcher 或缓存判定里，所以端到端时间线要从业务入队开始，覆盖异步排队、直接或条件缓存命中、DNS、每次连接与 TLS 尝试、请求写入、响应首部等待、响应体消费以及解码入库。本文把请求发送完成到最终交换的 `responseHeadersStart` 定义为响应首部等待的代理指标；它不等同于完整响应头解析耗时，也不承诺精确观测网卡首字节。TTFB（Time to First Byte）若使用不同起点、网络栈原始时间或服务端时间，必须另列字段，不能混算。流式上传、双工请求和长连接另行定义起止。
 
 指标应分成四层，避免重试把一次用户动作统计成多次失败：
 
@@ -320,7 +320,7 @@ class CachedHttpDns(
 
 这里用 `elapsedRealtime()` 判断进程内有效期，避免用户修改设备日期或时间后错误延长 TTL（Time to Live，生存时间）。缓存要跨重启持久化的话，还要同时保存可恢复的过期依据，并在重启后按协议重新校验。缓存写入端应直接解析数值 IP，避免在同步 `lookup()` 中用主机名解析 API 间接触发另一轮 DNS。
 
-示例适用于明确允许系统 DNS 回退的策略。严格解析策略应把回退实现作为依赖传入，并让失败显式返回。若客户端绑定到指定 Android `Network`，回退解析也应使用该网络的 `getAllByName()`，并与对应的套接字绑定策略保持一致。
+示例适用于明确允许系统 DNS 回退的策略。严格解析策略应把回退实现作为依赖传入，并让失败显式返回。若客户端绑定到指定 Android `Network`，回退解析也应使用该网络的 `getAllByName()`，并与对应的套接字绑定策略保持一致。 `Network` 参与缓存键并不会自动绑定后续连接；需要固定网络时，应捕获同一网络身份，统一配置解析与套接字，并处理捕获后网络失效的情况。示例的 `currentNetwork()` 只表示读取缓存时的当前值，不提供跨解析与建连的原子网络快照。
 
 排查时要分清四种事件：HTTPDNS 查询失败、返回空地址，属于解析服务与缓存策略；地址连接失败要落到具体连接路径上；TLS 校验失败则回到证书与主机名。关闭主机名校验换来的“兼容”，只是把故障藏了起来。
 
@@ -406,7 +406,7 @@ class DefaultNetworkMonitor(
 
 #### Dispatcher 的管辖范围
 
-OkHttp 5.4.0 的 `Dispatcher` 是异步调用调度器：`maxRequests` 和 `maxRequestsPerHost` 控制通过 `Call.enqueue()` 提交的调用，超过并发上限的调用留在内存队列，等待已有异步调用结束。通过 `Call.execute()` 发起的同步调用虽然会计入 `runningCalls()`，排队与放行的判断却都绕过这两个上限。
+OkHttp 5.4.0 的 `Dispatcher` 是异步调用调度器：`maxRequests` 和 `maxRequestsPerHost` 控制通过 `Call.enqueue()` 提交的调用，超过并发上限的调用留在内存队列，等待已有异步调用结束。通过 `Call.execute()` 发起的同步调用虽然会计入 `runningCalls()`，排队与放行的判断却都绕过这两个上限。 这里的“异步调用结束”按 Dispatcher 计数口径指 `onResponse` / `onFailure` 返回；同步调用在 `execute()` 返回时移出运行集合。响应体若被交给其他线程继续消费，仍可能占用连接、流和内存，因此 `runningCalls()` 不是所有活跃传输资源的完整清单，应用的端到端并发限制应覆盖实际资源生命周期。
 
 这一区别会影响架构选择：
 
@@ -520,18 +520,18 @@ OkHttp 的文件请求体可流式发送，但暂存文件在重试完成前必�
 
 #### 超时是分阶段预算
 
-OkHttp 的超时是分阶段的预算：`connectTimeout` 约束套接字建连，`readTimeout` 和 `writeTimeout` 约束对应的读写操作，`callTimeout` 覆盖整次逻辑调用，包括 DNS、连接、写入、服务端处理和读取。也正因为分阶段，把读超时调大治不了 DNS 或 Dispatcher 排队的慢；只设阶段超时，也拦不住重定向与重试累积后的总等待。
-
-参数由同一接口在不同网络类别下的耗时分位数、用户交互截止时间和服务端服务等级目标得出。分位数描述一组请求中有多少比例不超过该耗时，例如 P95 是 95% 的样本不超过的值；流式下载与短 API 的读取模型不同，共用一组机械常数并不合适。
+OkHttp 的超时是分阶段的预算：`connectTimeout` 约束套接字建连，`readTimeout` 和 `writeTimeout` 约束对应的读写操作；`callTimeout` 覆盖一次 `Call` 开始执行后的 DNS、连接、写入、服务端等待和响应体消费。固定 5.4.0 的 `RealCall` 在同步 `execute()` 进入时启动计时，异步调用则在 `AsyncCall.run()` 才启动，Dispatcher 队列等待不包含在内。业务总截止时间应在外层从用户动作开始计算，并覆盖队列等待、多次 Call、退避与恢复；超限时主动取消。延长读超时不能解决 DNS 或 Dispatcher 排队，单次 Call 的超时也不能替代整个用户路径的截止时间。
 
 <!-- gracker-diagram: a265-03-queue-and-call-timeouts -->
 ![异步排队与Call执行预算分开计时](../../assets/diagrams/ch24/a265-03-queue-and-call-timeouts.png)
 
 图：异步 Dispatcher 等待不计入 callTimeout；用户路径用外层总截止时间统一限制多次调用与重试。
 
+参数由同一接口在不同网络类别下的耗时分位数、用户交互截止时间和服务端服务等级目标得出。分位数描述一组请求中有多少比例不超过该耗时，例如 P95 是 95% 的样本不超过的值；流式下载与短 API 的读取模型不同，共用一组机械常数并不合适。
+
 #### 区分传输恢复与业务重试
 
-OkHttp 5.4.0 的 `retryOnConnectionFailure` 默认开启，用于从部分连接故障中恢复，例如失效的池连接或可替代连接路径。这里要分清：它恢复的是传输，业务操作要不要重新提交是另一个问题。一次 `Call` 内部发生传输恢复后，应用层拦截器若又执行重试，实际尝试次数可能高于业务代码表面上的计数。
+OkHttp 5.4.0 的 `retryOnConnectionFailure` 默认开启，用于从部分连接故障中恢复，例如失效的池连接或可替代连接路径。这里要分清：它恢复的是传输，业务操作要不要重新提交是另一个问题。一次 `Call` 内部发生传输恢复后，应用层拦截器若又执行重试，实际尝试次数可能高于业务代码表面上的计数。 `RetryAndFollowUpInterceptor.recover()` 主要按异常类别、请求是否开始发送、`isOneShot()` 与剩余连接路径判断，并不普遍替业务验证 HTTP 方法或服务端幂等性；可重放的 POST 也可能被传输层重发。因此结果未知的业务写必须先设计服务端幂等键或状态查询，不能把“库内恢复”视为不会重复副作用的保证。
 
 HTTP 语义提供起点，但服务端契约仍需确认：
 
@@ -570,7 +570,7 @@ Android 的网络调用要放在后台线程执行。AOSP `android-17.0.0_r1` �
 
 #### 流量归因的统计范围
 
-归因先看进程级计数。`TrafficStats.getUidRxBytes()` 与 `getUidTxBytes()` 返回当前 UID 自开机以来、跨所有网络接口累计的网络层字节，适合做进程内前后差值与粗粒度异常发现；在 Android 7.0（API 24）及以上，应用只能查询调用方自身 UID 的这两个计数。
+归因先看 UID 级计数。`TrafficStats.getUidRxBytes()` 与 `getUidTxBytes()` 返回当前 UID 自开机以来、跨所有网络接口累计的网络层字节，适合做前后差值与粗粒度异常发现，统计会合并同一 UID 的多个进程，不能直接归因给当前进程；在 Android 7.0（API 24）及以上，应用只能查询调用方自身 UID 的这两个计数。
 
 单请求、单域名或后台移动网络的字节，要另找数据源：这两个接口给不出，设备重启后归零，不支持时返回 `UNSUPPORTED`；VPN 转发和 CLAT（把应用的 IPv4 流量转换到仅 IPv6 网络的兼容机制）也可能改变计数的范围，结算和安全审计要用别的数据源。历史用量走 `NetworkStatsManager`，并遵守权限与用户授权；`setThreadStatsTag()` 只是添加归因标签，限流、取消和后台约束仍要应用自己实现。
 
@@ -578,7 +578,7 @@ Android 的网络调用要放在后台线程执行。AOSP `android-17.0.0_r1` �
 
 ### 账号、安全与资源隔离
 
-Cookie、认证头和业务拦截器属于请求策略；连接池里保存的是连接，某次请求带的这些 HTTP 头它一概不留。登录态和匿名态用不同的派生客户端或请求构造器表达即可，仅因为账号不同就创建全新的连接池没有必要。
+Cookie、认证头和业务拦截器属于请求策略；共享连接不会自动让后续请求继承上一次请求的 Cookie 或 Authorization，应用仍必须正确构造并隔离各请求的认证信息。对于按请求认证的普通 HTTP 业务，登录态和匿名态可用派生客户端或请求构造器表达，仅因为账号不同不必另建连接池；若采用与连接绑定的认证或其他隔离要求，应按该协议单独评估共享边界。
 
 TLS、代理与套接字配置会参与连接资格判断。使用不同的证书信任管理器（trust manager）、主机名校验器、证书或公钥固定器、客户端证书、代理或 DNS 时，要让配置差异在各自客户端中一眼可见，并验证 OkHttp 复用的都是兼容连接；复用率靠连接管理去提升，证书校验与主机名验证始终保持完整。
 
@@ -713,14 +713,19 @@ P50、P95、P99 分别表示 50%、95%、99% 的样本不超过该值；P95/P99 
 | 调度队列 | 网络库接收调用到开始执行 | 同步调用或未排队时可能没有独立事件 | DNS、代理选择、缓存查找 |
 | 缓存路径 | 缓存判定到命中，或转入网络 | 未配置缓存与缓存未命中要分开 | 响应解码与业务缓存 |
 | DNS | 解析开始到结果或错误 | 复用连接时通常没有 DNS | 地址建连和 Fast Fallback 等待 |
-| 建连（connect） | 每次地址尝试开始到成功或失败 | 复用连接时没有新建连 | TLS 与后续交换 |
+| 建连尝试（connect） | 每次 `connectStart` 到 `connectEnd` 或 `connectFailed` | 复用连接时没有新建连 | OkHttp HTTPS 的成功区间包含 TLS 子区间，不可再与 TLS 时长直接相加 |
 | TLS | 握手开始到验证结束 | 明文、复用连接或库未暴露时为空 | 服务端应用处理 |
 | 上传 | 请求头发送开始到请求体完成 | 无请求体时以请求头发送完成为界 | 排队和响应等待 |
-| TTFB | 请求发送完成到最终响应的首字节开始 | TTFB 是 Time to First Byte；缓存命中与双工流要使用单独定义 | 响应体下载 |
-| 下载 | 响应体开始到读取或关闭 | 提前关闭要记录取消或截断 | 解压、反序列化与界面提交 |
+| 响应首部等待代理 | 请求发送完成到最终交换的 `responseHeadersStart` | 不等同网卡首字节；缓存与双工流另行定义 | 完整响应头解析与响应体下载 |
+| 响应体消费 | 响应体开始到读取完成或关闭 | 提前关闭要记录取消或截断 | 可能包含内联解压与消费方等待，需额外埋点才能拆分 |
 | 本地消费 | 字节可用到业务消费完成 | 后台预取可能没有界面事件 | 网络等待 |
 
-阶段值允许为空，空表示这个阶段没有发生。连接复用时把 DNS、connect、TLS 填成零，就把“没有发生”误写成了“瞬间完成”；失败发生在 DNS 时，后续阶段同样应为空。聚合前，按缓存路径、连接复用、协议、成功/失败和取消分别统计。
+阶段值允许为空，但应同时记录原因：阶段未发生、请求提前失败，或所用网络栈没有暴露数据。复用连接时不能把缺失的 DNS、connect、TLS 强行填成零；实际计时起止相同才可按接口契约解释为未阻塞或零观测间隔。OkHttp HTTPS 的 connect 包含 TLS 子区间，流式响应体读取也可能与解压、本地消费重叠，只有边界互斥时才能把阶段相加。聚合前，按缓存路径、连接复用、协议、成功/失败和取消分别统计。
+
+<!-- gracker-diagram: a265-12-missing-and-overlapping-stages -->
+![未发生、不可观测与重叠阶段区别表达](../../assets/diagrams/ch24/a265-12-missing-and-overlapping-stages.png)
+
+图：保留缺失原因；分段只有在边界互斥时才可相加，响应头事件作为代理指标须写明定义。
 
 #### 用结构化键约束样本
 
@@ -774,11 +779,6 @@ data class NetworkBaselineSample(
 
 分位值只在 `NetworkBaselineKey` 相同、或分析者明确选择的维度内计算；系统版本、网络栈提供程序、缓存路径或计费状态不同的样本直接混合，环境构成变化会被误判成代码回归。
 
-<!-- gracker-diagram: a265-12-missing-and-overlapping-stages -->
-![未发生、不可观测与重叠阶段区别表达](../../assets/diagrams/ch24/a265-12-missing-and-overlapping-stages.png)
-
-图：保留缺失原因；分段只有在边界互斥时才可相加，响应头事件作为代理指标须写明定义。
-
 ### DNS 与地址选择的基线怎么建
 
 我们先看解析这一侧。Android 10 / API 29 起公开的 `DnsResolver` 支持异步查询，并可传入代表某条系统网络的 `Network`；`android-17.0.0_r1` 的 [`DnsResolver.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/DnsResolver.java) 仍按目标网络的 `netId` 发起解析，`netId` 是系统内部标识该网络的编号。它属于系统解析入口，和应用自行请求指定服务的 HTTPDNS 是两回事。
@@ -796,7 +796,7 @@ DoH（DNS over HTTPS）把 DNS 查询装入 HTTPS 请求；Android 的 Private D
 
 “冷 DNS”通常指没有可用解析缓存的首次查询。应用能清理自己的 HTTPDNS 缓存，系统解析缓存通常既独占不了、也清理不干净；控制系统缓存做不到时，报告就写“新应用客户端、无应用缓存”，别写成“系统冷解析”。
 
-地址选择要保留候选数量、地址族、每次尝试的顺序、是否并行、失败类型和获胜尝试。OkHttp 5.4.0 默认启用 Fast Fallback：客户端按短间隔并发尝试多个候选地址，任一连接成功后采用该连接；这类算法也称 Happy Eyeballs，用少量额外连接，换掉单一地址族不可达造成的等待。只记录最终 IPv4 或 IPv6，另一组地址持续失败就被隐藏了。线上遥测不保存原始 IP，可使用地址族、匿名化边缘节点编号和服务端返回的区域标记。
+地址选择要保留候选数量、地址族、每次尝试的顺序、是否并行、失败类型和获胜尝试。OkHttp 5.4.0 默认启用 Fast Fallback：固定源码每隔 250 ms 启动候选 TCP 建连，较早成功的 TCP 路径胜出后取消并推迟其余竞速，再在获胜路径执行 TLS 等后续建立步骤；后续失败仍可继续尝试；这类算法也称 Happy Eyeballs，用少量额外连接，换掉单一地址族不可达造成的等待。只记录最终 IPv4 或 IPv6，另一组地址持续失败就被隐藏了。线上遥测不保存原始 IP，可使用地址族、匿名化边缘节点编号和服务端返回的区域标记。
 
 TTL 规定 DNS 记录可以缓存多久，到期只影响后续解析：已经复用的连接不会随之自动失效，清空连接池也模拟不了普通的 TTL 刷新。HTTPDNS 与 OkHttp 同步接口的衔接见 24.7。
 
@@ -1042,3 +1042,5 @@ TLS 会话恢复与 0-RTT 在基线里要分成两个字段：0-RTT 有重放风
 - [Android Benchmark 概览](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
 - [TrafficStats API](https://developer.android.com/reference/android/net/TrafficStats)
 - [Zstandard Content-Encoding：RFC 9659](https://www.rfc-editor.org/rfc/rfc9659.html)
+- [QUIC 传输与流：RFC 9000](https://www.rfc-editor.org/rfc/rfc9000.html)
+- [HTTP/3：RFC 9114](https://www.rfc-editor.org/rfc/rfc9114.html)

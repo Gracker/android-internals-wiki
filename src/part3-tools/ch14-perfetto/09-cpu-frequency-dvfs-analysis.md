@@ -4,8 +4,8 @@ chapter: '14.9'
 section: '14.9'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-08-13'
-last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1 Perfetto sources; current Perfetto CPU frequency docs and PerfettoSQL linux.cpu.frequency/idle reference checked 2026-08-13; Android common kernel android17-6.18-2026-06_r6 CPUFreq/CPUIdle sources; arXiv 2507.02135v1 with explicit Android 13 Pixel/Tensor G2 boundary
+last_verified: '2026-10-25'
+last_verified_against: Android17 android-17.0.0_r1 Perfetto public prelude/frequency/idle/collectors and Profiling sources; android17-6.18-2026-06_r6 CPUFreq/CPUIdle/schedutil; native Trace Processor57.2/58.2 synthetic importer and SQL checks; arXiv2507.02135v1 section4 denominator with Android13 Pixel/TensorG2 boundary (2026-10-25)
 last_rework_at: '2026-08-07T21:35:15+08:00'
 confidence: medium-high
 tags:
@@ -96,8 +96,8 @@ Android 17 的 `schedutil` governor 以利用率和 CPU capacity（相对算力�
 |---|---|---|
 | `power/cpu_frequency` | cpufreq 路径报告了一次频率切换 | 硬件在整个区间都精确运行于该频率 |
 | `linux.sys_stats` | 轮询时刻的 sysfs 频率值 | 两次轮询之间的瞬时切换 |
-| `power/cpu_frequency_limits` | policy 的最小、最大频率约束发生更新 | 约束由 thermal、Power HAL 还是厂商逻辑触发 |
-| `cpuinfo_cur_freq` / `cpuinfo_avg_freq` | 驱动具备相应反馈能力时，更接近硬件观测 | 所有设备都实现并允许读取 |
+| `power/cpu_frequency_limits` | policy 设置路径报告的最小、最大频率约束 | 约束由 thermal、Power HAL 还是厂商逻辑触发 |
+| `cpuinfo_cur_freq` /<br>`cpuinfo_avg_freq` | 驱动具备相应反馈能力时，更接近硬件观测 | 所有设备都实现并允许读取 |
 | PMU（Performance Monitoring Unit，性能监控单元）/ AMU（Activity Monitor Unit，活动监控单元）与硬件功耗计 | 实际执行、周期或能耗的补充证据 | 单靠 Perfetto cpufreq 轨无法替代这些数据 |
 
 Android 17 的 Perfetto 文档和 proto（Protocol Buffers 配置定义）注释把轮询路径描述为读取 `cpuinfo_cur_freq`，同一版本的 `CpuFreqInfo::ReadCpuCurrFreq()` 实现读取的是 `scaling_cur_freq`。内核文档指出，`scaling_cur_freq` 多数情况下表示 scaling driver 最近请求的 P-state（处理器性能状态），未必等于硬件瞬时频率。核对某一版本时应以该版本实现为准，同时保留文档与实现的差异。[Android 17 Perfetto 采集实现](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/common/cpu_freq_info.cc) [Android 17 CPUFreq 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpufreq.rst)
@@ -109,9 +109,12 @@ Android 17 的 Perfetto 文档和 proto（Protocol Buffers 配置定义）注释
 
 ## 采集入口：事件、轮询和系统信息
 
-下面的配置同时采集频率切换、频率限制、空闲状态、调度事件、轮询频率和可用频点。`500 ms` 来自 Android 17 Perfetto 官方示例，只用于补充初始频率和观察慢变化；它不适合还原单帧内的调频过程。
+下面以 Android 17 系统设置包为目标给出可解析的完整 TraceConfig，记录频率切换、频率限制、空闲、调度、轮询和可用频点，并补充实例身份、应用绘制标记与 FrameTimeline。示例缓冲区和 10 秒窗口需要按实际复现过程及丢数情况调整；FrameTimeline 属于 Android 12+，更旧设备应移除该数据源并使用对应版本的帧模型。配置请求不证明设备实际产出了全部数据。`500 ms` 来自 Android 17 Perfetto 官方示例，只用于补充初始频率和观察慢变化；它不适合还原单帧内的调频过程。
 
 ```protobuf
+duration_ms: 10000
+buffers { size_kb: 40960 fill_policy: RING_BUFFER }
+
 data_sources: {
   config {
     name: "linux.ftrace"
@@ -123,6 +126,9 @@ data_sources: {
       ftrace_events: "sched/sched_switch"
       ftrace_events: "sched/sched_waking"
       ftrace_events: "sched/sched_wakeup_new"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_apps: "com.android.settings"
     }
   }
 }
@@ -141,9 +147,25 @@ data_sources: {
     name: "linux.system_info"
   }
 }
+
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config { scan_all_processes_on_start: true }
+  }
+}
+
+data_sources {
+  config { name: "android.surfaceflinger.frametimeline" }
+}
 ```
 
-`linux.ftrace` 通过内核 tracepoint（预先定义的静态事件点）记录 `power/cpu_frequency` 的切换时刻，`linux.sys_stats` 补充轮询快照，`linux.system_info` 在采集开始时读取一次可用频点。三条路径都可能因驱动、内核配置、权限或 sysfs 导出差异而缺失，采集后应先检查数据完整性。[Android 17 Perfetto CPU frequency 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/cpu-freq.md)
+`linux.ftrace` 通过内核 tracepoint（预先定义的静态事件点）记录 `power/cpu_frequency` 的切换时刻，`linux.sys_stats` 补充轮询快照，`linux.system_info` 在采集开始时读取一次可用频点。这些路径及补充数据源都可能因版本、驱动、内核配置、权限或 sysfs 导出差异而缺失，采集后先检查实际表、`stats`、ftrace setup metadata 与目标身份。本轮仅在 native Trace Processor57.2/58.2 导入受控合成数据并验证 SQL，配置用固定 Android17 描述编译；帧模型测试会注明兼容模型表。这里没有 Android 设备录制、内核/ART 构建、硬件频率反馈或功耗实测。[Android 17 Perfetto CPU frequency 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/cpu-freq.md)
+
+<!-- gracker-diagram: ch14-09-07-collection-channels -->
+![事件、快照和可用频点提供不同数据](../../assets/diagrams/ch14/ch14-09-07-collection-channels.png)
+
+图：ftrace 抓切换，sys_stats 补快照，system_info 抓可用频点。 配置可解析不等于目标设备产出；先查实际表、stats 和 setup metadata。
 
 事件驱动路径只在频率发生变化时写记录。某个 CPU 在 trace 开头保持原频点，轨道左侧就会留白；这段空白不能解释为 CPU 停止运行。轮询能补快照，却会漏掉采样点之间的切换。面向启动和掉帧的分析要保留事件驱动采集。
 
@@ -152,12 +174,7 @@ data_sources: {
 
 图：切换事件不能回填首值之前，轮询不能重建点间的全部变化。 示意未给实际时间比例；单帧分析保留事件路径并检查覆盖率。
 
-`power/cpu_frequency_limits` 值得与频率事件一起抓。Android 17 内核在 policy 限制更新时记录 `min_freq`、`max_freq` 和 policy 的代表 CPU，它能区分“governor 没有请求更高频率”和“当前上限不允许再升频”这两类线索。限制来源仍需结合 thermal、Power HAL、节电模式和厂商代码确认。[Android 17 CPU frequency tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/power.h) [Android 17 cpufreq core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpufreq/cpufreq.c)
-
-<!-- gracker-diagram: ch14-09-07-collection-channels -->
-![事件、快照和可用频点提供不同数据](../../assets/diagrams/ch14/ch14-09-07-collection-channels.png)
-
-图：ftrace 抓切换，sys_stats 补快照，system_info 抓可用频点。 配置可解析不等于目标设备产出；先查实际表、stats 和 setup metadata。
+`power/cpu_frequency_limits` 值得与频率事件一起抓。Android 17 内核在 policy 限制更新时记录 `min_freq`、`max_freq` 和 policy 的代表 CPU，它为判断当前上限是否允许升频提供线索，但不直接记录 governor 曾请求什么；只有观测到上限，仍不能在这两类原因中作唯一选择。同一次 policy 设置也可能报告与前次相同的上下限，先比较前后数值，再讨论变化。限制来源仍需结合 thermal、Power HAL、节电模式和厂商代码确认。[Android 17 CPU frequency tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/power.h) [Android 17 cpufreq core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpufreq/cpufreq.c)
 
 <!-- gracker-diagram: ch14-09-09-limits-not-request -->
 ![policy 上下限没有记录 governor 目标请求](../../assets/diagrams/ch14/ch14-09-09-limits-not-request.png)
@@ -173,7 +190,7 @@ data_sources: {
 | Running 长，报告频率高 | 线程获得 CPU，执行时间较长 | 调用栈、函数采样、缓存与内存停顿、PMU |
 | Running 长，报告频率低 | 低频、限频或低容量 CPU 值得检查 | policy limit、thermal、uclamp、CPU capacity、硬件频率反馈 |
 | Runnable 长 | 线程可运行却在等待 CPU | 同 CPU 的运行者、优先级、调度类、CPU 压力 |
-| Sleeping 长 | 线程主动等待 | 锁、条件变量、Binder 进程间通信、futex（用户态同步所用的内核等待机制）、定时器 |
+| S 状态长 | 线程处于可中断睡眠，等待事件或资源 | 锁、条件变量、Binder 进程间通信、futex（用户态同步所用的内核等待机制）、定时器 |
 | D 状态长 | 不可中断等待 | I/O、驱动、内核阻塞原因 |
 | CPU idle，频率轨保留高值 | 频率值可能是进入 idle 前的残留 | `cpuidle`、唤醒源、设备功耗 |
 
@@ -204,7 +221,7 @@ Perfetto 的 `cpu_idle_counters`（CPUIdle 状态区间表）已把原始值 `42
 
 图：原始4294967295规范为-1；非负值表示设备定义的 idle state。 state编号不可跨SoC直接比较；频率残留不能替代空闲状态或功耗。
 
-CPUIdle 的 target residency 是进入某个状态后至少停留多久才比浅层状态更节能，其中包含进入成本；exit latency 是从唤醒到开始执行第一条指令的最坏时间。短任务的首段延迟可能同时受 idle 退出与升频影响，需要观察任务唤醒前后的完整区间。[Android 17 CPUIdle 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpuidle.rst)
+CPUIdle 的 target residency 是进入某个状态后至少停留多久才比浅层状态更节能，其中包含进入成本；exit latency 是唤醒后恢复到可执行第一条指令的最坏延迟；若唤醒发生在进入状态的过程中、硬件必须先完成进入再退出，该上界还须覆盖相应进入阶段。短任务的首段延迟可能同时受 idle 退出与升频影响，需要观察任务唤醒前后的完整区间。[Android 17 CPUIdle 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpuidle.rst)
 
 <!-- gracker-diagram: ch14-09-13-idle-exit-boundary -->
 ![target residency 与 exit latency 是不同约束](../../assets/diagrams/ch14/ch14-09-13-idle-exit-boundary.png)
@@ -244,31 +261,29 @@ done'
 
 Trace Processor 里有三种容易混淆的标识：
 
-- `cpu` 是设备内的逻辑 CPU 编号；
+- `cpu.cpu` 是设备内逻辑 CPU 编号；不能把所有表中同名的 `cpu` 列都按此解释；
 - `ucpu` 是 Trace Processor 的可连接 CPU 标识，多机或虚拟化 trace 也能保持唯一；
-- `cluster_id` 和 `capacity` 来自已采集的处理器信息，用于描述拓扑与相对容量。
+- `cluster_id` 与 `capacity` 用于描述拓扑和相对容量，但要核对采集、解析和推断来源；`cluster_id` 的默认值不证明所有 CPU 真属一个 cluster，`capacity` 可以缺失。
 
-只要查询涉及 `sched` 和 CPU counter 的时间交集，就应以 `ucpu` 分区。把 `sched.ucpu` 与 `cpu_counter_track.cpu` 直接比较，会混用两个标识域，在多机 trace 中尤其危险。
-
-下面的查询读取 Android 17 `linux.system_info` 产生的可用频点，并与 CPU 拓扑关联。
-
-```sql
-SELECT
-  c.cpu,
-  c.cluster_id,
-  c.capacity,
-  cf.freq
-FROM cpu_freq AS cf
-JOIN cpu AS c ON cf.ucpu = c.ucpu
-ORDER BY c.cpu, cf.freq;
-```
-
-Android 17 的原始公开表名是 `cpu_freq`，连接键是两侧的 `ucpu`。当前 Perfetto 的内建公开 schema 另提供 `cpu_available_frequencies` 视图；它不应直接替换这段面向 Android 17 配套 schema 的原始表查询。频点集合、`cluster_id`、`capacity` 和同步变频可以互相校验，policy 成员仍以设备 sysfs 或内核源码为准。[Android 17 `cpu_freq` 表定义](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/metadata_tables.py)
+涉及 `sched` 和 CPU counter 的时间交集时，先把 CPU 统一成 `ucpu`。固定公开 prelude 的 `sched.cpu` 与 `cpu_available_frequencies.cpu` 是 `ucpu` 的兼容别名，未必是设备逻辑编号；`cpu_counter_track.cpu` 则来自轨道的逻辑 CPU 维度。Counter 需要用 `(machine_id, cpu)` 连接 `cpu` 表取得 `ucpu`；最终展示逻辑编号时读 `cpu.cpu`，不要只凭列名猜标识域。[Android17 公开CPU与调度schema](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/cpu_scheduling.sql)
 
 <!-- gracker-diagram: ch14-09-16-cpu-identity-domains -->
 ![按字段语义统一成 ucpu 再关联](../../assets/diagrams/ch14/ch14-09-16-cpu-identity-domains.png)
 
 图：sched.cpu 是 ucpu 兼容别名，counter轨cpu是设备逻辑编号。 多机连接 counter 需 machine_id + 逻辑cpu；展示逻辑编号从cpu表读取。
+
+下面使用 Android17 公开 prelude 和主机57.2/58.2 均可核对的 `cpu_available_frequencies`，通过 `ucpu` 关联真实逻辑编号和机器身份。
+
+```sql
+SELECT
+  c.machine_id, c.ucpu, c.cpu,
+  c.cluster_id, c.capacity, cf.freq
+FROM cpu_available_frequencies AS cf
+JOIN cpu AS c ON cf.ucpu = c.ucpu
+ORDER BY c.machine_id, c.cpu, cf.freq;
+```
+
+固定 `metadata_tables.py` 虽保留 `wrapping_sql_view=cpu_freq` 声明，但同 tag 的公开 SQL prelude 明确定义 `cpu_available_frequencies`；本轮 native57.2/58.2 也存在该视图而没有 `cpu_freq`。应同时核对公开 SQL 和实际 `sqlite_master`，不能仅由表生成声明宣称某名称可执行。频点集合、`cluster_id`、`capacity` 和同步变频可以互相校验，policy 成员仍以设备 sysfs 或内核源码为准。[Android 17 `cpu_freq` 表定义](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/metadata_tables.py)
 
 <!-- gracker-diagram: ch14-09-17-public-view-version -->
 ![公开 SQL 与运行时 schema 一起核对](../../assets/diagrams/ch14/ch14-09-17-public-view-version.png)
@@ -303,7 +318,7 @@ Android 17 的原始公开表名是 `cpu_freq`，连接键是两侧的 `ucpu`。
 
 图：帧周期内分别核对UI、RenderThread、GPU提交与合成侧的工作和等待。 相似波动可来自迁核、排队或fence等待；频率相位滞后仍是待验证假设。
 
-频率高不保证帧能按期完成，频率低也不必然是异常。帧内工作量较少时，低频可能正是能效目标。判断依据应是相同设备、相同温度和相同 workload 下的帧时序与频率变化，并结合 2.x 渲染章节的应用、RenderThread、GPU、合成与显示链路。
+频率高不保证帧能按期完成，频率低也不必然是异常。帧内工作量较少时，低频可能正是能效目标。判断依据应是相同设备、相同温度和相同 workload 下的帧时序与频率变化，并结合第13章渲染管线中的应用、RenderThread、GPU、合成与显示链路。
 
 ### 后台批处理
 
@@ -322,18 +337,23 @@ Android 17 把原始频率和 idle 事件建模为 `counter`，轨道属性放�
 
 ```sql
 SELECT
-  c.ts,
-  t.name,
-  t.cpu,
+  c.id AS counter_id, c.track_id, c.ts,
+  t.name, t.machine_id, cpu.ucpu, cpu.cpu,
   c.value
 FROM counter AS c
 JOIN cpu_counter_track AS t ON t.id = c.track_id
+JOIN cpu ON cpu.machine_id IS t.machine_id AND cpu.cpu = t.cpu
 WHERE t.name IN ('cpufreq', 'cpuidle')
-ORDER BY c.ts, t.cpu
+ORDER BY t.machine_id, cpu.cpu, c.ts, c.id
 LIMIT 200;
 ```
 
-`cpufreq` 的值单位是 kHz。`cpuidle` 原始值 `4294967295` 代表退出 idle。结果为空时要回查采集配置和设备支持情况；UI 没有显示轨道时也应执行该查询，因为 Android 17 文档记录过“缺少 idle 事件时 UI 不渲染频率轨，但 SQL 数据存在”的显示问题。
+`cpufreq` 的值单位是 kHz。`cpuidle` 原始值 `4294967295` 代表退出 idle。`CpuFreqInfo::ReadCpuCurrFreq()` 在读取失败或缺失时可填0，因此频率0应另作缺失/无效候选，不能直接当作硬件停止的观测。结果为空时要回查采集配置和设备支持情况；UI 没有显示轨道时也应执行该查询，因为 Android 17 文档记录过“缺少 idle 事件时 UI 不渲染频率轨，但 SQL 数据存在”的显示问题。
+
+<!-- gracker-diagram: ch14-09-21-raw-counter-check -->
+![先确认轨道身份、单位与无效零值](../../assets/diagrams/ch14/ch14-09-21-raw-counter-check.png)
+
+图：频率为kHz；原始idle退出值需归一化，缺轨与零值先查采集和实现。 UI无轨不等于SQL无数据；读取失败填0不证明硬件停止。
 
 Perfetto 标准库已经把 counter 转成带 `dur` 的区间。下面的查询读取频率区间和规范化后的 idle 区间。
 
@@ -341,18 +361,28 @@ Perfetto 标准库已经把 counter 转成带 `dur` 的区间。下面的查询�
 INCLUDE PERFETTO MODULE linux.cpu.frequency;
 INCLUDE PERFETTO MODULE linux.cpu.idle;
 
-SELECT ts, dur, ucpu, cpu, freq
-FROM cpu_frequency_counters
-ORDER BY ts, cpu
+SELECT f.id, f.track_id, f.ts, f.dur,
+       c.machine_id, f.ucpu, c.cpu, f.freq
+FROM cpu_frequency_counters AS f
+JOIN cpu AS c USING (ucpu)
+ORDER BY c.machine_id, c.cpu, f.ts, f.id
 LIMIT 100;
 
-SELECT ts, dur, cpu, idle
-FROM cpu_idle_counters
-ORDER BY ts, cpu
+SELECT i.id, i.track_id, i.ts, i.dur,
+       c.machine_id, c.ucpu, c.cpu, i.idle
+FROM cpu_idle_counters AS i
+JOIN cpu_counter_track AS t ON t.id = i.track_id
+JOIN cpu AS c ON c.machine_id IS t.machine_id AND c.cpu = t.cpu
+ORDER BY c.machine_id, c.cpu, i.ts, i.id
 LIMIT 100;
 ```
 
-`cpu_frequency_counters` 同时提供 `ucpu` 与逻辑 `cpu`；`cpu_idle_counters.idle = -1` 表示 active。`dur = -1` 可能表示区间延续到 trace 末尾，做交集或聚合时要按查询目标处理开放区间。[Android 17 frequency 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql) [Android 17 idle 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/idle.sql)
+上面的两个 SELECT 分别执行；独立 CLI 单次返回多份结果时需要拆开。`cpu_frequency_counters` 提供 `ucpu`，固定 `cpu_idle_counters` 只保留轨道与逻辑 `cpu`，多机时需像示例一样补机器映射。`idle=-1` 表示 active。固定 `counter_leading_intervals!` 已把尾样本持续到 `trace_end()`，这里的频率/idle 标准区间不应笼统称为 `dur=-1` 开放区间；尾值延续是分析假设，首样本前未知。原始 `sched` 的 `dur=-1` 则确实需要另行处理，本节下方只分析闭合 Running 并报告被排除的开放记录。[Android17 counter区间宏](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/counters/intervals.sql)[Android 17 frequency 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql) [Android 17 idle 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/idle.sql)
+
+<!-- gracker-diagram: ch14-09-22-counter-leading-intervals -->
+![频率尾值延续到 trace_end 是保持模型](../../assets/diagrams/ch14/ch14-09-22-counter-leading-intervals.png)
+
+图：标准宏把样本延伸到下次样本，最后一个延伸到trace_end。 首样本之前未知；尾值延续不是硬件连续测量，和sched.dur=-1是不同情况。
 
 下面的模板用 `ucpu` 对调度区间与频率区间做 `SPAN_JOIN`（按时间求区间交集）。它是后续频率分布、迁核和帧窗口查询共用的准备步骤。
 
@@ -360,153 +390,234 @@ LIMIT 100;
 INCLUDE PERFETTO MODULE linux.cpu.frequency;
 
 CREATE PERFETTO VIEW _running_spans AS
-SELECT ts, dur, ucpu, cpu, utid
-FROM sched
-WHERE dur > 0;
+SELECT s.id AS sched_id, s.ts, s.dur, s.ucpu,
+       c.cpu, c.machine_id, s.utid
+FROM sched AS s
+JOIN cpu AS c USING (ucpu)
+WHERE s.dur > 0;
+
+CREATE PERFETTO VIEW _frequency_track_quality AS
+SELECT ucpu, COUNT(DISTINCT track_id) AS candidate_tracks,
+       SUM(freq IS NULL OR freq <= 0) AS invalid_intervals
+FROM cpu_frequency_counters
+GROUP BY ucpu;
 
 CREATE PERFETTO VIEW _frequency_spans AS
-SELECT ts, dur, ucpu, freq
-FROM cpu_frequency_counters
-WHERE dur > 0 AND freq IS NOT NULL;
+SELECT f.id AS frequency_counter_id,
+       f.track_id AS frequency_track_id, f.ts, f.dur, f.ucpu, f.freq
+FROM cpu_frequency_counters AS f
+JOIN _frequency_track_quality AS q USING (ucpu)
+WHERE f.dur > 0 AND f.freq > 0 AND q.candidate_tracks = 1;
+
+-- Each side must be non-overlapping within each ucpu.
+CREATE PERFETTO VIEW _span_input_overlaps AS
+WITH intervals AS (
+  SELECT 'running' AS kind, ucpu, ts, dur, sched_id AS id
+  FROM _running_spans
+  UNION ALL
+  SELECT 'frequency', ucpu, ts, dur, frequency_counter_id
+  FROM _frequency_spans
+), checked AS (
+  SELECT *, MAX(ts + dur) OVER (
+    PARTITION BY kind, ucpu ORDER BY ts, id
+    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+  ) AS previous_max_end
+  FROM intervals
+)
+SELECT kind, ucpu, id, ts, dur
+FROM checked WHERE ts < previous_max_end;
+
+CREATE PERFETTO VIEW _span_running AS
+SELECT * FROM _running_spans
+WHERE NOT EXISTS (SELECT 1 FROM _span_input_overlaps);
+
+CREATE PERFETTO VIEW _span_frequency AS
+SELECT * FROM _frequency_spans
+WHERE NOT EXISTS (SELECT 1 FROM _span_input_overlaps);
 
 CREATE VIRTUAL TABLE _running_with_frequency
 USING SPAN_JOIN(
-  _running_spans PARTITIONED ucpu,
-  _frequency_spans PARTITIONED ucpu
+  _span_running PARTITIONED ucpu,
+  _span_frequency PARTITIONED ucpu
 );
+
+SELECT * FROM _span_input_overlaps;
 ```
 
-结果中的每一行都是“某线程在某逻辑 CPU 上 Running，且该 CPU 处于某个已知频率区间”的时间交集。使用内连接会舍弃未知频率区间，汇总时应同时报告被覆盖的 Running 时间，防止把缺失数据当成零。
-
-下面的查询以 `com.android.settings` 主线程为可执行示例，统计它在各频点上的 Running 时间。
-
-```sql
-WITH target_thread AS (
-  SELECT t.utid
-  FROM thread AS t
-  JOIN process AS p ON t.upid = p.upid
-  WHERE p.name = 'com.android.settings'
-    AND t.tid = p.pid
-),
-running_freq AS (
-  SELECT swf.dur, swf.freq
-  FROM _running_with_frequency AS swf
-  JOIN target_thread USING (utid)
-  WHERE swf.dur > 0
-)
-SELECT
-  freq,
-  SUM(dur) / 1000000.0 AS running_ms,
-  ROUND(100.0 * SUM(dur) / SUM(SUM(dur)) OVER (), 2) AS pct
-FROM running_freq
-GROUP BY freq
-ORDER BY running_ms DESC;
-```
-
-把包名替换为目标进程名即可复用。`tid = pid` 用于定位 Linux 主线程，随后全程使用 `utid`，从而避开长 trace 中 tid 复用。这里的百分比是“已知频率覆盖范围内的 Running 时间占比”，不能解释为指令占比、周期占比或能耗占比。
-
-下面的查询把 UI 线程 Running 区间裁到 `android_frames`（FrameTimeline 标准库生成的帧表）的帧窗口内，适合检查掉帧附近的频率分布。
-
-```sql
-INCLUDE PERFETTO MODULE android.frames.timeline;
-
-SELECT
-  f.frame_id,
-  swf.cpu,
-  swf.freq,
-  SUM(
-    MIN(swf.ts + swf.dur, f.ts + f.dur) -
-    MAX(swf.ts, f.ts)
-  ) / 1000000.0 AS ui_running_ms
-FROM android_frames AS f
-JOIN _running_with_frequency AS swf
-  ON swf.utid = f.ui_thread_utid
- AND swf.ts < f.ts + f.dur
- AND f.ts < swf.ts + swf.dur
-WHERE f.process_name = 'com.android.settings'
-GROUP BY f.frame_id, swf.cpu, swf.freq
-ORDER BY f.frame_id, ui_running_ms DESC;
-```
-
-这个结果只覆盖 UI 线程。RenderThread 需要改用 `f.render_thread_utid` 单独查询；GPU、SurfaceFlinger 和显示侧仍要沿渲染链路核对。帧窗口内缺少频率行时，先计算该帧的 Running 时间与频率覆盖率，再讨论低频相关性。
-
-线程迁核可以直接从公共结果里观察。下面的查询列出目标主线程连续 Running 区间之间的 CPU、cluster 与频率变化。
-
-```sql
-WITH target_thread AS (
-  SELECT t.utid
-  FROM thread AS t
-  JOIN process AS p ON t.upid = p.upid
-  WHERE p.name = 'com.android.settings'
-    AND t.tid = p.pid
-),
-ordered AS (
-  SELECT
-    swf.ts,
-    swf.dur,
-    swf.cpu,
-    c.cluster_id,
-    c.capacity,
-    swf.freq,
-    LAG(swf.cpu) OVER (ORDER BY swf.ts) AS prev_cpu,
-    LAG(c.cluster_id) OVER (ORDER BY swf.ts) AS prev_cluster_id
-  FROM _running_with_frequency AS swf
-  JOIN target_thread USING (utid)
-  JOIN cpu AS c ON c.ucpu = swf.ucpu
-)
-SELECT *
-FROM ordered
-WHERE prev_cpu IS NOT NULL
-  AND (cpu != prev_cpu OR cluster_id != prev_cluster_id)
-ORDER BY ts;
-```
-
-该查询展示相邻的已知频率 Running 区间，不保证两行之间没有 Runnable、Sleeping 或未知频率空洞。迁核原因需要结合 `thread_state`、wakeup（线程唤醒事件）、uclamp、调度优先级和系统负载判断。
-
-<!-- gracker-diagram: ch14-09-21-raw-counter-check -->
-![先确认轨道身份、单位与无效零值](../../assets/diagrams/ch14/ch14-09-21-raw-counter-check.png)
-
-图：频率为kHz；原始idle退出值需归一化，缺轨与零值先查采集和实现。 UI无轨不等于SQL无数据；读取失败填0不证明硬件停止。
-
-<!-- gracker-diagram: ch14-09-22-counter-leading-intervals -->
-![频率尾值延续到 trace_end 是保持模型](../../assets/diagrams/ch14/ch14-09-22-counter-leading-intervals.png)
-
-图：标准宏把样本延伸到下次样本，最后一个延伸到trace_end。 首样本之前未知；尾值延续不是硬件连续测量，和sched.dur=-1是不同情况。
+先独立执行准备块，检查 `_span_input_overlaps` 必须为空；有结果时停止后续统计并回查录制/合并或输入模型，本模板让 SPAN 两侧整体为空以防静默漏算。还要查看 `_frequency_track_quality`：同一 `ucpu` 有多条 cpufreq 轨时，本例保守排除该 CPU 的频率输入，不能把并行轨混在一起；NULL/非正频率区间也排除。有效结果表示闭合 Running 与已知正频率保持区间的交集，保留原始调度 ID、counter ID、track ID 与机器身份；首值前、无效值、多轨歧义和采集缺口均不能补成0。这里排除原始 `sched.dur=-1`，并不声称已覆盖目标线程的全部运行时间。
 
 <!-- gracker-diagram: ch14-09-23-span-preflight -->
 ![SPAN_JOIN 前检查轨道唯一、正值与不重叠](../../assets/diagrams/ch14/ch14-09-23-span-preflight.png)
 
 图：两侧按ucpu分区，排除开放Running、无效频率和多轨歧义。 发现任一输入重叠时整体清空SPAN输入并停止统计；缺失频率不补0。
 
+先枚举目标包的进程和主线程候选，根据问题窗口选定实际 `upid`，不能把同名重启实例混合。后续 `123` 是待替换的 Trace 内部 `upid`，不是 PID；主线程候选数必须恰好为1。
+
 <!-- gracker-diagram: ch14-09-24-process-instance -->
 ![先选 upid 再验证唯一主线程](../../assets/diagrams/ch14/ch14-09-24-process-instance.png)
 
 图：枚举同名重启实例，按问题窗口选定upid，再确认主线程候选数为1。 示例123是待替换的Trace内部upid，不是PID；空或多候选不能给有效统计。
+
+```sql
+SELECT p.upid, p.pid, p.name, p.start_ts, p.end_ts,
+       t.utid, t.tid, t.name AS thread_name
+FROM process AS p
+JOIN thread AS t USING (upid)
+WHERE p.name = 'com.android.settings'
+  AND (t.is_main_thread = 1 OR t.tid = p.pid)
+ORDER BY p.start_ts, p.upid, t.utid;
+```
+
+下面统计选定实例整份 Trace 中、已闭合主线程 Running 的频率分布。若只研究某段问题窗口，应先把 Running 和频率区间按同一半开窗口裁剪，再进行准备与汇总。
 
 <!-- gracker-diagram: ch14-09-25-span-time-intersection -->
 ![只统计 Running 与正频率保持区间的交集](../../assets/diagrams/ch14/ch14-09-25-span-time-intersection.png)
 
 图：两种区间先按同一半开窗口裁剪，再按ucpu求交集。 此图只示意求交；没有频率覆盖的Running必须留在覆盖率分母。
 
+```sql
+WITH target_thread AS (
+  SELECT CASE WHEN COUNT(*) = 1 THEN MIN(t.utid) END AS utid,
+         COUNT(*) AS main_candidates
+  FROM thread AS t JOIN process AS p USING (upid)
+  WHERE p.upid = 123 AND (t.is_main_thread = 1 OR t.tid = p.pid)
+), running_freq AS (
+  SELECT swf.freq, SUM(swf.dur) AS dur
+  FROM _running_with_frequency AS swf
+  JOIN target_thread USING (utid)
+  GROUP BY swf.freq
+), coverage AS (
+  SELECT t.*,
+    (SELECT SUM(r.dur) FROM _running_spans AS r
+     WHERE r.utid = t.utid) AS closed_running_dur,
+    (SELECT SUM(dur) FROM running_freq) AS known_frequency_dur,
+    (SELECT COUNT(*) FROM sched AS s
+     WHERE s.utid = t.utid AND s.dur = -1) AS open_sched_records,
+    (SELECT COUNT(*) FROM _span_input_overlaps) AS overlap_errors
+  FROM target_thread AS t
+)
+SELECT c.utid, c.main_candidates, c.overlap_errors, c.open_sched_records,
+       c.closed_running_dur / 1e6 AS closed_running_ms,
+       c.known_frequency_dur / 1e6 AS known_frequency_ms,
+       ROUND(100.0 * c.known_frequency_dur /
+             NULLIF(c.closed_running_dur, 0), 2) AS frequency_coverage_pct,
+       f.freq, f.dur / 1e6 AS running_ms,
+       ROUND(100.0 * f.dur / NULLIF(c.known_frequency_dur, 0), 2) AS pct
+FROM coverage AS c LEFT JOIN running_freq AS f ON TRUE
+ORDER BY running_ms DESC;
+```
+
+复用时替换实际 `upid` 并核对唯一主线程；若 `main_candidates!=1` 或 `overlap_errors>0`，后续数量不作为有效统计。`frequency_coverage_pct` 的分母是该实例已闭合的 Running 时间，`pct` 的分母是其中有已知正频率的交集时间。开放记录另列，尾频率延续仍属保持值假设；这些比例均不是指令、周期或能耗占比。
+
 <!-- gracker-diagram: ch14-09-26-two-denominators -->
 ![覆盖率和频率分布使用两个分母](../../assets/diagrams/ch14/ch14-09-26-two-denominators.png)
 
 图：合成校验：闭合Running55ms，其中已知正频率40ms，覆盖率72.73%。 频点pct以40ms为分母，覆盖率以55ms为分母；开放记录另列，不是周期或能耗占比。
+
+下面把 UI 线程 Running 裁到 `android_frames` 的候选模型窗口，保留 `upid`、代表性ID和模型计数。固定模型会聚合多Layer/多个DrawFrame，部分基础数据通过INNER JOIN排除，expected计数还固定为1，不能把该表当原始逐Layer完整帧列表。先回查异常原始FrameTimeline，再解释下面的频率覆盖。
 
 <!-- gracker-diagram: ch14-09-27-frame-model-coverage -->
 ![帧模型保留代表ID、计数与覆盖缺口](../../assets/diagrams/ch14/ch14-09-27-frame-model-coverage.png)
 
 图：按upid固定模型帧，分别聚合闭合Running和频率交集后再关联。 android_frames聚合多Layer/DrawFrame且会排除缺记录，expected计数常量1不证明完整。
 
+```sql
+INCLUDE PERFETTO MODULE android.frames.timeline;
+
+WITH target_frames AS (
+  SELECT * FROM android_frames WHERE upid = 123 AND dur > 0
+), frame_running AS (
+  SELECT f.*,
+    (SELECT SUM(MIN(r.ts + r.dur, f.ts + f.dur) - MAX(r.ts, f.ts))
+     FROM _running_spans AS r
+     WHERE r.utid = f.ui_thread_utid
+       AND r.ts < f.ts + f.dur AND f.ts < r.ts + r.dur
+    ) AS closed_running_dur
+  FROM target_frames AS f
+), frequency_groups AS (
+  SELECT f.upid, f.frame_id, swf.ucpu, swf.cpu, swf.machine_id, swf.freq,
+    SUM(MIN(swf.ts + swf.dur, f.ts + f.dur) - MAX(swf.ts, f.ts)) AS dur
+  FROM target_frames AS f
+  JOIN _running_with_frequency AS swf
+    ON swf.utid = f.ui_thread_utid
+   AND swf.ts < f.ts + f.dur AND f.ts < swf.ts + swf.dur
+  GROUP BY f.upid, f.frame_id, swf.ucpu, swf.cpu, swf.machine_id, swf.freq
+), known_coverage AS (
+  SELECT upid, frame_id, SUM(dur) AS known_frequency_dur
+  FROM frequency_groups GROUP BY upid, frame_id
+)
+SELECT f.upid, f.frame_id, f.ts, f.dur,
+       f.do_frame_id, f.actual_frame_timeline_id,
+       f.actual_frame_timeline_count, f.draw_frame_count,
+       g.machine_id, g.ucpu, g.cpu, g.freq,
+       g.dur / 1e6 AS ui_running_ms,
+       f.closed_running_dur / 1e6 AS closed_running_ms,
+       k.known_frequency_dur / 1e6 AS known_frequency_ms,
+       ROUND(100.0 * k.known_frequency_dur /
+             NULLIF(f.closed_running_dur, 0), 2) AS frequency_coverage_pct
+FROM frame_running AS f
+LEFT JOIN known_coverage AS k USING (upid, frame_id)
+LEFT JOIN frequency_groups AS g USING (upid, frame_id)
+ORDER BY f.ts, ui_running_ms DESC;
+```
+
+这个结果只针对模型选定的 UI 线程。改查RenderThread时，要把两个CTE里的UI utid条件一并换成 `render_thread_utid`；GPU、SurfaceFlinger与显示侧仍沿各自链路核对。NULL频率或覆盖率先解释为无匹配/缺口候选，不补为0Hz；输入重叠诊断必须为空。相互重叠的模型窗口可重复覆盖同一Running片段，不能把逐帧行直接相加当全Trace总量。
+
 <!-- gracker-diagram: ch14-09-28-frame-overlap-boundary -->
 ![逐帧覆盖不能直接相加为全局总量](../../assets/diagrams/ch14/ch14-09-28-frame-overlap-boundary.png)
 
 图：UI与RenderThread分别选utid；重叠模型窗口可能覆盖同一Running。 改RenderThread要同时改两个CTE；GPU、SF与显示仍走各自证据链。
 
+线程迁核可以直接从公共结果里观察。下面先在原始闭合 Running 区间上按 `utid` 分区、以 `(ts,sched_id)` 排序识别相邻记录的 `ucpu` 变化，再关联目标段的频率；这样不会把频率切分点当成一次新的调度，也不会因未知频率而把迁核候选漏掉。
+
 <!-- gracker-diagram: ch14-09-29-migration-before-frequency -->
 ![先从原始调度识别迁核再关联频率](../../assets/diagrams/ch14/ch14-09-29-migration-before-frequency.png)
 
 图：LAG按utid分区并以ts、sched_id排序，比较相邻原始Running的ucpu。 频率切分不产生新调度；LEFT JOIN保留未知频率迁核候选。
+
+```sql
+WITH target_thread AS (
+  SELECT CASE WHEN COUNT(*) = 1 THEN MIN(t.utid) END AS utid,
+         COUNT(*) AS main_candidates
+  FROM thread AS t JOIN process AS p USING (upid)
+  WHERE p.upid = 123 AND (t.is_main_thread = 1 OR t.tid = p.pid)
+), ordered AS (
+  SELECT r.*,
+    LAG(r.ucpu) OVER (
+      PARTITION BY r.utid ORDER BY r.ts, r.sched_id
+    ) AS previous_ucpu,
+    LAG(r.ts + r.dur) OVER (
+      PARTITION BY r.utid ORDER BY r.ts, r.sched_id
+    ) AS previous_running_end
+  FROM _running_spans AS r JOIN target_thread USING (utid)
+), candidates AS (
+  SELECT * FROM ordered
+  WHERE previous_ucpu IS NOT NULL AND ucpu != previous_ucpu
+)
+SELECT m.sched_id, m.utid, m.ts, m.dur,
+       m.machine_id, m.ucpu, m.cpu,
+       c.cluster_id, c.capacity,
+       m.previous_ucpu, previous.cpu AS previous_cpu,
+       previous.cluster_id AS previous_cluster_id,
+       m.previous_running_end,
+       m.ts - m.previous_running_end AS between_running_gap_ns,
+       f.frequency_track_id, f.freq,
+       SUM(MIN(m.ts + m.dur, f.ts + f.dur) - MAX(m.ts, f.ts)) / 1e6
+         AS known_frequency_ms
+FROM candidates AS m
+JOIN cpu AS c ON c.ucpu = m.ucpu
+LEFT JOIN cpu AS previous ON previous.ucpu = m.previous_ucpu
+LEFT JOIN _frequency_spans AS f
+  ON f.ucpu = m.ucpu
+ AND f.ts < m.ts + m.dur AND m.ts < f.ts + f.dur
+GROUP BY m.sched_id, m.utid, m.ts, m.dur, m.machine_id, m.ucpu, m.cpu,
+         c.cluster_id, c.capacity, m.previous_ucpu, previous.cpu,
+         previous.cluster_id, m.previous_running_end,
+         f.frequency_track_id, f.freq
+ORDER BY m.ts, m.sched_id, f.freq;
+```
+
+这里的 `ts` 是首次在另一CPU被观测到的闭合Running段起点，不是迁核决定的精确发生时刻。两段之间可以有Runnable、Sleeping、开放段或数据缺口，`between_running_gap_ns` 也不等于Runnable时长；同一目标段可因频率变化产生多行，`sched_id` 才标识这一段。迁核原因仍需线程状态、唤醒、uclamp、优先级及负载证据；`cluster_id` 缺失或默认时不强推拓扑。
 
 <!-- gracker-diagram: ch14-09-30-migration-observation -->
 ![迁核观测起点与两段间隙都有限制](../../assets/diagrams/ch14/ch14-09-30-migration-observation.png)
@@ -522,7 +633,19 @@ ORDER BY ts;
 
 图：原始实验限定Pixel7/7Pro、TensorG2、Android13和指定GPU推理栈。 root、旁路供电、屏幕关闭与外部功耗计环境不同于一般线上App。
 
-在这组实验边界内，独立 governor 相对同能耗的频率组合，部分 prefill（处理输入提示）/ decode（逐 token 生成）延迟最多增加 40.4%。论文提出统一管理 CPU、GPU 和内存频率的 energy-aware governor FUSE；在相同单 token 能耗下，它平均降低 7.0%—16.9% 的 TTFT（Time to First Token，首 token 延迟）和 25.4%—36.8% 的 TPOT（Time per Output Token，平均每个输出 token 的时间）。[论文页面](https://arxiv.org/abs/2507.02135)
+论文第4节以默认 governor 延迟为基准，报告在这组实验边界及采样输入/输出长度内，等能耗的频率组合可使部分 prefill（处理输入提示）/ decode（逐token生成）延迟最多降低40.4%。这不能反向改写为“默认governor延迟增加40.4%”，两者的分母不同；摘要中较长延迟的措辞不能替代第4节具体对比口径。
+
+<!-- gracker-diagram: ch14-09-32-paper-percent-base -->
+![延迟下降与反向增加的百分比分母不同](../../assets/diagrams/ch14/ch14-09-32-paper-percent-base.png)
+
+图：第4节最多下降40.4%以默认governor延迟为分母。 归一化100→59.6只是百分比说明；反向增加约67.8%，不是40.4%，也不是设备绝对延迟。
+
+论文以 llama.cpp b2202 扩展实现 FUSE：离线先搜索 GPU 候选频率，再为至多两个 GPU 候选搜索 CPU 频率，运行时按 prefill/decode 阶段和请求长度应用 CPU/GPU 组合；内存 governor 保持默认。它是该受控实验栈中的统一能效策略，不能直接等同 Android17 通用系统 governor。FUSE 评估覆盖论文表2的六个4-bit模型；其中 ShareGPT 真实请求实验抽样200条，prefill≤512 token、decode≤256 token。在论文设定的近似等总能耗目标下，三组模型的平均 TTFT（Time to First Token，首 token 延迟）降低7.0%—16.9%，TPOT（Time per Output Token，平均每个输出 token 的时间）降低25.4%—36.8%；不能把这组真实请求指标写成每次推理精确等单token能耗。[论文页面](https://arxiv.org/abs/2507.02135)
+
+<!-- gracker-diagram: ch14-09-33-fuse-two-step -->
+![FUSE 先GPU后CPU，内存保持默认](../../assets/diagrams/ch14/ch14-09-33-fuse-two-step.png)
+
+图：离线搜索GPU候选，再为至多两组候选搜索CPU，运行时按阶段应用。 内存governor保持默认；200条请求的真实请求指标按近似等总能耗目标，不能写成每次精确等token能耗。
 
 这些数字不能外推到 Android 17、其他 SoC、NPU（Neural Processing Unit，神经网络加速器）后端或不同推理运行时。它们提供的是一种诊断视角：GPU 执行仍依赖 CPU 提交，KV cache（注意力计算复用的 key/value 缓存）与权重访问受内存系统影响，单看 CPU 利用率可能低估整条推理流水线的时序需求。
 
@@ -532,16 +655,6 @@ ORDER BY ts;
 图：CPU提交、GPU执行和内存访问共同影响推理阶段的进度。 该依赖视角不保证所有SoC出现论文中的反馈；NPU和其他运行时需独立验证。
 
 端侧推理 trace 至少要把 CPU sched/cpufreq、GPU job 与频率、内存带宽或 DDR（Double Data Rate，双倍数据率内存）频率、thermal、TTFT、TPOT 和单 token 能耗放在相同实验中。设备不暴露 GPU 或 DDR 数据时，结论应明确限定为 CPU 侧观察。
-
-<!-- gracker-diagram: ch14-09-32-paper-percent-base -->
-![延迟下降与反向增加的百分比分母不同](../../assets/diagrams/ch14/ch14-09-32-paper-percent-base.png)
-
-图：第4节最多下降40.4%以默认governor延迟为分母。 归一化100→59.6只是百分比说明；反向增加约67.8%，不是40.4%，也不是设备绝对延迟。
-
-<!-- gracker-diagram: ch14-09-33-fuse-two-step -->
-![FUSE 先GPU后CPU，内存保持默认](../../assets/diagrams/ch14/ch14-09-33-fuse-two-step.png)
-
-图：离线搜索GPU候选，再为至多两组候选搜索CPU，运行时按阶段应用。 内存governor保持默认；200条请求的真实请求指标按近似等总能耗目标，不能写成每次精确等token能耗。
 
 <!-- gracker-diagram: ch14-09-35-inference-measurement -->
 ![推理实验把性能、状态与计量放在一起](../../assets/diagrams/ch14/ch14-09-35-inference-measurement.png)
@@ -579,14 +692,14 @@ Android 17 通用内核能说明 CPUFreq、schedutil、uclamp、EAS 与 CPUIdle 
 
 图：本地可提交完整配置，工具预设需逐版本检查实际数据。 权限与设备支持仍约束产出；以实际表、轨道和metadata为准。
 
-Android 17 的 `ProfilingManager`（面向应用的系统性能采样 API）system trace 由平台 `Configs` 生成固定配置。该配置包含 compact sched（压缩编码的调度事件）、进程信息、应用 atrace 分类和 SurfaceFlinger FrameTimeline，未启用 `power/cpu_frequency`、`power/cpu_idle`、`linux.sys_stats` 或 `linux.system_info`。system trace 结果还会经过 redaction（敏感信息裁剪），并受系统 rate limiter（采样频率限制）、参数范围和设备配置约束。它可以支持应用侧线上性能采样，却不能替代本地 CPU DVFS TraceConfig。[Android 17 Profiling 配置](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java) [Android 17 ProfilingService](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
-
-拿到线上 trace 后，先列出实际存在的数据源和轨道。缺少 idle、policy limit、GPU 或 thermal 时，报告应写成“已观测 CPU 频率与调度状态的相关性”，不能升级为整机能耗或 governor 根因。
+Android17 `ProfilingManager` 的system trace由平台 `Configs` 生成受限配置，应用不能直接提交任意TraceConfig。固定源码还在 `KEY_COLLECT_STACK_SAMPLING` 与 `systemTraceAddStackSampling` flag条件下支持附加linux.perf栈采样，所以“固定配置”不应解释为绝无条件扩展；该可选栈采样仍不补齐下面缺失的DVFS事件。该配置包含 compact sched（压缩编码的调度事件）、进程信息、应用 atrace 分类和 SurfaceFlinger FrameTimeline，未启用 `power/cpu_frequency`、`power/cpu_idle`、`linux.sys_stats` 或 `linux.system_info`。system trace 结果还会经过 redaction（敏感信息裁剪），并受系统 rate limiter（采样频率限制）、参数范围和设备配置约束。它可以支持应用侧线上性能采样，却不能替代本地 CPU DVFS TraceConfig。[Android 17 Profiling 配置](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java) [Android 17 ProfilingService](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
 
 <!-- gracker-diagram: ch14-09-39-online-preset-limits -->
 ![ProfilingManager system trace 没有补齐DVFS源](../../assets/diagrams/ch14/ch14-09-39-online-preset-limits.png)
 
 图：固定配置有compact sched、进程、应用atrace与FrameTimeline，可条件附加栈采样。 可选linux.perf不补freq/idle/sys_stats/system_info；结果还受redaction和请求rate limiter限制。
+
+拿到线上 trace 后，先列出实际存在的数据源和轨道。缺少 idle、policy limit、GPU 或 thermal 时，报告应写成“已观测 CPU 频率与调度状态的相关性”，不能升级为整机能耗或 governor 根因。
 
 <!-- gracker-diagram: ch14-09-40-online-evidence-level -->
 ![线上缺失关键轨道时保留结论层次](../../assets/diagrams/ch14/ch14-09-40-online-evidence-level.png)

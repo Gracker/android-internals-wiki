@@ -4,8 +4,9 @@ chapter: '15.15'
 section: '15.15'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: android-17.0.0_r1 / Android 17 Winscope Perfetto data sources / AOSP Winscope docs updated 2026-06-17
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6; Winscope official docs updated 2026-10-09; Layout Inspector current official embedded UI guide updated 2026-09-25; Quail 3 issue list is historical version context
 confidence: high
 sources:
 - type: official
@@ -88,7 +89,7 @@ consolidated_from:
 
 # Winscope、Layout Inspector 与 UI 状态调试
 
-排查窗口显示、转场、输入这类问题时，我们常常需要把系统各服务的状态放到同一条时间（目标/实际时间）轴上对照。Winscope 就是 AOSP 提供的系统状态录制、回放和分析工具，它把 WindowManager（WMS，窗口管理服务）、SurfaceFlinger（SF，系统合成器）、Shell transition、`SurfaceControl.Transaction`、Input、IME、ProtoLog 和 ViewCapture 等数据放到同一时间轴。其中 Shell transition 是系统窗口转场状态机，`SurfaceControl.Transaction` 是一组同时提交的 layer 属性修改，ProtoLog 是 Android 系统服务的结构化日志，ViewCapture 用于记录受支持系统窗口的 View 属性。
+排查窗口显示、转场、输入这类问题时，我们常常需要把系统各服务的状态放到同一条时间轴上对照。Winscope 就是 AOSP 提供的系统状态录制、回放和分析工具，它把 WindowManager（WMS，窗口管理服务）、SurfaceFlinger（SF，系统合成器）、Shell transition、`SurfaceControl.Transaction`、Input、IME、ProtoLog 和 ViewCapture 等数据放到同一时间轴。其中 Shell transition 是系统窗口转场状态机，`SurfaceControl.Transaction` 是一组同时提交的 layer 属性修改，ProtoLog 是 Android 系统服务的结构化日志，ViewCapture 用于记录受支持系统窗口的 View 属性。
 
 两者分工明确：Winscope 观察 WindowManager、SurfaceFlinger 和输入状态随时间变化，适合窗口与合成时序问题；Layout Inspector 观察应用当前的 View 或 Compose 结构，适合布局层级和属性问题。本文前半部分讲 Winscope 记录的系统状态时间线，后半部分讲应用内部的 View 与 Compose 结构检查。
 
@@ -99,7 +100,7 @@ consolidated_from:
 
 具体到排障，Winscope 适合回答这些问题：目标窗口是否进入可见状态，目标 layer 是否带 buffer，哪一层遮住了它，哪笔 transaction 修改了位置或透明度，转场参与者是否被合并或中止，触摸区域与焦点是否匹配。
 
-本文沿用 trace 与源码里的英文名：layer 是 SurfaceFlinger 管理的合成节点，buffer 是 Producer 提交的一帧像素数据，transaction 是一批状态修改，fence 是跨 CPU、GPU 和显示硬件协调读写完成时间的同步对象，present 表示一帧进入显示链路并交付给屏幕。
+本文沿用 trace 与源码里的英文名：layer 是 SurfaceFlinger 管理的合成节点，buffer 是 Producer 提交的一帧像素数据，transaction 是一批状态修改，fence 是跨 CPU、GPU 和显示硬件协调读写完成时间的同步对象，present 在这里指显示栈的呈现动作与反馈；present fence 是系统时间基准，不能直接当成光学测得的像素点亮时刻。
 
 > 源码基线：AOSP `android-17.0.0_r1`；涉及 fence 或显示驱动等待时，kernel 参考 `android17-6.18-2026-06_r6`。
 
@@ -111,7 +112,12 @@ Winscope 提供的是系统状态证据；CPU 调度、Binder（Android 跨进�
 
 WindowManager 和 SurfaceFlinger 描述的是同一块屏幕的不同层次，Winscope 把这两层状态放到同一条时间轴上，供我们逐帧对照。先看 WindowManager 一侧：它维护 Display（逻辑显示设备）、DisplayArea（显示区域）、Task、Activity、WindowToken（窗口身份与归属的令牌）和 WindowState 等容器，窗口生命周期、焦点、Insets（状态栏、导航栏等占用或避让区域）、方向、转场与几何都由它们控制。
 
-应用、解码器或相机等 Producer（画面生产者）通过 Surface 提交 buffer；layer 的位置、裁剪、层级和显隐，则由 WindowManager 和 WM Shell（负责系统窗口行为和动画的进程组件） 用 `SurfaceControl.Transaction` 修改，同一笔 transaction 内的修改原子生效，外界不会看到只应用了一半属性的中间状态。SurfaceFlinger 再把这些状态整理成当前时刻的 layer snapshot（图层状态快照），交给 CompositionEngine 选择合成策略，最后经 HWC（Hardware Composer，硬件合成接口） 送到显示硬件。
+应用、解码器或相机等 Producer（画面生产者）通过 Surface 提交 buffer；layer 的位置、裁剪、层级和显隐，则由 WindowManager 和 WM Shell（负责系统窗口行为和动画的进程组件） 用 `SurfaceControl.Transaction` 修改，同一笔有效 transaction 的状态修改按原子事务提交；这个保证属于状态应用边界，不代表相关buffer的写入fence已完成，也不保证多个Display在同一光学时刻更新。SurfaceFlinger 再把这些状态整理成当前时刻的 layer snapshot（图层状态快照），交给 CompositionEngine 选择合成策略，最后经 HWC（Hardware Composer，硬件合成接口） 送到显示硬件。
+
+<!-- gracker-diagram: ch15-15-02-geometry-buffer-channels -->
+![几何事务与像素提交是两条输入](../../assets/diagrams/ch15/ch15-15-02-geometry-buffer-channels.png)
+
+图：WM/Shell提交几何状态，Producer提交buffer，两条输入在SF状态模型中汇合。 原子状态事务不保证写入fence已完成或多Display同一光学时刻更新。
 
 Winscope 中的主要证据如下。
 
@@ -127,12 +133,7 @@ Winscope 中的主要证据如下。
 
 这些状态写进 Perfetto 时各有注册路径：WMS 一侧由 `WindowTracingPerfetto` 注册 `android.windowmanager`，按配置把 `WindowManagerService` 状态序列化到 Perfetto；SurfaceFlinger 一侧，`LayerDataSource` 注册 `android.surfaceflinger.layers`，`TransactionDataSource` 注册 `android.surfaceflinger.transactions`。
 
-`LayerTracing` 有两种模式，区别在于 snapshot 从哪来：active 模式在采集期间直接写 snapshot，记录运行时状态序列；generated 模式根据 transaction ring buffer 的记录重建 snapshot。ring buffer 是容量固定的循环缓冲区，写满后会覆盖最旧记录。所以排查本地一两帧错位时，我们优先采短时 active trace；要在 bugreport 中保留较长的故障前历史时，generated bugreport 模式运行开销更低。
-
-<!-- gracker-diagram: ch15-15-02-geometry-buffer-channels -->
-![几何事务与像素提交是两条输入](../../assets/diagrams/ch15/ch15-15-02-geometry-buffer-channels.png)
-
-图：WM/Shell提交几何状态，Producer提交buffer，两条输入在SF状态模型中汇合。 原子状态事务不保证写入fence已完成或多Display同一光学时刻更新。
+`LayerTracing` 有两种模式，区别在于 snapshot 从哪来：active 模式在采集期间直接写 snapshot，记录运行时状态序列；generated 模式根据 transaction ring buffer 的记录重建 snapshot。ring buffer 是容量固定的循环缓冲区，写满后会覆盖最旧记录。所以排查本地一两帧错位时，我们优先采短时 active trace；要在bugreport中保留故障前历史时，可评估generated bugreport模式：平时保留transaction ring buffer，生成时仍会消耗CPU和内存，不能把采集期较低开销当成重建阶段免费。
 
 <!-- gracker-diagram: ch15-15-03-tracing-modes -->
 ![active、generated 与单快照的触发时机](../../assets/diagrams/ch15/ch15-15-03-tracing-modes.png)
@@ -147,7 +148,7 @@ Winscope 中的主要证据如下。
 
 #### 标准 View / Compose 窗口
 
-普通 View 与纯 Compose 内容由宿主 ViewRoot/HWUI 生成 App Window buffer；HWUI 是 Android 的硬件加速 UI 渲染器，绘制工作主要由 RenderThread 录制和提交。因此 SurfaceFlinger 通常只看到宿主窗口一个 layer，某个按钮、Compose node 或 TextureView 子区域都不会各自成为可见的 SF layer。我们用 Winscope 验证的是窗口与宿主 layer 的 bounds（布局边界）、buffer 和遮挡关系；宿主内部每个 UI 节点长什么样，要靠后文的 Layout Inspector。
+普通 View 与纯 Compose 内容由宿主 ViewRoot/HWUI 生成 App Window buffer；HWUI 是 Android 的硬件加速 UI 渲染器，UI线程在traversal/draw中更新View的RenderNode display list，RenderThread再处理渲染和GPU提交；具体耗时仍按trace中的线程和阶段区分。因此 SurfaceFlinger 通常只看到宿主窗口一个 layer，某个按钮、Compose node 或 TextureView 子区域都不会各自成为可见的 SF layer。我们用 Winscope 验证的是窗口与宿主 layer 的 bounds（布局边界）、buffer 和遮挡关系；宿主内部每个 UI 节点长什么样，要靠后文的 Layout Inspector。
 
 #### SurfaceView 与独立 Surface
 
@@ -165,7 +166,7 @@ container 的状态进入 SF snapshot，说明的只是几何或层级已经生�
 
 #### TextureView
 
-TextureView 的外部 buffer 先交给应用进程内的 SurfaceTexture queue（纹理缓冲队列），由 HWUI 采样进宿主 App Window buffer，所以 SurfaceFlinger 通常看不到独立的 TextureView 可见 layer。TextureView 黑屏时，Winscope 最多能证明宿主窗口有没有提交和显示；外部 SurfaceTexture queue（缓冲队列）、宿主 RenderThread 采样和纹理内容，要换成应用、Perfetto 或 AGI 侧的线索去查。
+TextureView 的外部 buffer 先交给应用进程内的 SurfaceTexture queue（纹理缓冲队列），由 HWUI 采样进宿主 App Window buffer，所以 SurfaceFlinger 通常看不到独立的 TextureView 可见 layer。TextureView 黑屏时，Winscope 最多能证明宿主窗口有没有提交和显示；外部 SurfaceTexture queue（缓冲队列）、宿主 RenderThread 采样和纹理内容，要换成应用、Perfetto或对应图形API采集工具侧的线索去查；AGI的GLES帧捕获需要明确的ANGLE转译路径，不能直接覆盖任意原生GLES调用。
 
 <!-- gracker-diagram: ch15-15-04-drawing-topologies -->
 ![View、SurfaceView 与 TextureView 拓扑](../../assets/diagrams/ch15/ch15-15-04-drawing-topologies.png)
@@ -189,13 +190,13 @@ Winscope 报告里的对象，可以回到下面这些源码入口对照。
 
 | 面板或字段 | Android 17 源码入口 | 阅读重点 |
 | --- | --- | --- |
-| WM hierarchy | `WindowContainer`、`DisplayContent`、`Task`、`ActivityRecord`、`WindowState` | 逻辑 parent、display、bounds、visibility、focus、Insets |
-| WM Perfetto trace | `WindowTracingPerfetto`、`WindowTracingDataSource` | `LOG_LEVEL_*`、`LOG_FREQUENCY_*` 与 WMS dump 序列化 |
-| Shell transition | `TransitionController`、system_server 与 WM Shell 各自的 `PerfettoTransitionTracer`、`TransitionDataSource` | sync/transition id、target leash layer id、start/finish transaction、handler（处理器）分派、merge（转场合并）、finish/abort（完成/中止） |
-| Surface transaction | `SurfaceControl.Transaction`、`SurfaceComposerClient` | position、matrix、crop、alpha、layer、reparent、buffer 与 transaction id |
-| SF runtime state | `RequestedLayerState`、`LayerLifecycleManager`、`LayerSnapshotBuilder` | transaction 状态怎样变成当前 snapshot，父层属性怎样影响计算结果 |
-| SF layer trace | `LayerDataSource`、`LayerTracing` | active snapshot 与 generated snapshot 的来源 |
-| SF transaction trace | `TransactionDataSource`、`TransactionTracing` | continuous ring buffer、active 逐笔写入、PID/UID/layer/vsync id |
+| WM hierarchy | <code>Window<wbr>Container</code>、<code>Display<wbr>Content</code>、<code>Task</code>、<code>Activity<wbr>Record</code>、<code>Window<wbr>State</code> | 逻辑 parent、display、bounds、visibility、focus、Insets |
+| WM Perfetto trace | <code>Window<wbr>Tracing<wbr>Perfetto</code>、<code>Window<wbr>Tracing<wbr>Data<wbr>Source</code> | <code>LOG_<wbr>LEVEL_<wbr>*</code>、<code>LOG_<wbr>FREQUENCY_<wbr>*</code> 与 WMS dump 序列化 |
+| Shell transition | <code>Transition<wbr>Controller</code>、system_server 与 WM Shell 各自的 <code>Perfetto<wbr>Transition<wbr>Tracer</code>、<code>Transition<wbr>Data<wbr>Source</code> | sync/transition id、target leash layer id、start/finish transaction、handler（处理器）分派、merge（转场合并）、finish/abort（完成/中止） |
+| Surface transaction | <code>Surface<wbr>Control.<wbr>Transaction</code>、<code>Surface<wbr>Composer<wbr>Client</code> | position、matrix、crop、alpha、layer、reparent、buffer 与 transaction id |
+| SF runtime state | <code>Requested<wbr>Layer<wbr>State</code>、<code>Layer<wbr>Lifecycle<wbr>Manager</code>、<code>Layer<wbr>Snapshot<wbr>Builder</code> | transaction 状态怎样变成当前 snapshot，父层属性怎样影响计算结果 |
+| SF layer trace | <code>Layer<wbr>Data<wbr>Source</code>、<code>Layer<wbr>Tracing</code> | active snapshot 与 generated snapshot 的来源 |
+| SF transaction trace | <code>Transaction<wbr>Data<wbr>Source</code>、<code>Transaction<wbr>Tracing</code> | continuous ring buffer、active 逐笔写入、PID/UID/layer/vsync id |
 
 固定 tag 的入口如下：
 
@@ -207,7 +208,7 @@ Winscope 报告里的对象，可以回到下面这些源码入口对照。
 - [SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)
 - [SurfaceFlinger tracing](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Tracing/)
 
-读 Winscope 报告卡在某个字段上时，这些源码能解释字段来源与状态流转。如果我们还不熟悉 SF 状态模型，可以先读 [SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md) 和 [SurfaceFlinger FrontEnd 与 RequestedLayerState](../../part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md)。
+读 Winscope 报告卡在某个字段上时，这些源码能解释字段来源与状态流转。如果还不熟悉SF状态模型，可先读 [SurfaceFlinger FrontEnd 与 RequestedLayerState](../../part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md)。
 
 还有一条现实限制：HWC plane（显示控制器可直接扫描输出的硬件图层） 分配、DPU（Display Processing Unit，显示处理器）限制、GPU driver 和 protected display path（受保护内容的安全显示链路），通常位于 vendor（设备厂商或芯片厂商） 实现中，AOSP trace 只能提供公共框架侧线索。
 
@@ -234,14 +235,20 @@ Android 15 起，各类 Winscope trace 接入 Perfetto：每种 trace 都是一�
 
 #### 网页端与命令行
 
-Winscope Web UI 支持 Winscope Proxy 和 Web Device Proxy：前者在本机运行代理并通过 adb 连接设备，后者由浏览器直接连接设备。Winscope Proxy 要求 Python 3.10+ 与 adb；官方文档截至 2026-06-17 仍标明 Web Device Proxy 不支持 macOS。命令行采集面向 `userdebug`/`eng` 调试构建，并要求 `adb root` 取得 root adb daemon；换到普通量产 user build 上，这些命令的可用性要重新确认。
+Winscope Web UI 支持 Winscope Proxy 和 Web Device Proxy。前者运行本机Python代理并通过adb连接设备；后者也要求本机安装并运行Web Device Proxy daemon，再由浏览器获得origin和device授权，并非浏览器直接裸连设备。当前官方指南（更新于2026-10-09）要求Winscope Proxy使用Python3.10+与adb，仍注明Web Device Proxy不支持macOS。命令行采集面向userdebug/eng构建，需确认adbd已实际取得root；普通量产user build不能据此假定可用。
 
 ### 5. 一份短时、可复现的采集配置
 
 下面的配置面向 15 秒本地窗口转场复现，一次采齐 WM frame snapshot、SF active layer snapshot、SF active transaction 和 Shell transition。注意 `TRACE_FLAG_BUFFERS` 是 SF layer trace 的采集开关，负责捕获没有几何变化时的 buffer 更新；少了它，画面内容更新可能不会产生新的 layer snapshot。
 
 ```bash
+#!/usr/bin/env bash
+set -euo pipefail
 adb root
+adb wait-for-device
+winscope_uid=$(adb shell id -u)
+winscope_uid=${winscope_uid//$'\r'/}
+[[ "$winscope_uid" == 0 ]] || { printf '%s\n' 'adbd未取得root，停止采集' >&2; exit 1; }
 adb shell perfetto \
   -c - --txt \
   -o /data/misc/perfetto-traces/winscope_window_debug.perfetto-trace <<'EOF'
@@ -295,11 +302,11 @@ adb pull /data/misc/perfetto-traces/winscope_window_debug.perfetto-trace .
 
 图：确认root与数据源，再录制短时复现，取回后用viewer验证有效数据。 脚本在重连、root检查或录制失败时停止；schema通过不代表设备暴露了全部数据源。
 
-问题只涉及当前静态状态时改用 dump（单个状态快照）；要在 bugreport 中保留故障前历史时，可评估 `MODE_GENERATED_BUGREPORT_ONLY` 和 transaction continuous ring buffer。continuous 模式持续维护循环缓冲区，到 flush（请求输出当前缓冲内容） 或 bugreport 时输出其中记录。
+问题只涉及当前静态状态时改用 dump（单个状态快照）；要在 bugreport 中保留故障前历史时，可评估 `MODE_GENERATED_BUGREPORT_ONLY` 和 transaction continuous ring buffer。continuous 模式持续维护循环缓冲区，到 flush（请求输出当前缓冲内容） 或 bugreport 时输出其中记录。 固定A17的Perfetto单快照实现还要留意实际触发时刻：SF layer的MODE_DUMP和WMS的LOG_FREQUENCY_SINGLE_DUMP都在停止回调阶段安排快照，不能仅凭proto注释推断为启动瞬间；本文后面的dumpsys静态命令是另一条独立入口。
 
 默认配置没有启用 `TRACE_FLAG_EXTRA`、`TRACE_FLAG_HWC`、WindowManager verbose、ProtoLog stacktrace（调用栈）和全量 input event。`TRACE_FLAG_EXTRA` 增加额外 layer 元数据，`TRACE_FLAG_HWC` 增加非结构化的 HWC 信息，这些选项会明显增加内存、运行开销或隐私风险，所以只有当前问题需要对应字段时，才在短时本地 trace 中启用。
 
-WindowManager 的 `LOG_FREQUENCY_FRAME` 在 WMS 提交一帧窗口状态时记录快照；纯显示刷新不包含新的 WMS frame commit，因此不会自动增加记录。`LOG_FREQUENCY_TRANSACTION` 在每次 WMS transaction commit 时记录快照，可能保留同一显示周期内的中间状态，适合追一帧错位，但数据量和开销通常更高。日常用默认的 `LOG_LEVEL_DEBUG + LOG_FREQUENCY_FRAME` 就覆盖了多数窗口问题。
+官方把 `LOG_FREQUENCY_FRAME` 描述为每帧状态，把 `LOG_FREQUENCY_TRANSACTION` 描述为每次WMS transaction commit状态。固定A17实现中，`WindowTracing.logState()` 在transaction频率下立即调用 `log(where)`；frame频率则合并多次请求，只安排一次Choreographer frame callback后采样。这不是每个显示刷新都自动dump，也不能直接当作SF的commit或present时刻。未指定配置时，A17实现映射到DEBUG对应的TRIM级别和FRAME频率；显式保存配置便于复查。
 
 <!-- gracker-diagram: ch15-15-07-frequency-and-flags -->
 ![采样频率、buffer 更新与成本](../../assets/diagrams/ch15/ch15-15-07-frequency-and-flags.png)
@@ -331,14 +338,14 @@ layer 名称只是检索入口，确认对象要结合 owner PID/UID、layer id�
 
 #### 6.4 解释 SurfaceFlinger 可见性
 
-Winscope 的 rects view（矩形视图） 用 layer 的 bounds、z-order（前后层级）、opacity（是否不透明）、relative Z 和圆角画出屏幕占位。SF viewer 的 `V` chip 是可见性标记，表示该 layer 经 SF 计算后可见。Android 15 起旧的 HWC/GPU hierarchy chips 已弃用；当前这层由 HWC 还是 GPU 合成，以新字段为准，别再拿旧 chip 判断。
+Winscope 的 rects view（矩形视图） 用 layer 的 bounds、z-order（前后层级）、opacity（是否不透明）、relative Z 和圆角画出屏幕占位。SF viewer的 `V` chip表示该layer被判定为可见；还必须检查Occluded/Covered与真实像素，不能把chip当作最终屏幕上一定可见的证明。Android 15 起旧的 HWC/GPU hierarchy chips 已弃用；当前这层由 HWC 还是 GPU 合成，以新字段为准，别再拿旧 chip 判断。
 
 可见性检查包含：
 
 - `HIDDEN`、父层隐藏、没有 buffer、visible region 为空等 invisibility reason（不可见原因）；
 - `Occluded`：上方 opaque layer 完全遮挡；
 - `Partially Occluded`：上方 opaque layer 遮挡一部分；
-- `Covered`：上方非 opaque layer 覆盖，底层仍可能透出；
+- `Covered`：上方被标识为非opaque的layer覆盖，底层可能透出；若其实际像素全不透明，底层也可能完全看不见；
 - buffer 是否存在、frame number 是否更新、destination frame（buffer 映射到的目标矩形）是否正确；
 - input touchable region（可接收触摸的区域）和 focus 属性是否匹配。
 
@@ -407,9 +414,9 @@ Winscope 能指出“哪一个状态从哪一帧开始错误”。状态序列�
 
 SurfaceView 一帧错位时，同时选中宿主 App Window、SurfaceView container 和 BLAST child，对比 container geometry transaction、宿主 draw transaction、BLAST child frame number、buffer transaction 与目标 display snapshot。
 
-container 已移动而 child 沿用旧 buffer，未必是异常：几何和内容本来就来自不同状态源。只有走同步组、同一 `SurfaceControl.Transaction`，或按指定 frame number 把几何 transaction 合入下一次 buffer transaction，才谈得上两类更新同时生效。
+container 已移动而 child 沿用旧 buffer，未必是异常：几何和内容本来就来自不同状态源。应检查是否通过同步组、同一有效 `SurfaceControl.Transaction`，或按frame number合并了几何与buffer更新；这些机制用于协调状态，但仍需验证实际匹配对象、提交/合并时机与fence条件，不能仅凭用了某个入口就认定目标帧同步成功。
 
-若 crop、relative Z 或内容/几何持续错位，继续查 `mergeWithNextTransaction()`、`applyTransactionOnDraw()`、`applyTransactionToFrame()` 等同步入口和 Producer 的提交节奏；注意 `applyTransactionToFrame()` 在 SurfaceView 持续出帧时不保证精确对应哪一帧。
+若 crop、relative Z 或内容/几何持续错位，继续查 `mergeWithNextTransaction()`、`applyTransactionOnDraw()`、`applyTransactionToFrame()` 等同步入口和 Producer 的提交节奏；`applyTransactionToFrame()` 只有调用前暂停SurfaceView渲染、之后再产出下一帧时，精确绑定的帧才有定义；持续出帧时对应哪一帧未定义，后续没有新帧时transaction还可能不应用。
 
 <!-- gracker-diagram: ch15-15-13-surfaceview-sync-conditions -->
 ![SurfaceView 几何与内容的同步条件](../../assets/diagrams/ch15/ch15-15-13-surfaceview-sync-conditions.png)
@@ -428,9 +435,9 @@ SF 中找不到独立 TextureView layer 属于正常拓扑。我们先确认宿�
 
 #### 点击无响应
 
-SF `TRACE_FLAG_INPUT` 提供 layer 输入窗口属性、touchable region 和 focus 线索，但完整的事件派发它不记录；需要事件链时增加 `android.input.inputevent`。`TRACE_MODE_TRACE_ALL` 是全量输入事件模式，会记录系统处理的全部输入事件，只能用于本地设备或测试；现场/线上采集必须配置隐私规则。
+SF `TRACE_FLAG_INPUT` 提供 layer 输入窗口属性、touchable region 和 focus 线索，但完整的事件派发它不记录；需要事件链时增加 `android.input.inputevent`。固定A17的 `android.input.inputevent` 源限定userdebug/eng构建。`TRACE_MODE_TRACE_ALL` 会绕过调试构建的隐私过滤，只用于本地或测试；规则模式另用 `TRACE_MODE_USE_RULES`，且默认就是规则模式。配置规则不意味着普通量产user build因此获得该数据源。
 
-分析顺序是：触摸坐标对应的 Display → 顶层可触摸窗口/layer → focused window → input target → InputDispatcher（系统输入事件分发器）→ 应用回调。遮挡 layer 能显示，输入未必送到它那里；视觉 z-order 与 input region 也可能对不上。
+先按事件类别分流。指针触摸从Display和坐标出发，检查touchable region、遮挡/触摸策略、手势当前target与InputDispatcher派发，再追应用回调；按键和非指针motion则重点检查focused window，IME还需自己的焦点/输入连接。触摸target不必就是focused window，focus并非所有点击命中的前置步骤。可见layer与实际输入目标也可能不同。
 
 <!-- gracker-diagram: ch15-15-14-pointer-focus-input -->
 ![触摸命中与键盘焦点分开](../../assets/diagrams/ch15/ch15-15-14-pointer-focus-input.png)
@@ -439,7 +446,7 @@ SF `TRACE_FLAG_INPUT` 提供 layer 输入窗口属性、touchable region 和 foc
 
 ### 8. Search viewer 与 Perfetto SQL
 
-Winscope Search viewer 借助 Perfetto Trace Processor 提供 `sf_layer_search`、`transactions_search`、`transitions_search`、`viewcapture_search`、`wm_search` 等 helper view（预先整理好的 SQL 视图）。`property` 保留 repeated field（proto 中可重复出现、类似数组的字段） 的下标，`flat_property` 忽略下标；`value` 与 `previous_value` 用字符串表示，布尔值写成 `0`/`1`。
+Winscope在Search viewer首次初始化时创建helper views；这些视图不保证在独立Trace Processor中预先存在。它借助Perfetto Trace Processor提供 `sf_layer_search`、`transactions_search`、`transitions_search`、`viewcapture_search`、`wm_search` 等 helper view（预先整理好的 SQL 视图）。`property` 保留 repeated field（proto 中可重复出现、类似数组的字段） 的下标，`flat_property` 忽略下标；`value` 与 `previous_value` 用字符串表示，布尔值写成 `0`/`1`。
 
 比如我们想定位候选时间点，下面的查询列出目标 App layer 被计算为可见的状态：
 
@@ -453,7 +460,7 @@ ORDER BY ts;
 
 结果中的 `ts` 是 trace 时间戳，可直接映射到 Winscope 时间轴。可见记录很多时，再加 `layer_id` 过滤当前实例，避免混入旧 layer 或同包其它窗口。
 
-再验证 WM 逻辑可见与 SF layer 可见是否落在同一时间区间，下面的查询寻找某个窗口容器的可见状态：
+下面的查询寻找窗口容器的可见采样状态。WM与SF按不同触发条件写快照，两个查询并没有自动做区间连接；要判断同一时间区间内的关系，还需按稳定对象身份、相邻快照有效区间及丢失情况对齐：
 
 ```sql
 SELECT DISTINCT ts, title, token, parent_token
@@ -463,7 +470,7 @@ WHERE title LIKE '%DetailActivity%'
 ORDER BY ts;
 ```
 
-若 WM 先可见而 SF 后可见，继续查 App buffer、starting window 与 transition；这两个时间点分属不同阶段，别当成重复数据。
+WM可见采样早于SF可见采样时，可继续查App buffer、starting window和transition；采样频率不同或缺失也可能产生这个先后差，不能只凭两行时间戳就认定真实延迟。
 
 下面的查询用官方 helper view 字段，寻找把 layer x 改为 `-54.0` 的 transaction：
 
@@ -491,7 +498,7 @@ adb exec-out dumpsys window --proto > window_dump.winscope
 adb exec-out dumpsys SurfaceFlinger --proto > surfaceflinger_dump.winscope
 ```
 
-命令执行成功后，当前目录会得到两个 `.winscope` 文件。dump 记录的只是单个时刻，闪屏、转场顺序或一帧错位这类时序问题，要靠连续 trace 才能看到，而连续 trace 又受开销和 ring buffer 容量影响；bugreport 是 Android 的综合故障报告，适合保留故障前的 ring-buffer 历史，代价是包含的系统信息更多、隐私等级更高。三种产物按问题选用。
+当前目录会得到两个候选 `.winscope` 文件；检查命令退出状态，并在Winscope中成功解析确认内容。重定向可能先创建空文件，服务端错误也可能被写入文件，文件存在不等于有效proto dump。dump 记录的只是单个时刻，闪屏、转场顺序或一帧错位这类时序问题，要靠连续 trace 才能看到，而连续 trace 又受开销和 ring buffer 容量影响；bugreport 是 Android 的综合故障报告，适合保留故障前的 ring-buffer 历史，代价是包含的系统信息更多、隐私等级更高。三种产物按问题选用。
 
 <!-- gracker-diagram: ch15-15-16-dump-trace-bugreport -->
 ![单时刻、连续复现与历史保留](../../assets/diagrams/ch15/ch15-15-16-dump-trace-bugreport.png)
@@ -515,8 +522,8 @@ adb exec-out dumpsys SurfaceFlinger --proto > surfaceflinger_dump.winscope
 | --- | --- | --- |
 | Winscope | WM/SF/transition/transaction/input 状态序列 | 对象是谁，窗口与 layer 状态何时偏离预期 |
 | Perfetto | 调度、slice（持续时间区间）、counter（数值序列）、Binder、FrameTimeline、ftrace（内核事件）、部分图形数据源 | 哪个阶段迟到，CPU/锁/Binder/fence/I/O 等待在哪里 |
-| AGI | GPU counter 与 System Profiler；Vulkan Frame Profiler；经 ANGLE 转译为 Vulkan 后的 OpenGL ES 帧 | GPU 工作量与计数器、Vulkan 调用，或明确走 ANGLE 转译路径的 OpenGL ES 帧；不能把它当作任意原生 GL 调用的通用证据 |
-| `dumpsys` | 当前时刻的文本/proto 状态 | 快速复核静态现场或脚本化取证 |
+| APA / AGI / RenderDoc | APA System提供系统轨道；APA canary Frame基于GFXR重放测量；AGI/RenderDoc检查兼容的逐帧资源与调用 | 固定工具版本、设备、API和重放条件；AGI的GLES帧路径需ANGLE转Vulkan，不能当作任意原生GL调用的通用证据 |
+| <code>dumpsys</code> | 当前时刻的文本/proto 状态 | 快速复核静态现场或脚本化取证 |
 
 简单说：“画面状态错误”优先用 Winscope 定位对象与状态；“状态正确但画面迟到”转到 Perfetto；“buffer 内像素或 GPU 命令错误”根据图形 API 和采集路径选 AGI 或对应 Producer 工具。复杂问题通常要在同一时间点组合多类证据。
 
@@ -544,11 +551,11 @@ Layout Inspector 是 Android Studio 中检查运行时 UI 的工具，看的是�
 
 帧耗时交给 Perfetto，窗口与 SurfaceFlinger layer 状态回到前文的 Winscope 时间线，GPU 命令和 buffer 像素问题根据图形 API 转到 AGI 或对应 Producer 工具。
 
-截至 2026-08-14，本文界面步骤验证过的版本是 Android Studio Quail 3 | 2026.1.3 Patch 1，以及 Android 17 / API 37 的 `android-17.0.0_r1`；旧版 IDE 的 3D、独立窗口入口和连接方式可能不同，界面步骤不能照搬。
+以下界面步骤按本轮取回的官方嵌入式Layout Inspector指南叙述，平台机制按Android17/API37源码核对。Quail3 | 2026.1.3修复单用于历史版本对照，以下UI操作以实际安装版本为准。3D、独立窗口入口与连接方式仍按实际IDE版本确认。
 
 ### 1. 当前 Layout Inspector 的入口与界面
 
-Quail 3 默认使用嵌入 Running Devices 的 Layout Inspector：运行 debuggable 应用后，我们在 Running Devices 窗口点击 Toggle Layout Inspector，IDE 会自动连接当前设备前台的 debuggable 进程。`debuggable` 表示该构建允许调试器和检查工具附着，通常对应开发用的 debug 变体；物理设备则要先启用 device mirroring（把设备画面和输入映射到 IDE）。
+当前官方指南默认使用嵌入Running Devices的Layout Inspector：运行 debuggable 应用后，我们在 Running Devices 窗口点击 Toggle Layout Inspector，IDE 会自动连接当前设备前台的 debuggable 进程。`debuggable` 表示该构建允许调试器和检查工具附着，通常对应开发用的 debug 变体；物理设备则要先启用 device mirroring（把设备画面和输入映射到 IDE）。
 
 当前界面有三个主要区域：
 
@@ -598,12 +605,28 @@ Views 属性检查依赖全局设置 `debug_view_attributes`：Layout Inspector 
 下面的命令用于手工核对或恢复该全局开关。
 
 ```bash
-adb shell settings get global debug_view_attributes
+#!/usr/bin/env bash
+set -euo pipefail
+inspector_previous=$(adb shell settings get global debug_view_attributes)
+inspector_previous=${inspector_previous//$'\r'/}
+case "$inspector_previous" in
+  null|0|1) ;;
+  *) printf '%s\n' '原值不是null/0/1，保留现场并停止' >&2; exit 1 ;;
+esac
+inspector_restore() {
+  if [[ "$inspector_previous" == null ]]; then
+    adb shell settings delete global debug_view_attributes
+  else
+    adb shell settings put global debug_view_attributes "$inspector_previous"
+  fi
+}
+trap inspector_restore EXIT
 adb shell settings put global debug_view_attributes 1
-adb shell settings delete global debug_view_attributes
+printf '%s\n' '完成属性检查后按Enter，脚本将恢复原值'
+read -r inspector_done
 ```
 
-`put` 会为设备上所有进程生成额外 View 属性信息，`delete` 删除手工设置并恢复默认行为；日常让 Android Studio 自动管理即可。性能测量前关闭 Inspector，并确认该设置和页面状态已恢复。
+`put 1`会为设备上所有进程启用额外属性信息；脚本恢复原值，原先未设置时才delete。它是手工检查示例，日常可由IDE管理。切换设置可能触发Activity重启，恢复命令也可能失败；性能测量前断开Inspector，复核实际flag与页面状态。
 
 `View.mAttributes` 以“属性名、属性值”相邻成对的数组保存这类调试信息，`debug_view_attributes` 对应的开发者选项负责启用 View 属性检查。属性缺失时，依次检查构建是否 debuggable、Activity 是否已按新设置重启、目标是否为前台进程，以及厂商系统是否限制调试通道。
 
@@ -702,7 +725,7 @@ View.invalidate()
 
 `invalidateInternal()` 设置 `PFLAG_DIRTY`，并在需要时设置 `PFLAG_INVALIDATED`——这两个是 `View` 内部的 dirty/invalidated 标志位；随后它把 damage（需要重绘的区域）传给 parent。
 
-`ViewRootImpl.scheduleTraversals()` 放置同步屏障，避免普通同步消息越过待执行的 UI traversal，并通过 `Choreographer.postVsyncCallback(CALLBACK_TRAVERSAL, ...)` 安排下一次 traversal。`Choreographer` 负责把 UI 工作对齐到显示垂直同步，traversal 则包含 measure、layout、draw 等树遍历工作。这些状态只说明工作已进入后续帧调度，尚未证明目标帧按时绘制或显示。
+`ViewRootImpl.scheduleTraversals()` 放置同步屏障，使屏障之后的普通同步消息等待traversal，显式异步消息可以继续调度。`doTraversal()` 会先移除屏障，再执行 `performTraversals()`；排队与屏障只约束相应消息顺序。它通过 `Choreographer.postVsyncCallback(CALLBACK_TRAVERSAL, ...)` 安排下一次 traversal。`Choreographer` 负责把 UI 工作对齐到显示垂直同步，traversal 则包含 measure、layout、draw 等树遍历工作。这些状态只说明工作已进入后续帧调度，尚未证明目标帧按时绘制或显示。
 
 硬件加速路径下，`ThreadedRenderer.updateViewTreeDisplayList()` 根据 `PFLAG_INVALIDATED` 设置 `mRecreateDisplayList`，清除 flag 后调用 `updateDisplayListIfDirty()`。display list 就是交给 RenderNode/HWUI 的绘制命令记录。节点属性正确但屏幕内容没更新时，我们按四个阶段检查：
 
@@ -735,7 +758,7 @@ Layout Inspector 读取可调试应用的内部 View/Compose 结构；UI Automat
 | 入口 | 适合的场景 | 主要限制 |
 |---|---|---|
 | Layout Inspector | 自家 debug 构建、源码定位、运行时属性、Compose 重组 | 依赖 debuggable 进程和 IDE 调试通道 |
-| `uiautomator dump` | 黑盒 release App、脚本化获取已暴露的文本/bounds/clickable | 节点可能合并或缺失，不能代表完整 View 树；旧式 shell 命令的可用性还取决于系统版本 |
+| <code>uiautomator dump</code> | 黑盒 release App、脚本化获取已暴露的文本/bounds/clickable | 节点可能合并或缺失，不能代表完整 View 树；旧式 shell 命令的可用性还取决于系统版本 |
 | Accessibility service | 无源码辅助功能与自动化检查 | 受权限、隐私、semantics 和窗口策略限制 |
 
 Accessibility bounds 可用于复核自动化工具看到的点击区域；View 私有字段、RenderNode 绘制命令或 Compose 重组记录这些内部状态，要回到 Inspector 或 trace 里看。
@@ -765,7 +788,7 @@ Inspector 用来确认结构与属性；性能基准我们放在断开连接后�
 
 | Inspector 现场 | 时间或系统证据 | 排查方向 |
 |---|---|---|
-| 重复容器多、层级深 | `measure/layout` 在目标帧持续过长 | 扁平化高频列表 item，减少重复 measure |
+| 重复容器多、层级深 | <code>measure/<wbr>layout</code> 在目标帧持续过长 | 扁平化高频列表 item，减少重复 measure |
 | Compose 子树计数高 | composition/recomposition slice 与目标帧重合 | 缩小 state 读取范围，检查参数稳定性与 key |
 | bounds/属性正确，内容没更新 | traversal、display list、RenderThread、buffer | 区分状态没写入、没 invalidation、没录制与 buffer 没显示 |
 | 应用树正确，仍有遮挡或焦点错 | WM/SF/input trace | Winscope 检查系统窗口、layer、touchable region |
@@ -788,11 +811,11 @@ FrameTimeline 把 App 帧和 SurfaceFlinger 帧的 expected/actual 时间关联�
 
 一份可复查记录至少包含：设备与构建信息、复现步骤、snapshot、目标节点路径、异常属性、源码位置和后续 trace 链接。点击或遮挡问题还要记录 Window/displayId；SurfaceView/TextureView 问题还要记录内容 Producer 与对应 SF layer。
 
-
 <!-- gracker-diagram: ch15-15-26-controlled-reproduction -->
 ![错误快照与无 Inspector 的性能基线](../../assets/diagrams/ch15/ch15-15-26-controlled-reproduction.png)
 
 图：先保存结构异常与环境，再断开工具、恢复设置，用相同操作验证系统和性能证据。 镜像、属性开关、重组计数与重启都会影响被测条件；snapshot与trace分别保留。
+
 
 ## 参考资料
 

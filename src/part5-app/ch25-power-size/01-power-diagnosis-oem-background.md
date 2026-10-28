@@ -4,8 +4,8 @@ chapter: '25.1'
 section: '25.1'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-21'
-last_source_verified_at: '2026-10-21'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6 + Android Developers power, Macrobenchmark PowerMetric, Android vitals, SystemHealthManager and ApplicationExitInfo docs + Perfetto power data source docs, retrieved 2026-10-21; android-15.0.0_r1 and android-16.0.0_r1 checked only for the historical comparison table
 verification_scope_note: 2026-10-21 核验主要功耗工具的设备与版本边界、平台归因与存储、PowerMonitor 不可用读数、后台限制与豁免、退出原因及应用侧示例的版本和权限前提；不包含特定 OEM 设备的实机功耗、精度或后台存活实验。
 confidence: medium-high
@@ -125,7 +125,7 @@ last_rework_at: '2026-10-21T21:38:57+08:00'
 功耗诊断要完成三次转换：
 
 1. 把用户感受转换成可重复执行的场景。
-2. 把设备级能量变化转换成同一时间窗内的 CPU、网络、GNSS（全球卫星导航系统）、WakeLock（唤醒锁）等证据；WakeLock（唤醒锁；本文主要关注在屏幕关闭后仍让 CPU 运行的 Partial WakeLock），我们重点看这一类。
+2. 把设备级能量变化转换成同一时间窗内的 CPU、网络、GNSS（全球卫星导航系统）、WakeLock（唤醒锁）等证据；本文主要关注在屏幕关闭后仍让 CPU 运行的 Partial WakeLock。
 3. 把系统证据定位到线程、请求、定位订阅或唤醒锁标签，再验证修改前后的差异。
 
 功耗模型、硬件电流计与 BatteryStats 的计算原则见 §11.1；后台任务、Alarm（由 AlarmManager 管理的定时事件）、网络与定位策略见 §11.2；Battery Historian 的部署见 §15.5。这里专注于采集、解读和归因。
@@ -383,7 +383,7 @@ suspend fun <T> PowerManager.withPartialWakeLock(
 }
 ```
 
-`timeoutMs` 应来自该操作的业务时限，而非随意复制的常量。超时只是额外保护；正常路径和异常路径仍要在 `finally` 中释放。若 WorkManager（Jetpack 后台任务调度库）、媒体、定位或其他库间接持锁，还要按 Android vitals 显示的标签查对应 API。
+`timeoutMs` 应按业务需求限定持锁时间，而非随意复制常量。[`acquire(timeoutMs)`](https://developer.android.com/reference/android/os/PowerManager.WakeLock) 超时只会释放 WakeLock，不会取消 `block()` 或给业务设置完成期限。需要业务超时时，应另行采用可协作取消的 [`withTimeout`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html) 或相应 I/O 超时与取消机制；正常和异常路径仍在 `finally` 释放锁。若 WorkManager（Jetpack 后台任务调度库）、媒体、定位或其他库间接持锁，还要按 Android vitals 显示的标签查对应 API。
 
 <!-- gracker-diagram: a274-06-lock-timeout-versus-business-cancellation -->
 ![WakeLock超时释放与业务取消分开](../../assets/diagrams/ch25/a274-06-lock-timeout-versus-business-cancellation.png)
@@ -441,20 +441,12 @@ suspend fun <T> PowerManager.withPartialWakeLock(
 
 图中把活动记录、功耗聚合和结果展示三项职责分开。
 
-```mermaid
-flowchart LR
-    A["应用与系统服务事件"] --> B["BatteryStatsImpl history / UID 统计"]
-    C["内核、控制器与 PowerStats HAL"] --> D["PowerStats collectors"]
-    D --> B
-    B --> E["PowerStatsScheduler"]
-    E --> F["MultiStatePowerAttributor"]
-    F --> G["PowerStatsStore"]
-    B --> H["BatteryUsageStatsProvider"]
-    G --> H
-    H --> I["BatteryUsageStats / dumpsys"]
-    B --> J["bugreport"]
-    J --> K["Battery Historian"]
-```
+活动记录进入聚合、存储与结果查询；Battery Historian 位于诊断报告的消费端。
+
+<!-- gracker-diagram: a274-07-platform-attribution-pipeline -->
+![活动历史经聚合归因生成系统查询结果](../../assets/diagrams/ch25/a274-07-platform-attribution-pipeline.png)
+
+图：平台产生数据，Historian读取报告；系统归因结合模型与可用硬件能量，不是每UID独立测量。
 
 三项职责各有对应的组件：
 
@@ -546,11 +538,6 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 - 开发版设备：把隐藏接口调用限制在内部诊断组件，不随生产 APK（Android 安装包） 发布。
 
 `backgroundWakeLockData` 只是后台计时器的快照字段。Android vitals 的 excessive 和 stuck 判定还包含 24 小时窗口、前后台或前台服务状态、豁免项和会话聚合，单个字段和 Play 指标之间还隔着这些计算。
-
-<!-- gracker-diagram: a274-07-platform-attribution-pipeline -->
-![活动历史经聚合归因生成系统查询结果](../../assets/diagrams/ch25/a274-07-platform-attribution-pipeline.png)
-
-图：平台产生数据，Historian读取报告；系统归因结合模型与可用硬件能量，不是每UID独立测量。
 
 ### SoC（System on a Chip，片上系统）与设备差异：先查能力，再谈精度
 
@@ -660,7 +647,7 @@ for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
 }
 ```
 
-这是 tracker 汇总阶段的规则，完整决策还要先过休眠、force-stop（强制停止）、系统豁免、用户后台限制和当前 standby bucket；`BACKGROUND_RESTRICTED` 这一级源码明确要求用户同意，仅凭 tracker 走不到那里。
+这是 tracker 汇总阶段的规则。`calcAppRestrictionLevel()` 先检查应用休眠并返回 `FORCE_STOPPED`，再按 standby bucket、用户后台限制及是否计算 tracker 分支处理；系统豁免等输入由对应状态与 policy 参与计算。tracker 提出 `BACKGROUND_RESTRICTED` 时，只能按条件请求用户确认，并重新计算较低候选，不能直接进入该级。还要保留功能开关边界：`STANDBY_BUCKET_NEVER` 在 `appRestrictionsApi` 未开启的旧分支会直接映射为 `BACKGROUND_RESTRICTED`，不能把 tracker 分支的用户确认规则推广到所有入口。
 
 #### 限制等级要看名称和来源
 
@@ -678,14 +665,14 @@ for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
 | 70 | `USER_LAUNCH_ONLY` | 只有用户启动后才能恢复的更严格状态 |
 | 90 | `CUSTOM` | 为定制限制保留的等级 |
 
-这些数值用来对照源码中的 `Math.max()`，诊断报告仍要记录名称、变更时间，以及能够取得的 reason、subReason（细分原因） 和 source 字段。
-
-表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，把它简单归因成耗电超限会误判；`EXEMPTED` 也免不了 CPU、网络和前台服务规则各自的约束。
+这些数值用来对照同一 package 的 tracker 候选汇总 `Math.max()`。另一个方向的查询不能混用：`getRestrictionLevel(uid)` 对共享 UID 的多个 package 取已知等级中的最宽松值（`Math.min()`）；带 package 的查询才返回该包状态。诊断报告仍要记录包名、UID、名称、变更时间，以及能够取得的 reason、subReason（细分原因）和 source 字段。
 
 <!-- gracker-diagram: a274-12-restriction-candidate-and-uid-query -->
 ![tracker候选最大值与共享UID查询最小值分开](../../assets/diagrams/ch25/a274-12-restriction-candidate-and-uid-query.png)
 
 图：策略汇总与最终查询是两个不同操作；诊断必须保留package、UID和调用入口。
+
+表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，把它简单归因成耗电超限会误判；`EXEMPTED` 也免不了 CPU、网络和前台服务规则各自的约束。
 
 ### OEM 可以改变哪些 AOSP 输入
 

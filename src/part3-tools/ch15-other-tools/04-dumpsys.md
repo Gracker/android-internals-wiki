@@ -3,9 +3,9 @@ title: dumpsys 系列命令
 chapter: '15.4'
 section: '15.4'
 applicable_versions: Android 6.0 (API 23) – Android 17 (API 37)
-last_verified: '2026-10-19'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1
-last_source_verified_at: '2026-10-19T14:47:36+08:00'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-19T14:47:36+08:00'
 confidence: medium
 sources:
@@ -49,21 +49,20 @@ status: finalized
 
 ## 为什么需要 dumpsys
 
-`dumpsys` 每次调用，都是让一个 Binder 服务在采集时刻把它对外公开的内部状态打出来：它在 ServiceManager 这张系统服务注册表里找到目标服务，调用服务的 dump 接口，不会直接扫描服务进程的内存。
+常规 `dumpsys <service>` 请求会让目标 Binder 服务在采集时刻把它对外公开的内部状态打出来：它在 ServiceManager 这张系统服务注册表里找到目标服务，调用服务的 dump 接口，不会直接扫描服务进程的内存。
 
 所以我们常拿它回答“当前焦点在哪个窗口”“进程现在处于哪个 OOM 调整级别”“最近保留了哪些 HWUI 帧”这类快照式问题。事件先后要交给 Perfetto、Winscope 和 bugreport；一份文本快照证明不了谁先谁后。
 
-具体到实现，[`dumpsys.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/dumpsys/dumpsys.cpp) 从 ServiceManager 取得服务列表，用 `checkService()` 找到目标 Binder，再调用 `IBinder::dump()`。全量模式按服务名排序后逐项执行，单个服务的默认超时为 10 秒；超时后 `dumpsys` 只是放弃等待这份输出，服务内部可能还在继续采集。
-
-下面的命令用于确认设备上有哪些服务，并控制一次 dump 的范围。
-
-```bash
+具体到实现，[`dumpsys.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/dumpsys/dumpsys.cpp) 从 ServiceManager 取得服务列表，用 `checkService()` 找到目标 Binder，再调用 `IBinder::dump()`。全量模式按服务名排序后逐项执行，单个服务的默认超时为 10 秒；超时后 `dumpsys` 放弃等待并关闭输出管道的读端，服务内部可能仍在执行。该版本的主循环即使遇到服务超时或 dump 错误也可能最终返回 0；脚本必须同时检查 `DUMP TIMEOUT`、权限拒绝、缺失分段和输出完整性，不能只看 shell 退出码。
 
 <!-- gracker-diagram: ch15-04-01-binder-and-output -->
 ![dumpsys 的 Binder 调用与输出管道](../../assets/diagrams/ch15/ch15-04-01-binder-and-output.png)
 
 图：客户端查服务并发出 dump 请求，服务把状态写入传来的 fd，客户端在等待期限内读取。 默认每服务 10 秒；超时关闭读端不取消服务工作，退出码 0 也不能证明输出完整。
 
+下面的命令用于确认设备上有哪些服务，并控制一次 dump 的范围。
+
+```bash
 # 列出当前注册且可见的 Binder 服务
 adb shell dumpsys -l
 
@@ -120,7 +119,7 @@ OOM adjustment（简称 OOM adj）是系统交给 lmkd 的进程保护分数，�
 | `curRaw` | 本轮计算中尚未施加部分修正的 raw adj |
 | `setRaw` | 上次写入记录的 raw adj |
 | `cur` | 本轮计算后的目标 adj |
-| `set` | 已提交给进程/LMKD 路径的 adj |
+| `set` | 进程状态控制器记录的上次应用 adj；快照本身不证明内核或 LMKD 的最终观测值 |
 | `adjType`、`adjSource`、`adjTarget` | 哪个组件关系抬高或降低了进程保护级别 |
 
 可见进程还可能受 laddering 影响：系统按可见层级等信息把多个进程分配到 100—199 之间的细分值，具体行为也受设备配置控制。发现 `set` 与界面状态不符时，我们应连同 `adjType`、绑定服务、ContentProvider、前台服务和显示器可见性一起核对，别只凭一个数字判定 OOM 算错。LMK 归因还要对照 PSI（内核的内存压力停顿指标）、lmkd 日志和退出原因。
@@ -166,7 +165,7 @@ Android 17 支持 `-a/-d/-c/-s/-S/-p/--unreachable/--oom/--local/--package/--che
 | 指标 | 口径 | 适用问题 |
 |---|---|---|
 | RSS | 当前驻留在物理内存中的页，shared page 会在每个映射进程重复计算 | 进程驻留规模、LMKD 相关现场 |
-| PSS | shared page 按映射者数量比例分摊 | 跨进程归属和版本内对比 |
+| PSS | shared page 按内核映射计数等规则分摊 | 跨进程归属和版本内对比 |
 | USS | private clean 与 private dirty 的合计 | 进程退出后较可能直接释放的私有页 |
 | Private Dirty | 进程私有且已修改的页 | 私有匿名内存、COW（Copy-on-Write，写时复制）后的变化 |
 | SwapPss | 换出页按共享关系分摊 | zRAM（在内存中压缩的交换设备）或其他 swap 参与后的进程归属 |
@@ -201,7 +200,7 @@ for round in $(seq 1 10); do
 done
 ```
 
-每轮的工作负载、前后台状态、进程 PID、设备温度和等待时间都要固定。稳定增长只构成继续取证的条件：Java 类别转 HPROF/LeakCanary，Native Heap 转 heapprofd，Graphics 转 memtrack、`dmabuf_dump` 与 SurfaceFlinger。进程重启、GC、trim、缓存上限和 zRAM 变化都会改变曲线形状。
+每轮的工作负载、前后台状态、设备温度和等待时间都要固定，并记录实际 PID 与进程重启；按包名查询不能保证每轮都是同一进程实例。循环中的 10 秒是两次调用之间的等待，实际采样间隔还包含命令执行与传输时间。稳定增长只构成继续取证的条件：Java 类别转 HPROF/LeakCanary，Native Heap 转 heapprofd，Graphics 转 memtrack、`dmabuf_dump` 与 SurfaceFlinger。进程重启、GC、trim、缓存上限和 zRAM 变化都会改变曲线形状。
 
 <!-- gracker-diagram: ch15-04-06-memory-trend -->
 ![内存趋势的受控复测与分流](../../assets/diagrams/ch15/ch15-04-06-memory-trend.png)
@@ -210,7 +209,7 @@ done
 
 ## dumpsys gfxinfo：帧渲染统计与 Jank 定位
 
-复现掉帧之后，我们需要一段可重复的 HWUI 测试窗口来量化它。`gfxinfo` Binder 由 ActivityManagerService 注册：服务找到目标包的运行进程后，经 `IApplicationThread.dumpGfxInfo()` 进入应用进程，再由 `ThreadedRenderer` 和各 Window 的 renderer 输出 HWUI 统计；应用卡死时，这条跨进程链路也可能超时。
+复现掉帧之后，我们需要一段可重复的 HWUI 测试窗口来量化它。`gfxinfo` Binder 由 ActivityManagerService 注册：服务按 PID 或精确进程名选择运行进程，再经 `IApplicationThread.dumpGfxInfo()` 进入应用进程；默认主进程名通常等于包名，再由 `ThreadedRenderer` 和各 Window 的 renderer 输出 HWUI 统计；应用卡死时，这条跨进程链路也可能超时。
 
 下面的三条命令用于划定测试窗口。
 
@@ -225,32 +224,37 @@ adb shell dumpsys gfxinfo com.example.app
 adb shell dumpsys gfxinfo com.example.app framestats
 ```
 
-[`ThreadedRenderer.dumpArgsToFlags()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java) 识别 `reset` 和 `framestats`。目标包有多个进程或多个硬件加速 Window 时，输出会出现多个分段；采集脚本要保留 pid 和 Window 标题。
+[`ThreadedRenderer.dumpArgsToFlags()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java) 识别 `reset` 和 `framestats`。一个应用可能在多个进程中创建硬件加速 Window。A17 的 `gfxinfo com.example.app` 匹配精确进程名（或数字 PID），不会自动展开 `com.example.app:remote` 等其他进程；这些目标要分别采集。每个命中的进程仍可有多个 Window 分段，脚本应保留 PID 与 Window 标题。
+
+<!-- gracker-diagram: ch15-04-07-gfxinfo-data-path -->
+![gfxinfo 跨进程采集的路径](../../assets/diagrams/ch15/ch15-04-07-gfxinfo-data-path.png)
+
+图：系统服务把请求送到目标应用，再从全局统计与各 Window renderer 取回 HWUI 数据。 保留 PID、Window 和 Stats since；目标主线程或下游阻塞会造成等待，reset 也会改变统计状态。
 
 ### 聚合统计如何生成
 
 Android 17 的输出同时打印 deadline-aware 与 legacy 两套统计：前者使用每帧 deadline，后者保留旧版固定刷新间隔模型。当前 [`JankTracker::finishFrame()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 以 `GpuCompleted` 是否越过调整后的 `FrameDeadline` 记录 `Janky frames`；legacy 路径使用旧的固定间隔、swap deadline 与 triple-buffering（三缓冲队列） 修正规则。VRR/ARR（可变/自适应刷新率）场景优先读 deadline-aware 这套，再用 legacy 行观察兼容指标。
 
-[`ProfileData.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp) 输出以下分类。表中的 `Number Missed Vsync` 与三项 `Number Slow ...` 只在 `finishFrame()` 判定当前帧 deadline miss 后检查；带 `SurfaceCanvas` 标志的帧不参与这些 jank 判定，各阶段差值达到门槛且小于 10 秒才计数。同一帧可同时命中多项，不能把分类计数相加当作 jank 总数，也不能用它们统计所有帧的阶段超时次数。
+[`ProfileData.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp) 输出以下分类。表中的 `Number Missed Vsync` 与三项 `Number Slow ...` 只在 `finishFrame()` 判定当前帧 deadline miss 后检查；带 `SurfaceCanvas` 标志的帧不参与这些 jank 判定，各阶段差值达到门槛且小于 10 秒才计数。同一帧可同时命中多项，不能把分类计数相加当作 jank 总数，也不能用它们统计所有帧的阶段超时次数。四项阶段比较使用 `FrameInfo::duration(start, end)`：起点非正时先把时长置 0，跨过 `SyncQueued` 边界的区间还会扣除正的 `SyncStart - SyncQueued` 等待，最后夹到不小于 0。下表列的是逻辑区间边界；特别是 Slow UI，直接拿原始端点相减可能复算不出相同计数。
 
 | 输出 | AOSP 中的区间或判定 | 解读边界 |
 |---|---|---|
 | `Janky frames` | `GpuCompleted >= FrameDeadline` | HWUI deadline miss，仍需 trace 定位责任线程 |
 | `Janky frames (legacy)` | 旧 fixed-interval 模型 | 供历史报表兼容，不宜用于 VRR 精确判定 |
 | `Number Missed Vsync` | `IntendedVsync → Vsync` 至少相差 1 ns | App 收到帧回调已晚 |
-| `Number Slow UI thread` | `Vsync → SyncStart` 达到当前 frame interval 的 50% | UI 阶段偏长，原因可能含输入、动画、traversal、draw record |
+| `Number Slow UI thread` | 经 `duration()` 修正的 `Vsync → SyncStart` 达到 frame interval 的 50% | 扣除上述排队等待后衡量 UI 侧阶段；原因仍需 trace |
 | `Number Slow bitmap uploads` | `SyncStart → IssueDrawCommandsStart` 达到当前 frame interval 的 20% | 这是保留的输出名称，不能只凭名称认定发生了图片解码 |
 | `Number Slow issue draw commands` | `IssueDrawCommandsStart → FrameCompleted` 达到当前 frame interval 的 75% | RenderThread 后半段偏长，不直接区分 CPU、GPU、queue 或 fence wait |
 | `Number Frame deadline missed` | 当前 deadline miss 计数 | 与 `Janky frames` 的当前口径对应 |
 
-源码没有名为 `Number Slow RenderThread` 的固定输出。分位值来自 `IntendedVsync → FrameCompleted` 的时长直方图，bucket 就是直方图里的时间区间；99th percentile 为 50 ms，表示该统计窗口内约 1% 的已记录帧落在 50 ms 或更慢的 bucket，别把它换算成“连续丢三帧”。
-
-跨应用通用的 5% 合格线并不存在。基线应来自相同设备、刷新率、温控状态和 workload，并配合 FrameTimeline 的 jank type、用户可见场景和业务目标判断。
+源码没有名为 `Number Slow RenderThread` 的固定输出。分位值来自 `FrameInfo::duration(IntendedVsync, FrameCompleted)` 的时长直方图，同样受上述等待扣除影响；bucket 是量化后的时间区间。99th percentile 为 50 ms，表示源码分位算法选中了标为 50 ms 的 bucket；样本数量、并列值和 bucket 量化都会影响比例，不能断言正好 1% 的帧不小于 50 ms，更不能换算成“连续丢三帧”。
 
 <!-- gracker-diagram: ch15-04-08-jank-classification-gate -->
 ![deadline-aware Jank 的门槛与多标签](../../assets/diagrams/ch15/ch15-04-08-jank-classification-gate.png)
 
 图：当前 Jank 先经过有效帧和 deadline 判断，四项慢阶段计数只在 deadline miss 分支检查。 图描述 A17 当前路径；legacy 另有规则，SurfaceCanvas 仍可能进入总帧直方图，分类不能相加当总数。
+
+跨应用通用的 5% 合格线并不存在。基线应来自相同设备、刷新率、温控状态和 workload，并配合 FrameTimeline 的 jank type、用户可见场景和业务目标判断。
 
 ### `framestats` 的列
 
@@ -258,7 +262,7 @@ Android 17 的输出同时打印 deadline-aware 与 legacy 两套统计：前者
 
 解析时读取 `---PROFILEDATA---` 后的 header，按列名建索引。不同 Android 版本会增加字段，按固定列号解析会把后续时间戳整体错位；未填充字段还可能使用 0、负值或最大整数哨兵，计算差值前要过滤。
 
-几个常用区间可以帮助缩小范围：
+下面列的是原始时间戳间的常用观察区间；若要复算上面的 HWUI 聚合计数，必须另外采用 `FrameInfo::duration()` 的修正规则：
 
 - `Vsync → SyncStart` 覆盖 UI 线程消费帧的主要阶段。
 - `PerformTraversalsStart → DrawStart` 可观察 traversal 中 draw 之前的工作，但其中不只含 measure/layout。
@@ -281,17 +285,18 @@ Android 17 的输出同时打印 deadline-aware 与 legacy 两套统计：前者
 下面的命令用于取得最近窗口，并在确定目标 PID 后切换到连续线程观察。
 
 ```bash
-
-<!-- gracker-diagram: ch15-04-07-gfxinfo-data-path -->
-![gfxinfo 跨进程采集的路径](../../assets/diagrams/ch15/ch15-04-07-gfxinfo-data-path.png)
-
-图：系统服务把请求送到目标应用，再从全局统计与各 Window renderer 取回 HWUI 数据。 保留 PID、Window 和 Stats since；目标主线程或下游阻塞会造成等待，reset 也会改变统计状态。
-
 # 最近一个 ProcessCpuTracker 采样窗口
 adb shell dumpsys cpuinfo
 
 # 连续观察目标进程的线程
-APP_PID=$(adb shell pidof com.example.app | tr -d '\r')
+if ! APP_PID=$(adb shell pidof com.example.app); then
+  echo '未取得目标 PID' >&2
+  exit 1
+fi
+APP_PID=$(printf '%s' "$APP_PID" | tr -d '\r')
+case "$APP_PID" in
+  ''|*[!0-9]*) echo '需要明确选择一个数字 PID' >&2; exit 1 ;;
+esac
 adb shell top -H -p "$APP_PID"
 ```
 
@@ -372,7 +377,7 @@ adb bugreport bugreport.zip
 adb shell dumpsys batterystats --disable full-wake-history
 ```
 
-[`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 明确定义了 `--charged`、`--history`、`--reset`、`--enable/--disable full-wake-history`、`--usage` 等参数。`--reset` 会清空当前统计，属于有状态操作；共享测试机上要记录执行者和时间。
+[`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 明确定义了 `--charged`、`--history`、`--reset`、`--enable/--disable full-wake-history`、`--usage` 等参数。`--reset` 会清空当前统计，属于有状态操作；共享测试机上要记录执行者和时间。上面的开关示例假设开始前详细 history 已关闭；若原本已开启，结束时应保持原状态，不能把无条件 `--disable` 当作通用恢复。
 
 一轮可比较的测试应固定：
 
@@ -389,14 +394,14 @@ adb shell dumpsys batterystats --disable full-wake-history
 
 ### Wakelock 与功耗归因
 
-partial wakelock 会阻止设备进入 CPU suspend，但不会强制 CPU 持续忙碌。`All partial wake locks` 给出 UID/名称维度的持有时长和次数；多个 wakelock 可以重叠，持有时长也推不出 CPU 全程运行时长。分析时对齐 Battery Historian 的 `wake_lock`、`running`、JobScheduler、alarm、network、GNSS（卫星定位） 和 screen 状态：异常名称负责定位调用方，功耗影响要由 suspend 机会、CPU 工作、radio tail（网络传输结束后无线模块继续处于高功耗态的时间） 和测得能量共同确认，其中 radio tail 指网络传输结束后无线模块继续处于高功耗态的那段时间。
-
-[Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) 已不再积极维护，适合查看 bugreport 中的系统级历史；官方当前建议优先考虑 system tracing、Macrobenchmark power metric 或 [Power Profiler](https://developer.android.com/studio/profile/power-profiler)。ODPM（On Device Power Measurement）把设备功耗按 power rail（子系统供电轨）展示，归因到单个 App 还要另外做；官方当前列出的 Power Profiler ODPM 范围是 Android 10 及以上的 Pixel 6 和后续 Pixel 设备，具体 rail 仍随机型变化。
+partial wakelock 会阻止设备进入 CPU suspend，但不会强制 CPU 持续忙碌。`All partial wake locks` 给出 UID/名称维度的持有时长和次数；多个 wakelock 可以重叠，持有时长也推不出 CPU 全程运行时长。分析时对齐 Battery Historian 的 `wake_lock`、`running`、JobScheduler、alarm、network、GNSS（卫星定位） 和 screen 状态：异常名称负责定位调用方，功耗影响要由 suspend 机会、CPU 工作、radio tail（网络传输结束后无线模块继续处于高功耗态的时间） 和测得能量共同确认。
 
 <!-- gracker-diagram: ch15-04-13-wakelock-cpu-energy -->
 ![Wakelock、CPU 工作和能量是三种证据](../../assets/diagrams/ch15/ch15-04-13-wakelock-cpu-energy.png)
 
 图：持锁、实际调度运行与能量读数回答不同问题，应在同一个实验窗口关联。 多个 wakelock 可重叠；持锁不要求 CPU 一直忙，power rail 是设备子系统视角。
+
+[Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) 已不再积极维护，适合查看 bugreport 中的系统级历史；官方当前建议优先考虑 system tracing、Macrobenchmark power metric 或 [Power Profiler](https://developer.android.com/studio/profile/power-profiler)。ODPM（On-Device Power Rails Monitor，设备端电源轨监控器）把设备功耗按 power rail（子系统供电轨）展示，归因到单个 App 还要另外做；官方当前列出的 Power Profiler ODPM 范围是 Android 10 及以上的 Pixel 6 和后续 Pixel 设备，具体 rail 仍随机型变化。
 
 ## dumpsys SurfaceFlinger：Layer 信息与合成状态
 
@@ -425,17 +430,17 @@ adb shell dumpsys SurfaceFlinger --frametimeline
 adb shell dumpsys SurfaceFlinger --scheduler
 ```
 
-[`SurfaceFlinger::doDump()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 注册了这些参数。pacesetter display 是 SurfaceFlinger 选作调度基准的显示器，VSync period 是它的垂直同步周期；目标不存在时，`--latency` 仍可能只输出这一行周期，脚本要验证后续三列是否存在。
+[`SurfaceFlinger::doDump()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 注册了这些参数。pacesetter display 是 SurfaceFlinger 选作调度基准的显示器，VSync period 是它的垂直同步周期；目标不存在时，`--latency` 仍可能只输出这一行周期，脚本要验证后续三列是否存在。A17 的 `--list` 调用 `RequestedLayerState::getDebugString()`，行形如 `RequestedLayerState{name#sequence parentId=...}`；传给 `--latency` 的应是内部完整 `name#sequence`，不能把整行调试包装和尾部属性一起传入。名称可含空格，应结合 `--frontend` 核对，不能简单取空格分隔的第一段。
 
 ### Layer 列表与合成方式
 
-在 Android 15 至 Android 17 上，`dumpsys SurfaceFlinger` 的输出已经不再是早期资料说的“默认展开每个旧 Layer 对象的全部属性”。默认路径调用 `dumpVisibleFrontEnd()` 生成可见的 `Composition list` 与 `Input list`，综合 dump 还会追加 display、HWC 和其他模块状态；snapshot 是 FrontEnd 根据请求状态算出的当前消费快照，hierarchy 是 Layer 的父子与前后层级。`--frontend` 调用 `dumpFrontEnd()`，输出全部 snapshot、主 hierarchy 与 offscreen hierarchy。
+在本轮核对的 Android 17 源码中，`dumpsys SurfaceFlinger` 默认输出并非“展开每个旧 Layer 对象的全部属性”。默认路径调用 `dumpVisibleFrontEnd()` 生成可见的 `Composition list` 与 `Input list`，综合 dump 还会追加 display、HWC 和其他模块状态；snapshot 是 FrontEnd 根据请求状态算出的当前消费快照，hierarchy 是 Layer 的父子与前后层级。`--frontend` 调用 `dumpFrontEnd()`，输出全部 snapshot、主 hierarchy 与 offscreen hierarchy。
 
 读 Layer 时先分清三个视角：
 
 | 视角 | 命令 / 输出 | 适合回答的问题 |
 |------|-------------|----------------|
-| 名称列表 | `dumpsys SurfaceFlinger --list` | 当前有哪些 Layer，`--latency` 应该传哪个 layer name |
+| 名称与调试状态 | `dumpsys SurfaceFlinger --list` | 从调试包装中识别内部完整 `name#sequence`，再核对 latency 目标 |
 | FrontEnd 快照 | `--frontend` 或默认输出中的 `Composition list` / `Input list` | 当前 snapshot 的可见性、层级、几何、buffer 与输入状态 |
 | HWC minidump | `--hwclayers` | 采集时刻 HWC/CompositionEngine 暴露的精简 layer 合成状态 |
 
@@ -448,9 +453,9 @@ SurfaceControl transaction 是一批原子提交的 Layer 状态变化：`Reques
 
 HWC minidump 中，CLIENT 通常表示 SurfaceFlinger 通过 GPU/RenderEngine 合成，DEVICE 表示交给 HWC 硬件路径处理。这些选择只代表该次采集附近的状态：overlay 资源、圆角、混合、颜色空间、受保护内容、缩放旋转、带宽和厂商策略都可能改变选择。一次 CLIENT composition 说明不了某个 App layer 长期由 GPU 合成，跨帧结论应使用 Perfetto、Winscope、HWC trace 或稳定复现实验。
 
-### Android 15+ 的输出变化
+### Android 17 的输出边界
 
-从 Android 15 的 FrontEnd 默认路径到 Android 17，dump 的 Layer 主视角已经转向 snapshot：17 的 `Composition list` 明确标为 top-to-bottom，Input list 由 `forEachInputSnapshot()` 生成。旧资料中的 `Source Crop`、`Display Frame` 和 composition type 表格，用来读旧版本或厂商扩展还有效，直接套在 Android 17 默认文本格式上会读错。
+Android 17 默认 dump 的 Layer 主视角是 snapshot：`Composition list` 明确标为 top-to-bottom，Input list 由 `forEachInputSnapshot()` 生成。旧资料中的 `Source Crop`、`Display Frame` 和 composition type 表格，用来读旧版本或厂商扩展还有效，直接套在 Android 17 默认文本格式上会读错。
 
 `android-17.0.0_r1` 的 dumper map 包含 `--frontend`、`--list`、`--hwclayers`、`--latency`、`--frametimeline`、`--scheduler` 等入口，没有 `--all-layer`；厂商系统出现额外参数时，以设备输出和厂商源码为准。
 
@@ -472,7 +477,7 @@ FrontEnd dump 中的对象来自一条明确的数据转换链：
 
 `LayerHierarchyBuilder` 的类定义就在 `LayerHierarchy.h`，源码树中没有 `LayerHierarchyBuilder.h`；写源码索引时应使用当前 tag 中存在的文件名。
 
-下面的节选用于说明 `updateLayerSnapshots()` 的锁边界，省略了 tracing、display mirror、legacy layer 与 feature-flag 分支。
+下面是 `updateLayerSnapshots()` 的调用顺序示意，用于说明 `mStateLock` 边界；它省略了其他锁、tracing、display mirror、legacy layer、合成标志累计与 feature-flag 分支，并非可独立编译的完整源码。
 
 ```cpp
 mTransactionHandler.collectTransactions();
@@ -536,7 +541,7 @@ if ((args.layerLifecycleManager.getGlobalChanges().get() &
 return true;
 ```
 
-仅含 Content/Buffer 且没有 force/display change 时，可以跳过完整 hierarchy traversal。它缩小的是 snapshot 重算范围：既推不出本帧不会合成，也换算不成固定的性能收益；验证收益要看目标设备的 `FastPath` trace、FrontEnd 工作量与整帧 deadline。
+仅含 Content/Buffer 且没有 force/display change 时，`tryFastUpdate()` 可以返回 true；`update()` 还要求 `args.mergeableHierarchyManager == nullptr` 才会提前返回。若启用 `frontend_caching_v0`，该参数和 `forceUpdate` 会走另一组配置，不能只凭 Content/Buffer 就断定跳过完整 hierarchy traversal。它缩小的是 snapshot 重算范围：既推不出本帧不会合成，也换算不成固定的性能收益；验证收益要看目标设备的 `FastPath` trace、FrontEnd 工作量与整帧 deadline。
 
 <!-- gracker-diagram: ch15-04-16-snapshot-fast-path -->
 ![Snapshot fast path 与本轮合成的分离](../../assets/diagrams/ch15/ch15-04-16-snapshot-fast-path.png)
@@ -553,17 +558,17 @@ return true;
 |---|---|---|
 | 第一列 | `desired_present_time` | 该 layer frame 的期望呈现时间 |
 | 第二列 | `actual_present_time` | 系统记录的呈现时间 |
-| 第三列 | `frame_ready_time` | frame-stats 路径记录的 ready 边界；不等同于 GPU completion 或 HWC present 调用时间 |
+| 第三列 | `frame_ready_time` | A17 FrameTimeline `SurfaceFrame.actuals.endTime`；通常取 queue 时间与 acquire fence 时间的较大值，pending 时回退到 queue 时间 |
 
-`actual - desired` 只负责标记晚呈现，归因要接着往下走：晚呈现可能来自 producer、acquire fence、transaction readiness、SurfaceFlinger 调度、client composition、HWC、present fence 或显示模式切换；`frame_ready` 较晚可把方向推向前半段，仍要用同帧 FrameTimeline 和 fence 交叉确认。
+`frame_ready` 不是单独的 GPU completion 或 HWC present 调用时间。`actual - desired` 只负责标记晚呈现，归因要接着往下走：晚呈现可能来自 producer、acquire fence、transaction readiness、SurfaceFlinger 调度、client composition、HWC、present fence 或显示模式切换；`frame_ready` 较晚可把方向推向前半段，仍要用同帧 FrameTimeline 和 fence 交叉确认。
 
 第一行来自采集时刻的 pacesetter period。VRR/ARR、多 display、layer frame-rate override 与 frame-rate divisor 场景下，它只是采集时刻的周期值，未必是每一行各自的 deadline；解析器还要过滤 0、负值和未完成哨兵，三列都有效时才计算差值。
 
 建议按下面的顺序使用：
 
-1. 用 `--list` 复制精确 layer name，并保存 `--latency` 原文；
+1. 从 `--list` 调试行识别并核对内部完整 layer name，保留 `#sequence`，再保存 `--latency` 原文；
 2. 标记 actual 明显晚于 desired 的候选行；
-3. 在 Perfetto FrameTimeline 找对应 display frame 与 surface frame；
+3. 结合进程、Layer 生命周期和采集窗口在 Perfetto FrameTimeline 找候选 display frame 与 surface frame；三元组没有 frame token，不能只凭相近时间唯一关联。对齐时还要用 trace 的 clock snapshot 核对 MONOTONIC 与 BOOTTIME 等时基；
 4. 检查 App/HWUI、BLAST/BufferQueue、acquire fence、SF scheduler、CompositionEngine/HWC 和 present fence；
 5. 动态 hierarchy 或输入问题转 Winscope。
 
@@ -642,7 +647,7 @@ dump 实现应先复制少量状态，再释放业务锁并格式化输出；不
 - 用一份快照证明趋势：内存、CPU、alarm、job 和 Layer 都可能瞬时波动。固定 workload，重复采样，再用时间工具确认。
 - 把 `gfxinfo` 的分类名当根因：`Slow bitmap uploads` 是历史输出名，`Slow issue draw commands` 也没有区分 CPU、GPU 与 fence。两者都是 trace 入口。
 - 把 `dumpsys meminfo` 与 Android Studio Memory Profiler 强行对比：前者按 OS 页和 memtrack 归组；后者会随 recording 类型呈现 Java/Kotlin allocation、native allocation 或进程内存类别。采样范围、时刻和统计方式都不同，差值本身不构成 bug。
-- 把 batterystats 估算当功率计：估算归属、系统事件和 power rail（硬件子系统供电轨）s 各有适用范围，耗电回归要用同条件 A/B 与可测量能量。
+- 把 batterystats 估算当功率计：估算归属、系统事件和 power rails（硬件子系统供电轨） 各有适用范围，耗电回归要用同条件 A/B 与可测量能量。
 
 ## 采集复核清单
 
@@ -668,7 +673,7 @@ dump 实现应先复制少量状态，再释放业务锁并格式化输出；不
 - [WindowManagerService（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)
 - [BatteryStatsService（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java)
 - [SurfaceFlinger](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [FrontEnd 源码目录](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)
-- [Android Developers：Investigate RAM usage](https://developer.android.com/studio/profile/investigate-ram)
+- [Android Developers：Heap Dump 与内存分析](https://developer.android.com/studio/profile/investigate-ram)
 - [Android Developers：Slow rendering](https://developer.android.com/topic/performance/vitals/render)
 - [Android Developers：Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
 - [Android Developers：Power Profiler](https://developer.android.com/studio/profile/power-profiler)

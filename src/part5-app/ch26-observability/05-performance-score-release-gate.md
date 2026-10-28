@@ -4,9 +4,9 @@ chapter: '26.5'
 section: '26.5'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android 17 migration/behavior-change docs, Android vitals and Macrobenchmark docs, and Google Play staged/full-rollout and Publisher API docs retrieved 2026-08-15
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Current Android 17 migration/behavior-change docs, Android vitals and Macrobenchmark docs, and Google Play staged/full-rollout and Publisher API docs reviewed 2026-10-25; current core vitals, optional/weighted metrics, staged-cohort reuse, App Performance Score categories and SDK headroom signatures checked; no Play mutation or device benchmark
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -104,7 +104,7 @@ consolidated_from:
 
 # 性能评分与发版质量门禁
 
-发版门禁用少量稳定指标，把明确的回归挡在发布之前；Performance Score 用加权模型把多个性能维度汇总成一个总分。两件事共享同一组前提：评分之前，我们要先固定场景、人群、设备层级和缺失数据处理，这些没定下来，总分会把局部恶化盖住。
+发版门禁用少量稳定指标，把明确的回归挡在发布之前；性能评分汇总若干评估维度，便于查看改进空间；团队若采用加权总分，应另行公布权重和规则版本。官方App Performance Score的静态、动态评估仍需分别保留。两件事共享同一组前提：评分之前，我们要先固定场景、人群、设备层级和缺失数据处理，这些没定下来，总分会把局部恶化盖住。
 
 > 源码基线：AOSP `android-17.0.0_r1`，覆盖 Android 10 到 Android 17（API 29–37）；本文讨论应用与交付平台设计，不绑定特定内核版本，设备也可能使用厂商自己的内核分支。
 
@@ -148,7 +148,7 @@ Android 官方迁移指南把升级验证分成两条可以并行推进的路径
 
 测试清单从官方“影响所有应用”和“以 Android 17 为目标版本”两份行为变化文档生成，每轮验证时更新。
 
-对目标 API 37 及以上的应用，新的无锁 `MessageQueue` 实现可能破坏依赖其私有字段或方法的反射代码：通过反射修改 `static final` 字段会抛出 `IllegalAccessException`，通过 JNI 修改则直接崩溃。证书透明度（Certificate Transparency）默认启用；通过 `System.load()` 动态加载的原生库文件必须为只读。后台音频限制和大屏方向、宽高比、可调整大小规则，也可能影响媒体或布局。
+对目标 API 37 及以上的应用，新的无锁`MessageQueue`实现可能破坏依赖其私有字段或方法的反射代码。另一个独立变化是`static final`字段不可修改：通过反射修改会抛出 `IllegalAccessException`，通过 JNI 修改则直接崩溃。证书透明度（Certificate Transparency）默认启用；通过 `System.load()` 动态加载的原生库文件必须为只读。后台音频限制和大屏方向、宽高比、可调整大小规则，也可能影响媒体或布局。
 
 应用可以只挑与自身代码路径相关的条目，但每个排除项都要留下理由。
 
@@ -163,9 +163,9 @@ Android 官方迁移指南把升级验证分成两条可以并行推进的路径
 
 门禁阈值要绑定指标版本、设备群、场景和发布阶段，推导关系是固定的：相对退化阈值来自历史噪声和业务可接受的最小变化，绝对阈值来自服务等级目标（SLO）或稳定性预算，最小样本量取决于历史方差和希望识别出的变化幅度。要引用其他项目的百分比、毫秒数或样本量，先把这层推导在自己的数据上补齐，再写进配置。
 
-Android vitals 是 Google Play 汇总的外部质量信号，Play 每天用最近 28 天的平均值检查关键指标。
+Android vitals 是 Google Play 汇总的外部质量信号，Play每天用最近28天窗口检查关键指标。ANR Reporting API中的28天率按每日`distinctUsers`加权滚动，不是简单平均每日百分比；其他指标按各自聚合规则解释。
 
-当前面向所有应用的 Core vitals（会影响应用在 Google Play 中曝光度的核心指标）包括用户感知崩溃率、用户感知 ANR 率和 excessive partial wake lock（过度持有局部唤醒锁）；Wear OS 表盘应用的 Core vital 还包含 excessive battery usage（过度耗电）。
+当前Core vitals按适用应用类型分列：稳定性包括用户感知崩溃率与ANR率；电池包括过度partial wake lock及表盘应用的过度耗电；移动应用还包括Memory usage（Anonymous RSS + Swap）与Bitmap memory usage。官方标明内存、位图内存或代码优化阈值的商店可见性影响可能从2027年2月开始；不要把内存指标读成PSS或只列旧版三项。
 
 做发布报告时，我们要把自建应用性能监控（APM）与 vitals 的分子、分母、统计窗口和设备范围分别保存：内部会话数与 Play 的用户、会话统计方式不同，分母要各算各的。
 
@@ -182,7 +182,7 @@ Android 官方建议在物理设备上运行 Benchmark，模拟器结果会受�
 
 Macrobenchmark 指标进门禁之前，我们要逐项核对 API 可用范围和测量语义：
 
-- `StartupTimingMetric.timeToInitialDisplayMs` 测量首帧出现所需时间。`timeToFullDisplayMs` 依赖 `reportFullyDrawn()`，在 Android 10 / API 29 及更早版本可能不可用；场景里没有明确的完整绘制点时，TTFD（完整内容可用所需时间） 也不适合拿来卡门禁。
+- `StartupTimingMetric.timeToInitialDisplayMs` 测量首帧出现所需时间。`timeToFullDisplayMs` 依赖 `reportFullyDrawn()`，在Android 10 / API29之前可能不可用；场景里没有明确的完整绘制点时，TTFD（完整内容可用所需时间） 也不适合拿来卡门禁。
 - `FrameTimingMetric.frameDurationCpuMs` 是 UI 线程与 RenderThread 生成一帧所用的 CPU 时间；`frameOverrunMs` 只在 Android 12 / API 31 及以上可用，表示相对帧截止时间的提前或超时量。这两项指标要分别设阈值。
 - `TraceSectionMetric` 仍标记为实验性 API，用来统计 Trace 中带名称的代码区段（section）。AndroidX Benchmark 1.3.0 及以上默认只统计目标包（`targetPackageOnly = true`），并以 `Mode.Sum` 汇总一次测量中所有同名 section 的耗时；要看第一次或最长一次，必须显式选择 `Mode.First` 或 `Mode.Max`。业务阶段可能重复出现时，先确定需要的聚合方式。
 - `PowerMetric` 仍标记为实验性 API，测量的是系统级功率或能量，没法直接归因到单个应用头上；官方支持 Pixel 6、Pixel 6 Pro 及后续设备，测试时还要压低其他进程的干扰。
@@ -215,7 +215,7 @@ Benchmark 库输出测量 JSON 和性能剖析 Trace，Macrobenchmark 还会为�
 
 灰度发布（staged rollout）先把候选包提供给一部分符合条件的用户，再分阶段提高比例。走到每一步，做决定的证据来源都不一样：实验室测试决定能否开始灰度，生产数据决定能否扩大覆盖，数据健康度决定当前窗口能否支持发布判断。
 
-Google Play staged rollout 只适用于应用更新，首次发布用不上它。Play 会为每个新版本随机挑一批符合条件的用户，暂停之后再恢复，影响的仍是同一组用户。暂停只是让更多用户拿不到该版本，已经装上的用户会停留在原地。
+Google Play staged rollout 只适用于应用更新，首次发布用不上它。Play按发布协议从符合条件的用户中选择群组；同一发布暂停后恢复仍是同一组。若前一版分阶段发布尚未完成就开始新版，新版会按扩量比例沿用前一版用户群，不能默认每版都独立重新随机。暂停只是让更多用户拿不到该版本，已经装上的用户会停留在原地。
 
 staged rollout 也撑不起严格 A/B Test 的设计条件：严格实验需要一个由实验协议定义、可以稳定复现的旧版本对照组，而 Play 那里拿不到；版本覆盖还会受国家、设备资格、自动更新、安装时间和渠道影响。所以版本间的差异可以触发风险处置；要断定“灰度用户比旧版用户差”就是代码变化造成的，还得回到 26.4 节的受控实验或可复现的回退证据上。
 
@@ -244,7 +244,7 @@ staged rollout 也撑不起严格 A/B Test 的设计条件：严格实验需要�
 | 扩量观察 | 前一阶段通过，样本覆盖预先登记的分群 | 指标区间在预算内，服务端与客户端依赖稳定 | 保持当前比例或限制国家、设备 |
 | 完成发布 | 风险负责人接受剩余不确定性 | 全量后继续观察版本队列、vitals 与反馈 | 暂停已全量版本、降低配置风险或发布修复包 |
 
-灰度决策要区分快速信号和慢速信号。自建 APM、崩溃与 ANR 事件流、启动与帧指标能较早暴露风险，前提是数据延迟和样本覆盖达标。Android vitals 每天更新最近 28 天的平均值，适合观察长期质量与 Play 警告；刚起步的小流量灰度，扩量判断要靠前面这些快速信号。
+灰度决策要区分快速信号和慢速信号。自建 APM、崩溃与 ANR 事件流、启动与帧指标能较早暴露风险，前提是数据延迟和样本覆盖达标。Android vitals每日更新，使用最近28天窗口及各指标规定的聚合规则，适合观察长期质量与 Play 警告；刚起步的小流量灰度，扩量判断要靠前面这些快速信号。
 
 客服反馈和商店评论到得慢，还带选择偏差。它们能帮我们发现未知症状；已经观测到的崩溃、ANR 或数据管道异常，不会因为“暂时没有投诉”而消失。
 
@@ -327,7 +327,7 @@ App Performance Score 适合研发阶段的快速评估。官方页面给出 0�
 
 静态评分读的是项目源码，App 本身不用跑起来。官方当前列出的项目包括：使用最新 Android Gradle Plugin、以 full mode（完整优化模式）启用 R8 并把 keep 例外限制在必要范围、正确应用 Baseline Profiles 且覆盖至少一条用户路径、用 Startup Profiles 优化 DEX 布局、采用最新稳定版 Compose，以及在内容可用时调用 `FullyDrawnReporter` 或 `reportFullyDrawn()`。
 
-这几个名字容易混，我们分开说：keep 规则会阻止指定代码被裁剪、优化或改名；Baseline Profiles 是随应用发布、供 ART 预编译关键代码路径的规则集；Startup Profiles 则指导 R8/D8 调整启动代码在 DEX 文件中的排列。
+这几个名字容易混，我们分开说：keep 规则会阻止指定代码被裁剪、优化或改名；Baseline Profiles是随应用发布、供ART进行配置引导AOT编译的热点规则集；Startup Profiles 则指导 R8/D8 调整启动代码在 DEX 文件中的排列。
 
 这些项的价值在于成本低、失败信号清楚、适合接进 CI。
 
@@ -335,7 +335,7 @@ App Performance Score 适合研发阶段的快速评估。官方页面给出 0�
 |---|---|---|---|
 | Android Gradle Plugin 版本 | CI 读取插件解析后的 AGP 版本，不只搜索根工程文本 | 获取当前 R8 与 profile 工具链能力 | 构建负责人 |
 | R8 full mode 与例外控制 | 检查 release variant 的 minify 配置、优化模式与 keep 规则范围 | 降低代码体积并启用优化 | 架构 / 构建负责人 |
-| Baseline Profile | 验证生成任务、产物内 profile 与关键路径覆盖 | 让所含代码路径从首次运行起获得 AOT（安装时预编译）优化 | 性能专项负责人 |
+| Baseline Profile | 验证生成任务、产物内 profile 与关键路径覆盖 | 让所含路径具备配置引导AOT优化条件；首次运行是否已编译须核对分发、安装/编译状态 | 性能专项负责人 |
 | Startup Profile | 检查 `startup-prof.txt` 是否生成并被 release 构建消费 | 改善启动期 DEX 布局 | 启动专项负责人 |
 | Compose 稳定版本 | 解析 version catalog、BOM 与直接依赖后的版本 | 获取当前稳定版本的性能与修复 | UI 基建负责人 |
 | `reportFullyDrawn()` | 检查各启动入口是否在内容可交互时报告 | 为 TTFD 提供业务完成点 | 业务页面负责人 |
@@ -355,9 +355,9 @@ profile 生成构建与发布构建的配置不同：生成 profile 的 variant�
 
 ### 动态评分的运行条件
 
-动态评分依赖运行时（ART）数据，运行条件由官方划定：必须使用物理设备，并建议覆盖能代表用户群体的多台设备——低端设备可能把性能差异放大。分数绑定在特定设备、特定构建和特定观察条件上，横向排名要等这些条件对齐之后才有意义。
+动态评分依赖应用运行期间的测量数据，运行条件由官方划定：必须使用物理设备，并建议覆盖能代表用户群体的多台设备——低端设备可能把性能差异放大。分数绑定在特定设备、特定构建和特定观察条件上，横向排名要等这些条件对齐之后才有意义。
 
-当前动态评分覆盖两类指标：slow frame 与 frozen frame，即官方对超出渲染时限的帧和长时间停顿帧的分类。本文保留英文名称，免得和团队自行定义的卡顿阈值混为一谈。
+当前动态评分有启动和渲染两类评估：启动用TTFD；渲染统计滚动、动画和全屏路径的slow/frozen frames比例。后两个是渲染分项，不能当作动态评分仅有的两大类别；具体评分阈值以所保存规则版本为准。
 
 | 动态类别 | 官方评估口径 | 工程侧补充字段 | 关联章节 |
 |---|---|---|---|
@@ -507,7 +507,7 @@ CPU/GPU headroom 是处理器与图形处理器的剩余容量估计，独立于
 
 Android 17 通过 [`SystemHealthManager`](https://developer.android.com/reference/android/os/health/SystemHealthManager) 提供公开查询入口；`PerformanceHintManager` 用于另一类运行时协作。
 
-`android-17.0.0_r1` 的 [`SystemHealthManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java) 暴露 `getCpuHeadroom()` 与 `getGpuHeadroom()`。有效结果为 0～100，0 表示当前估算没有更多容量；估算暂不可用时可能返回 `Float.NaN`，设备不支持时抛出 `UnsupportedOperationException`。
+`android-17.0.0_r1` 的 [`SystemHealthManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java) 暴露`getCpuHeadroom(params)`与`getGpuHeadroom(params)`（参数可为null使用默认值）。有效结果为 0～100，0 表示当前估算没有更多容量；估算暂不可用时可能返回 `Float.NaN`，设备不支持时抛出 `UnsupportedOperationException`。
 
 调用方还要读取设备支持的计算窗口、CPU TID（线程 ID）数量上限与最小轮询间隔；把一套参数固定到所有设备上是行不通的。
 
@@ -523,11 +523,11 @@ Android 17 实现见 [`PerformanceHintManager.java`](https://android.googlesourc
 
 把这两套 API 放进性能报告时，我们要分清“测量”和“调节”：`SystemHealthManager` 的 headroom 是可选的环境样本，`PerformanceHintManager` 是运行时协作机制。二者都不会自动抬高 App Performance Score；评分改善仍要由同一构建产物、同一设备和同一路径上的动态结果来验证。
 
-
 <!-- gracker-diagram: a290-13-headroom-sample-versus-hint-session -->
 ![Headroom 是环境样本，Hint Session 是运行协作](../../assets/diagrams/ch26/a290-13-headroom-sample-versus-hint-session.png)
 
 图：近期历史headroom有时效和TOCTOU限制；同设备同负载比较，不能由单值判断设备档位或根因。
+
 
 ## 全文小结
 

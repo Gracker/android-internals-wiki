@@ -12,7 +12,7 @@ related_chapters:
 - '22.3'
 - '22.4'
 - '22.6'
-last_verified: '2026-08-15'
+last_verified: '2026-10-25'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1；Compose Runtime 1.12.0 源码（发行范围终点 963bf914f78b389bdddef0da7f36bee19d897274）
 confidence: high
 last_draft_polish_at: '2026-08-04T15:35:46+08:00'
@@ -73,7 +73,7 @@ Snapshot 系统同时支撑 `mutableStateOf`、Snapshot State 集合、Compositi
 
 Snapshot 位于 Jetpack Compose Runtime，不属于 Android 平台源码标签（platform tag）。同一台 Android 17 设备可以运行不同版本的 Compose，因此源码结论必须同时记录 Runtime 版本。
 
-源码分析以 Runtime 1.12.0 的 `runtime` / `runtime-android` 源码 JAR 为准。当前稳定版 Compose BOM `2026.08.00` 的 POM 将这两个 Runtime 构件约束为 1.12.0。BOM 只统一依赖版本，项目还可能通过显式版本、版本目录或其他平台依赖改变结果；排查行为时，应先查看 Gradle 已解析依赖图，再选择相同版本的源码 JAR。
+源码分析以 Runtime 1.12.0 的 `runtime` / `runtime-android` 源码 JAR 为准。本文固定的 Compose BOM `2026.08.00` POM 将这两个 Runtime 构件约束为 1.12.0。截至 2026-10-25，Runtime 发行页已列出 1.12.1，并说明相对 1.12.0 无改动；以下仍以 1.12.0 构件逐项核查，不把固定 BOM 称作最新稳定版。BOM 只统一依赖版本，项目还可能通过显式版本、版本目录或其他平台依赖改变结果；排查行为时，应先查看 Gradle 已解析依赖图，再选择相同版本的源码 JAR。
 
 下列常见概念需要映射到 Runtime 1.12.0 的现有实现：
 
@@ -109,7 +109,7 @@ Snapshot 位于 Jetpack Compose Runtime，不属于 Android 平台源码标签�
 - 状态记录 ID 小于或等于当前 Snapshot ID；
 - 状态记录 ID 不在当前 Snapshot 的 `invalid` 集合中。
 
-同一个 `StateObject` 可以挂接多条状态记录。读取时选择满足条件且 ID 最大的一条。Snapshot 创建后，晚于它产生的状态记录不会进入这份视图；创建时仍未应用的其他 Snapshot 也会被列入 `invalid` 集合。
+同一个 `StateObject` 可以挂接多条状态记录。读取时选择满足条件且 ID 最大的一条。Snapshot 创建后，晚于它产生且没有其他可见初始记录的版本不会进入这份视图；创建时仍未应用的其他 Snapshot 也会被列入 `invalid` 集合。注意普通 `MutableState` 在非全局 Snapshot 内创建时还会带一条 `PreexistingSnapshotId = 1` 的初始记录，旧视图仍可读取该初始值，后续修改则继续隔离（见 §9.3）。
 
 `Snapshot.current` 使用线程局部状态。`snapshot.enter { ... }` 只在当前线程临时替换它，代码块执行完毕后恢复此前的 Snapshot；其他线程不会随之切换。
 
@@ -164,7 +164,7 @@ return candidate
 - 竞争导致版本变化时重新计算；
 - 迭代器仍可能按集合语义抛出 `ConcurrentModificationException`。
 
-`SnapshotStateList.toList()` 在 Runtime 1.12.0 中是 O(1)，返回当前底层不可变列表；内容变化前通常还是同一实例。把列表送入 `snapshotFlow` 时，`toList()` 比手工复制更合适。
+`SnapshotStateList.toList()` 在 Runtime 1.12.0 中是 O(1)，返回当前底层不可变列表；内容变化前通常还是同一实例。这是列表结构的快照，不会深复制元素；元素若持有普通可变字段，其内部变化仍需独立的状态与并发协议。把列表送入 `snapshotFlow` 时，`toList()` 比手工复制更合适。
 
 <!-- gracker-diagram: a236-04-persistent-list -->
 ![Snapshot 列表的结构快照](../../assets/diagrams/ch22/a236-04-persistent-list.png)
@@ -189,7 +189,7 @@ try {
 }
 ```
 
-全局状态已经变成 `v2`，进入 `frozen` 后仍读到 `v1`。在只读 Snapshot 内写 State 会抛出 `IllegalStateException`。`dispose()` 不修改全局状态，它只释放这份视图对旧状态记录的保留需求。
+全局状态已经变成 `v2`，进入 `frozen` 后仍读到 `v1`。在只读 Snapshot 内尝试改变已有 State 的值会抛出 `IllegalStateException`；结构相等策略下赋相同值会提前返回，不构成有效写入。`dispose()` 不修改全局状态，它只释放这份视图对旧状态记录的保留需求。
 
 ### 3.1 未 dispose 的 Snapshot 会保留旧版本
 
@@ -262,11 +262,15 @@ fun counterPolicy(): SnapshotMutationPolicy<Int> =
             previous: Int,
             current: Int,
             applied: Int,
-        ): Int = current + (applied - previous)
+        ): Int? {
+            val merged = current.toLong() + (applied.toLong() - previous.toLong())
+            return merged.takeIf { it in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong() }
+                ?.toInt()
+        }
     }
 ```
 
-若一个 Snapshot 从 10 加 2，另一个分支已把全局值从 10 加到 15，合并结果是 17。这个策略只适合增量计数；业务若允许“把计数设置为 0”，同一公式会给出错误语义。`merge()` 必须是纯函数，结果确定、执行快速，也不能触发外部副作用。
+若一个 Snapshot 从 10 加 2，另一个分支已把全局值从 10 加到 15，合并结果是 17。这个策略只适合增量计数；业务若允许“把计数设置为 0”，同一公式会给出错误语义。示例用 Long 计算差量与总和，超出 Int 范围返回 `null`，使 apply 明确冲突；普通业务更新本身也要单独检查溢出。`merge()` 必须是纯函数，结果确定、执行快速，也不能触发外部副作用。
 
 <!-- gracker-diagram: a236-07-three-way-merge -->
 ![三方合并与计数溢出](../../assets/diagrams/ch22/a236-07-three-way-merge.png)
@@ -469,7 +473,12 @@ fun publish(result: LoadResult) {
 }
 ```
 
-其他 Snapshot 在 apply 前看不到这三项修改，apply 成功后看到全部修改。该事务不承诺一次重组或一次帧；多个变更对象仍要经过读取关系匹配与 Recomposer 调度。
+apply 前，外部 Snapshot 看不到这三项修改；apply 成功后，新取得且能看见这次提交的 Snapshot 会同时包含它们，提交前冻结的只读 Snapshot 仍保持旧版本。若在不断推进的全局上下文中分别读取多个字段，提交可能插在两次读取之间；需要一致组合时，应在同一只读 Snapshot 中读取或改用单个不可变状态。该事务不承诺一次重组或一次帧；多个变更对象仍要经过读取关系匹配与 Recomposer 调度。
+
+<!-- gracker-diagram: a236-15-atomic-view -->
+![一次提交与固定读取视图](../../assets/diagrams/ch22/a236-15-atomic-view.png)
+
+图：原子发布的单位是版本提交；它不会把读者的多次普通读取自动包成事务。
 
 使用时遵守四条规则：
 
@@ -479,11 +488,6 @@ fun publish(result: LoadResult) {
 - 跨字段业务不变量仍需防止写偏差。
 
 若一份 UI 数据天然共同变化，单个不可变 `UiState` 往往比多个 State 再加事务更易维护。多 State 事务适合组件内部已有独立订阅、又需要共同提交的场景。
-
-<!-- gracker-diagram: a236-15-atomic-view -->
-![一次提交与固定读取视图](../../assets/diagrams/ch22/a236-15-atomic-view.png)
-
-图：原子发布的单位是版本提交；它不会把读者的多次普通读取自动包成事务。
 
 ## 9. 跨线程访问
 
@@ -530,11 +534,13 @@ try {
 
 ### 9.3 状态创建时间也受版本约束
 
-在未应用的 MutableSnapshot 内创建的 State 若提前泄露，较早的 Snapshot 可能找不到合法状态记录，并报告：
+Runtime 1.12.0 的普通 `mutableStateOf` 在非全局 Snapshot 中构造时，会同时创建当前 Snapshot ID 的记录与 `PreexistingSnapshotId = 1` 的初始记录。因此，即使创建者尚未 apply，其他 Snapshot 也能读取该初始值；创建后在事务内写出的新值仍受隔离。不能仅凭“State 在未应用事务中创建”就断言普通 MutableState 必然报错。
+
+自定义 `StateObject` 若没有对读者可见的初始记录，或使用缺少这种初始化保障的旧实现，才可能在找不到可见记录时报告：
 
 `Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied`
 
-长期状态容器宜在全局上下文创建。需要在事务中创建并初始化时，应在 apply 成功后再发布引用。
+初始记录可见不等于完成业务初始化。事务内创建后又赋值的 State 若提前泄露，其他读者可能只看到初始值；需要发布完整初始化结果时，仍在 apply 成功后发布引用，并遵守应用的线程安全发布协议。
 
 <!-- gracker-diagram: a236-18-initial-record -->
 ![新建 MutableState 的初始记录例外](../../assets/diagrams/ch22/a236-18-initial-record.png)
@@ -550,7 +556,7 @@ try {
 - 依赖 Looper 的回调；
 - 指定协程调度器的 SDK、数据库或 IPC 封装。
 
-`SnapshotStateObserver.observeReads` 也要求同一个 Owner 的观察保持同线程。State 允许跨线程，不能推导整条 UI 调用链允许跨线程。
+`SnapshotStateObserver.observeReads` 会拒绝同一个实例同时在不同线程嵌套观察；AndroidComposeView 的测量、布局和绘制仍应由同一 UI 线程执行。State 允许跨线程，不能推导整条 UI 调用链允许跨线程。
 
 ### 9.5 Compose Multiplatform
 
@@ -685,7 +691,7 @@ fun installSnapshotProbe(totalChanged: AtomicLong): ObserverHandle =
     )
 ```
 
-回调可能从任意线程到达，探针自身必须线程安全。`SnapshotObserver` 回调内不支持调用任何 Snapshot API，也不应读取或写入 MutableState。结束测量后调用返回的 `ObserverHandle.dispose()`；生产构建不要常驻。
+同一 StateObject 可以出现在子 Snapshot 和外层 Snapshot 的多次 `onApplied` 回调中；示例统计的是各次 changed 集合大小之和，不是唯一对象数、setter 次数或全局提交次数。回调可能从任意线程到达，探针自身必须线程安全。`SnapshotObserver` 回调内不支持调用任何 Snapshot API，也不应读取或写入 MutableState。结束测量后调用返回的 `ObserverHandle.dispose()`；生产构建不要常驻。
 
 <!-- gracker-diagram: a236-23-probe-counts -->
 ![工具观察器计数的单位](../../assets/diagrams/ch22/a236-23-probe-counts.png)
@@ -710,7 +716,7 @@ Snapshot 变化频繁但 UI 线程仍按时，不能据此认定卡顿来自 Sna
 Snapshot 相关测试至少覆盖：
 
 - **隔离**：apply 前全局读取看不到修改；
-- **原子可见**：多状态提交后观察者只接受合法组合；
+- **原子可见**：在同一个固定读视图内检查多状态组合，提交前后分别保持完整旧值或完整新值；
 - **冲突**：同一 StateObject 的并行写按变更策略成功合并或明确失败。
 
 写偏差测试还要覆盖跨对象业务不变量。只测“没有抛异常”会漏掉可串行化约束。
@@ -740,7 +746,7 @@ fun observedReads(block: () -> Unit): Set<Any> {
 
 读观察器会在发生读取的线程同步执行。按对象身份去重的集合（identity set）不会调用状态对象自定义的 `equals`，可避免不同对象被误判为同一个依赖。这个辅助函数适合测试与诊断，不应包住高频生产路径。
 
-`Snapshot.observe { ... }` 会添加观察者而不引入新的隔离版本；其内部使用 `TransparentObserverSnapshot` 或可写变体。这两个类型是内部实现，应用应使用公开的 `Snapshot.observe`，不要依赖内部类名。
+`Snapshot.observe(readObserver = { /* 记录对象 */ }, writeObserver = null) { /* 被观察计算 */ }` 会添加观察器而不引入新的隔离版本；其内部使用 `TransparentObserverSnapshot` 或可写变体。这两个类型是内部实现，应用应使用公开的 `Snapshot.observe`，不要依赖内部类名。
 
 ## 15. Android 17 与内核边界
 
@@ -755,7 +761,7 @@ Snapshot apply 只改变应用进程内的状态版本。纯 Compose 页面要�
 
 图：Snapshot apply 完成、缓冲区提交与实际呈现是不同终点。
 
-Android 内核 `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread、Binder 与系统服务线程。CPU 集合控制组（cpuset）限制线程可运行在哪些 CPU 上，利用率钳制（uclamp）为调度器的任务利用率估计设置上下限，进而影响选核和频率决策，CPU 频率框架（cpufreq）负责调整处理器频率。内核不识别 StateObject、状态记录链或 RecomposeScope。Snapshot 锁等待要在应用进程内解释，GPU 同步栅栏与呈现延迟则要沿显示管线解释。
+本文使用的 Android 公共内核参考标签为 `android17-6.18-2026-06_r6`；具体设备仍须记录其实际内核、厂商补丁与调度配置。内核调度应用主线程、RenderThread、Binder 与系统服务线程。CPU 集合控制组（cpuset）限制线程可运行在哪些 CPU 上，利用率钳制（uclamp）为调度器的任务利用率估计设置上下限，进而影响选核和频率决策，CPU 频率框架（cpufreq）负责调整处理器频率。内核不识别 StateObject、状态记录链或 RecomposeScope。Snapshot 锁等待要在应用进程内解释，GPU 同步栅栏与呈现延迟则要沿显示管线解释。
 
 ## 16. 全文小结
 
@@ -767,7 +773,7 @@ Compose Snapshot 提供的是进程内多版本可见性、冲突检测和变更
 
 - [ ] Android 平台、内核与 Compose Runtime 版本分别记录。
 - [ ] 每个手工创建的 Snapshot 都有确定的 apply/dispose 路径。
-- [ ] 未应用 Snapshot 中创建的 State 不会提前泄露。
+- [ ] 新建 State 的初始记录可见性与业务初始化分开验证；需要完整初始化时在 apply 后安全发布。
 - [ ] 同一个 MutableSnapshot 没有多个并发写者。
 - [ ] `state.value++` 没有被当作原子操作。
 - [ ] 多字段事务之外还处理了写偏差与请求排序。
@@ -783,7 +789,7 @@ Compose Snapshot 提供的是进程内多版本可见性、冲突检测和变更
 
 | 主题 | 固定来源 | 核查内容 |
 | --- | --- | --- |
-| 版本 | [AndroidX versions](https://developer.android.com/jetpack/androidx/versions)、[Runtime 1.12.0 发行说明](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.0)、[Compose BOM](https://developer.android.com/develop/ui/compose/bom)、[BOM 2026.08.00 POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom) | Runtime 1.12.0 为当前稳定版；BOM 2026.08.00 映射 Runtime 1.12.0 |
+| 版本 | [AndroidX versions](https://developer.android.com/jetpack/androidx/versions)、[Runtime 1.12.0 发行说明](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.0)、[Compose BOM](https://developer.android.com/develop/ui/compose/bom)、[BOM 2026.08.00 POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom) | 固定 Runtime 1.12.0；BOM 2026.08.00 映射 Runtime 1.12.0；1.12.1 发行说明称无改动 |
 | Runtime 1.12.0 | [runtime 源码 JAR](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar)、[runtime-android 源码 JAR](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.12.0/runtime-android-1.12.0-sources.jar) | `Snapshot.kt`、`SnapshotState.kt`、`DerivedState.kt`、`Composition.kt`、`Recomposer.kt`、`SnapshotStateObserver.kt` |
 | Snapshot API | [Snapshot](https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot)、[MutableSnapshot](https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/MutableSnapshot) | 进入、创建、应用、释放、嵌套与冲突 |
 | 变更策略 | [SnapshotMutationPolicy](https://developer.android.com/reference/kotlin/androidx/compose/runtime/SnapshotMutationPolicy) | 等价判断与三方合并 |

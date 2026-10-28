@@ -62,7 +62,7 @@ GB 级应用冷启动会同时竞争文件页、匿名页、CPU 与进程生存�
 
 AppFlow 是 MobiCom 2026 论文提出的研究原型，它同时协调文件预读、内存页回收和后台进程终止。
 当前可公开核查的是 2026 年 3 月发布的 arXiv v1；实验系统以 Android 15 为基础，部署在 Pixel 7、Pixel 8 和 Raspberry Pi 4B 车载试验台上。
-论文没有公开完整的 Framework 与 kernel patch：前者指 Android 系统服务层改动，后者指 Linux 内核改动。AppFlow 也没有进入 Android 17 / API 37 的 AOSP 主线。以下内容使用两个独立锚点：
+所核对的 arXiv v1 未提供完整 Framework 与 kernel patch 的获取链接：前者指 Android 系统服务层改动，后者指 Linux 内核改动。在本文核对的 Android 17 r1 LMKD、Framework 与 kernel 回收路径中，没有对应的 AppFlow 实现，不能把研究原型当成平台内置能力。以下内容使用两个独立锚点：
 
 - 原型的设计与实验数字，以 [AppFlow 论文](https://arxiv.org/html/2603.17259v1) 为准；
 - 平台已有能力，以 `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 为准。
@@ -87,16 +87,16 @@ TTFD 依赖应用在正确时机主动上报，系统无法自动判断业务是
 | 成本 | 形成方式 | 常见证据 |
 |---|---|---|
 | CPU 与调度 | 进程创建、类加载、初始化、已编译代码执行、线程竞争 | `sched`、主线程 slice（trace 时间片）、ART（Android 运行时）与 Binder（进程间调用）trace |
-| 文件 I/O | APK、DEX、SO、资源、模型、贴图或数据库页不在 page cache（文件页缓存） | major fault（需要存储读取的缺页）、块设备 I/O、线程 D 状态、文件系统 trace |
+| 文件 I/O | APK、DEX、SO、资源、模型、贴图或数据库页不在 page cache（文件页缓存） | 目标文件映射的 major fault、块设备 I/O、线程 D 状态与文件系统 trace 交叉核对 |
 | 内存分配与回收 | 新分配触发 `kswapd`、direct reclaim、内存规整或 swap | PSI、`pgscan_*`、`allocstall`、zRAM、workingset refault |
 
 `kswapd` 是内核后台回收线程；direct reclaim 表示发起内存分配的线程同步参与回收，应用可能直接等待。
 PSI（Pressure Stall Information，压力停顿信息）报告任务因资源不足而停顿的情况。
 内存规整（compaction）尝试得到连续物理页，不等同于 zRAM 的数据压缩；swap 会把匿名页移出 DRAM，Android 常把它们压入 zRAM。
-线程处于 D 状态时正在不可中断睡眠，常见原因是等待块设备或内核 I/O。
+线程处于 D 状态时正在不可中断睡眠，常见原因是等待块设备或内核 I/O，但 D 状态本身不能定位等待对象。major fault 也可能来自匿名页的 swap-in；zRAM 换入会产生缺页与解压成本，不自动代表访问 UFS。
 `pgscan_*` 统计回收器扫描的页面数，`allocstall` 统计内存分配因同步回收而停顿的次数；workingset refault 表示工作集页面逐出后很快又被访问，常用来识别缓存抖动。
 
-多任务会让三段成本互相影响。预读会占用 page cache；内存回收可能在使用前逐出刚读入的页；匿名页换出会与预读竞争存储带宽。
+多任务会让三段成本互相影响。预读会占用 page cache；内存回收可能在使用前逐出刚读入的页；匿名页换入 zRAM 会争用 CPU 与 DRAM 带宽，只有实际使用块设备 swap 或启用 zRAM writeback 等路径时，才会直接增加与预读竞争的存储 I/O。
 低内存终止守护进程 `lmkd` 终止后台应用后，用户返回时还要重新创建进程并加载文件。只分析 `Application.onCreate()` 会漏掉这些系统等待。
 
 论文用 `T_cold = T_I/O + T_cpu + T_alloc` 表示问题，并把系统可调部分放在 I/O 与分配等待上。
@@ -115,7 +115,7 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 |---|---|---|
 | 启动访问具有重复性 | 24 个应用中，97.2% 的 cold-launch I/O wait 涉及可预测静态数据 | 稳定资源存在预读机会 |
 | 切换期 I/O 有空闲 | 论文原文称 79% 的 “DRAM I/O bandwidth” 未使用 | 作者的实验窗口存在预读机会，不能直接推导目标设备的 UFS 或内存带宽余量 |
-| 小文件数量多、体积小 | 图 5 汇总为数量约 4.7 倍、内存占比 2.2%；TikTok 个例为 1,002 个、数量 7.47 倍、23MB、约 4% | 小文件适合在有限预算内提前读 |
+| 小文件数量多、体积小 | 图 5 汇总为小文件数约是大文件的 4.7 倍、占用约为大文件的 2.2%；TikTok 个例为 1,002 个、数量 7.47 倍、23MB、约为大文件的 4% | 小文件适合在有限预算内提前读 |
 | 预读和回收会互相抵消 | 低内存下，预读页被回收后启动 I/O 延迟增至 6.4 倍 | 只加 prefetch（预读）可能增加压力与重复读取 |
 
 论文正文在汇总值和 TikTok 个例之间用了两组不同的数字。工程文档引用时应注明数字来自 Figure 5 的图表汇总，还是来自 TikTok 这一个应用，不能把两组拼在一起当成所有应用共有的常数。
@@ -151,7 +151,7 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 
 ### 启动中：吞吐优先
 
-应用开始启动后，预加载器用较大块读取余下的大文件。论文把它放在独立低优先级进程中，希望预读跟不上时给前台读取让路。
+应用开始启动后，预加载器用较大块读取余下的大文件；论文以不小于应用分界 `s_i` 的 block size 描述这一阶段。论文把它放在独立低优先级进程中，希望预读跟不上时给前台读取让路。
 低调度优先级只能减少 CPU 竞争，无法保证 block 层或文件系统一定先完成前台请求。
 产品实现还要观测 I/O priority（存储请求优先级）、queue depth（同时在途的请求数）和读放大（实际读取量与最终使用量之比）。
 
@@ -183,10 +183,15 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 
 ### 论文原型的两种控制
 
-论文每 100ms 读取一次可用内存和页分配计数。
-当可用内存低于设备阈值、最近窗口分配量高于 `N_alloc` 时，原型先进入 file-first 阶段，优先扫描有文件后备的页；论文参数搜索得到的 `N_alloc` 是 12,800 页。
+论文正文以约 100ms 的周期描述内存与分配量观测；Algorithm 1 更具体地写为每 100ms 更新分配计数，并在每个 allocation event 读取 `FreeMem()`。
+当空闲内存 `M_aval < M_F` 且最近窗口分配量 `n_alloc > N_alloc` 时，原型先进入 file-first 阶段，只回收未受保护的文件页；论文参数搜索得到的 `N_alloc` 是 12,800 页。论文没有公开 `FreeMem()` 的实现，不能自行认定它就是 Linux `/proc/meminfo` 的 `MemAvailable`。
 这个门槛按页计数，换算成字节取决于 page size：4KB 页约为 50MiB，16KB 页约为 200MiB。
-file-backed 页扫描完成后，原型进入 anonymous rebalance，重新提高匿名页的回收份额；压力窗口结束后恢复常规策略。该顺序符合论文算法，也避免匿名页长期堆积。
+Algorithm 1 在同一条件分支中，先调用 `ReclaimFilePages(exclude protected files)`，再调用 `ReclaimAnonPages()`。正文另用“高压时 file-first、压力缓解后 rebalance、最终恢复常规回收”描述模式切换。两者抽象粒度不同；可以据此说明先后顺序与防止匿名页堆积的意图，无法据未公开的 patch 断言精确切换时机、扫描配额或失败回退。
+
+<!-- gracker-diagram: ch18-08-07-reclaim-guard -->
+![按 Algorithm 1 的条件与顺序理解回收](../../assets/diagrams/ch18/ch18-08-07-reclaim-guard.png)
+
+图：分配计数每100ms更新，事件读取空闲内存；满足双条件后先回收非保护文件页，再调用匿名页回收。 12,800页在4KB/16KB设备分别约50/200MiB；FreeMem 实现、扫描配额和模式切换细节未公开，图不补造状态机。
 
 对预加载页，原型按两个窗口处理：
 
@@ -196,11 +201,6 @@ file-backed 页扫描完成后，原型进入 anonymous rebalance，重新提高
 这项行为来自 kernel patch。`readahead()` 可以提前把文件内容读入 page cache，`madvise(MADV_WILLNEED)` 可以提示内核即将访问某段映射。
 两者都不保证页面一直留到应用使用时刻，普通 page-cache 访问也没有这种保证。
 论文报告一次活跃度刷新约耗时 10ms，CPU 开销约 0.1%；目标 SoC（系统芯片）、文件集合和电源状态变化后仍需复测。
-
-<!-- gracker-diagram: ch18-08-07-reclaim-guard -->
-![按 Algorithm 1 的条件与顺序理解回收](../../assets/diagrams/ch18/ch18-08-07-reclaim-guard.png)
-
-图：分配计数每100ms更新，事件读取空闲内存；满足双条件后先回收非保护文件页，再调用匿名页回收。 12,800页在4KB/16KB设备分别约50/200MiB；FreeMem 实现、扫描配额和模式切换细节未公开，图不补造状态机。
 
 <!-- gracker-diagram: ch18-08-08-page-retention -->
 ![两阶段预读使用不同的页面保留方式](../../assets/diagrams/ch18/ch18-08-08-page-retention.png)
@@ -213,18 +213,18 @@ file-backed 页扫描完成后，原型进入 anonymous rebalance，重新提高
 classic LRU（传统的近似最近使用链表）路径中的 `get_scan_count()` 会综合 swap 能力、swappiness（匿名页与文件页的相对回收权重）、reclaim priority 和 file LRU 大小。
 它还会参考 refault 成本与 cache-trim 状态，最终选择 `SCAN_FILE`、`SCAN_ANON`、`SCAN_EQUAL` 或比例扫描。
 其中，reclaim priority 表示当前回收轮次的扫描强度，file LRU 大小表示文件页链表规模；cache-trim 状态表示系统有足够的非活跃文件缓存可优先回收。
-启用 MGLRU（Multi-Generational LRU，按访问代际管理页面）时，则进入另一套老化和逐出路径。
+启用 MGLRU（Multi-Generational LRU，按访问代际管理页面）且满足相应分支条件时，进入另一套老化和逐出路径；例如 r6 `shrink_lruvec()` 仅在 `lru_gen_enabled() && !root_reclaim(sc)` 时转入 `lru_gen_shrink_lruvec()`。r6 的基础回收函数已使用 `shrink_folio_list()` 命名，移植时不能照抄论文旧基线的 `shrink_page_list()` 函数名。
 
 论文对其 Android 15 基线“文件页与匿名页交替回收”的概括，不能直接套到 Android 17 kernel 6.18。
-Android 17 已经会按运行状态调整扫描比例，但内核仍不知道“某个文件页将在本次应用启动中使用”。AppFlow 增加的正是这种短时启动上下文。
-
-file-backed 页也有不同成本。干净文件页可以直接丢弃，脏文件页要先回写；被丢弃的页若很快 refault，会再次触发存储读取和 stall（任务因资源不足而停顿）。
-匿名页可能压入 zRAM，代价由压缩算法、CPU、swap 空间和后续 swap-in（把页读回内存）共同决定。回收策略不能只按 file/anon 二分。
+r6 已经会按运行状态调整扫描比例，且提供 `page_should_be_protected`、`tune_scan_type`、`evict_folios_bypass` 等 vendor hook。通用扩展点本身没有实现 AppFlow 的文件热集、启动会话与清单传递；AppFlow 增加的是这类短时启动上下文，具体产品模块是否扩展了这些 hook 需要另查。
 
 <!-- gracker-diagram: ch18-08-09-reclaim-baseline -->
 ![r6 的扫描选择与通用 hook 仍需运行时核对](../../assets/diagrams/ch18/ch18-08-09-reclaim-baseline.png)
 
 图：classic LRU 按状态决定 file/anon 扫描，符合条件时可进入 MGLRU；通用 hook 允许受控扩展。 这些入口没有自行实现 AppFlow 启动会话与文件清单，vendor 模块是否增加策略要另查；论文函数名与 r6 folio 命名不同。
+
+file-backed 页也有不同成本。干净文件页可以直接丢弃，脏文件页要先回写；被丢弃的页若很快 refault，会再次触发存储读取和 stall（任务因资源不足而停顿）。
+匿名页可能压入 zRAM，代价由压缩算法、CPU、swap 空间和后续 swap-in（把页读回内存）共同决定。回收策略不能只按 file/anon 二分。
 
 <!-- gracker-diagram: ch18-08-10-page-costs -->
 ![文件页与匿名页的回收代价按实际后备区分](../../assets/diagrams/ch18/ch18-08-10-page-costs.png)
@@ -261,26 +261,26 @@ Android 17 r1 的 `lmkd` 是一个用户空间守护进程。
 
 ### 压力检测
 
-r1 默认使用 PSI，设备可以通过属性覆盖。源码默认值如下：
+r1 没有旧材料中的 `ro.lmk.use_psi` 开关：检测到可写的旧 in-kernel LMK 接口时走兼容分支，否则初始化 PSI monitor。PSI 下的 `use_new_strategy` 默认取 `low_ram_device || !use_minfree_levels`，设备可覆盖；旧策略要求 memcg v1。下表是新策略相关属性的源码默认值，`psi_window_size_ms` 默认 1,000ms，也可覆盖：
 
-| 参数 | 常规设备 | low-RAM 设备 | 含义 |
+| 参数 | 常规 | <span style="white-space:nowrap">低内存</span> | 含义 |
 |---|---:|---:|---|
-| `psi_partial_stall_ms` | 70ms | 200ms | 1,000ms 窗口内 PSI `some` 的停顿门槛 |
-| `psi_complete_stall_ms` | 700ms | 700ms | 1,000ms 窗口内 PSI `full` 的停顿门槛 |
-| `thrashing_limit` | 100% | 30% | workingset refault 相对 file page cache 的比例门槛 |
-| `thrashing_limit_decay` | 10% | 50% | 因 thrashing 终止进程后，下一轮门槛的下调比例 |
+| <code>psi_<wbr>partial_<wbr>stall_ms</code> | 70ms | 200ms | 1,000ms 窗口内 PSI `some` 的停顿门槛 |
+| <code>psi_<wbr>complete_<wbr>stall_ms</code> | 700ms | 700ms | 1,000ms 窗口内 PSI `full` 的停顿门槛 |
+| <code>thrashing_<wbr>limit</code> | 100% | 30% | workingset refault 相对 file page cache 的比例门槛 |
+| <code>thrashing_<wbr>limit_<wbr>decay</code> | 10% | 50% | 因 thrashing 终止进程后，下一轮门槛的下调比例 |
 
 PSI `some` 表示窗口内至少有部分任务因内存不足而停顿，`full` 表示所有非空闲任务同时停顿。
 变量名使用 partial/complete，Linux `/proc/pressure/memory` 中对应的字段名则是 `some/full`。表内数字是 r1 源码默认值，产品属性可以覆盖；low-RAM 的 partial 默认值更高，代表触发较不敏感。
-旧材料中的“LOW 70 / MEDIUM 100 / CRITICAL 70”不对应 r1 的 `init_psi_monitors()` 配置，不应继续沿用。
-
-`lmkd` 收到压力事件后还会检查 zone watermark（各内存区域的空闲页水位）、swap、thrashing（页面反复逐出又读回）和 direct reclaim 等状态。
-PSI 提供唤醒和压力严重度信号，具体终止哪个进程还要经过候选选择。
+“LOW some 70 / MEDIUM some 100 / CRITICAL full 70”仍是 r1 `psi_thresholds` 数组的初值，旧策略保留它们。新策略才把 LOW 设为 0（不注册），把 MEDIUM/CRITICAL 改成 partial/complete 属性值。不能用旧初值解释常规新策略，也不能断言旧值在 r1 中不存在。
 
 <!-- gracker-diagram: ch18-08-12-psi-strategies -->
 ![新旧 PSI 策略共存，不能混用阈值](../../assets/diagrams/ch18/ch18-08-12-psi-strategies.png)
 
 图：r1 新 PSI 策略关闭 LOW，并以 partial/complete 属性配置 MEDIUM/CRITICAL；旧策略保留数组初值。 新策略默认 low_ram 或不用 minfree；旧策略需 memcg v1。表内70/200与700ms基于默认1秒窗口，实际配置仍需核对。
+
+`lmkd` 收到压力事件后还会检查 zone watermark（各内存区域的空闲页水位）、swap、thrashing（页面反复逐出又读回）和 direct reclaim 等状态。
+PSI 提供唤醒和压力严重度信号，具体终止哪个进程还要经过候选选择。
 
 ### 候选进程和 `oom_score_adj`
 
@@ -302,7 +302,7 @@ adj 表达 Android 组件此刻的重要性。
 Android 17 r1 的 `LMK_PROCS_PRIO` 是 framework 到 `lmkd` 控制 socket（进程间通信通道）的内部批量协议：
 
 - `include/lmkd.h` 把每个控制包的记录上限定为 3；
-- `ProcessList.batchSetOomAdj()` 读取每个 `ProcessRecordInternal.getCurAdj()`，每 3 个进程发送一包；
+- `ProcessList.batchSetOomAdj()` 读取每个 `ProcessRecordInternal.getCurAdj()`，跳过无有效 PID 或 adj 未知的记录，按最多 3 条有效记录分包；每条携带 PID、UID、adj、ptype 和 `for_lmkd_only` 这 5 个字段；
 - `lmkd.cpp::cmd_procs_prio()` 在收包线程内循环调用 `apply_proc_prio()`；
 - r1 `lmkd.cpp` 没有 io_uring 处理器，也没有 32 条记录的主线协议。
 
@@ -317,10 +317,10 @@ io_uring 是 Linux 的异步 I/O 接口，AOSP 17 r1 的 `lmkd.cpp` 没有相关
 ### 全局 LMKD 属性不能代替预测器
 
 `ro.lmk.lowmem_min_oom_score`、`ro.lmk.kill_heaviest_task`、thrashing 门槛等属性影响整台设备。
-调高最低可终止 adj 可能使 `lmkd` 在严重压力下找不到足够候选，增加 direct reclaim、系统 stall 或 kernel OOM（内核因内存耗尽而终止进程）的风险；调低值会扩大候选集合。
+`lowmem_min_oom_score` 在 r1 新策略的 `LOW_MEM` 兜底原因分支设置 `min_score_adj`，并非覆盖所有 kill reason 的统一门槛。在使用该值的分支内，调高它会缩小候选集合、调低则扩大；过度缩小可能加剧 direct reclaim、系统 stall 或 kernel OOM。
 这些全局属性无法按应用或启动窗口动态表达预测结果。
 
-`am set-isolated-process-uid-list` 管理 isolated process 的 UID 范围，与后台应用保护、文件页预读或 LMKD 候选排序无关。
+所核对的 r1 `ActivityManagerShellCommand.java` 命令分发与帮助中没有 `set-isolated-process-uid-list`，不能把它列为可用方案；`get-isolated-pids <UID>` 是查询关联 isolated process 的 PID，也不提供后台应用保护、文件页预读或 LMKD 排序。
 
 <!-- gracker-diagram: ch18-08-15-global-knobs -->
 ![全局门槛无法表达一次应用启动的预测](../../assets/diagrams/ch18/ch18-08-15-global-knobs.png)
@@ -330,7 +330,7 @@ io_uring 是 Linux 的异步 I/O 接口，AOSP 17 r1 的 `lmkd.cpp` 没有相关
 ## CachedAppOptimizer 能做什么
 
 `CachedAppOptimizer` 在 Android 17 r1 中负责 cached app compaction 和 freezer。
-这里的 compaction 是针对目标进程回收文件页或匿名页的操作，SOME/FULL/ANON profile 决定处理哪类页面；它不同于前文为取得连续物理页而进行的内核内存规整。
+这里的 compaction 是针对目标进程回收页面，命名上 SOME/ANON/FULL 分别请求 file/anon/两类，但请求不等于实际执行。r1 `ENABLE_SHARED_AND_CODE_COMPACT=false`：`resolveCompactionProfile()` 把 SOME 改为 NONE、FULL 改为 ANON；若 FULL 遇到空闲 swap 比例低于 20%，先降成 SOME，随后也变为 NONE。另有节流、取消等条件。它不同于前文为取得连续物理页而进行的内核内存规整。
 freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通信，恢复使用时再解冻。这个类不记录启动文件热集，也不会在 `vmscan` 中保护预读文件页。
 
 若要让 AppFlow 的进程终止分数影响 `CachedAppOptimizer`，仍需修改 AMS 的进程策略，还要验证 compaction、freezer、adj 更新和 LMKD 选择之间没有 race condition（执行先后变化导致结果不一致）。
@@ -343,12 +343,12 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 
 ## 原型组件与 Android 17 能力映射
 
-| AppFlow 组件 | Android 17 已有基础 | 主线缺失部分 | 需要的权限或改动 |
+| 原型组件 | Android 17 已有基础 | 原型需补足 | 权限与改动 |
 |---|---|---|---|
 | Selective File Preloader | 应用启动事件、文件 I/O、page cache、UsageStats | 跨应用文件访问记录、两阶段预算器、启动预测服务 | 平台服务、文件访问权限、预读执行器 |
-| Adaptive Memory Reclaimer | classic LRU/MGLRU、zRAM、memcg、PSI、`vmscan` | 启动窗口、预加载文件标记、逐出跳过规则 | kernel core mm patch 与接口 |
+| Adaptive Memory Reclaimer | classic LRU/MGLRU、zRAM、memcg、PSI、`vmscan` | 启动窗口、预加载文件标记、逐出跳过规则 | 内核扩展与接口；先审 hook 是否足够 |
 | Context-Aware Process Killer | AMS adj、`lmkd`、cached LRU、PSS/RSS 采样 | relaunch 基线、返回概率、净释放排序 | Framework 与 `lmkd` 策略改动 |
-| 验证与回滚 | Perfetto、statsd（系统指标收集服务）、`ApplicationExitInfo`、系统属性 | AppFlow 专用原因码、命中率和页保护统计 | 指标记录、实验开关、版本化访问记录 |
+| 验证与回滚 | Perfetto、statsd（系统指标收集服务）、<code>Application<wbr>ExitInfo</code>、系统属性 | AppFlow 专用原因码、命中率和页保护统计 | 指标记录、实验开关、版本化访问记录 |
 
 `UsageStatsManager.queryEvents()` 需要 `PACKAGE_USAGE_STATS`，在 `AndroidManifest.xml` 声明后还需用户到设置中授予 usage access（使用情况访问权）；只查询本包事件的接口不需要该权限。
 论文使用后台采集应用，不代表普通三方应用可以无提示收集整台设备的应用使用序列。系统镜像内的预测服务也要遵守多用户、工作资料、访客和数据保留期限。
@@ -364,7 +364,7 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 
 应用可以优化自己的初始化、生成 Baseline Profile、记录 TTID/TTFD、采样自己的文件访问，并控制自己的资源读取。
 `TRIM_MEMORY_UI_HIDDEN` 表示应用 UI 从可见变为不可见，应用可在该回调中释放能够重建的界面缓存。
-从 API 34 起，系统不再发送多档运行中内存压力回调；API 35 将相应常量标记为 deprecated，但没有废弃 `TRIM_MEMORY_UI_HIDDEN`。
+从 API 34 起，RUNNING_MODERATE/LOW/CRITICAL 与 MODERATE/COMPLETE 这些等级不再通知应用，API 35 将它们标记为 deprecated；`TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND` 仍保留。它们是状态提示，不能当作完整的全局压力监视器。
 应用还可用 `ApplicationExitInfo` 查询此前的退出原因。
 
 普通应用不能访问 `lmkd` 控制 socket、写其它进程的 `oom_score_adj`、修改 `vmscan`、保护 page cache 中的指定文件，也不能默认读取其它应用的使用历史。
@@ -393,8 +393,8 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 要复现论文完整设计，需要同时修改 Framework 和 kernel：建立启动会话 ID；传递文件或 inode/offset（文件对象编号与字节位置）标识；在 classic LRU 和 MGLRU 中都定义短时保护。
 还要处理文件截断、更新、卸载、memcg 迁移和多用户隔离；最后把进程排序限制在 AMS/LMKD 已允许终止的候选集合内。
 
-GKI（Generic Kernel Image，通用内核镜像）允许 vendor module 通过受控 hook 扩展部分功能，但模块不能直接替换 core `mm/vmscan.c` 的回收语义。
-修改 core mm 意味着长期维护产品 kernel 分支、内核 ABI（二进制接口）和安全更新合并。
+GKI（Generic Kernel Image，通用内核镜像）允许 vendor module 通过受控 hook 扩展部分功能。r6 已有前述保护、扫描和 MGLRU hook，应先核查其参数、调用点、KMI 可用性及对两条路径的覆盖，不能仅凭论文修改过 core mm 就断言模块方案一定可行或一定不可行。
+若现有接口不足而确需修改 core mm，就要长期维护产品 kernel 分支、模块接口与安全更新合并；这不自动取得 GKI/KMI 或兼容性认证。
 验证范围还要覆盖 CTS/VTS/GTS（应用兼容、厂商接口和 Google 认证测试）、SELinux 权限、OTA 升级、suspend/resume（休眠与唤醒）、low-RAM 设备和 kernel OOM 回归。
 
 <!-- gracker-diagram: ch18-08-20-kernel-scope -->
@@ -462,7 +462,7 @@ cold 表示应用进程不存在；hot 表示进程和 Activity 都仍在内存�
 3. Preloader 加 Adaptive Memory Reclaimer；
 4. 三个组件全部开启。
 
-AppFlow 论文的 ablation（逐个关闭组件的消融实验）显示，只开 Selective File Preloader 时启动变快，但 cold relaunch 数增加 30%。可以理解为预读带来的内存压力抵消了一部分收益。
+AppFlow 论文在 Pixel 8（6GB）的组件实验显示，只开 Selective File Preloader 时耗时下降 26.1%，但 cold-launch 次数增加 30%；AMR 单独开启时次数下降 60%、耗时下降 14.7%。作者报告三组件集成后耗时下降 40.8%、保留后台应用达到 1.85 倍。这里的次数与耗时是不同指标，本文建议的逐级组合还需在目标产品上自行运行。可以理解为预读带来的内存压力抵消了一部分收益。
 按组件分组后，才能区分“读取时间提前”“页面保留更久”和“后台进程选择变化”各自造成的影响。
 
 <!-- gracker-diagram: ch18-08-24-component-controls -->
@@ -498,7 +498,7 @@ Pixel 设备通过修改 `arm64_memblock_init()`，把内核可见内存限制�
 
 Profile 与 AppFlow 处理不同成本：
 
-| 技术 | 主要对象 | 主要收益证据 | 无法解决的部分 |
+| 技术 | 主要对象 | 主要收益证据 | 局限 |
 |---|---|---|---|
 | Baseline/Startup Profile | 热方法、类、DEX 布局与预编译 | CPU running（线程实际执行）时间、JIT/解释执行、class load | 模型和资源文件不在 page cache |
 | Cloud Profile | 用户群聚合后的 ART profile 与 dexopt | 编译 artifact（编译产物）、启动 CPU 和代码布局 | 当前设备的内存压力与后台存活 |

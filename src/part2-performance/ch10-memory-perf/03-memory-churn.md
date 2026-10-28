@@ -4,17 +4,17 @@ chapter: '10.3'
 section: '10.3'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-07-31'
-last_verified_against: AOSP android-17.0.0_r1（ART collector_type.h、runtime.cc、heap.cc、mark_compact.cc、region_space.cc；BinderInternal.java）/ Android Common Kernel android17-6.18-2026-06_r6（fs/userfaultfd.c、mm/mremap.c）/ Perfetto heapprofd 与 ART allocation profiling 文档 / Android Studio Java/Kotlin allocation recording / Compose Runtime 1.12.0-rc01 release notes / Compose strong skipping 与 performance best practices / Kotlin value class 文档
-verified_note: Android 17/API 37 分代 CMC 基线已锚定 android-17.0.0_r1；2026-07-09 deep-tech-review 抽检确认 platform/art 与 frameworks/base 均已有 android-17.0.0_r1 tag，关键 CMC/GcWatcher 符号存在
+last_verified: '2026-10-24'
+last_verified_against: AOSP android-17.0.0_r1（ART 分配器、heap/runtime/mark_compact、BinderInternal、Message/MotionEvent/Bitmap）/ ACK android17-6.18-2026-06_r6 UFFD/mremap / 固定 r1 Perfetto CLI 与官方 heapprofd、Studio allocation 文档 / Compose Runtime 1.12.0-rc01 发布源码、AAR 和 Gradle module；官方 1.12 release notes、strong skipping / Kotlin 2.2.20 编译与 stdlib 源码
+verified_note: 2026-10-24 核对固定 r1 分配/CMC/GcWatcher/Message 分支、内核 UFFD、Perfetto CLI、Studio 统计口径与 Compose 1.12.0-rc01 实际发布源码及 AAR 元数据；示例仅做主机编译/行为验证，不声称 Android 设备性能实测
 confidence: high
 sources:
 - type: material
-  path: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md
+  path: ../Cubox/Android深入卡顿分析与实践-2023-12-19.md
 - type: official
   path: developer.android.com/studio/profile/record-java-kotlin-allocations
 - type: official
-  path: developer.android.com/topic/performance/memory
+  path: developer.android.com/topic/performance/memory/manage-app-memory
 - type: official
   path: perfetto.dev/docs/data-sources/native-heap-profiler
 - type: official
@@ -58,7 +58,12 @@ related_chapters:
 
 # 内存抖动与频繁 GC
 
-内存抖动（allocation churn）描述高频分配与回收，不等同于内存泄漏。泄漏对象长期可达，GC 后的堆基线不断上升；抖动对象通常很快失去引用，堆曲线反复上升和回落。两种现象也可能同时存在，例如一个页面既在每帧创建临时对象，又把少量对象留在错误的生命周期里。
+内存抖动（allocation churn）描述高频分配与回收，不等同于内存泄漏。泄漏对象超过预期生命周期仍被引用；持续累积时，GC 后的堆基线可能上升，单个泄漏或有界泄漏也可能表现为平台。抖动对象通常很快失去引用，堆曲线反复上升和回落。两种现象也可能同时存在，例如一个页面既在每帧创建临时对象，又把少量对象留在错误的生命周期里。
+
+<!-- gracker-diagram: ch10-03-01-churn-leak -->
+![抖动与泄漏按生命周期分开](../../assets/diagrams/ch10/ch10-03-01-churn-leak.png)
+
+图：高分配看创建速率，泄漏看超过预期生命周期的引用；有界泄漏可以不持续推高堆基线，两者也能同时发生。
 
 一次 GC 事件也不能直接判定卡顿。诊断要证明三件事：目标场景的分配速率异常、GC 或分配等待与慢帧时间重叠、减少热点分配后同场景指标改善。热点分配指在目标时间窗中反复出现，或累计字节数较高的分配调用栈。抖动和泄漏要分开取证：前者看时间窗内的分配速率与调用栈，后者看 GC 之后仍然存活的对象数量和引用关系。
 
@@ -71,7 +76,12 @@ related_chapters:
 
 ### 分配快，不代表分配免费
 
-ART 给小对象留了一条线程本地快路径。TLAB（Thread-Local Allocation Buffer，线程本地分配缓冲区）让线程在自己的缓冲区里推进分配指针，不必每次分配都去抢堆的全局锁。快路径的具体形式随收集器变化：Android 8 以来的 Concurrent Copying（CC，并发复制）可以用 RegionTLAB，Android 17 的 Concurrent Mark-Compact（CMC，并发标记压缩）在启用 TLAB 时使用 TLAB allocator。
+ART 给小对象留了一条线程本地快路径。TLAB（Thread-Local Allocation Buffer，线程本地分配缓冲区）让线程在自己的缓冲区里推进分配指针，不必每次分配都去抢堆的全局锁。快路径受收集器和 `use_tlab` 配置共同控制：固定 r1 的 CC 在开启 TLAB 时选择 RegionTLAB，关闭时选择 Region；CMC 分别选择 TLAB 或 BumpPointer。大对象空间、插桩和慢路径还有各自条件，不能把所有分配画成一次线程本地指针移动。
+
+<!-- gracker-diagram: ch10-03-03-tlab-pointer -->
+![TLAB 快路径推进线程自己的指针](../../assets/diagrams/ch10/ch10-03-03-tlab-pointer.png)
+
+图：TLAB 可容纳该次对象时，线程返回原 pos 并推进指针；空间不足需要申请新 TLAB。这里只画启用 TLAB 后的局部路径。
 
 对象仍有后续成本：
 
@@ -87,11 +97,6 @@ ART 给小对象留了一条线程本地快路径。TLAB（Thread-Local Allocati
 图：固定 r1 的选择先受 allocator、对象大小与插桩控制。TLAB 快路径、补充缓冲和空间不足后的等待不是每次分配的固定三步。
 
 120 Hz 屏幕的理论帧间隔约为 8.33 ms。GC 暂停、分配等待或 CPU 竞争只要落在已经接近预算的那一帧上，就可能产生 missed frame（未按时呈现的帧）。暂停时间没有跨设备通用常量，不能用“某类 GC 固定耗时几毫秒”代替 trace 证据。
-
-<!-- gracker-diagram: ch10-03-03-tlab-pointer -->
-![TLAB 快路径推进线程自己的指针](../../assets/diagrams/ch10/ch10-03-03-tlab-pointer.png)
-
-图：TLAB 可容纳该次对象时，线程返回原 pos 并推进指针；空间不足需要申请新 TLAB。这里只画启用 TLAB 后的局部路径。
 
 <!-- gracker-diagram: ch10-03-05-gc-frame-timeline -->
 ![并发 GC 仍可通过不同路径影响帧](../../assets/diagrams/ch10/ch10-03-05-gc-frame-timeline.png)
@@ -114,12 +119,14 @@ Android 17 的 `collector_type.h` 把 `kCollectorTypeCMC` 定义为 **Concurrent
 
 图：相同 Android API 下，ART 模块、属性和进程选项仍可改变 GC 选择。启动日志用于确认进程实际配置，trace 用于确认该轮代价。
 
-CMC 的 `mark_compact.cc` 检查 `UFFD_FEATURE_SIGBUS` 与 `MREMAP_DONTUNMAP`，并实现 `SigbusHandler()` 处理压缩期间的页面访问。kernel 侧的对应实现按 `android17-6.18-2026-06_r6` 的 `fs/userfaultfd.c` 与 `mm/mremap.c` 核对。该机制缩短的是并发压缩对 mutator（执行应用代码的线程）的阻塞范围，不会消除 GC 工作量。应用持续制造短命对象时，年轻代回收、CPU 占用和 allocation stall（分配等待）仍然需要测量。
+常规 UFFD 路径在 `mark_compact.cc` 中检查 `UFFD_FEATURE_SIGBUS` 与 `MREMAP_DONTUNMAP`；显式 GC 选项、系统属性、内核能力和强制 STW 压缩选项都会影响选择。`SigbusHandler()` 只处理符合条件的故障：检查信号原因、压缩状态与地址范围后，按页推进处理；并不是所有对象访问都会触发 SIGBUS，也不是任意 SIGBUS 都能被 ART 接管。kernel 侧按 `android17-6.18-2026-06_r6` 的 `fs/userfaultfd.c` 与 `mm/mremap.c` 核对。
 
 <!-- gracker-diagram: ch10-03-08-uffd-fault -->
 ![UFFD 页面故障只在有效范围内处理](../../assets/diagrams/ch10/ch10-03-08-uffd-fault.png)
 
 图：只画常规 SIGBUS/UFFD 机制；强制 STW 是独立配置例外。并非所有对象访问都会触发故障，也不是每轮 GC 都进入压缩。
+
+`RunPhases()` 包含并发标记、MarkingPause、回收与压缩准备；需要压缩时还执行线程根翻转暂停，之后仅在 UFFD 有效时进入并发 `CompactionPhase()`。某轮可以不压缩，强制 STW 是另一条配置路径。这些机制缩小部分 mutator（执行应用代码的线程）停顿范围，不会消除 GC 工作量。应用持续制造短命对象时，年轻代回收、CPU 占用和 allocation stall（分配等待）仍然需要测量。
 
 <!-- gracker-diagram: ch10-03-09-cmc-phases -->
 ![CMC 的暂停和压缩都有实际分支](../../assets/diagrams/ch10/ch10-03-09-cmc-phases.png)
@@ -147,7 +154,7 @@ CMC 的 `mark_compact.cc` 检查 `UFFD_FEATURE_SIGBUS` 与 `MREMAP_DONTUNMAP`，
 
 ### Android Studio：记录 Java/Kotlin 分配
 
-Android Studio 的 “Track Memory Consumption (Java/Kotlin Allocations)” 可以显示分配类型、大小、线程、调用栈和释放时间。完整记录本身会减慢高分配应用；官方工具提供 sampled（抽样）模式降低影响。
+Android Studio 的 “Track Memory Consumption (Java/Kotlin Allocations)” 可以显示分配类型、大小、线程、调用栈和释放时间。这项 allocation recording 要求 `debuggable` 构建，只有 `profileable` 不足以启用该功能。完整记录本身会减慢高分配应用；官方工具提供 sampled（抽样）模式降低影响。
 
 一次有效的录制应满足：
 
@@ -157,7 +164,7 @@ Android Studio 的 “Track Memory Consumption (Java/Kotlin Allocations)” 可�
 4. 回到调用栈，确认对象来自业务路径、profiler（分析器）自身或框架预热。
 5. 修复后在同设备、同构建类型、同数据集下复测。
 
-分析 churn 时关注时间窗内累计分配次数与字节数；分析泄漏时关注结束时仍存活的数量、大小和引用关系。两个问题不应使用同一排序口径。
+分析 churn 时关注时间窗内累计分配次数与字节数。Studio 的 `Total Count = Allocations - Deallocations`，`Remaining Size = Allocations Size - Deallocations Size`，口径限定在所选记录区间，不能直接当作进程完整存活堆清点。分析泄漏还要用 heap dump 检查跨越预期生命周期的存活对象和引用关系。
 
 <!-- gracker-diagram: ch10-03-11-studio-columns -->
 ![Studio 的净值列有记录区间边界](../../assets/diagrams/ch10/ch10-03-11-studio-columns.png)
@@ -166,22 +173,16 @@ Android Studio 的 “Track Memory Consumption (Java/Kotlin Allocations)” 可�
 
 ### Perfetto heapprofd：调用栈采样
 
-heapprofd 从 Android 10 起支持 native malloc/free 分配分析。Android 12 起可把 heap 指定为 `com.android.art`，记录 Java allocation call stack。ART allocation profile 只记录对象创建位置，不提供对象删除时间或完整引用图；分析存活对象的引用关系需要 heap dump。
-
-下面两条命令展示当前 Perfetto 脚本的 native 与 ART 入口。
-
-```bash
-
-<!-- gracker-diagram: ch10-03-01-churn-leak -->
-![抖动与泄漏按生命周期分开](../../assets/diagrams/ch10/ch10-03-01-churn-leak.png)
-
-图：高分配看创建速率，泄漏看超过预期生命周期的引用；有界泄漏可以不持续推高堆基线，两者也能同时发生。
+heapprofd 从 Android 10 起支持 native malloc/free 分配调用栈采样，覆盖通过对应 allocator 的 `new/delete`；其他自定义分配器需要相应 heap 集成。Android 12 起可把 heap 指定为 `com.android.art`，采样 Java allocation call stack。ART allocation profile 只记录对象创建位置，不提供对象删除时间或完整引用图；分析存活对象的引用关系需要 heap dump。
 
 <!-- gracker-diagram: ch10-03-12-profilers-domains -->
 ![不同 profile 回答不同问题](../../assets/diagrams/ch10/ch10-03-12-profilers-domains.png)
 
 图：native 默认 heap、ART 创建采样与 heap dump 的数据语义不同；自定义 allocator 需要集成，不能把采样当成全量清点。
 
+下面两条命令按 AOSP `android-17.0.0_r1` 所含 Perfetto `tools/heap_profile` 脚本核对；需先取得相应 Perfetto checkout，并从其根目录执行。不同版本先检查 `--help`。
+
+```bash
 # Native malloc/free allocation profile
 tools/heap_profile android -n com.example.app
 
@@ -196,7 +197,12 @@ user build（日常发布版本的系统镜像）只允许分析 manifest 标记
 
 图：命令解析正确只证明入口和参数成立；权限、设备支持、采样结果以及性能影响必须在目标环境验证。
 
-读 Java profile 先看清两个数字的含义：`Total allocation size` 和 `Total allocation count` 包含采样期间的累计分配，即使对象稍后已经回收，也不能把它们当作当前存活堆大小。分配突发还可能让共享缓冲区溢出，Perfetto 会提前结束 profile，此时需要提高 sampling interval（采样间隔）或按官方建议调整缓冲区。
+读 Java profile 先看清两个数字的含义：`Total allocation size` 和 `Total allocation count` 是根据采样估计的累计创建字节数与次数，即使对象稍后已经回收，也不能把它们当作当前存活堆大小。运行中附加之前、Zygote 中的分配及未覆盖的 allocator 不会自动补入。分配突发还可能让共享缓冲区溢出，Perfetto 会提前结束 profile，此时需要提高 sampling interval（采样间隔）或按官方建议调整缓冲区。
+
+<!-- gracker-diagram: ch10-03-14-sample-window -->
+![ART 累计创建量不能解释为当前存活](../../assets/diagrams/ch10/ch10-03-14-sample-window.png)
+
+图：只画采样窗口中的创建语义。即使窗口里创建的对象后来回收，累计估计值也不会因此变成当前存活量；附加前的对象不自动补录。
 
 ### Perfetto：把分配、GC 和帧放进同一窗口
 
@@ -329,7 +335,7 @@ fun joinNames(items: List<String>): String = buildString {
 
 图：这是所有权协议示意，不代表所有库采用同一实现；分块、解码尺寸和库 pool 需分别核对。
 
-Android 8.0（API 26）起 Bitmap 像素位于 native heap。图片库管理的 Bitmap 应归还给库自己的池；业务代码不要在未知调用方仍可能使用 Bitmap 时提前 `recycle()`。
+Android 8.0（API 26）起，普通软件 Bitmap 的像素位于 native heap；`Bitmap.Config.HARDWARE` 的像素保存在图形内存中，不能统一归入 malloc/native heap。图片库管理的 Bitmap 应归还给库自己的池；业务代码不要在未知调用方仍可能使用 Bitmap 时提前 `recycle()`。
 
 <!-- gracker-diagram: ch10-03-22-bitmap-domains -->
 ![Bitmap 像素按实际存储域分析](../../assets/diagrams/ch10/ch10-03-22-bitmap-domains.png)
@@ -358,7 +364,12 @@ Android 8.0（API 26）起 Bitmap 像素位于 native heap。图片库管理的 
 
 ### 对象池是受约束的优化
 
-Android framework 的 `Message.obtain()`、`MotionEvent.obtain()` 等 API 使用池化，因为对象创建频繁、状态可重置且所有权协议明确。业务对象只有满足相似条件时才适合放入对象池：
+Android framework 的池化也有版本条件。固定 r1 的 `Message.obtain()` 仅在 `MessageQueue.getUseConcurrent()` 为假时尝试全局池；并发队列路径直接创建新 Message，`recycleUnchecked()` 只清理引用并标记使用状态。`MotionEvent.obtain()/recycle()` 仍有自身的 recycler。不要据 API 名称假定总会命中池，也不要替 framework 提前归还仍在使用的对象。业务对象只有满足以下条件时才适合放入对象池：
+
+<!-- gracker-diagram: ch10-03-24-framework-pool-branches -->
+![Message 的并发队列路径不使用旧全局池](../../assets/diagrams/ch10/ch10-03-24-framework-pool-branches.png)
+
+图：固定 r1 的 Message 池受 MessageQueue.getUseConcurrent() 控制。MotionEvent 有独立 recycler，不能据 obtain 名称推断所有模式都池化。
 
 - profiler 已确认分配点占据显著成本；
 - 对象构造或 backing storage（底层存储）成本较高；
@@ -368,11 +379,6 @@ Android framework 的 `Message.obtain()`、`MotionEvent.obtain()` 等 API 使用
 - 池命中率、容量与内存占用可观测。
 
 池会延长对象存活期，也可能增加同步、清理和泄漏风险。小型不可变对象或构造成本很低的对象，通常交给 ART 更合适。池大小不能照搬 16、32 等经验数字，应由并发峰值和命中率决定。
-
-<!-- gracker-diagram: ch10-03-24-framework-pool-branches -->
-![Message 的并发队列路径不使用旧全局池](../../assets/diagrams/ch10/ch10-03-24-framework-pool-branches.png)
-
-图：固定 r1 的 Message 池受 MessageQueue.getUseConcurrent() 控制。MotionEvent 有独立 recycler，不能据 obtain 名称推断所有模式都池化。
 
 <!-- gracker-diagram: ch10-03-25-pool-contract -->
 ![业务对象池必须完成所有权闭环](../../assets/diagrams/ch10/ch10-03-25-pool-contract.png)
@@ -397,7 +403,7 @@ Android framework 的 `Message.obtain()`、`MotionEvent.obtain()` 等 API 使用
 value class UserId(val raw: Long)
 ```
 
-Kotlin 官方文档明确列出需要装箱的场景：作为泛型类型、接口类型或 nullable value class 使用。`List<UserId>`、`Comparable<UserId>` 参数和 `UserId?` 都可能产生 wrapper。value class 是减少特定路径装箱的工具，不会自动让泛型集合变成原始类型存储；高频数值处理仍可评估 `LongArray`。
+Kotlin 官方文档说明，泛型、接口和可空使用可能要求 wrapper。对这里底层为 `Long` 的 `UserId`，`List<UserId>`、传给泛型函数或 `UserId?` 都存在装箱路径；只有类型实际实现了某个接口，才谈得上以该接口传递时的装箱。上面的 `UserId` 并未实现 `Comparable<UserId>`，不能直接传给该类型的参数。value class 是减少特定路径装箱的工具，不会自动让泛型集合变成原始类型存储；高频数值处理仍可评估 `LongArray`。
 
 <!-- gracker-diagram: ch10-03-27-valueclass-representation -->
 ![UserId 的底层 long 不覆盖所有用法](../../assets/diagrams/ch10/ch10-03-27-valueclass-representation.png)
@@ -406,7 +412,12 @@ Kotlin 官方文档明确列出需要装箱的场景：作为泛型类型、接�
 
 ## Jetpack Compose 中的分配
 
-Compose Runtime 通过 SlotTable/LinkTable（记录组合树结构的数据表）、RecomposeScope（重组作用域）和 snapshot state（快照状态）保存组合结构。结构本身会占用内存；业务更常见的 churn 来自重组时重复执行的构造代码、不断变化的参数身份和不必要的状态派生。
+以本文核验的 Compose Runtime 1.12.0-rc01 为例，默认 GapComposer 使用 SlotTable 保存组合结构，配合 RecomposeScope（重组作用域）与 snapshot state（快照状态）。LinkTable/LinkComposer 从 1.11 起属于实验路径；该制品的 `ComposeRuntimeFlags.isLinkBufferComposerEnabled` 默认值为 `false`，还受构建期 flag/R8 规则影响。不能把 SlotTable 与 LinkTable 画成每个 composition 必然依次经过的两张表。结构本身会占用内存；业务更常见的 churn 来自重组时重复执行的构造代码、不断变化的参数身份和不必要的状态派生。
+
+<!-- gracker-diagram: ch10-03-28-compose-engines -->
+![组合结构的两个实现是条件选择](../../assets/diagrams/ch10/ch10-03-28-compose-engines.png)
+
+图：固定核验 RC 的实验 flag 默认 false，默认使用 GapComposer / SlotTable；LinkComposer / LinkTable 是可选择的实验路径，不能串成必经两级。
 
 ### `remember` 解决的是重组期重建
 
@@ -427,39 +438,43 @@ fun PriceText(
 }
 ```
 
-`remember` 会延长对象在 composition（组合树）中的存活时间，不适合缓存无限增长的数据。key 过于频繁变化时，缓存会反复失效；key 缺失时，又可能读到与新输入不匹配的旧对象。
+`remember(locale)` 在该调用位置仍被组合保留且 key 按 `==` 未变时复用 formatter；移出 composition 后重新进入，会重新创建，也不跨进程保存。`formatter.format(price)` 在函数体执行时仍要运行，通常会产生结果字符串，缓存 formatter 不等于消除全部分配。NumberFormat 是可变对象，也要遵守线程所有权。
 
 <!-- gracker-diagram: ch10-03-29-remember-lifetime -->
 ![remember 缓存位置与 key 决定 formatter 生命周期](../../assets/diagrams/ch10/ch10-03-29-remember-lifetime.png)
 
 图：缓存的是 formatter 实例。只有组保留且 key 未变才复用，不能把 remember 画成持久缓存或整段函数永不执行。
 
+`remember` 会延长对象的存活时间，不适合缓存无限增长的数据。key 过于频繁变化时，缓存会反复失效；key 缺失时，又可能读到与新输入不匹配的旧对象。
+
 ### strong skipping 减少无效重组
 
-Kotlin 2.0.20 起默认启用 Compose strong skipping（强跳过模式）。启用后，restartable composable（可重启的可组合函数）可被标记为 skippable（参数未变时可跳过），具有 unstable capture（捕获不稳定对象）的 Lambda 也会被编译器记忆。参数比较规则仍有差异：unstable 参数使用实例相等，stable 参数使用对象相等。
-
-不要为了跳过重组随意添加 `@Stable`。它是一份行为契约：公开属性变化必须能被 Compose 感知，`equals()` 也要满足约定。错误标注可能让 UI 漏掉更新。可通过 Compose compiler reports（编译器报告）检查稳定性推断，再优化频繁重组的节点。
+Kotlin 2.0.20 起，Compose compiler 默认启用 strong skipping（强跳过模式）。可重启 composable 默认具备跳过资格，`@NonSkippableComposable` 可退出；不可重启函数不会因此变为可跳过。unstable 参数按 `===` 比较，stable 参数按 `equals()` 比较。参数相等仍不保证跳过：作用域读取的 state 发生有效变化、首次插入或其他强制重组条件，都可能要求执行。
 
 <!-- gracker-diagram: ch10-03-30-strong-skip -->
 ![跳过资格、参数相等与失效条件分别判断](../../assets/diagrams/ch10/ch10-03-30-strong-skip.png)
 
 图：strong skipping 给可重启函数跳过资格，但参数相等不能覆盖 state 导致的有效失效、首次插入等执行条件。
 
+编译器也会记忆 composable 内捕获值的 Lambda：捕获不稳定值按身份比较，稳定值按 `equals()` 比较；`@DontMemoize` 可退出。这与手写 `remember(keys)` 对所有 key 使用 `==` 的规则不同。应检查实际编译配置和报告。
+
 <!-- gracker-diagram: ch10-03-31-lambda-memoization -->
 ![自动 Lambda 记忆与手写 remember 比较不同](../../assets/diagrams/ch10/ch10-03-31-lambda-memoization.png)
 
 图：强跳过下自动 Lambda 记忆按 capture 稳定性选择比较；手写 remember 的 key 使用 ==。不要把两种规则合并。
 
+不要为了跳过重组随意添加 `@Stable`。它是一份行为契约：公开属性变化必须能被 Compose 感知，`equals()` 也要满足约定。错误标注可能让 UI 漏掉更新。可通过 Compose compiler reports（编译器报告）检查稳定性推断，再优化频繁重组的节点。
+
 ### `derivedStateOf` 有适用条件
 
-`derivedStateOf` 适合输入变化频率高、输出变化频率低的场景，例如滚动位置持续变化，而按钮只关心“是否离开列表顶部”。它本身有维护依赖和计算状态的成本；如果两个输入每次变化都要求更新拼接结果，直接计算通常更简单。
-
-Compose 官方示例把 `derivedStateOf` 放在 `remember` 中。Compose Runtime 1.12.0-beta01 修复了一个潜在保留问题：未正确 remember 的 derived state（派生状态）在 forward write（前向写入）路径上可能被 composition 持有到销毁。该修复已包含在 2026-07-29 发布的 1.12.0-rc01；生产升级仍要遵循团队对 RC（候选发布版）与稳定版的依赖政策。
+`derivedStateOf` 适合输入变化频率高、输出变化频率低的场景，例如滚动位置持续变化，而按钮只关心“是否离开列表顶部”。它本身有维护依赖和计算状态的成本；减少下游重组不等于依赖不再更新或派生值不再重算。无 policy 的重载与显式 SnapshotMutationPolicy 重载有不同的等价性约定，实际下游是否失效还取决于观察者。若两个输入每次变化都要求更新拼接结果，直接计算通常更简单。
 
 <!-- gracker-diagram: ch10-03-32-derived-state -->
 ![派生阈值减少下游更新，计算仍有成本](../../assets/diagrams/ch10/ch10-03-32-derived-state.png)
 
 图：逻辑值序列只是示例。derivedStateOf 不承诺永不重算；有无 mutation policy 的重载与观察者等价判断需分别解释。
+
+Compose 官方示例把 `derivedStateOf` 放在 `remember` 中。Compose Runtime 1.12.0-beta01 修复了一个潜在保留问题：未正确 remember 的 derived state（派生状态）在 forward write（前向写入）路径上可能被 composition 持有到销毁。该修复包含在 2026-07-29 的 1.12.0-rc01，以及后续 1.12.0 稳定版（2026-08-12）与 1.12.1（2026-09-09；相对 1.12.0 无改动）。本文以 RC 制品作机制核验，不把 RC 当作当前最新或统一生产升级目标。
 
 ### 原始类型 state
 
@@ -472,12 +487,7 @@ Compose 官方示例把 `derivedStateOf` 放在 `remember` 中。Compose Runtime
 
 ### Compose 与 Android 17 的版本关系
 
-Compose 通过 AndroidX 发布，不跟 platform API 一一绑定。Compose Runtime 1.12.0-alpha01 把库的 compileSdk 更新到 API 37，并要求至少使用 AGP（Android Gradle Plugin）9.2.0；这属于构建依赖边界，不能据此推断 Android 17 设备拥有专属的 SlotTable、LinkTable 或 Lazy list GC 行为。
-
-<!-- gracker-diagram: ch10-03-28-compose-engines -->
-![组合结构的两个实现是条件选择](../../assets/diagrams/ch10/ch10-03-28-compose-engines.png)
-
-图：固定核验 RC 的实验 flag 默认 false，默认使用 GapComposer / SlotTable；LinkComposer / LinkTable 是可选择的实验路径，不能串成必经两级。
+Compose 通过 AndroidX 发布，不跟 platform API 一一绑定。⚠ 这里有一处证据差异：1.12.0-alpha01 发布说明写了 compileSdk 37 与最低 AGP（Android Gradle Plugin）9.2.0；但本次下载的 `runtime-android:1.12.0-rc01` AAR 中，`aar-metadata.properties` 声明的是 `minCompileSdk=34`、`minAndroidGradlePluginVersion=8.1.1`，对应 Gradle module 的 Android 变体也指向该 AAR。不能仅凭 alpha 发布说明替所有 RC 消费者断言统一最低工具链；实际工程要核对解析到的制品、其他依赖和构建结果。库自身 compileSdk、消费者最低构建要求、设备运行 API 和 ART collector 是不同维度，不能据此推断 Android 17 专属的 SlotTable、LinkTable 或 Lazy list GC 行为。
 
 <!-- gracker-diagram: ch10-03-34-compose-platform-dimensions -->
 ![构建依赖和设备 GC 是不同维度](../../assets/diagrams/ch10/ch10-03-34-compose-platform-dimensions.png)
@@ -527,7 +537,7 @@ Compose 通过 AndroidX 发布，不跟 platform API 一一绑定。Compose Runt
 ## 参考资料
 
 - [Android Studio：Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)
-- [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory/manage-app-memory)
 - [AOSP：Debug ART garbage collection](https://source.android.com/docs/core/runtime/gc-debug)
 - [Perfetto：Callstack-based allocation profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 - [AOSP `collector_type.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector_type.h)
@@ -545,7 +555,11 @@ Compose 通过 AndroidX 发布，不跟 platform API 一一绑定。Compose Runt
 - [Compose Runtime：MutableIntState](https://developer.android.com/reference/kotlin/androidx/compose/runtime/MutableIntState)
 - [Compose Runtime release notes](https://developer.android.com/jetpack/androidx/releases/compose-runtime)
 
-<!-- gracker-diagram: ch10-03-14-sample-window -->
-![ART 累计创建量不能解释为当前存活](../../assets/diagrams/ch10/ch10-03-14-sample-window.png)
-
-图：只画采样窗口中的创建语义。即使窗口里创建的对象后来回收，累计估计值也不会因此变成当前存活量；附加前的对象不自动补录。
+- [AOSP `heap-inl.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap-inl.h)
+- [AOSP `Message.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Message.java)
+- [AOSP `MotionEvent.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/MotionEvent.java)
+- [Perfetto `tools/heap_profile`（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/heap_profile)
+- [Compose 1.12.0-rc01 Android 发布源码 JAR](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.12.0-rc01/runtime-android-1.12.0-rc01-sources.jar)
+- [Compose 1.12.0-rc01 AAR](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.12.0-rc01/runtime-android-1.12.0-rc01.aar)
+- [Compose 1.12.0-rc01 Gradle module](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.12.0-rc01/runtime-android-1.12.0-rc01.module)
+- [Android Developers：Managing Bitmap Memory](https://developer.android.com/topic/performance/graphics/manage-memory)

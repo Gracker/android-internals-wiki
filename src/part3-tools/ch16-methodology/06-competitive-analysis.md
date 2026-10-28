@@ -4,8 +4,8 @@ chapter: '16.6'
 section: '16.6'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 ActivityManagerShellCommand / WaitResult / ActivityTaskSupervisor / ActivityMetricsLogger / ActivityRecord / FrameMetrics / FrameTimeline; Android Developers current official documentation
+last_verified: '2026-10-26'
+last_verified_against: AOSP android-17.0.0_r1 ActivityManagerShellCommand / WaitResult / ActivityTaskSupervisor / ActivityMetricsLogger / ActivityRecord / FrameMetrics / FrameTimeline / PowerStatsService；固定 AndroidX Benchmark 1.4.1 Maven 源码；2026-10-26 Android Developers 与 Perfetto 官方文档。定点源码与宿主代码检查，非设备实测。
 confidence: high
 sources:
 - type: official
@@ -48,7 +48,7 @@ related_chapters:
 
 竞品对比只有在场景、设备状态、版本和指标口径一致时才有解释力。我们做它的目的，是用可重复的实验判断差异落在哪个用户阶段、竞品的哪些设计可以迁移到自己的产品上；一份笼统的排名反倒是次要产出。
 
-> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；涉及调度、频率或功耗事件的解释时，内核证据固定到 `android17-6.18-2026-06_r6`。设备可能使用其他内核分支。
+> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）。本文未逐项审计某个内核分支；涉及调度、频率或功耗归因时，需要另存实际设备内核、事件与厂商实现证据。
 
 ## 为什么要认真做竞品性能分析
 
@@ -76,13 +76,13 @@ related_chapters:
 
 ### 控制变量的四项基本原则
 
-**同设备**：A/B（成对交替测试两个应用）在同一台物理设备、同一用户和同一显示模式下执行。就算型号相同，芯片个体差异、存储老化和厂商配置也可能有差别。要覆盖多个档位时，让每台设备独立形成一组结果，跨设备的样本分开统计。
+**同设备**：A/B（成对交替测试两个应用）在同一台物理设备、同一 Android 用户空间和同一实际显示模式下执行。就算型号相同，芯片个体差异、存储老化和厂商配置也可能有差别。要覆盖多个档位时，让每台设备独立形成一组结果，跨设备的样本分开统计。
 
 **同场景**：使用用户可感知的起点、终点和成功条件。例如“从 Launcher 点击图标，到首个可操作 Feed 出现”，还要补上账号是否登录、缓存是否存在、广告是否展示、列表有多少项。两个产品的信息架构不同，页面名称对不上没关系，工作量和用户目标要相近。
 
-**同网络**：记录 Wi-Fi 或蜂窝网络、带宽、往返延迟、丢包、DNS（域名解析）、代理和服务端数据集。可控环境可以使用网络整形和固定响应；真实网络测试则交替执行 A/B（在同一条件下交替测试应用 A 和 B），并把网络时间单列。TLS 会话（加密连接是否复用）是否复用、内容是否命中（内容是否来自边缘缓存） CDN 边缘缓存、服务端负载如何，这三样靠“连同一个 Wi-Fi”消不掉，要单独记录。
+**同网络**：记录 Wi-Fi 或蜂窝网络、带宽、往返延迟、丢包、DNS（域名解析）、代理和服务端数据集。可控环境可以使用网络整形和固定响应；真实网络测试则交替执行 A/B（在同一条件下交替测试应用 A 和 B），并把网络时间单列。TLS 会话是否复用、内容是否命中 CDN 边缘缓存、服务端负载如何，这三样靠“连同一个 Wi-Fi”消不掉，要单独记录。
 
-**同热状态**：记录电池温度、Thermal Service（热管理服务）状态和测试前的静置条件。测完 A 接着测 B，时间漂移可能都算到其中一方头上，所以我们用 ABBA 交错顺序，例如 A1、B1、B2、A2，或者预先随机排序，减少时间漂移对单方结果的偏置。设备一旦进入新的 thermal status（热状态等级），该轮作废，等它恢复再继续。用户体验测试让 CPU 频率保持自适应——锁定频率会改变商用设备上的调度和温控行为。
+**同热状态**：记录环境条件、可用传感器、Thermal Service 状态和测试前的静置协议，ABBA（A1、B1、B2、A2）或预先随机顺序可减少部分时间漂移，但不保证消除缓存、携带或非线性热效应。短路径若违反预定义初态门控，应保留原因后重跑；持续负载中的自然升温和降频往往就是被测结果，不能因热等级改变便删样本。热状态是粗粒度信号，等级相同也不证明温度或频率相同。用户体验测试通常保留动态调频，锁频另标实验条件。
 
 <!-- gracker-diagram: ch16-06-02-matched-conditions -->
 ![控制变量与自然热响应](../../assets/diagrams/ch16/ch16-06-02-matched-conditions.png)
@@ -94,7 +94,7 @@ related_chapters:
 准备项要写进机器可读的 run manifest，也就是每轮测试随结果保存的配置清单，避免依靠测试人员记忆：
 
 - 设备序列号、型号、build fingerprint（系统构建标识）、API level、安全补丁和刷新率；
-- App 的包名、versionName、versionCode、安装来源、签名摘要，以及 APK 和 split APK（按设备配置拆分的安装包）文件摘要；
+- App 的包名、versionName、完整 long versionCode、安装来源、签名摘要，以及 APK 和 split APK（按设备配置拆分的安装包）文件摘要；
 - 账号、地区、语言、主题、权限、实验开关和本地数据状态；
 - 电量、充电状态、节电/性能模式、亮度、音量、屏幕方向和网络参数；
 - ART（Android Runtime） 编译策略，以及 Baseline Profile（随 App 发布的热点代码清单）是否保留；Cloud Profile（Google Play 根据线上数据生成的热点代码清单）是否保留同样要记录；
@@ -102,7 +102,7 @@ related_chapters:
 
 `adb shell am kill-all` 只结束系统认为可以安全清理的后台进程，离“设备恢复到一致状态”还差得远；划掉最近任务同样未必让进程退出。所以每个测试维度要有自己的复位动作：启动测试控制目标进程与任务，滑动测试恢复列表位置，网络测试恢复响应数据，功耗测试恢复电量和热状态。
 
-系统动画关不关，取决于问题定义。测 Activity 自身首帧时可以关；测用户看到的完整转场时必须保留，并固定动画缩放。两种结果分开报。
+系统动画是否关闭要写进场景合同。完整用户转场保留生产动画并固定缩放；若关闭动画做受控窗口诊断，另报实验条件，不能再把它当作生产用户体验。关闭动画也不保证只影响计时终点。
 
 <!-- gracker-diagram: ch16-06-03-state-reset-manifest -->
 ![每个测试维度有自己的复位](../../assets/diagrams/ch16/ch16-06-03-state-reset-manifest.png)
@@ -115,13 +115,13 @@ related_chapters:
 
 - 每台设备的最少有效轮数；
 - 单轮超时和失败判定；
-- 因来电、更新、温控或网络失控而排除样本的规则；
-- 最大轮数，或置信区间达到目标宽度时停止；
+- 实验装置失效、目标失败和有效慢样本的分类；来电、更新或网络异常按预定义规则处理，目标失败与自然热响应不能随意排除；
+- 最大轮数、查看批次与停止规则；若依据区间宽度自适应停止，统计方法也要适应该设计，不能边看边加到有利结果；
 - 查看结果前已经确定的主指标。
 
-A/B 在同一设备、相近时间内成对执行。报告给出每轮原始值、配对差值、差值中位数、P90/P99（90%/99% 的样本不高于该值） 和置信区间；置信区间描述在既定统计方法下，真实差异的合理范围。
+A/B 在同一设备、相近时间内成对执行，并保留设备和独立 block 层级。分别报告 A、B 的原始分布与尾部分位，再报告预定义的配对效应量及区间；“配对差值的中位数”不等于“两组中位数之差”，两者的 P90/P99 也不是同一对象。小样本尾部分位不稳定，应同时给样本量与算法。频率学派置信区间的覆盖率来自同一方法反复抽样的性质，不能解释为本次固定区间包含真值的概率。
 
-平均值、标准差可以照报；显著性交给检验来回答，“均值相差两倍标准差”这类读数替代不了它。数据有长尾时，用配对 bootstrap（对配对差值重复重采样）估计区间，或用预先选定、不要求正态分布的非参数检验，并同时报告效应量，也就是差异本身有多大。
+平均值与标准差可照报，同时给效应量和不确定性；“均值相差两倍标准差”不能替代检验。使用配对 bootstrap 时应按独立设备/block 等实际抽样单元保留 A/B 配对，并重算事先选定的统计量，不能把所有相关帧当独立样本。长尾、小样本、依赖结构与非参数检验各有前提，bootstrap 或非参数名称本身不保证区间有效。
 
 <!-- gracker-diagram: ch16-06-04-paired-sampling -->
 ![配对、相关层级与停止规则](../../assets/diagrams/ch16/ch16-06-04-paired-sampling.png)
@@ -132,14 +132,24 @@ A/B 在同一设备、相近时间内成对执行。报告给出每轮原始值�
 
 启动对比的第一步是选定口径，用户可感知的口径至少有两个：
 
-- **TTID（Time to Initial Display，首次画面显示时间）**：应用首帧显示；
-- **TTFD（Time to Full Display，完整画面显示时间）**：应用主动调用 `reportFullyDrawn()` 报告内容可用。
+- **TTID（Time to Initial Display，首次画面显示时间）**：系统记录启动到应用初始画面的时间；不保证业务内容完成或光学呈现与交互就绪同时发生；
+- **TTFD（Time to Full Display，应用报告完整显示的时间）**：依赖 `reportFullyDrawn()` 声明，具体工具还可能取匹配帧完成边界；不是声明即刻必然可交互的保证。
 
-TTID 由系统判定，TTFD 靠应用自己埋点。竞品有没有调用、调用位置和我们的是否等价，从外部未必确认得了；确认不了时，我们就把 TTFD 留在各自的纵向趋势里看，横向对比交给系统判定的 TTID。
+TTID 由系统记录，但仍要核对实际 Activity、入口和显示边界。TTFD 靠应用埋点，竞品是否调用、调用位置是否等价未必可知；未知时不做横向 TTFD 排名，也不把缺失填零。可保留可解释的 TTID，并用两侧等价的视觉/UI 成功断言补充“业务就绪”区间，分别标明工具、起点和终点。
+
+<!-- gracker-diagram: ch16-06-05-startup-completion-boundaries -->
+![TTID、TTFD与业务就绪分别测量](../../assets/diagrams/ch16/ch16-06-05-startup-completion-boundaries.png)
+
+图：系统初始画面、App fully-drawn声明与业务成功条件是三种边界。 竞品TTFD埋点未知时不横向排名，缺失不补零；外部UI断言另标起止点。
 
 ### adb am start -W 的原理与正确使用
 
-`ActivityManagerShellCommand` 看到 `-W` 后调用 `startActivityAndWait()`。目标 Activity 的窗口绘制完成时，`ActivityRecord#onWindowsDrawn()` 经 `ActivityMetricsLogger#notifyWindowsDrawn()` 得到 `windowsDrawnDelayMs`，再由 `ActivityTaskSupervisor#reportActivityLaunched()` 写入 `WaitResult.totalTime` 并唤醒等待者。我们读输出时的重点就在这条链的终点：`TotalTime` 量到目标窗口完成首轮绘制为止。
+`ActivityManagerShellCommand` 在 `-W` 路径调用 `startActivityAndWait()`。正常受跟踪的窗口绘制路径中，`ActivityRecord#onWindowsDrawn()` 调用 `ActivityMetricsLogger#notifyWindowsDrawn()`，后者以当前 uptime 与启动跟踪起点之差生成 `windowsDrawnDelayMs`（毫秒）；`ActivityTaskSupervisor#reportActivityLaunched()` 再写入 `WaitResult.totalTime`、组件和状态并唤醒等待者。这是窗口绘制报告的系统边界，不是 GPU 全部工作、屏幕光学呈现或业务可操作的共同完成点；已有顶部 Activity、跟踪失效或超时还可能走其他返回路径。
+
+<!-- gracker-diagram: ch16-06-06-am-start-wait-path -->
+![正常绘制路径怎样回填TotalTime](../../assets/diagrams/ch16/ch16-06-06-am-start-wait-path.png)
+
+图：正常启动跟踪从shell等待进入窗口绘制报告，再将毫秒延迟写回WaitResult并唤醒等待者。 图中是正常跟踪路径；已有顶部Activity、超时或无有效跟踪需另分类，窗口报告不等于光学完成。
 
 下面的命令用于确认一个**进程冷启动**样本。Intent 描述待执行的操作和目标组件；`-S` 在启动前 force-stop（强制停止）Intent 匹配到的包，`-W` 等待启动结果：
 
@@ -150,11 +160,12 @@ adb shell am start -S -W \
   com.example.app/.MainActivity
 ```
 
-这条命令能保证的只有一点：进程在启动前不存在。“冷”的含义也就到此为止——文件页缓存、应用数据和服务端缓存它都碰不到；要测首次安装、首次登录或冷数据，另设场景。
+`-S` 在指定 Android 用户下对解析出的包执行 force-stop，再发起启动；只有停止与启动都成功，且结果校验符合预期，才能接纳为进程冷启动样本。它不清文件页缓存、业务数据或服务端缓存；后台重启、重定向或启动失败也要用原始输出和 Trace 排查。首次安装、首次登录与冷数据另设场景。
 
-`android-17.0.0_r1` 的典型输出如下：
+`android-17.0.0_r1` 的成功输出形状可如下；组件、耗时和 Intent 排版均为示意，不代表实测：
 
 ```text
+Stopping: com.example.app
 Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER]
                   cmp=com.example.app/.MainActivity }
 Status: ok
@@ -167,16 +178,11 @@ Complete
 
 三个字段的读法，以源码为准：
 
-- **LaunchState**：`WaitResult` 明确区分 `COLD`、`WARM`、`HOT`、`RELAUNCH`。报告必须保存这个字段；预期是 COLD 却得到其他状态时，该轮无效。
-- **TotalTime**：Activity 启动跟踪开始到目标窗口完成首轮绘制的延迟，接近 TTID 的系统口径，量到窗口绘制为止；页面数据是否齐备、业务是否可操作，要再对照 TTFD 的埋点。
-- **WaitTime**：`ActivityManagerShellCommand` 在调用前后用 uptime（设备开机后的运行时间，深度休眠时不增长） 计算阻塞时间；WaitTime 包含 shell 发起、系统等待和返回路径，适合诊断命令本身的等待，横向对比还是看 `TotalTime`。
+- **LaunchState**：`WaitResult` 有 `COLD`、`WARM`、`HOT`、`RELAUNCH` 及 `UNKNOWN`。报告保存原始状态与实际组件，并检查 Status、警告和错误；预期 COLD 却不匹配时按预定义失败协议处理。
+- **TotalTime**：在正常绘制跟踪路径中，是跟踪起点到窗口绘制报告的毫秒延迟；接近系统 TTID，但不是任意工具的同名值都可互换。它可缺失或无有效延迟；数据齐备、可操作性另看等价业务断言。
+- **WaitTime**：shell 在调用附近用 `uptimeMillis()` 取差，包含选项准备、启动调用、等待与返回的一段时间；计时在 `-S` 的 force-stop 和该路径 250 ms 等待之后开始，也不含完整 adb 传输。它适合诊断这段命令等待，不能拿它减 `TotalTime` 就断言某项业务开销。
 
-旧版本曾输出 `ThisTime`，Android 17 的 [`WaitResult.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/WaitResult.java) 已无该字段，[`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 也不再打印它。所以解析脚本按目标系统版本识别字段，三个时间值未必都在。
-
-<!-- gracker-diagram: ch16-06-06-am-start-wait-path -->
-![正常绘制路径怎样回填TotalTime](../../assets/diagrams/ch16/ch16-06-06-am-start-wait-path.png)
-
-图：正常启动跟踪从shell等待进入窗口绘制报告，再将毫秒延迟写回WaitResult并唤醒等待者。 图中是正常跟踪路径；已有顶部Activity、超时或无有效跟踪需另分类，窗口报告不等于光学完成。
+旧版本曾输出 `ThisTime`，Android 17 的 [`WaitResult.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/WaitResult.java) 已无该字段，[`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 也不再打印它。所以解析脚本按目标系统版本识别字段，`TotalTime` 缺失、负值或未知状态时不填零；保存原始输出并区分未启动、无有效跟踪与超时。
 
 <!-- gracker-diagram: ch16-06-07-shell-output-validity -->
 ![启动状态与两个时间字段的边界](../../assets/diagrams/ch16/ch16-06-07-shell-output-validity.png)
@@ -185,30 +191,31 @@ Complete
 
 ### 冷启动 vs 温启动 vs 热启动
 
-下面四项解释 `am start -W` 返回的 `LaunchState`：它按进程是否运行、Activity 是否新建来分类，比用户层面的通用启动定义窄，报告里要注明用的是哪套口径。
+下面五项解释 `am start -W` 返回的 `LaunchState`：它按进程是否运行、Activity 是否新建来分类，比用户层面的通用启动定义窄，报告里要注明用的是哪套口径。
 
 - **Cold**：目标应用进程需要创建。文件缓存和应用数据可以仍在。
 - **Warm**：进程可复用，但 Activity 需要创建。
 - **Hot**：进程和 Activity 可复用，任务被带回前台。
-- **Relaunch**：平台还会报告 `RELAUNCH`，例如配置变化使已有 Activity 销毁重建。
-
-测试脚本应让平台返回的 `LaunchState` 参与校验，少用“按了返回键所以一定是 warm”这类间接判断。一个竞品可能通过透明 Activity、deep link（直达指定页面的链接）、多进程或不同 task（Activity 任务栈）策略进入首页，`TotalTime` 覆盖到哪个 Activity，取决于本次实际启动链。要看清这段启动链，我们再借助 Perfetto 中的 Android App Startups 派生指标（由原始 Trace 计算出的启动区间）和 Activity transition（页面切换过程） 补足时间线。
+- **Relaunch**：进程复用但 Activity 销毁重建，例如未自行处理的配置变化。
+- **Unknown**：不构成有效启动或无法分类，例如 Activity 已在顶部；不能自动并入 Hot。
 
 <!-- gracker-diagram: ch16-06-08-launch-state-objects -->
 ![启动分类保留哪些对象](../../assets/diagrams/ch16/ch16-06-08-launch-state-objects.png)
 
 图：Cold、Warm、Hot按进程和Activity复用分类；Relaunch与Unknown另存。 返回键、划任务或固定命令意图不能替代平台状态与实际启动链校验。
 
+测试脚本应让平台返回的 `LaunchState` 参与校验，少用“按了返回键所以一定是 warm”这类间接判断。一个竞品可能通过透明 Activity、deep link（直达指定页面的链接）、多进程或不同 task（Activity 任务栈）策略进入首页，`TotalTime` 覆盖到哪个 Activity，取决于本次实际启动链。要看清这段启动链，我们再借助 Perfetto 中的 Android App Startups 派生指标（由原始 Trace 计算出的启动区间）和 Activity transition（页面切换过程） 补足时间线。
+
 ### 启动对比的注意事项
 
-**SplashScreen**：Android 12 起的系统启动画面会早于应用首帧出现，但 `TotalTime` 的完成点仍来自目标 Activity 的窗口绘制，说明不了“页面数据可用”。报告可以同时保留“启动画面出现”“应用首帧”“业务可操作”三个视觉时间点；后两者需要 Trace、视频或等价的 UI 状态检测。
+**SplashScreen**：Android 12 起的系统启动画面可能先于应用内容帧出现，但 `TotalTime` 的完成点仍来自目标 Activity 的窗口绘制，说明不了“页面数据可用”。报告可以同时保留“启动画面出现”“应用首帧”“业务可操作”三个视觉时间点；后两者需要 Trace、视频或等价的 UI 状态检测。
 
 **编译状态**：Play 安装的包可能带 Baseline Profile，用一段时间后还可能积累 JIT（Just-In-Time，运行时即时编译） 产物或 Cloud Profile。竞品对比先选一种协议并写进报告：
 
 - **商店现实状态**：保留各自经商店分发和正常使用形成的编译状态，回答用户现实体验问题；
 - **统一实验状态**：对所有包执行同一安装、交互和编译流程，回答固定 ART 条件下的差异。
 
-以下命令把整个包按 `speed` 模式预编译，适合统一实验状态：
+以下命令请求按 `speed` filter 编译包；需检查命令结果与实际 ART 编译状态，不代表所有类初始化提前完成，也不保证所有路径最快：
 
 ```bash
 adb shell cmd package compile -m speed -f com.example.app
@@ -223,11 +230,6 @@ adb shell cmd package compile -m speed -f com.example.app
 
 **窗口与显示状态**：锁屏、分屏、画中画、外接显示器、刷新率切换和系统转场都会改变启动路径，这些状态在轮与轮之间可能漂移，所以每轮开始前都校验一遍。
 
-<!-- gracker-diagram: ch16-06-05-startup-completion-boundaries -->
-![TTID、TTFD与业务就绪分别测量](../../assets/diagrams/ch16/ch16-06-05-startup-completion-boundaries.png)
-
-图：系统初始画面、App fully-drawn声明与业务成功条件是三种边界。 竞品TTFD埋点未知时不横向排名，缺失不补零；外部UI断言另标起止点。
-
 ## 竞品流畅性对比
 
 平均 FPS（Frames Per Second，每秒帧数） 会把停顿的位置和长度抹平，所以我们看流畅性时不只盯这一个数：帧 deadline（每帧的完成时限）命中情况、长尾帧、连续卡顿段、场景阶段和帧归属至少要有。加载中的临时界面、页面转场和稳定滑动分开统计。
@@ -236,29 +238,31 @@ adb shell cmd package compile -m speed -f com.example.app
 
 Android 12 起，SurfaceFlinger（负责图层合成与呈现的系统服务） 的 FrameTimeline 能把 App 产生的帧和显示端呈现的帧关联起来；固定源码版本可查 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) 与 [`frame_timeline_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/android/frame_timeline_event.proto)。
 
-我们抓一次 Trace，需要包含：
+应先查询实际设备支持的数据源、atrace 分类和权限，再选择 Trace 配置。常用的采集项包括：
 
 - `android.surfaceflinger.frametimeline` 数据源；
-- `linux.ftrace`（内核事件 Trace 数据源） 中与 View、input、window manager、graphics 相关的 atrace 分类；
+- `linux.ftrace` 中实际可用的 atrace 分类，例如 `view`、`input`、`wm`、`gfx`；需要调度因果证据时再启用相应 `sched_*` 等内核事件，二者不是同一种事件；
 - 目标包的 atrace events，也就是 App 通过 Android Trace 标记写入的事件；
 - 场景开始、结束和阶段切换标记。
 
-Trace 时长要覆盖完整的操作路径：短动画可能几秒就够，长列表或视频场景可能要一分钟，“至少 10 秒”这类通用门槛站不住。持续时间跟着场景定义走，帧数和有效区间一起报告。
-
-滑动可以由 UI Automator（可跨 App 操作界面的自动化测试框架）或坐标事件驱动。坐标相同只说明输入相同；两个应用各自滚了多远、内容工作量多大，还要用可见 item、页面标识或录屏确认终点。`sendevent` 是向 Linux 输入设备节点写事件的低层命令，依赖设备节点和权限，不适合作为可移植方案。
+还要核对目标 Layer、Surface/Display token 关联、完整结束事件与数据丢失；多 Layer 不能简单合成一条“应用帧序列”。SurfaceView、游戏、自定义 Surface 和设备/版本的覆盖需实证确认，不能用空帧集合推断无卡顿。
 
 <!-- gracker-diagram: ch16-06-10-frametimeline-object-join -->
 ![从目标Layer关联Surface与Display](../../assets/diagrams/ch16/ch16-06-10-frametimeline-object-join.png)
 
 图：按目标Layer与token联系应用Surface帧、合成Display帧和显示反馈，再判断覆盖。 一个DisplayFrame可合成多个SurfaceFrame；空集合、缺失结束事件与不支持Surface不能当无卡顿。
 
+Trace 时长要覆盖完整的操作路径：短动画可能几秒就够，长列表或视频场景可能要一分钟，“至少 10 秒”这类通用门槛站不住。持续时间跟着场景定义走，帧数和有效区间一起报告。
+
+滑动可以由 UI Automator（可跨 App 操作界面的自动化测试框架）或坐标事件驱动。坐标相同只说明输入相同；两个应用各自滚了多远、内容工作量多大，还要用可见 item、页面标识或录屏确认终点。`sendevent` 是向 Linux 输入设备节点写事件的低层命令，依赖设备节点和权限，不适合作为可移植方案。
+
 ### 帧耗时分析的关键指标
 
-**deadline（平台为每帧分配的完成时限） miss 率**：未按时完成的帧占比。判断要用每帧自己的 deadline——可变刷新率、App 对期望帧率的投票和 SurfaceFlinger 调度都会让相邻帧的预算不同，硬编码 60 Hz 的 16.6 ms 或 120 Hz 的 8.3 ms 会误判。
+**deadline（平台为每帧分配的完成时限） miss 率**：未按时完成的帧占比。先声明统计的是 App 完成、显示呈现还是工具 overrun；这些条件与 jank type 不等价。再用该帧匹配的 deadline——可变刷新率、App 对期望帧率的投票和 SurfaceFlinger 调度都会让相邻帧的预算不同，硬编码 60 Hz 的 16.6 ms 或 120 Hz 的 8.3 ms 会误判。
 
 **P50/P90/P99**：分位数描述主体与长尾。统计对象必须写明：应用帧实际时长、预期时长、超出 deadline 的时长，还是帧间隔；对象一致，两组 P99 才有可比性。
 
-**连续卡顿段**：记录同一交互中连续 miss 的帧数和持续时间。单个长帧与连续多个超时帧，即使落在相似的百分位，也会形成不同的视觉现象。
+**连续卡顿段**：在同一目标 Layer、交互阶段和预定义有效序列中，记录连续 miss 的帧数与持续时间。时间单位、边界、丢失帧和截断段另报；单个长帧与多个超时帧即使百分位相近，视觉现象也可能不同。
 
 **归属**：FrameTimeline 的 App Jank、SurfaceFlinger Jank 和 jank type（平台标记的卡顿来源类型）是定位线索。要把责任落到业务代码、GPU 驱动或系统服务，还得回到 UI thread（处理界面事件与布局绘制的主线程）、RenderThread（承担部分渲染工作的线程）、GPU 和 SurfaceFlinger 时间线里找直接阻塞关系。
 
@@ -292,16 +296,16 @@ activity.getWindow().addOnFrameMetricsAvailableListener(
 );
 ```
 
-回调处理放到专用 `HandlerThread`（带消息循环的后台线程），避免主线程上的采集逻辑干扰被测对象。`dropCountSinceLastInvocation` 是监听器来不及接收的帧数，要连同数据一起上报，否则繁忙时段会被低估。API 26–30 的 `deadline == -1` 样本拿不到 deadline，miss 判定对它们不适用。
+回调交给已启动的专用 `HandlerThread` 对应 Handler，并在窗口生命周期结束时移除监听器、回收线程。`FrameMetrics` 对象每次复用；本例立即提取原始数值，`recordFrame` 应只做轻量有界入队，延后处理不能持有原对象。`dropCountSinceLastInvocation` 是丢失的监听报告数，不是显示掉帧数，应与收到的报告及缺失一起保存。各指标单位为 ns，负值作为不可用保留；只有 total、deadline 均有效且 deadline 为正时才分类，API 26–30 的 deadline 缺失不能填固定刷新周期。
 
-平台的 [`FrameMetrics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java) 定义 `TOTAL_DURATION = INTENDED_VSYNC → FRAME_COMPLETED` 和 `DEADLINE = INTENDED_VSYNC → FRAME_DEADLINE`，源码注释用 `TOTAL_DURATION < DEADLINE` 表示按时完成；两者相等时按未命中处理。`FIRST_DRAW_FRAME` 通常应从动画卡顿统计中单列。
-
-`dump（命令原始输出）sys gfxinfo <package> framestats` 可以作为无侵入备选，但它主要反映 HWUI（Android 硬件加速界面渲染管线） 窗口帧，输出字段随平台演进，覆盖面也不等同 FrameTimeline。解析器必须按 API 版本测试，并保留原始 dump 输出。
+平台的 [`FrameMetrics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java) 定义 `TOTAL_DURATION = INTENDED_VSYNC → FRAME_COMPLETED` 和 `DEADLINE = INTENDED_VSYNC → FRAME_DEADLINE`，源码注释用 `TOTAL_DURATION < DEADLINE` 表示按时完成；两者相等时按未命中处理。这是该 Window 帧的生产时限比较，不保证显示栈其他阶段没有 jank；也不能直接替代 FrameTimeline 的全部 jank 类型。阶段耗时可能重叠，不能逐项相加当总时长。`FIRST_DRAW_FRAME` 在动画卡顿统计中按预定义规则单列，并单报首绘；不同 Surface 的覆盖另核对。
 
 <!-- gracker-diagram: ch16-06-12-framemetrics-listener -->
 ![Window帧报告与显示掉帧的区别](../../assets/diagrams/ch16/ch16-06-12-framemetrics-listener.png)
 
 图：在可控制的Window内立即提取原始ns数值，轻量入队并保留丢失报告，按有效deadline分类。 监听报告丢失不是显示掉帧；TOTAL与DEADLINE是Window生产边界，也不能证明整个显示栈没有jank。
+
+`dumpsys gfxinfo <package> framestats` 可以作为无侵入备选，但它主要反映 HWUI（Android 硬件加速界面渲染管线） 窗口帧，输出字段随平台演进，覆盖面也不等同 FrameTimeline。解析器必须按 API 版本测试，并保留原始 dump 输出。
 
 ## 竞品包体积对比
 
@@ -319,7 +323,7 @@ Android Studio 的 APK Analyzer 可以查看 APK 或 App Bundle 的压缩大小�
 图形界面的基本流程如下：
 
 1. 在 Android Studio 中选择 `Build → Analyze APK`，或者直接将 APK 文件拖入编辑器窗口。
-2. 对每个文件同时记录 raw file size（文件本身大小）与 download size（传输压缩后的估算大小），两种数字各记各的，汇总时分开引用。
+2. 对每个文件同时记录 Raw File Size（该项对 ZIP/APK 文件大小的贡献，不是解压后逻辑大小）与 Download Size（交付压缩大小估算），两种数字各记各的，汇总时分开引用。
 3. 展开 DEX、`resources.arsc`、`res/`、`assets/` 和 `lib/<abi>/`。
 4. 使用 Compare with previous APK 比较同一个产品的相邻版本。
 
@@ -328,7 +332,7 @@ Android Studio 的 APK Analyzer 可以查看 APK 或 App Bundle 的压缩大小�
 
 图：APK Analyzer按ZIP/APK贡献量与交付压缩估算解释体积，CLI可保存同口径输出。 Raw File Size不等于解压后逻辑大小；download-size不是Play实际交付的保证。
 
-横向对比时，先为目标设备收集完整 split 集合，再按相同 ABI（CPU 指令集）、density（屏幕密度）、language（语言资源） 和动态功能模块计算；取不到完整集合时，报告写明缺哪些 split。
+横向对比时，先为目标设备收集已交付 base/split 集合，并分别记录按需模块与后续下载，再按相同 ABI（CPU 指令集）、density（屏幕密度）、language（语言资源） 和动态功能模块计算；取不到完整集合时，报告写明缺哪些 split。
 
 ### 命令行工具 apkanalyzer
 
@@ -353,7 +357,7 @@ apkanalyzer -h apk compare --different-only app-a.apk app-b.apk
 
 **Assets**：离线数据、Web bundle（Web 页面文件的打包集合）、模型和预置媒体常放在这里。Play Asset Delivery（Google Play 的大资源交付机制）或运行时下载的内容不在当前 APK 时，要在“首装下载”和“首次使用追加下载”中另行记录。
 
-**交付大小**：用户关心某台设备实际要下载的压缩字节。`apkanalyzer apk download-size` 给的是估算值，和 Play Console 的交付统计对不上；报告里标明数据来源。
+**交付大小**：用户关心某台设备实际要下载的压缩字节。`apkanalyzer apk download-size` 给的是估算值，不能保证与 Play Console 的真实交付统计相同；报告里标明数据来源。
 
 <!-- gracker-diagram: ch16-06-15-package-component-evidence -->
 ![分类字节不能直接解释实现质量](../../assets/diagrams/ch16/ch16-06-15-package-component-evidence.png)
@@ -403,9 +407,9 @@ SoC（System on Chip，系统级芯片）、GPU 驱动、内存、存储、厂�
 4. **随机执行**：按设备生成 A/B 顺序，设置超时、重试上限和失败分类。
 5. **证据采集**：保存 `am start -W` 原始输出、Perfetto Trace、录屏、安装包分析和设备快照。
 6. **统一计算**：从原始文件生成帧集合、分位数、配对差值和区间，分析代码与原始数据一起版本化。
-7. **报告门禁**：缺版本、样本不足、状态不一致或 Trace 丢失时标记无效，不生成胜负结论。
+7. **报告门禁**：缺版本、样本不足、状态不匹配、目标失败与必需证据缺失分别分类；不生成超出证据的排名。Trace 不是所有指标的共同有效性条件，应在合同里说明它用于计量、归因还是补充诊断。
 
-Macrobenchmark 很适合自有应用的启动、滚动和动画基准，并自动输出 JSON 与 Perfetto Trace。官方要求目标包为 profileable，也就是 manifest 中允许 shell 读取详细 Trace；竞品的 manifest 我们改不了，多半过不了这条。这时用外部 UI Automator/adb 驱动加 shell Perfetto 采集，并接受可观测性较低的限制。同样地，`FrameMetrics` 也只能部署到我们改得到的应用里。
+Macrobenchmark 适合自有应用并提供 JSON 与逐轮 Perfetto 产物，但目标配置、启动入口、编译重置和测试工作负载仍需适配。当前官方指南要求 profileable；固定 1.4.1 源码的 `NOT-PROFILEABLE` 错误实际只在 API 29–30 且 `DeviceInfo.profileableEnforced` 时成立，API 31+ 的 app trace tag 不再以此为同一硬门槛。因此不能仅因竞品 manifest 不可修改就断言所有版本无法使用。应按实际库/API、权限和依赖验收；需要时改用外部 UI Automator/adb 与 shell Perfetto，并记录覆盖限制，不能靠 suppressErrors 假装条件已满足。`FrameMetrics` 监听代码则需要可控制的目标进程。
 
 `dumpsys gfxinfo` 若作为兼容路径，流水线应按 Android API 版本选择解析器，并用固定样本验证字段。遇到未知格式直接失败——静默填 0 会把错误带进结论。
 
@@ -431,7 +435,7 @@ adb bugreport bugreport.zip
 
 重置会影响全设备统计，需在专用测试机执行。bugreport 可能包含账号、网络与系统日志，归档前按团队安全规范处理。
 
-AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、GPU、MEMORY、NETWORK 等类别，但它测量**全系统**功耗/能量。官方截至 2026-08-14 仍把高精度采集限制在 Pixel 6、Pixel 6 Pro 及后续实体设备。它适合在支持设备上做受控场景比较；结果对应整个系统，分不出竞品进程独占的能量。
+截至 2026-10-26，官方 Macrobenchmark 指南仍将实验性 `PowerMetric` 的高精度 power/energy 采集列在 Pixel 6、Pixel 6 Pro 及后续实体设备范围，且数值是系统级观测。还要检查实际库、API、powerstats rail 通道与采集结果，型号名本身不是可用性证明。固定 1.4.1 的高精度支持检查读取 `dumpsys powerstats` 的 `ChannelId`；`Type.Battery` 是另一种电荷变化路径，不能与 rail 能量或平均功率混算。这些结果都不等于竞品进程独占能耗。
 
 平台的 Power Stats 入口可从 [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 继续追到设备 HAL（Hardware Abstraction Layer，硬件抽象层）；具体可用的 channel（能量测量通道）和 consumer（逻辑耗能单元）由硬件实现决定。
 
@@ -447,7 +451,7 @@ AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、
 1. 校准采样率、电压与时间同步，确认设备不会同时从 USB 和仪器取电；
 2. 在同一电压、屏幕和无线条件下记录空闲基线；
 3. 用场景标记对齐每轮操作，保存原始电压与电流序列；
-4. 对功率积分得到能量，使用 J、mJ、Wh 或 mWh 报告；
+4. 以同步电压与电流计算功率 `P(t)=V(t)×I(t)`，再对时间积分得到能量 `E=∫P(t)dt`；统一为 J、mJ、Wh 或 mWh，保留测量点与 USB/夹具边界；
 5. 按随机顺序重复 A/B，给出配对差值与区间。
 
 `mAh`（毫安时）只表示电荷量，电压一变，同样的电荷对应的能量就不同。空闲基线相减也可能掩盖后台活动，原始总能量与基线修正值要同时保留。
@@ -478,6 +482,8 @@ AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、
 - `frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java` — Activity 窗口绘制完成状态与启动等待结果
 - `frameworks/base/core/java/android/view/FrameMetrics.java` — FrameMetrics API 定义
 - [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) — Android 17 SurfaceFlinger FrameTimeline
+
+- [AndroidX Benchmark 1.4.1 固定源码](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar) — Macrobenchmark profileable 检查与 PowerMetric/PowerRail 实现
 
 ### 工具与平台
 - [Perfetto](https://perfetto.dev/) — 系统级 Trace 分析平台（§14.1-§14.3 详细介绍）

@@ -4,9 +4,9 @@ chapter: '26.2'
 section: '26.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-19'
-last_source_verified_at: '2026-10-19'
-last_verified_against: AOSP android-17.0.0_r1 crash/ANR paths; Android 10-17 exit-info, profiling, WebView, symbolication and Android vitals docs; Android/Kotlin coroutine suspension docs, retrieved 2026-10-19
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 crash/ANR paths; Android 10-17 exit-info, profiling, WebView, symbolication and Android vitals docs; Android/Kotlin coroutine suspension docs, reviewed 2026-10-25; POSIX signal safety, ART SIGQUIT, tombstoned FD ownership, Java Thread.State and asynchronous component deadlines rechecked; no crash/ANR/device injection
 last_idle_audit_at: '2026-10-19T10:40:11+08:00'
 confidence: high
 sources:
@@ -151,20 +151,14 @@ Crash 监控依赖异常或信号处置路径，ANR 监控依赖主线程、系�
 
 下面的流程图把崩溃现场和后续处理窗口分开画：
 
-```mermaid
-flowchart TD
-  A["Java 未捕获异常 / Native 致命信号"] --> B["受约束的捕获入口"]
-  B --> C["写入最小记录"]
-  C --> D["继续系统默认退出路径"]
-  E["下次启动 / 健康的辅助进程"] --> F["扫描已完成记录"]
-  F --> G["补充版本与设备上下文"]
-  G --> H["压缩、脱敏、限流"]
-  H --> I["服务端接入与幂等去重"]
-  I --> J["反混淆 / 符号化"]
-  J --> K["Issue 聚合、告警、工单"]
-```
+现场阶段只保存符合当前异常环境的最小记录并继续默认退出链；下一次健康执行窗口再扫描、补充、脱敏、上报和符号化。
 
-`B → C` 对应崩溃现场，此刻运行环境是否健康是未知数；网络请求、数据库索引和复杂对象序列化，都放到后续的 `E → H` 阶段去做。
+<!-- gracker-diagram: a287-01-crash-preservation-and-next-healthy-window -->
+![崩溃现场保全与后续上报使用不同执行窗口](../../assets/diagrams/ch26/a287-01-crash-preservation-and-next-healthy-window.png)
+
+图：两行之间没有“故障进程一定继续运行”的箭头；上报失败保留稳定事件ID，ACK后再回收。
+
+图中现场保全阶段的堆、锁和线程是否健康未知；网络、数据库索引与复杂序列化都移到下一次健康执行窗口，不能依赖故障进程后台队列及时执行。
 
 #### 捕获：Java 与 Native 的执行环境
 
@@ -172,9 +166,9 @@ Java 未捕获异常的公开入口是 `Thread.UncaughtExceptionHandler`。在 A
 
 自定义 Java handler（处理器） 应在安装时保存前一个处理器，并在最小记录逻辑结束后调用它。调用要放在 `finally` 中且只发生一次——跳过这一步，平台的日志、报告与进程退出语义就变了。处理器运行在发生异常的线程上，所以 Java 路径同样不适合等待网络、获取业务锁或遍历大型对象图。
 
-Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原生崩溃诊断机制；它的 [`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 会预先准备备用栈，并以 `SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS` 标志注册信号处理。
+Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原生崩溃诊断机制；它的 [`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 预先准备辅助伪线程所用栈，并以`SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS`注册信号处理；`SA_ONSTACK`是在当前线程具备alternate signal stack时请求使用它，不能把这份辅助线程栈直接等同备用信号栈。
 
-收到致命信号后，它在专门准备的环境中启动辅助进程 `crash_dump`，读取崩溃进程的状态。[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 Linux 进程追踪接口 `ptrace`（诊断追踪数据） 读取线程状态，把结果交给 tombstoned（系统转储存储服务）写出 tombstone；tombstone 是包含信号、寄存器、线程栈和内存映射等信息的原生崩溃诊断记录，由 tombstoned 集中保存。
+收到致命信号后，它在专门准备的环境中启动辅助进程 `crash_dump`，读取崩溃进程的状态。[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过Linux进程追踪接口`ptrace`读取线程状态，并使用tombstoned（系统转储存储服务）提供的输出文件描述符写出文本/protobuf tombstone，完成后通知tombstoned；tombstone 是包含信号、寄存器、线程栈和内存映射等信息的原生崩溃诊断记录，由 tombstoned 集中保存。
 
 这条路径有两个容易踩错的地方：
 
@@ -202,7 +196,7 @@ Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原
 | `schema_version` | 让服务端兼容旧客户端 | 表示数据结构版本；废弃字段仍保留解析能力 |
 | `crash_id` / `sequence` | 幂等上传和端侧关联；幂等表示同一事件重复提交时只记一次 | 尽量提前生成；不要在 Native 信号处理器内临时创建 UUID（Universally Unique Identifier，通用唯一标识符） |
 | `event_time_wall_ms` | 与发布、日志和服务端事件对时 | 系统日期时间可能被校准，不单独用于计算耗时 |
-| `elapsed_realtime_ms` | 进程内排序和启动后时长 | 使用只递增、不受系统日期校时影响的单调时钟；该值不能跨设备比较 |
+| `elapsed_realtime_ms` | 进程内排序和启动后时长 | 使用只递增、不受系统日期校时影响的单调时钟；该值不能跨设备或跨开机区间直接相减；进程序列与开机区间应另作关联 |
 | `process_name` / `pid` / `thread_name` | 区分应用进程、进程 ID（PID）与线程 | Native 样本优先使用 minidump 或 tombstone 中已有字段 |
 | `exception_type` / `signal` | 区分 Java 异常和 Native 致命信号 | 端侧不做复杂根因推断 |
 | `raw_stack` / `top_frame` | 反混淆、符号化和初步聚合 | Native 侧还需 `.so` 共享库、相对地址、ABI（应用二进制接口）与 Build ID（构建时写入二进制的唯一标识） |
@@ -223,7 +217,7 @@ Crash 样本不宜直接复用普通业务埋点格式。它的单条价值更�
 
 #### 持久化：按捕获环境选择写入方式
 
-“临时文件 → 把数据同步到存储（例如调用 `fsync`）→ 原子重命名（rename）”这条路适合健康执行环境或经过约束的 Java 崩溃记录，直接套到 Native 信号处理器上行不通。
+“临时文件→同步数据（例如`fsync`）→原子重命名”的提交协议适合健康执行环境或受约束的Java记录，但不能据此证明完整Native信号处理代码安全。POSIX把若干相关系统调用列为异步信号安全；路径构造、缓冲区、FD、分配/锁、errno保存和可能的阻塞仍要逐步审计。原子名称切换不保证整条处理路径有界完成，也不单独保证掉电持久化。
 
 对 Java 路径和后续整理进程，可以采用以下规则：
 
@@ -253,11 +247,6 @@ SQLite 适合在进程恢复后做索引，记录“待上传、上传中、已�
 | P3 | 大型日志或追踪文件 | 默认不进入崩溃首批上传，只在授权诊断流程中获取 |
 
 服务端以 `crash_id` 和附件内容摘要实现幂等：同一份数据重复上传只入库一次，客户端的重试也就不会被计成多个受影响事件。采样记录还要带上策略版本与纳入概率，服务端才解释得了分层采样后的趋势。上传模块自身应公开待上传字节数、丢弃原因、重试次数和最近成功时间，免得“采集失效”被误读成“稳定性改善”。
-
-<!-- gracker-diagram: a287-01-crash-preservation-and-next-healthy-window -->
-![崩溃现场保全与后续上报使用不同执行窗口](../../assets/diagrams/ch26/a287-01-crash-preservation-and-next-healthy-window.png)
-
-图：两行之间没有“故障进程一定继续运行”的箭头；上报失败保留稳定事件ID，ACK后再回收。
 
 ### 多进程 Crash 上报的可靠性保证
 
@@ -311,7 +300,7 @@ API 30 起，应用可以通过 [`ActivityManager.getHistoricalProcessExitReason
 
 这项 API 是一份有界、会过期也会被覆盖的退出历史，用的时候要记住四点：
 
-- 返回值来自有界历史记录，按时间从新到旧排列；调用方应保存上次处理到的时间戳，以及由进程名和退出原因等字段组成的记录指纹，并容忍旧记录被淘汰。
+- 返回值来自有界历史记录，按时间从新到旧排列；调用方保存处理指纹与进度，但不能只用严格递增时间戳作唯一游标：同毫秒记录、日期校准和重试都可能重叠。每次重扫受限历史窗口并按多字段指纹幂等，持久化成功后再推进进度，同时容忍旧记录淘汰。
 - `ApplicationExitInfo` 的 trace（线程转储） 存放在单独的全局循环存储中，可能被包括其他应用在内的后续记录覆盖；`getTraceInputStream()` 允许返回 `null`。
 - API 30 的 trace 主要用于 ANR；API 31 起，`REASON_CRASH_NATIVE` 可以返回以 Protocol Buffers 编码的 tombstone 数据流。Protocol Buffers 是一种结构化二进制序列化格式。
 - 同一个事件可能同时被 Crash SDK 和系统历史发现。去重应综合应用构建、进程名、相近的发生时间、退出原因、SDK 事件 ID，以及可用的致命信号、Build ID 或栈顶帧；只拼接“进程 ID + 时间戳”是靠不住的。
@@ -368,7 +357,7 @@ Native 样本和符号产物至少要通过以下信息匹配：
 混淆名、绝对地址和随构建变化的程序计数器，都当不了跨版本问题组的主键。我们要把“事件的固定 ID”和“可重新计算的问题签名”分开：
 
 1. Java/Kotlin 候选签名：异常类型、反混淆后的稳定调用帧序列、规范化后的异常消息、构建范围。
-2. Native 候选签名：致命信号、模块 Build ID、符号化后的函数、模块内偏移区间、ABI。
+2. Native先用致命信号、ABI、模块Build ID与偏移定位同一构建内的候选组；跨构建再依据规范化符号帧、源码/模块语义和版本范围关联问题。Build ID用于选准符号文件，不是跨版本恒定的根因ID。
 3. 服务端保留原始事件与问题组的对应关系；映射文件、符号文件或聚类算法更新后，可以重新符号化和归组，但不改动原始事件。
 
 ### Crash 实时告警与分级响应
@@ -498,23 +487,12 @@ API 37 的 `ActivityManager.registerAnrWarningListener()` 会在应用接近 ANR
 
 下面的时序图只画 system_server 里的主要职责；trace 文件写入和退出历史记录是两个动作，图中分开表示。
 
-```mermaid
-sequenceDiagram
-    participant Trigger as 超时来源
-    participant AMS as ActivityManagerService
-    participant Anr as AnrHelper
-    participant PESR as ProcessErrorStateRecord
-    participant Dump as StackTracesDumpHelper
-    participant Store as DropBox / exit-info tracker
+超时来源进入AnrHelper后先去重和提交目标PID的early dump，再由AnrConsumer串行执行完整ANR处理；线程转储、DropBox与退出历史更新各自保留边界。
 
-    Trigger->>AMS: 上报 app not responding
-    AMS->>Anr: appNotResponding(process, reason)
-    Anr->>Dump: 提交目标 PID early dump
-    Anr->>PESR: AnrConsumer 串行处理记录
-    PESR->>Dump: dump firstPids / nativePids / extraPids
-    Dump-->>PESR: 返回 traces 文件与首进程范围
-    PESR->>Store: 写 DropBox、更新 ANR/退出信息
-```
+<!-- gracker-diagram: a287-12-early-dump-serialized-anr-and-recording -->
+![early dump 抢现场，完整 ANR 处理由消费者串行执行](../../assets/diagrams/ch26/a287-12-early-dump-serialized-anr-and-recording.png)
+
+图：基础预算：完整dump20s、Native单次2s、early10s；它们不是应用判定ANR的通用阈值。
 
 图中 early dump 与完整处理分开执行，用于尽早保存目标进程现场，同时避免多个 ANR 同时发生时并发执行成本较高的完整线程转储。
 
@@ -524,12 +502,7 @@ sequenceDiagram
 
 `Debug.dumpJavaBacktraceToFileTimeout()` 经 JNI（Java Native Interface，Java 原生接口） 调用 debuggerd 的 Java backtrace 路径。ART 的 `SignalCatcher` 线程通过 `sigwait()` 等待 `SIGQUIT` 信号，随后执行 `Runtime::DumpForSigQuit()` 并把结果交给 tombstoned。主线程上并没有安装普通的信号处理函数，App SDK 也拿不到“ANR 已确认”回调。
 
-第三方 SDK 对平台的 `SIGQUIT` 处理要保持克制：保留平台自己的处理器，让信号照常传递，也不要自行把该信号解释成“ANR 已确认”。新系统会把 ANR trace 写入 `/data/anr/anr_*`，这个目录普通应用读不到；具备 root 或调试条件的设备可以用 ADB（Android Debug Bridge，Android 调试桥）获取。生产环境 App 应把系统确认与端侧预警分开处理：API 30 及以上查询 `ApplicationExitInfo`，运行期靠低成本主线程监控保存自己的现场信息。
-
-<!-- gracker-diagram: a287-12-early-dump-serialized-anr-and-recording -->
-![early dump 抢现场，完整 ANR 处理由消费者串行执行](../../assets/diagrams/ch26/a287-12-early-dump-serialized-anr-and-recording.png)
-
-图：基础预算：完整dump20s、Native单次2s、early10s；它们不是应用判定ANR的通用阈值。
+第三方SDK应保持ART的SIGQUIT屏蔽、专用SignalCatcher/sigwait消费与tombstoned输出路径，不擅自改线程信号掩码或截断消费链。这里并非一个可简单“保存旧sigaction再转发”的主线程处理器；收到SIGQUIT也不能自行解释为“ANR已确认”。新系统会把 ANR trace 写入 `/data/anr/anr_*`，这个目录普通应用读不到；具备 root 或调试条件的设备可以用 ADB（Android Debug Bridge，Android 调试桥）获取。生产环境 App 应把系统确认与端侧预警分开处理：API 30 及以上查询 `ApplicationExitInfo`，运行期靠低成本主线程监控保存自己的现场信息。
 
 <!-- gracker-diagram: a287-13-sigquit-signal-catcher-and-output -->
 ![SIGQUIT 由 ART 专用线程等待，不是主线程普通 handler](../../assets/diagrams/ch26/a287-13-sigquit-signal-catcher-and-output.png)
@@ -551,7 +524,7 @@ Android 11 引入 `ApplicationExitInfo` 后，App 可以在后续进程启动时
 
 ANR 指标我们分两套用：内部治理一套，Google Play Android vitals 一套。内部指标面向排查，关注版本、场景、页面、设备和线程状态；vitals 面向分发质量，关注 user-perceived ANR rate（用户感知 ANR 率）。
 
-Play 当前把用户感知 ANR 率列为 core vital（会影响应用可发现性的核心质量指标）。官方口径中，只有 `Input dispatching timed out` 计入用户感知 ANR，而它只覆盖应用全部 ANR 的一部分。公开的不良行为阈值为：全设备维度至少 0.47% 的日活用户遇到用户感知 ANR，单机型维度至少 8%。Android vitals 每日更新；Google Play 通常依据最近 28 天的数据评估应用质量，指标突增时可能提前采取措施。超过阈值可能降低应用在 Google Play 的可发现性，也可能在商品详情中显示警告。
+Play 当前把用户感知 ANR 率列为 core vital（会影响应用可发现性的核心质量指标）。官方口径中，只有 `Input dispatching timed out` 计入用户感知 ANR，而它只覆盖应用全部 ANR 的一部分。公开的不良行为阈值为：全设备维度至少 0.47% 的日活用户遇到用户感知 ANR，手机型号维度至少8%（手表型号另为5%）。Android vitals每日更新；Google Play通常依据最近28天数据评估质量；Reporting API的28天率为按每日distinctUsers加权的滚动平均，不能先平均每日百分比或把28天distinctUsers简单相加。指标突增时可能提前采取措施。超过阈值可能降低应用在 Google Play 的可发现性，也可能在商品详情中显示警告。
 
 Play 的“用户”按设备和自然日去重：同一账号在两台设备上会计为两个日活用户，同一设备上的多个账号计为一个。Android vitals 的数据又只来自满足这些条件的设备：从 Google Play 安装、通过 Play 认证，且用户选择共享使用情况与诊断信息。内部用户 ANR 率可以用相同的分子和分母去比趋势；逐条对齐 Play Console 的数值，这个预期本身就不成立。
 
@@ -650,7 +623,7 @@ trace、breadcrumb、URL、文件路径、Intent 和线程名都可能含敏感�
 
 1. 确认事件来源：Android vitals、`ApplicationExitInfo.REASON_ANR`、端侧疑似 ANR 三者分开标记。只有端侧疑似事件时，先按长卡顿处理。
 2. 看 ANR 类型：输入派发、广播、Service、ContentProvider 的排查入口不同。类型判断详见 9.1 节。
-3. 看主线程状态：Java 栈里的 `RUNNABLE` 只表示线程具备运行条件，要确认它持续占用 CPU，还得结合 Perfetto 调度切片、CPU 计数或持续采样。`BLOCKED` 指向 Java monitor 锁竞争，`WAITING` / `TIMED_WAITING` 则需结合栈顶调用判断是在等锁、Binder、条件变量、数据库连接还是线程池结果。
+3. 看主线程状态：Java栈里的`RUNNABLE`是虚拟机线程状态，不等于Linux当前running/runnable；线程也可能在等操作系统资源。要判断实际占用CPU、可运行排队或native等待，需结合Perfetto线程状态/调度切片、CPU计数与完整调用栈。`BLOCKED` 指向 Java monitor 锁竞争，`WAITING` / `TIMED_WAITING` 则需结合栈顶调用判断是在等锁、Binder、条件变量、数据库连接还是线程池结果。
 4. 找等待对端：主线程等待 Binder 时查对端处理线程；等待锁时查持锁线程；等待 I/O 时查文件、数据库、网络和调用栈。
 5. 回到发布维度：按版本、实验组、页面、设备、系统版本聚合，确认是新增问题、存量问题恶化，还是特定机型问题。
 
@@ -677,7 +650,7 @@ WebView renderer（WebView 渲染进程，负责解析和绘制网页内容的�
 
 协程不改变 ANR 的系统判定：主线程没能及时处理输入或生命周期回调，仍可能触发系统 ANR。排查时要区分线程阻塞与协程挂起。`runBlocking` 会阻塞调用线程，在主线程使用时可能妨碍 Looper 处理消息；`Deferred.await()`、`Mutex.lock()` 等等待操作可以挂起协程，让出线程；`withContext(Dispatchers.IO)` 可以把阻塞 I/O 移到后台。协程回到主线程后执行的长计算或阻塞调用，仍可能造成无响应。
 
-协程项目的 ANR 快照至少保留主线程栈，并在可观测时补充调度线程栈与自定义 dispatcher（协程调度器） / executor（任务执行器） 的队列摘要。Kotlin 公共 API 不保证应用可以在发布构建中安全枚举全部活跃协程；没有稳定观测接口时，应保留线程栈和业务任务标识，避免把调试探针设为生产环境必选项。`Dispatchers.IO` 或 `Default` 中的任务饱和不会直接触发系统 ANR；主线程同步阻塞等待任务结果、回调没被及时执行时，才形成与 ANR 相关的现场。Java 崩溃与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
+协程项目的 ANR 快照至少保留主线程栈，并在可观测时补充调度线程栈与自定义 dispatcher（协程调度器） / executor（任务执行器） 的队列摘要。Kotlin 公共 API 不保证应用可以在发布构建中安全枚举全部活跃协程；没有稳定观测接口时，应保留线程栈和业务任务标识，避免把调试探针设为生产环境必选项。`Dispatchers.IO`或`Default`饱和本身不是ANR类型；但它既可能让主线程同步等结果，也可能推迟广播`goAsync()`后的`PendingResult.finish()`、JobService回调或其他组件期限内必须完成的工作。后一类超时即使主线程仍能处理消息，也可能形成系统ANR；应按实际超时来源判断，不能只看主线程是否阻塞。Java 崩溃与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
 
 <!-- gracker-diagram: a287-18-coroutine-suspension-blocking-and-component-deadline -->
 ![协程挂起不阻塞线程，但组件 deadline 仍要完成](../../assets/diagrams/ch26/a287-18-coroutine-suspension-blocking-and-component-deadline.png)

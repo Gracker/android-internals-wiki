@@ -16,7 +16,7 @@ related_chapters:
 - '22.3'
 - '2.16'
 - '2.13'
-last_verified: '2026-08-15'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1; Android 16/17 adaptive-layout behavior changes; AndroidX versions and Compose UI / Material 3 Adaptive / WindowManager release notes; Perfetto FrameTimeline docs
 confidence: high
 sources:
@@ -65,11 +65,11 @@ consolidated_from:
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `ViewRootImpl`、WindowManager、WM Shell、BLAST、SurfaceFlinger 与 HWC 按该源码标签核查 |
 | Android 内核 | `android17-6.18-2026-06_r6` | 调度、cpuset 与 dma-fence 只说明公共内核机制，不推断厂商 DPU/GPU 实现 |
-| Compose UI | 1.11.4 稳定版 | Compose 独立发布，不随 API 37 一起定版 |
-| Material 3 Adaptive | 1.2.0 稳定版 | 示例代码使用这一版公开 API；Large / Extra-large 分类需要显式开启 |
+| Compose UI | 示例沿用兼容 API；2026-10-25 当前稳定版为 1.12.1 | Compose 独立发布，运行时 API 编译复核使用 1.12.0，不由 API 37 推导 |
+| Material 3 Adaptive | 本文固定基线 1.2.0；当前稳定版 1.3.0 | 示例和源码结论仍按 1.2.0；Large / Extra-large 需要显式开启 |
 | Jetpack WindowManager | 1.5.1 稳定版 | `WindowInfoTracker`、`FoldingFeature` 与 `WindowMetricsCalculator` 按这一版说明 |
 
-Material 3 Adaptive 1.3.0-rc01 是候选发布版（release candidate，RC），部分窗口信息 API 已经调整。生产项目若采用 1.3.x，应按该版本的迁移说明改写调用；反过来说，1.3.x 里标记弃用的 API，在 1.2.0 中仍可能是正确用法。
+2026-10-25 复核，Material 3 Adaptive 1.3.0 已是稳定版，1.3.0-rc01 只是此前的候选发布物；部分窗口信息 API 已调整。生产项目若采用 1.3.x，应按该版本的迁移说明改写调用；反过来说，1.3.x 里标记弃用的 API，在 1.2.0 中仍可能是正确用法。
 
 ## 一、窗口尺寸类别描述窗口，不描述设备
 
@@ -105,6 +105,7 @@ Material 3 Adaptive 1.2.0 对宽度分类和窗格数量有几处默认行为：
 - `currentWindowAdaptiveInfo()` 默认仍按 Compact、Medium、Expanded 三档计算；传入 `supportLargeAndXLargeWidth = true` 后，计算才会包含 1200dp 与 1600dp 两个断点。
 - `calculatePaneScaffoldDirective()` 生成窗格布局指令：Compact 和 Medium 默认允许一个横向分区，Expanded 允许两个，Large 和 Extra-large 最多允许三个。
 - `calculatePaneScaffoldDirectiveWithTwoPanesOnMediumWidth()` 会让 Medium 使用双窗格，但源码文档也提醒，这可能使内容过密，只适合确有需求的页面。
+- 上述横向分区数是最大布局指令，不保证窗格都可见；目的地历史、适配策略、铰链和局部约束还会参与实际选择。1.2.0 在 tabletop 姿态，或单横向分区且 Expanded 高度时，也会允许两个纵向分区，不能把“一个横向分区”直接当成“总共一个窗格”。
 
 ### 2. 类别切换与连续调整是两种频率
 
@@ -330,14 +331,14 @@ class FoldAwareActivity : ComponentActivity() {
 
 `Choreographer#doFrame` → `ViewRootImpl` 遍历 → HWUI RenderThread → 窗口 BLAST 缓冲区 → SurfaceFlinger → 目标显示设备的 HWC → 呈现栅栏（present fence）。
 
-这条链上每一站都有自己的职责：`ViewRootImpl` 遍历里做的是一轮测量、布局和绘制准备；BLAST 协调窗口缓冲区与 `SurfaceControl` 事务；合成交给 HWC——硬件合成器（Hardware Composer）；一轮呈现结束时，显示设备发出呈现栅栏，作为本轮完成的同步信号。
-
-约束变化可能让 Compose 重新组合、测量、布局、记录绘制命令，也可能只触发其中一部分。而向系统侧请求重新布局的动作由 `ViewRootImpl.performTraversals()` 发起：尺寸、可见性、Insets、`LayoutParams`、Surface 等条件满足时，它才通过 `IWindowSession.relayout()` 请求 WMS 重新布局；内容稳定的帧不会固定执行一次 `relayout()`。再往上，WMS 维护窗口状态，WM Shell 在系统界面进程中负责多窗口和转场等上层交互。
+这条链上每一站都有自己的职责：`ViewRootImpl` 遍历里做的是一轮测量、布局和绘制准备；BLAST 协调窗口缓冲区与 `SurfaceControl` 事务；SurfaceFlinger 决定 DEVICE / CLIENT 分工，CLIENT 部分可由 RenderEngine 在 GPU 上合成，再交 HWC（硬件合成器）参与最终呈现；一轮呈现结束时，显示设备发出呈现栅栏，作为本轮完成的同步信号。
 
 <!-- gracker-diagram: a243-11-hwui-to-display -->
 ![标准窗口出图仍沿应用到显示链路](../../assets/diagrams/ch22/a243-11-hwui-to-display.png)
 
 图：窗口大小变化没有替换显示管线；客户端合成可使用RenderEngine GPU，不能把全部图层都当硬件直出。
+
+约束变化可能让 Compose 重新组合、测量、布局、记录绘制命令，也可能只触发其中一部分。而向系统侧请求重新布局的动作由 `ViewRootImpl.performTraversals()` 发起：尺寸、可见性、Insets、`LayoutParams`、Surface 等条件满足时，它才通过 `IWindowSession.relayout()` 请求 WMS 重新布局；内容稳定的帧不会固定执行一次 `relayout()`。再往上，WMS 维护窗口状态，WM Shell 在系统界面进程中负责多窗口和转场等上层交互。
 
 ### 2. 窗口、进程和显示设备要分别分析
 
@@ -417,9 +418,11 @@ flowchart LR
 变化的适用范围是显示设备最小宽度达到 600dp 的大屏，也就是官方资料里的 `sw600dp` 及以上。在这类设备上，下面这些配置或调用不能再当作布局前提：
 
 - `screenOrientation` 的 `portrait` / `landscape` 系列固定值；
-- `setRequestedOrientation()` 和 `getRequestedOrientation()` 对应的固定方向值；
+- `setRequestedOrientation()` 请求的固定方向值；
 - `resizeableActivity`；
 - `minAspectRatio` 与 `maxAspectRatio`。
+
+`getRequestedOrientation()` 读取请求值，不代表当前窗口已经按该方向显示；实际布局仍以当前窗口和配置为准。
 
 例外也要记全：游戏类别、低于 `sw600dp` 的屏幕，以及用户在设备宽高比设置中明确选择应用原有行为的情况，都是官方列出的例外。加上不同厂商的桌面窗口能力和窗口策略本身有差异，验收记录要写清设备与窗口模式。
 
@@ -475,7 +478,7 @@ flowchart LR
 
 ### 3. 更多窗格会扩大活跃工作集
 
-窗格多了，页面当前仍保留并参与更新的状态、图片、订阅和界面节点——也就是活跃工作集——也会跟着变大。双窗格或三窗格可能同时保留列表、详情、辅助内容、导航与动画；Lazy 容器只组合可见项，其余窗格的状态、图片和订阅未必会随之自动暂停。要检查：
+窗格多了，页面当前仍保留并参与更新的状态、图片、订阅和界面节点——也就是活跃工作集——也会跟着变大。双窗格或三窗格可能同时保留列表、详情、辅助内容、导航与动画；Lazy 容器按需组合和测量，但预取、缓存窗口、动画或 beyond-bounds 等路径也可能保留 / 处理视口外项目；其余窗格的状态、图片和订阅更不会因此自动暂停。要检查：
 
 - 不可见窗格是否仍在运行动画或定时刷新；
 - 详情切换是否保留过多大图和文本布局；
@@ -523,22 +526,22 @@ flowchart LR
 - 由数据仓库管理、带修订版本号和事务的共享业务状态；
 - 可以共享、但不隐含“当前窗口”的进程级缓存与连接池。
 
-再看拖放。跨窗口拖放只在回调中传递轻量的 `ClipData`、URI 和访问授权，MIME 类型校验、Bitmap 解码、缩略图生成与导入事务放到后台。Android 15 提供 `DRAG_FLAG_GLOBAL_SAME_APPLICATION`，允许拖放跨越同一应用的窗口；`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 则在没有窗口接收放下动作时启动 `IntentSender`。这两个入口仍要重新过一遍任务路由和权限验证，大对象不要序列化进 Intent 或 Binder 调用。
-
-同一进程的多个窗口各有 `ViewRootImpl` 和缓冲区周转，却可能共享 UI Looper 与进程级 RenderThread。后果是：窗口 B 自己的 `DrawFrame` 很短，也可能排在窗口 A 的长任务后面，错过显示截止时间。跨显示器时，`displayId`、密度、刷新率、色彩模式和每个屏幕的呈现结果要分别记录；连接或断开外屏、跨屏拖动、最大化或还原、输入焦点切换，都算独立用例。
-
-桌面窗口还要覆盖鼠标悬停、滚轮、右键、键盘快捷键、Tab 焦点和窗口标题栏 Insets。精确指针参与模式 `EngagementMode.PRECISE_POINTER` 到 WindowManager 1.6.0-alpha05 才加入，1.5.1 稳定版里还没有它；描述稳定版的实现时，这项预览 API 要排除在外。
+再看拖放。跨窗口拖放只在回调中传递轻量的 `ClipData`、URI 和访问授权，MIME 类型校验、Bitmap 解码、缩略图生成与导入事务放到后台。Android 15 提供 `DRAG_FLAG_GLOBAL_SAME_APPLICATION`，允许拖放送到同 UID 且 targetSdk≥24 的可见应用窗口；`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 会在没有窗口处理 drop 时请求系统启动提供的 `IntentSender`，但系统可按屏幕尺寸或窗口模式拒绝。`ClipData.Item` 必须包含指向 Activity 的不可变 `IntentSender`，不能拿 service / broadcast 目标代替。这两个入口仍要重新过一遍任务路由和权限验证，大对象不要序列化进 Intent 或 Binder 调用。
 
 <!-- gracker-diagram: a243-21-cross-window-drag -->
 ![拖放授权、导入工作与未处理降级分开](../../assets/diagrams/ch22/a243-21-cross-window-drag.png)
 
 图：大对象不序列化进Intent或Binder；拖放跨窗仍需验证访问授权和任务路由。
 
+同一进程的多个窗口各有 `ViewRootImpl` 和缓冲区周转，却可能共享 UI Looper 与进程级 RenderThread。后果是：窗口 B 自己的 `DrawFrame` 很短，也可能排在窗口 A 的长任务后面，错过显示截止时间。跨显示器时，`displayId`、密度、刷新率、色彩模式和每个屏幕的呈现结果要分别记录；连接或断开外屏、跨屏拖动、最大化或还原、输入焦点切换，都算独立用例。
+
+桌面窗口还要覆盖鼠标悬停、滚轮、右键、键盘快捷键、Tab 焦点和窗口标题栏 Insets。精确指针参与模式 `EngagementMode.PRECISE_POINTER` 到 WindowManager 1.6.0-alpha05 才加入，1.5.1 稳定版里还没有它；描述稳定版的实现时，这项预览 API 要排除在外。
+
 ## 八、资源限定符只处理稳定的资源差异
 
 我们先把资源限定符和运行时窗口分类的关系分清。`sw<N>dp`、`w<N>dp`、方向、密度这些限定符适合选择资源，但它们与运行时窗口分类并不完全等价：
 
-- `sw<N>dp` 描述配置中的最小宽度，不随每次自由窗口宽度变化；
+- `sw<N>dp` 匹配当前 Configuration 的 `smallestScreenWidthDp`，不等于不可变的设备类别。Android 17 对浮动任务可按任务边界的较短边 / 密度重算它，嵌入式窗口也有更新路径，因此自由窗口调整时资源可能重选；
 - `w<N>dp` 更接近当前可用宽度，但资源重选仍经过 Configuration/Resources 路径；
 - Compose 窗口尺寸类别是运行时布局输入；
 - 组件测量约束描述的是局部可用空间。
@@ -583,11 +586,12 @@ Compose Preview、Compose UI Check、`DeviceConfigurationOverride` 和截图测�
 
 ### 3. FrameTimeline 要按 SurfaceFrame 和 DisplayFrame 读取
 
-窗口调整的问题，我们最终要落到 FrameTimeline 上看。这段 PerfettoSQL 比较目标应用窗口的 Expected 和 Actual `SurfaceFrame`：Expected 是系统预期的帧时间窗，Actual 是实际执行记录。`$target_upid` 是 Perfetto 中的目标进程编号（pid），`$layer_glob` 是目标窗口图层的匹配模式；两者必须依据本次轨迹确定，仅凭包名模糊匹配整个系统是不够的。
+窗口调整的问题，我们最终要落到 FrameTimeline 上看。这段 PerfettoSQL 比较目标应用窗口的 Expected 和 Actual `SurfaceFrame`：Expected 是系统预期的帧时间窗，Actual 是实际执行记录。`$target_upid` 是 Perfetto `process.upid` 的唯一进程实例标识，不能直接填操作系统 pid；可先查询 `process` 表核对 pid、名称与生命周期，`$layer_glob` 是目标窗口图层的匹配模式；两者必须依据本次轨迹确定，仅凭包名模糊匹配整个系统是不够的。
 
 ```sql
 WITH actual_app AS (
   SELECT
+    id AS actual_slice_id,
     upid,
     surface_frame_token,
     display_frame_token,
@@ -598,20 +602,27 @@ WITH actual_app AS (
     present_type
   FROM actual_frame_timeline_slice
   WHERE upid = $target_upid
-    AND surface_frame_token != 0
+    AND surface_frame_token > 0
     AND layer_name GLOB $layer_glob
+    AND dur >= 0
 ),
 expected_app AS (
   SELECT
+    id AS expected_slice_id,
     upid,
     surface_frame_token,
+    layer_name,
     ts AS expected_start_ns,
     ts + dur AS expected_end_ns
   FROM expected_frame_timeline_slice
   WHERE upid = $target_upid
-    AND surface_frame_token != 0
+    AND surface_frame_token > 0
+    AND layer_name GLOB $layer_glob
+    AND dur >= 0
 )
 SELECT
+  a.actual_slice_id,
+  e.expected_slice_id,
   a.surface_frame_token,
   a.display_frame_token,
   a.layer_name,
@@ -623,19 +634,19 @@ SELECT
   a.jank_type,
   a.present_type
 FROM actual_app AS a
-JOIN expected_app AS e
-  USING (upid, surface_frame_token)
+LEFT JOIN expected_app AS e
+  USING (upid, surface_frame_token, layer_name)
 ORDER BY a.actual_start_ns;
 ```
 
-查询结果里，`overrun_ns > 0` 表示 Actual 结束时间晚于 Expected 截止时间，差值单位是纳秒；数值本身不说明原因。往下查分两条路：应用 `SurfaceFrame` 异常，查 UI 线程、RenderThread、GPU、缓冲区和同步栅栏；应用按时，而 `display_frame_token` 对应的 `DisplayFrame` 异常，再查 WMS/Shell 事务、SurfaceFlinger、客户端合成、HWC 与目标屏幕的呈现时间。
-
-多窗口、多进程时，查询结果要按窗口和进程分别看：同一进程有多个窗口，分别查各自的图层、`ViewRootImpl` 和缓冲区队列；同一显示设备有多个进程，分别确认每个应用是否按时提交。`surface_frame_token` 与 `display_frame_token` 是关联应用帧和显示帧的标识；把它和缓冲区事务 `BufferTX`、图层快照、呈现栅栏放在一起，才构成完整证据——单看某个时间片名称，定位不了责任模块。
+查询先筛掉 `dur < 0` 的未闭合记录；这些记录的数量应另计作采集质量。Expected 关联键 `(upid, surface_frame_token, layer_name)` 应先核查唯一性，重复键不能直接聚合。`expected_slice_id` / `overrun_ns` 为 NULL 表示未找到同层完整 Expected，不能补成按时或零超期。`overrun_ns > 0` 才表示该已匹配 Actual 的结束时间晚于 Expected 截止时间，单位是纳秒，数值本身仍不说明原因。往下查分两条路：应用 `SurfaceFrame` 异常，查 UI 线程、RenderThread、GPU、缓冲区和同步栅栏；应用按时，而 `display_frame_token` 对应的 `DisplayFrame` 异常，再查 WMS/Shell 事务、SurfaceFlinger、客户端合成、HWC 与目标屏幕的呈现时间。
 
 <!-- gracker-diagram: a243-24-sql-frame-identity -->
 ![SQL 按进程实例、帧 token 与目标图层关联](../../assets/diagrams/ch22/a243-24-sql-frame-identity.png)
 
 图：关联键先查唯一性，监控缺失与重复不能补成按时；时间差为正也不能直接给出根因。
+
+多窗口、多进程时，查询结果要按窗口和进程分别看：同一进程有多个窗口，分别查各自的图层、`ViewRootImpl` 和缓冲区队列；同一显示设备有多个进程，分别确认每个应用是否按时提交。`surface_frame_token` 与 `display_frame_token` 是关联应用帧和显示帧的标识；显示帧 token 的值可能为 0 或暂不可关联，也不能直接当作某块屏幕的实际呈现时间；把它和缓冲区事务 `BufferTX`、图层快照、呈现栅栏放在一起，才构成完整证据——单看某个时间片名称，定位不了责任模块。
 
 ### 4. 调整窗口轨迹的分析顺序
 
@@ -654,6 +665,7 @@ ORDER BY a.actual_start_ns;
 图：双窗格不等于两个窗口，共享线程也可能使小窗口排在其他工作后迟到。
 
 ## 十、常见误判
+
 
 | 现象 | 先查什么 | 不能直接下的结论 |
 |---|---|---|
@@ -721,6 +733,9 @@ ORDER BY a.actual_start_ns;
 - [`FoldingFeature.kt`（WindowManager 1.5.1）](https://android.googlesource.com/platform/frameworks/support/+/be8b763fe78ab805aa1c9a3bff09f1ff8081dbb2/window/window/src/main/java/androidx/window/layout/FoldingFeature.kt)
 - [`WindowInfoTracker.kt`（WindowManager 1.5.1）](https://android.googlesource.com/platform/frameworks/support/+/be8b763fe78ab805aa1c9a3bff09f1ff8081dbb2/window/window/src/main/java/androidx/window/layout/WindowInfoTracker.kt)
 - [`ViewRootImpl.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [`TaskFragment.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskFragment.java)：浮动与嵌入窗口重算 smallestScreenWidthDp 的配置路径。
+- [`View.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java) 与 [`Activity.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java)：拖放 flag 前提、系统选择与 requested orientation 读取边界。
+- [Perfetto process 表](https://perfetto.dev/docs/analysis/sql-tables#process)：upid 与操作系统 pid 的区分。
 - [`Choreographer.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
 - [`RenderThread.cpp`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
 - [`BLASTSyncEngine.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)

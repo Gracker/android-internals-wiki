@@ -4,7 +4,7 @@ chapter: '21.2'
 section: '21.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1, current Jetpack App Startup guide and 1.2.0 latest stable sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)
 confidence: medium-high
 sources:
@@ -109,7 +109,7 @@ last_consolidated_at: '2026-08-24'
 | `PRE_FULLY_DRAWN` | TTFD 之前 | 首要操作所需的数据和能力 |
 | `DEFERRED` | 页面可用之后 | 二级功能、预取、非必要 SDK |
 
-`PRE_APP` 是被组件生命周期强制出来的阶段，拿来追求“更早”只会把重活提前。[`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)先安装 Provider，再调用 `Application.onCreate()`；放进 Provider 的重活会直接进入更早的主线程关键路径。
+`PRE_APP` 是被组件生命周期强制出来的阶段，拿来追求“更早”只会把重活提前。[`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)在普通应用绑定且存在待安装 Provider 时，先安装 Provider，再调用 `Application.onCreate()`；放进 Provider 的重活会直接进入更早的主线程关键路径。 `restrictedBackupMode` 会跳过这段 Provider 安装；空 Provider 列表也不安装，不能把普通顺序写成所有入口都执行的强制流程。
 
 启动任务只应包含“初始化完成”可以清晰定义的工作。长期轮询、常驻连接和周期任务属于运行期调度，启动任务只负责把它们配置并启动到约定状态，别让启动 DAG 一直挂着等它们。
 
@@ -156,7 +156,7 @@ sealed interface TaskResult<out T> {
 }
 ```
 
-这里用 `suspend` 表达逻辑完成点：函数挂起时不占住调用线程，只有成功、降级或失败结果产生后才算结束。框架也可以用 Guava `ListenableFuture`、Java `CompletionStage` 或带完成回调的接口实现同一契约。所以后继的等待条件，是前驱产生允许传播的最终状态。某个 SDK 的 `startAsync()` 返回，多半只说明异步请求提交了出去，它是否已可供后继使用还是未知数。
+这里用 `suspend` 表达逻辑完成点：真正挂起时可释放承载线程，但 `suspend` 关键字不会自动切线程，内部阻塞调用仍占用线程；只有成功、降级或失败结果产生后才算结束。框架也可以用 Guava `ListenableFuture`、Java `CompletionStage` 或带完成回调的接口实现同一契约。所以后继的等待条件，是前驱产生允许传播的最终状态。某个 SDK 的 `startAsync()` 返回，多半只说明异步请求提交了出去，它是否已可供后继使用还是未知数。
 
 #### 2.2 边的语义
 
@@ -206,7 +206,12 @@ Logger(8 ms) ─→ Crash(20 ms) ─┐
 Device(12 ms) → Config(10 ms) ┘
 ```
 
-上例两条前驱路径分别是 28 ms 和 22 ms，汇合后的理论关键路径是 43 ms。缩短不在关键路径上的任务，第一帧结束时间可能纹丝不动——这个时间由上面那条链决定。
+这些时长仅为教学假设，不是设备测量。上例两条前驱路径分别是 28 ms 和 22 ms，忽略资源竞争且 FirstFrame 节点额外成本按零计算时，汇合后的理论关键路径是 43 ms。缩短不在关键路径上的任务，第一帧结束时间可能纹丝不动——这个时间由上面那条链决定。
+
+<!-- gracker-diagram: a223-04-critical-path-model -->
+![最长依赖链给出理论下界，非关键分支变快未必缩短结束时间](../../assets/diagrams/ch21/a223-04-critical-path-model.png)
+
+图：教学假设：max(8+20,12+10)+15+0=43ms；真机还需加入排队、竞争和实际帧成本。
 
 当然，这只是理论模型，真机上的完成时间还要叠加这些因素：
 
@@ -218,11 +223,6 @@ Device(12 ms) → Config(10 ms) ┘
 - 任务时长会随缓存、网络和入口变化。
 
 所以关键路径要用每次 Trace 的真实开始/结束和依赖关系重建，代码评审里估出来的耗时写死下来没有意义。P50 是样本中位数，P95 表示 95% 的样本不超过该值；典型启动和长尾启动的瓶颈不同，二者的关键路径也可能不同，我们要分开重建。
-
-<!-- gracker-diagram: a223-04-critical-path-model -->
-![最长依赖链给出理论下界，非关键分支变快未必缩短结束时间](../../assets/diagrams/ch21/a223-04-critical-path-model.png)
-
-图：教学假设：max(8+20,12+10)+15+0=43ms；真机还需加入排队、竞争和实际帧成本。
 
 #### 3.2 优先级只影响已经就绪的任务
 
@@ -291,7 +291,7 @@ Device(12 ms) → Config(10 ms) ┘
 
 #### 5.1 1.2.0 的执行模型
 
-[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 用一个 `InitializationProvider` 发现 Manifest `<meta-data>` 中声明的 `Initializer`。这里的 `<meta-data>` 是写在 Provider 下的键值配置，key 为初始化器类名，value 为 `androidx.startup`。截至 2026-08-14，[1.2.0](https://developer.android.com/jetpack/androidx/releases/startup) 仍是最新稳定版；其 `AppInitializer` 会：
+[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 用一个 `InitializationProvider` 发现 Manifest `<meta-data>` 中声明的 `Initializer`。这里的 `<meta-data>` 是写在 Provider 下的键值配置，key 为初始化器类名，value 为 `androidx.startup`。截至 2026-10-25，[1.2.0](https://developer.android.com/jetpack/androidx/releases/startup) 仍是最新稳定版；其 `AppInitializer` 会：
 
 1. 读取 Provider 的 metadata，找到值为 `androidx.startup` 的类名；
 2. 通过反射，按运行期类名查找并创建 `Initializer`；
@@ -334,7 +334,7 @@ App Startup 适合：
 
 它没有任务优先级、内建超时、取消、异步结果或运行期改图；每个由 Manifest 自动发现并立即执行的 eager initializer（由 Manifest 自动发现并立即执行的初始化器），都实打实占用 Provider 启动阶段的主线程时间。
 
-需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。官方文档明确指出：关闭一个组件的自动初始化，会连同关闭由它带入的依赖；反过来，手动初始化时依赖会一并初始化。
+需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。删除某个根 initializer 只会去掉从该根触发的自动遍历：若其依赖自身仍有 metadata，或仍被其他 eager initializer 依赖，该依赖仍会提前初始化。手动初始化会同步初始化尚未完成的依赖。要移出启动路径，必须检查所有剩余入口和依赖路径。
 
 <!-- gracker-diagram: a223-08-remaining-eager-roots -->
 ![移除一个入口不等于全局禁用该类及其依赖](../../assets/diagrams/ch21/a223-08-remaining-eager-roots.png)
@@ -370,7 +370,7 @@ class WorkerInitializationProvider : InitializationProvider()
 </provider>
 ```
 
-这会在 `:worker`（线程池中的工作线程） 进程形成独立的 `AppInitializer`、依赖遍历和结果缓存，与默认进程不共享“已初始化”状态。跨进程的完成关系要走 Binder IPC、可查询的 Provider 或持久状态去明确传递，画成一条只在内存中生效的 DAG 边是行不通的。
+这会在 `:worker` 命名的私有应用进程形成独立的 `AppInitializer`、依赖遍历和结果缓存，与默认进程不共享“已初始化”状态。跨进程的完成关系要走 Binder IPC、可查询的 Provider 或持久状态去明确传递，画成一条只在内存中生效的 DAG 边是行不通的。
 
 <!-- gracker-diagram: a223-09-process-local-graphs -->
 ![每个进程有独立任务图和单例，内存依赖边不能跨进程](../../assets/diagrams/ch21/a223-09-process-local-graphs.png)
@@ -401,7 +401,7 @@ App Startup 会为发现过程和每个 initializer 创建 Trace section，也�
 
 #### 6.1 固定提交中的行为
 
-Alpha 的选定提交 `04fe7f2` 日期为 2018-12-14，当前仓库默认分支也仍停在这一提交，下面的结论只对这份固定源码有效。它提供：
+Alpha 的选定提交 `04fe7f2` 日期为 2018-12-14；本轮 2026-10-25 核对仓库 HEAD 仍指向这一提交，下面的结论只对这份固定源码有效。它提供：
 
 - `Project.Builder.add(task).after(predecessors)` 构建任务图；
 - `Task(name, true)` 通过 Main `Handler` 执行；
@@ -441,7 +441,8 @@ manager.start();
 - `Task.run()` 返回后立刻标记完成并通知后继，不支持异步完成信号。
 - 用户 `run()` 外层没有 `try/finally`；异常会阻止完成通知，后继可能永远不启动。
 - `waitUntilFinish()` 与 Main Task 同时使用会死锁，源码注释已经警告。
-- Alpha 的 execute priority 只在通知后继任务时排序；后台任务一旦提交到普通先入先出的 executor，全局优先队列就没有保证了。
+- Alpha 的 execute priority 用于后继通知列表，也用于 Manager 的附加任务列表排序；它不等于全局 executor 优先队列，普通 FIFO 队列里已经提交的任务不会因此重新排序。
+- `Task` 耗时用 `System.currentTimeMillis()` 相减，可能受墙钟校时影响；新维护分支应以同一单调时基记录区间，并分别记录排队与执行阶段。
 - 状态机把非 IDLE 的重复 `start()` 报告为可能存在循环，但没有在执行前输出完整环路径。
 - 没有内建的类型化结果、取消和单任务超时协议。
 
@@ -544,7 +545,7 @@ I/O 任务会阻塞，线程数却要有个上限。启动时大量并发读会�
 
 #### 9.1 每个进程只构建自己的图
 
-Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先选择进程配置，再实例化任务，避免子进程加载主进程 initializer 类及其静态依赖。
+`Application.getProcessName()` 从 API 28 已公开，本文 Android 10+ 范围均可用。应先获取当前进程名并选择进程配置，再实例化任务，避免子进程加载主进程 initializer 类及其静态依赖。
 
 | 进程 | 常见必要任务 | 不应默认加载 |
 | --- | --- | --- |
@@ -642,7 +643,7 @@ Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先
 | outcome | success/degraded/failed/cancelled/timeout |
 | thread/process | 解释调度与进程路径 |
 
-`task start - task ready` 是排队时间，`task finish - task start` 是运行时间。只记录运行时间，executor 饱和和优先级反转就会漏掉；优先级反转指高优先级任务在等低优先级任务持有的锁或资源，结果反而落在后面。
+`task start - task ready` 是从依赖就绪到实际开始的调度等待（若还需门控，也包含门控等待）；`task finish - task start` 是任务逻辑区间的墙钟时长，可能包含挂起、阻塞与再次等待 CPU，并不等于线程实际 CPU 时间。若要单独量 executor 排队，应另记 submit/enqueue 时间。只记录运行时间，executor 饱和和优先级反转就会漏掉；优先级反转指高优先级任务在等低优先级任务持有的锁或资源，结果反而落在后面。
 
 使用 `androidx.tracing` 给任务增加名称稳定的时间区间，并把依赖关系与 Task ID 一同保存在本地基准结果中。线上指标控制采样率和标签种类，不把动态 URL、用户 ID 或异常全文作为标签，以免产生近乎无限的指标组合。
 
@@ -883,7 +884,7 @@ loader 要自行选择 `Dispatchers.IO`、受控 CPU dispatcher（协程的执�
 
 图：原示例TimeoutCancellationException被CancellationException分支处理：恢复NotLoaded，后续getOrLoad可重新执行。
 
-这个示例在调用者的协程里执行 loader。页面级初始化可以随页面取消；进程级初始化应由 application scope（与应用进程同寿命的作用域）——与 App 进程同生命周期的 `CoroutineScope`——发起，避免第一个 Activity 销毁时把所有等待者一起取消。失败会被缓存，只有显式调用 `retry()` 才会再执行 loader；生产实现还要加入逐步延长等待时间的退避策略和重试次数上限。
+这个示例在调用者的协程里执行 loader。页面级初始化可以随页面取消；进程级初始化应由 application scope（与应用进程同寿命的作用域）——与 App 进程同生命周期的 `CoroutineScope`——发起，避免第一个 Activity 销毁时把所有等待者一起取消。普通 `Exception` 会缓存为 `Failed`，只有显式 `retry()` 才重新尝试；`withTimeout` 的 `TimeoutCancellationException` 属于 `CancellationException`，和外部取消一样会恢复 `NotLoaded`，后续 `getOrLoad()` 可以再次执行 loader，并不要求先 `retry()`。loader 不得递归调用同一个 gate（Mutex 不可重入），资源需在取消/超时路径清理，尤其不能丢失刚创建的 Closeable；生产实现还要加入逐步延长等待时间的退避策略和重试次数上限。
 
 #### 4.2 预触发的位置
 
@@ -990,7 +991,7 @@ val analytics = AppInitializer.getInstance(context)
     .initializeComponent(AnalyticsInitializer::class.java)
 ```
 
-调用前要确认该组件没有通过另一个 Manifest initializer 的依赖关系提前运行。关闭某个 initializer 的自动初始化，也会关闭它所声明依赖的自动初始化，需要重新检查整张初始化图和首次使用路径。
+调用前要确认该组件没有通过另一个 Manifest initializer 的依赖关系提前运行。移除一个 metadata 不会屏蔽该类本身或它的依赖：其他剩余根、依赖边或直接调用仍可触发它们；需要检查整张图，确认所有启动期路径均已移除。
 
 `AppInitializer` 负责发现组件、按依赖顺序执行并缓存结果，不替应用选择线程、deadline 或失败界面。第三方 SDK 如果还有自己的 Provider 或其他自动初始化开关，也要单独处理。
 
@@ -1138,15 +1139,17 @@ Perfetto 用时间线确认主线程、CPU、I/O、Binder 与帧的关系；Andr
 
 我们给出的每个调度结论，都要能回答四个问题：任务契约是什么——它是否必须完成、能否丢弃或重试；用哪个执行器；允许多少任务同时运行；调用方在哪里等待。结论还要有队列指标与 Perfetto 系统 trace 支撑。
 
-线程、锁与协程的基础机制分别见 [§1.1 线程模型](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md) 和 [§8.4 协程性能](../../part2-performance/ch08-responsiveness/04-coroutine（协程）-performance.md)。以下只讨论启动场景中的任务编排和资源竞争。
+线程、锁与协程的基础机制分别见 [§1.1 线程模型](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md) 和 [§8.4 协程性能](../../part2-performance/ch08-responsiveness/04-coroutine-performance.md)。以下只讨论启动场景中的任务编排和资源竞争。
 
 ### 1. 并发优化先看启动关键路径
 
-并发优化的起点仍是启动任务图：节点代表工作，单向边代表依赖。从进程创建走到首帧或 fully drawn 的最长依赖路径，就是当前指标下的关键路径——首帧对应 TTID，fully drawn 表示应用声明主要内容已经可用，对应 TTFD。
+并发优化的起点仍是启动任务图：节点代表工作，单向边代表依赖。完整启动指标从系统启动请求开始；应用内部 DAG 只能覆盖其中可观测的任务段。沿任务依赖走到首帧或 fully drawn 的最长路径，是这张任务图对相应指标的关键路径——首帧对应 TTID，fully drawn 表示应用声明主要内容已经可用，对应 TTFD。
 
 一项后台任务对启动时间的贡献可以拆成四段：
 
-`完成时间 = 提交时刻 + 队列等待 + 获得 CPU 后的执行 + 依赖或资源等待`
+`完成时刻 = 提交时刻 + executor 排队 + 执行期间的 CPU 时间 + 执行期间的 Runnable 等待 + 阻塞/挂起等非 CPU 等待`
+
+这是互不重叠区间的归因示意，不是直接相加嵌套 trace 或不同线程的 CPU 时间。提交前的依赖等待另从 task ready/依赖完成点记录。
 
 只统计任务函数自身的运行时间，线程池排队、Runnable 等待、锁竞争、同步 Binder 和主线程等待就都被漏掉了；我们做并发调优时，要把这几段分开看。
 
@@ -1205,7 +1208,7 @@ else:
 执行器饱和时，拒绝策略决定数据会不会丢、调用线程会不会被阻塞、错误是否会被发现：
 
 - `AbortPolicy` 抛出 `RejectedExecutionException`，适合静默丢失不可接受、调用方能够降级或重试的任务。
-- `CallerRunsPolicy` 在提交线程执行任务，借此减慢生产者；若提交者是主线程，它会把后台工作搬回启动关键路径。
+- `CallerRunsPolicy` 在 executor 尚未关闭时由提交线程执行任务，借此减慢生产者；若提交者是主线程，后台工作会回到启动关键路径。executor 已关闭时，该策略直接丢弃任务，不会抛异常。
 - `DiscardPolicy` 和 `DiscardOldestPolicy` 只适合允许丢弃、合并或由新状态覆盖旧状态的任务，还要记录丢弃原因。
 - 自定义策略必须定义关闭期间与过载期间的差异，避免把 executor 已关闭误判成瞬时拥塞。
 
@@ -1272,7 +1275,12 @@ Android 的 `android.os.Process` 常量使用 Linux nice 值，数值越小，�
 - `THREAD_PRIORITY_FOREGROUND = -2`；
 - display、video、audio 等负值常量服务于特定系统场景，普通应用别借它们抢占 UI 或媒体线程。
 
-新线程创建时会继承创建线程的初始优先级和内核调度分组，所以工作线程应在自己的入口处设置 Android nice 值，别带着一个不符合任务用途的继承状态跑下去。下面的 `ThreadFactory` 给受管理的 worker 统一命名并设置优先级。
+这里要区分 Java 优先级与 Android nice：固定 libcore `Thread` 构造器继承父线程缓存的 Java `priority`，再据此生成新线程的 niceness；它不会直接继承父线程经 `Process.setThreadPriority()` 改过的 nice。原生创建线程的继承另受平台路径影响，调度组也应按实际策略核对。因此 worker 仍应在自己的入口设置允许的 Android nice，不能把两套数值和继承语义混用。下面的 `ThreadFactory` 给受管理的 worker 统一命名并设置优先级。
+
+<!-- gracker-diagram: a223-26-java-nice-inheritance -->
+![Java priority 的继承与 Process nice 的修改不能混同](../../assets/diagrams/ch21/a223-26-java-nice-inheritance.png)
+
+图：固定Android17 Thread构造器、ART启动和Process API相互印证；普通worker不要借用display/audio优先级。
 
 ```kotlin
 import android.os.Process
@@ -1300,11 +1308,6 @@ class AndroidThreadFactory(
 
 `Process.setThreadPriority()` 由 worker 自己执行，设置的是当前工作线程。后台预取可以用 `THREAD_PRIORITY_BACKGROUND`；首屏依赖任务是否适合默认优先级，要看它与主线程、RenderThread 的竞争结果。普通 worker 提升到 display 或 audio 优先级是禁区。
 
-<!-- gracker-diagram: a223-26-java-nice-inheritance -->
-![Java priority 的继承与 Process nice 的修改不能混同](../../assets/diagrams/ch21/a223-26-java-nice-inheritance.png)
-
-图：固定Android17 Thread构造器、ART启动和Process API相互印证；普通worker不要借用display/audio优先级。
-
 #### 4.2 内核调度不只看 nice
 
 在 `android17-6.18-2026-06_r6` 中，普通线程进入 fair 调度类，即 Linux 为普通任务提供的公平调度路径。`fair.c` 使用 EEVDF（Earliest Eligible Virtual Deadline First）：先筛选应该获得运行时间的任务，再从中选择虚拟截止时间最早的任务。nice 能改变调度权重，但给不出“某线程在指定毫秒内获得 CPU”这样的承诺。
@@ -1315,7 +1318,7 @@ Android 还用 cgroup（control group，内核资源分组） 和 task profile�
 
 #### 4.3 不把业务线程固定到大核
 
-通过 JNI（Java 与 native C/C++ 代码的调用接口） 调 `sched_setaffinity()` 把工作线程固定到所谓大核，会绕过调度器对负载、能耗、温度和前后台状态的动态判断；不同 SoC（片上系统）的 CPU 拓扑与在线状态也不一致。应用退到后台后若还保留着错误亲和性，可能增加功耗，甚至让线程无核可用。
+通过 JNI（Java 与 native C/C++ 代码的调用接口） 调 `sched_setaffinity()` 把工作线程固定到所谓大核，会绕过调度器对负载、能耗、温度和前后台状态的动态判断；不同 SoC（片上系统）的 CPU 拓扑与在线状态也不一致。应用退到后台后仍保留不合适的亲和性，可能限制系统迁移与能耗优化。实际可运行集合还受在线 CPU 与 cpuset 约束；请求集合与允许集合没有交集时，`sched_setaffinity()` 可返回 `EINVAL`，不能描述成调用成功后必然留下一个“无核可用”的线程。实验代码也必须检查返回值与实际 mask。
 
 CPU 亲和性可以用于实验室归因，比如判断某段计算是否受核容量影响；生产应用把硬绑核当通用启动优化就不合适了。trace 若显示关键线程长期在不合适的 CPU 上等待，应同时检查任务优先级、进程状态、Runnable 竞争、设备温度与厂商调度配置。
 
@@ -1420,14 +1423,14 @@ App Startup 1.2.0 只负责发现和依赖顺序：它按 `dependencies()` 先�
 
 WorkManager 面向应用离开可见状态后仍需执行、需要约束或重试的任务，由 JobScheduler（系统持久作业调度服务）、系统配额、进程状态和设备条件统一管理。想靠它保证某个启动任务立刻完成，是用错了工具。
 
-当前稳定版 WorkManager 2.11.2 也不是一个固定“最多 16 个线程”的池。`Worker.doWork()` 跑在 `Configuration.Builder.setExecutor()` 指定的 executor 上；task executor 处理 WorkManager 自身的记账与调度，和业务 worker 是两回事。`CoroutineWorker.doWork()` 默认使用 `Dispatchers.Default`，WorkManager 2.10.0 起可以用 `setWorkerCoroutineContext()` 配置其协程上下文；按当前 `Configuration.Builder` 契约，只要没设置 worker coroutine context，`setExecutor()` 提供的 executor 也会转换成 dispatcher 供 `CoroutineWorker` 使用。方法内部仍可用 `withContext()` 为某一段阻塞调用挑更合适的 dispatcher。
-
-若只是想把 WorkManager 自身移出启动路径，可以移除默认 initializer，让 `Application` 实现 `Configuration.Provider`，首次需要时再调 `WorkManager.getInstance(Context)`。这个动作只挪动了 WorkManager 的初始化时机，已入队的持久任务还是持久任务，不会变成应用进程内的即时启动任务。
+截至 2026-10-25，稳定版为 WorkManager 2.12.0；它也不是一个固定“最多 16 个线程”的池。`Worker.doWork()` 跑在 `Configuration.Builder.setExecutor()` 指定的 executor 上；task executor 处理 WorkManager 自身的记账与调度，和业务 worker 是两回事。`CoroutineWorker.doWork()` 默认使用 `Dispatchers.Default`，WorkManager 2.10.0 起可以用 `setWorkerCoroutineContext()` 配置其协程上下文；按当前 `Configuration.Builder` 契约，只要没设置 worker coroutine context，`setExecutor()` 提供的 executor 也会转换成 dispatcher 供 `CoroutineWorker` 使用。方法内部仍可用 `withContext()` 为某一段阻塞调用挑更合适的 dispatcher。 2.12.0 固定源码在两项配置都未提供时，把普通 Worker executor 设为 `Dispatchers.Default.limitedParallelism(max(1, min(availableProcessors() - 1, 4))).asExecutor()`，内部 task executor 默认也来自 Default；这些是共享调度器视图，不是各自独占线程池。它们仍不同于默认直接使用 Default 的 CoroutineWorker。
 
 <!-- gracker-diagram: a223-22-workmanager-defaults -->
 ![WorkManager 2.12.0 负责持久任务，默认执行资源仍有区别](../../assets/diagrams/ch21/a223-22-workmanager-defaults.png)
 
 图：setExecutor与setWorkerCoroutineContext按配置契约互相兜底；移除默认initializer只改变初始化时机。
+
+若只是想把 WorkManager 自身移出启动路径，可以移除默认 initializer，让 `Application` 实现 `Configuration.Provider`，首次需要时再调 `WorkManager.getInstance(Context)`。这个动作只挪动了 WorkManager 的初始化时机，已入队的持久任务还是持久任务，不会变成应用进程内的即时启动任务。
 
 ### 8. 线程治理从“谁创建、谁负责”开始
 
@@ -1571,3 +1574,6 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 - [Android startup analysis and optimization](https://developer.android.com/topic/performance/appstartup/analysis-optimization)
 - [21.3 ContentProvider 与多进程启动治理](03-contentprovider-multiprocess-startup.md)
 - [§21.1 启动性能监控](01-app-startup-path-monitoring.md)
+- [Linux sched_setaffinity：允许集合与 EINVAL](https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html)
+- [Kotlin withTimeout：协作取消、超时异常与资源归还](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html)
+- [WorkManager 2.12.0 固定源码包](https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.12.0/work-runtime-2.12.0-sources.jar)

@@ -3,8 +3,8 @@ title: 应用稳定性度量、聚合与归因
 chapter: '20.1'
 section: '20.1'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6; Android Developers ANR, ApplicationExitInfo, ProfilingManager/ProfilingTrigger, and Android vitals docs current on 2026-08-14
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6; Android Developers ANR, ApplicationExitInfo, ProfilingManager/ProfilingTrigger, and Android vitals docs current on 2026-10-25
 confidence: medium-high
 sources:
 - type: official
@@ -287,7 +287,7 @@ fun readRecentExits(context: Context): List<ApplicationExitInfo> {
 
 #### Play 的口径和阈值
 
-外部基准先看 Google Play：截至 2026-08-14，它将用户感知崩溃率和用户感知 ANR 率列为稳定性 core vitals（影响应用在 Play 中可见性的核心指标）：
+外部基准先看 Google Play：截至 2026-10-25，它将用户感知崩溃率和用户感知 ANR 率列为稳定性 core vitals（影响应用在 Play 中可见性的核心指标）：
 
 | 指标 | 口径 | 全机型不良行为阈值 | 单手机型号阈值 |
 |---|---|---:|---:|
@@ -372,7 +372,7 @@ Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `Ou
 
 - 看板按版本、渠道、机型、内存容量档位、ABI 和关键路径拆分。
 - 告警同时考虑绝对影响用户数、相对历史基线、增长速度和严重度。
-- Java/Native Crash 按去除易变地址和行号后的堆栈、异常或信号、Build ID 聚类；ANR 按原因文本、阻塞关系和主线程状态聚类。
+- Java/Native Crash 先按事件族和构建产物隔离，再按符号化帧、异常或信号建组；构建内精确指纹保留源行号或模块相对 PC，跨构建候选降低这些位置字段的权重。ANR 按原因文本、阻塞关系和相关执行线程状态聚类。
 - 对重启后的 `ApplicationExitInfo` 去重，避免每次启动重复上报同一条历史记录。
 - 区分新出现的问题簇、已有问题再次恶化和单机型异常，避免总体均值掩盖局部故障。
 
@@ -443,7 +443,7 @@ Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `Ou
 
 故障分类定了之后，我们要给每个指标固定事件定义和分母：Crash 次数、受影响用户和无崩溃会话回答的是不同问题，同一批故障数据还要落成可解释、可复算、能支撑发布判断的指标。
 
-Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中引用的阈值与产品规则按 2026 年 8 月 14 日的官方文档核对。把这些外部数字写进长期发布判定规则前，还要再次确认服务端文档是否更新。
+Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中引用的阈值与产品规则按 2026 年 10 月 25 日的官方文档核对。把这些外部数字写进长期发布判定规则前，还要再次确认服务端文档是否更新。
 
 本文所说的“统计规则”包括分子、分母、时间窗、纳入范围和去重方式；团队里常用的“口径”就是这组规则。`fatal` 指数据源标记为致命、会结束进程或会话的 Crash 事件，并不泛指所有系统终止。
 
@@ -497,12 +497,7 @@ Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中引用的�
 
 内部系统常把匿名安装实例近似为“用户”。在这种定义下，日活受影响率为：
 
-$$
-\text{Daily affected rate}
-=
-\frac{\text{当天至少发生一次 Crash 的去重安装实例数}}
-{\text{当天活跃安装实例数}}
-$$
+> 每日 Crash 受影响率 = 当天至少发生一次 Crash 的去重安装实例数 ÷ 当天活跃安装实例数
 
 同一个安装实例当天崩溃一次或十次，分子都只增加一。这项指标适合描述影响面，却看不出重复崩溃的严重程度。用户每天使用时长、会话次数和设备分布也会改变暴露机会，因此不同产品之间不宜直接横比。
 
@@ -512,13 +507,7 @@ $$
 
 [Firebase Crashlytics 的官方定义](https://firebase.google.com/docs/crashlytics/crash-free-metrics) 是：
 
-$$
-\text{Crash-Free Users}
-=
-1 -
-\frac{\text{观察期内发生过 fatal 的去重安装实例数}}
-{\text{观察期内有活动的去重安装实例数}}
-$$
+> Crash-Free Users = 1 −（观察期内发生过 fatal 的去重安装实例数 ÷ 观察期内有活动的去重安装实例数）
 
 Crashlytics 把一台设备上的一次应用安装视为一个 user。一个人在两台设备上安装应用，会被计为两个 user。这个指标只使用 fatal 事件；non-fatal（被捕获上报但未结束进程的错误）与 ANR 都会被过滤掉，不进入 Crash-Free 图表。
 
@@ -533,13 +522,7 @@ Crashlytics 把一台设备上的一次应用安装视为一个 user。一个人
 
 再看会话口径的 Crash-Free Sessions：它表示观察期内没有因 fatal 结束的会话占比，公式从 1 中减去受影响会话比例：
 
-$$
-\text{Crash-Free Sessions}
-=
-1 -
-\frac{\text{发生 fatal 的去重会话数}}
-{\text{全部有效会话数}}
-$$
+> Crash-Free Sessions = 1 −（发生 fatal 的去重会话数 ÷ 全部有效会话数）
 
 写这个公式时要防一种常见改写：`1 - 崩溃事件数 / 会话数` 是错的，因为 fatal 通常会结束当前会话；重复上传或数据异常产生多条 fatal 记录时，同一个受影响会话仍只能计一次。
 
@@ -554,22 +537,22 @@ Crashlytics 当前把冷启动视为新会话；应用进入后台至少 30 分�
 
 #### 启动失败率
 
-把 `Application.onCreate()` 到第一个 Activity `onResume()` 当作启动窗口，会漏掉 `Application.onCreate()` 之前的崩溃，也区分不了“界面出现”与“内容可用”。冷启动要新建进程，温启动（进程存在但 Activity 需要重建）里进程还在，热启动时 Activity 仍在内存；三类启动要分别建立启动尝试，并为每次尝试记录终态：
+把 `Application.onCreate()` 到第一个 Activity `onResume()` 当作启动窗口，会漏掉 `Application.onCreate()` 之前的崩溃，也区分不了“界面出现”与“内容可用”。冷启动要新建进程，温启动（进程存在但 Activity 需要重建）里进程还在，热启动时 Activity 仍在内存；三类启动要分别建立启动尝试。先记录启动里程碑，再为每次尝试记录互斥的终态：
 
-- `first_frame_presented`：第一帧画面已经提交，用户能看到界面；
-- `fully_drawn`：关键内容可用，可与 `Activity.reportFullyDrawn()` 的语义对应；
+- `first_frame_presented`：第一帧已经呈现的里程碑，提交渲染命令本身不代表用户已看到画面；
+- `fully_drawn`：关键内容可用的成功终态，可与 `Activity.reportFullyDrawn()` 的语义对应；
 - `fatal`：启动窗口内发生 Java 或 Native Crash；
 - `abnormal_exit`：没有采集到 fatal 事件，但系统记录到相关进程异常退出；
 - `abandoned`：应用转入后台或用户离开，都不算成功。
 
-以“关键内容可用”为成功条件时，可以计算：
+以“关键内容可用”为成功条件时，成功、故障失败和放弃要分开。下面只计算由 `fatal` 或 `abnormal_exit` 导致的故障启动失败率，`abandoned` 单列；该比例不等于 `1 − 启动成功率`：
 
-$$
-\text{Startup failure rate}
-=
-\frac{\text{以 fatal 或 abnormal\_exit 结束的有效 launch\_id 数}}
-{\text{全部有效 launch\_id 数}}
-$$
+<!-- gracker-diagram: a207-11-startup-outcomes -->
+![首帧是里程碑，成功与故障是终态](../../assets/diagrams/ch20/a207-11-startup-outcomes.png)
+
+图：同一次启动可以先出现首帧，再进入关键内容可用状态；故障失败率只含 fatal/abnormal_exit，放弃另报。
+
+> 故障启动失败率 = 以 fatal 或 abnormal_exit 结束的有效 launch_id 数 ÷ 全部有效 launch_id 数
 
 API 35 起，[`ApplicationStartInfo`](https://developer.android.com/reference/android/app/ApplicationStartInfo) 提供系统记录的应用启动信息；[`ActivityManager.addStartInfoTimestamp()`](https://developer.android.com/reference/android/app/ActivityManager) 允许在 `reportFullyDrawn()` 之前补充开发者时间点，参数必须是单调时钟的纳秒值。键要使用系统为开发者保留的范围；同一个键再次写入会覆盖前值，`reportFullyDrawn()` 之后写入则会被丢弃。
 
@@ -577,28 +560,13 @@ API 35 起，[`ApplicationStartInfo`](https://developer.android.com/reference/an
 
 启动发布规则要避免照搬一个通用百分比。支付、导航等关键路径与内容浏览应用面临的风险不同；冷启动量、分阶段发布样本和历史波动也不同。目标应来自稳定版本基线和产品容忍度。
 
-<!-- gracker-diagram: a207-11-startup-outcomes -->
-![首帧是里程碑，成功与故障是终态](../../assets/diagrams/ch20/a207-11-startup-outcomes.png)
-
-图：同一次启动可以先出现首帧，再进入关键内容可用状态；故障失败率只含 fatal/abnormal_exit，放弃另报。
-
 #### 重复崩溃与 crash loop（启动后连续崩溃、用户难以进入应用）
 
 Crash loop 指应用在连续启动中反复因同一问题崩溃，用户难以进入可用界面。这时“相同堆栈事件数 / 全部崩溃事件数”并不好用：它混合了问题热度、用户活跃度和重试次数。更有解释力的两个指标是：
 
-$$
-\text{Repeated-affected rate}_{cluster}
-=
-\frac{\text{观察期内该问题组发生至少两次的受影响安装实例数}}
-{\text{观察期内该问题组的全部受影响安装实例数}}
-$$
+> 重复受影响率（指定问题组） = 观察期内该问题组发生至少两次的受影响安装实例数 ÷ 观察期内该问题组的全部受影响安装实例数
 
-$$
-\text{Crash-loop launch rate}_{cluster}
-=
-\frac{\text{连续若干次启动均命中该问题组的安装实例数}}
-{\text{该问题组受影响安装实例数}}
-$$
+> Crash-loop launch rate（指定问题组） = 连续若干次启动均命中该问题组的安装实例数 ÷ 该问题组受影响安装实例数
 
 “连续若干次”和观察窗口由产品的启动频率确定，例如短时间内连续三次启动都因同一初始化问题组崩溃，可以作为 crash loop 候选；低频工具应用可能需要更长窗口。这个条件属于团队规则，Android 系统侧并没有对应阈值。
 
@@ -630,14 +598,14 @@ User-perceived crash rate 是 Google Play 的 core vital，也就是会影响应
 
 #### Bad behavior thresholds（不良行为阈值）
 
-截至 2026 年 8 月 14 日，[Google Play 公布的手机阈值](https://developer.android.com/topic/performance/vitals) 如下：
+截至 2026 年 10 月 25 日，[Google Play 公布的手机阈值](https://developer.android.com/topic/performance/vitals) 如下：
 
 | Core vital | 全机型阈值 | 单手机型号阈值 |
 |---|---:|---:|
 | User-perceived crash rate | 1.09% | 8% |
 | User-perceived ANR rate | 0.47% | 8% |
 
-达到或超过阈值属于 bad behavior，Play 可能降低应用在商店中的可见度，也可能在详情页显示警告，但都不保证每次发生；阈值口径与商店后果见前面的“Play 的口径和阈值”小节。Play 每天用最近 28 天的平均值评估质量。这些阈值是商店的质量门槛，不是团队 SLO（服务目标） 的推荐值。
+达到或超过阈值属于 bad behavior，Play 可能降低应用在商店中的可见度，也可能在详情页显示警告，但都不保证每次发生；阈值口径与商店后果见前面的“Play 的口径和阈值”小节。Play 通常用最近 28 天数据评估质量，出现突增时也可能提前采取措施。这些阈值是商店的质量门槛，不是团队 SLO（服务目标） 的推荐值。
 
 从这些商店阈值同样推不出 `100% - 1.09% = 98.91%` 这样的 Crashlytics Crash-Free Users 发布阈值，两边的故障范围、用户定义、采样范围和时间聚合均不相同。
 
@@ -658,7 +626,7 @@ API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回近期进
 
 API 36 起，可以通过 [`ProfilingTrigger.TRIGGER_TYPE_ANR`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR) 请求系统在识别 ANR 后提供运行中的 system trace（记录线程调度、CPU 和系统事件的性能时间线） 快照。触发后应用未必被杀，系统也未必每次都返回产物。
 
-API 37 起，`ApplicationExitInfo.getAnrInfo()` 会在 `reason == REASON_ANR` 时提供结构化 ANR 信息，其他退出原因返回 `null`；新增的 [`ActivityManager.registerAnrWarningListener()`](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor（任务执行器）,%20java.util.function.Consumer%3Candroid.app.AnrWarningResult%3E)) 则提供预警回调。下面的示意代码只负责在非主线程保存轻量预警字段：
+API 37 起，`ApplicationExitInfo.getAnrInfo()` 可能在 `reason == REASON_ANR` 时提供结构化 ANR 信息；其他退出原因返回 `null`，ANR 记录也仍需判空；新增的 [`ActivityManager.registerAnrWarningListener()`](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,%20java.util.function.Consumer%3Candroid.app.AnrWarningResult%3E)) 则提供预警回调。下面的示意代码只负责在非主线程保存轻量预警字段：
 
 ```kotlin
 @RequiresApi(37)
@@ -675,7 +643,7 @@ fun registerAnrWarningCollector(
 }
 ```
 
-[`AnrWarningResult`](https://developer.android.com/reference/android/app/AnrWarningResult) 提供 `anrId`、`anrType`、`consumedMillis`、`timeoutMillis` 和不保证格式稳定的描述；若事件后来成为 ANR，`anrId` 可与退出信息关联。
+[`AnrWarningResult`](https://developer.android.com/reference/android/app/AnrWarningResult) 提供 `anrId`、`anrType`、`consumedMillis`、`timeoutMillis` 和不保证格式稳定的描述；若事件后来成为 ANR，可用 `anrType + anrId` 与退出信息关联；`anrId` 只保证在同一 ANR 类型内唯一，不能单独作为全局关联键。
 
 接上面的代码：调用方要保存返回的同一个 `Consumer`，停止采集时传给 `unregisterAnrWarningListener()`。回调走非主线程的 Executor，`persist` 也要有严格的耗时上限。预警回调可能缺席，也可能来不及执行，网络请求或复杂恢复都别放在这里。
 
@@ -758,7 +726,7 @@ Native Crash 的采集要更费周折，只写“读取 debuggerd tombstone”�
 3. **新问题组**：新出现的问题组命中启动、登录、支付等高风险路径；
 4. **重复失败**：出现 crash loop 或同一实例短时间多次 ANR。
 
-在这四类信号之上，规则还要设置最小分母、置信条件、持续时间和恢复条件。P1/P2 通常表示最高和次高处理优先级，响应时限由团队值班能力与业务损失确定；适用于所有 Android 应用的每日告警配额并不存在。
+在这四类信号之上，规则还要设置最小分母、置信条件、持续时间和恢复条件。P1/P2 是团队自定义的处理优先级标签，是否另设 P0、各级含义及响应时限由团队值班能力与业务损失确定；适用于所有 Android 应用的每日告警配额并不存在。
 
 再看分阶段发布系统本身：它应记录每次提高发布比例、暂停发布和恢复到上一稳定版本的时间点。告警评估要用当时接触到新版本的用户或会话数量做分母，全量 DAU 是错的分母。异常只出现在特定设备、国家或渠道时，可以暂停向对应人群发布；数据还不足时就把质量倒退推广到所有用户头上，这个结论立不住。
 
@@ -784,11 +752,7 @@ Native Crash 的采集要更费周折，只写“读取 debuggerd tombstone”�
 
 如果 SLO 是 Crash-Free Sessions：
 
-$$
-\text{Allowed bad-session ratio}
-=
-1 - \text{SLO target}
-$$
+> 允许坏会话比例 = 1 − SLO 目标
 
 假设滚动 30 天有 3000 万个有效会话，目标为 99.8%，预算是 6 万个受影响会话。一个受影响会话里出现多条 Crash 记录，仍只消耗一个会话单位。
 
@@ -803,12 +767,7 @@ $$
 
 Burn rate 表示当前坏事件比例相对允许比例的倍数。数值为 1，表示按当前速度持续下去会在整个 SLO 窗口内刚好用完预算；数值为 3，表示预算消耗速度是预期速度的三倍：
 
-$$
-\text{Burn rate}
-=
-\frac{\text{observed bad-event ratio}}
-{\text{allowed bad-event ratio}}
-$$
+> Burn rate = 观测到的坏事件比例 ÷ 允许的坏事件比例
 
 拿目标 99.8% 来算，允许坏会话比例为 0.2%；若最近一小时坏会话比例为 0.6%，该小时 burn rate 为 3。短观察窗口能发现突发故障，长观察窗口能过滤瞬时噪声。[Google SRE 的多窗口告警方法](https://sre.google/workbook/alerting-on-slos/) 把两者组合，比单个固定百分比更适合控制 30 天预算。
 
@@ -855,6 +814,9 @@ $$
 
 我们用一条流水线把三项工作分开：符号化把混淆名或代码地址还原为函数和源码位置；确定性指纹让相同输入总是生成相同签名；相似度分组再寻找不完全相同但可能同根因的报告。
 
+<details>
+<summary>聚合流水线的 Mermaid 源码</summary>
+
 ```mermaid
 flowchart LR
   A["原始 occurrence"] --> B["格式校验与去重"]
@@ -873,6 +835,8 @@ flowchart LR
   K --> L["issue / issue family"]
   L --> M["归因、分派、告警"]
 ```
+
+</details>
 
 符号化失败的事件仍要保留，放进 `unsymbolicated`（未符号化）队列等待处理。我们要避免的做法，是先用不可读的混淆名或绝对地址建立长期 issue，等符号文件到齐之后再静默改它的含义。
 

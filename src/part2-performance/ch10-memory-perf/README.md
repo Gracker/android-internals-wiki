@@ -52,7 +52,7 @@
 
 ### 2. 确定内存域
 
-至少区分：
+至少从以下视角调查；它们存在交叉，并非可直接相加的互斥容量桶。线程和文件描述符是资源线索；PSI 衡量资源压力造成的任务停顿，并非内存字节数（见 [PSI 官方说明](https://docs.kernel.org/accounting/psi.html)）：
 
 - ART managed heap（由 ART 管理的 Java/Kotlin 对象堆）；
 - Native heap；
@@ -66,7 +66,7 @@
 
 图：这些是交叉的调查视角：ART 与 Native 堆可由匿名映射承载，图形资源也可能进入其他统计；线程数、FD 数和 PSI 不是另一套堆字节数。
 
-GC 只能处理 managed heap 中已经不可达的对象。Native owner（native 资源持有者）、Surface、codec（编解码器）、GPU 和内核页需要各自的证据链。
+GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 对象关联的 Native 分配通过 `NativeAllocationRegistry` 登记，在对象不可达后由清理机制调用登记的释放函数（见 [固定 r1 源码](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/util/NativeAllocationRegistry.java)）。这不代表一次 GC 会释放所有 Native、Surface、codec（编解码器）、GPU 或内核资源；仍需核对各自的 owner（资源持有者）、关闭责任、共享引用和异步工作完成条件。
 
 <!-- gracker-diagram: ch10-index-05-gc-native-boundary -->
 ![Java 可达性可以关联已登记 Native 清理](../../assets/diagrams/ch10/ch10-index-05-gc-native-boundary.png)
@@ -75,12 +75,12 @@ GC 只能处理 managed heap 中已经不可达的对象。Native owner（native
 
 ### 3. 区分 live set、churn 与峰值
 
-- heap dump（堆转储）用于分析当前可达对象和引用链；
+- heap dump（堆转储）用于分析转储中的对象与引用链；记录采集工具是否先触发 GC 及其对象过滤策略，转储也会扰动进程内存（见 [官方工具说明](https://developer.android.com/studio/profile/capture-heap-dump)）；
 - ART allocation profile（分配剖析）用于分析分配调用栈与分配速率；
 - Native heap profile 用于分析 `malloc`/`free`；
 - Perfetto 用于对齐 GC、调度、frame（帧）、fault（缺页）、PSI 与业务阶段；
 - `dumpsys meminfo` 和 smaps（进程内存映射明细）用于确定统计分类与映射归属；
-- DMA-BUF、memtrack 和 GpuService 用于统计图形内存。
+- DMA-BUF、memtrack 和 GpuService 分别提供图形对象、分类或驱动上报证据；先确认设备支持、权限、覆盖范围与采集完整性，缺数据不能直接按 0 解释。
 
 工具标签只能缩小调查范围。找到 owner（资源持有者）、生命周期或调用栈后，才能提出可验证的修复方案。
 
@@ -114,6 +114,7 @@ GC 只能处理 managed heap 中已经不可达的对象。Native owner（native
 - 不把 `System.gc()`、`WeakReference`、对象池、WebP、SparseArray 或异步线程写成通用解法。
 - 不用一次快照证明泄漏，不用一次 GC 证明资源已经释放。
 - 性能收益必须注明设备、构建、负载、指标和对照条件。
+
 
 <!-- gracker-diagram: ch10-index-08-evidence-boundaries -->
 ![结论保留口径、重复性与对照条件](../../assets/diagrams/ch10/ch10-index-08-evidence-boundaries.png)

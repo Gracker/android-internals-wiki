@@ -113,7 +113,7 @@ Android 17 / API 37 增加了一个标准 Activity action。调用方发送 `Int
 
 ### Action 与结果
 
-`Intent.ACTION_OPEN_EYE_DROPPER` 的公开文档定义了调用方可以依赖的行为：
+`Intent.ACTION_OPEN_EYE_DROPPER` 的公开文档定义取色 UI、颜色 extra、secure/protected 遮蔽与 opaque ARGB 输出。结合 AOSP 的结果返回路径，调用方按以下方式处理：
 
 1. 处理该 action 的 Activity 提供取色 UI；
 2. 用户确认后，以 `RESULT_OK` 返回；
@@ -246,7 +246,9 @@ AOSP EyeDropper manifest 使用了三个普通第三方应用无法取得的系�
 
 Android 17 AOSP 实现会：
 
-- 在 `MainActivity` 获得焦点后读取所有 display id；
+- 在 `MainActivity.onWindowFocusChanged()` 首次进入准备分支时读取所有 display id；该版本由 `setupInitiated` 保证只准备一次，没有显式检查 `hasFocus` 为 true；
+
+  > ⚠️ 矛盾：旧稿写成“获得焦点后”，而固定版本源码只检查 `setupInitiated`，不能据此断言准备分支必由焦点获得触发。
 - 在 `Dispatchers.IO` 上为各 display 并发发起截图；这里的并发只发生在同一进程的一次会话中；
 - 为每个 display 创建独立 `WindowContext`、`ComposeView` 和 ViewModel；
 - 用 `ActiveDisplayTracker` 在 display 之间切换当前 reticle；
@@ -389,7 +391,9 @@ private fun onEyeDropperResult(result: ActivityResult) {
 }
 ```
 
-`eye_dropper_session` 适合定位一次具体复现，不适合作为自动化性能分数，因为它包含用户停留时间。async trace 通过名称和 cookie 关联跨线程、跨时间的开始与结束；示例用布尔状态限制同一进程只开启一段会话。若允许并发，应为每次请求分配进程内唯一 cookie。进程在结果返回前退出时，trace 可能留下未闭合的 async slice，复盘时应将其标记为中断会话。
+`eye_dropper_session` 适合定位一次具体复现，不适合作为自动化性能分数，因为它包含用户停留时间。async trace 通过名称和 cookie 关联跨线程、跨时间的开始与结束。示例的布尔状态只限制当前状态持有者重复开始 trace；若字段属于 Activity 实例，它既不能协调同进程的其他实例，也不能在 Activity 重建后自动恢复。实际接入应由能跨配置变化存活的请求状态持有者协调 pending 请求、cookie 与结束操作，并避免同一请求重复 launch。若允许并发，应为每次请求分配进程内唯一 cookie。进程在结果返回前退出时，trace 可能留下未闭合的 async slice，复盘时应将其标记为中断会话。
+
+> ⚠️ 矛盾：旧稿把实例布尔字段写成“限制同一进程只开启一段会话”；实例字段没有进程范围的互斥或重建恢复能力。Activity Result 的回调重注册也不会替应用保存这些额外状态。
 
 若要测量 overlay 首次可交互时间，需要 UI 自动化可识别的就绪条件，或在可控系统构建中增加内部打点。result 返回后的 `apply_picked_color` 则可直接与调用方 FrameTimeline 对齐，观察状态更新对应的帧是否按时 present。
 

@@ -4,10 +4,10 @@ chapter: '14.5'
 section: '14.5'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-10-17'
-last_source_verified_at: '2026-10-17'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-17'
-last_verified_against: Android 17 / android-17.0.0_r1 Perfetto ece66975738007dd0978b911d8a2077e49b8f31e + frameworks/native ae266dcb706d083868578cfedce381ef44488a07; Perfetto stdlib docs checked 2026-10-17; SQL smoke tests with Trace Processor v56.1-c794fceab and pinned Android stdlib modules; android17-6.18-2026-06_r6
+last_verified_against: Android 17 / android-17.0.0_r1 Perfetto ece66975738007dd0978b911d8a2077e49b8f31e + frameworks/native ae266dcb706d083868578cfedce381ef44488a07; native Trace Processor v57.2/v58.2 synthetic host validation, fixed android.input and frames.timeline with native imported dependencies; Python perfetto 0.57.2 with explicit native binaries; startup mapping checked with schema-compatible synthetic tables; no Android device capture or performance measurement; android17-6.18-2026-06_r6
 confidence: high
 sources:
 - type: official
@@ -45,7 +45,19 @@ related_chapters:
 
 输入延迟排障常遇到三类问题：慢事件藏在大量正常样本中、ANR（Application Not Responding，应用无响应）发生前的队列状态不清楚、一次输入究竟关联了哪一帧。时间线界面适合观察单个现场，SQL 更适合筛选异常样本、计算分位数和复用判定逻辑。分位数描述样本排序后的位置，例如 P50 是中位数，P95 表示约 95% 的样本不高于该值。
 
-本文核对的平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto 对应提交为 `ece66975738007dd0978b911d8a2077e49b8f31e`，`frameworks/native` 对应提交为 `ae266dcb706d083868578cfedce381ef44488a07`。调度事件的内核语义以 `android17-6.18-2026-06_r6` 为准。Perfetto 标准库还可以由较新的 Trace Processor 提供，因此分析报告需要同时记录系统版本、采集配置和 Trace Processor 版本。
+本文核对的平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto 对应提交为 `ece66975738007dd0978b911d8a2077e49b8f31e`，`frameworks/native` 对应提交为 `ae266dcb706d083868578cfedce381ef44488a07`。调度事件的内核语义以 `android17-6.18-2026-06_r6` 为准。Perfetto 标准库还可以由较新的 Trace Processor 提供，因此分析报告需要同时记录系统版本、采集配置和 Trace Processor 版本。Android 12 是 FrameTimeline 能力的起点，不保证 12–16 的输入 ATrace 名称和公开列与本文完全相同；这些版本应重新核对设备埋点及所用模块。
+
+<!-- gracker-diagram: ch14-05-02-version-axes -->
+![设备版本与分析工具分别核对](../../assets/diagrams/ch14/ch14-05-02-version-axes.png)
+
+图：系统埋点、标准库与原生工具分别记录版本和摘要。 Android 12 的 FrameTimeline 起点不保证输入解析格式全版本一致。
+
+查询内部的时间保留原始纳秒，毫秒展示用 `数值 / 1e6` 保留小数。固定标准库的 `time_to_ms()` 返回整数毫秒，会把 0.5 ms 截为 0；`PERCENTILE()` 返回浮点值，直接传给要求整数纳秒的该函数还会触发类型错误。用于 JOIN、裁剪和定位的时间键应继续使用原始纳秒。
+
+<!-- gracker-diagram: ch14-05-03-time-precision -->
+![计算保留纳秒，展示保留小数](../../assets/diagrams/ch14/ch14-05-03-time-precision.png)
+
+图：身份、窗口和连接用原始纳秒，显示毫秒用浮点除法。 time_to_ms 返回 LONG；PERCENTILE 的浮点结果不能直接传入。
 
 `InputReader` 从 Linux 输入设备读取并解释事件，`InputDispatcher` 决定事件要投递给哪些窗口，应用处理完后通过输入通道返回 `FINISHED` 确认。SurfaceFlinger 是 Android 的显示合成服务，FrameTimeline 记录应用帧与合成帧的预期和实际时间。分析需要区分三段时间：
 
@@ -53,17 +65,7 @@ related_chapters:
 - `InputDispatcher` 发出消息到应用完成并返回 `FINISHED`；
 - `InputReader` 读取到关联帧在 `SurfaceFlinger FrameTimeline` 中结束。
 
-三段数据的来源和缺失条件不同。没有帧关联时，输入往返时间仍可能完整；没有完整的发送、接收和确认切片时，`android_input_events` 不会生成该行。分析时要把“没有记录”与“耗时为零”分开。
-
-<!-- gracker-diagram: ch14-05-02-version-axes -->
-![设备版本与分析工具分别核对](../../assets/diagrams/ch14/ch14-05-02-version-axes.png)
-
-图：系统埋点、标准库与原生工具分别记录版本和摘要。 Android 12 的 FrameTimeline 起点不保证输入解析格式全版本一致。
-
-<!-- gracker-diagram: ch14-05-03-time-precision -->
-![计算保留纳秒，展示保留小数](../../assets/diagrams/ch14/ch14-05-03-time-precision.png)
-
-图：身份、窗口和连接用原始纳秒，显示毫秒用浮点除法。 time_to_ms 返回 LONG；PERCENTILE 的浮点结果不能直接传入。
+前述“读取”在该 SQL 中是 Reader 监听链路包装 Slice 的代理边界。三段数据的来源、时钟域和缺失条件不同。没有帧关联时，输入往返时间仍可能完整；没有完整的发送、接收和确认切片时，`android_input_events` 不会生成该行。分析时要把“没有记录”与“耗时为零”分开。
 
 ## `android.input` 中的两条数据链路
 
@@ -89,20 +91,22 @@ related_chapters:
 INCLUDE PERFETTO MODULE android.input;
 
 SELECT
-  COUNT(*) AS event_count,
-  SUM(read_time IS NOT NULL) AS with_read_time,
-  SUM(frame_id IS NOT NULL) AS with_frame,
-  SUM(is_speculative_frame = 1) AS speculative_frame_count,
-  SUM(end_to_end_latency_dur IS NOT NULL) AS with_end_to_end_latency
+  COUNT(*) AS raw_row_count,
+  COUNT(CASE WHEN read_time IS NOT NULL THEN 1 END) AS rows_with_read_candidate,
+  COUNT(CASE WHEN frame_id IS NOT NULL THEN 1 END) AS rows_with_frame_candidate,
+  COUNT(CASE WHEN is_speculative_frame = 1 THEN 1 END) AS speculative_candidate_rows,
+  COUNT(CASE WHEN end_to_end_latency_dur IS NOT NULL THEN 1 END) AS rows_with_latency_candidate
 FROM android_input_events;
 ```
 
-这里的覆盖率指有多少输入行同时具备读取时间、帧关联或端到端延迟。结果全为零时，应先检查采集配置和场景是否产生输入，不能据此判断输入很快。`NULL` 表示字段缺失，不代表耗时为零；`with_frame` 明显少于 `event_count` 时，需要核对 FrameTimeline、应用 ATrace 和场景结束位置是否完整。
+这条查询检查的是标准库原始结果行和候选字段数量；空表上的条件计数都为零。`raw_row_count` 不是去重后的输入投递数，字段非 NULL 也不证明关联正确。结果为零时应检查采集与场景，不能据此判断输入很快；字段 NULL 表示缺失，候选帧较少时应核对 FrameTimeline、应用 ATrace 与窗口是否完整。
 
 <!-- gracker-diagram: ch14-05-05-coverage-states -->
 ![原始行、缺字段与零耗时分别判断](../../assets/diagrams/ch14/ch14-05-05-coverage-states.png)
 
 图：先看采集覆盖、原始行数和候选字段，再决定可统计的样本集合。 字段非空不证明关联正确，空结果不能当作零延迟。
+
+固定 Android 17 的实现还有一个影响统计的限制：最终只按 `event_seq` 关联帧结果，而序号只在输入通道内递增。两个连接使用相同序号时，合成 Trace 已复现两次投递被扩成四行，并把另一事件的 `input_event_id`、`read_time`、帧和呈现延迟附到当前投递。往返统计必须先按实例、通道、序号和消息时间去重，并剔除这些候选帧字段；把含帧字段的整行做 DISTINCT 仍会保留错误权重。候选呈现链路则需独立核验，不能仅凭字段非空进入回归门禁。
 
 <!-- gracker-diagram: ch14-05-06-cross-channel -->
 ![同序号跨通道导致帧附件放大](../../assets/diagrams/ch14/ch14-05-06-cross-channel.png)
@@ -130,8 +134,8 @@ INCLUDE PERFETTO MODULE time.conversion;
 
 SELECT
   event.event_id,
-  time_to_ms(event.ts) AS dispatcher_processed_at_ms,
-  time_to_ms(EXTRACT_ARG(event.arg_set_id, 'kernel_time')) AS kernel_event_at_ms,
+  ((event.ts) / 1e6) AS dispatcher_processed_at_ms,
+  ((EXTRACT_ARG(event.arg_set_id, 'kernel_time')) / 1e6) AS kernel_event_at_ms,
   event.source,
   event.action,
   event.device_id,
@@ -156,7 +160,7 @@ LIMIT 200;
 
 ### `android_input_events`
 
-每一行表示一个已经匹配到完整消息往返的输入投递。Android 17 的公开字段可以按用途分组：
+生成结果需要匹配四个消息节点，但这个固定实现的帧连接可能把一份投递扩成多行，因此不能默认“一行就是一个投递”。消息往返列与候选帧列应分开解读。Android 17 的公开字段可以按用途分组：
 
 | 分组 | 字段 | 含义 |
 |---|---|---|
@@ -164,16 +168,21 @@ LIMIT 200;
 | 往返延迟 | `handling_latency_dur` | 应用收到事件到应用发送 `FINISHED` |
 | 往返延迟 | `ack_latency_dur` | 应用发送 `FINISHED` 到 InputDispatcher 收到确认 |
 | 往返延迟 | `total_latency_dur` | InputDispatcher 发出事件到系统收到确认 |
-| 呈现延迟 | `end_to_end_latency_dur` | InputReader 读取到关联帧呈现；无关联帧时为 `NULL` |
-| 接收端 | `tid`, `thread_name`, `upid`, `pid`, `process_name` | 处理投递的线程与进程 |
-| 事件 | `event_type`, `event_action`, `event_seq` | 消息类型、动作及通道内递增的文本序号 |
+| 呈现候选 | `end_to_end_latency_dur` | Trace 域读取代理到候选帧呈现；无关联时为 `NULL` |
+| 确认发送端 | `tid`, `thread_name`, `upid`, `pid`, `process_name` | 应用发送 `FINISHED` 的线程与进程；不保证等于接收线程 |
+| 消息与动作 | `event_type`, `event_action`, `event_seq` | 消息类型与通道内文本序号；动作来自候选附件，可能被误关联 |
 | 通道 | `event_channel`, `normalized_event_channel` | 原始通道名与标准库归一化结果 |
-| 输入锚点 | `input_event_id`, `read_time`, `event_time` | 事件标识、InputReader 读取时间、事件发生时间 |
+| 候选输入锚点 | `input_event_id`, `read_time`, `event_time` | 候选 ID、Trace 域读取代理时间与内联 MONOTONIC 事件时间；需核验归属和时钟 |
 | 投递切片 | `dispatch_track_id`, `dispatch_ts`, `dispatch_dur` | InputDispatcher 侧切片 |
 | 接收切片 | `receive_track_id`, `receive_ts`, `receive_dur` | 应用接收侧切片 |
-| 帧关联 | `frame_id`, `is_speculative_frame` | 关联帧的 Vsync ID 与是否为推测关联 |
+| 帧关联 | `frame_id`, `is_speculative_frame` | 最终候选应用 Surface frame token（可为后续未丢弃帧）与原关联的推测标记；两者受下述实现限制 |
 
-`tid` 和 `pid` 是操作系统线程号与进程号，`upid` 是 Perfetto 在当前 Trace 内分配的进程唯一标识，可区分 PID 被系统复用后的不同实例。Vsync ID 是一次垂直同步周期的标识。`normalized_event_channel` 会按 Android 17 标准库规则去掉部分对象前缀、冒号后缀或末尾数字，便于分组；它不是跨版本稳定的连接 ID。
+`tid` 和 `pid` 是操作系统线程号与进程号，`upid` 是 Perfetto 在当前 Trace 内分配的进程唯一标识，可区分 PID 被系统复用后的不同实例。 要定位应用实际接收线程，应从 `receive_track_id` 连接 `thread_track.utid` 和 `thread`，不能直接使用这里的 `thread_name`。Vsync ID 是一次垂直同步周期的标识。`normalized_event_channel` 会按 Android 17 标准库规则去掉部分对象前缀、冒号后缀或末尾数字，便于分组；它不是跨版本稳定的连接 ID。
+
+<!-- gracker-diagram: ch14-05-09-finish-identity -->
+![公开线程身份来自 FINISHED 发送者](../../assets/diagrams/ch14/ch14-05-09-finish-identity.png)
+
+图：用接收轨道寻找实际接收线程，公开线程字段描述确认发送端。 upid 区分当前 Trace 内实例；不能把 finish 线程当成 receive 线程。
 
 四段消息节点的计算关系如下：
 
@@ -185,11 +194,6 @@ LIMIT 200;
 | `total_latency_dur` | `finish_ack.ts - dispatch.ts` |
 
 输入传输使用基于 socket 的输入通道，ACK 是 acknowledgment（确认消息）的缩写。`ack_latency_dur` 不是 Binder（Android 进程间通信机制）往返耗时；将它归因于 Binder 拥塞会把排查方向带偏。应用收到事件后，`handling_latency_dur` 也可能覆盖输入批处理和框架分发开销，不能直接等同于某个业务回调的执行时间。
-
-<!-- gracker-diagram: ch14-05-09-finish-identity -->
-![公开线程身份来自 FINISHED 发送者](../../assets/diagrams/ch14/ch14-05-09-finish-identity.png)
-
-图：用接收轨道寻找实际接收线程，公开线程字段描述确认发送端。 upid 区分当前 Trace 内实例；不能把 finish 线程当成 receive 线程。
 
 <!-- gracker-diagram: ch14-05-10-four-messages -->
 ![四个消息节点与往返分段](../../assets/diagrams/ch14/ch14-05-10-four-messages.png)
@@ -206,7 +210,7 @@ LIMIT 200;
 | `android_key_events` | 上述字段加 `key_code` | KeyEvent 元信息及按键码 |
 | `android_input_event_dispatch` | `id`, `event_id`, `arg_set_id`, `vsync_id`, `window_id` | 事件到窗口的分发决策 |
 
-坐标、指针轴、策略标志、`down_time` 和 `kernel_time` 等字段保存在 `args`。字段是否存在还受脱敏等级影响；脱敏会省略敏感字段，因此查询必须允许 `NULL`。
+坐标、指针轴、策略标志、`down_time` 和 `kernel_time` 等字段保存在 `args`。字段是否存在还受脱敏等级影响；脱敏会省略敏感字段，因此参数查询必须允许 `NULL`。公开 `key_code` 列是一个例外：固定解析器直接调用 protobuf 解码 getter，省略该字段时可读为默认值 0；0 不能证明记录到了真实按键码。
 
 <!-- gracker-diagram: ch14-05-11-redacted-defaults -->
 ![脱敏省略与公开标量默认值](../../assets/diagrams/ch14/ch14-05-11-redacted-defaults.png)
@@ -217,33 +221,65 @@ LIMIT 200;
 
 ### 找出慢样本
 
-下面的查询把目标进程写在单行参数中，并按总往返时间列出最慢样本：
+下面的查询默认使用整份 Trace 的时间窗，并要求名称恰好匹配一个进程实例；同名多实例时返回空结果，应先查明并显式选择 `upid`。正式实验应把参数中的起止时间改成同一业务场景。查询先对消息侧字段去重，再按总往返时间列出最慢样本：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 INCLUDE PERFETTO MODULE time.conversion;
 
-WITH params(process_name) AS (
-  VALUES ('com.example.reader')
+WITH params(process_name, start_ts, end_ts) AS (
+  SELECT 'com.example.reader', trace_start(), trace_end()
+),
+target_process AS (
+  SELECT MIN(process.upid) AS upid
+  FROM process JOIN params ON process.name = params.process_name
+  HAVING COUNT(*) = 1
+),
+round_trips AS (
+  SELECT DISTINCT
+    event.upid,
+    event.pid,
+    event.tid,
+    event.thread_name,
+    event.process_name,
+    event.event_type,
+    event.event_seq,
+    event.event_channel,
+    event.normalized_event_channel,
+    event.dispatch_track_id,
+    event.dispatch_ts,
+    event.dispatch_dur,
+    event.receive_track_id,
+    event.receive_ts,
+    event.receive_dur,
+    event.dispatch_latency_dur,
+    event.handling_latency_dur,
+    event.ack_latency_dur,
+    event.total_latency_dur
+  FROM android_input_events AS event
+  JOIN target_process USING (upid)
+  CROSS JOIN params
+  WHERE event.dispatch_ts >= params.start_ts
+    AND event.dispatch_ts < params.end_ts
 )
 SELECT
-  time_to_ms(event.dispatch_ts) AS dispatch_at_ms,
-  event.input_event_id,
-  event.event_action,
-  event.thread_name,
-  event.normalized_event_channel,
-  time_to_ms(event.dispatch_latency_dur) AS dispatch_ms,
-  time_to_ms(event.handling_latency_dur) AS handling_ms,
-  time_to_ms(event.ack_latency_dur) AS ack_ms,
-  time_to_ms(event.total_latency_dur) AS total_ms
-FROM android_input_events AS event
-JOIN params
-  USING (process_name)
-ORDER BY event.total_latency_dur DESC
+  upid, pid, tid AS finish_tid, event_channel, event_seq, event_type,
+  dispatch_ts, receive_ts, dispatch_track_id, receive_track_id,
+  ((dispatch_ts) / 1e6) AS dispatch_at_ms,
+  thread_name AS finish_thread_name,
+  normalized_event_channel,
+  ((dispatch_latency_dur) / 1e6) AS dispatch_ms,
+  ((handling_latency_dur) / 1e6) AS handling_ms,
+  ((ack_latency_dur) / 1e6) AS ack_ms,
+  ((total_latency_dur) / 1e6) AS total_ms
+FROM round_trips
+WHERE dispatch_latency_dur >= 0 AND handling_latency_dur >= 0
+  AND ack_latency_dur >= 0 AND total_latency_dur >= 0
+ORDER BY total_latency_dur DESC, dispatch_ts, event_channel, event_seq
 LIMIT 100;
 ```
 
-使用时只需修改 `VALUES` 中的进程名。`dispatch_ms` 高时检查 `InputDispatcher` 与目标线程的可运行、运行和睡眠状态；`handling_ms` 高时展开应用接收线程；`ack_ms` 高时检查应用发出确认后的调度与输入通道路径。单个分段偏高只能提供排查入口，不能独立证明根因。
+修改参数中的进程名与时间窗；同名进程有多个实例时不要任选一个。定位投递应联合保存 `upid`、通道、通道内序号和消息时间，不能只保留序号。去重列刻意不含候选输入 ID、动作和帧字段；这些附件可能已经被跨通道连接污染。负分段时长也应作为关联或时钟异常另查，不按正常样本进入分位数。`dispatch_ms` 高时检查 `InputDispatcher` 与目标线程的可运行、运行和睡眠状态；`handling_ms` 高时展开应用接收线程；`ack_ms` 高时检查应用发出确认后的调度与输入通道路径。单个分段偏高只能提供排查入口，不能独立证明根因。
 
 <!-- gracker-diagram: ch14-05-12-roundtrip-dedup -->
 ![慢往返查询先固定样本身份](../../assets/diagrams/ch14/ch14-05-12-roundtrip-dedup.png)
@@ -252,44 +288,68 @@ LIMIT 100;
 
 ### 建立同场景分布
 
-这条查询为四个分段计算 P50、P95、P99、最大值和样本量。P95、P99 用来观察最慢的 5% 和 1% 尾部样本，必须与 `sample_count` 一起解读：
+这条查询先在相同实例与窗口内按消息字段去重，再为三个分段及总往返计算 P50、P95、P99、最大值和样本量。分位数需要与样本量一起解读；按 `dur >= P95` 取尾部时，并列值可能使结果超过样本数的 5%，小样本也不足以稳定描述极端尾部：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 INCLUDE PERFETTO MODULE time.conversion;
 
-WITH params(process_name) AS (
-  VALUES ('com.example.reader')
+WITH params(process_name, start_ts, end_ts) AS (
+  SELECT 'com.example.reader', trace_start(), trace_end()
+),
+target_process AS (
+  SELECT MIN(process.upid) AS upid
+  FROM process JOIN params ON process.name = params.process_name
+  HAVING COUNT(*) = 1
+),
+round_trips AS (
+  SELECT DISTINCT
+    event.upid,
+    event.pid,
+    event.tid,
+    event.thread_name,
+    event.process_name,
+    event.event_type,
+    event.event_seq,
+    event.event_channel,
+    event.normalized_event_channel,
+    event.dispatch_track_id,
+    event.dispatch_ts,
+    event.dispatch_dur,
+    event.receive_track_id,
+    event.receive_ts,
+    event.receive_dur,
+    event.dispatch_latency_dur,
+    event.handling_latency_dur,
+    event.ack_latency_dur,
+    event.total_latency_dur
+  FROM android_input_events AS event
+  JOIN target_process USING (upid)
+  CROSS JOIN params
+  WHERE event.dispatch_ts >= params.start_ts
+    AND event.dispatch_ts < params.end_ts
+    AND event.dispatch_latency_dur >= 0 AND event.handling_latency_dur >= 0
+    AND event.ack_latency_dur >= 0 AND event.total_latency_dur >= 0
 ),
 samples(stage, dur) AS (
-  SELECT 'dispatch', dispatch_latency_dur
-  FROM android_input_events JOIN params USING (process_name)
-  UNION ALL
-  SELECT 'handling', handling_latency_dur
-  FROM android_input_events JOIN params USING (process_name)
-  UNION ALL
-  SELECT 'ack', ack_latency_dur
-  FROM android_input_events JOIN params USING (process_name)
-  UNION ALL
-  SELECT 'total', total_latency_dur
-  FROM android_input_events JOIN params USING (process_name)
+  SELECT 'dispatch', dispatch_latency_dur FROM round_trips
+  UNION ALL SELECT 'handling', handling_latency_dur FROM round_trips
+  UNION ALL SELECT 'ack', ack_latency_dur FROM round_trips
+  UNION ALL SELECT 'total', total_latency_dur FROM round_trips
 )
 SELECT
   stage,
   COUNT(*) AS sample_count,
-  time_to_ms(PERCENTILE(dur, 50)) AS p50_ms,
-  time_to_ms(PERCENTILE(dur, 95)) AS p95_ms,
-  time_to_ms(PERCENTILE(dur, 99)) AS p99_ms,
-  time_to_ms(MAX(dur)) AS max_ms
+  PERCENTILE(dur, 50) / 1e6 AS p50_ms,
+  PERCENTILE(dur, 95) / 1e6 AS p95_ms,
+  PERCENTILE(dur, 99) / 1e6 AS p99_ms,
+  ((MAX(dur)) / 1e6) AS max_ms
 FROM samples
-WHERE dur IS NOT NULL
+WHERE dur IS NOT NULL AND dur >= 0
 GROUP BY stage
 ORDER BY CASE stage
-  WHEN 'dispatch' THEN 1
-  WHEN 'handling' THEN 2
-  WHEN 'ack' THEN 3
-  ELSE 4
-END;
+  WHEN 'dispatch' THEN 1 WHEN 'handling' THEN 2
+  WHEN 'ack' THEN 3 ELSE 4 END;
 ```
 
 输入延迟没有脱离设备、刷新率、手势类型和负载的通用毫秒阈值。可靠的性能回退判定应固定设备、构建、Trace 配置、交互脚本、温度区间和样本量，再比较分位数及尾部样本。最大值对单次调度抖动很敏感，不适合单独作为门禁；门禁是持续集成中自动决定构建是否通过的规则。
@@ -303,37 +363,56 @@ END;
 
 ### 三段时间的组合
 
-`end_to_end_latency_dur` 在 Android 17 标准库中的定义是 `present_time - read_time`。若 `event_time` 可用，可以再计算事件发生到 `InputReader` 读取，以及事件发生到关联帧呈现：
-
-```sql
-INCLUDE PERFETTO MODULE android.input;
-INCLUDE PERFETTO MODULE time.conversion;
-
-SELECT
-  input_event_id,
-  process_name,
-  event_action,
-  time_to_ms(read_time - event_time) AS event_to_read_ms,
-  time_to_ms(end_to_end_latency_dur) AS read_to_present_ms,
-  time_to_ms(
-    (read_time - event_time) + end_to_end_latency_dur
-  ) AS event_to_present_ms,
-  frame_id,
-  is_speculative_frame
-FROM android_input_events
-WHERE event_time IS NOT NULL
-  AND read_time IS NOT NULL
-  AND end_to_end_latency_dur IS NOT NULL
-ORDER BY event_to_present_ms DESC
-LIMIT 100;
-```
-
-这里的 `event_time` 由 `InputReader` 的 ATrace 输出，取自输入事件自身携带的时间，不是原始 evdev（Linux 输入设备事件接口）上的 Tracepoint（内核预定义事件记录点）。它比 `dispatch_ts` 更靠近设备事件，但仍不能描述成触摸控制器中断时间。FrameTimeline 的呈现时间是 SurfaceFlinger 帧区间的结束，不代表屏幕像素实际发光的物理时刻。
+`end_to_end_latency_dur` 的公式是 Trace 时间域中的 `present_time - read_time`，但它首先只是候选值。普通 motion 的 `args.eventTime` 来自 MONOTONIC 事件时间，ATrace Slice 和 FrameTimeline 则已经是 Trace 时间，常见 Android 跟踪使用 BOOTTIME；两者不能直接相减。查询先用 `to_monotonic()` 转换两个 Trace 端点，再与事件时间组合。缺少时钟映射时，派生的 MONOTONIC 时长保留 NULL；附件歧义也显式保留，不能当作已测准延迟。
 
 <!-- gracker-diagram: ch14-05-14-clock-domain -->
 ![内联事件时间与 Trace 端点先统一时钟](../../assets/diagrams/ch14/ch14-05-14-clock-domain.png)
 
 图：将读取与呈现 Trace 端点转为 MONOTONIC，再与内联事件时间相减。 缺映射保留 NULL；统一时钟不会修复错误的事件或帧附件。
+
+```sql
+INCLUDE PERFETTO MODULE android.input;
+INCLUDE PERFETTO MODULE time.conversion;
+
+WITH raw_candidates AS (
+  SELECT *, COUNT(*) OVER (
+    PARTITION BY upid, event_channel, event_seq, dispatch_ts, receive_ts
+  ) AS attachment_row_count
+  FROM android_input_events
+)
+,
+converted AS (
+  SELECT *, to_monotonic(read_time) AS monotonic_read,
+    to_monotonic(read_time + end_to_end_latency_dur) AS monotonic_present
+  FROM raw_candidates
+)
+SELECT
+  upid, event_channel, event_seq, dispatch_ts, receive_ts,
+  input_event_id AS candidate_input_event_id,
+  process_name, event_action AS candidate_action,
+  (monotonic_read - event_time) / 1e6 AS candidate_event_to_read_monotonic_ms,
+  (monotonic_present - monotonic_read) / 1e6 AS candidate_read_to_present_monotonic_ms,
+  (monotonic_present - event_time) / 1e6 AS candidate_event_to_present_monotonic_ms,
+  end_to_end_latency_dur / 1e6 AS candidate_read_to_present_trace_ms,
+  frame_id AS candidate_surface_frame_token,
+  is_speculative_frame, attachment_row_count,
+  CASE
+    WHEN attachment_row_count > 1 THEN 'ambiguous_attachment'
+    WHEN end_to_end_latency_dur < 0 THEN 'timestamp_order_invalid'
+    WHEN monotonic_read IS NULL OR monotonic_present IS NULL
+      THEN 'missing_monotonic_mapping'
+    WHEN monotonic_read < event_time OR monotonic_present < monotonic_read
+      THEN 'timestamp_order_invalid'
+    ELSE 'unverified_stdlib_candidate'
+  END AS association_status
+FROM converted
+WHERE event_time IS NOT NULL AND read_time IS NOT NULL
+  AND end_to_end_latency_dur IS NOT NULL
+ORDER BY candidate_event_to_present_monotonic_ms DESC, upid, dispatch_ts
+LIMIT 100;
+```
+
+该路径的 `event_time` 来自 `TracedInputListener` 输出的 `args.eventTime`；`read_time` 则取 `UnwantedInteractionBlocker::notifyMotion` 包装 Slice 的起点，是 Reader 后续监听链路边界的代理时间，不是 EventHub 的 `read()` 时刻或触摸控制器中断时间。它们在此结果中还可能受附件误关联影响。FrameTimeline 的呈现候选是 SurfaceFlinger 帧区间结束，也不代表屏幕像素实际发光的物理时刻。 MONOTONIC 时长不包含系统挂起时间，BOOTTIME 时长包含；查询同时保留原始 Trace 域的读取到呈现候选，跨挂起时不能与 MONOTONIC 分段混加。设备的原始事件时间域仍应回到 EventHub 与采集元数据核验，传感器等路径不宜套用普通触摸假设。
 
 <!-- gracker-diagram: ch14-05-15-reader-proxy -->
 ![Reader 代理边界与真实设备读取分开](../../assets/diagrams/ch14/ch14-05-15-reader-proxy.png)
@@ -357,40 +436,53 @@ LIMIT 100;
 
 Android 17 的 `_input_read_time` 只匹配 motion 事件的 `UnwantedInteractionBlocker::notifyMotion*` Slice。按键事件可以有完整往返时间，却没有 `read_time`、`event_time` 或呈现延迟。以下划线开头表示标准库内部对象，外部查询不应依赖它。
 
-该版本查找未丢弃帧的内部标量查询（预期返回单个值的子查询）使用 `app_ts >= frame_ts` 和 `LIMIT 1`，没有 `upid` 条件，也没有 `ORDER BY`。结果不能保证是目标进程时间最早的候选帧。多应用同时绘制时，应回到目标进程的 `actual_frame_timeline_slice` 核对帧与呈现时间；仅在下游连接中补上 `upid`，无法修正已经算出的 `end_to_end_latency_dur`。
-
-下面的查询把输入结果连接到 `android_frames`，同时保留关联质量：
-
-```sql
-INCLUDE PERFETTO MODULE android.input;
-INCLUDE PERFETTO MODULE android.frames.timeline;
-INCLUDE PERFETTO MODULE time.conversion;
-
-SELECT
-  event.input_event_id,
-  event.process_name,
-  event.frame_id,
-  event.is_speculative_frame,
-  time_to_ms(event.dispatch_ts) AS dispatch_at_ms,
-  time_to_ms(frame.ts) AS do_frame_at_ms,
-  time_to_ms(frame.dur) AS frame_dur_ms,
-  frame.do_frame_id,
-  frame.draw_frame_id
-FROM android_input_events AS event
-JOIN android_frames AS frame
-  ON frame.frame_id = event.frame_id
-  AND frame.upid = event.upid
-WHERE event.frame_id IS NOT NULL
-ORDER BY event.dispatch_ts
-LIMIT 200;
-```
-
-同时使用 `frame_id` 和 `upid` 可以避开不同进程复用 Vsync ID 造成的误连接。帧持续时间长不等于输入处理慢，仍需展开 `doFrame`、负责渲染提交的 `RenderThread`、SurfaceFlinger 和调度上下文。
+该版本查找未丢弃帧的内部标量查询（预期返回单个值的子查询）使用 `app_ts >= frame_ts` 和 `LIMIT 1`，没有 `upid` 条件，也没有 `ORDER BY`，因此不保证取到目标进程最早的候选。最终帧附件还只按 `event_seq` 连接，存在前述跨通道放大。多应用绘制时，应独立固定输入身份、目标进程、Surface/Layer、应用 token 与 display token，再从底层 Actual 帧和对应 SF 帧重建呈现候选；仅在下游补 `upid`，不能修复已经混入的输入 ID、读取时间或呈现延迟。
 
 <!-- gracker-diagram: ch14-05-17-frame-failure-gates -->
 ![帧候选需要分层核验](../../assets/diagrams/ch14/ch14-05-17-frame-failure-gates.png)
 
 图：分别核验输入身份、应用 Surface、显示帧与实际采用的 buffer。 全局 LIMIT 1 无进程过滤和排序；下游补 upid 不能修复已污染字段。
+
+下面的查询把候选帧附件连接到 `android_frames`，保留附件歧义和没有匹配到 HWUI 上下文的情况：
+
+```sql
+INCLUDE PERFETTO MODULE android.input;
+INCLUDE PERFETTO MODULE time.conversion;
+
+INCLUDE PERFETTO MODULE android.frames.timeline;
+
+WITH raw_candidates AS (
+  SELECT *, COUNT(*) OVER (
+    PARTITION BY upid, event_channel, event_seq, dispatch_ts, receive_ts
+  ) AS attachment_row_count
+  FROM android_input_events
+)
+SELECT
+  event.upid, event.event_channel, event.event_seq,
+  event.input_event_id AS candidate_input_event_id,
+  event.process_name,
+  event.frame_id AS candidate_surface_frame_token,
+  event.is_speculative_frame,
+  event.attachment_row_count,
+  CASE
+    WHEN event.attachment_row_count > 1 THEN 'ambiguous_attachment'
+    WHEN frame.do_frame_id IS NULL THEN 'no_matching_hwui_context'
+    ELSE 'unverified_matching_context'
+  END AS association_status,
+  ((event.dispatch_ts) / 1e6) AS dispatch_at_ms,
+  ((frame.ts) / 1e6) AS frame_start_at_ms,
+  CASE WHEN frame.dur >= 0 THEN ((frame.dur) / 1e6) END AS frame_dur_ms,
+  frame.do_frame_id, frame.draw_frame_id,
+  frame.actual_frame_timeline_id, frame.expected_frame_timeline_id
+FROM raw_candidates AS event
+LEFT JOIN android_frames AS frame
+  ON frame.frame_id = event.frame_id AND frame.upid = event.upid
+WHERE event.frame_id IS NOT NULL
+ORDER BY event.dispatch_ts, event.event_channel, event.frame_id
+LIMIT 200;
+```
+
+同时使用候选 token 与 `upid` 只约束这一步上下文连接，不能修复此前的输入 ID、读取时间或全局呈现候选。`android_frames` 自身也是聚合视图，可能缺 Expected 数据或有多个 Layer/DrawFrame；应保留底层时间线 ID 再核对。帧持续时间长不等于输入处理慢，仍需联读 `doFrame`、RenderThread、SurfaceFlinger 和调度。
 
 <!-- gracker-diagram: ch14-05-18-frame-context-leftjoin -->
 ![候选帧与 HWUI 上下文保留缺失](../../assets/diagrams/ch14/ch14-05-18-frame-context-leftjoin.png)
@@ -407,23 +499,28 @@ INCLUDE PERFETTO MODULE time.conversion;
 
 WITH params(process_name, frame_id) AS (
   VALUES ('com.example.reader', 123456)
+),
+target_process AS (
+  SELECT MIN(process.upid) AS upid
+  FROM process JOIN params ON process.name = params.process_name
+  HAVING COUNT(*) = 1
 )
 SELECT
-  frame.frame_id,
-  slice.name,
-  slice.depth,
-  time_to_ms(slice.ts) AS start_ms,
-  time_to_ms(slice.dur) AS dur_ms
+  frame.upid, frame.frame_id, frame.do_frame_id,
+  slice.id AS slice_id, slice.name, slice.depth,
+  ((slice.ts) / 1e6) AS start_ms,
+  CASE WHEN slice.dur >= 0 THEN ((slice.dur) / 1e6) END AS dur_ms,
+  slice.dur < 0 AS unclosed
 FROM android_frames AS frame
-JOIN params
-  USING (process_name, frame_id)
+JOIN target_process USING (upid)
+CROSS JOIN params
 JOIN descendant_slice(frame.do_frame_id) AS descendant
-JOIN slice
-  ON slice.id = descendant.id
-ORDER BY slice.ts, slice.depth;
+JOIN slice ON slice.id = descendant.id
+WHERE frame.frame_id = params.frame_id
+ORDER BY slice.ts, slice.depth, slice.id;
 ```
 
-`descendant_slice()` 是递归遍历 Slice 父子关系的表函数。修改参数行后，查询会返回 `doFrame` 下所有层级的后代 Slice；具体回调名称受系统版本、应用埋点和采集类别影响，应先查看完整结果，再筛选当前 Trace 中存在的名称。
+`descendant_slice()` 返回 `doFrame` 下所有层级的后代 Slice。查询要求名称恰好对应一个进程实例；未闭合切片保留行与 `unclosed` 标记，但毫秒时长为 NULL，避免把 `dur = -1` 当成负耗时。具体回调名称取决于版本、埋点和采集类别，应先看完整结果再筛选。
 
 <!-- gracker-diagram: ch14-05-19-descendant-tree -->
 ![完整后代与第一层子 Slice 的区别](../../assets/diagrams/ch14/ch14-05-19-descendant-tree.png)
@@ -448,74 +545,65 @@ ORDER BY slice.ts, slice.depth;
 这条查询用于确认当前跟踪中存在的 `InputDispatcher` 计数器：
 
 ```sql
-INCLUDE PERFETTO MODULE time.conversion;
-
-SELECT
-  process.name AS process_name,
-  track.name AS queue_name,
-  time_to_ms(counter.ts) AS sample_at_ms,
-  counter.value AS queue_length
+SELECT process.upid AS system_upid,
+  process.name AS process_name, counter.track_id,
+  track.name AS queue_name, counter.ts,
+  counter.ts / 1e6 AS sample_at_ms, counter.value AS queue_length
 FROM counter
-JOIN process_counter_track AS track
-  ON track.id = counter.track_id
-JOIN process
-  USING (upid)
+JOIN process_counter_track AS track ON track.id = counter.track_id
+JOIN process USING (upid)
 WHERE process.name = 'system_server'
-  AND (
-    track.name = 'iq'
-    OR track.name GLOB 'oq:*'
-    OR track.name GLOB 'wq:*'
-  )
-ORDER BY counter.ts, track.name
+  AND (track.name = 'iq' OR track.name GLOB 'oq:*' OR track.name GLOB 'wq:*')
+ORDER BY counter.ts, counter.id
 LIMIT 500;
 ```
 
 `GLOB 'oq:*'` 和 `GLOB 'wq:*'` 使用通配符匹配对应前缀。如果没有结果，检查 `linux.ftrace` 是否启用了 ATrace 的 `input` 类别。旧文档中常见的 `InputDispatcher inbound queue` 等名称并不是 Android 17 源码写出的计数器名称。
 
-`counter` 只在值变化时记录采样点，没有 `dur`；一个值会持续到同轨道的下一次采样。下面的查询用下一次采样或 Trace 结束时间补出每段持续时间，并列出非零区间：
-
-```sql
-INCLUDE PERFETTO MODULE time.conversion;
-
-WITH queue_samples AS (
-  SELECT
-    counter.track_id,
-    track.name AS queue_name,
-    counter.ts,
-    counter.value AS queue_length,
-    LEAD(counter.ts) OVER (
-      PARTITION BY counter.track_id
-      ORDER BY counter.ts
-    ) AS next_ts
-  FROM counter
-  JOIN process_counter_track AS track
-    ON track.id = counter.track_id
-  JOIN process
-    USING (upid)
-  WHERE process.name = 'system_server'
-    AND (
-      track.name = 'iq'
-      OR track.name GLOB 'oq:*'
-      OR track.name GLOB 'wq:*'
-    )
-)
-SELECT
-  queue_name,
-  time_to_ms(ts) AS start_ms,
-  time_to_ms(COALESCE(next_ts, trace_end()) - ts) AS dur_ms,
-  queue_length
-FROM queue_samples
-WHERE queue_length > 0
-ORDER BY queue_length DESC, dur_ms DESC
-LIMIT 200;
-```
-
-`LEAD()` 取得同一轨道的下一条采样时间，最后一条没有后继时，`COALESCE()` 改用 `trace_end()`。瞬间出现非零值是正常流转的一部分。持续的 `iq` 表明 InputDispatcher 尚未消费完入站事件；持续的 `oq` 表明连接上仍有待写入事件；持续的 `wq` 表明已写入事件还在等待完成确认。队列堆积能缩小范围，但不能单独证明应用主线程、socket 写入或 `system_server` 调度中的哪一项是根因。
+`counter` 保存采样点，没有 `dur`；队列埋点在相关操作中写入当前值，不能假设所有来源都只记录发生变化的值。按阶梯值模型，一个样本保持到同轨道下一次采样；最后一个值外推到 Trace 结束只是分析假设，首条采样之前和采集缺口仍未知。下面的查询按此模型展开非零区间：
 
 <!-- gracker-diagram: ch14-05-22-queue-evidence -->
 ![持续非零队列提供排查入口](../../assets/diagrams/ch14/ch14-05-22-queue-evidence.png)
 
 图：队列非零区间提示等待发生的位置，再结合线程和通道现场定位。 队列长度本身不能独立证明主线程、socket 或系统调度根因。
+
+```sql
+WITH queue_points AS (
+  SELECT counter.id AS counter_id, counter.track_id,
+    process.upid AS system_upid, track.name AS queue_name,
+    counter.ts, counter.value AS queue_length,
+    process.end_ts AS process_end_ts,
+    LEAD(counter.ts) OVER (
+      PARTITION BY counter.track_id ORDER BY counter.ts, counter.id
+    ) AS next_ts
+  FROM counter
+  JOIN process_counter_track AS track ON track.id = counter.track_id
+  JOIN process USING (upid)
+  WHERE process.name = 'system_server'
+    AND (track.name = 'iq' OR track.name GLOB 'oq:*' OR track.name GLOB 'wq:*')
+),
+queue_intervals AS (
+  SELECT *, MIN(COALESCE(next_ts, trace_end()),
+    COALESCE(process_end_ts, trace_end()), trace_end()) AS end_ts,
+    CASE
+      WHEN process_end_ts IS NOT NULL
+        AND process_end_ts <= COALESCE(next_ts, trace_end())
+        AND process_end_ts <= trace_end() THEN 'process_end_clip'
+      WHEN next_ts IS NOT NULL AND next_ts <= trace_end() THEN 'next_sample'
+      ELSE 'trace_end_extrapolation'
+    END AS end_basis
+  FROM queue_points
+)
+SELECT system_upid, track_id, queue_name, ts AS start_ts,
+  ts / 1e6 AS start_ms, (end_ts - ts) / 1e6 AS dur_ms,
+  queue_length, end_basis
+FROM queue_intervals
+WHERE queue_length > 0 AND end_ts > ts
+ORDER BY queue_length DESC, end_ts - ts DESC, ts, track_id
+LIMIT 200;
+```
+
+`LEAD()` 按 `(ts, id)` 取得同轨道下一条采样，重复时间戳产生的零长区间被排除。区间还会裁到当前进程结束与 `trace_end()` 中较早的时刻；`end_basis` 区分下一采样、进程边界和末值外推。末值保持只是模型假设，不能视为连续观测。瞬间出现非零值是正常流转的一部分。持续的 `iq` 表明 InputDispatcher 尚未消费完入站事件；持续的 `oq` 表明连接上仍有待写入事件；持续的 `wq` 表明已写入事件还在等待完成确认。队列堆积能缩小范围，但不能单独证明应用主线程、socket 写入或 `system_server` 调度中的哪一项是根因。
 
 <!-- gracker-diagram: ch14-05-21-counter-intervals -->
 ![计数器采样转区间的边界](../../assets/diagrams/ch14/ch14-05-21-counter-intervals.png)
@@ -526,33 +614,29 @@ LIMIT 200;
 
 ### 以 `android_anrs` 为时间锚点
 
-这里的时间锚点是用于界定查询窗口的可信事件时刻。通过名称通配符在 `slice` 中搜索 `ANR` 容易命中日志、应用自定义 Slice 或无关文本。`android.anrs` 模块会解析 `system_server` 的 `ErrorId`（平台为一次 ANR 生成的唯一标识）、subject（主题文本）和 ANR 计时器，并给出标准化的 `anr_type`。
+这里用平台记录构造查询时间窗，同时保留关联误差。通过名称通配符在 `slice` 中搜索 `ANR` 容易命中日志、应用自定义 Slice 或无关文本。`android.anrs` 模块会解析 `system_server` 的 `ErrorId`（平台为一次 ANR 生成的唯一标识）、subject（主题文本）和 ANR 计时器，并给出标准化的 `anr_type`。
 
 这条查询列出输入分发类 ANR，以及跟踪中解析到的超时长度：
 
 ```sql
 INCLUDE PERFETTO MODULE android.anrs;
-INCLUDE PERFETTO MODULE time.conversion;
 
-SELECT
-  error_id,
-  process_name,
-  pid,
-  time_to_ms(ts) AS anr_at_ms,
-  anr_type,
-  anr_dur_ms,
-  default_anr_dur_ms,
-  timer_delay,
-  subject
+SELECT error_id, process_name, pid,
+  CASE WHEN COUNT(DISTINCT upid) = 1 THEN MIN(upid) END AS candidate_upid,
+  COUNT(DISTINCT upid) AS candidate_process_count,
+  ts, ts / 1e6 AS anr_at_ms, anr_type,
+  anr_dur_ms, default_anr_dur_ms, timer_delay, subject
 FROM android_anrs
 WHERE anr_type IN (
   'INPUT_DISPATCHING_TIMEOUT',
   'INPUT_DISPATCHING_TIMEOUT_NO_FOCUSED_WINDOW'
 )
-ORDER BY ts;
+GROUP BY error_id, process_name, pid, ts, anr_type,
+  anr_dur_ms, default_anr_dur_ms, timer_delay, subject
+ORDER BY ts, error_id;
 ```
 
-`InputDispatcher` 的超时时长并非固定五秒。Android 17 会优先读取目标窗口的分发超时时长，找不到窗口时才使用默认值，并可能按平台的硬件超时倍率放大。Perfetto 的 `anr_dur_ms` 优先来自平台计时器；`default_anr_dur_ms` 只是 AOSP / Pixel 的参考默认值，OEM 厂商可以修改。
+`InputDispatcher` 的超时时长并非固定五秒。Android 17 会优先读取目标窗口的分发超时时长，找不到窗口时才使用默认值，并可能按平台的硬件超时倍率放大。Perfetto 的 `anr_dur_ms` 优先来自平台计时器；`default_anr_dur_ms` 只是 AOSP / Pixel 的参考默认值，OEM 厂商可以修改。 固定模块按 PID 选择最近的前序计时器，并仅按 PID 连接 `process`，没有同时验证进程生命周期。PID 复用可令同一 ANR 扩成多行；查询对 ANR 核心字段去重，并报告 `candidate_process_count`，不把任选的 `upid` 当作已确认目标。
 
 <!-- gracker-diagram: ch14-05-23-anr-candidates -->
 ![ANR 记录与进程、计时器候选](../../assets/diagrams/ch14/ch14-05-23-anr-candidates.png)
@@ -561,64 +645,86 @@ ORDER BY ts;
 
 ### 查看 ANR 窗口内已完成的输入
 
-下面的查询以超时到期为窗口终点，列出窗口内分发、且到该终点已完成往返的最近 50 个事件。`android_anrs.ts` 是 `ErrorId` 计数器的记录时刻；存在计时器时，减去纳秒单位的 `timer_delay` 才是到期时刻。缺少计时器时使用记录时刻和默认超时长度估算窗口，不能把它当作精确的阻塞起点。
+下面的查询以超时到期为窗口终点，列出窗口内分发、且到该终点已完成往返的最近 50 个事件。`android_anrs.ts` 是 `ErrorId` 计数器的记录时刻；存在计时器时，减去纳秒单位的 `timer_delay` 才是到期时刻。缺少相应字段时使用记录时刻或默认超时长度估算窗口。`estimated_timer` 只表明是否使用了缺字段回退；值为 0 也不证明最近计时器属于本次 ANR。窗口起点不是精确阻塞起点，PID 关联仍需结合生命周期核验。
+
+<!-- gracker-diagram: ch14-05-24-anr-window -->
+![ANR 记录、超时到期与查询窗口](../../assets/diagrams/ch14/ch14-05-24-anr-window.png)
+
+图：到期候选等于 ErrorId 记录时刻减 timer_delay，窗口向前展开超时长度。 estimated_timer 只标缺字段回退；0 也不证明计时器归属正确。
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
-INCLUDE PERFETTO MODULE android.anrs;
 INCLUDE PERFETTO MODULE time.conversion;
 
+INCLUDE PERFETTO MODULE android.anrs;
+
 WITH input_anrs AS (
-  SELECT
-    *,
+  SELECT DISTINCT
+    error_id, process_name, pid,
     COALESCE(anr_dur_ms, default_anr_dur_ms) AS timeout_ms,
-    ts - COALESCE(timer_delay, 0) AS timeout_end_ts
+    ts - COALESCE(timer_delay, 0) AS timeout_end_ts,
+    timer_delay IS NULL AS estimated_timer
   FROM android_anrs
   WHERE anr_type IN (
     'INPUT_DISPATCHING_TIMEOUT',
     'INPUT_DISPATCHING_TIMEOUT_NO_FOCUSED_WINDOW'
   )
 ),
-ranked AS (
-  SELECT
-    anr.error_id,
-    anr.process_name AS anr_process,
-    anr.timeout_end_ts,
-    anr.timeout_ms,
-    event.dispatch_ts,
-    event.input_event_id,
+round_trips AS (
+  SELECT DISTINCT
+    event.upid,
+    event.pid,
+    event.tid,
     event.thread_name,
+    event.process_name,
+    event.event_type,
+    event.event_seq,
+    event.event_channel,
+    event.normalized_event_channel,
+    event.dispatch_track_id,
+    event.dispatch_ts,
+    event.dispatch_dur,
+    event.receive_track_id,
+    event.receive_ts,
+    event.receive_dur,
     event.dispatch_latency_dur,
     event.handling_latency_dur,
     event.ack_latency_dur,
-    event.total_latency_dur,
+    event.total_latency_dur
+  FROM android_input_events AS event
+),
+ranked AS (
+  SELECT anr.error_id, anr.process_name AS anr_process,
+    anr.timeout_end_ts, anr.timeout_ms, anr.estimated_timer,
+    event.upid AS event_upid, event.pid AS event_pid,
+    event.dispatch_ts, event.receive_ts,
+    event.event_channel, event.event_seq, event.thread_name AS finish_thread_name,
+    event.receive_track_id,
+    event.dispatch_latency_dur, event.handling_latency_dur,
+    event.ack_latency_dur, event.total_latency_dur,
     ROW_NUMBER() OVER (
       PARTITION BY anr.error_id
-      ORDER BY event.dispatch_ts DESC
+      ORDER BY event.dispatch_ts DESC, event.upid, event.event_channel, event.event_seq
     ) AS recency
   FROM input_anrs AS anr
-  LEFT JOIN android_input_events AS event
+  LEFT JOIN round_trips AS event
     ON event.process_name = anr.process_name
     AND (anr.pid IS NULL OR event.pid = anr.pid)
-    AND event.dispatch_ts BETWEEN
-      anr.timeout_end_ts - time_from_ms(anr.timeout_ms)
-      AND anr.timeout_end_ts
+    AND event.dispatch_ts >= anr.timeout_end_ts - time_from_ms(anr.timeout_ms)
+    AND event.dispatch_ts < anr.timeout_end_ts
+    AND event.total_latency_dur >= 0
     AND event.dispatch_ts + event.total_latency_dur <= anr.timeout_end_ts
 )
-SELECT
-  error_id,
-  anr_process,
-  timeout_ms,
-  time_to_ms(timeout_end_ts - dispatch_ts) AS ms_before_timeout,
-  input_event_id,
-  thread_name,
-  time_to_ms(dispatch_latency_dur) AS dispatch_ms,
-  time_to_ms(handling_latency_dur) AS handling_ms,
-  time_to_ms(ack_latency_dur) AS ack_ms,
-  time_to_ms(total_latency_dur) AS total_ms
-FROM ranked
-WHERE recency <= 50
-ORDER BY timeout_end_ts, recency;
+SELECT error_id, anr_process, timeout_ms, estimated_timer,
+  event_upid, event_pid, event_channel, event_seq, receive_track_id,
+  dispatch_ts, receive_ts, finish_thread_name,
+  (timeout_end_ts - dispatch_ts) / 1e6 AS ms_before_timeout,
+  dispatch_latency_dur / 1e6 AS dispatch_ms,
+  handling_latency_dur / 1e6 AS handling_ms,
+  ack_latency_dur / 1e6 AS ack_ms,
+  total_latency_dur / 1e6 AS total_ms
+FROM ranked WHERE recency <= 50
+ORDER BY timeout_end_ts, error_id, recency;
 ```
 
 `dispatch_ts + total_latency_dur` 是系统收到完成确认的时刻；额外的上界条件排除了超时后才完成的投递。`android_input_events` 只包含四个消息节点都匹配成功的投递。卡住并触发 ANR 的事件可能没有 `finish_ack`（系统收到完成确认的节点），因此不会出现在结果里。ANR 附近没有行并不等于没有输入；此时应查看 `wq:` 计数器、目标主线程调度状态和 ANR 主题字段。
@@ -635,73 +741,63 @@ INCLUDE PERFETTO MODULE android.anrs;
 INCLUDE PERFETTO MODULE time.conversion;
 
 WITH input_anrs AS (
-  SELECT
-    *,
+  SELECT DISTINCT
+    error_id, process_name, pid,
     COALESCE(anr_dur_ms, default_anr_dur_ms) AS timeout_ms,
-    ts - COALESCE(timer_delay, 0) AS timeout_end_ts
+    ts - COALESCE(timer_delay, 0) AS timeout_end_ts,
+    timer_delay IS NULL AS estimated_timer
   FROM android_anrs
   WHERE anr_type IN (
     'INPUT_DISPATCHING_TIMEOUT',
     'INPUT_DISPATCHING_TIMEOUT_NO_FOCUSED_WINDOW'
   )
 ),
-queue_samples AS (
-  SELECT
-    counter.ts,
-    COALESCE(
-      LEAD(counter.ts) OVER (
-        PARTITION BY counter.track_id
-        ORDER BY counter.ts
-      ),
-      trace_end()
-    ) AS end_ts,
-    counter.value,
-    track.name
+queue_points AS (
+  SELECT counter.id AS counter_id, counter.track_id,
+    process.upid AS system_upid, track.name AS queue_name,
+    counter.ts, counter.value AS queue_length,
+    process.end_ts AS process_end_ts,
+    LEAD(counter.ts) OVER (
+      PARTITION BY counter.track_id ORDER BY counter.ts, counter.id
+    ) AS next_ts
   FROM counter
-  JOIN process_counter_track AS track
-    ON track.id = counter.track_id
-  JOIN process
-    USING (upid)
+  JOIN process_counter_track AS track ON track.id = counter.track_id
+  JOIN process USING (upid)
   WHERE process.name = 'system_server'
-    AND (
-      track.name = 'iq'
-      OR track.name GLOB 'oq:*'
-      OR track.name GLOB 'wq:*'
-    )
+    AND (track.name = 'iq' OR track.name GLOB 'oq:*' OR track.name GLOB 'wq:*')
+),
+queue_intervals AS (
+  SELECT *, MIN(COALESCE(next_ts, trace_end()),
+    COALESCE(process_end_ts, trace_end()), trace_end()) AS end_ts,
+    CASE
+      WHEN process_end_ts IS NOT NULL
+        AND process_end_ts <= COALESCE(next_ts, trace_end())
+        AND process_end_ts <= trace_end() THEN 'process_end_clip'
+      WHEN next_ts IS NOT NULL AND next_ts <= trace_end() THEN 'next_sample'
+      ELSE 'trace_end_extrapolation'
+    END AS end_basis
+  FROM queue_points
 ),
 overlaps AS (
-  SELECT
-    anr.error_id,
-    anr.process_name,
-    anr.timeout_end_ts,
-    queue.name AS queue_name,
-    queue.value AS queue_length,
+  SELECT anr.error_id, anr.process_name, anr.estimated_timer,
+    anr.timeout_end_ts, queue.system_upid, queue.track_id,
+    queue.queue_name, queue.queue_length, queue.end_basis,
     MAX(queue.ts, anr.timeout_end_ts - time_from_ms(anr.timeout_ms)) AS start_ts,
     MIN(queue.end_ts, anr.timeout_end_ts) AS end_ts
-  FROM input_anrs AS anr
-  JOIN queue_samples AS queue
+  FROM input_anrs AS anr JOIN queue_intervals AS queue
     ON queue.ts < anr.timeout_end_ts
     AND queue.end_ts > anr.timeout_end_ts - time_from_ms(anr.timeout_ms)
-  WHERE queue.value > 0
+  WHERE queue.queue_length > 0
 )
-SELECT
-  error_id,
-  process_name,
-  queue_name,
-  time_to_ms(timeout_end_ts - start_ts) AS ms_before_timeout,
-  time_to_ms(end_ts - start_ts) AS overlap_dur_ms,
-  queue_length
-FROM overlaps
-WHERE end_ts > start_ts
-ORDER BY timeout_end_ts, start_ts, queue_name;
+SELECT error_id, process_name, estimated_timer,
+  system_upid, track_id, queue_name, queue_length, start_ts, end_ts,
+  (timeout_end_ts - start_ts) / 1e6 AS ms_before_timeout,
+  (end_ts - start_ts) / 1e6 AS overlap_dur_ms, end_basis
+FROM overlaps WHERE end_ts > start_ts
+ORDER BY timeout_end_ts, start_ts, track_id;
 ```
 
 `overlap_dur_ms` 是已知非零状态与窗口相交的时长；同轨道的后继采样会结束该状态，首条采样之前的值仍然未知。结果包含 `system_server` 的所有匹配队列，不能直接归给 ANR 进程。目标连接名可能被截断，仍需在 `Perfetto UI` 中对齐同一时间段的 `InputDispatcher`、应用主线程和调度轨道。
-
-<!-- gracker-diagram: ch14-05-24-anr-window -->
-![ANR 记录、超时到期与查询窗口](../../assets/diagrams/ch14/ch14-05-24-anr-window.png)
-
-图：到期候选等于 ErrorId 记录时刻减 timer_delay，窗口向前展开超时长度。 estimated_timer 只标缺字段回退；0 也不证明计时器归属正确。
 
 <!-- gracker-diagram: ch14-05-26-queue-window-overlap -->
 ![先还原队列区间，再裁 ANR 窗口](../../assets/diagrams/ch14/ch14-05-26-queue-window-overlap.png)
@@ -721,33 +817,56 @@ INCLUDE PERFETTO MODULE time.conversion;
 WITH params(process_name, start_ts, end_ts) AS (
   SELECT 'com.example.reader', trace_start(), trace_end()
 ),
-events AS (
-  SELECT event.*
+target_process AS (
+  SELECT MIN(process.upid) AS upid
+  FROM process JOIN params ON process.name = params.process_name
+  HAVING COUNT(*) = 1
+),
+round_trips AS (
+  SELECT DISTINCT
+    event.upid,
+    event.pid,
+    event.tid,
+    event.thread_name,
+    event.process_name,
+    event.event_type,
+    event.event_seq,
+    event.event_channel,
+    event.normalized_event_channel,
+    event.dispatch_track_id,
+    event.dispatch_ts,
+    event.dispatch_dur,
+    event.receive_track_id,
+    event.receive_ts,
+    event.receive_dur,
+    event.dispatch_latency_dur,
+    event.handling_latency_dur,
+    event.ack_latency_dur,
+    event.total_latency_dur
   FROM android_input_events AS event
-  JOIN params
-    USING (process_name)
-  WHERE event.dispatch_ts BETWEEN params.start_ts AND params.end_ts
+  JOIN target_process USING (upid)
+  CROSS JOIN params
+  WHERE event.dispatch_ts >= params.start_ts
+    AND event.dispatch_ts < params.end_ts
+    AND event.dispatch_latency_dur >= 0 AND event.handling_latency_dur >= 0
+    AND event.ack_latency_dur >= 0 AND event.total_latency_dur >= 0
 ),
 baseline AS (
   SELECT PERCENTILE(total_latency_dur, 95) AS p95_total
-  FROM events
-  WHERE total_latency_dur IS NOT NULL
+  FROM round_trips WHERE total_latency_dur >= 0
 )
 SELECT
-  time_to_ms(event.dispatch_ts) AS dispatch_at_ms,
-  event.input_event_id,
-  event.event_action,
-  event.normalized_event_channel,
-  time_to_ms(event.dispatch_latency_dur) AS dispatch_ms,
-  time_to_ms(event.handling_latency_dur) AS handling_ms,
-  time_to_ms(event.ack_latency_dur) AS ack_ms,
-  time_to_ms(event.total_latency_dur) AS total_ms,
-  event.frame_id,
-  event.is_speculative_frame
-FROM events AS event
-CROSS JOIN baseline
-WHERE event.total_latency_dur >= baseline.p95_total
-ORDER BY event.total_latency_dur DESC;
+  upid, pid, tid AS finish_tid, event_channel, event_seq, event_type,
+  dispatch_ts, receive_ts, dispatch_track_id, receive_track_id,
+  ((dispatch_ts) / 1e6) AS dispatch_at_ms,
+  normalized_event_channel,
+  ((dispatch_latency_dur) / 1e6) AS dispatch_ms,
+  ((handling_latency_dur) / 1e6) AS handling_ms,
+  ((ack_latency_dur) / 1e6) AS ack_ms,
+  ((total_latency_dur) / 1e6) AS total_ms
+FROM round_trips CROSS JOIN baseline
+WHERE total_latency_dur >= 0 AND total_latency_dur >= baseline.p95_total
+ORDER BY total_latency_dur DESC, dispatch_ts, event_channel, event_seq;
 ```
 
 该模板把当前区间本身作为 baseline（比较基准），用其中的 P95 选出尾部样本，不给出脱离场景的固定阈值。把异常时间带回 UI 后，依次检查接收线程状态、`doFrame`、Binder Slice、GC（Garbage Collection，垃圾回收）、锁等待和 CPU 频率。
@@ -778,65 +897,89 @@ ORDER BY event.total_latency_dur DESC;
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
-INCLUDE PERFETTO MODULE android.startup.startups;
 INCLUDE PERFETTO MODULE time.conversion;
 
-WITH params(package_name) AS (
-  VALUES ('com.example.reader')
+INCLUDE PERFETTO MODULE android.startup.startups;
+
+WITH round_trips AS (
+  SELECT DISTINCT
+    event.upid,
+    event.pid,
+    event.tid,
+    event.thread_name,
+    event.process_name,
+    event.event_type,
+    event.event_seq,
+    event.event_channel,
+    event.normalized_event_channel,
+    event.dispatch_track_id,
+    event.dispatch_ts,
+    event.dispatch_dur,
+    event.receive_track_id,
+    event.receive_ts,
+    event.receive_dur,
+    event.dispatch_latency_dur,
+    event.handling_latency_dur,
+    event.ack_latency_dur,
+    event.total_latency_dur
+  FROM android_input_events AS event
 ),
+params(package_name) AS (VALUES ('com.example.reader')),
 target_startups AS (
-  SELECT
-    startup.*,
+  SELECT startup.*,
     LEAD(startup.ts) OVER (
-      PARTITION BY startup.package
-      ORDER BY startup.ts
+      PARTITION BY startup.package ORDER BY startup.ts, startup.startup_id
     ) AS next_startup_ts
-  FROM android_startups AS startup
-  JOIN params
+  FROM android_startups AS startup JOIN params
     ON params.package_name = startup.package
 ),
+process_map AS (
+  SELECT DISTINCT startup_id, upid, pid, startup_type
+  FROM android_startup_processes
+),
+mapped_startups AS (
+  SELECT startup.*, map.upid, map.pid,
+    map.startup_type AS process_startup_type,
+    COUNT(map.upid) OVER (PARTITION BY startup.startup_id) AS mapped_process_count
+  FROM target_startups AS startup
+  LEFT JOIN process_map AS map USING (startup_id)
+),
 ranked AS (
-  SELECT
-    startup.startup_id,
-    startup.package,
-    startup.startup_type,
-    startup.ts AS startup_ts,
+  SELECT startup.startup_id, startup.package, startup.startup_type,
+    startup.upid, startup.pid, startup.process_startup_type,
+    startup.mapped_process_count, startup.ts AS startup_ts,
     startup.ts_end AS startup_end_ts,
-    event.receive_ts,
-    event.input_event_id,
+    event.receive_ts, event.dispatch_ts, event.event_channel, event.event_seq,
     event.total_latency_dur,
     ROW_NUMBER() OVER (
-      PARTITION BY startup.startup_id
-      ORDER BY event.receive_ts
+      PARTITION BY startup.startup_id, startup.upid
+      ORDER BY event.receive_ts, event.dispatch_ts, event.event_channel, event.event_seq
     ) AS input_order
-  FROM target_startups AS startup
-  LEFT JOIN android_input_events AS event
-    ON (
-      event.process_name = startup.package
-      OR event.process_name GLOB startup.package || ':*'
-    )
+  FROM mapped_startups AS startup
+  LEFT JOIN round_trips AS event ON event.upid = startup.upid
     AND event.receive_ts >= startup.ts
     AND event.receive_ts < COALESCE(startup.next_startup_ts, trace_end())
+    AND event.total_latency_dur >= 0
 )
-SELECT
-  startup_id,
-  package,
-  startup_type,
-  time_to_ms(startup_end_ts - startup_ts) AS startup_ms,
-  time_to_ms(receive_ts - startup_ts) AS first_input_after_start_ms,
-  CASE
-    WHEN receive_ts IS NULL THEN NULL
-    WHEN receive_ts <= startup_end_ts THEN 1
-    ELSE 0
+SELECT startup_id, package, startup_type, process_startup_type,
+  upid, pid, mapped_process_count,
+  CASE WHEN mapped_process_count = 0 THEN 'missing_process_map'
+       WHEN mapped_process_count > 1 THEN 'multiple_instances'
+       ELSE 'single_instance' END AS process_mapping_status,
+  startup_ts, receive_ts, dispatch_ts, event_channel, event_seq,
+  CASE WHEN startup_end_ts >= startup_ts
+    THEN (startup_end_ts - startup_ts) / 1e6 END AS startup_ms,
+  (receive_ts - startup_ts) / 1e6 AS first_input_after_start_ms,
+  CASE WHEN receive_ts IS NULL OR startup_end_ts IS NULL
+         OR startup_end_ts < startup_ts THEN NULL
+       WHEN receive_ts <= startup_end_ts THEN 1 ELSE 0
   END AS input_arrived_during_startup,
-  time_to_ms(total_latency_dur) AS first_input_round_trip_ms,
-  input_event_id
-FROM ranked
-WHERE input_order = 1
-ORDER BY startup_ts;
+  total_latency_dur / 1e6 AS first_input_round_trip_ms
+FROM ranked WHERE input_order = 1
+ORDER BY startup_ts, startup_id, upid;
 ```
 
-这里用应用侧 `receive_ts` 表示收到输入的时刻，并以同包下一次启动的开始时间为上界，避免把后一次启动的输入归入前次。模板保留各类 `startup_type`，分析冷启动时再筛选对应结果。第一条目标输入可能发生在启动结束很久之后，`first_input_after_start_ms` 因而不能直接当作可交互时间。若目标是启动手势到首帧，应结合 `android_startups`、启动方输入事件、Flow（Trace 事件之间的因果连线）或自定义场景标记，并对跨进程因果关系单独建模。
+这里通过 `android_startup_processes` 的 `startup_id`、`upid` 映射到应用实例，再以应用侧 `receive_ts` 选第一条输入；同包下一次启动开始构成不包含右端点的上界。一次启动可因进程死亡和重启对应多个实例，结果按实例分行；缺映射也保留，不能悄悄用包名前缀补齐。标准启动映射本身依赖包元数据、名称与窗口内 Activity 恢复证据，仍需核对现场。模板保留各类 `startup_type`，分析冷启动时再筛选对应结果。第一条目标输入可能发生在启动结束很久之后，`first_input_after_start_ms` 因而不能直接当作可交互时间。若目标是启动手势到首帧，应结合 `android_startups`、启动方输入事件、Flow（Trace 事件之间的因果连线）或自定义场景标记，并对跨进程因果关系单独建模。
 
 <!-- gracker-diagram: ch14-05-29-startup-mapping -->
 ![启动到第一条目标实例输入](../../assets/diagrams/ch14/ch14-05-29-startup-mapping.png)
@@ -941,14 +1084,14 @@ data_sources {
 
 `TRACE_MODE_TRACE_ALL` 会绕过隐私措施并记录系统处理的全部输入，只适合本地受控设备和测试，禁止用于线上采集。
 
-包名规则检查一次事件的所有目标：`match_any_packages` 在任一目标包命中列表时成立，`match_all_packages` 要求所有目标包都位于列表中。同一事件常被发送给前台应用、监视窗口等多个目标，因此两种规则的覆盖面可能与直觉不同。坐标、按键、IME（Input Method Editor，输入法）连接状态和安全窗口均属于敏感信息。
-
-原始事件数据源不会替代常规配置中的 ATrace 和 FrameTimeline。只打开它可以得到三张原始视图，却不保证 `android_input_events` 的消息往返与帧关联完整。
+包名规则检查一次事件的所有目标：`match_any_packages` 在任一目标包命中列表时成立，`match_all_packages` 要求所有目标 UID 都被允许列表覆盖，其中 System、Shell、Root UID 在固定后端中永久允许；因此不能把它理解为每个目标都必须显式写入包名列表。同一事件常被发送给前台应用、监视窗口等多个目标，因此两种规则的覆盖面可能与直觉不同。坐标、按键、IME（Input Method Editor，输入法）连接状态和安全窗口均属于敏感信息。
 
 <!-- gracker-diagram: ch14-05-33-package-allowlists -->
 ![any、all 与永久允许的系统 UID](../../assets/diagrams/ch14/ch14-05-33-package-allowlists.png)
 
 图：包名配置在后端映射到 UID；all 还计入永久允许的系统 UID。 多窗口或监视目标会改变匹配结果；隐私规则不能只看前台包。
+
+原始事件数据源不会替代常规配置中的 ATrace 和 FrameTimeline。只打开它可以得到三张原始视图，却不保证 `android_input_events` 的消息往返与帧关联完整。
 
 ## 批量跟踪对比
 
@@ -959,14 +1102,16 @@ data_sources {
 - `TraceConfig`、`Trace Processor` 或 `perfetto` Python 包版本；
 - 样本筛选条件、进程名、样本量和异常样本处理规则。
 
-Perfetto 的 Batch Trace Processor 会为每份 Trace 启动独立解析实例，并对它们执行同一条 SQL。下面的脚本读取 `traces` 目录中的文件，逐份生成分位数、帧关联率和推测关联率，再用 Pandas（Python 表格分析库）合并结果：
+Perfetto 的 Batch Trace Processor 会为每份 Trace 启动独立解析实例，并对它们执行同一条 SQL。下面以 Python 包 `perfetto==0.57.2` 为 API 基线，通过 `bin_path` 显式指定已核验的原生 Trace Processor；包号不能证明原生版本。脚本读取 `traces`，先去除帧附件造成的消息重复，再计算往返分位数；候选帧可用率、推测候选率与歧义投递数单独汇总，最后用 Pandas（Python 表格分析库）合并结果。运行前将二进制放到示例路径，并保存实际版本、SHA 摘要与标准库来源。
 
 ```python
 from glob import glob
 
 import pandas as pd
-from perfetto.batch_trace_processor.api import BatchTraceProcessor
-
+from perfetto.trace_processor import TraceProcessorConfig
+from perfetto.batch_trace_processor.api import (
+    BatchTraceProcessor, BatchTraceProcessorConfig,
+)
 
 TRACE_FILES = sorted(glob("traces/*.perfetto-trace"))
 if not TRACE_FILES:
@@ -976,37 +1121,89 @@ QUERY = """
 INCLUDE PERFETTO MODULE android.input;
 INCLUDE PERFETTO MODULE time.conversion;
 
-WITH params(process_name) AS (
-  VALUES ('com.example.reader')
+WITH params(process_name, start_ts, end_ts) AS (
+  SELECT 'com.example.reader', trace_start(), trace_end()
+),
+target_process AS (
+  SELECT MIN(process.upid) AS upid
+  FROM process JOIN params ON process.name = params.process_name
+  HAVING COUNT(*) = 1
+),
+round_trips AS (
+  SELECT DISTINCT
+    event.upid,
+    event.pid,
+    event.tid,
+    event.thread_name,
+    event.process_name,
+    event.event_type,
+    event.event_seq,
+    event.event_channel,
+    event.normalized_event_channel,
+    event.dispatch_track_id,
+    event.dispatch_ts,
+    event.dispatch_dur,
+    event.receive_track_id,
+    event.receive_ts,
+    event.receive_dur,
+    event.dispatch_latency_dur,
+    event.handling_latency_dur,
+    event.ack_latency_dur,
+    event.total_latency_dur
+  FROM android_input_events AS event
+  JOIN target_process USING (upid)
+  CROSS JOIN params
+  WHERE event.dispatch_ts >= params.start_ts
+    AND event.dispatch_ts < params.end_ts
+    AND event.dispatch_latency_dur >= 0 AND event.handling_latency_dur >= 0
+    AND event.ack_latency_dur >= 0 AND event.total_latency_dur >= 0
+),
+raw_target AS (
+  SELECT event.* FROM android_input_events AS event
+  JOIN target_process USING (upid) CROSS JOIN params
+  WHERE event.dispatch_ts >= params.start_ts AND event.dispatch_ts < params.end_ts
+),
+candidate_tuples AS (
+  SELECT DISTINCT upid, event_channel, event_seq, dispatch_ts, receive_ts,
+    input_event_id, read_time, event_time, frame_id,
+    is_speculative_frame, end_to_end_latency_dur
+  FROM raw_target
+),
+candidate_quality AS (
+  SELECT upid, event_channel, event_seq, dispatch_ts, receive_ts,
+    COUNT(*) AS tuple_count,
+    MAX(frame_id IS NOT NULL) AS has_frame_candidate,
+    MAX(COALESCE(is_speculative_frame = 1, 0)) AS has_speculative_candidate
+  FROM candidate_tuples
+  GROUP BY upid, event_channel, event_seq, dispatch_ts, receive_ts
 )
 SELECT
+  (SELECT COUNT(*) FROM process JOIN params ON process.name=params.process_name)
+    AS target_process_matches,
+  (SELECT upid FROM target_process) AS target_upid,
+  (SELECT COUNT(*) FROM raw_target) AS raw_row_count,
   COUNT(*) AS event_count,
-  time_to_ms(PERCENTILE(total_latency_dur, 50)) AS p50_ms,
-  time_to_ms(PERCENTILE(total_latency_dur, 95)) AS p95_ms,
-  time_to_ms(PERCENTILE(total_latency_dur, 99)) AS p99_ms,
-  time_to_ms(MAX(total_latency_dur)) AS max_ms,
-  ROUND(
-    100.0 * SUM(frame_id IS NOT NULL) / NULLIF(COUNT(*), 0),
-    2
-  ) AS frame_match_percent,
-  ROUND(
-    100.0 * SUM(is_speculative_frame = 1) / NULLIF(COUNT(*), 0),
-    2
-  ) AS speculative_match_percent
-FROM android_input_events
-JOIN params
-  USING (process_name)
-WHERE total_latency_dur IS NOT NULL;
+  PERCENTILE(total_latency_dur, 50) / 1e6 AS p50_ms,
+  PERCENTILE(total_latency_dur, 95) / 1e6 AS p95_ms,
+  PERCENTILE(total_latency_dur, 99) / 1e6 AS p99_ms,
+  MAX(total_latency_dur) / 1e6 AS max_ms,
+  (SELECT ROUND(100.0 * COALESCE(SUM(has_frame_candidate),0)
+    / NULLIF(COUNT(*),0),2) FROM candidate_quality) AS candidate_frame_percent,
+  (SELECT ROUND(100.0 * COALESCE(SUM(has_speculative_candidate),0)
+    / NULLIF(COUNT(*),0),2) FROM candidate_quality) AS candidate_speculative_percent,
+  (SELECT COUNT(*) FROM candidate_quality WHERE tuple_count > 1)
+    AS ambiguous_candidate_deliveries
+FROM round_trips WHERE total_latency_dur >= 0;
 """
 
-with BatchTraceProcessor(TRACE_FILES) as batch:
+config = BatchTraceProcessorConfig(
+    tp_config=TraceProcessorConfig(bin_path="tools/perfetto/trace_processor"),
+)
+with BatchTraceProcessor(TRACE_FILES, config=config) as batch:
     per_trace = batch.query(QUERY)
 
 summary = pd.concat(
-    [
-        frame.assign(trace_path=trace_path)
-        for trace_path, frame in zip(TRACE_FILES, per_trace)
-    ],
+    [frame.assign(trace_path=path) for path, frame in zip(TRACE_FILES, per_trace)],
     ignore_index=True,
 )
 summary.to_csv("input-latency-summary.csv", index=False)
@@ -1020,7 +1217,7 @@ print(summary.to_string(index=False))
 
 图：每份 Trace 内分别计算合法去重往返与候选附件质量，再按来源合并。 候选率只是可用性；无歧义也不证明全局帧候选正确。
 
-`event_count`、帧匹配率和推测关联率必须与延迟分位数一起看；覆盖率变化意味着两组统计来自不同完整程度的样本，分位数可能失去可比性。每份 Trace 的解析结果都会常驻内存，输入规模较大时需要分批处理。
+`event_count` 是消息去重后的往返数，`raw_row_count` 保留标准库放大前后的对照。候选字段比例只描述字段可用性，不是呈现关联准确率；`ambiguous_candidate_deliveries` 为零也不能排除全局帧候选错误。同名进程不唯一时不计算该实例的分位数；无样本时分位数和比例保留 NULL。每份 Trace 的解析实例都会常驻，worker 限额不限制实例总数，输入规模较大时需要分批处理。
 
 <!-- gracker-diagram: ch14-05-35-batch-residency -->
 ![批处理的原生版本与驻留实例](../../assets/diagrams/ch14/ch14-05-35-batch-residency.png)
@@ -1036,8 +1233,8 @@ print(summary.to_string(index=False))
 - `Trace Processor` 版本支持当前查询中的公开列；
 - 没有依赖以下划线开头的标准库内部对象；
 - `android_input_events` 与原始 inputevent 视图没有被当作同一采集链路；
-- `event_time`、`read_time`、`dispatch_ts` 和原始视图 `ts` 没有混用；
-- 帧结果区分精确关联、推测关联和无关联；
+- 内联 `event_time` 与 Trace 时间端点先统一时钟；缺映射保留未知，MONOTONIC 与 BOOTTIME 分段不混加；
+- 帧结果区分区间相交的规则匹配、推测和缺失，并检查跨通道放大与全局帧候选；
 - ANR 时间来自 `android_anrs`，超时长度没有写死；
 - 队列轨道使用 Android 17 源码中的 `iq`、`oq:`、`wq:`；
 - 修复前后采集条件、覆盖率与样本量一致。
@@ -1048,6 +1245,12 @@ print(summary.to_string(index=False))
 图：版本、数据语义、关联质量与实验条件共同决定结论是否可复查。 升级系统或工具后重核公开列、时钟与连接，合成验证不代表设备性能。
 
 ## 参考资料
+
+- [Android 17 EventHub 事件时间域](https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/reader/EventHub.cpp)
+- [Android 17 Reader Trace 包装器](https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/InputListener.cpp)
+- [Android 17 Trace 时间转换实现](https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/intrinsics/functions/clock_functions.h)
+- [Android 17 标准启动与进程映射](https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/startup/startups.sql)
+- [Android 17 原始输入规则与时间戳后端](https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/trace/InputTracingPerfettoBackend.cpp)
 
 - [PerfettoSQL 标准库：`android.input`](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)
 - [PerfettoSQL 语法与模块引入](https://perfetto.dev/docs/analysis/perfetto-sql-syntax)

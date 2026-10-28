@@ -4,7 +4,7 @@ chapter: '22.1'
 section: '22.1'
 status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-08-14'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1 ViewRootImpl/ViewGroup/LayoutInflater/ViewStub/ViewTreeObserver/FrameMetrics; current Android Developers layout guidance; AndroidX AsyncLayoutInflater 1.1.0 API and release notes
 confidence: medium-high
 sources:
@@ -64,7 +64,9 @@ consolidated_from:
 
 布局慢的时候，我们手里往往只有一张 Perfetto trace 和一堆互相纠缠的机制：View 体系的递归测量、`LayoutInflater` 的对象创建、`requestLayout()` 沿父链的传播、绘制失效的重录范围。本文把这些机制、对应的页面改造、代码选型和 trace 验收方法放到同一帧时间线里讲——trace 是 Perfetto 这类工具记录的线程与渲染时间线，deadline 则是一帧按时完成提交的截止点。目标很具体：减少首帧、页面切换和高频更新里的主线程 Measure / Layout / Draw 工作，为同一帧的输入、业务逻辑和渲染提交留出预算。
 
-> 源码基线：AOSP `android-17.0.0_r1`（API 37），内核 `android17-6.18-2026-06_r6`；设备可能使用其他内核分支。
+> 源码基线：AOSP `android-17.0.0_r1`（API 37）。本文核对 framework View 机制，不将某一内核分支当作 App 布局行为的统一契约。
+
+版本边界：一般 View 布局与绘制机制覆盖 API 21–37；`FrameMetrics` 从 API 24 提供，公开 `RenderNode` 示例仅用于 API 29+，FrameTimeline 取证从 Android 12 / API 31 起使用。低版本须按可用 API 选择测量与绘制路径。
 
 整条链路是这样接起来的。`ViewRootImpl` 通过 `Choreographer` 安排一轮 Traversal（遍历 View 树的一轮工作），按“哪些阶段需要重新执行”的脏标记决定要不要 Measure、Layout 和 Draw；硬件加速路径随后通过 `syncAndDrawFrame()` 同步 RenderNode 绘制节点树，把剩下的工作交给 RenderThread。所以布局变快只说明 App 主线程少做了工作；图形 buffer 有没有被 SurfaceFlinger（系统合成服务） 按时选中并送往显示，要沿后面的链路继续查。
 
@@ -200,7 +202,7 @@ fun showError(root: View) {
 布局 XML 经 AAPT2 编译成 binary XML（编译后的二进制 XML），但运行时仍要读取节点与属性、创建对象并组装 View 树，省掉的只是文本解析这一小段。把整段工作笼统称为“XML 解析”，会漏掉主题、资源和业务构造器的成本。我们按三段拆开看一次 `inflate()`：
 
 1. `Resources.getLayout()` 提供解析器，inflater 读取 `AttributeSet`，处理 `android:theme`、`<include>`、`<merge>`、`<tag>` 等特殊标签，并让父容器生成 `LayoutParams`；
-2. `createViewFromTag()` 先经过 `Factory2 → Factory → private factory`。都未创建 View 时，才进入 `onCreateView()` 或按完整类名构造；AppCompat 的控件替换、Context 包装和 tint 也在这条 Factory 路径中；
+2. `createViewFromTag()` 在已设置 `Factory2` 时调用它，否则才调用 `Factory`；结果仍为空时再尝试 private factory，之后才进入 `onCreateView()` 或按完整类名构造。不是 `Factory2` 返回空后还必定调用普通 `Factory`；AppCompat 的控件替换、Context 包装和 tint 也在这条 Factory 路径中；
 3. `rInflateChildren()` 递归创建子节点、生成布局参数、加入父容器，并在子树完成后调用 `onFinishInflate()`。
 
 `LayoutInflater` 的进程级构造器表可以省掉重复的类查找，省不掉的是后面这些：`Constructor.newInstance()`、View 构造函数、style、字体、Drawable 和自定义初始化。首次进入页面还可能包含类加载。所以我们比较冷启动与预热后的 trace 时要分开看，先定位主要耗时再谈优化，别先入为主认定是反射。
@@ -235,19 +237,33 @@ fun showError(root: View) {
 - **受控复用**：RecyclerView 的 `RecycledViewPool` 具有清晰的回收协议。普通 View 不宜随意放入全局对象池；预创建 View 必须保持未 attach 状态，且 Context、主题、配置和旧数据都与使用点一致。
 - **`AsyncLayoutInflater`**：尝试把 XML 解析和 View 构造放到后台线程，完成后再 attach。适合复杂但不需要立刻展示的布局；不满足后台构造条件时会回退到 UI 线程。
 
-用 `AsyncLayoutInflater` 之前，先把它的适用条件写清楚。后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，被创建的 View 在构造过程里也要避开 `Handler` 创建和 `Looper.myLooper()` 调用。它仍不支持直接设置 `LayoutInflater.Factory` / `Factory2`，也不支持包含 fragment 的布局；好在 AndroidX 1.1.0 可以在构造时传入 `AsyncLayoutFactory`，AppCompat 场景用 `AsyncAppCompatFactory` 就能正确创建 AppCompat View。碰到只能在 UI 线程构建的布局，AndroidX 会回退到 UI 线程 inflate——功能可以继续，只是这一次的解析和构造仍留在 UI 线程。
+用 `AsyncLayoutInflater` 之前，先把它的适用条件写清楚。构造 `AsyncLayoutInflater` 和调用 `inflate()` 都应在 UI 线程；后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，被创建的 View 在构造过程里也要避开 `Handler` 创建和 `Looper.myLooper()` 调用。它仍不支持直接设置 `LayoutInflater.Factory` / `Factory2`，也不支持包含 fragment 的布局；好在 AndroidX 1.1.0 可以在构造时传入 `AsyncLayoutFactory`，AppCompat 场景用 `AsyncAppCompatFactory` 就能正确创建 AppCompat View。碰到只能在 UI 线程构建的布局，AndroidX 会回退到 UI 线程 inflate——功能可以继续，只是这一次的解析和构造仍留在 UI 线程。
 
 不传 callback executor（指定完成回调在哪个执行器运行） 的默认重载会在 UI 线程执行完成回调，而且返回的 View 尚未加入 `parent`。下面的接入在回调中完成 attach 和绑定：
 
 ```kotlin
-AsyncLayoutInflater(context).inflate(
-    R.layout.panel_filter,
-    parent
-) { view, _, targetParent ->
-    targetParent?.addView(view)
-    bindFilterPanel(view)
+private var filterInflateGeneration = 0L
+
+// UI 线程调用；Fragment 应传入本次 viewLifecycleOwner。
+fun requestFilterPanel(context: Context, parent: ViewGroup, owner: LifecycleOwner) {
+    val generation = ++filterInflateGeneration
+    AsyncLayoutInflater(context).inflate(R.layout.panel_filter, parent) { view, _, targetParent ->
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED ||
+            generation != filterInflateGeneration || targetParent !== parent) {
+            return@inflate
+        }
+        parent.addView(view)
+        bindFilterPanel(view)
+    }
+}
+
+// UI 线程调用：页面转向或不再需要结果时，使在途结果失效。
+fun discardPendingFilterPanel() {
+    filterInflateGeneration++
 }
 ```
+
+这里的 generation 只丢弃过期结果，不会中断已经排队或执行中的 inflate；1.1.0 未提供取消请求的公开方法。Fragment 应使用本次 View 的 owner，避免 Fragment 仍存活却给已销毁的旧 View 树添加内容。示例的状态读写和失效操作都限定在 UI 线程。
 
 `bindFilterPanel()` 与 `addView()` 仍在主线程执行。异步 inflate 只迁移了布局解析和 View 构造的一部分成本；数据绑定、图片解码和网络请求需要按各自线程约束另行安排。AndroidX 1.1.0 还提供 callback executor 重载；回调落在后台线程时，调用 `addView()` 和修改 View 前要切回 UI 线程。
 
@@ -256,7 +272,7 @@ AsyncLayoutInflater(context).inflate(
 
 图：默认回调走 UI 线程，返回 View 未 attach；后台 RuntimeException 导致 UI 线程重做 inflate。
 
-验收时我们对比使用前后的 trace：使用前，`Activity.onCreate()` 或点击事件后方有较长的 `inflate` 区间；使用后，这段区间应移到后台线程，主线程只保留较短的 `addView` / bind 区间。主线程仍出现完整 `inflate`，可能是布局触发了回退；主线程只剩 bind 却依然超时，说明瓶颈已经转到回调工作。还要记录预加载未命中率（已创建却从未使用的比例）和被取消数量，避免用更多 CPU、内存换来很少的命中。
+验收时我们对比使用前后的 trace：使用前，`Activity.onCreate()` 或点击事件后方有较长的 `inflate` 区间；使用后，这段区间应移到后台线程，主线程只保留较短的 `addView` / bind 区间。主线程仍出现完整 `inflate`，可能是布局触发了回退；主线程只剩 bind 却依然超时，说明瓶颈已经转到回调工作。还要记录预加载未使用比例与被丢弃结果数，避免为低命中投入更多 CPU 和内存。1.1.0 只有一个 InflateThread，内部队列容量为 10，入队使用阻塞 `put()`；UI 线程批量提交把队列填满时，`inflate()` 本身也可能等待。限制预取窗口，不能把它理解成无限并行或永不阻塞的 API。实现见 [1.1.0 源码归档](https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar)。
 
 <!-- gracker-diagram: a232-11-async-backpressure -->
 ![AsyncLayoutInflater 不是无限队列，也不自动取消旧页面结果](../../assets/diagrams/ch22/a232-11-async-backpressure.png)
@@ -272,7 +288,7 @@ AsyncLayoutInflater(context).inflate(
 - 只关心一个 View 的位置或尺寸时，优先用 `View.OnLayoutChangeListener` 或 AndroidX `doOnLayout`；
 - 一次性 global listener 在条件满足后立即移除，回调内避免 I/O、同步 Binder、整树扫描和无条件 `requestLayout()`；
 - `OnPreDrawListener.onPreDraw()` 返回 `false` 会取消当前 draw 并重新调度，条件长期不满足会形成连续取消；
-- 首帧显示应使用 FrameTimeline、`reportFullyDrawn()` 或与产品目标含义相符的信号，而不是 global layout 的结束时间。
+- 首帧显示用 API 31+ FrameTimeline 等实际显示证据或启动度量判断；`reportFullyDrawn()` 是业务充分绘制报告，不能当作首帧已上屏的物理信号。`OnGlobalLayoutListener` 的回调结束也不等于显示终点。
 
 `getViewTreeObserver()` 返回的对象也要看生命周期：未 attach 的 View 使用 floating observer，attach 时 listener 会合并到窗口 observer，旧对象随后失效，跨整个 View 生命周期保存同一个引用并不可靠。长期持有引用时要检查 `isAlive()`，移除 listener 时重新取得当前 observer 更稳妥。
 
@@ -305,7 +321,7 @@ View/Compose 混合场景里，我们要同时盯着两套体系：`ComposeView`
 布局优化完成后，用同一台设备、同一份数据、同一条操作路径验证。至少检查这些项目：
 
 - `Choreographer#doFrame` 中 `measure` / `layout` 的 P50、P90、P95 以及调用次数是否下降（P95 指按耗时排序后 95% 的样本不超过该值）。
-- `FrameMetrics.LAYOUT_MEASURE_DURATION` 和 FrameTimeline overrun（超过该帧 deadline 的时长） 是否同时改善；overrun 是超过该帧 deadline 的时长，单看最小值说明不了问题。
+- `FrameMetrics.LAYOUT_MEASURE_DURATION` 和 FrameTimeline overrun（超过该帧 deadline 的时长）是否同时改善；单看最小值说明不了问题。
 - 首帧、页面切换或列表交互的用户可感知耗时是否下降。
 - Layout Inspector 中冗余父节点和重复测量结构是否减少；节点总数只作为解释材料。
 - 低 RAM 设备和高刷新率设备上是否同时通过。120 Hz 的名义 VSync 间隔约为 8.33 ms，当前帧仍应以 FrameTimeline 给出的 deadline 为准。
@@ -434,12 +450,26 @@ public final class WaveformView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        mContentBounds.set(
-                getPaddingLeft(),
-                getPaddingTop(),
-                w - getPaddingRight(),
-                h - getPaddingBottom());
-        rebuildWavePath(mWavePath, mContentBounds);
+        updateContentGeometry();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        // padding 改变时 bounds 未必改变，onSizeChanged 不一定再次调用。
+        updateContentGeometry();
+    }
+
+    private void updateContentGeometry() {
+        float left = getPaddingLeft();
+        float top = getPaddingTop();
+        float right = Math.max(left, getWidth() - getPaddingRight());
+        float bottom = Math.max(top, getHeight() - getPaddingBottom());
+        if (mContentBounds.left != left || mContentBounds.top != top
+                || mContentBounds.right != right || mContentBounds.bottom != bottom) {
+            mContentBounds.set(left, top, right, bottom);
+            rebuildWavePath(mWavePath, mContentBounds);
+        }
     }
 
     public void setSamples(float[] samples) {
@@ -472,7 +502,7 @@ public final class WaveformView extends View {
 
 `View.isHardwareAccelerated()` 表示 View 所在窗口启用了硬件加速；当前绘制可能仍使用软件 Canvas，例如把 View 画入 Bitmap。绘制代码需要分支时，应检查 `canvas.isHardwareAccelerated()`。
 
-Android 10—17 已支持 `clipPath()`、`drawPicture()` 和 `drawVertices()` 等过去受 API 版本限制的调用，其中 `drawVertices()` 从 API 29 起支持硬件 Canvas。兼容性仍要按当前官方表逐项核对，官方表就把 `Paint.setLinearText()` 和 `setMaskFilter()` 标为不支持。这类问题的表现可能是空白、异常或像素错误，系统也不会为所有不支持的调用统一切到软件绘制。
+本文覆盖 API 21–37，需要逐项区分：硬件 Canvas 的 `clipPath()` 从 API 18 支持，`drawPicture()` 从 API 23 支持，`drawVertices()` 从 API 29 支持。API 21–22 不能套用后两项的现代硬件支持结论。兼容性仍要按当前官方表逐项核对，官方表就把 `Paint.setLinearText()` 和 `setMaskFilter()` 标为不支持。这类问题的表现可能是空白、异常或像素错误，系统也不会为所有不支持的调用统一切到软件绘制。
 
 <!-- gracker-diagram: a232-17-canvas-backend -->
 ![当前 Canvas 决定绘制后端，API 支持范围逐项检查](../../assets/diagrams/ch22/a232-17-canvas-backend.png)
@@ -513,7 +543,7 @@ view.animate()
 
 #### `setWillNotDraw(true)` 的实际跳过范围
 
-纯布局 `ViewGroup` 可以设置 `setWillNotDraw(true)`，让框架跳过它自己的 `onDraw()`。子 View 仍会通过 `dispatchDraw()` 绘制。容器需要画背景、分隔线、调试标记或其他自身内容时，应清除该标记。
+没有自身 `onDraw()` 内容的布局 `ViewGroup` 可设置 `setWillNotDraw(true)`，框架在满足跳绘条件时直接走子节点的 `dispatchDraw()`。背景、前景或默认焦点高亮可能使框架清除 `PFLAG_SKIP_DRAW`，因此不能把它理解成始终跳过所有自身绘制；若新增分隔线、调试标记等自定义 `onDraw()` 内容，应明确设为 `false`。
 
 下面只截取容器设置绘制标记的构造函数。完整的非抽象 `ViewGroup` 还必须实现 `onMeasure()` 和 `onLayout()`，把这两处补齐，这段节选才能编译。
 
@@ -601,13 +631,13 @@ protected void onDetachedFromWindow() {
 
 #### `ViewCompat.postInvalidateOnAnimation()` 的版本位置
 
-平台 `postInvalidateOnAnimation()` 从 API 16 提供。本文适用范围为 Android 10—17，可以直接调用平台 API。若这段代码还要共享给 API 15 或更低的项目，可考虑 `ViewCompat.postInvalidateOnAnimation()`，但要先确认项目采用的 AndroidX Core 版本仍支持该 `minSdk`。兼容层的选择不会改变 Android 17 的调度语义。
+平台 `postInvalidateOnAnimation()` 从 API 16 提供。本文适用范围为 Android 5.0—17（API 21–37），可以直接调用平台 API。若这段代码还要共享给 API 15 或更低的项目，可考虑 `ViewCompat.postInvalidateOnAnimation()`，但要先确认项目采用的 AndroidX Core 版本仍支持该 `minSdk`。兼容层的选择不会改变 Android 17 的调度语义。
 
 ### 手动 `RenderNode`：按更新频率划分节点
 
 公开 `RenderNode` 从 API 29 提供。每个 View 已经由框架持有一个 RenderNode，手动增加节点适合的是自定义 View 内面积较大、更新频率不同且能独立记录的区域；反过来，小图元很多、每帧全部变化，或软件 Canvas 必须完整支持的场合，额外节点的管理成本可能超过复用收益。
 
-下面的示例把静态网格和动态波形分成两个节点。节点在字段初始化时创建，硬件 Canvas 走 `drawRenderNode()`，软件 Canvas 直接调用原绘制函数，避免截图或 Bitmap 绘制得到空白。
+下面是仅用于 API 29+ 的独立实现节选；API 21–28 应路由到不含 `RenderNode` 字段的普通 Canvas 实现，不能只在 `onDraw()` 内判断版本，却先在字段初始化时调用新 API。示例把静态网格和动态波形分成两个节点。节点在字段初始化时创建，硬件 Canvas 走 `drawRenderNode()`，软件 Canvas 直接调用原绘制函数，避免截图或 Bitmap 绘制得到空白。
 
 ```java
 private final RenderNode mGridNode = new RenderNode("wave-grid");

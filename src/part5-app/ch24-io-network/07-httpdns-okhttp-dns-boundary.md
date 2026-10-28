@@ -3,7 +3,7 @@ title: HTTPDNS 与 OkHttp Dns 的执行边界
 chapter: '24.7'
 section: '24.7'
 status: finalized
-applicable_versions: Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x
+applicable_versions: Android 8 (API 26) - Android 17 (API 37); synchronous Dns model pinned to OkHttp 5.4.0, 5.5+ DNS API requires separate review
 tags:
 - network
 - httpdns
@@ -48,8 +48,8 @@ sources:
   path: https://developer.android.com/privacy-and-security/risks/bad-dns
 - type: aosp
   path: system/dns-resolver
-last_verified: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1 and Android API 37 DnsResolver, Network and LinkProperties docs current through 2026-08-15; OkHttp 5.4.0 source
+last_verified: '2026-10-25'
+last_verified_against: fixed AOSP android-17.0.0_r1 and OkHttp 5.4.0 route, dispatcher, DNS and pool sources; OkHttp 4.12.0 ExchangeFinder and 5.5.1 changelog; Android API and DNS transport security docs accessed 2026-10-25; RFC2308
 related_chapters:
 - '12.1'
 - '12.2'
@@ -66,7 +66,7 @@ last_draft_polish_at: '2026-08-15T11:23:47+08:00'
 
 OkHttp 要在建立连接前把主机名转换成一组 `InetAddress`，也就是 Java 中表示 IP 地址的对象。`Dns.lookup()` 返回之前，请求还没有开始 TCP 连接。如果在这个同步回调里再请求 HTTPDNS，业务请求就要等这次解析网络请求结束，才能开始连接目标服务。
 
-平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是 5.4.0 的 `parent-5.4.0` 标签。OkHttp 4.x 的旧实现使用 `StreamAllocation` 等类；5.x 应按 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析路由规划、地址选择与并发连接，不能套用旧调用路径。
+平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 同步接口与源码基准固定为 5.4.0 的 `parent-5.4.0` 标签。不要把整个 4.x 都归为 `StreamAllocation`：例如 4.12.0 已使用 [`ExchangeFinder`](https://github.com/lysine-dev/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/connection/ExchangeFinder.kt)。本文按 5.4 的 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析。另据[固定 5.5.1 发布记录](https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md)，5.5.0 已新增多记录类型、异步流式结果与缓存的 DNS API，并提供 opt-in ECH；迁移到 5.5+ 时须重新核对新模型、HTTPS记录和兼容适配，不能直接外推本篇旧接口结论。
 
 [24.5 移动网络架构、连接生命周期与容灾策略](05-mobile-network-connection-resilience.md)讨论网络架构，[24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)讨论 HTTP 与传输协议。理解 HTTPDNS 的执行边界，需要区分四件事：
 
@@ -108,8 +108,8 @@ RealCall
 - 连接池已有合格连接时，请求直接复用连接，不执行 DNS 查询。
 - URL 主机本身是 IP 字面量，即直接写出的 IPv4 或 IPv6 地址时，`RouteSelector` 直接构造地址，不调用 `Dns`。
 - SOCKS 是一种由代理服务器代为建立连接的协议。使用 SOCKS 代理时，OkHttp 保留未解析的 `InetSocketAddress`，把目标主机名交给代理解析。
-- 使用 HTTP 代理时，OkHttp 在这条路径中解析代理服务器的主机名；目标站点通常由代理解析。
-- HTTP/2 连接合并允许证书和路由条件相容的不同主机复用同一条连接，因此也可能没有新的 DNS 查询。
+- 使用 HTTP 代理时，路线中的套接字目标是代理服务器；代理地址仍是未解析主机名时才调用 `Dns`，已携带数值地址时可跳过。目标站点通常由代理解析。
+- HTTP/2 跨主机合并还可能需要先解析目标主机，以候选路线验证同一 IP 等资格。5.4 的 `RealRoutePlanner` 在 `planConnect()` 得到路线后会再次查池，所以“最终复用已有连接”不能单独证明本次未执行 DNS；早期已经命中的合格连接才可跳过该轮新路线解析。
 
 生产日志中没有 `dnsStart`，不能据此断定解析模块没有生效。连接复用、IP 字面量和代理模式都可能让该事件不出现。
 
@@ -143,11 +143,11 @@ class BlockingHttpDns(
 }
 ```
 
-业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。即使通过固定地址避开递归，共用 `Dispatcher`（OkHttp 管理异步请求并发和排队的调度器）、连接池和请求并发配额，仍会让解析流量与业务流量相互影响。
+业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。内层使用同步 `execute()` 时不会被 Dispatcher 的异步并发上限阻塞，但会增加线程、套接字和带宽占用；不能把这个示例直接解释为异步队列配额死锁。反过来，若内层使用 `enqueue()` 后等待结果（下文的 5.4 DoH 就是这种结构），外层异步调用占满同一 Dispatcher 的放行配额时，内层查询可能一直排队，形成资源饥饿。两种故障应分开检查。
 
 HTTPDNS 服务变慢、TLS 握手失败或响应解析异常，都会延长外层业务请求在建连前的等待。
 
-`connectTimeout` 只约束套接字连接，不是 DNS 超时。OkHttp 的 `callTimeout` 把 DNS 计入整次调用期限，但取消一个 `Call` 无法保证任意自定义阻塞代码立即返回。自定义 `lookup()` 应只执行耗时可控的本地操作，不能依赖外层超时终止网络查询。
+`connectTimeout` 只约束套接字连接，不是 DNS 超时。OkHttp 的 `callTimeout` 把 DNS 计入整次调用期限，但取消一个 `Call` 无法保证任意自定义阻塞代码立即返回。自定义 `lookup()` 应只执行耗时可控的本地操作，不能依赖外层超时终止网络查询。 固定 5.4 的异步 `callTimeout` 还不包含 Dispatcher 排队：它在 `AsyncCall.run()` 中才开始。业务总截止时间要从用户动作开始计算，并覆盖排队、解析、重试及取消传播。
 
 OkHttp 自带的 [`DnsOverHttps`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt) 也受同步接口约束。DoH（DNS over HTTPS）把 DNS 查询放入 HTTPS 请求。5.4.0 源码会异步提交 A 记录和 AAAA 记录查询，再用 `CountDownLatch.await()` 等待全部请求结束；A 记录返回 IPv4 地址，AAAA 记录返回 IPv6 地址。`CountDownLatch` 是让当前线程等待一组任务完成的同步工具，所以 `enqueue()` 没有把 `lookup()` 变成异步方法。
 
@@ -164,9 +164,9 @@ DoH 仍需独立的引导解析来找到解析服务本身，并使用配置受�
 
 使用 `Dns.SYSTEM` 可以保留这些平台语义：
 
-- 查询跟随系统选出的默认网络；
+- 未做进程级网络绑定时跟随默认网络；`bindProcessToNetwork()` 等进程级设置也会影响默认解析与连接路径；
 - 解析器使用当前网络提供的 DNS 配置和系统缓存；
-- Android 9 及以上的 Private DNS 配置由系统处理；Private DNS 是 Android 对 DNS-over-TLS 加密解析的系统设置；
+- Android 9 及以上的 Private DNS 配置由系统处理；它是系统级加密 DNS 策略，Android 9 引入 DoT，Android 11 及以上的受支持解析服务还可经模块更新使用 DoH3，不能把实际传输永远等同 DoT；
 - VPN、企业网络的分域解析和本地网络名称仍能按系统策略工作；分域解析会按域名后缀选择不同的 DNS 服务器；
 - 网络变化时，平台解析器能按相应网络配置查询。
 
@@ -202,7 +202,12 @@ OkHttp 路由规划
     → 没有可用地址时调用系统解析
 ```
 
-刷新线程完成全部校验后，一次性替换不可变快照。这里的“快照”是一份发布后不再修改的地址记录集合；“原子发布”保证读取方只能看到完整的旧集合或新集合，不会读到写了一半的状态。`lookup()` 不遍历正在修改的集合，也不等待磁盘或网络任务。流程图中的 `network` 指产生这份结果时使用的 Android `Network`。
+刷新线程完成全部校验后，一次性替换不可变快照。这里的“快照”是一份发布后不再修改的地址记录集合；“原子发布”保证读取方只能看到完整的旧集合或新集合，不会读到写了一半的状态。HTTPDNS 命中路径不遍历正在修改的集合，也不等待自建磁盘或刷新任务；未命中后调用系统 DNS 时仍可能等待网络。流程图中的 `network` 指产生这份结果时使用的 Android `Network`。
+
+<!-- gracker-diagram: a267-03-refresh-and-read-paths -->
+![后台刷新与前台同步读取共享完整快照](../../assets/diagrams/ch24/a267-03-refresh-and-read-paths.png)
+
+图：分离的是HTTPDNS刷新等待；系统回退仍可能查询网络，回退策略与总截止时间必须明确。
 
 缓存记录至少需要下列信息：
 
@@ -261,14 +266,9 @@ class CachedHttpDns(
 }
 ```
 
-当前请求只读内存、检查时间并筛选地址。`scheduleRefresh()` 必须立即返回，并按 `CacheKey` 合并同时到来的刷新。缓存未命中、已到达强制过期时间或所有地址都不可用时，代码调用系统解析；它不会把空列表交给 OkHttp。
+HTTPDNS 命中路径只读内存、检查时间并筛选地址。`scheduleRefresh()` 必须立即返回，并按 `CacheKey` 合并同时到来的刷新。缓存未命中、强制过期或所有地址不可用时，示例会调用 `fallback.lookup()`；默认依赖是 `Dns.SYSTEM`，该同步回退仍可能等待网络，且需要匹配对应的 `Network`。严格解析策略应注入符合承诺的回退或明确失败，不能静默换解析服务；返回给 OkHttp 的成功结果仍须非空。
 
 磁盘快照不应在每次 `lookup()` 中同步读取。应用可在进程初始化阶段异步装载并原子发布；装载完成前使用 `Dns.SYSTEM`。这样能避免慢存储、文件损坏和解密操作进入每个新连接的路由规划。
-
-<!-- gracker-diagram: a267-03-refresh-and-read-paths -->
-![后台刷新与前台同步读取共享完整快照](../../assets/diagrams/ch24/a267-03-refresh-and-read-paths.png)
-
-图：分离的是HTTPDNS刷新等待；系统回退仍可能查询网络，回退策略与总截止时间必须明确。
 
 ## TTL 约束记录的最长有效期
 
@@ -279,7 +279,7 @@ HTTPDNS 服务返回的 TTL 决定地址还能被信任多久。工程实现通�
 
 刷新时间可以加入随机偏移，避免大量客户端在同一秒请求解析服务；偏移范围应来自服务约定和生产环境测量，不能写成适用于所有域名的常量。超出 TTL 后继续使用旧 IP 属于额外的陈旧数据策略，必须由域名所有者确认。没有这项约定时，应停止返回旧 HTTPDNS 结果并使用系统解析。
 
-失败结果也不能无限缓存。NXDOMAIN 表示负责该域名最终记录的权威 DNS 服务器回答“该域名不存在”，它与空响应、服务端错误、响应签名失败和本地解析异常不是同一种结果。只有服务约定明确给出负缓存规则时，才缓存对应失败结果；其余情况记录失败并使用系统解析。
+失败结果不能无限缓存。NXDOMAIN 是 DNS 的名称错误响应，含义为查询名称不存在；应用通常从递归解析器收到它，单凭该响应码不能证明自己直接访问了权威服务器或已验证响应来源。它与 NODATA（名称存在但无所查类型）、空响应、服务错误、签名失败和本地解析异常应分开。只有服务契约明确给出负缓存与可信来源规则时才按规则缓存；其他失败按既定解析策略恢复，不自动承诺无条件系统回退。
 
 <!-- gracker-diagram: a267-04-ttl-refresh-expiry -->
 ![TTL内刷新与到期停止返回的时序](../../assets/diagrams/ch24/a267-04-ttl-refresh-expiry.png)
@@ -291,7 +291,7 @@ HTTPDNS 服务返回的 TTL 决定地址还能被信任多久。工程实现通�
 刷新客户端至少应在这些方面与业务客户端分开：
 
 - 不安装业务 `CachedHttpDns`，避免解析服务域名再次进入同一套逻辑；
-- 使用独立 `Dispatcher` 和连接池，使解析服务拥塞不会占用业务请求配额；
+- 为刷新与业务建立独立的调度和并发预算，必要时使用独立 `Dispatcher`；连接池可在安全配置兼容时共享，需独立释放资源或隔离实测争用时再分池，不能仅凭池是否共享推断异步配额；
 - 设置与解析服务相符的调用、连接和读取期限；
 - 仅访问固定的 HTTPS 解析端点，并执行正常的证书与主机名校验；
 - 限制刷新域名集合、并发数和重试次数。
@@ -407,7 +407,7 @@ Fast Fallback 能缩短坏地址带来的连接等待，却无法缩短 `Dns.loo
 
 DNS 参与新路线生成，不管理已经进入连接池的连接。一个 HTTP/2 连接可以在 DNS TTL 到期后继续服务请求，只要 OkHttp 判断连接健康且仍符合主机与证书规则。新的 DNS 结果不会自动关闭它。
 
-DNS TTL 约束名称解析记录，不约束现有 TCP/TLS 会话的存活时间。若服务端需要紧急撤下节点，应配合负载均衡、连接排空、服务端关闭连接和客户端版本策略。连接排空是停止把新请求分配给待下线节点，同时等待已有请求结束。频繁执行 `connectionPool.evictAll()` 会损失连接复用，并影响共享同一客户端的无关域名。需要单独处置时，应让特殊业务使用独立客户端和连接池。
+DNS TTL 约束名称解析记录，不约束现有 TCP/TLS 会话的存活时间。若服务端需要紧急撤下节点，应配合负载均衡、连接排空、服务端关闭连接和客户端版本策略。连接排空是停止把新请求分配给待下线节点，同时等待已有请求结束。`connectionPool.evictAll()` 只驱逐空闲连接，不会立即关闭仍在用的连接；频繁执行会损失复用，并影响共享同一池的无关域名。需要单独处置时，应让特殊业务使用独立客户端和连接池。
 
 <!-- gracker-diagram: a267-10-dns-ttl-versus-connection -->
 ![DNS有效期不管理已复用连接的生存期](../../assets/diagrams/ch24/a267-10-dns-ttl-versus-connection.png)
@@ -422,7 +422,7 @@ DNS TTL 约束名称解析记录，不约束现有 TCP/TLS 会话的存活时间
 | DoH | 取决于 DoH 客户端配置，查询传输可加密 | 引导解析、同步等待、企业网络兼容和服务可用性 | 有明确隐私策略并能控制解析服务的场景 |
 | HTTPDNS | 由业务服务控制 TTL、候选地址和调度 | 自建缓存、网络隔离、安全、合规，以及解析服务故障时仍保持可用的责任 | 少量经过评估的核心公网域名 |
 
-系统 DNS 应作为默认选择，也是自定义解析失败时的兼容路径。HTTPDNS 和 DoH 都不适合未经评估地覆盖所有域名。应用还要确认域名是否属于用户数据、解析请求会发送到哪个地区、服务方保留哪些日志，以及隐私政策是否已经披露这些处理方式。
+系统 DNS 通常作为默认选择；自定义解析故障时能否回退，必须服从用户、企业与产品已经声明的解析策略。严格指定解析服务时，故障应明确失败或进入已授权恢复路径，不能静默切到另一服务。HTTPDNS 和 DoH 不宜未经评估覆盖所有域名；应用还应确认查询目的地、日志保留与隐私说明。
 
 ## 观测不能只依赖 `dnsStart` 与 `dnsEnd`
 
@@ -433,7 +433,7 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 | 观察对象 | 建议字段 | 解释 |
 | --- | --- | --- |
 | 解析决策 | 来源、缓存年龄、网络代次、地址数量、改用系统解析的原因 | 解释这次返回了哪组地址 |
-| 网络阶段 | DNS、TCP、TLS、TTFB、整次调用耗时 | TTFB（time to first byte）是发出请求后等到首个响应字节的时间，用它区分解析与后续等待 |
+| 网络阶段 | DNS、连接尝试、TLS、响应首部等待代理、整次调用耗时 | 写明具体事件边界与缺失原因；OkHttp HTTPS connect 区间含 TLS，响应首部事件也不保证观测真实网卡首字节，不直接相加 |
 | 路线结果 | 目标地址族、连接成功或失败、是否复用连接 | 判断地址质量和连接池影响 |
 | 网络环境 | 传输类型、是否有 `NET_CAPABILITY_VALIDATED`、是否 VPN、网络代次 | 避免把不同网络混在一起 |
 | 安全与合规 | 只记录归类后的错误码和域名分组 | 不在日志中泄露完整查询与用户信息 |
@@ -446,7 +446,7 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 
 - TTL 内命中、刷新时间到达、强制过期三种状态；
 - 同一个缓存键的并发刷新只发出一项任务；
-- 空响应、格式错误、服务端错误都改用系统解析；
+- 空响应、格式错误、服务端错误按既定策略系统回退或明确失败；
 - 单地址隔离不会删除同一主机的其他候选；
 - 网络代次变化后不读取上一网络的 HTTPDNS 记录；
 - 磁盘快照损坏、过期或来自上次启动时不会进入同步路径。
@@ -462,7 +462,7 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 
 发布判断应使用应用既有的成功率和分位耗时目标，分别比较缓存命中、系统解析、网络类型和地址族。P90 与 P99 分别表示 90% 和 99% 的样本不超过该耗时。不能预设一组通用 P90/P99 数值或“切网后若干秒”的门槛；阈值应来自改造前实测值、用户体验目标和允许的失败额度。
 
-还要通过故障演练确认：HTTPDNS 服务完全不可用时，系统解析路径仍保持可用。这个结果比只看到平均 DNS 耗时下降更能说明方案可发布。
+还要通过故障演练确认解析服务完全不可用时的策略：允许系统回退的产品验证该路径能否继续服务，严格解析产品验证明确失败、用户提示与恢复入口。安全和业务恢复条件通过后，再判断平均 DNS 耗时是否改善。
 
 <!-- gracker-diagram: a267-11-dns-evidence-and-tests -->
 ![解析决策、尝试结果与业务分母共同验收](../../assets/diagrams/ch24/a267-11-dns-evidence-and-tests.png)
@@ -471,9 +471,9 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 
 ## 工程检查清单
 
-- `Dns.lookup()` 是否只执行并发安全的内存读取和筛选；
+- HTTPDNS 命中路径是否只执行并发安全的内存读取和筛选，系统回退等待是否单独计时；
 - 刷新任务是否立即返回，并按主机和网络合并重复请求；
-- HTTPDNS 是否使用独立客户端、调度器、连接池和引导解析；
+- HTTPDNS 是否有独立引导、调度与并发预算，连接池共享或隔离是否符合安全配置和实测需求；
 - 缓存键是否包含实际出站网络，网络变化后是否避免跨网络复用；
 - TTL 到期后是否停止返回旧记录，陈旧结果策略是否得到服务方确认；
 - 缓存为空、过期、全被隔离时是否调用合适网络上的系统解析；
@@ -483,7 +483,7 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 - HTTPS URL 是否始终保留原主机名，证书与主机名校验是否保持开启；
 - 指定 `Network` 时，DNS 与 `SocketFactory` 是否绑定同一个网络；
 - 指标是否区分连接复用、解析来源、网络代次和地址族；
-- 故障演练是否证明 HTTPDNS 失效时业务仍能改用系统解析。
+- 故障演练是否验证 HTTPDNS 失效时按所选策略回退，或明确失败并提供恢复入口。
 
 ## 全文小结
 

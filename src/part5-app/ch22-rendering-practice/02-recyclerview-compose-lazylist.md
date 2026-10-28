@@ -4,10 +4,10 @@ chapter: '22.2'
 section: '22.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: AndroidX current-version table (updated 2026-08-12); RecyclerView 1.4.0 sources.jar and API docs; Android 17 MessageQueue guidance (updated 2026-08-13)
+last_verified: '2026-10-25'
+last_verified_against: RecyclerView 1.4.0 and Compose Foundation/Runtime 1.12.0 source artifacts; official release notes and Android 17 MessageQueue guidance checked 2026-10-25
 confidence: medium-high
-androidx_source_note: 截至 2026-08-14，AndroidX 版本总表仍将 androidx.recyclerview:recyclerview:1.4.0 列为稳定版。本文以其 sources.jar 为不可变源码基线；RecyclerView 是独立 AndroidX artifact，不属于 android-17.0.0_r1 platform tag。
+androidx_source_note: 截至 2026-10-25，RecyclerView 官方发布说明仍以 androidx.recyclerview:recyclerview:1.4.0 为稳定版。本文以其 sources.jar 为不可变源码基线；RecyclerView 是独立 AndroidX artifact，不属于 android-17.0.0_r1 platform tag。
 sources:
 - type: androidx
   path: androidx.recyclerview:recyclerview:1.4.0 sources.jar (RecyclerView.java)
@@ -54,15 +54,15 @@ sources:
 - type: clippings-structure-ref
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyList.kt
+  path: androidx.compose.foundation:foundation:1.12.0 sources.jar (LazyList.kt)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyListMeasure.kt
+  path: androidx.compose.foundation:foundation:1.12.0 sources.jar (LazyListMeasure.kt)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyListItemProvider.kt
+  path: androidx.compose.foundation:foundation:1.12.0 sources.jar (LazyListItemProvider.kt)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt
+  path: androidx.compose.foundation:foundation:1.12.0 sources.jar (LazyLayoutPrefetchState.kt)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt
+  path: androidx.compose.foundation:foundation:1.12.0 sources.jar (LazyLayoutCacheWindow.kt)
 - type: research
   path: intake/research-feeds/2026-04-01-12-compose-performance-milestone-2025.md
 tags:
@@ -95,9 +95,9 @@ last_consolidated_at: '2026-08-24'
 
 RecyclerView 的滑动成本分散在几处：布局状态机、`ViewHolder` 获取与绑定、列表差异、预取下一屏，以及嵌套滑动。优化的起点是把这些成本逐一定位出来，再谈调参。这一篇先把 RecyclerView 1.4.0 的布局、缓存、GapWorker 源码行为和应用写法讲清楚，再与 Compose LazyList 的组合（Composition）和预取模型对照；机制结论和改动收益，最后都要落到同一条慢帧数据上。
 
-> 源码基线：平台行为以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为准；RecyclerView 是独立发布的 AndroidX 库，本文固定使用 `androidx.recyclerview:recyclerview:1.4.0` 的 `sources.jar`（源码包），平台源码标签里查不到它——截至 2026 年 8 月 14 日，[AndroidX 版本总表](https://developer.android.com/jetpack/androidx/versions)仍将 1.4.0 列为稳定版。
+> 源码基线：平台行为以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为准；RecyclerView 是独立发布的 AndroidX 库，本文固定使用 `androidx.recyclerview:recyclerview:1.4.0` 的 `sources.jar`（源码包），平台源码标签里查不到它——截至 2026 年 10 月 25 日，[RecyclerView 发布说明](https://developer.android.com/jetpack/androidx/releases/recyclerview)仍将 1.4.0 列为稳定版。
 
-RecyclerView 的 trace 主要呈现主线程侧的输入、滚动、绑定与 Traversal（View 树的测量（measure）、布局和绘制遍历）；之后还有 RenderThread、图形缓冲区、SurfaceFlinger 与 HWC（硬件合成器）的工作，完整链路见 [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer（图层）.md)。
+RecyclerView 的 trace 主要呈现主线程侧的输入、滚动、绑定与 Traversal（View 树的测量（measure）、布局和绘制遍历）；之后还有 RenderThread、图形缓冲区、SurfaceFlinger 与 HWC（硬件合成器）的工作，完整链路见 [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer.md)。
 
 RecyclerView 通过 ViewHolder 复用和预取控制滚动成本，Compose LazyList 通过组合、测量和槽位复用管理可见项。两者都要稳定 item 身份、减少绑定工作并限制预取压力，我们先从 RecyclerView 的布局与缓存状态机看起。
 
@@ -192,7 +192,12 @@ fun bindHorizontalList(holder: SectionHolder, items: List<Card>) {
 
 `DiffUtil` 使用 Eugene W. Myers 差分算法寻找把旧列表变成新列表所需的最短插入/删除序列；移动不属于该算法的直接输出，需要再做一次检测。它的预期时间复杂度是 O(N + D²)，其中 N 是列表长度之和，D 是最短编辑序列长度；开启 move detection 后还会增加与新增项、删除项数量相关的扫描成本。`calculateDiff(callback, detectMoves)` 的第二个参数用于控制这轮移动检测。
 
-应用侧通常优先使用 `ListAdapter` 或 `AsyncListDiffer`。`ListAdapter#submitList()` 内部委托 `AsyncListDiffer`：diff 在后台 executor（任务执行器） 上计算，结果回到主线程后才更新当前列表并分发通知；连续提交多份列表时，已经被新提交取代的旧计算结果不会应用到 Adapter。
+应用侧通常优先使用 `ListAdapter` 或 `AsyncListDiffer`。`ListAdapter#submitList()` 内部委托 `AsyncListDiffer`：旧、新列表均非空且不是同一实例时，diff 在后台 executor 计算，主线程应用时检查提交代次，过期结果不再分发。相同实例、首次插入和提交 `null` 清空走同步快路径，因此 UI Adapter 的提交入口仍应放在主线程。被新提交取代只会丢弃旧结果，不会停止旧 diff 的 CPU 计算；它的 commit callback 也不保证执行。
+
+<!-- gracker-diagram: a233-05-async-generations -->
+![AsyncListDiffer 的同步与异步路径](../../assets/diagrams/ch22/a233-05-async-generations.png)
+
+图：异步仅覆盖真正需要比较的新旧快照；提交代次门禁保证结果顺序。
 
 DiffUtil 写得好不好，取决于三个回调：
 
@@ -202,12 +207,13 @@ DiffUtil 写得好不好，取决于三个回调：
 图：相同身份、不同内容才产生 payload；ListAdapter 的差异结果不替代完整绑定契约。
 
 - `areItemsTheSame()`：判断新旧位置是否代表同一个业务对象，通常比较服务端 ID 或本地稳定 ID。
-- `areContentsTheSame()`：比较所有会影响当前 UI 的内容；返回 `true` 时，RecyclerView 不需要重新绑定该 item。
+- `areContentsTheSame()`：比较所有会影响当前 UI 的内容；返回 `true` 时，本轮 diff 不为该 item 分发内容变化通知；新进入视口或被回收后取得的 holder 仍可能需要绑定。
 - `getChangePayload()`：在身份相同、内容不同的情况下返回变更描述，让 Adapter 只更新受影响的 View。
 
-payload 是一次局部更新携带的“变化说明”。下面的示例中，同一 item 只改标题时不会重新加载图片；没有 payload 时才走完整绑定。
+payload 是一次局部更新携带的“变化说明”。下面的 `Card` 只有 ID、标题和头像三个字段；新增影响 UI 的字段时，要同时扩展 diff 和 payload。`CardHolder.create(parent)` 是项目提供的 ViewHolder 工厂，`bind()` 必须恢复完整状态。同一 item 只改标题时只绑定标题；payload 为空、未知或格式不符时都回退完整绑定。
 
 ```kotlin
+data class Card(val id: Long, val title: String, val avatarUrl: String)
 data class TitleChanged(val title: String)
 data class AvatarChanged(val url: String)
 
@@ -229,18 +235,23 @@ class CardDiff : DiffUtil.ItemCallback<Card>() {
 }
 
 class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CardHolder =
+        CardHolder.create(parent)
+
+    override fun onBindViewHolder(holder: CardHolder, position: Int) {
+        holder.bind(getItem(position))
+    }
+
     override fun onBindViewHolder(holder: CardHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.isEmpty()) {
-            holder.bind(getItem(position))
+        val changes = payloads.flatMap { (it as? List<*>) ?: listOf(it) }
+        if (changes.isEmpty() || changes.any { it !is TitleChanged && it !is AvatarChanged }) {
+            onBindViewHolder(holder, position)
             return
         }
-        val changes = payloads.flatMap { (it as? List<*>) ?: listOf(it) }
-        changes.forEach { payload ->
-            when (payload) {
-                is TitleChanged -> holder.bindTitle(payload.title)
-                is AvatarChanged -> holder.bindAvatar(payload.url)
-            }
-        }
+        // 多次更新的 payload 可合并；只用它判断字段，值从当前快照读取。
+        val item = getItem(position)
+        if (changes.any { it is TitleChanged }) holder.bindTitle(item.title)
+        if (changes.any { it is AvatarChanged }) holder.bindAvatar(item.avatarUrl)
     }
 }
 ```
@@ -259,11 +270,6 @@ payload 优化的是局部绑定，状态正确性要靠完整绑定兜底：目
 - 数据源按同一规则排序且 item 不会交换位置时，自行调用 `DiffUtil.calculateDiff(callback, false)` 可以省去 move detection。`ListAdapter` / `AsyncListDiffer` 的标准路径调用单参数重载，默认开启移动检测，`AsyncDifferConfig` 没有关闭开关；若改为自管 diff，还要自行处理提交批次、不可变快照和主线程更新分发。
 - `areContentsTheSame()` 不要直接带入与 UI 无关的字段。埋点时间戳、临时曝光状态或调试字段如果参与比较，会让 DiffUtil 把无关变化判成需要更新。
 - 提交给 `ListAdapter` / `AsyncListDiffer` 的列表及其参与比较的字段在 diff 期间应视为不可变。`AsyncListDiffer` 对相同 List 实例会直接返回；原地修改旧列表再重复 `submitList()`，既破坏新旧快照，也可能不触发任何更新。应创建新的列表和不可变 item。
-
-<!-- gracker-diagram: a233-05-async-generations -->
-![AsyncListDiffer 的同步与异步路径](../../assets/diagrams/ch22/a233-05-async-generations.png)
-
-图：异步仅覆盖真正需要比较的新旧快照；提交代次门禁保证结果顺序。
 
 ### 预取机制与配置
 
@@ -336,14 +342,14 @@ fun RecyclerView.configureHorizontalCards(
 
 ### 变更动画与局部刷新的配合
 
-局部刷新做完后，还要看 ItemAnimator。change animation 会比较 item 更新前后的状态；`getChangePayload()` 虽能减少绑定范围，动画器仍可能让新旧 ViewHolder 同时参与过渡，增加布局和绘制压力。点赞、关注、计数器这类高频状态变更，通常只需要文本或图标状态切换，不需要整行 change animation。
-
-我们在同一台设备上录两段 Perfetto，一段保留 change animation，一段关闭 `supportsChangeAnimations`。如果关闭后 `RV OnLayout`、`RV onBindViewHolder` 和慢帧数量下降，并且交互视觉没有损失，就把关闭范围限定在对应 Adapter 或页面，不要全局一刀切。
+局部刷新做完后，还要看 ItemAnimator。1.4.0 的 `DefaultItemAnimator.canReuseUpdatedViewHolder(holder, payloads)` 对非空 payload 直接允许复用原 holder，通常不会为这类更新走新旧 holder 的交叉淡入淡出；它仍可能执行移动等动画。空 payload、自定义 ItemAnimator 或其他状态要按实际路径分析，不能把所有 payload 更新都归为双 holder 过渡。点赞、关注、计数器这类高频状态变更，通常只需要文本或图标状态切换，不需要整行 change animation。
 
 <!-- gracker-diagram: a233-10-animation -->
 ![非空 payload 与默认动画器](../../assets/diagrams/ch22/a233-10-animation.png)
 
 图：是否关闭 change animation 应由实际更新路径与同设备实验决定。
+
+我们在同一台设备上录两段 Perfetto，一段保留 change animation，一段关闭 `supportsChangeAnimations`。如果关闭后 `RV OnLayout`、`RV onBindViewHolder` 和慢帧数量下降，并且交互视觉没有损失，就把关闭范围限定在对应 Adapter 或页面，不要全局一刀切。
 
 ### SnapHelper、LayoutManager 与 ItemDecoration 的热路径
 
@@ -377,7 +383,7 @@ RecyclerView 1.4.0 的 `GapWorker.postFromTraversal()` 仍通过 `RecyclerView.p
 
 ### RecyclerView vs LazyColumn 性能对比
 
-`LazyColumn` 和 RecyclerView 都围绕可见窗口按需准备 item，也可能因预取，或焦点搜索、动画这类越过当前布局范围的 beyond-bounds（焦点搜索、动画等越过当前布局边界的访问） 访问，准备窗口之外的内容。Compose 的 `key` 为 item 提供跨位置变化仍稳定的身份，`contentType` 则告诉 Lazy 列表哪些 item 具有可兼容的组合结构。它和 RecyclerView 的 `viewType` / Pool 思路相近：类型划分越贴近可复用的 UI 结构，复用越稳定。
+`LazyColumn` 和 RecyclerView 都围绕可见窗口按需准备 item，也可能因预取，或焦点搜索、动画等 beyond-bounds（越过当前布局边界）访问，准备窗口之外的内容。Compose 的 `key` 为 item 提供跨位置变化仍稳定的身份，`contentType` 则告诉 Lazy 列表哪些 item 具有可兼容的组合结构。它和 RecyclerView 的 `viewType` / Pool 思路相近：类型划分越贴近可复用的 UI 结构，复用越稳定。
 
 两者选型不要用固定结论：
 
@@ -407,7 +413,7 @@ RecyclerView 优化完成后，我们至少要跑一次本地 trace 和一次线
 - `RV onBindViewHolder type=...` 应结合完整帧 deadline 与同一帧其他主线程工作判断；如果 bind 耗时的高分位值持续变长，回看 payload、图片加载、文本处理和同步 I/O。
 - `RV Prefetch` / `RV Nested Prefetch` 及 forced 变体出现后，核对目标 position 的 create / bind 是否前移，并检查后续关键帧成本；不要只按切片是否存在判断命中。
 - 慢帧集中在 `RV OnLayout` 时，回到 22.1 节查 item 布局层级、`requestLayout()` 来源和 change animation。
-- UI 线程按时完成后仍有 jank（卡顿），就继续沿显示链往下查：RenderThread、应用提交图形缓冲区的 `queueBuffer`（应用提交图形缓冲区）、目标图层的 `BufferTX - <layerName>（目标图层的缓冲区事务）` 缓冲区事务、SurfaceFlinger 采纳缓冲区的 latch（SurfaceFlinger 采纳缓冲区），以及最终上屏的 FrameTimeline present（最终上屏时刻）；列表切片解释不了完整显示链。
+- UI 线程按时完成后仍有 jank（卡顿），就继续沿显示链往下查：RenderThread、图形缓冲区入队 `queueBuffer`、目标图层的 `BufferTX - <layerName>` 缓冲区事务、SurfaceFlinger 采纳缓冲区的 latch，以及 FrameTimeline 的最终 present 时刻；列表切片解释不了完整显示链。
 - 线上按页面、机型、刷新率、列表类型拆指标；只看全局平均值会把低端机和复杂页面的问题稀释掉。
 
 这套检查的目标是把 RecyclerView 问题拆成四类：复用没命中、增量更新没生效、预取没赶上、嵌套布局太重。分类清楚后，优化动作才不会互相抵消。
@@ -455,7 +461,7 @@ RecyclerView 的复用单位是 ViewHolder，LazyList 的复用单位跟组合�
 
 ### 2. key 管业务身份
 
-没有提供自定义键时，`LazyLayout` 使用位置生成默认键。显式写 `key = { index -> index }` 与默认位置身份没有行为差别。列表头插入数据后，数字键 `0、1、2...` 仍然存在，但这些位置已经对应不同的业务对象。常见后果包括：
+没有提供自定义键时，`LazyLayout` 使用位置生成默认键。显式返回索引也采用位置身份，两者都不能稳定代表业务实体；默认键对象与显式整数键并非同一种键，切换键策略也不应假设身份连续。列表头插入数据后，数字键 `0、1、2...` 仍然存在，但这些位置已经对应不同的业务对象。常见后果包括：
 
 - `remember` 状态可能跟着位置留给另一条数据。
 - 内层 LazyRow 的滚动位置、输入状态或动画身份可能错配。
@@ -544,7 +550,7 @@ RecyclerView 的 `viewType` 与 Compose 的 `contentType` 都表达兼容分组�
 
 `derivedStateOf` 适合把高频输入转换成低频布尔值或离散结果；`snapshotFlow` 适合把滚动变化发送给埋点等副作用逻辑。前者控制状态通知频率，后者把 Compose 状态转换成可收集的数据流。
 
-下面的示例让按钮只在阈值变化时重组；每次回到顶部后再次离开，都会触发一次副作用回调。
+下面的示例让按钮只在阈值变化时重组；每次回到顶部后再次离开，会触发一次副作用回调。若开始收集时已经离开顶部，`snapshotFlow` 的首次 `true` 也会触发回调；它不是只统计用户跨界动作的事件源。
 
 ```kotlin
 @Composable
@@ -552,7 +558,7 @@ fun ScrollSignals(
     listState: LazyListState,
     onLeftTop: () -> Unit,
 ) {
-    val showScrollToTop by remember {
+    val showScrollToTop by remember(listState) {
         derivedStateOf { listState.firstVisibleItemIndex > 0 }
     }
     val currentOnLeftTop by rememberUpdatedState(onLeftTop)
@@ -749,7 +755,7 @@ Compose Foundation 1.12.0 包含 `LazyVerticalStaggeredGrid` 和 `LazyHorizontal
 
 ### 12. 用 Perfetto 和 Macrobenchmark 归因
 
-我们测量时要用 release 构建，开 R8 优化，并标记 profileable、non-debuggable。Debug 版本的解释执行、调试检查和工具连接会放大惰性布局成本。
+我们测量时要用 release 构建，开 R8 优化，并标记 profileable、non-debuggable。Debug 版本的编译状态、未优化代码、调试检查和工具连接可能放大惰性布局成本；不能把所有 Debug 执行都视为纯解释执行。
 
 我们按下面的顺序收集数据：
 
@@ -771,6 +777,8 @@ Compose Foundation 1.12.0 包含 `LazyVerticalStaggeredGrid` 和 `LazyHorizontal
 
 ```sql
 SELECT
+    a.id AS frame_slice_id,
+    a.upid,
     a.ts / 1e6 AS ts_ms,
     a.dur / 1e6 AS actual_dur_ms,
     a.jank_type,
@@ -780,17 +788,21 @@ SELECT
 FROM actual_frame_timeline_slice AS a
 JOIN process AS p USING (upid)
 WHERE p.name = 'com.example.app'
-  AND a.ts BETWEEN $start_ts AND $end_ts
+  AND a.dur >= 0
+  AND a.ts < $end_ts
+  AND a.ts + a.dur > $start_ts
   AND a.jank_type != 'None'
 ORDER BY a.ts;
 ```
 
-`$start_ts/$end_ts` 使用跟踪数据的纳秒时间基准。`actual_dur_ms` 是应用实际帧时间线区间的时长，结束点取应用 GPU 完成与图形缓冲区入队中较晚的时刻；它不等同于主线程 CPU 时间。
+`$start_ts/$end_ts` 是待绑定的 SQL 参数，使用跟踪数据的纳秒时间基准；在没有参数绑定的查询环境中，先替换为整数。查询选取与 `[start_ts, end_ts)` 相交的已完成区间，时长仍保留整帧，不裁切到窗口。相同进程名可能对应不同 `upid`，一进程也可能有多个 layer，单窗口归因需继续限定目标 `upid` 与 `layer_name`。`actual_dur_ms` 是应用实际帧时间线区间的时长，结束点取应用 GPU 完成与图形缓冲区入队中较晚的时刻；它不等同于主线程 CPU 时间。
 
 下面的查询用于列出同一时间段内主线程最长的区间事件。
 
 ```sql
 SELECT
+    s.id AS slice_id,
+    p.upid,
     s.ts / 1e6 AS ts_ms,
     s.dur / 1e6 AS dur_ms,
     s.name
@@ -800,19 +812,21 @@ JOIN thread AS t ON tt.utid = t.utid
 JOIN process AS p ON t.upid = p.upid
 WHERE p.name = 'com.example.app'
   AND t.tid = p.pid
-  AND s.ts BETWEEN $start_ts AND $end_ts
+  AND s.dur >= 0
+  AND s.ts < $end_ts
+  AND s.ts + s.dur > $start_ts
 ORDER BY s.dur DESC
 LIMIT 100;
 ```
 
-先从结果中识别 Compose、测量、图片、业务跟踪或 GC 相关名称，再回到时间轴核对线程状态。区间名称会随库版本和是否开启组合跟踪而变化，别把固定字符串当成跨版本指标。
-
-如果怀疑对象频繁分配和回收，应使用分配记录（allocation recording）或合适的堆分析器（heap profiler）查找分配调用栈；堆大小计数器只能显示存量变化，给不出每次分配的类型与调用点。GC 与卡顿同时出现只说明时间上相关，我们还要找出造成回收压力的对象来源。
+这些是完整区间的 inclusive 墙钟时长，可能包含子区间与线程等待；父子区间不能直接相加，也不能当作 Running CPU 时间。先从结果中识别 Compose、测量、图片、业务跟踪或 GC 相关名称，再回到时间轴核对线程状态。区间名称会随库版本和是否开启组合跟踪而变化，别把固定字符串当成跨版本指标。
 
 <!-- gracker-diagram: a233-26-sql-window -->
 ![查询保留身份、交集和时长含义](../../assets/diagrams/ch22/a233-26-sql-window.png)
 
 图：纳秒参数必须绑定或替换；先证明时间与身份，再讨论成本。
+
+如果怀疑对象频繁分配和回收，应使用分配记录（allocation recording）或合适的堆分析器（heap profiler）查找分配调用栈；堆大小计数器只能显示存量变化，给不出每次分配的类型与调用点。GC 与卡顿同时出现只说明时间上相关，我们还要找出造成回收压力的对象来源。
 
 ### 13. PausableComposition 的适用范围
 
@@ -840,7 +854,7 @@ Android 端预取调度器在主线程消息队列的帧间空隙运行。Founda
 
 平台侧提供的是 `Choreographer`、`FrameTimeline`、HWUI、窗口和系统合成路径。Compose 1.12.0 的 `LazyLayout` 算法打包在应用内；可暂停组合、缓存窗口或新的项目复用策略，都随所用 Compose 版本走，升级 `targetSdk` 单独开启不了它们。
 
-内核侧基线是 `android17-6.18-2026-06_r6`：调度器、CPU 调频（cpufreq）、热限制（thermal）、内存回收和同步 fence 等待影响主线程、`RenderThread` 或 GPU 驱动任务何时运行；键/`contentType`、项目移除和 `PagingData` 代际则由应用侧代码决定。跟踪数据出现线程可运行但迟迟未获调度、频率或热限制、内存回收或 fence 等待时，再看内核侧数据即可。
+本文用于源码定位的内核参考标签是 `android17-6.18-2026-06_r6`，不代表所有 Android 17 设备的内核版本：调度器、CPU 调频（cpufreq）、热限制（thermal）、内存回收和同步 fence 等待影响主线程、`RenderThread` 或 GPU 驱动任务何时运行；键/`contentType`、项目移除和 `PagingData` 代际则由应用侧代码决定。跟踪数据出现线程可运行但迟迟未获调度、频率或热限制、内存回收或 fence 等待时，再看内核侧数据即可。
 
 <!-- gracker-diagram: a233-29-platform-boundary -->
 ![库、平台与内核各自拥有的规则](../../assets/diagrams/ch22/a233-29-platform-boundary.png)
@@ -876,24 +890,24 @@ Pausable Composition 是 Compose Runtime 与 Foundation 的库能力，不由 An
 
 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 是临时的实验性回退入口，默认值曾在 Foundation 补丁版本之间变化。升级时应同时保存解析依赖树、发布说明、当前源码默认值、固定数据与手势的 Macrobenchmark 基线；别拿“某个大版本以后一定开启”代替核对。
 
-出现回归时，优先在**同一 Foundation 版本、同一代码、同一设备**上构建两个独立变体：一个保留默认值，一个在 `Application` 初始化的最早阶段关闭该标志。Compose 代码加载后再改标志属于未定义行为，所以同一进程运行中也没法动态切换；两组都要冷启动独立进程，并保持 R8、Baseline Profile、数据、图片缓存、刷新率和温度条件一致。
-
-```kotlin
-@OptIn(ExperimentalFoundationApi::class)
-class BenchmarkLegacyPrefetchApp : Application() {
-    override fun onCreate() {
-        ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled = false
-        super.onCreate()
-    }
-}
-```
-
-判断顺序保持为：先比较 `frameOverrunMs` 的 p50/p90/p95/p99 与内存峰值，再在 Perfetto 中区分 `compose:lazy:prefetch:compose`、`apply`、`resolve-nested` 和 `measure`。只有同版本对照稳定指向可暂停预取，而且短期没有已修复补丁时，才把关闭标志当成生产回退；长期方案仍是升级修复版本、减轻列表项工作或调整缓存窗口，并在回退后重新测量旧的完整组合路径。
+出现回归时，优先在**同一 Foundation 版本、同一代码、同一设备**上构建两个独立变体：一个保留默认值，一个在首次使用 Compose 前关闭该标志。下面使用 `attachBaseContext()`，早于通常的 ContentProvider 初始化；仍须检查 Application 的静态/字段初始化及其他更早入口是否已经使用 Compose。Compose 代码加载后再改标志属于未定义行为，所以同一进程运行中也没法动态切换；两组都要冷启动独立进程，并保持 R8、Baseline Profile、数据、图片缓存、刷新率和温度条件一致。发布变体还应按该版本 `ComposeFoundationFlags` 的源码建议，配套固定值的 R8 `-assumevalues` 规则，并核查最终 APK 的分支；单靠运行时赋值不能替代发布构建核验。
 
 <!-- gracker-diagram: a233-30-ab-variants -->
 ![同版本独立进程验证暂停预取回退](../../assets/diagrams/ch22/a233-30-ab-variants.png)
 
 图：FoundationFlags 是临时实验回退入口；发布变体还要核查 R8 固定值规则和最终分支。
+
+```kotlin
+@OptIn(ExperimentalFoundationApi::class)
+class BenchmarkLegacyPrefetchApp : Application() {
+    override fun attachBaseContext(base: Context) {
+        ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled = false
+        super.attachBaseContext(base)
+    }
+}
+```
+
+判断顺序保持为：先比较 `frameOverrunMs` 的 p50/p90/p95/p99 与内存峰值，再在 Perfetto 中区分 `compose:lazy:prefetch:compose`、`apply`、`resolve-nested` 和 `measure`。只有同版本对照稳定指向可暂停预取，而且短期没有已修复补丁时，才把关闭标志当成生产回退；长期方案仍是升级修复版本、减轻列表项工作或调整缓存窗口，并在回退后重新测量旧的完整组合路径。
 
 ### 17. 源码与资料索引
 

@@ -3,7 +3,7 @@ title: Vulkan 管线缓存与 Impeller 着色器编译实战
 chapter: '22.15'
 status: finalized
 applicable_versions: Android 16 (API 36) - Android 17 (API 37)
-last_verified: '2026-08-15'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: high
 sources:
@@ -115,6 +115,8 @@ Vulkan 管线创建和着色器编译，可能在首次使用或状态组合变�
 
 > 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`；Flutter 3.44.7。
 
+实现结论固定到上述平台与 Flutter 3.44.7；2026-10-25 所读 Flutter 官网部分页面已标为 3.47，不能据滚动更新的文档重标旧引擎行为。实际应用还要记录引擎构建开关，例如是否为 `SLIMPELLER`。
+
 本文回答四个问题：
 
 1. 管线创建时间消耗在哪一侧，为什么它会造成帧停顿；
@@ -209,8 +211,8 @@ OpenGL ES 应用可能用设备的原生 GLES 驱动，也可能经 ANGLE 把 GL
 
 ```text
 CPU / driver:  build state -> vkCreateGraphicsPipelines -> record -> vkQueueSubmit
-GPU:                                                        wait -> execute
-BufferQueue:                                                              queue
+GPU:                                                        wait -> execute -> signal fence
+BufferQueue:                                                queue(buffer, acquire fence)
 SurfaceFlinger / display:                                                     latch -> compose -> present
 ```
 
@@ -259,7 +261,7 @@ SurfaceFlinger / display:                                                     la
 标准 UI 应用可以从以下几个方面减少首次使用成本：
 
 - `RuntimeShader` 源码保持稳定，把可变化参数放在 `uniform` 变量中；
-- 重用已经创建的 `RuntimeShader`、`RenderEffect`、`Shader` 和 `Paint`，避免在每帧重新构造对象；
+- 重用稳定的 `RuntimeShader` 程序、`Shader` 和 `Paint`。同一 `RenderEffect` 可在效果及输入不变时复用；但 `createRuntimeShaderEffect()` 会捕获当时的 shader builder 状态，修改原 RuntimeShader 的 uniform 不会自动更新已经创建的旧效果，需据新状态重建并重新设置效果；
 - 避免在一次关键点击里同时出现大量此前未渲染的效果、字体、图片格式和图层组合；
 - 对必须首用的复杂效果，用目标设备上的真实用户操作衡量是否需要提前初始化；
 - 让图片解码尺寸、色彩格式和实际显示需求一致，减少不必要的上传与内存带宽；
@@ -281,7 +283,7 @@ SurfaceFlinger / display:                                                     la
 
 #### 3. Baseline Profile 的覆盖范围
 
-Baseline Profile（基准配置文件）改善的是应用 Java/Kotlin 与部分原生代码的编译和执行状态；厂商 GPU 指令不在它的覆盖范围内，它也替代不了 Skia 或 Vulkan 管线缓存。一次优化同时加入 Baseline Profile 和页面预热后，我们要分别验证 CPU 方法执行与图形首次使用成本，避免把收益归错原因。
+Baseline Profile（基准配置文件）改善的是ART 管理的应用 DEX 方法（主要由 Java/Kotlin 产生）的编译和执行状态；它不编译 C/C++ 原生机器码；厂商 GPU 指令不在它的覆盖范围内，它也替代不了 Skia 或 Vulkan 管线缓存。一次优化同时加入 Baseline Profile 和页面预热后，我们要分别验证 CPU 方法执行与图形首次使用成本，避免把收益归错原因。
 
 <!-- gracker-diagram: a246-11-baseline-profile-scope -->
 ![Baseline Profile和图形缓存覆盖不同对象](../../assets/diagrams/ch22/a246-11-baseline-profile-scope.png)
@@ -297,34 +299,56 @@ API 31 起，`FrameMetrics.GPU_DURATION` 表示该帧在 GPU 上完成所用的�
 ```kotlin
 class WindowFrameMetricsCollector(
     private val window: Window,
-    private val onGpuDuration: (gpuDurationNanos: Long, droppedCallbacks: Int) -> Unit,
+    private val onGpuDuration: (Long, Int) -> Unit,
 ) : AutoCloseable {
-    private val thread = HandlerThread("frame-metrics").apply { start() }
-    private val handler = Handler(thread.looper)
+    private var thread: HandlerThread? = null
+    private var started = false
+    @Volatile private var closed = false
 
     private val listener = Window.OnFrameMetricsAvailableListener {
-            _: Window,
-            metrics: FrameMetrics,
-            droppedSinceLastInvocation: Int,
-        ->
-        val gpuDuration = metrics.getMetric(FrameMetrics.GPU_DURATION)
-        if (gpuDuration >= 0L) {
-            onGpuDuration(gpuDuration, droppedSinceLastInvocation)
+            _: Window, metrics: FrameMetrics, dropped: Int ->
+        if (!closed) {
+            val gpuDuration = metrics.getMetric(FrameMetrics.GPU_DURATION)
+            if (gpuDuration >= 0L) onGpuDuration(gpuDuration, dropped)
         }
     }
 
+    @MainThread
     fun start() {
-        window.addOnFrameMetricsAvailableListener(listener, handler)
+        check(Looper.myLooper() == Looper.getMainLooper())
+        check(!closed && !started) { "Collector is single-use" }
+        val worker = HandlerThread("frame-metrics").apply { start() }
+        try {
+            window.addOnFrameMetricsAvailableListener(
+                listener, Handler(worker.looper),
+            )
+            thread = worker
+            started = true
+        } catch (failure: Exception) {
+            closed = true
+            worker.quitSafely()
+            throw failure
+        }
     }
 
+    @MainThread
     override fun close() {
-        window.removeOnFrameMetricsAvailableListener(listener)
-        thread.quitSafely()
+        check(Looper.myLooper() == Looper.getMainLooper())
+        if (closed) return
+        closed = true
+        try {
+            if (started) window.removeOnFrameMetricsAvailableListener(listener)
+        } finally {
+            thread?.quitSafely()
+            thread = null
+        }
     }
 }
 ```
 
 监听器注册在 `Window` 上，参数类型是 `android.view.FrameMetrics`。代码只上报可用值，并保留回调丢失数量。线上阈值应来自同一设备组、刷新率和用户操作的分布，固定的 15 ms 推断不出管线编译。
+
+此 collector 在主线程启动/关闭且只用一次；close-before-start 不会遗留线程。`onGpuDuration` 在 worker 上执行，应轻量且线程安全；已进入业务回调的调用可能与 close 重叠，owner 若需要“全部回调已结束”语义还需另行串行化，不能阻塞主线程去等待反过来依赖主线程的 worker。
 
 <!-- gracker-diagram: a246-12-frame-metrics-owner-lifecycle -->
 ![窗口GPU指标采集的单次生命周期](../../assets/diagrams/ch22/a246-12-frame-metrics-owner-lifecycle.png)
@@ -472,6 +496,14 @@ VkResult tryCreateCachedGraphicsPipeline(
         VkPipelineCache cache,
         const VkGraphicsPipelineCreateInfo& baseInfo,
         VkPipeline* pipeline) {
+    for (auto next = static_cast<const VkBaseInStructure*>(baseInfo.pNext);
+         next != nullptr; next = next->pNext) {
+        if (next->sType == VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO ||
+            next->sType == VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR) {
+            throw std::invalid_argument(
+                "Rebuild this recipe with explicit flags2/binary handling");
+        }
+    }
     VkGraphicsPipelineCreateInfo queryInfo = baseInfo;
     queryInfo.flags |=
             VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
@@ -488,12 +520,14 @@ VkResult tryCreateCachedGraphicsPipeline(
 
 调用期间，`baseInfo` 引用的所有数组和 `pNext` 结构必须保持有效。返回 `VK_SUCCESS` 时可发布管线；返回 `VK_PIPELINE_COMPILE_REQUIRED` 时，应把对应键交给编译线程，并让它用不带该标志的创建信息执行允许编译的调用。其他错误要按 `VkResult` 逐项处理，一概当成缓存未命中（cache miss）会掩盖真实问题。
 
-这个标志只挡住当前调用里的昂贵编译，后台任务和降级管线都要应用自己安排。降级管线必须与渲染过程、管线布局、描述符绑定和资源格式兼容；兼容条件满足不了时就延后绘制，绑定一条错误管线只会更糟。
+示例假定 feature 已启用、输出指针非空且只处理传统 `flags` 配方，需包含 `<stdexcept>`，并使用定义 flags2 / pipeline-binary 类型的现代 Vulkan headers。`VkPipelineCreateFlags2CreateInfo` 存在时，旧 `baseInfo.flags` 会被忽略；生产版应从不可变配方重建整条 pNext 链，在真正生效的 flags2 中设置对应位。pipeline-binary 创建也有独立约束，不能照搬本例。此处拒绝这两类输入并抛出参数错误，不把它们伪装成缓存未命中。
 
 <!-- gracker-diagram: a246-19-cache-query-flags-guard -->
 ![仅缓存查询先确认真正生效的flags](../../assets/diagrams/ch22/a246-19-cache-query-flags-guard.png)
 
 图：必须修改真正生效的创建标志，不能因一次OR操作就认定渲染线程不会编译。
+
+这个标志只挡住当前调用里的昂贵编译，后台任务和降级管线都要应用自己安排。降级管线必须与渲染过程、管线布局、描述符绑定和资源格式兼容；兼容条件满足不了时就延后绘制，绑定一条错误管线只会更糟。
 
 <!-- gracker-diagram: a246-20-cache-query-result-branches -->
 ![缓存查询结果的三个处理分支](../../assets/diagrams/ch22/a246-20-cache-query-result-branches.png)
@@ -589,12 +623,14 @@ bool isCompatiblePipelineCache(
 
 这里暂停编译线程，主要是为了得到与当前引擎版本一致、便于复现的快照，并避免与缓存或设备销毁过程交错。若使用外部同步缓存，即设置了 `VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT`，还必须满足对应的主机端同步要求。
 
-不要在每一帧写缓存。适合的时机包括加载阶段结束、累计产生新管线后的受控后台时点，以及正常退出流程中仍有足够生命周期时。Android 进程可能被直接终止，缓存正确性指望不上退出回调一定执行。
+`VK_INCOMPLETE` 不等于返回数据损坏：规范允许已写出的有效缓存子集作为后续 `pInitialData`，应按返回的实际 `pDataSize` 处理；空间连文件头都容不下时可写出 0 字节。选择重试还是接受部分缓存是工程策略，不能把未填满的分配容量一起保存。
 
 <!-- gracker-diagram: a246-23-cache-snapshot-persistence -->
 ![管线缓存的受控快照和原子保存](../../assets/diagrams/ch22/a246-23-cache-snapshot-persistence.png)
 
 图：VK_INCOMPLETE返回的有效子集仍可用；不能把未初始化的分配容量写入文件。
+
+不要在每一帧写缓存。适合的时机包括加载阶段结束、累计产生新管线后的受控后台时点，以及正常退出流程中仍有足够生命周期时。Android 进程可能被直接终止，缓存正确性指望不上退出回调一定执行。
 
 #### 3. 缓存失效要使用图形身份
 
@@ -624,7 +660,7 @@ Vulkan 1.3 核心类型 `VkPipelineCreationFeedback`（或对应的扩展别名�
 
 #### 2. 图形管线库
 
-`VK_EXT_graphics_pipeline_library` 可以把图形管线拆成四部分——顶点输入接口（vertex input interface）、光栅化前着色器（pre-rasterization shaders）、片段着色器（fragment shader）和片段输出接口（vertex input interface / pre-rasterization shaders / fragment shader / fragment output interface）。应用可以复用公共部分，再把它们链接为可执行管线。该扩展依赖 `VK_KHR_pipeline_library`，并提供独立的功能位和属性（properties）；属性是描述设备支持程度的只读值，应用启用不了它。
+`VK_EXT_graphics_pipeline_library` 可以把图形管线拆成四部分——顶点输入接口（vertex input interface）、光栅化前着色器（pre-rasterization shaders）、片段着色器（fragment shader）和片段输出接口（fragment output interface）。应用可以复用公共部分，再把它们链接为可执行管线。该扩展依赖 `VK_KHR_pipeline_library`，并提供独立的功能位和属性（properties）；属性是描述设备支持程度的只读值，应用启用不了它。
 
 应用需要查询并启用 `graphicsPipelineLibrary` 功能位。`graphicsPipelineLibraryFastLinking` 属性会影响即时链接策略：值为 `VK_TRUE` 时，不使用链接时优化的链接成本应与录制一条命令相近；值为 `VK_FALSE` 时，链接通常仍比完整编译便宜，“成本接近命令录制”这个假定就要收回了。链接时优化（link-time optimization）还可能用更长的创建时间换取更好的运行性能。
 
@@ -857,7 +893,7 @@ Android 16 的历史数据可以用于对比，但相关源码名称、跟踪标
 
 离线编译只覆盖着色器处理的一部分，运行时仍有图形管线创建和驱动处理成本。我们把这条链路拆成四个阶段分别观察：
 
-- **着色器源码编译与反射**：`impellerc` 在 Flutter 引擎或应用构建阶段把 GLSL 转换成目标后端需要的表示，并生成资源绑定信息。设备运行时不再解析同一份 GLSL，也不需要为 Impeller 内建着色器重复执行运行时反射。
+- **着色器源码编译与反射**：`impellerc` 在 Flutter 引擎或应用构建阶段把 GLSL 转换成目标后端需要的表示，并生成资源绑定信息。资源绑定反射可提前生成；Vulkan 消费 SPIR-V，但 GLES 生成物仍可能是 GLSL，设备驱动仍需编译/链接，不能概括为所有后端运行时都不解析着色语言。
 - **着色器模块装载或注册**：运行时还要从引擎内置的着色器归档文件或应用资源中读取目标后端代码，并向图形后端注册可用的着色器函数。
 - **管线状态对象创建**：Vulkan 必须根据着色器阶段、顶点布局、混合模式、颜色或深度附件（attachment）格式和采样数等描述创建管线状态对象。驱动可以在这个阶段做验证、链接、特化和设备相关优化。
 - **GPU 执行与显示**：管线可用后，光栅线程（Raster 线程）才会编码绘制命令。CPU 提交了 GPU 工作，内容离显示还有一段链路：缓冲要经过 Android `Surface`、SurfaceFlinger、硬件合成器 HWC 或 RenderEngine，再由显示系统呈现。
@@ -893,6 +929,13 @@ Flutter 官方页面把 Impeller 的目标概括为离线编译着色器、预�
 
 Flutter 3.27 起，官方支持范围是 Android API 29 及以上默认启用 Impeller。Flutter 3.44.7 的 [`Settings::enable_impeller`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/common/settings.h) 在 Android 构建中默认是 `true`，而 [`FlutterMain::SelectedRenderingAPI()`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/shell/platform/android/flutter_main.cc) 进一步选择具体渲染路径：
 
+下表描述 `!SLIMPELLER` 构建分支；固定源码的 `SLIMPELLER` 分支直接选择 `kImpellerAutoselect`，不经过这里的软件渲染、显式后端或 Skia 退出分支。引擎自定义构建必须核查开关，不能把默认包的诊断开关当成所有二进制都具备的能力。
+
+<!-- gracker-diagram: a246-32-impeller-selection-build-branches -->
+![Flutter3.44.7后端选择受构建分支约束](../../assets/diagrams/ch22/a246-32-impeller-selection-build-branches.png)
+
+图：诊断开关要和引擎构建匹配，不能把Skia回退能力假定为所有二进制都有。
+
 | 条件 | Flutter 3.44.7 返回的路径 |
 | --- | --- |
 | 显式软件渲染 | 软件渲染；Impeller 不支持该模式 |
@@ -901,19 +944,14 @@ Flutter 3.27 起，官方支持范围是 Android API 29 及以上默认启用 Im
 | Impeller 开启、API ≥ 29，且未被 Vivante 条件排除 | Impeller 自动选择 |
 | 其余情况 | Skia OpenGL ES |
 
-自动选择由 [`AndroidContextDynamicImpeller`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc) 执行。它先构造 Vulkan 上下文，并检查 API、设备属性、所需扩展和上下文有效性；Vulkan 路径不可用时，创建 `AndroidContextGLImpeller`。因此 API 29+ 的自动选择回退通常是 **Impeller OpenGL ES**；API 29 以下、禁用 Impeller 或更早的选择分支才是 **Skia OpenGL ES**。
-
-Flutter 官方文档把低版本 Android 或 Vulkan 不可用时的行为概括为回退到旧 OpenGL 渲染器。做源码级诊断时，我们要继续区分 Impeller GLES 与 Skia GLES，因为两者的着色器、管线、轨迹事件和缓存行为不同。设备规避列表属于 Flutter 3.44.7 的实现数据，不宜写成长期兼容性规则。
-
-<!-- gracker-diagram: a246-32-impeller-selection-build-branches -->
-![Flutter3.44.7后端选择受构建分支约束](../../assets/diagrams/ch22/a246-32-impeller-selection-build-branches.png)
-
-图：诊断开关要和引擎构建匹配，不能把Skia回退能力假定为所有二进制都有。
+自动选择由 [`AndroidContextDynamicImpeller`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc) 执行。它先按模拟器、系统/SoC 条件判断是否尝试 Vulkan，再构造并校验所需扩展、feature 和上下文有效性；Vulkan 路径不可用时，创建 `AndroidContextGLImpeller`。因此 API 29+ 的自动选择回退通常是 **Impeller OpenGL ES**；API 29 以下、禁用 Impeller 或更早的选择分支才是 **Skia OpenGL ES**。
 
 <!-- gracker-diagram: a246-33-impeller-auto-fallback -->
 ![自动选择先做设备条件检查再尝试Vulkan](../../assets/diagrams/ch22/a246-33-impeller-auto-fallback.png)
 
 图：自动选择内部的GLES回退仍可属于Impeller；Skia是更早选择分支或退出路径。
+
+Flutter 官方文档把低版本 Android 或 Vulkan 不可用时的行为概括为回退到旧 OpenGL 渲染器。做源码级诊断时，我们要继续区分 Impeller GLES 与 Skia GLES，因为两者的着色器、管线、轨迹事件和缓存行为不同。设备规避列表属于 Flutter 3.44.7 的实现数据，不宜写成长期兼容性规则。
 
 #### 2.2 配置开关用于诊断对照
 
@@ -937,7 +975,7 @@ Flutter 3.44.7 也允许在 `debug` 或 `profile` 模式指定 Impeller 后端�
 
 [`README.md`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/impeller/README.md) 和 `SelectedRenderingAPI()` 都把这项后端覆盖限定在 `debug` 或 `profile` 模式。`release`（发布）构建会忽略这条显式后端分支，生产设备的分流方案里没有它的位置。
 
-部署版本当前可通过 `io.flutter.embedding.android.EnableImpeller=false` 停用 Impeller。Flutter 3.44.7 的引擎会输出警告，说明命令行和 Manifest 中的退出选项将在后续版本移除。生产回退适合短期规避已确认的兼容性问题；用它时记得保留可复现样例、设备与驱动信息、性能轨迹，并向 Flutter 问题跟踪器提交证据。
+具有该退出分支的 Flutter 3.44.7 `!SLIMPELLER` 部署版本可通过 `io.flutter.embedding.android.EnableImpeller=false` 停用 Impeller。Flutter 3.44.7 的引擎会输出警告，说明命令行和 Manifest 中的退出选项将在后续版本移除。生产回退适合短期规避已确认的兼容性问题；用它时记得保留可复现样例、设备与驱动信息、性能轨迹，并向 Flutter 问题跟踪器提交证据。
 
 <!-- gracker-diagram: a246-34-impeller-debug-override -->
 ![后端覆盖与短期退出的版本边界](../../assets/diagrams/ch22/a246-34-impeller-debug-override.png)
@@ -950,7 +988,7 @@ Flutter 3.44.7 也允许在 `debug` 或 `profile` 模式指定 Impeller 后端�
 
 [`impellerc`](https://github.com/flutter/flutter/tree/3.44.7/engine/src/flutter/impeller/compiler) 以 GLSL 为输入，生成 Vulkan SPIR-V、OpenGL ES GLSL 或其他后端表示，并生成 C++ 绑定信息。生成物随引擎的着色器归档文件一起打包，`impellerc` 本身不会进入应用运行时。
 
-这一步减少的是设备上的着色器前端编译和反射工作。Vulkan 驱动还要处理 `vkCreateGraphicsPipelines` 或 `vkCreateComputePipelines`，所以冷启动或首次使用某个状态组合时可能出现 CPU 峰值。
+这一步把引擎可控制的前端转换和反射前移；Vulkan 的 SPIR-V 可减少相应前端工作，GLES 生成的 GLSL 仍需设备驱动编译/链接。Vulkan 驱动还要处理 `vkCreateGraphicsPipelines` 或 `vkCreateComputePipelines`，所以冷启动或首次使用某个状态组合时可能出现 CPU 峰值。
 
 <!-- gracker-diagram: a246-35-offline-backend-work -->
 ![离线着色器产物不消除所有后端编译](../../assets/diagrams/ch22/a246-35-offline-backend-work.png)
@@ -1068,13 +1106,18 @@ flutter:
     - shaders/background.frag
 ```
 
-构建产物包含当前目标需要的运行时阶段数据。设备运行时读取的是该产物，不会重新从原始 GLSL 开始完整编译。
+构建产物包含当前目标需要的运行时阶段数据。设备运行时读取的是该产物；Impeller Vulkan 仍要建立管线，GLES 仍可能编译/链接后端 GLSL，Skia 回退还会把所含 SkSL 交给 `SkRuntimeEffect::MakeForShader()`。不能从“资源已构建”推出所有后端运行时零编译。
 
 #### 5.2 `FragmentProgram.fromAsset()` 会缓存程序，并异步准备初始管线
 
 Flutter 3.44.7 的 [`FragmentProgram.fromAsset()`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/lib/ui/painting.dart) 以资源键为索引，把程序保存在静态注册表（registry）中。首次加载时，原生方法 [`FragmentProgram::initFromAsset()`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/lib/ui/painting/fragment_program.cc) 解析运行时着色器阶段数据，选择当前后端的表示，并向 Raster 任务执行器投递 `CacheRuntimeStage()`。
 
-Impeller 的 `CacheRuntimeStage()` 会注册着色器函数，并异步创建一份默认运行时效果管线（runtime-effect pipeline）。`fromAsset()` 返回的 `Future` 是 Dart 的异步结果对象，它完成时能确认的只有资源读取和解析已经成功，后台管线任务完成与否要另外确认。动画前加载可以给 Raster 任务与编译工作线程更多处理时间，只是它当不了“管线一定已完成”的同步栅栏。
+Impeller 的 `CacheRuntimeStage()` 会注册着色器函数，并异步创建一份默认运行时效果管线（runtime-effect pipeline）。`fromAsset()` 返回的 `Future` 是 Dart 的异步结果对象，在 Impeller 路径完成时能确认资源读取和解析成功；Skia 回退可还包含 RuntimeEffect 的 SkSL 编译，后台管线任务完成与否要另外确认。动画前加载可以给 Raster 任务与编译工作线程更多处理时间，只是它当不了“管线一定已完成”的同步栅栏。
+
+<!-- gracker-diagram: a246-42-fragment-program-future-boundary -->
+![fromAsset的Future与初始管线任务没有完成屏障](../../assets/diagrams/ch22/a246-42-fragment-program-future-boundary.png)
+
+图：资源Future完成不保证工作线程已建好PSO；Skia回退可在资源阶段包含RuntimeEffect编译。
 
 这个资源类用于提前加载着色器程序，并复用同一份 `FragmentShader`。
 
@@ -1085,8 +1128,14 @@ final class BackgroundShaderResources {
   ui.FragmentProgram? _program;
   ui.FragmentShader? _shader;
   Future<void>? _loading;
+  bool _disposed = false;
 
-  Future<void> load() => _loading ??= _load();
+  Future<void> load() {
+    if (_disposed) {
+      return Future<void>.error(StateError('Resources already disposed'));
+    }
+    return _loading ??= _load().whenComplete(() { _loading = null; });
+  }
 
   Future<void> _load() async {
     if (_program != null) {
@@ -1094,8 +1143,12 @@ final class BackgroundShaderResources {
     }
     final program =
         await ui.FragmentProgram.fromAsset('shaders/background.frag');
+    if (_disposed) {
+      throw StateError('Disposed while loading background shader');
+    }
+    final shader = program.fragmentShader();
     _program = program;
-    _shader = program.fragmentShader();
+    _shader = shader;
   }
 
   ui.FragmentShader get shader {
@@ -1107,20 +1160,18 @@ final class BackgroundShaderResources {
   }
 
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
     _shader?.dispose();
     _shader = null;
     _program = null;
-    _loading = null;
   }
 }
 ```
 
 这段代码避免在每个 `paint()` 中新建 `FragmentShader`。Flutter API 文档允许跨帧复用该对象，每帧只更新 `uniform` 或采样器（sampler）。多个画面需要同时保留不同 `uniform` 值时，应各自持有 `FragmentShader` 实例，避免在同一个实例上交错修改。
 
-<!-- gracker-diagram: a246-42-fragment-program-future-boundary -->
-![fromAsset的Future与初始管线任务没有完成屏障](../../assets/diagrams/ch22/a246-42-fragment-program-future-boundary.png)
-
-图：资源Future完成不保证工作线程已建好PSO；Skia回退可在资源阶段包含RuntimeEffect编译。
+资源对象关闭后不再复用；加载失败可重试，加载期间 dispose 后的迟到结果不会重新创建 shader。`FragmentProgram.fromAsset()` 的静态注册表仍可能持有程序，清空本对象的引用并不保证清掉引擎/驱动缓存。回调或动画 owner 应处理 load 的失败/关闭结果。
 
 <!-- gracker-diagram: a246-43-shader-resource-owner -->
 ![自定义着色器资源的关闭与迟到结果](../../assets/diagrams/ch22/a246-43-shader-resource-owner.png)
@@ -1202,6 +1253,8 @@ void stopFrameTimingReport() {
 
 `FrameTiming` 应在 `profile` 或 `release` 模式采集。帧预算由刷新率决定：60 Hz 约 16.67 ms，90 Hz 约 11.11 ms，120 Hz 约 8.33 ms。报告要记录测试时的实际显示模式，所有设备都套 16 ms 会得出错误结论。
 
+这里每帧 log 仅示意字段，线上应采样或聚合到有界缓冲，避免日志本身改变 UI/Raster 工作量。ARR 或 frame-rate override 下预算也可能变化，固定显示模式只是一项环境记录；判断 Android 呈现是否超期仍应关联实际 Expected/Actual FrameTimeline。
+
 <!-- gracker-diagram: a246-46-flutter-frame-timing-granularity -->
 ![FrameTiming阶段指标不等于编译分类](../../assets/diagrams/ch22/a246-46-flutter-frame-timing-granularity.png)
 
@@ -1280,14 +1333,16 @@ Android VSync
   → Flutter platform/UI thread：animation / build / layout / paint
   → layer tree / display list
   → Flutter Raster thread：Impeller pipeline / command encoding / submit
-  → GPU completion fence
-  → Flutter root Surface / BufferQueue
+  → Flutter root Surface / BufferQueue：queue(buffer, acquire fence)
+  → GPU completion fence（可与排队/事务重叠；消费内容前需就绪）
   → SurfaceFlinger latch 与 CompositionEngine
   → HWC 或 RenderEngine client composition
   → display present
 ```
 
 这段顺序帮我们划清各阶段的观测范围。Raster 完成表示引擎已完成本帧的 CPU 栅格化阶段；GPU 同步栅栏发出完成信号，表示缓冲具备安全读取条件；`queueBuffer`、SurfaceFlinger 获取缓冲（latch）与显示呈现又各自是不同的时间点。
+
+上面按职责列出链路，GPU 执行、queue、事务与 latch 不能强行排成所有设备都相同的串行顺序。buffer 可携带尚未就绪的 acquire fence 排队，特定路径还能 latch-unsignaled；能安全消费像素和完成 present 的同步依赖仍要从实际轨迹确认。
 
 `FlutterTextureView` 会多一段从 `SurfaceTexture` 到宿主 HWUI 应用窗口的采样和提交；`PlatformView`、相机或视频外部纹理（external texture）还可能拥有独立的缓冲生产者（producer）和 `Surface`。页面结构中存在这些对象时，需要先画出实际的 `Surface` / 图层树，再判断哪个缓冲对应用户看到的内容。
 
@@ -1480,3 +1535,10 @@ Vulkan 与 Impeller 的运行时成本，都概括不进“着色器已经离线
 - [Android Vulkan 原生引擎支持](https://developer.android.com/games/develop/vulkan/native-engine-support)
 - [Android `FrameMetrics` API](https://developer.android.com/reference/android/view/FrameMetrics)
 - [Android GPU Inspector Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
+
+- [Vulkan flags2 对旧 flags 的覆盖规则](https://docs.vulkan.org/refpages/latest/refpages/source/VkPipelineCreateFlags2CreateInfo.html)
+- [vkCreateGraphicsPipelines 有效性与同步约束](https://docs.vulkan.org/refpages/latest/refpages/source/vkCreateGraphicsPipelines.html)
+- [vkGetPipelineCacheData：有效部分数据](https://docs.vulkan.org/refpages/latest/refpages/source/vkGetPipelineCacheData.html)
+- [Baseline Profiles 覆盖 ART DEX](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [AOSP RenderEffect JNI：捕获 RuntimeShader builder](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/RenderEffect.cpp)
+- [AOSP sync 与 acquire fence](https://source.android.com/docs/core/graphics/sync)

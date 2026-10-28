@@ -20,8 +20,8 @@ related_chapters:
 - '1.7'
 - '4.5'
 confidence: high
-last_verified: '2026-10-20'
-last_source_verified_at: '2026-10-20'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_verified_against: '2026-10-20 spot-check: Android Developers R8 Configuration Analyzer, APK Analyzer, App Bundle format, ABIs, page sizes, Retrace, image formats and Android 17 target behavior; AOSP android-17.0.0_r1 libunwindstack ElfInterfaceArm and Arm EHABI section naming. Earlier 2026-09-04 verification of ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors retained; android17-6.18 kernel mmap anchor retained.'
 last_idle_audit_at: '2026-10-20T10:39:06+08:00'
 sources:
@@ -159,7 +159,7 @@ consolidated_from:
 
 应用体积主要由 DEX、Native SO 与资源文件组成。同一应用可以通过完整 APK 或 feature split（功能拆分包）等形式交付；比较大小时要区分上传、下载、安装与运行时映射。我们先固定交付制品和设备条件，再沿字节码、原生库与资源三条路径归因，最后回到下载、安装、运行时和功能兼容验证。
 
-> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。构建工具语义按 2026 年 8 月 30 日检索的官方文档核对；平台版本与 AGP/NDK/R8 版本是两条独立的轴。
+> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。构建工具语义于 2026 年 10 月 25 日按文中指定版本及官方文档复核；平台版本与 AGP/NDK/R8 版本是两条独立的轴。
 
 ## 先统一制品与体积口径
 
@@ -258,10 +258,10 @@ DEX 040 及更早格式的文件头是 112 字节，DEX 041 文件头是 120 字
 
 数据区包含以下主要项目：
 
-- `string_data_item`：MUTF-8（Modified UTF-8，以 UTF-16 代码单元为基础的变体编码） 字符串与 UTF-16 长度；MUTF-8 是以 UTF-16 代码单元为基础的变体编码；
+- `string_data_item`：MUTF-8（Modified UTF-8，以 UTF-16 代码单元为基础的变体编码） 字符串与 UTF-16 长度；
 - `type_list`：接口列表和方法参数类型；
 - `annotation_*`、`encoded_array_item`：注解、静态值和其他编码值；
-- `class_data_item`：字段、方法及其访问标志，以 ULEB128（无符号小端 Base-128 变长编码） 保存索引差值，ULEB128 即无符号小端 Base-128 变长编码；
+- `class_data_item`：字段、方法及其访问标志，以 ULEB128（无符号小端 Base-128 变长编码） 保存索引差值；
 - `code_item`：寄存器、参数、返回值、异常处理区间与 16 位指令单元；
 - `debug_info_item`：源码行号、参数名和局部变量事件。
 
@@ -277,7 +277,7 @@ APK Analyzer 同时显示 Defined Methods（定义的方法） 与 Referenced Me
 - Referenced Methods 统计该 DEX 的方法 ID 表，决定是否触发方法引用上限；
 - 一个定义在其他 DEX 或平台中的方法，仍可能占当前 DEX 的引用条目。
 
-这个上限解释了 multidex（为 Dalvik 运行时安装和加载次级 DEX 的兼容方案） 的由来。它约束的是正确性；体积要看另一组数字——两个版本的引用数相同，方法体、字符串和调试信息的差异仍可让字节数相差很大。
+这个上限解释了 multidex（将代码分布到多个 DEX）需求的由来；旧版 Dalvik 的次级 DEX 安装与加载兼容只是它的一条历史路径。它约束的是正确性；体积要看另一组数字——两个版本的引用数相同，方法体、字符串和调试信息的差异仍可让字节数相差很大。
 
 <!-- gracker-diagram: a283-02-dex-index-data-and-reference-limit -->
 ![DEX 字节由索引和变长数据共同组成](../../assets/diagrams/ch25/a283-02-dex-index-data-and-reference-limit.png)
@@ -288,35 +288,16 @@ APK Analyzer 同时显示 Defined Methods（定义的方法） 与 Referenced Me
 
 这张图区分 D8、R8、打包和 ART 的职责：
 
-```mermaid
-flowchart LR
-    SRC["Java / Kotlin 源码"]
-    CF["Javac / kotlinc<br/>class 文件"]
-    R8["R8<br/>shrink / optimize / obfuscate<br/>DEX 生成"]
-    D8["D8<br/>desugar / dex / merge"]
-    PKG["AGP 打包<br/>APK / AAB"]
-    PLAY["Play / bundletool<br/>设备专用 APK 集"]
-    ART["Android 17 ART<br/>验证、profile、dexopt"]
-    OUT["vdex / odex / art<br/>设备侧产物"]
-
-    SRC --> CF
-    CF --> R8
-    CF --> D8
-    R8 --> PKG
-    D8 --> PKG
-    PKG --> PLAY
-    PLAY --> ART
-    ART --> OUT
-```
-
-启用代码裁剪的 `release` 构建由 R8 完成整程序分析、代码改写、重命名和 DEX 生成；未启用裁剪的构建、增量中间产物和部分 DEX 合并路径使用 D8。R8 可以直接生成 DEX，当前发布流程已经不走“R8 输出 `.class`，再由 D8 固定转换一次”这条老路。
-
-AGP 负责编排 desugaring（把较新的 Java/Kotlin 字节码特性转换为目标 Android 版本可执行的形式）、依赖输入、默认规则、资源处理、性能配置文件（profile）改写和打包。应用项目通常交给 AGP 编排即可，独立调用 D8/R8 更适合复现实验和工具开发。
+构建路径分为启用 R8 的发布优化分支和 D8 分支，最终 DEX 进入发布打包；设备侧 ART 辅助产物另外生成。
 
 <!-- gracker-diagram: a283-03-source-r8-d8-and-art-products -->
 ![R8 与 D8 是构建分支，ART 产物在设备侧生成](../../assets/diagrams/ch25/a283-03-source-r8-d8-and-art-products.png)
 
 图：开启裁剪的release由R8直接生成DEX；D8负责其他转换或合并路径，ART辅助文件不计入商店DEX字节。
+
+启用代码裁剪的 `release` 构建由 R8 完成整程序分析、代码改写、重命名和 DEX 生成；未启用裁剪的构建、增量中间产物和部分 DEX 合并路径使用 D8。R8 可以直接生成 DEX，当前发布流程已经不走“R8 输出 `.class`，再由 D8 固定转换一次”这条老路。
+
+AGP 负责编排 desugaring（把较新的 Java/Kotlin 字节码特性转换为目标 Android 版本可执行的形式）、依赖输入、默认规则、资源处理、性能配置文件（profile）改写和打包。应用项目通常交给 AGP 编排即可，独立调用 D8/R8 更适合复现实验和工具开发。
 
 ### R8：主要体积收益来自可删除、可改写、可重命名
 
@@ -419,7 +400,7 @@ WebView bridge 已由静态代码创建，这条规则只保留其中带注解�
 
 R8 Configuration Analyzer 把最终合并到应用发布变体上的 keep 配置量化成三项分数：Shrinking Score、Optimization Score 和 Obfuscation Score。它们分别表示当前存活的类、字段和方法中仍允许 R8 做裁剪、优化或混淆的比例；最终能省多少字节，要另看发布产物对比。一次依赖升级后若 shrinking/optimization 分数明显下降、obfuscation 基本不变，排查方向应先落在让代码继续存活、或禁止内联与类合并的规则上。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
 
-AGP 9.3 及以上可以单独运行这项检查，不必每次都先生成完整 APK 或 App Bundle：[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
+分析器要求 AGP 9.3.0 或 R8 9.3.7-dev 及以上；独立 Gradle 任务由 AGP 9.3.0 及以上提供，可以不先生成完整 APK 或 App Bundle：[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
 
 ```bash
 ./gradlew :app:analyzeReleaseR8Config
@@ -427,9 +408,9 @@ AGP 9.3 及以上可以单独运行这项检查，不必每次都先生成完整
 
 独立任务的 HTML 报告写到 `app/build/reports/r8/r8-config-analyzer-release.html`；完整 R8 发布构建也会在 `build/outputs/mapping/release/configanalyzer.html` 生成报告。
 
-若 AGP 版本还没有独立任务，而项目使用的 R8 已支持 Configuration Analyzer，可用 `dumpkeepradiustodirectory` 输出 keep radius 数据，再通过 Google `android/skills` 仓库 `performance/r8-analyzer` 的 reference 转成 JSON 和分析结果；工具链连原始数据都生成不了时，才退回到包级通配符、整类成员通配符、`!` inversion 等语法启发式检查。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: https://github.com/android/skills/tree/main/performance/r8-analyzer]
+AGP 9.2 及更早版本可按官方“Replacing R8 in AGP”临时使用兼容的新 R8，再以 `-Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=<output_directory>` 运行启用 R8 的发布构建，直接生成 HTML 报告；这仍会构建应用，并非独立分析任务。当前官方示例使用 R8 9.4.14，升级前需验证项目兼容。`dumpkeepradiustodirectory` 则输出底层 keep-radius protobuf，适合按 Google `android/skills` 的对应 schema 转换和进一步分析，不应与 HTML 输出属性混淆。两种导出都要求工具链支持；不支持时先用合并规则与保留原因排查。[已验证: https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer；https://github.com/android/skills/tree/main/performance/r8-analyzer]
 
-Blast Radius 明细比单纯搜索 `-keep` 更适合排优先级。导出的 `keep_rule_blast_radius_table` 会把规则关联到 `class_blast_radius`、`field_blast_radius` 和 `method_blast_radius`；对象表 `kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 又可通过 `kept_by` 回到具体规则、约束、来源文件或 Maven 坐标。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]
+Blast Radius 明细可帮助按规则的静态影响范围排序。在底层 protobuf/JSON schema 中，`keep_rule_blast_radius_table` 的每条规则通过其 `blast_radius` 子对象关联 `class_blast_radius`、`field_blast_radius` 和 `method_blast_radius`；`kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 的 `kept_by` 则回指规则 ID。再结合 constraints、origin 和 file/Maven 信息定位来源。这些字段名来自 Google `android/skills` 的原始导出 schema，不能把它们当成所有版本 HTML 报告的固定列名。[已验证: https://raw.githubusercontent.com/android/skills/main/performance/r8-analyzer/references/CONFIGURATION-ANALYZER.md]
 
 报告还可以暴露 subsumed rules（被更宽规则覆盖的规则）：例如包级 `-keep class com.example.package.** { *; }` 已覆盖整个包时，单独保留 `com.example.package.User` 的窄规则可能没有额外效果。排查时先确认反射、JNI、序列化或注解扫描需要保护哪些类、字段、方法、名称或注解，再把宽规则改成更窄的协议规则。改完重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
@@ -556,6 +537,7 @@ R8 缩短和重打包符号后，类名、包名、字段名与方法名字符�
 - 反射访问字段名会限制删除或改名；
 - 公共 API、库使用方和独立编译边界会限制整程序优化；
 - 资源 ID 在非 `final` 场景、动态特性模块（Dynamic Feature）或共享资源中不一定成为编译期常量。
+
 
 ### Multidex：正确性、体积与启动分别处理
 
@@ -864,8 +846,8 @@ Native 库是应用随包交付、由 C/C++ 等语言编译出的 `.so` 共享�
 
 ELF 有两套描述同一文件的视图：
 
-- program header（程序头（program header））描述 `PT_LOAD`、`PT_DYNAMIC`、`PT_GNU_RELRO`（Relocation Read-Only，完成重定位后把相关内存改为只读） 等运行时段（segment），Android 动态链接器按它们预留地址、映射文件和设置权限；
-- section header（节区头（section header））描述 `.text`、`.rodata`、`.data`、`.bss`、符号表、字符串表、重定位和调试信息，链接与分析工具主要使用它们。
+- program header（程序头）描述 `PT_LOAD`、`PT_DYNAMIC`、`PT_GNU_RELRO`（Relocation Read-Only，完成重定位后把相关内存改为只读） 等运行时段（segment），Android 动态链接器按它们预留地址、映射文件和设置权限；
+- section header（节区头）描述 `.text`、`.rodata`、`.data`、`.bss`、符号表、字符串表、重定位和调试信息，链接与分析工具主要使用它们。
 
 节区与段没有一一对应关系：一个可执行 `PT_LOAD` 段往往同时装着 `.text` 和相邻只读内容，多个节区也可能进入同一个段。我们分析发布体积时，用节区做归因，用程序头解释加载、权限和页对齐。
 
@@ -924,29 +906,12 @@ AGP 默认会对发布版 Native 库执行 `strip`，移除完整符号表与调
 
 下面的图展示发布二进制与符号文件的分流：
 
-```mermaid
-flowchart LR
-    SRC["C / C++ / Rust 源码"]
-    OBJ["Clang 编译<br/>object / archive"]
-    ELF["未 strip ELF<br/>含 build ID 与 DWARF"]
-    STRIP["AGP / llvm-strip<br/>发布裁剪"]
-    SO["strip 后 .so"]
-    SYMBOL["native-debug-symbols.zip<br/>或未 strip ELF"]
-    AAB["AAB / APK"]
-    APKSET["设备 ABI APK 集"]
-    LINKER["Android 17 linker64"]
-    CRASH["tombstone / Android vitals"]
+同一次链接产物分为应用交付的 stripped ELF 与离线诊断的符号制品，按 ABI、版本和 Build ID 关联。
 
-    SRC --> OBJ
-    OBJ --> ELF
-    ELF --> STRIP
-    STRIP --> SO
-    ELF --> SYMBOL
-    SO --> AAB
-    AAB --> APKSET
-    APKSET --> LINKER
-    CRASH --> SYMBOL
-```
+<!-- gracker-diagram: a283-11-same-link-release-and-symbol-artifact -->
+![同一次链接产物，分开交付库与离线符号](../../assets/diagrams/ch25/a283-11-same-link-release-and-symbol-artifact.png)
+
+图：strip-all不会删除运行链接必需的全部动态符号；同名文件不代表可用于该次崩溃的符号。
 
 这条流水线要求符号制品和发布 `.so` 来自同一次链接。重新链接会改变地址布局和 build ID；即使源码提交、`versionName` 与 ABI 相同，换一份 ELF 就还原不了线上地址。
 
@@ -989,11 +954,6 @@ android {
 - 手写汇编和省略帧指针（frame pointer）的函数。
 
 删除 `.eh_frame`、`.ARM.exidx`（32 位 ARM 的异常展开索引）或紧凑栈展开（compact unwind）相关节区前，应先用发布构建制造一次受控 Native 崩溃，确认 tombstone 帧、离线符号化和 profiler 都能工作，再评估体积收益。Android 17 的 [`ElfInterfaceArm`](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterfaceArm.cpp) 基于 `ElfInterface32` 读取 `PT_ARM_EXIDX`；`.ARM.exidx` 的节区命名由 [Arm EHABI](https://github.com/ARM-software/abi-aa/blob/main/ehabi32/ehabi32.rst) 定义。
-
-<!-- gracker-diagram: a283-11-same-link-release-and-symbol-artifact -->
-![同一次链接产物，分开交付库与离线符号](../../assets/diagrams/ch25/a283-11-same-link-release-and-symbol-artifact.png)
-
-图：strip-all不会删除运行链接必需的全部动态符号；同名文件不代表可用于该次崩溃的符号。
 
 ### ABI：构建集合与单设备交付要分开
 
@@ -1221,7 +1181,7 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-两项必须配合。测试需要覆盖所有延迟加载和动态特性模块路径，完成后恢复设备属性。兼容模式、原生 16 KB ELF 和 4 KB 设备都要分别回归。
+两项必须配合。修改前记录两项 `getprop` 原值；测试需要覆盖所有延迟加载和动态特性模块路径，并在成功、失败或中断后恢复所记录原值。兼容模式、原生 16 KB ELF 和 4 KB 设备都要分别回归。
 
 内核 [`android17-6.18-2026-06_r6/mm/mmap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c) 提供 VMA（Virtual Memory Area，进程中一段连续虚拟地址区域）与 `mmap()` 等基础机制；缺页和文件页缓存由内核内存子系统继续处理。应用 `.so` 的段权限、重定位与链接器命名空间（namespace，用于限制库和符号的可见范围）仍由 Android bionic 动态链接器管理。某个 AGP/NDK 的对齐是否合格，答案在构建产物里，内核源码标签给不出这个结论。
 
@@ -1483,25 +1443,12 @@ AAPT2 的主流程可拆成三个阶段：
 
 下面的图用于区分 AAPT2、R8/资源缩减、App Bundle 和 Android 17 运行时的职责：
 
-```mermaid
-flowchart LR
-    SRC["res/ 与 assets/ 源文件"]
-    COMPILE["AAPT2 compile<br/>.flat 中间产物"]
-    LINK["AAPT2 link<br/>合并、ID、引用解析"]
-    GRAPH["R8 + resource shrinker<br/>代码/资源可达图"]
-    OPT["AAPT2 optimize / AGP packaging"]
-    AAB["AAB<br/>modules + resources.pb"]
-    APKSET["设备 APK Set<br/>resources.arsc + res/ + assets/"]
-    AM["Android 17<br/>AssetManager2 / Resources"]
+`res/` 经过 AAPT2 compile/link 与代码/资源可达性分析；`assets/` 以原始路径内容接入打包，不经过 `res/` 的逐文件编译和资源 ID 分配。模块随后按设备生成 APK 集，运行时再选择资源配置。
 
-    SRC --> COMPILE
-    COMPILE --> LINK
-    LINK --> GRAPH
-    GRAPH --> OPT
-    OPT --> AAB
-    AAB --> APKSET
-    APKSET --> AM
-```
+<!-- gracker-diagram: a283-19-aapt2-res-and-assets-separate-paths -->
+![res 进入编译与资源图，assets 按原始路径接入打包](../../assets/diagrams/ch25/a283-19-aapt2-res-and-assets-separate-paths.png)
+
+图：AAB以protobuf资源输入生成设备APK；APK中的resources.arsc是运行时表，assets不经过同样的资源编译链。
 
 `compile` 的逐文件中间产物有利于增量构建，`.flat` 目录总量属于中间产物，发布体积要看最终 APK/AAB。`link` 处理资源覆盖（overlay）与 ID；资源缩减处理可达性；App Bundle 决定某个设备获取哪些配置。四个阶段的问题要分别定位。
 
@@ -1524,7 +1471,7 @@ r8 ... --no-data-resources \
 
 #### 资源合并与内容去重
 
-AGP 遇到名称、类型和目录限定符（qualifier）完全相同的资源时，会按依赖、主源码集（main source set）、构建类型和产品变体覆盖层的优先级选择一个定义，再交给 AAPT2。它不会扫描所有不同名称的 PNG/WebP，再按内容哈希自动改写引用并合并文件。
+AGP 遇到名称、类型和目录限定符（qualifier）完全相同的资源时，会按依赖、主源码集（main source set）、构建类型和产品变体覆盖层的优先级选择一个定义，再交给 AAPT2。它不会扫描所有不同名称的 PNG/WebP，再按内容哈希自动改写引用并合并文件。另需区分 AAPT2 对兼容配置下相同资源值的去重：`--no-resource-deduping` 可关闭这类值去重，它不等于把所有异名图片自动合并。
 
 重复资源应分成两类：
 
@@ -1532,11 +1479,6 @@ AGP 遇到名称、类型和目录限定符（qualifier）完全相同的资源�
 - 内容重复：`banner_home.webp` 与 `banner_feed.webp` 字节相同但资源名不同，需要用哈希值检测，并在人工确认语义后统一引用。
 
 内容相同也不一定能合并。不同名称可能是未来独立替换的产品契约，或被服务端、测试、主题引擎按名称查找。去重前要检查动态引用与发布协议。
-
-<!-- gracker-diagram: a283-19-aapt2-res-and-assets-separate-paths -->
-![res 进入编译与资源图，assets 按原始路径接入打包](../../assets/diagrams/ch25/a283-19-aapt2-res-and-assets-separate-paths.png)
-
-图：AAB以protobuf资源输入生成设备APK；APK中的resources.arsc是运行时表，assets不经过同样的资源编译链。
 
 <!-- gracker-diagram: a283-20-resource-overlay-versus-content-duplicates -->
 ![覆盖、值去重与异名文件合并是不同操作](../../assets/diagrams/ch25/a283-20-resource-overlay-versus-content-duplicates.png)
@@ -2053,9 +1995,9 @@ ZIP 条目发生变化会破坏签名和对齐。所有转换必须进入受支�
 
 ## 全文小结
 
-应用体积不是一个可以靠单项压缩解释的数字。DEX 要从可达性、保留规则和设备交付集合分析；Native SO 要区分 ELF 文件、符号制品、ABI 与页对齐；资源则要同时检查资源表、文件内容、限定符和拆分策略。三条链路最终都应落到同一套发布基线、代表设备 APK Set 和可追溯的差异报告上，我们再据此决定删除、压缩还是延迟交付。
-
 <!-- gracker-diagram: a283-27-final-size-ci-and-compatibility-gate -->
 ![最后用同一发布基线同时验体积、性能与兼容](../../assets/diagrams/ch25/a283-27-final-size-ci-and-compatibility-gate.png)
 
 图：节省字节不能靠牺牲可追溯性来确认；发布结果要兼顾启动、运行内存、画质与功能正确性。
+
+应用体积不是一个可以靠单项压缩解释的数字。DEX 要从可达性、保留规则和设备交付集合分析；Native SO 要区分 ELF 文件、符号制品、ABI 与页对齐；资源则要同时检查资源表、文件内容、限定符和拆分策略。三条链路最终都应落到同一套发布基线、代表设备 APK Set 和可追溯的差异报告上，我们再据此决定删除、压缩还是延迟交付。

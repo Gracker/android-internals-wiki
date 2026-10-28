@@ -27,9 +27,9 @@ I/O（Input/Output，输入/输出）指应用与文件、数据库、设备或�
 
 ## 术语提示
 
-- HTTPDNS 是通过 HTTP 服务取得 DNS（Domain Name System，域名系统）解析结果的应用方案。
+- HTTPDNS 是通过 HTTP 或 HTTPS 服务取得 DNS（Domain Name System，域名系统）解析结果的应用方案。
 - ECH（Encrypted Client Hello）用于加密 `ClientHello` 中的敏感字段；`ClientHello` 是客户端发出的第一条 TLS 握手消息，`domainEncryption` 是按域名表达 ECH 策略的 Android 配置项。
-- 24.10 中的 quota 表示剩余字节额度，该篇不讨论带宽整形。
+- 24.10 中的接口 quota 表示剩余字节额度，手机路径主要执行总量与 UID 访问控制；Android TV 的 Data Saver 速率限制是该篇单列的例外。
 - SAF（Storage Access Framework，存储访问框架）让应用通过 `content://` URI 访问用户授权的文档。
 - NFC（Near Field Communication）指近场通信。
 

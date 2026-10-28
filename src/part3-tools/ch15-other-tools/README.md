@@ -1,8 +1,13 @@
 # 第 15 章：其他分析工具
 
-Perfetto 擅长把调度、进程、渲染和应用事件放在同一条时间轴上。本章介绍另一类工具，它们要么需要专门的采集方式，要么给出其他证据形态：CPU sampling（周期性采样调用栈）、Heap Dump（某一时刻的堆对象快照）、布局层级检查、GPU capture（记录单帧的命令、资源和管线状态）、构建产物分析，以及 production telemetry（线上长期汇总的指标和事件）。
+Perfetto 擅长把调度、进程、渲染和应用事件放在同一条时间轴上。本章介绍另一类工具，它们要么需要专门的采集方式，要么给出其他证据形态：CPU sampling（周期性采样调用栈）、Heap Dump（某一时刻的堆对象快照）、布局层级检查、GPU capture（按工具能力捕获单帧或一段帧的命令、资源和管线状态）、构建产物分析，以及 production telemetry（线上长期汇总的指标和事件）。
 
-选哪个工具，取决于要回答的问题和所需的证据：判断 CPU 时间花在哪些函数上，看 CPU sample 的统计调用栈；追对象之间的引用关系，看 Heap Dump；固定某一时刻的系统状态，看命令行快照；定位单帧的绘制细节，看 GPU capture；观察较长时间、大量设备上的趋势，看线上 telemetry。这些工具回答的问题不同，结论不能直接互换。
+选哪个工具，取决于要回答的问题和所需的证据：判断 CPU 时间花在哪些函数上，看 CPU sample 的统计调用栈；追对象之间的引用关系，看 Heap Dump；读取服务的当前状态、保留历史或统计窗口，看命令行快照，并核对各字段的时间边界；定位单帧的绘制细节，看 GPU capture；观察较长时间、大量设备上的趋势，看线上 telemetry。这些工具回答的问题不同，结论不能直接互换。
+
+<!-- gracker-diagram: ch15-readme-01-question-and-evidence -->
+![按问题选择证据形态](../../assets/diagrams/ch15/ch15-readme-01-question-and-evidence.png)
+
+图：先区分函数与对象、图形与状态、构建与线上趋势，再选择对应证据。 CPU样本、堆对象图、帧捕获、服务输出和群体指标各有观测边界；结论需要补齐对应证据。
 
 ## 内容索引
 
@@ -32,10 +37,6 @@ Perfetto 擅长把调度、进程、渲染和应用事件放在同一条时间�
 - GPU、相机、窗口合成和布局层级问题集中在 15.11—15.15，应按问题选择帧捕获、GPU Counter、Camera Trace、Winscope 或 Layout Inspector。
 - 第三方 Hook、动态可达性、eBPF 与 R8 规则分析分别见 15.10、15.13、15.16 和 15.17。使用前应先确认 Android 版本、构建类型、权限和数据安全边界。
 
-<!-- gracker-diagram: ch15-readme-01-question-and-evidence -->
-![按问题选择证据形态](../../assets/diagrams/ch15/ch15-readme-01-question-and-evidence.png)
-
-图：先区分函数与对象、图形与状态、构建与线上趋势，再选择对应证据。 CPU样本、堆对象图、帧捕获、服务输出和群体指标各有观测边界；结论需要补齐对应证据。
 
 <!-- gracker-diagram: ch15-readme-02-selection-and-validation -->
 ![从问题到可验证结论](../../assets/diagrams/ch15/ch15-readme-02-selection-and-validation.png)

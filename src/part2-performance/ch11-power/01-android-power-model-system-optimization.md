@@ -22,8 +22,8 @@ tags:
 - adaptive-battery
 - foreground-service
 confidence: medium
-last_verified: '2026-10-20'
-last_source_verified_at: '2026-10-20T14:13:15+08:00'
+last_verified: '2026-10-24'
+last_source_verified_at: '2026-10-24'
 last_deep_review_at: '2026-10-20T14:13:15+08:00'
 verification_scope_note: 2026-10-20 通读整篇正文，重新核对 Android 17 固定 tag 缓存中的归因、监测 API、后台策略与内核职责，并补取官方 API 文档、配额说明及 Android 17 源码；修正 PowerMonitor 常量和 provider 释义。Kotlin 示例与常量探针通过真实 API 35 SDK 编译，XML 字段、Protobuf 子配置、Shell 语法及模拟 adb 的设置恢复测试通过；未进行真机功耗或后台行为测试，内核仅核对入口与职责。
 last_verified_against: AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / PowerAttributor and PowerStatsProcessor pipeline
@@ -162,7 +162,7 @@ sources:
 - type: official
   path: https://developer.android.com/about/versions/oreo/background
 - type: official
-  path: https://developer.android.com/topic/performance/power
+  path: https://developer.android.com/topic/performance/power/power-details
 - type: official
   path: https://developer.android.com/about/versions
 related_chapters:
@@ -212,14 +212,14 @@ consolidated_from:
 | 对外结果 | `BatteryUsageStats`、`UidBatteryConsumer` | 查询窗口内的组件与 UID 归因 | mAh、百分比 |
 | 诊断工具 | bugreport、Battery Historian、Perfetto、Power Profiler | 时间线、统计结果、rail 变化 | 取决于数据源 |
 
-先分清单位：`µWs` 表示能量，`µAh` 和 `mAh` 表示电荷量，百分比表示电池剩余容量比例；能量与电荷量互相换算还需要电压，这几类数字要先对齐单位再比较。
-
-数据从硬件进入 Framework 后，每一层能走到哪一步取决于设备。缺少 energy consumer 时，组件归因可能退回 controller activity（控制器活动统计） 或 `power_profile.xml` 估算；energy meter 的原始 rail 主要用于观测，参与归因的输入由组件 collector 和 processor 组织，任意 rail 直接按 UID（Linux 用户标识，Android 用它归集应用资源） 时间分配，在归因管线里并没有这样一条现成路径。
+先分清单位：`µWs` 表示能量，`µAh` 和 `mAh` 表示电荷量；功率还需要能量除以时间。百分比必须注明分母：`BatteryManager.BATTERY_PROPERTY_CAPACITY` 是剩余容量比例，设置页的应用占比则受归因窗口和展示口径影响。能量与电荷量互相换算还需要对应电压，不能只因两项都用百分比或 mAh 就视为同一测量。
 
 <!-- gracker-diagram: ch11-01-02-unit-boundaries -->
 ![电荷、能量、功率和百分比分开解释](../../assets/diagrams/ch11/ch11-01-02-unit-boundaries.png)
 
 图：相同单位仍可能有不同覆盖范围；百分比还必须交代分母。区间平均功率需要有效能量差与正的时间差。
+
+数据从硬件进入 Framework 后，每一层能走到哪一步取决于设备。缺少 energy consumer 时，组件归因可能退回 controller activity（控制器活动统计） 或 `power_profile.xml` 估算；energy meter 的原始 rail 主要用于观测，参与归因的输入由组件 collector 和 processor 组织，任意 rail 直接按 UID（Linux 用户标识，Android 用它归集应用资源） 时间分配，在归因管线里并没有这样一条现成路径。
 
 ### 2. `power_profile.xml`：软件估算的设备参数
 
@@ -272,7 +272,7 @@ AOSP 默认文件明确声明数值是故意设置的错误值，OEM 出货前�
 - scaling policy 活跃的附加电流；
 - scaling step，也就是某个具体频点的附加电流。
 
-常规 time-in-state（各频点驻留时间）路径没有 CPU energy consumer 时，处理器按 uptime（设备运行时长）、policy 运行时间和频点时间形成 profile 估算。有 hardware energy（硬件能量读数） 时，这条路径仍会利用 profile 的 power bracket（合并了相近功耗档位的分组） 和 UID 时间，把 energy consumer 的总量按活动比例分配；power bracket 是把相近功耗档位合并后的分组。支持 x86 cycle/RAPL 的设备还可能采用下文 §3.1 的另一条采集路径。
+常规 time-in-state（各频点驻留时间）路径没有 CPU energy consumer 时，处理器具备按 uptime（不含深度休眠的运行时间）、policy 运行时间与频点时间计算的 profile 项。⚠ 采集实现边界：固定 r1 的 `CpuTimeInStateCollector.collectStats()` 清零数组后填入频点时间、uptime 差值和能量等字段，尚未填入 time-in-cluster，源码留有相应 TODO；不能因模型有 policy 项就认定当前采集路径已提供该项时长（见 [固定 collector](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/CpuTimeInStateCollector.java)）。有 hardware energy（硬件能量读数）时，常规处理器仍利用 profile 的 power bracket（相近功耗档位分组）与 UID 时间分配总量。支持 x86 cycle/RAPL 的设备还可能采用下文 §3.1 的另一条路径。
 
 因此，相同 CPU time 不保证相同耗电。任务运行在哪个 policy、哪些频点，以及设备是否提供 measured energy，都会改变结果。
 
@@ -295,7 +295,12 @@ Android 17 不再使用顶层 `CpuPowerCalculator`。入口变为：
 
 `BatteryUsageStatsProvider → PowerAttributor → MultiStatePowerAttributor → CpuPowerStatsProcessor`
 
-`CpuPowerStatsProcessor` 会按设备状态、屏幕状态和 UID 进程状态聚合 CPU 统计。在常规 time-in-state 路径中，缺少 measured energy（实测能量）时使用 profile；存在 CPU cluster energy consumer 时，以硬件能量校正各 power bracket，再按 UID 在 bracket 中的活动比例分配。
+`CpuPowerStatsProcessor` 会按设备状态、屏幕状态和 UID 进程状态聚合 CPU 统计。在常规 time-in-state 路径中，缺少 measured energy（实测能量）时使用 profile；存在 CPU cluster energy consumer 时，以硬件能量校正各 power bracket，再按 UID 在 bracket 中的活动比例分配。若已提供 WakeLock 聚合统计，这条常规路径还会从设备与 UID 的 CPU 估算中扣除对应 WakeLock 估算，并以 0 为下限，避免重复计入（见 [固定 r1 CPU 处理器](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java)）。
+
+<!-- gracker-diagram: ch11-01-05-cpu-time-state -->
+![常规 CPU 路径用模型组织与分配能量](../../assets/diagrams/ch11/ch11-01-05-cpu-time-state.png)
+
+图：硬件能量改善组件总量，UID 分配仍依赖活动比例。固定实现若有 WakeLock 聚合，还会在 CPU 设备与 UID 估算中扣除对应项并限制为非负。
 
 平台还提供 x86 CPU cycle/RAPL 路径。`BatteryStatsImpl` 在 `x86CpuEnergyAttribution` 开关启用且不支持 time-in-state 时选择 `CpuCyclePerUidCollector`；collector 需要底层支持，会把 RAPL 的 CPU package 能量按 UID CPU cycle 占比归因，再结合电压换成 µC。处理器的 `computePowerFromEnergyConsumers()` 直接将设备和 UID 的 µC 转为 mAh，不再经过 profile/bracket 分配。
 
@@ -305,11 +310,6 @@ Android 17 不再使用顶层 `CpuPowerCalculator`。入口变为：
 图：这条路径的 UID 分配发生在采集侧，不再走常规 profile/bracket 分配。结果仍是共享 package 成本的活动比例归因。
 
 两条路径都要靠活动记录来归属共享的 CPU 能量：前者在 processor 中按 bracket 时间分配，后者在采集侧按 cycle 分配。所以我们把后者的 UID 数值读作按活动比例分摊的结果就好，逐 App 各自的独立硬件测量，它提供不了。
-
-<!-- gracker-diagram: ch11-01-05-cpu-time-state -->
-![常规 CPU 路径用模型组织与分配能量](../../assets/diagrams/ch11/ch11-01-05-cpu-time-state.png)
-
-图：硬件能量改善组件总量，UID 分配仍依赖活动比例。固定实现若有 WakeLock 聚合，还会在 CPU 设备与 UID 估算中扣除对应项并限制为非负。
 
 #### 3.2 Display
 
@@ -624,7 +624,9 @@ fun readSupportedPowerMonitors(
 }
 ```
 
-`getConsumedEnergy()` 返回自开机以来的累计 µWs，并包含插电期间的能量；重启后不保留。比较场景要用同一 monitor 的前后差值和对应 timestamp（时间戳），累计值本身当不了“本次操作耗电”。设备不支持 ODPM 时，supported monitor 列表可能为空。
+`getConsumedEnergy()` 的公开契约是自开机以来的累计 µWs，包含插电期间的能量，重启后不保留；`getTimestampMillis()` 使用 elapsed realtime（含休眠的开机时间）基准。比较场景要用同一次开机中同一 monitor 的有效前后读数：`ΔE = E₂ − E₁`；只有 `Δt = t₂ − t₁ > 0` 且累计值未重置时才计算区间平均功率，`P(mW) = ΔE(µWs) / Δt(ms)`。同时间戳不能被解释为已测得 0 功率；跨重启、负差值或缺项应重新建立基线。设备不支持 ODPM 时，supported monitor 列表可能为空。
+
+⚠ 实现边界补充：固定 r1 的 `com/android/server/powerstats/PowerStatsService.java` 根据 `ACCESS_FINE_POWER_MONITORS` 权限选择两组缓存，最大缓存年龄候选分别为 20 秒和 250 毫秒；这不是硬件采样频率承诺。有前后有效值时，服务还会按调用 UID 对返回能量加入区间随机扰动，时间戳仍取底层读数。更频繁调用或获得 fine 粒度，都不能直接推出无缓存、无扰动的 HAL 原始值。短窗口回归应先核对时间戳是否推进、实际粒度与噪声，再结合长窗口及独立参考测量（见 [固定 r1 服务实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java)）。
 
 <!-- gracker-diagram: ch11-01-20-monitor-cache-delta -->
 ![缓存、扰动与累计差值需共同核对](../../assets/diagrams/ch11/ch11-01-20-monitor-cache-delta.png)
@@ -737,17 +739,17 @@ Linux EAS（Energy-Aware Scheduling，能耗感知调度）使用 Energy Model �
 
 | 主题 | 源码入口 |
 |---|---|
-| profile 默认结构 | `frameworks/base/core/res/res/xml/power_profile.xml` |
-| 活动与 history | `frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java` |
-| 查询入口 | `frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java` |
-| 归因接口 | `frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java` |
-| 默认多状态归因 | `frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java` |
-| CPU 归因 | `frameworks/base/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java` |
-| x86 CPU cycle 采集 | `frameworks/base/services/core/java/com/android/server/power/stats/CpuCyclePerUidCollector.java` |
-| Screen 归因 | `frameworks/base/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java` |
-| 公共 monitor API | `frameworks/base/core/java/android/os/PowerMonitor.java`、`PowerMonitorReadings.java` |
-| PowerStats AIDL | `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/` |
-| kernel power_supply | `include/linux/power_supply.h`、`drivers/power/supply/power_supply_core.c`，tag `android17-6.18-2026-06_r6` |
+| profile 默认结构 | [power_profile.xml](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/xml/power_profile.xml) |
+| 活动与 history | [BatteryStatsImpl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java) |
+| 查询入口 | [BatteryUsageStatsProvider.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java) |
+| 归因接口 | [PowerAttributor.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerAttributor.java) |
+| 默认多状态归因 | [MultiStatePowerAttributor.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java) |
+| CPU 归因 | [CpuPowerStatsProcessor.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java) |
+| x86 CPU cycle 采集 | [CpuCyclePerUidCollector.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/CpuCyclePerUidCollector.java) |
+| Screen 归因 | [ScreenPowerStatsProcessor.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java) |
+| 公共 monitor API | [PowerMonitor.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitor.java)、[PowerMonitorReadings.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java) |
+| PowerStats AIDL | [IPowerStats.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl) |
+| kernel power_supply | [power_supply.h](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/power_supply.h)、[power_supply_core.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/power/supply/power_supply_core.c) |
 
 ### 12. 复核检查表
 
@@ -818,7 +820,7 @@ Android 7.0 / API 24 加入限制较轻的 Light Doze。Light Doze 与 Deep Doze
 | 模式 | 进入条件 | 主要目的 |
 | --- | --- | --- |
 | Light Doze（轻度 Doze） | 屏幕关闭、未充电；不要求设备静止 | 较早限制后台网络和调度，移动中的设备也能节电 |
-| Deep Doze（深度 Doze） | 屏幕关闭、未充电、持续静止；完整实现依赖 significant motion detector（显著运动检测器） | 延长 suspend（系统挂起）驻留时间，限制更严格 |
+| Deep Doze（深度 Doze） | 典型为屏幕关闭、未充电并满足静止检测等约束；motion sensor（运动传感器）是否启用及 quick-doze 等路径由固定实现与配置决定 | 延长 suspend（系统挂起）驻留时间，限制更严格 |
 
 设备移动、点亮屏幕或接入充电器会让 Deep Doze 退出。Light Doze 与 Deep Doze 在 `DeviceIdleController` 中有各自状态，`dumpsys deviceidle` 输出的 `mLightState`、`mState` 也要分开读。
 
@@ -852,14 +854,14 @@ Android 7.0 / API 24 加入限制较轻的 Light Doze。Light Doze 与 Deep Doze
 
 图：FGS 提高进程重要性，并不提供设备级 Doze 通用豁免。特殊 Alarm 仍受适用频率和权限规则约束，不能把它们画成持续后台运行通道。
 
-高优先级 FCM 只适合时间敏感、会产生用户可见通知的消息。系统会给接收方短暂使用网络和 partial WakeLock（只保持 CPU 运行的唤醒锁）的机会，处理完成后设备继续空闲。普通数据刷新使用 normal priority（普通优先级），并接受维护窗口延迟。
-
-`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 能在空闲期间交付。前两者有频率限制：每个 App 约九分钟一次，系统还可以延长间隔。它们适合用户感知的关键事件；高频轮询不在适用范围里。
+FCM 交付行为需注明发送配置和客户端版本。旧 `AndroidConfig` v1 的 high / normal priority 分别用于紧急可见通知与普通同步，高优先级处理可能获得临时网络及 partial WakeLock 机会。⚠ 文档版本差异：当前 Android Doze 指南已引导到 `AndroidConfigV2` 的 `RemoteNotification` / `BackgroundSync`；Firebase 迁移页在 2026-10-22 更新时仍列出 `26.1.0-eap01` 和 GA 前可变策略。新方案中，默认不可变通知可由 GMS Core 直接展示而不执行应用后台代码；后台同步允许批处理或延迟。不能把 v1 的回调和优先级假设直接套到 v2，也不能由通知及时展示推导 App 获得持续后台执行资格（见 [Firebase 官方迁移说明](https://firebase.google.com/docs/cloud-messaging/send/v2-api)）。
 
 <!-- gracker-diagram: ch11-01-30-fcm-version-boundary -->
 ![FCM v2 的通知路径与静默同步分开理解](../../assets/diagrams/ch11/ch11-01-30-fcm-version-boundary.png)
 
 图：Firebase 2026-10-22 迁移页仍给出 EAP 版本与 GA 前可变策略。默认通知路径可不执行 App 后台代码；旧 v1 的 priority、回调与 v2 类型不能混用。
+
+`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 能在空闲期间交付。前两者有频率限制：每个 App 约九分钟一次，系统还可以延长间隔。它们适合用户感知的关键事件；高频轮询不在适用范围里。
 
 #### Android 17 的 listener（监听器） 型 allow-while-idle Alarm
 
@@ -1044,7 +1046,7 @@ Android 8.0+ 对后台 Service 的创建和存活施加限制。可延迟任务�
 
 ### Hibernation 与 Archiving
 
-Hibernation（应用休眠）与 Archiving（应用归档）都会让长期未用的 App 停止后台活动，但两者对存储占用和恢复流程的影响不同：
+Hibernation（应用休眠）处理长期未用 App；Archiving（应用归档）也可由用户或安装器主动发起，不以长期未用为必要前提。两者都会影响后台可用性，但存储与恢复语义不同：
 
 | 机制 | 平台起点 | 系统动作 | 恢复时要处理 |
 | --- | --- | --- | --- |
@@ -1074,7 +1076,7 @@ Battery Saver 并不会把所有 App 一律改成 Rare bucket。Job、Alarm、�
 
 #### Low Power Standby 的直接限制
 
-Android 13 / API 33 公开 Low Power Standby（低功耗待机）状态。启用后，设备处于非交互状态且不在维护窗口时，App 的网络访问会被禁用，持有的 WakeLock 会被忽略；运行 FGS 的 App 也在范围内。系统角色、ongoing call（进行中的通话）、临时 allowlist（允许列表） 或设备 policy 可以获得例外。
+Android 13 / API 33 公开 Low Power Standby（低功耗待机）状态。开启功能不等于限制此刻已经激活：固定 r1 的 `updateActiveLocked()` 还要求非交互、已过配置的 standby timeout，并检查维护窗口；`mActiveDuringMaintenance` 可改变维护期是否继续激活，调试强制状态另有分支。限制激活后，非豁免 App 的网络访问被禁用，WakeLock 被忽略，FGS 也不自动豁免。系统角色、ongoing call（进行中的通话）、临时 allowlist（允许列表）或设备 policy 可以提供例外（见 [固定 r1 控制器](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/LowPowerStandbyController.java)）。
 
 App 可用 `isLowPowerStandbyEnabled()` 检查功能是否开启，并监听 `ACTION_LOW_POWER_STANDBY_ENABLED_CHANGED`。排查“FGS 明明活着却断网”时，我们先把 Low Power Standby 与 Doze、Data Saver 分开确认。
 
@@ -1087,7 +1089,7 @@ App 可用 `isLowPowerStandbyEnabled()` 检查功能是否开启，并监听 `AC
 
 - Adaptive Battery 影响单个 App 的 bucket 分类，分类器可以使用预测或最近使用排序。
 - Routine Battery Saver（按日常规律触发的省电模式）是 Android 10 的可选 OEM 集成。OEM 通过 `config_batterySaverScheduleProvider` 指定预装 provider，并预授予 `POWER_SAVER` 签名或特权权限，由它提供启用提示。官方要求只让一个 App 控制这组 API；多个控制者同时使用时，行为不受支持且没有定义。
-- Adaptive Charging（自适应充电）属于电池健康与充电管理，设备实现可能根据日程、温度和电池状态控制充电。它与 App Standby、Battery Saver 分属不同机制，每台设备的充电曲线由具体实现决定。
+- Adaptive Charging（自适应充电）属于电池健康与充电管理，设备实现可能根据日程、温度和电池状态控制充电。它与 App Standby、Battery Saver 分属不同机制，每台设备的充电曲线由具体实现决定。 [Pixel 官方说明](https://support.google.com/pixelphone/answer/6090612?hl=en)给出了按充电习惯调整满充时机的设备示例；不要把该示例当作全部 Android 设备的统一实现。
 
 三项功能可能同时存在，观察入口分别是 bucket、low-power 状态，以及充电与 battery health（电池健康）服务。
 
@@ -1246,6 +1248,8 @@ PowerMonitor 可能返回直接测量的 rail measurement（直接测量值）�
 - [SystemHealthManager](https://developer.android.com/reference/android/os/health/SystemHealthManager)
 - [PowerMonitor](https://developer.android.com/reference/android/os/PowerMonitor)
 - [PowerMonitorReadings](https://developer.android.com/reference/android/os/PowerMonitorReadings)
+- [固定 r1 PowerStatsService：缓存、权限与返回值扰动](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java)
+- [Firebase AndroidConfigV2 迁移与 EAP 说明](https://firebase.google.com/docs/cloud-messaging/send/v2-api)
 - [BatteryManager：电池属性、单位与返回值](https://developer.android.com/reference/android/os/BatteryManager)
 - [Perfetto traced_probes：android.power](https://perfetto.dev/docs/reference/traced_probes)
 - [Battery Historian](https://github.com/google/battery-historian)

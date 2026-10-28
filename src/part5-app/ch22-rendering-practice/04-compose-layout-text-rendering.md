@@ -16,12 +16,12 @@ related_chapters:
 - '22.2'
 - '22.1'
 - '2.3'
-last_verified: '2026-08-15'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1；Compose UI、Runtime 与 Foundation 1.12.0 源码（发行范围终点 963bf914f78b389bdddef0da7f36bee19d897274）
 confidence: medium-high
 sources:
 - type: androidx-source
-  path: frameworks/support/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt
+  path: https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt
 - type: official
   path: https://developer.android.com/jetpack/compose/layout
   note: 历史地址；2026-08-15 返回 404，现行入口见下一项
@@ -159,7 +159,7 @@ last_consolidated_at: '2026-08-24'
 
 排查一个 Compose 界面的布局开销，我们最终要回答三个问题：哪个状态读取触发了布局、哪些节点重新测量或放置、这些工作有没有让目标帧错过显示截止时间。重组是 Compose 因状态变化而重新执行部分可组合函数的过程，它解释的是组合阶段；要看清布局本身的工作，还要顺着测量和放置往下查。
 
-> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核 `android17-6.18-2026-06_r6`；Compose UI、Runtime 与 Foundation 1.12.0，发行范围终点 `963bf914f78b389bdddef0da7f36bee19d897274`。
+> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核参考标签 `android17-6.18-2026-06_r6`（不代表所有设备的内核）；Compose UI、Runtime 与 Foundation 1.12.0，发行范围终点 `963bf914f78b389bdddef0da7f36bee19d897274`。
 
 两条版本线各管一段：Android 版本决定宿主 View 与系统显示路径，Compose 依赖版本决定 `LayoutNode`、Modifier 节点、前瞻布局（lookahead）和跟踪事件的形态。Compose UI、Compose Runtime 与 Compose Foundation 独立发布，所以分析报告要一并记录 Compose BOM（统一声明 Compose 库版本的物料清单）、Kotlin 版本和 Compose Compiler 插件。
 
@@ -185,37 +185,16 @@ Compose 官方文档把一次 UI 更新分成三个阶段：
 
 把 Compose 各阶段和标准应用窗口路径放到同一条时间线上，位置关系如下图。图中的 Snapshot 是 Compose 的状态快照系统，负责在一致的状态视图中记录读取并通知变化。
 
-```mermaid
-flowchart LR
-    S["Snapshot 状态变化"]
-    C["组合<br/>更新 UI 树"]
-    M["测量<br/>约束 → 尺寸"]
-    P["放置<br/>坐标与层级"]
-    D["绘制<br/>Canvas 操作"]
-    ACV["AndroidComposeView"]
-    HWUI["ViewRootImpl / HWUI"]
-    RT["RenderThread"]
-    BQ["App Window BLAST BufferQueue"]
-    SF["SurfaceFlinger / HWC"]
-
-    S -->|"组合阶段读取"| C
-    S -->|"测量阶段读取"| M
-    S -->|"放置阶段读取"| P
-    S -->|"绘制阶段读取"| D
-    C -->|"树或测量输入变化"| M
-    M --> P
-    P --> D
-    D --> ACV --> HWUI --> RT --> BQ --> SF
-```
-
-Compose 没有另起一套显示路径：`ComposeView` 和 `AndroidComposeView` 仍在 `ViewRootImpl` 管理的 View 树中。HWUI 是 Android 的硬件加速二维渲染库，`RenderThread` 是执行其中部分渲染工作的线程，二者把应用窗口内容写入图形缓冲区。缓冲区随后经过 BLAST BufferQueue（窗口缓冲区与事务协调队列）、SurfaceFlinger（系统合成服务）和 HWC（Hardware Composer，硬件合成接口）进入显示流程。
-
-这条分界也划定了归因范围：Compose 布局变慢属于应用侧原因。`queueBuffer()` 表示应用提交图形缓冲区；它之后的排队、合成和显示等待，要沿标准渲染路径单独分析，与 Compose 测量耗时分开统计。
+状态读取连接到对应的失效阶段；后续阶段是否需要执行由输出、约束和依赖共同决定。
 
 <!-- gracker-diagram: a235-01-phase-dependencies -->
 ![读取依赖分别连接到组合、测量、放置与绘制](../../assets/diagrams/ch22/a235-01-phase-dependencies.png)
 
 图：四条状态箭头表示不同读取位置；横向链是可能继续发生的阶段，不表示每次变化全部重跑。
+
+Compose 没有另起一套显示路径：`ComposeView` 和 `AndroidComposeView` 仍在 `ViewRootImpl` 管理的 View 树中。HWUI 是 Android 的硬件加速二维渲染库，`RenderThread` 是执行其中部分渲染工作的线程，二者把应用窗口内容写入图形缓冲区。缓冲区随后经过 BLAST BufferQueue（窗口缓冲区与事务协调队列）、SurfaceFlinger（系统合成服务）和 HWC（Hardware Composer，硬件合成接口）进入显示流程。
+
+这条分界也划定了归因范围：Compose 布局变慢属于应用侧原因。`queueBuffer()` 表示应用提交图形缓冲区；它之后的排队、合成和显示等待，要沿标准渲染路径单独分析，与 Compose 测量耗时分开统计。
 
 #### 2. Android 宿主如何调用 Compose 布局
 
@@ -226,7 +205,7 @@ Compose UI 1.12.0 的 `AndroidComposeView` 提供了几处明确入口：
 - `dispatchDraw()` 在绘制前再次处理待完成的 `measureAndLayout()`，随后调用根 `LayoutNode.draw()`。
 - `onRequestMeasure()` 和 `onRequestRelayout()` 把节点失效交给 `MeasureAndLayoutDelegate`，再决定调用 View `requestLayout()` 还是 `invalidate()`。
 
-宿主侧仍是一次视图树遍历：`ViewRootImpl` 组织宿主 View 的测量、布局和绘制，再由 `ThreadedRenderer` 进入 HWUI。Compose 自己的三个阶段就嵌在这次平台遍历里，只是两边使用不同的 API 名称。所以在 Perfetto 中，我们要同时观察 Compose 跟踪事件、`AndroidOwner:*`、`performTraversals()` 和 `syncAndDrawFrame()`。
+`ViewRootImpl` 组织宿主 View 的测量、布局和绘制，再由 `ThreadedRenderer` 进入 HWUI；Compose 测量、放置与绘制通过这些宿主入口执行。组合还可由 Recomposer 的帧时钟驱动，也可在 Subcompose 测量中按需发生，不能理解成所有 Composition 都被固定包在一次 View 遍历内。所以在 Perfetto 中，我们要同时观察 Compose 跟踪事件、`AndroidOwner:*`、`performTraversals()` 和 `syncAndDrawFrame()`。
 
 <!-- gracker-diagram: a235-02-host-entries -->
 ![宿主入口消费各自待处理的布局工作](../../assets/diagrams/ch22/a235-02-host-entries.png)
@@ -288,10 +267,9 @@ fun OnePassColumn(
         }
 
         val desiredWidth = placeables.maxOfOrNull { it.width } ?: 0
-        val desiredHeight = placeables
-            .sumOf { it.height.toLong() }
-            .coerceAtMost(Int.MAX_VALUE.toLong())
-            .toInt()
+        val totalHeight = placeables.sumOf { it.height.toLong() }
+        require(totalHeight <= Int.MAX_VALUE) { "Column height exceeds Int coordinates" }
+        val desiredHeight = totalHeight.toInt()
 
         val width = constraints.constrainWidth(desiredWidth)
         val height = constraints.constrainHeight(desiredHeight)
@@ -307,7 +285,7 @@ fun OnePassColumn(
 }
 ```
 
-测量代码必须保存 `Placeable`，以便放置阶段使用；为此创建一个列表，属于这个实现的明确成本。频繁执行的布局代码，先减少重复测量、无用节点和昂贵计算；必要的状态对象照常保留，用不着为了“零对象”去删。
+示例拒绝无法由 Int 表示的总高度；父约束仍可能限制外框尺寸，内容溢出是否裁剪由调用者决定。测量代码必须保存 `Placeable`，以便放置阶段使用；为此创建一个列表，属于这个实现的明确成本。频繁执行的布局代码，先减少重复测量、无用节点和昂贵计算；必要的状态对象照常保留，用不着为了“零对象”去删。
 
 <!-- gracker-diagram: a235-03-one-pass -->
 ![先保存一次测量结果，再按顺序放置](../../assets/diagrams/ch22/a235-03-one-pass.png)
@@ -495,7 +473,12 @@ Lookahead 先得到目标尺寸和坐标，接近阶段再逐步到达目标；�
 
 公开的 `Remeasurement` 关联一个布局节点。`forceRemeasure()` 会在不另行安排下一轮布局的情况下请求重测量，并立即调用宿主的 `measureAndLayout()`；节点会同步重测量，待处理的放置工作也可能随这次调用执行。官方 API 只建议把它用于少数复杂布局，例如滚动过程中必须同步消费偏移并重新测量子节点。
 
-常规业务状态更新应依赖 Snapshot 失效。强制重测量会把同步工作放到调用线程，即使节点此前没有标记为需要重测量也会执行。`RemeasurementModifier` 是把关联节点的 `Remeasurement` 对象交给调用方的公开接口；项目中出现它时，要确认调用频率、线程、约束和帧内位置。Compose UI 1.12.0 没有公开的 `Modifier.remeasure` 便捷扩展。
+常规业务状态更新应依赖 Snapshot 失效。附着到 Owner 的节点会把同步测量请求放到调用线程，调用方应在 UI 线程进入；节点没有 Owner 时，源码的安全调用不会立即执行宿主布局。它不是后台测量入口，也不能在任意生命周期状态下保证已同步重测。`RemeasurementModifier` 是把关联节点的 `Remeasurement` 对象交给调用方的公开接口；项目中出现它时，要确认调用频率、线程、约束和帧内位置。Compose UI 1.12.0 没有公开的 `Modifier.remeasure` 便捷扩展。
+
+<!-- gracker-diagram: a235-10-force-remeasure -->
+![强制重测走附着 Owner 的同步入口](../../assets/diagrams/ch22/a235-10-force-remeasure.png)
+
+图：常规业务用 Snapshot 失效；没有公开通用 remeasure Modifier 便捷扩展。
 
 高频动画还可以按需求选择更晚的读取阶段：
 
@@ -505,11 +488,6 @@ Lookahead 先得到目标尺寸和坐标，接近阶段再逐步到达目标；�
 - 颜色和绘制参数：`drawWithContent`、`drawBehind` 或 `Canvas` 中读取。
 
 后移读取以保住 UI 语义为前提：点击区域、父布局占位或可访问性范围必须随位置变化时，图层变换和布局位移给出的行为是不同的，这时按需求在两者之间选择。
-
-<!-- gracker-diagram: a235-10-force-remeasure -->
-![强制重测走附着 Owner 的同步入口](../../assets/diagrams/ch22/a235-10-force-remeasure.png)
-
-图：常规业务用 Snapshot 失效；没有公开通用 remeasure Modifier 便捷扩展。
 
 ### 九、怎样测量 Compose 布局成本
 
@@ -530,7 +508,10 @@ Perfetto UI 会给时间片（一段带开始时间和持续时间的跟踪事�
 
 ```sql
 SELECT
+  p.upid,
   p.name AS process_name,
+  t.utid,
+  t.tid,
   t.name AS thread_name,
   s.name AS slice_name,
   COUNT(*) AS occurrences,
@@ -540,7 +521,7 @@ FROM slice AS s
 JOIN thread_track AS tt ON s.track_id = tt.id
 JOIN thread AS t ON tt.utid = t.utid
 LEFT JOIN process AS p ON t.upid = p.upid
-WHERE s.dur > 0
+WHERE s.dur >= 0
   AND s.name IN (
     'AndroidOwner:onMeasure',
     'AndroidOwner:onLayout',
@@ -552,11 +533,11 @@ WHERE s.dur > 0
     'Compose:remeasure',
     'Compose:lookaheadRemeasure'
   )
-GROUP BY p.name, t.name, s.name
+GROUP BY p.upid, p.name, t.utid, t.tid, t.name, s.name
 ORDER BY total_ms DESC;
 ```
 
-`slice.dur` 的单位是纳秒，查询把总时长和最大值换算成毫秒。聚合结果用于寻找工作量集中在哪类阶段；具体到某个 Composable 或 `LayoutNode`，还要回到对应帧和调用栈去核对。
+`slice.dur` 的单位是纳秒，查询把总时长和最大值换算成毫秒，并以 `upid/utid` 区分同名进程生命周期和线程。这是全条跟踪中已完成、非负区间的 inclusive 墙钟时长聚合，包含等待；宿主与内部阶段可能嵌套，父子区间不能直接相加。分析特定交互时还要限定目标 `upid` 与时间窗口。聚合结果用于寻找工作量集中在哪类阶段；具体到某个 Composable 或 `LayoutNode`，还要回到对应帧和调用栈去核对。
 
 <!-- gracker-diagram: a235-12-sql-metrics -->
 ![布局聚合保留线程身份和墙钟含义](../../assets/diagrams/ch22/a235-12-sql-metrics.png)
@@ -569,7 +550,7 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 
 这两类工具的使用可以按层推进：
 
-1. Macrobenchmark（从应用进程外启动并测量完整场景的基准测试库）的 `FrameTimingMetric` 记录目标交互的 `frameOverrunMs`（相对显示截止时间的超前或逾期）和 `frameDurationCpuMs`（应用界面线程与 RenderThread 生成一帧的 CPU 时间）分布，并输出跟踪文件。
+1. Macrobenchmark（从应用进程外启动并测量完整场景的基准测试库）的 `FrameTimingMetric` 记录目标交互的 `frameOverrunMs`（相对显示截止时间的超前或逾期）和 `frameDurationCpuMs`（产帧区间时长；Benchmark 1.5.0 从 UI 帧开始量到对应 RenderThread 区间结束，不是两线程 Running CPU 时间之和）分布，并输出跟踪文件。
 2. FrameTimeline 找到错过截止时间的应用帧，区分 UI 线程、RenderThread 和显示侧问题。
 3. UI 线程变长时查看 `AndroidOwner:*`、已开启的 `Compose:*` 与业务自定义跟踪事件。
 4. 组合时间片变长再看 Layout Inspector、组合跟踪和 Compose Compiler 报告。
@@ -654,7 +635,7 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 
 排查 Compose 文本卡顿时，我们第一个核对的是重组次数，而它只解释组合阶段：一次文本更新可能停在测量、字体解析、绘制或显示系统中的任意一段；同样的 `Text` 调用还可能进入两套不同的 Modifier 节点实现。排查时要同时回答：哪项输入变了、是否重新排版、目标帧在哪个阶段错过显示截止时间。
 
-本部分涉及调度、缺页（访问尚未驻留内存页时由内核处理）或内存回收时，内核侧行为统一按文首基线里的内核标签核对；普通文本排版的结论，沿应用侧路径单独推导。
+本部分涉及调度、缺页（访问尚未驻留内存页时由内核处理）或内存回收时，应核对被测设备实际内核与跟踪配置，文首标签只作源码参考；普通文本排版的结论，沿应用侧路径单独推导。
 
 这一部分同样引用不到固定的耗时、提升比例或文本长度阈值。文字内容、字体、语言、字形、断行、约束、设备、刷新率和编译状态都会改变结果，性能判断必须附带可复现的场景和系统跟踪。
 
@@ -666,22 +647,12 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 
 下面的流程图用于区分 Compose 文本排版与 Android 整帧显示。虚线后的 HWUI、BLAST、SurfaceFlinger 和 HWC 属于普通应用窗口（App Window）的显示流程。
 
-```mermaid
-flowchart LR
-    A["Text / BasicText"] --> B{"是否需要 AnnotatedString 能力"}
-    B -->|"否"| C["TextStringSimpleNode"]
-    B -->|"是"| D["TextAnnotatedStringNode"]
-    C --> E["ParagraphLayoutCache"]
-    D --> F["MultiParagraphLayoutCache"]
-    E --> G["Paragraph / AndroidParagraph"]
-    F --> H["MultiParagraph / AndroidParagraph"]
-    G --> I["BoringLayout 或 StaticLayout"]
-    H --> I
-    I --> J["Compose Canvas 记录绘制"]
-    J -.-> K["HWUI / RenderThread"]
-    K -.-> L["BLASTBufferQueue"]
-    L -.-> M["SurfaceFlinger / HWC / 显示器"]
-```
+节点选择先看输入与所需能力；段落缓存之后才进入平台文本布局和宿主显示链。
+
+<!-- gracker-diagram: a235-14-text-node-gates -->
+![String 简化节点有三个同时满足的条件](../../assets/diagrams/ch22/a235-14-text-node-gates.png)
+
+图：回调、选择与自动字号有产品价值时保留；测试要记录具体节点路径，再追平台文本布局。
 
 `Text` 的组合节点负责保存输入和发起失效，`Paragraph`/`MultiParagraph` 负责文本测量与排版。Android 实现只在同时满足三个条件时才走适合单行简单文本的 `BoringLayout`：系统判定文本适合简化路径；内容不换行时所需的最大宽度不超过可用宽度；没有基线偏移样式。其余情况交给支持换行和复杂样式的 `StaticLayout`。
 
@@ -693,11 +664,6 @@ flowchart LR
 绘制结果记录到宿主 `ComposeView` 所在窗口，再沿普通应用窗口的显示流程提交。声明一个 `Text` 不会创建独立图形缓冲层（Surface）。
 
 这条分层对诊断很有用。Perfetto 中的 `TextLayout:initLayout` 时间片很长，说明 Android 文本排版工作较重；RenderThread 或 SurfaceFlinger 较晚时，继续调整重组稳定性通常解决不了那一帧。
-
-<!-- gracker-diagram: a235-14-text-node-gates -->
-![String 简化节点有三个同时满足的条件](../../assets/diagrams/ch22/a235-14-text-node-gates.png)
-
-图：回调、选择与自动字号有产品价值时保留；测试要记录具体节点路径，再追平台文本布局。
 
 #### 2. 普通 `String` 文本有专用实现
 
@@ -771,6 +737,8 @@ Compose 的 `FontFamily.Resolver`（字体解析器）返回可观察的字体�
 
 图：字体冷／热缓存与提供方、网络、回退条件分别记录；字体等待和主线程排版分开归因。
 
+Foundation Android 1.12.0 另有可选的文本度量预热：`LocalBackgroundTextMeasurementExecutor` 默认是 `null`；应用提供 Executor 后，`BasicText` 只对满足该版本内部条件的文本安排后台任务。实现要求 API 28+、文本长度至少 8 且小于 1000 个 UTF-16 code unit、运行时报告至少 4 个处理器，处理器条件会缓存。这些是固定实现的入选门禁，不是通用性能阈值。任务按顺序求 `maxIntrinsicWidth` 与 `minIntrinsicWidth`，预热平台文字度量与断词相关缓存；主线程仍需按最终约束完成排版、布局与绘制。任务可能被 Executor 拒绝，预热也不保证命中或净收益，应连同竞争、分配与目标帧一起测量。源码见 [Foundation Android 1.12.0 归档](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar) 中的 `BasicText.android.kt`。
+
 <!-- gracker-diagram: a235-19-background-metrics -->
 ![可选后台预热只准备度量缓存](../../assets/diagrams/ch22/a235-19-background-metrics.png)
 
@@ -820,7 +788,7 @@ fun MeasuredTitle(
     onSizeChanged: (IntSize) -> Unit,
 ) {
     val latestOnSizeChanged by rememberUpdatedState(onSizeChanged)
-    val lastSize = remember { mutableStateOf(IntSize.Zero) }
+    val lastSize = remember { mutableStateOf<IntSize?>(null) }
     val textLayoutCallback = remember {
         { result: TextLayoutResult ->
             if (result.size != lastSize.value) {
@@ -856,7 +824,7 @@ fun MeasuredTitle(
 
 #### 1. 强跳过模式改变了旧版经验
 
-把 `List<T>` 传给 Composable（由 `@Composable` 标记、用于描述界面的函数）不再等价于“父级重组时该函数一定执行”。强跳过模式是 Compose Compiler 的编译选项：它能把带不稳定参数的可重启 Composable 标记为可跳过。从 Kotlin 2.0.20 起，该模式默认开启；不稳定参数通常按对象身份比较，稳定参数按相等性比较。项目若关闭强跳过模式，规则会不同。
+把 `List<T>` 传给 Composable（由 `@Composable` 标记、用于描述界面的函数）不再等价于“父级重组时该函数一定执行”。强跳过模式是 Compose Compiler 的编译选项：它能把带不稳定参数的可重启 Composable 标记为可跳过。从 Kotlin 2.0.20 起，该模式默认开启；已知不稳定参数按对象身份比较，稳定参数按相等性比较；若像 22.3 的 Kotlin 2.4.10 样例那样被判为 runtime / `Uncertain`，还要结合运行时稳定性位和生成代码判断，不能仅凭集合接口名决定比较分支。项目若关闭强跳过模式，规则会不同。
 
 因此，排查清单至少要记录：
 
@@ -907,7 +875,7 @@ fun ArticleBody(paragraphs: List<ParagraphUiModel>) {
 }
 ```
 
-`ParagraphUiModel` 只有不可变的基础类型，满足示例中的 `@Immutable` 契约；`List` 参数本身仍要结合强跳过规则判断。长文章使用 Lazy 布局只组合可见项，详细复用条件见 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md)。
+`ParagraphUiModel` 只有不可变的基础类型，满足示例中的 `@Immutable` 契约；`List` 参数本身仍要结合强跳过规则判断。长文章使用 Lazy 布局按当前需要组合内容，其中还可能包括预取、复用缓存、固定和动画保留项；详细复用条件见 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md)。
 
 <!-- gracker-diagram: a235-22-identity-stability -->
 ![业务键、可跳过性与文本排版各管一件事](../../assets/diagrams/ch22/a235-22-identity-stability.png)
@@ -920,7 +888,7 @@ fun ArticleBody(paragraphs: List<ParagraphUiModel>) {
 
 解析 Markdown、匹配关键词或建立大量字符范围样式时，构造成本可能高于短文本排版本身。输入不变时可以在组合作用域缓存 `AnnotatedString`；输入来自后台解析器时，也可以先在后台线程生成不可变结果，再交给 Compose 展示。
 
-下面的示例只在正文、匹配范围或强调色变化时重建富文本。范围来自业务解析结果，不在组合中重新执行正则表达式。
+下面的示例只在正文、匹配范围或强调色变化时重建富文本。范围来自业务解析结果，不在组合中重新执行正则表达式；`highlights` 及其条目须作为不可变快照传入，变化时提交新列表，不能原地修改同一个普通集合后期待 `remember` 自动重建。
 
 ```kotlin
 @Immutable
@@ -975,7 +943,7 @@ fun HighlightedParagraph(
 
 图：大输入的新分配与比较也有成本；字体解析结果过期时缓存命中不可直接使用。
 
-下面的示例在绘制区域尺寸或文本输入变化时测量一次，随后用已有 `TextLayoutResult` 绘制颜色。
+下面的示例绘制单行标签：在绘制区域尺寸或文本输入变化时建立测量结果，再用它绘制颜色。调用者必须给 Spacer 有限且非零的尺寸，例如通过 Modifier 设置宽度和高度；绘制代码不会按文字内容反向撑大 Spacer。测量范围扣除两侧内边距，超出时按单行省略处理。
 
 ```kotlin
 @Composable
@@ -989,11 +957,18 @@ fun LabeledBackground(
     Spacer(
         modifier =
             modifier.drawWithCache {
+                val horizontalPadding = 12.dp.toPx()
+                val verticalPadding = 8.dp.toPx()
                 val layoutResult =
                     textMeasurer.measure(
                         text = label,
                         style = TextStyle(fontSize = 16.sp),
-                        constraints = Constraints(maxWidth = size.width.toInt()),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        constraints = Constraints(
+                            maxWidth = (size.width - 2 * horizontalPadding).coerceAtLeast(0f).toInt(),
+                            maxHeight = (size.height - 2 * verticalPadding).coerceAtLeast(0f).toInt(),
+                        ),
                     )
 
                 onDrawBehind {
@@ -1001,7 +976,7 @@ fun LabeledBackground(
                     drawText(
                         textLayoutResult = layoutResult,
                         color = color,
-                        topLeft = Offset(12.dp.toPx(), 8.dp.toPx()),
+                        topLeft = Offset(horizontalPadding, verticalPadding),
                     )
                 }
             }
@@ -1024,7 +999,7 @@ fun LabeledBackground(
 
 - 少量静态标签反复绘制：容量覆盖会重复出现的布局输入；
 - 每帧只测同一段文本：容量为 1 已有专用单项实现；
-- 输入几乎每次都不同：评估 `skipCache = true`，同时确认没有其他重复调用；
+- 输入几乎每次都不同：可评估 `skipCache = true`。1.12.0 的实现只跳过缓存查找，新的布局仍会写入已存在的缓存；若目标是完全不保留测量缓存，应使用 `cacheSize = 0`，并核对目标版本实现。
 
 - 需要长期保存大量文章段落：由业务设计明确的分页或缓存上限；`TextMeasurer` 的定位是测量缓存，全文存储交给业务层实现
 
@@ -1062,7 +1037,10 @@ Compose UI 1.12.0 的文本实现包含 `TextStringSimpleNode::measure`、`TextA
 
 ```sql
 SELECT
+  p.upid,
   p.name AS process_name,
+  t.utid,
+  t.tid,
   t.name AS thread_name,
   s.name AS slice_name,
   COUNT(*) AS occurrences,
@@ -1072,17 +1050,17 @@ FROM slice AS s
 JOIN thread_track AS tt ON s.track_id = tt.id
 JOIN thread AS t ON tt.utid = t.utid
 LEFT JOIN process AS p ON t.upid = p.upid
-WHERE s.dur > 0
+WHERE s.dur >= 0
   AND s.name IN (
     'TextStringSimpleNode::measure',
     'TextAnnotatedStringNode:measure',
     'TextLayout:initLayout'
   )
-GROUP BY p.name, t.name, s.name
+GROUP BY p.upid, p.name, t.utid, t.tid, t.name, s.name
 ORDER BY total_ms DESC;
 ```
 
-`slice.dur` 使用纳秒，查询换算为毫秒。聚合适合比较同一用例的前后版本；定位异常帧时还要回到单帧时间线，看对应时间片是否位于超时帧，以及调用前后是否有 GC（垃圾回收）、业务解析或父布局测量。
+`slice.dur` 使用纳秒，查询换算为毫秒；同样保留 `upid/utid`，不会把同名线程或进程重启前后的记录混成一组。它汇总全条跟踪的 inclusive 墙钟区间；不同文本阶段也可能嵌套，不能把父子总时长直接相加当作 CPU 时间。聚合适合比较同一用例的前后版本；定位异常帧时还要回到单帧时间线，看对应时间片是否位于超时帧，以及调用前后是否有 GC（垃圾回收）、业务解析或父布局测量。
 
 #### 3. 诊断顺序从目标帧开始
 

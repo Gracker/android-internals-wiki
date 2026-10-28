@@ -4,8 +4,8 @@ chapter: '25.2'
 section: '25.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_verified_against: Android Developers App Standby, Android 16/17 behavior, FGS and location docs retrieved 2026-08-15 + AOSP android-17.0.0_r1
 confidence: high
 sources:
@@ -122,7 +122,7 @@ consolidated_from:
 - Doze（设备空闲低功耗模式）、App Standby（应用待机） 和 Job（由系统调度的后台任务） 配额的系统实现见 §5.3。
 - WakeLock（唤醒锁）、Alarm（定时任务）、定位与 FCM（Firebase Cloud Messaging（FCM，Firebase 云消息推送））的横向策略见 §11.2。
 - 诊断流程见 §25.1。
-- 前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额的专题分析见 §25.2。
+- 前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额由本文后半部分集中说明。
 
 我们按四条要求设计后台工作：允许延后的交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止的原因可以观测。系统负责限制 CPU（中央处理器）、网络、Job、Alarm 和位置访问，但它不知道某次同步是否还有业务价值，也不知道某段轨迹何时可以降低采样频率——任务有效期、停止条件和资源预算，只能由应用自己定义。
 
@@ -154,23 +154,18 @@ consolidated_from:
 | Android 16 | Job 运行配额覆盖更多情形，包括应用离开前台后继续执行的 Job，以及与 FGS 并行的 Job | 记录停止原因和待执行原因历史；不要用 FGS 规避 Job 配额 |
 | Android 17 | 后台音频播放、音频焦点和音量操作受到更严格的生命周期检查 | 媒体任务按 Android 17 的音频资格要求审查，参见 §25.5 |
 
-`restricted` 是限制最严的待机分组，但仍保留受限的执行机会。Android 13 及以上的官方规则是：豁免范围之外的应用每天可在一次十分钟批处理时段内运行 Job，可用的 expedited Job（加急任务）更少，并且每天只能触发一次 Alarm。充电时这些限制仍然存在；设备同时处于充电、空闲和非计费网络时，限制会放宽。OEM（设备厂商） 可以调整分组算法，应用别尝试诱导系统把自己放进某个分组。参见 [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)。
+`restricted` 是限制最严的待机分组，但仍保留受限的执行机会。Android 13 及以上的官方规则是：豁免范围之外的应用每天可在一次十分钟批处理时段内运行 Job；该批次还要求至少有另一个正在运行或待执行的 Job（可以来自其他应用），受限 Job 不会单独运行。可用的 expedited Job（加急任务）更少，并且每天只能触发一次 Alarm。充电时这些限制仍然存在；设备同时处于充电、空闲和非计费网络时，限制会放宽。OEM（设备厂商） 可以调整分组算法，应用别尝试诱导系统把自己放进某个分组。参见 [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)。
 
 #### 平台源码中的职责分工
 
 关系图用于定位平台源码，表达组件之间的控制关系；一次后台任务不一定依次经过所有组件。
 
-```mermaid
-flowchart LR
-    A["设备空闲状态"] --> B["DeviceIdleController"]
-    C["用户与应用交互"] --> D["AppStandbyController"]
-    B --> E["JobScheduler 约束判断"]
-    D --> F["QuotaController 配额判断"]
-    F --> E
-    G["WorkManager / JobScheduler 请求"] --> E
-    E --> H["允许、延后或停止 Job"]
-    I["内核 suspend 与 wakeup source"] --> B
-```
+设备空闲、应用使用状态与任务请求共同参与框架调度；内核提供独立的休眠与唤醒事实。
+
+<!-- gracker-diagram: a275-02-framework-scheduling-controls -->
+![设备空闲与待机分组分别约束Job](../../assets/diagrams/ch25/a275-02-framework-scheduling-controls.png)
+
+图：内核suspend和wakeup source提供休眠与唤醒事实；把它们与框架调度日志按时间关联。
 
 `DeviceIdleController` 管理设备空闲与维护窗口，`AppStandbyController` 管理待机分组，`QuotaController` 参与 Job 配额计算；内核只管系统挂起和唤醒源（wakeup source）的生命周期，并不认识 `STANDBY_BUCKET_RARE` 这类框架层概念。我们分析一次唤醒时，要把框架调度信息、应用任务日志和内核唤醒事实按时间对齐。
 
@@ -194,11 +189,6 @@ flowchart LR
 - 重复触发时应保留旧工作、替换旧工作，还是追加新工作？
 - 页面关闭、退出账号、权限撤销或数据已被删除时，谁负责取消任务？
 - 任务被系统停止后，哪些进度可以安全恢复，哪些步骤必须保证幂等，也就是重复执行不会产生额外副作用？
-
-<!-- gracker-diagram: a275-02-framework-scheduling-controls -->
-![设备空闲与待机分组分别约束Job](../../assets/diagrams/ch25/a275-02-framework-scheduling-controls.png)
-
-图：内核suspend和wakeup source提供休眠与唤醒事实；把它们与框架调度日志按时间关联。
 
 ### 后台任务最佳实践
 
@@ -251,9 +241,9 @@ fun enqueueBulkInboxSync(
 
 `KEEP` 表示同名工作尚未结束时忽略新请求；如果新请求代表更新后的用户意图，应重新评估 `REPLACE` 或 `APPEND_OR_REPLACE`。
 
-退避只处理 Worker（WorkManager 的任务执行单元）返回 `Result.retry()` 的情况；网络请求自身的超时和幂等，仍要单独设计。
+这里的普通重试退避针对 Worker（WorkManager 的任务执行单元）返回 `Result.retry()` 的情况。WorkManager 2.11.0 起还提供实验性的 [`setBackoffForSystemInterruptions()`](https://developer.android.com/reference/kotlin/androidx/work/WorkRequest.Builder)，显式启用后，系统造成的中断也使用该退避策略；不能概括成所有版本都只处理 `Result.retry()`。网络请求自身的超时和幂等仍要单独设计。
 
-别把任务开始时间当成承诺时间：Doze、待机分组、约束和系统负载都可能推迟执行，运行之后也可能因约束变化、配额或应用取消而停止。WorkManager 可读取 `WorkInfo.getStopReason()`；直接使用 JobScheduler 时，可读取 `JobParameters.getStopReason()`。Android 14 及以上，如果 Job 频繁超时，系统可能将应用放入 `restricted` 分组。
+别把任务开始时间当成承诺时间：Doze、待机分组、约束和系统负载都可能推迟执行，运行之后也可能因约束变化、配额或应用取消而停止。WorkManager 2.9.0 起可读取 `WorkInfo.getStopReason()`；`JobParameters.getStopReason()` 要求 API 31 及以上，旧平台不能假定获得相同系统停止原因。Android 14 及以上，如果 Job 频繁超时，系统可能将应用放入 `restricted` 分组。
 
 Android 16 进一步扩大了 Job 运行配额的适用范围：
 
@@ -332,9 +322,9 @@ fun buildPassiveLocationRequest(
 
 传感器治理要区分普通传感器和受使用中权限约束的身体传感器。`health` 类型 FGS 需要声明 `FOREGROUND_SERVICE_HEALTH`，并满足 `HIGH_SAMPLING_RATE_SENSORS` 或相应的健康数据运行时权限。身体传感器的权限按系统版本区分：
 
-- API 35 及以下使用 `BODY_SENSORS`。
-- API 36 及以上使用相应的传感器读取权限，例如 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION`。
-- API 33～35 的后台身体传感器访问需要 `BODY_SENSORS_BACKGROUND`；API 36 及以上对应 `READ_HEALTH_DATA_IN_BACKGROUND`。
+- API 35 及以下的身体传感器使用 `BODY_SENSORS`。
+- 在 API 36 及以上且 target ≥36 时，改用相应的细分读取权限，例如 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION`；旧 target 还需按兼容授权路径核对，不能只按设备版本切换。
+- API 33～35 的后台身体传感器访问需要 `BODY_SENSORS_BACKGROUND`；在 API 36 及以上且 target ≥36 时改用 `READ_HEALTH_DATA_IN_BACKGROUND`。
 
 这些权限决定能否访问数据，FGS 后台启动资格仍需独立检查。具体类型与前提条件以[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types)为准。
 
@@ -370,7 +360,7 @@ adb shell am set-standby-bucket com.example.app active
 adb shell dumpsys battery reset
 ```
 
-`force-idle` 用于验证 Doze 中任务是否被延后以及退出后能否恢复；`set-standby-bucket` 用于复现待机分组限制；末尾两条命令将待机分组和电池服务恢复到测试前的常用状态。待机分组算法允许 OEM 调整，强制分组能验证应用在该条件下的行为，预测不了每台设备何时自动进入该分组。
+`force-idle` 用于验证 Doze 中任务是否被延后以及退出后能否恢复；`set-standby-bucket` 用于复现待机分组限制；末尾两条命令把分组明确设为 `active`，并让电池服务恢复读取真实设备状态；它们不能恢复任意测试前分组。测试前先保存原始分组和电池状态，结束时按原值恢复并复核，不把 `active` 当作每台设备的原始值。待机分组算法允许 OEM 调整，强制分组能验证应用在该条件下的行为，预测不了每台设备何时自动进入该分组。
 
 回归场景不要照抄固定的息屏时长或推送条数。测试周期应覆盖本业务完整的调度、超时和重试窗口，事件数量来自线上基线或明确的容量目标。测试分五步进行：
 
@@ -415,37 +405,14 @@ ANR 指 Application Not Responding：应用主线程长时间失去响应时系�
 
 这张图把主状态变化压缩成一条可用于日志设计的路径：图中的 `ServiceRecord` 是 AMS 为每个 Service 保存的内部运行记录，不是应用可以创建或持有的公开对象：
 
-```mermaid
-flowchart TD
-    A["业务产生持续任务"] --> B{"当前允许启动 FGS？"}
-    B -- "否" --> X["抛出 ForegroundServiceStartNotAllowedException"]
-    B -- "是" --> C["Context.startForegroundService"]
-    C --> D["AMS 创建或启动 ServiceRecord"]
-    D --> E["Service.onCreate / onStartCommand"]
-    E --> F{"及时调用 startForeground？"}
-    F -- "否" --> Y["停止服务并进入超时失败路径"]
-    F -- "是" --> G{"类型是 Manifest 子集？"}
-    G -- "否" --> Z["IllegalArgumentException"]
-    G -- "是" --> H{"类型权限与运行前提满足？"}
-    H -- "否" --> W["SecurityException 或类型异常"]
-    H -- "是" --> I["FGS 运行并展示通知"]
-    I --> J{"类型有运行时限？"}
-    J -- "否" --> K["业务完成后主动停止"]
-    J -- "是" --> L["系统累计该 UID 和类型的后台时长"]
-    L --> M{"额度耗尽或 shortService 到期？"}
-    M -- "否" --> K
-    M -- "是" --> N["Service.onTimeout"]
-    N --> O{"宽限期内停止？"}
-    O -- "是" --> K
-    O -- "否" --> P["shortService 触发 ANR；限时类型触发崩溃"]
-```
-
-`startForeground()` 成功只代表服务通过了本次晋升检查。后续资源访问、时间额度、用户停止和进程回收仍会改变结果。
+启动资格、服务回调中的及时晋升、类型校验和后续运行约束分别记录；失败路径各自取证。
 
 <!-- gracker-diagram: a275-05-fgs-start-promotion-runtime -->
 ![FGS启动、晋升与持续运行是三次检查](../../assets/diagrams/ch25/a275-05-fgs-start-promotion-runtime.png)
 
 图：startForeground成功代表本次晋升通过，不能推导资源永久可用、额度无限或进程不会退出。
+
+`startForeground()` 成功只代表服务通过了本次晋升检查。后续资源访问、时间额度、用户停止和进程回收仍会改变结果。
 
 ### 2. 从 `startForegroundService()` 到 `startForeground()`
 
@@ -512,7 +479,7 @@ FGS 不会把 Service 回调移出主线程。`onCreate()`、`onStartCommand()`�
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <application ...>
+    <application>
         <service
             android:name=".SyncService"
             android:exported="false"
@@ -549,7 +516,7 @@ class SyncService : Service() {
 
     override fun onTimeout(startId: Int, fgsType: Int) {
         scope.cancel("FGS time limit reached")
-        stopSelf(startId)
+        stopSelf()
     }
 
     override fun onDestroy() {
@@ -561,13 +528,27 @@ class SyncService : Service() {
 }
 ```
 
-`buildNotification()` 应只读取内存中的轻量状态，通知渠道应在更早阶段创建。`startId` 是系统为每次 Service 启动请求递增分配的编号，`stopSelf(startId)` 只会在该编号仍是最新请求时停止服务，可避免旧请求结束时误停新请求。真实项目还要让 `runSync()` 支持协作式取消，并做到幂等恢复，也就是同一任务重试多次不会重复写入结果或产生额外副作用。
+`buildNotification()` 应只读取内存中的轻量状态，通知渠道应在更早阶段创建。`startId` 是系统为每次 Service 启动请求递增分配的编号，`stopSelf(startId)` 只会在该编号仍是最新请求时停止服务，可避免旧请求结束时误停更新的启动请求，但不会等待更早的异步任务完成：最新请求先结束时，仍会停止整个 Service，触发 `onDestroy()` 取消旧工作。并发请求需要业务队列、合并规则或任务计数；超时路径取消全部工作后直接 `stopSelf()`，避免依赖可能过时的 startId。真实项目还要让 `runSync()` 支持协作式取消，并做到幂等恢复，也就是同一任务重试多次不会重复写入结果或产生额外副作用。
+
+<!-- gracker-diagram: a275-08-start-id-is-not-task-reference-count -->
+![最新startId先完成仍会停止整个Service](../../assets/diagrams/ch25/a275-08-start-id-is-not-task-reference-count.png)
+
+图：多个请求需队列、合并或任务计数；onTimeout取消全部工作后stopSelf，避免旧编号阻止停止。
 
 调用入口应记录用户动作，并处理当前状态不准启动 FGS 的结果：
 
 ```kotlin
 fun startUserRequestedSync(context: Context) {
     val intent = Intent(context, SyncService::class.java)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        startSyncOnApi31(context, intent)
+    } else {
+        ContextCompat.startForegroundService(context, intent)
+    }
+}
+
+@androidx.annotation.RequiresApi(31)
+private fun startSyncOnApi31(context: Context, intent: Intent) {
     try {
         ContextCompat.startForegroundService(context, intent)
     } catch (e: ForegroundServiceStartNotAllowedException) {
@@ -577,11 +558,6 @@ fun startUserRequestedSync(context: Context) {
 ```
 
 对 `ForegroundServiceStartNotAllowedException`，合适的处理是转入可延期任务或提示用户重试。类型专用权限与运行前提在 Service 调用 `startForeground()` 时校验，那里抛出的 `SecurityException` 不会同步返回这段调用代码；应在启动前核对前提，并把 Service 端异常纳入崩溃监控。
-
-<!-- gracker-diagram: a275-08-start-id-is-not-task-reference-count -->
-![最新startId先完成仍会停止整个Service](../../assets/diagrams/ch25/a275-08-start-id-is-not-task-reference-count.png)
-
-图：多个请求需队列、合并或任务计数；onTimeout取消全部工作后stopSelf，避免旧编号阻止停止。
 
 #### 3.3 `ActiveServices` 的四类校验结果
 
@@ -671,7 +647,7 @@ Context.startForegroundService() did not then call Service.startForeground()
 
 #### 5.4 Android 16 以后的 Job 配额
 
-从 Android 16 起，FGS 中启动的 `JobScheduler`、WorkManager 或 DownloadManager 工作仍消耗各自的运行配额。FGS 运行时长与 JobScheduler 配额没有合并成同一份计数，FGS 也替 Job 解除不了 App Standby 或调度额度。
+从 Android 16 起，FGS 中启动的 `JobScheduler`、WorkManager 或 DownloadManager 工作仍消耗各自的运行配额。FGS 运行时长与 JobScheduler 配额没有合并成同一份计数，FGS 会影响应用活跃状态和待机分组，例如长期 FGS 属于进入 active bucket 的官方条件；这仍不等于 Job 获得无限运行额度。
 
 对于用户明确触发的大文件传输，可以评估使用用户发起的数据传输任务（user-initiated data transfer，UIDT job）。这种 Job 专门表达用户已经启动且正在等待进度的数据传输。可延期、可重试、带网络或充电约束的工作更适合 WorkManager 或 JobScheduler。长时间 Worker 使用 FGS 时，仍要遵守 FGS 类型、启动和超时规则。
 
@@ -729,7 +705,7 @@ Job/Worker 收到停止，只表示调度器结束了本次执行，应用自建
 
 - 更高的 CPU 频率或固定调度优先级。
 - WakeLock、网络、传感器或存储资源。
-- Doze、App Standby、JobScheduler 配额豁免。
+- Doze 的通用豁免或 Android 16 起的 JobScheduler 无限配额。FGS 可以影响 App Standby 的活跃判断和 bucket，但不能据此忽略具体 Job、Alarm 与设备状态限制。
 - 免受 LMKD 回收的保证。
 - 后台 Activity 启动权。
 - 超出类型时间额度的运行权。
@@ -755,9 +731,9 @@ Job/Worker 收到停止，只表示调度器结束了本次执行，应用自建
 
 合法路径通常来自用户点击通知的 `PendingIntent`、当前可见窗口、系统角色或权限，以及官方列出的其他 BAL 例外。`PendingIntent` 是由创建方预先封装、允许另一方稍后以创建方身份发送的操作令牌，所以系统要同时检查创建方与发送方。`fullScreenIntent` 是通知触发的全屏入口，只适用于来电、闹钟等高优先级且满足通知权限与渠道条件的场景；普通 FGS 的展示页面不该拿它当入口。
 
-Android 14 起，发送 `PendingIntent` 的一方需要通过 `ActivityOptions.setPendingIntentBackgroundActivityStartMode()` 表达是否贡献自己的 BAL 权限；Android 15 起，创建方若要委托自身权限，也要显式设置创建方模式（creator mode）。API 36 新增了范围更窄的 `MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE`，它只在发送方可见时贡献权限，Android 17 建议优先采用该模式。
+在 Android 14 及以上且发送方 target ≥34 时，发送 `PendingIntent` 的一方需要通过 `ActivityOptions.setPendingIntentBackgroundActivityStartMode()` 表达是否贡献自己的 BAL 权限；在 Android 15 及以上且创建方 target ≥35 时，创建方若要委托自身权限，也要显式设置创建方模式（creator mode）。API 36 新增了范围更窄的 `MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE`，它只在发送方可见时贡献权限，Android 17 建议优先采用该模式。
 
-Android 17 把相同规则扩展到 `IntentSender.sendIntent()`。这段代码只在发送方可见时贡献 BAL 权限：
+Android 17 把相同规则扩展到 `IntentSender.sendIntent()`。固定 r1 中，旧默认行为还取决于 `balCoverIntentSender` 与 `COVER_INTENT_SENDER` 兼容变更；后者默认只对 target >36 启用，不能把新目标行为直接套到所有旧 target。这段代码只在发送方可见时贡献 BAL 权限：
 
 ```kotlin
 val options = ActivityOptions.makeBasic().apply {
@@ -812,15 +788,18 @@ Android 17 对播放、音频焦点和音量修改增加了后台状态检查。
 
 图：partial提示缺FGS，full提示FGS无WIU；强制模式用于故障注入，不能替代默认兼容行为。
 
-这组命令用于在测试设备上切换后台音频限制并查看相关记录。这里的 hardening 指平台新增的后台音频访问限制：
+音频调试命令要先用 `adb shell cmd audio help` 核对设备镜像。固定 `android-17.0.0_r1` 的 [`AudioManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java) 使用下面的覆盖和恢复命令：
 
 ```bash
-adb shell cmd audio set-enable-hardening enable
+adb shell cmd audio help
+adb shell cmd audio set-hardening enable
 adb shell dumpsys audio
 adb logcat | grep AudioHardening
+# 测试结束：清除覆盖，恢复平台默认策略
+adb shell cmd audio clear-hardening
 ```
 
-测试结束后可用 `set-enable-hardening disable` 恢复默认测试设置。`AudioHardening` 记录中的 `partial` 表示缺少 FGS，`full` 表示存在 FGS 但缺少 WIU 能力。
+当前[官网音频页面](https://developer.android.com/about/versions/17/changes/bg-audio)则使用 `set-enable-hardening <enable|disable|throw>`。其中 `enable` 会对所有 target 强制完整 WIU 检查，并取消默认策略中的精确闹钟豁免；`throw` 进一步改为可见失败，不能把这类强制模式的结果当作默认兼容策略。`disable` 是关闭全部限制，不能称为恢复默认。r1 的 `clear-hardening`（或 `set-hardening default`）才清除覆盖；其他镜像按其帮助与源码恢复原模式。`AudioHardening` 记录中的 `partial` 表示缺少 FGS，`full` 表示存在 FGS 但缺少 WIU 能力。
 
 相关的音频功耗与生命周期设计参见 [25.5 后台音频、AudioTrack 与 Offload 功耗](05-background-audio-audiotrack-offload.md)。
 

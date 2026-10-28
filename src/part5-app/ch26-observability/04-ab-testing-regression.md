@@ -4,9 +4,9 @@ chapter: '26.4'
 section: '26.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-04'
-last_source_verified_at: '2026-10-04'
-last_verified_against: Current Android Developers Macrobenchmark/StartupTimingMetric/TraceSectionMetric/PowerMetric/ActivityManager/ApplicationExitInfo docs, Firebase A/B Testing docs, and AOSP android-17.0.0_r1 AppExitInfoTracker/config sources retrieved 2026-10-04
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Current Android Developers Macrobenchmark/StartupTimingMetric/TraceSectionMetric/PowerMetric/ActivityManager/ApplicationExitInfo docs, Firebase A/B Testing docs, and AOSP android-17.0.0_r1 AppExitInfoTracker/config sources reviewed 2026-10-25; optional activation-event conditioning, cluster estimand weighting and exit fingerprint stability rechecked; no CI/device/production A/B run
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -95,7 +95,7 @@ last_idle_audit_at: '2026-10-04T10:40:33+08:00'
 
 随机化单元和统计单元必须一致——上表第一行要落到分析里，就是这一条。按用户分桶时，同一用户的多次启动、帧或会话是相关观测，统计时要当成一个整体：常见做法是先在用户级聚合再比较两组；必须保留事件级模型时，就用按随机化单元聚类的标准误，或按该单元做 bootstrap。少了这层处理，活跃用户贡献的更多事件会把置信区间压得过窄。
 
-落到工具上，Firebase A/B Testing 的 Remote Config 实验可以配置目标人群、基线与变体、权重和指标。官方文档里有两个容易忽略的点：进入实验结果的只有触发过激活事件 activation event 的目标用户，其他命中目标条件的用户仍可能收到实验值；实验一旦开始，变体权重也就固定了。
+落到工具上，Firebase A/B Testing 的 Remote Config 实验可以配置目标人群、基线与变体、权重和指标。官方文档里有两个容易忽略的点：若配置了可选激活事件（activation event），结果只纳入触发该事件的目标用户；其他命中条件的用户仍可能收到实验值。不要把这个条件说成每个实验都必须配置激活事件；实验一旦开始，变体权重也就固定了。
 
 自建平台应把“被分配”“成功获取”“成功激活”“使用功能”“成功上报”拆成一个漏斗来监控。主分析优先遵循预先指定的实验分配口径；按激活者做补充分析时，要说明这份数据可能受网络、启动成功率和变体自身崩溃的影响。
 
@@ -124,7 +124,7 @@ SRM 检查要覆盖全量与预注册关键分群，并沿“实验分配 → �
 
 ### 长尾指标的判定协议
 
-P90/P99 的主效应要直接定义为 `Qτ(variant) - Qτ(baseline)`：`Qτ` 是分位点函数，`τ` 取 0.90 或 0.99，`variant` 与 `baseline` 分别是实验组和基线组。区间也按同样的定义，直接为两组分位差构造；两组各自的分位值区间是否重叠，回答的是另一个问题，顶替不了差值区间。按用户或安装分桶时，聚类 bootstrap 必须按随机化单元重采样，并让被抽中的单元携带其全部合格事件；改成按帧、启动或请求重采样，会破坏单元内相关性，还会让高活跃用户获得额外权重。
+P90/P99 的主效应要直接定义为 `Qτ(variant) - Qτ(baseline)`：`Qτ` 是分位点函数，`τ` 取 0.90 或 0.99，`variant` 与 `baseline` 分别是实验组和基线组。区间也按同样的定义，直接为两组分位差构造；两组各自的分位值区间是否重叠，回答的是另一个问题，顶替不了差值区间。按用户或安装分桶时，聚类 bootstrap 必须按随机化单元重采样，并让被抽中的单元携带其全部合格事件；改成独立按帧、启动或请求重采样会破坏单元内相关性。还要另定估计目标：合并全部事件的分位值本来就按事件数让高活跃单元贡献更多权重；若要等用户权重，应明确定义用户加权经验CDF等目标，并在每次单元重采样中保持同一权重规则。聚类重采样本身不会把事件分位值自动变成用户等权分位值。
 
 尾部报告要给的比一个 P99 多：预先登记体验阈值 `L`，报告 `P(X > L)` 的违约率、超过阈值的时长（excess duration）、独立实验单元数和每单元事件分布。若区间同时包含可接受改善和不可接受退化，结论就记为证据不足 inconclusive；此时正确的做法是呈现不确定性本身，单点方向替代不了它。
 
@@ -286,8 +286,8 @@ Android 17 / API 37 的 `ApplicationExitInfo.getAnrInfo()` 可在 `REASON_ANR` �
 
 接入 A/B 平台时可这样处理：
 
-- 进程启动后在后台读取最近记录，用 `processName`、`timestamp`、`reason`、`status`、`processStateSummary` 和 trace 摘要生成去重键，PID 只作辅助字段。
-- 保存已消费的稳定游标或摘要，避免每次启动重复上报；系统保留窗口有限，不能依赖低频轮询找回全部退出事件。
+- 进程获得运行机会后在后台重扫当前仍保留的记录。对时间戳、PID/UID、进程名和原因/状态等身份字段作带版本的无歧义编码，建立尽力去重指纹；可缺失、稍后补充或失效的trace/状态摘要作为附件，不加入必须稳定的身份键。PID会复用，指纹也不是平台保证唯一的事件ID。
+- 已落盘待传与已ACK项都参与去重，记录和索引以唯一约束原子提交；ACK后才推进可回收状态。重扫允许重叠，不以严格最大wall-clock时间戳作为唯一游标，避免漏同毫秒或校时后的记录。系统历史有界，低频轮询不能找回已被覆盖的事件。
 - 按 `reason`、ANR 类型和变体分桶聚合，`description` 只进入受控明细；PSS/RSS 为 0 时标记为不可用，不做插值。
 - 发现 trace 后立即在字节上限内复制到应用私有目录并关闭流。`REASON_CRASH_NATIVE` 在 API 31 及以上对应前述 Protocol Buffers 格式 tombstone，其他 `reason` 也可能附带较早的 ANR trace；保留实际 `reason` 与 trace 类型两个字段，每个非空流按自身格式处理，统一当文本或统一标为 ANR 都会引入错误。
 - `setProcessStateSummary()` 只在变体或关键场景变化时更新，并捕获限流异常。服务端实验分配日志仍是实验归属的主记录，进程状态摘要只在进程死亡时作补充证据。

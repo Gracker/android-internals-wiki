@@ -3,7 +3,7 @@ title: "第 17 章：APM 工具与性能监控生态"
 chapter: "17.0"
 section: "17.0"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-08-14"
+last_verified: "2026-10-26"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.7", "15.3", "16.1"]
@@ -35,13 +35,13 @@ sources:
   - type: github
     path: https://github.com/measure-sh/measure
   - type: official
-    path: https://www.geekbench.com/download/android/
+    path: https://www.geekbench.com/download/
   - type: official
     path: https://benchmarks.ul.com/3dmark-android
   - type: official
     path: https://benchmarks.ul.com/pcmark-android
   - type: official
-    path: https://browserbench.org/Speedometer3.1/
+    path: https://www.browserbench.org/Speedometer3.1/
   - type: official
     path: https://www.antutu.com/web/download
   - type: github
@@ -63,25 +63,30 @@ last_consolidated_at: '2026-08-24'
 
 ## 全景分类
 
-工具按四个层级组织：App 层负责设备内采集，Framework（框架）层提供平台或 Jetpack（Android 官方支持库）API，平台层负责数据汇聚与分析，System 层用于实验室基准测试和自动化。“状态”描述截至 2026-08-14 的公开维护信号和本章建议用途，不代表市场占有率。仓库最近有提交只说明代码仍在变化，不能单独证明它兼容 Android 17、当前 AGP（Android Gradle Plugin）或所有 ABI（Application Binary Interface，应用二进制接口）；接入结论仍需按具体版本实测。
+这里按职责分成四组：客户端采集器、平台/Jetpack API、数据平台，以及实验室基准与自动化。它们不是四层固定调用栈：Jetpack 仍运行在应用中，System 组也不意味着拥有系统特权。版本与用途按2026-10-26核对，具体固定源码、制品和实验限制见相应小节；维护活跃、仓库有提交或发布了新版本，都不能单独证明兼容 Android17、当前 AGP 或所有 ABI。
+
+<!-- gracker-diagram: ch17-00-02-roles -->
+![采集、API、平台和实验室的职责](../../assets/diagrams/ch17/ch17-00-02-roles.png)
+
+图：平台 API、端侧采集器、服务端与实验室分别承担事实读取、有限采集、分析和受控测量。 这是职责与证据关系，Jetpack 仍在应用中运行，实验室工具也不因此获得系统特权。
 
 ### App 层：客户端 APM 框架
 
 表中的“线上”指生产环境中的用户设备，“线下”指开发、测试或实验室环境。
 
-| 工具 | 来源 | 核心能力 | 线上/线下 | 状态 |
-|------|------|----------|-----------|------|
-| Matrix | 腾讯微信 | 卡顿、启动、I/O、内存、APK 检查 | 线上 | 成熟项目；最近公开提交较早，接入前验证 AGP 与平台 API |
-| KOOM | 快手 | Java / Native（C/C++）/ 线程泄漏、OOM | 线上 | 有近期维护记录；接入前验证目标 API 与 ABI |
-| btrace / RheaTrace | 字节跳动 | 运行时 Hook、同步抓栈与方法 trace | 受控诊断 | Android 17 需修复 ART 私有接口与 16 KB 兼容性，不直接接入生产项目；详见 17.2 |
-| LeakCanary | Square | Activity / Fragment / ViewModel 泄漏检测 | 线下 | 活跃维护；适合开发与测试阶段 |
-| BlockCanary | — | 主线程卡顿堆栈捕获 | 线上 | 维护停滞；仅作原理参考 |
-| DoKit | 滴滴 | FPS（每秒帧数）、启动、网络、调试工具箱 | 线下 | 维护频率较低；以线下调试为主 |
-| ArgusAPM | 360 | UI（界面）、网络、内存、卡顿、ANR | 线上 | 历史项目；仅作原理参考 |
-| Measure | 开源 | 崩溃、ANR、trace、会话时间线 | 线上 | 活跃维护 |
-| AndroidGodEye | 开源 | CPU、内存、网络、电量、FPS | 线下 | 历史项目；仅作原理参考 |
-| Collie | 开源 | FPS、卡顿、流量、内存、启动 | 线上 | 历史项目；仅作原理参考 |
-| Rabbit | 开源 | 测速、慢函数、网络、卡顿、FPS | 线上+线下 | 历史项目；仅作原理参考 |
+| 工具 / 来源 | 主要机制 | 用途与边界 |
+|---|---|---|
+| Matrix / 腾讯微信 | 卡顿、启动、I/O、内存；另有构建期 APK 检查 | 运行时插件与构建插件分别接入；固定版本验证 AGP 和平台私有接口 |
+| KOOM / 快手 | Java OOM、Native 与线程泄漏诊断 | 线上有界触发；堆快照、线程和 ELF 路径各有 API/ABI 限制 |
+| btrace / RheaTrace / 字节跳动 | 3.0运行时动态Hook与同步抓栈；2.0编译期全量插桩另论 | 受控诊断；固定基线仍有 Android17 ART 私有接口和16KB制品问题，详见17.2 |
+| LeakCanary / Square | 对象保留与引用链分析 | 开发/测试为主，保留不自动等于泄漏，Hprof 与分析成本另控 |
+| DoKit / 滴滴 | 网络、UI 与性能调试工具箱 | 线下调试为主；release 需核对依赖、构建插件与运行时注册 |
+| Measure / 开源 | 崩溃、ANR、trace 与会话关联 | SDK、构建上传插件、后端与隐私策略共同验收，详见17.4 |
+| BlockCanary | 历史主线程卡顿采样 | 按固定旧实现学习原理，不直接当作 Android17 已验收方案 |
+| ArgusAPM / 360 | 历史 UI、网络、内存与 ANR 采集 | 固定历史实现参考，不能把旧 target 或可构建当作现代行为证明 |
+| AndroidGodEye | 历史 CPU、内存、网络、电量与 FPS 采集 | 以开发期和历史原理参考为主，逐项核验私有接口与指标含义 |
+| Collie | 历史 FPS、卡顿、流量、内存与启动采集 | 旧采集路径与统计分母见17.5，不替代系统证据 |
+| Rabbit | 历史测速、慢函数、网络与卡顿采集 | 以固定实现作原理参考，不默认兼容现代后台与隐私约束 |
 
 <!-- gracker-diagram: ch17-00-03-app-scope -->
 ![按运行条件选择客户端工具](../../assets/diagrams/ch17/ch17-00-03-app-scope.png)
@@ -90,22 +95,22 @@ last_consolidated_at: '2026-08-24'
 
 ### Framework 层：Google 官方 SDK（软件开发工具包）
 
-| 工具 | Jetpack / 平台模块 | 核心能力 | 状态 |
-|------|-------------------|----------|------|
-| JankStats | `androidx.metrics:metrics-performance` 1.0.0 | 检测卡顿帧，并附带当时的 UI 状态 | 稳定版 |
-| FrameMetrics | `android.view.FrameMetrics` / `Window.OnFrameMetricsAvailableListener`（API 24+） | 细分一帧各阶段的耗时；`FrameMetricsAggregator` 提供 AndroidX 聚合 | 平台稳定能力 |
-| Tracing SDK | `androidx.tracing:tracing-*` 2.0.0；旧 `tracing-perfetto` / `-binary` / `-handshake` 1.0.1 | 系统 trace 区间，以及 2.0 新增的进程内缓冲区、flow（跨事件关联）、annotation（键值注释）和协程 trace | 稳定版；两组产物需区分 |
-| Microbenchmark（微基准） | `androidx.benchmark` | 测量一小段代码的执行时间和内存分配 | 稳定能力 |
-| Macrobenchmark（宏基准） | `androidx.benchmark` | 从应用外部测量启动、滑动和复杂 UI，从操作触发一直覆盖到结果展示 | 稳定能力 |
-| Baseline Profiles（基线配置文件） | Android Gradle Plugin / Jetpack | 提供关键代码路径，让 ART（Android Runtime）提前生成 AOT（Ahead-of-Time，预先编译）代码；Play Cloud Profiles 是按真实设备数据生成的云端配置 | 稳定能力 |
-| ProfilingManager | `android.os` | Android 15（API 35）起请求堆内存采样（heap profile）、Java 堆转储（heap dump）、调用栈采样（stack sampling）和系统 trace | 新平台能力 |
-
-Tracing 2.0 的新接口把带字段的事件写入应用进程控制的缓冲区，Android Studio 的 System Trace 目前不会自动采集这部分数据；Benchmark 1.5 可以在测试结束后合并，核验时最新版本为 1.5.0-rc01（RC，候选发布版）。低频、希望始终进入系统 trace 缓冲区的事件，仍适合使用 `Trace.beginSection` 或 `androidx.tracing.trace {}`。这里的 slice 指带开始和结束时间的区间事件。
+| 工具 | 当前坐标 / 能力 | 输出与边界 |
+|---|---|---|
+| JankStats | <code>androidx.metrics:<wbr>metrics-performance</code> `1.0.0` | 帧数据、jank启发式与UI状态；不是根因判断或Perfetto文件 |
+| FrameMetrics | 平台 `FrameMetrics` 与 Window listener，API24+ | 宿主Window帧阶段耗时；AndroidX aggregator可聚合，不代替纯Flutter的FrameTiming |
+| Tracing SDK | 当前稳定 `2.0.5`；本章固定研究 `2.0.0`；旧Perfetto三组件 `1.0.1`另属一组 | 经典系统section与2.0进程内事件分别采集；API21–22兼容线为`1.3.0`，固定2.0.0 Android变体API23+ |
+| Microbenchmark | 当前稳定 Benchmark `1.5.0`，API24+ | 局部代码计时与按配置读取的分配指标；固定历史示例`1.4.1`的规则另见17.6 |
+| Macrobenchmark | 当前稳定 Benchmark `1.5.0`，API24+ | 从外部驱动用户场景，启动/帧等指标按各自定义确定终点，不自动等于所有操作到面板可见 |
+| Baseline Profiles | 关键路径的 ART 编译引导；与 Play Cloud Profiles 互补 | AOT收益需设备测量；Profile生成、安装与收益验证是不同步骤 |
+| ProfilingManager | API35+ app-driven；API36/36.1/37逐步扩展系统trigger | 受控heap/stack/system trace，结果、限流和脱敏由平台决定；并非任意全系统采集权 |
 
 <!-- gracker-diagram: ch17-00-04-official-signals -->
 ![帧数据、Window 阶段和系统受控采集](../../assets/diagrams/ch17/ch17-00-04-official-signals.png)
 
 图：JankStats、FrameMetrics 与 ProfilingManager 输出不同类型的性能证据。 jank 启发式不独立证明根因，宿主 Window 也不能替代 Flutter engine 的 FrameTiming。
+
+Tracing2.0 的新接口写应用进程控制的缓冲区，需要明确导出，或用支持的 Benchmark1.5 线合并到测试结果；当前稳定版为1.5.0，另有1.6.0-alpha01预发布。不能因为抓到了系统trace，就假定里面已经包含这份进程内数据。低频且希望进入系统trace的事件仍可使用 `Trace.beginSection` 或经典 `androidx.tracing.trace {}`。本章17.2分析固定2.0.0制品，当前稳定2.0.5的信息单独保留。
 
 <!-- gracker-diagram: ch17-00-05-trace-buffers -->
 ![系统 trace 与进程内缓冲分别采集](../../assets/diagrams/ch17/ch17-00-05-trace-buffers.png)
@@ -121,7 +126,7 @@ Tracing 2.0 的新接口把带字段的事件写入应用进程控制的缓冲�
 | APMPlus | 字节/火山引擎 | 移动 APM 平台 | 商业平台 |
 | Bugly | 腾讯 | 崩溃 + ANR 上报 | 商业平台 |
 | CAT | 美团开源 | 分布式监控（偏服务端） | 服务端方案；移动端仅作关联参考 |
-| PerfDog | 腾讯 WeTest | 免 Root（无需系统超级用户权限）测试 FPS / CPU / GPU / 内存 / 功耗 | 商业测试工具 |
+| PerfDog | 腾讯 WeTest | 实验室设备帧、CPU、内存等采集；GPU/功耗能力按机型和模式核对 | 商业测试工具，不作为线上用户设备通用SDK |
 
 托管服务的可用功能、计费、数据存储和处理地区、隐私条款会变化，选型时应以部署区域的官方说明和合同为准。
 
@@ -132,19 +137,14 @@ Benchmark（基准测试）用固定的一组操作（工作负载）比较设�
 | 工具 | 定位 | 状态 | 使用边界 |
 |------|------|------|----------|
 | Geekbench 7 | CPU 单核/多核 + GPU Compute（通用 GPU 计算） | 当前版本 | Android 12+、至少 4 GB 内存；旧版本分数应保留为独立基线 |
-| AnTuTu（安兔兔） | 综合性能（CPU / GPU / 内存 / UX，即用户体验） | Android 11.1.4（核验时） | 工具版本与 3D 资源包必须一致；结果还受温度和机型配置影响 |
+| AnTuTu（安兔兔） | CPU / GPU / 内存 / UX综合工作负载 | 当前Android标准版 `12.0.3`（2026-10-23） | 记录应用和3D资源包；V12新建基线，未有官方兼容声明前不与V11/V10混合 |
 | 3DMark | GPU + 游戏性能 | 当前维护 | 固定 Steel Nomad Light、Solar Bay、Wild Life 等具体测试及其版本；压力测试与单次跑分分开记录 |
 | PCMark | 生产力、日常使用与存储测试 | Android 3.1.4113（核验时） | 固定 Work 3.0 或 Storage 2.0；不同工作负载版本的分数不能直接比较 |
-| Speedometer 3.1 | 浏览器 / WebView 内 Web 应用的响应速度 | 当前 Web benchmark | 结果受浏览器内核、WebView 版本和设备热状态影响 |
-| CPDT | 跨平台存储读写测试 | 公开版 2.4.0；发布节奏较慢 | 用于补充存储吞吐观察，仍要结合设备温度、缓存和文件系统状态复核 |
-| SoloPi | 自动化测试与设备端性能采集 | 维护频率较低 | 适合专项测试，不能替代系统 trace |
+| Speedometer 3.1 | 浏览器Web应用工作负载的响应性 | 本章固定版本 | 固定浏览器/目标WebView内核、测试框架与设备状态；能运行不代表各种内核结果可直接互换 |
+| CPDT | 跨平台存储读写测试 | 本章固定2.4.0实现样本 | 固定块大小、线程、缓存/缓冲与读写模式，再结合温度和文件系统复核 |
+| SoloPi | 自动化操作与设备端采样 | 固定源码验证节点、补丁与采样路径 | 适合专项复现；目标API/权限/指标需实测，不能替代系统trace |
 
-Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推荐入口。它们保留在具体小节里，用于阅读旧报告或理解历史方案：Vellamo 已下架；旧版 AndroBench / A1 SD Bench 以早期存储权限、文件路径和测试模型为前提，结果不能直接代表现代 UFS（Universal Flash Storage，通用闪存存储）或真实应用负载；Emmagee 对 Android 10+ 的权限、后台限制和进程模型覆盖不足。
-
-<!-- gracker-diagram: ch17-00-02-roles -->
-![采集、API、平台和实验室的职责](../../assets/diagrams/ch17/ch17-00-02-roles.png)
-
-图：平台 API、端侧采集器、服务端与实验室分别承担事实读取、有限采集、分析和受控测量。 这是职责与证据关系，Jetpack 仍在应用中运行，实验室工具也不因此获得系统特权。
+Vellamo、AndroBench、A1 SD Bench、Emmagee 在本章作为历史实现或旧报告入口。它们的工作负载、存储权限与采集路径不能直接代表现代 UFS 或真实应用负载；Emmagee 对现代权限、后台与进程模型也要逐项核查。旧数据冻结在原工具/版本字段，新设备库使用明确版本的新基线；“改用新工具”不意味着旧分数可以换算后拼接。
 
 <!-- gracker-diagram: ch17-00-06-benchmark-baseline -->
 ![固定工作负载与版本后才比较分数](../../assets/diagrams/ch17/ch17-00-06-benchmark-baseline.png)
@@ -153,7 +153,7 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推�
 
 ## 与其他章节的关系
 
-- **第 14 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace/RheaTrace 可以把方法调用写成可导入 Perfetto 的 trace 数据；`Trace.beginSection` / `androidx.tracing.trace {}` 把 slice 写入系统 trace 缓冲区，Tracing 2.0 还提供应用进程控制的记录方式。JankStats 不生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank（异常卡顿帧）和 UI state（当时的界面状态），适合与 Perfetto、FrameTimeline（系统记录的帧时间线）和 Tracing SDK 一起定位原因。
+- **第 14 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace3.0把Hook点同步抓栈写成可导入Perfetto的数据，2.0编译期插桩数据按对应旧工具链解释；`Trace.beginSection` / `androidx.tracing.trace {}` 把 slice 写入系统 trace 缓冲区，Tracing 2.0 还提供应用进程控制的记录方式。JankStats 不生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank（异常卡顿帧）和 UI state（当时的界面状态），适合与 Perfetto、FrameTimeline（系统记录的帧时间线）和 Tracing SDK 一起定位原因。
 - **第 15 章（其他分析工具）**：15.10 统一说明第三方性能库、APM 可观测性（通过指标、日志和 trace 了解运行状态）选型与 Hook（拦截或替换调用）基础设施；第 17 章分别展开具体工具。
 - **第 16 章（方法论）**：16.3 和 16.1 说明线上监控，以及问题交接、负责人、修复和回归检查流程；第 17 章说明各工具的能力与边界。
 
@@ -180,10 +180,13 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推�
 
 ## 阅读建议
 
+选型先确定需要回答的问题和可用证据。17.1—17.7说明工具与实验方法；17.8—17.11沿网络、退出、资源与混合栈解释采集机制；17.12把这些入口接到有界队列、可恢复spool与受控上传。
+
 - 初次搭建线上 APM：先读 17.1，再按当前问题选择 2—3 个工具。
 - 已在使用某个工具：直接进入对应条目核对实现与边界。
 - 需要选型：结合 15.10 的基础设施边界和各工具的详细分析。
 - 关注回归与实验室测试：17.6 负责 Jetpack Benchmark 测量协议，17.7 负责操作复现、设备 Benchmark 与性能档位分组。
+
 
 <!-- gracker-diagram: ch17-00-08-reading-map -->
 ![从工具入口走向采集机制与端侧集成](../../assets/diagrams/ch17/ch17-00-08-reading-map.png)

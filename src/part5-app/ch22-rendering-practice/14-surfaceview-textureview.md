@@ -16,7 +16,7 @@ related_chapters:
 - '2.1'
 - '13.3'
 - '13.11'
-last_verified: '2026-08-15'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1；Compose BOM 2026.08.00 / UI 与 Foundation 1.12.0（963bf914f78b389bdddef0da7f36bee19d897274）；android17-6.18-2026-06_r6；CameraX PreviewView 与 Media3 Surface 官方文档
 confidence: high
 last_review_finalize_at: '2026-08-15T05:59:06+08:00'
@@ -77,7 +77,7 @@ sources:
 - **layer**：SurfaceFlinger 可独立定位、裁剪并参与合成的图层。`TextureView` 的 `TextureLayer` 是 HWUI 对象，不属于 SurfaceFlinger layer。
 - **transaction**：一组原子提交的图层或 buffer 更新；同一 transaction 内的状态一起生效，但不会让尚未完成的 buffer 提前就绪。
 - **fence**：跨 CPU、GPU 与显示硬件同步的完成信号。acquire fence 保护即将读取的 buffer，release fence 表示旧 buffer 可以复用，present fence 标记一次显示提交的完成边界。
-- **latch / present**：latch 表示 SurfaceFlinger 为某个显示周期选中一块已就绪 buffer；present 表示该周期已经交给显示路径，仍早于面板像素的光学响应完成。
+- **latch / present**：latch 表示 SurfaceFlinger 为某个显示周期采纳候选 buffer；特定 latch-unsignaled 路径下 acquire fence 此刻仍可能未就绪；present 表示该周期已经交给显示路径，仍早于面板像素的光学响应完成。
 - **HWC 与 DEVICE / CLIENT composition**：HWC（Hardware Composer，硬件合成器）按当前整屏图层集合选择合成方式。DEVICE 表示交给显示硬件处理；CLIENT 表示 RenderEngine 先用 GPU 合成 client target（供 HWC 使用的中间整屏目标）。
 - **BLAST**：Android 用来协调 BufferQueue 内容与 `SurfaceControl.Transaction` 的缓冲提交路径，源码和 trace 中常见 `BLASTBufferQueue`、BLAST child 与 `BufferTX`。
 - **hole-punch**：宿主窗口把 `SurfaceView` 对应区域处理为透明，露出处在更低合成层级的独立内容图层。
@@ -95,10 +95,12 @@ sources:
 | --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `SurfaceView`、`TextureView`、BLAST、HWUI、SurfaceFlinger、HWC |
 | Android 内核 | `android17-6.18-2026-06_r6` | sync file、dma-fence 等底层同步语义 |
-| Jetpack Compose | Compose BOM 2026.08.00；UI 与 Foundation 1.12.0 | `AndroidView` 与外部 Surface 的互操作边界 |
-| Media3 / CameraX | 使用项目锁定的稳定版 | 组件策略独立发布，不能由 platform tag 代替 |
+| Jetpack Compose | 固定 Compose BOM 2026.08.00；UI / Foundation 1.12.0 | `AndroidView` 与外部 Surface 的互操作边界 |
+| Media3 / CameraX | 本次额外核对 CameraX 1.6.2 / Media3 1.11.1；工程仍锁定实际依赖 | 组件策略独立发布，不能由 platform tag 代替 |
 
 版本演进只覆盖 Android 12—17 的现代路径；Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。
+
+固定源码行为与当前发布版本分开记录：2026-10-25，UI 与 Foundation 当前稳定版均为 1.12.1，本文互操作实现仍按指定 commit 的 1.12.0；CameraX 的回退分支按实际 1.6.2 发布源码核对。
 
 几项常见描述需要按当前实现收窄：
 
@@ -181,6 +183,8 @@ Android 17 的主要执行点如下：
 
 `onSurfaceTextureUpdated()` 发生在 UI 线程提交 layer update 之后，不能证明 RenderThread 已取得输入、GPU 已完成采样或画面已经 present。
 
+固定 Android 17 的 `ASurfaceTexture_dequeueBuffer()` 路径还会丢弃除最新一块外的中间排队输入。某块输入已经 queue，不代表它必然被 HWUI 采样或最终呈现；排查视频/相机丢帧时应保留 Producer frame number 与实际采样内容的关联。
+
 ### 一张图比较两条路径
 
 这张图只保留决定选型的对象边界。
@@ -242,7 +246,7 @@ SurfaceView 也可能迟到：
 
 评估触摸到显示、相机 sensor 到预览或解码到显示时，应给起点和终点下定义。Perfetto 的 present fence 只能提供 Android 显示栈边界，不能代替光电传感器测得的 panel 响应。
 
-### 功耗优势依赖 DEVICE composition
+### 功耗差异要连同合成策略测量
 
 SurfaceView 常用于视频和相机，因为独立 layer 能交给 HWC 单独评估。若该 layer 满足格式、缩放、旋转、颜色、保护和 plane 资源等要求，HWC 可以选择 DEVICE composition，从而避免宿主 GPU 对大面积内容再次采样。
 
@@ -276,9 +280,9 @@ TextureView 的输入必须经宿主 GPU 采样。外部 buffer 通常以 `AHard
 
 SurfaceView 页面通常有宿主窗口队列与独立内容队列；TextureView 页面有外部 `SurfaceTexture` 队列与宿主窗口队列。两者都有两套 buffer 周转，只是 Consumer 和最终 layer 位置不同。
 
-一块单平面、未压缩 buffer 的粗略下界可以按这个式子估算：
+一块单平面、未压缩 buffer 的粗略占用估算必须先说明 stride 单位：
 
-`rowStride × allocationHeight × bytesPerPixel`
+`rowStrideBytes × allocationHeight`；若 stride 以像素计，则是 `stridePixels × allocationHeight × bytesPerPixel`。`Image.Plane.getRowStride()` 的单位已经是字节，不能再乘一次每像素字节数。
 
 YUV、多平面、压缩 modifier、tile 对齐、metadata、HDR 与厂商 gralloc 会改变占用，不能只用 `width × height × 4`。总量还取决于：
 
@@ -330,18 +334,20 @@ SurfaceView 的 position、matrix、crop、alpha、composition order、show/hide
 
 硬件加速路径使用 `RenderNode.PositionUpdateListener` 取得最终位置和 host frame number，再经 `ViewRootImpl.mergeWithNextTransaction()` 与宿主目标帧合并。UI 线程的其他更新可由 `applyTransactionOnDraw()` 随下一次 ViewRoot draw 应用。
 
+这些是 SurfaceView 自己维护的状态。公开 `getSurfaceControl()` 返回值只定义了把自建子层挂在它下面的用途，近似只读；不要对这个返回对象直接改 position、crop、alpha 等 SurfaceView 管理属性，后续内部更新会覆盖它们。需要视觉效果时优先使用公开的 View/SurfaceView 属性或受支持的事务接口。
+
 需要把状态绑定到 SurfaceView 下一块内容 buffer 时，可以使用 `applyTransactionToFrame()`。源码按 `lastAcquiredFrameNum + 1` 合并目标 transaction。对连续出帧的 Producer 来说，“下一块”不能映射成业务上的固定逻辑帧；没有新内容 buffer 时，该更新也可能不生效。
 
 ### `apply()`、sync 与 async
 
-公开 `Transaction.apply()` 会原子提交这笔 transaction 内的状态，并清空对象供后续复用。它走非同步 apply；源码中的 `apply(boolean sync)` 是隐藏入口，注释直接称其为更容易造成 jank 的版本。
-
-应用不应为了“立刻看到”而寻找同步 apply。原子提交只保证同一 transaction 内的状态一起应用，不保证 acquire fence 已完成，也不保证指定 display 已 present。需要控制目标时间时，API 35 提供 `setDesiredPresentTimeNanos()` 与 `setFrameTimeline(vsyncId)`；它们是调度提示，不能让未完成 buffer 越过 fence。
+公开 `Transaction.apply()` 会原子提交这笔 transaction 内的状态，并清空对象供后续复用。固定实现调用 `apply(sync=false, oneWay=false)`：没有等待同步应用，但也不是 one-way Binder 调用；隐藏的 `applyAsyncUnsafe()` 才走 one-way，且明确警告可能乱序；`apply(boolean sync)` 是隐藏入口，注释直接称其为更容易造成 jank 的版本。
 
 <!-- gracker-diagram: a245-14-transaction-apply-modes -->
 ![apply的同步标志与one-way分开](../../assets/diagrams/ch22/a245-14-transaction-apply-modes.png)
 
 图：原子应用、调用返回和指定显示present是不同边界。
+
+应用不应为了“立刻看到”而寻找同步 apply。原子提交只保证同一 transaction 内的状态一起应用，不保证 acquire fence 已完成，也不保证指定 display 已 present。需要控制目标时间时，API 35 提供 `setDesiredPresentTimeNanos()` 与 `setFrameTimeline(vsyncId)`；它们是调度提示，不能让未完成 buffer 越过 fence。
 
 ### 没有 `BufferChangedListener`
 
@@ -356,6 +362,8 @@ API 37 的公开回调应按用途区分：
 | present fence | 本次 display present 的完成边界 | 最终 display 时序反馈 |
 
 BLAST 内部还有 buffer transaction、frame number 和 release callback。分析时要写明对象和队列，不能把任意回调统称为“buffer changed”。
+
+`TransactionStats.getLatchTimeNanos()` 是 CLOCK_MONOTONIC 下的采纳/排队时间；精确呈现要看其 `getPresentFence()` 信号。固定实现会在 listener 正常返回后关闭内部 stats；调用方取得的是新 fence 引用，需自行 `close()`，设备不支持 present fence 时还可能得到无效 fence。不要在回调后保留内部 stats 当作长期有效资源。
 
 <!-- gracker-diagram: a245-15-transaction-callback-fences -->
 ![transaction回调与实际同步信号](../../assets/diagrams/ch22/a245-15-transaction-callback-fences.png)
@@ -414,34 +422,43 @@ private interface FrameProducer {
     fun detachAndWaitUntilIdle()
 }
 
-surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
-    override fun surfaceCreated(holder: SurfaceHolder) {
-        producer.attach(holder.surface)
-    }
+private fun installSurfaceProducer(
+    surfaceView: SurfaceView,
+    producer: FrameProducer,
+): SurfaceHolder.Callback {
+    val callback = object : SurfaceHolder.Callback {
+        override fun surfaceCreated(holder: SurfaceHolder) {
+            producer.attach(holder.surface)
+        }
 
-    override fun surfaceChanged(
-        holder: SurfaceHolder,
-        format: Int,
-        width: Int,
-        height: Int,
-    ) {
-        producer.resize(width, height, format)
-    }
+        override fun surfaceChanged(
+            holder: SurfaceHolder,
+            format: Int,
+            width: Int,
+            height: Int,
+        ) {
+            producer.resize(width, height, format)
+        }
 
-    override fun surfaceDestroyed(holder: SurfaceHolder) {
-        producer.detachAndWaitUntilIdle()
+        override fun surfaceDestroyed(holder: SurfaceHolder) {
+            producer.detachAndWaitUntilIdle()
+        }
     }
-})
+    surfaceView.holder.addCallback(callback)
+    return callback
+}
 ```
 
 `detachAndWaitUntilIdle()` 必须保证 EGL/Vulkan、codec、camera 或远端 Producer 不再碰旧 Surface。只发一个异步 stop 消息后立即返回，仍可能与底层销毁竞态。
 
-Android 14 起，`setSurfaceLifecycle()` 可选择随 visibility 或 attachment 管理 Surface。attachment 策略能在暂时不可见时保留 Surface，减少重建，也会延长 buffer 和 Producer 资源寿命。Media3 的 `PlayerView` 从 Android 14 起会利用 attachment 策略改善滚动/复用时机。
+注册示例应在 holder Surface 创建前安装，owner 结束时移除返回的 callback，并按同一停止契约处理当前生产方。同步停止不能反过来等待主线程执行一个停止任务，否则主线程销毁回调等待工作线程、工作线程又等待主线程，会形成死锁；长期硬件释放要在业务生命周期中提早停止，不能把无界等待留到销毁回调。
 
 <!-- gracker-diagram: a245-18-holder-producer-lifecycle -->
 ![SurfaceHolder回调约束生产方所有权](../../assets/diagrams/ch22/a245-18-holder-producer-lifecycle.png)
 
 图：Activity恢复和View附着不能替代Surface可用边界；停止流程不可等待主线程形成死锁。
+
+Android 14 起，`setSurfaceLifecycle()` 可选择随 visibility 或 attachment 管理 Surface。attachment 策略能在暂时不可见时保留 Surface，减少重建，也会延长 buffer 和 Producer 资源寿命。Media3 的 `PlayerView` 从 Android 14 起会利用 attachment 策略改善滚动/复用时机。
 
 <!-- gracker-diagram: a245-19-surface-lifecycle-strategies -->
 ![可见性与attachment两种Surface寿命](../../assets/diagrams/ch22/a245-19-surface-lifecycle-strategies.png)
@@ -461,46 +478,62 @@ private interface TextureFrameProducer {
     fun detachAndWaitUntilIdle()
 }
 
-private var producerSurface: Surface? = null
-
-textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-    override fun onSurfaceTextureAvailable(
-        surfaceTexture: SurfaceTexture,
-        width: Int,
-        height: Int,
-    ) {
-        producerSurface = Surface(surfaceTexture).also {
-            textureProducer.attach(it, width, height)
+private fun installTextureProducer(
+    textureView: TextureView,
+    textureProducer: TextureFrameProducer,
+) {
+    var producerSurface: Surface? = null
+    textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+        override fun onSurfaceTextureAvailable(
+            surfaceTexture: SurfaceTexture,
+            width: Int,
+            height: Int,
+        ) {
+            val target = Surface(surfaceTexture)
+            producerSurface = target
+            try {
+                textureProducer.attach(target, width, height)
+            } catch (failure: Exception) {
+                try {
+                    textureProducer.detachAndWaitUntilIdle()
+                } finally {
+                    target.release()
+                    producerSurface = null
+                }
+                throw failure
+            }
         }
-    }
 
-    override fun onSurfaceTextureSizeChanged(
-        surfaceTexture: SurfaceTexture,
-        width: Int,
-        height: Int,
-    ) {
-        textureProducer.resize(width, height)
-    }
+        override fun onSurfaceTextureSizeChanged(
+            surfaceTexture: SurfaceTexture,
+            width: Int,
+            height: Int,
+        ) {
+            textureProducer.resize(width, height)
+        }
 
-    override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) = Unit
+        override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) = Unit
 
-    override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-        textureProducer.detachAndWaitUntilIdle()
-        producerSurface?.release()
-        producerSurface = null
-        return true
+        override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
+            textureProducer.detachAndWaitUntilIdle()
+            producerSurface?.release()
+            producerSurface = null
+            return true
+        }
     }
 }
 ```
 
 返回 `true` 表示由 TextureView 释放当前 SurfaceTexture；返回 `false` 表示调用方接管，后续必须自行调用 `release()`。应用通过 `Surface(surfaceTexture)` 创建的包装对象始终由应用调用 `release()`。
 
-`setSurfaceTexture(newTexture)` 会立即释放旧对象，且不会为旧对象调用 destroyed 回调，也不会为新对象调用 available 回调。复用旧 SurfaceTexture 时要显式记录所有权，以及它是否已经从原 GL 环境分离。
+这个安装函数只应在当前 TextureView 尚未可用且尚无旧 Producer 时调用一次。若绑定一个已经可用的实例，应由 owner 主动接入当前 `surfaceTexture`；仅设置 listener 不会补发过去的 available 回调。更换 listener 或手动 `setSurfaceTexture()` 前，先明确停用旧生产方并释放旧包装对象。
 
 <!-- gracker-diagram: a245-20-texture-owned-wrapper-lifecycle -->
 ![TextureView与应用Surface包装的释放方](../../assets/diagrams/ch22/a245-20-texture-owned-wrapper-lifecycle.png)
 
 图：包装Surface始终由应用释放；返回false还要自行管理SurfaceTexture的后续release。
+
+`setSurfaceTexture(newTexture)` 会立即释放旧对象，且不会为旧对象调用 destroyed 回调，也不会为新对象调用 available 回调。新传入对象必须先从所有 OpenGL ES context 分离；不能传当前同一实例或已 released 的对象。移交前应显式停止旧 Producer、释放旧 Surface 包装并记录新旧所有权。
 
 <!-- gracker-diagram: a245-21-texture-replacement-transfer -->
 ![手动替换SurfaceTexture的移交](../../assets/diagrams/ch22/a245-21-texture-replacement-transfer.png)
@@ -533,7 +566,12 @@ Android 17 的 SurfaceView 黑屏可能来自多个对象。按这组顺序检�
 
 ### 相机预览
 
-CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。即使选择 `PERFORMANCE`，CameraX 也会在 API 24 及以下、LEGACY camera hardware，或目标旋转与 display rotation 不一致时回退到 TextureView。
+CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。这里需要区分文档描述和实际发布代码：公开文档把 API≤24、LEGACY 相机和目标旋转不等于 display rotation 都列为回退条件；但本次核对的 CameraX 1.6.2 `shouldUseTextureView()` 实际按 API≤24、LEGACY、`SurfaceViewStretchedQuirk` / `SurfaceViewNotCroppedByParentQuirk` 及模式值判断，旋转不一致的回退仍留有 TODO。因此不要依赖它自动处理旋转差异；此时应明确选择 `COMPATIBLE`，并在目标设备验证裁剪、旋转和实际实现。
+
+<!-- gracker-diagram: a245-23-camerax-source-doc-boundary -->
+![CameraX1.6.2实际回退与文档差异](../../assets/diagrams/ch22/a245-23-camerax-source-doc-boundary.png)
+
+图：需要旋转差异兼容时明确使用COMPATIBLE，再确认裁剪、实际实现和目标时延。
 
 这段代码适用于明确需要普通 View 变换兼容性的页面。
 
@@ -552,11 +590,6 @@ previewView.implementationMode =
 - protected camera、HDR、10-bit 与 color space；
 - 前后台和 session 重建期间的首 buffer。
 
-<!-- gracker-diagram: a245-23-camerax-source-doc-boundary -->
-![CameraX1.6.2实际回退与文档差异](../../assets/diagrams/ch22/a245-23-camerax-source-doc-boundary.png)
-
-图：需要旋转差异兼容时明确使用COMPATIBLE，再确认裁剪、实际实现和目标时延。
-
 ### 视频播放
 
 Media3 `PlayerView` 的 `surface_type` 默认是 `surface_view`，官方也建议常规视频优先 SurfaceView，理由包括多设备上的功耗、帧时序、HDR、secure output 和 Android TV 全分辨率。
@@ -565,6 +598,8 @@ Media3 `PlayerView` 的 `surface_type` 默认是 `surface_view`，官方也建�
 
 ```xml
 <androidx.media3.ui.PlayerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/player_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -587,27 +622,36 @@ Media3 `PlayerView` 的 `surface_type` 默认是 `surface_view`，官方也建�
 这段原生代码只展示 Vulkan WSI 的对象关系。
 
 ```cpp
-ANativeWindow* window = ANativeWindow_fromSurface(env, javaSurface);
+VkResult createAndroidSurface(
+    JNIEnv* env, jobject javaSurface, VkInstance instance,
+    VkSurfaceKHR* outSurface) {
+    *outSurface = VK_NULL_HANDLE;
+    ANativeWindow* window = ANativeWindow_fromSurface(env, javaSurface);
+    if (window == nullptr) {
+        return VK_ERROR_SURFACE_LOST_KHR;
+    }
 
-VkAndroidSurfaceCreateInfoKHR createInfo{
-    VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
-};
-createInfo.window = window;
-
-VkSurfaceKHR vkSurface = VK_NULL_HANDLE;
-vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &vkSurface);
-
-ANativeWindow_release(window);
+    VkAndroidSurfaceCreateInfoKHR createInfo{
+        VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
+    };
+    createInfo.window = window;
+    VkResult result =
+        vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, outSurface);
+    ANativeWindow_release(window);
+    return result;
+}
 ```
 
 `vkCreateAndroidSurfaceKHR` 使用 `ANativeWindow`；SurfaceControl 负责 layer tree 与 transaction。引擎还要管理 swapchain 重建、预旋转（pre-rotation）、semaphore/fence 和帧节奏控制（Frame Pacing），不能依赖 `vkAcquireNextImageKHR` 或 `vkQueuePresentKHR` 的阻塞行为同步无关 CPU 工作。
 
-Unity、Unreal 或自研引擎的内部 Surface 拓扑会随版本、渲染后端和嵌入方式变化。是否获得独立 layer、是否多一次采样，必须从实际 layer tree 和队列确认。
+上例要求有效的 `instance`、已启用的 Android Surface 扩展及非空 `outSurface`，调用方检查返回的 `VkResult`。NDK 转换取得一份 window 引用；Vulkan 创建成功会再持有一份，`vkDestroySurfaceKHR()` 才释放后者，所以创建调用后释放本地引用是正确的。成功创建后仍要由 owner 在 swapchain 停用、相关使用结束后销毁 VkSurface；引用存活不代表 SurfaceHolder 底层内容目标永远可用，同一 window 也不能同时连接 EGLSurface 与 VkSurface。
 
 <!-- gracker-diagram: a245-25-vulkan-native-window-ownership -->
 ![Vulkan与ANativeWindow引用计数](../../assets/diagrams/ch22/a245-25-vulkan-native-window-ownership.png)
 
 图：创建调用后释放本地引用合法；空window和创建失败分别处理，持有引用也不代表底层Surface永远可用。
+
+Unity、Unreal 或自研引擎的内部 Surface 拓扑会随版本、渲染后端和嵌入方式变化。是否获得独立 layer、是否多一次采样，必须从实际 layer tree 和队列确认。
 
 ### 直播与弹幕
 
@@ -651,7 +695,7 @@ Unity、Unreal 或自研引擎的内部 Surface 拓扑会随版本、渲染后�
 - Camera、codec、Binder 或厂商轨迹，按场景添加；
 - 支持时采集 HWC composition type 或 Winscope layer 信息。
 
-Perfetto 的 FrameTimeline 对 SurfaceView 内容流没有完整覆盖。SurfaceFrame 记录一个 Surface 产生帧的时间线，DisplayFrame 记录一次显示周期汇总；宿主应用窗口的两类记录仍有价值。SurfaceView 主体还要补查独立 layer、表示 buffer transaction 的 `BufferTX`、Producer 队列和 fence。
+Perfetto 的 FrameTimeline 对 SurfaceView 内容流没有完整覆盖。SurfaceFrame 记录一个 Surface 产生帧的时间线，DisplayFrame 记录一次显示周期汇总；宿主窗口的 SurfaceFrame 与 SurfaceFlinger 的 DisplayFrame 要分开关联；DisplayFrame 不是每个宿主窗口各自拥有的一条应用帧记录。SurfaceView 主体还要补查独立 layer、表示 buffer transaction 的 `BufferTX`、Producer 队列和 fence。
 
 ### SurfaceView 的对象表
 
@@ -749,6 +793,8 @@ Android 7.0 起，SurfaceView 位置与 View 渲染已经同步；旧版本的�
 
 Android 14 alpha、Android 16 composition order 和 Android 17 blur region 扩展了视觉能力，但没有让 SurfaceView 变成普通纹理。blur region 坐标相对 View bounds，尺寸变化后必须更新。
 
+`AndroidView` 默认也不按自身布局边界裁剪；SurfaceView 包装后需要明确是否使用 `clipToOutline` / 受支持的 clip。`setCompositionOrder()` 中非负值位于宿主窗口之上、负值位于其下；同 order 的相对层级没有定义，不应依赖创建顺序。
+
 <!-- gracker-diagram: a245-31-visual-effects-and-protection -->
 ![现代视觉API仍保留拓扑边界](../../assets/diagrams/ch22/a245-31-visual-effects-and-protection.png)
 
@@ -776,14 +822,20 @@ Android 14 alpha、Android 16 composition order 和 Android 17 blur region 扩�
 - Lazy 列表项没有 `onReset`/`onRelease`，旧 Producer 继续输出；
 - 节点离开组合后只释放 View，未停止 codec/camera/EGL/Vulkan。
 
-这段 Compose 宿主把 listener 安装、复用后的重新绑定和资源释放放在明确位置。`CameraPreviewProducer` 是业务接口，其中 `bindIfSurfaceValid()` 必须幂等：只在 holder 已有有效 Surface 且尚未绑定时连接。
+这段 Compose 宿主把 listener 安装、复用后的重新绑定和资源释放放在明确位置。`CameraPreviewProducer` 是业务接口，其中 `bindIfSurfaceValid()` 必须幂等：启用本次绑定，且只在 holder 已有有效 Surface、尚未绑定时连接。`detachAndWaitUntilIdle()` 还必须把该绑定标为停用，保证保留的 callback 在下一次 bind 前不会因迟到事件自行重新启动 Producer。
 
 ```kotlin
-private interface CameraPreviewProducer {
+interface CameraPreviewProducer {
     val surfaceCallback: SurfaceHolder.Callback
 
     fun bindIfSurfaceValid(holder: SurfaceHolder)
     fun detachAndWaitUntilIdle()
+}
+
+private class ProducerIdentityKey(private val owner: Any) {
+    override fun equals(other: Any?): Boolean =
+        other is ProducerIdentityKey && other.owner === owner
+    override fun hashCode(): Int = System.identityHashCode(owner)
 }
 
 @Composable
@@ -791,7 +843,7 @@ fun CameraSurfaceHost(
     producer: CameraPreviewProducer,
     modifier: Modifier = Modifier,
 ) {
-    key(producer) {
+    key(ProducerIdentityKey(producer)) {
         AndroidView(
             modifier = modifier,
             factory = { context ->
@@ -821,16 +873,18 @@ fun CameraSurfaceHost(
 
 图：reset后可能暂时没有update；业务停用门控必须覆盖迟到回调，避免复用中的旧Producer重启。
 
-`key(producer)` 使 Producer 身份变化时旧 View 退出组合，避免回调仍指向旧对象。业务实现还要保证 `detachAndWaitUntilIdle()` 幂等。`producer` 由上层持有时，整个 Producer 的终止释放应由上层所有者负责；这里仅解除当前 Surface。
+`key(ProducerIdentityKey(producer))` 使 Producer 身份变化时旧 View 退出组合，避免回调仍指向旧对象。业务实现还要保证 `detachAndWaitUntilIdle()` 幂等。`producer` 由上层持有时，整个 Producer 的终止释放应由上层所有者负责；这里仅解除当前 Surface。
 
-播放器优先使用 Media3 自己的生命周期感知 API。Media3 明确说明 `PlayerView` 并非针对 `AndroidView` 设计，不能统一保证兼容性；API 34 的拉伸、裁剪或 Surface 泄漏问题可依据 Media3 的最新说明评估 `setEnableComposeSurfaceSyncWorkaround()`，但该兼容方案与 XML shared transition 存在冲突。
-
-Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbeddedExternalSurface`：前者提供由系统合成器处理的独立 layer，后者把外部内容作为 Compose 层级中的常规元素交给 GPU 合成。两者都通过 `onSurface`、`onChanged` 与 `onDestroyed` 表达 Surface 生命周期；`onDestroyed` 触发后，渲染线程必须停止访问旧 Surface。Media3 Compose 提供生命周期感知的 `PlayerSurface`。这些 API 的 Surface 类型、生命周期与功能限制要按项目锁定版本核查，不能只因 API 名带 Compose 就省略 layer/BufferQueue 分析。
+Compose 的 `key` 默认按 equality 比较，直接传 producer 不保证引用身份变化就换掉 View；上例显式用 `===` 做身份键。此接口的停用门控、串行切换与幂等停止仍由业务实现提供，不把这个包装器当成完整相机 session 管理器。
 
 <!-- gracker-diagram: a245-33-compose-producer-identity -->
 ![producer身份键与equality边界](../../assets/diagrams/ch22/a245-33-compose-producer-identity.png)
 
 图：只写key(producer)不能保证引用变动一定重建；显式身份键避免回调闭包继续指向旧实例。
+
+播放器优先使用 Media3 自己的生命周期感知 API。Media3 明确说明 `PlayerView` 并非针对 `AndroidView` 设计，不能统一保证兼容性；API 34 的拉伸、裁剪或 Surface 泄漏问题可依据 Media3 的最新说明评估 `setEnableComposeSurfaceSyncWorkaround()`，但该兼容方案与 XML shared transition 存在冲突。
+
+Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbeddedExternalSurface`：前者提供由系统合成器处理的独立 layer，后者把外部内容作为 Compose 层级中的常规元素交给 GPU 合成。两者都通过 `onSurface`、`onChanged` 与 `onDestroyed` 表达 Surface 生命周期；`onDestroyed` 触发后，渲染线程必须停止访问旧 Surface。Media3 Compose 提供生命周期感知的 `PlayerSurface`。这些 API 的 Surface 类型、生命周期与功能限制要按项目锁定版本核查，不能只因 API 名带 Compose 就省略 layer/BufferQueue 分析。
 
 <!-- gracker-diagram: a245-34-compose-external-surface-choices -->
 ![Compose外部Surface类型仍决定消费者](../../assets/diagrams/ch22/a245-34-compose-external-surface-choices.png)
@@ -942,3 +996,9 @@ TextureView 把外部 BufferQueue 交给应用内 HWUI。它能够使用普通 V
 - [Android 17 `HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
 - [Android 17 kernel `sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
 - [Android 17 kernel `dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)
+
+- [CameraX 1.6.2 发布源码包：PreviewView 实际回退分支](https://dl.google.com/android/maven2/androidx/camera/camera-view/1.6.2/camera-view-1.6.2-sources.jar)
+- [BOM 2026.08.00 POM](https://dl.google.com/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom)
+- [Image.Plane：rowStride 字节单位](https://developer.android.com/reference/android/media/Image.Plane)
+- [Vulkan：Android Surface 引用计数和独占连接](https://docs.vulkan.org/refpages/latest/refpages/source/vkCreateAndroidSurfaceKHR.html)
+- [NDK：ANativeWindow_fromSurface 本地引用](https://developer.android.com/ndk/reference/group/native-activity)

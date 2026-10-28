@@ -448,25 +448,36 @@ Perfetto 标准库的 `android_input_events` 会把套接字往返与关联帧�
 
 `total_latency_dur` 只计算到 `FINISHED` 完成确认，不表示画面已经显示。在 `android-17.0.0_r1` 附带的 `android.input` 实现中，`read_time` 取自 `UnwantedInteractionBlocker::notifyMotion...` 区段的起始时间，作为读取阶段的代理时间点；它没有直接使用 `EventHub` 记录的 `RawEvent.readTime`。`end_to_end_latency_dur` 表示这个代理点到关联帧呈现的区间，不包含触控 IC 前段和面板光学响应。若要精确测量从设备节点读取到呈现的耗时，需要另行取得真实 `RawEvent.readTime`，再按同一事件关联呈现时间。
 
-标准库拿不准事件驱动的是哪一帧时，可能选择随后最近的一帧，并把 `is_speculative_frame` 设为 `true`；这类样本适合观察整体分布，作单个事件的因果结论时要谨慎。
+标准库会把同线程区间相交的 `doFrame` 作为规则匹配，否则选择随后一帧并标记 `is_speculative_frame`。这些都是待核验的帧候选，不能直接用来证明输入触发了画面。固定 r1 最终仅按通道内序号连接附件，还存在全局未丢弃帧选择缺少进程过滤和排序的限制；已在两个独立通道的合成 Trace 中复现两次投递扩成四行，并污染输入 ID、读取时间与帧。因此，推测样本不能直接汇入“真实输入到呈现”的总体分布，往返统计也必须先按消息身份去重，详见 §14.5。
 
 <!-- gracker-diagram: ch03-02-perfetto-ack-and-present -->
 ![Perfetto total_latency 到 ACK，end_to_end 使用读取代理点](../../assets/diagrams/ch03/ch03-02-perfetto-ack-and-present.png)
 
-图：android.input 的 total_latency_dur 是 dispatch 到 finish_ack；end_to_end_latency_dur 是 frame.present_time − frame.read_time。Android17 随附 SQL 的 read_time 来自 UnwantedInteractionBlocker::notifyMotion 区段起点，属于读取阶段代理，不能冒充真实 RawEvent.readTime。推测关联帧需保留 is_speculative_frame 标记。
+图：android.input 的 total_latency_dur 是 dispatch 到 finish_ack；end_to_end_latency_dur 是 frame.present_time − frame.read_time。Android17 随附 SQL 的 read_time 来自 UnwantedInteractionBlocker::notifyMotion 区段起点，属于读取阶段代理，不能冒充真实 RawEvent.readTime。帧侧公式表达的是候选区间；推测标记、附件歧义和底层事件/帧身份需共同核验，字段非空不能证明关联正确。
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
-SELECT
-  process_name,
-  event_action,
+WITH candidates AS (
+  SELECT *, COUNT(*) OVER (
+    PARTITION BY upid, event_channel, event_seq, dispatch_ts, receive_ts
+  ) AS attachment_row_count
+  FROM android_input_events
+)
+SELECT upid, pid, process_name, thread_name AS finish_thread_name,
+  event_channel, event_seq, dispatch_ts, receive_ts, receive_track_id,
+  input_event_id AS candidate_input_event_id,
+  event_action AS candidate_action,
   total_latency_dur / 1e6 AS dispatch_to_ack_ms,
-  end_to_end_latency_dur / 1e6 AS read_to_present_ms,
-  is_speculative_frame
-FROM android_input_events
+  end_to_end_latency_dur / 1e6 AS candidate_read_to_present_ms,
+  frame_id AS candidate_surface_frame_token, is_speculative_frame,
+  attachment_row_count,
+  CASE WHEN attachment_row_count > 1 THEN 'ambiguous_attachment'
+       WHEN frame_id IS NULL THEN 'missing_frame_candidate'
+       ELSE 'unverified_stdlib_candidate' END AS association_status
+FROM candidates
 WHERE end_to_end_latency_dur IS NOT NULL
-ORDER BY read_to_present_ms DESC
+ORDER BY total_latency_dur DESC, upid, dispatch_ts, event_channel
 LIMIT 50;
 ```
 

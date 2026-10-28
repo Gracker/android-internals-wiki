@@ -4,8 +4,8 @@ chapter: '16.2'
 section: '16.2'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-07'
-last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto thread_state、FrameTimeline、memory counters 文档（含 FrameTimeline Android 12+ 适用范围）
+last_verified: '2026-10-26'
+last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto sched/thread_state/slice 表定义及 CPU Scheduling、FrameTimeline、memory counters 官方文档；Android Developers ANR、FGS 故障与 Thermal API 指南。定点源码与文档核对，不代表目标设备实测。
 confidence: high
 sources:
 - type: aosp
@@ -39,6 +39,25 @@ sources:
   path: source.android.com/docs/core/perf/lmkd
 - type: official
   path: developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+- type: official
+  path: developer.android.com/develop/background-work/services/fgs/troubleshooting
+- type: official
+  path: developer.android.com/games/optimize/adpf/thermal
+- type: aosp
+  tag: android-17.0.0_r1
+  path: external/perfetto/src/trace_processor/tables/sched_tables.py
+- type: aosp
+  tag: android-17.0.0_r1
+  path: external/perfetto/src/trace_processor/tables/slice_tables.py
+- type: aosp
+  tag: android-17.0.0_r1
+  path: frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp
+- type: kernel
+  tag: android17-6.18-2026-06_r6
+  path: Documentation/accounting/psi.rst
+- type: kernel
+  tag: android17-6.18-2026-06_r6
+  path: mm/memory.c
 - type: blog
   path: androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/
 - type: blog
@@ -95,27 +114,27 @@ related_chapters:
 
 ### 固定起点与终点
 
-归因前先确定用户旅程（CUJ）和问题窗口。滑动卡顿可从目标 vsync（垂直同步信号）或输入事件开始，到对应帧 present（真正显示到屏幕）结束。启动过程可从进程创建或 launch Intent（启动请求）开始，到 TTID（首帧显示）/TTFD（应用报告内容已完整显示）结束。ANR（应用无响应）则要记录组件类型、timeout（超时计时）起点和主线程状态。
+归因前先确定用户旅程（CUJ）和问题窗口。滑动卡顿可从目标 vsync（垂直同步信号）或输入事件开始，到对应帧的显示栈 present 反馈边界结束；present fence 不是面板像素发光的光学测量。启动过程可从进程创建或 launch Intent（启动请求）开始，到 TTID（首帧显示）/TTFD（应用报告内容已完整显示）结束；如需“可交互”，另定义业务信号。ANR（应用无响应）则要记录类型、timeout（超时计时）起点和相关线程状态。
 
 不要先看整份 Trace 的 CPU 排行。问题窗口可能只有几十毫秒，整段录制中的后台下载或编译会稀释局部竞争。Perfetto UI 选择、SQL 查询和截图应使用同一时间范围。
 
 ### 把 Wall 时间按线程状态分开
 
-当 sched 调度数据完整时，一个同步 Slice（线程轨道上的起止区间）的 wall duration（经过的总时间）可以近似分为：
+先把同一线程的状态区间裁剪到目标 Slice 的起止窗口，并检查未结束区间、丢包和 Trace 边界。数据完整且状态区间不重叠时，wall duration（经过的总时间）可按下面的互斥类别拆分；跨线程、进程和 GPU 阶段则可能并行，不能套用同一加法。
 
-> Running + Runnable + Interruptible Sleep + Uninterruptible Sleep + trace 缺口
+> Running + Runnable（含 R+ 抢占后等待）+ S + D + 其他已知状态 + 未知/Trace 缺口
 
-Perfetto UI 显示的 CPU time 主要来自线程实际 Running 的 sched 区间。Wall time 与 CPU time 的差值是继续调查的入口，不能直接等同于“系统耗时”。
+在该窗口内汇总 `sched_slice` 与窗口相交的区间，可估算线程被调度到 CPU 上的 Running 时间；这不等于所有界面上名为 CPU time 的字段都来自同一个算法。`slice.thread_dur` 还可来自启用了 thread timestamp 的 TrackEvent。报告应记录实际字段、来源、单位和缺失范围；IRQ/softirq 等执行上下文要另查。Wall time 与所选 CPU 时间的差值只是调查入口，不能直接等同于“系统耗时”。
 
 | `thread_state` 表现 | 能确认的事实 | 下一步 |
 |---|---|---|
 | `Running` | 线程正在某个 CPU 上执行 | 看调用栈、slice 嵌套、系统调用与 CPU 频率 |
-| `R` / Runnable | 线程已可运行，正在等待调度 | 看 wakeup（线程变为可运行的事件）、目标 CPU、同 cpuset 竞争者、优先级、affinity（允许使用的 CPU 集合）、uclamp（调度利用率上下限）与 capacity（CPU 算力容量） |
-| `S` / Interruptible Sleep | 线程主动阻塞，等待可唤醒事件 | 看 Binder flow（跨进程事务关联线）、futex（用户态同步需要阻塞时的内核等待）/锁、epoll（I/O 事件等待）、条件变量和对端线程 |
-| `D` / Uninterruptible Sleep | 线程处于不可被普通信号打断的等待 | 看 `blocked_function`、I/O、page fault（内存页缺失异常）、驱动、fence（图形任务同步信号）或内核栈；不能只写成“磁盘慢” |
+| `R` / `R+`（被抢占） | 线程已可运行，正在等待调度 | 看 wakeup（线程变为可运行的事件）、目标 CPU、同 cpuset 竞争者、优先级、affinity（允许使用的 CPU 集合）、uclamp（调度利用率上下限）与 capacity（CPU 算力容量） |
+| `S` / Interruptible Sleep | 线程在可中断睡眠状态，等待事件 | 看 Binder flow（跨进程事务关联线）、futex（用户态同步需要阻塞时的内核等待）/锁、epoll（I/O 事件等待）、条件变量和对端线程 |
+| `D` / Uninterruptible Sleep | 线程处于不可被普通信号打断的等待 | 看 <code>blocked_<wbr>function</code>、I/O、page fault（内存页缺失异常）、驱动、fence（图形任务同步信号）或内核栈；不能只写成“磁盘慢” |
 | 状态缺失 | 当前 Trace 无法还原这段时间 | 检查内核 ftrace 缓冲区、启用的数据源、丢包与采集起止位置 |
 
-Perfetto UI 的颜色会随版本和主题改变，报告应记录 state 值和时间，不依赖“浅绿色”“蓝色”这类描述。`blocked_function` 是线程被切出时的内核位置，能缩小范围，但不一定代表更上层的业务等待原因。
+Perfetto UI 的颜色会随版本和主题改变，报告应记录 state 值和时间，不依赖“浅绿色”“蓝色”这类描述。`blocked_function` 是采集到的内核阻塞函数信息，只有相关事件可用、被采集并能解析时才会出现；它不是所有线程切出的通用调用栈，也不一定代表上层业务等待原因。
 
 <!-- gracker-diagram: ch16-02-02-window-state-partition -->
 ![同窗单线程分解与指标来源](../../assets/diagrams/ch16/ch16-02-02-window-state-partition.png)
@@ -126,7 +145,7 @@ Perfetto UI 的颜色会随版本和主题改变，报告应记录 state 值和�
 
 ### Runnable 时间怎样归因
 
-主线程从 wakeup 到首次 Running 的时间可视为一次调度延迟。判断责任时依次检查：
+对一次从睡眠唤醒的样本，可量从所选 `sched_waking`/`sched_wakeup` 事件到后续首次 Running 的间隔；两个事件所处唤醒阶段不同，必须固定口径。直接汇总 `thread_state` 中 R/R+ 区间则是在量可运行但未上 CPU 的时间；被抢占后的 R+ 可以没有新 wakeup。判断责任时依次检查：
 
 1. 唤醒是否晚。定时器、Binder 回复或生产者本身晚到，会让线程更晚进入 Runnable。
 2. 唤醒后是否存在可用 CPU。还要考虑 affinity、cpuset、online CPU（当前在线的核心）、异构 CPU capacity，以及 RT/DL（实时/截止时间调度类）任务，不能只看整机平均利用率。
@@ -166,7 +185,7 @@ CPU 全核有任务运行，说明算力供给紧张，但还不能确定谁制�
 
 ## Binder 与跨进程等待
 
-客户端线程在 Binder ioctl（进入 Binder 驱动的控制调用）附近 Sleep，只能确认它在等待 Binder 路径。完整归因需要沿 transaction/flow（事务及其跨轨关联）找到服务端：
+客户端线程在 Binder ioctl（进入 Binder 驱动的控制调用）附近 Sleep，还不能确认它正在等某次同步事务的回复；空闲 Binder 服务线程也会在驱动中等工作。先确认未完成的同步 transaction、对应服务端和 reply，再沿 transaction/flow（事务及其跨轨关联）分解：
 
 1. 记录客户端发起事务、进入等待和收到回复的时间。
 2. 找到服务端 Binder 线程接收该事务的时间，区分 Binder 队列等待与服务端执行。
@@ -182,7 +201,7 @@ CPU 全核有任务运行，说明算力供给紧张，但还不能确定谁制�
 - 服务端本身长时间 Runnable，系统竞争是共同条件；
 - Binder 只是中间一跳，延迟来自更下游的服务或驱动。
 
-wakeup arrow 说明哪个线程执行了唤醒动作，不等于它制造了此前全部等待。Binder transaction slice 和服务端状态比单独的唤醒箭头更有解释力。
+wakeup arrow 表示 Trace 记录的唤醒执行上下文，不等于它制造了此前全部等待。结合 `irq_context` 区分进程和中断上下文；中断发生时被打断的线程不能仅因成为记录中的当前线程就被视为业务发起者。Binder transaction、reply 和服务端状态比单独的唤醒箭头更有解释力。
 
 <!-- gracker-diagram: ch16-02-05-binder-dependency-chain -->
 ![同步Binder的完整依赖路径](../../assets/diagrams/ch16/ch16-02-05-binder-dependency-chain.png)
@@ -201,7 +220,7 @@ wakeup arrow 说明哪个线程执行了唤醒动作，不等于它制造了此�
 - ART（Android Runtime，Android 运行时）GC（垃圾回收）由系统内存压力触发；
 - 增加物理内存是唯一修复。
 
-继续检查 PSI memory `some`/`full`（至少部分/所有非空闲任务因内存压力停顿）、direct reclaim、major fault（需要从存储读取页面的缺页）、zRAM（位于内存中的压缩交换设备）、进程 RSS（驻留物理内存）/swap、lmkd kill 事件与 `oom_score_adj`。Perfetto 是否包含进程内存计数器，取决于采集配置和设备权限。
+继续检查 PSI memory `some`/`full`：分别表示被测范围内至少部分任务、所有非空闲任务同时因该资源停顿的时间占比；记录读的是系统级还是 cgroup 级。再结合 direct reclaim、major fault、zRAM（内存中的压缩交换设备）、进程 RSS（驻留物理内存）/swap、lmkd kill 事件与 `oom_score_adj`。Major fault 是内核缺页计数口径，可能涉及文件页或 swap；swap 后端也可能是 zRAM，不能直接推导物理磁盘 I/O。Perfetto 是否包含这些内存事件和进程计数器，还取决于采集配置和设备权限。
 
 ### GC 要按 App heap 证据分析
 
@@ -218,13 +237,13 @@ GC 频率主要与分配速率、heap（堆）容量、对象存活和 ART 策�
 
 ### App 主线程
 
-`Choreographer#doFrame`（帧回调）与 `performTraversals`（View 测量、布局和绘制遍历）或 Compose 对应阶段长时间 Running，且调用栈落在 App 逻辑，是 App 关键路径工作量的直接证据。Android 12（API 31）及以上可以用 FrameTimeline（预期与实际帧时间线）的 deadline 判断这一帧是否真的晚到；固定的 16.67 ms 或 8.33 ms 不能覆盖可变刷新率和平台预测。Android 8–11 的 trace 需要退回到 Choreographer、SurfaceFlinger、fence 和 CPU/GPU 轨道组合判断。Perfetto 文档说明 SurfaceView 目前不在 FrameTimeline 支持范围内，涉及 SurfaceView 时要用 Layer、buffer/fence 和 SurfaceFlinger 轨道补证。
+`Choreographer#doFrame`（帧回调）与 `performTraversals`（View 测量、布局和绘制遍历）或 Compose 对应阶段长时间 Running，且调用栈落在 App 逻辑，是 App 关键路径工作量的直接证据。Android 12（API 31）及以上可以结合 FrameTimeline（预期与实际帧时间线）的 deadline、prediction 和 present 信息判断；固定的 16.67 ms 或 8.33 ms 不能覆盖可变刷新率和平台预测。Android 8–11 的 Trace 需组合 Choreographer、SurfaceFlinger、fence 和 CPU/GPU 轨道。Perfetto 指南仍提示 SurfaceView 支持限制；实际分析先核对目标 Layer 是否有可关联的 token 和完整 expected/actual，不能拿宿主窗口的帧代表独立 Surface。缺失时用该 Layer 的 buffer/fence、Producer 和 SurfaceFlinger 证据补齐。
 
 特定操作稳定触发同一 App slice，也能加强 App 归因。操作相关性本身不充分：点击可能触发同步 Binder、存储、shader（GPU 着色程序）编译或系统窗口变化，仍需沿时间线继续追踪。
 
 ### RenderThread 与 GPU
 
-RenderThread 的 `DrawFrame` 变长可能包含录制/提交工作，也可能等待 GPU、buffer、fence 或驱动。App 提交过重的 display list（绘制命令列表）、纹理上传或 shader 是一种来源；GPU 竞争、驱动行为和 thermal 限制属于另一类。仅凭 RenderThread slice 长度不能决定由 App 组或系统组修改。
+RenderThread 的 `DrawFrame` 变长可能包含渲染状态同步、准备和绘制命令提交，也可能等待 GPU、buffer、fence 或驱动；View 的 display list 通常在 UI 绘制阶段记录，不能把全部录制工作都算到 RenderThread。App 提交过重的 display list（绘制命令列表）、纹理上传或 shader（GPU 着色程序）是一类来源；GPU 竞争、驱动行为和 thermal 限制是另一类。仅凭 RenderThread slice 长度不能决定由 App 组或系统组修改。
 
 <!-- gracker-diagram: ch16-02-07-rendering-work-and-wait -->
 ![UI、RenderThread和系统显示栈](../../assets/diagrams/ch16/ch16-02-07-rendering-work-and-wait.png)
@@ -241,7 +260,7 @@ Android 17 的 `SurfaceFlinger.cpp` 明确保留 `commit()`、`composite()` 与 
 - Layer 数量、分辨率、刷新率和 client/device composition（GPU 客户端合成/显示硬件合成）；
 - 同设备、同场景的正常帧。
 
-SurfaceFlinger 侧错过 deadline 说明显示合成阶段晚到；工作量仍可能由 App Layer、系统 UI、HWC、GPU 竞争或驱动产生。多个 App 同时出现 jank 能增强系统侧证据，但共享显示链路上的单帧晚到也可能只影响一个可见 Surface。
+SurfaceFlinger 侧的 jank 表示显示栈相对预测时序出现了偏差，需继续区分 CPU/GPU deadline miss、DisplayHAL、PredictionError 等分类；Actual 区间不等于 SurfaceFlinger 线程一直在 CPU 上执行。工作量或延迟仍可能来自 App Layer、系统 UI、HWC、GPU 竞争、驱动或预测偏差。多个 App 同时出现 jank 能增强共享条件的证据，但共享显示链路上的单帧晚到也可能只影响一个可见 Surface。
 
 <!-- gracker-diagram: ch16-02-08-frame-classification-boundary -->
 ![从帧关联到显示栈归因](../../assets/diagrams/ch16/ch16-02-08-frame-classification-boundary.png)
@@ -267,12 +286,12 @@ thermal 条件成立后，改动责任仍可能分布在多侧：
 
 ## ANR 的归因
 
-ANR 是系统检测到组件在规定窗口内没有完成，并不等于 App 主线程独自消耗了整个窗口。Input、Service、Broadcast 与前台服务各有不同起点和配置；部分值可由 DeviceConfig（运行时系统配置）或厂商配置调整。
+ANR 是系统判定某类响应条件在规定窗口内未满足，并不等于 App 主线程独自消耗了整个窗口。输入分发、无焦点窗口、Service 执行和 Broadcast 等类型有不同的计时起点、完成信号及相关线程；异步广播还要追踪工作线程与 `finish()`。部分阈值受 DeviceConfig（运行时系统配置）或厂商配置影响。前台服务问题也要先分事件：shortService 未及时停止可触发 ANR；未及时调用 `startForeground()` 和部分限时 FGS 未停止则走异常/崩溃路径，不能把所有 FGS 超时都归为 ANR。
 
 Android 17 的 `ActivityManagerConstants.java`、`ActiveServices.java` 和 `BroadcastConstants.java` 是核对平台配置的源码入口。分析时至少展示：
 
 - ANR 类型与 timeout 起点；
-- 主线程各状态的时间分布；
+- 相关线程各状态的时间分布，以及堆栈抓取是否晚于超时现场；
 - 同步 Binder 的服务端状态；
 - 系统 CPU、I/O、内存与 thermal 背景；
 - App 在可控条件下能否稳定完成同一工作。
@@ -319,7 +338,7 @@ A/B 指只改变待验证因素的对照实验。比较系统升级前后时，�
 
 ### 比较阶段，不只比较总时间
 
-把 CUJ 分为 App Running、Runnable、Binder、I/O、RenderThread/GPU、SurfaceFlinger 等阶段。总时长回退可能来自不同阶段，只有阶段差异稳定出现，才能继续映射到具体源码或配置变更。
+在同一 CUJ 窗口比较 App 的 Running/Runnable、Binder 等待、I/O、RenderThread/GPU 和 SurfaceFlinger 证据，并沿实际依赖找关键路径。这些跨线程阶段可以重叠；Binder 客户端等待还会包含服务端执行和下游时间，不能把所有阶段时长直接相加。总时长回退可能来自不同位置，只有阶段差异稳定出现，才能继续映射到具体源码或配置变更。
 
 ### 用源码差异验证假设
 
@@ -340,7 +359,7 @@ A/B 指只改变待验证因素的对照实验。比较系统升级前后时，�
 | 线程处于 `D` | 内核不可中断等待 | blocked function、内核栈、I/O/page fault/fence/driver |
 | kswapd 活跃 | 后台内存回收 | PSI、direct reclaim、RSS/swap、lmkd、压力来源 |
 | RenderThread 长 slice | 渲染后半段或等待 | GPU stage、fence、driver、App 绘制输入 |
-| SurfaceFlinger deadline miss | 合成/显示阶段晚到 | FrameTimeline token、commit/composite、HWC/GPU、Layer |
+| SurfaceFlinger 侧 jank | 显示栈相对预测偏差 | jank 分类、prediction、token、commit/composite、HWC/GPU、Layer |
 | 多个 App 同版本回退 | 系统/vendor 共同条件 | 受影响面、A/B、build/module/kernel/vendor 差异 |
 | 单一 CUJ 稳定复现 | 与该操作相关 | App slice、Binder、I/O、GPU/SF 的完整时间线 |
 
@@ -398,5 +417,10 @@ App Layer、系统 UI、HWC 选择、GPU 竞争、driver 与 display pipeline（
 - [AOSP android-17.0.0_r1：BroadcastConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java)
 - [Android common kernel android17-6.18-2026-06_r6：sched tracepoints](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
 - [Android common kernel android17-6.18-2026-06_r6：vmscan.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
+- [Android Developers：前台服务故障排查](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
+- [Android Developers：Thermal API](https://developer.android.com/games/optimize/adpf/thermal)
+- [AOSP android-17.0.0_r1：thread_state/sched 表](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/tables/sched_tables.py)
+- [AOSP android-17.0.0_r1：slice 与 thread_dur 字段](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/tables/slice_tables.py)
+- [Android common kernel：PSI 作用域与统计口径](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst)
 - [Gracker：Android Perfetto 系列——CPU](https://androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - [Gracker：如何分析 Perfetto Trace](https://androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/)

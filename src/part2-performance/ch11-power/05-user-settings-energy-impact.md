@@ -4,8 +4,8 @@ chapter: '11.5'
 section: '11.5'
 status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
-last_verified: '2026-09-15'
-last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 SDK；arXiv 2604.25587v1；wellington-oj/user_energy master_energy_data.csv；Android 官方显示与功耗文档 2026-09
+last_verified: '2026-10-24'
+last_verified_against: AOSP android-17.0.0_r1；Android 公开 API 文档；arXiv 2604.25587v1；wellington-oj/user_energy f12c27c5487ec0e9be97ab468c3ab104dacca02b 的 CSV 与 notebook；官方显示与功耗文档 2026-10
 last_idle_audit_at: '2026-09-15T18:41:59+08:00'
 confidence: high
 sources:
@@ -61,7 +61,7 @@ related_chapters:
 
 “亮度 50%、高刷开启、深色模式开启”这些设置会改变面板发光、显示时序、应用渲染、视频管线和系统调度。若两轮实验的设置不同，所得差值很可能混入了显示侧变化。
 
-平台锚点为 Android 17 / API 37 和 AOSP `android-17.0.0_r1`，同时复核论文《An Empirical Analysis of Mobile Energy Consumption Across User Configurations》。论文中的百分比只描述一台 Samsung Galaxy S23 Ultra 上的自动化短场景，不能当作其他设备的预期收益。
+平台锚点为 Android 17 / API 37 和 AOSP `android-17.0.0_r1`，同时复核论文《An Empirical Analysis of Mobile Energy Consumption Across User Configurations》。论文中的百分比是单台 Samsung Galaxy S23 Ultra 自动化短场景的软件归因统计。复现数据还存在设置标签冲突（见 11.5.2）；这些数字不能当作已验证的面板实测收益，也不能作为其他设备的预期值。
 
 ## 11.5.1 先确认能耗数字来自哪里
 
@@ -87,14 +87,16 @@ related_chapters:
 - 各显示的 screen-on、doze（低功耗显示）与亮度档位时长；
 - UID 的 top activity（最前台 Activity）时长。
 
-设备提供显示 energy consumer 时，`ScreenPowerStatsProcessor` 把硬件报告的微库仑换算成 mAh（毫安时）；没有这类数据时才回退到 `PowerProfile` 的显示参数估算。现代参数按显示设备区分，包括 `ambient.on.display`、`screen.on.display` 和 `screen.full.display`；旧的 `screen.on`、`screen.full` 常量只保留兼容含义。
+HAL 的 `EnergyConsumerResult.energyUWs` 报告开机以来累计的 µWs（即 µJ）。采集器的 `ConsumedEnergyHelper` 先取能量增量，再用本次与上次电压的平均值换算成 µC；`ScreenPowerStatsProcessor` 再把 µC 换算为 mAh。它读取当前布局中的第 0 个显示 energy consumer；不能据此推断已经汇总了所有显示计量项。描述符中的 consumer 数量为 0 时，处理器才使用 `PowerProfile` 模型；单次 HAL 读数失败不意味着自动改走模型。[来源：采集与换算实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerStatsCollector.java)、[显示处理器](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java)。
 
-UID 归因走的是另一条路径：处理器会依据 top activity 时长分配一部分显示成本。这能支持系统级归因，却不能证明某个 View、某帧 GPU 工作或某个颜色像素消耗了对应能量。文章或评审报告若要证明产品设置带来的整机收益，仍应使用设备 rail、长时间燃料计测试或外接仪器补证。
+模型按显示设备使用 `ambient.on.displayN`、`screen.on.displayN` 和 `screen.full.displayN`（N 为序号）。亮屏估算包含基础亮屏电流×时长，以及各亮度档位的附加电流×时长；doze 成本单独计算。这里的档位模型不读取页面像素颜色，不能直接刻画相同亮度下 OLED 页面配色的成本变化。旧的 `ambient.on`、`screen.on`、`screen.full` 在缺少新显示配置时仍可能被迁移为 display0 参数，不能理解为完全失效。
 
 <!-- gracker-diagram: ch11-05-02-display-energy-units -->
 ![显示能量从 HAL 到 BatteryStats 的换算](../../assets/diagrams/ch11/ch11-05-02-display-energy-units.png)
 
 图：把累计能量、窗口电荷与最终电量的单位逐级对齐。 固定 r1：helper 取能量增量并用两次电压均值换算；首次建立基线。显示处理器读取 consumer0，不能推断多计量项自动求和。
+
+UID 归因走的是另一条路径：处理器在亮屏状态中，以各 UID 的 top activity 时长占同组 UID 总时长的比例分配显示成本；总时长为 0 时不会完成这项比例归因。这能支持系统级归因，却不能证明某个 View、某帧 GPU 工作或某个颜色像素消耗了对应能量。文章或评审报告若要证明产品设置带来的整机收益，仍应使用设备 rail、长时间燃料计测试或外接仪器补证。
 
 <!-- gracker-diagram: ch11-05-03-screen-model-uid -->
 ![显示估算与 UID 比例归因](../../assets/diagrams/ch11/ch11-05-03-screen-model-uid.png)
@@ -103,39 +105,45 @@ UID 归因走的是另一条路径：处理器会依据 top activity 时长分�
 
 ## 11.5.2 如何阅读 2026 年单机实验
 
-论文正文给出了实验设计与清洗后的统计口径，复现仓库提供脚本和 `master_energy_data.csv`。两侧的行数清点口径不完全一致，下列数字用于理解论文结论边界，不应用作复现实验的行数验收。
+论文正文给出实验设计，复现仓库提供脚本和 CSV。以下核验固定于提交 [`f12c27c5487e`](https://github.com/wellington-oj/user_energy/tree/f12c27c5487ec0e9be97ab468c3ab104dacca02b)，不把仓库后续变化混入结论。核验只重算公开数据和读取代码，没有重跑真机实验。
 
 论文给出的实验条件：
 
 - 设备为一台 Galaxy S23 Ultra，Snapdragon 8 Gen 2、5000 mAh 电池、Dynamic AMOLED、最高 120 Hz；
 - 场景覆盖 WhatsApp、Instagram、TikTok、YouTube 和手电筒；
-- 879 组唯一配置，计划为每组执行 15 次，实际清点需以仓库数据为准；
-- 主要场景持续 15 或 30 秒，手电筒另含 60 秒条件。
-
-论文的数据清洗与统计口径：
-
-- 论文正文报告初始记录 13,184 条，移除 536 条异常值后保留 12,649 条；这些值存在 1 条的口径差异；
-- 通过 `dumpsys batterystats` 获取 mAh，再按采样电压换算为焦耳；
-- 使用 Mann-Whitney U（两组独立样本的非参数检验），以 `p < 0.05` 判定统计显著差异。
-
-这项工作可以用来建立实验变量表，也能说明同一设备、同一脚本下的变化方向。它没有跨面板、跨 SoC、跨 OEM（设备厂商）的结论，也没有长时间稳态下的结论；软件归因、短采样窗口和单机设计都会限制外推。
-
-后文引用这些数字时都应读作“该设备、该脚本、该窗口的观察”。产品文案、系统默认值和 KPI（关键绩效指标）不能直接套用这些百分比。
+- 879 组配置：通用变量的 72 种组合×12 种应用条件，加上独立的 15 种手电筒条件；公开 CSV 中每组均有 15 条记录；
+- Instagram、TikTok、YouTube 的动作参数为 15 或 30 秒，手电筒另含 60 秒；WhatsApp 扫描消息长度。动作参数不等于整条记录的 `duration_ms`，后者还覆盖脚本与测量窗口中的其他阶段。
 
 <!-- gracker-diagram: ch11-05-04-experiment-pipeline -->
 ![论文实验与公开复现材料的边界](../../assets/diagrams/ch11/ch11-05-04-experiment-pipeline.png)
 
 图：区分论文报告的设备实验链路和本次能重算的公开分析链路。 这里描述论文/仓库流程；没有重跑真机。公开仓库未提供完整设置实现和原始设备日志。
 
+论文的数据清洗与统计口径：
+
+- ⚠️ 矛盾：论文写初始 13,184 条；固定版本 CSV 实际为 **13,185 条=879×15**。按 notebook 顺序，先排除 155 条 `is_outlier=True`，再检查正时长（此步未额外排除），最后排除 381 条 `Smart_Metric_W ≤ 0.05`，共移除 536 条，保留 12,649 条。不能把 536 条都说成由同一种异常值检验标出；
+
+- 通过 `dumpsys batterystats` 提取软件计量/估算值，再以 `估算能量 J = mAh × 电压 V × 3.6` 换算。通用设置和分辨率比较平均功率 `W=J/实际秒数`；时长与消息长度比较累计能量。`mAh` 是电量，不能脱离电压直接称为能量；
+- 使用双侧 Mann-Whitney U 检验，以 `p < 0.05` 作为单项结果的筛选条件。notebook 对部分 Overall 汇总仍保留未显著结果，不能据图上出现柱子就认为每个汇总都显著。
+
 <!-- gracker-diagram: ch11-05-05-data-cleaning -->
 ![公开数据的行数与过滤流程](../../assets/diagrams/ch11/ch11-05-05-data-cleaning.png)
 
 图：用固定 CSV 和 notebook 条件解释最终 12,649 条记录的来源。 固定提交 f12c27c5487e；这是公开数据清点，不是新实验。155 条标记排除与 381 条功率阈值排除不能合并称作同一种异常检验。
+还有三项复现边界必须保留：
+
+1. **标签不自洽**：在 12,960 条非手电筒记录中，`Config_Theme` 与 `Experiment_ID` 路径的 theme 标签有 10,800 条不一致，refresh 有 1,440 条不一致，airplane 有 2,160 条不一致；brightness 与 saving 的相应标签一致。这是字段冲突，不足以判断哪一侧才是设备真实设置。仓库没有发布原始设备日志和设置实现，不能自行选择一个字段当真值。[来源：固定版本 CSV](https://github.com/wellington-oj/user_energy/blob/f12c27c5487ec0e9be97ab468c3ab104dacca02b/script_data/master_energy_data.csv)。
+2. **归因范围混合**：notebook 对 IG/WPP/LIGHT 使用 `t_total`，对 YT/TT 使用组件合计减 `r_total`，并非每个应用都使用同一整机测量口径。Overall 先求各应用的均值，再等权汇总；它不是全部记录直接加总，也不是跨设备的平均续航收益。[来源：notebook](https://github.com/wellington-oj/user_energy/blob/f12c27c5487ec0e9be97ab468c3ab104dacca02b/script_data/script.ipynb)。
+3. **绝对单位错误**：时长/消息分支用已经是 W 的 `Smart_Metric_W` 除以 1000 后再乘秒数，却把结果命名为 `Energy_Joules`；这些数值实际为 kJ。共同缩放不改变百分比和秩检验，但引用绝对能量必须校正单位。后文只保留明确标注来源的相对结果。
 
 <!-- gracker-diagram: ch11-05-06-label-conflict -->
 ![设置字段冲突如何限制因果解释](../../assets/diagrams/ch11/ch11-05-06-label-conflict.png)
 
 图：看到分组字段冲突时，先保留原始证据，再限制能够得出的结论。 同一批 12,960 条非手电筒记录中统计字段冲突；数量不是设备设置失败次数。不能自行认定列或路径哪一方是真值。
+
+这项工作可以用来建立实验变量表；公开分组能重算部分论文百分比，但标签冲突使“分组差异确由相应真实设置导致”仍需原始日志或新实验补证。它没有跨面板、跨 SoC、跨 OEM（设备厂商）的结论，也没有长时间稳态下的结论；软件归因、短采样窗口和单机设计都会限制外推。
+
+后文引用这些数字时都应读作“论文报告的单机、短场景、软件归因结果”，并同时保留上述数据冲突与单位限制。产品文案、系统默认值和 KPI（关键绩效指标）不能直接套用这些百分比。
 
 <!-- gracker-diagram: ch11-05-07-power-energy-overall -->
 ![平均功率、累计能量与 Overall 汇总](../../assets/diagrams/ch11/ch11-05-07-power-energy-overall.png)
@@ -144,18 +152,23 @@ UID 归因走的是另一条路径：处理器会依据 top activity 时长分�
 
 ## 11.5.3 亮度：滑块位置、面板亮度与显示功耗
 
-论文中，亮度是影响范围较大且方向稳定的变量：
+论文报告亮度分组的功率增幅较大。下表的百分比描述平均功率 W，不是整机实测能量，也不等于续航时长的反向变化：
 
 | 比较 | 论文观察 | 使用边界 |
 |---|---:|---|
-| 0% → 100%，全部场景汇总 | +86.5% | 单台 S23 Ultra、短场景、BatteryStats 口径 |
-| 0% → 100%，Instagram | +96.8% | 受该次内容与交互脚本影响 |
-| 0% → 100%，WhatsApp | +210.2% | 基线较低，百分比会被放大 |
-| 0% → 50%，全部场景汇总 | +46.0% | 不能推导 50% 对应某个固定 nit（尼特，亮度单位）值 |
+| 0% → 100%，应用均值等权汇总 | +86.5% | 单台 S23 Ultra、短场景、软件归因平均功率 |
+| 0% → 100%，Instagram | +96.8% | 受内容、脚本及归因范围影响 |
+| 0% → 100%，WhatsApp | +210.2% | 比值以 0% 档分组均值为分母，不能视作面板功率增幅 |
+| 0% → 50%，应用均值等权汇总 | +46.0% | 不能推导 50% 对应某个固定 nit（尼特，亮度单位）值 |
 
 ### “50% 亮度”不是跨设备物理量
 
-Android 的应用层亮度通常使用归一化范围，系统再通过设备配置与映射策略换算为面板可执行亮度。`BrightnessMappingStrategy` 可以使用亮度—nit 曲线、环境照度曲线和校准数据。滑块 50% 在两台设备上可能对应不同 nit 值，也可能经过不同的非线性映射。
+`WindowManager.LayoutParams.screenBrightness` 的 0～1 表示从暗到亮，小于 0 表示跟随用户偏好；系统设置中的滑块位置、窗口归一化值和物理 nit 是三个不同量。自动亮度的 `BrightnessMappingStrategy` 可以依据 lux、nit 曲线、校准与用户修正计算目标值，也存在简单映射实现。滑块 0% 不等于关闭屏幕，50% 也不必等于最大 nit 的一半。应分别记录设置值、系统目标值和可观测的面板状态。
+
+<!-- gracker-diagram: ch11-05-08-brightness-mapping -->
+![从亮度请求到可观测面板亮度](../../assets/diagrams/ch11/ch11-05-08-brightness-mapping.png)
+
+图：将设置值、自动亮度映射和最终面板状态分开记录。 这是概念链路：BrightnessMappingStrategy 主要参与自动亮度，不代表所有手动滑块都只经过同一策略。50% 不能跨设备当作固定 nit。
 
 因此，跨设备实验应同时记录：
 
@@ -166,11 +179,6 @@ Android 的应用层亮度通常使用归一化范围，系统再通过设备配
 - HBM（High Brightness Mode，高亮模式）、HDR（高动态范围）、相机或阳光可读模式是否触发；
 - 面板类型与显示模式。
 
-<!-- gracker-diagram: ch11-05-08-brightness-mapping -->
-![从亮度请求到可观测面板亮度](../../assets/diagrams/ch11/ch11-05-08-brightness-mapping.png)
-
-图：将设置值、自动亮度映射和最终面板状态分开记录。 这是概念链路：BrightnessMappingStrategy 主要参与自动亮度，不代表所有手动滑块都只经过同一策略。50% 不能跨设备当作固定 nit。
-
 ### 面板类型改变内容与亮度的关系
 
 LCD（液晶显示器）的背光通常是显示功耗的重要来源，页面颜色对背光本身的影响有限。OLED / AMOLED（有机发光二极管）面板的像素自发光，像素亮度、颜色、发光面积和面板实现都会改变成本。相同滑块值下，白底网页、低平均画面亮度的视频和大面积黑色界面可能有不同功耗。
@@ -180,7 +188,7 @@ LCD（液晶显示器）的背光通常是显示功耗的重要来源，页面�
 
 图：分别追踪背光和自发光像素如何响应亮度与页面内容。 是显示技术机制示意，没有任何设备的实测占比；内容、驱动、局部调光等实现仍会影响结果。
 
-亮度还会影响热状态。户外高亮或 HDR 峰值亮度可能抬高面板与整机温度，继而触发显示、CPU 或 GPU 的 thermal throttling（过热降频）。短测若刚好跨过热阈值，帧率变化与显示功耗变化会混在一起。
+亮度变化还可能改变热负载。户外高亮或 HDR 与持续渲染同时发生时，应观察温度、thermal severity 和频率限制；不能仅凭掉帧就判定是面板发热导致 CPU/GPU 降频。短测若跨过设备热阈值，需按温度阶段分析。这里是待 trace 与温度记录验证的可能链路，不是该论文已经测出的因果关系。
 
 <!-- gracker-diagram: ch11-05-10-brightness-thermal -->
 ![高亮与热状态的验证时间线](../../assets/diagrams/ch11/ch11-05-10-brightness-thermal.png)
@@ -209,30 +217,30 @@ LCD（液晶显示器）的背光通常是显示功耗的重要来源，页面�
 3. SurfaceFlinger（系统显示合成服务）合成与提交的节奏；
 4. 面板执行的物理刷新率。
 
-应用以 30 fps（每秒帧数）解码视频，不代表面板工作在 30 Hz（每秒刷新次数）。面板可能运行 60 Hz、90 Hz 或 120 Hz，并通过重复帧显示 30 fps 内容。支持 Android Adaptive Refresh Rate（自适应刷新率，ARR）的设备还可能保持某个面板模式，在该模式内改变 VSync 节奏。实验报告要分别写“请求值”和“观察值”。
-
-60 Hz 的单帧预算约为 16.67 ms，120 Hz 约为 8.33 ms。刷新率更高时，主线程、RenderThread（渲染线程）和 GPU 可用的单帧时间更短，但不表示每次升到 120 Hz 都会让应用计算量翻倍；静态内容、复用 buffer、硬件能力和系统 vote（投票请求）都会改变结果。
-
-### 论文中的刷新率数字
-
-| 比较 | 论文观察 | 解释范围 |
-|---|---:|---|
-| 30 Hz → 120 Hz，全部场景汇总 | +10.8% | 单台设备的设置扫描 |
-| 30 Hz → 60 Hz，Instagram | +9.1% | 受滚动与内容脚本影响 |
-| YouTube 的最高差值 | +16.3% | 不能推导所有视频场景的固定成本 |
-| WhatsApp | 未发现显著差异 | 只说明该脚本没有检出差异 |
-
-这些数字不支持“60 Hz 是所有设备的最佳能效点”这类结论。应用应表达内容帧率偏好，系统应结合用户选择、其他可见 Layer（图层）、热状态、省电策略与设备能力做出决策。
+应用以 30 fps（每秒帧数）解码视频，不代表面板工作在 30 Hz（每秒刷新次数）。面板可能运行 60 Hz、90 Hz 或 120 Hz，并通过重复帧显示 30 fps 内容。支持 Android Adaptive Refresh Rate（自适应刷新率，ARR）的显示模式把 TE/VSync 基准节拍与实际刷新间隔解耦，可以在同一模式中按基准节拍的整数倍改变呈现间隔，并受最小帧间隔约束。它不等于每次改变刷新率都改变 TE/VSync 基准。应用回调节奏、合成调度与面板刷新仍要分别观察。
 
 <!-- gracker-diagram: ch11-05-12-display-cadences -->
 ![产帧、回调、合成与面板刷新分层](../../assets/diagrams/ch11/ch11-05-12-display-cadences.png)
 
 图：显示链路中的四个节奏必须用各自证据观察。 下方仅给出 30 fps 内容在 120 Hz 刷新机会重复呈现的理想示例，不是某设备 trace，也不规定 Choreographer 或 SF 必须跟随哪一频率。 上方串联展示 UI 路径；视频解码可有独立产帧节奏。
 
+固定节奏下，60 Hz 与 120 Hz 的相邻刷新机会分别相隔约 16.67 ms、8.33 ms。应用若要每次都提供新帧，通常需要维持相应吞吐和截止时间；这不是主线程、RenderThread 与 GPU 各自独占的同一份完整预算，流水线可以跨帧重叠，具体截止时间还受调度偏移影响。提高面板刷新率也不会自动把应用的计算量翻倍，静态内容与重复 buffer 尤其如此。
+
 <!-- gracker-diagram: ch11-05-13-refresh-budget -->
 ![刷新周期与流水线截止时间](../../assets/diagrams/ch11/ch11-05-13-refresh-budget.png)
 
 图：先用刷新间隔确定目标吞吐，再查看各阶段实际 deadline。 轨道展示相同约 33.33 ms 内的参考间隔，不代表真实 App/RenderThread/GPU 耗时；阶段可跨帧重叠。
+
+### 论文中的刷新率数字
+
+| 比较 | 论文观察 | 解释范围 |
+|---|---:|---|
+| `fps30` → `fps120`，应用均值等权汇总 | +10.8% | 平均功率 W；配置标签不等于面板实测频率 |
+| `fps30` → `fps60`，Instagram | +9.2% | 论文正文及固定 CSV 分组重算约 +9.24%；原文 +9.1% 有误 |
+| YouTube 的最高差值 | +16.3% | 平均功率 W；保留数据标签冲突边界 |
+| WhatsApp | 论文未报告显著差异 | 不能据此证明刷新率没有成本 |
+
+这些数字不支持“60 Hz 是所有设备的最佳能效点”这类结论。应用应表达内容帧率偏好，系统应结合用户选择、其他可见 Layer（图层）、热状态、省电策略与设备能力做出决策。
 
 ## 11.5.5 Android 17 如何决定刷新率
 
@@ -240,7 +248,6 @@ Android 17 的 `DisplayModeDirector` 汇集多个 vote，并生成显示模式�
 
 - 用户的默认、最低和峰值刷新率设置；
 - 应用对 mode（显示模式）或 frame rate（帧率）的请求；
-- 可见 Surface / View 的内容帧率；
 - 屏幕亮度区间与环境光策略；
 - High Brightness Mode（高亮模式）；
 - 省电模式；
@@ -252,13 +259,18 @@ Android 17 的 `DisplayModeDirector` 汇集多个 vote，并生成显示模式�
 
 图：把显示策略约束与内容帧率提示汇入最终决策，而非让单个 App 直接控制面板。 概念链路省略 Binder/服务间转发；Layer 提示不等于直接进入 DMD 的同类窗口模式 vote，调用成功也不证明硬件生效。
 
-SurfaceFlinger 的 `RefreshRateSelector` 再结合 Layer 需求、可选模式与策略选择候选刷新率。应用 API 表达的是提示或兼容性要求，并不独占面板刷新率的控制权。
+`DisplayModeDirector` 按优先级组合 vote 并过滤可用模式；若交集为空，会逐步舍弃最低优先级约束，必要时退回默认模式，因此不能把所有 vote 都画成必须同时满足的硬条件。SurfaceFlinger 的 `RefreshRateSelector` 在显示策略允许的范围内，另外结合可见 Layer 的内容帧率提示、启发式与交互信号排序候选值。窗口/应用的模式请求与 Surface/View 提示属于不同入口，最终结果还需经显示调度与 HWC 生效。
+
+<!-- gracker-diagram: ch11-05-15-priority-vote-loop -->
+![DisplayModeDirector 的冲突处理](../../assets/diagrams/ch11/ch11-05-15-priority-vote-loop.png)
+
+图：用可用模式集合判断约束组合是否成立，按优先级解决冲突。 固定 r1 常规决策示意，省略测试专用 alwaysRespectAppRequest 等分支；不是所有 vote 永远同时有效。
 
 ### `Surface.setFrameRate()` 的边界
 
 `Surface.setFrameRate()` 从 Android 11 / API 30 提供。视频、自绘 Surface 和游戏可以上报内容帧率，系统会评估是否切换显示模式或采用可兼容的倍频，例如 24 fps 内容可能配合 120 Hz。其他 Surface、用户设置、省电模式或设备限制都可能让请求无法满足。
 
-可见但暂停更新的 Surface 应按 API 约定清除不再需要的 frame-rate vote（帧率投票），避免旧请求继续影响选择。业务代码也不能根据 API 调用成功就判定面板已经切换；要用系统状态和 trace（性能跟踪）观察生效结果。
+Surface 仍可见但暂停产帧时，可把 `setFrameRate()` 的 frameRate 设为 0，恢复接受系统选择；API 34 起也可用 `clearFrameRate()`。销毁 Surface 或切到其他应用而隐藏时，无需为了这一目的额外清除。恢复播放时重新报告真实内容帧率，内容稳定时不要逐帧反复调用。该 API 本身不会给生产者限帧；调用返回也不等于面板已切换，应结合显示通知、状态与 trace 观察。
 
 <!-- gracker-diagram: ch11-05-16-surface-vote-lifecycle -->
 ![Surface 帧率提示的生命周期](../../assets/diagrams/ch11/ch11-05-16-surface-vote-lifecycle.png)
@@ -267,14 +279,14 @@ SurfaceFlinger 的 `RefreshRateSelector` 再结合 Layer 需求、可选模式�
 
 ### View 与 ARR
 
-Android 15 / API 35 增加 `View.setRequestedFrameRate()`，普通 View 层级可以提供帧率类别或数值提示。官方 ARR 文档把 Android 15 作为平台引入点，但设备支持还依赖显示硬件、Composer HAL（显示合成硬件抽象层）接口和 OEM 配置。应用侧文档将 Android 15 QPR1（季度平台更新 1）及后续版本列为相关支持范围。
-
-Android 16 / API 36 增加 `Display.hasArrSupport()`。在 Android 17 / API 37 上，应用仍应先检查设备能力再讨论 ARR 行为：系统版本达到 Android 17 也不能推出设备一定支持 ARR。
+Android 15 / API 35 增加 `View.setRequestedFrameRate()`，View 可在需要绘制时提供正数帧率或类别提示。请求设在 ViewGroup 上并不会自动传播给子 View；恢复默认用 `REQUESTED_FRAME_RATE_CATEGORY_DEFAULT`，显式不投偏好用 `REQUESTED_FRAME_RATE_CATEGORY_NO_PREFERENCE`，不要套用 Surface 的“0 清除”规则。官方 ARR 文档把 Android 15 作为平台引入点，但设备支持还依赖显示硬件、Composer HAL（显示合成硬件抽象层）接口和 OEM 配置。应用侧文档将 Android 15 QPR1（季度平台更新 1）及后续版本列为相关支持范围。
 
 <!-- gracker-diagram: ch11-05-17-view-frame-votes -->
 ![View 帧率请求的聚合与边界](../../assets/diagrams/ch11/ch11-05-17-view-frame-votes.png)
 
 图：View 在绘制时表达偏好，框架聚合后继续作为下层提示。 View.setRequestedFrameRate 自 API35；设在 ViewGroup 上不自动传播给孩子。DEFAULT 恢复默认行为，NO_PREFERENCE 显式不投偏好，二者不同。
+
+Android 16 / API 36 增加 `Display.hasArrSupport()`。在 Android 17 / API 37 上，应用仍应先检查设备能力再讨论 ARR 行为：系统版本达到 Android 17 也不能推出设备一定支持 ARR。
 
 <!-- gracker-diagram: ch11-05-18-arr-te-cadence -->
 ![ARR 在同一模式内选择呈现间隔](../../assets/diagrams/ch11/ch11-05-18-arr-te-cadence.png)
@@ -296,12 +308,7 @@ Android 16 / API 36 增加 `Display.hasArrSupport()`。在 Android 17 / API 37 �
 
 图：视频内容帧率与滚动交互需求可以同时存在，交给系统共同评估。 24 fps 内容与120Hz倍频只说明兼容呈现的一个可能选择；系统可能受用户、设备、其他 Layer 和省电约束而选择其他值。
 
-省电模式常会收窄允许的刷新率范围，但“固定限制到 60 Hz”不应写成所有 Android 设备的平台保证；限制值与行为还可能受平台版本、OEM 策略和设备配置影响。
-
-<!-- gracker-diagram: ch11-05-15-priority-vote-loop -->
-![DisplayModeDirector 的冲突处理](../../assets/diagrams/ch11/ch11-05-15-priority-vote-loop.png)
-
-图：用可用模式集合判断约束组合是否成立，按优先级解决冲突。 固定 r1 常规决策示意，省略测试专用 alwaysRespectAppRequest 等分支；不是所有 vote 永远同时有效。
+固定的 `android-17.0.0_r1` 中，`DisplayModeDirector` 在省电开启时投出 0～60 fps 的 **render frame-rate** 范围 vote，并结合设备配置的低功耗支持模式；这个源码事实不等于所有设备的面板物理刷新恒定为 60 Hz。ARR、帧率覆盖、其他约束与 OEM 实现都要求分别验证。
 
 ## 11.5.6 深色模式：屏幕技术与内容共同决定收益
 
@@ -313,9 +320,9 @@ Android 官方文档把暗色主题的收益放在屏幕技术条件下描述，
 |---|---:|---|
 | Instagram | -2.4% | 只覆盖该次内容与短脚本 |
 | WhatsApp | -3.8% | 文本页面占比与配色会影响结果 |
-| 全部场景汇总 | -1.4% | 不能推广为 AMOLED 的固定收益 |
+| 应用均值等权汇总 | -1.4% | 平均功率 W；不能推广为 AMOLED 的固定收益 |
 
-收益偏小来自该实验的内容、亮度和时长限制，并不表示深色主题没有价值。
+这些相对值是论文对平均功率的报告；公开数据不足以单独识别内容、亮度或时长各自造成的份额，也不能由此认定深色主题没有价值。
 
 对 OLED / AMOLED，大面积低亮度像素通常有利；图片、视频、地图与相机预览中的媒体像素，不会因应用的背景、导航栏等界面元素变暗而同步变化。对 LCD，背光仍持续工作，页面配色通常难以形成同等级别的面板收益。
 
@@ -335,7 +342,7 @@ Android 官方文档把暗色主题的收益放在屏幕技术条件下描述，
 
 ## 11.5.7 省电模式不是一个固定参数包
 
-论文在该设备上观察到省电模式使汇总能耗下降 9.1%，YouTube 下降 14%，TikTok 下降 7.3%，WhatsApp 场景没有表现出相同方向。这仍是设备实现与脚本共同产生的结果。
+论文报告省电分组的应用均值等权平均功率下降 9.1%，YouTube 下降 14%，TikTok 下降 7.3%；WhatsApp 未报告显著降低。这些软件归因结果包含设备策略与脚本联动，不能当作固定 Android 参数包的独立收益。
 
 Android 为应用提供 `PowerManager.isPowerSaveMode()` 等状态接口，系统与 OEM 可以据此限制后台执行、位置、网络、动画、刷新率或处理器策略。具体 CPU 上限、刷新率上限与后台规则不属于统一的应用层保证。
 
@@ -352,7 +359,7 @@ Android 为应用提供 `PowerManager.isPowerSaveMode()` 等状态接口，系�
 - 动画或触觉反馈是否调整；
 - CPU/GPU 频率、thermal severity（热状态等级）和业务耗时是否变化。
 
-直接读取或写入 `Settings.Global.LOW_POWER_MODE` 不适合作为普通应用的控制方案。测试自动化也应优先使用公开 shell / dumpsys 能力，并在报告中记录设备与权限环境。
+普通应用应通过 `PowerManager.isPowerSaveMode()` 查询，并监听 `ACTION_POWER_SAVE_MODE_CHANGED` 后重新读取状态；查询结果不列出 CPU、亮度或刷新率等具体限制。直接读写隐藏的 `Settings.Global.LOW_POWER_MODE` 不能作为普通应用的通用控制方案。测试控制应使用设备支持且具备相应权限的 shell 能力，`dumpsys` 只用于观察；shell 权限也不等于普通 App 权限。
 
 <!-- gracker-diagram: ch11-05-23-saver-observe -->
 ![应用如何响应省电状态并验证实际变化](../../assets/diagrams/ch11/ch11-05-23-saver-observe.png)
@@ -365,10 +372,10 @@ Android 为应用提供 `PowerManager.isPowerSaveMode()` 等状态接口，系�
 
 ### 视频分辨率
 
-论文中，YouTube 最高测试分辨率对应的能耗增幅为 5.5%，720p 与 1440p 没有检出统计显著差异。这不能用于证明分辨率“对功耗没有影响”。短窗口内可能同时存在：
+论文中，YouTube 1440p 相对 240p 的平均功率增幅为 5.5%，720p 与 1440p 没有检出统计显著差异。这不能用于证明分辨率“对功耗没有影响”。短窗口内可能同时存在：
 
 - 网络下载与缓存；
-- 编解码器固定成本和硬件解码效率；
+- 解码器固定成本、codec 与硬件/软件解码路径；
 - Surface 合成与缩放；
 - 面板亮度与视频平均画面亮度；
 - 播放控件、广告和脚本动作。
@@ -382,7 +389,7 @@ Android 为应用提供 `PowerManager.isPowerSaveMode()` 等状态接口，系�
 
 ### 消息长度
 
-论文的 WhatsApp 脚本中，消息从 100 字符增至 200 字符后，总能耗增加 115.6%。这个百分比描述的是整次脚本，不是单字符能量。输入法处理、文本布局、网络传输、加密、回执和发送后的 UI 更新都可能计入那次总能耗。
+论文的 WhatsApp 脚本中，消息从 100 字符增至 200 字符后，总能耗增加 115.6%。这个百分比描述的是整次脚本，不是单字符能量。文本注入或输入法处理、布局、加密、网络与回执等是可能的解释路径；公开脚本与统计没有把这些阶段逐项测量，不能把 +115.6% 分摊给某个环节。
 
 复现实验应分别记录输入时长、按键或注入方式、布局次数、上下行字节、CPU 时间和后台任务。若动作持续时间也随字符数增加，报告还要区分“单位时间功率”与“完成一次任务的总能量”。
 
@@ -393,7 +400,7 @@ Android 为应用提供 `PowerManager.isPowerSaveMode()` 等状态接口，系�
 
 ### 网络状态
 
-论文的飞行模式对比没有检出显著差异，只能说明其脚本和缓存条件下没有形成可检测结果。线上弱网、蜂窝寻网、重传、DNS/TLS 重试，以及请求结束后基带仍保持活跃的 radio tail（基带尾时长），都可能改变结论。
+论文未报告飞行模式分组的显著差异；结合公开 airplane 标签冲突，这甚至不能替代一次核实了实际无线状态的 A/B 测试。飞行模式也不保证 Wi-Fi 一定关闭，必须记录各无线接口的真实状态。线上弱网、蜂窝寻网、重传、DNS/TLS 重试，以及请求结束后基带仍保持活跃的 radio tail（基带尾时长），都可能改变结论。
 
 网络实验应记录 Wi-Fi / 蜂窝制式、信号强度、传输字节、缓存、请求重试与服务器响应。飞行模式会同时改变多项能力，不适合作为精确模拟弱网的单一开关。
 
@@ -409,7 +416,7 @@ Android 为应用提供 `PowerManager.isPowerSaveMode()` 等状态接口，系�
 | 变量 | 请求或配置值 | 生效值与证据 | 常见混淆 |
 |---|---|---|---|
 | 亮度 | 滑块、Window brightness（窗口亮度）、自动亮度 | 当前亮度、nit、HBM/HDR 状态 | 同一百分比跨设备比较 |
-| 刷新率 | 用户 min/peak（最低/峰值）、应用 frame-rate vote | VSync 间隔、显示模式、面板观察值 | 把请求 120 Hz 写成持续 120 Hz |
+| 刷新率 | 用户 min/peak（最低/峰值）、应用 frame-rate vote | 应用帧/回调、VSync、显示模式与设备开放的实际刷新证据 | ARR 下仅凭模式名或单一 VSync 值认定面板恒定 120 Hz |
 | 主题 | 系统与应用主题 | 页面颜色、媒体内容、用户补偿亮度 | 把 OLED 结论用于 LCD |
 | 省电模式 | 开关状态 | 刷新率、任务、网络、频率变化 | 把 OEM 行为当成 Android 合同 |
 | 网络 | Wi-Fi / 蜂窝 / 弱网配置 | 信号、吞吐、重试、缓存 | 用飞行模式代表所有网络问题 |
@@ -435,33 +442,36 @@ Android 为应用提供 `PowerManager.isPowerSaveMode()` 等状态接口，系�
 
 图：先建立稳定基线，再扫描变量，最后恢复真实场景验证方向。 设置单变量不保证生效状态只有一个变化；省电、ARR 和自动亮度存在联动，必须记录或分层分析。
 
+### 快速采集系统快照
+
+在测试窗口之外分别采集前后快照。每次执行以下命令会新建临时目录，避免覆盖上一轮；完整 bugreport 较重，可在一组实验完成后再采集，采集过程不纳入短场景能量窗口：
+
+```bash
+out_dir="$(mktemp -d "${TMPDIR:-/tmp}/display-power.XXXXXX")"
+adb shell dumpsys display > "$out_dir/display.txt"
+adb shell dumpsys SurfaceFlinger > "$out_dir/surfaceflinger.txt"
+adb shell dumpsys batterystats --charged > "$out_dir/batterystats.txt"
+# 可选：放在整组实验结束后，采集开销不计入测试窗口。
+adb bugreport "$out_dir/display-power.zip"
+printf '%s\n' "$out_dir"
+```
+
+`dumpsys display` 与 SurfaceFlinger 输出适合确认配置和当时状态，不能替代连续时间线。`batterystats --charged` 是累计统计窗口，不是本轮动作的自动净增量；单轮比较须记录窗口、重置/充电时点并核实增量口径。BatteryStats 用于系统归因，bugreport 保存诊断上下文；命令输出中的应用、账号、设备标识和网络信息应在分享前脱敏。
+
+连续分析时，几类工具的分工不同：
+
+- Perfetto：同时观察 FrameTimeline（帧时间线）、VSync、调度、CPU frequency/idle（频率/空闲状态）、thermal 与设备开放的 power rail；
+- Battery Historian：可读取历史较长时间线；官方已标明不再积极维护，新分析优先使用系统跟踪、Power Profiler 等受支持工具；
+- Android Studio Power Profiler 与 Macrobenchmark `PowerMetric`：区分 ODPM 的整设备/子系统数据和电池电量差；先检查设备支持。`PowerMetric` 的 `Type.Power`、`Type.Energy` 与 `Type.Battery` 量纲不同，不能混用，也不能把 rail 的总和自动称为完整整机能量。
+
 <!-- gracker-diagram: ch11-05-29-snapshot-continuous -->
 ![快照与连续时间线各自回答什么](../../assets/diagrams/ch11/ch11-05-29-snapshot-continuous.png)
 
 图：前后快照确认边界条件，连续跟踪解释窗口中发生的变化。 轨道仅示意采集阶段；dumpsys与bugreport采集放在短测试窗口外。--charged是累计窗口，rail总和也不自动等于完整整机能量。
 
-### 快速采集系统快照
-
-下面的命令用于在每轮测试前后保存显示状态、SurfaceFlinger 状态、BatteryStats 和完整 bugreport（系统诊断包）：
-
-```bash
-adb shell dumpsys display > display.txt
-adb shell dumpsys SurfaceFlinger > surfaceflinger.txt
-adb shell dumpsys batterystats --charged > batterystats.txt
-adb bugreport display-power.zip
-```
-
-`dumpsys display` 与 SurfaceFlinger 输出适合确认配置和当时状态，不能替代连续时间线。BatteryStats 用于系统归因，bugreport 保存诊断上下文；命令输出中的应用、账号、设备标识和网络信息应在分享前脱敏。
-
-连续分析时，几类工具的分工不同：
-
-- Perfetto：同时观察 FrameTimeline（帧时间线）、VSync、调度、CPU frequency/idle（频率/空闲状态）、thermal 与设备开放的 power rail；
-- Battery Historian：查看较长时间线上的屏幕亮度、信号和 UID 活动；
-- Android Studio Power Profiler（功耗分析器）或 Macrobenchmark `PowerMetric`（功耗指标）：可用数据取决于设备能力，仍需写明设备与指标来源。
-
 ### 重复、统计与失败样本
 
-功耗数据常呈偏态分布，并有少量远高于多数样本的长尾值。报告应给出重复次数、中位数、离散程度、异常值规则与场景成功率。Mann-Whitney U 检验适合比较这类独立样本，但 `p < 0.05` 只说明当前样本存在统计证据，不代表差异一定具有产品价值。
+功耗数据常呈偏态分布，并有少量远高于多数样本的长尾值。报告应给出重复次数、中位数、离散程度、异常值规则与场景成功率。Mann-Whitney U 检验比较独立样本的分布，不能仅因数据偏态就忽略样本独立性，也不自动等价于“中位数不同”。同一设备上的顺序重复可能受温度、缓存和时间漂移影响，应随机化/分块、按设计选择独立或配对分析，并说明多重比较处理。除 p 值外还应报告效果量、区间估计与业务成功率；统计显著不等于产品价值。
 
 删除异常样本必须有预先定义的规则，并保留失败原因。脚本超时、广告出现、网络失败、温度越界或业务动作未完成，应作为场景质量问题记录，不能只因数值偏大就移除。
 
@@ -475,7 +485,7 @@ adb bugreport display-power.zip
 | 平台 | 相关变化 | 阅读方式 |
 |---|---|---|
 | Android 11 / API 30 | `Surface.setFrameRate()` 与多刷新率应用接入 | 应用可表达 Surface 内容帧率 |
-| Android 12 / API 31 | frame-rate API 增加兼容性相关参数 | 区分无缝与可能发生模式切换的请求 |
+| Android 12 / API 31 | 新增带 `changeFrameRateStrategy` 的三参数重载；compatibility 在 API 30 已存在 | 区分只允许无缝与允许非无缝切换的策略，仍受用户偏好和设备条件约束 |
 | Android 15 / API 35 | 平台引入 ARR，增加 View 级帧率请求能力 | 支持受硬件、HAL 与 OEM 配置约束 |
 | Android 16 / API 36 | `Display.hasArrSupport()` 提供能力检查 | 系统版本与设备能力分开判断 |
 | Android 17 / API 37 | 源码锚点；显示策略继续汇集用户、应用、亮度、热与省电投票 | 以设备生效状态验证请求结果 |
@@ -526,7 +536,8 @@ adb bugreport display-power.zip
 - [ ] 网络实验记录信号、重试、字节与 radio 状态
 - [ ] BatteryStats 归因与整机测量没有混用
 - [ ] 实验写明重复次数、离散程度、异常值规则和失败样本
-- [ ] 论文百分比标注单机、短场景与软件归因边界
+- [ ] 论文百分比注明 W/累计能量、等权汇总、固定数据版本及标签冲突
+- [ ] `mAh`、µWs/µJ、µC、J、W 的换算与采样窗口一致
 
 ## 小结
 
@@ -537,7 +548,10 @@ Android 17 的 BatteryStats 显示归因可能使用硬件 consumed energy，也
 ## 参考资料
 
 - [An Empirical Analysis of Mobile Energy Consumption Across User Configurations](https://arxiv.org/abs/2604.25587)
-- [论文复现仓库：wellington-oj/user_energy](https://github.com/wellington-oj/user_energy)
+- [论文固定版本 CSV](https://github.com/wellington-oj/user_energy/blob/f12c27c5487ec0e9be97ab468c3ab104dacca02b/script_data/master_energy_data.csv)、[分析 notebook](https://github.com/wellington-oj/user_energy/blob/f12c27c5487ec0e9be97ab468c3ab104dacca02b/script_data/script.ipynb)、[聚合脚本](https://github.com/wellington-oj/user_energy/blob/f12c27c5487ec0e9be97ab468c3ab104dacca02b/ebserver/experiment-results/master.py)
+- [Surface 帧率 API](https://developer.android.com/reference/android/view/Surface)、[View 帧率 API](https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float))、[ARR 能力检查](https://developer.android.com/reference/android/view/Display#hasArrSupport())
+- [Power Profiler](https://developer.android.com/studio/profile/power-profiler)、[PowerMetric](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric)、[Perfetto power data sources](https://perfetto.dev/docs/data-sources/battery-counters)
+- [SciPy：Mann-Whitney U 的独立样本与分布检验合同](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html)
 - [AOSP：Platform power management values](https://source.android.com/docs/core/power/values)
 - [AOSP：Adaptive refresh rate](https://source.android.com/docs/core/graphics/arr)
 - [AOSP：Multiple refresh rate](https://source.android.com/docs/core/graphics/multiple-refresh-rate)
@@ -547,3 +561,7 @@ Android 17 的 BatteryStats 显示归因可能使用硬件 consumed energy，也
 - [Android Developers：Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
 - AOSP `android-17.0.0_r1`：`ScreenPowerStatsCollector.java`、`ScreenPowerStatsProcessor.java`、`PowerProfile.java`
 - AOSP `android-17.0.0_r1`：`DisplayModeDirector.java`、`BrightnessMappingStrategy.java`、`RefreshRateSelector.cpp`
+- [Samsung Display：OLED 自发光与 LCD 背光机制](https://global.samsungdisplay.com/28033)
+- [Android：网络访问与无线状态机](https://developer.android.com/develop/connectivity/network-ops/network-access-optimization)
+- [Google：飞行模式中保留 Wi-Fi/蓝牙（Pixel 示例）](https://support.google.com/pixelphone/answer/12639358?hl=en)
+- [Android：热状态与可持续性能](https://developer.android.com/games/optimize/adpf/thermal)

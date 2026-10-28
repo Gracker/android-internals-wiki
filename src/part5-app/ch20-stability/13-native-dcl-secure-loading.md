@@ -4,7 +4,7 @@ chapter: '20.13'
 section: '20.13'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37); System.load writable-file enforcement requires Android 17 with targetSdkVersion 37
-last_verified: '2026-08-24'
+last_verified: '2026-10-25'
 last_verified_against: Android 17 behavior changes and AOSP android-17.0.0_r1 Runtime, VMRuntime and bionic linker; Android 14 safer DCL and current Android DCL security guidance
 confidence: high
 sources:
@@ -50,7 +50,7 @@ consolidated_from:
 
 Native 动态库能被 linker 装入，只是走完了安全发布的第一步。把 `.so` 交给用户之前，我们还要确认文件来自可信来源、发布过程没有暴露半成品、加载时已不可写，并且新版本失败后能回到最近一次确认可用的版本。
 
-动态代码加载（Dynamic Code Loading，DCL）指应用在运行时加载可执行代码，这些代码没有随当前 APK（Android 安装包）或 AAB（用于发布的 Android App Bundle）走常规安装路径一起提供。本章讨论其中的原生动态库：由 C/C++ 等语言编译为机器码、通常以 `.so` 为扩展名的共享库。
+动态代码加载（Dynamic Code Loading，DCL）指应用在运行时加载可执行代码。代码可能来自下载、插件，也可能随当前 APK（Android 安装包）或 AAB（用于发布的 Android App Bundle）交付后再释放到文件；交付来源与实际加载路径应分别记录。本章讨论其中的原生动态库：由 C/C++ 等语言编译为机器码、通常以 `.so` 为扩展名的共享库。
 
 Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径：应用运行在 Android 17（API 37）上、target SDK（应用向系统声明已适配的目标 API 级别）为 API 37 或更高时，`System.load()` 一旦发现目标文件仍可写，就会在进入 native linker（原生动态链接器）之前抛出 `UnsatisfiedLinkError`。
 
@@ -94,7 +94,7 @@ Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径：�
 
 1. 要求传入绝对路径，否则抛出“`Expecting an absolute path of the library`”。
 2. 读取进程 UID（Linux 用来标识进程所属用户的数字）。普通应用 UID 才进入这条检查；源码排除了 root 超级用户（0）、Android 系统身份 system（1000）和 `adb shell` 使用的 shell 身份（2000）。
-3. 如果文件所在的文件系统可写，并且 `File.canWrite()` 对当前进程返回 `true`，记录一次不安全 DCL 事件。
+3. 条件表达式先要求 `file.toPath().getFileSystem().isReadOnly() == false`，再判断 `File.canWrite() == true`。前者不是该路径挂载点的逐文件 `statvfs` 查询：固定 `UnixFileSystem.isReadOnly()` 直接返回 `false`，不能据此推断具体挂载是否可写。满足条件后写警告日志，统计事件还受单独的日志开关控制。
 4. Android 17 的功能开关已启用、系统 API 不低于 37，且兼容性变更对该应用生效时，抛出“`Attempt to load writable file: ...`”。`VMRuntime.java` 把该变更标为从 target SDK 37 启用。
 5. 检查通过后才调用 `nativeLoad(filename, classLoader, caller)`。
 
@@ -105,7 +105,7 @@ Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径：�
 
 线上诊断要同时记录 mode bit 与 `canWrite()` 两项，并在调用 `System.load()` 前确认 `canWrite()` 为 `false`。这两个概念要分清：`File.canWrite()` 给出当前进程对该路径的可写判断；mode bit 是 `stat` 返回的 Unix 所有者、组和其他用户权限位。`0400` 代表“仅所有者可读”，而平台检查看的是 `canWrite()` 的返回值，单看 mode bit 推不出检查一定通过。
 
-文件权限和目录权限也要分开看。inode 是文件系统保存文件内容位置与权限等元数据的对象；目录项负责把文件名指向 inode。文件改成 `0400` 后，拥有可写父目录的进程仍可能执行 `unlink`（删除目录项）或 `rename`（更换目录项名称或目标）。所以只读文件挡住的是普通的原地改写；要让某个路径始终指向同一组字节，还需要版本化路径、禁止覆盖、签名校验和版本选择记录配合使用。
+文件权限和目录权限也要分开看。inode 是文件系统保存文件内容位置与权限等元数据的对象；目录项负责把文件名指向 inode。文件改成 `0400` 后，拥有可写父目录的进程仍可能执行 `unlink`（删除目录项）或 `rename`（更换目录项名称或目标）。所以仅去掉写权限不能构成同 UID 代码的隔离边界：已打开的可写 fd 仍可写，文件所有者也可能重新更改权限；发布者必须关闭自身写 fd，其他合作组件也不得保留可写句柄或重新开放写入。要让某个路径始终指向同一组字节，还需要版本化路径、禁止覆盖、签名校验和版本选择记录配合使用。
 
 <!-- gracker-diagram: a219-03-readonly-scope -->
 ![0400、路径目录项与已打开写 FD 提供不同边界](../../assets/diagrams/ch20/a219-03-readonly-scope.png)
@@ -143,10 +143,15 @@ Android 官方安全指南还指出，许多 DCL 形式，尤其是从远端获�
 - `STAGED`：临时文件已经创建，尚未进入加载线程的选择范围。
 - `VERIFIED`：签名清单、内容摘要、长度、ABI 和 ELF 元数据均已通过验证。
 - `PUBLISHED`：临时文件已在同一文件系统内通过原子 `rename` 切换到唯一版本路径。这里的“原子”指其他进程只能看到切换前或切换后的目录项。
-- `SELECTED`：小型选择清单已通过 `AtomicFile` 或等价文件事务更新。`AtomicFile` 是 Android 用于整份小文件安全替换的辅助类，可在写入中断时保留旧版本。
+- `SELECTED`：小型选择清单已通过 `AtomicFile` 或等价协议更新。`AtomicFile` 用于整份小文件替换，但不提供线程或跨进程互斥；包括 `openRead()` 在内的访问也须遵守同一同步协议。固定实现对部分同步/重命名失败只记录日志，严格持久性要求不能仅靠 `finishWrite()` 正常返回证明已落盘。
 - `LOADED`：当前进程已经加载该版本；之后修改选择清单只影响尚未加载它的进程。
 
-签名、哈希、ELF 或加载任一环节失败时，都把该版本标记为 `BAD`；回滚只更新版本选择记录，已发布文件保持原样。
+可捕获的签名、哈希、ELF 或加载失败应把该候选版本标记为 `BAD`；回滚只更新选择记录，已发布文件保持原样。`LOADED` 仅表示加载返回，不等于业务健康；通过约定的试运行和健康确认后，才能提升为 `last-known-good`。若原生构造函数或 `JNI_OnLoad` 触发致命信号，Java 的 `catch (UnsatisfiedLinkError)` 无法兜住；调用加载 API 前需持久化本次尝试，下一进程结合未确认尝试与退出证据执行隔离策略，不能承诺崩溃进程还能补写 `BAD`。
+
+<!-- gracker-diagram: a219-05-publish-state -->
+![文件发布、进程加载与业务健康分别确认](../../assets/diagrams/ch20/a219-05-publish-state.png)
+
+图：可捕获失败记BAD；原生致命退出由下一进程结合加载尝试与退出证据处理，已加载进程不强行热换。
 
 Android 没有面向应用的通用、可靠的原生库卸载和同进程热切换协议。库被某个 `ClassLoader` 加载后，JNI（Java Native Interface，Java/Kotlin 调用 C/C++ 的接口）注册、静态对象、线程、TLS（线程局部存储）和函数指针都可能仍被引用。所以较稳妥的启用时机是下次进程启动；需要即时切换时，可把插件放入能够单独重启的隔离进程。
 
@@ -154,9 +159,9 @@ Android 没有面向应用的通用、可靠的原生库卸载和同进程热切
 
 发布进程应持有跨进程锁，也就是让同一应用的多个进程互斥执行发布操作，并确保临时文件与目标文件位于同一私有文件系统。建议按以下顺序执行：
 
-1. 使用唯一临时文件名和 `O_CREAT | O_EXCL | O_CLOEXEC` 创建文件。三个标志分别表示“文件不存在时创建”“文件已存在则失败”和“执行其他程序时自动关闭该描述符”，可避免复用旧临时文件；创建路径时还要拒绝跟随已有的符号链接，也就是路径不得经由符号链接指向其他文件。
+1. 使用唯一临时文件名和 `O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW` 创建文件。前几个标志要求新建且不复用已存在文件、执行其他程序时关闭描述符；`O_NOFOLLOW` 显式拒绝末级符号链接。它不保护父目录组件，受控私有根目录、路径组件白名单和目录生命周期仍由外层保证。
 2. 保持写入用的文件描述符（file descriptor，fd）处于打开状态，立即调用 `fchmod`，把该文件设为仅所有者可读。
-3. 通过已经打开的 fd 流式写入并计算摘要，完成后调用 `fsync`，请求系统把该文件的缓存数据提交给存储设备。
+3. 通过已打开 fd 流式写入，同时限制字节总数并计算摘要；完成后 `fsync` 文件并关闭本次拥有的写 fd，再进入发布与加载。
 4. 验证已签名清单、长度、摘要、ABI、ELF 的位数与机器类型、Build ID 和依赖声明。
 5. 在发布锁内确认目标不存在，再用 `rename` 切换到唯一版本路径。若要求设备掉电后仍可恢复，随后还要同步父目录。
 6. 原子更新选择清单。加载者只读取 `PUBLISHED` 且已被选择的版本。
@@ -169,7 +174,7 @@ Android 没有面向应用的通用、可靠的原生库卸载和同进程热切
 
 “先设为只读，再通过已打开的 fd 写入”利用了 Linux 的文件访问规则：`fchmod` 会影响后续打开文件时的权限检查，却不会撤销已经成功取得的写入权限。Android 14 的 DCL 文档也采用先设只读、后写内容的顺序，以缩短其他线程打开可写文件的时间窗口。
 
-下面的 Kotlin 代码只演示文件发布的主要顺序；跨进程锁、目录 `fsync`、ELF 解析和选择清单由外层组件负责：
+下面的 Kotlin 代码只演示文件发布的主要顺序；受控私有目录与路径组件校验、跨进程锁、目录 `fsync`、ELF 解析和选择清单由外层负责；签名清单的序列化和字段在本次操作内必须保持不变，长度上限还须通过应用策略校验：
 
 ```kotlin
 private fun publishLibrary(
@@ -182,12 +187,15 @@ private fun publishLibrary(
     require(tmp.parentFile == finalFile.parentFile)
     require(verifyManifestSignature(manifest, pinnedKey))
     require(finalFile.name == manifest.fileName)
+    require(manifest.size >= 0L) // 外层另校验应用允许的最大文件长度。
     require(!finalFile.exists())
 
+    val digest = MessageDigest.getInstance("SHA-256")
     val flags = OsConstants.O_WRONLY or
         OsConstants.O_CREAT or
         OsConstants.O_EXCL or
-        OsConstants.O_CLOEXEC
+        OsConstants.O_CLOEXEC or
+        OsConstants.O_NOFOLLOW
     val fd = Os.open(
         tmp.absolutePath,
         flags,
@@ -195,27 +203,26 @@ private fun publishLibrary(
     )
 
     try {
-        // 路径先变为只读；已打开的 fd 仍可完成本次写入。
-        Os.fchmod(fd, OsConstants.S_IRUSR)
-    } catch (t: Throwable) {
-        Os.close(fd)
-        throw t
-    }
-
-    val digest = MessageDigest.getInstance("SHA-256")
-    try {
-        FileOutputStream(fd).use { output ->
-            source.use { input ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    output.write(buffer, 0, count)
-                    digest.update(buffer, 0, count)
+        // Android 的 FileOutputStream(fd) 不拥有 fd；由这里负责关闭。
+        java.io.Closeable { Os.close(fd) }.use {
+            Os.fchmod(fd, OsConstants.S_IRUSR)
+            FileOutputStream(fd).use { output ->
+                var written = 0L
+                source.use { input ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        require(count.toLong() <= manifest.size - written)
+                        output.write(buffer, 0, count)
+                        digest.update(buffer, 0, count)
+                        written += count
+                    }
                 }
+                require(written == manifest.size)
+                output.fd.sync()
             }
-            output.fd.sync()
-        }
+        } // 成功或异常均结束本次 fd 所有权；发布前不再保留写句柄。
 
         require(tmp.length() == manifest.size)
         require(digest.digest().contentEquals(manifest.sha256))
@@ -230,27 +237,22 @@ private fun publishLibrary(
 }
 ```
 
-这段代码没有把整个库读入内存，摘要覆盖的就是写入 fd 的同一串字节。`verifyElf()` 即使需要重新打开文件，仅所有者可读的权限也允许当前应用读取。
-
-示例依赖外层跨进程锁来保证只有一个合作发布者。`require(!finalFile.exists())` 与之后的 `Os.rename()` 是两次操作，检查与切换之间留有窗口，“目标存在时绝不覆盖”这一语义给不出原子保证；POSIX（类 Unix 系统接口规范）的 `rename` 还可能替换已有目标。若威胁模型包含不遵守该锁的同 UID 写入者，生产实现要使用支持原子“不覆盖”语义的系统接口或等价协议。
-
-`rename` 成功后，还应按持久性要求同步父目录，并在发布状态写入成功后才允许加载。
+这段代码不把整个库读入内存，并在写入超出已签名长度前拒绝，摘要覆盖写入 fd 的同一串字节。固定 Android `FileOutputStream(FileDescriptor)` 使用 `isOwner=false`，其 `close()` 不关闭传入 fd；因此额外的 `Closeable` 必不可少，不能依赖流的 `.use` 结束原始 FD 所有权。`verifyElf()` 即使需要重新打开文件，仅所有者可读的权限也允许当前应用读取。
 
 <!-- gracker-diagram: a219-07-borrowed-fd-owner -->
 ![Android 的流借用 FD，发布者负责最终关闭](../../assets/diagrams/ch20/a219-07-borrowed-fd-owner.png)
 
 图：关闭写句柄发生在rename前；记录器或代码结构不能因“只读文件”省略原始FD所有权。
 
+示例依赖外层跨进程锁来保证只有一个合作发布者。`require(!finalFile.exists())` 与之后的 `Os.rename()` 是两次操作，检查与切换之间留有窗口，“目标存在时绝不覆盖”这一语义给不出原子保证；POSIX（类 Unix 系统接口规范）的 `rename` 还可能替换已有目标。若威胁模型包含不遵守该锁的同 UID 写入者，生产实现要使用支持原子“不覆盖”语义的系统接口或等价协议。
+
+`rename` 成功后，还应按持久性要求同步父目录，并在发布状态写入成功后才允许加载。
+
 #### `File.renameTo()` 的用途与局限
 
 `File.renameTo()` 只返回布尔值，失败原因是路径、权限还是文件系统错误，从返回值上区分不出来；`Os.rename()` 失败时会提供 `ErrnoException`，可据此区分这些错误。至于“目标存在时失败”之类的附加规则，两层 API 都没有提供，需要在调用侧自行保证。无论使用哪一层 API，源与目标都应位于同一文件系统；需要禁止覆盖时，还要引入具备原子“不覆盖”语义的操作。
 
 原子 `rename` 保证的是运行中的观察者看不到半次目录项切换；掉电后的目录更新是否已持久化、选择清单是否已更新，都在它的保证范围之外。所以恢复逻辑应分别处理“文件未发布”“文件已发布但尚未选择”“选择记录已提交”这几种状态：启动扫描只接受签名完整且状态为 `PUBLISHED` 的版本，未被引用的临时文件可以延迟清理。
-
-<!-- gracker-diagram: a219-05-publish-state -->
-![文件发布、进程加载与业务健康分别确认](../../assets/diagrams/ch20/a219-05-publish-state.png)
-
-图：可捕获失败记BAD；原生致命退出由下一进程结合加载尝试与退出证据处理，已加载进程不强行热换。
 
 <!-- gracker-diagram: a219-08-atomic-durable -->
 ![运行时原子替换、持久化与无覆盖是三个要求](../../assets/diagrams/ch20/a219-08-atomic-durable.png)
@@ -300,9 +302,9 @@ APK ZIP 对齐只影响从 APK 直接 `mmap` 未压缩库的路径；`mmap` 是�
 
 多进程应用可能遇到这种时序：主进程正在发布版本 B，远程服务仍按旧清单加载版本 A，清理线程随后删除了 A。针对这种时序，可采用以下约束：
 
-- 只有一个发布者能够持有跨进程锁；在锁内完成版本文件发布和选择清单更新。
+- 只有一个发布者能够持有跨进程锁；在锁内完成版本文件发布和选择清单更新。所有通过 `AtomicFile` 访问选择清单的线程和进程也必须参与互斥；读取者拿到已验证快照后，再按模块生命周期协议使用该版本。
 - 读取者只加载状态为 `PUBLISHED` 的不可变路径，不打开临时文件。
-- 已加载版本在对应进程退出前都视为仍被引用。缺少可靠的跨进程引用计数时，至少保留 `active`（当前选择）与 `last-known-good`（最近一次确认可用）两个版本，并延迟清理更早版本。
+- 已加载版本及仍准备按旧选择加载的版本都可能被引用。只保留 `active` 与 `last-known-good` 是最低恢复保留策略，不能证明其他旧版本已经无人使用；缺少可靠进程/租约跟踪或已证明的静默期时，不得据此立即删除更早版本。
 - 版本 B 失败后写入 `BAD` 记录，把版本选择切回 A；同一进程不要无限重试 B。
 
 文件锁只表示当前有没有进程占用它，前一次发布是否完成，锁本身回答不了。进程被终止后，内核会释放锁，磁盘上却可能留下临时文件，或处于“文件已发布、选择记录未更新”的中间状态。所以恢复时我们要以签名清单和持久状态为依据，“现在能取得锁”只是锁的状态，代替不了上一次操作成功的结论。
@@ -373,7 +375,7 @@ APK ZIP 对齐只影响从 APK 直接 `mmap` 未压缩库的路径；`mmap` 是�
 | 4 KB 对齐库运行在 16 KB 环境 | 被本节的构建检查或运行测试发现 |
 | 两个进程同时发布和加载 | 读取者只见完整 `PUBLISHED` 版本 |
 | `rename` 后、选择记录更新前终止进程 | 重启后继续使用旧选择，或根据已验证状态完成恢复 |
-| 新版本加载失败 | 写入 `BAD`，新进程回退到最近一次确认可用的版本，不循环重试 |
+| 可捕获加载失败 / 原生加载期退出 | 前者立即记 `BAD`；后者由下一进程结合持久加载尝试与退出证据隔离候选，再选已确认版本，不循环重试 |
 | 可选模块加载失败 | 功能关闭且 JNI 不再被调用，主流程继续运行 |
 
 测试中可以保留一条原生 `dlopen()` 用例，用来持续确认各入口在 AOSP 中的调用路径，并验证诊断系统能把这类加载与 `Runtime.load0()` 拒绝区分开。这条用例服务的是测试目的，线上仍按只读发布要求执行。
@@ -394,6 +396,8 @@ Native DCL 的安全，靠的是一条完整的发布事务，“文件能被 li
 - [Android 17 behavior changes - Safer Native DCL-C](https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c)
 - [AOSP `android-17.0.0_r1`：`java.lang.Runtime`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java)
 - [AOSP `android-17.0.0_r1`：`dalvik.system.VMRuntime`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/libart/src/main/java/dalvik/system/VMRuntime.java)
+- [AOSP Android 17：FileOutputStream FD 所有权](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/io/FileOutputStream.java)、[UnixFileSystem.isReadOnly](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/sun/nio/fs/UnixFileSystem.java) 与 [AtomicFile](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java)。
+- [POSIX open](https://pubs.opengroup.org/onlinepubs/9799919799/functions/open.html) 与 [rename](https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html)：路径末级、描述符和目录项语义。
 - [AOSP `android-17.0.0_r1`：bionic linker](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp)
 - [Android 14 behavior changes - Safer dynamic code loading](https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading)
 - [Dynamic Code Loading security risks](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)

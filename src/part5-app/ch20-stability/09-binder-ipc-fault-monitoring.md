@@ -18,8 +18,8 @@ related_chapters:
 - '26.14'
 consolidated_from:
 - src/part5-app/ch20-stability/22-binder-communication-monitoring.md
-last_verified: '2026-10-21'
-last_source_verified_at: '2026-10-21'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_idle_audit_at: '2026-10-21T10:40:18+08:00'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/base and frameworks/native; Android common kernel android17-6.18-2026-06_r6; Android API and Perfetto documentation checked for the Android 17 scope
 confidence: medium-high
@@ -68,7 +68,7 @@ sources:
 
 # Binder IPC 故障判断与性能诊断
 
-一次 Binder 调用抛出异常，我们最先拿到的一般只是一个 `RemoteException`。它说明的只是 IPC 链路上出了错；服务端到底执行没有、业务提交没有，要靠后面的证据回答。`oneway` 调用在本地就返回，目标是否处理，同样要另行确认。
+一次 Binder 调用抛出异常，我们最先拿到的一般只是一个 `RemoteException`。它说明的只是 IPC 链路上出了错；服务端到底执行没有、业务提交没有，要靠后面的证据回答。跨进程 `oneway` 调用提交后不等待业务回复，目标是否处理同样要另行确认；同进程 AIDL 本地调用可能直接执行 Stub，并不自动获得异步语义。
 
 Binder 是 Android 最主要的本机 IPC 机制。socket、pipe（字节流管道）、共享内存和文件描述符等机制也能跨进程传递数据，Binder 额外负责远端对象引用、调用者身份传递和服务端线程分派。AIDL（Android Interface Definition Language，Android 接口定义语言） 用于描述接口并生成调用代码，Parcel 是 Binder 参数和返回值的序列化容器。
 
@@ -100,11 +100,11 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 
 ### 2.1 `RemoteException` 家族
 
-落到 Java 层，我们最常见到的是 `RemoteException` 家族。它是受检异常（checked exception），编译器要求调用方捕获它，或在方法签名中继续声明。常见子类包括：
+落到 Java 层，我们最常见到的是 `RemoteException` 家族。它在 Java 中是受检异常（checked exception），Java 编译器要求调用方捕获它，或在方法签名中继续声明；Kotlin 不强制检查受检异常，但运行时仍可能抛出。常见子类包括：
 
 | 类型 | 含义 | 注意点 |
 |---|---|---|
-| `DeadObjectException` | 远端进程不存在，或 Binder 端点已经不可用 | 旧代理对象已失效；`isBinderAlive()` 为真也只代表检查发生的那一刻 |
+| `DeadObjectException` | 远端死亡，或底层 Binder 传输失败的启发式映射 | 按端点不可用处理并重建连接；但异常本身不能证明进程已死亡，`isBinderAlive()` 也只有瞬时参考价值 |
 | `DeadSystemException` | Android 核心系统已经死亡并正在重启 | 它继承 `DeadObjectException`；应用随后通常也会被终止 |
 | `TransactionTooLargeException` | 大 transaction 失败后的推测性分类 | 请求和回复都可能失败；异常名不能证明精确的字节原因 |
 | 其他 `RemoteException` | 未实现 transaction、底层传输失败等 | 要结合接口版本、日志和服务端证据 |
@@ -229,7 +229,7 @@ fun marshalledSize(bundle: Bundle): Int {
 | 纯读取、可重复查询 | 重新获取代理对象后，可按既定上限重试一次 |
 | 带稳定 request ID 的幂等写入 | 先查询服务端状态，确认未提交后再重放 |
 | 扣款、消费一次性令牌（token）、追加日志 | 结果未知；查询提交状态，不能盲目重放 |
-| `TransactionTooLargeException` | 修改协议或减小数据量；原样重试没有价值 |
+| `TransactionTooLargeException` | 先按部分失败核对提交状态；修改协议或减小数据量，不盲目原样重试 |
 | `SecurityException` / 参数错误 | 修复权限、身份或参数；退避重试无效 |
 | `oneway` | 本地返回只代表无需等待回复；可靠投递要另建确认和序号协议 |
 
@@ -251,7 +251,7 @@ inline fun <T> callRemote(block: () -> T): IpcCallResult<T> {
         )
     } catch (e: DeadObjectException) {
         IpcCallResult.Indeterminate(
-            kind = IpcFailureKind.REMOTE_DIED,
+            kind = IpcFailureKind.REMOTE_UNAVAILABLE,
             cause = e,
         )
     } catch (e: RemoteException) {
@@ -264,7 +264,7 @@ inline fun <T> callRemote(block: () -> T): IpcCallResult<T> {
 }
 ```
 
-`Indeterminate` 表示仅凭客户端异常判断不出服务端是否已经产生副作用。接口提供幂等键或状态查询能力时，调用方才可以重试。把所有 framework API 都包进 `catch (RuntimeException)` 没有必要；我们只处理公开 API 文档声明或自有协议约定的异常。
+`Indeterminate` 表示仅凭客户端异常判断不出服务端是否已经产生副作用；示例的 `TransportUnavailable` 也不保证服务端未执行，两类都要保留“提交结果未知”，除非具体接口提供可证明的执行前失败证据。接口提供幂等键或状态查询能力时，调用方才可以重试。把所有 framework API 都包进 `catch (RuntimeException)` 没有必要；我们只处理公开 API 文档声明或自有协议约定的异常。
 
 ## 5. Binder Freezer：同步调用和 `oneway` 走不同路径
 
@@ -325,14 +325,14 @@ Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表�
 - **嵌套同步调用**：A 调用 B，B 处理期间又同步回调 A。Binder 允许这类递归调用，A 中正在等待的线程可能转而处理回调；双方若同时持有业务锁，容易形成跨进程循环等待。
 - **`oneway` 处理过慢**：同一 `IBinder` 对象上的多个 `oneway` 调用按发送顺序逐个分派；它们可能由不同线程执行，但前一笔完成前不会分派下一笔。不同 `IBinder` 对象之间，以及同步和 `oneway` 混合调用之间，都没有这项顺序保证。
 
-`oneway` 让发送方不必等待回复，却没有增加服务端的并行处理能力。
-
-服务端 `onTransact()` 应快速校验并复制必要参数，把可以异步执行的耗时任务交给有容量上限的业务 executor，再尽快释放 Binder 线程。持有应用锁去发起外部同步 Binder 调用是危险的组合；实在避不开，就要规定统一的跨进程加锁顺序，并设计超时和取消方式。
+跨进程 `oneway` 让发送方不等待业务回复；同一 Binder 节点的异步事务串行分派，但不同节点可由线程池并行处理。它不扩大线程池或缓冲区，多个发送线程也需用业务序号明确跨线程顺序。
 
 <!-- gracker-diagram: a215-12-nested-reentry -->
 ![同步嵌套回调可以重入原等待线程](../../assets/diagrams/ch20/a215-12-nested-reentry.png)
 
 图：Binder允许递归同步调用；不能仅凭A等待B且B回调A就断言死锁，还要证明锁、执行线程与等待链。
+
+服务端 `onTransact()` 应快速校验并复制必要参数，把可以异步执行的耗时任务交给有容量上限的业务 executor，再尽快释放 Binder 线程。转交 executor 后，Binder 的同节点分派顺序不再自动约束后台业务任务的完成顺序，需要由协议或单消费者执行器保持；同步接口也不能仅因转交后台就声称业务已完成。持有应用锁去发起外部同步 Binder 调用是危险的组合；实在避不开，就要规定统一的跨进程加锁顺序，并设计超时和取消方式。
 
 <!-- gracker-diagram: a215-13-oneway-order -->
 ![同节点异步分派串行不等于后台业务完成顺序](../../assets/diagrams/ch20/a215-13-oneway-order.png)
@@ -451,7 +451,7 @@ inline fun <T> measuredIpc(
 }
 ```
 
-标签只能来自编译期确定的枚举，URI、用户 ID、参数和异常消息都放不进去。`recorder` 使用固定容量缓冲区，写满后丢弃新样本并计数；高频接口可以写入预先分配的环形缓冲区（ring buffer，写到末尾后从头复用空间），写到末尾后从头复用空间，编码和上传则放到独立线程。
+标签只能来自编译期确定的枚举，URI、用户 ID、参数和异常消息都放不进去。`recorder` 使用固定容量缓冲区，写满后丢弃新样本并计数；高频接口可以写入预先分配的环形缓冲区（ring buffer，写到末尾后从头复用空间），编码和上传则放到独立线程。
 
 服务端包装层记录 `server_enter` 和 `server_exit`。两端需要关联时，把 request ID 纳入业务协议；两端日志可能存在时钟偏差，拿日志猜关联不可靠。
 

@@ -164,7 +164,7 @@ Android 会为每个应用进程设置 Java 堆上限，超限的分配会抛出
 | growth limit / capacity / target footprint | growth limit 是当前 Java 堆增长限制；capacity 是可扩展的最大容量；target footprint 是 ART 根据回收结果调节的目标堆大小，不是硬上限。 |
 | OOM / OOME | OOM 表示无法满足内存请求的状态；OOME 是 Java 异常 `OutOfMemoryError` 的简称。 |
 | heap dump / allocation recording | heap dump（堆转储）记录某一时刻的对象和引用；allocation recording（分配记录）记录一段时间内的分配次数、大小与调用栈。 |
-| shallow size / retained size | shallow size 是对象自身占用；retained size 还包括只通过该对象保持可达、移除这条引用后可一并回收的对象。 |
+| shallow size / retained size | shallow size 是对象自身占用；retained size 还包括被该对象支配的对象：当该对象本身变为不可达时，随它一起可被回收的对象占用；删除任意一条入引用并不保证它已经不可达。 |
 | LRU / trim | LRU 是“最近最少使用”淘汰顺序；trim 表示根据进程状态或系统提示主动缩减可重建资源。 |
 | FD / VMA | FD 是文件描述符；VMA 是进程的一段虚拟内存区域。FD、VMA 或地址空间耗尽也可能表现为分配失败。 |
 | profiling trigger / artifact / handler | profiling trigger 是满足条件后由系统启动诊断采集的触发器；artifact 是返回的堆转储、跟踪等诊断产物；handler 是接收或处理异常、结果的回调。 |
@@ -233,7 +233,7 @@ object JavaHeapPressure {
 
 ### ART 分配失败与 OOM 触发路径
 
-普通对象快速分配失败后，`Heap::AllocateInternalWithGc()` 并不会立即抛出 OOME，而是逐级尝试：先等待正在运行的 GC，等待期间完成过回收就重试分配；随后按 `next_gc_type_` 执行阻塞式 GC，也就是由分配线程发起并等待完成的回收；仍未取得足够空间时，执行覆盖整个堆的回收，并清除 SoftReference（内存不足时允许 GC 清除的软引用）；部分分配器在配置启用且达到时间间隔后，还会尝试 homogeneous space compaction（同构空间压缩），在两个同类堆空间之间复制对象整理碎片。这些尝试都失败后，才抛出 OOME。
+普通对象快速分配失败后，`Heap::AllocateInternalWithGc()` 并不会立即抛出 OOME，而是逐级尝试：先等待正在运行的 GC，等待期间完成过回收就重试分配；随后按 `next_gc_type_` 执行阻塞式 GC，也就是由分配线程发起并等待完成的回收；仍未取得足够空间时，执行覆盖整个堆的回收，并清除 SoftReference（内存不足时允许 GC 清除的软引用）；部分分配器在配置启用且达到时间间隔后，还会尝试 homogeneous space compaction（同构空间压缩），在两个同类堆空间之间复制对象整理碎片。这些尝试仍无法满足请求后，才抛出 OOME。完整回收和清除软引用阶段不是必然只执行一次：源码结合空闲堆比例、此次回收字节比例以及是否成功运行 GC 判定是否继续重试，避免无产出的 GC thrashing。`kMaxGcAttempts = 5` 只约束“未成功运行 GC”这一重试条件，不是整条慢路径最多五次 GC 的保证。
 
 把这条路径读成固定的“Young GC（年轻代回收） → Full GC（全堆回收）”两步，容易读错现场：`next_gc_type_` 取决于收集器、代际状态、上次 GC 和目标堆大小，设备之间没有统一剧本。分配线程也可能把主要时间花在等待另一线程执行 GC 上，所以 Perfetto 中看到的业务停顿可能长于单次 GC 暂停。
 
@@ -508,7 +508,7 @@ Android 8 起，ART 默认使用 Concurrent Copying；官方 GC 文档说明 And
 
 GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用线程，以及后台 GC 线程与渲染线程竞争 CPU。AOSP `Daemons.java` 中的 `HeapTaskDaemon` 会调用 `VMRuntime.getRuntime().runHeapTasks()`；`TaskProcessor::RunAllTasks()` 从队列取出 `HeapTask` 并执行。Android Developers 的慢渲染文档也说明，新版 Android 的 GC 通常由名为 `HeapTaskDaemon` 的后台线程运行；大量分配会增加 GC 的 CPU 工作。
 
-每帧预算由屏幕刷新率决定，写不成一个固定的毫秒数。滑动时主线程、RenderThread、图片解码线程和后台任务共同使用 CPU；GC 工作与帧生产重叠时，可能增加调度等待、内存带宽压力或短暂停顿。是否影响用户可见帧必须由 Frame Timeline 与线程轨道证明。
+屏幕刷新率决定刷新间隔，但具体应用帧的可用渲染预算还取决于调度与流水线，应读取 FrameTimeline 中对应帧的 expected 区间与 deadline，不能仅用刷新率倒数替代。滑动时主线程、RenderThread、图片解码线程和后台任务共同使用 CPU；GC 工作与帧生产重叠时，可能增加调度等待、内存带宽压力或短暂停顿。是否影响用户可见帧必须由 Frame Timeline 与线程轨道证明。
 
 排查时，单次 GC 耗时本身说明不了多少问题：相同的 GC 工作出现在空闲窗口与关键帧窗口，用户影响完全不同。我们要在同一份系统跟踪中比较三类轨道：
 
@@ -544,7 +544,9 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 
 #### 并发 GC 请求如何判定和去重
 
-`ShouldConcurrentGCForJava()` 有字节阈值和“分配增量 × 经过时间”两类判断。它可能返回“不需要 GC”“请求 `ConcurrentGCTask`”或“安排 `TimeBasedGcThresholdCheckTask`”。`num_bytes_allocated_` 会把仍在使用的整块 TLAB 计入，因此是近似已分配字节数，不是逐对象精确值，也不是 PSS。
+`ShouldConcurrentGCForJava()` 先受当前 feature flag 与非零时间阈值约束。时间路径仍保留 `concurrent_start_bytes_` 字节兜底；随后若启用 `time_based_gc_triggering_via_integral()`，用 `TimeIntegral::AddSample()` 累积分配增量的时间积分，否则使用“上次 GC 后新增 KiB × 距上次 GC 的毫秒数”。未进入时间路径时只比较字节阈值。
+
+> ⚠️ 矛盾：旧稿将时间判断统一写为“分配增量 × 经过时间”；Android 17 r1 还包含受独立开关控制的累计积分模式，必须按运行时配置区分。它可能返回“不需要 GC”“请求 `ConcurrentGCTask`”或“安排 `TimeBasedGcThresholdCheckTask`”。`num_bytes_allocated_` 会把仍在使用的整块 TLAB 计入，因此是近似已分配字节数，不是逐对象精确值，也不是 PSS。
 
 多个线程同时满足条件时，`RequestConcurrentGC()` 用原子 compare-and-set（仅当旧值未变化时更新）增加 `max_gc_requested_`，只有更新成功的线程把任务加入队列。任务执行时还会核对目标序号：其他路径已经完成更新的 GC，本次任务就跳过收集。去重依赖这个序号协议，而不是扫描（检查线程栈和全局引用等根对象）队列里是否已有同名任务。
 
@@ -733,7 +735,7 @@ suspend fun <T> processInChunks(
 
 讨论范围是 Android 上的 Compose Runtime、应用 Java Heap（ART 管理的 Java/Kotlin 对象堆）与 ART GC（垃圾回收）；平台与内核基线见文首引言。Compose 是独立发布的 Jetpack 库，版本节奏与平台分开走。本文使用 2026 年 8 月 12 日发布的稳定版 Compose Runtime 1.12.0，并以 AndroidX 提交 `963bf914f78b389bdddef0da7f36bee19d897274` 为源码锚点。
 
-截至 2026-10-21，官方发布页列出的稳定版为 1.12.1，预览版为 1.13.0-beta01；1.12.1 发布说明标注其相对 1.12.0 没有改动。本文保留 1.12.0 的固定源码锚点，预览版变化单独标明，不作为稳定行为依据。
+截至 2026-10-25，官方发布页列出的稳定版仍为 1.12.1，预览版已于 2026-10-21 更新到 1.13.0-beta02；1.12.1 发布说明标注其相对 1.12.0 没有改动。本文保留 1.12.0 的固定源码锚点，预览版变化单独标明，不作为稳定行为依据。
 
 Composition 是可组合界面在运行时的实例树，保存界面结构、状态订阅和 `remember` 值；重组（recomposition）是状态变化后重新执行受影响的可组合函数。处理 Compose 内存问题时，先区分两种症状：
 
@@ -922,6 +924,8 @@ fun TrackListPosition(
 }
 ```
 
+`snapshotFlow` 会立即发送首次求值结果；后续只有结果不等时发送。快速多次 Snapshot 变化可能在一次重新求值前合并，因此它不是逐次写入的无损事件日志，`block` 也应无副作用且不能写 Snapshot 状态。
+
 `reportIndex` 更新时，`rememberUpdatedState` 让现有收集任务使用最新回调；`listState` 不变就无需重启任务。直接捕获 `reportIndex` 会让未重启的协程继续调用旧回调。[副作用官方文档](https://developer.android.com/develop/ui/compose/side-effects#rememberupdatedstate)说明了这种长期任务与可更新输入的配合方式。
 
 把 `snapshotFlow` 放在 `LaunchedEffect` 中不会自动造成泄漏。风险来自外部协程作用域比界面所有者存活更久、`LaunchedEffect` 的 key 选择错误、回调捕获 Activity/View，或重复启动未受管理的收集任务。heap dump 中只看到 Snapshot 类不足以确认泄漏，还要继续检查协程 Job（可取消任务）、Flow collector（Flow 收集者） 和宿主生命周期。
@@ -1091,7 +1095,7 @@ composeCompiler {
 | Compose Runtime 1.11.4 | LinkTable 实现存在但默认关闭；尚未包含 `derivedStateOf` forward-write 保留问题修复 |
 | Compose Runtime 1.12.0 | 本文固定的稳定源码锚点；包含上述 `derivedStateOf` 修复；LinkTable 仍为实验实现且默认关闭 |
 | Compose Runtime 1.12.1 | 2026-09-09 发布；官方说明相对 1.12.0 没有改动 |
-| Compose Runtime 1.13.0-beta01 | 2026-10-07 发布的预览版；不作为本文稳定行为依据 |
+| Compose Runtime 1.13.0-beta02 | 2026-10-21 发布的预览版；修复 ComputedState 保留与失效问题，不作为本文稳定行为依据 |
 | Android 17 / API 37 | ART 源码锚点为 `android-17.0.0_r1`；垃圾回收器与分代模式仍受运行时和设备配置影响 |
 
 Compose Multiplatform 在不同目标上使用不同运行时与内存管理器。这里的 GC、heap dump 和 Android View 互操作结论只适用于 Android；Desktop/JVM、iOS 或 Wasm 的对象大小与 GC 行为需要按各自平台验证。

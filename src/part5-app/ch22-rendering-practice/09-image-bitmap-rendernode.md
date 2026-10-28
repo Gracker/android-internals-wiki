@@ -4,7 +4,7 @@ chapter: '22.9'
 section: '22.9'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1; Glide 5.0.9; Coil 3.5.0; Android Developers docs
 confidence: medium-high
 sources:
@@ -113,14 +113,14 @@ Hardware Bitmap 与 RenderNode 能减少这条链路上的一部分复制或录�
 
 #### Glide 的请求管理与资源释放
 
-Glide 5.0.9 的 `Engine` 先查正在使用的资源和内存缓存；未命中时，同一缓存键对应的 `EngineJob`（进行中的加载任务） 还在进行，就直接复用这个加载任务，否则启动新的解码任务 `DecodeJob`（解码任务）。原始数据和变换后资源怎么进磁盘缓存，由请求决定。加载到 `ImageView` 时，新的 `into(imageView)` 会替换该 View 上的旧请求；RecyclerView 回收后若暂时不绑定新图，应调用 `clear(imageView)`，把占位图之外的旧内容一并清掉。
-
-`Glide.with(fragment)`、`Glide.with(activity)` 或 `Glide.with(view)` 可以获得与界面关联的 `RequestManager`。传入 Application Context（应用级 Context） 得到的是应用级 `RequestManager`，页面停止时它不会自动暂停请求。Glide 返回的 Bitmap 可能受引用计数和 `BitmapPool` 管理：请求清理后继续持有 Bitmap，或在 Transformation（变换实现） 变换中手动调用 `recycle()` 回收原始 Bitmap，都可能造成内容复用错误或崩溃。
+Glide 5.0.9 的 `Engine` 在请求允许内存缓存时，先查正在使用的资源和内存缓存；未命中或跳过内存时，再查进行中的 `EngineJob`。任务去重除了相同缓存键，还区分 `onlyRetrieveFromCache`（只允许从缓存取）；同组已有任务则加入回调，否则启动新的 `DecodeJob`。原始数据和变换后资源怎么进磁盘缓存，由请求决定。加载到 `ImageView` 时，新的 `into(imageView)` 会替换该 View 上的旧请求；RecyclerView 回收后若暂时不绑定新图，应调用 `clear(imageView)`，把占位图之外的旧内容一并清掉。
 
 <!-- gracker-diagram: a240-02-glide-engine-jobs -->
 ![Glide 5.0.9 的内存查询与任务复用条件](../../assets/diagrams/ch22/a240-02-glide-engine-jobs.png)
 
 图：同一 URL 不能替代完整请求 key；onlyRetrieveFromCache 也影响进行中任务的复用。
+
+`Glide.with(fragment)`、`Glide.with(activity)` 或 `Glide.with(view)` 可以获得与界面关联的 `RequestManager`。传入 Application Context（应用级 Context） 得到的是应用级 `RequestManager`，页面停止时它不会自动暂停请求。Glide 返回的 Bitmap 可能受引用计数和 `BitmapPool` 管理：请求清理后继续持有 Bitmap，或在 Transformation（变换实现） 变换中手动调用 `recycle()` 回收原始 Bitmap，都可能造成内容复用错误或崩溃。
 
 #### Coil 的实例与网络配置
 
@@ -170,7 +170,7 @@ Android 8.0 / API 26 起，软件 Bitmap 的像素数据位于原生堆（native
 
 #### BitmapFactory：先读边界尺寸，再按 2 的幂采样
 
-下面的函数只负责文件解码，调用方必须把它放到解码线程池。它会先读取文件头得到边界尺寸，并选择不会把两个维度都采样到目标值以下的最大 2 的幂。
+下面的函数只负责文件解码，调用方必须把它放到解码线程池。它会先读取文件头得到边界尺寸，并在原图足够大的前提下，选择让宽、高各自都不小于请求尺寸的最大 2 的幂。原图任一维已小于请求值时保留采样 1，不在这里补做放大。
 
 ```kotlin
 @WorkerThread
@@ -236,13 +236,13 @@ suspend fun decodeSized(
         val sourceWidth = info.size.width
         val sourceHeight = info.size.height
         val scale = minOf(
-            requestedWidth.toFloat() / sourceWidth,
-            requestedHeight.toFloat() / sourceHeight,
-            1f,
+            requestedWidth.toDouble() / sourceWidth,
+            requestedHeight.toDouble() / sourceHeight,
+            1.0,
         )
         decoder.setTargetSize(
-            maxOf(1, (sourceWidth * scale).roundToInt()),
-            maxOf(1, (sourceHeight * scale).roundToInt()),
+            (sourceWidth * scale).toInt().coerceIn(1, minOf(sourceWidth, requestedWidth)),
+            (sourceHeight * scale).toInt().coerceIn(1, minOf(sourceHeight, requestedHeight)),
         )
         if (requireSoftwarePixels) {
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
@@ -340,7 +340,7 @@ fun decodeTile(
 | 正在使用或显示的资源 | 正在被显示目标使用的 Drawable / Bitmap | 重复引用与解码 | 清理后仍持有被资源池接管的对象 |
 | 内存缓存 | 已解码并可能已变换的结果 | 磁盘读取、解码、变换 | 原生堆或图形内存峰值，尺寸变体互相挤占 |
 | Bitmap / 资源复用池 | 可安全复用的已分配空间或数组 | 频繁分配与释放 | 把仍在显示或不可变的对象放入池 |
-| 变换结果磁盘缓存 | 已缩放或变换的输出 | 网络、解码和部分变换 | 尺寸或变换版本遗漏导致错误命中 |
+| 变换结果磁盘缓存 | 已缩放或变换后重新编码的输出 | 网络、原图解码与部分变换；缓存输出仍需解码 | 尺寸或变换版本遗漏导致错误命中 |
 | 原始数据磁盘缓存 | 原始压缩数据 | 网络 | 同一 URL 内容变化、认证隔离和过期策略 |
 | HTTP 缓存 / CDN | HTTP 响应或内容分发网络（CDN）的边缘资源 | 服务端传输 | `Cache-Control`、`ETag`、`Vary` 或客户端实现不一致 |
 
@@ -404,7 +404,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 
 图：同一视觉内容固定尺寸和设备后比较；文件更小不保证解码或首个可见帧更快。
 
-- CDN 输出字节、TTFB（首字节到达时间） 首字节时间与完整下载时间；
+- CDN 输出字节、TTFB（首字节到达时间）与完整下载时间；
 - 冷 / 热原始数据缓存下的解码与变换时间；
 - 输出 Bitmap 尺寸、配置、分配空间和图形内存；
 - UI 回调、RenderThread 首次采样与 FrameTimeline；
@@ -426,7 +426,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 
 - View 或可组合项的目标尺寸在发起请求前可解析，未约束尺寸不会退回原图。
 - 解码、变换和磁盘 I/O 不运行在 UI 线程。
-- RecyclerView 回收、Fragment `onDestroyView()`、Compose 列表项离屏和页面停止时，请求与结果引用按框架契约释放。
+- RecyclerView 回收、Fragment `onDestroyView()`、Compose 项离开组合和页面停止时，按各自请求管理契约处理暂停、取消与引用释放；像素离屏不等于项已离开组合，也不保证缓存立即释放。
 - 预取数量、请求并发、交叉淡入淡出和缓存容量经过低内存设备测试。
 - 软件与硬件 Bitmap 的选择符合像素访问、Canvas 类型、变换和图形内存限制。
 - 自定义 Transformation 不调用 `recycle()` 回收框架仍拥有的输入资源。
@@ -501,14 +501,14 @@ suspend fun decodeForDisplay(
         val sourceWidth = info.size.width
         val sourceHeight = info.size.height
         val scale = minOf(
-            1f,
-            targetWidth.toFloat() / sourceWidth,
-            targetHeight.toFloat() / sourceHeight,
+            1.0,
+            targetWidth.toDouble() / sourceWidth,
+            targetHeight.toDouble() / sourceHeight,
         )
 
         decoder.setTargetSize(
-            (sourceWidth * scale).toInt().coerceAtLeast(1),
-            (sourceHeight * scale).toInt().coerceAtLeast(1),
+            (sourceWidth * scale).toInt().coerceIn(1, minOf(sourceWidth, targetWidth)),
+            (sourceHeight * scale).toInt().coerceIn(1, minOf(sourceHeight, targetHeight)),
         )
         decoder.setAllocator(ImageDecoder.ALLOCATOR_DEFAULT)
     }
@@ -522,7 +522,7 @@ suspend fun decodeForDisplay(
 
 图：withContext 负责调度，ImageDecoder 不会因存在回调就自动后台执行。
 
-若输出需要 `getPixel()`、`copyPixelsToBuffer()`、软件 `Canvas` 或后续原地修改，应显式选择 `ALLOCATOR_SOFTWARE`。如果只是在解码后画圆角，`ImageDecoder.setPostProcessor()` 可以先在内部软件像素上绘制，再生成不可变结果；业务拿到结果后，像素就改不动了。
+若输出需要 `getPixel()`、`copyPixelsToBuffer()` 或作为软件 Canvas 的图片源，应选择 `ALLOCATOR_SOFTWARE`；如果还要在返回后原地修改像素或把结果作为可写 Canvas 目标，必须再设置 `setMutableRequired(true)`。软件分配本身不改变默认不可变契约。如果只是在解码后画圆角，`ImageDecoder.setPostProcessor()` 可以先在内部软件像素上绘制，再生成不可变结果；业务拿到结果后，像素就改不动了。
 
 <!-- gracker-diagram: a240-08-software-mutability -->
 ![软件存储与可写结果是两个配置维度](../../assets/diagrams/ch22/a240-08-software-mutability.png)
@@ -534,7 +534,8 @@ suspend fun decodeForDisplay(
 文件来源必须使用 `BitmapFactory` 时，第一次调用只读取边界，第二次才分配像素。这一段与前面「先读边界尺寸，再按 2 的幂采样」是同一条两阶段流程，差别在失败处理：这里边界读取不到尺寸就返回 `null`，由调用方决定回退。
 
 ```kotlin
-fun decodeSampledFile(
+@WorkerThread
+fun decodeSampledFileOrNull(
     path: String,
     requestedWidth: Int,
     requestedHeight: Int,
@@ -549,6 +550,7 @@ fun decodeSampledFile(
 
     var sampleSize = 1
     while (
+        sampleSize <= Int.MAX_VALUE / 2 &&
         bounds.outWidth / (sampleSize * 2) >= requestedWidth &&
         bounds.outHeight / (sampleSize * 2) >= requestedHeight
     ) {
@@ -663,7 +665,12 @@ Hardware Bitmap 是应用绘制命令使用的资源，它自己不会变成 Sur
 
 Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（gainmap），增益图记录从 SDR 基础图恢复 HDR 亮度所需的增益信息。`BitmapFactory.cpp` 会从编解码器取得增益图，解码为独立 Bitmap 并附着到基础 Bitmap；Hardware Bitmap 路径还会为增益图创建对应的硬件像素存储。`Gainmap.java` 保存增益图内容 Bitmap 与显示参数。
 
-`ImageDecoder.cpp` 在设置 `PostProcessor` 时会跳过自动增益图提取，因为平台推断不出任意 Canvas 处理应怎样等价作用于增益图。Ultra HDR 输入若还要做解码期后处理，应同时验证 `hasGainmap()` 和显示效果，只检查最终 Bitmap 是否为 `Config.HARDWARE` 是不够的。
+`ImageDecoder.cpp` 只在主图解码成功、未设置 `PostProcessor` 且未选择优先节省 RAM 的内存策略时自动提取增益图。后处理会跳过提取，因为平台推断不出任意 Canvas 处理应怎样等价作用于增益图；`MEMORY_POLICY_LOW_RAM` 也会跳过自动提取。Ultra HDR 输入若还要做解码期后处理，应同时验证 `hasGainmap()` 和显示效果，只检查最终 Bitmap 是否为 `Config.HARDWARE` 是不够的。
+
+<!-- gracker-diagram: a240-18-gainmap-gates -->
+![Ultra HDR 增益图有独立的提取与存储条件](../../assets/diagrams/ch22/a240-18-gainmap-gates.png)
+
+图：后处理或节省 RAM 策略可能跳过自动增益图提取；HDR 验收要看 hasGainmap 与实际显示。
 
 计算这类图片的驻留内存与解码峰值时，要纳入基础 Bitmap、增益图 Bitmap 和解码、缩放期间的临时缓冲；生成硬件结果时，软件像素与硬件像素存储还可能短暂共存。
 
@@ -686,11 +693,6 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 - 失败率，以及服务端回退格式是否生效。
 
 一台旗舰设备的单次结果不足以推导全量策略。设备分组应来自实际 SoC、系统版本、内存等级和业务样本，格式性能则由各组实测给出。
-
-<!-- gracker-diagram: a240-18-gainmap-gates -->
-![Ultra HDR 增益图有独立的提取与存储条件](../../assets/diagrams/ch22/a240-18-gainmap-gates.png)
-
-图：后处理或节省 RAM 策略可能跳过自动增益图提取；HDR 验收要看 hasGainmap 与实际显示。
 
 ### 6. 解码线程调度与并发上限
 
@@ -776,7 +778,7 @@ ashmem 至今仍有明确的共享像素用途。普通软件 Bitmap 默认使�
 
 #### 8.2 HardwareBuffer、dma-buf 与厂商实现
 
-Hardware Bitmap 可以通过 `Bitmap.getHardwareBuffer()` 取得 `HardwareBuffer`。应用层拿到的是标准化的 AHardwareBuffer/HardwareBuffer 图形缓冲句柄；实际 `gralloc` 分配堆、压缩布局、IOMMU（I/O 内存管理单元）映射与统计归类由设备实现决定。
+Hardware Bitmap 可以通过 `Bitmap.getHardwareBuffer()` 取得 `HardwareBuffer`；该句柄不附带颜色空间，要同时保留 `Bitmap.getColorSpace()`，且在 Bitmap 使用期间不能修改底层缓冲。应用直接管理的 `HardwareBuffer` 包装对象还要按所有权关闭，不能在其他使用者仍依赖同一个包装对象时提前 `close()`。应用层拿到的是标准化的 AHardwareBuffer/HardwareBuffer 图形缓冲句柄；实际 `gralloc` 分配堆、压缩布局、IOMMU（I/O 内存管理单元）映射与统计归类由设备实现决定。
 
 在 `android17-6.18-2026-06_r6` 内核基线下，图形缓冲跨设备或跨进程共享通常会使用 Linux 的共享缓冲机制 dma-buf，生产者和消费者同步会关联 dma-fence。这套机制证明不了“每个 Hardware Bitmap 都来自相同分配堆、采用相同物理布局”，单凭一个文件描述符（FD）也推断不出 GPU 已完成写入。
 
@@ -841,9 +843,11 @@ adb shell dumpsys SurfaceFlinger
 inline fun <T> tracedImageStage(
     requestId: String,
     stage: String,
-    block: () -> T,
+    crossinline block: () -> T,
 ): T {
-    Trace.beginSection("Image:$stage:$requestId")
+    val sectionName = "Image:$stage:$requestId"
+    require(sectionName.length <= 127)
+    Trace.beginSection(sectionName)
     return try {
         block()
     } finally {
@@ -852,7 +856,12 @@ inline fun <T> tracedImageStage(
 }
 ```
 
-`beginSection()` 与 `endSection()` 必须在同一线程成对执行，切片名称还应控制长度并避免写入用户隐私。使用这层标记后，可以在 Perfetto 中把应用排队、系统解码和结果绑定关联到同一个请求。
+`beginSection()` 与 `endSection()` 必须在同一线程成对执行，本例用 `crossinline` 限定同步 block，不能跨挂起点或把它当作跨线程请求总时长。名称上限是 127 个 UTF-16 code unit，`requestId` 只用短的不透明关联号，不写 URL、令牌或用户数据；`stage` 使用固定枚举值。异步或挂起请求的端到端区间可另用 API 29+ 的 `beginAsyncSection` / `endAsyncSection`，按相同名称与 cookie 配对。各同步切片仍可用关联号串到同一个请求。
+
+<!-- gracker-diagram: a240-24-request-trace-boundaries -->
+![同步解码切片与异步请求区间分别标记](../../assets/diagrams/ch22/a240-24-request-trace-boundaries.png)
+
+图：同步业务切片关联系统 decode trace；异步跨度不能套同线程 trace 栈。
 
 做一次可靠的线下分析时，我们同时检查以下几项：
 
@@ -865,11 +874,6 @@ inline fun <T> tracedImageStage(
 7. 冷缓存和热缓存是否混在同一组数据里。
 
 不要编写依赖并不存在的 `Bitmap#allocate` 切片参数的 SQL。若平台源码没有记录所需字段，应由应用 trace counter（轨迹计数器）、请求日志或内存采样补齐。
-
-<!-- gracker-diagram: a240-24-request-trace-boundaries -->
-![同步解码切片与异步请求区间分别标记](../../assets/diagrams/ch22/a240-24-request-trace-boundaries.png)
-
-图：同步业务切片关联系统 decode trace；异步跨度不能套同线程 trace 栈。
 
 ### 10. 九宫格和瀑布流的调度策略
 
@@ -901,7 +905,7 @@ inline fun <T> tracedImageStage(
 
 | 框架 | 官方资料可确认的能力 | 主要核查点 |
 | --- | --- | --- |
-| Glide 4 | 请求生命周期、内存/磁盘缓存、`BitmapPool`、可配置 Hardware Bitmap | 当前版本是否启用 ImageDecoder；该路径不能使用 `inBitmap` 作为解码目标 |
+| Glide 5.0.9（本文基线） | 请求生命周期、内存/磁盘缓存、`BitmapPool`、可配置 Hardware Bitmap | 当前版本是否启用 ImageDecoder；该路径不能使用 `inBitmap` 作为解码目标 |
 | Coil 3 | Interceptor、Mapper、Keyer、Fetcher、Decoder 组件链，内存/磁盘缓存 | 注册了哪个 Decoder、`allowHardware` 与变换是否要求软件像素 |
 | Picasso | ImageView 复用处理、请求取消、变换与缓存 | 当前依赖版本和源码中采用的解码器、网络缓存实际由谁提供 |
 
@@ -916,7 +920,7 @@ Android 17 / API 37 的公开 API 差异为 `ImageDecoder` 增加了四个默认
 - `setDefaultThreadListener()` / `getDefaultThreadListener()`
 - `setDefaultProcessListener()` / `getDefaultProcessListener()`
 
-源码中的调用顺序是：
+在 `imageDecoderDefaultListener` 功能开关启用的源码分支中，调用顺序是：
 
 1. 当前线程设置了线程级监听器时，先调用它，并跳过进程级监听器；
 2. 当前线程没有线程级监听器时，调用进程级监听器；
@@ -947,7 +951,7 @@ Android 17 / API 37 的公开 API 差异为 `ImageDecoder` 增加了四个默认
 
 图：RenderNode 缓存的是命令和属性，不是自动缓存整张栅格图；框架内部节点交给框架管理。
 
-HWUI 对非 Hardware Bitmap 可进入 `prepareToDraw()` / `PinAsTexture()` 的显式纹理准备分支；Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。
+`Bitmap.prepareToDraw()` 可让非 Hardware Bitmap 提前进入 HWUI 的显式纹理准备分支（原生 `Bitmap_prepareToDraw` / `PinAsTexture`）；Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。 `prepareToDraw()` 是提前发起准备：`RenderProxy` 没有现成 RenderThread 时会直接返回，有线程时把工作投递给它；GPU context 可用且 Bitmap 非硬件时才执行 pin/unpin 与提交。方法返回不保证 GPU 已完成，也不等于图片已经上屏。参见 [RenderProxy](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp) 与 [SkiaGpuPipeline](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp)。
 
 做对照实验时，我们固定同一图片字节、目标尺寸、色彩空间、缓存冷热和页面，分别采集软件 Bitmap 直接显示、软件 Bitmap 提前 `prepareToDraw()`、Hardware Bitmap 显示，以及三组内存缓存命中。比较从请求开始到目标帧呈现（present）的总等待，并记录解码、上传或准备切片、`DrawFrame`、GPU 完成时刻和 Graphics、dma-buf、PSS。若 Hardware 组首绘更稳定但解码完成更晚，只能说明成本前移；端到端是否改善仍要看总等待。
 

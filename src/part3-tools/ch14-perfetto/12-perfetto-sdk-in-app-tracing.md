@@ -144,16 +144,16 @@ void StopAppTrace(
 }
 ```
 
-初始化、`TrackEvent::Register()` 和 category 静态存储都要在事件写入前完成。`StartBlocking()` 返回后，配置才处于活动状态；此前执行的 `TRACE_EVENT` 不属于这次普通 in-process session。`TraceDrawFrame()` 让真实渲染函数在 slice 作用域内执行，记录的是函数从进入到返回的持续时间。
+初始化、`TrackEvent::Register()` 和 category 静态存储都要在事件写入前完成。本例在调用 `StartBlocking()` 前完成注册，返回后再执行目标工作；不能把这一保证推广到调用启动后才注册的数据源，或不支持 start notification 的外部 producer。启动前的事件不属于本次普通 in-process session。`TraceDrawFrame()` 的作用域从 `TRACE_EVENT` 开始，到函数退出时结束，包含 `draw()`、counter 写入及可能发生的排队/阻塞，不等同于纯 CPU 执行时间。
 
-`TrackEvent::Flush()` 把 writer（SDK 写入端）中尚未提交的数据推给 service，`StopBlocking()` 负责结束 session。示例使用 `Setup(config, output_fd)` 直接写入由应用以私有权限打开的文件；调用方要保持 fd 有效，并在停止完成后关闭。若 `Setup()` 不传 fd，再使用 `ReadTraceBlocking()` 读取 consumer buffer。同一个 session 只选择一种导出方式。
-
-`buffer_size_kb` 要根据目标设备上的事件率、最长采集时间和丢包统计确定。ring buffer（环形缓冲区）写满后覆盖旧 packet，`DISCARD` 策略写满后舍弃新 packet，两者丢失的时间段不同。
+`TrackEvent::Flush()` 把 writer（SDK 写入端）中尚未提交的数据推给 service，`StopBlocking()` 负责结束 session。示例使用 `Setup(config, output_fd)` 直接写入由应用以私有权限打开的文件；调用方要保持 fd 有效，并在停止完成后关闭。若 `Setup()` 不传 fd，再使用 `ReadTraceBlocking()` 读取 consumer buffer。同一个 session 只选择一种导出方式。`ReadTraceBlocking()` 会消耗缓冲区内容，重复读取不是重放；采集中读取通常还需要成功的 session flush。示例中的 `TrackEvent::Flush()` 只提交调用线程上各活动实例的 writer，不是等待所有线程提交完成的全局屏障。多写入线程应先停止或同步业务写入，再按需要在各线程 flush，并核对 session flush、停止结果与丢失统计。Blocking 接口不要放进对延迟敏感的渲染回调。
 
 <!-- gracker-diagram: ch14-12-04-inprocess-session -->
 ![普通进程内session从启动到导出](../../assets/diagrams/ch14/ch14-12-04-inprocess-session.png)
 
 图：普通会话启动后记录目标工作，停止写入与提交后选择一种导出方式。 writer flush仅作用调用线程；ReadTrace会消耗buffer，Blocking接口不放进延迟敏感回调。
+
+`buffer_size_kb` 要根据目标设备上的事件率、最长采集时间和丢包统计确定。service 的 ring buffer（环形缓冲区）写满后覆盖旧数据，`DISCARD` 策略写满后舍弃新数据，两者丢失的时间段不同。它们与 producer 的共享内存写入缓冲区不是同一层；后者耗尽时还受数据源的 buffer-exhausted policy 约束。调大 consumer buffer 不能保证消除 producer 侧丢数。
 
 <!-- gracker-diagram: ch14-12-05-two-buffer-layers -->
 ![共享内存暂存与service保留buffer分层](../../assets/diagrams/ch14/ch14-12-05-two-buffer-layers.png)
@@ -183,7 +183,7 @@ void InitSystemProducer() {
 }
 ```
 
-同时设置 `enable_system_consumer = false` 且代码中不显式调用 `NewTrace(kSystemBackend)` 时，linker（链接器）可以把未使用的 system consumer IPC（进程间通信）代码从最终二进制中移除。这个字段只帮助构建工具删除未使用代码，不负责授权；应用代码仍不得创建 system consumer，也不调用 `ReadTraceBlocking()`。外部 consumer 决定何时选择 `track_event`。
+同时设置 `enable_system_consumer = false` 且代码中不显式调用 `NewTrace(kSystemBackend)` 时，linker（链接器）可以把未使用的 system consumer IPC（进程间通信）代码从最终二进制中移除。这个字段只帮助构建工具删除未使用代码，不负责授权；应用代码仍不得创建 system consumer 来读取整机 trace。这里限定 producer-only 的系统后端路径；同一进程也可另外启用 in-process backend，并读取自己控制的进程内 session。外部 consumer 决定何时选择 `track_event`。
 
 adb 或受控实验环境的外部 TraceConfig 要显式请求 `track_event`，并在 `TrackEventConfig` 中启用目标 category。需要调度证据时，再加入 `linux.ftrace` 的 `sched_switch`、`sched_waking`；duration 与 buffer 按复现窗口和实测写入速率设置。配置由具备 consumer socket 权限的 shell 或系统组件提交，应用 producer 不负责创建输出文件。
 
@@ -200,7 +200,12 @@ adb 或受控实验环境的外部 TraceConfig 要显式请求 `track_event`，�
 
 custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session 会创建独立实例；存在多个并发 session 时，同一个 `Trace()` lambda（传给 `Trace()` 的匿名回调）可能被执行多次。没有活动实例时 lambda 不执行，所以计算成本高的参数应放在 lambda 内。
 
-访问实例状态时要调用 `GetDataSourceLocked()` 取得带锁句柄，避免 session 停止与业务线程写入同时发生时访问已销毁的实例。
+访问实例状态时，在 `Trace()` lambda 内调用 `ctx.GetDataSourceLocked()` 取得带锁句柄，并先检查句柄是否为空；停止可能恰好发生在取锁之前。确认非空后，在句柄存活期间访问状态，避免与实例销毁竞态。`Trace()` lambda 在调用线程同步执行；昂贵计算放在其中仍可能因并发 session 重复执行，不应无条件重复消费队列或改变业务状态。
+
+<!-- gracker-diagram: ch14-12-08-custom-lifecycle -->
+![custom实例生命周期与调用线程写入](../../assets/diagrams/ch14/ch14-12-08-custom-lifecycle.png)
+
+图：每个活动session拥有独立实例，Trace同步遍历活动实例写packet。 无实例则不执行lambda；并发会重复执行，昂贵计算和业务副作用需单独处理。
 
 自定义数据源的四个边界如下：
 
@@ -211,7 +216,12 @@ custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session
 | `Trace(lambda)` | 按活动实例写 packet | 没有活动实例时 lambda 不执行；并发 session 可执行多次 |
 | `OnStop(const StopArgs&)` | 停止采样并写收尾 packet | 不应长时间阻塞 Perfetto 回调线程 |
 
-`OnStop()` 中存在异步清理时，要调用 `StopArgs::HandleStopAsynchronously()` 取得 acknowledgement closure，也就是用于确认“停止操作已经完成”的回调。清理线程写完末尾 packet 后，还要在最后一次 `Trace()` lambda 中显式调用 `TraceContext::Flush()`，再执行该回调。这个过程必须在 consumer 配置的 stop timeout（停止等待上限）内完成；超时后服务会强制停止，之后写出的末尾数据不会进入 trace。
+`OnStop()` 中存在异步清理时，要调用 `StopArgs::HandleStopAsynchronously()` 取得 acknowledgement closure，也就是用于确认“停止操作已经完成”的回调。清理线程写完末尾 packet 后，先让最后一个 `TracePacketHandle` 离开作用域或显式 `Finalize()`，再在最后一次 `Trace()` lambda 中调用 `ctx.Flush()`，之后执行停止确认回调。存在多个写入线程时，要完成相应线程的提交与同步；`ctx.Flush()` 只作用于该线程/实例的 writer。需要 service 确认时可使用 flush callback，但连接断开或 service 崩溃时它可能永不调用，停止流程仍要有超时处理。这个过程必须在 consumer 配置的 stop timeout（停止等待上限）内完成；超时后服务会强制停止，之后写出的末尾数据不会进入 trace。
+
+<!-- gracker-diagram: ch14-12-09-async-stop-finalize -->
+![异步停止先完整写尾packet，再提交和确认](../../assets/diagrams/ch14/ch14-12-09-async-stop-finalize.png)
+
+图：异步清理须完成packet、writer提交与停止确认，并遵守consumer超时。 Finalize早于Flush；多写入线程分别同步，flush callback连接断开时可能不回调。
 
 数据源名称宜使用团队控制域名的反向域名形式，减少与其他 producer 的命名冲突。
 
@@ -229,19 +239,9 @@ custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session
 
 只在应用仓库里增加 `.proto`，公开版 Perfetto UI 无法自动识别它。团队无法长期维护 Trace Processor fork（定制分支）时，优先使用 TrackEvent 的 category、slice、counter、flow 和长度受限的 debug annotation。
 
-<!-- gracker-diagram: ch14-12-08-custom-lifecycle -->
-![custom实例生命周期与调用线程写入](../../assets/diagrams/ch14/ch14-12-08-custom-lifecycle.png)
-
-图：每个活动session拥有独立实例，Trace同步遍历活动实例写packet。 无实例则不执行lambda；并发会重复执行，昂贵计算和业务副作用需单独处理。
-
-<!-- gracker-diagram: ch14-12-09-async-stop-finalize -->
-![异步停止先完整写尾packet，再提交和确认](../../assets/diagrams/ch14/ch14-12-09-async-stop-finalize.png)
-
-图：异步清理须完成packet、writer提交与停止确认，并遵守consumer超时。 Finalize早于Flush；多写入线程分别同步，flush callback连接断开时可能不回调。
-
 ## 5. startup tracing、触发器与环形缓冲
 
-普通 session 只能记录它启动后发生的事件。Perfetto SDK 的 startup tracing（启动早期采集）会先让 data source 写入临时目标缓冲区，再等待后续 system session 用匹配的配置接管这些数据。Android 17 的 `Tracing::SetupStartupTracingOpts` 默认超时是 10 秒；超时、配置不匹配，或 service 不接受 producer-provided shared memory（由 producer 提供的共享内存）时，startup session 会终止。
+普通 session 只能记录它启动后发生的事件。Perfetto SDK 的 startup tracing（启动早期采集）会先让 data source 写入临时目标缓冲区，再等待后续 system session 用匹配的配置接管这些数据。Android 17 的 `Tracing::SetupStartupTracingOpts` 默认超时是 10 秒；没有匹配的后续 session 时持续等待，超过超时后中止，并不是遇到一次不匹配配置就立即结束。startup tracing 要求已有可用的 service 共享内存，或者 service 支持 producer-provided shared memory（由 producer 提供的共享内存）；需要后者而遭拒绝时无法继续启动早期采集。
 
 下面的代码固定使用 system backend，并把 session handle（管理该 startup session 的对象）交给调用方；不再等待 system session 时，可以通过该 handle 主动 abort（中止等待）：
 
@@ -255,7 +255,12 @@ StartStartupTracing(const perfetto::TraceConfig& config) {
 }
 ```
 
-`timeout_ms` 用来覆盖这个默认超时。`SetupStartupTracingOpts` 还提供 `on_setup`、`on_adopted` 和 `on_aborted` 回调，生产实现应记录临时数据是否被 system session 接管，或等待是否中止。
+`timeout_ms` 用来覆盖这个默认超时；固定版本中设为 0 会取消自动超时，必须自行约束等待。销毁 `StartupTracingSession` 对象不会自动中止 session；应显式调用 `Abort()` 或 `AbortBlocking()`，且只影响尚未被接管的实例。`SetupStartupTracingOpts` 还提供 `on_setup`、`on_adopted` 和 `on_aborted` 回调，生产实现应记录临时数据是否被 system session 接管，或等待是否中止。
+
+<!-- gracker-diagram: ch14-12-11-startup-adoption -->
+![启动早期记录等待系统会话接管](../../assets/diagrams/ch14/ch14-12-11-startup-adoption.png)
+
+图：startup数据先写临时目标，匹配的外部系统会话在等待期限内接管。 固定默认10秒，0取消自动超时；销毁handle不自动Abort，已接管实例不受Abort影响。
 
 startup tracing 不支持 in-process backend。in-process 场景应在目标初始化工作前创建普通 session，并等待 `StartBlocking()` 完成。
 
@@ -276,12 +281,7 @@ static void ActivateTriggers(
 
 图：应用只发送条件信号，实际会话与保留策略由consumer提前配置。 TTL是信号发送连接窗口；故障后才开始采集不能回补事前数据，也不授予读取权限。
 
-要持续保留故障发生前的一段数据，session 必须提前运行并使用 ring buffer。故障出现后才启动 trace，只能看到故障后的活动。进程被 LMK（low-memory killer，低内存终止机制）或 native crash 直接终止时，尚未提交的 producer chunk（共享内存中的一块待提交数据）和应用私有文件都可能丢失；线上方案要单独验证异常退出路径。
-
-<!-- gracker-diagram: ch14-12-11-startup-adoption -->
-![启动早期记录等待系统会话接管](../../assets/diagrams/ch14/ch14-12-11-startup-adoption.png)
-
-图：startup数据先写临时目标，匹配的外部系统会话在等待期限内接管。 固定默认10秒，0取消自动超时；销毁handle不自动Abort，已接管实例不受Abort影响。
+要持续保留故障发生前的一段数据，session 必须提前运行并使用 ring buffer。故障出现后才启动 trace，只能看到故障后的活动。进程被 LMK（low-memory killer，低内存终止机制）或 native crash 直接终止时，producer 中尚未提交或尚未完整写好的数据可能丢失；纯 in-process service 的内存 buffer 也随进程消失。已经写出的私有文件字节通常仍在，但尾部、完整性和所需的持久化保证不能由正常退出示例推定。线上方案要单独验证异常退出路径。
 
 ## 6. 构建、体积和版本兼容
 
@@ -380,40 +380,52 @@ APM 若需要 SDK 专属事件，可以管理短时间运行的 in-process sessi
 
 ## 9. Trace Processor 查询与验收
 
-TrackEvent 使用标准 importer，无需自定义插件。下面的 SQL 检查 `rendering` category 是否生成线程上的 slice 记录：
+TrackEvent 使用标准 importer，无需自定义插件。下面的 SQL 检查包含 `rendering` category 的线程 slice，保留实例 ID、原始时长与开放标记；同名对象需要再按确认的 `upid/utid` 和窗口限定。custom track 不一定属于 `thread_track`，会被本查询排除，不能据空结果判定它没有写入：
 
 ```sql
 SELECT
-  process.name AS process_name,
-  thread.name AS thread_name,
-  slice.ts / 1e6 AS ts_ms,
-  IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur) / 1e6 AS dur_ms,
-  slice.name,
-  slice.category
+  slice.id AS slice_id, slice.track_id, slice.parent_id, slice.depth,
+  thread.upid, thread.utid,
+  process.name AS process_name, thread.name AS thread_name,
+  slice.ts AS ts_ns, slice.dur AS raw_dur_ns,
+  slice.dur = -1 AS is_open,
+  trace_end() AS observation_end_ns,
+  CASE
+    WHEN slice.dur >= 0 THEN slice.dur
+    WHEN slice.dur = -1 AND trace_end() > slice.ts
+      THEN trace_end() - slice.ts
+  END / 1e6 AS observed_dur_ms,
+  slice.name, slice.category,
+  EXTRACT_ARG(slice.arg_set_id, 'debug.frame_id') AS frame_id
 FROM slice
 JOIN thread_track ON thread_track.id = slice.track_id
 JOIN thread USING (utid)
-LEFT JOIN process USING (upid)
-WHERE slice.category = 'rendering'
-ORDER BY slice.ts;
+LEFT JOIN process ON process.upid = thread.upid
+WHERE instr(',' || COALESCE(slice.category, '') || ',', ',rendering,') > 0
+ORDER BY slice.ts, slice.id;
 ```
 
-结果为空时，不要只看事件宏是否执行。检查 trace 配置是否选择 `track_event`、category 过滤是否匹配、producer 是否在 session 内连接，以及事件是否发生在 `StartBlocking()` 之后。
+`raw_dur_ns = -1` 表示未闭合。`observed_dur_ms` 对开放区间只给出到有效 trace 结束边界的观测值，不是完成时长；若结束边界不晚于事件时间，返回 NULL。本机 SDK 产物在 Trace Processor v57.2 中实际出现末端开放事件的 `trace_end() = slice.ts - 1 ns`，原查询输出 -0.000001 ms；v58.2 对同一产物的边界等于该事件时间，原查询输出 0。两者都不能解释为事件已经完成。`TRACE_EVENT` 的墙钟也不等于 CPU time。结果为空时，不要只看事件宏是否执行。检查 trace 配置是否选择 `track_event`、category 过滤是否匹配、producer 是否在 session 内连接，以及事件是否发生在 `StartBlocking()` 之后。
 
-下面的查询检查示例 counter；counter 名来自 `TRACE_COUNTER` 的 track name：
+<!-- gracker-diagram: ch14-12-17-query-identity-open -->
+![查询保留身份和开放边界，并区分线程与自定义Track](../../assets/diagrams/ch14/ch14-12-17-query-identity-open.png)
+
+图：从标准importer查线程slice与counter，保留ID、轨道与有效观测边界。 开放末端无有效结束则NULL；thread_track查询排除自定义Track，帧编号counter不等于FPS。
+
+下面的查询检查示例 counter；counter 名来自 `TRACE_COUNTER` 的 track name；`SubmittedFrameId` 是帧编号快照，不是帧率或帧数增量，同名 track 仍需按 `track_id` 区分：
 
 ```sql
 SELECT
-  counter.ts / 1e6 AS ts_ms,
-  counter.value,
-  counter_track.name
+  counter.id AS counter_id, counter.track_id,
+  counter.ts AS ts_ns, counter.ts / 1e6 AS ts_ms,
+  counter.value, counter_track.name
 FROM counter
 JOIN counter_track ON counter_track.id = counter.track_id
 WHERE counter_track.name = 'SubmittedFrameId'
-ORDER BY counter.ts;
+ORDER BY counter.ts, counter.id;
 ```
 
-custom data source 的验收标准更高：原始 trace 中有 packet、Trace Processor 没有 importer error（导入错误）、目标 storage 表有行、未知枚举按兼容规则处理、SQL 输出与写入样本一致，五项都要通过。
+custom data source 的验收标准更高：原始 trace 中有 packet、Trace Processor 没有 importer error（导入错误）、目标 storage 表有行、未知枚举按兼容规则处理、SQL 输出与写入样本一致，五项都要通过；“没有 importer error”本身不能证明未知字段已被导入。 本轮只在macOS主机用固定v57.2 C++ SDK运行进程内示例，验证fd直写与停止后读取两种产物，并用native Trace Processor57.2/58.2核对SQL。系统producer/startup/trigger代码只验证公开接口与编译，不声明Android设备录制、SELinux运行、service接管、异常退出或APK性能测量已通过。
 
 一次完整接入至少保存这些证据：
 
@@ -428,11 +440,6 @@ custom data source 的验收标准更高：原始 trace 中有 packet、Trace Pr
 4. TraceConfig、采集命令、输出文件 hash（内容摘要）；
 5. buffer loss（缓冲区数据丢失）、producer disconnect（连接断开）、startup adopted/aborted（被接管或中止）状态；
 6. Trace Processor 版本和可复现 SQL。
-
-<!-- gracker-diagram: ch14-12-17-query-identity-open -->
-![查询保留身份和开放边界，并区分线程与自定义Track](../../assets/diagrams/ch14/ch14-12-17-query-identity-open.png)
-
-图：从标准importer查线程slice与counter，保留ID、轨道与有效观测边界。 开放末端无有效结束则NULL；thread_track查询排除自定义Track，帧编号counter不等于FPS。
 
 ## 10. 已确认的限制与待实测项
 

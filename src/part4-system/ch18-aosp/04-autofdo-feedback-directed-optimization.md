@@ -4,12 +4,22 @@ chapter: '18.4'
 section: '18.4'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-07-25'
+last_verified: '2026-10-26'
+last_source_verified_at: '2026-10-24T14:44:02+08:00'
+last_idle_audit_at: '2026-10-24T14:44:02+08:00'
 last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android/LLVM official documentation
 confidence: high
 sources:
 - type: aosp
   path: system/extras/simpleperf/doc/collect_etm_data_for_autofdo.md @ android-17.0.0_r1
+- type: aosp
+  path: system/extras/simpleperf/cmd_inject.cpp @ android-17.0.0_r1
+- type: aosp
+  path: system/extras/simpleperf/dso.cpp @ android-17.0.0_r1
+- type: aosp
+  path: system/extras/simpleperf/cmd_stat.cpp @ android-17.0.0_r1
+- type: aosp
+  path: system/extras/simpleperf/environment.cpp @ android-17.0.0_r1
 - type: aosp
   path: build/soong/cc/afdo.go @ android-17.0.0_r1
 - type: aosp
@@ -67,7 +77,7 @@ consolidated_from:
   → 采集指令/分支历史
   → 地址与符号还原
   → 生成 LLVM sample profile
-  → 用同源代码和相近工具链重新编译
+  → 将 Profile 接入目标源码与工具链重新编译
   → A/B 性能与稳定性验证
   → 发布 profile 或二进制
 ```
@@ -137,7 +147,14 @@ Android 17 的固定源码标签（tag）中，以下模块开启了 `afdo: true
 - `art/libartbase/Android.bp` 的 `libartbase`；
 - `art/runtime/Android.bp` 的 `libart`。
 
-这只能证明目标具备 AFDO 构建接入，不能证明任意本地构建都拿到了有效 Profile。是否实际使用，还取决于 Profile 配置、目标处理器架构（arch）、构建变体和产物日志。验证时，应在详细构建日志（verbose build log）中查找 `-fprofile-sample-use=`，再核对该参数指向的 Profile。
+`afdo: true` 只声明构建接入。固定 r1 的 afdo.go 会在 eng 与 native coverage 构建中关闭 AFDO，并跳过 host；实际应用还依赖按架构解析的 fdo_profile、目标变体与有效 Profile 路径。启用目标还会把 AFDO 变体沿部分静态依赖传播，不能据根模块属性认定全部动态依赖都已优化。核验详细构建日志中的 `-fprofile-sample-use=` 及其路径，同时检查编译与链接参数。
+
+采集用初始构建也要保持 AFDO 准备条件：r1 为相关目标加入 `-fdebug-info-for-profiling`、`-funique-internal-linkage-names` 和 flow-sensitive discriminator 参数，甚至在尚无 Profile 时也生成唯一内部链接名。先用没有这些命名条件的旧二进制采样，再给目标开启新命名，会削弱样本匹配。`fdo_profile.incomplete_coverage` 则决定是否声明 sample-accurate，不能把它与内核转换器的 symbol-list 开关混为一项。
+
+<!-- gracker-diagram: ch18-04-04-soong -->
+![Soong 从模块属性到真实 sample-use](../../assets/diagrams/ch18/ch18-04-04-soong.png)
+
+图：r1 Soong 按构建类型、架构 Profile 和依赖变体决定是否应用 AFDO。 初始采集构建也需保持内部符号命名与 discriminator 条件；动态依赖不随根目标全部传播。
 
 ### 与 ART Baseline Profile 的区别
 
@@ -158,11 +175,6 @@ Baseline Profile 标记应用中哪些 DEX 路径值得提前编译。AutoFDO �
 
 ---
 
-<!-- gracker-diagram: ch18-04-04-soong -->
-![Soong 从模块属性到真实 sample-use](../../assets/diagrams/ch18/ch18-04-04-soong.png)
-
-图：r1 Soong 按构建类型、架构 Profile 和依赖变体决定是否应用 AFDO。 初始采集构建也需保持内部符号命名与 discriminator 条件；动态依赖不随根目标全部传播。
-
 ## Android 17 GKI 已接入 `kernel.afdo`
 
 ACK `android17-6.18-2026-06_r6` 中有三条直接证据：
@@ -175,7 +187,12 @@ ACK `android17-6.18-2026-06_r6` 中有三条直接证据：
 clang_autofdo_profile = ":gki/aarch64/afdo/kernel.afdo"
 ```
 
-当前源码标签已经把内核 AutoFDO 接入 GKI 构建。README 指出，当前 Profile 针对 AArch64 内核 6.18.21 采集，并会在对应滚动分支持续更新。固定标签只冻结某一版 Profile，分支上的最新提交仍会变化；复现实验必须记录使用的源码标签、Profile 文件内容或具体分支提交。
+r6 的 BUILD.bazel 将 AArch64 GKI 目标绑定到 tag 内的 kernel.afdo；`scripts/Makefile.autofdo` 再把 CLANG_AUTOFDO_PROFILE 接入 C/Clang 和 Rust 参数，ThinLTO 还接收 linker sample profile。README 标明采集内核为 6.18.21、SHA 3ad9926a5d177675fe818af93dcb3451532c3165、build server ID 15434288。固定 tag 只冻结这一快照；复现须保存源码、Profile 内容摘要和工具链，设备实际 release 是否采用还要查最终构建记录。
+
+<!-- gracker-diagram: ch18-04-06-gki-build -->
+![GKI Profile 从固定快照进入编译与链接](../../assets/diagrams/ch18/ch18-04-06-gki-build.png)
+
+图：r6 的 BUILD.bazel 绑定 kernel.afdo，内核 Makefile 将它带入对应编译与 ThinLTO 流程。 固定 Profile 记录采集 SHA/build ID；README 的 Pixel 8 初步结果和 Binder 最佳轮次不能替代目标产品实测。
 
 ### Android 17 README 中的性能数据
 
@@ -199,11 +216,6 @@ clang_autofdo_profile = ":gki/aarch64/afdo/kernel.afdo"
 
 ---
 
-<!-- gracker-diagram: ch18-04-06-gki-build -->
-![GKI Profile 从固定快照进入编译与链接](../../assets/diagrams/ch18/ch18-04-06-gki-build.png)
-
-图：r6 的 BUILD.bazel 绑定 kernel.afdo，内核 Makefile 将它带入对应编译与 ThinLTO 流程。 固定 Profile 记录采集 SHA/build ID；README 的 Pixel 8 初步结果和 Binder 最佳轮次不能替代目标产品实测。
-
 ## 分支 trace 从哪里来
 
 ### PMU、ETM/ETE 与 TRBE 的分工
@@ -214,9 +226,12 @@ PMU 是 ARM CPU 提供硬件性能事件的基础设施，simpleperf 通过 Linu
 
 - ETM（嵌入式跟踪宏单元，Embedded Trace Macrocell）是常见的 CoreSight 指令轨迹源；
 - ARMv9 平台可以使用 ETE（Embedded Trace Extension）；
-- TRBE（跟踪缓冲扩展，Trace Buffer Extension）把轨迹数据写入内存缓冲区。
+- CoreSight ETR 把轨迹数据写入系统内存；
+- TRBE（跟踪缓冲扩展，Trace Buffer Extension）也能把轨迹数据写入内存缓冲区，是另一种硬件实现。
 
 simpleperf 对用户暴露的事件名仍是 `cs-etm`。命令中的 `cs-etm:k` 是软件接口名，不代表每台设备底层都只使用传统 ETM。ACK 当前标签中既有 `coresight-etm4x-core.c`，也有 `coresight-trbe.c`；具体设备是否提供这些能力、调用方是否有权访问，取决于 SoC、内核配置和权限。
+
+固定 r1 的 simpleperf 文档说明，ARMv8 的 ETM 等 CoreSight 组件通常属于外部调试接口，量产设备往往关闭；root 或可调试镜像不会自动开放硬件。该文档的 Pixel 8 示例使用 ETE + ETR，并因核心 TRBE 勘误避免使用 TRBE；2026 年 AutoFDO 博客则描述 Pixel 设备上的 ETE/TRBE 采集流程。两者描述的构建与设备范围不同，不能据其中一个例子概括所有 Pixel。实际选择按目标芯片勘误、固件、设备树、内核驱动和可用 sink 核实。
 
 <!-- gracker-diagram: ch18-04-07-trace-hardware -->
 ![指令轨迹源、sink 与 perf 软件接口](../../assets/diagrams/ch18/ch18-04-07-trace-hardware.png)
@@ -234,14 +249,14 @@ Android 内核 README 使用的代表性流程包括：
 - 单应用启动 3 秒、执行 15 次；
 - 每次启动后终止进程并清理缓存，以覆盖冷启动。
 
-Android 官方博客还报告，实验室工作负载与内部设备群（fleet）的执行模式约有 85% 相似。这个数字只说明 Google 对该套工作负载的验证结果，不能直接代表 OEM 自建工作负载的质量。
-
----
+README 的“终止进程并清理缓存”未细分缓存层次，复现时还须记录进程、页缓存与应用数据各自处理方式，不能仅凭 cold 标签认定条件相同。官方博客报告实验室负载与内部 fleet 执行模式约 85% 相似，但未在该文给出完整相似度算法；这不是 85% 代码覆盖率或 OEM 工作负载质量证明。
 
 <!-- gracker-diagram: ch18-04-08-workload -->
 ![工作负载覆盖与权重决定 Profile 优化方向](../../assets/diagrams/ch18/ch18-04-08-workload.png)
 
 图：先按产品 CUJ 规划输入与权重，再记录进程和缓存状态及实际采样覆盖。 r6 的 top100/crawler/launch 是既定采集方案；博客 85% 相似度不是代码覆盖率，也不替 OEM 验证代表性。
+
+---
 
 ## 从 `perf.data` 生成 `kernel.afdo`
 
@@ -255,9 +270,9 @@ Android 17 的 simpleperf 文档和当前 ACK README 给出的内核流程可以
 - 内核模块的未剥离 ELF（Linux 原生二进制格式）文件，即仍保留调试符号的二进制；
 - 用于确认二进制版本的 build ID；
 - 当前源码、工具链和构建配置；
-- 可选但推荐的 `-fdebug-info-for-profiling`，用于生成采样归因所需的调试信息。
+- 足够的 DWARF 行号、内联与 discriminator 信息；`-fdebug-info-for-profiling` 有助于归因，但不是单独替代调试信息的开关。r6 的 AFDO Makefile 在未启用 CONFIG_DEBUG_INFO 时补入 `-gmlt`。
 
-如果用另一次构建的 `vmlinux` 强行还原地址，Profile 会映射到错误的源码位置。`--allow-mismatched-build-id` 只是工具提供的容错开关，不能用它忽略二进制来源。
+地址还原必须使用采集镜像配套的 vmlinux 与模块，先核对 build ID、构建记录和代码布局；未剥离 ELF 不自动证明有可用 DWARF。`--allow-mismatched-build-id` 在 r1 的分支列表路径会清空匹配键里的 build ID，允许不同来源混入，所以下面的默认转换保留严格匹配。源码更新后的 Profile 重应用是后续阶段，不能用它为错误的采集二进制地址还原辩护。
 
 <!-- gracker-diagram: ch18-04-09-binary-binding -->
 ![采集二进制与后续目标构建分别匹配](../../assets/diagrams/ch18/ch18-04-09-binary-binding.png)
@@ -266,29 +281,21 @@ Android 17 的 simpleperf 文档和当前 ACK README 给出的内核流程可以
 
 ### 2. 在设备上录制并转换为分支列表
 
-测试设备通常需要可调试的 `userdebug` 或 `eng` 构建、root 权限、CoreSight 能力和匹配的内核配置。下面的命令先录制 `cs-etm:k`，再把原始数据转换成分支列表：
+采集前先确认调试权限、CoreSight 源与 sink、内核配置和配套符号产物。以下命令全部从主机发起，在另一路会话运行预定 CUJ；record 只在给定窗口采集，不会自动触发业务。每轮保存独立文件名和工作负载记录，后续 branch02 等文件必须实际生成，不能把示例列表当作已有输入。
 
 ```bash
-adb root
-adb shell
-cd /data/local/tmp
-
-simpleperf record \
-  -e cs-etm:k \
-  -a \
-  --duration 60 \
-  -z \
-  -o perf.data
-
-mkdir branch_data
-simpleperf inject \
-  -i perf.data \
-  -o branch_data/branch01.data \
-  --output branch-list \
-  --binary kernel.kallsyms
+adb root &&
+adb shell 'cd /data/local/tmp &&
+  mkdir -p branch_data &&
+  simpleperf record -e cs-etm:k -a --duration 60 -z -o perf.data &&
+  simpleperf inject -i perf.data -o branch_data/branch01.data \
+    --output branch-list --binary "^\[kernel\.kallsyms\]$" &&
+  test -s branch_data/branch01.data'
 ```
 
-`perf.data` 是原始采集容器，`branch01.data` 是压缩后的中间分支列表（branch-list），`kernel.kallsyms` 则提供内核地址到符号名称的映射。文档建议多次录制，因为 ETM 指令流在高负载下可能因缓冲区溢出或采样限速而丢失。多份 Profile 能增加覆盖范围，但也可能放大异常工作负载产生的噪声。
+`perf.data` 是原始采集容器，branch01.data 是中间分支列表。`--binary` 接受名称正则，上例精确匹配 `[kernel.kallsyms]`，不会读取同名符号文件。分支列表可能仍保存内核运行地址和 kernel_start_addr；主机转换结合配套 vmlinux 还原链接地址，再输出文件偏移，不能把 branch-list、AutoFDO 文本与 LLVM Profile 当作同一种地址格式。
+
+前面的 `record -z` 只压缩 `perf.data`；如需压缩分支列表，应为 `inject --output branch-list` 另加 `-z`。文档建议多次录制，因为 ETM 指令流在高负载下可能因缓冲区溢出或采样限速而丢失。多份 Profile 能增加覆盖范围，但也可能放大异常工作负载产生的噪声。
 
 <!-- gracker-diagram: ch18-04-10-device-capture -->
 ![设备采集与 branch-list 是两个阶段](../../assets/diagrams/ch18/ch18-04-10-device-capture.png)
@@ -297,22 +304,23 @@ simpleperf inject \
 
 ### 3. 在主机上生成 AutoFDO 文本 Profile
 
-把所有分支列表与对应的未剥离二进制放到开发主机，然后执行：
+先把匹配的未剥离 vmlinux 放在主机当前工作目录，并核对其 build ID。下例只使用前一步确实生成的 branch01；已有多轮输入时，先逐份拉回再将 -i 改成逗号分隔列表。不要把不同 build ID 或不同目标的样本无条件合并。
 
 ```bash
-adb pull /data/local/tmp/branch_data
-cd branch_data
-
+mkdir -p branch_data &&
+adb pull /data/local/tmp/branch_data/branch01.data branch_data/branch01.data &&
+test -s branch_data/branch01.data &&
+test -r vmlinux &&
 simpleperf inject \
-  -i branch01.data,branch02.data \
-  --binary kernel.kallsyms \
+  -i branch_data/branch01.data \
+  --binary '^\[kernel\.kallsyms\]$' \
   --symdir . \
-  --allow-mismatched-build-id \
   -o kernel.autofdo \
-  -j 20
+  -j 20 &&
+test -s kernel.autofdo
 ```
 
-`kernel.autofdo` 是按内核二进制聚合并完成符号解析的文本 Profile。若采集覆盖多个二进制，必须按目标分别处理；不能把一份未区分目标的地址样本同时用于 `vmlinux`、`.ko` 和用户空间库。
+kernel.autofdo 保存按目标 ELF 文件偏移表示的执行区间、地址和分支计数，还不是按源码位置归因的 LLVM Profile。r1 的转换流程可能跳过找不到匹配符号的 binary，仍成功写出空文本；退出码为零不代表有目标样本。除检查非空，还要核对目标注释、build ID 与有效计数；多 binary 输出需先拆分。下一步再用对应 ELF 的 DWARF 还原源码位置。
 
 <!-- gracker-diagram: ch18-04-11-host-addresses -->
 ![主机合并、内核地址还原和文件偏移](../../assets/diagrams/ch18/ch18-04-11-host-addresses.png)
@@ -326,18 +334,20 @@ simpleperf inject \
 ```bash
 create_llvm_prof \
   --profiler=text \
-  --binary=/path/to/vmlinux \
+  --binary=./vmlinux \
   --profile=kernel.autofdo \
   --format=extbinary \
   --use_fs_discriminator \
   --out=kernel.afdo \
-  --prof_sym_list=false
+  --prof_sym_list=false &&
+test -s kernel.afdo &&
+llvm-profdata show --sample --all-functions kernel.afdo
 ```
 
 几个参数不能随意省略：
 
 - `--binary` 必须指向匹配的未剥离 `vmlinux`；
-- `--use_fs_discriminator` 是当前 GKI README 的转换要求，用于保留编译器生成的路径区分信息；
+- `--use_fs_discriminator` 按 r6 README 处理 flow-sensitive discriminator；它需要采集构建已有相应信息，不能在转换阶段补造缺失的路径信息；
 - `--prof_sym_list=false` 避免 Clang 把未列入 Profile 的内核函数都视为冷代码。
 
 内核 Profile 不可能覆盖所有错误处理、中断和低频管理路径。让未采样函数继续使用标准优化策略，可以降低覆盖不足导致这些函数被错误降级优化的风险，也能避免某些热/冷代码段与初始化代码段不匹配。
@@ -348,6 +358,8 @@ create_llvm_prof \
 图：配套二进制保证地址归因，FS discriminator 使用已有路径信息，symbol list 影响未覆盖函数的处理。 r6 README 显式要求 prof_sym_list=false；所用工具版本的默认值和 Soong incomplete_coverage 都需分别核对。
 
 ---
+
+转换后检查 llvm-profdata 输出中的目标函数、行号与非零样本，并保存工具版本；没有目标样本时退回符号、build ID、地址转换和工作负载排查。文件非空也可能只有格式头。r6 README 要求显式关闭 symbol list；本次核对的 AutoFDO 提交 f95d1a17 已默认 prof_sym_list=false，仍保留显式参数，不能把某版默认值推成永久契约。
 
 <!-- gracker-diagram: ch18-04-12-llvm-convert -->
 ![文本计数与 DWARF 合成 LLVM 采样 Profile](../../assets/diagrams/ch18/ch18-04-12-llvm-convert.png)
@@ -360,7 +372,7 @@ AutoFDO 还有一种不容易发现的失败：Profile 已成功接入构建，�
 
 ### Profile 必须与二进制版本接近
 
-源码、内联结构和地址布局变化后，旧样本的可用程度会下降。应记录：
+采样地址还原要求匹配原二进制；生成的源码位置 Profile 则通过函数名、相对行号和 discriminator 应用于后续构建，允许一定源码漂移。r1 Soong 还有 stale-profile salvage，但不保证任意重命名、内联或控制流变化都能恢复。记录覆盖、缺失与失配并重测，不把“文件可读”当作“样本仍代表当前代码”。应记录：
 
 - 内核和平台的代码提交；
 - Clang 版本；
@@ -425,7 +437,7 @@ AutoFDO 不会在 Perfetto 中生成名为 `AutoFDO` 的轨迹区段（slice）�
 - 同一温度、电量与调频条件；
 - 唯一变量为是否应用目标 Profile。
 
-先通过详细构建日志和反汇编确认 A 组没有使用 Profile、B 组已经使用。否则，“无差异”可能只是两组都没有接入 Profile，所谓“提升”也可能来自工具链或配置变化。
+A 组保留与采样阶段一致的 AFDO 准备、符号命名和调试条件；B 组应用目标 Profile。不要简单把 A 的 afdo/CONFIG_AUTOFDO_CLANG 整项关闭而同时改变其他准备条件。r6 Makefile 在使用 Profile 时还引入 function sections、machine-function splitting，ThinLTO 也有相应参数：应保存完整 flags 差异，把这种组合效果按实际配置报告；若要单独归因样本，则额外对齐这些优化开关。构建日志证明输入被读取，反汇编证明代码变化，两者仍不能替代性能验证。
 
 <!-- gracker-diagram: ch18-04-16-ab-flags -->
 ![A/B 保持准备条件并记录伴随优化开关](../../assets/diagrams/ch18/ch18-04-16-ab-flags.png)
@@ -451,30 +463,33 @@ Perfetto 适合比较：
 
 ### simpleperf 看函数和硬件事件
 
-下面的命令用于在 A/B 两组上执行相同工作负载，并统计硬件性能事件：
+在 A/B 两组上分别手动或用自动化工具运行相同工作负载。下面的命令只统计目标应用进程的硬件事件，不会启动应用或执行测试流程：
 
 ```bash
+adb shell simpleperf list
 adb shell simpleperf stat \
   -e cycles,instructions,branch-misses,cache-misses \
   --app com.example.app \
   --duration 10
 ```
 
-命令返回的是 10 秒采样窗口内的周期、指令和缓存等计数。硬件事件是否可用、如何归因取决于 PMU 和权限。函数级变化可用 `simpleperf record/report` 检查热点是否移动；内核目标还要区分 GKI `vmlinux`、GKI 模块和厂商模块。
+--app 等待找到目标包的进程后设置监测，再进入计数窗口；--duration 10 不包含前面可能的等待，也不会启动应用。stat 输出事件计数，不输出函数采样 Profile。权限允许时，这些计数可包含目标线程在内核态执行的部分，但不覆盖其他 Binder 服务或独立内核线程的全部工作；GKI 系统效果需在受控权限下另用 -a，并借 Perfetto 区分服务端和后台活动。
 
-如果冷启动变快但 CPU 周期数上升，可能是调频、并行度或 I/O 发生了变化；如果微基准变快而整机 CUJ 不变，说明该路径不是当前瓶颈。两类结果都需要解释，不能只挑正向指标。
-
----
+非 root 目标须满足 debuggable/profileable 与设备策略。r1 在 Android 16+ 优先走设备自带 simpleperf 的 simpleperf_app_runner；侧载新 binary 不自动取得同样权限。cache-misses 不自动等于指令缓存未命中，按 SoC 查询事件语义，并检查 PMU 复用与运行时间覆盖。函数变化用 record/report 另采；内核主体、GKI 模块和厂商模块分别归因。
 
 <!-- gracker-diagram: ch18-04-18-stat-scope -->
 ![stat 的应用进程计数与系统级范围不同](../../assets/diagrams/ch18/ch18-04-18-stat-scope.png)
 
 图：simpleperf stat 在找到应用进程后计数，函数热点另用 record/report，系统结果还要看其他执行上下文。 duration 不含前置等待且 --app 不启动业务；cache-misses 不自动等于 I-cache，事件权限和 PMU 复用影响解释。
 
+冷启动更快但 CPU 周期更多，可能涉及频率、并行度、I/O 或工作量变化；微基准变快而 CUJ 未变，也可能是该路径不主导关键耗时、差异低于噪声或被其他回退抵消。沿关键路径和多轮分布继续检验，不把单一现象当作唯一根因，也不只挑正向指标。
+
 <!-- gracker-diagram: ch18-04-19-interpretation -->
 ![微基准与 CUJ 差异需要继续验证](../../assets/diagrams/ch18/ch18-04-19-interpretation.png)
 
 图：用关键路径与多轮数据解释延迟、周期数和整机 CUJ 的不同变化。 微基准变快而 CUJ 未变并不唯一证明不是瓶颈；噪声、并行、I/O 与其他回退都可能影响结果。
+
+---
 
 ## OEM 与应用开发者分别做什么
 
@@ -490,6 +505,8 @@ adb shell simpleperf stat \
 6. 随代码变化定期刷新，避免长期复用旧 Profile。
 
 当前 ACK README 聚焦 `vmlinux`。模块需要单独采集、完成符号解析并接入构建；不能因为内核主体使用了 `kernel.afdo`，就认定厂商驱动已经得到相同优化。
+
+固定 r1 文档要求未剥离模块具备 .debug_line、匹配 build ID，并给出旧 create_llvm_prof 的 ET_REL 补丁；本次核对的 AutoFDO f95d1a17 已有模块 .text 段映射与 section-index 行号查找。按实际工具提交检查支持，已有实现不重复打旧补丁；该实现侧重 .text，不能默认完整覆盖 .init.text/.exit.text 等其他段。DDK 的实际版本、debug_info_for_profiling 和模块独立 autofdo_profile 也要核实，不能照搬 vmlinux 的转换与构建规则。
 
 <!-- gracker-diagram: ch18-04-20-modules -->
 ![模块 Profile 需要独立 ELF、转换支持和 DDK 接入](../../assets/diagrams/ch18/ch18-04-20-modules.png)
@@ -569,3 +586,15 @@ adb shell simpleperf stat \
 ![四组证据闭合后才报告优化收益](../../assets/diagrams/ch18/ch18-04-22-release-evidence.png)
 
 图：将工作负载、原始二进制、实际构建采用和当前产品 A/B 结果对应，形成可复核记录。 选项打开、文件存在或构建成功只覆盖其中一环；代码、负载和 Profile 更新后要重新核实适用范围。
+
+
+## 本次核对的一手入口
+
+- [r1 simpleperf 采集与转换文档](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/collect_etm_data_for_autofdo.md)
+- [r1 inject：地址转换、build ID 与输出](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/cmd_inject.cpp)
+- [r1 Soong AFDO 变体和参数](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/cc/afdo.go)
+- [r6 GKI Profile 与初步实验条件](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md)
+- [r6 Profile 编译与 ThinLTO 参数](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/scripts/Makefile.autofdo)
+- [AutoFDO f95d1a17 模块行号查找](https://github.com/google/autofdo/blob/f95d1a170dfe24ec5ce4117aa4b0f6d836841703/addr2line.cc)
+- [AutoFDO f95d1a17 模块段映射](https://github.com/google/autofdo/blob/f95d1a170dfe24ec5ce4117aa4b0f6d836841703/symbol_map.cc)
+- [Clang 采样 Profile 使用方法](https://clang.llvm.org/docs/UsersManual.html#using-sampling-profilers)

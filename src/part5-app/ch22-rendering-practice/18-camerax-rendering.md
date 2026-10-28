@@ -20,8 +20,8 @@ related_chapters:
 - '24.4'
 - '2.8'
 - '14.7'
-last_verified: '2026-08-20'
-last_verified_against: CameraX 1.6.1 稳定版与 1.7.0-alpha03 版本说明；AOSP android-17.0.0_r1；android17-6.18-2026-06_r6；CameraX 与 Android 官方文档及源码 + android-17.0.0_r1 + android17-6.18-2026-06_r6
+last_verified: '2026-10-25'
+last_verified_against: CameraX 1.6.1 固定源码；截至 2026-10-25 的稳定版 1.6.2 与预览版 1.7.0-rc01 版本说明；AOSP android-17.0.0_r1；android17-6.18-2026-06_r6；CameraX 与 Android 官方文档及源码 + android-17.0.0_r1 + android17-6.18-2026-06_r6
 confidence: high
 last_deep_review_at: '2026-07-25T12:35:05+08:00'
 sources:
@@ -40,7 +40,7 @@ sources:
 - type: official-doc
   path: https://developer.android.com/reference/android/hardware/camera2/package-summary
 - type: internal-chapter
-  path: src/part3-tools/ch15-other-tools/20-camera-performance-analysis.md
+  path: src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md
 - type: internal-chapter
   path: src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md
 - type: aosp
@@ -155,11 +155,11 @@ CameraX 是 Jetpack 的相机库。它把预览、拍照、图像分析和录像
 | 坐标 | 基线 | 用途 |
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | Camera2、相机服务、HAL 接口与显示系统 |
-| CameraX 稳定版 | 1.6.1 | 应用依赖、兼容修复、CameraPipe、录像与用例配置 |
-| CameraX 预览版 | 1.7.0-alpha03，仅作观察 | 不进入生产基线，也不据此描述稳定能力 |
+| CameraX 源码基线 | 1.6.1 | 应用依赖、兼容修复、CameraPipe、录像与用例配置 |
+| CameraX 预览版 | 1.7.0-rc01，仅作观察 | 不进入生产基线，也不据此描述稳定能力 |
 | Android common kernel | `android17-6.18-2026-06_r6` | dma-buf、dma-fence 与 sync_file（把 fence 暴露为文件描述符的接口）公共语义 |
 
-截至 2026-08-15，AndroidX 官方版本页列出的 CameraX 稳定版是 1.6.1，预览版是 1.7.0-alpha03；3.0 主版本还查不到可核验的发布物，本文也就不按它描述版本能力。
+截至 2026-10-25，官方发布页与 Google Maven 列出的最新稳定版为 1.6.2（2026-08-26），预览版为 1.7.0-rc01（2026-10-21）。下文源码细节与依赖示例仍固定在 1.6.1；升级后需重新核对实现，不能把旧代码直接标为新版本。1.6.2 修复了较新 JDK 解析传递引入的 JSpecify 注解时的编译问题。
 
 CameraX 与 Android API level 分开发布：Android 17 设备可以运行较旧的 CameraX，旧库却未必认识平台新增的相机元数据（metadata）。CameraX 1.5.1 及更早版本在部分 Android 17 设备上遇到新的 dynamic range（动态范围） profile（动态范围档位）时，可能在绑定阶段崩溃，官方要求升级到 1.5.2、1.6.0 或更高版本。本文采用 1.6.1。
 
@@ -193,11 +193,11 @@ CameraX 的关键版本变化，我们可以按下面的顺序理解：
 - CameraX 1.5.2 修复 Android 17 新 dynamic range profile（动态范围档位标识） 造成的绑定崩溃；
 - CameraX 1.6 把默认 Camera2 实现迁移到 CameraPipe，录像的 MP4 / 3GPP 封装默认使用 Media3 Muxer，并稳定 `SessionConfig`、`HighSpeedVideoSessionConfig` 与 `isSessionConfigSupported()`；
 - CameraX 1.6.1 修复 1.6.0 的依赖编译问题；
-- CameraX 1.7 仍处于 alpha 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL（领域专用配置语法） 配置语法，并移除预览与录像镜像控制的实验注解。这些能力均不属于 1.6.1 稳定基线。
+- CameraX 1.7 截至本次核验已进入 RC 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL（领域专用配置语法） 配置语法，并移除预览与录像镜像控制的实验注解。这些新增接口均不属于 1.6.1 固定基线；1.7.0-rc01 还修复效果 Surface 生命周期、ImageAnalysis 动态旋转/解绑泄漏等问题，不能据此假定 1.6.1 已包含这些修复。
 
 ## 2. CameraX 1.6 的位置：CameraPipe 仍在 Camera2 与 HAL 之上
 
-CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。CameraX 1.6 里，`Camera2Config.defaultConfig()` 返回的已经是基于 CameraPipe 的配置，早期那套 Camera2 内部实现已经不用了。CameraPipe 调用（Binder 是 Android 的跨进程通信机制）的仍是平台 Camera2 接口，往下同样要经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。
+CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。CameraX 1.6 里，`Camera2Config.defaultConfig()` 返回的已经是基于 CameraPipe 的配置，早期那套 Camera2 内部实现已经不用了。CameraPipe 仍调用平台 Camera2 接口，框架通过 Binder 跨进程连接相机服务，往下同样要经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。
 
 我们先借助下图分清配置层与数据消费者，归因时才好判断一段耗时该记在谁名下。
 
@@ -237,7 +237,7 @@ flowchart TD
 | `VideoCapture` | 相机输出、编码器、Muxer、文件 | 质量组合、dynamic range、持续吞吐 |
 | Extensions | 扩展会话、厂商算法 | 支持范围、延迟、内存、热与设备差异 |
 
-`Camera3OutputStream` 仍从 `ANativeWindow` 取得缓冲区，等待 acquire fence（生产者允许写入的同步点），再把 HAL 返回的 release fence（消费者可以读取的同步点） 随缓冲区交给消费者，release fence 到了，消费者才可以读取。CameraX 的 Java/Kotlin API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。
+`Camera3OutputStream` 从 `ANativeWindow` dequeue 缓冲区及 fence fd，再把该 fd 作为 `acquire_fence` 连同 buffer 交给 HAL。HAL 写入前必须满足该同步依赖；不能把它画成 Camera3OutputStream 必然先在 CPU 上等待完成。HAL 返回的 release fence 随输出 buffer queue 给消费者，后续消费同样必须满足同步依赖，可以等待或传递 fence。CameraX API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。
 
 <!-- gracker-diagram: a249-03-hal-fence-ownership -->
 ![输出缓冲区的同步依赖随所有权传递](../../assets/diagrams/ch22/a249-03-hal-fence-ownership.png)
@@ -307,7 +307,7 @@ if (!cameraInfo.isSessionConfigSupported(sessionConfig)) {
 
 界面状态变化若只影响覆盖层、焦点框或分析开关，优先保留会话：停止分析可以清除 Analyzer，恢复时再设置回来，无需为每次暂停重建全部用例。
 
-`CameraCaptureSession.updateOutputConfigurations()` 是 Android 17 / API 37 新增的 Camera2 平台接口，可以替换属性兼容的既有输出 Surface，无需重建整个会话；它只用于替换，传入数量必须与现有输出一致，增加或删除输出配置则超出了它的范围。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API，需要精确控制 Android 17 的动态输出更新时，应评估 Camera2。
+`CameraCaptureSession.updateOutputConfigurations()` 是 Android 17 / API 37 新增的 Camera2 平台接口，可以替换属性兼容的既有输出 Surface，无需重建整个会话；它只用于替换，传入数量必须与现有输出一致，增加或删除输出配置则超出了它的范围。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API，需要精确控制 Android 17 的动态输出更新时，应评估 Camera2。 此调用还会停止目标为被替换 Surface 的活跃请求，框架继续跟踪旧 Surface 以接收在途 buffer；调用方需重新面向新目标组织请求，不能把“不重建会话”理解为请求或画面天然无中断。
 
 <!-- gracker-diagram: a249-05-session-update-boundaries -->
 ![界面更新、用例重绑与平台换面分开](../../assets/diagrams/ch22/a249-05-session-update-boundaries.png)
@@ -321,7 +321,7 @@ if (!cameraInfo.isSessionConfigSupported(sessionConfig)) {
 `PreviewView.ImplementationMode.PERFORMANCE` 是默认值。它会尽量使用 `SurfaceView`；`COMPATIBLE` 使用 `TextureView`。
 
 - `SurfaceView` 为预览提供独立 Surface，SurfaceFlinger 可以把它作为独立 layer 参与合成；满足设备条件时，HWC 有机会使用 overlay，从而减少宿主窗口的纹理采样；
-- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI（Android 界面硬件加速渲染器） / GPU 路径。
+- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI（Android 界面硬件加速渲染器） / GPU 路径。 现代 Android 的 SurfaceView 也支持同步位移及一定范围的 alpha、裁剪，是否需要 TextureView 应按实际变换验证，不能仅凭“有动画”判断。
 
 overlay 用不用，是 HWC 对当帧 layer 集合逐帧决定的；选 `SurfaceView` 只是让 overlay 成为可能，每帧是否真的走硬件 overlay 仍由 HWC 决定。
 
@@ -394,7 +394,7 @@ CameraX 1.6.1 的 `PreviewView` 说明文档把 target rotation（目标旋转�
 
 图：加深队列只吸收有限抖动，实时结果仍可能变旧。
 
-下面的 Analyzer 适合实时识别：它保留最新帧，并用 ATrace（应用写入 Perfetto 的命名时间区间） 标出处理过程。ATrace 是应用写入 Perfetto 的命名时间区间。
+下面的 Analyzer 适合同步、耗时有界的实时识别，`analyzeFrame` 必须在返回前结束对图像的访问；`reportAnalysisFailure` 是业务提供的轻量、不抛异常的记录函数。ATrace 在当前线程标出处理区间；若分析是异步任务，应按下文的所有权约定另行组织，不能跨线程复用同一个同步 section。
 
 ```kotlin
 val analysis = ImageAnalysis.Builder()
@@ -410,9 +410,15 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
     Trace.beginSection("CameraX#analyze")
     try {
         analyzeFrame(imageProxy)
+    } catch (error: Exception) {
+        // 业务错误记录必须轻量且不抛异常。
+        reportAnalysisFailure(error)
     } finally {
-        imageProxy.close()
-        Trace.endSection()
+        try {
+            imageProxy.close()
+        } finally {
+            Trace.endSection()
+        }
     }
 }
 ```
@@ -424,11 +430,16 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
 
 图：不能直接关闭被包装的Media.Image，也不能提前结束仍在访问的任务。
 
-异步模型下，关闭操作要放到异步任务的完成回调里。若 `analyzeFrame()` 只是提交任务就返回、`finally` 立即关闭，模型随后访问的图像已经失效；若一直等业务回调才关闭，又会延长缓冲区持有时间。解决办法是让分析任务明确拥有这次 `ImageProxy` 的生命周期，并为超时、异常和取消路径都注册关闭操作。
+异步模型下，只有最后一个消费者确认停止访问之后，owner 才能调用 `ImageProxy.close()`。超时、取消或失败信号本身不保证 GPU、native 或异步模型已停止读图，不能直接把这些信号都接到关闭操作。优先把所需数据复制到自有、有界缓冲区后及早关闭 ImageProxy；若要零复制持有原图，则明确任务接受/拒绝、完成、失败、取消确认和会话退出的回收协议，保证恰好一次关闭，并拒收旧会话结果。
+
+<!-- gracker-diagram: a249-11-async-image-ownership -->
+![异步图像必须等最后消费者确认结束](../../assets/diagrams/ch22/a249-11-async-image-ownership.png)
+
+图：释放依据是访问已停止，不是业务计时器到期。
 
 ### 5.1 格式转换也属于分析耗时
 
-`YUV_420_888` 是默认输出。请求 `RGBA_8888` 时，CameraX 会在内部执行 YUV 到 RGBA 的转换，把结果放进第一个数据平面（plane），这段转换时间同样要计入分析成本。
+`YUV_420_888` 是默认输出。请求 `RGBA_8888` 时，CameraX 会在内部执行 YUV 到 RGBA 的转换，把结果放进第一个数据平面（plane），这段转换时间同样要计入分析成本。 1.6.1 还提供 NV21 输出；读取 YUV/NV21 必须依据各 plane 的 rowStride、pixelStride、crop 与旋转信息，不能假设紧密连续的宽×高数组。格式转换和旋转也可能使 ImageProxy 与其底层 Media.Image 的尺寸/布局不同，应按所用 API 的契约取数。
 
 分析预算应至少分为：
 
@@ -455,13 +466,8 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
 3. 避免每帧分配 Bitmap、ByteArray 或大对象；
 4. 直接使用 YUV plane，减少无必要的 YUV → RGB → Bitmap 转换；
 5. 降低分析频率或依据场景变化触发分析；
-6. 选择更轻的模型或合适的 NNAPI（Android 神经网络 API）/ GPU 执行路径；
+6. 选择更轻的模型，并按所用运行时评估 CPU / GPU 等执行路径；NNAPI 已在 Android 15 废弃，新方案不把它当默认性能建议；
 7. 只有必须逐帧处理时才使用 `BLOCK_PRODUCER`，并对队列等待时间设监控。
-
-<!-- gracker-diagram: a249-11-async-image-ownership -->
-![异步图像必须等最后消费者确认结束](../../assets/diagrams/ch22/a249-11-async-image-ownership.png)
-
-图：释放依据是访问已停止，不是业务计时器到期。
 
 ## 6. ImageCapture：捕获模式只表达偏好
 
@@ -471,7 +477,7 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
 
 - `CAPTURE_MODE_MINIMIZE_LATENCY`：默认值，优先减少捕获延迟；
 - `CAPTURE_MODE_MAXIMIZE_QUALITY`：允许设备选择更重的画质路径；
-- `CAPTURE_MODE_ZERO_SHUTTER_LAG`：实验能力，从候选历史帧中选择接近按键时刻的帧，再执行 reprocess（把已捕获图像作为输入重新处理），把已捕获的图像作为输入重新处理。
+- `CAPTURE_MODE_ZERO_SHUTTER_LAG`：实验能力，从候选历史帧中选择接近按键时刻的帧，再执行 reprocess（把已捕获图像作为输入重新处理）。
 
 ZSL 这个名称只表达“优先复用历史候选帧”的捕获策略，文件是否立即可得要看后续流程。公开文档描述的能力与 CameraX 1.6.1 的具体实现要分开对待：设备能力、用例组合和单次 ring 取帧都可能让请求降级，固定实现见 6.4。
 
@@ -515,7 +521,7 @@ Android 17 / API 37 新增了 `ImageFormat.RAW14`，表示紧密打包的单平�
 下面的示例用于在构建 `ImageCapture` 前选择拍照模式：
 
 ```kotlin
-@OptIn(ExperimentalZeroShutterLag::class)
+@androidx.annotation.OptIn(ExperimentalZeroShutterLag::class)
 fun buildImageCapture(cameraInfo: CameraInfo): ImageCapture {
     val captureMode = if (cameraInfo.isZslSupported) {
         ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG
@@ -667,7 +673,7 @@ CameraX 1.6.1 源码中出现了三个含义不同的缓冲区数量：
 |---|---:|---|
 | `RING_BUFFER_CAPACITY` | 3 | 可供 ZSL 选择的合格 `ImageProxy` 数量 |
 | `ZslControlImpl.MAX_IMAGES` | 9 | 传给 `MetadataImageReader` 的图像上限，源码中为环形队列容量的 3 倍 |
-| CameraPipe 输入端 `maxImages` | 1 | 会话输入 `Surface` 上的 `ImageWriter` 并发图像数 |
+| CameraPipe 输入端 `maxImages` | 1 | 会话输入 `Surface` 上的 `ImageWriter` 可同时 dequeue 的图像数；不能等同整个下游在途 buffer 总数 |
 
 “ZSL 缓存 3 帧”只描述环形队列的容量；至于整个相机处理流水线，预览、JPEG、ZSL 输出、HAL 处理中的缓冲区、`ImageReader` 和输入流各有自己的队列约束，`GraphicBuffer` 驻留量要逐条流统计。
 
@@ -717,7 +723,7 @@ CameraX 1.6.1 的 Camera2 后端已经迁移到 CameraPipe。较早资料里常�
 
 ##### ImageWriter 排入 session input
 
-CameraPipe 会为可重处理会话的输入 `Surface` 创建 `ImageWriter`。准备提交请求时，`Camera2CaptureSequenceProcessor` 先调用以下方法，把选中的历史帧排入输入队列：
+CameraPipe 会为可重处理会话的输入 `Surface` 创建 `ImageWriter`。在该版本的请求构建循环中，`Camera2CaptureSequenceProcessor` 先用源 TotalCaptureResult 创建 reprocess builder 并加入输出目标，再调用以下方法，把选中的历史帧排入输入队列：
 
 ```text
 imageWriter.queueInputImage(selectedImage)
@@ -728,7 +734,7 @@ imageWriter.queueInputImage(selectedImage)
 
 图：正文按主题分节，真正调用顺序以1.6.1请求构建循环为准。
 
-这一步把 CameraX 持有的 `PRIVATE` 图像排入 Camera2 会话的输入队列，全程既没有复制出应用可访问的位图，也没有把 JPEG 数据送回 HAL。
+这一步把 CameraX 持有的 `PRIVATE` 图像排入 Camera2 会话的输入队列，全程既没有复制出应用可访问的位图，也没有把 JPEG 数据送回 HAL。 这是 API 层的图像移交描述，不承诺 ISP/驱动内部全程无拷贝；外部 Image 排入时还需要可用的 ImageWriter 输入槽，无空槽时该调用可能阻塞。
 
 ##### TotalCaptureResult 初始化 reprocess request
 
@@ -749,21 +755,21 @@ cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 
 ##### 成功、失败、取消都要回收 input image
 
-被选中的 `ImageProxy` 在排入 `ImageWriter` 后仍持有底层资源。CameraX 会为请求安装监听器，并在以下路径中通过同一个原子引用关闭它：
+成功 `queueInputImage()` 后，底层 `Image` 的所有权已经交给 ImageWriter/下游，原 Image 不得继续访问，其状态等同已关闭；这不等于物理 buffer 已被下游消费并归还。CameraX 仍需关闭 `ImageProxy` 包装以传播内部关闭通知，并为请求安装监听器，在以下路径共用一个原子引用：
+
+<!-- gracker-diagram: a249-27-image-transfer-and-release -->
+![图像移交、包装关闭与buffer归还是三件事](../../assets/diagrams/ch22/a249-27-image-transfer-and-release.png)
+
+图：回调关闭wrapper不能证明HAL已经归还同一物理buffer。
 
 - 请求完成；
 - 请求失败；
 - 请求中止；
 - 完整捕获结果到达。
 
-多个回调可能先后发生，原子引用保证资源只关闭一次。我们若自行实现 Camera2 ZSL，同样要在提交失败、会话关闭、请求中止和异常路径中完整回收输入图像。
+多个回调可能先后发生，`getAndSet(null)` 保证这一监听器对包装对象最多发起一次关闭。我们若自行实现 Camera2 ZSL，同样要在提交失败、会话关闭、请求中止和异常路径中按当前所有者回收资源；成功 queue 后不能再次读写原 Image，也不能把 wrapper.close 当作下游已释放缓冲区的证明。
 
 失败的位置分两种：拍照时没有候选帧，CameraX 会改用普通静态拍照；而一旦已经构造 `InputRequest`，随后 `ImageWriter.queueInputImage()` 或 `createReprocessCaptureRequest()` 失败，CameraPipe 就会让本次捕获序列构建失败。这一阶段是否还会自动重试普通拍照并没有保证，应按失败处理。
-
-<!-- gracker-diagram: a249-27-image-transfer-and-release -->
-![图像移交、包装关闭与buffer归还是三件事](../../assets/diagrams/ch22/a249-27-image-transfer-and-release.png)
-
-图：回调关闭wrapper不能证明HAL已经归还同一物理buffer。
 
 <!-- gracker-diagram: a249-24-zsl-fallback-vs-failure -->
 ![无候选降级与构建失败不能混淆](../../assets/diagrams/ch22/a249-24-zsl-fallback-vs-failure.png)
@@ -772,7 +778,12 @@ cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 
 #### 候选帧也占用 stream buffer
 
-环形队列保存的是尚未关闭的 `ImageProxy`，每保留一帧，就有一块 `PRIVATE` 输出缓冲区回不到生产方队列。队列满后关闭被淘汰的帧，拍照完成或失败后关闭被选中的帧，会话重置时清空全部帧。
+环形队列保存尚未关闭的 `ImageProxy`，候选帧会占用输出资源；满队列淘汰和会话重置会关闭未选中的帧。选中帧在成功 queue 前仍由调用方负责，成功 queue 后 Image 所有权转到输入链路，wrapper 关闭通知与下游真正释放 buffer 是不同阶段。分析驻留量时必须把候选输出与已移交的在途输入分开。
+
+<!-- gracker-diagram: a249-28-zsl-residency-and-pressure -->
+![候选输出与已移交输入分别追踪](../../assets/diagrams/ch22/a249-28-zsl-residency-and-pressure.png)
+
+图：预览正常不能证明ZSL输出与input队列也正常。
 
 如果图像没有按预期关闭，可能出现：
 
@@ -782,11 +793,6 @@ cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 - 预览、分析或其他共享 camera 资源出现连带延迟。
 
 这类问题要按 [Camera 平台管线的逐 stream Buffer 方法](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md) 对每条流分别检查。预览正常只说明预览那一路没问题，ZSL 输出流和输入队列要单独检查。
-
-<!-- gracker-diagram: a249-28-zsl-residency-and-pressure -->
-![候选输出与已移交输入分别追踪](../../assets/diagrams/ch22/a249-28-zsl-residency-and-pressure.png)
-
-图：预览正常不能证明ZSL输出与input队列也正常。
 
 #### 应用条件、降级与日志证据
 
@@ -807,7 +813,7 @@ cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 - 输出图像或捕获结果的传感器时间戳；
 - 成功、失败和错误码。
 
-只记一个 `zsl=true` 布尔值是不够的：会话是否建立了输入流、本次拍照是否从环形队列取得了历史帧，都要靠上面的字段回答。
+只记一个 `zsl=true` 布尔值是不够的：会话是否建立了输入流、本次拍照是否从环形队列取得了历史帧，都要靠上面的字段回答。 `SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` 的 sensor timestamp 可与 `elapsedRealtimeNanos()` 比较；UNKNOWN 源不能直接做跨时钟差。ZSL 帧可能早于按键，图像年龄和按键到文件延迟是两个指标，不能把负的时间差当作计时错误。
 
 <!-- gracker-diagram: a249-29-zsl-clock-and-evidence -->
 ![ZSL图像年龄与按键到文件时延分开](../../assets/diagrams/ch22/a249-29-zsl-clock-and-evidence.png)
@@ -854,12 +860,12 @@ CameraX 是独立于 Android 系统发布的 Jetpack 库，同一台 Android 17 
 
 `QualitySelector.getSupportedQualities()` 返回的质量保证，只针对 `VideoCapture` 单独运行或 `Preview + VideoCapture` 组合；再加入 `ImageCapture`、`ImageAnalysis`、HDR、稳定或 CameraEffect 后，绑定仍可能失败或改用不同配置。
 
-下面的选择器用于优先 1080p，并允许在不支持时选择较低质量。
+下面的选择器优先 1080p，其次 720p、SD，未命中列表时仅尝试低于 FHD 的质量；若不存在可用质量，应由产品处理不支持分支，不能悄悄回退到更高成本的 UHD。
 
 ```kotlin
 val qualitySelector = QualitySelector.fromOrderedList(
     listOf(Quality.FHD, Quality.HD, Quality.SD),
-    FallbackStrategy.lowerQualityOrHigherThan(Quality.SD),
+    FallbackStrategy.lowerQualityThan(Quality.FHD),
 )
 
 val recorder = Recorder.Builder()
@@ -939,11 +945,11 @@ ML Kit 集成通常运行在 `ImageAnalysis` 消费端，CameraEffect 或自研 
 
 - CPU Analyzer 会占用 CPU、内存带宽，并持有分析图像；
 - GPU Analyzer 或效果会增加纹理导入、同步、shader（着色器程序） 与输出 Surface 的工作；
-- NNAPI / GPU 模型可能与预览效果争用 GPU 或内存；
+- GPU 模型或实际被委派到 GPU 的模型可能与预览效果争用 GPU 或内存；
 - 逐帧 YUV → RGB 与 Bitmap 分配会增加 CPU、内存和 GC（垃圾回收） 压力；
 - 结果覆盖层若每帧触发复杂 UI 重绘，还会增加宿主窗口的帧耗时。
 
-性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟——即使模型推理很快，输入帧在队列里等得太久，用户看到的仍是旧结果。
+性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟——即使模型推理很快，输入帧在队列里等得太久，用户看到的仍是旧结果。 跨 timestamp 源的计时先确认时基映射，结果还需带会话/帧身份，旧会话或已过期结果不得更新当前预览；预览镜像只改变显示坐标，不代表分析缓冲区也已镜像。
 
 坐标转换同样要用 CameraX 提供的 rotation、crop rect 与 transformation 信息。直接拿传感器坐标绘制到 `PreviewView`，在裁剪、镜像和旋转场景会错位；为修错位反复复制或旋转 Bitmap，又会引入额外开销。
 
@@ -964,14 +970,14 @@ ML Kit 集成通常运行在 `ImageAnalysis` 消费端，CameraEffect 或自研 
 - 录像编码设置与存储位置；
 - 预热时间、总时长和系统热状态。
 
-降级要由状态机控制，升降级使用不同温度阈值，形成滞回，避免温度在阈值附近时反复重绑会话。只降低应用线程优先级，通常解决不了 ISP、GPU、编码器或 DDR 的热限制。
-
-公共 kernel 的 dma-buf 与 dma-fence 源码，分别回答“设备间如何共享同一缓冲区”和“设备间如何表达工作完成”。相机 sensor、ISP、频率和带宽策略通常位于厂商驱动、固件与 HAL，所以缺少厂商轨迹时，我们不把 kernel 调度等待直接写成 ISP 结论。
+降级要由状态机控制，按可获得的系统热状态/实测信号使用不同升降级阈值与最短驻留时间，形成滞回，避免温度在阈值附近时反复重绑会话。只降低应用线程优先级，通常解决不了 ISP、GPU、编码器或 DDR 的热限制。 普通应用可使用 PowerManager 热状态监听等公开信号，不应假定能读取所有传感器或厂商温度。
 
 <!-- gracker-diagram: a249-35-thermal-hysteresis -->
 ![持续录像降级需要滞回与驻留时间](../../assets/diagrams/ch22/a249-35-thermal-hysteresis.png)
 
 图：线程优先级无法直接解决ISP、编码器或DDR热限制。
+
+公共 kernel 的 dma-buf 与 dma-fence 源码，分别回答“设备间如何共享同一缓冲区”和“设备间如何表达工作完成”。相机 sensor、ISP、频率和带宽策略通常位于厂商驱动、固件与 HAL，所以缺少厂商轨迹时，我们不把 kernel 调度等待直接写成 ISP 结论。
 
 ## 11. 性能观测：先定义时间点，再看工具
 
@@ -1008,7 +1014,7 @@ FrameTimeline 是系统记录的应用窗口帧时间线，主要解释界面帧
 
 图：独立预览layer与应用窗口帧分开；以实际帧ID与时基映射关联。
 
-[15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md) 给出了 Android 17 的 Perfetto 配置、CameraService 打开相机阶段、输出流首缓冲区、请求延迟直方图与 ZSL 时间点拆分，采集配置可以直接沿用。
+[15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md) 给出了 Android 17 的 Perfetto 配置、CameraService 打开相机阶段、输出流首缓冲区、请求延迟直方图与 ZSL 时间点拆分，采集配置可作起点，但必须按设备实际支持的 atrace 类别、数据源与权限校验；缺失的厂商 ISP/GPU/thermal 轨迹要标为不可见。
 
 ### 11.3 内存必须分域
 
@@ -1020,7 +1026,7 @@ FrameTimeline 是系统记录的应用窗口帧时间线，主要解释界面帧
 - GPU、ISP、codec 与厂商私有池；
 - ZSL、Extensions 和多帧算法的候选图像。
 
-进程 RSS（常驻物理内存）的增长不能直接换算成 `ImageAnalysis` 的队列大小。我们先确认未关闭的 `ImageProxy`、Bitmap 分配和 native heap，再结合 dma-buf、Surface 与厂商数据判断。
+进程 RSS（常驻物理内存）的增长不能直接换算成 `ImageAnalysis` 的队列大小。我们先确认未关闭的 `ImageProxy`、Bitmap 分配和 native heap，再结合 dma-buf、Surface 与厂商数据判断。 共享映射可能在多个进程中重复计入 RSS，不能把各进程 RSS 简单相加当唯一物理占用；PRIVATE 格式的步长、对齐、压缩与多平面布局需按实际分配数据核实。
 
 <!-- gracker-diagram: a249-37-camera-memory-domains -->
 ![内存按分配域、共享和持有对象核查](../../assets/diagrams/ch22/a249-37-camera-memory-domains.png)
@@ -1129,3 +1135,8 @@ CameraX 1.6 的 CameraPipe 仍运行在 Camera2、相机服务和 HAL 之上：�
 - [Camera2 API](https://developer.android.com/reference/android/hardware/camera2/package-summary)
 - [13.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md)
 - [15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md)
+
+- [ImageWriter 图像移交契约](https://developer.android.com/reference/android/media/ImageWriter)
+- [NNAPI 迁移说明](https://developer.android.com/ndk/guides/neuralnetworks/migration-guide)
+- [固定版本 ZSL 控制](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt)、[请求转换](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt)、[CameraPipe 重处理](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt)
+- [固定版本 ZSL ring](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ZslRingBuffer.java)、[FIFO 容器](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ArrayRingBuffer.java)：过滤条件与候选顺序。

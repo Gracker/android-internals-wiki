@@ -40,9 +40,9 @@ related_chapters:
 - '4.9'
 - '15.2'
 - '4.5'
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1 heapprofd, Bionic, Perfetto Profiling module, and init sources; current Perfetto native heap profiler and SQL docs; current Android Developers profileable, ProfilingManager, ProfilingResult, and AndroidX HeapProfileRequestBuilder references, retrieved 2026-08-15
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 heapprofd, Bionic, Perfetto Profiling module, and init sources; current Perfetto native heap profiler and SQL docs; current Android Developers profileable, ProfilingManager, ProfilingResult, and AndroidX HeapProfileRequestBuilder references, reviewed 2026-10-25; fixed trace-processor delta import/ART allocation-only semantics, native process CPU clock and safe parsers additionally audited; host Kotlin/synthetic SQL verification only
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -218,7 +218,7 @@ native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART（Android Ru
 
 heapprofd 是 Perfetto 的 native heap 采样器：allocator（内存分配器）向进程发放和回收内存，heapprofd 观察目标进程在采集窗口内经过它的分配与释放，把采样大小、调用栈和内存映射写进 trace。
 
-默认 heap 为 `libc.malloc`，覆盖 Bionic（Android 的 C 标准库实现）的 `malloc`、`free`、`calloc`、`realloc` 以及 C++ `new`、`delete` 等路径。
+默认 heap 为 `libc.malloc`，覆盖Bionic的malloc/free/calloc/realloc，以及最终经过这些入口的C++ new/delete；自定义allocator或重载new若绕过该dispatch，不会自动进入默认heap。
 
 一次 allocation 就是一次内存分配。heapprofd 记录采集期间抽样到的分配和释放事件，完整的进程堆快照扫描和对象内容保存都不在它的输出里。哪些问题它能直接回答、哪些要换工具？我们按内存对象逐类看：
 
@@ -373,9 +373,18 @@ heapprofd 会分别为匹配到的 PID 建立记录。`upid` 是 trace processor
 
 API 35 起，普通应用可以请求自己的 native heap profile——按调用栈抽样记录 native 分配与释放。Android 官方建议通过 AndroidX `HeapProfileRequestBuilder` 构造参数。系统会限制时长、buffer、采样间隔和请求频率；请求被接受只表示系统开始尝试采集，不保证一定生成结果文件。
 
-这段 Kotlin 代码用于启动 native allocation profile，并把停止时机交给调用方：
+这段完整导入的Kotlin示例请求native allocation profile，调用方可用CancellationSignal请求提前结束；系统最大时长、限流与异步启动仍然有效，调用函数返回不代表采集器已经接入。AndroidX core1.15.0已提供setTrackJavaAllocations，false可用于API35，不需凭新版平台常量推断不可用。
 
 ```kotlin
+import android.content.Context
+import android.os.CancellationSignal
+import android.os.ProfilingResult
+import androidx.annotation.RequiresApi
+import androidx.core.os.HeapProfileRequestBuilder
+import androidx.core.os.requestProfiling
+import java.util.concurrent.Executor
+import java.util.function.Consumer
+
 @RequiresApi(35)
 fun requestNativeHeapProfile(
     context: Context,
@@ -394,13 +403,13 @@ fun requestNativeHeapProfile(
 }
 ```
 
-调用方应在目标场景前发起请求，并在场景结束后执行 `stopSignal.cancel()`。`CancellationSignal` 在这里用于提前结束采集。成功结果的 `ProfilingResult.getResultFilePath()` 指向应用 files 目录；失败时应同时记录 `getErrorCode()` 和 `getErrorMessage()`，以区分参数错误、并发冲突、进程级限流和系统级限流。
+调用方应在场景前发起请求，在场景结束后stopSignal.cancel()请求提前结束，并按实际结果/首尾样本核对覆盖窗口。公开入口没有“已安装采样器”的同步保证，不能把请求返回到cancel之间直接当成完整场景采样。`CancellationSignal` 在这里用于提前结束采集。成功结果的 `ProfilingResult.getResultFilePath()` 指向应用 files 目录；失败时应同时记录 `getErrorCode()` 和 `getErrorMessage()`，以区分参数错误、并发冲突、进程级限流和系统级限流。
 
 服务端可从 Binder 请求中取得真实调用 UID；Profiling 模块校验该 UID 与包名后，把包名写入 `HeapprofdConfig.process_cmdline`。
 
 借这条入口，应用只能采到自己的包，`:remote` 等次要进程也不会自动加入。
 
-`setTrackJavaAllocations(true)` 会把采样对象从 native 分配改为 `com.android.art` Java 分配，记录 Java 分配调用栈和大小。这种 allocation profile 不提供对象引用关系，引用关系的证据要另找 Java heap dump。
+`setTrackJavaAllocations(true)` 会把采样对象从 native 分配改为 `com.android.art` Java 分配，记录Java分配调用栈和大小；固定17r1 trace processor对com.android.art只导入allocation，不导入free，因此其累计分配量不是当前存活Java堆。它也不提供对象引用关系，存活与引用应另用适当heap dump/对象工具。
 
 trace redactor 会按策略删除或改写跟踪文件中的敏感字段。系统 trace 会经过通用 redactor；`android-17.0.0_r1` 的 `ProfilingService.needsRedaction()` 没有把 heap profile 列入该流程。heap profile 依靠目标包限制来隔离其他应用数据，但返回文件中的本应用调用栈、映射与地址仍属于敏感诊断数据。
 
@@ -552,7 +561,7 @@ OEM 或系统产品可以让受信系统服务按设备健康信号发起 Perfet
 
 #### Android 12–14 普通 App 的替代路径
 
-Android 12–14 的普通 App 没有 `ProfilingManager`，也没有公开 API 可以把自己声明为 trusted-system 会话。若产品必须在这些版本的终端用户设备上由 App 自主触发，只能退到应用内手段：在分配器调用处自行记录的 allocator instrumentation（在分配器调用处自行记录）、SDK 自带 native hook、GWP-ASan 或轻量内存指标，并单独评估兼容性、性能和隐私。
+Android 12–14 的普通 App 没有 `ProfilingManager`，也没有公开 API 可以把自己声明为 trusted-system 会话。若产品必须在这些版本的终端用户设备上由 App 自主触发，只能退到应用内手段：应用内allocator instrumentation（在分配器入口自行记录）、SDK 自带 native hook、GWP-ASan 或轻量内存指标，并单独评估兼容性、性能和隐私。
 
 若想用 `onTrimMemory()`、PSS 阈值或 `ApplicationExitInfo` 触发 heapprofd，必须先确认设备上存在有权执行采集的系统主体。Android 15–17 可以请求 `ProfilingManager`，但仍受限流和并发会话约束。更低版本上，这些事件信号只能决定何时记录应用内证据，Perfetto 系统权限仍要由系统主体提供。
 
@@ -565,27 +574,44 @@ Android 12–14 的普通 App 没有 `ProfilingManager`，也没有公开 API �
 - 包名、PID、`upid`、进程启动时间与版本号；
 - 采样间隔、dump 周期、是否命中 guardrail；
 - 业务动作的起止 marker 和重复次数；
-- 每个 dump 中由样本折算出的存活字节数（sampled bytes）；
+- 完整会话前缀截至各dump的分配/释放累计净字节估计（不含ART仅分配模式）；
 - 同期 RSS、PSS、anon RSS、swap（交换页） 和 mmap 变化；
 - trace 是否出现 buffer overrun、unwinding error，或目标进程因权限判定被拒。
 
-anon RSS 是匿名映射当前驻留在 RAM 的大小，swap（交换） 则是已换出到交换空间的大小。`heap_profile_allocation` 中的正数表示分配，负数表示已经释放的样本。callsite 是把一次分配归因到的调用栈位置，下面的 SQL 按 dump、进程、heap 和 callsite 汇总净存活量：
+anon RSS 是匿名映射当前驻留在 RAM 的大小，swap（交换） 则是已换出到交换空间的大小。heap_profile_allocation的正/负行分别是该dump相对上一dump新增的分配/释放delta；按单个ts求和只得到该段净变化。要估计截至某dump仍未释放的本次会话分配，应从完整会话前缀累计。下例将每个已出现的dump时间与其之前的行关联，保留没有新事件的旧callsite；按upid、heap、callsite隔离，并排除仅有allocation的com.android.art。只适用于已确认有alloc/free语义的单一连续会话；dump_at_max应按其单独语义分析。
 
 ```sql
+-- Analyze one continuous, complete heap-profiling session.
+-- Limit the selected trace/process/heap before running this range join.
+WITH samples AS (
+  SELECT * FROM heap_profile_allocation
+  WHERE heap_name IS NOT 'com.android.art'
+), dump_times AS (
+  SELECT DISTINCT ts, upid, heap_name FROM samples
+)
 SELECT
-  ts,
-  upid,
-  heap_name,
-  callsite_id,
-  SUM(size) AS net_live_bytes,
-  SUM(count) AS net_live_count
-FROM heap_profile_allocation
-GROUP BY ts, upid, heap_name, callsite_id
-HAVING SUM(size) > 0
-ORDER BY ts, net_live_bytes DESC;
+  d.ts AS dump_ts,
+  d.upid,
+  d.heap_name,
+  a.callsite_id,
+  SUM(a.size) AS net_live_bytes,
+  SUM(a.count) AS net_reported_count
+FROM dump_times AS d
+JOIN samples AS a
+  ON a.upid = d.upid
+ AND a.heap_name IS d.heap_name
+ AND a.ts <= d.ts
+GROUP BY d.ts, d.upid, d.heap_name, a.callsite_id
+HAVING SUM(a.size) > 0
+ORDER BY dump_ts, net_live_bytes DESC;
 ```
 
-查询结果仍是采样估计。相同调用栈跨 dump 增长、场景退出后不回落，并且多轮复现一致，才构成较强的泄漏线索。
+该范围JOIN可能随dump数增大而变贵，先限制选定进程/heap/单一会话并保留其完整前缀，再查看目标窗口。表只为非零delta写行；完全无变化的dump可能没有时间戳，需从完整ProfilePacket/支持版本的heap_profile元数据补时间，不能写成零存活。丢失前缀、buffer错误或会话边界不明时累计结果不可靠；count也是采样报告口径，不当成全堆精确对象数。相同调用栈跨dump的累计估计增长、场景退出后不回落，并且多轮复现一致，才构成较强的泄漏线索。
+
+<!-- gracker-diagram: a298-08-delta-table-to-cumulative-live-estimate -->
+![分配表是 dump 间 delta，当前净存活估计需要完整前缀](../../assets/diagrams/ch26/a298-08-delta-table-to-cumulative-live-estimate.png)
+
+图：范围JOIN有成本；原trace缺前缀或buffer错误时不能把累计数字当完整存活堆。
 
 查询结果出来后，我们切到 flamegraph（火焰图） 视图：矩形宽度表示聚合量，沿父子调用关系可以走到完整栈。调用栈展开与符号化交给 Perfetto UI flamegraph 或命令行转换工具 `traceconv`；只连接 leaf frame（栈最末端函数）的 SQL 拿到的只是栈顶，完整调用栈要靠这两条路径还原。
 
@@ -596,11 +622,6 @@ ORDER BY ts, net_live_bytes DESC;
 3. **增长来自 `mmap` 或图形内存**：PSS 上升而 heapprofd 平稳时，应转查 anonymous mapping（匿名内存映射）、文件 mapping、DMA-BUF 与 GPU 内存。
 
 heapprofd 与 PSS 要并排解释。两者趋势一致时，可以把调用栈当作主要线索；趋势分离时，先确定增长落在哪个内存类别。
-
-<!-- gracker-diagram: a298-08-delta-table-to-cumulative-live-estimate -->
-![分配表是 dump 间 delta，当前净存活估计需要完整前缀](../../assets/diagrams/ch26/a298-08-delta-table-to-cumulative-live-estimate.png)
-
-图：范围JOIN有成本；原trace缺前缀或buffer错误时不能把累计数字当完整存活堆。
 
 <!-- gracker-diagram: a298-09-art-allocation-only-and-leak-confounders -->
 ![分配增长、存活增长与物理驻留增长分别查证](../../assets/diagrams/ch26/a298-09-art-allocation-only-and-leak-confounders.png)
@@ -657,7 +678,7 @@ UAF（use-after-free（释放后使用））是释放内存后继续访问，dou
 | malloc debug | allocator 检查、回溯与泄漏信息 | 可控 debug 环境 | 开销高，发布环境受限 |
 | 应用内 native hook | App 自己定义的事件和调用栈 | 无系统采集权限的长期监控 | 兼容 allocator、递归、信号安全和版本维护成本高 |
 
-`libmemunreachable` 不属于稳定 NDK API。它通过 `dlopen` 加载私有系统库并硬编码 C++ 符号，而 linker namespace 规定一个进程能加载哪些 native 库，加上符号变化和 SELinux 限制，这类调用难以作为通用量产方案。
+`libmemunreachable` 不属于稳定 NDK API。应用若试图用dlopen加载该私有系统库并硬编码C++符号，还会受linker namespace影响；namespace 规定一个进程能加载哪些 native 库，加上符号变化和 SELinux 限制，这类调用难以作为通用量产方案。
 
 Scudo 是强调内存安全检查的 native 分配器，error callback 只报告分配器自己发现的错误，通用 allocation 事件回调要另找机制。
 
@@ -694,11 +715,11 @@ heapprofd 不会把 heap payload（堆中对象或缓冲区的原始内容）复
 - [ ] heapprofd 与 PSS、mmap、DMA-BUF 等口径分开解释；
 - [ ] 原始 trace、符号文件和分析结果有访问与删除策略。
 
-
 <!-- gracker-diagram: a298-10-profile-failure-symbols-and-safe-archive -->
 ![先核采集完整性，再看符号与增长来源](../../assets/diagrams/ch26/a298-10-profile-failure-symbols-and-safe-archive.png)
 
 图：仅上传allocation表不是脱敏等价物，缺完整栈/错误/会话信息时结论受限。
+
 
 ## procfs CPU 计数器与采样窗口
 
@@ -716,7 +737,7 @@ heapprofd 不会把 heap payload（堆中对象或缓冲区的原始内容）复
 
 这三类问题各有对口的数据源：`/proc/stat`、进程 CPU 时间和调度事件。load average 衡量一段时间内活跃任务的平均数量，与 CPU 利用率是两回事。把这些口径混成一个百分比，单核占满可能被误报成整机占满，load average 也可能被错当成利用率——后面我们会反复回到这一点。
 
-读代码之前还要分清应用侧与平台侧：`ProcessCpuTracker` 是系统框架内部的全进程 CPU 采样类，运行在 `system_server` 里，它的方案建立在平台权限上，普通应用照搬不了。
+读代码之前还要分清应用侧与平台侧：`ProcessCpuTracker` 是系统框架内部的全进程 CPU 采样类，运行在 `system_server` 里，它的方案建立在平台权限上，普通应用照搬不了。普通App的Process.getElapsedCpuTime固定17r1 JNI使用CLOCK_PROCESS_CPUTIME_ID，失败返回0；该0与真实极早零耗时不能由接口区分，下面采样器保守将其视为无效并重建基线，不把它当明确错误码。
 
 本节内核链接指向 `android17-6.18-2026-06_r6` 标签，其中 6 条对应文件与 `android17-6.18-2026-06_r39` 字节一致，结论都按 r39 复核过。
 
@@ -845,6 +866,7 @@ data class CpuUsage(
     val windowCorePercent: Double,
 )
 
+// Confine this mutable sampler to one sampling thread.
 class SelfCpuSampler {
     private var previous: CpuPoint? = null
 
@@ -854,6 +876,12 @@ class SelfCpuSampler {
             uptimeMs = SystemClock.uptimeMillis(),
             realtimeMs = SystemClock.elapsedRealtime(),
         )
+        // The pinned native implementation returns zero on clock failure;
+        // zero may also be a valid early reading, so do not rebaseline to it.
+        if (current.processCpuMs <= 0) {
+            previous = null
+            return null
+        }
         val old = previous
         previous = current
         if (old == null) return null
@@ -871,7 +899,7 @@ class SelfCpuSampler {
 }
 ```
 
-`uptimeMillis()` 在深度睡眠期间停止，适合描述设备醒着时的 CPU 密度；`elapsedRealtime()` 包含深度睡眠，适合描述完整观察窗口内的平均负担。这个示例只统计当前进程，不会自动合并应用的 `:remote` 等其他进程。
+示例是单线程持有的可变采样器；跨线程同时sample需外部串行化。三次时钟读取不原子，短窗口须评估读取时差，并保留采样耗时。uptimeMillis()在深度睡眠期间停止，适合描述设备醒着时的 CPU 密度；`elapsedRealtime()` 包含深度睡眠，适合描述完整观察窗口内的平均负担。这个示例只统计当前进程，不会自动合并应用的 `:remote` 等其他进程。
 
 #### 整机容量占比
 
@@ -910,36 +938,34 @@ import android.system.Os
 import android.system.OsConstants
 import java.io.File
 
-data class ProcCpuTicks(
-    val cpuTicks: Long,
-    val startTicks: Long,
-)
-
+data class ProcCpuTicks(val cpuTicks: Long, val startTicks: Long)
 private val whitespace = Regex("\\s+")
 
-fun readSelfCpuTicks(): ProcCpuTicks? {
-    return try {
-        val line = File("/proc/self/stat").readText()
-        val closingParen = line.lastIndexOf(')')
-        require(closingParen > 0)
+fun parseProcCpuTicks(line: String): ProcCpuTicks? = runCatching {
+    val openingParen = line.indexOf('(')
+    val closingParen = line.lastIndexOf(')')
+    require(openingParen > 0 && closingParen > openingParen)
+    require(line.substring(0, openingParen).trim().toInt() > 0)
+    val tail = line.substring(closingParen + 1).trim().split(whitespace)
+    require(tail.size > 19 && tail[0].length == 1)
+    // tail[0] is field 3; 11/12/19 are utime/stime/starttime.
+    val user = tail[11].toLong()
+    val system = tail[12].toLong()
+    val start = tail[19].toLong()
+    require(user >= 0 && system >= 0 && start >= 0)
+    ProcCpuTicks(Math.addExact(user, system), start)
+}.getOrNull()
 
-        // tail[0] 对应字段 3；utime、stime、starttime 分别对应 11、12、19。
-        val tail = line.substring(closingParen + 1).trim().split(whitespace)
-        require(tail.size > 19)
-        ProcCpuTicks(
-            cpuTicks = tail[11].toLong() + tail[12].toLong(),
-            startTicks = tail[19].toLong(),
-        )
-    } catch (_: Exception) {
-        null
-    }
-}
+fun readSelfCpuTicks(): ProcCpuTicks? = runCatching {
+    parseProcCpuTicks(File("/proc/self/stat").readText())
+}.getOrNull()
 
-fun clockTicksPerSecond(): Long =
-    Os.sysconf(OsConstants._SC_CLK_TCK)
+fun clockTicksPerSecond(): Long? = runCatching {
+    Os.sysconf(OsConstants._SC_CLK_TCK).takeIf { it > 0 }
+}.getOrNull()
 ```
 
-解析失败返回 `null`，调用方应丢弃这一轮样本。这里不要返回 `-1` 后继续计算差值——一次权限拒绝或进程退出就会产生很大的伪 CPU 峰值。跟踪任意 PID 时，还要在两次样本之间比较 `startTicks`；数值变化说明 PID 已对应另一个进程。
+解析、读取失败或CLK_TCK不可用均返回null，调用方分别记录原因并丢弃该区间；只有取得正CLK_TCK后才换算tick。这里不要返回 `-1` 后继续计算差值——一次权限拒绝或进程退出就会产生很大的伪 CPU 峰值。跟踪任意 PID 时，还要在两次样本之间比较 `startTicks`；数值变化说明 PID 已对应另一个进程。
 
 内核可能在末尾追加字段，所以我们别把 `/proc/<pid>/stat` 写死成 44 个字段；按需要解析稳定前缀，比校验总字段数更兼容。生成这些字段的代码位于 [`fs/proc/array.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)。
 
@@ -1079,7 +1105,7 @@ Android 17 内核将 load average 定义为 `nr_running + nr_uninterruptible` �
 
 #### CPU 调度分析用 `linux.ftrace`
 
-要回答“线程何时被调度”这类问题，procfs 轮询就不够了，我们换成事件数据。ftrace 是 Linux 内核事件跟踪框架；Perfetto 的 `linux.process_stats` 主要提供进程/线程身份关系，以及按周期采集的内存、`oom_score_adj`（进程被低内存回收的优先级调整值） 等数据，它不提供进程 CPU 时间样本。CPU 时间轴来自 `linux.ftrace`：`sched_switch` 记录 CPU 从一个线程切换到另一个线程，可还原线程何时运行以及运行多久；`sched_waking` 记录线程被唤醒，可补充唤醒到实际运行之间的调度延迟。
+要回答“线程何时被调度”这类问题，procfs 轮询就不够了，我们换成事件数据。ftrace 是 Linux 内核事件跟踪框架；Perfetto 的 `linux.process_stats` 主要提供进程/线程身份关系，以及按周期采集的内存、`oom_score_adj`（进程被低内存回收的优先级调整值） 等数据，固定17r1的process_stats_config.proto支持record_process_runtime（Perfetto v44引入）；它与proc_stats_poll_ms同时启用时可输出进程utime/stime累计快照。因此它能提供CPU计数样本，但不能重建sched级执行/等待片段；下面仅scan_all配置也未启用这项采样。CPU 时间轴来自 `linux.ftrace`：`sched_switch` 记录 CPU 从一个线程切换到另一个线程，可还原线程何时运行以及运行多久；`sched_waking` 记录线程被唤醒，可补充唤醒到实际运行之间的调度延迟。
 
 这份配置同时启用两类 data source，使调度事件带有完整的进程和线程名称：
 
@@ -1104,7 +1130,7 @@ data_sources {
 }
 ```
 
-两者这样分工：`linux.ftrace` 给出 CPU 时间轴，`linux.process_stats` 补充名称和线程归属。若要周期采集进程内存，再显式配置 `proc_stats_poll_ms`；它是进程统计的轮询周期，与 CPU 采样频率是两个参数。可继续阅读 Perfetto 的 [CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling) 与 [Memory counters and events](https://perfetto.dev/docs/data-sources/memory-counters)。
+两者这样分工：`linux.ftrace` 给出 CPU 时间轴，`linux.process_stats` 补充名称和线程归属。周期内存统计需proc_stats_poll_ms；若要同时采进程CPU累计值，还需record_process_runtime=true。poll是状态计数轮询周期，不是sched事件采样率；调用栈采样又由linux.perf等数据源单独配置。可继续阅读 Perfetto 的 [CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling) 与 [Memory counters and events](https://perfetto.dev/docs/data-sources/memory-counters)。
 
 <!-- gracker-diagram: a298-16-cpu-running-runnable-and-wait-tracks -->
 ![累计 CPU 不能重建线程在何时运行或等待](../../assets/diagrams/ch26/a298-16-cpu-running-runnable-and-wait-tracks.png)
@@ -1234,7 +1260,7 @@ Android 上常见的来源有：
 
 #### Android 17 的 zRAM 与 MMD
 
-swap 是把匿名页内容写入交换设备、释放原物理页，并在再次访问时读回的机制。zRAM 是位于内存中的压缩块设备，Android 通常把它用作交换设备；从 zRAM 读回并解压页面仍会走 swap-in 路径并记作 major。
+swap 是把匿名页内容写入交换设备、释放原物理页，并在再次访问时读回的机制。zRAM 是位于内存中的压缩块设备，Android 通常把它用作交换设备；实际需要从zRAM读回解压、且成功完成的swap-in会按相应major/retry规则记账；若页已在swap cache且未发生重试，也可能是minor。major不是“闪存读了一页”的同义词。
 
 Android 17 起，[Memory Management Daemon（MMD）](https://source.android.com/docs/core/perf/mmd) 统一管理 zRAM 配置和维护任务。recompression 会用压缩率更高的算法重新压缩冷页；writeback 会把符合条件的 zRAM 页移到 `/data` 上的后备存储；prefetch 则在应用按需访问前先把指定进程的交换页取回。应用从缓存冻结状态恢复时，`system_server` 可以请求 MMD 异步执行按进程预取，以减少主界面初始化期间等待后备存储的概率。
 
@@ -1292,51 +1318,42 @@ data class FaultSnapshot(
     val elapsedRealtimeNanos: Long,
 )
 
-data class FaultDelta(
-    val minor: Long,
-    val major: Long,
-    val durationNanos: Long,
-)
+data class FaultDelta(val minor: Long, val major: Long, val durationNanos: Long)
 
-fun readSelfFaults(): FaultSnapshot {
-    val line = File("/proc/self/stat").readText().trim()
+fun parseSelfFaults(line: String, sampleTimeNanos: Long): FaultSnapshot? = runCatching {
+    val commStart = line.indexOf('(')
     val commEnd = line.lastIndexOf(')')
-    require(commEnd >= 0 && commEnd + 2 < line.length) {
-        "Malformed /proc/self/stat"
-    }
+    require(commStart > 0 && commEnd > commStart)
+    require(line.substring(0, commStart).trim().toInt() > 0)
+    val fields = line.substring(commEnd + 1).trim().split(Regex("\\s+"))
+    require(fields.size > 19 && fields[0].length == 1)
+    val start = fields[19].toLong() // field 22
+    val minor = fields[7].toLong() // field 10
+    val major = fields[9].toLong() // field 12
+    require(start >= 0 && minor >= 0 && major >= 0 && sampleTimeNanos >= 0)
+    FaultSnapshot(start, minor, major, sampleTimeNanos)
+}.getOrNull()
 
-    // fields[0] 对应内核文档中的字段 3（state）。
-    val fields = line
-        .substring(commEnd + 2)
-        .trim()
-        .split(Regex("\\s+"))
-    require(fields.size > 19) { "Incomplete /proc/self/stat" }
+fun readSelfFaults(): FaultSnapshot? = runCatching {
+    val line = File("/proc/self/stat").readText()
+    parseSelfFaults(line, SystemClock.elapsedRealtimeNanos())
+}.getOrNull()
 
-    return FaultSnapshot(
-        startTimeTicks = fields[19].toLong(), // 字段 22
-        minor = fields[7].toLong(),           // 字段 10
-        major = fields[9].toLong(),           // 字段 12
-        elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos(),
-    )
-}
-
-fun delta(
-    previous: FaultSnapshot,
-    current: FaultSnapshot,
-): FaultDelta? {
-    if (current.startTimeTicks != previous.startTimeTicks) return null
+fun delta(previous: FaultSnapshot, current: FaultSnapshot): FaultDelta? {
+    if (previous.startTimeTicks < 0 || current.startTimeTicks != previous.startTimeTicks) return null
+    if (previous.minor < 0 || previous.major < 0) return null
     if (current.minor < previous.minor || current.major < previous.major) return null
-    if (current.elapsedRealtimeNanos <= previous.elapsedRealtimeNanos) return null
-
+    if (previous.elapsedRealtimeNanos < 0 ||
+        current.elapsedRealtimeNanos <= previous.elapsedRealtimeNanos) return null
     return FaultDelta(
-        minor = current.minor - previous.minor,
-        major = current.major - previous.major,
-        durationNanos = current.elapsedRealtimeNanos - previous.elapsedRealtimeNanos,
+        current.minor - previous.minor,
+        current.major - previous.major,
+        current.elapsedRealtimeNanos - previous.elapsedRealtimeNanos,
     )
 }
 ```
 
-示例只读取当前应用自己的 proc 节点，并用 `starttime` 识别 PID 复用或进程重启。采样应放在低频诊断窗口，避免文件读取干扰短场景；进程或线程退出、读取失败及计数回退都按无效样本处理，我们在示例里逐项判断了这些条件。
+示例只读取当前应用自己的 proc 节点，并用 `starttime` 识别 PID 复用或进程重启。采样应放在低频诊断窗口，避免文件读取干扰短场景；读取/格式失败返回null；差值另检查starttime、非负计数与正时间窗。示例只在当前开机与当前进程生命周期内使用，若跨进程/持久化保存还须纳入boot身份；调用方不得用0替代失败样本。
 
 #### fault 数与分配字节的换算
 
@@ -1370,7 +1387,7 @@ adb shell simpleperf stat \
   --duration 10
 ```
 
-`simpleperf list` 的实际输出就是这台设备的能力清单。应用还要满足 [Android application profiling](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/doc/android_application_profiling.md) 的权限条件：面向发布的 release 包通常需要 `profileableFromShell`，调试用 debug 包可依赖 `debuggable`，root 设备另有更宽权限。预装工具版本和厂商策略仍可能缩小 user build 上的可用范围。统计结果中 `page-faults` 与 minor、major 之和的差值，应按三类事件各自的计数时机解释。
+`simpleperf list` 的实际输出就是这台设备的能力清单。应用还要满足 [Android application profiling](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/doc/android_application_profiling.md) 的权限条件：面向发布的 release 包通常需要 `profileableFromShell`，调试用 debug 包可依赖 `debuggable`，root 设备另有更宽权限。预装工具版本和厂商策略仍可能缩小 user build 上的可用范围。统计结果中的page-faults、proc min/maj与perf minor/major不保证机械相等：除区间/失败路径差异，固定mm_account_fault在regs为null的GUP场景更新task计数后跳过perf事件。应按具体入口和计数时机解释差值。
 
 #### 用 Perfetto 定位等待发生在哪一段
 

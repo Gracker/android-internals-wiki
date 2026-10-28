@@ -13,8 +13,9 @@ tags:
 - static-analysis
 - method-reachability
 - android-testing
-last_verified: '2026-08-14'
-last_verified_against: APA 首页更新至 2026-08-12；Quickstart、录制、Trace View 与三类分析指南当前版本；android-17.0.0_r1；android17-6.18-2026-06_r6
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: APA current official System Profiler guides and 0.10.0-canary Frame Profiler; AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6; GAPS arXiv 2511.23213v3 and raw 4open.science files retrieved 2026-10-25; exact content SHA-256 retained in source audit
 confidence: medium
 last_deep_review_at: '2026-07-26T20:36:00+08:00'
 last_rework_at: '2026-07-26T21:35:26+08:00'
@@ -46,29 +47,29 @@ sources:
 - type: obsidian
   path: rendering_pipelines/S13_game_type.md
 - type: internal
-  path: src/part3-tools/ch14-perfetto/01-perfetto-intro.md
+  path: src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md
 - type: internal
   path: src/part3-tools/ch15-other-tools/01-as-profiler.md
 - type: internal
-  path: src/part3-tools/ch15-other-tools/02-simpleperf.md
+  path: src/part3-tools/ch15-other-tools/02-simpleperf-arm-topdown.md
 - type: internal
-  path: src/part3-tools/ch15-other-tools/07-dumpsys.md
+  path: src/part3-tools/ch15-other-tools/04-dumpsys.md
 - type: internal
-  path: src/part3-tools/ch15-other-tools/08-battery-historian.md
+  path: src/part3-tools/ch15-other-tools/05-battery-historian.md
 - type: paper
   path: https://arxiv.org/abs/2511.23213v3
   authors: Samuele Doria, Alexander Pilgun, Jordan Samhi, Jacques Klein, Eleonora Losiouk
   date: '2026-07-17'
 - type: artifact
   path: https://anonymous.4open.science/r/GAPS/README.md
-  snapshot: README 3c646133；uv.lock dce51b4c
+  snapshot: 4open file-list identifiers README 3c646133 and uv.lock dce51b4c; retrieved content SHA-256 README 84c36d16f65759213df5566111ab30da32bd999fdee50fcd1240bcf50df06691 and uv.lock b26e5fdaaa5f9b183c03ccb4fa1f98b7d09fe76a0160d00bb3e8d9779d44348b
 - type: historical-repo
   path: https://github.com/samudoria/GAPS
-  availability: 2026-08-14 返回 404；保留该地址用于解释论文 v1 的历史引用
+  availability: GitHub repository API still returned 404 on 2026-10-25; historical v1 reference retained; current code reviewed through the public 4open.science artifact
 - type: official
   path: https://developer.android.com/reference/android/os/Trace
 - type: official
-  path: https://perfetto.dev/docs/quickstart/android-tracing
+  path: https://perfetto.dev/docs/getting-started/system-tracing
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
 related_chapters:
@@ -92,11 +93,16 @@ consolidated_from:
 
 > 源码基线：设备侧 Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
-APA 是 Google 面向 Android App 与游戏提供的性能分析工具，官方以独立桌面应用分发；2026 年 5 月的发布文还说明，其 System Trace viewer 已进入 Android Studio Panda 4 Canary 及后续版本。本文的 APA 操作流程以独立版 System Profiler 为准。它支持 Android 12 及以上的受支持设备，发布周期独立于 Android 平台，Android 17 新增的 framework API 与它是两条线。
+APA 是 Google 独立分发的性能分析工具；截至本轮复核，当前首页明确主要面向游戏与 Vulkan 图形，其他 App 优先使用 Android Studio Profiler；2026 年 5 月的发布文还说明，其 System Trace viewer 已进入 Android Studio Panda 4 Canary 及后续版本。本文的 APA 操作流程以独立版 System Profiler 为准。它支持 Android 12 及以上的受支持设备，发布周期独立于 Android 平台，Android 17 新增的 framework API 与它是两条线。
 
-System Profiler 在 2026 年 5 月 19 日以 open beta 发布。截至 2026 年 8 月 13 日，8 月 12 日更新的 APA 下载页已经去掉 Beta 标注；旧 AGI 页面上还留着“public beta”字样，这条交叉链接更新滞后，判断当前发布状态时以 APA 下载页为准。
+System Profiler 在 2026 年 5 月 19 日以 open beta 发布。当前应按 APA 自己的发布说明区分版本与通道：`0.10.0-canary`（2026 年 9 月）已加入实验性 Frame Profiler。旧交叉链接里的 Beta 字样不能代替当前发布记录；本文后续操作仍聚焦独立版 System Profiler。
 
-当前 APA 文档仍以 System Profiler 为主：录制 system trace（系统追踪）、在 Project（组织多份 trace 的项目容器） 中组织多份 trace、查看 CPU/GPU/内存/功耗与 SurfaceFlinger（Android 系统合成器） 事件、运行 PerfettoSQL，并为 Vulkan 工作负载补充调试数据。
+System Profiler 负责录制 system trace（系统追踪）、在 Project（组织多份 trace 的项目容器）中保存多份 trace、查看 CPU/GPU/内存/功耗与 SurfaceFlinger 事件，并运行 PerfettoSQL。APA canary 的 Frame Profiler 则走 GFXR 捕获与逐 render pass 重放测量，还可导出 `.rdc` 交给 RenderDoc；兼容范围与预热、重复测量条件见 15.11。两条流程分别记录版本和测量条件。
+
+<!-- gracker-diagram: ch15-13-02-apa-profiler-modes -->
+![System、APA canary Frame 与 AGI 分开](../../assets/diagrams/ch15/ch15-13-02-apa-profiler-modes.png)
+
+图：系统轨道、GFXR重放性能和AGI命令资源捕获分别固定版本与条件。 本章操作聚焦System Profiler；当前APA主页主要面向游戏和Vulkan，canary逐帧另查设备支持。
 
 ## 统一性能检查与系统证据
 
@@ -104,14 +110,14 @@ System Profiler 在 2026 年 5 月 19 日以 open beta 发布。截至 2026 年 
 
 ### 1. APA 在工具链中的位置
 
-APA 的 System Profiler 依赖 Perfetto 采集 system trace。我们先分清设备侧和桌面侧各自的职责：设备侧的 tracing service 协调录制，producer 注册并写入数据，data source 表示可采集的数据类型，trace buffer 暂存生成的 trace packet（追踪数据包）；桌面端 APA 负责配置录制、取回 trace、展示时间轨道和执行查询。AGI 文档仍把 APA 列为 system profiling 的推荐工具；AGI Frame Profiler 则继续负责 Vulkan 单帧命令、pipeline（图形管线）、shader（GPU 程序）、纹理与几何资源分析。
+APA 的 System Profiler 依赖 Perfetto 采集 system trace。我们先分清设备侧和桌面侧各自的职责：设备侧的 tracing service 协调录制，producer 注册并写入数据，data source 表示可采集的数据类型，trace buffer 暂存生成的 trace packet（追踪数据包）；桌面端 APA 负责配置录制、取回 trace、展示时间轨道和执行查询。AGI 文档仍把 APA 列为 system profiling 的推荐工具。逐帧问题还要区分 APA canary Frame Profiler 的 GFXR 性能测量、AGI Frame Profiler 的 `.gfxtrace` 命令/资源分析，以及 RenderDoc 图形调试；它们不是同一种捕获文件或重放引擎。
 
 | 层次 | 组件 | 职责 |
 |---|---|---|
 | Android App / 游戏 | Java、Kotlin、C/C++、Vulkan、应用 trace marker（自定义时间标记） | 产生业务工作和可读标记 |
 | Android framework | ART（Android Runtime）、Binder IPC（Android 跨进程通信）、HWUI（UI 硬件加速渲染库）、FrameTimeline（预期/实际帧时间线）、SurfaceFlinger | 产生线程、帧、buffer 与系统服务事件 |
 | Linux kernel | ftrace（内核事件追踪）、scheduler（调度器）、frequency（频率）、idle（空闲状态）、IRQ（硬件中断请求） | 记录线程何时被唤醒、运行、抢占或阻塞 |
-| Perfetto | tracing service、producer、data source、`TraceConfig`（录制配置）、trace packet | 统一配置、时间轴和二进制 trace |
+| Perfetto | tracing service、producer、data source、<code>Trace<wbr>Config</code>（录制配置）、trace packet | 统一配置、时间轴和二进制 trace |
 | APA System Profiler | Project、Record Trace、Trace View、PerfettoSQL | 交互录制、项目化管理和人工分析 |
 
 自定义录制配置的协议定义在 `external/perfetto/protos/perfetto/config/trace_config.proto`，tracing service 的源码位于 `external/perfetto/src/traced/service/`；调度 tracepoint（内核事件记录点）如 `sched_switch`、`sched_wakeup`（线程唤醒事件） 则由内核 `android17-6.18-2026-06_r6/include/trace/events/sched.h` 定义。这些数据在设备侧是什么语义，APA 就显示什么——语义由设备侧决定，桌面工具只负责呈现。
@@ -206,7 +212,7 @@ Use custom trace configuration 会把界面当前设置自动展开成 Perfetto 
 - 采样频率是否改变被测负载；
 - trace 是否因 buffer 覆盖、flush（把暂存数据写出）或 stop 时机而丢掉目标窗口。
 
-截至 2026 年 8 月 13 日，APA 公开文档没有给出 `/system/etc/perfetto-configs/apa-config.textproto`、`--custom-cpu-freq`、`--custom-gpu` 或 `adb shell apa` 这些入口。本文的 APA 操作步骤以独立桌面 GUI 为准；2026 年 5 月发布文还描述了 Android Studio 集成，两种界面都属于交互式工具，脚本化采集交给 Perfetto CLI、Macrobenchmark（Jetpack 性能基准测试框架）或相应测试工具。
+本轮核对的 System Profiler 录制指南使用 GUI 与自定义 `TraceConfig`，没有将 `/system/etc/perfetto-configs/apa-config.textproto`、`--custom-cpu-freq`、`--custom-gpu` 或 `adb shell apa` 定义为本流程的入口；本章不依赖这些未在所引指南公开的字符串。本文的 APA 操作步骤以独立桌面 GUI 为准；2026 年 5 月发布文还描述了 Android Studio 集成，两种界面都属于交互式工具，脚本化采集交给 Perfetto CLI、Macrobenchmark（Jetpack 性能基准测试框架）或相应测试工具。
 
 <!-- gracker-diagram: ch15-13-08-config-and-retention -->
 ![数据源能力、容量与保留窗口](../../assets/diagrams/ch15/ch15-13-08-config-and-retention.png)
@@ -215,7 +221,7 @@ Use custom trace configuration 会把界面当前设置自动展开成 Perfetto 
 
 ### 5. Vulkan Layers：能力与扰动
 
-APA 可以在录制时注入 Vulkan layers，也就是加载能拦截 Vulkan API 调用、写入额外调试数据的模块，当前文档列出三类选项。这些 layer 产出的是 trace 增强信息：render pass 名称和截图帮我们认出阶段与画面；逐 draw（逐次绘制调用）的单帧 capture/replay（捕获与回放）则在这些 layer 的范围之外。
+APA 可以在录制时注入 Vulkan layers，也就是加载能拦截 Vulkan API 调用、写入额外调试数据的模块，当前文档列出三类选项。这些 layer 产出的是 trace 增强信息：render pass 名称和截图帮我们认出阶段与画面；逐 draw 的单帧 capture/replay 在这三类 System Profiler layer 的范围之外；APA canary 另有 Frame Profiler，这个范围限制不能外推成整个 APA 不提供逐帧能力。
 
 #### 5.1 CPU Timing
 
@@ -259,7 +265,7 @@ APA 把每条时间轨道（track）上的 trace event 分为三类；我们先�
 | Battery | current、charge、capacity | 观察趋势；USB 连接会持续充电，不能直接当作脱机功耗 |
 | GPU Memory | GPU 内存及全 trace 的 min/max/average | 找资源增长或场景峰值 |
 | GPU Queues | 硬件队列工作；Vulkan 场景可含 command buffer、render pass、framebuffer | 估算 GPU 阶段与 submission 关系 |
-| Vulkan Events | `vkQueueSubmit` 与 `submission_id` | 关联 CPU submit 和 GPU queue slice |
+| Vulkan Events | <code>vk<wbr>Queue<wbr>Submit</code> 与 <code>submission_<wbr>id</code> | 关联 CPU submit 和 GPU queue slice |
 | GPU Counters | 设备支持的周期采样 counter | 分析利用率、stall、纹理/顶点带宽；具体含义以 GPU 厂商文档为准 |
 | SurfaceFlinger Events | 各 layer 的 On Display、active buffer 与生命周期 | 关联 buffer 到显示阶段 |
 | Processes / Threads | 进程、线程、counter、async event | 回到主线程、RenderThread 与工作线程 |
@@ -282,15 +288,15 @@ SELECT
 FROM thread_state AS ts
 JOIN thread AS t USING (utid)
 JOIN process AS p USING (upid)
-WHERE ts.state = 'R'
+WHERE ts.state IN ('R', 'R+')
   AND p.name = 'com.android.systemui'
   AND ts.dur >= 8e6
 ORDER BY ts.dur DESC;
 ```
 
-查出来的每一行都在说同一件事：线程已经可运行，但在该区间内没有执行。原因可能在 CPU 竞争、优先级、调度约束或更高优先级工作上，仅凭一行结果还定不了根因。下一步我们回到对应时间窗，检查 CPU Scheduling、wakeup、当前运行线程、频率与相关 slice。更多查询模式见 14.7 的 Perfetto SQL 查询手册。
+查出来的每一行都在说同一件事：线程已经可运行，但在该区间内没有执行。`R` 与 `R+` 都纳入查询，后者表示被抢占后仍可运行；两类的来源可继续分开分析。原因可能在 CPU 竞争、优先级、调度约束或更高优先级工作上，仅凭一行结果还定不了根因。下一步我们回到对应时间窗，检查 CPU Scheduling、wakeup、当前运行线程、频率与相关 slice。更多查询模式见 14.7 的 Perfetto SQL 查询手册。
 
-官方还提供 `perfetto-sql` 与 `perfetto-trace-analysis` 两个 skill，供 AI agent 生成查询或给出分析起点。用之前要装好对应 skill；生成结果仍要对着当前 trace 核一遍表、字段、单位和进程范围，AI 给出的自然语言解释当起点就好，最终以 trace 为准。
+当前 Android 工具页列出 `perfetto-sql` 与 `perfetto-trace-analyzer` 两个可安装 skill；文档中的工作流标题也可能使用 Perfetto Trace Analysis，供 AI agent 生成查询或给出分析起点。用之前要装好对应 skill；生成结果仍要对着当前 trace 核一遍表、字段、单位和进程范围，AI 给出的自然语言解释当起点就好，最终以 trace 为准。
 
 ### 8. 三类常用分析
 
@@ -299,7 +305,7 @@ ORDER BY ts.dur DESC;
 分析一帧时，我们先区分 CPU total time（两次帧提交之间包含等待的总时长）、CPU active time（CPU 实际运行该 App 代码的时长）、GPU time 与最终 present 结果。
 
 - Vulkan 场景可用相邻 `vkQueuePresentKHR` 之间的区间估算 CPU total frame time；其中包含等待 GPU 或 buffer 的时间；
-- CPU active time 要统计该帧窗口内主线程、render thread 和 worker（工作线程） 的 Running slice，只量一条线程会把工作量看漏；
+- CPU active time 要统计该帧窗口内相关主线程、render thread 和 worker 的 Running 区间；先裁剪到目标帧窗口，再注明如何聚合。跨线程求和得到 CPU 工作量，线程并行时可大于窗口墙钟时长，不能直接当作端到端关键路径；
 - GPU slice 可用时，它比 counter 更适合估算 GPU frame time；
 - GPU slice 缺失时，可以用 GPU utilization（利用率）、instruction（指令活动） 或 queue counter 的周期模式估算边界，但精度较低；
 - 一帧可能包含多次 Vulkan submission，应使用 Vulkan Events 与 `submission_id` 关联同一帧的 GPU 工作；
@@ -350,11 +356,11 @@ Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android St
 | 系统级卡顿、线程调度、CPU/GPU/帧关联 | APA 或 Perfetto UI | Project 化录制、Trace View、SQL、A/B 对照 trace |
 | Java/Kotlin 方法热点 | Android Studio CPU Profiler | 提供系统上下文与目标时间窗 |
 | Java/Kotlin 分配、GC、对象泄漏 | Memory Profiler、heap dump、LeakCanary | 关联场景、进程内存与帧变化 |
-| Vulkan 单帧 shader、pipeline、纹理、几何 | AGI Frame Profiler | 确定异常帧与系统侧 CPU/GPU 上下文 |
+| Vulkan 逐 render pass 成本或单帧资源问题 | APA canary Frame Profiler（性能）、AGI Frame Profiler、RenderDoc | System Profiler 先确定异常窗口；逐帧工具再按文件、设备兼容与调试目的选择 |
 | WindowManager、SurfaceFlinger 状态机和跨窗口问题 | Winscope | 提供 buffer、layer 和帧时间线线索 |
 | 可重复启动、滚动和帧指标 | Macrobenchmark | 对异常样本做人工 trace 复盘 |
 | CI 批量指标 | Trace Processor、PerfettoSQL | 人工打开回归 trace |
-| 线上真实用户 trace | `ProfilingManager` + Perfetto UI | APA 不提供线上采集 API；导出的脱敏 trace 能否完整显示，要按 APA 版本验证 |
+| 线上真实用户 trace | <code>Profiling<wbr>Manager</code> + Perfetto UI | APA 不提供线上采集 API；导出的脱敏 trace 能否完整显示，要按 APA 版本验证 |
 | 长时间耗电与后台行为 | Batterystats、Battery Historian、statsd | 在短时 trace 中关联 CPU/GPU/电流变化 |
 
 表中几个工具先认一下：Winscope 用来看 WindowManager 与 SurfaceFlinger 状态；Macrobenchmark（Jetpack 的可重复性能测试框架）负责可重复的基准测试；CI（Continuous Integration） 是持续集成流水线；`ProfilingManager` 是面向真实用户设备采集脱敏 profile 的 Android API；statsd 是 Android 系统统计守护进程。它们各管一段，APA 主要承担本地 system trace 的交互分析。
@@ -393,11 +399,11 @@ APA 安装包不属于 `android-17.0.0_r1` framework 源码，在平台 tag 里�
 
 短 trace 适合定位一轮交互，长时间功耗、温升和降频需要专门实验。为了 Trace View 更丰富而把数据源全开，换来的主要是更多扰动；等记录不到目标事件，再按缺口增加 data source。
 
-
 <!-- gracker-diagram: ch15-13-13-controlled-ab-analysis -->
 ![视觉对齐与固定查询的 A/B 对照](../../assets/diagrams/ch15/ch15-13-13-controlled-ab-analysis.png)
 
 图：先固定采集与场景，再用同一查询或benchmark指标比较修复前后。 分栏对齐方便复盘；定量结论仍要同单位、同窗口与可复查的指标定义。
+
 
 ## 动态目标可达性与路径重建
 
@@ -464,7 +470,7 @@ GAPS 把一次查询分成静态分析与动态执行两半，处理链如下。
 
 Android 应用没有单一 `main()` 入口。ICC（Inter-Component Communication，组件间通信）通过 Intent 连接 `Activity`、`Service`、`BroadcastReceiver` 等组件。GAPS 会检查 manifest 中导出的组件和 intent filter（Intent 匹配规则），也会分析动态注册的 receiver（广播接收器） 及其注册路径。ICC 映射保存组件类名、action（动作字符串） 或关联路径，供反向遍历在合法入口处停止。
 
-论文也交代了这一步的能力范围：带权限的入口、只能由系统发送的广播，以及要求额外 data 参数的 Intent，可能有静态路径，却构造不出可自动执行的输入。当前实现离“完整求解 action、category（分类）、URI（数据地址） 和 extras（附加键值参数）”还有距离。
+论文也交代了这一步的能力范围：带权限的入口、只能由系统发送的广播，以及要求额外 data 参数的 Intent，可能有静态路径，却构造不出可自动执行的输入。当前实现离“完整求解 action、category（分类）、URI（数据地址）和 extras（附加键值参数）”还有距离。本轮执行器还会过滤掉首项第一字段为 `intent` 的候选路径；静态识别到这类入口，不表示该快照会自动执行相应 Intent。
 
 <!-- gracker-diagram: ch15-13-17-entry-and-input-boundaries -->
 ![候选入口与可构造输入的限制](../../assets/diagrams/ch15/ch15-13-17-entry-and-input-boundaries.png)
@@ -475,14 +481,14 @@ Android 应用没有单一 `main()` 入口。ICC（Inter-Component Communication
 
 GAPS 从目标方法向调用者反向扩展，按需构建 CHA（Class Hierarchy Analysis，类层次分析）图，对运行时才确定实现的虚调用保守列出潜在调用者；遇到已识别入口时停止该分支；完整的整应用调用图并不预先构建，用到哪段建哪段。
 
-v3 的 Algorithm 2 把路径提取写成深度优先遍历 `dfs_visit`；同一论文的实现说明与公开快照 `path_generation.py` 则使用自定义 `all_shortest_paths()`，在 `path_limit` 上限内枚举入口与目标之间的最短路径。复现实验应固定快照文件，只凭伪代码名称去推枚举策略，是靠不住的。
-
-论文将整体分析描述为 target-oriented（围绕目标）、demand-driven（按需扩展）、inter-procedural（跨方法）、context-sensitive（区分调用上下文）。EdgeMiner 与 Soot virtual edges（框架隐式回调边）提供回调映射；不过，未被跟踪的 implicit flow（由框架隐式触发、源码中没有直接调用语句的执行流程）仍会让调用图漏边。
+v3 的 Algorithm 2 把路径提取写成深度优先遍历 `dfs_visit`；同一论文的实现说明与本轮复核的 `path_generation.py` 则使用自定义 `all_shortest_paths()` 枚举最短路径。它的生成器在 `n_paths > max_paths` 时才停止，单次调用可多产一条；调用方还按入口分配预算并在合并后检查数量。因此 `path_limit` 是配置预算，不能当作该快照严格满足的总路径硬上限。复现实验应固定快照文件，只凭伪代码名称去推枚举策略，是靠不住的。
 
 <!-- gracker-diagram: ch15-13-18-path-enumeration-budget -->
 ![论文路径算法与复现枚举预算](../../assets/diagrams/ch15/ch15-13-18-path-enumeration-budget.png)
 
 图：按固定论文和代码分别说明路径枚举，预算边界由实际实现验证。 当前生成器max_paths为1可产2条，外层还有入口预算分配与合并后检查，不能承诺严格总上限。
+
+论文将整体分析描述为 target-oriented（围绕目标）、demand-driven（按需扩展）、inter-procedural（跨方法）、context-sensitive（区分调用上下文）。EdgeMiner 与 Soot virtual edges（框架隐式回调边）提供回调映射；不过，未被跟踪的 implicit flow（由框架隐式触发、源码中没有直接调用语句的执行流程）仍会让调用图漏边。
 
 #### 4. 补足条件路径
 
@@ -492,7 +498,7 @@ v3 的 Algorithm 2 把路径提取写成深度优先遍历 `dfs_visit`；同一�
 - 与 `null` 比较的对象；
 - 方法返回值。
 
-分析器回溯左右操作数的来源，传播候选常量，再合并能满足条件的赋值路径。这里得到的是静态可满足路径；账号态、网络返回、随机数、服务端配置等运行期输入仍可能让设备执行停住。
+分析器回溯左右操作数的来源，传播候选常量，再合并能满足条件的赋值路径。这里得到的是静态推导的候选满足路径；它不构成完整运行时可达性证明。账号态、网络返回、随机数、服务端配置等输入仍可能让设备执行停住。
 
 #### 5. 找到 GUI 事件和资源 ID
 
@@ -514,7 +520,7 @@ XML View 体系能提供稳定资源 ID，正好适合这套分析。Jetpack Com
 
 动态阶段安装应用，并用 AndroidViewClient 的 `findViewById()` 与 `touch()` 执行静态指令。论文 Algorithm 5 在每条候选路径开始前调用 `restart_app()`，执行器持续轮询 runtime monitor（运行时触达监视器）；方法被观察到后返回 `REACHED`，当前路径走不下去时转试下一条。公开快照的具体重启范围与这段伪代码不同，见下文的重启范围说明。
 
-确定性操作（同一输入按既定指令执行）遇到权限弹窗、广告或动态布局时，v3 会调用 PHIL（Predictive Handler for Interface Limitations，界面障碍预测处理器）。它接收经过筛选的当前 GUI 层级、目标方法和静态路径，输出 `click`、`type` 等结构化动作。论文实验写的是 GPT-5.4、temperature（采样随机度）0.7；2026-08-14 可访问的复现快照 `phil.py` 则配置 `gpt-5.4-mini`、temperature 0.7。PHIL 是 LLM 组件，可关闭也可换模型，模型名必须随实验记录，算不上 GAPS 的稳定接口。
+确定性操作（同一输入按既定指令执行）遇到权限弹窗、广告或动态布局时，v3 会调用 PHIL（Predictive Handler for Interface Limitations，界面障碍预测处理器）。它接收经过筛选的当前 GUI 层级、目标方法和静态路径，输出 `click`、`type` 等结构化动作。论文实验写的是 GPT-5.4、temperature（采样随机度）0.7；本轮取回的复现文件 `phil.py` 则配置 `gpt-5.4-mini`、temperature 0.7。PHIL 是 LLM 组件，可关闭也可换模型，模型名必须随实验记录，算不上 GAPS 的稳定接口。
 
 PHIL 的调用受到两层约束：
 
@@ -526,7 +532,12 @@ PHIL 的调用受到两层约束：
 - 每条路径中的同一个 `Activity` 最多介入一次；
 - 障碍仍未清除，或该 `Activity` 已用过 PHIL 时，当前路径会终止。
 
-以上是论文 Algorithm 5 的语义。复现快照 `gaps_run.py`（`b87d111d`）把 `llm_used` 保存在 `GAPSRUN` 实例上，没有在每条候选路径开始时清空；快照中的 PHIL 线程单次还可尝试最多 15 个动作。工程复现时，“每路径每 Activity 一次”这套语义套不到该快照上，实际预算要以固定代码和运行日志确认。
+以上是论文 Algorithm 5 的语义。本轮复核的 `gaps_run.py`（内容 SHA-256 前缀 `47b7b00773a261b2`）把 `llm_used` 保存在 `GAPSRUN` 实例上，没有在每条候选路径或每个目标方法开始时清空。若某 Activity 的补救已经用过且动作仍失败，当前代码走 `i += 1` 跳到后续指令，并不按论文 Algorithm 5 立即放弃该路径。PHIL 线程最多15轮尝试，其中可能只有焦点/层级检查而没有动作；单轮模型请求另有最多3次重试，所以15轮不等于15个成功动作或15次API请求，也不是5分钟硬超时。工程复现时，“每路径每 Activity 一次”这套语义套不到该快照上，实际预算要以固定代码和运行日志确认。
+
+<!-- gracker-diagram: ch15-13-21-snapshot-executor-control -->
+![复现代码的 PHIL 作用域与失败跳步](../../assets/diagrams/ch15/ch15-13-21-snapshot-executor-control.png)
+
+图：当前代码按GAPSRUN实例保存Activity补救记录；用过补救后仍失败会跳到后续指令。 PHIL最多15轮尝试、每轮模型请求最多3次重试；它们不是成功动作数或5分钟总时限。
 
 论文的这两条约束把 agent（自动决策代理）的探索限制在有限范围内，并保留静态路径的主导地位。PHIL 仍带有非确定性，论文通过每个应用运行三轮并报告平均值来反映部分波动。
 
@@ -535,26 +546,30 @@ PHIL 的调用受到两层约束：
 下面的命令展示 4open.science 复现快照中的两阶段入口。`uv` 是 Python 环境与依赖管理工具，`uv.lock` 锁定具体依赖版本；实际使用时还应保存快照文件哈希：
 
 ```bash
+#!/usr/bin/env bash
+set -euo pipefail
+apk_path=app-under-test.apk
+output_dir=gaps-output
+[[ -f "$apk_path" ]] || { printf '%s\n' '找不到目标 APK' >&2; exit 1; }
 uv sync
 
 uv run gaps static \
-  -i app-under-test.apk \
+  -i "$apk_path" \
   -sig 'Lcom/example/Target;->work(Ljava/lang/String;)V' \
   -cond \
-  -o gaps-output
+  -o "$output_dir"
 
+apk_stem=${apk_path##*/}
+apk_stem=${apk_stem%.*}
+instructions="$output_dir/$apk_stem/$apk_stem-instr.json"
+[[ -f "$instructions" ]] || { printf '%s\n' '未生成指令 JSON，停止动态阶段' >&2; exit 1; }
 uv run gaps run \
-  -i app-under-test.apk \
-  -instr gaps-output/path-to-instructions.json \
+  -i "$apk_path" \
+  -instr "$instructions" \
   -frida
 ```
 
-`static` 生成路径和高层指令，`-sig` 接收 smali 格式的方法签名；`run` 才会操作设备。示例中的 `path-to-instructions.json` 是占位文件名，快照实际写到 `<输出目录>/<APK 基名>/<APK 基名>-instr.json`。`-frida` 需要具有 root 权限且运行 frida-server 的设备或模拟器；PHIL 所用模型还可能要求通过环境变量提供 API 凭据。自动化环境里只记一句“使用最新版”是不够的。
-
-<!-- gracker-diagram: ch15-13-21-snapshot-executor-control -->
-![复现代码的 PHIL 作用域与失败跳步](../../assets/diagrams/ch15/ch15-13-21-snapshot-executor-control.png)
-
-图：当前代码按GAPSRUN实例保存Activity补救记录；用过补救后仍失败会跳到后续指令。 PHIL最多15轮尝试、每轮模型请求最多3次重试；它们不是成功动作数或5分钟总时限。
+`static` 生成路径和高层指令，`-sig` 接收 smali 格式的方法签名；`run` 才会操作设备。示例按实际输出规则构造 `<输出目录>/<APK 基名>/<APK 基名>-instr.json`，检查文件存在后才执行动态阶段。命令需在已取回的 GAPS 项目目录中运行，并把 APK 与签名改为实际目标。`-frida` 需要具有 root 权限且运行 frida-server 的设备或模拟器；PHIL 所用模型还可能要求通过环境变量提供 API 凭据。自动化环境里只记一句“使用最新版”是不够的。
 
 ### Runtime monitor 的触达判定
 
@@ -594,7 +609,7 @@ GAPS 论文没有把 Perfetto 纳入路径生成、动态执行或 reachability�
 
 图：在交互前录trace，再安装monitor并执行路径，最后把目标marker关联到系统异常。 这是独立工程组合；只打开页面不证明方法执行，单次命中也不证明性能原因。
 
-论文 Algorithm 5 的每路径重启会改变进程冷启动/热启动、JIT、页面缓存、数据库连接和图片缓存；复现快照 `gaps_run.py` 则在目标方法级调用 `restart_app()`，遍历候选路径时主要重新启动主 `Activity`，没有逐路径 `force-stop`。若待测问题只在长会话、后台恢复或热缓存条件下出现，需要先确认所用版本的重置范围，再修改执行器或使用 `--manual-setup` 准备状态，统一的 clean-state（干净初始状态）策略在这里立不住。
+论文 Algorithm 5 的每路径重启会改变进程冷启动/热启动、JIT、页面缓存、数据库连接和图片缓存；本轮代码在单目标分支或遍历所有目标之前调用一次 `restart_app()`；随后每个 `_process_method()` 可创建 Frida spawn/attach，或通过 monkey 启动应用，处理方法结束后会 `force-stop`。候选路径之间主要重新启动主 `Activity`，没有逐路径完整 `force-stop`。缺包时的安装使用 `adb install -r -g`，也会影响运行时权限初始状态。若待测问题只在长会话、后台恢复或热缓存条件下出现，需要先确认所用版本的重置范围，再修改执行器或使用 `--manual-setup` 准备状态，统一的 clean-state（干净初始状态）策略在这里立不住。
 
 <!-- gracker-diagram: ch15-13-22-reset-and-state-lifetime -->
 ![run、目标方法与候选路径的重置范围](../../assets/diagrams/ch15/ch15-13-22-reset-and-state-lifetime.png)
@@ -633,7 +648,7 @@ Java.perform(() => {
 
 - **jank**：从 missed `DisplayFrame`（最终显示帧）与对应 `SurfaceFrame`（应用或图层提交帧）出发，检查 marker 是否落在相关帧的生产区间；只在时间重叠且调用链合理时继续归因。
 - **ANR**：确认目标方法与主线程、Binder 跨进程调用、锁等待或 input timeout（输入分发超时） 的时序。方法命中早于 ANR 数十秒，通常还缺中间证据。
-- **功耗/发热**：按同设备、同热状态、同网络条件做多轮对照；单次目标触达无法区分方法成本、PHIL 网络请求、Frida 或屏幕操作开销。
+- **功耗/发热**：按同设备、同热状态、同网络条件做多轮对照；单次目标触达无法区分方法成本、Frida 与屏幕操作开销；PHIL 的模型请求由主机代码发出，其网络等待还可能延长手机亮屏与应用活跃窗口，不能直接当作目标方法自身耗电。
 - **native 热点**：GAPS 的 DEX 路径可触达 Java/Kotlin 包装层，native 内部成本仍需 simpleperf、Perfetto native heap/CPU 数据或库内 marker。
 
 ### v3 的真实应用实验
@@ -713,11 +728,11 @@ Java.perform(() => {
 - hook、重打包和 release 原包分别建基线。
 - 结论同时给出目标 marker、线程/帧证据和无探针复测。
 
-
 <!-- gracker-diagram: ch15-13-25-reproducibility-and-result-schema -->
 ![触达率与性能分布分别记录](../../assets/diagrams/ch15/ch15-13-25-reproducibility-and-result-schema.png)
 
 图：先固定输入和状态，逐轮保存路径与补救证据，再分别报告触达和性能指标。 性能分布仅描述相应REACHED子集；FAILED不能混作性能样本，模型与探针条件也需保留。
+
 
 ## 版本与实现边界
 
@@ -767,12 +782,7 @@ APA 和 GAPS 的共同点，是帮自动化工作流拿到“实际发生了什�
 - DEX 静态分析：[Androguard](https://github.com/androguard/androguard)
 - 方法日志插桩：[AndroLog](https://arxiv.org/abs/2404.11223)
 - Android trace API：[`android.os.Trace`](https://developer.android.com/reference/android/os/Trace)
-- Perfetto Android tracing：[Android tracing quickstart](https://perfetto.dev/docs/quickstart/android-tracing)
+- Perfetto Android tracing：[System tracing tutorial](https://perfetto.dev/docs/getting-started/system-tracing)
 - Perfetto 应用事件：[ATrace data source](https://perfetto.dev/docs/data-sources/atrace)
 - Perfetto 帧判定：[FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - Perfetto 缓冲区语义：[Trace configuration](https://perfetto.dev/docs/concepts/config)
-
-<!-- gracker-diagram: ch15-13-02-apa-profiler-modes -->
-![System、APA canary Frame 与 AGI 分开](../../assets/diagrams/ch15/ch15-13-02-apa-profiler-modes.png)
-
-图：系统轨道、GFXR重放性能和AGI命令资源捕获分别固定版本与条件。 本章操作聚焦System Profiler；当前APA主页主要面向游戏和Vulkan，canary逐帧另查设备支持。

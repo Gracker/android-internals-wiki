@@ -105,9 +105,14 @@ consolidated_from:
 
 ## `largeHeap` 的使用场景与代价
 
-`android:largeHeap="true"` 写在 `<application>` 元素上。官方文档为它划了三条规则：设置作用于该应用创建的所有进程；同一进程以第一个载入应用的设置为准；共享 UID 且共用进程的多个应用必须保持设置一致。另外，设备给出的大堆内存等级（`large memory class`，大堆模式下建议的 Java 堆容量，单位 MB） `large memory class`——大堆模式下建议的 Java 堆容量，单位 MB——可能与普通内存等级相同，开了这个属性未必多出固定容量。
+`android:largeHeap="true"` 写在 `<application>` 元素上。官方文档为它划了三条规则：设置作用于该应用创建的所有进程；同一进程以第一个载入应用的设置为准；共享 UID 且共用进程的多个应用必须保持设置一致。另外，设备给出的大堆内存等级（`large memory class`，大堆模式下建议的 Java 堆容量，单位 MB）可能与普通内存等级相同，开了这个属性未必多出固定容量。
 
-在源码这一侧，`ActivityThread.handleBindApplication()` 检查 `ApplicationInfo.FLAG_LARGE_HEAP`：设了标志就调用 `VMRuntime.getRuntime().clearGrowthLimit()`，否则调用 `clampGrowthLimit()`。读数接口是 `ActivityManager.getMemoryClass()` 读取 `dalvik.vm.heapgrowthlimit`，`getLargeMemoryClass()` 读取 `dalvik.vm.heapsize`。这些代码只调整 ART Java 堆限制，原生堆、图形内存、线程栈和文件映射都不会因此减少。
+在源码这一侧，`ActivityThread.handleBindApplication()` 检查 `ApplicationInfo.FLAG_LARGE_HEAP`：设了标志就调用 `VMRuntime.getRuntime().clearGrowthLimit()`，否则调用 `clampGrowthLimit()`。读数接口是 `ActivityManager.getMemoryClass()` 优先读取 `dalvik.vm.heapgrowthlimit`，该属性为空时回退到大堆等级；`getLargeMemoryClass()` 读取 `dalvik.vm.heapsize`。这些代码只调整 ART Java 堆限制，原生堆、图形内存、线程栈和文件映射都不会因此减少。
+
+<!-- gracker-diagram: a257-02-largeheap-bind -->
+![largeHeap 在进程绑定阶段的分支](../../assets/diagrams/ch23/a257-02-largeheap-bind.png)
+
+图：largeHeap 改变 ART Java 堆增长策略；原生堆、图形缓冲和线程栈仍需独立预算。
 
 源码可查阅 AOSP `android-17.0.0_r1` 的 [`ActivityThread.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 与 [`ActivityManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)。
 
@@ -153,11 +158,6 @@ fun readHeapPolicyInputs(context: Context): HeapPolicyInputs {
 - 多进程统计更复杂：该属性作用于应用创建的所有进程；共享 UID 或同一进程载入多个应用时，还要满足前述一致性要求，只看单个组件会看漏。
 
 评估 `largeHeap` 时，我们在同一设备、场景和输入下比较 Java 堆存活量、分配速率、GC、PSS、RSS（进程当前映射到物理内存的全部页面），以及 Android 17 记录的退出原因。OOM 不再出现，只说明这轮测试没有在原来的 Java 堆上限处失败，系统内存压力可能还在上升。
-
-<!-- gracker-diagram: a257-02-largeheap-bind -->
-![largeHeap 在进程绑定阶段的分支](../../assets/diagrams/ch23/a257-02-largeheap-bind.png)
-
-图：largeHeap 改变 ART Java 堆增长策略；原生堆、图形缓冲和线程栈仍需独立预算。
 
 ## 多进程内存隔离与共享
 
@@ -239,11 +239,11 @@ adb shell su 0 cat "/proc/${editor_pid}/smaps_rollup"
 
 ### 把 Play 技术质量线纳入发布预算
 
-Google Play 在 2026-08-26 公告的新技术质量要求把内存使用纳入 Android vitals 核心指标：从 2027 年 2 月起，面向手机和平板发布的应用和游戏需要满足各自的内存 bad behavior thresholds；Play 使用最近 28 天的聚合数据，并用 90th percentile（P90）与阈值比较。这个门槛是发布与质量信号，既动不了本文的 Android 17 / `android-17.0.0_r1` 平台源码基线，也替代不了本机压力测试。 [来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
+Google Play 在 2026-08-26 公告的新技术质量要求把内存使用纳入 Android vitals 核心指标：从 2027 年 2 月起，面向手机和平板发布的应用和游戏需要满足各自的内存 bad behavior thresholds；Play 使用最近 28 天的聚合数据，并用 90th percentile（P90）与阈值比较。这个门槛是发布与质量信号，既动不了本文的 Android 17 / `android-17.0.0_r1` 平台源码基线，也替代不了本机压力测试。 （[Google Play 技术质量要求](https://support.google.com/googleplay/android-developer/answer/17492799)；核对于 2026-10-25。）
 
-Play 的“Memory usage”指标是 Anonymous RSS + Swap：Anon RSS 包括 Java/Kotlin 堆、原生分配和匿名映射等在没有 swap 时换不到落盘文件的应用私有数据；Swap 包括压缩或换入 zRAM 的内存。这个指标和 ART `memoryClass`、PSS 以及 Android 17 `MemoryLimiter` 源码中的 `AnonSwap` 退出描述不是一回事。另一个单独指标是 Bitmap memory usage，用来发现后台或缓存状态下长期保留大图的问题。 [来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html 与 raw/02-play-support.html]
+Play 的“Memory usage”指标是 Anonymous RSS + Swap：Anon RSS 包括 Java/Kotlin 堆、原生分配和匿名映射等在没有 swap 时换不到落盘文件的应用私有数据；Swap 包括压缩或换入 zRAM 的内存。这个指标和 ART `memoryClass`、PSS 以及 Android 17 `MemoryLimiter` 源码中的 `AnonSwap` 退出描述不是一回事。另一个单独指标是 Bitmap memory usage，用来发现后台或缓存状态下长期保留大图的问题。 （[Google Play 技术质量要求](https://support.google.com/googleplay/android-developer/answer/17492799)；核对于 2026-10-25。）
 
-Play Help Center 17492799 给出的 Apps 类 Anonymous RSS + Swap P90 阈值如下；每个 RAM 档包含下限，Total Memory 可能低于设备宣传的物理 RAM。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
+Play Help Center 17492799 给出的 Apps 类 Anonymous RSS + Swap P90 阈值如下；每个 RAM 档包含下限，Total Memory 可能低于设备宣传的物理 RAM。（[Google Play 技术质量要求](https://support.google.com/googleplay/android-developer/answer/17492799)；核对于 2026-10-25。）
 
 | Total Memory 档 | Foreground | User-perceived services | Background | Cached |
 | --- | --- | --- | --- | --- |
@@ -255,9 +255,14 @@ Play Help Center 17492799 给出的 Apps 类 Anonymous RSS + Swap P90 阈值如�
 | 14336–18432 MB | 4.25 GB | 2 GB | 2 GB | - |
 | Above 18432 MB | - | - | - | - |
 
-Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived services 与 background 为大于 200 MB，cached 为大于 400 MB。前台短时占用 Bitmap 是可以的，但进入后台或缓存状态后仍长时间保留大图，通常说明 `onTrimMemory()`、页面销毁或图片缓存策略没有把可重建资源释放出去。 [来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/02-play-support.html]
+Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived services 与 background 为大于 200 MB，cached 为大于 400 MB。前台短时占用 Bitmap 是可以的，但进入后台或缓存状态后仍长时间保留大图，通常说明 `onTrimMemory()`、页面销毁或图片缓存策略没有把可重建资源释放出去。 （[Google Play 技术质量要求](https://support.google.com/googleplay/android-developer/answer/17492799)；核对于 2026-10-25。）
 
-预算表之外，还要区分三类观察入口。Play Console / Developer Reporting API 看到的是按用户设备聚合的长期 P90 和 RAM 档；`dumpsys meminfo`、Perfetto、堆转储与 `/proc` 采样看到的是当前复现场景；Android 17 `MemoryLimiter` 则是在单台设备上按可见性和 cgroup 限制处理“此刻”的异常占用。三组数字回答的是不同问题：Play 阈值没法直接当某台设备的 `am memory-limiter manual` 参数用，本地 PSS 低于某个表格值，也跳不过 Play Console 的分桶检查。 [来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/2026-08-28-Play内存门槛2027-02先对四行-深度调研.md；已验证: raw/01-googleblog.html、raw/02-play-support.html 与 AOSP android-17.0.0_r1 MemoryLimiter 源码]
+预算表之外，还要区分三类观察入口。Play Console / Developer Reporting API 看到的是按用户设备聚合的长期 P90 和 RAM 档；`dumpsys meminfo`、Perfetto、堆转储与 `/proc` 采样看到的是当前复现场景；Android 17 `MemoryLimiter` 则是在单台设备上按可见性和 cgroup 限制处理“此刻”的异常占用。三组数字回答的是不同问题：Play 阈值没法直接当某台设备的 `am memory-limiter manual` 参数用，本地 PSS 低于某个表格值，也跳不过 Play Console 的分桶检查。 （[Google Play 技术质量要求](https://support.google.com/googleplay/android-developer/answer/17492799)；核对于 2026-10-25。）
+
+<!-- gracker-diagram: a257-07-metric-boundaries -->
+![三种内存观察入口](../../assets/diagrams/ch23/a257-07-metric-boundaries.png)
+
+图：Play、场景采样和设备策略回答不同问题；任何一个数字都不能直接替代另一个。
 
 预算值应来自目标设备上的实测峰值，并提前规定超限时允许降低哪些资源规格。表中列出了各进程需要记录的输入、资源释放时机和超限处理，不提供跨设备通用比例。
 
@@ -269,11 +274,6 @@ Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived s
 | 批处理进程 | 单批对象、文件映射、原生缓冲区和序列化副本 | 每批关闭流与描述符；无任务时停止组件 | 缩小批大小、暂停后台任务；同一任务 ID 重试时不得重复写入结果 |
 
 这张表的重点，是给每个进程指定可观测的输入和明确的释放时机。缺了这两项，单个“内存上限”既说不清是哪类分配在增长，也判断不了任务完成后有没有回收可重建资源。
-
-<!-- gracker-diagram: a257-07-metric-boundaries -->
-![三种内存观察入口](../../assets/diagrams/ch23/a257-07-metric-boundaries.png)
-
-图：Play、场景采样和设备策略回答不同问题；任何一个数字都不能直接替代另一个。
 
 ### 用进程状态信号释放可重建资源
 
@@ -311,7 +311,7 @@ override fun onTrimMemory(level: Int) {
 
 ### Android 17 应用内存限制
 
-应用内存限制属于 Android 17 对所有应用生效的行为变更，不按 `targetSdkVersion` 区分，但只在部分设备启用。AOSP r1 的实现要求功能标志开启，设备提供 `/vendor/etc/memory-limiter-config.xml`，并且配置中至少有一组限制与 `/proc/meminfo` 的设备总内存 `MemTotal` 匹配。配置分别定义 `visible`（用户仍可感知）和 `not-visible`（用户不可见）进程的限制；同一进程可能在前台低于限制，进入后台后因限制降低而超限。
+应用内存限制属于 Android 17 对所有应用生效的行为变更，不按 `targetSdkVersion` 区分，但只在部分设备启用。AOSP r1 的实现要求功能标志开启，设备提供 `/vendor/etc/memory-limiter-config.xml`，并且配置中至少有一组限制与 `/proc/meminfo` 的设备总内存 `MemTotal` 匹配。配置分别定义 `visible`（用户仍可感知）和 `not-visible`（用户不可见）进程的限制；同一进程可能在前台低于限制，进入后台后因限制降低而超限。 这里的 `/vendor` 路径只描述固定的 r1 源码；[现行 AOSP 文档](https://source.android.com/docs/core/perf/memory-limiter)已使用 `/system/etc/memory-limiter-config.xml`，并列出 cached 状态的处理方式。部署和排障须核对目标构建，不能把当前文档路径回填为 r1 实现。
 
 这套限制独立于 ART `memoryClass`、`largeHeap` 和 lmkd。原生层 `MemoryLimiter` 用 cgroup 约束单个进程：它监听 `memory.events` 中 `memory.high` 计数的变化，把交换区上限写入 `memory.swap.max`，再用这个统计量判断是否超过 `AnonSwap` 限制：
 
@@ -319,7 +319,12 @@ override fun onTrimMemory(level: Int) {
 
 其中 `anon` 是匿名页，`shmem` 是共享内存页，`memory.swap.current` 是该 cgroup 当前使用的交换空间。超过 `memory.high` 会促使内核回收页面并限制分配速度，`memory.swap.max` 则限制该 cgroup 可用的交换空间。`AnonSwap` 是源码为上述组合量起的名称，和 PSS、RSS 或 Java 堆各是各的指标。
 
-确认 `AnonSwap` 超限后，Android 17 r1 先把当前进程的 `memory.high` 和 `memory.swap.max` 恢复为 `max`。相关剖析功能标志均开启且系统能取得包名时，系统再发送 `TRIGGER_TYPE_ANOMALY` 异常剖析触发器；无论是否成功生成剖析文件，源码都会延迟 30 秒请求终止进程。这 30 秒只给系统剖析器预留处理时间，应用拿它当保存期限是靠不住的，业务状态仍应在正常流程中持续保存。
+确认 `AnonSwap` 超限后，Android 17 r1 先把当前进程的 `memory.high` 和 `memory.swap.max` 恢复为 `max`。相关剖析功能标志均开启且系统能取得包名时，系统再发送 `TRIGGER_TYPE_ANOMALY` 异常剖析触发器；无论是否成功生成剖析文件，控制器都会把终止请求排到 30 秒后；默认策略届时终止进程，但运行时 `disable_kill` 开关可抑制实际终止。这 30 秒只给系统剖析器预留处理时间，应用拿它当保存期限是靠不住的，业务状态仍应在正常流程中持续保存。
+
+<!-- gracker-diagram: a257-09-limiter-enforcement -->
+![Android 17 r1 MemoryLimiter 超限路径](../../assets/diagrams/ch23/a257-09-limiter-enforcement.png)
+
+图：AnonSwap 确认后释放当前限制，再按条件剖析并排队终止；实际终止还受运行时开关控制。
 
 退出归因应同时检查三项：
 
@@ -329,31 +334,29 @@ override fun onTrimMemory(level: Int) {
 
 `getPss()` / `getRss()` 可能返回零，也不保证记录的是终止瞬间；`getTraceInputStream()` 同样不保证返回 `MemoryLimiter` 的诊断文件。命中只能证明匿名页、共享内存页与交换空间的组合量超过了设备策略，单凭这一条记录判定不了内存泄漏；大图处理、端侧模型推理、WebView 或音视频处理的短时峰值，也可能触发限制。
 
-> **版本警告**：`manual` 的参数语法在三条文档里不一致。`android-17.0.0_r1` 的帮助文本是 `manual <PID> <PERCENT|none>`，数字解释为设备总 RAM 的百分比，并要求使用 1–99 的整数；现行 developer.android.com 行为变更页是 `manual <pid> <limit>|max|none`，把无后缀整数解释为 MB 并增加 `max`；source.android Memory Limiter 文档还示例了字节值和 `MB` / `GB` 后缀。三者不能混用。
+> **版本警告**：r1 的帮助文本与实际调用链也不一致。帮助仍写 `manual <PID> <PERCENT|none>` 和 1–99%，但 `ActivityManagerShellCommand` 实际把数字解析为 `int`，交给 `MemoryLimiter.setManualLimit(..., limitInMB)` 乘以 `1024²`，再分别设为 `memory.high` 与 `memory.swap.max`；因此这一源码按 MiB 转换数字，不能按帮助当作总 RAM 百分比。r1 解析 `none` 为 `-1` 后也会乘以 MiB，进入 native `setLimit()` 的忽略负值范围，不能据此保证恢复默认限制。r1 解析器也不接受 `max`。现行 [developer 文档](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)把整数写作 MB 并提供 `max` / `none`，[source 文档](https://source.android.com/docs/core/perf/memory-limiter)还示例字节值与单位后缀；测试必须核对目标构建的解析和执行链，而非只看帮助或版本名称。
 
-这段脚本只展示“查询状态、施加测试限制、恢复默认限制”的顺序，应在专用测试设备上运行。r1 中传入的数值是根据场景基线选择的故障注入百分比，不是应用发布时的预算：
+<!-- gracker-diagram: a257-10-manual-source-trace -->
+![r1 manual 帮助与实际参数链](../../assets/diagrams/ch23/a257-10-manual-source-trace.png)
+
+图：r1 实际按 MiB 转换数字；none 的负值进入 native 忽略范围，不能作为已验证的默认策略恢复操作。
+
+这段脚本展示专用测试设备上的“查询、施加已核实单位的测试限制、采集、停止测试应用”顺序。r1 中数字按 MiB 转换，并同时用于内存和交换区上限；它是故障注入参数，不是发布预算。示例最后停止 `com.example.app` 的所有进程，下一次正常启动用新 PID 获取设备策略，以免依赖 r1 中未经保证的 `none` 恢复行为：
 
 ```bash
 target_pid="$(adb shell pidof com.example.app:editor | tr -d '\r')"
 test_limit_value="${TEST_LIMIT_VALUE:?export TEST_LIMIT_VALUE according to the target build syntax}"
 adb shell am memory-limiter status
 adb shell am memory-limiter manual "$target_pid" "$test_limit_value"
-adb shell am memory-limiter manual "$target_pid" none
+adb shell am memory-limiter status
+# 在停止测试应用前先保存本轮诊断产物；force-stop 会停止该包的所有进程。
+adb shell am force-stop com.example.app
+adb shell am memory-limiter status
 ```
 
-测试前应查看目标系统构建的命令帮助和限制状态，别只根据“Android 17”这个版本名推断参数单位。先用 `status` 保存设备是否启用及 `visible` / `not-visible` 配置，每次 `manual` 后再次查询状态，测试结束用 `none` 恢复设备默认限制。`ignore all` 会改变整台设备的限制策略，拿来掩盖回归测试失败是不可取的。
+测试前应核对目标构建的命令帮助、实际源码和限制状态，别只根据“Android 17”推断参数单位。`status` 用于保存全局开关、默认 `visible` / `not-visible` 配置与统计，不能单凭它的默认配置行证明某个 PID 的手工值已生效；必要时在有权限的测试设备核对对应 cgroup 文件与日志。若目标版本已修复并验证 `none` 的恢复语义，可用它恢复；固定 r1 示例则停止测试应用，再以新 PID 启动并核对策略。`ignore all` 会改变整台设备的限制策略，拿来掩盖回归测试失败是不可取的。
 
 r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 [`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)，cgroup 文件访问与 `AnonSwap` 公式见原生层 [`com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)。
-
-<!-- gracker-diagram: a257-09-limiter-enforcement -->
-![Android 17 r1 MemoryLimiter 超限路径](../../assets/diagrams/ch23/a257-09-limiter-enforcement.png)
-
-图：AnonSwap 确认后释放当前限制，再按条件剖析并排队终止；实际终止还受运行时开关控制。
-
-<!-- gracker-diagram: a257-10-manual-source-trace -->
-![r1 manual 帮助与实际参数链](../../assets/diagrams/ch23/a257-10-manual-source-trace.png)
-
-图：r1 实际按 MiB 转换数字；none 的负值进入 native 忽略范围，不能作为已验证的默认策略恢复操作。
 
 ## 实战决策表
 

@@ -35,7 +35,7 @@ Perfetto 把 Android 各层性能事件放到同一条时间轴上；这些事�
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | 平台源码、数据源注册、权限和系统事件语义 |
 | Android 内核 | `android17-6.18-2026-06_r6` | `sched`、perf event、ftrace、DMA-BUF 等内核行为 |
 | 平台内 Perfetto | v54 时代快照，加 Android 固定 tag 中的后续改动 | 应以 `android-17.0.0_r1` tag 标识实际源码，不能直接等同于纯上游 v54.0 或宿主机 v57 |
-| 宿主机分析器 | Perfetto v57.2 | 用于复核当前 UI、Trace Processor 和标准库；版本应和分析结果一起保存 |
+| 宿主机分析器 | Perfetto v57.2 | 固定本章Trace Processor与标准库复核环境；UI的版本或固定链接环境另行记录，不能用TP版本代替 |
 | AndroidX Tracing | 稳定版 1.3.0；2.0.0-beta01（2026-07-15） | 2.0 beta 的 `Tracer`、driver/sink、协程上下文传播和 host JVM trace 属于应用依赖，不是平台 API 37 的组成部分 |
 
 设备采集端与宿主机分析端可以独立升级。新 UI 通常能读取旧 trace，却无法让旧设备提供当时没有采集的数据源。查询得到空表时，应检查采集配置、设备权限、trace 是否丢包，以及当前分析器的 schema（可查询表与字段定义）；只升级浏览器页面无法补回缺失数据。
@@ -87,7 +87,7 @@ Perfetto 把 Android 各层性能事件放到同一条时间轴上；这些事�
 
 ### 应用埋点与工具集成
 
-按 14.6 → 14.12 阅读。`android.os.Trace`、AndroidX Tracing 和 Perfetto SDK 三者在写入路径、文件格式和采集 session 依赖上各不相同。选型前应先确认需要的是系统时间轴、独立的进程内 trace，还是由应用定义事件格式的自定义 data source。
+按 14.6 → 14.12 阅读。AndroidX Tracing 1.3.0主要封装平台Trace/ATrace，不能说它必然采用独立文件格式；2.0的实际写入路径取决于所选driver/sink。Perfetto SDK再区分system producer与应用自控in-process session。选型前先确认要系统时间轴、进程内文件，还是需配套schema/importer的自定义数据源。
 
 ### 自动化与代理分析
 

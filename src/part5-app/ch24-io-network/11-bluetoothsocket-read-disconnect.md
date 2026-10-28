@@ -4,8 +4,8 @@ chapter: '24.11'
 section: '24.11'
 status: finalized
 applicable_versions: Android 5 (API 21) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: Android 17 stable behavior changes and API reference 2026-08 / Bluetooth transfer-data and foreground-service guides / AOSP android-17.0.0_r1
+last_verified: '2026-10-25'
+last_verified_against: Android 17 stable behavior changes and API reference reviewed 2026-10-25 / Bluetooth transfer-data, permissions and foreground-service guides / AOSP android-17.0.0_r1
 confidence: high
 tags:
   - bluetooth
@@ -36,6 +36,10 @@ sources:
   path: https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothInputStream.java
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/flags/sockets.aconfig
+- type: official
+  path: https://developer.android.com/develop/connectivity/bluetooth/bt-permissions
+- type: official
+  path: https://developer.android.com/about/versions/14/changes/fgs-types-required
 - type: clippings-structure
   path: '[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]'
 - type: clippings-structure
@@ -44,7 +48,7 @@ sources:
 
 # BluetoothSocket read() 断开语义与长连接治理
 
-阻塞中的 `BluetoothSocket.read()` 会以 EOF、异常或字节数三种结果反映连接状态，每一种结果都要接到自己的处置动作上，把它们一律当作可以立即重连的依据并不可靠。可靠长连接要把读写线程、关闭顺序、状态机和退避预算放进同一套治理。
+`BluetoothSocket` 输入流中阻塞的 `read()` 会以 EOF、异常或字节数三种结果反映连接状态，每一种结果都要接到自己的处置动作上，把它们一律当作可以立即重连的依据并不可靠。可靠长连接要把读写线程、关闭顺序、状态机和退避预算放进同一套治理。
 
 > 源码基线：AOSP `android-17.0.0_r1`，实现位于 `packages/modules/Bluetooth` 的 Java 框架层；公开行为以 Android Developers 文档为准。
 
@@ -167,16 +171,16 @@ class BtReadLoop(
 }
 ```
 
-几个实现细节值得留意。`closeRequested` 是原子布尔值，供关闭线程与读线程安全地共享意图；关闭线程先更新它、再调用 `close()`，读线程的阻塞被 `close()` 终止时就能看见本地意图。EOF 分支在观察到返回值的那一刻保存原因，稍后到达的关闭请求改写不了已经发生的结果。
-
-示例复制有效字节，避免异步消费者继续引用下一次读取会覆盖的数组；高吞吐场景可以改用容量受限的缓冲池，并要求缓冲区归还前只能由一个消费者持有。
-
-`onBytes` 只负责移交字节，并且不抛异常，协议解析错误由独立事件返回状态机；`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。
+几个实现细节值得留意。`closeRequested` 是原子布尔值，供关闭线程与读线程安全地共享意图；关闭线程先更新它、再调用 `close()`，读线程的阻塞被 `close()` 终止时就能看见本地意图。EOF 分支按读取 `closeRequested` 时可见的意图保存分类；`read()` 返回与这次原子读取之间仍可能发生关闭请求，代码不能据此恢复真实断线的物理先后。分类一旦保存在 `terminalReason` 中，之后的关闭请求不会回写该分类。
 
 <!-- gracker-diagram: a271-02-exit-cause-classification -->
 ![EOF与异常先按分类时可见的关闭意图归因](../../assets/diagrams/ch24/a271-02-exit-cause-classification.png)
 
 图：原子变量支持线程间可见性，但不能恢复真实断线的物理时间顺序；分类以代码实际读取时为准。
+
+示例复制有效字节，避免异步消费者继续引用下一次读取会覆盖的数组；高吞吐场景可以改用容量受限的缓冲池，并要求缓冲区归还前只能由一个消费者持有。
+
+`onBytes` 只负责移交字节，并且不抛异常，协议解析错误由独立事件返回状态机；`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。这里的 `onExit` 只移交读任务结果，外层会话所有者还要关闭当前套接字、停用写入口并回收任务资源；它不是完整的会话清理实现，不能只更新界面状态。
 
 ### 源码中的生效条件
 
@@ -261,14 +265,14 @@ RFCOMM 向应用提供的只有字节流：发送方一次 `write()`，接收方
 
 写入同样要串行。文档把 `BluetoothSocket` 描述为线程安全，但应用协议仍需要稳定的消息顺序，以及明确规定哪些消息允许重发。多个调用方先进入有界队列，即容量固定的等待队列，再由单一写任务写入；队列已满时由产品策略决定拒绝、合并或关闭连接，避免任务无限积压。
 
-`getMaxReceivePacketSize()` 与 `getMaxTransmitPacketSize()` 描述底层传输的包尺寸，可以用来优化每次读写的大小；业务帧长度由应用协议定义，一次读取也未必恰好对应一个底层包。示例中的 `DEFAULT_BUFFER_SIZE` 同样只是内存选择，不是协议常量。
-
-`isConnected()` 反映的是调用那一刻的套接字连接状态，下一次读写能否成功，它说了不算。业务在线状态应由当前连接代次、读写结果和协议活性共同决定；协议活性通常来自业务心跳，或请求响应是否按时完成。
+API 23 及以上的 `getMaxReceivePacketSize()` 与 `getMaxTransmitPacketSize()` 描述底层传输的包尺寸，可以用来优化每次读写的大小；业务帧长度由应用协议定义，一次读取也未必恰好对应一个底层包。示例中的 `DEFAULT_BUFFER_SIZE` 同样只是内存选择，不是协议常量。
 
 <!-- gracker-diagram: a271-04-stream-framing-and-bounds -->
 ![read边界与业务消息边界相互独立](../../assets/diagrams/ch24/a271-04-stream-framing-and-bounds.png)
 
 图：InputStream 没有业务帧语义；复制有效字节或明确单消费者所有权，避免下一次read覆盖异步数据。
+
+`isConnected()` 反映的是调用那一刻的套接字连接状态，下一次读写能否成功，它说了不算。业务在线状态应由当前连接代次、读写结果和协议活性共同决定；协议活性通常来自业务心跳，或请求响应是否按时完成。
 
 ## 断线归因与状态机
 
@@ -287,7 +291,7 @@ RFCOMM 向应用提供的只有字节流：发送方一次 `write()`，接收方
 
 `EndOfStream` 到这一步仍只说明流结束。官方文档把连接丢失也映射到 `-1`，公开的关闭原因平台并未提供。记录 `IOException` 时，一段消息文本远远不够，至少保留发生阶段、异常类名、是否存在本地关闭意图和适配器状态。MAC 是蓝牙设备的硬件地址，完整 MAC、设备名和业务负载都要留在日志之外。
 
-API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整数错误码，比异常消息文本更适合聚合；低版本和普通 `IOException` 仍按发生阶段与异常类别记录。Android 12（API 31）及以上的连接操作通常需要 `BLUETOOTH_CONNECT` 运行时权限，扫描还涉及 `BLUETOOTH_SCAN`；各系统版本按各自的权限模型检查，权限错误单独归类，避免混进传输失败。
+API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整数错误码，比异常消息文本更适合聚合；低版本和普通 `IOException` 仍按发生阶段与异常类别记录。在 Android 12（API 31）及以上设备上、应用目标 API 31 及以上时，连接操作需要 `BLUETOOTH_CONNECT` 运行时权限，扫描还涉及 `BLUETOOTH_SCAN`；旧目标与旧系统仍须按各自兼容权限模型检查，权限错误单独归类，避免混进传输失败。
 
 我们推荐的状态集合见表：
 
@@ -354,7 +358,7 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 
 应用要在后台持续与外部设备传输数据时，按场景评估 `connectedDevice` 前台服务或配套设备管理器（Companion Device Manager）；普通后台线程对进程被系统保留的优先级没有帮助。
 
-[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) 要求 Android 14 及以上在服务上声明 `android:foregroundServiceType="connectedDevice"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE` 权限。启动服务时还要满足文档列出的至少一项运行前提；已授予 `BLUETOOTH_CONNECT` 的应用可满足蓝牙连接场景的这一条件。
+[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) 要求在 Android 14 及以上设备上、应用目标 API 34 及以上时，在服务上声明 `android:foregroundServiceType="connectedDevice"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE`；基础 `FOREGROUND_SERVICE` 权限及前台服务启动限制也仍适用。启动服务时还要满足文档列出的至少一项运行前提；已授予 `BLUETOOTH_CONNECT` 的应用可满足蓝牙连接场景的这一条件。
 
 前台服务改变的是进程执行条件，`BluetoothSocket.read()` 的 EOF 语义、扫描和重连的约束都维持原样。用户主动断开、权限撤销或预算用尽后，我们应停止连接任务和不再需要的前台服务。若使用配套设备管理器，恢复流程要按设备进入或离开通信范围的事件设计，旧套接字跨进程存活这条路走不通。
 
@@ -394,7 +398,7 @@ Perfetto 是 Android 的系统跟踪工具，BatteryStats 统计设备电量使�
 
 | 维度 | 覆盖项 | 通过标准 |
 | --- | --- | --- |
-| 目标 SDK | 36、37 | 36 的旧异常分支与 37 的 EOF 分支都能终止读任务 |
+| 目标 SDK | 36、37 | 在 RFCOMM 底层负返回值且模块开关启用的对照中，36 默认旧异常分支、37 默认 EOF 分支都能终止读任务；其他 I/O 错误仍可抛异常 |
 | 兼容性开关 | `targetSdkVersion 36` 强制启用、`targetSdkVersion 37` 强制禁用、重置默认值 | 相同 APK 可隔离 383671392 的影响，测试后没有遗留覆盖 |
 | 套接字类型 | RFCOMM、LE CoC | RFCOMM 处理新 EOF；LE CoC 原有 EOF 行为没有回归 |
 | 本地关闭 | 用户断开、会话销毁、连接超时取消 | 先记录关闭意图，结果为 `LocalClose`，不触发自动重连 |

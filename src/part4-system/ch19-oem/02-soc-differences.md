@@ -104,6 +104,11 @@ SoC 型号只是硬件拓扑的起点，最终性能还要看设备散热、内�
 
 ## 从 SoC 型号到设备证据
 
+<!-- gracker-diagram: a200-01-evidence-layers -->
+![SoC 规格、整机实现与当前状态](../../assets/diagrams/ch19/a200-01-evidence-layers.png)
+
+图：规格限定能力范围；整机实现与当前状态共同决定这次测量能支持的结论。
+
 拿到两台设备上差异明显的数据时，我们首先要弄清差异来自哪一层。SoC（System on Chip，片上系统）把 CPU、GPU、内存控制器和专用加速器集成在同一颗芯片里，但同一款应用在两台手机上帧时间不同，原因可能在 CPU 拓扑、GPU 或内存系统，也可能在内核配置、驱动版本、散热结构、屏幕分辨率或 OEM 策略。芯片型号能缩小排查范围，结论还要从设备本身来。
 
 分析时可以把问题拆成三层：
@@ -113,11 +118,6 @@ SoC 型号只是硬件拓扑的起点，最终性能还要看设备散热、内�
 3. **当前负载**：温度、电量模式、刷新率、前后台状态和并发任务，决定一次 trace（性能跟踪记录） 捕获到的是什么。
 
 这三层各回答各的问题：要回答某台手机持续运行时的频率，得看整机实现和实测；单次 Perfetto 只是当时状态的一个样本，说明不了 SoC 的架构上限。
-
-<!-- gracker-diagram: a200-01-evidence-layers -->
-![SoC 规格、整机实现与当前状态](../../assets/diagrams/ch19/a200-01-evidence-layers.png)
-
-图：规格限定能力范围；整机实现与当前状态共同决定这次测量能支持的结论。
 
 ## 四类代表性平台
 
@@ -136,14 +136,19 @@ SoC 型号只是硬件拓扑的起点，最终性能还要看设备散热、内�
 
 ## CPU：分别看指令集、微架构、拓扑和策略
 
+<!-- gracker-diagram: a200-02-cpu-dimensions -->
+![CPU 差异的四个维度](../../assets/diagrams/ch19/a200-02-cpu-dimensions.png)
+
+图：四个维度分别回答软件兼容、执行能力、硬件组织和运行策略；共享调频控制不能证明共享缓存。
+
 聊 CPU 平台差异时，经常有四个概念被混在一起，我们一个个拆开：
 
 - **指令集**描述软件能够使用哪些指令，例如 Armv9.x。
 - **微架构**描述核心如何取指、乱序执行和访问缓存，例如 Oryon、C1-Ultra、C1-Pro。
-- **拓扑**描述核心数量、共享缓存和调频策略域（cpufreq policy，即共享一套调频控制的 CPU 集合）的组织方式；cpufreq policy 指共享一套调频控制的 CPU 集合。
-- **策略**描述调度器、调频器、Power HAL（负责传递系统性能与功耗策略的硬件抽象层） 和 OEM 服务如何使用这些硬件；Power HAL 负责在系统与硬件之间传递性能与功耗策略。
+- **拓扑**描述核心数量、共享缓存和调频策略域（cpufreq policy，即共享一套调频控制的 CPU 集合）的组织方式。
+- **策略**描述调度器、调频器、Power HAL（负责传递系统性能与功耗策略的硬件抽象层）和 OEM 服务如何使用这些硬件。
 
-两个核心都支持 Armv9，只说明软件可用的指令集相同；IPC（instructions per cycle，每周期完成的指令数（instructions））、缓存或能耗仍可能相差很大。同样，两个核心落在同一个调频策略域，也说明不了它们共享某一级缓存。
+两个核心都支持 Armv9，只说明软件可用的指令集相同；IPC（instructions per cycle，每周期完成的指令数）、缓存或能耗仍可能相差很大。同样，两个核心落在同一个调频策略域，也说明不了它们共享某一级缓存。
 
 ### 从目标设备读取拓扑
 
@@ -165,11 +170,16 @@ adb shell uname -a
 
 ### Android 17 的公平调度与 EAS
 
+<!-- gracker-diagram: a200-03-scheduler-decisions -->
+![选核、选任务与请求频率的职责](../../assets/diagrams/ch19/a200-03-scheduler-decisions.png)
+
+图：vendor hook 可提前返回；EAS 负责唤醒选核，EEVDF 负责公平类任务选择，schedutil 请求频率。
+
 `android17-6.18-2026-06_r6` 的公平调度类使用 EEVDF（Earliest Eligible Virtual Deadline First）：根据运行资格和虚拟截止时间，从公平调度类中挑选任务。EAS（Energy Aware Scheduling，能效感知调度）回答的是另一个问题——唤醒的任务放到异构 CPU 中的哪一个，判断依据是 Energy Model（能耗模型） 给出的能耗数据。两套机制处在不同的决策层次。
 
 后面会用到两个内核概念：根调度域（root domain）指共享一套负载均衡状态的 CPU 范围；`overutilized` 表示这个范围的整体利用率已经超出 EAS 的适用条件。
 
-在这条 Android common 分支里，`select_task_rq_fair()` 会先经过 Android vendor hook（厂商钩子，即内核预留的扩展回调点）——内核预留的扩展回调点，厂商可以在这里接管选核。hook 给出非负 CPU 时，函数直接采用该目标；hook 没有接管、且根调度域未进入 `overutilized` 状态时，唤醒选核路径才会调用 `find_energy_efficient_cpu()`。
+在这条 Android common 分支里，`select_task_rq_fair()` 会先经过 Android vendor hook（厂商钩子，即内核预留的扩展回调点），厂商可以在这里接管选核。hook 给出非负 CPU 时，函数直接采用该目标；hook 没有接管、且根调度域未进入 `overutilized` 状态时，唤醒选核路径才会调用 `find_energy_efficient_cpu()`。
 
 下面的摘录只保留 hook 返回和 EAS 判断相关的控制流：
 
@@ -187,20 +197,15 @@ if (!is_rd_overutilized(this_rq()->rd)) {
 }
 ```
 
-EAS 的 `compute_energy()` 调用 `em_cpu_energy()`，为候选的 performance domain（性能域，即共享一组性能状态的 CPU 集合） 估算活动能耗；performance domain 指共享一组性能状态的 CPU 集合。Energy Model 里没有记录任务迁移造成的私有 L1/L2 缓存局部性损失，所以读到“EAS 选中了某个 CPU”时，合理理解是内核按能耗模型选了核，缓存迁移成本没有进入这份计算。
+EAS 的 `compute_energy()` 调用 `em_cpu_energy()`，为候选的 performance domain（性能域，即共享一组性能状态的 CPU 集合）估算活动能耗。Energy Model 里没有记录任务迁移造成的私有 L1/L2 缓存局部性损失，所以读到“EAS 选中了某个 CPU”时，合理理解是内核按能耗模型选了核，缓存迁移成本没有进入这份计算。
 
-频率方面还要认识两个词：OPP（Operating Performance Point，工作频点）是一组配套的频率与电压；uclamp（utilization clamp，利用率钳制） 全称 utilization clamp，用来限制调度器采用的利用率范围。`schedutil` 依据调度器利用率请求频率，而最终结果还要经过 cpufreq 驱动、OPP 表、调频间隔限制、温控约束、uclamp 和 Power HAL。所以一次频率抬升，可能来自负载，也可能来自性能提示、任务分组或厂商服务；把调用链、调度信息与频率轨迹对齐之后，我们才有条件判断来源。
+频率方面还要认识两个词：OPP（Operating Performance Point，工作频点）是一组配套的频率与电压；uclamp（utilization clamp，利用率钳制），用来限制调度器采用的利用率范围。`schedutil` 依据调度器利用率请求频率，而最终结果还要经过 cpufreq 驱动、OPP 表、调频间隔限制、温控约束、uclamp 和 Power HAL。所以一次频率抬升，可能来自负载，也可能来自性能提示、任务分组或厂商服务；把调用链、调度信息与频率轨迹对齐之后，我们才有条件判断来源。
 
 内核侧还有一条新路径：这条 6.18 common 分支含有 `sched_ext`，一个允许用 BPF 程序定义调度策略的 Linux 可扩展调度框架。设备需要启用 `CONFIG_SCHED_CLASS_EXT`，再加载相应的 BPF 调度器，任务才会受这个扩展调度类影响。源码里能找到 `kernel/sched/ext.c`，至于某台量产设备是否启用了 OEM BPF 调度器，要以设备自身为准。
 
-<!-- gracker-diagram: a200-03-scheduler-decisions -->
-![选核、选任务与请求频率的职责](../../assets/diagrams/ch19/a200-03-scheduler-decisions.png)
-
-图：vendor hook 可提前返回；EAS 负责唤醒选核，EEVDF 负责公平类任务选择，schedutil 请求频率。
-
 ### 从观测结果识别厂商策略
 
-Snapdragon、Dimensity、Exynos 和 Tensor 设备都可能在 AOSP 调度机制之上叠加自己的机制：厂商钩子、Power HAL 性能提示、uclamp、任务配置档（task profile） task profile、cpufreq 服务质量约束（QoS） QoS、私有守护进程。这些私有接口在 AOSP 里看不到，还会随产品线与版本变化；要判断某家厂商“更激进”还是“更保守”，只能看每台设备上的可观测结果。
+Snapdragon、Dimensity、Exynos 和 Tensor 设备都可能在 AOSP 调度机制之上叠加自己的机制：厂商钩子、Power HAL 性能提示、uclamp、任务配置档（task profile）、cpufreq 服务质量约束（QoS）、私有守护进程。这些私有接口在 AOSP 里看不到，还会随产品线与版本变化；要判断某家厂商“更激进”还是“更保守”，只能看每台设备上的可观测结果。
 
 在 trace 里遇到一段突发提频时，我们可以按下面的顺序查证：
 
@@ -213,6 +218,11 @@ Snapdragon、Dimensity、Exynos 和 Tensor 设备都可能在 AOSP 调度机制�
 访问厂商服务受限时，我们就把结论停在“观测到频率与负载不成比例”这一层，私有机制的名称留给有权限的环境去确认。
 
 ### 用 Perfetto 统计运行片段之间的 CPU 变化
+
+<!-- gracker-diagram: a200-04-migration-observation -->
+![相邻运行片段的 CPU 变化](../../assets/diagrams/ch19/a200-04-migration-observation.png)
+
+图：查询按线程排列窗口内的运行片段，再比较相邻 CPU；该计数不等于 sched_migrate_task 事件数量，也不直接衡量缓存代价。
 
 我们可以用下面的 PerfettoSQL，统计指定时间窗内、同一线程相邻运行片段之间观察到的 CPU 编号变化：
 
@@ -227,7 +237,8 @@ WITH ordered_runs AS (
       ORDER BY s.ts
     ) AS previous_cpu
   FROM sched s
-  WHERE s.ts BETWEEN 1000000000 AND 11000000000
+  WHERE s.ts >= trace_start() + 1000000000
+    AND s.ts < trace_start() + 11000000000
 )
 SELECT
   t.tid,
@@ -235,29 +246,22 @@ SELECT
   COUNT(*) AS observed_cpu_changes
 FROM ordered_runs r
 JOIN thread t USING (utid)
-WHERE r.previous_cpu IS NOT NULL
+WHERE COALESCE(t.is_idle, 0) = 0
+  AND r.previous_cpu IS NOT NULL
   AND r.previous_cpu != r.cpu
 GROUP BY r.utid, t.tid, t.name
 ORDER BY observed_cpu_changes DESC;
 ```
 
-示例时间戳对应 trace 起点后的 1～11 秒，使用时要替换成目标交互区间。这个计数只描述相邻运行片段的 CPU 编号变化，和 `sched_migrate_task` 事件数量是两回事，也不能直接拿来衡量迁移代价；要判断代价，还要结合运行片段时长、唤醒延迟、PMU（Performance Monitoring Unit，性能监控单元）记录的缓存未命中与业务阶段。
+示例窗口为 `[trace_start() + 1 秒, trace_start() + 11 秒)`，按运行片段的开始时间筛选；跨越窗口起点但开始于窗口外的片段不在此计数内。使用时要替换成目标交互区间。
 
-<!-- gracker-diagram: a200-02-cpu-dimensions -->
-![CPU 差异的四个维度](../../assets/diagrams/ch19/a200-02-cpu-dimensions.png)
-
-图：四个维度分别回答软件兼容、执行能力、硬件组织和运行策略；共享调频控制不能证明共享缓存。
-
-<!-- gracker-diagram: a200-04-migration-observation -->
-![相邻运行片段的 CPU 变化](../../assets/diagrams/ch19/a200-04-migration-observation.png)
-
-图：查询按线程排列窗口内的运行片段，再比较相邻 CPU；该计数不等于 sched_migrate_task 事件数量，也不直接衡量缓存代价。
+> ⚠️ 时间基准校勘：`sched.ts` 不是默认从零开始的相对时间；直接写 1～11 秒的常量不能表示 trace 起点后的窗口。[来源：Perfetto trace bounds 源码](https://android.googlesource.com/platform/external/perfetto/+/7424539825a0ae7a6529c26a696a64896bab32c5/src/trace_processor/perfetto_sql/stdlib/prelude/trace_bounds.sql)查询排除 idle 线程，避免把多 CPU 的空闲片段当成同一业务线程的迁移。这个计数只描述相邻运行片段的 CPU 编号变化，和 `sched_migrate_task` 事件数量是两回事，也不能直接拿来衡量迁移代价；要判断代价，还要结合运行片段时长、唤醒延迟、PMU（Performance Monitoring Unit，性能监控单元）记录的缓存未命中与业务阶段。
 
 ## GPU：架构名称与驱动能力
 
 ### Adreno、Mali / Immortalis 与 Xclipse
 
-Qualcomm 的 Adreno 是自研 GPU 系列。官方资料把 Snapdragon 8 Elite 引入的设计称为 sliced architecture（分片式架构）；Adreno 开发文档还说明 FlexRender 可以在分块渲染与直接渲染路径之间选择。TBR（tile-based rendering） 指 tile-based rendering，先按屏幕分块再处理图元的渲染方式；具体负载走哪条路径，我们以实机的驱动行为为准，一条固定的 TBR 流程，是概括不了所有 Adreno 工作负载的。
+Qualcomm 的 Adreno 是自研 GPU 系列。官方资料把 Snapdragon 8 Elite 引入的设计称为 sliced architecture（分片式架构）；Adreno 开发文档还说明 FlexRender 可以在分块渲染与直接渲染路径之间选择。TBR（tile-based rendering），先按屏幕分块再处理图元的渲染方式；具体负载走哪条路径，我们以实机的驱动行为为准，一条固定的 TBR 流程，是概括不了所有 Adreno 工作负载的。
 
 Arm 的 Mali 与 Immortalis 是可配置 GPU IP，也就是可以由 SoC 厂商选择规模并集成的 GPU 设计。同一代 IP 可以有不同的 shader core 数量、缓存和频率；Mali-G1 Ultra 的公开范围是 10～24 个着色器核心（shader core），Dimensity 9500 采用 MC12 的 12 核配置。所以看到 “Mali-G1 Ultra” 时，仍要落到具体核心数、驱动和整机功耗限制上。
 
@@ -267,20 +271,20 @@ Google 的 Tensor G5 官方介绍强调 TPU、ISP 与 3 nm 工艺，没有在该
 
 ### API 支持与整机驱动
 
-SoC 产品页、GPU IP 页面和 Android 设备报告回答的是不同问题：产品页可能列出 IP 支持的 OpenGL ES / Vulkan 上限，应用能使用哪些扩展，要看量产设备的驱动、系统镜像和功能级别（feature level） feature level。做跨设备记录时，至少要收集：
+<!-- gracker-diagram: a200-05-gpu-capability-gates -->
+![GPU 能力从 IP 到可观测数据](../../assets/diagrams/ch19/a200-05-gpu-capability-gates.png)
 
-- GPU 的 vendor、renderer 字符串、驱动版本与系统构建指纹（build fingerprint） build fingerprint；
-- Vulkan API 版本、扩展和队列族（queue family，即具备同类操作能力的一组 Vulkan 队列） queue family，即具备同类操作能力的一组 Vulkan 队列；
+图：IP 规格、设备 API、工具支持与实际数据源是逐层核验的条件；跨厂商阶段标签并不保证等价。
+
+SoC 产品页、GPU IP 页面和 Android 设备报告回答的是不同问题：产品页可能列出 IP 支持的 OpenGL ES / Vulkan 上限，应用能使用哪些扩展，要看量产设备的驱动、系统镜像和功能级别（feature level）。做跨设备记录时，至少要收集：
+
+- GPU 的 vendor、renderer 字符串、驱动版本与系统构建指纹（build fingerprint）；
+- Vulkan API 版本、扩展和队列族（queue family，即具备同类操作能力的一组 Vulkan 队列）；
 - OpenGL ES 版本与扩展；
 - 显示分辨率、刷新率、色彩格式和渲染比例；
 - 图形 API、着色器变体、纹理格式与帧率上限。
 
 Android GPU Inspector（AGI）的文档列出 Qualcomm Adreno、Arm Mali 和 Imagination PowerVR；快速入门还要求设备在支持列表中、运行 Android 11 或更高版本，并通过兼容 GPU 驱动的校验。文档没有列出 Xclipse，Xclipse 的 AGI 支持状态就要留到实机校验去确认。
-
-<!-- gracker-diagram: a200-05-gpu-capability-gates -->
-![GPU 能力从 IP 到可观测数据](../../assets/diagrams/ch19/a200-05-gpu-capability-gates.png)
-
-图：IP 规格、设备 API、工具支持与实际数据源是逐层核验的条件；跨厂商阶段标签并不保证等价。
 
 ### Perfetto GPU 数据与数据生产端
 
@@ -305,11 +309,16 @@ data_sources {
 }
 ```
 
-采集前先查询设备公布的数据源，配置里使用完全匹配的名称。缺少 `gpu.renderstages` 或某个 ftrace 事件时，删去该项并记录缺口；空轨道（Track） Track 只说明这一路没有数据，说明不了 GPU 没有工作。`gpu_mem_total` 表示内存分配量，DRAM 带宽是另一个量。
+采集前先查询设备公布的数据源，配置里使用完全匹配的名称。缺少 `gpu.renderstages` 或某个 ftrace 事件时，删去该项并记录缺口；空轨道（Track） 只说明这一路没有数据，说明不了 GPU 没有工作。`gpu_mem_total` 表示内存分配量，DRAM 带宽是另一个量。
 
 不同数据生产端给出的阶段标签和粒度，跨厂商并无等价保证。跨设备比较时，先固定画面、分辨率、刷新率、API、着色器、驱动版本、温度与功耗模式，再比较端到端帧时间、错过帧截止时间的次数和持续稳态；单独比较两个厂商阶段名称下的绝对耗时，容易得出错误结论。
 
 ## NPU、DSP 与 ISP 的运行证据
+
+<!-- gracker-diagram: a200-06-accelerator-evidence -->
+![专用加速器的执行证据](../../assets/diagrams/ch19/a200-06-accelerator-evidence.png)
+
+图：专用单元的活动可能不出现在 CPU sched 轨道；执行路径需结合运行时日志、HAL trace 和可用硬件计数器确认。
 
 ### NPU / TPU
 
@@ -317,8 +326,8 @@ Hexagon、MediaTek NPU、Samsung NPU 和 Google TPU 面向端侧推理，也就�
 
 我们评估一个模型在目标平台上的表现时，更有解释力的指标包括：
 
-- 算子、数据类型与动态形状（dynamic shape） dynamic shape 是否受硬件加速器支持；
-- 计算图被切成多少个子图（partition） partition，哪些算子回退到 CPU 或 GPU；
+- 算子、数据类型与动态形状（dynamic shape） 是否受硬件加速器支持；
+- 计算图被切成多少个子图（partition），哪些算子回退到 CPU 或 GPU；
 - 编译和缓存耗时，输入输出复制与布局转换耗时；
 - 冷启动、预热后延迟、吞吐、尾延迟和持续功耗；
 - 模型精度、量化误差，以及不同 runtime 和 delegate 后端的版本。
@@ -337,12 +346,12 @@ ISP 负责传感器数据处理、去噪、HDR、对焦和部分计算摄影。�
 
 ISP 通常缺少跨厂商通用的 Perfetto 计数器，我们能用的数据包括相机框架与 HAL 的 trace、BufferQueue、CPU / GPU 运行片段、厂商 ISP 计数器、内存互连计数器和外部功耗测量。相机运行时 UI 掉帧，第一步只能说明两个现象在时间上相关；要证明带宽争用，还需要计数器或受控扰动实验。
 
-<!-- gracker-diagram: a200-06-accelerator-evidence -->
-![专用加速器的执行证据](../../assets/diagrams/ch19/a200-06-accelerator-evidence.png)
-
-图：专用单元的活动可能不出现在 CPU sched 轨道；执行路径需结合运行时日志、HAL trace 和可用硬件计数器确认。
-
 ## LPDDR5 / LPDDR5X：标称速率与有效带宽
+
+<!-- gracker-diagram: a200-07-bandwidth-units -->
+![从内存标称值到有效带宽](../../assets/diagrams/ch19/a200-07-bandwidth-units.png)
+
+图：理论峰值需要明确传输率与总数据位宽；缓存、互连、并发和温控会改变实际工作负载的有效带宽。
 
 一款 SoC “支持 LPDDR5X”，只说明内存控制器的能力范围。OEM 仍会选择颗粒、容量、速率、总线组织和固件策略。
 
@@ -352,30 +361,30 @@ Snapdragon 8 Elite Gen 5 产品简报写的是 “LP-DDR5x, up to 5300 MHz”，
 
 `理论带宽（Byte/s） = 每秒传输次数（transfer/s） × 总数据位宽（bit） ÷ 8`
 
-若资料只写内存通道（channel） channel 数量，不写每个通道的数据位宽，公式仍缺参数。MT/s 表示每秒百万次传输，Gb/s 表示每秒十亿比特；这两个单位要和时钟频率分开理解，双倍数据率已经算在定义里，不必再乘二。
+若资料只写内存通道（channel） 数量，不写每个通道的数据位宽，公式仍缺参数。MT/s 表示每秒百万次传输，Gb/s 表示每秒十亿比特；这两个单位要和时钟频率分开理解，双倍数据率已经算在定义里，不必再乘二。
 
-应用最终拿到的是有效带宽和访问延迟。LLC（Last Level Cache）是末级缓存；NoC（Network on Chip）是连接芯片内部模块的片上网络。内存控制器调度、DRAM 时序、SLC / LLC 命中、压缩、NoC、内存互连、CPU / GPU / ISP 并发与温控，都会把理论值和测量值拉开。顺序读写微基准（microbenchmark） microbenchmark 同样代表不了游戏纹理采样或相机流水线。
+应用最终拿到的是有效带宽和访问延迟。LLC（Last Level Cache）是末级缓存；NoC（Network on Chip）是连接芯片内部模块的片上网络。内存控制器调度、DRAM 时序、SLC / LLC 命中、压缩、NoC、内存互连、CPU / GPU / ISP 并发与温控，都会把理论值和测量值拉开。顺序读写微基准（microbenchmark） 同样代表不了游戏纹理采样或相机流水线。
 
 Perfetto 没有所有 Android 设备都提供的通用 “DRAM bandwidth” 轨道。设备若公开内存互连、devfreq（内核设备调频框架）、PMU 或厂商内存计数器，可以在时间轴上对齐。
 
 没有计数器时，可用固定负载做受控扰动，例如保持 GPU 场景不变，逐档增加 CPU 内存流量并记录帧时间、频率和功耗。相关性只能支持提出假设，因果判断还需要可重复的负载变化。
 
-<!-- gracker-diagram: a200-07-bandwidth-units -->
-![从内存标称值到有效带宽](../../assets/diagrams/ch19/a200-07-bandwidth-units.png)
-
-图：理论峰值需要明确传输率与总数据位宽；缓存、互连、并发和温控会改变实际工作负载的有效带宽。
-
 ## 工具选择与数据缺口
+
+<!-- gracker-diagram: a200-08-tools-evidence -->
+![分析工具与可支持的证据](../../assets/diagrams/ch19/a200-08-tools-evidence.png)
+
+图：公共时间轴定位问题，再按瓶颈补充计数器；工具能力依赖设备、权限、驱动与版本。
 
 ### Perfetto
 
-做跨平台对比时，Perfetto 适合当公共基线：CPU 调度、频率、空闲状态、进程与线程、Binder、帧时间线、部分温控与 GPU 数据可以放在同一时钟域里。至于每条轨道存不存在，取决于内核跟踪点（tracepoint） tracepoint、数据生产端、权限和配置。报告里要同时附上采集配置和缺失的数据——工具没采到，说明不了硬件没有活动。
+做跨平台对比时，Perfetto 适合当公共基线：CPU 调度、频率、空闲状态、进程与线程、Binder、帧时间线、部分温控与 GPU 数据可以放在同一时钟域里。至于每条轨道存不存在，取决于内核跟踪点（tracepoint）、数据生产端、权限和配置。报告里要同时附上采集配置和缺失的数据——工具没采到，说明不了硬件没有活动。
 
 CPU 频率可能按调频策略域变化，也可能由每核事件上报；温度传感器的名字、位置与采样周期也不相同。跨设备报告应把这些统计方式上的差异写清楚。
 
 ### Android GPU Inspector 与 Android Performance Analyzer
 
-AGI 可在受支持设备上采集 GPU 计数器，执行系统分析与单帧分析，适合检查绘制调用（draw call） draw call、着色器、流水线停顿和 GPU 计数器；使用前要核对设备、GPU 和驱动是否在当前支持范围内。Google 目前把 Android Performance Analyzer（APA）列为系统分析的新推荐工具；AGI 的单帧分析与现有系统分析功能仍有独立用途。
+AGI 可在受支持设备上采集 GPU 计数器，执行系统分析与单帧分析，适合检查绘制调用（draw call）、着色器、流水线停顿和 GPU 计数器；使用前要核对设备、GPU 和驱动是否在当前支持范围内。Google 目前把 Android Performance Analyzer（APA）列为系统分析的新推荐工具；AGI 的单帧分析与现有系统分析功能仍有独立用途。
 
 ### Arm Streamline
 
@@ -387,12 +396,12 @@ Snapdragon Profiler 面向受支持的 Snapdragon 平台，可提供 Adreno、CP
 
 Samsung、MediaTek、Google 或 OEM 也可能提供内部或合作伙伴工具。拿不到这些工具时，Perfetto、simpleperf、AGI、应用埋点和外部功耗设备仍能组成一套可复现的基础数据。结论范围要与可见数据一致。
 
-<!-- gracker-diagram: a200-08-tools-evidence -->
-![分析工具与可支持的证据](../../assets/diagrams/ch19/a200-08-tools-evidence.png)
-
-图：公共时间轴定位问题，再按瓶颈补充计数器；工具能力依赖设备、权限、驱动与版本。
-
 ## 一套可复用的跨 SoC 分析流程
+
+<!-- gracker-diagram: a200-09-comparison-loop -->
+![跨 SoC 实验的证据闭环](../../assets/diagrams/ch19/a200-09-comparison-loop.png)
+
+图：对齐输入条件，记录设备实现与数据缺口，再比较瞬态和持续稳态；结论仅覆盖已验证的软件、设备和运行条件。
 
 把前面这些工具和数据缺口串起来，一次跨 SoC 对比可以按下面七步组织：
 
@@ -405,11 +414,6 @@ Samsung、MediaTek、Google 或 OEM 也可能提供内部或合作伙伴工具�
 7. **复现实验**：每个结论至少能由固定步骤重复触发，并保留原始 trace、配置和统计脚本。
 
 这套流程得到的是“某个软件版本在某台设备、某种状态下”的结论。扩大到整个 SoC 系列前，需要增加机型、系统版本和运行条件。
-
-<!-- gracker-diagram: a200-09-comparison-loop -->
-![跨 SoC 实验的证据闭环](../../assets/diagrams/ch19/a200-09-comparison-loop.png)
-
-图：对齐输入条件，记录设备实现与数据缺口，再比较瞬态和持续稳态；结论仅覆盖已验证的软件、设备和运行条件。
 
 ## 常见误判
 
@@ -435,7 +439,7 @@ Samsung、MediaTek、Google 或 OEM 也可能提供内部或合作伙伴工具�
 
 ### 直接比较厂商 AI 百分比
 
-“提升 40%”必须连同上一代基线、模型、精度、批量大小（batch size） batch size、功耗模式和软件栈一起读取。不同厂商的百分比缺少共同分母，也就谈不上相加、相减或排序。
+“提升 40%”必须连同上一代基线、模型、精度、批量大小（batch size）、功耗模式和软件栈一起读取。不同厂商的百分比缺少共同分母，也就谈不上相加、相减或排序。
 
 ### 从时间相关性推断内存带宽争用
 

@@ -4,9 +4,9 @@ chapter: '26.8'
 section: '26.8'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals 2026 口径
-last_verified: '2026-10-22'
-last_source_verified_at: '2026-10-22'
-last_verified_against: Android Vitals overview and memory docs updated 2026-10-19; DEX optimization applicability and February 2027 visibility notice; migrated Play metric definitions and v1beta1 query availability verified 2026-10-22; platform ceiling android-17.0.0_r1 / android17-6.18
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Android Vitals overview and memory docs updated 2026-10-19; DEX optimization applicability and February 2027 visibility notice; migrated Play metric definitions and v1beta1 query availability reviewed 2026-10-25; threshold operators, game/watch scope, request cohort/granularity, distinctUsers and freshness ingestion boundaries rechecked; documentation only, no authenticated API queries; platform ceiling android-17.0.0_r1 / android17-6.18
 confidence: high
 tags:
 - observability
@@ -92,7 +92,7 @@ last_idle_audit_at: '2026-10-22T14:42:11+08:00'
 
 Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计的用户都从 Google Play 安装应用、并允许共享使用情况与诊断数据，衡量的是这些用户经历的稳定性、性能和功耗问题。内部应用性能监控（application performance monitoring，APM）负责定位问题所在的版本、场景和调用路径，帮助团队在只向部分用户逐步发布的灰度阶段暂停异常版本。两套数据的采集范围、分母和时效不同，应分别判断趋势，再按版本、设备和错误类型相互校验，不能直接比较两个百分比的大小。
 
-指标口径以 2026 年 10 月 22 日可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略由 Google Play 服务端制定，不在 `android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约内。Android 17 源码可用于解释应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制，无法据此证明 Play 的服务端阈值。升级平台源码锚点不应连带改写这些阈值；Play 文档变更也不表示 Android 框架同时发生了对应改动。
+指标口径以2026年10月25日本轮可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略由 Google Play 服务端制定，不在 `android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约内。Android 17 源码可用于解释应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制，无法据此证明 Play 的服务端阈值。升级平台源码锚点不应连带改写这些阈值；Play 文档变更也不表示 Android 框架同时发生了对应改动。
 
 ## Android Vitals 的指标层级
 
@@ -107,7 +107,7 @@ Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计�
 | 表盘专项 | watch face excessive battery usage 及 CPU、partial wakelock 贡献因素 | 表盘在非充电、没有其他应用使用设备时的耗电情况 | AoD（常亮显示）配置、刷新频率、Complication（表盘信息组件）更新、资源与动画成本 |
 | 内部 APM | crash-free users（无崩溃用户率）、启动分位数、页面卡顿、内存水位、业务错误率 | 当前版本是否回归，问题发生在什么路径 | 与 Play 维度一致的版本、设备、系统和渠道标识 |
 
-[Android Vitals 总览](https://developer.android.com/google/play/vitals)已把匿名 RSS + swap 和位图内存列为移动应用的 core vitals，并注明：内存、位图内存和代码优化超出相应阈值，可能从 2027 年 2 月起影响商店可见性。截至 2026 年 10 月 22 日，这一日期尚未到来，不能把这些可见性约束写成已经生效。该日期属于 Play 政策，与 Android 平台版本升级分开判断。
+[Android Vitals 总览](https://developer.android.com/google/play/vitals)已把匿名 RSS + swap 和位图内存列为移动应用的 core vitals，并注明：内存、位图内存和代码优化超出相应阈值，可能从 2027 年 2 月起影响商店可见性。截至2026年10月25日，这一日期尚未到来，不能把这些可见性约束写成已经生效。该日期属于 Play 政策，与 Android 平台版本升级分开判断。
 
 [匿名 RSS + swap](https://developer.android.com/google/play/vitals/memory-usage)按进程状态和 RAM 桶展示；内存阈值还区分应用与游戏，不能套用单一全局数值。前台、用户可感知服务、后台和缓存状态也需要分别分析。进程名拆分可能包含应用使用的 SDK 或系统服务，应先核对责任进程，再定位资源占用。[位图内存](https://developer.android.com/google/play/vitals/bitmap-memory-usage)除堆分配外还可能包含共享内存或图形缓冲区支持的位图，不能与匿名 RSS + swap 直接等同。
 
@@ -214,7 +214,7 @@ ANR 不能只看一张堆栈。`Input dispatching timed out` 说明用户输入�
 
 内存项中，PSS 是按共享比例折算后的进程内存，RSS 是进程当前驻留在物理内存中的总量，native heap 是 C/C++ 等原生代码使用的堆，设备 RAM 桶则按物理内存容量给设备分组。单独一个数值不足以解释 LMK，需要结合设备内存分组和同机内存压力。
 
-Slow Sessions 的 present-to-present 指相邻两帧送达屏幕合成端的时间间隔；thermal status 是设备因温度变化进入的性能限制状态。因此 Slow Sessions 统计的是用户看到的出帧节奏，无法直接代替 CPU 或 GPU 单阶段耗时。
+Slow Sessions的present-to-present是按SurfaceFlinger采集的应用surface相邻帧呈现时间估计出帧间隔，不是应用提交BufferQueue的时刻差。thermal status表示系统报告的热压力等级，不能单靠该整数断言CPU/GPU已降到某个频率。因此 Slow Sessions 统计的是用户看到的出帧节奏，无法直接代替 CPU 或 GPU 单阶段耗时。
 
 Slow startup 的固定秒数适合识别严重慢开，却无法识别冷启动从 1.8 秒退化到 2.4 秒这类未达到 Play 门槛的回归；同样的耗时若出现在温启动中，2.4 秒已经超过其 2 秒门槛。灰度暂停规则仍需比较相同启动类型、相同设备档和相同安装状态下的分布；第 21.1 节给出了启动数据的详细边界。
 
@@ -245,6 +245,7 @@ User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 
 
 音频、定位等豁免也不表示可以无限持有锁。Play 是否豁免取决于其当前分类和用户收益判断；内部仍要检查资源生命周期、设备发热和电量。后台调度的 API 选择与系统限制见 25.2 节。
 
+
 ## Play 指标与发版暂停规则
 
 官方阈值表示政策边界，团队还需要更早的内部暂停线。发布动作可分成“已越过官方阈值”“内部确认新版本回归”“证据不足”三类，避免把“接近阈值”写成没有样本和基线依据的固定数字。
@@ -255,7 +256,7 @@ User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 
 | 某手机或手表机型越过对应阈值 | `deviceModel`、系统版本、ABI（应用二进制接口）、SoC/GPU、WebView、ROM（设备系统构建）、该分组 `distinctUsers` | 暂停该设备组；可安全降级时使用远程配置，否则回滚 |
 | Partial wake lock core vital 越线 | 非豁免 tag、24 小时累计时长、受影响会话、任务来源、版本变化 | 停止相关后台功能放量，修复资源生命周期和调度策略 |
 | 表盘耗电越线 | 充电状态、会话耗电、CPU/wakelock 贡献、AoD 与表盘版本 | 暂停表盘版本；优先降低刷新和动态资源成本 |
-| Play 未越线，但内部指标相对对照版本显著恶化 | 实验分组是否随机、样本量、置信区间（估计值可能落入的范围）、设备与版本构成、数据漏报 | 按内部灰度暂停规则处理；不要等待 28 天窗口 |
+| Play 未越线，但内部指标相对对照版本显著恶化 | 实验分组是否随机、样本量、置信区间（按预设方法刻画效应估计不确定性的区间）、设备与版本构成、数据漏报 | 按内部灰度暂停规则处理；不要等待 28 天窗口 |
 | Play 指标升高，内部没有对应变化 | 分母、渠道、用户同意范围、时区、版本过滤、内部上报成功率 | 保持灰度或降低放量速度，补齐证据后再决定，不能按“无复现”关闭问题 |
 | 存量窗口仍越线，但修复版本趋势持续改善 | 修复版本覆盖率、旧版本占比、错误聚类是否消退、freshness | 控制放量并继续观察；不要把窗口残留误判为修复无效 |
 
@@ -296,7 +297,12 @@ Play Developer Reporting API 用 metric set（指标集）组织指标，同一�
 - `dimensions`：用于切片的维度，例如版本、机型和地区。每个 metric set 支持的集合可能不同，提交请求前应读取对应 endpoint（具体 API 接口资源）文档。
 - `filter`、分页和 `userCohort`：过滤分组、读取完整结果，并用 user cohort（用户群组）选择数据范围。Crash/ANR 支持公开系统版本、应用测试用户和系统 beta 用户；其中 `OS_BETA` 仅支持 `versionCode` 与 `osBuild` 维度。`slowstartrate`、`slowrenderingrate` 的 `userCohort` 只支持 `OS_PUBLIC`，不能照搬 Crash/ANR 的测试群组查询。
 
-API 使用 `https://www.googleapis.com/auth/playdeveloperreporting` OAuth scope（OAuth 授权范围，用来声明访问权限）。每个 metric set 资源还提供 freshness 查询，可得到各粒度最新可用数据点。定时任务应先读 freshness，只在数据推进后拉取新增区间，并记录服务端 freshness、抓取时间、API 版本和请求维度。
+API 使用 `https://www.googleapis.com/auth/playdeveloperreporting` OAuth scope（OAuth 授权范围，用来声明访问权限）。每个 metric set 资源还提供 freshness 查询，可得到各粒度最新可用数据点。入仓任务先按粒度读取freshness，以最新可用点限制查询终点，并保存抓取时刻、API版本、cohort及完整维度。freshness不是历史点永不修订的承诺：增量回读允许重叠，按事实键upsert，并配置有界历史复核；分页未完整或API失败时不推进完成水位，不把失败批次写成零。
+
+<!-- gracker-diagram: a293-09-reporting-query-completeness-and-upsert -->
+![Reporting API 入仓：冻结查询身份，完整分页后提交](../../assets/diagrams/ch26/a293-09-reporting-query-completeness-and-upsert.png)
+
+图：Crash/ANR可DAILY/HOURLY，slow startup/rendering只DAILY；OS_BETA仅支持其规定维度，不共用万能请求。
 
 ### 仓库模型不假设精确关联键
 
@@ -304,7 +310,7 @@ Play 与内部系统没有共享的事件标识，因此数据仓库应把 Play 
 
 | 数据集 | 最小关键字段 | 用途 |
 |---|---|---|
-| Play metric fact（Play 指标事实表） | package（包名）、metric set、metric、aggregation period（聚合周期）、start time、维度集合、rate、`distinctUsers`、freshness | 保留官方聚合值和查询条件 |
+| Play metric fact（Play指标事实表） | package、API版本、metric set、metric、cohort、聚合粒度、时区、start time、维度集合、value与单位、distinctUsers、freshness | 保留官方值及完整查询身份；value可为率、计数或内存分位数，不一律命名rate |
 | Internal quality fact（内部质量事实表） | app、version、channel、time bucket（时间分桶）、device/OS、metric、value、sample unit（样本单位）、sample size（样本量） | 保存内部 APM、实验和灰度指标 |
 | Quality incident（质量事件表） | incident id（事件编号）、触发规则、受影响版本/设备、证据链接、动作、状态 | 记录调查和发布决策 |
 
@@ -319,11 +325,6 @@ Play 与内部系统没有共享的事件标识，因此数据仓库应把 Play 
 查询规模也需要控制。官方建议应用越大、breakdown 越多，单次时间范围越短，以免读取过多数据而超时。
 
 分页时除 `pageToken` 外必须保持原查询参数不变；任务还应保存失败重试和缺口检查，避免一页失败后留下看似完整的曲线。
-
-<!-- gracker-diagram: a293-09-reporting-query-completeness-and-upsert -->
-![Reporting API 入仓：冻结查询身份，完整分页后提交](../../assets/diagrams/ch26/a293-09-reporting-query-completeness-and-upsert.png)
-
-图：Crash/ANR可DAILY/HOURLY，slow startup/rendering只DAILY；OS_BETA仅支持其规定维度，不共用万能请求。
 
 <!-- gracker-diagram: a293-10-aggregation-rounded-users-and-quality-incidents -->
 ![入仓聚合值、内部事实与质量事件分开关联](../../assets/diagrams/ch26/a293-10-aggregation-rounded-users-and-quality-incidents.png)

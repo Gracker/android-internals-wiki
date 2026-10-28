@@ -4,9 +4,9 @@ chapter: '25.11'
 section: '25.11'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Android Developers App Bundle, Feature Delivery, Asset Delivery and bundletool docs retrieved 2026-08-15 + Google Play Device and Network Abuse policy + AOSP android-17.0.0_r1
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Android Developers App Bundle/Feature Delivery/Asset Delivery/bundletool and SplitInstallManager API, AGP built-in Kotlin, Play policy and AOSP android-17.0.0_r1 reviewed 2026-10-25; host-only state-machine adapter validation, no Android/Play/device test
 confidence: high
 sources:
 - type: official
@@ -27,6 +27,10 @@ sources:
   path: https://developer.android.com/guide/playcore/asset-delivery/texture-compression
 - type: official
   path: https://developer.android.com/tools/bundletool
+- type: official
+  path: https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager
+- type: official
+  path: https://developer.android.com/build/migrate-to-built-in-kotlin
 - type: policy
   path: https://support.google.com/googleplay/android-developer/answer/16559646
 - type: legacy-aosp-reference-preserved
@@ -145,7 +149,7 @@ Dynamic Feature Module（动态功能模块）适合低频、体积较大、允�
 | deferred install | 后台尽力预取 on-demand module | 无法跟踪进度，不保证立刻可用 |
 | deferred uninstall | 请求延后移除已安装 module | 请求返回时不能假设文件已经消失 |
 
-Base module 用这段配置注册动态功能，并把编译平台统一到 Android 17/API 37。
+下例按 AGP 9.x 默认内置 Kotlin 的工程说明。Base module 用这段配置注册动态功能，并把编译平台统一到 Android 17/API 37；平台API与AGP版本分别固定。
 
 ```kotlin
 android {
@@ -159,7 +163,6 @@ android {
 ```kotlin
 plugins {
     id("com.android.dynamic-feature")
-    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -172,7 +175,7 @@ dependencies {
 }
 ```
 
-Feature 可以访问 base 的公共 API；base 不能在编译期引用 feature 实现。公共路由、错误类型和埋点协议应放在 base 或独立 API module（接口模块），功能专用页面、资源和原生库放在 feature。
+AGP 9.x 默认内置 Kotlin，不再额外应用 `org.jetbrains.kotlin.android`；旧 AGP 或显式退出内置 Kotlin 的工程应按各自迁移文档配置，不能照搬同一插件组合。Feature 可以访问 base 的公共 API；base 不能在编译期引用 feature 实现。公共路由、错误类型和埋点协议应放在 base 或独立 API module（接口模块），功能专用页面、资源和原生库放在 feature。
 
 Feature 会继承 base 的部分配置，不应重复声明签名、`versionCode`、`versionName` 或 `minifyEnabled`。各 feature 的附加 keep rules（代码保留规则）会在构建时与全应用规则合并。
 
@@ -203,53 +206,133 @@ Feature 会继承 base 的部分配置，不应重复声明签名、`versionCode
 
 图：dist:title引用base资源，确保下载前可见；配置on-demand不会自动替应用发起请求。
 
-这个 Kotlin 骨架展示安装会话过滤和关键状态处理。页面只有收到 `INSTALLED` 后才能进入功能。
+这个 Kotlin 骨架展示已安装检查、活动会话恢复和关键状态过滤。模块已安装时可以直接进入；`startInstall()` 返回 ID 0 表示拆分包已安装且不会生成会话，不能继续等待 `INSTALLED` 广播。其余路径确认安装完成并可访问后再进入。
 
 ```kotlin
-val manager = SplitInstallManagerFactory.create(context)
-val request = SplitInstallRequest.newBuilder()
-    .addModule("camera_editor")
-    .build()
+// 在主线程创建、调用并关闭；Play Task默认监听器也在主线程执行。
+// onState处理进度/确认UI；onError保留base并提供重试；onReady导航一次。
+class FeatureInstallGate(
+    private val manager: SplitInstallManager,
+    private val module: String,
+    private val onReady: () -> Unit,
+    private val onState: (SplitInstallSessionState) -> Unit,
+    private val onError: (String) -> Unit,
+) : AutoCloseable {
+    private var closed = false
+    private var delivered = false
+    private var pending = false
+    private var generation = 0L
+    private var activeSessionId: Int? = null
+    private val listener = SplitInstallStateUpdatedListener { accept(it) }
 
-var activeSessionId = 0
-val listener = SplitInstallStateUpdatedListener { state ->
-    if (state.sessionId() != activeSessionId) return@SplitInstallStateUpdatedListener
+    init { manager.registerListener(listener) }
 
-    when (state.status()) {
-        SplitInstallSessionStatus.DOWNLOADING -> {
-            // 用 bytesDownloaded/totalBytesToDownload 更新进度。
+    private fun installed() = module in manager.installedModules
+    private fun current(token: Long) =
+        !closed && !delivered && token == generation
+
+    private fun ready() {
+        if (closed || delivered) return
+        delivered = true
+        pending = false
+        activeSessionId = null
+        generation++
+        onReady()
+    }
+
+    private fun fail(message: String) {
+        pending = false
+        activeSessionId = null
+        generation++ // 使前一次请求尚未到达的Task回调失效。
+        onError(message)
+    }
+
+    private fun accept(state: SplitInstallSessionState) {
+        if (closed || delivered) return
+        if (state.sessionId() == -1 &&
+            state.errorCode() == SplitInstallErrorCode.SERVICE_DIED &&
+            (pending || activeSessionId != null)) {
+            fail("安装服务中断，请重试")
+            return
         }
-        SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION -> {
-            // 通过 startConfirmationDialogForResult 请求用户确认。
-        }
-        SplitInstallSessionStatus.INSTALLED -> {
-            // 此时再导航到 feature 页面。
-        }
-        SplitInstallSessionStatus.FAILED,
-        SplitInstallSessionStatus.CANCELED -> {
-            // 保留基础功能，并提供重试或退出。
+        if (state.sessionId() != activeSessionId) return
+        when (state.status()) {
+            SplitInstallSessionStatus.INSTALLED -> {
+                if (installed()) ready() else fail("模块暂不可访问，请重试")
+            }
+            SplitInstallSessionStatus.FAILED,
+            SplitInstallSessionStatus.CANCELED -> {
+                val message = "安装终止：${state.errorCode()}"
+                fail(message)
+            }
+            else -> onState(state) // 包括REQUIRES_USER_CONFIRMATION。
         }
     }
-}
 
-manager.registerListener(listener)
-manager.startInstall(request)
-    .addOnSuccessListener { activeSessionId = it }
-    .addOnFailureListener { /* 请求尚未建立，展示可恢复错误。 */ }
+    fun startOrRestore() {
+        check(!closed)
+        if (delivered || pending || activeSessionId != null) return
+        if (installed()) { ready(); return }
+        pending = true
+        val token = ++generation
+        manager.sessionStates.addOnSuccessListener { states ->
+            if (!current(token)) return@addOnSuccessListener
+            val existing = states.firstOrNull { module in it.moduleNames() }
+            if (existing != null) {
+                pending = false
+                activeSessionId = existing.sessionId()
+                accept(existing)
+            } else {
+                val request = SplitInstallRequest.newBuilder()
+                    .addModule(module).build()
+                manager.startInstall(request).addOnSuccessListener { id ->
+                    if (current(token)) {
+                        pending = false
+                        if (id == 0 || installed()) {
+                            ready() // ID 0：模块已安装，没有后续安装会话。
+                        } else {
+                            activeSessionId = id
+                            // 弥补会话ID返回前已到达而被过滤的状态通知。
+                            manager.getSessionState(id).addOnSuccessListener { state ->
+                                if (current(token)) accept(state)
+                            }.addOnFailureListener { error ->
+                                if (current(token)) {
+                                    if (installed()) ready()
+                                    else fail("状态查询失败：${error.message}")
+                                }
+                            }
+                        }
+                    }
+                }.addOnFailureListener { error ->
+                    if (current(token)) fail("请求失败：${error.message}")
+                }
+            }
+        }.addOnFailureListener { error ->
+            if (current(token)) fail("会话恢复失败：${error.message}")
+        }
+    }
+
+    override fun close() {
+        if (closed) return
+        closed = true
+        generation++
+        manager.unregisterListener(listener)
+    }
+}
 ```
 
-`startInstall()` 成功回调只返回安装会话 ID，不代表安装完成。监听器要按页面或进程生命周期注销；进程重建后，通过 `installedModules`（已安装模块集合）和安装会话状态恢复，不能只依赖内存变量。`deferredInstall()` 只是后台尽力预取，无法跟踪进度，需要立即使用模块时仍应调用 `startInstall()`。完整状态和用户确认流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand)。
+`startInstall()` 成功只表示请求结果：ID 为 0 时模块已安装、不会创建会话，正 ID 才用于后续跟踪。上面的 gate 在同一主线程使用，一次只管理一个模块请求；`onState` 必须把 `REQUIRES_USER_CONFIRMATION` 接到当前页面的确认 API，并处理取消结果，下载进度不代表可以导航。页面释放时调用 `close()` 成对注销，关闭不会取消已经提交的安装；新页面或进程创建新 gate 后调用 `startOrRestore()`，先检查 `installedModules`，再接回该模块活动会话。`SERVICE_DIED` 可能以会话 ID -1 上报，不能被普通 ID 过滤直接丢弃。`deferredInstall()` 是后台尽力预取，无法跟踪进度，也不保证立即可用；需要立即使用时仍走 `startInstall()`。库依赖、imports、具体 UI/确认回调和生命周期接线需由工程补齐。完整流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand) 与 [SplitInstallManager API](https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager)。
+
+<!-- gracker-diagram: a284-06-on-demand-state-recovery-and-zero-session -->
+![先查已安装，再接回会话；ID 0 不会产生安装事件](../../assets/diagrams/ch25/a284-06-on-demand-state-recovery-and-zero-session.png)
+
+图：SERVICE_DIED可能携带ID -1，须在普通ID过滤前处理；close注销监听并让旧异步回调失效。
 
 应用和 feature Activity（界面组件）还要启用 SplitCompat（让应用访问新下载 split 代码与资源的兼容库）。可选 feature 不应声明 exported（可被其他应用调用）组件；需要对外入口时，在 base 放代理组件，确认模块已安装后再转发。
 
 刚下载完成的一段时间内，平台可能无法应用 feature 新增的 manifest 组件，也可能无法让通知等系统界面访问 feature 资源。通知图标、系统会拉起的组件和故障页面应放在 base。
 
 Play 会让已安装 feature 随应用更新；不要给 Play feature 自建独立版本协议。版本一致性问题主要出现在自建资源下载、非 Play 插件或绕过 Play 的分发方案中。
-
-<!-- gracker-diagram: a284-06-on-demand-state-recovery-and-zero-session -->
-![先查已安装，再接回会话；ID 0 不会产生安装事件](../../assets/diagrams/ch25/a284-06-on-demand-state-recovery-and-zero-session.png)
-
-图：SERVICE_DIED可能携带ID -1，须在普通ID过滤前处理；close注销监听并让旧异步回调失效。
 
 <!-- gracker-diagram: a284-07-splitcompat-system-entry-and-versioning -->
 ![安装完成后，还要让代码、资源与系统入口可用](../../assets/diagrams/ch25/a284-07-splitcompat-system-entry-and-versioning.png)
@@ -258,7 +341,7 @@ Play 会让已安装 feature 随应用更新；不要给 Play feature 自建独�
 
 ## Play Asset Delivery 与大资源管理
 
-Play Asset Delivery（PAD，Play 资源交付）面向 asset（原始素材），不允许 asset pack 包含可执行代码。纹理、音频、关卡、离线模型和媒体素材可以进入 asset pack；DEX（Android 字节码）、JAR（Java 归档）、`.so` 原生库和需要参与编译的功能应使用应用模块或 Dynamic Feature。
+Play Asset Delivery（PAD，Play 资源交付）的官方指南主要面向游戏资源交付。项目先核对自身应用类型和 Play 支持范围，再设计 asset pack；它面向 asset（原始素材），不允许包含可执行代码。纹理、音频、关卡、离线模型和媒体素材可以进入 asset pack；DEX（Android 字节码）、JAR（Java 归档）、`.so` 原生库和需要参与编译的功能应使用应用模块或 Dynamic Feature。
 
 三种模式在磁盘形态上也有差异：
 
@@ -277,7 +360,7 @@ Fast-follow 和 on-demand pack 的路径可能跨会话变化，文件也可能�
 
 应用更新期间还可能出现新二进制已安装、资源补丁尚未应用完的短暂状态，页面要能显示 `资源更新中`。
 
-首屏必需的最小资源留在 base 或 install-time pack；可在安装后准备的内容用 fast-follow；低频内容用 on-demand。推迟下载不会减少最终磁盘占用，仍要设计空间检查、失败恢复和资源回收。
+首屏必需的最小资源留在 base 或 install-time pack；可在安装后准备的内容用 fast-follow；低频内容用 on-demand。推迟下载本身不会删掉最终使用所需的资源；完整下载后不保证磁盘占用更小。仍要设计空间检查、失败恢复和资源回收，并单独测量补丁及临时展开的空间峰值。
 
 Texture Compression Format Targeting（纹理压缩格式定向）允许 AAB 携带多种 GPU（图形处理器）纹理格式，由 Play 为设备选择受支持的格式，适合游戏或图形密集应用。普通 UI（用户界面）图片仍应按 25.10 的 WebP、AVIF、VectorDrawable 与网络图片策略处理。
 

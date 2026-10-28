@@ -4,7 +4,7 @@ chapter: '18.6'
 section: '18.6'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-06'
+last_verified: '2026-10-26'
 last_verified_against: AOSP android-17.0.0_r1 (bootanalyze / bootio / init / bootstat / ZygoteInit / SystemServer / ActivityManagerService / DexOptHelper / ArtManagerLocal); Android Common Kernel android17-6.18-2026-06_r6; current source.android.com boot guidance; current Android Developers 16 KB page-size guidance
 confidence: high
 last_review_finalize_at: '2026-10-06T10:05:34+08:00'
@@ -83,14 +83,14 @@ related_chapters:
 
 同一次启动可以有多个终点。终点选错，优化结果会在看板上变好，却没有改善用户等待。
 
-| 终点 | 观察方式 | 能回答的问题 | 不能替代的指标 |
+| 终点 | 观察方式 | 说明 | 另测指标 |
 |---|---|---|---|
-| kernel entry | bootloader 日志、UART、硬件计时 | bootloader 已经把控制权交给 kernel | 上电到 kernel 的完整时间 |
-| second-stage `init` | dmesg、`init second stage started` | kernel 和 first-stage init 的基线 | `/data` 挂载、Zygote、桌面可用 |
-| Zygote start | `ro.boottime.zygote`、init 日志；flag 开启时可用 `ro.boottime.event.zygote-start` | framework 进程模型何时开始建立 | `system_server` 是否 ready |
-| `sys.boot_completed=1` | property、bootstat | AMS 已进入 boot completion 收尾 | Launcher 是否已绘制且可操作 |
-| Launcher shown | Launcher 自有事件、Surface/Window trace | 首个桌面窗口是否显示 | 输入是否已被处理 |
-| first interactive | 自动化输入、画面检测、产品事件 | 用户何时能完成第一个关键动作 | 单纯的 property 时间 |
+| kernel entry | bootloader 日志、UART、硬件计时 | 内核已接管 | 上电到内核的耗时 |
+| second-stage init | dmesg、<code>init second stage started</code> | 内核与早期 init 阶段基线 | /data 挂载、Zygote、桌面可用 |
+| Zygote start | <code>ro.boottime.<wbr>zygote</code>、init 日志；flag 开启时可有 <code>ro.boottime.<wbr>event.<wbr>zygote-start</code> | framework 进程模型开始建立 | <code>system_<wbr>server</code> 是否 ready |
+| <code>sys.boot_<wbr>completed=1</code> | property、bootstat | AMS 进入 boot completion 收尾 | 桌面显示与操作响应 |
+| Launcher shown | Launcher 自有事件、Surface/Window trace | 桌面窗口实际显示 | 输入是否已处理 |
+| first interactive | 自动化输入、画面检测、产品事件 | 用户能完成首个关键动作 | property 时间另记 |
 
 first-stage init 先完成早期挂载与 SELinux 切换所需工作，随后执行 second-stage init，由后者加载属性、解析更多 rc 并启动服务。UART 是启动早期常用的串口日志通道。
 
@@ -163,7 +163,7 @@ Android 17 的 `DexOptHelper.performPackageDexOptUpgradeIfNeeded()` 只在 first
 
 ## bootanalyze：它读什么，输出什么
 
-Android 17 的工具位于 `system/extras/boottime_tools/bootanalyze/`，目录中的角色如下：
+Android 17 的工具位于 system/extras/boottime_tools/bootanalyze/。它把匹配到的日志事件、日志内耗时和 boottime property 整理成观测点；事件缺失、日志时钟变化和产品正则漂移都会影响输出，不能把默认事件名直接当成统一的产品启动终点。目录中的角色如下：
 
 | 文件 | 作用 |
 |---|---|
@@ -179,8 +179,7 @@ Android 17 的工具位于 `system/extras/boottime_tools/bootanalyze/`，目录�
 
 ### README 与 r1 脚本存在漂移
 
-`README.md` 仍写 Python 2.7，`bootanalyze.py` 的 shebang（脚本首行声明的解释器）已是 `#!/usr/bin/python3`。README 还展示了 `stop_event`，r1 脚本没有读取这个字段。
-脚本默认等待 `BootComplete` 和 `LauncherStart` 两个事件；启用额外选项时，还会等待 `FsStat`、CarWatchdog、`LoginEnd` 或 `LauncherShown`。
+README.md 仍写 Python 2.7，r1 bootanalyze.py 的 shebang 已是 #!/usr/bin/python3；README 展示的 stop_event 字段也没有被脚本读取。默认 logcat 采集要等齐 BootComplete 和 LauncherStart；默认配置的前者匹配 Starting phase 1000，后者匹配 HOME activity 的启动请求，都不等于桌面首帧或首次可交互。选项可增加 FsStat、CarWatchdog、LoginEnd 或 LauncherShown 条件。dmesg 采集另采用“任一停止事件到达即停”的模式，两条采集流不能混为同一停止条件。
 
 这带来两个工程约束：
 
@@ -189,7 +188,7 @@ Android 17 的工具位于 `system/extras/boottime_tools/bootanalyze/`，目录�
 
 ### `events` 与 `timings` 的含义不同
 
-`events` 记录一个事件第一次出现的时间点。`timings` 从一条日志中提取子阶段名和耗时，正则必须提供 `name` 与 `time` 命名捕获组，也就是用名称标识的正则匹配结果。
+events 提取匹配日志中的时间点。一般重复事件以 _1、_2 等后缀保留，Zygote 相关事件另有 PID 与覆盖规则，并非所有事件都只留第一次。timings 从一条日志提取子阶段名和耗时，正则必须提供 name 与 time 命名捕获组。generate_timing_points 会给重名耗时追加 #1、#2，将 _secs 项换算成毫秒；它用真值判断过滤，因此 0 ms 项会被省略。
 
 下面的配置用于解析 SystemServer 的 `took to complete` 日志：
 
@@ -198,7 +197,7 @@ timings:
   system_server: 'SystemServerTiming(Async)?\s*:\s*(?P<name>\S+) took to complete:\s(?P<time>[0-9]+)ms'
 ```
 
-匹配后，工具会把 `StartPackageManagerService` 一类子阶段及其毫秒值分别记录。正则要先在目标版本的原始 logcat 上回放，避免日志 tag 变化后静默丢点。
+匹配后可提取 StartPackageManagerService 等子阶段与毫秒值；SystemServerTimingAsync 的名称会加括号。详细 timings 的生成与打印还要求 bootanalyze.py 的 -t/--timings，下面的默认 wrapper 不传 -t，不能假设它已经输出逐子阶段耗时。先对目标版本原始 logcat 回放正则，再保存原始日志和有效轮数，避免日志 tag 改动后静默丢点。
 
 <!-- gracker-diagram: ch18-06-06-events-timings -->
 ![停止条件、时间点与子阶段耗时分别解释](../../assets/diagrams/ch18/ch18-06-06-events-timings.png)
@@ -218,7 +217,9 @@ system/extras/boottime_tools/bootanalyze/bootanalyze.sh -a
 ```
 
 `CONFIG_YMAL` 是源码里已经固化的拼写，不能改成 `CONFIG_YAML`。工具需要可执行 `su` 的测试设备，适合允许调试和 root 的 userdebug/eng 构建及实验室环境。
-r1 wrapper 会无条件执行 `touch /data/bootchart/enabled`，`-b` 只控制后续 bootchart 处理。bootchart 是按进程展示 CPU 与 I/O 活动的启动时间线；做低扰动基线时应评估开启它的影响，或直接调用 `bootanalyze.py` 并自行管理采集开关。
+r1 wrapper 会无条件尝试 touch /data/bootchart/enabled；该命令没有套 su，adb shell 权限不足时可能失败，而且 wrapper 不检查这一步的返回值。-b 只控制后续 bootchart 处理。bootchart 是按进程展示 CPU 与 I/O 活动的启动时间线；做低扰动基线时应评估开启它的影响，或直接调用 `bootanalyze.py` 并自行管理采集开关。
+
+wrapper 在每轮之间固定等待 20 秒；这不是统一的设备温度、关机静置或缓存控制。即便脚本返回成功，也要核对本轮是否有有效数据和全部必要终点，不能把 LOOPS=10 自动解释成十个有效的 first-interactive 样本。
 
 <!-- gracker-diagram: ch18-06-07-wrapper -->
 ![wrapper 的循环成功不等于有效交互样本](../../assets/diagrams/ch18/ch18-06-07-wrapper.png)
@@ -227,38 +228,39 @@ r1 wrapper 会无条件执行 `touch /data/bootchart/enabled`，`-b` 只控制�
 
 ### 时间修正
 
-启动早期的 logcat wall clock（日期时间）可能被校时。默认配置通过 `time_correction_key: correction` 匹配 `Updating system time`，再修正校时点之前的 logcat 时间。
-dmesg 使用从内核启动起算的时间，两类时钟不能直接相减；产品新增事件时，应确认它来自哪个时钟域。
+启动早期 logcat 的日期时间可能被校时。默认 correction 正则只匹配非负 diff；脚本取该事件中的 delta，调整时间不晚于校时事件的 logcat 观测点，再用跨 logcat/dmesg 的锚点估算偏移。共同事件优先用 dmesg 时间；其余事件再换算。默认还可能把 phase 1000 的日志与 sys.boot_completed Action 配对；它们有先后间隔，不是同一瞬间，偏移应结合 second-stage 等锚点复核。缺少必要锚点会使该轮无法形成有效结果，负向或多次校时也不能假定已被默认规则完整处理。dmesg 与 wall clock 的原值不能直接相减，报告需保留原始时间、换算规则和缺点情况。
 
 <!-- gracker-diagram: ch18-06-08-clock-align -->
 ![日志校时和跨源对齐保留近似与缺点](../../assets/diagrams/ch18/ch18-06-08-clock-align.png)
 
 图：先修正配置识别的 logcat 校时，再用跨源锚点估算与 dmesg 的偏移。 默认只匹配非负 diff，部分锚点是不同平台边界；缺锚点或多次校时不能默认为精确对齐。
 
-<!-- gracker-diagram: ch18-06-09-bootio -->
-![bootio 用进程快照观察服务运行后的窗口](../../assets/diagrams/ch18/ch18-06-09-bootio.png)
-
-图：r1 bootio 从 proc 读取进程与 CPU 计数，按参数形成快照，再持久化结果。 120 5 得到六份快照、五个约 24 秒间隔；main class 之前退出的进程不可补回，没有文件级调用链。
-
 ## bootio：先找 I/O 责任进程
 
-`bootio` 通过 kernel taskstats 接口读取进程级统计。它依赖以下 kernel 配置：
+bootio 的 r1 实现遍历 /proc，读取进程 io、stat、cmdline 等并采集 CPU 汇总；不能把 README 中的 TASKSTATS 配置要求解释成当前程序通过 taskstats netlink 获取所有数据。README 列出如下 kernel 配置，产品还需包含 bootio 模块并允许它读取目标 proc 节点：
 
 - `CONFIG_TASKSTATS=y`
 - `CONFIG_TASK_DELAY_ACCT=y`
 - `CONFIG_TASK_XACCT=y`
 - `CONFIG_TASK_IO_ACCOUNTING=y`
 
-它记录进程维度的启动 I/O，适合回答“谁读写得多”，不提供文件级调用链。下面的命令设置 120 秒窗口、采五次并在结束后清理控制文件：
+它保存进程级计数快照，不能补回 bootio 服务启动前已经退出的进程。r1 bootio.rc 把服务放在 main class，实际窗口始于该服务运行时，不是 kernel entry。下面的 120 5 表示约 120 秒内五个采样间隔：collector 先取一份，再每隔整数除法 120/5=24 秒取一份，共六份快照。它不是重启五次，采集耗时还包含遍历开销；timeout 上限 120，samples 上限 30，且 samples 不能超过 timeout。
 
 ```bash
-adb shell 'echo "120 5" > /data/misc/bootio/start'
+printf '120 5\n' | adb shell su root tee /data/misc/bootio/start
 adb reboot
-adb shell bootio -p
-adb shell rm /data/misc/bootio/start
+adb wait-for-device
+# 确认本轮 bootio 采集完成后再打印；wait-for-device 只表示 ADB 已连通。
+adb shell su root bootio -p
+adb shell su root rm /data/misc/bootio/start
 ```
 
-`/data/misc/bootio/start` 不会自动删除。若只看总字节数，仍无法区分顺序读、随机读、page cache（内核文件页缓存）命中或 block queue（块设备请求队列）等待；定位文件和等待原因还要接 ftrace/Perfetto。
+/data/misc/bootio/start 不会自动删除，实验结束后要清理；命令要求测试设备支持 su root，量产设备的权限不能由这些命令推定。r1 collector 从 /proc 读取计数且使用有限宽度字段，长窗口、大流量、进程消失或 PID 复用都要检查。总字节数仍不提供文件调用链或块队列等待，定位文件与关键路径要接文件访问记录、ftrace/Perfetto。
+
+<!-- gracker-diagram: ch18-06-09-bootio -->
+![bootio 用进程快照观察服务运行后的窗口](../../assets/diagrams/ch18/ch18-06-09-bootio.png)
+
+图：r1 bootio 从 proc 读取进程与 CPU 计数，按参数形成快照，再持久化结果。 120 5 得到六份快照、五个约 24 秒间隔；main class 之前退出的进程不可补回，没有文件级调用链。
 
 ## Perfetto：解释等待发生在哪里
 
@@ -270,16 +272,15 @@ bootanalyze 给出阶段，Perfetto 负责解释阶段内部的并发和等待�
 - `init`、Zygote、SystemServer 的 atrace slice；
 - 目标 HAL（framework 访问硬件实现的抽象接口）、SurfaceFlinger、SystemUI 和 Launcher 的自定义 slice。
 
-启动采集要在重启前安装 trace 配置，并确认 trace session 已经开始。普通的“设备起来后再执行 `perfetto`”会漏掉 kernel、first-stage init、APEX bootstrap 和 Zygote 前半段。
-采集配置、buffer 大小和 data source（事件来源）也要作为实验元数据保存，因为丢事件和 trace 开销都会改变结论。
-
-Android 17 的 `SystemServer.run()` 显式调用 `Producer.init(..., 4 * 1024)`，源码注释把它定义为 4 MiB 的 Perfetto producer shared-memory buffer。
-producer 是向 Perfetto 写入事件的一端；这块内存只服务于 system_server producer，不能当成整份 trace 的全局 buffer，也不能换算成“追踪精度提升多少”或“固定增加多少 CPU 开销”。
+启动采集应在重启前部署配置和下一次启动的启用条件，再验证新一次启动中 session 的实际开始时刻。标准 perfetto_trace_on_boot 在 /data 挂载、持久属性加载后，还需 traced 就绪才启动，并重置一次性启用属性；它不能恢复更早的 kernel、first-stage init 或已经结束的 APEX 工作。更早事件要另用 kernel boot tracing、bootloader/UART 或足够早启用的 ftrace，并明确各段覆盖。设备起来后才手工启动 perfetto 会进一步丢失前半程；采集配置、丢事件和 buffer 开销也须保存为实验元数据。
 
 <!-- gracker-diagram: ch18-06-10-perfetto-coverage -->
 ![标准 boottrace 的覆盖始于持久属性就绪之后](../../assets/diagrams/ch18/ch18-06-10-perfetto-coverage.png)
 
 图：重启前部署配置，重启后满足持久属性、启用条件与 traced 就绪门才启动标准 session。 session 不能补回更早的 kernel/first-stage 事件；更早 ftrace、UART 和 bootloader 证据需单独覆盖并校时。
+
+Android 17 的 `SystemServer.run()` 显式调用 `Producer.init(..., 4 * 1024)`，源码注释把它定义为 4 MiB 的 Perfetto producer shared-memory buffer。
+producer 是向 Perfetto 写入事件的一端；这块内存只服务于 system_server producer，不能当成整份 trace 的全局 buffer，也不能换算成“追踪精度提升多少”或“固定增加多少 CPU 开销”。
 
 <!-- gracker-diagram: ch18-06-11-producer-buffer -->
 ![system_server 的 4 MiB 是 producer 共享内存](../../assets/diagrams/ch18/ch18-06-11-producer-buffer.png)
@@ -288,8 +289,7 @@ producer 是向 Perfetto 写入事件的一端；这块内存只服务于 system
 
 ## `init` 的串行队列与进程并发
 
-`init` 的 Action 队列按 rc 文件解析顺序入队，队列中的 Action 依次执行，每个 Action 内的 command 也依次执行。
-Android 17 `init.cpp` 主循环每次调用一次 `ActionManager::ExecuteOneCommand()`，然后回到事件循环处理 property、子进程和控制消息。service 定义可由 init 启动和监管的进程。
+init 先处理到达的触发事件，再按已解析 Action 的顺序选出匹配项；匹配 Action 和其中的 command 依次执行，并非所有 rc 都不分触发条件按文件顺序执行。r1 主循环在没有 property/exec 等待时调用 ActionManager::ExecuteOneCommand()，随后继续处理事件与进程。service 定义由 init 启动和监管的进程。
 
 这不表示启动期间只能运行一个进程：
 
@@ -313,20 +313,33 @@ service vendor_prepare_cache /vendor/bin/prepare_cache
     disabled
     oneshot
 
+service vendor_consumer /vendor/bin/consumer
+    class main
+    user system
+    group system
+    disabled
+    oneshot
+
 on post-fs-data
+    setprop vendor.prepare_cache.ready 0
     start vendor_prepare_cache
 
 on property:vendor.prepare_cache.ready=1
     start vendor_consumer
 ```
 
-这种写法允许 `vendor_prepare_cache` 与其他 service 并发。安全性取决于 `vendor_consumer` 是否只在 ready property 之后启动，以及失败路径是否能超时、降级或阻止错误状态继续传播。
+这种写法允许 `vendor_prepare_cache` 与其他 service 并发。这个片段只定义了 producer，vendor_consumer 还需在其他 rc 中定义并设为 disabled，避免随 class main 提前启动；producer 成功完成后才应设置 ready。还要为重复启动清理旧 ready 值，并为失败设置超时、降级或错误传播。
+
+<!-- gracker-diagram: ch18-06-13-ready-dependency -->
+![用 ready 状态表达 producer 到 consumer 的依赖](../../assets/diagrams/ch18/ch18-06-13-ready-dependency.png)
+
+图：两个 disabled service 不靠 class 自动启动，producer 完成后通过明确状态放行 consumer。 图表示依赖条件；厂商程序和 SELinux 策略需配套，重复启动清旧状态，失败需有超时或降级。
 
 ### `class_start` 的边界
 
 Android 17 `do_class_start()` 遍历 `ServiceList`，对属于目标 class 的 service 调用 `StartIfNotDisabled()`。它有三点容易写错：
 
-- `disabled` service 不随 class 自动启动。
+- persist.init.dont_start_class.<class>=true 时，整组 class_start 直接返回；其他情况下，disabled service 仍不随 class 自动启动。
 - 单个 service 启动失败会记日志，遍历仍会继续。
 - class 只提供分组，不表达 service 之间的依赖图。
 
@@ -339,30 +352,25 @@ Android 17 `do_class_start()` 遍历 `ServiceList`，对属于目标 class 的 s
 
 ### event trigger 与 property trigger
 
-`on boot && property:x=y` 只在 `boot` event 发生时检查组合条件。如果 `boot` 已经过去，property 随后才变成 `y`，这条 Action 不会补跑。只依赖 property 的 `on property:x=y` 会在属性变成目标值时触发；`boot` event 的末条 command 执行完以后，init 还会对全部 property trigger 做一次检查，执行当时已经满足条件的 Action。
-
-持久化 property 还有额外顺序边界：当 `ro.property_service.async_persist_writes=true` 时，写入持久化存储的 setprop 与普通 setprop 触发顺序没有定义。修改 rc 时要用状态机或显式 property 表达依赖，不能依赖日志里一次偶然的顺序。
+on boot && property:x=y 在 boot 事件匹配时检查组合条件；boot 已过去后才把 x 设成 y，不会补跑这个组合 Action。仅 property 的 Action 在初始统一检查前不会随每次属性更新触发；boot 事件末条命令之后进行一次统一检查，此后相关属性新建或变更时再检查。将 ready 写成 property 依赖前要确认这个门控时点，不能假设任意早期 setprop 都立即执行 consumer。
 
 <!-- gracker-diagram: ch18-06-15-trigger-gates -->
 ![property 初始检查与 event 条件的时点不同](../../assets/diagrams/ch18/ch18-06-15-trigger-gates.png)
 
 图：纯 property 的初始统一检查与后续变更触发分开，组合 event 条件只在该 event 时检查。 boot 已过后才满足属性不会补跑 event Action；异步持久属性写入不能提供跨属性固定顺序。
 
+持久化 property 还有额外顺序边界：当 `ro.property_service.async_persist_writes=true` 时，写入持久化存储的 setprop 与普通 setprop 触发顺序没有定义。修改 rc 时要用状态机或显式 property 表达依赖，不能依赖日志里一次偶然的顺序。
+
 ### APEX rc 与 `updatable` service
 
-Android 17 会处理 `/apex/*/etc/*rc`，并按 SDK 后缀选择适用的版本化 rc。标记为 `updatable` 的 service 如果在 APEX 激活完成前收到启动请求，init 会把启动延后；没有 `updatable` 标记的 service 不能由 APEX 中的定义覆盖。
-
-启动回归不能只检查 `/system/etc/init/hw/init.rc`。vendor、odm、APEX 和硬件专用 rc 都可能新增 Action、service 或 property 等待。
-
-<!-- gracker-diagram: ch18-06-13-ready-dependency -->
-![用 ready 状态表达 producer 到 consumer 的依赖](../../assets/diagrams/ch18/ch18-06-13-ready-dependency.png)
-
-图：两个 disabled service 不靠 class 自动启动，producer 完成后通过明确状态放行 consumer。 图表示依赖条件；厂商程序和 SELinux 策略需配套，重复启动清旧状态，失败需有超时或降级。
+Android 17 会处理 /apex/*/etc/*rc，按相同基名选择不超过当前 SDK 的最高 .#rc；无版本 .rc 按 SDK 0。这个版本化选择只适用于 APEX 内 rc，不自动推广到 vendor/system 目录。标记为 `updatable` 的 service 如果在 APEX 激活完成前收到启动请求，init 会把启动延后；没有 `updatable` 标记的 service 不能由 APEX 中的定义覆盖。
 
 <!-- gracker-diagram: ch18-06-16-apex-rc -->
 ![APEX rc 的版本选择与 service 激活约束分开](../../assets/diagrams/ch18/ch18-06-16-apex-rc.png)
 
 图：APEX 内同基名 rc 选择最高适用 SDK 版本，updatable service 的执行还受激活状态约束。 版本化规则限定 APEX rc；声明可覆盖、选中 rc 与服务已执行是三层条件。
+
+启动回归不能只检查 `/system/etc/init/hw/init.rc`。vendor、odm、APEX 和硬件专用 rc 都可能新增 Action、service 或 property 等待。
 
 ## kernel：以 android17-6.18-2026-06_r6 为准
 
@@ -371,7 +379,12 @@ Android 官方 kernel boot-time 指南给出的优化方向，在 6.18 锚点上
 
 ### 选择性异步 probe
 
-`android17-6.18-2026-06_r6` 的 `drivers/base/dd.c` 会根据 driver 的 `probe_type` 和 `driver_async_probe=` 选择同步或异步 attach。Android 模块还可以通过 `<module>.async_probe=1` 启用异步 probe。
+`android17-6.18-2026-06_r6` 的 `drivers/base/dd.c` 会根据 driver 的 `probe_type` 和 `driver_async_probe=` 选择同步或异步 attach。模块可通过相应 async_probe 参数请求异步 probe；但 PROBE_FORCE_SYNCHRONOUS 明确禁止异步，PROBE_PREFER_ASYNCHRONOUS 直接允许，只有默认类型才进一步检查 driver_async_probe 和 module 请求。它们改变的是 driver core 的 probe 策略，不保证任意 module_init 函数都整体后台执行。
+
+<!-- gracker-diagram: ch18-06-17-async-probe -->
+![probe_type 优先于命令行和 module 异步请求](../../assets/diagrams/ch18/ch18-06-17-async-probe.png)
+
+图：driver core 先按 probe_type 判断，只有默认类型才查询命令行和 module 请求。 异步 probe 不等于整个 module_init 都后台执行；supplier 未就绪要正确 defer 并验证显示、触摸和恢复路径。
 
 适合评估的对象通常有：
 
@@ -383,11 +396,6 @@ Android 官方 kernel boot-time 指南给出的优化方向，在 6.18 锚点上
 显示、存储、clock、regulator（稳压器）、thermal（温控）等依赖若表达错误，耗时会从 module load 转成更晚的同步等待或功能故障。
 
 官方文档给出的异步 probe 示例收益是 100–500 ms，移动非必要 module 到 second-stage init 的示例收益是 500–1000 ms。这些数字取决于硬件和 driver，只能用来说明量级，不能直接写进产品收益预期。
-
-<!-- gracker-diagram: ch18-06-17-async-probe -->
-![probe_type 优先于命令行和 module 异步请求](../../assets/diagrams/ch18/ch18-06-17-async-probe.png)
-
-图：driver core 先按 probe_type 判断，只有默认类型才查询命令行和 module 请求。 异步 probe 不等于整个 module_init 都后台执行；supplier 未就绪要正确 defer 并验证显示、触摸和恢复路径。
 
 ### first-stage 与 second-stage module
 
@@ -425,7 +433,7 @@ primary Zygote 负责设备主 ABI（应用二进制接口，例如 `arm64-v8a`�
 - `android`、`jnigraphics` 等 shared library；
 - text/font cache 与 compatibility rules；
 - flag 开启时的 `HttpEngine.preload()`；
-- WebView Zygote 准备和 JCA provider warm-up；JCA 是 Java Cryptography Architecture，provider 是其密码算法实现方。
+- WebViewFactory.prepareWebViewInZygote() 的共享准备和 JCA provider warm-up；这里不能等同于已经创建 WebView 专用 Zygote。JCA 是 Java Cryptography Architecture，provider 是其密码算法实现方。
 
 preload 会增加 boot 阶段的 CPU、I/O 和 page fault，同时让 fork 后进程复用更多已初始化状态。删减预加载项时要同时测系统 boot、首个 App、首个 WebView、PSS（按共享页比例折算的进程内存）和连续启动。
 
@@ -476,14 +484,14 @@ Android 17 `SystemServer.run()` 的主线结构是：
 
 ### SystemConfig 早期并发
 
-r1 无条件调用 `startSystemConfigInit()`，方法把 `SystemConfig::getInstance` 提交给 `SystemServerInitThreadPool`。后续 consumer 第一次取 `SystemConfig` 时，如果后台工作尚未完成，仍可能在那里等待。
-
-优化方向应围绕“提交是否足够早、consumer 在哪里 join、配置扫描是否变重”展开。源码仅证明并发结构，不能推出固定的毫秒收益。
+r1 在正常 SystemServer 初始化主线无条件调用 startSystemConfigInit()，将 SystemConfig::getInstance 提交到线程池；提交用的 ReadingSystemConfig slice 不是后台扫描的完整耗时。SystemConfig.getInstance() 在类锁内创建单例，consumer 若在扫描完成前进入，会在这个锁上等待，而不是必须通过主线程持有的 Future.get() join。
 
 <!-- gracker-diagram: ch18-06-22-systemconfig -->
 ![SystemConfig 的并发点与类锁等待分别观察](../../assets/diagrams/ch18/ch18-06-22-systemconfig.png)
 
 图：早期提交 SystemConfig 可以与其他初始化重叠，consumer 是否等待取决于单例创建是否完成。 ReadingSystemConfig 提交 slice 不覆盖完整后台扫描；consumer 通过 SystemConfig 类锁等待，不必出现 Future.get。
+
+优化方向应围绕“提交是否足够早、consumer 在哪里 join、配置扫描是否变重”展开。源码仅证明并发结构，不能推出固定的毫秒收益。
 
 ### ART Mainline 的早期初始化
 
@@ -514,15 +522,14 @@ r1 无条件调用 `startSystemConfigInit()`，方法把 `SystemConfig::getInsta
 
 图：SystemServer 完成前面的 platform service 分组后启动 APEX 声明的 service，最后封闭注册集合。 这是服务依赖与更新稳定性约束，不证明 APEX 挂载并行收益；apexd 日志三点仍需更细证据解释。
 
+### Boot phase：阶段边界与可选 callback 并行
+
+Android 17 的 SystemServer 触发 PHASE_WAIT_FOR_DEFAULT_DISPLAY、PHASE_WAIT_FOR_SENSOR_SERVICE、PHASE_SYSTEM_SERVICES_READY、PHASE_ACTIVITY_MANAGER_READY、PHASE_THIRD_PARTY_APPS_CAN_START 等递增阶段。r1 startBootPhase() 先按 Flags.parallelizeOnbootphase() 与 service.getBootPhaseSerial(phase) 分组：关闭开关时全部串行；开启时先执行串行组，再把未标为串行的 callback 提交到 SystemServerInitThreadPool，等待全部 Future.get() 后才结束该阶段。阶段号本身不描述服务依赖图；并行是否实际发生要核对产品 flag、各服务 phase 标记和 trace，不能把所有 callback 都画成串行或假定跨阶段自由并行。
+
 <!-- gracker-diagram: ch18-06-25-phase-barrier -->
 ![boot phase 可选并行：串行组之后有完成屏障](../../assets/diagrams/ch18/ch18-06-25-phase-barrier.png)
 
 图：r1 开关开启时先执行串行 callback，再提交其余 callback，并等待所有 Future 完成。 开关关闭则全串行；phase 标记和依赖须逐服务核实，图示两任务数量与执行时长都不是实测。
-
-### Boot phase 不是任务并行模型
-
-Android 17 的 SystemServer 会触发 `PHASE_WAIT_FOR_DEFAULT_DISPLAY`、`PHASE_WAIT_FOR_SENSOR_SERVICE`、`PHASE_SYSTEM_SERVICES_READY`、`PHASE_ACTIVITY_MANAGER_READY`、`PHASE_THIRD_PARTY_APPS_CAN_START` 等阶段。
-`SystemServiceManager.startBootPhase()` 按已启动 service 调用 `onBootPhase()`；阶段号是通知各服务进入某个生命周期边界的编号，不是自动并行的任务调度器。
 
 平台新增 service 时，应记录：
 
@@ -559,7 +566,7 @@ lmkd 是 low memory killer daemon，在内存压力下协助选择并结束进�
 
 ## bootstat：适合版本看板的持久化事件
 
-`bootstat` 把事件名和相对时间持久化。这里的相对时间通常是 uptime，即从本次系统启动起经过的时间。Android 17 的 `bootstat.rc` 在第一次 `sys.boot_completed=1` 时执行：
+bootstat 可持久化事件名与整数值，单位必须按事件解释：-r 自定义事件以 boot_clock/CLOCK_BOOTTIME 的整数秒记录，包含休眠；RecordBootComplete() 用毫秒记录 boot_complete 等值，并减去可选 ro.boot.boottime_offset。不能把两类值都当 uptimeMillis，或把容器内自定义 -r 与 boot_complete 无条件相减。r1 bootstat.rc 用 sys.bootstat.first_boot_completed 门控，一次完整重启只在首次 sys.boot_completed=1 后提交下列采集，userspace reboot 不会自动重新提交同一组指标：
 
 - `--record_boot_complete`
 - `--record_boot_reason`
@@ -572,12 +579,12 @@ event 字段只有在 init 的 event timestamp flag 开启并成功写入 proper
 下面的命令用于记录自定义事件并检查本机事件：
 
 ```bash
-adb shell bootstat -r vendor_display_ready
-adb shell bootstat -p
-adb shell bootstat -l
+adb shell su root bootstat -r vendor_display_ready
+adb shell su root bootstat -p
+adb shell su root bootstat -l
 ```
 
-`-r` 记录执行命令时的系统 uptime。r1 的 `-l` 实现会把已支持的事件映射到 bootstats atoms；atom 是 statsd 使用的结构化事件类型。README 中“EventLog/Tron histogram”的描述已经落后于当前实现。
+-r 记录执行命令时的 CLOCK_BOOTTIME 整数秒；命令需有事件目录的读写权限，以上示例使用 su root。这个主机下发的自定义点有 ADB 延迟与秒级量化，不宜冒充精确的显示 ready 硬件时间。r1 的 `-l` 实现会把已支持的事件映射到 bootstats atoms；atom 是 statsd 使用的结构化事件类型。README 中“EventLog/Tron histogram”的描述已经落后于当前实现。
 自定义事件仍可持久化和打印，但没有 `kBootEventToAtomInfo` 映射时不会作为受支持 atom 写出。
 
 <!-- gracker-diagram: ch18-06-27-bootstat -->
@@ -591,7 +598,7 @@ adb shell bootstat -l
 
 | 层级 | 典型现象 | 证据 | 调整方向 |
 |---|---|---|---|
-| 文件 | APK/JAR/APEX/配置被过早扫描 | file access、bootio、page cache | 延迟非关键读取、减少重复扫描 |
+| 文件 | APK/JAR/APEX/配置被过早扫描 | file access、文件映射与 page cache；bootio 仅辅助定位进程 | 延迟非关键读取、减少重复扫描 |
 | block/fs | queue 等待、读放大、verity、fsck | block/ext4/f2fs trace | I/O scheduler、read ahead、文件布局 |
 | memory mapping | major fault、mmap 抖动、解压 | page fault + sched + file map | 热点布局、预加载清单、压缩策略 |
 
@@ -613,7 +620,7 @@ OTA 后 checkpoint、pre-reboot dexopt artifact 提交、APEX 切换和首次包
 
 page size 是内核管理虚拟内存和文件映射的基本页粒度。Android Developers 的 16 KB page size 文档给出一组初始测试：system boot time 平均改善 8%，约 950 ms，同时说明不同设备结果会变化。这个数字是官方测试样本，不是 Android 17 所有设备的保证。
 
-比较 4 KB 与 16 KB 时，page table、mmap、page fault、ELF 对齐、文件系统和设备内存都发生了变化。应把 page size 写入样本维度，并使用同一硬件、同一 build 配置和同一启动类型做 A/B。不能把跨设备差异归到某个 SystemServer service。
+比较 4 KB 与 16 KB 时，页表、mmap 和 page fault 的粒度与成本可能变化，还需满足 native ELF 与 ZIP 对齐要求；文件系统或存储硬件不一定随页大小自动改变。将 page size 写入样本维度，在同一硬件并尽量固定文件系统、存储、镜像功能和启动类型下比较两个可用构建，另列为支持 16 KB 必须做的构建差异。不能把跨设备或其他配置差异归到某个 SystemServer service。
 
 <!-- gracker-diagram: ch18-06-29-page-size -->
 ![16 KB 实验固定硬件并列明必要构建差异](../../assets/diagrams/ch18/ch18-06-29-page-size.png)
@@ -699,3 +706,10 @@ KeyMint 管理硬件支持的密钥与密码操作，Gatekeeper 负责锁屏凭�
 - [AOSP r1：DexOptHelper.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/DexOptHelper.java)
 - [AOSP r1：ArtManagerLocal.java](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagerLocal.java)
 - [AOSP kernel：android17-6.18-2026-06_r6 driver core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/dd.c)
+
+- [r1：android-boot-tracing.md](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/case-studies/android-boot-tracing.md)
+- [r1：perfetto.rc](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/perfetto.rc)
+- [r1：bootio_collector.cpp](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/boottime_tools/bootio/bootio_collector.cpp)
+- [r1：action_manager.cpp](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/init/action_manager.cpp)
+- [r1：SystemService.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/SystemService.java)
+- [r1：boot_event_record_store.cpp](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/bootstat/boot_event_record_store.cpp)

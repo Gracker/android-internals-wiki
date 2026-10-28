@@ -4,7 +4,8 @@ chapter: '15.5'
 section: '15.5'
 status: finalized
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
-last_verified: '2026-08-13'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1 PowerMonitorReadings.java / PowerStatsService.java / BatteryUsageStatsQuery.java / android_power_config.proto / power_rails.sql
 confidence: medium
 sources:
@@ -37,7 +38,7 @@ Historian 更适合回看较长时间内的 WakeLock（用来阻止设备进入�
 
 ## 按问题选择证据
 
-ODPM（On-Device Power Monitoring）是设备端硬件功耗计量，通常由 Power Stats HAL（功耗统计硬件抽象层）向 Android framework 提供。`uWs` 表示微瓦秒，数值上等于微焦耳。`statsd` 是 Android 在后台收集结构化统计事件的系统服务。
+ODPM（On-Device Power Rails Monitor，设备端电源轨监控器）是设备端硬件功耗计量，通常由 Power Stats HAL（功耗统计硬件抽象层）向 Android framework 提供。`uWs` 表示微瓦秒，数值上等于微焦耳。`statsd` 是 Android 在后台收集结构化统计事件的系统服务。
 
 | 要回答的问题 | 优先工具 | 数据含义 | 不能直接证明什么 |
 |---|---|---|---|
@@ -84,7 +85,12 @@ adb bugreport bugreport.zip
 adb shell dumpsys batterystats --disable full-wake-history
 ```
 
-`--reset` 会清除当前统计和历史，应在确认不需要保留现场后执行。完整 WakeLock 历史会占用更多历史缓冲区，即历史事件的有限内存空间，只应覆盖目标测试窗口。测试阶段断开 USB，是为了让 BatteryStats 进入 on-battery（电池供电）统计口径；抓取 bugreport 时重新连接不会抹掉前面的历史。
+`--reset` 会清除当前统计和历史，应在确认不需要保留现场后执行。完整 WakeLock 历史会占用更多历史缓冲区，即历史事件的有限内存空间，只应覆盖目标测试窗口。示例假设开始前该开关已关闭；若原本开启，结束时应保持原状态，不能无条件关闭来声称已经恢复。测试阶段断开 USB，是为了让 BatteryStats 进入 on-battery（电池供电）统计口径；重连后应尽快抓取报告，并核对统计起点、RESET 标记和历史覆盖范围；重启、自动 reset 或历史裁剪仍可能让窗口不完整，不能保证所有早期记录都保留。
+
+<!-- gracker-diagram: ch15-05-02-bugreport-capture -->
+![受控 BatteryStats 窗口与 bugreport 采集](../../assets/diagrams/ch15/ch15-05-02-bugreport-capture.png)
+
+图：先保存旧现场和原开关状态，再执行固定电池供电场景，并尽快保存报告。 reset、重启、自动清零与历史裁剪会影响窗口；详细 history 应恢复原状态。
 
 Android 7.0 及更高版本使用 zip bugreport。报告可能含账号、网络、应用、日志和设备状态等敏感信息，不应上传到不受信任的在线 Historian 服务。
 
@@ -107,7 +113,7 @@ docker run -p 9999:9999 \
 | 行或区域 | 表示什么 | 合理的下一步 |
 |---|---|---|
 | Battery level | 电池计量芯片报告的剩余百分比变化 | 长窗口观察趋势；短窗口不要依赖百分比差值 |
-| CPU running | 系统至少有一个 CPU 处于运行状态 | 与 WakeLock、alarm、job 和 Perfetto `sched` 调度数据交叉检查 |
+| CPU running | BatteryStats 历史记录的 CPU 未处于 suspend 状态；不等于某个线程持续忙碌 | 与 WakeLock、alarm、job 和 Perfetto `sched` 调度数据交叉检查 |
 | Userspace wakelock | 记录到历史中的应用 WakeLock 活动 | 按 UID 与 tag 查累计次数、时长和调用代码 |
 | Top app | 当时处于前台的应用 | 只用来提供场景上下文，不能当成功耗排名 |
 | JobScheduler / SyncManager | job 或同步活动窗口 | 核对周期、约束、停止原因和业务触发条件 |
@@ -121,7 +127,7 @@ docker run -p 9999:9999 \
 
 bugreport 生成时仍被持有的锁值得检查，但这不自动等于泄漏。录音、导航、媒体播放等任务可能合法持锁，应根据持锁原因、生命周期和时长是否与用户可见任务一致来判断。
 
-Partial WakeLock 在屏幕关闭时仍可让 CPU 保持运行。Android vitals 把 24 小时内合计达到 2 小时的后台或前台服务 Partial WakeLock 视为过度使用，并排除音频、定位和 JobScheduler user-initiated API（由用户明确操作发起的任务 API）等部分场景。
+Partial WakeLock 在屏幕关闭时仍可阻止 CPU suspend，但不要求 CPU 全程执行工作。Android vitals 把 24 小时内合计达到 2 小时的后台或前台服务 Partial WakeLock 视为过度使用，并排除音频、定位和 JobScheduler user-initiated API（由用户明确操作发起的任务 API）等部分场景。
 
 过去 28 天内，若受这类过度使用影响的用户会话占比超过 5%，应用在 Google Play 上的展示可能受影响。这些阈值用于线上质量统计，不能替代本地场景的需求判断。
 
@@ -141,12 +147,6 @@ Historian 页面打不开时，BatteryStats 文本仍然可用。Android 17 的 
 下面的命令用于保留不同粒度的原始证据。
 
 ```bash
-
-<!-- gracker-diagram: ch15-05-02-bugreport-capture -->
-![受控 BatteryStats 窗口与 bugreport 采集](../../assets/diagrams/ch15/ch15-05-02-bugreport-capture.png)
-
-图：先保存旧现场和原开关状态，再执行固定电池供电场景，并尽快保存报告。 reset、重启、自动清零与历史裁剪会影响窗口；详细 history 应恢复原状态。
-
 # 人类可读的当前统计
 adb shell dumpsys batterystats > batterystats.txt
 
@@ -189,7 +189,7 @@ Historian 能显示运行窗口和累计次数。下一步应检查调度 API、
 
 ### CPU 活动持续
 
-CPU running 只能说明设备没有完全休眠。要定位 CPU 时间花在何处，需要 System Trace 或 simpleperf（Android 的 CPU 采样性能工具）：
+CPU running 表示 BatteryStats 记录的 CPU awake 状态，不能证明 CPU 一直忙，也不能用来替代每核 idle 或线程运行时间。要定位 CPU 时间花在何处，需要 System Trace 或 simpleperf（Android 的 CPU 采样性能工具）：
 
 - Perfetto 的 `sched` 是 Linux 调度器事件，可查哪些线程在运行、被谁唤醒、是否被抢占；
 - CPU frequency 和 idle 数据分别记录频率与空闲状态；
@@ -229,35 +229,39 @@ data_sources {
 duration_ms: 30000
 ```
 
-`RING_BUFFER` 表示缓冲区写满后覆盖最旧数据。降低 `battery_poll_ms` 会提高轮询时间分辨率，也会增加采集负担；这个参数不代表硬件的内部采样率。rail 通常是设备本次开机以来的累计能量 counter，UI 或 SQL 用相邻样本相减（差分）得到窗口能量和平均功率。设备没有 ODPM 时，trace 可能只有 battery capacity、charge、current 等读数。
-
-Android 17 的 Perfetto SQL 标准库已经提供 `android.power_rails` 模块。下面的查询用于读取每条 rail 的相邻样本区间。
-
-```sql
-INCLUDE PERFETTO MODULE android.power_rails;
-
-SELECT
-  power_rail_name,
-  ts,
-  dur,
-  energy_delta,
-  average_power
-FROM android_power_rails_counters
-WHERE dur > 0
-ORDER BY ts, power_rail_name;
-```
-
-`ts` 是区间起点时间戳，`dur` 是区间时长。`energy_delta` 的单位是 `uWs`，数值上等于微焦耳；`average_power` 的单位是 mW。模块会跳过没有形成有效相邻区间的尾部样本。分析时还应同时查询目标进程、线程调度和应用 trace section，避免把系统后台活动算给目标应用。
+`RING_BUFFER` 表示缓冲区写满后覆盖最旧数据。降低 `battery_poll_ms` 会提高请求轮询的频率，也会增加采集负担；A17 producer 对 0 使用默认 1,000 ms，对小于 100 ms 的值上调到 100 ms。轮询参数不代表硬件内部采样率或结果一定更新。rail 通常是设备本次开机以来的累计能量 counter，UI 或 SQL 用能量差与读数时间差得到区间能量和平均功率；应使用实际样本时间，不能把调用间隔或轮询配置当成读数间隔。设备没有 ODPM 时，trace 可能只有 battery capacity、charge、current 等读数。
 
 <!-- gracker-diagram: ch15-05-06-perfetto-power-path -->
 ![Perfetto android.power 的轮询与时间戳](../../assets/diagrams/ch15/ch15-05-06-perfetto-power-path.png)
 
 图：producer 周期请求硬件与系统计量，将累计能量和读数时间写入 trace，再由 parser 建立 rail 轨道。 轮询最小 100 ms、0 使用默认 1 秒；这不保证 HAL 更新率，ring buffer 还可能覆盖开头描述符。
 
+Android 17 的 Perfetto SQL 标准库已经提供 `android.power_rails` 模块。下面的查询保留 track 身份，并读取每条 rail 的前向区间；排除没有下一读数和 counter 回退的区间。
+
 <!-- gracker-diagram: ch15-05-07-backward-versus-forward -->
 ![power_rails 的向后差值与前向平均功率](../../assets/diagrams/ch15/ch15-05-07-backward-versus-forward.png)
 
 图：标准库 energy_delta 相对前值，而 average_power 使用下一读数；前向区间能量要显式用 end 减 start。 图为合成示例；57.2/58.2 真实导入均复现该区别，不能把两列直接当作同一区间。
+
+```sql
+INCLUDE PERFETTO MODULE android.power_rails;
+
+SELECT
+  track_id,
+  power_rail_name,
+  raw_power_rail_name,
+  ts,
+  dur,
+  energy_since_boot_at_end - energy_since_boot AS interval_energy_uws,
+  average_power
+FROM android_power_rails_counters
+WHERE dur > 0
+  AND energy_since_boot_at_end IS NOT NULL
+  AND energy_since_boot_at_end >= energy_since_boot
+ORDER BY track_id, ts;
+```
+
+`ts` 是区间起点时间戳，`dur` 是纳秒时长。这里计算的 `interval_energy_uws` 是本行 `[ts, ts + dur)` 的前向能量差，单位为 `uWs`，数值上等于微焦耳；`average_power = interval_energy_uws × 10^6 / dur`，单位为 mW。库原有 `energy_delta` 列是相对前一个保留样本的差，不能拿它与本行前向平均功率配对。模块可能保留到 trace 末尾的尾部区间而使 next value 和功率为 NULL，因此查询显式过滤；重复值也可能经过区间宏合并，`dur` 不保证等于轮询配置。分析时还应同时查询目标进程、线程调度和应用 trace section，避免把系统后台活动算给目标应用。指定业务窗口时，要处理跨边界区间并说明裁剪或插值假设；不能只按起点落在窗口内就把整个区间的能量算入。被过滤的回退、缺样或覆盖不足也应单独记录，不能解释成零耗电。
 
 <!-- gracker-diagram: ch15-05-08-rail-interval-quality -->
 ![计算窗口能量前的区间检查](../../assets/diagrams/ch15/ch15-05-08-rail-interval-quality.png)
@@ -290,7 +294,7 @@ Macrobenchmark 是 AndroidX 在真实设备上反复运行整个应用场景的�
 
 高精度 Power/Energy 指标的官方支持范围是 Pixel 6、Pixel 6 Pro 及后续设备，结果表示整个系统在测试窗口中的消耗。Power 是平均功率，Energy 是窗口内的能量，Battery 则基于电池计量值。
 
-下面的基准在运行前检查高精度能力，再采集 CPU、Display 与 Network 能量。
+下面的基准要求 AndroidX Benchmark 1.3.0 或更新版本，因为设备能力预检方法在 1.3.0 加入；它在运行前检查高精度能力，再采集 CPU、Display 与 Network 能量。
 
 ```kotlin
 @OptIn(ExperimentalMetricApi::class)
@@ -325,7 +329,7 @@ class PowerBenchmark {
 }
 ```
 
-基准输出会包含选定的 category（CPU、Display、Network 等大类）、其下的 component（具体计量组件）、total、unselected 和 uncategorized 等指标。unselected 是设备支持但未被选中的类别，uncategorized 是无法映射到已知类别的读数。
+上例各类别使用 `PowerCategoryDisplayLevel.TOTAL`，请求 category（CPU、Display、Network 等大类）的汇总；需要各 component（具体计量组件）时应选 `BREAKDOWN`。Power/Energy 结果还会提供 total、unselected 和 uncategorized 等汇总，具体输出取决于配置和设备数据。unselected 是设备支持但未被选中的类别，uncategorized 是无法映射到已知类别的读数。
 
 `Type.Battery` 可作为没有高精度 rail 时的较粗替代，并可用 `deviceBatteryHasMinimumCharge()` 预检。两种模式的统计口径不同，不能混在同一回归序列里。
 
@@ -338,12 +342,12 @@ CI（持续集成）设备还需要固定系统镜像、充电控制、热状态
 
 ## API 35+ `PowerMonitor`
 
-`PowerMonitor` 是设备通过 framework 公开的逻辑能量计。`SystemHealthManager.getSupportedPowerMonitors()` 返回当前设备可用的 monitor；设备没有实现对应能力时，回调会得到空列表。`PowerMonitor` 分两类：
+`PowerMonitor` 是设备通过 framework 公开的逻辑能量计。`SystemHealthManager.getSupportedPowerMonitors()` 返回当前设备可用的 monitor；设备没有实现对应能力、服务不可用或相关功能被关闭时，回调可能得到空列表。示例应运行于提供该公开 API 的 API 35+ 平台，并先检查列表，不能仅靠系统版本推定有数据。`PowerMonitor` 分两类：
 
 - `POWER_MONITOR_TYPE_MEASUREMENT`：直接测量的 rail，名称与含义由设备定义；
 - `POWER_MONITOR_TYPE_CONSUMER`：某个子系统的能量消费者，可能直接来自 rail，也可能组合、拆分或建模。
 
-monitor 的 index 只是当前开机期间的数字标识，重启后不保证稳定。应用应在当前进程中使用枚举返回的对象，不能把 index 持久化为设备协议。
+源码内部的 monitor index 只是当前开机期间的数字标识，重启后不保证稳定。应用应在当前进程中使用枚举返回的对象，不能把 index 持久化为设备协议。
 
 下面的代码展示一次完整枚举和异步读取。它读取累计能量，不在回调里假设 monitor 名称。
 
@@ -391,48 +395,48 @@ averagePower_mW =
     (timestamp2_ms - timestamp1_ms)
 ```
 
-因为 `1 uWs / 1 ms = 1 mW`，公式不需要额外的 1000 倍换算。两次读数必须来自同一 `PowerMonitor` 对象和同一次开机，时间差还要大于服务端缓存与设备采样周期。
-
-### Android 17 的新鲜度与随机化
-
-`PowerStatsService` 在 API 37 使用两组缓存：
-
-- 普通调用方的最大缓存年龄是 20,000 ms；
-- 持有 `ACCESS_FINE_POWER_MONITORS` 的调用方使用 fine 缓存，最大年龄是 250 ms。
-
-`ACCESS_FINE_POWER_MONITORS` 是 `signature|privileged|development` 权限，普通三方应用无法获得，并且该权限受 feature flag（平台功能开关）控制。这里的 20 秒和 250 ms 是服务端允许的最大缓存年龄，不是硬件固定采样率。
-
-读取返回前，服务还会调用 `IntervalRandomNoiseGenerator.addNoise()`。Android 17 的上下界是：
-
-```text
-low  = max(previousEnergyUws, currentEnergyUws - 10_000_000)
-high = currentEnergyUws
-```
-
-`10_000_000 uWs` 等于 10 J。Beta 分布是一种概率分布，取值范围限定在一个区间内；这里的参数 `alpha=50` 会让样本更靠近 high。同一调用 UID 在一次 refresh（缓存刷新）周期内复用同一样本。
-
-这个算法既不是对称的 ±10%，也不能描述成固定 10 mWs 误差。源码在选择普通或 fine 缓存后都会经过该随机化步骤；fine 权限只提高读数新鲜度，不会返回“完全无噪声”的值。
-
-PowerMonitor 因此不适合作为毫秒级实时控制信号。它适合对比受控窗口内的累计能量；频繁轮询、过短的相邻样本差分和跨设备固定阈值，都会放大缓存、随机化和硬件差异的影响。
+因为 `1 uWs / 1 ms = 1 mW`，公式不需要额外的 1000 倍换算。两次读数必须来自同一设备、同一次开机和同一枚举结果中的 monitor 身份。两端能量都必须有效，读数时间戳必须确实前进，能量回退应先诊断；不要把两次调用的墙钟间隔作为分母。选择足够长的受控窗口，并核对实际读数更新，以降低缓存、随机化与硬件采样的影响。
 
 <!-- gracker-diagram: ch15-05-11-monitor-identity-and-delta -->
 ![PowerMonitor 的枚举、读取与差分守卫](../../assets/diagrams/ch15/ch15-05-11-monitor-identity-and-delta.png)
 
 图：使用当前枚举结果读取 monitor，保留设备、开机身份、读数能量和 elapsed realtime 时间，再判断能否差分。 空列表、错误回调、无效能量、时间未前进或回退都不能硬算功率；µWs / ms 才是 mW。
 
+### Android 17 的新鲜度与随机化
+
+`PowerStatsService` 在 API 37 使用两组缓存：
+
+- 普通调用方的缓存刷新尝试阈值是 20,000 ms；
+- 持有 `ACCESS_FINE_POWER_MONITORS` 的调用方使用 fine 缓存，刷新尝试阈值是 250 ms。
+
+`ACCESS_FINE_POWER_MONITORS` 是 `signature|privileged|development` 权限，并受 feature flag（平台功能开关）控制；普通线上应用不能依靠运行时权限弹窗取得它。20 秒和 250 ms 是服务端判断是否尝试刷新缓存的年龄阈值；HAL 刷新失败或仍返回旧样本时，并不保证实际读数达到该新鲜度，也不是硬件固定采样率。
+
 <!-- gracker-diagram: ch15-05-12-cache-refresh-policy -->
 ![20 秒与 250 毫秒是刷新尝试阈值](../../assets/diagrams/ch15/ch15-05-12-cache-refresh-policy.png)
 
 图：普通和 fine 请求选择不同缓存及年龄阈值，过期时尝试向 HAL 刷新。 阈值不保证实际样本新鲜度；HAL 失败或仍返回旧样本时，要检查结果时间戳，不能声称硬件固定频率。
+
+返回循环只在当前和上一次缓存能量都不为 `ENERGY_UNAVAILABLE` 时调用 `IntervalRandomNoiseGenerator.addNoise()`；首次有效读数或尚无前值时会直接返回当前值。满足该条件时，Android 17 的上下界是：
+
+```text
+low  = max(previousEnergyUws, currentEnergyUws - 10_000_000)
+high = currentEnergyUws
+```
+
+`10_000_000 uWs` 等于 10 J。Beta 分布是一种概率分布，取值范围限定在一个区间内；这里的参数 `alpha=50` 会让样本更靠近 high。生成器用 `UID % 17` 选择一个缓存槽；在 `refresh()` 之间复用该槽的分布抽样因子，同槽的不同 UID 也会复用因子。槽并非每 UID 独占，且服务任何一次刷新尝试都会清空抽样缓存，不能把它理解为对某个调用方永久固定的测量偏移。
+
+这个算法既不是对称的 ±10%，也不能描述成固定 10 mWs 误差。普通或 fine 缓存都使用上述相同条件判断；fine 权限改变缓存选择和刷新阈值，并不普遍绕过随机化。首次读数直接返回的分支也不能当作长期无噪声接口。
 
 <!-- gracker-diagram: ch15-05-13-conditional-randomization -->
 ![PowerMonitor 随机化的条件与共享抽样槽](../../assets/diagrams/ch15/ch15-05-13-conditional-randomization.png)
 
 图：只有当前和前值均有效才进行有界随机化，首次有效值等分支直接返回；fine 也不普遍绕过它。 先排查计数回退；10,000,000 µWs 是 10 J；17 个槽复用抽样因子，refresh 会清空槽，不能描述为每 UID 永久固定偏移。
 
+PowerMonitor 因此不适合作为毫秒级实时控制信号。它适合对比受控窗口内的累计能量；频繁轮询、过短的相邻样本差分和跨设备固定阈值，都会放大缓存、随机化和硬件差异的影响。
+
 ## `BatteryUsageStats` 是平台归因接口
 
-`BatteryStatsManager.getBatteryUsageStats()` 返回按子系统和 UID 归因的结果，但该接口需要 `BATTERY_STATS`，权限级别是 `signature|privileged|development`。普通应用无法获得该权限，不能把这个接口当作线上自助功耗 API。
+`BatteryStatsManager.getBatteryUsageStats()` 返回按子系统和 UID 归因的结果；`BatteryStatsManager` 在 A17 源码中是 `@SystemApi` / `@hide`，不是普通应用的公开 SDK 接口，调用还需要 `signature|privileged|development` 级别的 `BATTERY_STATS`。系统或受控开发授权与普通线上应用的能力不同，不能把它当作通用线上自助功耗 API。
 
 Android 17 的服务端流程是：
 
@@ -559,11 +563,11 @@ ODPM 量的是设备 rail。应用归因要借助受控场景、线程活动和 
 
 ### “250 ms 表示 Android 17 每 250 ms 采一次硬件”
 
-250 ms 是 fine 缓存的最大年龄。HAL 与硬件的内部采样方式由设备实现。
+250 ms 是触发 fine 缓存刷新尝试的年龄阈值，不保证硬件每 250 ms 更新或返回的读数一定足够新。HAL 与硬件内部采样方式由设备实现。
 
 ### “fine 权限会返回完全原始、无随机化的数值”
 
-Android 17 的返回循环对两种缓存都调用有界随机化函数。fine 权限改变缓存选择和新鲜度。
+Android 17 对两种缓存都检查当前和前值是否有效，满足条件时调用有界随机化；首次有效读数等分支可直接返回当前值。fine 权限改变缓存选择和刷新阈值，不保证长期原始读数。
 
 ### “Power Profiler 在不支持 ODPM 的设备上会自动给出等价估算”
 
@@ -576,6 +580,7 @@ Android 17 的返回循环对两种缓存都调用有界随机化函数。fine �
 - [Google Battery Historian 归档仓库](https://github.com/google/battery-historian)
 - [Android Studio Power Profiler](https://developer.android.com/studio/profile/power-profiler)
 - [Macrobenchmark PowerMetric API](https://developer.android.com/reference/androidx/benchmark/macro/PowerMetric)
+- [本轮固定 AndroidX PowerMetric 实现](https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/Metric.kt)
 - [Macrobenchmark 指标说明](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
 - [Android vitals 过度 Partial Wakelock 口径](https://developer.android.com/topic/performance/vitals/excessive-wakelock)
 - [Perfetto power 数据源](https://perfetto.dev/docs/data-sources/battery-counters)

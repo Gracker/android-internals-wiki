@@ -14,8 +14,8 @@ related_chapters:
 - '20.1'
 - '23.2'
 - '24.5'
-last_verified: '2026-09-07'
-last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2026-06_r6; Android Developers App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes, Google Play SDK Index, and Privacy Sandbox phaseout/API deprecation docs checked 2026-09-07; no Android 18/API 38+ conclusions
+last_verified: '2026-10-25'
+last_verified_against: android-17.0.0_r1 / Android 17 (API 37); android17-6.18-2026-06_r6; Android Developers App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes, Google Play SDK Index, and Privacy Sandbox phaseout/API deprecation docs checked 2026-10-25; no Android 18/API 38+ conclusions
 last_draft_polish_at: '2026-08-08T11:35:18+08:00'
 confidence: medium-high
 last_body_apply_at: '2026-10-07T07:15:34+08:00'
@@ -81,10 +81,10 @@ sources:
 - Java/Kotlin 字节码、资源、Manifest 合并项，以及按 ABI（应用二进制接口，如 `arm64-v8a`）区分的 `.so`；
 - `ContentProvider`、`Service`、`Receiver`、`Activity`、独立进程和自定义权限；
 - 初始化代码、线程池、定时任务、网络协议、数据库与本地缓存；
-- consumer ProGuard/R8 规则（库随 AAR 交付、构建时并入应用的压缩与混淆规则）——库随 AAR 交付、构建时并入应用的压缩与混淆规则——以及基线配置文件和注解处理器；
+- consumer ProGuard/R8 规则（库随 AAR 交付、构建时并入应用的压缩与混淆规则）以及基线配置文件和注解处理器；
 - 服务端开关、控制台配置、数据处理关系与供应商运维能力。
 
-因此，“一个应用平均有 20～40 个 SDK”“SDK 代码占 30%～60%”只能当参考，作不了项目结论：这类数字高度依赖统计口径——按供应商、业务能力、Maven 发布单元、DEX 包名前缀，还是按最终安装字节计数？同一家供应商可能拆成十几个发布单元，一个基础库也可能被多个 SDK 复用。
+因此，不应把没有可核对样本与统计口径的“平均 SDK 数量”或“SDK 体积比例”作为参考基线，更不能据此给出项目结论：这类数字高度依赖统计口径——按供应商、业务能力、Maven 发布单元、DEX 包名前缀，还是按最终安装字节计数？同一家供应商可能拆成十几个发布单元，一个基础库也可能被多个 SDK 复用。
 
 更可靠的做法，是我们同时维护两种视图：
 
@@ -181,7 +181,7 @@ SDK 评估最常见的误判，是“工具显示了数字，于是数字属于 
 
 ### 4.1 Provider 早于 `Application.onCreate`
 
-看 [`ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 的启动路径：系统先调用 `installContentProviders(...)`，随后通过 `Instrumentation.callApplicationOnCreate(...)` 调用 `Application.onCreate()`。`Instrumentation` 是 Android 用来创建和驱动应用组件的框架入口。因此，SDK 的自动 `ContentProvider` 初始化发生在应用自己的 `Application.onCreate()` 之前。
+看 [`ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 的启动路径：普通 `bindApplication` 启动中，系统先创建 `Application`，在非 `restrictedBackupMode` 且存在 Provider 列表时调用 `installContentProviders(...)`，随后通过 `Instrumentation.callApplicationOnCreate(...)` 调用 `Application.onCreate()`。`Instrumentation` 是 Android 用来创建和驱动应用组件的框架入口。因此，SDK 的自动 `ContentProvider` 初始化发生在应用自己的 `Application.onCreate()` 之前。
 
 常见主线程成本包括：
 
@@ -202,7 +202,7 @@ SDK 评估最常见的误判，是“工具显示了数字，于是数字属于 
 
 [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) 能在应用进程外重复驱动冷、温、热启动，并保存 Perfetto Trace。冷启动从无进程状态开始，温启动保留进程但重新启动 Activity，热启动则把仍在内存中的 Activity 带回前台。
 
-目标应用需要可 profile，即发布构建通过 `android:profileable` 允许性能工具读取跟踪数据。我们比较 SDK 版本时，release 配置、设备、启动模式和编译模式都要相同。
+目标应用应使用可 profile 的非 debuggable 发布变体：在 `<application>` 内声明 `<profileable android:shell="true" />`，允许本地性能工具访问。`profileable` 是元素，不是 `android:profileable` 属性；最终以合并 Manifest 与基准的配置检查为准。我们比较 SDK 版本时，release 配置、设备、启动模式和编译模式都要相同。
 
 下面的测试用于测量带有 Baseline Profile 的冷启动；`BaselineProfileMode.Require` 会在配置不满足时让测试失败，避免悄悄换成另一种编译条件：
 
@@ -289,16 +289,16 @@ class SdkStartupBenchmark {
 
 ### 4.5 `BOOT_COMPLETED` 的触发语义
 
-有些 SDK 会同时放 Provider、App Startup 和 `BOOT_COMPLETED` Receiver。评估这类 SDK 时，我们要把三个信号分开：`system_server` 进程存在、`sys.boot_completed=1`、应用 Receiver 执行，它们是三个不同的里程碑。Android 17 的 `SystemService` 契约里，phase 600 表示系统服务可以启动或绑定第三方应用；`ActivityManagerService.finishBooting()` 后续进入 phase 1000、设置 `sys.boot_completed` / `dev.bootcomplete`，再调用 `UserController.onBootComplete(...)` 发送用户级 `ACTION_BOOT_COMPLETED`。`sys.boot_completed=1` 出现时用户广播还没处理完，某个 SDK 的 Receiver 是否已执行、是否成功，从这里看不出来。[已验证: AOSP Android 17 `SystemService.java`, `ActivityManagerService.java`, `UserController.java`; 来源: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md]
-
-落到记录上，三类入口要分开：进程创建时的 Provider / App Startup、业务首用时的显式初始化、开机后由 `LOCKED_BOOT_COMPLETED` 或 `BOOT_COMPLETED` 触发的后台工作。第三类还要按用户、Direct Boot 状态、stopped package 状态和广播结果回调核对；只看到全局属性或旧 `system_server` 日志，还归因不到当前 Framework generation 或当前应用进程。[来源: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md]
-
-观察 BOOT_COMPLETED 型 SDK 时，至少要记录 Receiver 被调起的用户 ID、进程 PID、触发时间、任务 ID 和后续 Job/Work/网络请求；若设备发生 runtime restart，还要确认 phase、property 和广播记录来自同一个 `system_server` 实例。否则很容易把“系统全局里程碑到了”误写成“SDK 已经完成初始化”。[来源: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md]
+有些 SDK 会同时放 Provider、App Startup 和 `BOOT_COMPLETED` Receiver。评估这类 SDK 时，我们要把三个信号分开：`system_server` 进程存在、`sys.boot_completed=1`、应用 Receiver 执行，它们是三个不同的里程碑。Android 17 的 `SystemService` 契约里，phase 600 表示系统服务可以启动或绑定第三方应用；`ActivityManagerService.finishBooting()` 后续进入 phase 1000、设置 `sys.boot_completed` / `dev.bootcomplete`，再调用 `UserController.onBootComplete(...)` 推动用户启动、解锁与相关广播流程；`ACTION_BOOT_COMPLETED` 的实际发送还取决于用户状态和异步流程。`sys.boot_completed=1` 出现时用户广播还没处理完，某个 SDK 的 Receiver 是否已执行、是否成功，从这里看不出来。（来源：[SystemService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemService.java)、[ActivityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)、[UserController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/UserController.java)，固定 Android 17 tag。）
 
 <!-- gracker-diagram: a220-06-boot-milestones -->
 ![系统阶段、全局属性与应用 Receiver 完成是不同里程碑](../../assets/diagrams/ch20/a220-06-boot-milestones.png)
 
 图：固定AMS在属性后调用UserController.onBootComplete；属性已置位不能证明某SDK Receiver已成功执行。
+
+落到记录上，三类入口要分开：进程创建时的 Provider / App Startup、业务首用时的显式初始化、开机后由 `LOCKED_BOOT_COMPLETED` 或 `BOOT_COMPLETED` 触发的后台工作。第三类还要按用户、Direct Boot 状态、stopped package 状态和广播结果回调核对；只看到全局属性或旧 `system_server` 日志，还归因不到当前 Framework generation 或当前应用进程。（来源：[SystemService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemService.java)、[ActivityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)、[UserController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/UserController.java)，固定 Android 17 tag。）
+
+观察 BOOT_COMPLETED 型 SDK 时，至少要记录 Receiver 被调起的用户 ID、进程 PID、触发时间、任务 ID 和后续 Job/Work/网络请求；若设备发生 runtime restart，还要确认 phase、property 和广播记录来自同一个 `system_server` 实例。否则很容易把“系统全局里程碑到了”误写成“SDK 已经完成初始化”。（来源：[SystemService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemService.java)、[ActivityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)、[UserController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/UserController.java)，固定 Android 17 tag。）
 
 ## 5. 内存：同进程没有可靠的“每 SDK PSS”
 
@@ -333,7 +333,7 @@ class SdkStartupBenchmark {
 1. 生成只相差一个 SDK 或一个版本的两个 release 产物。
 2. 在相同设备档位、冷进程、账号数据和固定脚本下运行相同场景。
 3. 在稳定点与峰值点重复采集 RSS/PSS、Java heap、native heap 和映射。
-4. Java 堆先看 dominator（支配对象）与 retained path——某个对象不可达时，其下游对象也一并不可达——这比按类名计数更接近保留责任。
+4. Java 堆先看到 GC Root 的保留路径与 dominator（支配关系）：若从根到对象 Y 的每条路径都经过 X，X 才支配 Y；X 的 retained set 是其支配的对象集合。仅仅被 X 引用的“下游对象”可能还有其他根路径，不会随 X 不可达就全部回收。支配树边也不一定是原对象图的直接引用。
 5. native 堆用带 Build ID 的符号解析 heapprofd 分配栈。
 6. 把加载映射、活跃分配、线程栈和图形缓冲分开解释。
 7. 保存每轮原始数据与分布，报告差值、取值范围和离散程度；只有明确统计模型时才报告置信区间。
@@ -359,7 +359,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 ### 6.1 后台线程与后台执行资格
 
-嵌入式 SDK 与宿主共享 UID（Linux 用户标识，也是 Android 权限与部分资源统计的边界）——Linux 用户标识，也是 Android 权限和部分资源统计的归属单位——以及进程状态、权限和后台限制。把任务提交到线程池、协程或 native 线程（通常由 `pthread` 创建），并不会取得新的后台执行豁免。
+嵌入式 SDK 与宿主共享 UID（Linux 用户标识，也是 Android 权限与部分资源统计的边界）以及进程状态、权限和后台限制。把任务提交到线程池、协程或 native 线程（通常由 `pthread` 创建），并不会取得新的后台执行豁免。
 
 治理时我们要清点这些入口和资源：
 
@@ -417,7 +417,7 @@ Macrobenchmark [`PowerMetric`](https://developer.android.com/reference/kotlin/an
 除 App Memory Limits 外，Android 17 还需关注：
 
 - target API 37 后，[`MessageQueue` 使用无锁实现](https://developer.android.com/about/versions/17/changes/messagequeue)；依赖反射访问其私有字段的 SDK 可能失效。公共 `Handler`/`Looper` 契约没有因此改变。
-- Android 17 对所有应用施加了更严格的[后台音频交互限制](https://developer.android.com/about/versions/17/changes/bg-audio)：后台播放、音频焦点和音量操作需要可见 Activity，或一个类型不为 `SHORT_SERVICE` 的前台服务。target API 37 后，后台应用还需让该前台服务具备 while-in-use（由可见界面或用户操作授予的“使用期间”）能力；精确闹钟权限配合 `USAGE_ALARM` 音频流是例外。不满足条件时，播放和音量操作会静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。
+- Android 17 对所有应用施加了更严格的[后台音频交互限制](https://developer.android.com/about/versions/17/changes/bg-audio)：后台播放、音频焦点和音量操作需要可见 Activity，或一个类型不为 `SHORT_SERVICE` 的前台服务。target API 37 后，后台应用还需让该前台服务具备 while-in-use（由可见界面或用户操作授予的“使用期间”）能力；精确闹钟权限配合 `USAGE_ALARM` 仅豁免额外的 WIU 能力要求，仍需满足可见 Activity 或非 `SHORT_SERVICE` 前台服务的基本条件。不满足条件时，播放和音量操作会静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。
 - 后台调度、前台服务和权限的合规与稳定性责任仍由宿主应用承担。
 
 评估报告要写明 SDK 行为依赖的是公开 API 还是私有实现。Android 17 的目标 SDK 变更可从 [target 37 行为变更](https://developer.android.com/about/versions/17/behavior-changes-17)逐项核对。
@@ -455,7 +455,7 @@ ANR 也一样，光看栈里有没有 SDK 帧远远不够；我们要找的是�
 
 [ndk-stack](https://developer.android.com/ndk/guides/ndk-stack)需要与崩溃二进制匹配的符号。闭源 SDK 只提供 stripped `.so`、供应商又没法按 Build ID 符号化时，团队就无法可靠定位 native crash；这项缺口直接记入准入风险，发布前把材料备齐。
 
-聚类键是把疑似同一根因的事件归为一组的字段组合，建议包含异常类型或 signal（如 native crash 的 `SIGSEGV`）、归一化栈、SDK 版本、ABI、Android 版本、设备、进程和功能路径。归一化栈会去掉地址偏移等易变信息，保留稳定的调用结构。
+聚类键是把疑似同一根因的事件归为一组的字段组合，建议包含异常类型或 signal（如 native crash 的 `SIGSEGV`）、归一化栈、SDK 版本、ABI、Android 版本、设备、进程和功能路径。归一化可以移除 ASLR 导致的绝对装载地址等易变字段，原始诊断证据仍须保留 Build ID 与 relative PC；native 的模块内偏移有助于区分和符号化不同故障点，不能一概删掉。聚类规则应明确采用函数、行号或相对 PC 中的哪一层。
 
 [Android vitals](https://support.google.com/googleplay/android-developer/answer/9859174?hl=zh-Hans)可能标记“可能与 SDK 有关”的问题，这仍是线索；SDK 供应商可通过 [Google Play SDK Console](https://support.google.com/googleplay/android-developer/answer/12246095?hl=zh-Hans)接收聚合信息并上传反混淆文件。
 
@@ -536,7 +536,7 @@ Gradle 的版本调解可能让一个 SDK 运行在它没有验证过的依赖�
 
 业务代码若到处暴露供应商类型，替换和禁用都会变成大规模改造。我们先定义自己的领域接口——由应用控制、只表达业务能力的抽象——供应商 API 留在适配层，由适配层处理同意、初始化、状态和异常。
 
-下面的简化示例展示一个可禁用的统计接口：
+下面示例采用显式线程约束：在供应商允许的同一个线程上创建并串行调用适配器，不接受同步重入。上层可以投递调用，但本例不提供调度器；`start()` 必须是同步就绪契约，耗时与线程要求仍要由接入层评估：
 
 ```kotlin
 interface Analytics {
@@ -546,28 +546,41 @@ interface Analytics {
 class GovernedAnalytics(
     private val provider: AnalyticsProvider,
 ) : Analytics {
-    private val enabled = AtomicBoolean(false)
+    // 在供应商允许的线程创建并使用；上层负责把调用投递到这个线程。
+    private val ownerThread = Thread.currentThread()
+    private var enabled = false
+    private var inCall = false
 
-    fun enableAfterConsent() {
-        if (enabled.compareAndSet(false, true)) {
+    private inline fun onOwner(block: () -> Unit) {
+        check(Thread.currentThread() === ownerThread)
+        check(!inCall) { "Synchronous adapter reentry is unsupported" }
+        inCall = true
+        try {
+            block()
+        } finally {
+            inCall = false
+        }
+    }
+
+    fun enableAfterConsent() = onOwner {
+        if (!enabled) {
             provider.start()
+            enabled = true // 只有同步 start 成功返回才开放调用。
         }
     }
 
-    override fun record(event: AnalyticsEvent) {
-        if (enabled.get()) {
-            provider.record(event)
-        }
+    override fun record(event: AnalyticsEvent) = onOwner {
+        if (enabled) provider.record(event)
     }
 
-    fun disable() {
-        enabled.set(false)
+    fun disable() = onOwner {
+        enabled = false // 停止操作失败也不重新开放后续 record。
         provider.stopIfSupported()
     }
 }
 ```
 
-这里的开关拦得住后续调用，也只在供应商支持时执行停止操作；已经加载的 DEX/`.so` 卸不掉，静态初始化、未知监听器或已排队的任务也不会被自动撤销。所以 SDK 必须提供成对的注册/反注册和可重复调用的停止契约。
+在上述串行契约内，开关阻止之后的 `record()`，并只在供应商支持时执行停止操作。供应商异常会传播给上层；`start()` 部分失败后的清理由供应商契约处理，不能盲目自动重试；异步初始化必须另建 STARTING/READY/FAILED 状态，不能把“提交成功”当成就绪。此例也不承诺中断已经进入供应商内部的工作；已经加载的 DEX/`.so` 卸不掉，静态初始化、未知监听器或已排队的任务也不会被自动撤销。所以 SDK 必须提供成对的注册/反注册和可重复调用的停止契约。
 
 <!-- gracker-diagram: a220-15-serial-consent-gate -->
 ![在同一非重入线程中，start 成功后才开放 record](../../assets/diagrams/ch20/a220-15-serial-consent-gate.png)
@@ -576,9 +589,9 @@ class GovernedAnalytics(
 
 ### 10.2 用双视图测试守住供应商边界
 
-适配层这条线，还要被构建和源码两条线同时守住：Gradle 依赖图能暴露业务模块是否直接依赖供应商 SDK 模块或同级实现模块；Kotlin 源模型能暴露 `UiState`、领域接口、公共 repository 等签名是否导入或返回供应商 DTO、持久化实体或 Android/框架类型。[来源: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md]
+适配层这条线，还要被构建和源码两条线同时守住：Gradle 依赖图能暴露业务模块是否直接依赖供应商 SDK 模块或同级实现模块；Kotlin 源模型能暴露 `UiState`、领域接口、公共 repository 等签名是否导入或返回供应商 DTO、持久化实体或 Android/框架类型。（工程架构规则示例；依赖视图可依据 [Gradle 官方依赖报告](https://docs.gradle.org/current/userguide/viewing_debugging_dependencies.html)，源码签名边界需由项目实际分析器与 CI 用例验证。）
 
-可执行规则应放在普通测试和 CI 中，而不是只靠代码审查记忆。对 SDK 治理来说，最低限度可以检查三类契约：只有适配层可以依赖供应商 artifact；公共接口只暴露应用自有类型；KMP 或共享模块禁止意外导入 Android 框架或供应商实现包。若规则太宽，例如笼统禁止 `kotlinx..`，会误伤协程、序列化等合法跨平台库；应从少量高信号规则开始，写明例外并跟随架构演进维护。[来源: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md]
+可执行规则应放在普通测试和 CI 中，而不是只靠代码审查记忆。对 SDK 治理来说，最低限度可以检查三类契约：只有适配层可以依赖供应商 artifact；公共接口只暴露应用自有类型；KMP 或共享模块禁止意外导入 Android 框架或供应商实现包。若规则太宽，例如笼统禁止 `kotlinx..`，会误伤协程、序列化等合法跨平台库；应从少量高信号规则开始，写明例外并跟随架构演进维护。（工程架构规则示例；依赖视图可依据 [Gradle 官方依赖报告](https://docs.gradle.org/current/userguide/viewing_debugging_dependencies.html)，源码签名边界需由项目实际分析器与 CI 用例验证。）
 
 <!-- gracker-diagram: a220-16-two-view-boundary -->
 ![依赖视图与公共类型签名共同守住供应商适配边界](../../assets/diagrams/ch20/a220-16-two-view-boundary.png)
@@ -624,7 +637,7 @@ class GovernedAnalytics(
 友盟、Bugly、Sentry 等产品覆盖的能力并不完全相同。常见控制点包括：
 
 - 在用户同意和数据配置满足条件后初始化；
-- 统一事件 schema（字段、类型、命名和版本约定）——字段、类型、命名和版本约定——以及采样、批量大小、上传条件和重试；
+- 统一事件 schema（字段、类型、命名和版本约定）以及采样、批量大小、上传条件和重试；
 - 限制 breadcrumb（崩溃前的操作与状态记录）、附件、线程栈与本地队列上限；
 - 保留与业务版本匹配的 mapping 和 native symbols；
 - 让核心错误观测不依赖可能引发故障的同一执行链。
@@ -646,7 +659,7 @@ WebView 或视频卡顿不一定由 SDK 主线程代码直接引起；需结合�
 
 ## 12. SDK Runtime：只按遗留路径评估
 
-### 12.1 Android 17 已停止支持新接入
+### 12.1 Android 17 的 SDK sandbox 已不再受支持
 
 Google 在 2025 年 10 月 17 日宣布[退役 SDK Runtime 等 Privacy Sandbox 技术](https://privacysandbox.google.com/blog/update-on-plans-for-privacy-sandbox-technologies)，官方[功能状态页](https://privacysandbox.google.com/overview/status)也把 Android SDK Runtime 标为计划逐步退出。Android 17 / API 37 的 [`SdkSandboxManager`](https://developer.android.com/reference/android/app/sdksandbox/SdkSandboxManager) 已废弃，API 文档明确说明 SDK sandbox 不再受支持；AndroidX `privacysandbox-sdkruntime` 的 [`1.0.0-alpha19`](https://developer.android.com/jetpack/androidx/releases/privacysandbox-sdkruntime) 同样已废弃且不会继续更新。
 
@@ -666,7 +679,7 @@ API 符号、旧设计页或系统服务类仍然存在，这只说明兼容代�
 - 远端 UI 的 Surface 与帧同步；
 - 进程死亡后的状态恢复和重新加载。
 
-旧 Runtime 路径如果仍在运行，我们评估时要报告宿主与 Runtime 进程的合计 PSS/RSS，并同时测量加载延迟、Binder 回调、远端 UI 帧时间、进程死亡率与恢复成功率。两端没有共享堆；应用商店曾提出的可信分发可能影响下载或磁盘存储，但由此推不出运行时 RAM 会下降。
+旧 Runtime 路径如果仍在运行，我们评估时报告宿主与 Runtime 的逐进程 PSS/RSS；需要合计时说明范围与采样时刻。PSS 按共享页比例分摊，RSS 直接相加会重复计算共享驻留页，不能当作去重后的总物理内存。并同时测量加载延迟、Binder 回调、远端 UI 帧时间、进程死亡率与恢复成功率。两端没有共享堆；应用商店曾提出的可信分发可能影响下载或磁盘存储，但由此推不出运行时 RAM 会下降。
 
 历史兼容方案的构建流程是：Android Gradle Plugin（AGP）和 Bundletool 构建包含 SDK 的应用变体，SDK Runtime client library 从应用 assets 提取 DEX，再用独立 classloader（类加载器）载入宿主进程。类加载器能降低类名冲突，却不提供进程隔离。
 
@@ -720,6 +733,7 @@ SDK 治理的输出应当是一组能被重复执行的实验、制品差异和�
 - [AOSP Android 17 `SdkSandboxManagerService`](https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/service/java/com/android/server/sdksandbox/SdkSandboxManagerService.java)
 - [Android Common Kernel `android17-6.18-2026-06_r6` proc 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
 - [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
+- [profileable 元素](https://developer.android.com/guide/topics/manifest/profileable-element)、[Gradle 依赖报告](https://docs.gradle.org/current/userguide/viewing_debugging_dependencies.html)、[Eclipse MAT 支配树定义](https://help.eclipse.org/latest/topic/org.eclipse.mat.ui.help/concepts/dominatortree.html)。
 - [Macrobenchmark 概览](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
 - [Macrobenchmark 指标](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
 - [Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview)

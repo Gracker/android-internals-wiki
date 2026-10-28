@@ -33,12 +33,12 @@
 - 可观测性通过指标（Metrics）、日志（Logs）和追踪记录（Traces）判断线上系统发生了什么，并保留足以解释影响范围和耗时路径的证据。APM 是其中面向应用性能的一类工具体系。
 - Crash 指进程因未处理异常、原生信号等原因意外退出；ANR（Application Not Responding，应用无响应）指系统判定应用在规定时间内没有响应关键事件。长卡顿不一定构成系统 ANR，两类事件需要分别确认。
 - A/B Test（A/B 实验）把用户分入不同方案并比较同口径指标；发布质量门禁把崩溃率、ANR 率、性能回归和测试结果转换为继续灰度、暂停或回滚的条件。
-- `ApplicationExitInfo` 保存系统视角的近期进程退出记录，`ApplicationStartInfo` 保存系统侧启动原因、类型和时间信息。`ProfilingManager` 用于请求受系统约束的性能采集，`ProfilingTrigger` 描述由系统事件触发采集的条件。
+- [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)从API30提供系统视角的近期退出记录；[ApplicationStartInfo](https://developer.android.com/reference/android/app/ApplicationStartInfo)从API35提供系统侧启动原因、类型和时间。[ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)从API35提供受系统约束的采集请求，系统触发从API36加入，Android17继续扩展触发类型；请求、支持和实际成功产物分别核验。
 - eBPF（extended Berkeley Packet Filter）是在内核中运行受验证程序的机制，可用于具备相应权限的系统追踪；Binder 是 Android 的进程间通信机制。普通商店应用不能据此获得任意内核或跨进程观测权限。
 - ATrace 是 Android 的追踪标记接口与兼容格式，Perfetto 可同时记录应用标记、系统服务和内核事件。Profilo 是已归档的生产追踪框架；XTrace 是研究方案，二者都不是 Android 17 SDK 提供的通用线上接口。
 - Android Vitals 是 Google Play 汇总的线上质量指标，Play Console 是查看这些指标和发布状态的控制台。App Performance Score 是另一套评估框架，分数不能替代团队自己的线上指标和设备验证。
 - `heapprofd` 是 Perfetto 的原生堆采样组件；Page Fault（缺页异常）是 CPU 无法按当前页表状态完成内存访问时交给内核处理的同步异常。`ProcessCpuTracker` 读取 `/proc`（内核导出的进程与系统状态伪文件系统）统计 CPU，但它是 Android 框架内部类，不属于公开 SDK。
-- ART（Android Runtime）是 Android 执行应用字节码的运行时；JVMTI（Java Virtual Machine Tool Interface）是 ART 提供给调试器和分析器的进程内原生接口，Agent 是加载进目标进程的原生库。普通发布应用受到调试状态和附加权限限制。
+- ART（Android Runtime）是 Android 执行应用字节码的运行时；JVMTI（Java Virtual Machine Tool Interface）是 ART 提供给调试器和分析器的进程内原生接口，Agent 是加载进目标进程的原生库。普通App运行期JVMTI attach仅对debuggable应用开放，profileable不能授予此权；标准接口也不消除同进程native缺陷与事件采集成本。
 - OEM（Original Equipment Manufacturer，设备制造商）和 ROM（设备系统软件）在本章用于描述厂商实现差异。厂商指标、后台限制和权限策略需要在目标设备上验证，不能只用 AOSP 源码推断。
 
 ## 阅读建议
@@ -48,6 +48,7 @@
 - 发布评估可结合 26.4、26.5、26.8 和 26.11，统一实验口径、门禁阈值与外部质量指标。
 - 26.13—26.15 依次讨论资源采样、系统事件和动态方法追踪，涉及不同的系统权限或实验方案。采用其中机制前，应确认目标 Android 版本、构建类型、权限和上游维护状态。
 - 非 Play 分发与厂商系统差异见 26.3；涉及 OEM 数据时，应保留设备型号、系统构建指纹、渠道和采集权限。
+
 
 <!-- gracker-diagram: a301-02-symptom-to-chapter-and-permission-map -->
 ![按证据对象选择章节，同时核对采集权限](../../assets/diagrams/ch26/a301-02-symptom-to-chapter-and-permission-map.png)

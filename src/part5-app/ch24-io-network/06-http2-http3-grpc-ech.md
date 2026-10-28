@@ -4,8 +4,8 @@ chapter: '24.6'
 section: '24.6'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1 and Android common kernel android17-6.18-2026-06_r6; Android Developers HttpEngine, Cronet and API reference updated through 2026-08-03; OkHttp 5.4.0 source and changelog; IETF RFC 9000, 9001, 9113 and 9114; current gRPC guides
+last_verified: '2026-10-25'
+last_verified_against: fixed AOSP android-17.0.0_r1 and Android common kernel android17-6.18-2026-06_r6; Android Developers and gRPC guides accessed 2026-10-25; fixed OkHttp 5.4.0 protocol source and 5.5.1 release changelog; Maven release metadata; IETF RFC 9000, 9001, 9113, 9114, 9849 and 9460; API37.2 ECH constant boundary noted
 confidence: high
 sources:
 - type: aosp
@@ -121,7 +121,7 @@ consolidated_from:
 
 # HTTP/2、HTTP/3、gRPC 与 ECH
 
-这一篇把四件事放在一起讲：HTTP/2 在 TCP 上复用流，HTTP/3 在 QUIC 上处理传输和拥塞，gRPC 在 HTTP/2 或 HTTP/3 上定义 RPC 语义，ECH 保护 ClientHello 中的目标信息。前三件主要是选型与验证问题，ECH 还依赖 DNS HTTPS 记录和服务端部署。
+这一篇把四件事放在一起讲：HTTP/2 在 TCP 上复用流，HTTP/3 在 QUIC 上处理传输和拥塞，gRPC 定义 RPC 语义，Android 常用 Java/Kotlin 传输基于 HTTP/2，其他传输能力取决于具体实现，ECH 保护 ClientHello 中的目标信息。前三件主要是选型与验证问题，ECH 还依赖 DNS HTTPS 记录和服务端部署。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
@@ -171,7 +171,7 @@ Android 项目里的协议能力来自不同组件：
 
 并发数由好几层一起决定：服务端 `SETTINGS_MAX_CONCURRENT_STREAMS`（同时活跃的逻辑流上限）、客户端 `Dispatcher`、连接级与逻辑流级的流量窗口、服务端容量和设备资源都在约束它。请求最终是否共用一条连接没有保证，业务请求也拿不到优先级承诺。
 
-OkHttp 5.4.0 还给单个 HTTP/2 响应的首部总量设了上限：256 KiB（262,144 字节）；服务端真要发超大首部，超出部分会被客户端按这个上限拦下。
+OkHttp 5.4.0 为 HTTP/2 首部列表设置了 256 KiB（262,144 字节）的限制。固定源码的 HPACK 读取器累计首部名称与值的字节数，并在超限时抛出 `IOException`；它不是把超出部分静默截断后继续返回一个成功响应。服务端首部、Cookie 等数据增长要在兼容测试中覆盖。
 
 大响应体会争用同一连接的带宽和拥塞窗口。消费方长时间不读取响应体，还会产生逻辑流级背压，也就是接收方处理不及时后逐步限制发送方，并可能影响连接级流量窗口。
 
@@ -239,7 +239,7 @@ HTTP/3 依赖 UDP，而部分企业网络、代理、VPN 或热点会阻断或�
 
 服务端还要用客户端支持的方式声明 HTTP/3 能力，比如发送 Alt-Svc，或者由应用提供可信的 QUIC 能力提示（hint）。`setEnableQuic(true)` 打开后，引擎只是拿到了选择 QUIC 的资格；缺少服务端配置的域名，最终仍落在 HTTP/2 或 HTTP/1.1 上。
 
-Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` 增加了 `setProxyOptions()`。注意应用代理配置会覆盖系统代理配置：企业环境依赖系统代理时，一个错误的应用代理、或者代理列表末尾漏掉 `null` 回退，都可能让网络完全不可达。分批启用协议的实验，也要把企业代理和 VPN 场景包含进来。
+Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` 增加了 `setProxyOptions()`。应用代理配置会覆盖系统代理配置，企业环境依赖系统代理时必须单独验证。`ProxyOptions.fromProxyList()` 要求代理列表非空，且不能包含 `null`；所有代理失败后是否允许直接连接，由 `ALL_PROXIES_FAILED_BEHAVIOR_ALLOW_DIRECT` 或 `DISALLOW_DIRECT` 显式选择，不能靠列表末尾塞入 `null`。固定 r1 的 `HttpEngine` 注释仍提及旧式 null fallback，但同标签 `ProxyOptions` 的实际构造逻辑已拒绝 null，应以该类实现及公开 API 为准。只有业务和网络策略允许时才选择直连回退；企业代理、VPN 与无直连权限场景都要进入测试。
 
 <!-- gracker-diagram: a266-04-zero-rtt-and-discovery -->
 ![QUIC发现、恢复与0RTT是不同状态](../../assets/diagrams/ch24/a266-04-zero-rtt-and-discovery.png)
@@ -439,7 +439,7 @@ gRPC 到 REST 则是两套接口契约，协议层不会自动回退，只有业
 - 最终协议、客户端实现与实现提供方版本。
 - 默认网络变化序号、传输类型、计费属性、VPN 和代理。
 - 请求与响应大小、缓存状态、冷连接或复用连接。
-- DNS、连接、握手、TTFB（Time to First Byte，从请求发出到收到响应首部的等待）、响应体与逻辑调用总时长；只使用当前客户端实际公开的阶段。
+- DNS、连接、握手、响应首部等待代理、响应体消费与逻辑调用总时长；写明各客户端的事件边界与缺失原因，阶段包含或重叠时不直接相加，TTFB 使用统一的起止定义。
 - HTTP 或 gRPC 错误、取消、重试尝试与最终成功率。
 - 前台交互、后台任务、媒体传输和切网场景。
 
@@ -592,7 +592,12 @@ Android 17 正式版的 XML 语法只接受两个值：
 | `enabled` | 握手获得 ECH 配置时使用 ECH；没有配置时启用 ECH GREASE |
 | `disabled` | 不使用 ECH，也不使用 ECH GREASE |
 
-`NetworkSecurityPolicy` 的公开常量里还有 `DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC` 和 `DOMAIN_ENCRYPTION_MODE_UNKNOWN`：`OPPORTUNISTIC` 表示有服务端配置时尝试 ECH、没有配置时不发送 GREASE；`UNKNOWN` 要求网络库退回普通 TLS。这两个值是网络库读策略时可能遇到的 API 值，XML 语法并不接受它们，`mode="opportunistic"` 写进配置是无效的。
+`NetworkSecurityPolicy` 的公开常量里还有 `DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC` 和 `DOMAIN_ENCRYPTION_MODE_UNKNOWN`：`OPPORTUNISTIC` 表示有服务端配置时尝试 ECH、没有配置时不发送 GREASE；`UNKNOWN` 要求网络库退回普通 TLS。这两个值是网络库读策略时可能遇到的 API 值，XML 语法并不接受它们，`mode="opportunistic"` 写进配置是无效的。 本段描述的是固定 API 37 / r1 的模式边界；当前 API 参考还列出了 37.2 / C Extension 24 新增的 `DOMAIN_ENCRYPTION_MODE_REQUIRED`（无法启用 ECH 时连接失败），并在 37.2 弃用 `OPPORTUNISTIC`。这些后续 API 不能反推 r1 XML 已支持新模式；需要强制加密的库还必须按实际版本适配新策略，不能把未知返回值自动当作普通 TLS 回退。下方诊断函数只打印策略，不执行握手策略。
+
+<!-- gracker-diagram: a266-12-domain-policy-modes -->
+![固定API37策略值与XML语法分层](../../assets/diagrams/ch24/a266-12-domain-policy-modes.png)
+
+图：区分XML可写模式、平台返回常量和实际协商；后续37.2新增required不纳入r1示例。
 
 要确认某个主机名经过 Network Security Configuration 匹配后拿到的策略值，可以用这段诊断函数：
 
@@ -616,11 +621,6 @@ fun domainEncryptionMode(hostname: String): String {
 
 模式与默认值以 [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config#domain-encryption) 为准，API 常量见 [`NetworkSecurityPolicy`](https://developer.android.com/reference/android/security/NetworkSecurityPolicy)。
 
-<!-- gracker-diagram: a266-12-domain-policy-modes -->
-![固定API37策略值与XML语法分层](../../assets/diagrams/ch24/a266-12-domain-policy-modes.png)
-
-图：区分XML可写模式、平台返回常量和实际协商；后续37.2新增required不纳入r1示例。
-
 ### Android 17 API 与源码位置
 
 `DnsResolver` 在 API 37 增加了返回 `HttpsEndpoint` 的查询重载：并发发出 A、AAAA 和 HTTPS 查询，调用方可以用 `httpsTimeoutMillis` 指定地址记录完成后还要等多久 HTTPS 记录。同在 API 37，`DnsResolver.getInstance()` 已废弃，新代码改用接收 `Context` 与 `Looper` 的构造函数。
@@ -642,12 +642,12 @@ fun domainEncryptionMode(hostname: String): String {
 
 Android 17 [行为变更页面](https://developer.android.com/about/versions/17/behavior-changes-17#ech) 把 HttpEngine、WebView 与 OkHttp 列为网络库示例，同时明确 ECH 只在网络库已集成支持时生效。页面列的是库名，应用当前安装或依赖的版本支持到什么程度，要按版本核对。
 
-截至 2026-08-15，我们能把上游状态核实到这个程度：
+下表保留可追溯的提交与固定标签，同时补充截至 2026-10-25 已发布制品的状态；固定基线与最新依赖版本分别判断：
 
 | 路径 | 可验证事实 | 适配判断 |
 | --- | --- | --- |
 | Android 平台 API | DNS、策略、TLS 与失配异常 API 已进入 API 37 | 提供接入能力，不替网络库完成接入 |
-| OkHttp | `square/okhttp` 现重定向到上游仓库 `lysine-dev/okhttp`。主分支于 2026-07-24 合并初始 Android API 37 ECH 支持的 [PR #9573](https://github.com/square/okhttp/pull/9573)，并于 2026-07-26 合并按 `NetworkSecurityPolicy` 选择模式的 [PR #9596](https://github.com/square/okhttp/pull/9596)；最新 [`parent-5.4.0`](https://github.com/square/okhttp/tree/parent-5.4.0) 标签创建于 2026-06-08，早于两次合并 | 主分支已经有接入代码，`parent-5.4.0` 尚未包含；核对依赖版本或提交号 |
+| OkHttp | 上游为 `lysine-dev/okhttp`；2026-07-24 的 [PR #9573](https://github.com/lysine-dev/okhttp/pull/9573) 和 2026-07-26 的 [PR #9596](https://github.com/lysine-dev/okhttp/pull/9596) 晚于本文固定的 `parent-5.4.0` 标签（2026-06-08）。[5.5.0 发布说明](https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md)已于 2026-08-16 引入 opt-in ECH；本轮 Maven 元数据最新发布为 5.5.1 | 5.4.0 不包含该接入；5.5.x 仍需主动选择能提供 HTTPS 记录的 DNS 路径（如 `AndroidDns` 或新版 `DnsOverHttps`），不能只更新 XML 就假定成功 |
 | Chromium / WebView / Cronet | 2026-06-22 的 [Chromium 提交](https://chromium.googlesource.com/chromium/src/net/+/b91f5ad12e2adc0166183b0172cd4cbc0a04a934) 加入按主机读取平台模式；2026-07-11 的 [后续提交](https://chromium.googlesource.com/chromium/src/net/+/40d5138e2f148890a937d6653284074cd3c3676d) 已在 TLS 与 QUIC 路径执行 ECH 模式 | 主分支已具备读取和执行逻辑；设备上的 WebView 或 Cronet 仍要确认其版本包含这两次提交 |
 | 自定义 `SSLSocket` / `SSLEngine` | 公共 API 已可用 | 应由网络库维护完整 DNS、策略与重试流程 |
 | 自带原生 TLS 的 SDK | 是否读取 Android XML 取决于 SDK | 要求供应方给出版本、源码或测试证据 |
@@ -708,7 +708,7 @@ ECH 的耗时影响可能来自几处：HTTPS DNS 查询等待、配置失配后
 dig HTTPS api.example.com +short
 ```
 
-命令结果验证的是发布格式，代表不了 Android 设备在蜂窝网络、专用 DNS、VPN 或 HTTPDNS 下拿到的答案——专用 DNS 是 Android 的系统级加密 DNS 设置，VPN 还可能接管解析路径。所以客户端解析日志、服务端 DNS 日志和 TLS 服务端的 ECH 接受状态要放在一起核对。
+命令结果只说明当前电脑所用解析器返回了哪些 HTTPS 记录，不能独立证明权威发布正确，也代表不了 Android 设备在蜂窝网络、Private DNS、VPN 或 HTTPDNS 下拿到的答案。Private DNS 是 Android 的系统级加密 DNS 设置，VPN 也可能接管解析路径。因此权威 DNS 发布、设备解析日志与 TLS 服务端的 ECH 接受状态要分别核对，并关联缓存 TTL 与配置版本。
 
 抓包能看到有没有形似 ECH 的扩展、连接重试和协议选择，有效 ECH 与 GREASE 的区分要靠网络库或服务端的状态，从 ECH 中恢复内层 SNI 这条路也别走。业务性能数据还是要来自网络库事件、应用 trace 与服务端日志。
 
@@ -746,7 +746,7 @@ dig HTTPS api.example.com +short
 
 ### 与 24.9 本地网络权限适配的关系
 
-24.9 处理 Android 17 `ACCESS_LOCAL_NETWORK`、局域网设备发现、Google Cast 投屏、物联网（IoT）设备与本地 HTTP 服务；ECH 与网络安全配置作用于公网 HTTPS 连接，两类问题的失败阶段不同。
+24.9 处理 Android 17 `ACCESS_LOCAL_NETWORK`、局域网设备发现、Google Cast、物联网设备与本地 HTTP 服务；本节主要讨论 ECH 与网络安全配置的公网 HTTPS 路径。ECH 并不天然排除私网域名，私网 HTTPS 也可能先受本地网络权限约束，再进入 DNS、证书与 ECH 协商，因此按实际失败阶段分层定位。
 
 判断顺序可以很直接：公网域名的 TLS 握手失败，查 DNS HTTPS 记录、ECH、CT、证书与协议回退；RFC 1918 私有 IPv4 地址、仅在当前网段有效的地址、`.local`、组播 DNS（mDNS）、简单服务发现协议（SSDP）和本地 HTTP 服务失败，先查本地网络权限。工单里记下目标地址类别和失败阶段，可以避免把权限拒绝误报成 TLS 问题。
 

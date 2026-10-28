@@ -4,8 +4,8 @@ chapter: '25.5'
 section: '25.5'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-09-30'
-last_source_verified_at: '2026-09-30'
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
 last_verified_against: Android Developers background audio hardening, Media3 battery/track-selection/offload listener, Android 17 features, AAudio/AudioTrack references, and Android 17 CDD retrieved 2026-09-30；AOSP android-17.0.0_r1 HardeningEnforcer/AudioManagerShellCommand/AudioManager/AudioService/MediaFocusControl/AudioFlinger Tracks.cpp/AAudio.h/AudioTrack.java/LeAudioService/codec_manager
 confidence: medium
 last_idle_audit_at: '2026-09-30T18:35:04+08:00'
@@ -264,7 +264,7 @@ AudioFlinger 为播放 Track 观察 `OP_CONTROL_AUDIO_PARTIAL` 和 `OP_CONTROL_A
 - `level: partial`：应用没有运行合格的前台服务。
 - `level: full`：应用有前台服务，但该服务缺少 WIU。
 
-限制级别还会受平台兼容条件影响：严格模式下，r1 的 C++ 决策对三类调用者按 partial 级别处理——target 小于 37 的应用、符合条件的闹钟，以及持有 `BLUETOOTH_CONNECT` 的调用者；系统音频用途和具有路由或电话特权的调用者可以豁免。我们做应用适配时，以公开的后台播放模型为准即可，内部兼容分支留给平台自己。
+限制级别还会受平台兼容条件影响：在默认策略且 `hardening_strict` 功能开关开启时，r1 的 C++ 决策会将旧 target、符合条件的闹钟及 `BLUETOOTH_CONNECT` 等兼容情形降为 partial；`hardening_usage` 关闭时，闹钟和辅助功能 usage 还有旧分支。系统 usage、路由或电话特权则可免于检查。强制 `ENABLE` / `THROW` 在这些分支前就返回 full，不能把默认兼容分支套到强制测试模式。Java 焦点、音量入口的条件也不完全相同，不能互相外推。我们做应用适配时，以公开的后台播放模型为准即可，内部兼容分支留给平台自己。
 
 #### Offload 与 MMap 的限制适用
 
@@ -288,7 +288,7 @@ Java 的焦点和音量入口用 AppOps，AudioFlinger 的播放路径一边按�
 
 ### 调试命令存在版本差异
 
-调试命令本身存在版本差异：Android 17 官方页面在 2026-08-13 的当前版本中使用 `set-enable-hardening`，而 `android-17.0.0_r1` 的 `AudioManagerShellCommand` 使用 `set-hardening` 与 `clear-hardening`。所以命令名要按设备镜像逐一确认。
+调试命令本身存在版本差异：Android 17 官方页面在本轮 2026-10-25 核验时仍使用 `set-enable-hardening`，而 `android-17.0.0_r1` 的 `AudioManagerShellCommand` 使用 `set-hardening` 与 `clear-hardening`。所以命令名要按设备镜像逐一确认。
 
 这组命令先读取设备自己的帮助，再按匹配分支启用测试模式：
 
@@ -342,7 +342,7 @@ adb shell dumpsys batterystats > batterystats.txt
 
 Perfetto 是 Android 的系统级跟踪工具，采集应覆盖音频、调度、CPU 频率、电源、Binder（Android 跨进程调用机制） 和 ActivityManager 相关轨迹。
 
-阅读顺序我们可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，说明声音停止后的资源清理不足。
+阅读顺序我们可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。声音消失而 CPU、网络或 WakeLock 仍活跃时，先区分暂时缓冲、路由切换、静默限制与永久停止；只有确认播放意图已结束或恢复已无价值后，残留工作才构成清理问题。不能把合法的短暂恢复窗口直接判为泄漏。
 
 ### 长时播放的功耗检查
 
@@ -357,7 +357,7 @@ Perfetto 是 Android 的系统级跟踪工具，采集应覆盖音频、调度�
 | 非播放任务 | 歌词、封面、推荐、埋点线程的 CPU 时间与唤醒 | 降低非必要任务频率，避免与解码和输出线程竞争 |
 | 蓝牙 | 路由变更、断连重连、设备类别、控制器活动 | 把路由故障和播放器故障分开统计 |
 
-Audio offload 改变的是解码与输出所使用的计算资源，后台硬化检查的是应用生命周期，两条线相互独立：offload Track 照样受 hardening 控制；反过来，LC3（Low Complexity Communication Codec，低复杂度通信编解码器） 配置匹配不上 ADSP（Audio Digital Signal Processor，音频数字信号处理器），也推不出应用会因处于后台而被静音。这里的 ADSP（Digital Signal Processor，数字信号处理器） 指音频数字信号处理器，LC3 即低复杂度通信编解码器。
+Audio offload 改变的是解码与输出所使用的计算资源，后台硬化检查的是应用生命周期，两条线相互独立：offload Track 照样受 hardening 控制；反过来，LC3（Low Complexity Communication Codec，低复杂度通信编解码器） 配置匹配不上 ADSP（Audio Digital Signal Processor，音频数字信号处理器），也推不出应用会因处于后台而被静音。这里的 ADSP 指音频数字信号处理器。
 
 `codec_manager.cc` 的 `IsLc3ConfigMatched()` 逐项比较采样率、帧时长、每条 ISO（等时）流的通道数和每帧字节数，以此判断 LC3 配置是否匹配；匹配失败影响的是编解码执行路径，FGS 或 WIU 归另一套规则决定。`target_latency` 表示 Bluetooth LE Audio（低功耗蓝牙音频）配置期望的时延等级，它参与配置选择；设备能耗要落到具体控制器、耳机和媒体参数上测量，仅凭“低延迟”推算不出来。
 
@@ -374,7 +374,7 @@ Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统进入 suspe
 
 | 用例 | 操作 | 预期 |
 | --- | --- | --- |
-| 可见页面播放 | 页面可见时开始播放 | 焦点成功，正常出声 |
+| 可见页面播放 | 页面可见时开始播放 | 无其他焦点阻碍、权限与路由满足时，焦点成功并正常出声 |
 | 锁屏继续播放 | 用户开始播放后锁屏 | `mediaPlayback` FGS 与 MediaSession 保持，通知可控制 |
 | 无 FGS 的后台播放 | 停止 FGS 后继续写音频 | target 36 与 37 都受到 partial 限制 |
 | FGS 没有 WIU | 从不带用户意图的后台入口启动服务并播放 | target 36 走兼容行为；target 37 受到 full 限制 |
@@ -444,7 +444,7 @@ AAudio 的 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 从 API 36 可用，
 
 请求归请求，生效归生效：音频流对象（代码中的 `stream`）打开后，我们要读取 `AAudioStream_getPerformanceMode(stream)` 确认实际拿到的模式；构造 builder（流配置构建器） 时也要使用媒体本身的压缩格式、采样率和声道掩码。
 
-下面的函数展示能力探测所需的关键字段，调用方传入从媒体轨道读取的真实配置：
+下面的函数是 API 36 及以上路径的探测骨架，调用方传入媒体轨道的真实配置。本文最低覆盖 API 31，接入时还必须做运行时可用性分支；NDK 库若面向较低 minSdk 构建，新函数符号不能仅靠 Java 层版本判断保护，应按 [NDK 新 API 指南](https://developer.android.com/ndk/guides/using-newer-apis)选择受支持的弱符号与 `__builtin_available` 防护，或动态查找并回退。API 37 的 flush 扩展同样需要构建和运行时边界。
 
 ```c
 bool openOffloadProbe(
@@ -489,7 +489,7 @@ bool openOffloadProbe(
 
 API 36 的 `AAudioStreamBuilder_setPresentationEndCallback()` 会在应用请求停止后，等待系统与硬件中已排队的数据播放完，再通知结束。应用提前关闭 stream，回调就不会发生；回调若与数据回调共用框架的实时线程，其中要避免执行阻塞工作。
 
-Android 17 / API 37 又增加了 `AAudio_getFlushFromFrameSupport(builder)` 和 `AAudioStream_flushFromFrame()`。flush 指丢弃已经写入但尚未播放的数据，frame（音频帧） 是这里的位置计数单位；前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码，后者通过 `inOutPosition` 传入目标 frame，并在成功时写回实际 flush 位置。
+Android 17 / API 37 又增加了 `AAudio_getFlushFromFrameSupport(builder)` 和 `AAudioStream_flushFromFrame()`。flush 指丢弃已经写入但尚未播放的数据，frame（音频帧） 是这里的位置计数单位；前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码。后者用 `inOutPosition` 传入目标 frame；成功时写回实际位置，准确 flush 无法满足时也可能回写一个建议位置。必须先检查返回码，失败时的位置不是“已经执行成功”的证明，不能直接覆盖业务播放断点。
 
 调用返回前保持串行、别并发写数据；成功后剩余数据不足时要立即补写，否则会出现 underrun。若要求 `AAUDIO_FLUSH_FROM_FRAME_ACCURATE` 而设备做不到从指定位置处理，r1 会返回 `AAUDIO_ERROR_OUT_OF_RANGE`，一次失败也不会被当作成功 flush。
 

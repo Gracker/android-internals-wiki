@@ -5,8 +5,8 @@ section: '20.3'
 section_title: Native Crash 分析与治理
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers ApplicationExitInfo, GWP-ASan, memory debugging, C++ support, native symbols and 16 KB page-size docs current on 2026-08-14
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1; Android Developers ApplicationExitInfo, GWP-ASan, memory debugging, C++ support, native symbols and 16 KB page-size docs current on 2026-10-25
 confidence: medium-high
 consolidated_from:
 - src/part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md
@@ -95,7 +95,7 @@ last_consolidated_at: '2026-08-24'
 
 # Native Crash、堆栈回溯与符号化
 
-Native Crash 是 C/C++ 等本地代码执行期间发生的致命崩溃。分析时，我们要把信号现场、栈回溯、符号版本和对象生命周期放进同一条证据链。Java 异常通常还能沿 `Throwable` 传播；`SIGSEGV`、`SIGABRT` 等同步致命信号往往意味着本地代码状态已经损坏，应用没有可靠的进程内恢复机会。
+Native Crash 是 C/C++ 等本地代码执行期间发生的致命崩溃。分析时，我们要把信号现场、栈回溯、符号版本和对象生命周期放进同一条证据链。Java 异常通常还能沿 `Throwable` 传播；`SIGSEGV`、`SIGABRT` 等致命信号往往意味着本地代码状态已经损坏，应用没有可靠的进程内恢复机会。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`。
 
@@ -159,18 +159,17 @@ CPU、内核、运行库和应用代码都可能发出信号。读现场时，�
 下面的流程图区分了崩溃进程内完成的最小入口动作和放到进程外完成的主要工作。图里的 `ptrace` 指一个进程检查另一个进程线程与内存的机制，maps（内存映射表） 记录进程的内存映射，protobuf 是一种结构化二进制编码。
 
 ```text
-同步致命信号
-  → ART special handlers / android_handle_signal / 用户 action
-  → debuggerd_signal_handler（崩溃进程内，保存 siginfo 与 ucontext）
+普通致命路径（先排除平台已处理的特殊或可恢复分支）
+  → debuggerd_signal_handler（进程内保存 siginfo 与 ucontext）
   → 派生并 exec crash_dump32 或 crash_dump64
-  → crash_dump ptrace 目标线程，读取寄存器、maps 与进程信息
-  → libunwindstack 生成线程 backtrace
-  → tombstoned 分配并轮转文本/protobuf 输出
-  → crash_dump 通知 ActivityManager 的 NativeCrashListener
-  → 恢复致命信号 disposition，使父进程观察到正确退出状态
+  → ptrace 读取线程与寄存器，并协作保留地址空间快照
+  → 连接 tombstoned 取得输出文件描述符
+  → libunwindstack 回溯，写入文本/protobuf tombstone
+  → 通知 ActivityManager，并完成输出的保存与轮转
+  → 恢复并重新交付致命信号，保留正确退出状态
 ```
 
-[`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 使用预先准备的 pseudothread（专用于崩溃协作的伪线程） 栈和受控的 `fork`（从上游项目分出的代码版本）/`exec` 协议；[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 读取现场，并创建崩溃地址空间的快照进程来缩短原进程所有线程的暂停时间。
+[`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 使用预先准备的 pseudothread（专用于崩溃协作的伪线程） 栈和受控的 `fork`（创建子进程）/`exec` 协议；[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 读取现场，并创建崩溃地址空间的快照进程来缩短原进程所有线程的暂停时间。
 
 进程内处理器仍运行在约束严格的信号处理上下文里，到这里能安全执行的只有一小组合法的安全操作，主要工作都放到了进程外完成。
 
@@ -189,7 +188,7 @@ CPU、内核、运行库和应用代码都可能发出信号。读现场时，�
 
 ##### 备用信号栈（alternate signal stack，也称 altstack）与 pseudothread 栈各有用途
 
-`SA_ONSTACK` 让致命信号处理器切换到当前线程事先安装的备用信号栈（alternate signal stack，altstack）上运行，应对的是线程栈损坏或接近耗尽的现场。debuggerd 预留的 pseudothread 栈则专供崩溃转储协作使用，前后设置了不可访问的保护页（guard page）。系统并不会替进程里的每条业务线程自动安装备用信号栈。
+`SA_ONSTACK` 让致命信号处理器切换到当前线程事先安装的备用信号栈（alternate signal stack，altstack）上运行，应对的是线程栈损坏或接近耗尽的现场。debuggerd 预留的 pseudothread 栈则专供崩溃转储协作使用，前后设置了不可访问的保护页（guard page）。Linux 内核不会因为设置 `SA_ONSTACK` 就自动分配备用栈；但在本篇固定的 Android 17 Bionic 实现中，常规 `pthread` 的 `__pthread_start()` 会经 `__init_additional_stacks()` 调用 `__init_alternate_signal_stack()`，为新线程配置带保护区的备用栈，见 [`pthread_create.cpp`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_create.cpp)。因此不能假定所有业务线程都没有备用栈，非标准创建路径与其他 SDK 覆盖配置仍需逐线程检查。
 
 自研采集器若依赖 altstack，必须明确谁安装、谁恢复、大小如何按 ABI 验证，以及与其他 SDK 共存时是否覆盖旧配置。把 debuggerd 的 pseudothread 栈大小照搬成业务 `sigaltstack()` 参数没有依据。
 
@@ -252,7 +251,7 @@ backtrace:
 3. **abort message**：`SIGABRT` 时常比 fault address 更有价值。
 4. **寄存器**：`pc` 指向当前指令，`sp` 指向当前栈顶；ARM64 的 `x30` 常用作链接寄存器（link register），`x29` 常用作帧指针（frame pointer）。
 5. **backtrace 与 maps**：每帧的 relative pc、模块、函数、Build ID 和映射信息共同用于符号化。
-6. **其他线程、栈内存转储（stack dump）与故障地址附近内存（memory near）**：用于寻找锁等待、线程所有者、损坏指针（tagged pointer）和上下文。
+6. **其他线程、栈内存转储（stack dump）与故障地址附近内存（memory near）**：用于寻找锁等待、线程所有者、损坏指针、带标签指针（tagged pointer）和上下文。
 
 ARM64 ABI 规定函数入口的前八个整数或指针参数通常使用 `x0-x7`，但崩溃可能发生在函数中部，编译器早已复用这些寄存器。`x0 == 0` 离“第一个源码参数为空”的结论还差一步验证。同理，`x30` 在优化、叶函数或异常展开中也不一定等于可靠调用者；应优先采用经过 unwind metadata 验证的 backtrace。
 
@@ -278,7 +277,7 @@ stack dump 是对原始栈内存的解释结果。某个值“看起来像代码
 
 #### Unwind：从现场恢复栈帧
 
-tombstone 里的 backtrace 不是凭空来的：`libunwindstack` 根据寄存器、maps、进程内存和 unwind metadata 恢复栈帧。常见信息来源有 DWARF CFI（Call Frame Information，调用帧信息）、ARM EHABI（ARM 异常处理 ABI） 的 `.ARM.exidx`、frame pointer，以及 JIT（Just-In-Time，即时编译）/Dex 相关映射信息；CFI（控制流完整性保护） 通常放在 `.eh_frame` 或 `.debug_frame` 段里。
+tombstone 里的 backtrace 不是凭空来的：`libunwindstack` 根据寄存器、maps、进程内存和 unwind metadata 恢复栈帧。常见信息来源有 DWARF CFI（Call Frame Information，调用帧信息）、ARM EHABI（ARM 异常处理 ABI） 的 `.ARM.exidx`、frame pointer，以及 JIT（Just-In-Time，即时编译）/Dex 相关映射信息；这里的 CFI 指 Call Frame Information（调用帧信息），通常放在 `.eh_frame` 或 `.debug_frame` 段里，与 Control Flow Integrity（控制流完整性保护）不同。
 
 “EH”即 Exception Handling；`.eh_frame` 原本服务于异常展开，里面存放的 CFI 同样可用于 Crash 时的栈回溯，谈不上是一套独立或必然更快的算法。Frame pointer 的遍历规则较简单，但能否得到完整栈取决于架构、编译选项、尾调用、栈损坏和生成代码。
 
@@ -538,7 +537,7 @@ int SnapshotHandler(int signo, HandlerSnapshot* out) {
 - 不假设业务锁、allocator、JNI、TLS（Thread-Local Storage，线程局部存储） 或全局状态仍一致；
 - 只处理经过严格限定的同步故障，其他信号仍交给系统。
 
-C++ 析构和栈展开被跳过，自动变量还受 `setjmp`/`longjmp` 语义限制。若故障来自堆内存损坏、栈破坏或错误函数指针，跳回后继续使用同一进程可能造成数据损坏、死锁，或稍后在无关位置崩溃。
+非局部跳转不会执行通常的 C++ 异常栈展开；若跨越本应执行非平凡析构的自动对象，会落入 C++ `setjmp`/`longjmp` 的未定义行为限制，而不只是少做一次清理。自动变量也受这些跳转语义限制，见 [C++ 标准草案的限制](https://eel.is/c++draft/csetjmp.syn)。若故障来自堆内存损坏、栈破坏或错误函数指针，跳回后继续使用同一进程可能造成数据损坏、死锁，或稍后在无关位置崩溃。
 
 #### mooner `prevent_pthread_crash` 的适用范围
 
@@ -546,9 +545,9 @@ C++ 析构和栈展开被跳过，自动变量还受 `setjmp`/`longjmp` 语义�
 
 它适合当作研究样本，离通用线上容错还有距离：
 
-- 当前示例把 `sig_env` 和 `handleFlag` 定义为进程级 `static` 全局变量，多条线程会共享并覆盖跳转上下文；
+- 当前示例把 `sig_env` 和 `handleFlag` 定义为进程级 `static` 全局变量，多条线程会共享并覆盖跳转上下文；其 JNI 初始化里的 `sigaltstack()` 也只改变调用线程，不会为之后 Hook 到的每个工作线程安装示例的 128 KB 栈；
 - 代理 `pthread_create` 只能覆盖经指定 Hook 点创建、并在包装函数内执行的任务；
-- `siglongjmp` 会跳过锁释放、RAII（用对象生命周期自动清理资源） 析构、JNI 线程分离和线程局部清理；
+- `siglongjmp` 可能跳过被跨越栈帧中的锁释放、RAII（用对象生命周期自动清理资源）析构与显式 JNI 清理；一次跳转不能代替完整的退出与清理协议；
 - 故障已经破坏共享堆或全局状态时，结束单个线程也不能恢复进程一致性；
 - 若转发旧 signal action、恢复 disposition 或重新投递不完整，会干扰 debuggerd。
 
@@ -566,7 +565,7 @@ C++ 析构和栈展开被跳过，自动变量还受 `setjmp`/`longjmp` 语义�
 使用它们时要重新验证：
 
 - 目标符号是否导出，是否被 LTO、内联展开（inlining）或直接调用绕过；
-- linker namespace（动态库可见范围）、RELR（Link Register，arm64 返回地址寄存器）O（重定位后只读保护）、PAC/BTI 与 CFI（控制流完整性），以及 16 KB 页大小的影响；
+- linker namespace（动态库可见范围）、RELRO（Relocation Read-Only，重定位完成后将指定区域设为只读）、PAC/BTI 与 CFI（控制流完整性），以及 16 KB 页大小的影响；
 - 动态加载/卸载、新增 `.so` 和多 ABI；
 - Hook 回调重入、取消 Hook 时的并发调用和原函数递归；
 - 第三方库声明的 Android/NDK 支持范围。
@@ -997,7 +996,7 @@ backtrace:
 
 建议在进程正常阶段完成这些准备：
 
-- 预先分配独立的备用信号栈，在边界设置不可访问的保护页，再通过 `sigaltstack()` 注册；
+- 先用 `sigaltstack(nullptr, &old_stack)` 查询当前线程的备用栈配置；确需替换时预先分配并设置保护区，保存旧配置、定义恢复时机，不能盲目覆盖 Bionic 或其他 SDK 已安装的备用栈；
 - 预分配固定大小的崩溃记录；
 - 预先打开文件描述符，或建立与独立处理进程的 socket；
 - 设计模块清单更新机制，但不要在信号处理器中解析 ELF；
@@ -1009,7 +1008,7 @@ backtrace:
 下面的伪代码只表达职责划分，别直接当完整的信号处理器复制：
 
 ```cpp
-static volatile sig_atomic_t handling_crash = 0;
+static volatile sig_atomic_t handling_crash = 0; // 仅示意重入标记，不提供跨线程互斥。
 static int crash_fd = -1;  // 正常启动阶段预先打开
 
 static void FatalSignalHandler(
@@ -1028,7 +1027,7 @@ static void FatalSignalHandler(
 }
 ```
 
-其中，`CopyFixedSize`、`WriteFullySignalSafe`、处理器链和重新触发信号，都必须由实现方针对 Bionic、部分写入、系统调用被信号中断的 `EINTR`（系统调用被信号中断）、备用栈和线程定向信号逐项验证。代码中的抽象函数只是职责占位，并非通用实现。
+其中，`CopyFixedSize`、`WriteFullySignalSafe`、处理器链和重新触发信号，都必须由实现方针对 Bionic、部分写入、系统调用被信号中断的 `EINTR`（系统调用被信号中断）、备用栈和线程定向信号逐项验证。代码中的抽象函数只是职责占位，并非通用实现。`volatile sig_atomic_t` 标记也不是跨线程的原子 test-and-set；多线程同时收到信号时，需要另行审计始终无锁的原子操作与重入策略，不能直接复制这段伪代码。
 
 <!-- gracker-diagram: a209-11-signal-safe-split -->
 ![信号上下文只保存和通知，解析放到外部](../../assets/diagrams/ch20/a209-11-signal-safe-split.png)
@@ -1041,7 +1040,7 @@ static void FatalSignalHandler(
 
 这条路径适合应用在下次启动后补采系统报告，也能减少致命信号现场的工作。它也有几点限制：
 
-- 返回值可能为空。系统把 trace 保存在全局环形缓冲区，新记录（包括其他应用的记录）可能覆盖旧记录，其他应用写入的记录也一样，调用方必须容错。
+- 返回值可能为空。系统把 trace 保存在全局环形缓冲区，新记录（包括其他应用的记录）可能覆盖旧记录，调用方必须容错。
 - 它查询的是历史退出，不是让当前崩溃进程继续执行。
 - protobuf schema 和读取逻辑应随目标 Android 版本验证。
 - 数据仍需取得用户同意，并按隐私与保留策略上传。

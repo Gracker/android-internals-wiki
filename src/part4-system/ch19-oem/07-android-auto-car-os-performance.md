@@ -13,8 +13,8 @@ related_chapters:
 - '19.3'
 - '25.2'
 confidence: medium-high
-last_verified: '2026-08-14'
-last_verified_against: Android for Cars docs current on 2026-08-14; AOSP android-17.0.0_r1 Car APIs/services and AIDL VHAL; android17-6.18-2026-06_r6
+last_verified: '2026-10-25'
+last_verified_against: Android for Cars docs current on 2026-10-25; AOSP android-17.0.0_r1 Car APIs/services and AIDL VHAL; android17-6.18-2026-06_r6
 sources:
 - type: official
   path: Android for Cars App Library official docs
@@ -90,6 +90,9 @@ AAOS 还包含 CarService、VHAL、CarWatchdog 和车辆电源状态机。CarSer
 
 图：两种平台中的模板都由客户端构建、host 绘制；Android Auto 的应用与 host 同在手机，投射接收端才在车机。
 
+<details>
+<summary>平台责任图的 Mermaid 源码</summary>
+
 ```mermaid
 flowchart LR
     subgraph auto["Android Auto 手机投射"]
@@ -110,7 +113,9 @@ flowchart LR
     end
 ```
 
-定位卡顿时，先确定问题属于模板模型、host 绘制、投射传输，还是应用自己的 Surface。上面的图把两种平台的责任落点并排放到了一起：Android Auto 的模板模型与 host 绘制分处手机与车机，AAOS 则都落在车机内。
+</details>
+
+定位卡顿时，先确定问题属于模板模型、host 绘制、投射传输，还是应用自己的 Surface。上面的图把两种平台的责任落点并排放到了一起：Android Auto 的模板模型与 host 绘制都在手机，车机负责投射接收、显示、输入和音频；AAOS 的应用与 host 则都在车机内。
 
 ## Android 17 不是唯一版本轴
 
@@ -123,7 +128,7 @@ flowchart LR
 | `androidx.car.app` 版本 | 客户端库 API 与兼容修复 | Gradle 依赖版本和发布说明（release notes） |
 | host / 整车厂（OEM）软件版本 | 模板渲染、输入、投射和车辆集成 | Android Auto/host 版本、车机软件版本 |
 
-Android 17 不会自动开启某个 Car App Library 模板，Jetpack 库升级也不会改变旧 host 的能力。产品代码应查询 host 能力和内容限制。当前文档还区分发布阶段：Car App Library 媒体体验在 Android 17 及更高版本 AAOS 上获得完整支持，在 Android Auto 上仍受早期访问与测试轨道限制；停驻游戏等类别也有各自的平台与发布轨道要求。不能只用 Android API level 推断类别可用性。
+Android 17 不会自动开启某个 Car App Library 模板，Jetpack 库升级也不会改变旧 host 的能力。产品代码应查询 host 能力和内容限制。当前文档还区分发布阶段：Car App Library 媒体体验在 Android 17 及更高版本 AAOS 上获得完整支持，在 Android Auto 上仍受早期访问与测试轨道限制；停驻游戏已于 2026 年 9 月 14 日在 Android Auto 与 AAOS 上正式开放，可发布到所有 Play 轨道；浏览器仍仅支持 AAOS 的内部测试轨道。不能只用 Android API level 推断类别可用性。
 
 <!-- gracker-diagram: a205-02-version-axes -->
 ![车载能力由四个版本轴共同决定](../../assets/diagrams/ch19/a205-02-version-axes.png)
@@ -149,7 +154,7 @@ Android 17 不会自动开启某个 Car App Library 模板，Jetpack 库升级�
 4. 新状态就绪后在主线程调用 `Screen.invalidate()`；
 5. 页面销毁或 host 断开时取消无用请求。
 
-`invalidate()` 只请求 host 再次调用 `onGetTemplate()`，应从主线程调用。它发出一次刷新请求后，在新模板返回前继续调用不会产生新请求。host 还会限制车屏更新频率；短时间内返回多个模板时，车屏可能只显示末次结果。因此不能把 `invalidate()` 当成动画时钟，也不应为每个网络分片刷新界面。
+`invalidate()` 只请求 host 再次调用 `onGetTemplate()`，应从主线程调用；`Screen` 未达到 `STARTED` 生命周期时，该调用没有效果。它发出一次刷新请求后，在新模板返回前继续调用不会产生新请求。host 还会限制车屏更新频率；短时间内返回多个模板时，车屏可能只显示末次结果。因此不能把 `invalidate()` 当成动画时钟，也不应为每个网络分片刷新界面。
 
 ### 模板配额和内容限制
 
@@ -244,7 +249,7 @@ Car App Library 导航应用通过 `NavigationManager` 更新 `Trip`、`TravelEs
 
 图：用同一命令标识关联状态和缓冲区事件，声学终点需要外部或平台观测补齐。
 
-视频、游戏和浏览器等停驻体验要按当前平台支持、车辆停驻状态和发布轨道处理。当前文档中，视频与浏览器主要面向 AAOS，停驻游戏可面向 Android Auto 与 AAOS，但部分能力仍处于受限测试阶段。普通媒体应用不能因为屏幕尺寸足够就允许行驶中播放视频。
+视频、游戏和浏览器等停驻体验要按当前平台支持、车辆状态和发布轨道处理。截至 2026 年 10 月 25 日，游戏可在 Android Auto 与 AAOS 上停驻使用，并发布到所有 Play 轨道；浏览器仅支持 AAOS 停驻使用，限内部测试轨道。视频类别支持 AAOS 的所有轨道，主要在停驻时使用；官方允许的行驶中有限使用是音频能力，不能据此在行驶中显示视频。详见[当前支持类别](https://developer.android.com/training/cars#supported-app-categories)与[2026 年 9 月发布更新](https://developer.android.com/training/cars/whats-new)。
 
 ## 网络与断线恢复
 
@@ -343,7 +348,7 @@ ADAS（Advanced Driver Assistance Systems，高级驾驶辅助系统）和其他
 | 媒体控制 | host 命令 → MediaSession 回调 → 播放器状态 → 首个音频缓冲区 → 扬声器输出 |
 | AAOS 启动/恢复 | 点火或系统恢复 → Android 系统可用 → 用户解锁或切换 → 应用会话 → 可用首屏 |
 
-应用用 `Trace.beginSection()` 标记业务阶段和模板构建，网络层记录请求 ID 与状态版本，媒体层记录 MediaSession 命令与播放器事件。Android Auto 还要在手机与 DHU 或车机日志中记录同一个测试事件，或使用可对齐的单调时钟；单调时钟只向前递增，不受用户校时影响，适合计算阶段耗时。
+应用用 `Trace.beginSection()` 标记业务阶段和模板构建，网络层记录请求 ID 与状态版本，媒体层记录 MediaSession 命令与播放器事件。Android Auto 还要在手机与 DHU 或车机日志中记录同一个测试事件。本机单调时钟适合计算本机阶段耗时，但不同设备的起点和漂移不同，不能直接相减；跨设备合并轨迹前需要共同事件或显式时钟同步，记录偏移、漂移与对齐误差。Perfetto 的[时钟同步模型](https://perfetto.dev/docs/concepts/clock-sync)说明了以时钟快照建立时间域映射的方式；无法建立映射时应分别报告各端耗时和外部端到端测量。
 
 <!-- gracker-diagram: a205-12-clock-domains -->
 ![跨设备延迟必须先建立时间域映射](../../assets/diagrams/ch19/a205-12-clock-domains.png)
@@ -352,9 +357,10 @@ ADAS（Advanced Driver Assistance Systems，高级驾驶辅助系统）和其他
 
 ### 工具选择
 
+
 - **Android Auto**：先用 Desktop Head Unit（DHU，在电脑上模拟兼容车机的测试程序）验证连接、旋钮或触摸等输入和 host 行为，再到多款量产车机做只能从外部观察结果的黑盒延迟与断线实验。
 - **AAOS**：用通用 Automotive Emulator 覆盖 API 和屏幕形态，用 OEM 系统镜像验证 CarService 与 VHAL 差异；GPU、音频、启动、休眠和高温表现仍需在量产硬件上测量。
-- **Perfetto**：在应用所在设备采集 `sched`（线程调度）、Binder（进程间调用）、CPU 频率、FrameTimeline（帧生命周期）、SurfaceFlinger（系统合成显示服务）、网络和应用自定义轨道。模板 host 位于另一个设备或进程且无法采集时，在报告中标出观测缺口。
+- **Perfetto**：在应用所在设备采集 `sched`（线程调度）、Binder（进程间调用）、CPU 频率、FrameTimeline（帧生命周期）、SurfaceFlinger（系统合成显示服务）、网络和应用自定义轨道。模板 host 的进程轨道或车端接收与呈现轨道无法采集时，在报告中标出观测缺口。
 - **CarWatchdog / `dumpsys`**：在 AAOS 上检查资源超限、CarService、电源策略、VHAL 和音频状态。`dumpsys` 用于输出系统服务的当前状态；可用命令和字段会随产品构建版本变化，需要在目标车机上确认。
 - **Car App Library 测试**：单元测试 `Screen` 返回栈、模板类型、配额流程，以及不同 host 能力下的分支。
 

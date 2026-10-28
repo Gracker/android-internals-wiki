@@ -4,9 +4,9 @@ chapter: '26.7'
 section: '26.7'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android Developers ApplicationStartInfo and ActivityManager docs updated 2026-08-14, current app startup/Macrobenchmark/ProfilingTrigger docs, and AOSP android-17.0.0_r1 sources retrieved 2026-08-15
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Current Android Developers ApplicationStartInfo and ActivityManager docs reviewed 2026-10-25, current startup/Macrobenchmark/ProfilingTrigger/SystemClock docs, and AOSP android-17.0.0_r1 start tracker/ActivityThread/ActivityMetricsLogger sources; clock, listener implementation and source-event37.2 boundaries checked; host stubs only
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -113,9 +113,9 @@ Android 15 / API 35 引入 `ApplicationStartInfo`，为应用提供系统侧的�
 
 ### 首帧完成回调
 
-`addApplicationStartInfoCompletionListener(executor, listener)` 在当前启动首帧绘制完成时通知应用。`Executor` 决定在哪个线程执行，listener 接收完成记录。回调不等待 `Activity.reportFullyDrawn()`；当前启动若已经完成，系统会立即把记录投递到指定 executor。每个 listener 最多调用一次，调用后自动移除；同一时刻已有 listener 时，新注册项会替换它。回调是异步的，注册和处理都应避免阻塞主线程。
+`addApplicationStartInfoCompletionListener(executor, listener)` 在当前启动首帧绘制完成时通知应用。`Executor` 决定在哪个线程执行，listener 接收完成记录。回调不等待 `Activity.reportFullyDrawn()`；当前启动若已经完成，系统会立即把记录投递到指定 executor。每个listener至多回调一次，之后移除。要区分公开说明和版本实现：`android-17.0.0_r1`的ActivityManager用列表保存不同listener，同一`equals`对象重复添加被忽略，经单一Binder回调分发后清空；源码/公开注释仍有“replace existing”措辞。接入层宜统一管理注册和移除，不依赖新listener会覆盖所有旧项。回调是异步的，注册和处理都应避免阻塞主线程。
 
-需要 `START_TIMESTAMP_FULLY_DRAWN` 时，应在调用 `reportFullyDrawn()` 后重新查询记录，或重新注册 listener 取得已经完成的记录。首帧回调拿到的是当时的副本，稍后不会自行更新。
+需要 `START_TIMESTAMP_FULLY_DRAWN` 时，应在调用 `reportFullyDrawn()` 后重新查询记录，或重新注册 listener 取得已经完成的记录。首帧回调拿到的是当时副本，之后不会自行更新。`reportFullyDrawn()`之后立即重读也不应强制要求该key出现；允许系统处理/记录延迟，按有界策略后续upsert，仍缺失则保留未就绪状态，不忙等或补零。
 
 <!-- gracker-diagram: a292-03-completion-listener-and-late-fully-drawn -->
 ![首帧 listener 不等待 fully-drawn，副本不会自动更新](../../assets/diagrams/ch26/a292-03-completion-listener-and-late-fully-drawn.png)
@@ -150,7 +150,7 @@ Android 16 / API 36 增加的 `getStartComponent()` 用于区分 Activity、Serv
 - `START_TYPE_HOT`：已有应用状态被带回前台。
 - `START_TYPE_UNSET`：启动类型尚未设置。
 
-线上冷启动 SLA（服务等级目标）只纳入完成记录中的 `START_TYPE_COLD`。warm 和 hot 分桶统计，不与 cold 聚合。后台 Service、Broadcast、ContentProvider 等进程启动也不进入“首页冷启动”指标；它们属于后台拉起健康度或组件初始化成本。
+冷启动耗时分布只纳入满足该指标定义、已完成且`START_TYPE_COLD`的样本；ERROR、未完成和未上报项仍进入启动失败/完成率与数据健康护栏，不能从用户影响分母静默删除。warm 和 hot 分桶统计，不与 cold 聚合。后台 Service、Broadcast、ContentProvider 等进程启动也不进入“首页冷启动”指标；它们属于后台拉起健康度或组件初始化成本。
 
 用户入口还要结合 reason 和业务 route：
 
@@ -171,7 +171,7 @@ Android 15 缺少 start component 时，不要仅凭 reason 把样本永久定�
 
 ## 时间戳协议
 
-`getStartupTimestamps()` 返回非空的 `Map<Integer, Long>`。Map 中的 value 是纳秒单位的单调时钟时间戳；单调时钟只随设备运行向前递增，适合计算时长，不表示从 1970 年开始的 Unix epoch 日历时间。Map 对象本身非空，但各个 key 仍可能缺失。
+`getStartupTimestamps()` 返回非空的 `Map<Integer, Long>`。Map的value是CLOCK_MONOTONIC时基的纳秒数。该tag的ActivityMetricsLogger与ActivityThread用`SystemClock.uptimeNanos()`记录首帧和Application.onCreate等点，不计深睡；`elapsedRealtimeNanos()`计深睡，不能因都叫单调时钟就混算。详见[SystemClock契约](https://developer.android.com/reference/android/os/SystemClock)及[实际取时点](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java)。它不是Unix epoch时间。Map 对象本身非空，但各个 key 仍可能缺失。
 
 系统公开的主要 key 包括：
 
@@ -188,15 +188,20 @@ Android 15 缺少 start component 时，不要仅凭 reason 把样本永久定�
 
 可用性由启动状态、启动组件和系统采集情况共同决定。`FULLY_DRAWN` 只有应用调用 `reportFullyDrawn()` 后才可能出现。Android 官方文档还标明：Service 启动的 `START_TIMESTAMP_LAUNCH` 在 Android 16 及更早版本可能不正确。API 35 / 36 上不要用该值给 Service 启动设置耗时门禁；Android 17 再按修复后的平台语义处理。
 
-当前 API reference 还展示了 API 10000 预览常量 `START_TIMESTAMP_SOURCE_EVENT`，用于记录触发 Activity 启动的源事件。它不属于稳定 API 37，本章的数据模型和门禁不使用该 key；待对应 SDK 正式发布后再单独验证时间基准和设备覆盖。
+截至本轮核对，在线API reference已将`START_TIMESTAMP_SOURCE_EVENT`标为Android17次要版本37.2，并明确使用`SystemClock.uptimeNanos()`时基、仅Activity组件设置；它不在`android-17.0.0_r1`源码中。本章API37.0基线仍不把它设为必填key。后续适配按正式完整SDK版本和实际字段可用性扩展，不再沿用“API10000预览”的旧标签。
 
 阶段耗时只在同一记录、两个 key 均存在时相减。例如：
 
 - `FIRST_FRAME - LAUNCH` 可保存为系统首帧原始区间，前提是 Activity 启动且 launch 时间可信。
 - `APPLICATION_ONCREATE - BIND_APPLICATION` 表示从 bindApplication 记录点到 `Application.onCreate()` 被调用的区间，其中还包含框架在两点之间执行的工作，不能当作 `Application.onCreate()` 自身耗时。
-- `FULLY_DRAWN - LAUNCH` 只有 `reportFullyDrawn()` 的业务语义稳定时才可跨版本比较。
+- `FULLY_DRAWN - LAUNCH`只在key齐全、非负且业务报告语义稳定时比较，并保留为系统原始阶段区间。Macrobenchmark的TTFD还以包含/紧随reportFullyDrawn的那一帧完成渲染为终点，不能不核对测量端点就把两个数直接混用。
 
-系统时间戳不应与 `System.currentTimeMillis()` 直接相减。若要给记录增加可读的 wall-clock（日历时钟）时间，应在采集瞬间同时保存日历时钟和单调时钟快照，再在同一 boot session（一次开机周期）内近似换算。设备重启或系统时间变化后，关联置信度需要降低。
+系统时间戳不应与 `System.currentTimeMillis()` 直接相减。若要给记录增加可读的 wall-clock（日历时钟）时间，应在采集瞬间同时保存wall-clock与同一uptime时基的校准点；已有elapsedRealtime数据需另记录uptime/elapsed对应关系并保留换算误差，再在同一 boot session（一次开机周期）内近似换算。设备重启或系统时间变化后，关联置信度需要降低。
+
+<!-- gracker-diagram: a292-05-uptime-versus-elapsed-realtime -->
+![都是纳秒单调时钟，也不能混用深睡规则](../../assets/diagrams/ch26/a292-05-uptime-versus-elapsed-realtime.png)
+
+图：阶段差只在同一记录、同一时基且key齐全时计算；纳秒单位相同不能证明时基相同。
 
 ### 把业务 ready 写入同一 Map
 
@@ -205,46 +210,40 @@ API 35 还提供 `ActivityManager#addStartInfoTimestamp(key, timestampNs)`。开
 下面的代码演示两件事：如何安全读取未完成记录，以及如何在调用 `reportFullyDrawn()` 前，通过应用数据协议固定分配的 key 写入首页 ready 时间戳。
 
 ```kotlin
+import android.app.ActivityManager
+import android.app.ApplicationStartInfo
+import android.content.Context
+import android.os.Build
+import android.os.SystemClock
+import androidx.annotation.RequiresApi
+
 data class StartEvidence(
-    val pid: Int,
-    val processName: String,
-    val packageUid: Int,
-    val realUid: Int,
-    val reason: Int,
-    val startupState: Int,
-    val startType: Int?,
-    val startComponent: Int?,
+    val pid: Int, val processName: String,
+    val packageUid: Int, val realUid: Int, val definingUid: Int,
+    val reason: Int, val startupState: Int,
+    val startType: Int?, val startComponent: Int?,
     val wasForceStopped: Boolean,
     val timestampsNs: Map<Int, Long>,
 )
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-fun readRecentStarts(
-    context: Context,
-    maxRecords: Int,
-): List<StartEvidence> {
-    require(maxRecords > 0)
-    val activityManager = context.getSystemService(ActivityManager::class.java)
-
-    return activityManager.getHistoricalProcessStartReasons(maxRecords).map { info ->
+fun readRecentStarts(context: Context, maxRecords: Int = 0): List<StartEvidence> {
+    require(maxRecords >= 0) // 0 仍只读取平台当前保留的有界历史。
+    val am = requireNotNull(context.getSystemService(ActivityManager::class.java))
+    return am.getHistoricalProcessStartReasons(maxRecords).map { info ->
         val completed =
             info.startupState == ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN
-
         StartEvidence(
-            pid = info.pid,
-            processName = info.processName,
-            packageUid = info.packageUid,
-            realUid = info.realUid,
-            reason = info.reason,
-            startupState = info.startupState,
-            startType = info.startType.takeIf {
-                completed && it != ApplicationStartInfo.START_TYPE_UNSET
-            },
+            pid = info.pid, processName = info.processName,
+            packageUid = info.packageUid, realUid = info.realUid,
+            definingUid = info.definingUid,
+            reason = info.reason, startupState = info.startupState,
+            startType = if (completed) {
+                info.startType.takeUnless { it == ApplicationStartInfo.START_TYPE_UNSET }
+            } else null,
             startComponent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
                 info.startComponent
-            } else {
-                null
-            },
+            } else null,
             wasForceStopped = info.wasForceStopped(),
             timestampsNs = info.startupTimestamps.toMap(),
         )
@@ -253,20 +252,15 @@ fun readRecentStarts(
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 fun markHomeReadyBeforeFullyDrawn(context: Context) {
-    val activityManager = context.getSystemService(ActivityManager::class.java)
-    activityManager.addStartInfoTimestamp(
+    val am = requireNotNull(context.getSystemService(ActivityManager::class.java))
+    am.addStartInfoTimestamp(
         ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START,
-        SystemClock.elapsedRealtimeNanos(),
+        SystemClock.uptimeNanos(),
     )
 }
 ```
 
-`START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START` 在这个示例的数据协议中固定表示 `HOME_READY`。生产实现要维护 key 注册表，避免不同模块复用 21–30 的同一位置。写入后仍应重新读取完成记录；采集层不在字段缺失时补 0。
-
-<!-- gracker-diagram: a292-05-uptime-versus-elapsed-realtime -->
-![都是纳秒单调时钟，也不能混用深睡规则](../../assets/diagrams/ch26/a292-05-uptime-versus-elapsed-realtime.png)
-
-图：阶段差只在同一记录、同一时基且key齐全时计算；纳秒单位相同不能证明时基相同。
+`START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START` 在这个示例的数据协议中固定表示 `HOME_READY`。生产实现要维护 key 注册表，避免不同模块复用 21–30 的同一位置。标记函数须在业务定义的ready点、`reportFullyDrawn()`之前调用；写入失败与查询失败分别记状态。调用方先做API35+分支，在后台处理服务缺失/远端异常；不可把异常转为空列表。之后按有界策略重读并upsert完成记录，不把缺失补0。
 
 <!-- gracker-diagram: a292-06-developer-home-ready-and-fully-drawn-order -->
 ![业务 HOME_READY 使用固定 key，并在 fully-drawn 前写入](../../assets/diagrams/ch26/a292-06-developer-home-ready-and-fully-drawn-order.png)
@@ -279,10 +273,10 @@ fun markHomeReadyBeforeFullyDrawn(context: Context) {
 
 | 字段组 | 建议字段 | 约束 |
 |---|---|---|
-| 记录身份 | `start_record_key`、pid、processName、packageUid、realUid | key 包含多字段，处理 PID 复用 |
+| 记录身份 | `start_record_key`、开机区间、launch_ns、pid、processName、packageUid、realUid | 版本化无歧义编码尽力识别；startup_state、后补fully_drawn等可变字段不进入稳定身份，缺launch时保留本地接收ID与候选关联 |
 | 系统归因 | `startup_state`、`start_type`、`start_reason`、`start_component`、`was_force_stopped` | 保留 API 可用版本和字段来源 |
 | 系统时间 | `launch_ns`、`fork_ns`、`bind_application_ns`、`app_on_create_ns`、`first_frame_ns`、`fully_drawn_ns` | 缺失为 null；保留原始值 |
-| 业务时间 | `home_ready_ns`、`first_interactive_ns`、`report_fully_drawn_policy` | 使用同一单调时钟；记录协议版本 |
+| 业务时间 | `home_ready_ns`、`first_interactive_ns`、`report_fully_drawn_policy` | 使用同一uptime/CLOCK_MONOTONIC时基；记录协议版本与开机区间 |
 | 业务入口 | `route_name`、`entry_scene`、`install_or_upgrade_state` | 使用有限枚举，避免上传原始 URI（统一资源标识符） |
 | 口径调整 | `raw_duration_ms`、`adjusted_duration_ms`、`adjustment_reason` | raw 是系统原始时长，adjusted 是按产品协议调整后的时长；调整值不能覆盖原始值 |
 | 诊断关联 | `session_id`、`trace_id`、`case_id`、`app_version`、`os_build`、`api_level` | 关联文件时保留 source |

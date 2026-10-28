@@ -3,10 +3,10 @@ title: 线上排障、诊断通道与非 Play ROM 适配
 chapter: '26.3'
 section: '26.3'
 status: finalized
-applicable_versions: Android 10 (API 29) - Android 17 (API 37); ProfilingManager details include SDK extension 36.1
-last_verified: '2026-08-16'
-last_source_verified_at: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1 StatsManagerService/statsd sources and current Android Developers, Firebase Remote Config, and Google Play staged rollout docs retrieved 2026-08-15
+applicable_versions: Android 10 (API 29) - Android 17 (API 37); ProfilingManager details include Android 16 minor API version 36.1
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 StatsManagerService/statsd sources and current Android Developers, Firebase Remote Config, and Google Play staged rollout docs reviewed 2026-10-25; SDK 36.1 minor release, profiling result types, failure-aware snapshots and bounded exit-history deduplication rechecked; host stubs only, no Android device test
 confidence: medium
 sources:
 - type: legacy-reference-preserved
@@ -141,7 +141,7 @@ consolidated_from:
 
 # 线上排障、诊断通道与非 Play ROM（系统固件） 适配
 
-线上排障先用指标和版本缩小影响面，再通过受控日志、Trace（追踪记录） 或诊断命令获取增量证据。非 Play 渠道和国内 ROM 缺少部分标准平台能力，需要提前设计替代分发、权限和回传路径。
+线上排障先用指标和版本缩小影响面，再通过受控日志、Trace（追踪记录） 或诊断命令获取增量证据。非Play安装可能不进入Play质量报表；ROM是否提供某项公共API、系统服务或厂商报表，应按设备版本和实际能力检查。提前设计自己的证据回传与分发路径，不能从渠道名称推断平台API缺失。
 
 > 源码基线：AOSP `android-17.0.0_r1`，平台能力上界为 Android 17 / API 37；相关结论不依赖内核专有实现，因此不附加内核版本标签（kernel tag）；设备可能使用其他内核分支。
 
@@ -158,7 +158,7 @@ consolidated_from:
 1. 建立事件编号，记录用户可见现象、首次发生时间、影响版本和当前影响面。
 2. 先做安全处置：暂停扩大灰度，必要时关闭可疑功能；保留已知证据，避免重启服务或清除缓存后现场消失。
 3. 建立时间线。优先使用单调时间，也就是只随设备运行递增、不受校时影响的时钟；跨设备关联时改用带时区并经过校准的墙钟时间（wall clock）。我们把客户端日志、服务端追踪标识（traceId）、Crash / ANR、配置变更和发布记录放进同一时间线。
-4. 列出证据缺口，想清楚还缺哪些材料才能验证当前假设，再选择动态日志、端侧性能剖析（profiling）、用户协助生成系统诊断包（bug report（系统错误报告）），或在测试环境复现。采集动作本身也要限时、限量并可撤销。
+4. 列出证据缺口，想清楚还缺哪些材料才能验证当前假设，再选择动态日志、端侧性能剖析（profiling）、用户协助生成系统诊断包（bug report），或在测试环境复现。采集动作本身也要限时、限量并可撤销。
 5. 修复或隔离后，沿用相同的用户分桶和操作路径验证指标是否恢复；同时记录哪些证据能够支持结论，哪些只能说明时间或分组相关。
 
 <!-- gracker-diagram: a288-01-incident-evidence-and-reversible-mitigation -->
@@ -211,7 +211,7 @@ Trace 适合回答两个问题：时间花在哪里，线程为什么没有运�
 
 在用户设备上，发布版 App 能抓到什么 Trace，取决于系统给出的路径。Android 9 起设备提供 System Tracing（系统追踪） 应用，Android 10 起以 Perfetto 格式保存记录，这条路径需要用户或测试人员亲手操作。
 
-Android 15 新增的 `ProfilingManager` 为普通 App 提供受系统约束的程序化性能剖析：返回的数据经过裁剪或脱敏、只与请求进程相关，和 adb 条件下的全设备 Trace 是两回事。表中 SDK extension 是可独立于 API level 更新的平台模块版本。
+Android 15 新增的 `ProfilingManager` 为普通 App 提供受系统约束的程序化性能剖析：返回的数据经过裁剪或脱敏、只与请求进程相关，和 adb 条件下的全设备 Trace 是两回事。表中的36.1是Android 16的次要API发布版本；它与独立更新模块使用的SDK Extensions不是同一编号体系。
 
 **Android 线上诊断能力按版本分层**：
 
@@ -222,11 +222,17 @@ Android 15 新增的 `ProfilingManager` 为普通 App 提供受系统约束的�
 | Android 12-14 / API 31-34 | 延续退出历史；API 31 起原生崩溃（Native crash）可返回 Protocol Buffers 格式的 tombstone（崩溃转储） | 按 `reason`（退出原因）区分 ANR trace 与 Native tombstone |
 | Android 15 / API 35 | `ProfilingManager.requestProfiling()` | 请求可能延迟、失败或被限流；持续采集类型应提前开始，并用 `CancellationSignal` 取消信号停止 |
 | Android 16 / API 36 | `ProfilingTrigger`、`addProfilingTriggers()` | 系统触发结果只投递给全局监听器（listener），不保证每次触发都有文件 |
-| SDK extension 36.1 与 Android 17 / API 37 | `requestRunningSystemTrace()` 与扩展触发类型 | 仅在后台 trace 正在运行且 App 已注册对应触发器（trigger）时才可能得到快照 |
+| Android 16次要版本36.1 | `requestRunningSystemTrace()`、`addAllProfilingTriggers()` | 先注册对应触发器；后台trace快照还依赖系统当时正在录制 |
+| Android 17 / API 37 | OOM、冷启动、异常行为、兼容性等新增触发类型 | 各常量有不同采集产物；OOM为Java heap dump，不一律依赖后台trace快照 |
 
 Android 15 的 `requestProfiling()` 支持 system trace（系统追踪）、Java heap dump（Java 堆转储）、heap profile（堆分配剖析） 和 stack sampling（调用栈采样） 四种类型。请求必须配好接收结果的监听器和执行回调的 executor；系统会同时按应用和全局预算限流，成功、失败还是被限流，要看回调里的 `ProfilingResult`。结果文件交付到应用数据目录后，容量、保留期和上传策略仍由应用自己执行。
 
-Android 16 的 `ProfilingTrigger` 支持注册 ANR、`APP_FULLY_DRAWN` 等事件。SDK extension 36.1 增加了 `requestRunningSystemTrace()` 和 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，这个 API 请求的是系统正在后台采集的 trace 快照，系统不会为调用方临时启动不受约束的全局 Trace。Android 17 / API 37 又增加了一批触发类型：OOM（内存不足）、冷启动、异常行为、兼容性问题，以及因过量占用 CPU 被终止。不同类型返回 system trace、stack sample、heap dump 或与异常类型对应的产物。客户端要同时检查运行时 API level 与 SDK extension 版本，只看 `targetSdk` 会漏掉扩展能力。详细 API 用法见 26.6 节。
+Android 16 的 `ProfilingTrigger` 支持注册 ANR、`APP_FULLY_DRAWN` 等事件。Android 16次要版本36.1增加了 `requestRunningSystemTrace()` 和 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，这个 API 请求的是系统正在后台采集的 trace 快照，系统不会为调用方临时启动不受约束的全局 Trace。Android 17 / API 37 又增加了一批触发类型：OOM（内存不足）、冷启动、异常行为、兼容性问题，以及因过量占用 CPU 被终止。不同类型返回 system trace、stack sample、heap dump 或与异常类型对应的产物。客户端按成员的引入版本检查运行时能力：主API看`SDK_INT`，36.1成员应先确认API≥36，再用`SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`判断。`targetSdk`不是能力探测；[完整版本常量](https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL)与[版本判断说明](https://developer.android.com/studio/publish/versioning)给出了次要版本规则。详细 API 用法见 26.6 节。
+
+<!-- gracker-diagram: a288-03-profiling-sdk-major-and-minor-versions -->
+![ProfilingManager 必须区分 API 36、36.1 与 37](../../assets/diagrams/ch26/a288-03-profiling-sdk-major-and-minor-versions.png)
+
+图：36.1是次要API发布版本；SDK_INT只有36不足以确认36.1成员存在，targetSdk也不是能力检查。
 
 生产环境方案仍要把能力分成三个等级：
 
@@ -245,11 +251,6 @@ Android 16 的 `ProfilingTrigger` 支持注册 ANR、`APP_FULLY_DRAWN` 等事件
 
 如果团队已经有 traceId 或 requestId，Trace section 名称不要写高基数值。高基数表示字段有大量不同取值，例如把每个用户 ID 都当成一个类别。section 只写稳定阶段名，高基数字段放日志或事件属性里，否则 Perfetto 视图和聚合统计会被大量唯一名称污染。
 
-<!-- gracker-diagram: a288-03-profiling-sdk-major-and-minor-versions -->
-![ProfilingManager 必须区分 API 36、36.1 与 37](../../assets/diagrams/ch26/a288-03-profiling-sdk-major-and-minor-versions.png)
-
-图：36.1是次要API发布版本；SDK_INT只有36不足以确认36.1成员存在，targetSdk也不是能力检查。
-
 ### 灰度环境与问题隔离
 
 灰度环境用于限制风险范围，并让诊断配置与功能开关能够撤销。它同时服务发版和线上排障：给小范围用户增加日志、下发诊断配置、关闭可疑功能或恢复旧配置，都应经过同一套授权、发布、监控和审计规则。
@@ -261,7 +262,7 @@ Android 16 的 `ProfilingTrigger` 支持注册 ANR、`APP_FULLY_DRAWN` 等事件
 - **版本隔离**：按 App 版本、配置版本、资源版本、热修复版本切分。适合发版后指标异常或配置下发事故。
 - **功能隔离**：用远程配置关闭可疑功能、切回旧实现、降采样、降低图片质量、停用高风险实验。适合一时发不了版、但可以止损的场景。
 
-Google Play 分阶段发布（staged rollout）可以暂停继续分发，但已经收到该版本的用户仍停留在该版本；修复通常需要发布 `version（配置键与版本）Code` 更高的新版本。halt 只停止新增分发，起不到远程降级已安装 APK 的作用。
+Google Play 分阶段发布（staged rollout）可以暂停继续分发，但已经收到该版本的用户仍停留在该版本；修复通常需要发布 `versionCode` 更高的新版本。halt 只停止新增分发，起不到远程降级已安装 APK 的作用。
 
 Firebase Remote Config rollout 支持编辑或回滚灰度配置；客户端只有在后续成功拉取（fetch）并激活（activate）配置后才会应用新值，离线设备和仍使用缓存的客户端不会即时切换。两条路径的生效时延不同，事故预案要分别准备"停止新增曝光""运行期关闭功能"和"发布修复版本"。
 
@@ -305,7 +306,7 @@ Firebase Remote Config rollout 支持编辑或回滚灰度配置；客户端只�
 
 ### 平台与 OEM 补充：StatsD 的权限边界
 
-StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设备厂商（OEM）和具备相应权限的系统组件，为他们提供长期聚合数据，普通第三方 App 拿不到通用的生产环境查询入口。它的调用路径是：`StatsManagerService` 通过 Binder 与本地 `statsd` 守护进程通信，`StatsCompanionService` 负责部分系统协作，全程不经过 Java Native Interface（JNI） 三层模型。
+StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设备厂商（OEM）和具备相应权限的系统组件，为他们提供长期聚合数据，普通第三方 App 拿不到通用的生产环境查询入口。它的调用路径是：`StatsManagerService` 通过 Binder 与本地 `statsd` 守护进程通信，`StatsCompanionService` 负责部分系统协作；这段配置/报告控制链通过Binder，不应画成固定JNI三层。事件写入另有`StatsLog`等入口及native实现，不能据此断言StatsD所有路径都不经过JNI。
 
 权限决定了适用对象：
 
@@ -408,7 +409,7 @@ Android 安全文档仍建议生产环境使用应用内部、可治理的日志
 | 内存组块后写文件 | 可合并写入并集中编码 | 崩溃前尚未刷出的组块会丢失 | 中低频结构化日志 |
 | mmap（内存映射）/ 环形文件 | 高频写入路径可控，可限制最大占用 | 崩溃恢复、并发协议和持久化语义复杂 | 经压测证明有需要的日志基础库 |
 
-`mmap` 让进程通过虚拟内存页访问文件，它只改变访问方式，要判断一条记录是否稳定写入存储，还得看记录自身的持久化信息。无论采用哪种方案，记录都应具有长度、schema（字段与编码结构）版本、序号和校验信息；读取端碰到半条记录时停止在上一条完整边界。关键元数据还要有独立的小型状态记录，别只凭文件名猜测上传状态。
+`mmap` 让进程通过虚拟内存页访问文件，它只改变访问方式，映射可写不等于已经持久化。记录长度/序号/校验用于恢复时识别完整记录；掉电持久性还取决于同步策略、文件系统和设备，不能由校验通过倒推出。无论采用哪种方案，记录都应具有长度、schema（字段与编码结构）版本、序号和校验信息；读取端碰到半条记录时停止在上一条完整边界。关键元数据还要有独立的小型状态记录，别只凭文件名猜测上传状态。
 
 应用私有目录提供的是进程与普通应用之间的沙箱隔离；业务需要的保密性、完整性和可恢复性要另行设计。是否额外加密取决于威胁模型，即要保护什么、攻击者是谁、攻击者拥有哪些权限。密钥与密文都由同一已被攻陷的进程访问时，应用层加密挡不住该进程读取明文。
 
@@ -434,12 +435,12 @@ Android 不保证某个应用进程长期存活。各进程可以写自己的文
 
 ### 多进程写入与单进程上报
 
-主进程、WebView 进程、播放器进程和推送进程同时写入一个 Binder（Android 跨进程调用机制）服务，会把日志压力转成 IPC（跨进程通信）队列压力；每个进程独立上传又会增加连接、退避和状态竞争。常用边界是每进程独立写文件，由任一取得上传租约的执行者统一扫描和传输。
+主进程、应用声明的WebView宿主进程、播放器进程和推送进程同时写入一个 Binder（Android 跨进程调用机制）服务，会把日志压力转成 IPC（跨进程通信）队列压力；每个进程独立上传又会增加连接、退避和状态竞争。常用边界是每进程独立写文件，由任一取得上传租约的执行者统一扫描和传输。
 
 这里的"单执行者"描述并发协议，不绑定固定进程身份：
 
 - 每个进程只修改自身正在写入的文件。切片完成后，在同一文件系统内 rename 到待上传目录。
-- rename 只保证目录项切换的原子性，此前数据是否已完整持久化，仍要靠记录长度、序号和校验值判断完整边界。
+- 同一文件系统内成功rename提供名称切换原子性；记录长度、序号和校验值用于恢复完整边界，不能证明此前数据已持久化。需要抗掉电时另行设计文件同步及所需的目录同步/提交顺序，并验证具体文件系统；同步失败必须留在失败状态。
 - `FileObserver` 是 Android 的文件与目录变更通知 API，这里只把它作为唤醒提示。观察者未运行、进程死亡或监听范围不完整时可能没有事件，而且目录监听不会自动递归覆盖所有子目录。进程启动、后台任务运行和上传完成后均要全量重扫索引目录。
 - 上传执行者使用跨进程文件锁或带过期时间的租约。持有者退出后其他进程可以接管；即便出现双执行者，服务端幂等键也应避免产生两份业务结果。
 - WorkManager 的 unique work 会按唯一名称和既定冲突策略处理重复入队，可限制同一调度数据库里的重复工作，但它不是任意多进程代码的锁。多进程初始化方式、实际运行进程和数据库访问策略必须在目标 App 中验证。
@@ -494,7 +495,7 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 官方当前建议多数场景优先使用 AndroidX 高层封装来构造请求，以减少参数组合错误。无论使用哪层封装，系统配额与 `ProfilingResult` 的结果语义都不变。
 
-版本差异还要细分：API 36 加入系统触发器注册；Android 17 / API 37 又加入 `requestRunningSystemTrace()`。App 必须先通过 `addProfilingTriggers()` 或 `addAllProfilingTriggers()` 注册 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，该方法才会请求系统当前后台 trace 的快照。
+版本差异还要细分：API 36 加入系统触发器注册；Android 16次要版本36.1加入`requestRunningSystemTrace()`和`addAllProfilingTriggers()`。App 必须先通过 `addProfilingTriggers()` 或 `addAllProfilingTriggers()` 注册 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，该方法才会请求系统当前后台 trace 的快照。
 
 调用方能否拿到结果，取决于系统当时是否在运行后台 trace、配额是否充足、请求是否被执行；结果只通过全局监听器投递。这项 API 给不了普通 App 任意启动全设备追踪的能力。
 
@@ -525,7 +526,7 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 [结果获取说明](https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze)还规定了进程死亡后的行为：若 App 在结果投递前退出，系统会在 App 下次启动并注册全局监听器后尝试投递。端侧必须尽早注册该监听器，同时接受结果因配额、进程生命周期或文件问题而缺失的可能性。
 
-触发式采集与后台持续录制是两回事。[trigger-based capture 文档](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)说明，触发器只有在系统当时正在采集被抽样的后台 trace 且配额允许时，才可能得到结果；触发结果依赖全局监听器，App 未运行时会在以后启动并注册监听器后尝试投递。服务端应把"触发已登记""系统产生结果""结果已上传"分开统计。
+需要历史system trace的触发类型，依赖系统当时有抽样后台trace及可用配额；不能将这个前提推广到所有触发器。例如API37的`TRIGGER_TYPE_OOM`请求Java heap dump。按[各触发器契约](https://developer.android.com/reference/android/os/ProfilingTrigger)解释产物；结果依赖全局监听器，并区分“触发已登记”“系统产生结果”“结果已上传”。进程不在时的重投递也只是平台尝试。
 
 命令回执保存请求参数、平台版本、结果码、错误消息、结果文件 ID 和上传状态。`rate_limited` 这类根据结果码归纳出的字段替代不了原始 `error_code`；请求时长或缓冲设置也应标为 `requested_*`，表示这是请求值，除非系统 API 明确返回实际采用值。
 
@@ -641,23 +642,12 @@ APM 是 Application Performance Monitoring 的缩写，指持续采集应用性�
 
 数据路径上，非 Play 场景仍要把指标、崩溃事件和 trace 分开处理：指标是可聚合的数值，崩溃事件描述一次离散故障，trace 保存一段时间内的细粒度事件与时间戳。三者体积、采样方式、隐私风险和服务端查询方式各不相同，塞进同一种日志，容量与上传限额很容易失控。
 
-```text
-应用进程
-├─ 指标采集：启动、帧、CPU、内存、任务执行、能力快照
-├─ 稳定性采集：Java/Native 崩溃、ANR 线索、ApplicationExitInfo
-├─ 诊断采集：命中策略后请求 profile 或保存应用内 trace
-└─ 有界本地队列：版本化 schema、去重、限额、过期、用户同意状态
-                         │
-                         ▼
-                  机会式批量上传
-                         │
-                         ▼
-服务端入口 ──> 校验与限流 ──> 指标库 / 事件库 / trace 存储
-                                  │
-               构建与符号文件登记 ┤
-                                  ▼
-                    分群分析、告警、回归比较
-```
+三类采集各有schema与预算，先经过有界持久队列，再机会式批量上传；服务端按类型分库，并关联准确构建与符号文件。
+
+<!-- gracker-diagram: a288-12-separate-telemetry-streams-and-ack -->
+![非 Play 端云证据路径：分类型采集与持久 ACK](../../assets/diagrams/ch26/a288-12-separate-telemetry-streams-and-ack.png)
+
+图：没有收到事件与指标值为零分开；进程可能在回传前退出，本地状态需跨进程恢复。
 
 "机会式"表示满足网络、电量和调度条件时才尝试上传，不承诺精确执行时刻。进程也可能在上传前结束，因此本地队列要限制容量与保存期限，写入要能抵抗进程中断；收到服务端确认后再删除对应批次。
 
@@ -676,7 +666,7 @@ APM 是 Application Performance Monitoring 的缩写，指持续采集应用性�
 | 运行状态 | 前后台、进程 importance、省电、热状态、刷新率、后台限制、standby bucket | 状态必须和被测事件尽量同时记录 |
 | 采集质量 | collector 版本、采样原因、丢弃计数、队列年龄、上传重试状态 | 用于判断缺数和采集器自身回归 |
 
-时间字段的分工是：wall clock 是可能被用户或网络校时调整的日历时间，便于服务端按日期对齐；elapsed realtime 从设备启动起单调递增，适合计算同一设备上的耗时。跨设备比较前，仍要先转换到共同时间基准。
+时间字段的分工是：wall clock 是可能被用户或网络校时调整的日历时间，便于服务端按日期对齐；elapsed realtime 从设备启动起单调递增，适合计算同一设备、同一次开机区间内的耗时；跨重启须另存开机区间标识。跨设备比较前，仍要先转换到共同时间基准。
 
 进程 importance 由 `ActivityManager` 分类，例如是否承载前台界面或用户可感知工作；它会随组件生命周期变化，所以记录时要保留原始常量和 API 版本。
 
@@ -686,18 +676,13 @@ fingerprint 是系统构建指纹，通常包含产品、版本和构建标识�
 
 collector 是执行采集的客户端模块；把它的版本、丢弃计数和队列年龄记下来，我们才能区分业务指标的变化与采集器自身的回归。
 
-ANR 是 Application Not Responding（应用无响应（ANR）），表示主线程等关键响应路径在系统规定时间内没有完成。Native 崩溃指 C/C++ 等本地代码触发的进程故障。
+ANR是Application Not Responding（应用无响应），表示主线程等关键响应路径在系统规定时间内没有完成。Native 崩溃指 C/C++ 等本地代码触发的进程故障。
 
 [`PackageManager.getInstallSourceInfo()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java) 从 API 30 开始提供安装来源信息。逐字段语义见 [`InstallSourceInfo`](https://developer.android.com/reference/android/content/pm/InstallSourceInfo)。
 
 `installingPackageName` 是当前登记的安装器名称，可以被更改；`initiatingPackageName` 指请求安装或更新的包，来源不可用或该包已经卸载时可能为空。`originatingPackageName` 由发起安装的一方提供且未经框架验证，调用方缺少 `INSTALL_PACKAGES` 权限时拿不到。
 
 应用还应保留编译或分包阶段写入的明确渠道字段。平台字段与自有渠道不一致时记录差异，并把结果标为待解释，避免擅自选一个字段回答"用户来自哪个市场"。
-
-<!-- gracker-diagram: a288-12-separate-telemetry-streams-and-ack -->
-![非 Play 端云证据路径：分类型采集与持久 ACK](../../assets/diagrams/ch26/a288-12-separate-telemetry-streams-and-ack.png)
-
-图：没有收到事件与指标值为零分开；进程可能在回传前退出，本地状态需跨进程恢复。
 
 ### 采集公共能力快照
 
@@ -709,59 +694,84 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Build
 import android.os.PowerManager
+import android.os.SystemClock
 import android.system.Os
 import android.system.OsConstants
 
+data class Readout<T>(val value: T?, val error: String? = null)
+
+fun <T> observe(read: () -> T): Readout<T> = try {
+    Readout(read())
+} catch (e: Exception) {
+    Readout(null, e.javaClass.simpleName)
+}
+
+fun <T, R> Readout<T>.mapRead(read: (T) -> R): Readout<R> =
+    if (error != null) Readout(null, error)
+    else observe { read(requireNotNull(value)) }
+
 data class RuntimeCapabilitySnapshot(
+    val readStartedElapsedMillis: Long,
+    val readFinishedElapsedMillis: Long,
     val sdkInt: Int,
     val release: String,
     val securityPatch: String,
     val manufacturer: String,
     val model: String,
     val supportedAbis: List<String>,
-    val pageSizeBytes: Long,
-    val lowRamDevice: Boolean,
-    val backgroundRestricted: Boolean,
-    val standbyBucket: Int,
-    val powerSaveMode: Boolean,
-    val thermalStatus: Int,
-    val ignoringBatteryOptimizations: Boolean,
-    val installingPackage: String?,
-    val initiatingPackage: String?
+    val pageSizeBytes: Readout<Long>,
+    val lowRamDevice: Readout<Boolean>,
+    val backgroundRestricted: Readout<Boolean>,
+    val standbyBucket: Readout<Int>,
+    val powerSaveMode: Readout<Boolean>,
+    val thermalStatus: Readout<Int>,
+    val ignoringBatteryOptimizations: Readout<Boolean>,
+    val installingPackage: Readout<String?>,
+    val initiatingPackage: Readout<String?>
 )
 
 fun readRuntimeCapabilitySnapshot(context: Context): RuntimeCapabilitySnapshot {
-    val activityManager =
-        context.getSystemService(ActivityManager::class.java)
-    val usageStatsManager =
-        context.getSystemService(UsageStatsManager::class.java)
-    val powerManager =
-        context.getSystemService(PowerManager::class.java)
-    val installSource =
+    val started = SystemClock.elapsedRealtime()
+    val am = observe { requireNotNull(context.getSystemService(ActivityManager::class.java)) }
+    val usage = observe { requireNotNull(context.getSystemService(UsageStatsManager::class.java)) }
+    val power = observe { requireNotNull(context.getSystemService(PowerManager::class.java)) }
+    val source = observe {
         context.packageManager.getInstallSourceInfo(context.packageName)
-
+    }
+    val pageSize = observe {
+        Os.sysconf(OsConstants._SC_PAGESIZE).also { check(it > 0) }
+    }
+    val lowRam = am.mapRead { it.isLowRamDevice }
+    val restricted = am.mapRead { it.isBackgroundRestricted }
+    val bucket = usage.mapRead { it.appStandbyBucket }
+    val powerSave = power.mapRead { it.isPowerSaveMode }
+    val thermal = power.mapRead { it.currentThermalStatus }
+    val exempt = power.mapRead { it.isIgnoringBatteryOptimizations(context.packageName) }
+    val installing = source.mapRead { it.installingPackageName }
+    val initiating = source.mapRead { it.initiatingPackageName }
     return RuntimeCapabilitySnapshot(
+        readStartedElapsedMillis = started,
+        readFinishedElapsedMillis = SystemClock.elapsedRealtime(),
         sdkInt = Build.VERSION.SDK_INT,
         release = Build.VERSION.RELEASE,
         securityPatch = Build.VERSION.SECURITY_PATCH,
         manufacturer = Build.MANUFACTURER,
         model = Build.MODEL,
         supportedAbis = Build.SUPPORTED_ABIS.toList(),
-        pageSizeBytes = Os.sysconf(OsConstants._SC_PAGESIZE),
-        lowRamDevice = activityManager.isLowRamDevice,
-        backgroundRestricted = activityManager.isBackgroundRestricted,
-        standbyBucket = usageStatsManager.appStandbyBucket,
-        powerSaveMode = powerManager.isPowerSaveMode,
-        thermalStatus = powerManager.currentThermalStatus,
-        ignoringBatteryOptimizations =
-            powerManager.isIgnoringBatteryOptimizations(context.packageName),
-        installingPackage = installSource.installingPackageName,
-        initiatingPackage = installSource.initiatingPackageName
+        pageSizeBytes = pageSize,
+        lowRamDevice = lowRam,
+        backgroundRestricted = restricted,
+        standbyBucket = bucket,
+        powerSaveMode = powerSave,
+        thermalStatus = thermal,
+        ignoringBatteryOptimizations = exempt,
+        installingPackage = installing,
+        initiatingPackage = initiating
     )
 }
 ```
 
-能力快照是带采集时间的观测记录，读它时我们要记住，设备能力会变：省电模式、热状态、standby bucket 与后台限制都可能变化，首次启动时的值解释不了几天后的任务延迟。
+示例保留同次开机内的读取开始/结束时间，表示一个观测窗口，不声称多个服务状态原子一致。每个`Readout`的`error != null`表示读取失败；`error == null && value == null`可表示安装来源正常不可得。异常只记类别，不直接上传异常消息；不要捕获并吞掉`Error`。省电、热状态、standby bucket和后台限制会变化，首次启动快照解释不了几天后的任务延迟。
 
 standby bucket（应用待机分组）是系统按近期使用情况给应用划分的活跃程度类别，并据此调整后台资源；热状态则是 `PowerManager` 报告的设备热压力等级。存储这些整数值时还要记录 API 与采集器版本，服务端按对应版本的常量解释；读取失败或值不可用时写"未知"，别用零代替。
 
@@ -786,17 +796,22 @@ Android 11 / API 30 引入 `ApplicationExitInfo`。
 
 `getHistoricalProcessExitReasons()` 返回的是系统仍保留的近期记录，更近的退出可能把它覆盖掉。应用要在下次获得运行机会时尽早读取、限量写入本地队列并上传；可选 trace 也可能为空。
 
-代码示例按调用方给定的批量上限读取历史记录，并以复合键去重。
+示例重扫系统仍保留的受限历史窗口，先过滤已经落盘或ACK的记录，再按调用方的批量上限选取最旧未处理项。它复用上文`Readout`和`observe`，应在受控后台执行器上调用。
 
 ```kotlin
 import android.app.ActivityManager
 import android.app.ApplicationExitInfo
 import android.content.Context
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
+import java.security.MessageDigest
 
 data class ExitRecord(
     val key: String,
     val timestampMillis: Long,
     val pid: Int,
+    val realUid: Int,
+    val packageUid: Int,
     val processName: String?,
     val reason: Int,
     val status: Int,
@@ -806,41 +821,58 @@ data class ExitRecord(
     val description: String?
 )
 
+fun exitRecordKey(info: ApplicationExitInfo): String {
+    val bytes = ByteArrayOutputStream()
+    DataOutputStream(bytes).use { out ->
+        out.writeInt(1) // 本地身份编码版本
+        out.writeLong(info.timestamp)
+        out.writeInt(info.pid)
+        out.writeInt(info.realUid)
+        out.writeInt(info.packageUid)
+        out.writeInt(info.reason)
+        out.writeInt(info.status)
+        val name = info.processName?.toByteArray(Charsets.UTF_8)
+        out.writeInt(name?.size ?: -1) // null 与空串不同
+        if (name != null) out.write(name)
+    }
+    return MessageDigest.getInstance("SHA-256")
+        .digest(bytes.toByteArray())
+        .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+}
+
+// 使用上文 Readout / observe；查询失败与成功但无记录分开表示。
 fun readUnseenExitRecords(
     context: Context,
     batchLimit: Int,
-    wasUploaded: (String) -> Boolean
-): List<ExitRecord> {
+    isPersistedOrAcked: (String) -> Boolean
+): Readout<List<ExitRecord>> {
     require(batchLimit > 0)
-    val activityManager =
-        context.getSystemService(ActivityManager::class.java)
-
-    return activityManager.getHistoricalProcessExitReasons(
-        context.packageName,
-        0,
-        batchLimit
-    ).map { info ->
-        val key = listOf(
-            info.timestamp,
-            info.pid,
-            info.reason,
-            info.status,
-            info.processName
-        ).joinToString(":")
-
-        ExitRecord(
-            key = key,
-            timestampMillis = info.timestamp,
-            pid = info.pid,
-            processName = info.processName,
-            reason = info.reason,
-            status = info.status,
-            importance = info.importance,
-            pssKilobytes = info.pss,
-            rssKilobytes = info.rss,
-            description = info.description
-        )
-    }.filterNot { wasUploaded(it.key) }
+    return observe {
+        val am = requireNotNull(context.getSystemService(ActivityManager::class.java))
+        // maxNum=0 返回系统当前仍保留的全部记录，并非无限历史。
+        // 最旧记录先入队，避免最新的已处理记录反复占满查询上限。
+        am.getHistoricalProcessExitReasons(context.packageName, 0, 0)
+            .asReversed().asSequence()
+            .map { info ->
+                ExitRecord(
+                    key = exitRecordKey(info),
+                    timestampMillis = info.timestamp,
+                    pid = info.pid,
+                    realUid = info.realUid,
+                    packageUid = info.packageUid,
+                    processName = info.processName,
+                    reason = info.reason,
+                    status = info.status,
+                    importance = info.importance,
+                    pssKilobytes = info.pss,
+                    rssKilobytes = info.rss,
+                    description = info.description
+                )
+            }
+            .distinctBy { it.key }
+            .filterNot { isPersistedOrAcked(it.key) }
+            .take(batchLimit).toList()
+    }
 }
 ```
 
@@ -848,7 +880,7 @@ fun readUnseenExitRecords(
 
 从 API 31 开始，Native 崩溃还可能提供 protobuf 格式的 tombstone。tombstone 是系统保存的 Native 崩溃诊断记录，protobuf 是 Protocol Buffers 的二进制编码格式。消费方必须同时检查退出原因和 trace 类型，有 trace，并不说明本次退出由 ANR 引起。
 
-示例中的复合键只用于演示本地去重，也不构成设备身份。生产实现应给字段元组加版本并采用无歧义编码，例如长度前缀或规范化序列化后取摘要，避免进程名中的分隔符造成碰撞。收到上报确认后再持久化已处理标记；只保存"最大时间戳"会漏掉同一毫秒内的其他记录。
+示例对带版本的字段元组做长度前缀编码，再取SHA-256；它是本地尽力去重指纹，不是平台保证唯一的事件ID，也不会自动匿名化。`isPersistedOrAcked`查询已落盘待上传或已确认索引；调用方必须把记录与唯一键原子提交后才视为已持久化，并在ACK后变更状态。并发扫描以存储唯一约束兜底，保留重复/冲突计数。历史会淘汰，任何重扫策略都不能恢复已被平台覆盖的记录；不要只保存最大时间戳。
 
 PSS 是 proportional set size（比例集大小），会把共享内存页按共享进程数折算后计入；RSS 是 resident set size（常驻集大小），统计当前驻留在物理内存中的页面，共享页会在每个进程的 RSS 中出现。`pss` 与 `rss` 的单位均为 kB，字段保存的是系统最近一次采样值，可能早于退出时刻；系统没有样本时还会返回零。两者适合辅助分组；要把一次退出归因到内存，还需要其他证据支持。
 

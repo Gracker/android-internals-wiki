@@ -4,7 +4,7 @@ chapter: '20.5'
 section: '20.5'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-21'
+last_verified: '2026-10-25'
 last_verified_against: AOSP android-17.0.0_r1 ART, Bionic, HWUI and ActivityThread; android17-6.18-2026-06_r6 kernel; Android Developers API 30 ApplicationExitInfo/ActivityManager low-memory kill report docs; API 37 OOM profiling, memory, Bitmap and ComponentCallbacks2 docs
 confidence: medium-high
 sources:
@@ -279,7 +279,7 @@ void Heap::ThrowOutOfMemoryError(
 - `jdk_internal_misc_Unsafe.cc` 的 `Unsafe_allocateMemory()` 调用 `malloc()`；空指针时通过 `Thread::ThrowOutOfMemoryError("native alloc")` 抛出 OOME。
 - `libs/hwui/hwui/Bitmap.cpp` 的 `allocateHeapBitmap()` 使用 `calloc()` 分配普通 Bitmap 像素；返回空指针后，`libs/hwui/jni/Bitmap.cpp` 的 JNI（Java Native Interface，Java/Kotlin 与 C/C++ 代码交互的接口） 入口调用 `doThrowOOME()`。
 - JNI（Java Native Interface）的某些 API 会在输入超出可表示范围或分配失败时抛出 OOME，例如超长 `NewStringUTF`。具体结果由 JNI 入口实现决定。
-- 应用或第三方 native 库直接调用 `malloc/calloc/realloc/mmap` 时，失败结果属于调用方契约。忽略空指针可能转成 SIGSEGV（非法内存访问）信号，主动 `abort()` 会产生 SIGABRT（主动终止）信号，只有显式调用 JNI/ART 异常接口才会变成 Java OOME。
+- 应用或第三方 native 库直接调用 `malloc/calloc/realloc/mmap` 时，失败结果属于调用方契约。其中 `malloc/calloc/realloc` 通常用空指针表示失败，`mmap` 则返回 `MAP_FAILED`（不是空指针）并设置 `errno`；误用这些失败结果可能转成 SIGSEGV（非法内存访问）信号，主动 `abort()` 会产生 SIGABRT（主动终止）信号，只有显式调用 JNI/ART 异常接口才会变成 Java OOME。
 
 根据 [Android Bitmap 内存说明](https://developer.android.com/topic/performance/graphics/manage-memory)，普通 Bitmap 自 Android 8.0 起由 native heap 持有像素；`Bitmap.Config.HARDWARE` 使用 GraphicBuffer / AHardwareBuffer（供图形栈使用的硬件缓冲区）。两者都可能增加进程或系统内存压力，只是采集方式和归属不同。所以评估 Bitmap 成本时，我们要看像素和图形缓冲本身；Java heap dump 里那个体积很小的 Bitmap 包装对象，与真实成本相去甚远。
 
@@ -311,7 +311,7 @@ void Heap::ThrowOutOfMemoryError(
 
 1. Android 11 / API 30 及以上，先用 [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)) 读取 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)（系统保存的历史进程退出记录），把 OOME crash、native crash 和 `REASON_LOW_MEMORY` 分开；Android 10 / API 29 没有这组历史退出 API，只能靠 LMKD/系统日志、崩溃记录和重启前的轻量本地标记。API 30+ 还要先调用 `ActivityManager.isLowMemoryKillReportSupported()` 确认设备支持低内存退出原因；设备不支持时，低内存终止可能记录成 `REASON_SIGNALED` 与 `SIGKILL`，此时就算记录里没有 `REASON_LOW_MEMORY`，系统内存压力也仍然可能存在。系统直接终止进程时，也没有可依赖的未捕获异常回调。
 2. 对比同场景的 PSS（Proportional Set Size）/RSS（Resident Set Size）、Java heap、native malloc、图形内存、线程和映射数，先确定哪一类内存在增长。
-3. `malloc` 分配使用 [heapprofd 或 Android Studio native allocation profiler](https://developer.android.com/studio/profile/record-native-allocations)，保留分配与释放栈；接入条件受构建类型、`profileable`（允许性能工具连接）配置、设备和系统策略影响。
+3. `malloc` 分配使用 [heapprofd 或 Android Studio native allocation profiler](https://developer.android.com/studio/profile/record-native-allocations)，保留分配调用栈及释放/存活记录；其中 [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler) 的聚合栈是分配位置，不能当作每次 `free()` 的调用栈。接入条件受构建类型、`profileable`（允许性能工具连接）配置、设备和系统策略影响。
 4. `mmap()` 映射解析 `/proc/self/maps` 与 `smaps`（逐映射的内存统计），按文件路径、匿名映射名称和权限汇总。
 5. 图形与媒体对象结合 Perfetto（系统性能时间线工具）、`dumpsys meminfo`、dma-buf（内核共享缓冲区）/GraphicBuffer 工具和对象生命周期检查。
 6. 对 JNI 资源建立明确的所有权与释放协议：`close()`、RAII（作用域结束自动释放资源）、引用计数和失败路径都要覆盖；`Cleaner`（GC 触发、时机不确定的清理机制）只宜当作补充，释放要以明确的所有权协议为主。
@@ -362,7 +362,7 @@ soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 
 ### FD 泄漏导致的资源型崩溃
 
-FD 是内核分配给文件、socket、pipe 等已打开资源的整数句柄。进程达到 `RLIMIT_NOFILE`（进程级 FD 数量上限）后，`open()`、`socket()`、`pipe()`、`eventfd()` 或 `epoll_create1()` 可能返回 `EMFILE`；系统级打开文件表耗尽还可能表现为 `ENFILE`。`android17-6.18-2026-06_r6/fs/file.c` 的 FD 分配路径会按当前进程的 files table 和限制返回 `-EMFILE`。
+FD 是内核分配给文件、socket、pipe 等已打开资源的整数句柄。`RLIMIT_NOFILE` 的软限制规定新分配 FD 编号的上界：正常分配需找到小于该值的空闲编号，而不是只比较一个 FD 总数。找不到可用编号时，`open()`、`socket()`、`pipe()`、`eventfd()` 或 `epoll_create1()` 可能返回 `EMFILE`；系统级打开文件表耗尽还可能表现为 `ENFILE`。`android17-6.18-2026-06_r6/fs/file.c` 的 FD 分配路径会按当前进程的 files table 和限制返回 `-EMFILE`。
 
 FD 耗尽一般不走 ART OOME 这条路，但治理上我们仍应把内存、线程、FD 和地址空间放进同一套进程资源看板，事件类型各自分开统计。
 
@@ -374,7 +374,7 @@ FORTIFY 是 Bionic 的运行时边界检查机制。下面的日志表示代码�
 FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 ```
 
-`FD_SETSIZE` 是 `select()` 数据结构能表示的 FD 编号上限，和 `RLIMIT_NOFILE`（单进程可打开 FD 数量的软/硬限制） 不是同一个值。只要进程拿到的 FD 编号超过 `FD_SETSIZE`，FORTIFY 就可能调用 `abort()` 结束进程；此时 FD 总数仍可能低于进程上限。修复既要找 FD 增长源，也要检查库是否错误地用 `select()` 处理高编号 FD。
+`FD_SETSIZE` 是 `select()` 数据结构能表示的 FD 编号上限，和 `RLIMIT_NOFILE`（可分配 FD 编号范围的软/硬限制）不是同一个值。只要代码把小于 0 或大于等于 `FD_SETSIZE` 的编号交给受检查的 `FD_SET` 等宏，FORTIFY 就可能调用 `abort()` 结束进程；此时 FD 总数仍可能低于进程上限。修复既要找 FD 增长源，也要检查库是否错误地用 `select()` 处理高编号 FD。
 
 <!-- gracker-diagram: a211-08-fd-boundaries -->
 ![FD 可分配编号与 select 位集合边界不同](../../assets/diagrams/ch20/a211-08-fd-boundaries.png)
@@ -501,7 +501,7 @@ override fun onTrimMemory(level: Int) {
 
 在可控的可选分配点捕获 OOME，只适用于输入尺寸已知、没有共享状态写到一半、可以返回低分辨率或失败结果的操作。全局吞掉 OOME 后继续运行，进程的资源使用可能仍接近上限，其他线程也可能已失败。
 
-`sigsetjmp` / `siglongjmp` 可以从 SIGSEGV、SIGABRT 信号处理位置跳回预先保存的 native 执行点，只适合受控的 crash 隔离实验。它既处理不了 Java heap OOME，也修复不了 native allocator 失败；这种跳转还会绕过正常的函数返回、锁释放、C++ 析构和 JNI 状态恢复，不要把它当作 OOM 降级方案。
+`sigsetjmp` / `siglongjmp` 可以从 SIGSEGV、SIGABRT 信号处理位置跳回预先保存的 native 执行点，只适合受控的 crash 隔离实验。它既处理不了 Java heap OOME，也修复不了 native allocator 失败；这种跳转可能绕过被跨越栈帧的正常返回、锁释放和 JNI 清理；若跨过本应执行非平凡 C++ 析构的自动对象，还会落入 [C++ 非局部跳转的未定义行为限制](https://eel.is/c++draft/csetjmp.syn)，不要把它当作 OOM 降级方案。
 
 #### 大型 App 的内存预算管理
 
@@ -684,7 +684,9 @@ class H5Activity : AppCompatActivity() {
                 url: String,
                 favicon: Bitmap?,
             ) {
-                checkpointFor(url)?.let { checkpoint = it }
+                if (view === webView) {
+                    checkpoint = checkpointFor(url)
+                }
             }
 
             override fun onPageCommitVisible(view: WebView, url: String) {
@@ -772,7 +774,7 @@ class H5Activity : AppCompatActivity() {
 
 旧实例按官方要求从视图树移除、清除引用并调用 `destroy()`，之后不再设置 client、停止加载或执行 JavaScript。代码先把 `RenderProcessGoneDetail` 中需要的字段复制成普通值，避免延后任务继续持有回调对象；事件上报函数也必须自行处理异常，别让异常从回调里抛出去。
 
-重建通过 `container.post` 放入主线程消息队列，等回调返回后再执行，避免尚未退出回调又开始创建 WebView。任务执行前还会检查 Activity 是否正在结束或已经销毁。自动恢复次数写入 `savedInstanceState`（Activity 重建时由系统传回的状态 Bundle），避免屏幕旋转等配置变更把次数重新置零。
+重建通过 `container.post` 放入主线程消息队列，等回调返回后再执行，避免尚未退出回调又开始创建 WebView。任务执行前还会检查 Activity 是否正在结束或已经销毁。自动恢复次数写入 `savedInstanceState`（Activity 重建时由系统传回的状态 Bundle），可保留最近一次已保存的次数。Bundle 只是保存时刻的快照，保存之后发生的恢复尝试或未及保存的进程退出仍可能丢失；若要求会话级严格次数上限，还需要独立且可恢复的业务状态。
 
 示例对崩溃采取保守策略：同一页面可能稳定复现 Chromium 或页面内容触发的问题，所以崩溃后不自动重载；被系统结束的页面也只有一次自动恢复机会。`WebCheckpoint` 保存去敏后的业务路由和重放规则，完整浏览历史、POST 数据和 JavaScript 运行时状态都留在恢复范围之外。
 

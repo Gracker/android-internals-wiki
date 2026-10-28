@@ -13,9 +13,9 @@ related_chapters:
 - '26.1'
 - '26.8'
 - '26.5'
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Android Developers Battery Historian docs updated 2026-05-19; PowerMonitorReadings and BatteryManager API references updated 2026-08-03; current Power Profiler, Macrobenchmark PowerMetric, WakeLock, and Android vitals docs; AOSP android-17.0.0_r1 power and battery sources; android17-6.18 kernel refs, retrieved 2026-08-15
+last_verified: '2026-10-25'
+last_source_verified_at: '2026-10-25'
+last_verified_against: Android Developers Battery Historian docs updated 2026-05-19; PowerMonitorReadings and BatteryManager API references updated 2026-08-03; current Power Profiler, Macrobenchmark PowerMetric, WakeLock, and Android vitals docs; AOSP android-17.0.0_r1 power and battery sources; android17-6.18 kernel refs, reviewed 2026-10-25; PowerMonitor sample timestamps/cache, HealthStats since-charged counters and energy/work denominators additionally audited; source/documentation review only
 confidence: high
 sources:
 - type: legacy-reference-preserved
@@ -96,7 +96,7 @@ last_rework_at: '2026-08-15T22:11:00+08:00'
 | 系统归因估算 | `BatteryUsageStats`、设置页、bugreport | 系统怎样把组件能耗估算到 UID | 物理仪器级精度与跨设备可比性 |
 | 设备级能量 | ODPM 电源轨、设备用能组件、外置功耗仪 | 实验窗口内整机或子系统能量差 | 普通场景下某个 App 的独占能量 |
 
-能量与功率也要分开：能量描述一个窗口内的累计消耗，功率描述消耗速率，平均功率等于能量增量除以时间增量。电池百分比经过量化和系统估算，短窗口内读数没有下降，推不出这段窗口就是零消耗。
+能量与功率也要分开：能量描述一个窗口内的累计消耗，功率描述消耗速率，平均功率等于能量增量除以时间增量：ΔE以微瓦秒、Δt以毫秒记录时，P[mW]=ΔE[μWs]/Δt[ms]；必须先确认Δt>0且读数有效，不能用请求回调耗时替代硬件样本时间。电池百分比经过量化和系统估算，短窗口内读数没有下降，推不出这段窗口就是零消耗。
 
 <!-- gracker-diagram: a296-01-four-power-evidence-scopes -->
 ![状态、UID 活动、模型归因与设备能量分别回答问题](../../assets/diagrams/ch26/a296-01-four-power-evidence-scopes.png)
@@ -229,11 +229,11 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 
 - 支持列表可能为空，电源监视器的名称与含义依设备而变；即使名称相同，不同 OEM 的计量范围也未必等价。
 - [`PowerMonitorReadings`](https://developer.android.com/reference/android/os/PowerMonitorReadings) 返回自开机以来的累计能量，单位是微瓦秒，包含电池供电与插电阶段；重启后不连续。
-- 单次累计值要在场景前后配对读取才有意义：用同一组 `PowerMonitor` 各读一次，按各自 `timestamp` 计算非负增量，该时间戳来自 `SystemClock.elapsedRealtime()`。跨重启、计数回退或 `ENERGY_UNAVAILABLE` 的样本直接丢弃。
+- 单次累计值需在场景前后配对：同一开机周期、同一monitor身份/类型各读一次，用其getTimestampMillis（elapsedRealtime时基）验证后样本时间严格大于前样本时间，再算非负能量增量。相同timestamp可能是缓存命中，不能算0ms窗口或除出功率；记录实际样本窗口与场景边界偏差。跨重启、回退、ENERGY_UNAVAILABLE、查询失败或通道变化的区间不参与有效增量，分别保留原因。
 - 普通 App 读数可能被缓存并加入与调用 UID 相关的随机噪声；想靠连续高频读取逼近实验室仪器精度，或者反推出干净数据，都不现实。
 - 电源轨是设备级数据：App 只能在受控实验中用 Trace 时间窗做相关分析，台账里把增量记成设备级观测，当前 App 的能耗要到本 UID 指标那一层回答。
 
-`PowerMonitor` 适合在内部测试版中输出结构化实验记录：类型、原始名称、起止累计值、起止 `timestamp`、增量、设备与 build fingerprint。硬件通道名称可能暴露机型或硬件组合，生产上报前先评估这种设备指纹风险，并对采样频率和保留期设限。
+`PowerMonitor` 适合在内部测试版中输出结构化实验记录：类型、原始名称、起止累计值、起止 `timestamp`、增量、设备与 build fingerprint。通道集合需按硬件定义核对是否互斥：电源轨、总量与modeled consumer可能覆盖相同组件，不能把所有monitor无条件求和为整机总能量。硬件通道名称可能暴露机型或硬件组合，生产上报前先评估这种设备指纹风险，并对采样频率和保留期设限。
 
 <!-- gracker-diagram: a296-07-power-monitor-valid-window -->
 ![PowerMonitor：按每个通道的样本时间验证差分](../../assets/diagrams/ch26/a296-07-power-monitor-valid-window.png)
@@ -244,7 +244,7 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 
 `SystemHealthManager.takeMyUidSnapshot()` 返回本 UID 的 `HealthStats`，即一组按键查询的累计计数器和计时器。[`UidHealthStats`](https://developer.android.com/reference/android/os/health/UidHealthStats) 提供用户态/内核态 CPU 时间、Wi-Fi 与移动网络字节、部分控制器活动、WakeLock、Job、Sync、传感器和前后台状态等键。
 
-这些值适合作为资源代理指标，用资源活动量提示可能的能耗变化；真要落到能量，还得回到实验框架里的能量增量。读取时必须先用对应的 `has…()` 方法检查键是否存在，因为设备与版本都可能缺少部分数据。共享 UID 会把多个包的统计记到同一身份下，系统代持的 WakeLock 和库内部调度也会影响解释，读数要放在这两层背景下看。
+这些值适合作为资源代理，不是本App焦耳数。固定17r1的HealthStatsBatteryStatsWriter有多项按STATS_SINCE_CHARGED读取，不能假设所有键都是永不重置的开机计数。前后差值须核同UID/键/单位、统计周期与reset状态；出现计数回退或周期不明时使该差值失效。资源差值与能量仍需在受控窗口关联。读取时必须先用对应的 `has…()` 方法检查键是否存在，因为设备与版本都可能缺少部分数据。共享 UID 会把多个包的统计记到同一身份下，系统代持的 WakeLock 和库内部调度也会影响解释，读数要放在这两层背景下看。
 
 ### BatteryManager：电池状态与燃料计
 
@@ -328,7 +328,7 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 3. 用自定义 Trace 标记每次调度、实际执行、请求尝试与结束原因。
 4. 同时采集 bugreport、Macrobenchmark/Power Profiler、PowerMonitor 增量和本 UID HealthStats。
 5. 检查 Alarm/Job/WakeLock、radio 活跃、CPU 时间、字节、失败与重试是否在同一窗口变化。
-6. 以每次成功同步的能量与耗时比较两组，并验证同步后的数据仍满足时效要求。
+6. 按同一完整实验窗口的总观测能量/成功同步数报告每成功任务能量，失败与重试的消耗不能从分子删掉；成功数为0则该比值未定义。另报尝试数、失败率、成功耗时与数据时效，避免只挑成功样本。
 
 若候选实现减少了唤醒、却让同步大量超时，“更省电”这三个字就落不到它头上。同样，某次 Historian 时间线看起来更安静，也还要多轮实验和能量增量来支持。优化收益只填写测量得到的分布、样本条件和不确定性，固定百分比或“续航增加几小时”这类数字，要等测完才有。
 
@@ -339,7 +339,7 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 
 ## 设备级实战：解释电源轨峰值
 
-在 Power Profiler 或 PowerMonitor 里看到 `CPU`、`display`、`cellular` 等电源轨出现增量时，我们先确认这是系统范围数据，再往下解释：
+Power Profiler或PowerMonitor的CPU/display/cellular等轨都先按系统范围解释。两次累计读数只能给该有效窗口的能量与平均功率，不能据此重建窗口内瞬时峰值；峰值还受实际采样分辨率限制。接着检查：
 
 - 用 App Trace 标记目标操作，检查峰值是否与窗口重叠；
 - 查看同一窗口是否有系统更新、媒体播放、其他 App、屏幕或温控变化；
@@ -364,7 +364,7 @@ APM 应保存各层数据原本的含义：
 |---|---|---|
 | 生产 App | 场景、耗时、请求、字节、任务结果、WakeLock 自埋点、电池/热状态 | 发现集中在特定版本或设备群的性能回退 |
 | 本 UID 系统快照 | CPU 时间、网络、Job、Sync、WakeLock 与传感器计数 | 低频采样前后差值，验证资源代理 |
-| 支持设备的 PowerMonitor | monitor 名称、类型、累计能量与 timestamp | 内测或严格采样的设备级窗口差分 |
+| 支持设备的 PowerMonitor | monitor 名称、类型、累计能量与 timestamp | 内测或严格采样的设备级窗口差分；同timestamp不算新窗口，通道重叠不重复求和 |
 | 实验室 | Macrobenchmark、Power Profiler、bugreport、外置功耗仪 | 复现、归因和发布门禁 |
 | Play Console | excessive partial WakeLock 等 Android vitals | 观察真实用户分布与受影响会话 |
 
