@@ -13800,9 +13800,641 @@
       "before_count": 46,
       "before_all_images": 46,
       "sha256_before": "29ae19fa798ce7f051e5084f1f38682846a2146174fd3a4ac4ea3b47932c9e2c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 17,
+      "decisions": [
+        {
+          "original_id": "ch10-01-01-accounting-views",
+          "title": "先按内存域区分统计视角",
+          "decision": "remove",
+          "reason": "三个内存域卡片逐项摘要开篇口径段和紧邻八行指标表，后文又有工具对照表；没有额外映射、对象或计量关系，保留完整定义和范围。",
+          "original_line": 115,
+          "heading": "# App 内存分析与案例"
+        },
+        {
+          "original_id": "ch10-01-02-shared-page-accounting",
+          "title": "RSS 与 PSS 的共享页算例",
+          "decision": "keep",
+          "reason": "一张4KiB驻留普通页被两个进程各映射一次的具体教学算例，将RSS各4/PSS各2与同一物理页对应，是数值记账关系而不是表格摘要；别名/大页及totalPss边界保留。",
+          "original_line": 145,
+          "heading": "#### 1.1 常用指标的含义"
+        },
+        {
+          "original_id": "ch10-01-03-summary-vs-used",
+          "title": "App Summary 与对象用量分开",
+          "decision": "remove",
+          "reason": "App Summary Java/native与Runtime/mallinfo三卡直接复述156完整字段定义段及totalPss不得重复加SwapPss/memtrack说明；所有精确公式与限制保留。",
+          "original_line": 158,
+          "heading": "#### 1.2 `Debug.MemoryInfo` 的字段与读法"
+        },
+        {
+          "original_id": "ch10-01-04-am-memory-access",
+          "title": "AM 内存查询的权限与缓存",
+          "decision": "keep",
+          "reason": "逐PID权限不通过保留默认条目、通过后节流缓存与shell/root instrumentation例外的具体控制分支，能解释数组长度或零值不证明采样成功，区别于一般字段说明。",
+          "original_line": 171,
+          "heading": "#### 1.2 `Debug.MemoryInfo` 的字段与读法"
+        },
+        {
+          "original_id": "ch10-01-05-snapshot-failure-and-time",
+          "title": "快照里的失败状态与时间含义",
+          "decision": "remove",
+          "reason": "失败/null/原样保留零/独立Runtime与native/本地观察时间四步直接重排紧邻34行真实captureAppMemory代码与233完整限制段；权限缓存机制图4保留，源码比第二份线性摘要更准确。",
+          "original_line": 235,
+          "heading": "### 2. 建立第一份内存快照"
+        },
+        {
+          "original_id": "ch10-01-06-references-and-dominators",
+          "title": "引用路径与独占支配要分清",
+          "decision": "keep",
+          "reason": "GC Roots经A/B均可到C、只有A到D的具体对象引用图，直接说明可达路径与独占支配不同，不与生命周期检查清单合并。",
+          "original_line": 250,
+          "heading": "#### 3.1 三个必须分清的概念"
+        },
+        {
+          "original_id": "ch10-01-07-lifecycle-leak-proof",
+          "title": "生命周期与稳定引用链共同证明泄漏",
+          "decision": "remove",
+          "reason": "固定入口→循环并等待→确认生命周期→稳定Root与重放四步逐项摘要紧邻七步完整检查清单及两个必要条件段，没有具体对象生命周期或新增引用结构；通用对象图6保留。",
+          "original_line": 271,
+          "heading": "#### 3.2 可复现的泄漏检查"
+        },
+        {
+          "original_id": "ch10-01-08-bitmap-two-pixel-domains",
+          "title": "Bitmap 包装对象与像素域分开",
+          "decision": "keep",
+          "reason": "同一Java Bitmap包装对象分向软件native像素与HARDWARE图形像素的实际归属关系，解释为何shallow不能计全图像，不将两域加成malloc；不同释放观察时刻保留。",
+          "original_line": 278,
+          "heading": "#### 3.2 可复现的泄漏检查"
+        },
+        {
+          "original_id": "ch10-01-09-churn-vs-retained",
+          "title": "短命分配与长期保留分开",
+          "decision": "remove",
+          "reason": "churn/retained两卡逐项重排287概念段及294四条工具/证据清单；没有真实分配/GC或存活曲线，保留二者可共存与引用证据边界的全文。",
+          "original_line": 289,
+          "heading": "#### 3.3 分配 churn 与 retained leak（对象保留型泄漏）"
+        },
+        {
+          "original_id": "ch10-01-11-live-vs-total",
+          "title": "累计分配与未释放分配不同",
+          "decision": "merge",
+          "reason": "窗口内已free与未free分别进入Total/Unreleased的计数关系接入同坐标观测图，保留估算/size/count及样本末尚未free不是全进程历史live bytes。",
+          "original_line": 322,
+          "heading": "#### 4.1 heapprofd 用于分配调用栈",
+          "replacement_id": "ed10-01-native-profile-window-counters"
+        },
+        {
+          "original_id": "ch10-01-10-heapprofd-coverage",
+          "title": "heapprofd 只覆盖所选模式与实际窗口",
+          "decision": "merge",
+          "reason": "默认native模式的权限、实际窗口与未覆盖分配接入Total/Unreleased合图，ART另配、buffer overrun提前终止及interval/符号/目标进程名边界完整保留。",
+          "original_line": 329,
+          "heading": "#### 4.1 heapprofd 用于分配调用栈",
+          "replacement_id": "ed10-01-native-profile-window-counters"
+        },
+        {
+          "original_id": "ch10-01-12-three-parallel-views",
+          "title": "分配记录、allocator 与驻留并列",
+          "decision": "remove",
+          "reason": "heapprofd/allocator/RSS三卡直接重排紧邻八行文本账本及338不能严格包含的完整说明，未画新的分配/驻留对应关系；账本源码和并列而非包含结论保留。",
+          "original_line": 340,
+          "heading": "#### 4.2 三层统计的覆盖范围"
+        },
+        {
+          "original_id": "ch10-01-13-difference-not-fragmentation",
+          "title": "RSS 与 live bytes 的差值不能直接归因",
+          "decision": "remove",
+          "reason": "窗口、allocator分类、页面状态三个候选卡片逐项摘要356完整差值解释段，没有实际allocator/映射证据；差值可负、不能命名为碎片的全部限制原文保留。",
+          "original_line": 358,
+          "heading": "#### 4.2 三层统计的覆盖范围"
+        },
+        {
+          "original_id": "ch10-01-14-wrap-startup",
+          "title": "wrap.sh 在受控启动中启用 malloc debug",
+          "decision": "keep",
+          "reason": "debuggable/按ABI打包wrap→系统传入启动参数→环境选项/logwrapper执行原命令的具体启动交接，强调参数边界与调试开销；不是仅工具名称对照。",
+          "original_line": 374,
+          "heading": "#### 4.3 用 `wrap.sh` 启用 malloc debug"
+        },
+        {
+          "original_id": "ch10-01-15-native-tool-goals",
+          "title": "分配归因与内存非法访问分别取证",
+          "decision": "remove",
+          "reason": "分配归因/非法访问/分配器受控调试三卡逐项摘要紧邻四行工具职责表及NDK/构建限制段；保留完整表和全部API/ABI/成本边界。",
+          "original_line": 390,
+          "heading": "#### 4.4 HWASan、GWP-ASan 与 heapprofd 的职责"
+        },
+        {
+          "original_id": "ch10-01-16-memtrack-categories",
+          "title": "memtrack 契约按设备内存类型记账",
+          "decision": "remove",
+          "reason": "GRAPHICS/GL/OTHER三卡逐项重排紧邻四条IMemtrack契约清单，未实际画CPU/GPU集合去重过程；精确SMAPS_UNACCOUNTED范围、PID0和不支持不等零均保留。",
+          "original_line": 408,
+          "heading": "### 5. Graphics、DMA-BUF 与 Bitmap"
+        },
+        {
+          "original_id": "ch10-01-17-graphics-ownership",
+          "title": "资源关闭与最后持有者释放分开",
+          "decision": "merge",
+          "reason": "业务close、consumer/renderer仍可持有和按资源身份复测接入缓存/资源多方持有图，避免把四步清单当立即释放证明。",
+          "original_line": 420,
+          "heading": "### 5. Graphics、DMA-BUF 与 Bitmap",
+          "replacement_id": "ed10-01-cache-and-resource-owners"
+        },
+        {
+          "original_id": "ch10-01-18-baseline-phases",
+          "title": "固定场景中的可比采样点",
+          "decision": "remove",
+          "reason": "四个阶段框和下方六段顺序轨道对同一六项编号采样点再次图形化，图内也重复同一阶段；保留基线维度表、六个采样点及无通用秒数的原文。",
+          "original_line": 451,
+          "heading": "### 6. 建立可比较的基线"
+        },
+        {
+          "original_id": "ch10-01-19-page-size-two-axes",
+          "title": "页大小兼容性与内存回归分开",
+          "decision": "remove",
+          "reason": "兼容性与内存性能两卡直接摘要469页大小段与五条基线规则，未给不同page span或驻留算例；分组统计、禁止固定校正系数和独立验收全部原文保留。",
+          "original_line": 479,
+          "heading": "#### 6.1 4 KB 与 16 KB page size 分组"
+        },
+        {
+          "original_id": "ch10-01-20-growth-release-tests",
+          "title": "用释放条件区分增长机制",
+          "decision": "remove",
+          "reason": "对象/native/图形WebView三卡直接压缩紧邻八行增长来源/释放动作/补证表；原表包含更多候选与操作，可比性更强，不重复另画分类摘要。",
+          "original_line": 503,
+          "heading": "#### 6.2 用回落条件区分缓存、积压与泄漏"
+        },
+        {
+          "original_id": "ch10-01-21-cache-ownership",
+          "title": "缓存计数下降不代表对象已回收",
+          "decision": "merge",
+          "reason": "sizeOf/maxSize同单位、硬上限只约束cache和条目淘汰仍有外部引用合入多方持有图，明确最后使用者证明与提前销毁条件，禁止通用recycle推断。",
+          "original_line": 520,
+          "heading": "#### 6.2 用回落条件区分缓存、积压与泄漏",
+          "replacement_id": "ed10-01-cache-and-resource-owners"
+        },
+        {
+          "original_id": "ch10-01-22-lmkd-decision",
+          "title": "压力事件与 LMKD 选进程分开",
+          "decision": "keep",
+          "reason": "压力和回收等上下文→策略判断→从高adj向允许下界扫描→按配置/保护级别选同档候选→观察kill结果的具体选择层次，区别于PSI事件通知接口。",
+          "original_line": 531,
+          "heading": "### 7. 系统内存压力与 LMKD"
+        },
+        {
+          "original_id": "ch10-01-23-psi-two-fds-policy",
+          "title": "PSI 事件、统计与策略分工",
+          "decision": "merge",
+          "reason": "monitor fd写trigger/EPOLLPRI与另一组统计fd/parse的职责合入PSI图，保留每打开文件一trigger、EBUSY、EPOLLIN可能常驻及libpsi不选victim。",
+          "original_line": 557,
+          "heading": "#### 7.1 libpsi 与 PSI 事件通道",
+          "replacement_id": "ed10-01-psi-event-stat-and-poll"
+        },
+        {
+          "original_id": "ch10-01-25-psi-poll-after-event",
+          "title": "事件之后继续采样状态",
+          "decision": "merge",
+          "reason": "事件后10/100ms按状态轮询、默认1000ms窗口、等待死亡暂停恢复与超窗结束并入事件/统计图；策略处理不画成必须轮询窗口结束之后才kill。",
+          "original_line": 564,
+          "heading": "#### 7.1 libpsi 与 PSI 事件通道",
+          "replacement_id": "ed10-01-psi-event-stat-and-poll"
+        },
+        {
+          "original_id": "ch10-01-24-psi-trigger-gates",
+          "title": "固定内核的 PSI 参数条件",
+          "decision": "keep",
+          "reason": "固定内核window/threshold合法性、打开凭据或编译SELinux的privileged判断、仅非privileged要求2s倍数的条件层次，明确访问权限还独立存在，不能套其他内核通用下限。",
+          "original_line": 571,
+          "heading": "#### 7.1 libpsi 与 PSI 事件通道"
+        },
+        {
+          "original_id": "ch10-01-26-exit-last-sample",
+          "title": "退出记录与最后内存样本分开",
+          "decision": "merge",
+          "reason": "退出reason/importance等上下文与上次PSS/RSS采样的独立来源合入API门槛和可选摘要图；kB、早于死亡、可零、缺失未知与隐藏subreason边界保留。",
+          "original_line": 601,
+          "heading": "#### 7.2 用 `ApplicationExitInfo` 补齐进程退出上下文",
+          "replacement_id": "ed10-01-exit-context-and-old-sample"
+        },
+        {
+          "original_id": "ch10-01-27-state-summary-api",
+          "title": "历史查询与状态摘要的 API 边界",
+          "decision": "merge",
+          "reason": "公开历史/summary API30门槛、当前包示例至多16条和UTF8最多128bytes低频可选摘要接入同图，不将字符数当字节数，也不暗示完整历史或UI恢复。",
+          "original_line": 618,
+          "heading": "#### 7.2 用 `ApplicationExitInfo` 补齐进程退出上下文",
+          "replacement_id": "ed10-01-exit-context-and-old-sample"
+        },
+        {
+          "original_id": "ch10-01-28-light-vs-deep",
+          "title": "常规遥测与深度采集分开",
+          "decision": "remove",
+          "reason": "轻量与深度采集两卡逐项复述627完整范围段、七项轻量清单及六条隐私稳定性要求；受控产物可缺失和告警不无条件同步dump的原文全部保留。",
+          "original_line": 629,
+          "heading": "### 8. 线上监控的采集范围"
+        },
+        {
+          "original_id": "ch10-01-29-domain-tool-router",
+          "title": "按内存域选择证据",
+          "decision": "remove",
+          "reason": "三个域的工具卡片直接压缩紧邻八行现象/工具/需要证明表，也与开篇域概念和末段Android表重复；原表细分churn、mmap、图形、退出和非法访问更完整。",
+          "original_line": 676,
+          "heading": "### 9. 按现象选工具"
+        },
+        {
+          "original_id": "ch10-01-30-case-startup-states",
+          "title": "历史启动摘要按同口径重算",
+          "decision": "remove",
+          "reason": "两组Running/D和选择范围数字直接逐项复述716原图重算段及718完整差异说明；图是数字卡片而非状态区间或可比比例图，所有精确数值和计算式保留。",
+          "original_line": 720,
+          "heading": "#### 现象与数据"
+        },
+        {
+          "original_id": "ch10-01-31-case-pressure-causality",
+          "title": "从相关性补齐请求级因果",
+          "decision": "keep",
+          "reason": "冷启动截图和另一Monkey终止重启材料分在独立证据支路，强调不能拼成同一次启动的LMKD因果链；与普通方法清单不同，是本历史案例重要的样本归属关系。",
+          "original_line": 742,
+          "heading": "#### 根因判断"
+        },
+        {
+          "original_id": "ch10-01-32-pressure-ab-validation",
+          "title": "系统压力修复要回到同场景实验",
+          "decision": "remove",
+          "reason": "固定实验/观察多指标/kill后重启/AB四步逐项重排紧邻三条系统验证清单和755历史参数风险段；来源无收益数据保持未知的文字保留。",
+          "original_line": 763,
+          "heading": "#### 修复与验证"
+        },
+        {
+          "original_id": "ch10-01-33-trim-level-evolution",
+          "title": "回调等级与实时压力分开",
+          "decision": "remove",
+          "reason": "生命周期回调/旧等级两卡逐项复述768单个完整API34/35段且图未增加版本时间关系；保留UI_HIDDEN/BACKGROUND、旧等级不再投递/废弃及不能推实时压力原文。",
+          "original_line": 770,
+          "heading": "#### 修复与验证"
+        },
+        {
+          "original_id": "ch10-01-34-historical-hprof-entry",
+          "title": "历史 Hprof 方案的两条采集入口",
+          "decision": "merge",
+          "reason": "历史默认OOM现场与可配置高水位fork两入口合入同一客户端/服务端分析管线，保留采集可失败和ART/CoW/清理约束，不当作普通SDK无停顿能力。",
+          "original_line": 787,
+          "heading": "#### 采集与分析",
+          "replacement_id": "ed10-01-historical-hprof-acquisition-and-analysis"
+        },
+        {
+          "original_id": "ch10-01-35-hprof-processing",
+          "title": "Hprof 裁剪、分析与聚合分工",
+          "decision": "merge",
+          "reason": "Tailor裁剪/压缩上传、引用图与支配关系、Retained/GC Root聚合、Retrace回到owner并重放合入历史入口图；裁剪不保证隐私消失，引用不按比例分摊独占字节。",
+          "original_line": 797,
+          "heading": "#### 采集与分析",
+          "replacement_id": "ed10-01-historical-hprof-acquisition-and-analysis"
+        },
+        {
+          "original_id": "ch10-01-36-articlecell-evidence",
+          "title": "ArticleCell 的聚合数与持有关系分开",
+          "decision": "remove",
+          "reason": "364实例/51.29MiB聚合与280相关路径两卡逐项重排806完整案例证据段；无真实对象引用边，图6已解释可达不等支配，保留全部精确数量和不可按比例分摊的限制。",
+          "original_line": 808,
+          "heading": "#### 根因证据"
+        },
+        {
+          "original_id": "ch10-01-37-profiling-trigger-gates",
+          "title": "OOM 与 anomaly 触发有不同前置",
+          "decision": "keep",
+          "reason": "同一API/flag/注册策略门槛下OOM链回默认异常handler与anomaly部分同UID多包限制两种前置不同，保留受限产物不是OOM前探针，区别于历史fork入口。",
+          "original_line": 833,
+          "heading": "#### 原文结果与 Android 17 增量"
+        },
+        {
+          "original_id": "ch10-01-38-powervr-direct-syscall",
+          "title": "从缺失 Hook 找到实际映射入口",
+          "decision": "merge",
+          "reason": "常规mmap符号Hook无记录、vendor直接syscall(mmap2)和限定两个库入口后覆盖增长接入pool生命周期，修正无记录等于内核独占映射的误推。",
+          "original_line": 852,
+          "heading": "#### 从缺失的 Hook 记录找到映射入口",
+          "replacement_id": "ed10-01-powervr-entry-and-pool-lifetime"
+        },
+        {
+          "original_id": "ch10-01-39-pool-free-vs-unmap",
+          "title": "归还池条目与解除映射分开",
+          "decision": "merge",
+          "reason": "GetPoolBuffers可复用/不足时Acquire、绘制后Release只标idle和池保留映射接入同图；迟到销毁释放不自动排除生命周期泄漏，也不把映射量当RSS。",
+          "original_line": 859,
+          "heading": "#### 从缺失的 Hook 记录找到映射入口",
+          "replacement_id": "ed10-01-powervr-entry-and-pool-lifetime"
+        },
+        {
+          "original_id": "ch10-01-40-pool-threshold-experiments",
+          "title": "历史阈值实验保留原始字节",
+          "decision": "remove",
+          "reason": "50/20/10阈值和三组精确bytes卡片直接逐项复制866完整原实验段；没有实际图表轴或新比较关系，保留原始数值、虚拟映射口径及近50%特定设备收益边界。",
+          "original_line": 868,
+          "heading": "#### 根因与历史修复"
+        },
+        {
+          "original_id": "ch10-01-42-vendor-cluster-remedy",
+          "title": "驱动问题按设备组合验证",
+          "decision": "remove",
+          "reason": "设备聚类、地址空间/驻留、定向规避/64位、厂商修复四步逐项重排875四条产品处理清单及873非公开vendor风险段；所有历史适用范围和验证指标保留。",
+          "original_line": 883,
+          "heading": "#### 根因与历史修复"
+        },
+        {
+          "original_id": "ch10-01-41-hwui-promotion-gates",
+          "title": "自动图层提升与后续更新条件",
+          "decision": "keep",
+          "reason": "promotedToLayer前置LayerType/尺寸、多个触发之一和effectiveLayerType到pushLayerUpdate再检查可渲染/尺寸后创建更新或销毁的具体守卫，不能简化为alpha<1必建layer。",
+          "original_line": 892,
+          "heading": "#### Android 17 源码中的对应路径"
+        },
+        {
+          "original_id": "ch10-01-43-ios-counting-pipeline",
+          "title": "MemoryThrashing 统计的是 OC 对象",
+          "decision": "merge",
+          "reason": "iOS OC alloc/dealloc按Class累积/存活计数和相邻样本差分接入两个独立历史样本，明确不等于ART Runtime方案，低成本发现不提供完整引用关系。",
+          "original_line": 905,
+          "heading": "#### 原案例的 iOS 背景",
+          "replacement_id": "ed10-01-oc-allocation-and-live-differences"
+        },
+        {
+          "original_id": "ch10-01-44-allocation-vs-live-deltas",
+          "title": "累计分配差与存活量差分开",
+          "decision": "merge",
+          "reason": "存活4776→238800净增234024与另一累计alloc73979→134731增60752次合入两个独立计数流，保留末存活字节和百万是另述，不拼同一时间窗或当净存活。",
+          "original_line": 915,
+          "heading": "#### 原案例的 iOS 背景",
+          "replacement_id": "ed10-01-oc-allocation-and-live-differences"
+        },
+        {
+          "original_id": "ch10-01-45-android-probe-routing",
+          "title": "Android 以各内存域的工具承接差分",
+          "decision": "remove",
+          "reason": "Java/native映射/图形三卡直接重排紧邻四行Android域/轻量信号/深入证据表，并重复前文工具表；保留全部域选择及artifact可缺失、报警同场景分组规则。",
+          "original_line": 935,
+          "heading": "#### Android 上如何复用"
+        },
+        {
+          "original_id": "ch10-01-46-case-review-closure",
+          "title": "从曲线到可复核的内存结论",
+          "decision": "remove",
+          "reason": "单位来源→内存域证据→事实推断→重放收益四步再次摘要紧邻四小节共同结论和八条复盘清单，全文结论完整保留，不在尾部再做图形总结。",
+          "original_line": 956,
+          "heading": "#### 内存上涨曲线的机制分类"
+        }
+      ],
+      "sha256_after": "0522da16d5eca4b232ff2f7d360838f4210df0180efd03d315958246e3c012df",
+      "new_diagrams": [
+        {
+          "id": "ed10-01-native-profile-window-counters",
+          "title": "在实际观测窗口内解释 Total 与 Unreleased",
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-01-native-profile-window-counters.svg",
+            "src/assets/diagrams/ch10/ed10-01-native-profile-window-counters.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-01-native-profile-window-counters",
+          "sources": [
+            "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+            "本文冻结全文的统计口径、代码、时钟与历史样本边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-01-11-live-vs-total",
+              "ch10-01-10-heapprofd-coverage"
+            ],
+            "boundary": "默认native malloc模式，user build要求目标profileable/debuggable；ART allocation另配。图示只包含窗口内被观测分配的一种生命周期，非设备数据或耗时比例。已free分配进入Total不留Unreleased；样本末尚未free分配进入二者，轨道截止样本不代表free。启动前分配、直接mmap、graphics和GPU通常不在默认覆盖，buffer overrun可提前结束，保留实际窗口/interval/符号/进程名。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-01-cache-and-resource-owners",
+          "title": "缓存淘汰只移除一处持有，资源销毁取决于所有使用者",
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-01-cache-and-resource-owners.svg",
+            "src/assets/diagrams/ch10/ed10-01-cache-and-resource-owners.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-01-cache-and-resource-owners",
+          "sources": [
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/LruCache.java",
+            "本文冻结全文的统计口径、代码、时钟与历史样本边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-01-17-graphics-ownership",
+              "ch10-01-21-cache-ownership"
+            ],
+            "boundary": "示意一个被缓存资源的多方持有，不承诺所有资源都具有相同Java包装或consumer。缓存sizeOf/maxSize/收缩目标同单位，hard limit只约束缓存本身；实际外部引用和底层资源协议需按资源身份追踪。业务close、GC、consumer/renderer完成与指标回落不是同一时刻。提前销毁须证明没有其他使用者，不能通用recycle。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-01-psi-event-stat-and-poll",
+          "title": "PSI trigger 唤醒与统计读取分开，后续策略可继续轮询",
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-01-psi-event-stat-and-poll.svg",
+            "src/assets/diagrams/ch10/ed10-01-psi-event-stat-and-poll.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-01-psi-event-stat-and-poll",
+          "sources": [
+            "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/libpsi/include/psi/psi.h",
+            "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/libpsi/psi.cpp",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/psi.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/poll.h",
+            "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp",
+            "本文冻结全文的统计口径、代码、时钟与历史样本边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-01-23-psi-two-fds-policy",
+              "ch10-01-25-psi-poll-after-event"
+            ],
+            "boundary": "固定r1和本文内核标签。monitor fd O_WRONLY|O_CLOEXEC写一个trigger；同fd再次写被EBUSY拒绝。EPOLLPRI代表trigger事件，EPOLLIN可能常驻就绪不能用作新事件。统计经另组fd/reread_file/parse取得，CPU只解析some。默认窗口1000ms，10/100ms是lmkd状态轮询参数不是应用SLA；等待死亡可暂停恢复，超过窗口结束。策略是否kill与选谁不能从单个事件推出。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-01-exit-context-and-old-sample",
+          "title": "退出历史把最后内存样本与可选状态摘要作为上下文",
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-01-exit-context-and-old-sample.svg",
+            "src/assets/diagrams/ch10/ed10-01-exit-context-and-old-sample.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-01-exit-context-and-old-sample",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+            "本文冻结全文的统计口径、代码、时钟与历史样本边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-01-26-exit-last-sample",
+              "ch10-01-27-state-summary-api"
+            ],
+            "boundary": "公开历史查询/状态摘要API30+，本文API26-29需跳过对应调用。系统采样与可选summary写入互相独立，不承诺先后或都存在。PSS/RSS上一次采样kB可早于死亡且可为0；摘要UTF8编码后最多128bytes、低频并处理RuntimeException，仅用于诊断。示例查询当前包最近至多16条不是完整历史保证。getSubReason为hide；缺失记录/trace保留未知。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-01-historical-hprof-acquisition-and-analysis",
+          "title": "历史 Hprof 两条采集入口汇入裁剪与持有关系分析",
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-01-historical-hprof-acquisition-and-analysis.svg",
+            "src/assets/diagrams/ch10/ed10-01-historical-hprof-acquisition-and-analysis.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-01-historical-hprof-acquisition-and-analysis",
+          "sources": [
+            "https://mp.weixin.qq.com/s?__biz=Mzg2NTYyMjYxNg==&mid=2247486007&idx=1",
+            "https://help.eclipse.org/latest/topic/org.eclipse.mat.ui.help/concepts/dominatortree.html",
+            "https://help.eclipse.org/latest/topic/org.eclipse.mat.ui.help/concepts/shallowretainedheap.html",
+            "本文冻结全文的统计口径、代码、时钟与历史样本边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-01-34-historical-hprof-entry",
+              "ch10-01-35-hprof-processing"
+            ],
+            "boundary": "仅复述Client Infra历史方案，不能当当前普通SDK无停顿fork能力。fork需ART协调、CoW和子进程清理，OOM现场也可采集失败。裁剪与上传不保证隐私消除；对象图与dominator/GCroot证明持有关系，Retained不能按引用比例分摊。355MB到44MB仅来源头条样本平均文件大小，不是本项目收益。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-01-powervr-entry-and-pool-lifetime",
+          "title": "直接 syscall 的映射入口与池条目归还后的持有关系",
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-01-powervr-entry-and-pool-lifetime.svg",
+            "src/assets/diagrams/ch10/ed10-01-powervr-entry-and-pool-lifetime.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-01-powervr-entry-and-pool-lifetime",
+          "sources": [
+            "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247514363&idx=1",
+            "本文冻结全文的统计口径、代码、时钟与历史样本边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-01-38-powervr-direct-syscall",
+              "ch10-01-39-pool-free-vs-unmap"
+            ],
+            "boundary": "仅历史PowerVR/ARM32/已识别设备和vendor版本；常规mmap符号无记录不是内核独占分配证明。libsrv_um.so直接syscall mmap2，限定libsrv_um.so/gralloc.mt6765.so拦截后记录对应增长。一次增长含五次AcquireCPUMapping，25MiB为该View复现工程的映射增量非通用每View/RSS/物理成本。Release只标idle，销毁相关调用栈可有迟到解除映射；仍须验证预期生命周期、引用归零和增长上限，不能仅凭存在释放路径排除泄漏。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-01-oc-allocation-and-live-differences",
+          "title": "OC 两个历史样本分别计算存活净增与累计分配次数",
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-01-oc-allocation-and-live-differences.svg",
+            "src/assets/diagrams/ch10/ed10-01-oc-allocation-and-live-differences.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-01-oc-allocation-and-live-differences",
+          "sources": [
+            "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247496677&idx=1",
+            "本文冻结全文的统计口径、代码、时钟与历史样本边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-01-43-ios-counting-pipeline",
+              "ch10-01-44-allocation-vs-live-deltas"
+            ],
+            "boundary": "历史iOS工具只覆盖OC对象，Hook可影响方法缓存；不是ART Runtime实现。左例N4776到238800净增234024，末值11462400bytes；右例累计分配73979到134731差60752次，不能推成仍存活60752个。样本不同不拼成同一时间窗，百万分配为原文另一概括、不能从三行直接推算。差分指出增长类而非持有者，需引用图继续证明。原文发布时测试部署，线上收益未公布。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T11:58:10.538249+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 46,
+        "contexts_actually_viewed": 8,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a106/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a106/visual-review.json",
+      "retired_diagrams": [
+        "ch10-01-01-accounting-views",
+        "ch10-01-03-summary-vs-used",
+        "ch10-01-05-snapshot-failure-and-time",
+        "ch10-01-07-lifecycle-leak-proof",
+        "ch10-01-09-churn-vs-retained",
+        "ch10-01-10-heapprofd-coverage",
+        "ch10-01-11-live-vs-total",
+        "ch10-01-12-three-parallel-views",
+        "ch10-01-13-difference-not-fragmentation",
+        "ch10-01-15-native-tool-goals",
+        "ch10-01-16-memtrack-categories",
+        "ch10-01-17-graphics-ownership",
+        "ch10-01-18-baseline-phases",
+        "ch10-01-19-page-size-two-axes",
+        "ch10-01-20-growth-release-tests",
+        "ch10-01-21-cache-ownership",
+        "ch10-01-23-psi-two-fds-policy",
+        "ch10-01-25-psi-poll-after-event",
+        "ch10-01-26-exit-last-sample",
+        "ch10-01-27-state-summary-api",
+        "ch10-01-28-light-vs-deep",
+        "ch10-01-29-domain-tool-router",
+        "ch10-01-30-case-startup-states",
+        "ch10-01-32-pressure-ab-validation",
+        "ch10-01-33-trim-level-evolution",
+        "ch10-01-34-historical-hprof-entry",
+        "ch10-01-35-hprof-processing",
+        "ch10-01-36-articlecell-evidence",
+        "ch10-01-38-powervr-direct-syscall",
+        "ch10-01-39-pool-free-vs-unmap",
+        "ch10-01-40-pool-threshold-experiments",
+        "ch10-01-42-vendor-cluster-remedy",
+        "ch10-01-43-ios-counting-pipeline",
+        "ch10-01-44-allocation-vs-live-deltas",
+        "ch10-01-45-android-probe-routing",
+        "ch10-01-46-case-review-closure"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-106/retired-assets.json"
     },
     {
       "index": 107,
@@ -13811,9 +14443,411 @@
       "before_count": 29,
       "before_all_images": 29,
       "sha256_before": "3234768af7699012ecd8a1245b070409343443df0ef005d39539fb3b13e91e28",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "ch10-02-01-pressure-paths",
+          "title": "低内存代价分成三类证据",
+          "decision": "remove",
+          "reason": "内核页面/进程策略/App对象三卡直接摘要开篇路径段与后文八行诊断表，末部router又重复相同分类；完整适用范围、可交叠和同窗因果要求保留。",
+          "original_line": 65,
+          "heading": "# 低内存对系统性能的影响"
+        },
+        {
+          "original_id": "ch10-02-02-watermarks-and-request",
+          "title": "水位线要和分配请求一起解释",
+          "decision": "merge",
+          "reason": "各zone水位、order/GFP/保留页及允许唤醒kswapd条件合入分配请求三机制图，不把min/low/high画成全机free固定流水线。",
+          "original_line": 78,
+          "heading": "### 1.1 Zone 水位线与 kswapd",
+          "replacement_id": "ed10-02-allocation-and-reclaim-conditions"
+        },
+        {
+          "original_id": "ch10-02-03-direct-reclaim-gate",
+          "title": "同步回收由分配线程和 GFP 条件决定",
+          "decision": "merge",
+          "reason": "快速尝试失败且GFP/上下文允许后当前分配线程才可能同步回收，与后台kswapd/物理规整合图，保留D状态不是回收或I/O的独立证明。",
+          "original_line": 97,
+          "heading": "### 1.2 Direct reclaim",
+          "replacement_id": "ed10-02-allocation-and-reclaim-conditions"
+        },
+        {
+          "original_id": "ch10-02-04-page-reclaim-costs",
+          "title": "回收页面类型决定后续代价",
+          "decision": "remove",
+          "reason": "文件/匿名/内核缓存三卡直接压缩紧邻五行页面/回收动作/后续成本表，还遗漏高阶行；原表更完整，clean/dirty/ZRAM/writeback等全部语义保留。",
+          "original_line": 116,
+          "heading": "### 1.3 回收成本来自哪里"
+        },
+        {
+          "original_id": "ch10-02-05-compaction-vs-reclaim",
+          "title": "高阶规整与回收没有固定先后",
+          "decision": "merge",
+          "reason": "高阶连续页块与碎片、部分路径先compaction及后续reclaim/retry/失败合入同一请求条件图，不强加规整与回收固定先后。",
+          "original_line": 123,
+          "heading": "### 1.3 回收成本来自哪里",
+          "replacement_id": "ed10-02-allocation-and-reclaim-conditions"
+        },
+        {
+          "original_id": "ch10-02-06-psi-some-full",
+          "title": "some 与 full 描述任务停顿的不同集合",
+          "decision": "merge",
+          "reason": "some至少一项/full全体非idle任务停顿合入同统计范围的两个任务教学轨道，以并集/交集实际表达定义，保留full为0仍可局部严重延迟。",
+          "original_line": 134,
+          "heading": "## 2. PSI 怎样描述系统停顿",
+          "replacement_id": "ed10-02-psi-task-sets-and-time-views"
+        },
+        {
+          "original_id": "ch10-02-07-psi-average-and-delta",
+          "title": "平滑趋势与区间差分分开",
+          "decision": "merge",
+          "reason": "avg指数平均与total微秒同范围无重置差分并列在任务集合图下，保留实际采样间隔、系统级/cgroup范围和当前值不能解释过去死亡。",
+          "original_line": 157,
+          "heading": "## 2. PSI 怎样描述系统停顿",
+          "replacement_id": "ed10-02-psi-task-sets-and-time-views"
+        },
+        {
+          "original_id": "ch10-02-09-lmkd-strategy-branches",
+          "title": "新旧 kill 策略都有条件",
+          "decision": "merge",
+          "reason": "lmkd use_new_strategy/产品组合的新旧策略门槛接入两个PSI消费者图；新LOW关闭、MEDIUM partial/CRITICAL complete、旧仅v1memcg及无旧use_psi路径保留。",
+          "original_line": 168,
+          "heading": "### 3.1 lmkd",
+          "replacement_id": "ed10-02-psi-consumers-and-detector-state"
+        },
+        {
+          "original_id": "ch10-02-10-kill-submission-boundary",
+          "title": "lmkd instant 不是资源释放完成点",
+          "decision": "merge",
+          "reason": "仅reaper.kill成功后lmk instant记录提交请求、另核对死亡和实际资源回收边界接入用户返回/重建证据链，不把标记等同实际退出或回收完成。",
+          "original_line": 186,
+          "heading": "### 3.1 lmkd",
+          "replacement_id": "ed10-02-kill-submission-to-return-evidence"
+        },
+        {
+          "original_id": "ch10-02-11-lowmem-detector-state",
+          "title": "LowMemDetector 具有保持与超时规则",
+          "decision": "merge",
+          "reason": "LowMemDetector三个r1阈值、同批最高/无压力无限等/已有压力1秒超时回NORMAL和Java后续状态接入独立消费者支路，critical区间不当raw full时长。",
+          "original_line": 203,
+          "heading": "### 3.2 system_server 的 LowMemDetector",
+          "replacement_id": "ed10-02-psi-consumers-and-detector-state"
+        },
+        {
+          "original_id": "ch10-02-08-psi-two-consumers",
+          "title": "同一 PSI 子系统有不同消费者",
+          "decision": "merge",
+          "reason": "同一PSI子系统供lmkd与LowMemDetector分别注册trigger的关系接入具体状态/动作合图，监听数不等停顿重复计算，也不推同样kill策略。",
+          "original_line": 210,
+          "heading": "### 3.2 system_server 的 LowMemDetector",
+          "replacement_id": "ed10-02-psi-consumers-and-detector-state"
+        },
+        {
+          "original_id": "ch10-02-12-kill-return-startup",
+          "title": "进程退出到用户返回的成本链",
+          "decision": "merge",
+          "reason": "实际退出、用户返回相同入口且进程已不存在才重建、首帧/恢复与重复同设备比较接入终止提交边界图；以证据关联而非固定时间流水线连接。",
+          "original_line": 221,
+          "heading": "## 4. lmkd kill 怎样转化为用户性能损失",
+          "replacement_id": "ed10-02-kill-submission-to-return-evidence"
+        },
+        {
+          "original_id": "ch10-02-13-gc-and-system-pressure",
+          "title": "GC 与系统回收是独立证据轴",
+          "decision": "remove",
+          "reason": "GC密PSI稳/PSI升GC稳/两者叠加三卡逐句重排245完整条件判断段及238四项清单；没有真实叠加轨迹，不再重复一份图形诊断分支，所有证据轴和帧期限限制保留。",
+          "original_line": 247,
+          "heading": "## 5. 全局低内存与 ART GC 的边界"
+        },
+        {
+          "original_id": "ch10-02-14-memevents-gates",
+          "title": "memevents 必需事件与可选事件分开",
+          "decision": "keep",
+          "reason": "MemEventListener必需direct begin/end+kswapd wake/sleep、ring buffer/epoll成功与失败fallback，和vendor kill/zone info可选缺失不全退的具体能力分支；不与旧工具同名比较混成一图。",
+          "original_line": 259,
+          "heading": "## 6. Android 17 中 `memevents` 与旧 `mm_events`"
+        },
+        {
+          "original_id": "ch10-02-15-memevents-not-legacy",
+          "title": "新 memevents 与旧工具入口分开",
+          "decision": "remove",
+          "reason": "libmemevents/旧mm_events两卡逐项复述256两条定义和264完整目录/入口缺失说明，图没有额外新旧调用关系；全部r1/OEM/schema边界保留。",
+          "original_line": 268,
+          "heading": "## 6. Android 17 中 `memevents` 与旧 `mm_events`"
+        },
+        {
+          "original_id": "ch10-02-16-capture-data-domains",
+          "title": "起始采集配置的三个数据域",
+          "decision": "remove",
+          "reason": "内核ART/1秒系统进程/帧三个数据卡片逐项摘要53行真实textproto、九行事件表和347完整覆盖缺口段；所有可执行配置、FrameTimeline支持和需补I/O/ZRAM/阻塞栈条件保留。",
+          "original_line": 349,
+          "heading": "### 7.1 需要观察的事件"
+        },
+        {
+          "original_id": "ch10-02-17-trace-causal-review",
+          "title": "按业务窗口还原真实压力路径",
+          "decision": "remove",
+          "reason": "圈业务窗→PSI差分→同TID回收/栈→GC/帧/生命周期四步重排紧邻六项完整阅读清单及363同核D状态非因果段，合并请求图和kill证据链已有各自机制关系。",
+          "original_line": 365,
+          "heading": "### 7.2 阅读顺序"
+        },
+        {
+          "original_id": "ch10-02-18-zram-capacity-and-storage",
+          "title": "ZRAM 的逻辑容量不是预留 RAM",
+          "decision": "remove",
+          "reason": "逻辑/物理与处理成本两卡直接摘要374、392和412完整ZRAM段落；没有实际压缩池比例或容量算例，disksize非预留、writeback/metadata/CPU全部边界保留。",
+          "original_line": 376,
+          "heading": "### 8.1 ZRAM"
+        },
+        {
+          "original_id": "ch10-02-19-swap-readahead-scale",
+          "title": "page-cluster 是页数上限的对数尺度",
+          "decision": "keep",
+          "reason": "同n=3的2^n至多8页在4KiB/16KiB页分别32/128KiB的具体单位算例，说明相同参数字节上限差4倍；不是虚拟相邻、0关闭额外预读和不保读满限制保留。",
+          "original_line": 394,
+          "heading": "### 8.1 ZRAM"
+        },
+        {
+          "original_id": "ch10-02-20-zram-ab-tradeoffs",
+          "title": "ZRAM 调整要同时比较收益和代价",
+          "decision": "remove",
+          "reason": "固定设备→逻辑/实际/效率→CPU/PSI→业务AB四步逐项重排紧邻五条ZRAM验证清单与412代价段，没有真实AB结果，全部收益/代价和同负载限制保留。",
+          "original_line": 401,
+          "heading": "### 8.1 ZRAM"
+        },
+        {
+          "original_id": "ch10-02-21-mglru-feature-bits",
+          "title": "MGLRU 代际与 enabled 位掩码分开",
+          "decision": "remove",
+          "reason": "页面generation/运行组件enabled两卡逐项重排416/418两个完整段落，未画老化/代选择或具体mask组件关系；bitmask不是代号与硬件/内核能力条件保留。",
+          "original_line": 420,
+          "heading": "### 8.2 MGLRU"
+        },
+        {
+          "original_id": "ch10-02-22-cached-compaction-resolution",
+          "title": "Cached App profile 还要经过降级和能力检查",
+          "decision": "keep",
+          "reason": "请求SOME/ANON/FULL经过时间adj/RSS状态节流、swap余量和文件回收开关降级，再选择可用memcg/task-profile/process_madvise能力的具体策略转换链；MADV_COLD非立即RSS回落保留。",
+          "original_line": 429,
+          "heading": "### 8.3 Cached App Optimizer"
+        },
+        {
+          "original_id": "ch10-02-23-four-memory-mechanisms",
+          "title": "四种“回收或冻结”各有对象",
+          "decision": "remove",
+          "reason": "GC/缓存进程压减/物理规整/freezer四卡逐项复述236/241、427/434的完整机制对比段，具体分配/规整条件合图和profile转换图已保留；四类对象及非固定流水线说明完整保留。",
+          "original_line": 436,
+          "heading": "### 8.3 Cached App Optimizer"
+        },
+        {
+          "original_id": "ch10-02-24-memory-limiter-real-path",
+          "title": "Memory Limiter 要沿 JNI 和异步动作看",
+          "decision": "keep",
+          "reason": "状态开关到JNI实际memory.high/memory.swap.max、组合anon+shmem+swap.current超限撤限、条件profiling和30秒消息后终止的具体链，名称与实际节点/指标/退出reason相区别，非概括性调优清单。",
+          "original_line": 449,
+          "heading": "### 8.4 cgroup、Task Profiles 与 Android 17 Memory Limiter"
+        },
+        {
+          "original_id": "ch10-02-25-manual-limit-version-trap",
+          "title": "手动测试要核对单位与撤销路径",
+          "decision": "keep",
+          "reason": "手动整数MiB乘1024²、none先-1再变-1048576被JNI跳过的具体跨层数值路径，直接解释帮助PERCENT与执行代码矛盾/无法可靠撤限，保留max不解析及重启读节点确认。",
+          "original_line": 464,
+          "heading": "### 8.4 cgroup、Task Profiles 与 Android 17 Memory Limiter"
+        },
+        {
+          "original_id": "ch10-02-26-lowram-budget-and-matrix",
+          "title": "产品档位和运行压力是两个维度",
+          "decision": "remove",
+          "reason": "业务资源预算/设备系统差异两卡摘要471产品配置定义、五条适配清单与486测试矩阵段，没有实际设备矩阵或预算样例；Go/lowRAM/page-size/Limiter条件完整保留。",
+          "original_line": 473,
+          "heading": "## 9. App 与低 RAM 产品适配"
+        },
+        {
+          "original_id": "ch10-02-27-trim-state-and-budget",
+          "title": "trim 是状态提示，缓存要有主动预算",
+          "decision": "remove",
+          "reason": "状态回调/持续预算两卡直接复述490/492完整trim段及相关hard-budget章节，未增加具体缓存协议；旧等级API34停止/API35废弃、无PSI/无保证清理机会和System.gc限制保留。",
+          "original_line": 494,
+          "heading": "### 9.1 `onTrimMemory()`"
+        },
+        {
+          "original_id": "ch10-02-28-diagnostic-evidence-router",
+          "title": "按已验证信号选择修复对象",
+          "decision": "remove",
+          "reason": "内核页面/进程策略/App对象三个router卡片再次压缩紧邻八行诊断表，与开篇分类重复；原表保留每个现象和验证字段，更具体可用。",
+          "original_line": 512,
+          "heading": "## 10. 诊断表"
+        },
+        {
+          "original_id": "ch10-02-29-pressure-review-closure",
+          "title": "从压力线索走到可复核结论",
+          "decision": "remove",
+          "reason": "固定构建→分证据→关联→重复实验四步再次摘要紧邻十项检查清单及前文阅读顺序，完整清单与版本边界保留，不在末尾再重画总流程。",
+          "original_line": 528,
+          "heading": "## 检查清单"
+        }
+      ],
+      "sha256_after": "67b6818a9bd73a9fb4ca22bb22448d54abee40d45c9e5f6c8721f24bd8338793",
+      "new_diagrams": [
+        {
+          "id": "ed10-02-allocation-and-reclaim-conditions",
+          "title": "按分配请求分别判断后台回收、同步回收与物理页规整",
+          "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-02-allocation-and-reclaim-conditions.svg",
+            "src/assets/diagrams/ch10/ed10-02-allocation-and-reclaim-conditions.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-02-allocation-and-reclaim-conditions",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c",
+            "本文冻结全文的GFP/水位条件、PSI定义、监听状态和进程生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-02-02-watermarks-and-request",
+              "ch10-02-03-direct-reclaim-gate",
+              "ch10-02-05-compaction-vs-reclaim"
+            ],
+            "boundary": "固定6.18内核，只表达条件和职责，不是完整page_alloc控制流。node/zone/order/GFP/reserve/碎片共同影响分配，允许kswapd或direct reclaim不保证一定触发。部分高阶路径可先compaction，后续回收/重试/失败非固定顺序。D状态不单独证明回收或存储I/O，需同TID事件/栈。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a107/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-02-psi-task-sets-and-time-views",
+          "title": "PSI some / full 是不同任务集合，avg 与 total 也用不同时间口径",
+          "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-02-psi-task-sets-and-time-views.svg",
+            "src/assets/diagrams/ch10/ed10-02-psi-task-sets-and-time-views.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-02-psi-task-sets-and-time-views",
+          "sources": [
+            "https://docs.kernel.org/accounting/psi.html",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/psi.c",
+            "本文冻结全文的GFP/水位条件、PSI定义、监听状态和进程生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-02-06-psi-some-full",
+              "ch10-02-07-psi-average-and-delta"
+            ],
+            "boundary": "仅两个任务且图示区间都non-idle、同一memory资源/统计范围的教学示意，无真实时长或比例。some至少一项停顿，full全体停顿；full为0仍可有some或局部严重延迟。avg10/60/300为对应尺度指数平均不是滑窗算术平均。total微秒需同计数范围/无重置差分并记录实际间隔，不能用当前PSI解释过去退出。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a107/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-02-psi-consumers-and-detector-state",
+          "title": "同一个 PSI 子系统供两个消费者各自注册触发器",
+          "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-02-psi-consumers-and-detector-state.svg",
+            "src/assets/diagrams/ch10/ed10-02-psi-consumers-and-detector-state.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-02-psi-consumers-and-detector-state",
+          "sources": [
+            "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_LowMemDetector.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/LowMemDetector.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppProfiler.java",
+            "本文冻结全文的GFP/水位条件、PSI定义、监听状态和进程生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-02-09-lmkd-strategy-branches",
+              "ch10-02-11-lowmem-detector-state",
+              "ch10-02-08-psi-two-consumers"
+            ],
+            "boundary": "固定r1。lmkd use_new_strategy及lowRAM/minfree组合决定策略，旧策略仅v1memcg，新策略LOW关闭MEDIUM partial CRITICAL complete；没有旧use_psi开关路径。LowMemDetector三个固定framework阈值仅本r1，同批最高、已有压力1秒超时回NORMAL、无压力无限等；criticalLowMemory是内部状态区间非rawfull时长。AppProfiler还可覆盖/门限调整memory factor，不等于lmkd kill策略。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a107/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-02-kill-submission-to-return-evidence",
+          "title": "从终止请求标记到实际退出、用户返回与冷启动分别取证",
+          "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-02-kill-submission-to-return-evidence.svg",
+            "src/assets/diagrams/ch10/ed10-02-kill-submission-to-return-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-02-kill-submission-to-return-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
+            "本文冻结全文的GFP/水位条件、PSI定义、监听状态和进程生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-02-10-kill-submission-boundary",
+              "ch10-02-12-kill-return-startup"
+            ],
+            "boundary": "固定r1正常压力选择且reaper.kill返回成功路径；失败/hook已处理另分支。instant是请求提交标记，不是实际死亡或物理页回收完成；图为证据关联，不承诺死亡事件一定晚于instant。需PID/进程代次、同包其他进程与共享资源，返回时目标确已不存在才冷建。lmkd LOW_MEMORY与Limiter OTHER/MemoryLimiter:AnonSwap分开。无统一冷启动毫秒数和回收收益。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a107/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T12:04:23.497611+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 29,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a107/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a107/visual-review.json",
+      "retired_diagrams": [
+        "ch10-02-01-pressure-paths",
+        "ch10-02-02-watermarks-and-request",
+        "ch10-02-03-direct-reclaim-gate",
+        "ch10-02-04-page-reclaim-costs",
+        "ch10-02-05-compaction-vs-reclaim",
+        "ch10-02-06-psi-some-full",
+        "ch10-02-07-psi-average-and-delta",
+        "ch10-02-08-psi-two-consumers",
+        "ch10-02-09-lmkd-strategy-branches",
+        "ch10-02-10-kill-submission-boundary",
+        "ch10-02-11-lowmem-detector-state",
+        "ch10-02-12-kill-return-startup",
+        "ch10-02-13-gc-and-system-pressure",
+        "ch10-02-15-memevents-not-legacy",
+        "ch10-02-16-capture-data-domains",
+        "ch10-02-17-trace-causal-review",
+        "ch10-02-18-zram-capacity-and-storage",
+        "ch10-02-20-zram-ab-tradeoffs",
+        "ch10-02-21-mglru-feature-bits",
+        "ch10-02-23-four-memory-mechanisms",
+        "ch10-02-26-lowram-budget-and-matrix",
+        "ch10-02-27-trim-state-and-budget",
+        "ch10-02-28-diagnostic-evidence-router",
+        "ch10-02-29-pressure-review-closure"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-107/retired-assets.json"
     },
     {
       "index": 108,
@@ -13822,9 +14856,452 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "60312dc80021fb25c39d8721046f5a9e9112e26378aa5c1eebf8d70bd34fac1a",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 19,
+      "decisions": [
+        {
+          "original_id": "ch10-03-01-churn-leak",
+          "title": "抖动与泄漏按生命周期分开",
+          "decision": "remove",
+          "reason": "短命反复创建/引用越过生命周期两卡直接逐句摘要61完整定义段及后续五行现象证据表；有界泄漏可平台、两者可共存的正文完整保留。",
+          "original_line": 63,
+          "heading": "# 内存抖动与频繁 GC"
+        },
+        {
+          "original_id": "ch10-03-02-causal-proof",
+          "title": "从分配热点到慢帧需要验证链",
+          "decision": "remove",
+          "reason": "固定条件→分配热点→GC/帧/等待→修改复测四步直接重排68三个证明条件和后文五步阅读顺序/验证表；没有真实场景关联事件，保留完整取证方法。",
+          "original_line": 70,
+          "heading": "# 内存抖动与频繁 GC"
+        },
+        {
+          "original_id": "ch10-03-03-tlab-pointer",
+          "title": "TLAB 快路径推进线程自己的指针",
+          "decision": "keep",
+          "reason": "线程本地缓冲区中旧pos/本次aligned对象/新pos/end的具体空间关系，直接说明返回地址和指针推进；不是一般三卡摘要，TLAB不足与allocator/插桩边界保留。",
+          "original_line": 81,
+          "heading": "### 分配快，不代表分配免费"
+        },
+        {
+          "original_id": "ch10-03-04-allocation-paths",
+          "title": "分配路径有多个条件分支",
+          "decision": "remove",
+          "reason": "TLAB足够/新缓冲其他allocator/大对象三卡逐项重排79完整选择段及五条后续成本清单；图3已画具体本地空间，其他路径门槛完整正文保留，无需再三卡总结。",
+          "original_line": 94,
+          "heading": "### 分配快，不代表分配免费"
+        },
+        {
+          "original_id": "ch10-03-05-gc-frame-timeline",
+          "title": "并发 GC 仍可通过不同路径影响帧",
+          "decision": "keep",
+          "reason": "mutator暂停、并发GC执行与分配等待在两个线程轨道上的交叠示意，能解释并发仍有多种帧影响；条宽非实测、非每次同时发生和实际FrameTimeline期限保留。",
+          "original_line": 101,
+          "heading": "### 分配快，不代表分配免费"
+        },
+        {
+          "original_id": "ch10-03-06-cmc-selection",
+          "title": "CMC 与分代 CMC 逐层核对条件",
+          "decision": "merge",
+          "reason": "固定r1显式-Xgc/属性/能力、gUseUserfaultfd真时CMC/Background校验与分代能力/选项条件合入配置/运行证据图，不当所有API37进程强制路径。",
+          "original_line": 110,
+          "heading": "### Android 17 的 CMC 源码边界",
+          "replacement_id": "ed10-03-cmc-config-and-process-evidence"
+        },
+        {
+          "original_id": "ch10-03-07-collector-evidence",
+          "title": "平台 API 不能单独确定进程 GC",
+          "decision": "merge",
+          "reason": "ART模块/OEM/进程选项的静态条件与目标进程启动描述、当前轮GC trace合到同图，明确源码YoungMarkCompact存在不证明启用或每轮固定成本。",
+          "original_line": 117,
+          "heading": "### Android 17 的 CMC 源码边界",
+          "replacement_id": "ed10-03-cmc-config-and-process-evidence"
+        },
+        {
+          "original_id": "ch10-03-08-uffd-fault",
+          "title": "UFFD 页面故障只在有效范围内处理",
+          "decision": "keep",
+          "reason": "常规UFFD内核能力→满足注册/缺页条件地址→ART信号原因/压缩状态/范围检查→有效页面协同的实际分层门槛，避免把任意SIGBUS和对象访问均归handler。",
+          "original_line": 124,
+          "heading": "### Android 17 的 CMC 源码边界"
+        },
+        {
+          "original_id": "ch10-03-09-cmc-phases",
+          "title": "CMC 的暂停和压缩都有实际分支",
+          "decision": "keep",
+          "reason": "RunPhases经需要压缩/不压缩两支、线程根翻转暂停、UFFD有效才并发压缩与FinishPhase参数汇合的具体控制关系；强制STW例外独立，不与配置图合成必经流程。",
+          "original_line": 131,
+          "heading": "### Android 17 的 CMC 源码边界"
+        },
+        {
+          "original_id": "ch10-03-10-curves-evidence",
+          "title": "堆曲线分类以后还需要相应证据",
+          "decision": "remove",
+          "reason": "回落/仍持有/预热缓存大对象三个候选卡片直接压缩紧邻五行现象/曲线/证据/处理表；没有实际堆曲线，原表更完整，优化优先级条件保留。",
+          "original_line": 148,
+          "heading": "## 识别抖动、泄漏与正常波动"
+        },
+        {
+          "original_id": "ch10-03-11-studio-columns",
+          "title": "Studio 的净值列有记录区间边界",
+          "decision": "keep",
+          "reason": "Studio同记录区间内累计创建与创建减释放净值两个统计口径并列，区别于ART只有创建的采样模式；Total Count/Remaining Size实际公式、非完整heap及debuggable/录制开销边界保留。",
+          "original_line": 169,
+          "heading": "### Android Studio：记录 Java/Kotlin 分配"
+        },
+        {
+          "original_id": "ch10-03-12-profilers-domains",
+          "title": "不同 profile 回答不同问题",
+          "decision": "merge",
+          "reason": "native malloc/free、ART创建采样与heap dump引用图的不同数据语义合入模式/ART窗口图；Android10/12门槛、自定义allocator集成和user-build权限不混同。",
+          "original_line": 178,
+          "heading": "### Perfetto heapprofd：调用栈采样",
+          "replacement_id": "ed10-03-profile-modes-and-art-creation-window"
+        },
+        {
+          "original_id": "ch10-03-13-cli-eligibility",
+          "title": "CLI 可用性和采样权限分别核对",
+          "decision": "remove",
+          "reason": "checkout/help→选heap→权限→窗口四步逐项重排紧邻真实5行CLI示例、183版本说明、193权限和200完整覆盖段；命令、全部权限和结束条件保留。",
+          "original_line": 195,
+          "heading": "### Perfetto heapprofd：调用栈采样"
+        },
+        {
+          "original_id": "ch10-03-14-sample-window",
+          "title": "ART 累计创建量不能解释为当前存活",
+          "decision": "merge",
+          "reason": "ART附加前不补录、窗口累计创建即使后来回收也无删除时间、Total不是live set及溢出提前结束并入工具语义图，不画不存在的对象删除曲线。",
+          "original_line": 202,
+          "heading": "### Perfetto heapprofd：调用栈采样",
+          "replacement_id": "ed10-03-profile-modes-and-art-creation-window"
+        },
+        {
+          "original_id": "ch10-03-15-trace-causality",
+          "title": "从慢帧向线程状态回查 GC 影响",
+          "decision": "remove",
+          "reason": "慢帧→同TID状态→GC/调度→同场景profile四步直接重排紧邻五条阅读顺序及217完整同近不等因果段；图5已经显示实际线程轨道关系，全文排除其他原因/修复复测保留。",
+          "original_line": 219,
+          "heading": "### Perfetto：把分配、GC 和帧放进同一窗口"
+        },
+        {
+          "original_id": "ch10-03-16-gcwatcher",
+          "title": "GcWatcher 的回调来自终结处理链",
+          "decision": "keep",
+          "reason": "弱引用GcWatcher、GC后finalization的不确定时机、finalize分发内部watcher再rearm的实际机制链，App工具选择与Framework回调明确分隔，不能作每GC一次计数协议。",
+          "original_line": 228,
+          "heading": "### 不要在 App 中复制 `GcWatcher`"
+        },
+        {
+          "original_id": "ch10-03-17-view-reuse",
+          "title": "绘制状态随 View 保存而非逐帧重建",
+          "decision": "keep",
+          "reason": "一个View创建的一组Paint/RectF被首帧和后续onDraw共享，具体对象身份跨帧复用关系；真实14行示例、非整帧零分配和线程所有权限制保留。",
+          "original_line": 264,
+          "heading": "### `onDraw()`、布局和动画回调"
+        },
+        {
+          "original_id": "ch10-03-18-pipeline-ownership",
+          "title": "集合流水线与容器复用分别评估",
+          "decision": "remove",
+          "reason": "急切collection/Sequence/复用容器三卡逐项摘要271完整取舍段、三问清单及279引用逃逸边界，未画真实中间集合或逃逸示例；全部性能/并发条件保留。",
+          "original_line": 281,
+          "heading": "### 循环、列表绑定与流式转换"
+        },
+        {
+          "original_id": "ch10-03-19-strings-logging",
+          "title": "先判断日志开关，再构造昂贵参数",
+          "decision": "remove",
+          "reason": "日志启用/禁用两支和builder后继逐项复述288/301两段及真实buildString代码，普通参数先求值和延迟API实现条件原文已明确；删除第二份摘要，不再将两个例子用同一图形链串接。",
+          "original_line": 303,
+          "heading": "### 字符串与日志"
+        },
+        {
+          "original_id": "ch10-03-20-boxing-containers",
+          "title": "原始类型存储与泛型对象存储不同",
+          "decision": "keep",
+          "reason": "HashMap包装key、SparseArray sorted int[]/Object[]与密集原始数组的具体存储表示对照，解释省key装箱不等value去对象；缓存/JIT可能优化和无元素数通用切换点保留。",
+          "original_line": 324,
+          "heading": "### 装箱"
+        },
+        {
+          "original_id": "ch10-03-21-buffer-ownership",
+          "title": "buffer 轮转必须有归还边界",
+          "decision": "merge",
+          "reason": "buffer生产者获取/写入交接/同步或异步消费者完成后归还接入业务池闭环，明确任务入队不是完成、归还前不能提前覆盖同一实例。",
+          "original_line": 333,
+          "heading": "### 大型 buffer 与图像",
+          "replacement_id": "ed10-03-buffer-pool-return-and-reset"
+        },
+        {
+          "original_id": "ch10-03-22-bitmap-domains",
+          "title": "Bitmap 像素按实际存储域分析",
+          "decision": "remove",
+          "reason": "软件native/HARDWARE图形两支直接逐项重述338单个完整段及10.1已有专门像素归属图；本文全部两域、Java数非像素字节和按库协议归还/禁止提前recycle限制保留。",
+          "original_line": 340,
+          "heading": "### 大型 buffer 与图像"
+        },
+        {
+          "original_id": "ch10-03-23-preallocation",
+          "title": "预分配把代价移到更早并延长持有",
+          "decision": "keep",
+          "reason": "按需创建与提前分配在两条轨道中显示成本前移和持续持有，解释目标操作变快可同时拖启动/增live set；非测量比例、不预设净收益。",
+          "original_line": 360,
+          "heading": "### 优先删除分配"
+        },
+        {
+          "original_id": "ch10-03-24-framework-pool-branches",
+          "title": "Message 的并发队列路径不使用旧全局池",
+          "decision": "keep",
+          "reason": "MessageQueue.getUseConcurrent真假决定Message.obtain尝试旧全局池或直接new，recycle清引用是否回池的真实版本分支；MotionEvent独立recycler和禁止提前归还边界保留。",
+          "original_line": 369,
+          "heading": "### 对象池是受约束的优化"
+        },
+        {
+          "original_id": "ch10-03-25-pool-contract",
+          "title": "业务对象池必须完成所有权闭环",
+          "decision": "merge",
+          "reason": "acquire/授权使用/所有消费者完成/release重置/按容量留池或丢弃接入buffer闭环，增加可观察命中/在用字节/存活/同步成本，非建议所有对象池化。",
+          "original_line": 383,
+          "heading": "### 对象池是受约束的优化",
+          "replacement_id": "ed10-03-buffer-pool-return-and-reset"
+        },
+        {
+          "original_id": "ch10-03-26-system-gc",
+          "title": "主动 GC 请求没有消除分配源",
+          "decision": "remove",
+          "reason": "System.gc请求/修正热点两卡直接逐句重排390完整段，没有不同机制的实际执行证据；请求非立即、不治分配源、测试用途与产品修复条件全部原文保留。",
+          "original_line": 392,
+          "heading": "### 不调用 `System.gc()` 治理抖动"
+        },
+        {
+          "original_id": "ch10-03-27-valueclass-representation",
+          "title": "UserId 的底层 long 不覆盖所有用法",
+          "decision": "keep",
+          "reason": "具体Long底层UserId在直接/泛型/nullable及实际实现接口路径的表示分支，说明value class不是LongArray且缓存/JIT可进一步优化，区别于一般容器和state accessor。",
+          "original_line": 408,
+          "heading": "## Kotlin value class 的边界"
+        },
+        {
+          "original_id": "ch10-03-28-compose-engines",
+          "title": "组合结构的两个实现是条件选择",
+          "decision": "keep",
+          "reason": "固定RC真实flag/R8决定GapComposer+SlotTable默认false或实验LinkComposer+LinkTable的两个实现分支；避免把它们串成必经两张表，非由platform API推专属结构。",
+          "original_line": 417,
+          "heading": "## Jetpack Compose 中的分配"
+        },
+        {
+          "original_id": "ch10-03-29-remember-lifetime",
+          "title": "remember 缓存位置与 key 决定 formatter 生命周期",
+          "decision": "keep",
+          "reason": "remember(locale)位置仍保留且key==未变复用，否则重建，汇合后format仍执行/结果String仍分配的具体缓存生命周期，与自动Lambda capture规则独立。",
+          "original_line": 443,
+          "heading": "### `remember` 解决的是重组期重建"
+        },
+        {
+          "original_id": "ch10-03-30-strong-skip",
+          "title": "跳过资格、参数相等与失效条件分别判断",
+          "decision": "merge",
+          "reason": "强跳过restartable资格、NonSkippable退出、参数稳定性比较与state/首次/强制重组运行条件合入并列机制图，不让参数相等覆盖有效失效。",
+          "original_line": 454,
+          "heading": "### strong skipping 减少无效重组",
+          "replacement_id": "ed10-03-strong-skip-and-lambda-rules"
+        },
+        {
+          "original_id": "ch10-03-31-lambda-memoization",
+          "title": "自动 Lambda 记忆与手写 remember 比较不同",
+          "decision": "merge",
+          "reason": "自动Lambda按不稳capture===/稳定equals且DontMemoize退出与手写remember所有key==作同图独立对照，不串成先自动记忆再手写remember的阶段。",
+          "original_line": 461,
+          "heading": "### strong skipping 减少无效重组",
+          "replacement_id": "ed10-03-strong-skip-and-lambda-rules"
+        },
+        {
+          "original_id": "ch10-03-32-derived-state",
+          "title": "派生阈值减少下游更新，计算仍有成本",
+          "decision": "keep",
+          "reason": "输入位置0/1/2/3到阈值false/true/true/true的具体多对一示例，解释输出变化可少于输入；无policy/显式policy与观察者等价判断、仍会维护依赖/重算和版本修复段保留。",
+          "original_line": 472,
+          "heading": "### `derivedStateOf` 有适用条件"
+        },
+        {
+          "original_id": "ch10-03-33-primitive-state",
+          "title": "原始类型 state 的存储和访问要配套",
+          "decision": "keep",
+          "reason": "MutableIntState.intValue原始读写与泛型MutableState<Int>.value桥接的具体表示/访问对照，减少wrapper不等消除状态失效或重组，需profile证实。",
+          "original_line": 483,
+          "heading": "### 原始类型 state"
+        },
+        {
+          "original_id": "ch10-03-34-compose-platform-dimensions",
+          "title": "构建依赖和设备 GC 是不同维度",
+          "decision": "remove",
+          "reason": "alpha发布说明/RC AAR metadata/设备GC三个证据卡片逐项复述490完整差异段，图没有新依赖图或兼容矩阵；所有精确版本/工具链值、制品解析和不能推ART结论保留。",
+          "original_line": 492,
+          "heading": "### Compose 与 Android 17 的版本关系"
+        },
+        {
+          "original_id": "ch10-03-35-validation-loop",
+          "title": "同一场景同时验收成本与正确性",
+          "decision": "remove",
+          "reason": "固定场景→分配GC帧→资源正确性→前后复测四步直接压缩紧邻五行验证指标表、509完整单指标误推段和十项清单；整张表和全部验收语义保留，不尾部再重画方法论。",
+          "original_line": 511,
+          "heading": "## 验证优化"
+        }
+      ],
+      "sha256_after": "8bc1f79f3bb8987396ee130ac79bb197e081a2da428c88e0caa999cc961f03ba",
+      "new_diagrams": [
+        {
+          "id": "ed10-03-cmc-config-and-process-evidence",
+          "title": "CMC 可选配置与进程实际收集器需要两组证据",
+          "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-03-cmc-config-and-process-evidence.svg",
+            "src/assets/diagrams/ch10/ed10-03-cmc-config-and-process-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-03-cmc-config-and-process-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector_type.h",
+            "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc",
+            "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc",
+            "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc",
+            "本文冻结全文的收集器配置、采样语义、所有权和编译器条件"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-03-06-cmc-selection",
+              "ch10-03-07-collector-evidence"
+            ],
+            "boundary": "仅固定r1路径核对而非完整ART初始化算法。显式-Xgc/属性/内核/ART模块/OEM与强制STW例外可影响路径；gUseUserfaultfd真时heap校验CMC/CMCBackground，分代还检查collector能力/generational选项/ShouldUseGenerationalGC。符号存在不保证设备或进程启用，启动描述确认配置，当前轮次trace再确认成本与阶段。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a108/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-03-profile-modes-and-art-creation-window",
+          "title": "按数据语义选择 native profile、ART 创建采样或 heap dump",
+          "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-03-profile-modes-and-art-creation-window.svg",
+            "src/assets/diagrams/ch10/ed10-03-profile-modes-and-art-creation-window.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-03-profile-modes-and-art-creation-window",
+          "sources": [
+            "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+            "https://developer.android.com/studio/profile/record-java-kotlin-allocations",
+            "本文冻结全文的收集器配置、采样语义、所有权和编译器条件"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-03-12-profilers-domains",
+              "ch10-03-14-sample-window"
+            ],
+            "boundary": "native Android10+，ART com.android.art Android12+；user build目标需profileable/debuggable，自定义allocator另需集成。ART profile只估计创建size/count，附加前/Zygote/未覆盖allocator不补录，缺删除时间与完整引用图。对象后来可已回收；缓冲溢出提前终止需核对实际窗口与采样参数，不能从缺记录推零。Studio allocation另要求debuggable。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a108/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-03-buffer-pool-return-and-reset",
+          "title": "以 buffer 为例画出业务池的归还与重置闭环",
+          "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-03-buffer-pool-return-and-reset.svg",
+            "src/assets/diagrams/ch10/ed10-03-buffer-pool-return-and-reset.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-03-buffer-pool-return-and-reset",
+          "sources": [
+            "https://developer.android.com/topic/performance/memory/manage-app-memory",
+            "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Message.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/MotionEvent.java",
+            "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc",
+            "本文冻结全文的收集器配置、采样语义、所有权和编译器条件"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-03-21-buffer-ownership",
+              "ch10-03-25-pool-contract"
+            ],
+            "boundary": "教学所有权协议，非所有库的统一实现；是否池化先由profiler确认收益，容量/同时在用数/命中率/重置可靠性都要审查。消费者同步或异步完成后才可归还，获授权所有者之外不得覆盖；重置按对象协议处理引用/数据/错误/外部资源，再按容量留池或丢弃。池可增加持有/锁/清理/泄漏成本，小对象未必适合。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a108/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-03-strong-skip-and-lambda-rules",
+          "title": "强跳过的函数资格与 Lambda 记忆是两个并列机制",
+          "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-03-strong-skip-and-lambda-rules.svg",
+            "src/assets/diagrams/ch10/ed10-03-strong-skip-and-lambda-rules.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-03-strong-skip-and-lambda-rules",
+          "sources": [
+            "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
+            "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.12.0-rc01/runtime-android-1.12.0-rc01-sources.jar",
+            "本文冻结全文的收集器配置、采样语义、所有权和编译器条件"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-03-30-strong-skip",
+              "ch10-03-31-lambda-memoization"
+            ],
+            "boundary": "Kotlin2.0.20起默认strong skipping但实际看编译配置报告。可重启composable默认有skip资格，NonSkippable可退出，不可重启不因该模式变可跳过；unstable参数===，stable equals，还受state失效/首次/强制重组影响。自动Lambda不稳capture===、稳定equals，DontMemoize退出；手写remember全部key==是对照而非自动Lambda下一阶段。Stable契约错误可漏更新，profile证明实际分配。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a108/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T12:12:09.269158+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 7,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a108/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a108/visual-review.json",
+      "retired_diagrams": [
+        "ch10-03-01-churn-leak",
+        "ch10-03-02-causal-proof",
+        "ch10-03-04-allocation-paths",
+        "ch10-03-06-cmc-selection",
+        "ch10-03-07-collector-evidence",
+        "ch10-03-10-curves-evidence",
+        "ch10-03-12-profilers-domains",
+        "ch10-03-13-cli-eligibility",
+        "ch10-03-14-sample-window",
+        "ch10-03-15-trace-causality",
+        "ch10-03-18-pipeline-ownership",
+        "ch10-03-19-strings-logging",
+        "ch10-03-21-buffer-ownership",
+        "ch10-03-22-bitmap-domains",
+        "ch10-03-25-pool-contract",
+        "ch10-03-26-system-gc",
+        "ch10-03-30-strong-skip",
+        "ch10-03-31-lambda-memoization",
+        "ch10-03-34-compose-platform-dimensions",
+        "ch10-03-35-validation-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-108/retired-assets.json"
     },
     {
       "index": 109,
@@ -13833,9 +15310,586 @@
       "before_count": 39,
       "before_all_images": 39,
       "sha256_before": "56e8fa7ad98dcad95b7e3554c646dd73544a39770f6a211a69efa8ec41d8599a",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 18,
+      "decisions": [
+        {
+          "original_id": "ch10-04-01-counter-questions",
+          "title": "图形内存数字先限定问题",
+          "decision": "remove",
+          "reason": "meminfo/GPU counter/DMA-BUF三卡直接摘要71/78开篇口径限定及紧邻七行工具表，后文又重复边界总结；全部接口/单位/共享和不能相加结论保留。",
+          "original_line": 73,
+          "heading": "# GPU 与图形内存统计、归因与诊断"
+        },
+        {
+          "original_id": "ch10-04-02-shared-buffer",
+          "title": "同一个共享 buffer 可被多个进程导入",
+          "decision": "merge",
+          "reason": "一个DMA-BUF被producer/consumer/设备持有或映射的拓扑与PSS/GPU总量/inode容量合为同一示意，不把多方引用误作多份物理分配。",
+          "original_line": 86,
+          "heading": "### 1.1 两类常见图形分配",
+          "replacement_id": "ed10-04-shared-buffer-accounting-views"
+        },
+        {
+          "original_id": "ch10-04-03-resource-paths",
+          "title": "逻辑图片可沿不同分配路径出现",
+          "decision": "remove",
+          "reason": "软件Bitmap/Hardware/媒体Vulkan三卡逐项重排97四条分配路径清单与102对象不等backing段；所有native/图形/Gralloc/device-memory口径完整保留，具体资源生命周期后文独立展开。",
+          "original_line": 104,
+          "heading": "### 1.1 两类常见图形分配"
+        },
+        {
+          "original_id": "ch10-04-04-tool-selection",
+          "title": "按增长对象选择证据入口",
+          "decision": "remove",
+          "reason": "分类/共享/创建保留三卡直接压缩紧邻七行工具能与不能回答表，原表更精确；合并记账/采集/inode图各保留具体关系，不另做重复router。",
+          "original_line": 123,
+          "heading": "### 1.2 同一资源在不同工具里的视角"
+        },
+        {
+          "original_id": "ch10-04-05-graphics-sum",
+          "title": "Graphics 摘要按三个分类字段求和",
+          "decision": "merge",
+          "reason": "Gfxdev+EGLmtrack+GLmtrack各private字段求和接入HAL→lib→JNI→字段链，保留smaps独立Gfxdev来源及Other不入Graphics。",
+          "original_line": 142,
+          "heading": "### 2.1 Android 17 的详细行",
+          "replacement_id": "ed10-04-memtrack-to-graphics-summary"
+        },
+        {
+          "original_id": "ch10-04-06-memtrack-fields",
+          "title": "同一 HAL 上报值进入多个 Framework 字段",
+          "decision": "merge",
+          "reason": "HAL承担PSS共享责任、lib按类型/flag求和、JNI同上报值写pss/privateDirty/rss接入摘要图，字段不是三份测量或backing全物理私有证明。",
+          "original_line": 153,
+          "heading": "### 2.1 Android 17 的详细行",
+          "replacement_id": "ed10-04-memtrack-to-graphics-summary"
+        },
+        {
+          "original_id": "ch10-04-07-unaccounted-types",
+          "title": "SMAPS_UNACCOUNTED 按类型补充",
+          "decision": "merge",
+          "reason": "GRAPHICS CPU/GPU DMA-BUF集合去重、GLprivate/OTHER及SMAPS_UNACCOUNTED类型不重叠条件接入数据流头部，保留缺项/0/VM_PFNMAP与HAL覆盖限制。",
+          "original_line": 172,
+          "heading": "### 2.2 `SMAPS_UNACCOUNTED` 的设计目的",
+          "replacement_id": "ed10-04-memtrack-to-graphics-summary"
+        },
+        {
+          "original_id": "ch10-04-08-three-capacities",
+          "title": "PSS、GPU 总量与 inode 容量分别解释",
+          "decision": "merge",
+          "reason": "PSS按共享规则、各PIDGPU总量可重叠、inode仅对象容量与具体共享buffer合图；不以PID求和替全局pid0，也不从capacity推出物理驻留/PSS等式。",
+          "original_line": 194,
+          "heading": "### 2.3 PSS、GPU 映射总量与唯一 buffer 容量",
+          "replacement_id": "ed10-04-shared-buffer-accounting-views"
+        },
+        {
+          "original_id": "ch10-04-09-bpf-update",
+          "title": "驱动事件经 BPF 保存最新上报值",
+          "decision": "merge",
+          "reason": "驱动当前总量事件、组合GPU/PID key、非零更新或插入/size0删除与dump读取接入同一分支图，保留只收到事件最新值而非主动清点。",
+          "original_line": 207,
+          "heading": "### 3.1 `dumpsys gpu --gpumem`",
+          "replacement_id": "ed10-04-bpf-updates-and-missing-values"
+        },
+        {
+          "original_id": "ch10-04-10-bpf-data-quality",
+          "title": "map 缺项、零事件与失败不是同一结果",
+          "decision": "merge",
+          "reason": "初始化/map/driver/读取完整性、1024keys/更新失败、缺pid0 N/A/部分读取接入BPF分支图；空map/缺项/0删除/失败不当同一零值。",
+          "original_line": 218,
+          "heading": "### 3.1 `dumpsys gpu --gpumem`",
+          "replacement_id": "ed10-04-bpf-updates-and-missing-values"
+        },
+        {
+          "original_id": "ch10-04-11-snapshot-stream",
+          "title": "初始遍历值与后续事件补足时间覆盖",
+          "decision": "merge",
+          "reason": "GpuMemTracer逐项MONOTONIC初始值与独立ftrace变化的交叠轨道接入配置前置图，不把遍历当统一原子快照或自动补丢失事件。",
+          "original_line": 229,
+          "heading": "### 3.2 Perfetto 的初始值与增量",
+          "replacement_id": "ed10-04-initial-traversal-and-ftrace-coverage"
+        },
+        {
+          "original_id": "ch10-04-12-configuration-gates",
+          "title": "采集片段需要完整配置与可用性证据",
+          "decision": "merge",
+          "reason": "完整TraceConfig/buffer/duration、tracepoint权限和BPF初始化及只开一侧的覆盖缺口接入初始/变化合图，保留schema能解析不等设备采集成功。",
+          "original_line": 255,
+          "heading": "### 3.2 Perfetto 的初始值与增量",
+          "replacement_id": "ed10-04-initial-traversal-and-ftrace-coverage"
+        },
+        {
+          "original_id": "ch10-04-13-sql-gpu-dimension",
+          "title": "多 GPU 查询需要保留轨道维度",
+          "decision": "merge",
+          "reason": "修订SQL保留gpu_id/track_id/事件PID对应upid、每track LEAD末段trace_end与首样本不补零接入解析器版本分支图，防止跨GPU拼接或相加。",
+          "original_line": 262,
+          "heading": "### 3.2 Perfetto 的初始值与增量",
+          "replacement_id": "ed10-04-parser-gpu-dimensions-and-sql"
+        },
+        {
+          "original_id": "ch10-04-14-parser-version",
+          "title": "同一合成 trace 暴露解析器版本差异",
+          "decision": "merge",
+          "reason": "同一主机合成双GPU输入v54混轨缺维度/v58.2独立轨的结果接入SQL图，明确无行不等无GPU内存、SQL不能补导入丢失的信息，非设备性能实验。",
+          "original_line": 290,
+          "heading": "### 3.2 Perfetto 的初始值与增量",
+          "replacement_id": "ed10-04-parser-gpu-dimensions-and-sql"
+        },
+        {
+          "original_id": "ch10-04-15-gpu-data-sources",
+          "title": "GPU 数据源按目标证据选择",
+          "decision": "remove",
+          "reason": "gpu.counters/renderstages/vulkan.memory_tracker三卡逐项复述紧邻四条用途清单和309 gfxinfo边界段；所有厂商后缀、无统一uploadstage、旧事件不保证支持原文保留。",
+          "original_line": 304,
+          "heading": "### 3.3 其他 GPU 数据源各有用途"
+        },
+        {
+          "original_id": "ch10-04-16-fdinfo-evidence",
+          "title": "fdinfo 证明的是观测时的文件引用",
+          "decision": "merge",
+          "reason": "多PID fdinfo读取、ino/size/count/exp_name/name字段与权限/转交/退出缺口接入同窗sysfs关联，count非进程数/映射数/回收比例。",
+          "original_line": 341,
+          "heading": "### 4.1 进程 fd：谁还持有共享 buffer",
+          "replacement_id": "ed10-04-fdinfo-and-sysfs-inode-correlation"
+        },
+        {
+          "original_id": "ch10-04-17-sysfs-snapshot",
+          "title": "sysfs 汇总对象容量，并保留读取缺口",
+          "decision": "merge",
+          "reason": "配置权限成立时按inode读sysfs size/exporter、动态创建释放/失败跳过/stderr与fdinfo同窗关联接入一图；不称原子无遗漏或物理驻留快照。",
+          "original_line": 371,
+          "heading": "### 4.2 全局 sysfs：系统里有哪些唯一 DMA-BUF",
+          "replacement_id": "ed10-04-fdinfo-and-sysfs-inode-correlation"
+        },
+        {
+          "original_id": "ch10-04-18-access-paths",
+          "title": "全局调试接口受配置和权限约束",
+          "decision": "remove",
+          "reason": "标准proc/sysfs与rootdebugfs/vendor两卡直接复述346、350、378/384完整访问边界段；所有不存在通用proc/PID/dmabuf、权限与格式/版本条件保留。",
+          "original_line": 386,
+          "heading": "### 4.3 debugfs：实验室设备上的全局调试视图"
+        },
+        {
+          "original_id": "ch10-04-19-deferred-release",
+          "title": "释放请求之后还要核对异步使用与引用",
+          "decision": "keep",
+          "reason": "页面退出/引用清理与设备已提交工作/fence完成两条轨道的真实交叠，具体说明异步与其他持有者为何延后回收；非一次GC归零和非测量时长限制保留。",
+          "original_line": 397,
+          "heading": "### 5.1 先辨认缓存、延迟释放与泄漏"
+        },
+        {
+          "original_id": "ch10-04-20-diagnostic-loop",
+          "title": "用同状态多轮实验关联增长资源",
+          "decision": "remove",
+          "reason": "记录环境→稳态重复→同UI采样→指标归因四步直接摘要紧邻六条完整诊断脚本清单与419原始值段，没有实际实验曲线，保留全部可执行步骤。",
+          "original_line": 421,
+          "heading": "### 5.2 可复查的诊断实验"
+        },
+        {
+          "original_id": "ch10-04-21-wrapper-backing",
+          "title": "创建栈、保留引用与 backing 指标分开",
+          "decision": "remove",
+          "reason": "创建栈/保留引用/backing三卡逐项重述428/430两个完整段及工具表；profile不证存活、heapdump查Java引用、malloc不包Gralloc/GPU及资源表补证全文保留。",
+          "original_line": 432,
+          "heading": "### 5.3 Java 与 native profile 能发现什么"
+        },
+        {
+          "original_id": "ch10-04-22-page-rounding",
+          "title": "按页取整只解释一部分容量差异",
+          "decision": "keep",
+          "reason": "同17KiB数学请求在4KiB/16KiB页取整为20/32KiB、尾部3/15KiB的具体单位算例，解释__PAGE_ALIGN边界；不冒充实际Gralloc或统一增长率。",
+          "original_line": 441,
+          "heading": "### 5.4 16 KB kernel page 的精确边界"
+        },
+        {
+          "original_id": "ch10-04-23-layout-capacity",
+          "title": "像素公式与真实 allocation 有多层差异",
+          "decision": "remove",
+          "reason": "逻辑内容/布局驱动/容量证据三卡逐项摘要446完整stride/plane/tiling等边界段；没有实际layout示例或额外公式，真实分配/同workload实测全部限制保留。",
+          "original_line": 448,
+          "heading": "### 5.4 16 KB kernel page 的精确边界"
+        },
+        {
+          "original_id": "ch10-04-24-hardware-bitmap",
+          "title": "Hardware Bitmap 的引用和图形像素分开",
+          "decision": "merge",
+          "reason": "API26Hardware包装引用与immutable图形backing合入正常解除己方引用/其他使用者条件图，禁止用Java数量或GC推即时回收。",
+          "original_line": 459,
+          "heading": "### 6.1 Hardware Bitmap",
+          "replacement_id": "ed10-04-hardware-bitmap-owners-and-release"
+        },
+        {
+          "original_id": "ch10-04-25-bitmap-release",
+          "title": "Bitmap 的回收与重配置不是同一协议",
+          "decision": "merge",
+          "reason": "recycle无其他使用者前提和非Hardware常规协议、reconfigure文档drawpass不是通用同步屏障合入所有权图，方法语义独立注解而非串行操作步骤。",
+          "original_line": 466,
+          "heading": "### 6.1 Hardware Bitmap",
+          "replacement_id": "ed10-04-hardware-bitmap-owners-and-release"
+        },
+        {
+          "original_id": "ch10-04-26-prepare-upload",
+          "title": "prepareToDraw 将部分上传工作提前",
+          "decision": "keep",
+          "reason": "调用线程返回和RenderThread可能异步上传/后续绘制的两轨关系，保留已上传复用、像素改动可重传与非性能保证；仅补图注明确不保证上传先于首绘完成。",
+          "original_line": 473,
+          "heading": "### 6.1 Hardware Bitmap"
+        },
+        {
+          "original_id": "ch10-04-27-media-ownership",
+          "title": "Surface 与媒体对象各有释放责任",
+          "decision": "remove",
+          "reason": "Image/Surface/codec-camera三卡逐项重排480/487完整生命周期段，原文含每Image.close与maxImages配额更精确；具体TextureView责任分支图28保留，不再做清单卡片。",
+          "original_line": 482,
+          "heading": "### 6.2 Surface、BufferQueue 与媒体资源"
+        },
+        {
+          "original_id": "ch10-04-28-texture-callback",
+          "title": "TextureView 回调返回值决定 SurfaceTexture 释放方",
+          "decision": "keep",
+          "reason": "onSurfaceTextureDestroyed true由TextureView释放/false调用方负责的具体布尔所有权分支，释放责任与外部buffer引用仍须分别核对。",
+          "original_line": 489,
+          "heading": "### 6.2 Surface、BufferQueue 与媒体资源"
+        },
+        {
+          "original_id": "ch10-04-29-bufferqueue-count",
+          "title": "BufferQueue 数量由配置和状态共同决定",
+          "decision": "keep",
+          "reason": "getMaxBufferCountLocked基础maxAcquired+maxDequeued、async/cannotBlock额外1及mMaxBufferCount约束的具体数量计算关系；slot上限/实际分配/在用数不同，不固定三缓冲。",
+          "original_line": 496,
+          "heading": "### 6.2 Surface、BufferQueue 与媒体资源"
+        },
+        {
+          "original_id": "ch10-04-30-gl-objects",
+          "title": "GL 共享对象与 context 容器分开销毁",
+          "decision": "keep",
+          "reason": "GL share-group可共享纹理/buffer/renderbuffer与context私有FBO容器的具体引用/销毁域对照；名字删除不等其他引用或设备使用完成。",
+          "original_line": 505,
+          "heading": "### 6.3 OpenGL ES 与 Vulkan"
+        },
+        {
+          "original_id": "ch10-04-31-egl-surface",
+          "title": "EGL Surface 有独立的 current 状态边界",
+          "decision": "keep",
+          "reason": "eglDestroySurface下current/非current两支和pbuffer颜色buffer纹理绑定额外条件的实际API生命周期，独立于GL sharegroup对象清单。",
+          "original_line": 512,
+          "heading": "### 6.3 OpenGL ES 与 Vulkan"
+        },
+        {
+          "original_id": "ch10-04-32-vulkan-lifetime",
+          "title": "Vulkan object 与 device memory 分别管理",
+          "decision": "keep",
+          "reason": "Vulkan API对象destroy与DeviceMemory/suballocation归还的真实不同所有权对象，解释销毁一个Image不隐式释放共享allocator大块；提交完成和同步先满足。",
+          "original_line": 519,
+          "heading": "### 6.3 OpenGL ES 与 Vulkan"
+        },
+        {
+          "original_id": "ch10-04-33-wait-idle",
+          "title": "等待相关 fence 与全设备空闲粒度不同",
+          "decision": "keep",
+          "reason": "全逻辑设备所有队列等待与相关fence/其他无冲突队列继续的具体粒度轨道，说明不能每次销毁一概DeviceWaitIdle；非测量时长或通用性能收益。",
+          "original_line": 526,
+          "heading": "### 6.3 OpenGL ES 与 Vulkan"
+        },
+        {
+          "original_id": "ch10-04-34-view-composition",
+          "title": "SurfaceView 与 TextureView 路径不同",
+          "decision": "keep",
+          "reason": "SurfaceView独立layer可能HWC与TextureView SurfaceTexture→HWUI硬件加速窗口的实际内容路径分支，不按组件名给固定内存排序，版本alpha/HDR/DRM等限制保留。",
+          "original_line": 537,
+          "heading": "### 6.4 SurfaceView 与 TextureView"
+        },
+        {
+          "original_id": "ch10-04-35-game-budget",
+          "title": "游戏预算按资源与 allocator 大块列账",
+          "decision": "remove",
+          "reason": "长期纹理/渲染资源/allocator block三卡直接重排546资源清单和553完整流式/suballocation段，无实际资源表、别名或字节预算；所有共享/子分配不重复和AOSP不见碎片的原文保留。",
+          "original_line": 548,
+          "heading": "## 7. Game、Camera 与 AR 的预算方法"
+        },
+        {
+          "original_id": "ch10-04-36-camera-budget",
+          "title": "相机预算按输出路径分别核对",
+          "decision": "keep",
+          "reason": "Camera多路预览录制/分析ImageReader/JPEGRAW的不同输出队列/寿命关系，说明maxImages已获取Image与及时close及每路格式布局，alias共享先核对而非默认互不重叠。",
+          "original_line": 557,
+          "heading": "## 7. Game、Camera 与 AR 的预算方法"
+        },
+        {
+          "original_id": "ch10-04-37-ar-session",
+          "title": "AR 切换 session 要同时查输入与渲染资源",
+          "decision": "remove",
+          "reason": "资源登记→session脚本→指标对齐→查旧owner四步逐项重排562单个完整AR段落，未给实际session资源表或引用变化；全部资源类型与趋势不证driver leak限制保留。",
+          "original_line": 564,
+          "heading": "## 7. Game、Camera 与 AR 的预算方法"
+        },
+        {
+          "original_id": "ch10-04-38-observability-boundaries",
+          "title": "系统观测点与创建归因不是同一层",
+          "decision": "remove",
+          "reason": "系统分类时间线/API资源vendor两卡再次摘要前述工具表与571五观测点/579完整范围段；合并具体链路已保留，全文无统一GPUcompact/分配栈/碎片率结论保留。",
+          "original_line": 581,
+          "heading": "## 8. Android 17 边界与发布检查"
+        },
+        {
+          "original_id": "ch10-04-39-release-check",
+          "title": "发布检查保留可复查证据",
+          "decision": "remove",
+          "reason": "指标/完整性/归因/正确性四框直接压缩紧邻十条发布清单，全文清单和每项证据保留，不在末部第二次重画诊断总流程。",
+          "original_line": 588,
+          "heading": "## 8. Android 17 边界与发布检查"
+        }
+      ],
+      "sha256_after": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
+      "new_diagrams": [
+        {
+          "id": "ed10-04-shared-buffer-accounting-views",
+          "title": "同一 DMA-BUF 的多方导入、GPU 总量与对象容量分开记账",
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-04-shared-buffer-accounting-views.svg",
+            "src/assets/diagrams/ch10/ed10-04-shared-buffer-accounting-views.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-04-shared-buffer-accounting-views",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c",
+            "本文冻结全文的HAL/JNI记账、BPF/采样、SQL、inode与资源生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-04-02-shared-buffer",
+              "ch10-04-08-three-capacities"
+            ],
+            "boundary": "仅一个DMA-BUF对象的共享示意，不给PSS按容量除人数公式、不假定CPU/GPU映射集合相同。驱动各PID总量可重叠，不能求和替同GPU pid0；sysfs inode去重仅对象容量，非驻留或backing页完全不重叠证明。PSS/memtrack按HAL对应共享规则归因，与其他口径不建等式。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-04-memtrack-to-graphics-summary",
+          "title": "从 HAL 类型与 flag 到 JNI 字段，再到 Graphics 摘要",
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-04-memtrack-to-graphics-summary.svg",
+            "src/assets/diagrams/ch10/ed10-04-memtrack-to-graphics-summary.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-04-memtrack-to-graphics-summary",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl",
+            "https://android.googlesource.com/platform/system/memory/libmemtrack/+/refs/tags/android-17.0.0_r1/memtrack.cpp",
+            "本文冻结全文的HAL/JNI记账、BPF/采样、SQL、inode与资源生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-04-05-graphics-sum",
+              "ch10-04-06-memtrack-fields",
+              "ch10-04-07-unaccounted-types"
+            ],
+            "boundary": "固定r1。HAL负责共享/PSS及CPU/GPU DMA-BUF集合去重和类型不重叠；libmemtrack仅按type+flag求和不再按进程分摊。JNI将类型PSS字节转KiB同写pss/privateDirty/rss，非三份测量或物理私有证明。Graphics=Gfxdev+EGLmtrack+GLmtrack各otherPrivate；Gfxdev该分支只匹配kgsl-3d0，Other mtrack不入。0/缺项可未支持/漏报，flag不自动补发现错误。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-04-bpf-updates-and-missing-values",
+          "title": "BPF 非零更新与零值删 key 决定快照怎样解释",
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-04-bpf-updates-and-missing-values.svg",
+            "src/assets/diagrams/ch10/ed10-04-bpf-updates-and-missing-values.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-04-bpf-updates-and-missing-values",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/bpfprogs/gpuMem.c",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/gpumem/GpuMem.cpp",
+            "本文冻结全文的HAL/JNI记账、BPF/采样、SQL、inode与资源生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-04-09-bpf-update",
+              "ch10-04-10-bpf-data-quality"
+            ],
+            "boundary": "固定r1 gpuMem.c 1024keys，key按gpu_id/pid组合；非零更新或插入、size0删除。map只保存收到事件最新值，不向驱动重数；初始状态、支持、更新失败/容量与读取并发影响覆盖。pid0缺则global N/A，init失败/空map/缺PID/0删除/部分读取不混同，dump非原子。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-04-initial-traversal-and-ftrace-coverage",
+          "title": "初始逐项遍历与变化事件共同构成时间覆盖",
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-04-initial-traversal-and-ftrace-coverage.svg",
+            "src/assets/diagrams/ch10/ed10-04-initial-traversal-and-ftrace-coverage.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-04-initial-traversal-and-ftrace-coverage",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/tracing/GpuMemTracer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/tracing/include/tracing/GpuMemTracer.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/gpumem/GpuMem.cpp",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h",
+            "本文冻结全文的HAL/JNI记账、BPF/采样、SQL、inode与资源生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-04-11-snapshot-stream",
+              "ch10-04-12-configuration-gates"
+            ],
+            "boundary": "完整TraceConfig含buffer/duration等并核对tracepoint/权限，snapshot需GpuMem/BPF初始化。android.gpu.memory工作线程逐项遍历，每条systemTime MONOTONIC非原子瞬间，可能与ftrace捕获交叠。仅ftrace无不变既有资源基线，仅初始遍历无后续变化；首样本前不补零、丢事件不补回，图无时长比例。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-04-parser-gpu-dimensions-and-sql",
+          "title": "解析器先保留 GPU 维度，SQL 才能在每条轨道内算持续时间",
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-04-parser-gpu-dimensions-and-sql.svg",
+            "src/assets/diagrams/ch10/ed10-04-parser-gpu-dimensions-and-sql.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-04-parser-gpu-dimensions-and-sql",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/gpu/memory.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/trace_packet.proto",
+            "https://get.perfetto.dev/trace_processor",
+            "本文冻结全文的HAL/JNI记账、BPF/采样、SQL、inode与资源生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-04-13-sql-gpu-dimension",
+              "ch10-04-14-parser-version"
+            ],
+            "boundary": "仅正文已核验的主机合成trace测试，非设备性能测量。v54同PID两个GPU合一轨缺gpu；v58.2保留独立GPU轨。WHERE gpu_id IS NOT NULL使缺维度输入无结果，非零内存证明。r1标准表无GPU列，修订SQL从track args取gpu/upid，在track_id内LEAD末段trace_end；MiB非PSS，ts/dur纳秒，首样本前不补零、丢事件跨段不可靠；事件PID归属非packet生产者。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-04-fdinfo-and-sysfs-inode-correlation",
+          "title": "同一观测窗口用 inode 关联进程文件引用与全局对象容量",
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-04-fdinfo-and-sysfs-inode-correlation.svg",
+            "src/assets/diagrams/ch10/ed10-04-fdinfo-and-sysfs-inode-correlation.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-04-fdinfo-and-sysfs-inode-correlation",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf-sysfs-stats.c",
+            "本文冻结全文的HAL/JNI记账、BPF/采样、SQL、inode与资源生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-04-16-fdinfo-evidence",
+              "ch10-04-17-sysfs-snapshot"
+            ],
+            "boundary": "fdinfo size/count/exp_name/name与ino是观测线索，count为file_count减本次proc临时引用非进程数或GPU映射数。sysfs需CONFIG_DMABUF_SYSFS_STATS/权限，列登记对象size/exporter，失败跳过留stderr，非原子无遗漏/驻留页。PID/inode释放后可复用，不是永久身份；同窗匹配不提供创建栈或全部阻止释放的引用。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json"
+          }
+        },
+        {
+          "id": "ed10-04-hardware-bitmap-owners-and-release",
+          "title": "Hardware Bitmap 的持有关系与回收前提分开核对",
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "assets": [
+            "src/assets/diagrams/ch10/ed10-04-hardware-bitmap-owners-and-release.svg",
+            "src/assets/diagrams/ch10/ed10-04-hardware-bitmap-owners-and-release.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed10-04-hardware-bitmap-owners-and-release",
+          "sources": [
+            "https://developer.android.com/reference/android/graphics/Bitmap.Config",
+            "https://developer.android.com/reference/android/graphics/Bitmap",
+            "本文冻结全文的HAL/JNI记账、BPF/采样、SQL、inode与资源生命周期边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch10-04-24-hardware-bitmap",
+              "ch10-04-25-bitmap-release"
+            ],
+            "boundary": "API26+ HARDWARE像素在图形内存且immutable，Java/native/View/Canvas/RenderThread/缓存和图形使用可延后回收。优先按请求/生命周期和图片库协议解除己方引用，不承诺立即归零。recycle不是常规HardwareBitmap释放协议，须无其他使用者；reconfigure文档invalidate+drawpass例子不是任意recycle的同步屏障。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T12:21:25.866239+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 39,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a109/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a109/visual-review.json",
+      "retired_diagrams": [
+        "ch10-04-01-counter-questions",
+        "ch10-04-02-shared-buffer",
+        "ch10-04-03-resource-paths",
+        "ch10-04-04-tool-selection",
+        "ch10-04-05-graphics-sum",
+        "ch10-04-06-memtrack-fields",
+        "ch10-04-07-unaccounted-types",
+        "ch10-04-08-three-capacities",
+        "ch10-04-09-bpf-update",
+        "ch10-04-10-bpf-data-quality",
+        "ch10-04-11-snapshot-stream",
+        "ch10-04-12-configuration-gates",
+        "ch10-04-13-sql-gpu-dimension",
+        "ch10-04-14-parser-version",
+        "ch10-04-15-gpu-data-sources",
+        "ch10-04-16-fdinfo-evidence",
+        "ch10-04-17-sysfs-snapshot",
+        "ch10-04-18-access-paths",
+        "ch10-04-20-diagnostic-loop",
+        "ch10-04-21-wrapper-backing",
+        "ch10-04-23-layout-capacity",
+        "ch10-04-24-hardware-bitmap",
+        "ch10-04-25-bitmap-release",
+        "ch10-04-27-media-ownership",
+        "ch10-04-35-game-budget",
+        "ch10-04-37-ar-session",
+        "ch10-04-38-observability-boundaries",
+        "ch10-04-39-release-check"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-109/retired-assets.json"
     },
     {
       "index": 111,
@@ -15576,8 +17630,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 45,
-  "next_article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+  "reviewed_articles": 49,
+  "next_article": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -15587,7 +17641,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T11:47:56.947865+08:00",
+  "updated_at": "2026-10-28T12:21:25.866239+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
@@ -15618,6 +17672,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+      "registered_sha256": "13ff8a098852782a36cfe9870aa1d5d517bef382bec46a28c6963ba8df263f04",
+      "observed_sha256": "384d5ce388d0973f5e6a72eb60be01b071a24a8aad4ab590218936905a1665b1",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
       "registered_sha256": "f6a74823e1876c05b66654995eb5481dbd8f90106f53cc5e6c15130dcefc35e2",
       "observed_sha256": "c7d2706127579a2ebc9ad64184960c47c2a47e61b945053c9a4f31ad57517f5a",
@@ -15632,9 +17693,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 1309,
-  "reviewed_placements_after": 709,
-  "net_removed_placements": 600,
+  "reviewed_placements_before": 1458,
+  "reviewed_placements_after": 772,
+  "net_removed_placements": 686,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
