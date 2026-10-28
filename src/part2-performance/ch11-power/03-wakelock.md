@@ -63,10 +63,6 @@ WakeLock 解决一个很窄的问题：设备准备进入 system suspend（整�
 
 这组边界决定了排查方法。客户端对象显示 held（已持有），表示客户端 `mHeld` 当前仍为真；它会随正常释放或超时释放变化，不等于“应用还没调用过 release（释放）”。PowerManagerService 可能已经因电源策略禁用这把锁。BatteryStats 中的应用 tag（标签）、SystemSuspend 中的用户态锁和内核 `wakeup_source`（唤醒源）也属于不同的统计层级。
 
-<!-- gracker-diagram: ch11-03-02-observe-layers -->
-![同一问题在不同层级留下不同记录](../../assets/diagrams/ch11/ch11-03-02-observe-layers.png)
-
-图：多个 App tag 不逐把对应内核同名 source。客户端 held、PMS 生效、native 计数和硬件能量是不同证据，不能互换。
 
 Google 在 [2026-03-04 的官方说明](https://developer.android.com/blog/posts/battery-technical-quality-enforcement-is-here-how-to-optimize-common-wake-lock-use-cases)中确认，自 3 月 1 日开始逐步对持续超出 excessive partial wake lock（过度持有部分唤醒锁）阈值的应用实施推荐入口与商店警告等处理。排查功耗时还要关注线上质量指标，不能只看本地电流。
 
@@ -74,10 +70,6 @@ Google 在 [2026-03-04 的官方说明](https://developer.android.com/blog/posts
 
 分析 CPU 低功耗状态时，至少要区分 CPU idle 与 system suspend：
 
-<!-- gracker-diagram: ch11-03-01-sleep-layers -->
-![单核 idle、整机挂起与硬件唤醒分开理解](../../assets/diagrams/ch11/ch11-03-01-sleep-layers.png)
-
-图：图表示不同职责，不给低功耗状态统一排序或节电百分比。系统特权 forceSuspend 可忽略用户态锁，普通 App 不能据此绕过策略。
 
 - **CPU idle**：某个 CPU 没有 runnable task（已就绪、等待调度的任务）时进入 idle state（空闲状态）。持有 partial wake lock 不会强迫 CPU 持续执行指令。
 - **System suspend**：整机经过设备挂起流程进入更深的低功耗状态。正常自动挂起路径中，有效的 partial wake lock（阻止系统挂起的唤醒锁）会阻止这一步；系统特权 force-suspend 可能绕过用户态计数，不能把它当普通应用能力。
@@ -133,10 +125,6 @@ PowerManagerService 判断是否需要 CPU suspend blocker
 
 Foreground Service（前台服务，FGS）会提高进程重要性并展示通知，但不会自动阻止整机进入 suspend。直接持 partial wake lock 的后台工作通常也应处在用户可见的 FGS 中；若业务不适合 FGS，通常也不适合直接持锁。
 
-<!-- gracker-diagram: ch11-03-04-api-before-lock -->
-![先选择工作所有者，再判断是否需要手工持锁](../../assets/diagrams/ch11/ch11-03-04-api-before-lock.png)
-
-图：FGS 的持续通知和进程重要性，不会自动申请防挂起锁。高层 API 的代持只覆盖相应工作窗口，也不免除 Job 配额或业务恢复设计。
 
 ## 11.3.3 应用层的安全持锁模式
 
@@ -146,17 +134,13 @@ Foreground Service（前台服务，FGS）会提高进程重要性并展示通�
 
 `WakeLock` 默认启用引用计数。在不含自动超时释放的普通配对中，两次 `acquire()` 要由两次 `release()` 平衡；引用计数锁释放过多会产生 under-lock（释放次数超过申请次数）异常。固定 r1 另外维护 internal/external 两个计数，超时释放只影响内部计数，调用方仍应完成自己的释放配对。共享代码要明确每个 owner（所有者）；下面的独立单次操作使用非引用计数锁，不能把它复用于重叠任务。
 
-<!-- gracker-diagram: ch11-03-05-reference-count -->
-![引用计数锁要平衡每个所有者的申请](../../assets/diagrams/ch11/ch11-03-05-reference-count.png)
-
-图：轨道限定没有自动超时介入的普通引用计数路径。引用计数锁释放过多可触发 under-lock；图不把“锁已不 held”当成所有 owner 的配对都已完成。
 
 下面的同步工作示例限定在工作线程调用，`exportCurrentItem()` 表示应用自己的同步导出操作，必须直到该项工作结束才返回。10 分钟是示例业务的保护值，不是平台建议或调度额度；实际应用要另设可响应取消的业务截止时间。锁是每次调用的局部对象，使用稳定 tag，并在 `finally` 中释放。
 
-<!-- gracker-diagram: ch11-03-06-synchronous-finally -->
-![同步导出由本次调用持锁并统一收尾](../../assets/diagrams/ch11/ch11-03-06-synchronous-finally.png)
+<!-- gracker-diagram: ed11-03-sync-and-async-release-owner -->
+![同步 finally 与异步统一终态，都要跟随真正工作结束](../../assets/diagrams/ch11/ed11-03-sync-and-async-release-owner.png)
 
-图：10 分钟仅为示例保护值。WorkerThread 注解不会自动切线程；若导出只是提交异步工作就返回，finally 会过早释放，必须改用实际完成边界。
+图：同步与异步依真实完成边界管理同一owner的锁。正文工作线程示例每次创建独占局部non-ref，exportCurrentItem真正同步返回/抛出才finally检查并release；若只提交异步就返回，这个finally会过早。异步由成功失败取消业务超时销毁统一终态，先确认完成/中止、收尾并保存进度，再按锁模式配对。客户端Handler保护超时可能延后且不取消业务，10分钟仅示例值非推荐/配额；业务另设可响应取消deadline，复杂跨进程或长任务应评估调度API/合格FGS。
 
 ```java
 public final class CpuBoundExport {
@@ -187,10 +171,10 @@ public final class CpuBoundExport {
 
 `acquire(timeout)` 通过客户端 Handler 安排释放，不是严格实时的截止器；Handler 阻塞或设备状态可能使回调延后，锁到期也不会取消仍在执行的导出。正常路径仍须尽早 release；接近保护上限的任务应分段、保存进度或改用调度 API。`@WorkerThread` 来自 AndroidX annotations，只表达线程契约。多个线程共享非引用计数锁时，任意一次 release 都会解除此前的 acquire，因此本例仅对自己的独立锁做 `isHeld()` 保护，不能照搬到共享锁上。
 
-<!-- gracker-diagram: ch11-03-07-nonref-owner -->
-![非引用计数锁不能被重叠任务共享](../../assets/diagrams/ch11/ch11-03-07-nonref-owner.png)
+<!-- gracker-diagram: ed11-03-reference-count-and-shared-nonref -->
+![引用计数配对与共享 non-ref 提前解除，是两种不同的所有权问题](../../assets/diagrams/ch11/ed11-03-reference-count-and-shared-nonref.png)
 
-图：轨道说明共享所有权的风险，不表示特定线程时序。isHeld 检查不能修复所有者错误；引用计数配对、业务取消与服务端有效性仍需分别管理。
+图：两组独立非比例示意：上半为默认引用计数、无自动超时介入的普通配对，2次acquire对应2次release，内部计数1→2→1→0，过度release可under-lock。下半是两任务错误共享non-ref的反例，任意release可解除此前acquire，另一个任务仍工作却失去锁。固定r1自动超时另有internal/external计数，锁不再held不等每owner都完成配对，超时也不取消业务。isHeld不能修复共享owner，正文独占局部锁不可套给重叠任务；两部分不共用时间轴。
 
 ### Tag
 
@@ -203,19 +187,11 @@ public final class CpuBoundExport {
 
 系统发现 tag 可能包含个人信息时，诊断工具可能只显示 `_UNKNOWN`。高基数 tag，也就是同一持锁点产生大量不同 tag，也会让线上数据无法聚合。
 
-<!-- gracker-diagram: ch11-03-08-stable-tag -->
-![稳定标签与业务请求 ID 分开保存](../../assets/diagrams/ch11/ch11-03-08-stable-tag.png)
-
-图：不要把唯一请求 ID、账号或设备信息放到 tag；PII 可被显示为 _UNKNOWN。稳定名字有助聚合，但名字本身不证明 Play 豁免或实际能耗。
 
 ### WorkSource
 
 `WorkSource` 表示“这份工作替哪个 UID（应用用户标识）执行”，常见于系统服务或中间层。Android 17 的 `PowerManagerService.BinderService.acquireWakeLock()` 会在非 null 且含归因内容的 `WorkSource` 上校验 `UPDATE_DEVICE_STATS` 权限；空对象会被归一为 null。普通应用不能靠它更改归因，也不应把成本转给其他 UID。
 
-<!-- gracker-diagram: ch11-03-09-worksource-permission -->
-![持有者与被归因方可能不同](../../assets/diagrams/ch11/ch11-03-09-worksource-permission.png)
-
-图：普通 App 不能靠伪造 WorkSource 任意转移成本。固定 r1 会把空对象归一为 null；持锁方、native 调用 PID 和 BatteryStats 归因 UID 不能混作一个标识。
 
 ### held 与 enabled
 
@@ -234,10 +210,6 @@ if (Build.VERSION.SDK_INT >= 33) {
 
 `isHeld()` 读取客户端当前状态。`enabled=false` 既可能来自正常释放，也可能来自 cached（缓存进程）/frozen（冻结进程）、Doze、LPS 或其他策略使服务端忽略该锁；它不是统一“持锁配额已耗尽”的信号。回调异步执行，事件携带的 enabled 与回调里现读的 held 也不是原子快照。监听不能替代释放；移除监听可用 `setStateListener(executor, null)`，已排队事件仍需按实际所有者失效处理。未释放的锁在策略重新允许时可能再次生效。
 
-<!-- gracker-diagram: ch11-03-10-held-enabled-events -->
-![客户端 held 与服务端启停事件各有时间](../../assets/diagrams/ch11/ch11-03-10-held-enabled-events.png)
-
-图：仅为说明轨道，不承诺所有状态转换都按此时序发生。撤掉 listener 不撤回所有已排队事件；锁仍 held 时策略恢复可能再次生效，不能拿监听代替资源所有权。
 
 ## 11.3.4 Android 17 Framework 调用链
 
@@ -268,19 +240,15 @@ Binder token 是服务端识别某次持锁关系的令牌，`linkToDeath()` 用
 
 PowerManagerService 根据 owner 与 WorkSource 保存归因，Notifier（电源事件通知组件）再把 acquire/release 事件交给 BatteryStats。某个系统组件持有锁，不代表成本一定计在该系统组件名下；排查时要结合 WorkSource、UID 和 tag。
 
-<!-- gracker-diagram: ch11-03-12-notifier-attribution -->
-![事件通知与统计按 owner 和 WorkSource 组织](../../assets/diagrams/ch11/ch11-03-12-notifier-attribution.png)
+<!-- gracker-diagram: ed11-03-worksource-and-notifier-attribution -->
+![WorkSource 的权限与 owner 信息如何进入归因通知](../../assets/diagrams/ch11/ed11-03-worksource-and-notifier-attribution.png)
 
-图：逻辑启停也可能更新统计，不能只数应用直接 release 次数。系统服务代持不自动意味着能耗计在系统服务名下；归因记录也不是硬件电表。
+图：固定r1权限与归因数据流：基础WAKE_LOCK仍需，无归因空WorkSource归一null；实际含归因内容才额外校验UPDATE_DEVICE_STATS，普通App不可任意转移成本。PMS保存token/flags/owner/WorkSource并按状态判断有效性，经Notifier相应acquire/release/change更新监听/日志/BatteryStats。逻辑启停也可能更新统计，不是每条事件都对应App直接调用；系统服务代持不自动计在服务名下。持有者、归因UID、nativePID不同，活动归因不是独立硬件电量。
 
 ### PowerManagerService 会禁用已申请的锁
 
 Android 17 的 `setWakeLockDisabledStateLocked()` 会检查：
 
-<!-- gracker-diagram: ch11-03-13-pms-disable-gates -->
-![PMS 是否尊重锁由多类状态共同决定](../../assets/diagrams/ch11/ch11-03-13-pms-disable-gates.png)
-
-图：这些是固定 r1 的检查类别，实际分支还依锁类型、UID 和 proc state；App Standby bucket 不能单独推出某把 partial 锁必然有效或无效。
 
 - WorkSource 归因 UID 是否进入 cached 状态；
 - owner 进程是否进入 frozen 状态；
@@ -292,19 +260,15 @@ Android 17 的 `setWakeLockDisabledStateLocked()` 会检查：
 
 状态变化后，`updateWakeLockDisabledStatesLocked()` 会为禁用的锁发送逻辑 release 通知，为重新启用的锁发送逻辑 acquire 通知，再重算 `mWakeLockSummary`。这里的“逻辑通知”用于更新服务端状态和统计，不代表客户端调用了对应方法。App Standby bucket（应用待机分组）会限制 Job、Alarm 与网络入口；wake lock 在服务端是否有效，还要结合上述 UID 与电源状态判断，不能只凭 bucket 推断。
 
-<!-- gracker-diagram: ch11-03-14-logical-notification -->
-![策略禁用会发逻辑通知，客户端可仍 held](../../assets/diagrams/ch11/ch11-03-14-logical-notification.png)
+<!-- gracker-diagram: ed11-03-held-policy-and-logical-events -->
+![客户端仍 held 时，PMS 可以禁用、通知并重新启用同一把锁](../../assets/diagrams/ch11/ed11-03-held-policy-and-logical-events.png)
 
-图：状态恢复可使仍被客户端持有的锁重新生效。观察 enabled 与 BatteryStats 事件时，需把应用调用和服务端逻辑转换分开，不能据它们建立一对一调用计数。
+图：固定r1逐锁分支依类型/UID/procstate及归因cached、ownerfrozen、NO_CACHED、deep/配置light、allowlists、LPS与强制策略，不是全部条件固定AND，bucket不能单独推有效性。状态改变会重查已有锁，仅disabled发生转换才逻辑release/acquire、DIRTY与summary重算，客户端可能一直held，策略恢复可使同锁重新生效。非比例轨道只示可能时序。API33listener异步，enabledfalse也可正常释放，事件值与回调现读held非原子；撤监听不撤回所有排队事件，监听不能替正常释放，更非统一持锁配额信号。
 
 ### 多把 App 锁会汇总成一个 suspend blocker
 
 PMS（PowerManagerService）通过 `mWakeLockSummary & WAKE_LOCK_CPU` 判断是否需要 CPU suspend blocker。suspend blocker 是用户态用于阻止整机挂起的锁；PMS 需要它时会持有名为 `PowerManagerService.WakeLocks` 的 blocker，不再需要时则释放。应用的多个 tag 会留在 PMS 与 BatteryStats，但从 PMS 到 SystemSuspend 的这一段已经汇总。PMS 的显示、启动等 blocker 仍各自存在，其他进程也可直接申请 native 锁；释放 `PowerManagerService.WakeLocks` 不代表全局 suspend counter 已经归零。
 
-<!-- gracker-diagram: ch11-03-15-cpu-blocker-aggregation -->
-![CPU 锁汇总之后还有其他 blocker](../../assets/diagrams/ch11/ch11-03-15-cpu-blocker-aggregation.png)
-
-图：多个有效 CPU 需求汇总成 PowerManagerService.WakeLocks；显示、启动及其他 native 锁仍独立参与 SystemSuspend 默认 counter 路径。释放该 CPU blocker 不等于全局可挂起。
 
 下面的路径来自 `android-17.0.0_r1`。
 
@@ -319,10 +283,10 @@ PowerManagerService.updateSuspendBlockerLocked()
 
 固定 r1 的 libpower 使用 AIDL `ISystemSuspend`，入口落在 `SystemSuspendAidl.cpp`；`SystemSuspend.cpp` 负责计数、挂起循环和统计。官方 SystemSuspend 介绍中的 HIDL 代码用于历史迁移解释，不能直接当作当前接口实现。libpower 按名称缓存 native `IWakeLock`，服务统计的调用 PID 此时是 system_server，而非每个原始 App。
 
-<!-- gracker-diagram: ch11-03-16-native-aidl-chain -->
-![当前 native 桥接路径使用 AIDL](../../assets/diagrams/ch11/ch11-03-16-native-aidl-chain.png)
+<!-- gracker-diagram: ed11-03-app-summary-native-counter-and-kernel -->
+![多把 App 锁汇总后走 AIDL，内核源按独立来源解释](../../assets/diagrams/ch11/ed11-03-app-summary-native-counter-and-kernel.png)
 
-图：图限定 android-17.0.0_r1 的这条路径。官方历史 HIDL 示例不能替代当前 AIDL；native 这里的调用 PID 是 system_server，不是每个原始应用 UID。计数增减限定默认 counter 路径，关闭此路径后按名称使用内核兼容接口。
+图：固定r1默认counter路径的多对一汇总与独立来源：PMS保留多token/UID/tag，有效CPU需求统一成PowerManagerService.WakeLocks，经JNI→libpower按名缓存IWakeLock→AIDL ISystemSuspend/SystemSuspendAidl参与native计数，这条调用PID是system_server。releaseOnce/析构配对减少，显示/启动等和其他进程native锁也参与，所以释放CPUblocker不等全局0。右侧内核驱动/兼容接口与短时userspaceabort独立解释，不画逐App同名映射。关闭counter路径才按名兼容wake_lock，历史HIDL不能替代当前AIDL；归零仍需auto/client/握手/内核实际检查。
 
 这解释了常见差异：BatteryStats 保留多个应用 tag，而对应的这一路 CPU blocker 在 native 侧名为 `PowerManagerService.WakeLocks`；SystemSuspend 中还可能有其他 native 或 kernel 项。前者记录应用归因，后者记录汇总后的用户态挂起阻止项。
 
@@ -365,10 +329,6 @@ Linux PM（电源管理子系统）使用 `struct wakeup_source` 记录可阻止
 
 App 的 `PowerManager.WakeLock` 会保留在 Framework 的 UID/tag 统计中，PMS 再把有效 CPU 锁汇总为 `PowerManagerService.WakeLocks`。内核还会有来自 alarmtimer（内核闹钟定时器）、输入、USB、蓝牙、modem 和各设备驱动的 wakeup source。看到某个 kernel source（内核唤醒源）时，不能只按名字寻找同名 App tag。
 
-<!-- gracker-diagram: ch11-03-19-kernel-source-mapping -->
-![App 标签和内核唤醒源没有逐把映射](../../assets/diagrams/ch11/ch11-03-19-kernel-source-mapping.png)
-
-图：输入、USB、modem、alarmtimer 等来源不能仅凭名字映射到 App。默认计数路径、兼容按名接口与驱动事件分别解释，需用统一时间线建立关联。
 
 ### `/sys/kernel/debug/wakeup_sources`
 
@@ -425,19 +385,11 @@ Low Power Standby（低功耗待机，LPS）必须先区分 enabled（启用）�
 
 App Standby bucket（应用待机分组）直接影响 Job、Alarm、网络与后台运行机会。它不会给普通应用提供一个稳定公开的“每天可持锁多少分钟”契约。bucket 等级降低后，后台入口减少；进程进入 cached、Doze 或 LPS 后，PMS 又可能禁用已申请的 partial wake lock。这些状态需要联合检查。
 
-<!-- gracker-diagram: ch11-03-22-power-policy-roles -->
-![Doze、LPS 与 bucket 各自检查](../../assets/diagrams/ch11/ch11-03-22-power-policy-roles.png)
-
-图：LPS 还依 timeout 和维护配置，查询 allowed 在 LPS 禁用时也可为 true。FGS 不自动豁免这些策略；bucket 不直接给普通 App 一个公开持锁预算。
 
 ## 11.3.7 由系统或库代持的 WakeLock
 
 应用没有调用 `newWakeLock()`，Android vitals 中仍可能出现归因到该应用的锁。
 
-<!-- gracker-diagram: ch11-03-23-delegated-locks -->
-![没有直接 newWakeLock 也要回查实际工作 API](../../assets/diagrams/ch11/ch11-03-23-delegated-locks.png)
-
-图：平台或库代持不意味着无限执行，也不自动构成 Play 指标豁免。FCM v2 默认通知可能不运行 App 代码，诊断要按真实消息路径与对应回调解释。
 
 | 来源 | 常见行为 | 排查方向 |
 |---|---|---|
@@ -487,10 +439,6 @@ API 37 新增公开重载：
 
 API 35+ 通过 `SystemHealthManager` 枚举 `PowerMonitor` 描述并读取 `PowerMonitorReadings` 累计能量。monitor 可代表 measurement rail 或 consumer 子系统，不能全部叫作独立电源轨；结果还受设备支持、缓存、粒度与返回处理影响。比较时检查有效能量、同 monitor 和推进的时间戳，具体边界见 [11.1 系统功耗模型](01-android-power-model-system-optimization.md)。共享 rail 也不等于某个 App 的独立电表。ADPF 能效提示只表达运行偏好，不会替应用释放锁。
 
-<!-- gracker-diagram: ch11-03-27-monitor-observation -->
-![PowerMonitor 先确认描述类型，再比较有效差值](../../assets/diagrams/ch11/ch11-03-27-monitor-observation.png)
-
-图：两类都不是某行代码的独立电表。检查有效能量、同 monitor 和推进的时间戳；缓存、粒度与返回处理见11.1，修复还须比较业务完成度与并行负载。
 
 ### 第一步：确认 Framework 记录
 
@@ -569,19 +517,11 @@ duration_ms: 60000
 
 同步代码使用 `try/finally`。异步代码需要统一的完成状态，成功、失败、取消、超时和组件销毁都必须进入同一个 release 路径。若生命周期跨进程或可能持续很久，应改用 WorkManager、JobScheduler 或合适类型的 FGS，避免让一把手工管理的锁跨越复杂的回调状态机。
 
-<!-- gracker-diagram: ch11-03-29-terminal-owner -->
-![所有业务终态汇到同一个释放所有者](../../assets/diagrams/ch11/ch11-03-29-terminal-owner.png)
-
-图：业务超时与 WakeLock 的 Handler 释放定时器是两回事。保护超时不会取消底层业务，复杂跨进程生命周期应评估系统调度入口，不能靠一把锁兜底。
 
 ### acquire 与 release 所有者不同
 
 若由 Activity 调用 acquire、由 Service 调用 release，或由多个 callback（回调）共同操作引用计数，容易出现重入（同一流程再次进入）和欠释放（申请次数多于释放次数）。锁对象、业务状态和释放权应交给同一个 owner 管理。
 
-<!-- gracker-diagram: ch11-03-30-owner-mismatch -->
-![组件生命周期不同会制造释放竞争](../../assets/diagrams/ch11/ch11-03-30-owner-mismatch.png)
-
-图：轨道说明所有权冲突，不是有效的持锁实现。共享引用计数也要逐 owner 配对，非引用计数更不能由任意回调解除所有工作。
 
 ### 用 FGS 掩盖后台轮询
 
@@ -599,10 +539,6 @@ Android vitals 归因到应用的锁可能来自 SDK、WorkManager、JobSchedule
 
 持锁时长要先区分客户端 held 与系统实际生效区间；即使确实占用 suspend 机会，也不直接等于能量。修复评估还要看：
 
-<!-- gracker-diagram: ch11-03-31-verify-energy-and-service -->
-![修复要同时改变原因链并保住业务](../../assets/diagrams/ch11/ch11-03-31-verify-energy-and-service.png)
-
-图：持锁更短不自动意味着整机更省电，计数也不直接换成能量。归因、rail 与整机仪表的覆盖不同，结论仅覆盖已验证设备和场景。
 
 - 锁内 CPU running time（CPU 实际运行时间）与线程活动；
 - 网络、定位、传感器和存储活动；
@@ -614,10 +550,6 @@ Android vitals 归因到应用的锁可能来自 SDK、WorkManager、JobSchedule
 
 Android vitals 在以下条件下把一次应用会话计入 excessive partial wake lock：
 
-<!-- gracker-diagram: ch11-03-32-vitals-denominators -->
-![质量指标使用两个不同的时间窗口与分母](../../assets/diagrams/ch11/ch11-03-32-vitals-denominators.png)
-
-图：后台或运行 FGS 时的锁按当前指标页统计；2 小时不是系统持锁 quota，5% 也不是每用户可持锁时间比例。图不公开推定平台未披露的合并或采样算法。
 
 - 所有非豁免 partial wake lock 合计，在 24 小时内达到或超过 2 小时；
 - 统计锁在应用后台或运行 Foreground Service 时的持有时间；
@@ -627,10 +559,10 @@ Android vitals 在以下条件下把一次应用会话计入 excessive partial w
 
 5% 是命中该问题的会话比例门槛，不表示每个用户可以持锁 5% 的时间。两小时也不是应用的 system API quota（系统接口配额）；它是 Android vitals 汇总多把非豁免锁后的质量指标。Play Console 的 wake-lock name（锁名称）、affected sessions（受影响会话）和 P90/P99 时长（90/99 分位数）可用于定位来源，修复仍要回到具体业务与系统时间线。
 
-<!-- gracker-diagram: ch11-03-33-vitals-exemption-scope -->
-![指标豁免依实际 API 路径，标签不能授予豁免](../../assets/diagrams/ch11/ch11-03-33-vitals-exemption-scope.png)
+<!-- gracker-diagram: ed11-03-vitals-scope-and-denominators -->
+![先核对质量指标范围，再分别解释 24 小时与 28 天分母](../../assets/diagrams/ch11/ed11-03-vitals-scope-and-denominators.png)
 
-图：豁免是当前质量指标的计算范围，不能推出零能耗、无限后台执行或 Doze/LPS 豁免。具体锁仍应按业务结束、资源释放和线上实际分类排查。
+图：仅按本文已核对指标解释计算范围：先辨实际API/SDK来源和线上分类，当前列明audio/location/JobScheduleruserinitiated豁免，普通手工或调度代持不能凭tag自认。对后台或FGS中的非豁免partial，24h合计≥2h用于单会话excessive判定；28天>5%appsession命中是另一个窗口与会话分母，可能影响Play可见性。2h非系统APIquota，5%非用户时间比；豁免不证零能耗/无限执行或DozeLPS放行，也不推平台未公开合并/采样算法。按name/affectedsessions/P90P99回查业务，能量和功能另验。
 
 ## 11.3.11 版本边界
 
