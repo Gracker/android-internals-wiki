@@ -10631,6 +10631,66 @@
       "summary": "HDR headroom 缺少 Window HDR 模式前提与独立 Surface 作用域",
       "type": "api-applicability",
       "updated_at": "2026-10-28T08:44:04.519027+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已按 nextDeliQueue()/looperCheckIsIdle() 与 nextLegacy() 改为空队列或最早消息在未来；明确到期同步屏障不触发 IdleHandler，保留 API 1 和返回值语义。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261028-143520-idle-audit-ee602329",
+      "created_at": "2026-10-28T14:38:45.445054+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261028-143520-idle-audit-ee602329",
+      "details": "正文 3.3 把没有立即可执行消息概括为空闲条件；android-17.0.0_r1 nextDeliQueue()/looperCheckIsIdle() 及 nextLegacy() 均要求队列为空或最早消息（可能为屏障）尚未到期。到期屏障挡住同步消息且没有可分发异步消息时仍不会调用 IdleHandler。",
+      "id": "RF-ch01-08-idlehandler-barrier-boundary",
+      "log_path": "logs/audit/2026-10-28-20261028-143520-idle-audit-ee602329-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java"
+      ],
+      "status": "fixed",
+      "summary": "IdleHandler 空闲条件误写为无可分发消息，遗漏到期同步屏障阻止回调的边界",
+      "type": "idle-condition",
+      "updated_at": "2026-10-28T14:41:43.199375+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已删除等待删除遍历结束再回池的错误说法，统一为 DeliQueue 不回共享 Message 池，由现存引用约束垃圾回收；与 obtain()/recycleUnchecked() 分支一致。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261028-143520-idle-audit-ee602329",
+      "created_at": "2026-10-28T14:38:45.503679+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261028-143520-idle-audit-ee602329",
+      "details": "正文 5.4 先称推迟回收、待删除遍历结束再考虑入池，后文却正确说明 DeliQueue 不回池。Message.obtain() 只在 legacy 路径取池；recycleUnchecked() 并发分支仅 clearReferenceFields()/markInUse()，保留 flags 和链路，无等待后重新入池协议。",
+      "id": "RF-ch01-08-message-pool-lifecycle",
+      "log_path": "logs/audit/2026-10-28-20261028-143520-idle-audit-ee602329-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Message.java"
+      ],
+      "status": "fixed",
+      "summary": "DeliQueue 消息生命周期段落误称删除遍历结束后可重新入池，与实际禁用共享池冲突",
+      "type": "contradictory-current-account",
+      "updated_at": "2026-10-28T14:41:43.255807+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已说明 weakCompareAndSetRelease() 返回 false 也可能为伪失败，两种情况都重读栈顶并重试；补入 libcore android-17.0.0_r1 VarHandle.java 来源。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261028-143520-idle-audit-ee602329",
+      "created_at": "2026-10-28T14:38:45.560187+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261028-143520-idle-audit-ee602329",
+      "details": "正文 5.1 使用的 API 是 weakCompareAndSetRelease。libcore 同 tag VarHandle.java 969-1005 明确允许 witness 等于 expectedValue 时仍返回 false；失败不能证明其他线程改过栈顶。",
+      "id": "RF-ch01-08-weak-cas-spurious-failure",
+      "log_path": "logs/audit/2026-10-28-20261028-143520-idle-audit-ee602329-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/invoke/VarHandle.java"
+      ],
+      "status": "fixed",
+      "summary": "weakCompareAndSetRelease 失败被等同于栈顶改变，遗漏弱 CAS 伪失败",
+      "type": "atomic-semantics",
+      "updated_at": "2026-10-28T14:41:43.312051+08:00"
     }
   ],
   "schema_version": 1

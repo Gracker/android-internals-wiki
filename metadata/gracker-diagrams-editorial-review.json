@@ -22838,9 +22838,1049 @@
       "before_count": 68,
       "before_all_images": 68,
       "sha256_before": "2c93ef840d452cf275cb6c569ddc9c061ef7175117d9b0748c5f415a248b19ad",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 21,
+      "decisions": [
+        {
+          "original_id": "ch13-05-01-public-private",
+          "title": "原生 Vulkan WSI 与 HWUI 窗口管理",
+          "decision": "keep",
+          "reason": "原生WSI自管swapchain与HWUI VulkanSurface直接dequeue/draw/queue两条实际对象链并排，解释相同Vulkan后端仍有不同窗口管理责任；不是末端GPU时序的重复。",
+          "original_line": 201,
+          "heading": "# Vulkan 原生管线与 HWUI 多队列"
+        },
+        {
+          "original_id": "ch13-05-02-explicit-value",
+          "title": "显式控制怎样变成收益或成本",
+          "decision": "remove",
+          "reason": "pipeline/recording/sync三列六卡逐项摘录开篇三条条件收益及cache/生命周期边界，后续保留具体同步对象和HWUI queue结构，删除泛化价值摘要。",
+          "original_line": 224,
+          "heading": "#### 显式控制带来的价值"
+        },
+        {
+          "original_id": "ch13-05-03-app-responsibility",
+          "title": "Vulkan 应用的三组管理责任",
+          "decision": "remove",
+          "reason": "资源命令/图像状态/窗口节奏三组卡压缩231-239七行责任表，表含更多具体API与误读；全文保留，不为管理清单再配一图。",
+          "original_line": 243,
+          "heading": "#### 应用侧的责任"
+        },
+        {
+          "original_id": "ch13-05-04-target-topology",
+          "title": "Vulkan API 与可见 Layer 是两个维度",
+          "decision": "keep",
+          "reason": "独立Surface形成layer、TextureView由宿主采样、同imageHUD与离屏三种不同Consumer/输出拓扑，防把Vulkan API和可见Layer数混同。",
+          "original_line": 254,
+          "heading": "#### Vulkan 与承载结构是两个维度"
+        },
+        {
+          "original_id": "ch13-05-05-profiles",
+          "title": "AVP 兼容性与 VRA17 要求的范围",
+          "decision": "merge",
+          "reason": "AVP2025兼容集合与VRA17新芯片freeze要求不同范围，接6物理设备feature启用和具体surface查询，合为需求到实际创建的能力关系。",
+          "original_line": 272,
+          "heading": "#### 兼容性 profile 与要求 profile",
+          "replacement_id": "ed13-05-profiles-runtime-and-surface"
+        },
+        {
+          "original_id": "ch13-05-06-capability-gates",
+          "title": "Profile、feature 与 surface query 的三个门槛",
+          "decision": "merge",
+          "reason": "profile需求、目标device支持并启用、surfaceformats/modes/caps分别成立，接5不同profile适用范围，保留DynamicRendering仍须featurebit等原文条件。",
+          "original_line": 287,
+          "heading": "#### 工程使用方式",
+          "replacement_id": "ed13-05-profiles-runtime-and-surface"
+        },
+        {
+          "original_id": "ch13-05-07-swapchain-init",
+          "title": "原生 surface 与 swapchain 初始化",
+          "decision": "remove",
+          "reason": "ANW建surface→查询→选择→创建四框逐步重画294-299六步初始化清单，原清单包含实际images查询；新8/13图保留容易出错的复用生命周期。",
+          "original_line": 302,
+          "heading": "#### 创建 surface 与 swapchain"
+        },
+        {
+          "original_id": "ch13-05-08-resource-indices",
+          "title": "frame slot 与 image index 的复用范围",
+          "decision": "merge",
+          "reason": "frame-slot command/acquire与imageIndex render-finished不同复用作用域，接13 submit fence与presentwait对象分工，避免两处各画一半生命周期。",
+          "original_line": 316,
+          "heading": "#### 创建 surface 与 swapchain",
+          "replacement_id": "ed13-05-submit-and-presentation-reuse"
+        },
+        {
+          "original_id": "ch13-05-09-acquire-result",
+          "title": "acquire 成功与 image 可访问的区别",
+          "decision": "keep",
+          "reason": "success仍须availability、NOTREADY/TIMEOUT没有取得新image、outofdate/surfacelost恢复三分支；固定r1Acquire返回SUCCESS而SUBOPTIMAL由present侧检查的原文保留。",
+          "original_line": 338,
+          "heading": "#### 第一阶段：Acquire"
+        },
+        {
+          "original_id": "ch13-05-10-wsi-acquire",
+          "title": "Android WSI acquire 的 fd 交接",
+          "decision": "merge",
+          "reason": "私有WSI dequeue旧依赖→image匹配/绑定→dup→AcquireImageANDROID驱动连接应用同步，接11CPU调用内阻塞与成功返回后GPUavailability区别。",
+          "original_line": 353,
+          "heading": "#### 第一阶段：Acquire",
+          "replacement_id": "ed13-05-android-acquire-and-availability"
+        },
+        {
+          "original_id": "ch13-05-11-acquire-waits",
+          "title": "dequeue 调用阻塞与返回 fence 的依赖",
+          "decision": "merge",
+          "reason": "dequeue内slot约束等待和返回fence未signal是不同结论，接10私有WSI链及dup失败CPU等待，应用不重复导入fd。",
+          "original_line": 360,
+          "heading": "#### 第一阶段：Acquire",
+          "replacement_id": "ed13-05-android-acquire-and-availability"
+        },
+        {
+          "original_id": "ch13-05-12-host-threading",
+          "title": "CPU 并行录制与对象外部同步",
+          "decision": "keep",
+          "reason": "worker pool/command对象host外部同步与GPU资源执行依赖三类对象并列，明确不是全device全局锁且flags0的HWUI不默认内部同步；与image layout图回答不同问题。",
+          "original_line": 376,
+          "heading": "#### 第二阶段：Record 与 Submit"
+        },
+        {
+          "original_id": "ch13-05-13-submit-present",
+          "title": "submit fence 与 present wait semaphore",
+          "decision": "merge",
+          "reason": "submitfence保护该提交资源、render-finished供present消费，接8frame-slot/image-index复用；图中reset仅成功acquire且实际将submit的分支，不能以submit结束替presentwait消费。",
+          "original_line": 415,
+          "heading": "#### 第二阶段：Record 与 Submit",
+          "replacement_id": "ed13-05-submit-and-presentation-reuse"
+        },
+        {
+          "original_id": "ch13-05-14-present-handoff",
+          "title": "CPU present 怎样变成 Android buffer 提交",
+          "decision": "remove",
+          "reason": "present→QueueSignalReleaseImageANDROID→CPUqueue→BLAST四框与455-488保留原生时序逐步重复；fd转交/可未signal等全文保留，删小链副本。",
+          "original_line": 439,
+          "heading": "#### 第三阶段：Present"
+        },
+        {
+          "original_id": "ch13-05-15-window-recovery",
+          "title": "present 返回与窗口重建",
+          "decision": "remove",
+          "reason": "API返回不等显示、SUBOPTIMAL transform、outofdate/lost三列六卡重述448-451完整错误恢复段；9保留Acquire分支，原生时序保留后半，所有恢复条件和资源生命周期原文未删。",
+          "original_line": 446,
+          "heading": "#### 第三阶段：Present"
+        },
+        {
+          "original_id": "ch13-05-16-async-wsi",
+          "title": "原生 Vulkan 的异步写入与读取依赖",
+          "decision": "remove",
+          "reason": "CPU/WSI、GPUwrite、Consumer三轨重复前面完整原生WSIsequence的异步queue/受限latch/实际read依赖，后文HWUI另有完整sequence，删除第三次相同后半图。",
+          "original_line": 492,
+          "heading": "#### 完整时序"
+        },
+        {
+          "original_id": "ch13-05-17-sync-roles",
+          "title": "执行、内存与图像状态三类问题",
+          "decision": "merge",
+          "reason": "执行/内存/layout-family三种职责接18保留或丢弃的起点及19具体toPresent示例，图中semaphore不自动转换layout/ownership。",
+          "original_line": 507,
+          "heading": "#### 三种同步对象解决不同问题",
+          "replacement_id": "ed13-05-image-state-and-present-dependency"
+        },
+        {
+          "original_id": "ch13-05-18-layout-cycle",
+          "title": "保留内容与丢弃内容的 layout 起点",
+          "decision": "merge",
+          "reason": "实际旧layout保留与允许丢弃时UNDEFINED两个起点，接17同步职责及19最后颜色写入到present的完整状态链，UNDEFINED不限首次使用。",
+          "original_line": 528,
+          "heading": "#### acquired image 的 layout",
+          "replacement_id": "ed13-05-image-state-and-present-dependency"
+        },
+        {
+          "original_id": "ch13-05-19-barrier-scope",
+          "title": "toPresent barrier 的适用前提",
+          "decision": "merge",
+          "reason": "src颜色附件写/布局到PRESENT/dstNONE示例与18完整image状态链合并；只用于本例同family且最后颜色写，transfer/compute/不同family仍须另配。",
+          "original_line": 565,
+          "heading": "#### synchronization2 barrier",
+          "replacement_id": "ed13-05-image-state-and-present-dependency"
+        },
+        {
+          "original_id": "ch13-05-20-over-sync",
+          "title": "从真实资源依赖缩小同步范围",
+          "decision": "remove",
+          "reason": "真实依赖→消费stage→减少idle/submit→测量四框逐项压缩579-583五步过同步检查，代码和精确作用域新17/18/19图完整保留，不再放优化清单摘要。",
+          "original_line": 574,
+          "heading": "#### 过度同步"
+        },
+        {
+          "original_id": "ch13-05-21-present-modes",
+          "title": "Android WSI present modes 的枚举边界",
+          "decision": "remove",
+          "reason": "FIFO/MAILBOX/latestready/shared三组卡截短589-595六行presentmode表，表精确列数量条件/flag/sharedImage及不枚举模式；原表全文更完整，删除缩略副本。",
+          "original_line": 600,
+          "heading": "### Presentation Mode"
+        },
+        {
+          "original_id": "ch13-05-22-mode-budget",
+          "title": "mode、image count 与输入延迟",
+          "decision": "remove",
+          "reason": "mode→imagecount→inflight→延迟测量四框逐项重述606-613四个预算维度和丢帧仍耗CPU/GPU段；保留28实际queue-stuffing因果回路。",
+          "original_line": 618,
+          "heading": "#### 运行时选择"
+        },
+        {
+          "original_id": "ch13-05-23-present-timing",
+          "title": "present timing 扩展的启用与反馈",
+          "decision": "keep",
+          "reason": "presenttiming从extension/feature依赖到surface能力、swapchainflag、presentID/queue容量再到延后查询的真实多门槛交接，防枚举扩展就假设当前swapchain可用；monotonic与GOOGLE不同模型在正文。",
+          "original_line": 636,
+          "heading": "#### Android 17 present timing"
+        },
+        {
+          "original_id": "ch13-05-24-swappy",
+          "title": "Swappy pacing 与图形同步的分工",
+          "decision": "remove",
+          "reason": "pacing/资源同步/显示反馈六卡重复644-652完整Swappy分工段；保留28积压因果和原库初始化/重建/不要双pacer限制，不再画概念分组。",
+          "original_line": 656,
+          "heading": "#### 它解决什么"
+        },
+        {
+          "original_id": "ch13-05-25-swappy-lifecycle",
+          "title": "Swappy 的 swapchain 生命周期",
+          "decision": "remove",
+          "reason": "create/init→target→wrappedpresent→recreate四框逐项重画667-678十行生命周期文本骨架，代码和VkResult处理段完整保留，避免同一骨架紧邻图示重复。",
+          "original_line": 682,
+          "heading": "#### 接入要点"
+        },
+        {
+          "original_id": "ch13-05-26-trace-correlation",
+          "title": "逐帧关联 CPU、GPU 与显示",
+          "decision": "remove",
+          "reason": "锁Surface→调用标识→GPU→显示四框重复697-703五行多轨文本和上下文，完整WSI原生sequence及新ID信息流解释更具体，删诊断流程清单图。",
+          "original_line": 707,
+          "heading": "#### 建立逐帧证据"
+        },
+        {
+          "original_id": "ch13-05-27-wait-localization",
+          "title": "Vulkan 长调用的分段归因",
+          "decision": "remove",
+          "reason": "Acquire/Submit/Present三组诊断六卡截短714-722七行等待定位表，表还分fence/pipeline/Swappy、前台栈和线程状态，全文原表保留。",
+          "original_line": 726,
+          "heading": "#### 等待归因"
+        },
+        {
+          "original_id": "ch13-05-28-queue-stuffing",
+          "title": "queue-stuffing 的证据与调整方向",
+          "decision": "keep",
+          "reason": "过量生产与过早采样→长期inflight高位/背压→同帧inputpresent时延上升→调整后重测的实际因果回路；不是仅列presentmode或诊断字段。",
+          "original_line": 735,
+          "heading": "#### queue-stuffing"
+        },
+        {
+          "original_id": "ch13-05-29-frametimeline-limits",
+          "title": "native Surface 的 FrameTimeline 与光学边界",
+          "decision": "remove",
+          "reason": "FrameTimeline/WSItiming/光学三列六卡逐项重述743-746三段能力边界；SurfaceView未支持和token不足证明的原文完整保留，工具ID合图已有阶段区分。",
+          "original_line": 750,
+          "heading": "#### FrameTimeline、present timing 与光学时间"
+        },
+        {
+          "original_id": "ch13-05-31-sf-thread-policy",
+          "title": "RenderEngine 线程策略的条件",
+          "decision": "remove",
+          "reason": "实际是id31-sf-thread-policy，Builder默认Ganesh可覆盖、线程profile可能失败、FIFO2/OTHER三组卡摘录752-756两段实现条件；原文所有flag/syscall/primecache细节保留，CPUvsGPU层次接48/49/50合图。",
+          "original_line": 759,
+          "heading": "#### SurfaceFlinger Graphite 不属于 App WSI"
+        },
+        {
+          "original_id": "ch13-05-30-sf-separate",
+          "title": "SF RenderEngine 与 App Vulkan 的对象边界",
+          "decision": "merge",
+          "reason": "实际是id30-sf-separate，App与SF各自device/context/queue/thread但共享物理GPU，接32Graphite输入wait/输出signal到clienttargetfd的可选CLIENT因果链。",
+          "original_line": 766,
+          "heading": "#### SurfaceFlinger Graphite 不属于 App WSI",
+          "replacement_id": "ed13-05-app-and-sf-gpu-dependencies"
+        },
+        {
+          "original_id": "ch13-05-32-sf-recording",
+          "title": "Graphite Recording 与 CLIENT 输出 fence",
+          "decision": "merge",
+          "reason": "GraphiteRecorder snap→InsertRecordingInfo→submit→输出fd接31App输入及SF独立对象，DEVICE可不执行RE，Graphite条件不推广为固定默认。",
+          "original_line": 773,
+          "heading": "#### SurfaceFlinger Graphite 不属于 App WSI",
+          "replacement_id": "ed13-05-app-and-sf-gpu-dependencies"
+        },
+        {
+          "original_id": "ch13-05-33-tool-scopes",
+          "title": "Validation、GPU capture 与系统 trace",
+          "decision": "remove",
+          "reason": "validation/capture/systemtrace六卡逐项重述779-783四条工具职责清单，保留syncvalidation与GPUassisted不同覆盖及baseline关闭开销原文，不为工具清单再画卡。",
+          "original_line": 787,
+          "heading": "#### Validation 与工具"
+        },
+        {
+          "original_id": "ch13-05-34-version-conditions",
+          "title": "平台版本与设备能力分开验证",
+          "decision": "remove",
+          "reason": "12/13、15/16、17三版本组六卡压缩794-800六行版本条件表，表更完整包含HAL/页大小/ARR/WSIvsSF；原文全保留，删泛化版本摘要。",
+          "original_line": 803,
+          "heading": "#### Android 12—17 版本对照"
+        },
+        {
+          "original_id": "ch13-05-35-two-queues",
+          "title": "HWUI 两条 queue 的对象关系",
+          "decision": "merge",
+          "reason": "同device两context两queue职责与40独立allocator、42同family依赖、43绑定、44资源争用和65trace队列身份合为一张实际对象结构，避免五遍两queue半图。",
+          "original_line": 833,
+          "heading": "## HWUI Vulkan 多队列与帧边界",
+          "replacement_id": "ed13-05-hwui-queues-contexts-and-hardware"
+        },
+        {
+          "original_id": "ch13-05-36-three-evidence-levels",
+          "title": "双 queue 结论的三层证据",
+          "decision": "remove",
+          "reason": "接口/源码/现场三框逐项重述836段三层证据说明，新35等对象图显式物理执行仍需stage/counter，删除抽象证明清单。",
+          "original_line": 840,
+          "heading": "## HWUI Vulkan 多队列与帧边界"
+        },
+        {
+          "original_id": "ch13-05-37-historical-dual",
+          "title": "双 queue 至少早于 Android 17",
+          "decision": "remove",
+          "reason": "Android14/15-16/17三组卡重述844及1352-1357四tag历史表，全文保留至少14已有非精确首次提交的限制，不重复历史版图。",
+          "original_line": 847,
+          "heading": "## HWUI Vulkan 多队列与帧边界"
+        },
+        {
+          "original_id": "ch13-05-38-hwui-path",
+          "title": "上传结果进入后续窗口帧",
+          "decision": "remove",
+          "reason": "上传CPU→q1→AHB→后续q0→CPUqueue六框与866-883完整保留原生HWUIflow逐边重复；新bitmap图补拷贝/CPU等待，原生图保留后续采样关系。",
+          "original_line": 887,
+          "heading": "### 完整路径"
+        },
+        {
+          "original_id": "ch13-05-39-manager-lifetime",
+          "title": "弱引用缓存与 manager 的实际寿命",
+          "decision": "merge",
+          "reason": "getInstance弱缓存与RT/uploader/context强引用寿命接47上传闲置释放，合图明确上传context清理不等整个device销毁。",
+          "original_line": 915,
+          "heading": "### VulkanManager：共享 device，分别持有 Skia context",
+          "replacement_id": "ed13-05-manager-strong-refs-and-idle"
+        },
+        {
+          "original_id": "ch13-05-40-shared-isolated",
+          "title": "共享 device 与各 context allocator 的边界",
+          "decision": "merge",
+          "reason": "createContext每次SkiaVMAMake各建allocator，共享device但按API对象同步，接35/42/43/44/65对象图；fThreadSafe选项非独立性来源也非全device锁。",
+          "original_line": 937,
+          "heading": "### VulkanManager：共享 device，分别持有 Skia context",
+          "replacement_id": "ed13-05-hwui-queues-contexts-and-hardware"
+        },
+        {
+          "original_id": "ch13-05-41-family-creation",
+          "title": "HWUI 选中第一个 graphics family 并请求双 queue",
+          "decision": "keep",
+          "reason": "首个GRAPHICSfamily必须至少2queue，否则fatal，没有尝试后一个family/复用q0降级，成功取index0/1的实际控制边界；代码旁图帮助辨识非直观失败分支。",
+          "original_line": 974,
+          "heading": "#### 同一 queue family，两个 queue index"
+        },
+        {
+          "original_id": "ch13-05-42-same-family",
+          "title": "同 family 免彼此 ownership 转移，仍需依赖",
+          "decision": "merge",
+          "reason": "普通资源同family两queue免彼此ownershiptransfer仍须执行/内存依赖，AHBforeign另查，接35/40/43/44/65共享device/独立context与物理资源图。",
+          "original_line": 981,
+          "heading": "#### 同一 queue family，两个 queue index",
+          "replacement_id": "ed13-05-hwui-queues-contexts-and-hardware"
+        },
+        {
+          "original_id": "ch13-05-43-queue-context",
+          "title": "两个 Skia context 各自绑定 queue",
+          "decision": "merge",
+          "reason": "RTcontext绑定q0和uploadcontext绑定q1两条映射，与35几乎同义，接40allocator及44/65物理执行边界合图。",
+          "original_line": 995,
+          "heading": "#### 两个 Skia context 绑定不同 queue",
+          "replacement_id": "ed13-05-hwui-queues-contexts-and-hardware"
+        },
+        {
+          "original_id": "ch13-05-44-gpu-contention",
+          "title": "双 queue 仍会争用物理 GPU 资源",
+          "decision": "merge",
+          "reason": "可重叠/交错串行及带宽cache分配页映射争用，接35/40/42/43对象来源和65设备producer证据，不把2个queue当2套硬件引擎或低优先级上传。",
+          "original_line": 1007,
+          "heading": "#### 两个 Skia context 绑定不同 queue",
+          "replacement_id": "ed13-05-hwui-queues-contexts-and-hardware"
+        },
+        {
+          "original_id": "ch13-05-45-upload-copy",
+          "title": "hardware bitmap 创建中的内容传输",
+          "decision": "merge",
+          "reason": "CPU pixels必要格式转换后内容传输到新sampled AHB，接46Vulkan同步等待与64GL调用方clientwait比较；AHB非零copy或固定一次搬运。",
+          "original_line": 1020,
+          "heading": "#### CPU 像素会被复制",
+          "replacement_id": "ed13-05-bitmap-copy-and-backend-cpu-wait"
+        },
+        {
+          "original_id": "ch13-05-46-upload-blocking",
+          "title": "Vulkan 上传线程与调用方的同步等待",
+          "decision": "merge",
+          "reason": "Vulkan上传线程GrSyncCpuYes，caller runSync阻塞的三轨接45内容传输及64GLCPU等待位置，保留有用时间关系并去掉64重复Vulkan半图。",
+          "original_line": 1037,
+          "heading": "#### GrallocUploadThread 与调用方等待",
+          "replacement_id": "ed13-05-bitmap-copy-and-backend-cpu-wait"
+        },
+        {
+          "original_id": "ch13-05-47-upload-idle",
+          "title": "上传 context 的 60 秒闲置回收",
+          "decision": "merge",
+          "reason": "无pending且idle超过60000ms延迟onIdle释放上传context/manager强引用接39弱/强缓存寿命；仍有RT引用就复用manager，不推固定回收量或线程退出。",
+          "original_line": 1050,
+          "heading": "#### 60 秒闲置回收",
+          "replacement_id": "ed13-05-manager-strong-refs-and-idle"
+        },
+        {
+          "original_id": "ch13-05-48-priority-map",
+          "title": "context priority 请求的启用条件",
+          "decision": "merge",
+          "reason": "初始化前非零contextPriority+EXTv2门槛及LOW/MED/HIGH映射，接49query支持/缺失/拒绝和create失败分支及50CPU/GPU调度分层。",
+          "original_line": 1065,
+          "heading": "### Global priority 的请求语义",
+          "replacement_id": "ed13-05-global-priority-query-and-cpu-policy"
+        },
+        {
+          "original_id": "ch13-05-49-priority-fallback",
+          "title": "priority query 降级与 device 创建失败",
+          "decision": "merge",
+          "reason": "query不支持丢请求、缺query仍可能尝试、createDevice失败fatal三种不同行为接48启用门槛和50独立CPU策略，不把所有错误称自动低档。",
+          "original_line": 1072,
+          "heading": "### Global priority 的请求语义",
+          "replacement_id": "ed13-05-global-priority-query-and-cpu-policy"
+        },
+        {
+          "original_id": "ch13-05-50-priority-vs-cpu",
+          "title": "GPU queue priority 与 Linux 线程策略",
+          "decision": "merge",
+          "reason": "Linux线程policy与Vkqueueglobalpriority不同层，接48/49实际启用和query/create控制图；两queue同global请求且不承诺抢占延迟。",
+          "original_line": 1081,
+          "heading": "### Global priority 的请求语义",
+          "replacement_id": "ed13-05-global-priority-query-and-cpu-policy"
+        },
+        {
+          "original_id": "ch13-05-51-boundary-branches",
+          "title": "HWUI 两条 Vulkan frame-boundary 路径",
+          "decision": "merge",
+          "reason": "AGI私有proc可用传semaphore/image，否则SkiafMarkBoundary/frameID的两路径，接52窗口metadata及53三类ID独立信息流；标注不新增依赖或替presentwait。",
+          "original_line": 1099,
+          "heading": "#### Vulkan frame-boundary 的用途",
+          "replacement_id": "ed13-05-frame-id-domains-and-handoff"
+        },
+        {
+          "original_id": "ch13-05-53-timeline-handoff",
+          "title": "HWUI FrameTimeline 元数据在 queue 前设置",
+          "decision": "merge",
+          "reason": "实际id53-timeline-handoff，有效vsyncId且有render target才CanvasContext组织metadata，经pipeline queue前交ANW/SF，接51/53三ID来源消费者图。",
+          "original_line": 1108,
+          "heading": "#### FrameTimeline 的窗口时间线",
+          "replacement_id": "ed13-05-frame-id-domains-and-handoff"
+        },
+        {
+          "original_id": "ch13-05-52-id-domains",
+          "title": "Vulkan frame ID、vsyncId 与 BQ frame number",
+          "decision": "merge",
+          "reason": "实际id52-id-domains，内部frameID/vsyncId/BQ序号不同且token非timestamp，接51标记路径与52窗口元数据交接，不按数值同值join。",
+          "original_line": 1123,
+          "heading": "#### FrameTimeline 的窗口时间线",
+          "replacement_id": "ed13-05-frame-id-domains-and-handoff"
+        },
+        {
+          "original_id": "ch13-05-54-boundary-distance",
+          "title": "工具 frame-boundary 到显示仍有异步阶段",
+          "decision": "remove",
+          "reason": "annotation→导fd/queue→BLAST/latch→HWC四框重复1132-1135四条步骤与1190-1216保留完整原生sequence，删除第三种相同异步显示后段。",
+          "original_line": 1139,
+          "heading": "#### Frame boundary 到 present 的距离"
+        },
+        {
+          "original_id": "ch13-05-55-hwui-dequeue",
+          "title": "HWUI dequeue fence 的 pending 导入分支",
+          "decision": "merge",
+          "reason": "fd有效且查询成功status!=1才dup/create/tempSYNCFD/Skiawait/FlushAndSubmit，接56导入错误CPUfallback及查询失败另支、fdowner。",
+          "original_line": 1152,
+          "heading": "#### dequeue fence：等待旧消费者释放 buffer",
+          "replacement_id": "ed13-05-dequeue-import-and-error-branches"
+        },
+        {
+          "original_id": "ch13-05-56-import-fallback",
+          "title": "dequeue 导入失败与查询失败的不同处理",
+          "decision": "merge",
+          "reason": "成功Vulkan接dup副本/原fd仍buffer持有，dup-create-import失败CPUsyncwait，查询失败不进pending分支，接55条件图避免用缺slice推signal。",
+          "original_line": 1165,
+          "heading": "#### dequeue fence：等待旧消费者释放 buffer",
+          "replacement_id": "ed13-05-dequeue-import-and-error-branches"
+        },
+        {
+          "original_id": "ch13-05-57-finish-export",
+          "title": "HWUI 正常 finishFrame 的完成依赖导出",
+          "decision": "remove",
+          "reason": "Skiaflush→exportsem→submit→getfd→queue正常链与1190-1216原生sequence逐步重合；58保留不统一的失败/调试等待，完整正常路径文字和native均保留。",
+          "original_line": 1176,
+          "heading": "#### finishFrame：导出本轮 GPU 完成 fence"
+        },
+        {
+          "original_id": "ch13-05-58-finish-failures",
+          "title": "finishFrame 的失败与调试等待不能合并",
+          "decision": "keep",
+          "reason": "signal-semaphore创建失败queue0idle、submit后导fd失败无统一idle、调试deviceidle可等上传三分支，区分真实fallback作用域，原文无效fd改用旧dequeue并非可靠新写完证明完整保留。",
+          "original_line": 1183,
+          "heading": "#### finishFrame：导出本轮 GPU 完成 fence"
+        },
+        {
+          "original_id": "ch13-05-59-reuse-vs-submit",
+          "title": "dequeue 旧依赖与 queue 新依赖方向相反",
+          "decision": "remove",
+          "reason": "旧Consumerrelease保护重写与新Produceracquire保护新读两行链重复紧前保留原生sequence与55/56条件图；FREE/成功dequeue仍未signal原文保留，不再两图连放同一fence方向。",
+          "original_line": 1220,
+          "heading": "#### finishFrame：导出本轮 GPU 完成 fence"
+        },
+        {
+          "original_id": "ch13-05-60-hwui-age",
+          "title": "HWUI buffer age 的内容有效性",
+          "decision": "merge",
+          "reason": "partialupdate双开关、成功queue差值age及失效0接61历史修复dirty和单独windowDirty提交，合实际数据流并保留全绘制fallback。",
+          "original_line": 1229,
+          "heading": "### Buffer age 与 partial update",
+          "replacement_id": "ed13-05-buffer-age-and-two-damage-regions"
+        },
+        {
+          "original_id": "ch13-05-61-two-damages",
+          "title": "HWUI 修复 dirty 与窗口 windowDirty 的区别",
+          "decision": "merge",
+          "reason": "computeDirtyRect先保存windowDirty再合age-1历史dirty，draw用修复dirty/swap传新变化窗口damage，接60age来源与有效性，避免两变量被画成同矩形。",
+          "original_line": 1236,
+          "heading": "### Buffer age 与 partial update",
+          "replacement_id": "ed13-05-buffer-age-and-two-damage-regions"
+        },
+        {
+          "original_id": "ch13-05-62-partial-update-measure",
+          "title": "partial update 的有效性与性能证据",
+          "decision": "remove",
+          "reason": "有效age→真实workload→GPU功耗三框重述1241-1245三限制及测量段；新60/61图保留提示非像素修复和收益另测，删性能证据清单。",
+          "original_line": 1247,
+          "heading": "### Buffer age 与 partial update"
+        },
+        {
+          "original_id": "ch13-05-63-webview-interop",
+          "title": "WebView Vulkan functor 的私有对象边界",
+          "decision": "keep",
+          "reason": "HWUI私有WebViewFunctor参数/Handle/RT互操作与普通native自建公开对象的接口边界，防把私有共享device误当应用API；不是shareddevice内部queue关系图。",
+          "original_line": 1258,
+          "heading": "### VkFunctor 与 WebView 私有互操作"
+        },
+        {
+          "original_id": "ch13-05-64-gl-vk-upload",
+          "title": "GL 与 Vulkan 上传的 CPU 等待位置",
+          "decision": "merge",
+          "reason": "GL上传task返fence后caller有限clientwait与VulkanuploadthreadkYes并排，接45内容传输和46实际Caller/Upload/GPU三轨；GL异常仅记继续非任意返回都已上传完。",
+          "original_line": 1269,
+          "heading": "### 与 SkiaGL 的对比",
+          "replacement_id": "ed13-05-bitmap-copy-and-backend-cpu-wait"
+        },
+        {
+          "original_id": "ch13-05-65-trace-queue-identity",
+          "title": "VkQueue 对象与 Perfetto 硬件 queue 不一一对应",
+          "decision": "merge",
+          "reason": "CPUthread/APIqueue/GPUproducercontext-submission-hwqueue三域接35/40/42/43/44队列结构，2Vkqueue不保证2个硬件队列，字段/后缀设备条件原文完整保留。",
+          "original_line": 1300,
+          "heading": "#### Perfetto",
+          "replacement_id": "ed13-05-hwui-queues-contexts-and-hardware"
+        },
+        {
+          "original_id": "ch13-05-66-capture-system",
+          "title": "AGI frame annotation 与系统显示诊断",
+          "decision": "remove",
+          "reason": "AGI单帧命令与Perfetto显示全链两行六卡重复1307-1309工具职责原文，51/52/53合图已给不同ID来源和消费者，删第二次工具职责摘要。",
+          "original_line": 1311,
+          "heading": "#### AGI"
+        },
+        {
+          "original_id": "ch13-05-67-symptom-proof",
+          "title": "HWUI 常见症状需要的证据",
+          "decision": "remove",
+          "reason": "bitmap阻塞/RTupload同期/queue按时帧晚三组卡截短1318-1325六行症状表，表还覆盖ID和partialupdate，保留完整原表不重复诊断摘要。",
+          "original_line": 1327,
+          "heading": "#### 常见症状与证据"
+        },
+        {
+          "original_id": "ch13-05-68-history-boundaries",
+          "title": "历史帧标注与 priority 分支的对照范围",
+          "decision": "remove",
+          "reason": "Android14-15/16/17三组卡逐项重述1352-1357历史对照表，原表及精确首次提交须Git历史限制全保留，不再结尾重复版本摘要。",
+          "original_line": 1361,
+          "heading": "## 版本与实现边界"
+        }
+      ],
+      "sha256_after": "6243eaec233f5e65351261c4bd33a370b031cbca2ceea94a0496806db9973298",
+      "new_diagrams": [
+        {
+          "id": "ed13-05-profiles-runtime-and-surface",
+          "title": "Profile 要求、设备启用与窗口能力依次核对",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-profiles-runtime-and-surface.svg",
+            "src/assets/diagrams/ch13/ed13-05-profiles-runtime-and-surface.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-profiles-runtime-and-surface",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json",
+            "https://developer.android.com/ndk/guides/graphics/android-vulkan-profile",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceSynchronization2Features.html",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-05-profiles",
+              "ch13-05-06-capability-gates"
+            ],
+            "boundary": "AVP2025兼容集合与VRA17相应新芯片/freeze要求的适用范围不同，VRA17以AVP2025为父profile并增加规范要求，不能推广为所有Android17升级设备。profile/version不是目标设备已启用某feature或窗口支持某组合的证明，DynamicRendering等仍须查支持并正确启用，再查询具体surface的format/mode/capabilities。箭头是能力核对关系，不表示性能因果。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-submit-and-presentation-reuse",
+          "title": "Submit 完成与 presentation 资源复用分开管理",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-submit-and-presentation-reuse.svg",
+            "src/assets/diagrams/ch13/ed13-05-submit-and-presentation-reuse.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-submit-and-presentation-reuse",
+          "sources": [
+            "https://docs.vulkan.org/guide/latest/swapchain_semaphore_reuse.html",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/vkAcquireNextImageKHR.html",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/vkQueueSubmit2.html"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-08-resource-indices",
+              "ch13-05-13-submit-present"
+            ],
+            "boundary": "frame slot可管理commandbuffer/acquiresemaphore等提交资源，frame submit fence仅证明该提交完成，不证明present已消费renderFinished。renderFinished安全生命周期可按swapchain imageIndex管理，重新acquire对应image并遵守availability依赖后安全复用。不能在任何acquire失败后无条件resetframefence；reset仅在成功acquire且将实际submit的分支。箭头为同步对象及复用保护关系，非CPU先等待整个GPU再调用present。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-android-acquire-and-availability",
+          "title": "Android WSI 的 dequeue、fd 导入与 availability 分开确认",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-android-acquire-and-availability.svg",
+            "src/assets/diagrams/ch13/ed13-05-android-acquire-and-availability.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-android-acquire-and-availability",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-10-wsi-acquire",
+              "ch13-05-11-acquire-waits"
+            ],
+            "boundary": "固定r1内部NativeWindowDequeue可因slot/队列约束等待，成功返回可带未signal旧Consumer fence。WSI匹配或延迟绑定VkImage，dupfd交私有AcquireImageANDROID由driver连接应用semaphore/fence；dup失败可CPUsync_wait，异常可cancel/报错。成功imageIndex不证明已安全访问，应用在正确stage遵守availability，不重复导入WSI已处理的fd。这里只画正常链和关键等待边界，不是公有API替代实现。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-image-state-and-present-dependency",
+          "title": "执行与内存依赖不自动完成 image layout 转换",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-image-state-and-present-dependency.svg",
+            "src/assets/diagrams/ch13/ed13-05-image-state-and-present-dependency.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-image-state-and-present-dependency",
+          "sources": [
+            "https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#fundamentals-threadingbehavior",
+            "https://github.khronos.org/Vulkan-Site/guide/latest/synchronization_examples.html",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageMemoryBarrier2.html"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-17-sync-roles",
+              "ch13-05-18-layout-cycle",
+              "ch13-05-19-barrier-scope"
+            ],
+            "boundary": "semaphore的signal/wait建立规范作用域内执行与内存依赖，不自动做layout或queue-family ownership转移。成功acquire并遵守availability之后，保留旧内容须用实际已知layout，允许丢弃时任意帧可依法用UNDEFINED。图中toPresent只针对最后访问为颜色附件写入且不需family转移的例子；transfer/compute或不同family须另配，不能照抄。present仍等待renderFinished，barrier不是CPU等待显示，syncvalidation与GPUassisted覆盖范围不同。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-app-and-sf-gpu-dependencies",
+          "title": "App 与 SF 使用各自 context，CLIENT 输出另有完成依赖",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-app-and-sf-gpu-dependencies.svg",
+            "src/assets/diagrams/ch13/ed13-05-app-and-sf-gpu-dependencies.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-app-and-sf-gpu-dependencies",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/renderengine/skia/GraphiteVkRenderEngine.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-30-sf-separate",
+              "ch13-05-32-sf-recording"
+            ],
+            "boundary": "App原生Vulkan/HWUI与SFRenderEngine不是同一device/context/queue/线程，仍可争用同一物理GPU。SF可用Graphite或Ganesh，DEVICE可不执行RenderEngine；图中仅展开需要CLIENT/效果且选择Graphite的条件分支。Recorder snap得Recording，InsertRecordingInfo附输入wait和输出signal，经insertRecording/submit异步执行，输出syncfd保护后续clienttarget读取。此fd不同于AppVkFence，却可关联同一帧因果链。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-hwui-queues-contexts-and-hardware",
+          "title": "HWUI 双 queue 分开提交，context、依赖和硬件各有边界",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-hwui-queues-contexts-and-hardware.svg",
+            "src/assets/diagrams/ch13/ed13-05-hwui-queues-contexts-and-hardware.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-hwui-queues-contexts-and-hardware",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.h",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp",
+            "https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#fundamentals-threadingbehavior",
+            "https://perfetto.dev/docs/data-sources/gpu"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-35-two-queues",
+              "ch13-05-40-shared-isolated",
+              "ch13-05-42-same-family",
+              "ch13-05-43-queue-context",
+              "ch13-05-44-gpu-contention",
+              "ch13-05-65-trace-queue-identity"
+            ],
+            "boundary": "同VulkanManager共享instance/physicaldevice/device/family/features/extensions；每次createContext各建GrDirectContext和SkiaVMA allocator，fThreadSafe=false不意味整个device所有API一把锁。queue0RT窗口/queue1上传都是同family graphicsqueue；普通资源仅在两者间不需familyownershiptransfer，但执行/内存依赖仍需建立，AHBexternal/foreign另查。队列接口数、host并发和物理执行重叠三者不同；APIqueue不保证对应独立hw_queue_iid，按设备producercontext/submission/stage/counter取证，两queue请求同globalpriority并非上传天然低优先级。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-manager-strong-refs-and-idle",
+          "title": "弱缓存与上传闲置回收共同决定 manager 的寿命",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-manager-strong-refs-and-idle.svg",
+            "src/assets/diagrams/ch13/ed13-05-manager-strong-refs-and-idle.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-manager-strong-refs-and-idle",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-39-manager-lifetime",
+              "ch13-05-47-upload-idle"
+            ],
+            "boundary": "getInstance加锁promote弱缓存，存活则复用，否则新建。RT/uploader/各contextcallback持有强引用，弱缓存本身不延寿。无pendingupload且空闲超过60000ms后延迟检查可onIdle清上传context及manager强引用，不等于线程必退出/精确到时/固定回收量。只有全部强引用释放才销毁manager及device；RT仍持有时下次upload复用同manager重建上传context。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-bitmap-copy-and-backend-cpu-wait",
+          "title": "Hardware bitmap 有内容传输，GL 与 Vulkan 的 CPU 等待位置不同",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-bitmap-copy-and-backend-cpu-wait.svg",
+            "src/assets/diagrams/ch13/ed13-05-bitmap-copy-and-backend-cpu-wait.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-bitmap-copy-and-backend-cpu-wait",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/hwui/Bitmap.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-45-upload-copy",
+              "ch13-05-46-upload-blocking",
+              "ch13-05-64-gl-vk-upload"
+            ],
+            "boundary": "CPU像素可能先makeHwCompatible转换，分配带sampledusage的新AHB后TextureFromAHardwareBufferWithData传输；AHB不保证零复制/恰一次搬运/无staging。Vulkan上传在GrallocUploadThreadqueue1且submitGrSyncCpuYes，runSync正常返回后调用方才获写完结果。GL上传task记录/flush并返回fence，runSync后由调用方eglClientWaitSyncKHR，2秒有限超时且异常只记录后继续，不能将任何返回等同上传成功。两种后端都有上传线程，不保证与窗口GPU工作同时执行。轨道只示Vulkan正常同步返回的关系，非时长测量。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-global-priority-query-and-cpu-policy",
+          "title": "GPU global-priority 请求的降级与 CPU 线程策略分开判断",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-global-priority-query-and-cpu-policy.svg",
+            "src/assets/diagrams/ch13/ed13-05-global-priority-query-and-cpu-policy.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-global-priority-query-and-cpu-policy",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/Properties.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/renderengine/threaded/RenderEngineThreaded.cpp",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-48-priority-map",
+              "ch13-05-49-priority-fallback",
+              "ch13-05-50-priority-vs-cpu"
+            ],
+            "boundary": "contextPriority默认0；初始化前内部入口设置非零EGLpriority常量且识别EXTglobalpriorityv2才映射LOW/MEDIUM/HIGH并进入请求逻辑。query可用且支持目标档位或query不可用时可能尝试请求；query明确不支持时warning并丢弃附加请求。两queue同queueInfo接同globalpriority请求，不保证设备权限允许；createDevice失败fatal非所有失败重试低档。mAPIVersion1.1不因检查1.4推正在走1.4core。Linux线程policy与Vulkanqueuepriority不同，两者不承诺硬件并行或抢占时延。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-frame-id-domains-and-handoff",
+          "title": "GPU 工具帧标记、FrameTimeline token 与 BQ 序号分别关联",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-frame-id-domains-and-handoff.svg",
+            "src/assets/diagrams/ch13/ed13-05-frame-id-domains-and-handoff.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-frame-id-domains-and-handoff",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.h",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/VkFrameBoundaryEXT.html",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp",
+            "https://perfetto.dev/docs/data-sources/frametimeline",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-51-boundary-branches",
+              "ch13-05-53-timeline-handoff",
+              "ch13-05-52-id-domains"
+            ],
+            "boundary": "HWUIfinishFrame存在私有vkFrameBoundaryANDROID指针时传signalSemaphore/renderimage，普通运行缺私有AGIproc属预期；否则给SkiafMarkBoundaryYes及内部递增frameID，依赖可用EXT支持。frameannotation不新建执行依赖，不替代presentwait。FrameTimelinevsyncId由平台帧计划传入，有效且存在目标时CanvasContext组织ANativeWindowFrameTimelineInfo经pipeline在queue前设置，再由SF关联expected/actual；token不是时间戳。BQframenumber是Producerqueue次序，三者无同值赋值保证，不能按数值相等join；可按时间/target/submission等另关联。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-dequeue-import-and-error-branches",
+          "title": "HWUI dequeue 的 pending 导入、CPU fallback 与查询失败不同",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-dequeue-import-and-error-branches.svg",
+            "src/assets/diagrams/ch13/ed13-05-dequeue-import-and-error-branches.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-dequeue-import-and-error-branches",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanSurface.cpp",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/vkImportSemaphoreFdKHR.html"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-55-hwui-dequeue",
+              "ch13-05-56-import-fallback"
+            ],
+            "boundary": "仅fd有效、sync_file_info查询成功且status!=1分支dupfd/createbinarysemaphore/TEMPORARYSYNCFDimport；成功Vulkan接管副本，原dequeuefd仍由buffer记录持有。Skiasurfacewait后FlushAndSubmit及时交GPU等待，源码workaround不证明CPU等GPU结束。dup/create/import失败走清理和CPUsync_wait；sync_file_info查询失败不进入同一pending分支。缺少waitslice不是fence已signal独立证明；新Producer写前仍须满足旧Consumer依赖。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-05-buffer-age-and-two-damage-regions",
+          "title": "Buffer age 决定修复历史，windowDirty 沿另一条提交路径传递",
+          "article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-05-buffer-age-and-two-damage-regions.svg",
+            "src/assets/diagrams/ch13/ed13-05-buffer-age-and-two-damage-regions.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-05-buffer-age-and-two-damage-regions",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanSurface.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/Properties.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-05-60-hwui-age",
+              "ch13-05-61-two-damages"
+            ],
+            "boundary": "enablePartialUpdates与useBufferAge同时开才选择BufferAge，否则Discard/age0。age由进程成功queue计数减buffer上次成功queue计数，不是当前显示时长；新建/内容无效/transform变化age0。computeDirtyRect先保存本帧windowDirty，再修复dirty合age-1历史damage，age0或历史不足全绘制。SkiaVulkanPipelinedraw用修复dirty，而swap/native_window_set_surface_damage传windowDirty，二者可不同。damage提示不保证所有GPU仅执行该矩形，性能收益另测GPU/带宽/功耗。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T14:36:21.606374+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 68,
+        "contexts_actually_viewed": 13,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "native_source_exact_except_declared_semicolon_entities": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a124/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a124/visual-review.json",
+      "inline_mermaid_syntax_repairs": [
+        {
+          "kind": "mermaid_semicolon_entity_escape",
+          "original_ordinal": 1,
+          "before": "```mermaid\nsequenceDiagram\n    participant App as \"App / RHI thread\"\n    participant WSI as \"Android Vulkan WSI\"\n    participant BQ as \"ANativeWindow / BufferQueue / BLAST\"\n    participant Driver as \"Vulkan driver\"\n    participant GPU as \"GPU execution\"\n    participant SF as \"SF / CompositionEngine\"\n    participant HWC as \"Composer / Display\"\n    App->>WSI: \"vkAcquireNextImageKHR\"\n    WSI->>BQ: \"dequeueBuffer\"\n    BQ-->>WSI: \"buffer + dequeue/release fence\"\n    WSI->>Driver: \"AcquireImageANDROID(duplicated fd, semaphore/fence)\"\n    WSI-->>App: \"successful imageIndex; availability signal may be pending\"\n    App->>App: \"record commands; layout and access dependencies\"\n    App->>Driver: \"submit(wait acquire, signal renderFinished)\"\n    Driver->>GPU: \"asynchronous GPU work\"\n    App->>WSI: \"present request(wait renderFinished)\"\n    WSI->>Driver: \"QueueSignalReleaseImageANDROID\"\n    Driver-->>WSI: \"write-completion fence fd (may be unsignaled)\"\n    WSI->>BQ: \"CPU queueBuffer(buffer, fence)\"\n    BQ->>SF: \"BLAST buffer transaction + acquire dependency\"\n    Note over GPU,SF: queue and constrained latch may precede GPU completion; actual read obeys acquire fence\n    alt presentOrValidate presents directly\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / release feedback\"\n    else validated result\n        SF->>HWC: \"validate or validated result\"\n        SF->>SF: \"optional CLIENT composition; respect read dependency\"\n        SF->>HWC: \"present\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>BQ: \"old buffer release; may merge CLIENT GPU dependency\"\n```\n",
+          "after": "```mermaid\nsequenceDiagram\n    participant App as \"App / RHI thread\"\n    participant WSI as \"Android Vulkan WSI\"\n    participant BQ as \"ANativeWindow / BufferQueue / BLAST\"\n    participant Driver as \"Vulkan driver\"\n    participant GPU as \"GPU execution\"\n    participant SF as \"SF / CompositionEngine\"\n    participant HWC as \"Composer / Display\"\n    App->>WSI: \"vkAcquireNextImageKHR\"\n    WSI->>BQ: \"dequeueBuffer\"\n    BQ-->>WSI: \"buffer + dequeue/release fence\"\n    WSI->>Driver: \"AcquireImageANDROID(duplicated fd, semaphore/fence)\"\n    WSI-->>App: \"successful imageIndex#59; availability signal may be pending\"\n    App->>App: \"record commands#59; layout and access dependencies\"\n    App->>Driver: \"submit(wait acquire, signal renderFinished)\"\n    Driver->>GPU: \"asynchronous GPU work\"\n    App->>WSI: \"present request(wait renderFinished)\"\n    WSI->>Driver: \"QueueSignalReleaseImageANDROID\"\n    Driver-->>WSI: \"write-completion fence fd (may be unsignaled)\"\n    WSI->>BQ: \"CPU queueBuffer(buffer, fence)\"\n    BQ->>SF: \"BLAST buffer transaction + acquire dependency\"\n    Note over GPU,SF: queue and constrained latch may precede GPU completion#59; actual read obeys acquire fence\n    alt presentOrValidate presents directly\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / release feedback\"\n    else validated result\n        SF->>HWC: \"validate or validated result\"\n        SF->>SF: \"optional CLIENT composition#59; respect read dependency\"\n        SF->>HWC: \"present\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>BQ: \"old buffer release#59; may merge CLIENT GPU dependency\"\n```\n",
+          "semicolon_count": 5,
+          "before_sha256": "85ef3e626119cea4e6144fff7279a86d2747806296a149f171df9e24e910bd2d",
+          "after_sha256": "9619d8d424bfcb63c3a55052257a79978f06b0abbc01776be0208dacb54ffe5c",
+          "reason": "Actual bundled Mermaid parser rejects original sequence messages containing literal ASCII semicolons. Entity escaping preserves visible words, punctuation, nodes and arrows.",
+          "parse_and_render_test": {
+            "original_failed": {
+              "ok": false,
+              "message": "Error: Parse error on line 13:\n...gnal may be pending\"    App->>App: \"rec\n-----------------------^\nExpecting 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'DOTTED_ARROW', 'SOLID_CROSS', 'DOTTED_CROSS', 'SOLID_POINT', 'DOTTED_POINT', got 'NEWLINE'"
+            },
+            "escaped_parse_render_passed": true
+          },
+          "preview": "/tmp/gracker-diagrams-editorial-review-20261028/a124/native-1-repaired-preview.png"
+        },
+        {
+          "kind": "mermaid_semicolon_entity_escape",
+          "original_ordinal": 3,
+          "before": "```mermaid\nsequenceDiagram\n    participant BQ as \"ANativeWindow / BufferQueue / BLAST\"\n    participant RT as \"RenderThread / VulkanManager\"\n    participant Vk as \"Vulkan / Skia CPU API\"\n    participant GPU as \"GPU queue 0 work\"\n    participant SF as \"SF / CompositionEngine\"\n    participant HWC as \"Composer / Display\"\n    BQ-->>RT: \"dequeue buffer + old-consumer release fence\"\n    RT->>Vk: \"pending branch: import dup fd; surface wait + FlushAndSubmit\"\n    RT->>Vk: \"Skia draw / flush + signal exportable semaphore\"\n    Vk->>GPU: \"asynchronous work; obey old-consumer dependency\"\n    Vk-->>RT: \"export producer completion sync fd\"\n    RT->>BQ: \"CPU queueBuffer(buffer, sync fd)\"\n    BQ->>SF: \"BLAST buffer transaction + acquire dependency\"\n    Note over GPU,SF: queue / constrained latch can precede signal; actual read obeys acquire\n    alt presentOrValidate presents directly\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / release feedback\"\n    else validated result\n        SF->>HWC: \"validate or validated result\"\n        SF->>SF: \"optional CLIENT composition\"\n        SF->>HWC: \"present\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>BQ: \"old buffer release; may include CLIENT GPU dependency\"\n```\n",
+          "after": "```mermaid\nsequenceDiagram\n    participant BQ as \"ANativeWindow / BufferQueue / BLAST\"\n    participant RT as \"RenderThread / VulkanManager\"\n    participant Vk as \"Vulkan / Skia CPU API\"\n    participant GPU as \"GPU queue 0 work\"\n    participant SF as \"SF / CompositionEngine\"\n    participant HWC as \"Composer / Display\"\n    BQ-->>RT: \"dequeue buffer + old-consumer release fence\"\n    RT->>Vk: \"pending branch: import dup fd#59; surface wait + FlushAndSubmit\"\n    RT->>Vk: \"Skia draw / flush + signal exportable semaphore\"\n    Vk->>GPU: \"asynchronous work#59; obey old-consumer dependency\"\n    Vk-->>RT: \"export producer completion sync fd\"\n    RT->>BQ: \"CPU queueBuffer(buffer, sync fd)\"\n    BQ->>SF: \"BLAST buffer transaction + acquire dependency\"\n    Note over GPU,SF: queue / constrained latch can precede signal#59; actual read obeys acquire\n    alt presentOrValidate presents directly\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / release feedback\"\n    else validated result\n        SF->>HWC: \"validate or validated result\"\n        SF->>SF: \"optional CLIENT composition\"\n        SF->>HWC: \"present\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>BQ: \"old buffer release#59; may include CLIENT GPU dependency\"\n```\n",
+          "semicolon_count": 4,
+          "before_sha256": "ca4d12615e1876ed1b10fafab3673c4c204b32137ce178d931de20ab42155be0",
+          "after_sha256": "2505daaa4c2ed254b8dbdd02e76b41234d8a69a3d2ba88666f9b5940267ab827",
+          "reason": "Actual bundled Mermaid parser rejects original sequence messages containing literal ASCII semicolons. Entity escaping preserves visible words, punctuation, nodes and arrows.",
+          "parse_and_render_test": {
+            "original_failed": {
+              "ok": false,
+              "message": "Error: Parse error on line 9:\n...up fd; surface wait + FlushAndSubmit\"  \n-----------------------^\nExpecting 'NEWLINE', 'AS', ',', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'DOTTED_ARROW', 'SOLID_CROSS', 'DOTTED_CROSS', 'SOLID_POINT', 'DOTTED_POINT', 'TXT', got '+'"
+            },
+            "escaped_parse_render_passed": true
+          },
+          "preview": "/tmp/gracker-diagrams-editorial-review-20261028/a124/native-3-repaired-preview.png"
+        }
+      ],
+      "retired_diagrams": [
+        "ch13-05-02-explicit-value",
+        "ch13-05-03-app-responsibility",
+        "ch13-05-05-profiles",
+        "ch13-05-06-capability-gates",
+        "ch13-05-07-swapchain-init",
+        "ch13-05-08-resource-indices",
+        "ch13-05-10-wsi-acquire",
+        "ch13-05-11-acquire-waits",
+        "ch13-05-13-submit-present",
+        "ch13-05-14-present-handoff",
+        "ch13-05-15-window-recovery",
+        "ch13-05-16-async-wsi",
+        "ch13-05-17-sync-roles",
+        "ch13-05-18-layout-cycle",
+        "ch13-05-19-barrier-scope",
+        "ch13-05-20-over-sync",
+        "ch13-05-21-present-modes",
+        "ch13-05-22-mode-budget",
+        "ch13-05-24-swappy",
+        "ch13-05-25-swappy-lifecycle",
+        "ch13-05-26-trace-correlation",
+        "ch13-05-27-wait-localization",
+        "ch13-05-29-frametimeline-limits",
+        "ch13-05-30-sf-separate",
+        "ch13-05-31-sf-thread-policy",
+        "ch13-05-32-sf-recording",
+        "ch13-05-33-tool-scopes",
+        "ch13-05-34-version-conditions",
+        "ch13-05-35-two-queues",
+        "ch13-05-36-three-evidence-levels",
+        "ch13-05-37-historical-dual",
+        "ch13-05-38-hwui-path",
+        "ch13-05-39-manager-lifetime",
+        "ch13-05-40-shared-isolated",
+        "ch13-05-42-same-family",
+        "ch13-05-43-queue-context",
+        "ch13-05-44-gpu-contention",
+        "ch13-05-45-upload-copy",
+        "ch13-05-46-upload-blocking",
+        "ch13-05-47-upload-idle",
+        "ch13-05-48-priority-map",
+        "ch13-05-49-priority-fallback",
+        "ch13-05-50-priority-vs-cpu",
+        "ch13-05-51-boundary-branches",
+        "ch13-05-52-id-domains",
+        "ch13-05-53-timeline-handoff",
+        "ch13-05-54-boundary-distance",
+        "ch13-05-55-hwui-dequeue",
+        "ch13-05-56-import-fallback",
+        "ch13-05-57-finish-export",
+        "ch13-05-59-reuse-vs-submit",
+        "ch13-05-60-hwui-age",
+        "ch13-05-61-two-damages",
+        "ch13-05-62-partial-update-measure",
+        "ch13-05-64-gl-vk-upload",
+        "ch13-05-65-trace-queue-identity",
+        "ch13-05-66-capture-system",
+        "ch13-05-67-symptom-proof",
+        "ch13-05-68-history-boundaries"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-124/retired-assets.json"
     },
     {
       "index": 125,
@@ -22849,9 +23889,1034 @@
       "before_count": 68,
       "before_all_images": 68,
       "sha256_before": "bf0715baeaf449d4507e57b173a7c24954cde0eda6387f1e76e02d29557b9113",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 24,
+      "decisions": [
+        {
+          "original_id": "ch13-06-01-overview",
+          "title": "HBR 生产像素与 SurfaceControl 提交 Layer",
+          "decision": "keep",
+          "reason": "HBR只生产像素、AHB共享存储/fence、SC交Layer状态、SF显示四个主体的开篇范围图，帮助理解文章前后两半如何接合；末尾原生全环更细，非又一份回收检查卡。",
+          "original_line": 188,
+          "heading": "# SurfaceControl 与 HardwareBufferRenderer"
+        },
+        {
+          "original_id": "ch13-06-02-object-roles",
+          "title": "五类对象的接口与职责",
+          "decision": "remove",
+          "reason": "五个仅标题框逐项摘录201-207五类对象职责表，图无额外对象关系/边界；原表含不负责什么及opaquehandle解释更全，删除概念词卡。",
+          "original_line": 211,
+          "heading": "#### 五类对象各管什么"
+        },
+        {
+          "original_id": "ch13-06-03-create-child",
+          "title": "从既有宿主创建新的 buffer-state 节点",
+          "decision": "merge",
+          "reason": "创建新buffer-state child而非复用宿主BQ，接4固定类型/setColor边界、8window与child引用及33宿主队列vs新child两路线，合为对象图。",
+          "original_line": 222,
+          "heading": "#### 创建的是父节点下面的新 Layer",
+          "replacement_id": "ed13-06-host-queue-child-and-references"
+        },
+        {
+          "original_id": "ch13-06-04-layer-kind",
+          "title": "NDK 创建类型与颜色属性的边界",
+          "decision": "merge",
+          "reason": "NDK创建bufferstate无JavaBuilder类型选项、setColor只是背景、只组织子树不改变类型，接3/8/33宿主输出目标与独立引用合图。",
+          "original_line": 229,
+          "heading": "#### 创建的是父节点下面的新 Layer",
+          "replacement_id": "ed13-06-host-queue-child-and-references"
+        },
+        {
+          "original_id": "ch13-06-05-jni-ownership",
+          "title": "Java 与 NDK 桥接的两种所有权",
+          "decision": "merge",
+          "reason": "control fromJava取得强引用需release、transaction borrowed不可delete、都只同进程，接20SurfacePackage跨进程后再桥接，避免第三列IPC与后文重复。",
+          "original_line": 243,
+          "heading": "#### Java 与 NDK 句柄桥接",
+          "replacement_id": "ed13-06-ipc-control-and-local-java-bridge"
+        },
+        {
+          "original_id": "ch13-06-06-atomicity",
+          "title": "事务原子应用与之后的异步阶段",
+          "decision": "merge",
+          "reason": "多Layer状态原子应用/同线程有序但apply异步，接15commit-complete-perbuffer独立事件和16stats合法作用域；不把release画成必在present之后。",
+          "original_line": 259,
+          "heading": "#### Transaction 的原子性保证",
+          "replacement_id": "ed13-06-transaction-phases-and-stats-scope"
+        },
+        {
+          "original_id": "ch13-06-07-blast-direct",
+          "title": "BLAST 队列与直接 buffer 提交的汇合点",
+          "decision": "remove",
+          "reason": "BLAST既有BQ与NDK自管池的两行六框与268-285保留原生双路径flow逐边重复；原文三项对象/slot/frame检查完整保留。",
+          "original_line": 289,
+          "heading": "### 与 BLAST 的关系"
+        },
+        {
+          "original_id": "ch13-06-08-native-refs",
+          "title": "window 与 child 分别持有和释放引用",
+          "decision": "merge",
+          "reason": "JavaSurface增加window引用、child另配controlrelease，接3/4/33两条生产目标和创建类型；宿主重建按串行生命周期移除旧child清句柄。",
+          "original_line": 344,
+          "heading": "#### 从 Java Surface 建立子 Layer",
+          "replacement_id": "ed13-06-host-queue-child-and-references"
+        },
+        {
+          "original_id": "ch13-06-09-submit-buffer",
+          "title": "像素完成依赖与几何进入同一事务",
+          "decision": "remove",
+          "reason": "submit写入→setbuffer几何→apply/delete→release四框重复353-380保留C代码及400-427完整原生sequence，source fd转交/API31兼容/异步语义全保留。",
+          "original_line": 384,
+          "heading": "#### 提交 buffer 和几何状态"
+        },
+        {
+          "original_id": "ch13-06-10-usage-contract",
+          "title": "用途声明与 fence 分工",
+          "decision": "remove",
+          "reason": "COLOROUTPUT/SAMPLED/OVERLAY三组六卡逐项压缩389及1208-1212三用途说明，54保留支持查询→实际分配→固定HBR具体链；原文usage与fence独立、非overlay保证更详。",
+          "original_line": 391,
+          "heading": "#### 提交 buffer 和几何状态"
+        },
+        {
+          "original_id": "ch13-06-11-async-system",
+          "title": "CPU 提交与 GPU 完成可重叠",
+          "decision": "remove",
+          "reason": "CPU/GPU/Consumer三轨重复400-427保留原生sequence同一异步提交/受限latch/读取依赖；后半新46/47四轨专讲HBRhost，不再放第三份系统后段。",
+          "original_line": 431,
+          "heading": "#### 提交后的系统路径"
+        },
+        {
+          "original_id": "ch13-06-15-ndk-versions",
+          "title": "公开 NDK 能力按版本分组",
+          "decision": "remove",
+          "reason": "实际id15-ndk-versions，29/30、31/33、34/35/36六卡截短440-452十行API表，原表含具体接口与边界更多；API37无新增C函数正文完整保留。",
+          "original_line": 456,
+          "heading": "#### 公开能力与版本范围"
+        },
+        {
+          "original_id": "ch13-06-16-geometry",
+          "title": "节点几何、子树裁剪与 buffer transform",
+          "decision": "remove",
+          "reason": "实际id16-geometry，position-scale/crop-visibility/buffer-transform-damage六卡逐项重述472-477六条坐标语义，图不是实际空间示意；19保留具体Layer树，完整bullet限制未删。",
+          "original_line": 467,
+          "heading": "#### Buffer、几何和颜色"
+        },
+        {
+          "original_id": "ch13-06-17-alpha-color",
+          "title": "像素预乘、整体 alpha 与色彩解释",
+          "decision": "merge",
+          "reason": "实际id17-alpha-color，Producer预乘/OPAQUE真实透明性、整体alpha及背景vsdataspace，接64format-ColorSpace-HDR提示和显示支持完整编码解释链。",
+          "original_line": 483,
+          "heading": "#### Buffer、几何和颜色",
+          "replacement_id": "ed13-06-pixel-alpha-dataspace-and-hdr"
+        },
+        {
+          "original_id": "ch13-06-12-callbacks",
+          "title": "commit、complete 与 buffer release 各证明什么",
+          "decision": "merge",
+          "reason": "实际id12-callbacks，commit、complete和逐引用release证明范围接6异步原子提交和16stats/fdownership，保留release可未显示及fdpending不保证signal。",
+          "original_line": 498,
+          "heading": "#### `OnCommit`、`OnComplete` 与 release callback",
+          "replacement_id": "ed13-06-transaction-phases-and-stats-scope"
+        },
+        {
+          "original_id": "ch13-06-13-stats-query",
+          "title": "完成统计的作用域与错误边界",
+          "decision": "merge",
+          "reason": "实际id13-stats-query，stats回调期/合法control列表/fd移交、错误controlfatal与acquireTime可waitForever，接6/15回调阶段合图，原枚举数组专用释放正文保留。",
+          "original_line": 505,
+          "heading": "#### `OnCommit`、`OnComplete` 与 release callback",
+          "replacement_id": "ed13-06-transaction-phases-and-stats-scope"
+        },
+        {
+          "original_id": "ch13-06-30-all-refs",
+          "title": "同一内存多次提交要等待全部引用",
+          "decision": "merge",
+          "reason": "实际id30-all-refs，同内存多提交引用分别回收接28专用worker及57slot可写条件，合明确双引用聚合与generation/失败隔离，不把callback当显示计数。",
+          "original_line": 512,
+          "heading": "#### `OnCommit`、`OnComplete` 与 release callback",
+          "replacement_id": "ed13-06-submission-refs-and-safe-pool"
+        },
+        {
+          "original_id": "ch13-06-14-backpressure",
+          "title": "服务端保留提交与低延迟覆盖",
+          "decision": "merge",
+          "reason": "实际id14-backpressure，默认覆盖/开启服务端保留/应用无slot停产三个不同控制，接58容量/实际backlog/内存时延合反馈回路，移除和本地未apply覆盖例外保留。",
+          "original_line": 523,
+          "heading": "#### Backpressure 与丢帧",
+          "replacement_id": "ed13-06-server-backpressure-and-app-pool"
+        },
+        {
+          "original_id": "ch13-06-18-layer-tree",
+          "title": "父子关系与兄弟 Z 顺序",
+          "decision": "keep",
+          "reason": "Host→Nativeparent→video/subtitle/debug不同Z的具体父子树，视觉上解释子树继承与独立更新，比534文本树补继承位置裁剪可见性；此结构不是引用/回收环。",
+          "original_line": 546,
+          "heading": "#### 用树描述显示层级"
+        },
+        {
+          "original_id": "ch13-06-19-ipc-controls",
+          "title": "跨进程 SurfacePackage 与本地指针桥接",
+          "decision": "merge",
+          "reason": "SurfaceControlViewHost/SurfacePackage→Binder→接收方SV及可选SyncGroup→本进程fromJava，接5强control与借用tx两ownership，保留死亡/reparent协议边界。",
+          "original_line": 562,
+          "heading": "#### 跨进程传递的路径",
+          "replacement_id": "ed13-06-ipc-control-and-local-java-bridge"
+        },
+        {
+          "original_id": "ch13-06-20-destroy",
+          "title": "移出显示树、release 与本地释放分开",
+          "decision": "merge",
+          "reason": "先停提交再reparentNULL移树、排空异步后localrelease，接31callback排队任务存活和66renderer/wrapper/native引用分开关闭，合一份完整owner结束流程。",
+          "original_line": 580,
+          "heading": "#### 销毁分为“离开显示树”和“释放本地引用”",
+          "replacement_id": "ed13-06-detach-drain-and-close-owners"
+        },
+        {
+          "original_id": "ch13-06-21-layer-cost",
+          "title": "独立 Layer 的收益与显示侧成本",
+          "decision": "keep",
+          "reason": "按独立更新/共同生产生命周期决定少量Layer拆分、或合画一buffer、并核对显示侧成本的实际选择分支；无通用N层阈值，和后面的buffer容量是不同决策。",
+          "original_line": 591,
+          "heading": "#### Layer 数量的权衡"
+        },
+        {
+          "original_id": "ch13-06-22-timeline-fields",
+          "title": "候选 timeline 的 ID、展示时刻与 deadline",
+          "decision": "remove",
+          "reason": "vsyncId/expected/deadline六卡重述604-606三字段及615绝对单调时间条件，24保留真正选择/跳过分支，新25/48图把选定token与HBRbuffer汇合，删除字段清单副本。",
+          "original_line": 610,
+          "heading": "#### NDK 中的 FrameTimeline 选择流程"
+        },
+        {
+          "original_id": "ch13-06-23-timeline-selection",
+          "title": "无合适候选时跳过本轮生产",
+          "decision": "keep",
+          "reason": "preferred有效性、expected>=业务目标且deadline>=预测ready、成功绑定/失败跳过及两支重注册的真实控制图，避免错误用最后过期候选；不是仅列三字段。",
+          "original_line": 684,
+          "heading": "#### NDK 中的 FrameTimeline 选择流程"
+        },
+        {
+          "original_id": "ch13-06-24-timeline-rate",
+          "title": "timeline、时间戳请求与 frame-rate vote",
+          "decision": "merge",
+          "reason": "timeline候选关联/独立desired绝对时间/framerate投票不同功能，接48HBRJNI INVALIDVSYNC及Choreo目标另接transaction，合buffer和token两路输入，Javaflag/API条件完整保留。",
+          "original_line": 693,
+          "heading": "#### NDK 中的 FrameTimeline 选择流程",
+          "replacement_id": "ed13-06-hbr-buffer-and-display-target"
+        },
+        {
+          "original_id": "ch13-06-25-frametimeline-limits",
+          "title": "App 完成、显示反馈与覆盖边界",
+          "decision": "remove",
+          "reason": "AppActual/DisplayActual/光学覆盖六卡逐项压缩702-710五行trace字段表与pending替代路径/SurfaceView覆盖完整段，原文更全；50保留三fence名称易混的不同对象。",
+          "original_line": 712,
+          "heading": "#### Trace 中怎样解释 FrameTimeline"
+        },
+        {
+          "original_id": "ch13-06-26-fence-directions",
+          "title": "Producer 写完与 Consumer 用完的两端依赖",
+          "decision": "remove",
+          "reason": "Producer可读/Consumer用完/再次可写正常六框重复723-731方向文本与1074-1091保留原生正常及提前释放全环；新17/28/57图补具体多引用/fence汇合，50保留名称作用域。",
+          "original_line": 735,
+          "heading": "#### 一块 buffer 的同步方向"
+        },
+        {
+          "original_id": "ch13-06-27-buffer-release",
+          "title": "API36 回调先移交，再等待并回收",
+          "decision": "merge",
+          "reason": "API36callback只移交记录fd到worker、非负fd确认等待/close且全refs后IDLE、失败隔离，接17多引用与57slot轮次，而不是第三次单一回收环。",
+          "original_line": 771,
+          "heading": "#### API 36：按 buffer 接收 release",
+          "replacement_id": "ed13-06-submission-refs-and-safe-pool"
+        },
+        {
+          "original_id": "ch13-06-28-local-overwrite",
+          "title": "未 apply 覆盖时转交旧 acquire 依赖",
+          "decision": "keep",
+          "reason": "同tx本地A被B覆盖立即安排异步release，交回旧acquirefence而旧GPUwrite可继续的三轨；解释从未展示也不能马上重写，专用线程非覆盖调用栈同步callback。",
+          "original_line": 778,
+          "heading": "#### API 36：按 buffer 接收 release"
+        },
+        {
+          "original_id": "ch13-06-29-legacy-previous",
+          "title": "API29–35 统计回收的是上一块 buffer",
+          "decision": "keep",
+          "reason": "A→后续B→BOnComplete查询previous→A依赖成功回收而B仍current具体两buffer映射，避免旧版把当前slot归还；59旧接口六卡/表重复这点后删。",
+          "original_line": 798,
+          "heading": "#### API 29—35：从完成统计取得上一块 buffer"
+        },
+        {
+          "original_id": "ch13-06-31-callback-lifetime",
+          "title": "回调、回收任务和组件关闭的依赖",
+          "decision": "merge",
+          "reason": "停新提交→callback移交→排队等待任务→最后context/pool的访问寿命，接21显示树移除和66三个owner独立close，callback不能先free上下文。",
+          "original_line": 814,
+          "heading": "#### 常见错误",
+          "replacement_id": "ed13-06-detach-drain-and-close-owners"
+        },
+        {
+          "original_id": "ch13-06-32-engine-cost",
+          "title": "拆分更新成本后还要看 CLIENT 合成",
+          "decision": "remove",
+          "reason": "独立主画面字幕/额外CLIENT/前后测量六卡重复823-825两段，22保留何时拆分Layer的具体选择，目标设备CLIENT成本转移全文保留，不加第二份收益摘要。",
+          "original_line": 827,
+          "heading": "#### 自绘引擎与视频编辑器"
+        },
+        {
+          "original_id": "ch13-06-33-surfaceview-host",
+          "title": "向宿主队列生产与创建额外 child 的区别",
+          "decision": "merge",
+          "reason": "SurfaceView原window队列生产与createFromWindow另建child两路线，与3/8反复相同对象；接4NDK类型，宿主替换不能自动新树根的边界进入一张图。",
+          "original_line": 838,
+          "heading": "#### SurfaceView 宿主",
+          "replacement_id": "ed13-06-host-queue-child-and-references"
+        },
+        {
+          "original_id": "ch13-06-34-webview-scope",
+          "title": "WebView 主体与额外 overlay 分别取证",
+          "decision": "remove",
+          "reason": "WebView主体functor/媒体overlay/provider现场证据六卡重述845-847两段，进程独立非Layer独立及overlay可并存原文完整保留；不为每个实战小节再放两段摘要。",
+          "original_line": 849,
+          "heading": "#### WebView"
+        },
+        {
+          "original_id": "ch13-06-35-pip-domains",
+          "title": "PiP 几何、内容与合成成本分别定位",
+          "decision": "remove",
+          "reason": "PiP几何/视频/合成三组卡逐项缩略856-865职责和四项清单，原文含旧buffer新几何伸缩/黑边及tokenLayer分开更详，保留所有场景文字。",
+          "original_line": 867,
+          "heading": "#### 画中画与系统动画"
+        },
+        {
+          "original_id": "ch13-06-36-framework-topology",
+          "title": "跨进程与 Flutter 的目标分类",
+          "decision": "remove",
+          "reason": "Producer→消费位置→宿主orchild→SF四框逐项重述874-876跨进程/Flutter拓扑核对句，nativeBLAST/directflow及新宿主child图已明确实际路线，engine/provider约束全文未改。",
+          "original_line": 878,
+          "heading": "#### 跨进程 View 与 Flutter Platform View"
+        },
+        {
+          "original_id": "ch13-06-37-object-table",
+          "title": "按内容对象关联 Layer、buffer 与时间线",
+          "decision": "remove",
+          "reason": "内容/generation、Layerparent世代、buffer/token六卡压缩889-895七列三内容对象表，表含具体Producer/API/同步更完整；保留同名Layer非同对象、不同ID不直接替代的原文。",
+          "original_line": 897,
+          "heading": "#### 先建内容对象表"
+        },
+        {
+          "original_id": "ch13-06-38-trace-markers",
+          "title": "自定义 API marker 与显示反馈的边界",
+          "decision": "remove",
+          "reason": "marker/状态采纳/显示反馈六卡重复904-916稳定marker段及5行ATrace代码，原文更精确声明API无固定slice名和marker结束非present，不用概念卡重复。",
+          "original_line": 918,
+          "heading": "#### 应用侧 trace 标记"
+        },
+        {
+          "original_id": "ch13-06-39-diagnostic-chain",
+          "title": "SurfaceControl 从生产到安全复用的证据链",
+          "decision": "remove",
+          "reason": "生产→apply→latch→合成→present→release六框逐项重画932-936五段清单，与两原生全时序重合；正文完整保留所有对象字段/DEVICECLIENT/反馈/池证据。",
+          "original_line": 927,
+          "heading": "#### 一次卡顿分析的最小链路"
+        },
+        {
+          "original_id": "ch13-06-40-symptom-proof",
+          "title": "快 apply、丢帧与内存增长的核对路径",
+          "decision": "remove",
+          "reason": "快apply丢帧/LayerPiP/内存callback六卡截短949-956六行诊断表，原表有精确症状、先查项和错误结论，保留表更详，不做一表一图。",
+          "original_line": 958,
+          "heading": "#### 从现象到检查项"
+        },
+        {
+          "original_id": "ch13-06-41-canvas-targets",
+          "title": "三种 Canvas 路径的输出与复用边界",
+          "decision": "merge",
+          "reason": "CPUCanvas/SurfaceGPUCanvas/独立HBR三输出及复用模型接42不同内容保留/清屏和68目标驱动降级，合先选consumer再选生产API的对象选择图。",
+          "original_line": 1004,
+          "heading": "### HBR 解决什么问题",
+          "replacement_id": "ed13-06-canvas-targets-content-and-fallback"
+        },
+        {
+          "original_id": "ch13-06-42-preserve-clear",
+          "title": "内容保留与显示 damage 分别管理",
+          "decision": "merge",
+          "reason": "HBR不自动clear、局部更新依赖本slot历史/damage非清屏，SurfaceHWCanvas全覆盖不同契约，接41输出与68API34以下方案，避免两个相邻三列卡。",
+          "original_line": 1011,
+          "heading": "### HBR 解决什么问题",
+          "replacement_id": "ed13-06-canvas-targets-content-and-fallback"
+        },
+        {
+          "original_id": "ch13-06-43-shared-renderthread",
+          "title": "多个 HBR 与窗口共享应用渲染资源",
+          "decision": "remove",
+          "reason": "共享HWUI基础设施→窗口/HBRA/HBRB四框是45保留双固定slot+共享RTcontext的更粗子集，1025-1028生命周期/争用/冷启动原文完整保留，删根节点重复图。",
+          "original_line": 1020,
+          "heading": "### HBR 的生命周期约束"
+        },
+        {
+          "original_id": "ch13-06-45-request-reset",
+          "title": "RenderRequest 是单次使用的内部复用对象",
+          "decision": "merge",
+          "reason": "实际id45-request-reset，obtain内部复用/reset sRGBidentity→逐轮配→draw后不改，接52bounds/viewport/displaylist/root与下一request同步，避免把改树和改请求混同。",
+          "original_line": 1032,
+          "heading": "### HBR 的生命周期约束",
+          "replacement_id": "ed13-06-rendernode-bounds-and-request-reset"
+        },
+        {
+          "original_id": "ch13-06-44-slot-renderer",
+          "title": "每个活动 HardwareBuffer 固定对应 renderer",
+          "decision": "keep",
+          "reason": "实际id44-slot-renderer，两个实际AHBslot各固定renderer/目标并各管refsfence、共享RT/GPUcontext的对象图；43较粗相同共享树删除，此图防想象一个renderer改绑多buffer。",
+          "original_line": 1039,
+          "heading": "### HBR 的生命周期约束"
+        },
+        {
+          "original_id": "ch13-06-46-hbr-native",
+          "title": "HBR 通过 RenderProxy 与 HWUI pipeline 写独立目标",
+          "decision": "merge",
+          "reason": "draw→JNI参数→RenderProxy/DrawFrameTask同步树→固定AHBpipelineflush导fd→JNIadopt/executor，接47host早唤醒与GPU/callback四轨，真实链和等待边界在一处。",
+          "original_line": 1051,
+          "heading": "### HBR 的生命周期约束",
+          "replacement_id": "ed13-06-hbr-native-host-and-gpu-boundaries"
+        },
+        {
+          "original_id": "ch13-06-47-draw-blocking",
+          "title": "draw 的 host 同步与 GPU fence 是不同边界",
+          "decision": "merge",
+          "reason": "draw非纯投递、canUnblock场景同步后可早返、结果交付仍可fencepending四轨，接46真实native调用；边表示工作发起非强制callback与GPU结束的固定先后。",
+          "original_line": 1058,
+          "heading": "### HBR 的生命周期约束",
+          "replacement_id": "ed13-06-hbr-native-host-and-gpu-boundaries"
+        },
+        {
+          "original_id": "ch13-06-48-hbr-timeline",
+          "title": "HBR 自身不带有效 App VSync token",
+          "decision": "merge",
+          "reason": "HBRJNI INVALIDVSYNC_ID不构成App计划帧、Choreo候选及SC显式token接25三显示请求功能，Java35固定flag以及SurfaceView覆盖限制完整保留。",
+          "original_line": 1065,
+          "heading": "### HBR 的生命周期约束",
+          "replacement_id": "ed13-06-hbr-buffer-and-display-target"
+        },
+        {
+          "original_id": "ch13-06-49-hbr-handoff",
+          "title": "独立目标从生产结果到 Consumer 与回收",
+          "decision": "remove",
+          "reason": "RenderNode→result→setBuffer→read→release→allrefs六框和虚线提前释放逐边重复1074-1091完整保留原生flow，50专讲名称、新多引用图专讲聚合，不保留第三份同一全环。",
+          "original_line": 1095,
+          "heading": "### 从 RenderNode 到屏幕的完整路径"
+        },
+        {
+          "original_id": "ch13-06-50-fence-names",
+          "title": "HBR presentation fence 与显示 present fence",
+          "decision": "keep",
+          "reason": "HBRpresentation=Producer写完、SCrelease=最后使用/可含旧acquire、Displaypresent=显示反馈三种相近名称不同作用域，是常见误判的直接比较，既有全环未给Displaypresent与其他二者的独立列。",
+          "original_line": 1105,
+          "heading": "### 从 RenderNode 到屏幕的完整路径"
+        },
+        {
+          "original_id": "ch13-06-53-java-callback",
+          "title": "成功提交、失败渲染与释放等待的三个分支",
+          "decision": "merge",
+          "reason": "实际id53-java-callback，SUCCESS交consumer、ERROR也处理Producerfence、release全refs成功再IDLE，接53Java native强Fence/NDK fd转交差异，失败隔离不靠close伪造signal。",
+          "original_line": 1114,
+          "heading": "### Java API 提交骨架",
+          "replacement_id": "ed13-06-result-status-and-fence-ownership"
+        },
+        {
+          "original_id": "ch13-06-52-rendernode-recording",
+          "title": "节点 bounds 与 recording viewport 分开设置",
+          "decision": "merge",
+          "reason": "实际id52-rendernode-recording，setPosition节点bounds与beginRecording仅viewport、clear/endRecording显示列表及setContentRoot接44单轮request重置使用边界；只有换根重绑。",
+          "original_line": 1189,
+          "heading": "### Java API 提交骨架",
+          "replacement_id": "ed13-06-rendernode-bounds-and-request-reset"
+        },
+        {
+          "original_id": "ch13-06-54-fence-ref-ownership",
+          "title": "Java wrapper、native Fence 与 fd 生命周期",
+          "decision": "merge",
+          "reason": "实际id54-fence-ref-ownership，JNIadopt wrapper、Java transaction持nativeFence可交接后close、NDK直接接fd所有权，接51成功/失败及未来release分支，分清close与完成。",
+          "original_line": 1196,
+          "heading": "### Java API 提交骨架",
+          "replacement_id": "ed13-06-result-status-and-fence-ownership"
+        },
+        {
+          "original_id": "ch13-06-51-allocation",
+          "title": "支持查询、实际分配与固定目标实例",
+          "decision": "keep",
+          "reason": "实际id51-allocation，format/usage/size→isSupported→实际分配仍可失败→建立slot/gen固定HBR的具体gate/创建链；保留本图而删10逐用途卡，正文三usage精确解释未删。",
+          "original_line": 1203,
+          "heading": "### Java API 提交骨架"
+        },
+        {
+          "original_id": "ch13-06-55-light-coordinates",
+          "title": "光源显示锚点与输出坐标换算",
+          "decision": "keep",
+          "reason": "显示物理光源锚点→减windowLeft/Top换输出坐标→geometry/alpha→request旋转native调整的实际坐标转换链；与Layer几何列表/一般性能清单不同。",
+          "original_line": 1220,
+          "heading": "#### RenderNode 更新与阴影"
+        },
+        {
+          "original_id": "ch13-06-56-transform-values",
+          "title": "HBR 只接受四种直角旋转",
+          "decision": "keep",
+          "reason": "identity180、90/270交换宽高、mirror通用注解但HBR抛异常的具体接受/拒绝分支；光源转换与RenderNode任意变换边界原文完整保留。",
+          "original_line": 1231,
+          "heading": "#### Transform 的四种直角旋转"
+        },
+        {
+          "original_id": "ch13-06-57-slot-cycle",
+          "title": "slot 回池必须等待提交引用与 fence",
+          "decision": "merge",
+          "reason": "slot取得→HBRresult→SC占用或提前释放→回调→全部refs和waitsuccess才可写，与前半27正常方向环重复，接17/28多引用/worker/generation聚合改一次具体对象图。",
+          "original_line": 1250,
+          "heading": "### Buffer 池的复用规则",
+          "replacement_id": "ed13-06-submission-refs-and-safe-pool"
+        },
+        {
+          "original_id": "ch13-06-58-pool-size",
+          "title": "池容量、实际积压与共享资源",
+          "decision": "merge",
+          "reason": "池过小release等待、池更大仅可能inflight/内存增加且实际backlog才加时延，接18服务端保留vsapp无slot停产，形成完整生产反馈回路。",
+          "original_line": 1265,
+          "heading": "### Buffer 池的复用规则",
+          "replacement_id": "ed13-06-server-backpressure-and-app-pool"
+        },
+        {
+          "original_id": "ch13-06-59-ndk-producer",
+          "title": "NDK 自建 Producer 与版本化回收接口",
+          "decision": "remove",
+          "reason": "按API26-28/29-35/36-37六卡逐项缩略1285-1291三行版本回收表及NDK六行生产链；30已保留A→Bprevious映射，新API36多refs图更具体，无AHardwareBufferRenderer原文未改。",
+          "original_line": 1293,
+          "heading": "### 与 NDK 的关系"
+        },
+        {
+          "original_id": "ch13-06-60-kernel-scope",
+          "title": "共享内存、同步 fd 与业务对象分别取证",
+          "decision": "remove",
+          "reason": "AHBdmabuf/sync_file/上层RenderNode六卡重述1302及1304-1311四源码入口和内核不知业务映射段，全文保留共享存储非同步许可/非DEVICE和光学证据，删通用层次摘要。",
+          "original_line": 1313,
+          "heading": "### 内核里的共享对象与同步原语"
+        },
+        {
+          "original_id": "ch13-06-61-benchmark",
+          "title": "HBR 性能测量要固定目标并拆开阶段",
+          "decision": "remove",
+          "reason": "固定条件→冷稳态→recording→RTGPU→present→release六框压缩1331-1339性能候选/控制/测量段，完整六列表及GPU争用/readback限制保留，不为基准控制清单再画流程。",
+          "original_line": 1341,
+          "heading": "### 性能对比与实测"
+        },
+        {
+          "original_id": "ch13-06-62-readback",
+          "title": "GPU 离屏收益取决于最终 consumer",
+          "decision": "remove",
+          "reason": "CPU瓶颈→HBR→CPUreadback三框逐项重述1350唯一两句，目标consumer是否留GPU/复制与同步抵消收益原文未删，新Canvas选择图已有输出模型。",
+          "original_line": 1352,
+          "heading": "#### CPU 软件光栅化吃紧的离屏内容"
+        },
+        {
+          "original_id": "ch13-06-63-buffer-ipc",
+          "title": "跨进程 buffer 协议必须同时传递同步与世代",
+          "decision": "keep",
+          "reason": "共享buffer经Binder到Consumer，Producer完成依赖随协议交接、Consumer结束回release、按gen/全部refs再复用的真实跨进程双向链；不同于20control/SurfacePackage引用桥接。",
+          "original_line": 1369,
+          "heading": "#### 跨进程 buffer 共享"
+        },
+        {
+          "original_id": "ch13-06-64-hdr-contract",
+          "title": "存储精度、色彩编码与亮度提示分别配置",
+          "decision": "merge",
+          "reason": "format/ColorSpace/dataspace/headroom/display能力接14预乘alpha/OPAQUE/背景属性，合生产像素编码→Layer解释→显示链，FP16/P3/HLGPQ不混作HDR开关。",
+          "original_line": 1386,
+          "heading": "#### Wide color 与 HDR",
+          "replacement_id": "ed13-06-pixel-alpha-dataspace-and-hdr"
+        },
+        {
+          "original_id": "ch13-06-65-pacing",
+          "title": "高帧率直接提交还需显示目标与池背压",
+          "decision": "remove",
+          "reason": "timeline/frameratevote/pool背压三组六卡摘录1393-1401五项高帧率工作，25/48新图保留请求分工、18/58回路保留实际积压和停产；共享GPU/模式条件全文未删。",
+          "original_line": 1403,
+          "heading": "#### 高帧率直接 layer 提交"
+        },
+        {
+          "original_id": "ch13-06-66-close-refs",
+          "title": "关闭 wrapper 与释放 native 使用引用是不同事件",
+          "decision": "merge",
+          "reason": "renderer.close不关闭buffer、继续draw要wrapper开放、native提交引用与context独立结束，接21移树/排空和31回调任务寿命合完整owner清理流程。",
+          "original_line": 1455,
+          "heading": "#### 只关闭 renderer",
+          "replacement_id": "ed13-06-detach-drain-and-close-owners"
+        },
+        {
+          "original_id": "ch13-06-67-public-history",
+          "title": "Java HBR 与 NDK release 的版本边界",
+          "decision": "remove",
+          "reason": "API33/34-35/36-37六卡截短1466-1474五版本表，表精确含Javaflag/37无新增/33非HBR类，正文原表更全，删又一次能力历史摘要。",
+          "original_line": 1476,
+          "heading": "### 从 Android 13 到 Android 17 的公开能力"
+        },
+        {
+          "original_id": "ch13-06-68-fallback",
+          "title": "按输出目标选择 API34 以下替代路径",
+          "decision": "merge",
+          "reason": "API34以下先按已有Surface/独立GPUbuffer/可接受CPU选择，接41输出目标和42内容保留，颜色同步所有权契约降级仍成立，不只换类名。",
+          "original_line": 1497,
+          "heading": "### Android 14 以下的降级",
+          "replacement_id": "ed13-06-canvas-targets-content-and-fallback"
+        }
+      ],
+      "sha256_after": "21e9e7c36c22a78620b56fd3b258c8fd838de3392a3953a7da479a20a9523d2b",
+      "new_diagrams": [
+        {
+          "id": "ed13-06-host-queue-child-and-references",
+          "title": "向宿主队列生产与创建 child Layer 分别持有资源",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-host-queue-child-and-references.svg",
+            "src/assets/diagrams/ch13/ed13-06-host-queue-child-and-references.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-host-queue-child-and-references",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/android/surface_control.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-03-create-child",
+              "ch13-06-04-layer-kind",
+              "ch13-06-08-native-refs",
+              "ch13-06-33-surfaceview-host"
+            ],
+            "boundary": "Java Surface 桥接增加 ANativeWindow 引用。向现有 window 的 EGL/Vulkan/codec 队列生产，与 createFromWindow 另建 child 是不同操作；后者新 client/child，create(parentControl) 使用 parent client。公开 NDK 创建 buffer-state 节点，无 Java Builder layer-type 选择；setColor 只设置透明区域后的背景，不新建 Color Layer。临时 window 引用可释放，child 新引用要另配 control release；本地 release 不等移出显示树。宿主 Surface 重建时旧 parent 不能对应新树根，须串行移除/释放旧 child 并清空句柄后重建。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-ipc-control-and-local-java-bridge",
+          "title": "跨进程先传受支持对象，同进程桥接再区分强引用与借用",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-ipc-control-and-local-java-bridge.svg",
+            "src/assets/diagrams/ch13/ed13-06-ipc-control-and-local-java-bridge.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-ipc-control-and-local-java-bridge",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control_jni.h",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/android/surface_control.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControlViewHost.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-05-jni-ownership",
+              "ch13-06-19-ipc-controls"
+            ],
+            "boundary": "SurfaceControl 的 Parcelable / SurfaceControlViewHost.SurfacePackage 负责受支持的跨进程传递，接收方把 SurfacePackage 附着 SurfaceView，API34 可显式加入 SurfaceSyncGroup；公开 NDK 没有 writeToParcel，裸 control 指针仅当前地址空间有效。API34 control fromJava 取得需 release 的本地强引用；transaction fromJava 只借用 Java 内部指针，Java 对象必须存活且未 close，不可 NDK delete。Binder death、reparent 权责与 callback context 失效由协议约定，同步组参与不自动发生。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-transaction-phases-and-stats-scope",
+          "title": "事务原子应用、commit、complete 与逐提交 release 分别处理",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-transaction-phases-and-stats-scope.svg",
+            "src/assets/diagrams/ch13/ed13-06-transaction-phases-and-stats-scope.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-transaction-phases-and-stats-scope",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/android/surface_control.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-06-atomicity",
+              "ch13-06-12-callbacks",
+              "ch13-06-13-stats-query"
+            ],
+            "boundary": "同 transaction 状态原子应用，同线程 apply 有序，共享 transaction 的 host 修改要串行。apply 异步返回不保证下一 VSync 或 GPU 完成；多 Producer 业务帧需上层协议。OnCommit API31 先于 OnComplete，不能查 present/previous-release；OnComplete API29 可在回调内查询 stats，stats 裸指针只在回调期间有效。control 必须是 stats 更新/移除列表成员，否则固定 r1 可 fatal；getASurfaceControls 数组须专用 release。返回有效 fd 由调用方等待/close，可移交独立 fd 与复制业务数据；deprecated acquireTime 可能 waitForever。API36 per-buffer release 可未显示即发生，回调交回 fence 也不等 signal。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-pixel-alpha-dataspace-and-hdr",
+          "title": "像素编码、Layer 混合与 HDR 显示能力沿链核对",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-pixel-alpha-dataspace-and-hdr.svg",
+            "src/assets/diagrams/ch13/ed13-06-pixel-alpha-dataspace-and-hdr.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-pixel-alpha-dataspace-and-hdr",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/android/surface_control.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-17-alpha-color",
+              "ch13-06-64-hdr-contract"
+            ],
+            "boundary": "格式和 usage 要设备支持并处理实际分配失败；RGBA_FP16 仅是存储精度，P3 是色域，HLG/PQ 是传递函数，彼此不等同 HDR。每轮 request obtain 会 reset sRGB，须显式 ColorSpace，Producer 正确编码并做预乘；Layer alpha 不替像素预乘，OPAQUE 要全像素不透明。setColor 是透明区域后背景，与 setBufferDataSpace 的 buffer 编码不同。headroom 是有限 0 或 >=1，0 交系统；(0,1) 被 Java 拒绝，与 extendedRangeBrightness 后调用者覆盖。显示/SF/HWC 支持目标编码并准备 tone-map/SDR，hint 不保证亮度。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-submission-refs-and-safe-pool",
+          "title": "同一块内存的所有提交引用和 fence 完成后才回池",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-submission-refs-and-safe-pool.svg",
+            "src/assets/diagrams/ch13/ed13-06-submission-refs-and-safe-pool.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-submission-refs-and-safe-pool",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/android/surface_control.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/SyncFence.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-30-all-refs",
+              "ch13-06-27-buffer-release",
+              "ch13-06-57-slot-cycle"
+            ],
+            "boundary": "一块 AHardwareBuffer 可被不同 Layer 或多次 setBuffer 作为多份提交引用持有。每次 release 只归还对应提交引用，可能未显示，不是显示计数。回调任意线程只移交提交记录/generation/fd，context 覆盖回调及排队任务；非负 fd 须等待成功后 close，-1 按契约无需等待。必须全部引用释放且所有依赖成功，generation 匹配后线程安全置 IDLE；失败隔离，旧回调不能释放新一轮 slot。producer fence pending 可先提交，但 Producer 完成、apply 返回或一次 callback 都不足以重写。per-buffer 回收不能同时用 OnComplete 再回收一次。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-server-backpressure-and-app-pool",
+          "title": "服务端保留策略与应用无空闲 slot 停产分别控制",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-server-backpressure-and-app-pool.svg",
+            "src/assets/diagrams/ch13/ed13-06-server-backpressure-and-app-pool.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-server-backpressure-and-app-pool",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-14-backpressure",
+              "ch13-06-58-pool-size"
+            ],
+            "boundary": "NDK child 默认关闭服务端 backpressure，尚未展示的旧提交可被新提交覆盖；开启通常先展示再release，但整个control移除是例外，本地未apply覆盖也不能要求显示。应用 buffer 池背压是无安全可写slot则停产，独立于服务端策略。池容量太小可能等待release，扩池增加内存/潜在inflight，只有实际超前积压才增加排队延迟，不能用扩池隐藏下游瓶颈。每次仍按所有提交引用/fence回收，Producer频率、输入到present和功耗一起测，不由HBR或setFrameRate自动pacing。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-detach-drain-and-close-owners",
+          "title": "停止提交、移出树、排空异步工作后分别关闭资源",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-detach-drain-and-close-owners.svg",
+            "src/assets/diagrams/ch13/ed13-06-detach-drain-and-close-owners.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-detach-drain-and-close-owners",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/SyncFence.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-20-destroy",
+              "ch13-06-31-callback-lifetime",
+              "ch13-06-66-close-refs"
+            ],
+            "boundary": "图示一种安全关闭流程，不将各对象close当同一事件。先停新生产/transaction并保持context/executor，reparent-null apply移出显示树；要证显示状态另等OnComplete，HIDE可保留节点/当前buffer，control release仅减本地引用不移树。再排空Producer工作、所有提交引用/release fence、回调和排队回收任务，最后分别释放renderer、HardwareBuffer wrapper、localcontrol及context。HBR close不关闭buffer，计划继续draw时buffer wrapper必须保持开放（后续读取宽高）；wrapper close不等nativeGraphicBuffer引用消失或硬件已完成。context要活到回调和任务都不再访问。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-hbr-buffer-and-display-target",
+          "title": "HBR 产出 buffer，显示事务另接 Choreographer 目标",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-hbr-buffer-and-display-target.svg",
+            "src/assets/diagrams/ch13/ed13-06-hbr-buffer-and-display-target.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-hbr-buffer-and-display-target",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/choreographer.h",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/android_graphics_HardwareBufferRenderer.cpp",
+            "https://perfetto.dev/docs/data-sources/frametimeline"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-24-timeline-rate",
+              "ch13-06-48-hbr-timeline"
+            ],
+            "boundary": "HBR JNI UiFrameInfo 使用 INVALID_VSYNC_ID，一次离屏draw自身不关联有效AppVSync。Choreographer选候选并按预计就绪/业务展示预算取token；无可行候选应跳过，实际选择见保留分支图。NDK33/Java35 transaction关联vsyncId，过期无效忽略；Java35timeline/desiredtime固定r1有sdkDesiredPresentTime flag关闭即返回。setFrameTimeline已含expected/deadline，不机械重复desiredtime；desiredtime是独立不早于绝对单调时间请求，两者共用时目标一致。frameRate是内容帧率投票，不触发draw，不保证实际刷新率；token不补齐独立HBR/SurfaceView完整FrameTimeline覆盖。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-canvas-targets-content-and-fallback",
+          "title": "先选输出目标，再选 Surface Canvas 或独立共享 buffer",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-canvas-targets-content-and-fallback.svg",
+            "src/assets/diagrams/ch13/ed13-06-canvas-targets-content-and-fallback.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-canvas-targets-content-and-fallback",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/AHardwareBuffer.cpp",
+            "https://developer.android.com/reference/androidx/graphics/CanvasBufferedRenderer"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-41-canvas-targets",
+              "ch13-06-42-preserve-clear",
+              "ch13-06-68-fallback"
+            ],
+            "boundary": "lockCanvas为CPUsoftware光栅到Surface的BufferQueue，dirtyregion按Surface契约；lockHardwareCanvas为HWUI/GPU写同类Surface目标，每帧完整覆盖。HBR34+把RenderNode写调用方HardwareBuffer，Consumer/同步/池自行管理，draw前不自动清空；完整帧须完整覆盖或clear，局部更新维护该slot的历史，不能借另一slot内容，surface damage不是清屏。已有Surface只需GPUCanvas可用lockHardwareCanvas/HardwareRenderer；API34以下独立GPUbuffer可EGL/Vulkan或兼容封装，CPU可接受时software。降级必须保留颜色、consumer、fence与资源所有权，NDK没有公开AHardwareBufferRenderer。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-rendernode-bounds-and-request-reset",
+          "title": "RenderNode 的 bounds、显示列表与每轮 request 各管一层",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-rendernode-bounds-and-request-reset.svg",
+            "src/assets/diagrams/ch13/ed13-06-rendernode-bounds-and-request-reset.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-rendernode-bounds-and-request-reset",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-45-request-reset",
+              "ch13-06-52-rendernode-recording"
+            ],
+            "boundary": "root.setPosition设置实际bounds/宽高，默认clipToBounds=true；beginRecording(width,height)只是录制viewport，不替节点改bounds。clear/draw/endRecording更新displaylist，setContentRoot让内部根记录drawRenderNode；之后同树displaylist或属性变更下一request同步，只有换根需再setContentRoot。obtainRenderRequest返回内部复用对象并重置sRGB/identity，逐轮显式设置所需colorSpace/transform；非线程安全，draw后不能继续修改或长期保留。HBR不自动清屏，局部更新要维护本slot历史。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-hbr-native-host-and-gpu-boundaries",
+          "title": "draw 的 host 同步、RT 提交与 GPU 完成由不同边界表达",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-hbr-native-host-and-gpu-boundaries.svg",
+            "src/assets/diagrams/ch13/ed13-06-hbr-native-host-and-gpu-boundaries.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-hbr-native-host-and-gpu-boundaries",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/android_graphics_HardwareBufferRenderer.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-46-hbr-native",
+              "ch13-06-47-draw-blocking"
+            ],
+            "boundary": "draw通过nRender配置HardwareBufferRenderParams尺寸/transform/color/callback，再RenderProxy.syncAndDrawFrame；DrawFrameTask同步RenderNode并写构造固定AHB，持AHB目标时pipeline.flush导Producerfd，JNI adopt为SyncFence后executor交RenderResult。draw不是纯投递立即返，host可在场景同步后较早唤醒，仍非GPU完成；callback也可早于fence signal。图中边为调用和工作发起关系，不规定callback必先于或后于GPU结束；轨道示允许提前unblock的一种正常依赖，条长非测量。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-06-result-status-and-fence-ownership",
+          "title": "成功交给 Consumer，渲染失败也须处理 Producer fence",
+          "article": "src/part2-performance/ch13-rendering-pipelines/06-surfacecontrol-hardwarebuffer-renderer.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-06-result-status-and-fence-ownership.svg",
+            "src/assets/diagrams/ch13/ed13-06-result-status-and-fence-ownership.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-06-result-status-and-fence-ownership",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/SyncFence.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-06-53-java-callback",
+              "ch13-06-54-fence-ref-ownership"
+            ],
+            "boundary": "先检查RenderResult.status；SUCCESS才Java setBuffer(buffer,SyncFence)并apply，native transaction增持sp<Fence>，交接后可close原Javawrapper，close非等待。ERROR未交Consumer也要回收线程处理返回Producerfence，await失败隔离，成功才按slot状态归还。未来release callback交回Consumer最后使用依赖，移交专用executor，等待成功且全部refs完成再IDLE。新返回无效fence按API约定已完成，不可把主动close制造的无效状态当证据。NDK setBuffer接管传入fd，传后不得再close/复用，诊断须事前dup；create返回transaction仍由调用方apply后delete，fromJava借用者不delete。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T14:52:25.149174+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 68,
+        "contexts_actually_viewed": 13,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "native_source_exact_except_declared_semicolon_entities": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a125/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a125/visual-review.json",
+      "inline_mermaid_syntax_repairs": [
+        {
+          "kind": "mermaid_semicolon_entity_escape",
+          "original_ordinal": 2,
+          "before": "```mermaid\nsequenceDiagram\n    participant P as \"Producer / pool\"\n    participant GPU as \"Producer GPU\"\n    participant NDK as \"ASurfaceTransaction\"\n    participant SF as \"SurfaceFlinger\"\n    participant RE as \"RenderEngine\"\n    participant HWC as \"Composer / Display\"\n    P->>GPU: \"submit writes for B; export completion fence\"\n    P->>NDK: \"setBuffer B + acquire fence + geometry/timeline\"\n    P->>NDK: \"apply\"\n    NDK->>SF: \"enqueue Binder transaction\"\n    NDK-->>P: \"return; no display completion wait\"\n    SF->>SF: \"timeline / readiness / state application / latch\"\n    Note over GPU,SF: CPU submission and constrained latch may precede signal; actual reads obey acquire dependency\n    GPU-->>SF: \"write completion dependency becomes ready\"\n    alt fast present succeeds\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / per-layer release feedback\"\n    else validation needed\n        SF->>HWC: \"validate or validated result\"\n        SF->>RE: \"optional CLIENT composition; obey acquire fence\"\n        SF->>HWC: \"present client target / DEVICE layers\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>P: \"release previous A; may include CLIENT GPU dependency\"\n    Note over P,SF: Current B needs a later replacement/removal or early-release path; each callback still carries its fence\n```\n",
+          "after": "```mermaid\nsequenceDiagram\n    participant P as \"Producer / pool\"\n    participant GPU as \"Producer GPU\"\n    participant NDK as \"ASurfaceTransaction\"\n    participant SF as \"SurfaceFlinger\"\n    participant RE as \"RenderEngine\"\n    participant HWC as \"Composer / Display\"\n    P->>GPU: \"submit writes for B#59; export completion fence\"\n    P->>NDK: \"setBuffer B + acquire fence + geometry/timeline\"\n    P->>NDK: \"apply\"\n    NDK->>SF: \"enqueue Binder transaction\"\n    NDK-->>P: \"return#59; no display completion wait\"\n    SF->>SF: \"timeline / readiness / state application / latch\"\n    Note over GPU,SF: CPU submission and constrained latch may precede signal#59; actual reads obey acquire dependency\n    GPU-->>SF: \"write completion dependency becomes ready\"\n    alt fast present succeeds\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / per-layer release feedback\"\n    else validation needed\n        SF->>HWC: \"validate or validated result\"\n        SF->>RE: \"optional CLIENT composition#59; obey acquire fence\"\n        SF->>HWC: \"present client target / DEVICE layers\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>P: \"release previous A#59; may include CLIENT GPU dependency\"\n    Note over P,SF: Current B needs a later replacement/removal or early-release path#59; each callback still carries its fence\n```\n",
+          "semicolon_count": 6,
+          "before_sha256": "3e591b37f7e88b7e1815ab05781c1d8cca93327b1bba638ec5cede3b1b042580",
+          "after_sha256": "6059df5536746b4869fbcb73bad067c909d42662d75678be127feb8ec12643dc",
+          "reason": "Actual bundled Mermaid parser rejects original sequence messages containing literal ASCII semicolons. Entity escaping preserves visible words, punctuation, nodes and arrows.",
+          "parse_and_render_test": {
+            "original_failed": {
+              "ok": false,
+              "message": "Error: Parse error on line 8:\n...rt completion fence\"    P->>NDK: \"setBu\n-----------------------^\nExpecting 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'DOTTED_ARROW', 'SOLID_CROSS', 'DOTTED_CROSS', 'SOLID_POINT', 'DOTTED_POINT', got 'NEWLINE'"
+            },
+            "escaped_parse_render_passed": true
+          },
+          "preview": "/tmp/gracker-diagrams-editorial-review-20261028/a125/native-2-repaired-preview.png"
+        }
+      ],
+      "retired_diagrams": [
+        "ch13-06-02-object-roles",
+        "ch13-06-03-create-child",
+        "ch13-06-04-layer-kind",
+        "ch13-06-05-jni-ownership",
+        "ch13-06-06-atomicity",
+        "ch13-06-07-blast-direct",
+        "ch13-06-08-native-refs",
+        "ch13-06-09-submit-buffer",
+        "ch13-06-10-usage-contract",
+        "ch13-06-11-async-system",
+        "ch13-06-12-callbacks",
+        "ch13-06-13-stats-query",
+        "ch13-06-14-backpressure",
+        "ch13-06-15-ndk-versions",
+        "ch13-06-16-geometry",
+        "ch13-06-17-alpha-color",
+        "ch13-06-19-ipc-controls",
+        "ch13-06-20-destroy",
+        "ch13-06-22-timeline-fields",
+        "ch13-06-24-timeline-rate",
+        "ch13-06-25-frametimeline-limits",
+        "ch13-06-26-fence-directions",
+        "ch13-06-27-buffer-release",
+        "ch13-06-30-all-refs",
+        "ch13-06-31-callback-lifetime",
+        "ch13-06-32-engine-cost",
+        "ch13-06-33-surfaceview-host",
+        "ch13-06-34-webview-scope",
+        "ch13-06-35-pip-domains",
+        "ch13-06-36-framework-topology",
+        "ch13-06-37-object-table",
+        "ch13-06-38-trace-markers",
+        "ch13-06-39-diagnostic-chain",
+        "ch13-06-40-symptom-proof",
+        "ch13-06-41-canvas-targets",
+        "ch13-06-42-preserve-clear",
+        "ch13-06-43-shared-renderthread",
+        "ch13-06-45-request-reset",
+        "ch13-06-46-hbr-native",
+        "ch13-06-47-draw-blocking",
+        "ch13-06-48-hbr-timeline",
+        "ch13-06-49-hbr-handoff",
+        "ch13-06-52-rendernode-recording",
+        "ch13-06-53-java-callback",
+        "ch13-06-54-fence-ref-ownership",
+        "ch13-06-57-slot-cycle",
+        "ch13-06-58-pool-size",
+        "ch13-06-59-ndk-producer",
+        "ch13-06-60-kernel-scope",
+        "ch13-06-61-benchmark",
+        "ch13-06-62-readback",
+        "ch13-06-64-hdr-contract",
+        "ch13-06-65-pacing",
+        "ch13-06-66-close-refs",
+        "ch13-06-67-public-history",
+        "ch13-06-68-fallback"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-125/retired-assets.json"
     },
     {
       "index": 126,
@@ -24449,8 +26514,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 60,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+  "reviewed_articles": 62,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -24460,8 +26525,15 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T14:21:05.382592+08:00",
+  "updated_at": "2026-10-28T14:52:25.149174+08:00",
   "external_article_changes_observed": [
+    {
+      "article": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "registered_sha256": "694b561ae6f02dbbb0f5dae49edc616c09fd279156d96a693c3ca4806fe73a80",
+      "observed_sha256": "fa462bedb43196f268080e81fa8c7303861869d78625023c4aa5dec5665e629b",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
       "registered_sha256": "c4e18831e4fa1b9df967db73745d2c583be7abee191a3f3f0d118b2609de91ab",
@@ -24481,6 +26553,13 @@
       "registered_sha256": "13ff8a098852782a36cfe9870aa1d5d517bef382bec46a28c6963ba8df263f04",
       "observed_sha256": "384d5ce388d0973f5e6a72eb60be01b071a24a8aad4ab590218936905a1665b1",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+      "registered_sha256": "f3c4629af8b425eae0f50101fcf9ab6046ffd2722d6b3589829cc45ff1fd6900",
+      "observed_sha256": "ec28b41fcd075c4c22b65497a6efddad83d76221618732b2cafbe276a54a5ea5",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -24526,9 +26605,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 1966,
-  "reviewed_placements_after": 984,
-  "net_removed_placements": 982,
+  "reviewed_placements_before": 2102,
+  "reviewed_placements_after": 1029,
+  "net_removed_placements": 1073,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
