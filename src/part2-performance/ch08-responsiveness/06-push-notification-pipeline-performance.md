@@ -116,11 +116,6 @@ flowchart LR
 
 [FCM Android 接收文档](https://firebase.google.com/docs/cloud-messaging/android/receive-messages) 的下表适用于旧 `AndroidConfig`：
 
-<!-- gracker-diagram: ch08-06-03-legacy-routing -->
-![旧消息类型与 App 状态决定回调入口](../../assets/diagrams/ch08/ch08-06-03-legacy-routing.png)
-
-图：旧 AndroidConfig 表区分前台 callback、后台自动通知和点击 Intent 数据；路由描述不等于必达承诺。
-
 | payload（消息负载）与 App 状态 | 到达时的公开行为 | 应用能控制什么 |
 |---|---|---|
 | notification message，前台 | 调用 `onMessageReceived()` | 解析消息并决定是否发布通知 |
@@ -128,6 +123,11 @@ flowchart LR
 | data message，前台或后台 | 成功交付到此路径后调用 `onMessageReceived()` | 构造通知、更新数据或安排后续工作 |
 | notification + data，后台 | FCM SDK 处理 notification，data 放入启动 Activity 的 Intent extras（附加参数） | 用户点击后读取 data |
 | notification + data，前台 | 两部分都交给 `onMessageReceived()` | 由应用决定 UI 和数据处理 |
+
+<!-- gracker-diagram: ch08-06-03-legacy-routing -->
+![旧消息类型与 App 状态决定回调入口](../../assets/diagrams/ch08/ch08-06-03-legacy-routing.png)
+
+图：旧 AndroidConfig 表区分前台 callback、后台自动通知和点击 Intent 数据；路由描述不等于必达承诺。
 
 “后台 notification message 更快”是排查推送延迟时的常见直觉，我们把它放回链路里检验：这种消息确实跳过了应用的业务 callback，但展示仍要经过 FCM 设备端组件、NMS 和 SystemUI，代理展示、权限和设备状态都会改变实际路径。旧 data message 把处理和展示的控制权交给应用，代价是进程启动、`Application.onCreate()` 与通知构造的耗时可能计入等待；固定开源 SDK 的自动展示路径也可能下载并等待远端图片。所以单看“有没有执行业务 callback”，判断不了哪条更快。[源码](https://github.com/firebase/firebase-android-sdk/blob/dc0ce88130e7f9621506471af919054cb2453aae/firebase-messaging/src/main/java/com/google/firebase/messaging/DisplayNotification.java)
 

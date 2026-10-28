@@ -436,11 +436,6 @@ Android 17 为 `ApplicationExitInfo` 增加了 `getAnrInfo()`。当退出原因�
 
 同一 producer 计时确实进入对应 ANR 且结构化信息被保留时，warning id 可与 `ApplicationExitInfo.AnrInfo` 关联。下面代码只枚举当前可见的最近 32 条退出记录并打印候选 `(type,id)`，没有读取持久化 warning，也没有完成 boot/session、进程身份及时间范围的实际匹配：
 
-<!-- gracker-diagram: ch09-07-19-history-candidates -->
-![历史退出记录只是关联候选](../../assets/diagrams/ch09/ch09-07-19-history-candidates.png)
-
-图：正文示例只打印候选key，内存recorder未实现跨启动存储；查询无命中不能直接判恢复。
-
 ```kotlin
 if (Build.VERSION.SDK_INT >= 37) {
     val activityManager =
@@ -464,6 +459,11 @@ if (Build.VERSION.SDK_INT >= 37) {
     }
 }
 ```
+
+<!-- gracker-diagram: ch09-07-19-history-candidates -->
+![历史退出记录只是关联候选](../../assets/diagrams/ch09/ch09-07-19-history-candidates.png)
+
+图：正文示例只打印候选key，内存recorder未实现跨启动存储；查询无命中不能直接判恢复。
 
 同一次等待在最终 detector 检查前恢复，可以没有对应 ANR；但“没有匹配退出记录”本身只应标为 unmatched（未匹配）。历史条数与保留窗口、进程继续存活、重启、结构化信息缺失、跨 UID 改归责和本地 warning 丢样，都可能造成关联缺口。反过来，有 ANR exit 而没有已记录 warning，也可能是 producer 未覆盖、开关关闭、尚未注册、投递或 executor 未执行；不能单凭缺失记录推断恢复或系统没有预警。
 

@@ -72,6 +72,11 @@ Private Space、工作资料、厂商应用锁和应用自身认证属于不同�
 
 ## 先分清四类“锁”
 
+<!-- gracker-diagram: a204-01-four-lock-models -->
+![四类“锁”保护的对象与生命周期](../../assets/diagrams/ch19/a204-01-four-lock-models.png)
+
+图：名称相近的机制保护不同对象；Private Space、厂商认证取消与应用会话过期，应分成不同状态和恢复路径。
+
 用户说“这个 App 被锁了”，背后的系统机制可能完全不同。下文的 profile 指 Android 多用户框架中的“资料用户”，每个资料用户都有独立的应用数据和运行状态；Launcher 指桌面或启动器。排查前应先确认实际由哪一层负责阻止访问：
 
 | 机制 | 保护对象 | 锁定后的系统行为 | 普通 App 能否识别 |
@@ -87,12 +92,12 @@ Android Automotive 的 App Lock 容易造成名称误读。它从 Android 14 起
 
 业务代码不能把 `Private Space locked`（私密空间已锁定）、`OEM authentication canceled`（厂商认证已取消）和 `App session expired`（应用内会话已过期）归为同一种状态。三者的生命周期、权限与恢复路径都不同。
 
-<!-- gracker-diagram: a204-01-four-lock-models -->
-![四类“锁”保护的对象与生命周期](../../assets/diagrams/ch19/a204-01-four-lock-models.png)
-
-图：名称相近的机制保护不同对象；Private Space、厂商认证取消与应用会话过期，应分成不同状态和恢复路径。
-
 ## Private Space 的系统模型
+
+<!-- gracker-diagram: a204-02-user-data-isolation -->
+![同包代码与两份用户数据](../../assets/diagrams/ch19/a204-02-user-data-isolation.png)
+
+图：在两个用户安装同一包会形成独立数据和运行环境；主空间的登录、数据库、缓存和下载内容不会自动复制。
 
 Private Space 从 Android 15 / API 35 引入，建立在 Android 多用户框架上，资料用户类型是 `android.os.usertype.profile.PRIVATE`。同一个包分别安装到主用户和私密资料用户后，会形成两份相互隔离的 App 实例：
 
@@ -122,11 +127,6 @@ Private Space 的主要状态如下：
 
 “模型允许共存”不代表所有受管设备都会开放 Private Space。Android Enterprise 文档说明，个人所有且带工作资料的设备可以使用；公司所有的混合用途设备上，管理员可以阻止创建或移除已有空间。全托管设备、主空间存在受监督账号，或厂商与管理员关闭该功能时，也可能没有 Private Space。业务 App 应把“设备没有该入口”视为正常配置差异，不能当成系统故障。
 
-<!-- gracker-diagram: a204-02-user-data-isolation -->
-![同包代码与两份用户数据](../../assets/diagrams/ch19/a204-02-user-data-isolation.png)
-
-图：在两个用户安装同一包会形成独立数据和运行环境；主空间的登录、数据库、缓存和下载内容不会自动复制。
-
 ## 普通 App 所处的边界
 
 普通业务 App 只应处理“自己当前运行在哪个 Android 用户中”。它没有公开、跨设备可靠的途径列出主用户的 Private Space，也不应把品牌、`userId` 范围或进程 UID 当作识别依据。
@@ -144,12 +144,17 @@ Private Space 的主要状态如下：
 
 ## 桌面（Launcher）与系统组件如何接入
 
+<!-- gracker-diagram: a204-04-hidden-profile-access -->
+![访问隐藏资料的两条权限路径](../../assets/diagrams/ch19/a204-04-hidden-profile-access.png)
+
+图：默认 Launcher 需声明 normal 权限并持有 HOME 角色；具备 FULL 权限的系统组件有另一条路径，单独声明 normal 权限不足以访问。
+
 默认 Launcher 就不同，它能拿到隐藏资料用户的句柄。Android 17 源码为这类访问设置了两条权限路径：
 
 1. 在清单中声明 normal 保护级别的 `android.permission.ACCESS_HIDDEN_PROFILES`，同时持有默认桌面角色 `RoleManager.ROLE_HOME`。normal 表示安装时授予、不弹运行时授权框；它本身仍不足以访问 Private Space。
 2. 系统应用持有 signature/privileged 保护级别的 `ACCESS_HIDDEN_PROFILES_FULL`，无需 HOME 角色。这类权限只会授予平台同签名应用，或系统镜像中经过特权权限配置的应用。
 
-只声明 normal 权限并不能让普通 App 列出 Private Space。`LauncherApps#getProfiles()` 在 Android 17 源码里明确要求 HOME 角色；当调用进程本身位于 managed profile（工作资料）或 private profile 时，该方法也只返回当前资料用户。
+只声明 normal 权限并不能让普通 App 列出 Private Space。访问隐藏资料时，`LauncherApps#getProfiles()` 的普通权限路径要求 HOME 角色；源码还明确保留 `ACCESS_HIDDEN_PROFILES_FULL` 系统特权路径。当调用进程本身位于 managed profile（工作资料）或 private profile 时，该方法只返回当前资料用户。
 
 Launcher 可以用下列 API 读取资料用户类型、运行状态和入口配置：
 
@@ -201,12 +206,12 @@ fun readPrivateProfileStates(
 
 Launcher 还应监听 `Intent.ACTION_PROFILE_AVAILABLE` 与 `Intent.ACTION_PROFILE_UNAVAILABLE`，并从 `Intent.EXTRA_USER` 读取发生变化的资料用户。这两个广播是系统发出的状态变化通知，表示 quiet mode 已改变。收到广播后仍应重新查询当前值，不要继续使用本地保存的旧结果。`ACTION_MANAGED_PROFILE_AVAILABLE` 一类广播只针对 managed profile，不适合作为 Private Space 的唯一监听入口。
 
-<!-- gracker-diagram: a204-04-hidden-profile-access -->
-![访问隐藏资料的两条权限路径](../../assets/diagrams/ch19/a204-04-hidden-profile-access.png)
-
-图：默认 Launcher 需声明 normal 权限并持有 HOME 角色；具备 FULL 权限的系统组件有另一条路径，单独声明 normal 权限不足以访问。
-
 ## 启动、最近任务与通知
+
+<!-- gracker-diagram: a204-05-sensitive-entry-gate -->
+![敏感页面的统一入口校验](../../assets/diagrams/ch19/a204-05-sensitive-entry-gate.png)
+
+图：所有直接入口都经过相同业务校验；BiometricPrompt 完成本次认证，App 还需定义过期、进程死亡与取消后的安全路径。
 
 Private Space 锁定后，系统隐藏其中应用的 Launcher 图标、最近任务和通知。这里有三项容易写错：
 
@@ -236,12 +241,12 @@ val promptInfo = BiometricPrompt.PromptInfo.Builder()
 
 `FLAG_SECURE` 也不是应用锁。它可限制窗口截图和在非安全显示器上的呈现，适合保护已打开的敏感内容；它不会认证用户，也不会阻止其他入口启动 Activity。
 
-<!-- gracker-diagram: a204-05-sensitive-entry-gate -->
-![敏感页面的统一入口校验](../../assets/diagrams/ch19/a204-05-sensitive-entry-gate.png)
-
-图：所有直接入口都经过相同业务校验；BiometricPrompt 完成本次认证，App 还需定义过期、进程死亡与取消后的安全路径。
-
 ## 系统分享面板、Photo Picker 与 URI 授权
+
+<!-- gracker-diagram: a204-06-uri-two-conditions -->
+![URI 授权与来源可用性是两个条件](../../assets/diagrams/ch19/a204-06-uri-two-conditions.png)
+
+图：拥有 URI grant 还需要来源用户和 Provider 可用；读取异常不能单独证明授权已撤销，重新解锁后也需重新验证来源。
 
 Private Space 解锁时，系统可以通过 Sharesheet（系统分享面板）和 Photo Picker（照片选择器）提供受控的跨空间交互。锁定后，私密资料用户停止，其中的应用和内容会从这些系统入口中消失。
 
@@ -269,12 +274,12 @@ Android 16 QPR2 增加了从主空间向 Private Space 移动或复制文件的�
 
 媒体解码、转码与缓存的性能处理见 24.4；这里仅讨论 Android 用户与资料用户、`ContentProvider` 可用性和 URI 授权之间的关系。
 
-<!-- gracker-diagram: a204-06-uri-two-conditions -->
-![URI 授权与来源可用性是两个条件](../../assets/diagrams/ch19/a204-06-uri-two-conditions.png)
-
-图：拥有 URI grant 还需要来源用户和 Provider 可用；读取异常不能单独证明授权已撤销，重新解锁后也需重新验证来源。
-
 ## 设备厂商应用锁的兼容策略
+
+<!-- gracker-diagram: a204-08-observable-results -->
+![围绕 App 可见结果处理 OEM 应用锁](../../assets/diagrams/ch19/a204-08-observable-results.png)
+
+图：普通 App 没有统一厂商应用锁状态码，应根据自身生命周期、页面到达和读取结果恢复，并固定固件与入口复现。
 
 手持设备的厂商应用锁可能在 Activity 启动、任务切换、通知展示或厂商安全中心等位置要求认证，也可能只覆盖其中几项。它未必创建独立资料用户；锁定时是否终止进程、暂停后台任务或隐藏通知，都由厂商提供的系统软件版本（设备固件）决定。
 
@@ -294,12 +299,12 @@ Android 17 没有供普通 App 查询“厂商应用锁是否锁了我”的统�
 
 系统认证页属于 App 进程外的 UI。测试脚本如果只等待某个 Activity 出现，很容易把“用户还没完成认证”误判成启动超时。自动化用例应把“出现厂商认证页”“用户取消”“认证成功后继续启动”分成不同结果。
 
-<!-- gracker-diagram: a204-08-observable-results -->
-![围绕 App 可见结果处理 OEM 应用锁](../../assets/diagrams/ch19/a204-08-observable-results.png)
-
-图：普通 App 没有统一厂商应用锁状态码，应根据自身生命周期、页面到达和读取结果恢复，并固定固件与入口复现。
-
 ## 观测与隐私
+
+<!-- gracker-diagram: a204-09-privacy-test-matrix -->
+![兼容性测试的输入和可记录结果](../../assets/diagrams/ch19/a204-09-privacy-test-matrix.png)
+
+图：测试矩阵覆盖资料用户生命周期与多入口；业务上报只描述自己看到的结果，不能声称识别了私密空间或 OEM 锁定状态。
 
 Private Space 的存在本身带有隐私含义。普通 App 的线上日志不应尝试推断或上传 `user_serial_number`、`userId`、私密空间应用列表。即使先对 `userId` 做哈希，结果仍可能成为跨会话不变的标识，不能自动消除隐私风险。
 
@@ -323,11 +328,6 @@ Private Space 的存在本身带有隐私含义。普通 App 的线上日志不�
 - 厂商应用锁开启与关闭，并分别执行认证成功、取消和超时。
 
 测试报告要写明设备、Build fingerprint（构建指纹，标识具体固件版本的字符串）、API 级别、QPR 或厂商版本、Launcher 版本和复现入口。只写“Android 17 应用锁异常”无法判断问题来自 AOSP Private Space、AAOS App Lock、厂商策略，还是 App 自有鉴权。
-
-<!-- gracker-diagram: a204-09-privacy-test-matrix -->
-![兼容性测试的输入和可记录结果](../../assets/diagrams/ch19/a204-09-privacy-test-matrix.png)
-
-图：测试矩阵覆盖资料用户生命周期与多入口；业务上报只描述自己看到的结果，不能声称识别了私密空间或 OEM 锁定状态。
 
 ## Android 17 结论
 

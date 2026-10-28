@@ -946,9 +946,11 @@ RecyclerView、Fragment、WebView provider 和地图 SDK 都可以独立更新�
 
 腾讯音乐技术团队在 WeSing 歌房进房场景做过两轮优化。公开测试条件是 OnePlus 10 Pro、Android 12、进程冷启动，点击进房后等待 8 秒让 UI 稳定。原文报告，在 5.65 与 5.70 两轮优化后，PerfDog（移动端性能测试工具）统计的卡顿率改善接近 50%。
 
-其中一条主线程消息集中创建微服务（可独立初始化的应用服务模块），并派发 Activity、Fragment 和音视频组件的生命周期事件。trace 截图给出的服务实例创建时间为 312 ms；同一复盘还记录了 40 ms 的生命周期分发、115 ms 的音视频 SDK 初始化、103 ms 的 bitmap 模糊和 18 ms 的日志参数拼接。
+其中一条主线程消息集中创建微服务（可独立初始化的应用服务模块），并派发 Activity、Fragment 和音视频组件的生命周期事件。原文文字报告服务实例创建时间为 312 ms；同一复盘还记录了 40 ms 的生命周期分发、115 ms 的音视频 SDK 初始化、103 ms 的 bitmap 模糊和 18 ms 的日志参数拼接。
 
-![WeSing 进房服务创建 trace](https://image.cubox.pro/cardImg/2023121920204054940/61512.jpg?imageMogr2/quality/90/ignore-error/1)
+![WeSing 服务实例集中创建代码摘录](https://image.cubox.pro/cardImg/2023121920204054940/61512.jpg?imageMogr2/quality/90/ignore-error/1)
+
+图：来源截图展示服务实例创建映射代码；312 ms 来自原文文字报告，图内没有耗时时间轴。
 
 这些数字只适用于该团队的设备、版本，以及 PerfDog 的指标定义和计算方式，直接换算成 Android vitals（Play Console 的应用性能指标） 或其他应用的收益并不可靠。
 
@@ -1001,7 +1003,9 @@ RecyclerView、Fragment、WebView provider 和地图 SDK 都可以独立更新�
 
 同一篇 WeSing 复盘记录了“开始流畅，反复进退歌房后越来越卡”的问题。Profiler（性能分析工具） 显示房间退出后仍有对象存活，其中一个根因是弹窗关闭后动画没有停止，引用链继续持有页面对象。原文还记录了内存紧张时进房更容易触发频繁 GC。
 
-![反复进退房后的内存增长](https://image.cubox.pro/cardImg/2023121920204870875/18152.jpg?imageMogr2/quality/90/ignore-error/1)
+![WeSing 原文中的 TypedArray 回收代码示例](https://image.cubox.pro/cardImg/2023121920204870875/18152.jpg?imageMogr2/quality/90/ignore-error/1)
+
+图：原文另列的 TypedArray 回收问题，截图展示 finally 中补充 recycle() 的处理；图内未展示内存增长曲线或动画泄漏引用链。
 
 公开材料没有给出该泄漏修复前后的 GC pause（垃圾回收暂停） 分位值或 JankStats 对照。因此这里只保留“修复引用链与生命周期”这一结论，该动画泄漏修复前后的堆大小、GC 次数和卡顿率缺少对应公开数据，不采用。
 
@@ -1073,7 +1077,9 @@ WeSing 5.68 的版本对比发现：
 - APK/版本二分（在版本区间中反复折半定位变化）把问题定位到 TRTC SDK 升级；
 - Perfetto SQL 统计显示，升级后名为 DefaultDispatch 的线程 CPU 时间超过 UI Thread 和 RenderThread。
 
-![SDK 升级前后线程 CPU 对比](https://image.cubox.pro/cardImg/2023121920205064063/74508.jpg?imageMogr2/quality/90/ignore-error/1)
+![SDK 升级后的一次线程 CPU 时间汇总](https://image.cubox.pro/cardImg/2023121920205064063/74508.jpg?imageMogr2/quality/90/ignore-error/1)
+
+图：来源截图按线程名汇总一次采集中的 CPU 时间；升级前后差异来自原文复测叙述，截图本身只显示一组查询结果。
 
 #### 从相关性到根因
 

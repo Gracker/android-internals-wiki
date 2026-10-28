@@ -607,11 +607,6 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 
 下面的代码为一次跨回调、可能跨线程的 Standard token 请求增加 Perfetto async slice，并用 `traceCookie` 配对开始和结束事件：
 
-<!-- gracker-diagram: ch08-07-41-trace-balanced-lifecycle -->
-![异步 trace 在完成与同步抛错时配对](../../assets/diagrams/ch08/ch08-07-41-trace-balanced-lifecycle.png)
-
-图：traceCookie 由调用方保证在途唯一；闭合标记不是底层取消或完整性通过的证明。
-
 ```kotlin
 fun requestWithTrace(
     provider: StandardIntegrityManager.StandardIntegrityTokenProvider,
@@ -643,6 +638,11 @@ fun requestWithTrace(
     }
 }
 ```
+
+<!-- gracker-diagram: ch08-07-41-trace-balanced-lifecycle -->
+![异步 trace 在完成与同步抛错时配对](../../assets/diagrams/ch08/ch08-07-41-trace-balanced-lifecycle.png)
+
+图：traceCookie 由调用方保证在途唯一；闭合标记不是底层取消或完整性通过的证明。
 
 示例需要导入 `java.util.concurrent.Executor` 与 `java.util.concurrent.atomic.AtomicBoolean`。`traceCookie` 由调用方分配，同名在途事件必须使用不同 cookie，结束时不能提前复用。[Trace 契约](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java)
 

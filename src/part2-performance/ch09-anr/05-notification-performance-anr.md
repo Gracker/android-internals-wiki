@@ -623,11 +623,6 @@ override fun onNotificationPosted(
 
 下面的 textproto（Perfetto 文本配置格式）请求约 30 秒的采集会话并使用 64 MiB 环形缓冲，包含目标应用 atrace、Binder 与调度事件；覆盖时长仍受事件量、覆盖写和丢包影响：
 
-<!-- gracker-diagram: ch09-05-37-buffer-window -->
-![会话时长与保留历史分开看](../../assets/diagrams/ch09/ch09-05-37-buffer-window.png)
-
-图：图只说明可能的覆盖关系；不声称该配置一定丢失多少秒，也不把duration当成保证留存时长。
-
 ```textproto
 buffers: {
   size_kb: 65536
@@ -651,6 +646,11 @@ data_sources: {
 }
 duration_ms: 30000
 ```
+
+<!-- gracker-diagram: ch09-05-37-buffer-window -->
+![会话时长与保留历史分开看](../../assets/diagrams/ch09/ch09-05-37-buffer-window.png)
+
+图：图只说明可能的覆盖关系；不声称该配置一定丢失多少秒，也不把duration当成保证留存时长。
 
 这里的 30 秒只是采集时长的设定值；实际能保留多久历史，受事件量、覆盖写和丢包影响，故障前因有没有被覆盖，要看目标 detector、触发前数据与 buffer 实际的丢失/覆盖情况。`atrace_apps` 当前只选了目标应用；想观察 SystemUI 的 APP-tag 自定义 section 或其他系统 tag，就按目标构建追加相应进程和类别，并在结果里确认确实采到了，别默认它们已经进来。
 

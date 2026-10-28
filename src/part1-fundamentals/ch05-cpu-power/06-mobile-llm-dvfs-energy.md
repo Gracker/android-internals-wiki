@@ -115,11 +115,6 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程
 
 一次端侧推理请求会穿过多个执行层，每层都有一部分容易被漏看的成本；具体分工由模型格式、运行时和 delegate 决定。我们先用下表建立一个排查用的层次视图：
 
-<!-- gracker-diagram: ch05-06-hardware-responsibilities -->
-![LLM 请求的多部件成本](../../assets/diagrams/ch05/ch05-06-hardware-responsibilities.png)
-
-图：图为常见混合执行关系。模型加载还涉及存储，屏幕、网络与其他进程会进入整机能量；具体算子分工由模型、runtime 和 delegate 决定。
-
 | 层级 | 常见工作 | 容易漏看的成本 |
 |---|---|---|
 | 应用与 tokenizer | 文本预处理、分词（tokenize）、流式回调、用户界面（UI）更新 | Java / Kotlin 对象分配、日志、频繁跨语言调用 |
@@ -129,6 +124,11 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程
 | 动态随机存取内存（DRAM）/ 系统缓存 | 读取权重和 KV cache，交换各后端数据 | 带宽竞争、容量压力、数据布局转换 |
 | 存储 | 首次读取模型与编译产物 | 尚未进入内存缓存的文件页（冷页）、解压、校验、存储空间不足 |
 | 显示、网络及其他进程 | 展示流式文本、下载上下文、系统并发任务 | 全机功耗与模型功耗混在一起 |
+
+<!-- gracker-diagram: ch05-06-hardware-responsibilities -->
+![LLM 请求的多部件成本](../../assets/diagrams/ch05/ch05-06-hardware-responsibilities.png)
+
+图：图为常见混合执行关系。模型加载还涉及存储，屏幕、网络与其他进程会进入整机能量；具体算子分工由模型、runtime 和 delegate 决定。
 
 ## Prefill 与 Decode 的负载特征
 

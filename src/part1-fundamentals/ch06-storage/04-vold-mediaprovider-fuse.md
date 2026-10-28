@@ -190,17 +190,17 @@ App 内部目录 `/data/user/<userId>/<package>/` 位于共享存储的 FUSE 挂
 
 “直通”这个词在排障讨论里经常被笼统使用：direct I/O、passthrough、BPF backing 都可能被叫作“直通”，但它们各自改动的环节差别很大。下表把普通缓存 FUSE 和三种常被称作“直通”的能力放在一起对照，表中的 daemon 指 MediaProvider 里的 `FuseDaemon`：
 
-<!-- gracker-diagram: ch06-04-four-io-modes -->
-![四种 FUSE I/O 机制](../../assets/diagrams/ch06/ch06-04-four-io-modes.png)
-
-图：四行是机制对照，不表示执行顺序。direct_io 不能单凭名字推断走 lower-fs 直通；passthrough 与 DIRECT_IO 的组合还要按操作判断。
-
 | 路径 | FUSE 页缓存 | `read`/`write` 是否到 daemon | lower filesystem 怎样参与 |
 |---|---|---|---|
 | 普通缓存 FUSE | 使用 | 缓存未命中、回写等情况需要 | daemon 再访问 lower fs（底层文件系统） |
 | `FOPEN_DIRECT_IO` | 对该 open 绕过 | 仍然需要 | daemon 处理 FUSE 请求；direct I/O（直接 I/O）不同于 lower-fs 直通 |
 | FUSE passthrough | 数据路径不使用 FUSE 页缓存 | `open` 需要；获准后的数据 I/O 通常不需要 | 内核通过本次 open 绑定的 backing file（底层文件对象）转发 |
 | FUSE BPF + backing | 取决于操作 | BPF/backing 已处理的操作可以不交给 daemon | inode/dentry（索引节点/目录项）关联 backing path，BPF 决定保留、移除或替换 |
+
+<!-- gracker-diagram: ch06-04-four-io-modes -->
+![四种 FUSE I/O 机制](../../assets/diagrams/ch06/ch06-04-four-io-modes.png)
+
+图：四行是机制对照，不表示执行顺序。direct_io 不能单凭名字推断走 lower-fs 直通；passthrough 与 DIRECT_IO 的组合还要按操作判断。
 
 `direct_io` 改变的只是 FUSE 页缓存语义：没有 passthrough 或 BPF backing 时，请求仍要经 `/dev/fuse` 到 MediaProvider。而 passthrough 缩短的是数据搬运那一段，Scoped Storage（分区存储）的规则仍然生效：open 会检查身份、访问权与脱敏/转码条件，并决定本次打开能否直通；需要 daemon 的读取仍可能在 pf_read() 执行转码和按区间脱敏，不能把全部处理都归到 open。
 

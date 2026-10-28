@@ -162,7 +162,17 @@ last_consolidated_at: '2026-08-24'
 
 ## Power Hint、schedutil 与 SoC 控制环
 
+<!-- gracker-diagram: a202-01-control-statistics -->
+![电源控制与能量统计的两条路径](../../assets/diagrams/ch19/a202-01-control-statistics.png)
+
+图：Power HAL 传递场景策略，schedutil 形成 CPU 频率请求，Power Stats 报告结果；统计接口不直接参与 schedutil 的选频。
+
 ### 先分清四层职责
+
+<!-- gracker-diagram: a202-02-four-layers -->
+![从应用预算到硬件动作的职责](../../assets/diagrams/ch19/a202-02-four-layers.png)
+
+图：四层接口与能力分别确认；Mode 或 Boost 枚举存在，仍需查询支持并观察设备响应。
 
 功耗问题适合按四层排查：应用层、Framework / HAL 层、内核层、固件 / 硬件层。表格列出了每一层的典型接口和职责，我们先借助它把层次分清，再进入各层的细节。governor 是 CPU 调频策略，HAL 负责连接系统与厂商实现。把层次混在一起，很容易把提示、调度和硬件动作误写成一条固定调用链。
 
@@ -177,11 +187,6 @@ last_consolidated_at: '2026-08-24'
 
 可选能力要看设备实现：`IPower.aidl` 明确允许平台忽略某个 `Mode` 或 `Boost`，调用前先用 `isModeSupported()`、`isBoostSupported()` 查询支持情况。看到 AIDL（Android Interface Definition Language，Android 接口定义语言） 枚举，我们知道的只是接口契约存在；往下每一层都要重新确认。
 
-<!-- gracker-diagram: a202-02-four-layers -->
-![从应用预算到硬件动作的职责](../../assets/diagrams/ch19/a202-02-four-layers.png)
-
-图：四层接口与能力分别确认；Mode 或 Boost 枚举存在，仍需查询支持并观察设备响应。
-
 ### 冻结的 Power AIDL 契约
 
 系统与厂商实现之间的跨进程接口契约由 AIDL 描述。`android-17.0.0_r1` 冻结的 `android.hardware.power` AIDL 是 v7：`Mode.aidl` 定义 19 个持续状态，包括 `LOW_POWER`、`SUSTAINED_PERFORMANCE`、`LAUNCH`、`GAME` 与多档相机流模式；`Boost.aidl` 定义 6 个短时提示，包括 `INTERACTION`、`DISPLAY_UPDATE_IMMINENT`、`ML_ACC`、音频和相机提示。
@@ -195,6 +200,11 @@ Hint Session 让一组线程持续报告目标时长和实际用时，`IPower` �
 厂商 Power HAL 收到提示后可以调整 CPU、GPU、内存总线或空闲策略，也可以按本机策略忽略它。要判断某次提示落在哪条硬件路径上，需要目标设备的 HAL 源码、厂商 trace marker 或寄存器级证据；“`LAUNCH` 一定调用 Qualcomm 的 RPMh 硬件资源请求通道”“`GAME` 一定锁定某档 GPU 频率”这类固定映射，要拿到证据才写得出来。
 
 #### Mode/Boost 与 Hint Session 是两条入口
+
+<!-- gracker-diagram: a202-03-entry-contracts -->
+![Mode、Boost 与 Hint Session 的入口](../../assets/diagrams/ch19/a202-03-entry-contracts.png)
+
+图：系统场景与应用会话是不同入口；框架校验和厂商支持之后，资源控制仍取决于设备实现。
 
 `Mode` 和 `Boost` 由系统场景或特权调用触发，Hint Session 则由应用主动创建。我们先看系统侧这条：`PowerManagerService` 中的交互、亮灭屏、Device Idle 等事件进入 `setPowerModeInternal()` 或 `setPowerBoostInternal()`，Binder 对外暴露的相应方法要求 `DEVICE_POWER` 权限。省电策略禁用启动加速时，Framework 会过滤 `LAUNCH`：
 
@@ -213,6 +223,9 @@ private boolean setPowerModeInternal(int mode, boolean enabled) {
 
 普通应用的另一条入口是 `PerformanceHintManager`，请求会进入 `HintManagerService`。系统端校验 UID（应用身份）、TGID（进程 ID）、TID（线程 ID）、进程状态和会话生命周期，再交给 `IPowerHintSession`。AIDL v7 支持 `createHintSessionWithConfig()`；v5 起还可通过可选 FMQ Channel 减少高频报告的 Binder 往返，FMQ 不可用时仍走 Binder 会话路径。
 
+<details>
+<summary>Mermaid 源码（保留供复查）</summary>
+
 ```mermaid
 flowchart TD
     scene["系统场景或特权调用"] --> pms["PowerManagerService"]
@@ -229,14 +242,16 @@ flowchart TD
     sugov --> driver["cpufreq driver / OPP"]
 ```
 
+</details>
+
 图中实线是可验证的标准接口，虚线是厂商可选映射；AOSP 没有定义 Power HAL 直接调用内核调度器辅助函数的通用路径。
 
-<!-- gracker-diagram: a202-03-entry-contracts -->
-![Mode、Boost 与 Hint Session 的入口](../../assets/diagrams/ch19/a202-03-entry-contracts.png)
-
-图：系统场景与应用会话是不同入口；框架校验和厂商支持之后，资源控制仍取决于设备实现。
-
 ### schedutil 的频率决策
+
+<!-- gracker-diagram: a202-04-scx-input-modes -->
+![SCX 状态改变 schedutil 的输入](../../assets/diagrams/ch19/a202-04-scx-input-modes.png)
+
+图：SCX target 是归一化性能值，既不是 kHz 也不是 OPP 序号；full 与 partial 决定是否叠加 fair 利用率。
 
 `schedutil` 是基于调度器负载的 CPU 调频策略。在内核标签 `android17-6.18-2026-06_r6` 中，它已通过 `sugov_get_util()` 接入 `sched_ext` 的 CPU 性能目标。`sched_ext` 简称 SCX，允许用 BPF 程序定义调度策略，这些 BPF 程序在受约束的内核执行环境中运行；CFS/fair class 是 Linux 普通任务使用的公平调度类。看频率决策时，我们要同时知道 CFS 与 SCX 各自给了多少利用率。
 
@@ -280,21 +295,21 @@ iowait boost 会在任务等待 I/O 后唤醒时临时抬高利用率，uclamp�
 
 #### Android 厂商扩展钩子与异常恢复
 
-`android17-6.18-2026-06_r6/include/trace/hooks/sched.h` 中，名称含 `android_vh_scx_` 的钩子声明共 11 个，覆盖启用状态、异常退出、CPU 可运行性、迁移、入队、时间片和调度类切换修正。它们供 GKI（Generic Kernel Image，通用内核镜像）的厂商模块扩展调度行为，不是 Power HAL 到 SCX 的标准协议；数量和函数签名也只对应这个内核标签。
-
-SCX 遇到 BPF 错误、可运行任务长时间得不到执行（runnable task stall）或 `SysRq-S` 时，会终止调度器并把任务交回 fair class；`SysRq-D` 只输出诊断 dump。退出后 `scx_cpuperf_target()` 返回 0，`scx_switched_all()` 为 false，下次 `schedutil` 更新会重新加入 fair-class 利用率。到这里要分清两条恢复路径：SCX 退出由内核自己完成，设备厂商在 SCX 之外保留的 Boost、uclamp 或固件状态仍需自行设计超时和清理；Power HAL 服务死亡后的封装层（wrapper）重连是另一条，两者互不替代。
-
-<!-- gracker-diagram: a202-04-scx-input-modes -->
-![SCX 状态改变 schedutil 的输入](../../assets/diagrams/ch19/a202-04-scx-input-modes.png)
-
-图：SCX target 是归一化性能值，既不是 kHz 也不是 OPP 序号；full 与 partial 决定是否叠加 fair 利用率。
-
 <!-- gracker-diagram: a202-06-recovery-lifecycles -->
 ![SCX 回退与厂商状态清理](../../assets/diagrams/ch19/a202-06-recovery-lifecycles.png)
 
 图：SCX 的内核回退、厂商额外资源状态清理、Power HAL 死亡后的重连，是三个分别设计的生命周期。
 
+`android17-6.18-2026-06_r6/include/trace/hooks/sched.h` 中，名称含 `android_vh_scx_` 的钩子声明共 11 个，覆盖启用状态、异常退出、CPU 可运行性、迁移、入队、时间片和调度类切换修正。它们供 GKI（Generic Kernel Image，通用内核镜像）的厂商模块扩展调度行为，不是 Power HAL 到 SCX 的标准协议；数量和函数签名也只对应这个内核标签。
+
+SCX 遇到 BPF 错误、可运行任务长时间得不到执行（runnable task stall）或 `SysRq-S` 时，会终止调度器并把任务交回 fair class；`SysRq-D` 只输出诊断 dump。退出后 `scx_cpuperf_target()` 返回 0，`scx_switched_all()` 为 false，下次 `schedutil` 更新会重新加入 fair-class 利用率。到这里要分清两条恢复路径：SCX 退出由内核自己完成，设备厂商在 SCX 之外保留的 Boost、uclamp 或固件状态仍需自行设计超时和清理；Power HAL 服务死亡后的封装层（wrapper）重连是另一条，两者互不替代。
+
 ### 三类厂商公开驱动能证明什么
+
+<!-- gracker-diagram: a202-07-driver-boundaries -->
+![公开驱动与量产实现的边界](../../assets/diagrams/ch19/a202-07-driver-boundaries.png)
+
+图：公开驱动解释一类硬件接入方式；品牌、旧款驱动或节点名不足以还原新设备 Power HAL 与固件策略。
 
 公开内核树提供了部分厂商硬件的基础驱动。这些代码能说明某类控制器怎样接入 Linux，也能限定本文可以确认的范围；量产手机的厂商模块、Power HAL 和固件往往还有额外实现。
 
@@ -338,16 +353,16 @@ Xclipse GPU 的 DVFS、固件和产品策略要以相应设备的公开驱动、
 - 无线网络制式、信号条件、SIM 与后台账号状态；
 - 工作负载版本、输入数据、持续时间和重复次数。
 
-<!-- gracker-diagram: a202-07-driver-boundaries -->
-![公开驱动与量产实现的边界](../../assets/diagrams/ch19/a202-07-driver-boundaries.png)
-
-图：公开驱动解释一类硬件接入方式；品牌、旧款驱动或节点名不足以还原新设备 Power HAL 与固件策略。
-
 ### 应用侧可用的标准能力
 
 应用很少需要知道某个 Hint 在芯片内部怎样执行。可移植的做法是报告周期任务的目标用时与实际用时，读取系统压力，并在本进程内调整工作量。这三个入口分别是 Hint Session、温控状态与资源余量。
 
 #### 用 `PerformanceHintManager` 描述周期工作
+
+<!-- gracker-diagram: a202-08-hint-session-lifetime -->
+![Hint Session 的周期工作闭环](../../assets/diagrams/ch19/a202-08-hint-session-lifetime.png)
+
+图：会话把目标预算与实际用时交给系统；实际频率、核心和功耗由设备结合温控预算决定，应用仍需减少无效工作。
 
 `PerformanceHintManager` 从 API 31 提供公开接口，适合渲染、音视频等具有周期预算的长寿命线程。下面的 Kotlin 片段展示最小会话生命周期。
 
@@ -361,9 +376,9 @@ val session = manager?.createHintSession(
 
 try {
     repeat(frameCount) {
-        val startNs = SystemClock.uptimeNanos()
+        val startNs = System.nanoTime()
         renderOneFrame()
-        val actualNs = SystemClock.uptimeNanos() - startNs
+        val actualNs = System.nanoTime() - startNs
         session?.reportActualWorkDuration(actualNs)
     }
 } finally {
@@ -371,27 +386,24 @@ try {
 }
 ```
 
-`frameCount` 和 `renderOneFrame()` 代表业务自己的周期循环。`createHintSession()` 接收 Linux TID 数组和正数目标时长；设备不支持 Hint Session，或线程不属于当前进程时，可以返回 `null`。使用时要守住几条约定：参与线程长期存活且属于当前进程，每个周期都报告工作时长，目标预算变化时再调用 `updateTargetWorkDuration()`。目标时长应取该线程组在整条处理管线中的工作预算，计时使用与 `SystemClock.uptimeNanos()` 一致的时钟基准。
+`frameCount` 和 `renderOneFrame()` 代表业务自己的周期循环。`createHintSession()` 接收 Linux TID 数组和正数目标时长；设备不支持 Hint Session，或线程不属于当前进程时，可以返回 `null`。使用时要守住几条约定：参与线程长期存活且属于当前进程，每个周期都报告工作时长，目标预算变化时再调用 `updateTargetWorkDuration()`。目标时长应取该线程组在整条处理管线中的工作预算。示例两端都用 `System.nanoTime()` 测量单调时钟时差，兼容本文覆盖的 API 34；`SystemClock.uptimeNanos()` 与其同属不包含深度休眠的 uptime 时间基准，但该公开方法从 API 35 才提供。
+
+> ⚠️ API 边界校勘：Hint Session 从 API 31 提供，不代表示例中的所有计时方法也都能在 API 31～34 使用。[来源：SystemClock API](https://developer.android.com/reference/android/os/SystemClock#uptimeNanos())
 
 ADPF（Android Dynamic Performance Framework，Android 动态性能框架）提供反馈信号，频率、核心或功耗结果仍由厂商实现结合温控和整机预算决定。所以应用侧该做的优化一件不少：减少无效工作、控制并发和缩短持锁区间。
 
-<!-- gracker-diagram: a202-08-hint-session-lifetime -->
-![Hint Session 的周期工作闭环](../../assets/diagrams/ch19/a202-08-hint-session-lifetime.png)
-
-图：会话把目标预算与实际用时交给系统；实际频率、核心和功耗由设备结合温控预算决定，应用仍需减少无效工作。
-
 #### thermal headroom 的读数与阈值
+
+<!-- gracker-diagram: a202-09-headroom-direction -->
+![两类 headroom 的读数方向](../../assets/diagrams/ch19/a202-09-headroom-direction.png)
+
+图：thermal headroom 和 CPU/GPU headroom 的读数方向不同；设备阈值、查询间隔和计算窗口均需单独读取。
 
 `PowerManager.getThermalHeadroom(forecastSeconds)` 的 `forecastSeconds` 参数取 0 到 60 秒，返回值为非负的归一化热压力指标。这个 API 名字里带 headroom（热余量），读数方向却相反：返回值越高表示越接近严重温控阈值，`1.0` 表示到达 `THERMAL_STATUS_SEVERE` 阈值，返回值可以超过 `1.0`；`0.0` 不对应某个固定温度或温控状态，也没有摄氏度单位。
 
 接口可能返回 `NaN`（Not a Number，表示当前没有有效数值），包括设备不支持、采样尚未稳定或调用过快等情况。AOSP 文档指出慢变化传感器约一秒更新一次，更高频轮询没有收益。我们把 headroom 与 `getCurrentThermalStatus()` 放在一起用，可以决定何时降低画质、减小批量任务或延后预取。
 
 `getThermalHeadroomThresholds()` 从 API 35 开始提供，用于读取设备为各温控状态定义的 headroom 阈值。不同设备的传感器和阈值模型可能不同，跨机比较原始 headroom 数字时要保留这项限制。
-
-<!-- gracker-diagram: a202-09-headroom-direction -->
-![两类 headroom 的读数方向](../../assets/diagrams/ch19/a202-09-headroom-direction.png)
-
-图：thermal headroom 和 CPU/GPU headroom 的读数方向不同；设备阈值、查询间隔和计算窗口均需单独读取。
 
 #### CPU/GPU headroom 的含义
 
@@ -411,6 +423,11 @@ sysfs 是 Linux 通过虚拟文件暴露内核设备和状态的接口。应用�
 若开发的是系统镜像、设备策略或游戏性能服务，绑核和 QoS 调整也应完成目标设备实验，明确撤销条件，并在 OTA（系统无线更新） 后重新验证。另外，`sched_ext` 与 `schedtune` 面向的对象、接口和部署方式各不相同，是两套独立的机制。
 
 ### 功耗测量：先明确物理量
+
+<!-- gracker-diagram: a202-10-energy-measurements -->
+![能量、电流与测量边界](../../assets/diagrams/ch19/a202-10-energy-measurements.png)
+
+图：任务总能量需结合完成时间、温度和帧性能；电池电流与片上供电支路读数的测量范围不同。
 
 “功耗”经常混用三类量：
 
@@ -451,11 +468,6 @@ PowerStats AIDL 仍是冻结的 v2。它可以报告电源轨能量，以及 pow
 API 35 起，普通应用可通过 `SystemHealthManager.getSupportedPowerMonitors()` 查询设备公开的功耗监视器，再异步调用 `getPowerMonitorReadings()`；支持列表为空是合法结果。监视器可能来自原始 ODPM rail，也可能来自 energy consumer（按硬件读数或模型归集的耗能组件），分析时要保留监视器类型与名称。
 
 ODPM rail 在电池输出的下游测量子系统能量，充电状态对它的读数没有直接影响；覆盖范围由硬件决定，屏幕、射频或 PMIC 转换损耗可能都不在内。rail 名同样随设备各自定义，互比前要先核对覆盖说明。跨设备总功耗比较仍以校准过的外部功耗仪更稳妥，片上 rail 更适合分析同一台设备内各子系统的贡献。
-
-<!-- gracker-diagram: a202-10-energy-measurements -->
-![能量、电流与测量边界](../../assets/diagrams/ch19/a202-10-energy-measurements.png)
-
-图：任务总能量需结合完成时间、温度和帧性能；电池电流与片上供电支路读数的测量范围不同。
 
 ### 按控制链路做运行态排查
 
@@ -545,11 +557,6 @@ Perfetto 至少同时观察：
 
 应用侧较稳妥的路径是使用 `PerformanceHintManager`、温控状态、资源余量和功耗监视器等公开能力，并通过减少工作量改善能效。系统侧排查要分层观察 Framework 提示、内核调度与频率、温控约束和固件响应。控制变量、记录测量范围并保留跟踪证据，才能让跨 SoC 功耗结论经得起复查。
 
-<!-- gracker-diagram: a202-01-control-statistics -->
-![电源控制与能量统计的两条路径](../../assets/diagrams/ch19/a202-01-control-statistics.png)
-
-图：Power HAL 传递场景策略，schedutil 形成 CPU 频率请求，Power Stats 报告结果；统计接口不直接参与 schedutil 的选频。
-
 ## Power Stats 能量实体、驻留与归因
 
 控制环决定硬件状态，Power Stats 用来观察能量和驻留结果。我们拿到一台设备做功耗分析时，首先要弄清它的统计覆盖、单位和更新频率：这些都由 OEM（设备厂商）实现，设备之间差别可以很大。
@@ -561,6 +568,11 @@ AOSP 定义稳定的 HAL 接口、Framework 系统服务和数据使用路径；
 ### 标准架构与厂商差异
 
 #### PowerStats HAL 标准架构
+
+<!-- gracker-diagram: a202-11-stats-three-objects -->
+![Power Stats 的三类对象](../../assets/diagrams/ch19/a202-11-stats-three-objects.png)
+
+图：六个 HAL 方法配成三组对象与读数；ID、名称和覆盖由设备定义，服务存在不代表三组数据齐全。
 
 冻结的 `android.hardware.power.stats` AIDL 是 v2，`IPowerStats.aidl` 定义以下 6 个方法：
 
@@ -581,11 +593,6 @@ EnergyMeasurement[]        readEnergyMeter(in int[] channelIds);
 
 能量字段的单位是微瓦秒（µW·s，数值上等于微焦耳），AIDL 时间戳使用从开机起计时且包含休眠时间的 `CLOCK_BOOTTIME`。ID 数组为空时表示请求全部可用对象，某个对象暂时没有结果时 HAL 可以不返回该项。接口约定到这里为止：设备是否覆盖某个组件、是否提供 UID 分摊，要靠后文的能力核查确认。
 
-<!-- gracker-diagram: a202-11-stats-three-objects -->
-![Power Stats 的三类对象](../../assets/diagrams/ch19/a202-11-stats-three-objects.png)
-
-图：六个 HAL 方法配成三组对象与读数；ID、名称和覆盖由设备定义，服务存在不代表三组数据齐全。
-
 #### AOSP 默认实现与真实设备
 
 AOSP 默认实现位于 `hardware/interfaces/power/stats/aidl/default/`。`main.cpp` 注册 3 条虚构 rail、2 个虚构状态提供者和 2 个虚构 EnergyConsumer，供接口联调与 VINTF（Vendor Interface，系统和厂商组件之间的兼容契约）验证。这些 fake 数据只服务于测试，真实设备的数据基线要另行确认。
@@ -598,16 +605,22 @@ OEM 差异也从这里开始：
 
 #### Framework 的三条数据使用路径
 
+<!-- gracker-diagram: a202-12-stats-service-branches -->
+![PowerStatsService 的三条使用路径](../../assets/diagrams/ch19/a202-12-stats-service-branches.png)
+
+图：日志、公开 Power Monitor 和 StatsD 是从服务分开的使用路径；公开 Monitor 不经过 Logger 文件，HIDL 回退也不提供 EnergyConsumer。
+
 `PowerStatsHALWrapper` 优先连接稳定 AIDL v2；连接不到时会尝试旧版 HIDL（旧版 HAL 接口定义） 1.0，后者能提供 rail 与状态驻留，Framework 的兼容封装会把 EnergyConsumer 信息和结果返回为空数组。所以设备有 PowerStats 服务，只说明接口连上了，三组数据是否齐全要分别确认。
 
-下面列出主要类名，便于在源码中定位；箭头表示组件关系。图中含有存储、PowerMonitor 和 `dumpsys` 的那一行是并列的三种使用入口，它们不按文字顺序互相调用。
+下面列出主要类名，便于在源码中定位。服务连接 HAL 后分成日志、公开 Power Monitor 和 StatsD 三路；公开 Power Monitor 使用服务自己的缓存，不经过 Logger 或日志文件。
 
 ```text
 vendor PowerStats HAL
   → PowerStatsHALWrapper
   → PowerStatsService
-  → PowerStatsLogger
-  → PowerStatsDataStorage / PowerMonitor / dumpsys
+      ├─ PowerStatsLogger → PowerStatsDataStorage → dumpsys --proto
+      ├─ Power Monitor API → 独立缓存 → SystemHealthManager
+      └─ LocalService → StatsPullAtomCallbackImpl → StatsD
 ```
 
 `PowerStatsService` 封装 HAL 后，数据分三路使用：
@@ -626,11 +639,6 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 `PowerStatsLogger` 写文件前，会按本次开机的时钟偏移把 HAL 的开机时间戳转换为 Unix 时间。对象元数据在重启后发生变化时，Logger 会清理对应的旧日志。无参数的 `dumpsys powerstats` 列出当前对象与 Logger 状态；`--proto meter/model/residency` 导出各自的二进制 protobuf（Protocol Buffers，结构化序列化格式）日志。
 
-<!-- gracker-diagram: a202-12-stats-service-branches -->
-![PowerStatsService 的三条使用路径](../../assets/diagrams/ch19/a202-12-stats-service-branches.png)
-
-图：日志、公开 Power Monitor 和 StatsD 是从服务分开的使用路径；公开 Monitor 不经过 Logger 文件，HIDL 回退也不提供 EnergyConsumer。
-
 #### 设备能力的四个维度
 
 评估一台设备时，“服务存在”只说明接口可以连接，我们还要检查以下四项：
@@ -646,6 +654,11 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 #### Power Monitor 的缓存、权限与随机扰动
 
+<!-- gracker-diagram: a202-13-monitor-cache-noise -->
+![Power Monitor 的缓存与读数](../../assets/diagrams/ch19/a202-13-monitor-cache-noise.png)
+
+图：服务缓存新鲜度与硬件采样周期不同；两类权限路径都经过扰动处理，公开结果不包含 EnergyConsumer 的 UID 分摊数组。
+
 公开 Power Monitor API 从 API 35 开始提供。`getSupportedPowerMonitors()` 异步返回两类对象：直接测得的 `POWER_MONITOR_TYPE_MEASUREMENT` 与直接测量或模型计算的 `POWER_MONITOR_TYPE_CONSUMER`；空列表是合法结果。有一个坑：PowerMonitor 的 index 在重启后不保证稳定，应用只能使用本次查询返回的对象，index 不要持久化。
 
 `ACCESS_FINE_POWER_MONITORS` 是 `signature|privileged|development` 级别权限，普通第三方应用通常无法获得。服务为两类调用方维护独立缓存：
@@ -656,11 +669,6 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 这两个阈值决定服务何时重新请求 HAL，硬件传感器本身的采样周期要另行确认。服务还会在前后两次累计值之间加入按调用 UID 保持一段时间的随机扰动，两类权限路径都会经过该处理。公开结果以 µW·s 报告自开机以来的累计能量，包含电池供电与外接电源期间的能量，重启后不会延续；该 API 不返回 `EnergyConsumerAttribution[]`。
 
 这里的 granularity 指结果新鲜度等级。排查 Power Monitor 读数时，我们同时确认设备功能开关、对象列表、结果时间戳、累计值是否增长、调用方权限和返回的 granularity；20 秒或 250 毫秒的缓存规则与 HAL 计数器本身的采样说明是两回事。
-
-<!-- gracker-diagram: a202-13-monitor-cache-noise -->
-![Power Monitor 的缓存与读数](../../assets/diagrams/ch19/a202-13-monitor-cache-noise.png)
-
-图：服务缓存新鲜度与硬件采样周期不同；两类权限路径都经过扰动处理，公开结果不包含 EnergyConsumer 的 UID 分摊数组。
 
 ### 能力分级与部署
 
@@ -680,6 +688,11 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 #### 跨厂商比较的统一口径
 
+<!-- gracker-diagram: a202-14-energy-difference -->
+![跨设备能量比较前的对齐](../../assets/diagrams/ch19/a202-14-energy-difference.png)
+
+图：先对齐对象、时钟和实验窗口，再做累计值差分；未提供 UID 数据的设备不能被解释成应用耗电更低。
+
 跨厂商比较前，我们先统一对象映射、计算方式和时间窗口：
 
 1. **保存对象清单**：记录 `getPowerEntityInfo()`、`getEnergyConsumerInfo()` 和 `getEnergyMeterInfo()` 的完整返回值。设备自定义名称对 Framework 是不透明字符串，同名对象测量的范围要逐一核对。
@@ -691,11 +704,6 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 7. **记录来源**：报告中写明机型、软件构建指纹、内核版本、HAL 路径、对象清单、采样时长、权限与 Power Monitor granularity。
 
 不同设备的对象对不上时，我们就比较各自覆盖范围内的趋势，暂不拼统一的绝对总量。
-
-<!-- gracker-diagram: a202-14-energy-difference -->
-![跨设备能量比较前的对齐](../../assets/diagrams/ch19/a202-14-energy-difference.png)
-
-图：先对齐对象、时钟和实验窗口，再做累计值差分；未提供 UID 数据的设备不能被解释成应用耗电更低。
 
 #### 企业设备与实验室设备池
 
@@ -724,6 +732,11 @@ adb shell dumpsys powerstats --proto residency
 
 ### 实战排查：不同手机功耗榜的差异来源
 
+<!-- gracker-diagram: a202-15-collection-cadence -->
+![日志触发、公开缓存与设备采样](../../assets/diagrams/ch19/a202-15-collection-cadence.png)
+
+图：四类节奏属于不同层；采集路径、权限、粒度、计数器与覆盖一致后，才能把功耗榜差异归因到业务行为。
+
 同一个 APK 在两台设备上出现不同耗电归因时，我们按以下顺序排查：
 
 1. **确认 HAL 路径**：区分 AIDL v2、HIDL 1.0 与未初始化状态，记录服务是否使用默认 fake 实现。
@@ -746,11 +759,6 @@ PowerStats 能力：L1/L2/L3/L4
 ```
 
 模板中的 `model/build/kernel` 分别指机型、软件构建指纹和内核版本。`legacy` 只是原模板对“没有细粒度权限”的简称，不是 Framework 的正式路径名，正式报告宜写 `GRANULARITY_UNSPECIFIED` 或 `GRANULARITY_FINE`。
-
-<!-- gracker-diagram: a202-15-collection-cadence -->
-![日志触发、公开缓存与设备采样](../../assets/diagrams/ch19/a202-15-collection-cadence.png)
-
-图：四类节奏属于不同层；采集路径、权限、粒度、计数器与覆盖一致后，才能把功耗榜差异归因到业务行为。
 
 ### 版本与实现边界
 

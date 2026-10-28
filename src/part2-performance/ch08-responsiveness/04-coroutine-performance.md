@@ -448,11 +448,6 @@ StateFlow 和 SharedFlow 是热流，页面停止显示后，共享上游仍可�
 
 同步的 `beginSection / endSection` 必须在同一线程上正确嵌套，不适合包住可能切换线程的 suspend block。下面的辅助函数为每次操作分配唯一 cookie，用 async section 记录跨线程、跨挂起的完整逻辑区间；cookie 须在相同 name 的并发活动区间内保持唯一，并与同名结束事件配对。下面的进程内计数器适合常规短操作，长寿命或极高吞吐场景需处理 Int 回绕及其他埋点共用编号的问题：
 
-<!-- gracker-diagram: ch08-04-30-async-trace -->
-![逻辑区间用 async 标记成对闭合](../../assets/diagrams/ch08/ch08-04-30-async-trace.png)
-
-图：跨挂起的业务用 async name/cookie 配对；它记录墙钟区间，CPU 时间仍需线程和 sched 证据。
-
 ```kotlin
 private val nextTraceCookie = AtomicInteger(1)
 
@@ -469,6 +464,11 @@ private suspend inline fun <T> traceAsync(
     }
 }
 ```
+
+<!-- gracker-diagram: ch08-04-30-async-trace -->
+![逻辑区间用 async 标记成对闭合](../../assets/diagrams/ch08/ch08-04-30-async-trace.png)
+
+图：跨挂起的业务用 async name/cookie 配对；它记录墙钟区间，CPU 时间仍需线程和 sched 证据。
 
 这里的 `Trace` 可以使用 `androidx.tracing.Trace`。async section 表示业务操作从开始到结束的墙钟区间，其中的等待时间不会混进任何线程的 CPU 时间；不会挂起的短函数再用同步 section。这样 Perfetto 才能同时显示整条操作经过了多久，以及各线程实际执行了多久。
 

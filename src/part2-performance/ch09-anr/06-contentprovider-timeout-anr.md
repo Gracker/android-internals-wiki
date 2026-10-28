@@ -477,11 +477,6 @@ Call detector 的有效报告进入标准 ANR 处理流程。相应信息开关�
 
 主机侧 Perfetto 工具支持 Binder 标准查询库时，下面的查询按总墙钟耗时排列目标宿主已结束的同步调用，并纳入与半开窗口相交的事务。示例时间戳必须替换为同一 trace 的故障窗口；本查询没有设置统一的“慢”阈值，需按接口约定和具体场景判断：
 
-<!-- gracker-diagram: ch09-06-30-binder-overlap -->
-![窗口相交比起点落窗更完整](../../assets/diagrams/ch09/ch09-06-30-binder-overlap.png)
-
-图：这是闭合正时长同步事务的筛选示意；仅用BETWEEN起点会漏掉跨左边界调用，示例时间戳必须替换。
-
 ```sql
 INCLUDE PERFETTO MODULE android.binder;
 
@@ -520,6 +515,11 @@ WHERE server_process = 'com.example.provider'
   AND client_ts + client_dur > params.window_start
 ORDER BY client_dur DESC;
 ```
+
+<!-- gracker-diagram: ch09-06-30-binder-overlap -->
+![窗口相交比起点落窗更完整](../../assets/diagrams/ch09/ch09-06-30-binder-overlap.png)
+
+图：这是闭合正时长同步事务的筛选示意；仅用BETWEEN起点会漏掉跨左边界调用，示例时间戳必须替换。
 
 查询返回整笔已结束事务的 client/server（调用方/服务端）墙钟时长，窗口内裁剪时长和 CPU 时间都要另行计算；同名宿主可能有多个进程实例，应继续按 server_upid/PID 筛定。oneway 与未完成事务被排除在外，它们的积压情况要换别的查询确认。`aidl_name` 能否解析出 `IContentProvider` 方法，取决于 trace 与解析器；方法名缺失时，仍可用事务 ID、双方 PID/TID、调度和栈追踪关联事务；认定它就是目标 query，还需要对应方法栈、请求标记或其他方法级证据，事务身份和宿主进程名本身不说明调用了哪个方法。
 
