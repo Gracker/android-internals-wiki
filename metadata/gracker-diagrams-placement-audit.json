@@ -9849,5 +9849,14 @@
   "report": "/tmp/gracker-android-wiki-diagrams-audit-20261026/audit-report.json",
   "handoff": "/tmp/gracker-android-wiki-diagrams-audit-20261026/handoff.json",
   "current_article_sha256_manifest": "/tmp/gracker-android-wiki-diagrams-audit-20261026/articles-current-sha256.json",
-  "original_baseline_manifest": "/tmp/gracker-android-wiki-diagrams-audit-20261026/baseline-manifest.json"
+  "original_baseline_manifest": "/tmp/gracker-android-wiki-diagrams-audit-20261026/baseline-manifest.json",
+  "parent_master_reconciliation": {
+    "status": "complete",
+    "checked_at": "2026-10-28T08:27:44.436266+08:00",
+    "master": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-progress.json",
+    "master_sha256": "6851fa70650fb039d8b912be33320688290e3f822453049c8bb5237788105c9d",
+    "updated_article_records": 40,
+    "report": "/tmp/gracker-android-wiki-diagrams-audit-20261026/parent-integration/reconciliation-result.json",
+    "original_illustration_baselines_and_reviewed_snapshots": "preserved"
+  }
 }

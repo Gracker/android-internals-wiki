@@ -8185,9 +8185,9 @@
       "created_at": "2026-10-22T10:11:31.229497+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261022-100520-e286d5fa",
-      "details": "保留既有核验：SurfaceView 四项 API 首引、Android 17 当前 flag、alpha 作用范围和 Connected Display Desktop 的 Android 16 QPR3 GA。20261024-080520-dc2d5001 已补核并修订：Android 12 BLAST 与 FrameTimeline 的版本及 SurfaceView 覆盖限制；Android 13 AutoSingleLayer 默认值、Composer AIDL 引入及 HIDL 弃用但不强制迁移；Android 17 已不读取旧 latch_unsignaled/Always 强制配置；ARR 的 Android 15 QPR1、composer3 接口版本 3、vrrConfig 条件，以及 API 36 hasArrSupport 和当前 FlaggedApi；Shell Transitions 在 Android 12/13/14/15/17 固定 r1 标签的默认值、属性改名、Automotive 例外和 Android 17 player/fallback 判定。剩余缺口：其余历史 HDR/SurfaceView flag，以及 WebView、Flutter、React Native、游戏引擎等第三方拓扑仍未按具体组件版本逐项复核。原 id 保持 open，章节保持 ready-for-review；不以部分核验替代整章证据覆盖。",
+      "details": "保留既有核验：SurfaceView 四项 API 首引、Android 17 当前 flag、alpha 作用范围和 Connected Display Desktop 的 Android 16 QPR3 GA。20261024-080520-dc2d5001 已补核并修订：Android 12 BLAST 与 FrameTimeline 的版本及 SurfaceView 覆盖限制；Android 13 AutoSingleLayer 默认值、Composer AIDL 引入及 HIDL 弃用但不强制迁移；Android 17 已不读取旧 latch_unsignaled/Always 强制配置；ARR 的 Android 15 QPR1、composer3 接口版本 3、vrrConfig 条件，以及 API 36 hasArrSupport 和当前 FlaggedApi；Shell Transitions 在 Android 12/13/14/15/17 固定 r1 标签的默认值、属性改名、Automotive 例外和 Android 17 player/fallback 判定。20261028-083520-deep-review-f805dc05 补核 Window/SurfaceView HDR headroom 的作用域、COLOR_MODE_HDR 前提、比值/合法输入与自动默认值；补核 Android 15/16 current.txt 的 limited_hdr 注解及 Android 17 移除该注解，并复核 SurfaceView setSurfaceLifecycle/API 34、setDesiredHdrHeadroom/API 35、setCompositionOrder/API 36、setBlurRegions/API 37 的公开版本与当前注解及 alpha 边界。剩余缺口：WebView、Flutter、React Native、游戏引擎等第三方拓扑仍未按具体组件版本逐项复核。target_range：出图拓扑表（原文 368—382 行）；recommended_action：按组件版本核对生产者、宿主与独立 Surface，取得对应版本源码或官方架构文档后再关闭。原 id 保持 open，章节保持 ready-for-review；不以部分核验替代整章证据覆盖。",
       "id": "finding-1f0df2d48025",
-      "log_path": "logs/deep-review/2026-10-22-20261022-123520-deep-review-f805dc05-deep-review.md",
+      "log_path": "logs/deep-review/2026-10-28-20261028-083520-deep-review-f805dc05-deep-review.md",
       "severity": "P2",
       "source_paths": [
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt",
@@ -8201,12 +8201,18 @@
         "https://developer.android.com/reference/android/view/Display#hasArrSupport()",
         "https://perfetto.dev/docs/data-sources/frametimeline",
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java",
-        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/TransitionController.java"
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/TransitionController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-15.0.0_r1/core/api/current.txt",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/api/current.txt",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/WindowManager.java",
+        "https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float)"
       ],
       "status": "open",
-      "summary": "历史 flag 与第三方拓扑仍缺逐项证据（Android 12—13、ARR 与 Shell 启用逻辑已补核）",
+      "summary": "第三方拓扑仍缺组件版本证据（HDR/SurfaceView 历史 API 与 flag 已补核）",
       "type": "source-coverage",
-      "updated_at": "2026-10-24T08:13:59.300241+08:00"
+      "updated_at": "2026-10-28T08:44:04.443613+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
@@ -10599,6 +10605,29 @@
       "summary": "OEM 配置核对步骤漏掉 vendor 覆盖文件",
       "type": "diagnostic-gap",
       "updated_at": "2026-10-27T22:42:48.424232+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已在同一版本说明中补齐 Window HDR 模式前提、独立 SurfaceView/SurfaceControl 作用域、比值与输入范围、0 自动/1 无 HDR 余量、请求值与实际显示的区别和按对象排查入口；以 Android 17 固定标签与官方 API 参考支撑，metadata、SUMMARY 链接、diff 检查及新增中文硬门均通过。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261028-083520-deep-review-f805dc05",
+      "created_at": "2026-10-28T08:39:56.351994+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261028-083520-deep-review-f805dc05",
+      "details": "claim：版本表并列 Window / SurfaceView 的 HDR headroom 请求，但缺少 Window 仅在 COLOR_MODE_HDR 下适用、且不会影响独立 SurfaceView / SurfaceControl 的限制；target_range：原文 399—414 行版本表及说明；evidence：android-17.0.0_r1 Window.java 1420—1458、SurfaceView.java 1102—1142，以及对应官方 API 35 参考；recommended_action：补齐 HDR 模式前提、独立作用域、比值单位、0 自动/1 无 HDR/显式合法范围及按对象排查入口；不把请求值当实际亮度保证。",
+      "id": "finding-b3421acfe905",
+      "log_path": "logs/deep-review/2026-10-28-20261028-083520-deep-review-f805dc05-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float)",
+        "https://developer.android.com/reference/android/view/SurfaceView#setDesiredHdrHeadroom(float)"
+      ],
+      "status": "fixed",
+      "summary": "HDR headroom 缺少 Window HDR 模式前提与独立 Surface 作用域",
+      "type": "api-applicability",
+      "updated_at": "2026-10-28T08:44:04.519027+08:00"
     }
   ],
   "schema_version": 1
