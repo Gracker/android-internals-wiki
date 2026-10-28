@@ -4,8 +4,10 @@ chapter: '1.27'
 section: '1.27'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-18'
-last_verified_against: AOSP android-17.0.0_r1 (system/logging/logd, system/logging/liblog, frameworks/base Log.java/android_util_Log.cpp, packages/modules/StatsD libstatssocket) plus Android Developers NDK logging/R8/Log Info Disclosure docs checked 2026-08-18
+last_verified: '2026-10-25'
+last_verified_against: AOSP android-17.0.0_r1 (system/logging/logd, system/logging/liblog, frameworks/base Log.java/android_util_Log.cpp, packages/modules/StatsD libstatssocket) plus Android Developers NDK logging/R8/Log Info Disclosure docs checked 2026-10-25
+last_source_verified_at: '2026-10-25'
+last_idle_audit_at: '2026-10-25T22:40:00+08:00'
 confidence: high
 last_rework_at: '2026-07-25T17:35:42+08:00'
 last_deep_review_at: '2026-08-17T16:42:12+08:00'
@@ -39,7 +41,7 @@ related_chapters:
 
 # Android logd 日志系统性能与开销
 
-一条 `Log.d()` 从调用到被读取客户端看到，要依次经过级别判断、JNI 取字符串、Unix Domain Socket（同一设备上进程间通信使用的本地套接字） 发送和缓冲保存。分析这条链路时，有三处容易混淆：应用写日志与 logd 保存日志是两段成本；logd 的服务端筛选与 logcat 的客户端筛选是两回事；EventLog 与 StatsD 原子事件（atom，即 StatsD 定义的一类结构化指标事件）走的是两条传输路径。我们把这三处分开，后面的开销归因才站得住。
+普通 `Log.d()` 的参数先在调用方求值，随后经过 JNI 取字符串、liblog 级别判断、Unix Domain Socket（同一设备上进程间通信使用的本地套接字）发送和 logd 缓冲保存，最后由读取客户端取得。分析这条链路时，有三处容易混淆：应用写日志与 logd 保存日志是两段成本；logd 的服务端筛选与 logcat 的客户端筛选是两回事；EventLog 与 StatsD 原子事件（atom，即 StatsD 定义的一类结构化指标事件）走的是两条传输路径。
 
 > 源码基线：AOSP `android-17.0.0_r1`，本文结论均以它为准。
 
@@ -65,11 +67,11 @@ android.util.Log.d(tag, message)
   -> LogBuffer::Log()
 ```
 
-这条路径上有四个细节会影响我们后面的判断：JNI 取字符串、native 侧的第二次级别过滤、`writev()` 的提交方式，以及 socket 的凭据传递。
+这条路径上有四个细节会影响开销判断：JNI 取字符串、native 侧的级别过滤、`writev()` 的提交方式，以及 socket 的凭据传递。
 
 JNI 层用 `GetStringUTFChars()` 取到 tag 和 message 的表示，编码是 Modified UTF-8（JNI 使用的一种 UTF-8 变体），用完即释放。虚拟机会不会复制字符串，取决于具体实现和字符串内容，直接写成“一次堆分配”并不可靠；可以确定的是，取编码和跨一次 JNI 都有成本。
 
-文本日志进入 `__android_log_buf_write()` 后会再次执行 `__android_log_is_loggable()`。`Log.d()` 的参数在进入 native 方法前已经求值，所以这层过滤能省去套接字写入，却省不掉调用方已经完成的字符串拼接、对象 `toString()` 或 JSON 序列化。
+文本日志进入 `__android_log_buf_write()` 后执行 `__android_log_is_loggable()`。普通 `Log.d(tag, message)` 在 Java 层直接调用 native 方法，调用方若未显式检查级别，JNI 取字符串前没有这道过滤。此时参数也已求值，所以 liblog 的过滤能省去套接字写入，却省不掉字符串拼接、对象 `toString()`、JSON 序列化或 JNI 转换。
 
 liblog 用 `writev()` 把头部和 payload（日志消息体） 一次提交。旧版内核 logger 的 `/dev/log_main` 等节点留在早期版本里，当前路径已经用不到它们。
 
@@ -108,7 +110,7 @@ logd 一旦来不及接收，socket 就返回 `EAGAIN`（表示“稍后再试�
 
 ### 1.3 payload 上限与长消息
 
-`LOGGER_ENTRY_MAX_PAYLOAD` 为 4068 字节。`LogdWrite()` 会把超出上限的直接 payload 截到可发送范围；Java `Log.printlns()` 处理长文本和堆栈时会更进一步，按消息体的字节预算和换行位置拆成多条，再逐条调用原生写入函数。
+`LOGGER_ENTRY_MAX_PAYLOAD` 为 4068 字节。`LogdWrite()` 会把超出上限的直接 payload 截到可发送范围。Java `Log.printlns()` 处理长文本和堆栈时，会按字符缓冲区容量和换行位置拆成多条，再逐条调用原生写入函数。缓冲区容量由 payload 上限减去 tag 长度、终止符和预留量估算；`Log.java` 明确接受 Modified UTF-8 编码差异带来的截断风险，没有逐条精确计算编码后的字节数。
 
 这带来两个结果：
 
@@ -159,14 +161,16 @@ adb logcat -g
 
 `logd.buffer_type` 的默认值是 `serialized`，即日志先编码、再按数据块保存；另一个可选值是 `simple`。所以默认实现并不是定长的 `LogBufferEntry[]` 数组。
 
-`SerializedLogBuffer` 为每个 log ID 维护一份 `SerializedLogChunk` 列表，chunk 就是一批连续保存的序列化日志：当前的 chunk 保持可追加，写满或封存后的 chunk 用 Zstd 1 级压缩。计入容量的总大小一旦超过目标值，logd 就从较老的 chunk 开始裁剪。读取客户端碰到压缩 chunk 时才解压，并靠引用状态避免正在读取的数据被释放。
+`SerializedLogBuffer` 为每个 log ID 维护一份 `SerializedLogChunk` 列表，chunk 就是一批连续保存的序列化日志：当前的 chunk 保持可追加，写满或封存后的 chunk 用 Zstd 1 级压缩。计入容量的总大小一旦超过目标值，logd 就从较老的 chunk 开始裁剪。
+
+访问封存块内的日志条目时，logd 在 `SerializedLogChunk::IncReaderRefCount()` 中按需解压；清理被裁剪块的统计信息也可能触发这一步。引用计数管理解压后的内容，裁剪时会通知关联读取状态放弃旧块，再回收数据，不会等待客户端读完。logcat 经 `logdr` 收到的是日志条目头和原始 payload，不承担 serialized chunk 的解压。
 
 从外面看，这套设计仍表现为“只保留有限窗口，并淘汰旧数据”；内部的管理单位则换成了 chunk 和序列化条目。我们分析裁剪成本、内存占用或慢速读取客户端行为时，都要落到这套实现上看。
 
 <!-- gracker-diagram: ch01-27-serialized-retention -->
 ![SerializedLogBuffer 按数据块压缩与裁剪](../../assets/diagrams/ch01/ch01-27-serialized-retention.png)
 
-图：默认 serialized 路径把日志追加到当前 chunk，封存后压缩；容量超限时裁剪较老 chunk。读取压缩块会按需要解压，reader 状态也要随裁剪推进。增大容量不会消除调用方格式化或 socket 过载丢弃。
+图：默认 serialized 路径把日志追加到当前 chunk，封存后压缩；容量超限时裁剪较老 chunk。按需解压在 logd 内完成，reader 状态也要随裁剪推进。增大容量不会消除调用方格式化或 socket 过载丢弃。
 
 ### 2.4 `chatty` 属于历史机制
 
@@ -185,11 +189,11 @@ logcat 这边连接的是 `/dev/socket/logdr`。该 reader socket 使用 `SOCK_S
 
 - log ID mask；
 - PID；
-- 起始时间或日志序号（sequence）；
+- 起始时间，由服务端换算成内部日志序号（sequence）；
 - tail 条数；
-- 非阻塞读取，以及等到缓冲区即将回绕才返回（wrap）的 wrap 读取模式。
+- 非阻塞读取，以及延迟读取（wrap）模式；后者等待裁剪或超时后再开始读取。
 
-安全 buffer 和跨 UID 读取还受凭据与权限约束。面向应用公开的 NDK logging API 通常写入 `main`；读取全局 logcat 所需的 `READ_LOGS` 也只授予受信任的特权组件。
+安全 buffer 和跨 UID 读取还受凭据与权限约束。面向普通应用的公开 NDK logging API 仅支持 `main`，应使用 `__android_log_print()` 或 `__android_log_write()`；带 buffer 参数的接口不代表普通应用可写入其他 buffer。读取全局 logcat 所需的 `READ_LOGS` 也只授予受信任的特权组件。
 
 ### 3.2 tag 与正则表达式在 logcat 客户端执行
 
@@ -218,7 +222,7 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
 
 ### 3.3 慢速读取客户端与多个 reader
 
-每个 reader 都有独立线程和读取状态。多开 logcat 会增加线程、解压和 socket 发送的工作量；不过 AOSP 并没有给出“每个客户端固定占用多少 KB”或“超过多少个必然变慢”的通用阈值。
+logd 为每个 reader 维护独立线程和读取状态。多开 logcat 会增加 logd 的线程、解压和 socket 发送工作量；不过 AOSP 并没有给出“每个客户端固定占用多少 KB”或“超过多少个必然变慢”的通用阈值。
 
 reader 要读的位置一旦落在被裁剪的数据之后，serialized buffer 会让它跳过已回收的旧 chunk，并记一条警告；读 socket 也配置了发送超时，避免一个停止读取的客户端长期占住发送线程。是否达到瓶颈，取决于日志速率、buffer 容量、读取客户端数量、输出介质和设备性能，答案要以目标设备上的测量为准。
 
@@ -318,8 +322,8 @@ adb shell pidof logd
 
 1. 调用前消息格式化与对象分配；
 2. 应用进程的 JNI、`writev()` 次数及 `EAGAIN`；
-3. logd 的 CPU 调度、接收、压缩和裁剪；
-4. logcat reader 的解压、正则匹配与输出介质。
+3. logd 的 CPU 调度、接收、压缩、解压和裁剪；
+4. logcat 客户端的条目解析、正则匹配、格式化与输出介质。
 
 Perfetto 可同时观察应用与 logd 的线程调度、CPU 时间和频率变化。`userdebug`/`eng` 环境还可用 CPU 采样工具 simpleperf 分析应用或 logd 热点；用系统调用跟踪工具 `strace` 短时间跟踪，能验证应用是否频繁调用 `writev()`、调用是否返回 `EAGAIN`。
 
