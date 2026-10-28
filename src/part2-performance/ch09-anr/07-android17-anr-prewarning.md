@@ -127,10 +127,6 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 | `ActivityManager.registerAnrWarningListener()` | 注册 executor 与 listener |
 | `ActivityManager.unregisterAnrWarningListener()` | 用同一个 listener 对象注销 |
 
-<!-- gracker-diagram: ch09-07-02-public-api -->
-![API 37 的公开入口与载荷](../../assets/diagrams/ch09/ch09-07-02-public-api.png)
-
-图：公开API版本、producer开关、具体注册实例与executor状态需要分别核对。
 
 `IAnrWarningCallback.aidl` 是 ActivityManager 与 AMS（ActivityManagerService）之间的 hidden（隐藏） Binder 接口，应用不需要直接实现它。同一个 `ActivityManager` 实例首次注册 listener 时会创建 Binder stub（接收系统跨进程调用的入口），该实例后续 listener 共用这个 callback。映射和 callback 是实例字段；`ContextImpl` 的服务缓存也按 Context 实例保存，不能把它扩大成整个进程只存在一个 callback。注册、注销应保留同一 `ActivityManager` 与 listener 实例。
 
@@ -161,10 +157,6 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 
 这些常量还用于 `ApplicationExitInfo.AnrInfo`。类型集合覆盖 ANR 分类；至于每一种类型是否都已经接入 warning producer（产生预警的系统路径），要看下一小节核对的实现清单。
 
-<!-- gracker-diagram: ch09-07-04-types-vs-producers -->
-![分类常量与实际 producer 分开](../../assets/diagrams/ch09/ch09-07-04-types-vs-producers.png)
-
-图：图概括本次r1核对的producer，不把分类API扩大成每种情况均交付的承诺。
 
 #### 2.1 枚举覆盖与预警覆盖要分开
 
@@ -178,10 +170,6 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 | short FGS timer | `FOREGROUND_SHORT_SERVICE_TIMEOUT` | `onTimeout()` 通知后启动的剩余 ANR 宽限计时运行到 50% split point |
 | start-foreground timer | `START_FOREGROUND_SERVICE` | `AnrTimer` 运行到 50% split point |
 
-<!-- gracker-diagram: ch09-07-05-producer-points -->
-![已核对的预警点与条件](../../assets/diagrams/ch09/ch09-07-05-producer-points.png)
-
-图：50%是对应native计时的预定点，实际交付可能延迟；short FGS的payload timeout与consumed还需分别核对基准。
 
 InputDispatcher 的 `processPreAnrsLocked()` 在该 tag（源码版本） 中只调用了 `processNoFocusedWindowPreAnrLocked()`，普通 input connection（输入连接） timeout（输入连接超时）也就没有沿这段代码发送 warning。ContentProvider call detector、JobService、application start 和 app-triggered ANR 都有对应常量，但常量只是 API 层面的名字，系统是否真的投递过 warning，要看 producer 实现。
 
@@ -201,17 +189,9 @@ warning 覆盖还受 feature flag（功能开关）与计时器实现影响。�
 
 载荷里找不到 PID、UID、包名、进程名、组件对象、线程栈、锁状态或 Binder 队列深度。`description` 可能包含 Service component（组件名） 等提示，但 API 明确声明格式可变：拿它做人工分析或辅助聚类可以，要解析成稳定协议就靠不住了。
 
-<!-- gracker-diagram: ch09-07-06-payload-fields -->
-![五项载荷与未提供的信息](../../assets/diagrams/ch09/ch09-07-06-payload-fields.png)
-
-图：采样、Java构造、Binder交付和App执行可能在不同时间；目标进程身份需要其他证据。
 
 `anrId` 只保证“在每个 `anrType` 内唯一”。所以设计持久化 key（记录键）时，我们至少使用 `(anrType, anrId)`，再带上用户、应用版本、设备 boot/session（本次开机或应用会话）和本地进程名，免得跨重启或多进程的数据混在一起。
 
-<!-- gracker-diagram: ch09-07-07-correlation-key -->
-![关联 key 与身份信息](../../assets/diagrams/ch09/ch09-07-07-correlation-key.png)
-
-图：key用于关联与去重，不会因为某个进程收到回调就证明它是目标。
 
 ### 4. 注册与注销
 
@@ -297,19 +277,16 @@ class AnrWarningRecorder(context: Context) : Closeable {
 
 `WarningSnapshot` 是示例自定义的不可变类型；只保留最后一条内存快照，进程退出就会丢失，尚不能完成下节所说的跨启动关联。调用方须在 `SDK_INT >= 37` 的分支内创建和使用此类，并处理平台 API 不可用或注册异常。容量 16 是示例取舍，不是系统阈值：队列满或已关闭时静默丢弃，统计必须允许漏样本。
 
-<!-- gracker-diagram: ch09-07-08-recorder-lifecycle -->
-![有界 recorder 的生命周期](../../assets/diagrams/ch09/ch09-07-08-recorder-lifecycle.png)
-
-图：容量16是教学参数；内存记录可能丢失，示例未实现跨启动持久化，也不保证回调必达。
 
 若 recorder 与进程同寿命，可在 `Application` 初始化时长期保留；短生命周期持有者使用同一实例调用 `close()`。注销不撤回已提交任务，`shutdownNow()` 也不保证中断已执行的回调；接受开关只是减少关闭后的记录，已开始的短任务仍可能完成。需要跨启动诊断时，应另设计经过开销验证的有界持久化流程。
 
-<!-- gracker-diagram: ch09-07-09-bounded-executor -->
-![队列与关闭的丢样边界](../../assets/diagrams/ch09/ch09-07-09-bounded-executor.png)
-
-图：注销不撤回已提交工作，shutdownNow不保证中断已执行任务；图不承诺关闭时绝对没有竞态。
 
 executor 怎么选？官方文档要求避开应用主线程：主线程可能正是被监视的阻塞线程，把回调再次排到主线程会失去预警机会。容易排满的业务线程池同样不适合。
+
+<!-- gracker-diagram: ed09-07-recorder -->
+![recorder 注册、排队与关闭边界](../../assets/diagrams/ch09/ed09-07-recorder.png)
+
+图：把注册、执行与关闭放在同一视图；close 由拥有者触发，不是每个 callback 结束后自动执行。
 
 ### 5. 系统如何投递
 
@@ -323,26 +300,14 @@ executor 怎么选？官方文档要求避开应用主线程：主线程可能�
 4. 多个 listener 的通知及实际执行顺序没有保证；
 5. 该实例最后一个 listener 移除时，向 AMS 注销其 Binder callback。
 
-<!-- gracker-diagram: ch09-07-10-app-dispatch -->
-![Binder 到 listener executor 的分派](../../assets/diagrams/ch09/ch09-07-10-app-dispatch.png)
-
-图：oneway返回不代表listener已执行；多个listener的通知和执行没有统一顺序保证。
 
 在同一 `ActivityManager` 实例上重复注册同一个 listener，不会新增记录或替换原 executor；注销未注册的 listener 直接返回。`dispatchAnrWarning()` 在遍历处没有捕获 executor 的拒绝异常，应用要避免把已经关闭、会抛异常的 executor 留在映射中；示例的丢弃策略只是在容量或关闭边界静默漏样本。
 
-<!-- gracker-diagram: ch09-07-11-registration-edges -->
-![重复注册与拒绝异常](../../assets/diagrams/ch09/ch09-07-11-registration-edges.png)
-
-图：图取自r1实现，不能把官方不保证顺序解释成任意executor错误均被隔离。
 
 #### 5.2 system_server 内
 
 投递走的是 `AnrWarningController`。它按 calling UID（注册方的应用身份）保存 callback 列表，并为每个 Binder callback 注册 death recipient（进程死亡通知）。producer 调用 `ActivityManagerService.notifyAnrWarning()` 时，AMS 先用 `anrId` 获取或创建 error id，再交给 controller，由它依次执行：
 
-<!-- gracker-diagram: ch09-07-12-controller-delivery -->
-![系统按 UID 投递的步骤](../../assets/diagrams/ch09/ch09-07-12-controller-delivery.png)
-
-图：instant只在有目标callback记录的分支发出，实际trace还要采到类别；统计投递尝试不等于App处理完成。
 
 1. 若该 UID 有 callback，发出 `debug.anr` category 的 `AnrWarningDetected` Perfetto instant（瞬时事件）；
 2. 构造 `AnrWarningResult`；
@@ -355,10 +320,6 @@ executor 怎么选？官方文档要求避开应用主线程：主线程可能�
 
 AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程都注册 listener 后，同一 UID 的 warning 会投递到两个进程，而载荷中没有目标 PID。
 
-<!-- gracker-diagram: ch09-07-13-uid-fanout -->
-![同 UID 的多个接收者](../../assets/diagrams/ch09/ch09-07-13-uid-fanout.png)
-
-图：系统按UID归组，没有package selector；上传去重与真正责任归因应分开。
 
 所以多进程应用要做的核对相应简单：
 
@@ -369,12 +330,13 @@ AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程�
 
 同一个 UID 下装有多个包时也一样：warning API 没有提供 package selector，按包筛选做不到。
 
+<!-- gracker-diagram: ed09-07-uid-delivery -->
+![系统按 UID 分发，应用按 AM 实例分派](../../assets/diagrams/ch09/ed09-07-uid-delivery.png)
+
+图：把 system_server 的 UID 分发与应用内 AM 实例、listener、executor 的分派合为一条链。
+
 ### 6. warning 的预定时点与实际交付
 
-<!-- gracker-diagram: ch09-07-14-warning-delay -->
-![预定点不等于 App 执行时刻](../../assets/diagrams/ch09/ch09-07-14-warning-delay.png)
-
-图：这是一种可能的延迟时序；不承诺每个producer有同样延迟，也不把warning当续时。
 
 标准 ANR 路径在 detector 报告后才请求其 early dump 与完整转储；取样时现场可能已经变化。warning 的预定触发点更早，但实际交付可能延迟。下图表示两种互斥结果：条件及时恢复，或最终进入 timeout 路径；已发出的 warning 不会被撤回：
 
@@ -395,17 +357,13 @@ AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程�
 
 `AnrTimer.Args.anrWarning(true)` 会在 native timer 中加入 50% split point。到点后，`AnrTimer` 把 `timerId`、关联对象和 elapsed time（已经经过的时间） 送回相应 Handler，再由 `ActiveServices` 生成 type、timeout 和 description。
 
-<!-- gracker-diagram: ch09-07-15-timer-split -->
-![Service timer 的 split 通知链](../../assets/diagrams/ch09/ch09-07-15-timer-split.png)
+<!-- gracker-diagram: ed09-07-service-timer -->
+![Service timer 的原生 split 与降级分支](../../assets/diagrams/ch09/ed09-07-service-timer.png)
 
-图：对应计时50%的计划不保证App在50%执行；取消、对象失效和降级实现均可令warning缺席。
+图：在一个分支图中说明 split warning 如何产生、哪些检查会跳过，以及 native 失败时为何只有最终超时。
 
 50% 是 native timer 的预定 split point，通知还要经过 Java Handler、producer 状态检查、Binder 与 app executor。原生计时不可用而降级为 `FeatureDisabled` 时，只投递最终超时消息，没有这套 split warning；即使已排队，producer 也可能因计时对象已结束而返回。系统延迟可能让 warning 晚于 deadline 才处理。
 
-<!-- gracker-diagram: ch09-07-16-timer-fallback -->
-![native timer 与降级实现](../../assets/diagrams/ch09/ch09-07-16-timer-fallback.png)
-
-图：r1选择依据native支持和创建结果；不要从旧注释推断仍有同名运行时flag门槛。
 
 也不要直接用 `timeout-consumed` 当作统一的剩余时间：short FGS 的 timer 在 `onTimeout()` 通知后按剩余宽限启动，warning 的 consumed 来自这段 timer，timeout 却由 `getAnrTime()-getStartTime()` 计算；Broadcast 的可扩展 timer 也可能改变最终到期时长。字段须结合具体 producer 的起点、配置和扩展解释。
 
@@ -418,10 +376,6 @@ AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程�
 
 InputDispatcher 为 no-focused-window（没有焦点窗口）状态维护独立的 pre-ANR 标记，并从 deadline 反推 warning 时刻，预警窗口的取值见后文“pre-ANR 时间公式”。状态恢复、focused application（当前应获得焦点的应用）改变或已经出现 focused window 时，最终 ANR 可以取消。
 
-<!-- gracker-diagram: ch09-07-18-no-focus-preview -->
-![no-focus 预警的状态条件](../../assets/diagrams/ch09/ch09-07-18-no-focus-preview.png)
-
-图：普通connection输入超时没有沿这条pre-ANR helper发送warning，不能由一条路径推导全输入覆盖。
 
 该实现路径使用 `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW`，单凭这一条路径，推不出全部输入派发超时的覆盖情况。
 
@@ -460,17 +414,13 @@ if (Build.VERSION.SDK_INT >= 37) {
 }
 ```
 
-<!-- gracker-diagram: ch09-07-19-history-candidates -->
-![历史退出记录只是关联候选](../../assets/diagrams/ch09/ch09-07-19-history-candidates.png)
-
-图：正文示例只打印候选key，内存recorder未实现跨启动存储；查询无命中不能直接判恢复。
 
 同一次等待在最终 detector 检查前恢复，可以没有对应 ANR；但“没有匹配退出记录”本身只应标为 unmatched（未匹配）。历史条数与保留窗口、进程继续存活、重启、结构化信息缺失、跨 UID 改归责和本地 warning 丢样，都可能造成关联缺口。反过来，有 ANR exit 而没有已记录 warning，也可能是 producer 未覆盖、开关关闭、尚未注册、投递或 executor 未执行；不能单凭缺失记录推断恢复或系统没有预警。
 
-<!-- gracker-diagram: ch09-07-20-unmatched-warning -->
-![没有匹配记录时先保留未知](../../assets/diagrams/ch09/ch09-07-20-unmatched-warning.png)
+<!-- gracker-diagram: ed09-07-warning-match -->
+![warning 关联候选与最终分类](../../assets/diagrams/ch09/ed09-07-warning-match.png)
 
-图：一个ANR未必终止进程；缺少exit、缺少warning或缺少trace各有不同原因。
+图：合并退出候选的查找和 matched / recovered / unmatched 分类，明确“没有匹配”不等于“已恢复”。
 
 `isUserPerceptible()` 表示系统记录的用户可感知性。把它读成“进程一定展示了某种固定样式的对话框”就过了；后台 silent ANR 与设备 UI 策略，仍由最终 ANR 处理流程决定。
 
@@ -478,10 +428,6 @@ if (Build.VERSION.SDK_INT >= 37) {
 
 高价值且成本可控的数据包括：
 
-<!-- gracker-diagram: ch09-07-21-snapshot-cost -->
-![回调应复制已有状态](../../assets/diagrams/ch09/ch09-07-21-snapshot-cost.png)
-
-图：这是诊断设计取舍，不是设备开销实测；需要目标build验证采集成本与丢样。
 
 - `(anrType, anrId)`、consumed/timeout；
 - callback 的 uptime（开机时长） 与 wall clock（日期时间）；
@@ -543,17 +489,9 @@ warning listener 本身不会启动系统 trace，也补不回注册前的历史
 
 上面的 warning instant 不含 anrType 或 PID，要靠载荷、producer 与日志补足。最终 `ANR Detected` instant 还要求 `includeAnrInfo` 开启并成功构造非空 AnrInfo；它增加 PID，但同样没有 type/reason 字段。抓取还需采到 `debug.anr` Track Event category，详细配置见 [§9.2](02-anr-kernel-trace-diagnosis.md#3-android-17-中可用的数据源)。
 
-<!-- gracker-diagram: ch09-07-24-instant-fields -->
-![两类系统 instant 的字段与门槛](../../assets/diagrams/ch09/ch09-07-24-instant-fields.png)
-
-图：字段缺失不能靠名字补全；缺少最终instant也不证明没有ANR或已经恢复。
 
 分析时，我们可按下面的时间关系核对：
 
-<!-- gracker-diagram: ch09-07-25-evidence-order -->
-![把多种可缺席的证据对齐](../../assets/diagrams/ch09/ch09-07-25-evidence-order.png)
-
-图：这是分析顺序，不是保证采集到的因果全序；trace缓冲和信息开关可造成缺口。
 
 1. `AnrWarningDetected`；
 2. 应用自定义 warning breadcrumb（时间线标记）；
@@ -578,19 +516,11 @@ warning listener 本身不会启动系统 trace，也补不回注册前的历史
 | `matched_exit` | 是否匹配到最终 `ApplicationExitInfo.AnrInfo` |
 | `evidence_refs` | trace、breadcrumb、日志文件的索引 |
 
-<!-- gracker-diagram: ch09-07-26-storage-model -->
-![把类型、原文与时间分开存储](../../assets/diagrams/ch09/ch09-07-26-storage-model.png)
-
-图：生成时刻估算需要独立的投递延迟或误差界；payload的consumed本身不是绝对时间戳。
 
 warning 可提示耗时压力，但应按 producer 的预警点、执行延迟与恢复证据解释。反复出现有明确恢复证据的样本，值得核对该阶段耗时；自定义短 timeout 可让 no-focus warning 在首次检查就满足，也不能一概把所有 warning 解释为已经消耗一半期限。
 
 ### 12. 常见误解
 
-<!-- gracker-diagram: ch09-07-27-misconceptions -->
-![四类常见的误推](../../assets/diagrams/ch09/ch09-07-27-misconceptions.png)
-
-图：这些判断分别涉及检测、覆盖、身份与证据完整性，不能由一次callback同时证明。
 
 #### 收到 warning 就一定会 ANR
 
@@ -618,10 +548,6 @@ AMS 按 UID 分发。同 UID 的多个已注册进程都可能收到同一 warni
 
 ### 13. 接入检查表
 
-<!-- gracker-diagram: ch09-07-28-integration -->
-![接入前后各核对什么](../../assets/diagrams/ch09/ch09-07-28-integration.png)
-
-图：工程建议需要目标build验证，不把版本号代替producer、注册或剩余窗口的实际证据。
 
 - 用 API 37 SDK 编译，并用 `SDK_INT >= 37` 保护调用；
 - executor 与主线程、容易排满的业务线程池隔离；
@@ -671,10 +597,6 @@ InputDispatcher 处理的两类超时都表现为“输入没有按期完成”�
 
 状态首次建立时保存：
 
-<!-- gracker-diagram: ch09-07-30-focus-state -->
-![何时建立 no-focus 等待](../../assets/diagrams/ch09/ch09-07-30-focus-state.png)
-
-图：eventTime可能早于状态建立时刻；实际timeout取application handle，不能统一假定为5秒。
 
 - 输入事件的 `eventTime`（发生时间） 与 `eventId`（事件标识）；
 - 当前 focused application；
@@ -684,16 +606,17 @@ InputDispatcher 处理的两类超时都表现为“输入没有按期完成”�
 
 实际 timeout 来自 `focusedApplicationHandle->getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT)`，因此每次都按 5 秒算并不成立。应用焦点改变、窗口出现或其他重置条件发生时，InputDispatcher 会清除这次等待。
 
+<!-- gracker-diagram: ed09-07-focus-lifecycle -->
+![no-focus 从建立等待到预警、恢复或正式到期](../../assets/diagrams/ch09/ed09-07-focus-lifecycle.png)
+
+图：用一张状态图连接 no-focus 等待的建立、一次预警、条件恢复与正式到期，避免四图反复介绍同一状态。
+
 #### 1.2 window unresponsive
 
 窗口建立 connection 后，InputDispatcher 把等待确认的 `DispatchEntry`（一次事件派发记录）放进 wait queue，并用 `mAnrTracker` 快速找到最近的 deadline。到期后，它取 connection wait queue 中最老的事件来构造诊断 reason（原因描述）。
 
 源码特意说明：最老事件未必就是最早达到 deadline 的事件，因为窗口 timeout 可能变化；但应用通常按顺序处理输入，用最老事件解释现场更有诊断价值。因此，reason 中的 event 与精确触发 deadline 的 entry（队列项） 可能不是同一条记录。
 
-<!-- gracker-diagram: ch09-07-31-tracker-oldest -->
-![触发 deadline 与诊断事件可能不同](../../assets/diagrams/ch09/ch09-07-31-tracker-oldest.png)
-
-图：事务身份和时间基准必须一并保留；不能把reason中的事件直接当作唯一触发者。
 
 ### 2. `dispatchOnce()` 里的两次检查
 
@@ -751,19 +674,11 @@ consumed   = actual_timeout - (timeout_end - now)
 | 3000 ms | 1500 ms | 2000 ms | 1000 ms |
 | 1000 ms | 500 ms | 2000 ms | 首次检查时立即满足 |
 
-<!-- gracker-diagram: ch09-07-33-pre-window-examples -->
-![预警点的三个 timeout 算例](../../assets/diagrams/ch09/ch09-07-33-pre-window-examples.png)
-
-图：这些是公式算例，实际到达和执行仍受调度影响；2000ms参数不是App诊断窗口SLA。
 
 默认 5 秒路径恰好在一半附近发出 warning。自定义 timeout 较短时，warning 的触发点会早于 50% 进度；若计算出的 `warning_at` 已经过去，InputDispatcher 会立即排队通知。
 
 `notifiedPreAnr` 保证同一 `mNoFocusedWindowAnrState` 只排队一次。状态被重置后，新事件可以开始新的预警周期。
 
-<!-- gracker-diagram: ch09-07-34-pre-once -->
-![同一 no-focus 状态只排一次预警](../../assets/diagrams/ch09/ch09-07-34-pre-once.png)
-
-图：标记限制的是同一状态的入队次数，不是保证公开listener恰好收到一次，也不撤回已排队command。
 
 ### 4. pre-ANR 会直接到达公开 warning API
 
@@ -771,10 +686,6 @@ consumed   = actual_timeout - (timeout_end - now)
 
 预警的主链是 `InputDispatcher command → NativeInputManager JNI → InputManagerService → InputManagerCallback → WMS AnrController → AMS → AnrWarningController`。WMS 可选追踪与向原 Activity UID 发出 warning 是两项动作，均须保留各自条件。
 
-<!-- gracker-diagram: ch09-07-35-native-bridge -->
-![Native producer 到 Java 的桥接](../../assets/diagrams/ch09/ch09-07-35-native-bridge.png)
-
-图：JNI连接native和Java，预警路径与公开API直接相连；这里没有绕过WMS或绕过UID分发。
 
 这里要区分两个 flag。Native producer 由 `enable_anr_warning_callback_input_dispatcher` 控制；Java 公开接入也带 `@FlaggedApi(Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK)`，覆盖 `ActivityManager.registerAnrWarningListener()`、`unregisterAnrWarningListener()` 和 `AnrWarningResult`。因此，平台集成时要分别确认 InputDispatcher producer 与 framework API 暴露状态；App 端即使用 API 37 编译，也要把 API/flag 不可用、无 warning 投递作为正常分支。
 
@@ -787,10 +698,6 @@ consumed   = actual_timeout - (timeout_end - now)
 
 `AnrController.notifyPreAppUnresponsive()` 先解析 `InputApplicationHandle` 对应的 Activity。Activity 不存在、已经 stopped（停止） 或没有进程时，部分动作会被跳过。存在进程时，AMS warning 使用以下数据：
 
-<!-- gracker-diagram: ch09-07-38-pre-wms-targets -->
-![预警 UID 与追踪 PID 是两个选择](../../assets/diagrams/ch09/ch09-07-38-pre-wms-targets.png)
-
-图：这两项动作的开关、对象与成功条件分别核对；收到callback不证明trace请求成功。
 
 - UID：候选 Activity 所属应用的身份编号；
 - `anrId`：Native 输入事件 id；
@@ -803,19 +710,15 @@ consumed   = actual_timeout - (timeout_end - now)
 
 公开 API、类型清单和载荷字段见本章前文“公开回调、类型与交付约束”。
 
-<!-- gracker-diagram: ch09-07-36-java-bridge -->
-![WMS 到公开 callback 的主链](../../assets/diagrams/ch09/ch09-07-36-java-bridge.png)
+<!-- gracker-diagram: ed09-07-input-bridge -->
+![Input pre-ANR 到公开 warning 的完整投递链](../../assets/diagrams/ch09/ed09-07-input-bridge.png)
 
-图：可选trace可选择另一PID；公开warning仍使用原Activity UID，payload不含目标PID或token。
+图：合并 Native 与 Java 两段桥接链；JNI、WMS 和按 UID 分发均保留。
 
 ### 5. warning 时可选的 Long Method Trace
 
 WMS 的 `enableInputDispatcherLongMethodTracing` flag 开启时，pre-ANR 还会尝试调用 `LongMethodTracer.trigger(pid, 3000)`。`LongMethodTracer` 自身又受 `com.android.server.utils` 的 `longMethodTrace` flag 控制，因此只有两个开关都启用时，系统才会尝试这项诊断，结果仍不保证成功。
 
-<!-- gracker-diagram: ch09-07-39-long-method -->
-![Long Method Trace 的前提与结果](../../assets/diagrams/ch09/ch09-07-39-long-method.png)
-
-图：3秒是请求追踪时长，不延长输入deadline，也不保证在剩余warning窗口内完成。
 
 目标 PID 的选择有两种：
 
@@ -826,16 +729,17 @@ WMS 的 `enableInputDispatcherLongMethodTracing` flag 开启时，pre-ANR 还会
 
 warning callback 与 Long Method Trace 是相互独立的动作：应用收到 callback 时，追踪可能尚未成功；追踪成功时，应用也可能还没注册 listener。
 
+<!-- gracker-diagram: ed09-07-wms-two-actions -->
+![WMS 的公开 warning 与可选追踪分别判断](../../assets/diagrams/ch09/ed09-07-wms-two-actions.png)
+
+图：在一张图中分开两个可独立成功或缺席的动作：warning 用原 UID，追踪可选另一 PID。
+
 ### 6. 到期路径仍有两条
 
 #### 6.1 no focused window 到期
 
 `processAnrsLocked()` 发现当前时间达到 `mNoFocusedWindowAnrState.timeoutEndTime` 后，会重新检查：
 
-<!-- gracker-diagram: ch09-07-40-focus-expiry -->
-![no-focus 到期时重新检查](../../assets/diagrams/ch09/ch09-07-40-focus-expiry.png)
-
-图：正式归因仍由WMS继续处理；已排出的pre command不因状态结束而自动撤回。
 
 - 当前 focused application 是否仍为等待中的 application；
 - focused window 是否仍为空。
@@ -853,10 +757,10 @@ warning callback 与 Long Method Trace 是相互独立的动作：应用收到 c
 5. 保存 `mLastAnrState`；
 6. 将 policy 通知排队，并通过 `cancelEventsForAnrLocked()` 尝试合成该连接的输入取消事件；它不在这里断开连接，也不是撤回已经报告的 ANR。
 
-<!-- gracker-diagram: ch09-07-41-connection-expiry -->
-![connection 到期后的真实动作](../../assets/diagrams/ch09/ch09-07-41-connection-expiry.png)
+<!-- gracker-diagram: ed09-07-connection-expiry -->
+![连接超时：deadline 触发与最老事件取证](../../assets/diagrams/ch09/ed09-07-connection-expiry.png)
 
-图：队列空可提前返回；取消输入状态与ANR报告是不同动作，目标window已移除也可不再生成取消事件。
+图：把连接到期的动作链与“触发 deadline 的事件”和“诊断最老事件”的差别放在同一流程中。
 
 这一路没有经过 `processNoFocusedWindowPreAnrLocked()`，所以 API 37 input warning 在这里是指望不上的。
 
@@ -869,10 +773,6 @@ warning callback 与 Long Method Trace 是相互独立的动作：应用收到 c
 | `notifyNoFocusedWindowAnr()` | `INPUT_DISPATCH_NO_FOCUSED_WINDOW` | application handle |
 | `notifyWindowUnresponsive()` | `INPUT_DISPATCH_WINDOW_UNRESPONSIVE` | input token、可选 PID、reason |
 
-<!-- gracker-diagram: ch09-07-42-formal-jni -->
-![两条正式回调构造不同 kind](../../assets/diagrams/ch09/ch09-07-42-formal-jni.png)
-
-图：includeAnrInfo开启时另挂ExpiredTimer；Java对象只承载数据，不替输入启动AnrTimer计时。
 
 `InputManagerService.timeoutMessage()` 还会用 `SurfaceControl.getStalledTransactionInfo(pid)` 检查关联 surface（图形缓冲区提交目标） 是否因 unsignaled fence（尚未发出完成信号的图形同步栅栏） 卡住。命中时，reason 会补充 layer（图层）、buffer id 和 frame number，提示可能存在 GPU hang（GPU 长时间没有完成工作）。这些信息仍只是诊断上下文，WMS/AMS 还要继续解析责任进程。
 
@@ -896,10 +796,6 @@ timeoutRecord.setExpiredTimer(expiredTimer);
 
 这里复用了 `AnrTimer.ExpiredTimer` 作为只承载三个字段的数据对象：
 
-<!-- gracker-diagram: ch09-07-44-expired-fields -->
-![ExpiredTimer 在输入路径只承载数据](../../assets/diagrams/ch09/ch09-07-44-expired-fields.png)
-
-图：输入deadline由Native状态与AnrTracker驱动；AnrInfo是否存在还取决于flag及后续有效记录。
 
 - `mTimerId`：输入 event id；
 - `mStartMs`：输入 event time 转为毫秒；
@@ -927,17 +823,9 @@ no-focused-window warning 会先投给候选 Activity UID。到期后，`AnrCont
 
 若当前 focus target 的 focus request age（等待焦点请求的时间）已经达到其 dispatch timeout，WMS 会尝试把正式 window-unresponsive 责任交给该 focus target；否则仍按原 Activity 处理。pre-ANR 的可选 long method trace 也用相同规则挑选候选 PID。
 
-<!-- gracker-diagram: ch09-07-46-focus-blame -->
-![WMS 按 focus request age 判断候选](../../assets/diagrams/ch09/ch09-07-46-focus-blame.png)
-
-图：focus request age不是直接测量实际持有焦点的时长；改目标也不意味着自动把TimeoutRecord的kind改成另一种。
 
 这就带来一个平台关联上的错位：
 
-<!-- gracker-diagram: ch09-07-47-uid-reattribution -->
-![跨 UID 改归责的关联缺口](../../assets/diagrams/ch09/ch09-07-47-uid-reattribution.png)
-
-图：接收warning的进程与最终责任进程可能不同；系统/OEM需保存原token、focus target和判断过程。
 
 - warning 的 `(type, id)` 属于原 Activity UID；
 - 正式 ANR 可能归到另一个 PID/UID；
@@ -946,14 +834,15 @@ no-focused-window warning 会先投给候选 Activity UID。到期后，`AnrCont
 
 系统/OEM 平台应保留 event id、原 application token、focus target 和责任判断过程。普通应用的 APM 应先把缺乏匹配证据的 warning 标成 unmatched；有独立证据时再标 recovered 或 possible-reattribution。不要由缺少退出记录直接判断恢复，也不要强行归给接收回调的进程。
 
+<!-- gracker-diagram: ed09-07-attribution -->
+![正式归责变化与 warning 的关联边界](../../assets/diagrams/ch09/ed09-07-attribution.png)
+
+图：把 WMS 的候选选择、回退与 App 侧关联缺口放在同一条责任变化链中。
+
 ### 10. AMS 与 AnrHelper
 
 WMS 解析出 Activity 或 PID 后，调用 `ActivityManagerInternal.inputDispatchingTimedOut()`。AMS：
 
-<!-- gracker-diagram: ch09-07-48-ams-filters -->
-![正式输入报告的 AMS 过滤](../../assets/diagrams/ch09/ch09-07-48-ams-filters.png)
-
-图：没有普通persistent进程天然豁免的统一分支；是否出现UI仍取决于后续状态与策略。
 
 - 要求调用方具有 `FILTER_EVENTS`；
 - 按 PID 查 `ProcessRecord`；
@@ -969,10 +858,6 @@ WMS 解析出 Activity 或 PID 后，调用 `ActivityManagerInternal.inputDispat
 
 在实际 timeout 恰为 5 秒、HW=1、相关 flag 开启且调度及时的示意中，T0 指建立本次等待状态的时刻，原输入事件的 eventTime 可能更早：
 
-<!-- gracker-diagram: ch09-07-49-five-second-example -->
-![实际 D 为五秒时的计划算例](../../assets/diagrams/ch09/ch09-07-49-five-second-example.png)
-
-图：条带只表达给定条件的配置算例，非实测比例；输入eventTime可早于T0，实际warning可能错过deadline。
 
 ```text
 T0       发现 focused application 存在，但 focused window 为空
@@ -993,10 +878,11 @@ T0+5.0s+ WMS / AMS / AnrHelper 处理栈、报告、UI 或 kill
 
 若系统在 `warning_at` 之后才得到运行机会，pre-warning 与正式 ANR 可能非常接近。公开回调只有“尽力早于 deadline”的承诺，没有“至少剩余 N 毫秒”的 SLA（服务级别保证）。
 
-<!-- gracker-diagram: ch09-07-50-late-check -->
-![检查延迟时 pre 和正式通知可很接近](../../assets/diagrams/ch09/ch09-07-50-late-check.png)
 
-图：这是源码允许的一种极端时序，不是固定常态；warning回调与最终归因之间没有最短领先时间保证。
+<!-- gracker-diagram: ed09-07-timeliness -->
+![及时与延迟检查的两种预警时序](../../assets/diagrams/ch09/ed09-07-timeliness.png)
+
+图：把正常算例和迟到检查并排对照：有预定点，不代表 App 能得到固定长度的诊断窗口。
 
 ### 12. `2s / 5s / 10s` 各自的计时对象
 
@@ -1031,10 +917,6 @@ pre-ANR 代码附近还有两个常量：
 
 我们在 trace 里按以下顺序对齐：
 
-<!-- gracker-diagram: ch09-07-52-input-evidence -->
-![Input 证据的关联顺序](../../assets/diagrams/ch09/ch09-07-52-input-evidence.png)
-
-图：这是分析流程，trace标记可能缺失；自动生成固定/data/anr产物不是Perfetto的一般承诺。
 
 1. 从 payload / 本地记录找 `(anrType,anrId)` 和 callback uptime，再与不带 type 的系统 instant 按 id、时段及 producer 关联；
 2. 找 WMS `notifyPreAppUnresponsive()` 和可选的 long-method trace（长方法追踪）；
@@ -1044,12 +926,13 @@ pre-ANR 代码附近还有两个常量：
 
 Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持续 trace、triggered trace（按事件触发的 trace）或 Profiling trigger，详见 [9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)。
 
+<!-- gracker-diagram: ed09-07-evidence -->
+![从预警载荷到 Input 现场的证据关联](../../assets/diagrams/ch09/ed09-07-evidence.png)
+
+图：用一条取证流程连接通用 key 与 Input 特有线索，避免两套步骤重复铺陈。
+
 ### 14. 工程接入建议
 
-<!-- gracker-diagram: ch09-07-53-engineering-scope -->
-![应用、平台与测试的职责](../../assets/diagrams/ch09/ch09-07-53-engineering-scope.png)
-
-图：这些是待在目标build执行的验证维度，本文图示和主机夹具不冒充已完成的设备测试。
 
 #### 普通 App
 
@@ -1089,10 +972,6 @@ Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持�
 | AOSP Android 14/15/16 的各自 `android-N.0.0_r1` | 本次在这三份 InputDispatcher.cpp 中检索，均无 `processPreAnrsLocked()` 与 `processNoFocusedWindowPreAnrLocked()`；此结论不覆盖所有厂商分支与后续补丁 |
 | Android 17 / API 37 | 增加 InputDispatcher no-focus pre-ANR、公开 warning 投递、可选 long method tracing 与 input `AnrInfo` 载荷 |
 
-<!-- gracker-diagram: ch09-07-54-version-scope -->
-![release 对照与厂商边界](../../assets/diagrams/ch09/ch09-07-54-version-scope.png)
-
-图：旧版本对照只检查明确列出的三份r1文件，不证明所有厂商或后续版本均无相似功能。
 
 输入 timeout、WMS 归因和 ANR 主路径在更早版本已经存在；Android 17 的 pre-warning 行为，倒推回 Android 14—16 是套不上的。
 
@@ -1110,10 +989,6 @@ Android 17 为 no-focused-window 输入 ANR 增加了一次 deadline 前的观�
 
 window-unresponsive pre-warning 仍在这套机制之外，callback 领先 deadline 的时长也没有固定保证。诊断系统应把 warning、可选 trace、正式责任判断和退出记录当成四份各自可能缺席的材料。
 
-<!-- gracker-diagram: ch09-07-55-four-evidence-pieces -->
-![最终保留四份独立证据](../../assets/diagrams/ch09/ch09-07-55-four-evidence-pieces.png)
-
-图：四份材料各自可能缺席；窗口connection无响应的pre-warning不在本r1这条no-focus producer中。
 
 ## 相关章节
 
