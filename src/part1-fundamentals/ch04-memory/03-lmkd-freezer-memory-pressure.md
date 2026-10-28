@@ -4,8 +4,11 @@ title: lmkd、Cached App Freezer 与内存压力治理
 section: '4.3'
 chapter: '4.3'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-16'
-last_verified_against: AOSP android-17.0.0_r1 ProcessList.java, psc/Constants.java, ActivityThread.java, CachedAppOptimizer.java, MemoryLimiter.java/JNI; system/memory/lmkd lmkd.cpp, include/lmkd.h, reaper.cpp; external/perfetto android.memory.lmk stdlib; Android common kernel android17-6.18-2026-06_r6 PSI and cgroup v2 docs; official lmkd, Android 17 app memory limits, app memory and Perfetto docs
+last_verified: '2026-10-26'
+last_source_verified_at: '2026-10-26T22:41:51+08:00'
+last_idle_audit_at: '2026-10-26T22:41:51+08:00'
+verification_scope_note: 本次核对 lmkd 压力与候选选择、Freezer 状态及诊断入口、MemoryLimiter Java/JNI 和官方版本边界；未执行真机冻结或内存压力实验。
+last_verified_against: AOSP android-17.0.0_r1 ProcessList.java, psc/Constants.java, ActivityThread.java, CachedAppOptimizer.java, ActivityManagerShellCommand.java, MemoryLimiter.java/JNI; system/memory/lmkd lmkd.cpp, include/lmkd.h, reaper.cpp; external/perfetto android.memory.lmk stdlib; Android common kernel android17-6.18-2026-06_r6 PSI and cgroup v2 docs; official lmkd, Android 17 app memory limits, app memory and Perfetto docs
 last_rework_at: '2026-08-16T21:39:17+08:00'
 confidence: medium-high
 sources:
@@ -17,6 +20,8 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java
 - type: aosp
@@ -126,7 +131,7 @@ consolidated_from:
 
 # lmkd、Cached App Freezer 与内存压力治理
 
-系统内存压力会触发回收、压缩、冻结、内存控制组（memory cgroup，简称 memcg）限制和进程终止。这几套手段由不同角色分工：lmkd 负责挑选要终止的进程，Freezer 降低缓存进程的活动，MemoryLimiter（单进程配额机制）与产品预取则改变局部压力和工作集。
+Android 的内存治理包含回收、压缩、冻结、内存控制组（memory cgroup，简称 memcg）限制和进程终止。各机制的触发条件不同：lmkd 根据系统内存压力挑选要终止的进程，Freezer 按进程状态和冻结策略暂停或恢复执行，MemoryLimiter（单进程配额机制）按设备配置施加局部限制，产品预取则会改变工作集和系统压力。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
@@ -555,7 +560,7 @@ ORDER BY ts;
 adb shell cat /proc/<pid>/oom_score_adj
 adb shell dumpsys meminfo
 adb shell dumpsys activity exit-info <package-name>
-adb shell getprop | grep -E 'ro\\.lmk|sys\\.lmk'
+adb shell getprop | grep -E 'ro\.lmk|sys\.lmk'
 adb logcat -b all -s lowmemorykiller ActivityManager MemoryLimiter
 ```
 
@@ -721,6 +726,7 @@ Android 17 源码中的边界包括：
 - [`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
 - [`com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)
 - [`CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
+- [`ActivityManagerShellCommand.java`（`runFreeze()` 与 `getProcessFromShell()`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java#1501)
 - [`ActivityThread.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
 - [`lmkd.cpp`](https://android.googlesource.com/platform/system/memory/lmkd/+/android-17.0.0_r1/lmkd.cpp)
 - [`include/lmkd.h`](https://android.googlesource.com/platform/system/memory/lmkd/+/android-17.0.0_r1/include/lmkd.h)
@@ -1081,12 +1087,12 @@ adb shell getprop ro.product.cpu.abilist
 
 ```bash
 adb shell dumpsys activity | grep -A 20 "Apps frozen:"
-adb shell am freeze <PACKAGE_OR_PROCESS>
-adb shell am unfreeze <PACKAGE_OR_PROCESS>
+adb shell am freeze <PID_OR_PROCESS_NAME>
+adb shell am unfreeze <PID_OR_PROCESS_NAME>
 adb logcat | grep -iE "freez|cachedappoptimizer"
 ```
 
-`am freeze` 与 `am unfreeze` 适合受控实验。不同构建类型和版本的 shell 子命令可能有权限或参数差异，自动化脚本应先检查命令返回值。
+`am freeze` 与 `am unfreeze` 适合受控实验。`android-17.0.0_r1` 按 PID 或完整进程名查找目标；同包的独立进程需要分别指定，同名匹配到多个实例时命令会报错。不同构建类型和版本的 shell 子命令可能有权限或参数差异，自动化脚本应先检查命令返回值。
 
 #### 第三步：在 Perfetto 中对齐事件
 
