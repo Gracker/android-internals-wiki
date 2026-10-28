@@ -62,10 +62,6 @@ related_chapters:
 
 低内存带来的性能损失没有固定顺序。系统可能回收 clean file page（未修改的文件页）、把匿名页换入 ZRAM（内存中的压缩交换设备）、让分配线程进入 direct reclaim（同步直接回收），也可能终止 cached process（缓存进程）；Android 17 的 Memory Limiter 还会约束异常进程。这些路径各自消耗 CPU、I/O、内存带宽或启动时间，只有在同一段 Trace 中核对事件先后和因果关系，才能确认是哪一条在起作用。
 
-<!-- gracker-diagram: ch10-02-01-pressure-paths -->
-![低内存代价分成三类证据](../../assets/diagrams/ch10/ch10-02-01-pressure-paths.png)
-
-图：回收、进程终止和 App 分配可以重叠出现；先识别实际路径，再衡量前台完成时间、返回启动与能耗。
 
 ## 1. 从分配失败到回收
 
@@ -75,10 +71,6 @@ Linux 把物理内存划分为多个 zone（内存区域），每个 zone 各自
 
 这条规则有多个条件：
 
-<!-- gracker-diagram: ch10-02-02-watermarks-and-request -->
-![水位线要和分配请求一起解释](../../assets/diagrams/ch10/ch10-02-02-watermarks-and-request.png)
-
-图：min、low、high 是 zone 水位参数；是否允许分配与唤醒后台线程，还受 order、GFP、保留页和碎片等条件控制。
 
 - 分配请求的 order（连续页块阶数）、GFP flags（内核分配约束）、允许使用的 zone 与保留页各不相同。
 - per-CPU page list（每 CPU 页缓存）、watermark boost（水位临时增量）、碎片和 compaction（内存规整）会改变分配慢路径。
@@ -94,10 +86,6 @@ Android 17 的 6.18 内核锚点：
 
 分配请求在快速路径上失败，同时又允许 `__GFP_DIRECT_RECLAIM` 时，发起分配的线程可能同步进入回收。空闲页低于 `min` 并不会无条件触发这条路径，分配 order、zone、reserve（保留页）、memcg（内存控制组）与 GFP 语义都会影响这个判断。
 
-<!-- gracker-diagram: ch10-02-03-direct-reclaim-gate -->
-![同步回收由分配线程和 GFP 条件决定](../../assets/diagrams/ch10/ch10-02-03-direct-reclaim-gate.png)
-
-图：慢路径失败不必然进入同步回收。允许直接回收、上下文和其他门限成立后，当前分配线程才可能承担回收与等待成本。
 
 Direct reclaim 会占用当前线程的执行时间。线程可能在 CPU 上扫描页面，也可能因 throttle（限速）、swap 或 I/O 等待进入不可中断睡眠。看到主线程处于 `D` 状态时，仍要用 `sched_switch`、blocked reason（阻塞原因）或内核调用栈证明它在等待什么，不能只凭线程状态归因到内存回收。
 
@@ -113,17 +101,13 @@ Direct reclaim 会占用当前线程的执行时间。线程可能在 CPU 上扫
 | slab / 内核缓存 | shrinker（内核缓存回收器）回收 | 由具体子系统决定 |
 | 高阶物理页需求 | compaction / retry（规整后重试） | 页迁移、扫描与分配延迟 |
 
-<!-- gracker-diagram: ch10-02-04-page-reclaim-costs -->
-![回收页面类型决定后续代价](../../assets/diagrams/ch10/ch10-02-04-page-reclaim-costs.png)
-
-图：clean 文件页可丢弃，匿名页通常需要 swap，内核缓存由子系统 shrinker 处理。脏页还需考虑回写、跳过与等待。
 
 高阶分配还可能在 direct reclaim 之前先尝试 compaction；失败后的重试、规整、OOM 与返回失败受 GFP / order 条件控制，不存在所有分配都会经历的固定流水线。
 
-<!-- gracker-diagram: ch10-02-05-compaction-vs-reclaim -->
-![高阶规整与回收没有固定先后](../../assets/diagrams/ch10/ch10-02-05-compaction-vs-reclaim.png)
+<!-- gracker-diagram: ed10-02-allocation-and-reclaim-conditions -->
+![按分配请求分别判断后台回收、同步回收与物理页规整](../../assets/diagrams/ch10/ed10-02-allocation-and-reclaim-conditions.png)
 
-图：高阶分配需要满足连续页块需求。固定 6.18 慢路径在部分条件下会先尝试规整，后续也可回收、重试或失败。
+图：固定6.18内核的条件/线程关系示意，不是完整page_alloc控制流。先按node/zone、order、GFP、reserve与碎片核对请求，各zone min/low/high参与不同判断，不构成全机free三级流水线。后台回收需允许等条件才可唤醒对应node的kswapd；快速尝试失败且GFP/上下文允许后，当前分配线程才可能同步direct reclaim。高阶需求还要连续块，基础页足够仍可受碎片限制，部分路径先compaction，后续reclaim/retry/失败不能固定排序。三机制可以交叠，用同TID事件、sched与调用栈追当前关键路径；kswapd Running与main D共现仅是线索，D也可能来自Binder/文件系统/fence等等待，回收不保证产生磁盘I/O。
 
 Direct reclaim 不一定产生存储 I/O。clean file page 可以直接丢弃，匿名页在常见 Android 配置中可进入 ZRAM；设备若启用 ZRAM writeback（回写），部分数据也可能进入 backing device（后备存储设备）。分析时应把 vmscan、block I/O、ZRAM、refault 和线程状态放在一起。
 
@@ -131,10 +115,6 @@ Direct reclaim 不一定产生存储 I/O。clean file page 可以直接丢弃，
 
 Pressure Stall Information（PSI，资源压力停顿信息）统计任务因 CPU、memory 或 I/O 资源不足而停顿的时间。memory PSI 中：
 
-<!-- gracker-diagram: ch10-02-06-psi-some-full -->
-![some 与 full 描述任务停顿的不同集合](../../assets/diagrams/ch10/ch10-02-06-psi-some-full.png)
-
-图：memory PSI some 表示有任务因内存压力停顿，full 表示所有非 idle 任务同时停顿。full 为零仍可能存在严重的局部延迟。
 
 - `some`：时间窗内至少有一个非 idle（非空闲）任务因内存压力停顿。
 - `full`：时间窗内所有非 idle 任务同时因内存压力停顿。
@@ -154,10 +134,10 @@ adb shell dumpsys activity exit-info com.example.app
 
 `/proc/pressure/memory` 是系统级累计与平均信息，`vmstat` 需要用两个时间点做差分。要确认进程死亡原因，应查看退出记录，不能用当前 PSI 值反推过去某次退出。
 
-<!-- gracker-diagram: ch10-02-07-psi-average-and-delta -->
-![平滑趋势与区间差分分开](../../assets/diagrams/ch10/ch10-02-07-psi-average-and-delta.png)
+<!-- gracker-diagram: ed10-02-psi-task-sets-and-time-views -->
+![PSI some / full 是不同任务集合，avg 与 total 也用不同时间口径](../../assets/diagrams/ch10/ed10-02-psi-task-sets-and-time-views.png)
 
-图：avg10/60/300 是指数平滑趋势。total 用微秒累计，需在同一计数范围内对齐两次读数与实际时间；当前 PSI 不能解释过去某次退出。
+图：轨道只作教学：同一memory资源/统计范围仅A/B两项任务且全段non-idle，没有测量值或真实时长比例。some是至少一项任务因内存压力停顿的时间并集，full是全部非idle任务同时停顿的交集；full为零仍可有some或严重局部延迟。avg10/60/300为10/60/300秒尺度指数移动平均，不是精确滑窗算术平均；total以微秒累计，在同一计数范围且无重置时用两次读数差分，并保留实际t1/t2。系统级和cgroup范围不混算；PSI不提供具体页/进程/分配根因，当前读数不能反推过去某次退出，需同窗回收、线程和进程证据。
 
 ## 3. Android 17 的两个 PSI 消费者
 
@@ -165,10 +145,6 @@ adb shell dumpsys activity exit-info com.example.app
 
 Android 17 的 lmkd（low memory killer daemon，低内存终止守护进程）初始化 PSI monitors（压力事件监听器）时，默认配置采用新策略；`use_new_strategy` 属性及 low-RAM / `use_minfree_levels` 组合仍会影响选择，旧策略仅支持 v1 memcg。以下说明新策略：不使用 LOW 档，把 MEDIUM 映射到可配置的 partial stall（部分任务停顿），把 CRITICAL 映射到可配置的 complete stall（所有非空闲任务停顿）。收到 PSI 事件后，lmkd 还会读取 zone watermark、swap、working-set refault / thrashing（工作集页面频繁换入造成的抖动）、进程 `oom_score_adj`（进程受保护级别）与 footprint（内存占用），再决定是否选择进程。
 
-<!-- gracker-diagram: ch10-02-09-lmkd-strategy-branches -->
-![新旧 kill 策略都有条件](../../assets/diagrams/ch10/ch10-02-09-lmkd-strategy-branches.png)
-
-图：固定 r1 直接初始化 PSI。use_new_strategy 和设备属性组合决定处理器；新策略中 LOW 关闭，MEDIUM/CRITICAL 使用配置的 partial/complete stall。
 
 `use_minfree_levels` 在 Android 17 影响 kill strategy（终止进程策略），它不能按旧版的 `ro.lmk.use_psi=false` 来理解。Android 17 源码已经没有该 PSI 开关的旧用法。
 
@@ -183,10 +159,6 @@ lmkd 选择目标时应以事件证据为准：
 
 Android 17 在 `reaper.kill()` 返回成功后调用 `ATRACE_INSTANT_FOR_TRACK()`，description 格式为 `lmk,pid,reason,oomadj,min_oom_score,max_thrashing`；正常压力选择路径还写入 `lowmemorykiller` 日志与统计。这个 instant 标记提交终止请求的时刻，不能当成进程已经退出或物理页全部回收的完成点。在现代设备上排查时，优先读这个 userspace instant（用户空间瞬时事件）、logcat/statsd 和 `ApplicationExitInfo`，不要依赖可能不存在的 legacy（旧式）`lowmemorykiller/lowmemory_kill` 内核事件。
 
-<!-- gracker-diagram: ch10-02-10-kill-submission-boundary -->
-![lmkd instant 不是资源释放完成点](../../assets/diagrams/ch10/ch10-02-10-kill-submission-boundary.png)
-
-图：固定 r1 的 instant 标记终止请求已被接受；异步退出和共享资源释放另有完成边界。
 
 ### 3.2 system_server 的 LowMemDetector
 
@@ -200,17 +172,13 @@ Android 17 在 `reaper.kill()` 返回成功后调用 `ATRACE_INSTANT_FOR_TRACK()
 
 这些是 `android-17.0.0_r1` 的 Framework 常量，不能直接作为所有 OEM 分支的性能阈值。Java 的 LowMemThread 调用 JNI，通过 epoll 等待事件；同批事件取最高等级。已有压力时以 1 秒超时继续等待，无新事件则返回 NORMAL；无压力时无限等待。`criticalLowMemory` slice 表示这套检测器处于 CRITICAL 的区间，并非原始 PSI full 停顿时长。ActivityManager 读取该状态后还可能使用覆盖值和进程数量等门限，再更新 memory factor 与进程统计。
 
-<!-- gracker-diagram: ch10-02-11-lowmem-detector-state -->
-![LowMemDetector 具有保持与超时规则](../../assets/diagrams/ch10/ch10-02-11-lowmem-detector-state.png)
-
-图：三个阈值是固定 r1 的 Framework 常量。critical slice 是检测器状态区间，不是原始 full 停顿时长。
 
 LowMemDetector 与 lmkd 读取同一个 PSI 子系统，但监听配置和动作不同。前者属于 system_server 状态管理，后者负责内存压力下的进程选择与终止；出现两个监听 fd（文件描述符）不表示 PSI 被重复计算。
 
-<!-- gracker-diagram: ch10-02-08-psi-two-consumers -->
-![同一 PSI 子系统有不同消费者](../../assets/diagrams/ch10/ch10-02-08-psi-two-consumers.png)
+<!-- gracker-diagram: ed10-02-psi-consumers-and-detector-state -->
+![同一个 PSI 子系统供两个消费者各自注册触发器](../../assets/diagrams/ch10/ed10-02-psi-consumers-and-detector-state.png)
 
-图：lmkd 与 LowMemDetector 分别注册自己的触发器；监听数量不意味着停顿时间重复计算，也不意味着两个消费者执行相同策略。
+图：两个消费者各自注册trigger，监听数不意味着PSI停顿重复记账。固定r1 lmkd按use_new_strategy和low-RAM/minfree等产品组合选策略：新策略LOW关闭、MEDIUM partial stall/CRITICAL complete stall，旧策略仍用PSI且仅支持v1memcg；minfree不是已不存在的旧use_psi开关。收到事件还需watermark/swap/refault/thrashing/adj/footprint等上下文才决定是否选进程。LowMemDetector则用三个1s固定framework窗口：some15ms、full30ms、full50ms；同批取最高，无压力无限等待，已有压力至多等1s，无新事件回NORMAL。Java状态和criticalLowMemory区间还经AppProfiler覆盖值/进程数门限更新memory factor；critical slice不是raw full停顿时长，这些阈值也不是全部OEM性能阈值。
 
 ## 4. lmkd kill 怎样转化为用户性能损失
 
@@ -218,10 +186,10 @@ cached process 退出后会释放其地址空间与资源引用；实际可回�
 
 评估低内存的产品影响时，至少要关联这几项：
 
-<!-- gracker-diagram: ch10-02-12-kill-return-startup -->
-![进程退出到用户返回的成本链](../../assets/diagrams/ch10/ch10-02-12-kill-return-startup.png)
+<!-- gracker-diagram: ed10-02-kill-submission-to-return-evidence -->
+![从终止请求标记到实际退出、用户返回与冷启动分别取证](../../assets/diagrams/ch10/ed10-02-kill-submission-to-return-evidence.png)
 
-图：lmkd kill 不自动等于某次用户卡顿。先连上进程退出、返回入口和启动工作，才评估冷热转换的产品影响。
+图：仅正常压力选择且reaper.kill返回成功的r1路径写lmk instant及相应日志统计，失败或hook已处理有别的分支。instant记录pid/reason/oomadj/min_oom_score/max_thrashing，是提交请求标记，不能当实际死亡或全部物理页回收完成点。图中箭头表示证据关联，不规定实际死亡一定晚于instant；按PID/进程代次另对死亡通知和资源持有者状态，共享页与同包其他进程另看，回收量不直接等于kill前RSS。只有实际用户返回同一入口且目标进程此时不存在，才关联重建进程、代码/资源、Application/Provider、首帧及状态恢复CPU/I/O，并同设备同入口比较返回间隔/冷热转换比例/完成时间，无通用毫秒数。lmkd REASON_LOW_MEMORY与Limiter REASON_OTHER/MemoryLimiter:AnonSwap分开统计。
 
 1. lmkd kill 时间与原因。
 2. 用户返回该 App 的时间间隔。
@@ -244,10 +212,6 @@ ART GC 的频率主要由 App 的 allocation rate（分配速率）、live set�
 
 如果 GC 密度上升而 PSI、vmscan 和 kswapd 平稳，问题更可能来自 App allocation churn。若 PSI 和 direct reclaim 上升而 GC 不变，瓶颈可能位于系统回收或 I/O。两组信号重叠时，再检查 CPU 竞争和分配线程调用栈。
 
-<!-- gracker-diagram: ch10-02-13-gc-and-system-pressure -->
-![GC 与系统回收是独立证据轴](../../assets/diagrams/ch10/ch10-02-13-gc-and-system-pressure.png)
-
-图：GC 触发、系统停顿与 CPU 竞争可以单独变化或重叠。先区分信号，再用同一线程与时间窗的证据验证叠加影响。
 
 ## 6. Android 17 中 `memevents` 与旧 `mm_events`
 
@@ -265,10 +229,6 @@ ART GC 的频率主要由 App 的 allocation rate（分配速率）、live set�
 
 Android 17 的通用证据仍是 vmscan / compaction ftrace（内核函数跟踪事件）、PSI、vmstat、lmkd userspace event、进程统计和 App trace。
 
-<!-- gracker-diagram: ch10-02-15-memevents-not-legacy -->
-![新 memevents 与旧工具入口分开](../../assets/diagrams/ch10/ch10-02-15-memevents-not-legacy.png)
-
-图：同样包含 memory event 字样不意味着是同一服务。固定 r1 目录检查只证明旧入口缺失，OEM 镜像和 SQL schema 必须现场核对。
 
 ## 7. 用 Perfetto 还原压力时间窗
 
@@ -346,10 +306,6 @@ data_sources {
 
 Android 17 的 `atrace.cpp` 明确定义了 `memreclaim` category（轨迹类别），它启用 direct reclaim、kswapd 和可选 lowmemorykiller 事件组。上面这份配置同时显式列出 vmscan 事件，便于在设备裁剪类别时核对。进程计数按 1 秒轮询，可能漏掉短峰值；FrameTimeline 数据源需要设备支持。若要判断块 I/O、ZRAM 内部工作或内核阻塞栈，还需按目标设备补充相应事件/计数器，不能假设这份起始配置已经覆盖所有信号。录制前还要确认 tracefs（内核跟踪文件系统）里存在这些事件，缺少可选事件时按设备能力删减。
 
-<!-- gracker-diagram: ch10-02-16-capture-data-domains -->
-![起始采集配置的三个数据域](../../assets/diagrams/ch10/ch10-02-16-capture-data-domains.png)
-
-图：vmscan/sched 事件、1 秒系统与进程轮询、独立 FrameTimeline 数据源各有可见性边界。缺失事件、权限与短峰值都需单独处理。
 
 ### 7.2 阅读顺序
 
@@ -362,10 +318,6 @@ Android 17 的 `atrace.cpp` 明确定义了 `memreclaim` category（轨迹类别
 
 “kswapd Running + 主线程 D 状态”仍不足以证明主线程因内存回收而阻塞。需要 direct reclaim event 或调用栈把主线程与回收关联，也要排除 Binder、文件系统、GPU fence（GPU 同步栅栏）和其他不可中断等待。
 
-<!-- gracker-diagram: ch10-02-17-trace-causal-review -->
-![按业务窗口还原真实压力路径](../../assets/diagrams/ch10/ch10-02-17-trace-causal-review.png)
-
-图：kswapd Running 与主线程 D 同期出现仍是线索。需要同一线程的事件或调用栈建立具体等待路径。
 
 ## 8. 系统侧调优的边界
 
@@ -373,10 +325,6 @@ Android 17 的 `atrace.cpp` 明确定义了 `memreclaim` category（轨迹类别
 
 ZRAM 用 RAM 保存压缩后的 swap page（交换页），提高匿名页的存储密度，同时占用物理内存和压缩/解压 CPU；部分设备还启用 writeback 或 recompression（重新压缩）。ZRAM 大小、压缩比、算法和 swappiness（交换倾向参数）都没有跨设备通用的取值。
 
-<!-- gracker-diagram: ch10-02-18-zram-capacity-and-storage -->
-![ZRAM 的逻辑容量不是预留 RAM](../../assets/diagrams/ch10/ch10-02-18-zram-capacity-and-storage.png)
-
-图：ZRAM 用 RAM 保存压缩交换数据；disksize、原始字节、压缩数据与实际池占用分别统计。writeback、重压缩和不可压缩页带来不同成本。
 
 下列节点保存交换与 ZRAM 的配置和运行统计：
 
@@ -398,10 +346,6 @@ adb shell cat /proc/sys/vm/page-cluster
 
 评估 ZRAM 改动要同时比较：
 
-<!-- gracker-diagram: ch10-02-20-zram-ab-tradeoffs -->
-![ZRAM 调整要同时比较收益和代价](../../assets/diagrams/ch10/ch10-02-20-zram-ab-tradeoffs.png)
-
-图：容量、算法、重压缩和预读参数没有跨设备通用值；只看压缩率或杀进程次数会漏掉 CPU、恢复延迟与功耗代价。
 
 - `pswpin` / `pswpout`（累计换入/换出页数）、ZRAM 占用和压缩效率。
 - memory PSI、direct reclaim 和 kswapd 时间。
@@ -417,10 +361,6 @@ Multi-Gen LRU（MGLRU，多代最近最少使用）用 generation（代）记录
 
 评估 MGLRU 不能只看开关。需要比较 refault、scan/steal（扫描页数/成功回收页数）、direct reclaim、PSI、swap 与冷启动回访。`enabled` 的 bitmask（位掩码）控制 MGLRU 主开关、叶/非叶页表访问位批量清理等组件，不是 generation 编号；可用组件受内核与硬件能力限制，不应把某个十六进制值当成所有设备的固定状态。
 
-<!-- gracker-diagram: ch10-02-21-mglru-feature-bits -->
-![MGLRU 代际与 enabled 位掩码分开](../../assets/diagrams/ch10/ch10-02-21-mglru-feature-bits.png)
-
-图：generation 表示页面访问冷热的代际；enabled bitmask 控制实现组件。读取组件状态并结合扫描、refault 与前台结果评估，不能把两者当成同一个数字。
 
 ### 8.3 Cached App Optimizer
 
@@ -433,10 +373,6 @@ Android 17 的 `CachedAppOptimizer` 同时包含 cached app compaction（缓存�
 
 cached app compaction 经 `process_madvise` 或受支持的 memcg/task profile 请求压减驻留成本。`MADV_COLD` 主要把页降温，并不保证立刻降低 RSS；`MADV_PAGEOUT` 则尝试回收/换出，实际效果受页面和权限条件限制。它们保留业务对象的语义，不能修复仍被持有的对象泄漏。Freezer 暂停 cached process 的调度，解冻时还要处理 Binder、文件锁和任务积压；Freezer 与物理页规整、ART GC 属于不同机制。
 
-<!-- gracker-diagram: ch10-02-23-four-memory-mechanisms -->
-![四种“回收或冻结”各有对象](../../assets/diagrams/ch10/ch10-02-23-four-memory-mechanisms.png)
-
-图：同样可能改善内存或后台成本，ART GC、进程驻留压减、物理页规整与 freezer 操作的对象各不相同，不构成固定流水线。
 
 ### 8.4 cgroup、Task Profiles 与 Android 17 Memory Limiter
 
@@ -470,10 +406,6 @@ adb shell am memory-limiter manual "$app_pid" 30
 
 `ActivityManager.isLowRamDevice()` 表示设备使用 low-RAM（低内存设备）产品配置，不能用“RAM 小于等于某个 GB 数”来判断。`getMemoryClass()` 只描述 ART heap 的近似预算，也不等于进程 PSS 上限。
 
-<!-- gracker-diagram: ch10-02-26-lowram-budget-and-matrix -->
-![产品档位和运行压力是两个维度](../../assets/diagrams/ch10/ch10-02-26-lowram-budget-and-matrix.png)
-
-图：isLowRamDevice 表示产品配置，getMemoryClass 是近似 Java heap 预算。产品资源预算与当前压力不能只用物理 RAM 或 PSS 一条线替代。
 
 App 可以按产品档位调整：
 
@@ -491,10 +423,6 @@ Android 17 App 侧稳定可用的状态提示包括 `TRIM_MEMORY_UI_HIDDEN` 与 
 
 App 应在 UI 隐藏和进入后台状态时缩减可重新生成的缓存、停止预取并关闭界面资源。该回调不提供 PSI 数值，也不能代替 hard memory budget（内存硬上限）。主动 `System.gc()` 无法释放仍被引用的对象，也会干扰正常调度。
 
-<!-- gracker-diagram: ch10-02-27-trim-state-and-budget -->
-![trim 是状态提示，缓存要有主动预算](../../assets/diagrams/ch10/ch10-02-27-trim-state-and-budget.png)
-
-图：API 34 起旧运行时压力等级不再投递；UI_HIDDEN 与 BACKGROUND 仍用于状态变化。回调不给 PSI 值，也不保证在终止前获得清理机会。
 
 ## 10. 诊断表
 
@@ -509,10 +437,6 @@ App 应在 UI 隐藏和进入后台状态时缩减可重新生成的缓存、停
 | ZRAM 使用高且切回慢 | pswpin/out、解压 CPU、page-cluster | 容量、算法、预读与工作集 |
 | Android 17 `MemoryLimiter:AnonSwap` | exit-info、anomaly profile（异常诊断数据）、进程状态 | 单进程预算、泄漏、恢复 |
 
-<!-- gracker-diagram: ch10-02-28-diagnostic-evidence-router -->
-![按已验证信号选择修复对象](../../assets/diagrams/ch10/ch10-02-28-diagnostic-evidence-router.png)
-
-图：诊断表中的每个方向都需要对应证据。相同卡顿表象可能分别来自页面、进程重建或 App 对象分配，不能根据单个曲线直接归因。
 
 ## 版本边界
 
@@ -525,10 +449,6 @@ App 应在 UI 隐藏和进入后台状态时缩减可重新生成的缓存、停
 
 ## 检查清单
 
-<!-- gracker-diagram: ch10-02-29-pressure-review-closure -->
-![从压力线索走到可复核结论](../../assets/diagrams/ch10/ch10-02-29-pressure-review-closure.png)
-
-图：按检查清单保留证据范围、采样缺口与版本边界。低内存路径没有固定时序，修复结论由重复实验和业务结果验证。
 
 - 是否把 kswapd、direct reclaim、PSI 与 lmkd 当作不同证据？
 - D 状态（不可中断睡眠）是否有 blocked reason、调用栈或 direct reclaim event 支撑？
