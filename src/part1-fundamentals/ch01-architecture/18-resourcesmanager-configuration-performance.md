@@ -4,8 +4,10 @@ chapter: '1.18'
 section: '1.18'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-07-25'
-last_verified_against: AOSP android-17.0.0_r1 ResourcesManager / ResourcesKey / ConfigurationController / ActivityRecord / ActivityThread / AppCompatRecreateOnConfigChangePolicy / DisplayContent / WindowToken；Android 17 官方行为变更文档
+last_verified: '2026-10-24'
+last_source_verified_at: '2026-10-24'
+last_idle_audit_at: '2026-10-24'
+last_verified_against: AOSP android-17.0.0_r1 ResourcesManager / ResourcesKey / ConfigurationController / ActivityInfo / ActivityRecord / ActivityThread / AppCompatRecreateOnConfigChangePolicy / DisplayContent / WindowToken / Trace；Android 17 官方行为变更与 Configuration 变化文档
 confidence: high
 sources:
 - type: official
@@ -36,6 +38,14 @@ sources:
   path: frameworks/base/core/java/android/app/servertransaction/ActivityRelaunchItem.java @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/android/app/servertransaction/ActivityConfigurationChangeItem.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/content/pm/ActivityInfo.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/com/android/internal/pm/pkg/component/ParsedActivityUtils.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/os/Trace.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/cmds/atrace/atrace.cpp @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java @ android-17.0.0_r1
 - type: aosp
@@ -158,12 +168,14 @@ Android 17 的 `ResourcesKey` 包含：
 2. `mResConfiguration.updateFrom(config)` 更新进程级基准配置。
 3. 遍历 `mResourceImpls`，把全局配置与每个资源键的覆盖配置合并。
 4. 调用 `ResourcesImpl.updateConfiguration()` 更新资源选择、显示指标和内部缓存。
-5. Activity 覆盖配置、资源路径或显示屏发生变化并需要不同实现时，通过 `redirectResourcesToNewImplLocked()` 让现有 `Resources` 改指向新的 `ResourcesImpl`。
 
-源码提供的稳定系统轨迹名称是：
+Activity 覆盖配置或显示屏变化走 `updateResourcesForActivity()`：重新计算关联资源的资源键，查找或创建 `ResourcesImpl`，必要时调用 `Resources.setImpl()` 切换实现。资源路径变化则可通过 `redirectResourcesToNewImplLocked()` 批量重定向。它们与全局配置遍历是不同入口。
+
+全局配置与 Activity 资源更新分别有以下系统轨迹名称：
 
 ```text
 ResourcesManager#applyConfigurationToResources
+ResourcesManager#updateResourcesForActivity
 ```
 
 “旋转一次就创建一个新 `ResourcesImpl`”和“拖动窗口时为每个尺寸都保留一份缓存”这两种推断都不成立。是否新建取决于资源键和覆盖配置是否改变，以及旧 `ResourcesImpl` 能否复用。
@@ -181,16 +193,18 @@ ResourcesManager#applyConfigurationToResources
 (changes & ~skipRelaunchConfigMask) != 0
 ```
 
-`changes` 是新旧合并后配置的差异位，每一位对应一类配置变化。`skipRelaunchConfigMask` 是位掩码，表示 Activity 或系统策略能够热处理、无需重建的变化。Android 17 按以下来源逐步构造这个掩码：
+`changes` 是 `ActivityRecord.getConfigurationChanges()` 处理后的配置差异位：先比较新旧合并后配置，再由 `SizeConfigurationBuckets.filterDiff()` 按应用资源的尺寸分界过滤尺寸变化，并移除 `CONFIG_WINDOW_CONFIGURATION`。窗口边界改变不会仅凭这个内部配置位触发重建；是否跨过资源尺寸分界等条件仍要继续检查。
 
-1. `ActivityInfo.getRealConfigChanged()`：应用清单中的 `android:configChanges`，加上旧目标 SDK 版本的兼容位。
+`skipRelaunchConfigMask` 是位掩码，表示 Activity 或系统策略能够热处理、无需重建的变化。Android 17 按以下来源逐步构造这个掩码：
+
+1. `ActivityInfo.getRealConfigChanged()`：返回 `ActivityInfo.configChanges`，并为旧目标 SDK 加上尺寸变化兼容位。
 2. `CONFIG_RESOURCES_UNUSED`：Activity 声明不使用资源时跳过重建。
 3. 旧 VR 应用的 `uiMode` 兼容规则。
 4. 桌面模式（desk mode）切换且应用没有对应桌面模式资源时的跳过规则。
 5. 画中画（PiP）中的密度变化。
 6. 显示兼容策略，例如尺寸兼容模式。
 7. 资源覆盖策略对 `CONFIG_ASSETS_PATHS` 的处理。
-8. `AppCompatRecreateOnConfigChangePolicy.getRecreateConfigMask()`：包内存在相应限定符资源，或应用明确要求重建时，把这些位从免重建掩码中移除。
+8. `AppCompatRecreateOnConfigChangePolicy.getRecreateConfigMask()`：检查包内的键盘、键盘可用性、导航设备、触摸屏与颜色模式限定符资源，把需要重新选择资源的对应变化位从免重建掩码中移除。显式 `recreateOnConfigChanges` 声明由清单处理，不由这个资源检查方法读取。
 
 只要还有一个变化位未被免重建掩码覆盖，Activity 就会 relaunch。`orientation` 经常和 `screenSize`、`screenLayout`、窗口边界一起变化，所以只声明 `orientation` 仍可能重建。
 
@@ -238,7 +252,9 @@ Android 17 默认不再因为以下变化重建 Activity：
     android:recreateOnConfigChanges="keyboard|keyboardHidden|navigation|touchscreen|colorMode" />
 ```
 
-同一配置位同时出现在 `configChanges` 和 `recreateOnConfigChanges` 时，结果是不重建、由 Activity 处理。代码审查时应避免这种自相矛盾的声明。
+清单解析时，同一配置位同时出现在 `configChanges` 和 `recreateOnConfigChanges`，`ParsedActivityUtils.getActivityConfigChanges()` 会保留 `configChanges` 中的免重建位。
+
+但 `android-17.0.0_r1` 的后续资源检查仍可能把前述五类配置位从免重建掩码中移除：减少重建策略启用且包内存在对应限定符资源时，`getRecreateConfigMask()` 会返回相应位。属性冲突时的解析结果不能单独保证 Activity 不重建，最终仍要看 `shouldRelaunchLocked()`。代码审查时应避免重复声明同一配置位，并核对包内限定符资源。
 
 这项 Android 17 变化不包含 `locale`、`layoutDirection`、`screenSize`、`smallestScreenSize`、`density`、普通夜间模式或字体缩放。它们仍由应用清单、资源限定符和 `shouldRelaunchLocked()` 的其他策略决定。
 
@@ -246,15 +262,15 @@ Android 17 默认不再因为以下变化重建 Activity：
 
 `android:configChanges` 把资源和界面更新责任交给 Activity。系统仍会更新 `Configuration`，也仍会调用 `onConfigurationChanged()`；省掉的是 Activity 销毁与重建。
 
-一个只需自行处理旋转和窗口尺寸的 Activity，可以使用较窄的声明：
+一个需要自行处理旋转及多窗口尺寸变化的 Activity，可以接管以下相关配置位：
 
 ```xml
 <activity
     android:name=".PlayerActivity"
-    android:configChanges="orientation|screenSize" />
+    android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout" />
 ```
 
-对应的回调只处理这两类变化，并在新配置下更新播放器布局：
+这组声明覆盖方向、可用尺寸、最小可用尺寸与屏幕布局分类的变化。它不会接管跨显示屏时可能同时发生的 `density` 等其他变化。回调按新配置更新播放器布局：
 
 ```kotlin
 override fun onConfigurationChanged(newConfig: Configuration) {
@@ -268,6 +284,8 @@ override fun onConfigurationChanged(newConfig: Configuration) {
 ```
 
 回调执行时，Activity 的 `Resources` 已切到新配置。应用需要更新所有受影响对象，包括自定义 View、播放器或相机变换、窗口内边距（insets）、缓存的尺寸、语言文本和嵌入组件。只调用 `super` 不能完成这些工作。
+
+Android 12 / API 31 与 Android 12L / API 32 有一项已知缺陷：尺寸变化只有跨过资源选择分界、成为显著变化时，才会触发 Activity 的 `onConfigurationChanged()`。后续 API 版本已修复。覆盖这两个版本时，应让布局测量或窗口尺寸监听同时驱动播放器尺寸更新，避免只依赖配置回调处理连续缩放。
 
 不建议为了性能把 `orientation|screenSize|screenLayout|smallestScreenSize|uiMode|locale|layoutDirection|density` 全部塞进应用清单。每多接管一项，就多一类资源、第三方组件和状态需要人工刷新。默认重建能自动重新选择 `layout-land`、`values-night`、`values-sw600dp`、本地化字符串和不同密度资源，正确性成本通常更低。
 
@@ -293,7 +311,7 @@ DisplayContent.handleTopActivityLaunchingInDifferentOrientation()
 
 FixedRotation 不是“禁止 Activity 重建”的开关。`ActivityRecord.applyFixedRotationTransform()` 仍会调用 `ensureActivityConfiguration()`，后续是否 relaunch 继续由配置差异和 `shouldRelaunchLocked()` 决定。它主要处理旋转期间的窗口配置与 Surface 画面变换，减少画面跳变。
 
-默认 Perfetto 系统轨迹中不一定有 `applyFixedRotationTransform` 这类 Java 方法区间。轨迹里没有 `activityRestart`，只能证明 Activity 没有重建，不能反推 FixedRotation 一定参与。判断 FixedRotation 需要结合 WindowManager 日志、窗口状态和对应源码分支。
+默认 Perfetto 系统轨迹中不一定有 `applyFixedRotationTransform` 这类 Java 方法区间。`activityRestart` 受 `am`（ActivityManager）轨迹类别控制；没有采集该类别、没有覆盖目标进程与完整时间窗口，或轨迹存在丢失时，都可能看不到它。单凭缺少这个区间不能认定 Activity 未重建，应结合带实例标识的生命周期日志确认。即使已确认没有重建，也不能反推 FixedRotation 一定参与；判断 FixedRotation 需要结合 WindowManager 日志、窗口状态和对应源码分支。
 
 ## Perfetto：区分热更新和 Activity 重建
 
@@ -303,6 +321,7 @@ Android 17 源码中可以直接依赖的系统轨迹区间（slice）名称如�
 |---|---|---|
 | `configChanged` | `ConfigurationController` | 进程级 Configuration 更新 |
 | `ResourcesManager#applyConfigurationToResources` | `ResourcesManager` | 更新进程内 ResourcesImpl |
+| `ResourcesManager#updateResourcesForActivity` | `ResourcesManager` | 更新 Activity 覆盖配置、显示屏与关联资源实现 |
 | `activityConfigChanged` | `ActivityConfigurationChangeItem` | Activity 热派发 |
 | `activityRestart` | `ActivityRelaunchItem` | Activity 重建 |
 | `performCreate:<Activity>` 等 | `Activity` | 新实例的生命周期阶段 |
@@ -328,6 +347,7 @@ LEFT JOIN process p USING (upid)
 WHERE s.name IN (
     'configChanged',
     'ResourcesManager#applyConfigurationToResources',
+    'ResourcesManager#updateResourcesForActivity',
     'activityConfigChanged',
     'activityRestart',
     'inflate',
@@ -375,7 +395,7 @@ ORDER BY ts;
 
 1. 有 `activityRestart`：查看 `performStop`、`performDestroy`、`performCreate`、`inflate` 和新窗口首帧。
 2. 只有 `activityConfigChanged`：查看应用回调、自定义标记和 `measure` / `layout` / `draw`。
-3. `ResourcesManager#applyConfigurationToResources` 很长：检查资源路径、资源覆盖包、多个存活的 `ResourcesImpl` 和资源缓存失效。
+3. 资源更新区间很长：`ResourcesManager#applyConfigurationToResources` 对应全局遍历；`ResourcesManager#updateResourcesForActivity` 对应 Activity 资源键重算与实现切换。分别检查存活实现数量、资源路径与资源覆盖包，以及覆盖配置变化造成的实现查找或创建成本。
 4. 各区间都短但 FrameTimeline 仍有卡顿帧：检查主线程调度延迟、渲染线程（RenderThread）、GPU 和 Surface 或窗口过渡。
 5. `Configuration` 在短时间内连续变化：按每次事件的配置与窗口边界分组，确认应用是否重复执行网络、解码、数据库或大对象构建。
 
@@ -516,7 +536,8 @@ adb shell am dumpheap <process-name> /data/local/tmp/app.hprof
 
 ### 3. 把系统成本与应用成本分开
 
-- `ResourcesManager#applyConfigurationToResources`：Android 框架的资源更新。
+- `ResourcesManager#applyConfigurationToResources`：Android 框架的全局资源更新。
+- `ResourcesManager#updateResourcesForActivity`：Activity 覆盖配置、显示屏与资源实现切换。
 - 应用自定义标记：业务回调、数据恢复、播放器或相机更新。
 - `inflate`、`measure`、`layout`、`draw-VRI[...]`：View 系统工作。
 - FrameTimeline：用户可见帧结果。
@@ -570,6 +591,10 @@ adb shell am dumpheap <process-name> /data/local/tmp/app.hprof
 - [ActivityThread.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
 - [ActivityRelaunchItem.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/servertransaction/ActivityRelaunchItem.java)
 - [ActivityConfigurationChangeItem.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/servertransaction/ActivityConfigurationChangeItem.java)
+- [ActivityInfo.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java)
+- [ParsedActivityUtils.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/pm/pkg/component/ParsedActivityUtils.java)
+- [Trace.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java)
+- [atrace.cpp @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/cmds/atrace/atrace.cpp)
 - [ActivityRecord.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java)
 - [AppCompatRecreateOnConfigChangePolicy.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java)
 - [DisplayContent.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)
