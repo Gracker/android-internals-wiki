@@ -8186,9 +8186,467 @@
       "before_count": 44,
       "before_all_images": 44,
       "sha256_before": "ca8eaab901d486d9cf57273129032bcf64a959bd214449aa4478e8e318983d5d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 23,
+      "decisions": [
+        {
+          "original_id": "ch08-04-01-resume-paths",
+          "title": "恢复路径先分直接执行与排队",
+          "decision": "keep",
+          "reason": "直接当前栈/事件循环与目标队列两支恢复路径，以及排队路径须Running后出队的先后，构成独立执行分支。",
+          "original_line": 56,
+          "heading": "## 从挂起到恢复的七个阶段"
+        },
+        {
+          "original_id": "ch08-04-02-queue-versus-runnable",
+          "title": "用户态排队与内核 Runnable 分开计时",
+          "decision": "keep",
+          "reason": "任务A队列与worker正在处理其他工作、Runnable等待和Running出队两轨，明确用户队列与内核调度两个不同等待范围。",
+          "original_line": 63,
+          "heading": "## 从挂起到恢复的七个阶段"
+        },
+        {
+          "original_id": "ch08-04-03-dispatcher-constraints",
+          "title": "选择 Dispatcher 时先确定执行约束",
+          "decision": "remove",
+          "reason": "Main/Default/IO三卡及Unconfined脚注逐项复制紧邻四行Dispatcher表，没有额外线程或调度实例。",
+          "original_line": 72,
+          "heading": "### 四个标准 Dispatcher"
+        },
+        {
+          "original_id": "ch08-04-04-main-handler",
+          "title": "Main 从协程恢复到主 Looper",
+          "decision": "keep",
+          "reason": "Android MainFactory经Handler投递、异步屏障绕过和主Looper串行消费的具体跨层链，保留实际分派机制及低版本回退。",
+          "original_line": 88,
+          "heading": "#### Main：Handler、Looper 与队列延迟"
+        },
+        {
+          "original_id": "ch08-04-05-immediate-order",
+          "title": "Main.immediate 改变的是入口投递",
+          "decision": "keep",
+          "reason": "普通Main先outer-after后inner与immediate先inner再outer-after的对齐顺序反例，不能被Dispatcher分类表替代。",
+          "original_line": 95,
+          "heading": "#### Main：Handler、Looper 与队列延迟"
+        },
+        {
+          "original_id": "ch08-04-06-messagequeue-scope",
+          "title": "新 MessageQueue 的收益与启用范围",
+          "decision": "remove",
+          "reason": "target37新队列/收益/仍串行/迁移四框重复紧邻一个完整段落，实际Main投递与队列等待已由图4和图2呈现。",
+          "original_line": 102,
+          "heading": "#### Main：Handler、Looper 与队列延迟"
+        },
+        {
+          "original_id": "ch08-04-07-default-budget",
+          "title": "Default 的 CPU 预算与任务排队",
+          "decision": "remove",
+          "reason": "CPU队列/许可/工作窃取和普通阻塞四步重述本节完整两段；下一张Default与IO共享调度器的Blocking标记、释放许可与有条件补偿图更具体，正文工作窃取细节完整保留。",
+          "original_line": 113,
+          "heading": "#### Default：CPU 并行度与阻塞补偿"
+        },
+        {
+          "original_id": "ch08-04-08-io-compensation",
+          "title": "IO 的 blocking 标记与补偿条件",
+          "decision": "keep",
+          "reason": "Default NonBlocking与IO Blocking两支进入共享scheduler，阻塞计数、释放CPU许可与有条件补偿链是独立实际机制。",
+          "original_line": 124,
+          "heading": "#### IO：默认限制与弹性视图"
+        },
+        {
+          "original_id": "ch08-04-09-io-elastic-views",
+          "title": "默认 IO 与弹性视图共享底层资源",
+          "decision": "keep",
+          "reason": "默认IO与100/60独立弹性视图预算并列，明确共享资源但非224常驻线程，区别于Default的执行并行预算。",
+          "original_line": 133,
+          "heading": "#### IO：默认限制与弹性视图"
+        },
+        {
+          "original_id": "ch08-04-44-unconfined-undispatched",
+          "title": "Unconfined 与 UNDISPATCHED 的恢复规则",
+          "decision": "keep",
+          "reason": "Unconfined与UNDISPATCHED首片段相同但首次挂起后恢复线程来源不同的双轨实例，保留Job父关系说明。",
+          "original_line": 146,
+          "heading": "#### Unconfined：线程不受约束，结构仍可存在"
+        },
+        {
+          "original_id": "ch08-04-10-main-safe",
+          "title": "Repository 内部分离 I/O 与 CPU 工作",
+          "decision": "remove",
+          "reason": "Main调用load/withContext IO读取/CPU解码/返回四框逐项重画紧邻完整Repository代码和说明，没有实际跨线程计时实例。",
+          "original_line": 175,
+          "heading": "### 让 suspend API 对主线程安全"
+        },
+        {
+          "original_id": "ch08-04-11-limited-interleave",
+          "title": "串行片段不等于整个挂起操作互斥",
+          "decision": "keep",
+          "reason": "A读0挂起、B读0写1、A再写1的交错反例展示limitedParallelism(1)只串行片段，保留真实竞态关系。",
+          "original_line": 184,
+          "heading": "### limitedParallelism 的执行并行预算与线程亲和"
+        },
+        {
+          "original_id": "ch08-04-12-three-event-types",
+          "title": "挂起、dispatch 与 sched_switch 不一一对应",
+          "decision": "remove",
+          "reason": "状态/dispatch/sched_switch三卡逐项复述紧邻三条定义与六行观测事件表，无新增关联实例。",
+          "original_line": 193,
+          "heading": "### 三类事件：挂起恢复、dispatch 与内核切换"
+        },
+        {
+          "original_id": "ch08-04-13-measure-whole-path",
+          "title": "调度成本按同语义工作负载测量",
+          "decision": "remove",
+          "reason": "固定条件、三类负载、四指标和直接测P95四框重复紧邻完整指标表、算式和测量段落，不把方法清单再图形化。",
+          "original_line": 232,
+          "heading": "### 在目标设备上测四个数"
+        },
+        {
+          "original_id": "ch08-04-14-job-failure",
+          "title": "普通 Job 与监督边界分别传播失败",
+          "decision": "merge",
+          "reason": "将普通Job失败向上及兄弟取消与监督直接子隔离画在同一图上半，两种父子拓扑与下半异常处理明确作为独立维度。",
+          "original_line": 249,
+          "heading": "### Job 树的规则",
+          "replacement_id": "ed08-04-job-propagation-and-errors"
+        },
+        {
+          "original_id": "ch08-04-15-supervision-errors",
+          "title": "失败隔离之后仍需要异常策略",
+          "decision": "merge",
+          "reason": "合入同一失败策略图下半，保留launch未捕获异常处理、async await重新抛出及普通async失败传播不等await，避免误把监督当吞异常。",
+          "original_line": 256,
+          "heading": "### Job 树的规则",
+          "replacement_id": "ed08-04-job-propagation-and-errors"
+        },
+        {
+          "original_id": "ch08-04-16-lifecycle-restart",
+          "title": "可见性收集与 View 所有权",
+          "decision": "keep",
+          "reason": "view owner寿命与STARTED/STOPPED取消及重建双轨保留，说明旧View归属、清理等待与replay0事件无法补回。",
+          "original_line": 276,
+          "heading": "### 生命周期取消要覆盖“不可见”状态"
+        },
+        {
+          "original_id": "ch08-04-17-three-budgets",
+          "title": "生命周期、执行并行与待办数量分开限",
+          "decision": "keep",
+          "reason": "执行片段、整个挂起操作、接单待办三种预算对象并列，区分limitedParallelism、Semaphore与有界Channel，保留先launch万任务仍创建等待者的边界。",
+          "original_line": 285,
+          "heading": "### 结构化并发与并发上限"
+        },
+        {
+          "original_id": "ch08-04-18-owner-and-cleanup",
+          "title": "脱离结构与非协作工作的修复路径",
+          "decision": "remove",
+          "reason": "GlobalScope/owner/取消回调/CPU与清理四框逐项重排紧邻六条完整脱离结构路径清单，无新的所有权树或资源实例。",
+          "original_line": 294,
+          "heading": "### 常见的脱离结构路径"
+        },
+        {
+          "original_id": "ch08-04-19-sequential-flow",
+          "title": "默认冷 Flow 顺序调用下游",
+          "decision": "keep",
+          "reason": "同一协程produce1/consume1/produce2/consume2的真实顺序轨道表明默认Flow没有额外队列，区别于后续并发边界。",
+          "original_line": 312,
+          "heading": "### 默认 Flow 是顺序执行"
+        },
+        {
+          "original_id": "ch08-04-20-buffer-backpressure",
+          "title": "buffer 拆分生产者与消费者",
+          "decision": "keep",
+          "reason": "独立生产者协程经有界Channel到消费者的具体拓扑与容量满时SUSPEND，区别于跳值和取消语义，保留活跃对象不只缓冲槽的说明。",
+          "original_line": 321,
+          "heading": "### 三个操作符的语义表"
+        },
+        {
+          "original_id": "ch08-04-21-conflate-pending",
+          "title": "conflate 只替换待处理状态",
+          "decision": "merge",
+          "reason": "将处理1时待处理2被3替换的conflate实例与collectLatest取消旧action实例上下对照，明确跳过待处理值不取消当前处理。",
+          "original_line": 335,
+          "heading": "### 三个操作符的语义表",
+          "replacement_id": "ed08-04-conflate-versus-latest"
+        },
+        {
+          "original_id": "ch08-04-23-channel-fusion",
+          "title": "相邻缓冲操作要按融合规则推导",
+          "decision": "keep",
+          "reason": "buffer32+buffer8的40 SUSPEND与后置DROP_OLDEST覆盖为8两例展示融合后容量和策略的具体反例。",
+          "original_line": 342,
+          "heading": "### 三个操作符的语义表"
+        },
+        {
+          "original_id": "ch08-04-22-latest-cancel-join",
+          "title": "collectLatest 取消旧 action 后等待其结束",
+          "decision": "merge",
+          "reason": "合入上下两个独立示例的时间轨道，保留B触发取消A后join清理才能开始B，以及非协作调用和既有副作用限制，不制造共同发射时刻。",
+          "original_line": 380,
+          "heading": "### 按数据语义选择",
+          "replacement_id": "ed08-04-conflate-versus-latest"
+        },
+        {
+          "original_id": "ch08-04-24-stateflow-equality",
+          "title": "StateFlow 的当前值、等值与慢订阅者",
+          "decision": "keep",
+          "reason": "equals相同早退与有效新状态通知两支、慢订阅者读最新值和O(N)条件，保留StateFlow实际判定路径。",
+          "original_line": 389,
+          "heading": "### StateFlow、SharedFlow 与 flatten 的资源语义"
+        },
+        {
+          "original_id": "ch08-04-25-sharedflow-subscribers",
+          "title": "SharedFlow 缓冲要分有无订阅者",
+          "decision": "keep",
+          "reason": "有慢订阅者时replay+extra与无人时仅replay两支，显示同一SharedFlow在不同订阅状态下的缓存对象差异。",
+          "original_line": 396,
+          "heading": "### StateFlow、SharedFlow 与 flatten 的资源语义"
+        },
+        {
+          "original_id": "ch08-04-27-flatten-policies",
+          "title": "flatten 的顺序、并发与取消选择",
+          "decision": "remove",
+          "reason": "Concat/Merge/Latest三卡逐项复述紧邻flatten段落和下一段协作取消边界，无实际内层流的交错实例，保留原文并发与资源预算。",
+          "original_line": 403,
+          "heading": "### StateFlow、SharedFlow 与 flatten 的资源语义"
+        },
+        {
+          "original_id": "ch08-04-28-flowon-upstream",
+          "title": "flowOn 的上游边界与取消损失",
+          "decision": "keep",
+          "reason": "flowOn上游上下文经跨Dispatcher Channel到保持原上下文的collector，明确边界方向、融合及取消在途值丢失。",
+          "original_line": 414,
+          "heading": "### flowOn 只改变上游"
+        },
+        {
+          "original_id": "ch08-04-26-sharing-owner",
+          "title": "UI 停订与共享上游是两层寿命",
+          "decision": "keep",
+          "reason": "UI collector停止到订阅数变化，再由共享owner/SharingStarted/timeout和其他订阅者决定上游存活，区别于图17只控制UI收集者的生命周期。",
+          "original_line": 423,
+          "heading": "### UI 收集与共享上游的生命周期"
+        },
+        {
+          "original_id": "ch08-04-29-tools-evidence",
+          "title": "定位协程先区分工具证据",
+          "decision": "remove",
+          "reason": "Perfetto/CoroutineDebugger/CPU三卡直接复述紧邻三行工具/证据/边界表，无实际trace关联图。",
+          "original_line": 432,
+          "heading": "### 三类工具回答不同问题"
+        },
+        {
+          "original_id": "ch08-04-30-async-trace",
+          "title": "逻辑区间用 async 标记成对闭合",
+          "decision": "remove",
+          "reason": "唯一cookie/beginAsync/工作/finally end四框逐步重画紧邻完整辅助函数与wall/CPU解释，没有新增跨线程时间实例。",
+          "original_line": 468,
+          "heading": "### 跨 suspend 边界使用 async trace"
+        },
+        {
+          "original_id": "ch08-04-31-inprocess-tracing",
+          "title": "Tracing 2.0 的初始化、文件与合并",
+          "decision": "remove",
+          "reason": "版本/sink/业务记录/导出四框逐句重排紧邻tracing2.0配置和导出段落，版本与兼容边界正文完整保留。",
+          "original_line": 477,
+          "heading": "### 跨 suspend 边界使用 async trace"
+        },
+        {
+          "original_id": "ch08-04-32-sql-identity-window",
+          "title": "worker SQL 先确认身份再裁剪窗口",
+          "decision": "remove",
+          "reason": "进程线程身份/Running/窗口裁剪/归因四框重复紧邻完整SQL及公式说明，没有实际区间交集实例；相同裁剪概念在8.2已有轨道图。",
+          "original_line": 506,
+          "heading": "### 用 sched 表量化 worker 运行片段"
+        },
+        {
+          "original_id": "ch08-04-33-trace-shapes",
+          "title": "把长逻辑区间拆成线程状态再归因",
+          "decision": "remove",
+          "reason": "业务区间分Running或Runnable/Sleep及采样三层重复紧邻五条trace观察清单，前文图2已区分队列与调度等待。",
+          "original_line": 513,
+          "heading": "### 识别常见 trace 形态"
+        },
+        {
+          "original_id": "ch08-04-34-equivalent-benchmarks",
+          "title": "Coroutine 与 RxJava 先统一数据语义",
+          "decision": "remove",
+          "reason": "语义/容量/真实基准/迁移四框逐项重排紧邻Coroutine与RxJava对照表和完整段落，没有具体对照数据。",
+          "original_line": 544,
+          "heading": "## Coroutine 与 RxJava：比较相同语义"
+        },
+        {
+          "original_id": "ch08-04-35-views-not-pools",
+          "title": "共享视图限制执行而不新增专用线程池",
+          "decision": "remove",
+          "reason": "Defaultlimited2/IOlimited4/在途操作三卡复制紧邻代码及说明，并与图18三种预算和图12片段交错例子重复。",
+          "original_line": 565,
+          "heading": "### 执行并行度优先使用视图"
+        },
+        {
+          "original_id": "ch08-04-36-affinity-owner",
+          "title": "专用线程的资源寿命由 owner 管理",
+          "decision": "keep",
+          "reason": "专用Executor owner创建、线程亲和调用、停止接单及同线程释放、最后关闭的实际资源生命周期顺序，保留worker替换时重建资源。",
+          "original_line": 592,
+          "heading": "### 线程亲和与专用 Executor"
+        },
+        {
+          "original_id": "ch08-04-37-executor-rejection",
+          "title": "Executor 队列与拒绝后的清理线程",
+          "decision": "keep",
+          "reason": "Executor接收与拒绝两支，后者取消Job并转IO清理，明确finally不保证原线程亲和性的独立错误路径。",
+          "original_line": 601,
+          "heading": "### Executor、HandlerThread 与队列所有权"
+        },
+        {
+          "original_id": "ch08-04-38-handlerthread-shutdown",
+          "title": "HandlerThread 的串行队列与退出",
+          "decision": "keep",
+          "reason": "HandlerThread串行处理后先停接单和释放再quitSafely、最后由其他线程按需join的具体关闭协议，区别于Executor拒绝或关闭。",
+          "original_line": 608,
+          "heading": "### Executor、HandlerThread 与队列所有权"
+        },
+        {
+          "original_id": "ch08-04-39-suspend-blocking-backpressure",
+          "title": "有界背压可以挂起也可以阻塞",
+          "decision": "keep",
+          "reason": "满/空队列等待时Channel挂起当前协程与BlockingQueue占住物理线程的两支，保留就绪时可直接完成和业务协议约束。",
+          "original_line": 617,
+          "heading": "### Executor、HandlerThread 与队列所有权"
+        },
+        {
+          "original_id": "ch08-04-40-thread-policy",
+          "title": "线程优先级只是实际 CPU 分配的一部分",
+          "decision": "remove",
+          "reason": "nice/Java优先级/系统约束/按TID观测四框逐句重排紧邻优先级与平台边界段落，未新增运行实例。",
+          "original_line": 626,
+          "heading": "### 线程优先级与 ADPF 的归属"
+        },
+        {
+          "original_id": "ch08-04-41-eevdf-boundary",
+          "title": "EEVDF 看不到尚未执行的 continuation",
+          "decision": "remove",
+          "reason": "continuation队列/workerRunnable/EEVDF三卡重复图2已保留的两类等待及本节内核实体边界段，无新调度选择反例。",
+          "original_line": 633,
+          "heading": "### 线程优先级与 ADPF 的归属"
+        },
+        {
+          "original_id": "ch08-04-42-adpf-tid-cycle",
+          "title": "ADPF 绑定实际线程与完整工作周期",
+          "decision": "remove",
+          "reason": "ADPF owner/TID/完整周期/更新关闭四框逐项复制紧邻段落和API版本条目，没有实际hint周期或worker变化轨道，全部技术边界保留正文。",
+          "original_line": 640,
+          "heading": "### 线程优先级与 ADPF 的归属"
+        },
+        {
+          "original_id": "ch08-04-43-diagnostic-loop",
+          "title": "按 owner、数据语义和线程证据闭环",
+          "decision": "remove",
+          "reason": "owner/预算/证据/复测四步再次复制紧邻四组完整诊断清单，和前面测量方法图重复，保留原始审计问题。",
+          "original_line": 656,
+          "heading": "## 排查清单"
+        }
+      ],
+      "sha256_after": "5d47457b72a78a51e432c6343ef6499944cf8315feaf98d2d8fe0b5b43a201c5",
+      "new_diagrams": [
+        {
+          "id": "ed08-04-job-propagation-and-errors",
+          "title": "Job 失败传播与异常处理分开判断",
+          "article": "src/part2-performance/ch08-responsiveness/04-coroutine-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-04-job-propagation-and-errors.svg",
+            "src/assets/diagrams/ch08/ed08-04-job-propagation-and-errors.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-04-job-propagation-and-errors",
+          "sources": [
+            "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/Supervisor.kt",
+            "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/Job.kt",
+            "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/supervisor-scope.html",
+            "本文冻结全文中相应段落、表格、代码与原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-04-14-job-failure",
+              "ch08-04-15-supervision-errors"
+            ],
+            "boundary": "以本文kotlinx.coroutines1.11.0规则为准。非CancellationException子失败才按普通规则向上传播；监督仅隔离直接子任务。下半不是上半的下一执行阶段。普通async的子失败仍可在await前取消父；监督不吞异常。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a093/change-proof.json"
+          }
+        },
+        {
+          "id": "ed08-04-conflate-versus-latest",
+          "title": "conflate 跳过待处理值，collectLatest 取消当前 action",
+          "article": "src/part2-performance/ch08-responsiveness/04-coroutine-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-04-conflate-versus-latest.svg",
+            "src/assets/diagrams/ch08/ed08-04-conflate-versus-latest.png"
+          ],
+          "layout": "linear-progression",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-04-conflate-versus-latest",
+          "sources": [
+            "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/operators/Context.kt",
+            "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/StateFlow.kt",
+            "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt",
+            "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/operators/Merge.kt",
+            "本文冻结全文中相应段落、表格、代码与原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-04-21-conflate-pending",
+              "ch08-04-22-latest-cancel-join"
+            ],
+            "boundary": "两个示例没有共同发射时间或实测比例。conflate不取消正在处理值1的action；collectLatest新值取消旧action并等其结束后启动新action，非协作调用与清理可能延后开始；既有副作用不能撤回。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a093/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T10:28:16.210467+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 44,
+        "contexts_actually_viewed": 5,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a093/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a093/visual-review.json",
+      "retired_diagrams": [
+        "ch08-04-03-dispatcher-constraints",
+        "ch08-04-06-messagequeue-scope",
+        "ch08-04-07-default-budget",
+        "ch08-04-10-main-safe",
+        "ch08-04-12-three-event-types",
+        "ch08-04-13-measure-whole-path",
+        "ch08-04-14-job-failure",
+        "ch08-04-15-supervision-errors",
+        "ch08-04-18-owner-and-cleanup",
+        "ch08-04-21-conflate-pending",
+        "ch08-04-22-latest-cancel-join",
+        "ch08-04-27-flatten-policies",
+        "ch08-04-29-tools-evidence",
+        "ch08-04-30-async-trace",
+        "ch08-04-31-inprocess-tracing",
+        "ch08-04-32-sql-identity-window",
+        "ch08-04-33-trace-shapes",
+        "ch08-04-34-equivalent-benchmarks",
+        "ch08-04-35-views-not-pools",
+        "ch08-04-40-thread-policy",
+        "ch08-04-41-eevdf-boundary",
+        "ch08-04-42-adpf-tid-cycle",
+        "ch08-04-43-diagnostic-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-93/retired-assets.json"
     },
     {
       "index": 94,
@@ -8197,9 +8655,622 @@
       "before_count": 54,
       "before_all_images": 54,
       "sha256_before": "501748483ae2bbe53ba3a0995b57f39dde98570f33acc7711e27be046fbc1f41",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 25,
+      "decisions": [
+        {
+          "original_id": "ch08-05-01-key-and-auth-path",
+          "title": "密码操作与认证 token 在授权处汇合",
+          "decision": "keep",
+          "reason": "密码Provider/Binder/KeyMint主链与认证HAT经KeystoreAuthorization汇合的两路关系是全文主图；折叠精确Mermaid源码保留。",
+          "original_line": 99,
+          "heading": "### 调用路径：App、Keystore2、KeyMint 与安全环境"
+        },
+        {
+          "original_id": "ch08-05-02-key-material-boundary",
+          "title": "硬件密钥保护与 App 数据边界",
+          "decision": "remove",
+          "reason": "App数据、keyblob、安全环境三卡逐项复述紧邻完整材料保护边界段落，未画输入输出传输或导入前后实例，主链图已保留对象归属。",
+          "original_line": 127,
+          "heading": "### 调用路径：App、Keystore2、KeyMint 与安全环境"
+        },
+        {
+          "original_id": "ch08-05-03-phase-spans",
+          "title": "总耗时与子阶段分别计量",
+          "decision": "keep",
+          "reason": "App密码、系统认证和网络三轨及独立总流程显示观测span不同和可重叠，不等于简单的阶段列表，保留无比例和业务路径可变化的限定。",
+          "original_line": 146,
+          "heading": "#### 一次操作至少有五段"
+        },
+        {
+          "original_id": "ch08-05-04-init-creates-operation",
+          "title": "硬件 operation 可在 init 阶段创建",
+          "decision": "keep",
+          "reason": "JCA init到Provider初始化再到Keystore2/KeyMint begin的具体入口链，揭示init已有后端状态，区别于下一张结束生命周期。",
+          "original_line": 155,
+          "heading": "### `init()` 已经创建 KeyMint operation"
+        },
+        {
+          "original_id": "ch08-05-05-operation-lifecycle",
+          "title": "operation 结束与对象回收不同步",
+          "decision": "keep",
+          "reason": "同一活动operation由调用结束与Binder释放/prune两类路径终止的实际资源生命周期分叉，保留丢引用不保证即时释放和单对象并发限制。",
+          "original_line": 179,
+          "heading": "#### operation 的完整生命周期"
+        },
+        {
+          "original_id": "ch08-05-06-generation-policy",
+          "title": "密钥生成移出高频路径并分类恢复",
+          "decision": "remove",
+          "reason": "既有复用与缺失错误两支只有通用政策摘要，逐句重排紧邻生成时机和错误分类段；永久失效恢复及StrongBox fallback后文已有独立机制图。",
+          "original_line": 198,
+          "heading": "#### 密钥生成（key generation）"
+        },
+        {
+          "original_id": "ch08-05-07-envelope",
+          "title": "大数据交给 DEK，Keystore 保护 DEK",
+          "decision": "remove",
+          "reason": "DEK生成/AEAD/Keystore保护/元数据四框逐项复制紧邻四步完整协议清单，未补数据流或密钥归属的实际拓扑，保留全部密码协议与nonce/DEK边界原文。",
+          "original_line": 216,
+          "heading": "#### begin/update/finish"
+        },
+        {
+          "original_id": "ch08-05-08-attestation-measurement",
+          "title": "证明链生成与服务端验证的观测边界",
+          "decision": "remove",
+          "reason": "本地生成/上传/服务端三卡逐句复述紧邻一段观测边界说明，主阶段轨道图及各实际计时限制文字完整保留。",
+          "original_line": 225,
+          "heading": "#### 密钥证明（attestation）"
+        },
+        {
+          "original_id": "ch08-05-09-auth-modes",
+          "title": "先按 timeout 区分两套密钥授权",
+          "decision": "merge",
+          "reason": "将授权模式总览与per-use/time-based细节合为两栏初始化顺序，保留timeout不同、旧对象弃用与新旧operation对比，避免与两行模式表重复。",
+          "original_line": 234,
+          "heading": "### 认证绑定密钥：per-use 与 time-based 两套流程",
+          "replacement_id": "ed08-05-auth-operation-order"
+        },
+        {
+          "original_id": "ch08-05-10-per-use-binding",
+          "title": "per-use 的 HAT 绑定 operation challenge",
+          "decision": "merge",
+          "reason": "合入左栏签名实例：先initSign创建operation和challenge，同一Signature经CryptoObject/prompt/HAT再回后台签名，区分operation与业务challenge。",
+          "original_line": 265,
+          "heading": "#### per-use 密钥",
+          "replacement_id": "ed08-05-auth-operation-order"
+        },
+        {
+          "original_id": "ch08-05-11-time-window",
+          "title": "time-based 认证后新建密码操作",
+          "decision": "merge",
+          "reason": "合入右栏缺有效授权的恢复分支：旧init失败后无对象prompt，成功后新建对象并init，已有有效授权可直接使用；不把每次time-based操作都画成必须prompt。",
+          "original_line": 274,
+          "heading": "#### time-based 密钥",
+          "replacement_id": "ed08-05-auth-operation-order"
+        },
+        {
+          "original_id": "ch08-05-12-invalidation-recovery",
+          "title": "永久失效先确认数据恢复协议",
+          "decision": "keep",
+          "reason": "永久失效后可恢复重绑与无恢复路径的两支决定能否删key，保留新key不能自动解开旧密文的独立数据恢复约束。",
+          "original_line": 298,
+          "heading": "#### 密钥永久失效（invalidation）"
+        },
+        {
+          "original_id": "ch08-05-13-security-choice",
+          "title": "TEE 与 StrongBox 按安全需求选择",
+          "decision": "remove",
+          "reason": "威胁模型/TEE/StrongBox三卡逐句复述紧邻隔离、资源与性能段落，无具体选择树或设备比较数据。",
+          "original_line": 307,
+          "heading": "### StrongBox、TEE 与 security level"
+        },
+        {
+          "original_id": "ch08-05-14-strongbox-fallback",
+          "title": "请求 StrongBox 不等于实际成功生成",
+          "decision": "keep",
+          "reason": "StrongBox请求经实际生成成功或异常分类后才按required/preferred显式重发，保留请求/实际级别与安全策略分支。",
+          "original_line": 316,
+          "heading": "#### 设备能力与业务策略"
+        },
+        {
+          "original_id": "ch08-05-15-security-evidence",
+          "title": "记录请求、实际级别和降级原因",
+          "decision": "remove",
+          "reason": "请求意图/生成结果/fallback三卡直接重排紧邻三项埋点要求及KeyInfo枚举，已保留图14中的实际生成分支。",
+          "original_line": 342,
+          "heading": "#### 查询生成结果"
+        },
+        {
+          "original_id": "ch08-05-16-slot-contract",
+          "title": "最低 32 项合同不是 App 配额",
+          "decision": "remove",
+          "reason": "32最低合同/设备共享/16旧文档三卡逐项复述紧邻三段完整校勘和配额边界，未画实际operation占用样例；原文合同差异不删。",
+          "original_line": 355,
+          "heading": "### operation slot 与 prune 策略"
+        },
+        {
+          "original_id": "ch08-05-17-prune-score",
+          "title": "prune 同时比较 owner 负载与闲置时间",
+          "decision": "keep",
+          "reason": "普通caller/候选的不同malus公式、严格比较/同分久未用以及caller自身回收分支，是独立选候选算法，不由压力总图替代。",
+          "original_line": 362,
+          "heading": "### operation slot 与 prune 策略"
+        },
+        {
+          "original_id": "ch08-05-18-prune-retry",
+          "title": "容量压力通过 prune 和重试处理",
+          "decision": "merge",
+          "reason": "把服务端TOO_MANY/prune/重新begin和无法回收busy接入同一分层图，保留被回收旧operation可能invalid handle及并发状态变化。",
+          "original_line": 374,
+          "heading": "### operation slot 与 prune 策略",
+          "replacement_id": "ed08-05-backend-busy-and-client-retry"
+        },
+        {
+          "original_id": "ch08-05-19-client-busy",
+          "title": "服务端 busy 可能表现为客户端长等待",
+          "decision": "merge",
+          "reason": "将客户端收到BACKEND_BUSY后的兼容开关、异常或20–100ms退避分支接在服务端busy之后，保留r1 @Disabled、target与中断边界。",
+          "original_line": 381,
+          "heading": "### operation slot 与 prune 策略",
+          "replacement_id": "ed08-05-backend-busy-and-client-retry"
+        },
+        {
+          "original_id": "ch08-05-20-slot-occupancy",
+          "title": "临用时初始化缩短等待中的 slot 占用",
+          "decision": "keep",
+          "reason": "过早init与临用init两轨显示用户等待中的slot占用长度，并明确线程数不等于在途operation数和队列数，是真实资源寿命对照。",
+          "original_line": 396,
+          "heading": "#### 容易耗尽 slot 的写法"
+        },
+        {
+          "original_id": "ch08-05-21-thread-placement",
+          "title": "首帧时机与执行线程分别安排",
+          "decision": "remove",
+          "reason": "主线程/受控后台/首帧时机三卡逐项复制紧邻调度段及五行时机表，无具体队列或执行分支；下一张有界签名执行器保留。",
+          "original_line": 405,
+          "heading": "### 冷启动和登录的线程调度"
+        },
+        {
+          "original_id": "ch08-05-22-signer-budget",
+          "title": "签名 worker 与队列都要有界",
+          "decision": "keep",
+          "reason": "owner拥有2worker/8队列示例、正常执行和AbortPolicy拒绝后Job取消/IO清理两支，保留有界接单和关闭时序的实际协议。",
+          "original_line": 422,
+          "heading": "#### 时机表"
+        },
+        {
+          "original_id": "ch08-05-23-timeout-boundary",
+          "title": "UI 超时与硬件调用结束是两件事",
+          "decision": "keep",
+          "reason": "UI等待超时后展示可继续而受控worker仍在同步调用并晚返回的双轨，保留withTimeout非强制打断和旧结果代次隔离。",
+          "original_line": 470,
+          "heading": "#### 超时与取消"
+        },
+        {
+          "original_id": "ch08-05-24-keystore-telemetry",
+          "title": "密码阶段埋点按实际安全级别分组",
+          "decision": "remove",
+          "reason": "流程/结果/敏感边界三卡直接复述紧邻12行字段表与敏感材料段落，无额外事件关联。",
+          "original_line": 504,
+          "heading": "#### 应记录的字段"
+        },
+        {
+          "original_id": "ch08-05-25-perfetto-boundary",
+          "title": "Perfetto 可见段与安全环境内部区分",
+          "decision": "remove",
+          "reason": "App marker/系统轨迹/KeyMint内部三卡逐句重排紧邻六项可观测问题与HAL证据边界段，没有实际trace样例。",
+          "original_line": 521,
+          "heading": "#### Perfetto 能看到什么"
+        },
+        {
+          "original_id": "ch08-05-26-controlled-crypto-tests",
+          "title": "对照测试固定策略、负载和设备条件",
+          "decision": "remove",
+          "reason": "基线/并发/环境/分位数四步重复紧邻七项测试组合及同设备控制变量段落，不再把清单图形化。",
+          "original_line": 540,
+          "heading": "#### 测试组合"
+        },
+        {
+          "original_id": "ch08-05-27-cache-boundary",
+          "title": "性能缓存仍需保持认证与失效语义",
+          "decision": "remove",
+          "reason": "元数据/失效/明文缓存三卡逐句复述紧邻性能动作表与完整缓存边界段落，无实际缓存状态转换实例。",
+          "original_line": 561,
+          "heading": "### 性能动作与安全策略"
+        },
+        {
+          "original_id": "ch08-05-28-passkey-ownership",
+          "title": "passkey 私钥通常归 credential provider 管理",
+          "decision": "remove",
+          "reason": "RP/provider/server三卡复述紧邻密钥所有权段落及五项指标清单；后文具体登录双路径和provider fanout保留，passkey私钥不等于RP alias的原文完整保留。",
+          "original_line": 570,
+          "heading": "### Passkey / Credential Manager 的角色"
+        },
+        {
+          "original_id": "ch08-05-29-api-versus-device",
+          "title": "平台 API 版本与设备能力分别验证",
+          "decision": "remove",
+          "reason": "API23/28、30/31、设备能力三卡直接复制紧邻六行版本表和设备实现限定，无额外版本调用路径。",
+          "original_line": 598,
+          "heading": "### Android 6—17 的版本边界"
+        },
+        {
+          "original_id": "ch08-05-53-kernel-boundary",
+          "title": "内核 Binder 与设备认证实现分层定位",
+          "decision": "remove",
+          "reason": "Framework/commonkernel/vendor三卡逐句重排紧邻完整源码入口清单与内核/HAL边界段落，后半源码表亦保留准确职责。",
+          "original_line": 616,
+          "heading": "### Android 17 与 kernel 源码入口"
+        },
+        {
+          "original_id": "ch08-05-30-login-versus-reauth",
+          "title": "凭据登录与会话内重新授权的后续不同",
+          "decision": "keep",
+          "reason": "Credential登录与已登录Biometric重授权两支分别进入凭据协议或本地/签名验证，保留业务成功边界；精确Mermaid双路径折叠参考保留。",
+          "original_line": 631,
+          "heading": "### 两条流程，两个责任边界"
+        },
+        {
+          "original_id": "ch08-05-31-observable-endpoints",
+          "title": "请求到结果不能改名为传感器耗时",
+          "decision": "remove",
+          "reason": "可观测/等待区间/额外证据三卡逐项复制紧邻五行阶段观测表和请求到结果命名段，无新增时间样例；图36保留authenticate返回与可见性区别。",
+          "original_line": 676,
+          "heading": "### 两条流程，两个责任边界"
+        },
+        {
+          "original_id": "ch08-05-34-sensor-scheduler",
+          "title": "每个 sensor 有自己的调度状态",
+          "decision": "keep",
+          "reason": "AuthSession分到sensor A/B各自scheduler和当前/待办，再进入HAL的对象拓扑，防止误合全系统单FIFO，区别于进程图。",
+          "original_line": 693,
+          "heading": "### BiometricPrompt：从应用调用到系统回调"
+        },
+        {
+          "original_id": "ch08-05-32-biometric-processes",
+          "title": "认证组件按真实进程边界展开",
+          "decision": "keep",
+          "reason": "App先到IAuthService，system_server框内AuthService/BiometricService/AuthSession/sensor服务，再分SystemUI与HAL的真实进程分组，保留准确IPC边界。",
+          "original_line": 700,
+          "heading": "### BiometricPrompt：从应用调用到系统回调"
+        },
+        {
+          "original_id": "ch08-05-35-callback-state",
+          "title": "未识别是非终态，成功与错误结束会话",
+          "decision": "merge",
+          "reason": "将三类callback的非终态reject与成功/终态错误合入单attempt业务状态图，明确reject自环，避免另一个fork重复后文回调表和状态机。",
+          "original_line": 709,
+          "heading": "#### 应用侧可记录的 prompt 事件",
+          "replacement_id": "ed08-05-single-biometric-attempt"
+        },
+        {
+          "original_id": "ch08-05-33-request-not-shown",
+          "title": "authenticate 返回与 UI 可见不是同一事件",
+          "decision": "keep",
+          "reason": "authenticate调用、系统准备、UI/用户/sensor三个轨道展示调用返回不能证明UI可见，公开端点与需额外证据的时刻明确分开。",
+          "original_line": 721,
+          "heading": "#### 应用侧可记录的 prompt 事件"
+        },
+        {
+          "original_id": "ch08-05-36-config-reattach",
+          "title": "旋转重建接续 callback，进程重建重新判断",
+          "decision": "keep",
+          "reason": "配置重建接续callback与进程死亡后重新判断两支，保留AndroidX保留会话但不重复authenticate的独立生命周期条件。",
+          "original_line": 730,
+          "heading": "#### 配置变更后的认证会话"
+        },
+        {
+          "original_id": "ch08-05-37-attempt-owner",
+          "title": "业务状态维持一个活动或正在取消的 attempt",
+          "decision": "merge",
+          "reason": "合成实际owner状态：空闲准入、启动、活动、取消中、一次收尾，补足同步启动失败清理并隔离重复点击/旧代次；平台成功与业务验证仍分开。",
+          "original_line": 786,
+          "heading": "#### 配置变更后的认证会话",
+          "replacement_id": "ed08-05-single-biometric-attempt"
+        },
+        {
+          "original_id": "ch08-05-38-auth-type-not-modality",
+          "title": "authenticationType 的分辨力止于认证类型",
+          "decision": "remove",
+          "reason": "公开认证类型/不能推断modality/实验室补证三卡逐句重排紧邻两段，类型值和线上不能猜sensor的边界完整保留。",
+          "original_line": 805,
+          "heading": "#### 认证类型与传感器形态"
+        },
+        {
+          "original_id": "ch08-05-39-preflight-policy",
+          "title": "预检查采用同一认证器组合",
+          "decision": "remove",
+          "reason": "canAuthenticate可用/不可用两支重复后文完整回退状态图的Preflight分支，精确组合、瞬时快照与negativeButton互斥已在紧邻完整段落保留。",
+          "original_line": 814,
+          "heading": "#### 认证类型与传感器形态"
+        },
+        {
+          "original_id": "ch08-05-40-provider-fanout",
+          "title": "一次请求可以协调多个 provider session",
+          "decision": "keep",
+          "reason": "RP一次请求到平台RequestSession，再fanout多个provider子会话并汇合成get结果或preparehandle，展示真实一对多对象关系及双方可见性边界。",
+          "original_line": 837,
+          "heading": "### Credential Manager 的应用方与 provider 方"
+        },
+        {
+          "original_id": "ch08-05-41-prepare-handle",
+          "title": "预取 handle 仍需完成 getCredential",
+          "decision": "merge",
+          "reason": "将API34+ prepare无UI→pendinghandle→get完成与取消/配置变化合成同一handle生命周期，保留有效challenge与当前Activity/task。",
+          "original_line": 846,
+          "heading": "#### `prepareGetCredential()` 的使用条件",
+          "replacement_id": "ed08-05-credential-handle-lifecycle"
+        },
+        {
+          "original_id": "ch08-05-42-credential-cancel",
+          "title": "协程取消传播信号，UI 接续仍需独立设计",
+          "decision": "merge",
+          "reason": "合入handle有效继续/失效取消两支，明确协程取消才传播CancellationSignal，丢弃旧handle和隔离晚结果不证明provider底层停止，配置接续依库契约。",
+          "original_line": 859,
+          "heading": "#### `prepareGetCredential()` 的使用条件",
+          "replacement_id": "ed08-05-credential-handle-lifecycle"
+        },
+        {
+          "original_id": "ch08-05-43-single-tap-eligibility",
+          "title": "single tap 是 provider 侧的有条件能力",
+          "decision": "keep",
+          "reason": "single-tap单账号可含多凭据与多账号/设备凭据等回标准流程两支，保留系统/provider条件和RP只能依直接信号上报。",
+          "original_line": 870,
+          "heading": "### Android 15 single tap：provider 侧的集成能力"
+        },
+        {
+          "original_id": "ch08-05-44-provider-crypto-policy",
+          "title": "provider CryptoObject 要求精确 STRONG",
+          "decision": "keep",
+          "reason": "provider BiometricPromptData按crypto是否为空分出精确STRONG公开契约与无对象校验分支，独立于普通App per-use规则；源码宽松不等于公开支持的文字保留。",
+          "original_line": 879,
+          "heading": "### Android 15 single tap：provider 侧的集成能力"
+        },
+        {
+          "original_id": "ch08-05-45-provider-result",
+          "title": "provider 要处理成功、错误与 null",
+          "decision": "keep",
+          "reason": "provider收到成功/错误与null两路后仍完成自身授权才返回凭据，显示null既非成功亦非失败的实际处理边界。",
+          "original_line": 889,
+          "heading": "### Android 15 single tap：provider 侧的集成能力"
+        },
+        {
+          "original_id": "ch08-05-46-four-crypto-roles",
+          "title": "CryptoObject 约束按版本和调用角色查表",
+          "decision": "remove",
+          "reason": "per-use/time-based/provider三卡逐项复制紧邻四行角色版本表，与前文合并授权顺序图和图45的provider约束再次重叠；四种角色精确契约表完整保留。",
+          "original_line": 900,
+          "heading": "### CryptoObject 的形态与约束"
+        },
+        {
+          "original_id": "ch08-05-47-auth-constant-spaces",
+          "title": "密钥策略与 Prompt 认证器不是同一位掩码",
+          "decision": "keep",
+          "reason": "KeyProperties与Prompt两种整数空间的具体1/2和15/32768数值对照是独立误用反例，保留语义一致仍不能复制bitmask。",
+          "original_line": 916,
+          "heading": "### CryptoObject 的形态与约束"
+        },
+        {
+          "original_id": "ch08-05-48-endpoint-separation",
+          "title": "认证回调与 finish 返回各设端点",
+          "decision": "remove",
+          "reason": "init/request/finish-server三卡逐项重排紧邻五行字段/起止/解释表及成功回调不等sign返回段，前文阶段轨道和图36已保留真实时间区别。",
+          "original_line": 933,
+          "heading": "### CryptoObject 的形态与约束"
+        },
+        {
+          "original_id": "ch08-05-49-fallback-state",
+          "title": "平台认证终态之后才进入业务验证",
+          "decision": "keep",
+          "reason": "Preflight/Prompting reject自环/Alternative/Verifying/Stopped/Ready/Recovery的完整业务回退状态机，区别于单attempt取消与收尾；折叠精确Mermaid源码保留。",
+          "original_line": 942,
+          "heading": "### 取消、失败与回退"
+        },
+        {
+          "original_id": "ch08-05-50-error-and-cancel",
+          "title": "错误分类与取消意图分别记录",
+          "decision": "remove",
+          "reason": "用户取消/系统认证/业务凭据三卡逐项复制紧邻八行信号/含义/动作表和cancel_source段，实际回退状态机已保留。",
+          "original_line": 985,
+          "heading": "### 取消、失败与回退"
+        },
+        {
+          "original_id": "ch08-05-51-event-identities",
+          "title": "flow、attempt 与终态去重保持一致",
+          "decision": "remove",
+          "reason": "flow/attempt/request-reject-terminal/敏感边界四框直接重排紧邻八行事件表与两段采集限定，attempt守卫与终态去重已合入图38。",
+          "original_line": 994,
+          "heading": "### 线上事件的字段设计"
+        },
+        {
+          "original_id": "ch08-05-52-oem-measurement",
+          "title": "设备差异用实验室补证，线上看分布",
+          "decision": "remove",
+          "reason": "实验室矩阵/额外证据/线上分布三卡逐项重排紧邻六项测试清单和分位数/回退完成率段，无具体对照结果或归因样本。",
+          "original_line": 1029,
+          "heading": "### OEM 差异如何验证"
+        },
+        {
+          "original_id": "ch08-05-54-version-and-library",
+          "title": "平台 API 与 Jetpack 库版本共同决定行为",
+          "decision": "remove",
+          "reason": "平台/Jetpack/provider/现场验证三卡复述紧邻六行版本表与独立库版本段，没有额外兼容路径，全部版本限制文字保留。",
+          "original_line": 1071,
+          "heading": "## 版本与实现边界"
+        }
+      ],
+      "sha256_after": "7a6d7f82978e1a7e059f41f627b5780e732fc516c8ad79a191404c5fc7617e02",
+      "new_diagrams": [
+        {
+          "id": "ed08-05-auth-operation-order",
+          "title": "per-use 复用同一 operation，限时授权后新建 operation",
+          "article": "src/part2-performance/ch08-responsiveness/05-keystore-biometric-credential-login.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-05-auth-operation-order.svg",
+            "src/assets/diagrams/ch08/ed08-05-auth-operation-order.png"
+          ],
+          "layout": "linear-progression",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-05-auth-operation-order",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/keystore/java/android/security/keystore/KeyGenParameterSpec.java",
+            "https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/enforcements.rs",
+            "https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/biometric/biometric/src/main/java/androidx/biometric/BiometricPrompt.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/keystore/java/android/security/keystore2/AndroidKeyStoreSignatureSpiBase.java",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/security/keymint/aidl/android/hardware/security/keymint/HardwareAuthToken.aidl",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/AuthSession.java",
+            "https://developer.android.com/identity/sign-in/biometric-auth",
+            "本篇冻结全文中的相应段落、表格、代码和原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-05-09-auth-modes",
+              "ch08-05-10-per-use-binding",
+              "ch08-05-11-time-window"
+            ],
+            "boundary": "以本文API30+密钥策略和所用AndroidX兼容条件为准；右栏仅画缺少有效授权时的恢复分支，已有有效授权可直接初始化。认证成功不保证密码调用成功；operation challenge与服务端业务challenge不同。两轨是独立顺序示意，没有共用起点或实测比例。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a094/change-proof.json"
+          }
+        },
+        {
+          "id": "ed08-05-backend-busy-and-client-retry",
+          "title": "容量压力先经服务端 prune，再按客户端兼容配置处理 busy",
+          "article": "src/part2-performance/ch08-responsiveness/05-keystore-biometric-credential-login.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-05-backend-busy-and-client-retry.svg",
+            "src/assets/diagrams/ch08/ed08-05-backend-busy-and-client-retry.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-05-backend-busy-and-client-retry",
+          "sources": [
+            "https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/security_level.rs",
+            "https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/operation.rs",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/keystore/java/android/security/KeyStoreSecurityLevel.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/keystore/java/android/security/KeyStore2.java",
+            "本篇冻结全文中的相应段落、表格、代码和原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-05-18-prune-retry",
+              "ch08-05-19-client-busy"
+            ],
+            "boundary": "固定Android17 r1。服务端无候选可BACKEND_BUSY，并发变化可再试；旧operation被prune后可能invalid handle。客户端兼容变更在r1为@Disabled，不由target31自动推定开启。退避或线程中断不保证立即结束，不表示FIFO排队。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a094/change-proof.json"
+          }
+        },
+        {
+          "id": "ed08-05-single-biometric-attempt",
+          "title": "一个认证 attempt 覆盖活动、取消中与一次性收尾",
+          "article": "src/part2-performance/ch08-responsiveness/05-keystore-biometric-credential-login.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-05-single-biometric-attempt.svg",
+            "src/assets/diagrams/ch08/ed08-05-single-biometric-attempt.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-05-single-biometric-attempt",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/biometric/biometric/src/main/java/androidx/biometric/BiometricPrompt.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/biometrics/BiometricPrompt.java",
+            "本篇冻结全文中的相应段落、表格、代码和原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-05-35-callback-state",
+              "ch08-05-37-attempt-owner"
+            ],
+            "boundary": "业务owner实现的状态协议，不冒充平台内部状态名。样本未识别非终态；成功或终态错误结束当前平台会话，业务验证另行处理。同步启动失败不要求等待不存在的callback；取消中仍拒绝并行新prompt；旧代次结果隔离。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a094/change-proof.json"
+          }
+        },
+        {
+          "id": "ed08-05-credential-handle-lifecycle",
+          "title": "预取 handle 只在当前请求有效时进入完成阶段",
+          "article": "src/part2-performance/ch08-responsiveness/05-keystore-biometric-credential-login.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-05-credential-handle-lifecycle.svg",
+            "src/assets/diagrams/ch08/ed08-05-credential-handle-lifecycle.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-05-credential-handle-lifecycle",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/credentials/credentials/src/main/java/androidx/credentials/CredentialManager.kt",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/credentials/java/com/android/server/credentials/CredentialManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/credentials/java/com/android/server/credentials/PrepareGetRequestSession.java",
+            "本篇冻结全文中的相应段落、表格、代码和原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-05-41-prepare-handle",
+              "ch08-05-42-credential-cancel"
+            ],
+            "boundary": "AndroidX prepare需要API34+。handle不是最终Credential，不显示UI。完成阶段使用合适当前Activity context/task并按所用库版本接续；取消传播到CancellationSignal并忽略取消后callback，不保证所有provider底层工作停止。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a094/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T10:36:03.302402+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 54,
+        "contexts_actually_viewed": 7,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a094/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a094/visual-review.json",
+      "retired_diagrams": [
+        "ch08-05-02-key-material-boundary",
+        "ch08-05-06-generation-policy",
+        "ch08-05-07-envelope",
+        "ch08-05-08-attestation-measurement",
+        "ch08-05-09-auth-modes",
+        "ch08-05-10-per-use-binding",
+        "ch08-05-11-time-window",
+        "ch08-05-13-security-choice",
+        "ch08-05-15-security-evidence",
+        "ch08-05-16-slot-contract",
+        "ch08-05-18-prune-retry",
+        "ch08-05-19-client-busy",
+        "ch08-05-21-thread-placement",
+        "ch08-05-24-keystore-telemetry",
+        "ch08-05-25-perfetto-boundary",
+        "ch08-05-26-controlled-crypto-tests",
+        "ch08-05-27-cache-boundary",
+        "ch08-05-28-passkey-ownership",
+        "ch08-05-29-api-versus-device",
+        "ch08-05-31-observable-endpoints",
+        "ch08-05-35-callback-state",
+        "ch08-05-37-attempt-owner",
+        "ch08-05-38-auth-type-not-modality",
+        "ch08-05-39-preflight-policy",
+        "ch08-05-41-prepare-handle",
+        "ch08-05-42-credential-cancel",
+        "ch08-05-46-four-crypto-roles",
+        "ch08-05-48-endpoint-separation",
+        "ch08-05-50-error-and-cancel",
+        "ch08-05-51-event-identities",
+        "ch08-05-52-oem-measurement",
+        "ch08-05-53-kernel-boundary",
+        "ch08-05-54-version-and-library"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-94/retired-assets.json"
     },
     {
       "index": 95,
@@ -8208,9 +9279,414 @@
       "before_count": 41,
       "before_all_images": 41,
       "sha256_before": "c6eb7097094bac43b160ec00d6d4385ca3fe8a36fd4d08d8570d5588bc49ea27",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 21,
+      "decisions": [
+        {
+          "original_id": "ch08-06-01-legacy-pipeline",
+          "title": "旧 AndroidConfig 的处理与自动展示分支",
+          "decision": "keep",
+          "reason": "旧AndroidConfig从云端分应用callback/自动展示再经NMS与SystemUI的总管线保留，折叠精确Mermaid源码也保留。",
+          "original_line": 72,
+          "heading": "## 先定义“到达”和“显示”"
+        },
+        {
+          "original_id": "ch08-06-02-arrival-is-not-visible",
+          "title": "接受、回调、调用返回与可见是不同端点",
+          "decision": "remove",
+          "reason": "FCM接受/notify返回/UI事件三卡逐项复述紧邻六行端点/含义/可见性表和开篇段落，没有额外时间关联实例。",
+          "original_line": 101,
+          "heading": "## 先定义“到达”和“显示”"
+        },
+        {
+          "original_id": "ch08-06-03-legacy-routing",
+          "title": "旧消息类型与 App 状态决定回调入口",
+          "decision": "remove",
+          "reason": "旧配置前后台/数据路由两支重复紧邻五行完整路由表及总图1的相同分叉，点击Intent extras、代理与进程边界文字完整保留。",
+          "original_line": 127,
+          "heading": "## FCM 消息形态与应用的参与方式"
+        },
+        {
+          "original_id": "ch08-06-04-process-start",
+          "title": "进入应用组件时才讨论进程启动成本",
+          "decision": "keep",
+          "reason": "只有需要进入应用组件时才分冷进程创建和cached/frozen恢复的具体生命周期条件，避免代理路径或force-stop被当冷启动。",
+          "original_line": 136,
+          "heading": "## FCM 消息形态与应用的参与方式"
+        },
+        {
+          "original_id": "ch08-06-05-eap-version-dimensions",
+          "title": "AndroidConfigV2 目前是 EAP 独立配置维度",
+          "decision": "remove",
+          "reason": "发送配置/SDK/设备三卡逐句重排紧邻EAP版本和messages:send维度段落，无新的实际入口路径；图6的v2分流保留。",
+          "original_line": 147,
+          "heading": "### AndroidConfigV2：EAP 另设路径"
+        },
+        {
+          "original_id": "ch08-06-06-eap-intents",
+          "title": "v2 按通知或同步意图选择处理路径",
+          "decision": "keep",
+          "reason": "v2按RemoteNotification/BackgroundSync意图分出的默认GMS、mutable callback和静默同步路径区别于旧前后台规则，保留preview与fallback边界。",
+          "original_line": 158,
+          "heading": "### AndroidConfigV2：EAP 另设路径"
+        },
+        {
+          "original_id": "ch08-06-07-eap-manager-lifetime",
+          "title": "EAP 通知 manager 只在当前回调有效",
+          "decision": "keep",
+          "reason": "scoped FcmNotificationManager从callback取得、post/cancel、finished或finally失效到过期异常的具体API生命周期，区别于路由总图。",
+          "original_line": 165,
+          "heading": "### AndroidConfigV2：EAP 另设路径"
+        },
+        {
+          "original_id": "ch08-06-08-high-normal",
+          "title": "旧 high 是及时调度提示",
+          "decision": "keep",
+          "reason": "旧normal在Doze可能延迟与high尝试唤醒的两支，说明传输调度条件和有限窗口，不把高优先级画成固定时长。",
+          "original_line": 174,
+          "heading": "## high priority 的传输语义与降级"
+        },
+        {
+          "original_id": "ch08-06-09-priority-feedback",
+          "title": "降级与代理按 App 实例行为判断",
+          "decision": "keep",
+          "reason": "实例7天行为评估分降级normal或GMS代理，保留消息自身优先级与聚合/Proxy证据两层，区别于设备Doze状态。",
+          "original_line": 187,
+          "heading": "## high priority 的传输语义与降级"
+        },
+        {
+          "original_id": "ch08-06-11-evidence-tools",
+          "title": "idle、降级和可见性各用自己的证据",
+          "decision": "remove",
+          "reason": "deviceidle/消息云端/可见性三卡重复紧邻证据范围段落和七行因素/影响/证据表，没有实际事件关联。",
+          "original_line": 194,
+          "heading": "## high priority 的传输语义与降级"
+        },
+        {
+          "original_id": "ch08-06-10-offline-collapse-ttl",
+          "title": "传输有效期和折叠只作用于待交付消息",
+          "decision": "keep",
+          "reason": "传输待交付状态按collapse同token/key替换或TTL到期丢弃两支，明确消息对象与NMS通知ID不是同一对象。",
+          "original_line": 211,
+          "heading": "## high priority 的传输语义与降级"
+        },
+        {
+          "original_id": "ch08-06-13-workmanager",
+          "title": "附加工作交给有生命周期的调度设施",
+          "decision": "keep",
+          "reason": "短callback后按交付仍high与normal两路选择expedited豁免或普通WorkRequest，保持进程寿命与后续工作的实际交接。",
+          "original_line": 222,
+          "heading": "## 旧回调的时间预算与后续工作"
+        },
+        {
+          "original_id": "ch08-06-14-fgs-not-universal",
+          "title": "高优先级消息只是一项后台启动 FGS 豁免",
+          "decision": "keep",
+          "reason": "后台FGS按交付high而非原始high分流豁免与NotAllowed错误，并仍核对类型/权限/while-in-use，区别于WorkManager调度。",
+          "original_line": 234,
+          "heading": "## 旧回调的时间预算与后续工作"
+        },
+        {
+          "original_id": "ch08-06-12-callback-spans",
+          "title": "短回调内的计时边界与埋点尾部",
+          "decision": "keep",
+          "reason": "外层Push主体、build/notify嵌套和recordCallback尾部三个轨道体现实际计时包含关系，保持callback整次开销大于外层trace的端点。",
+          "original_line": 272,
+          "heading": "## 旧回调的时间预算与后续工作"
+        },
+        {
+          "original_id": "ch08-06-15-notify-sync-work",
+          "title": "notify 同步工作从 App 预处理开始",
+          "decision": "merge",
+          "reason": "将App fixNotification/图像缩减/delivery clone/Parcel和同步NMS检查纳入同一交接图左上与右上，保留notify_call的同步范围。",
+          "original_line": 281,
+          "heading": "## `notify()` 返回前后分别发生什么",
+          "replacement_id": "ed08-06-notify-handler-handoff"
+        },
+        {
+          "original_id": "ch08-06-17-nms-handler",
+          "title": "NMS 入队与发布是不同阶段",
+          "decision": "merge",
+          "reason": "把NMS Handler Enqueue处理旧记录/timeout/分组/assistant，再投递Post和listener分发接在成功投递分支，避免独立流程重复同一入口。",
+          "original_line": 288,
+          "heading": "## `notify()` 返回前后分别发生什么",
+          "replacement_id": "ed08-06-notify-handler-handoff"
+        },
+        {
+          "original_id": "ch08-06-16-return-overlap",
+          "title": "NMS 异步工作可以与 Binder 返回重叠",
+          "decision": "merge",
+          "reason": "将Binder返回不等待队列/SystemUI的并发边界画入同一图的分叉和三轨；拒绝可正常返回，轨道仅示一种允许交叠次序。",
+          "original_line": 301,
+          "heading": "## `notify()` 返回前后分别发生什么",
+          "replacement_id": "ed08-06-notify-handler-handoff"
+        },
+        {
+          "original_id": "ch08-06-18-ewma-estimator",
+          "title": "EWMA 平滑间隔再换算到达率",
+          "decision": "keep",
+          "reason": "RateEstimator的初始间隔、最小dt、0.7/0.3间隔平滑和倒数rate是独立估算算法，区别于何时触发限速的资格判断。",
+          "original_line": 317,
+          "heading": "## NMS 更新限速的判定"
+        },
+        {
+          "original_id": "ch08-06-19-rate-gating",
+          "title": "更新限速按 previous 和底层进度状态分支",
+          "decision": "keep",
+          "reason": "相同key previous/progressState/autogroup等条件决定是否检查rate的实际分叉，保留严格大于阈值及无异常不能证明发布。",
+          "original_line": 324,
+          "heading": "## NMS 更新限速的判定"
+        },
+        {
+          "original_id": "ch08-06-20-progress-state",
+          "title": "底层进度状态不同于业务状态文字",
+          "decision": "keep",
+          "reason": "NONE/COMPLETE/ONGOING的具体底层字段判定补足正文只有业务状态文字不等于底层状态的说明，保留这个独立值域对照。",
+          "original_line": 331,
+          "heading": "## NMS 更新限速的判定"
+        },
+        {
+          "original_id": "ch08-06-21-count-versus-rate",
+          "title": "50 条上限与更新速率分开核算",
+          "decision": "remove",
+          "reason": "数量/普通50上限/特殊规则三卡逐项复述紧邻完整posted+enqueued计数段落，非独立队列样例；只posted排除同tag/ID和豁免原文完整保留。",
+          "original_line": 338,
+          "heading": "## NMS 更新限速的判定"
+        },
+        {
+          "original_id": "ch08-06-22-coalesce-policy",
+          "title": "稳定通知 key 与合并更新降低总成本",
+          "decision": "remove",
+          "reason": "稳定key/语义更新/onlyAlertOnce/记录四步逐项重排紧邻五项发布清单及实测周期段，无新合并队列或时间实例。",
+          "original_line": 353,
+          "heading": "## NMS 更新限速的判定"
+        },
+        {
+          "original_id": "ch08-06-23-timeout-stages",
+          "title": "FCM TTL 与通知 timeout 的生命周期不同",
+          "decision": "remove",
+          "reason": "FCM TTL/NMS timeout/可见性三卡逐句复述紧邻两个阶段解释段落，图11保留传输状态，图24保留NMS超时机制，两者不混成同一计时器。",
+          "original_line": 364,
+          "heading": "### `timeoutAfter` 由 AlarmManager 驱动"
+        },
+        {
+          "original_id": "ch08-06-24-ttl-helper-and-collision",
+          "title": "超时集合与相同到期毫秒的固定版本缺口",
+          "decision": "keep",
+          "reason": "TimeToLiveHelper elapsed到期、同key更新、正常最近alarm与r1同毫秒不同key冲突两支是具体版本算法缺口，保留取消豁免。",
+          "original_line": 371,
+          "heading": "### `timeoutAfter` 由 AlarmManager 驱动"
+        },
+        {
+          "original_id": "ch08-06-25-remoteviews-actions",
+          "title": "系统模板同样可以生成 RemoteViews",
+          "decision": "keep",
+          "reason": "App系统模板或自定义描述经RemoteViews mActions/Parcel再到SystemUI View准备与布局绘制的数据表示链，区别于NMS事件交接与复用资格。",
+          "original_line": 380,
+          "heading": "## RemoteViews 与 SystemUI 的真实成本"
+        },
+        {
+          "original_id": "ch08-06-26-apply-reapply",
+          "title": "RemoteViews 复用仍有主线程应用工作",
+          "decision": "keep",
+          "reason": "package/layout和旧复用标记决定reapplyAsync或新applyAsync两支，保留主线程action和异步错误回退，不把async当作无UI成本。",
+          "original_line": 387,
+          "heading": "## RemoteViews 与 SystemUI 的真实成本"
+        },
+        {
+          "original_id": "ch08-06-27-style-costs",
+          "title": "成本由内容和复用决定",
+          "decision": "remove",
+          "reason": "App/IPC、SystemUI、实验控制三卡直接复制紧邻五行内容特征/成本表和控制设备payload段落，无实际对照数据。",
+          "original_line": 404,
+          "heading": "## RemoteViews 与 SystemUI 的真实成本"
+        },
+        {
+          "original_id": "ch08-06-28-metric-style",
+          "title": "MetricStyle 的数值更新与计时特例",
+          "decision": "keep",
+          "reason": "MetricStyle有效metric数量及TimeDifference系统连续计时与普通业务变化更新的对照保留；至少一个有效metric的图内限定不是正文中同等完整的重复。",
+          "original_line": 413,
+          "heading": "### ProgressStyle、MetricStyle 与 Live Update"
+        },
+        {
+          "original_id": "ch08-06-30-title-exception",
+          "title": "MetricStyle 的标题例外按实现判断",
+          "decision": "remove",
+          "reason": "通用title/Metric flag例外/最终多条件三卡逐句重排紧邻hasTitle固定版本解释，未画额外判定树；完整文档差异和flag实现说明不删。",
+          "original_line": 424,
+          "heading": "### ProgressStyle、MetricStyle 与 Live Update"
+        },
+        {
+          "original_id": "ch08-06-29-promotion-gates",
+          "title": "提升展示需要内容、权限与系统决策",
+          "decision": "remove",
+          "reason": "内容/应用渠道/实际promoted结果三卡重述紧邻完整资格段落和两个公开检查API及最终结果说明，无新增条件依赖或样例。",
+          "original_line": 431,
+          "heading": "### ProgressStyle、MetricStyle 与 Live Update"
+        },
+        {
+          "original_id": "ch08-06-31-semantic-coloring",
+          "title": "语义颜色表达状态，不改变传输或限流",
+          "decision": "remove",
+          "reason": "语义/系统颜色/性能预算三卡逐句复述紧邻一个语义色段落，无实际颜色状态映射或更新机制。",
+          "original_line": 438,
+          "heading": "### ProgressStyle、MetricStyle 与 Live Update"
+        },
+        {
+          "original_id": "ch08-06-32-three-priorities",
+          "title": "传输优先级、channel 与 Binder 调度分层",
+          "decision": "remove",
+          "reason": "传输/channel/IPC三卡逐项重排紧邻importance完整边界段，传输high/normal图8和channel控制图33已分别说明实际机制。",
+          "original_line": 447,
+          "heading": "## channel importance 与传输优先级分别控制"
+        },
+        {
+          "original_id": "ch08-06-33-channel-mutation",
+          "title": "channel 创建后的控制权与有限修改",
+          "decision": "keep",
+          "reason": "已存在channel按用户是否修改设置分出用户锁定与条件性降低importance，保留不同控制权及heads-up条件的实际分支。",
+          "original_line": 454,
+          "heading": "## channel importance 与传输优先级分别控制"
+        },
+        {
+          "original_id": "ch08-06-34-permission-visibility",
+          "title": "通知权限与 FGS 的展示位置分别判断",
+          "decision": "keep",
+          "reason": "普通非豁免通知受权限/channel阻止与FGS仍须通知但提示可在TaskManager两路，保留交付不等于抽屉可见的实际展示差异。",
+          "original_line": 463,
+          "heading": "## channel importance 与传输优先级分别控制"
+        },
+        {
+          "original_id": "ch08-06-35-group-rows",
+          "title": "通知分组组织信息，不免除 child 成本",
+          "decision": "remove",
+          "reason": "分组/提醒/child成本三卡逐句复述紧邻一个完整分组段落，没有实际summary/child对象树或数量实例。",
+          "original_line": 470,
+          "heading": "## channel importance 与传输优先级分别控制"
+        },
+        {
+          "original_id": "ch08-06-36-clocks-and-identity",
+          "title": "跨系统用关联键，耗时在各自单调时钟计算",
+          "decision": "remove",
+          "reason": "关联键/本地单调时钟/敏感边界三卡逐项重排紧邻关联段及六行阶段/字段/时钟表，无跨时钟校准或时间对齐实例。",
+          "original_line": 479,
+          "heading": "## 端到端观测：每段使用自己的时钟"
+        },
+        {
+          "original_id": "ch08-06-37-delivery-data-scope",
+          "title": "交付、聚合与 impression 不是同一层事件",
+          "decision": "remove",
+          "reason": "BigQuery delivered/聚合API/展示代理三卡逐句复述紧邻交付数据完整段及前表FCM行，没有实际事件汇合或覆盖实例。",
+          "original_line": 497,
+          "heading": "## 端到端观测：每段使用自己的时钟"
+        },
+        {
+          "original_id": "ch08-06-38-sql-joins",
+          "title": "用 slice、utid 与 upid 保持线程身份",
+          "decision": "remove",
+          "reason": "slice/thread_track/utid/upid四框逐步重画紧邻完整SQL及关联链段，未展示一对多错配实例，笛卡尔积与因果边界原文完整保留。",
+          "original_line": 533,
+          "heading": "## Perfetto 关联查询与时间窗"
+        },
+        {
+          "original_id": "ch08-06-39-systemui-trace-coverage",
+          "title": "后台准备、apply 和屏幕呈现分开观测",
+          "decision": "keep",
+          "reason": "doInBackground、后续apply/reapply与帧呈现三个轨道显示具体trace section只覆盖后台准备，独立于Binder交接轨道和RemoteViews复用条件。",
+          "original_line": 540,
+          "heading": "## Perfetto 关联查询与时间窗"
+        },
+        {
+          "original_id": "ch08-06-40-causal-evidence",
+          "title": "时间窗相关性与单条通知因果链分开",
+          "decision": "remove",
+          "reason": "同窗/notificationkey因果/内核范围三卡复制紧邻四项观察清单、共同键限制段和源码表/内核段，没有实际配对样本。",
+          "original_line": 552,
+          "heading": "## Perfetto 关联查询与时间窗"
+        },
+        {
+          "original_id": "ch08-06-41-layered-versions",
+          "title": "平台、Messaging SDK 与 Play services 分开记录",
+          "decision": "remove",
+          "reason": "平台/SDKGMS/发送配置三卡逐项复制紧邻五行平台版本表和独立库版本说明，图6和图7已保留v2具体入口及寿命规则。",
+          "original_line": 584,
+          "heading": "## 版本边界"
+        }
+      ],
+      "sha256_after": "d00d5f8b83301a681822c030d6820cb76febdf8593d0c1bc488d9dded83c3711",
+      "new_diagrams": [
+        {
+          "id": "ed08-06-notify-handler-handoff",
+          "title": "notify 同步边界与 NMS、SystemUI 的异步交接",
+          "article": "src/part2-performance/ch08-responsiveness/06-push-notification-pipeline-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-06-notify-handler-handoff.svg",
+            "src/assets/diagrams/ch08/ed08-06-notify-handler-handoff.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-06-notify-handler-handoff",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/NotificationManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/INotificationManager.aidl",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/NotifCollection.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationRowContentBinderImpl.kt",
+            "本文冻结全文中notify返回前后、源代码入口、段落与原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-06-15-notify-sync-work",
+              "ch08-06-17-nms-handler",
+              "ch08-06-16-return-overlap"
+            ],
+            "boundary": "以本文Android17 r1为准。箭头表示调用、投递或listener交接，不把Handler工作放进同步等待范围。仅接受路径投递Handler，拒绝可正常返回或按具体错误抛异常。下方轨道只是允许的一种交叠次序，不按比例，不保证先返回App再执行队列。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a095/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T10:40:42.203996+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 41,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a095/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a095/visual-review.json",
+      "retired_diagrams": [
+        "ch08-06-02-arrival-is-not-visible",
+        "ch08-06-03-legacy-routing",
+        "ch08-06-05-eap-version-dimensions",
+        "ch08-06-11-evidence-tools",
+        "ch08-06-15-notify-sync-work",
+        "ch08-06-16-return-overlap",
+        "ch08-06-17-nms-handler",
+        "ch08-06-21-count-versus-rate",
+        "ch08-06-22-coalesce-policy",
+        "ch08-06-23-timeout-stages",
+        "ch08-06-27-style-costs",
+        "ch08-06-29-promotion-gates",
+        "ch08-06-30-title-exception",
+        "ch08-06-31-semantic-coloring",
+        "ch08-06-32-three-priorities",
+        "ch08-06-35-group-rows",
+        "ch08-06-36-clocks-and-identity",
+        "ch08-06-37-delivery-data-scope",
+        "ch08-06-38-sql-joins",
+        "ch08-06-40-causal-evidence",
+        "ch08-06-41-layered-versions"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-95/retired-assets.json"
     },
     {
       "index": 96,
@@ -8219,9 +9695,540 @@
       "before_count": 48,
       "before_all_images": 48,
       "sha256_before": "805ae17dfca92b418579064b46994e0a9a5635b7d35c9c9aa61d6a390a24a431",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 18,
+      "decisions": [
+        {
+          "original_id": "ch08-07-01-signals-and-policy",
+          "title": "完整性信号进入服务端业务策略",
+          "decision": "keep",
+          "reason": "多个独立Integrity信号汇到业务服务端账号/交易/行为/幂等策略的职责总览，保留API成功与业务授权不同层的基本关系。",
+          "original_line": 49,
+          "heading": "# Play Integrity API 性能与集成延迟"
+        },
+        {
+          "original_id": "ch08-07-02-success-endpoints",
+          "title": "token 到手、解密成功与业务通过分开",
+          "decision": "remove",
+          "reason": "token到手/decode/业务检查/客户端结果四框重复后文完整Standard总链图13及五段计时图29，开篇完整说明仍保留。",
+          "original_line": 56,
+          "heading": "# Play Integrity API 性能与集成延迟"
+        },
+        {
+          "original_id": "ch08-07-03-open-and-closed",
+          "title": "公开契约、通用承载与闭源内部",
+          "decision": "remove",
+          "reason": "公开契约/AOSP承载/闭源内部三卡直接复述紧邻闭源前提段，末尾源码边界及锚点清单也完整保留，无新增实际调用关系。",
+          "original_line": 65,
+          "heading": "# Play Integrity API 性能与集成延迟"
+        },
+        {
+          "original_id": "ch08-07-04-safetynet-migration",
+          "title": "SafetyNet 迁移包含服务端格式与接口",
+          "decision": "remove",
+          "reason": "SafetyNet/Standard/Classic三卡逐项重排紧邻单段迁移说明，没有实际JWE/JWS嵌套结构或新增迁移依赖，格式差异原文保留。",
+          "original_line": 74,
+          "heading": "## 1. 接口定位"
+        },
+        {
+          "original_id": "ch08-07-05-integrity-versus-key",
+          "title": "Play 分发信号与密钥属性证明",
+          "decision": "remove",
+          "reason": "Integrity/KeyAttestation/组合成本三卡逐项复制紧邻两条职责和威胁模型段，缺Play环境的限制后文亦完整说明。",
+          "original_line": 86,
+          "heading": "## 1. 接口定位"
+        },
+        {
+          "original_id": "ch08-07-06-independent-verdicts",
+          "title": "应用识别与账号授权分别读取",
+          "decision": "keep",
+          "reason": "解密后分出appLicensingVerdict与appRecognitionVerdict两个独立轴，显示一个不能推出另一个及各自未知值，区别于单列枚举表。",
+          "original_line": 95,
+          "heading": "### 1.1 服务端会看到哪些主要判定"
+        },
+        {
+          "original_id": "ch08-07-07-licensed-history",
+          "title": "授权记录与当前安装包分开判断",
+          "decision": "remove",
+          "reason": "账号授权/旧设备卸载保留/结合识别三卡逐句复述紧邻LICENSED历史例外段，无实际安装前后状态图。",
+          "original_line": 118,
+          "heading": "### 1.1 服务端会看到哪些主要判定"
+        },
+        {
+          "original_id": "ch08-07-08-device-label-levels",
+          "title": "设备标签的条件按系统版本解释",
+          "decision": "remove",
+          "reason": "BASIC/DEVICE/STRONG三卡逐项复制紧邻三行标签条件表和Android13/12分界段，未画新包含关系或返回实例。",
+          "original_line": 133,
+          "heading": "### 1.2 设备标签的分级与读取"
+        },
+        {
+          "original_id": "ch08-07-09-optional-label-gates",
+          "title": "可选标签和 sdkVersion 都有返回前提",
+          "decision": "keep",
+          "reason": "可选标签按配置、授权与设备条件分流返回或省略，保留其他标签可返回和sdkVersion缺失不能当旧系统的实际字段守卫。",
+          "original_line": 142,
+          "heading": "### 1.2 设备标签的分级与读取"
+        },
+        {
+          "original_id": "ch08-07-10-missing-field-diagnosis",
+          "title": "先解释字段缺失再做风险归因",
+          "decision": "remove",
+          "reason": "配置/设备技术/业务文案三卡逐句重排紧邻缺失归因段，并重复图9的前提检查，没有新的字段状态实例。",
+          "original_line": 149,
+          "heading": "### 1.2 设备标签的分级与读取"
+        },
+        {
+          "original_id": "ch08-07-12-platform-and-library",
+          "title": "Android API、SDK 与 Play 组件分别演进",
+          "decision": "remove",
+          "reason": "平台/库1.6.0/Play服务三卡逐项复述紧邻库版本minSdk段及开篇独立演进前提，无额外版本调用路径。",
+          "original_line": 158,
+          "heading": "## 2. Standard 与 Classic 是两套调用方式"
+        },
+        {
+          "original_id": "ch08-07-11-standard-classic-choice",
+          "title": "Standard 与 Classic 按动作成本选择",
+          "decision": "remove",
+          "reason": "Standard/Classic/量级三卡直接复制紧邻八行维度对照表和官方量级非SLA段；两种实际调用流程图13/23保留。",
+          "original_line": 178,
+          "heading": "## 2. Standard 与 Classic 是两套调用方式"
+        },
+        {
+          "original_id": "ch08-07-13-standard-sequence",
+          "title": "Standard 从预热到业务决定的完整路径",
+          "decision": "keep",
+          "reason": "提前prepare到固定快照/requestHash、按动作request、同次上行、Googledecode及业务提交返回的全文主链，折叠精确时序源码保留。",
+          "original_line": 185,
+          "heading": "## 2. Standard 与 Classic 是两套调用方式"
+        },
+        {
+          "original_id": "ch08-07-14-prewarm-and-interaction",
+          "title": "异步预热只有不被等待才移出交互路径",
+          "decision": "merge",
+          "reason": "把页面绘制与prepare交叠、不能等待后才放行的预热安排合入一张关键路径轨道图，与后文相同预热轨道不再分画。",
+          "original_line": 223,
+          "heading": "## 2. Standard 与 Classic 是两套调用方式",
+          "replacement_id": "ed08-07-prewarm-and-safe-parallelism"
+        },
+        {
+          "original_id": "ch08-07-15-provider-target-lifecycle",
+          "title": "生产组件应有明确 provider 状态迁移",
+          "decision": "merge",
+          "reason": "将未就绪/PREPARING/READY的生产目标与状态串行发布、在途prepare合并画成实际条件状态图，不把正文短类冒充完整实现。",
+          "original_line": 237,
+          "heading": "### 3.1 prepare 与 provider 的生命周期",
+          "replacement_id": "ed08-07-provider-generation-state"
+        },
+        {
+          "original_id": "ch08-07-16-provider-example-races",
+          "title": "volatile 示例的三种未解决竞态",
+          "decision": "merge",
+          "reason": "把Task完成main listener未写回、并发prepare乱序、clear后旧success复活三种竞态转为同一状态图的代次守卫和先写缓存后READY规则。",
+          "original_line": 244,
+          "heading": "### 3.1 prepare 与 provider 的生命周期",
+          "replacement_id": "ed08-07-provider-generation-state"
+        },
+        {
+          "original_id": "ch08-07-17-provider-invalid-recovery",
+          "title": "provider 失效恢复按代次隔离",
+          "decision": "merge",
+          "reason": "合入同一provider图的INVALID分支：核对出错provider/代次，只匹配当前引用才清理和合并重建，旧错误不能清新引用。",
+          "original_line": 296,
+          "heading": "### 3.1 prepare 与 provider 的生命周期",
+          "replacement_id": "ed08-07-provider-generation-state"
+        },
+        {
+          "original_id": "ch08-07-18-hash-binding-pipeline",
+          "title": "请求绑定从稳定字节到服务端重算",
+          "decision": "keep",
+          "reason": "冻结授权参数→规范字节→SHA256/编码→服务端重算的具体数据变换链，区别于摘要一致后仍须授权的条件分叉。",
+          "original_line": 310,
+          "heading": "### 3.2 `requestHash` 与当前动作的绑定"
+        },
+        {
+          "original_id": "ch08-07-19-utf16-canonicalization",
+          "title": "现有 v1 长度前缀使用 UTF-16 单元",
+          "decision": "remove",
+          "reason": "String.length汉字1/emoji2/服务端同规则三卡逐句复述紧邻UTF16、UTF8和Unicode约定完整段落，无新的跨语言编码实例。",
+          "original_line": 317,
+          "heading": "### 3.2 `requestHash` 与当前动作的绑定"
+        },
+        {
+          "original_id": "ch08-07-20-frozen-payload-and-authority",
+          "title": "同一 token 只能绑定对应业务快照",
+          "decision": "keep",
+          "reason": "服务端重算摘要不一致拒绝与一致后仍继续可信订单/会话授权两路，保留内容绑定不等于内容合法的实际授权边界。",
+          "original_line": 347,
+          "heading": "### 3.2 `requestHash` 与当前动作的绑定"
+        },
+        {
+          "original_id": "ch08-07-21-backend-validation",
+          "title": "服务端按请求、时效、判定和幂等验证",
+          "decision": "remove",
+          "reason": "请求/时效/判定/原子消费四框逐项重排紧邻六条完整服务端校验顺序，图13、20与22已保留实际链路、授权分叉与重放对象。",
+          "original_line": 369,
+          "heading": "### 3.3 服务端校验顺序"
+        },
+        {
+          "original_id": "ch08-07-22-two-replay-scopes",
+          "title": "token 重用与业务重放是两层问题",
+          "decision": "keep",
+          "reason": "同token重复decode、不同新token同订单、并发动作消费三个作用域对照，显示Google缓解与业务原子幂等两个不同保护对象。",
+          "original_line": 376,
+          "heading": "### 3.3 服务端校验顺序"
+        },
+        {
+          "original_id": "ch08-07-23-classic-request-flow",
+          "title": "Classic 用一次性 nonce 绑定当前动作",
+          "decision": "keep",
+          "reason": "服务端不可预测唯一值到App规范化nonce、Classic现场request、服务端核对并原子消费的独立调用链，区别于Standardprovider预热。",
+          "original_line": 387,
+          "heading": "## 4. Classic 请求与 nonce"
+        },
+        {
+          "original_id": "ch08-07-24-classic-project-configuration",
+          "title": "Classic 的 project number 按分发场景设置",
+          "decision": "remove",
+          "reason": "Play分发/站外或SDK/project及nonce三卡逐句重排紧邻项目配置段与硬编码nonce限制，未画具体参数选择实例。",
+          "original_line": 414,
+          "heading": "## 4. Classic 请求与 nonce"
+        },
+        {
+          "original_id": "ch08-07-25-nonce-two-properties",
+          "title": "唯一值与内容摘要承担不同保护",
+          "decision": "remove",
+          "reason": "唯一值/内容摘要/服务端消费三卡逐项复制紧邻五项nonce要求，与图23同一绑定链重复；不可预测性及敏感信息边界原文完整保留。",
+          "original_line": 427,
+          "heading": "## 4. Classic 请求与 nonce"
+        },
+        {
+          "original_id": "ch08-07-26-nonce-limit-disagreement",
+          "title": "nonce 的两套官方长度单位要区分",
+          "decision": "remove",
+          "reason": "编码后字符/编码前字节/32字节43字符三卡直接复述紧邻醒目文档矛盾段，全部单位、数值和不推断边界必过的限制原文保留。",
+          "original_line": 434,
+          "heading": "## 4. Classic 请求与 nonce"
+        },
+        {
+          "original_id": "ch08-07-27-classic-no-cache",
+          "title": "频繁使用应切换调用模式而非复用旧 token",
+          "decision": "remove",
+          "reason": "Classic本次计算/频繁改Standard/不缓存三卡逐句复述紧邻两段，并重复模式表与实际请求链中每动作新token规则。",
+          "original_line": 441,
+          "heading": "## 4. Classic 请求与 nonce"
+        },
+        {
+          "original_id": "ch08-07-28-latency-not-sla",
+          "title": "官方延迟量级用于初始规划",
+          "decision": "remove",
+          "reason": "Standard/Classicdecode/实测尾延迟三卡直接复制紧邻四条官方量级与规划限定段，没有实际分布或对照数据。",
+          "original_line": 459,
+          "heading": "### 5.1 官方量级与容量估算"
+        },
+        {
+          "original_id": "ch08-07-29-five-measurement-scopes",
+          "title": "五段时间分别记录并独立量总耗时",
+          "decision": "keep",
+          "reason": "预热、客户端token与完整业务等待、服务端decode和策略四轨显示嵌套计时与返回链路，保留总时长独立测、跨时钟不可直接算单程。",
+          "original_line": 478,
+          "heading": "### 5.2 一次业务请求至少记录五段"
+        },
+        {
+          "original_id": "ch08-07-30-backend-http-stages",
+          "title": "Google decode 延迟需要服务端观测",
+          "decision": "remove",
+          "reason": "客户端/服务端HTTP/分段/关联四步重复紧邻HTTP字段段落及上文时钟说明，未画连接复用与新建的实际网络分支。",
+          "original_line": 485,
+          "heading": "### 5.2 一次业务请求至少记录五段"
+        },
+        {
+          "original_id": "ch08-07-31-critical-path-arrangement",
+          "title": "预热与本地工作按数据依赖安排",
+          "decision": "merge",
+          "reason": "将token与安全相容独立工作并行、最终业务快照及同次上行合入前述预热和页面轨道，保留服务端HTTP连接复用、预算和等待prepare仍在关键路径的边界。",
+          "original_line": 502,
+          "heading": "### 5.3 关键路径优化",
+          "replacement_id": "ed08-07-prewarm-and-safe-parallelism"
+        },
+        {
+          "original_id": "ch08-07-32-scene-timing",
+          "title": "支付与游戏把预热安排在动作之前",
+          "decision": "remove",
+          "reason": "支付/游戏/共同约束三卡逐句复制紧邻一个场景段，没有额外时间安排图；合并关键路径轨道保留通用顺序和快照限制。",
+          "original_line": 509,
+          "heading": "### 5.3 关键路径优化"
+        },
+        {
+          "original_id": "ch08-07-33-outcome-versus-policy",
+          "title": "观测状态与业务处置分别记录",
+          "decision": "remove",
+          "reason": "调用失败/未知缺失/不符合动作策略三卡逐项复制紧邻三条编号结果及后续处置段，没有额外状态转换；未知不当通过的安全语义全部保留。",
+          "original_line": 524,
+          "heading": "### 6.1 三类结果的区分"
+        },
+        {
+          "original_id": "ch08-07-34-retry-classification",
+          "title": "按错误原因选择重试或修复",
+          "decision": "keep",
+          "reason": "按模式记录错误后分瞬态退避与provider/配置/环境修复的处理分叉保留，图注给CLIENT_TRANSIENT_ERROR Classic-17/Standard-18独立数值对照。",
+          "original_line": 545,
+          "heading": "### 6.2 按错误类别重试"
+        },
+        {
+          "original_id": "ch08-07-35-retry-sequence",
+          "title": "初次失败后的三次重试与风险处置",
+          "decision": "keep",
+          "reason": "初始失败后的5/10/20秒三次后台退避示意明确计数和最终风险处置，保留不是前台必须等待节奏和不能诊断攻击。",
+          "original_line": 554,
+          "heading": "### 6.2 按错误类别重试"
+        },
+        {
+          "original_id": "ch08-07-36-ui-deadline-versus-task",
+          "title": "UI 截止时间与 Play 请求完成分开",
+          "decision": "keep",
+          "reason": "UI截止退出与底层Task继续及晚到完成两轨，保留当前request无CancellationToken、晚结果代次隔离和未完成观测。",
+          "original_line": 561,
+          "heading": "### 6.2 按错误类别重试"
+        },
+        {
+          "original_id": "ch08-07-37-remediation-and-rewarm",
+          "title": "修复有 verdict 与客户端异常两个入口",
+          "decision": "keep",
+          "reason": "修复对话框从服务端verdict或客户端可修复异常两种入口汇合，再Standard重新warmup申请新token，保留对话框响应不等于问题已解决。",
+          "original_line": 570,
+          "heading": "### 6.3 给用户可修复的出口"
+        },
+        {
+          "original_id": "ch08-07-38-ecosystem-and-fallback",
+          "title": "分发渠道与可用判定能力要先确认",
+          "decision": "remove",
+          "reason": "Play环境/缺失环境/独立渠道策略三卡逐句复述紧邻一个渠道段落，KeyAttestation不能补Play字段的文字前后完整保留。",
+          "original_line": 577,
+          "heading": "### 6.3 给用户可修复的出口"
+        },
+        {
+          "original_id": "ch08-07-39-separate-quota-buckets",
+          "title": "默认每日配额分成生成与解密两桶",
+          "decision": "keep",
+          "reason": "关联Cloudproject下生成准备Classic+prepare与Standard+Classicdecode两个独立桶，保留普通Standardrequest不占前桶和实例频控，避免误合预算。",
+          "original_line": 592,
+          "heading": "## 7. 配额与流量模型"
+        },
+        {
+          "original_id": "ch08-07-40-capacity-and-rollout",
+          "title": "提额、重试与峰值流量分别估算",
+          "decision": "remove",
+          "reason": "估算/资格/申请/放量四步逐项复制紧邻容量和上线完整段落，没有具体流量样例或数值计算。",
+          "original_line": 599,
+          "heading": "## 7. 配额与流量模型"
+        },
+        {
+          "original_id": "ch08-07-41-trace-balanced-lifecycle",
+          "title": "异步 trace 在完成与同步抛错时配对",
+          "decision": "merge",
+          "reason": "将单async事件的正常Task终态或同步request/监听注册抛错两支、AtomicBoolean endOnce守卫与并发cookie配对合入一图。",
+          "original_line": 642,
+          "heading": "## 8. 可观测性：应用侧的 Perfetto 视角",
+          "replacement_id": "ed08-07-async-trace-lifecycle-and-cookies"
+        },
+        {
+          "original_id": "ch08-07-43-async-cookie-pairing",
+          "title": "同名并发事件用不同 cookie 配对",
+          "decision": "merge",
+          "reason": "同名事件A101/B102由文字卡改为交叠且非嵌套的两轨示例，合入单事件闭合协议，保留在途唯一、结束后复用及敏感数据限制。",
+          "original_line": 649,
+          "heading": "## 8. 可观测性：应用侧的 Perfetto 视角",
+          "replacement_id": "ed08-07-async-trace-lifecycle-and-cookies"
+        },
+        {
+          "original_id": "ch08-07-42-completion-observation",
+          "title": "主线程排队会延后默认完成观察点",
+          "decision": "keep",
+          "reason": "Task内部终态、默认main排队listener与inline观察三轨，独立说明应用观察完成不等于闭源内部精确完成，区别于trace配对正确性。",
+          "original_line": 656,
+          "heading": "## 8. 可观测性：应用侧的 Perfetto 视角"
+        },
+        {
+          "original_id": "ch08-07-44-observability-fields",
+          "title": "分阶段记录结果和分布",
+          "decision": "remove",
+          "reason": "身份环境/耗时恢复/业务数据三卡逐项复制紧邻六项观测清单，无新增记录关联或分位数样例。",
+          "original_line": 670,
+          "heading": "## 8. 可观测性：应用侧的 Perfetto 视角"
+        },
+        {
+          "original_id": "ch08-07-45-controlled-comparison",
+          "title": "同业务对照帮助排除其他慢依赖",
+          "decision": "remove",
+          "reason": "控制条件/Integrity路径/业务对照三卡逐句重排紧邻同业务对照段，没有实际实验结果或新的控制变量矩阵。",
+          "original_line": 677,
+          "heading": "## 8. 可观测性：应用侧的 Perfetto 视角"
+        },
+        {
+          "original_id": "ch08-07-46-generic-binder-boundary",
+          "title": "通用 Binder 源码只解释承载机制",
+          "decision": "remove",
+          "reason": "App Binder/nativeIPCThreadState/kernelbinder三层四框逐项重画紧邻三个源码锚点及归因范围段，没有某次请求的实际IPC路径。",
+          "original_line": 688,
+          "heading": "## 9. 源码边界与排查锚点"
+        },
+        {
+          "original_id": "ch08-07-47-correlation-not-internals",
+          "title": "短期 request ID 关联可见证据",
+          "decision": "remove",
+          "reason": "客户端/服务端/闭源额外证据三卡逐句复制紧邻requestID关联段及本节闭源边界说明，未形成新证据图。",
+          "original_line": 699,
+          "heading": "## 9. 源码边界与排查锚点"
+        },
+        {
+          "original_id": "ch08-07-48-integration-review-flow",
+          "title": "按动作检查集成链路是否闭合",
+          "decision": "remove",
+          "reason": "模式/动作链/服务端验证/恢复观测四框再次重排紧邻十项完整接入清单，主链图、状态图和独立机制图已有对应解释。",
+          "original_line": 717,
+          "heading": "## 10. 检查清单"
+        }
+      ],
+      "sha256_after": "efd07971e0b27d8662cbf035baecbd90a1fbd390f8132d7e719155273e3f3918",
+      "new_diagrams": [
+        {
+          "id": "ed08-07-provider-generation-state",
+          "title": "provider 按代次发布、失效与重建",
+          "article": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-07-provider-generation-state.svg",
+            "src/assets/diagrams/ch08/ed08-07-provider-generation-state.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-07-provider-generation-state",
+          "sources": [
+            "https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/integrity/StandardIntegrityManager",
+            "https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/integrity/StandardIntegrityManager.StandardIntegrityTokenProvider",
+            "https://developers.google.com/android/reference/com/google/android/gms/tasks/Task",
+            "https://developer.android.com/google/play/integrity/error-codes",
+            "本文冻结全文中的相应段落、表格、代码和原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-07-15-provider-target-lifecycle",
+              "ch08-07-16-provider-example-races",
+              "ch08-07-17-provider-invalid-recovery"
+            ],
+            "boundary": "这是应用生产组件的目标协议，不是SDK公开状态枚举；正文短类未实现完整并发状态机。缓存/状态更新串行化，不宣称串行化全部业务请求。Task完成不代表main success listener已执行；只有当前代次缓存写入后才发READY。INVALID只清仍匹配该错误的引用。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a096/change-proof.json"
+          }
+        },
+        {
+          "id": "ed08-07-prewarm-and-safe-parallelism",
+          "title": "预热移出等待，token 只与独立工作并行",
+          "article": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-07-prewarm-and-safe-parallelism.svg",
+            "src/assets/diagrams/ch08/ed08-07-prewarm-and-safe-parallelism.png"
+          ],
+          "layout": "linear-progression",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-07-prewarm-and-safe-parallelism",
+          "sources": [
+            "https://developer.android.com/google/play/integrity/standard",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java",
+            "https://developer.android.com/google/play/integrity/setup",
+            "本文冻结全文中的相应段落、表格、代码和原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-07-14-prewarm-and-interaction",
+              "ch08-07-31-critical-path-arrangement"
+            ],
+            "boundary": "轨道只画provider在动作前已就绪的一种安排，独立示意无实测比例；未就绪时若等待prepare，准备耗时仍进入交互路径。异步仍可能竞争CPU/Binder/网络。本地工作必须不改变最终绑定快照且被安全策略允许。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a096/change-proof.json"
+          }
+        },
+        {
+          "id": "ed08-07-async-trace-lifecycle-and-cookies",
+          "title": "async trace 按 name 和 cookie 闭合一次",
+          "article": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch08/ed08-07-async-trace-lifecycle-and-cookies.svg",
+            "src/assets/diagrams/ch08/ed08-07-async-trace-lifecycle-and-cookies.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed08-07-async-trace-lifecycle-and-cookies",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java",
+            "https://developers.google.com/android/reference/com/google/android/gms/tasks/Task",
+            "本文冻结全文中的相应段落、表格、代码和原图图注"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch08-07-41-trace-balanced-lifecycle",
+              "ch08-07-43-async-cookie-pairing"
+            ],
+            "boundary": "这是应用观测的生命周期，不证明Play内部精确完成、底层取消或完整性通过。AtomicBoolean endOnce防重复闭合；request或监听注册同步失败时先闭合再原样重抛。Cookie例子仅示意交叠，无实测刻度；同名在途唯一，结束后才可复用。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a096/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T10:51:05.983980+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 48,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a096/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a096/visual-review.json",
+      "retired_diagrams": [
+        "ch08-07-02-success-endpoints",
+        "ch08-07-03-open-and-closed",
+        "ch08-07-04-safetynet-migration",
+        "ch08-07-05-integrity-versus-key",
+        "ch08-07-07-licensed-history",
+        "ch08-07-08-device-label-levels",
+        "ch08-07-10-missing-field-diagnosis",
+        "ch08-07-11-standard-classic-choice",
+        "ch08-07-12-platform-and-library",
+        "ch08-07-14-prewarm-and-interaction",
+        "ch08-07-15-provider-target-lifecycle",
+        "ch08-07-16-provider-example-races",
+        "ch08-07-17-provider-invalid-recovery",
+        "ch08-07-19-utf16-canonicalization",
+        "ch08-07-21-backend-validation",
+        "ch08-07-24-classic-project-configuration",
+        "ch08-07-25-nonce-two-properties",
+        "ch08-07-26-nonce-limit-disagreement",
+        "ch08-07-27-classic-no-cache",
+        "ch08-07-28-latency-not-sla",
+        "ch08-07-30-backend-http-stages",
+        "ch08-07-31-critical-path-arrangement",
+        "ch08-07-32-scene-timing",
+        "ch08-07-33-outcome-versus-policy",
+        "ch08-07-38-ecosystem-and-fallback",
+        "ch08-07-40-capacity-and-rollout",
+        "ch08-07-41-trace-balanced-lifecycle",
+        "ch08-07-43-async-cookie-pairing",
+        "ch08-07-44-observability-fields",
+        "ch08-07-45-controlled-comparison",
+        "ch08-07-46-generic-binder-boundary",
+        "ch08-07-47-correlation-not-internals",
+        "ch08-07-48-integration-review-flow"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-96/retired-assets.json"
     },
     {
       "index": 98,
@@ -10539,8 +12546,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 35,
-  "next_article": "src/part2-performance/ch08-responsiveness/04-coroutine-performance.md",
+  "reviewed_articles": 39,
+  "next_article": "src/part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -10550,7 +12557,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T10:20:53.758261+08:00",
+  "updated_at": "2026-10-28T10:51:05.983980+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
@@ -10567,6 +12574,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "registered_sha256": "e9cdd7aa677e9820668e5314e759897751fc5e5eed34411138c65cc2edb0f243",
+      "observed_sha256": "f7614e59bd773662f0cb56bd3d15920be69d7a6a703cbcf9462d310a7d069f5a",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
       "registered_sha256": "f6a74823e1876c05b66654995eb5481dbd8f90106f53cc5e6c15130dcefc35e2",
       "observed_sha256": "c7d2706127579a2ebc9ad64184960c47c2a47e61b945053c9a4f31ad57517f5a",
@@ -10576,14 +12590,14 @@
     {
       "article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "registered_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
-      "observed_sha256": "7646e4fe6387f1cef773e7b1ab21cfa7ac71bbd0d6fa1579c426f28b11a9bc8f",
+      "observed_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 866,
-  "reviewed_placements_after": 527,
-  "net_removed_placements": 339,
+  "reviewed_placements_before": 1053,
+  "reviewed_placements_after": 614,
+  "net_removed_placements": 439,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
