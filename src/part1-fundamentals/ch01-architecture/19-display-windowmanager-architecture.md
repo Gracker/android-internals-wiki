@@ -15,9 +15,9 @@ tags:
   - surface
 last_verified: '2026-10-28'
 last_source_verified_at: '2026-10-28'
-last_rework_at: '2026-10-22T09:37:56+08:00'
+last_rework_at: '2026-10-28T09:41:03+08:00'
 last_deep_review_at: '2026-10-28T08:40:14+08:00'
-verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。补核 Window/SurfaceView HDR headroom 的 HDR 模式前提、独立作用域、比值及输入范围、自动默认值和 Android 15/16 limited_hdr 注解到 Android 17 移除注解的边界；复核 SurfaceView 四项 API 与 alpha。WebView、Flutter、React Native、游戏引擎等第三方拓扑仍未按具体组件版本逐项复核。
+verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。补核 Window/SurfaceView HDR headroom 的 HDR 模式前提、独立作用域、比值及输入范围、自动默认值和 Android 15/16 limited_hdr 注解到 Android 17 移除注解的边界；复核 SurfaceView 四项 API 与 alpha。WebView、Flutter、React Native 和游戏拓扑分别补核到 Chromium 140.0.7339.155、Flutter 3.35.0、React Native 0.82.0 与 Godot 4.5-stable；结论限定于相应承载与合成路径，不外推其他组件版本、插件或设备表现。
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: medium-high
 sources:
@@ -221,6 +221,44 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/view/SurfaceView.java
 - type: official
   path: https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float)
+- type: official
+  path: https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/architecture.md
+- type: official
+  path: https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/renderer/README.md
+- type: official
+  path: https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/browser_view_renderer.cc
+- type: official
+  path: https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/aw_draw_fn_impl.cc
+- type: official
+  path: https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/overlay_processor_webview.cc
+- type: official
+  path: https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/software_draw_deprecated.md
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java
+- type: official
+  path: https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java
+- type: official
+  path: https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java
+- type: official
+  path: https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
+- type: official
+  path: https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/runtime/ReactSurfaceView.kt
+- type: official
+  path: https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/ReactRootView.java
+- type: official
+  path: https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/fabric/mounting/SurfaceMountingManager.java
+- type: official
+  path: https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/GodotGLRenderView.java
+- type: official
+  path: https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/gl/GLSurfaceView.java
+- type: official
+  path: https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/GodotVulkanRenderView.java
+- type: official
+  path: https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/vulkan/VkSurfaceView.kt
+- type: official
+  path: https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/vulkan/VkThread.kt
 related_chapters:
 - '2.1'
 - '2.9'
@@ -382,12 +420,19 @@ present fence 不能证明整块面板已完成扫描、像素响应或用户已
 | 混合页面 | 宿主 HWUI 与多个独立 Surface 或嵌入对象并存 | 每个内容对象的生产者、几何、buffer、fence 与 layer | [混合渲染](../../part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md) |
 | 多窗口 | 每个窗口有独立 ViewRoot / Surface；同一进程可共享 Looper 与 RenderThread | 按显示屏、窗口、进程和生产者分组 | [多窗口](../ch02-rendering/14-multiwindow-desktop-rendering.md) |
 | OpenGL ES / Vulkan / ANGLE | 应用自己的渲染循环写入 ANativeWindow / swapchain | 获取图像、CPU 提交、GPU 完成、队列深度、帧节奏 | [OpenGL ES](../../part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md)、[Vulkan](../../part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md)、[ANGLE](../../part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md) |
-| WebView | Chromium 渲染进程、提供方和 GPU 服务经 functor 接入宿主，媒体可另建 layer | Android 与 WebView 提供方双版本、渲染进程、宿主、媒体叠加层 | [WebView](../../part2-performance/ch13-rendering-pipelines/09-webview-rendering.md) |
-| Flutter | 根视图渲染模式、外部纹理与 PlatformView 策略共同决定拓扑 | Android 与 Flutter 双版本、Raster 线程、插件生产者、PlatformView | [Flutter](../../part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md) |
+| WebView（Chromium 140.0.7339.155，硬件加速） | 渲染进程提供合成帧；宿主进程内的浏览器侧代码、GPU 服务与 HWUI functor 参与显示，视频 overlay 可独立成层 | Android 与提供方双版本、渲染进程与宿主进程、functor 回调、overlay 的 SurfaceControl | [WebView](../../part2-performance/ch13-rendering-pipelines/09-webview-rendering.md) |
+| Flutter 3.35.0 | 引擎写入 FlutterSurfaceView 的独立 Surface，或 FlutterTextureView 的 SurfaceTexture；PlatformView 策略可改变输出目标 | 实际 RenderSurface、栅格化任务、插件生产者、PlatformView 合成策略与回退 | [Flutter](../../part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md) |
 | Camera | HAL3 请求与结果向预览、录像、分析、拍照多路输出 | 传感器时间戳、输出 buffer、消费者释放、预览显示 | [Camera](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md) |
 | Video | MediaCodec 输出到 Surface；隧道模式使用 sideband | PTS 时间戳、编解码器输出、队列、合成类型、刷新节奏、显示提交 | [Video 与 HWC](../../part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md) |
-| Game | 游戏、渲染与 RHI 线程，GPU 队列和 swapchain 自主管理帧节奏 | 输入、逻辑、提交、GPU、队列积压、显示提交、温控 | [游戏引擎](../../part2-performance/ch13-rendering-pipelines/12-game-engine.md) |
-| React Native | Fabric Render / Commit / Mount 后进入普通 Android View / HWUI；原生组件可另建 Surface | JS、提交与布局、挂载、View 遍历、独立 Surface | [类型识别总览](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) |
+| Game（以 Godot 4.5-stable 为例） | OpenGL ES 的 GLThread 或 Vulkan 的 VkThread 驱动渲染，目标由 SurfaceView 承载 | 引擎版本、图形后端、实际渲染线程、目标 Surface、GPU 完成与 present | [游戏引擎](../../part2-performance/ch13-rendering-pipelines/12-game-engine.md) |
+| React Native 0.82.0（Fabric，普通原生 View） | UI 线程创建和挂载 Android View，硬件加速时随宿主 HWUI 绘制；嵌入组件的 Surface 要另行识别 | JS、挂载与布局、宿主遍历；逐项确认原生组件是否使用独立 Surface | [类型识别总览](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) |
+
+第三方条目的版本固定到表中标签，用于说明它们接入 Android 显示系统的方式。实际排查仍需记录应用使用的提供方、插件版本和图形后端，不能仅凭框架名计算 SurfaceFlinger 的 layer 数量。
+
+- WebView 的 [Chromium 架构文档](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/architecture.md#L36-L56)区分了宿主内的浏览器侧代码、GPU 服务与渲染进程。在 Android 17 上，[渲染进程使用独立沙箱](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/renderer/README.md#L12-L33)；硬件绘制经 [`AwDrawFnImpl`](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/aw_draw_fn_impl.cc#L207-L226)注册 functor（HWUI 调用 WebView 绘制的回调桥接对象）。Android 17 的 [`RecordingCanvas.drawWebViewFunctor()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java#161)是内部接口，带 `@hide`，应用不应直接调用。视频成为 [overlay（独立叠加层）候选](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/overlay_processor_webview.cc#L991-L1005)后才可能使用额外的 SurfaceControl，不能把网页内部合成层逐个当成系统 layer。该标签还将[软件绘制列为已弃用的兼容路径](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/software_draw_deprecated.md#L1-L15)，并注明缺失 `<video>`、`<webgl>` 等功能。
+- Flutter 的 [`FlutterSurfaceView`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java#L242-L255)把 holder 的 Surface 交给引擎；[`FlutterTextureView`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java#L221-L239)则从 SurfaceTexture 创建渲染 Surface，之后由宿主采样。两者不能共用「主体必有独立可见 layer」的判断。该版本 [`PlatformViewsController`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java#L211-L236)的纹理混合路径要求 API 23 及以上，遇到嵌入的 SurfaceView 时按请求回退到混合合成或虚拟显示；虚拟显示不支持软件模式。其旧混合合成路径还会拒绝与 HC++ 同时启用。排查嵌入页面时，应核对实际回退结果，以及是否为同步而切换到 FlutterImageView，不能只记录根视图最初的渲染模式。
+- React Native 的 [`ReactSurfaceView`](https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/runtime/ReactSurfaceView.kt#L31-L37)继承 ReactRootView，后者是 FrameLayout；[`SurfaceMountingManager`](https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/fabric/mounting/SurfaceMountingManager.java#L649-L679)在 UI 线程通过 ViewManager 创建原生 View，并挂入 Android View 树。Fabric 的渲染根名称带有 Surface，不代表每个渲染根都新增一个 Android 图形 Surface。视频、相机或自定义原生组件是否另有生产者与 Surface，仍由该组件的实现决定。
+- 游戏条目限定为 Godot 的具体实现：其 [`GLSurfaceView`](https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/gl/GLSurfaceView.java#L1587-L1601)由 GLThread 调用绘制并交换缓冲区；[`VkSurfaceView`](https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/vulkan/VkSurfaceView.kt#L38-L64)也继承 SurfaceView，并由专用 VkThread 驱动 Vulkan 渲染。这两条路径都要关联独立 Surface 的 buffer 和 fence；其他引擎的线程划分须按引擎版本确认，不能把 RHI 线程当成所有游戏共有的对象。
 
 SurfaceView 与 TextureView 的差异值得单独记，这直接影响我们选哪条排查路径：
 
@@ -450,7 +495,7 @@ HDR 亮度余量也要按目标对象分别设置。`Window.setDesiredHdrHeadroo
 
 #### 5.2 找到每个生产者
 
-第二步找生产者。标准页面看主线程与 RenderThread；原生引擎看游戏、渲染与 RHI 线程；视频看编解码器输出；Camera 看 HAL 请求、结果与各路输出流；WebView、Flutter、React Native 还要补上各自的框架线程与宿主线程。
+第二步找生产者。标准页面看主线程与 RenderThread；原生引擎按具体版本和图形后端识别渲染线程，例如表中 Godot 的 GLThread / VkThread，不预设所有引擎都有 RHI 线程；视频看编解码器输出；Camera 看 HAL 请求、结果与各路输出流；WebView、Flutter、React Native 还要补上各自的框架线程与宿主线程。
 
 #### 5.3 对齐生产阶段
 
