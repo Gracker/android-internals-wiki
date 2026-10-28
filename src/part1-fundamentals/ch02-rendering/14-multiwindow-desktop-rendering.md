@@ -4,8 +4,10 @@ chapter: '2.14'
 section: '2.14'
 status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-08-24'
+last_verified: '2026-10-26'
 last_verified_against: AOSP android-17.0.0_r1 DisplayManager, WindowManager, WM Shell PiP, ViewRootImpl, HWUI, BLAST and SurfaceFlinger; Perfetto stdlib / FrameTimeline; kernel android17-6.18-2026-06_r6; current Android multi-window, PiP, desktop windowing and connected-display guidance
+last_source_verified_at: '2026-10-26'
+last_idle_audit_at: '2026-10-26T10:42:04+08:00'
 confidence: high
 sources:
 - type: official
@@ -279,7 +281,11 @@ flowchart LR
 
 ### 多 Display 要分别计时
 
-每个 Display 都有自己的可见 layer 集合、mode、HWC output 与 present fence。窗口从内屏移到外接屏后，解释外屏延迟要用外屏自己的 FrameTimeline 和 present fence，默认屏的数据套不过去。
+每个物理 Display 的 mode、HWC output 与 present fence 都要分别分析。窗口从内屏移到外接屏后，先确认目标 output、刷新率和 fence 归属，默认屏的数据不能直接套用。
+
+Android 17 r1 的 SurfaceFlinger FrameTimeline 以当前 pacesetter（SurfaceFlinger 调度所采用的节拍显示）为基准。`SurfaceFlinger::commit()` 用 pacesetter 的帧起点和刷新率调用 `setSfWakeUp()`；`onCompositionPresented()` 虽然按物理 Display 收集 present fence，传给 `setSfPresent()` 的却只有 pacesetter 的 present fence 和 GPU composition fence。由此不能推导每块物理屏都有独立的 SurfaceFlinger DisplayFrame。
+
+Perfetto 的 `actual_frame_timeline_slice` 也没有 `display_id` 列，`display_frame_token` 用于关联帧，不能直接当作物理显示 ID。排查外屏时，要结合该时刻的 pacesetter、Winscope output、display transaction 和目标屏的 present fence 确认归属；缺少对应证据时，FrameTimeline 的卡顿分类不能单独证明外屏迟到。
 
 Output 指 SurfaceFlinger 面向某个 Display 构造的合成输出，同一个 layer 还可能经镜像、virtual display（虚拟显示） 或投屏进入多个 Output。检查延迟前先确认目标 Display 的 output layer state，全局 layer 存在与否只是第一步。
 
@@ -500,7 +506,7 @@ SurfaceFlinger FrontEnd（前端状态层）接收所有窗口、Shell/WMS 几�
 | release fence | 被消费的 layer/buffer | 旧 buffer 何时可以复用 |
 | present fence | 一次 Display present | 该 output 的 present 工作何时到达 Android 显示栈完成边界 |
 
-present fence 不属于某个 Window：内屏与外屏各有自己的 present 结果；刷新率不同时，60 Hz 的帧预算也解释不了 120 Hz output。FrameTimeline 中出现 SurfaceFlinger jank 后，我们先通过 DisplayFrame token、目标 output 和相邻 display 状态确定归属，再判断另一块屏有没有受到影响。
+present fence 不属于某个 Window：内屏与外屏各有自己的 present 结果；刷新率不同时，60 Hz 的帧预算也解释不了 120 Hz output。FrameTimeline 中出现 SurfaceFlinger jank 后，先核对当时的 pacesetter 与目标 output，再用目标屏的 present fence 和相邻 display 状态判断影响范围。仅有 DisplayFrame token，无法断定另一块屏是否也迟到。
 
 ### 多窗口开销的实测方法
 
