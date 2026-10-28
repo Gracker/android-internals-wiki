@@ -14,10 +14,10 @@ tags:
   - windowmanagerservice
   - surface
 last_verified: '2026-10-22'
-last_source_verified_at: '2026-10-22'
+last_source_verified_at: '2026-10-24'
 last_rework_at: '2026-10-22T09:37:56+08:00'
 last_deep_review_at: '2026-10-22T12:39:04+08:00'
-verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；另核对 SurfaceView alpha 作用范围、重叠混合警告、四项 API 的 API 34—37 首引及当前 flag 注解，并以官方发布说明确认 Connected Display Desktop 的 Android 16 QPR3 GA 与受支持设备边界。Android 12—13 演进、其余历史 flag 与第三方框架拓扑尚未逐项核验。
+verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；SurfaceView alpha、四项 API 首引与当前 flag、Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。其余历史 HDR/SurfaceView flag 与第三方框架拓扑仍未逐项按版本复核。
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: medium-high
 sources:
@@ -183,6 +183,36 @@ sources:
   path: https://android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html
 - type: material
   path: rendering_pipelines/S06_multi_window_type.md
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/core/java/android/view/ViewRootImpl.java
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://source.android.com/docs/core/graphics/unsignaled-buffer-latch
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-13.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+- type: official
+  path: https://source.android.com/docs/core/graphics/aidl-hwc
+- type: official
+  path: https://source.android.com/docs/core/graphics/arr
+- type: official
+  path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
+- type: official
+  path: https://developer.android.com/reference/android/view/Display#hasArrSupport()
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-13.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-15.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
 related_chapters:
 - '2.1'
 - '2.9'
@@ -286,7 +316,9 @@ RenderThread 通过 `dequeueBuffer` 取得可写的缓冲槽，再用 `queueBuff
 
 buffer 到了 SurfaceFlinger 这边，FrontEnd 先以 `RequestedLayerState` 保存请求状态，经 `LayerLifecycleManager` 和 `LayerSnapshotBuilder` 形成当前帧快照（snapshot）。CompositionEngine 再根据快照里的可见性、几何、Z 轴顺序、buffer、dataspace 和效果状态，为每个显示屏准备输出。
 
-`latch` 表示 SurfaceFlinger 在本轮采纳了某个 layer 的新 buffer。Android 13 之后，部分受限场景允许先采纳 fence 尚未发出完成信号的 buffer，把等待推迟到真正读取内容之前；RenderEngine 或 HWC 读取内容时仍须遵守 acquire fence。该策略只覆盖满足条件的简单单 layer buffer 更新；跨 layer、跨窗口的同步是否完成，这条路径本身回答不了。
+`latch` 表示 SurfaceFlinger 在本轮采纳了某个 layer 的新 buffer。Android 13 引入并默认启用 `AutoSingleLayer`，允许受限的单 layer buffer 更新先被采纳，再在读取内容前等待 acquire fence；它不适用于跨 layer 的几何变化或同步事务。RenderEngine 或 HWC 读取内容时仍须遵守 acquire fence。版本与适用范围见 [AutoSingleLayer 官方说明](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)。
+
+在 `android-17.0.0_r1` 中，`getLatchUnsignaledConfig()` 读取 `debug.sf.auto_latch_unsignaled`，默认值为 `true`，只返回 `AutoSingleLayer` 或 `Disabled`。`shouldLatchUnsignaled()` 还检查单 layer、首笔事务条件 `firstTransaction` 和非 early VSync 配置，调用处再用 `isSimpleBufferUpdate()` 过滤。排查时可关联 `fence unsignaled try allowLatchUnsignaled` trace 与这些条件。旧配置 `debug.sf.latch_unsignaled=true` 对应的 `Always` 模式已不在该标签的配置选择中，不能照搬 Android 13 文档中的强制开关；官方也提示旧模式可能破坏同步事务、造成显示冻结。当前实现见 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp#598)。
 
 #### 1.4 HWC、RenderEngine 与 present
 
@@ -364,12 +396,16 @@ Camera、视频、游戏描述生产者或业务类型，SurfaceView、TextureVi
 
 | 版本 | 可以确认的变化 | 阅读系统轨迹时的含义 |
 |---|---|---|
-| Android 12 / API 31 | BLAST 与 FrameTimeline 已进入现代应用窗口主线 | 标准窗口可用应用 / SF 的预期与实际时间线；独立 Surface 仍需 layer、BufferQueue 和 fence 证据 |
-| Android 13 / API 33 | `AutoSingleLayer` 下的 latch-unsignaled 策略成为重要边界；Composer HAL 进入 AIDL 时代 | acquire fence 未发出完成信号，不代表事务一定无法先被采纳；内容读取仍受 fence 约束 |
+| Android 12 / API 31 | [`ViewRootImpl` 使用 BLAST](https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/core/java/android/view/ViewRootImpl.java#1958)，[FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) 从 Android 12 起提供帧时间线 | 标准窗口可用应用 / SF 的预期与实际时间线；独立 Surface 仍需 layer、BufferQueue 和 fence 证据 |
+| Android 13 / API 33 | `AutoSingleLayer` 成为 latch-unsignaled 的默认模式；[Composer HAL 新增 AIDL 接口](https://source.android.com/docs/core/graphics/aidl-hwc) | 简单单 layer 更新可先采纳未完成的 buffer；HIDL composer 2.1—2.4 已弃用，但 Android 13 不强制厂商改用 AIDL，需核对设备实际 HAL |
 | Android 14 / API 34 | SurfaceView 开始支持 0 与 1 之间的 alpha，并公开 [`setSurfaceLifecycle()`](https://developer.android.com/reference/android/view/SurfaceView#setSurfaceLifecycle(int)) | alpha 的作用目标取决于 SurfaceView 与宿主窗口的合成顺序；Surface 保留行为还取决于生命周期策略 |
-| Android 15 / API 35 | Window / SurfaceView 可以表达期望的 HDR 亮度余量（headroom），其中 [`SurfaceView.setDesiredHdrHeadroom()`](https://developer.android.com/reference/android/view/SurfaceView#setDesiredHdrHeadroom(float)) 标为 API 35；支持的设备可使用自适应刷新率（ARR）；Android 15/16 API 文本中的 headroom 方法仍带 `limited_hdr` 功能开关 | 亮度余量和帧率请求都是期望值，不能证明实际亮度、刷新率或合成类型；功能开关与设备能力都要核对 |
+| Android 15 / API 35 | Window / SurfaceView 可以表达期望的 HDR 亮度余量（headroom），其中 [`SurfaceView.setDesiredHdrHeadroom()`](https://developer.android.com/reference/android/view/SurfaceView#setDesiredHdrHeadroom(float)) 标为 API 35；平台引入自适应刷新率（ARR），应用侧支持范围从 Android 15 QPR1 起且要求设备实现对应 HAL；Android 15/16 API 文本中的 headroom 方法仍带 `limited_hdr` 功能开关 | 亮度余量和帧率请求都是期望值，不能证明实际亮度、刷新率或合成类型；QPR、功能开关与设备能力都要核对 |
 | Android 16 / API 36 | [`SurfaceView.setCompositionOrder()`](https://developer.android.com/reference/android/view/SurfaceView#setCompositionOrder(int)) 标为 API 36；API 文本中带 `surface_view_set_composition_order` flag | 多 Surface 页面要记录 parent、relative layer 和 Z-order；flag-gated API 不能当成所有设备无条件可用 |
 | Android 17 / API 37 | 现行 FrontEnd 帧快照、预测显示调度与 HWC 流程；[`SurfaceView.setBlurRegions()`](https://developer.android.com/reference/android/view/SurfaceView#setBlurRegions(java.util.Collection%3Candroid.view.BlurRegion%3E)) 标为 API 37，源码仍带 `surface_view_set_blur_regions` 开关 | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力和功能开关状态仍需设备证据 |
+
+ARR 的平台引入时间与应用侧可用范围要分开记录。[应用侧指南](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)明确要求 Android 15 QPR1 及以上、设备实现特定 HAL 接口；[系统实现说明](https://source.android.com/docs/core/graphics/arr#implementation)还要求 `android.hardware.graphics.composer3` 接口版本 3 和配套的内核、系统实现。显示模式的 `DisplayConfiguration.vrrConfig` 为非空时才是 ARR 配置，为 `null` 则是非 ARR 模式。ARR 允许在同一显示模式内解耦 VSync 与刷新节奏，不能直接用 VSync 频率代表实际刷新率。
+
+在 Android 17 上，可以用 [`Display.hasArrSupport()`](https://developer.android.com/reference/android/view/Display#hasArrSupport()) 查询目标显示屏是否支持 ARR。该方法从 API 36 起公开，不能在 API 35 设备上无条件调用；`android-17.0.0_r1` 的 [`Display.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java#1372) 仍带 `enable_has_arr_support` 的 `@FlaggedApi` 注解。查询支持情况后，还要结合当前显示模式和 present 节奏判断实际行为，不能从一个帧率请求推导系统已启用 ARR。
 
 SurfaceView 的 alpha 有具体的作用范围：合成顺序非负时，alpha 直接作用于 Surface 内容，也作用于嵌入的 `SurfacePackage`；合成顺序为负、SurfaceView 位于宿主窗口下方时，alpha 作用于宿主的挖洞区域，不直接修改 Surface 或 `SurfacePackage` 内容。官方明确提示，窗口下方的多个 SurfaceView 重叠时可能无法正确混合。排查半透明视频或叠层预览时，应同时记录合成顺序与重叠关系，不能只检查 View 的 alpha 值。依据见 [`setAlpha()` 官方说明](https://developer.android.com/reference/android/view/SurfaceView#setAlpha(float))和固定标签的 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#683)。
 
@@ -418,7 +454,7 @@ SurfaceView 的 alpha 有具体的作用范围：合成顺序非负时，alpha �
 
 最后对齐合成与显示。检查 SurfaceFlinger 的 CPU/GPU 截止时间、RenderEngine 客户端合成、每个 layer 的合成类型、HWC/DisplayHAL 事件和 present fence。若 buffer 入队与 latch 都按时、present 仍晚，我们就要把排查范围移向合成阶段、显示模式切换、Composer HAL、显示驱动与面板。
 
-FrameTimeline 对标准应用窗口很有价值，对 SurfaceView 主体、Camera、视频和某些引擎 layer 的覆盖可能不完整。缺少应用侧实际帧区间时，我们回到生产者入队、layer、`BufferTX`、fence、latch 和 present 这些更原始的信号。
+FrameTimeline 对标准应用窗口很有价值；[Perfetto 文档](https://perfetto.dev/docs/data-sources/frametimeline)注明要求 Android 12 及以上，SurfaceView 尚不在支持范围。SurfaceView 主体、Camera、视频和某些引擎 layer 不能默认具有完整的应用侧实际帧区间。缺少这类区间时，我们回到生产者入队、layer、`BufferTX`、fence、latch 和 present 这些更原始的信号。
 
 ### 6. 优化动作与证据对应
 
@@ -827,7 +863,7 @@ Perfetto 中要区分源码方法与实际写入的 trace 名称。该标签的 
 | Trace 名称或前缀 | 进程 | 线程 | 含义 |
 |-----------|------|------|------|
 | `Choreographer#doFrame` 中的 traversal 回调阶段 | App | UI Thread | 定位这一帧的 ViewRoot 遍历时段；measure、layout、draw 是否发生取决于状态 |
-| `VRI[...]-relayoutWindow#first=.../resize=.../vis=.../params=.../force=.../seqId=...` | App | UI Thread | `performTraversals()` 命中 relayout 分支，名称中记录触发条件 |
+| <code>VRI[...]-<wbr>relayoutWindow#<wbr>first=.../<wbr>resize=.../<wbr>vis=.../<wbr>params=.../<wbr>force=.../<wbr>seqId=...</code> | App | UI Thread | `performTraversals()` 命中 relayout 分支，名称中记录触发条件 |
 | `relayoutSync ...` | App | UI Thread | 同步 relayout 的原因；这是 instant 事件，不是耗时 slice |
 | `measure`、`layout`、`draw-VRI[...]` | App | UI Thread | 对应实际执行的测量、布局和绘制阶段 |
 
@@ -1004,12 +1040,17 @@ Shell Transitions 由 `TransitionController`/`Transition` 在 `system_server` �
 
 #### Activity 切换的版本边界
 
-Activity open / close 动画可以按版本分层理解：
+Activity open / close 的执行路径要按固定标签的启用逻辑区分。下表记录 AOSP 默认值，产品配置和具体转场 handler 仍需单独确认：
 
-| 版本范围 | 主线口径 | 排查重点 |
-|----------|----------|----------|
-| Android 12—14 | legacy `AppTransition` 仍覆盖一部分路径，`TransitionController` 和 Shell transition 逐步接管 Task/Activity 级过渡 | 同时看 `wm`、`transition`、`android.anim*`、Shell 进程和 SurfaceFlinger transaction |
-| Android 15—17 | `TransitionController` / Shell transition 是 Activity、Recents、predictive back、桌面模式等场景的主要分析入口 | 先定位 transition id，再看 Shell handler、remote transition、leash transaction 与 SF `commit`/`composite` |
+| 源码标签 | Shell Transitions 启用逻辑 | 排查重点 |
+|----------|---------------------------|----------|
+| [`android-12.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java#70) | `persist.debug.shell_transit`，默认 `false` | 先确认产品是否启用，再选择 legacy `AppTransition` 或 Shell 路径 |
+| [`android-13.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-13.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java#74) | 属性名改为 `persist.wm.debug.shell_transit`，默认仍为 `false` | 不沿用 Android 12 的属性名；同时核对实际 player 和 handler |
+| [`android-14.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java#119) | `persist.wm.debug.shell_transit` 默认 `true` | Shell 已默认启用，不能把 Android 15 当作统一切换点 |
+| [`android-15.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-15.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java#1732) | 非 Automotive 产品返回 `true`；Automotive 仍读取上述属性，默认 `true` | 车载产品需保留属性覆盖这一分支 |
+| [`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java#153) | Shell 侧 `ENABLE_SHELL_TRANSITIONS = true` | 不用旧属性推断开关；从 transition id、player、Shell handler 和 leash transaction 追到 SF |
+
+Android 17 的服务端还通过 [`TransitionController.isShellTransitionsEnabled()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/TransitionController.java#509) 检查已注册 player 或 `fallbackTransitionPlayer` flag。Shell 常量为 `true`、服务端存在可用 player、某次转场选中了哪个 handler，是三个需要分别确认的条件。实际动画仍要关联应用首帧和 SurfaceFlinger 的 `commit`、`composite` 与 present。
 
 一次 Activity 切换里，旧 Activity 和新 Activity 的 Window 往往会被包到 leash Surface 下。动画过程更新 transform（坐标变换）、alpha、crop 和 layer，App 不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server transition 状态收集慢、SurfaceFlinger 合成慢，都会表现成切换掉帧，但对应的慢点各不相同，下一步就是把这四段拆开。
 
