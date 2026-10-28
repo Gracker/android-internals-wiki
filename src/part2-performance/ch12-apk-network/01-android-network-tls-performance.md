@@ -140,10 +140,6 @@ consolidated_from:
 
 `Future.get()`、`CountDownLatch.await()` 或 `runBlocking` 虽不会抛 `NetworkOnMainThreadException`，仍会让 UI 等待后台请求，带来卡顿甚至 ANR（应用无响应）——这就是第二种情况。判断主线程问题时，我们先分清卡顿属于哪一种，再往下定位。
 
-<!-- gracker-diagram: ch12-01-02-main-thread-boundaries -->
-![主线程直接网络与等待后台请求](../../assets/diagrams/ch12/ch12-01-02-main-thread-boundaries.png)
-
-图：区分被线程策略检测的网络入口与把 UI 阻塞在同步等待上的调用。 固定r1有UDP connect、非阻塞poll等检测例外；无异常不等于无卡顿。轨道只示意等待关系。
 
 ### 一次请求应当怎样计时
 
@@ -182,10 +178,10 @@ enqueue / execute
 | 响应体交付 / 消费 | `responseBodyStart` 到 `responseBodyEnd`，同时保存字节数与关闭方式 | 包含应用读取节奏；空体或提前关闭也可能触发事件，不能等同完整资源下载成功 |
 | 内容可用时间 | 业务发起到数据可展示 | 网络、解析、数据库和 UI 的整体结果 |
 
-<!-- gracker-diagram: ch12-01-04-call-lifetime -->
-![网络 Call 结束与业务内容可用的不同边界](../../assets/diagrams/ch12/ch12-01-04-call-lifetime.png)
+<!-- gracker-diagram: ed12-01-call-consumption-and-content -->
+![Call 终态、响应消费和内容可展示分别计时](../../assets/diagrams/ch12/ed12-01-call-consumption-and-content.png)
 
-图：将业务发起、库调用、响应消费与 UI 提交分别计时。 execute返回响应头不等于callEnd；callEnd包含延迟消费，提前关闭也可能结束，业务成功要独立定义。
+图：普通顺序HTTP路径的职责与数据依赖合图：业务发起、Call事件、响应消费、解析/存储和UI可展示分别计时。execute返回响应头不等callEnd；读取可受消费背压影响，提前关闭可结束但不证明完整下载或业务成功。流式解析可与读取重叠，两轨无测量时长含义，Call终态与UI可见不强制固定先后。HTTP状态/解析成功不能仅靠failed布尔识别；过期业务取消传到Call，响应体或升级流仍由owner关闭，cancel不替代关闭。双工、100continue、升级需另存实际交错事件。
 
 OkHttp 5.3.0 的 `callStart` 在调用 `enqueue()` 或 `execute()` 后触发。这对 queue 事件只对应异步 Dispatcher 的资源等待：立即获准执行的调用没有这对事件，同步 `execute()` 不受它的并发上限约束；HTTP/2 stream 容量、连接分配和自定义 Executor 的等待不能全部归入这对事件。相关约束写在同版本的 [`EventListener.kt`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 中。
 
@@ -216,10 +212,6 @@ TTFB（Time to First Byte）严格指首字节时间；EventListener 提供的�
 
 `NetworkCapabilities.getLinkDownstreamBandwidthKbps()` 返回的是系统估计的**第一跳 transport（传输类型）带宽**，也就是设备到所连接网络的链路能力，拿它当实际请求吞吐会有很大偏差。
 
-<!-- gracker-diagram: ch12-01-06-throughput-vs-link -->
-![第一跳带宽、请求吞吐与业务体积](../../assets/diagrams/ch12/ch12-01-06-throughput-vs-link.png)
-
-图：分别记录系统链路估计、窗口内字节与内容编码。 第一跳能力不是端到端测速；应用消费、背压、缓存与重试也会改变观察值。无示例数值代表真机吞吐。
 
 ### HTTP/1.1、HTTP/2 与 HTTP/3
 
@@ -232,10 +224,6 @@ TTFB（Time to First Byte）严格指首字节时间；EventListener 提供的�
 | 丢包影响 | 该 TCP 连接等待缺失字节 | 同一 TCP 连接上的 stream 都受传输层顺序约束 | 丢失数据所属 stream 等待重传；共享拥塞控制仍会影响整条连接 |
 | 网络迁移 | 通常重建连接 | 通常重建连接 | 协议具备 Connection ID（连接标识）与路径验证能力，能否迁移取决于实现和服务端 |
 
-<!-- gracker-diagram: ch12-01-07-http-transport-layers -->
-![HTTP/1.1、HTTP/2、HTTP/3 的传输与并发](../../assets/diagrams/ch12/ch12-01-07-http-transport-layers.png)
-
-图：先分清 HTTP 消息组织和其下的可靠传输层。 H1这里指常规无流水线实现；H2仍共享TCP有序交付；H3共享连接资源且可能有QPACK依赖。
 
 把三代协议放在一起看，HTTP/2 首先把应用层组织并发时对多条连接的依赖降了下来，靠 multiplexing（多路复用） 和 HPACK 减少重复开销。但 TCP 仍按字节顺序交付，一段数据丢失后，后续字节都要等重传；服务端允许的最大并发 stream、优先级实现和单连接拥塞也会影响最终结果。
 
@@ -250,10 +238,6 @@ HTTP/3 把 HTTP 映射到 QUIC stream，某个请求流的缺失数据不再迫�
 
 QUIC 恢复连接时可能发送 TLS early data（握手完成前的早期数据），把一次往返省下来，这个过程称为 0-RTT。它需要已有会话状态、客户端允许、服务端接受并保留相应配置。服务端也可以拒绝 early data，客户端随后按正常握手继续。所以我们按 0-RTT 失败的路径设计功能正确性，把它当成可能落空的一次往返节省。
 
-<!-- gracker-diagram: ch12-01-09-zero-rtt-resumption -->
-![0-RTT 的恢复前提与拒绝路径](../../assets/diagrams/ch12/ch12-01-09-zero-rtt-resumption.png)
-
-图：在恢复握手首轮发送可重放的早期数据，并保留拒绝后的正确恢复路径。 需要可用PSK/会话状态及双方支持；0-RTT不是握手完成，也不保证响应无需等待。
 
 Early data 可能被重放——同一份请求数据可能被攻击者再发一遍，安全属性弱于新握手后的 1-RTT 数据。所以业务能发送的，是那些能够容忍重放的操作：支付、发帖、创建订单这类要等握手完成，或者靠服务端幂等键、去重记录和明确的重放策略兜底。HTTP 方法名只能当线索，判断依据还是业务语义。
 
@@ -300,10 +284,6 @@ HTTP/3 发布至少要按这些维度分组：
 
 发布 HTTP/3 要客户端、服务端和网络路径一起就位：服务器正确发布能力，CDN 和防火墙放行相应 UDP 路径，客户端还要保留 HTTP/2 回退。先向少量流量开放；之后若尾部延迟或失败率变差，我们按网络与地区逐组定位，整体平均值在这一步容易掩盖问题。
 
-<!-- gracker-diagram: ch12-01-12-protocol-rollout -->
-![HTTP/3 发布的协商与分组验证](../../assets/diagrams/ch12/ch12-01-12-protocol-rollout.png)
-
-图：客户端、服务端与UDP路径一起验证，再按网络和地区评估尾部指标。 启用QUIC配置不代表协商为h3；UDP不可用时保留TCP HTTP回退，具体H2/H1依实现和服务端。
 
 ### 请求组织：复用、并发、合并与预热
 
@@ -336,19 +316,11 @@ fun clientFor(
     .build()
 ```
 
-<!-- gracker-diagram: ch12-01-13-shared-client-pool -->
-![共享 client、派生策略与资源所有权](../../assets/diagrams/ch12/ch12-01-13-shared-client-pool.png)
-
-图：从共享 client 派生超时策略时保留连接池和 Dispatcher。 共享资源不意味着所有Address可复用；同步并发仍由应用控制，使用者不能随意关闭共享资源。
 
 `newBuilder()` 派生的 client 会共享连接池和线程资源。我们可按交互请求、上传、流式读取等类别配置策略；只有代理、信任管理器、证书固定、DNS 或协议要求相互冲突时，才值得认真评估独立 client。
 
 OkHttp 5.3.0 默认最多保留 5 条**空闲**连接 5 分钟——这条默认值只描述空闲连接的回收；这不是总连接数上限或每域名 5 条限制。正在承载 HTTP/2 stream 的连接不算空闲；异步请求还受 Dispatcher 限制，同步 `execute()` 的并发要由应用另控，其他边界来自服务端 stream 配置、socket 与系统资源。要判断池子够不够用，我们先统计新建连接率、空闲回收和服务端 keep-alive（保持连接） 策略，再决定是否调整默认数字。
 
-<!-- gracker-diagram: ch12-01-14-idle-pool-vs-concurrency -->
-![空闲连接容量与请求并发的区别](../../assets/diagrams/ch12/ch12-01-14-idle-pool-vs-concurrency.png)
-
-图：分别看空闲池、活跃连接和请求调度限制。 固定5.3.0的5条/5分钟只描述空闲保留策略；不是总连接或每主机请求上限的同义词。
 
 连接能否复用还受 scheme（协议）、port、代理、DNS、socket/TLS 配置、hostname verifier（主机名校验器） 和 certificate pinner（证书固定器） 等完整 `Address` 条件约束。固定 5.3.0 的 HTTP/2 跨主机合并还要求双方都是 DIRECT 路由、socket 地址匹配、端口一致、使用内置主机名校验器、证书覆盖新主机、pin 检查通过且连接仍允许接收新流；代理连接不能套用这一合并路径。两个域名是否共享连接，要按这些条件逐项核对。
 
@@ -379,10 +351,6 @@ OkHttp 5 默认启用 fast fallback（快速回退），并行尝试可用路由
 
 同一页面每次打开都发出相同请求时，缓存或状态复用通常比单纯增加并发更有效。而搜索联想、滚动图片和页面切换，要及时取消过期请求，把 Dispatcher、stream 和带宽资源让给当前可见的内容。
 
-<!-- gracker-diagram: ch12-01-17-aggregation-parallel -->
-![聚合接口与并行请求的不同等待结构](../../assets/diagrams/ch12/ch12-01-17-aggregation-parallel.png)
-
-图：按首个可展示、全部完成、缓存与部分失败评估请求组织。 图中不提供通用速度排序；聚合服务端fan-out和协议并发会改变真实结果。
 
 #### 预连接的真实成本
 
@@ -419,10 +387,6 @@ CDN 会改变 DNS 答案、边缘节点距离、TLS 会话、协议协商、缓�
 
 单靠客户端的 TTFB，我们很难分清边缘排队、cache miss（缓存未命中） 与源站处理，CDN 日志和服务端 trace ID 要补上这一环；两者都应采用白名单传递，并避免把完整 URL、query（查询参数）、Cookie、Authorization 或用户标识写入 APM（应用性能监控系统）。
 
-<!-- gracker-diagram: ch12-01-19-cdn-evidence -->
-![CDN 边缘等待与源站耗时的联合证据](../../assets/diagrams/ch12/ch12-01-19-cdn-evidence.png)
-
-图：用客户端事件、CDN状态和服务端trace关联相同请求。 客户端TTFB包含多段等待，不能单独分摊到CDN或源站；关联字段按白名单且不携带凭证或完整URL。
 
 #### 自定义 DNS 与系统边界
 
@@ -435,10 +399,6 @@ OkHttp 的 `Dns` 接口允许自定义解析。HTTPDNS（通过 HTTP 查询的�
 
 自定义解析可能不使用 Android Private DNS、VPN 或企业 split DNS 提供的解析命名空间与策略，也可能破坏局域网域名和 captive portal 流程；这不意味着流量必然绕过 VPN 数据隧道，实际走向仍由 socket、Network 绑定和系统路由决定。采用前要确认解析治理与数据路径两类要求。如果怀疑系统 DNS 慢，判断依据应来自按网络分组的事件数据，个别超时不足以支撑全量切换。
 
-<!-- gracker-diagram: ch12-01-20-custom-dns-lifecycle -->
-![自定义解析的缓存与网络隔离](../../assets/diagrams/ch12/ch12-01-20-custom-dns-lifecycle.png)
-
-图：把业务DNS请求、TTL缓存、多地址路由和系统网络边界一起管理。 自定义HTTPDNS/DoH不自动继承系统PrivateDNS、VPN或企业splitDNS语义；网络变化后缓存与路由需重新核实。
 
 #### 图片网络优化
 
@@ -453,10 +413,6 @@ OkHttp 的 `Dns` 接口允许自定义解析。HTTPDNS（通过 HTTP 查询的�
 
 缩略图和原图要使用可推导或可关联的 cache key，防止列表滚动时重复下载。渐进式传输如果需要多次解码，还会增加 CPU 和内存成本，这时必须同时测量首个可用画面出现时间与完整解码时间。
 
-<!-- gracker-diagram: ch12-01-22-image-request-work -->
-![图片从显示需求到缓存、取消和解码](../../assets/diagrams/ch12/ch12-01-22-image-request-work.png)
-
-图：减少无用像素、下载与解码，并保持列表和详情的缓存关系。 渐进式需要格式、解码器、渲染共同支持；多次解码可能增加CPU/内存，首图与完整解码应分别测量。
 
 ### 弱网策略：期限、重试、缓存与降级
 
@@ -493,19 +449,15 @@ OkHttp 5.3.0 的默认 connect、read、write timeout 都是 10 秒，默认没�
 | 其他 4xx | 请求、权限或业务状态通常需要修改 | 按响应语义处理 |
 | 响应体中途失败 | 已接收部分数据 | 支持 Range / ETag 的下载可续传，其他请求按业务语义恢复 |
 
-<!-- gracker-diagram: ch12-01-24-retry-unknown-result -->
-![失败位置、结果未知与重试资格](../../assets/diagrams/ch12/ch12-01-24-retry-unknown-result.png)
-
-图：先判断是否可能已执行，再按错误类型和业务语义决定恢复。 方法名只是线索；请求发送后断连可能结果未知，不能把客户端失败当作服务端未执行。
 
 指数退避要加入随机抖动（随机延迟），并受尝试次数、总期限、前后台状态和用户取消约束。服务端给出 `Retry-After`（建议的重试时间） 时优先遵守；恢复网络时，挂起请求要避免同时齐发。
 
 OkHttp 的 `retryOnConnectionFailure` 默认开启，处理部分路由和连接层恢复；重定向、认证与某些响应也会在一个 `Call` 内产生 follow-up（后续请求） 请求。应用层重试叠加在其上时，要分别记录网络库 attempt 与业务 attempt，避免重试次数相乘。在 Interceptor（拦截器） 内阻塞等待退避会占用执行资源，重试调度更适合放在请求编排层或 WorkManager。
 
-<!-- gracker-diagram: ch12-01-25-retry-layers -->
-![库内尝试与业务重试分别计数](../../assets/diagrams/ch12/ch12-01-25-retry-layers.png)
+<!-- gracker-diagram: ed12-01-retry-classification-and-attempts -->
+![失败先分类，库内尝试与业务重试分别计数](../../assets/diagrams/ch12/ed12-01-retry-classification-and-attempts.png)
 
-图：一个业务attempt中的Call可包含多次路由、认证和重定向，外层退避另计。 内部恢复并不覆盖所有错误；应用重试必须受幂等、Retry-After、取消和总期限共同约束。轨道不表示次数上限或实际时长。
+图：概念重试编排合图，不是OkHttp内部完整状态机。每次业务attempt中的Call可已有多个route/认证/重定向followup，内外分别计数。按失败位置与业务语义处理：安全校验不盲重试，发送后断链先查结果或服务端幂等；发送前连接失败和408/429/503也需按契约判断。仅确需恢复且允许时，在次数/总期限/幂等/前后台/用户取消约束下遵守RetryAfter并抖动，再发新的Call；不在Interceptor阻塞退避。双轨仅示分层，非时长或次数上限；其他4xx/响应体中断仍按上表恢复。
 
 HTTP 方法的规范语义只是初筛线索：一个声明为 PUT 或 DELETE 的接口，仍可能包含审计、通知或外部系统副作用。支付、订单和发帖等写操作，应由服务端提供幂等键和可查询结果。
 
@@ -522,10 +474,10 @@ fun withHttpCache(
     .build()
 ```
 
-<!-- gracker-diagram: ch12-01-26-cache-ownership -->
-![磁盘 Cache 的唯一拥有者与派生 client](../../assets/diagrams/ch12/ch12-01-26-cache-ownership.png)
+<!-- gracker-diagram: ed12-01-shared-client-cache-owner -->
+![派生 client 共享连接资源，磁盘 Cache 由唯一 owner 管理](../../assets/diagrams/ch12/ed12-01-shared-client-cache-owner.png)
 
-图：同一目录由一个Cache实例独占，该实例可被多个client共享。 不能为同一目录反复创建并发Cache实例；容量、清理和关闭由拥有者统一管理。
+图：共享资源与磁盘目录所有权合图：固定5.3的newBuilder派生client沿用连接池/Dispatcher，按请求类别配置超时。一个目录只由一个Cache实例独占；派生client可配置同一sharedCache，或继承base已配置实例，并不表示任意独立client自动共享缓存。容量/清理/关闭由owner统一管理，页面只管理自己的Call；共享池不替代完整Address资格、同步并发或服务端stream资源约束。
 
 服务端应正确返回 `Cache-Control`、`ETag`、`Last-Modified` 和 `Vary`。客户端 cache 只保存符合规则的 HTTP 响应；Room、SQLite 或文件层的业务离线数据，要在对应的层里另建。
 
@@ -559,19 +511,11 @@ fun offlineRequest(
 
 弱网降级可以选择已有缓存、较低分辨率、较小分页、暂停自动播放或延后非交互同步。网络 transport 只是提示：同一 Wi‑Fi 可能经过拥塞链路，蜂窝也可能有良好吞吐。策略输入应结合用户设置、metered、roaming、系统估计和近期请求观测，并设置滞回——为升降级使用不同阈值，避免频繁切换画质。
 
-<!-- gracker-diagram: ch12-01-28-weak-network-adaptation -->
-![弱网降级的多信号输入与滞回](../../assets/diagrams/ch12/ch12-01-28-weak-network-adaptation.png)
-
-图：结合近期请求与用户约束作降级，使用不同升降阈值减少震荡。 transport标签、第一跳估计或运营商分配值均不能单独代表实际业务吞吐；图中没有通用阈值。
 
 ### 平台提供的策略输入
 
 策略输入里还有两项来自平台。`SubscriptionInfo.getStreamingAppMaxDownlinkKbps()` / `getStreamingAppMaxUplinkKbps()` 表示运营商为流媒体应用分配的速率上限，未知时返回 `SubscriptionPlan.BITRATE_UNKNOWN`，它只是分配值，拿来当链路测速会误判；targetSdk 37 的局域网功能则要适配 `ACCESS_LOCAL_NETWORK` 或系统 picker（由系统展示的设备选择器），权限被拒时按权限问题处理，归入普通弱网会走错方向。局域网权限与网络切换的完整规则见 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
 
-<!-- gracker-diagram: ch12-01-29-platform-signal-scope -->
-![平台信号、业务质量与局域网权限](../../assets/diagrams/ch12/ch12-01-29-platform-signal-scope.png)
-
-图：不同平台字段分别描述能力、估计、分配和授权，策略要分开使用。 SubscriptionPlan.BITRATE_UNKNOWN表示未知或不适用；target37的局域网拒权不是弱网。picker只授予其限定选择范围。
 
 ### 长连接、解析与后台流量
 
@@ -584,10 +528,6 @@ WebSocket 适合高频双向消息，但长连接不会自动省电。固定 pin
 
 Retrofit 的 suspend adapter（协程适配器） 也不会让协议本身变快。EventListener 已显示网络完成、业务仍迟迟拿不到数据时，我们要继续区分 Converter/JSON 解析、数据库和 UI 映射；协程取消还要确认会传到 `Call.cancel()`。网络、CPU 解析和界面提交分别记录 trace，避免把网络完成后的 CPU 时间计入 TTFB。
 
-<!-- gracker-diagram: ch12-01-31-network-parse-ui -->
-![网络、解析与 UI 的独立跨度](../../assets/diagrams/ch12/ch12-01-31-network-parse-ui.png)
-
-图：分别观察网络、流式解析、存储与界面提交，取消要传到请求所有者。 suspend不改变协议速度；解析可能与读取重叠，Call终态包含响应消费，UI可用时间另计。
 
 日志、遥测和可延迟同步应在应用内合批，交给 WorkManager/JobScheduler 设置网络、电量和充电约束。蜂窝 tail time（请求结束后基带继续活跃的时长）会受设备、RAT（无线接入技术）、信号和运营商配置影响，写死一个固定时长会出错；是否节能要比较唤醒次数、radio 活跃窗口、字节量和任务完成率。
 
@@ -698,10 +638,10 @@ Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。我们可以�
 
 后台任务若只关心“有网”或“非计费网络”，优先使用 WorkManager/JobScheduler constraint（约束条件）。网络切换后不要统一清空连接池或立即重放全部失败请求；先让网络库处理连接状态，再由业务幂等和退避策略决定恢复。
 
-<!-- gracker-diagram: ch12-01-34-network-callback-scope -->
-![系统网络回调与业务请求质量分工](../../assets/diagrams/ch12/ch12-01-34-network-callback-scope.png)
+<!-- gracker-diagram: ed12-01-platform-inputs-and-request-quality -->
+![平台状态、速率字段、局域网授权与实际请求质量分开](../../assets/diagrams/ch12/ed12-01-platform-inputs-and-request-quality.png)
 
-图：系统回调提供网络策略输入，业务质量由请求事件另行验证。 NetworkCallback不能测host级DNS/TLS/TTFB；注册按生命周期注销，切网不应统一清池或重放所有请求。
+图：三类平台输入与真实请求证据合图：NetworkCallback只报告能力/计费/blocked/VPN/切网等状态，INTERNET和VALIDATED不保证目标host成功；第一跳带宽是估计，carrier cap是运营商分配，BITRATEUNKNOWN保留未知，均非请求实时吞吐。仅局域网业务检查target37权限或picker限定范围，拒权按授权问题处理。业务用DNS/TLS/等待与所选层有效字节/明确时间窗验证质量，另记编码/缓存/背压/续传/重试。注册按生命周期注销；切网先由库处理连接，业务恢复再核幂等/期限/抖动，不统一清池或齐发全部失败请求。
 
 ### 排查清单
 
@@ -757,10 +697,6 @@ RTT（Round-Trip Time）表示报文往返一次的时间。网络制式、无�
 | 证书验证 | 信任链、主机名、有效期、CT 等检查 | 失败类型、证书链、SCT（证书透明度时间戳） |
 | HTTP | 发送请求并等待响应头与响应体 | 协议、连接复用、服务端处理 |
 
-<!-- gracker-diagram: ch12-01-35-https-stage-boundaries -->
-![新 HTTPS 连接中的阶段与验证](../../assets/diagrams/ch12/ch12-01-35-https-stage-boundaries.png)
-
-图：按实现事件划分解析、传输、握手和业务，证书检查属于握手过程。 证书验证不是必然额外网络往返；QUIC把传输与TLS组合，复用连接可省去新建路径。条长非测量值。
 
 HTTP/2 或 HTTP/3 可以让多个请求复用一条连接。复用命中时前四段不会为每个请求重新执行，收益通常大于调整加密算法参数——这也是后面反复出现的主线：先争取复用，再谈参数。
 
@@ -787,10 +723,6 @@ Android 10（API 29）起，平台 TLS 实现默认启用 TLS 1.3；同一版本
 | TLS 会话恢复 | 是 | 是，但使用 PSK（预共享密钥）或缓存的 session state（会话状态）缩短协商 | 原连接已关闭，双方仍保留恢复状态 |
 | TLS 1.3 0-RTT | 是 | 恢复握手中提前发送 early data（握手确认前的早期数据） | 网络栈、服务端和业务语义均允许 |
 
-<!-- gracker-diagram: ch12-01-37-reuse-resume-earlydata -->
-![连接复用、会话恢复与早期数据](../../assets/diagrams/ch12/ch12-01-37-reuse-resume-earlydata.png)
-
-图：把继续使用旧连接与新连接的恢复握手分开。 0-RTT属于恢复握手中的早期数据能力；可用性取决于具体栈和服务端，不能由TLS1.3版本号推断。
 
 连接复用能否命中，取决于池内是否还有可用连接；池容量与 keep-alive 的默认值见前文「共享 OkHttpClient」。要判断复用有没有发生，我们先统计 `connectionAcquired` 回调、新建连接率、域名数量和服务端空闲超时，再调整 `maxIdleConnections` 与 keep-alive。
 
@@ -805,10 +737,10 @@ Android 10（API 29）起，平台 TLS 实现默认启用 TLS 1.3；同一版本
 
 前面已经说过 early data 可能被重放，这里从安全条件再往前推一步。RFC 8446 要求应用协议评估重复执行的后果，HTTP 方法名只能作为初筛条件：一个 GET 请求也可能消费一次性令牌、改变计数器或读取带时序约束的敏感资源；某些 POST 请求在业务上则可能带有幂等键，用于识别并去重同一次业务操作。所以安全条件应写成“该请求被重复执行也不会产生不可接受后果”，只列一份 GET/HEAD 白名单是不够的。
 
-<!-- gracker-diagram: ch12-01-39-earlydata-business-gate -->
-![0-RTT 的业务安全条件](../../assets/diagrams/ch12/ch12-01-39-earlydata-business-gate.png)
+<!-- gracker-diagram: ed12-01-zero-rtt-eligibility-and-rejection -->
+![0-RTT 先审业务资格，再记录接受或拒绝后的恢复](../../assets/diagrams/ch12/ed12-01-zero-rtt-eligibility-and-rejection.png)
 
-图：把早期数据资格落实到重复执行后果、鉴权与服务端保护。 GET/HEAD不是安全证明，幂等键也需服务端实现；仅PSK保护的0-RTT没有前向保密，不能自动继承后续握手保证。
+图：恢复机制与安全门槛合图：需具体provider/协议/服务端支持及可用PSK/恢复状态，且重复执行后果、鉴权材料和服务器保护允许，才发送earlydata。不满足则等正常握手；发送后服务端仍可接受或拒绝，接受不等握手已完成或业务成功，拒绝后按栈/业务语义恢复并受总期限约束。GET/HEAD或客户端幂等键不是重放安全证明，去重须服务端实现；仅PSK保护的0RTT无前向保密，不能自动继承后续握手安全保证。
 
 OkHttp 5.3 的稳定公开协议配置没有 HTTP/3 或 TLS early-data 开关；平台 `HttpEngine` 的 QUIC hint（提示某个主机可尝试 QUIC） 也证明不了某个请求已经用上 early data。Cronet 侧 `QuicOptions.Builder.enableTlsZeroRtt()` 与跨进程会话恢复的配置面，已在前文「0-RTT 的边界」列出。启用前应确认以下事项：
 
@@ -831,10 +763,6 @@ OkHttp 5.3 的稳定公开协议配置没有 HTTP/3 或 TLS early-data 开关；
 
 Android 的 Java TLS 路径由 Conscrypt 等安全 provider 实现，底层使用 BoringSSL。模块化更新能让部分实现随 Google Play 系统更新交付，但设备、模块版本和厂商支持存在差异，所以诊断报告要记录设备 build fingerprint（用于定位系统镜像版本的构建指纹）、provider 名称与版本——一句“Android 17”概括不了这些差异。
 
-<!-- gracker-diagram: ch12-01-40-security-runtime-matrix -->
-![网络安全能力的运行与配置条件](../../assets/diagrams/ch12/ch12-01-40-security-runtime-matrix.png)
-
-图：运行系统、target、模块实现和网络栈共同决定实际能力。 版本表给出引入节点，不证明某设备已接入、协商或强制执行；报告记录build、provider及网络库版本。
 
 ### Android 17 的 Encrypted Client Hello（ECH，加密客户端问候）
 
@@ -883,10 +811,6 @@ ClientHello 加密使用 HPKE。客户端只在新 TLS 握手中执行相关密�
 - 完整握手、会话恢复和连接复用比例；
 - 同一设备、同一网络条件下的 CPU 时间与握手墙钟时间，即用户实际等待的经过时间。
 
-<!-- gracker-diagram: ch12-01-44-ech-cost-accounting -->
-![ECH 的配置查询、握手 CPU 与连接复用](../../assets/diagrams/ch12/ch12-01-44-ech-cost-accounting.png)
-
-图：把配置获取、密码运算和已有连接上的HTTP请求分别记账。 DNS是否额外等待依缓存与并行；HPKE发生在新TLS握手，不为已建连接每个HTTP请求重算。图中无固定RTT或收益。
 
 ### Android 17 的 Certificate Transparency（CT，证书透明度）
 
@@ -918,10 +842,6 @@ Network Security Configuration 的规则还包含一个容易遗漏的分支：
 | 嵌入证书 | 至少 1 个来自检查时 Qualified / Usable / ReadOnly 日志；计数集合可包含检查时 Qualified / Usable / ReadOnly / Retired 的不同日志，有效期≤180天需要2个，>180天需要3个；计数集合至少覆盖2个运营者。Retired 日志的 SCT 还须满足退休时间约束 |
 | OCSP stapling（服务端在握手中附带证书状态响应）或 TLS 扩展 | 至少 2 个 SCT 来自检查时合格的不同日志，并覆盖至少 2 个日志运营者 |
 
-<!-- gracker-diagram: ch12-01-47-ct-sct-delivery-policy -->
-![SCT 交付方式与 Android 当前日志政策](../../assets/diagrams/ch12/ch12-01-47-ct-sct-delivery-policy.png)
-
-图：按交付方式、有效期、状态和运营者联合判断SCT集合。 表中N是不同日志计数；Retired有签发/退休时间限制，运营者按SCT签发时归属；部署前重新核对政策。
 
 日志状态和 Android CT log list 会变化。当前 Android CT Policy 还规定：设备没有可用日志表，或表的时间戳距今超过 70 天时，暂停 CT 强制执行。因此“配置要求 CT”不等于任意离线设备当下都执行了验证；证书链和主机名验证也不会因此被一并关闭。日志运营者按 SCT 签发时归属判断，不能只看当前名称。证书部署流程应以当前 Android CT Policy 和预发布设备测试为准，不要把表中的数字固化成多年不变的服务端规则。
 
@@ -940,10 +860,6 @@ Android 7.0 及以上可使用 Network Security Configuration 按域名管理明
 
 从 HTTP 迁移时，客户端应直接配置 HTTPS URL。先访问 HTTP 再跟随 301/302 会多一次明文请求、一次服务端响应和一条新的 HTTPS 连接路径，还会在重定向前暴露请求元数据。WebView 的 mixed content（HTTPS 页面加载 HTTP 资源） 策略是另一组配置，不要拿普通 API 客户端的明文策略去推 WebView 行为。
 
-<!-- gracker-diagram: ch12-01-48-cleartext-direct-https -->
-![直接 HTTPS、重定向与明文策略边界](../../assets/diagrams/ch12/ch12-01-48-cleartext-direct-https.png)
-
-图：迁移时直接使用HTTPS，并分别核实远端默认值与localhost例外。 target≥28普通远端默认禁明文；Android17隐式loopback规则受实现flag且不推广到任意LAN，自管栈可能不读取策略。
 
 #### 证书链与证书固定
 
@@ -951,10 +867,6 @@ TLS 服务端应发送叶子证书（直接签发给目标域名的证书）和�
 
 Network Security Configuration 支持 certificate pinning（证书公钥固定），但 Android 官方文档不建议一般应用把 pinning 当作默认方案：服务端证书或 CA 轮换处理不当会使应用失联。如果威胁模型（需要防范的攻击和采用的信任假设）要求使用 pinning，就要准备 backup pin（备用公钥摘要）、合理的失效时间、证书轮换演练和可用的轮换与恢复渠道；如果恢复配置也只能从已经被错误 pin 拦住的同一入口下载，远端开关无法自救。删除证书校验、信任所有证书或放宽主机名校验，都不属于性能优化。
 
-<!-- gracker-diagram: ch12-01-49-certificate-pin-recovery -->
-![证书链、固定公钥与轮换恢复](../../assets/diagrams/ch12/ch12-01-49-certificate-pin-recovery.png)
-
-图：保持身份校验，按实际链字节和轮换可恢复性评估部署。 通常发送叶子和必要中间证书而非根；pinning需威胁模型、backup和演练，同一被拦端点无法承担唯一救援通道。
 
 ### API 35 与 API 37 的 HPKE 位于不同接口层
 
@@ -1009,10 +921,10 @@ OkHttp `EventListener` 可记录 `dnsStart`/`dnsEnd`、`connectStart`、`secureC
 
 客户端和服务端的时间基准可能不同。分析单次请求时，我们用贯穿两端的 request ID 关联两端事件；比较分布时，使用同一网络类型、同一设备组和同一发布阶段，避免把用户构成变化误判为协议收益。
 
-<!-- gracker-diagram: ch12-01-52-client-server-evidence -->
-![客户端与服务端关联后再解释协议收益](../../assets/diagrams/ch12/ch12-01-52-client-server-evidence.png)
+<!-- gracker-diagram: ed12-01-cdn-protocol-joint-evidence -->
+![关联客户端、CDN 与服务端证据后再解释性能](../../assets/diagrams/ch12/ed12-01-cdn-protocol-joint-evidence.png)
 
-图：用贯穿两端的request ID关联请求，同条件比较分段分布与失败。 不同墙钟不能直接相减；库事件不足以证明resumed/ECH/CT结果，协议日志和服务端指标需联合且脱敏。
+图：CDN与TLS协议诊断共用同一关联方法：客户端单调事件、CDN白名单POP/cache/回源与服务端trace/协议日志按requestID关联，再在同网络/地区/设备/发布组比较延迟和失败分布。单个TTFB不能独自分摊CDN与源站，secureConnect耗时也不证明会话恢复、ECH或CT结果；跨端不同墙钟不直接相减。字段保持低基数和白名单，不记录完整URLquery、凭证、正文、密钥或用户标识。
 
 #### 排查对照表
 

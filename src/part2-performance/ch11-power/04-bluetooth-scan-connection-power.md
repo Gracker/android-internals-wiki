@@ -86,10 +86,6 @@ sources:
 
 连接事件稀疏、无持续数据时，BLE 链路可以减少无线活动；要比较连接和扫描哪个更省电，还得把扫描 duty cycle、连接参数和设备实现放在一起看。“已连接”与“低功耗”是两回事：连接间隔很短、notification（外围设备主动通知）很密、链路质量差导致重传，或者应用持续发起 ATT 读写时，controller 仍会频繁进入 active（工作）状态。
 
-<!-- gracker-diagram: ch11-04-01-activity-families -->
-![先按活动选择功耗证据](../../assets/diagrams/ch11/ch11-04-01-activity-families.png)
-
-图：按成本来源归类；缺少同等参数和负载时，扫描、连接或媒体之间排不出可信的能耗高低。
 
 ## 11.4.2 BLE 扫描成本由哪些参数决定
 
@@ -101,10 +97,6 @@ sources:
 
 BatteryStats 根据 WorkSource（工作归属信息）、扫描类型和 controller activity 把扫描与无线活动归因到应用，应用 CPU、网络等另记在各自的统计分量里。它没有直接测量三个层级各自的能量，所以这些时间与估算值在相加之前，要先弄清每一项量的是什么。
 
-<!-- gracker-diagram: ch11-04-02-scan-cost-layers -->
-![扫描从无线接收扩展到主机和应用工作](../../assets/diagrams/ch11/ch11-04-02-scan-cost-layers.png)
-
-图：三层可并行产生成本，图只表示结果经过的层级；BatteryStats 的 UID 归因、controller 时长和硬件能量是三种不同的量。
 
 ### Scan mode 控制接收 duty cycle
 
@@ -132,10 +124,10 @@ Bluetooth 栈还使用内部的 screen-off scan mode（熄屏扫描模式）：�
 
 过滤条件并不会自动缩短 controller 的扫描窗口：它的收益主要是减少无关结果上送、Binder 回调和应用进程工作；要降低射频接收时间，还得缩短扫描时长或选用较低 duty cycle。
 
-<!-- gracker-diagram: ch11-04-05-filter-placement -->
-![过滤减少无关结果，接收窗口另行控制](../../assets/diagrams/ch11/ch11-04-05-filter-placement.png)
+<!-- gracker-diagram: ed11-04-scan-window-filter-and-host-cost -->
+![接收窗口控制无线时间，过滤控制结果经过主机与 App 的工作量](../../assets/diagrams/ch11/ed11-04-scan-window-filter-and-host-cost.png)
 
-图：filter 不自动缩短无线接收窗口；FIRST_MATCH / MATCH_LOST 依平台跟踪资源而定。
+图：两个控制维度与结果数据流合图：scanmode/window/interval和业务总时长影响RF接收机会，filter按稳定广播字段筛结果，不自动缩短接收窗口。支持且资源足可controlleroffload，普通ALL_MATCHES部分路径可host匹配，tracking/batch不足也可能直接注册失败，不能一概当软件回退。Bluetooth进程结果组装/统计及App回调/分配/业务/网络可与RF并行产生成本；controller时长、UID归因与硬件能量不同不可盲加。FIRSTMATCH/MATCHLOST还需非空filter/跟踪资源，lost不证明物理离开瞬间。
 
 `FIRST_MATCH` / `MATCH_LOST` 适合“目标出现或离开”的事件模型，前提是非空 filter（过滤条件）、controller 跟踪资源和平台支持都到位。`MATCH_LOST` 报告的是平台的跟踪与超时判断，至于设备是否刚离开物理范围，要另外核实。
 
@@ -161,10 +153,6 @@ Android 14 / API 34 新增 `CALLBACK_TYPE_ALL_MATCHES_AUTO_BATCH`：屏幕关闭
 
 配网页面的扫描要用稳定 filter，设好业务超时，让重复 stop 安全，页面退出时停止。下面的示例把 start/stop 与会话状态都限定在主线程，我们为每次扫描创建独立 callback，旧会话已排队的回调一律忽略；权限请求和 Bluetooth 开关引导在调用前完成。还要留意 Handler 超时可能因线程繁忙而延后，把它当尽力而为的保护来用。
 
-<!-- gracker-diagram: ch11-04-07-pairing-session-owner -->
-![每次配网扫描拥有独立会话与回调](../../assets/diagrams/ch11/ch11-04-07-pairing-session-owner.png)
-
-图：Handler 是可延迟的业务保护；示例的主线程与代次隔离只约束应用状态，真实的 Binder 取消与设备功耗要另行验证。
 
 ```kotlin
 private const val SCAN_TIMEOUT_MS = 10_000L
@@ -243,10 +231,10 @@ class PairingScanner(
 
 调用方要在找到目标、`onStop()`、Bluetooth 关闭和权限撤销时调用 `stop()`。`startScan()` 正常返回只表示调用已提交，注册可能异步失败，也可能被静默限流，所以超时路径必须收尾。示例的 stop 在权限撤销或蓝牙不可用时会清理本地状态并记日志；远端请求是否已被移除，要用 Bluetooth dump 之类的系统侧输出确认。`LOW_LATENCY` 只覆盖用户等待的短区间，失败后歇一下再试，避免立即循环重试。
 
-<!-- gracker-diagram: ch11-04-08-late-callback-generation -->
-![旧扫描回调不能影响新会话](../../assets/diagrams/ch11/ch11-04-08-late-callback-generation.png)
+<!-- gracker-diagram: ed11-04-pairing-session-and-late-events -->
+![扫描会话先收回本地所有权，迟到回调再检查会话身份](../../assets/diagrams/ch11/ed11-04-pairing-session-and-late-events.png)
 
-图：轨道仅示意排队关系。删除本地定时任务不会撤回所有已在 Binder/Handler 队列中的事件；同样的对象/会话隔离适用于 GATT 连接。
+图：当前示例在主线程管理每次独立Session/callback/timeout，已有session不重复start。正常提交不等注册成功；回调post后核对对象身份，只有当前会话可交付结果，当前公开失败先stop再onFailure，旧事件不能推进或结束新会话。找到目标由调用方stop，生命周期/超时/权限/蓝牙变化也收尾：先sessionnull与撤定时任务，再try远端stop，异常留日志。非比例双轨仅示已排队旧事件可能迟到，removeCallbacks不撤回全部事件。Handler超时可延后，本地隔离不证明远端已取消；固定r1注册中stop竞态与设备dump/时序仍独立核对。
 
 平台上还有一个注册竞争要核对：固定 r1 的 `stopScan(callback)` 会先移除客户端映射，`stopLeScan()` 在尚未收到注册结果、`mScannerId <= 0` 时直接返回，后续成功注册回调也缺少对应的取消检查。所以这个示例保证的只是应用侧会话与定时任务的收尾；该版本注册中的远端请求是否同步取消，要结合目标系统修订、Bluetooth dump 和注册时序验证，设备端是否已经停止同样要靠这些输出确认，主机示例测试给不出答案。
 
@@ -276,19 +264,11 @@ class PairingScanner(
 
 `neverForLocation` 是数据用途声明：应用确认扫描结果不会用于推导物理位置时，可为 `BLUETOOTH_SCAN` 设置该 flag（标志），代价是平台可能过滤部分 BLE beacon（信标）结果。它只管数据用途，扫描 duty cycle 不因它改变，把它当省电参数是误用。
 
-<!-- gracker-diagram: ch11-04-11-permission-purpose -->
-![附近设备授权与位置用途分开核对](../../assets/diagrams/ch11/ch11-04-11-permission-purpose.png)
-
-图：neverForLocation 是用途承诺，可能过滤部分 beacon，与扫描省电无关；旧权限截到 API30 的做法只适用于无需位置的功能。
 
 ### PendingIntent 扫描
 
 下面的示例使用显式 BroadcastReceiver（广播接收器）和同一个 mutable（内容可由系统补充）`PendingIntent` 启停扫描，便于系统在进程不常驻时投递匹配结果。
 
-<!-- gracker-diagram: ch11-04-13-pi-identity-update -->
-![同一个 PI 重复 start 不会更新已有扫描](../../assets/diagrams/ch11/ch11-04-13-pi-identity-update.png)
-
-图：startPresenceScan 不会每次调用都创建独立扫描；取消 token 后整机无线未必静止，权限与 adapter 异常仍需处理。
 
 ```kotlin
 private const val BLE_SCAN_ACTION = "com.example.ble.SCAN_RESULT"
@@ -345,17 +325,13 @@ Bluetooth 栈要向 Intent 填充扫描 extras（附加数据），所以 Androi
 
 返回 0 也只是请求提交成功，异步注册可能还在路上：Receiver 先检查 `EXTRA_ERROR_CODE`，成功时再读取 `EXTRA_LIST_SCAN_RESULT` / `EXTRA_CALLBACK_TYPE`，并校验业务是否仍有效、安排短任务。stop 抛出的权限或状态异常由调用者处理，取消 token 之后设备是否静止同样要另行确认。Android 12+ 的后台 FGS（Foreground Service，前台服务）启动限制仍然生效，`PendingIntent` 扫描换不来无限后台执行权。
 
-<!-- gracker-diagram: ch11-04-12-pi-delivery-contract -->
-![PendingIntent 从请求提交到结果投递](../../assets/diagrams/ch11/ch11-04-12-pi-delivery-contract.png)
+<!-- gracker-diagram: ed11-04-pi-identity-and-delivery -->
+![同一 PendingIntent 的注册身份、异步投递与停止由一个 owner 管理](../../assets/diagrams/ch11/ed11-04-pi-identity-and-delivery.png)
 
-图：一个 owner 管理同一身份；FIRST_MATCH 需要非空 filter 与硬件支持。Receiver 执行、FGS 启动和持久任务仍须遵守后台规则。
+图：单owner管理API26+固定身份PI与显式Receiver，31+mutable供栈填extras。固定r1已有同PI scanner会忽略新start，不更新filter/settings，需更改先结束旧扫描再重新请求；新start即时0也仅说明提交，异步注册可失败。Receiver先ERRORCODE后成功结果/callbacktype，再核业务有效性与受限短工作。结束用同PIstop再canceltoken，异常由调用方处理并核查远端，取消token不等整机无线静止；FIRSTMATCH需非空filter和跟踪支持，PI不豁免后台FGS/执行限制。
 
 不要用 AlarmManager 或 WorkManager 周期启动扫描来模拟“设备出现”事件：外围设备不在附近时，这种设计照样唤醒进程。穿戴、配件和 IoT（物联网）产品若存在稳定关联关系，可以评估 Companion Device Manager 的 presence API（设备出现/离开事件接口）；评估时把 filter 支持、随机 MAC（定期变化的设备地址）和配件广播协议放在一起看，它的适用范围有限。
 
-<!-- gracker-diagram: ch11-04-14-presence-without-polling -->
-![设备出现事件比周期重启更贴近业务](../../assets/diagrams/ch11/ch11-04-14-presence-without-polling.png)
-
-图：这是由发现事件驱动的工程选择；设备、固件、随机地址或平台限制都可能造成漏报，验收时把恢复能力和业务发现延迟一起覆盖。
 
 ## 11.4.5 Android 17 的 BLE 扫描实现与平台限制
 
@@ -363,10 +339,6 @@ Android 17 把扫描实现集中到了 `packages/modules/Bluetooth/android/app/s
 
 下图标出回调扫描和 `PendingIntent` 扫描共享的主要路径。
 
-<!-- gracker-diagram: ch11-04-15-scan-stack-order -->
-![Android 17 扫描从 API 到控制器的主路径](../../assets/diagrams/ch11/ch11-04-15-scan-stack-order.png)
-
-图：只画主要职责顺序，异步注册、资源失败与控制器命令见下方 Mermaid 精确路径；统计 start 与射频连续接收是两回事。
 
 ```mermaid
 sequenceDiagram
@@ -429,20 +401,16 @@ sequenceDiagram
 
 AOSP 17 的 legacy scan timeout（旧扫描超时）默认为 10 分钟，可由 DeviceConfig 调整。`ScanManager.startScan()` 只在常规扫描分支设置这项计时器，批量扫描分支和自动批量扫描进入批量路径时都跳过。常规扫描中的 opportunistic 和 first-match（首次匹配）扫描豁免这条 timeout，其余长时常规扫描会经历以下变化：
 
-<!-- gracker-diagram: ch11-04-19-legacy-timeout-branches -->
-![长扫描的旧超时只覆盖适用常规路径](../../assets/diagrams/ch11/ch11-04-19-legacy-timeout-branches.png)
-
-图：batch / auto-batch 批量分支跳过这项计时器；启用 allowance flag 后同样跳过旧 timeout。实际 isFiltered 语义还取决于空 filter 的 feature flag。
 
 - 无 filter：改成 opportunistic，不再单独驱动 controller 扫描。
 - 有 filter：把当前 mode 的上限限制到内部 `SCAN_MODE_FORCE_DOWNGRADED`，它是 `SCAN_MODE_LOW_POWER` 的别名；实际还受其他限制影响，固定射频占空比要以实测确认。
 
 Android 17 还包含由 feature flag 控制的 scan allowance throttling（扫描额度限速）。该模式启用时，系统跳过 legacy timeout 路径，改由 `ScanThrottler` 按 UID 记录加权扫描额度：默认额度 6 分钟、补充窗口 1 小时，按 mode 权重折算，各 mode 实际可运行的时长有差异；当前前台 UI 与特权 client 可绕过额度分支。适用 client 的额度耗尽后降到内部 screen-off mode。这套机制属于平台实现与可配置策略，6 分钟读作额度数字就好，应用的任务时限建立在自己的业务超时上更稳妥。
 
-<!-- gracker-diagram: ch11-04-20-weighted-scan-allowance -->
-![UID 额度受模式权重与豁免条件影响](../../assets/diagrams/ch11/ch11-04-20-weighted-scan-allowance.png)
+<!-- gracker-diagram: ed11-04-legacy-timeout-or-weighted-allowance -->
+![长扫描先看开关：旧 timeout 与 UID 计权额度走不同分支](../../assets/diagrams/ch11/ed11-04-legacy-timeout-or-weighted-allowance.png)
 
-图：6 分钟只是额度基准，各 mode 按权重折算出各自的运行时长；权重以 LOW_LATENCY 为基准，可配置。这一实现策略没有写成 SDK 的任务时限保证。
+图：固定r1按allowancefeatureflag分流：启用时跳过legacytimeout，默认UID6min额度/1h补充按mode权重折算，当前前台UI/特权可绕过此额度但其他规则仍在，适用client耗尽降内部screenoff。未启用的旧timeout默认10min可配，只在适用常规非opportunistic/FIRSTMATCH路径设置，batch/autobatch批量跳过；无filter改机会式不自行驱动，有filter上限FORCEDOWNGRADED即LOWPOWER，isFiltered受空filterflag影响。这不是两套同时叠加的时限，也非SDK任务deadline；降级不等停止逻辑请求或固定RF占空比，应用仍须显式收尾。
 
 ### BatteryStats 归因
 
@@ -526,17 +494,9 @@ Direct connect 适合用户正在等待的首次连接；已知设备的长期 p
 
 Android 14 起，首个 GATT client 调用 `requestMtu()` 时，Android 栈会请求 ATT MTU 517，并忽略后续 client 的 MTU 请求；API 37 的 `setAutomaticMtuEnabled(true)` 则默认在连接后自动协商。我们要在成功的 `onMtuChanged()` 里读取实际结果，按协商值和具体 ATT 操作的协议开销计算有效载荷：MTU 字节数里含协议开销，链路也未必协商到 517。
 
-<!-- gracker-diagram: ch11-04-25-mtu-request-result -->
-![MTU 请求与可用载荷分开验收](../../assets/diagrams/ch11/ch11-04-25-mtu-request-result.png)
-
-图：MTU 是 ATT 层限制，应用有效载荷要扣除协议开销；自动协商完成的只是协商这一步，连接、服务发现和数据传输各有各的状态。
 
 `requestSubrateMode()` 的返回值是状态码，确认更新要看 `onSubrateChange()` 的成功状态；`LOW/HIGH` 是模式名，按 subrate factor 数值排序会读错。
 
-<!-- gracker-diagram: ch11-04-26-subrate-mode-meaning -->
-![Subrate 模式名不能当连接间隔因子排序](../../assets/diagrams/ch11/ch11-04-26-subrate-mode-meaning.png)
-
-图：方法返回状态码，确认以 onSubrateChange 的成功状态与实机参数为准；36.1 是次版本 API，与 SDK extension 的版本号是两种编号。
 
 周期状态更新优先考虑 characteristic notification / indication（外围设备支持时），并减少无变化的数据上报。订阅要在两端完成：本地 `setCharacteristicNotification()` 之外，通常还要按该特征协议写远端 CCCD（客户端特征配置描述符），等待描述符写入结果；只打开本地回调，远端未必开始发送。通知频率由配件固件控制，配件每几十毫秒发送一次无变化数据时，这部分成本手机侧单独消除不了。
 
@@ -549,10 +509,6 @@ Android 14 起，首个 GATT client 调用 `requestMtu()` 时，Android 栈会�
 
 重连策略至少应包含以下状态：
 
-<!-- gracker-diagram: ch11-04-28-reconnection-budget -->
-![重连失败后进入有上限的等待策略](../../assets/diagrams/ch11/ch11-04-28-reconnection-budget.png)
-
-图：这是业务状态机，不是固定平台超时承诺。进程死亡、底层共享连接与平台权限变化仍需独立恢复设计。
 
 1. 用户前台触发 direct connect，并设置较短超时。
 2. 已知设备暂时离线时进入带 jitter（随机扰动）的指数退避，避免多台设备同时重试。
@@ -562,10 +518,10 @@ Android 14 起，首个 GATT client 调用 `requestMtu()` 时，Android 栈会�
 
 连接建立是异步的：`connectGatt()` 返回了非 null 对象只说明请求已受理，业务要跟着 `onConnectionStateChange()` 的状态和结果走；旧 `BluetoothGatt` 的迟到回调同样按对象/会话隔离，以免干扰新的连接。`disconnect()` 是主动断开请求，`close()` 释放这个本地 GATT client；底层链路可能被其他 client 共用，某个 App close 之后射频是否停止，取决于链路上还有谁在用。`autoConnect=true` 会让系统在设备可用时尝试连接，适合已知外围设备，但它保不住进程：进程被终止后，应用仍要用官方后台方案恢复工作。
 
-<!-- gracker-diagram: ch11-04-29-gatt-terminal-ownership -->
-![GATT 对象与共享物理连接分别管理](../../assets/diagrams/ch11/ch11-04-29-gatt-terminal-ownership.png)
+<!-- gracker-diagram: ed11-04-gatt-retry-and-terminal-ownership -->
+![GATT 按当前会话推进连接，重试有预算，终态统一收回资源](../../assets/diagrams/ch11/ed11-04-gatt-retry-and-terminal-ownership.png)
 
-图：connectGatt 非 null 只是请求被受理；其他 client 可继续使用同一远端链路，某个 App close 之后射频的去留要看链路上的其他使用者。权限撤销时，完成不了的远端清理要记录下来。
+图：业务有界重连状态与对象所有权合图：connectGatt非null仅受理，当前GATT/会话匹配的onConnectionStateChange状态结果才推进，旧回调丢弃。失败仅预算剩余且业务有效时jitter指数退避再试，达到上限停主动尝试等新广播/presence/用户事件；所有终态取消pendingretry。需主动断链先disconnect请求，不用的本clientclose；底层可能被其他client共享，close不证明RF立刻停止。权限撤销无法完成远端清理要记录，autoConnect不保进程常驻，进程死亡另设计恢复；图不给平台固定超时或排空保证。
 
 ## 11.4.7 诊断：把请求、归因和硬件证据对齐
 
@@ -619,10 +575,6 @@ BatteryStats 的 controller 数据依赖 Bluetooth controller activity reporting
 
 每组重复多次，并记录系统版本、build fingerprint（系统构建标识）、外围设备距离、RSSI、数据量和连接参数。还要留意 USB 供电会改变电池计数器：需要精确测量时，用能断开充电的测试夹具或外接电源分析仪。
 
-<!-- gracker-diagram: ch11-04-32-controlled-ble-experiment -->
-![功耗对照要验收相同业务与设备条件](../../assets/diagrams/ch11/ch11-04-32-controlled-ble-experiment.png)
-
-图：这是实验设计，能耗数字要等这组实验产出；USB 供电会改变电池计数器的读数，精确能量需断开充电的受控夹具或外接仪表，并解释共享 rail。
 
 ## 11.4.8 版本边界
 
@@ -639,19 +591,11 @@ BatteryStats 的 controller 数据依赖 Bluetooth controller activity reporting
 
 版本表只描述平台公开行为和 AOSP 17 实现；OEM 可调整 scan quota、timeout、window/interval、feature flag 和后台策略，涉及产品承诺时，以目标设备上的验证为准。
 
-<!-- gracker-diagram: ch11-04-33-version-entry-gates -->
-![示例版本门槛与平台策略各自检查](../../assets/diagrams/ch11/ch11-04-33-version-entry-gates.png)
-
-图：应用支持 API24 之后，后续接口仍按各自版本门槛放行；OEM 可改配置与开关，源码固定 r1 的实现结论只是参考，产品结论以目标设备验证为准。
 
 ## 11.4.9 LE Audio、空间音频与头动追踪
 
 LE Audio 播放时，Bluetooth 只占媒体功耗的一部分，其余成本分散在下面这些地方，我们要同时观察：
 
-<!-- gracker-diagram: ch11-04-34-le-audio-cost-roles -->
-![LE Audio 功耗横跨无线、媒体和头动链](../../assets/diagrams/ch11/ch11-04-34-le-audio-cost-roles.png)
-
-图：相关 rail 变化只是定位证据之一。没有独立 Bluetooth rail 仍可做受控 A/B；媒体处理细节与整机能量要结合相邻章节。
 
 - controller 的 ISO（等时数据流）/ ACL（异步数据链路）活动与链路质量；
 - audio HAL（音频硬件抽象层）、Codec 和 DSP 的 active 时间；
