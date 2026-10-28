@@ -18586,7 +18586,17 @@
         "ch11-05-32-product-evidence"
       ],
       "removed_but_shared_diagrams": [],
-      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-115/retired-assets.json"
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-115/retired-assets.json",
+      "post_review_source_revalidation_required": {
+        "index": 115,
+        "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+        "accepted_sha256": "752f746b3845be976375a1163f03222e3b70705ec64c01648ed0f86fd342f478",
+        "observed_sha256": "4382bd5b7d6c0185d899e74c13f562a8549c6e3564c6655ecbfa5d9201478f96",
+        "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/a115/candidate.md",
+        "observed_at": "2026-10-28T18:59:58.843475+08:00",
+        "status": "requires_independent_revalidation",
+        "diagram_count_unchanged": true
+      }
     },
     {
       "index": 117,
@@ -25739,9 +25749,681 @@
       "before_count": 45,
       "before_all_images": 45,
       "sha256_before": "0e8bb5b65b78c04610e3634d89e1b42900262a6eed99207986afd791da5fdd70",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 14,
+      "decisions": [
+        {
+          "original_id": "ch13-08-01-compose-window",
+          "title": "Compose 内容生成与窗口显示的分工",
+          "decision": "remove",
+          "reason": "端到端六框把composition/layout/draw画成粗串行总览，与187职责段、225–233平台职责清单及503–524保留原生完整证据链重复；保留真实按读者分支而不再开篇简化一次。",
+          "original_line": 189,
+          "heading": "# Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode"
+        },
+        {
+          "original_id": "ch13-08-02-version-axes",
+          "title": "固定 Compose、平台与工具链基线",
+          "decision": "remove",
+          "reason": "版本三组六卡摘录203–207完整基线表及196工具链独立说明，原表有精确BOM/tag/内核边界，删除版本摘要卡，固定基线正文不动。",
+          "original_line": 198,
+          "heading": "## 复核基线与阅读边界"
+        },
+        {
+          "original_id": "ch13-08-03-runtime-roles",
+          "title": "四组 Compose 机制如何衔接",
+          "decision": "remove",
+          "reason": "Snapshot/Recomposer/LayoutNode/OwnedLayer四框逐项重述215–218四机制清单，且保留原生状态分支及新frameclock/layer图更具体；删除职责列表的流程副本。",
+          "original_line": 220,
+          "heading": "## Compose 改了什么，复用了什么"
+        },
+        {
+          "original_id": "ch13-08-04-platform-backend",
+          "title": "普通 Compose 页面复用 HWUI 后端",
+          "decision": "remove",
+          "reason": "普通HWUI后端六框重述227–233七职责清单，与保留原生两回调时序及状态到显示flow同一路线，删除再次端到端概览，queue可早GPU完成正文保留。",
+          "original_line": 237,
+          "heading": "## Compose 改了什么，复用了什么"
+        },
+        {
+          "original_id": "ch13-08-05-two-frame-drivers",
+          "title": "Compose 帧工作与窗口 traversal",
+          "decision": "remove",
+          "reason": "Main上animation与traversal两入口和阶段条逐项重复紧接的256–283完整原生时序；249下方时序图指引仍准确指原生图，无需第二张粗分支图。",
+          "original_line": 251,
+          "heading": "## 两条帧驱动在同一主线程会合"
+        },
+        {
+          "original_id": "ch13-08-06-frameclock-dispatcher",
+          "title": "FrameClock 的 dispatcher 与直接注册分支",
+          "decision": "merge",
+          "reason": "匹配AndroidUiDispatcher聚合/未匹配直接一次性注册接7Recomposer帧内条件步骤，保留取消移除对应队列、交换批次及withFrameNanos非永久自循环。",
+          "original_line": 304,
+          "heading": "## 两条帧驱动在同一主线程会合",
+          "replacement_id": "ed13-08-frameclock-registration-and-recomposer-work"
+        },
+        {
+          "original_id": "ch13-08-07-recomposer-frame-work",
+          "title": "Recomposer 默认帧内工作顺序",
+          "decision": "merge",
+          "reason": "按需等parentclock、等待者才分发/通知、收集失效/重组/apply接6注册分支，区别于原生图专门说明的窗口traversal，不把frameclock画成直接布局绘制。",
+          "original_line": 311,
+          "heading": "## 两条帧驱动在同一主线程会合",
+          "replacement_id": "ed13-08-frameclock-registration-and-recomposer-work"
+        },
+        {
+          "original_id": "ch13-08-08-host-tree",
+          "title": "ComposeView 的宿主与节点树",
+          "decision": "merge",
+          "reason": "ComposeView管理composition、内部AndroidComposeView承载节点树接37多个root共享context/state的实际对象关系，避免早晚两图重复宿主树；普通LayoutNode不是AndroidView。",
+          "original_line": 320,
+          "heading": "## AndroidComposeView：Compose 与 ViewRoot 的连接点",
+          "replacement_id": "ed13-08-composeview-hosts-and-shared-context"
+        },
+        {
+          "original_id": "ch13-08-09-owner-entries",
+          "title": "三个 Android owner 入口",
+          "decision": "remove",
+          "reason": "onMeasure/onLayout/dispatchDraw三组六框逐项复制332–336三个入口的完整表，原表含约束和按需边界；保留原生时序有调用对象，删表格副本。",
+          "original_line": 327,
+          "heading": "## AndroidComposeView：Compose 与 ViewRoot 的连接点"
+        },
+        {
+          "original_id": "ch13-08-10-hwui-call-stack",
+          "title": "ThreadedRenderer 包含 display-list 更新",
+          "decision": "remove",
+          "reason": "performDraw→ThreadedRenderer.draw→updateRootDisplayList→dispatchDraw→sync/RT六框重复338精确顺序及保留原生时序后半；保留全部调用边界文字，删除相同调用串第二份。",
+          "original_line": 340,
+          "heading": "## AndroidComposeView：Compose 与 ViewRoot 的连接点"
+        },
+        {
+          "original_id": "ch13-08-11-state-readers",
+          "title": "失效按读者集合分发",
+          "decision": "remove",
+          "reason": "有效state向composition/measure-placement/draw/layer参数四分支与保留原生flow前半逐边相同，356–362原表还区分可跳阶段；12具体代码两读者图留，不重复通用分发图。",
+          "original_line": 351,
+          "heading": "## Composition、Layout、Drawing 可以分别失效"
+        },
+        {
+          "original_id": "ch13-08-12-moving-badge",
+          "title": "MovingBadge 中的两组观察关系",
+          "decision": "keep",
+          "reason": "MovingBadge同一offsetPx分别被placement和graphicsLayer参数读取的实际两组观察图，直接对照366–377 Kotlin例子；与通用四分支不同，保留额外composable读者仍可重组边界。",
+          "original_line": 381,
+          "heading": "## Composition、Layout、Drawing 可以分别失效"
+        },
+        {
+          "original_id": "ch13-08-13-recompose-draw",
+          "title": "结构重组、绘制内容和属性分别更新",
+          "decision": "remove",
+          "reason": "重组结果/draw内容/layer参数三组六卡重复388–390两段及保留原生多读者flow；内容重录与属性复用在新18–20合图具体表达，删重复阶段摘要。",
+          "original_line": 392,
+          "heading": "### Recomposition 不等于重绘"
+        },
+        {
+          "original_id": "ch13-08-14-strong-skipping",
+          "title": "Strong Skipping 的三个判定边界",
+          "decision": "remove",
+          "reason": "编译可skippable、参数equals/identity、自身失效/optout六卡逐项摘录397完整段；原文Kotlin2.0.20边界及NonSkippable条件更完整，不用非流程卡片重述同一段。",
+          "original_line": 399,
+          "heading": "### Recomposition 不等于重绘"
+        },
+        {
+          "original_id": "ch13-08-15-measure-place-protocol",
+          "title": "约束、尺寸和放置的方向",
+          "decision": "keep",
+          "reason": "父Constraints向child、Placeable尺寸返回父、placement再定child位置的三个实际方向，非列表文字转卡；清楚说明一次父测量协议而非每帧整树一次，保留。",
+          "original_line": 408,
+          "heading": "## LayoutNode 的测量与放置"
+        },
+        {
+          "original_id": "ch13-08-16-extra-layout-work",
+          "title": "额外布局工作不等于任意重复 measure",
+          "decision": "remove",
+          "reason": "Intrinsic/Subcompose-Lazy/Lookahead六卡逐项压缩415–420六条额外工作清单，正文含新请求/dispatchDraw待办及同pass约束更全，删除清单副本。",
+          "original_line": 424,
+          "heading": "## LayoutNode 的测量与放置"
+        },
+        {
+          "original_id": "ch13-08-17-three-object-spaces",
+          "title": "函数、节点与系统 Layer 的对象边界",
+          "decision": "remove",
+          "reason": "函数group/LayoutNode/GraphicsLayer三个对象空间六卡逐项重述433及440段；新18–20合图保留非一一对应和所属layer实际边界，原文所有区别完整，删概念对照卡。",
+          "original_line": 435,
+          "heading": "### LayoutNode 与 RenderNode 不是一一对应"
+        },
+        {
+          "original_id": "ch13-08-18-nearest-layer",
+          "title": "绘制失效到最近 layer 边界",
+          "decision": "merge",
+          "reason": "普通节点draw变化向最近所属layer失效、独立子层未变可复用接19dirty/clean及20固定主实现，共一张实际对象/控制图，不按LayoutNode逐一重录。",
+          "original_line": 442,
+          "heading": "### LayoutNode 与 RenderNode 不是一一对应",
+          "replacement_id": "ed13-08-nearest-layer-recording-and-reuse"
+        },
+        {
+          "original_id": "ch13-08-20-display-list-reuse",
+          "title": "dirty 重录与未变内容复用",
+          "decision": "merge",
+          "reason": "实际id20-display-list-reuse：updateDisplayList内容dirty才record，否则保留并可改属性，接18所属边界和20GraphicsLayerV29公开RenderNode，区分内容与属性入口。",
+          "original_line": 456,
+          "heading": "### Android 17 上的 graphicsLayer 主路径",
+          "replacement_id": "ed13-08-nearest-layer-recording-and-reuse"
+        },
+        {
+          "original_id": "ch13-08-19-graphics-layer-route",
+          "title": "Android 17 的 GraphicsLayerV29 路径",
+          "decision": "merge",
+          "reason": "实际id19-graphics-layer-route：AndroidComposeView主路径GraphicsLayerOwnerLayer→GraphicsLayerV29→RenderNode接18/19失效重录与引用，兼容RenderNodeLayer不是本基线主路径。",
+          "original_line": 463,
+          "heading": "### Android 17 上的 graphicsLayer 主路径",
+          "replacement_id": "ed13-08-nearest-layer-recording-and-reuse"
+        },
+        {
+          "original_id": "ch13-08-21-compositing-strategies",
+          "title": "三种 CompositingStrategy 的含义",
+          "decision": "merge",
+          "reason": "Auto整层alpha/Offscreen/ModulateAlpha三组六卡接22强制效果条件，改成先强制再Autoalpha的真实决策树，避免两个相邻卡片和表重复。",
+          "original_line": 472,
+          "heading": "### layer 边界不一定产生离屏 buffer",
+          "replacement_id": "ed13-08-offscreen-strategy-and-effects"
+        },
+        {
+          "original_id": "ch13-08-22-forced-offscreen",
+          "title": "哪些条件仍会要求离屏",
+          "decision": "merge",
+          "reason": "显式Offscreen、RenderEffect、非SrcOver或ColorFilter强制中间结果接21策略分支；ModulateAlpha不能绕过其他效果，内容重叠差异和非独立Surface完整保留。",
+          "original_line": 489,
+          "heading": "### layer 边界不一定产生离屏 buffer",
+          "replacement_id": "ed13-08-offscreen-strategy-and-effects"
+        },
+        {
+          "original_id": "ch13-08-23-state-to-display",
+          "title": "状态变更到最终显示的阶段证据",
+          "decision": "remove",
+          "reason": "state→按需Compose→HWUI→BLAST→SF→present六框逐项压缩紧接503–524保留原生完整分支，496下方流程图仍指原生，删第三个端到端总览。",
+          "original_line": 498,
+          "heading": "## 从状态写入到 present"
+        },
+        {
+          "original_id": "ch13-08-24-fence-handoffs",
+          "title": "queue、acquire 与 present 分别证明什么",
+          "decision": "merge",
+          "reason": "queue交付与Producercompletion/consumeracquire两路作用域接26CPU/GPU/显示异步轨，保留queue不保证选中、latch非统一signal与present非光学，避免概念与时序分两图。",
+          "original_line": 528,
+          "heading": "## 从状态写入到 present",
+          "replacement_id": "ed13-08-queue-gpu-read-and-present"
+        },
+        {
+          "original_id": "ch13-08-25-main-renderthread",
+          "title": "Main 与 RenderThread 的主要职责",
+          "decision": "remove",
+          "reason": "Main/RT三组六卡逐项重述540–552完整两份职责清单；原生双回调时序与新24/26异步图已有实际边界，旧Consumerrelease后才重写的正文550全留。",
+          "original_line": 535,
+          "heading": "### UI 线程与 RenderThread 的分工"
+        },
+        {
+          "original_id": "ch13-08-26-async-gpu-present",
+          "title": "CPU slice 与 GPU、显示时序",
+          "decision": "merge",
+          "reason": "RT walltime含准备等待、GPU异步执行、SF可先采纳但真正读满足依赖的三轨接24fence交接，在同一buffer上对齐，不把CPU条长当GPU时长。",
+          "original_line": 556,
+          "heading": "### UI 线程与 RenderThread 的分工",
+          "replacement_id": "ed13-08-queue-gpu-read-and-present"
+        },
+        {
+          "original_id": "ch13-08-27-snapshot-notifications",
+          "title": "全局 state 写入后的通知安排",
+          "decision": "keep",
+          "reason": "setter→globalwriteobserver合并请求→Main通知通道→sendApplyNotifications→已登记reader/后续工作的具体全局通知链，保留原生flow从apply起始未展开此入口；setter返回不等完成。",
+          "original_line": 565,
+          "heading": "## Snapshot 与 Recomposer 的并发边界"
+        },
+        {
+          "original_id": "ch13-08-28-snapshot-concurrency",
+          "title": "Snapshot 原子性与 UI 线程边界",
+          "decision": "remove",
+          "reason": "Snapshot事务/composition串行/UI约束六卡压缩572–579六条完整并发边界，原文含冲突/普通字段IO不覆盖；新8/37对象图保留可共享roots，删列表副本。",
+          "original_line": 581,
+          "heading": "## Snapshot 与 Recomposer 的并发边界"
+        },
+        {
+          "original_id": "ch13-08-29-pausable-between-frames",
+          "title": "Lazy 子 composition 的分段准备",
+          "decision": "merge",
+          "reason": "尚未使用item跨帧resume/pause→complete/apply图接30实际取消/循环和32prefetch后续measure，统一同Main时序，未apply结果不能给可见布局，不承诺GPU减负。",
+          "original_line": 592,
+          "heading": "### 分段处理哪类工作",
+          "replacement_id": "ed13-08-paused-prefetch-lifecycle-and-steps"
+        },
+        {
+          "original_id": "ch13-08-30-pausable-state-machine",
+          "title": "PausedComposition 的使用状态机",
+          "decision": "merge",
+          "reason": "PausedComposition创建、resume、isComplete循环、apply和cancel接29跨帧及32步骤；shouldPause非任意抢占、延期state变化需重处理，apply同步有效后才可用。",
+          "original_line": 601,
+          "heading": "### API 与暂停语义",
+          "replacement_id": "ed13-08-paused-prefetch-lifecycle-and-steps"
+        },
+        {
+          "original_id": "ch13-08-31-prefetch-flag-history",
+          "title": "预取开关按依赖版本核对",
+          "decision": "remove",
+          "reason": "Runtime1.8加入/1.10.6false/1.11.4true六卡逐项复制617及624–626三事实与754–762版本表，固定flag正文与新生命周期caption保留，不放又一份历史摘要。",
+          "original_line": 619,
+          "heading": "### 1.11.4 的默认预取路径"
+        },
+        {
+          "original_id": "ch13-08-32-prefetch-steps",
+          "title": "Lazy 预取的 resume、apply 与 measure",
+          "decision": "merge",
+          "reason": "prefetch索引有效/pausedprepare/按预算apply/预测量/成本历史接29/30生命周期，一图明确完成与有效性先决条件、预算分步及取消清理，apply/measure并非任意可抢占。",
+          "original_line": 628,
+          "heading": "### 1.11.4 的默认预取路径",
+          "replacement_id": "ed13-08-paused-prefetch-lifecycle-and-steps"
+        },
+        {
+          "original_id": "ch13-08-33-prefetch-budget",
+          "title": "预取的普通时间预算如何估算",
+          "decision": "merge",
+          "reason": "静态缓存refreshinterval、max(frameStart,viewDraw)起点及available算式接34ordinary/urgent/firstidle门槛，合实际预算决策，不称逐帧精确deadline。",
+          "original_line": 635,
+          "heading": "### 1.11.4 的默认预取路径",
+          "replacement_id": "ed13-08-prefetch-budget-and-thresholds"
+        },
+        {
+          "original_id": "ch13-08-34-prefetch-thresholds",
+          "title": "普通、urgent 与 idle 的阈值",
+          "decision": "merge",
+          "reason": "普通available>历史平均、urgent>0、两间隔未draw首请求LongMAX并重置接33算式，7节点同时给不满足延后分支和历史成本反馈，不把整个队列都画成无限空闲。",
+          "original_line": 642,
+          "heading": "### 1.11.4 的默认预取路径",
+          "replacement_id": "ed13-08-prefetch-budget-and-thresholds"
+        },
+        {
+          "original_id": "ch13-08-35-interop-topology",
+          "title": "互操作按实际 Surface 拓扑分类",
+          "decision": "merge",
+          "reason": "普通共享window、SurfaceView独立child、TextureView输入回宿主三路线接38独立Producer节奏，合实际buffer/Layer对象与不同代际显示，不靠UI包装推拓扑。",
+          "original_line": 653,
+          "heading": "## 互操作：按 Surface 拓扑分类",
+          "replacement_id": "ed13-08-interop-output-objects-and-producer-timing"
+        },
+        {
+          "original_id": "ch13-08-36-android-view-adapter",
+          "title": "AndroidViewHolder 的布局和绘制适配",
+          "decision": "keep",
+          "reason": "AndroidViewHolder将Constraints/LP转MeasureSpec、Viewmeasure、Composeplacement调Viewlayout、drawAndroidView及invalidation反馈的具体适配链；分类表/新拓扑图不展开这组调用。",
+          "original_line": 670,
+          "heading": "### AndroidView 的边界"
+        },
+        {
+          "original_id": "ch13-08-37-shared-roots",
+          "title": "多个 ComposeView 的共享边界",
+          "decision": "merge",
+          "reason": "多个ComposeView独立root/owner但可共享parentcontext/windowRecomposer及应用state接8宿主树，图内展开各自AndroidComposeView与LayoutNode，生命周期各自管理。",
+          "original_line": 679,
+          "heading": "### ComposeView 的边界",
+          "replacement_id": "ed13-08-composeview-hosts-and-shared-context"
+        },
+        {
+          "original_id": "ch13-08-38-mixed-producer-timing",
+          "title": "共用 Choreographer 不保证内容同帧",
+          "decision": "merge",
+          "reason": "宿主与独立Producer各自render/queue/fence、SF可用内容决定本轮代际接35三实际路线；共同Main/Choreographer不保证同步，SurfaceTexture输入不当独立显示Layer。",
+          "original_line": 688,
+          "heading": "### 混合动画不自动同步",
+          "replacement_id": "ed13-08-interop-output-objects-and-producer-timing"
+        },
+        {
+          "original_id": "ch13-08-39-frametimeline-coverage",
+          "title": "宿主 FrameTimeline 与独立输入的覆盖",
+          "decision": "keep",
+          "reason": "先定Window/child/texture对象与Timeline覆盖，有则SurfaceFrame关联DisplayFrame、缺则buffer/TX/fence补齐的真实证据分支；保留SurfaceView文档覆盖限制和输入采样另查。",
+          "original_line": 695,
+          "heading": "### 混合动画不自动同步"
+        },
+        {
+          "original_id": "ch13-08-40-budget-vs-interval",
+          "title": "刷新间隔与实际可用预算",
+          "decision": "remove",
+          "reason": "60/120Hz名义间隔、expected/deadline、实际线程依赖六卡重述704完整段，原文明确不能固定composition/layout/draw配额；删除预算词卡，预取预算新33/34专图范围不同。",
+          "original_line": 706,
+          "heading": "### 先确认看到的是哪一帧"
+        },
+        {
+          "original_id": "ch13-08-41-perfetto-evidence",
+          "title": "从异常帧沿执行者和队列取证",
+          "decision": "remove",
+          "reason": "目标帧→Main→RT→GPU→BLAST/SF→内核六框压缩720–726七条完整取证顺序，缺tracing配置与证据边界正文更详；保留39真实覆盖分支，删通用流程摘要。",
+          "original_line": 715,
+          "heading": "### 再沿线程和队列取证"
+        },
+        {
+          "original_id": "ch13-08-42-optimize-by-stage",
+          "title": "按证据选择 Compose 优化入口",
+          "decision": "remove",
+          "reason": "重组布局/记录GPU/队列系统六卡逐项压缩735–743七行完整证据-改法表，优化条件和实际等待方原表更完整，不再为表做六卡重复。",
+          "original_line": 730,
+          "heading": "### 按阶段选择优化手段"
+        },
+        {
+          "original_id": "ch13-08-43-derived-state",
+          "title": "derivedStateOf 的输入与输出频率",
+          "decision": "keep",
+          "reason": "高频滚动state→remember derivedStateOf→派生阈值结果及相等策略→下游读者的具体频率转换例子，明确源写频率不变与计算成本；保留以说明优化表中一项实际机制。",
+          "original_line": 747,
+          "heading": "### 按阶段选择优化手段"
+        },
+        {
+          "original_id": "ch13-08-44-version-evolution",
+          "title": "Runtime 演进与平台能力分开记",
+          "decision": "remove",
+          "reason": "RuntimeAPI/内部flag/平台三组六卡摘录754–762七行版本表和764段，固定1.11.4flagfalse特指SlotTable非Foundation预取flag，完整表更清楚避免多张历史摘要互混。",
+          "original_line": 766,
+          "heading": "## 版本演进：平台与 Compose 分开记"
+        },
+        {
+          "original_id": "ch13-08-45-end-to-end-review",
+          "title": "从状态读者到最终显示逐层复核",
+          "decision": "remove",
+          "reason": "末尾端到端六框重画保留原生完整flow与822–828三层总结，前面重复总览已删；保留全部结论文字和具体mechanism图，删除最后一份总结图。",
+          "original_line": 831,
+          "heading": "## 总结"
+        }
+      ],
+      "sha256_after": "2146aa3da2a94334bfbfc1ce73fa777e7fc3561575d6586bc45d10e4a2b3c00e",
+      "new_diagrams": [
+        {
+          "id": "ed13-08-frameclock-registration-and-recomposer-work",
+          "title": "FrameClock 的一次性注册汇入按需 Recomposer 工作",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-frameclock-registration-and-recomposer-work.svg",
+            "src/assets/diagrams/ch13/ed13-08-frameclock-registration-and-recomposer-work.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-frameclock-registration-and-recomposer-work",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidUiFrameClock.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidUiDispatcher.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-06-frameclock-dispatcher",
+              "ch13-08-07-recomposer-frame-work"
+            ],
+            "boundary": "固定Compose1.11.4默认Android接入：Recomposer有帧级工作才等parent clock；匹配同一Choreographer的AndroidUiDispatcher时聚合回调，trampoline后执行本批并换队列，否则直接注册一次性FrameCallback。取消从对应队列移除。onFrame有等待者才BroadcastFrameClock分发时间及发送相应Snapshot通知，随后收集失效、按需重组/apply/late/changesApplied；无工作可跳相应步骤，不直接完成整个窗口draw。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-08-composeview-hosts-and-shared-context",
+          "title": "独立 composition root 与可共享 context / state 分别建模",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-composeview-hosts-and-shared-context.svg",
+            "src/assets/diagrams/ch13/ed13-08-composeview-hosts-and-shared-context.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-composeview-hosts-and-shared-context",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidViewHolder.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-08-host-tree",
+              "ch13-08-37-shared-roots"
+            ],
+            "boundary": "ComposeView/AbstractComposeView管理composition，内部AndroidComposeView作为ViewGroup承载LayoutNode/Modifier树，普通LayoutNode不是逐一AndroidView。不同ComposeView各有root/owner与生命周期；可查找View tree composition context或共享window Recomposer，也可显式设置parent context。应用state可被多个root显式共享；context/root数量不证明状态隔离或Recomposer独占。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-08-nearest-layer-recording-and-reuse",
+          "title": "先找到所属 layer，再按 dirty 决定重录或复用",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-nearest-layer-recording-and-reuse.svg",
+            "src/assets/diagrams/ch13/ed13-08-nearest-layer-recording-and-reuse.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-nearest-layer-recording-and-reuse",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeCoordinator.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/GraphicsLayerOwnerLayer.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidGraphicsContext.android.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-18-nearest-layer",
+              "ch13-08-20-display-list-reuse",
+              "ch13-08-19-graphics-layer-route"
+            ],
+            "boundary": "无独立layer的普通LayoutNode draw变化先使最近所属layer内容dirty；普通函数/group/LayoutNode与RenderNode不一一对应。固定Android12–17/Compose1.11.4主路径为GraphicsLayerOwnerLayer→GraphicsLayerV29→公开RenderNode。内容dirty才record begin/endRecording；内容未变可保留displaylist并独立改属性，Canvas.drawRenderNode引用进宿主HWUI。未失效的独立子layer可继续引用旧记录。App内layer不是独立Surface/系统Layer，复用也不等零GPU成本。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-08-offscreen-strategy-and-effects",
+          "title": "先检查强制条件，再区分整层 alpha 与逐指令 alpha",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-offscreen-strategy-and-effects.svg",
+            "src/assets/diagrams/ch13/ed13-08-offscreen-strategy-and-effects.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-offscreen-strategy-and-effects",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/layer/CompositingStrategy.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayer.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-21-compositing-strategies",
+              "ch13-08-22-forced-offscreen"
+            ],
+            "boundary": "固定Compose1.11.4：Offscreen显式策略、RenderEffect、非SrcOver BlendMode或非空ColorFilter等会要求中间结果；这些条件也适用于ModulateAlpha。无其他强制条件时，Auto+alpha<1按整层语义使用中间层，不先检测内容是否实际重叠。ModulateAlpha只避免为alpha单独离屏，逐指令调制在重叠时可改变视觉结果。平移/缩放/旋转或建立layer边界本身不等创建离屏buffer，更不等独立窗口Surface。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-08-queue-gpu-read-and-present",
+          "title": "queue、GPU 写完、系统采纳与 display present 分别取证",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-queue-gpu-read-and-present.svg",
+            "src/assets/diagrams/ch13/ed13-08-queue-gpu-read-and-present.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-queue-gpu-read-and-present",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp",
+            "https://perfetto.dev/docs/data-sources/frametimeline",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-24-fence-handoffs",
+              "ch13-08-26-async-gpu-present"
+            ],
+            "boundary": "同一窗口buffer由RenderThread/Skia准备并提交；CPU slice可含等待，不等GPU busy。CPU queue交付buffer与Producer completion fence，Consumer侧称acquire；GPU异步写入完成另发signal，queue与signal无固定先后，受限readiness/latch也可先于signal。实际读取前满足acquire，DEVICE或必要CLIENT合成后追目标displaypresent。queue不保证该buffer后来被选中；present反馈不等像素光学响应，旧buffer复用另受release依赖约束。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-08-paused-prefetch-lifecycle-and-steps",
+          "title": "未使用 item 的分段准备：完成并 apply 后才能使用",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-paused-prefetch-lifecycle-and-steps.svg",
+            "src/assets/diagrams/ch13/ed13-08-paused-prefetch-lifecycle-and-steps.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-paused-prefetch-lifecycle-and-steps",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/lazy/layout/PrefetchScheduler.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/ComposeFoundationFlags.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-29-pausable-between-frames",
+              "ch13-08-30-pausable-state-machine",
+              "ch13-08-32-prefetch-steps"
+            ],
+            "boundary": "PausableComposition只安排尚未使用的子composition，典型为Lazy预取；普通setContent不自动可暂停，可见页面常规重组不因此任意分多帧。反复resume(shouldPause)到完成，pause在支持边界生效，apply同步且完成有效后结果才可使用；完成后延迟apply期间state变化可能需要重新处理。预取后续apply/预测量分别按请求和预算评估并更新步骤成本，非任意可抢占。放弃则cancel并丢弃composition；预取与可见帧共享Main，图不保证GPU工作下降。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-08-prefetch-budget-and-thresholds",
+          "title": "缓存帧间隔估算预算，再按请求类型决定是否执行",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-prefetch-budget-and-thresholds.svg",
+            "src/assets/diagrams/ch13/ed13-08-prefetch-budget-and-thresholds.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-prefetch-budget-and-thresholds",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/lazy/layout/PrefetchScheduler.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-33-prefetch-budget",
+              "ch13-08-34-prefetch-thresholds"
+            ],
+            "boundary": "固定Foundation默认Android预取调度器：View.display.refreshRate估算并静态缓存frameIntervalNs，普通available=max(0,max(frameStartTimeNanos,viewDrawTimeNanos)+frameIntervalNs-now)。距上次draw超过两个缓存间隔时首个请求可按idle Long.MAX_VALUE，执行一个请求后重置idle。普通步骤要求可用时间超过历史平均成本，urgent只需正值。暂停边界与非分段步骤仍可超估算；这里不直接读取preferred frame deadline，也不是实时刷新率逐帧预算或硬时限。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-08-interop-output-objects-and-producer-timing",
+          "title": "先辨认输出对象，再判断宿主与独立 Producer 是否同帧",
+          "article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-08-interop-output-objects-and-producer-timing.svg",
+            "src/assets/diagrams/ch13/ed13-08-interop-output-objects-and-producer-timing.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-08-interop-output-objects-and-producer-timing",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidViewHolder.android.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-08-35-interop-topology",
+              "ch13-08-38-mixed-producer-timing"
+            ],
+            "boundary": "普通View/Compose通常由宿主HWUI共同生产App Window；AndroidView包装本身不新建Surface。独立Producer若用TextureView/SurfaceTexture，宿主满足输入依赖后采样并另产窗口buffer，输入通常不是独立显示Layer；若用SurfaceView，子内容有独立Surface/Layer与宿主分别提交。两条是按实际组件选择的路线，不表示同一输入自动双投递。即使共用Main/Choreographer，SF仍按本轮readiness与依赖选各Layer新旧内容，须用buffer/TX/fence取证，不能推画面自动同步。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T18:55:38.108397+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 45,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a127/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a127/visual-review.json",
+      "retired_diagrams": [
+        "ch13-08-01-compose-window",
+        "ch13-08-02-version-axes",
+        "ch13-08-03-runtime-roles",
+        "ch13-08-04-platform-backend",
+        "ch13-08-05-two-frame-drivers",
+        "ch13-08-06-frameclock-dispatcher",
+        "ch13-08-07-recomposer-frame-work",
+        "ch13-08-08-host-tree",
+        "ch13-08-09-owner-entries",
+        "ch13-08-10-hwui-call-stack",
+        "ch13-08-11-state-readers",
+        "ch13-08-13-recompose-draw",
+        "ch13-08-14-strong-skipping",
+        "ch13-08-16-extra-layout-work",
+        "ch13-08-17-three-object-spaces",
+        "ch13-08-18-nearest-layer",
+        "ch13-08-19-graphics-layer-route",
+        "ch13-08-20-display-list-reuse",
+        "ch13-08-21-compositing-strategies",
+        "ch13-08-22-forced-offscreen",
+        "ch13-08-23-state-to-display",
+        "ch13-08-24-fence-handoffs",
+        "ch13-08-25-main-renderthread",
+        "ch13-08-26-async-gpu-present",
+        "ch13-08-28-snapshot-concurrency",
+        "ch13-08-29-pausable-between-frames",
+        "ch13-08-30-pausable-state-machine",
+        "ch13-08-31-prefetch-flag-history",
+        "ch13-08-32-prefetch-steps",
+        "ch13-08-33-prefetch-budget",
+        "ch13-08-34-prefetch-thresholds",
+        "ch13-08-35-interop-topology",
+        "ch13-08-37-shared-roots",
+        "ch13-08-38-mixed-producer-timing",
+        "ch13-08-40-budget-vs-interval",
+        "ch13-08-41-perfetto-evidence",
+        "ch13-08-42-optimize-by-stage",
+        "ch13-08-44-version-evolution",
+        "ch13-08-45-end-to-end-review"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-127/retired-assets.json"
     },
     {
       "index": 128,
@@ -27317,8 +27999,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 63,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md",
+  "reviewed_articles": 64,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -27328,7 +28010,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T15:12:48.546727+08:00",
+  "updated_at": "2026-10-28T18:55:38.108397+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
@@ -27342,6 +28024,13 @@
       "registered_sha256": "c4e18831e4fa1b9df967db73745d2c583be7abee191a3f3f0d118b2609de91ab",
       "observed_sha256": "3a9d35933e7f1fd1a4f76e9cfb44d20f8a2246d2308098e877c5bc08c7bffe8c",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+      "registered_sha256": "752f746b3845be976375a1163f03222e3b70705ec64c01648ed0f86fd342f478",
+      "observed_sha256": "4382bd5b7d6c0185d899e74c13f562a8549c6e3564c6655ecbfa5d9201478f96",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -27380,9 +28069,16 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+      "registered_sha256": "fc0389d5fd6d48f422301c9c8da45ce40a9eea7b62ba1f0ab0bcaa178c934223",
+      "observed_sha256": "ac051388c7172ac69f20e6e751583c6eb7e6c3b5347b7f688b108f7f2cba12b3",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
       "registered_sha256": "3de69fb83be00408a082a0477d6fc278f3dda8b0e23255a531432a36af23b430",
-      "observed_sha256": "6132761cd311b0790a3b80cf51bc874e3c4ee2df5738bb6c032c2575b4068d4f",
+      "observed_sha256": "4cfbb57f0cb7b76238ca01d6fbe150b58f8a74eeebda7bdb3d54b3d53360bb75",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
@@ -27391,6 +28087,13 @@
       "registered_sha256": "de680a48d94357b5f2162a8754cfb2d763e3a29b0aea074f09725b6f3f442d71",
       "observed_sha256": "2723a486ec3770db40815d18bc36cc69e988126b9d600ce81a1e21980705827e",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
+      "registered_sha256": "e4da93532c5aa9d6f21775484fb2d6c1b3b171636352094d5d29738d8803e538",
+      "observed_sha256": "6b6ce9dc5e979c0c054fef692f9c184c5d189a0898c21b45371a2222f778b772",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -27406,11 +28109,18 @@
       "observed_sha256": "ea3457cf082cf783d3b8a7930b9eedf7cca40d7b362518318ef1f2c6a66413da",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "registered_sha256": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
+      "observed_sha256": "9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2155,
-  "reviewed_placements_after": 1047,
-  "net_removed_placements": 1108,
+  "reviewed_placements_before": 2200,
+  "reviewed_placements_after": 1061,
+  "net_removed_placements": 1139,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -27432,5 +28142,18 @@
       ],
       "eligibility_proof": "/tmp/gracker-diagrams-editorial-review-20261028/scope-additions-rendered-proof.json"
     }
-  ]
+  ],
+  "post_review_external_source_revalidations_pending": [
+    {
+      "index": 115,
+      "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+      "accepted_sha256": "752f746b3845be976375a1163f03222e3b70705ec64c01648ed0f86fd342f478",
+      "observed_sha256": "4382bd5b7d6c0185d899e74c13f562a8549c6e3564c6655ecbfa5d9201478f96",
+      "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/a115/candidate.md",
+      "observed_at": "2026-10-28T18:59:58.843475+08:00",
+      "status": "requires_independent_revalidation",
+      "diagram_count_unchanged": true
+    }
+  ],
+  "currently_matching_reviewed_source_count": 63
 }
