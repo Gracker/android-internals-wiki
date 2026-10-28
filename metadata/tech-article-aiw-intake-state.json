@@ -7186,6 +7186,114 @@
       "size": 1910,
       "status": "skipped-low-score"
     },
+    "source/rss-snapshot/2026-10-29-Apple-Also-Announces-iMac-With-M6.md": {
+      "chapter": "待分类",
+      "entry_id": "d26cbd24922dd69e",
+      "last_appended": "2026-10-29T05:25:20.098064+08:00",
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214468.312348,
+      "score": 11,
+      "sha256": "aefe44ba1d417739e34c139cee3463f1c23786e3939ead25eab87d7368a880c4",
+      "size": 54602,
+      "status": "appended",
+      "title": "Apple unveils new iMac with M6"
+    },
+    "source/rss-snapshot/2026-10-29-Apple-Creator-Studio-Updated-With-a-Slew-of-AI-F.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214461.1996734,
+      "sha256": "8adde1555a298f1a428e568825f4fbe649a616926e1b36831d087b52ad64787a",
+      "size": 35421,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-Apple-Introduces-New-Base-MacBook-Pro-With-M6-14.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214471.5747042,
+      "sha256": "d756fb907613275eb130b7fff51b29260ee971bd5f523bc5fad6da27800a8531",
+      "size": 49386,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-Game-Boy-Color-on-My-Conference-Badge.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214463.478123,
+      "sha256": "6b22b06c1b530b3ae0e9a0ada4a2338a818d66a7b967edec9987e321ffdac6c3",
+      "size": 1361,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-Getting-good-at-AI-takes-time-and-practice.md": {
+      "chapter": "待分类",
+      "entry_id": "3b8f698f8a6a5b11",
+      "last_appended": "2026-10-29T05:25:20.098064+08:00",
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214455.5341501,
+      "score": 9,
+      "sha256": "f6181c546627c81139034e48f54a4f4d97f0f0d1c9737a3308f015ed0b003cc3",
+      "size": 11396,
+      "status": "appended",
+      "title": "Getting good at AI takes time and practice"
+    },
+    "source/rss-snapshot/2026-10-29-GitHub-Octoverse-2026.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214431.02934,
+      "sha256": "c8b7a56600e66b2d3b2b5bea1c1b5aa6e384c2dabaa644b2ea87f4d1c616b7e0",
+      "size": 2968,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-Guessing-the-Name-MacBook-Studio.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214448.335029,
+      "sha256": "3a2f8ad78f0dc07c91c41dd10f4ff7b9af5f64719d189a448231c4f1ec370eb6",
+      "size": 4037,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-Pluralistic-Agents-vs-ecommerce-28-Oct-2026.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214197.8065505,
+      "sha256": "5bfc1cce3e98f5f8f76e2dcc0f5b1acba614dc0a6eb656b41115843a514b9241",
+      "size": 23133,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-Quoting-Terk-Terkowitz.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214452.4911778,
+      "sha256": "a3a90de9711a156a338ef91d7ed6d0e4136a7ddd540a18c54c34733ac9008055",
+      "size": 747,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-Siri-AI-Expands-to-More-Languages-in-OS-27-2.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214208.228849,
+      "sha256": "8b556a65638d7188970fed1e843217e019932906f1be9efabe4142fd8aa4ba3d",
+      "size": 5986,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-The-Exponential-Time-Hypothesis-is-False.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214477.0549426,
+      "sha256": "ded737049ef21d23fa386de56d2f89723407b98f7a33cd3d272fd8e5add269b6",
+      "size": 3089,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-The-October-inflection-point-for-vibe-game-devel.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214188.7530868,
+      "sha256": "3fdd245e0475ccbf43aa3c18380487ce2384ec50684f3ca21f27f319a08c4434",
+      "size": 22801,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-The-Unbalanced-Group-Theorem.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214194.2625418,
+      "sha256": "d9ce14b5856952eedb7ac87dc7580673db8baccccb5a32baf36cae78b7a3f35b",
+      "size": 2715,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-29-What-s-Left-for-Pro-and-Tell-Week-Touch-Enabled-.md": {
+      "last_seen": "2026-10-29T05:25:20.098064+08:00",
+      "mtime": 1793214216.334648,
+      "sha256": "0b23a6dbe9dedaf5cadd8a60fc031ed5c63e3d790abae45f568faad02768277c",
+      "size": 1664,
+      "status": "skipped-low-score"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -8993,24 +9101,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 4,
-    "cutoff": "2026-10-27T05:20:20.386015+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-28.md",
+    "appended": 2,
+    "considered": 14,
+    "cutoff": "2026-10-28T05:20:20.280932+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-29.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2264,
+    "scanned": 2278,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 12,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 815
+      "unchanged": 819
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-28T05:25:20.280932+08:00",
+  "last_run_at": "2026-10-29T05:25:20.098064+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
