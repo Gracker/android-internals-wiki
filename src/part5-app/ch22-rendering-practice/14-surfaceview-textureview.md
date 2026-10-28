@@ -62,21 +62,21 @@ sources:
 - `TextureView` 由应用进程内的 HWUI 消费输入 buffer，再把像素画入宿主应用窗口（App Window）。
 
 <!-- gracker-diagram: a245-01-consumer-boundaries -->
-![SurfaceView与TextureView的消费边界](../../assets/diagrams/ch22/a245-01-consumer-boundaries.png)
+![SurfaceView与TextureView的消费分工](../../assets/diagrams/ch22/a245-01-consumer-boundaries.png)
 
-图：选型首先看消费者在哪里；控件名称不能保证低延迟或硬件叠加。
+图：选型首先看消费者在哪里；控件名称给不出低延迟或硬件叠加的保证。
 
-这个分界决定了延迟组成、GPU 带宽、HWC 机会、变换能力、生命周期和 trace（性能轨迹）读法。控件名称本身不能保证低延迟、低功耗或硬件叠加；所有性能结论都要回到当前设备的 Producer、BufferQueue、layer、fence 和 display present。
+这个分界决定了延迟组成、GPU 带宽、HWC 机会、变换能力、生命周期和 trace（性能轨迹）读法。这些收益能否兑现，要回到当前设备的 Producer、BufferQueue、layer、fence 和 display present 上核对；控件名称只能指出候选路径，选型时我们先看消费者在哪里。
 
-[SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md) 负责从源码解释两条端到端管线；本文只保留选型所需的最小拓扑模型，重点负责生命周期、场景决策、Compose 包装与 Perfetto 排障步骤。
+两条端到端管线的源码解释放在 [SurfaceView 与 TextureView 渲染管线](../../part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md)；本文只保留选型所需的最小拓扑模型，重点讲生命周期、场景决策、Compose 包装与 Perfetto 排障步骤。
 
 正文保留源码和 Perfetto 中可检索的英文名，含义统一如下：
 
 - **Producer / Consumer**：Producer 是写入画面的生产者，例如相机、解码器或游戏引擎；Consumer 是取得并使用 buffer 的消费者，例如 SurfaceFlinger 或 HWUI。
-- **BufferQueue / slot**：BufferQueue 管理可循环复用的 buffer；slot 是队列中标识某块 buffer 的槽位，不等于固定的双缓冲或三缓冲。
+- **BufferQueue / slot**：BufferQueue 管理可循环复用的 buffer；slot 是队列中标识某块 buffer 的槽位，队列里有几个 slot 由 Producer 与 Consumer 协商，并无固定的双缓冲或三缓冲。
 - **layer**：SurfaceFlinger 可独立定位、裁剪并参与合成的图层。`TextureView` 的 `TextureLayer` 是 HWUI 对象，不属于 SurfaceFlinger layer。
 - **transaction**：一组原子提交的图层或 buffer 更新；同一 transaction 内的状态一起生效，但不会让尚未完成的 buffer 提前就绪。
-- **fence**：跨 CPU、GPU 与显示硬件同步的完成信号。acquire fence 保护即将读取的 buffer，release fence 表示旧 buffer 可以复用，present fence 标记一次显示提交的完成边界。
+- **fence**：跨 CPU、GPU 与显示硬件同步的完成信号。acquire fence 保护即将读取的 buffer，release fence 表示旧 buffer 可以复用，present fence 标记一次显示提交的完成。
 - **latch / present**：latch 表示 SurfaceFlinger 为某个显示周期采纳候选 buffer；特定 latch-unsignaled 路径下 acquire fence 此刻仍可能未就绪；present 表示该周期已经交给显示路径，仍早于面板像素的光学响应完成。
 - **HWC 与 DEVICE / CLIENT composition**：HWC（Hardware Composer，硬件合成器）按当前整屏图层集合选择合成方式。DEVICE 表示交给显示硬件处理；CLIENT 表示 RenderEngine 先用 GPU 合成 client target（供 HWC 使用的中间整屏目标）。
 - **BLAST**：Android 用来协调 BufferQueue 内容与 `SurfaceControl.Transaction` 的缓冲提交路径，源码和 trace 中常见 `BLASTBufferQueue`、BLAST child 与 `BufferTX`。
@@ -85,11 +85,11 @@ sources:
 <!-- gracker-diagram: a245-02-buffer-state-fence -->
 ![队列槽位与三类栅栏](../../assets/diagrams/ch22/a245-02-buffer-state-fence.png)
 
-图：transaction状态原子应用不等于像素已就绪；latch也可能早于acquire fence信号。
+图：transaction状态原子生效，像素未必就绪；latch也可能早于acquire fence信号。
 
 ## 版本基线与术语校正
 
-源码锚点如下：
+本文核对的源码与组件版本如下：
 
 | 层级 | 基线 | 用途 |
 | --- | --- | --- |
@@ -98,9 +98,9 @@ sources:
 | Jetpack Compose | 固定 Compose BOM 2026.08.00；UI / Foundation 1.12.0 | `AndroidView` 与外部 Surface 的互操作边界 |
 | Media3 / CameraX | 本次额外核对 CameraX 1.6.2 / Media3 1.11.1；工程仍锁定实际依赖 | 组件策略独立发布，不能由 platform tag 代替 |
 
-版本演进只覆盖 Android 12—17 的现代路径；Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。
+版本演进只覆盖 Android 12—17 的现代路径；Android 10/11 只用于兼容性判断，我们不会把早期实现直接套到 Android 17 的行为上。
 
-固定源码行为与当前发布版本分开记录：2026-10-25，UI 与 Foundation 当前稳定版均为 1.12.1，本文互操作实现仍按指定 commit 的 1.12.0；CameraX 的回退分支按实际 1.6.2 发布源码核对。
+固定源码行为与当前发布版本分开记录：截至 2026-10-25，UI 与 Foundation 当前稳定版均为 1.12.1，本文互操作实现仍按指定 commit 的 1.12.0；CameraX 的回退分支按实际 1.6.2 发布源码核对。
 
 几项常见描述需要按当前实现收窄：
 
@@ -117,9 +117,11 @@ sources:
 
 ## 一、两条显示拓扑
 
+选型之前，我们先建立两条路径的对象图：内容在哪里排队、由谁消费、SurfaceFlinger 能看到什么。后面的延迟、功耗与排障结论都以这两张拓扑为基准。
+
 ### SurfaceView：宿主和内容各走一条生产线
 
-Android 17 的 `SurfaceView.createBlastSurfaceControls()` 维护三个主要对象：
+`SurfaceView.createBlastSurfaceControls()` 维护三个主要对象：
 
 - `mSurfaceControl`：container layer，承载位置、crop、相对层级等管理状态；
 - `mBlastSurfaceControl`：container 的 BLAST child，接收 Producer buffer；
@@ -151,7 +153,7 @@ SurfaceFlinger 把宿主 layer 与 SurfaceView child 一起交给 HWC；每个 l
 
 图：多次present保持同一视频buffer可以正常；两路提交应按业务时刻核对。
 
-宿主 120 Hz、视频 30 fps 时，多次 display present 复用同一视频 buffer 属于正常节奏。需要定位的是新 buffer 是否赶上业务期望的 present，以及几何、遮罩和内容是否对应同一业务时刻。
+宿主 120 Hz、视频 30 fps 时，多次 display present 复用同一视频 buffer 属于正常节奏。我们这时要核对的是新 buffer 有没有赶上业务期望的 present，以及几何、遮罩和内容是否落在同一业务时刻。
 
 ### TextureView：外部流先回到宿主 HWUI
 
@@ -165,12 +167,12 @@ SurfaceFlinger 把宿主 layer 与 SurfaceView child 一起交给 HWC；每个 l
 1. 外部 Producer → `SurfaceTexture`；
 2. 宿主 HWUI → App Window BLAST → SurfaceFlinger。
 
-Android 17 的主要执行点如下：
+从输入到上屏的主要执行点如下：
 
 <!-- gracker-diagram: a245-07-texture-update-callback -->
 ![TextureView回调到RenderThread更新](../../assets/diagrams/ch22/a245-07-texture-update-callback.png)
 
-图：UI的onSurfaceTextureUpdated不能证明RT已取得输入、GPU完成或present。
+图：UI的onSurfaceTextureUpdated证明不了RT已取得输入、GPU完成或present。
 
 1. Producer 向 `SurfaceTexture` queue buffer；
 2. `OnFrameAvailableListener` 投递到 ViewRoot 所在线程；
@@ -181,13 +183,13 @@ Android 17 的主要执行点如下：
 7. HWUI 将其包装为可采样 `SkImage`，与其他 View 一起画进 App Window；
 8. 宿主 RenderThread 再向 App Window BLAST 提交窗口 buffer。
 
-`onSurfaceTextureUpdated()` 发生在 UI 线程提交 layer update 之后，不能证明 RenderThread 已取得输入、GPU 已完成采样或画面已经 present。
+`onSurfaceTextureUpdated()` 发生在 UI 线程提交 layer update 之后，只说明提交这一步已经完成；要确认 RenderThread 已取得输入、GPU 已完成采样或画面已经 present，还得往下追后续环节。
 
-固定 Android 17 的 `ASurfaceTexture_dequeueBuffer()` 路径还会丢弃除最新一块外的中间排队输入。某块输入已经 queue，不代表它必然被 HWUI 采样或最终呈现；排查视频/相机丢帧时应保留 Producer frame number 与实际采样内容的关联。
+固定实现的 `ASurfaceTexture_dequeueBuffer()` 路径还会丢弃除最新一块外的中间排队输入。一块输入已经 queue，只说明它进了队；我们排查视频/相机丢帧时，要把 Producer frame number 与实际采样内容对上，才能知道哪几块被丢掉。
 
 ### 一张图比较两条路径
 
-这张图只保留决定选型的对象边界。
+这张图只保留决定选型的对象关系。
 
 ```mermaid
 flowchart LR
@@ -216,9 +218,11 @@ SurfaceView 内容保持独立 layer，宿主 UI 仍有自己的窗口 buffer；
 
 图：SurfaceView的内容和宿主各有缓冲区层；TextureView最终只作为宿主像素参加整屏评估。
 
-## 二、延迟、功耗与内存要怎样比较
+## 二、延迟、功耗与内存怎样比较
 
-### 延迟不是固定相差一帧
+延迟、功耗、内存经常被混在一起比较。这一节我们把它们拆开，分别说明各自该怎么测、怎么比。
+
+### 两条路径的延迟组成
 
 SurfaceView 的一块内容帧大致经过：
 
@@ -228,12 +232,12 @@ TextureView 的一块内容帧大致经过：
 
 `Producer fill → SurfaceTexture queue → frame-available → host frame → RT acquire/sample → host queue → SF readiness/latch → HWC/RenderEngine → present`
 
-TextureView 多了宿主 callback、宿主帧截止点、输入 acquire 和纹理采样。若输入恰好赶上已经安排的 host frame，这些工作可能落在同一 VSync 周期；若输入到达晚于 RenderThread pending layer update，就要等下一次宿主帧。不能统一写成“必定多一帧”。
+TextureView 多了宿主 callback、宿主帧截止点、输入 acquire 和纹理采样。若输入恰好赶上已经安排的 host frame，这些工作可能落在同一 VSync 周期；若输入到达晚于 RenderThread pending layer update，就要等下一次宿主帧。延迟差随输入到达时机变化，逐帧对时序才有结论。
 
 <!-- gracker-diagram: a245-09-latency-boundary-comparison -->
 ![两条路径的额外等待点](../../assets/diagrams/ch22/a245-09-latency-boundary-comparison.png)
 
-图：TextureView可能赶上同一宿主帧，也可能错过；无法统一声称固定多一帧。
+图：TextureView可能赶上同一宿主帧，也可能错过；固定多一帧的说法站不住。
 
 SurfaceView 也可能迟到：
 
@@ -244,13 +248,13 @@ SurfaceView 也可能迟到：
 - display mode、frame-rate override 或 present deadline 不匹配；
 - Producer 被自己的 release fence 与 queue slot 反压。
 
-评估触摸到显示、相机 sensor 到预览或解码到显示时，应给起点和终点下定义。Perfetto 的 present fence 只能提供 Android 显示栈边界，不能代替光电传感器测得的 panel 响应。
+评估触摸到显示、相机 sensor 到预览或解码到显示时，我们先给起点和终点下定义。Perfetto 的 present fence 提供的是 Android 显示栈这一段的完成信号；面板的光学响应要靠光电传感器测。
 
-### 功耗差异要连同合成策略测量
+### 功耗差异与合成策略
 
 SurfaceView 常用于视频和相机，因为独立 layer 能交给 HWC 单独评估。若该 layer 满足格式、缩放、旋转、颜色、保护和 plane 资源等要求，HWC 可以选择 DEVICE composition，从而避免宿主 GPU 对大面积内容再次采样。
 
-这个机会不等于保证。以下变化都可能让 strategy 改变：
+这个机会能否兑现取决于整屏状态，以下变化都可能让 strategy 改变：
 
 <!-- gracker-diagram: a245-10-device-client-opportunity -->
 ![独立图层与HWC合成机会](../../assets/diagrams/ch22/a245-10-device-client-opportunity.png)
@@ -274,17 +278,17 @@ TextureView 的输入必须经宿主 GPU 采样。外部 buffer 通常以 `AHard
 - RenderEngine、应用 GPU、memory bandwidth 和相关 power rail；
 - 同一内容、同一时长和相同 UI overlay。
 
-只比较整机平均电流会混入 modem、音频、显示亮度、解码器和温控差异。应先固定这些变量，再解释 Surface 类型带来的增量。
+只比较整机平均电流会混入 modem、音频、显示亮度、解码器和温控差异；我们先固定这些变量，再解释 Surface 类型带来的增量。
 
-### 内存不能用“双缓冲/FIFO”概括
+### 内存按两套队列核算
 
 SurfaceView 页面通常有宿主窗口队列与独立内容队列；TextureView 页面有外部 `SurfaceTexture` 队列与宿主窗口队列。两者都有两套 buffer 周转，只是 Consumer 和最终 layer 位置不同。
 
 一块单平面、未压缩 buffer 的粗略占用估算必须先说明 stride 单位：
 
-`rowStrideBytes × allocationHeight`；若 stride 以像素计，则是 `stridePixels × allocationHeight × bytesPerPixel`。`Image.Plane.getRowStride()` 的单位已经是字节，不能再乘一次每像素字节数。
+`rowStrideBytes × allocationHeight`；若 stride 以像素计，则是 `stridePixels × allocationHeight × bytesPerPixel`。`Image.Plane.getRowStride()` 的单位已经是字节，无须再乘一次每像素字节数。
 
-YUV、多平面、压缩 modifier、tile 对齐、metadata、HDR 与厂商 gralloc 会改变占用，不能只用 `width × height × 4`。总量还取决于：
+YUV、多平面、压缩 modifier、tile 对齐、metadata、HDR 与厂商 gralloc 会改变占用，`width × height × 4` 只覆盖最简单的单平面未压缩情形。总量还取决于：
 
 <!-- gracker-diagram: a245-11-graphics-memory-accounting -->
 ![缓冲区占用按stride单位与实际池核算](../../assets/diagrams/ch22/a245-11-graphics-memory-accounting.png)
@@ -299,9 +303,9 @@ YUV、多平面、压缩 modifier、tile 对齐、metadata、HDR 与厂商 grall
 
 测量时结合 `dumpsys SurfaceFlinger --list`、完整 SurfaceFlinger dump、layer trace、Perfetto graphics memory、`dumpsys meminfo`、GPU/vendor 工具和 gralloc dump。任何“某分辨率固定占用 N MB”的结论都要同时给出 format、stride、slot、usage、压缩与设备信息。
 
-### 不提供跨 SoC 的“典型范围”
+### 跨 SoC 对比的受控基准
 
-不同 SoC 的 GPU、DPU、plane、scaler、内存压缩、codec/camera pipeline 和 Composer HAL 差异很大。没有统一的 Android 17 延迟、功耗或内存区间。
+不同 SoC 的 GPU、DPU、plane、scaler、内存压缩、codec/camera pipeline 和 Composer HAL 差异很大，延迟、功耗或内存都没有统一的“典型区间”。
 
 可靠的基准应包含：
 
@@ -314,16 +318,18 @@ YUV、多平面、压缩 modifier、tile 对齐、metadata、HDR 与厂商 grall
 | 功耗 | 同亮度、网络、音频、温度区间 | 电源轨能耗、GPU busy、带宽、CLIENT 时间 |
 | 内存 | 相同 slot 稳态与操作步骤 | gralloc allocation、heap、GPU resource |
 
-跨设备对比可以回答兼容性和分布，不能拿一台设备的 overlay 成功率替另一台设备下结论。
+跨设备对比回答的是兼容性和分布；一台设备的 overlay 成功率要推广到另一台设备，得在那台设备上重新验证。
 
 <!-- gracker-diagram: a245-12-benchmark-controlled-conditions -->
 ![跨SoC比较的受控测量](../../assets/diagrams/ch22/a245-12-benchmark-controlled-conditions.png)
 
 图：跨设备分布与同设备增量回答不同问题；无统一Android17典型延迟或内存区间。
 
-## 三、SurfaceControl 在 Android 17 中负责什么
+## 三、SurfaceControl 负责什么
 
-### 几何 transaction 与内容 buffer 分开
+SurfaceControl 管理图层状态与提交路径。我们先看几何与内容两条更新线，再看 apply 的同步语义、公开回调与多 Surface 同步，最后落在 HWC 合成的判定上。
+
+### 几何 transaction 与内容 buffer
 
 SurfaceView 的 position、matrix、crop、alpha、composition order、show/hide 等状态由 `SurfaceControl.Transaction` 管理。内容 Producer 的 frame 进入 BLAST child BufferQueue。两类更新可以合进同一 transaction，也可能来自不同时间。
 
@@ -334,9 +340,9 @@ SurfaceView 的 position、matrix、crop、alpha、composition order、show/hide
 
 硬件加速路径使用 `RenderNode.PositionUpdateListener` 取得最终位置和 host frame number，再经 `ViewRootImpl.mergeWithNextTransaction()` 与宿主目标帧合并。UI 线程的其他更新可由 `applyTransactionOnDraw()` 随下一次 ViewRoot draw 应用。
 
-这些是 SurfaceView 自己维护的状态。公开 `getSurfaceControl()` 返回值只定义了把自建子层挂在它下面的用途，近似只读；不要对这个返回对象直接改 position、crop、alpha 等 SurfaceView 管理属性，后续内部更新会覆盖它们。需要视觉效果时优先使用公开的 View/SurfaceView 属性或受支持的事务接口。
+这些是 SurfaceView 自己维护的状态。公开 `getSurfaceControl()` 返回值只定义了把自建子层挂在它下面的用途，近似只读；在返回对象上直接改 position、crop、alpha 等 SurfaceView 管理属性，会被后续内部更新覆盖，需要视觉效果时优先使用公开的 View/SurfaceView 属性或受支持的事务接口。
 
-需要把状态绑定到 SurfaceView 下一块内容 buffer 时，可以使用 `applyTransactionToFrame()`。源码按 `lastAcquiredFrameNum + 1` 合并目标 transaction。对连续出帧的 Producer 来说，“下一块”不能映射成业务上的固定逻辑帧；没有新内容 buffer 时，该更新也可能不生效。
+需要把状态绑定到 SurfaceView 下一块内容 buffer 时，可以使用 `applyTransactionToFrame()`。源码按 `lastAcquiredFrameNum + 1` 合并目标 transaction。“下一块”对应队列里的下一块 buffer，未必对应业务上的固定逻辑帧；没有新内容 buffer 时，该更新也可能不生效。
 
 ### `apply()`、sync 与 async
 
@@ -345,11 +351,11 @@ SurfaceView 的 position、matrix、crop、alpha、composition order、show/hide
 <!-- gracker-diagram: a245-14-transaction-apply-modes -->
 ![apply的同步标志与one-way分开](../../assets/diagrams/ch22/a245-14-transaction-apply-modes.png)
 
-图：原子应用、调用返回和指定显示present是不同边界。
+图：原子应用、调用返回和指定显示present是三个不同阶段。
 
-应用不应为了“立刻看到”而寻找同步 apply。原子提交只保证同一 transaction 内的状态一起应用，不保证 acquire fence 已完成，也不保证指定 display 已 present。需要控制目标时间时，API 35 提供 `setDesiredPresentTimeNanos()` 与 `setFrameTimeline(vsyncId)`；它们是调度提示，不能让未完成 buffer 越过 fence。
+为了“立刻看到”去找同步 apply 是找错了方向：原子提交只保证同一 transaction 内的状态一起应用，acquire fence 完成与否、指定 display 是否 present，都超出它的保证范围。需要控制目标时间时，API 35 提供 `setDesiredPresentTimeNanos()` 与 `setFrameTimeline(vsyncId)`；它们是调度提示，未完成的 buffer 仍要等 fence。
 
-### 没有 `BufferChangedListener`
+### `BufferChangedListener` 与公开回调
 
 API 37 的公开回调应按用途区分：
 
@@ -361,40 +367,40 @@ API 37 的公开回调应按用途区分：
 | per-layer release fence | Consumer/HWC 不再读旧 buffer 后 signal | 旧 slot 何时可复用 |
 | present fence | 本次 display present 的完成边界 | 最终 display 时序反馈 |
 
-BLAST 内部还有 buffer transaction、frame number 和 release callback。分析时要写明对象和队列，不能把任意回调统称为“buffer changed”。
+BLAST 内部还有 buffer transaction、frame number 和 release callback。我们分析时写明对象和队列，避免把任意回调统称为“buffer changed”。
 
 `TransactionStats.getLatchTimeNanos()` 是 CLOCK_MONOTONIC 下的采纳/排队时间；精确呈现要看其 `getPresentFence()` 信号。固定实现会在 listener 正常返回后关闭内部 stats；调用方取得的是新 fence 引用，需自行 `close()`，设备不支持 present fence 时还可能得到无效 fence。不要在回调后保留内部 stats 当作长期有效资源。
 
 <!-- gracker-diagram: a245-15-transaction-callback-fences -->
 ![transaction回调与实际同步信号](../../assets/diagrams/ch22/a245-15-transaction-callback-fences.png)
 
-图：listener交付不等于面板光学完成；不要在回调后长期持有内部stats。
+图：listener交付离面板光学完成还有距离；回调后不要长期持有内部stats。
 
 ### BLAST 怎样提交内容
 
-Android 17 的 `BLASTBufferQueue::acquireNextBufferLocked()` 从 Consumer 侧取得 `BufferItem`，把 buffer、acquire fence、frame number、dataspace、HDR metadata、crop 与 transform 等写入 `SurfaceComposerClient::Transaction`。
+`BLASTBufferQueue::acquireNextBufferLocked()` 从 Consumer 侧取得 `BufferItem`，把 buffer、acquire fence、frame number、dataspace、HDR metadata、crop 与 transform 等写入 `SurfaceComposerClient::Transaction`。
 
-`mergeWithNextTransaction()` 按 frame number 保存外部状态；对应 buffer 到达后，`mergePendingTransactions()` 将其合入同一 buffer transaction。这个机制能协调已知 frame number 的状态，不能替 Camera、codec 或游戏 Producer 提前产出画面。
+`mergeWithNextTransaction()` 按 frame number 保存外部状态；对应 buffer 到达后，`mergePendingTransactions()` 将其合入同一 buffer transaction。这个机制能协调已知 frame number 的状态；画面本身仍要等 Camera、codec 或游戏 Producer 按自己的节奏产出。
 
 <!-- gracker-diagram: a245-16-blast-frame-merge -->
 ![BLAST按内容frame number合并事务](../../assets/diagrams/ch22/a245-16-blast-frame-merge.png)
 
-图：已知frame number可协调状态与内容；不能替生产方提前生成业务下一帧。
+图：已知frame number可协调状态与内容；业务下一帧仍要等生产方自己生成。
 
-### 多 Surface 一致性要明确参与者
+### 多 Surface 同步的参与者
 
 同一 `SurfaceControl.Transaction` 能让多项 layer 状态原子应用，却不会等待未加入 transaction 的 Producer 生成业务上的下一帧。API 34 的 `SurfaceSyncGroup` 可以收集 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 与附加 transaction；调用 `markSyncReady()` 后，系统等待已经注册的 child sync 完成，再应用最终合并的 transaction。
 
-同步组只约束加入组的对象。Camera HAL、MediaCodec 或游戏引擎若独立向 Surface 输出，而且没有通过受控 Surface 的同步回调参与该组，`SurfaceSyncGroup` 无法判断哪块 buffer 对应业务期望的逻辑帧。`setDesiredPresentTimeNanos()` 与 `setFrameTimeline()` 也只提供显示调度目标，不会代替 Producer 完成内容。
+同步组只约束加入组的对象。Camera HAL、MediaCodec 或游戏引擎若独立向 Surface 输出，又没有通过受控 Surface 的同步回调参与该组，`SurfaceSyncGroup` 就无从判断哪块 buffer 对应业务期望的逻辑帧。`setDesiredPresentTimeNanos()` 与 `setFrameTimeline()` 也只提供显示调度目标，内容仍要由 Producer 完成。
 
 <!-- gracker-diagram: a245-17-surface-sync-participants -->
 ![SurfaceSyncGroup只等待已注册参与者](../../assets/diagrams/ch22/a245-17-surface-sync-participants.png)
 
-图：相机、codec或引擎未参加受控同步回调时，组不能判断其哪帧对应业务目标。
+图：相机、codec或引擎未参加受控同步回调时，组无从判断其哪帧对应业务目标。
 
-Perfetto 中看到 Android 13 引入的 `AutoSingleLayer` latch-unsignaled 路径，也不能据此推断多个 Surface 已经同步。AOSP 把它限制在单 layer 的纯 buffer update；跨 layer、几何变化和 sync transaction 都不属于这个优化范围。
+Perfetto 中看到 Android 13 引入的 `AutoSingleLayer` latch-unsignaled 路径，也说明不了多个 Surface 已经同步：AOSP 把它限制在单 layer 的纯 buffer update，跨 layer、几何变化和 sync transaction 都在这个优化范围之外。
 
-### HWC 硬件叠加的准确边界
+### HWC 硬件叠加的成立条件
 
 SurfaceFlinger 为当前 display 构建可见 layer 集合，HWC 再返回 DEVICE/CLIENT composition 建议。SurfaceView child 作为独立 layer，可获得独立的格式、source crop、destination frame、dataspace 和保护属性。
 
@@ -408,6 +414,8 @@ SurfaceFlinger 为当前 display 构建可见 layer 集合，HWC 再返回 DEVIC
 多 SurfaceView 也不会按 layer 数线性增加或减少 GPU。增加一个独立 layer 可能让视频进入 DEVICE，也可能消耗有限 plane，让另一层回到 CLIENT。
 
 ## 四、生命周期与黑屏
+
+生命周期要回答两件事：Producer 什么时候可以开始用 Surface，什么时候必须停；黑屏时我们按什么顺序逐个对象排查。
 
 ### SurfaceView 以 SurfaceHolder 回调为边界
 
@@ -451,19 +459,19 @@ private fun installSurfaceProducer(
 
 `detachAndWaitUntilIdle()` 必须保证 EGL/Vulkan、codec、camera 或远端 Producer 不再碰旧 Surface。只发一个异步 stop 消息后立即返回，仍可能与底层销毁竞态。
 
-注册示例应在 holder Surface 创建前安装，owner 结束时移除返回的 callback，并按同一停止契约处理当前生产方。同步停止不能反过来等待主线程执行一个停止任务，否则主线程销毁回调等待工作线程、工作线程又等待主线程，会形成死锁；长期硬件释放要在业务生命周期中提早停止，不能把无界等待留到销毁回调。
+注册示例应在 holder Surface 创建前安装，owner 结束时移除返回的 callback，并按同一停止契约处理当前生产方。同步停止若反过来等待主线程执行一个停止任务，就会形成主线程销毁回调等工作线程、工作线程又等主线程的死锁；长期硬件释放要提早到业务生命周期中处理，销毁回调里不做无界等待。
 
 <!-- gracker-diagram: a245-18-holder-producer-lifecycle -->
 ![SurfaceHolder回调约束生产方所有权](../../assets/diagrams/ch22/a245-18-holder-producer-lifecycle.png)
 
-图：Activity恢复和View附着不能替代Surface可用边界；停止流程不可等待主线程形成死锁。
+图：Activity恢复和View附着替代不了Surface可用状态；停止流程不可等待主线程形成死锁。
 
 Android 14 起，`setSurfaceLifecycle()` 可选择随 visibility 或 attachment 管理 Surface。attachment 策略能在暂时不可见时保留 Surface，减少重建，也会延长 buffer 和 Producer 资源寿命。Media3 的 `PlayerView` 从 Android 14 起会利用 attachment 策略改善滚动/复用时机。
 
 <!-- gracker-diagram: a245-19-surface-lifecycle-strategies -->
 ![可见性与attachment两种Surface寿命](../../assets/diagrams/ch22/a245-19-surface-lifecycle-strategies.png)
 
-图：attachment策略不能让Surface永久存活，业务仍需正确停止输出。
+图：attachment策略给不了Surface永久存活，业务仍需正确停止输出。
 
 ### TextureView 以 SurfaceTextureListener 为边界
 
@@ -533,7 +541,7 @@ private fun installTextureProducer(
 
 图：包装Surface始终由应用释放；返回false还要自行管理SurfaceTexture的后续release。
 
-`setSurfaceTexture(newTexture)` 会立即释放旧对象，且不会为旧对象调用 destroyed 回调，也不会为新对象调用 available 回调。新传入对象必须先从所有 OpenGL ES context 分离；不能传当前同一实例或已 released 的对象。移交前应显式停止旧 Producer、释放旧 Surface 包装并记录新旧所有权。
+`setSurfaceTexture(newTexture)` 会立即释放旧对象，且不会为旧对象调用 destroyed 回调，也不会为新对象调用 available 回调。新传入对象必须先从所有 OpenGL ES context 分离，当前同一实例和已 released 的对象都排除在外。移交前应显式停止旧 Producer、释放旧 Surface 包装并记录新旧所有权。
 
 <!-- gracker-diagram: a245-21-texture-replacement-transfer -->
 ![手动替换SurfaceTexture的移交](../../assets/diagrams/ch22/a245-21-texture-replacement-transfer.png)
@@ -542,7 +550,7 @@ private fun installTextureProducer(
 
 ### 黑屏按对象逐项检查
 
-Android 17 的 SurfaceView 黑屏可能来自多个对象。按这组顺序检查：
+SurfaceView 黑屏可能来自多个对象。我们按这组顺序检查：
 
 1. container、BLAST child 或 TextureLayer 是否已经创建；
 2. Producer 是否连接当前而非旧 Surface；
@@ -553,20 +561,22 @@ Android 17 的 SurfaceView 黑屏可能来自多个对象。按这组顺序检�
 7. 宿主硬件加速、TextureView listener 与 RenderThread acquire 是否工作；
 8. 模式切换后 layer id、BufferQueue 和 Producer 是否已经变化。
 
-`setSecure(true)` 表达安全输出要求，不能用于修复一般黑屏。protected buffer 需要端到端保护路径；设备、外接显示或 HWC 不满足条件时，可能拒绝显示。移除 secure 以换取普通 GPU 读取会破坏 DRM/安全模型。
+`setSecure(true)` 表达的是安全输出要求，拿来修一般黑屏是用错了工具。protected buffer 需要端到端保护路径；设备、外接显示或 HWC 不满足条件时，可能拒绝显示。移除 secure 以换取普通 GPU 读取会破坏 DRM/安全模型。
 
 <!-- gracker-diagram: a245-22-black-screen-object-diagnosis -->
-![黑屏按对象边界逐级定位](../../assets/diagrams/ch22/a245-22-black-screen-object-diagnosis.png)
+![黑屏按对象逐级定位](../../assets/diagrams/ch22/a245-22-black-screen-object-diagnosis.png)
 
 图：secure标志不是普通黑屏修复开关，HDR和保护输出需要端到端支持。
 
-`setAlpha()` 也有明确边界。Android 14 起 SurfaceView 支持任意 alpha；composition order 小于 0 时 alpha 调制 hole-punch，非负时直接作用于 Surface 内容。多个重叠的 Z-below SurfaceView 不保证得到普通 View 那样的混合结果。
+`setAlpha()` 的行为也有明确划分。Android 14 起 SurfaceView 支持任意 alpha；composition order 小于 0 时 alpha 调制 hole-punch，非负时直接作用于 Surface 内容。多个重叠的 Z-below SurfaceView 未必得到普通 View 那样的混合结果。
 
 ## 五、场景选型
 
+拓扑和生命周期都清楚了，我们按场景把选型落到具体决策：相机、视频、地图与游戏、直播弹幕，最后是一张快速决策表。
+
 ### 相机预览
 
-CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。这里需要区分文档描述和实际发布代码：公开文档把 API≤24、LEGACY 相机和目标旋转不等于 display rotation 都列为回退条件；但本次核对的 CameraX 1.6.2 `shouldUseTextureView()` 实际按 API≤24、LEGACY、`SurfaceViewStretchedQuirk` / `SurfaceViewNotCroppedByParentQuirk` 及模式值判断，旋转不一致的回退仍留有 TODO。因此不要依赖它自动处理旋转差异；此时应明确选择 `COMPATIBLE`，并在目标设备验证裁剪、旋转和实际实现。
+CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。这里要区分文档描述和实际发布代码：公开文档把 API≤24、LEGACY 相机和目标旋转与 display rotation 不一致都列为回退条件；但本次核对的 CameraX 1.6.2 `shouldUseTextureView()` 实际按 API≤24、LEGACY、`SurfaceViewStretchedQuirk` / `SurfaceViewNotCroppedByParentQuirk` 及模式值判断，旋转不一致的回退仍留有 TODO。所以不要依赖它自动处理旋转差异；此时应明确选择 `COMPATIBLE`，并在目标设备验证裁剪、旋转和实际实现。
 
 <!-- gracker-diagram: a245-23-camerax-source-doc-boundary -->
 ![CameraX1.6.2实际回退与文档差异](../../assets/diagrams/ch22/a245-23-camerax-source-doc-boundary.png)
@@ -615,7 +625,7 @@ Media3 `PlayerView` 的 `surface_type` 默认是 `surface_view`，官方也建�
 
 ### 地图与游戏
 
-地图 SDK 的输出方式由具体版本和配置决定，不能仅凭“地图”标签选控件。若 SDK 能提供 SurfaceView 和 TextureView 两种模式，按变换、层级、功耗与设备兼容性基准选择。
+地图 SDK 的输出方式由具体版本和配置决定，仅凭“地图”标签定不了控件；若 SDK 能提供 SurfaceView 和 TextureView 两种模式，按变换、层级、功耗与设备兼容性基准选择。
 
 `GLSurfaceView` 建立在 SurfaceView 上。Vulkan 引擎通常从 Java `Surface` 得到 `ANativeWindow`，再创建 `VkSurfaceKHR` 和 swapchain。它可以使用 Activity 主窗口，也可以使用 SurfaceView 暴露的 Surface。
 
@@ -642,9 +652,9 @@ VkResult createAndroidSurface(
 }
 ```
 
-`vkCreateAndroidSurfaceKHR` 使用 `ANativeWindow`；SurfaceControl 负责 layer tree 与 transaction。引擎还要管理 swapchain 重建、预旋转（pre-rotation）、semaphore/fence 和帧节奏控制（Frame Pacing），不能依赖 `vkAcquireNextImageKHR` 或 `vkQueuePresentKHR` 的阻塞行为同步无关 CPU 工作。
+`vkCreateAndroidSurfaceKHR` 使用 `ANativeWindow`；SurfaceControl 负责 layer tree 与 transaction。引擎还要管理 swapchain 重建、预旋转（pre-rotation）、semaphore/fence 和帧节奏控制（Frame Pacing）；`vkAcquireNextImageKHR` 或 `vkQueuePresentKHR` 的阻塞行为，都不适合拿来同步无关 CPU 工作。
 
-上例要求有效的 `instance`、已启用的 Android Surface 扩展及非空 `outSurface`，调用方检查返回的 `VkResult`。NDK 转换取得一份 window 引用；Vulkan 创建成功会再持有一份，`vkDestroySurfaceKHR()` 才释放后者，所以创建调用后释放本地引用是正确的。成功创建后仍要由 owner 在 swapchain 停用、相关使用结束后销毁 VkSurface；引用存活不代表 SurfaceHolder 底层内容目标永远可用，同一 window 也不能同时连接 EGLSurface 与 VkSurface。
+上例要求有效的 `instance`、已启用的 Android Surface 扩展及非空 `outSurface`，调用方检查返回的 `VkResult`。NDK 转换取得一份 window 引用；Vulkan 创建成功会再持有一份，`vkDestroySurfaceKHR()` 才释放后者，所以创建调用后释放本地引用是正确的。成功创建后仍要由 owner 在 swapchain 停用、相关使用结束后销毁 VkSurface；引用存活只说明 Vulkan 侧还握着它，SurfaceHolder 底层内容目标未必仍然可用，同一 window 同一时刻也只接一个 EGLSurface 或 VkSurface。
 
 <!-- gracker-diagram: a245-25-vulkan-native-window-ownership -->
 ![Vulkan与ANativeWindow引用计数](../../assets/diagrams/ch22/a245-25-vulkan-native-window-ownership.png)
@@ -685,6 +695,8 @@ Unity、Unreal 或自研引擎的内部 Surface 拓扑会随版本、渲染后�
 
 ## 六、Perfetto 中怎样证明路径
 
+结论以 trace 为准。我们先定采集项，再按 SurfaceView 与 TextureView 各自的对象表取证，最后从异常 present 反向追。
+
 ### 采集项
 
 至少开启：
@@ -695,7 +707,7 @@ Unity、Unreal 或自研引擎的内部 Surface 拓扑会随版本、渲染后�
 - Camera、codec、Binder 或厂商轨迹，按场景添加；
 - 支持时采集 HWC composition type 或 Winscope layer 信息。
 
-Perfetto 的 FrameTimeline 对 SurfaceView 内容流没有完整覆盖。SurfaceFrame 记录一个 Surface 产生帧的时间线，DisplayFrame 记录一次显示周期汇总；宿主窗口的 SurfaceFrame 与 SurfaceFlinger 的 DisplayFrame 要分开关联；DisplayFrame 不是每个宿主窗口各自拥有的一条应用帧记录。SurfaceView 主体还要补查独立 layer、表示 buffer transaction 的 `BufferTX`、Producer 队列和 fence。
+Perfetto 的 FrameTimeline 对 SurfaceView 内容流覆盖有限。SurfaceFrame 记录一个 Surface 产生帧的时间线，DisplayFrame 记录一次显示周期汇总，两者要分开关联；每个宿主窗口各自的帧记录，要看它的 SurfaceFrame。SurfaceView 主体还要补查独立 layer、表示 buffer transaction 的 `BufferTX`、Producer 队列和 fence。
 
 ### SurfaceView 的对象表
 
@@ -707,7 +719,7 @@ Perfetto 的 FrameTimeline 对 SurfaceView 内容流没有完整覆盖。Surface
 | background / embedded child | parent、visible region、type | 避免把辅助层当内容 |
 | Producer | connect/dequeue/queue、completion fence | 判断内容生成和反压 |
 
-layer 名称可能包含 SurfaceView tag、窗口短名与 SurfaceFlinger 序号。不要只靠硬编码正则；parent-child 关系、buffer 属性和 Producer connection 应同时匹配。
+layer 名称可能包含 SurfaceView tag、窗口短名与 SurfaceFlinger 序号。我们用 parent-child 关系、buffer 属性和 Producer connection 一起确认身份，只靠硬编码正则容易认错对象。
 
 <!-- gracker-diagram: a245-27-trace-surfaceview-object-map -->
 ![SurfaceView取证对象表](../../assets/diagrams/ch22/a245-27-trace-surfaceview-object-map.png)
@@ -742,7 +754,7 @@ SurfaceFlinger layer tree 中找不到独立 TextureView buffer layer 属于预�
 4. SurfaceView 路径继续检查 container 几何、host hole-punch 和 BLAST child；
 5. TextureView 路径展开宿主 buffer，检查外部 queue → callback → RT acquire → host queue；
 6. 给每个 acquire、release、present fence 标明归属方；
-7. 回到最早偏离业务 deadline 的 Producer 或同步边界。
+7. 回到最早偏离业务 deadline 的 Producer 或同步环节。
 
 从最长 CPU slice 开始容易把结果当成原因。比如宿主主线程很空，SurfaceView Producer 仍可能迟到；Producer queue 很早，TextureView 也可能错过宿主 acquire。
 
@@ -751,9 +763,9 @@ SurfaceFlinger layer tree 中找不到独立 TextureView buffer layer 属于预�
 
 图：主线程空闲不排除独立Producer迟到；外部queue早也不保证赶上TextureView宿主acquire。
 
-### HWC Overlay 不能靠一个字符串判定
+### HWC overlay 的判定依据
 
-不同设备和 trace 配置不会统一提供名为 “layer type: overlay” 的标记。更稳妥的证据包括：
+名为 “layer type: overlay” 的标记在不同设备与 trace 配置之间并不统一，更可靠的判定要靠下面这些材料：
 
 - layer trace / Winscope 中目标 layer 的 composition type；
 - SurfaceFlinger dump 中 DEVICE/CLIENT 结果；
@@ -761,7 +773,7 @@ SurfaceFlinger layer tree 中找不到独立 TextureView buffer layer 属于预�
 - HWC validate changes、display requests 与 vendor Composer 轨迹；
 - 变化前后相同 layer 属性和整屏 layer 集合。
 
-目标 SurfaceView child 走 DEVICE，只说明当前 display frame 的 HWC 合成策略接受它；不能推出固定使用某个硬件 plane，也不能外推到后续帧或另一台设备。
+目标 SurfaceView child 走 DEVICE，只说明当前 display frame 的 HWC 合成策略接受它；固定使用哪个硬件 plane、后续帧或另一台设备是否同样走 DEVICE，都要另行取证。
 
 ### 四类常见等待
 
@@ -772,7 +784,7 @@ SurfaceFlinger layer tree 中找不到独立 TextureView buffer layer 属于预�
 | TextureView RenderThread acquire | SurfaceTexture 输入 | Producer completion、import/ownership |
 | 宿主 RenderThread dequeue | 应用窗口 BLAST | host release fence、缓冲堆积（buffer stuffing）、display 反压 |
 
-报告中只写“卡在 dequeueBuffer”没有足够信息。队列名、layer、slot、frame number 与 fence 归属方都应记录。
+报告里只写“卡在 dequeueBuffer”信息量不足；队列名、layer、slot、frame number 与 fence 归属方都要记录。
 
 <!-- gracker-diagram: a245-30-dequeue-wait-ownership -->
 ![四种等待必须记录所属队列](../../assets/diagrams/ch22/a245-30-dequeue-wait-ownership.png)
@@ -781,28 +793,30 @@ SurfaceFlinger layer tree 中找不到独立 TextureView buffer layer 属于预�
 
 ## 七、常见陷阱
 
+最后是几类实战里反复出现的问题：动画、半透明、多 Surface、安全与颜色、Compose 包装。我们逐个看它们各自卡在哪里。
+
 ### TextureView 动画
 
 对 TextureView 做 scale、rotation、alpha 或 clip 时，外部内容能够按普通 View 语义参与宿主绘制。代价可能包括更大的采样区域、非整数过滤、blend、离屏或更高宿主 GPU 带宽。
 
-调用 `animate()` 不代表固定增加一个渲染步骤；要从 RenderThread 和 GPU 捕获结果确认该动画怎样改变 draw、clip 和图形层缓存。动画期间还应检查 Producer 帧率与宿主刷新率是否不同。
+调用 `animate()` 并不会固定增加一个渲染步骤；该动画怎样改变 draw、clip 和图形层缓存，要从 RenderThread 和 GPU 捕获的结果确认。动画期间还应检查 Producer 帧率与宿主刷新率是否不同。
 
 ### SurfaceView 动画和半透明
 
-Android 7.0 起，SurfaceView 位置与 View 渲染已经同步；旧版本的异步位置伪影不能解释 Android 17 的全部问题。现代设备出现错位时，应检查 host frame number、container transaction、hole-punch 和内容 buffer。
+Android 7.0 起，SurfaceView 位置与 View 渲染已经同步；旧版本的异步位置伪影解释不了 Android 17 的全部问题，现代设备出现错位时应检查 host frame number、container transaction、hole-punch 和内容 buffer。
 
 Android 14 alpha、Android 16 composition order 和 Android 17 blur region 扩展了视觉能力，但没有让 SurfaceView 变成普通纹理。blur region 坐标相对 View bounds，尺寸变化后必须更新。
 
-`AndroidView` 默认也不按自身布局边界裁剪；SurfaceView 包装后需要明确是否使用 `clipToOutline` / 受支持的 clip。`setCompositionOrder()` 中非负值位于宿主窗口之上、负值位于其下；同 order 的相对层级没有定义，不应依赖创建顺序。
+`AndroidView` 默认也不按自身布局边界裁剪；SurfaceView 包装后需要明确是否使用 `clipToOutline` / 受支持的 clip。`setCompositionOrder()` 中非负值位于宿主窗口之上、负值位于其下；同 order 的相对层级没有定义，实现上不要依赖创建顺序。
 
 <!-- gracker-diagram: a245-31-visual-effects-and-protection -->
-![现代视觉API仍保留拓扑边界](../../assets/diagrams/ch22/a245-31-visual-effects-and-protection.png)
+![现代视觉API仍保留拓扑限制](../../assets/diagrams/ch22/a245-31-visual-effects-and-protection.png)
 
 图：视觉能力扩展不会把SurfaceView变成普通纹理；相同composition order的相对层级未定义。
 
 ### 多 SurfaceView 与 plane 资源
 
-多独立 layer 会增加 HWC 选择空间，也会竞争有限 plane、scaler、bandwidth 和颜色处理资源。退化证据是 DEVICE/CLIENT 变化、client target、GPU/power 和 vendor HWC 输出，不能仅按 SurfaceView 数量判断。
+多独立 layer 会增加 HWC 选择空间，也会竞争有限 plane、scaler、bandwidth 和颜色处理资源。退化与否看 DEVICE/CLIENT 变化、client target、GPU/power 和 vendor HWC 输出，SurfaceView 数量本身给不出判断。
 
 ### secure、HDR 与颜色
 
@@ -866,7 +880,7 @@ fun CameraSurfaceHost(
 }
 ```
 
-`onReset` 先解除旧绑定；同一 View 再次启用时，后续 `update` 会检查当前 holder 并重新连接。Compose 也允许 View 在 reset 后暂时处于未启用状态，此时不会立即调用 `update`，所以 reset 阶段不能继续输出。
+`onReset` 先解除旧绑定；同一 View 再次启用时，后续 `update` 会检查当前 holder 并重新连接。Compose 也允许 View 在 reset 后暂时处于未启用状态，此时不会立即调用 `update`，所以 reset 阶段就要停住输出。
 
 <!-- gracker-diagram: a245-32-compose-view-binding-lifecycle -->
 ![Compose复用时的生产方门控](../../assets/diagrams/ch22/a245-32-compose-view-binding-lifecycle.png)
@@ -878,18 +892,18 @@ fun CameraSurfaceHost(
 Compose 的 `key` 默认按 equality 比较，直接传 producer 不保证引用身份变化就换掉 View；上例显式用 `===` 做身份键。此接口的停用门控、串行切换与幂等停止仍由业务实现提供，不把这个包装器当成完整相机 session 管理器。
 
 <!-- gracker-diagram: a245-33-compose-producer-identity -->
-![producer身份键与equality边界](../../assets/diagrams/ch22/a245-33-compose-producer-identity.png)
+![producer身份键与equality差异](../../assets/diagrams/ch22/a245-33-compose-producer-identity.png)
 
-图：只写key(producer)不能保证引用变动一定重建；显式身份键避免回调闭包继续指向旧实例。
+图：只写key(producer)未必保证引用变动一定重建；显式身份键避免回调闭包继续指向旧实例。
 
-播放器优先使用 Media3 自己的生命周期感知 API。Media3 明确说明 `PlayerView` 并非针对 `AndroidView` 设计，不能统一保证兼容性；API 34 的拉伸、裁剪或 Surface 泄漏问题可依据 Media3 的最新说明评估 `setEnableComposeSurfaceSyncWorkaround()`，但该兼容方案与 XML shared transition 存在冲突。
+播放器优先使用 Media3 自己的生命周期感知 API。Media3 明确说明 `PlayerView` 没有按 `AndroidView` 设计，兼容性没有统一保证；API 34 的拉伸、裁剪或 Surface 泄漏问题可依据 Media3 的最新说明评估 `setEnableComposeSurfaceSyncWorkaround()`，但该兼容方案与 XML shared transition 存在冲突。
 
-Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbeddedExternalSurface`：前者提供由系统合成器处理的独立 layer，后者把外部内容作为 Compose 层级中的常规元素交给 GPU 合成。两者都通过 `onSurface`、`onChanged` 与 `onDestroyed` 表达 Surface 生命周期；`onDestroyed` 触发后，渲染线程必须停止访问旧 Surface。Media3 Compose 提供生命周期感知的 `PlayerSurface`。这些 API 的 Surface 类型、生命周期与功能限制要按项目锁定版本核查，不能只因 API 名带 Compose 就省略 layer/BufferQueue 分析。
+Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbeddedExternalSurface`：前者提供由系统合成器处理的独立 layer，后者把外部内容作为 Compose 层级中的常规元素交给 GPU 合成。两者都通过 `onSurface`、`onChanged` 与 `onDestroyed` 表达 Surface 生命周期；`onDestroyed` 触发后，渲染线程必须停止访问旧 Surface。Media3 Compose 提供生命周期感知的 `PlayerSurface`。这些 API 的 Surface 类型、生命周期与功能限制要按项目锁定版本核查，不要只因 API 名带 Compose 就省略 layer/BufferQueue 分析。
 
 <!-- gracker-diagram: a245-34-compose-external-surface-choices -->
 ![Compose外部Surface类型仍决定消费者](../../assets/diagrams/ch22/a245-34-compose-external-surface-choices.png)
 
-图：Media3 PlayerSurface按生命周期连接输出；API名字带Compose也不能省略队列和layer分析。
+图：Media3 PlayerSurface按生命周期连接输出；API名字带Compose也省不了队列和layer分析。
 
 ## 八、Android 12—17 演进
 
@@ -902,7 +916,7 @@ Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbedde
 | Android 16 / API 36 | `setCompositionOrder()` | 应用内 Consumer 与宿主再提交路径延续 |
 | Android 17 / API 37 | `setBlurRegions()`；当前 container + BLAST + background 锚点 | 当前 `DeferredLayerUpdater` 继续处理 crop、transform、dataspace、HDR 与槽位图像缓存 |
 
-版本表用于确认某项 API 从何时可用，不代表未列出结构变化就一定没有厂商 backport。定位设备差异时，还要记录 build fingerprint、vendor graphics stack、codec/camera 和应用库版本。
+版本表用于确认某项 API 从何时可用；表里未列出的结构变化仍可能有厂商 backport。定位设备差异时，还要记录 build fingerprint、vendor graphics stack、codec/camera 和应用库版本。
 
 ## 九、检查与基准清单
 
@@ -916,7 +930,7 @@ Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbedde
 
 ### 生命周期
 
-- [ ] SurfaceHolder 或 SurfaceTexture callback 是 Producer 有效期边界；
+- [ ] SurfaceHolder 或 SurfaceTexture callback 划定 Producer 有效期；
 - [ ] 销毁回调返回前，工作线程不再访问旧目标；
 - [ ] 应用创建的 `Surface`、接管的 `SurfaceTexture` 有明确 release 方；
 - [ ] 模式切换后重新建立 layer、queue 和 Producer 身份；
@@ -938,18 +952,18 @@ Compose Foundation 1.12.0 还提供 `AndroidExternalSurface` 与 `AndroidEmbedde
 - [ ] 每个 fence 都标明 acquire/release/present 和归属方；
 - [ ] SurfaceView 不只看宿主 FrameTimeline；
 - [ ] TextureView 不在 SurfaceFlinger layer tree 里寻找输入 slot；
-- [ ] HWC overlay 结论有 composition type 与 client target 证据。
+- [ ] HWC overlay 结论有 composition type 与 client target 支撑。
 
 ## 全文小结
 
 SurfaceView 把内容保留在独立 BLAST child，使 Producer 与宿主窗口各自按自己的出帧节奏工作，也让 HWC 能单独评估这块内容。它有机会降低大面积视频、相机和游戏内容的宿主 GPU 采样与功耗，同时增加 Surface 生命周期、几何、hole-punch、独立 fence 和跨 layer 同步工作。
 
-TextureView 把外部 BufferQueue 交给应用内 HWUI。它能够使用普通 View 的变换、裁剪、alpha 和兄弟节点混合；代价是输入必须赶上宿主帧，并由 RenderThread 采样进宿主应用窗口。SurfaceFlinger 无法把其中一个矩形重新拆成独立视频 overlay。
+TextureView 把外部 BufferQueue 交给应用内 HWUI。它能够使用普通 View 的变换、裁剪、alpha 和兄弟节点混合；代价是输入必须赶上宿主帧，并由 RenderThread 采样进宿主应用窗口。到了 SurfaceFlinger 那里，这块区域已是宿主像素的一部分，拆不出独立视频 overlay。
 
-选型时先确定视觉和安全约束，再在目标设备上测延迟、功耗、内存和 HWC 合成策略。Perfetto 分析从目标 present 反向查：SurfaceView 要区分宿主、container 与 BLAST child，TextureView 要区分外部队列、宿主 acquire 与 host BLAST。控件名称只能指出候选路径，trace 和源码才决定结论。
+选型时我们先确定视觉和安全约束，再在目标设备上测延迟、功耗、内存和 HWC 合成策略。Perfetto 分析从目标 present 反向查：SurfaceView 要区分宿主、container 与 BLAST child，TextureView 要区分外部队列、宿主 acquire 与 host BLAST。控件名称只能指出候选路径，trace 和源码才决定结论。
 
 <!-- gracker-diagram: a245-35-selection-measurement-loop -->
-![Surface选型与排障的验证闭环](../../assets/diagrams/ch22/a245-35-selection-measurement-loop.png)
+![Surface选型与排障的验证路径](../../assets/diagrams/ch22/a245-35-selection-measurement-loop.png)
 
 图：SV保留独立内容层，TV把输入采样到宿主；性能结论由轨迹和设备条件决定。
 
