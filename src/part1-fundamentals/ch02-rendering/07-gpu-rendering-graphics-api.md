@@ -1,14 +1,14 @@
 ---
-status: ready-for-review
+status: finalized
 section: '2.7'
 title: GPU 渲染与图形 API 选型
 chapter: '2.7'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
 last_verified: '2026-09-20'
-last_source_verified_at: '2026-10-22T20:38:35+08:00'
-last_deep_review_at: '2026-10-22T20:38:35+08:00'
-last_rework_at: '2026-10-22T20:14:49+08:00'
-verification_scope_note: '2026-10-22 全文一致性审读，核对 Vulkan 版本条件、WSI fence、图形缓冲对象与 stride、Perfetto 区间语义、Headroom 和 WebGPU alpha06 迁移边界，补记 ION 旧文档弃用限制；另核对 HWUI 双 queue、GPU render stage 配置与 Headroom 调用边界，修正 Vulkan 主机/设备内存观测口径；未逐项复核全部厂商工具与设备行为，未更新整章 last_verified。'
+last_source_verified_at: '2026-10-24T10:16:17+08:00'
+last_deep_review_at: '2026-10-24T10:12:54+08:00'
+last_rework_at: '2026-10-24T10:12:54+08:00'
+verification_scope_note: '2026-10-24 全文审读并核对 Android 17 源码、CDD 与官方图形资料；修正外部 Producer 与 GPU 工作归属、GPU counter 末尾占位零的统计边界、GLES 特性维护状态及 CDD 屏幕或视频输出条件。Perfetto 合成 protobuf 回归测试验证尾行过滤与有效零值保留，两段章节 SQL 均执行成功；测试不代表设备性能。保留 WebGPU alpha06 迁移、Headroom 调用、ION 文档弃用和工具适用边界；未实测 Android 设备或逐项验证厂商 profiler，整章 last_verified 保留原日期。'
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto/APA/AGI GPU documentation + AndroidX WebGPU 1.0.0-alpha06 + Writer rendering_pipelines S01/S02/S05/S08/S13
 confidence: medium-high
 last_idle_audit_at: '2026-09-20T22:39:38+08:00'
@@ -127,6 +127,8 @@ sources:
   path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar
 - type: official
   path: https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/memory.adoc
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java
 tags:
   - gpu
   - rendering
@@ -181,14 +183,16 @@ GPU 性能取决于工作负载、提交方式、同步和带宽；图形 API �
 | 内容类型 | 主要 Producer | GPU 工作出现在哪里 | SurfaceFlinger 看到什么 |
 | --- | --- | --- | --- |
 | 普通 View / Compose | App HWUI RenderThread | SkiaOpenGL 或 SkiaVulkan | 宿主 App Window Layer |
-| TextureView 视频/相机 | 外部 Producer + 宿主 HWUI | 外部生产一次，HWUI 再采样一次 | 通常只有宿主 App Window Layer |
-| SurfaceView 视频/游戏 | codec、Camera、GLES/Vulkan engine | 独立 Producer | 独立的 child Surface Layer |
+| TextureView 视频/相机 | 外部 Producer + 宿主 HWUI | 宿主 HWUI 用 GPU 采样外部 buffer；外部生产是否用 GPU 取决于 Producer | 通常只有宿主 App Window Layer |
+| SurfaceView 视频/游戏 | codec、Camera、GLES/Vulkan engine | 是否使用 GPU 取决于 Producer；不经宿主 HWUI 采样 | 独立的 child Surface Layer |
 | SurfaceFlinger CLIENT composition | RenderEngine | SurfaceFlinger 进程的 GPU 工作 | client target 交给 HWC |
 | HWC DEVICE composition | Composer/display hardware | 不一定使用通用 GPU | 独立 Layer 由硬件平面合成 |
 
 看到 GPU busy（GPU 处于工作状态的时间比例） 升高时，我们第一步先弄清这份 workload（提交给 GPU 的工作负载） 属于谁：App、另一个进程，还是 SurfaceFlinger。页面里只要有 `SurfaceView`、`TextureView`、游戏引擎或视频，宿主 `RenderThread` 就代表不了全部内容，表中每行给出的 Producer 才是归属线索。
 
 表中的 child Surface 挂在宿主窗口层级之下，拥有独立的 buffer 提交路径，但仍由 SurfaceFlinger 与宿主窗口一起组织显示。
+
+`TextureView` 的外部 buffer 可以来自 MediaCodec 或 Camera，内容生产与宿主 HWUI 采样不能直接计成两次 GPU 渲染。排查时分别跟踪外部 Producer 的输出 buffer 与 fence，以及宿主 RenderThread 的 GPU 提交。这里讨论的是硬件加速窗口；[`TextureView` 源码](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java) 明确要求窗口开启硬件加速。
 
 ### Android GPU 渲染管线：从 API 到颜色附件
 
@@ -664,7 +668,11 @@ GPU 数据不是由 SurfaceFlinger 统一产生的。采集前我们先查询目
 
 硬件 counter 必须连同 descriptor 保存——descriptor 会声明 counter id、名称、单位、可选峰值、group 以及 counter block capacity；一次请求超过 block capacity，producer 可能拒绝、只启用子集，或者 multiplex（把多组 counter 分时轮换采集）。`counter_period_ns` 越短采样扰动越大；`fix_gpu_clock` 会固定 GPU 时钟、改变正常 DVFS 条件，只适合受控 A/B。
 
-Trace Processor 在解析 `GpuCounterEvent` 硬件采样时，会把“向前回看型”的值回填到前一个样本区间：当前事件报告的是刚刚结束的区间。`power/gpu_frequency` 等状态变化事件通常从事件时刻向后保持，不能套用同一回填规则。计算平均频率、带宽或利用率，要先确认数据源的区间语义，再按有效 duration 加权；不能直接平均所有 `counter.value`。`gpu_slice` 也不只包含 render stage，还可能包含 Vulkan event 与 GPU log；下面的查询按 track type 过滤出 GPU render stage：
+Trace Processor 在解析 `GpuCounterEvent` 硬件采样时，会把“向前回看型”的值回填到前一个样本区间：当前事件报告的是刚刚结束的区间。`power/gpu_frequency` 等状态变化事件通常从事件时刻向后保持，不能套用同一回填规则。计算平均频率、带宽或利用率，要先确认数据源的区间语义，再按有效 duration 加权；不能直接平均所有 `counter.value`。
+
+`GpuCounterEvent` 还有尾样本边界：解析器先在当前时间戳写入 0，下一次采样才会回填这个位置。没有后续样本时，最后一行仍是占位 0，不能当成已观测到的 GPU 空闲区间。可用 `LEAD(ts) OVER (PARTITION BY track_id ORDER BY ts)` 取得后继时间，只对 `next_ts IS NOT NULL` 的 `[ts, next_ts)` 区间按分析窗口裁剪并加权；不要用 `value != 0` 排除尾行，否则会丢失有效的零值样本。这个尾行处理只适用于上述向前回看型硬件采样，不用于频率和内存等从事件时刻向后保持的状态数据。
+
+`gpu_slice` 也不只包含 render stage，还可能包含 Vulkan event 与 GPU log；下面的查询按 track type 过滤出 GPU render stage：
 
 ```sql
 SELECT
@@ -916,7 +924,9 @@ Android 从 API 1 就有 OpenGL ES 1.x；OpenGL ES 2.0 从 API 8 开始提供可
 | 3.1 | API 21 | compute shader（计算着色器）、SSBO（Shader Storage Buffer Object，可读写的大块 shader buffer）等 |
 | 3.2 | API 24 | geometry/tessellation（几何/曲面细分着色阶段）等进入 ES 标准 |
 
-API 起点只说明平台何时引入；设备具体实现到哪个版本，应用仍要通过 manifest 的 `uses-feature`（声明所需硬件/软件能力）、EGL 配置和运行时查询来约束能力。Android 17 CDD（Compatibility Definition Document，兼容性定义文档）7.1.4.1 对带屏幕和视频输出的设备要求支持 GLES 1.1、2.0、3.0 和 3.1，并建议支持 3.2；这是 Android 17 兼容设备的要求，倒推到旧系统不成立。
+API 起点只说明平台何时引入；设备具体实现到哪个版本，应用仍要通过 manifest 的 `uses-feature`（声明所需硬件/软件能力）、EGL 配置和运行时查询来约束能力。Android 17 CDD（Compatibility Definition Document，兼容性定义文档）7.1.4.1 对带屏幕或视频输出的设备要求支持 GLES 1.1、2.0、3.0 和 3.1，并建议支持 3.2；这是 Android 17 兼容设备的要求，倒推到旧系统不成立。
+
+Android 官方仍支持 OpenGL ES，但已不再积极开发其新特性；新的低层图形能力以 Vulkan 为主。这不表示 GLES 已被弃用或移除，已有项目仍可按性能、设备覆盖与维护成本决定是否迁移。
 
 GLES 的核心模型是 context 内的可变状态：`glBindTexture()`、`glUseProgram()` 和 blend/depth（混合/深度测试） 设置会改变后续 draw call 的解释方式；驱动要根据当前状态生成或选择底层命令，并处理应用看不到的缓存、资源驻留和同步。这个模型容易入门，也给驱动留下了较大的实现空间。
 
