@@ -21156,9 +21156,882 @@
       "before_count": 67,
       "before_all_images": 67,
       "sha256_before": "aeaf563c429152daae7f0b5f58b2d75ff402ab3082c67da013dcf1ac68e61097",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 20,
+      "decisions": [
+        {
+          "original_id": "ch13-03-01-sv-two-producers",
+          "title": "SurfaceView 页面中的两条生产线",
+          "decision": "remove",
+          "reason": "两路Producer汇入SF/HWC图与159-164保留原生文本简图逐路径重复，也由336-367保留原生时序par分支完整表达；166软件宿主及几何管理边界全文保留，不放第三个总链。",
+          "original_line": 168,
+          "heading": "### 为什么需要 SurfaceView"
+        },
+        {
+          "original_id": "ch13-03-02-sv-three-questions",
+          "title": "独立内容、宿主几何与合成策略分别判断",
+          "decision": "remove",
+          "reason": "内容/宿主几何/合成三列六卡逐项重述179完整段三问题和175-177收益条件，具体事务绑定和两套fence合图另保留，不再重复问题目录。",
+          "original_line": 181,
+          "heading": "### 为什么需要 SurfaceView"
+        },
+        {
+          "original_id": "ch13-03-03-sv-object-tree",
+          "title": "SurfaceView 的容器与像素内容层",
+          "decision": "merge",
+          "reason": "container与BLAST/background的结构树与4背景显隐AND条件合成同一实际对象图；202-207原生文本树保留，明确父子关系非Z，container不承载像素，背景非首帧证明。",
+          "original_line": 211,
+          "heading": "#### SurfaceView 的对象层次",
+          "replacement_id": "ed13-03-sv-hierarchy-and-background"
+        },
+        {
+          "original_id": "ch13-03-04-sv-background",
+          "title": "背景层显示需要同时满足的条件",
+          "decision": "merge",
+          "reason": "mSubLayer负/内容OPAQUE/背景启用且对象存在才show，接入3主要对象父子关系，不把条件依赖当结构边，保留背景只是辅助colorchild。",
+          "original_line": 218,
+          "heading": "#### SurfaceView 的对象层次",
+          "replacement_id": "ed13-03-sv-hierarchy-and-background"
+        },
+        {
+          "original_id": "ch13-03-05-sv-hole-punch",
+          "title": "透明洞让下方独立内容可见",
+          "decision": "merge",
+          "reason": "Zbelow宿主清透明洞→SF混合独立内容，与6redraw阶段非首帧、7compositionorder、8alpha对象合图；不复制视频进host。",
+          "original_line": 236,
+          "heading": "#### 默认 Z-below 与透明洞",
+          "replacement_id": "ed13-03-sv-z-alpha-and-hole-punch"
+        },
+        {
+          "original_id": "ch13-03-06-sv-redraw-first-frame",
+          "title": "重绘回调完成不等于首帧已显示",
+          "decision": "merge",
+          "reason": "mDrawFinished只代表redrawcallbacks结束，允许后续draw/dispatchDraw清洞，与5/7/8实际Z和alpha路径合图；首queue/acquire/present独立核对。",
+          "original_line": 243,
+          "heading": "#### 默认 Z-below 与透明洞",
+          "replacement_id": "ed13-03-sv-z-alpha-and-hole-punch"
+        },
+        {
+          "original_id": "ch13-03-07-sv-composition-order",
+          "title": "composition order 决定相对宿主的位置",
+          "decision": "merge",
+          "reason": "order负在host下/非负在上、peer大在上同值未定义，与5/6打洞条件和8alpha对象合图；API36flag/旧接口源码注解与SDK公开状态的原文完整保留。",
+          "original_line": 250,
+          "heading": "#### 默认 Z-below 与透明洞",
+          "replacement_id": "ed13-03-sv-z-alpha-and-hole-punch"
+        },
+        {
+          "original_id": "ch13-03-08-sv-alpha-boundary",
+          "title": "alpha 在上方内容与下方透明洞的不同作用",
+          "decision": "merge",
+          "reason": "API34alpha在Zabove作用Surface内容、Zbelow作用hole混合且不改bufferalpha，与5/6/7同图显示两个不同作用位置，重叠SV非普通View混合。",
+          "original_line": 270,
+          "heading": "#### alpha、HDR、composition order 与 blur",
+          "replacement_id": "ed13-03-sv-z-alpha-and-hole-punch"
+        },
+        {
+          "original_id": "ch13-03-09-sv-lifecycle",
+          "title": "SurfaceHolder 有效期约束 Producer",
+          "decision": "keep",
+          "reason": "created/changed生产到destroyed请求停止并等idle再返回的具体所有权控制流，强调异步stop不足以满足回调返回后不可访问，区别于首帧显示。",
+          "original_line": 279,
+          "heading": "#### 生命周期是 Producer 的硬边界"
+        },
+        {
+          "original_id": "ch13-03-10-sv-buffer-to-display",
+          "title": "主体内容经 BLAST 进入系统合成",
+          "decision": "remove",
+          "reason": "dequeue→写/queue→BLAST→SF→HWC→present/release六框逐项压缩326-332七步列表，并与保留SV原生时序重复；CLIENTrelease可合并GPU条件等细节正文更完整。",
+          "original_line": 321,
+          "heading": "#### 从 Producer 到显示设备"
+        },
+        {
+          "original_id": "ch13-03-11-sv-clock-pacing",
+          "title": "内容时钟与宿主时钟可以不同",
+          "decision": "remove",
+          "reason": "媒体/Camera/引擎三列时钟与限制卡逐项摘录373-375两段；保留旧buffer符合节奏非自动丢帧的完整判断及原生par独立更新，不再画Producer目录。",
+          "original_line": 377,
+          "heading": "#### 内容节奏的时钟来源"
+        },
+        {
+          "original_id": "ch13-03-12-sv-transaction-binding",
+          "title": "几何可绑定宿主帧或主体内容帧",
+          "decision": "merge",
+          "reason": "RenderNode按hostframe merge、UI applyTransactionOnDraw绑hostdraw、公开applyTransactionToFrame绑SV内容三路径，与13内容生产时机和BLAST已acquire/pending分支合图。",
+          "original_line": 386,
+          "heading": "#### 几何 transaction 与内容 transaction",
+          "replacement_id": "ed13-03-sv-host-versus-content-binding"
+        },
+        {
+          "original_id": "ch13-03-13-sv-next-content-conditions",
+          "title": "内容帧事务的三个时机分支",
+          "decision": "merge",
+          "reason": "内容帧绑定调用前停产才明确下一帧、持续生产未定义、无新内容可不apply，与12两类host绑定及BLAST已acquire可直接apply/否则pending合图；不同队列帧号不共命名空间。",
+          "original_line": 397,
+          "heading": "#### 几何 transaction 与内容 transaction",
+          "replacement_id": "ed13-03-sv-host-versus-content-binding"
+        },
+        {
+          "original_id": "ch13-03-14-sv-fence-directions",
+          "title": "acquire、release 与 present 的对象不同",
+          "decision": "merge",
+          "reason": "SV acquire读取、旧buffer release复用、Displaypresent不同边界纳入39/49/59/63两队列反馈图；SVrelease可合并CLIENTGPU依赖，TV输入以具体新旧Consumer分支核实，不能混淆。",
+          "original_line": 408,
+          "heading": "#### fence：fd、依赖与所有权",
+          "replacement_id": "ed13-03-tv-two-queues-fences-and-backpressure"
+        },
+        {
+          "original_id": "ch13-03-15-sv-slot-counts",
+          "title": "槽表容量、分配与实际积压分开数",
+          "decision": "remove",
+          "reason": "槽表容量/实际分配/运行积压三列六卡逐项重述423完整段；NUMSLOTS初始默认禁扩、Consumer允许后的扩展、数量口径不同等边界原文完整保留，不再图形化字段清单。",
+          "original_line": 425,
+          "heading": "### BufferQueue 行为与 Triple Buffering"
+        },
+        {
+          "original_id": "ch13-03-16-sv-ownership-cycle",
+          "title": "普通队列的所有权与 fence 边界",
+          "decision": "keep",
+          "reason": "普通非sharedbuffer所有权周转环在每个状态补写前release/acquire和归FREE非signal边界，比434两行文本环多出同步位置；cancel/drop/attach等省略在原文说明。",
+          "original_line": 441,
+          "heading": "#### 状态与背压"
+        },
+        {
+          "original_id": "ch13-03-17-sv-dequeue-causes",
+          "title": "长 dequeue 不等于只有 release fence 慢",
+          "decision": "keep",
+          "reason": "目标dequeue先定Surface队列，再分候选/数量、分配resize、返回后写前fence的实际等待入口，避免把长dequeue都算nativefenceCPUwait或增深度；与双队列归因图层次不同。",
+          "original_line": 448,
+          "heading": "#### 状态与背压"
+        },
+        {
+          "original_id": "ch13-03-18-sv-independent-shared",
+          "title": "两套队列独立，但资源与显示相关",
+          "decision": "remove",
+          "reason": "host/主体独立背压与共享资源三列六卡逐项重述463-472三段，内容所有权独立/资源不隔离原文保留，SV原生par和后文TV反馈回路有实际对象关系。",
+          "original_line": 467,
+          "heading": "#### 两套队列独立，但仍共享设备资源"
+        },
+        {
+          "original_id": "ch13-03-19-sv-vs-tv-topology",
+          "title": "SurfaceView 独立输出与 TextureView 宿主采样",
+          "decision": "merge",
+          "reason": "SV独立SFchild与TV应用内Consumer→hostbuffer两种拓扑，合33实际id34绘制引用/像素分流及34实际id33两次生产，以7节点画真实流向而非三列分类卡。",
+          "original_line": 490,
+          "heading": "### SurfaceView vs TextureView",
+          "replacement_id": "ed13-03-sv-tv-pixels-and-draw-records"
+        },
+        {
+          "original_id": "ch13-03-20-sv-choice",
+          "title": "选型前明确保护、变换与帧节奏需求",
+          "decision": "remove",
+          "reason": "独立保护/普通View变换/设备测量三分支逐项压缩512-516五步选型，后文51同义迁移图亦删除；更完整列表及实际拓扑合图保留。",
+          "original_line": 507,
+          "heading": "### SurfaceView vs TextureView"
+        },
+        {
+          "original_id": "ch13-03-21-sv-hwc-inputs",
+          "title": "独立 layer 的硬件合成机会由整屏条件决定",
+          "decision": "remove",
+          "reason": "buffer属性/几何/同屏资源汇入HWC方案四框重排522-528五项清单和YUV/控制条边界；原文列更完整条件，23保留真正validate/present分支。",
+          "original_line": 530,
+          "heading": "### HWC Overlay 与合成策略"
+        },
+        {
+          "original_id": "ch13-03-22-sv-client-protected",
+          "title": "普通 CLIENT 回退与保护链路的不同边界",
+          "decision": "remove",
+          "reason": "DEVICE/CLIENT/protected三列六卡逐项重述535完整段，SV原生sequence含必要CLIENT，707保护各字段完整保留；不重复普通非保护fallback不能规避DRM。",
+          "original_line": 537,
+          "heading": "### HWC Overlay 与合成策略"
+        },
+        {
+          "original_id": "ch13-03-23-sv-hwc-branches",
+          "title": "HWC 快速 present 与 validated 分支",
+          "decision": "keep",
+          "reason": "组合present成功保存fence不再present、组合validated、独立validate三种具体执行结果，原生时序只有更粗alt，保留三个入口与后续accept/client/present差异。",
+          "original_line": 544,
+          "heading": "### HWC Overlay 与合成策略"
+        },
+        {
+          "original_id": "ch13-03-24-sv-dump-identity",
+          "title": "从完整 dump 识别内容层再看合成类型",
+          "decision": "remove",
+          "reason": "设备dump→pull→按层级属性识别→读type四框逐项重画553两条命令、558引用解释与560识别段，完整命令原封保留，不为两命令再放通用操作图。",
+          "original_line": 562,
+          "heading": "#### 怎样验证 composition type"
+        },
+        {
+          "original_id": "ch13-03-25-sv-trace-identity",
+          "title": "trace 身份表把四类对象对应起来",
+          "decision": "remove",
+          "reason": "host/container/content三列身份与取证卡逐项压缩579-584四行身份表和586命名边界，表还明确background/embedded；对象图与原表保留，不再一表一图。",
+          "original_line": 588,
+          "heading": "#### 建立 layer 身份表"
+        },
+        {
+          "original_id": "ch13-03-26-sv-present-inventory",
+          "title": "一次异常 present 使用了哪些状态",
+          "decision": "remove",
+          "reason": "H/G/I三输入到目标present四框与29resize同结构，611完整句已列五项对应证据；保留更具体resize三依赖29，不在同篇前后各画相同H/G/I汇合。",
+          "original_line": 613,
+          "heading": "#### 分开观察宿主组和内容组"
+        },
+        {
+          "original_id": "ch13-03-27-sv-fence-wait-proof",
+          "title": "看到 fence wait 后沿对象与创建者反查",
+          "decision": "remove",
+          "reason": "等待者→fence类型→创建者→deadline四框逐项重排633-637五步清单，639 acquire慢与release慢归因段、14等合图的对象和方向完整保留，不再画清单序列。",
+          "original_line": 641,
+          "heading": "#### fence wait 的读法"
+        },
+        {
+          "original_id": "ch13-03-28-sv-symptom-split",
+          "title": "控制层卡与主体卡需要不同证据",
+          "decision": "remove",
+          "reason": "控制卡视频动/视频卡按钮动/共同迟到三列诊断卡与620-627证据表及650完整段重叠，原表更完整且29保留resize对象依赖，删除症状摘要。",
+          "original_line": 652,
+          "heading": "#### 主线程卡住，内容仍动"
+        },
+        {
+          "original_id": "ch13-03-29-sv-resize-sync",
+          "title": "resize 需要对齐三项内容",
+          "decision": "keep",
+          "reason": "resize时host透明洞H、container几何G、主体新尺寸I三路独立准备汇入同一目标输出，具体展示三对象需对齐而非同队列帧号自动一致，区别于正常总链与绑定API选择。",
+          "original_line": 671,
+          "heading": "#### resize、滚动和转场错位"
+        },
+        {
+          "original_id": "ch13-03-30-sv-first-visible",
+          "title": "从 Surface 创建到首次可见的不同门槛",
+          "decision": "remove",
+          "reason": "创建→callback/connect→首queue→采纳→读前fence/present五框逐项压缩680-688七行原生文本链；保留原生链和690竞态说明，6首回调不等显示的边界已进入Z合图。",
+          "original_line": 692,
+          "heading": "#### 首帧延迟和生命周期竞态"
+        },
+        {
+          "original_id": "ch13-03-31-sv-protection",
+          "title": "secure layer 与 protected buffer 分开核对",
+          "decision": "remove",
+          "reason": "SECUREflag/protectedusage/display三列六卡逐项重述707单完整段和535保护边界，setSecure不替分配/DRM与内外屏核对全部原文保留，删第二处保护字段摘要。",
+          "original_line": 709,
+          "heading": "#### protected 内容黑屏"
+        },
+        {
+          "original_id": "ch13-03-32-sv-input-latency",
+          "title": "独立 Surface 不绕过应用输入路径",
+          "decision": "remove",
+          "reason": "输入投递→主线程交接→内容生产→SFpresent→光学五框逐项重排718-723四项输入链和pacing说明，完整原文包含视频/Camera不因触摸改节奏，不再画一般端到端链。",
+          "original_line": 725,
+          "heading": "#### 输入延迟"
+        },
+        {
+          "original_id": "ch13-03-34-tv-pixel-reference",
+          "title": "DisplayList 记录引用，像素在 GPU 采样时汇入宿主",
+          "decision": "merge",
+          "reason": "实际id34-tv-pixel-reference：UI DisplayList只记录TextureLayer引用，输入T独立，GPU采样生成H，与19拓扑和34实际id33两次生产合图；RT组织不当CPU像素拷贝。",
+          "original_line": 772,
+          "heading": "## TextureView 的 SurfaceTexture 与宿主合成",
+          "replacement_id": "ed13-03-sv-tv-pixels-and-draw-records"
+        },
+        {
+          "original_id": "ch13-03-33-tv-two-productions",
+          "title": "TextureView 的输入与宿主两次生产",
+          "decision": "merge",
+          "reason": "实际id33-tv-two-productions：外部先生产T、宿主再生产H，与19两种Consumer拓扑和33实际id34记录/像素分开合图；两次生产不等固定两帧延迟。",
+          "original_line": 790,
+          "heading": "### 为什么要理解 TextureView 的链路",
+          "replacement_id": "ed13-03-sv-tv-pixels-and-draw-records"
+        },
+        {
+          "original_id": "ch13-03-35-tv-hardware-required",
+          "title": "TextureView 黑屏先确认硬件加速前提",
+          "decision": "remove",
+          "reason": "Producer正常仍黑屏→硬件加速/生命周期/连接三分支逐项重述806-808两完整段，条件更完整保留，具体控制流和生命周期图另保留，不重复检查清单。",
+          "original_line": 810,
+          "heading": "#### 硬件加速是前提"
+        },
+        {
+          "original_id": "ch13-03-36-tv-notification-to-rt",
+          "title": "UI 送更新，RenderThread 按标志取输入",
+          "decision": "merge",
+          "reason": "ViewRoothandler标更新→UI applyUpdate/push→RTpending→按ownership/flag取输入→GPU与38实际id37updatedcallback范围、52内部handler合一；公共updateTexImage非此固定入口。",
+          "original_line": 837,
+          "heading": "#### 第二阶段：TextureView 与宿主 HWUI",
+          "replacement_id": "ed13-03-tv-ui-request-and-rt-consumption"
+        },
+        {
+          "original_id": "ch13-03-38-tv-host-output",
+          "title": "宿主 queue 可以先于 GPU 完成",
+          "decision": "remove",
+          "reason": "实际id38-tv-host-output四框逐项重述844-851两段和855-887保留TV原生时序后半，宿主queue可先于GPU、SF读前fence及无独立输入layer原文完整保留，删宿主总链副本。",
+          "original_line": 846,
+          "heading": "#### 第三阶段：宿主 BLAST、SurfaceFlinger 与 HWC"
+        },
+        {
+          "original_id": "ch13-03-37-tv-updated-not-present",
+          "title": "onSurfaceTextureUpdated 只证明 UI 提交了更新",
+          "decision": "merge",
+          "reason": "实际id37-tv-updated-not-present：frameavailable与UIupdated不证明RTacquire/GPU/present，接入36具体UI→RT交接与52handler，不在时序图后再放三个证据卡。",
+          "original_line": 891,
+          "heading": "#### 第三阶段：宿主 BLAST、SurfaceFlinger 与 HWC",
+          "replacement_id": "ed13-03-tv-ui-request-and-rt-consumption"
+        },
+        {
+          "original_id": "ch13-03-39-tv-queue-ownership",
+          "title": "两套队列的 frame、slot 与 fence 不共享",
+          "decision": "merge",
+          "reason": "T输入与H宿主两套frame/slot/fence和hostBufferTX范围，接入14/49同步方向及59/63等待/背压，用两个实际回收反馈环一次解释。",
+          "original_line": 914,
+          "heading": "#### 两套 Producer/Consumer",
+          "replacement_id": "ed13-03-tv-two-queues-fences-and-backpressure"
+        },
+        {
+          "original_id": "ch13-03-40-tv-object-roles",
+          "title": "TextureLayer 与系统 layer 不是同一对象",
+          "decision": "remove",
+          "reason": "TextureView→ST→TextureLayer→updater→host五框逐项重排921-925五项职责清单，36合图已有真实调用/数据交接，927HWUIlayer非SFlayer完整保留，不再画名词目录。",
+          "original_line": 929,
+          "heading": "#### TextureView 链路的对象分工"
+        },
+        {
+          "original_id": "ch13-03-41-tv-latest-loop",
+          "title": "取最新的循环与停止条件",
+          "decision": "merge",
+          "reason": "ASurfaceTexture内部可追新、未signal/outQueueEmpty保护停止、暂空旧current或错误空三类返回，与65预览可跳中间帧/逐帧需明确协议合图；不保证CPU已等GPU或返回最新。",
+          "original_line": 940,
+          "heading": "#### 最新帧选择",
+          "replacement_id": "ed13-03-tv-latest-loop-and-exit"
+        },
+        {
+          "original_id": "ch13-03-42-tv-slot-identity",
+          "title": "当前构建分支决定输入 image slot 的含义",
+          "decision": "keep",
+          "reason": "wb_surfacetexture选择LegacyBQslot索引或新GraphicBuffer映射imagecache两套不同编号，实际buffer/frame/timestamp再关联host，不能用整数相等配对；与取帧算法不同。",
+          "original_line": 947,
+          "heading": "#### 最新帧选择"
+        },
+        {
+          "original_id": "ch13-03-43-tv-gl-vulkan",
+          "title": "GL 与 Vulkan 都要导入输入并遵守同步",
+          "decision": "keep",
+          "reason": "同一AHardwareBuffer/SkImage输入在SkiaGL/EglManager与SkiaVulkan/VulkanManager的wait/release与ownership分支，区分后端创建同步和1094新旧Consumer实际传递，非固定OES或CPUcopy。",
+          "original_line": 972,
+          "heading": "#### image import、GL 与 Vulkan"
+        },
+        {
+          "original_id": "ch13-03-44-tv-lifecycle-ownership",
+          "title": "destroyed 返回值决定谁释放 SurfaceTexture",
+          "decision": "keep",
+          "reason": "Surface包装应用自建自释放、destroyedtrue由TV释放ST、false应用保留并最终自管release的三种所有权范围，false不强制立即销毁，区别于SurfaceHolder生命周期。",
+          "original_line": 1025,
+          "heading": "#### 生命周期与所有权"
+        },
+        {
+          "original_id": "ch13-03-45-tv-replace",
+          "title": "替换 SurfaceTexture 不补发旧新生命周期回调",
+          "decision": "keep",
+          "reason": "setSurfaceTexture替换前停旧Producer并detach新GLcontext、立即release旧ST且不补旧destroyed/新available回调的具体协议；代码示例没有该入口，保留独立异常生命周期路径。",
+          "original_line": 1032,
+          "heading": "#### 生命周期与所有权"
+        },
+        {
+          "original_id": "ch13-03-46-tv-visibility",
+          "title": "不可见时移除通知，重新可见时恢复",
+          "decision": "keep",
+          "reason": "不可见移除内部listener、外部Producer仍queue、重新可见注册并updateLayerAndInvalidate的状态分支，区别于destroyed/替换；不把不可见当Producer已停或队列销毁。",
+          "original_line": 1039,
+          "heading": "#### 生命周期与所有权"
+        },
+        {
+          "original_id": "ch13-03-47-tv-gpu-costs",
+          "title": "采样成本分布在 import、依赖和宿主输出",
+          "decision": "remove",
+          "reason": "import依赖/采样混合/宿主输出三列六卡逐项压缩1050-1058七成本清单及实际内存解释；原文保留不每帧CPU上传/不固定翻倍等边界，删指标目录。",
+          "original_line": 1060,
+          "heading": "#### 采样与宿主 render pass"
+        },
+        {
+          "original_id": "ch13-03-48-tv-ui-rt-gate",
+          "title": "UI 提交与 RT 取帧共同决定本次输入",
+          "decision": "merge",
+          "reason": "UIupdater进入本次sync与RT实际选T两门槛及三轨依赖，接入53通知及时/无pending晚到/已有pending又queue三情形，保证listener不能在UI等RT时插入、Producer仍并发。",
+          "original_line": 1073,
+          "heading": "#### 宿主调度门槛",
+          "replacement_id": "ed13-03-tv-two-gates-and-coalescing"
+        },
+        {
+          "original_id": "ch13-03-49-tv-fence-scope",
+          "title": "输入、宿主和 Display 的同步边界",
+          "decision": "merge",
+          "reason": "T输入acquire/release、H宿主acquire/release、Displaypresent三作用域，接入14/39/59/63两套所有权和背压回路，明确Legacy nativefence传出与新NOFENCE实现需现场另核。",
+          "original_line": 1082,
+          "heading": "#### 两套同步与背压",
+          "replacement_id": "ed13-03-tv-two-queues-fences-and-backpressure"
+        },
+        {
+          "original_id": "ch13-03-50-tv-version-boundaries",
+          "title": "当前消费模型与历史版本变化分开核验",
+          "decision": "remove",
+          "reason": "API31消费模型/API33HDR/API35-17flag桥梁三列六卡逐项重排1100-1107六行版本表；表更全，55保留实际frame-rate桥接机制，不再画版本摘要。",
+          "original_line": 1109,
+          "heading": "#### Android 12—17 的版本边界"
+        },
+        {
+          "original_id": "ch13-03-51-tv-migration",
+          "title": "迁移组件前按需求与设备数据判断",
+          "decision": "remove",
+          "reason": "迁移前拓扑/变换/保护独立/测量三分支逐项压缩1142-1148五问和框架名边界，与20同义；更完整问题列表和19等实际像素拓扑合图保留。",
+          "original_line": 1150,
+          "heading": "### 链路级对比：SurfaceView vs TextureView"
+        },
+        {
+          "original_id": "ch13-03-52-tv-callback-chain",
+          "title": "frame available 通知通过宿主 handler 传播",
+          "decision": "merge",
+          "reason": "Producerqueue→ViewRoothandler→update/invalidate→UIupdater链与36完整HWUI消费及38实际id37updated范围合图，裸ST可自选handler与内部handler分开，避免第三次回调链。",
+          "original_line": 1169,
+          "heading": "### onFrameAvailable 回调模型",
+          "replacement_id": "ed13-03-tv-ui-request-and-rt-consumption"
+        },
+        {
+          "original_id": "ch13-03-53-tv-coalesced-notification",
+          "title": "通知与输入帧不是一对一关系",
+          "decision": "merge",
+          "reason": "早通知/晚且无pending/已有pending继续queue三情形接入48两个门槛与UI/Producer/RT三轨；frameavailable非逐帧保证，RT可能选比通知更晚输入也可旧/空。",
+          "original_line": 1187,
+          "heading": "#### invalidate 的合并",
+          "replacement_id": "ed13-03-tv-two-gates-and-coalescing"
+        },
+        {
+          "original_id": "ch13-03-54-tv-size-transform",
+          "title": "尺寸、内容变换与触摸布局分开",
+          "decision": "keep",
+          "reason": "默认buffer尺寸建议、contenttransform不改Viewlayout/hit、opaque不替输入生成alpha三类API作用域比较，帮助分开Producer输出与采样/触摸映射，区别于渲染主链。",
+          "original_line": 1198,
+          "heading": "#### 尺寸、opaque 与 transform"
+        },
+        {
+          "original_id": "ch13-03-55-tv-frame-rate-hint",
+          "title": "输入帧率请求经 flag 桥接到 View",
+          "decision": "keep",
+          "reason": "输入Producer帧率意图经toolkitSetFrameRateReadOnly注册条件和ViewRoothandler桥接requestedrate/compatibility，再由系统其他layer综合决策的具体提示链，非实际刷新率承诺。",
+          "original_line": 1207,
+          "heading": "#### frame-rate hint"
+        },
+        {
+          "original_id": "ch13-03-56-tv-trace-topology",
+          "title": "用多项证据确认 TextureView 宿主链路",
+          "decision": "remove",
+          "reason": "输入端点/应用HWUI/host三输入到证明拓扑四框逐项重排1218-1224五项组合证据及反例，真实拓扑合图和UIRT机制已保留，不再画取证目录。",
+          "original_line": 1226,
+          "heading": "#### 证明 TextureView 拓扑"
+        },
+        {
+          "original_id": "ch13-03-57-tv-trace-identities",
+          "title": "输入帧、更新对象与宿主帧的身份链",
+          "decision": "remove",
+          "reason": "外部input→Consumer→updater→host→Display五身份框逐项重排1233-1239五行对象时间表，表更全含字段/时刻且1241明确SF看不到inputslot；42slot编号图保留。",
+          "original_line": 1243,
+          "heading": "#### 建立对象与时间表"
+        },
+        {
+          "original_id": "ch13-03-58-tv-two-production-trace",
+          "title": "按两次生产对齐可见帧",
+          "decision": "remove",
+          "reason": "queue→callbackUI→RT选T→GPUH→hostTX→present六框逐项压缩1252-1262九步时间表，与保留TV原生完整时序和36/48等合图重复；fence停止追新细节进41合图。",
+          "original_line": 1264,
+          "heading": "#### 对齐两次生产"
+        },
+        {
+          "original_id": "ch13-03-59-tv-wait-location",
+          "title": "同名 dequeue 要先定位是哪套队列",
+          "decision": "merge",
+          "reason": "外部dequeue、RTinputwait/import、hostdequeue/SFhostacquire四种等待位置与14/39/49/63两个具体反馈环合图；原始1271-1276四行表仍保留，明确创建者不能互换。",
+          "original_line": 1280,
+          "heading": "#### 分开等待位置",
+          "replacement_id": "ed13-03-tv-two-queues-fences-and-backpressure"
+        },
+        {
+          "original_id": "ch13-03-60-tv-frametimeline-scope",
+          "title": "FrameTimeline 记录宿主，输入内容另行关联",
+          "decision": "remove",
+          "reason": "外部T/hostSurfaceFrame/DisplayFrame三列证据卡逐项重述1287和1294两完整段，实际token/expectedactual/无内部overlay边界原文及像素拓扑合图完整保留，不重复FrameTimeline范围卡。",
+          "original_line": 1289,
+          "heading": "#### FrameTimeline 与 HWC"
+        },
+        {
+          "original_id": "ch13-03-61-tv-old-frame-diagnosis",
+          "title": "queue 之后仍旧画面的检查门槛",
+          "decision": "remove",
+          "reason": "输入→listener/visibility→UI→RT→host五框逐项重画1300单段检查链，36/48两机制合图与2套队列native更具体，原文保留外部queue仅第一队列收到。",
+          "original_line": 1302,
+          "heading": "#### Producer 已 queue，画面仍旧"
+        },
+        {
+          "original_id": "ch13-03-62-tv-main-and-rt-delay",
+          "title": "主线程迟到与输入依赖迟到分开归因",
+          "decision": "remove",
+          "reason": "主线程/RTCPU/输入GPU三列六卡逐项压缩1309、1313两段，原文明确expecteddeadline和CPUvsGPUside依赖以及沿创建者查，双反馈环保留对象归因，不再画工作类型目录。",
+          "original_line": 1315,
+          "heading": "#### RenderThread 或输入 fence 慢"
+        },
+        {
+          "original_id": "ch13-03-63-tv-two-backpressures",
+          "title": "外部背压与宿主背压各有反馈回路",
+          "decision": "merge",
+          "reason": "旧T归还给外部、旧H归还给窗口两套背压与共同deadline，接入14/39/49/59两实际反馈回路，增数量不保证低时延、host正常不证明input正常。",
+          "original_line": 1328,
+          "heading": "#### 宿主窗口背压",
+          "replacement_id": "ed13-03-tv-two-queues-fences-and-backpressure"
+        },
+        {
+          "original_id": "ch13-03-64-tv-resource-leaks",
+          "title": "黑屏与泄漏先核对对象有效期和所有权",
+          "decision": "remove",
+          "reason": "黑屏旧帧资源→硬件visibility/生命周期owner/连接protected三分支逐项重述1339-1346两段，44/45/46具体所有权与状态路径保留，不再放总检查清单。",
+          "original_line": 1341,
+          "heading": "#### 黑屏、旧帧与生命周期泄漏"
+        },
+        {
+          "original_id": "ch13-03-65-tv-skipped-preview",
+          "title": "跳过中间输入可能是显示较新内容的策略",
+          "decision": "merge",
+          "reason": "高频输入可跳旧pending、非每帧保证/非队列坏、逐帧需ImageReader或自管协议，纳入41实际循环及停止条件，而不再放预览策略三列摘要。",
+          "original_line": 1352,
+          "heading": "#### 预览跳帧但交互延迟较低",
+          "replacement_id": "ed13-03-tv-latest-loop-and-exit"
+        },
+        {
+          "original_id": "ch13-03-66-tv-hdr-coordinates",
+          "title": "HDR 与几何映射沿同一内容链核对",
+          "decision": "remove",
+          "reason": "输入HDR/hostcolor/backend/几何映射三列六卡逐项重述1359单完整段，54已保留三个实际API作用域，HDRmetadata不证明显示结果等原文完整保留，删字段摘要。",
+          "original_line": 1361,
+          "heading": "#### HDR、折叠与坐标错位"
+        },
+        {
+          "original_id": "ch13-03-67-sv-tv-final-boundary",
+          "title": "用 Consumer 和最终 buffer 归属区分两条路径",
+          "decision": "remove",
+          "reason": "SV独立I/TV T到H/目标present三列小结卡逐项重述1402与1409两段，并重复19等拓扑合图及两套完整原生时序，删结尾最后一次主链摘要。",
+          "original_line": 1404,
+          "heading": "## 小结"
+        }
+      ],
+      "sha256_after": "d34b58e081c356a44b80f938b3cd0d0078d7ddf29bab8f7ce7ef9b1b7ef9d2eb",
+      "new_diagrams": [
+        {
+          "id": "ed13-03-sv-hierarchy-and-background",
+          "title": "SurfaceView 的内容与背景是 container 下不同 child",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-sv-hierarchy-and-background.svg",
+            "src/assets/diagrams/ch13/ed13-03-sv-hierarchy-and-background.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-sv-hierarchy-and-background",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-03-sv-object-tree",
+              "ch13-03-04-sv-background"
+            ],
+            "boundary": "按正文createBlastSurfaceControls主要对象，不将container当像素buffer。content与background均为containerchild；原生文本树保留。background显示要求mSubLayer<0、内容OPAQUE且背景未被禁用，并有背景对象，否则hide；不是主体buffer或首帧证明。parentchild边表示结构，虚线仅表示对已有background可见性的配置依赖，不把Z顺序画成父子。嵌入SurfacePackage相关完整文字仍保留，图聚焦本节主要三对象。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-03-sv-z-alpha-and-hole-punch",
+          "title": "相对宿主的 Z 决定透明洞与 alpha 的作用位置",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-sv-z-alpha-and-hole-punch.svg",
+            "src/assets/diagrams/ch13/ed13-03-sv-z-alpha-and-hole-punch.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-sv-z-alpha-and-hole-punch",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://developer.android.com/reference/android/view/SurfaceView"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-05-sv-hole-punch",
+              "ch13-03-06-sv-redraw-first-frame",
+              "ch13-03-07-sv-composition-order",
+              "ch13-03-08-sv-alpha-boundary"
+            ],
+            "boundary": "order<0在宿主下，非负在上；同级order大在上，相同值顺序未定义。API36首引/当前flag以及旧接口源码注解与公开SDK弃用状态区别由原文保留。Zbelow只有mDrawFinished且非above才draw/dispatchDraw清洞，mDrawFinished只说明redrawcallbacks结束，非首queue/latch/present；punchHole结合clip圆角alpha。Zabove无hosthole，宿主普通View盖不到上方独立内容，API34alpha作用Surface内容而Zbelow作用hole混合不改bufferalpha；下方SV重叠不等普通View逐层混合。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-03-sv-host-versus-content-binding",
+          "title": "事务先明确绑定宿主帧，还是 SurfaceView 内容帧",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-sv-host-versus-content-binding.svg",
+            "src/assets/diagrams/ch13/ed13-03-sv-host-versus-content-binding.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-sv-host-versus-content-binding",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://developer.android.com/reference/android/view/SurfaceView"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-12-sv-transaction-binding",
+              "ch13-03-13-sv-next-content-conditions"
+            ],
+            "boundary": "RenderNode位置回调用宿主frame number经ViewRootImpl.mergeWithNextTransaction合hostbuffer；部分UI状态经applyTransactionOnDraw绑下次hostdraw。这两者是framework路径。公开API34applyTransactionToFrame经SVBLASTmergeWithNextTransaction绑内容；调用前停渲染才明确调用后下一帧，持续生产哪帧未定义，无后续内容可能不apply。当前BLAST若目标已acquire可直接apply，否则保存pending。各队列frame number不共命名空间，不代Producer生成或保证新尺寸内容，非每次固定等dequeuequeue。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-03-sv-tv-pixels-and-draw-records",
+          "title": "SurfaceView 独立送显，TextureView 把输入采样进宿主",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-sv-tv-pixels-and-draw-records.svg",
+            "src/assets/diagrams/ch13/ed13-03-sv-tv-pixels-and-draw-records.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-sv-tv-pixels-and-draw-records",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-19-sv-vs-tv-topology",
+              "ch13-03-34-tv-pixel-reference",
+              "ch13-03-33-tv-two-productions"
+            ],
+            "boundary": "现代硬件加速TextureView宿主为前提，软件Canvas不会绘TV内容。SV可有软件host但内容仍独立。RT是CPU组织/提交方，GPU执行纹理采样；DisplayList只存TextureLayer引用而非整帧视频像素。TV输入先成为hostH像素，SF无独立输入Tlayer；H本身可DEVICE或CLIENT但内部矩形不另有overlay。SV独立child给HWC评估机会不保证DEVICE、省电或固定时延。两路Producer可在应用或外部，图为两种可选拓扑非同一输入必须同时提交。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-03-tv-ui-request-and-rt-consumption",
+          "title": "UI 提交 updater，RenderThread 再按条件取得输入",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-tv-ui-request-and-rt-consumption.svg",
+            "src/assets/diagrams/ch13/ed13-03-tv-ui-request-and-rt-consumption.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-tv-ui-request-and-rt-consumption",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativedisplay/surfacetexture/surface_texture.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/SurfaceTexture.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-36-tv-notification-to-rt",
+              "ch13-03-37-tv-updated-not-present",
+              "ch13-03-52-tv-callback-chain"
+            ],
+            "boundary": "内部listener投mAttachInfo.mHandler，在ViewRoot线程串行updateLayer和invalidate；裸ST可自选handler。UI硬件Canvasdraw/applyUpdate经TextureLayerupdateSurfaceTexture/pushLayerUpdate把updater交RT；onSurfaceTextureUpdated在UIapplyUpdate之后，不证明RT已acquire或GPU完成显示。syncFrameState处理pending，DeferredLayerUpdaterapply仅初次取得ownership或mUpdateTexImage置位才ASurfaceTexturedequeue，可返回旧current或失败空；通知非每个queue独立vsync也非frame一一对应。公共updateTexImage是应用自管GLConsumer路径，非此HWUI固定入口。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-03-tv-two-gates-and-coalescing",
+          "title": "本次 updater 与实际取帧，分别决定 T 能否进入 H",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-tv-two-gates-and-coalescing.svg",
+            "src/assets/diagrams/ch13/ed13-03-tv-two-gates-and-coalescing.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-tv-two-gates-and-coalescing",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativedisplay/surfacetexture/surface_texture.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-48-tv-ui-rt-gate",
+              "ch13-03-53-tv-coalesced-notification"
+            ],
+            "boundary": "正常消息循环listener与traversal同ViewRoot线程，UI在等RT时不能插入新listener；外部Producer仍可并发queue。通知赶上applyUpdate且updater进入本次sync后，输入还须赶上实际取帧并受fence/停止条件限制。通知晚且无其他pending则后续hostdraw；若已有pendingRT可能选比通知更新输入。条长非测量，不保证固定一帧额外延迟或最新帧；acquire未signal可停止追新且读取依赖仍须满足。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-03-tv-latest-loop-and-exit",
+          "title": "取帧循环可以追新，也会因 fence、暂空或失败停止",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-tv-latest-loop-and-exit.svg",
+            "src/assets/diagrams/ch13/ed13-03-tv-latest-loop-and-exit.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-tv-latest-loop-and-exit",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativedisplay/surfacetexture/surface_texture.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativedisplay/surfacetexture/ImageConsumer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativedisplay/surfacetexture/LegacyImageConsumer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-41-tv-latest-loop",
+              "ch13-03-65-tv-skipped-preview"
+            ],
+            "boundary": "DeferredLayerUpdater仅按更新条件进入ASurfaceTexture内部循环，循环在后者而非调用方预判同步异步。可继续时更新current并再取；未signalfence设置outQueueEmpty保护提示，经后端fenceWait建依赖或等，成功后外层停止追新，不保证CPU已等GPU完成，也不是物理队列为空证明。暂空已有current可沿旧内容，取帧失败可返回空并终止。返回时不保证队列最新，跳过pending是预览策略非每帧处理协议，逐帧任务需ImageReaderMediaCodecbuffer或自管队列。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-03-tv-two-queues-fences-and-backpressure",
+          "title": "输入 T 与宿主 H 分别周转，present 属于 Display",
+          "article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-03-tv-two-queues-fences-and-backpressure.svg",
+            "src/assets/diagrams/ch13/ed13-03-tv-two-queues-fences-and-backpressure.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-03-tv-two-queues-fences-and-backpressure",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativedisplay/surfacetexture/LegacyImageConsumer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativedisplay/surfacetexture/SurfaceTexture.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-03-14-sv-fence-directions",
+              "ch13-03-39-tv-queue-ownership",
+              "ch13-03-49-tv-fence-scope",
+              "ch13-03-59-tv-wait-location",
+              "ch13-03-63-tv-two-backpressures"
+            ],
+            "boundary": "以下为TextureViewT/H两套队列示意，SV内容同样区分acquire/release且release可合并CLIENTGPU条件。T由外部Producer写、HWUI消费，H由hostGPU写、SFHWC消费，各自frame/slot/fence独立，hostBufferTX只度量host。输入acquire保护T读取，输入release保护旧T复用；H各有acquire/release，present为display反馈而非Tslot归还。输入归还回路只表达安全复用需求；固定r1Legacy把createReleaseFence生成nativefence加入旧slot，新SurfaceTexturereleaseBufferLocked传NOFENCE，不能仅凭createFence回调断言同路径已交Producer或静态断言竞态。GL/Vulkan后端建同步或GPU依赖不等CPU等待。回收旧T与当前Hpresent无固定顺序。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T14:05:17.676378+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 67,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a122/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a122/visual-review.json",
+      "retired_diagrams": [
+        "ch13-03-01-sv-two-producers",
+        "ch13-03-02-sv-three-questions",
+        "ch13-03-03-sv-object-tree",
+        "ch13-03-04-sv-background",
+        "ch13-03-05-sv-hole-punch",
+        "ch13-03-06-sv-redraw-first-frame",
+        "ch13-03-07-sv-composition-order",
+        "ch13-03-08-sv-alpha-boundary",
+        "ch13-03-10-sv-buffer-to-display",
+        "ch13-03-11-sv-clock-pacing",
+        "ch13-03-12-sv-transaction-binding",
+        "ch13-03-13-sv-next-content-conditions",
+        "ch13-03-14-sv-fence-directions",
+        "ch13-03-15-sv-slot-counts",
+        "ch13-03-18-sv-independent-shared",
+        "ch13-03-19-sv-vs-tv-topology",
+        "ch13-03-20-sv-choice",
+        "ch13-03-21-sv-hwc-inputs",
+        "ch13-03-22-sv-client-protected",
+        "ch13-03-24-sv-dump-identity",
+        "ch13-03-25-sv-trace-identity",
+        "ch13-03-26-sv-present-inventory",
+        "ch13-03-27-sv-fence-wait-proof",
+        "ch13-03-28-sv-symptom-split",
+        "ch13-03-30-sv-first-visible",
+        "ch13-03-31-sv-protection",
+        "ch13-03-32-sv-input-latency",
+        "ch13-03-33-tv-two-productions",
+        "ch13-03-34-tv-pixel-reference",
+        "ch13-03-35-tv-hardware-required",
+        "ch13-03-36-tv-notification-to-rt",
+        "ch13-03-37-tv-updated-not-present",
+        "ch13-03-38-tv-host-output",
+        "ch13-03-39-tv-queue-ownership",
+        "ch13-03-40-tv-object-roles",
+        "ch13-03-41-tv-latest-loop",
+        "ch13-03-47-tv-gpu-costs",
+        "ch13-03-48-tv-ui-rt-gate",
+        "ch13-03-49-tv-fence-scope",
+        "ch13-03-50-tv-version-boundaries",
+        "ch13-03-51-tv-migration",
+        "ch13-03-52-tv-callback-chain",
+        "ch13-03-53-tv-coalesced-notification",
+        "ch13-03-56-tv-trace-topology",
+        "ch13-03-57-tv-trace-identities",
+        "ch13-03-58-tv-two-production-trace",
+        "ch13-03-59-tv-wait-location",
+        "ch13-03-60-tv-frametimeline-scope",
+        "ch13-03-61-tv-old-frame-diagnosis",
+        "ch13-03-62-tv-main-and-rt-delay",
+        "ch13-03-63-tv-two-backpressures",
+        "ch13-03-64-tv-resource-leaks",
+        "ch13-03-65-tv-skipped-preview",
+        "ch13-03-66-tv-hdr-coordinates",
+        "ch13-03-67-sv-tv-final-boundary"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-122/retired-assets.json"
     },
     {
       "index": 123,
@@ -21167,9 +22040,796 @@
       "before_count": 58,
       "before_all_images": 58,
       "sha256_before": "7d5418383d665d1e967be24cf36598cffb4fade40248e0c638bd522608178914",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 21,
+      "decisions": [
+        {
+          "original_id": "ch13-04-01-four-boundaries",
+          "title": "GLES 一帧的四个独立边界",
+          "decision": "remove",
+          "reason": "API/GPU/queue-latch-present三列六卡逐项重述165开篇边界与320调用返回说明；保留完整原生时序及9/21/22/45统一异步fence图，不再开篇先放同义检查卡。",
+          "original_line": 167,
+          "heading": "# OpenGL ES、EGL 与 ANGLE"
+        },
+        {
+          "original_id": "ch13-04-02-native-angle",
+          "title": "厂商 GLES 与 ANGLE 的两条后端路径",
+          "decision": "keep",
+          "reason": "同一GLES/EGL分别经vendorGLES或ANGLE→Vulkan再入共同窗口显示的两条实际后端路径对照，读者可直接区分前端差异与共享后半段；两原生flow各详一条，不是这个并列比较。",
+          "original_line": 176,
+          "heading": "# OpenGL ES、EGL 与 ANGLE"
+        },
+        {
+          "original_id": "ch13-04-03-egl-objects",
+          "title": "EGL 三种对象与绑定范围",
+          "decision": "merge",
+          "reason": "EGLDisplay连接、Context状态命名空间、Surface默认draw/read目标，接入7current线程/部分对象共享/GPU可见性约束，合成创建绑定关系而非两处概念卡。",
+          "original_line": 191,
+          "heading": "#### EGL 对象与 Android Surface",
+          "replacement_id": "ed13-04-egl-objects-current-and-sharing"
+        },
+        {
+          "original_id": "ch13-04-04-window-output",
+          "title": "EGL window surface 到显示的交接",
+          "decision": "remove",
+          "reason": "EGLwindow→ANativeWindow→BLAST→SF四框与紧邻204-218保留原生结构图逐边重复；220GPU可未完而CPUqueue和GLES不直接调用SF完整保留。",
+          "original_line": 222,
+          "heading": "#### EGL 对象与 Android Surface"
+        },
+        {
+          "original_id": "ch13-04-05-carrier-targets",
+          "title": "GLES Producer 的三个输出去向",
+          "decision": "keep",
+          "reason": "独立SVchild、TextureView输入后宿主采样、纯离屏三种实际Consumer分支，限定成功window/pbufferswap及FBO/HardwareBuffer后续用途，防从GLES或swap名称直接猜独立显示Layer。",
+          "original_line": 238,
+          "heading": "#### GLES 的 Producer 角色与承载方式"
+        },
+        {
+          "original_id": "ch13-04-06-glthread-lifecycle",
+          "title": "GLThread 生命周期与渲染回调",
+          "decision": "merge",
+          "reason": "setRenderer启动GLThread、Surface/pause/size就绪、需要时EGL/Renderer回调到drawswap，与8Continuous/WhenDirty共用ready及请求来源合图；错误分支另保留17。",
+          "original_line": 255,
+          "heading": "#### GLSurfaceView 的 GLThread",
+          "replacement_id": "ed13-04-glthread-readiness-and-render-modes"
+        },
+        {
+          "original_id": "ch13-04-07-context-sharing",
+          "title": "共享 context 的线程与资源依赖",
+          "decision": "merge",
+          "reason": "部分GL对象共享、同context不可同时current两线程、资源可见性需GL/EGL同步，纳入3EGL对象创建绑定图；Java先后非GPU完成，FBO非EGLSurface边界完整保留。",
+          "original_line": 264,
+          "heading": "#### GLSurfaceView 的 GLThread",
+          "replacement_id": "ed13-04-egl-objects-current-and-sharing"
+        },
+        {
+          "original_id": "ch13-04-08-render-modes",
+          "title": "Continuous 与 When Dirty 的触发",
+          "decision": "merge",
+          "reason": "Continuous非宿主Choreographer逐帧直接唤醒、WhenDirty初始/恢复/resize等可置位，接入6GLThread生命周期就绪与正常drawswap回路，非无pacing或只等业务requestRender。",
+          "original_line": 282,
+          "heading": "#### Continuous 与 When Dirty",
+          "replacement_id": "ed13-04-glthread-readiness-and-render-modes"
+        },
+        {
+          "original_id": "ch13-04-09-async-frame",
+          "title": "queue 可以早于 GPU 写入完成",
+          "decision": "merge",
+          "reason": "CPUqueue可早于GPU写完的三轨与45ANGLEWSI同义三轨合并，并接21存储/fence分工和22新内容可读/旧buffer复用/Displaypresent各自边界。",
+          "original_line": 322,
+          "heading": "#### 一帧的 CPU、GPU 与显示边界",
+          "replacement_id": "ed13-04-async-buffer-read-reuse-and-present"
+        },
+        {
+          "original_id": "ch13-04-10-hwc-branches",
+          "title": "HWC 快 present 与 validated 分支",
+          "decision": "remove",
+          "reason": "组合调用/已present/validated三列六卡与保留291-318及939-968两套原生时序alt分支重合，641又明确state1无第二present；原文所有无CLIENT/配置条件保留，删第三个HWC摘要。",
+          "original_line": 327,
+          "heading": "#### 一帧的 CPU、GPU 与显示边界"
+        },
+        {
+          "original_id": "ch13-04-11-pacing-backpressure",
+          "title": "过量提交与 queue-stuffing",
+          "decision": "keep",
+          "reason": "过量生产早采样→在途排队→swap/dequeue背压→输入时延增加的具体因果回路，解释FPS稳定仍高时延；Swappy主动等待不自动无效卡顿由正文完整限定。",
+          "original_line": 337,
+          "heading": "#### frame pacing 与 queue-stuffing"
+        },
+        {
+          "original_id": "ch13-04-12-pacing-knobs",
+          "title": "目标帧率、提示与提交时机分工",
+          "decision": "remove",
+          "reason": "目标内容帧率/显示hint/提交与inflight三列六卡逐项压缩346-351四项控制分工，原清单和hint不自动改变采样/提交/深度的完整句保留，11保留实际积压回路。",
+          "original_line": 353,
+          "heading": "#### frame pacing 与 queue-stuffing"
+        },
+        {
+          "original_id": "ch13-04-13-egl-dispatch",
+          "title": "libEGL swap 分发的实际职责",
+          "decision": "merge",
+          "reason": "libEGL普通swap进damage、验证参数/metadata/选中后端分发，接14可叠加traceGpuCompletion及finishOnSwap职责，不能预设wrapper无同步或固定dequeue位置。",
+          "original_line": 364,
+          "heading": "#### libEGL 的分发职责",
+          "replacement_id": "ed13-04-egl-wrapper-dispatch-and-debug"
+        },
+        {
+          "original_id": "ch13-04-14-swap-debug",
+          "title": "swap wrapper 中的调试同步分支",
+          "decision": "merge",
+          "reason": "EGLfence完成线程与1x1glReadPixels强制完成两个可叠加配置，接入13验证/metadata/damage/后端核心分发；虚线表达可选职责非互斥或固定内部先后。",
+          "original_line": 375,
+          "heading": "#### libEGL 的分发职责",
+          "replacement_id": "ed13-04-egl-wrapper-dispatch-and-debug"
+        },
+        {
+          "original_id": "ch13-04-15-timing-scope",
+          "title": "Swappy 外层等待与 EGL 内层耗时",
+          "decision": "merge",
+          "reason": "外层Swappy/完整EGLAPI/内部swapImpl不同计时范围，接44WSI创建提交与present后unlockedCPUthrottle，四轨明确内部slice外仍在API返回前，墙钟非GPUbusy。",
+          "original_line": 409,
+          "heading": "#### swap 耗时的构成",
+          "replacement_id": "ed13-04-swap-wsi-and-measurement-scope"
+        },
+        {
+          "original_id": "ch13-04-16-damage-age",
+          "title": "buffer age 与本帧修复区域",
+          "decision": "keep",
+          "reason": "age0全重绘、ageN修复本帧和前N-1damage并集、swap提交damage不同口径三分支，避免把surface提示当自动修复backbuffer或硬件只读矩形；是具体复用算法。",
+          "original_line": 418,
+          "heading": "#### damage 与 buffer age"
+        },
+        {
+          "original_id": "ch13-04-17-swap-errors",
+          "title": "GLSurfaceView swap 错误的恢复分支",
+          "decision": "keep",
+          "reason": "swap成功下一轮、EGLCONTEXTLOST重建资源、其他错误标badSurface等生命周期变化三种实际恢复分支，区别于正常GLThread模式回路。",
+          "original_line": 435,
+          "heading": "#### 错误与生命周期"
+        },
+        {
+          "original_id": "ch13-04-18-slot-cycle",
+          "title": "普通 BufferQueue slot 状态环",
+          "decision": "keep",
+          "reason": "FREE/DEQUEUED/QUEUED/ACQUIRED周转补本地Consumer是BLAST、FREE可附未signalreleasefence、写入/提交依赖位置，原448文本环只列状态且HWC不持有本地BQslot，保留对象同步图。",
+          "original_line": 456,
+          "heading": "### Buffer 流转与 Triple Buffering"
+        },
+        {
+          "original_id": "ch13-04-19-buffer-budget",
+          "title": "buffer 配置、分配与排队延迟",
+          "decision": "remove",
+          "reason": "配置→实际分配→inflight三框重排444和463完整段，配置大非必分配/排满/延迟变长的边界全文保留，11真实积压因果与20错误/等待分支更具体。",
+          "original_line": 465,
+          "heading": "#### 为什么 buffer 数量影响吞吐与时延"
+        },
+        {
+          "original_id": "ch13-04-20-dequeue-outcomes",
+          "title": "dequeue 的错误、等待与 fence",
+          "decision": "keep",
+          "reason": "固定r1已queue过且maxdequeued超限INVALIDOP、无候选按配置等待超时WOULDBLOCK、成功返回slot仍看release三类结果；不是简单等待清单，区别于状态环。",
+          "original_line": 474,
+          "heading": "#### 诊断等待"
+        },
+        {
+          "original_id": "ch13-04-21-storage-sync",
+          "title": "共享存储与同步依赖的分工",
+          "decision": "merge",
+          "reason": "GraphicBuffer/dmabuf共享存储与fence只表达依赖不传像素，接9/45CPU-GPU异步及22 acquire/release/present对象，避免相邻两次定义fence卡。",
+          "original_line": 493,
+          "heading": "### Fence 机制",
+          "replacement_id": "ed13-04-async-buffer-read-reuse-and-present"
+        },
+        {
+          "original_id": "ch13-04-22-three-fences",
+          "title": "acquire、release 与 present fence",
+          "decision": "merge",
+          "reason": "acquire可读、release对应旧buffer复用/CLIENT可合GPU、present为Display非光学，接9/45异步三轨和21存储引用，FREE/通知不等signal。",
+          "original_line": 508,
+          "heading": "#### queue fence：新 Producer 何时写完",
+          "replacement_id": "ed13-04-async-buffer-read-reuse-and-present"
+        },
+        {
+          "original_id": "ch13-04-23-egl-sync-roles",
+          "title": "EGL CPU wait、server wait 与 fd 导出",
+          "decision": "remove",
+          "reason": "clientCPUwait/server后续命令wait/fd导出三列六卡逐项重述517-521三条API语义和flush/extension完整段；48/49合图及50具体实现另保留，公开接口支持与close契约不删。",
+          "original_line": 523,
+          "heading": "#### EGL sync 与平台 buffer fence"
+        },
+        {
+          "original_id": "ch13-04-24-kernel-boundary",
+          "title": "通用 buffer/fence 与厂商 GPU 调度",
+          "decision": "remove",
+          "reason": "dmabuf/syncfile-dmafence/vendor调度三列六卡逐项摘录532-536三源码文件及能力边界段，内核通用机制非GPU设备时长证明原文完整保留，21等合图保留真实存储/依赖分工。",
+          "original_line": 538,
+          "heading": "#### kernel 边界"
+        },
+        {
+          "original_id": "ch13-04-25-selection-proof",
+          "title": "ANGLE 偏好、设置与最终后端",
+          "decision": "merge",
+          "reason": "配置意图→setupflagproperties→loader→当前context证明的泛化链，与26同帧证据、37进程初始化重启、53maps/strings能力合到诊断处一次说明。",
+          "original_line": 553,
+          "heading": "### ANGLE 路径",
+          "replacement_id": "ed13-04-backend-request-load-context-and-frame"
+        },
+        {
+          "original_id": "ch13-04-26-backend-correlation",
+          "title": "ANGLE 与 Vulkan 的关联证据",
+          "decision": "merge",
+          "reason": "固定context线程/Surface、strings/maps、ANGLEevent与Vulkan同frame、输出关联，与25/37/53实际身份链合图；单独VkSubmit非ANGLE证明。",
+          "original_line": 570,
+          "heading": "#### 怎样确认 backend",
+          "replacement_id": "ed13-04-backend-request-load-context-and-frame"
+        },
+        {
+          "original_id": "ch13-04-27-cost-segments",
+          "title": "ANGLE 成本的四段归因",
+          "decision": "remove",
+          "reason": "GLES→ANGLE→vendorGPU→window四段流程逐项重排579-582四项成本列表，并与保留ANGLE原生架构重复；584设备A/B非固定快慢完整保留。",
+          "original_line": 586,
+          "heading": "#### 分段归因"
+        },
+        {
+          "original_id": "ch13-04-28-trace-identity",
+          "title": "从目标 Surface 反查 Producer",
+          "decision": "remove",
+          "reason": "layertree→Surface→makecurrent/swap→frame/fence四框直接重述595识别段及604-610保留原生四轨文本，固定线程名只线索及缺slice如何补证全部原文保留。",
+          "original_line": 597,
+          "heading": "#### 从目标 Surface 找 Producer"
+        },
+        {
+          "original_id": "ch13-04-29-frametimeline-scope",
+          "title": "SurfaceView FrameTimeline 的支持边界",
+          "decision": "remove",
+          "reason": "独立child→支持边界→补buffer/latch/present三框逐项重述627完整段，官方SurfaceView未支持和token不保证expectedactual的限制原文保留，不再画三标签摘要。",
+          "original_line": 629,
+          "heading": "#### FrameTimeline 与 composition"
+        },
+        {
+          "original_id": "ch13-04-30-composition-choice",
+          "title": "GLES 已渲染不代表使用 DEVICE 合成",
+          "decision": "remove",
+          "reason": "属性资源→SFHWC→DEVICE/CLIENT四框重排634单段，与两保留原生时序可选CLIENT分支重复；641快present无重复调用边界完整保留，删又一遍系统后半段。",
+          "original_line": 636,
+          "heading": "#### FrameTimeline 与 composition"
+        },
+        {
+          "original_id": "ch13-04-31-egl-integration",
+          "title": "GLSurfaceView 与自管 EGL 的责任",
+          "decision": "remove",
+          "reason": "GLSurfaceView/自管EGL/共同责任三列六卡逐项压缩645-654责任说明和647-652六项清单，原列表更全，错误/对象/生命周期具体图已保留，不再放选型摘要。",
+          "original_line": 656,
+          "heading": "#### GLSurfaceView 与原生 EGL"
+        },
+        {
+          "original_id": "ch13-04-32-version-gates",
+          "title": "版本能力与设备条件分别验证",
+          "decision": "remove",
+          "reason": "三个版本组与设备门槛六卡逐项压缩663-670六行版本表，ARRHAL/16KB/backend/GPUfilter各自范围完整保留，表更细，不画一表一图。",
+          "original_line": 672,
+          "heading": "#### Android 12—17 边界"
+        },
+        {
+          "original_id": "ch13-04-33-angle-layers",
+          "title": "ANGLE 前端、后端与厂商驱动",
+          "decision": "remove",
+          "reason": "App→ANGLEfrontend→Vkbackend→vendor/GPU/display四框逐项重画711-721九行原生文本链与741-763保留原生架构；减少GLES差异非消除vendor差异的两条原文保留。",
+          "original_line": 725,
+          "heading": "### ANGLE 解决什么问题"
+        },
+        {
+          "original_id": "ch13-04-34-dirty-state",
+          "title": "GLES dirty bits 到 Vulkan 工作",
+          "decision": "merge",
+          "reason": "GLES状态dirtybits→ContextVksyncState→pipeline/descriptor/barriers→commands，与43后续draw支付此前积累成本合图；不把每次状态修改等价立即vkCmd。",
+          "original_line": 767,
+          "heading": "#### 四层职责",
+          "replacement_id": "ed13-04-deferred-dirty-state-and-cpu-cost"
+        },
+        {
+          "original_id": "ch13-04-35-draw-not-one",
+          "title": "一个 GLES draw 可产生多种 Vulkan 命令",
+          "decision": "keep",
+          "reason": "glDraw普通primitive、GL_LINE_LOOP生成/复用索引转indexed、其他clear/转换/barrier三类实际命令形态，具体说明非1:1映射，不与一般dirty状态链相同。",
+          "original_line": 784,
+          "heading": "#### GLES draw 与 Vulkan 命令的对应关系"
+        },
+        {
+          "original_id": "ch13-04-36-shader-stages",
+          "title": "GLSL ES 翻译与厂商 pipeline 编译",
+          "decision": "keep",
+          "reason": "GLSL语义AST→TranslatorSPIRVblob→pipeline组合→vendorcompiler设备形式的两阶段编译链，保留SPIRV不等设备代码且不是每draw从文本重编，原生架构只有更粗shader模块。",
+          "original_line": 802,
+          "heading": "#### GLSL ES 到 SPIR-V"
+        },
+        {
+          "original_id": "ch13-04-37-process-setup",
+          "title": "驱动选路在应用进程初始化时发生",
+          "decision": "merge",
+          "reason": "改Settings只影响尚未setup进程、必须停止重启而非仅重建context，接入25/26/53配置装入当前context与目标帧的证据链。",
+          "original_line": 815,
+          "heading": "#### 决策发生在应用进程启动阶段",
+          "replacement_id": "ed13-04-backend-request-load-context-and-frame"
+        },
+        {
+          "original_id": "ch13-04-38-query-priority",
+          "title": "queryAngleChoice 的前半段优先级",
+          "decision": "remove",
+          "reason": "只画allangle/包级/allowlist前三优先级和余项汇总的四框，紧邻827-835七行表已给更完整顺序；39新旧setupflags及40metadata设备门槛具体分支保留，不留截短优先级副本。",
+          "original_line": 822,
+          "heading": "#### 决策发生在应用进程启动阶段"
+        },
+        {
+          "original_id": "ch13-04-39-setup-flags",
+          "title": "setupAngle 怎样使用查询结果",
+          "decision": "keep",
+          "reason": "useQueryAngleChoice新分支angle直接配置、native跳persist仍看ro/default先persist再ro、旧roangle可绕过query三种非直观控制逻辑；query结果native非最终vendor证明。",
+          "original_line": 839,
+          "heading": "#### 决策发生在应用进程启动阶段"
+        },
+        {
+          "original_id": "ch13-04-40-manifest-gates",
+          "title": "manifest 偏好的前置选择与设备条件",
+          "decision": "keep",
+          "reason": "更高优先级未返回才metadata、essential/lowRAM/vendorAPI202604门槛到请求ANGLE的具体分支，限制只在metadata而不撤销更早选择，game示例与metadata在game判断外原文保留。",
+          "original_line": 859,
+          "heading": "#### Android 17 manifest 偏好"
+        },
+        {
+          "original_id": "ch13-04-41-apk-system-loader",
+          "title": "ANGLE APK 设置与真正库加载",
+          "decision": "keep",
+          "reason": "APK配置成功直达loader、失败试system、Java配置非库装入以及已要求ANGLE装入失败可fatal的实际分支，区别于genericcontext证明链；debug包/system包与vendorupdatable namespace正文保留。",
+          "original_line": 877,
+          "heading": "#### ANGLE APK、system ANGLE 与 vendor updatable driver"
+        },
+        {
+          "original_id": "ch13-04-42-adb-restore",
+          "title": "包级 A/B 配置的可恢复流程",
+          "decision": "remove",
+          "reason": "记录配置→成对修改→重启测试→精确恢复四框逐项重述884-900完整流程及两段保留ADB命令，正文更详禁止覆盖其他条目/仅原不存在才delete，不为操作清单再加摘要图。",
+          "original_line": 902,
+          "heading": "#### 用 ADB 做包级 A/B"
+        },
+        {
+          "original_id": "ch13-04-43-deferred-cost",
+          "title": "轻量 draw 内可能支付此前的准备成本",
+          "decision": "merge",
+          "reason": "前序GL状态可延迟，后续draw/dispatch集中支付texture/framebuffer/shader/pipeline准备，与34dirtybits到Vulkan工作合图；CPU墙钟可含等待，不据draw名推GPU时长。",
+          "original_line": 917,
+          "heading": "#### Draw 阶段",
+          "replacement_id": "ed13-04-deferred-dirty-state-and-cpu-cost"
+        },
+        {
+          "original_id": "ch13-04-44-wsi-swap",
+          "title": "ANativeWindow 到 Vulkan WSI swap",
+          "decision": "merge",
+          "reason": "ANativeWindow创建VkSurface与WindowSurfaceVkswap/acquire/submit/present、可选解锁throttle，合15外层Swappy/完整EGL/内部slice四轨计时范围；acquire可前移延后无固定一行。",
+          "original_line": 934,
+          "heading": "#### Swap 阶段",
+          "replacement_id": "ed13-04-swap-wsi-and-measurement-scope"
+        },
+        {
+          "original_id": "ch13-04-45-wsi-async",
+          "title": "ANGLE WSI 提交与 GPU 完成的异步关系",
+          "decision": "merge",
+          "reason": "ANGLEWSIqueue可早于GPU完成三轨与9nativeGLES几乎同结构，接21/22buffer存储和fence职责统一，保留native/WSI不同内部实现不宣称相同调用栈。",
+          "original_line": 972,
+          "heading": "#### Swap 阶段",
+          "replacement_id": "ed13-04-async-buffer-read-reuse-and-present"
+        },
+        {
+          "original_id": "ch13-04-46-cache-layers",
+          "title": "三类缓存各减少哪一段工作",
+          "decision": "remove",
+          "reason": "programblob/pipelinemapping/vendordata三列六卡逐项重排983-989三行缓存表和feature/持久化限制段，表更精确；996-1003命中仍有工作列表完整保留，不重复缓存分类。",
+          "original_line": 991,
+          "heading": "### Shader、program 与 pipeline cache"
+        },
+        {
+          "original_id": "ch13-04-47-cold-warm",
+          "title": "cold / warm 对照需要记录缓存范围",
+          "decision": "remove",
+          "reason": "固定版本→cold→warm→比指标四框逐项重排1007-1011三步缓存试验和失效条件，原文更完整说明全新安装未必系统全冷，删除实验清单摘要。",
+          "original_line": 1013,
+          "heading": "### Shader、program 与 pipeline cache"
+        },
+        {
+          "original_id": "ch13-04-48-server-wait",
+          "title": "server wait 从 sync fd 建立 GPU 依赖",
+          "decision": "merge",
+          "reason": "serverWait先signal快速返、未完binarysem导dupSYNCFD临时payload、成功加入ALLCOMMANDS后续submit，与49原fd/副本成功转移及失败清理合图。",
+          "original_line": 1028,
+          "heading": "#### server wait：把 sync fd 导入临时 semaphore",
+          "replacement_id": "ed13-04-native-server-wait-import-and-fd-owner"
+        },
+        {
+          "original_id": "ch13-04-49-fd-ownership",
+          "title": "native fd 的原引用、复制与成功转移",
+          "decision": "merge",
+          "reason": "ANGLE原fd保留、dup副本、Vulkan仅成功import后接管，接48 signal判断/temporaryimport/后续GPU依赖，失败不能算已转移，不把CPU不阻塞当GPU依赖已完成。",
+          "original_line": 1049,
+          "heading": "#### server wait：把 sync fd 导入临时 semaphore",
+          "replacement_id": "ed13-04-native-server-wait-import-and-fd-owner"
+        },
+        {
+          "original_id": "ch13-04-50-client-wait",
+          "title": "client wait 解锁后仍阻塞调用线程",
+          "decision": "keep",
+          "reason": "signal/timeout快速返回或登记UnlockedTailCall解frontend锁、原线程poll、满足/超时/错到EGL返回的真实控制链，解锁非异步worker；小于1ms非零timeout提升到1ms在图注和原文保留。",
+          "original_line": 1060,
+          "heading": "#### client wait：调用线程仍在等待"
+        },
+        {
+          "original_id": "ch13-04-51-ab-controls",
+          "title": "native GLES 与 ANGLE A/B 的固定项",
+          "decision": "remove",
+          "reason": "实现身份/工作量/运行条件三列六卡逐项压缩1089-1095五项固定控制及指标段，原文完整区分CPUframe/present分位数和1%low定义，不再做测试清单图。",
+          "original_line": 1097,
+          "heading": "#### 公平对比的固定项"
+        },
+        {
+          "original_id": "ch13-04-52-optimize-order",
+          "title": "先修兼容与重复工作，再测整条路径",
+          "decision": "remove",
+          "reason": "规范→减少重复→cache同步→测完整帧四框逐项重排1104-1111六步优化和shader规范段，完整原文保留，35具体命令转换/34等因果图更有解释力。",
+          "original_line": 1113,
+          "heading": "#### 常见优化顺序"
+        },
+        {
+          "original_id": "ch13-04-53-detect-context",
+          "title": "当前 context 字符串与进程 maps",
+          "decision": "merge",
+          "reason": "配置意图/maps装入/contextstrings三类证据能力，与25/26/37同一后端证明链合图，查询在正确current线程，保存原始字符串build；maps权限/多模块与单Vk不能定后端。",
+          "original_line": 1156,
+          "heading": "#### 确认 ANGLE 的三类证据",
+          "replacement_id": "ed13-04-backend-request-load-context-and-frame"
+        },
+        {
+          "original_id": "ch13-04-54-regression",
+          "title": "ANGLE 与 native 的回归维度",
+          "decision": "remove",
+          "reason": "渲染/生命周期/发布环境三列六卡逐项重排1178-1186七项回归及私有扩展不可预设说明，原清单包含具体工具ABI16KB等更全，删概念分类摘要。",
+          "original_line": 1188,
+          "heading": "#### 回归范围"
+        },
+        {
+          "original_id": "ch13-04-55-trace-events",
+          "title": "ANGLE event 的名称与含义边界",
+          "decision": "remove",
+          "reason": "submit、WSI、clientwait/pipeline三列六卡逐项压缩1206-1217八行event表与revisioncategory限制，表含具体误读和工作线程，更全；50与计时合图保留实际范围。",
+          "original_line": 1219,
+          "heading": "#### backend 判定与 slice 解释"
+        },
+        {
+          "original_id": "ch13-04-56-sql-scope",
+          "title": "Perfetto SQL 的筛选与统计边界",
+          "decision": "remove",
+          "reason": "jointhreads/process→限process/name→dur>=0→回看库四框逐项重述1228-1252完整SQL和解释；原文明确CPU墙钟非busy/嵌套不可加/upid时间窗，代码查询不改，不再画SQL字段操作清单。",
+          "original_line": 1254,
+          "heading": "#### 用 SQL 限定目标进程"
+        },
+        {
+          "original_id": "ch13-04-57-wait-attribution",
+          "title": "按长段位置寻找相应依赖",
+          "decision": "remove",
+          "reason": "shaderpipeline/clientwait/acquirethrottle三列六卡逐项压缩1261-1270六行等待归因表和异步完整句；表覆盖syncState/GPUstage/显示后半更多情况，保留具体同步图，删重复诊断卡。",
+          "original_line": 1272,
+          "heading": "#### 按等待位置归因"
+        },
+        {
+          "original_id": "ch13-04-58-history-evidence",
+          "title": "历史 ANGLE 能力与当前配置分开",
+          "decision": "remove",
+          "reason": "历史10-14/15-16/17三列六卡逐项重述1283-1297四版本段落及vendorbuild说明，历史tag非设备已启用的边界完整保留，删结尾第三次版本摘要。",
+          "original_line": 1299,
+          "heading": "#### Android 17"
+        }
+      ],
+      "sha256_after": "897bad6fb9c8826df12bfdc9ff5c01b01e226f0babf644d1ba286c23d222aa44",
+      "new_diagrams": [
+        {
+          "id": "ed13-04-egl-objects-current-and-sharing",
+          "title": "EGL 对象、current 绑定与共享资源同步分开确认",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-egl-objects-current-and-sharing.svg",
+            "src/assets/diagrams/ch13/ed13-04-egl-objects-current-and-sharing.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-egl-objects-current-and-sharing",
+          "sources": [
+            "https://registry.khronos.org/EGL/sdk/docs/man/html/eglMakeCurrent.xhtml",
+            "https://registry.khronos.org/EGL/sdk/docs/man/html/eglSwapBuffers.xhtml",
+            "https://registry.khronos.org/EGL/extensions/KHR/EGL_KHR_fence_sync.txt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-03-egl-objects",
+              "ch13-04-07-context-sharing"
+            ],
+            "boundary": "EGLDisplay是实现连接句柄非Android物理DisplayID；Context保存GLES状态与对象命名空间，共享仅部分对象。Surface是current默认draw/read目标，window连ANativeWindow，pbuffer可离屏，另绑FBO是GL对象非新EGLSurface。makeCurrent遵守线程和surface组合规则，同一context不能同时current两线程。共享对象不保证GPU可见性或生命周期安全，跨context使用仍需GL/EGL同步，JavaCPU先后不等GPU完成。箭头是对象创建/绑定和共享使用依赖，非完整EGL调用程序。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-04-glthread-readiness-and-render-modes",
+          "title": "GLThread 两种模式共用 Surface 与生命周期就绪条件",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-glthread-readiness-and-render-modes.svg",
+            "src/assets/diagrams/ch13/ed13-04-glthread-readiness-and-render-modes.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-glthread-readiness-and-render-modes",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/opengl/java/android/opengl/GLSurfaceView.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-06-glthread-lifecycle",
+              "ch13-04-08-render-modes"
+            ],
+            "boundary": "setRenderer启动GLThread负责EGL与Renderer；主线程传入Surface/pause/resume/size/input状态。ready要求未暂停当前Surface有效尺寸非零等，模式控制是否需要mRequestRender；dirty初始恢复resizeredraw也置位，非仅业务requestRender。Continuous非宿主Choreographer逐帧直接唤醒，实际受swapinterval队列驱动Swappy/自管pacing。Created/Changed按资源/尺寸需要调用，非每帧重建；swap错误分支由保留错误图说明，箭头回路仅正常下一轮。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-04-async-buffer-read-reuse-and-present",
+          "title": "queue 可先于 GPU 完成，读取、复用与 present 各有依赖",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-async-buffer-read-reuse-and-present.svg",
+            "src/assets/diagrams/ch13/ed13-04-async-buffer-read-reuse-and-present.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-async-buffer-read-reuse-and-present",
+          "sources": [
+            "https://registry.khronos.org/EGL/sdk/docs/man/html/eglSwapBuffers.xhtml",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SurfaceVk.cpp",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/vkQueuePresentKHR.html"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-09-async-frame",
+              "ch13-04-21-storage-sync",
+              "ch13-04-22-three-fences",
+              "ch13-04-45-wsi-async"
+            ],
+            "boundary": "GraphicBuffer/dmabuf句柄共享存储，fence不承载像素。驱动/ANGLEWSI提交命令并交buffer+写完成依赖，GPU执行可与CPUqueue重叠，非GPU直接调用queue。Consumer读前遵守acquire，受限latch可早于signal；queue返回与采纳不证明读取/显示。release对应旧buffer，CLIENT可合并RenderEngineGPU读取依赖，FREE/通知非安全覆写。present是display时间基准，非当前buffer写完成/旧buffer可复用/面板光学响应。轨道非实测，只示一种合法重叠。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-04-egl-wrapper-dispatch-and-debug",
+          "title": "libEGL 平台分发与可叠加的调试同步",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-egl-wrapper-dispatch-and-debug.svg",
+            "src/assets/diagrams/ch13/ed13-04-egl-wrapper-dispatch-and-debug.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-egl-wrapper-dispatch-and-debug",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/opengl/libs/EGL/egl_platform_entries.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-13-egl-dispatch",
+              "ch13-04-14-swap-debug"
+            ],
+            "boundary": "eglSwapBuffersImpl进入damage实现零rect，验证display/surface及rect数量指针，处理metadata/damage按分支能力，选定native或ANGLE实现；带damage扩展不可用时普通swap。traceGpuCompletion创建EGLfence交完成线程，finishOnSwap通过1x1glReadPixels强制完成；可叠加非互斥三选一，图中虚线只表示可选职责，非保证内部先后。实际启用配置要查设备，不能假设wrapper始终无同步或固定dequeue位置。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-04-swap-wsi-and-measurement-scope",
+          "title": "Swappy、完整 EGL API 与 swapImpl 的计时范围不同",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-swap-wsi-and-measurement-scope.svg",
+            "src/assets/diagrams/ch13/ed13-04-swap-wsi-and-measurement-scope.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-swap-wsi-and-measurement-scope",
+          "sources": [
+            "https://developer.android.com/games/sdk/frame-pacing",
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SurfaceVk.cpp",
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/android/WindowSurfaceVkAndroid.cpp",
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/vk_renderer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-15-timing-scope",
+              "ch13-04-44-wsi-swap"
+            ],
+            "boundary": "ANativeWindow交vkCreateAndroidSurfaceKHR建立VkSurfaceKHR/swapchain，WindowSurfaceVk可处理renderpass提交layout/acquire/pacing，acquire可前移延后不固定一处。RendererqueuePresent提交WSI请求，不证明GPU完成或SF采纳。固定r1可在present后将CPUthrottle放unlockedtailcall，位于swapImplslice外但对应EGLAPI返回前。Swappy可不存在，外层SwappyGLswap前后等待不能一概算内层EGL；CPU墙钟包含抢占等待，非GPUbusy。轨道仅一种可选嵌套关系非实测。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-04-backend-request-load-context-and-frame",
+          "title": "选路意图、装入实现、当前 context 与目标帧逐层取证",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-backend-request-load-context-and-frame.svg",
+            "src/assets/diagrams/ch13/ed13-04-backend-request-load-context-and-frame.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-backend-request-load-context-and-frame",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/opengl/libs/EGL/Loader.cpp",
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ContextVk.cpp",
+            "https://registry.khronos.org/EGL/sdk/docs/man/html/eglMakeCurrent.xhtml"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-25-selection-proof",
+              "ch13-04-26-backend-correlation",
+              "ch13-04-37-process-setup",
+              "ch13-04-53-detect-context"
+            ],
+            "boundary": "Settingsresource/manifest是angle/native/default意图，GraphicsEnvironmentsetup在进程初始化，修改后须停止重启，重建context不重做Java选择。setupflag与ro/persist规则另由保留细图解释，native意图不直接证明vendorGLES。已要求ANGLEloader装入失败固定r1可fatal，Java配置成功非库已装入。maps只证明进程有库，其他图形模块可共存；GL/EGLstrings需正确currentcontext和线程，保存原字符串build不依赖格式ABI。ANGLEevents与VkSubmit还需同进程contextframe目标Surface/queue/latch/present关联，单独Vulkan不证明ANGLE，缺maps可权限PID命名。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-04-deferred-dirty-state-and-cpu-cost",
+          "title": "后续 draw 可以支付此前积累的状态与资源准备成本",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-deferred-dirty-state-and-cpu-cost.svg",
+            "src/assets/diagrams/ch13/ed13-04-deferred-dirty-state-and-cpu-cost.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-deferred-dirty-state-and-cpu-cost",
+          "sources": [
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ContextVk.cpp",
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ProgramExecutableVk.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-34-dirty-state",
+              "ch13-04-43-deferred-cost"
+            ],
+            "boundary": "ANGLEfrontend记录GLES对象状态，Vulkanbackend读取dirtybits，直到draw/dispatch/clear需要执行时同步。textureframebuffershaderpipeline等准备可延后到后续调用，非每次状态修改即时同名vkCmd；GL_LINE_LOOP等命令形态另由保留图说明。drawCPU长可包含前序准备或等待，非GPUdraw时长，CPU墙钟/Running/抢占依赖与GPUstage分别测。轨道仅说明成本落点不提供固定时长。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-04-native-server-wait-import-and-fd-owner",
+          "title": "server wait 成功导入副本后，才把依赖加入后续 submit",
+          "article": "src/part2-performance/ch13-rendering-pipelines/04-opengl-egl-angle.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-04-native-server-wait-import-and-fd-owner.svg",
+            "src/assets/diagrams/ch13/ed13-04-native-server-wait-import-and-fd-owner.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-04-native-server-wait-import-and-fd-owner",
+          "sources": [
+            "https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SyncVk.cpp",
+            "https://registry.khronos.org/vulkan/specs/latest/man/html/vkImportSemaphoreFdKHR.html"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-04-48-server-wait",
+              "ch13-04-49-fd-ownership"
+            ],
+            "boundary": "SyncHelperNativeFenceserverWait固定r1先检查signal，已signal直接返回；否则binarysemaphore导入dup的syncfd，SYNCFDtemporarypayload。ANGLE保留原mExternalFencefd；Vulkan仅成功import后接管副本，失败不转移，按错误清理路径。成功后addWaitSemaphoreALLCOMMANDS再由后续GPUsubmit遵守依赖，CPU不必先等signal，不代表GPU依赖已完成。应用扩展/flush和eglDupNativeFence返回调用方close语义仍由前半完整段说明，不把导入副本与原fd混用。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T14:21:05.382592+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 58,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "native_source_exact_except_declared_semicolon_entities": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a123/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a123/visual-review.json",
+      "inline_mermaid_syntax_repairs": [
+        {
+          "kind": "mermaid_semicolon_entity_escape",
+          "original_ordinal": 4,
+          "before": "```mermaid\nsequenceDiagram\n    participant App as \"App render thread\"\n    participant Angle as \"ANGLE frontend / Vulkan backend\"\n    participant Vk as \"Vulkan loader / driver / WSI\"\n    participant GPU as \"GPU execution\"\n    participant BQ as \"ANativeWindow / BufferQueue / BLAST\"\n    participant SF as \"SF / CompositionEngine\"\n    participant HWC as \"Composer / Display\"\n    App->>Angle: \"GLES state + glDraw*\"\n    Angle->>Angle: \"sync dirty state; record Vulkan commands\"\n    App->>Angle: \"eglSwapBuffers\"\n    Angle->>Vk: \"submit + present request with wait semaphore\"\n    Vk->>GPU: \"asynchronous rendering\"\n    Vk->>BQ: \"WSI queues buffer + acquire dependency\"\n    BQ->>SF: \"buffer transaction / readiness\"\n    Note over GPU,SF: queue / latch may precede GPU completion; actual pixel read obeys acquire dependency\n    alt presentOrValidate presents directly\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / release feedback\"\n    else validated result\n        SF->>HWC: \"validate / validated result\"\n        SF->>SF: \"optional CLIENT composition\"\n        SF->>HWC: \"present\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>BQ: \"old buffer release; may merge CLIENT GPU dependency\"\n    BQ-->>Vk: \"future dequeue + release dependency\"\n    Note over App,Angle: optional unlocked CPU throttle before EGL returns; may sit outside swapImpl slice\n```\n",
+          "after": "```mermaid\nsequenceDiagram\n    participant App as \"App render thread\"\n    participant Angle as \"ANGLE frontend / Vulkan backend\"\n    participant Vk as \"Vulkan loader / driver / WSI\"\n    participant GPU as \"GPU execution\"\n    participant BQ as \"ANativeWindow / BufferQueue / BLAST\"\n    participant SF as \"SF / CompositionEngine\"\n    participant HWC as \"Composer / Display\"\n    App->>Angle: \"GLES state + glDraw*\"\n    Angle->>Angle: \"sync dirty state#59; record Vulkan commands\"\n    App->>Angle: \"eglSwapBuffers\"\n    Angle->>Vk: \"submit + present request with wait semaphore\"\n    Vk->>GPU: \"asynchronous rendering\"\n    Vk->>BQ: \"WSI queues buffer + acquire dependency\"\n    BQ->>SF: \"buffer transaction / readiness\"\n    Note over GPU,SF: queue / latch may precede GPU completion#59; actual pixel read obeys acquire dependency\n    alt presentOrValidate presents directly\n        SF->>HWC: \"presentOrValidate\"\n        HWC-->>SF: \"present / release feedback\"\n    else validated result\n        SF->>HWC: \"validate / validated result\"\n        SF->>SF: \"optional CLIENT composition\"\n        SF->>HWC: \"present\"\n        HWC-->>SF: \"present / release feedback\"\n    end\n    SF-->>BQ: \"old buffer release#59; may merge CLIENT GPU dependency\"\n    BQ-->>Vk: \"future dequeue + release dependency\"\n    Note over App,Angle: optional unlocked CPU throttle before EGL returns#59; may sit outside swapImpl slice\n```\n",
+          "semicolon_count": 4,
+          "before_sha256": "bf107c917ab2ef9cf1b2690d7ad84c08a3a6bb5be717f24e5cc12f33dd594fa7",
+          "after_sha256": "d033992928fa269cf230eeb3c8b23414e324bf391ec95ca95093b73b89256b4d",
+          "reason": "Existing last ANGLE sequence failed local Mermaid parser on literal semicolons even inside quoted messages. Escape only those punctuation characters as Mermaid #59; entities; preserve all words, nodes, arrows and original source snapshot.",
+          "parse_and_render_test": "passed: current bundled Mermaid parsed and rendered escaped candidate",
+          "preview": "/tmp/gracker-diagrams-editorial-review-20261028/a123/native-four-repaired-preview.png"
+        }
+      ],
+      "retired_diagrams": [
+        "ch13-04-01-four-boundaries",
+        "ch13-04-03-egl-objects",
+        "ch13-04-04-window-output",
+        "ch13-04-06-glthread-lifecycle",
+        "ch13-04-07-context-sharing",
+        "ch13-04-08-render-modes",
+        "ch13-04-09-async-frame",
+        "ch13-04-10-hwc-branches",
+        "ch13-04-12-pacing-knobs",
+        "ch13-04-13-egl-dispatch",
+        "ch13-04-14-swap-debug",
+        "ch13-04-15-timing-scope",
+        "ch13-04-19-buffer-budget",
+        "ch13-04-21-storage-sync",
+        "ch13-04-22-three-fences",
+        "ch13-04-23-egl-sync-roles",
+        "ch13-04-24-kernel-boundary",
+        "ch13-04-25-selection-proof",
+        "ch13-04-26-backend-correlation",
+        "ch13-04-27-cost-segments",
+        "ch13-04-28-trace-identity",
+        "ch13-04-29-frametimeline-scope",
+        "ch13-04-30-composition-choice",
+        "ch13-04-31-egl-integration",
+        "ch13-04-32-version-gates",
+        "ch13-04-33-angle-layers",
+        "ch13-04-34-dirty-state",
+        "ch13-04-37-process-setup",
+        "ch13-04-38-query-priority",
+        "ch13-04-42-adb-restore",
+        "ch13-04-43-deferred-cost",
+        "ch13-04-44-wsi-swap",
+        "ch13-04-45-wsi-async",
+        "ch13-04-46-cache-layers",
+        "ch13-04-47-cold-warm",
+        "ch13-04-48-server-wait",
+        "ch13-04-49-fd-ownership",
+        "ch13-04-51-ab-controls",
+        "ch13-04-52-optimize-order",
+        "ch13-04-53-detect-context",
+        "ch13-04-54-regression",
+        "ch13-04-55-trace-events",
+        "ch13-04-56-sql-scope",
+        "ch13-04-57-wait-attribution",
+        "ch13-04-58-history-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-123/retired-assets.json"
     },
     {
       "index": 124,
@@ -22789,8 +24449,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 58,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+  "reviewed_articles": 60,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -22800,7 +24460,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T13:53:59.688891+08:00",
+  "updated_at": "2026-10-28T14:21:05.382592+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
@@ -22845,6 +24505,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
+      "registered_sha256": "de680a48d94357b5f2162a8754cfb2d763e3a29b0aea074f09725b6f3f442d71",
+      "observed_sha256": "2723a486ec3770db40815d18bc36cc69e988126b9d600ce81a1e21980705827e",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "registered_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
       "observed_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
@@ -22859,9 +24526,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 1841,
-  "reviewed_placements_after": 943,
-  "net_removed_placements": 898,
+  "reviewed_placements_before": 1966,
+  "reviewed_placements_after": 984,
+  "net_removed_placements": 982,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
