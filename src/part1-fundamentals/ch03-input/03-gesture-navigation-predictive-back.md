@@ -4,7 +4,9 @@ chapter: '3.3'
 section: '3.3'
 status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
-last_verified: '2026-08-21'
+last_verified: '2026-10-26'
+last_source_verified_at: '2026-10-26'
+last_idle_audit_at: '2026-10-26'
 last_verified_against: AOSP android-17.0.0_r1 / Android Developers predictive back docs
 confidence: medium-high
 sources:
@@ -32,6 +34,8 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/WindowState.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/WindowManagerConstants.java
 - type: aosp
@@ -63,7 +67,7 @@ sources:
 - type: official
   path: https://developer.android.com/reference/androidx/activity/OnBackPressedCallback
 - type: official
-  path: https://perfetto.dev/docs/quickstart/android-tracing
+  path: https://perfetto.dev/docs/getting-started/system-tracing
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
 - type: aosp
@@ -218,7 +222,9 @@ WMS 同时保留受限区域（restricted `Region`）与原始未受限区域（
 
 图：应用提供 View 局部矩形，ViewRootImpl 收集并转换到窗口坐标，上报 WMS。DisplayContent 再按窗口 Z 序、可触摸区域和显示坐标汇总，消耗左右边缘各自的纵向总高度配额。SystemUI 使用最终受限 Region；仅申请过但未批准的片段仍可触发系统返回。
 
-部分系统窗口和特定的粘性沉浸模式（sticky immersive）场景可以绕过普通限制。粘性沉浸指系统栏短暂出现后会自动再次隐藏，这属于平台权限和窗口策略；第三方应用仍然只能按前面的限制申请排除。
+部分系统窗口可以跳过排除区域的高度配额，第三方应用的窗口也可能满足豁免条件：`DisplayContent.needsGestureExclusionRestrictions()` 对请求隐藏导航栏、且使用 `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE` 的窗口不施加高度限制。应用仍需上报排除矩形，获批范围仍要经过可触摸区域和窗口遮挡裁剪。这个条件对应粘性沉浸模式（sticky immersive），系统栏短暂出现后会自动再次隐藏。
+
+`WindowState.isImplicitlyExcludingAllSystemGestures()` 另有隐式排除兼容分支：窗口满足上述粘性沉浸条件、应用的 `targetSdkVersion < 29`，并且 `mSystemGestureExcludedByPreQStickyImmersive` 配置开启时，WMS 会把窗口可触摸区域作为排除区域。导航栏临时显示时，`EdgeBackGestureHandler` 会优先允许返回边缘内的候选手势，不受应用排除区阻挡。
 
 #### WindowInsets 与手势区域
 
@@ -362,7 +368,7 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 1. 用结构化输入事件的 `event_id` 确认初始触摸同时分发到前台窗口和手势监视器。
 2. 在阈值附近寻找原窗口的 `ACTION_CANCEL`，并检查 SystemUI 对应线程是否正在处理该手势。
 3. 提交后查找注入的 `KEYCODE_BACK` 及其后续窗口分发。
-4. 若原窗口收到完整指针事件流且没有 `ACTION_CANCEL`，再检查这次是否未命中边缘、排除请求是否被拒绝，或是否没有达到方向阈值。
+4. 若原窗口收到完整指针事件流且没有 `ACTION_CANCEL`，检查是否未命中返回边缘、命中了最终获批的排除区域，或未达到方向阈值。仅命中未获批的排除申请不会阻止系统返回。
 
 #### 2. 预测性返回：检查进度回调和目标层预览
 
@@ -600,7 +606,7 @@ WMS 核心准备完成后，会把描述打开和关闭窗口图层的 `RemoteAn
 - 回调路径：Shell 直接调用应用回调的取消或提交方法；
 - 系统动画路径：Shell 启动提交后动画；跨 Activity、跨任务和返回主屏会在这一阶段开始时触发真实回调，让关闭转场与动画衔接，其他类型可在动画结束时再触发。
 
-`BackAnimationController` 会在触发真实回调前同步通知 WMS 核心当前动画结果，避免关闭转场再播放一套重复动画。看门狗（watchdog）是防止动画执行器一直不回调的超时保护；动画执行器完成或看门狗超时后，Shell 释放动画目标、结束本次导航，并由 `BackTransitionHandler` 完成后续转场协调。
+`invokeOrCancelBack()` 收尾时，若持有 `IBackAnimationFinishedCallback`，会先通过 `onAnimationFinished()` 同步通知 WMS，再调用尚未执行的真实回调。跨 Activity、跨任务和返回主屏路径会在 `startPostCommitAnimation()` 中提前执行真实回调，并用 `mRealCallbackInvoked` 防止收尾时重复调用；不能用收尾方法里的顺序推断这几类返回的提交时序。看门狗（watchdog）是防止动画执行器一直不回调的超时保护；动画执行器完成或看门狗超时后，Shell 释放动画目标、结束本次导航，并由 `BackTransitionHandler` 完成后续转场协调。
 
 源码里的 2 秒 `MAX_ANIMATION_DURATION` 是等待远程动画完成的看门狗阈值，兜住的是动画执行器未回调、动画迟到这类异常；产品动画时长和性能目标另有尺度，别拿它当参考。
 
@@ -816,7 +822,8 @@ Android 17 后续小版本或 AndroidX 新版本的行为，解释不了 `androi
   - `frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/back/BackAnimationController.java` — 提前返回分发、目标解析、进度、指针抢占与提交动画
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — `pilferPointersLocked()` 与 `CANCEL_POINTER_EVENTS` 合成
   - `frameworks/base/core/java/android/view/ViewRootImpl.java` — View 排除矩形收集与 WMS 上报
-  - `frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java` — 最终排除区域与每侧高度预算
+  - `frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java` — 最终排除区域、每侧高度预算与粘性沉浸窗口的配额例外
+  - [`WindowState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java) — 旧目标 SDK 应用在粘性沉浸模式下的隐式排除兼容条件
   - `frameworks/base/core/java/android/window/OnBackInvokedCallback.java` — API 33 的提交回调
   - `frameworks/base/core/java/android/window/OnBackAnimationCallback.java` — API 34 的进度回调
   - `frameworks/base/core/java/android/window/OnBackInvokedDispatcher.java` — 观察者优先级与回调注册入口
@@ -831,7 +838,7 @@ Android 17 后续小版本或 AndroidX 新版本的行为，解释不了 `androi
   - [OnBackInvokedDispatcher | Android Developers](https://developer.android.com/reference/android/window/OnBackInvokedDispatcher)
   - [WindowInsets | Android Developers](https://developer.android.com/reference/android/view/WindowInsets)
   - [OnBackPressedCallback | Android Developers](https://developer.android.com/reference/androidx/activity/OnBackPressedCallback)
-  - [Android tracing quickstart | Perfetto](https://perfetto.dev/docs/quickstart/android-tracing)
+  - [Recording system traces with Perfetto](https://perfetto.dev/docs/getting-started/system-tracing)
   - [FrameTimeline data source | Perfetto](https://perfetto.dev/docs/data-sources/frametimeline)
 - 外部参考：
   - TechMerger《深入理解 Android 系统 Back Gesture 的实现》
