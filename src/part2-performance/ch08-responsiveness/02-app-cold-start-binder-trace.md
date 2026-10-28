@@ -152,10 +152,6 @@ consolidated_from:
 
 官方启动文档对温启动的描述较宽，还包括“进程重建，但可以使用 saved instance state（已保存实例状态）”的情况。Macrobenchmark 为基准测试提供了更窄、可重复的定义：WARM 保留进程并重建 Activity。所以比较线上数据和实验室数据时，应记录各自采用的是哪种定义。
 
-<!-- gracker-diagram: ch08-02-01-start-types -->
-![冷温热启动复用哪些状态](../../assets/diagrams/ch08/ch08-02-01-start-types.png)
-
-图：三种状态按 Macrobenchmark 口径对比；官方温启动描述还包括更宽的 saved-state 场景。
 
 按 Home、按返回键、从 Recents（最近任务） 恢复和点击通知，会产生不同的任务栈状态。生命周期日志可以辅助判断，但单凭出现 `onCreate()` 或 `onResume()` 还定不下启动类型；更可靠的依据是 Perfetto 的 Android App Startups、`am start -W` 输出、Macrobenchmark 配置，以及 API 35 及以上版本的 `ApplicationStartInfo.getStartType()`。
 
@@ -215,10 +211,6 @@ Launcher 通过 Activity API 发起启动，Binder 请求随后进入 `ActivityT
 
 冷启动期间，WindowManager 可以先显示 starting window（启动占位窗口）。从 Android 12（API 31）开始，标准路径由 SplashScreen API 统一。starting window 是系统在目标应用首帧之前显示的过渡画面，TTID 的终点仍是目标 Activity 自己的首帧。若再使用专门的 trampoline Activity（只负责跳转的中间 Activity）充当启动页，还会额外增加一次 Activity 创建和窗口转场。
 
-<!-- gracker-diagram: ch08-02-03-starting-window -->
-![启动占位窗口与目标首帧](../../assets/diagrams/ch08/ch08-02-03-starting-window.png)
-
-图：系统过渡窗口让启动过程可见；TTID 仍对齐目标 Activity 的首帧。
 
 #### 进程选择与 Zygote fork
 
@@ -236,10 +228,6 @@ Launcher 通过 Activity API 发起启动，Binder 请求随后进入 `ActivityT
 
 Zygote 已加载的 Framework 类、资源和部分 native 映射，可以由子进程通过 Copy-on-Write（写时复制）共享：只读时多个进程使用同一物理页，发生写入时才复制。共享页能减少重复加载和内存占用；至于应用代码的类加载是否完成、共享页是否驻留在内存里，共享机制本身说明不了。preload 的收益取决于系统版本、厂商列表、内存压力和启动路径，具体设备上的覆盖比例，我们实测了才有数。
 
-<!-- gracker-diagram: ch08-02-05-zygote-cow -->
-![Zygote 的 socket、fork 与写时复制](../../assets/diagrams/ch08/ch08-02-05-zygote-cow.png)
-
-图：进程创建请求通过本地 socket；COW 共享只在写入时复制，不能证明应用代码已加载。
 
 #### ActivityThread 与 attachApplication
 
@@ -297,10 +285,6 @@ Activity 进入 resume 阶段后，DecorView 会被加入 WindowManager；应用
 
 `ActivityRecord.onWindowsDrawn()` 会调用 `ActivityMetricsLogger.notifyWindowsDrawn()`。这是窗口绘制路径的系统观测点，不是 HWC 的实际呈现时间。Framework 在这里通过 `SystemClock.uptimeNanos()` 记录 `START_TIMESTAMP_FIRST_FRAME`，并结束 Framework 统计的窗口绘制启动区间——平台对 TTID 的统计就到这一刻为止。SurfaceFlinger 合成、HWC present 和面板扫描仍可能发生在这个时间点之后。
 
-<!-- gracker-diagram: ch08-02-09-first-frame -->
-![绘制上报与显示呈现分开观察](../../assets/diagrams/ch08/ch08-02-09-first-frame.png)
-
-图：Framework FIRST_FRAME 用 uptimeNanos 记录窗口 drawn；GPU 完成、present 与面板发光各有观测端点。
 
 ### TTID 与 TTFD
 
@@ -318,10 +302,6 @@ Logcat 中的 `Displayed` 行和 Android Vitals 的启动时间以 TTID 为主�
 
 首帧可能只包含 Splash 之后的页面外壳、骨架屏或空列表，所以 TTID 变短时页面内容可能还没就绪，判断内容可用要看 TTFD。
 
-<!-- gracker-diagram: ch08-02-10-ttid-ttfd -->
-![TTID 与 TTFD 分别回答什么](../../assets/diagrams/ch08/ch08-02-10-ttid-ttfd.png)
-
-图：TTID 与 TTFD 从同一启动起点观察；应用必须定义主内容可用，单有首帧不保证可以操作。
 
 #### TTFD：应用声明的可用状态
 
@@ -354,10 +334,6 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 所有 reporter 计数移除后，reporter 会经 executor 安排报告；`ComponentActivity` 的实现还与绘制回调配合。这仍不证明已经实际 present。业务必须先提交成功或可交互错误 UI；只在 `finally` 里减计数会把失败、取消但仍停在 loading 的页面误报为就绪。Activity 销毁导致的取消不应为了补一个 TTFD 而报告成功；仍存活页面若用新任务替换旧任务，应正确交接 readiness 条件。异步 Diff、图片等必需 UI 提交也要等到约定条件完成后再移除 reporter。
 
-<!-- gracker-diagram: ch08-02-11-readiness-reporter -->
-![FullyDrawnReporter 的计数与就绪边界](../../assets/diagrams/ch08/ch08-02-11-readiness-reporter.png)
-
-图：先提交成功或可操作错误 UI，再移除 reporter；取消不自动说明页面已就绪。
 
 Compose 页面可以使用 `ReportDrawn`、`ReportDrawnWhen` 或 `ReportDrawnAfter` 表达相同的就绪条件。判断依据应是用户能否使用页面，无须等待所有后台任务结束。
 
@@ -365,10 +341,6 @@ Compose 页面可以使用 `ReportDrawn`、`ReportDrawnWhen` 或 `ReportDrawnAft
 
 Android 15（API 35）引入了 `ApplicationStartInfo`，用于描述进程为何启动、由哪类组件触发、属于哪种启动类型、当前到达什么状态，以及各阶段的 monotonic（单调递增时钟）纳秒时间戳。一条记录可能由 Activity、Service、Provider、Broadcast 等入口产生，应先检查启动原因、状态和样本身份。`getStartComponent()` 从 API 36 才公开，API 35 不能直接调用；在 API 35 上，`getReason()` 也不是组件类型的一一映射，需结合入口与 trace 复核。
 
-<!-- gracker-diagram: ch08-02-12-start-info-api -->
-![ApplicationStartInfo 的身份与版本闸门](../../assets/diagrams/ch08/ch08-02-12-start-info-api.png)
-
-图：API 35 记录不只覆盖 Activity；组件 getter 从 API 36 起公开，必须先核对记录再算阶段。
 
 常用字段如下：
 
@@ -426,10 +398,6 @@ fun readStartPhases(info: ApplicationStartInfo): Map<String, Double?> {
 
 同一个 `startupTimestamps` map 中的时间戳可以直接相减。若要把 monotonic 时间戳叠加到 Perfetto，则应使用 trace clock snapshot（时钟快照） 转换时钟域，API 数值与 trace 主时间轴的零点未必一致。`getHistoricalProcessStartReasons()` 可能返回尚未完成的记录，缺少部分字段属于正常状态。文档还注明 Service 启动的 LAUNCH 时间戳在 Android 16（BAKLAVA）及更早版本可能不正确；异常样本要单独标记，不能靠相减得到可信延迟。
 
-<!-- gracker-diagram: ch08-02-13-start-timestamps -->
-![启动时间戳怎样安全计算](../../assets/diagrams/ch08/ch08-02-13-start-timestamps.png)
-
-图：同一 map 内可相减；跨 Perfetto 时钟域需转换，bind 到 onCreate 差值也包含投递与排队。
 
 ### 四类测量工具
 
@@ -454,10 +422,6 @@ adb shell am start -S -W \
 
 Logcat 时间可以帮助定位样本，但记录日志本身会产生一定扰动，而且缺少线程调度、Binder、I/O 和渲染细节。
 
-<!-- gracker-diagram: ch08-02-14-measure-tools -->
-![四类启动工具的使用层次](../../assets/diagrams/ch08/ch08-02-14-measure-tools.png)
-
-图：先快速确认样本，再用基准对比和系统 Trace 解释；各工具端点必须注明。
 
 #### Macrobenchmark
 
@@ -525,10 +489,10 @@ ORDER BY s.ts;
 
 r1 的查询还要复核：以进程/时间推导关联，若多次启动、同包多个进程或缺少首帧，可能选到不属于该样本的后续帧；部分选帧使用 GROUP BY 搭配非聚合列，再在分组后 ORDER BY，不能据此证明组选中了最早帧。应核对 upid、frame id、目标窗口和样本边界，缺失时保留不确定性。
 
-<!-- gracker-diagram: ch08-02-16-perfetto-display-association -->
-![Perfetto 显示指标需要复核帧关联](../../assets/diagrams/ch08/ch08-02-16-perfetto-display-association.png)
+<!-- gracker-diagram: ed08-02-display-observation-endpoints -->
+![启动显示指标的三类观测端点](../../assets/diagrams/ch08/ed08-02-display-observation-endpoints.png)
 
-图：r1 time_to_display 取 RenderThread DrawFrame 结束作为代理端点；多启动、缺帧和启发式关联需核验。
+图：三行分别按工具定义观测：Framework / Logcat 以目标窗口 drawn 与 fully drawn 计时，应用负责业务就绪；本文 r1 Perfetto 指标取选定的 RenderThread DrawFrame 结束作为代理端点，并需复核 startup、进程、窗口与帧；GPU、SF、HWC present 和面板结果另按同一 buffer 追踪。跨行位置不表示固定先后或时长，不能加固定 VSync 偏移互换，跨时钟域叠加还需转换。
 
 ### Application 与 Provider 的启动成本
 
@@ -543,10 +507,6 @@ r1 的查询还要复核：以进程/时间推导关联，若多次启动、同�
 - SDK 是否提供关闭自动初始化或按需初始化的配置；
 - 当前启动入口是否需要这项初始化，例如 Launcher 入口和 push / service 进程可能依赖不同组件。
 
-<!-- gracker-diagram: ch08-02-17-provider-audit -->
-![Provider 自动初始化的排查入口](../../assets/diagrams/ch08/ch08-02-17-provider-audit.png)
-
-图：从合并 Manifest 找到本进程自动初始化入口，再在 bindApplication 内对照真实成本。
 
 #### Application.onCreate
 
@@ -572,10 +532,6 @@ Android 8.0 到 Android 17 的 ART 原生支持多 DEX。Android 5.0 以下版�
 
 多 DEX 仍会影响现代 Android 的启动表现：类在 DEX 文件中的布局、页缓存、校验、类加载，以及解释执行、JIT（运行时即时编译）、AOT 等编译状态都会改变启动开销。我们应通过 class loading slice、文件 I/O、编译过滤器和 Macrobenchmark 的 compilation mode 验证具体原因，DEX 的开销来源也不止“方法数超过 65536”这一种。
 
-<!-- gracker-diagram: ch08-02-19-art-multidex -->
-![现代多 DEX 的成本来自哪里](../../assets/diagrams/ch08/ch08-02-19-art-multidex.png)
-
-图：API 26–37 ART 原生支持多 DEX；关注布局、加载、缺页与编译状态。
 
 ### AndroidX App Startup
 
@@ -610,28 +566,16 @@ XML 页面通常依次经历 inflate、measure、layout 和 draw。inflate 包�
 
 减少层级只是可以尝试的手段之一。`ConstraintLayout`、嵌套容器和自定义布局中哪一种更快，应由首帧 trace 与基准测试判断。`AsyncLayoutInflater` 也受 View 线程安全限制；如果 Activity 必须等待异步 inflate 完成后才能显示，那么工作虽然换了线程，TTID 却未必缩短。
 
-<!-- gracker-diagram: ch08-02-21-view-first-frame -->
-![View 首帧工作的依赖链](../../assets/diagrams/ch08/ch08-02-21-view-first-frame.png)
-
-图：inflate、测量布局和渲染按实际依赖进入关键路径；换线程只有解除首帧等待才可能缩短 TTID。
 
 #### Compose 页面
 
 Compose 首帧包含初始 composition、measure / place 和 draw。启动期间读取磁盘、执行复杂集合变换、同步创建图片，或一次组合大量不可见节点，都会延长主线程或 RenderThread 路径。可以根据可见状态进行条件组合，推迟次要 tab、错误详情和屏外内容，但要避免首帧之后立即出现一次耗时更长的重组。
 
-<!-- gracker-diagram: ch08-02-22-compose-first-frame -->
-![Compose 首帧与延后组合](../../assets/diagrams/ch08/ch08-02-22-compose-first-frame.png)
-
-图：先组合当前可见且必需的内容，按需加载次要内容；延后后也需验证重组与交互。
 
 #### 图片与资源
 
 首帧只应同步准备当前可见且必需的资源。图片解码、`VectorDrawable` rasterization（栅格化）、字体加载和主题资源解析都可能出现在 trace 中。使用占位内容时应预留真实内容的尺寸，避免资源到达后发生大范围重新布局。减少首帧工作的前提，是界面仍可交互、内容不闪烁。
 
-<!-- gracker-diagram: ch08-02-23-resources-ready -->
-![首屏资源怎样进入就绪条件](../../assets/diagrams/ch08/ch08-02-23-resources-ready.png)
-
-图：只同步准备当前可见且必需资源；占位内容保留尺寸，资源到达后再验证可用状态。
 
 ### Profile 优化的三层含义
 
@@ -646,10 +590,6 @@ Baseline Profile 会随应用或库一起交付热点类和方法规则，ART �
 - 目标设备上的安装状态与编译过滤器符合预期；
 - `CompilationMode.None`、`Partial` 与 `Full` 的 Macrobenchmark 差异符合解释。
 
-<!-- gracker-diagram: ch08-02-25-profile-validation -->
-![Profile 从规则到实测收益的核对链](../../assets/diagrams/ch08/ch08-02-25-profile-validation.png)
-
-图：规则存在不等于首次启动已完成 AOT；入口覆盖、R8 重写、安装与编译状态都要验证。
 
 #### Startup Profile
 
@@ -670,10 +610,6 @@ Cloud Profile 由 Google Play 汇总真实用户设备上的热点，再提供�
 
 Google 的初始测试显示，在系统存在内存压力时，样本中的应用启动时间平均降低 3.16%，部分样本改善更多；这只描述一组受控测试，换一个应用或设备要重新测。更大的页会同时改变页表、TLB（地址转换缓存）、页内空间浪费、缺页和 COW 粒度，从“页大小变为四倍”推不出“缺页次数减少四倍”。
 
-<!-- gracker-diagram: ch08-02-26-page-size -->
-![16 KB 页大小：兼容性与性能分开验证](../../assets/diagrams/ch08/ch08-02-26-page-size.png)
-
-图：页大小改变多个系统因素，不能从四倍页大小推导四倍收益；3.16% 是官方特定压力测试的平均结果。
 
 比较 4 KB 和 16 KB 环境下的启动表现时，应使用同一设备或等价平台配置，固定 APK、编译状态、缓存、温度和内存压力，并分别查看缺页、I/O、CPU time（线程实际占用 CPU 的时间） 和 TTID；只看 `bindApplication` 之前那一段，会漏掉后面大半个启动过程。
 
@@ -689,10 +625,6 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 
 性能采集本身也会产生额外开销。方法 trace 比系统 trace 更重，适合在排查范围已经缩小后使用。冷缓存、force-stop、重启设备和清除数据代表不同的实验条件，混在同一种“冷启动”标签下会让对比失真。
 
-<!-- gracker-diagram: ch08-02-27-startup-diagnosis -->
-![启动性能的诊断与验证闭环](../../assets/diagrams/ch08/ch08-02-27-startup-diagnosis.png)
-
-图：先固定协议并定位最长样本，再按线程状态与跨进程依赖归因，最终以同条件多轮验证。
 
 ### Android 17 源码锚点
 
@@ -737,10 +669,6 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 - Choreographer 通过 `DisplayEventReceiver` 接收 vsync（垂直同步信号）；
 - 应用主线程执行类加载、View inflate（从布局资源创建 View）、Compose composition（组合计算） 和业务初始化。
 
-<!-- gracker-diagram: ch08-02-28-transport-scope -->
-![启动路径中哪些通信不走 Binder](../../assets/diagrams/ch08/ch08-02-28-transport-scope.png)
-
-图：Zygote socket、显示事件通道、本地文件和进程内工作各有数据源，不能归入 Binder 总和。
 
 因此，`am start -W` 的总时间只能当作整个启动的参考，Binder 等待要单独统计。分析时先确定 Activity startup 的起止区间，再统计与这个区间相交的事务。
 
@@ -759,10 +687,6 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 
 `bindApplication` 携带应用信息和 Provider 列表。应用在 `ActivityThread.handleBindApplication()` 中安装本进程 Provider；Provider 初始化代码若访问系统服务、远端 Provider 或其他进程，还会产生相应 IPC（Inter-Process Communication，进程间通信）。观察到 `ContentProvider.onCreate()` 很慢时，我们应把本进程内的初始化和它发起的 Binder 调用分别计时，看清两类耗时各占多少。
 
-<!-- gracker-diagram: ch08-02-29-binder-directions -->
-![冷启动中的主要 Binder 方向](../../assets/diagrams/ch08/ch08-02-29-binder-directions.png)
-
-图：方向与同步性应按接口区分；初始化内部还可能产生额外 Provider / PackageManager 事务。
 
 #### 1.2 先回答三个问题
 
@@ -774,10 +698,6 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 
 调用次数和单次时长要同时看。大量短事务可能累积成明显延迟；单笔长事务也可能与其他工作并行，未必等量增加首帧时间。多个嵌套事务的 `client_dur` 区间会互相包含，直接求和会重复计时，所以“事务总和”只适合用来排序排查对象，要估算可节省的启动时间，还得回到首帧关键路径逐笔确认。
 
-<!-- gracker-diagram: ch08-02-30-critical-overlap -->
-![嵌套 Binder 时长不能直接相加](../../assets/diagrams/ch08/ch08-02-30-critical-overlap.png)
-
-图：外层事务可包含内层事务；裁剪到启动窗后仍可能重复计时，关键路径与区间并集要另外核对。
 
 ### 二、采集 Binder Trace
 
@@ -858,10 +778,6 @@ data_sources {
 
 这份配置同时采集 Binder 内核事件、线程调度、框架 atrace slice 和目标应用的自定义 slice。`RING_BUFFER` 表示空间用完后覆盖最旧数据，`drain_period_ms` 控制 ftrace 数据搬入 Perfetto buffer 的周期。
 
-<!-- gracker-diagram: ch08-02-31-capture-sources -->
-![Binder 分析需要哪些采集证据](../../assets/diagrams/ch08/ch08-02-31-capture-sources.png)
-
-图：内核事务、调度、框架与应用标记共同支撑配对；包元数据与可用平台的 FrameTimeline 补充身份和帧证据。
 
 15 秒和 32 MiB 是便于手工分析的起点。高频设备或多轮连续启动需要根据丢事件统计调整 buffer；配置过大也会增加采集开销。`android.binder` 属于 Trace Processor 的分析侧标准库，能否通过 `INCLUDE` 加载取决于分析工具版本，与采集设备的 API 级别无直接对应关系。
 
@@ -889,10 +805,6 @@ adb shell am start -W -S \
 
 采集结束后再执行 `adb pull /data/local/tmp/cold-start-binder.pftrace .`。
 
-<!-- gracker-diagram: ch08-02-32-manual-capture -->
-![两终端采集一次进程冷启动](../../assets/diagrams/ch08/ch08-02-32-manual-capture.png)
-
-图：先启动有限时长采集，再强停并启动目标 Activity；结束后拉取完整 trace，记录缓存与设备条件。
 
 手工 `am start -S` 的“进程冷启动”只保证目标进程已终止并重建；文件页缓存、shader cache 和 ART 编译产物仍可能保留。本文核对的 Macrobenchmark COLD setup 已依次尝试清 shader cache、终止进程和 `dropKernelPageCache()`，不能把它写成“只有终止进程”。缓存清理是否成功取决于库版本、API、设备权限等条件，应记录实际结果；复测还需固定 CompilationMode、温度、动画和迭代次数。
 
@@ -926,10 +838,6 @@ fun loadBookmarks(): List<Bookmark> {
 
 这个 slice 反映同步函数从开始到结束的 wall time（墙上时钟时间），其中既包含实际运行时间，也包含等待和被调度出 CPU 的时间。跨线程、跨 suspend 点或回调式工作应使用 async trace，并用稳定 cookie（同一异步区间的配对 ID）关联开始与结束事件。section 名要保持低基数，也就是控制不同名称的数量，不要把用户 ID、URL 等动态内容拼进名称。
 
-<!-- gracker-diagram: ch08-02-33-business-trace -->
-![业务 Trace 把同步调用映射回代码](../../assets/diagrams/ch08/ch08-02-33-business-trace.png)
-
-图：应用同步 section 用 try/finally 闭合；它表达业务边界，不自动解释内部 CPU、Binder 与 I/O。
 
 ### 三、理解 `android_binder_txns` 的数据边界
 
@@ -951,10 +859,6 @@ fun loadBookmarks(): List<Bookmark> {
 
 这个标准表通过 `flow` 关系把客户端 `binder transaction` slice 与服务端 `binder reply` 或 async receive 关联；在 Perfetto UI 中，flow 通常显示为连接两个 slice 的因果箭头。目标死亡、frozen rejection（因目标被冻结而被拒绝）或采集丢事件时，客户端和服务端可能配不上对，这些事务也就缺席于标准表——Freezer 的问题因此要另找入口查（见 6.4）。r1 的同步配对还排除 client/server 的未闭合时长 `-1`，并要求 `client_dur >= server_dur`；标准表不是全部发送尝试的台账。
 
-<!-- gracker-diagram: ch08-02-34-pairing-identities -->
-![Binder 标准表怎样配对客户端与服务端](../../assets/diagrams/ch08/ch08-02-34-pairing-identities.png)
-
-图：配对依赖 slice / flow 与完整事件；内部 upid / utid 区分实例，标准表缺行不代表没有发送尝试。
 
 #### 3.2 四段时间怎样解释
 
@@ -976,10 +880,10 @@ fun loadBookmarks(): List<Bookmark> {
 
 `client_dur` 与 `server_dur` 都是经过时间，包含 Running、Runnable 和阻塞，并非“等待时间之和”。CPU time 可由相同 utid 的 `sched` / `thread_state Running` 区间裁剪求和等方式计算，不必要求另有 CPU time 计数器。序列化、反序列化和调用前后工作可能在内核派生 slice 外，完整 API 耗时应另有业务/API 标记。服务端 CPU time 很少而 `server_dur` 很长时，常见原因是等待锁、I/O、嵌套同步 Binder，或线程在区间内被调度出 CPU。
 
-<!-- gracker-diagram: ch08-02-36-wall-cpu -->
-![wall time 与 CPU time 怎样区分](../../assets/diagrams/ch08/ch08-02-36-wall-cpu.png)
+<!-- gracker-diagram: ed08-02-binder-duration-scopes -->
+![Binder经过时间、monotonic时长与CPU运行](../../assets/diagrams/ch08/ed08-02-binder-duration-scopes.png)
 
-图：长事务经过时间包含运行、可运行等待和阻塞；实际占 CPU 的时间须由相同线程的运行区间裁剪求和。
+图：示意轨道只说明同一事务和同一 utid 的包含关系，没有实测比例。wall time 包含整个经过区间；monotonic-duration 字段扣掉系统 suspend，线程自身 Sleeping / Runnable 仍可计入；CPU time 只累计 Running 与目标区间的交集。事务内锁、I/O、嵌套调用和调度需继续按证据区分。
 
 #### 3.3 归因顺序
 
@@ -993,10 +897,6 @@ fun loadBookmarks(): List<Bookmark> {
 
 队列增长、服务逻辑变慢和客户端抢占可能叠加，只依据耗时最大的一个字段下判断，容易错过复合瓶颈。
 
-<!-- gracker-diagram: ch08-02-37-attribution-order -->
-![慢 Binder 的逐层归因路径](../../assets/diagrams/ch08/ch08-02-37-attribution-order.png)
-
-图：先证明与目标首帧有关，再比较分段和服务端证据；配对缺失时切换到原始返回与采集检查。
 
 ### 四、Perfetto SQL：从启动窗口到事务原因
 
@@ -1021,10 +921,6 @@ ORDER BY s.ts, p.upid;
 
 `startup_slice_ms` 是标准库所识别启动 slice 的时长，不能无条件当成另一个工具的 TTID。先用包名、类型、时间和关联 `upid` 确认样本。r1 的进程匹配依赖包元数据与 `bindApplication` / Activity 等标记，缺包元数据时还有进程名前缀回退，故关联结果也要人工复核，不能视为精确身份保证。若无结果，检查 `am`/`wm`、进程/包名数据和分析器版本；不要改用整条 trace 求和来代替目标窗口。
 
-<!-- gracker-diagram: ch08-02-38-sql-startup-process -->
-![SQL 先锁定 startup 与进程实例](../../assets/diagrams/ch08/ch08-02-38-sql-startup-process.png)
-
-图：启动 slice、包名和关联进程都来自派生规则；复核 upid 后再用作 Binder 窗口。
 
 #### 4.2 冷启动窗口内的 Top-N 同步事务
 
@@ -1072,10 +968,10 @@ LIMIT 30;
 
 结果先按窗口交集排序。`dispatch_ms`、`server_ms`、`reply_residual_ms` 仍按**整笔事务**计算，三者只与 `full_client_ms` 对应，不能从裁剪后的 `startup_overlap_ms` 再机械相减。残差只是排查线索；出现负值应核对事件、区间包含关系与嵌套情况，不能把它当作真实负延迟。
 
-<!-- gracker-diagram: ch08-02-39-sql-window-clip -->
-![Binder SQL 的筛选与裁剪是两步](../../assets/diagrams/ch08/ch08-02-39-sql-window-clip.png)
+<!-- gracker-diagram: ed08-02-startup-clip-and-nesting -->
+![启动窗口裁剪与嵌套事务的重复计时](../../assets/diagrams/ch08/ed08-02-startup-clip-and-nesting.png)
 
-图：先以 upid 和半开区间筛选，再用 min / max 计算交集；完整事务分段仍只对应 full_client_ms。
+图：先限定目标进程和主线程同步事务，再与半开 startup 窗口求交集；只接触边界不算相交。full_client_ms 保留整笔事务分段，startup_overlap_ms 只表示窗口交集。嵌套事务的交集仍可重叠，累计值用于排查排序，区间并集也不能直接承诺首帧节省时间；条长仅为示意。
 
 #### 4.3 按 endpoint 聚合调用压力
 
@@ -1122,10 +1018,6 @@ ORDER BY summed_overlap_ms DESC;
 
 `summed_full_client_ms` 累计完整事务，`summed_overlap_ms` 累计与启动窗口的交集；**两者都可能重复计算嵌套或重叠区间**，只适合排序。要预测移除 IPC 能节省多少首帧时间，仍需计算区间并集并核对真实关键依赖；并集本身也不是收益保证。P50/P95 分别表示样本的第 50 和第 95 百分位，应从多轮同条件启动数据中计算；一条 trace 里的少量同名调用，代替不了启动耗时分布。
 
-<!-- gracker-diagram: ch08-02-40-sql-aggregation -->
-![endpoint 聚合怎样避免误读](../../assets/diagrams/ch08/ch08-02-40-sql-aggregation.png)
-
-图：同类接口的次数与累计时长适合排查排序；嵌套和重叠区间不能预测删除 IPC 的收益。
 
 #### 4.4 用标准 breakdown 查等待原因
 
@@ -1171,10 +1063,6 @@ ORDER BY startup_reason_ms DESC;
 
 `reason` 可能是 `monitor_contention`（Java monitor 竞争）、`art_lock_contention`（ART 内部锁竞争）、`mutex_contention`（原生互斥锁竞争）、`io`、`binder` 或某种线程状态。这里的 `startup_reason_ms` 只累计启动窗内的分类片段。合并表在重叠处优先采用非空 server reason，否则采用 client reason，`reason_type` 是这条归类规则的结果，不是独立证明了根因；事件/线程状态缺失也会影响覆盖。要判断哪段业务造成延迟，还需对照服务端业务 slice。
 
-<!-- gracker-diagram: ch08-02-41-breakdown-rule -->
-![breakdown 的分类结果怎样解释](../../assets/diagrams/ch08/ch08-02-41-breakdown-rule.png)
-
-图：先裁剪分类片段到启动窗；合并表的 server 优先规则是标签选择，不是独立根因证明。
 
 #### 4.5 查询 Binder 计数画像
 
@@ -1197,10 +1085,6 @@ ORDER BY event_count DESC;
 
 结果只包含各类 slice 的事件数，启动窗口和耗时都不在其中；性能归因仍要回到 `android_binder_txns`。
 
-<!-- gracker-diagram: ch08-02-42-count-coverage -->
-![Binder 计数画像能说明什么](../../assets/diagrams/ch08/ch08-02-42-count-coverage.png)
-
-图：进程计数画像不带 startup 窗口与延迟；缺少配对或原始事件时，单看计数无法保证覆盖。
 
 ### 五、冷启动中常见的 Binder 瓶颈模式
 
@@ -1258,10 +1142,6 @@ Binder 线程池拥塞指的是可处理新事务的 worker（工作线程） �
 
 只看到一笔很长的 `server_dur`，更可能是该服务的业务逻辑、嵌套调用、锁或 I/O 导致；要认定线程池拥塞，我们还需要 `android_binder_server_breakdown` 和服务端子 slice 的佐证。
 
-<!-- gracker-diagram: ch08-02-46-threadpool-evidence -->
-![线程池拥塞需要哪些并发证据](../../assets/diagrams/ch08/ch08-02-46-threadpool-evidence.png)
-
-图：31 / 15 是驱动扩池配置参数；认定拥塞还要观察多客户端、worker 状态与派发随负载的变化。
 
 #### 5.5 本地 I/O 与 Binder 等待混在一起
 
@@ -1312,10 +1192,6 @@ r6 kernel 在选中目标 Binder 线程后调用 `binder_transaction_priority()`
 
 这里的 frozen 目标是被系统 Freezer 暂停执行的 cached process（缓存进程）。`binder_proc_transaction()` 会根据事务类型走两条不同路径：
 
-<!-- gracker-diagram: ch08-02-50-frozen-outcomes -->
-![frozen 目标的同步与 oneway 分支](../../assets/diagrams/ch08/ch08-02-50-frozen-outcomes.png)
-
-图：r6 同步调用被拒绝；oneway 可进入异步队列并报告 pending，不代表服务端已处理。
 
 | 事务类型 | r6 行为 |
 |---|---|
@@ -1328,10 +1204,10 @@ libbinder 在 `waitForResponse()` 收到 `BR_FROZEN_REPLY` 后，会根据 froze
 
 `android_binder_txns` 依赖客户端到服务端的 flow。同步事务在目标 frozen 时会被驱动直接拒绝，没有服务端 receive/reply slice，标准表通常也就没有这一行；因此在标准表里过滤 `server_dur = 0`、把 `client_dur > 0 AND server_dur = 0` 直接计成 frozen 次数，这两种推断都靠不住。我们诊断 frozen rejection 时要保留 `binder_return` 原始事件，下面的查询从 raw ftrace 表中列出返回命令、发生时间和调用线程，供进一步与目标进程状态、调用 slice 对齐。
 
-<!-- gracker-diagram: ch08-02-51-frozen-raw-diagnosis -->
-![冻结拒绝为何要查询原始 return](../../assets/diagrams/ch08/ch08-02-51-frozen-raw-diagnosis.png)
+<!-- gracker-diagram: ed08-02-binder-pairing-and-frozen-observation -->
+![Binder有效配对、冻结拒绝与pending观测](../../assets/diagrams/ch08/ed08-02-binder-pairing-and-frozen-observation.png)
 
-图：拒绝事务可缺失服务端配对行；从原始 binder_return 映射 UAPI 命令，再关联客户端与目标冻结状态。
+图：有效同步配对依赖 client / flow / server 及完整时长约束；r6 frozen 同步事务拒绝入队，可缺失服务端配对行，应查原始 binder_return 和目标状态；frozen oneway 可排队并报告 pending，不能据此认定已经处理。标准表缺行还可能来自死亡或采集丢失，server_dur=0 不能统计冻结拒绝；原始表也依赖采集与解析。
 
 ```sql
 SELECT
@@ -1364,10 +1240,6 @@ Trace Processor 的 `ftrace_event` 是调试表，关闭原始 ftrace 事件解�
 
 这套替换只发生在满足上述条件的 oneway 之间：同步事务不参与合并，`android_binder_txns` 里也没有 `is_merged`、`frozen_reply` 或 `parent_txn_id` 这样的列。被更新的旧 oneway 不再由服务端消费，所以应用侧发送次数可能多于服务端实际处理次数。
 
-<!-- gracker-diagram: ch08-02-52-update-txn -->
-![TF_UPDATE_TXN 替换的条件链](../../assets/diagrams/ch08/ch08-02-52-update-txn.png)
-
-图：仅 frozen 目标同 node 的特定 pending oneway 可被替换；同步事务不合并，标准表也没有 is_merged 列。
 
 ### 七、优化策略与验证
 
@@ -1383,10 +1255,6 @@ Trace Processor 的 `ftrace_event` 是调试表，关闭原始 ftrace 事件解�
 
 缓存要说明一致性的判定条件：哪些变化发生后旧值不再可信。包升级、locale（语言与地区设置）、用户、权限、配置和进程重建都可能让旧结果失效；失效之后要以新值为准，别为了缩短 trace 而沿用过期数据。
 
-<!-- gracker-diagram: ch08-02-53-cache-optimization -->
-![减少 IPC 时先定义缓存失效条件](../../assets/diagrams/ch08/ch08-02-53-cache-optimization.png)
-
-图：进程内缓存、按需初始化和批量接口各有适用条件；调用数下降须与功能一致性和首帧指标一起验证。
 
 #### 7.2 只有自有 AIDL 才能选择 oneway
 
@@ -1417,10 +1285,6 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 
 同时比较 TTID、TTFD、主线程同步事务计数、endpoint 分布、请求派发间隔、`server_dur` 和 breakdown。若 Binder 指标下降而启动指标不变，这笔事务可能不在首帧关键路径上，也可能有新的工作占用了节省出的时间。
 
-<!-- gracker-diagram: ch08-02-55-binder-ab-validation -->
-![Binder 优化的 A/B 验证闭环](../../assets/diagrams/ch08/ch08-02-55-binder-ab-validation.png)
-
-图：固定协议并同时比较首帧、就绪与 IPC 分段；事务变快不保证它位于首帧关键路径。
 
 ### 扩展
 
@@ -1431,10 +1295,6 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 - r6 kernel 的 `binder_command` / `binder_return` 让 `BinderTracker` 在失败、frozen 和 nested transaction（嵌套事务）场景中更可靠地维护事务栈；
 - Android 17 的 Perfetto `android.binder` 表提供 sync/async、client/server、AIDL 名称、OOM score、package metadata（包版本等元数据）与 monotonic-duration（扣除系统 suspend 区间）相关字段。这些不是线程 Running / Runnable 的时长，也不等于 CPU time。
 
-<!-- gracker-diagram: ch08-02-56-monotonic-wall -->
-![monotonic duration 扣除的是系统 suspend](../../assets/diagrams/ch08/ch08-02-56-monotonic-wall.png)
-
-图：Perfetto 的 monotonic duration 去除系统 suspend 区间；线程自身睡眠等待依然不等于 CPU 使用。
 
 因目标冻结而失败的事务，这些能力也补不进 `android_binder_txns`，替代查法见 6.4。分析工具版本升级后，应先阅读所用 tag（源码版本标签） 的表定义，再写 SQL；网页上最新版 stdlib 的列，在按 r1 源码构建或其他版本的 Trace Processor 中未必存在；设备 Android 版本不唯一决定离线分析器版本。
 
@@ -1471,10 +1331,6 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 
 案例拿不出原始材料时，文中的毫秒数就只是示例；其他应用的预算和阈值，要按自己的实测来定。
 
-<!-- gracker-diagram: ch08-02-58-case-evidence -->
-![可复盘的冷启动案例要保留什么](../../assets/diagrams/ch08/ch08-02-58-case-evidence.png)
-
-图：先锁定样本并追到代码，再以同条件多轮验证；原始 trace、配置、SQL 和构建信息共同支撑结论。
 
 ### 与相关章节的边界
 

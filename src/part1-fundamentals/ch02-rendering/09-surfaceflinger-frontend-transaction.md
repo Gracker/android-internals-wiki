@@ -766,25 +766,10 @@ acquire fence、release fence 和 dma-fence 的内核语义见 §2.8；这里集
 
 FrontEnd 的职责，是把客户端请求转换成当前帧可消费的状态；显示流水线的其余部分，交给后面的阶段。
 
-```mermaid
-flowchart LR
-    Client["App / WMS / Shell<br/>SurfaceControl.Transaction"]
-    Queue["TransactionHandler<br/>入队与 per-applyToken 队列"]
-    Ready["readiness filters<br/>时间、buffer、barrier"]
-    State["LayerLifecycleManager<br/>RequestedLayerState"]
-    Graph["LayerHierarchyBuilder<br/>layer graph"]
-    Snapshot["LayerSnapshotBuilder<br/>z-ordered snapshots"]
-    Latch["兼容 Layer 路径<br/>latchBufferImpl"]
-    Compose["CompositionEngine<br/>per-display composition"]
-    HWC["HWC / RenderEngine"]
+<!-- gracker-diagram: ch02-09-frontend-state-pipeline -->
+![FrontEnd 把客户端请求转换成当前帧快照](../../assets/diagrams/ch02/ch02-09-frontend-state-pipeline.png)
 
-    Client --> Queue --> Ready --> State
-    State --> Graph --> Snapshot
-    State --> Latch
-    Snapshot --> Compose
-    Latch --> Compose
-    Compose --> HWC
-```
+图：collect 后先登记新 Layer，再筛选就绪事务并合并请求状态；层级更新与 snapshot 计算随后发生。Android 17 仍与 legacy Layer 的 latch 路径共存，FrontEnd 的状态更新无法直接证明 buffer 已可读或显示已完成。
 
 这张图表示职责关系，与逐行调用栈并不一一对应。`SurfaceFlinger::updateLayerSnapshots()` 主要按以下顺序执行：
 
@@ -799,10 +784,6 @@ flowchart LR
 
 上面八步里有三个常被混为一谈的时刻，我们把它们摆在一起区分：transaction 已进入 `RequestedLayerState`、新 buffer 已被 latch、目标 display 已经 present。第一项是请求状态更新；后两项还涉及 buffer、fence、CompositionEngine、HWC 和显示设备，各自有各自的完成条件。
 
-<!-- gracker-diagram: ch02-09-frontend-state-pipeline -->
-![FrontEnd 把客户端请求转换成当前帧快照](../../assets/diagrams/ch02/ch02-09-frontend-state-pipeline.png)
-
-图：collect 后先登记新 Layer，再筛选就绪事务并合并请求状态；层级更新与 snapshot 计算随后发生。Android 17 仍与 legacy Layer 的 latch 路径共存，FrontEnd 的状态更新无法直接证明 buffer 已可读或显示已完成。
 
 ### 2. FrontEnd 与旧 `Layer` 对象共存
 
@@ -1175,22 +1156,8 @@ SurfaceFlinger FrontEnd 可以按五个对象理解：
 
 ### 2. Android 17 的主路径
 
-下图按职责标出各组件。从“提交”到“本轮显示”，中间还要经过 readiness、snapshot、合成和 present。
+从“提交”到“本轮显示”的总体路径见前文“FrontEnd 的职责边界”图；中间还要经过 readiness、snapshot、合成和 present。
 
-```mermaid
-flowchart TD
-    A["客户端 Transaction::apply()"] --> B["Binder: SurfaceFlinger::setTransactionState()"]
-    B --> C["LocklessQueue<QueuedTransactionState>"]
-    C --> D["collectTransactions()"]
-    D --> E["按 applyToken 分桶的 FIFO"]
-    E --> F["flushTransactions()"]
-    F --> G["timeline 过滤"]
-    G --> H["buffer / fence / frame barrier 过滤"]
-    H --> I["transaction barrier 过滤"]
-    I --> J["LayerLifecycleManager::applyTransactions()"]
-    J --> K["Layer hierarchy 与 LayerSnapshot"]
-    K --> L["CompositionEngine / HWC / present"]
-```
 
 正常处理入口位于 `SurfaceFlinger::updateLayerSnapshots()`：
 
@@ -1343,10 +1310,6 @@ Android 17 的 `AutoSingleLayer` 至少要求：
 
 `NotReadyUnsignaled` 距离立即应用还有一步：`TransactionHandler` 先记住该 token，等本轮尚未选出任何正常 ready transaction，才单独弹出这笔事务；后续 RenderEngine 或 HWC 读取 buffer 时依然必须遵守 fence。
 
-<!-- gracker-diagram: ch02-09-readiness-filters -->
-![三类过滤器后才决定本轮能否应用事务](../../assets/diagrams/ch02/ch02-09-readiness-filters.png)
-
-图：timeline、buffer 和 transaction barrier 按注册顺序检查；结果不是简单的 fence 是否 signal。NotReadyUnsignaled 仅是严格条件下的候选，本轮没有正常 ready 项时才可取出一笔。读取像素前仍须满足 acquire 依赖。
 
 #### 5.3 transaction barrier：Android 17 的显式 token 依赖
 

@@ -163,22 +163,10 @@ Android 13 / API 33 开始提供预测性返回（Predictive Back） API，返�
 
 下面的流程图标出两条提交路径的分叉点：
 
-```mermaid
-flowchart TD
-    A["触摸从左右边缘开始"] --> B["App 与 edge-swipe 并行收到 pointer stream"]
-    B --> C["EdgeBackGestureHandler 检查资格、方向与阈值"]
-    C -->|候选失败| D["App 继续处理原触摸流"]
-    C -->|候选资格成立| E{"BackAnimation 是否可用"}
-    E -->|否| F["阈值越过后 SystemUI 直接 pilferPointers"]
-    F --> G["原 App 窗口收到 ACTION_CANCEL"]
-    G --> H["提交时注入 KEYCODE_BACK"]
-    E -->|是| I["首次 MOVE 即可 startBackNavigation（可早于阈值）"]
-    I --> J["解析 BackNavigationInfo 与动画目标"]
-    J --> K["跟踪阈值、按需 pilfer、分发 progress 与预览"]
-    K --> L{"松手时是否提交"}
-    L -->|提交| M["onBackInvoked 或系统返回转场"]
-    L -->|取消| N["onBackCancelled 与预览回撤"]
-```
+<!-- gracker-diagram: ch03-03-legacy-and-ahead-routing -->
+![提前解析返回目标可以早于手势识别阈值](../../assets/diagrams/ch03/ch03-03-legacy-and-ahead-routing.png)
+
+图：SystemUI 与应用先并行观察指针流，候选成立后按是否连接 BackAnimation 分流。legacy 越过阈值后直接 pilfer，提交时注入 BACK；提前分发可在首次 MOVE 就解析 BackNavigationInfo，之后根据阈值、目标和进度生成能力决定抢占与预览。两条路径都可能让原应用收到 CANCEL。
 
 左侧旧式（legacy）分支到 Android 17 源码里仍是明确的回退路径，别把它当成只存在于 Android 10–12 的老代码。当 `mBackAnimation == null` 时，越过阈值后由 SystemUI 抢占指针，`BackPanelController` 判断提交后，`triggerBack()` 注入 `KEYCODE_BACK` 的按下和抬起事件。
 
@@ -186,10 +174,6 @@ flowchart TD
 
 预测性返回（Predictive Back）也可能抢占指针。接管时机交给 `BackAnimationController.tryPilferPointers()`：使用系统动画控制器、应用侧生成不了进度、焦点变化或导航信息为空，都可能触发抢占。所以排查性能跟踪时，想分清旧式返回与预测性返回，光有 `ACTION_CANCEL` 还不够，还要结合 Shell 返回动画和回调轨道。
 
-<!-- gracker-diagram: ch03-03-legacy-and-ahead-routing -->
-![提前解析返回目标可以早于手势识别阈值](../../assets/diagrams/ch03/ch03-03-legacy-and-ahead-routing.png)
-
-图：SystemUI 与应用先并行观察指针流，候选成立后按是否连接 BackAnimation 分流。legacy 越过阈值后直接 pilfer，提交时注入 BACK；提前分发可在首次 MOVE 就解析 BackNavigationInfo，之后根据阈值、目标和进度生成能力决定抢占与预览。两条路径都可能让原应用收到 CANCEL。
 
 ### 手势冲突处理：系统手势优先区域与应用的 WindowInsets
 
@@ -423,10 +407,6 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 
 我们把界线划在这里：在 `onBackProgressed()` 中结束 Activity、弹出 Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这条线：手势阶段只变换 SurfaceControl 动画控制柄（leash），提交后才调用真实回调，并把预览接入正式的窗口转场。leash 让动画执行者变换窗口图层，但不会把窗口 Surface 本身的所有权交出去。
 
-<!-- gracker-diagram: ch03-03-preview-commit-cancel -->
-![手势进度只做可撤销视觉更新，提交后才改变导航](../../assets/diagrams/ch03/ch03-03-preview-commit-cancel.png)
-
-图：onBackStarted 保存起点，onBackProgressed 随进度更新可恢复的属性。手势取消时 onBackCancelled 恢复视觉状态；确认提交后 onBackInvoked 才执行 finish、pop 或其他导航操作。进度和取消由 OnBackAnimationCallback 提供，OnBackInvokedCallback 本身只有提交方法。
 
 #### 1.2 返回目的地与动画执行者
 
@@ -448,22 +428,10 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 
 下面的流程图标出 SystemUI、WM Shell、`system_server` 和应用之间谁做决策、谁做动画。下文把 ActivityTaskManagerService 简称为 ATMS，把 InputMethodManagerService 简称为 IMMS。
 
-```mermaid
-flowchart TD
-    A["SystemUI: EdgeBackGestureHandler 观察边缘手势"] --> B["WM Shell: BackAnimationController 跟踪手势"]
-    B --> C["ATMS.startBackNavigation() Binder 调用"]
-    C --> D["system_server: BackNavigationController"]
-    D --> E["读取 focused WindowState 的 top callback"]
-    E --> F{"能否预测并准备系统目标"}
-    F -->|应用或 IME callback| G["返回 TYPE_CALLBACK"]
-    F -->|dialog / activity / task / home| H["准备 RemoteAnimationTarget 与 leash"]
-    G --> I["应用 ViewRoot 分发 start / progress / cancel / invoke"]
-    H --> J["WM Shell 对 leash 应用 SurfaceControl.Transaction"]
-    J --> K{"手势提交"}
-    K -->|取消| L["播放取消动画并恢复层级"]
-    K -->|提交| M["启动 post-commit，并按类型触发真实 callback"]
-    M --> N["Transition 合并并完成收尾"]
-```
+<!-- gracker-diagram: ch03-03-navigation-target-and-executor -->
+![WMS 预测目的地，Shell 按能力选择动画执行者](../../assets/diagrams/ch03/ch03-03-navigation-target-and-executor.png)
+
+图：SystemUI 把手势交给 Shell，Shell 经 ATMS 请求 WMS 的 BackNavigationController。WMS 读取焦点窗口 top callback，判断应用回调或系统目标；满足准备条件且产品有动画执行者时交付 RemoteAnimationTarget 与 leash。应用回调、系统 leash 动画和无有效信息时的按键兜底应分别取证。
 
 图中的 `RemoteAnimationTarget` 是交给 Shell 的窗口图层描述，包含几何信息和用于变换图层的 leash。其中两个类负责核心协调职责：
 
@@ -472,10 +440,6 @@ flowchart TD
 
 Android 17 的 WMS 里查不到 `TaskAnimationCoordinator` 这个类，解释跨 Activity、跨任务或任务快照路径时也用不上它。
 
-<!-- gracker-diagram: ch03-03-navigation-target-and-executor -->
-![WMS 预测目的地，Shell 按能力选择动画执行者](../../assets/diagrams/ch03/ch03-03-navigation-target-and-executor.png)
-
-图：SystemUI 把手势交给 Shell，Shell 经 ATMS 请求 WMS 的 BackNavigationController。WMS 读取焦点窗口 top callback，判断应用回调或系统目标；满足准备条件且产品有动画执行者时交付 RemoteAnimationTarget 与 leash。应用回调、系统 leash 动画和无有效信息时的按键兜底应分别取证。
 
 ### 3. 输入事件怎样到达返回动画
 
@@ -661,14 +625,10 @@ AndroidX `OnBackPressedDispatcher`、Navigation、Fragment 与 Compose `Predicti
 
 输入法返回路径跨越输入法和应用两个进程。下面的流程图标出回调转发与 Insets 动画控制之间的分工：
 
-```mermaid
-flowchart LR
-    A["IME: ImeBackCallbackSender"] --> B["ResultReceiver"]
-    B --> C["App: ImeBackCallbackProxy"]
-    C --> D["App WindowOnBackInvokedDispatcher"]
-    D --> E["ImeBackAnimationController"]
-    E --> F["App InsetsController 控制 IME Insets"]
-```
+<!-- gracker-diagram: ch03-03-ime-back-callback-control -->
+![IME 返回先转发注册，再由应用窗口控制 Insets 动画](../../assets/diagrams/ch03/ch03-03-ime-back-callback-control.png)
+
+图：IME 通过 Sender / ResultReceiver 把回调注册传给当前应用 Proxy；默认系统回调在应用窗口映射到 DEFAULT，通常高于 Activity 的内部 SYSTEM 回调。可用时 ImeBackAnimationController 在预提交阶段做 peek，取消恢复，提交后完成隐藏并临时清除回调，让后续返回可以继续导航。
 
 输入法进程通过 `ImeBackCallbackSender` 把回调注册转发给当前应用。应用侧 `ImeBackCallbackProxy` 收到默认系统回调后，会把它映射到 `PRIORITY_DEFAULT`；若 ViewRoot 已提供 `ImeBackAnimationController`，分发器就用该控制器处理预测动画。
 
@@ -684,10 +644,6 @@ flowchart LR
 
 输入法隐藏提交后，控制器会暂时清除输入法回调，让下一次返回交到后续回调手里，即使隐藏动画还在收尾。常见“两次返回”的现象有这个状态基础，但把它写成所有输入法、窗口模式和回调组合下的硬性规则，会在例外场景翻车。
 
-<!-- gracker-diagram: ch03-03-ime-back-callback-control -->
-![IME 返回先转发注册，再由应用窗口控制 Insets 动画](../../assets/diagrams/ch03/ch03-03-ime-back-callback-control.png)
-
-图：IME 通过 Sender / ResultReceiver 把回调注册传给当前应用 Proxy；默认系统回调在应用窗口映射到 DEFAULT，通常高于 Activity 的内部 SYSTEM 回调。可用时 ImeBackAnimationController 在预提交阶段做 peek，取消恢复，提交后完成隐藏并临时清除回调，让后续返回可以继续导航。
 
 ### 10. 如何建立性能结论
 
