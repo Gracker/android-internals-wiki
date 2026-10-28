@@ -13,11 +13,11 @@ tags:
   - wms
   - windowmanagerservice
   - surface
-last_verified: '2026-10-22'
-last_source_verified_at: '2026-10-24'
+last_verified: '2026-10-28'
+last_source_verified_at: '2026-10-28'
 last_rework_at: '2026-10-22T09:37:56+08:00'
-last_deep_review_at: '2026-10-22T12:39:04+08:00'
-verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；SurfaceView alpha、四项 API 首引与当前 flag、Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。其余历史 HDR/SurfaceView flag 与第三方框架拓扑仍未逐项按版本复核。
+last_deep_review_at: '2026-10-28T08:40:14+08:00'
+verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。补核 Window/SurfaceView HDR headroom 的 HDR 模式前提、独立作用域、比值及输入范围、自动默认值和 Android 15/16 limited_hdr 注解到 Android 17 移除注解的边界；复核 SurfaceView 四项 API 与 alpha。WebView、Flutter、React Native、游戏引擎等第三方拓扑仍未按具体组件版本逐项复核。
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: medium-high
 sources:
@@ -213,6 +213,14 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/android-15.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/WindowManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r1/core/java/android/view/SurfaceView.java
+- type: official
+  path: https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float)
 related_chapters:
 - '2.1'
 - '2.9'
@@ -399,7 +407,7 @@ Camera、视频、游戏描述生产者或业务类型，SurfaceView、TextureVi
 | Android 12 / API 31 | [`ViewRootImpl` 使用 BLAST](https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/core/java/android/view/ViewRootImpl.java#1958)，[FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) 从 Android 12 起提供帧时间线 | 标准窗口可用应用 / SF 的预期与实际时间线；独立 Surface 仍需 layer、BufferQueue 和 fence 证据 |
 | Android 13 / API 33 | `AutoSingleLayer` 成为 latch-unsignaled 的默认模式；[Composer HAL 新增 AIDL 接口](https://source.android.com/docs/core/graphics/aidl-hwc) | 简单单 layer 更新可先采纳未完成的 buffer；HIDL composer 2.1—2.4 已弃用，但 Android 13 不强制厂商改用 AIDL，需核对设备实际 HAL |
 | Android 14 / API 34 | SurfaceView 开始支持 0 与 1 之间的 alpha，并公开 [`setSurfaceLifecycle()`](https://developer.android.com/reference/android/view/SurfaceView#setSurfaceLifecycle(int)) | alpha 的作用目标取决于 SurfaceView 与宿主窗口的合成顺序；Surface 保留行为还取决于生命周期策略 |
-| Android 15 / API 35 | Window / SurfaceView 可以表达期望的 HDR 亮度余量（headroom），其中 [`SurfaceView.setDesiredHdrHeadroom()`](https://developer.android.com/reference/android/view/SurfaceView#setDesiredHdrHeadroom(float)) 标为 API 35；平台引入自适应刷新率（ARR），应用侧支持范围从 Android 15 QPR1 起且要求设备实现对应 HAL；Android 15/16 API 文本中的 headroom 方法仍带 `limited_hdr` 功能开关 | 亮度余量和帧率请求都是期望值，不能证明实际亮度、刷新率或合成类型；QPR、功能开关与设备能力都要核对 |
+| Android 15 / API 35 | [`Window.setDesiredHdrHeadroom()`](https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float)) 与 [`SurfaceView.setDesiredHdrHeadroom()`](https://developer.android.com/reference/android/view/SurfaceView#setDesiredHdrHeadroom(float)) 分别表达各自的期望 HDR 亮度余量（headroom），均标为 API 35；平台引入自适应刷新率（ARR），应用侧支持范围从 Android 15 QPR1 起且要求设备实现对应 HAL；Android 15/16 API 文本中的 headroom 方法仍带 `limited_hdr` 功能开关 | Window 请求仅在 `COLOR_MODE_HDR` 下生效，不影响独立 SurfaceView；亮度余量和帧率请求不能证明实际亮度、刷新率或合成类型，QPR、功能开关与设备能力都要核对 |
 | Android 16 / API 36 | [`SurfaceView.setCompositionOrder()`](https://developer.android.com/reference/android/view/SurfaceView#setCompositionOrder(int)) 标为 API 36；API 文本中带 `surface_view_set_composition_order` flag | 多 Surface 页面要记录 parent、relative layer 和 Z-order；flag-gated API 不能当成所有设备无条件可用 |
 | Android 17 / API 37 | 现行 FrontEnd 帧快照、预测显示调度与 HWC 流程；[`SurfaceView.setBlurRegions()`](https://developer.android.com/reference/android/view/SurfaceView#setBlurRegions(java.util.Collection%3Candroid.view.BlurRegion%3E)) 标为 API 37，源码仍带 `surface_view_set_blur_regions` 开关 | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力和功能开关状态仍需设备证据 |
 
@@ -410,6 +418,12 @@ ARR 的平台引入时间与应用侧可用范围要分开记录。[应用侧指
 SurfaceView 的 alpha 有具体的作用范围：合成顺序非负时，alpha 直接作用于 Surface 内容，也作用于嵌入的 `SurfacePackage`；合成顺序为负、SurfaceView 位于宿主窗口下方时，alpha 作用于宿主的挖洞区域，不直接修改 Surface 或 `SurfacePackage` 内容。官方明确提示，窗口下方的多个 SurfaceView 重叠时可能无法正确混合。排查半透明视频或叠层预览时，应同时记录合成顺序与重叠关系，不能只检查 View 的 alpha 值。依据见 [`setAlpha()` 官方说明](https://developer.android.com/reference/android/view/SurfaceView#setAlpha(float))和固定标签的 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#683)。
 
 `setCompositionOrder()` 的非负值表示在宿主窗口上方合成，负值表示在下方；同级 SurfaceView 中数值更大的排在上方，相同值之间的相对顺序未定义。复现遮挡错误时，应记录各 SurfaceView 的具体值；相同值不能作为稳定排序依据。
+
+HDR 亮度余量也要按目标对象分别设置。`Window.setDesiredHdrHeadroom()` 仅在窗口的 `colorMode` 为 `ActivityInfo.COLOR_MODE_HDR` 时生效，不影响独立的 SurfaceView 或 SurfaceControl；`SurfaceView.setDesiredHdrHeadroom()` 则独立于宿主 Window 的 `colorMode` 和 headroom。HDR 视频或相机预览位于独立 SurfaceView 时，只设置宿主 Window 的参数不会同时设置该 SurfaceView。作用域见固定标签的 [`Window.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java#1420) 与 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#1102)。
+
+这两个接口的 `desiredHeadroom` 表示 HDR 白点亮度相对 SDR 白点亮度的比值，不是绝对亮度（nits）。`1.0` 表示无 HDR 亮度余量，`0.0` 恢复系统自动选择；其余合法值为有限数，范围是 `1.0`—`10000.0`。`Window.getDesiredHdrHeadroom()` 返回设置的请求值，实际余量仍受环境、显示能力与面板位深影响。排查时应分别记录 Window 的 `colorMode`、headroom 请求值和独立 SurfaceView 的请求值，再核对目标 layer 的 HDR 内容与显示能力。
+
+历史功能开关也有版本边界：[`android-15.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-15.0.0_r1/core/api/current.txt) 与 [`android-16.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/api/current.txt) 的 API 文本为这些 headroom 方法保留 `limited_hdr` 注解；[`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt) 已移除该注解。注解变化不能替代目标设备的 HDR 能力检查。
 
 这些版本差异没有建立“版本越新，所有页面越快”的因果关系。做渲染评审时，我们把版本能力、应用用法、设备实现和运行时证据分别记录，四者不互相代表。
 
