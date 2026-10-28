@@ -18,8 +18,10 @@ related_chapters:
 - '1.15'
 - '1.10'
 - '14.3'
-last_verified: '2026-08-16'
+last_verified: '2026-10-27'
 last_verified_against: AOSP android-17.0.0_r1 / external/perfetto android-17.0.0_r1 / android17-6.18-2026-06_r6
+last_source_verified_at: '2026-10-27'
+last_idle_audit_at: '2026-10-27'
 last_review_finalize_at: '2026-08-16'
 confidence: high
 sources:
@@ -253,7 +255,7 @@ Binder node 是驱动中代表目标 Binder 对象的节点。同一 node 的 `o
 - buffer 数量超过 50；或
 - 总占用超过 `buffer_size / 4`；
 
-满足其一，当前 buffer 会被标记为 `oneway_spam_suspect`。libbinder 默认启用驱动检测，调用方收到 `BR_ONEWAY_SPAM_SUSPECT` 时记录调用栈。
+满足其一且接收方分配器的 `oneway_spam_detected` 尚未置位时，当前 buffer 才会被标记为 `oneway_spam_suspect`，同时置位该状态。持续处于低异步空间期间，后续事务不会反复获得这个标记；检测函数再次看到 `free_async_space >= buffer_size / 10` 时才清除状态，允许后续重新触发。libbinder 默认启用驱动检测，调用方收到 `BR_ONEWAY_SPAM_SUSPECT` 时记录调用栈。因此，没有连续出现调用栈告警，并不能排除异步空间仍然紧张。
 
 这些条件只用于内核诊断；业务接口的容量目标应该定在更早的位置——等到接近这些条件，目标进程的异步预算已经非常紧张了。
 
@@ -279,6 +281,8 @@ Android 8 已引入 scatter-gather Binder，把分散在多处的 buffer 作为�
 - 走内核 Binder 还是 RPC Binder。
 
 即使单笔数据明显低于映射长度，并发事务也可能使它失败；反过来，一笔失败也未必说明本次 Parcel 本身接近 1 MiB。
+
+[`TransactionTooLargeException` 的官方说明](https://developer.android.com/reference/android/os/TransactionTooLargeException)还指出：调用方无法仅凭这个异常判断是请求未送达，还是服务端已经处理、却未能发回回复，应按可能发生部分失败处理。有副作用的操作需要先核对业务状态或使用幂等协议，不能把收到异常当作服务端没有执行的证据。该异常类从 API 15 提供，适用于本文的 Android 15–17 范围。
 
 #### 2. 300 KiB 是主动告警线
 
@@ -387,6 +391,10 @@ r6 内核在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on_
 - 生产者与消费者之间如何同步；
 - 对端死亡后的清理；
 - 长度、偏移与整数溢出的校验。
+
+[`SharedMemory` 从 API 27 提供](https://developer.android.com/reference/android/os/SharedMemory)，在本文的 Android 15–17 范围内可用。`setProtect()` 只能收紧权限，不能重新增加权限；它只约束之后创建的映射，已有映射保留原来的权限。需要向对端共享只读数据时，可以先建立生产者的读写映射，再调用 `setProtect(PROT_READ)`，随后传递 `SharedMemory`，但不能用这一步撤销对端此前已有的可写映射。
+
+`SharedMemory.close()` 只关闭当前实例持有的 FD，已有映射仍然有效；所有 FD 都关闭且所有映射都解除后，共享区域才会释放。每个映射用完后还需调用 `SharedMemory.unmap()`，并确保没有其他引用继续访问对应的 `ByteBuffer`。
 
 #### 3. 为 `oneway` 建立下游压力控制
 
@@ -573,7 +581,9 @@ struct binder_extended_error {
 - `command`：`BR_FAILED_REPLY` 等 Binder 返回命令；
 - `param`：负 errno 错误号。
 
-内核把错误保存在当前 `binder_thread` 中。`BINDER_GET_EXTENDED_ERROR` 复制结果后立即把该线程的记录重置为 `BR_OK`。它不是进程级错误历史，也不适合跨线程延后查询。
+内核把错误保存在当前 `binder_thread` 中。`BINDER_GET_EXTENDED_ERROR` 在锁内把记录复制到内核局部变量，并将该线程的记录重置为 `BR_OK`，随后才向用户态复制结果；即使这次用户态复制因 `EFAULT` 失败，旧记录也已被清除。扩展错误只属于当前线程，读取会消费这条记录，不适合跨线程或延后查询。
+
+`extended_error` 功能探测通过时，标准 libbinder 的 `waitForResponse()` 在返回失败前会通过 `logExtendedError()` 读取并消费记录。使用这条路径排查时，应先保留 `Binder transaction failure` 日志中的 ID、命令和 errno；等 `transact()` 返回后再发一次 ioctl，通常读不到同一条错误。只有自行处理驱动协议或调整底层错误处理路径时，才应在失败线程上安排这次读取。
 
 `logExtendedError()` 只为 `ENOSPC` 增加一段解释：Binder 缓冲区已满，事务过多或过大；其他 errno 仍使用通用错误字符串。不过单独一个 `ENOSPC` 也证明不了“这一条 Parcel 超过固定 1 MiB”——同一接收进程的并发同步 / 异步分配都会消耗 Binder 映射与异步预算，要结合前文的分配器与异步预算一起判断。
 
@@ -783,7 +793,7 @@ End
 
 #### 12.3 失败与内容复现
 
-1. 事务失败后在同一 Binder 线程读取扩展错误；
+1. 标准 libbinder 调用失败后先保留 `logExtendedError()` 的失败日志；若自行处理驱动协议，则在失败线程的错误处理路径读取一次扩展错误，避免事后重复读取；
 2. `ENOSPC` 先检查接收进程的缓冲区占用、大事务和并发异步事务；
 3. 只有在系统轨迹与日志无法解释协议内容、设备可控且 libbinder 编译开关已打开时，才使用 `RecordedTransaction`；
 4. 录制文件按敏感数据管理，完成分析后清理。
