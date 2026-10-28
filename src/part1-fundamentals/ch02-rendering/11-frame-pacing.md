@@ -4,8 +4,10 @@ chapter: '2.11'
 section: '2.11'
 status: finalized
 applicable_versions: Android 4.4 (API 19, Swappy 当前 release minSdk) - Android 17 (API 37)；Java Choreographer 自 API 16 可用
-last_verified: '2026-07-25'
+last_verified: '2026-10-24'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1；android17-6.18-2026-06_r6；AGDK frame-pacing release @ f81f888fe11e；Vulkan 1.4.335；Writer rendering_pipelines S01/S08/S12
+last_source_verified_at: '2026-10-24'
+last_idle_audit_at: '2026-10-24T22:38:49+08:00'
 confidence: high
 sources:
 - type: aosp
@@ -34,6 +36,8 @@ sources:
   path: https://developer.android.com/games/sdk/frame-pacing
 - type: official
   path: https://developer.android.com/games/develop/vulkan/frame-pacing-extensions
+- type: official
+  path: https://perfetto.dev/docs/data-sources/gpu
 - type: material
   path: S01_baseline_12_anchor_pipeline/source.md
 - type: material
@@ -180,11 +184,11 @@ int SwappyCommon::calculateSwapInterval(nanoseconds frameTime,
 
 `interval` 是运行时算出来的刷新周期整数倍，库内没有 90 FPS、45 FPS、30 FPS 这样的固定档位表；官方文档列出的档位来自设备刷新率组合的示例，作参考即可。
 
-多刷新率的选择同样在运行时完成。`setPreferredRefreshPeriod()` 遍历 `mSupportedRefreshPeriods`，寻找能容纳当前 frame time（单帧耗时） 的最短 swap duration；几段结果相近时，它会选较长的 refresh period（刷新周期），以降低显示刷新功耗。`ANativeWindow_setFrameRate()` 已加载且 window 已设置时，Swappy 直接提交 frame-rate vote，DisplayManager 路径只是回退。
+多刷新率的选择同样在运行时完成。`setPreferredRefreshPeriod()` 在 `ANativeWindow_setFrameRate()` 已加载且 window 已设置时，直接提交 frame-rate vote，由平台选择显示模式；只有回退到 `SwappyDisplayManager` 时，才遍历 `mSupportedRefreshPeriods`，寻找能容纳当前 frame time（单帧耗时）的最短 swap duration。几段结果相近时，这条回退路径会选较长的 refresh period（刷新周期），以降低显示刷新功耗。
 
 源码里有几个常量，含义和三档阈值表是两回事：
 
-- `mAutoSwapIntervalThreshold` 默认是 `50 ms`。观测到的帧时长超过该阈值后，auto swap interval 不再主动 sleep，让应用尽快追赶；这个阈值不是建议的目标帧预算。
+- `mAutoSwapIntervalThreshold` 默认是 `50 ms`。Auto 模式下，`waitForNextFrame()` 比较的是 `refreshPeriod * mAutoSwapInterval`；该提交间隔超过阈值时，会跳过其中的目标节拍等待和上一帧完成等待，并将 `presentationTimeIsNeeded` 设为 false。阈值约束的是按刷新周期换算的间隔，不直接比较原始帧耗时，也不代表建议的目标帧预算。
 - `REFRESH_RATE_MARGIN` 是 `500 ns`，只用于 interval 取整边界。
 - `FrameDurations` 的采样窗口是 `2 s`，用来估计近期 CPU/GPU 的帧耗时。
 
@@ -289,7 +293,7 @@ Android 17/API 37 新增了 `VK_EXT_present_timing` 平台支持。对自研 Vul
 
 图：AOSP 17 当前映射中，QUEUE_OPERATIONS_END 对应 render complete，REQUEST_DEQUEUED 对应 composition latch；两个 IMAGE_FIRST_PIXEL 阶段共享 actual present。阶段名不保证独立光学传感信息，该版本 Swappy release 也不会自动改用新 EXT 接口。
 
-AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR_present_id2` 和 `VK_KHR_present_wait2` 列为 Android 17 Vulkan Profile（能力要求集合） 的 `MUST`（必须支持） 项。这个 Profile 约束的是 Android 17 首发设备和新芯片的能力；应用仍要做自己的运行时检查，升级设备、定制系统、驱动状态和 feature（功能） 开关都可能造成差异。
+AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR_present_id2` 和 `VK_KHR_present_wait2` 列为 Android 17 Vulkan Profile（能力要求集合）的 `MUST`（必须支持）项。这个 Profile 约束的是在 Android 17 上首发或续期 Google Requirements Freeze（GRF，Google 要求冻结）的芯片组；应用仍要做自己的运行时检查，升级设备、定制系统、驱动状态和 feature（功能）开关都可能造成差异。
 
 `android-17.0.0_r1` 的 Vulkan loader（加载器） 公布这个扩展是有条件的，`EnumerateDeviceExtensionProperties()` 只有在以下三项都满足时才加入 `VK_EXT_present_timing`：
 
@@ -297,7 +301,7 @@ AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR
 2. `present_timing_ext` 平台 flag（功能开关） 已开启；
 3. ICD（Installable Client Driver，可安装客户端驱动）支持该扩展硬依赖的 calibrated timestamps（校准时间戳）能力。
 
-所以应用仍要自己执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询、启用所需能力；查询 past presentation timing（历史显示时序） 之前，还要先用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。
+所以应用仍要自己执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询、启用所需能力；创建 swapchain 时还要设置 `VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT`。查询 past presentation timing（历史显示时序）之前，还要先用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。
 
 Android 17 的实现目前只公布 absolute scheduling（绝对时间调度），还不支持 relative scheduling（相对时间调度）；`vkGetSwapchainTimeDomainPropertiesEXT()` 返回 `VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT`。要与 CPU 时钟关联，按规范经 calibrated timestamp 机制转换即可，不要把接口时间域直接写死成 `CLOCK_MONOTONIC`。
 
@@ -311,11 +315,11 @@ Android 17 的实现目前只公布 absolute scheduling（绝对时间调度）�
 
 ### Android 17 的 producer throttling 开关
 
-Android 17/API 37 还新增了 `Surface.setProducerThrottlingEnabled()` 和对应的 `ANativeWindow_setProducerThrottlingEnabled()`，控制 producer throttling，也就是生产端在下游仍忙时主动放慢提交。Java API 带 `FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL` 标记，`BufferQueueProducer` 的分支受 `bq_producer_backpressure（反压，即下游处理不过来时阻塞上游）_control` 平台 flag 保护；设备行为与 API 37 文档不符时，要同时确认系统镜像的 flag 状态。
+Android 17/API 37 还新增了 `Surface.setProducerThrottlingEnabled()` 和对应的 `ANativeWindow_setProducerThrottlingEnabled()`，控制 producer throttling，也就是生产端在下游仍忙时主动放慢提交。Java API 带 `FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL` 标记，`BufferQueueProducer` 的分支受 `bq_producer_backpressure_control` 平台 flag 保护（反压，即下游处理不过来时阻塞上游）；设备行为与 API 37 文档不符时，要同时确认系统镜像的 flag 状态。
 
 功能启用时默认值为 true：producer 在 consumer 仍处理上一块 buffer 时调用 `queueBuffer()`，CPU 可能在 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 附近等待上一帧 GPU 工作完成。
 
-设置为 false 关闭的是 `queueBuffer()` 处的 CPU 限速。CPU 生产速度超过 GPU 时，队列容量仍会在后续 dequeue 或 `vkAcquireNextImageKHR()` 处形成自然反压；该 API 不会取消 BufferQueue 容量、fence 语义或应用自己的 in-flight frame（同时在途帧）上限。异步模式下该设置没有效果，throttling 始终启用。
+设置为 false 请求关闭 `queueBuffer()` 处的 CPU 限速。CPU 生产速度超过 GPU 时，队列容量仍会在后续 dequeue 或 `vkAcquireNextImageKHR()` 处形成自然反压；该 API 不会取消 BufferQueue 容量、fence 语义或应用自己的 in-flight frame（同时在途帧）上限。异步模式下该设置没有效果，throttling 始终启用；源码还会在 `mDequeueBufferCannotBlock` 为 true 时保留这一限速，避免 dequeue 无法阻塞时失去反压。
 
 这项能力适合已经用 semaphore（信号量）、fence 和有限在途帧做好显式同步的 Vulkan 渲染器。旧应用若把 present 中的 stall 当作隐式同步，直接关闭可能暴露资源复用错误，或让 queue depth 增长。`f81f888fe11e` 的 Swappy release 实现早于该 API，也尚未调用它；接入 Swappy 的应用应先用 trace 确认当前 stall 来源，再决定是否由业务侧修改。
 
@@ -350,10 +354,10 @@ FrameTimeline 要求 Android 12/API 31 及以上。`Expected Timeline` 是 sched
 
 - 应用进程的 Choreographer/AChoreographer callback 与 render-thread marker（渲染线程标记）；
 - `Expected Timeline` 和 `Actual Timeline`；
-- GPU Render Stag（日志标签）es（GPU 阶段轨道） 与 producer fence；
+- GPU Render Stages（GPU 阶段轨道；需设备与驱动提供对应数据源）与 producer fence；
 - 对应 layer 的 BufferQueue/SurfaceFlinger slice（时间片段）。
 
-对于受 FrameTimeline 支持的窗口，下面的查询把预算、实际工作时长和 jank 归因放到同一行。它沿用 Android 17 Perfetto metric（预置分析指标） 中按 `upid + name` 关联 expected 与 actual slice 的方式；`upid` 是 Perfetto 为进程分配的唯一标识。
+对于受 FrameTimeline 支持的窗口，下面的查询把预算、实际工作时长和 jank 归因放到同一行。查询用 `upid + name` 关联同一进程、同一 vsync token 的 expected 与 actual slice；`upid` 是 Perfetto 为进程分配的唯一标识。Android 17 Perfetto 的 metric（预置分析指标）`android_frame_timeline_metric.sql` 按进程与 vsync token 聚合 actual slice 中的 jank 结果，没有执行 expected/actual 关联。
 
 ```sql
 SELECT
@@ -441,5 +445,5 @@ Pacing 决定每一帧落在哪个显示周期，frame-rate vote 帮助系统选
 - Android 17 AOSP：[`vulkan/libvulkan/driver.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/driver.cpp)、[`vulkan/libvulkan/swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp) 与 [`VP_ANDROID_17_requirements.json`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json)
 - Khronos Vulkan 1.4.335：[`VK_EXT_present_timing` proposal](https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/proposals/VK_EXT_present_timing.adoc)
 - Android 17 BufferQueue 与 producer throttling：[`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)、[`native_window.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/native_window.h)、[`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp) 与 [`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)
-- Perfetto：[FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)、[`actual_frame_timeline_slice` schema](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql) 与 [`android_frame_timeline_metric.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql)
+- Perfetto：[FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)、[GPU 数据源](https://perfetto.dev/docs/data-sources/gpu)、[`actual_frame_timeline_slice` schema](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql) 与 [`android_frame_timeline_metric.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql)
 - 内核 `android17-6.18-2026-06_r6`：[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)
