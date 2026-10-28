@@ -4,8 +4,10 @@ title: 文字渲染性能
 chapter: '2.6'
 section: '2.6'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-07-25'
-last_verified_against: AOSP android-17.0.0_r1 frameworks/base + frameworks/minikin + external/harfbuzz_ng + external/skia, AndroidX main, Perfetto docs, Writer rendering_pipelines S01 / S02
+last_verified: '2026-10-24'
+last_source_verified_at: '2026-10-24'
+last_idle_audit_at: '2026-10-24T10:39:20+08:00'
+last_verified_against: AOSP android-17.0.0_r1 frameworks/base + frameworks/minikin + external/harfbuzz_ng + external/skia; AndroidX androidx-main emoji2 + appcompat; Android Developers PrecomputedText + StaticLayout.Builder + emoji2; Perfetto Android system tracing
 confidence: high
 sources:
 - type: aosp
@@ -28,6 +30,12 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/text/MeasuredText.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/SkiaCanvas.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaRecordingCanvas.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaRecordingCanvas.h
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/text/method/SingleLineTransformationMethod.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/minikin/+/refs/tags/android-17.0.0_r1/include/minikin/LayoutCache.h
 - type: aosp
@@ -84,9 +92,11 @@ related_chapters:
 |---|---|---|---|
 | 内容处理 | 调用 `setText()` 的线程，通常是主线程 | `CharSequence`、Span（附加在文本区间上的样式或行为）、EmojiCompat 处理结果 | bind（把数据绑定到 View）、文本更新、filter（过滤器）、linkify（识别并添加链接）、emoji 处理 |
 | 排版准备 | 主线程，或显式预计算线程 | `MeasuredParagraph` 与 `MeasuredText`、行断点、`Layout` | 新文本、宽度或测量参数变化 |
-| 绘制录制 | 主线程 | RenderNode 与 DisplayList（可重复回放的绘制命令列表）中的文字绘制命令 | View 失效、DisplayList 需要重录 |
-| 绘制执行 | RenderThread 与 GPU | Skia text blob（批量文字绘制数据）、strike 与 glyph（特定字体参数下的字形资源）、应用窗口 buffer | DisplayList 回放、字形资源冷启动、GPU 提交 |
+| 绘制录制 | 主线程 | RenderNode 与 DisplayList（可重复回放的绘制命令列表）中的文字绘制命令、Skia text blob（批量文字绘制数据） | View 失效、DisplayList 需要重录 |
+| 绘制执行 | RenderThread 与 GPU | strike 与 glyph（特定字体参数下的字形资源）、应用窗口 buffer | DisplayList 回放、字形资源冷启动、GPU 提交 |
 | 显示 | SurfaceFlinger、HWC（Hardware Composer，硬件合成器）与 Display | 合成后的 display frame（显示帧） | buffer latch（把本帧 buffer 纳入合成）、composition（合成）、present（送显） |
+
+标准 View 路径中，`SkiaCanvas::drawGlyphs()` 在主线程录制时就通过 `SkTextBlobBuilder` 构造 text blob，并把绘制命令交给 `SkiaRecordingCanvas` 的内部录制器。RenderThread 后续回放这些命令，准备绘制所需的 strike/glyph 资源。排查时要把 text blob 构造与字形资源准备分开计时。
 
 下面的流程图标出排版和出图的分界，描述的是标准硬件加速 View 页面；软件 Canvas、自定义原生文字引擎或独立 Surface 要另行分析。
 
@@ -127,7 +137,7 @@ flowchart LR
 
 ### `BoringLayout` 的资格条件
 
-轮不到 `DynamicLayout` 的文本，`TextView` 会先调用 `BoringLayout.isBoring()` 做资格检查。实现会拒绝以下几类文本：
+轮不到 `DynamicLayout` 的文本，`TextView` 会把经过 transformation（文本转换）的显示文本 `mTransformed` 交给 `BoringLayout.isBoring()` 做资格检查。实现会拒绝以下几类显示文本：
 
 - 换行符或制表符；
 - 可能影响双向文本的字符和 surrogate code unit（UTF-16 代理代码单元）；
@@ -136,7 +146,9 @@ flowchart LR
 
 这份清单比“单行无 Span”的直觉细得多：判据落在字符和段落结构上，`CharacterStyle` 就未必让 `isBoring()` 失败。通过资格检查后还有宽度一关——文字宽度和 ellipsize（超宽时截断并显示省略号）条件要适合当前可用宽度，`TextView` 才会构造或复用 `BoringLayout`。
 
-单行设置换不来这条路径：`setSingleLine(true)` 或 `maxLines = 1` 之后，文本包含换行、RTL、用 UTF-16 代理对表示的 emoji 或段落级样式时，单行显示仍可能落到 `StaticLayout`；反过来，部分 BMP（Unicode 基本多文种平面）文字即使不是拉丁字母，只要满足上述条件，也可能被判定为 boring。
+单行配置不保证使用 `BoringLayout`，还要区分两种设置：`maxLines = 1` 限制最大行数；`setSingleLine(true)` 还会启用横向滚动，并安装 `SingleLineTransformationMethod`，把换行符显示为空格、回车符替换为不可见的 `U+FEFF`。原始文本含换行，不能直接判定它会被 `isBoring()` 拒绝，应检查转换后的显示文本。
+
+显示文本仍包含 RTL、用 UTF-16 代理对表示的 emoji 或段落级样式时，单行显示仍可能落到 `StaticLayout`；反过来，部分 BMP（Unicode 基本多文种平面）文字即使不是拉丁字母，只要满足上述条件，也可能被判定为 boring。
 
 `BoringLayout` 的“简单”指单行、LTR（从左向右）和较少的段落结构，整形这一步照常执行：`isBoring()` 仍要通过 `TextLine.metrics()` 计算宽度和字体指标，ellipsize 后还可能再次测量。它的工作量少于完整的多行换行，但单次 `Paint.measureText()` 估算不了它。
 
@@ -376,7 +388,7 @@ Traversal 会依据脏标记、`MeasureSpec`（父 View 下发的尺寸约束）
 
 ### 单行文本一定使用 BoringLayout
 
-单行只是必要条件之一：RTL、UTF-16 代理代码单元、换行符、制表符、`ParagraphStyle`、宽度和 ellipsize 条件都会改变选择结果。
+单行配置还要经过文本转换、字符与方向检查、段落级 Span 检查，以及宽度和 ellipsize 判断。`isBoring()` 检查的是显示文本；`setSingleLine(true)` 会转换换行符，不能用原始文本中的换行直接判断 Layout 类型。
 
 ### 所有 Span 都会让 shaping 成本成倍增加
 
@@ -410,6 +422,9 @@ Traversal 会依据脏标记、`MeasureSpec`（父 View 下发的尺寸约束）
 - [AOSP Android 17 `MeasuredText`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/text/MeasuredText.java)
 - [AOSP Android 17 `TextLine`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/text/TextLine.java)
 - [AOSP Android 17 HWUI `SkiaCanvas`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/SkiaCanvas.cpp)
+- [AOSP Android 17 HWUI `SkiaRecordingCanvas` 实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaRecordingCanvas.cpp)
+- [AOSP Android 17 HWUI `SkiaRecordingCanvas` 声明](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaRecordingCanvas.h)
+- [AOSP Android 17 `SingleLineTransformationMethod`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/text/method/SingleLineTransformationMethod.java)
 - [Minikin Android 17 `LayoutCache`](https://android.googlesource.com/platform/frameworks/minikin/+/refs/tags/android-17.0.0_r1/include/minikin/LayoutCache.h)
 - [Minikin Android 17 `LayoutCore`](https://android.googlesource.com/platform/frameworks/minikin/+/refs/tags/android-17.0.0_r1/libs/minikin/LayoutCore.cpp)
 - [Minikin Android 17 `WordBreaker`](https://android.googlesource.com/platform/frameworks/minikin/+/refs/tags/android-17.0.0_r1/libs/minikin/WordBreaker.cpp)
