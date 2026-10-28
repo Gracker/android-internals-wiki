@@ -156,10 +156,6 @@ ANR（Application Not Responding，应用无响应）机制因此负责三项工
 
 输入派发的 AOSP 默认超时是 5 秒，设备还可能用 `ro.hw_timeout_multiplier`（硬件超时倍数） 这个硬件超时倍数，加上窗口级配置来调整。广播、Service 等期限也会随前后台状态、目标 SDK 和组件类型变化，具体数值见 [Input、Broadcast、Service 与 Provider 超时](#inputbroadcastservice-与-provider-超时) 一节。把所有 ANR 都概括成“主线程超过 5 秒”，就会盖住不同检测器各自的触发条件。
 
-<!-- gracker-diagram: ch09-01-03-completion-signals -->
-![识别各类 detector 的完成信号](../../assets/diagrams/ch09/ch09-01-03-completion-signals.png)
-
-图：Service 的完成经 Framework 协议回报；普通 Provider query 没有通用固定十秒 ANR timer。
 
 #### `TimeoutRecord` 统一表达超时
 
@@ -217,10 +213,6 @@ public static TimeoutRecord forContentProvider(String reason) {
 
 大部分组件回调都跑在应用主线程上，所以主线程 I/O、长计算、同步 Binder、锁竞争和死锁最容易把期限拖过去。不过这个阶段还要检查，有没有别的线程挡住了完成信号：
 
-<!-- gracker-diagram: ch09-01-06-dependency-responsibility -->
-![等待完成信号的线程不一定是根因线程](../../assets/diagrams/ch09/ch09-01-06-dependency-responsibility.png)
-
-图：这是诊断顺序；被归因 PID 只是排查入口，根因线程可能在别的进程。
 
 - 主线程可能正在等待工作线程释放锁；
 - 同步 Binder 的耗时由服务端线程和调度状态决定；
@@ -269,10 +261,6 @@ public static TimeoutRecord forContentProvider(String reason) {
 
 这一层挡住了同一进程同时生成多份高成本报告。所以日志里“业务层连续检测到多次卡顿”和“系统完整处理了多次 ANR”，本来就是两种不同的计数方式。
 
-<!-- gracker-diagram: ch09-01-08-helper-dedup -->
-![AnrHelper 按 PID 拒绝重复报告](../../assets/diagrams/ch09/ch09-01-08-helper-dedup.png)
-
-图：去重限制高成本报告数量；业务卡顿次数与系统 ANR 报告次数是两套计数。
 
 #### 尽早保存目标进程栈
 
@@ -296,10 +284,6 @@ mAnrRecords.add(new AnrRecord(
 
 `Future<File>` 代表还在执行或已完成的异步文件任务，会跟着 `AnrRecord` 进入消费线程。生成正式 trace 时，`StackTracesDumpHelper` 优先复制这份 early dump；临时采集或复制未成功时，会在剩余 dump 时间预算允许的情况下重新抓目标 PID。等待临时任务本身也会消耗预算，预算耗尽时补采就停在这一步。
 
-<!-- gracker-diagram: ch09-01-09-early-dump -->
-![早期抓栈与报告消费可以并行](../../assets/diagrams/ch09/ch09-01-09-early-dump.png)
-
-图：先提交早期抓栈任务，再把记录入队；任务可与入队及报告消费并行，实际完成先后取决于调度。
 
 #### 队列拥塞时缩小采集范围
 
@@ -307,10 +291,10 @@ mAnrRecords.add(new AnrRecord(
 
 两次 ANR 间隔不足 2 分钟时，`AnrHelper` 会安排 Binder heavy-hitter（高频 Binder 调用方）自动采样，给报告补上调用热点线索。这个 2 分钟常量只管采样调度，不会自行合并两次事件；能否各自入队成报，仍受同 PID 去重、进程存活和后续处置条件约束。
 
-<!-- gracker-diagram: ch09-01-10-report-load-controls -->
-![三种时间常量控制不同报告行为](../../assets/diagrams/ch09/ch09-01-10-report-load-controls.png)
+<!-- gracker-diagram: ed09-01-helper-capture-and-load -->
+![AnrHelper 去重后并行保存现场，再排队消费报告](../../assets/diagrams/ch09/ed09-01-helper-capture-and-load.png)
 
-图：这些是报告采集和采样调度条件，与应用响应期限是两回事。
+图：AnrHelper在入口按PID跳过无效/重复请求，接受的请求先提交early dump再把持Future的记录入队；提交先后不保证任务完成先后。消费者独立安排采样，并按排队超过10秒或开机不足10分钟选择onlyDumpSelf等抓栈范围；相邻ANR不足2分钟用于Binder heavy-hitter调度，不是合并事件。正式trace优先等待并复制early文件，失败时只在剩余dump预算内补抓；轨道仅示一种可能交叠，不表示实测时长或采样阻塞报告。
 
 单条 ANR 处理结束后，系统还可以发送 `ProfilingTrigger.TRIGGER_TYPE_ANR`。应用事先注册过系统触发式 profiling（性能剖析）的话，可能拿到覆盖一段时间的额外产物，注册方式与数据范围见 [15.7 ProfilingManager](../../part3-tools/ch15-other-tools/07-profiling-manager.md)。这类产物是补充材料，替代不了 ANR trace。
 
@@ -343,10 +327,6 @@ mAnrRecords.add(new AnrRecord(
 
 下面的源码节选展示 EventLog 事件、trace 文件和 DropBox 条目都出自 `appNotResponding()` 这一次调用：
 
-<!-- gracker-diagram: ch09-01-12-report-materials -->
-![ANR 报告将线程、资源和事件关联](../../assets/diagrams/ch09/ch09-01-12-report-materials.png)
-
-图：是否抓关联进程、有哪些标记及可回捞内容受进程类型、配置、时间预算和保留情况影响。
 
 ```java
 EventLog.writeEvent(EventLogTags.AM_ANR, mApp.userId, pid,
@@ -450,17 +430,13 @@ latestAnr?.traceInputStream?.bufferedReader()?.use { reader ->
 
 这个 API 只返回本应用有权访问的历史信息，内容范围小于完整 bugreport。生产环境上传前要限制大小、做隐私审查并脱敏；trace 为 `null` 是允许出现的结果，别当成采集逻辑的异常。
 
-<!-- gracker-diagram: ch09-01-17-historical-trace -->
-![应用从历史退出记录读取仍被保留的 trace](../../assets/diagrams/ch09/ch09-01-17-historical-trace.png)
-
-图：示例只筛选 REASON_ANR；携带过往 ANR trace 的退出原因还有别的，缓冲区覆盖可导致 null。
 
 Android 17 / API 37 又为 `ApplicationExitInfo` 增加了 `getAnrInfo()`。返回的 `ApplicationExitInfo.AnrInfo` 里有 ANR ID、`AnrTypes` 类型、系统等待时长和用户可感知标志，且只出现在 `REASON_ANR` 记录中。它有两条局限：输入派发这类路径没有 `AnrTimer.ExpiredTimer` 对象，timer 回退实现也可能缺这个对象，此时仍可能拿不到 `AnrInfo`，所以兼容代码要同时判断系统版本和空值。AOSP 在报告前用 `!isSilentAnr` 填充可感知标志，这只代表报告走了可感知路径，用户最终是否看到对话框，还要看后续 UI 策略。
 
-<!-- gracker-diagram: ch09-01-18-structured-anr-info -->
-![AnrInfo 补充元数据但仍需原始原因](../../assets/diagrams/ch09/ch09-01-18-structured-anr-info.png)
+<!-- gracker-diagram: ed09-01-exit-record-optional-evidence -->
+![同一历史退出记录的 trace 与 AnrInfo 分别判空](../../assets/diagrams/ch09/ed09-01-exit-record-optional-evidence.png)
 
-图：AOSP 根据 !isSilentAnr 提前填充可感知标志；UI 后续策略仍可改变最终展示。
+图：API30+查询本应用可访问的历史退出记录，正文示例筛REASON_ANR。trace流受全局循环缓冲保留影响，可以为null，其他退出原因也可能携带此前ANR的trace；有流时后台有界读取、关闭、处理IOException并脱敏。API37+的ANR退出记录才可能有AnrInfo，未经过ExpiredTimer或相关回退路径仍可缺失，不能互推两类证据必然同时存在。结构化type/timeout与userPerceptible预填不替代原始reason，也不保证已显示弹窗；结合发生时间、进程名、PID与生命周期关联。
 
 #### DropBox：回答“系统汇总了哪些上下文”
 
@@ -479,10 +455,6 @@ adb shell dumpsys dropbox --print data_app_anr
 
 一份可靠的基础材料，至少要把下面三类信息对齐：
 
-<!-- gracker-diagram: ch09-01-16-three-artifacts -->
-![EventLog、trace 与 DropBox 各回答一类问题](../../assets/diagrams/ch09/ch09-01-16-three-artifacts.png)
-
-图：结合时间、PID、进程生命周期与错误 ID 关联；只按包名或 PID 汇总会混入重启及 PID 复用。
 
 1. EventLog 的时间、PID、进程名和 reason；
 2. trace 文件头中的 PID、时间与 subject；
@@ -527,10 +499,6 @@ PID 会被后来的进程复用，应用进程也可能在 ANR 后重启。只�
 
 这些版本变化的方向一致：各检测器保留自己的协议语义，AMS 统一组织报告；诊断材料从单次线程快照，扩展到结构化退出信息、早期预警和可选的时间段 profiling。传统 trace 仍是基础，但要和时间线、结构化信息放在一起解释。
 
-<!-- gracker-diagram: ch09-01-20-diagnostics-evolution -->
-![诊断从退出记录扩展到时间段与结构信息](../../assets/diagrams/ch09/ch09-01-20-diagnostics-evolution.png)
-
-图：版本新增能力按条件生效；每次 ANR 是否伴随预警、profiling 文件或 AnrInfo，取决于具体路径。
 
 ### Google Play Console 的统计范围
 
@@ -551,10 +519,6 @@ PID 会被后来的进程复用，应用进程也可能在 ANR 后重启。只�
 
 我们还要留意两边的统计分母：本地 APM（应用性能监控）常按会话、事件数或进程启动次数计算，Android vitals 按每日活跃用户计算，还要受来源设备、用户共享设置和隐私门槛影响。两边数值对不上是正常的，比较前先统一分母、时间窗口和“用户可感知”的定义。
 
-<!-- gracker-diagram: ch09-01-21-vitals-denominator -->
-![Android vitals 按每日活跃用户计算](../../assets/diagrams/ch09/ch09-01-21-vitals-denominator.png)
-
-图：2026-10-23 核对：可感知率全局阈值0.47%、单机型8%。活跃用户按用户与设备计，与按事件或会话计算的 APM 分母不同。
 
 ### 工程检查表
 
@@ -588,10 +552,6 @@ ANR 报告里的 `Reason`，说的就是系统在等哪一个完成信号：Inpu
 
 这三个问题要排在“主线程卡在哪里”之前回答。类型判断错了，线程栈即使读对，也可能把回调、进程启动或远端 Provider 的责任归错位置。
 
-<!-- gracker-diagram: ch09-01-22-read-contract-first -->
-![拿到 Reason 后先识别超时契约](../../assets/diagrams/ch09/ch09-01-22-read-contract-first.png)
-
-图：默认常量用于初步定位；版本、设备和组件配置都可能改变实际等待值。
 
 常用类型可以先按下表定位。表里的数值是 AOSP 源码默认值，`Build.HW_TIMEOUT_MULTIPLIER`、DeviceConfig、广播 CPU 饥饿补偿和 OEM 配置都可能改变具体设备上的等待时长。
 
@@ -784,10 +744,6 @@ long SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_BACKGROUND_TIMEOUT;
 
 前台服务相关的报错常被统称成“FGS ANR”，但不同路径的计时起点和最终结果各不相同，至少要区分以下三种情况。
 
-<!-- gracker-diagram: ch09-01-31-fgs-outcomes -->
-![FGS 三类期限与结果分别解释](../../assets/diagrams/ch09/ch09-01-31-fgs-outcomes.png)
-
-图：公开数秒契约与内部默认常量分开；限时 FGS 走崩溃路径，要单独归类。
 
 #### `startForegroundService()` 后没有及时晋升
 
@@ -918,10 +874,10 @@ static final long ANR_PRE_UDC_APIS_ON_SLOW_RESPONSES = 258236856L;
 
 三条时间线应分别阅读：
 
-<!-- gracker-diagram: ch09-01-37-job-timeout-contracts -->
-![JobService 的回调、运行与通知窗口分开](../../assets/diagrams/ch09/ch09-01-37-job-timeout-contracts.png)
+<!-- gracker-diagram: ed09-01-job-deadlines-and-coarse-type -->
+![JobService 的响应、通知期限与 AnrTypes 粗分类](../../assets/diagrams/ch09/ed09-01-job-deadlines-and-coarse-type.png)
 
-图：绑定默认18秒超时走失败重调度；通知窗口从 `onStartJob()` 被调用起算，与回调 8 秒是两段独立期限。
+图：r1内部回调8秒、绑定18秒、通知10秒常量均乘硬件超时倍率；图中两条仅在倍率为1时比较基础预算，不代表方法实际执行时长。公开需继续运行的user-initiated job通知契约从onStartJob被调用起10秒，不能等8秒回调返回后重新计10秒；内部还依据isUserVisibleJob/mAwaitingNotification判断。onStopJob有自己的响应起点，target34+慢响应走显式ANR；job运行配额/时限停止与绑定失败重调度分别处理。onStart/onStop响应超时及所需通知缺失可以同映射ANR_TYPE_JOB_SERVICE_START，仍必须保存完整原始reason和设备配置。
 
 - **回调 ANR**：`onStartJob()` 或 `onStopJob()` 超过默认 8 秒仍未返回；
 - **job 运行超时**：`onStartJob()` 已返回 `true`，JobScheduler 之后因配额或执行时限停止 job 并调用 `onStopJob()`；停止 job 本身不构成 ANR，但 `onStopJob()` 仍要在回调期限内返回；
@@ -949,10 +905,6 @@ static final long ANR_PRE_UDC_APIS_ON_SLOW_RESPONSES = 258236856L;
 
 枚举名里的 `JOB_SERVICE_START` 比底层 reason 更粗：`TimeoutRecord.forJobService()` 也能承载 `onStopJob` 或通知超时的 reason，所以分析工具要保留原始 reason。只存一个整数枚举，后面就分不出这些情况了。
 
-<!-- gracker-diagram: ch09-01-38-coarse-types-keep-reason -->
-![AnrTypes 映射保留分类但会丢失细节](../../assets/diagrams/ch09/ch09-01-38-coarse-types-keep-reason.png)
-
-图：API37 分类与部分新增能力受开关影响；OEM 仍可能有其他私有 detector。
 
 ### 如何从设备记录识别类型
 
@@ -989,10 +941,6 @@ adb pull /data/anr ./anr-traces
 
 Logcat 文案可能被 AMS 再次包装，整行文字与表格片段之间允许有包装差异，按片段对照即可。把 `TimeoutRecord` kind、`ApplicationExitInfo` 子原因和原始 reason 放在一起用，分类会更可靠。
 
-<!-- gracker-diagram: ch09-01-39-reason-to-evidence -->
-![Reason 将后续证据引向不同等待对象](../../assets/diagrams/ch09/ch09-01-39-reason-to-evidence.png)
-
-图：Reason 可能被包装；联合 kind、退出子原因、时间和实际 waited 值，比匹配整行固定文案更可靠。
 
 ### Perfetto 中能确认什么
 
@@ -1021,10 +969,6 @@ Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；ANR 类�
 
 版本号只说明平台能力。DeviceConfig、compat change（兼容性变更开关）、targetSdk、广播 flags 和厂商修改都会影响具体设备的行为，所以分析报告还要记下 build fingerprint（系统构建指纹）、API level、targetSdk 和原始超时值。
 
-<!-- gracker-diagram: ch09-01-41-investigation-loop -->
-![按系统契约闭合 ANR 排查与修复](../../assets/diagrams/ch09/ch09-01-41-investigation-loop.png)
-
-图：这是一套诊断次序，设备记录仍是依据；修复有没有效，看受监控等待是否缩短，采样栈顶换位置说明不了。
 
 ### 排查清单
 
