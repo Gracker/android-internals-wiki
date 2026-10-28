@@ -10753,6 +10753,67 @@
       "summary": "限制汇总将 startup tracing 误写成只支持 system backend",
       "type": "overbroad-backend-claim",
       "updated_at": "2026-10-28T18:41:54.332342+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+      "close_note": "已对照 Android 17 r1 PowerManager.java 3303-3307 与公开 API 文档，在十秒预测示例后说明首次调用需积累多个温度样本，期间返回当前 headroom；保留 NaN、API 级别、轮询、滞回与默认策略边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261028-223519-idle-audit-04428757",
+      "created_at": "2026-10-28T22:39:12.173708+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261028-223519-idle-audit-04428757",
+      "details": "Android 17 r1 PowerManager.java 3303-3307 及公开 API 文档明确说明：首次调用后需积累多个温度样本，在此期间忽略 forecastSeconds 并返回当前 headroom。正文把参数 10 直接解释为预测未来十秒，未保留该边界，容易将初始当前值当成预测值。",
+      "id": "finding-110b80aba079",
+      "log_path": "logs/audit/2026-10-28-20261028-223519-idle-audit-04428757-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java#3303"
+      ],
+      "status": "fixed",
+      "summary": "Thermal headroom 十秒预测示例遗漏初始采样期返回当前值的限制",
+      "type": "missing-warning",
+      "updated_at": "2026-10-28T22:41:21.558564+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+      "close_note": "已对照固定 commit README.zh-CN.md 102-109 补齐 Android 8.0+、64 位设备与应用、无 Perfetto 时系统轨道不可采及 simple 模式边界，以及 Android 15+ Java 对象创建监控未适配的限制；未将该限制扩大为整个抓栈功能不可用。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261028-223519-idle-audit-04428757",
+      "created_at": "2026-10-28T22:39:12.234527+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261028-223519-idle-audit-04428757",
+      "details": "固定 commit 的 README.zh-CN.md 已知问题列出 Android 8.0+、64 位设备和应用要求；Java 对象创建监控未适配 Android 15+，无 Perfetto 设备无法采集 CPU 调度等系统信息。正文介绍 Android 17 下选用工具时未交代这些适用边界。",
+      "id": "finding-902852617d31",
+      "log_path": "logs/audit/2026-10-28-20261028-223519-idle-audit-04428757-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://github.com/bytedance/btrace/blob/2ae621f2d84ad54b2811d675d86ba2815006adb3/README.zh-CN.md#已知问题及说明"
+      ],
+      "status": "fixed",
+      "summary": "btrace 3 工具说明遗漏固定版本的设备和功能支持限制",
+      "type": "missing-availability",
+      "updated_at": "2026-10-28T22:41:21.621980+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+      "close_note": "已只读核对 SUMMARY 中 Perfetto 的第 14 章定位，并将目标正文的 §13 改为 §14；未编辑 SUMMARY。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261028-223519-idle-audit-04428757",
+      "created_at": "2026-10-28T22:39:12.294714+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261028-223519-idle-audit-04428757",
+      "details": "正文相关章节分工写为 §13 解释 Perfetto；只读核对 src/SUMMARY.md 第 171 行可知 Perfetto 是第 14 章，第 13 章是渲染管线专题。",
+      "id": "finding-80c74f8adb49",
+      "log_path": "logs/audit/2026-10-28-20261028-223519-idle-audit-04428757-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "src/SUMMARY.md"
+      ],
+      "status": "fixed",
+      "summary": "相关章节将 Perfetto 误指向第 13 章",
+      "type": "wrong-cross-reference",
+      "updated_at": "2026-10-28T22:41:21.689701+08:00"
     }
   ],
   "schema_version": 1
