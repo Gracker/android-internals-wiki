@@ -11804,9 +11804,472 @@
       "before_count": 40,
       "before_all_images": 40,
       "sha256_before": "b8d9e947be0f18bc34ff493604434d3158473c96eafd3765819191d9d64c8e84",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 16,
+      "decisions": [
+        {
+          "original_id": "ch09-04-01-evidence-grade",
+          "title": "先判证据强度再写根因",
+          "decision": "remove",
+          "reason": "已确认/强推断/未闭合三卡逐项复制紧邻三行证据等级表，五类来源与构造例范围也有完整段落和七案例表，不再重复排图。",
+          "original_line": 62,
+          "heading": "## 先给证据分级"
+        },
+        {
+          "original_id": "ch09-04-02-native-poll-callback",
+          "title": "nativePollOnce 与 native 回调栈一起读",
+          "decision": "remove",
+          "reason": "当前栈/若归因GC两支逐项图形化紧邻真实native栈及完整WaitHoldingLocks解释段，未增加实际GC时序或等待依赖；采样栈与GC补证限制全部保留。",
+          "original_line": 110,
+          "heading": "### 主线程栈的读法"
+        },
+        {
+          "original_id": "ch09-04-04-pressure-time-windows",
+          "title": "CPU 窗口、抓栈与 PSI 输出时点",
+          "decision": "keep",
+          "reason": "CPU统计区间、目标栈/am_anr及晚到PSI输出的实际记录时点对照，明确不同窗口不可拼成ANR前五秒精确压力；数值非比例条注明。",
+          "original_line": 131,
+          "heading": "### 压力证据"
+        },
+        {
+          "original_id": "ch09-04-03-pressure-fields",
+          "title": "Load、PSI 与 CPU 构成分别解释",
+          "decision": "remove",
+          "reason": "Load/PSI/CPU三卡逐项重复紧邻日志数值、PSI口径和iowait/Load单位解释，完整原始摘录与显示精度限制保留，时间窗口图3独立保留。",
+          "original_line": 149,
+          "heading": "### 压力证据"
+        },
+        {
+          "original_id": "ch09-04-05-pressure-causal-gap",
+          "title": "系统压力到无焦点之间还缺什么",
+          "decision": "remove",
+          "reason": "压力/目标线程/focus/验证四步逐项复制紧邻强推断结论和四项待补数据源清单，没有实际焦点转场或调度样本；不把候选升级根因的文字保留。",
+          "original_line": 158,
+          "heading": "### 根因结论"
+        },
+        {
+          "original_id": "ch09-04-06-channel-owner",
+          "title": "从通道名称找到真正消费者",
+          "decision": "keep",
+          "reason": "InputChannel名称和connection token经monitor/窗口信息映射到真正消费者PID/Looper/事件完成，再追资源的身份转换链，避免将server后缀当system_server。",
+          "original_line": 193,
+          "heading": "### ANR 信息"
+        },
+        {
+          "original_id": "ch09-04-07-notifier-clock-gap",
+          "title": "慢 dispatch 的结束日志与 52 秒缺口",
+          "decision": "keep",
+          "reason": "Notifier结束后日志、旧Launcher栈与约52秒后的新ANR记录分列，显式保留推算起点和墙钟无跳变前提，突出旧证据不覆盖本次期限。",
+          "original_line": 210,
+          "heading": "### 时间线对齐"
+        },
+        {
+          "original_id": "ch09-04-08-cpu-thread-identity",
+          "title": "进程 CPU 超过 100% 不指认主线程",
+          "decision": "remove",
+          "reason": "进程215%/全局64%/连接消费三卡逐项复述紧邻一个CPU解释段及后续四项补证清单，没有TID细分实测；进程占比不指认main的文字保留。",
+          "original_line": 225,
+          "heading": "### 时间线对齐"
+        },
+        {
+          "original_id": "ch09-04-09-input-next-evidence",
+          "title": "时间错位后补齐四组输入证据",
+          "decision": "remove",
+          "reason": "连接/时间/线程/环境四框逐项重排紧邻四项下一轮取证列表，原列表更具体，没有现成新现场可画，不能以摘要图补缺口。",
+          "original_line": 236,
+          "heading": "### 根因结论"
+        },
+        {
+          "original_id": "ch09-04-10-sp-source-scope",
+          "title": "SP 截图能证明的路径与线程边界",
+          "decision": "remove",
+          "reason": "SP截图路径/HandlerThread/待补三卡逐句复述紧邻截图调用栈、线程归属段与结论，全部矛盾校正和不能认定main的限制保留。",
+          "original_line": 274,
+          "heading": "### ANR 信息"
+        },
+        {
+          "original_id": "ch09-04-11-queued-work-lifecycle",
+          "title": "Android 17 组件收尾与 QueuedWork",
+          "decision": "remove",
+          "reason": "Activity/Service/Receiver三卡逐项复制紧邻四行Android17组件行为表，表明确兼容条件和普通queue非addFinisher，原表与精确文字保留。",
+          "original_line": 290,
+          "heading": "### Android 17 的调用位置"
+        },
+        {
+          "original_id": "ch09-04-12-sp-work-finisher",
+          "title": "apply 的 work 与 finisher 是两类任务",
+          "decision": "keep",
+          "reason": "apply提交、写盘work与组件收尾processPendingWork/finisher的交叠轨道，区别调用线程亲自执行与等待其他工作、非每个generation都物理写盘。",
+          "original_line": 297,
+          "heading": "### Android 17 的调用位置"
+        },
+        {
+          "original_id": "ch09-04-13-sp-two-waits",
+          "title": "初次加载等待与全进程收尾等待",
+          "decision": "keep",
+          "reason": "awaitLoadedLocked实例初次加载与QueuedWork全进程收尾两个不同入口的条件分支，各自证据和修复对象不同，不能合成单一SP写盘慢。",
+          "original_line": 306,
+          "heading": "### 两种等待的区别"
+        },
+        {
+          "original_id": "ch09-04-14-sp-fix-verification",
+          "title": "SP 修复按完成期限和长尾验收",
+          "decision": "remove",
+          "reason": "减成本/存储/场景/长尾四步重复紧邻七项修复方案和P95/P99验收段，没有实际改前改后测量数据，原文完整保留。",
+          "original_line": 334,
+          "heading": "### 修复方案"
+        },
+        {
+          "original_id": "ch09-04-15-freezer-raw-clock",
+          "title": "freezer 案例的接收、派发与冻结日志",
+          "decision": "merge",
+          "reason": "将同PID/eventTime的接收、派发、freezing/am_freeze和ANR日志时点与输入完成协议合为一图，不把20.276当目标派发或日志差当内核冻结延迟。",
+          "original_line": 368,
+          "heading": "### 时间线与 A/B 结果相互印证",
+          "replacement_id": "ed09-04-freezer-event-and-finish"
+        },
+        {
+          "original_id": "ch09-04-17-freezer-ab-boundary",
+          "title": "来源 A/B 与本次复核分别计入结论",
+          "decision": "remove",
+          "reason": "来源开关实验与本次复核两支逐句复制紧邻373和382等范围说明；合图脚注继续明确作者A/B与本次仅原文截图核验，未声称重跑。",
+          "original_line": 375,
+          "heading": "### 时间线与 A/B 结果相互印证"
+        },
+        {
+          "original_id": "ch09-04-16-freezer-consumer-chain",
+          "title": "冻结如何切断输入完成协议",
+          "decision": "merge",
+          "reason": "消费者冻结影响运行机会、finished未及时到达和WaitQueue保留的协议链与原始记录合并；日志对dispatch/冻结分别支持，未画成dispatch导致冻结。",
+          "original_line": 384,
+          "heading": "### 根因结论",
+          "replacement_id": "ed09-04-freezer-event-and-finish"
+        },
+        {
+          "original_id": "ch09-04-18-freezer-lifecycle",
+          "title": "输入 monitor 与冻结状态迁移协同",
+          "decision": "remove",
+          "reason": "登记/活跃/销毁/回归四步逐项复述紧邻四条产品修复规则与脚本段，无实际monitor状态机或当前AOSP统一豁免的证据，完整策略限定保留。",
+          "original_line": 397,
+          "heading": "### 修复方案"
+        },
+        {
+          "original_id": "ch09-04-19-start-event-sequence",
+          "title": "Dialer 启动超时与后续无焦点记录",
+          "decision": "keep",
+          "reason": "Dialer启动/失焦、约10秒后start_timeout/kill和再14.4秒后ANR的离散事件对照，保留不能据此断言中间焦点连续缺失。",
+          "original_line": 442,
+          "heading": "### 用 event log 还原启动与焦点"
+        },
+        {
+          "original_id": "ch09-04-20-attach-java-boundary",
+          "title": "Java 框架入口、attach 与应用初始化",
+          "decision": "keep",
+          "reason": "system_server处理启动结果/安装timer与应用Java入口/attach可并行，AMS发bind后移除timer而不等onCreate的实际跨进程边界图，区别案例19的墙钟记录。",
+          "original_line": 453,
+          "heading": "### Android 17 源码怎样定义 start timeout"
+        },
+        {
+          "original_id": "ch09-04-21-startup-focus-two-gaps",
+          "title": "启动失败与焦点恢复是两段待补依赖",
+          "decision": "remove",
+          "reason": "attach失败与焦点恢复两支逐项图形化紧邻强推断段、四项attach前检查和四项修复回归清单，没有已取得的新直接证据；两段缺口原文完整保留。",
+          "original_line": 462,
+          "heading": "### 根因结论"
+        },
+        {
+          "original_id": "ch09-04-22-lock-cycle",
+          "title": "两把锁的持有边与等待边",
+          "decision": "keep",
+          "reason": "教学构造的main/DatabaseHelper/SyncWorker/DataManager四节点以等待边和分配边闭合，明确对象地址和构造性质，非线上采样。",
+          "original_line": 530,
+          "heading": "### 从两份线程栈画出等待环"
+        },
+        {
+          "original_id": "ch09-04-23-lock-proof-levels",
+          "title": "反序风险、快照等待与确认闭环",
+          "decision": "remove",
+          "reason": "代码风险/运行环/采样限制三卡逐项复述紧邻528和560等一致对象/并发条件及真实ART逐线程采样限制段，具体锁环图22仍保留。",
+          "original_line": 562,
+          "heading": "### 根因与修复"
+        },
+        {
+          "original_id": "ch09-04-24-lock-release-snapshot",
+          "title": "先复制并解锁，再跨对象调用",
+          "decision": "keep",
+          "reason": "DB锁内read+可安全转交复制与释放锁后跨对象buildCursor的两条互斥范围轨道，保留业务快照必须实现、同一monitor规则和不能只复制外层引用。",
+          "original_line": 581,
+          "heading": "### 根因与修复"
+        },
+        {
+          "original_id": "ch09-04-25-binder-reentry",
+          "title": "直接嵌套回调与跨线程闭环分开",
+          "decision": "keep",
+          "reason": "直接同步事务栈可定向重入与独立worker切断定向、另线程等锁两支条件，解释跨进程环必须补具体线程而不能只看A-B-A。",
+          "original_line": 605,
+          "heading": "### Binder 场景的同类问题"
+        },
+        {
+          "original_id": "ch09-04-26-binder-capacity",
+          "title": "Binder 容量上限与锁闭环分别分析",
+          "decision": "remove",
+          "reason": "默认15/锁闭环/容量三卡逐项复制紧邻610到619的线程请求上限与显式加入说明，没有实际容量计数或另一个资源图；空闲线程不解锁环的文字保留。",
+          "original_line": 614,
+          "heading": "### Binder 场景的同类问题"
+        },
+        {
+          "original_id": "ch09-04-27-finished-failure-chain",
+          "title": "历史缺陷发生在错误后的恢复链",
+          "decision": "merge",
+          "reason": "将部分finished发送失败才进入恢复链的限定接到两版循环对照，保留缺陷不是每次正常发送都会触发。",
+          "original_line": 636,
+          "heading": "## 案例 7：InputTransport finished signal 的历史平台缺陷",
+          "replacement_id": "ed09-04-finished-recovery-loop"
+        },
+        {
+          "original_id": "ch09-04-28-loop-zero-iteration",
+          "title": "恢复链循环为什么必须执行 index 0",
+          "decision": "merge",
+          "reason": "构造索引2→1与2→1→0、初始0旧do也执行一次的边界合入错误恢复总图，版本对照不画成同次运行先后，提交证据与产品现场分别验证。",
+          "original_line": 645,
+          "heading": "## 案例 7：InputTransport finished signal 的历史平台缺陷",
+          "replacement_id": "ed09-04-finished-recovery-loop"
+        },
+        {
+          "original_id": "ch09-04-29-platform-product-proof",
+          "title": "源码缺陷与产品归因分别验证",
+          "decision": "remove",
+          "reason": "提交/产品镜像/动态日志/A-B四框逐项复述紧邻源码已确认而产品强推断的结论与完整归因方法段；合图继续保留版本与现场需分别证明。",
+          "original_line": 652,
+          "heading": "## 案例 7：InputTransport finished signal 的历史平台缺陷"
+        },
+        {
+          "original_id": "ch09-04-30-input-queue-protocol",
+          "title": "入站、待派发与等待完成三个队列",
+          "decision": "keep",
+          "reason": "inbound iq→perconnection outbound oq→成功派发waitQueue wq→finished按序号移除的实际队列协议，不能用一条消费者消息替代每个条目。",
+          "original_line": 663,
+          "heading": "## 如何用 InputDispatcher WaitQueue 分析以上案例"
+        },
+        {
+          "original_id": "ch09-04-31-deadline-not-head",
+          "title": "触发到期条目未必是报告中的队首",
+          "decision": "keep",
+          "reason": "队首A较长预算与后入B先到deadline的条件对照，明确isConnectionResponsive遍历所有条目而reason用队首；无伪造设备数字。",
+          "original_line": 673,
+          "heading": "## 如何用 InputDispatcher WaitQueue 分析以上案例"
+        },
+        {
+          "original_id": "ch09-04-32-queue-evidence-fields",
+          "title": "用身份和每条事件时序解释积压",
+          "decision": "remove",
+          "reason": "连接/条目/同窗三卡逐项复述紧邻三条积压限制和完整字段/数据源段，没有新增条目时序实例；无固定input_event_waiting_duration轨道的文字保留。",
+          "original_line": 680,
+          "heading": "## 如何用 InputDispatcher WaitQueue 分析以上案例"
+        },
+        {
+          "original_id": "ch09-04-33-case-review-order",
+          "title": "案例复盘以时钟、对象和语义串联",
+          "decision": "remove",
+          "reason": "身份/时间/依赖/结论四步再次摘要紧邻七项可复用复盘顺序，与开篇证据表和尾清单重合，完整方法文字保留。",
+          "original_line": 705,
+          "heading": "## 一套可复用的案例复盘顺序"
+        },
+        {
+          "original_id": "ch09-04-35-exit-anr-coverage",
+          "title": "REASON_ANR 筛选只覆盖部分 ANR 现场",
+          "decision": "merge",
+          "reason": "REASON_ANR可空和恢复后其他reason也可带trace的覆盖差异接到正文示例的首匹配筛选上，明确32条/首条策略不等于API上限。",
+          "original_line": 716,
+          "heading": "### 官方退出信息的覆盖范围",
+          "replacement_id": "ed09-04-exit-trace-selection-and-bounds"
+        },
+        {
+          "original_id": "ch09-04-34-exit-stream-scope",
+          "title": "公开退出 trace 的保存与读取范围",
+          "decision": "merge",
+          "reason": "系统anr文件按offset保存目标段、UID权限过滤和公开可空流接入同一示例数据流，保留不能当完整bugreport和DUMP非文件绕过。",
+          "original_line": 723,
+          "heading": "### 官方退出信息的覆盖范围",
+          "replacement_id": "ed09-04-exit-trace-selection-and-bounds"
+        },
+        {
+          "original_id": "ch09-04-36-bounded-trace-code",
+          "title": "限量读取示例的真实执行边界",
+          "decision": "merge",
+          "reason": "按实际Kotlin校验顺序、首匹配无流不回退、maxBytes+额外1字节/关闭与原始bytes输出合并，区分try中I/O/权限返回null与参数/主线程检查异常。",
+          "original_line": 776,
+          "heading": "### 官方退出信息的覆盖范围",
+          "replacement_id": "ed09-04-exit-trace-selection-and-bounds"
+        },
+        {
+          "original_id": "ch09-04-37-printer-visibility",
+          "title": "Printer 能看消息分发，不能自动还原排队",
+          "decision": "remove",
+          "reason": "直接观察/额外测量/不提供三卡逐项复制紧邻Printer两段完整能力和热路径成本说明，没有实际入队到dispatch数据；隐藏Observer与公开Printer区别原文保留。",
+          "original_line": 785,
+          "heading": "### 主线程历史"
+        },
+        {
+          "original_id": "ch09-04-38-ring-history",
+          "title": "历史缓冲区保留已完成与进行中状态",
+          "decision": "keep",
+          "reason": "环形覆盖历史中已完成消息、未闭合记录与其他数据源的覆盖对照，保留未见Finished可因异常/丢日志/仍在运行、窗口不能统一10秒。",
+          "original_line": 792,
+          "heading": "### 主线程历史"
+        },
+        {
+          "original_id": "ch09-04-39-cluster-evidence",
+          "title": "聚合保留等待结构与证据完整度",
+          "decision": "remove",
+          "reason": "机制/环境/复核三卡逐项重排紧邻六项聚合键与证据完整度排序段，没有新聚类结果或具体特征映射，原始样本人工复核要求保留。",
+          "original_line": 810,
+          "heading": "### 聚合键"
+        },
+        {
+          "original_id": "ch09-04-40-final-evidence-check",
+          "title": "把未闭合项带入下一轮取证",
+          "decision": "remove",
+          "reason": "时间身份/压力SP/启动冻结/队列覆盖四步再次摘要紧邻十项检查清单与前面复盘流程，全部未闭合项完整正文保留，不再第三轮图形总结。",
+          "original_line": 817,
+          "heading": "## 检查清单"
+        }
+      ],
+      "sha256_after": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
+      "new_diagrams": [
+        {
+          "id": "ed09-04-freezer-event-and-finish",
+          "title": "冻结案例：同一输入事件的日志与完成协议",
+          "article": "src/part2-performance/ch09-anr/04-case-studies.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-04-freezer-event-and-finish.svg",
+            "src/assets/diagrams/ch09/ed09-04-freezer-event-and-finish.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-04-freezer-event-and-finish",
+          "sources": [
+            "https://cubox.pro/web/card/7292787177056898019",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp",
+            "本文冻结全文的案例记录、证据等级与源码/代码说明"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-04-15-freezer-raw-clock",
+              "ch09-04-16-freezer-consumer-chain"
+            ],
+            "boundary": "仅依据文中同一来源报告与截图，PID3930、Screenshot monitor、eventTime39032316052000。20.276是最后接收打印，20.280/.281才是目标派发；20.289/.290是freezing/am_freeze记录而非内核完成冻结的精确时刻。作者开关实验与本次文字截图复核分开，缺少完整trace，不宣称本次重跑A/B。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a101/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-04-finished-recovery-loop",
+          "title": "finished 部分发送失败后，两版恢复循环的区别",
+          "article": "src/part2-performance/ch09-anr/04-case-studies.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-04-finished-recovery-loop.svg",
+            "src/assets/diagrams/ch09/ed09-04-finished-recovery-loop.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-04-finished-recovery-loop",
+          "sources": [
+            "https://android-review.googlesource.com/changes/172237/detail?o=ALL_REVISIONS&o=ALL_COMMITS",
+            "https://android-review.googlesource.com/changes/396876/detail?o=ALL_REVISIONS&o=ALL_COMMITS",
+            "https://cubox.pro/web/card/7313928111836364935",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputConsumer.cpp",
+            "本文冻结全文的案例记录、证据等级与源码/代码说明"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-04-27-finished-failure-chain",
+              "ch09-04-28-loop-zero-iteration"
+            ],
+            "boundary": "仅示部分finished signal发送失败后重建尚未完成链的分支；示例chainIndex=2为构造索引。2015循环从非零降到0时漏head迭代，初始0旧do也执行一次；2017修复执行0后再退出。Gerrit证明历史缺陷，具体产品事件仍须镜像、动态日志和A/B单独闭环。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a101/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-04-exit-trace-selection-and-bounds",
+          "title": "示例采集器：记录筛选、可空 trace 与字节上限",
+          "article": "src/part2-performance/ch09-anr/04-case-studies.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-04-exit-trace-selection-and-bounds.svg",
+            "src/assets/diagrams/ch09/ed09-04-exit-trace-selection-and-bounds.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-04-exit-trace-selection-and-bounds",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java",
+            "本文冻结全文的案例记录、证据等级与源码/代码说明"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-04-35-exit-anr-coverage",
+              "ch09-04-34-exit-stream-scope",
+              "ch09-04-36-bounded-trace-code"
+            ],
+            "boundary": "API30+本应用历史记录与可选目标trace；32条、首个REASON_ANR、maxBytes上限及null不回退仅为正文示例。非法maxBytes首先require抛错，API<30返回null，支持版本在检查后台线程后查询；IOException/SecurityException在try内返回null，其他检查异常并未吞掉。读取最多保存maxBytes再探测1字节，use关闭，退出timestamp不是精确ANR时刻。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a101/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T11:27:46.884080+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 40,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a101/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a101/visual-review.json",
+      "retired_diagrams": [
+        "ch09-04-01-evidence-grade",
+        "ch09-04-02-native-poll-callback",
+        "ch09-04-03-pressure-fields",
+        "ch09-04-05-pressure-causal-gap",
+        "ch09-04-08-cpu-thread-identity",
+        "ch09-04-09-input-next-evidence",
+        "ch09-04-10-sp-source-scope",
+        "ch09-04-11-queued-work-lifecycle",
+        "ch09-04-14-sp-fix-verification",
+        "ch09-04-15-freezer-raw-clock",
+        "ch09-04-16-freezer-consumer-chain",
+        "ch09-04-17-freezer-ab-boundary",
+        "ch09-04-18-freezer-lifecycle",
+        "ch09-04-21-startup-focus-two-gaps",
+        "ch09-04-23-lock-proof-levels",
+        "ch09-04-26-binder-capacity",
+        "ch09-04-27-finished-failure-chain",
+        "ch09-04-28-loop-zero-iteration",
+        "ch09-04-29-platform-product-proof",
+        "ch09-04-32-queue-evidence-fields",
+        "ch09-04-33-case-review-order",
+        "ch09-04-34-exit-stream-scope",
+        "ch09-04-35-exit-anr-coverage",
+        "ch09-04-36-bounded-trace-code",
+        "ch09-04-37-printer-visibility",
+        "ch09-04-39-cluster-evidence",
+        "ch09-04-40-final-evidence-check"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-101/retired-assets.json"
     },
     {
       "index": 102,
@@ -11815,9 +12278,530 @@
       "before_count": 43,
       "before_all_images": 43,
       "sha256_before": "0075fb432f6fbc1a247280209e49965e94da7bdcc202aa4176b8ffe1b5340bf0",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 16,
+      "decisions": [
+        {
+          "original_id": "ch09-05-01-four-chains",
+          "title": "通知的四条链与进程归属",
+          "decision": "remove",
+          "reason": "四个执行链卡片逐项复制紧邻四行执行链/同步边界/故障表，没有画真实调用或调度关系；合并主链图另保留实际post分叉。",
+          "original_line": 84,
+          "heading": "## 为什么 Notification 会引发 ANR"
+        },
+        {
+          "original_id": "ch09-05-02-sync-prefix",
+          "title": "notify 的同步前缀",
+          "decision": "merge",
+          "reason": "应用构造/修正/Parcel、NMS身份渠道策略和配额/PendingIntent准备接入同一允许发布路径的同步前缀，保留拒绝或异常可提前结束。",
+          "original_line": 103,
+          "heading": "### `notify()` 返回前做了哪些工作",
+          "replacement_id": "ed09-05-notify-prefix-and-fanout"
+        },
+        {
+          "original_id": "ch09-05-03-partial-order",
+          "title": "post 之后是并发关系",
+          "decision": "merge",
+          "reason": "post后的Binder回复与handler独立后继合入主链，明确客户端收到回复与handler开始无固定先后，不等待listener或SystemUI完成。",
+          "original_line": 132,
+          "heading": "### `notify()` 返回前做了哪些工作",
+          "replacement_id": "ed09-05-notify-prefix-and-fanout"
+        },
+        {
+          "original_id": "ch09-05-04-publisher-cost",
+          "title": "发布阻塞先分三段",
+          "decision": "remove",
+          "reason": "build/进入Binder前/Binder等待三卡逐项复述紧邻四条定位清单，构造与发布scope仍在代码及合图说明中，没有实际样本可画。",
+          "original_line": 139,
+          "heading": "### `notify()` 返回前做了哪些工作"
+        },
+        {
+          "original_id": "ch09-05-05-fgs-budget",
+          "title": "FGS 先转换再增强",
+          "decision": "merge",
+          "reason": "有效channel/图标/类型权限和启动资格、先最小通知再后台增强的设计接入同一FGS图，后台增强另核对服务代次和生命周期。",
+          "original_line": 155,
+          "heading": "### 前台服务转换超时",
+          "replacement_id": "ed09-05-fgs-minimal-and-later-outcomes"
+        },
+        {
+          "original_id": "ch09-05-06-fgs-async-outcome",
+          "title": "转换等待取消与通知结果分开看",
+          "decision": "merge",
+          "reason": "AMS转换等待取消、ServiceRecord异步通知和更晚上屏合入FGS图，不虚构timer取消与post任务的严格先后，不从正常返回推断全部校验成功。",
+          "original_line": 175,
+          "heading": "### 前台服务转换超时",
+          "replacement_id": "ed09-05-fgs-minimal-and-later-outcomes"
+        },
+        {
+          "original_id": "ch09-05-07-nms-handler",
+          "title": "NMS 处理与 listener 投递",
+          "decision": "merge",
+          "reason": "NMS入队与后续正式发布/锁内准备可见数据/各listener runnable及oneway接入同一主链，区分入队和呈现，不在后节再重画同步前缀。",
+          "original_line": 190,
+          "heading": "### Binder 线程与 handler 各自负责什么",
+          "replacement_id": "ed09-05-notify-prefix-and-fanout"
+        },
+        {
+          "original_id": "ch09-05-08-fanout",
+          "title": "通知分发的乘数来自哪里",
+          "decision": "merge",
+          "reason": "更新频率、listener可见集合与各份Parcel成本合入每listener独立数据支路图，避免与RankingMap范围前后各画一遍三卡摘要。",
+          "original_line": 215,
+          "heading": "### 通知排序与分发的开销",
+          "replacement_id": "ed09-05-per-listener-ranking-fanout"
+        },
+        {
+          "original_id": "ch09-05-09-rate-gates",
+          "title": "包级更新速率的适用条件",
+          "decision": "keep",
+          "reason": "外层发布者资格、previous/相同progressstate/autogroup、估算rate阈值及内部false/外部void的连续检查关系，明确只跳过该分支不是所有发布成功。",
+          "original_line": 226,
+          "heading": "### 通知限流策略"
+        },
+        {
+          "original_id": "ch09-05-10-progress-state",
+          "title": "进度数值与进度状态分别判断",
+          "decision": "remove",
+          "reason": "同状态/状态转换/Metric三卡逐项重排244及578等完整progress extras解释段，速率图9已保留实际分支守卫；指标不提供通用豁免的文字完整保留。",
+          "original_line": 246,
+          "heading": "### 通知限流策略"
+        },
+        {
+          "original_id": "ch09-05-11-rate-estimator",
+          "title": "速率是估算值",
+          "decision": "keep",
+          "reason": "已接受事件到达→指数加权间隔→取倒数估速→丢弃日志的具体计算链，和资格分支图9不同；另从固定r1主源核对alpha0.7、dt下限0.0005秒确实存在。",
+          "original_line": 253,
+          "heading": "### 通知限流策略"
+        },
+        {
+          "original_id": "ch09-05-12-quota-types",
+          "title": "三类限制不要合并",
+          "decision": "remove",
+          "reason": "速率/数量/渠道三卡直接复述紧邻三个配额概念与各自例外段，图9/11和完整权限渠道说明已覆盖，无需第二份文字卡。",
+          "original_line": 260,
+          "heading": "### 通知限流策略"
+        },
+        {
+          "original_id": "ch09-05-13-rv-transport",
+          "title": "RemoteViews 跨进程传什么",
+          "decision": "keep",
+          "reason": "发布端layout/actions/cache→Parcel实际count/tag/data→消费端inflate或reapply的具体数据转换链，明确跨进程不传构造好的View树、mActions非Parcel字段。",
+          "original_line": 286,
+          "heading": "### 传输的是布局标识和 action"
+        },
+        {
+          "original_id": "ch09-05-14-rv-async",
+          "title": "SystemUI 的异步绑定与回调",
+          "decision": "keep",
+          "reason": "NotifInflation worker、Context主looper剩余action回调和实际窗口UI提交的分层交接轨道，保留同步fallback和窗口线程不能从flag直接推断的条件。",
+          "original_line": 295,
+          "heading": "### 布局复杂度与 SystemUI 的工作量"
+        },
+        {
+          "original_id": "ch09-05-15-rv-reapply-guard",
+          "title": "reapply 的预检查",
+          "decision": "keep",
+          "reason": "canReapplyRemoteView预检查→实际多布局/ViewID校验→action或fallback的实际阶段守卫，旧对象flag与双方null分支限制保留，不能当复用成功保证。",
+          "original_line": 306,
+          "heading": "### RemoteViews 的 reapply 机制"
+        },
+        {
+          "original_id": "ch09-05-16-image-three-costs",
+          "title": "图片成本分布在两端和传输中",
+          "decision": "remove",
+          "reason": "应用/跨进程/SystemUI三卡逐项复制紧邻三项图片成本清单，具体序列化/异步绑定/共享转换图分别保留，未加入设备时长数据。",
+          "original_line": 317,
+          "heading": "### 图片通知的开销落在三段"
+        },
+        {
+          "original_id": "ch09-05-17-icon-inputs",
+          "title": "三种 Icon 输入与成本位置",
+          "decision": "remove",
+          "reason": "resource/URI/bitmap三卡逐项重排紧邻三条Icon来源说明与共享成本段，所有资源解析/URI存活授权/转换缓存细节保留，独立asShared条件图18保留。",
+          "original_line": 328,
+          "heading": "### 图片通知的开销落在三段"
+        },
+        {
+          "original_id": "ch09-05-18-bitmap-shared",
+          "title": "asShared 何时返回自身",
+          "decision": "keep",
+          "reason": "ashmem/不可变/gainmap条件共同决定返回自身或创建共享副本的真实分支，保留首次转换缓存、可失败和图片缩放并未省掉的成本。",
+          "original_line": 339,
+          "heading": "### 图片通知的开销落在三段"
+        },
+        {
+          "original_id": "ch09-05-19-nls-thread-model",
+          "title": "NLS 接收端先兼容再转主线程",
+          "decision": "keep",
+          "reason": "NLS oneway Binder入口的旧客户端兼容处理→锁内ranking→getMainLooper MyHandler→公开回调/正常回执的线程交接，区别于NMS发送侧或仅worker队列。",
+          "original_line": 354,
+          "heading": "### NLS 回调的线程模型"
+        },
+        {
+          "original_id": "ch09-05-20-nls-backlog",
+          "title": "长回调如何推迟主线程消息",
+          "decision": "keep",
+          "reason": "长NLS主回调、下一通知与UI消息在同一looper排队的示意轨道，保留无输入连接和deadline证据不能自动定Input ANR。",
+          "original_line": 376,
+          "heading": "### NLS 回调的线程模型"
+        },
+        {
+          "original_id": "ch09-05-21-nls-bounded-worker",
+          "title": "有界队列的接受与拒绝",
+          "decision": "keep",
+          "reason": "实际教学单worker+队列64的接受/AbortPolicy拒绝两路，拒绝仅记录丢样不在main回退，明确容量非平台阈值和不是无损最终状态通道。",
+          "original_line": 417,
+          "heading": "### 回调中的快照与转交"
+        },
+        {
+          "original_id": "ch09-05-22-nls-shutdown",
+          "title": "快照与生命周期的边界",
+          "decision": "remove",
+          "reason": "复制字段/shutdownNow/最终状态三卡逐项复述紧邻415完整生产边界段和真实onDestroy代码，没有新增生命周期状态机；取消排队不保证运行任务已结束等文字保留。",
+          "original_line": 422,
+          "heading": "### 回调中的快照与转交"
+        },
+        {
+          "original_id": "ch09-05-23-nls-session",
+          "title": "完成回执与 10 秒宽限",
+          "decision": "merge",
+          "reason": "仅IBinderSession绑定dispatch token、正常公开回调后ack、NMS收到后默认10秒可配置关闭计数与独立worker合为一图，明确不是NLS ANR预算。",
+          "original_line": 431,
+          "heading": "### 回调完成回执与进程冻结",
+          "replacement_id": "ed09-05-session-ack-and-independent-worker"
+        },
+        {
+          "original_id": "ch09-05-24-nls-background-boundary",
+          "title": "后台任务不在完成回执内",
+          "decision": "merge",
+          "reason": "回调快照execute后worker与session延迟任务交叠合入前述记账图，只示已接受样本且worker较晚结束的一例，完成先后不固定，框架不保业务持久执行。",
+          "original_line": 438,
+          "heading": "### 回调完成回执与进程冻结",
+          "replacement_id": "ed09-05-session-ack-and-independent-worker"
+        },
+        {
+          "original_id": "ch09-05-25-ranking-scope",
+          "title": "RankingMap 是 listener 的可见快照",
+          "decision": "merge",
+          "reason": "RankingMap是当前listener可见快照、不同listener集合不同、按key提取而不cache每代map合入两listener独立过滤/Parcel/接收的分发图。",
+          "original_line": 447,
+          "heading": "### RankingMap 的成本与可见性",
+          "replacement_id": "ed09-05-per-listener-ranking-fanout"
+        },
+        {
+          "original_id": "ch09-05-26-pattern-publisher",
+          "title": "同步 Binder 阻塞的取证顺序",
+          "decision": "remove",
+          "reason": "发布slice→服务端→输入deadline三步复制模式一一个完整段及前文定位清单，主链和身份图保留真实关系，没有实际ANR样本可增图。",
+          "original_line": 467,
+          "heading": "### 模式一：发布应用主线程卡在同步 Binder"
+        },
+        {
+          "original_id": "ch09-05-27-patterns-fgs-nls",
+          "title": "FGS 与 NLS 用各自证据判断",
+          "decision": "remove",
+          "reason": "FGS/NLS/异步坏通知三卡逐项复述紧邻模式二三及173/180的结果边界，合并FGS图和NLS回调/记账图已各自保留，不再第二轮摘要。",
+          "original_line": 480,
+          "heading": "### 模式三：NLS 主线程回调积压"
+        },
+        {
+          "original_id": "ch09-05-28-pattern-update",
+          "title": "高频 update 的负载与丢弃",
+          "decision": "remove",
+          "reason": "采样/合并/配额/终态四步逐句重排紧邻487完整更新策略段，资格/估速机制图已保留，原始终态仍受其他校验的文字保留。",
+          "original_line": 489,
+          "heading": "### 模式四：高频 update 被限流丢弃"
+        },
+        {
+          "original_id": "ch09-05-29-pattern-systemui",
+          "title": "notify 返回与 SystemUI 卡顿",
+          "decision": "remove",
+          "reason": "NMS分发/SystemUI消费两支重述模式五一个完整段和前文handler/RemoteViews交接，合并主链与异步绑定图已有对应真实路径。",
+          "original_line": 498,
+          "heading": "### 模式五：SystemUI 渲染长任务"
+        },
+        {
+          "original_id": "ch09-05-30-channel-startup",
+          "title": "channel 创建与首个前台通知",
+          "decision": "remove",
+          "reason": "提前建channel/首个就绪/最小转换三框逐句复制紧邻505一段及FGS前提，合并FGS图已保留channel等资格，不提供新的启动安排样例。",
+          "original_line": 507,
+          "heading": "### 模式六：渠道创建进入首次关键启动路径"
+        },
+        {
+          "original_id": "ch09-05-31-versions",
+          "title": "API 31–37 的能力边界",
+          "decision": "remove",
+          "reason": "API31/33/36/37四卡逐项复制紧邻四行版本能力表与旧摘要矛盾提示，图没有新时间依赖；完整版本/权限/样式边界保留。",
+          "original_line": 523,
+          "heading": "### 版本边界"
+        },
+        {
+          "original_id": "ch09-05-32-live-eligibility",
+          "title": "Live Update 的资格与最终展示",
+          "decision": "keep",
+          "reason": "内容/样式、禁止项、权限及importance>MIN/bundle规则到最终用户产品展示的层层资格，明确Metric标题例外及通过仍不保固定surface或性能收益。",
+          "original_line": 536,
+          "heading": "### ProgressStyle 与 Live Update 是两个概念"
+        },
+        {
+          "original_id": "ch09-05-33-metric-count",
+          "title": "MetricStyle 的数量边界",
+          "decision": "remove",
+          "reason": "0/1到3/>3三卡逐项重述545和564数量说明及单指标代码，全部build异常、展开只前三项及criticalmetric独立选择边界原文保留。",
+          "original_line": 566,
+          "heading": "### MetricStyle 与 Semantic Coloring"
+        },
+        {
+          "original_id": "ch09-05-34-semantic-color",
+          "title": "语义色由系统 surface 解释",
+          "decision": "remove",
+          "reason": "语义值/条件/surface三卡逐项复制紧邻571语义色条件段和578速率关系，未画真实颜色或不同区域样例，颜色非RGB和指标非配额豁免文字保留。",
+          "original_line": 573,
+          "heading": "### MetricStyle 与 Semantic Coloring"
+        },
+        {
+          "original_id": "ch09-05-35-trace-markers",
+          "title": "应用 Trace 把阶段分开",
+          "decision": "remove",
+          "reason": "四种应用Trace卡片逐项复制紧邻615区间说明及真实代码的finally闭合，合并主链/FGS/session图已经显示调用与异步工作的边界，保留全部可用埋点源码。",
+          "original_line": 617,
+          "heading": "### 应用侧标记"
+        },
+        {
+          "original_id": "ch09-05-37-buffer-window",
+          "title": "会话时长与保留历史分开看",
+          "decision": "keep",
+          "reason": "请求30秒会话、有限环形保留和实际归因窗口三轨对照，明确64MiB不能保证固定留存历史，条长无测量比例。",
+          "original_line": 650,
+          "heading": "### 最小采集配置"
+        },
+        {
+          "original_id": "ch09-05-36-capture-coverage",
+          "title": "最小配置覆盖哪些信号",
+          "decision": "remove",
+          "reason": "APPtag/系统类别/调度三卡逐项复制紧邻textproto和655目标应用选择/覆盖确认段，配置支持与实际采集的全部限制保留。",
+          "original_line": 657,
+          "heading": "### 最小采集配置"
+        },
+        {
+          "original_id": "ch09-05-38-sql-identity",
+          "title": "从 slice 追到线程与进程身份",
+          "decision": "keep",
+          "reason": "slice.track_id→thread_track→utid/upid→进程线程身份的具体表关联链，避免同名section串进不同进程实例；排序只是调查入口。",
+          "original_line": 694,
+          "heading": "### 查询应用 section"
+        },
+        {
+          "original_id": "ch09-05-39-sql-closed-slices",
+          "title": "已结束查询保留什么",
+          "decision": "remove",
+          "reason": "已闭合/另分析两支直接图形化紧邻692完整dur>=0和dur=-1说明及SQL过滤，零时长/未闭合裁剪/墙钟非CPU时间的原文完整保留。",
+          "original_line": 699,
+          "heading": "### 查询应用 section"
+        },
+        {
+          "original_id": "ch09-05-40-thread-states",
+          "title": "主线程状态只给调查方向",
+          "decision": "remove",
+          "reason": "Running/R/阻塞三卡逐项复制紧邻729线程状态解释段及查询前is_main_thread/>1ms范围，没有实际状态区间或新依赖。",
+          "original_line": 731,
+          "heading": "### 查询主线程状态"
+        },
+        {
+          "original_id": "ch09-05-41-three-trace-chains",
+          "title": "Perfetto 中三条链逐段关联",
+          "decision": "remove",
+          "reason": "发布/分发/消费三卡逐项复制紧邻三条核对链清单和747身份对齐段，前段合并主链已经画实际偏序，避免本篇第三次总链摘要。",
+          "original_line": 742,
+          "heading": "### 三条链分别核对"
+        },
+        {
+          "original_id": "ch09-05-42-dumpsys-limits",
+          "title": "状态快照与日志的证据边界",
+          "decision": "remove",
+          "reason": "dumpsys/Shedding/trace三卡逐项重排紧邻759完整快照与日志缺口段，没有实际采集输出，保留无日志不能排除丢弃的全部条件。",
+          "original_line": 761,
+          "heading": "### 使用 dumpsys 辅助诊断"
+        },
+        {
+          "original_id": "ch09-05-43-faq-boundaries",
+          "title": "常见误读对应哪条边界",
+          "decision": "remove",
+          "reason": "同步返回/FGS与NLS/限流/模板Icon四卡再次摘要紧邻五条完整FAQ及前文机制图，完整问答与限制文字保留，不再尾部重复图形总结。",
+          "original_line": 796,
+          "heading": "### 「Icon 构造方式对性能没影响」"
+        }
+      ],
+      "sha256_after": "d1cd4701e2e6c3d83ae70ba66d3453ec4c783a9a25bce86ee8361f60b23f295d",
+      "new_diagrams": [
+        {
+          "id": "ed09-05-notify-prefix-and-fanout",
+          "title": "notify 的同步返回与后续分发共享 post 起点",
+          "article": "src/part2-performance/ch09-anr/05-notification-performance-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-05-notify-prefix-and-fanout.svg",
+            "src/assets/diagrams/ch09/ed09-05-notify-prefix-and-fanout.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-05-notify-prefix-and-fanout",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/NotificationManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/INotificationManager.aidl",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/INotificationListener.aidl",
+            "本文冻结全文的同步边界、异步条件、示例代码与限制说明"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-05-02-sync-prefix",
+              "ch09-05-03-partial-order",
+              "ch09-05-07-nms-handler"
+            ],
+            "boundary": "固定r1普通允许发布路径；拒绝或异常可提前结束。post后handler开始与客户端收到Binder回复无固定先后，listener接口oneway不要求用户回调执行完，但Parcel/背压/失败等成本仍存在。Enqueue与后续正式发布是不同任务，合图不把入队等于上屏。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a102/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-05-fgs-minimal-and-later-outcomes",
+          "title": "FGS 最小转换、增强内容与异步通知结果分开核对",
+          "article": "src/part2-performance/ch09-anr/05-notification-performance-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-05-fgs-minimal-and-later-outcomes.svg",
+            "src/assets/diagrams/ch09/ed09-05-fgs-minimal-and-later-outcomes.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-05-fgs-minimal-and-later-outcomes",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ServiceRecord.java",
+            "https://developer.android.com/develop/background-work/services/fgs/troubleshooting",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+            "本文冻结全文的同步边界、异步条件、示例代码与限制说明"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-05-05-fgs-budget",
+              "ch09-05-06-fgs-async-outcome"
+            ],
+            "boundary": "仅为教学设计，预先满足有效channel/图标/类型/权限/启动资格；DATA_SYNC是示例类型。转换路径状态变化与ServiceRecord异步通知另核对，不给两者虚构严格先后。后台增强要检查Service生命周期与代次。FGS转换ANR/DidNotStart崩溃与异步坏通知崩溃分别统计。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a102/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-05-session-ack-and-independent-worker",
+          "title": "NLS 回执后记账与应用 worker 不共享完成条件",
+          "article": "src/part2-performance/ch09-anr/05-notification-performance-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-05-session-ack-and-independent-worker.svg",
+            "src/assets/diagrams/ch09/ed09-05-session-ack-and-independent-worker.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-05-session-ack-and-independent-worker",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/NotificationListenerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/psc/BinderSession.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/psc/ProcessStateController.java",
+            "本文冻结全文的同步边界、异步条件、示例代码与限制说明"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-05-23-nls-session",
+              "ch09-05-24-nls-background-boundary"
+            ],
+            "boundary": "仅带IBinderSession的绑定跟踪dispatch token，系统直接注册可无session。MyHandler在公开回调正常返回后发完成回执；NMS收到后按可配置mNlsCompletionDurationMs延迟结束该次调用，默认10秒。worker不被回执覆盖，可早于或晚于session任务结束，普通executor不保证持久执行。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a102/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-05-per-listener-ranking-fanout",
+          "title": "每个 listener 的可见 ranking 独立构造并发送",
+          "article": "src/part2-performance/ch09-anr/05-notification-performance-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-05-per-listener-ranking-fanout.svg",
+            "src/assets/diagrams/ch09/ed09-05-per-listener-ranking-fanout.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-05-per-listener-ranking-fanout",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/NotificationListenerService.java",
+            "本文冻结全文的同步边界、异步条件、示例代码与限制说明"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-05-08-fanout",
+              "ch09-05-25-ranking-scope"
+            ],
+            "boundary": "仅示两个listener以表达fanout，不是数量上限或设备测量。锁内按listener过滤用户/类型/锁定模式/敏感内容并构造可见Ranking数组，再post其runnable做oneway发送；可见集合可以不同，回调map不是系统全部通知。频率/通知数/listener数只增加工作量机会，不能据此给固定线性耗时公式。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a102/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T11:37:22.175647+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 43,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a102/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a102/visual-review.json",
+      "retired_diagrams": [
+        "ch09-05-01-four-chains",
+        "ch09-05-02-sync-prefix",
+        "ch09-05-03-partial-order",
+        "ch09-05-04-publisher-cost",
+        "ch09-05-05-fgs-budget",
+        "ch09-05-06-fgs-async-outcome",
+        "ch09-05-07-nms-handler",
+        "ch09-05-08-fanout",
+        "ch09-05-10-progress-state",
+        "ch09-05-12-quota-types",
+        "ch09-05-16-image-three-costs",
+        "ch09-05-17-icon-inputs",
+        "ch09-05-22-nls-shutdown",
+        "ch09-05-23-nls-session",
+        "ch09-05-24-nls-background-boundary",
+        "ch09-05-25-ranking-scope",
+        "ch09-05-26-pattern-publisher",
+        "ch09-05-27-patterns-fgs-nls",
+        "ch09-05-28-pattern-update",
+        "ch09-05-29-pattern-systemui",
+        "ch09-05-30-channel-startup",
+        "ch09-05-31-versions",
+        "ch09-05-33-metric-count",
+        "ch09-05-34-semantic-color",
+        "ch09-05-35-trace-markers",
+        "ch09-05-36-capture-coverage",
+        "ch09-05-39-sql-closed-slices",
+        "ch09-05-40-thread-states",
+        "ch09-05-41-three-trace-chains",
+        "ch09-05-42-dumpsys-limits",
+        "ch09-05-43-faq-boundaries"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-102/retired-assets.json"
     },
     {
       "index": 103,
@@ -11826,9 +12810,521 @@
       "before_count": 37,
       "before_all_images": 37,
       "sha256_before": "6fc53f8465fc03ffb2a5f558fa826cbabb99ff5386530cf532d7bcba2a28f18f",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 10,
+      "decisions": [
+        {
+          "original_id": "ch09-06-01-four-paths",
+          "title": "四条路径的处理对象与结果",
+          "decision": "remove",
+          "reason": "四个路径卡片逐项复制开篇四条路径清单和紧邻五行预算/起点/对象/动作表；四条边界已在全文独立展开，未提供额外调用关系。",
+          "original_line": 61,
+          "heading": "# ContentProvider 超时与 ANR 四路径"
+        },
+        {
+          "original_id": "ch09-06-02-budget-relations",
+          "title": "四个固定参数的关系",
+          "decision": "remove",
+          "reason": "10/20/3/23关系卡片逐项复述完整常量源码、默认数值段和预算表；算式、HW定义及等待非总耗时的边界保留，独立计时轨道图12另保留。",
+          "original_line": 102,
+          "heading": "## 1. 四个常量，四种语义"
+        },
+        {
+          "original_id": "ch09-06-03-hw-multiplier",
+          "title": "HW 倍率是整型系统属性",
+          "decision": "remove",
+          "reason": "属性整数默认1/倍率2的三个卡片直接重排紧邻属性定义、getprop命令和完整算例段；没有增加真实设备数据或分支关系，正文完整保留。",
+          "original_line": 128,
+          "heading": "## 2. `HW_TIMEOUT_MULTIPLIER` 的边界"
+        },
+        {
+          "original_id": "ch09-06-04-publish-install",
+          "title": "Publish guard 具体装在哪里",
+          "decision": "merge",
+          "reason": "attach内非空列表且仍launching时安装message57接入发布生命周期合图，保留fork到attach排除、发送位置起点和Handler调度限制。",
+          "original_line": 141,
+          "heading": "### 3.1 计时从 attach 开始",
+          "replacement_id": "ed09-06-publish-guard-lifecycle"
+        },
+        {
+          "original_id": "ch09-06-05-publish-startup-order",
+          "title": "发布之后才执行 Application.onCreate",
+          "decision": "merge",
+          "reason": "普通非restricted-backup启动的Application创建、Provider逐个安装、批量发布/撤销guard、随后App.onCreate接入一图；保留发布后query可与App初始化并发。",
+          "original_line": 162,
+          "heading": "### 3.1 计时从 attach 开始",
+          "replacement_id": "ed09-06-publish-guard-lifecycle"
+        },
+        {
+          "original_id": "ch09-06-06-publish-batch",
+          "title": "多个 Provider 先逐个安装再批量发布",
+          "decision": "merge",
+          "reason": "先逐个onCreate再收齐holder一次publish并入同一普通启动主链，保留前序阻塞推迟后续和整批发布，不把清单文本顺序承诺为实际顺序。",
+          "original_line": 171,
+          "heading": "### 3.2 多个 Provider 共用一次 publish",
+          "replacement_id": "ed09-06-publish-guard-lifecycle"
+        },
+        {
+          "original_id": "ch09-06-07-publish-blockers",
+          "title": "沿初始化依赖追真正阻塞点",
+          "decision": "remove",
+          "reason": "DB/I-O、锁/Binder、SDK/executor三个候选卡片直接摘要紧邻五条完整阻塞清单与网络边界；没有目标设备证据或额外依赖结构，候选文字全部保留。",
+          "original_line": 178,
+          "heading": "### 3.2 多个 Provider 共用一次 publish"
+        },
+        {
+          "original_id": "ch09-06-08-publish-expiry",
+          "title": "发布超时清理不走 Provider ANR",
+          "decision": "merge",
+          "reason": "未撤销guard实际到期处理、清理连接/launching和宿主INITIALIZATION_FAILURE/UNKNOWN并入发布分支；stable依赖退出与AnrHelper边界明确保留。",
+          "original_line": 195,
+          "heading": "### 3.3 到期动作",
+          "replacement_id": "ed09-06-publish-guard-lifecycle"
+        },
+        {
+          "original_id": "ch09-06-09-exit-evidence",
+          "title": "初始化失败记录只是候选入口",
+          "decision": "remove",
+          "reason": "reason候选、身份/时段、日志交叉三卡逐项复述完整历史退出代码及紧邻description不稳定/原因不唯一段；不需要再做图形取证清单。",
+          "original_line": 236,
+          "heading": "### 3.4 如何取证"
+        },
+        {
+          "original_id": "ch09-06-10-ready-handshake",
+          "title": "未发布远程 Provider 的获取握手",
+          "decision": "merge",
+          "reason": "非空holder/provider为空的远程分支、锁内先检查回报、必要的一次wait及重查结果合入应用/external握手图，修正线性图容易暗示回报只能在wait后到达。",
+          "original_line": 245,
+          "heading": "## 4. Ready timeout：获取失败，不是 Provider ANR",
+          "replacement_id": "ed09-06-ready-client-handshake"
+        },
+        {
+          "original_id": "ch09-06-12-ready-client-types",
+          "title": "应用调用方和 external client 的等待位置",
+          "decision": "merge",
+          "reason": "应用ActivityThread本地等待与external在system_server内等待合为双支路，保留各自日志/null和message73回报不撤销宿主publish guard。",
+          "original_line": 258,
+          "heading": "## 4. Ready timeout：获取失败，不是 Provider ANR",
+          "replacement_id": "ed09-06-ready-client-handshake"
+        },
+        {
+          "original_id": "ch09-06-11-independent-deadlines",
+          "title": "Ready 与 Publish 的时钟独立",
+          "decision": "keep",
+          "reason": "AMS ready消息、应用一次wait和宿主publish guard分别安装/分别计时的三轨对照，直接说明20大于10不保证实际到期动作顺序，不能与单条获取握手混成同一时钟。",
+          "original_line": 265,
+          "heading": "## 4. Ready timeout：获取失败，不是 Provider ANR"
+        },
+        {
+          "original_id": "ch09-06-13-caller-anr",
+          "title": "调用方自己的 deadline 是另一条路径",
+          "decision": "keep",
+          "reason": "调用方主线程同步等待Provider与自身Input/Service/Broadcast期限并行，明确ANR主体是调用方、先后靠独立deadline证据，区别于宿主call detector。",
+          "original_line": 272,
+          "heading": "## 4. Ready timeout：获取失败，不是 Provider ANR"
+        },
+        {
+          "original_id": "ch09-06-14-async-paths",
+          "title": "异步请求之后的同步结果等待",
+          "decision": "remove",
+          "reason": "connected3/remote23/调用点异常三卡逐项复述紧邻三API清单、预算来源和下一完整异常处理段；具体ResultListener流程图15保留，不额外放第二张摘要。",
+          "original_line": 287,
+          "heading": "## 5. Async callback timeout：结果降级"
+        },
+        {
+          "original_id": "ch09-06-15-callback-result",
+          "title": "ResultListener 等待返回不等于取消远端",
+          "decision": "keep",
+          "reason": "RemoteCallback发送/尚未完成才一次wait/读取结果或异常/不自动取消远端的具体控制链，保留回调、打断、虚假唤醒可早退和预算不是全API耗时。",
+          "original_line": 294,
+          "heading": "## 5. Async callback timeout：结果降级"
+        },
+        {
+          "original_id": "ch09-06-16-detector-privilege",
+          "title": "配置与运行时权限检查分开",
+          "decision": "merge",
+          "reason": "SystemApi/hide/REMOVE_TASKS注解与实际AMS报告入口enforce合入归责链，明确setter注解不代表setter入口执行了运行时校验，调用方fixed不乘HW。",
+          "original_line": 307,
+          "heading": "### 6.1 API 权限与计时方式",
+          "replacement_id": "ed09-06-privileged-host-report"
+        },
+        {
+          "original_id": "ch09-06-17-execute-finally",
+          "title": "固定检测包围 execute 的哪一段",
+          "decision": "merge",
+          "reason": "beforeRemote投递、实际操作、finally afterRemote仅移除pending共享runnable并入获取/主线程/worker全生命周期，保留已报告撤不回和并发复用限制。",
+          "original_line": 314,
+          "heading": "### 6.1 API 权限与计时方式",
+          "replacement_id": "ed09-06-fixed-detector-lifecycle"
+        },
+        {
+          "original_id": "ch09-06-18-main-handler",
+          "title": "异步 Handler 也需要主线程能运行",
+          "decision": "merge",
+          "reason": "worker远程操作与main异步Handler检测的两个后继合入生命周期图；async只越过同步屏障，main阻塞时检测同样不能运行，不把delay当硬墙钟保证。",
+          "original_line": 326,
+          "heading": "### 6.1 API 权限与计时方式",
+          "replacement_id": "ed09-06-fixed-detector-lifecycle"
+        },
+        {
+          "original_id": "ch09-06-19-acquire-before-detector",
+          "title": "获取 client 与调用检测的边界",
+          "decision": "merge",
+          "reason": "acquire Provider后才构造client再beforeRemote计时并入生命周期图，保留cold/ready不追溯、transport准备在检测投递后，以及发布后共享依赖仍可能进入远程等待。",
+          "original_line": 335,
+          "heading": "### 6.1 API 权限与计时方式",
+          "replacement_id": "ed09-06-fixed-detector-lifecycle"
+        },
+        {
+          "original_id": "ch09-06-20-report-host",
+          "title": "从 Provider 引用定位宿主进程",
+          "decision": "merge",
+          "reason": "binder→ProviderRefCount→holder.connection→AMS权限/当前宿主→TimeoutRecord→AnrHelper过滤接入同一归责链，保留引用/宿主消失提前结束和报告/原返回竞态。",
+          "original_line": 344,
+          "heading": "### 6.2 AMS 如何找到被归责进程",
+          "replacement_id": "ed09-06-privileged-host-report"
+        },
+        {
+          "original_id": "ch09-06-21-anr-disposition",
+          "title": "宿主 ANR 的后续处理",
+          "decision": "merge",
+          "reason": "AnrHelper有效报告后的silent后台终止或可能UI合入归责链条件后继，保留产品/调试/生命周期条件，不承诺报告必弹框或主动结束原Binder。",
+          "original_line": 356,
+          "heading": "### 6.2 AMS 如何找到被归责进程",
+          "replacement_id": "ed09-06-privileged-host-report"
+        },
+        {
+          "original_id": "ch09-06-22-cancel-choice",
+          "title": "是否传入 signal 决定检测分支",
+          "decision": "keep",
+          "reason": "feature flag、实际nonnull signal、onCancel>0共同决定该次调用不投fixed检测，否则只在fixed>0时启用fixed的真实条件分支；签名可取消不等于实际走onCancel。",
+          "original_line": 370,
+          "heading": "### 6.3 Android 17 的 cancellation-aware（取消感知）变体"
+        },
+        {
+          "original_id": "ch09-06-23-cancel-order",
+          "title": "取消后检测的实际投递顺序",
+          "decision": "keep",
+          "reason": "外部cancel→innerSignal.cancel返回→才postDelayed→main实际运行报告→finally只能清pending的具体先后，保留oneway传播不等远端已停和非外部入口硬倒计时。",
+          "original_line": 375,
+          "heading": "### 6.3 Android 17 的 cancellation-aware（取消感知）变体"
+        },
+        {
+          "original_id": "ch09-06-24-cancel-auxiliary",
+          "title": "兼容固定模式与诊断日志分支",
+          "decision": "remove",
+          "reason": "旧setter转onCancel0、默认6小时仅错误日志、实际ANR runnable三卡逐项摘要紧邻完整兼容/诊断两段；保留全部条件及图22/23，六小时不误作第三个ANR期限。",
+          "original_line": 382,
+          "heading": "### 6.3 Android 17 的 cancellation-aware（取消感知）变体"
+        },
+        {
+          "original_id": "ch09-06-25-evidence-decision",
+          "title": "故障分类先核对主体与入口",
+          "decision": "remove",
+          "reason": "路径/主体/身份的三个图形摘要直接重复紧邻六行诊断证据表及完整日志边界说明；原表更完整且可横向对照，不需要另一版分类图。",
+          "original_line": 400,
+          "heading": "## 7. 诊断决策表"
+        },
+        {
+          "original_id": "ch09-06-26-publish-trace",
+          "title": "发布路径的取证顺序",
+          "decision": "remove",
+          "reason": "身份/窗口、framework标记、补充采集三步骤逐项重排紧邻采集四项清单、SQL入口段与后续451限制段；没有实际trace数据，全部配置和源SQL保留。",
+          "original_line": 420,
+          "heading": "### 8.1 Publish 路径"
+        },
+        {
+          "original_id": "ch09-06-27-publish-sql",
+          "title": "启动 slice 查询的身份与缺口",
+          "decision": "remove",
+          "reason": "身份、dur>=0与命中不等证明三卡逐项复述同一SQL和451完整解释；零时长/未闭合/方法名覆盖/调度补证全部正文保留。",
+          "original_line": 453,
+          "heading": "### 8.1 Publish 路径"
+        },
+        {
+          "original_id": "ch09-06-28-anr-instant",
+          "title": "ANR Detected 本身不标明 Provider reason",
+          "decision": "remove",
+          "reason": "开关/anrInfo/debug.anr、instant字段、reason另关联三卡直接重排460完整段，未提供真实instant截图或新字段关联；原文字段和缺失不能排除ANR的限制保留。",
+          "original_line": 462,
+          "heading": "### 8.2 Call hang 路径"
+        },
+        {
+          "original_id": "ch09-06-29-binder-saturation",
+          "title": "远程调用等待先分三类依赖",
+          "decision": "remove",
+          "reason": "已进Binder、未进且线程忙、App.onCreate依赖三卡摘要紧邻五条排查清单及方法/线程/时段说明；无当前设备事务证据，静态候选图没有额外因果关系。",
+          "original_line": 473,
+          "heading": "### 8.2 Call hang 路径"
+        },
+        {
+          "original_id": "ch09-06-30-binder-overlap",
+          "title": "窗口相交比起点落窗更完整",
+          "decision": "merge",
+          "reason": "同一坐标的窗口、跨左/右边界闭合同步client事务和另算交集与完整时长输出合为一图，保留半开相交谓词及BETWEEN会漏跨左调用的原因。",
+          "original_line": 519,
+          "heading": "### 8.2 Call hang 路径",
+          "replacement_id": "ed09-06-binder-window-and-whole-duration"
+        },
+        {
+          "original_id": "ch09-06-31-binder-whole-duration",
+          "title": "查询返回整笔事务时长",
+          "decision": "merge",
+          "reason": "原SQL is_sync/client_dur>0/server_dur>=0和双方完整wall输出接入窗口图，明确不是裁剪/CPU、server可零时长、oneway/未完成另查及upid/方法级证据边界。",
+          "original_line": 526,
+          "heading": "### 8.2 Call hang 路径",
+          "replacement_id": "ed09-06-binder-window-and-whole-duration"
+        },
+        {
+          "original_id": "ch09-06-32-stable-evidence-entry",
+          "title": "跨日志与 trace 的证据入口",
+          "decision": "remove",
+          "reason": "退出信息→instant/reason→身份时序→Binder flow四步逐项复制紧邻四项编号清单；am_anr文本依赖parser的全部限制保留，不再新增图形清单。",
+          "original_line": 537,
+          "heading": "### 8.3 `am_anr` 字符串 SQL 的局限"
+        },
+        {
+          "original_id": "ch09-06-33-lazy-init",
+          "title": "延后初始化可能把等待移到首个 query",
+          "decision": "remove",
+          "reason": "后台就绪/首query仍同步等两支逐项图形化555完整资源就绪协议条目；未画具体线程安全协议或真实交叠，发布后等待转移仍由完整正文和调用生命周期边界说明。",
+          "original_line": 559,
+          "heading": "### 9.1 Publish 超时"
+        },
+        {
+          "original_id": "ch09-06-34-app-startup",
+          "title": "App Startup 合并组件仍有同步初始化",
+          "decision": "remove",
+          "reason": "InitializationProvider发现metadata/递归依赖/同步create/publish链直接逐项重排564完整段，全文保留context为空延后、循环检测和数量不等固定收益的条件；本篇不另展开SDK初始化专题。",
+          "original_line": 566,
+          "heading": "### 9.1 Publish 超时"
+        },
+        {
+          "original_id": "ch09-06-35-remote-fix",
+          "title": "远程调用优化沿资源依赖处理",
+          "decision": "remove",
+          "reason": "缩小query、数据库锁、Binder依赖三个卡片逐项摘要紧邻六条完整修复清单；无设备证据对应到实际依赖，不重复画候选优化列表。",
+          "original_line": 580,
+          "heading": "### 9.2 Provider call hang（远程调用卡死）"
+        },
+        {
+          "original_id": "ch09-06-36-local-timeout",
+          "title": "界面不等结果与远端停止是两件事",
+          "decision": "remove",
+          "reason": "UI本地timeout、协作取消、特权宿主ANR三卡逐项复述585完整对比段；具体结果等待、取消检测和宿主报告流程已各保留，所有迟到结果/生命周期边界文字保留。",
+          "original_line": 587,
+          "heading": "### 9.2 Provider call hang（远程调用卡死）"
+        },
+        {
+          "original_id": "ch09-06-37-version-boundaries",
+          "title": "Android 17 四条路径的边界",
+          "decision": "remove",
+          "reason": "版本路径/预算/权限/开关四卡再次摘要紧邻六条版本结论、首节预算表及前文机制图；完整Android17r1范围与结论保留，不再尾部重画总览。",
+          "original_line": 596,
+          "heading": "## 10. 版本结论"
+        }
+      ],
+      "sha256_after": "289523916f045798723e153888223f5eb3f55977cece40b6f23433ef488eaf3f",
+      "new_diagrams": [
+        {
+          "id": "ed09-06-publish-guard-lifecycle",
+          "title": "批量发布成功与发布保护到期是两条后继",
+          "article": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-06-publish-guard-lifecycle.svg",
+            "src/assets/diagrams/ch09/ed09-06-publish-guard-lifecycle.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-06-publish-guard-lifecycle",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ContentProvider.java",
+            "本文冻结全文的计时起点、调用顺序、分支条件和SQL原文"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-06-04-publish-install",
+              "ch09-06-05-publish-startup-order",
+              "ch09-06-06-publish-batch",
+              "ch09-06-08-publish-expiry"
+            ],
+            "boundary": "固定r1；普通非restricted-backup且有Provider列表的启动。guard仅在列表非空且仍有launching provider时安装。10s×HW是AMS Handler延迟参数而非硬墙钟；fork到attach不在参数内。成功发布后Application.onCreate在预算外，但可能与远程query并发。到期不是AnrHelper路径，stable依赖客户端可能另以DEPENDENCY_DIED退出。实际安装顺序不等于清单文本顺序。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a103/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-06-ready-client-handshake",
+          "title": "应用本地握手与 external client 的等待位置分开",
+          "article": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-06-ready-client-handshake.svg",
+            "src/assets/diagrams/ch09/ed09-06-ready-client-handshake.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-06-ready-client-handshake",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java",
+            "本文冻结全文的计时起点、调用顺序、分支条件和SQL原文"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-06-10-ready-handshake",
+              "ch09-06-12-ready-client-types"
+            ],
+            "boundary": "应用支路仅展示AMS返回非空holder且provider为空的远程获取分支；已有或本地Provider跳过。应用回报可早于wait，mHolder检查可跳过一次wait。message73失败回报、应用wait和宿主publish guard各自计时，回报不移除publish guard，也不直接发起ANR。external特殊路径在system_server用同一ready预算等待，不把应用提前收到空provider的holder条件套给external。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a103/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-06-fixed-detector-lifecycle",
+          "title": "获取 client 之前的等待与 fixed 检测分开计时",
+          "article": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-06-fixed-detector-lifecycle.svg",
+            "src/assets/diagrams/ch09/ed09-06-fixed-detector-lifecycle.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-06-fixed-detector-lifecycle",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ContentProviderClient.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Handler.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ContentResolver.java",
+            "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+            "本文冻结全文的计时起点、调用顺序、分支条件和SQL原文"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-06-17-execute-finally",
+              "ch09-06-18-main-handler",
+              "ch09-06-19-acquire-before-detector"
+            ],
+            "boundary": "只示一次启用fixed的调用且主looper可调度，取消感知分支另见原图22/23。固定参数由调用方配置不乘HW，acquire client前的ready/cold启动等待不追溯计入。beforeRemote后可先准备取消transport再实际远程操作。main async Handler只能越过同步屏障，不能越过main线程阻塞。共享runnable不保证并发调用各有独立timer；已执行报告不能由finally撤回。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a103/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-06-privileged-host-report",
+          "title": "从调用方引用到宿主 ANR 的权限、身份与后续处置",
+          "article": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-06-privileged-host-report.svg",
+            "src/assets/diagrams/ch09/ed09-06-privileged-host-report.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-06-privileged-host-report",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ContentProviderClient.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java",
+            "本文冻结全文的计时起点、调用顺序、分支条件和SQL原文"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-06-16-detector-privilege",
+              "ch09-06-20-report-host",
+              "ch09-06-21-anr-disposition"
+            ],
+            "boundary": "固定r1；setter的注解不代表setter入口已enforce。runtime检查在报告入口，引用/connection/宿主可消失，AnrHelper继续过滤0PID/重复/实例变化；不是每个timer都成为有效ANR。报告不主动结束原Binder调用，报告时原调用也可能已经返回。UI由系统策略/调试/生命周期决定，stable依赖进程结果另记录。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a103/change-proof.json"
+          }
+        },
+        {
+          "id": "ed09-06-binder-window-and-whole-duration",
+          "title": "窗口相交只决定入选，查询仍返回整笔 Binder 墙钟时长",
+          "article": "src/part2-performance/ch09-anr/06-contentprovider-timeout-anr.md",
+          "assets": [
+            "src/assets/diagrams/ch09/ed09-06-binder-window-and-whole-duration.svg",
+            "src/assets/diagrams/ch09/ed09-06-binder-window-and-whole-duration.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed09-06-binder-window-and-whole-duration",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql",
+            "https://perfetto.dev/docs/analysis/sql-tables",
+            "本文冻结全文的计时起点、调用顺序、分支条件和SQL原文"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch09-06-30-binder-overlap",
+              "ch09-06-31-binder-whole-duration"
+            ],
+            "boundary": "无实测时间和比例，仅示闭合同步事务一种嵌套。SQL过滤is_sync=1、client_dur>0、server_dur>=0、client_ts<end且client_ts+client_dur>start；NULL与未完成项不入选，server零时长允许。client/server完整wall而非窗口裁剪或CPU，oneway/未闭合另查；宿主名/事务ID不证明具体query方法，应按server_upid/PID代次及方法级证据核对。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a103/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T11:47:56.947865+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 37,
+        "contexts_actually_viewed": 5,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a103/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a103/visual-review.json",
+      "retired_diagrams": [
+        "ch09-06-01-four-paths",
+        "ch09-06-02-budget-relations",
+        "ch09-06-03-hw-multiplier",
+        "ch09-06-04-publish-install",
+        "ch09-06-05-publish-startup-order",
+        "ch09-06-06-publish-batch",
+        "ch09-06-07-publish-blockers",
+        "ch09-06-08-publish-expiry",
+        "ch09-06-09-exit-evidence",
+        "ch09-06-10-ready-handshake",
+        "ch09-06-12-ready-client-types",
+        "ch09-06-14-async-paths",
+        "ch09-06-16-detector-privilege",
+        "ch09-06-17-execute-finally",
+        "ch09-06-18-main-handler",
+        "ch09-06-19-acquire-before-detector",
+        "ch09-06-20-report-host",
+        "ch09-06-21-anr-disposition",
+        "ch09-06-24-cancel-auxiliary",
+        "ch09-06-25-evidence-decision",
+        "ch09-06-26-publish-trace",
+        "ch09-06-27-publish-sql",
+        "ch09-06-28-anr-instant",
+        "ch09-06-29-binder-saturation",
+        "ch09-06-30-binder-overlap",
+        "ch09-06-31-binder-whole-duration",
+        "ch09-06-32-stable-evidence-entry",
+        "ch09-06-33-lazy-init",
+        "ch09-06-34-app-startup",
+        "ch09-06-35-remote-fix",
+        "ch09-06-36-local-timeout",
+        "ch09-06-37-version-boundaries"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-103/retired-assets.json"
     },
     {
       "index": 104,
@@ -14080,8 +15576,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 42,
-  "next_article": "src/part2-performance/ch09-anr/04-case-studies.md",
+  "reviewed_articles": 45,
+  "next_article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -14091,13 +15587,20 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T11:19:55.545499+08:00",
+  "updated_at": "2026-10-28T11:47:56.947865+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
       "registered_sha256": "c4e18831e4fa1b9df967db73745d2c583be7abee191a3f3f0d118b2609de91ab",
       "observed_sha256": "3a9d35933e7f1fd1a4f76e9cfb44d20f8a2246d2308098e877c5bc08c7bffe8c",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+      "registered_sha256": "83ff5b20b25edeade48872ea5da65da368314c1fc4935d8d5e6b96b7df442399",
+      "observed_sha256": "6f4c19c8a366a9f45557eed0e1c08841065993337eca46d0f4795257799d2b2c",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -14129,9 +15632,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 1189,
-  "reviewed_placements_after": 667,
-  "net_removed_placements": 522,
+  "reviewed_placements_before": 1309,
+  "reviewed_placements_after": 709,
+  "net_removed_placements": 600,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
