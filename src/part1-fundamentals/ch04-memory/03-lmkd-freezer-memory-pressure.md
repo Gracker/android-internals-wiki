@@ -145,32 +145,16 @@ Linux 内核自带的 OOM Killer 通常要等内存分配已经难以继续时�
 
 LMK 的主路径包含三类输入、两段决策和一条回收链。下图用于区分进程重要性计算、压力判断、候选选择和终止后的内存回收：
 
-```mermaid
-flowchart LR
-    lifecycle["Activity、Service、Provider 与绑定关系"] --> adjuster["OomAdjuster / Process State Controller"]
-    adjuster --> processlist["ProcessList"]
-    processlist -->|"控制 socket：PID、UID、adj"| lmkd["lmkd"]
-    lmkd -->|"写入"| procfs["/proc/PID/oom_score_adj"]
+<!-- gracker-diagram: ch04-03-lmkd-inputs-strategy-and-reaper -->
+![AMS 算重要性，lmkd 判断压力并选择终止目标](../../assets/diagrams/ch04/ch04-03-lmkd-inputs-strategy-and-reaper.png)
 
-    psi["PSI：some / full stall"] --> lmkd
-    memory["meminfo、vmstat、zoneinfo、swap、refault"] --> lmkd
-    memevents["BPF memevents：direct reclaim、kswapd"] --> lmkd
-
-    lmkd --> candidate["按 adj 与内存占用选择一个候选"]
-    candidate --> reaper["Reaper"]
-    reaper --> terminate["cgroup kill 接口或 pidfd SIGKILL"]
-    terminate --> release["process_mrelease 加速回收"]
-```
+图：OomAdjuster / Process State Controller 根据真实组件与依赖计算重要性，ProcessList 经控制 socket 下发 PID、UID、adj。lmkd 同时观察全局 PSI、水位、Swap、refault 与回收状态，先决定是否处理和候选门槛，再在 adj 档内选目标。Reaper 执行终止并尝试加速页释放；Freezer 和 MemoryLimiter 有各自的触发链。
 
 图中有两处分工容易看错：
 
 - `OomAdjuster` 负责回答“这个进程对用户有多重要”，`lmkd` 负责回答“当前压力是否需要终止进程，以及在什么优先级范围内选谁”。
 - `lmkd` 会写 `/proc/<pid>/oom_score_adj`，同时在自己的进程表中登记候选；它与活动管理服务（ActivityManagerService，AMS）之间还有一条专用控制套接字，两边的通信路径也不止 `/proc` 共享信息这一条。
 
-<!-- gracker-diagram: ch04-03-lmkd-inputs-strategy-and-reaper -->
-![AMS 算重要性，lmkd 判断压力并选择终止目标](../../assets/diagrams/ch04/ch04-03-lmkd-inputs-strategy-and-reaper.png)
-
-图：OomAdjuster / Process State Controller 根据真实组件与依赖计算重要性，ProcessList 经控制 socket 下发 PID、UID、adj。lmkd 同时观察全局 PSI、水位、Swap、refault 与回收状态，先决定是否处理和候选门槛，再在 adj 档内选目标。Reaper 执行终止并尝试加速页释放；Freezer 和 MemoryLimiter 有各自的触发链。
 
 ### 从内核 LMK 到用户空间 lmkd
 
@@ -842,28 +826,10 @@ Android 14 及以上的公开行为是：进程进入缓存状态约 10 秒后�
 
 下面的状态图用于定位关键分支：
 
-```mermaid
-flowchart TD
-    A["OOM 调整完成"] --> B{"仍有 CPU_TIME capability?"}
-    B -->|是| C["取消 pending freeze 或解冻"]
-    B -->|否| D["scheduleTrimMemory(BACKGROUND)"]
-    D --> E["进入 pending freeze"]
-    E --> F{"延迟期间重新变为活跃?"}
-    F -->|是| C
-    F -->|否| G["FreezeHandler 处理冻结消息"]
-    G --> H["先冻结 Binder"]
-    H --> I{"存在未完成或冲突事务?"}
-    I -->|是| J["重试、退避或按失败原因终止进程"]
-    I -->|否| K["写入 frozen cgroup"]
-    K --> L["记录 mFrozenProcesses"]
-    L --> M["可选 app compaction 与 ZRAM writeback"]
-    M --> N{"收到激活事件或冻结异常?"}
-    N -->|激活| O["检查 Binder 冻结信息"]
-    O --> P{"冻结期间收到同步事务?"}
-    P -->|是| Q["以 REASON_FREEZER 终止进程"]
-    P -->|否| R["先解冻 Binder，再解冻 cgroup"]
-    R --> S["移除 frozen 记录并恢复执行"]
-```
+<!-- gracker-diagram: ch04-03-binder-cgroup-freeze-thaw -->
+![冻结先停 Binder 再停线程；解冻先查 Binder 异常](../../assets/diagrams/ch04/ch04-03-binder-cgroup-freeze-thaw.png)
+
+图：冻结消息到期后重新校验候选，先 freezeBinder，再 setProcessFrozen，随后记录状态并复查待处理事务。激活时先取消 pending 消息、读取 Binder freeze info；同步事务标记或查询异常可进入终止分支。正常恢复先解冻 Binder，再解冻 cgroup；Activity 激活且此前写回时，还可请求 ZRAM 预取。
 
 图中 `scheduleTrimMemory()` 是一次跨 Binder 的异步请求。正常的防抖窗口通常给应用主线程留出了处理机会，但源码并没有保证主线程严重阻塞时一定能在冻结前完成回调；工程文档里把时序写成“先完整执行内存整理，再冻结”，与源码行为对不上。
 
@@ -901,10 +867,6 @@ Binder 先冻结，cgroup 随后冻结。这个顺序让 system_server 能在停
 
 最后一步是前台恢复前的 ZRAM 页面预取，由 `system_server` 与内存管理守护进程 MMD 协作执行，和应用进程里的 ART GC 没有调用关系。
 
-<!-- gracker-diagram: ch04-03-binder-cgroup-freeze-thaw -->
-![冻结先停 Binder 再停线程；解冻先查 Binder 异常](../../assets/diagrams/ch04/ch04-03-binder-cgroup-freeze-thaw.png)
-
-图：冻结消息到期后重新校验候选，先 freezeBinder，再 setProcessFrozen，随后记录状态并复查待处理事务。激活时先取消 pending 消息、读取 Binder freeze info；同步事务标记或查询异常可进入终止分支。正常恢复先解冻 Binder，再解冻 cgroup；Activity 激活且此前写回时，还可请求 ZRAM 预取。
 
 ### Freezer 与 GC 的边界
 
@@ -1128,10 +1090,6 @@ ORDER BY ts;
 
 查询结果只证明 `system_server` 记录了冻结器事件。还要按 PID 和时间窗口关联线程调度、进程退出、GC 与页面 I/O，才能说明用户看到的停顿来自哪里。
 
-<!-- gracker-diagram: ch04-03-exit-versus-unfreeze-diagnosis -->
-![先确认 PID 与退出类型，再解释恢复时的停顿](../../assets/diagrams/ch04/ch04-03-exit-versus-unfreeze-diagnosis.png)
-
-图：先判断原进程是否仍在，并结合退出历史、日志与事件确认状态。PID 未变且 Freeze / Unfreeze 成对时，分析原进程恢复、页面 I/O 与积压任务；进程已退出则按原因区分 LMK / 内核 OOM、Freezer 异常、MemoryLimiter 或崩溃，再确认是否创建新进程。事件时刻与压力、GC、缺页和启动时间必须对齐。
 
 #### 第四步：按证据分类
 
@@ -1285,10 +1243,6 @@ MemoryLimiter 位于 `system_server`，按进程配置并监控所属的 memcg�
 
 把缓存进程描述成“完全不受 MemoryLimiter 限制”是错的：进程从受控状态转为缓存状态时，交换空间上限会被取消，而 `memory.high` 使用“忽略”语义，之前写入的值可能继续保留在 cgroup 文件中。这个细节会影响现场排查——只看当前进程状态，推不出 `memory.high` 一定是 `max`。
 
-<!-- gracker-diagram: ch04-03-limiter-state-values -->
-![MemoryLimiter 的 cached 档保留 high，并取消 Swap 上限](../../assets/diagrams/ch04/ch04-03-limiter-state-values.png)
-
-图：在符合监控条件的进程上，MemoryLimiter 按状态选配置。可见和不可见档分别下发平台阈值；持久状态为 max/max。cached 对 memory.high 使用 ignored，保留旧值，而 Swap 上限取消为 max。-1 才表示写 max，-2 表示跳过；因此仅凭缓存状态不能断言两个节点都已无限制。
 
 ### 两个 cgroup 文件，两种内核语义
 
@@ -1418,10 +1372,6 @@ statsd 是 Android 的结构化统计收集服务，单条结构化记录称为 
 
 限流只影响 statsd atom，不会阻止日志记录、解除限制、性能剖析或进程终止流程。
 
-<!-- gracker-diagram: ch04-03-limiter-statsd-token-bucket -->
-![statsd 桶容量 4，持续补充速率是每小时 1 个令牌](../../assets/diagrams/ch04/ch04-03-limiter-statsd-token-bucket.png)
-
-图：ControllerEnabled 的令牌桶最多储存 4 个令牌，按小时取整计算已过周期，每周期补 1 个，上报一条 atom 消耗 1 个。桶满时可突发 4 条，耗尽后的持续速率是每小时 1 条，不是每小时都允许 4 条。这个检查只控制结构化统计，后续解除限制、profiling 和终止仍继续按自己的条件运行。
 
 ### 与 lmkd、CachedAppOptimizer 的关系
 
@@ -1640,10 +1590,6 @@ ABORTED
 
 这个状态机只约束 AppFlow 自己的工作：它既阻塞不了 lmkd，也保证不了启动进程在此期间免于被终止。
 
-<!-- gracker-diagram: ch04-03-product-prefetch-budget-state -->
-![产品预取先守预算和取消条件，再验证整机收益](../../assets/diagrams/ch04/ch04-03-product-prefetch-budget-state.png)
-
-图：这是产品侧设计示意：确认请求后检查预算，再预取并等待 Framework 确认启动；压力升高、取消、超时、目标变化或失败均应终止模块自己的工作并释放资源。真实进程状态由 OomAdjuster 计算，lmkd 独立按压力决策。验证时同时看目标启动收益、全局 PSI / refault、后台留存与重建成本。
 
 ### 5. 与反复换页（thrashing）的关系
 
