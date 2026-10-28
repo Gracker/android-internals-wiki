@@ -114,10 +114,6 @@ adb shell dumpsys window windows | grep -E 'NotificationShade|StatusBar|Navigati
 
 这组输出要与 Perfetto trace（系统跟踪） 一起存档。`aflags list` 只给出 flag 值，窗口列表和线程列表才能证明对应实现真的建出来了。量产设备还可能隐藏部分调试信息，这时要借助 userdebug（可调试系统构建）或厂商内部符号补齐材料。
 
-<!-- gracker-diagram: ch07-04-configuration-evidence -->
-![SystemUI 路径选择的证据链](../../assets/diagrams/ch07/ch07-04-configuration-evidence.png)
-
-图：tag 证明参考代码存在，目标构建与运行时 flag 用于判断配置分支；窗口和线程列表再核对实际宿主。要证明具体实现已执行，还应结合对应调用、生命周期日志或 trace。
 
 ### 组件边界
 
@@ -146,10 +142,6 @@ adb shell dumpsys window windows | grep -E 'NotificationShade|StatusBar|Navigati
 
 窗口名和 Layer（图层） 也未必一一对应：一个窗口可以在 SurfaceFlinger 中产生多个图层。窗口由谁创建，用 `dumpsys window` 确认；到了合成阶段，再按名称和时间在 SurfaceFlinger Layers 里找对应图层。
 
-<!-- gracker-diagram: ch07-04-three-window-topology -->
-![状态栏、Shade 与导航栏的窗口边界](../../assets/diagrams/ch07/ch07-04-three-window-topology.png)
-
-图：status_bar_expanded 是 Shade 的展开布局名；顶部 StatusBar、NotificationShade 与 NavigationBarN 使用独立窗口入口。三按钮导航窗口的显示仍受设备导航策略约束。
 
 ### Legacy shade 的树
 
@@ -224,10 +216,10 @@ Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅�
 5. 异步 apply 失败时，`OnViewAppliedListener.onError()` 会在 UI 回调路径尝试同步 `apply()` 或 `reapply()`，用来区分异步框架的异常和通知内容自身的 inflate 失败。
 6. 所需内容全部完成后，更新后的 row 进入 View 树，引起后续的测量、布局、动画和绘制。
 
-<!-- gracker-diagram: ch07-04-notification-binding-overview -->
-![通知 entry 到 row 与窗口的绑定链路](../../assets/diagrams/ch07/ch07-04-notification-binding-overview.png)
+<!-- gracker-diagram: ed07-04-notification-binding-handoffs -->
+![通知绑定的执行器交接、图片等待预算与呈现边界](../../assets/diagrams/ch07/ed07-04-notification-binding-handoffs.png)
 
-图：内容绑定与更新会影响 View 树和窗口帧；复用内容的 reapply 也可能在整批完成前修改已有 View。绑定完成回调不证明目标内容已经呈现，仍需沿窗口绘制与 FrameTimeline 确认。内容形态可以含 heads-up、public 和单行等分支。
+图：限定 Android 17 r1 的正常异步内容绑定：entry/row 请求所需形态，模板与图片准备、RemoteViews 准备共用同一 NotifInflation 执行器，中间经 SystemUI 主 looper 发起 apply，剩余 Action 与结果回调回到 RemoteViews Context 的主 looper。1000 ms 仅为该批 URI 预加载等待的共享预算，无 cache 或目标 URI 时可跳过；其他阶段另计。reapply 可在整批完成前修改已有 View；实际 ViewRoot 线程及窗口呈现仍须另查，异步失败的同步回退见下文。
 
 这里有一个容易踩的坑：Android 17 已经没有旧路径中的 `NotificationContentInflater.java`，实现类迁移为 Kotlin 的 `NotificationRowContentBinderImpl.kt`，但 `doInBackground()` 仍保留历史 trace 名 `NotificationContentInflater.AsyncInflationTask#doInBackground`。搜 trace 时记住，这个 slice 名是为了兼容保留的，对应的是迁移后的 Kotlin 实现类。
 
@@ -235,10 +227,6 @@ Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅�
 
 `NotifInflation` 在参考实现中是单个后台优先级 `HandlerThread`，由 `ExecutorImpl` 投递任务；Builder/模板阶段与后续 RemoteViews 准备阶段共享这个执行器，可能互相排队。`AsyncInflationTask.onPostExecute()` 使用默认主 looper；RemoteViews 回调使用其 Context 的主 looper，完成部分 Action、wrapper 更新和内容挂接等工作。窗口 traversal 仍要到该 ViewRoot 的实际 UI 线程核对；窗口线程 flag 给出的是窗口自身的宿主，哪些通知回调迁过去了要逐个核对。所以大量通知在短时间内到达时，可能观察到：
 
-<!-- gracker-diagram: ch07-04-remoteviews-thread-handoffs -->
-![通知异步绑定的线程交接](../../assets/diagrams/ch07/ch07-04-remoteviews-thread-handoffs.png)
-
-图：正常异步路径多次往返 worker 与回调 looper。底部只示意同一内容的阶段先后，间距和条长不是实测时长；窗口 traversal 应核对实际 ViewRoot 线程。
 
 - `NotifInflation` 队列持续工作；
 - 多个异步结果在相近时刻完成；
@@ -293,10 +281,6 @@ NSSL 的状态更新在两条路径中时机不同：legacy 通过 pre-draw list
 
 `NotificationRowContentBinderImpl` 的正常异步任务为 `waitForPreloadedImages()` 传入 1000 ms；resolver 为这一批目标 URI 共用一个截止时间，并逐张递减剩余等待预算。这笔预算按整批结算，分不到每张图各一秒；它只约束预加载等待这一段，不给整个绑定任务设统一总时限；其他阶段的耗时需另行测量。该等待发生在 worker 中，UI 线程未必跟着卡一秒；但队列延迟、完成回调集中到达和后续纹理上传，仍可能影响可见帧。
 
-<!-- gracker-diagram: ch07-04-image-preload-budget -->
-![图片预加载等待的 1000 ms 预算](../../assets/diagrams/ch07/ch07-04-image-preload-budget.png)
-
-图：1000 ms 是该次预加载等待的共享预算，源码逐 URI 递减剩余时间。其前后的图片、绑定与呈现阶段另计；正常异步路径中的这次等待发生在 worker。
 
 App 侧的改进通常更直接：合并高频进度更新，保持通知 ID 与模板稳定，减少内容未变化时的 `notify()`，避免每秒替换大图，控制自定义 RemoteViews 层级，并利用通知分组减少不必要的结构变化。SystemUI 侧则要保留异步路径，修复触发 fallback 的原因，限制同一帧中的状态更新量，并用设备数据验证任何缓存策略。
 
@@ -326,10 +310,6 @@ App 侧的改进通常更直接：合并高频进度更新，保持通知 ID 与
 - 右侧压力来自网络、电话、热点、隐私指示、OEM 扩展等状态变化；
 - 两者可在同一状态栏窗口帧内叠加，但原因和限制更新频率的位置不同。
 
-<!-- gracker-diagram: ch07-04-status-bar-two-signal-paths -->
-![通知图标与系统状态图标的两类输入](../../assets/diagrams/ch07/ch07-04-status-bar-two-signal-paths.png)
-
-图：同一状态栏窗口可以承受通知图标与系统状态图标两类压力。按输入和组件分开归因，再核对它们是否在同一目标帧叠加。
 
 ## 导航输入的两条路径
 
@@ -382,10 +362,6 @@ per-display status bar（每块显示屏独立状态栏） 的基础设施已经
 - AOSP Shade 是 display-aware（能够识别不同显示屏） 的单例主窗口，可以在 display 之间移动，或在 display 移除时重新挂到默认屏；“每块屏都有一套 NotificationShade”的说法，要从窗口列表单独验证。
 - 桌面任务布局、窗口装饰与转场主要属于 WM Shell desktop mode；任务应用的 View、Shell 的窗口装饰与输入系统的光标应按实际宿主分别分析，不能统一归入 desktop mode 渲染。
 
-<!-- gracker-diagram: ch07-04-multi-display-responsibilities -->
-![多显示时 StatusBar、Shade 与 Taskbar 的边界](../../assets/diagrams/ch07/ch07-04-multi-display-responsibilities.png)
-
-图：StatusBar 可按 display 管理，Shade 主窗口可在 display 间移动；Nav/Taskbar 与桌面装饰另有策略和宿主。具体实例数需现场窗口列表证明。
 
 多显示性能，我们至少要分别记录：单屏折叠态、单屏展开态、外屏连接但休眠、双屏点亮、桌面窗口模式，以及导航栏与 Taskbar 两种界面形态。实验记录还要包含分辨率、刷新率、Layer 数、状态栏实例数和通知 Shade 所在 display。CPU、GPU、显存或 PSS 的增幅，只能根据同一设备上的对照数据得出。
 
@@ -415,10 +391,6 @@ per-display status bar（每块显示屏独立状态栏） 的基础设施已经
 
 Overview 的 `RecentsView.applyLoadPlan()` 会增删、复用并绑定任务卡片，但该方法名本身并未成为稳定的 trace slice；源码中的方法与设备上实际出现的 trace，要分开说明。
 
-<!-- gracker-diagram: ch07-04-overview-load-plan-evidence -->
-![Overview 任务卡绑定与 trace 锚点](../../assets/diagrams/ch07/ch07-04-overview-load-plan-evidence.png)
-
-图：先查真实 Launcher 宿主，再用 applyLoadPlan 等源码方法解释任务卡变化；方法名本身不是固定 trace 名，仍需与对应窗口帧关联。
 
 Launcher 的包名和进程名受产品实现影响：AOSP 的参考实现是 Launcher3 Quickstep，Pixel 或 OEM 构建可能用不同包名。我们通过默认 HOME activity、进程 `cmdline` 和窗口 owner（所有者） 找到当前宿主，别只搜索固定的 `com.android.launcher3`。
 
@@ -441,10 +413,6 @@ SystemUI 特殊在窗口数量多、状态来源多，还能通过开关选择�
 - `requestLayout` instant event 只说明请求已经发出，当场是否完成 layout 要看后续的 measure/layout。
 - App `SurfaceFrame` 使用 `surface_frame_token`，Display `DisplayFrame` 使用 `display_frame_token`；二者分属不同命名空间；数值相同本身不证明关联，关联两者要走 FrameTimeline 的对应关系。
 
-<!-- gracker-diagram: ch07-04-frame-identity-and-causality -->
-![Surface、Display 与根因的关联边界](../../assets/diagrams/ch07/ch07-04-frame-identity-and-causality.png)
-
-图：保留 Surface/Layer/进程身份并沿 FrameTimeline 关系关联显示帧；再检查最早延迟依赖。多个 SurfaceFrame 可进入同一显示结果；定责任先找最早延迟的那个依赖，单看一处 CPU 峰值是不够的。
 
 ### Perfetto 中的观察顺序
 
@@ -488,10 +456,6 @@ ORDER BY s.ts;
 
 查询结果给出已完成 slice 的墙钟时长，包含运行、调度等待或阻塞，与线程 CPU 时间是两个量。进程名和三个 slice 名只适用于相应实现及采集覆盖；空结果也可能来自 OEM 改名、未采集或未完成区间。接下来用实际进程/线程身份、Surface 与逐帧关联，核对同一时间范围内的 `SurfaceFrame`、`DisplayFrame`、RenderThread、SurfaceFlinger 和调度状态；时间重叠只提供候选，认定用户可见卡顿要靠逐帧证据。
 
-<!-- gracker-diagram: ch07-04-notification-sql-scope -->
-![通知 slice SQL 的结果范围](../../assets/diagrams/ch07/ch07-04-notification-sql-scope.png)
-
-图：SQL 输出是指定实现下已结束 slice 的墙钟区间。进程名、slice 名和采集覆盖要逐项核对；以目标帧身份与依赖继续归因。
 
 ## 四类常见现场
 
@@ -508,10 +472,6 @@ ORDER BY s.ts;
 
 下一步看信号落在哪：NSSL measure 随通知总数增长，优化目标就是减少参与测量的 row、内容形态和层级；`NSSL#updateChildren` 变长，就检查分组、heads-up、动画状态与同一帧中的更新次数；UI 与 RenderThread 都没有异常而 display frame 仍然 miss，继续检查 SurfaceFlinger/HWC、其他高层 Surface 或显示模式切换。
 
-<!-- gracker-diagram: ch07-04-shade-jank-triage -->
-![Shade 展开异常的三组检查分支](../../assets/diagrams/ch07/ch07-04-shade-jank-triage.png)
-
-图：先关联实际异常帧与 Shade 生产者，再拆分 measure、updateChildren 和下游依赖。图中分支是调查线索，最终需调度、依赖与对照支持根因。
 
 ### 通知集中到达
 
@@ -519,19 +479,11 @@ ORDER BY s.ts;
 
 主线程里看不到 `RemoteViews.apply()`，离排除通知绑定还远：异步的主要工作本来就在 worker 上，用户可见的卡顿往往发生在任务完成后的 View 树更新阶段。反过来，worker 队列变长而可见帧没有受影响时，先把它记作候选原因，是否成立还要更多证据。
 
-<!-- gracker-diagram: ch07-04-notification-burst-feedback -->
-![通知集中到达后的工作与可见帧](../../assets/diagrams/ch07/ch07-04-notification-burst-feedback.png)
-
-图：同一执行器中的模板和 apply 准备可互相排队，回调再影响内容挂接与窗口帧。底部只给出一种阶段排列示意，设备上的耗时与回调顺序以 trace 为准。
 
 ### 返回手势反馈迟缓
 
 以 input event 到达 `edge-swipe` receiver 为起点，以 Back Panel 首帧或目标窗口 transition 为终点。若 `BackPanelUiThread` 存在，主线程上的通知工作未必会直接阻塞箭头绘制；两条线程仍可能通过共享状态、WM 调用和合成资源相互影响。若 input receiver 很快、Back Panel 也按时出帧，只有窗口切换阶段变慢，就应检查 WM Shell 和目标 App。
 
-<!-- gracker-diagram: ch07-04-back-feedback-triage -->
-![返回手势反馈与窗口转场的分段检查](../../assets/diagrams/ch07/ch07-04-back-feedback-triage.png)
-
-图：用输入到 Back Panel 首次反馈和输入到目标转场两个区间检查问题。专用线程能改变的是直接阻塞位置；共享状态、WM 或合成资源的影响，仍在这两个区间的检查范围内。
 
 ### 启动动画不连贯
 
@@ -556,10 +508,6 @@ ORDER BY s.ts;
 
 写结论时也要带上适用条件。例如，“Scene path 的 NSSL 仍参与通知行布局”有 AOSP Android 17 源码直接支持；“某机型在 120 Hz 下展开通知面板时 blur 是瓶颈”需要该机型的对照 trace；“连接显示器后会创建第二个 StatusBar”还需要 display policy（显示策略）与运行时窗口列表证明。
 
-<!-- gracker-diagram: ch07-04-oem-evidence-and-controls -->
-![OEM 差异与优化验证的证据关系](../../assets/diagrams/ch07/ch07-04-oem-evidence-and-controls.png)
-
-图：AOSP 提供基线，产品 diff 和现场窗口决定适用范围。内存、模糊或多显示成本的结论以同设备对照为准，固定增幅表和开关值都替代不了对照数据。
 
 ## 实战检查清单
 

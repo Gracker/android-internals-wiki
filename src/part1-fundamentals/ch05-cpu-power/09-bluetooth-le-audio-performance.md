@@ -147,10 +147,6 @@ LC3 常见帧时长为 7.5 ms 和 10 ms。帧时长只是预算中的一项 Code
 
 LC3 与 SBC 的 CPU 占用、主观音质 MOS（Mean Opinion Score，主观音质评分） 或耗电量对比，同样依赖实现、配置和测试方法：在 Host（主机侧软件栈） 软件栈上用软件运行、交给音频 DSP、Controller 或 vendor offloader（厂商卸载模块），可能得到不同结果。跨设备对比表里那些看似精确的数字，背后要有目标芯片、编译选项、音频配置和功耗仪器来支撑。
 
-<!-- gracker-diagram: ch05-09-lc3-config-and-sdu -->
-![LC3 帧、声道与 SDU 的配置层次](../../assets/diagrams/ch05/ch05-09-lc3-config-and-sdu.png)
-
-图：7.5 ms / 10 ms 是常见帧时长配置；算法总延迟、声学端到端延迟要按整条路径另算。码率与 CPU/功耗比较需要同时给出声道、每帧字节数、组帧、有效间隔和执行位置。
 
 ## 延迟要按测量对象拆开
 
@@ -165,10 +161,6 @@ LC3 与 SBC 的 CPU 占用、主观音质 MOS（Mean Opinion Score，主观音�
 | 路由切换间隙 | 旧路由最末帧，到新路由第一帧 | A2DP/LE Audio 或扬声器/耳机切换 |
 | 抖动与 glitch（爆音或短暂中断） | 稳态延迟分布、缓冲欠载和丢帧 | 射频干扰、调度和缓冲稳定性 |
 
-<!-- gracker-diagram: ch05-09-latency-measurement-endpoints -->
-![先确定测量延迟的起止点](../../assets/diagrams/ch05/ch05-09-latency-measurement-endpoints.png)
-
-图：同一张报告里要分别写出冷启动、已连接启动、稳态单向、双向往返与路由间隙。抖动和 glitch 另做分布与计数，不用一项“蓝牙延迟”包办所有问题。
 
 手机向耳机播放时，我们按 BAP 的定义把稳态单向延迟拆成三部分：
 
@@ -185,36 +177,14 @@ BAP 第 7 节规定，Transport_Latency 是设备间传输音频负载的延迟�
 
 以下以手机向耳机播放为例，区分软件与 offload 的媒体数据路径。实线表示媒体数据，虚线表示路由、session 或建流控制：
 
-```mermaid
-flowchart LR
-    A["应用：AudioTrack"] --> B["AudioFlinger"]
-    B --> C["Audio HAL"]
-    C --> S["Bluetooth Audio 软件 session：PCM"]
-    S --> D["Bluetooth Host：LC3 / ISO 数据处理"]
-    D --> E["Bluetooth HCI HAL"]
-    E --> F["手机 Controller"]
-    C --> O["平台 offloader：LC3 / 媒体数据"]
-    O --> V["厂商 ISO 数据路径"]
-    V --> F
-    P["Audio Policy / Bluetooth Audio Provider"] -.->|路由与 session 控制| C
-    P -.->|offload session 控制| O
-    L["Bluetooth 栈：PACS / ASCS"] -.->|HCI 建流控制| E
-    F --> G["CIS / BIS 空口"]
-    G --> H["耳机 Controller 与抖动缓冲"]
-    H --> I["LC3 解码、DSP 后处理与扬声器"]
-```
+<!-- gracker-diagram: ed05-09-software-offload-media-paths -->
+![LE Audio软件和offload的媒体与控制路径](../../assets/diagrams/ch05/ed05-09-software-offload-media-paths.png)
 
-<!-- gracker-diagram: ch05-09-software-media-data-path -->
-![LE Audio 软件编码的媒体路径](../../assets/diagrams/ch05/ch05-09-software-media-data-path.png)
+图：手机向耳机播放时，共同的音频入口分为Host软件编码和平台offload两路，再到Controller及耳机。实线表示本例媒体，虚线表示路由、session和建流控制；offload媒体可走厂商ISO通道，不必经过Host HCI数据接口，内部连接与执行位置以设备为准。上行软件解码方向相反，编码/解码session分别跟踪；HARDWARE_OFFLOAD名称不保证全部处理都在硬件。
 
-图：实线表示本例媒体数据流，PACS/ASCS 和路由/session 控制留在 PCM 数据链之外。上行软件解码路径方向相反，编码、解码 session 要分别跟踪状态。
 
 对照上图，ASCS/PACS 负责能力协商与状态管理；软件 session 的 PCM（未压缩音频采样） 交给 Host 编解码，offload session 主要承载控制，媒体数据走平台实现的数据路径，厂商内部连接要按设备实现确认。排障时我们先区分建流控制耗时与 Streaming 之后的数据传输，再根据当前 session 判断能在哪一层看到媒体数据。
 
-<!-- gracker-diagram: ch05-09-offload-control-and-vendor-media -->
-![Offload 会话控制与厂商媒体路径](../../assets/diagrams/ch05/ch05-09-offload-control-and-vendor-media.png)
-
-图：实线为示意媒体数据，虚线为 session 控制。SessionType 名称包含 HARDWARE_OFFLOAD，但部分编码路径注释允许硬件或软件卸载；内部连接及唤醒成本要核对目标产品。
 
 ### Codec 与 QoS 参数怎样改变结果
 
@@ -231,10 +201,6 @@ flowchart LR
 
 RTN 是提交给 Controller 的推荐重传参数，Controller 可按目标可靠性和带宽选取不同值。`RTN=2` 常被读成“任何包最多重传两次，延迟固定增加多少”，实际的重传安排还受 BN、NSE、FT、PHY、PDU（协议数据单元）分段和 Controller 调度约束。所以调参时我们以最终 HCI（Host Controller Interface，主机控制器接口） 配置与抓包结果为准，上层期望值只作参考。
 
-<!-- gracker-diagram: ch05-09-codec-qos-resource-tradeoffs -->
-![Codec、QoS 与空口资源的取舍](../../assets/diagrams/ch05/ch05-09-codec-qos-resource-tradeoffs.png)
-
-图：最终HCI配置、Controller行为和射频证据比上层期望值更接近实际。更短帧、更多重传或更大呈现余量，分别带来不同资源代价，需要把音质、可靠性、延迟和功耗一起测量。
 
 ### `SetLatencyMode()` 与延迟模式
 
@@ -271,10 +237,6 @@ LE Audio transport 提供了 `SetLatencyMode()`：它接收 `FREE`、`LOW_LATENC
 
 `LeAudioService` 管理组、活跃输入/输出设备、广播与单播切换这些 Framework 状态；Codec 能力选择、CIG/CIS 和 ASE 状态由 Native LE Audio 代码接手。审阅文档或报告时，看到 `LeAudioService` “注册 Audio Provider 并独自决定所有 LC3 参数”这类描述，可以对照上面的分工判定为错：Audio Framework、Bluetooth Audio HAL 与 Native 栈各管一段。
 
-<!-- gracker-diagram: ch05-09-framework-native-control-boundaries -->
-![Framework、JNI 与 Native 控制分工](../../assets/diagrams/ch05/ch05-09-framework-native-control-boundaries.png)
-
-图：LC3/QoS 参数的决策分布在 Audio Framework、Bluetooth Audio HAL、Native 栈和 Controller 各层，LeAudioService 管的是 Framework 状态这一段；图画的是层次分工，各层回调的时间要分别测量后再关联。
 
 ### 音频数据路径
 
@@ -367,10 +329,6 @@ A2DP 与 LE Audio 都可用时，Android 会结合设备能力、用户选择、
 5. **是否命中共存问题**：2.4 GHz Wi-Fi、人体遮挡、手机握持和左右耳位置都可能改变丢包与功耗。
 6. **耳机功能是否相同**：ANC、头部跟踪、麦克风和后处理常比协议差异更显著。
 
-<!-- gracker-diagram: ch05-09-phone-and-headset-power-components -->
-![手机与耳机的功耗组成](../../assets/diagrams/ch05/ch05-09-phone-and-headset-power-components.png)
-
-图：这是测量归因框架，各段之间没有按比例分配的含义。多流、双向、射频可靠性与耳机功能会改变成本；手机省电和耳机省电也可能是不同结论，应分别测量。
 
 Classic TWS（真无线立体声） 常采用主副耳中继，LE Audio 多流则允许手机分别向左右设备发送音频。多流消除了某些中继拓扑的限制，代价是手机要调度多条 CIS。整机省不省电，取决于手机与耳机两端的实现，拓扑本身给不出答案。
 
@@ -404,10 +362,6 @@ HFP active-device handover 属于 Classic 通话路径，统计时延时应与 L
 
 手机侧优先使用外部电源监测或设备电源轨；耳机侧需要夹具、电池电量计或厂商遥测。`batterystats` 适合观察系统归因和长期趋势，很难单独分离几十毫秒周期内的 Codec 与射频成本。Pixel 电流数据要同时说明设备、固件、测量仪器和置信区间，才谈得上通用参考。
 
-<!-- gracker-diagram: ch05-09-power-ab-controlled-conditions -->
-![LE Audio 功耗 A/B 的可比条件](../../assets/diagrams/ch05/ch05-09-power-ab-controlled-conditions.png)
-
-图：batterystats 可看长期归因，难以独立分解每个 Codec/RF 周期。A2DP 与 LE Audio 对比应说明设备、固件、配置、执行位置、仪器与置信区间，手机和耳机分别报告。
 
 ## 广播音频与 Auracast
 
@@ -505,10 +459,6 @@ HCI snoop 记录 Host 与 Controller 之间的命令、事件和数据包。软�
 
 Wireshark 字段名会随 dissector（协议解析器）版本变化。`btatt` 常用于 ATT/GATT，ISO 过滤字段以当前版本能够识别的协议树为准，固定过滤字符串不适合写进自动化判据。
 
-<!-- gracker-diagram: ch05-09-hci-snoop-capture-and-interpretation -->
-![HCI snoop 的采集与解释范围](../../assets/diagrams/ch05/ch05-09-hci-snoop-capture-and-interpretation.png)
-
-图：始终开启的内存摘要日志限制个人数据，只能看概要。完整 snoop 记录 Host/Controller 接口；日志位置、权限与解析字段按产品和工具版本确认，优先从 bugreport 获取。
 
 ### 第三步：用 Perfetto 看 Host 侧
 
@@ -541,10 +491,6 @@ Perfetto 适合检查 AudioFlinger 线程、Binder、调度、CPU idle/frequency
 
 logcat 里的“stream started”给不出声学端到端延迟：这个时间点通常还在控制面，离耳机按协商的 Presentation Delay 完成缓冲、解码与声学输出还有一段距离。
 
-<!-- gracker-diagram: ch05-09-acoustic-latency-measurement -->
-![从已知波形测量声学端到端延迟](../../assets/diagrams/ch05/ch05-09-acoustic-latency-measurement.png)
-
-图：这是正文建议的单向测量设计，需要外部参考与同步采集。常规音频 loopback 得到的是输入+输出往返延迟，单向结果要按同步采集设计来测；logcat 的 stream started 属于控制面时间点。
 
 ## 常见误判
 

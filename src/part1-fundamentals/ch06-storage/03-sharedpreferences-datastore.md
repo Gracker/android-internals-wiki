@@ -257,10 +257,6 @@ SP 没有按 key 更新磁盘文件的能力，改一个布尔值也可能重写
 
 这两个阈值只做观测，既取消不了写盘，也拦不住 ANR，也没有面向普通 App 的公开调参接口。256 ms 和 512 ms 只是日志观测线，我们别把它们当成系统超时线。
 
-<!-- gracker-diagram: ch06-03-logging-thresholds -->
-![慢同步与慢收尾的观测阈值](../../assets/diagrams/ch06/ch06-03-logging-thresholds.png)
-
-图：256 ms 和 512 ms 触发的是内部直方图日志；写盘与组件等待仍继续，判断 ANR 仍以实际时限和调用栈为准。
 
 ## `apply()` 如何进入组件收尾路径
 
@@ -319,10 +315,6 @@ public static void waitToFinish() {
 - **BroadcastReceiver**：`PendingResult.finish()` 不直接调用 `waitToFinish()`。仅 TYPE_COMPONENT 分支在 hasPendingWork() 为真时把 sendFinished() 排在队尾；其他类型或没有 pending work 时直接发送。这个检查只看尚在 sWork 中的任务，不等同于统计所有 in-flight 写盘。排队分支会使 AMS（ActivityManagerService，系统的 Activity 管理服务） 收到完成回执的时间随之推迟。
 
 
-<!-- gracker-diagram: ch06-03-component-wait-points -->
-![Activity 与 Service 的 SP 收尾点](../../assets/diagrams/ch06/ch06-03-component-wait-points.png)
-
-图：现代 Activity 在 stop 路径等待，pre-Honeycomb 兼容路径在 pause；Service 命令和销毁清理后也有等待点。
 <!-- gracker-diagram: ch06-03-broadcast-finish-gates -->
 ![广播完成回执的条件排队](../../assets/diagrams/ch06/ch06-03-broadcast-finish-gates.png)
 
@@ -364,10 +356,6 @@ android.app.QueuedWork.waitToFinish
 
 A 类要关联 SharedPreferences 加载线程与 XML 解析；B 类区分 writtenToDiskLatch 等待与 B2 的 sProcessingWork monitor 竞争，并找到后台工作线程；C 类的文件 I/O 已经在主线程上。我们先把阻塞类型分对再谈优化——类型分错，很容易只移动耗时而没有消除等待。
 
-<!-- gracker-diagram: ch06-03-anr-stack-types -->
-![SP ANR 的四种栈形态](../../assets/diagrams/ch06/ch06-03-anr-stack-types.png)
-
-图：先按调用栈区分加载等待、finisher latch、批处理 monitor 和主线程直接写盘，再关联对应工作线程和 I/O。
 
 Service 栈可能以 `handleServiceArgs()` 或 `handleStopService()` 结尾。BroadcastReceiver 常见的是完成回执延后，未必出现主线程停在 `waitToFinish()` 的相同栈形态。
 
@@ -444,10 +432,10 @@ DataStore 没有字段级磁盘更新。官方 API 文档明确说明：新旧�
 6. `writeScope` 的写入代码结束后，`FileStorage` 把临时文件原子移动到目标路径。
 7. 整个 `writeScope` 成功返回后，串行处理更新的写入 actor（串行处理更新的内部任务） 才唤醒等待该更新的调用方。
 
-<!-- gracker-diagram: ch06-03-filestorage-write-protocol -->
-![FileStorage 的版本、临时文件、同步与替换](../../assets/diagrams/ch06/ch06-03-filestorage-write-protocol.png)
+<!-- gracker-diagram: ed06-03-filestorage-version-replace -->
+![FileStorage写入顺序及替换前后的进程退出边界](../../assets/diagrams/ch06/ed06-03-filestorage-version-replace.png)
 
-图：在 FileStorage 实际写入路径中，先递增协调版本，再全量写 .tmp 并 sync；writeScope 结束时原子替换目标，之后 actor 才完成 ack。
+图：限定 DataStore 1.2.1 的 FileStorage 实际写入：持协调锁先递增版本，再全量写 .tmp、同步并原子替换正式文件，writeScope 返回并释放协调锁后由 actor 完成 ack。替换前退出时正式文件可仍旧，但版本已变化；替换后也不会留下新文件存在而版本尚未递增的顺序窗口。版本是重查信号；异常向上传播并尝试清理 .tmp，父目录 fsync 仍有 TODO，断电持久性另行验证。
 
 源码里仍留着“同步父目录”的待办注释，掉电窗口下的回退风险因此还在。DataStore 的 API 一致性和错误传播显著强于 SP，但存储硬件与文件系统对持久性的影响，任何上层 API 都消不掉。
 
@@ -553,10 +541,6 @@ val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
 3. **迁移并观测**：先迁高风险写入和大文件；记录迁移失败、初始化耗时、DataStore 文件大小和更新延迟。
 4. **删除旧路径**：确认活跃版本和独立进程都切换后，移除旧读写。需要支持版本回退时，要提前定义旧版本如何处理已删除的 SP key。
 
-<!-- gracker-diagram: ch06-03-migration-data-ownership -->
-![按数据所有权推进迁移](../../assets/diagrams/ch06/ch06-03-migration-data-ownership.png)
-
-图：先建立唯一数据接口，再迁移并观察失败与耗时；旧进程和旧版本如何读写、如何回退，要在删除旧路径前明确。
 
 “SP 超过 50 KB 就必须迁移”这样的通用阈值并不存在。文件大小只是一个维度，key 数、启动位置、写频率、设备分布和等待分位数同样要看；按线上 trace 和 ANR 聚类（按相似调用栈归组）确定优先级，更可靠。
 
@@ -617,10 +601,6 @@ override suspend fun incrementAndGetVersion(): Int =
 
 版本先递增是刻意设计：如果先替换文件，随后进程在递增版本前退出，其他进程可能长时间认为缓存仍是最新。版本、锁与文件观察器要一起工作，单拿出任何一个机制都撑不起跨进程事务。
 
-<!-- gracker-diagram: ch06-03-version-before-file -->
-![共享版本先递增的进程退出边界](../../assets/diagrams/ch06/ch06-03-version-before-file.png)
-
-图：持锁写方先递增版本，再写临时文件并替换目标；进程在替换前退出时正式文件仍可能是旧值，但读者会重新检查。
 
 `updateData()` 的 transform 位于跨进程独占锁范围内，应保持短小、确定且无副作用；网络请求、长计算或另一把业务锁会延长所有进程的写等待。DataStore 的事务覆盖一个完整对象，多文件原子提交、字段级更新和历史版本回滚都超出它的能力。
 
@@ -672,10 +652,6 @@ DataStore 1.2.0 起增加了 Direct Boot 支持 API；本文 1.2.1 的 createInD
 
 拆分 SP 文件可以缩小单次序列化与解析的范围，也会增加首次打开任务和管理成本。加载执行器只有单线程，拆成大量小文件并不会带来并行加载；文件应按数据拥有者和访问阶段划分，避免按 key 随意分文件。
 
-<!-- gracker-diagram: ch06-03-split-files-cost -->
-![拆分 SP 文件的收益与串行加载代价](../../assets/diagrams/ch06/ch06-03-split-files-cost.png)
-
-图：拆分可缩小每次序列化/解析的范围，同时增加首次打开任务；同进程加载 worker 仍只有一个，应按拥有者和访问阶段划分。
 
 ## DataStore、MMKV 与 Room 的选型
 

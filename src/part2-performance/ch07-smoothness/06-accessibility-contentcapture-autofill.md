@@ -213,10 +213,6 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 
 服务侧先通过同步的 `IAccessibilityServiceConnection` 方法完成系统路由，再进入 `AccessibilityInteractionClient` 的结果等待；后一个阶段的超时常量为 5000 ms，发生在发起查询的服务线程。它不是整个 API 的统一耗时上限，也不会在超时瞬间取消已经运行的应用节点回调。目标应用承担的是另一类风险：ViewRoot looper 上多了节点创建任务，同一条线程上的输入分发、traversal（测量、布局与绘制） 或逐帧回调就可能往后排。
 
-<!-- gracker-diagram: ch07-06-node-query-wait-ownership -->
-![节点查询中的路由与结果等待](../../assets/diagrams/ch07/ch07-06-node-query-wait-ownership.png)
-
-图：服务侧同步路由与随后结果等待分开计时，应用侧负责实际节点工作。常见服务主线程查询会影响自身事件处理；应用任务可在服务超时后继续。
 
 ### 成本应按四个进程位置拆开
 
@@ -231,10 +227,6 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 
 Touch exploration（触摸探索）、按键过滤、手势观察和放大还会改变输入处理链。遇到点击延迟或手势行为变化时，要分别检查输入过滤和 `AccessibilityEvent` / `AccessibilityNodeInfo` 开销；按键过滤的系统路径见 [3.1 Input 分发、拦截与安全边界](../../part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md)。
 
-<!-- gracker-diagram: ch07-06-input-versus-node-cost -->
-![输入辅助与节点工作的归因分支](../../assets/diagrams/ch07/ch07-06-input-versus-node-cost.png)
-
-图：输入过滤与事件/节点查询有不同入口。先识别变化的路径，再按具体线程和目标帧查证，责任认定靠这两步，开关状态只当线索。
 
 ### 应用侧：保持语义正确，再去掉无意义工作
 
@@ -288,10 +280,6 @@ class PriceTickerView(context: Context) : View(context) {
 
 这个示例把格式化工作放在业务状态更新处：`View.setContentDescription()` 在描述变化时通知无障碍框架，后续节点初始化直接读 View 已保存的属性。`AccessibilityService` 可以读取节点声明的最小间隔，据此限制来自该节点的内容变化事件频率。`setMinDurationBetweenContentChanges()` 适合进度、计时器、行情这类持续变化但无须逐次朗读的节点；间隔按用户能理解的更新节奏设置，焦点、错误、可操作状态和关键结果仍要及时上报。
 
-<!-- gracker-diagram: ch07-06-prepared-semantics-and-service-hint -->
-![预备语义状态与服务侧内容间隔提示](../../assets/diagrams/ch07/ch07-06-prepared-semantics-and-service-hint.png)
-
-图：格式化放在状态更新处，节点回调保持轻量；最小内容间隔是提供给服务的节点属性，应用仍须正确发送必要事件。
 
 批量更新时，把真实内容临时设置成 `NO_HIDE_DESCENDANTS` 换来的问题更多：当前焦点节点消失、节点树结构改变，还可能额外触发内容变化。列表更新应该走增量数据加正确的 change type，交给 ViewRoot 或控件库已有的事件合并机制。
 
@@ -306,10 +294,6 @@ class PriceTickerView(context: Context) : View(context) {
 
 改法也直接：用 `DiffUtil` / `ListAdapter` 精确更新发生变化的列表项，复用稳定的 delegate，并在业务状态改变时同步更新简洁的 `stateDescription`、文本和 action。
 
-<!-- gracker-diagram: ch07-06-recyclerview-data-versus-nodes -->
-![RecyclerView 数据规模与节点规模](../../assets/diagrams/ch07/ch07-06-recyclerview-data-versus-nodes.png)
-
-图：列表数据量、附着 View 数、虚拟节点数是不同指标。优化回调和更新范围时仍要保留集合与独立动作信息。
 
 ### Compose：按逻辑控件设计 semantics tree（语义树）
 
@@ -365,10 +349,6 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 
 服务主线程等待节点查询结果期间，该服务收到的其他事件也可能排队。频繁查询 root 节点既会增加目标应用的 UI 线程工作，也会延迟服务自身的反馈。
 
-<!-- gracker-diagram: ch07-06-service-subscription-query-budget -->
-![服务订阅与节点查询的范围控制](../../assets/diagrams/ch07/ch07-06-service-subscription-query-budget.png)
-
-图：减少无意义工作要从订阅、已有字段和目标节点入手；服务业务耗时与目标应用节点成本分别记录。
 
 ### 测量条件与 A/B 设计
 
@@ -395,10 +375,6 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 
 `BinderProxy.transactNative` 能证明的只有这里发生了一次 Binder 调用；调用目的要结合 interface / method（接口与方法）、调用进程和回调时序来认。事件上报和节点查询方向相反，认出具体路径之后再往下归因。
 
-<!-- gracker-diagram: ch07-06-a11y-trace-causal-review -->
-![无障碍性能实验的证据链](../../assets/diagrams/ch07/ch07-06-a11y-trace-causal-review.png)
-
-图：Binder 调用名称与 oneway 数量只是线索。沿真实调用方向和目标帧核对工作位置，再以同条件实验验证归因。
 
 #### Android 17 accessibility trace
 
@@ -421,10 +397,6 @@ adb pull /data/misc/a11ytrace/a11y_trace.winscope
 
 r1 源码明确禁止在面向普通用户发布的 user build 上启用这项 trace。停止命令会异步写入 Winscope 文件，拉取前应先确认文件已经生成。Tracing 会记录调用参数、线程和调用栈，本身也会增加运行开销，因此只适合短时间定位问题。
 
-<!-- gracker-diagram: ch07-06-a11y-debug-trace-lifecycle -->
-![Accessibility 专用 trace 的生命周期](../../assets/diagrams/ch07/ch07-06-a11y-debug-trace-lifecycle.png)
-
-图：专用追踪提供接口与调用栈线索；停止命令返回时文件可能尚未写完，拉取前先确认。user 构建限制以 r1 实现为准。
 
 #### dumpsys 的用途与局限
 
@@ -458,10 +430,6 @@ r1 源码明确禁止在面向普通用户发布的 user build 上启用这项 t
 
 `getEnabledAccessibilityServiceList()` 会发起跨 Binder 查询，调用位置放在低频路径上。启用哪些服务还可能暴露敏感的设备使用状态，线上采集前要过隐私评审，优先记录匿名化的能力类别和数量，服务组件名这类可定位到具体应用的标识留在设备本地。
 
-<!-- gracker-diagram: ch07-06-a11y-context-versus-measurement -->
-![服务配置与实际测量的边界](../../assets/diagrams/ch07/ch07-06-a11y-context-versus-measurement.png)
-
-图：dumpsys 与状态 API 解释实验配置，事件率、等待和帧影响仍须动态证据。低频查询配置，避免把监控本身放进高频 UI 路径。
 
 ### Android 12—17 版本边界
 
@@ -509,10 +477,6 @@ r1 源码明确禁止在面向普通用户发布的 user build 上启用这项 t
 
 ContentCapture 的常规采集走自己的 `ContentCaptureEvent` 和轻量 `ViewNode`，增量变化时并不重建完整的 `AssistStructure`；承载完整结构快照的是 Autofill 管线。三者混在一起统称“无障碍全树扫描”时，请求由谁发起、工作在哪个线程执行就看不清了，对应的优化位置也随之丢失。
 
-<!-- gracker-diagram: ch07-06-three-ui-data-models -->
-![界面语义的三套数据模型](../../assets/diagrams/ch07/ch07-06-three-ui-data-models.png)
-
-图：三个框架可能读取同一页面，但分别产生事件/节点、增量内容与 Autofill 结构上下文。部分 r1 flag 路径可复用节点语义，仍须识别真实触发者。
 
 下图给出 ContentCapture 和 Autofill 的主要调用方向。
 
@@ -612,10 +576,6 @@ Activity 创建时，`ContentCaptureManager` 通过 `IContentCaptureManager.star
 - buffer 达到 `maxBufferSize`，或遇到会话边界、显式 flush、idle timeout、text-change timeout 时发送；这里的 flush 表示尝试发送当前缓冲批次；空批次、禁用状态或 direct Binder 尚未就绪时可能返回或延后，服务端接收与处理的情况要靠服务侧证据确认；
 - 批次通过 direct `oneway` Binder 进入 ContentCaptureService。
 
-<!-- gracker-diagram: ch07-06-contentcapture-merge-and-flush -->
-![ContentCapture 合并与 flush 的作用域](../../assets/diagrams/ch07/ch07-06-contentcapture-merge-and-flush.png)
-
-图：合并规则按事件类型、节点和 session 条件决定，flush 还受连接与启用状态影响。判断成本要同时记录事件数、文本规模、批次与触发原因。
 
 我们分析 ContentCapture 性能时要两头看：UI 线程上的 `ViewStructure` 准备，后台线程上的事件合并、Parcel 写入和 Binder 发送。只看到其中一侧，开销落在哪里就还是个问号。
 
@@ -645,10 +605,6 @@ ContentCapture 的结构大小和耗时没有全设备通用的阈值：节点�
 
 `IAutoFillManager` 是 `oneway` 接口，但 `AutofillManager` 的 `addClient()` 和 `startSession()` 会附带 `SyncResultReceiver`，通过另一条结果通道等会话建立完成，超时常量 5000 ms。焦点事件通常来自 UI 线程，所以 trace 里出现 `SyncResultReceiver` 等待时，我们要沿 Binder flow（跨进程调用流） 继续查 `system_server` 创建 Autofill 会话的过程。
 
-<!-- gracker-diagram: ch07-06-autofill-session-result-wait -->
-![Autofill 会话入口的结果等待](../../assets/diagrams/ch07/ch07-06-autofill-session-result-wait.png)
-
-图：Autofill 的 addClient/startSession 可通过独立结果通道同步等状态；它没有等待全部字段建议生成。需要新结构、复用上下文和状态更新要按实际会话判断。
 
 注意 5000 ms 是异常情况下的保护上限，正常延迟以实测为准；“每次 Binder 约 5–10 ms”这类固定耗时并没有契约依据。
 
@@ -668,10 +624,10 @@ ContentCapture 的结构大小和耗时没有全设备通用的阈值：节点�
 
 这些回调和应用 UI 工作共享线程。虚拟层级可以用 `asyncNewChild()` / `asyncCommit()` 在异步任务中补充；`AssistStructure.waitForReady()` 在传输通道开始写结构时等待异步子节点，预算为 5000 ms。普通跨进程读取中，等待落在应用处理该 Binder 取数请求的线程上，与 Activity 主线程遍历分开记；超时后传输头中的窗口数为 0。`ActivityThread` 的 acquisition start / end 早于后续惰性传输，异步补齐、全部分段传输和提供方响应的总时长要另行计量。
 
-<!-- gracker-diagram: ch07-06-three-timeout-scopes -->
-![三个 5000 ms 超时的线程与范围](../../assets/diagrams/ch07/ch07-06-three-timeout-scopes.png)
+<!-- gracker-diagram: ed07-06-three-wait-budgets -->
+![三个5000ms等待预算的调用方向与线程范围](../../assets/diagrams/ch07/ed07-06-three-wait-budgets.png)
 
-图：节点结果、会话状态与虚拟子节点分别有自己的等待预算。主线程 acquisition 时间只覆盖采集一段，后续惰性传输等待另算；三个数各有各的范围，直接相加估不出正常时延。
+图：三行是独立调用路径：服务线程在同步路由返回后等节点结果；Autofill 调用线程按需等客户端状态/session ID；AssistStructure 惰性取数时，应用处理 Binder 请求的线程可等异步子节点。各自 5000 ms 是阶段保护预算，不能相加估算正常或端到端耗时。节点超时不取消应用任务，会话结果也不等全部建议生成；虚拟子节点超时可令传输头窗口数为 0，主线程 acquisition 之后的等待、分段传输与提供方响应仍需另计。
 
 #### 大结构采用分段传输
 
@@ -781,10 +737,6 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 
 反过来，每次 `onDraw()`、动画帧，或数据没有变化的 bind 都去调 `requestAutofill()`、`notifyValueChanged()` 或 ContentCapture 文本通知，就纯属浪费；焦点在相邻节点间反复切换，也会产生额外的会话更新、结构请求或建议 UI 显示与隐藏。
 
-<!-- gracker-diagram: ch07-06-structure-callbacks-and-semantic-events -->
-![结构回调与语义变化通知的职责](../../assets/diagrams/ch07/ch07-06-structure-callbacks-and-semantic-events.png)
-
-图：结构描述应保持轻量，事件只反映真实变化；批量接口减少调用开销，同时仍须保留有效节点与完整操作。
 
 `ContentCaptureManager.getContentCaptureConditions()` 用带超时的结果接收器查询系统服务。浏览器可以根据 URL 条件判断是否报告虚拟页面，这条查询安排在低频路径上调用即可。
 
@@ -796,10 +748,6 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 
 页面内更细的控制仍可用 `importantForContentCapture`。Autofill 的敏感数据有自己独立的处理规则，信任范围以用户所选的 provider 为准；密码字段要由密码管理器填充时，保留正确的 Autofill 结构，并按字段敏感性、请求 flags、允许值和填充/保存阶段核对框架的清理规则——“会清理”要按这些规则逐项理解，它给不了“所选提供方永远接触不到密码等值”的保证。ContentCapture 的设置管好 ContentCapture 自己的采集就够了。
 
-<!-- gracker-diagram: ch07-06-capture-privacy-control-boundaries -->
-![ContentCapture 控制与 Autofill 隐私边界](../../assets/diagrams/ch07/ch07-06-capture-privacy-control-boundaries.png)
-
-图：r1 的 no-op 由 flag 与 target SDK compat 共同控制。FLAG_SECURE 带有窗口安全语义，Autofill 仍有独立数据与填充规则，各条管线分别对待。
 
 ### WebView 与跨框架页面
 
@@ -814,10 +762,6 @@ WebView 可以通过 `onProvideAutofillVirtualStructure()` 向 Autofill 暴露 H
 
 是否存在重复计算，取决于 WebView 的版本和实现，所以我们同时记录 WebView provider 版本、页面 DOM（文档对象模型） 规模、虚拟节点数、目标字段、ContentCapture 采集条件和 Autofill request ID，再从 trace 判断哪条路径占用了 UI 线程。
 
-<!-- gracker-diagram: ch07-06-webview-two-structure-pipelines -->
-![WebView 的 Autofill 与 ContentCapture 管线](../../assets/diagrams/ch07/ch07-06-webview-two-structure-pipelines.png)
-
-图：WebView 可以参与两套框架，具体实现随 provider 变化。按目标字段、request ID 与虚拟节点规模解释成本，不把 WebView 一概视为绕开 Autofill。
 
 ### 观测与复现
 
@@ -833,10 +777,6 @@ WebView 可以通过 `onProvideAutofillVirtualStructure()` 向 Autofill 暴露 H
 
 `android.content_capture.request`、`android.content_capture.process`、`android.autofill.request` 和 `android.autofill.process` 在 AOSP 的对应类中没有定义；设备上出现同名标记，先确认是不是厂商、provider 或应用自行添加的。
 
-<!-- gracker-diagram: ch07-06-trace-marker-measurement-scopes -->
-![源码 trace 标记的线程与计时范围](../../assets/diagrams/ch07/ch07-06-trace-marker-measurement-scopes.png)
-
-图：初始遍历、后台处理、flush 调用与 assist 请求各有范围。图中 assist 名称作缩写，完整标记见正文；Autofill 类型的认定和服务处理进度，都要以完整标记和调用证据为准。
 
 #### dumpsys 确认服务与会话
 
@@ -861,10 +801,6 @@ adb shell dumpsys autofill
 
 每组都记录 App frame、主线程 `handleRequestAssistContextExtras`、ContentCapture 初始 slice、`BackgroundThread`、`AssistStructure` acquisition 时间、provider 首次响应时间和 IME 建议出现时间。用户日常使用的设备上，密码管理器、辅助服务和内容采集组件保持原样，实验放到受控测试设备上做。
 
-<!-- gracker-diagram: ch07-06-capture-autofill-controlled-evidence -->
-![内容采集与自动填充的对照实验](../../assets/diagrams/ch07/ch07-06-capture-autofill-controlled-evidence.png)
-
-图：同一操作可能有多个请求和异步阶段。实验按路径与身份对齐，分别衡量帧时序和建议响应；没出现的阶段记录缺失，数据按阶段分别取，一个标记覆盖不了全部数据。
 
 ### 归因检查表
 
