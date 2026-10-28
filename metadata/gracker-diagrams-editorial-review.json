@@ -17655,9 +17655,504 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "83ff5b20b25edeade48872ea5da65da368314c1fc4935d8d5e6b96b7df442399",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 21,
+      "decisions": [
+        {
+          "original_id": "ch11-04-01-activity-families",
+          "title": "先按活动选择功耗证据",
+          "decision": "remove",
+          "reason": "发现广播/GATT/媒体三卡直接重排79-85五行活动/成本/问题/证据表，原表更完整；当前引言已区分四类证据，不在开篇重画成本目录。",
+          "original_line": 89,
+          "heading": "## 11.4.1 先确定哪类 Bluetooth 活动在耗电"
+        },
+        {
+          "original_id": "ch11-04-02-scan-cost-layers",
+          "title": "扫描从无线接收扩展到主机和应用工作",
+          "decision": "merge",
+          "reason": "controller无线接收、Bluetooth进程组装/统计、App回调业务成本三层与实际过滤位置合图；三层可并行、UID归因/controller时间/硬件能量不可盲加。",
+          "original_line": 104,
+          "heading": "## 11.4.2 BLE 扫描成本由哪些参数决定",
+          "replacement_id": "ed11-04-scan-window-filter-and-host-cost"
+        },
+        {
+          "original_id": "ch11-04-03-scan-window-duty",
+          "title": "常规扫描的接收窗口与间隔",
+          "decision": "keep",
+          "reason": "常规LOW_POWER/BALANCED/LOW_LATENCY接收窗口在各自归一化周期内的具体duty结构，区别机会式不自行驱动、batch另参数；不是请求mode独占硬件或能量比例。",
+          "original_line": 122,
+          "heading": "### Scan mode 控制接收 duty cycle"
+        },
+        {
+          "original_id": "ch11-04-05-filter-placement",
+          "title": "过滤减少无关结果，接收窗口另行控制",
+          "decision": "merge",
+          "reason": "稳定广播协议字段→controlleroffload/host匹配或资源失败→App结果的路径接入成本层图，过滤减少上送不自动缩短RF窗口，FIRSTMATCH/MATCHLOST实际支持与非物理离开瞬时边界保留。",
+          "original_line": 135,
+          "heading": "### Filter 主要减少结果与主机唤醒",
+          "replacement_id": "ed11-04-scan-window-filter-and-host-cost"
+        },
+        {
+          "original_id": "ch11-04-04-mode-vs-scan-type",
+          "title": "驱动扫描的 mode 与主动被动类型是两维",
+          "decision": "keep",
+          "reason": "OPPORTUNISTIC是否自行驱动与active/passive scan type不同控制维度，具体收发scanrequest/response关系值得独立对照，不能把机会式等同被动。",
+          "original_line": 144,
+          "heading": "### Filter 主要减少结果与主机唤醒"
+        },
+        {
+          "original_id": "ch11-04-06-auto-batch-transitions",
+          "title": "自动批量扫描随屏幕切换交付模式",
+          "decision": "keep",
+          "reason": "AUTO_BATCH屏幕亮/灭/再亮与逐条/累计延迟/刷新交付双轨，API34最低reportdelay与stop刷新规则，和扫描RF窗口、逻辑请求暂停均不同。",
+          "original_line": 155,
+          "heading": "### Batch 降低回调频率"
+        },
+        {
+          "original_id": "ch11-04-07-pairing-session-owner",
+          "title": "每次配网扫描拥有独立会话与回调",
+          "decision": "merge",
+          "reason": "当前72行Kotlin单会话主线程start/filter短LOWLATENCY/Handler保护与stop先本地失效/撤timeout再try远端接入迟到事件身份检查图。",
+          "original_line": 164,
+          "heading": "## 11.4.3 把扫描绑定到业务生命周期",
+          "replacement_id": "ed11-04-pairing-session-and-late-events"
+        },
+        {
+          "original_id": "ch11-04-08-late-callback-generation",
+          "title": "旧扫描回调不能影响新会话",
+          "decision": "merge",
+          "reason": "旧会话已排队事件在新session出现后身份不符丢弃、旧failure不能关闭新扫描，接入本地生命周期合图；不假设removeCallbacks撤所有队列事件或本地stop证RF停止。",
+          "original_line": 246,
+          "heading": "## 11.4.3 把扫描绑定到业务生命周期",
+          "replacement_id": "ed11-04-pairing-session-and-late-events"
+        },
+        {
+          "original_id": "ch11-04-09-registration-stop-race",
+          "title": "固定 r1 注册中的 stop 存在取消边界",
+          "decision": "keep",
+          "reason": "固定r1 stop先移客户端wrapper后mScannerId已知/未知两支，未知直接返回且迟到注册缺取消检查的具体远端竞态；不能由App会话隔离图替代或宣称本地测试已解决。",
+          "original_line": 253,
+          "heading": "## 11.4.3 把扫描绑定到业务生命周期"
+        },
+        {
+          "original_id": "ch11-04-10-background-discovery-entry",
+          "title": "界面不可见与进程不存在选择不同入口",
+          "decision": "keep",
+          "reason": "界面不可见但进程活着的callback与进程可能不存在的PI/Companion两个实际发现入口选择，后台资源/存活条件不同；独立于同PI注册身份。",
+          "original_line": 262,
+          "heading": "## 11.4.4 后台发现、权限与进程存活"
+        },
+        {
+          "original_id": "ch11-04-11-permission-purpose",
+          "title": "附近设备授权与位置用途分开核对",
+          "decision": "remove",
+          "reason": "扫描/连接/广播三卡逐项复述269-273三行权限表，neverForLocation用途/旧位置权限条件由275-282完整段更精确表达，保留全部原文不另画枚举卡。",
+          "original_line": 279,
+          "heading": "### Android 12+ 权限"
+        },
+        {
+          "original_id": "ch11-04-13-pi-identity-update",
+          "title": "同一个 PI 重复 start 不会更新已有扫描",
+          "decision": "merge",
+          "reason": "同PI已注册r1忽略新start不更新filter/settings、需改配置先结束旧扫描的身份两支与异步Receiver交付/同PIstop合成一个owner生命周期。",
+          "original_line": 288,
+          "heading": "### PendingIntent 扫描",
+          "replacement_id": "ed11-04-pi-identity-and-delivery"
+        },
+        {
+          "original_id": "ch11-04-12-pi-delivery-contract",
+          "title": "PendingIntent 从请求提交到结果投递",
+          "decision": "merge",
+          "reason": "API26显式Receiver、31mutable补extras、即时0非注册完成、先ERRORCODE后结果并核业务有效性与受限短工作接入同身份图，后台FGS条件与stop异常另查。",
+          "original_line": 348,
+          "heading": "### PendingIntent 扫描",
+          "replacement_id": "ed11-04-pi-identity-and-delivery"
+        },
+        {
+          "original_id": "ch11-04-14-presence-without-polling",
+          "title": "设备出现事件比周期重启更贴近业务",
+          "decision": "remove",
+          "reason": "关联/广播适配→PI或presence事件→工作收尾三框直接复述353完整段，后台入口图10和新的PI身份交付图已覆盖该选择；随机MAC/漏报恢复/避免周期空唤醒限制全文保留。",
+          "original_line": 355,
+          "heading": "### PendingIntent 扫描"
+        },
+        {
+          "original_id": "ch11-04-15-scan-stack-order",
+          "title": "Android 17 扫描从 API 到控制器的主路径",
+          "decision": "remove",
+          "reason": "五步PNG主路径与紧邻原生Mermaid同一App/API/Binder/Controller/Stats/Manager/native/controller和stop顺序重复；保留更细的原生sequence及364下图引导、397统计先于Manager段。",
+          "original_line": 366,
+          "heading": "## 11.4.5 Android 17 的 BLE 扫描实现与平台限制"
+        },
+        {
+          "original_id": "ch11-04-16-logical-active-suspended",
+          "title": "逻辑请求、活跃段和硬件接收不是同一时间",
+          "decision": "keep",
+          "reason": "逻辑start-stop、active/suspended恢复、本请求实际接收窗口三条时间层次，说明active非连续RF且暂停本请求不关其他client/链路，独立于主调用顺序图。",
+          "original_line": 399,
+          "heading": "## 11.4.5 Android 17 的 BLE 扫描实现与平台限制"
+        },
+        {
+          "original_id": "ch11-04-17-registration-quota-api-gap",
+          "title": "注册频率配额的内部拒绝与公开回调",
+          "decision": "keep",
+          "reason": "非特权callback近期5次/30秒可配注册检查、内部拒绝到wrapper只日志不转App失败的具体可观测性缺口；PI入口跳过该检查/其他限制仍在，不同于运行额度。",
+          "original_line": 410,
+          "heading": "### 注册频率限制"
+        },
+        {
+          "original_id": "ch11-04-18-suspend-gates",
+          "title": "无实际过滤字段时还要检查屏幕与位置",
+          "decision": "keep",
+          "reason": "hasNonEmptyFilters与屏幕/位置/系统suspend三个独立暂停条件及逻辑请求仍存的关系，权限与位置开关/isFiltered语义和resume待亮屏不能简化为filter就全放行。",
+          "original_line": 423,
+          "heading": "### 熄屏与位置关闭时的暂停"
+        },
+        {
+          "original_id": "ch11-04-19-legacy-timeout-branches",
+          "title": "长扫描的旧超时只覆盖适用常规路径",
+          "decision": "merge",
+          "reason": "适用常规legacy默认10min及batch/autobatch/opportunistic/FIRSTMATCH豁免、无filter降opportunistic/有filter上限LOWPOWER两支接入flag分流图，非终止逻辑请求。",
+          "original_line": 432,
+          "heading": "### 长时间扫描降级",
+          "replacement_id": "ed11-04-legacy-timeout-or-weighted-allowance"
+        },
+        {
+          "original_id": "ch11-04-20-weighted-scan-allowance",
+          "title": "UID 额度受模式权重与豁免条件影响",
+          "decision": "merge",
+          "reason": "allowanceflag启用跳过旧timeout、UID6min/1h基准按mode权重与前台UI/特权绕过、耗尽内部screenoff分支接入同一图，明确两套可配数字非共同SDK业务时限。",
+          "original_line": 442,
+          "heading": "### 长时间扫描降级",
+          "replacement_id": "ed11-04-legacy-timeout-or-weighted-allowance"
+        },
+        {
+          "original_id": "ch11-04-21-unoptimized-classification",
+          "title": "isUnoptimized 的 background 是回调类型",
+          "decision": "keep",
+          "reason": "isUnoptimized三个布尔输入的实际语义，background是FIRSTMATCH位不是Activity可见性，opportunistic非active/passive；不能由genericfilter图替代统计分类公式。",
+          "original_line": 455,
+          "heading": "### BatteryStats 归因"
+        },
+        {
+          "original_id": "ch11-04-22-scan-result-accounting",
+          "title": "扫描结果计数是归因接口而非无损抓包",
+          "decision": "keep",
+          "reason": "addResults跨百位桶只报一次100、批量跨多桶不补循环及stop余数的具体非无损记账算法，区别结果数/逻辑时长/TxRx与硬件能量，没有一条统一换算。",
+          "original_line": 462,
+          "heading": "### BatteryStats 归因"
+        },
+        {
+          "original_id": "ch11-04-23-gatt-connection-modes",
+          "title": "GATT 的连接方式按业务所有权选择",
+          "decision": "keep",
+          "reason": "API37direct/auto/opportunistic client不同连接所有权与独占维持条件，非null对象不等已连；和后续当前回调重试/终态协议回答不同问题。",
+          "original_line": 505,
+          "heading": "### Android 17 的连接入口"
+        },
+        {
+          "original_id": "ch11-04-24-connection-priority-phase",
+          "title": "高连接优先级只覆盖有效传输窗口",
+          "decision": "keep",
+          "reason": "准备/批量传输/低频通知和BALANCED/HIGH/BALANCED两轨说明优先级只覆盖有效阶段，请求提交不证对端参数或固定速率。",
+          "original_line": 522,
+          "heading": "### 连接参数要随业务阶段变化"
+        },
+        {
+          "original_id": "ch11-04-25-mtu-request-result",
+          "title": "MTU 请求与可用载荷分开验收",
+          "decision": "remove",
+          "reason": "请求517→成功onMtuChanged→扣ATT开销三框逐项重述527单个完整段和516表格行，无具体payload算例；API37自动MTU、非必517、连接/服务/传输各状态原文保留。",
+          "original_line": 529,
+          "heading": "### 连接参数要随业务阶段变化"
+        },
+        {
+          "original_id": "ch11-04-26-subrate-mode-meaning",
+          "title": "Subrate 模式名不能当连接间隔因子排序",
+          "decision": "remove",
+          "reason": "OFF/HIGH/LOW模式三卡重排518表中API/权限/特权或关联/两端支持与534命名非factor排序段，所有公开条件与成功onSubrateChange要求保留；无实际参数或额外图关系。",
+          "original_line": 536,
+          "heading": "### 连接参数要随业务阶段变化"
+        },
+        {
+          "original_id": "ch11-04-27-notification-subscription",
+          "title": "通知订阅同时配置主机与外围设备",
+          "decision": "keep",
+          "reason": "本地主机注册与远端CCCD两端订阅、描述符写结果与真实通知分别验收的协议链，callback到达可交错、固件频率与无变化数据仍影响成本，非通用调用列表可替代。",
+          "original_line": 543,
+          "heading": "### 连接参数要随业务阶段变化"
+        },
+        {
+          "original_id": "ch11-04-28-reconnection-budget",
+          "title": "重连失败后进入有上限的等待策略",
+          "decision": "merge",
+          "reason": "业务direct+timeout→失败仅预算有效才jitter指数退避回路→耗尽等新事件与统一终态收尾，接入GATT对象/会话身份和共享链路边界。",
+          "original_line": 552,
+          "heading": "### 重连状态机",
+          "replacement_id": "ed11-04-gatt-retry-and-terminal-ownership"
+        },
+        {
+          "original_id": "ch11-04-29-gatt-terminal-ownership",
+          "title": "GATT 对象与共享物理连接分别管理",
+          "decision": "merge",
+          "reason": "当前onConnectionStateChange才推进、旧GATT回调隔离与终态取消重试/disconnect请求/close本地client接入重连图，close不保证其他client共享链路或RF停止。",
+          "original_line": 565,
+          "heading": "### 重连状态机",
+          "replacement_id": "ed11-04-gatt-retry-and-terminal-ownership"
+        },
+        {
+          "original_id": "ch11-04-30-diagnostic-evidence-chain",
+          "title": "把业务、系统归因和硬件证据对齐",
+          "decision": "keep",
+          "reason": "业务session时间→dump/AppScanStats suspended/HCI→UID归因/线程→同窗能量和业务验收的具体证据协调路径，保留当前快照/历史/协议/硬件的覆盖差异；实验重复摘要32删除。",
+          "original_line": 597,
+          "heading": "### 三层证据分别回答什么"
+        },
+        {
+          "original_id": "ch11-04-31-component-vs-uid-model",
+          "title": "组件电荷校准不等于逐 App 独立计量",
+          "decision": "keep",
+          "reason": "controller idle/rx/tx×profile基础估算、有硬件输入校准组件总电荷、再按scan time或字节等UID分配的实际算法链，独立于诊断工具表且非逐App电表。",
+          "original_line": 604,
+          "heading": "### 三层证据分别回答什么"
+        },
+        {
+          "original_id": "ch11-04-32-controlled-ble-experiment",
+          "title": "功耗对照要验收相同业务与设备条件",
+          "decision": "remove",
+          "reason": "固定条件→改变一个变量→同窗验能量/延迟三框直接压缩613-620六项具体样本清单和620控制条件，图30已保留具体协调取证；USB供电/无虚构测量的原文全文保留。",
+          "original_line": 622,
+          "heading": "### 实验设计"
+        },
+        {
+          "original_id": "ch11-04-33-version-entry-gates",
+          "title": "示例版本门槛与平台策略各自检查",
+          "decision": "remove",
+          "reason": "API24-30/31-35/36.1-37三版本卡重排629-640八行版本表和OEM可配段，原表更精确；注解不替运行检查、次版本与extension区别仍在正文/代码。",
+          "original_line": 642,
+          "heading": "## 11.4.8 版本边界"
+        },
+        {
+          "original_id": "ch11-04-34-le-audio-cost-roles",
+          "title": "LE Audio 功耗横跨无线、媒体和头动链",
+          "decision": "remove",
+          "reason": "无线/媒体/头动三成本卡逐项复述656-660五条完整观察项以及开篇活动表媒体行；35真实软件/隧道三路径独立保留，受控AB/rail非因果证明原文不变。",
+          "original_line": 651,
+          "heading": "## 11.4.9 LE Audio、空间音频与头动追踪"
+        },
+        {
+          "original_id": "ch11-04-35-headtracking-paths",
+          "title": "头动追踪可以经过软件也可以直连硬件",
+          "decision": "keep",
+          "reason": "FRAMEWORK_PROCESSED、DIRECT_TO_SENSOR_SW、TUNNEL三种不同头动数据/控制路径和可能DSP卸载，说明不是每设备/每帧由App或SensorService同样工作；不承诺设备支持或固定收益。",
+          "original_line": 664,
+          "heading": "## 11.4.9 LE Audio、空间音频与头动追踪"
+        }
+      ],
+      "sha256_after": "d8ba93f1c62f720a649ac372de08960c8cc90e9dc9869d07d528bed909ad7e42",
+      "new_diagrams": [
+        {
+          "id": "ed11-04-scan-window-filter-and-host-cost",
+          "title": "接收窗口控制无线时间，过滤控制结果经过主机与 App 的工作量",
+          "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-04-scan-window-filter-and-host-cost.svg",
+            "src/assets/diagrams/ch11/ed11-04-scan-window-filter-and-host-cost.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-04-scan-window-filter-and-host-cost",
+          "sources": [
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanController.java",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanNativeInterface.kt",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/BluetoothPowerStatsProcessor.java",
+            "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-61/out/en/low-energy-controller/link-layer-specification.html",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/le/ScanFilter.java",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/le/BluetoothLeScanner.java",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanManager.java",
+            "当前独立修订后的完整正文：扫描/PI生命周期、过滤与RF窗口、二选一限速及GATT恢复边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-04-02-scan-cost-layers",
+              "ch11-04-05-filter-placement"
+            ],
+            "boundary": "职责图非统一能量公式，三层可并行。scanmode/windowinterval和业务总时长控制接收机会；filter需稳定协议字段/设备资源，可controlleroffload，普通ALL_MATCHES部分host过滤，tracking/batch能力不足可注册失败非必软件回退。FIRSTMATCH/MATCHLOST依非空filter/硬件跟踪且lost非物理离开瞬间。controller时长/UID归因/独立能量不同且不能盲加。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a114/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-04-pairing-session-and-late-events",
+          "title": "扫描会话先收回本地所有权，迟到回调再检查会话身份",
+          "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-04-pairing-session-and-late-events.svg",
+            "src/assets/diagrams/ch11/ed11-04-pairing-session-and-late-events.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-04-pairing-session-and-late-events",
+          "sources": [
+            "https://developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/le/BluetoothLeScanner.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Handler.java",
+            "当前独立修订后的完整正文：扫描/PI生命周期、过滤与RF窗口、二选一限速及GATT恢复边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-04-07-pairing-session-owner",
+              "ch11-04-08-late-callback-generation"
+            ],
+            "boundary": "当前72行示例在主线程操作，重入start已有session直接返回；独立Session/scanner/callback/timeout，handler身份检查后结果/公开failure处理。start返回提交非注册成功且可静默限流。stop先sessionnull/removetimeout再tryremote，权限/蓝牙异常仅日志，注册中mScannerId竞态另有专图。找到目标由调用方stop；Handler保护可延后，取消不撤所有排队事件，不证明RF停止。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a114/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-04-pi-identity-and-delivery",
+          "title": "同一 PendingIntent 的注册身份、异步投递与停止由一个 owner 管理",
+          "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-04-pi-identity-and-delivery.svg",
+            "src/assets/diagrams/ch11/ed11-04-pi-identity-and-delivery.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-04-pi-identity-and-delivery",
+          "sources": [
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanController.java",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/le/BluetoothLeScanner.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/PendingIntent.java",
+            "https://developer.android.com/develop/connectivity/bluetooth/ble/background",
+            "当前独立修订后的完整正文：扫描/PI生命周期、过滤与RF窗口、二选一限速及GATT恢复边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-04-13-pi-identity-update",
+              "ch11-04-12-pi-delivery-contract"
+            ],
+            "boundary": "API26+示例，31+mutable让栈填extras且显式Receiver限制目标；固定action/component/requestcode形成同身份，UPDATECURRENT不等更新已有scannerfilters/settings。r1同PI已注册忽略新start；即时0仍非异步注册完成。Receiver先errorcode再list/type再业务有效性与受限短任务；FIRSTMATCH需非空filter/跟踪支持，FGS/后台执行规则不豁免。同PIstop再canceltoken但异常/远端是否清理另查，不承诺整机RF静止。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a114/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-04-legacy-timeout-or-weighted-allowance",
+          "title": "长扫描先看开关：旧 timeout 与 UID 计权额度走不同分支",
+          "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-04-legacy-timeout-or-weighted-allowance.svg",
+            "src/assets/diagrams/ch11/ed11-04-legacy-timeout-or-weighted-allowance.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-04-legacy-timeout-or-weighted-allowance",
+          "sources": [
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanManager.java",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanUtil.kt",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanClient.kt",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/btservice/AdapterService.java",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanThrottler.kt",
+            "当前独立修订后的完整正文：扫描/PI生命周期、过滤与RF窗口、二选一限速及GATT恢复边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-04-19-legacy-timeout-branches",
+              "ch11-04-20-weighted-scan-allowance"
+            ],
+            "boundary": "固定r1可配策略非SDK任务deadline。flag启用跳过legacy，UID默认6min额度/1h补充window按mode权重不同runtime，当前前台UI/特权可绕过额度分支但其他规则仍在，耗尽降内部screenoffmode。flag未启用的legacy默认10min只适用常规非opportunistic非firstmatch，batch/autobatch批量跳过；无filter改opportunistic，有filtermode上限FORCEDOWNGRADED=LOWPOWER，isFiltered受空filterflag影响；均不保证RF固定duty或结束逻辑请求。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a114/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-04-gatt-retry-and-terminal-ownership",
+          "title": "GATT 按当前会话推进连接，重试有预算，终态统一收回资源",
+          "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-04-gatt-retry-and-terminal-ownership.svg",
+            "src/assets/diagrams/ch11/ed11-04-gatt-retry-and-terminal-ownership.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-04-gatt-retry-and-terminal-ownership",
+          "sources": [
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothGatt.java",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothDevice.java",
+            "https://developer.android.com/develop/connectivity/bluetooth/ble/background",
+            "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothGattConnectionSettings.java",
+            "当前独立修订后的完整正文：扫描/PI生命周期、过滤与RF窗口、二选一限速及GATT恢复边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-04-28-reconnection-budget",
+              "ch11-04-29-gatt-terminal-ownership"
+            ],
+            "boundary": "业务状态机非固定平台超时。connectGatt非null仅受理，当前对象/会话匹配的onConnectionStateChange结果才推进；旧回调丢弃。失败仅预算且业务有效时jitter指数退避，耗尽等待匹配广播/presence/用户；完成解绑权限撤销蓝牙关取消pendingretry，主动断链disconnect，本client不用close。其他client可共享底层链路，close不证RF立即停止；权限撤销不能远端清理留日志，autoconnect不保进程存活。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a114/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T12:58:55.270477+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 8,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a114/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a114/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 114,
+        "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+        "registered_sha256": "83ff5b20b25edeade48872ea5da65da368314c1fc4935d8d5e6b96b7df442399",
+        "frozen_sha256": "83ff5b20b25edeade48872ea5da65da368314c1fc4935d8d5e6b96b7df442399",
+        "review_input_sha256": "6f4c19c8a366a9f45557eed0e1c08841065993337eca46d0f4795257799d2b2c",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a114/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a114/external-source.diff",
+        "diff_sha256": "23eeb6256e3feb3e280a8b5d6f321457f10aec228b777086d1dbbb188ed078b4",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All305 current narrative/table rows,35 SVG label sets,35 original PNGs/5contact sheets and1 rendered native sequence read/viewed;72line callback owner48linePI16lineGATT code read separately."
+      },
+      "sha256_review_input": "6f4c19c8a366a9f45557eed0e1c08841065993337eca46d0f4795257799d2b2c",
+      "retired_diagrams": [
+        "ch11-04-01-activity-families",
+        "ch11-04-02-scan-cost-layers",
+        "ch11-04-05-filter-placement",
+        "ch11-04-07-pairing-session-owner",
+        "ch11-04-08-late-callback-generation",
+        "ch11-04-11-permission-purpose",
+        "ch11-04-12-pi-delivery-contract",
+        "ch11-04-13-pi-identity-update",
+        "ch11-04-14-presence-without-polling",
+        "ch11-04-15-scan-stack-order",
+        "ch11-04-19-legacy-timeout-branches",
+        "ch11-04-20-weighted-scan-allowance",
+        "ch11-04-25-mtu-request-result",
+        "ch11-04-26-subrate-mode-meaning",
+        "ch11-04-28-reconnection-budget",
+        "ch11-04-29-gatt-terminal-ownership",
+        "ch11-04-32-controlled-ble-experiment",
+        "ch11-04-33-version-entry-gates",
+        "ch11-04-34-le-audio-cost-roles"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-114/retired-assets.json"
     },
     {
       "index": 115,
@@ -17666,9 +18161,432 @@
       "before_count": 32,
       "before_all_images": 32,
       "sha256_before": "978d61a3fae5aec741f74f5262049995dae84529387b19d7ec49819b488e3500",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 17,
+      "decisions": [
+        {
+          "original_id": "ch11-05-01-measurement-scopes",
+          "title": "能耗证据的测量范围",
+          "decision": "remove",
+          "reason": "四种能耗证据框图逐项重排紧邻70-75四行证据/含义/问题/边界表，原表覆盖供电位置与口径差异更完整。",
+          "original_line": 77,
+          "heading": "## 11.5.1 先确认能耗数字来自哪里"
+        },
+        {
+          "original_id": "ch11-05-02-display-energy-units",
+          "title": "显示能量从 HAL 到 BatteryStats 的换算",
+          "decision": "merge",
+          "reason": "HAL累计µJ差分、两次平均电压转µC再到mAh，与描述符分流及UID归因合图，保留首次基线、consumer0非所有项求和边界。",
+          "original_line": 94,
+          "heading": "### Android 17 的显示归因有测量与模型两条路径",
+          "replacement_id": "ed11-05-display-cost-and-uid-share"
+        },
+        {
+          "original_id": "ch11-05-03-screen-model-uid",
+          "title": "显示估算与 UID 比例归因",
+          "decision": "merge",
+          "reason": "consumer数量>0选第0计量项/为0才走powerprofile，与同组亮屏成本按topactivity时长分配合图；单次失败不自动转模型、doze另算、零总时长跳过。",
+          "original_line": 101,
+          "heading": "### Android 17 的显示归因有测量与模型两条路径",
+          "replacement_id": "ed11-05-display-cost-and-uid-share"
+        },
+        {
+          "original_id": "ch11-05-04-experiment-pipeline",
+          "title": "论文实验与公开复现材料的边界",
+          "decision": "remove",
+          "reason": "879配置、15次、单台S23、dumpsys/CSV/notebook六框重画110-115实验条件及108公开数据核验范围段；图未提供真实执行时序，保持原文即可。",
+          "original_line": 117,
+          "heading": "## 11.5.2 如何阅读 2026 年单机实验"
+        },
+        {
+          "original_id": "ch11-05-05-data-cleaning",
+          "title": "公开数据的行数与过滤流程",
+          "decision": "remove",
+          "reason": "13185→去155→正时长未额外去→去381→12649五框逐项重复124单个完整清洗说明，原文保留论文13184冲突与536非同一种异常排除。",
+          "original_line": 129,
+          "heading": "## 11.5.2 如何阅读 2026 年单机实验"
+        },
+        {
+          "original_id": "ch11-05-06-label-conflict",
+          "title": "设置字段冲突如何限制因果解释",
+          "decision": "keep",
+          "reason": "同一记录两种设置标签分叉再汇为冲突与未知真值，清晰展示为什么重算分组仍不能证明真实设置；与单位/归因范围问题不同。",
+          "original_line": 139,
+          "heading": "## 11.5.2 如何阅读 2026 年单机实验"
+        },
+        {
+          "original_id": "ch11-05-07-power-energy-overall",
+          "title": "平均功率、累计能量与 Overall 汇总",
+          "decision": "keep",
+          "reason": "mAh×V到J、按实际秒数分出W与累计能量两类比较，再接每App均值等权Overall；单位和聚合不是同一操作，保留独立关系与错误kJ标签边界。",
+          "original_line": 148,
+          "heading": "## 11.5.2 如何阅读 2026 年单机实验"
+        },
+        {
+          "original_id": "ch11-05-08-brightness-mapping",
+          "title": "从亮度请求到可观测面板亮度",
+          "decision": "keep",
+          "reason": "用户/窗口与自动亮度两条输入经设备映射及HBM/HDR/热限制到实际值，说明百分比、nit、目标与执行值不同，独立于面板配色机制。",
+          "original_line": 168,
+          "heading": "### “50% 亮度”不是跨设备物理量"
+        },
+        {
+          "original_id": "ch11-05-09-panel-content",
+          "title": "LCD 与 OLED 的内容成本机制",
+          "decision": "merge",
+          "reason": "LCD背光/OLED自发光差异与深色主题UI/独立媒体的内容分支合图，集中解释面板类型和实际合成画面，不在两个小节重复画两类面板。",
+          "original_line": 186,
+          "heading": "### 面板类型改变内容与亮度的关系",
+          "replacement_id": "ed11-05-theme-content-and-panel"
+        },
+        {
+          "original_id": "ch11-05-10-brightness-thermal",
+          "title": "高亮与热状态的验证时间线",
+          "decision": "keep",
+          "reason": "亮度模式、热状态、帧/频率三轨展示必须在同一时间轴观察可能的跨热阈值关系；明确是待验证链而非论文已测因果，不能由亮度映射图替代。",
+          "original_line": 193,
+          "heading": "### 面板类型改变内容与亮度的关系"
+        },
+        {
+          "original_id": "ch11-05-11-brightness-test-design",
+          "title": "固定亮度与用户自动亮度的两类实验",
+          "decision": "merge",
+          "reason": "固定亮度受控回归与真实自动环境两列，与深色自主调亮补偿和通篇基线/单变量/复测合为一张双分支设计，两个问题分开报告。",
+          "original_line": 206,
+          "heading": "### 固定亮度与自动亮度用于不同问题",
+          "replacement_id": "ed11-05-controlled-and-user-experiments"
+        },
+        {
+          "original_id": "ch11-05-12-display-cadences",
+          "title": "产帧、回调、合成与面板刷新分层",
+          "decision": "keep",
+          "reason": "Choreographer回调/新buffer/SF合成/物理刷新四层与30fps内容在120Hz重复呈现双轨，有具体非一对一节奏关系，非简单变量清单。",
+          "original_line": 222,
+          "heading": "## 11.5.4 刷新率：四个频率不能混为一个数字"
+        },
+        {
+          "original_id": "ch11-05-13-refresh-budget",
+          "title": "刷新周期与流水线截止时间",
+          "decision": "remove",
+          "reason": "16.67/8.33参考间隔轨与三阶段框逐项复述227单段吞吐、跨帧流水线和deadline限制；无真实阶段耗时，12和18已保留更有解释价值的节奏轨。",
+          "original_line": 229,
+          "heading": "## 11.5.4 刷新率：四个频率不能混为一个数字"
+        },
+        {
+          "original_id": "ch11-05-14-policy-and-layer-hints",
+          "title": "刷新率的策略入口与 Layer 提示入口",
+          "decision": "keep",
+          "reason": "DMD窗口/设备策略入口与Surface/ViewLayer内容提示两个不同入口在SF选择器汇合，再到HWC/观测，避免所有请求一律当DMDvote或直接控面板。",
+          "original_line": 257,
+          "heading": "## 11.5.5 Android 17 如何决定刷新率"
+        },
+        {
+          "original_id": "ch11-05-15-priority-vote-loop",
+          "title": "DisplayModeDirector 的冲突处理",
+          "decision": "keep",
+          "reason": "可用模式为空时逐步丢低优先级再过滤的实际反馈回路及默认回退，独立于14各入口关系，不能画成永远同时满足硬约束。",
+          "original_line": 264,
+          "heading": "## 11.5.5 Android 17 如何决定刷新率"
+        },
+        {
+          "original_id": "ch11-05-16-surface-vote-lifecycle",
+          "title": "Surface 帧率提示的生命周期",
+          "decision": "keep",
+          "reason": "可见Surface暂停时0/clear再恢复真实fps，与隐藏/销毁无需额外清理的生命周期两轨，防把内容提示当生产者限帧或物理切换保证。",
+          "original_line": 275,
+          "heading": "### `Surface.setFrameRate()` 的边界"
+        },
+        {
+          "original_id": "ch11-05-17-view-frame-votes",
+          "title": "View 帧率请求的聚合与边界",
+          "decision": "remove",
+          "reason": "绘制→收集→下层三框和ViewGroup/DEFAULT/NOPREFERENCE三卡逐项重排282完整API语义段及289能力段，原文比单向框更精确；Surface规则保留16。",
+          "original_line": 284,
+          "heading": "### View 与 ARR"
+        },
+        {
+          "original_id": "ch11-05-18-arr-te-cadence",
+          "title": "ARR 在同一模式内选择呈现间隔",
+          "decision": "keep",
+          "reason": "240HzTE基准与满足8.33ms最小间隔的120/60两种独立呈现轨，具体显示同模式不同整数TE倍，不等同普通面板切模式或Choreographer回调。",
+          "original_line": 291,
+          "heading": "### View 与 ARR"
+        },
+        {
+          "original_id": "ch11-05-19-video-ui-layer",
+          "title": "视频内容与交互 UI 分别表达帧率",
+          "decision": "remove",
+          "reason": "视频/UI两输入汇系统决策并选择兼容倍频，重复14已保留的独立Layer提示入口和271的24fps/120Hz例子、302短视频表行；无独立观测数据。",
+          "original_line": 306,
+          "heading": "### 常见场景的策略"
+        },
+        {
+          "original_id": "ch11-05-20-dark-content",
+          "title": "深色主题改变哪些像素",
+          "decision": "merge",
+          "reason": "主题改变UI但不自动改视频/照片/预览，实际合成后分别解释OLED像素成本/LCD背光，接入9面板差异同图。",
+          "original_line": 329,
+          "heading": "## 11.5.6 深色模式：屏幕技术与内容共同决定收益",
+          "replacement_id": "ed11-05-theme-content-and-panel"
+        },
+        {
+          "original_id": "ch11-05-21-dark-brightness-compensation",
+          "title": "主题本身与用户亮度补偿分开评估",
+          "decision": "merge",
+          "reason": "固定亮度比较配色与用户真实自主调亮两种问题并入全篇实验分层图，保留补偿只是一种待观察可能性和可读性结果分开报告。",
+          "original_line": 336,
+          "heading": "## 11.5.6 深色模式：屏幕技术与内容共同决定收益",
+          "replacement_id": "ed11-05-controlled-and-user-experiments"
+        },
+        {
+          "original_id": "ch11-05-22-battery-saver-policy",
+          "title": "省电开关触发的多路径联动",
+          "decision": "merge",
+          "reason": "设备开关→平台/OEM多项联动与普通App布尔状态/广播重读→自主适配合图，硬件实际值与公开状态分别验收。",
+          "original_line": 349,
+          "heading": "## 11.5.7 省电模式不是一个固定参数包",
+          "replacement_id": "ed11-05-saver-state-policy-and-evidence"
+        },
+        {
+          "original_id": "ch11-05-23-saver-observe",
+          "title": "应用如何响应省电状态并验证实际变化",
+          "decision": "merge",
+          "reason": "公开isPowerSaveMode和广播后重读、设备端实验授权与实际策略核查接入同一省电状态/策略图，不把CPU百分比或隐藏Settings当通用App命令。",
+          "original_line": 364,
+          "heading": "## 11.5.7 省电模式不是一个固定参数包",
+          "replacement_id": "ed11-05-saver-state-policy-and-evidence"
+        },
+        {
+          "original_id": "ch11-05-24-video-power-path",
+          "title": "分辨率变化经过哪些业务与显示环节",
+          "decision": "keep",
+          "reason": "网络缓存→解码→Surface合成缩放→面板到同窗能耗的具体视频管线，并行保留码率成功率热状态体验，解释分辨率变化不能直接归于面板。",
+          "original_line": 385,
+          "heading": "### 视频分辨率"
+        },
+        {
+          "original_id": "ch11-05-25-message-task-energy",
+          "title": "消息长度与整次任务能量",
+          "decision": "keep",
+          "reason": "消息输入布局、网络等待、统一业务完成窗口三轨把累计J与平均W分开，具体解释+115.6不是每字符成本且阶段可能重叠。",
+          "original_line": 396,
+          "heading": "### 消息长度"
+        },
+        {
+          "original_id": "ch11-05-26-network-state-tail",
+          "title": "网络设置、缓存与 radio tail 的不同作用",
+          "decision": "keep",
+          "reason": "请求/真实传输/无线tail三轨说明请求结束后硬件活跃可继续；实际接口、弱网、缓存与飞行模式不能视为同一个变量。",
+          "original_line": 407,
+          "heading": "### 网络状态"
+        },
+        {
+          "original_id": "ch11-05-27-request-to-evidence",
+          "title": "从配置请求到可信实验结论",
+          "decision": "remove",
+          "reason": "请求值→生效→指标→同业务同窗→结论六框重排416-425八行条件矩阵和全篇重复限制；具体机制和29时间窗口图已承载必要关系。",
+          "original_line": 427,
+          "heading": "## 11.5.9 测试设计：记录请求值与生效值"
+        },
+        {
+          "original_id": "ch11-05-28-experiment-layers",
+          "title": "固定基线、单变量扫描与用户场景复测",
+          "decision": "merge",
+          "reason": "全篇固定基线、单变量扫描、真实条件复测与亮度/配色两类问题合图，记录联动、随机化/分块、温度缓存漂移，避免把三个相近方法图分散重复。",
+          "original_line": 440,
+          "heading": "### 分三层安排实验",
+          "replacement_id": "ed11-05-controlled-and-user-experiments"
+        },
+        {
+          "original_id": "ch11-05-29-snapshot-continuous",
+          "title": "快照与连续时间线各自回答什么",
+          "decision": "keep",
+          "reason": "窗口外前后快照和窗口内连续trace两轨与相同业务窗口对齐，说明dumpsys/batterystats累计窗口不能冒充连续或本轮自动净增量。",
+          "original_line": 467,
+          "heading": "### 快速采集系统快照"
+        },
+        {
+          "original_id": "ch11-05-30-statistics-quality",
+          "title": "从场景质量到统计解释",
+          "decision": "remove",
+          "reason": "质量→预设排除→设计→检验→区间→产品价值六框逐项重述474起的完整统计段，无具体样本检验或真实分布；保留所有方法限制正文。",
+          "original_line": 478,
+          "heading": "### 重复、统计与失败样本"
+        },
+        {
+          "original_id": "ch11-05-31-version-capability",
+          "title": "帧率 API 版本与设备能力分开判断",
+          "decision": "remove",
+          "reason": "API30/31/34/35/36/37六版本卡逐项重排485-498版本能力表，原表更清楚区分可用API、设备支持与实际效果。",
+          "original_line": 495,
+          "heading": "## 11.5.10 版本边界：Android 11 到 Android 17"
+        },
+        {
+          "original_id": "ch11-05-32-product-evidence",
+          "title": "把功耗证据转成有条件的产品策略",
+          "decision": "remove",
+          "reason": "场景→策略→验证→复测→条件→体验六框重复500-525产品建议与529-540发布前清单，主机制/实验/窗口图已保留，删除最后一轮图形摘要。",
+          "original_line": 522,
+          "heading": "### 省电模式"
+        }
+      ],
+      "sha256_after": "752f746b3845be976375a1163f03222e3b70705ec64c01648ed0f86fd342f478",
+      "new_diagrams": [
+        {
+          "id": "ed11-05-display-cost-and-uid-share",
+          "title": "显示计量或模型先形成成本，再按前台时长归因",
+          "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-05-display-cost-and-uid-share.svg",
+            "src/assets/diagrams/ch11/ed11-05-display-cost-and-uid-share.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-05-display-cost-and-uid-share",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerStatsCollector.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerResult.aidl",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/ScreenPowerStatsCollector.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/PowerProfile.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-05-02-display-energy-units",
+              "ch11-05-03-screen-model-uid"
+            ],
+            "boundary": "固定Android17r1。ScreenPowerStatsProcessor按描述符consumer数量分支；数量大于0读取第0项，不能推断多项求和；ConsumedEnergyHelper先能量差分，以两次电压均值从µJ转µC，再换mAh，首次仅建基线。数量0才用PowerProfile的各显示亮屏/亮度档模型，旧参数可能迁移display0；单次读取失败不自动转模型。doze另算；亮屏同组成本按UIDtopactivity时长比例，总时长0跳过，不是View/帧/像素实测。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a115/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-05-theme-content-and-panel",
+          "title": "主题先改变部分内容，面板类型再影响能耗解释",
+          "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-05-theme-content-and-panel.svg",
+            "src/assets/diagrams/ch11/ed11-05-theme-content-and-panel.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-05-theme-content-and-panel",
+          "sources": [
+            "https://developer.android.com/develop/ui/views/theming/darktheme",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/PowerProfile.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/BrightnessMappingStrategy.java",
+            "https://global.samsungdisplay.com/28033"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-05-09-panel-content",
+              "ch11-05-20-dark-content"
+            ],
+            "boundary": "设备条件图非固定节能比例。主题资源改变UI背景文本等；视频照片预览通常独立于主题，不因开关自动改写像素。实际合成内容与亮度由设备观测，OLED像素亮度/颜色/发光面积共同影响成本，LCD背光仍需驱动，深色页面不自动关闭背光；收益依面板和调光。固定亮度配色实验与真实用户自主调亮补偿分开，原文没有为补偿效应提供实测比例。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a115/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-05-controlled-and-user-experiments",
+          "title": "固定条件回归与真实用户场景回答不同问题",
+          "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-05-controlled-and-user-experiments.svg",
+            "src/assets/diagrams/ch11/ed11-05-controlled-and-user-experiments.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-05-controlled-and-user-experiments",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/BrightnessMappingStrategy.java",
+            "https://developer.android.com/games/optimize/adpf/thermal",
+            "https://developer.android.com/develop/ui/views/theming/darktheme",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/batterysaver/BatterySaverPolicy.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/mode/DisplayModeDirector.java",
+            "https://source.android.com/docs/core/graphics/arr"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-05-11-brightness-test-design",
+              "ch11-05-21-dark-brightness-compensation",
+              "ch11-05-28-experiment-layers"
+            ],
+            "boundary": "实验设计非论文新增实测。先稳定设备内容温度与窗口；受控分支每次改变一个请求变量，颜色比较固定亮度，实际联动仍须观测或分层；真实场景恢复自动亮度和环境变化，用户自主调亮可能抵消颜色收益但需要证据。两类结果分别报告。顺序随机化/分块，记录温度缓存时间漂移；关联相同业务任务、成功率和采样窗口，不把配置单变量误当所有生效状态仅改变一个。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a115/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-05-saver-state-policy-and-evidence",
+          "title": "省电状态、设备策略与 App 适配分别验证",
+          "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-05-saver-state-policy-and-evidence.svg",
+            "src/assets/diagrams/ch11/ed11-05-saver-state-policy-and-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-05-saver-state-policy-and-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/batterysaver/BatterySaverPolicy.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/mode/DisplayModeDirector.java",
+            "https://developer.android.com/reference/android/os/PowerManager",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerShellCommand.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-05-22-battery-saver-policy",
+              "ch11-05-23-saver-observe"
+            ],
+            "boundary": "固定r1实现与普通App公开API边界。实验控制开关单独记录授权与设备设置；isPowerSaveMode及广播后重读只提供状态，App适配自己的可延迟工作，非CPU百分比或隐藏Settings通用控制。实际平台/OEM/资源可能影响亮度renderframe范围与低功耗模式、任务网络位置动画处理器等，需设备验证。r1 DMD 0..60为render vote非所有物理面板恒定60Hz。对同任务同窗口比较能耗成功率体验，论文-9.1等不是固定策略包收益。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a115/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T13:07:28.155597+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 32,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a115/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a115/visual-review.json",
+      "retired_diagrams": [
+        "ch11-05-01-measurement-scopes",
+        "ch11-05-02-display-energy-units",
+        "ch11-05-03-screen-model-uid",
+        "ch11-05-04-experiment-pipeline",
+        "ch11-05-05-data-cleaning",
+        "ch11-05-09-panel-content",
+        "ch11-05-11-brightness-test-design",
+        "ch11-05-13-refresh-budget",
+        "ch11-05-17-view-frame-votes",
+        "ch11-05-19-video-ui-layer",
+        "ch11-05-20-dark-content",
+        "ch11-05-21-dark-brightness-compensation",
+        "ch11-05-22-battery-saver-policy",
+        "ch11-05-23-saver-observe",
+        "ch11-05-27-request-to-evidence",
+        "ch11-05-28-experiment-layers",
+        "ch11-05-30-statistics-quality",
+        "ch11-05-31-version-capability",
+        "ch11-05-32-product-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-115/retired-assets.json"
     },
     {
       "index": 117,
@@ -17677,9 +18595,657 @@
       "before_count": 52,
       "before_all_images": 52,
       "sha256_before": "5883b4e2a1e4b0121017c948d275dc2da5cd90c15c6362d03309e0bdb72a29ff",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 30,
+      "decisions": [
+        {
+          "original_id": "ch12-01-01-network-stack-layers",
+          "title": "Android 应用 HTTP 栈的实现落点",
+          "decision": "keep",
+          "reason": "OkHttp平台Socket/JSSE与Cronet/HttpEngine用户空间QUIC两条实现落点、内核TCP/UDP共用边界需要层级关系，不能由协议对照表或版本号替代。",
+          "original_line": 134,
+          "heading": "### 应用网络栈和主线程边界"
+        },
+        {
+          "original_id": "ch12-01-02-main-thread-boundaries",
+          "title": "主线程直接网络与等待后台请求",
+          "decision": "remove",
+          "reason": "直接I/O检查与Future/await同步等待两列及UI/后台双轨重复139-141完整两段和33同一UI等待关系；33保留更完整的栈/同步对象因果取证，UDP/poll/JNI检测例外正文不变。",
+          "original_line": 143,
+          "heading": "### 应用网络栈和主线程边界"
+        },
+        {
+          "original_id": "ch12-01-03-call-event-sequence",
+          "title": "Call 事件序列与可跳过、重复的阶段",
+          "decision": "keep",
+          "reason": "普通新连/复用/重定向三种事件轨显示阶段可跳过与重复，区别固定九行概念链路；按实际事件序列保留attempt而非按缺席阶段唯一反推原因。",
+          "original_line": 166,
+          "heading": "### 一次请求应当怎样计时"
+        },
+        {
+          "original_id": "ch12-01-04-call-lifetime",
+          "title": "网络 Call 结束与业务内容可用的不同边界",
+          "decision": "merge",
+          "reason": "业务起点、execute仅返回头、响应消费影响Call终态，与31流式解析/数据库/UI独立跨度合图；读取和解析可重叠，取消不替代关闭，Call终态非业务成功。",
+          "original_line": 185,
+          "heading": "#### 需要分开的指标",
+          "replacement_id": "ed12-01-call-consumption-and-content"
+        },
+        {
+          "original_id": "ch12-01-05-ttfb-endpoints",
+          "title": "TTFB 起点、响应事件与中间响应",
+          "decision": "keep",
+          "reason": "两个计时起点与responseHeadersStart/End、100continue可能早于发送结束的端点关系，防将库事件近似值当wire首字节或直接归因服务端。",
+          "original_line": 201,
+          "heading": "#### TTFB 的两种起点"
+        },
+        {
+          "original_id": "ch12-01-06-throughput-vs-link",
+          "title": "第一跳带宽、请求吞吐与业务体积",
+          "decision": "merge",
+          "reason": "第一跳带宽估计、明确字节层和窗口的实际吞吐、编码/背压/缓存，与29平台分配/授权及34NetworkCallback职责合图。",
+          "original_line": 219,
+          "heading": "#### 传输速率怎么算",
+          "replacement_id": "ed12-01-platform-inputs-and-request-quality"
+        },
+        {
+          "original_id": "ch12-01-07-http-transport-layers",
+          "title": "HTTP/1.1、HTTP/2、HTTP/3 的传输与并发",
+          "decision": "remove",
+          "reason": "H1/H2/H3到TCP/QUIC三列逐项重排226-233六行传输/加密/并发/压缩/丢包/迁移对照表；保留8更具体的丢包独立流与共享约束机制。",
+          "original_line": 235,
+          "heading": "### HTTP/1.1、HTTP/2 与 HTTP/3"
+        },
+        {
+          "original_id": "ch12-01-08-loss-and-qpack",
+          "title": "HTTP/3 避开 TCP 队头阻塞后的共享约束",
+          "decision": "keep",
+          "reason": "H2共享TCP缺字节与H3受损/独立流三轨显示不同传输依赖，并保留QPACK/拥塞/连接流控共享限制；不能用简单协议表替代。",
+          "original_line": 244,
+          "heading": "### HTTP/1.1、HTTP/2 与 HTTP/3"
+        },
+        {
+          "original_id": "ch12-01-09-zero-rtt-resumption",
+          "title": "0-RTT 的恢复前提与拒绝路径",
+          "decision": "merge",
+          "reason": "已有PSK/恢复状态、首轮earlydata与服务端接受/拒绝恢复，接入39业务重放资格和鉴权/服务端去重，集中0RTT机制避免前后重复图。",
+          "original_line": 253,
+          "heading": "#### 0-RTT 的边界",
+          "replacement_id": "ed12-01-zero-rtt-eligibility-and-rejection"
+        },
+        {
+          "original_id": "ch12-01-10-quic-migration",
+          "title": "QUIC 切网迁移与业务恢复",
+          "decision": "keep",
+          "reason": "CID已有连接、路径变化、验证和继续/失败恢复双轨，说明迁移是有条件的路径延续，非重试或切网永远无感；计费/次数/驻留边界保留。",
+          "original_line": 266,
+          "heading": "#### QUIC 连接迁移的条件"
+        },
+        {
+          "original_id": "ch12-01-11-cronet-provider",
+          "title": "Cronet provider 安装与运行时能力",
+          "decision": "keep",
+          "reason": "provider安装成功创建engine与缺失/更新/安装失败到可选Javafallback的实际启动分支，明确依赖坐标与运行实现能力不同、目录不并发共享。",
+          "original_line": 285,
+          "heading": "#### Android 上怎样使用 HTTP/3"
+        },
+        {
+          "original_id": "ch12-01-12-protocol-rollout",
+          "title": "HTTP/3 发布的协商与分组验证",
+          "decision": "remove",
+          "reason": "客户端/服务端/UDP三输入→协议/指标/回滚框逐项重排292-301放量分组清单和完整段，联合证据新图已保留同组分布/失败与协议实际结果。",
+          "original_line": 303,
+          "heading": "#### 协议选择的线上分组"
+        },
+        {
+          "original_id": "ch12-01-13-shared-client-pool",
+          "title": "共享 client、派生策略与资源所有权",
+          "decision": "merge",
+          "reason": "共享client的newBuilder派生、连接池/Dispatcher资源所有权，与26每目录唯一Cache实例及派生引用合为一个owner图，页面只管理自己的Call。",
+          "original_line": 339,
+          "heading": "#### 共享 OkHttpClient",
+          "replacement_id": "ed12-01-shared-client-cache-owner"
+        },
+        {
+          "original_id": "ch12-01-14-idle-pool-vs-concurrency",
+          "title": "空闲连接容量与请求并发的区别",
+          "decision": "remove",
+          "reason": "5空闲/5分钟、活跃H2、异步Dispatcher、同步并发和资源六卡复制346单段解释，且原图idle→同步并发箭头易误作因果；完整精确文字与15复用资格图保留。",
+          "original_line": 348,
+          "heading": "#### 共享 OkHttpClient"
+        },
+        {
+          "original_id": "ch12-01-15-connection-eligibility",
+          "title": "连接复用与跨主机合并的筛选",
+          "decision": "keep",
+          "reason": "先连接/Address资格、再同host或跨hostH2合并分支和失败另建的条件筛选，具体DIRECT同socket/端口/校验器/证书/pin要求不能由共享owner图代替。",
+          "original_line": 355,
+          "heading": "#### 共享 OkHttpClient"
+        },
+        {
+          "original_id": "ch12-01-16-fast-fallback",
+          "title": "Fast fallback 的 TCP 竞速与 TLS 后续",
+          "decision": "keep",
+          "reason": "IPv6/IPv4等路由交错TCP竞速、选胜者再TLS三轨，解释connect事件重叠不能直接相加、非所有地址同时TLS，独立于普通事件序列。",
+          "original_line": 362,
+          "heading": "#### 共享 OkHttpClient"
+        },
+        {
+          "original_id": "ch12-01-17-aggregation-parallel",
+          "title": "聚合接口与并行请求的不同等待结构",
+          "decision": "remove",
+          "reason": "聚合与并行的五框只是369对比段及373-378六项评估量的图形摘要，没有首屏/全完成具体时间或缓存失效路径，保留完整比较文字。",
+          "original_line": 382,
+          "heading": "#### 并行请求与聚合接口的取舍"
+        },
+        {
+          "original_id": "ch12-01-18-warmup-costs",
+          "title": "预热的复用机会与真实代价",
+          "decision": "keep",
+          "reason": "预热真实请求的即时代价与后续复用成功/切网回收丢失机会两类后果接在同一图，突出即使无后续收益仍先付出成本，非普通池资格条件。",
+          "original_line": 401,
+          "heading": "#### 预连接的真实成本"
+        },
+        {
+          "original_id": "ch12-01-19-cdn-evidence",
+          "title": "CDN 边缘等待与源站耗时的联合证据",
+          "decision": "merge",
+          "reason": "客户端/CDN/源站白名单requestID联合证据与52协议/TLS结果同组比较合图，保留TTFB不能单独分摊边缘和源站、低基数隐私及不同墙钟不相减。",
+          "original_line": 422,
+          "heading": "#### 客户端如何观察 CDN",
+          "replacement_id": "ed12-01-cdn-protocol-joint-evidence"
+        },
+        {
+          "original_id": "ch12-01-21-domain-and-ip",
+          "title": "连接地址与 HTTPS 域名身份分开处理",
+          "decision": "keep",
+          "reason": "同一URL域名分别用于地址候选、HTTPauthority和TLS SNI/主机名校验三支，直接说明裸IP加Host头不等价，属于具体身份关系而非DNS配置列表。",
+          "original_line": 431,
+          "heading": "#### 自定义 DNS 与系统边界"
+        },
+        {
+          "original_id": "ch12-01-20-custom-dns-lifecycle",
+          "title": "自定义解析的缓存与网络隔离",
+          "decision": "remove",
+          "reason": "网络语境/TTL负缓存/自定义A-AAAA/路由/切网/分组证据六框重排429与436两段管理清单，无实际缓存命中/失效决策；20已保留地址与身份的关键分工。",
+          "original_line": 438,
+          "heading": "#### 自定义 DNS 与系统边界"
+        },
+        {
+          "original_id": "ch12-01-22-image-request-work",
+          "title": "图片从显示需求到缓存、取消和解码",
+          "decision": "remove",
+          "reason": "显示尺寸→变体→缓存→取消→下载→解码六框重复447-454六项优化清单和cachekey/渐进式段，未画真实命中/取消或首图收益样本，所有正文保留。",
+          "original_line": 456,
+          "heading": "#### 图片网络优化"
+        },
+        {
+          "original_id": "ch12-01-23-timeout-and-deadline",
+          "title": "业务期限、排队与执行期 callTimeout",
+          "decision": "keep",
+          "reason": "业务总期限覆盖排队/执行/外层退避而5.3异步callTimeout到AsyncCall.run才启动的双轨，是具体范围差异；同步/长连接/不可中断DNS边界由原文保留。",
+          "original_line": 478,
+          "heading": "#### 各层超时的含义"
+        },
+        {
+          "original_id": "ch12-01-24-retry-unknown-result",
+          "title": "失败位置、结果未知与重试资格",
+          "decision": "merge",
+          "reason": "发送前失败、发送后结果未知、安全验证不可盲重试三类与25内外attempt/抖动编排合图，已执行先查结果或服务端幂等而非默认再发。",
+          "original_line": 496,
+          "heading": "#### 失败分类与重试决策",
+          "replacement_id": "ed12-01-retry-classification-and-attempts"
+        },
+        {
+          "original_id": "ch12-01-25-retry-layers",
+          "title": "库内尝试与业务重试分别计数",
+          "decision": "merge",
+          "reason": "一个业务attempt内Call可包含多个route/followup与外层有界退避双轨，接入24失败位置资格，分别计数避免重试相乘；总期限/取消/RetryAfter/前后台/幂等共同约束。",
+          "original_line": 505,
+          "heading": "#### 失败分类与重试决策",
+          "replacement_id": "ed12-01-retry-classification-and-attempts"
+        },
+        {
+          "original_id": "ch12-01-26-cache-ownership",
+          "title": "磁盘 Cache 的唯一拥有者与派生 client",
+          "decision": "merge",
+          "reason": "同目录唯一Cache实例、派生client可共享同实例及统一清理关闭，与13共享client/池/Dispatcher owner合图；配置或继承base缓存，不暗示独立client自动共享。",
+          "original_line": 525,
+          "heading": "#### HTTP cache 与业务离线数据",
+          "replacement_id": "ed12-01-shared-client-cache-owner"
+        },
+        {
+          "original_id": "ch12-01-27-http-cache-decision",
+          "title": "只读缓存、重新验证与本地 504",
+          "decision": "keep",
+          "reason": "新鲜/可用stale直接交付，与需验证或不可用后onlyIfCached本地504/允许网络304-200的真实分支，明示只读缓存不自动刷新，非缓存拥有者机制。",
+          "original_line": 553,
+          "heading": "#### HTTP cache 与业务离线数据"
+        },
+        {
+          "original_id": "ch12-01-28-weak-network-adaptation",
+          "title": "弱网降级的多信号输入与滞回",
+          "decision": "remove",
+          "reason": "输入→滞回→降级→观测四框及缓存说明逐项重述560单个完整段，无阈值/具体状态转换，平台信号与实际请求的合图保留输入边界；滞回正文完整保留。",
+          "original_line": 562,
+          "heading": "#### 弱网降级的依据"
+        },
+        {
+          "original_id": "ch12-01-29-platform-signal-scope",
+          "title": "平台信号、业务质量与局域网权限",
+          "decision": "merge",
+          "reason": "INTERNET/VALIDATED、第一跳与carrier分配、局域网授权三类信号，与6吞吐和34系统回调职责合图，保留BITRATEUNKNOWN及picker限定范围、拒权非弱网。",
+          "original_line": 571,
+          "heading": "### 平台提供的策略输入",
+          "replacement_id": "ed12-01-platform-inputs-and-request-quality"
+        },
+        {
+          "original_id": "ch12-01-30-heartbeat-radio",
+          "title": "长连接心跳、重连与基带活跃",
+          "decision": "keep",
+          "reason": "心跳/重连/消息与无线活跃tail双轨说明动作结束不等无线空闲、长连接不自动省电；低频系统通道和真实能量验收限制保留。",
+          "original_line": 580,
+          "heading": "### 长连接、解析与后台流量"
+        },
+        {
+          "original_id": "ch12-01-31-network-parse-ui",
+          "title": "网络、解析与 UI 的独立跨度",
+          "decision": "merge",
+          "reason": "网络响应体读取、流式解析与UI提交的重叠时间边界并入4调用生命周期图，保持业务成功独立、取消传给Call且资源仍由owner关闭。",
+          "original_line": 587,
+          "heading": "### 长连接、解析与后台流量",
+          "replacement_id": "ed12-01-call-consumption-and-content"
+        },
+        {
+          "original_id": "ch12-01-32-event-listener-pipeline",
+          "title": "每 Call 计时状态与有界遥测队列",
+          "decision": "keep",
+          "reason": "68行示例的每Call独立状态→短锁单调差值→一次终态→有界offer满丢计数→后台消费真实职责链，空事件null/短排队0区别与不阻塞回调有具体实现对应。",
+          "original_line": 675,
+          "heading": "#### OkHttp EventListener"
+        },
+        {
+          "original_id": "ch12-01-33-trace-causality",
+          "title": "Perfetto 时间相关性与 UI 等待因果",
+          "decision": "keep",
+          "reason": "Call route attempt与cookie异步slice、线程栈/同步对象及时间重叠联合取证，明确nativePollOnce非网络卡顿证明和重叠非因果；2重复UI等待轨移除。",
+          "original_line": 690,
+          "heading": "#### 用 Perfetto 对齐网络与线程"
+        },
+        {
+          "original_id": "ch12-01-34-network-callback-scope",
+          "title": "系统网络回调与业务请求质量分工",
+          "decision": "merge",
+          "reason": "NetworkCallback仅网络策略输入、生命周期注销与库处理切网/业务幂等抖动恢复接入6/29信号范围图，host级DNS/TLS/吞吐仍由真实请求证据验证。",
+          "original_line": 701,
+          "heading": "#### NetworkCallback 的职责范围",
+          "replacement_id": "ed12-01-platform-inputs-and-request-quality"
+        },
+        {
+          "original_id": "ch12-01-35-https-stage-boundaries",
+          "title": "新 HTTPS 连接中的阶段与验证",
+          "decision": "remove",
+          "reason": "DNS→传输→TLS→验证→HTTP与复用分支重复752-758五行阶段/工作/观测表和3已保留新连/复用轨，验证非额外RTT和QUIC组合的正文完整保留。",
+          "original_line": 760,
+          "heading": "### 先把一次安全连接分段"
+        },
+        {
+          "original_id": "ch12-01-36-tls-full-handshake",
+          "title": "TLS 1.2 与 1.3 的常见完整握手等待",
+          "decision": "keep",
+          "reason": "TLS1.2常见2TLS往返与1.3首轮keyshare后1往返可发应用数据的具体两轨，区分TCP/HRR/丢包/恢复，非固定毫秒或百分比。",
+          "original_line": 773,
+          "heading": "#### 完整握手"
+        },
+        {
+          "original_id": "ch12-01-37-reuse-resume-earlydata",
+          "title": "连接复用、会话恢复与早期数据",
+          "decision": "remove",
+          "reason": "复用/恢复/0RTT三列及是否新建/握手六框逐项重复784-788四列表，票据实际被接受/完整握手回退由38保留、0RTT资格和拒绝由合图覆盖。",
+          "original_line": 790,
+          "heading": "#### 连接复用和会话恢复"
+        },
+        {
+          "original_id": "ch12-01-38-session-ticket-lifetime",
+          "title": "会话票据可用性与完整握手回退",
+          "decision": "keep",
+          "reason": "客户端持票与服务端票据过期/重启/key轮换/LB状态导致接受恢复或退回完整握手的实际条件分支，不能由仅三种机制对照表替代。",
+          "original_line": 799,
+          "heading": "#### 连接复用和会话恢复"
+        },
+        {
+          "original_id": "ch12-01-39-earlydata-business-gate",
+          "title": "0-RTT 的业务安全条件",
+          "decision": "merge",
+          "reason": "重放后果、鉴权材料、服务端保护/幂等去重门槛接入9恢复发送与接受/拒绝两支，保留GET/HEAD非证明、仅PSK0RTT无前向保密及总期限约束。",
+          "original_line": 808,
+          "heading": "#### 0-RTT 与可重放风险",
+          "replacement_id": "ed12-01-zero-rtt-eligibility-and-rejection"
+        },
+        {
+          "original_id": "ch12-01-40-security-runtime-matrix",
+          "title": "网络安全能力的运行与配置条件",
+          "decision": "remove",
+          "reason": "运行系统/targetXML/provider/网络库/DNS服务端/实证六框重画822-832版本表与模块差异段，ECH/CT/HPKE具体条件图分别保留，不另画泛化能力矩阵。",
+          "original_line": 834,
+          "heading": "### 网络安全能力的版本演进"
+        },
+        {
+          "original_id": "ch12-01-42-ech-default-version-difference",
+          "title": "ECH 当前文档与固定 r1 默认策略差异",
+          "decision": "keep",
+          "reason": "公开默认enabled与固定r1变更flag选择OPPORTUNISTIC/DISABLED、显式XMLENABLED到GREASE差异需明确并列，不能由43显式enabled运行分支代替。",
+          "original_line": 849,
+          "heading": "#### 四个生效条件"
+        },
+        {
+          "original_id": "ch12-01-41-ech-inner-outer",
+          "title": "ECH 配置、内外 ClientHello 与可见信息",
+          "decision": "keep",
+          "reason": "ECHConfig/已接入库/inner与outerHello/TLS终止端/链路观察者之间的具体加密与可见性边界，区别应用payloadHPKE和普通传输层概念。",
+          "original_line": 861,
+          "heading": "#### 四个生效条件"
+        },
+        {
+          "original_id": "ch12-01-43-ech-grease-and-retry",
+          "title": "ECH、GREASE 与配置不匹配后的处理",
+          "decision": "keep",
+          "reason": "显式enabled下有ECHConfig真尝试/无配置GREASE、mismatch可能携retryconfigs到库重连或报错的实际分支，不能从默认策略或版本号推断静默回退。",
+          "original_line": 870,
+          "heading": "#### 四个生效条件"
+        },
+        {
+          "original_id": "ch12-01-44-ech-cost-accounting",
+          "title": "ECH 的配置查询、握手 CPU 与连接复用",
+          "decision": "remove",
+          "reason": "HTTPSRR查询/新握手HPKE/连接复用及三成本备注逐项重排877-884两个完整段与四项采集清单，无真实测量曲线；3/38保留复用/恢复关系。",
+          "original_line": 886,
+          "heading": "#### ECH 性能的分段测量"
+        },
+        {
+          "original_id": "ch12-01-45-ct-config-precedence",
+          "title": "CT 要求的配置优先级",
+          "decision": "keep",
+          "reason": "当前匹配配置显式truefalse→任一user/raw锚→上层递归→默认的真实优先级决策，判断单位为配置非所选根，不能用版本默认表替代。",
+          "original_line": 907,
+          "heading": "#### CT 默认值的决定条件"
+        },
+        {
+          "original_id": "ch12-01-47-ct-sct-delivery-policy",
+          "title": "SCT 交付方式与 Android 当前日志政策",
+          "decision": "remove",
+          "reason": "嵌入SCT与OCSP/TLS两列六框逐项重排916-918两行详细政策表，表还更精确包含Retired时限和按签发时运营者；保留完整政策与变动提示。",
+          "original_line": 921,
+          "heading": "#### Android CT Policy 的判定条件"
+        },
+        {
+          "original_id": "ch12-01-46-ct-enforcement-loglist",
+          "title": "CT 配置要求与实际强制执行",
+          "decision": "keep",
+          "reason": "配置要求CT还需可用且≤70天日志表才强制，缺表/过期暂停但基础信任链/主机名继续的条件分支；与45配置优先级是不同判断层次。",
+          "original_line": 928,
+          "heading": "#### Android CT Policy 的判定条件"
+        },
+        {
+          "original_id": "ch12-01-48-cleartext-direct-https",
+          "title": "直接 HTTPS、重定向与明文策略边界",
+          "decision": "remove",
+          "reason": "HTTP→301302→HTTPS三框和明文target/localhost/WebView三备注逐项重述939-941两段，简单额外请求关系已由普通事件链支持，全部远端/loopback/自管栈边界保留。",
+          "original_line": 943,
+          "heading": "#### 明文默认值"
+        },
+        {
+          "original_id": "ch12-01-49-certificate-pin-recovery",
+          "title": "证书链、固定公钥与轮换恢复",
+          "decision": "remove",
+          "reason": "证书链/身份校验/pinning三列与链字节/backup/恢复三卡逐项摘录950-952两段，无真实轮换状态机；原文完整保留backup演练和被pin端点不能唯一救援。",
+          "original_line": 954,
+          "heading": "#### 证书链与证书固定"
+        },
+        {
+          "original_id": "ch12-01-50-hpke-api-layers",
+          "title": "HPKE 组成、API 层与 ECH 的分工",
+          "decision": "keep",
+          "reason": "HPKE组成、API35providerSPI与API37应用入口、ECH内部使用和base不认证发送者的分层，具体区分两个接口层及两种载荷/Hello用途。",
+          "original_line": 972,
+          "heading": "### API 35 与 API 37 的 HPKE 位于不同接口层"
+        },
+        {
+          "original_id": "ch12-01-51-dns-ech-privacy",
+          "title": "加密 DNS 与 ECH 的隐私边界",
+          "decision": "keep",
+          "reason": "DoT/DoH保护解析器传输、ECH保护Hello敏感域与仍可见IP/时序三层泄露面及单独启用边界，独立于42Hello加密构成，隐私保护范围值得保留。",
+          "original_line": 987,
+          "heading": "### 加密 DNS 与 ECH 的关系"
+        },
+        {
+          "original_id": "ch12-01-52-client-server-evidence",
+          "title": "客户端与服务端关联后再解释协议收益",
+          "decision": "merge",
+          "reason": "客户端库事件不能证明resumed/ECH/CT，服务端协议指标/trace和同组分布验证与19CDN回源证据合成一次完整关联图，保留不同墙钟不可相减、数据最小化。",
+          "original_line": 1012,
+          "heading": "#### 服务端指标",
+          "replacement_id": "ed12-01-cdn-protocol-joint-evidence"
+        }
+      ],
+      "sha256_after": "0577816a8fb43ef0730bf4ba50e17c0b97bef42b3250603fa414a03e5dbc8f77",
+      "new_diagrams": [
+        {
+          "id": "ed12-01-call-consumption-and-content",
+          "title": "Call 终态、响应消费和内容可展示分别计时",
+          "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch12/ed12-01-call-consumption-and-content.svg",
+            "src/assets/diagrams/ch12/ed12-01-call-consumption-and-content.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed12-01-call-consumption-and-content",
+          "sources": [
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/Exchange.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch12-01-04-call-lifetime",
+              "ch12-01-31-network-parse-ui"
+            ],
+            "boundary": "固定OkHttp5.3.0普通顺序路径的数据依赖图，双工/升级另记录交错；callStart包含Dispatcher/Executor等待而执行期callTimeout另有起点。execute返回响应头非callEnd。Call终态包含应用延迟消费，提前关闭可结束消费但不等完整资源或业务成功；HTTP错误/解析失败不能仅由failed布尔判断。owner关闭响应体/升级流，取消不替代资源关闭；过期业务取消传到Call。流式解析可与读取重叠，UI可用另按业务定义。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a117/change-proof.json"
+          }
+        },
+        {
+          "id": "ed12-01-zero-rtt-eligibility-and-rejection",
+          "title": "0-RTT 先审业务资格，再记录接受或拒绝后的恢复",
+          "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch12/ed12-01-zero-rtt-eligibility-and-rejection.svg",
+            "src/assets/diagrams/ch12/ed12-01-zero-rtt-eligibility-and-rejection.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed12-01-zero-rtt-eligibility-and-rejection",
+          "sources": [
+            "https://www.rfc-editor.org/rfc/rfc8446",
+            "https://www.rfc-editor.org/rfc/rfc9001",
+            "https://www.rfc-editor.org/rfc/rfc8470"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch12-01-09-zero-rtt-resumption",
+              "ch12-01-39-earlydata-business-gate"
+            ],
+            "boundary": "0RTT是恢复握手中的earlydata，需可用PSK/会话状态、双方支持和provider允许。HTTP方法名不是安全证明，需评估重复执行副作用、令牌/计数与鉴权材料、服务器earlydata识别及去重。无前提或业务不允许则等正常握手；服务端可拒绝earlydata，按栈和业务语义恢复并受总期限约束。接受仍需继续握手不等业务成功。仅PSK保护的0RTT无前向保密，不能继承后续1RTT安全保证；不承诺支付等凭方法名或仅客户端幂等键安全。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a117/change-proof.json"
+          }
+        },
+        {
+          "id": "ed12-01-shared-client-cache-owner",
+          "title": "派生 client 共享连接资源，磁盘 Cache 由唯一 owner 管理",
+          "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch12/ed12-01-shared-client-cache-owner.svg",
+            "src/assets/diagrams/ch12/ed12-01-shared-client-cache-owner.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed12-01-shared-client-cache-owner",
+          "sources": [
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt",
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ConnectionPool.kt",
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt",
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Cache.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch12-01-13-shared-client-pool",
+              "ch12-01-26-cache-ownership"
+            ],
+            "boundary": "固定OkHttp5.3.0。base.newBuilder派生默认共享连接池/Dispatcher等资源，页面策略不同不自动新建池；完整Address条件仍决定连接资格。一个磁盘目录只能一个Cache实例，实例可由多个client共享，配置相同sharedCache或继承base已配置实例；不假定任意独立client自动共享Cache。容量/清理/关闭由拥有者统一管理，页面取消自己Call。同步execute并发与服务端stream/socket资源另约束，默认5闲置连接/5min非总连接上限。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a117/change-proof.json"
+          }
+        },
+        {
+          "id": "ed12-01-cdn-protocol-joint-evidence",
+          "title": "关联客户端、CDN 与服务端证据后再解释性能",
+          "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch12/ed12-01-cdn-protocol-joint-evidence.svg",
+            "src/assets/diagrams/ch12/ed12-01-cdn-protocol-joint-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed12-01-cdn-protocol-joint-evidence",
+          "sources": [
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+            "https://www.rfc-editor.org/rfc/rfc9114",
+            "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics",
+            "https://developer.android.com/privacy-and-security/certificate-transparency-policy"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch12-01-19-cdn-evidence",
+              "ch12-01-52-client-server-evidence"
+            ],
+            "boundary": "关联不代表不同墙钟可直接相减。客户端EventListener给阶段/字节/失败并按Call route attempt保留重复，不能单凭TTFB分摊CDN回源或服务端，也不能单凭secureConnect耗时证明恢复/ECH/CT；CDN白名单POP/cache与源站trace、协议日志共同验证。按同网络/地区/设备/发布批次比较分布和失败，区分ALPN/fullresumed/0RTT/ECHGREASE/SCT/alert。字段低基数且白名单，不记录完整URLquery凭证正文会话密钥等。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a117/change-proof.json"
+          }
+        },
+        {
+          "id": "ed12-01-retry-classification-and-attempts",
+          "title": "失败先分类，库内尝试与业务重试分别计数",
+          "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch12/ed12-01-retry-classification-and-attempts.svg",
+            "src/assets/diagrams/ch12/ed12-01-retry-classification-and-attempts.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed12-01-retry-classification-and-attempts",
+          "sources": [
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt",
+            "https://www.rfc-editor.org/rfc/rfc9110",
+            "https://www.rfc-editor.org/rfc/rfc8470",
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch12-01-24-retry-unknown-result",
+              "ch12-01-25-retry-layers"
+            ],
+            "boundary": "概念编排图非OkHttp内部精确状态机。一个业务attempt的Call可含多个路由、连接恢复、认证和重定向followup；不是每类失败都恢复。DNS/发送前连接失败可在期限内试其他路由；证书主机名协议验证失败不盲重试；发送后断链可能已执行，先查状态或服务端幂等去重，已有结果可直接结束。408429503受契约RetryAfter约束，其他4xx与体中断按原表。外层重试记录businessattempt不和libraryattempt混计，受次数/总期限/前后台/用户取消/幂等与RetryAfter限制，编排层或WorkManager调度不阻塞Interceptor。轨道不表示真实次数上限或时长。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a117/change-proof.json"
+          }
+        },
+        {
+          "id": "ed12-01-platform-inputs-and-request-quality",
+          "title": "平台状态、速率字段、局域网授权与实际请求质量分开",
+          "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+          "assets": [
+            "src/assets/diagrams/ch12/ed12-01-platform-inputs-and-request-quality.svg",
+            "src/assets/diagrams/ch12/ed12-01-platform-inputs-and-request-quality.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed12-01-platform-inputs-and-request-quality",
+          "sources": [
+            "https://developer.android.com/reference/android/net/NetworkCapabilities",
+            "https://raw.githubusercontent.com/square/okhttp/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+            "https://developer.android.com/reference/android/net/ConnectivityManager",
+            "https://developer.android.com/reference/android/telephony/SubscriptionInfo",
+            "https://developer.android.com/privacy-and-security/local-network-permission",
+            "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch12-01-06-throughput-vs-link",
+              "ch12-01-29-platform-signal-scope",
+              "ch12-01-34-network-callback-scope"
+            ],
+            "boundary": "NetworkCallback提供能力计费blockedVPN切网等状态不能测host级DNS/TLS/TTFB；INTERNET声明VALIDATED系统探测均非业务成功保证。NetworkCapabilities为第一跳transport带宽估计，SubscriptionInfo流媒体cap为运营商分配值且BITRATEUNKNOWN保留未知，不等实时请求吞吐。局域网target37权限/picker限定授权按权限问题处理非弱网；其他网络业务不套此授权分支。吞吐保存所选层有效字节与明确窗口、编码、背压、缓存、续传重试，不能混用跨层字节。注册生命周期注销；切网不统一清池或立即重放所有失败，库处理连接后业务按幂等期限抖动恢复，后台可优先WorkManager/JobScheduler约束。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a117/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T13:18:22.158353+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 52,
+        "contexts_actually_viewed": 8,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a117/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a117/visual-review.json",
+      "retired_diagrams": [
+        "ch12-01-02-main-thread-boundaries",
+        "ch12-01-04-call-lifetime",
+        "ch12-01-06-throughput-vs-link",
+        "ch12-01-07-http-transport-layers",
+        "ch12-01-09-zero-rtt-resumption",
+        "ch12-01-12-protocol-rollout",
+        "ch12-01-13-shared-client-pool",
+        "ch12-01-14-idle-pool-vs-concurrency",
+        "ch12-01-17-aggregation-parallel",
+        "ch12-01-19-cdn-evidence",
+        "ch12-01-20-custom-dns-lifecycle",
+        "ch12-01-22-image-request-work",
+        "ch12-01-24-retry-unknown-result",
+        "ch12-01-25-retry-layers",
+        "ch12-01-26-cache-ownership",
+        "ch12-01-28-weak-network-adaptation",
+        "ch12-01-29-platform-signal-scope",
+        "ch12-01-31-network-parse-ui",
+        "ch12-01-34-network-callback-scope",
+        "ch12-01-35-https-stage-boundaries",
+        "ch12-01-37-reuse-resume-earlydata",
+        "ch12-01-39-earlydata-business-gate",
+        "ch12-01-40-security-runtime-matrix",
+        "ch12-01-44-ech-cost-accounting",
+        "ch12-01-47-ct-sct-delivery-policy",
+        "ch12-01-48-cleartext-direct-https",
+        "ch12-01-49-certificate-pin-recovery",
+        "ch12-01-52-client-server-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-117/retired-assets.json"
     },
     {
       "index": 118,
@@ -19354,8 +20920,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 52,
-  "next_article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
+  "reviewed_articles": 55,
+  "next_article": "src/part2-performance/ch12-apk-network/02-netd-dnsresolver-network-diagnostics.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -19365,20 +20931,13 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T12:47:12.445697+08:00",
+  "updated_at": "2026-10-28T13:18:22.158353+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
       "registered_sha256": "c4e18831e4fa1b9df967db73745d2c583be7abee191a3f3f0d118b2609de91ab",
       "observed_sha256": "3a9d35933e7f1fd1a4f76e9cfb44d20f8a2246d2308098e877c5bc08c7bffe8c",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
-      "registered_sha256": "83ff5b20b25edeade48872ea5da65da368314c1fc4935d8d5e6b96b7df442399",
-      "observed_sha256": "6f4c19c8a366a9f45557eed0e1c08841065993337eca46d0f4795257799d2b2c",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -19422,11 +20981,18 @@
       "observed_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "registered_sha256": "93cf9c1c7710045cbe7e538879755f6b82973403a98891751f3b1b33680a734e",
+      "observed_sha256": "ea3457cf082cf783d3b8a7930b9eedf7cca40d7b362518318ef1f2c6a66413da",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 1581,
-  "reviewed_placements_after": 829,
-  "net_removed_placements": 752,
+  "reviewed_placements_before": 1700,
+  "reviewed_placements_after": 897,
+  "net_removed_placements": 803,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
