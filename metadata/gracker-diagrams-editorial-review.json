@@ -16,9 +16,156 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "02b99cfa3e870cb5c50b9d970862e04ab5af48fe985829fedfc5f2b940e611d3",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 15,
+      "decisions": [
+        {
+          "original_id": "ch04-01-process-domains-kernel-pages",
+          "title": "应用内存域最终对应页、映射或设备缓冲区",
+          "decision": "keep",
+          "reason": "与已有 Mermaid 表达同一机制；保留字号与布局更易读的 Gracker 图，删除重复 Mermaid 块，并保持全部技术叙述。",
+          "original_line": 244,
+          "heading": "### 四类内存问题与排障地图"
+        },
+        {
+          "original_id": "ch04-01-shared-pages-pss-example",
+          "title": "共享者退出，剩余进程的 PSS 可以上升而没有泄漏",
+          "decision": "keep",
+          "reason": "三映射者到单映射者的前后数值可直观看出 PSS 变动而 RSS 不变。",
+          "original_line": 313,
+          "heading": "#### 为什么 PSS 会在代码不变时波动"
+        },
+        {
+          "original_id": "ch04-01-apk-page-file-attribution",
+          "title": "从驻留页到 APK 条目：先算文件区间，再解析 DEX",
+          "decision": "keep",
+          "reason": "跨 VMA、页文件区间、ZIP 条目和 DEX 结构的映射链较复杂，图可辅助跟踪层次。",
+          "original_line": 403,
+          "heading": "#### APK mmap：从 VMA 定位到 ZIP 条目与 DEX 结构"
+        },
+        {
+          "original_id": "ch04-01-proc-pss-versus-debug-total",
+          "title": "smaps 驻留 PSS 与 dumpsys TOTAL PSS 要先统一口径",
+          "decision": "keep",
+          "reason": "将 smaps Pss/SwapPss 汇入 Debug 总量，清晰展示重复相加风险。",
+          "original_line": 436,
+          "heading": "#### App Summary 是分类视图"
+        },
+        {
+          "original_id": "ch04-01-cgroup-controls-and-accounting",
+          "title": "cgroup 的回收、硬上限与 Swap 限制各管一层",
+          "decision": "remove",
+          "reason": "high/max/swap.max 三列完全复述相邻控制文件表及统计口径段落，去掉卡片版重复说明。",
+          "original_line": 525,
+          "heading": "#### cgroup v2 的几个内存控制文件"
+        },
+        {
+          "original_id": "ch04-01-ignore-future-not-reset",
+          "title": "ignore 影响后续配置，不复位现有限制",
+          "decision": "keep",
+          "reason": "明确区分 ignore 对未来配置、既有状态和排队 KILL 三类作用范围，避免误当复位。",
+          "original_line": 563,
+          "heading": "#### Android 17 MemoryLimiter：只在部分设备生效"
+        },
+        {
+          "original_id": "ch04-01-memory-limiter-anon-swap",
+          "title": "MemoryLimiter 比较匿名 + shmem + Swap 联合上限",
+          "decision": "keep",
+          "reason": "串起配置、状态档、JNI 联合计量与延迟终止，和 ignore 作用域图信息不同。",
+          "original_line": 576,
+          "heading": "#### Android 17 MemoryLimiter：只在部分设备生效"
+        },
+        {
+          "original_id": "ch04-01-pmgd-two-checks",
+          "title": "PMGD：事件后先查匿名量，再决定是否等待回收",
+          "decision": "keep",
+          "reason": "PMGD 匿名量立即检查和延迟复查是独立的分支时序，不与 MemoryLimiter 合并。",
+          "original_line": 589,
+          "heading": "#### PMGD 与 MemoryLimiter 的差别"
+        },
+        {
+          "original_id": "ch04-01-zram-logical-pool-and-backing",
+          "title": "ZRAM 逻辑占用、对象池 RAM 与后备存储要分开",
+          "decision": "keep",
+          "reason": "逻辑槽、对象池和 backing device 的分岔有助区分计量和成本。",
+          "original_line": 678,
+          "heading": "### ZRAM 与 Swap：容量、压缩数据和 RAM 成本"
+        },
+        {
+          "original_id": "ch04-01-allocation-fast-and-slow",
+          "title": "一次 malloc 不必进内核，页分配慢路径也没有固定顺序",
+          "decision": "keep",
+          "reason": "与已有 Mermaid 表达同一机制；保留字号与布局更易读的 Gracker 图，删除重复 Mermaid 块，并保持全部技术叙述。",
+          "original_line": 877,
+          "heading": "### 这一层为什么会让应用卡住"
+        },
+        {
+          "original_id": "ch04-01-tlb-walk-and-page-fault",
+          "title": "TLB 未命中仍可能正常翻译，缺页要看页表与权限",
+          "decision": "keep",
+          "reason": "用分支区分 TLB miss、page-table walk、合法修复和异常信号，机制不能被分配图替代。",
+          "original_line": 910,
+          "heading": "#### 缺页异常与按需建立映射"
+        },
+        {
+          "original_id": "ch04-01-reclaim-by-backing",
+          "title": "页面能否丢弃，先看数据能从哪里恢复",
+          "decision": "keep",
+          "reason": "用四类后备分别连到丢弃、写回和 Swap 条件，帮助理解 shmem 与普通文件页差异。",
+          "original_line": 993,
+          "heading": "#### 两类页的回收成本不同"
+        },
+        {
+          "original_id": "ch04-01-mglru-aging-eviction-feedback",
+          "title": "MGLRU 用访问代际挑候选，再用 refault 反馈调整选择",
+          "decision": "keep",
+          "reason": "独立的 aging→eviction→refault 反馈闭环，保留回路拓扑。",
+          "original_line": 1059,
+          "heading": "#### MGLRU 的默认启用状态"
+        },
+        {
+          "original_id": "ch04-01-compaction-page-relocation",
+          "title": "规整搬动可迁移页，形成满足 order 的连续空闲块",
+          "decision": "keep",
+          "reason": "前后页布局和迁移连线展示总空闲不变但连续块形成，文字难替代。",
+          "original_line": 1070,
+          "heading": "#### 内存规整与连续空闲块"
+        },
+        {
+          "original_id": "ch04-01-dmabuf-export-import-reference",
+          "title": "DMA-BUF：共享同一个对象，设备映射和 CPU 映射各有条件",
+          "decision": "keep",
+          "reason": "与已有 Mermaid 表达同一机制；保留字号与布局更易读的 Gracker 图，删除重复 Mermaid 块，并保持全部技术叙述。",
+          "original_line": 1124,
+          "heading": "#### 分配器与共享框架的分工"
+        },
+        {
+          "original_id": "ch04-01-base-pages-versus-thp-policy",
+          "title": "基础页大小与 THP 策略是两个需要分别确认的维度",
+          "decision": "keep",
+          "reason": "把基础页、PTE mTHP、PMD THP 与运行策略分层，避免把 16KiB 与 THP 混为一个开关。",
+          "original_line": 1193,
+          "heading": "#### THP 的尺寸与运行时策略"
+        }
+      ],
+      "sha256_after": "79594ed4546674ff38e388313a1384c72d501f07c10e653819214adce806c80d",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:07:08.309593+08:00",
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 15,
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a056/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a056/visual-review.json",
+      "retired_diagrams": [
+        "ch04-01-cgroup-controls-and-accounting"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-56-64-65/retired-assets.json",
+      "inline_mermaid_blocks_removed": 3
     },
     {
       "index": 57,
@@ -27,9 +174,164 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "2a3c1c66d6cf23c1434cd29b422139ed6d0aacb0d6811d20e4ae8e23a1389293",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 16,
+      "decisions": [
+        {
+          "original_id": "ch04-02-heap-space-map",
+          "title": "ART Heap 管理多种空间，主移动空间随收集器选择",
+          "decision": "keep",
+          "reason": "与已有 Mermaid 表达同一机制；保留字号与布局更易读的 Gracker 图，删除重复 Mermaid 块，并保持全部技术叙述。",
+          "original_line": 166,
+          "heading": "### ART 堆空间关系"
+        },
+        {
+          "original_id": "ch04-02-tlab-fast-refill",
+          "title": "TLAB 快路径只推进线程本地指针，补充时才协调共享空间",
+          "decision": "keep",
+          "reason": "线程本地快路径、共享 refill 和返回快路径组成分支，尺寸层次不与堆空间图重复。",
+          "original_line": 303,
+          "heading": "##### 部分 TLAB、默认 TLAB 与 region 不是同一个尺寸"
+        },
+        {
+          "original_id": "ch04-02-allocation-failure-gc-retry",
+          "title": "分配失败：先等已有 GC，再按收益和分配结果决定下一步",
+          "decision": "keep",
+          "reason": "与已有 Mermaid 表达同一机制；保留字号与布局更易读的 Gracker 图，删除重复 Mermaid 块，并保持全部技术叙述。",
+          "original_line": 355,
+          "heading": "#### 分配慢路径"
+        },
+        {
+          "original_id": "ch04-02-gc-three-dimensions",
+          "title": "收集器、回收范围和触发原因是三组不同信息",
+          "decision": "keep",
+          "reason": "三种正交分类连接到 trace 命名，并与等待事件分开，可避免以触发原因推定范围。",
+          "original_line": 395,
+          "heading": "#### GC 原因：为什么触发"
+        },
+        {
+          "original_id": "ch04-02-cmc-page-coordination",
+          "title": "CMC 用来源视图与按页处理协调并发规整",
+          "decision": "keep",
+          "reason": "来源/目标视图与 mutator/GC 按页协调是独立机制，不与收集器选择条件合并。",
+          "original_line": 442,
+          "heading": "#### CMC：用缺页故障协调并发规整"
+        },
+        {
+          "original_id": "ch04-02-collector-selection-and-generational",
+          "title": "选择 CMC 与启用分代需要分别通过运行时条件",
+          "decision": "keep",
+          "reason": "算法选择和分代启用是先后不同条件，分支图有助核对默认与显式入口。",
+          "original_line": 459,
+          "heading": "#### Android 16 QPR2：分代 CMC 对外发布"
+        },
+        {
+          "original_id": "ch04-02-young-mid-old-promotion",
+          "title": "分代 CMC：young 存活后进 mid，再存活才进 old",
+          "decision": "keep",
+          "reason": "young→mid→old 跨两轮回收的生命周期关系比固定比例示意更必要。",
+          "original_line": 764,
+          "heading": "#### 4.1 三代模型"
+        },
+        {
+          "original_id": "ch04-02-write-barrier-holder-card",
+          "title": "写屏障标记持有字段的对象，脏卡只是扫描候选",
+          "decision": "keep",
+          "reason": "H→Y 引用与被标记 H 所在 card 的关系可直观看出写屏障标记对象。",
+          "original_line": 822,
+          "heading": "#### 4.4 卡表缩小老年代扫描范围"
+        },
+        {
+          "original_id": "ch04-02-gc-wall-pause-running-wait",
+          "title": "一轮 GC 的墙钟、线程运行、应用暂停和分配等待分别量",
+          "decision": "keep",
+          "reason": "四组轨道区分 GC 墙钟、CPU、应用 pause 和分配等待，是核心时序。",
+          "original_line": 854,
+          "heading": "### 6. 暂停时间、总时长和调度时间"
+        },
+        {
+          "original_id": "ch04-02-cc-region-evacuation",
+          "title": "CC 按 Region 选择疏散，大型 Region 另有边界",
+          "decision": "keep",
+          "reason": "CC 三种疏散策略及选择后的 region 状态是独立条件比较。",
+          "original_line": 892,
+          "heading": "#### CC 的三种对象疏散策略"
+        },
+        {
+          "original_id": "ch04-02-gc-slow-frame-evidence",
+          "title": "先找问题帧与线程状态，再决定采分配栈还是保留图",
+          "decision": "remove",
+          "reason": "排查图复述本节七步示例，分配栈/保留图分工前文已讲，时间关系也已由墙钟/pause 轨道图说明。",
+          "original_line": 1117,
+          "heading": "### 12. 一次 GC 卡顿排查示例"
+        },
+        {
+          "original_id": "ch04-02-heap-task-queue-lifecycle",
+          "title": "HeapTaskDaemon 串行取到期任务，执行后释放任务对象",
+          "decision": "keep",
+          "reason": "串联任务入队、按时间等待、Run/Finalize 和 Stop 排空的所有权及生命周期，保留队列机制。",
+          "original_line": 1238,
+          "heading": "#### Stop 的排空语义"
+        },
+        {
+          "original_id": "ch04-02-heap-task-dedup-policies",
+          "title": "任务合并各有规则：GC 序号、改期与忽略重复",
+          "decision": "keep",
+          "reason": "GC 序号合并、任务改期、重复忽略三种策略并排比较，不能统称类型去重。",
+          "original_line": 1296,
+          "heading": "#### CollectorTransitionTask：保留一个对象并允许改期"
+        },
+        {
+          "original_id": "ch04-02-post-fork-targets-and-fallback",
+          "title": "派生后先放宽 ART 目标，再按配置降低并检查兜底 GC",
+          "decision": "keep",
+          "reason": "0/1/2 次目标降低与三种兜底目标时间是条件时序，保留各自守卫。",
+          "original_line": 1375,
+          "heading": "#### 第三步：为空闲进程安排一次兜底 GC"
+        },
+        {
+          "original_id": "ch04-02-startup-completion-and-freezer",
+          "title": "到期任务执行仍要过守卫，冻结会推迟实际运行",
+          "decision": "keep",
+          "reason": "显式/兜底启动通知幂等与冻结延期两个因素共同解释到期≠运行，区别于普通队列排序。",
+          "original_line": 1415,
+          "heading": "### 进程被冻结时会发生什么"
+        },
+        {
+          "original_id": "ch04-02-framework-trim-callback-dispatch",
+          "title": "trim 回调从 system_server 发出，在应用主线程分发",
+          "decision": "keep",
+          "reason": "system_server、Binder、主线程及组件/渲染器的跨参与者分发链值得保留。",
+          "original_line": 1590,
+          "heading": "### 5. `handleTrimMemory()` 的准确行为"
+        },
+        {
+          "original_id": "ch04-02-app-trim-versus-art-heap-trim",
+          "title": "应用缩减缓存与 ART 归还堆页是两条独立的链",
+          "decision": "keep",
+          "reason": "Framework 缓存回调与 ART GC→异步堆页归还并列，明确不一一对应。",
+          "original_line": 1649,
+          "heading": "#### ART Heap Trim（堆页归还）是另一条异步链"
+        }
+      ],
+      "sha256_after": "9f8ae2c9fab2aef9ab0db61f57f244d9806bb574384cb2dd01f9ee26ad77119e",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:07:08.554258+08:00",
+      "inline_mermaid_blocks_removed": 2,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 16,
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a057/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a057/visual-review.json",
+      "retired_diagrams": [
+        "ch04-02-gc-slow-frame-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-57/retired-assets.json"
     },
     {
       "index": 58,
@@ -38,9 +340,160 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "e7397babfd16597a3415aeac403fee364f2a40fa68473e3e0d86e02c0a390731",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 12,
+      "decisions": [
+        {
+          "original_id": "ch04-03-lmkd-inputs-strategy-and-reaper",
+          "title": "AMS 算重要性，lmkd 判断压力并选择终止目标",
+          "decision": "keep",
+          "reason": "组件重要性与内核压力两组输入汇合后再选择与回收；保留这一总览，移到原 Mermaid 引导位置并删除重复 Mermaid。",
+          "original_line": 170,
+          "heading": "### 先把低内存终止机制放回 Android 内存体系"
+        },
+        {
+          "original_id": "ch04-03-prio-control-batch-packet",
+          "title": "批量 adj 包：1 个命令字 + 最多 3 条独立记录",
+          "decision": "keep",
+          "reason": "控制包命令与三条独立记录并列，展示消息边界及逐条处理，不只是命令常量表。",
+          "original_line": 276,
+          "heading": "#### 控制协议"
+        },
+        {
+          "original_id": "ch04-03-psi-trigger-versus-kill-decision",
+          "title": "PSI 触发器唤醒检查，是否终止还要经过策略判断",
+          "decision": "keep",
+          "reason": "PSI 两类触发器只唤醒后续策略检查，分支汇合能防止把阈值误读成立即 kill。",
+          "original_line": 337,
+          "heading": "#### Android 17 最终注册的阈值"
+        },
+        {
+          "original_id": "ch04-03-candidate-adj-and-heaviest",
+          "title": "候选选择先按 adj 档搜索，再决定档内取尾部还是最重者",
+          "decision": "keep",
+          "reason": "从 adj 档搜索到档内尾部/最重选择是两层条件，图保留分支范围。",
+          "original_line": 411,
+          "heading": "#### 候选选择"
+        },
+        {
+          "original_id": "ch04-03-reaper-kill-release-observation",
+          "title": "发出终止与页面变得可用之间，还有退出和回收过程",
+          "decision": "keep",
+          "reason": "终止提交、异步 Reaper 和内存可用是不同阶段，补充总览没有展开的检查与回退。",
+          "original_line": 438,
+          "heading": "### 终止进程后：Reaper 怎样让内存尽快可用"
+        },
+        {
+          "original_id": "ch04-03-freezer-cpu-capability-gate",
+          "title": "可冻结资格看 CPU 时间能力，adj 只是其中一个输入",
+          "decision": "keep",
+          "reason": "显式/隐式 CPU_TIME 两路输入汇到冻结资格，独立于 lmkd 候选选择。",
+          "original_line": 828,
+          "heading": "#### OOM adj、CPU 时间能力与冻结资格"
+        },
+        {
+          "original_id": "ch04-03-binder-cgroup-freeze-thaw",
+          "title": "冻结先停 Binder 再停线程；解冻先查 Binder 异常",
+          "decision": "keep",
+          "reason": "冻结与解冻两条列明确 Binder/cgroup 操作顺序和异常检查；移到原状态图引导处，删除重复 Mermaid。",
+          "original_line": 904,
+          "heading": "#### 解冻动作与失败分支"
+        },
+        {
+          "original_id": "ch04-03-frozen-app-external-page-work",
+          "title": "冻结停止的是应用 CPU，外部页面优化仍可改变内存指标",
+          "decision": "keep",
+          "reason": "区分应用进程内停止的线程与外部系统执行者，再连接回收、写回和预取，防止把 RSS 变化归于冻结中 GC。",
+          "original_line": 977,
+          "heading": "### 冻结后的应用页面回收"
+        },
+        {
+          "original_id": "ch04-03-page-reclaim-profile-and-backends",
+          "title": "应用页面回收先解析档位，再选择 memcg 或 VMA 后端",
+          "decision": "keep",
+          "reason": "回收档位先解析/降级，再按条件进入 memcg 或逐 VMA 两个后端，机制关系独立。",
+          "original_line": 995,
+          "heading": "#### 应用页面回收的档位与执行后端"
+        },
+        {
+          "original_id": "ch04-03-binder-frozen-sync-and-oneway",
+          "title": "冻结远端：同步事务与 oneway 队列有不同后果",
+          "decision": "keep",
+          "reason": "同步/oneway 两列连接不同失败与排队后果，并补充冻结回调策略，不能与线程冻结流程合并。",
+          "original_line": 1034,
+          "heading": "#### API 36 起可以监听远端冻结状态"
+        },
+        {
+          "original_id": "ch04-03-exit-versus-unfreeze-diagnosis",
+          "title": "先确认 PID 与退出类型，再解释恢复时的停顿",
+          "decision": "remove",
+          "reason": "PID/退出类型/恢复排查步骤和紧随的观测组合表已完整覆盖，图片再总结同样诊断清单。",
+          "original_line": 1131,
+          "heading": "#### 第三步：在 Perfetto 中对齐事件"
+        },
+        {
+          "original_id": "ch04-03-limiter-state-values",
+          "title": "MemoryLimiter 的 cached 档保留 high，并取消 Swap 上限",
+          "decision": "remove",
+          "reason": "五类状态与 high/swap 参数已在紧邻表格逐项比较，-1/-2 及 cached 保留旧值又有专门段落解释；删除表格卡片副本。",
+          "original_line": 1288,
+          "heading": "### 从进程状态到内存限制的映射"
+        },
+        {
+          "original_id": "ch04-03-limiter-watch-red-poll-loop",
+          "title": "high 事件切换到红区轮询，联合量再决定冷却或超限",
+          "decision": "keep",
+          "reason": "事件监听→红区的切换、Cold 反馈回监听、Okay 继续和 Hot 回调构成必要状态闭环。",
+          "original_line": 1384,
+          "heading": "#### 第三步：轮询联合指标"
+        },
+        {
+          "original_id": "ch04-03-limiter-poll-versus-kill-delay",
+          "title": "两个 30 秒：红区检查周期与联合超限后的终止延迟",
+          "decision": "keep",
+          "reason": "明确原生红区检查周期与 Java 超限后终止延迟两段 30 秒，不能为合图而混成统一时间。",
+          "original_line": 1406,
+          "heading": "### 联合超限之后发生什么"
+        },
+        {
+          "original_id": "ch04-03-limiter-statsd-token-bucket",
+          "title": "statsd 桶容量 4，持续补充速率是每小时 1 个令牌",
+          "decision": "remove",
+          "reason": "三段正文已说明容量4、补充1/小时、限流只控制 atom；图没有画出令牌随时间变化，只把这些短规则装进卡片。",
+          "original_line": 1421,
+          "heading": "### statsd 令牌桶的准确含义"
+        },
+        {
+          "original_id": "ch04-03-product-prefetch-budget-state",
+          "title": "产品预取先守预算和取消条件，再验证整机收益",
+          "decision": "remove",
+          "reason": "紧邻 ASCII 状态机逐阶段保留 PREPARING/PREFETCHING/LAUNCHING 的不同退出条件，比这张通用四框总结更精确；保留原状态机。",
+          "original_line": 1643,
+          "heading": "#### 4.3 建议的产品状态机"
+        }
+      ],
+      "sha256_after": "cbb4a02d150d0ecae6296a9323d70de3aed8abed56d010a5084554f90ca6da82",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:11:56.133335+08:00",
+      "inline_mermaid_blocks_removed": 2,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a058/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a058/visual-review.json",
+      "retired_diagrams": [
+        "ch04-03-exit-versus-unfreeze-diagnosis",
+        "ch04-03-limiter-state-values",
+        "ch04-03-limiter-statsd-token-bucket",
+        "ch04-03-product-prefetch-budget-state"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-58-67/retired-assets.json"
     },
     {
       "index": 64,
@@ -49,9 +502,118 @@
       "before_count": 11,
       "before_all_images": 11,
       "sha256_before": "77eea40850e47f270fb2bad88847c111f598de39d23f36de58a3c6efba465b4d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "ch04-09-pointer-tag-and-granule",
+          "title": "指针的逻辑标签，逐个对照 16 字节粒度的分配标签",
+          "decision": "keep",
+          "reason": "标签 A/B/C 的空间与生命周期例子展示匹配和漏检边界。",
+          "original_line": 97,
+          "heading": "### 逻辑标签、分配标签与 TBI"
+        },
+        {
+          "original_id": "ch04-09-mapping-thread-and-bypass",
+          "title": "映射与线程是两套开关，TCO 还可临时关闭检查",
+          "decision": "keep",
+          "reason": "地址映射和当前线程两套开关汇到检查条件，作用域区别值得用图保留。",
+          "original_line": 134,
+          "heading": "### 一次访问满足哪些条件才会检查"
+        },
+        {
+          "original_id": "ch04-09-sync-async-asymm-reporting",
+          "title": "三种报告方式：精确访问位置与延后报告的取舍",
+          "decision": "keep",
+          "reason": "横向比较三类错误语义，并区分请求位、CPU 首选与 Scudo 记录。",
+          "original_line": 177,
+          "heading": "### ASYMM：读同步、写异步"
+        },
+        {
+          "original_id": "ch04-09-native-executable-initialization",
+          "title": "原生可执行文件：ELF 与覆盖配置汇入 libc 初始化",
+          "decision": "remove",
+          "reason": "初始化图把紧邻五步编号和覆盖优先级重新串成文本卡片；无独立分支或数据关系，原文足够。",
+          "original_line": 257,
+          "heading": "### 原生可执行文件的初始化"
+        },
+        {
+          "original_id": "ch04-09-zygote-request-priority",
+          "title": "应用由 Zygote 决策：显式请求优先，默认前还有退出分支",
+          "decision": "keep",
+          "reason": "显式优先级、未命中分支、硬件降级与 fork 后配置构成决策图，不能用原生启动图替代。",
+          "original_line": 282,
+          "heading": "### 应用进程由 Zygote 决策"
+        },
+        {
+          "original_id": "ch04-09-allocator-pointer-and-memory-tags",
+          "title": "分配器要同时维护指针与内存标签，IRG 不会替内存写标签",
+          "decision": "keep",
+          "reason": "分配、存活、释放重标和复用的生命周期联系指针与内存两端标签。",
+          "original_line": 300,
+          "heading": "### Scudo 如何参与"
+        },
+        {
+          "original_id": "ch04-09-heap-tagging-mode-transitions",
+          "title": "ASYNC 与 SYNC 可互换，关闭到 NONE 是单向转换",
+          "decision": "keep",
+          "reason": "ASYNC↔SYNC 与单向 NONE 是真正状态转换，区别于线程模式配置。",
+          "original_line": 309,
+          "heading": "### 堆标签级别的状态转换"
+        },
+        {
+          "original_id": "ch04-09-heap-stack-globals-coverage",
+          "title": "堆、栈、全局变量需要三套配合，manifest 只解决堆入口",
+          "decision": "keep",
+          "reason": "横向分清堆、栈、全局变量的工具链与运行时协作范围。",
+          "original_line": 340,
+          "heading": "### 堆、栈与全局变量三个范围"
+        },
+        {
+          "original_id": "ch04-09-globals-tagged-remapping",
+          "title": "全局变量：描述符驱动重映射、分配标签与重定位",
+          "decision": "remove",
+          "reason": "globals 图逐项重复紧邻五步链接器列表；保留全文中描述符、复制映射、标签重定位和共享损失说明。",
+          "original_line": 375,
+          "heading": "### 全局变量 MTE"
+        },
+        {
+          "original_id": "ch04-09-tombstone-diagnosis-and-retest",
+          "title": "先读信号语义，再用同场景 SYNC 补足生命周期证据",
+          "decision": "remove",
+          "reason": "两类信号语义已在报告方式图说明，后续排查流程逐条重复本节六步清单，删除二次总结。",
+          "original_line": 442,
+          "heading": "### 读取 tombstone"
+        },
+        {
+          "original_id": "ch04-09-tag-capacity-and-detection-limits",
+          "title": "3.125% 是标签信息量，运行成本与检测概率还要另算",
+          "decision": "remove",
+          "reason": "容量公式已有独立公式块，成本、粒度碰撞及防护组合在前后段落充分说明；这张四卡总结重复多个小节。",
+          "original_line": 461,
+          "heading": "## 标签存储的内存开销与 vMTE 展望"
+        }
+      ],
+      "sha256_after": "11096ee0e4d4b49a774db05843974bc6b008e6da23c45493b0af86d7ab77e807",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:02:13.922230+08:00",
+      "verification": {
+        "prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 11,
+        "contexts_actually_viewed": 7,
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a064/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a064/visual-review.json",
+      "retired_diagrams": [
+        "ch04-09-globals-tagged-remapping",
+        "ch04-09-native-executable-initialization",
+        "ch04-09-tag-capacity-and-detection-limits",
+        "ch04-09-tombstone-diagnosis-and-retest"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-56-64-65/retired-assets.json"
     },
     {
       "index": 65,
@@ -60,9 +622,125 @@
       "before_count": 12,
       "before_all_images": 12,
       "sha256_before": "e63b73a0450b3b5fd9c75f74a603e3c638d9f3a734421854cdb747fe361c5e58",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "ch04-10-deployment-identity-and-isolation",
+          "title": "推理部署到哪个 PID，先决定记账与隔离边界",
+          "decision": "remove",
+          "reason": "四种部署方式逐格重复本节 UID/PID/计账/隔离表；后续文字补充已保留，无须同内容卡片。",
+          "original_line": 114,
+          "heading": "### 隔离服务的能力传入"
+        },
+        {
+          "original_id": "ch04-10-shared-page-rss-pss-accounting",
+          "title": "同一驻留物理页可以计入两份 RSS，PSS 按映射分摊",
+          "decision": "keep",
+          "reason": "共享物理页连到两套地址空间和 PSS 贡献，图体现跨进程同一页关系。",
+          "original_line": 142,
+          "heading": "## 4.10.2 RSS、PSS 与共享页怎样记账"
+        },
+        {
+          "original_id": "ch04-10-binder-control-and-fd-data",
+          "title": "Binder 传控制与句柄，大块数据由缓冲对象承载",
+          "decision": "keep",
+          "reason": "控制 Parcel 与载荷对象的两条路径不同，保留控制/数据分离的结构关系。",
+          "original_line": 171,
+          "heading": "## 4.10.3 IPC 先传控制信息，再传大块数据"
+        },
+        {
+          "original_id": "ch04-10-sharedmemory-readonly-ownership",
+          "title": "只读共享快照：先撤掉可写映射，再降权限并传句柄",
+          "decision": "keep",
+          "reason": "发送与接收双方的保护、映射和 fd 独立释放流程有助读懂代码的跨进程生命周期。",
+          "original_line": 219,
+          "heading": "## 4.10.4 SharedMemory：共享页加上能力句柄"
+        },
+        {
+          "original_id": "ch04-10-shared-pages-copy-boundaries",
+          "title": "共享同一组页，只省掉路径中的部分复制",
+          "decision": "keep",
+          "reason": "从源数组到 runtime 到硬件的连续边界定位每段潜在复制，与上一张权限/所有权流程不同。",
+          "original_line": 236,
+          "heading": "### “零拷贝”的观察范围"
+        },
+        {
+          "original_id": "ch04-10-hardwarebuffer-import-and-fences",
+          "title": "HardwareBuffer 能否直达后端，要同时满足导入与同步契约",
+          "decision": "keep",
+          "reason": "硬件导入、就绪 fence、消费和归还的同步生命周期独立于普通共享页。",
+          "original_line": 265,
+          "heading": "## 4.10.5 HardwareBuffer：硬件互操作能力由契约决定"
+        },
+        {
+          "original_id": "ch04-10-provider-index-and-content-stream",
+          "title": "ContentProvider：小型索引分页，大型内容经 URI 与 fd 读取",
+          "decision": "keep",
+          "reason": "小索引与大内容两路分流，体现 URI/fd 与 CursorWindow 的不同协议路径。",
+          "original_line": 286,
+          "heading": "## 4.10.6 ContentProvider：共享数据，不暴露进程内存"
+        },
+        {
+          "original_id": "ch04-10-appfunctions-authorization-and-uri-grants",
+          "title": "App Functions 管资格与函数执行，大结果仍走内容协议",
+          "decision": "keep",
+          "reason": "调用者→system_server→目标函数→URI 授权的跨参与者链，权限与结果交接关系值得保留。",
+          "original_line": 311,
+          "heading": "## 4.10.7 App Functions：受控函数调用，不是共享内存 API"
+        },
+        {
+          "original_id": "ch04-10-weights-kv-and-workspace-budget",
+          "title": "模型参数量只给权重下限，KV 与工作区需要另算",
+          "decision": "remove",
+          "reason": "权重与 KV 公式、1024/4096 token 示例已经紧邻展示，图片只把公式和预算说明再装进四框。",
+          "original_line": 374,
+          "heading": "### KV 缓存的估算"
+        },
+        {
+          "original_id": "ch04-10-inference-phases-and-retention",
+          "title": "推理峰值取决于阶段，释放会话不保证 RSS 立刻回落",
+          "decision": "keep",
+          "reason": "阶段轨道与两类内存分量非同步变化是独立视觉信息；四种释放后保留原因服务于时间线解释。",
+          "original_line": 392,
+          "heading": "### 工作区与内存峰值"
+        },
+        {
+          "original_id": "ch04-10-memorylimiter-and-lmkd-independent",
+          "title": "MemoryLimiter 管限制与监控，lmkd 按压力和优先级选进程",
+          "decision": "keep",
+          "reason": "MemoryLimiter 与 lmkd 独立决策链并排比较，避免误读为前后串行或 AI 固定保护。",
+          "original_line": 436,
+          "heading": "### lmkd 的终止目标选择"
+        },
+        {
+          "original_id": "ch04-10-pid-fd-phase-measurement",
+          "title": "测量按所有权与阶段交叉记录，再解释共享与峰值",
+          "decision": "remove",
+          "reason": "测量图逐条复述前面三个步骤、工具和复测要求，又与推理阶段图重复阶段列表，保留可执行清单即可。",
+          "original_line": 493,
+          "heading": "### 第三步：组合使用测量工具"
+        }
+      ],
+      "sha256_after": "126bd69fe2ee83de7aad870816347eae011238965e9ac020dc062d967fffec4d",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:02:13.922230+08:00",
+      "verification": {
+        "prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 12,
+        "contexts_actually_viewed": 9,
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a065/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a065/visual-review.json",
+      "retired_diagrams": [
+        "ch04-10-deployment-identity-and-isolation",
+        "ch04-10-pid-fd-phase-measurement",
+        "ch04-10-weights-kv-and-workspace-budget"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-56-64-65/retired-assets.json"
     },
     {
       "index": 67,
@@ -71,9 +749,169 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "1a5f79473dd2e1621cda2478d527983f889264eba7dbd71f7653ae0b5846ea88",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 12,
+      "decisions": [
+        {
+          "original_id": "ch05-01-topology-four-dimensions",
+          "title": "微架构、capacity、频率 policy 与 EM 性能域要分别确认",
+          "decision": "remove",
+          "reason": "四个概念及可靠来源已由紧邻三列表格比较，四卡图片逐项重复表格与编号边界说明。",
+          "original_line": 122,
+          "heading": "### 先区分四个容易混用的概念"
+        },
+        {
+          "original_id": "ch05-01-capacity-margin-and-constraints",
+          "title": "原始 capacity 是起点，实际适配还看压力与 UClamp",
+          "decision": "keep",
+          "reason": "从原始 capacity 到运行压力，再分普通 fits 与 UClamp 适配三态，图呈现不同判定口径。",
+          "original_line": 182,
+          "heading": "#### 原始 capacity 与当前可用 capacity"
+        },
+        {
+          "original_id": "ch05-01-migration-cache-policy-and-thermal",
+          "title": "迁移成本来自工作集与新环境，不能由迁移次数直接推出",
+          "decision": "remove",
+          "reason": "三卡迁移成本与下方取证要求重复前述缓存、policy、外部约束三节及检查列表；未画出额外迁移关系。",
+          "original_line": 394,
+          "heading": "#### 用 Perfetto 统计分布与迁移"
+        },
+        {
+          "original_id": "ch05-01-schedutil-util-to-shared-frequency",
+          "title": "schedutil 合并需求再选频，共享 policy 取最高目标",
+          "decision": "keep",
+          "reason": "多类利用率输入经有效需求/约束到共享 policy 最大需求和驱动，保留调频链。",
+          "original_line": 419,
+          "heading": "#### 当前源码路径"
+        },
+        {
+          "original_id": "ch05-01-cpu-accelerator-dependency",
+          "title": "CPU 调度只覆盖提交与后处理，加速器队列和执行需单独看",
+          "decision": "keep",
+          "reason": "CPU 与加速器的两组时间轨道和完成依赖，直观区分 CPU 排队和 fence 等待。",
+          "original_line": 493,
+          "heading": "### GPU、NPU 与 CPU 调度的分工"
+        },
+        {
+          "original_id": "ch05-01-wakeup-versus-runtime-migration",
+          "title": "唤醒放置与运行时迁移有不同入口，迁移不都经过 EM",
+          "decision": "keep",
+          "reason": "唤醒放置与运行时迁移两路入口汇到 per-CPU 竞争，明确 EAS 与 EEVDF 范围。",
+          "original_line": 554,
+          "heading": "### 调度决策链"
+        },
+        {
+          "original_id": "ch05-01-eevdf-eligibility-virtual-deadline",
+          "title": "EEVDF 先筛资格，再在合格实体中比较虚拟截止时间",
+          "decision": "keep",
+          "reason": "A/B/C 的 lag 和 VD 反例体现资格过滤先于截止时间比较，文字定义不足以替代案例关系。",
+          "original_line": 645,
+          "heading": "#### `sched_ext` 的入口与默认状态"
+        },
+        {
+          "original_id": "ch05-01-policy-priority-and-nice-share",
+          "title": "调度策略先分层，nice 在 fair 类中改变长期份额",
+          "decision": "remove",
+          "reason": "策略优先顺序已有独立文本梯阶，参数和 nice 权重又有两张表；本图重复同样层次与数值。",
+          "original_line": 695,
+          "heading": "#### nice 调整的是份额"
+        },
+        {
+          "original_id": "ch05-01-android-task-profile-control",
+          "title": "Android 调度组展开成多种资源操作，不只改 nice",
+          "decision": "keep",
+          "reason": "Framework/JNI/libprocessgroup/profile 展开成资源操作是独立的跨层控制链。",
+          "original_line": 750,
+          "heading": "#### 任务配置文件是 Android 用户空间的命名控制层"
+        },
+        {
+          "original_id": "ch05-01-affinity-cpuset-uclamp-nice",
+          "title": "CPU 范围、利用率提示与 fair 权重分别限制不同问题",
+          "decision": "remove",
+          "reason": "affinity/cpuset、nice、UClamp 分工前文已逐项解释，卡片再次复述，并与任务 profile 图和策略说明重叠。",
+          "original_line": 775,
+          "heading": "#### UClamp 的作用层面"
+        },
+        {
+          "original_id": "ch05-01-perfetto-runnable-preempted-sleep",
+          "title": "区分 R/R+ 排队、Running 执行与 S/D 等待",
+          "decision": "keep",
+          "reason": "S→R→Running→R+→Running→D 与竞争者轨道说明排队/抢占/阻塞的真实时间关系。",
+          "original_line": 797,
+          "heading": "#### 区分正在运行、可运行与被抢占"
+        },
+        {
+          "original_id": "ch05-01-scheduler-diagnosis-decision",
+          "title": "从业务期限拆线程时间，再选调度、代码或依赖证据",
+          "decision": "remove",
+          "reason": "Running/R/R+/S/D 三路诊断图逐条复述紧邻五步诊断和验收清单，所需时间关系已在状态轨道图中。",
+          "original_line": 938,
+          "heading": "#### 5. 每次只验证一个改动"
+        },
+        {
+          "original_id": "ch05-01-energy-model-whole-performance-domain",
+          "title": "共享性能状态让一次放置影响整个性能域的活跃态成本",
+          "decision": "keep",
+          "reason": "共享性能域中 max_util 选状态、sum_util 定规模，再汇合到域成本，区别于单核功耗和 CPUIdle。",
+          "original_line": 1055,
+          "heading": "#### 能量模型框架"
+        },
+        {
+          "original_id": "ch05-01-pelt-utilest-invariance",
+          "title": "PELT 以衰减历史估计需求，util_est 与 UClamp 补不同输入",
+          "decision": "keep",
+          "reason": "历史利用率经频率与 CPU 不变性缩放，再结合预测/提示，是 EAS 输入链。",
+          "original_line": 1107,
+          "heading": "#### 频率不变性与 CPU 不变性"
+        },
+        {
+          "original_id": "ch05-01-eas-entry-and-fastpaths",
+          "title": "EAS 只接管部分唤醒，进入函数也可能不做 EM 估算",
+          "decision": "keep",
+          "reason": "EAS 入口条件、同步快速返回和缺少利用率依据的提前退出是候选计算之前的独立分支。",
+          "original_line": 1124,
+          "heading": "#### `find_energy_efficient_cpu()` 的决策流程"
+        },
+        {
+          "original_id": "ch05-01-eas-candidates-fit-and-energy",
+          "title": "先筛每个性能域的代表候选，再比较适配与能量增量",
+          "decision": "keep",
+          "reason": "性能域候选、prev_cpu、能量差与适配比较有独立步骤，强行塞进入口图会损害分支可读性。",
+          "original_line": 1137,
+          "heading": "#### `find_energy_efficient_cpu()` 的决策流程"
+        },
+        {
+          "original_id": "ch05-01-uclamp-max-buckets-versus-sum-util",
+          "title": "UClamp 聚合取最高请求，实际 PELT 负载仍然相加",
+          "decision": "keep",
+          "reason": "三个任务的负载求和与 UClamp 最大值分两路计算再比较范围，直接呈现聚合对象差异。",
+          "original_line": 1194,
+          "heading": "#### UClamp 聚合方式的演进"
+        }
+      ],
+      "sha256_after": "8109eb55a83717d8ea06b5ae68ff9b0e1418fa8ca467ef5c656977dde96f94e3",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:11:56.133335+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a067/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a067/visual-review.json",
+      "retired_diagrams": [
+        "ch05-01-affinity-cpuset-uclamp-nice",
+        "ch05-01-migration-cache-policy-and-thermal",
+        "ch05-01-policy-priority-and-nice-share",
+        "ch05-01-scheduler-diagnosis-decision",
+        "ch05-01-topology-four-dimensions"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-58-67/retired-assets.json"
     },
     {
       "index": 68,
@@ -82,9 +920,209 @@
       "before_count": 22,
       "before_all_images": 22,
       "sha256_before": "cd1f71aabb540e707b472159ce489debe02115137bbe77a2ff37e0387e661b03",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 17,
+      "decisions": [
+        {
+          "original_id": "ch05-02-power-energy-and-work-duration",
+          "title": "瞬时功率与整项工作的能量，要用同一工作量比较",
+          "decision": "keep",
+          "reason": "同一工作量的快完成/长活跃两条轨道解释功率与能量不同，保留时间关系。",
+          "original_line": 111,
+          "heading": "#### 动态功耗、漏电功耗与能量"
+        },
+        {
+          "original_id": "ch05-02-cpufreq-policy-driver-and-feedback",
+          "title": "调频需求经过 policy、驱动与固件，观测值还要辨认来源",
+          "decision": "keep",
+          "reason": "性能需求经共享 policy、驱动/固件到可观测值，分层展示请求和实际状态边界。",
+          "original_line": 145,
+          "heading": "### OPP：离散的工作档位"
+        },
+        {
+          "original_id": "ch05-02-schedutil-update-and-three-submit-paths",
+          "title": "性能余量只加一次，提交目标还有三种驱动路径",
+          "decision": "keep",
+          "reason": "输入余量只加一次，再分 fast switch、adjust-perf、延后提交三个后端，是真实分支。",
+          "original_line": 223,
+          "heading": "#### 提交目标有三条主要路径"
+        },
+        {
+          "original_id": "ch05-02-frame-demand-frequency-and-limits",
+          "title": "一帧慢在哪：排队、需求形成、请求、兑现与上限分开看",
+          "decision": "keep",
+          "reason": "帧内 Runnable/Running、需求形成、提交和限制三轨解释交错时序，不能用瞬时低频归因。",
+          "original_line": 260,
+          "heading": "#### 判断低频是否导致掉帧"
+        },
+        {
+          "original_id": "ch05-02-adpf-power-hal-feedback-and-observation",
+          "title": "ADPF 反馈工作期限，Power HAL 决定怎样映射资源",
+          "decision": "keep",
+          "reason": "工作实际时长回到提示会话的反馈闭环，以及 IPowerStats 的观测角色，结构独立。",
+          "original_line": 306,
+          "heading": "#### Framework 提示与频率请求的关系"
+        },
+        {
+          "original_id": "ch05-02-cpu-gpu-memory-bottleneck-domains",
+          "title": "CPU、GPU 与内存各有控制域，数据也要按资源域解释",
+          "decision": "remove",
+          "reason": "CPU/GPU/DDR 三张指标卡重复紧邻各资源域的指标与检查列表，图没有展示额外的跨域依赖。",
+          "original_line": 382,
+          "heading": "#### DDR/LPDDR 调频要关注带宽、延迟与竞争"
+        },
+        {
+          "original_id": "ch05-02-thermal-control-and-report-planes",
+          "title": "温控执行降载与上报状态是两条路径，不能画成单一串行链",
+          "decision": "remove",
+          "reason": "控制平面和报告平面已经分别有独立文本链与职责段落，保留更精确的原链；删除再次汇总同流向的图片。",
+          "original_line": 491,
+          "heading": "#### 报告平面：把状态交给 Framework 与应用"
+        },
+        {
+          "original_id": "ch05-02-thermal-zone-trip-cooling-state",
+          "title": "热区、trip 与 cooling state 是不同对象，step_wise 只是可选算法",
+          "decision": "keep",
+          "reason": "thermal zone/trip/instance 与 cooling state 的控制链进一步展开 step_wise 算法，不与平面概览重复。",
+          "original_line": 527,
+          "heading": "#### thermal governor 决定怎样调整 cooling state"
+        },
+        {
+          "original_id": "ch05-02-thermalmanager-skin-status-and-shutdown",
+          "title": "公开 thermal status 取 SKIN 严重度，关机检查另看指定类型",
+          "decision": "keep",
+          "reason": "SKIN 公开聚合与指定类型 SHUTDOWN 的不同分支是关键作用域。",
+          "original_line": 572,
+          "heading": "#### ThermalManagerService 做什么"
+        },
+        {
+          "original_id": "ch05-02-thermal-versus-cpu-gpu-headroom",
+          "title": "同叫 headroom，数值方向、时间语义与接口都不同",
+          "decision": "keep",
+          "reason": "三类 headroom 数值方向和时间含义相反，横向比较能避免同名接口混用，正文没有同样的对照表。",
+          "original_line": 675,
+          "heading": "### CPU/GPU headroom 与 thermal headroom 的区别"
+        },
+        {
+          "original_id": "ch05-02-thermal-throttle-steady-recovery-evidence",
+          "title": "进入限制、稳态与冷却恢复，要放在同一证据时间线上",
+          "decision": "keep",
+          "reason": "限制出现、热稳态和冷却恢复三阶段轨道独立于帧内升频过程，用来解释持续负载。",
+          "original_line": 753,
+          "heading": "#### 阅读顺序"
+        },
+        {
+          "original_id": "ch05-02-adaptive-quality-with-hysteresis",
+          "title": "应用减载要可逆、有迟滞，并对准真正受限的资源",
+          "decision": "keep",
+          "reason": "进入高阈值和恢复低阈值形成闭环，显示迟滞而非仅列减载动作。",
+          "original_line": 789,
+          "heading": "#### 应用如何主动降载"
+        },
+        {
+          "original_id": "ch05-02-sustained-versus-fixed-performance",
+          "title": "持续性能需求与测试固定性能模式都不取消保护",
+          "decision": "remove",
+          "reason": "持续模式与固定测试模式的入口、支持与共同边界已由相邻两节和代码说明；两卡总结没有新增关系。",
+          "original_line": 823,
+          "heading": "#### 固定性能模式（Fixed Performance Mode）"
+        },
+        {
+          "original_id": "ch05-02-energy-suspend-and-work-timing-questions",
+          "title": "能量、阻止挂起、工作时机，是三个互相联系的问题",
+          "decision": "remove",
+          "reason": "三个排障问题和共同时间窗已在紧邻编号列表与总结段说明，分三框再汇合只是重复目录。",
+          "original_line": 929,
+          "heading": "### 功耗排障先回答三个问题"
+        },
+        {
+          "original_id": "ch05-02-wakelock-pms-systemsuspend-kernel-chain",
+          "title": "客户端持锁，经 PMS 汇总后才影响系统挂起尝试",
+          "decision": "keep",
+          "reason": "客户端、PMS blocker、JNI、SystemSuspend 与内核挂起的跨层对象关系有独立价值。",
+          "original_line": 962,
+          "heading": "#### PMS 到原生挂起控制的调用链"
+        },
+        {
+          "original_id": "ch05-02-cpuidle-versus-system-sleep",
+          "title": "CPU 空闲是局部状态，系统挂起是全系统转换",
+          "decision": "keep",
+          "reason": "单 CPU idle 与全系统挂起并列，后者再分 s2idle/平台睡眠，范围与分支值得保留。",
+          "original_line": 984,
+          "heading": "#### CPUIdle 与 schedutil 分别处理空闲和运行需求"
+        },
+        {
+          "original_id": "ch05-02-wakelock-timeout-and-balanced-release",
+          "title": "独占、默认引用计数的锁：超时后仍要配对显式 release",
+          "decision": "keep",
+          "reason": "超时与业务完成两路展示 internal/external 计数变化，再汇到显式 release，保留容易误用的生命周期案例。",
+          "original_line": 1029,
+          "heading": "#### 安全的持锁写法"
+        },
+        {
+          "original_id": "ch05-02-wakelock-worksource-batterystats-attribution",
+          "title": "持锁者和工作请求者可以不同，统计也不等于精确焦耳",
+          "decision": "keep",
+          "reason": "持锁者和 WorkSource 两组身份汇到统计归因，原函数调用链保留精确入口，图补对象/责任关系。",
+          "original_line": 1062,
+          "heading": "### WakeLock 怎样进入 Batterystats"
+        },
+        {
+          "original_id": "ch05-02-background-power-restrictions-overlap",
+          "title": "后台工作同时受设备、应用与任务约束影响",
+          "decision": "keep",
+          "reason": "设备状态和应用状态两路约束汇到任务资格，再分可执行/等待，说明政策叠加。",
+          "original_line": 1082,
+          "heading": "#### 几种省电机制各自的范围"
+        },
+        {
+          "original_id": "ch05-02-low-power-standby-activation-and-effects",
+          "title": "LPS 判断是否生效，再分别约束网络与 WakeLock 效力",
+          "decision": "keep",
+          "reason": "LPS 的 forceActive/常规条件、维护窗口与网络/WakeLock 两个使用方，独立于 Doze 列表。",
+          "original_line": 1151,
+          "heading": "#### Low Power Standby 在非交互期间限制网络与 WakeLock 效力"
+        },
+        {
+          "original_id": "ch05-02-suspend-attempt-outcome-and-residency-evidence",
+          "title": "挂起尝试、内核结果与硬件驻留，需要不同证据",
+          "decision": "keep",
+          "reason": "blocker/wakeup source/挂起尝试三轨加成功失败分支，保留尝试、结果、驻留的时间证据差异。",
+          "original_line": 1230,
+          "heading": "#### 抓取系统 Trace"
+        },
+        {
+          "original_id": "ch05-02-vitals-wakelock-quality-metric",
+          "title": "Vitals 汇总质量指标，不是系统持锁时限",
+          "decision": "remove",
+          "reason": "Vitals 统计范围、24小时阈值、28天比例和政策边界已由紧邻两段完整说明；四框只是重排同一政策数字。",
+          "original_line": 1287,
+          "heading": "#### Android vitals 口径"
+        }
+      ],
+      "sha256_after": "b480b5b838c587507521f71602c430630579c49a474aca266c33c3faea63521e",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:13:50.896216+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 22,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a068/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a068/visual-review.json",
+      "retired_diagrams": [
+        "ch05-02-cpu-gpu-memory-bottleneck-domains",
+        "ch05-02-energy-suspend-and-work-timing-questions",
+        "ch05-02-sustained-versus-fixed-performance",
+        "ch05-02-thermal-control-and-report-planes",
+        "ch05-02-vitals-wakelock-quality-metric"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-68/retired-assets.json"
     },
     {
       "index": 69,
@@ -93,9 +1131,278 @@
       "before_count": 30,
       "before_all_images": 30,
       "sha256_before": "bfc87b8c945fe98e2c6004d01bf6e80d9c15c58514a204ad53f4aa45762bde5c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 20,
+      "decisions": [
+        {
+          "original_id": "ch05-03-policy-scope-device-app-job-process",
+          "title": "后台约束分别作用于设备、应用、任务与进程",
+          "decision": "keep",
+          "reason": "开篇用设备、应用、任务、进程四个对象定位后续三大部分；没有对应逐格表格，保留范围总览。",
+          "original_line": 164,
+          "heading": "### 为什么要了解后台执行限制"
+        },
+        {
+          "original_id": "ch05-03-light-deep-doze-and-maintenance",
+          "title": "Light 与 Deep Doze 各有状态机，维护窗口不是固定钟点",
+          "decision": "keep",
+          "reason": "Light 与 Deep 各自维护窗口及覆盖关系是并行状态分支，保留设备空闲机制。",
+          "original_line": 228,
+          "heading": "#### Light Doze：先限流，再进入更深 idle"
+        },
+        {
+          "original_id": "ch05-03-standby-bucket-input-and-consumers",
+          "title": "分桶是一份应用状态，各资源控制器分别消费",
+          "decision": "keep",
+          "reason": "使用事件到 bucket/reason，再分给 Job、Alarm、Network 独立使用方，呈现一对多政策关系。",
+          "original_line": 269,
+          "heading": "#### Bucket 是资源控制器的共同输入"
+        },
+        {
+          "original_id": "ch05-03-foreground-service-independent-gates",
+          "title": "FGS 启动、类型、权限和生命周期需要分别通过",
+          "decision": "remove",
+          "reason": "启动资格、类型权限、while-in-use、通知与时限已由本节段落和类型表逐项说明；线性卡片再次排列同一排查清单。",
+          "original_line": 327,
+          "heading": "#### 前台服务类型体系"
+        },
+        {
+          "original_id": "ch05-03-foreground-service-timeout-two-budgets",
+          "title": "shortService 的单次超时与六小时分类预算不同",
+          "decision": "keep",
+          "reason": "shortService 单次三分钟与 dataSync/mediaProcessing 共享窗口预算的计时对象不同，双列时序比较有独立作用。",
+          "original_line": 354,
+          "heading": "#### 超时机制：`shortService` 看单次时长，`dataSync` / `mediaProcessing` 看 24 小时预算"
+        },
+        {
+          "original_id": "ch05-03-android17-background-audio-qualification",
+          "title": "Android 17 音频要检查可见性、FGS 与 WIU 资格",
+          "decision": "keep",
+          "reason": "可见 Activity、非 short FGS、target37 while-in-use 与闹钟豁免构成实际资格分支。",
+          "original_line": 365,
+          "heading": "#### Android 17 的后台音频硬化"
+        },
+        {
+          "original_id": "ch05-03-background-work-api-selection",
+          "title": "先按业务语义选择 API，再核对对应资格",
+          "decision": "remove",
+          "reason": "六项 API 选型逐对重复紧邻六步业务选型列表及后文完整选型表，没有新增决策关系。",
+          "original_line": 441,
+          "heading": "#### 选型决策"
+        },
+        {
+          "original_id": "ch05-03-cached-process-two-phase-freeze",
+          "title": "先冻结 Binder，再冻结线程，最后还要检查竞态",
+          "decision": "keep",
+          "reason": "freezeBinder 与 cgroup freeze 两阶段及后置竞态检查，补充跨参与者冻结次序。",
+          "original_line": 499,
+          "heading": "#### Binder 返回值的准确含义"
+        },
+        {
+          "original_id": "ch05-03-binder-frozen-returns-and-callback-policies",
+          "title": "拒绝同步事务、暂存异步事务，与冻结通知是三种语义",
+          "decision": "remove",
+          "reason": "三个 Binder 返回值已有三行表，RemoteCallbackList 四策略已有列表和上限说明；六卡并列重复两组不同语义。",
+          "original_line": 531,
+          "heading": "#### API 36 的冻结通知与回调队列策略"
+        },
+        {
+          "original_id": "ch05-03-background-work-front-frame-contention",
+          "title": "后台工作可通过 CPU、内存与热限制影响前台",
+          "decision": "remove",
+          "reason": "CPU、内存/I/O、热三个框逐项复述紧邻三节及观测要求，再次做排障总结。",
+          "original_line": 556,
+          "heading": "#### 热节流"
+        },
+        {
+          "original_id": "ch05-03-job-request-ready-context-service",
+          "title": "schedule 被接受后，还要经过就绪、并发与绑定",
+          "decision": "keep",
+          "reason": "登记、controller 就绪、pending、并发与 context/service 依次跨层，帮助定位任务未运行卡在哪一级。",
+          "original_line": 679,
+          "heading": "#### 源码中的核心组件"
+        },
+        {
+          "original_id": "ch05-03-jobstore-persistence-and-lifecycle-boundaries",
+          "title": "跨重启保留的是调度记录，业务状态还需自行持久化",
+          "decision": "remove",
+          "reason": "持久化与非持久化两卡、路径和业务边界卡重复紧邻三段完整说明；保留精确路径与约束正文。",
+          "original_line": 704,
+          "heading": "#### JobStore、重启与持久化边界"
+        },
+        {
+          "original_id": "ch05-03-jobservice-completion-stop-and-execution-identity",
+          "title": "完成和停止在主线程串行处理，每轮执行要有身份",
+          "decision": "keep",
+          "reason": "正常完成与系统停止分支汇到执行身份核对，体现过期回调和 WakeLock 责任边界的竞态案例。",
+          "original_line": 764,
+          "heading": "#### JobService 生命周期与系统 WakeLock"
+        },
+        {
+          "original_id": "ch05-03-constraints-latency-deadline-and-system-gates",
+          "title": "最早时间、功能约束和 deadline 都不是精确定时保证",
+          "decision": "keep",
+          "reason": "最早时间、deadline 前后功能约束与隐式系统门槛分开，保留条件合流关系。",
+          "original_line": 791,
+          "heading": "#### 约束、时间窗口与 deadline"
+        },
+        {
+          "original_id": "ch05-03-job-runtime-quota-is-elapsed-session-time",
+          "title": "Job 运行额度按经过时间记账，不能替换成线程 CPU 时间",
+          "decision": "keep",
+          "reason": "同一运行 session 中执行和网络等待的轨道展示 elapsed quota，区别于 CPU time。",
+          "original_line": 813,
+          "heading": "#### 优先级、Standby Bucket 与配额"
+        },
+        {
+          "original_id": "ch05-03-expedited-admission-and-downgrade",
+          "title": "加急先检查提交结果，执行时还要确认是否仍是加急",
+          "decision": "keep",
+          "reason": "直接提交失败、WorkManager 的两策略和已 pending 后降级是不同发生阶段与分支。",
+          "original_line": 845,
+          "heading": "#### Expedited Job"
+        },
+        {
+          "original_id": "ch05-03-user-initiated-transfer-admission-and-stop",
+          "title": "UIDT 用于明确用户传输，通知与停止语义也是契约",
+          "decision": "remove",
+          "reason": "UIDT 的提交前提、通知、普通 quota 例外和用户停止规则均在紧邻列表及段落说明，四步文本卡未补充额外状态。",
+          "original_line": 864,
+          "heading": "#### User-Initiated Data Transfer"
+        },
+        {
+          "original_id": "ch05-03-workmanager-database-two-schedulers-processor",
+          "title": "WorkManager 的数据库保存状态，两种调度入口可同时存在",
+          "decision": "keep",
+          "reason": "数据库向 System 与 Greedy 两调度入口分流，再汇到 Processor 和执行身份，架构关系独立。",
+          "original_line": 899,
+          "heading": "#### 当前稳定版中的调度器"
+        },
+        {
+          "original_id": "ch05-03-periodic-work-first-flex-and-reschedule",
+          "title": "周期 Work 反复安排执行机会，不是固定整点闹钟",
+          "decision": "keep",
+          "reason": "首轮 flex 和后续 enqueue 时间锚点不同，保留周期调度的阶段对比。",
+          "original_line": 914,
+          "heading": "#### One-time、Periodic 与任务链"
+        },
+        {
+          "original_id": "ch05-03-long-running-worker-and-foreground-service-quota",
+          "title": "Worker 的前台服务与 JobScheduler 配额是两层限制",
+          "decision": "keep",
+          "reason": "同一 long-running Worker 同时受 Job quota 与 FGS 资格两路约束，独立于普通 WorkManager 架构。",
+          "original_line": 941,
+          "heading": "#### Long-running Worker 与 Android 16 配额"
+        },
+        {
+          "original_id": "ch05-03-pending-reason-now-history-stats-overlap",
+          "title": "当前原因、变化历史与累计时长各回答不同问题",
+          "decision": "keep",
+          "reason": "网络6与quota7在10单位窗口重叠3的实际轨道例子，解释累计原因不能求和为总等待。",
+          "original_line": 996,
+          "heading": "#### pending reason 的 API 34、36、37 边界"
+        },
+        {
+          "original_id": "ch05-03-perfetto-job-context-statsd-and-pending-evidence",
+          "title": "执行区间附带约束配置，不是等待原因时间线",
+          "decision": "keep",
+          "reason": "ATrace context 与 statsd 执行状态的并列证据边界，再结合 pending 证据，帮助区分采集对象。",
+          "original_line": 1094,
+          "heading": "#### Perfetto：事件与状态分开看"
+        },
+        {
+          "original_id": "ch05-03-standby-hibernation-archiving-boundaries",
+          "title": "分桶调整机会，休眠改变状态，归档还会移除 APK",
+          "decision": "remove",
+          "reason": "Standby、Hibernation、Archiving 三机制已有紧邻四列表格，三卡重复比较各项和恢复边界。",
+          "original_line": 1190,
+          "heading": "### 三种相邻机制的边界"
+        },
+        {
+          "original_id": "ch05-03-hibernation-policy-state-permission-branches",
+          "title": "策略选出未使用包后，休眠与权限重置走两条支线",
+          "decision": "keep",
+          "reason": "同一 unused-app 策略分向休眠动作和权限撤销，两路过滤结果可能不同；保留且满足正文指图引导。",
+          "original_line": 1199,
+          "heading": "### 职责分层"
+        },
+        {
+          "original_id": "ch05-03-unused-app-time-exemptions-and-important-process",
+          "title": "未使用时间取多个保护起点，再检查豁免与重要性",
+          "decision": "keep",
+          "reason": "保护后的时间起点计算、阈值、豁免和当前 importance 依次影响候选资格，提供不同筛选维度的总览。",
+          "original_line": 1260,
+          "heading": "#### 候选包还要经过豁免与运行状态检查"
+        },
+        {
+          "original_id": "ch05-03-hibernation-user-global-async-and-state-store",
+          "title": "用户级与全局级分别记录状态，再异步执行存储动作",
+          "decision": "keep",
+          "reason": "user/global 两条状态路径分别映射 CE 和全局 protobuf，补充异步动作与持久化对象关系。",
+          "original_line": 1298,
+          "heading": "#### 状态持久化位置"
+        },
+        {
+          "original_id": "ch05-03-unhibernate-user-entry-boot-and-permissions",
+          "title": "用户使用后解除状态，任务重建与权限恢复仍由应用处理",
+          "decision": "keep",
+          "reason": "用户入口与后台 boot 广播两路汇合幂等重建，显示恢复阶段的异步竞态及权限独立性。",
+          "original_line": 1365,
+          "heading": "### 用户再次打开应用时的恢复"
+        },
+        {
+          "original_id": "ch05-03-hibernation-cold-start-controlled-comparison",
+          "title": "恢复变慢要用三组对照分离缓存与编译产物成本",
+          "decision": "remove",
+          "reason": "三组冷启动对照已由紧邻实验表和观测列表完整规定，图再把同样控制变量和归因限制排成卡片。",
+          "original_line": 1403,
+          "heading": "#### 建议的对照实验"
+        },
+        {
+          "original_id": "ch05-03-hibernation-direct-state-versus-full-policy-test",
+          "title": "直接设置状态与运行完整策略，验证范围不同",
+          "decision": "remove",
+          "reason": "直接设状态与完整策略已有两个命令小节与范围说明，合流检查和配置恢复又在代码/正文充分列出。",
+          "original_line": 1463,
+          "heading": "#### 运行完整的 PermissionController 策略"
+        },
+        {
+          "original_id": "ch05-03-recover-work-idempotently-and-query-capability",
+          "title": "后台计划从业务状态重建，功能开关查询不等于当前已休眠",
+          "decision": "remove",
+          "reason": "幂等恢复和功能状态查询已有五步列表、功能入口权限规则及 Kotlin 示例；图片重复初始化与恢复图的后半部分。",
+          "original_line": 1534,
+          "heading": "#### 查询 unused-app restrictions 功能状态"
+        }
+      ],
+      "sha256_after": "c95ae582a7685e50df2ee614b8ee7f119ae0932afeed346b33001be5261739bd",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:18:33.357606+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 30,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a069/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a069/visual-review.json",
+      "retired_diagrams": [
+        "ch05-03-background-work-api-selection",
+        "ch05-03-background-work-front-frame-contention",
+        "ch05-03-binder-frozen-returns-and-callback-policies",
+        "ch05-03-foreground-service-independent-gates",
+        "ch05-03-hibernation-cold-start-controlled-comparison",
+        "ch05-03-hibernation-direct-state-versus-full-policy-test",
+        "ch05-03-jobstore-persistence-and-lifecycle-boundaries",
+        "ch05-03-recover-work-idempotently-and-query-capability",
+        "ch05-03-standby-hibernation-archiving-boundaries",
+        "ch05-03-user-initiated-transfer-admission-and-stop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-69-70-71/retired-assets.json"
     },
     {
       "index": 70,
@@ -104,9 +1411,278 @@
       "before_count": 30,
       "before_all_images": 30,
       "sha256_before": "5d2f02629c4946a56488b4cf37deebad1e3fea5a9a15b9d3789c5fbf1bb7c9b2",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 20,
+      "decisions": [
+        {
+          "original_id": "ch05-03-policy-scope-device-app-job-process",
+          "title": "后台约束分别作用于设备、应用、任务与进程",
+          "decision": "keep",
+          "reason": "开篇用设备、应用、任务、进程四个对象定位后续三大部分；没有对应逐格表格，保留范围总览。",
+          "original_line": 164,
+          "heading": "### 为什么要了解后台执行限制"
+        },
+        {
+          "original_id": "ch05-03-light-deep-doze-and-maintenance",
+          "title": "Light 与 Deep Doze 各有状态机，维护窗口不是固定钟点",
+          "decision": "keep",
+          "reason": "Light 与 Deep 各自维护窗口及覆盖关系是并行状态分支，保留设备空闲机制。",
+          "original_line": 228,
+          "heading": "#### Light Doze：先限流，再进入更深 idle"
+        },
+        {
+          "original_id": "ch05-03-standby-bucket-input-and-consumers",
+          "title": "分桶是一份应用状态，各资源控制器分别消费",
+          "decision": "keep",
+          "reason": "使用事件到 bucket/reason，再分给 Job、Alarm、Network 独立使用方，呈现一对多政策关系。",
+          "original_line": 269,
+          "heading": "#### Bucket 是资源控制器的共同输入"
+        },
+        {
+          "original_id": "ch05-03-foreground-service-independent-gates",
+          "title": "FGS 启动、类型、权限和生命周期需要分别通过",
+          "decision": "remove",
+          "reason": "启动资格、类型权限、while-in-use、通知与时限已由本节段落和类型表逐项说明；线性卡片再次排列同一排查清单。",
+          "original_line": 327,
+          "heading": "#### 前台服务类型体系"
+        },
+        {
+          "original_id": "ch05-03-foreground-service-timeout-two-budgets",
+          "title": "shortService 的单次超时与六小时分类预算不同",
+          "decision": "keep",
+          "reason": "shortService 单次三分钟与 dataSync/mediaProcessing 共享窗口预算的计时对象不同，双列时序比较有独立作用。",
+          "original_line": 354,
+          "heading": "#### 超时机制：`shortService` 看单次时长，`dataSync` / `mediaProcessing` 看 24 小时预算"
+        },
+        {
+          "original_id": "ch05-03-android17-background-audio-qualification",
+          "title": "Android 17 音频要检查可见性、FGS 与 WIU 资格",
+          "decision": "keep",
+          "reason": "可见 Activity、非 short FGS、target37 while-in-use 与闹钟豁免构成实际资格分支。",
+          "original_line": 365,
+          "heading": "#### Android 17 的后台音频硬化"
+        },
+        {
+          "original_id": "ch05-03-background-work-api-selection",
+          "title": "先按业务语义选择 API，再核对对应资格",
+          "decision": "remove",
+          "reason": "六项 API 选型逐对重复紧邻六步业务选型列表及后文完整选型表，没有新增决策关系。",
+          "original_line": 441,
+          "heading": "#### 选型决策"
+        },
+        {
+          "original_id": "ch05-03-cached-process-two-phase-freeze",
+          "title": "先冻结 Binder，再冻结线程，最后还要检查竞态",
+          "decision": "keep",
+          "reason": "freezeBinder 与 cgroup freeze 两阶段及后置竞态检查，补充跨参与者冻结次序。",
+          "original_line": 499,
+          "heading": "#### Binder 返回值的准确含义"
+        },
+        {
+          "original_id": "ch05-03-binder-frozen-returns-and-callback-policies",
+          "title": "拒绝同步事务、暂存异步事务，与冻结通知是三种语义",
+          "decision": "remove",
+          "reason": "三个 Binder 返回值已有三行表，RemoteCallbackList 四策略已有列表和上限说明；六卡并列重复两组不同语义。",
+          "original_line": 531,
+          "heading": "#### API 36 的冻结通知与回调队列策略"
+        },
+        {
+          "original_id": "ch05-03-background-work-front-frame-contention",
+          "title": "后台工作可通过 CPU、内存与热限制影响前台",
+          "decision": "remove",
+          "reason": "CPU、内存/I/O、热三个框逐项复述紧邻三节及观测要求，再次做排障总结。",
+          "original_line": 556,
+          "heading": "#### 热节流"
+        },
+        {
+          "original_id": "ch05-03-job-request-ready-context-service",
+          "title": "schedule 被接受后，还要经过就绪、并发与绑定",
+          "decision": "keep",
+          "reason": "登记、controller 就绪、pending、并发与 context/service 依次跨层，帮助定位任务未运行卡在哪一级。",
+          "original_line": 679,
+          "heading": "#### 源码中的核心组件"
+        },
+        {
+          "original_id": "ch05-03-jobstore-persistence-and-lifecycle-boundaries",
+          "title": "跨重启保留的是调度记录，业务状态还需自行持久化",
+          "decision": "remove",
+          "reason": "持久化与非持久化两卡、路径和业务边界卡重复紧邻三段完整说明；保留精确路径与约束正文。",
+          "original_line": 704,
+          "heading": "#### JobStore、重启与持久化边界"
+        },
+        {
+          "original_id": "ch05-03-jobservice-completion-stop-and-execution-identity",
+          "title": "完成和停止在主线程串行处理，每轮执行要有身份",
+          "decision": "keep",
+          "reason": "正常完成与系统停止分支汇到执行身份核对，体现过期回调和 WakeLock 责任边界的竞态案例。",
+          "original_line": 764,
+          "heading": "#### JobService 生命周期与系统 WakeLock"
+        },
+        {
+          "original_id": "ch05-03-constraints-latency-deadline-and-system-gates",
+          "title": "最早时间、功能约束和 deadline 都不是精确定时保证",
+          "decision": "keep",
+          "reason": "最早时间、deadline 前后功能约束与隐式系统门槛分开，保留条件合流关系。",
+          "original_line": 791,
+          "heading": "#### 约束、时间窗口与 deadline"
+        },
+        {
+          "original_id": "ch05-03-job-runtime-quota-is-elapsed-session-time",
+          "title": "Job 运行额度按经过时间记账，不能替换成线程 CPU 时间",
+          "decision": "keep",
+          "reason": "同一运行 session 中执行和网络等待的轨道展示 elapsed quota，区别于 CPU time。",
+          "original_line": 813,
+          "heading": "#### 优先级、Standby Bucket 与配额"
+        },
+        {
+          "original_id": "ch05-03-expedited-admission-and-downgrade",
+          "title": "加急先检查提交结果，执行时还要确认是否仍是加急",
+          "decision": "keep",
+          "reason": "直接提交失败、WorkManager 的两策略和已 pending 后降级是不同发生阶段与分支。",
+          "original_line": 845,
+          "heading": "#### Expedited Job"
+        },
+        {
+          "original_id": "ch05-03-user-initiated-transfer-admission-and-stop",
+          "title": "UIDT 用于明确用户传输，通知与停止语义也是契约",
+          "decision": "remove",
+          "reason": "UIDT 的提交前提、通知、普通 quota 例外和用户停止规则均在紧邻列表及段落说明，四步文本卡未补充额外状态。",
+          "original_line": 864,
+          "heading": "#### User-Initiated Data Transfer"
+        },
+        {
+          "original_id": "ch05-03-workmanager-database-two-schedulers-processor",
+          "title": "WorkManager 的数据库保存状态，两种调度入口可同时存在",
+          "decision": "keep",
+          "reason": "数据库向 System 与 Greedy 两调度入口分流，再汇到 Processor 和执行身份，架构关系独立。",
+          "original_line": 899,
+          "heading": "#### 当前稳定版中的调度器"
+        },
+        {
+          "original_id": "ch05-03-periodic-work-first-flex-and-reschedule",
+          "title": "周期 Work 反复安排执行机会，不是固定整点闹钟",
+          "decision": "keep",
+          "reason": "首轮 flex 和后续 enqueue 时间锚点不同，保留周期调度的阶段对比。",
+          "original_line": 914,
+          "heading": "#### One-time、Periodic 与任务链"
+        },
+        {
+          "original_id": "ch05-03-long-running-worker-and-foreground-service-quota",
+          "title": "Worker 的前台服务与 JobScheduler 配额是两层限制",
+          "decision": "keep",
+          "reason": "同一 long-running Worker 同时受 Job quota 与 FGS 资格两路约束，独立于普通 WorkManager 架构。",
+          "original_line": 941,
+          "heading": "#### Long-running Worker 与 Android 16 配额"
+        },
+        {
+          "original_id": "ch05-03-pending-reason-now-history-stats-overlap",
+          "title": "当前原因、变化历史与累计时长各回答不同问题",
+          "decision": "keep",
+          "reason": "网络6与quota7在10单位窗口重叠3的实际轨道例子，解释累计原因不能求和为总等待。",
+          "original_line": 996,
+          "heading": "#### pending reason 的 API 34、36、37 边界"
+        },
+        {
+          "original_id": "ch05-03-perfetto-job-context-statsd-and-pending-evidence",
+          "title": "执行区间附带约束配置，不是等待原因时间线",
+          "decision": "keep",
+          "reason": "ATrace context 与 statsd 执行状态的并列证据边界，再结合 pending 证据，帮助区分采集对象。",
+          "original_line": 1094,
+          "heading": "#### Perfetto：事件与状态分开看"
+        },
+        {
+          "original_id": "ch05-03-standby-hibernation-archiving-boundaries",
+          "title": "分桶调整机会，休眠改变状态，归档还会移除 APK",
+          "decision": "remove",
+          "reason": "Standby、Hibernation、Archiving 三机制已有紧邻四列表格，三卡重复比较各项和恢复边界。",
+          "original_line": 1190,
+          "heading": "### 三种相邻机制的边界"
+        },
+        {
+          "original_id": "ch05-03-hibernation-policy-state-permission-branches",
+          "title": "策略选出未使用包后，休眠与权限重置走两条支线",
+          "decision": "keep",
+          "reason": "同一 unused-app 策略分向休眠动作和权限撤销，两路过滤结果可能不同；保留且满足正文指图引导。",
+          "original_line": 1199,
+          "heading": "### 职责分层"
+        },
+        {
+          "original_id": "ch05-03-unused-app-time-exemptions-and-important-process",
+          "title": "未使用时间取多个保护起点，再检查豁免与重要性",
+          "decision": "keep",
+          "reason": "保护后的时间起点计算、阈值、豁免和当前 importance 依次影响候选资格，提供不同筛选维度的总览。",
+          "original_line": 1260,
+          "heading": "#### 候选包还要经过豁免与运行状态检查"
+        },
+        {
+          "original_id": "ch05-03-hibernation-user-global-async-and-state-store",
+          "title": "用户级与全局级分别记录状态，再异步执行存储动作",
+          "decision": "keep",
+          "reason": "user/global 两条状态路径分别映射 CE 和全局 protobuf，补充异步动作与持久化对象关系。",
+          "original_line": 1298,
+          "heading": "#### 状态持久化位置"
+        },
+        {
+          "original_id": "ch05-03-unhibernate-user-entry-boot-and-permissions",
+          "title": "用户使用后解除状态，任务重建与权限恢复仍由应用处理",
+          "decision": "keep",
+          "reason": "用户入口与后台 boot 广播两路汇合幂等重建，显示恢复阶段的异步竞态及权限独立性。",
+          "original_line": 1365,
+          "heading": "### 用户再次打开应用时的恢复"
+        },
+        {
+          "original_id": "ch05-03-hibernation-cold-start-controlled-comparison",
+          "title": "恢复变慢要用三组对照分离缓存与编译产物成本",
+          "decision": "remove",
+          "reason": "三组冷启动对照已由紧邻实验表和观测列表完整规定，图再把同样控制变量和归因限制排成卡片。",
+          "original_line": 1403,
+          "heading": "#### 建议的对照实验"
+        },
+        {
+          "original_id": "ch05-03-hibernation-direct-state-versus-full-policy-test",
+          "title": "直接设置状态与运行完整策略，验证范围不同",
+          "decision": "remove",
+          "reason": "直接设状态与完整策略已有两个命令小节与范围说明，合流检查和配置恢复又在代码/正文充分列出。",
+          "original_line": 1463,
+          "heading": "#### 运行完整的 PermissionController 策略"
+        },
+        {
+          "original_id": "ch05-03-recover-work-idempotently-and-query-capability",
+          "title": "后台计划从业务状态重建，功能开关查询不等于当前已休眠",
+          "decision": "remove",
+          "reason": "幂等恢复和功能状态查询已有五步列表、功能入口权限规则及 Kotlin 示例；图片重复初始化与恢复图的后半部分。",
+          "original_line": 1534,
+          "heading": "#### 查询 unused-app restrictions 功能状态"
+        }
+      ],
+      "sha256_after": "ae1164b15740e88905862e541f909d3b5ca1af7e43021c17463ee35c04f1eab2",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:18:33.357606+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 30,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a070/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a070/visual-review.json",
+      "retired_diagrams": [
+        "ch05-03-background-work-api-selection",
+        "ch05-03-background-work-front-frame-contention",
+        "ch05-03-binder-frozen-returns-and-callback-policies",
+        "ch05-03-foreground-service-independent-gates",
+        "ch05-03-hibernation-cold-start-controlled-comparison",
+        "ch05-03-hibernation-direct-state-versus-full-policy-test",
+        "ch05-03-jobstore-persistence-and-lifecycle-boundaries",
+        "ch05-03-recover-work-idempotently-and-query-capability",
+        "ch05-03-standby-hibernation-archiving-boundaries",
+        "ch05-03-user-initiated-transfer-admission-and-stop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-69-70-71/retired-assets.json"
     },
     {
       "index": 71,
@@ -115,9 +1691,161 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "1c089904573993121b19f81675c6f026c548fe7c2d8254e032ec3efb8debd232",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch05-04-application-system-two-feedback-loops",
+          "title": "ADPF 连接资源策略与应用减载两个反馈回路",
+          "decision": "keep",
+          "reason": "需求上报和应用减载两个反馈回路共同经过实际执行结果，保留闭环总览。",
+          "original_line": 66,
+          "heading": "## 为什么需要 ADPF"
+        },
+        {
+          "original_id": "ch05-04-target-budget-is-a-work-segment",
+          "title": "target 对应 session 的工作段，显示周期还要容纳其他阶段",
+          "decision": "keep",
+          "reason": "6ms session、16.67ms和8.33ms显示周期用不同比例轨道比较预算，直观显示工作段与整帧不同。",
+          "original_line": 81,
+          "heading": "### HintSession、target duration 与 actual duration"
+        },
+        {
+          "original_id": "ch05-04-session-scope-fallback-and-close",
+          "title": "会话作用于场景，失败回退仍执行工作，结束后显式关闭",
+          "decision": "keep",
+          "reason": "创建成功/失败两路汇到业务执行与显式关闭，保留场景复用和资源生命周期。",
+          "original_line": 116,
+          "heading": "### HintSession、target duration 与 actual duration"
+        },
+        {
+          "original_id": "ch05-04-linux-tid-coroutines-and-thread-update",
+          "title": "会话跟踪 Linux 线程，不跟踪协程或业务任务",
+          "decision": "remove",
+          "reason": "Linux TID与协程区别、线程变化、API34替换/旧版重建已由紧邻三条实践和服务端说明完整覆盖，三框再次复述同一清单。",
+          "original_line": 137,
+          "heading": "### TID、协程与 `setThreads()`"
+        },
+        {
+          "original_id": "ch05-04-java-ndk-framework-hal-session-creation",
+          "title": "Java 与 NDK 共用 native 实现，创建会话仍经过系统校验",
+          "decision": "keep",
+          "reason": "Java/JNI和公开NDK两路汇入native服务再到HAL校验，补充原单一文本调用链的双入口对象关系。",
+          "original_line": 158,
+          "heading": "### 从 Java API 到 Power HAL 的调用链"
+        },
+        {
+          "original_id": "ch05-04-per-cycle-report-client-batching-and-transport",
+          "title": "每周期上报一次，不代表每周期都有一次 HAL Binder 事务",
+          "decision": "keep",
+          "reason": "每周期采样经客户端批处理后分FMQ/oneway Binder，独立于会话创建链。",
+          "original_line": 171,
+          "heading": "### 从 Java API 到 Power HAL 的调用链"
+        },
+        {
+          "original_id": "ch05-04-workduration-cpu-gpu-overlap-and-clock",
+          "title": "WorkDuration 拆分 wall time，CPU 与 GPU 可重叠",
+          "decision": "keep",
+          "reason": "CPU6/GPU5在total8里重叠3的实际轨道例子说明wall time不可求和，保留。",
+          "original_line": 194,
+          "heading": "### `WorkDuration`：拆分 CPU 与 GPU 工作"
+        },
+        {
+          "original_id": "ch05-04-power-efficiency-preference-with-work-budget",
+          "title": "节能偏好改变策略取舍，仍需报告真实目标与结果",
+          "decision": "remove",
+          "reason": "能效偏好图把紧邻一段的适用边界扩成四卡，target/actual、设备约束与同工作量对照已有总览和验证小节。",
+          "original_line": 203,
+          "heading": "### 能效模式：`Session#setPreferPowerEfficiency()`"
+        },
+        {
+          "original_id": "ch05-04-workload-increase-reset-spike-before-cycle",
+          "title": "突发提示提前表达变化，长期负载仍靠周期反馈",
+          "decision": "remove",
+          "reason": "Increase/Reset/Spike三个定义已有紧邻三条列表，限流、错误与提前发送要求也有专段；图片没有实际时序轨道，只再分类同样标签。",
+          "original_line": 220,
+          "heading": "### Android 16 workload hint"
+        },
+        {
+          "original_id": "ch05-04-thermal-status-valid-forecast-and-hysteresis",
+          "title": "预测无效时仍看当前状态，恢复时使用更低门槛",
+          "decision": "keep",
+          "reason": "当前status与有效/未知预测分支，再连接不同恢复阈值与冷却确认，保留降级及滞回条件。",
+          "original_line": 278,
+          "heading": "### Thermal Headroom 的数值与采样"
+        },
+        {
+          "original_id": "ch05-04-three-signals-capacity-thermal-and-work-demand",
+          "title": "性能需求、计算容量与热严重程度，数值方向各不同",
+          "decision": "keep",
+          "reason": "需求、容量余量、热严重程度三者数值方向与未知值处理易混，本文无同类对照表；保留统一比较。",
+          "original_line": 295,
+          "heading": "## Thermal、CPU/GPU Headroom 与 Performance Hint 的分工"
+        },
+        {
+          "original_id": "ch05-04-game-owned-profiles-and-oem-intervention-flags",
+          "title": "游戏自行优化与允许 OEM 干预，是不同配置分支",
+          "decision": "keep",
+          "reason": "游戏自行实现与OEM干预资格分支，以及各具体allow配置，不能简化为一个退出开关。",
+          "original_line": 342,
+          "heading": "### Game Mode 表达用户偏好"
+        },
+        {
+          "original_id": "ch05-04-game-mode-preference-versus-game-state-phase",
+          "title": "Game Mode 读取用户偏好，Game State 上报当前阶段",
+          "decision": "keep",
+          "reason": "用户偏好读入与游戏状态上报两个相反信号方向，汇到质量档和target更新，机制关系独立。",
+          "original_line": 366,
+          "heading": "### Game State 表达当前阶段"
+        },
+        {
+          "original_id": "ch05-04-perfetto-evidence-and-controlled-ab",
+          "title": "用同窗证据找瓶颈，再做同机 A/B 验证收益",
+          "decision": "keep",
+          "reason": "业务期限、参与线程、资源约束三个同窗轨道用于对齐证据；比采集列表增加时间关系。",
+          "original_line": 411,
+          "heading": "### 怎样判断结果"
+        },
+        {
+          "original_id": "ch05-04-public-api-milestones-and-internal-boundaries",
+          "title": "先检查公开版本与设备能力，再选择会话功能",
+          "decision": "remove",
+          "reason": "API31到37的版本卡逐项重复紧邻里程碑表与公开/内部边界段落，表格已更完整。",
+          "original_line": 431,
+          "heading": "## 版本演进与 Android 17 的公开能力"
+        },
+        {
+          "original_id": "ch05-04-engine-provider-and-device-policy-validation",
+          "title": "引擎处理接入，项目仍要确认预算和设备效果",
+          "decision": "remove",
+          "reason": "Unity/Unreal两列和共同核对项重复紧邻引擎两段及OEM五条检查列表，再做一轮接入/设备总结。",
+          "original_line": 484,
+          "heading": "## OEM 差异应怎样验证"
+        }
+      ],
+      "sha256_after": "8004911154952dd4fb55fc3487ca005b2b82d249fe232de90ab06bd9d0af50c7",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:18:33.357606+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a071/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a071/visual-review.json",
+      "retired_diagrams": [
+        "ch05-04-engine-provider-and-device-policy-validation",
+        "ch05-04-linux-tid-coroutines-and-thread-update",
+        "ch05-04-power-efficiency-preference-with-work-budget",
+        "ch05-04-public-api-milestones-and-internal-boundaries",
+        "ch05-04-workload-increase-reset-spike-before-cycle"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-69-70-71/retired-assets.json"
     },
     {
       "index": 72,
@@ -126,9 +1854,281 @@
       "before_count": 30,
       "before_all_images": 30,
       "sha256_before": "690d50bf48414382fe56083606bb6c1ed5b69d37687553534a95d3c3c295d188",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 17,
+      "decisions": [
+        {
+          "original_id": "ch05-05-runtime-paths",
+          "title": "端侧 AI 的四条软件路径",
+          "decision": "remove",
+          "reason": "四条软件路径已有紧邻四列表格，四卡逐项重复模型、运行时管理与后端边界。",
+          "original_line": 102,
+          "heading": "### 先把四条软件路径分开"
+        },
+        {
+          "original_id": "ch05-05-end-to-end",
+          "title": "冷路径准备与端到端推理",
+          "decision": "keep",
+          "reason": "冷路径准备与稳态复用在两条时间轨道呈现，补充端到端流水线与仅测kernel的范围差异。",
+          "original_line": 124,
+          "heading": "### 为什么端侧推理容易变成性能问题"
+        },
+        {
+          "original_id": "ch05-05-backend-tradeoffs",
+          "title": "CPU、GPU、NPU 与 DSP 的选择约束",
+          "decision": "remove",
+          "reason": "CPU/GPU/NPU/DSP四卡复述前面四个小节的首要特征与适配要求，无额外关联。",
+          "original_line": 179,
+          "heading": "#### DSP：旧设备与厂商栈"
+        },
+        {
+          "original_id": "ch05-05-partition-cost",
+          "title": "图分区与跨后端交界成本",
+          "decision": "keep",
+          "reason": "加速器A→CPU B→加速器C的具体分区例子显示两处交界和同步成本，保留混合执行关系。",
+          "original_line": 201,
+          "heading": "#### 分区与回退的实际执行计划"
+        },
+        {
+          "original_id": "ch05-05-model-lifecycle",
+          "title": "Interpreter 与 CompiledModel 生命周期",
+          "decision": "keep",
+          "reason": "Interpreter与CompiledModel两条准备/执行生命周期并列，直接比较接口对象与重复使用阶段。",
+          "original_line": 254,
+          "heading": "#### `CompiledModel` 路径"
+        },
+        {
+          "original_id": "ch05-05-memory-lifecycle",
+          "title": "模型文件之外的运行时内存",
+          "decision": "remove",
+          "reason": "四类内存卡与采样时点逐项重复紧邻六行组成表和生命周期采样段；图未绘制实际峰值或占用随时间变化。",
+          "original_line": 327,
+          "heading": "### 一次推理的内存由哪些部分组成"
+        },
+        {
+          "original_id": "ch05-05-bounded-pipeline",
+          "title": "实时推理的有界提交与回收",
+          "decision": "keep",
+          "reason": "待处理槽、在途请求与完成后归还三种边界串起来，明确只限制排队仍不够的所有权生命周期。",
+          "original_line": 346,
+          "heading": "#### 先优化端到端管线"
+        },
+        {
+          "original_id": "ch05-05-model-optimization",
+          "title": "模型压缩到设备收益的验证闭环",
+          "decision": "remove",
+          "reason": "压缩优化四步卡片重复量化验证五项、裁剪/蒸馏说明及后文基准要求，没有实际反馈分支。",
+          "original_line": 369,
+          "heading": "#### 裁剪、稀疏与蒸馏"
+        },
+        {
+          "original_id": "ch05-05-benchmark-controls",
+          "title": "四组推理性能对照",
+          "decision": "remove",
+          "reason": "四个实验组在紧邻编号列表逐项列出，指标也有八项清单；四卡无新增比较数据。",
+          "original_line": 395,
+          "heading": "### 建立可复现的 benchmark（基准测试）"
+        },
+        {
+          "original_id": "ch05-05-trace-evidence",
+          "title": "从 App 标记到后端执行证据",
+          "decision": "remove",
+          "reason": "App标记、系统证据、厂商证据再汇总为对齐要求，重复本节四行后端证据表和直接记录限制。",
+          "original_line": 458,
+          "heading": "#### 不同后端的观测重点"
+        },
+        {
+          "original_id": "ch05-05-feature-dimensions",
+          "title": "NPU 声明、渠道过滤与模型能力",
+          "decision": "keep",
+          "reason": "声明存在、渠道required过滤、设备feature和模型能力是四个独立判定维度，本文没有等价对照表；保留易混范围比较。",
+          "original_line": 561,
+          "heading": "### `android.hardware.npu`：声明、安装过滤与能力检测"
+        },
+        {
+          "original_id": "ch05-05-npu-control-plane",
+          "title": "Android 17 NPU 的 UID 控制链",
+          "decision": "keep",
+          "reason": "包与UID状态经PriorityManager生成配置，再进入IScheduling厂商实现，呈现独立控制面跨层路径。",
+          "original_line": 612,
+          "heading": "### Android 17 如何阻断未声明的直接访问"
+        },
+        {
+          "original_id": "ch05-05-model-load-coordination",
+          "title": "NpuManager 的模型装载协调",
+          "decision": "keep",
+          "reason": "资源协调、允许装载、客户端加载通知及卸载通知组成系统与runtime之间的生命周期，独立于提交资格。",
+          "original_line": 646,
+          "heading": "### NpuManager 的系统管理职责边界"
+        },
+        {
+          "original_id": "ch05-05-artifact-and-backend",
+          "title": "模型产物选择与执行后端选择",
+          "decision": "remove",
+          "reason": "紧邻完整ASCII链已区分AOT产物与设备侧编译原始模型，并分别列出产物选择及带fallback的accelerator配置；本图线性四框是精度更低的重复摘要。",
+          "original_line": 686,
+          "heading": "#### 创建模型前先选择可用产物"
+        },
+        {
+          "original_id": "ch05-05-buffer-ownership",
+          "title": "共享 buffer 的所有权与同步",
+          "decision": "keep",
+          "reason": "生产者取得、fence可用、NPU完成和消费者归还连接同一个buffer所有权，独立于请求数量控制。",
+          "original_line": 721,
+          "heading": "#### Buffer 与零复制"
+        },
+        {
+          "original_id": "ch05-05-aot-jit-cache",
+          "title": "AOT、JIT 与编译缓存边界",
+          "decision": "remove",
+          "reason": "AOT/JIT/cache已有紧邻适用条件/首次成本/分发成本表及两段边界说明；汇入可执行模型的图片再总结同样准备。",
+          "original_line": 740,
+          "heading": "### AOT、设备侧编译与分发"
+        },
+        {
+          "original_id": "ch05-05-model-runtime-delivery",
+          "title": "模型与运行时库的分发",
+          "decision": "remove",
+          "reason": "模型、runtime、JIT与非Play四个分发卡重复紧邻分发列表和非GMS替代清单，遗漏Maven/PFD阶段细节而未增加关系。",
+          "original_line": 756,
+          "heading": "#### Play AI Pack（按设备交付 AI 模型的资源包） 与 runtime library 是两类产物"
+        },
+        {
+          "original_id": "ch05-05-nnapi-versus-npu-hal",
+          "title": "NNAPI 执行层与 NPU 调度层",
+          "decision": "keep",
+          "reason": "NNAPI执行层和NPU身份调度层两条链连接不同对象再到硬件，补充文字对照的参与者层次。",
+          "original_line": 843,
+          "heading": "#### NPU scheduling HAL 的调度身份与生命周期"
+        },
+        {
+          "original_id": "ch05-05-migration-validation",
+          "title": "迁移到 LiteRT 的逐层验证",
+          "decision": "remove",
+          "reason": "迁移四框复述紧邻八项表与七步验证顺序，保留更完整的可执行迁移清单。",
+          "original_line": 941,
+          "heading": "### 从 TFLite / NNAPI 迁移到 LiteRT"
+        },
+        {
+          "original_id": "ch05-05-managed-versus-owned",
+          "title": "AICore 与 LiteRT-LM 的资源责任",
+          "decision": "remove",
+          "reason": "AICore/LiteRT-LM资源责任四卡重复紧邻六行对照表，表中控制范围和适用条件更完整。",
+          "original_line": 1018,
+          "heading": "### 先选清楚执行架构"
+        },
+        {
+          "original_id": "ch05-05-odi-system-boundary",
+          "title": "ODI 的管理服务与隔离推理边界",
+          "decision": "keep",
+          "reason": "受保护ODI客户端、system_server及OEM管理/隔离推理两服务的分支架构，有独立系统集成对象。",
+          "original_line": 1027,
+          "heading": "### 先选清楚执行架构"
+        },
+        {
+          "original_id": "ch05-05-aicore-public-boundary",
+          "title": "AICore 的公开架构边界",
+          "decision": "keep",
+          "reason": "ML Kit/AICore向本地硬件与PCS网络下载分两路，保留公开边界与无固定内部HAL的关系。",
+          "original_line": 1054,
+          "heading": "### AICore 公开保证了什么"
+        },
+        {
+          "original_id": "ch05-05-genai-feature-status",
+          "title": "ML Kit GenAI 的准备状态机",
+          "decision": "keep",
+          "reason": "checkStatus四分支分别通向替代、下载、等待或生成，下载后重查状态，是必要的实际状态决策。",
+          "original_line": 1076,
+          "heading": "### ML Kit GenAI 的准备状态机"
+        },
+        {
+          "original_id": "ch05-05-genai-gates-quota",
+          "title": "前台限制与配额的处理",
+          "decision": "remove",
+          "reason": "前台资格、后台错误、BUSY和电量配额四卡直接重复紧邻前后台规则及两个错误处理段，没有额外状态转换。",
+          "original_line": 1152,
+          "heading": "### 前台限制与配额"
+        },
+        {
+          "original_id": "ch05-05-streaming-ui-cancellation",
+          "title": "流式结果与页面生命周期",
+          "decision": "keep",
+          "reason": "请求身份/页面范围贯穿预处理、异步收集和UI消费，补充一般buffer流水线没有表达的过期结果边界。",
+          "original_line": 1169,
+          "heading": "### 线程、取消与 UI 更新"
+        },
+        {
+          "original_id": "ch05-05-adpf-process-scope",
+          "title": "ADPF 与 AICore 的控制范围",
+          "decision": "keep",
+          "reason": "App会话与AICore服务分属不同进程及可控路径，空间分组直观说明TID集合的权限边界。",
+          "original_line": 1216,
+          "heading": "### ADPF 的作用范围"
+        },
+        {
+          "original_id": "ch05-05-thermal-product-policy",
+          "title": "热状态到产品降级策略",
+          "decision": "remove",
+          "reason": "热观测、标定、减载和复测四框重复紧邻指标列表与产品降级段落，本文前面已讲持续温度及同机对照。",
+          "original_line": 1237,
+          "heading": "### 热状态与降级"
+        },
+        {
+          "original_id": "ch05-05-litert-lm-lifecycle",
+          "title": "LiteRT-LM 的引擎与会话生命周期",
+          "decision": "keep",
+          "reason": "模型→Engine后台初始化→Conversation→依次关闭的资源所有者生命周期，区别于系统托管的准备状态机。",
+          "original_line": 1271,
+          "heading": "### 需要自选模型时：LiteRT-LM"
+        },
+        {
+          "original_id": "ch05-05-appfunctions-boundary",
+          "title": "AppFunctions 的工具调用边界",
+          "decision": "keep",
+          "reason": "模型决策者、授权调用者、AppFunctions协议和目标App四个参与者依次交接，保留推理与工具执行分工。",
+          "original_line": 1282,
+          "heading": "### AppFunctions 的职责范围"
+        },
+        {
+          "original_id": "ch05-05-request-measurement",
+          "title": "首分片、完整生成与 UI 消费的计时边界",
+          "decision": "keep",
+          "reason": "t0/t1/t2与并行UI轨道说明首段、持续和最终呈现边界，不与最初模型准备/稳态图重复。",
+          "original_line": 1313,
+          "heading": "#### 把一次请求拆成阶段"
+        }
+      ],
+      "sha256_after": "ab131328bae74655bd44a52ae28af30fc105735ec81be95d21ca76ec918e2480",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:19:45.356748+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 30,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a072/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a072/visual-review.json",
+      "retired_diagrams": [
+        "ch05-05-aot-jit-cache",
+        "ch05-05-artifact-and-backend",
+        "ch05-05-backend-tradeoffs",
+        "ch05-05-benchmark-controls",
+        "ch05-05-genai-gates-quota",
+        "ch05-05-managed-versus-owned",
+        "ch05-05-memory-lifecycle",
+        "ch05-05-migration-validation",
+        "ch05-05-model-optimization",
+        "ch05-05-model-runtime-delivery",
+        "ch05-05-runtime-paths",
+        "ch05-05-thermal-product-policy",
+        "ch05-05-trace-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-72/retired-assets.json"
     },
     {
       "index": 73,
@@ -137,9 +2137,164 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "5a4d53f4efea6829bb30ebb2824cf70d39f061331f0ad8ee81a6284d3a4b9bb3",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "ch05-06-latency-boundaries",
+          "title": "TTFT 与 TPOT 的计时边界",
+          "decision": "keep",
+          "reason": "t_request、首/末token与TTFT、输出间隔轨道相连，显示t_done不同于最后token的计时边界。",
+          "original_line": 95,
+          "heading": "## 先把指标定义清楚"
+        },
+        {
+          "original_id": "ch05-06-energy-denominators",
+          "title": "LLM 能量指标的分母与窗口",
+          "decision": "remove",
+          "reason": "四种能量分母已有紧邻四条列表，窗口一致和零输出又有独立段落；四卡逐项重复定义。",
+          "original_line": 109,
+          "heading": "## 先把指标定义清楚"
+        },
+        {
+          "original_id": "ch05-06-hardware-responsibilities",
+          "title": "LLM 请求的多部件成本",
+          "decision": "keep",
+          "reason": "App经CPU向选定加速后端提交，CPU和加速器又共用DRAM，补充组件表未画出的交接与共享关系。",
+          "original_line": 128,
+          "heading": "## 一次请求经过哪些硬件"
+        },
+        {
+          "original_id": "ch05-06-scheduling-frequency-layers",
+          "title": "选核、选频与最终约束",
+          "decision": "keep",
+          "reason": "选核与CPU目标频率并列，汇入policy/QoS/热/硬件约束，GPU/内存单列，保留分层对象关系。",
+          "original_line": 176,
+          "heading": "### schedutil 与 CPUFreq 负责 CPU 频率"
+        },
+        {
+          "original_id": "ch05-06-prefill-decode-shapes",
+          "title": "Prefill 与自回归 Decode 的工作形态",
+          "decision": "remove",
+          "reason": "Prefill/Decode与各自测量重点四卡重复前面两个小节；下一张真实CPU/加速器轨道已解释decode依赖节奏。",
+          "original_line": 207,
+          "heading": "## decode 阶段的利用率盲区"
+        },
+        {
+          "original_id": "ch05-06-decode-utilization-blindspot",
+          "title": "Decode 的交接与利用率盲区",
+          "decision": "keep",
+          "reason": "CPU提交、加速器运行、CPU采样的交替轨道说明局部空闲来自依赖，不等于调频失败。",
+          "original_line": 214,
+          "heading": "## decode 阶段的利用率盲区"
+        },
+        {
+          "original_id": "ch05-06-fuse-search-scope",
+          "title": "FUSE 的搜索流程与实验边界",
+          "decision": "keep",
+          "reason": "FUSE离线先GPU再CPU搜索、运行时按阶段应用配置的独立研究流程，保留实验机制与范围。",
+          "original_line": 245,
+          "heading": "## FUSE 论文：Pixel 7 上的频点组合实验"
+        },
+        {
+          "original_id": "ch05-06-application-system-root-scope",
+          "title": "应用、系统与 root 实验的控制边界",
+          "decision": "remove",
+          "reason": "普通App/系统/root的控制范围已有紧邻九行三方对照表，四卡只是较短摘要。",
+          "original_line": 279,
+          "heading": "## 普通应用、系统组件与 root 实验各能做什么"
+        },
+        {
+          "original_id": "ch05-06-decode-hint-lifecycle",
+          "title": "Decode CPU 工作段的 HintSession",
+          "decision": "keep",
+          "reason": "长期CPU工作线程、场景创建、每周期反馈和最终关闭构成应用HintSession的作用域生命周期。",
+          "original_line": 329,
+          "heading": "## 用 ADPF 描述周期工作"
+        },
+        {
+          "original_id": "ch05-06-kv-capacity-boundary",
+          "title": "KV cache 的容量估算边界",
+          "decision": "remove",
+          "reason": "KV主容量公式已有独立公式块，层/序列/batch和不同cache策略边界已有两段完整解释；K/V两卡无内存布局关系。",
+          "original_line": 364,
+          "heading": "### KV cache 与上下文长度"
+        },
+        {
+          "original_id": "ch05-06-runtime-work-reduction",
+          "title": "从模型与运行时减少无效工作",
+          "decision": "remove",
+          "reason": "工作量、后端、复用与清理四框重复本节四个小节和生命周期列表，又与后续实验检查重叠。",
+          "original_line": 393,
+          "heading": "### 模型与 session 生命周期"
+        },
+        {
+          "original_id": "ch05-06-energy-experiment-protocol",
+          "title": "可复现的端侧 LLM 能效实验",
+          "decision": "remove",
+          "reason": "实验四步总览重复紧邻五个环节导语、八项固定条件和后续各节，无额外实验结果或变量映射。",
+          "original_line": 417,
+          "heading": "### 1. 固定工作负载组合"
+        },
+        {
+          "original_id": "ch05-06-frequency-event-and-poll",
+          "title": "CPU 频率变化事件与轮询互补",
+          "decision": "keep",
+          "reason": "频率变化事件与周期轮询两路证据汇合后对齐token/调度，保留初值与采样互补关系。",
+          "original_line": 460,
+          "heading": "### 3. 同时采集 CPU 频率变化与轮询值"
+        },
+        {
+          "original_id": "ch05-06-power-data-scope",
+          "title": "电池计数、PowerStats 与外置仪器",
+          "decision": "keep",
+          "reason": "电池整机、厂商rail/consumer及外置仪器三个数据源无等价对照表，保留口径及供电范围比较。",
+          "original_line": 493,
+          "heading": "### 4. 区分整机功耗与部件能量"
+        },
+        {
+          "original_id": "ch05-06-energy-integration-validation",
+          "title": "从采样到请求能量",
+          "decision": "remove",
+          "reason": "采样积分、基线、归一化与重复四框复述紧邻公式和完整方法段落，未画采样面积或误差传播。",
+          "original_line": 510,
+          "heading": "### 5. 积分、基线与重复试验"
+        },
+        {
+          "original_id": "ch05-06-sustained-thermal-validation",
+          "title": "持续热约束与 race to idle 的验证",
+          "decision": "remove",
+          "reason": "持续测试四框逐项复述紧邻五项温控验证列表，图片没有实际限制/恢复时序或额外闭环条件。",
+          "original_line": 527,
+          "heading": "## 把温控纳入性能结论"
+        }
+      ],
+      "sha256_after": "4d8999c742447939ac3d24088f2d14daff09a3a60f238cf8dc7b6d3fd2aa8589",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:20:31.019751+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a073/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a073/visual-review.json",
+      "retired_diagrams": [
+        "ch05-06-application-system-root-scope",
+        "ch05-06-energy-denominators",
+        "ch05-06-energy-experiment-protocol",
+        "ch05-06-energy-integration-validation",
+        "ch05-06-kv-capacity-boundary",
+        "ch05-06-prefill-decode-shapes",
+        "ch05-06-runtime-work-reduction",
+        "ch05-06-sustained-thermal-validation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-73/retired-assets.json"
     },
     {
       "index": 74,
@@ -148,9 +2303,170 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "c82d75841e4ca415888724a28816ff9636bf128a505a45960381bed9e460ce03",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch05-07-three-power-costs",
+          "title": "传感器功耗的三个位置",
+          "decision": "remove",
+          "reason": "采样、缓冲、AP三种成本已有紧邻四列表格，三卡逐项重复发生位置和影响因素。",
+          "original_line": 60,
+          "heading": "## 传感器耗电来自三个位置"
+        },
+        {
+          "original_id": "ch05-07-reporting-modes",
+          "title": "上报模式决定采样周期的含义",
+          "decision": "remove",
+          "reason": "continuous/on-change/one-shot/special四类模式及周期含义已有完整对照表，图片是同表的四卡副本。",
+          "original_line": 96,
+          "heading": "## 先区分上报模式（reporting mode）"
+        },
+        {
+          "original_id": "ch05-07-request-and-event-path",
+          "title": "请求配置与传感器事件的往返路径",
+          "decision": "keep",
+          "reason": "配置向下、事件向上的双向跨层连接清晰；保留PNG，移除相邻表达相同链的Mermaid并归档原源码。",
+          "original_line": 105,
+          "heading": "## 从应用请求到硬件 FIFO"
+        },
+        {
+          "original_id": "ch05-07-registration-batch-fallback",
+          "title": "注册成功不等于 batching 成功",
+          "decision": "keep",
+          "reason": "正latency首次启用失败后以0重试、成功/最终失败的分支是注册结果的重要机制。",
+          "original_line": 139,
+          "heading": "## 从应用请求到硬件 FIFO"
+        },
+        {
+          "original_id": "ch05-07-sampling-versus-batching",
+          "title": "采样频率与批量交付是两个参数",
+          "decision": "keep",
+          "reason": "持续采样与密集回调两条时间轨道解释50Hz与5秒独立，不是采样降为0.2Hz。",
+          "original_line": 161,
+          "heading": "## `samplingPeriodUs` 与 `maxReportLatencyUs`"
+        },
+        {
+          "original_id": "ch05-07-fifo-capacity-window",
+          "title": "FIFO 容量如何限制批量窗口",
+          "decision": "remove",
+          "reason": "reserved/max定义、槽数/频率公式和100槽/50Hz例子已由紧邻三条定义、公式块与段落完整说明，图片再次汇总同值。",
+          "original_line": 180,
+          "heading": "## `samplingPeriodUs` 与 `maxReportLatencyUs`"
+        },
+        {
+          "original_id": "ch05-07-multi-client-aggregation",
+          "title": "同一 handle 的多客户端参数聚合",
+          "decision": "keep",
+          "reason": "两个不同客户端输入聚合min/max并在batch≤sampling时归零的具体数值案例，比纯规则列表更易核对作用对象。",
+          "original_line": 201,
+          "heading": "## SensorService 如何合并多个客户端"
+        },
+        {
+          "original_id": "ch05-07-early-batch-delivery",
+          "title": "批量窗口为何提前结束",
+          "decision": "keep",
+          "reason": "到期、容量和其他触发三个条件汇到同批提前交付，显示任一条件满足就交付的合流关系。",
+          "original_line": 230,
+          "heading": "## AP 醒着时的 batching"
+        },
+        {
+          "original_id": "ch05-07-on-change-latest-retention",
+          "title": "On-change 最新状态为何保存在 FIFO 外",
+          "decision": "keep",
+          "reason": "共享FIFO和FIFO外最新状态两条保存路径汇到AP恢复交付，明确保留最终状态与完整历史不同。",
+          "original_line": 253,
+          "heading": "### Non-wake-up sensor"
+        },
+        {
+          "original_id": "ch05-07-suspend-wakeup-contrast",
+          "title": "Suspend 时的 wake-up 与 non-wake-up",
+          "decision": "keep",
+          "reason": "wake-up/non-wake-up两条挂起、缓存及恢复路径并排，突出是否主动唤醒AP的独立语义。",
+          "original_line": 274,
+          "heading": "### Wake-up sensor"
+        },
+        {
+          "original_id": "ch05-07-two-stage-wakelock-ack",
+          "title": "Wake-up 事件的两段确认与持锁交接",
+          "decision": "keep",
+          "reason": "HAL和服务两段确认链与各自持锁时间轨道，保留接管顺序及App异步工作不受ACK覆盖的边界。",
+          "original_line": 289,
+          "heading": "## Wake lock 确认链"
+        },
+        {
+          "original_id": "ch05-07-flush-completion-and-new-client",
+          "title": "公开 flush 与新连接的首个 flush 边界",
+          "decision": "keep",
+          "reason": "公开flush与新连接first-flush-pending两列描述不同发起者、过滤和完成对象，关系独立。",
+          "original_line": 315,
+          "heading": "## `flush()` 的正确含义"
+        },
+        {
+          "original_id": "ch05-07-high-rate-permission-and-privacy",
+          "title": "高采样率限制的权限与隐私条件",
+          "decision": "remove",
+          "reason": "默认listener/Direct速率、高采样权限及麦克风隐私四卡逐项复述本节段落与六类型列表，没有额外权限决策分支。",
+          "original_line": 346,
+          "heading": "## Android 12 以来的 200 Hz 访问限制"
+        },
+        {
+          "original_id": "ch05-07-direct-channel-data-path",
+          "title": "Direct Channel 的控制与数据路径",
+          "decision": "keep",
+          "reason": "控制经SensorService到HAL、数据经共享内存回App的分离路径，是普通listener链没有表达的架构。",
+          "original_line": 364,
+          "heading": "## Sensor Direct Channel 的适用边界"
+        },
+        {
+          "original_id": "ch05-07-frozen-pid-conditional-path",
+          "title": "Android 17 冻结连接的条件处理",
+          "decision": "keep",
+          "reason": "产品flag、冻结原因、客户端聚合与解冻后其他原因检查的生命周期，独立于一般batching和wake-up行为。",
+          "original_line": 384,
+          "heading": "## Android 17 的 frozen-PID 条件路径"
+        },
+        {
+          "original_id": "ch05-07-sensor-observation-evidence",
+          "title": "传感器诊断的三组证据",
+          "decision": "remove",
+          "reason": "App/服务/系统三组证据逐项重复紧邻前三个观测小节和采集列表，再次总结诊断入口。",
+          "original_line": 444,
+          "heading": "### 3. 对齐 AP suspend 与事件交付"
+        },
+        {
+          "original_id": "ch05-07-sensor-three-group-experiment",
+          "title": "采样与 batching 的三组对照",
+          "decision": "remove",
+          "reason": "A/B/C三组参数已由紧邻三行实验表比较，单改latency/period及共同条件也有两段说明，图片无新数据关系。",
+          "original_line": 476,
+          "heading": "## 一个可复现的对照实验"
+        }
+      ],
+      "sha256_after": "ff7a4faf08efb0d7d1e14f59b83970555b002145272726c978e84fe87b17616c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:22:26.304673+08:00",
+      "inline_mermaid_blocks_removed": 1,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a074/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a074/visual-review.json",
+      "retired_diagrams": [
+        "ch05-07-fifo-capacity-window",
+        "ch05-07-high-rate-permission-and-privacy",
+        "ch05-07-reporting-modes",
+        "ch05-07-sensor-observation-evidence",
+        "ch05-07-sensor-three-group-experiment",
+        "ch05-07-three-power-costs"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-74-75/retired-assets.json"
     },
     {
       "index": 75,
@@ -159,9 +2475,179 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "df5698c281656011be540122e6c3352bbd0ae7f7155a5b4476c69a4b98cd98f3",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch05-08-cache-hierarchy-boundary",
+          "title": "移动 CPU 内存层级的配置边界",
+          "decision": "keep",
+          "reason": "CPU私有、L2组织、可选共享末级和DRAM的空间层级独立于经验数值，保留cache模型总览。",
+          "original_line": 80,
+          "heading": "## 先建立准确的 cache 模型"
+        },
+        {
+          "original_id": "ch05-08-cache-line-dma-and-interference",
+          "title": "Cache line、写回粒度与 DMA 对齐",
+          "decision": "remove",
+          "reason": "64B构建行、CTR写回粒度、128B DMA对齐三项已由紧邻源码和完整段落分别说明，三卡再汇总同样常量。",
+          "original_line": 104,
+          "heading": "### 64 字节的适用范围"
+        },
+        {
+          "original_id": "ch05-08-migration-and-cache-state",
+          "title": "线程迁移后的 cache 状态",
+          "decision": "keep",
+          "reason": "迁移后两CPU私有cache状态与共享供数路径并列，说明旧cache不会统一失效的对象关系。",
+          "original_line": 115,
+          "heading": "### 线程迁移对 cache 的影响"
+        },
+        {
+          "original_id": "ch05-08-values-versus-references",
+          "title": "连续数组里的值与引用",
+          "decision": "keep",
+          "reason": "值数组与连续引用到分散对象的实际连接差异，保留指针追踪关系。",
+          "original_line": 153,
+          "heading": "### 空间局部性"
+        },
+        {
+          "original_id": "ch05-08-tiling-temporal-locality",
+          "title": "分块如何增加时间局部性",
+          "decision": "keep",
+          "reason": "每块A→B→C再下一块的轨道展示时间靠近执行，补充分块描述的操作顺序。",
+          "original_line": 166,
+          "heading": "### 时间局部性"
+        },
+        {
+          "original_id": "ch05-08-false-sharing-mechanism",
+          "title": "False sharing 的缓存行竞争",
+          "decision": "keep",
+          "reason": "两个CPU的不同字段汇到同一cache line，直观表现伪共享的一致性粒度与业务字段不同。",
+          "original_line": 175,
+          "heading": "## False sharing（伪共享）：不同字段，共用一条 cache line"
+        },
+        {
+          "original_id": "ch05-08-false-sharing-mitigation-order",
+          "title": "从共享写入到字段隔离",
+          "decision": "remove",
+          "reason": "减少写入、字段分组、C++对齐和Java边界已在紧邻五步顺序、代码及语言差异段落说明，图再次总结同一路线。",
+          "original_line": 218,
+          "heading": "### NDK 与 Java/Kotlin 的布局控制差别"
+        },
+        {
+          "original_id": "ch05-08-aos-soa-aosoa-layout",
+          "title": "AoS、SoA 与 AoSoA 的地址组织",
+          "decision": "keep",
+          "reason": "AoS、SoA、AoSoA用元素和字段序列表示三种地址组织，便于对照两段结构定义。",
+          "original_line": 258,
+          "heading": "### AoS 与 SoA 的选择由访问模式决定"
+        },
+        {
+          "original_id": "ch05-08-hot-cold-split",
+          "title": "Hot/Cold 拆分与稳定索引",
+          "decision": "keep",
+          "reason": "连续Hot通过稳定索引关联Cold的两组对象，以及常见/偶发访问路径，呈现冷热拆分关系。",
+          "original_line": 290,
+          "heading": "### hot/cold split 还要考虑对象生命周期"
+        },
+        {
+          "original_id": "ch05-08-reserve-capacity-versus-rss",
+          "title": "连续容器的容量与扩容成本",
+          "decision": "remove",
+          "reason": "size/capacity/RSS、扩容和合理预留三框复述紧邻完整段落，未展示真实前后内存布局或容量曲线。",
+          "original_line": 301,
+          "heading": "### 连续内存也有扩容与复制成本"
+        },
+        {
+          "original_id": "ch05-08-object-pool-evaluation",
+          "title": "对象池的局部性与总成本",
+          "decision": "remove",
+          "reason": "分配热点、直接/批量分配、池化及同负载比较已在紧邻五条成本和最后方法段说明；重复实验小结，原图左侧标签也存在裁边。",
+          "original_line": 332,
+          "heading": "### 谨慎复用可变对象"
+        },
+        {
+          "original_id": "ch05-08-branch-and-prefetch-separation",
+          "title": "分支预测与数据预取的不同作用",
+          "decision": "remove",
+          "reason": "分支与prefetch四卡重复紧邻两个小节的目标、提示边界与验证指标，未画出指令或预取距离关系。",
+          "original_line": 349,
+          "heading": "### 是否手动 prefetch"
+        },
+        {
+          "original_id": "ch05-08-startup-versus-baseline-profile",
+          "title": "Startup 与 Baseline Profile 的不同阶段",
+          "decision": "keep",
+          "reason": "真实入口分向Baseline→ART与Startup→R8/D8两个阶段再做产物核验，保留编译时机/使用方不同的关系。",
+          "original_line": 392,
+          "heading": "### 生成、验证、A/B 测量"
+        },
+        {
+          "original_id": "ch05-08-simpleperf-evidence-pipeline",
+          "title": "Simpleperf 从事件支持到时间上下文",
+          "decision": "remove",
+          "reason": "事件支持、分组计数、热点采样和时间上下文四步逐项重复紧邻三个方法小节及代码，删除二次方法总览。",
+          "original_line": 460,
+          "heading": "### 低 IPC 与 memory-bound 的判断"
+        },
+        {
+          "original_id": "ch05-08-false-sharing-evidence-boundary",
+          "title": "False sharing 证据与内存统计的边界",
+          "decision": "keep",
+          "reason": "症状分向地址证据与受控替代实验，再汇到不同强度结论，保留证据可用性路径与PSS作用域。",
+          "original_line": 481,
+          "heading": "### 内存统计与 cache 证据的分工"
+        },
+        {
+          "original_id": "ch05-08-art-card-table-addressing",
+          "title": "ART 卡表的粒度、偏置与脏卡",
+          "decision": "keep",
+          "reason": "addr移位映射card地址，偏置基址另一路汇入写屏障，呈现粒度与代码生成的具体计算关系。",
+          "original_line": 504,
+          "heading": "### ART CardTable：一字节表示 1 KiB 堆区间"
+        },
+        {
+          "original_id": "ch05-08-binder-parcel-data-and-object-layout",
+          "title": "Binder Parcel 的数据区与对象位置表",
+          "decision": "keep",
+          "reason": "mData与对象位置容器分开，再联系增长/所有权路径，补充连续数据之外的实际对象表布局。",
+          "original_line": 519,
+          "heading": "### Binder Parcel：连续数据与独立对象表"
+        },
+        {
+          "original_id": "ch05-08-cache-optimization-validation-loop",
+          "title": "Cache 优化的验证顺序",
+          "decision": "remove",
+          "reason": "六框验证流程逐项重复紧邻六个编号小节与对照变量列表，没有额外反馈或排除分支。",
+          "original_line": 579,
+          "heading": "### 6. 检查代价"
+        }
+      ],
+      "sha256_after": "caa38aa796461654dbc62565c846f78bf8fdd35a80c1568df33b9f5326089cdb",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-28T09:22:26.304673+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a075/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a075/visual-review.json",
+      "retired_diagrams": [
+        "ch05-08-branch-and-prefetch-separation",
+        "ch05-08-cache-line-dma-and-interference",
+        "ch05-08-cache-optimization-validation-loop",
+        "ch05-08-false-sharing-mitigation-order",
+        "ch05-08-object-pool-evaluation",
+        "ch05-08-reserve-capacity-versus-rss",
+        "ch05-08-simpleperf-evidence-pipeline"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-74-75/retired-assets.json"
     },
     {
       "index": 76,
@@ -2677,8 +5163,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 1,
-  "next_article": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+  "reviewed_articles": 15,
+  "next_article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -2687,7 +5173,7 @@
     "仓库只保留当前引用资产；删除前全仓引用检查并在工作区保留历史及前后SHA",
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档"
   ],
-  "updated_at": "2026-10-28T08:54:35.664882+08:00",
+  "updated_at": "2026-10-28T09:22:26.304673+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
@@ -2695,9 +5181,17 @@
       "observed_sha256": "706e5eda48b4f402b93a4de9927cbbb92c5c75d799865dfcb2584fcf3ff8801e",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+      "registered_sha256": "f6a74823e1876c05b66654995eb5481dbd8f90106f53cc5e6c15130dcefc35e2",
+      "observed_sha256": "c7d2706127579a2ebc9ad64184960c47c2a47e61b945053c9a4f31ad57517f5a",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 55,
-  "reviewed_placements_after": 22,
-  "net_removed_placements": 33
+  "reviewed_placements_before": 323,
+  "reviewed_placements_after": 208,
+  "net_removed_placements": 115,
+  "removed_inline_mermaid_blocks": 8
 }
