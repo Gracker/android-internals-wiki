@@ -4,8 +4,10 @@ chapter: '3.6'
 section: '3.6'
 status: finalized
 applicable_versions: Android 13 (API 33) - Android 17 (API 37)
-last_verified: '2026-08-27'
+last_verified: '2026-10-26'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-10-26T14:41:01+08:00'
+last_idle_audit_at: '2026-10-26T14:41:01+08:00'
 confidence: medium
 sources:
 - type: aosp
@@ -24,6 +26,10 @@ sources:
   path: frameworks/base/core/java/android/hardware/input/input_framework.aconfig
 - type: aosp
   path: frameworks/base/core/java/android/view/DragEvent.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/DragState.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/DragDropController.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/input/InputManagerService.java
 - type: aosp
@@ -71,7 +77,7 @@ consolidated_from:
 - 悬停（hover）没有按下状态，却持续触发窗口命中、View 命中、指针图标解析和应用回调；
 - 跨窗口拖放同时涉及 InputDispatcher、WindowManager、SurfaceControl 和应用主线程。
 
-这些事件最终仍通过输入通道（input channel）进入应用，性能问题的收敛点也相同：应用没有及时处理完事件，`InputDispatcher` 连接上的等待队列持续增长。用户先看到光标、焦点或快捷键响应落后，随后才可能遇到输入分发超时（input dispatching timeout）。
+普通键盘和指针事件通过输入通道（input channel）进入应用。应用未及时完成已分发事件时，`InputDispatcher` 连接的等待队列可能积压，随后可能触发输入分发超时（input dispatching timeout）。跨窗口拖放的位置消息可走输入通道，最终的 `ACTION_DROP` 与数据则由 WindowManager 通过 Binder 回调发送。焦点窗口等待、辅助功能过滤和拖放结果等待也会影响响应，需要与连接队列积压分开检查。
 
 > 源码基线：AOSP `android-17.0.0_r1`，API 37；历史版本只用于解释兼容范围。
 
@@ -324,7 +330,7 @@ InputReader
 
 `InputFilter` 是 C++ 包装层，内部的 Rust 链只处理键盘辅助功能；`notifyMotion()`、传感器、开关、振动器状态、设备重置和指针捕获变化都从包装层直接通知下一层，InputReader、PointerChoreographer、InputProcessor 和 InputDispatcher 仍由 C++ 实现。所以这只是键盘路径上的局部组件，称不上“InputFlinger 已用 Rust 重写”。
 
-C++ 与 Rust 之间是进程内的 AIDL 接口，外加负责建立 C++/Rust 调用入口的 `cxxbridge` 启动桥接代码。按键进入 `IInputFilter.notifyKey()`，过滤后经 `IInputFilterCallbacks.sendKeyEvent()` 回到 C++ 监听器；这些调用都在同一个 InputFlinger 进程和调用链里，不会产生 Binder 跨进程事务。
+C++ 与 Rust 之间是进程内的 AIDL 接口，外加负责建立 C++/Rust 调用入口的 `cxxbridge` 启动桥接代码。按键进入 `IInputFilter.notifyKey()`，过滤后经 `IInputFilterCallbacks.sendKeyEvent()` 回到 C++ 监听器。这些接口在同一个 InputFlinger 进程内调用，不会产生 Binder 跨进程事务；Slow Keys 延后接受的按键可由过滤线程的超时回调继续送入下游，不能据此推断全程同步或同线程执行。
 
 三种辅助功能分别是：粘滞键（Sticky Keys）让修饰键保持生效，慢速键（Slow Keys）要求按住达到阈值，防抖键（Bounce Keys）会忽略阈值内的重复按键。配置变化时，Rust 从 `BaseFilter` 开始依次包上 Sticky、Slow 和 Bounce，因此三者同时开启时的执行顺序为：
 
@@ -424,7 +430,9 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 
 事件写入应用输入通道后，`InputDispatcher` 将对应 `DispatchEntry` 放入该连接的 `waitQueue`。应用通过 `finishInputEvent()` 回报处理完成后，条目才会移除。
 
-默认的输入分发超时为 5 秒，还会乘以硬件超时倍率；具体窗口可以提供自己的超时时间。系统判定 ANR 时只看一条：连接里有没有超过超时时间的未完成条目。事件类型不参与判断，“键盘固定 5 秒、悬停永不触发 ANR”这类规则并不存在。
+默认的输入分发超时为 5 秒，还会乘以硬件超时倍率；具体窗口可以提供自己的超时时间。对已经分发到连接的事件，分发器检查等待队列中是否有超时的未完成条目；这条连接超时规则没有给悬停事件单独豁免，“键盘固定 5 秒、悬停永不触发 ANR”这类规则并不存在。
+
+无焦点窗口还有独立的超时分支：有焦点应用、无焦点窗口，且有焦点型事件等待分发时开始计时。到期时若仍是同一焦点应用、窗口仍未获得焦点，也可能报告 ANR，即使事件尚未进入任何连接的等待队列。排查时先区分这两条路径，再检查窗口焦点、配置的超时和事件完成回报。
 
 连续悬停、滚轮或按键重复的风险在于放大积压：
 
@@ -467,7 +475,9 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 - 取消旧焦点显示设备上尚未释放、且未指定显示设备的非指针事件；
 - 通知系统策略焦点显示设备已经改变；
 - 强制关闭现有指针捕获；
-- 向旧、新焦点窗口发送焦点变化。
+- 将旧、新焦点窗口令牌通过 `notifyFocusChanged()` 通知系统策略。
+
+应用窗口的焦点事件由 `onFocusChangedLocked()` 创建 `FocusEntry` 后分发，应与焦点显示设备切换时的策略通知分开观察。
 
 桌面模式的测试只覆盖“单显示器中两个 Activity”是远远不够的，至少还要加入：
 
@@ -511,7 +521,9 @@ WMS 创建 `DragState`，将拖影的 SurfaceControl 图层放到显示设备的
 
 ### 8.2 放下阶段
 
-指针抬起后，`InputDispatcher` 把目标窗口、窗口局部坐标和原始坐标通知 WMS，`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才拿到放下所需的 `ClipData` 和 URI 临时授权令牌。能够拦截全局拖放的特权窗口有单独的数据传递规则。目标窗口报告是否消费后，WMS 结束拖放并广播 `ACTION_DRAG_ENDED`。
+指针抬起后，`InputDispatcher` 把目标窗口、窗口局部坐标和原始坐标通知 WMS，`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才拿到放下所需的 `ClipData`。能够拦截全局拖放的特权窗口有单独的数据传递规则。
+
+URI 访问权有额外条件：源端须设置 `DRAG_FLAG_GLOBAL`，并设置 `DRAG_FLAG_GLOBAL_URI_READ` 或 `DRAG_FLAG_GLOBAL_URI_WRITE`；有拖放数据时，WMS 才附带权限处理对象，目标再调用 `requestDragAndDropPermissions()` 申请授权。目标窗口报告是否消费后，WMS 结束拖放并广播 `ACTION_DRAG_ENDED`。
 
 WMS 对放下结果另有 5 秒等待。这个计时属于拖放状态机，与输入通道的连接超时是两个不同的观察点。
 
