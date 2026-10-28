@@ -81,10 +81,6 @@ last_idle_audit_at: '2026-08-29T18:35:04+08:00'
 | SystemUI 消费并渲染 | SystemUI 创建/复用视图、加载图片和主线程提交界面 | 通知延迟显示、面板卡顿；有输入事件时可能形成 SystemUI Input ANR |
 | NLS 接收回调 | 监听器的 Binder stub（接收跨进程调用的入口）把消息转给主线程 `MyHandler` | 监听器回调积压；进程持有窗口且输入超时时可能形成自己的 Input ANR |
 
-<!-- gracker-diagram: ch09-05-01-four-chains -->
-![通知的四条链与进程归属](../../assets/diagrams/ch09/ch09-05-01-four-chains.png)
-
-图：同一通知跨越不同进程；延迟显示、输入ANR、FGS转换超时必须按执行链分别取证。
 
 前台服务还有一条相邻的超时：调用 `startForegroundService()` 之后，服务要是在期限内没有完成 `Service.startForeground()`，AMS（ActivityManagerService）的 `serviceForegroundTimeout()` 会为该服务构造 timeout record（超时记录）、停止仍在等待的服务，并延迟派发 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`；`serviceForegroundCrash()` 则用 `ForegroundServiceDidNotStartInTimeException` 报告崩溃路径。
 
@@ -100,10 +96,6 @@ last_idle_audit_at: '2026-08-29T18:35:04+08:00'
 
 按 `android-17.0.0_r1` 的源码，这次调用可以拆成六段来看：
 
-<!-- gracker-diagram: ch09-05-02-sync-prefix -->
-![notify 的同步前缀](../../assets/diagrams/ch09/ch09-05-02-sync-prefix.png)
-
-图：这是普通同步发布的允许路径；拒绝和异常可能提前结束，post后的任务与Binder返回可交叠。
 
 1. 应用构造 `Notification`、样式、`RemoteViews`、`Icon` 和 extras（附加字段）。
 2. `NotificationManager` 执行兼容性修正，并把对象写入 Binder Parcel。
@@ -129,17 +121,13 @@ return true;
 
 普通同步发布路径中，NMS 投递 handler 前的处理都在这次 Binder 服务端调用内，工作量远多于“权限校验后立刻入队”；投递后的任务可能在客户端收到返回之前就已经开跑。`INotificationListener.aidl` 声明为 `oneway interface`，所以 listener 回调和 SystemUI 显示通知都不在发布者这次调用的返回路径上，各走各的调度。
 
-<!-- gracker-diagram: ch09-05-03-partial-order -->
-![post 之后是并发关系](../../assets/diagrams/ch09/ch09-05-03-partial-order.png)
+<!-- gracker-diagram: ed09-05-notify-prefix-and-fanout -->
+![notify 的同步返回与后续分发共享 post 起点](../../assets/diagrams/ch09/ed09-05-notify-prefix-and-fanout.png)
 
-图：handler在任务投递后即可运行；客户端收到Binder回复与handler开始之间没有固定先后，不等待listener或显示完成。
+图：固定r1普通允许发布路径中，应用构造、NotificationManager修正/Parcel和NMS身份/渠道/策略、记录构造/配额、PendingIntent准备都在post之前的同步调用链内；拒绝或异常可提前结束。post EnqueueNotificationRunnable后，Binder回复到达与handler开始没有固定先后，发布者不等待用户回调或上屏。handler入队之后还有正式发布、锁内各listener可见数据/ranking准备、各runnable和oneway投递；oneway仍有序列化/背压/失败成本，SystemUI和NLS各自继续调度。图为关系而非耗时比例，不把入队当呈现。
 
 发布应用主线程停在 `notify()` 时，我们接着判断耗时落在哪一侧：
 
-<!-- gracker-diagram: ch09-05-04-publisher-cost -->
-![发布阻塞先分三段](../../assets/diagrams/ch09/ch09-05-04-publisher-cost.png)
-
-图：若notify很快返回而上屏慢，继续调查handler与SystemUI；主线程长等待还需输入期限证据才能归为Input ANR。
 
 - `notif.build` trace 区间很长：应用在读取文件、缩放图片、创建大量 action 或组装 extras；
 - Binder transaction 前的 Running（正在 CPU 上执行）时间很长：Parcel 写入、bitmap 转共享内存或应用侧修正较重；
@@ -152,10 +140,6 @@ AMS 会给要求转为前台的 Service 安排一个独立 timer（计时器）�
 
 下面是 Service 上下文中的两阶段教学片段：预先创建有效 channel，并满足清单中的服务类型、权限与当前启动资格后，先用最小通知调用前台转换，再在后台生成增强内容。`DATA_SYNC` 仅代表示例业务类型：
 
-<!-- gracker-diagram: ch09-05-05-fgs-budget -->
-![FGS 先转换再增强](../../assets/diagrams/ch09/ch09-05-05-fgs-budget.png)
-
-图：阶段条表达示例设计；timer取消、异步通知校验与屏幕呈现是不同事件。
 
 ```java
 Notification stub = new Notification.Builder(this, CHANNEL_ID)
@@ -172,10 +156,10 @@ backgroundExecutor.execute(() -> {
 
 前台转换、通知校验和屏幕呈现是三个不同阶段。AMS 在转换路径上清除 `fgRequired/fgWaiting` 并取消前台转换 timer；`ServiceRecord.postNotification()` 则向 AMS handler 投递通知处理，之后仍可能因渠道或图标等错误走 `CannotPostForegroundServiceNotificationException` 崩溃路径。所以不能只凭 `startForeground()` 正常返回断言前台状态已经接受、全部校验通过或通知已上屏；转换状态、等待标志和后续通知结果要分别确认。增强通知也要检查任务代次和 Service 生命周期，避免停止后补发过期内容。
 
-<!-- gracker-diagram: ch09-05-06-fgs-async-outcome -->
-![转换等待取消与通知结果分开看](../../assets/diagrams/ch09/ch09-05-06-fgs-async-outcome.png)
+<!-- gracker-diagram: ed09-05-fgs-minimal-and-later-outcomes -->
+![FGS 最小转换、增强内容与异步通知结果分开核对](../../assets/diagrams/ch09/ed09-05-fgs-minimal-and-later-outcomes.png)
 
-图：前台转换timer取消并不证明后续所有通知校验通过；前台转换ANR、DidNotStart崩溃与坏通知崩溃须分开。
+图：最小合规前台通知仍先满足channel/图标、真实服务类型、权限和启动资格；DATA_SYNC仅教学类型。正常教学调用返回后再后台构造增强内容，生产要按Service生命周期和任务代次防止过期补发。AMS转换路径清fgRequired/fgWaiting和取消独立timer，与ServiceRecord向AMS handler投递通知处理是不同观察点；图不承诺二者内部固定先后。后续channel/图标等错误仍可触发CannotPostForegroundServiceNotificationException，NMS/消费者再决定更晚结果与呈现；仅凭调用正常返回不能判全部接受/校验/上屏。转换ANR、DidNotStartInTime和异步坏通知崩溃按各自原因分别核对。
 
 故障日志含 `Context.startForegroundService() did not then call Service.startForeground()`、`ForegroundServiceDidNotStartInTimeException` 或 service foreground timeout ANR 时，按前台转换超时处理。同一窗口内若还有输入 ANR 或普通 Service 执行 ANR，就分别保留时间线、分别归因。
 
@@ -187,10 +171,6 @@ NMS 内部按“Binder 线程做校验和入队准备、handler 在锁内做处�
 
 NMS Binder 线程负责检查调用身份、渠道和策略，修正对象，并完成配额检查和入队准备。`EnqueueNotificationRunnable` 进入 handler 后，NMS 才在通知锁保护下处理旧记录、分组、排序、提醒效果、URI 权限和 listener 通知。
 
-<!-- gracker-diagram: ch09-05-07-nms-handler -->
-![NMS 处理与 listener 投递](../../assets/diagrams/ch09/ch09-05-07-nms-handler.png)
-
-图：为便于读图合并handler内部阶段；源码还有正式发布任务，不把入队完成等同于上屏完成。
 
 源码里的线程名和 Trace section 会随平台分支调整，所以我们诊断时直接从执行上下文逐项确认：
 
@@ -212,10 +192,6 @@ NMS Binder 线程负责检查调用身份、渠道和策略，修正对象，并
 
 通知总数、listener 数量和更新频率，共同决定 fan-out（一次更新向多个监听器分发）的成本；要量化它，还是在目标场景里用 Perfetto 实测，固定的“通知超过多少条”阈值给不了这个答案。
 
-<!-- gracker-diagram: ch09-05-08-fanout -->
-![通知分发的乘数来自哪里](../../assets/diagrams/ch09/ch09-05-08-fanout.png)
-
-图：这些变量增加的是工作量机会，固定线性耗时公式给不出；锁内和跨进程成本需在目标build测量。
 
 ### 通知限流策略
 
@@ -243,10 +219,6 @@ if (previous != null
 
 在该外层适用范围内，首次发布还没有 `previous`，走不到这段更新速率检查；新旧 progress state 不同或 `isAutogroup` 为真也会跳过这一分支——跳过的只是速率检查，渠道、权限与数量等其他校验仍然有效，照样可能拒绝。状态取自 progress/max/indeterminate extras，进度数值的每次变化未必都构成一次状态转换。
 
-<!-- gracker-diagram: ch09-05-10-progress-state -->
-![进度数值与进度状态分别判断](../../assets/diagrams/ch09/ch09-05-10-progress-state.png)
-
-图：getProgressState读取进度extras；首次发布、autogroup和状态转换的分支条件，推广成“发布一定成功”没有依据。
 
 适用分支超限时，NMS 返回 `false`，并按日志时间间隔的限制记录 `Shedding <notification-key>`；一条日志对应一次丢弃，日志里搜不到，也说明不了没有发生限流。速率由 `NotificationUsageStats` / `RateEstimator` 估算：拿已接受的入队事件去更新到达间隔的指数加权估计，它与“每个整秒精确准许五次”的计数器是两回事。外部 AIDL 返回类型是 `void`，发布应用通常收不到异常或失败回调，所以界面上进度值可能直接跳跃。限流本身不会触发 ANR，它的作用是阻止高频更新继续推高 NMS 与消费者的负载。
 
@@ -257,10 +229,6 @@ if (previous != null
 
 同一方法还限制普通应用保留的未完成通知数量；前台服务、user-initiated job（由用户主动发起的任务）和聚合组各有例外。速率配额、数量配额和 channel 限制是三个概念，排查时分开核对。
 
-<!-- gracker-diagram: ch09-05-12-quota-types -->
-![三类限制不要合并](../../assets/diagrams/ch09/ch09-05-12-quota-types.png)
-
-图：降低频率只能减少一部分重复工作；终态仍需明确发布并满足其余校验。
 
 ## RemoteViews 的性能开销
 
@@ -314,10 +282,6 @@ SystemUI 会先检查复用条件，通过后才调用 `reapply()` / `reapplyAsy
 
 图片型通知的成本分布在三个位置：
 
-<!-- gracker-diagram: ch09-05-16-image-three-costs -->
-![图片成本分布在两端和传输中](../../assets/diagrams/ch09/ch09-05-16-image-three-costs.png)
-
-图：同一张图片可能在多个阶段产生工作；共享内存不消除解码、对象创建和渲染成本。
 
 1. 应用侧取图、缩放和构造通知对象；
 2. 通过 Parcel、共享内存和 Binder FD（文件描述符）传输；
@@ -325,10 +289,6 @@ SystemUI 会先检查复用条件，通过后才调用 `reapply()` / `reapplyAsy
 
 三种 `Icon` 输入的成本模型不同：
 
-<!-- gracker-diagram: ch09-05-17-icon-inputs -->
-![三种 Icon 输入与成本位置](../../assets/diagrams/ch09/ch09-05-17-icon-inputs.png)
-
-图：不存在适用于所有来源的统一性能排序；授权、图像尺寸与更新频率都影响选择。
 
 - `createWithResource()` 传包名与资源 ID，消费者按资源解析，适合应用内稳定资源；
 - `createWithContentUri()` 传 URI 字符串，消费者稍后打开并解码，需要 URI 在通知存活期间可读；
@@ -419,35 +379,27 @@ public class MyNotificationListener extends NotificationListenerService {
 
 图：64是教学容量；该示例允许丢弃，不提供移除或最终状态无损保证，业务需另行实现合并/持久化/重同步。
 
-<!-- gracker-diagram: ch09-05-22-nls-shutdown -->
-![快照与生命周期的边界](../../assets/diagrams/ch09/ch09-05-22-nls-shutdown.png)
-
-图：快照复制也有成本；普通executor只提供进程内调度，框架完成回执不替业务保证持久执行。
 
 ### 回调完成回执与进程冻结
 
 对带 `IBinderSession` 的绑定，系统还跟踪 dispatch token。NLS 的 MyHandler 在公开回调正常返回后发送完成回执；NMS 收到回执，再按可配置的 `mNlsCompletionDurationMs` 延迟关闭 session 中该次调用，默认延迟 10 秒。这 10 秒是回调完成之后的状态记账宽限；把它读成“回调允许执行 10 秒”的 NLS ANR timer 是误读。
 
-<!-- gracker-diagram: ch09-05-23-nls-session -->
-![完成回执与 10 秒宽限](../../assets/diagrams/ch09/ch09-05-23-nls-session.png)
-
-图：默认10秒从回执后开始，是状态记账宽限；系统直接注册listener可能没有session，把它画成独立NLS ANR计时器是误读。
 
 这个 session 与允许冻结的绑定及进程状态更新相关，系统直接注册的 listener 可能就没有它。把工作交给自己的 executor 之后，公开回调已经返回，框架的完成回执也只覆盖到回调返回这一刻，后台持久化或网络请求的完成情况都在回执范围之外。需要持久执行保证的业务，必须使用相应的任务与生命周期协议。
 
-<!-- gracker-diagram: ch09-05-24-nls-background-boundary -->
-![后台任务不在完成回执内](../../assets/diagrams/ch09/ch09-05-24-nls-background-boundary.png)
+<!-- gracker-diagram: ed09-05-session-ack-and-independent-worker -->
+![NLS 回执后记账与应用 worker 不共享完成条件](../../assets/diagrams/ch09/ed09-05-session-ack-and-independent-worker.png)
 
-图：只示意允许的交叠；worker完成时间与10秒宽限没有固定先后，持久执行需任务和生命周期协议。
+图：仅带IBinderSession的绑定按dispatch token跟踪，系统直接注册可能无session。NLS公开回调正常返回后MyHandler发完成回执，NMS收到后按可配置mNlsCompletionDurationMs延迟结束这次session调用，默认10秒，更新计数和相关进程状态；这不是回调允许执行10秒的独立ANR timer。图中的应用worker仅示被执行器接受的样本，拒绝处理见前述教学代码。worker可以早于或晚于session任务结束，轨道只画较晚的一种无实测比例交叠；框架回执不等待数据库/网络，不提供普通executor的持久执行保证。
 
 ### RankingMap 的成本与可见性
 
 每次 posted callback（通知已发布回调）携带的是该 listener 当前可见通知的 ranking map。NMS 会按 listener 过滤用户、通知类型、锁定模式与敏感内容，再构造 `Ranking[]`。因此：
 
-<!-- gracker-diagram: ch09-05-25-ranking-scope -->
-![RankingMap 是 listener 的可见快照](../../assets/diagrams/ch09/ch09-05-25-ranking-scope.png)
+<!-- gracker-diagram: ed09-05-per-listener-ranking-fanout -->
+![每个 listener 的可见 ranking 独立构造并发送](../../assets/diagrams/ch09/ed09-05-per-listener-ranking-fanout.png)
 
-图：它只覆盖listener可见通知；可见条目和listener数量增加分发工作机会，耗时要用实测，固定条数推不出来。
+图：A/B仅为两个listener的支路示意，非设备条目数或数量上限。NMS锁内按各自用户、类型、锁定模式、可见性与敏感内容规则构造Ranking数组，再post各自runnable并oneway发送通知和ranking Parcel；每份map只是该listener当前可见快照，集合与内容可以不同，不能当系统全部通知。消费者按本次key提取必要ranking，缓存每代整份map会延长整批对象存活。频率、可见通知数与listener数增加工作量机会，仍不能推出统一阈值或固定线性耗时；序列化、背压/失败和消费阶段分别实测。
 
 - map 只包含该 listener 可见的通知，其他记录不进入这份 map；不能据此把它当作系统全部通知；
 - 不同 listener 的条目数和内容可能不同；
@@ -464,10 +416,6 @@ public class MyNotificationListener extends NotificationListenerService {
 
 trace 停在 `NotificationManager.notify*()`、`BinderProxy.transactNative()` 或 Parcel/bitmap 路径上。取证要同时覆盖应用 slice 和对应的 `system_server` Binder 线程；发布若发生在主线程，长等待可能叠加输入事件，进而触发应用 Input ANR。
 
-<!-- gracker-diagram: ch09-05-26-pattern-publisher -->
-![同步 Binder 阻塞的取证顺序](../../assets/diagrams/ch09/ch09-05-26-pattern-publisher.png)
-
-图：单独看到BinderProxy.transactNative只提供等待入口；必须追服务端与输入期限才能闭合应用Input ANR因果。
 
 ### 模式二：前台服务转换超时
 
@@ -477,37 +425,21 @@ trace 停在 `NotificationManager.notify*()`、`BinderProxy.transactNative()` �
 
 监听器自己的主线程栈落在数据库、JSON、锁或网络等待上。要定成 Input ANR，还需证明该进程存在等待中的输入事件；拿不出这项证据时，结论就写成 NLS 主线程长任务和回调积压。
 
-<!-- gracker-diagram: ch09-05-27-patterns-fgs-nls -->
-![FGS 与 NLS 用各自证据判断](../../assets/diagrams/ch09/ch09-05-27-patterns-fgs-nls.png)
-
-图：前台转换、普通Service执行、输入超时和坏通知各走各的 detector；同一份静态栈替代不了彼此。
 
 ### 模式四：高频 update 被限流丢弃
 
 下载、导航、计时和指标通知反复更新同一个 key：应用反复构造对象，NMS 反复检查并向各监听器分发；同一 progress state（进度状态）内的 update 还可能在没有回调通知应用的情况下被丢弃。更新频率按用户可见变化、允许信息滞后的最长时间和最终状态发布要求来设计，发布点跟着用户可见变化走，别跟着每个底层采样点走。
 
-<!-- gracker-diagram: ch09-05-28-pattern-update -->
-![高频 update 的负载与丢弃](../../assets/diagrams/ch09/ch09-05-28-pattern-update.png)
-
-图：这是更新策略设计顺序，不是统一频率建议；状态转换跳过速率分支不保证最终一定上屏。
 
 ### 模式五：SystemUI 渲染长任务
 
 发布线程很快返回，通知显示却明显延后；Perfetto 显示 SystemUI 在 apply、图片加载、布局或主线程提交上耗时。若通知面板正接收触摸事件，SystemUI 主线程长任务还可能形成它自己的 Input ANR。
 
-<!-- gracker-diagram: ch09-05-29-pattern-systemui -->
-![notify 返回与 SystemUI 卡顿](../../assets/diagrams/ch09/ch09-05-29-pattern-systemui.png)
-
-图：晚显示可能来自多个异步阶段；发布端返回时长不能替代显示延迟或消费者主线程时长。
 
 ### 模式六：渠道创建进入首次关键启动路径
 
 `createNotificationChannel()` 与 `notify()` 都会进入 NMS。固定 channel 可以幂等创建（重复执行不会改变最终结果），放在可控的初始化阶段完成；首次启动前台服务时，大量 channel 迁移、图片读取和通知发布都压进这一段，等于给前台转换窗口加负载。必需 channel 要提前就绪；为省启动耗时把它延后，首个通知会因 channel 缺失被拒绝。
 
-<!-- gracker-diagram: ch09-05-30-channel-startup -->
-![channel 创建与首个前台通知](../../assets/diagrams/ch09/ch09-05-30-channel-startup.png)
-
-图：channel创建和notify都会进入NMS；省掉首个通知必需的channel去换启动耗时，代价是首个通知被拒绝。
 
 ## Android 17 通知性能变更
 
@@ -520,10 +452,6 @@ trace 停在 `NotificationManager.notify*()`、`BinderProxy.transactNative()` �
 | Android 16（API 36） | `Notification.ProgressStyle` 与 promoted ongoing / Live Update API | 进度场景可使用系统样式；是否获得 Live Update 的显著展示位置需要另行判断 |
 | Android 17（API 37） | `Notification.MetricStyle`、Metric value 类型、Semantic Coloring | 指标场景新增系统样式，语义颜色由状态栏等系统 surface（展示区域）解释 |
 
-<!-- gracker-diagram: ch09-05-31-versions -->
-![API 31–37 的能力边界](../../assets/diagrams/ch09/ch09-05-31-versions.png)
-
-图：图示版本能力；OEM、功能开关和用户设置仍可能影响实际展示，不据此推导执行优先级。
 
 “后台 NLS 统一按包限频”的说法，目前没有 Android 17 一手证据支持，本章未采用。
 
@@ -563,17 +491,9 @@ if (Build.VERSION.SDK_INT >= 37) {
 
 `MetricStyle` 至少要包含一个 metric（指标），否则 `build()` 会抛出 `IllegalArgumentException`。源码只绑定前三个 metric，多出来的条目进不了展开布局，所以我们在构造前就把列表限制为三个。
 
-<!-- gracker-diagram: ch09-05-33-metric-count -->
-![MetricStyle 的数量边界](../../assets/diagrams/ch09/ch09-05-33-metric-count.png)
-
-图：最多三项说的是展开布局；不要扩大为所有surface都只读取前三个，critical metric另有选择逻辑。
 
 Android 17 的 semantic style 常量包括 `UNSPECIFIED`、`INFO`、`SAFE`、`CAUTION` 和 `DANGER`。它们表达信息、安全、警示与危险等语义，颜色由系统 surface 挑选；应用想用这几个值直接指定绿、红、蓝，是行不通的。源码只在满足 feature flag（功能开关）、promoted ongoing 和非 unspecified 等条件时，才给 metric value 应用语义色。
 
-<!-- gracker-diagram: ch09-05-34-semantic-color -->
-![语义色由系统 surface 解释](../../assets/diagrams/ch09/ch09-05-34-semantic-color.png)
-
-图：语义色与Metric指标不构成速率豁免；只更新metric列表通常不会改变进度extras状态。
 
 `getProgressState()` 读取的是进度 extras，MetricStyle 指标列表不在它的读取范围内。只更新指标、未另外设置进度 extras 时，状态通常保持 NONE；新旧状态相同且符合外层条件的更新，仍可进入包级速率检查——系统样式本身没有配额豁免这条通道。
 
@@ -614,10 +534,6 @@ override fun onNotificationPosted(
 
 `notif.build` 衡量应用构造耗时，`notif.notify` 覆盖 Parcel 与同步 Binder，`nls.callback` 里只放快照和入队；前台服务可以另加 `notif.startForeground`。
 
-<!-- gracker-diagram: ch09-05-35-trace-markers -->
-![应用 Trace 把阶段分开](../../assets/diagrams/ch09/ch09-05-35-trace-markers.png)
-
-图：每个区间按真实调用边界解释；slice墙钟时长包含CPU、调度等待和阻塞，CPU占用要另算。
 
 ### 最小采集配置
 
@@ -654,10 +570,6 @@ duration_ms: 30000
 
 这里的 30 秒只是采集时长的设定值；实际能保留多久历史，受事件量、覆盖写和丢包影响，故障前因有没有被覆盖，要看目标 detector、触发前数据与 buffer 实际的丢失/覆盖情况。`atrace_apps` 当前只选了目标应用；想观察 SystemUI 的 APP-tag 自定义 section 或其他系统 tag，就按目标构建追加相应进程和类别，并在结果里确认确实采到了，别默认它们已经进来。
 
-<!-- gracker-diagram: ch09-05-36-capture-coverage -->
-![最小配置覆盖哪些信号](../../assets/diagrams/ch09/ch09-05-36-capture-coverage.png)
-
-图：类别展开与权限受目标系统影响；配置通过解析不证明设备已成功采到所有事件。
 
 ### 查询应用 section
 
@@ -696,10 +608,6 @@ ORDER BY slice.dur DESC;
 
 图：同名section可能来自不同进程或线程；查询只是耗时排序入口，跨进程关联要靠upid/utid与时间。
 
-<!-- gracker-diagram: ch09-05-39-sql-closed-slices -->
-![已结束查询保留什么](../../assets/diagrams/ch09/ch09-05-39-sql-closed-slices.png)
-
-图：该排名查询排除了未结束项；结果里没有它，可能是还没结束，卡不卡要结合9.2的窗口裁剪方法继续看。
 
 ### 查询主线程状态
 
@@ -728,10 +636,6 @@ ORDER BY thread_state.dur DESC;
 
 长时间 Running 表示本进程正在执行 CPU 工作；`R` 表示线程已经可以运行，却还未获得 CPU；线程睡眠且 blocked function（阻塞位置）落在 Binder 路径时，我们就顺着去找对应的 `system_server` transaction。线程状态给出的是排查方向，具体代码仍要用 slice 与调用栈确认。
 
-<!-- gracker-diagram: ch09-05-40-thread-states -->
-![主线程状态只给调查方向](../../assets/diagrams/ch09/ch09-05-40-thread-states.png)
-
-图：查询用is_main_thread适应主线程改名，只列已结束且>1ms区间；仍需按upid/PID确认实际进程实例。
 
 ### 三条链分别核对
 
@@ -739,10 +643,6 @@ ORDER BY thread_state.dur DESC;
 - 分发链：NMS handler、通知锁、ranking 构造与 listener Binder 调用；
 - 消费链：SystemUI/NLS Binder 接收、主线程消息、RemoteViews 或业务回调。
 
-<!-- gracker-diagram: ch09-05-41-three-trace-chains -->
-![Perfetto 中三条链逐段关联](../../assets/diagrams/ch09/ch09-05-41-three-trace-chains.png)
-
-图：以transaction、PID/TID与时间范围关联；平台私有slice名可能不存在，调用关系要靠关联字段补出来，猜名称行不通。
 
 核对时以应用自定义 section、Binder transaction、PID/TID 和时间范围为基准；`notif-handler`、`enqueueNotificationInternal` 这类私有 slice 名，在不同 build 上可能存在，也可能并不存在。
 
@@ -758,10 +658,6 @@ adb logcat -b system -d | grep -E \
 
 `dumpsys` 适合确认当前活跃记录、listener、channel 与策略状态；某次超速更新有没有被丢弃，以 NMS 日志和 trace 时间线为准。快照若采在故障之后，已经移除的通知和短暂积压可能已经看不到了；Shedding 日志还受输出节流与日志保留限制；搜索结果为空时，继续结合 trace、状态和可用统计核对。若所采数据没有覆盖拒绝分支，结论应保留缺口，不能保证仅凭 trace 就能判明每次丢弃。
 
-<!-- gracker-diagram: ch09-05-42-dumpsys-limits -->
-![状态快照与日志的证据边界](../../assets/diagrams/ch09/ch09-05-42-dumpsys-limits.png)
-
-图：这里提供取证方法，没有宣称已在设备复现或采集；负面搜索结果只能按覆盖范围解释。
 
 ## 与其他机制的关系
 
@@ -793,10 +689,6 @@ adb logcat -b system -d | grep -E \
 
 resource、URI 和 bitmap 的成本分别落在资源解析、延迟读取与解码、共享内存复制上。bitmap 预先缩放；URI 的授权要覆盖通知存活期；resource 要保证接收端能解析对应包和资源。三者怎么选，看图片来源、更新频率和目标尺寸；适用于所有来源的统一性能排序，这里是给不出来的。
 
-<!-- gracker-diagram: ch09-05-43-faq-boundaries -->
-![常见误读对应哪条边界](../../assets/diagrams/ch09/ch09-05-43-faq-boundaries.png)
-
-图：这组边界对应本章机制图；具体根因仍须用目标build和故障时段的证据逐一确认。
 
 ## 参考资料
 
