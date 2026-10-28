@@ -8182,6 +8182,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已将第三方拓扑限定并补核到 Chromium 140.0.7339.155、Flutter 3.35.0、React Native v0.82.0、Godot 4.5-stable；逐项确认宿主、生产者、Surface 与原生 View 挂载，删除通用 RHI 线程假定。19 份真实源码/仓库文档的行号、API 23/隐藏接口/弃用/回退边界见 logs/rework/2026-10-28-20261028-093520-rework-f805dc05-rework.md；evidence 保存原文摘录与 SHA-256。元数据、SUMMARY 链接、diff 检查通过。原 finding id 置 fixed，章节继续 ready-for-review；不外推其他版本、插件、引擎及设备表现，不声称已实测。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261028-093520-rework-f805dc05",
       "created_at": "2026-10-22T10:11:31.229497+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261022-100520-e286d5fa",
@@ -8209,10 +8212,10 @@
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/WindowManager.java",
         "https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float)"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "第三方拓扑仍缺组件版本证据（HDR/SurfaceView 历史 API 与 flag 已补核）",
       "type": "source-coverage",
-      "updated_at": "2026-10-28T08:44:04.443613+08:00"
+      "updated_at": "2026-10-28T09:45:42.278865+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
