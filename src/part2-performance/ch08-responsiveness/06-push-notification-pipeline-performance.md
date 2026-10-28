@@ -98,10 +98,6 @@ flowchart LR
 
 既然端点不同，工程指标就应使用不同名称：
 
-<!-- gracker-diagram: ch08-06-02-arrival-is-not-visible -->
-![接受、回调、调用返回与可见是不同端点](../../assets/diagrams/ch08/ch08-06-02-arrival-is-not-visible.png)
-
-图：每个事件说明自己的层次；没有公开 App API 能把 FCM 接受、平台分发与用户可见合成同一端点。
 
 | 时间点 | 含义 | 是否等于用户可见 |
 |---|---|---|
@@ -124,10 +120,6 @@ flowchart LR
 | notification + data，后台 | FCM SDK 处理 notification，data 放入启动 Activity 的 Intent extras（附加参数） | 用户点击后读取 data |
 | notification + data，前台 | 两部分都交给 `onMessageReceived()` | 由应用决定 UI 和数据处理 |
 
-<!-- gracker-diagram: ch08-06-03-legacy-routing -->
-![旧消息类型与 App 状态决定回调入口](../../assets/diagrams/ch08/ch08-06-03-legacy-routing.png)
-
-图：旧 AndroidConfig 表区分前台 callback、后台自动通知和点击 Intent 数据；路由描述不等于必达承诺。
 
 “后台 notification message 更快”是排查推送延迟时的常见直觉，我们把它放回链路里检验：这种消息确实跳过了应用的业务 callback，但展示仍要经过 FCM 设备端组件、NMS 和 SystemUI，代理展示、权限和设备状态都会改变实际路径。旧 data message 把处理和展示的控制权交给应用，代价是进程启动、`Application.onCreate()` 与通知构造的耗时可能计入等待；固定开源 SDK 的自动展示路径也可能下载并等待远端图片。所以单看“有没有执行业务 callback”，判断不了哪条更快。[源码](https://github.com/firebase/firebase-android-sdk/blob/dc0ce88130e7f9621506471af919054cb2453aae/firebase-messaging/src/main/java/com/google/firebase/messaging/DisplayNotification.java)
 
@@ -144,10 +136,6 @@ Android 没有为这些状态规定固定延迟，线上分析套用“缓存进
 
 当前 [v2 迁移指南](https://firebase.google.com/docs/cloud-messaging/send/v2-api) 标为 EAP，客户端示例依赖 `firebase-messaging:26.1.0-eap01`，还需相应 Play services 支持，仅凭设备运行 Android 17 还断定不了它可用。请求仍可使用 `messages:send`，但消息中的配置改为 `android_v2`，这与 HTTP v1 接口名称是两个维度。
 
-<!-- gracker-diagram: ch08-06-05-eap-version-dimensions -->
-![AndroidConfigV2 目前是 EAP 独立配置维度](../../assets/diagrams/ch08/ch08-06-05-eap-version-dimensions.png)
-
-图：android_v2 配置、SDK EAP 与 Play services 支持共同决定路径；messages:send 名称或 Android 17 不证明已经迁移。
 
 | 配置 | 处理入口与默认行为 |
 |---|---|
@@ -191,10 +179,6 @@ v2 不再用显式 priority 选择紧急程度，改按消息意图调度。muta
 
 `dumpsys deviceidle` 能确认设备是否处于 idle（空闲节电）状态、是否在白名单或临时豁免中，但它看到的范围到节电状态为止，单条消息的原始与交付优先级要从消息自身读取；实例级反馈与代理情况仍要结合相应聚合数据。所以我们排查高优先级降级时，先比较消息的原始优先级和交付优先级，再结合 FCM Data API 分析。
 
-<!-- gracker-diagram: ch08-06-11-evidence-tools -->
-![idle、降级和可见性各用自己的证据](../../assets/diagrams/ch08/ch08-06-11-evidence-tools.png)
-
-图：deviceidle 说明节电与 allowlist 状态；优先级从消息读，可见性还要查权限、channel 与系统展示。
 
 下列因素要分开统计：
 
@@ -278,17 +262,9 @@ override fun onMessageReceived(message: RemoteMessage) {
 
 `notify()` 这一步，我们先看应用进程内的同步工作。[`NotificationManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/NotificationManager.java) 在 `notifyAsUser()` 中先执行 `fixNotification()`，再同步调用 `INotificationManager.enqueueNotificationWithTag()`；应用侧的同步工作包括补充 context 字段、校验 small icon（状态栏小图标）、执行 `reduceImageSizes()` 缩减图片，以及移除不必跨进程传输的内容。
 
-<!-- gracker-diagram: ch08-06-15-notify-sync-work -->
-![notify 同步工作从 App 预处理开始](../../assets/diagrams/ch08/ch08-06-15-notify-sync-work.png)
-
-图：notify 外层耗时包含字段补齐、icon 校验、图像缩减与 delivery 克隆，然后才到同步 Binder 和 NMS 检查。
 
 `system_server` 中的 [`NotificationManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java) 在 Binder 入口继续执行：
 
-<!-- gracker-diagram: ch08-06-17-nms-handler -->
-![NMS 入队与发布是不同阶段](../../assets/diagrams/ch08/ch08-06-17-nms-handler.png)
-
-图：接受后 Enqueue 还会处理旧记录、超时、分组与 assistant；Post 阶段再按策略发布和分发给 listener。
 
 1. 校验调用 UID、包名、user 与 allowlist token（白名单授权令牌）；
 2. 处理 FGS / UIJ policy；UIJ 是 user-initiated job，即用户发起的数据传输任务；
@@ -298,10 +274,10 @@ override fun onMessageReceived(message: RemoteMessage) {
 
 上面五步走的是通知被接受时的路径，拒绝分支也可能不抛异常而直接返回。`EnqueueNotificationRunnable` 投递到 NMS Handler 之后，队列工作就可以与 Binder 返回并行，“先返回 App、再执行队列”的顺序并无保证；通知排序、listener（通知监听器）分发和 SystemUI 内容创建，都在 `notify()` 必须等待的范围之外。因此：
 
-<!-- gracker-diagram: ch08-06-16-return-overlap -->
-![NMS 异步工作可以与 Binder 返回重叠](../../assets/diagrams/ch08/ch08-06-16-return-overlap.png)
+<!-- gracker-diagram: ed08-06-notify-handler-handoff -->
+![notify 同步边界与 NMS、SystemUI 的异步交接](../../assets/diagrams/ch08/ed08-06-notify-handler-handoff.png)
 
-图：投递 Handler 是交接点，之后不保证严格先返回 App 再执行队列；notify 不等待 SystemUI 完成。
+图：App先做fixNotification、图片缩减与delivery clone/Parcel，再同步进入NMS检查。只有接受路径投递Handler；拒绝可直接正常返回或按具体错误抛异常。Enqueue处理旧记录、timeout、分组与assistant，再投递Post发布、ranking和listener分发，SystemUI另行准备与应用内容。分叉和三轨表示成功投递后队列可与Binder返回交叠的一种允许次序，无实测比例；notify不等待SystemUI完成，正常返回也不证明已接受、posted、apply或用户可见。
 
 - `notify_call_ms` 覆盖 Framework 预处理、对象传输、Binder 等待和 NMS 入队前检查；
 - `notify()` 很快返回，还证明不了通知已经显示；
@@ -335,10 +311,6 @@ override fun onMessageReceived(message: RemoteMessage) {
 
 同一份源码还限制普通包同一 user 的通知数，已发布和已入队项都计入；`getNotificationCount(pkg, userId, id, tag)` 只从已发布列表排除同 tag / ID 旧项，已入队列表仍逐项计数，普通路径上限为 50；FGS、UIJ 和部分聚合通知适用单独规则。更新速率限制和通知数量上限是两类问题，指标也要分别记录。
 
-<!-- gracker-diagram: ch08-06-21-count-versus-rate -->
-![50 条上限与更新速率分开核算](../../assets/diagrams/ch08/ch08-06-21-count-versus-rate.png)
-
-图：同包同 user 计入 posted 与 enqueued；仅 posted 排除同 tag/ID 旧项，入队项仍计数。数量规则与 EWMA 分开判断。
 
 进度或指标通知可采用以下发布策略：
 
@@ -350,10 +322,6 @@ override fun onMessageReceived(message: RemoteMessage) {
 
 固定 500 ms 或 1 s 的更新间隔，只有在设备上测试之后才能定为产品节奏。平台使用 EWMA，OEM 也可以改变阈值；应用还要为同一包名下的其他通知留出更新余量。
 
-<!-- gracker-diagram: ch08-06-22-coalesce-policy -->
-![稳定通知 key 与合并更新降低总成本](../../assets/diagrams/ch08/ch08-06-22-coalesce-policy.png)
-
-图：发布节奏按状态意义和实测制定；onlyAlertOnce 控制重复提醒，不会跳过 NMS 或 View 更新成本。
 
 ### `timeoutAfter` 由 AlarmManager 驱动
 
@@ -361,10 +329,6 @@ override fun onMessageReceived(message: RemoteMessage) {
 
 `setTimeoutAfter()` 适合内容过时后就没有展示价值的通知，它和 FCM TTL 管的是两个阶段：FCM TTL 控制消息可以在传输层保留多久，notification timeout 控制已进入 NMS 的通知保留多久。两项配置位于不同阶段，要分别记录。
 
-<!-- gracker-diagram: ch08-06-23-timeout-stages -->
-![FCM TTL 与通知 timeout 的生命周期不同](../../assets/diagrams/ch08/ch08-06-23-timeout-stages.png)
-
-图：FCM TTL 管尚未交付消息的保留；timeoutAfter 从 NMS 处理阶段管理已有通知，不能相互替代。
 
 固定 r1 还有一个实现缺口：`TimeToLiveHelper` 的 `TreeSet` 比较器只比较到期毫秒，两个不同 key 若到期值完全相同，第二项可能加入集合失败，同一批通知未必都成功安排了超时；批量场景要核对设备版本和实际取消结果。
 
@@ -401,10 +365,6 @@ SystemUI 侧的 [`NotificationRowContentBinderImpl.kt`](https://android.googleso
 
 `MediaStyle`、自定义 `RemoteViews` 和 `ProgressStyle` 之间，排不出一个适用于所有通知的固定耗时顺序——内容大小、图片、action 数量、是否成功复用以及 SystemUI 状态都会改变结果。所以做对比实验时，我们先固定 payload 和设备，再分别比较 `Push:build`、`Push:notify` 与 SystemUI inflation 耗时。
 
-<!-- gracker-diagram: ch08-06-27-style-costs -->
-![成本由内容和复用决定](../../assets/diagrams/ch08/ch08-06-27-style-costs.png)
-
-图：比较 style 时固定设备与实际内容，并拆 App build/notify 和 SystemUI 阶段；不建立跨所有通知的固定速度排名。
 
 ### ProgressStyle、MetricStyle 与 Live Update
 
@@ -421,33 +381,17 @@ Live Update 是一种获得系统突出展示的资格，与具体某个 notific
 
 `MetricStyle` 文档允许 promoted 状态下用 metric / App 名补位标题；通用资格页则要求 content title。固定 r1 的 `hasTitle()` 对开启相应 flag 的 MetricStyle 有特殊分支，所以这里的例外有实现依据，不必判定为文档矛盾。
 
-<!-- gracker-diagram: ch08-06-30-title-exception -->
-![MetricStyle 的标题例外按实现判断](../../assets/diagrams/ch08/ch08-06-30-title-exception.png)
-
-图：通用页面要求 title，MetricStyle 专页允许 metric/App 名补位；r1 hasTitle 的 flag 分支解释这项例外。
 
 在 API 37 上，我们应同时调用 `Notification.hasPromotableCharacteristics()` 和 `NotificationManager.canPostPromotedNotifications()`，分别核对内容特征与应用提升权限；两项都通过，也还不保证每次都被提升——最终 `FLAG_PROMOTED_ONGOING`、channel、用户与 OEM 条件要单独核对，只凭 style 推测不出来。
 
-<!-- gracker-diagram: ch08-06-29-promotion-gates -->
-![提升展示需要内容、权限与系统决策](../../assets/diagrams/ch08/ch08-06-29-promotion-gates.png)
-
-图：hasPromotableCharacteristics 与 canPostPromotedNotifications 检查不同条件；最终 promoted 标志和用户/OEM 仍须确认。
 
 Android 17 的 Semantic Coloring API 为安全、警示、危险和中性信息提供系统定义的语义色。它让不同系统界面上的颜色含义保持一致，但降低更新频率、控制图片成本这些事，还是要另外自己做。
 
-<!-- gracker-diagram: ch08-06-31-semantic-coloring -->
-![语义颜色表达状态，不改变传输或限流](../../assets/diagrams/ch08/ch08-06-31-semantic-coloring.png)
-
-图：API 37 的语义色让系统按含义展示状态；它不降低图片成本，也不增加 FCM、NMS 或渲染预算。
 
 ## channel importance 与传输优先级分别控制
 
 展示层还有一组旋钮容易和优先级混淆，我们先分清楚。`NotificationChannel` importance（渠道重要程度）控制声音、震动、状态栏和 heads-up（横幅通知）等展示行为；它改变不了 FCM 传输优先级，也提高不了 App 发往 NMS 的 Binder 请求调度优先级。
 
-<!-- gracker-diagram: ch08-06-32-three-priorities -->
-![传输优先级、channel 与 Binder 调度分层](../../assets/diagrams/ch08/ch08-06-32-three-priorities.png)
-
-图：提高 channel importance 影响打扰和可见性，不能加速 FCM 传输或提升应用 Binder 请求调度优先级。
 
 Android 8（API 26）起，channel 创建后由用户掌控其行为，App 不能任意提高打扰级别；固定 API 契约还允许在用户未改过该 channel 设置时，通过重新创建降低 importance。名称和描述也可更新，按具体字段和用户锁定状态判断即可。
 
@@ -467,19 +411,11 @@ Android 13（API 33）起，普通通知需要 `POST_NOTIFICATIONS` 运行时权
 
 通知分组用于组织信息和控制重复提醒。`setGroup()` 并不保证减少 SystemUI 创建的 child row（子通知视图），也不会让 NMS 跳过每条通知的 ranking（排序与策略计算）。消息类场景可以用 `MessagingStyle`、稳定 ID、group summary 和 `setGroupAlertBehavior(GROUP_ALERT_SUMMARY)` 控制通知数量与重复提示；每个 child 仍应能独立表达内容。
 
-<!-- gracker-diagram: ch08-06-35-group-rows -->
-![通知分组组织信息，不免除 child 成本](../../assets/diagrams/ch08/ch08-06-35-group-rows.png)
-
-图：稳定 ID、摘要与 groupAlertBehavior 可减少数量或重复提醒；setGroup 本身不保证跳过每个 child 的 ranking 与 View。
 
 ## 端到端观测：每段使用自己的时钟
 
 做端到端关联时，我们用同一个 `message_trace_id`（单条消息的关联 ID）把服务端和设备事件串起来；registration token（设备注册令牌）、完整 payload 和用户消息正文不要上传。发送 FCM 请求时可额外设置不含个人信息的 analytics label 或服务端批次字段，与 BigQuery 导出或 Aggregate Delivery Data（聚合交付数据）的分组维度对齐。analytics label 要用受控的低基数值，每条消息的 trace ID 各自当成一个新 label 的做法要避免。
 
-<!-- gracker-diagram: ch08-06-36-clocks-and-identity -->
-![跨系统用关联键，耗时在各自单调时钟计算](../../assets/diagrams/ch08/ch08-06-36-clocks-and-identity.png)
-
-图：message_trace_id 用于业务关联；服务端和设备各算本地时长，跨时钟只在校准或误差可解释时比较。
 
 聚合交付数据不能按单条 `message_trace_id` 反查设备链路。
 
@@ -494,10 +430,6 @@ Android 13（API 33）起，普通通知需要 `POST_NOTIFICATIONS` 运行时权
 
 读这些数据时先分清各自说明什么：FCM BigQuery 中的 `MESSAGE_DELIVERED` 表示消息已交给设备上的 FCM SDK，离“通知已经显示”还差后半程；Aggregate Delivery Data 经过抽样和聚合，并且延迟提供，适合观察比例和趋势，单设备 trace 还得单独做；代理 notification 在普通 FCM / GA 指标中可能形成缺口，要结合 Proxy Notification Insights 查看。
 
-<!-- gracker-diagram: ch08-06-37-delivery-data-scope -->
-![交付、聚合与 impression 不是同一层事件](../../assets/diagrams/ch08/ch08-06-37-delivery-data-scope.png)
-
-图：BigQuery delivered 说明 SDK 收到；聚合比率适合趋势，不能反查单条 trace；代理与 impression 的采集覆盖须说明。
 
 旧 AndroidConfig 的后台 notification message 不进入业务 `onMessageReceived()`，应用也就无法在消息到达时写入自定义 callback 埋点。若产品必须取得应用处理和自定义展示的证据，可以选择 data message，但应用要自行满足进程生命周期与后台执行约束；这项选择会同时影响可靠性、功耗和用户体验。
 
@@ -530,10 +462,6 @@ ORDER BY s.ts;
 
 查询按照 `slice -> thread_track -> thread -> process` 逐层关联。如果把所有 FCM slice 与所有 SystemUI `inflate` slice 直接 join（连接），就会产生笛卡尔积——每条 FCM 记录都与每条 SystemUI 记录组合，这样算出的延迟在单条事件之间没有对应关系。
 
-<!-- gracker-diagram: ch08-06-38-sql-joins -->
-![用 slice、utid 与 upid 保持线程身份](../../assets/diagrams/ch08/ch08-06-38-sql-joins.png)
-
-图：SQL 仅列出已闭合的应用 section；保留 slice_id/utid/upid，不能按同名线程或所有 inflate 记录做笛卡尔积关联。
 
 Android 17 AOSP 的 SystemUI 提供 `NotificationContentInflater.AsyncInflationTask#doInBackground` trace section，覆盖后台内容准备，后续 apply / reapply 是另一阶段；另有异步任务区间 `NotificationRowContentBinderImpl.AsyncInflationTask` 和 apply 区间，它们都不能单独作为首次用户可见或屏幕实际呈现的端点。OEM 可以改变类名、线程名和 trace 埋点。实验室排查时，我们可在同一时间窗口观察：
 
@@ -549,10 +477,6 @@ Android 17 AOSP 的 SystemUI 提供 `NotificationContentInflater.AsyncInflationT
 
 没有 notification key（通知唯一键）或平台日志时，这些现象只能说明时间上相关，单条通知的因果关系还没有建立。
 
-<!-- gracker-diagram: ch08-06-40-causal-evidence -->
-![时间窗相关性与单条通知因果链分开](../../assets/diagrams/ch08/ch08-06-40-causal-evidence.png)
-
-图：缺少 notification key 或平台事件关联时只能报告同窗繁忙；Binder 源码也不能证明 FCM 云端传输耗时。
 
 ## Android 17 平台与内核锚点
 
@@ -581,10 +505,6 @@ common kernel 的 Binder 代码能解释的，是 App、NMS 与 SystemUI 之间�
 
 FCM SDK、Google Play services 和 Android 平台版本要分别记录。即使设备都运行 Android 17，其 Firebase Messaging SDK 与 Play services 版本仍可能不同，`api_level` 一个字段代表不了三者。
 
-<!-- gracker-diagram: ch08-06-41-layered-versions -->
-![平台、Messaging SDK 与 Play services 分开记录](../../assets/diagrams/ch08/ch08-06-41-layered-versions.png)
-
-图：API 31/33/34/36/37 描述平台能力；SDK、GMS 和 android/android_v2 配置独立，现场路径以实际入口为准。
 
 ## 小结
 

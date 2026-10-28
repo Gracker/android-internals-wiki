@@ -69,10 +69,6 @@ related_chapters:
 
 ### 四个标准 Dispatcher
 
-<!-- gracker-diagram: ch08-04-03-dispatcher-constraints -->
-![选择 Dispatcher 时先确定执行约束](../../assets/diagrams/ch08/ch08-04-03-dispatcher-constraints.png)
-
-图：Main 管 UI 亲和，Default 管 CPU 工作，IO 面向阻塞；Unconfined 不承诺固定恢复线程。
 
 | Dispatcher | 执行模型 | 适合的工作 | 容易写错的地方 |
 |---|---|---|---|
@@ -99,10 +95,6 @@ Android 上的 Main Dispatcher 由 kotlinx-coroutines-android 提供：1.11.0 �
 
 Android 17 为 target API 37+ 的应用默认启用新的无全局队列锁 MessageQueue（兼容开关和设备实现仍须核对），减少了一类入队和队列管理竞争；但主线程仍然一次只执行一个回调，前面的长消息、其他 async message、帧回调和 Binder 返回照样造成队列延迟。
 
-<!-- gracker-diagram: ch08-04-06-messagequeue-scope -->
-![新 MessageQueue 的收益与启用范围](../../assets/diagrams/ch08/ch08-04-06-messagequeue-scope.png)
-
-图：Android 17 target 37+ 默认新实现；队列结构变化没有让主 Looper 同时执行多个回调。
 
 #### Default：CPU 并行度与阻塞补偿
 
@@ -110,10 +102,6 @@ Default 面向持续占用 CPU 的任务。当前 JVM 调度器使用共享 work
 
 CPU 任务数量超过并行度后，新增任务排队属于预期行为。把阻塞调用放进 Default，会一直占住 worker；调度器可以给被正确标记为 blocking 的内部任务增加补偿线程，但普通业务代码不会自动获得这个标记，所以我们要主动把阻塞调用放到 IO 或专用的受限 Dispatcher。
 
-<!-- gracker-diagram: ch08-04-07-default-budget -->
-![Default 的 CPU 预算与任务排队](../../assets/diagrams/ch08/ch08-04-07-default-budget.png)
-
-图：Default 用用户态队列和 CPU permit 管理计算任务；未标记的阻塞会占住可执行计算的 worker。
 
 #### IO：默认限制与弹性视图
 
@@ -172,10 +160,6 @@ class ThumbnailRepository(
 
 这样一来，调用者从 Main 调用 `load()`，文件读取和解码仍会分别在指定 Dispatcher 上执行，这就是 main-safe：API 可以安全地从主线程调用。示例假设缩略图文件大小可控，任意大小的文件应改为流式读取；注入 Dispatcher 还允许测试替换为 TestDispatcher。如果阻塞 API 支持 `Thread.interrupt()`，可以评估 `runInterruptible(ioDispatcher)`——取消普通的 `withContext(IO)`，并不会强制中断所有 Java 或 native 阻塞调用。
 
-<!-- gracker-diagram: ch08-04-10-main-safe -->
-![Repository 内部分离 I/O 与 CPU 工作](../../assets/diagrams/ch08/ch08-04-10-main-safe.png)
-
-图：阻塞读取和解码各自选 Dispatcher；调用者回到原上下文，取消不保证强制中断任意阻塞 API。
 
 ### limitedParallelism 的执行并行预算与线程亲和
 
@@ -190,10 +174,6 @@ class ThumbnailRepository(
 
 ### 三类事件：挂起恢复、dispatch 与内核切换
 
-<!-- gracker-diagram: ch08-04-12-three-event-types -->
-![挂起、dispatch 与 sched_switch 不一一对应](../../assets/diagrams/ch08/ch08-04-12-three-event-types.png)
-
-图：协程状态、用户态派发和 CPU 线程切换是不同层；可各自发生多次或走直接路径。
 
 - **挂起 / 恢复**：continuation 状态发生变化，但不一定更换 Dispatcher。
 - **dispatch**：Dispatcher 决定直接执行还是把任务放入队列。
@@ -229,10 +209,6 @@ class ThumbnailRepository(
 
 我们拿一帧预算做个换算：120 Hz 屏幕的一帧约为 8.33 ms。若一次实际测得的操作串行发生 10 次往返，每次都耗时 0.20 ms，那么合计为 2 ms。这只是算术示例：不能把单次 P95 直接乘 10 当作整条路径的 P95；排队相关性和分布会改变结果，应直接测量完整操作的分位数。
 
-<!-- gracker-diagram: ch08-04-13-measure-whole-path -->
-![调度成本按同语义工作负载测量](../../assets/diagrams/ch08/ch08-04-13-measure-whole-path.png)
-
-图：空、短、真实任务分别建立对照；完整路径分位数须直接测量，不能把单次 P95 相加。
 
 ## 结构化并发：控制寿命、失败和取消
 
@@ -246,17 +222,13 @@ class ThumbnailRepository(
 - `supervisorScope` 或 `SupervisorJob` 隔离其直接子任务之间的失败；若 `supervisorScope` 自身的 block 抛异常，或父 owner 被取消，其子任务仍会取消。
 - 取消是协作式的。挂起函数通常会检查取消；长 CPU 循环和不响应中断的阻塞 API 需要主动配合。
 
-<!-- gracker-diagram: ch08-04-14-job-failure -->
-![普通 Job 与监督边界分别传播失败](../../assets/diagrams/ch08/ch08-04-14-job-failure.png)
-
-图：普通子失败取消父及兄弟；监督隔离直接子失败，但 owner 取消或监督 block 失败仍向下取消。
 
 Android 的 `viewModelScope` 和生命周期 scope 使用 `SupervisorJob` 风格的根作用域，一个顶层 `launch` 失败，兄弟任务可以继续运行。进入普通 `coroutineScope` 后，内部又回到普通父子 Job 规则，失败照常传播。所以设计异常策略时，我们要把这两层分开对待。监督只规定 Job 传播，不会自动处理异常：顶层 `launch` 的未捕获异常仍可能交给 Android 的未捕获异常处理链并导致进程崩溃；需要显式捕获或配置合适的 `CoroutineExceptionHandler`。`async` 的异常在 `await()` 处重新抛出，调用方也要决定怎样处理。
 
-<!-- gracker-diagram: ch08-04-15-supervision-errors -->
-![失败隔离之后仍需要异常策略](../../assets/diagrams/ch08/ch08-04-15-supervision-errors.png)
+<!-- gracker-diagram: ed08-04-job-propagation-and-errors -->
+![Job 失败传播与异常处理分开判断](../../assets/diagrams/ch08/ed08-04-job-propagation-and-errors.png)
 
-图：SupervisorJob 不会吞掉异常；launch 的未捕获异常与 async 的 await 失败需要各自处理。
+图：上半比较Job传播：普通子任务的非CancellationException失败会取消父和兄弟，监督只隔离直接子任务；owner取消或supervisorScope自身block失败仍向下取消，普通coroutineScope内采用普通规则。下半单独比较异常处理：顶层或监督子launch仍需要异常策略，async异常由await重新抛出，普通子Job的失败传播不等await。取消与清理依赖协作，两层不是同一流水线。
 
 ### 生命周期取消要覆盖“不可见”状态
 
@@ -291,10 +263,6 @@ viewLifecycleOwner.lifecycleScope.launch {
 
 ### 常见的脱离结构路径
 
-<!-- gracker-diagram: ch08-04-18-owner-and-cleanup -->
-![脱离结构与非协作工作的修复路径](../../assets/diagrams/ch08/ch08-04-18-owner-and-cleanup.png)
-
-图：先明确 owner、取消与资源释放；新 Job、全局作用域和无取消回调会绕开原有寿命关系。
 
 - `GlobalScope` 没有业务生命周期所有者，属于 delicate API（需要谨慎使用的 API）。它不会保证进程常驻，也不会随页面退出而取消。
 - 手动创建 `CoroutineScope(Job() + dispatcher)` 后未在 owner 结束时调用 `cancel()`。
@@ -332,10 +300,6 @@ viewLifecycleOwner.lifecycleScope.launch {
 
 `conflate()` 等价于容量 0、溢出策略为 `DROP_OLDEST` 的 buffer 语义。StateFlow 已经根据 `Any.equals` 合并相同状态，在它之上再调 `conflate()` 是多余的一步。
 
-<!-- gracker-diagram: ch08-04-21-conflate-pending -->
-![conflate 只替换待处理状态](../../assets/diagrams/ch08/ch08-04-21-conflate-pending.png)
-
-图：慢 collector 处理当前值时继续完成该 action；新状态替换待处理旧状态，避免堆积中间快照。
 
 `buffer()` 的默认容量是 `Channel.BUFFERED`，由库方约定。相邻的 `channelFlow`、`flowOn`、`buffer` 和 `produceIn` 可能发生操作符融合，共享底层 Channel；所以最终容量和溢出策略，我们要按操作符顺序推导。还要当心 `Channel.UNLIMITED`：它会把生产与消费之间长期存在的速率差，转化成没有上限的内存增长。
 
@@ -377,10 +341,10 @@ suspend fun collectPipelines(
 
 三条路径对应三种语义：事件缓冲区满后会让上游挂起，buffer 自身不主动丢值，但取消、失败及热上游仍可能影响交付；UI 快照允许跳过中间值；新查询则取消旧的 collector action。示例假定函数从 Main scope 调用，`persist()` 和 `repository.search()` 自己满足 main-safe 契约。`buffer()` 会增加协程和 Channel，但不会自动选择后台 Dispatcher。第三条路径只有在搜索支持协作式取消时才能及时停止；不可中断的阻塞 SDK 即使放在 IO 中，也可能一直执行到调用返回。
 
-<!-- gracker-diagram: ch08-04-22-latest-cancel-join -->
-![collectLatest 取消旧 action 后等待其结束](../../assets/diagrams/ch08/ch08-04-22-latest-cancel-join.png)
+<!-- gracker-diagram: ed08-04-conflate-versus-latest -->
+![conflate 跳过待处理值，collectLatest 取消当前 action](../../assets/diagrams/ch08/ed08-04-conflate-versus-latest.png)
 
-图：新值取消旧 action；清理与非协作阻塞会延后后一个 action，latest 不会强制终止任意 SDK。
+图：两组轨道分别示意，不共用发射时刻或实测比例。conflate让当前值1的action继续完成，仅把待处理2替换为3；collectLatest在B到来时取消旧action A并等待其结束后启动B。非协作SDK和清理可能推迟B，取消不能撤回既有副作用；等待轨道表示后续处理等待，并非B的action已启动。
 
 ### StateFlow、SharedFlow 与 flatten 的资源语义
 
@@ -400,10 +364,6 @@ suspend fun collectPipelines(
 
 再看 flatten 这一层：`flatMapConcat` 按顺序处理内层流，`flatMapMerge(concurrency)` 允许多条内层流并发，`flatMapLatest` 则在新值到来时取消旧内层流。并发上限必须符合数据库连接数、HTTP client、文件描述符和内存预算。
 
-<!-- gracker-diagram: ch08-04-27-flatten-policies -->
-![flatten 的顺序、并发与取消选择](../../assets/diagrams/ch08/ch08-04-27-flatten-policies.png)
-
-图：Concat 依次收集内层流，Merge 限制同时收集数量，Latest 取消旧内层；外部资源总量仍须另定预算。
 
 取消要及时生效，前提是内层操作支持协作取消。操作符链不会为每一级都创建 Job，但 `buffer`、`flowOn`、`channelFlow` 和并发 flatten（将内层流合并回外层）会让取消跨越额外的协程或 Channel。
 
@@ -429,10 +389,6 @@ StateFlow 和 SharedFlow 是热流，页面停止显示后，共享上游仍可�
 
 ### 三类工具回答不同问题
 
-<!-- gracker-diagram: ch08-04-29-tools-evidence -->
-![定位协程先区分工具证据](../../assets/diagrams/ch08/ch08-04-29-tools-evidence.png)
-
-图：系统 trace 看线程时序，Debugger 看 Job，采样看 CPU 栈；CoroutineName 不会自动成为 Perfetto slice。
 
 | 工具 | 擅长回答 | 不能单独证明 |
 |---|---|---|
@@ -465,19 +421,11 @@ private suspend inline fun <T> traceAsync(
 }
 ```
 
-<!-- gracker-diagram: ch08-04-30-async-trace -->
-![逻辑区间用 async 标记成对闭合](../../assets/diagrams/ch08/ch08-04-30-async-trace.png)
-
-图：跨挂起的业务用 async name/cookie 配对；它记录墙钟区间，CPU 时间仍需线程和 sched 证据。
 
 这里的 `Trace` 可以使用 `androidx.tracing.Trace`。async section 表示业务操作从开始到结束的墙钟区间，其中的等待时间不会混进任何线程的 CPU 时间；不会挂起的短函数再用同步 section。这样 Perfetto 才能同时显示整条操作经过了多久，以及各线程实际执行了多久。
 
 AndroidX Tracing 2.0.0 已于 2026-08-12 稳定发布；截至本次核对，官方最新稳定版为 2.0.5（2026-10-21）。新进程内 API 支持协程上下文传播，写入进程管理的 Perfetto 数据；应用配置 tracing-wire 时还要核对自动初始化、文件位置、flush / close 与容量策略。它不自动等同于 Studio 系统 trace 中已有同名事件，需要导出并按支持流程合并。既有同步 / 异步系统 trace API 仍可用于低频标记。[来源：版本发布与进程内追踪说明][coro-tracing]。
 
-<!-- gracker-diagram: ch08-04-31-inprocess-tracing -->
-![Tracing 2.0 的初始化、文件与合并](../../assets/diagrams/ch08/ch08-04-31-inprocess-tracing.png)
-
-图：2.0 已稳定；进程内追踪与系统事件有不同采集路径，需要明确 sink、导出和合并协议。
 
 ### 用 sched 表量化 worker 运行片段
 
@@ -503,17 +451,9 @@ ORDER BY running_ms DESC;
 
 `sched` 的每一行记录线程的一段 Running 时间，所以 `scheduled_slices` 数的是调度片段，不是 coroutine resume 次数。这里按 trace 内部身份 upid / utid 分组；tid 可复用，名字也可重复或被平台截断，应先检查真实线程名，必要时调整过滤条件。`dur=-1` 等未闭合片段已排除，此查询不声称覆盖 trace 边界外的运行时间。要看一次业务操作，先选择正确进程和 async slice，取得半开窗口 `[t0,t1)`；对相交 Running 片段按 `min(ts+dur,t1)-max(ts,t0)` 裁剪后求和。不能只筛选起点，也不能把跨窗片段的整段 dur 相加。同一 worker 可能交替执行多个协程，时间重叠仍不能单独证明因果归属。
 
-<!-- gracker-diagram: ch08-04-32-sql-identity-window -->
-![worker SQL 先确认身份再裁剪窗口](../../assets/diagrams/ch08/ch08-04-32-sql-identity-window.png)
-
-图：按 upid/utid 区分同名线程；完整片段与业务窗口重叠部分要分别统计，片段数不是 resume 数。
 
 ### 识别常见 trace 形态
 
-<!-- gracker-diagram: ch08-04-33-trace-shapes -->
-![把长逻辑区间拆成线程状态再归因](../../assets/diagrams/ch08/ch08-04-33-trace-shapes.png)
-
-图：Running、Runnable 与阻塞等待分别指向执行、CPU 竞争和依赖；短片段多不足以认定协程调度过细。
 
 - worker 长时间 Running：可能在执行大型 CPU block；使用采样栈定位方法，并检查取消点。
 - worker 长时间处于不可中断睡眠或 I/O：检查阻塞 API、存储与内核路径。
@@ -541,10 +481,6 @@ Android Studio 的 Java / Kotlin 方法 instrumentation（插桩跟踪）会引�
 
 基准必须统一热流 / 冷流、缓冲容量、丢值策略、错误处理、调度方式和消费者工作量。只比较“启动一百万个空任务”，说明的只是空任务的开销，网络、数据库或 UI 路径的表现还得另行测量。已有 RxJava 项目要整体迁移，光凭微基准还不够，应先测量高频路径和维护成本。
 
-<!-- gracker-diagram: ch08-04-34-equivalent-benchmarks -->
-![Coroutine 与 RxJava 先统一数据语义](../../assets/diagrams/ch08/ch08-04-34-equivalent-benchmarks.png)
-
-图：比较相同寿命、缓冲、丢值和工作量；空任务微基准无法直接代表真实网络、数据库或 UI 路径。
 
 ## 自定义 Dispatcher：优先复用线程，再考虑专用线程
 
@@ -562,10 +498,6 @@ private val legacySdkDispatcher =
 
 前者最多并行执行两个 CPU 解码片段；Default 的实际计算并行度大于 2 时，可以限制这组工作对预算的占用，但不承诺独占或保留特定 worker / CPU；后者限制实际占线程执行的旧阻塞 SDK 调用；若 API 会挂起或只是提交异步请求，限制整个在途操作仍需 Semaphore 等协议。IO 弹性视图的并发量会与其他 IO 视图叠加，因此仍要检查整个进程中的阻塞任务总数。
 
-<!-- gracker-diagram: ch08-04-35-views-not-pools -->
-![共享视图限制执行而不新增专用线程池](../../assets/diagrams/ch08/ch08-04-35-views-not-pools.png)
-
-图：Default 视图控制 CPU 执行，IO 视图控制阻塞片段；挂起后仍在途的请求需另有限额。
 
 ### 线程亲和与专用 Executor
 
@@ -623,24 +555,12 @@ API 明确要求 `Looper` / `Handler` 或 MessageQueue 语义时，可以使用 
 
 `Process.setThreadPriority()` 设置 Linux nice 值，`Thread.setPriority()` 维护 Java priority 语义；二者的数值范围、继承关系和运行时行为都不同。在此之上，Android 的 task profile、cpuset（允许线程运行的 CPU 集合）、uclamp（调度利用率上下限）、进程状态、thermal 和 OEM 策略，仍会改变线程实际获得的 CPU。所以要设置 Android nice，就在目标线程入口设置并测量；内核优先级要看目标线程本身，创建者线程和 `CoroutineName` 都给不出答案。
 
-<!-- gracker-diagram: ch08-04-40-thread-policy -->
-![线程优先级只是实际 CPU 分配的一部分](../../assets/diagrams/ch08/ch08-04-40-thread-policy.png)
-
-图：Android nice、Java priority 与系统策略属于不同层；看目标 TID 的实测调度，不从协程名字推断优先级。
 
 Linux 6.18 的 EEVDF 调度器会在 runnable fair entity（可运行的普通调度实体）中，根据 eligibility（是否具备运行资格）和 virtual deadline（虚拟截止时间）选择任务。这里我们要区分两种等待：协程 continuation 还停在用户态 scheduler 队列中是一种，worker 已经 Runnable 却还没拿到 CPU 是另一种。前者的线索是提交 / 开始标记和 worker 队列压力，后者看 Perfetto `sched` / `thread_state`、频率、cgroup 和 uclamp。
 
-<!-- gracker-diagram: ch08-04-41-eevdf-boundary -->
-![EEVDF 看不到尚未执行的 continuation](../../assets/diagrams/ch08/ch08-04-41-eevdf-boundary.png)
-
-图：用户态队列等待与内核 Runnable 是两种证据；EEVDF 在可运行公平实体中结合 eligibility 和虚拟截止时间选择。
 
 ADPF（Android Dynamic Performance Framework）session 绑定一组长期存在的 TID（线程 ID），与 coroutine ID 无关。周期性渲染、音视频或稳定计算确实需要 ADPF 时，应由 owner 明确的长期 worker 承担，按照完整工作周期上报 wall duration，并在 worker 被替换时更新 TID；session 按 owner 粒度创建，避免随每次 `launch`、suspend 或 resume 各开一个。
 
-<!-- gracker-diagram: ch08-04-42-adpf-tid-cycle -->
-![ADPF 绑定实际线程与完整工作周期](../../assets/diagrams/ch08/ch08-04-42-adpf-tid-cycle.png)
-
-图：Session 面向 TID 与可度量工作周期；协程迁移后静态 worker 列表不再代表其实际执行位置。
 
 ## Android 17 与内核 6.18 下的边界
 
@@ -653,10 +573,6 @@ ADPF（Android Dynamic Performance Framework）session 绑定一组长期存在�
 
 ## 排查清单
 
-<!-- gracker-diagram: ch08-04-43-diagnostic-loop -->
-![按 owner、数据语义和线程证据闭环](../../assets/diagrams/ch08/ch08-04-43-diagnostic-loop.png)
-
-图：先确认寿命和数据语义，再按实际等待层选择改动，最后在相同协议下验证结果与资源。
 
 ### 主线程
 
