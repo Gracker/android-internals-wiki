@@ -78,6 +78,11 @@ Hybrid（混合开发）页面通常由原生应用里的 WebView 承载。同�
 
 WebView 渲染管线见 13.10 节，优化实战见 22.16 节，内存持续增长的分类诊断见 10.1 节，Hybrid APM（Application Performance Monitoring，应用性能监控）见 17.11 节。功耗分析与技术选型会复用这些章节的指标和结论。
 
+<!-- gracker-diagram: a279-01-provider-code-host-and-renderer -->
+![WebView provider是实现包，不能按包名数进程](../../assets/diagrams/ch25/a279-01-provider-code-host-and-renderer.png)
+
+图：provider版本、宿主进程和renderer活动分别记录；一个页面不固定对应一个独立进程。
+
 ## 原生 App、Web App、Hybrid 页面的能耗边界
 
 同一个内容页换成不同形态，能耗差异来自运行时边界的变化。
@@ -89,6 +94,11 @@ WebView 渲染管线见 13.10 节，优化实战见 22.16 节，内存持续增�
 | WebView Hybrid 页 | 应用进程、WebView provider 包、一个或多个 renderer、JSBridge | 页面资源、桥调用、renderer、容器与页面双重生命周期 | 运营页、轻交互配置页、需要跨端复用的内容页 | 稳定性、权限边界和页面级观测仍由应用团队负责 |
 
 CPU 时间、网络传输、内存压力、页面驻留、后台活动和屏幕亮度都会影响整机能耗。`BatteryStats`（Android 框架的电量活动记账服务）不直接读取每个应用的电流，而是按 UID（Linux 用户 ID，通常按应用分配）记录 CPU、网络、唤醒等活动时间。设备不支持硬件测量时，平台会结合 `power_profile.xml`（厂商提供的组件耗电参数表）估算归因；实现了 [Power Stats HAL](https://source.android.com/docs/core/power/power-stats-hal)（功耗统计硬件抽象层）的设备可以用硬件能量数据改进部分归因。不同设备支持的电源轨（rail，给芯片子系统供电的支路）和归因模型不同，所以 `BatteryStats` 适合定位行为与做同机比较，不能代替外部功率计的绝对测量。
+
+<!-- gracker-diagram: a279-02-device-energy-uid-and-process -->
+![整机能量、UID归因、进程资源回答不同问题](../../assets/diagrams/ch25/a279-02-device-energy-uid-and-process.png)
+
+图：整机背景负载需要控制；隔离renderer与宿主的覆盖范围要核实，不能按页面凭空分摊能量。
 
 ## Native vs Web 能耗实验的结论与局限
 
@@ -107,6 +117,11 @@ CPU 时间、网络传输、内存压力、页面驻留、后台活动和屏幕�
 
 外推时要保留作者列出的限制：样本只有 10 对；只测试一台 Android 10 设备和一个浏览器；静态脚本不能覆盖结账、发帖等交互；Web 内容可能在实验期间变化；网络统计存在未及时更新的无效数据，部分对象被删减到较少的有效配对。论文既没有测试 WebView 容器，也没有把 Web 与原生实现控制成同一功能代码。它可以提示 CPU、内存和网络风险，不能证明某个 Hybrid 页面必须原生化。
 
+<!-- gracker-diagram: a279-03-paper-sample-and-generalization -->
+![论文验证的是Native与Chrome Web的有限样本](../../assets/diagrams/ch25/a279-03-paper-sample-and-generalization.png)
+
+图：论文结果可提示排查方向；本业务需要同内容、同脚本的Native / WebView / Chrome对照。
+
 ## WebView 的 CPU、内存和网络开销来源
 
 WebView 的成本通常分成四类看。
@@ -118,6 +133,16 @@ WebView 的成本通常分成四类看。
 
 功耗记录至少包含页面类型、provider 包版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。本地诊断可用 Perfetto（Android 系统跟踪工具）或 `ps` 按 renderer PID（进程编号）关联数据；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
 
+<!-- gracker-diagram: a279-04-virtual-reservation-not-resident-memory -->
+![WebView地址预留与物理常驻内存分开诊断](../../assets/diagrams/ch25/a279-04-virtual-reservation-not-resident-memory.png)
+
+图：看到大块reservation先核对映射权限与常驻页；不能把虚拟大小直接计入物理泄漏。
+
+<!-- gracker-diagram: a279-05-visibility-script-and-destruction -->
+![页面离屏后按生命周期停止持续工作](../../assets/diagrams/ch25/a279-05-visibility-script-and-destruction.png)
+
+图：pauseTimers与resumeTimers要考虑同进程其他WebView；缓存清理、资源停止和实例销毁是不同动作。
+
 ## 功耗基准测试方案
 
 功耗对比必须做成同机、同内容、同脚本的对照实验。实验对象至少包含三组：原生页、应用内 WebView 页、外部浏览器 Web 页。外部浏览器组不直接决定应用方案，但能帮助判断问题来自 Web 内容，还是来自应用容器。
@@ -125,6 +150,11 @@ WebView 的成本通常分成四类看。
 实验前固定这些条件：设备型号、系统版本、WebView provider 包版本、电量区间、亮度、刷新率、网络类型、账号状态、内容集合、广告开关、地理位置、温度起点和后台应用数量。每次采样只改一个变量，避免把页面版本、网络波动和设备温升混在一起。
 
 这组命令建立一轮手工采样窗口。每个方案都要重复执行同一套步骤。进程状态和资源缓存状态需要分别控制：冷启动表示应用或浏览器进程未驻留，热进程表示目标进程仍在内存；缓存状态表示 HTTP 缓存、WebView 缓存或离线包能否复用。条件允许时测试“冷/热进程 × 无/有缓存”四种组合；报告中至少要写清本轮采用的组合。
+
+<!-- gracker-diagram: a279-06-benchmark-cache-and-process-matrix -->
+![冷暖进程与缓存命中是两个独立实验维度](../../assets/diagrams/ch25/a279-06-benchmark-cache-and-process-matrix.png)
+
+图：分别控制Cookie、HTTP、DOM storage、Service Worker和离线包；清一层不代表全部清空。
 
 ```bash
 adb shell dumpsys batterystats --reset
@@ -161,6 +191,11 @@ Battery Historian 已不再积极维护，适合读取旧 Batterystats 记录，
 
 整机能耗是整机的总量，UID 归因把这些消耗算到具体应用，进程资源用量进一步拆到具体进程，三者回答的问题不同。单个指标只能说明相关现象，判断原因还要结合时间线和对照组。
 
+<!-- gracker-diagram: a279-07-benchmark-time-window-and-coverage -->
+![先统一采样窗口，再关联能量与进程活动](../../assets/diagrams/ch25/a279-07-benchmark-time-window-and-coverage.png)
+
+图：netstats比较目标UID前后增量并保留刷新延迟；meminfo包快照不能默认为覆盖所有renderer。
+
 ## 原生化与 Web 优化的决策表
 
 技术选型需要回答两个问题：页面高频操作是否产生了可测量的额外 CPU、内存或网络成本，以及局部原生化能否消除主要成本。
@@ -175,6 +210,11 @@ Battery Historian 已不再积极维护，适合读取旧 Batterystats 记录，
 | 富交互工具页 | 局部原生化 | 手势、编辑、图形、低延迟输入多 | 原生负责输入和高频渲染区域，Web 负责配置面板；把密集桥调用合并成批量请求 |
 
 保留 WebView 时，应按测量结果处理缓存命中、图片尺寸、请求合并、按需拆分脚本包和页面不可见后的资源释放。发布前要为 CPU 时间、PSS、网络字节、卡顿率、退出率和 Android Vitals 设置量化阈值；任一指标越过阈值，就停止扩大用户范围并分析原因。
+
+<!-- gracker-diagram: a279-08-optimization-versus-native-migration -->
+![选型由已测瓶颈与局部改造收益决定](../../assets/diagrams/ch25/a279-08-optimization-versus-native-migration.png)
+
+图：低端机、弱网、低电量和provider版本分组；实验室均值不能覆盖所有用户。
 
 ## 线上监控与发布条件
 
@@ -195,6 +235,11 @@ WebView renderer 的版本边界如下：
 - **API 29+**：再实现 `WebViewRenderProcessClient.onRenderProcessUnresponsive()` 与 `onRenderProcessResponsive()`，分别接收 renderer 持续无响应和恢复响应的通知。无响应回调可能以不短于 5 秒的间隔重复，告警要去重；若主动终止 renderer，必须能处理共享该 renderer 的所有 WebView。
 - **API 26–28**：平台没有标准的 renderer 无响应回调。页面加载或交互超时只能作为用户体验故障信号，不能据此断言 renderer 已失去响应。
 
+<!-- gracker-diagram: a279-09-renderer-unresponsive-exit-and-recovery -->
+![renderer无响应通知与退出清理不是同一个事件](../../assets/diagrams/ch25/a279-09-renderer-unresponsive-exit-and-recovery.png)
+
+图：didCrash帮助区分异常与系统回收；ApplicationExitInfo补宿主退出，不能代替renderer回调。
+
 发布条件可以分成三档：
 
 - 小流量发布前：实验室基准测试通过，原生对照、WebView 对照、外部浏览器对照都有完整报告。
@@ -212,6 +257,11 @@ Android 官方提供 WebView DevTools App，用于查看系统 WebView 组件信
 PWA（Progressive Web App，可安装并支持离线能力的渐进式 Web 应用）、Trusted Web Activity（TWA）和普通 WebView 都能展示 Web 内容，但运行责任不同。普通 WebView 由应用持有 View 生命周期、权限回调和桥接口。TWA 通过支持该协议的浏览器，以全屏方式显示经过 Digital Asset Links（用站点文件和应用签名验证双方关系）验证的站点；它不是嵌入应用进程的 WebView，宿主应用也不能直接访问页面内容、Cookie 或 `localStorage`，不能注入 WebView 的 JSBridge。PWA 的安装、更新和 Service Worker 生命周期主要由浏览器管理。
 
 功耗测试时不要把三者混成一组。普通 WebView 的成本归到应用容器，TWA 和外部浏览器更依赖浏览器实现。选择 TWA 不能自动解决页面 CPU 或网络问题，只是把部分容器责任移给浏览器。
+
+<!-- gracker-diagram: a279-10-webview-twa-browser-responsibility -->
+![WebView与TWA改变容器责任，页面成本仍需测量](../../assets/diagrams/ch25/a279-10-webview-twa-browser-responsibility.png)
+
+图：选择TWA不自动产生节电收益，也不能注入WebView JSBridge；同条件测量浏览器相关进程。
 
 ## 低端机与弱网场景
 

@@ -56,17 +56,37 @@ Compose 仍是随应用发布的 AndroidX 库，没有并入 Android 17 framewor
 
 “Activity 直接插入 `AndroidComposeView`”的说法与源码不符：公开宿主是 `ComposeView`；内部组合创建时，`AbstractComposeView` 才会创建或复用 `AndroidComposeView`，后者继承 `ViewGroup`，负责协调 Compose UI 节点与 Android View 的测量、布局、输入和绘制。
 
+<!-- gracker-diagram: a230-01-host-hierarchy -->
+![Compose 通过 View 宿主接入 Android 渲染管线](../../assets/diagrams/ch21/a230-01-host-hierarchy.png)
+
+图：公开容器与内部 UI owner 各有职责；Composable 调用数量不能等同 View 或布局节点数量。
+
 `attach` 表示 View 已接入窗口。`ComposeView.setContent` 在 View 尚未 attach 时只保存 content，并把 `shouldCreateCompositionOnAttachedToWindow` 置为 `true`；如果 View 已 attach，当前实现会立即调用 `createComposition()`。初始组合在 attach 或显式调用 `createComposition()` 时创建，以先发生者为准。所以 `setContent {}` 会随 View attach、Lifecycle 状态和父组合的准备时机推进，把它归类为“一次纯异步入队”并不可靠。
+
+<!-- gracker-diagram: a230-02-composition-triggers -->
+![setContent 的工作取决于 attach、父 context 与 Lifecycle](../../assets/diagrams/ch21/a230-02-composition-triggers.png)
+
+图：测量路径也会 ensureCompositionCreated；composition 对象建立与业务 content 开始执行要分开看。
 
 ### 1.2 窗口级 `Recomposer` 受 Lifecycle 驱动
 
 `Recomposer` 是 Compose runtime 的调度器：它接收状态失效通知，安排重组，并把变化应用到一个或多个 `Composition`。`AbstractComposeView` 会优先使用显式父 context、View 树中的 composition context 或缓存；都没有时，再通过 `windowRecomposer` 为窗口创建或取得 `Recomposer`。默认创建策略使用 UI 线程的 `AndroidUiDispatcher`，并从 View 树寻找 `LifecycleOwner`：
+
+<!-- gracker-diagram: a230-03-parent-context-search -->
+![父 CompositionContext 按优先级复用，最后才创建窗口调度器](../../assets/diagrams/ch21/a230-03-parent-context-search.png)
+
+图：图中顺序表示逐级回退查找，前一来源存在时不再访问后续来源；不是四个 Recomposer 依次建立。
 
 - Lifecycle 至少到 `STARTED` 时，frame clock（向动画和重组提供帧时间的时钟） 才持续提供可见帧，它向动画和重组提供帧时间；
 - `ON_STOP` 会暂停 frame clock；
 - `ON_DESTROY` 会取消对应 `Recomposer`；
 - 宿主从窗口 detach 时，窗口级 `Recomposer` 也会被取消；
 - 找不到必需的 View tree owner 时，当前实现会抛出异常，不会安静等待一个不确定时长。
+
+<!-- gracker-diagram: a230-04-lifecycle-clock -->
+![初始组合与 Recomposer 帧时钟有不同的生命周期边界](../../assets/diagrams/ch21/a230-04-lifecycle-clock.png)
+
+图：找不到必需 owner 会报错；默认窗口策略使用 UI dispatcher，并受宿主生命周期约束。
 
 Fragment 中使用 `ComposeView` 时，我们要让 View 树 owner 与组合释放策略匹配。这属于生命周期正确性问题，用 owner 与策略是否匹配来衡量，而不是固定的毫秒数。
 
@@ -86,6 +106,11 @@ Fragment 中使用 `ComposeView` 时，我们要让 View 树 owner 与组合释�
 
 所以首次成本更适合按几部分加总来估计，`N × M` 这样的层数公式套不上：被进入的 composable 工作量；创建的布局节点、modifier 节点和 semantics 节点；业务计算、子组合、文本与图片处理；以及应用变更、测量、布局和绘制。其中 modifier 节点承载布局、绘制或输入行为，semantics 节点保存无障碍和测试所需的语义信息。
 
+<!-- gracker-diagram: a230-05-entered-subtree -->
+![首次组合只执行进入的分支和布局请求的 item](../../assets/diagrams/ch21/a230-05-entered-subtree.png)
+
+图：Lazy 请求范围可包含预取或保留项；一个 composable 可以不产生布局节点，也可以产生多个。
+
 ### 1.4 composition 完成后仍要经过 View traversal
 
 初始结果应用到 UI 树后，`AndroidComposeView` 仍是 `ViewRootImpl` 管理的一棵 View 子树，仍要走一轮 View traversal——`ViewRootImpl` 调度的测量、布局和绘制。我们顺着这棵子树看可见路径：
@@ -97,6 +122,11 @@ Fragment 中使用 `ComposeView` 时，我们要让 View 树 owner 与组合释�
 5. SurfaceFlinger（系统显示合成服务） 合成各窗口图层后，像素才出现在屏幕上。
 
 组合只是首帧中的一段。若 Perfetto 系统 trace 显示组合很短，而主线程 I/O（磁盘或网络输入输出）、文本测量、图片解码、View traversal 或 RenderThread 很长，我们该去处理对应的那一段；继续删 composable 层级帮不上忙。
+
+<!-- gracker-diagram: a230-06-composition-to-display -->
+![组合结束以后，仍有布局、绘制与系统呈现](../../assets/diagrams/ch21/a230-06-composition-to-display.png)
+
+图：系统 trace 中组合很短时，继续检查文本、图片、I/O、traversal 和 RenderThread 对应长段。
 
 ## 2. 初始 composition 与重组不能混为一谈
 
@@ -118,6 +148,11 @@ fun HomeScreen(items: List<Item>) {
 这段代码适合计算规模可控、结果只服务 UI 的场景。数据量大或排序涉及 I/O 时，我们把排序挪到数据准备阶段完成——repository（封装数据来源的层） 封装数据来源，use case（封装一项业务操作的层） 封装一项业务操作，ViewModel 也可以承担——再把准备好的 UI state（可直接用于渲染的页面状态），也就是可直接用于渲染的页面状态，传入首屏。把代码从 Activity 移进 ViewModel 并不会自动延迟它：只要首屏同步创建 ViewModel 并等待结果，这段工作仍属于首帧显示时间（TTID） TTID（Time to Initial Display，首帧显示时间） 或完整显示时间（TTFD） TTFD（Time to Full Display，完整显示时间） 的统计路径。
 
 `remember(LazyThreadSafetyMode.NONE)` 并不存在于 Compose API：`remember` 的公开重载接收 calculation 和可选 keys，`LazyThreadSafetyMode` 参数属于 Kotlin `lazy()`。它也关不掉 Snapshot 对状态读取和失效通知的跟踪。
+
+<!-- gracker-diagram: a230-07-remember-key-boundary -->
+![remember 可避免重复计算，首次成本仍在组合里](../../assets/diagrams/ch21/a230-07-remember-key-boundary.png)
+
+图：大计算放入数据准备阶段仍须异步与状态管理；仅从 Activity 移入同步 ViewModel 不会移走关键路径。
 
 ## 3. 首屏开销应按来源拆分
 
@@ -155,6 +190,11 @@ Startup Profile 是 Baseline Profile 中专门标记启动路径的规则子集�
 
 当前官方文档建议使用 Macrobenchmark 1.2.0+、AGP（Android Gradle Plugin）8.2+ 和 Android Studio Iguana+，并在 release 构建中开启 R8。DEX layout optimization 从 AGP 8.1 开始可用，AGP 8.3 起默认开启；使用 AGP 8.1～8.2 时还要在 `baselineProfile {}` 中显式设置 `dexLayoutOptimization = true`。依赖库可以贡献 Baseline Profile；Startup Profile 只能来自应用自己定义的启动测试。详细生成与产物校验见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)。
 
+<!-- gracker-diagram: a230-08-profile-roles -->
+![库规则、应用规则与 Startup Profile 各作用于不同边界](../../assets/diagrams/ch21/a230-08-profile-roles.png)
+
+图：BOM 只管理版本，不含实现或 profile；库可贡献 Baseline，Startup 由应用自己的启动路径产生。
+
 ### 4.3 类预加载与 Profile 的分工
 
 在 `Application.onCreate()` 中调用 `Class.forName()` 预加载 Compose 类，效果只是把类加载挪到更早的主线程路径，还可能扩大每次启动的必做集合；它替代不了 AOT 编译，也保证不了启动代码在 DEX 中相邻存放。
@@ -173,6 +213,11 @@ Startup Profile 是 Baseline Profile 中专门标记启动路径的规则子集�
 
 Compose UI 1.11 起提供 `ComposeViewContext`，可让尚未 attach 的 `ComposeView` 提前创建组合，官方示例场景是 RecyclerView item 预取。这个 API 允许“未挂到 View 树时组合”，但依旧依赖一个已 attach View 提供的上下文与 owner，对 UI 代码运行线程的限制也依旧。若预取的 `ComposeView` 最终没有 attach，必须调用 `disposeComposition()` 释放资源。整页启动是否值得这样预取，应由 trace 和端到端基准决定。
 
+<!-- gracker-diagram: a230-09-unattached-prefetch -->
+![未 attach 预组合仍依赖已 attach 的上下文与清理](../../assets/diagrams/ch21/a230-09-unattached-prefetch.png)
+
+图：参考 View 在上下文有效期间保持附着；整页预取的价值需端到端 trace 证明。
+
 ### 5.2 把重计算移出 composable，但保留状态所有权
 
 适合移出的工作包括：
@@ -186,6 +231,11 @@ Compose UI 1.11 起提供 `ComposeViewContext`，可让尚未 attach 的 `Compos
 
 `LaunchedEffect` 会在进入组合后启动协程，“首帧后免费执行”的印象要打折扣：它的启动、主线程片段以及切换 dispatcher（决定协程在哪类线程执行的调度器） 前的代码，仍可能与首帧竞争；dispatcher 决定协程在哪类线程执行。首屏必需数据应有明确的 loading/ready 状态，也就是区分“仍在准备”和“已经可显示”；非必需任务交给受生命周期管理的后台工作，并用 trace 验证调度位置。
 
+<!-- gracker-diagram: a230-10-effects-and-data -->
+![缓存、后台数据与 Effect 都有各自的成本归属](../../assets/diagrams/ch21/a230-10-effects-and-data.png)
+
+图：rememberSaveable 适合小型可保存值；生命周期、错误态与取消必须由明确所有者处理。
+
 ### 5.3 正确选择 `Column` 与 Lazy layout
 
 官方文档给出的划分很直白：固定且数量很少的内容可以使用 `Column`/`Row`；数量大或未知时交给 Lazy layout，避免一次组合并布局所有 item。要给出“100 项只组合 8 项”“耗时降低 50%”这类承诺，得先弄清可见数量从哪来：它取决于 viewport（当前可见区域）、item 尺寸、content padding（列表内容内边距）、预取与版本实现。
@@ -198,11 +248,21 @@ Lazy 首屏还要注意：
 - 不要把大量元素塞进同一个 `item { ... }`，否则它们仍会作为一个单元一起组合和测量；
 - 小型固定按钮组、标签组没有理由只为“懒加载”换成 `LazyRow`。
 
+<!-- gracker-diagram: a230-11-lazy-viewport -->
+![Lazy 请求量来自可见区域与布局约束，零尺寸会误导填充](../../assets/diagrams/ch21/a230-11-lazy-viewport.png)
+
+图：稳定 key 支持重排，contentType 描述可复用结构；同一 item 内的大批内容仍作为整体组合测量。
+
 ### 5.4 `SubcomposeLayout` 的适用场景
 
 `SubcomposeLayout` 允许父布局拿到 constraints（父级给出的最小、最大宽高限制） 后，在 measure 期间选择并组合子内容，这个过程称为 subcomposition（子组合）。`LazyColumn`、`LazyRow` 和 `BoxWithConstraints` 属于官方文档列出的典型“子内容依赖父布局阶段”场景。
 
 普通 `Box` 即使使用 `Modifier.align`，源码仍调用常规 `Layout` 和 `BoxMeasurePolicy`，并不会因此变成 `SubcomposeLayout`。自定义页面若只为推迟工作就默认选择子组合，代价是把一部分组合工作移到布局阶段，Perfetto 中经常表现为两个相邻工作块，还可能抬高当前帧总成本；它的适用条件是子内容必须依赖测量约束，或需要按可见区域创建。
+
+<!-- gracker-diagram: a230-12-subcompose-layout -->
+![子组合将内容选择放到测量期间，普通 Box 不走此机制](../../assets/diagrams/ch21/a230-12-subcompose-layout.png)
+
+图：组合工作没有被删除，只是部分发生在布局阶段；trace 应把相邻工作块放在同一帧预算里看。
 
 ### 5.5 阶段反馈与首帧后的第二帧
 
@@ -214,6 +274,11 @@ Lazy 首屏还要注意：
 
 若父子关系可以在同一次测量中求解，应使用现有布局组件或自定义 `Layout`。自适应页面也应从当前 constraints 或窗口尺寸类别派生结构，避免把一次布局结果绕回组合。
 
+<!-- gracker-diagram: a230-13-phase-feedback -->
+![把布局尺寸写回组合状态，可能多走一次帧循环](../../assets/diagrams/ch21/a230-13-phase-feedback.png)
+
+图：同一布局关系可在测量中求解时，用既有布局或自定义 Layout 避免绕回组合。
+
 ## 6. Android 17 多窗口与多进程边界
 
 自由窗口、分屏和旋转都可能改变窗口约束。约束变化后会重新测量，页面读取窗口类别时会发生必要的重组，这属于正确行为。在 `onCreate()` 里等一个所谓“稳定的 `WindowMetrics`”再调 `setContent`，只会推迟首帧：`WindowMetrics` 记录的是某一时刻的窗口范围和系统区域信息，可调整窗口没有永久稳定尺寸。
@@ -222,6 +287,11 @@ Lazy 首屏还要注意：
 
 每个 Android 进程有独立的 heap（运行时堆内存）、ClassLoader（把 DEX 中的类装入进程的加载器） 和 Compose runtime 状态；只有创建了 Compose UI 宿主的进程，才会产生对应的类加载与组合成本。通知和 App Widget 常使用 `RemoteViews`，把受限 View 描述交给系统或其他进程显示；Glance 最终生成的也是 `RemoteViews`，这条路径套用 Activity 里的 `AndroidComposeView` 首帧模型并不合适。多进程 Baseline Profile 是否覆盖入口，要用该进程自己的启动 trace 验证。
 
+<!-- gracker-diagram: a230-14-window-process-boundaries -->
+![窗口约束与进程边界改变组合发生的位置](../../assets/diagrams/ch21/a230-14-window-process-boundaries.png)
+
+图：窗口读取范围和离散化可以检查，不能冻结一次窗口指标来掩盖后续约束变化。
+
 ## 7. View/Compose 混合页面
 
 混合页面会同时执行 View 的 inflate/binding（创建 View 并绑定数据） 和 Compose 宿主的初始组合。每个独立 `ComposeView` 都有自己的组合生命周期，内部持有 Compose UI owner；首屏分散许多 `ComposeView`，也可能推高宿主创建、owner 查找和组合管理的成本。
@@ -229,6 +299,11 @@ Lazy 首屏还要注意：
 优化时可以评估把相邻 Compose 内容放进同一个宿主，但要保留 Fragment/View 各自的生命周期。`ViewCompositionStrategy` 决定 View 宿主中的组合何时释放，先保证它与实际生命周期匹配。为了少一个宿主而让组合越过 Fragment view 生命周期，等于拿未经证实的小幅性能收益去换泄漏或状态错误。
 
 反方向的 `AndroidView`/`AndroidViewBinding` 是在 Compose 中承载传统 View 的互操作 API，也会把 View 创建和测量带入 Compose 页面。归因时我们在 trace 中分别查看 XML inflate、View 构造、组合、布局和绘制；整个混合页的耗时要按这些段拆开看，而不是全部记到 Compose。
+
+<!-- gracker-diagram: a230-15-interop-host-lifetime -->
+![混合页面把宿主建立与组合生命周期同时带入首帧](../../assets/diagrams/ch21/a230-15-interop-host-lifetime.png)
+
+图：以相同功能和生命周期比较；整个混合页长段不能全部归到 Compose Runtime。
 
 ## 8. 用 TTID、TTFD 和 Perfetto 测量
 
@@ -250,6 +325,11 @@ fun HomeRoute(state: HomeUiState) {
 ```
 
 这里的 ready 是业务完成条件，不要求列表非空。若错误页或离线页也属于可交互完成态，应让这些状态同样释放 fully drawn reporter，避免 TTFD 样本永久缺失。
+
+<!-- gracker-diagram: a230-16-fully-drawn-ready -->
+![充分绘制条件由业务定义，度量终点还需对齐显示帧](../../assets/diagrams/ch21/a230-16-fully-drawn-ready.png)
+
+图：不要求所有后台任务完成；错误或离线若是完成态，也必须释放等待，防止样本缺失。
 
 ### 8.2 Macrobenchmark 固定实验条件
 
@@ -281,6 +361,11 @@ class HomeStartupBenchmark {
 
 `CompilationMode.Partial(Require)` 会要求目标 APK 同时包含可安装的 Baseline Profile 与 ProfileInstaller，缺少任意一项都会在编译准备阶段报错。它会按 profile 做部分 AOT 编译，适合验证应用的 profile 交付是否完整。另建 `CompilationMode.None()` 场景会清除编译 profile，不做预编译，并允许代码在运行中 JIT（即时编译）；它用于观察通常偏慢的最差条件，性能下界和用户默认安装状态都不是它的定位。比较前要固定设备、系统、APK、启动入口、数据集、网络替身和温控条件，并查看多轮的中位数与分布。
 
+<!-- gracker-diagram: a230-17-benchmark-window -->
+![启动采集同时固定编译条件与业务等待边界](../../assets/diagrams/ch21/a230-17-benchmark-window.png)
+
+图：稳定标记必须只在与 ReportDrawnWhen 同义的完成态出现；双参数 By.res 会添加 package:id/ 前缀。
+
 ### 8.3 Perfetto 负责归因
 
 Macrobenchmark 会产出 system trace，也就是把系统与应用多个线程的带时间事件放在同一条时间轴上。初始分析可按这条顺序进行：
@@ -295,9 +380,19 @@ Macrobenchmark 会产出 system trace，也就是把系统与应用多个线程�
 
 细粒度 composable 名称需要 `androidx.compose.runtime:runtime-tracing`。使用 Compose BOM 时，这项依赖无需单列版本。Android Studio 可以自动完成常规 system trace 配置；从终端手动采集还需要 `tracing-perfetto`、只用于测试构建的 `tracing-perfetto-binary`、名为 `track_event` 的 Perfetto 数据源和 `ENABLE_TRACING` 广播。Macrobenchmark 的完整 Composition Tracing 还要在测试模块加入 tracing 依赖，并传入 instrumentation 参数 `androidx.benchmark.fullTracing.enable=true`。`tracing-perfetto-binary` 会明显增大包体，发布生产包时应把它留在测试构建里。
 
+<!-- gracker-diagram: a230-18-trace-paths -->
+![粗粒度、细粒度与采集入口要按构建分别配置](../../assets/diagrams/ch21/a230-18-trace-paths.png)
+
+图：BOM 管理 runtime-tracing 版本；API37 不会凭系统版本自动开启细粒度 tracing。
+
 在 `Application.onCreate()` 里调一个笼统的 `Trace.enable()`，或者假定 Android 15 到 Android 17 会自动打开细粒度 Compose tracing，都靠不住；采集方式取决于 Android Studio、Macrobenchmark 或手动 Perfetto 路径，详见 [§22.3 Compose Runtime Tracing](../ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md)。
 
 `FrameMetrics` 和 `FrameTimingMetric` 适合回答帧是否超时；耗时是否来自组合，它们单独回答不了。反过来，某个 composable slice 较长，用户也未必已经看到卡顿，下结论前还要与同一帧的 deadline（完成时限）、主线程和 RenderThread 工作对齐。
+
+<!-- gracker-diagram: a230-19-phase-evidence -->
+![症状先映射到同一帧与启动窗口中的阶段证据](../../assets/diagrams/ch21/a230-19-phase-evidence.png)
+
+图：固定 APK、设备、温控、编译与数据条件；同时看 TTID、TTFD、首交互及分布。
 
 ## 9. 常见症状与下一步证据
 

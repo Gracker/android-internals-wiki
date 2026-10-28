@@ -164,6 +164,11 @@ OkHttp 5.4.0 还提供通用 `CompressionInterceptor`。它把注册算法组成
 
 如果调用方手动设置了 `Accept-Encoding`，解码就要自己负责，`CompressionInterceptor` 和默认 gzip 路径都不会再透明介入。要关闭压缩，显式发送 `Accept-Encoding: identity` 即可。只添加 `br` 或 `gzip` 请求头、又指望响应体自动解压，是常见的踩坑点。
 
+<!-- gracker-diagram: a263-01-compression-negotiation -->
+![压缩协商决定谁负责解压](../../assets/diagrams/ch24/a263-01-compression-negotiation.png)
+
+图：手写 Accept-Encoding 会改变解码责任；协商和数据格式是不同层次，Protocol Buffers 本身也不是内容压缩。
+
 服务端按 `Accept-Encoding` 返回不同表示时，应发送 `Vary: Accept-Encoding`。`Vary` 指定“哪些请求头共同决定缓存变体”；共享缓存据此把 gzip、Brotli 和未编码响应分开保存，每种编码只发给支持它的客户端。
 
 #### 哪些数据值得压缩
@@ -211,6 +216,11 @@ OkHttp 5.4.0 还提供通用 `CompressionInterceptor`。它把注册算法组成
 
 `LruCache` 的 LRU 是“最近最少使用”策略：空间不足时优先淘汰最久未访问的条目。容量要按对象的实际成本算——以 `Bitmap` 为例，条目大小应来自分配字节数这类可验证数据，只数条目个数会严重失真。系统给出的内存等级只作为容量输入之一；界面对象、数据库游标、原生内存和图形资源仍在共同消耗进程预算。
 
+<!-- gracker-diagram: a263-02-cache-storage-lifetimes -->
+![四种缓存与持久真源的生命周期](../../assets/diagrams/ch24/a263-02-cache-storage-lifetimes.png)
+
+图：容量、淘汰和陈旧策略属于缓存；离线实体和待发送操作属于持久真源，不能因缓存缺失而丢掉用户操作。
+
 AOSP `Context.getCacheDir()` 的文档说明了以下几点：
 
 - 系统需要回收存储空间时，会按 `lastModified()` 从较旧文件开始处理；
@@ -221,6 +231,11 @@ AOSP `Context.getCacheDir()` 的文档说明了以下几点：
 API 26 起，`StorageManager.setCacheBehaviorGroup()` 可以让一个目录在系统自动清理时整体保留或整体删除，并用组内最新的修改时间代表整组。`setCacheBehaviorTombstone()` 会把被系统自动清理的文件截断为零字节，而非移除目录项；这种零长度“墓碑”可帮助应用区分“曾经存在但已被清理”和“从未创建”。
 
 两种行为都只能设置在目录上并递归生效，也都只影响系统的自动清理。用户主动清除缓存时，墓碑设置会被忽略；分组设置也不提供持久性保证。
+
+<!-- gracker-diagram: a263-03-cache-cleanup-semantics -->
+![系统缓存清理的 Group 与 Tombstone](../../assets/diagrams/ch24/a263-03-cache-cleanup-semantics.png)
+
+图：Group 改变自动清理粒度，Tombstone 保留零长度痕迹；两者都不把缓存提升为用户数据存储。
 
 `externalCacheDir` 可能不可用，使用前先检查返回值和卷状态。要在应用升级、进程重启或设备重启后仍可靠恢复的数据，放进持久数据源，缓存目录只当加速层用。
 
@@ -271,6 +286,11 @@ RFC 9111 把“能否存储”“当前是否新鲜”“过期后能否验证�
 
 `ETag` 可以表达与时间无关的表示版本，还分强验证器和弱验证器；`Last-Modified` 适用于服务端能可靠维护修改时间的资源，但 HTTP 日期粒度、时钟和生成方式都会影响判断。两者该按服务端数据模型选，它们是两套适用条件，排不出高低。
 
+<!-- gracker-diagram: a263-04-http-cache-decision -->
+![HTTP 缓存区分新鲜复用与条件验证](../../assets/diagrams/ch24/a263-04-http-cache-decision.png)
+
+图：条件命中仍访问网络，OkHttp 同时增加 networkCount 与 hitCount；只看单一命中率会混淆复用路径。
+
 服务端返回随请求头变化的表示时，用 `Vary` 声明参与选择的请求头。OkHttp 把这些请求头的名称和值写进缓存元数据，复用前逐项比较；`Vary: *` 表示任何请求都匹配不上，这样的响应也就进不了 OkHttp 缓存。自建缓存键要是只包含 URL、漏掉语言、内容编码或账号范围，就可能复用错误的响应变体。
 
 #### OkHttp 5.4.0 的缓存实现
@@ -320,6 +340,11 @@ TTL 规定缓存条目可直接使用多久，但固定 TTL 只认时间：用�
 磁盘写入走“临时文件 + 原子重命名”：先写同一文件系统中的临时文件，校验成功后再替换目标；文件系统提供该保证时，读取者只会看到旧文件或完整的新文件。读取时把文件不存在、零长度、结构版本不支持、校验失败和解析失败都当作可恢复的缓存未命中——删掉损坏条目，回权威数据源重新获取。持久业务数据损坏则进入迁移或恢复流程。
 
 展示陈旧数据时，界面状态至少要分得清“已有旧数据、正在刷新”“已有旧数据、刷新失败”和“没有数据”三种情形。字段 `lastSyncedAt` 只记录最近一次成功同步的时间，失败的尝试别去改写它。预取任务要设业务范围和淘汰优先级，别让一次性内容挤占高复用资源。
+
+<!-- gracker-diagram: a263-05-business-cache-refresh -->
+![业务缓存按键合并刷新与按依赖失效](../../assets/diagrams/ch24/a263-05-business-cache-refresh.png)
+
+图：TTL 之外仍需依赖失效、同键合并与完整性校验；lastSyncedAt 只在成功同步后更新。
 
 ### 缓存与离线真源的分工
 
@@ -397,6 +422,11 @@ HTTP、内存和可删除文件缓存都在减少重复工作，条目缺失时�
 离线优先的 `Repository` 是协调本地与网络数据源的数据访问组件：`Flow` 是可持续发出新值的异步数据流，`StateFlow` 还会保留当前值，Paging 数据流则按页提供列表。界面与业务逻辑只观察本地数据；网络读取完成后先写进本地，再由本地数据变化通知界面。绕过 `Repository` 直接读网络数据源，离线语义就断了。
 
 只有业务实体的界面还缺同步语义：刷新状态不暴露出来，“旧数据可读”和“数据已经同步”就混在一起了。我们建议把以下信息也放进界面状态：
+
+<!-- gracker-diagram: a263-06-offline-read-source -->
+![离线优先固定本地读取入口](../../assets/diagrams/ch24/a263-06-offline-read-source.png)
+
+图：界面读取本地，网络更新持久层；“本地可读”“正在刷新”和“已同步”分别表达。
 
 - 本地是否有可展示数据；
 - 最近一次成功同步时间；
@@ -539,6 +569,11 @@ suspend fun setBookmarked(
 
 调度调用放在事务之后。进程恰好在事务提交后、调用 `ensureScheduled()` 前终止时，Outbox 记录还在，应用启动、登录恢复或其他同步入口会再次安排“唯一工作”。唯一工作以固定名称避免重复调度同一逻辑任务。分工是：Outbox 保存待发送这一业务事实，`WorkRequest` 只记录何时、在什么约束下运行 `Worker`。
 
+<!-- gracker-diagram: a263-07-outbox-atomic-scheduling -->
+![本地变更与 Outbox 原子提交，调度随后执行](../../assets/diagrams/ch24/a263-07-outbox-atomic-scheduling.png)
+
+图：本地提交与安排工作之间进程终止时，恢复入口重扫 Outbox；唯一工作策略还须覆盖 Worker 结束与新操作入队的交错。
+
 网络请求放在 Room 事务外面：发送前用短事务选择可发送记录，响应回来后再用短事务更新实体、服务端版本和 Outbox 状态。这样网络等待期间就不会占着数据库事务。
 
 #### WorkManager 负责持久调度
@@ -597,7 +632,17 @@ WorkManager 对开始时间只有尽力而为的保证。要用户当场等结�
 
 表中这几类错误——临时传输错误、身份失效、数据错误、版本冲突——会进入不同的队列状态；退避时间、服务端限流时间和业务重试上限也是三档不同的约束。服务端明确给出等待时间时，业务队列把它保存下来，WorkManager 的退避只负责工作级重新调度。
 
+<!-- gracker-diagram: a263-08-worker-error-states -->
+![同步失败按原因进入不同持久状态](../../assets/diagrams/ch24/a263-08-worker-error-states.png)
+
+图：重试、服务端限流时间和业务错误上限是不同约束；取消后的 Result 不作为成功确认。
+
 “服务端已成功、本地尚未确认时进程终止”这种情形，靠发送端复用原操作的幂等键来兜底：服务端返回已有结果后，本地按普通成功确认。WorkManager 的唯一工作防不住这种重复请求。
+
+<!-- gracker-diagram: a263-09-idempotency-and-version -->
+![幂等键与版本条件解决两类问题](../../assets/diagrams/ch24/a263-09-idempotency-and-version.png)
+
+图：幂等键防同一次操作重复执行；服务端版本防基于旧副本覆盖新数据。两者不能互相替代。
 
 ### 冲突解决策略
 
@@ -648,6 +693,11 @@ WorkManager 对开始时间只有尽力而为的保证。要用户当场等结�
 
 分页键必须包含查询条件、账号和排序方式——只用一个全局 `nextKey`，不同搜索词或账号就会共享分页位置。服务端改变排序或游标格式时，清理相应分页键并启动完整刷新。
 
+<!-- gracker-diagram: a263-10-remote-mediator-transaction -->
+![RemoteMediator 的数据与分页键同事务](../../assets/diagrams/ch24/a263-10-remote-mediator-transaction.png)
+
+图：数据与续页键必须同时推进，避免恢复后跳页或重复请求；远端响应不直接绕过本地上界面。
+
 #### 乐观更新需要持久状态机
 
 状态机为每项操作规定允许的状态及转换，例如“待同步 → 已确认”或“待同步 → 冲突”。当前状态持久化之后，进程重建也能恢复同一语义。乐观更新适合收藏、已读、草稿这类可回滚或失败可解释的动作。界面状态要区分：
@@ -677,6 +727,11 @@ WorkManager 对开始时间只有尽力而为的保证。要用户当场等结�
 - Room 事务耗时、分页键异常与数据库迁移失败。
 
 日志里只放内部操作标识和错误分类；令牌、完整请求数据和用户正文一律不落日志。账号退出时，取消该账号的唯一工作，删除或隔离它的业务数据、分页键和 Outbox，并验证已在运行的请求返回后写不进已退出的账号。
+
+<!-- gracker-diagram: a263-11-late-ack-account-fence -->
+![迟到确认只作用于对应账号和操作](../../assets/diagrams/ch24/a263-11-late-ack-account-fence.png)
+
+图：确认只清除对应操作的状态；账号退出和连续编辑都需防止迟到响应覆盖更晚的本地事实。
 
 恢复测试应覆盖：
 

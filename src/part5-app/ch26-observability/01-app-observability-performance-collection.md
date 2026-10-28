@@ -132,6 +132,11 @@ Firebase Performance Monitoring 更接近应用内部性能观测：自动采集
 
 所以应用自建体系通常组合两类数据：Android vitals 提供 Play 侧质量结果，自建指标补充内部维度，日志和追踪提供现场证据。只看 vitals，能发现质量变化；要解释变化出现在哪个业务场景、由什么触发，还得靠后者。
 
+<!-- gracker-diagram: a286-01-metrics-logs-traces-and-play-baseline -->
+![指标找群体回归，日志与追踪还原单次证据](../../assets/diagrams/ch26/a286-01-metrics-logs-traces-and-play-baseline.png)
+
+图：当前内存core vitals为Anonymous RSS+Swap与bitmap内存，不直接复用App PSS数值。
+
 #### 事件数据模型设计示例
 
 指标、日志和追踪在端侧的编码方式不同，但需要共享关联字段。我们先看一份最小公共信封，即包在各类事件外层、用于关联和解码的一组公共字段；字段名属于应用协议示例，和 Android 平台 API 无关。
@@ -235,9 +240,19 @@ Firebase Performance Monitoring 更接近应用内部性能观测：自动采集
 
 `trace_id`、`span_id` 和 `parent_span_id` 构成父子关联，单调时钟给出同设备会话内的起点与时长。
 
+<!-- gracker-diagram: a286-02-event-identity-clocks-and-schema -->
+![公共信封分开管理身份、关联、时钟和版本](../../assets/diagrams/ch26/a286-02-event-identity-clocks-and-schema.png)
+
+图：会话跨重启要开启新时钟区间；字段名是应用协议，不是Android统一事件格式。
+
 Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求系统追踪（system trace）、Java 堆转储（heap dump）、原生堆采样（heap profile）或调用栈采样（stack sampling）；请求受系统限流且不保证执行，结果会脱敏并只包含请求应用的相关信息。Android 16 / API 36 起可注册系统触发器；Android 17 / API 37 又增加冷启动（`TRIGGER_TYPE_COLD_START`）、异常行为（`TRIGGER_TYPE_ANOMALY`）等类型。异常发生后想拿完整设备 Perfetto 数据，这条能力给不了保证；回调失败、文件配额、用户数据政策与上传策略都要单独处理。
 
 数据模型的兼容靠版本机制维持，而非“字段永不删除”的约定。每条事件都要携带数据结构（schema）版本；服务端至少兼容当前版本和迁移窗口内的旧版本。新增字段必须有缺省语义；废弃字段应先让服务端同时读取新旧格式，验证新格式数据后再停止发送旧字段。
+
+<!-- gracker-diagram: a286-03-profiling-public-request-and-trigger-versions -->
+![线上 Profiling 是受限补充证据，不是常态全设备追踪](../../assets/diagrams/ch26/a286-03-profiling-public-request-and-trigger-versions.png)
+
+图：失败、无制品、文件配额与重启后监听恢复都要处理；不能承诺拿到完整设备Perfetto。
 
 最小版本只需要事件类型、双时钟、构建版本、会话/场景 ID、采样纳入概率与业务核心字段；取值数量庞大的高基数字段，要放在指标标签集合之外。
 
@@ -272,6 +287,11 @@ graph TD
 
 Crash 还要走一条独立于普通异步队列的最小保全路径：进程异常退出时，后台线程可能来不及消费队列，而 Java 未捕获异常（uncaught exception）与原生信号（native signal）能安全执行的操作也不同。实现上应预分配必要结构，避开原生信号处理器中不具备异步信号安全性（async-signal-safe）的调用，并在下次启动时校验和补传未完成记录。具体分工见 26.2。
 
+<!-- gracker-diagram: a286-04-bounded-client-data-and-control-plane -->
+![端侧按数据流串联，配置与自监控另走控制面](../../assets/diagrams/ch26/a286-04-bounded-client-data-and-control-plane.png)
+
+图：UI/回调线程只读最小安全快照；编码、压缩、写盘和网络转交后台，mmap也可能缺页或回写。
+
 ### 从采集到告警的完整数据路径
 
 把视角从端侧拉远：一套可用的可观测性系统，数据通常经过端侧采集 → 本地暂存 → 批量上报 → 接入清洗与存储 → 实时聚合或离线聚合（分析）→ 告警 → 证据查询 → 修复验证。
@@ -292,6 +312,11 @@ Crash 还要走一条独立于普通异步队列的最小保全路径：进程�
 
 服务端分析层要保留几类关联键：`event_id`、`session_id`、`trace_id`、`span_id`、`scene_id`、`build_version`、`device_model`、`android_version` 和 `network_type`。有了它们，Crash、ANR、性能指标、用户日志和发布记录才能互相查询。其中 `session_id` 应是短期、可重置且用途受限的标识，永久设备 ID 替代不了它。详见 16.1 节的采集到治理过程设计。
 
+<!-- gracker-diagram: a286-05-server-query-alert-and-verification -->
+![从告警到修复，用同一关联键找回证据](../../assets/diagrams/ch26/a286-05-server-query-alert-and-verification.png)
+
+图：TTID看首帧，TTFD由产品可用定义与reportFullyDrawn落点约束；总耗时不能解释阶段。
+
 ### 采样策略与数据量控制
 
 可观测性系统的成本来自端侧 CPU / I/O、用户流量和服务端存储与计算，采样策略要同时压住这三处。容量评估别只按 DAU（Daily Active Users，日活跃用户数）猜，我们用“活跃设备数 × 每设备事件频率 × 编码后字节 × 保留期 × 副本数”算出初值，再用灰度实测校正压缩率和一次查询实际读取的数据量。
@@ -306,6 +331,11 @@ Crash 还要走一条独立于普通异步队列的最小保全路径：进程�
 采样配置要有版本号。客户端每次成功上报时带上本地配置版本，服务端可以随响应返回新配置；新配置走的是“下次上报才可能拿到”的路径，所以客户端还要为配置过期、长期离线和签名校验失败定义保守缺省值。配置应支持紧急关闭开关（kill switch），用于迅速停用异常或成本失控的采集能力；可关闭范围必须受限，保住 Crash / ANR 等最低诊断能力。
 
 采样后的数据必须携带 `sampling_rule_id`、分层字段和该事件的 `inclusion_probability`（纳入样本的概率）。服务端要按权重估计总体，前提就是抽样设计与纳入概率已知；异常补采、失败全量和成功抽样混在一起时，必须按层分别计算，总体估计靠“所有样本除以一个采样率”是得不到的。单用户排查界面还要显示采样命中与丢弃原因，别把“没有采到”误判成“没有发生”。
+
+<!-- gracker-diagram: a286-06-sampling-strata-and-inclusion-probability -->
+![采样要保分母、概率和缺失原因](../../assets/diagrams/ch26/a286-06-sampling-strata-and-inclusion-probability.png)
+
+图：概率来自抽样设计；基线摘要、诊断附件和失败全量各有预算，服务端按已知层次重算。
 
 ### 可观测性建设的常见陷阱
 
@@ -356,6 +386,11 @@ Crash 还要走一条独立于普通异步队列的最小保全路径：进程�
 - 异常触发补采：Crash、ANR、冻帧或启动超出产品阈值后，下一次启动优先上传摘要；命中灰度策略时，再请求受平台限制的性能剖析资料或目标日志。
 
 隐私处理可以参考 Firebase Performance Monitoring 的做法：对 HTTP 请求使用不含查询参数的 URL 构造聚合模式，并声明不永久保存个人可识别信息。自建系统也应在采集前完成字段允许列表、脱敏与用途分级；个人信息的删除流程无法用哈希替代。[Firebase Performance Monitoring：User data](https://firebase.google.com/docs/perf-mon/#user_data)
+
+<!-- gracker-diagram: a286-07-baseline-versus-authorized-diagnostics -->
+![低成本基线与目标诊断分别设预算和生命周期](../../assets/diagrams/ch26/a286-07-baseline-versus-authorized-diagnostics.png)
+
+图：对原文做SHA不等于匿名化；HMAC聚合也要先最小化字段、控制密钥和保留用途。
 
 ### 平台源码基线
 
@@ -463,9 +498,19 @@ StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data) → statsd 
 
 回调只在 statsd 的 config 里包含 pulled atom 时发生，方向是客户端向 `List<StatsEvent>` 填充指标数据。要读 statsd 的系统聚合指标，用的是 `addConfig` + `getReports`，和这里的提供方角色正好相反。
 
+<!-- gracker-diagram: a286-09-pull-provider-request-reply-and-cooldown -->
+![Pull 是 statsd 请求提供方，不是提供方订阅读数](../../assets/diagrams/ch26/a286-09-pull-provider-request-reply-and-cooldown.png)
+
+图：配置可周期性拉取；metadata只调节冷却/超时，不是App端“每秒采集器”。
+
 特权系统组件提供 pulled atom，只能用 `setPullAtomCallback()` 注册已经定义并获准使用的 atom tag；statsd 调用 `StatsPullAtomCallback.onPullAtom()` 时，提供方把符合数据结构定义（schema）的 `StatsEvent` 加入列表并返回结果码。atom ID、字段顺序、字段类型和可累加字段（additive field）必须来自同一次平台发布的 schema，业务自定义常量替代不了平台定义。
 
 回到开头的问题：当前 `atoms.proto`（android-17.0.0_r1）定义了大量系统健康原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`BatteryLevelChanged` 等），却始终没有那个覆盖全部性能问题的“统一性能指标 Atom”。我们收集系统级指标时，优先走 AndroidX API（如 `JankStats`）和 `Debug.MemoryInfo` 等公开接口，直接依赖 StatsD 这条路走不通。
+
+<!-- gracker-diagram: a286-08-statsd-three-directions-and-permissions -->
+![StatsD 三条方向不同，普通 App 不获得系统报告](../../assets/diagrams/ch26/a286-08-statsd-three-directions-and-permissions.png)
+
+图：pull需要REGISTER_STATS_PULL_ATOM，SQL需要READ_RESTRICTED_STATS；普通应用自建指标不依赖该路径。
 
 以 `AppStartOccurred`（`app_start_occurred`）为例，字段包含 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，没有 `latencyMillis` 字段。
 
@@ -582,6 +627,11 @@ String gcTime  = Debug.getRuntimeStat("art.gc.gc-time");
 
 两个返回值都有讲究：`getNativeHeapAllocatedSize()` 返回的是 Native heap allocator 统计，进程全部 Native 映射比它大；`getRuntimeStat()` 在键不受支持时可能返回 `null`。
 
+<!-- gracker-diagram: a286-10-memory-metric-attribution-and-version -->
+![PSS、Native allocator 和系统 RAM 是不同读数](../../assets/diagrams/ch26/a286-10-memory-metric-attribution-and-version.png)
+
+图：长期采样带时钟、进程序列、版本和状态；公开快照不能单独说明哪个系统策略触发。
+
 #### 3.3 Compaction、Freezer 与 Android 17 MemoryLimiter
 
 先把版本结论摆清楚：`CachedAppOptimizer` 仍把 Compaction 和 Freezer 的构建默认值设为开启，但这两项机制在更早版本就有，运行时状态也会受配置与设备条件影响；`MemoryLimiter` 是 Android 17 新出现的，有独立功能开关、`/vendor/etc/memory-limiter-config.xml` 厂商配置文件和设备内存条件。源码里存在，不代表所有 Android 17 设备都会启用。
@@ -610,6 +660,11 @@ enum CompactProfile {
 
 `MemoryLimiter` 由 system_server 的 Java 控制层与 JNI / Native 监控层组成。启用时，它为目标进程配置 cgroup v2 内存控制组（memcg）的 `memory.high`、`memory.swap.high` 等限制，并监听越界事件。启用条件有四项：功能开关开启、代码运行在系统用户标识（system UID）下、存在有效厂商配置、设备内存满足条件。
 
+<!-- gracker-diagram: a286-11-compaction-freezer-and-visible-gaps -->
+![内存整理、冻结与限制器，不能只从 PSS 曲线反推](../../assets/diagrams/ch26/a286-11-compaction-freezer-and-visible-gaps.png)
+
+图：图中系统策略不保证所有设备开启；应用恢复后记真实缺口，不能补0或确定标成冻结。
+
 内核语义以 `android17-6.18-2026-06_r6` 为准。该版本的 [cgroup v2 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst) 把 `memory.high` 定义为内存使用节流线：超过后进程承受回收压力，但内核不会仅因越过 `memory.high` 就调用 OOM killer（内存耗尽时选择进程终止的内核机制）。MemoryLimiter 在此基础上监控事件，并在匿名内存与交换空间总量（anon+swap）分支由 system_server 另行安排进程终止。所以这里的完整链条是“节流靠内核、终止由 system_server 安排”，合并描述成“内核越界后自动终止”就错了。
 
 **对监控采集的三类影响：**
@@ -617,6 +672,11 @@ enum CompactProfile {
 1. **指标含义不同**：PSS 按共享页面比例分摊；cgroup memory charge（记入该控制组的内存用量）、anon（匿名内存）与 swap（换出到交换空间的内存）采用另一套归属规则。PSS 未达到某个数值，进程也可能已经触及限制。
 2. **越界后可能先采性能剖析数据再终止**：`LIMIT_TYPE_ANON_SWAP` 分支会触发异常性能剖析（anomaly profiling），并通过 `KILL_DELAY_MS` 延迟终止请求，为系统剖析器留出完成时间。这个延迟不属于 App 的轮询或上传时限。
 3. **退出原因要读记录，不要预设**：进程恢复后查询 `ApplicationExitInfo`，记录实际 `reason`、`status`、描述和可用 trace，再与 SDK 样本关联；把所有 MemoryLimiter 终止预先写成 `REASON_LOW_MEMORY` 会掩盖真实原因。
+
+<!-- gracker-diagram: a286-12-memory-limiter-kernel-throttle-system-kill -->
+![memory.high 先由内核节流，anon+swap 终止由系统安排](../../assets/diagrams/ch26/a286-12-memory-limiter-kernel-throttle-system-kill.png)
+
+图：退出后读取ApplicationExitInfo的实际reason/status/描述，不预设所有此类终止都为LOW_MEMORY。
 
 #### 3.4 原生内存跟踪架构
 
@@ -662,6 +722,11 @@ Android 14 相关源码中的 `libmemevents` 用 eBPF 环形缓冲区接收 OOM 
 
 按成本分两层用：常态用聚合快照发现 PSS、nativePss、GC 或后台回落异常；命中诊断条件后，再在受控设备或受信系统组件中上 VMA 扫描、`libmemevents`、Perfetto、heap dump（堆转储）或 Perfetto 的 Native 堆分析器 heapprofd。聚合值负责发现趋势，深度工具负责解释来源，两者各干各的活。
 
+<!-- gracker-diagram: a286-13-native-memory-two-sources-and-read-failure -->
+![图形 memtrack 与 smaps 页统计是两条路径](../../assets/diagrams/ch26/a286-13-native-memory-two-sources-and-read-failure.png)
+
+图：默认库在受信平台组件中使用；普通应用继续公开MemoryInfo和受支持的诊断工具。
+
 ---
 
 ### 4. Battery Historian 与性能指标整合
@@ -683,6 +748,11 @@ adb bugreport bugreport.zip
 #### 4.2 与 App 侧监控的配合
 
 两者配合的节奏是：App APM 持续记录受控的低成本指标，Battery Historian、Power Profiler 和 Perfetto 做抽样复现与深入归因。线上告警先确定版本、设备和场景，再在可复现设备上采集系统级证据。另外别忘了 StatsD config/report 仍是特权路径——Battery Historian 能读 bugreport，推不出普通 App 能在线读取同一批系统数据。
+
+<!-- gracker-diagram: a286-14-online-apm-versus-offline-power-evidence -->
+![线上低成本趋势，离线系统证据做深入归因](../../assets/diagrams/ch26/a286-14-online-apm-versus-offline-power-evidence.png)
+
+图：工具能读bugreport，不意味着普通应用有权限持续读取StatsD或全设备系统记录。
 
 ---
 
@@ -717,6 +787,11 @@ Firebase Performance Monitoring 会先匹配项目配置的 custom URL pattern�
 - **编码信息**：记录 `Content-Encoding`，仅在同时掌握编码前后字节数时计算压缩比
 
 `Content-Length` 描述的是消息中的内容长度，含义还受编码、分块传输和客户端解码位置影响，拿它与接收字节数相除就宣称是压缩比，这个结论站不住。OkHttp 可通过 `EventListener` 的请求体和响应体事件取得相应字节数；自定义拦截器还要避免读取或复制流式传输的数据体。
+
+<!-- gracker-diagram: a286-15-network-stage-route-and-bytes -->
+![网络观测分阶段、逻辑请求与实际尝试次数](../../assets/diagrams/ch26/a286-15-network-stage-route-and-bytes.png)
+
+图：传输字节要标网络层与编码；只知道Content-Length不能直接与解码后大小相除声称压缩比。
 
 ---
 
@@ -774,6 +849,11 @@ JankStats jankStats = JankStats.createAndTrack(window, frameData -> {
 
 listener 每帧都会收到回调。API 24 及以上通常由 FrameMetrics 使用的线程交付，更早版本可能在主线程交付；两种情况下都要快速返回。采样作用在“是否保留或上传完整 frame 明细”这一层，页面级总帧数、jank 数等分母的统计方式保持一致。电池或网络策略变化时，记录策略版本和纳入概率，全项目通用阈值不要写死。
 
+<!-- gracker-diagram: a286-16-jankstats-frame-data-ownership -->
+![JankStats 回调对象会复用，跨回调保存先复制](../../assets/diagrams/ch26/a286-16-jankstats-frame-data-ownership.png)
+
+图：前台可交互时观察，后台停用；不要在回调里读跨线程View、序列化、写盘或发网络。
+
 ---
 
 ### 7. 内存泄漏检测
@@ -800,6 +880,11 @@ LeakCanary 官方建议通过 `debugImplementation` 引入完整的 `leakcanary-
 #### 7.3 线上边界
 
 LeakCanary 官方不建议把完整 `leakcanary-android` 放入发布构建（release build），库还会阻止误装到不可调试 APK。生产环境若只需要 retained object 计数，可单独评估 `leakcanary-object-watcher-android`，并用远程开关、设备条件和隐私规则限制范围。生产环境生成堆转储会造成明显停顿，也可能包含敏感数据，所以要配专门的授权诊断方案；照搬调试构建的默认配置，等于把停顿和敏感数据这两类风险直接带上线。
+
+<!-- gracker-diagram: a286-17-leakcanary-retained-dump-and-reference-path -->
+![弱引用观察只是候选，堆转储与分析才找保留路径](../../assets/diagrams/ch26/a286-17-leakcanary-retained-dump-and-reference-path.png)
+
+图：后台分析不等于全程无停顿；堆内容和详细引用链也须配独立的数据使用与保留规则。
 
 ---
 
@@ -857,6 +942,11 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 
 ---
 
+<!-- gracker-diagram: a286-18-lifecycle-constraint-and-unobserved-intervals -->
+![采集按真实执行机会降级，冻结间隔不补零](../../assets/diagrams/ch26/a286-18-lifecycle-constraint-and-unobserved-intervals.png)
+
+图：内存压力时拒绝大附件并缩缓冲；不能为了诊断压力马上制造大量分配和网络。
+
 ### 9. 数据处理与上报策略
 
 以下策略基于工程实践总结，不绑定 Android 17 StatsD 平台的特定配置项。
@@ -875,6 +965,11 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 - Crash、ANR 摘要与性能批次使用不同优先级；但“高优先级”依旧不要求崩溃进程现场发网，也不绕过用户的数据设置。
 - 失败重试采用带随机扰动的退避：连续失败时逐步延长等待时间，并加入随机偏移，免得大量客户端同时重试。客户端还要尊重服务端 `Retry-After` 指定的再次请求等待时间和自身后台配额；认证失败、schema 不兼容这类永久错误进入隔离或升级流程，无限重试没有意义。
 - 使用 WorkManager 的命名唯一任务（unique work）或等价队列键，网络恢复时就不会重复创建同一上传任务。网络约束失效时让调度器停止并稍后重试；在网络状态回调 `NetworkCallback` 里直接发起整批上传是反模式。
+
+<!-- gracker-diagram: a286-19-durable-batches-ack-retry-and-isolation -->
+![持久化批次按 ID 幂等确认，ACK 后回收](../../assets/diagrams/ch26/a286-19-durable-batches-ack-retry-and-isolation.png)
+
+图：SDK业务优先级不意味着崩溃现场发网；约束失效后允许任务停止并在系统许可时恢复。
 
 ---
 
@@ -921,6 +1016,11 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 - 删除流程覆盖主存储、索引、缓存和备份到期策略；用户请求删除时能定位关联数据。
 
 保留时长由数据分类、业务 SLO、地区法规和成本共同确定；所有项目通用的固定天数并不存在。
+
+<!-- gracker-diagram: a286-20-monitor-the-monitor-and-release-budgets -->
+![SDK 自监控必须进入同设备与场景的发布预算](../../assets/diagrams/ch26/a286-20-monitor-the-monitor-and-release-budgets.png)
+
+图：对象池默认不启用；复用降低分配也引入所有权、同步和旧字段残留，需要实测取舍。
 
 ---
 

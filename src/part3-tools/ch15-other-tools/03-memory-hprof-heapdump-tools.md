@@ -104,6 +104,11 @@ flowchart TD
 
 同一个问题往往要走两步：记账工具确认“涨在哪里”，归因工具解释“由谁产生”。单次快照通常只能提出假设。
 
+<!-- gracker-diagram: ch15-03-01-question-to-tool -->
+![先定位内存类别，再选归因证据](../../assets/diagrams/ch15/ch15-03-01-question-to-tool.png)
+
+图：把进程记账、对象保留、分配调用栈和非法访问分开，再按问题取证。 单次曲线或快照只给线索；整机压力需结合 PSS、LMKD 与 PSI，不能直接归成 Java 泄漏。
+
 ### LeakCanary：发现应被回收的 Java 对象
 
 #### 它观察的对象
@@ -143,6 +148,11 @@ fun watchAfterLifecycleEnd(instance: Any, reason: String) {
 ```
 
 这段代码只登记弱引用观察目标，不会延长对象生命周期。调用位置应紧邻真实的释放时点，`reason` 应写清哪个生命周期事件已经发生。
+
+<!-- gracker-diagram: ch15-03-02-leakcanary-order -->
+![LeakCanary 从弱引用到堆分析的实际顺序](../../assets/diagrams/ch15/ch15-03-02-leakcanary-order.png)
+
+图：弱引用观察先产生 retained 候选，策略检查再 GC 复核，并在条件满足后转储分析。 固定 LeakCanary 2.14；默认等待五秒是检查延迟，不是五秒时必定产生泄漏报告。
 
 #### 配置等待时间与触发阈值
 
@@ -184,6 +194,11 @@ fun setVisibleHeapDumpThreshold(retainedObjectCount: Int) {
 ```
 
 该阈值只决定何时生成堆转储，不改变对象是否被判定为保留对象。自动化测试若只收集保留对象计数而不希望暂停进程，可在测试专用配置中关闭 `dumpHeap`。
+
+<!-- gracker-diagram: ch15-03-03-watch-versus-dump-policy -->
+![等待期、计数阈值与转储资格互相独立](../../assets/diagrams/ch15/ch15-03-03-watch-versus-dump-policy.png)
+
+图：对象保留判定、GC 后计数和堆转储资格是三组不同条件。 提高阈值或延长等待只会改变反馈时机；异常强引用仍需在生命周期结束处修复。
 
 #### 如何读一条报告
 
@@ -228,6 +243,11 @@ val detectLeaksAfterTestSuccess = DetectLeaksAfterTestSuccess()
 JUnit 出现在运行时类路径时，LeakCanary 会禁用常规自动检测，测试应通过该规则或 `LeakAssertions.assertNoLeaks()` 触发检查。
 
 使用 `ActivityScenarioRule` 时，规则顺序决定断言时点：把 `DetectLeaksAfterTestSuccess` 放在其外层，才能在 Activity 销毁后检查 Activity 泄漏；放在内层则在销毁前检查，可能发现随 Activity 销毁而消失的 Fragment 泄漏。需要覆盖两个时点时，应分别设置断言。
+
+<!-- gracker-diagram: ch15-03-04-test-rule-order -->
+![测试规则顺序决定泄漏断言发生在哪个生命周期点](../../assets/diagrams/ch15/ch15-03-04-test-rule-order.png)
+
+图：外层规则在 Activity 销毁后断言，内层规则可在销毁前检查保留关系。 固定 2.14 规则只在测试成功后分析，finally 清理观察表；需要覆盖两个时点时显式设置双断言。
 
 对混淆 release 构建运行 instrumentation 测试，还要注意官方文档记录的 AGP 跨主 APK 与测试 APK 重写不一致问题；遇到相关运行时崩溃时，可按文档评估 Keeper 插件。
 
@@ -282,6 +302,11 @@ output_hprof="./app-${APP_PID}-mat.hprof"
 
 Retained size 很大，说明该对象控制着大块对象图，这些字节却未必是它自己分配的。Histogram 中数量最多的类同样未必是泄漏源；缓存、预加载和池化对象可能有合法生命周期。
 
+<!-- gracker-diagram: ch15-03-05-reference-and-dominator -->
+![对象引用、支配关系与分配来源是不同坐标](../../assets/diagrams/ch15/ch15-03-05-reference-and-dominator.png)
+
+图：示例中 Owner 支配自身和 Data，共享对象仍能沿 Cache 路径到达。 示意字节，非实测；Owner retained = 10 + 20，不能加上 Shared；引用链不能还原分配调用栈。
+
 #### 一套可复现的 MAT 流程
 
 1. 固定应用版本、设备、测试账号和操作脚本，预热到稳定状态。
@@ -293,6 +318,11 @@ Retained size 很大，说明该对象控制着大块对象图，这些字节却
 7. 回到源码验证写入、移除和生命周期，修复后以同一脚本复测。
 
 单个 HPROF 适合判断持有关系，两份或多份同条件 HPROF 才适合判断增长。对象数量上涨一次也可能来自懒加载，要用重复轮次确认它是否停止增长并趋于稳定。
+
+<!-- gracker-diagram: ch15-03-06-repeatable-snapshots -->
+![从快照 A/B 到持有关系修复的验证闭环](../../assets/diagrams/ch15/ch15-03-06-repeatable-snapshots.png)
+
+图：固定场景与清理时点，比较多份快照，再沿具体实例的 root 路径验证生命周期。 一次增长可能来自懒加载或缓存；大 retained、对象数量与分配来源需要分别解释。
 
 #### Bitmap 的版本边界
 
@@ -309,6 +339,11 @@ heapprofd 从 Android 10 起作为 Perfetto 数据源提供。native 模式拦�
 采样间隔为 `n` 字节时，可理解为每个字节约有 `1/n` 的概率命中，工具再用统计权重估算总体。`HeapprofdConfig` 要求显式提供非零间隔，`tools/heap_profile` 代为写入的默认值是 4096 字节。间隔设为 1 表示记录每次分配，记录量与被测进程扰动也随之增加。
 
 heapprofd 统计的是分配器请求与释放。分配器 arena（批量管理内存的预留区）、页粒度、碎片、zRAM 和 mmap 区域，会让 heapprofd 的存活分配字节、`malloc_info()` 与 Native Heap RSS 出现差异；三者各说各话，分开读就好。
+
+<!-- gracker-diagram: ch15-03-07-allocator-versus-pages -->
+![分配器存活字节与进程驻留页为什么不同](../../assets/diagrams/ch15/ch15-03-07-allocator-versus-pages.png)
+
+图：分配记录、分配器保留空间和内核页记账衡量不同层次的内存。 arena、碎片、独立 mmap、页粒度与 swap 都会造成差异；两种读数不能互相替代。
 
 #### 权限与目标
 
@@ -365,6 +400,11 @@ write_into_file: true
 ```
 
 `process_cmdline` 可覆盖已运行及后续启动的匹配进程。`block_client` 在共享内存写满时会暂停目标分配线程，因此高分配率测试还要检查 trace 统计和业务时延。若要改成应用进程，应替换为设备上 `/proc/<pid>/cmdline` 的精确值，并满足前述 AndroidManifest 条件。配置字段以 [`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto) 为准；文本配置交给 Perfetto CLI（命令行工具） 时要使用 `--txt`。
+
+<!-- gracker-diagram: ch15-03-08-heapprofd-data-path -->
+![heapprofd 的采样、传输与聚合路径](../../assets/diagrams/ch15/ch15-03-08-heapprofd-data-path.png)
+
+图：配置选中目标后，分配器按字节采样，将栈与分配/释放信息交给独立进程聚合。 间隔与缓冲策略会改变精度和扰动；block_client 可能在共享内存写满时阻塞目标分配线程。
 
 #### ART（Android Runtime，Android 运行时） 分配分析
 
@@ -433,6 +473,11 @@ adb shell dumpsys meminfo --package "${APP_PACKAGE}"
 PSS 可以避免共享页在进程间重复记账，但把所有进程 PSS 相加，离整机全部物理内存还差一截：内核自身、未映射页、设备内存和统计时刻变化，都落在这套进程统计之外。
 
 内核提供 SwapPss 时，`Debug.MemoryInfo.getTotalPss()` 会把按比例分摊的换出页加入总值。解析脚本应保存原始列名和系统版本，避免把 `TOTAL PSS` 与单独显示的 swap 列重复相加。
+
+<!-- gracker-diagram: ch15-03-09-rss-pss-uss -->
+![RSS、PSS、USS 与 swap 的记账边界](../../assets/diagrams/ch15/ch15-03-09-rss-pss-uss.png)
+
+图：先区分驻留、共享分摊与独占驻留，再处理换出页的单独口径。 共享页按内核映射计数等规则分摊；Debug 总 PSS 可能已含 SwapPss，解析时保留原列名与版本。
 
 Private Dirty 表示页面由该进程独占且内容已经改变，这类页面没法像干净文件页那样直接丢弃；匿名页和私有 COW（Copy-on-Write（写时复制），写时复制）页仍可换出到 zRAM/swap。可回写文件的共享脏页属于另一种记账，解释不了 Private Dirty。Private Clean 多为可从文件重新加载的私有页，内存压力下更容易回收。
 
@@ -528,6 +573,11 @@ adb shell dmabuf_dump -b
 
 带 PID 的输出只覆盖该进程持有 fd 或建立映射的缓冲区；`-b` 不接受 PID。工具可用性和可见范围取决于产品镜像、debugfs（内核调试伪文件系统）、procfs 与 SELinux。每进程总量会在共享缓冲区上重复显示，系统唯一总量要按 inode 去重。实现依据见 [`dmabuf_dump.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libdmabufinfo/tools/dmabuf_dump.cpp)。
 
+<!-- gracker-diagram: ch15-03-10-graphics-shared-identity -->
+![dma-buf 的 fd、映射与跨进程去重](../../assets/diagrams/ch15/ch15-03-10-graphics-shared-identity.png)
+
+图：进程可以通过 fd 或映射持有同一个 dma-buf，VMA 只覆盖已映射的地址空间。 同一时点的系统唯一总量按 inode 去重；各进程统计可能重复显示同一共享缓冲区。
+
 dma-buf 的内核对象、文件描述符与 attachment（设备附加到共享缓冲区后建立的关系）生命周期见 [`drivers/dma-buf/dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)。图形缓冲区的分配与跨进程共享原理参见 §2.8 [DMA-BUF 与 Gralloc](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)。
 
 ### malloc debug：给分配器增加检查与记录
@@ -622,6 +672,11 @@ hook 指针更新没有线程安全保证，应在线程并发分配前完成。
 
 多数项目应优先使用 heapprofd。malloc hooks 更适合编写专用测试器，维护成本和测量扰动都更高。
 
+<!-- gracker-diagram: ch15-03-11-native-allocator-observation -->
+![采样、分配器检查与自定义 hooks 的区别](../../assets/diagrams/ch15/ch15-03-11-native-allocator-observation.png)
+
+图：按需要选择分配采样、内存破坏检查或专用分配回调。 hooks 需显式启用、保存原函数并在并发前安装；回调内再分配可能递归，不能当作低扰动基准。
+
 ### HWASan 与 MTE：定位 native 内存安全错误
 
 #### 两套标记机制
@@ -693,6 +748,11 @@ endfunction()
 ```
 
 这组产物只能在支持 MTE 的设备上运行，应限制在 native 内存安全测试变体。清单中的 `sync` 决定堆检查模式，`-fsanitize=memtag` 则给栈增加标记与检查，两者覆盖范围不同。
+
+<!-- gracker-diagram: ch15-03-12-tagging-coverage -->
+![HWASan、MTE 堆与 MTE 栈的覆盖范围](../../assets/diagrams/ch15/ch15-03-12-tagging-coverage.png)
+
+图：编译器插桩、硬件堆标记和栈标记需要不同的构建与运行条件。 标记粒度与概率限制仍在，不能覆盖所有内存错误；SYNC 精确定位，ASYNC 报告可能延后，ASYMM 不是清单值。
 
 内核接口与标记故障处理可从 [`memory-tagging-extension.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/memory-tagging-extension.rst) 和 [`arch/arm64/include/asm/mte.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/mte.h) 核对。
 
@@ -798,6 +858,11 @@ Android 17 的托管堆路径可以按下面的顺序阅读：
 
 `system_server` 是承载 Android 核心系统服务的进程；Binder 是 Android 的跨进程调用机制。按这张表读，两个常见现象就有了出处：Shell 命令会等待目标进程异步完成；遍历堆和写文件的工作发生在目标应用进程，`system_server` 不经手这部分。
 
+<!-- gracker-diagram: ch15-03-13-dumpheap-control-data -->
+![am dumpheap 的控制调用与文件数据路径](../../assets/diagrams/ch15/ch15-03-13-dumpheap-control-data.png)
+
+图：Shell 经 AMS 检查并传递文件描述符，真正的堆遍历和输出发生在目标进程。 图为正常成功路径；AMS 的 Freezer 开关与 ART 的托管线程暂停分别发生，采集成功后再拉取文件。
+
 #### 权限检查和 Freezer 的含义
 
 `ActivityManagerService.dumpHeap()` 要求调用方持有 `android.permission.SET_ACTIVITY_WATCHER`。该权限的保护级别是 `signature`，通常只授予使用平台签名的系统组件。AMS 还会调用 `enforceDebuggable()` 检查目标进程，所以别把 `am dumpheap` 当成面向任意发布应用的通用接口。
@@ -841,6 +906,11 @@ HPROF record 是带类型标记和长度的记录单元。`Hprof::Dump()` 在这
 
 暂停覆盖计数遍历、正式遍历和文件输出，代价不止一次“扫对象”。耗时受对象数、字段与数组数据量、存储速度、Bitmap 内容和设备状态影响；“每 100 MB 几秒”这类固定数字跨不了设备，采集方案应在目标机型和目标堆规模上实测。
 
+<!-- gracker-diagram: ch15-03-14-two-pass-pause -->
+![传统 HPROF 的暂停覆盖计数与正式输出](../../assets/diagrams/ch15/ch15-03-14-two-pass-pause.png)
+
+图：ART 在 GC 互斥与托管线程暂停范围内，先计数，再正式遍历并写文件。 暂停成本受对象、字段、数组、Bitmap 与 I/O 影响；不能用固定毫秒或每百 MB 经验值替代实测。
+
 #### Android 17 HPROF 的结构
 
 ART 写出的头部 magic（用于识别文件格式的固定字节序列）是 `JAVA PROFILE 1.0.3`，对象 ID 宽度为 4 字节。文件包含字符串与类定义、GC Root、类转储、实例转储、对象数组和基本类型数组等 record。
@@ -861,6 +931,16 @@ Header
 ```
 
 ART 的实现会在生成堆数据时收集字符串和类信息，再按分析工具需要的顺序组织输出。自行编写裁剪器时，还要处理 Android 扩展 tag（记录类型编号）、分段起止、对象 ID 和交叉引用。
+
+<!-- gracker-diagram: ch15-03-15-hprof-record-layout -->
+![HPROF 的头部、记录与交叉引用](../../assets/diagrams/ch15/ch15-03-15-hprof-record-layout.png)
+
+图：HPROF 通过带 tag 与长度的记录保存类、对象、root 和数组引用。 固定 A17 magic 为 JAVA PROFILE 1.0.3、对象 ID 为 4 B；示意顺序不能替代扩展 tag、分段和引用完整性校验。
+
+<!-- gracker-diagram: ch15-03-16-direct-heap-graph-fork -->
+![普通 android.java_hprof 的信号与父子进程链路](../../assets/diagrams/ch15/ch15-03-16-direct-heap-graph-fork.png)
+
+图：普通信号路径由 producer 授权与通知，ART 派生进程后直接写 HeapGraph。 图只表示普通 DumpPerfetto()；OOME 另用 DEFERRED 等待子进程，fork/COW 也不等于零成本。
 
 #### app、zygote 与 image 只是空间归类
 
@@ -931,6 +1011,11 @@ duration_ms: 180000
 
 `StartDataSource()` 总会立即调用一次 `SendSignal()`。`dump_interval_ms` 非零时，`dump_phase_ms` 是第一次追加采集前的延迟，只延迟追加采集，开头那份快照不受影响；后续每隔 `dump_interval_ms` 再采一份。
 
+<!-- gracker-diagram: ch15-03-17-continuous-request-times -->
+![启动请求、phase 延迟与追加采集间隔](../../assets/diagrams/ch15/ch15-03-17-continuous-request-times.png)
+
+图：该配置计划在启动时请求一次，再按 phase 与 interval 追加请求。 下列时间均相对数据源启动，表示请求计划；实际图的时间、成功率和完整性以记录与日志为准。
+
 #### 配置字段的含义
 
 | 字段 | Android 17 语义 |
@@ -959,6 +1044,11 @@ Android 12 及更早版本默认只在数据源启动时扫描 PID；Android 13 
 
 `profileable_from_shell` 表示应用允许 Shell 发起性能分析，`profileable` 表示允许受信任的系统会话分析，`debuggable` 表示应用允许调试。这组检查与 `am dumpheap` 的 `SET_ACTIVITY_WATCHER`、`enforceDebuggable()` 不是同一套权限模型。排查“抓不到图”时，应同时确认 trace 发起者、应用 Manifest 中的 profileable/debuggable 属性、目标进程 UID 和 installer 条件。
 
+<!-- gracker-diagram: ch15-03-18-permission-models -->
+![AMS、进程内 Debug 与 HeapGraph 的授权边界](../../assets/diagrams/ch15/ch15-03-18-permission-models.png)
+
+图：跨进程完整堆转储、进程内公开 API 与 Perfetto producer 使用不同授权路径。 CanProfile 还按构建、UID、发起者与包分支提前返回；installer 条件只在进入包检查的路径生效。
+
 Android 17 的 ART 插件还会在 `DumpPerfetto()` 中检测 Chromium/WebView 的严格 seccomp（限制进程可执行系统调用的沙箱机制）沙箱。命中时会记录 `Chromium seccomp detected, skipping Perfetto heap dump` 并跳过采集，即使 `CanProfile()` 已允许目标也不会生成引用图。排查空报告时，应检查目标进程日志及沙箱类型。
 
 ### Perfetto 引用图和完整 HPROF 差在哪
@@ -966,6 +1056,11 @@ Android 17 的 ART 插件还会在 `DumpPerfetto()` 中检测 Chromium/WebView �
 Perfetto 文档把 `android.java_hprof` 的结果称为 ART Heap Dump。它记录类型、对象、大小、root 和对象间引用；实例的基本类型字段值、字符串内容、基本类型数组字节和 Bitmap 像素，要靠完整 HPROF 才带得动——所以完整 HPROF 文件更大，也更容易包含隐私数据。
 
 Trace Processor 也能导入完整 ART HPROF，导入后填充 HPROF 专用的数据表。这是分析器多支持的一种输入格式；实时 `android.java_hprof` 采集产出的仍是 `HeapGraph` 数据包。
+
+<!-- gracker-diagram: ch15-03-19-artifact-value-boundaries -->
+![完整 HPROF、HeapGraph 与解析器能力分别确认](../../assets/diagrams/ch15/ch15-03-19-artifact-value-boundaries.png)
+
+图：对象图、普通字段值和专项元数据要按采集产物与分析器版本分别判断。 Bitmap 像素需显式转储；HeapGraph 可有受 flag 控制的 Bitmap 元数据，固定 r1 导入器仍可能不消费新增字段。
 
 | 能力 | 实时 `android.java_hprof` | 导入完整 ART HPROF |
 | --- | --- | --- |
@@ -994,7 +1089,17 @@ Trace Processor 也能导入完整 ART HPROF，导入后填充 HPROF 专用的�
 
 生成表都带隐式 `id` 主键，所以 `heap_graph_object.id` 可以与 `owner_id`、`owned_id` 关联。`profiler_tables.py` 的 `columns` 列表没有手写 `id`，SQL 表里的 `id` 一直都在。
 
+<!-- gracker-diagram: ch15-03-20-heap-graph-join-keys -->
+![从目标快照的对象行关联类型与引用](../../assets/diagrams/ch15/ch15-03-20-heap-graph-join-keys.png)
+
+图：先选定对象的进程与快照，再用类型、对象和字段集合 ID 关联其他查询对象。 源对象地址、TP 对象行 id、type_id 与类名各有作用域；同名不同加载器的类型不能仅按名称混算。
+
 没有一张名为 `heap_graph` 的采样元信息表。同一 `(upid, graph_sample_ts)` 的全部 `heap_graph_object` 行构成一次 dump，其中 `graph_sample_ts` 是采样时间戳。trace 中包含多次采集时，查询要同时限定进程和时间戳。
+
+<!-- gracker-diagram: ch15-03-21-quality-before-latest -->
+![有结果行不代表最新快照完整](../../assets/diagrams/ch15/ch15-03-21-quality-before-latest.png)
+
+图：先检查质量并定位受影响的图，再选取目标快照并解释大小变化。 合成缺包测试仍可输出看似正常的最新行；MAX(graph_sample_ts) 不是完整性标志，不能自动恢复缺失引用。
 
 #### 统计最新快照中各类的 shallow size
 
@@ -1073,6 +1178,11 @@ LIMIT 100;
 
 表中的 `parent_id` 组成按最短 root 路径聚合后的树，`cumulative_size` 是节点及其后代的总和。flamegraph（火焰图） 会用层级块展示这些路径及其大小；这里的类路径树与单对象 dominator tree 含义不同，阅读时不要混用。
 
+<!-- gracker-diagram: ch15-03-22-three-size-views -->
+![自身大小、支配聚合与 root 路径树的不同含义](../../assets/diagrams/ch15/ch15-03-22-three-size-views.png)
+
+图：自身字节、dominator 聚合和按最短 root 路径形成的类树分别回答不同问题。 后两段示例按各图保留进程和时间键，但 LIMIT 是全局排名；路径树父子边不能当作支配关系。
+
 ### 工具选择与采集流程
 
 #### 需要完整对象值
@@ -1106,6 +1216,11 @@ KOOM 2.2.1 的 `ForkJvmHeapDumper` 源码执行 `suspendAndFork()`：子进程�
 这些代码依赖 ART 内部实现和版本适配。入口会调用 `sdkVersionMatch()` 读取 KOOM 公共配置中的版本检查结果，不支持时拒绝转储。源码中存在 fork 设计，但据此认定 KOOM 已适配 Android 17，或者推出一个固定的毫秒级停顿，都站不住。
 
 接入 Android 17 时，要核对 KOOM 版本、ART 私有符号与实现、目标厂商 ROM（厂商定制的系统镜像）、子进程资源占用、文件可解析性和失败回退。
+
+<!-- gracker-diagram: ch15-03-23-koom-adaptation-gates -->
+![KOOM fork dump 的适配门槛与父子路径](../../assets/diagrams/ch15/ch15-03-23-koom-adaptation-gates.png)
+
+图：KOOM 固定版本先检查适配，再分别执行父进程恢复/等待与子进程堆转储。 图依据 2.2.1 源码，不证明已适配 Android 17；恢复托管线程不等于调用线程立即返回，也不保证固定停顿。
 
 Perfetto ART Heap Graph 自身也使用 fork。只需要引用图和时间轴时，可先评估系统数据源；需要完整 HPROF、第三方告警策略或定制裁剪时，再评估 KOOM 一类方案。
 

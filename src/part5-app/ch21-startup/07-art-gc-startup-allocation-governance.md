@@ -64,6 +64,11 @@ App 进程从 Zygote（预先加载公共 framework 代码的系统进程） for
 
 `HeapTaskDaemon` 是 ART 执行堆任务的后台守护线程。除了回收，它还负责前后台状态切换时的 collector（回收器） transition（前后台状态变化时切换回收策略）、尝试把空闲页归还系统的 heap trim（尝试把空闲页归还系统），以及启动完成清理。所以 Perfetto 里看到它 Running（正在 CPU 上执行），只说明这个线程当时正在 CPU 上执行；要判断 GC 是否拖慢了启动，我们还得把具体的 ART slice（时间线上的一段事件）、主线程状态和对象分配记录放到同一时间窗里对照着看。
 
+<!-- gracker-diagram: a228-01-gc-impact-paths -->
+![GC 通过暂停、分配等待与资源竞争影响启动](../../assets/diagrams/ch21/a228-01-gc-impact-paths.png)
+
+图：daemon Running 不等于全在 GC；trim、transition 与启动清理同样使用该后台线程。
+
 ## Android 17 的 HeapTaskDaemon 调度链
 
 我们顺着调用链，看 Java 侧的常驻后台线程和 ART native（C++ 运行时） 任务队列是怎么衔接的：
@@ -80,6 +85,11 @@ Daemons.HeapTaskDaemon.runInternal()
 
 守护线程怎么等，由队首任务决定：队列为空时在 condition variable（条件变量） 上等待，队首任务还没到期就按目标时间定时等待。`AddTask()` 每次插入都会发一次 signal（唤醒信号） 唤醒；新任务的目标时间更早时，daemon 会重新检查队首。
 
+<!-- gracker-diagram: a228-02-heap-task-chain -->
+![HeapTaskDaemon 连接 Java 守护线程与 ART 队列](../../assets/diagrams/ch21/a228-02-heap-task-chain.png)
+
+图：空队列等待，未来任务定时等待；每次 AddTask 发唤醒信号，再检查按目标时间排序的队首。
+
 排进这个队列的常见任务包括：
 
 | 任务 | 源码职责 | 与启动分析的关系 |
@@ -93,6 +103,11 @@ Daemons.HeapTaskDaemon.runInternal()
 
 我们最关心的 `ConcurrentGCTask` 入队时直接用当前 `NanoTime()` 作目标时间，相当于一进队就具备执行资格。前面即使已经排着延时的 `ReduceTargetFootprintTask` 或 post-fork GC 请求，它照样能排到更早的位置；至于何时拿到 CPU，仍取决于线程调度。
 
+<!-- gracker-diagram: a228-03-queue-order -->
+![立即 GC 任务可排在未来维护任务之前](../../assets/diagrams/ch21/a228-03-queue-order.png)
+
+图：TaskProcessor 使用有序 multiset；优先级来自目标时间，不是按入队先后无限等待。
+
 ## Android 17 的 post-fork 启动期策略
 
 启动期策略的关键源码入口是 `Heap::PostForkChildAction()`，处理分四步：
@@ -104,7 +119,17 @@ Daemons.HeapTaskDaemon.runInternal()
 
 这里我们要澄清一点：这两秒内 collector 并未关闭，`TaskProcessor` 也没有全局冻结——源码只是放宽了 target footprint、让 fork 前后的旧请求失效。启动分配触及阈值、发生 allocation failure（对象分配失败）、收到其他 GC 请求或遇到进程状态变化时，GC 仍可能发生。
 
+<!-- gracker-diagram: a228-04-postfork-threshold -->
+![post-fork 放宽目标堆并按条件分阶段降低](../../assets/diagrams/ch21/a228-04-postfork-threshold.png)
+
+图：initial<limit 才安排首降，first>initial 才安排二降；执行还需 GC 代次未变、无 collector 且当前目标更高。
+
 这套策略只作用于新 fork 出来的进程。温启动和热启动复用已有进程，跳过了 `PostForkChildAction()`；多进程 App 的每个新进程各有一套 heap 与 post-fork 状态。冷、温、热启动的判定见 [21.1 App 启动路径、监控与度量](01-app-startup-path-monitoring.md)。
+
+<!-- gracker-diagram: a228-05-postfork-gc-jitter -->
+![post-fork 后台 GC 的目标时间随降低任务数改变](../../assets/diagrams/ch21/a228-05-postfork-gc-jitter.png)
+
+图：jitter 范围为 0–19,999 ms，按 UID 确定；任务到期后也只是按条件请求并发 GC。
 
 ## 用 Perfetto 建立因果证据
 
@@ -150,6 +175,16 @@ GROUP BY p.name;
 
 Logcat 中的 ART GC 行可以补充 cause、freed bytes（回收字节数）、heap 大小、pause 和 total duration。`Heap::LogGC()` 默认只保证记录符合条件的显式或慢 GC，快速的普通 GC 可能不打印；日志为空时，启动期间是否发生过 GC，要回到 trace 确认。
 
+<!-- gracker-diagram: a228-07-running-intersection -->
+![SQL 只累加 Running 区间与启动窗口的交集](../../assets/diagrams/ch21/a228-07-running-intersection.png)
+
+图：SQL 以 utid/upid 关联线程和进程，并按 upid 拆分同名进程生命周期；统计的是 daemon CPU 时间。
+
+<!-- gracker-diagram: a228-06-gc-causal-tracks -->
+![把 GC、主线程状态与关键路径放在同一窗口](../../assets/diagrams/ch21/a228-06-gc-causal-tracks.png)
+
+图：示意暂停与竞争可能出现在同一 GC 过程的不同时段；要用对应等待证据和调度数据判断具体原因。
+
 ## 从 GC 事件追到分配调用栈
 
 Perfetto 负责确认时序和关键路径；查对象类型与分配调用栈，我们换用 Java/Kotlin Allocation Recording（对象分配记录）。当前 Android Studio 要求使用 debuggable 构建：Full 模式记录每次分配，分配密集时会明显拖慢 App；Sampled 模式按间隔采样。两种模式都用于归因，采集期间的启动耗时不能作为发布性能结论。详细限制见 [Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)。
@@ -163,6 +198,11 @@ Android 8（API 26）及更高版本的分配分析器还可能把部分分析�
 
 Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已释放大小”，适合寻找采集结束时仍未释放的对象。整棵对象引用图的 retained size（移除某个对象后可一起释放的总大小）在它的范围之外；判断泄漏或完整保留关系，还得结合 heap dump（堆快照） 和引用链。
 
+<!-- gracker-diagram: a228-08-two-recordings -->
+![发布时序与分配归因分两轮采集](../../assets/diagrams/ch21/a228-08-two-recordings.png)
+
+图：API26+ 工具可能带来额外 native 记账；保留一轮未启用分配记录的结果区分应用与工具。
+
 具体排查时，我们把对象分成三类：
 
 | 类型 | 典型信号 | 处理方向 |
@@ -172,6 +212,11 @@ Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已�
 | 单个或少量大对象 | byte[]、Bitmap、大数组占比高 | 延后加载、降低尺寸、流式处理或按需映射 |
 
 把工作移到后台线程，并不能自动降低 GC 压力：Java heap 由进程内线程共享，后台线程仍在同一个 heap 里分配。迁移线程可以减少主线程的 CPU 工作，并发 GC 和内存带宽竞争却仍然存在。
+
+<!-- gracker-diagram: a228-09-allocation-shapes -->
+![短命分配、live set 与大对象分别治理](../../assets/diagrams/ch21/a228-09-allocation-shapes.png)
+
+图：Java heap 为进程内线程共享；把相同分配移到 Worker，不会自动消除 GC 与带宽压力。
 
 ## 可发布应用的治理顺序
 
@@ -204,6 +249,11 @@ trace 和分配记录都拿到手之后，我们按下面的顺序治理：先�
 
 启动期缓存要预先定好容量、逐出规则和生命周期。对象池只适合已经测出高频构造、且重置成本可控的对象；随意池化会扩大 live set、增加状态错误，还可能让 GC 更慢。业务缓存的容量与冷热分段见 [4.4 App 内存优化与诊断](../../part1-fundamentals/ch04-memory/04-app-memory-optimization.md#业务缓存的容量与冷热分段)，CPU 硬件缓存与数据局部性见 [5.8 CPU Cache 友好代码与数据布局优化](../../part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md)。
 
+<!-- gracker-diagram: a228-10-allocation-governance -->
+![先减首帧前对象图，再降低分配与保留](../../assets/diagrams/ch21/a228-10-allocation-governance.png)
+
+图：延后的任务仍需错峰，不能把所有分配与 GC 一次性推到首帧后的同一回调。
+
 ### 4. 同时检查 native 与 graphics memory
 
 native 侧的压力统计把两笔账加在一起：系统 malloc 已用字节数，加上显式登记的字节数。`Heap::GetNativeBytes()` 把 `mallinfo().uordblks` 与 `native_bytes_registered_` 相加，所以 native SDK 走系统 malloc 分配的内存即使没有逐笔登记，也可能参与 GC 压力判断。Bitmap、字体和解码器的占用，同样要按实际分配与记账路径检查；自行 `mmap` 的区域、文件页缓存和 graphics buffer（图形缓冲区） 能否纳入统计，取决于具体的分配与登记方式，从进程 PSS 推算不出结果。
@@ -211,6 +261,16 @@ native 侧的压力统计把两笔账加在一起：系统 malloc 已用字节�
 `RegisterNativeAllocation()` 按字节补记 malloc 统计覆盖不到的非 malloc 分配；累计登记达到检查间隔或出现大额登记时会调用 `CheckGCForNative()`，`NotifyNativeAllocations()` 也会触发检查。检查把原生内存计数与 Java 堆占用放在一起判断压力，满足条件时以 `kGcCauseForNativeAlloc` 请求或执行 GC。统计范围和检查时机是两回事：原生内存增长之后，回收要等检查发生、条件满足才会到来。
 
 Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折算的驻留内存）、native heap、graphics 分类和对应调用栈。这些数据衡量的是进程总内存压力，并不等同于 ART heap 的触发阈值；`Runtime.totalMemory() - freeMemory()` 只给出 Java heap 的一个瞬时近似值，代表不了进程总内存，也不适合设置跨设备统一的百分比告警。
+
+<!-- gracker-diagram: a228-12-native-check-triggers -->
+![Native 分配检查区分次数周期与单次字节数](../../assets/diagrams/ch21/a228-12-native-check-triggers.png)
+
+图：登记次数周期与单次分配大小是两条检查门槛；检查并不保证一定发生回收。
+
+<!-- gracker-diagram: a228-11-native-accounting -->
+![ART native 压力不是进程 PSS 的同义词](../../assets/diagrams/ch21/a228-11-native-accounting.png)
+
+图：系统 malloc 未逐笔注册也可能参与压力；自行 mmap、图形与文件页是否覆盖，取决于分配和登记路径。
 
 ### 5. 保持编译状态与实验条件一致
 
@@ -241,9 +301,19 @@ Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折
 
 `notifyStartupCompleted()` 只是把一个立即执行的 `StartupCompletedTask` 放进 heap 任务队列。任务首次生效时释放 startup dex cache/linear alloc；只有在非 debuggable、没有 AOT（Ahead-Of-Time，提前编译） 机器码且没有可用 App Image 等条件同时满足时，它才会尝试写 runtime app image（运行时类元数据快照）。它不是供 App 自选时机的 GC 控制器。
 
+<!-- gracker-diagram: a228-13-startup-completed -->
+![StartupCompletedTask 按条件写 image 并释放启动元数据](../../assets/diagrams/ch21/a228-13-startup-completed.png)
+
+图：image 尝试在释放启动缓存之前；写入条件包括非 debuggable、无 AOT 代码且没有可用 App Image。
+
 ### 在首帧后主动调用 `System.gc()`
 
 `System.gc()` 向 runtime 发出显式回收请求，ART 可以忽略或调整；被执行的请求可能引入暂停以及 CPU/内存带宽竞争。只有 trace 和对照实验都证明某个无交互窗口的请求能改善后续关键路径，才有继续评估的依据；常规 App 应避免在首帧后、页面切换或滑动开始前调用它。
+
+<!-- gracker-diagram: a228-14-unsupported-controls -->
+![阻塞 daemon、隐藏 API 与显式 GC 都不能替代分配治理](../../assets/diagrams/ch21/a228-14-unsupported-controls.png)
+
+图：可发布策略是减少分配、缩小存活对象并控制缓存；固定条件验证启动及后续交互。
 
 ## 实验设计与发布判断
 

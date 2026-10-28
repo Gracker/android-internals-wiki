@@ -212,6 +212,11 @@ Compose 没有另起一套显示路径：`ComposeView` 和 `AndroidComposeView` 
 
 这条分界也划定了归因范围：Compose 布局变慢属于应用侧原因。`queueBuffer()` 表示应用提交图形缓冲区；它之后的排队、合成和显示等待，要沿标准渲染路径单独分析，与 Compose 测量耗时分开统计。
 
+<!-- gracker-diagram: a235-01-phase-dependencies -->
+![读取依赖分别连接到组合、测量、放置与绘制](../../assets/diagrams/ch22/a235-01-phase-dependencies.png)
+
+图：四条状态箭头表示不同读取位置；横向链是可能继续发生的阶段，不表示每次变化全部重跑。
+
 #### 2. Android 宿主如何调用 Compose 布局
 
 Compose UI 1.12.0 的 `AndroidComposeView` 提供了几处明确入口：
@@ -222,6 +227,11 @@ Compose UI 1.12.0 的 `AndroidComposeView` 提供了几处明确入口：
 - `onRequestMeasure()` 和 `onRequestRelayout()` 把节点失效交给 `MeasureAndLayoutDelegate`，再决定调用 View `requestLayout()` 还是 `invalidate()`。
 
 宿主侧仍是一次视图树遍历：`ViewRootImpl` 组织宿主 View 的测量、布局和绘制，再由 `ThreadedRenderer` 进入 HWUI。Compose 自己的三个阶段就嵌在这次平台遍历里，只是两边使用不同的 API 名称。所以在 Perfetto 中，我们要同时观察 Compose 跟踪事件、`AndroidOwner:*`、`performTraversals()` 和 `syncAndDrawFrame()`。
+
+<!-- gracker-diagram: a235-02-host-entries -->
+![宿主入口消费各自待处理的布局工作](../../assets/diagrams/ch22/a235-02-host-entries.png)
+
+图：节点失效由 Delegate 管理；框架遍历与 Recomposer 组合调度有不同入口。
 
 ### 二、测量与放置的重启作用域
 
@@ -299,6 +309,11 @@ fun OnePassColumn(
 
 测量代码必须保存 `Placeable`，以便放置阶段使用；为此创建一个列表，属于这个实现的明确成本。频繁执行的布局代码，先减少重复测量、无用节点和昂贵计算；必要的状态对象照常保留，用不着为了“零对象”去删。
 
+<!-- gracker-diagram: a235-03-one-pass -->
+![先保存一次测量结果，再按顺序放置](../../assets/diagrams/ch22/a235-03-one-pass.png)
+
+图：必要的 Placeable 列表有明确成本；没有零分配的统一要求。
+
 #### 3. 对齐线可能把读取带回布局
 
 `FirstBaseline` 等 `AlignmentLine`（对齐线）让子节点向父节点报告基线一类内部参考坐标。父节点在测量或放置阶段读取对齐线时，Compose 会记录依赖；子节点的对齐线变化后，对应父节点需要重新测量或放置。
@@ -318,6 +333,11 @@ Compose UI 1.12.0 的 `MeasurePassDelegate` 是处理常规测量的内部委托
 `performMeasure()` 会清除当前节点的 `measurePending`，并通过 Snapshot 观察器记录测量代码读取了哪些状态。测量完成后通常会把放置标记为待处理。
 
 这套机制跨帧保存上次约束和结果，作用范围比“同一帧缓存一个 `MeasureResult`”大。约束相同时，当前节点只有在没有待测量标记的情况下才复用已有尺寸；子树里仍可能有工作——子节点可能因自己的状态读取而失效，`forceMeasureTheSubtree()` 会处理这些待测量节点。
+
+<!-- gracker-diagram: a235-04-measurement-reuse -->
+![相同约束还需没有待测量标记](../../assets/diagrams/ch22/a235-04-measurement-reuse.png)
+
+图：复用跨帧维护；注解 Stable 不直接清除测量标记，也不管理这些约束。
 
 #### 2. 测量与放置使用不同标记
 
@@ -368,6 +388,11 @@ Compose UI 1.12.0 的 `SubcomposeLayout` 使用 `NoIntrinsicsMeasurePolicy`。�
 
 需要“与父尺寸匹配”时，可以让外层自定义布局控制测量顺序，或给 Subcompose 组件明确尺寸约束。对 `LazyColumn` 调用 `height(IntrinsicSize.Min)` 不会得到低成本的列表总高度查询。
 
+<!-- gracker-diagram: a235-05-intrinsics -->
+![固有尺寸查询不是第二次正式测量](../../assets/diagrams/ch22/a235-05-intrinsics.png)
+
+图：成本按真实子树与查询实现判断，没有统一 O(depth) 或固定倍数。
+
 ### 五、Modifier 链怎样映射到 `LayoutNode`
 
 #### 1. `LayoutNode` 与 `Modifier.Node` 是两层结构
@@ -385,11 +410,21 @@ Compose UI 1.12.0 的 `SubcomposeLayout` 使用 `NoIntrinsicsMeasurePolicy`。�
 
 Compose UI 1.12.0 把 Modifier 元素差异比较所用的临时列表改为 `MutableObjectList`，并从根 `NodeChain` 统一复用缓冲区和遍历栈；这里的栈是暂存待展开 Modifier 的后进先出列表。这是减少临时集合分配的实现调整，不会合并 Modifier 节点，也不会改变链的顺序语义。
 
+<!-- gracker-diagram: a235-06-modifier-structure -->
+![布局树与 Modifier 节点是两层结构](../../assets/diagrams/ch22/a235-06-modifier-structure.png)
+
+图：1.12 的临时集合和遍历栈复用减少分配，不会自动合并节点。
+
 #### 2. 顺序决定语义，没有通用的“size 放最前”
 
 Modifier 从外到内包装内容。`padding(16.dp).size(40.dp)` 与 `size(40.dp).padding(16.dp)` 接收和传递的约束不同，最终外部尺寸也可能不同。`clip().background()` 与 `background().clip()` 的绘制范围同样不同。
 
 调整顺序属于 UI 行为变更，需要先确认设计语义，再测性能。`Modifier.then()` 只负责连接两段 Modifier；靠它自动合并相邻节点、减少节点数量，是行不通的。
+
+<!-- gracker-diagram: a235-07-modifier-order -->
+![外到内的顺序改变约束与绘制范围](../../assets/diagrams/ch22/a235-07-modifier-order.png)
+
+图：两种顺序是并列对照，尺寸结果受父约束影响，不能统一要求 size 放最前。
 
 #### 3. 自定义布局 Modifier 的频繁执行路径
 
@@ -444,7 +479,17 @@ Foundation 1.12.0 的 LazyLayout 在这套机制之上用业务键（`key`）维
 
 `SubcomposeLayout` 使用 `NoIntrinsicsMeasurePolicy`。父级通过 `IntrinsicSize.Min/Max` 查询到它时会直接失败，不会先完成固有尺寸组合再正式测量。要实现匹配父尺寸一类依赖，应重写父布局的测量顺序；组件尺寸能由外层约束表达时，直接传入约束。Compose UI 1.12.0 也没有公开的 `@IntrinsicMeasurer` 注解可绕过这项限制。
 
+<!-- gracker-diagram: a235-08-subcompose-slots -->
+![槽位身份与离场复用策略分开](../../assets/diagrams/ch22/a235-08-subcompose-slots.png)
+
+图：子组合解决测量期内容依赖；它与 Lookahead 目标坐标预测是不同能力。
+
 Lookahead 先得到目标尺寸和坐标，接近阶段再逐步到达目标；它与“测量时才决定组合哪些内容”是两种能力。嵌套两者时，我们要分别观察前瞻布局、正式测量、子组合和绘制；额外那一轮布局仍属于布局工作，与 GPU 渲染分开统计。Compose Compiler 报告只能解释槽位内容能否跳过，Layout Inspector 只提供组合线索；实际的子组合与测量次数需要 Perfetto、自定义稳定计数或最小对照实验。
+
+<!-- gracker-diagram: a235-09-lookahead -->
+![目标布局与接近阶段有独立状态](../../assets/diagrams/ch22/a235-09-lookahead.png)
+
+图：共享元素与尺寸过渡可能需要目标坐标；静态内容无需为预计算扩大范围。
 
 ### 八、`Remeasurement.forceRemeasure()` 的适用场景
 
@@ -460,6 +505,11 @@ Lookahead 先得到目标尺寸和坐标，接近阶段再逐步到达目标；�
 - 颜色和绘制参数：`drawWithContent`、`drawBehind` 或 `Canvas` 中读取。
 
 后移读取以保住 UI 语义为前提：点击区域、父布局占位或可访问性范围必须随位置变化时，图层变换和布局位移给出的行为是不同的，这时按需求在两者之间选择。
+
+<!-- gracker-diagram: a235-10-force-remeasure -->
+![强制重测走附着 Owner 的同步入口](../../assets/diagrams/ch22/a235-10-force-remeasure.png)
+
+图：常规业务用 Snapshot 失效；没有公开通用 remeasure Modifier 便捷扩展。
 
 ### 九、怎样测量 Compose 布局成本
 
@@ -508,6 +558,11 @@ ORDER BY total_ms DESC;
 
 `slice.dur` 的单位是纳秒，查询把总时长和最大值换算成毫秒。聚合结果用于寻找工作量集中在哪类阶段；具体到某个 Composable 或 `LayoutNode`，还要回到对应帧和调用栈去核对。
 
+<!-- gracker-diagram: a235-12-sql-metrics -->
+![布局聚合保留线程身份和墙钟含义](../../assets/diagrams/ch22/a235-12-sql-metrics.png)
+
+图：聚合找到工作集中在哪类阶段，时间线与线程状态才解释帧内原因。
+
 #### 2. Layout Inspector 与 Compose Compiler 报告只覆盖组合线索
 
 Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compose Compiler 报告中的 `restartable`、`skippable` 分别表示函数可因状态变化重新执行、可在输入稳定时跳过；报告还会列出参数稳定性。两类工具都不会直接给出节点测量次数或布局耗时。
@@ -528,6 +583,11 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 系统跟踪默认不会列出每个 Composable。需要函数级组合事件时，按官方文档加入由 BOM 管理版本的 `androidx.compose.runtime:runtime-tracing`，并保证 Perfetto 配置包含 `track_event` 数据源。这个依赖会保留跟踪字符串并增加一定安装包体积，测试报告应记录是否启用。
 
 `runtime-tracing` 负责显示可组合函数，不会替应用开启 `ComposeToolingFlags.isVerboseTracingEnabled`；函数级组合事件和详细布局事件是两套独立配置。
+
+<!-- gracker-diagram: a235-11-tracing-config -->
+![组合事件与详细布局事件各自配置](../../assets/diagrams/ch22/a235-11-tracing-config.png)
+
+图：对照组开关一致；Perfetto 配色不表达测量、警告或超预算含义。
 
 即使启用了组合跟踪，布局节点归因仍可能需要自定义 `Trace.beginSection()`、最小复现或基准变体。某个 Composable 的组合时间片只包含组合工作，它的测量与绘制成本要另外度量。
 
@@ -552,6 +612,11 @@ Layout Inspector 可以显示 Composable 的组合次数和跳过次数。Compos
 5. 对 Subcompose 组件确认槽位键和布局分支是否稳定。
 
 父节点传入相同约束时，子节点自身失效仍可能触发局部重测量；子节点返回尺寸变化后，父节点可能继续更新。两种情况要分开记录。
+
+<!-- gracker-diagram: a235-13-layout-triage -->
+![从同一异常帧区分三种布局问题](../../assets/diagrams/ch22/a235-13-layout-triage.png)
+
+图：只有用户结果与目标帧对齐，才能判断组合、布局或系统后段的责任。
 
 #### 场景 C：布局动画启用后成本增加
 
@@ -620,9 +685,19 @@ flowchart LR
 
 `Text` 的组合节点负责保存输入和发起失效，`Paragraph`/`MultiParagraph` 负责文本测量与排版。Android 实现只在同时满足三个条件时才走适合单行简单文本的 `BoringLayout`：系统判定文本适合简化路径；内容不换行时所需的最大宽度不超过可用宽度；没有基线偏移样式。其余情况交给支持换行和复杂样式的 `StaticLayout`。
 
+<!-- gracker-diagram: a235-15-platform-text -->
+![BoringLayout 是带前置条件的简化路径](../../assets/diagrams/ch22/a235-15-platform-text.png)
+
+图：文本排版与整帧显示是两层工作；TextLayout:initLayout 不能解释全部显示等待。
+
 绘制结果记录到宿主 `ComposeView` 所在窗口，再沿普通应用窗口的显示流程提交。声明一个 `Text` 不会创建独立图形缓冲层（Surface）。
 
 这条分层对诊断很有用。Perfetto 中的 `TextLayout:initLayout` 时间片很长，说明 Android 文本排版工作较重；RenderThread 或 SurfaceFlinger 较晚时，继续调整重组稳定性通常解决不了那一帧。
+
+<!-- gracker-diagram: a235-14-text-node-gates -->
+![String 简化节点有三个同时满足的条件](../../assets/diagrams/ch22/a235-14-text-node-gates.png)
+
+图：回调、选择与自动字号有产品价值时保留；测试要记录具体节点路径，再追平台文本布局。
 
 #### 2. 普通 `String` 文本有专用实现
 
@@ -661,6 +736,11 @@ Compose Foundation 1.12.0 的 `BasicText(String, ...)` 在以下条件都满足�
 
 Compose 1.12.0 还把 `softWrap` 显式传入 `ParagraphIntrinsics` 和 `TextLayoutInput`。是否允许软换行会参与固有尺寸和布局输入；修改它时，要按布局输入来对待。
 
+<!-- gracker-diagram: a235-16-text-invalidation -->
+![布局输入与纯绘制输入使用不同失效范围](../../assets/diagrams/ch22/a235-16-text-invalidation.png)
+
+图：新建但内容相等的 AnnotatedString 不因对象身份单独触发重排；分配与内容比较仍有成本。
+
 #### 2. 相同宽度通常比相同高度更有复用价值
 
 `ParagraphLayoutCache.newLayoutWillBeDifferent()` 会检查旧段落、字体解析状态、布局方向和新约束。约束完全相同时可直接复用。宽度不变且新的高度仍能容纳旧段落时，断行不会变化，缓存可以保留已有 `Paragraph`；最大宽度或最小宽度变化时需要重新排版。
@@ -668,6 +748,11 @@ Compose 1.12.0 还把 `softWrap` 显式传入 `ParagraphIntrinsics` 和 `TextLay
 高度仍可能影响裁剪和省略。旧段落高于新的最大高度，或旧结果已经超过 `maxLines` 时，缓存会重新计算。列表项宽度在滚动期间保持不变，通常有利于复用；窗口尺寸、折叠状态、Insets 或父布局反复改变宽度，会让文本重新断行。
 
 更完整的 Compose 测量失效机制见前一部分“约束、测量、放置与 Subcompose”。
+
+<!-- gracker-diagram: a235-17-paragraph-reuse -->
+![同宽度与有效字体是段落复用的关键输入](../../assets/diagrams/ch22/a235-17-paragraph-reuse.png)
+
+图：同宽度往往比同高度更有复用价值，但高度、maxLines 和省略仍参与判断。
 
 #### 3. 新对象与重新排版的关系
 
@@ -680,6 +765,16 @@ Compose 1.12.0 还把 `softWrap` 显式传入 `ParagraphIntrinsics` 和 `TextLay
 Compose 的 `FontFamily.Resolver`（字体解析器）返回可观察的字体状态。使用异步字体时，首轮排版可以先采用回退字体；目标字体返回后，`hasStaleResolvedFonts` 会让旧缓存失效，文本重新测量。两种字体的字宽、基线和行高不同，周围布局也可能变化。
 
 首屏或滚动基准应分别覆盖冷字体缓存与热字体缓存。下载字体还要记录字体提供方、证书、网络状态、回退顺序和失败处理；一次下载等待属于字体获取环节的成本，要与 Compose 布局成本分开记录。
+
+<!-- gracker-diagram: a235-18-font-resolution -->
+![异步字体返回会让旧排版过期](../../assets/diagrams/ch22/a235-18-font-resolution.png)
+
+图：字体冷／热缓存与提供方、网络、回退条件分别记录；字体等待和主线程排版分开归因。
+
+<!-- gracker-diagram: a235-19-background-metrics -->
+![可选后台预热只准备度量缓存](../../assets/diagrams/ch22/a235-19-background-metrics.png)
+
+图：任务可被拒绝，预热可能竞争或未命中；不会把界面构建或最终布局整体搬到后台。
 
 ### 三、哪些输入容易增加文本工作量
 
@@ -704,6 +799,11 @@ Compose 的 `FontFamily.Resolver`（字体解析器）返回可观察的字体�
 Compose 1.12.0 的 `TextAutoSize.StepBased` 使用二分查找选择能放入约束的最大字号。每个候选字号都通过 `performLayout()` 试排；搜索收敛后，源码还会尝试再增大一个步长。缓存能复用所选布局结果，但新的文本或约束仍可能触发多轮试排。
 
 步长越小，候选空间越密。标题、按钮等少量短文本可以直接测量；长文档列表中大面积启用自动字号时，应记录试排成本以及尺寸变化是否影响父布局。产品只要求限制行数时，固定排版规则通常更容易预测。
+
+<!-- gracker-diagram: a235-20-auto-size -->
+![自动字号对多个候选执行试排](../../assets/diagrams/ch22/a235-20-auto-size.png)
+
+图：字号搜索减少候选次数，不是只布局一次；尺寸变化还可能影响父布局。
 
 #### 3. `onTextLayout` 的节点类型与反馈更新
 
@@ -740,6 +840,11 @@ fun MeasuredTitle(
 ```
 
 `rememberUpdatedState` 让稳定回调读取最新的外部处理函数，`lastSize` 过滤相同结果。I/O、解析和网络上报这类工作交给受控的异步任务，外部函数保持轻量。
+
+<!-- gracker-diagram: a235-21-text-callback -->
+![稳定回调与首次尺寸哨兵分别保证语义](../../assets/diagrams/ch22/a235-21-text-callback.png)
+
+图：onTextLayout 对应新布局结果；添加回调会改变 String 节点路径。
 
 #### 4. 选择、链接和无障碍语义都有额外职责
 
@@ -804,6 +909,11 @@ fun ArticleBody(paragraphs: List<ParagraphUiModel>) {
 
 `ParagraphUiModel` 只有不可变的基础类型，满足示例中的 `@Immutable` 契约；`List` 参数本身仍要结合强跳过规则判断。长文章使用 Lazy 布局只组合可见项，详细复用条件见 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md)。
 
+<!-- gracker-diagram: a235-22-identity-stability -->
+![业务键、可跳过性与文本排版各管一件事](../../assets/diagrams/ch22/a235-22-identity-stability.png)
+
+图：不可观察的可变输入不会被注解修好；数据快照与回调语义先于优化标签。
+
 ### 五、怎样写富文本和自绘文本
 
 #### 1. 缓存昂贵的富文本构造
@@ -849,11 +959,21 @@ fun HighlightedParagraph(
 
 颜色属于绘制属性，但它被写进 `AnnotatedString` 的字符范围样式，变更时会产生新的注解内容并更新文字节点。若颜色需要高频动画，可考虑把视觉效果放到更适合的绘制层；先确认高亮范围、无障碍和选择语义没有改变。
 
+<!-- gracker-diagram: a235-23-rich-text -->
+![按不可变输入缓存昂贵富文本构造](../../assets/diagrams/ch22/a235-23-rich-text.png)
+
+图：只为大构造成本缓存；新普通列表快照才能正确表达范围变化。
+
 #### 2. `TextMeasurer` 服务于自定义绘制
 
 普通 `Text` 已有节点级 `ParagraphLayoutCache` 或 `MultiParagraphLayoutCache`，无需再包一层 `TextMeasurer`。`rememberTextMeasurer()` 主要用于 `Canvas`、`drawBehind`、`drawWithCache` 等自定义绘制场景。
 
 `TextMeasurer` 用 LRU（最近最少使用）策略缓存 `TextLayoutInput` 到 `TextLayoutResult` 的映射。缓存键包含文字、布局样式、占位内容、行数、换行、溢出、密度、布局方向、字体解析器和约束；颜色、画刷、阴影和文字装饰等非布局属性不参与键比较。动画只改颜色时可以复用布局，动画字号或宽度时则会产生不同键。
+
+<!-- gracker-diagram: a235-24-measurer-key -->
+![TextMeasurer 缓存布局输入，不缓存全文业务](../../assets/diagrams/ch22/a235-24-measurer-key.png)
+
+图：大输入的新分配与比较也有成本；字体解析结果过期时缓存命中不可直接使用。
 
 下面的示例在绘制区域尺寸或文本输入变化时测量一次，随后用已有 `TextLayoutResult` 绘制颜色。
 
@@ -891,6 +1011,11 @@ fun LabeledBackground(
 
 `drawWithCache` 的构建块会在尺寸或读取到的状态变化时重新执行。`color` 在该块中参与背景和文本绘制，所以颜色变化也会重建绘制缓存，但 `TextMeasurer` 仍可复用布局结果。若颜色每帧变化且这段重建产生了可测成本，可在绘制匿名函数中读取最新颜色，把测量输入保持不变。Canvas 的其他约束见 [22.8 Runtime 图形效果与 Compose Canvas](08-runtime-effects-compose-canvas.md)。
 
+<!-- gracker-diagram: a235-25-draw-cache-geometry -->
+![绘制文字的可用空间先扣除内边距](../../assets/diagrams/ch22/a235-25-draw-cache-geometry.png)
+
+图：drawWithCache 在尺寸或相关输入改变时重建；颜色重建也不必意味着重新排版。
+
 #### 3. 缓存容量按重复输入数量设置
 
 `TextMeasurer` 的默认缓存容量，调大之后未必更快。容量单位是不同布局输入的数量。滚动中不断出现新文本时，过大的缓存会保留更多 `TextLayoutResult` 和段落数据；字号、约束或文本每帧变化时，大多数请求仍会未命中。
@@ -902,6 +1027,11 @@ fun LabeledBackground(
 - 输入几乎每次都不同：评估 `skipCache = true`，同时确认没有其他重复调用；
 
 - 需要长期保存大量文章段落：由业务设计明确的分页或缓存上限；`TextMeasurer` 的定位是测量缓存，全文存储交给业务层实现
+
+<!-- gracker-diagram: a235-26-cache-lookup-retention -->
+![跳过查找和不保留缓存是两个选项](../../assets/diagrams/ch22/a235-26-cache-lookup-retention.png)
+
+图：1.12实际实现中 skipCache 不等于禁用所有缓存；没有重复输入时扩大容量也可能只有占用。
 
 ### 六、用系统跟踪判断时间花在哪里
 
@@ -922,6 +1052,11 @@ Macrobenchmark 的 `FrameTimingMetric` 给出 `frameOverrunMs` 与 `frameDuratio
 #### 2. 源码中的文本时间片可以辅助定位
 
 Compose UI 1.12.0 的文本实现包含 `TextStringSimpleNode::measure`、`TextAnnotatedStringNode:measure` 和 Android 端 `TextLayout:initLayout` 等跟踪名称。前两个名称通过 Compose UI 的 `trace()` 写入，Android 实现会直接调用 `Trace.beginSection()`；第三个名称也直接使用 Android Trace。它们不受 `ComposeToolingFlags.isVerboseTracingEnabled` 控制，但跟踪配置仍要采集应用时间片，目标代码也必须在采集期间执行。
+
+<!-- gracker-diagram: a235-27-text-tracing -->
+![文本节点时间片与组合切片分开收集](../../assets/diagrams/ch22/a235-27-text-tracing.png)
+
+图：两个 SQL 均保留 upid/utid 与完成区间；总时长仍是可嵌套的 inclusive 墙钟。
 
 下面的 PerfettoSQL 用于汇总这些已确认的文本测量时间片，并保留进程和线程维度。
 

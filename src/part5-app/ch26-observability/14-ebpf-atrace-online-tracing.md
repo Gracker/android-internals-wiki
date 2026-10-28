@@ -132,6 +132,11 @@ WOOTdroid 的正式实验跑在两台已 root（取得超级用户权限） 的 
 
 所以线上系统追踪始终是在信号价值、权限、开销和隐私之间做取舍：eBPF 在内核侧重建调度或 Binder 事件；Profilo 这类端侧框架靠 ATrace 等数据源组织短窗口 Trace——ATrace 既是用户态埋点 API，也是一套事件协议。
 
+<!-- gracker-diagram: a299-01-kernel-and-process-evidence-scopes -->
+![内核审计与应用内轨迹有不同的权限和证据范围](../../assets/diagrams/ch26/a299-01-kernel-and-process-evidence-scopes.png)
+
+图：root Pixel研究结果不能外推Android17量产user；Device Owner也不提供任意BPF加载权。
+
 ## 内核 Hook、Binder 关联与事件预算
 
 内核侧追踪要解决三件事：把钩子挂到正确的位置，把 Binder 事件和调用语义对上，再把事件预算管住。我们先从 ftrace 说起。
@@ -159,6 +164,11 @@ WOOTdroid 关注的系统调用审计是另一条路：WDSys 在 eBPF 侧过滤�
 
 这里要分清两件事：“没有观察到事件”只说明这套采集流程没有产出该事件；要进一步认定“事件没有发生”，得先确认丢失计数、过滤规则和权限状态都是完整的。
 
+<!-- gracker-diagram: a299-03-buffer-loss-and-observation-health -->
+![未观察到事件，先排除过滤、权限与丢失](../../assets/diagrams/ch26/a299-03-buffer-loss-and-observation-health.png)
+
+图：没有事件记录不证明事件未发生；没有可读丢失计数也不能默认完整。
+
 ### Android eBPF 系统调用追踪路径
 
 Android 平台自己就在用 eBPF。按 AOSP 文档的说法，系统镜像中的 BPF 对象由 Android BPF loader 在启动阶段加载，所需的 map 和 program 会 pin 到 BPF 文件系统——pin 就是给内核对象建一个持久路径，loader 退出后其他进程仍可按权限访问。`system/bpf` 源码还显示，平台程序受 loader 描述项和文件权限管理，带 `skip_on_user` 标记的对象在 `ro.build.type=user` 时会被跳过。
@@ -174,6 +184,11 @@ WDSys 的论文原型可以拆成五个阶段：
 5. **用户态消费**：读取进程负责拼接分片、统一时间表示、落盘和审计。内核程序成功输出，只说明事件进了传输缓冲区；读取进程有没有消费并持久化这些数据，还要单独确认。
 
 读取带 tag 的用户地址是另一个设备相关的问题。论文的 Pixel 原型为此用了固定按位掩码：tag 指 arm64 可以放在地址高位的标记，TBI（Top Byte Ignore）让处理器忽略地址最高字节，MTE（Memory Tagging Extension）用标签检测内存访问错误。这个掩码常量依赖所测设备的虚拟地址布局，直接当成 Android 17 的通用方案是有风险的。
+
+<!-- gracker-diagram: a299-02-wd-sys-filter-tail-call-reader -->
+![WDSys：内核筛选、分段逻辑、传输与持久化分开验收](../../assets/diagrams/ch26/a299-02-wd-sys-filter-tail-call-reader.png)
+
+图：map、tail call、输出、解码、落盘分别留错误；缺一端保partial，不补造时长。
 
 去除地址标签之前，要把目标 arm64 内核、TBI/MTE 配置、BPF helper（内核提供给 BPF 程序的受控函数） 的行为和进程 ABI（应用二进制接口） 放在一起验证；验证失败时只记元数据，用户缓冲区一概不读。
 
@@ -210,9 +225,19 @@ WDBind 在 `raw_syscalls:sys_enter` 事件中运行于内核态，读到的数�
 
 WOOTdroid 论文在设备上用 Java reflection（运行时反射）生成 Android framework（系统框架） 的 AIDL 签名表。原型能解析基本类型、`String` 和部分 Binder 对象，也就到此为止：fd 或指针指向的内容不再展开，事务回复（transaction reply）同样不处理；复杂 `Parcelable`（可写入 `Parcel` 的结构化对象）、厂商接口和动态注册接口都没有系统性覆盖，论文因此把 WDBind 的完整性和性能评估列为后续工作。
 
+<!-- gracker-diagram: a299-04-binder-user-memory-to-signatures -->
+![Binder 语义：用户内存快照不等于驱动接受的事务](../../assets/diagrams/ch26/a299-04-binder-user-memory-to-signatures.png)
+
+图：图示对比观察与使用的边界；并非WDBind v1已经完整实现全部校验或所有命令。
+
 如果我们要的只是路由和时序、用不着参数内容，Binder tracepoint 反而更合适：`binder_transaction` 给出事务调试编号、目标进程或线程、reply 标记、code 和 flags，`binder_transaction_received` 表示目标侧收到事务。只是别忘了它们的限制：仍受 ftrace 权限和缓冲区约束，而且这些字段属于内核追踪接口，应用 API 的稳定性保证罩不到它们。
 
 那一次 Binder RPC（远程过程调用）到底有多长？要把客户端应用 slice、Binder transaction / received 事件和服务端 slice 分段拼起来才能算出来，`BINDER_WRITE_READ` 的 ioctl 时长给不出这个数：一次 ioctl 可以写入多条命令，也可能进入读取路径等待工作，oneway transaction（单向事务）也不同步等回复。slice 是 trace 中带开始与结束时间的一段任务区间；缺少关联点时，我们只报告已经观察到的区间。
+
+<!-- gracker-diagram: a299-05-binder-rpc-observation-tracks -->
+![Binder RPC 要拼多侧区间，单次 ioctl 不代表往返时长](../../assets/diagrams/ch26/a299-05-binder-rpc-observation-tracks.png)
+
+图：同步调用需关联request、received与reply；单次BINDER_WRITE_READ可批量写入或等待读工作，不能等同一次RPC。
 
 ### 性能开销与完整性指标
 
@@ -225,6 +250,11 @@ WOOTdroid v1 的数据适合用来理解实验方法，离产品预算还远。�
 | UER | WDSys 均值 37.75%，ftrace 均值 4.27%，相差 33.48 个百分点 | 某采集器的 UER = 只有该采集器记录到的事件数 ÷ 两份日志的事件并集；该指标不能表示绝对召回率（所有应采事件中成功采到的比例），也不能作为独立测得的丢失率 |
 
 ftrace 的 UER 非零，说明有些事件只出现在 ftrace 日志里；WDSys 同样有残余缺失，写成“完整捕获”就名不副实。论文摘要里那句“多追踪 33%”也要按 UER 的定义理解，准确说法是两者平均 UER 相差 33.48 个百分点。
+
+<!-- gracker-diagram: a299-06-unique-event-rate-union-denominator -->
+![UER 是两份日志并集中的独有比例，独立真值仍缺失](../../assets/diagrams/ch26/a299-06-unique-event-rate-union-denominator.png)
+
+图：两台root Pixel9、Android16；Geekbench WDSys数据不代表Binder参数解码或本项目开销。
 
 换成我们自己的项目，评估要覆盖四类数据：
 
@@ -323,6 +353,11 @@ WDBind v1 不处理 reply，ioctl enter / exit 又可能混合 write 与 read，
 
 安全实验若必须保留短时间的原始参数，应与生产数据域隔离，并具备明确的设备清单、审批人、加密密钥、到期删除和访问日志。这里容易低估的是匿名化：hash 是把原值映射为固定摘要，geohash 是把经纬度编码为网格字符串，而手机号后四位、未加密钥的普通 hash 和粗粒度 geohash 仍可能成为可关联标识，直接按匿名数据对待有风险。
 
+<!-- gracker-diagram: a299-07-version-bound-semantic-decoding -->
+![语义与参数策略作为同一版本配置发布](../../assets/diagrams/ch26/a299-07-version-bound-semantic-decoding.png)
+
+图：原始Parcel一进reader就扩大暴露面；服务端清洗不能替代端侧先最小化。
+
 ### 源码与文档锚点
 
 - [Android 17 `system/bpf`](https://android.googlesource.com/platform/system/bpf/+/refs/tags/android-17.0.0_r1/)：平台 BPF loader、program 与 map 的实现入口。
@@ -374,6 +409,11 @@ Profilo 包含多个协作组件。官方[架构文档](https://github.com/faceb
 
 这张关系图区分应用内 Profilo 数据与系统 trace 数据：
 
+<!-- gracker-diagram: a299-09-profilo-ring-concurrency-and-wrap -->
+![固定容量环形缓冲：读落后、写绕回各有不同后果](../../assets/diagrams/ch26/a299-09-profilo-ring-concurrency-and-wrap.png)
+
+图：图示依据LockFreeRingBuffer源码并发契约；buffer满不自动提供持久化或完整性保证。
+
 ```text
 业务 trigger / 远程配置
           │
@@ -396,6 +436,11 @@ Profilo 包含多个协作组件。官方[架构文档](https://github.com/faceb
 ```
 
 图中的上传、限额、脱敏和服务端分析都要接入方自己实现。Profilo 有个名为 `upload` 的文件目录，它只能说明文件处于待处理阶段，从这里推不出“默认会压缩、加密并上传”。
+
+<!-- gracker-diagram: a299-08-profilo-controller-to-private-files -->
+![Profilo：控制、provider、缓冲和文件职责分开](../../assets/diagrams/ch26/a299-08-profilo-controller-to-private-files.png)
+
+图：加密、上传、后端与保留策略由接入方实现；名为upload的目录不证明已联网上传。
 
 ### ATrace 事件的写入路径
 
@@ -438,6 +483,11 @@ val result = traceSection("Feed.bindVisibleItems") {
 }
 ```
 
+<!-- gracker-diagram: a299-10-android17-trace-backend-branches -->
+![Android 17：公共 Trace 调用不能一概视为 trace_marker 写入](../../assets/diagrams/ch26/a299-10-android17-trace-backend-branches.png)
+
+图：Profilo单库PLT hook只观察命中该入口的写入；API存在与目标构建实际被捕获是两个验收项。
+
 `finally` 保证异常路径也能关闭 slice。高基数指可能出现的取值特别多，例如 URL、账号与订单号；把这些值放进 section name 会撑大 trace 体积，还可能暴露敏感信息。线上事件名保持固定，必要参数等采样命中后再交给受控日志。
 
 ### Profilo ATrace provider 的精确行为
@@ -474,6 +524,11 @@ ssize_t profilo_write_hook(int fd, const void* data, size_t size) {
 
 hook 对 `S/F/G/H/I/N/C` 同样返回成功，对应记录却没有写进 Profilo，丢失从返回值上看不出来。业务若依赖异步事件、counter、instant event 或自定义 track，必须扩展记录格式与解析器，或者明确声明这些事件不受支持。
 
+<!-- gracker-diagram: a299-11-profilo-hook-parse-and-swallow -->
+![命中 Profilo hook 后：B/E 转写，其他前缀也不再下送](../../assets/diagrams/ch26/a299-11-profilo-hook-parse-and-swallow.png)
+
+图：中间两类是互斥的解析结果；返回成功不代表已保存不支持的事件。
+
 #### 能看到哪些进程
 
 先回答一个常见疑问：这套 hook 能看到哪些进程？PLT relocation 是动态加载器填入的函数地址槽位，Profilo 修改的是当前应用进程内 `libcutils.so` 的这个槽位；其他进程各有自己的地址空间，不会随之改变。
@@ -498,6 +553,11 @@ tid 4178: POP
 
 每个 TID 的 `PUSH` 与 `POP` 独立配对。缓冲区回绕指写指针走完一圈后复用旧槽位，可能盖掉还没读取的开始事件；采集正好从一段未结束 slice 的中间开始、进程异常退出，或调用方漏掉配对调用，栈同样会不平衡。分析端要把对应区间标成不完整数据，时长一律不补造。
 
+<!-- gracker-diagram: a299-12-thread-lifetime-stack-and-partial -->
+![B/E 栈按线程生命周期隔离，缺事件就保留不完整](../../assets/diagrams/ch26/a299-12-thread-lifetime-stack-and-partial.png)
+
+图：采集从slice中间开始也会缺begin；名称、深度与端点完整性分别验证。
+
 ### ATrace provider 与 stack provider 的分工
 
 Profilo 的堆栈采样由另一个 provider 完成，native 入口见 [`SamplingProfiler.cpp`](https://github.com/facebookarchive/profilo/blob/main/cpp/profiler/SamplingProfiler.cpp)。
@@ -521,6 +581,11 @@ ART/DEX/JIT unwind 指跨越 ART 运行时、DEX 字节码和即时编译代码�
 Java 方法采样优先选择 Android Studio CPU Profiler、Simpleperf 或 Perfetto 支持的数据源；API 35 及更高版本还可评估平台的 `ProfilingManager`。
 
 JVMTI 是虚拟机提供的调试与插桩接口，attach 指运行中把 agent 加载进目标进程。Android 的 JVMTI attach 只对可调试应用开放，普通生产构建里当不了默认入口；扫描 ART 私有内存寻找新偏移，同样放不进生产方案。
+
+<!-- gracker-diagram: a299-13-sampling-provider-thread-timers -->
+![stack provider：线程定时器、采样信号与 unwind 是另一数据源](../../assets/diagrams/ch26/a299-13-sampling-provider-thread-timers.png)
+
+图：源码没有Quicken模式，也未靠pthread_create PLT hook维护线程；不把ATrace B/E当成自动堆栈。
 
 ### Android 17 兼容性审计
 
@@ -569,6 +634,11 @@ AAR 是 Android 库的发布归档。上游 README 明确声明 API 不稳定，
 - `android.os.Trace`、NDK ATrace 和直接使用 Perfetto SDK 的事件分别测试——它们未必经过同一个 PLT 入口。
 
 Profilo 启用期间会吞掉命中 hook 的 ATrace 写入，并发的 Perfetto system trace 因此可能缺少本进程的 ATrace 事件。工程上应禁止两类采集重叠，或者把这种缺失写进采集模式和分析协议，避免把两份结果都标成完整。
+
+<!-- gracker-diagram: a299-14-fixed-artifacts-and-hook-capabilities -->
+![私有 hook 验收：源码、构建产物和运行结果逐层对应](../../assets/diagrams/ch26/a299-14-fixed-artifacts-and-hook-capabilities.png)
+
+图：扫描.bss猜私有地址会误写内存；不能仅凭hidden API、SELinux或W^X名称断言所有构建必然失败。
 
 #### 用上游工具检查文件
 
@@ -628,6 +698,11 @@ trace session 是一次有明确开始、配置、停止和输出结果的采集
 Android 10 及更高版本应优先使用 Perfetto system trace。它能在同一时间轴上组合应用标记、`sched`、Binder、CPU 频率、内存和 I/O 等数据。Perfetto SDK 的 system backend 连接系统 `traced`，读取结果受平台权限控制，主要适合开发机、实验室或受控系统环境。
 
 API 35 及更高版本的 [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager) 允许应用请求系统 trace、堆采样等受平台管理的 profile。平台负责调度、频率限制与结果交付，它也不授予应用任意读取持续系统 trace 的能力。
+
+<!-- gracker-diagram: a299-15-stable-tracing-driver-and-system-scopes -->
+![Tracing 2.0.5 应用内输出与系统 trace 保持独立](../../assets/diagrams/ch26/a299-15-stable-tracing-driver-and-system-scopes.png)
+
+图：截至2026-10-25最新稳定2.0.5；C++17也可用Perfetto SDK in-process，均不自动捕获内核事件。
 
 ### 工程决策
 

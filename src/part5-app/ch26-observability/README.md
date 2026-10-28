@@ -4,6 +4,11 @@
 
 本章从应用团队视角组织崩溃（Crash）上报、性能采集、线上排查和发布质量门禁（Release Quality Gate），覆盖问题发现、证据采集、影响归因、修复验证与回归防护。
 
+<!-- gracker-diagram: a301-01-observability-evidence-to-release-loop -->
+![第26章：从线上问题到修复验证与发布决策](../../assets/diagrams/ch26/a301-01-observability-evidence-to-release-loop.png)
+
+图：质量门禁依赖可解释、同口径的证据；问题复现与回归防护反过来完善采集和规则。
+
 ## 内容索引
 
 
@@ -43,3 +48,8 @@
 - 发布评估可结合 26.4、26.5、26.8 和 26.11，统一实验口径、门禁阈值与外部质量指标。
 - 26.13—26.15 依次讨论资源采样、系统事件和动态方法追踪，涉及不同的系统权限或实验方案。采用其中机制前，应确认目标 Android 版本、构建类型、权限和上游维护状态。
 - 非 Play 分发与厂商系统差异见 26.3；涉及 OEM 数据时，应保留设备型号、系统构建指纹、渠道和采集权限。
+
+<!-- gracker-diagram: a301-02-symptom-to-chapter-and-permission-map -->
+![按证据对象选择章节，同时核对采集权限](../../assets/diagrams/ch26/a301-02-symptom-to-chapter-and-permission-map.png)
+
+图：体系搭建先读26.1，已知症状先读26.3；非Play与OEM差异保留构建、渠道和权限信息。

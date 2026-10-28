@@ -106,6 +106,11 @@ consolidated_from:
 
 这些检查都要落到具体设备上。电流值脱离设备、网络、屏幕、温度和测量窗口就没有可比性：同一段代码跑在两款手机上，底层可能是不同的 modem（蜂窝基带）、GNSS、codec（编解码器） 和调度策略。所以工程判断要看目标设备的时间线和能量数据，某款设备上的一次测试结果只对那台设备成立。
 
+<!-- gracker-diagram: ch11-02-01-request-to-hardware -->
+![从请求链缩短不必要的资源活动](../../assets/diagrams/ch11/ch11-02-01-request-to-hardware.png)
+
+图：应用参数影响工作量与资源活动，但硬件功率还依设备、信号、温度和系统策略变化。图是职责链，不是统一能量公式。
+
 #### 先选合适的执行机制
 
 | 业务性质 | 建议入口 | 必须接受的系统边界 |
@@ -118,9 +123,19 @@ consolidated_from:
 
 入口选好之后，系统还剩多少合并和延后的空间就基本定了。我们如果把普通同步放进精确闹钟或长期 FGS，等于主动放弃大量省电机会。
 
+<!-- gracker-diagram: ch11-02-02-execution-contract -->
+![执行入口决定系统可调度的空间](../../assets/diagrams/ch11/ch11-02-02-execution-contract.png)
+
+图：图聚焦三类跨页面任务；界面内即时操作仍由进程内异步处理。推送只是事件入口，后续执行仍需符合平台条件。
+
 #### Doze 与前台服务
 
 Doze 会延后普通网络访问、Job 和 Alarm，攒到 maintenance window（维护窗口）里批量执行。有些实现以为前台服务一开，网络和 Job 就能一直畅通，但 FGS 免不了同进程 Job 的配额，也拿不到设备级的 Doze 豁免；抱着这种假设的应用，在熄屏静置测试里很容易暴露问题。
+
+<!-- gracker-diagram: ch11-02-03-fgs-not-idle-exemption -->
+![前台服务和 Job 的准入各自判断](../../assets/diagrams/ch11/ch11-02-03-fgs-not-idle-exemption.png)
+
+图：轨道只示意独立判断，无固定维护窗口或等待长度。FGS 不自动豁免 Doze；Android 16 起与 FGS 并发的相关 Job 也受 runtime quota。
 
 ### WakeLock 的适用窗口
 
@@ -129,6 +144,11 @@ Doze 会延后普通网络访问、Job 和 Alarm，攒到 maintenance window（�
 直接持锁之前，先看高层 API 是否已经代劳：WorkManager、JobScheduler、媒体、位置和下载这些 API，已经在各自的执行窗口内管理唤醒条件。只有一种情况需要业务自己持锁：CPU 一旦休眠，手头的短操作就安全收不了尾。锁要有单一所有者、稳定且不含隐私的 tag、由业务截止时间推导的超时，并在 `finally` 中释放；超时只是故障保护，替代不了正常释放。
 
 客户端对象显示 held（已持有），只说明应用侧还握着这把锁。它当前是否生效，还要往下看几层：App tag、PowerManagerService 的 suspend（系统挂起） blocker（系统休眠阻止项）、SystemSuspend 和内核 `wakeup_source`（唤醒源），这些层级之间没有一一对应关系。这条链路的源码调用链、安全示例，Doze/LPS（Low Power Standby（低功耗待机），低功耗待机）下的适用范围，以及 Android Vitals 的统计口径与逐层排障方法，统一见 [11.3 WakeLock 机制与功耗分析](03-wakelock.md)。
+
+<!-- gracker-diagram: ch11-02-04-wakelock-owner -->
+![持锁区间与业务所有者对齐](../../assets/diagrams/ch11/ch11-02-04-wakelock-owner.png)
+
+图：持锁不代表 CPU 始终忙碌、网络可用或必然阻止所有休眠路径。客户端 held 与系统实际 blocker、内核 wakeup source 不是一对一关系。
 
 ### WorkManager 与 JobScheduler：把延迟空间交给系统
 
@@ -164,6 +184,11 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 
 `UNMETERED` 的判断依据是 `ConnectivityManager` 报告的网络是否计费，跟 Wi‑Fi 没有绑定关系：某些 Wi‑Fi 可能被标记为计费，某些蜂窝套餐或设备环境也可能被标记为不计费。业务只需要联网时，用 `CONNECTED` 就够了；多加的约束只会推迟任务，还可能让积压工作在条件满足时集中执行。
 
+<!-- gracker-diagram: ch11-02-05-constraints-and-stop -->
+![约束检查会影响开始和执行中的工作](../../assets/diagrams/ch11/ch11-02-05-constraints-and-stop.png)
+
+图：示例条件是充电与不计费网络，不是 Wi-Fi。条件满足不构成立即执行承诺；可靠恢复仍需应用处理重复与中止。
+
 #### 周期、加急与唯一工作
 
 - `PeriodicWorkRequest` 的最小重复间隔为 15 分钟。这是请求下限，系统可以因为约束、Doze、配额或 standby bucket 延后某一轮，也不承诺固定相位。
@@ -172,7 +197,22 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 - 唯一工作可以避免相同任务被重复入队。能合并的上报、清理、索引操作应在业务层合并输入。
 - `Result.retry()` 只用于可恢复错误。鉴权失败、参数错误等永久失败继续重试，只会重复唤醒设备和服务器。
 
+<!-- gracker-diagram: ch11-02-07-period-flex -->
+![周期窗口给系统选择执行时机](../../assets/diagrams/ch11/ch11-02-07-period-flex.png)
+
+图：两条是不同周期的局部示意，不共用绝对时间轴。没有画出固定相位或保证每个窗口都执行；业务时刻敏感时不能把最小周期当 SLA。
+
+<!-- gracker-diagram: ch11-02-06-keep-running -->
+![KEEP 会忽略同名排队中或运行中的新请求](../../assets/diagrams/ch11/ch11-02-06-keep-running.png)
+
+图：图依据 WorkManager 2.12.0 的 EnqueueRunnable。唯一调度不合并业务输入，也不保证业务只处理一次；数据先进入持久存储。
+
 `PerformanceHintManager.Session.setPreferPowerEfficiency(true)` 是 Android 15+ 对正在运行线程的能效提示，属于 ADPF（Android Dynamic Performance Framework）能力。它不参与 WorkManager 排队，也不保证绑定到某类 CPU；设备是否采纳提示由系统和 Power HAL 决定。计算密集型代码想用它，先在实机上做 A/B 验证。
+
+<!-- gracker-diagram: ch11-02-08-adpf-scheduler -->
+![排队与线程能效提示位于两个环节](../../assets/diagrams/ch11/ch11-02-08-adpf-scheduler.png)
+
+图：setPreferPowerEfficiency 从 API 35 提供，不参与 WorkManager 入队，不绑定特定 CPU；真实性能和能量效果要在支持设备验证。
 
 #### Android 16 的 Job runtime quota
 
@@ -183,6 +223,11 @@ Android 16（API 36）调整了 regular 与 expedited job（加急任务） 的�
 - WorkManager、JobScheduler 和 DownloadManager 调度的相关工作都受影响。
 
 这两套限制各自独立：FGS 的类型时长是一套，JobScheduler 的 runtime quota 是另一套，平台没有“Job 与 FGS 共用一个预算”的规则。用户发起的大文件传输可评估 user-initiated（用户发起） data transfer job（用户发起的数据传输任务）；它有专门的资格条件和配额语义，属于专用通道。
+
+<!-- gracker-diagram: ch11-02-09-independent-budgets -->
+![FGS 类型时长和 Job 配额是两套预算](../../assets/diagrams/ch11/ch11-02-09-independent-budgets.png)
+
+图：轨道说明独立预算，不按比例。Android 16 对相关 top-started 和 FGS 并发 Job 的配额变化，不代表 FGS 与 Job 共享一份时间池。
 
 排查任务为何延迟或中止时，WorkManager 通过 `WorkInfo.getStopReason()` 提供原因，直接使用 JobScheduler 时则读取 `JobParameters.getStopReason()`。Android 16 还提供 `JobScheduler.getPendingJobReasonsHistory()`，用于查看任务没有运行的历史原因。
 
@@ -203,6 +248,11 @@ Android 14 对 target 33+ 的多数新安装应用不再预授予 `SCHEDULE_EXAC
 
 `AlarmManager.OnAlarmListener` 形式的 `setExact()` 是个例外：它不要求 `SCHEDULE_EXACT_ALARM`。代价是回调活在进程里——进程退出后，系统不会为此重新创建 App。需要跨进程生命周期的可靠触发，通常用 `PendingIntent`（可由系统代应用执行的预封装操作），并遵守精确闹钟权限规则。这个例外服务于进程内存活期的精确回调，后台保活不在其列。
 
+<!-- gracker-diagram: ch11-02-10-alarm-process-lifetime -->
+![精确 Alarm 的形式决定交付寿命](../../assets/diagrams/ch11/ch11-02-10-alarm-process-lifetime.png)
+
+图：Listener 的 setExact 不要求 SCHEDULE_EXACT_ALARM，但依赖存活组件。PendingIntent 交付也仍受重启、权限、平台与业务恢复设计约束，不代表任意环境绝不丢失。
+
 #### Doze 与 allow-while-idle
 
 - `setAlarmClock()` 面向用户可见闹钟，系统会为交付离开低功耗模式。
@@ -211,6 +261,11 @@ Android 14 对 target 33+ 的多数新安装应用不再预授予 `SCHEDULE_EXAC
 - 普通 Alarm 在 Doze 中可能延后到 maintenance window。
 
 AlarmManager API 文档给出的正常条件下节流量级约为每个 App 九分钟一次，系统也可以拉长间隔。这个数值是防滥用上限，不是建议的轮询周期。所以闹钟回调里只安排短操作；需要联网或持久执行时，把后续工作交给 JobScheduler 或 WorkManager。
+
+<!-- gracker-diagram: ch11-02-11-alarm-three-axes -->
+![精确、空闲交付与唤醒是三个独立选择](../../assets/diagrams/ch11/ch11-02-11-alarm-three-axes.png)
+
+图：九分钟的 Doze 指南量级不能改写成正常运行条件；API 的约一分钟与空闲可能十五分钟也不是统一固定常量或轮询建议。
 
 ### 前台服务的运行限制
 
@@ -221,6 +276,11 @@ FGS 用持续通知表达用户知情的长任务，并提高进程重要性；D
 - App 已在后台且不满足 FGS 启动豁免时，可能触发 `ForegroundServiceStartNotAllowedException`。
 
 判读日志时，我们先把声明、权限、启动资格分开：三个异常各自指向不同的修复位置。
+
+<!-- gracker-diagram: ch11-02-12-fgs-three-gates -->
+![FGS 声明、权限与启动资格分别修复](../../assets/diagrams/ch11/ch11-02-12-fgs-three-gates.png)
+
+图：类型要求、权限条件和后台启动资格不是相互替代的许可；图以 target 34+ 适配场景概括，不代替各类型完整要求。
 
 #### Android 14 与 Android 15 的超时
 
@@ -234,6 +294,11 @@ FGS 用持续通知表达用户知情的长任务，并提高进程重要性；D
 
 `android-17.0.0_r1` 的 `ActiveServices.getTimeLimitedFgsType()` 把 `dataSync` 与 `mediaProcessing` 纳入此路径；宽限期结束后，`onFgsCrashTimeout()` 通过 `ForegroundServiceDidNotStopInTimeException` 终止宿主进程。`shortService` 走的是独立的 ANR（应用无响应） timer（超时计时器）。两条超时路径的表象相近，排查时要分开对待。
 
+<!-- gracker-diagram: ch11-02-13-fgs-timeout-paths -->
+![shortService 与累计类型走不同超时路径](../../assets/diagrams/ch11/ch11-02-13-fgs-timeout-paths.png)
+
+图：条宽不按时长比例；六小时按类型分别计，同 App 同类型共享，用户带到前台会重置。混合声明类型的源码选择还需看 getTimeLimitedFgsType，不把图当完整多类型算法。
+
 收到超时回调，我们要做的事只有三件：保存进度、释放资源、停止服务。数据同步可以评估 WorkManager、user-initiated data transfer job 或 DownloadManager，选了哪个，就要接受哪个的调度和配额规则。
 
 #### Android 17 后台音频
@@ -243,6 +308,11 @@ Android 17（API 37）把后台播放、音频焦点请求和音量修改纳入�
 - 所有运行在 Android 17 上的 App，无论 targetSdk，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS，才能进行这些后台音频交互。
 - target 37 的 App 在后台还要求该 FGS 具有 while-in-use（WIU，仅使用期间允许）能力。通常由用户操作或 App 可见状态下启动的 FGS 获得。
 - App 具有精确闹钟权限并操作 `USAGE_ALARM` 音频流时，WIU 要求可豁免；前一条“可见 Activity 或非 shortService FGS”仍然存在。
+
+<!-- gracker-diagram: ch11-02-14-audio-two-gates -->
+![Android 17 后台音频先过基础门槛，再查 WIU](../../assets/diagrams/ch11/ch11-02-14-audio-two-gates.png)
+
+图：图是普通 App 的公开默认规则。音频焦点、播放与音量修改的源码入口并不完全相同；闹钟音频例外不能跳过前面的基础资格。
 
 条件不满足时，播放和音量 API 可能静默失败，音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。我们用 `adb dumpsys audio`，或在 logcat 里搜 `AudioHardening`：`level: partial` 表示没有运行 FGS，`level: full` 表示 FGS 缺少 WIU 能力。系统实现可对照 `AudioService.java` 与 `HardeningEnforcer.java`。
 
@@ -260,6 +330,11 @@ Fused Location Provider（融合位置提供方）的 priority 表达精度与�
 | `PRIORITY_PASSIVE` | 只接收其他客户端产生的位置，不为本请求额外计算 | 辅助更新、维护缓存时效性 |
 
 高精度请求不保证 GNSS 一定启用，平衡模式也不保证只用 Wi‑Fi 和基站——系统设置、权限、设备能力、环境和其他客户端都会改变最终结果。所以我们拿到位置后，先看它的 `accuracy` 和时间戳，再结合业务容差判断它是否可用。
+
+<!-- gracker-diagram: ch11-02-15-location-quality -->
+![定位 priority 是偏好，结果仍要验收](../../assets/diagrams/ch11/ch11-02-15-location-quality.png)
+
+图：priority 不指定固定传感器组合或固定精度，PASSIVE 也只是复用其他请求的结果。图不能推导 GNSS 必开或必关。
 
 #### 间隔、批量与生命周期
 
@@ -284,9 +359,24 @@ val request = LocationRequest.Builder(
 
 还可以按需求设置最小位移、最大更新次数、请求时长以及“等待更准确的首个位置”。这些条件来自产品容差，不宜复制一组固定数字到所有场景。
 
+<!-- gracker-diagram: ch11-02-16-location-batch-clock -->
+![采样时间与批量回调时间分开记录](../../assets/diagrams/ch11/ch11-02-16-location-batch-clock.png)
+
+图：轨道不按比例，也不承诺实际采样和批量周期。跨批乱序的样本可能不适用最小间隔/距离约束；max delay 达到两倍 interval 才允许批量，设备仍可不采用。
+
+<!-- gracker-diagram: ch11-02-17-location-owner -->
+![请求随实际所有者结束](../../assets/diagrams/ch11/ch11-02-17-location-owner.png)
+
+图：Activity 不可见不等于合格定位 FGS 必须结束。前提仍包括启动资格、类型与位置权限，后台定位或围栏另查相应权限。
+
 #### Geofencing 的适用范围
 
 Geofencing（地理围栏）适合“进入或离开区域时通知”这类事件驱动需求：判断交给系统，App 无需再用短周期定位轮询维持它，Play services 与位置栈还能合并多个客户端的请求。要注意响应速度——Android 8.0+ 在后台交付地理围栏事件时可能放宽到几分钟量级，秒级轨迹或严格到达时间超出了它的能力范围。
+
+<!-- gracker-diagram: ch11-02-18-geofence-events -->
+![区域事件交给系统，避免短周期轮询](../../assets/diagrams/ch11/ch11-02-18-geofence-events.png)
+
+图：图只说明事件驱动契约，不承诺硬件独立执行、GNSS 常开或秒级到达通知；公开 GnssCapabilities 字段不能证明当前 Play services 业务的完整路径。
 
 硬件是否参与围栏判断属于设备实现。公开 App 契约里，`GnssCapabilities`、`dumpsys location` 的字段都没有承诺能稳定表示 Play services Geofencing 的完整执行路径；从“设备支持 GNSS geofencing”推不出“当前业务已由硬件独立处理”。
 
@@ -304,13 +394,28 @@ Geofencing（地理围栏）适合“进入或离开区域时通知”这类事�
 - 失败按错误类型处理：网络瞬断可退避，服务端限流遵守 `Retry-After`（服务端建议的重试时间），客户端参数错误应停止重试。
 - 大文件支持断点续传和幂等提交（重复提交不会产生额外副作用），避免一次失败重传全部内容。
 
+<!-- gracker-diagram: ch11-02-20-retry-classification -->
+![重试先分类，再控制恢复成本](../../assets/diagrams/ch11/ch11-02-20-retry-classification.png)
+
+图：重试不是可靠性的唯一来源，服务端确认与业务幂等同样必要。具体错误分类按协议决定，鉴权恢复后可按业务重新发起。
+
 批量的收益来自减少 App 唤醒与连接建立次数；如果每次传输大到容易超时或触发内存压力，就要缩小批次，并在目标网络环境重新测量。
+
+<!-- gracker-diagram: ch11-02-19-network-batching -->
+![批量给无线链路留下空闲机会](../../assets/diagrams/ch11/ch11-02-19-network-batching.png)
+
+图：驻留取决于无线系统、网络与信号；图示不量化 tail 或收益。批次过大也可能增超时与内存成本，应受产品时限和大小限制。
 
 #### 推送替代固定轮询
 
 只有服务端状态变化才需要唤醒客户端的业务，适合用 FCM 或同类推送。FCM 的 normal priority 适合普通同步，在 Doze 中可能延迟；high priority（高优先级） 只用于时间敏感、用户可见的内容，并应在收到后及时展示通知。长期发送 high priority 却没有用户可见结果，FCM 可能降低后续消息优先级或代理通知。
 
 推送只解决“及时唤醒”，数据一致性仍要自己设计：消息可能重复、延迟或丢失，客户端要用版本号或游标拉取缺失数据；低频兜底同步可以交给 WorkManager。
+
+<!-- gracker-diagram: ch11-02-21-push-intent-version -->
+![推送意图和持久恢复各自设计](../../assets/diagrams/ch11/ch11-02-21-push-intent-version.png)
+
+图：v2 仍是预览，不能把旧优先级规则照搬；推送可能延迟或重复，客户端用版本/游标恢复，不能把推送回调当持续后台执行权。
 
 ### Camera 与 Audio 资源生命周期
 
@@ -323,17 +428,32 @@ Camera 的开销受 sensor mode（传感器工作模式）、分辨率、帧率�
 - 页面离开或任务结束时，停止 repeating request，关闭 `CameraCaptureSession`、`CameraDevice`，并释放不再使用的 Surface。
 - App 退到后台后若 `dumpsys media.camera` 仍显示活跃 client，应检查会话和错误分支。
 
+<!-- gracker-diagram: ch11-02-22-camera-async-close -->
+![相机停止与关闭需要处理在途请求](../../assets/diagrams/ch11/ch11-02-22-camera-async-close.png)
+
+图：轨道展示 CameraCaptureSession.close 的异步完成路径。CameraDevice.close 则直接丢弃剩余请求，不等成功/失败回调；两者都应按关闭事件协调消费者，再释放自有输出，不能释放借用 Surface。
+
 #### Audio
 
 采样率、声道数、格式、缓冲区、编解码器、offload（交给专用音频硬件处理）能力和输出路由共同决定音频开销。44.1 kHz、48 kHz、96 kHz 之间没有统一的优劣排序，合适的取值取决于内容和设备：用内容和设备支持的原生配置，避免无收益的重采样；长时间播放要检查硬件 offload 是否生效，短提示音则别维持不必要的常驻播放对象。
 
 录音、播放、焦点和 media session 都要跟随用户会话结束。音频线程不工作时还持有 WakeLock，或播放停止后仍保留 FGS，是常见的额外待机成本。
 
+<!-- gracker-diagram: ch11-02-23-audio-release -->
+![音频成本与用户会话一起收尾](../../assets/diagrams/ch11/ch11-02-23-audio-release.png)
+
+图：暂时中断不等于所有服务必须立即终止；永久结束与用户停止才按业务关闭。采样率与 offload 的最佳选择依内容和设备，不能给统一节电排序。
+
 ### 证据驱动的排查流程
 
 #### 建立可复现窗口
 
 我们先把可复现的测试窗口搭起来：记录机型、系统 build（构建版本）、App 版本、网络、屏幕亮度、温度、电池电量区间和操作脚本；对照组一次只改一个变量，重复多轮后比较时间线与分布。测试期间的 USB 供电、调试器和屏幕常亮都可能改变结果，要一并固定。
+
+<!-- gracker-diagram: ch11-02-24-measurement-window -->
+![复测窗口对齐业务、活动和能量](../../assets/diagrams/ch11/ch11-02-24-measurement-window.png)
+
+图：只在明确测试窗口执行重置；单个 dumpsys 是快照。这里不执行 adb，不生成虚构样本或收益，旧 Historian 解析还需核对版本兼容。
 
 下面的命令用于一次短测试前清理 Batterystats，并在测试后收集各系统服务状态。
 
@@ -385,6 +505,11 @@ Perfetto 轨道依赖 trace（性能跟踪） config（采集配置）、系统 
 4. **硬件是否被激活**：CPU 在跑，蜂窝基带未必在发射；收到了定位回调，也说明不了 GNSS 只服务当前 UID。判断要把应用、系统服务和硬件三个层级分开。
 5. **修复是否破坏业务**：同时比较成功率、端到端延迟、重试量和能耗指标。
 
+<!-- gracker-diagram: ch11-02-25-triangulate-evidence -->
+![同时建立发起方、系统决策和硬件证据](../../assets/diagrams/ch11/ch11-02-25-triangulate-evidence.png)
+
+图：三类证据互补：CPU 工作不等于 modem 发射，位置回调不等于该 UID 独占 GNSS。归因数据与整机能量不能直接互换。
+
 推荐保留以下测试信息：
 
 | 类别 | 至少记录的内容 |
@@ -429,6 +554,11 @@ public final class MessagePollingService extends Service {
 
 我们看到，这段代码把“消息送达”做成了应用侧定时查询：就算没有新消息，定时器唤醒、网络握手和维持进程的成本也照付；`START_STICKY` 还可能在进程被终止后把服务拉起来。通知只说明服务对用户可见，降不了轮询的开销。
 
+<!-- gracker-diagram: ch11-02-26-polling-loop -->
+![无消息时轮询仍反复制造工作](../../assets/diagrams/ch11/ch11-02-26-polling-loop.png)
+
+图：轨道表示故障示例可能叠加的循环，不是设备跟踪。持续通知不会消除网络握手、定时查询和并发重复的成本。
+
 #### 按业务时效选择机制
 
 | 业务要求 | 合适机制 | 说明 |
@@ -468,6 +598,11 @@ public final class MessageSync {
 
 `KEEP` 消除的是同一时刻的重复待执行工作；漏消息、重试和重复投递，仍要靠 Worker 里的服务端游标或幂等键处理。周期任务的 15 分钟是最小周期，不是准点承诺，实时收消息别指望它。
 
+<!-- gracker-diagram: ch11-02-27-message-recovery -->
+![事件触发同步与可靠消息恢复分工](../../assets/diagrams/ch11/ch11-02-27-message-recovery.png)
+
+图：后台刷新允许延迟；用户可见消息使用相应可见通知契约。唯一 Work、周期下限与 START_STICKY 都不能承诺实时或 exactly-once。
+
 #### 调度限制与应用契约
 
 `JobScheduler` 在 Android 16 起位于 `frameworks/base/apex/jobscheduler/`。应用无需为正在执行的 Job 再持有 CPU WakeLock，系统会在 Job 的整个执行期内代为持有。下面几条限制，比内部可调常量更适合作为应用契约：
@@ -491,6 +626,11 @@ if (Build.VERSION.SDK_INT >= 37) {
 ```
 
 还有一个统计细节：多个约束可以同时阻止一个 Job，各项时长之和可能超过按现实时间计算的总等待时长；我们的采集代码要在 Job 完成或取消前运行，并把 Job ID 与业务请求 ID 一起记录。
+
+<!-- gracker-diagram: ch11-02-28-pending-overlap -->
+![Job 等待原因可同时累计](../../assets/diagrams/ch11/ch11-02-28-pending-overlap.png)
+
+图：条宽为说明，不含测量值；原因不是互斥饼图。成功完成、取消或重启会清除相关统计；Job 不再 pending 可抛异常，空 Map 也不能证明零延迟。
 
 #### 超时与调度机制的分工
 
@@ -576,6 +716,11 @@ public final class CurrentLocationRequest {
 
 一次定位也可能启用高成本 provider；这种 API 的价值是给请求设置明确终点。导航等连续场景仍应使用 `LocationRequest`，参数须由可接受延迟、路径误差和运动速度推导，并在停止导航时移除 listener（监听器）。
 
+<!-- gracker-diagram: ch11-02-29-current-location-generation -->
+![一次定位替换请求时取消旧请求并拒绝旧回调](../../assets/diagrams/ch11/ch11-02-29-current-location-generation.png)
+
+图：代次与取消信号共同使旧回调失效，不假设 cancel 能撤销所有已排队 Runnable。getCurrentLocation 从 API 30 提供，公共 FUSED_PROVIDER 常量使本例限定 API 31。
+
 #### 系统端的检查链
 
 定位请求到达系统端后，`LocationProviderManager` 会综合检查：
@@ -588,6 +733,11 @@ public final class CurrentLocationRequest {
 
 未通过检查的 registration（已注册的定位请求） 不会参与 provider request（提供方请求） 的合并，当前 UID 的请求也就驱动不了底层 provider。反过来，我们还要看整机：设备上若还有导航、系统服务或其他应用在请求定位，GNSS 或融合定位仍可能工作——“当前应用无回调”推不出“整机定位功耗为零”。
 
+<!-- gracker-diagram: ch11-02-30-provider-active-merge -->
+![只有有效定位请求参与当前 provider 合并](../../assets/diagrams/ch11/ch11-02-30-provider-active-merge.png)
+
+图：图按固定 r1 LocationProviderManager 解释 active 与 merge。当前 UID 没回调不能证明整机 GNSS 关闭；权限、间隔节流和旁路豁免需分别读具体分支。
+
 Battery Saver 的位置模式定义在 `PowerManager`，包括不改变、熄屏禁 GPS、熄屏禁全部位置、只允许前台请求、熄屏时降低请求频率等策略。`SystemLocationPowerSaveModeHelper` 接收 `PowerManagerInternal` 的状态，`LocationProviderManager` 再据此更新 registration。OEM 可以选择不同策略，应用侧要把“当前是哪种模式”当成运行时状态来查询，而不是写死假设。
 
 后台位置限制从 Android 8.0 就已存在：AOSP 里能找到后台节流间隔的配置默认值，设备配置和 OEM 策略都可以修改它，应用应依赖的公开行为只有“后台大约每小时少量更新”这一条。Android 12 增加的是精确/大致位置等权限变化，别把它当成后台节流的起点。
@@ -597,6 +747,11 @@ Battery Saver 的位置模式定义在 `PowerManager`，包括不改变、熄屏
 #### Battery Saver 与 Thermal 的分工
 
 Battery Saver 把位置策略传给 location service；Thermal service（热管理服务） 提供的是当前热状态和 headroom（距离热限制还有多少余量），平台不会把热状态自动换算成某个 location power-save mode。产品若允许在温度升高时降低更新频率，可以监听热状态后调整自身请求——注意别用高频轮询热状态制造新的负载。
+
+<!-- gracker-diagram: ch11-02-31-battery-thermal-location -->
+![Battery Saver 策略与 App 热适配来自不同输入](../../assets/diagrams/ch11/ch11-02-31-battery-thermal-location.png)
+
+图：平台没有把 Thermal 状态自动换算成某个 location power-save mode 的公开通用链。厂商额外策略要有设备或源码证据；应用避免高频轮询热状态。
 
 #### 验证
 
@@ -612,6 +767,11 @@ Battery Saver 把位置策略传给 location service；Thermal service（热管�
 #### Android 与 modem 的分工
 
 要看清蜂窝链路为什么被反复激活，先分清 Android 框架和 modem 各管什么。Android Radio HAL（无线硬件抽象层） 的 `RadioState` 描述 modem 控制面处于 `OFF`、`UNAVAILABLE` 还是 `ON`。Android 17 的新实现使用稳定 AIDL（Android 接口定义语言） 接口 `IRadioModem`；`RadioModemProxy` 仍保留旧的 HIDL（HAL 接口定义语言） 分支以兼容旧设备。`setRadioPower()` 属于系统 telephony（电话与蜂窝网络） 的控制路径，普通应用做网络节能用不上它。
+
+<!-- gracker-diagram: ch11-02-32-radio-state-vs-rrc -->
+![Android 无线电开关状态与 RRC 驻留分层观察](../../assets/diagrams/ch11/ch11-02-32-radio-state-vs-rrc.png)
+
+图：不能把 RadioState.ON 当 RRC_CONNECTED，也不能通过 App 看到的一次网络请求推出固定 tail。优化批量后，要用设备 modem / rail / 仪表检查真实变化。
 
 LTE/5G 的 RRC（Radio Resource Control，无线资源控制）连接态、DRX（Discontinuous Reception，非连续接收）周期、inactivity timer（空闲计时器） 和发射功率，由 modem、网络制式、运营商参数及信号共同决定。公开 Android API 里找不到一套跨设备可靠的 RRC 状态。把 3G 的 DCH/PCH（专用信道/寻呼信道）、LTE 的 RRC Connected/Idle 和 5G 状态塞进同一张固定电流表，只会得出错误结论。
 
@@ -649,7 +809,17 @@ public final class TelemetryUpload {
 
 Worker 在一次运行中循环读取大小受限的批次，收到服务端确认后再通过事务删除；达到本次执行额度且 outbox 尚未清空时返回 `Result.retry()`。数据库保存唯一可信的待发送记录，还要安排低频恢复同步，以处理两类缝隙：“写入 outbox”与“调用 enqueue”进不了同一事务，以及 `KEEP` 判断期间出现并发请求的竞争窗口。
 
+<!-- gracker-diagram: ch11-02-33-outbox-race-recovery -->
+![outbox 与调度之间的缝隙需要恢复入口](../../assets/diagrams/ch11/ch11-02-33-outbox-race-recovery.png)
+
+图：两类缝隙需覆盖：写库后未 enqueue 就崩溃，以及 Worker 结束附近的新记录碰到 RUNNING 的 KEEP 被忽略。单靠 enqueue 不保证 outbox 永远排空。
+
 网络客户端应复用连接，并分别设置连接、读写与整次调用的超时。交互请求、支付确认和用户正在等待的发送操作，需要单独的及时执行路径；批量只作用于允许延迟的请求。
+
+<!-- gracker-diagram: ch11-02-34-outbox-ack-idempotency -->
+![确认、删除和幂等共同处理重复传输](../../assets/diagrams/ch11/ch11-02-34-outbox-ack-idempotency.png)
+
+图：这是本文业务协议的设计流程，不是 WorkManager 的 exactly-once 保证。交互发送独立走及时路径，批量大小和超时要匹配实际网络。
 
 #### 诊断证据
 
@@ -727,9 +897,19 @@ public final class NetworkScreen extends Activity {
 
 生产代码还要防止重复注册，并根据 UI 是否需要后台更新，选择 `onStart/onStop` 或更长的生命周期。协程、Rx stream（ReactiveX 数据流）、sensor listener（传感器监听器）、location listener（位置监听器） 和 Handler callback（回调） 都要明确由谁注册、由谁取消。
 
+<!-- gracker-diagram: ch11-02-36-network-callback-generation -->
+![主线程与代次检查共同限定 UI 回调](../../assets/diagrams/ch11/ch11-02-36-network-callback-generation.png)
+
+图：取消注册之外还防已经排队的事件。生命周期和回调都在主线程；onAvailable 只表示网络出现，互联网 validated 状态需后续 capabilities。
+
 #### 从泄漏到功耗的证据链
 
 把“泄漏”和“耗电”连起来，要按顺序建立四步：
+
+<!-- gracker-diagram: ch11-02-35-leak-work-energy -->
+![从对象保留到耗电需要补足中间证据](../../assets/diagrams/ch11/ch11-02-35-leak-work-energy.png)
+
+图：对象数量或 RSS 下降本身不能换算为节电。GC、回收和压缩路径依内核配置与负载，必须证明对象仍做工作以及对应时间窗口的成本。
 
 1. heap dump（堆转储） 显示已销毁组件仍被某个 listener、线程或队列引用；
 2. trace 或日志显示该对象仍收到回调；
@@ -739,6 +919,11 @@ public final class NetworkScreen extends Activity {
 GC（垃圾回收） 次数增加可能带来 CPU 成本，内存压力也可能触发 reclaim（内存回收）、内存压缩或 swap（交换空间）；具体路径取决于设备内核与内存配置。`android17-6.18-2026-06_r6` 中页面回收的通用入口可从 `mm/vmscan.c` 追踪，但应用侧把 RSS（Resident Set Size，进程驻留内存）的变化直接换算成能耗是行不通的。
 
 Android 17 的 `ProfilingManager` 增加 anomaly trigger（异常触发器），可在系统检测到 Binder 调用过量或内存超限等异常时提供采样或 heap dump 线索。这个接口能辅助取证，复现脚本、对象引用链和功耗测量仍然是主力。
+
+<!-- gracker-diagram: ch11-02-37-profiling-anomaly -->
+![异常触发器给线索，功耗结论仍需交叉取证](../../assets/diagrams/ch11/ch11-02-37-profiling-anomaly.png)
+
+图：触发器不保证每次泄漏都检测到或自动产出 heap dump，更不是能量测量器。图只表示条件性取证入口。
 
 ### 案例五：用 WakeLock 和 Alarm 对抗 Doze
 
@@ -750,6 +935,11 @@ Android 17 的 `ProfilingManager` 增加 anomaly trigger（异常触发器），
 - allow-while-idle Alarm（可在设备空闲时交付的闹钟） 会唤醒设备，频率受系统限制，只应服务于用户可感知且有精确时刻要求的功能。
 
 即时消息应优先使用共享推送通道。普通后台刷新交给 WorkManager/JobScheduler，接受维护窗口或 quota 带来的延迟。只有闹钟、日历提醒这类用户明确要求准时发生的事件，才去评估 exact Alarm（精确闹钟） 资格。
+
+<!-- gracker-diagram: ch11-02-38-idle-antipattern -->
+![先按业务时效选通道，再接受 idle 边界](../../assets/diagrams/ch11/ch11-02-38-idle-antipattern.png)
+
+图：Doze 会忽略普通 App WakeLock 并推迟相关工作；allow-while-idle 仍限频，唤醒还看 alarm type。不同业务不能靠同一保活循环兜底。
 
 #### Android 17 的 listener 型 idle Alarm
 
@@ -791,6 +981,11 @@ public final class VisibleSessionDeadline {
 
 系统可在调用进程不再有 Activity、Service 或 ContentProvider 时取消 listener Alarm，组件结束时我们也应调用 `cancel(listener)`。要在进程终止后仍可靠送达的用户提醒，用合适的 `PendingIntent` 方案，并遵守 exact Alarm 权限和政策。
 
+<!-- gracker-diagram: ch11-02-39-listener-alarm-generation -->
+![进程内 listener Alarm 跟随组件会话](../../assets/diagrams/ch11/ch11-02-39-listener-alarm-generation.png)
+
+图：这不是可在进程退出后重建应用的定时器。所有操作按主线程使用，系统可在组件生命周期结束后丢弃 listener Alarm；精确回调也不能突破 idle 限频。
+
 #### Doze 与 Low Power Standby
 
 Doze 关注设备长时间闲置时的 CPU、网络、Job、Alarm 和 WakeLock。Low Power Standby 还会在非交互状态下限制网络与 WakeLock；设备支持、启用状态和豁免都可能不同。运行前台服务也不会自动获得这些网络与电源策略的豁免。
@@ -807,6 +1002,11 @@ adb shell dumpsys deviceidle unforce
 
 测试期间应确认设备未充电，并在结束后执行 `unforce`。用例要检查推送送达、普通同步延迟、维护窗口恢复、网络失败后的幂等重试，以及用户唤醒设备后的状态一致性。
 
+<!-- gracker-diagram: ch11-02-40-lps-effective-state -->
+![LPS 从支持与启用到实际限制还需状态检查](../../assets/diagrams/ch11/ch11-02-40-lps-effective-state.png)
+
+图：这是状态判断顺序概括，具体 active 条件和设备配置按固定 r1 方法核对；LPS 与 Doze 是不同策略，不能把一个状态查询当另一个。
+
 ### 案例六：多个模块各自注册后台任务
 
 #### 问题
@@ -819,6 +1019,11 @@ adb shell dumpsys deviceidle unforce
 - Job 数量、调度入口频率和 App Standby quota 更快触及限制。
 
 合并的前提是约束语义一致，时间接近只是表象：精确时限、网络类型、充电要求、失败语义或用户可见性不同的工作，应保留独立调度。
+
+<!-- gracker-diagram: ch11-02-41-merge-semantic-gate -->
+![后台任务合并先核对业务语义](../../assets/diagrams/ch11/ch11-02-41-merge-semantic-gate.png)
+
+图：合并不是单纯减少 Job 数；同一批任务需能接受相同网络、充电和恢复策略。合并后仍有数量、频率、standby 和 runtime quota 限制。
 
 #### 同约束工作使用一个 JobInfo
 
@@ -860,9 +1065,19 @@ public final class DeferredWorkQueue {
 
 官方 API 建议同一队列持续使用相同的 `JobInfo`。反复改变 extras（附加参数）、ClipData（可携带 URI 等内容的数据容器）或约束，可能让系统认为任务描述发生变化，导致正在运行的 Job 被停止后重启。合并之后，150 个 Job 上限、调度入口频率限制、standby bucket、quota 和设备状态限制照样生效。
 
+<!-- gracker-diagram: ch11-02-42-persisted-job-workitem -->
+![持久化工作项的排队、确认与业务幂等](../../assets/diagrams/ch11/ch11-02-42-persisted-job-workitem.png)
+
+图：队列取空且已取项确认后由系统结束，不再自行 jobFinished，以免丢失并发入队项。API 34+ extras 可持久化而 Intent 不可；系统中止后按 onStopJob 返回值决定重排，业务仍须幂等。
+
 #### App Standby 与等待原因
 
 Adaptive Battery（自适应电量管理）或系统使用记录会影响 App Standby bucket，`QuotaController` 再按 bucket 与设备状态判断 Job 是否还有可用 quota。应用能做的是按业务时限选择普通、expedited 或 user-initiated 工作；频繁重新调度换不来执行机会。
+
+<!-- gracker-diagram: ch11-02-43-quota-waiting-evidence -->
+![等待由约束与系统政策共同解释](../../assets/diagrams/ch11/ch11-02-43-quota-waiting-evidence.png)
+
+图：频繁 schedule 不会制造配额。API 37 原因时长可重叠且不跨重启持久保留；直接 Job 和 WorkManager 的诊断 ID/接口也需区分。
 
 Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络约束、App Standby、quota、设备状态还是调度优化。等待时间符合已声明的约束时，这是正常调度结果；若 SLA（服务时限承诺）不允许这段延迟，应重新选择 API 或调整业务契约。
 
@@ -886,6 +1101,11 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 | Job 长时间 pending | JobScheduler 出错 | pending reason、standby bucket、quota、设备状态 |
 | FGS 仍在通知栏 | 网络和 WakeLock 可在 Doze 中自由使用 | Doze/LPS 状态、网络与 WakeLock trace |
 | 唤醒次数下降 | 用户体验没有损失 | 成功率、延迟、丢失与恢复结果 |
+
+<!-- gracker-diagram: ch11-02-44-case-validation -->
+![修复收益须与功能完成度一起验证](../../assets/diagrams/ch11/ch11-02-44-case-validation.png)
+
+图：字节下降、回调停止、RSS 降低、Job 数减少与唤醒变少，都不能单独证明续航和体验同时改善。图不提供脱离设备的通用百分比。
 
 ### 复核清单
 

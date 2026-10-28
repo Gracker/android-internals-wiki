@@ -4,6 +4,11 @@ I/O（Input/Output，输入/输出）指应用与文件、数据库、设备或�
 
 [第 6 章：存储性能](../../part1-fundamentals/ch06-storage/README.md)分析存储与 I/O 机制，[第 12 章：网络性能](../../part2-performance/ch12-apk-network/README.md)讨论系统网络性能；本章聚焦应用侧的 API 选型、弱网策略和线上治理。弱网包括高延迟、丢包、带宽不足和频繁断连；线上治理指发布后的指标监控、问题归因、降级与恢复。
 
+<!-- gracker-diagram: a273-01-ch24-problem-reading-map -->
+![按存储、网络路径、系统能力和近场问题选择阅读入口](../../assets/diagrams/ch24/a273-01-ch24-problem-reading-map.png)
+
+图：从问题类型选择入口；计量、带宽约束、权限与业务成功各有证据，不能统一归为接口慢。
+
 ## 内容索引
 
 

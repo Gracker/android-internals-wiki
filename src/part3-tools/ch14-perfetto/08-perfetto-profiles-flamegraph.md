@@ -65,6 +65,11 @@ related_chapters:
 
 平台源码基线是 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto v53、v54 带来的格式支持属于主机分析端能力，不能直接换算成设备 API 等级；设备侧 `linux.perf` 采集另有 Android 版本、系统构建类型和应用可分析性的要求。这两条线彼此独立，检查时要把“文件能否被新版 Perfetto 打开”和“设备能否录到调用栈”分开看。
 
+<!-- gracker-diagram: ch14-08-01-version-dimensions -->
+![主机格式支持与设备采集能力分别核对](../../assets/diagrams/ch14/ch14-08-01-version-dimensions.png)
+
+图：主机能打开文件与设备能否录到调用栈属于独立条件。 固定 Android 17、主机 Trace Processor 和网页 UI 分别记录版本。
+
 ## Profile 与 system trace 的数据边界
 
 系统跟踪记录的是带时间位置的事件：调度、线程状态、Binder（Android 进程间通信）、FrameTimeline（系统记录的帧期望与实际时间线）、GC（垃圾回收）和计数器都属于这一类。CPU 采样走的是另一条路，它在周期性采样中断到来时记下当时的调用栈，用来判断一段 CPU 执行更集中在哪些路径。两类数据可以放进同一个 Perfetto 文件，也可以各自独立成文件。只有把 `linux.perf` 与其他数据源放在同一次录制里，调用栈采样才能与帧、调度、Binder 共用一条时间轴。
@@ -81,9 +86,29 @@ related_chapters:
 
 protobuf 是 Protocol Buffers 的二进制消息格式。Android 17 的 pprof 导入器按 pprof 中的指标类型和单位建立聚合表；Simpleperf（Android 的 CPU 分析工具）导入器把样本写入 `cpu_profile_stack_sample`；`linux.perf` 样本则进入 `perf_sample`。这三个入口不能混用同一套 SQL 表名。以 `__intrinsic_` 开头的是 Perfetto 内部表名，适合核对当前实现，不应当作跨版本稳定接口。[Android 17 pprof 导入器](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/pprof/pprof_trace_reader.cc)、[Android 17 Simpleperf protobuf 导入器](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/simpleperf_proto/simpleperf_proto_parser.cc)
 
+<!-- gracker-diagram: ch14-08-03-import-table-routing -->
+![按真实导入入口选择 SQL 表](../../assets/diagrams/ch14/ch14-08-03-import-table-routing.png)
+
+图：pprof、Simpleperf 和 linux.perf 进入不同的数据表。 内部 __intrinsic 表用于核对当前实现，不是跨版本稳定接口。
+
 Flamegraph 是一种调用栈聚合图：纵向表示调用深度，横向宽度表示当前所选指标的累计值，并不代表时间轴的时长。它的英文名与 Perfetto UI 及多数分析工具一致，本文沿用。
 
+<!-- gracker-diagram: ch14-08-04-flamegraph-width-depth -->
+![火焰图宽度表达聚合量，纵向表达调用深度](../../assets/diagrams/ch14/ch14-08-04-flamegraph-width-depth.png)
+
+图：合成示例中两条叶路径的计数为 37 与 63，上层累计为 100。 子块宽度按计数37:63绘制；横向不是时间轴，单位必须另行确认。
+
 诊断交互卡顿时，先用 FrameTimeline、`slice` 和 `thread_state` 圈定异常区间，再看区间内的 `perf_sample`，判断这段时间的 CPU 消耗落在哪些调用路径上。追持续高 CPU 则是另一种手法：聚合 profile 能快速指出热点，但目标线程分到多少 CPU、有没有被别的线程抢占，还得靠调度数据确认。全局火焰图替代不了帧级的因果链。
+
+<!-- gracker-diagram: ch14-08-02-profile-trace-boundaries -->
+![聚合、时间戳与系统事件是三种信息边界](../../assets/diagrams/ch14/ch14-08-02-profile-trace-boundaries.png)
+
+图：先判断输入是否带样本时间和系统事件，再选择问题。 单有调用树不能重建调度、Binder 或某帧的因果链。
+
+<!-- gracker-diagram: ch14-08-05-frame-state-sample-chain -->
+![先定窗口与状态，再解释调用路径](../../assets/diagrams/ch14/ch14-08-05-frame-state-sample-chain.png)
+
+图：异常帧提供窗口，线程状态区分执行与等待，区间采样提供热点候选。 全局函数排名不直接证明某一帧的根因；需要原始关系和对照。
 
 ## pprof：只有聚合值，没有逐样本时间轴
 
@@ -91,7 +116,17 @@ Perfetto v53 加入了 pprof 导入和专用 UI 页面。Android 17 的解析代
 
 pprof 里 `location_id` 的顺序以叶节点开头，导入器会把它翻转成 Perfetto 使用的根到叶调用树。导入后的样本是聚合项，不会展开成带原始时间戳的 `perf_sample`。即使 pprof 元数据里带了采集周期，也无法只靠这个文件把某条调用栈准确放回某个 `Choreographer#doFrame`。
 
+<!-- gracker-diagram: ch14-08-06-pprof-unit-and-order -->
+![pprof 按指标建立聚合树](../../assets/diagrams/ch14/ch14-08-06-pprof-unit-and-order.png)
+
+图：导入器把叶到根的 location_id 反转为根到叶，并按指标保留聚合值。 time_nanos、duration 或 period 元数据不能还原每个样本发生时刻。
+
 导入之后，可以按这个顺序检查：
+
+<!-- gracker-diagram: ch14-08-07-pprof-evidence-review -->
+![聚合 profile 先确认单位与符号](../../assets/diagrams/ch14/ch14-08-07-pprof-evidence-review.png)
+
+图：先确认选中指标，再比较 self/cumulative 并核对源码和符号。 独立抓取的系统 trace 只能在满足校时与身份条件时逐点关联。
 
 - 在 pprof 专用页面确认当前指标及单位，例如 `cpu/nanoseconds` 或 `alloc_space/bytes`。
 - 对比 self 与 cumulative。self 表示直接落在当前叶节点的聚合量，cumulative 表示当前节点及其整个子树的聚合量。
@@ -100,11 +135,21 @@ pprof 里 `location_id` 的顺序以叶节点开头，导入器会把它翻转�
 
 Perfetto v54 的 `traceconv profile` 增加了输出类型自动检测。它负责的是从 Perfetto trace 导出 profile，跟打开 pprof 文件是两回事，后者不需要先执行这条命令。[Perfetto v53/v54 变更记录](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/CHANGELOG)
 
+<!-- gracker-diagram: ch14-08-08-profile-import-export -->
+![pprof 导入与 traceconv 导出方向不同](../../assets/diagrams/ch14/ch14-08-08-profile-import-export.png)
+
+图：打开 pprof 是导入聚合 profile；traceconv profile 是从 trace 导出。 输出类型自动检测不等于为聚合文件补出原始时间戳。
+
 ## Simpleperf protobuf：保留样本时间，不导入调度记录
 
 Simpleperf 路径适合 Android 10—17 上的应用 CPU 分析。主机脚本先录制二进制采样文件 `perf.data`，再由 `report-sample` 输出 Perfetto 可识别的 protobuf。Android 17 源码中的格式头为 `SIMPLEPERF`，版本号为 1。
 
 这条命令用系统设置应用走一遍完整数据流。`100 Hz` 表示目标采样频率约为每秒 100 次，这是为控制分析开销给出的录制选择，不是所有设备都该固定的阈值。
+
+<!-- gracker-diagram: ch14-08-09-simpleperf-generation -->
+![Simpleperf 从设备采样到主机导入](../../assets/diagrams/ch14/ch14-08-09-simpleperf-generation.png)
+
+图：先记录 perf.data，再用 report-sample 导出 Simpleperf protobuf。 100 Hz 是示例选择；目标包、权限、符号路径与构建必须匹配。
 
 ```bash
 python system/extras/simpleperf/scripts/app_profiler.py \
@@ -144,11 +189,36 @@ ORDER BY sample_count DESC;
 
 查询结果能暴露包名选择错误、目标线程未被采到或录制区间过短等问题。它不能提供调度时长，也不能把样本数解释成函数执行毫秒数。
 
+<!-- gracker-diagram: ch14-08-10-callchain-export-guard -->
+![录制和导出都要保留调用链](../../assets/diagrams/ch14/ch14-08-10-callchain-export-guard.png)
+
+图：录制时用 -g，导出时用 --show-callchain，并提供匹配符号。 未指定导出选项时采样地址数组被裁为1，已有内联信息补不回祖先地址。
+
+<!-- gracker-diagram: ch14-08-11-simpleperf-identity-enumeration -->
+![Simpleperf 进程名可为空，先枚举内部身份](../../assets/diagrams/ch14/ch14-08-11-simpleperf-identity-enumeration.png)
+
+图：先列出 upid、utid、PID/TID 与样本范围，再核对原始采集目标。 MetaInfo 中的包名不自动生成 process.name；按包名过滤可能漏掉全部样本。
+
+<!-- gracker-diagram: ch14-08-12-simpleperf-information-loss -->
+![Simpleperf protobuf 有些字段不会进入当前模型](../../assets/diagrams/ch14/ch14-08-12-simpleperf-information-loss.png)
+
+图：固定导入器保留栈样本，却忽略上下文切换、事件权重类型与丢样详情。 空调度表或没有丢样告警不能证明线程未运行或录制无丢样。
+
 ## `linux.perf`：把 CPU 样本录进同一条时间轴
 
 Perfetto 官方命令行采集文档把 Android 设备下限标为 Android 15。量产 `user` 构建要求目标应用在清单中声明 `profileable`（允许性能分析）或 `debuggable`；用于调试的 `userdebug`、`eng` 构建权限条件不同。这里的版本约束属于设备侧采集能力，与主机 Trace Processor 能导入哪些文件格式是两条独立版本线。
 
+<!-- gracker-diagram: ch14-08-13-linux-perf-prerequisites -->
+![linux.perf 设备权限独立于文件格式支持](../../assets/diagrams/ch14/ch14-08-13-linux-perf-prerequisites.png)
+
+图：按设备版本、系统构建和应用分析权限决定能否采到调用栈。 官方此路径标明 Android 15+；userdebug/eng 条件不同，不能只看主机版本。
+
 `linux.perf` 走 Linux 的 `perf_event_open` ABI（应用二进制接口，用户空间与内核约定的数据布局和调用规则）。Android 17 的 Perfetto 采集端向内核请求每个样本的 TID（线程 ID）、时间和计数值；启用用户态展开后，再请求用户寄存器与栈内存，以便从机器状态还原调用栈；启用内核帧后，请求内核调用链。对应的内核 ABI 标志定义在 `PERF_SAMPLE_TID`、`PERF_SAMPLE_TIME`、`PERF_SAMPLE_CALLCHAIN`、`PERF_SAMPLE_REGS_USER` 和 `PERF_SAMPLE_STACK_USER` 中。[Android 17 Perfetto perf 事件配置](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/perf/event_config.cc)、[android17-6.18-2026-06_r6 perf 事件 ABI](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h)
+
+<!-- gracker-diagram: ch14-08-14-perf-event-open-abi -->
+![perf_event_open 分别请求样本状态](../../assets/diagrams/ch14/ch14-08-14-perf-event-open-abi.png)
+
+图：采集端请求 TID、时间、计数，再按配置请求用户态展开材料与内核链。 采样状态是还原调用栈的输入，展开可能失败；不是给每次函数调用计时。
 
 这段配置以 `100 Hz` 周期采样系统设置应用，同时录制调度、进程快照和 FrameTimeline。Perfetto 文档建议非原生调用栈不超过每 CPU 200 Hz；具体用多少还要看设备核数、展开错误和被测负载。
 
@@ -238,6 +308,26 @@ ORDER BY name, idx;
 
 第一组结果描述样本落在哪些线程及是否出现展开错误；第二组结果暴露 perf 数据源或导入阶段记录的非零统计项。样本少可能来自线程运行时间短、过滤条件不匹配、丢样本或展开失败，不能用一个固定数量作为通用合格线。
 
+<!-- gracker-diagram: ch14-08-15-per-cpu-rate-and-scope -->
+![100 Hz 是每 CPU 的采样时间基](../../assets/diagrams/ch14/ch14-08-15-per-cpu-rate-and-scope.png)
+
+图：SW_CPU_CLOCK 按每 CPU 触发采样，scope 只对匹配进程展开调用栈。 非原生栈建议低于每CPU 200Hz；它不是每个进程必定每秒100个成功样本。
+
+<!-- gracker-diagram: ch14-08-16-joint-capture-validation -->
+![联合配置必须在录后验证实际数据](../../assets/diagrams/ch14/ch14-08-16-joint-capture-validation.png)
+
+图：同次录制仍要分别确认栈、调度、进程和帧数据以及时钟转换。 配置请求不证明目标事件存在，时钟和缺口未经核对就不能逐点关联。
+
+<!-- gracker-diagram: ch14-08-17-sampling-overhead -->
+![频率、核数与展开成本影响录制](../../assets/diagrams/ch14/ch14-08-17-sampling-overhead.png)
+
+图：记录频率、设备、构建与内核帧配置，再核对展开错误及负载影响。 没有统一的样本数量合格线；本文不把合成验证当设备开销测量。
+
+<!-- gracker-diagram: ch14-08-18-record-count-versus-stack-count -->
+![perf 样本记录数不等于成功栈数](../../assets/diagrams/ch14/ch14-08-18-record-count-versus-stack-count.png)
+
+图：分别报告原始记录、有栈、无栈和展开错误，不把非零 stats 一律当丢样。 合成文件4条记录只有3条有栈；该数值只用来说明字段语义。
+
 ## 选区 Flamegraph 与 TrackEvent 调用栈
 
 CPU 火焰图的横向宽度表示当前指标的聚合值。对周期性 `linux.perf` 样本，常见指标是样本数；对 pprof，它可能是 CPU 纳秒、分配字节或对象数；对 Collapsed Stack，它是行尾给出的计数。宽度不表示某次调用从开始到结束的墙上时间，单次持续时间需要 `slice.dur`、方法跟踪或其他区间证据。
@@ -249,22 +339,47 @@ CPU 火焰图的横向宽度表示当前指标的聚合值。对周期性 `linux
 
 一个调度函数可能 cumulative 很宽而 self 很窄，说明大量热点经过它进入不同子路径；一个叶函数 self 很宽，才表示采样经常中断在该函数内部。采样频率、采样时刻是否偶然与周期性工作对齐、线程运行份额和展开质量都会影响排名；这种排名是统计证据，不是精确计时。
 
+<!-- gracker-diagram: ch14-08-19-self-versus-cumulative -->
+![self 与累计宽度回答不同问题](../../assets/diagrams/ch14/ch14-08-19-self-versus-cumulative.png)
+
+图：self 大表示直接落在该函数的指标较大，cumulative 大也可能由下层工作贡献。 排名受采样时间基、周期对齐、运行份额和展开质量影响，不是精确计时。
+
 Perfetto v53 还支持把调用栈附到 TrackEvent 的 Slice 或 instant event（瞬时事件）上。点选单个事件，详情面板会给出这个事件的栈；划选一段区间，区间内事件附带的栈会被聚合成火焰图。默认每个栈计一次；如果事件带了 `callstack_weight` 或你选了其他数值参数，当前 UI 也能按该权重聚合。按权重聚合时只统计带了该值的事件，无权重的事件不会被当成 1 混进去，写结论时要注明用的是哪个 measure（度量项）。
 
 这里要和 CPU 采样区分开：TrackEvent 调用栈表达的是“事件记录时附带的调用关系”，`perf_sample` 表达的是“采样中断时 CPU 上的调用关系”。两者可以互相印证，但不是同一种采样来源。
 
+<!-- gracker-diagram: ch14-08-21-trackevent-weight-version -->
+![Samples、Weight 与数值参数分版本解释](../../assets/diagrams/ch14/ch14-08-21-trackevent-weight-version.png)
+
+图：TrackEvent 表达事件记录时的栈，CPU 采样表达采样中断时的栈。 固定Android17与UI57.2仅计数；UI58.2加权只纳入有对应值的记录点。
+
 选区分析要同时限定：
+
+<!-- gracker-diagram: ch14-08-22-selection-four-dimensions -->
+![选区分析同时固定四个维度](../../assets/diagrams/ch14/ch14-08-22-selection-four-dimensions.png)
+
+图：时间、线程、场景和指标共同定义一张可比较的火焰图。 冷暖启动、缓存状态和不同单位混合后，排名可能失去问题指向。
 
 - 时间：异常帧、启动阶段、Binder 往返或明确的用户操作标记。
 - 线程：主线程、RenderThread、Binder 工作线程或已确认的后台工作线程。
 - 场景：冷启动与热启动、首帧与滚动、缓存命中与未命中不能混在同一聚合结果中。
 - 指标：样本数、CPU 时间、分配字节等指标需要在结论里写明。
 
+<!-- gracker-diagram: ch14-08-20-trackevent-endpoint-selection -->
+![TrackEvent 选区按附带栈的记录点计数](../../assets/diagrams/ch14/ch14-08-20-trackevent-endpoint-selection.png)
+
+图：开始栈与结束栈分别看端点是否入选，区间相交不保证附带栈入选。 一个 Slice 的两个端点都入选时可贡献两次；所选轨道也要一致。
+
 ## 符号、内联函数与 R8 还原
 
 函数名能不能读，取决于采集产物与构建产物是否对得上。Native 栈需要正确的 ELF（二进制文件格式）、Build ID（标识具体二进制构建的散列值）和展开信息；Java / Kotlin 的混淆栈需要同一 APK 构建生成的 `mapping.txt`。路径里能找到同名 `.so` 并不够，Build ID 对不上时，它不能用来证明线上地址对应某个函数。
 
 编译器内联会把函数体展开到调用点，让一个机器码地址对应多层源码调用关系。Perfetto v53 的 UI 能标出 inline frame（内联调用帧），分析时应保留这些层级：外层调用者解释业务入口，内联函数解释执行的源码位置。缺少 DWARF 调试信息中的内联记录时，“火焰图没有某个函数名”不能推出该函数未执行。
+
+<!-- gracker-diagram: ch14-08-24-inline-source-layers -->
+![一个机器地址可以展开多层源码关系](../../assets/diagrams/ch14/ch14-08-24-inline-source-layers.png)
+
+图：内联记录把一个机器位置映射到内层函数与外层调用者。 缺少内联调试信息时，图中没有函数名不能证明该函数没有执行。
 
 `traceconv bundle` 是目前推荐的交付方式：它把 trace、符号和去混淆信息打包成 TAR 归档，Perfetto UI 与 `trace_processor_shell` 都能直接打开，不需要手工解包和拼接。Android 17 固定源码中的 bundle 命令只提供 `--symbol-paths`、`--no-auto-symbol-paths` 和 `--verbose` 等选项，没有 `--proguard-map`，Java / Kotlin 映射这时通过 `PERFETTO_PROGUARD_MAP` 环境变量传入。构建流水线要保证 `R8_MAPPING_FILE` 指向被测 APK 的同一次构建，变量格式固定为 `包名=映射文件`，多个包用冒号分隔。下面的命令沿用 Android 构建输出目录，把系统设置包与它的 R8 映射绑定后打包。
 
@@ -293,9 +408,34 @@ cat raw-trace.perfetto-trace symbols.pb deobfuscation.pb \
 
 `symbols.pb` 和 `deobfuscation.pb` 是额外的 TracePacket（Perfetto Trace 的数据包）流，要和原始 trace 拼在一起才是可直接打开的 enriched trace。[Android 17 符号化与去混淆文档](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/data-sources/native-heap-profiler.md)
 
+<!-- gracker-diagram: ch14-08-23-symbols-build-identity -->
+![符号必须对应实际构建](../../assets/diagrams/ch14/ch14-08-23-symbols-build-identity.png)
+
+图：Native 栈核对 ELF 与 Build ID，混淆栈核对同 APK 的映射文件。 文件同名不能证明构建相同；Build ID 的生成方式取决于工具链。
+
+<!-- gracker-diagram: ch14-08-25-bundle-dataflow -->
+![符号化与去混淆产物和原始 trace 一起交付](../../assets/diagrams/ch14/ch14-08-25-bundle-dataflow.png)
+
+图：traceconv bundle 读取原始 trace，收集匹配符号和映射后生成 TAR。 是否包含 symbols.pb/deobfuscation.pb 取决于收集结果；打包不证明所有符号已还原。
+
+<!-- gracker-diagram: ch14-08-26-bundle-cli-version -->
+![固定 Android 17 与主机 v57.2 CLI 有边界](../../assets/diagrams/ch14/ch14-08-26-bundle-cli-version.png)
+
+图：固定 r1 通过环境变量提供 R8 映射，主机57.2另支持重复 --proguard-map。 包名=映射路径按对应工具版本使用；导入归档无需手工解包。
+
+<!-- gracker-diagram: ch14-08-27-protobuf-concatenation -->
+![手工富化是拼接 TracePacket 流](../../assets/diagrams/ch14/ch14-08-27-protobuf-concatenation.png)
+
+图：原始 protobuf trace 后附符号与去混淆 TracePacket 流，得到富化文件。 这里适用于相容原生 protobuf 流，不能把任意 pprof、TAR 或 JSON 当作同一种字节流拼接。
+
 ## SQL 与 DataGrid：从探索走向可复现查询
 
 Perfetto v54 的 DataGrid 增加了 pivot（按维度分组汇总）、glob（通配匹配）、contains（包含）、not-contains（不包含）等筛选方式和 distinct value picker（去重值选择器）。它适合快速发现线程、映射或函数分布；需要复查、批量运行和代码评审的结论应固化成 SQL，并记录 Trace Processor 版本。
+
+<!-- gracker-diagram: ch14-08-28-exploration-to-sql -->
+![探索结论固化为带版本的 SQL](../../assets/diagrams/ch14/ch14-08-28-exploration-to-sql.png)
+
+图：DataGrid 用于筛选发现分布，稳定结论要保存 SQL 和 Trace Processor 版本。 表格交互本身不验证单位、对象身份或样本完整性。
 
 `linux.perf.samples` 标准库把 `perf_sample` 的调用栈整理成树。这条查询按累计样本数查看整份 Trace 的热点。v57.2 另有 `stacks.cpu_profiling` 模块，能统一查询 Linux perf、Simpleperf、Firefox / Gecko 等带时间戳的 CPU profile；pprof 没有逐样本时间维度，仍走独立的聚合表与页面。
 
@@ -347,15 +487,45 @@ ORDER BY frame.ts;
 
 这里统计的是帧区间内 UI 线程被采中的次数。线程只有在 CPU 上运行时才可能被周期采样命中；零样本既可能表示线程未运行，也可能与采样频率、区间过短、过滤或丢样本有关。还要结合 `thread_state`、FrameTimeline 的 jank（帧未按期呈现）标记和展开统计判断。
 
+<!-- gracker-diagram: ch14-08-29-summary-tree-path-identity -->
+![同名函数可位于不同调用树节点](../../assets/diagrams/ch14/ch14-08-29-summary-tree-path-identity.png)
+
+图：调用树使用 id/parent_id 保留路径，整份trace汇总只计有可用栈的样本。 全局排名不能归因于短暂帧；不同路径、映射或实例下同名节点不能盲合并。
+
+<!-- gracker-diagram: ch14-08-30-frame-model-identity -->
+![android_frames 是兼容聚合模型](../../assets/diagrams/ch14/ch14-08-30-frame-model-identity.png)
+
+图：按实际 upid 固定进程，保留代表性事件 ID、多层和DrawFrame计数。 INNER JOIN 可排除缺失记录；expected_count=1 是常量，不能证明数据完整。
+
+<!-- gracker-diagram: ch14-08-31-frame-sample-halfopen -->
+![帧模型窗口按同线程与半开时间匹配样本](../../assets/diagrams/ch14/ch14-08-31-frame-sample-halfopen.png)
+
+图：只把同 UI utid 且位于 [ts,ts+dur) 的样本计入该模型窗口。 分别统计记录与有栈样本；重叠模型窗口会重复命中，不能直接相加当总数。
+
+<!-- gracker-diagram: ch14-08-32-zero-samples-not-verdict -->
+![零样本需检查采样与执行条件](../../assets/diagrams/ch14/ch14-08-32-zero-samples-not-verdict.png)
+
+图：零样本可来自未运行、窗口很短、过滤、丢样或展开问题。 本文 SW_CPU_CLOCK 周期采样不同于 tracepoint timebase；不能用无样本证明没执行。
+
 ## FrameTimeline、Binder 与 GC 的证据拼接
 
 Profile 与系统跟踪联合分析时，每类数据负责不同的证明责任：
+
+<!-- gracker-diagram: ch14-08-33-causal-evidence-responsibilities -->
+![帧、Binder、GC 与采样分担证据](../../assets/diagrams/ch14/ch14-08-33-causal-evidence-responsibilities.png)
+
+图：FrameTimeline 给出帧分类与窗口，Binder 连接两端，GC 还需暂停证据。 等待的客户端不产生活跃用户CPU样本；服务端热点要在服务端utid查找。
 
 - **FrameTimeline** 给出帧的实际区间、预期区间和 jank 分类。`perf_sample` 只能说明该区间内某线程被采中时的调用路径。
 - **Binder** 的 Slice 与 flow（连接相关 Slice 的事件关系）用于连接客户端等待和服务端执行。客户端线程 blocked（阻塞等待）时不会产生用户态 CPU 样本；服务端线程的热点要在服务端 `utid` 上查找。
 - **GC** Slice 说明一次回收活动的范围，但整个 GC 区间不等于应用线程全程 Stop-The-World（暂停受管线程执行）。暂停影响需要结合具体 GC pause Slice、线程状态和帧重叠关系；采样落在分配路径只能支持“分配活动较重”的判断。
 
 一个可审计的卡顿结论可以写成：某个 FrameTimeline 异常帧与主线程 Running 区间重叠，区间内主线程样本集中在某条已完成符号化的调用路径，复现实验中该分布稳定出现。若主线程大部分时间 blocked，应继续查 Binder、锁或 I/O 等等待链，不能因为全局火焰图中某函数排名靠前就把它定为该帧根因。
+
+<!-- gracker-diagram: ch14-08-34-profile-hypothesis-control -->
+![函数热点要经过窗口和复现验证](../../assets/diagrams/ch14/ch14-08-34-profile-hypothesis-control.png)
+
+图：按相同帧窗口、线程状态与符号路径提出候选，并用复现对照验证。 若主线程大部分时间等待，应继续查依赖链；全局宽函数不能直接定根因。
 
 ## Firefox Profiler 与 Collapsed Stack 迁移
 
@@ -370,11 +540,31 @@ main;render;draw 63
 
 导入后 `render` 的 cumulative count 为两行计数之和，`layout` 与 `draw` 的 self count 分别来自各自行尾。该格式没有线程身份、样本时间、Binder、FrameTimeline 或 CPU 频率，适合比较聚合热点，不适合帧级诊断。
 
+<!-- gracker-diagram: ch14-08-35-collapsed-stack-counts -->
+![Collapsed Stack 只有路径与聚合计数](../../assets/diagrams/ch14/ch14-08-35-collapsed-stack-counts.png)
+
+图：两条路径按根到叶读取，render 累计37+63=100，两叶self分别为37和63。 计数没有线程身份与采样时间；不能推断两个函数先后执行或耗时比例。
+
 Firefox Profiler 预处理 JSON 可保留 CPU 样本、线程和进程信息。当前 v57.2 还会把受支持的 instant / interval marker 导入为 Slice，并把 marker 的 `data` 展开成参数；自定义颜色、tooltip（悬浮信息）模板、profile counters（计数器）和 profiler overhead（分析器自身开销）等 UI 或 profile 级元数据仍不导入。原始资料已有 Simpleperf protobuf 时，直接导入该格式能保留更明确的 Android 样本与线程语义，并明确区分 Firefox marker、Android FrameTimeline 和调度事件。
+
+<!-- gracker-diagram: ch14-08-36-firefox-marker-import -->
+![Firefox 样本和 marker 按不同结构导入](../../assets/diagrams/ch14/ch14-08-36-firefox-marker-import.png)
+
+图：主机57.2导入CPU样本并处理支持的marker；固定r1只处理样本和线程元数据。 instant为0时长，完整interval用起止时间，start/end按同轨道LIFO匹配。
+
+<!-- gracker-diagram: ch14-08-37-firefox-import-limits -->
+![Firefox 格式支持不等于 Android 系统事件](../../assets/diagrams/ch14/ch14-08-37-firefox-import-limits.png)
+
+图：保留受支持的栈样本和 marker，同时核对重叠丢弃与未导入元数据。 非嵌套同名同类别marker可能被丢；颜色、tooltip、counters等不补成系统事件。
 
 ## 大 trace 的分析顺序
 
 大文件分析可以按证据依赖关系推进：
+
+<!-- gracker-diagram: ch14-08-38-large-trace-analysis-order -->
+![大文件按证据依赖顺序分析](../../assets/diagrams/ch14/ch14-08-38-large-trace-analysis-order.png)
+
+图：按输入与覆盖、异常窗口、线程栈、系统依赖和可复查产物推进。 本文合成导入和SQL检查不代替设备采集、符号化执行或性能开销实测。
 
 1. 确认输入类型、设备版本、Perfetto/Trace Processor 版本和采集方式。
 2. 检查目标进程、线程、时间覆盖、非零 `stats` 和调用栈展开错误。
@@ -384,6 +574,11 @@ Firefox Profiler 预处理 JSON 可保留 CPU 样本、线程和进程信息。�
 6. 把稳定查询保存为 SQL，记录采样频率、构建类型、符号目录、Build ID 和 R8 映射版本。
 
 复查清单应覆盖以下问题：
+
+<!-- gracker-diagram: ch14-08-39-reviewable-artifacts -->
+![报告保留输入、单位、身份与构建产物](../../assets/diagrams/ch14/ch14-08-39-reviewable-artifacts.png)
+
+图：结论同时保存原始输入、查询、工具版本、符号映射和采集缺口。 明确区别函数热点、墙钟耗时、等待与调度；单次采样排名不能替代受控对照结果。
 
 - 当前文件是聚合 profile，还是包含统一时间轴的原生 trace？
 - SQL 使用的是 `cpu_profile_stack_sample` 还是 `perf_sample`？

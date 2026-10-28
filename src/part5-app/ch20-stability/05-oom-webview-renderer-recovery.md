@@ -145,6 +145,11 @@ OOM 可能来自 Java Heap、Native、图形内存、地址空间或系统低内
 
 类别放对之后，采集工具的选择也随之确定：Heap dump 记录 Java 对象与引用关系，覆盖不到全部 native 映射；heapprofd 采样 native 分配调用栈，覆盖不到 Java 对象引用；LMKD（Low Memory Killer Daemon，低内存终止守护进程） 则是直接终止进程，崩溃捕获 SDK 连执行收尾代码的机会都没有。
 
+<!-- gracker-diagram: a211-01-failure-evidence -->
+![资源失败先保留类型，再选择证据](../../assets/diagrams/ch20/a211-01-failure-evidence.png)
+
+图：Heap dump、native分配采样与历史退出各覆盖不同范围；资源平台可以统一看板，事件不能混计。
+
 #### ART 如何抛出 OOME
 
 ART 内部有多条 native 失败路径，最终都汇到 `Thread::ThrowOutOfMemoryError()` 这个出口。它先尝试构造带错误文本的 `java.lang.OutOfMemoryError`；如果构造 OOME 时内存再次耗尽，线程就改用 Runtime 启动阶段预先准备好的 OOME 对象。
@@ -166,6 +171,11 @@ void Thread::ThrowOutOfMemoryError(const char* msg) {
 ```
 
 预分配对象保证线程至少还能设置异常状态，代价是错误文本和 Java 栈可能残缺；递归分支还会输出当前线程信息，帮助我们诊断。`Heap::ThrowOutOfMemoryError()` 另有 native stack overflow（C/C++ 调用栈耗尽）分支，使用 `GetPreAllocatedOutOfMemoryErrorWhenHandlingStackOverflow()`。
+
+<!-- gracker-diagram: a211-02-oome-fallback -->
+![异常对象也可能分配失败，ART 预留兜底对象](../../assets/diagrams/ch20/a211-02-oome-fallback.png)
+
+图：正常分支构造带文本的OOME；递归分支记录线程信息并使用预分配对象，栈与消息可能不完整。
 
 OOME 成为 ART 的待处理异常后，控制流回到由 ART 执行的 Java/Kotlin 代码。业务没有捕获时，它交给 `Thread.UncaughtExceptionHandler`（未捕获异常的最终处理器），Android 默认处理器随后结束进程。所以自定义处理器必须继续调用安装前保存的默认处理器——API 37 的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 也把这条调用路径作为自动生成 Java heap dump 的前提之一。
 
@@ -199,6 +209,11 @@ growth limit 536870912; giving up on allocation because <1% of heap free after G
 
 `Heap::AllocateInternalWithGc()` 会先尝试分配，再执行适用的 GC 并在满足条件时重试，都拿不到对象才调用 `Heap::ThrowOutOfMemoryError()`。
 
+<!-- gracker-diagram: a211-04-allocation-retry -->
+![ART 按适用策略 GC 和重试后才报告分配失败](../../assets/diagrams/ch20/a211-04-allocation-retry.png)
+
+图：这是固定ART失败路径的概括，具体GC与重试分支依allocator和运行时状态，不把某次GC当成泄漏修复。
+
 下面的节选展示生成错误文本和选择碎片诊断的条件。
 
 ```cpp
@@ -228,6 +243,11 @@ void Heap::ThrowOutOfMemoryError(
 ```
 
 这段代码说明两点：碎片诊断只在“空闲总量足够”且分配目标不是 LOS（Large Object Space，ART 存放大对象的堆区域） 时才会尝试；错误文本记录的是失败瞬间的状态，对象引用关系仍要靠 heap dump。
+
+<!-- gracker-diagram: a211-03-heap-quantities -->
+![heap 空闲量、目标值与增长上限分开解释](../../assets/diagrams/ch20/a211-03-heap-quantities.png)
+
+图：碎片诊断只在满足条件且非LOS时尝试；泄漏结论还需稳定场景的对象引用与存活集证据。
 
 #### 四类 Java heap 问题
 
@@ -263,6 +283,11 @@ void Heap::ThrowOutOfMemoryError(
 
 根据 [Android Bitmap 内存说明](https://developer.android.com/topic/performance/graphics/manage-memory)，普通 Bitmap 自 Android 8.0 起由 native heap 持有像素；`Bitmap.Config.HARDWARE` 使用 GraphicBuffer / AHardwareBuffer（供图形栈使用的硬件缓冲区）。两者都可能增加进程或系统内存压力，只是采集方式和归属不同。所以评估 Bitmap 成本时，我们要看像素和图形缓冲本身；Java heap dump 里那个体积很小的 Bitmap 包装对象，与真实成本相去甚远。
 
+<!-- gracker-diagram: a211-05-bitmap-domains -->
+![小型 Java 包装对象不能代表 Bitmap 总成本](../../assets/diagrams/ch20/a211-05-bitmap-domains.png)
+
+图：普通像素与硬件图形缓冲属于不同资源域；Java引用分析仍用于找到所有者，但大小要结合native与图形证据。
+
 #### 先区分虚拟地址、驻留页和比例分摊
 
 | 指标 | 回答的问题 | 不能回答的问题 |
@@ -274,6 +299,11 @@ void Heap::ThrowOutOfMemoryError(
 | heapprofd | 被采样的 `malloc/free` 调用栈、大小和存活情况 | 未经过受支持 allocator 的所有映射与图形内存 |
 
 所以单看一个总量容易误判：native heap 指标平稳，mmap、线程栈或图形缓冲仍可能在增长；VmSize 很大，也只是虚拟地址保留得多，物理内存泄漏的结论还要靠驻留页指标。
+
+<!-- gracker-diagram: a211-06-memory-metrics -->
+![虚拟区间、驻留页与共享分摊回答不同问题](../../assets/diagrams/ch20/a211-06-memory-metrics.png)
+
+图：native malloc稳定不排除线程栈、映射或图形增长；跨进程相加RSS还可能重复计算共享页。
 
 #### 诊断顺序
 
@@ -313,6 +343,11 @@ soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 
 栈大小由 ART 的 `FixStackSize()` 和线程请求共同决定，“每线程固定 1 MB”换一台设备或架构就不成立。诊断时我们从 OOME 错误文本里的栈大小、`/proc/self/task` 数量和 maps 中的 stack/guard 映射出发。
 
+<!-- gracker-diagram: a211-07-thread-creation -->
+![线程创建失败沿阶段保留原始错误](../../assets/diagrams/ch20/a211-07-thread-creation.png)
+
+图：线程请求消耗地址区间、native资源与内核task；相同EAGAIN文本不足以区分栈映射和内核限额等原因。
+
 #### 线程治理与监控
 
 - 对自有任务使用队列长度受限的 executor、结构化协程和统一调度入口，记录线程池大小、正在执行的任务数、排队任务数、拒绝次数和取消次数。
@@ -340,6 +375,11 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 ```
 
 `FD_SETSIZE` 是 `select()` 数据结构能表示的 FD 编号上限，和 `RLIMIT_NOFILE`（单进程可打开 FD 数量的软/硬限制） 不是同一个值。只要进程拿到的 FD 编号超过 `FD_SETSIZE`，FORTIFY 就可能调用 `abort()` 结束进程；此时 FD 总数仍可能低于进程上限。修复既要找 FD 增长源，也要检查库是否错误地用 `select()` 处理高编号 FD。
+
+<!-- gracker-diagram: a211-08-fd-boundaries -->
+![FD 可分配编号与 select 位集合边界不同](../../assets/diagrams/ch20/a211-08-fd-boundaries.png)
+
+图：高编号本身不必崩溃；错误交给受检查的fd_set宏才可能FORTIFY abort，资源分配也可能先返回EMFILE。
 
 #### 采集一份可解释的 FD 快照
 
@@ -380,6 +420,11 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 
 64 位进程也可能因无界映射、VMA 数量、异常地址保留或超大连续映射而收到 `ENOMEM`。`android17-6.18-2026-06_r6/mm/mmap.c` 的 `do_mmap()` 会在长度、地址或 `map_count`（当前进程的 VMA 数量）超过系统约束等条件下返回 `-ENOMEM`；64 位进程仍要管理映射生命周期。
 
+<!-- gracker-diagram: a211-09-address-holes -->
+![总剩余地址空间不保证存在足够大的连续空洞](../../assets/diagrams/ch20/a211-09-address-holes.png)
+
+图：32位地址范围较窄，更容易因连续区间不足失败；64位仍受映射数、保留区和请求长度约束。
+
 #### 排查顺序
 
 地址空间问题的排查顺序：
@@ -406,6 +451,11 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 #### OOM 前的降级与失败处理
 
 OOME 发生后，当前线程连创建异常对象都可能失败，观测和降级因此要提前到资源接近预算时完成；异常一旦交给 `UncaughtExceptionHandler`，就只保留最小记录，沿默认处理路径结束进程。
+
+<!-- gracker-diagram: a211-10-early-degrade -->
+![把降级移到资源接近预算且仍健康的阶段](../../assets/diagrams/ch20/a211-10-early-degrade.png)
+
+图：缓存容量、线程队列、图形缓冲和映射各有预算；全局handler不是临时抓dump、联网或吞异常的恢复入口。
 
 #### 在 OOM 前释放可重建资源
 
@@ -443,6 +493,11 @@ override fun onTrimMemory(level: Int) {
 自定义处理器必须保存安装前的处理器，并对所有 `Throwable` 调用它——API 37 的 [`ProfilingTrigger.TRIGGER_TYPE_OOM`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_OOM) 可以在 OOME crash 时生成 Java heap dump，官方明确要求这条调用路径，否则自动触发器不可用。
 
 触发器还受系统资源和频率限制，每次都产生结果是没有保证的。已生成的结果要等应用后续启动、注册 `registerForAllProfilingResults` 回调后再读取，它不是崩溃线程上的同步恢复机制。
+
+<!-- gracker-diagram: a211-11-trim-profiling -->
+![生命周期释放与 OOM 自动取证属于不同阶段](../../assets/diagrams/ch20/a211-11-trim-profiling.png)
+
+图：自定义异常处理器必须沿保存的默认链继续调用；捕获非关键分配失败仅限一致性可验证的边界。
 
 在可控的可选分配点捕获 OOME，只适用于输入尺寸已知、没有共享状态写到一半、可以返回低分辨率或失败结果的操作。全局吞掉 OOME 后继续运行，进程的资源使用可能仍接近上限，其他线程也可能已失败。
 
@@ -519,6 +574,11 @@ OOM 治理达到可发布状态时，每个接近资源预算的事件都有责�
 
 视频、受保护内容或 provider overlay（由 provider 单独提交的叠加画面）可能增加独立的 `SurfaceControl` 图层。Renderer 退出后，已提交的旧帧可能短暂保留，也可能变成空白或静止画面。宿主窗口还在，只说明应用进程尚未退出；网页是否仍可交互，要等后面的恢复流程走完才知道。
 
+<!-- gracker-diagram: a211-12-webview-domains -->
+![WebView 同时跨平台版本、provider 与进程边界](../../assets/diagrams/ch20/a211-12-webview-domains.png)
+
+图：平台固定API契约，provider独立更新Chromium实现；宿主对象、沙箱页面和系统显示资源需分别取证。
+
 ### `onRenderProcessGone()` 回调契约
 
 Android 8 / API 26 起，`WebViewClient.onRenderProcessGone(view, detail)` 是 Renderer 退出后的公开入口。`WebViewClient.java` 给出四条硬约束：
@@ -537,6 +597,11 @@ Android 8 / API 26 起，`WebViewClient.onRenderProcessGone(view, detail)` 是 R
 
 默认实现返回 `false`。只有在清理动作已完成、后续代码不会再触碰旧实例时，才应返回 `true`。返回 `true` 却仍在访问旧对象，会把一次清晰的 Renderer 退出变成随机异常或长期白屏。
 
+<!-- gracker-diagram: a211-13-gone-contract -->
+![每个受影响实例都要完成 gone 处理](../../assets/diagrams/ch20/a211-13-gone-contract.png)
+
+图：同一Renderer可能关联多个WebView；一个实例返回true不能替其他实例完成处理。
+
 #### `didCrash()` 的二分类含义
 
 `RenderProcessGoneDetail.didCrash()` 返回：
@@ -547,6 +612,11 @@ Android 8 / API 26 起，`WebViewClient.onRenderProcessGone(view, detail)` 是 R
 要把 `false` 读成“页面 OOM”，得先排除两个干扰：应用在 API 29 及以上可能主动调用 `WebViewRenderProcess.terminate()`，设备实现和系统资源管理也会影响进程寿命。provider 更新通常会结束已经加载 WebView 的整个应用进程，这类进程重启要单独记录，别指望它一定留下 renderer-only 的 gone 事件。
 
 若应用会主动终止 Renderer，应在调用前生成一条短时有效的“预期终止标记”（下文简称 termination token），至少包含会话、调用时间、有效期和关联的 WebView 实例。随后到达且命中这条标记的 gone 事件，才归为预期终止。未命中时，再结合设备内存档位、前后台状态、Renderer 优先级、系统内存压力和问题页面是否反复出现来判断。
+
+<!-- gracker-diagram: a211-14-gone-reasons -->
+![didCrash 二分类还不能直接归因 OOM](../../assets/diagrams/ch20/a211-14-gone-reasons.png)
+
+图：终止token应在请求前写入，带会话、实例与有效期；白屏或false都不能单独证明页面内存泄漏。
 
 `rendererPriorityAtExit()` 返回退出时的最终 Renderer 优先级。一个 Renderer 可被多个 WebView 共享；`WebView.java` 规定，最终优先级取所有关联实例请求值中的最高值，实例销毁后不再参与计算。`RenderProcessGoneDetail.java` 也提醒，退出值可能高于某个单独实例请求的值。这个字段适合描述现场；要反推是哪个 WebView 提高了优先级、解释它为何被回收，还得靠其他现场信息。
 
@@ -569,6 +639,11 @@ ACTIVE
 任一步失败都进入原生错误页。`VISUAL_COMMITTED` 对应 `onPageCommitVisible()`：旧导航的内容不会再被绘制，响应正文已经进入 DOM，后续绘制可以出现新页面内容，但 CSS、图片等资源此时可能尚未完成。支付、编辑、登录等页面还需要 H5（WebView 里运行的前端页面）主动发出可校验的 `BUSINESS_READY`，表示业务接口和关键交互已经可用；宿主还要为这次握手设置超时。
 
 恢复前我们先回答三个问题：
+
+<!-- gracker-diagram: a211-15-recovery-gates -->
+![自动重建由可重放性、生命周期和次数共同决定](../../assets/diagrams/ch20/a211-15-recovery-gates.png)
+
+图：新实例沿统一安全配置加载去敏业务检查点；不可重放页查询服务端状态或进入原生错误页。
 
 1. 当前页面能否安全重放？
 2. 是否已有一次自动恢复尝试？
@@ -701,6 +776,11 @@ class H5Activity : AppCompatActivity() {
 
 示例对崩溃采取保守策略：同一页面可能稳定复现 Chromium 或页面内容触发的问题，所以崩溃后不自动重载；被系统结束的页面也只有一次自动恢复机会。`WebCheckpoint` 保存去敏后的业务路由和重放规则，完整浏览历史、POST 数据和 JavaScript 运行时状态都留在恢复范围之外。
 
+<!-- gracker-diagram: a211-16-checkpoint-ownership -->
+![导航和异步回调都要对应当前实例与页面](../../assets/diagrams/ch20/a211-16-checkpoint-ownership.png)
+
+图：检查点是最小业务恢复协议；完整历史、POST与JS运行时状态不在自动恢复范围，不能因旧地址可重放就复用。
+
 `configureWebView()` 要统一安全与功能配置，包括允许访问的 origin（协议、主机与端口）、Safe Browsing、Cookie 策略、文件访问、混合内容、`WebChromeClient` 和 JS Bridge（JavaScript 与原生代码之间的通信接口）。只有可信页面需要的 Bridge 才能重新注册。若每个业务页面都直接创建 WebView，恢复出的实例很容易漏掉安全配置。
 
 #### 多 WebView 容器
@@ -740,6 +820,11 @@ webView.setRendererPriorityPolicy(
 
 多个 WebView 共享 Renderer 时，最终优先级取关联实例请求值的最大值；销毁某个 WebView 后，它不再参与计算。只修改一个后台实例，未必改变共享 Renderer 的最终优先级。
 
+<!-- gracker-diagram: a211-17-renderer-priority -->
+![共享 Renderer 采用关联实例请求的最高优先级](../../assets/diagrams/ch20/a211-17-renderer-priority.png)
+
+图：降低优先级改变低内存时被选中可能性，不立即释放页面资源；所有共享实例都必须能处理gone。
+
 ### 怎样判断内存诱因
 
 判断内存诱因之前，我们先看 WebView 页面的资源分布在哪几个域：
@@ -750,6 +835,11 @@ webView.setRendererPriorityPolicy(
 - 系统：其他进程的竞争、zram 压缩交换空间、内存回收活动和设备内存档位。
 
 宿主 Java 堆正常，Renderer 或图形内存仍可能有压力；反过来，Renderer 被系统结束，也定不到某个 JavaScript 对象泄漏上。
+
+<!-- gracker-diagram: a211-18-renderer-attribution -->
+![宿主 PSS 不能替代 Renderer 与图形现场](../../assets/diagrams/ch20/a211-18-renderer-attribution.png)
+
+图：RSS共享页相加可重复，PSS按共享比例分摊；ApplicationExitInfo主要补宿主退出，不强配renderer-only事件。
 
 一次有效的 gone 事件至少记录：
 
@@ -796,6 +886,11 @@ Android 10 / API 29 起，`WebViewRenderProcessClient` 提供：
 
 `WebViewRenderProcess` 是不透明句柄：调用方可以请求终止，但拿不到稳定的 PID 这类实现细节。回调参数在单进程模式下还可能为 `null`。`terminate()` 返回 `true` 只表示当前可以终止这个 Renderer，返回 `false` 表示终止不了；返回值既说明不了 gone 回调已经到达，更说明不了新页面已经恢复。
 
+<!-- gracker-diagram: a211-19-unresponsive-terminate -->
+![Renderer 无响应先判断用户退路，再请求终止](../../assets/diagrams/ch20/a211-19-unresponsive-terminate.png)
+
+图：API29+回调描述Renderer输入或导航处理迟缓；terminate返回true不表示gone已经到达或页面恢复。
+
 ### 恢复过程的状态指标
 
 应用崩溃率看不见那些已返回 `true` 的 Renderer gone，所以我们要按状态记录一次恢复过程：
@@ -820,6 +915,11 @@ Android 10 / API 29 起，`WebViewRenderProcessClient` 提供：
 - 按 provider 版本、业务路由、设备内存档位和前后台状态分组后的差异。
 
 “新 WebView 已创建”离恢复成功还有距离，`onPageFinished()` 也保证不了用户已经看到可操作内容。更接近用户体验的是视觉提交加业务握手：两者都要设超时，并比对前文所说的实例代号，防止旧回调把新实例误报为成功。不过这个组合仍是应用侧的间接信号；某一帧是否已由 SurfaceFlinger 提交到屏幕，要逐帧诊断才能确认，那时我们再看宿主窗口的 FrameTimeline（帧的渲染时间线）和实际显示时间。
+
+<!-- gracker-diagram: a211-20-recovery-milestones -->
+![恢复成功从旧实例清理追踪到业务可用](../../assets/diagrams/ch20/a211-20-recovery-milestones.png)
+
+图：记录各阶段分母、失败原因与耗时分布，防止把新建实例或onPageFinished当作用户已恢复。
 
 ### 分批启用、紧急停用和自动恢复次数
 

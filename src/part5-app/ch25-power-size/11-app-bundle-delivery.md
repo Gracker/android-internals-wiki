@@ -76,6 +76,11 @@ Android App Bundle（AAB）是发布格式，不是 Android 平台可直接安�
 
 平台安装行为以 Android 17（API 37）为锚点。AAB 拆分与 Play Feature/Asset Delivery 由构建工具、Google Play 服务端和 Play 商店实现，不涉及 kernel（内核）分包逻辑。
 
+<!-- gracker-diagram: a284-01-aab-publish-device-apks-and-platform -->
+![AAB 是发布输入，设备安装匹配的一组 APK](../../assets/diagrams/ch25/a284-01-aab-publish-device-apks-and-platform.png)
+
+图：R8决定可删除什么，模块交付决定何时给谁；二者解决不同问题。
+
 ## AAB 格式与分包机制
 
 AAB 按 module（模块）组织代码和资源。base module 是所有安装必需的主体；feature module（功能模块）可以在安装时、满足条件时或用户请求时交付；asset pack（资源包）用于 Play Asset Delivery。Google Play 还可以按 ABI（应用二进制接口，对应处理器架构与调用约定）、语言和屏幕密度生成 configuration APK，让设备只下载匹配配置。
@@ -102,6 +107,11 @@ bundletool get-size total \
 
 `get-size total` 默认统计首次下载时安装的所有 module，不只包含 base。指定 `--modules` 时，工具会把所选 module 的依赖一并计入。未提供设备规格时，结果可能给出一组跨设备维度的最小值和最大值，不能作为某台设备的基线。命令语义见 [`bundletool` 文档](https://developer.android.com/tools/bundletool)。
 
+<!-- gracker-diagram: a284-02-three-size-metrics-and-fixed-device-spec -->
+![固定设备规格后，再谈首次下载与安装占用](../../assets/diagrams/ch25/a284-02-three-size-metrics-and-fixed-device-spec.png)
+
+图：两组module结果不能简单相减当feature独占大小；先看共同base与依赖集合。
+
 本地 `build-apks` 使用与 Play 相关的拆包工具，但签名、Play 服务端处理和线上设备选择仍要通过测试轨道验证。未显式传 keystore（签名密钥库）时，`bundletool` 会尝试使用 debug key（调试签名密钥）；这样的 APK Set 适合本地测试，不能作为渠道发布制品。
 
 ### Android 17 如何接收 split APK
@@ -115,6 +125,11 @@ bundletool get-size total \
 - 通过 [`ApkLiteParseUtils.composePackageLiteFromApks()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/parsing/ApkLiteParseUtils.java) 形成 base、feature、`uses-split`（功能依赖）和 `configForSplit`（配置归属）的统一视图。
 
 验证完成后，不需要重启即可生效的安装会进入 `installNonStaged()` 等后续流程。base、配置 split 和功能 split 必须作为同一个包的一致集合安装，不能按单个文件随意拼凑。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google 认证设备失败。
+
+<!-- gracker-diagram: a284-03-split-session-consistency-validation -->
+![一次安装会话中的 base 与 splits 必须一致](../../assets/diagrams/ch25/a284-03-split-session-consistency-validation.png)
+
+图：AAB不进入PackageManager；从通用包中任挑几个split侧载，可能缺签名、配置或功能依赖。
 
 ## Dynamic Feature Module 实践
 
@@ -161,6 +176,11 @@ Feature 可以访问 base 的公共 API；base 不能在编译期引用 feature 
 
 Feature 会继承 base 的部分配置，不应重复声明签名、`versionCode`、`versionName` 或 `minifyEnabled`。各 feature 的附加 keep rules（代码保留规则）会在构建时与全应用规则合并。
 
+<!-- gracker-diagram: a284-04-feature-boundary-and-build-dependencies -->
+![base 保留可立即恢复的入口，feature 承载可等待实现](../../assets/diagrams/ch25/a284-04-feature-boundary-and-build-dependencies.png)
+
+图：dynamicFeatures注册构建模块；签名、版本和全应用优化仍服从base配置及合并规则。
+
 这个 feature manifest（功能模块清单）把模块配置为 on-demand。`dist:title` 引用的字符串应放在 base，保证模块下载前系统也能读取；`dist:fusing` 决定模块能否进入需要融合的 APK，包括 `bundletool --mode=universal` 生成的 universal APK（包含所有受支持设备配置的通用包）。
 
 ```xml
@@ -177,6 +197,11 @@ Feature 会继承 base 的部分配置，不应重复声明签名、`versionCode
 ```
 
 `dist:instant="false"` 表示该模块不用于免安装体验，`dist:on-demand` 只声明按需交付方式。应用仍需通过 Play Feature Delivery Library（Play 功能交付库）请求模块并监听状态。
+
+<!-- gracker-diagram: a284-05-feature-delivery-timing-and-fusing -->
+![交付方式影响何时可用，fusing 影响 universal 内容](../../assets/diagrams/ch25/a284-05-feature-delivery-timing-and-fusing.png)
+
+图：dist:title引用base资源，确保下载前可见；配置on-demand不会自动替应用发起请求。
 
 这个 Kotlin 骨架展示安装会话过滤和关键状态处理。页面只有收到 `INSTALLED` 后才能进入功能。
 
@@ -221,6 +246,16 @@ manager.startInstall(request)
 
 Play 会让已安装 feature 随应用更新；不要给 Play feature 自建独立版本协议。版本一致性问题主要出现在自建资源下载、非 Play 插件或绕过 Play 的分发方案中。
 
+<!-- gracker-diagram: a284-06-on-demand-state-recovery-and-zero-session -->
+![先查已安装，再接回会话；ID 0 不会产生安装事件](../../assets/diagrams/ch25/a284-06-on-demand-state-recovery-and-zero-session.png)
+
+图：SERVICE_DIED可能携带ID -1，须在普通ID过滤前处理；close注销监听并让旧异步回调失效。
+
+<!-- gracker-diagram: a284-07-splitcompat-system-entry-and-versioning -->
+![安装完成后，还要让代码、资源与系统入口可用](../../assets/diagrams/ch25/a284-07-splitcompat-system-entry-and-versioning.png)
+
+图：下载成功不能替代访问验证；进程重建从已安装模块与活动会话恢复真实状态。
+
 ## Play Asset Delivery 与大资源管理
 
 Play Asset Delivery（PAD，Play 资源交付）面向 asset（原始素材），不允许 asset pack 包含可执行代码。纹理、音频、关卡、离线模型和媒体素材可以进入 asset pack；DEX（Android 字节码）、JAR（Java 归档）、`.so` 原生库和需要参与编译的功能应使用应用模块或 Dynamic Feature。
@@ -235,6 +270,11 @@ Play Asset Delivery（PAD，Play 资源交付）面向 asset（原始素材）�
 
 Fast-follow 和 on-demand pack 的路径可能跨会话变化，文件也可能被用户或 Play Asset Delivery Library（PAD 访问库）删除。应用每次使用前都要查询 pack 状态和位置，并把展开后的内容视为只读，因为资源补丁依赖文件完整性。
 
+<!-- gracker-diagram: a284-08-asset-pack-three-delivery-timelines -->
+![资源包的三种下载时机，也有不同磁盘形态](../../assets/diagrams/ch25/a284-08-asset-pack-three-delivery-timelines.png)
+
+图：install-time随安装可用；fast-follow安装后自动下载无需先启动；on-demand由应用请求后下载。
+
 应用更新期间还可能出现新二进制已安装、资源补丁尚未应用完的短暂状态，页面要能显示 `资源更新中`。
 
 首屏必需的最小资源留在 base 或 install-time pack；可在安装后准备的内容用 fast-follow；低频内容用 on-demand。推迟下载不会减少最终磁盘占用，仍要设计空间检查、失败恢复和资源回收。
@@ -242,6 +282,11 @@ Fast-follow 和 on-demand pack 的路径可能跨会话变化，文件也可能�
 Texture Compression Format Targeting（纹理压缩格式定向）允许 AAB 携带多种 GPU（图形处理器）纹理格式，由 Play 为设备选择受支持的格式，适合游戏或图形密集应用。普通 UI（用户界面）图片仍应按 25.10 的 WebP、AVIF、VectorDrawable 与网络图片策略处理。
 
 PAD 的模式、路径和更新语义以 [Play Asset Delivery](https://developer.android.com/guide/playcore/asset-delivery) 为准。
+
+<!-- gracker-diagram: a284-09-asset-update-and-first-use-fallback -->
+![新二进制可先到达，资产更新必须有独立状态](../../assets/diagrams/ch25/a284-09-asset-update-and-first-use-fallback.png)
+
+图：纹理格式定向让Play选择GPU支持的TCF；普通UI图片仍按像素、格式与解码能力设计。
 
 ## 国内分发场景的 AAB 替代方案
 
@@ -273,6 +318,11 @@ bundletool install-apks --apks=app-release.apks
 
 其他渠道也要逐项核对政策、安全、兼容和更新责任；面向 Play 的自建分发默认只交付非代码资源。
 
+<!-- gracker-diagram: a284-10-channel-capability-and-executable-boundary -->
+![按渠道验证分包与签名，非代码资源另建更新协议](../../assets/diagrams/ch25/a284-10-channel-capability-and-executable-boundary.png)
+
+图：Play不允许从Play之外下载DEX/JAR/SO等可执行代码；解释型代码例外仍受其他政策约束。
+
 ## 按需分发要进入体积门禁
 
 AAB、Dynamic Feature 和 PAD 上线后，CI（持续集成）要按设备、module 和下载时机保存结果：
@@ -299,6 +349,11 @@ bundletool get-size total \
 第一条默认包含首次下载时安装的所有 module；第二条按显式 module 集合测量，并自动加入依赖。两条结果的含义不同，不能简单相减推导 feature 自身大小。最终发布还应使用 Play 测试轨道或渠道测试环境校验。
 
 门禁阈值来自项目基线和实际设备分布，不要直接套用通用百分位或固定数字。制品、`bundletool` 版本、device spec（设备规格 JSON）、签名方式和 module 集合必须随结果归档。
+
+<!-- gracker-diagram: a284-11-delivery-ci-same-spec-and-module-dependencies -->
+![体积门禁固定规格，并把首用失败纳入结果](../../assets/diagrams/ch25/a284-11-delivery-ci-same-spec-and-module-dependencies.png)
+
+图：预算来自实际设备与产品基线；不能用AAB上传大小或通用百分比替代设备交付集合。
 
 ## 全文小结
 

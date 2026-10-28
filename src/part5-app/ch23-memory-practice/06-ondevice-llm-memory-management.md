@@ -82,6 +82,11 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 排查时我们要按阶段记录。一次 `dumpsys meminfo` 只反映采样那一刻的状态：至少要区分未加载模型、模型文件打开、运行时和 delegate 初始化完成、首次运行、prefill 峰值、稳定 decode、取消生成、关闭会话、关闭模型这几个点。表中六类内存的峰值时刻各不相同，中间峰值要靠这些分阶段的采样点才抓得到，加载完成或生成结束后的单点快照看不到它们。
 
+<!-- gracker-diagram: a258-01-memory-owners -->
+![端侧推理的分配归属](../../assets/diagrams/ch23/a258-01-memory-owners.png)
+
+图：按分配归属和推理阶段分别采样：权重只是预算的一项，初始化、prefill 与多会话都可能形成峰值。
+
 ### 1.2 权重大小的理论下限
 
 如果参数量为 \(P\)，平均权重位宽为 \(b\)，仅权重数据的理论下限是：
@@ -98,6 +103,11 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 不过，“4-bit 模型”也可能保留 FP16/FP32 的归一化层、embedding 或输出层。分组量化要为每组保存 scale (把量化整数还原到数值范围的缩放因子)，非对称方案通常还需要 zero-point。所以表中数字只是权重位数的换算结果；模型文件比它们大时，先对照上面这些附加项，再判断打包有没有问题。
 
+<!-- gracker-diagram: a258-02-weight-lower-bound -->
+![量化只改变权重预算的一部分](../../assets/diagrams/ch23/a258-02-weight-lower-bound.png)
+
+图：权重位宽给出理论数据量；量化元数据、混合精度、运行时副本、KV 和工作区仍需另算。
+
 选量化方案时，压缩率只是其中一个输入：算子是否被目标后端支持、是否触发 CPU 回退、加载时是否反量化或重排，都会改变运行时内存。精度变化还依赖模型、校准集、量化算法和任务，通用的 MMLU（多学科问答基准）降幅只能当参考，验收要回到应用自己的任务上。
 
 ### 1.3 KV 缓存要按模型配置计算
@@ -109,6 +119,11 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 系数 2 对应 Key 和 Value 两份。这里要用 `kv_heads`：一个 attention head（注意力头） 就是一组并行处理注意力投影的单元。GQA（Grouped-Query Attention）让一组查询头共享 KV 头，MQA（Multi-Query Attention）则让更多查询头共用同一组 K/V，所以 KV 头数可能比 query 头数少，估算时以 `kv_heads` 为准，query head 数先放到一边。
 
 举个有量级的例子：批大小 1、32 层、8 个 KV 头、每个头的维度（head dimension） 128、缓存 4096 个 token、每个元素 2 字节，结果是 512 MiB；只把 KV 头数改成 32，结果就变成 2 GiB。这两个数是公式演示，不对应某个产品模型。
+
+<!-- gracker-diagram: a258-03-kv-heads-budget -->
+![KV 缓存按 KV 头数和 token 计算](../../assets/diagrams/ch23/a258-03-kv-heads-budget.png)
+
+图：查询头共享 KV 头时，应使用 kv_heads 预算。权重量化不会自动降低 KV 元素的字节数。
 
 在这条公式之上，还要处理几项修正：
 
@@ -128,11 +143,21 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 还有一点容易算错：把模型文件大小、native heap 和 GPU 缓冲区直接相加，可能重复计算同一物理页。跨进程或跨设备比较时优先用进程 PSS，各分类留作归因线索。
 
+<!-- gracker-diagram: a258-04-mapping-and-copies -->
+![文件映射与后端副本分别记账](../../assets/diagrams/ch23/a258-04-mapping-and-copies.png)
+
+图：文件体积、native heap 和设备缓冲不能直接相加；先确认是否描述同一物理页，再记录独立后端副本。
+
 ### 1.5 16 KiB 页与数据搬运的峰值
 
 16 KiB 页设备会改变模型文件映射、原生分配器区域和小映射的页面粒度：自研加载器要避免写死 4096 字节对齐，文件 `mmap()` 的 offset（文件偏移） 必须遵守运行时页大小，APK/ELF 也要按[官方 16 KiB 兼容要求](https://developer.android.com/guide/practices/page-sizes)构建。页变大并不会自动让每个 tensor 各占一个 16 KiB 页，变化的是内部碎片和驻留页的观察结果。
 
 跨进程或跨硬件后端传递大 tensor 时，Binder（Android 进程间通信机制） 只传控制信息、句柄和小型元数据，数据本体优先走运行时张量缓冲区、`SharedMemory`、文件描述符，或满足消费端约束的 `AHardwareBuffer`。Java direct `ByteBuffer` 通常没有可访问的 Java 数组，native 地址要另外确认，`arrayOffset()` 给不出答案。即便共享缓冲区能被后端导入，我们也要用跟踪数据验证有没有发生 CPU staging copy（先复制到过渡缓冲区）、后端重排或额外设备副本。
+
+<!-- gracker-diagram: a258-05-tensor-transfer -->
+![共享张量仍需验证导入与同步](../../assets/diagrams/ch23/a258-05-tensor-transfer.png)
+
+图：句柄减少 Binder 数据量；共享缓冲能否直用，取决于消费端的格式、同步与导入能力。
 
 最后是线程问题：模型加载、delegate 初始化和首次编译不要放在主线程。在 Perfetto 里，除了计算 slice（一段带起止时间的跟踪事件），我们还要看 Binder 等待、Runnable 排队、page fault（缺页事件）、大块 `memcpy` 和后端返回码——数据搬运与初始化等待很容易被误判成“算子计算慢”。
 
@@ -197,6 +222,11 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 这里有一条硬约束：异步回调仍可能访问对象时，先等它结束，再关闭它持有的 native 资源句柄。框架实现 `AutoCloseable` 时，用 `try-with-resources`、Kotlin `use` 或显式 `finally`。处于维护模式的 MediaPipe LLM Inference 示例也把 `LlmInference` 与 `LlmInferenceSession` 放进受控的关闭范围；迁移到 LiteRT-LM 后，再按新 API 的所有权约定确认一遍关闭顺序。
 
+<!-- gracker-diagram: a258-06-safe-close-order -->
+![异步推理资源的安全关闭顺序](../../assets/diagrams/ch23/a258-06-safe-close-order.png)
+
+图：先等待异步消费者结束，再按所有权逆序关闭资源；不能在后端仍执行时直接 munmap 权重。
+
 ### 3.2 模型切换时的双份驻留
 
 模型切换是另一个容易漏算的峰值。“先加载新模型，成功后再释放旧模型”确实能降低切换失败的风险，但代价是双模型同时驻留。内存紧张的设备应采用以下过程：
@@ -208,6 +238,11 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 5. 加载失败时进入更小变体或云端路径。
 
 判断“旧资源已经关干净”也要小心：内存分配器、驱动缓存或文件页可能让数值延迟回落，要多看几份快照再下结论。若产品要求无缝切换，双模型窗口就必须作为独立场景进入预算，归入正常单模型峰值会低估它。
+
+<!-- gracker-diagram: a258-07-model-switch-window -->
+![模型切换中的双份驻留窗口](../../assets/diagrams/ch23/a258-07-model-switch-window.png)
+
+图：无缝切换需要预算双模型重叠窗口；内存紧张时先保存状态、停止旧会话并关闭旧模型，再加载目标变体。
 
 ### 3.3 多会话与多模型的统一调度
 
@@ -267,6 +302,11 @@ Android 17 的 [`ProfilingTrigger`](https://developer.android.com/reference/andr
 
 对较大且目标 SoC 已知的模型，[部分 LiteRT NPU 路径](https://developers.google.com/edge/litert/android/npu/qualcomm) 与当前 [LiteRT NPU 编译和分发文档](https://developers.google.com/edge/litert/next/qualcomm) 都提供 AOT 方案，用来减少设备侧初始化编译。当前路径还支持设备侧编译及编译缓存，缓存是否命中会显著改变初始化时间和内存。另外，AOT 产物、原始模型、AI Pack（按设备投递的 Play 资产包）和厂商运行时库可能在安装或加载阶段同时存在，这一阶段的峰值仍要按对应 SoC 与运行时版本测量。
 
+<!-- gracker-diagram: a258-08-backend-fallback -->
+![后端选择仍要看分区与回退](../../assets/diagrams/ch23/a258-08-backend-fallback.png)
+
+图：选择 NPU 不证明整图都在 NPU 执行；失败回退要避免旧后端与新后端资源同时驻留。
+
 ### 5.2 共享缓冲区的导入条件
 
 [`AHardwareBuffer`](https://developer.android.com/ndk/reference/group/a-hardware-buffer) 从 API 26 起提供跨进程和图形 API 可共享的缓冲区。格式、usage flags（使用方式标志）、尺寸和设备实现共同决定它能否分配或被某个消费者导入；API 29 起可先用 `AHardwareBuffer_isSupported()` 检查给定描述。
@@ -321,6 +361,11 @@ fun readProcessStatus(): Map<String, Long> =
 ```
 
 该函数适合在阶段交界处或异常触发时采样，不要在每生成一个 token 时调用。`VmHWM` 不能重置；需要比较单阶段峰值时，可在独立测试进程中运行场景，或用足够频率的 RSS/PSS 采样配合 Perfetto 时间线。
+
+<!-- gracker-diagram: a258-09-rss-and-high-water -->
+![当前 RSS 与历史峰值的采样边界](../../assets/diagrams/ch23/a258-09-rss-and-high-water.png)
+
+图：RSS 是当前值，HWM 默认是累计峰值；对比单阶段峰值需独立进程或有阶段标记的采样，并确认重置能力。
 
 ### 6.2 每个采样点保存同一组字段
 

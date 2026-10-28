@@ -119,6 +119,11 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 
 输入超时也一样，主线程之外还有别的变量：窗口没有焦点、目标窗口迟迟未创建、应用正在等同步 Binder 返回，都会表现成输入没有按时完成。修复前我们从 ANR 类型和 traces 把计时期间发生了什么还原出来，再决定动哪里。
 
+<!-- gracker-diagram: a210-01-timers -->
+![不同系统等待由不同计时器判断](../../assets/diagrams/ch20/a210-01-timers.png)
+
+图：先用ANR主题定类型，再还原计时区间；主线程长任务只是多种原因之一。
+
 ### 前台服务的三类时限
 
 前台服务的故障排查经常在三套计时器之间绕晕——`startForegroundService()` 的转前台时限、`shortService` 的短时窗口、按类型的累计额度，约束对象和到期结果各不相同。我们先分开看：
@@ -130,6 +135,11 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 | 以 Android 15 及以上为目标平台的 `dataSync` / `mediaProcessing` | 应用处于后台时，每种类型在 24 小时内累计约 6 小时；用户把应用带到前台会重置额度 | 收到 `onTimeout()` 后仍不停止会抛出内部 `RemoteServiceException` 并导致崩溃，不能归类为 ANR。 |
 
 这些默认值来自 `android-17.0.0_r1` 源码，产品代码仍应在业务可接受的时间内结束工作；拿系统超时减去一小段时间当日常预算，执行时仍贴着系统上限，稍有波动就越界。
+
+<!-- gracker-diagram: a210-02-fgs-boundaries -->
+![FGS 的三套时限对应不同结果](../../assets/diagrams/ch20/a210-02-fgs-boundaries.png)
+
+图：本图第一行仅描述固定AOSP标签；旧版与厂商转前台失败也可能是异常崩溃，不能统一归为ANR。
 
 ### 从类型进入修复路径
 
@@ -146,6 +156,11 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 
 用这张表时还要留意：一份主线程快照只说明采样那一瞬间。广播可能运行在自定义 `Handler` 上，`goAsync()` 的工作也可能落在后台 worker 线程；主线程栈里出现 `nativePollOnce`，只说明 Looper（线程消息循环） 正在等消息，看到它就把这类 ANR 排除掉，是会漏判的。
 
+<!-- gracker-diagram: a210-03-type-thread -->
+![ANR 类型决定要追哪条线程](../../assets/diagrams/ch20/a210-03-type-thread.png)
+
+图：主线程nativePollOnce只说明采样时空闲；广播worker、焦点或晚采样仍可能解释ANR。
+
 ## 缩短主线程同步工作并异步化
 
 主线程要处理 Looper 消息、组件回调、窗口与输入相关的工作，治理的目标是：每个同步阶段都有明确的耗时预算，每个等待都能找到所有者，超出预算的工作可以取消、降级或延后。这一节我们按“先选执行位置、再立预算”的顺序展开。
@@ -161,6 +176,11 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 | 可推迟且需要进程重启后继续的任务 | [WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager) / JobScheduler | 适合持久、可延迟工作，不适合当前页面必须立即得到的结果 |
 
 线程切换改变的只是执行位置：无界队列照样积压，不可取消的 I/O 照样占住 worker，错误地切回 `Dispatchers.Main` 照样阻塞界面。
+
+<!-- gracker-diagram: a210-04-execution-place -->
+![按工作性质选择执行位置和限制](../../assets/diagrams/ch20/a210-04-execution-place.png)
+
+图：协程组织生命周期和取消传播，执行线程仍需指定；切线程不会消除积压或不可取消阻塞。
 
 ### 协程负责结构，线程由我们指定
 
@@ -209,6 +229,11 @@ class ArticleViewModel(
 
 启动优化要记录每个初始化项的调用线程、依赖、可延迟条件、失败处理与完成时刻；只记一句“已经异步”，说明不了主线程预算有任何改善。
 
+<!-- gracker-diagram: a210-05-startup-sync -->
+![整理初始化依赖不等于自动移出主线程](../../assets/diagrams/ch20/a210-05-startup-sync.png)
+
+图：App Startup合并provider、整理依赖与支持按需初始化；同步create本身仍会占用启动线程。
+
 ### 为主线程任务建立预算
 
 固定 500 毫秒之类的全局阈值会把不同业务混成一类，更稳妥的做法是按场景立基线，我们一步步来：
@@ -236,6 +261,11 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 - 只有调用语义允许单向投递时才使用 AIDL 的 `oneway`：调用方提交后不等返回，但远端处理速度跟不上时，事务会在队列中积压，这就是这里所说的背压。可见 `oneway` 解决的是“不必等”，把积压问题原样搬到了对端。
 
 `Future.get(timeout)` 等待后台任务时，调用方可以在超时后停止等待，但执行 Binder 事务的后台工作线程仍可能被占用；协程 `withTimeout` 会发出取消信号，阻塞式 Binder 事务通常不响应这次取消，工作线程仍要等远端返回。两种写法都终止不了远端正在执行的 `onTransact()`，主线程也就没有理由阻塞等这类结果。
+
+<!-- gracker-diagram: a210-06-binder-timeout -->
+![业务停止等待与终止 Binder 执行是两件事](../../assets/diagrams/ch20/a210-06-binder-timeout.png)
+
+图：Future.get超时与协程取消只能改变调用方等待策略；同步Binder和远端工作可能继续占用资源。
 
 ### 服务端也会制造调用方 ANR
 
@@ -292,6 +322,11 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 
 这里锁 A 只存在于应用进程，等待环却跨过了 Binder。规则还是那条：持锁期间不调用未知代码，也不做同步 IPC（inter-process communication）。
 
+<!-- gracker-diagram: a210-07-binder-lock-cycle -->
+![一把应用内锁也能形成跨进程等待环](../../assets/diagrams/ch20/a210-07-binder-lock-cycle.png)
+
+图：main持锁同步IPC，服务端另起线程发起回调并等待；应用Binder回调线程需要锁A，构成跨线程等待环。
+
 ## ContentProvider、BroadcastReceiver 与 Service 超时治理
 
 组件 ANR 的计时范围常常比组件方法本身更长：冷启动、前置初始化和线程排队都可能被算进系统窗口。所以只测 `onReceive()` 或 `onStartCommand()` 的函数耗时是不够的，窗口的两头都要看。
@@ -308,6 +343,11 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 provider 发布完成后，`query()`、`insert()`、`call()` 等入口还可能被并发调用：远程调用经 Binder 线程进入进程，同进程调用则可能在调用线程直接执行。所以 provider 实现要按并发入口设计，“所有方法都在主线程”的假设靠不住，一把大锁包住数据库、文件和 IPC 的做法也一样。
 
 publish 基线来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`。`ContentProviderHelper` 中等待 provider 就绪、请求方检测 provider 无响应等路径有各自的条件和时限，所以报告里要保留 ANR 类型和描述，看到 provider 名称就套 10 秒发布结论，容易把另一条检测路径当成 publish 超时。
+
+<!-- gracker-diagram: a210-08-provider-stages -->
+![Provider 治理区分启动发布与并发请求](../../assets/diagrams/ch20/a210-08-provider-stages.png)
+
+图：publish超时不能覆盖全部provider ANR；数据库迁移、文件与IPC等待要按实际入口追踪。
 
 #### 案例：清单合并引入的 SDK Provider
 
@@ -345,11 +385,21 @@ trace 只负责测量，初始化不会因此变快，决定预算的是 `instal
 
 验证时各工具分工明确：Macrobenchmark 批量测量启动性能分布，Perfetto 用时间线确认主线程区间，`ApplicationStartInfo` 对齐系统记录的启动节点，`ApplicationExitInfo` 和 ANR traces 复核进程退出与现场栈。最后还要看质量指标：P95、P99 等高百分位启动延迟降了，SDK 初始化失败率却升了，这个修复不算合格。
 
+<!-- gracker-diagram: a210-09-sdk-provider-audit -->
+![SDK 升级后的启动退化按产物和证据定位](../../assets/diagrams/ch20/a210-09-sdk-provider-audit.png)
+
+图：栈停在SDK Provider只提供候选；结合最终清单、Perfetto和启动系统节点确认，保留升级与并发首次访问回归。
+
 ### BroadcastReceiver：`goAsync()` 不增加时间
 
 静态注册的 receiver 通常由主线程执行，用 [`registerReceiver(..., scheduler)`](https://developer.android.com/reference/android/content/BroadcastReceiver) 可以通过 `Handler` 指定接收线程。换到后台线程保护了 UI 响应，但 receiver 仍受广播期限约束，线程池排队也要消耗时间——线程换掉了，期限没换。
 
 `goAsync()` 返回的 `PendingResult` 允许 `onReceive()` 返回后继续处理，但计时起点仍是广播分发那一刻，直到 `PendingResult.finish()` 为止，异步工作沿用原有截止时间。进程在 receiver 完成后也可能被回收，需要在进程重建后继续的工作交给 WorkManager 或 JobScheduler。
+
+<!-- gracker-diagram: a210-10-broadcast-window -->
+![goAsync 延后完成点，沿用原广播窗口](../../assets/diagrams/ch20/a210-10-broadcast-window.png)
+
+图：onReceive返回后由PendingResult.finish结束同一次广播；冷启动、工作线程排队和执行仍消耗该窗口。
 
 示例只处理能在广播期限内完成、支持协程取消的短任务。`receiverScope` 由应用统一持有，避免每次广播创建无人管理的作用域；应用还应为它配置受控的后台调度器和异常处理。
 
@@ -374,6 +424,11 @@ class SyncReceiver(
 ```
 
 默认 `launch` 可能在协程体开始执行前就被取消，这个分支协程体内的 `finally` 覆盖不到。`Job.invokeOnCompletion()` 在任务成功、失败或取消后执行一次；注册时任务若已完成，处理器也会立即执行，因此示例把唯一一次 `finish()` 放在完成处理器中。处理器可能在不同线程运行，只负责结束广播，不执行额外耗时工作。
+
+<!-- gracker-diagram: a210-11-receiver-completion -->
+![用 Job 完成契约覆盖未执行协程体的取消](../../assets/diagrams/ch20/a210-11-receiver-completion.png)
+
+图：只在协程体finally调用finish会漏掉体未开始的取消；完成处理器仅结束广播，不做额外重活。
 
 这里的内部预算必须短于对应广播窗口，由线上基线确定；排队时间仍会消耗广播窗口，协程内的计时把这一段落在账外。`processor.handle()` 还要能响应取消——一旦它进入不可取消的阻塞调用，`withTimeout` 也拦不住这段代码，按时完成任务并调用 `finish()` 就失去了保证。超过广播窗口或要求进程重建后继续的任务，在 `onReceive()` 里只入队持久任务即可。
 
@@ -461,6 +516,11 @@ class MainLooperWatchdog(
 
 旧 `Runnable` 的 token 与当前 token 不同时，`compareAndSet()` 不会替新周期盖章；当前 token 未完成前也不再投递探针（供主线程执行的轻量 `Runnable`）。示例省略了重复调用 `start()` 时防止创建多个线程的保护、应用退出处理、采样频率上限和持久队列。`onStall` 是发现长时间无响应后的回调，里面别同步做网络或大文件写入。
 
+<!-- gracker-diagram: a210-12-watchdog-token -->
+![单探针避免堆积与旧探针误确认](../../assets/diagrams/ch20/a210-12-watchdog-token.png)
+
+图：未确认期间只监测当前token，旧Runnable不能确认新token；同一Thread不可重复start，实例仍需统一管理。
+
 ### 阈值来自产品基线
 
 Watchdog 阈值没有通用的 3 秒或 5 秒答案：定短了，正常的长消息、调试器暂停和设备进出休眠的时刻都会被记成风险事件；定长了又起不到预警作用。配置时我们考虑：
@@ -484,6 +544,11 @@ Watchdog 报告应包含 token、投递时间、延迟、主线程栈、若干�
 - 主线程恢复后，Watchdog 样本仍有价值；ANR 不是 Java Crash，不一定终止进程。
 
 所以 Watchdog 事件与系统 ANR 应分开存储，之后按时间、进程、ANR 类型和堆栈签名（由关键栈帧生成的事件指纹）关联。
+
+<!-- gracker-diagram: a210-13-watchdog-limits -->
+![Watchdog 样本与系统判定分别保存](../../assets/diagrams/ch20/a210-13-watchdog-limits.png)
+
+图：内部阈值取自产品基线；系统可能在Watchdog前后判定，不保证提前预警或一定结束进程。
 
 ## ANR 预警与主动发现
 
@@ -549,6 +614,11 @@ API 36 的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在系统识别 ANR 后、可能�
 
 同一个事件用 `anrId`、进程启动标识、单调时钟时间和堆栈签名关联。这里用单调时钟是有讲究的：Wall clock 是可被用户或网络校时调整的日历时间，单调时钟只向前累计，计算同一进程内的时间间隔更适合用它。
 
+<!-- gracker-diagram: a210-14-warning-evidence -->
+![三类信号提供不同阶段的互补证据](../../assets/diagrams/ch20/a210-14-warning-evidence.png)
+
+图：用ANR类型和ID、进程生命周期、时间及签名关联；description格式不可作为长期协议。
+
 ### Looper 与 Binder 的主动监测
 
 `Looper.setMessageLogging()` 可以通过 `Printer` 回调接口观察消息分发前后的文本，但有三个限制要记牢：每个 Looper 只有一个 `Printer` 槽位且没有公开的读取方法，文本格式属于诊断输出，持续解析会增加主线程成本。所以接入时由一个组件统一持有 `Printer`，把其他消费者加入内部观察者列表，并在目标 Android 版本验证格式；线上使用要配采样、频率限制和远程开关。
@@ -568,6 +638,11 @@ Google Play 当前提供三项以 DAU（daily active users，当日活跃用户�
 - **Multiple ANR rate**：当天至少经历两次 ANR 的活跃用户占比。
 
 User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital（主要质量指标），官方当前给出的全局不良行为阈值为 0.47%，单设备型号阈值为 8%。这些数值和定义可能调整，发布治理规则前我们再核对一次官方页面。
+
+<!-- gracker-diagram: a210-15-play-denominators -->
+![Play 的三种 ANR 比率采用相同日活口径](../../assets/diagrams/ch20/a210-15-play-denominators.png)
+
+图：2026-10-25复核：全局阈值0.47%，单设备型号8%；用户设备按天计数，不能与事件数或会话率直接比较。
 
 后台 ANR 可能不展示对话框，但仍会进入 overall ANR（全部类型 ANR）数据，也可能揭示共享线程池、锁、广播冷启动或 Service 回调的问题。“用户没看到”影响的只是修复优先级，把它当忽略的理由并不成立。
 
@@ -609,6 +684,11 @@ User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital�
 
 工程上，监控平台可以增加 `system_load_suspected`（疑似系统负载）及证据字段，降低这类事件在告警列表中的排序优先级，或放入单独队列；原始事件、分母和系统确认状态照常保留。多次版本对比后，如果问题只出现在某个设备系统构建、应用栈又分散，我们再把线索交给设备厂商或平台团队联合排查。
 
+<!-- gracker-diagram: a210-16-system-pressure -->
+![系统负载用于解释和分组，保留原始事件](../../assets/diagrams/ch20/a210-16-system-pressure.png)
+
+图：高负载、低RAM、进程死亡日志或freezer单个信号都不能证明本次ANR与业务无关。
+
 ## 治理与验证流程
 
 最后我们把流程串起来。一个 ANR 修复要能回答三个问题：系统在等什么、哪条线程没有前进、改动如何证明有效。代码改了却没有同场景回归，风险只是换了个位置。
@@ -623,6 +703,11 @@ User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital�
 8. **观察发布前后趋势**：同时看事件数、受影响用户、会话风险事件、设备分组和堆栈问题组，避免分母变化掩盖回归。
 
 每个高频问题组都应有负责人、证据、修复版本和验证结果。材料不齐时标“原因待确认”即可，为了报表整洁直接归入“系统原因”，是把未知当成了已知。
+
+<!-- gracker-diagram: a210-17-governance-loop -->
+![每个修复对应可重放证据和质量验证](../../assets/diagrams/ch20/a210-17-governance-loop.png)
+
+图：延迟自有Binder、延长持锁或模拟receiver冷启动，检查降级、取消、finish与onTimeout，再比较同口径质量趋势。
 
 ## 小结
 

@@ -93,6 +93,11 @@ sources:
 
 依赖声明数量推不出最终体积，包名前缀也说明不了运行时责任；治理对象应当是“某个能力在某个版本发布制品中的完整执行路径”。
 
+<!-- gracker-diagram: a220-01-two-ledgers -->
+![能力供应商视图与最终 release 制品视图共同界定 SDK](../../assets/diagrams/ch20/a220-01-two-ledgers.png)
+
+图：依赖报告只是输入；最终合并Manifest、交付模块和A/B制品差异才说明用户实际得到什么。
+
 ## 2. 建立可核对的 SDK 台账
 
 ### 2.1 从 release 产物反推事实
@@ -167,6 +172,11 @@ SDK 评估最常见的误判，是“工具显示了数字，于是数字属于 
 
 工具只回答“观察到了什么”；要把观察变成归因，我们还得靠对照实验与调用关系。同一进程内，线程、堆、网络连接和系统回调经常由宿主与 SDK 共同参与。
 
+<!-- gracker-diagram: a220-02-evidence-chain -->
+![观测到 SDK 线索后，还需对照与调用路径确认归因](../../assets/diagrams/ch20/a220-02-evidence-chain.png)
+
+图：线程名、包名、域名和栈顶都只是线索；实验产物、编译模式、符号与异常样本共同归档。
+
 ## 4. 启动：先找自动入口
 
 ### 4.1 Provider 早于 `Application.onCreate`
@@ -182,6 +192,11 @@ SDK 评估最常见的误判，是“工具显示了数字，于是数字属于 
 - 多个 SDK 争用主线程、磁盘和类加载锁。
 
 这也解释了为什么只给 `Application.onCreate()` 打点会漏掉早期成本。Provider 优化的完整路径见 [ContentProvider 启动优化](../ch21-startup/03-contentprovider-multiprocess-startup.md)。
+
+<!-- gracker-diagram: a220-03-early-startup -->
+![Provider 自动入口先于 Application.onCreate 执行](../../assets/diagrams/ch20/a220-03-early-startup.png)
+
+图：固定非受限备份启动路径：Provider和App Startup初始化可能发生在业务Application.onCreate之前。
 
 ### 4.2 用 Macrobenchmark 建立可比较基线
 
@@ -218,6 +233,11 @@ class SdkStartupBenchmark {
 
 测试应对 A/B 产物分别运行，并查看 [`timeToInitialDisplayMs` 与 `timeToFullDisplayMs`](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)及对应 Trace。迭代十次只是示例，保证不了统计显著性；样本量要按设备噪声和回归幅度来定。
 
+<!-- gracker-diagram: a220-04-benchmark-contract -->
+![固定构建、启动与编译条件后比较初显和全显](../../assets/diagrams/ch20/a220-04-benchmark-contract.png)
+
+图：BaselineProfileMode.Require防止缺少Profile条件时静默换策略；Profile不会消除同步I/O、锁与网络等待。
+
 [Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview)可以预编译关键代码路径，SDK 也能随库交付 profile rules。同步磁盘、网络、锁等待这些成本它管不掉，静态初始化语义也保持原样。评估 profile 收益时，仍要固定 [`CompilationMode.Partial`](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode.Partial) 配置。
 
 对于可控的集成代码，我们用 `androidx.tracing` 给初始化入口加命名切片——Trace 时间轴上带开始、结束与名称的一段区间。不透明的 Provider 只能依赖系统切片、调用栈或供应商提供的 Trace。切片要把等待时间和结果都圈进来，只包住一次异步任务提交没有意义。
@@ -243,6 +263,11 @@ class SdkStartupBenchmark {
 删除这条元数据后，应用可在用户同意或功能首用时调用 `AppInitializer.initializeComponent(...)`。App Startup 的公开契约还规定：关闭某个组件（component）的自动初始化，也会关闭其 `dependencies()` 返回组件的自动初始化；随后手动初始化该组件时，这些依赖会按图一并初始化。
 
 若某个依赖同时被其他 Manifest 声明的 `Initializer` 引用，它仍可能从另一条路径启动，因此必须检查完整依赖图。
+
+<!-- gracker-diagram: a220-05-initializer-reachability -->
+![移除一个自动入口不保证共享依赖完全不再执行](../../assets/diagrams/ch20/a220-05-initializer-reachability.png)
+
+图：手动initializeComponent会按依赖图初始化；App Startup统一入口与顺序，不会自动把create移出主线程。
 
 ### 4.4 按需、延迟与异步初始化
 
@@ -270,6 +295,11 @@ class SdkStartupBenchmark {
 
 观察 BOOT_COMPLETED 型 SDK 时，至少要记录 Receiver 被调起的用户 ID、进程 PID、触发时间、任务 ID 和后续 Job/Work/网络请求；若设备发生 runtime restart，还要确认 phase、property 和广播记录来自同一个 `system_server` 实例。否则很容易把“系统全局里程碑到了”误写成“SDK 已经完成初始化”。[来源: 技术文章/source/juejin-android/2026-10-07-76911262-Android 系统启动机制（九）：sy.md]
 
+<!-- gracker-diagram: a220-06-boot-milestones -->
+![系统阶段、全局属性与应用 Receiver 完成是不同里程碑](../../assets/diagrams/ch20/a220-06-boot-milestones.png)
+
+图：固定AMS在属性后调用UserController.onBootComplete；属性已置位不能证明某SDK Receiver已成功执行。
+
 ## 5. 内存：同进程没有可靠的“每 SDK PSS”
 
 ### 5.1 先辨认工具的观察对象
@@ -291,6 +321,11 @@ class SdkStartupBenchmark {
 
 所以“按包名汇总 heap dump”“把 `.so` RSS 当作 SDK 内存”“从 smaps 精确拆分 SDK PSS”这三条做法都只提供线索；精确归因要看下面这套 A/B 内存实验。
 
+<!-- gracker-diagram: a220-08-memory-observers -->
+![进程内存、对象保留与分配栈不能直接互换](../../assets/diagrams/ch20/a220-08-memory-observers.png)
+
+图：同场景A/B再解释映射、堆、栈与图形缓冲；多进程RSS相加会重复共享页。
+
 ### 5.2 推荐的 A/B 内存实验
 
 一次可审计的内存评估应包含：
@@ -302,6 +337,11 @@ class SdkStartupBenchmark {
 5. native 堆用带 Build ID 的符号解析 heapprofd 分配栈。
 6. 把加载映射、活跃分配、线程栈和图形缓冲分开解释。
 7. 保存每轮原始数据与分布，报告差值、取值范围和离散程度；只有明确统计模型时才报告置信区间。
+
+<!-- gracker-diagram: a220-07-retained-vs-referenced -->
+![被 A 引用不等于被 A 支配，其他根路径仍可保留 C](../../assets/diagrams/ch20/a220-07-retained-vs-referenced.png)
+
+图：这是对象引用图：A不可达时C仍可经Root2→B到达，因此C不属于A的retained set。
 
 若 SDK 自带有语义的缓存/队列计数器，也应纳入同一时间线。供应商指标可以帮我们解释差异，系统级内存差值还是要自己测。
 
@@ -348,6 +388,11 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 较可靠的组合是：
 
+<!-- gracker-diagram: a220-09-network-attribution -->
+![UID 网络量与客户端拦截器各有覆盖范围](../../assets/diagrams/ch20/a220-09-network-attribution.png)
+
+图：端点只是线索；负载、协议开销、失败重试和心跳分开，异步请求要保留发起来源。
+
 - 实验环境抓包或受控代理，核对域名、协议、字节量和重试；
 - 供应商提供请求标签、诊断回调或网络代理注入点；
 - 在适配层传播请求 ID，把业务动作与后台流量对齐；
@@ -362,6 +407,11 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 Macrobenchmark [`PowerMetric`](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric) 仍带 `ExperimentalMetricApi` 标记；高精度 power/energy 数据依赖设备支持，而且结果反映的是测量窗口内的系统总消耗，分不出哪个应用或 SDK 独占多少。Perfetto power rails（设备供电轨功耗计数器）有同样的设备与归因限制；读不到的数据要标为缺失，按零处理会把结论偏向乐观。
 
+<!-- gracker-diagram: a220-10-power-evidence -->
+![功耗工具观察系统窗口，不能直接给每 SDK 分账](../../assets/diagrams/ch20/a220-10-power-evidence.png)
+
+图：PowerMetric仍带ExperimentalMetricApi；总功耗变化需结合工作路径与集成竞争解释。
+
 ### 6.5 Android 17 的相关兼容点
 
 除 App Memory Limits 外，Android 17 还需关注：
@@ -371,6 +421,11 @@ Macrobenchmark [`PowerMetric`](https://developer.android.com/reference/kotlin/an
 - 后台调度、前台服务和权限的合规与稳定性责任仍由宿主应用承担。
 
 评估报告要写明 SDK 行为依赖的是公开 API 还是私有实现。Android 17 的目标 SDK 变更可从 [target 37 行为变更](https://developer.android.com/about/versions/17/behavior-changes-17)逐项核对。
+
+<!-- gracker-diagram: a220-11-android17-gates -->
+![Android 17 兼容检查按 target 与能力条件分别记录](../../assets/diagrams/ch20/a220-11-android17-gates.png)
+
+图：精确闹钟+USAGE_ALARM仅豁免额外WIU要求；音频焦点失败码与播放静默失败分别观测。
 
 ## 7. Crash、ANR（Application Not Responding，应用无响应） 与进程退出归因
 
@@ -383,6 +438,11 @@ Java 异常栈顶出现 SDK 类，可能是 SDK 缺陷，也可能是宿主传�
 3. **供应商确认**：供应商确认根因，并提供可验证修复或规避方案。
 
 ANR 也一样，光看栈里有没有 SDK 帧远远不够；我们要找的是主线程正在等待什么、锁或 Binder 的另一端是谁、后台线程是否持有资源，以及等待是否由宿主调用时机触发。
+
+<!-- gracker-diagram: a220-12-fault-attribution -->
+![栈顶相关、对照实验与供应商确认分开记录](../../assets/diagrams/ch20/a220-12-fault-attribution.png)
+
+图：ANR追等待链、锁和Binder另一端；保留原始Build ID/relative PC与归一化聚类规则。
 
 ### 7.2 上线前的符号与版本准备
 
@@ -426,6 +486,11 @@ SDK 携带的宽泛 `-keep` 规则可能保留无关代码、阻止优化或放�
 
 为缩体积盲删供应商规则是危险动作。收窄规则必须配合功能测试和反混淆验证，必要时让供应商给出可维护的最小规则。
 
+<!-- gracker-diagram: a220-13-delivery-and-r8 -->
+![最终交付字节与消费者 R8 规则一并回归](../../assets/diagrams/ch20/a220-13-delivery-and-r8.png)
+
+图：AAR大小和依赖声明数不能代替用户增量；收窄keep规则必须保留功能、JNI和反混淆验证。
+
 ### 8.3 传递依赖冲突
 
 Gradle 的版本调解可能让一个 SDK 运行在它没有验证过的依赖版本上。编译通过也不说明运行路径兼容。对于关键公共库，应通过 `dependencyInsight` 找出选择原因，固定可验证版本，并覆盖涉及二进制兼容、资源、序列化与网络协议的集成测试。
@@ -459,6 +524,11 @@ Gradle 的版本调解可能让一个 SDK 运行在它没有验证过的依赖�
 5. **持续监控**：每次 SDK 或构建工具升级重放基准与差异检查。
 
 “每个 SDK 单独达标”仍可能让总预算超标。准入记录必须同时显示该 SDK 的边际成本和应用剩余预算。
+
+<!-- gracker-diagram: a220-14-admission-budget -->
+![把单 SDK 准入与全部集成后的预算同时验收](../../assets/diagrams/ch20/a220-14-admission-budget.png)
+
+图：每次SDK或构建工具升级重放同样场景；供应商版本号与单项达标不能证明合计预算安全。
 
 ## 10. 退出能力要在接入时设计
 
@@ -499,11 +569,21 @@ class GovernedAnalytics(
 
 这里的开关拦得住后续调用，也只在供应商支持时执行停止操作；已经加载的 DEX/`.so` 卸不掉，静态初始化、未知监听器或已排队的任务也不会被自动撤销。所以 SDK 必须提供成对的注册/反注册和可重复调用的停止契约。
 
+<!-- gracker-diagram: a220-15-serial-consent-gate -->
+![在同一非重入线程中，start 成功后才开放 record](../../assets/diagrams/ch20/a220-15-serial-consent-gate.png)
+
+图：同步示例不假设AtomicBoolean能完成生命周期同步；异步start必须另建STARTING/READY/FAILED状态。
+
 ### 10.2 用双视图测试守住供应商边界
 
 适配层这条线，还要被构建和源码两条线同时守住：Gradle 依赖图能暴露业务模块是否直接依赖供应商 SDK 模块或同级实现模块；Kotlin 源模型能暴露 `UiState`、领域接口、公共 repository 等签名是否导入或返回供应商 DTO、持久化实体或 Android/框架类型。[来源: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md]
 
 可执行规则应放在普通测试和 CI 中，而不是只靠代码审查记忆。对 SDK 治理来说，最低限度可以检查三类契约：只有适配层可以依赖供应商 artifact；公共接口只暴露应用自有类型；KMP 或共享模块禁止意外导入 Android 框架或供应商实现包。若规则太宽，例如笼统禁止 `kotlinx..`，会误伤协程、序列化等合法跨平台库；应从少量高信号规则开始，写明例外并跟随架构演进维护。[来源: 技术文章/source/juejin-android/2026-09-07-76816756-架构测试为何需要双视图.md]
+
+<!-- gracker-diagram: a220-16-two-view-boundary -->
+![依赖视图与公共类型签名共同守住供应商适配边界](../../assets/diagrams/ch20/a220-16-two-view-boundary.png)
+
+图：两类测试捕获不同违例：只看Gradle图发现不了公共接口泄露供应商DTO，只看源码也替代不了制品差异。
 
 ### 10.3 远程开关的适用条件
 
@@ -517,6 +597,11 @@ class GovernedAnalytics(
 - 服务端、客户端和供应商控制台状态可核对。
 
 若 SDK 在进程创建时由 Provider 自动运行，远程开关读取往往已经太晚。高风险 SDK 应改为显式初始化，或至少让 Provider 只做轻量登记，不执行耗时的网络或磁盘操作。
+
+<!-- gracker-diagram: a220-17-remote-disable-timing -->
+![远程禁用要早于自动入口，且自身不依赖被禁 SDK](../../assets/diagrams/ch20/a220-17-remote-disable-timing.png)
+
+图：Provider已运行后才取到远程开关，不能撤回静态初始化；未注册反注册或未取消的工作仍需生命周期治理。
 
 ## 11. 常见 SDK 类型的治理重点
 
@@ -584,6 +669,11 @@ API 符号、旧设计页或系统服务类仍然存在，这只说明兼容代�
 旧 Runtime 路径如果仍在运行，我们评估时要报告宿主与 Runtime 进程的合计 PSS/RSS，并同时测量加载延迟、Binder 回调、远端 UI 帧时间、进程死亡率与恢复成功率。两端没有共享堆；应用商店曾提出的可信分发可能影响下载或磁盘存储，但由此推不出运行时 RAM 会下降。
 
 历史兼容方案的构建流程是：Android Gradle Plugin（AGP）和 Bundletool 构建包含 SDK 的应用变体，SDK Runtime client library 从应用 assets 提取 DEX，再用独立 classloader（类加载器）载入宿主进程。类加载器能降低类名冲突，却不提供进程隔离。
+
+<!-- gracker-diagram: a220-18-runtime-legacy-model -->
+![SDK Runtime 遗留进程与兼容类加载路径隔离程度不同](../../assets/diagrams/ch20/a220-18-runtime-legacy-model.png)
+
+图：旧进程模型分别观测双方并计入合计成本；PSS分摊与RSS重复计数边界保留，不能由可信分发推导RAM下降。
 
 AndroidX 兼容库已经停止更新，所以它只能解释现有发布包的行为；Android 17 的替代方案与新接入路径，都要在受支持的方案里选。
 

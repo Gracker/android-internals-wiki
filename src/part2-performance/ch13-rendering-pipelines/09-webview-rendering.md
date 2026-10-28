@@ -138,6 +138,11 @@ WebView 的一帧横跨应用 View 树、Chromium 多进程管线和 Android 合
 
 WebView 同时跨越 Chromium 与 Android 两套渲染系统。网页侧负责 JavaScript、样式、布局、绘制列表、栅格化和 compositor frame（Chromium 合成器生成的帧）；宿主侧仍要完成 View 遍历、HWUI 绘制、窗口 buffer 提交和 SurfaceFlinger 合成。只检查 App 主线程会遗漏 renderer 与 GPU service；只看到 Chromium compositor，也无法证明网页拥有独立的 SurfaceFlinger layer。
 
+<!-- gracker-diagram: ch13-09-01-two-rendering-systems -->
+![网页内容与宿主窗口的协作](../../assets/diagrams/ch13/ch13-09-01-two-rendering-systems.png)
+
+图：Chromium 准备内容，宿主 HWUI 生产最终窗口 buffer，系统再完成合成与显示。 Chromium compositor 不等于独立 SF layer；先确认标准、软件或独立 Surface 分支。
+
 这里固定三组锚点，其中 Android 平台和 WebView provider 是两条彼此独立的版本线：
 
 - Android 平台固定在 Android 17/API 37/`android-17.0.0_r1`，用于解释 framework、HWUI、SurfaceControl 和显示系统接口；
@@ -145,6 +150,11 @@ WebView 同时跨越 Chromium 与 Android 两套渲染系统。网页侧负责 J
 - WebView provider 是第二条独立版本线。现场必须记录包名、`versionName` 和 `versionCode`，再定位对应 Chromium revision。
 
 即使系统都是 Android 17，两台设备也可能安装不同 Chromium milestone（版本里程碑）的 provider，并受不同 feature flag、GPU blocklist 和 OEM 配置影响。平台 tag 只能回答 Android 提供了哪些接口，provider 的实际行为仍要根据设备版本对应的源码判断。
+
+<!-- gracker-diagram: ch13-09-02-version-coordinates -->
+![平台、provider 与 WebKit 三组坐标](../../assets/diagrams/ch13/ch13-09-02-version-coordinates.png)
+
+图：固定平台接口、实际 provider 与应用 API 库，才能解释设备上的具体路径。 WebKit 1.16.0 minSdk24；Android 5 历史范围不能覆盖这套依赖，ACK基线也不代表全部设备。
 
 ## 先分清三个边界
 
@@ -158,6 +168,21 @@ WebView 现场常被混在一起的内容有三类。
 
 这里的 “SurfaceControl 子 Surface” 指官方 provider 把合格的 overlay candidate（可提升候选）放入独立 layer 的能力。普通网页主体通常仍由 functor 绘入宿主 App Window；视频、受保护内容或其他满足条件的候选才可能增加独立 layer。分析时必须保留这一适用范围。
 
+<!-- gracker-diagram: ch13-09-03-three-boundaries -->
+![官方 provider、全屏托管与 SDK 扩展](../../assets/diagrams/ch13/ch13-09-03-three-boundaries.png)
+
+图：三个边界对应不同 owner，运行现场应分别确认。 普通网页主体仍通常进入宿主窗口；overlay 只提升候选，fullscreen callback 也不指定 View 类型。
+
+<!-- gracker-diagram: ch13-09-05-profile-renderers -->
+![WebView 数量与 renderer 数量](../../assets/diagrams/ch13/ch13-09-05-profile-renderers.png)
+
+图：同一 Profile 共享 renderer，多 Profile 与内置错误页可能增加进程。 按实际 provider 能力和 Profile 配置核对，不能用 WebView 实例数推导 renderer 数。
+
+<!-- gracker-diagram: ch13-09-04-process-thread-map -->
+![进程边界与宿主线程的位置](../../assets/diagrams/ch13/ch13-09-04-process-thread-map.png)
+
+图：browser/GPU 服务在宿主内，renderer 独立沙箱，HWUI 与 Viz 再衔接系统显示。 服务名不等于独立进程；旧 API21–25 的进程内 renderer 属于另一历史模型。
+
 ## 进程模型：三个执行域
 
 现代系统 WebView 可以按三个执行域理解。
@@ -167,6 +192,21 @@ WebView 现场常被混在一起的内容有三类。
 3. Android 显示系统：包含宿主 `ViewRootImpl`、HWUI RenderThread、BLAST/BufferQueue、SurfaceFlinger、CompositionEngine 和 HWC。
 
 下面的图用于定位 browser code、GPU services 和 renderer。箭头表达主要数据流，其中部分步骤通过异步 IPC 或资源队列衔接。
+
+<!-- gracker-diagram: ch13-09-06-request-to-window -->
+![从异步 child 请求到窗口提交](../../assets/diagrams/ch13/ch13-09-06-request-to-window.png)
+
+图：宿主请求、renderer 结果与 RT 消费形成依赖，再由 HWUI 输出窗口 buffer。 图表达数据关系；结果可已完成、晚到或为空，overlay 是可选分支。
+
+<!-- gracker-diagram: ch13-09-14-future-wait-sites -->
+![child future 可以在哪些位置等待](../../assets/diagrams/ch13/ch13-09-14-future-wait-sites.png)
+
+图：当前 future 与旧队列分别影响 Main、sync 和 Draw 阶段。 等待位置取决于队列状态；不能把所有 GetFrame 都当成 RenderThread 的 GPU 计算。
+
+<!-- gracker-diagram: ch13-09-07-independent-bottlenecks -->
+![Main 空闲时还要查哪些执行者](../../assets/diagrams/ch13/ch13-09-07-independent-bottlenecks.png)
+
+图：网页任务、宿主消费与 GPU/显示依赖可以分别迟到。 raster/解码执行位置随后端变化；线程名与短 Main slice 不能独立排除 WebView 问题。
 
 ```mermaid
 flowchart TD
@@ -221,6 +261,11 @@ Log.i(
 
 Android 17 的调用边界可以概括为：
 
+<!-- gracker-diagram: ch13-09-09-provider-loading -->
+![provider factory 装入宿主进程](../../assets/diagrams/ch13/ch13-09-09-provider-loading.png)
+
+图：首次需要实现时取得选定包、校验并装载代码，之后缓存进程级 factory。 factory 装载不是页面首帧完成；具体 Chromium 与 renderer 初始化由 provider 决定。
+
 1. `WebView` 的 provider 代理在第一次需要具体实现时进入 `WebViewFactory.getProvider()`；同一进程会缓存同一个 `WebViewFactoryProvider`。
 2. `WebViewFactory` 通过 `WebViewUpdateService.waitForAndGetProvider()` 取得系统选中的包，并校验包名、版本、签名、安装与启用状态。
 3. framework 为该包创建可加载代码的 context，取得 provider class loader，加载包声明的 native WebView library，再通过反射创建 provider factory。
@@ -228,7 +273,27 @@ Android 17 的调用边界可以概括为：
 
 这条链路解释了 WebView 首次创建为何可能耗时较长：它可能同时包含包选择、RELRO（预重定位只读数据）/native library、Java 类加载、Chromium 初始化、renderer 建立、网络和页面首帧。稳态滚动 trace 无法回答冷启动问题。
 
+<!-- gracker-diagram: ch13-09-10-cold-start-scope -->
+![冷启动的多个不同完成点](../../assets/diagrams/ch13/ch13-09-10-cold-start-scope.png)
+
+图：包装载、Chromium 启动与页面结果属于不同成本范围。 各步骤按实际路径触发；预热回调不保证 renderer、网络与页面首帧全部就绪。
+
 AndroidX WebKit 提供 `WebViewCompat.startUpWebView()`，可以把允许在后台执行的启动工作提前到可控时机；其余工作仍可能分段回到主线程。调用后立刻访问其他 WebView API 时，UI 线程仍可能等待初始化完成。预热还会增加进程和内存驻留，应按真实启动路径评估，并以项目实际使用的 AndroidX WebKit 版本说明为准。
+
+<!-- gracker-diagram: ch13-09-08-provider-query -->
+![查询已加载包与当前候选包](../../assets/diagrams/ch13/ch13-09-08-provider-query.png)
+
+图：getCurrentWebViewPackage 不加载 WebView，返回已加载包或此刻会选用的候选包。 未加载时结果可变化，也可为 null；用户代理查询或构造等其他 API 可能触发初始化。
+
+<!-- gracker-diagram: ch13-09-11-startup-parts -->
+![异步启动的全部与部分配置](../../assets/diagrams/ch13/ch13-09-11-startup-parts.png)
+
+图：稳定重载区分启动成功与失败，配置决定是否本次执行 UI 启动任务。 API 1.16.0 minSdk24；立即触碰其他 WebView API 仍可阻塞 Main。
+
+<!-- gracker-diagram: ch13-09-12-startup-compatibility -->
+![启动 API 按 provider 能力选择分支](../../assets/diagrams/ch13/ch13-09-12-startup-compatibility.png)
+
+图：兼容库按 V2、V1 与旧 provider fallback 分流。 callback 与诊断能力随分支不同；不能承诺每台设备取得相同预热收益或诊断数据。
 
 ## 官方 provider 的标准硬件路径：functor / DrawFn
 
@@ -268,6 +333,21 @@ sequenceDiagram
 
 `HardwareRenderer::OnViz::DrawAndSwapOnViz()` 名称中的 “Swap” 属于 Chromium 内部显示合成器语义，无法证明 App Window 已经向 SurfaceFlinger `queueBuffer`。普通网页主体的 Android 窗口提交仍由宿主 HWUI 完成。
 
+<!-- gracker-diagram: ch13-09-13-hardware-main-path -->
+![Main 准备与 RT/Viz 消费的硬件主线](../../assets/diagrams/ch13/ch13-09-13-hardware-main-path.png)
+
+图：Main 请求并记录，RT 同步消费，Viz 与 GPU tasks 协调后写入宿主 target。 不是每次 draw 都有新 frame；native draw 失败不会自动转软件分支。
+
+<!-- gracker-diagram: ch13-09-15-late-future-example -->
+![一次 child future 晚到的时序](../../assets/diagrams/ch13/ch13-09-15-late-future-example.png)
+
+图：请求可以先返回 future，RT 之后才拿到结果并协调 Viz 绘制。 仅示意晚到样本；Main 裁剪旧队列也可能等待，条长不是实测。
+
+<!-- gracker-diagram: ch13-09-16-internal-swap -->
+![Chromium Swap 与 Android 窗口提交](../../assets/diagrams/ch13/ch13-09-16-internal-swap.png)
+
+图：Chromium 内部 Display、宿主窗口 queue 与系统 present 是三个观测点。 CPU 路径构造的 MaybeDidPresent 反馈不能替代真实显示 present fence。
+
 ### GL 与 Vulkan 的准确口径
 
 Android 17 的 `WebViewFunctor.h` 同时定义 GLES 与 Vulkan 回调。`WebViewFunctor_queryPlatformRenderMode()` 查询宿主 HWUI pipeline，HWUI 再按当前 pipeline 校验并调用对应回调。现场可以用以下 slice 区分分支：
@@ -277,9 +357,19 @@ Android 17 的 `WebViewFunctor.h` 同时定义 GLES 与 Vulkan 回调。`WebView
 
 这段关系不能简化为 HWUI 与 Chromium 共用一个 GPU context。GL/Vulkan context、resource import 和同步实现取决于 provider revision 与后端；可以确认的是 provider 必须通过平台定义的 functor 模式与当前 HWUI pipeline 协作。
 
+<!-- gracker-diagram: ch13-09-17-drawfn-backends -->
+![DrawFn 的 GLES 与 Vulkan 回调](../../assets/diagrams/ch13/ch13-09-17-drawfn-backends.png)
+
+图：平台定义模式和回调契约，provider 按宿主后端协作。 实际 context、资源导入和同步按 revision 核对；不能笼统说两端共用同一 GPU context。
+
 ### 这条路径的性能含义
 
 普通网页主体合入 host buffer 后，SurfaceFlinger 通常只看到宿主 App Window layer。DOM layer、CSS transform、canvas 和普通图片已经在 Chromium/HWUI 前半段完成合成，不会逐项变成 SF layer，也无法由 HWC 分别分配 overlay plane。
+
+<!-- gracker-diagram: ch13-09-18-dom-vs-system-layer -->
+![DOM layer 与系统显示 Layer](../../assets/diagrams/ch13/ch13-09-18-dom-vs-system-layer.png)
+
+图：网页的内部层与资源通常已合进宿主 target，再由一个窗口 layer 交给系统。 DOM/CSS layer 不逐项映射 SF Layer；可选 overlay 候选才可能另有系统内容 layer。
 
 WebView 的耗时会沿两种方式拖慢宿主帧：
 
@@ -294,10 +384,25 @@ WebView 的耗时会沿两种方式拖慢宿主帧：
 
 这里要区分两种宿主形态：
 
+<!-- gracker-diagram: ch13-09-20-software-host-forms -->
+![软件窗口与单 View 软件层](../../assets/diagrams/ch13/ch13-09-20-software-host-forms.png)
+
+图：软件内容既可经软件窗口提交，也可先成为硬件窗口的输入。 两种都不自动新增独立 SF Layer；是否有宿主 RT/GPU 工作要看最终窗口形态。
+
 - 整个窗口软件绘制时，`ViewRootImpl.drawSoftware()` 通过窗口 Surface 的 Canvas 路径提交 App Window buffer；
 - 单个 WebView 使用 software layer 时，软件结果可以先成为 bitmap/layer，再由硬件加速的宿主窗口采样。
 
 两种情况都不会让网页自动获得独立 SF layer。确认 fallback 时，应组合检查硬件 DrawFn slice 消失、软件 draw 调用栈或 CPU raster 增长、Canvas acceleration 状态和 provider 日志。低端设备、白屏或某个 CSS 属性本身都不足以定型。
+
+<!-- gracker-diagram: ch13-09-19-software-branch-guard -->
+![AwContents 的硬件与软件分流](../../assets/diagrams/ch13/ch13-09-19-software-branch-guard.png)
+
+图：先按 Canvas、附着与辅助 bitmap 条件选分支，硬件失败直接返回结果。 硬件 draw 返回 false 不能等同于自动软件 fallback；软件路径也可空尺寸或无 Canvas 早退。
+
+<!-- gracker-diagram: ch13-09-21-software-proof -->
+![确认软件 fallback 的证据](../../assets/diagrams/ch13/ch13-09-21-software-proof.png)
+
+图：结合 Canvas 状态和真实调用栈，区分软件 draw、未采集与没有工作。 缺少 DrawFn slice、白屏或 CSS 属性均不足以单独判断渲染类型。
 
 ## 官方 provider 的 SurfaceControl 子 Surface：overlay，不是整页搬家
 
@@ -307,6 +412,11 @@ Android 17 的 HWUI 与 Chromium 都包含 WebView overlay 接口，但该接口
 
 `WebViewFunctorManager.cpp` 只有在以下条件成立时，才把 `overlaysMode` 设为 Enabled：
 
+<!-- gracker-diagram: ch13-09-22-overlay-platform-gates -->
+![HWUI 提供 overlay 容器的条件](../../assets/diagrams/ch13/ch13-09-22-overlay-platform-gates.png)
+
+图：平台先决定本次 draw 能否提供 overlay 接口。 四项是共同前提，不是三条任选分支；Enabled 仍不保证候选最终提升。
+
 - `Properties::enableWebViewOverlays` 已启用；
 - 当前 draw 存在 active `CanvasContext`；
 - 该 context 有 root `SurfaceControl`；
@@ -315,6 +425,16 @@ Android 17 的 HWUI 与 Chromium 都包含 WebView overlay 接口，但该接口
 provider 请求父节点时，HWUI 会创建名为 `Webview Overlay SurfaceControl` 的 buffer-state layer，把它挂在 App Window 的 root SurfaceControl 下，并放在当前绘制目标下方作为 underlay（下层内容）。`prepareSurfaceControlForWebview()` 让窗口准备这条路径；`mergeTransaction()` 尝试把 provider transaction 合入 active `CanvasContext`，没有可合并的 context 时才单独 apply。
 
 这一步只创建 overlay 容器并提供 transaction 接口，还没有证明任何网页内容已经获得独立 layer。
+
+<!-- gracker-diagram: ch13-09-23-overlay-container -->
+![overlay 容器与实际内容 child](../../assets/diagrams/ch13/ch13-09-23-overlay-container.png)
+
+图：HWUI 为 provider 提供 underlay 容器，实际内容与 buffer 再挂到相应 child。 看到容器名称不证明任何候选已出图，更不证明整页搬到独立 Surface。
+
+<!-- gracker-diagram: ch13-09-24-transaction-merge -->
+![provider transaction 的合并与独立 apply](../../assets/diagrams/ch13/ch13-09-24-transaction-merge.png)
+
+图：有 active context 时先尝试合并；没有或合并未成功才独立 apply。 容器创建、几何状态和 buffer 提交分别核对，不能仅凭接口调用证明已显示。
 
 ### Chromium 侧再决定“哪个候选能提升”
 
@@ -327,6 +447,11 @@ provider 请求父节点时，HWUI 会创建名为 `Webview Overlay SurfaceContr
 - buffer、crop、transform、颜色空间、保护属性和 acquire fence 是否满足实现要求。
 
 只有通过检查的候选才会获得 AHardwareBuffer 与 SurfaceControl 更新。候选提升失败时，该部分内容会回到网页主体合成路径，但仍可能使用硬件 DrawFn，不能把它解释为 WebView 软件渲染。
+
+<!-- gracker-diagram: ch13-09-25-overlay-candidates -->
+![provider 如何筛选可提升候选](../../assets/diagrams/ch13/ch13-09-25-overlay-candidates.png)
+
+图：平台许可后，Chromium 再检查服务准备、候选支持和临时阻止状态。 候选不能提升仍可回到硬件主体路径；这不是软件 fallback。
 
 ### 一帧里可能同时存在两条提交
 
@@ -342,15 +467,50 @@ buffer ready 与几何 transaction ready 是两个独立条件。媒体 buffer �
 
 Android 10—11 的平台 tag 已有现代 WebView functor 接口，但还没有 `WebViewOverlayData` 中的 SurfaceControl/transaction 回调；[`android-12.0.0_r1` 的 `WebViewFunctor.h`](https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/libs/hwui/private/hwui/WebViewFunctor.h) 已包含 `getSurfaceControl()` 与 `mergeTransaction()`，Android 17 保留了这组接口并增加 rendering-thread reporting。目标设备是否真正使用该路径，仍需结合 Android tag、provider revision、运行时开关与页面候选判断，不能只看 API level 就认定整页独立出图。
 
+<!-- gracker-diagram: ch13-09-26-two-output-objects -->
+![普通主体与 overlay 的双输出](../../assets/diagrams/ch13/ch13-09-26-two-output-objects.png)
+
+图：主体窗口和提升候选可以同时参与显示，分别追 buffer 与完成依赖。 宿主 HWUI 是最终窗口 Producer；decoder/provider 的候选不必经过传统窗口 BufferQueue。
+
+<!-- gracker-diagram: ch13-09-27-geometry-buffer-readiness -->
+![buffer 依赖与几何状态的同步](../../assets/diagrams/ch13/ch13-09-27-geometry-buffer-readiness.png)
+
+图：几何可合入宿主更新，buffer 的读取仍受 acquire fence 约束。 两类条件不代表必定分开无同步 apply；已提升也不保证 HWC DEVICE。
+
+<!-- gracker-diagram: ch13-09-28-overlay-interface-history -->
+![WebView overlay 接口的历史边界](../../assets/diagrams/ch13/ch13-09-28-overlay-interface-history.png)
+
+图：已检查的历史 tag 说明接口存在与否，运行路径仍由 provider 和配置决定。 Android 17 有 reporting 不证明恰好首发于 17；API level 不保证整页独立出图。
+
 ## ImageReader：中间 buffer 不等于最终 layer
 
 标准 Chromium 同样可能使用 ImageReader，不能因为 trace 中出现该对象就归到第三方 SDK。固定 revision 的 `ImageReaderGLOwner` 通过 `AImageReader_newWithUsage()` 创建 private-format reader，并按 TextureOwner mode 请求 GPU sampling、protected content 或 composer overlay usage。新 image 到达后，它异步 acquire image 和 fence，再取出 `AHardwareBuffer` 供后续纹理采样或 overlay 使用。
 
 这条证据只能说明中间 image 的 Producer/Consumer 关系，无法单独确定最终显示对象。ImageReader image 可能被 Chromium/HWUI 再采样进宿主 App Window，也可能服务于 SurfaceControl overlay。排障时应同时核对 `ImageReaderGLOwner` mode、usage、acquire fence、buffer owner、后续 DrawFn 和 SurfaceFlinger layer；如果 acquire 迟到或 reader 的可用 image 数量不足，还要检查 Producer backpressure 与旧帧复用。
 
+<!-- gracker-diagram: ch13-09-29-imagereader-middle -->
+![ImageReader 是中间消费边界](../../assets/diagrams/ch13/ch13-09-29-imagereader-middle.png)
+
+图：reader 从 Surface 接收 image，异步取得 buffer 与完成依赖供下游消费。 标准 provider 也使用它；acquire 返回不等于 GPU 完成，也不代表 CPU 图像复制。
+
+<!-- gracker-diagram: ch13-09-30-imagereader-limits -->
+![可用 image 额度与旧图保留](../../assets/diagrams/ch13/ch13-09-30-imagereader-limits.png)
+
+图：acquire 策略取决于额度，单 image 配置还需先释放当前 image。 不能保证取图失败时任何配置都能持有旧图；引用与 release fence 决定持续生产能力。
+
+<!-- gracker-diagram: ch13-09-31-imagereader-destination -->
+![同一 reader 可以通向不同显示对象](../../assets/diagrams/ch13/ch13-09-31-imagereader-destination.png)
+
+图：取得中间 image 后仍需确认采样目标或独立候选的归属。 看到 ImageReader 名称不能直接判定第三方 SDK、独立 SF Layer 或零拷贝端到端路径。
+
 ## 宿主全屏托管：`onShowCustomView()`
 
 网页进入 fullscreen mode 时，WebView 可以调用 `WebChromeClient.onShowCustomView(View, CustomViewCallback)`。Android 17 的 API 注释说明，回调之后，相关 web content 会改画到参数 `view` 中，不再进入原 WebView；宿主需要把该 View 放入合适的全屏 Window，并在退出时移除。仅把 WebView 布局设为 `match_parent` 不会触发该托管协议。
+
+<!-- gracker-diagram: ch13-09-32-fullscreen-view-handoff -->
+![全屏回调移交的是 View](../../assets/diagrams/ch13/ch13-09-32-fullscreen-view-handoff.png)
+
+图：WebView 通过回调移交绘制 View，宿主负责挂入全屏承载窗口并处理退出。 仅把布局铺满屏幕不触发协议；回调没有规定内部必须是 SurfaceView。
 
 下面的最小实现用于记录交接 View 的运行时类型，并正确维护退出回调。
 
@@ -402,13 +562,38 @@ class FullscreenChromeClient(
 - 如果内部是 `TextureView`，Producer 写入 `SurfaceTexture`，宿主 RenderThread 通过纹理采样把结果合入 App Window；
 - 若只是容器，继续向下找实际持有 Surface、SurfaceTexture 或播放器的 child。
 
+<!-- gracker-diagram: ch13-09-35-fullscreen-content-types -->
+![全屏 View 子树仍要按对象分类](../../assets/diagrams/ch13/ch13-09-35-fullscreen-content-types.png)
+
+图：从实际交接 View 的子树和 owner 判断显示路径。 FullScreenView、SurfaceView、TextureView 可以出现在不同实现中，回调名称不决定拓扑。
+
 全屏 custom view 与 provider 内部 overlay 可以同时出现，但属于不同机制。判断 owner 时，应以回调、View 树和 layer parent 为准。
+
+<!-- gracker-diagram: ch13-09-34-fullscreen-exit -->
+![全屏主动退出与真正移除 View](../../assets/diagrams/ch13/ch13-09-34-fullscreen-exit.png)
+
+图：宿主发出退出请求后，按 provider 的 onHide 回调移除交接 View。 先清 callback 避免重复请求；requestExit 返回不代表退出完成，销毁和系统栏策略另处理。
+
+<!-- gracker-diagram: ch13-09-33-fullscreen-ownership -->
+![固定 Chromium 的 FullScreenView 切换](../../assets/diagrams/ch13/ch13-09-33-fullscreen-ownership.png)
+
+图：同一 AwContents 可迁移到 FullScreenView，网页绘制仍可能继续用 functor。 这是固定实现例子，类名不是公开跨版本保证；媒体 overlay 是另一条可并存机制。
+
+<!-- gracker-diagram: ch13-09-36-fullscreen-vs-overlay -->
+![全屏托管与 provider overlay 可并存](../../assets/diagrams/ch13/ch13-09-36-fullscreen-vs-overlay.png)
+
+图：View 的 owner 切换与 buffer 候选提升是不同机制。 是否并存由实际场景决定；须同时查看 callback、View tree 与 Layer parent。
 
 ## 第三方 SDK 的 Texture-like 扩展
 
 X5、UC 或定制 Chromium 可以在包装层中采用 `TextureView`/`SurfaceTexture`、独立 Surface、ImageReader、HardwareBuffer 或私有桥接。不同版本、设备渠道和 feature flag 都可能改变实现，不能把第三方 WebView 固定描述为一种管线。
 
 只有在 trace 或调用栈中确认以下证据后，才把现场归为 Texture-like：
+
+<!-- gracker-diagram: ch13-09-37-texture-owner-direction -->
+![SurfaceTexture 的生产端与消费端](../../assets/diagrams/ch13/ch13-09-37-texture-owner-direction.png)
+
+图：SDK 向 Surface 或 ANativeWindow 生产，SurfaceTexture 接收供宿主消费。 SurfaceTexture 本身是消费端，方法名或中间对象不能独立识别 SDK 与最终显示路径。
 
 - SDK 自己创建并持有 `SurfaceTexture` 或等价 Producer endpoint（生产端入口）；
 - Producer 的 frame-available 回调到达；
@@ -419,9 +604,24 @@ X5、UC 或定制 Chromium 可以在包装层中采用 `TextureView`/`SurfaceTex
 
 这条路径的 Producer 是第三方内核或其 GPU 线程，Consumer 是宿主 HWUI。它会增加一次纹理采样和相应同步，具体开销必须用该 SDK 版本、页面负载和设备 trace 测量，不能预设更快或更慢。
 
+<!-- gracker-diagram: ch13-09-38-texture-three-moments -->
+![Texture-like 的三个不同消费时点](../../assets/diagrams/ch13/ch13-09-38-texture-three-moments.png)
+
+图：frame-available、Main 绘制记录与 RT/GPU 取图采样分别核对。 回调或 Java draw 返回不等于读取完成；native 取图不必出现 Java updateTexImage 方法名。
+
+<!-- gracker-diagram: ch13-09-39-texture-two-producers -->
+![中间提交与最终窗口提交](../../assets/diagrams/ch13/ch13-09-39-texture-two-producers.png)
+
+图：输入图像先交付给中间队列，宿主消费后才形成窗口输出。 源 swap 不证明 GPU 写完或宿主已采样；额外采样成本需要按现场量测。
+
 ## 从网页更新到显示的一帧
 
 一帧可以拆成六个诊断阶段。
+
+<!-- gracker-diagram: ch13-09-40-six-diagnostic-stages -->
+![一帧的六个诊断阶段](../../assets/diagrams/ch13/ch13-09-40-six-diagnostic-stages.png)
+
+图：把网页更新、宿主记录与显示后段按同一对象的依赖关联。 这是诊断分层，不要求严格串行；可以复用旧结果，也可没有新网页 frame。
 
 1. 网页状态更新：JavaScript、DOM、style、layout、paint invalidation、图片解码或滚动改变内容。
 2. renderer 合成准备：renderer compositor 生成 frame，raster worker 准备 tile（分块栅格化单元），并跨进程提交 frame/resource 信息。
@@ -432,6 +632,11 @@ X5、UC 或定制 Chromium 可以在包装层中采用 `TextureView`/`SurfaceTex
 
 这些阶段可能相互重叠。renderer 可以提前准备 frame，宿主也可以在没有新网页 frame 时重画其他 View；GPU 命令提交与完成又是异步关系。关联时要使用 frame token、buffer frame number、flow event、transaction id 和 fence，不能把时间上相邻的 slice 自动视为同一帧。
 
+<!-- gracker-diagram: ch13-09-41-async-write-display -->
+![DrawFn、GPU 与显示是不同边界](../../assets/diagrams/ch13/ch13-09-41-async-write-display.png)
+
+图：用 frame、buffer、transaction 与 fence 联系异步阶段。 相邻 slice 不能自动当成同一帧；queue 或 latch 也不一概意味着写入已完成。
+
 ## renderer 生命周期、启动与内存压力
 
 ### renderer 消失后不能复用原 WebView
@@ -440,15 +645,40 @@ renderer 可能 crash，也可能在内存压力下被系统回收。`WebViewCli
 
 `WebView.setRendererPriorityPolicy()` 可以调整 renderer 的进程重要性。降低不可见 WebView 的优先级会提高它被回收的概率，应用应先具备可靠的 process-gone 恢复路径。后台返回后出现白屏或重载时，应先检查 renderer death/OOM，再检查绘制管线。
 
+<!-- gracker-diagram: ch13-09-42-renderer-gone -->
+![共享 renderer 终止后的恢复](../../assets/diagrams/ch13/ch13-09-42-renderer-gone.png)
+
+图：受影响 WebView 逐一收到终止回调，旧对象必须清理，恢复需要新实例。 API26+ 恢复入口；一个实例清理不能代替同 renderer 其他实例的处理。
+
+<!-- gracker-diagram: ch13-09-43-renderer-priority -->
+![renderer 优先级与恢复责任](../../assets/diagrams/ch13/ch13-09-43-renderer-priority.png)
+
+图：降低 renderer 重要性可改变回收风险，先具备 process-gone 恢复能力。 后台白屏先核对 renderer death/OOM；优先级策略不保证常驻或自动重建页面。
+
 ### 冷启动和稳态卡顿要分开
 
 首次初始化可能包含 provider 装载、native library、Chromium startup、renderer 创建、网络连接和首帧 raster。稳态滚动则更关注 JavaScript 长任务、layout、raster、resource import、DrawFn、GPU queue 和 host window deadline。两类样本混入同一个平均值，会掩盖各自的主要耗时来源。
+
+<!-- gracker-diagram: ch13-09-44-startup-vs-steady -->
+![冷启动与稳态滚动分别取样](../../assets/diagrams/ch13/ch13-09-44-startup-vs-steady.png)
+
+图：冷启动与稳态的关键工作不同，应分别采集和比较。 把两类样本混成一个平均值会掩盖瓶颈；同时固定页面、provider 与构建。
 
 ### Android 17 / kernel 6.18 下的内存证据
 
 大页面会同时占用 DOM/JS heap、解码图片、Skia 资源、tile cache、GPU texture、AHardwareBuffer/dma-buf 和宿主图形内存。内存压力可能触发 GC、tile 淘汰、重新解码、renderer 回收、page fault（缺页）、direct reclaim（业务线程直接回收内存）、`kswapd` 后台回收、zram I/O 或 dma-buf 分配等待。
 
+<!-- gracker-diagram: ch13-09-45-memory-owners -->
+![大页面的多个内存归属](../../assets/diagrams/ch13/ch13-09-45-memory-owners.png)
+
+图：DOM/JS、栅格资源与图形 buffer 分属不同对象和执行域。 内存压力可能扩大解码、回收与等待成本；不能把全部图形内存都记作 Java heap。
+
 在内核基线 `android17-6.18-2026-06_r6` 中，跨进程图形 buffer 仍通过 dma-buf 共享，显式同步通过 dma-fence/sync_file 传递。CPU slice 变长时，要结合线程状态区分 Running（正在执行）、Runnable（可运行但等待 CPU）和 blocked（等待依赖）；线程等待 fence 时，CPU wall time 不能当作实际计算量。
+
+<!-- gracker-diagram: ch13-09-46-thread-state-cost -->
+![CPU wall time 中的执行与等待](../../assets/diagrams/ch13/ch13-09-46-thread-state-cost.png)
+
+图：Running、Runnable 与 blocked 分别表示执行、等 CPU 与等依赖。 长 slice 不等于等量计算或 GPU 工作；内核证据还需对应目标线程与对象。
 
 ## 如何判断当前 WebView 走哪条路径
 
@@ -468,6 +698,11 @@ adb shell dumpsys SurfaceFlinger --list
 
 把完整输出与 Perfetto 时间戳放入同一问题单。`grep` 仅用于快速定位入口；正式判断还要回看完整进程关系和 layer parent，避免被同名线程或 layer 误导。
 
+<!-- gracker-diagram: ch13-09-47-evidence-collection -->
+![现场分类所需的版本与对象证据](../../assets/diagrams/ch13/ch13-09-47-evidence-collection.png)
+
+图：同时保存版本、进程、页面场景与真实 layer owner。 命令输出只收集证据，不会自动判定类型；进程名或 layer 名还需关系核对。
+
 还应记录：
 
 - URL 或本地复现页、登录状态和页面操作；
@@ -479,6 +714,11 @@ adb shell dumpsys SurfaceFlinger --list
 ### 2. 先看 fullscreen 交接和 View owner
 
 收到 `onShowCustomView()` 才能确认进入宿主全屏托管分支。记录参数 View 的完整类名与 child tree，再检查它创建的 Surface/SurfaceTexture。没有回调时，不能因为画面占满屏幕就标记为 fullscreen custom view。
+
+<!-- gracker-diagram: ch13-09-48-fullscreen-evidence -->
+![全屏外观与交接协议的判别](../../assets/diagrams/ch13/ch13-09-48-fullscreen-evidence.png)
+
+图：先以回调确认托管，再看 View 子树与实际 Surface 对象。 画面铺满屏幕不等于 custom-view 协议，也不能据此断定独立 layer。
 
 ### 3. 在 Perfetto 中连接五段证据
 
@@ -493,6 +733,16 @@ adb shell dumpsys SurfaceFlinger --list
 
 线程名和 slice 名会随 provider 更新而变化。它们是定位线索，不是跨版本稳定 API；复盘时必须保留 provider revision。
 
+<!-- gracker-diagram: ch13-09-49-trace-five-domains -->
+![沿线程、资源和显示连接 Perfetto](../../assets/diagrams/ch13/ch13-09-49-trace-five-domains.png)
+
+图：从目标 Layer 和时间窗出发，把网页工作、宿主消费与显示后段相连。 按时 queue 仍可能等 App GPU 的 acquire；DrawFn wall time 也不是 GPU 设备时长。
+
+<!-- gracker-diagram: ch13-09-50-timeline-coverage -->
+![宿主与独立输入的采集覆盖](../../assets/diagrams/ch13/ch13-09-50-timeline-coverage.png)
+
+图：先确认目标对象的事件覆盖，缺口用 buffer / transaction / fence 补齐。 官方 FrameTimeline 页面暂不支持 SurfaceView；宿主时间线不代表独立 overlay 或纹理输入。
+
 ### 4. 用 layer tree 验证内容落点
 
 - 只有 host App Window，且 trace 出现 WebView DrawFn，主体更接近标准 functor 路径；
@@ -500,6 +750,11 @@ adb shell dumpsys SurfaceFlinger --list
 - 出现 video / protected layer，分别追 decoder producer 与宿主几何 transaction；
 - fullscreen 场景同时核对 custom view 容器和播放器 layer；
 - 出现 `SurfaceTexture` / `updateTexImage`，先查 owner。标准 provider、第三方 SDK 或宿主包装层都可能留下不同证据。
+
+<!-- gracker-diagram: ch13-09-51-layer-tree-validation -->
+![用 Layer tree 验证真实内容落点](../../assets/diagrams/ch13/ch13-09-51-layer-tree-validation.png)
+
+图：宿主窗口、overlay 容器与实际内容 child 需要不同证据。 名字只是线索；还要验证 parent、buffer owner 和随页面变化的提交。
 
 ### 5. 把结论写成可复查记录
 
@@ -526,6 +781,11 @@ adb shell dumpsys SurfaceFlinger --list
 | fullscreen custom view | 宿主全屏托管 | 由回调 View 的内部实现决定 | SurfaceView、TextureView 或其他容器对应的路径 | 由实际 View 类型决定 | `onShowCustomView()` + View tree + layer owner |
 | 第三方 Texture-like | 第三方 SDK 扩展 | SDK renderer/GPU 线程 | SurfaceTexture → HWUI host target | 消费纹理并合入宿主窗口 | SDK revision + frame-available + `updateTexImage` |
 
+<!-- gracker-diagram: ch13-09-52-path-comparison -->
+![三类官方路径对应不同后半段](../../assets/diagrams/ch13/ch13-09-52-path-comparison.png)
+
+图：普通 functor、overlay 与软件分支在不同位置生成最终窗口内容。 全屏托管和第三方 SDK 另按真实 View 与 Producer 分类；独立 Layer 不保证更快。
+
 ## 常见误判
 
 | 误判 | 修正方法 |
@@ -545,6 +805,11 @@ adb shell dumpsys SurfaceFlinger --list
 ## Android 12—17 的版本边界
 
 WebView 版本演进要同时保留平台线和 provider 线。下面只说明排障时应保留的 Android 平台边界；Chromium milestone 与 feature flag 仍按设备 provider 核对。
+
+<!-- gracker-diagram: ch13-09-53-platform-provider-evolution -->
+![平台能力与 provider 演进分别核对](../../assets/diagrams/ch13/ch13-09-53-platform-provider-evolution.png)
+
+图：平台提供接口与约束，provider 和 App API 库决定实际构建与使用方式。 16KB/ABI 兼容失败先查二进制；ACK6.18 只是本文固定研究基线。
 
 - Android 12/API 31：BLAST 与 FrameTimeline 成为显示诊断的重要基线。现代 WebView 的主体仍通常经 functor 合入 host window；平台具备 SurfaceControl 集成能力，不代表页面整体自动获得独立 layer。
 - Android 13/API 33：WebView 的公开 darkening 控制等能力会影响页面 raster 结果，但不改变 framework/provider/renderer/HWUI 的基本分层。
@@ -600,3 +865,8 @@ Chromium 是可更新组件。这里以上游 revision `4e18c703f7cd950c890e1410
 SurfaceControl 能力用于被提升的 overlay 候选，常见于媒体或受保护内容；它不能证明整页 WebView 独立出图。`onShowCustomView()` 是宿主全屏托管协议，第三方 Texture-like 则属于 SDK 扩展。三者的 owner、producer 和 consumer 不同。
 
 排障时要同时固定 Android build 和 provider revision，再依次核对 renderer、host DrawFn、host window、可选 child layer 和 Display present。这样才能区分网页计算、资源准备、宿主消费、overlay 同步和系统显示分别在哪一阶段迟到。
+
+<!-- gracker-diagram: ch13-09-54-end-to-end -->
+![从 provider 身份到最终显示复核](../../assets/diagrams/ch13/ch13-09-54-end-to-end.png)
+
+图：固定版本与对象后，再把网页结果、宿主消费和系统显示连接起来。 按实际 topology 分别追 host、overlay、fullscreen 或 texture，不能在 DrawFn CPU 返回处结束。

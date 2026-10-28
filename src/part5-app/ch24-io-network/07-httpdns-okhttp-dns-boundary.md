@@ -113,6 +113,11 @@ RealCall
 
 生产日志中没有 `dnsStart`，不能据此断定解析模块没有生效。连接复用、IP 字面量和代理模式都可能让该事件不出现。
 
+<!-- gracker-diagram: a267-01-synchronous-route-boundary -->
+![5.4路由规划中的同步解析与旁路](../../assets/diagrams/ch24/a267-01-synchronous-route-boundary.png)
+
+图：没有 DNS 事件可能是复用、IP 或代理；最终复用也不能反推 DNS 一定未发生。
+
 ## 在同步回调中请求 HTTPDNS 的故障形态
 
 这段代码展示一种应当避免的结构：
@@ -147,6 +152,11 @@ HTTPDNS 服务变慢、TLS 握手失败或响应解析异常，都会延长外�
 OkHttp 自带的 [`DnsOverHttps`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt) 也受同步接口约束。DoH（DNS over HTTPS）把 DNS 查询放入 HTTPS 请求。5.4.0 源码会异步提交 A 记录和 AAAA 记录查询，再用 `CountDownLatch.await()` 等待全部请求结束；A 记录返回 IPv4 地址，AAAA 记录返回 IPv6 地址。`CountDownLatch` 是让当前线程等待一组任务完成的同步工具，所以 `enqueue()` 没有把 `lookup()` 变成异步方法。
 
 DoH 仍需独立的引导解析来找到解析服务本身，并使用配置受控的专用客户端；它的网络等待仍发生在 OkHttp 路由规划期间。
+
+<!-- gracker-diagram: a267-02-nested-dns-wait -->
+![嵌套HTTPDNS的递归与队列饥饿分别分析](../../assets/diagrams/ch24/a267-02-nested-dns-wait.png)
+
+图：独立引导避免解析依赖自身；隔离调度和预算，连接池是否独立按安全与实测需求决定。
 
 ## Android 17 系统解析器提供了哪些语义
 
@@ -255,6 +265,11 @@ class CachedHttpDns(
 
 磁盘快照不应在每次 `lookup()` 中同步读取。应用可在进程初始化阶段异步装载并原子发布；装载完成前使用 `Dns.SYSTEM`。这样能避免慢存储、文件损坏和解密操作进入每个新连接的路由规划。
 
+<!-- gracker-diagram: a267-03-refresh-and-read-paths -->
+![后台刷新与前台同步读取共享完整快照](../../assets/diagrams/ch24/a267-03-refresh-and-read-paths.png)
+
+图：分离的是HTTPDNS刷新等待；系统回退仍可能查询网络，回退策略与总截止时间必须明确。
+
 ## TTL 约束记录的最长有效期
 
 HTTPDNS 服务返回的 TTL 决定地址还能被信任多久。工程实现通常需要两个时间点：
@@ -265,6 +280,11 @@ HTTPDNS 服务返回的 TTL 决定地址还能被信任多久。工程实现通�
 刷新时间可以加入随机偏移，避免大量客户端在同一秒请求解析服务；偏移范围应来自服务约定和生产环境测量，不能写成适用于所有域名的常量。超出 TTL 后继续使用旧 IP 属于额外的陈旧数据策略，必须由域名所有者确认。没有这项约定时，应停止返回旧 HTTPDNS 结果并使用系统解析。
 
 失败结果也不能无限缓存。NXDOMAIN 表示负责该域名最终记录的权威 DNS 服务器回答“该域名不存在”，它与空响应、服务端错误、响应签名失败和本地解析异常不是同一种结果。只有服务约定明确给出负缓存规则时，才缓存对应失败结果；其余情况记录失败并使用系统解析。
+
+<!-- gracker-diagram: a267-04-ttl-refresh-expiry -->
+![TTL内刷新与到期停止返回的时序](../../assets/diagrams/ch24/a267-04-ttl-refresh-expiry.png)
+
+图：refreshAt 启动刷新而不阻塞命中；expiresAt 后停止返回旧HTTPDNS地址，陈旧策略需另有明确契约。
 
 ## HTTPDNS 刷新客户端必须独立
 
@@ -305,6 +325,11 @@ fun OkHttpClient.onNetwork(network: Network): OkHttpClient {
 
 HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定到目标 `Network` 的独立客户端，并在写缓存前确认该网络仍有效。若刷新过程使用默认网络，而默认网络已经改变，该响应就不应写入新网络对应的缓存项。
 
+<!-- gracker-diagram: a267-05-network-paired-dns-sockets -->
+![指定Network时成对约束DNS与套接字](../../assets/diagrams/ch24/a267-05-network-paired-dns-sockets.png)
+
+图：只绑定解析或套接字之一会混入另一网络的语义；VPN、NAT64和企业分域需实机验证。
+
 ## 网络切换后只使用对应网络的记录
 
 `registerDefaultNetworkCallback()` 可以接收默认网络变化，调用它需要 `ACCESS_NETWORK_STATE` 权限。`onAvailable()` 之后，平台会继续通过回调报告该网络的能力和链路属性；不要在 `onAvailable()` 中同步调用 `getNetworkCapabilities()`，因为网络状态可能在回调与查询之间变化。等 `onCapabilitiesChanged()` 报告 `NET_CAPABILITY_VALIDATED`，也就是系统探测确认公网可达后，再刷新需要联网的核心域名。
@@ -319,6 +344,11 @@ HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定
 - VPN 开启或关闭后重新判断该域名是否仍允许走 HTTPDNS。
 
 这些动作不需要在切网瞬间同步清空磁盘，也不会把 Wi-Fi 上得到的 CDN 地址直接当成蜂窝网络结果。新网络的 HTTPDNS 结果尚未准备好时，当前请求使用该网络的系统解析。
+
+<!-- gracker-diagram: a267-06-network-generation-fence -->
+![切网和迟到刷新以网络代次隔离](../../assets/diagrams/ch24/a267-06-network-generation-fence.png)
+
+图：切网不要求瞬间清空全部磁盘；只淘汰或停用对应网络任务，保留其他网络的隔离记录。
 
 ## 失败地址隔离要使用可归因的证据
 
@@ -340,6 +370,11 @@ HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定
 
 OkHttp 本身会记录失败路由并尝试其他候选，自定义隔离层不应设置过长期限，也不应因一个地址失败而删除整个主机记录。成功连接可以提前恢复对应地址的优先级。隔离期限和触发次数应由故障演练与生产数据确定。
 
+<!-- gracker-diagram: a267-07-attributable-address-failures -->
+![地址隔离只采用可归因的连接证据](../../assets/diagrams/ch24/a267-07-attributable-address-failures.png)
+
+图：竞速输掉不等于连接失败；代理地址也不等于目标站点IP，隔离不能削弱TLS验证。
+
 ## 不要把 HTTPS URL 改写为 IP
 
 HTTPDNS 只应替换 `Dns` 返回的连接地址，原始 URL 仍保留域名。OkHttp 会用原始主机名生成 HTTP `Host` 请求头；TLS 的 SNI（Server Name Indication）也会在握手中携带目标主机名。证书主机名校验、Cookie 适用域和证书锁定同样依赖这个名称。证书锁定要求服务端证书或公钥匹配应用预置值，用来限制可被接受的证书范围。
@@ -350,6 +385,11 @@ HTTPDNS 只应替换 `Dns` 返回的连接地址，原始 URL 仍保留域名。
 
 HTTPDNS 响应也属于不可信网络输入。应用至少要校验 HTTPS 端点、响应主机、地址格式和允许的地址范围。公网业务域名若返回回环地址（只指向本机）、链路本地地址（只在当前二层网络有效）、组播地址或未指定地址，应拒绝该结果。企业内网域名可能合法返回私有地址，这类例外需要按域名配置，不能用一条全局规则覆盖。
 
+<!-- gracker-diagram: a267-08-hostname-and-policy -->
+![替换候选地址仍保留HTTPS主机身份](../../assets/diagrams/ch24/a267-08-hostname-and-policy.png)
+
+图：Host 请求头不能修复把URL改成IP后的TLS身份变化；地址格式与范围校验也不可省略。
+
 ## 多地址与 OkHttp 5 Fast Fallback
 
 HTTPDNS 只返回一个“最优 IP”会移除连接层的备用路线。只要服务约定允许，结果应保留经过验证的多个候选，以及可用的 IPv6、IPv4 地址。候选顺序表达服务端偏好，但 OkHttp 5 启用 Fast Fallback 后不会严格串行等待每个地址超时。
@@ -358,11 +398,21 @@ OkHttp 5.4.0 默认启用 `fastFallback`。[`InetAddressOrder`](https://github.c
 
 Fast Fallback 能缩短坏地址带来的连接等待，却无法缩短 `Dns.lookup()` 本身。地址列表要在竞速开始前完整返回。HTTPDNS 若只返回 IPv4，也会让 OkHttp 失去双栈选择空间。
 
+<!-- gracker-diagram: a267-09-dns-before-tcp-race -->
+![完整DNS结果先于TCP候选竞速](../../assets/diagrams/ch24/a267-09-dns-before-tcp-race.png)
+
+图：Fast Fallback 改善地址连接选择，不能缩短此前lookup等待；保留多个IPv6/IPv4候选。
+
 ## TTL 到期不会驱逐已复用连接
 
 DNS 参与新路线生成，不管理已经进入连接池的连接。一个 HTTP/2 连接可以在 DNS TTL 到期后继续服务请求，只要 OkHttp 判断连接健康且仍符合主机与证书规则。新的 DNS 结果不会自动关闭它。
 
 DNS TTL 约束名称解析记录，不约束现有 TCP/TLS 会话的存活时间。若服务端需要紧急撤下节点，应配合负载均衡、连接排空、服务端关闭连接和客户端版本策略。连接排空是停止把新请求分配给待下线节点，同时等待已有请求结束。频繁执行 `connectionPool.evictAll()` 会损失连接复用，并影响共享同一客户端的无关域名。需要单独处置时，应让特殊业务使用独立客户端和连接池。
+
+<!-- gracker-diagram: a267-10-dns-ttl-versus-connection -->
+![DNS有效期不管理已复用连接的生存期](../../assets/diagrams/ch24/a267-10-dns-ttl-versus-connection.png)
+
+图：TTL、地址隔离和连接池是三种治理范围；清缓存不会强制所有在用连接马上切换节点。
 
 ## 系统 DNS、DoH 与 HTTPDNS 的选择
 
@@ -413,6 +463,11 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 发布判断应使用应用既有的成功率和分位耗时目标，分别比较缓存命中、系统解析、网络类型和地址族。P90 与 P99 分别表示 90% 和 99% 的样本不超过该耗时。不能预设一组通用 P90/P99 数值或“切网后若干秒”的门槛；阈值应来自改造前实测值、用户体验目标和允许的失败额度。
 
 还要通过故障演练确认：HTTPDNS 服务完全不可用时，系统解析路径仍保持可用。这个结果比只看到平均 DNS 耗时下降更能说明方案可发布。
+
+<!-- gracker-diagram: a267-11-dns-evidence-and-tests -->
+![解析决策、尝试结果与业务分母共同验收](../../assets/diagrams/ch24/a267-11-dns-evidence-and-tests.png)
+
+图：按所选解析策略验证故障恢复；允许系统回退时测该路径，严格隐私模式验证明确失败与恢复入口。
 
 ## 工程检查清单
 

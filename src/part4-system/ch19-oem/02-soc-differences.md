@@ -114,6 +114,11 @@ SoC 型号只是硬件拓扑的起点，最终性能还要看设备散热、内�
 
 这三层各回答各的问题：要回答某台手机持续运行时的频率，得看整机实现和实测；单次 Perfetto 只是当时状态的一个样本，说明不了 SoC 的架构上限。
 
+<!-- gracker-diagram: a200-01-evidence-layers -->
+![SoC 规格、整机实现与当前状态](../../assets/diagrams/ch19/a200-01-evidence-layers.png)
+
+图：规格限定能力范围；整机实现与当前状态共同决定这次测量能支持的结论。
+
 ## 四类代表性平台
 
 在我们核对过的资料范围内，四家厂商公开的新一代移动平台可以这样描述：
@@ -188,6 +193,11 @@ EAS 的 `compute_energy()` 调用 `em_cpu_energy()`，为候选的 performance d
 
 内核侧还有一条新路径：这条 6.18 common 分支含有 `sched_ext`，一个允许用 BPF 程序定义调度策略的 Linux 可扩展调度框架。设备需要启用 `CONFIG_SCHED_CLASS_EXT`，再加载相应的 BPF 调度器，任务才会受这个扩展调度类影响。源码里能找到 `kernel/sched/ext.c`，至于某台量产设备是否启用了 OEM BPF 调度器，要以设备自身为准。
 
+<!-- gracker-diagram: a200-03-scheduler-decisions -->
+![选核、选任务与请求频率的职责](../../assets/diagrams/ch19/a200-03-scheduler-decisions.png)
+
+图：vendor hook 可提前返回；EAS 负责唤醒选核，EEVDF 负责公平类任务选择，schedutil 请求频率。
+
 ### 从观测结果识别厂商策略
 
 Snapdragon、Dimensity、Exynos 和 Tensor 设备都可能在 AOSP 调度机制之上叠加自己的机制：厂商钩子、Power HAL 性能提示、uclamp、任务配置档（task profile） task profile、cpufreq 服务质量约束（QoS） QoS、私有守护进程。这些私有接口在 AOSP 里看不到，还会随产品线与版本变化；要判断某家厂商“更激进”还是“更保守”，只能看每台设备上的可观测结果。
@@ -233,6 +243,16 @@ ORDER BY observed_cpu_changes DESC;
 
 示例时间戳对应 trace 起点后的 1～11 秒，使用时要替换成目标交互区间。这个计数只描述相邻运行片段的 CPU 编号变化，和 `sched_migrate_task` 事件数量是两回事，也不能直接拿来衡量迁移代价；要判断代价，还要结合运行片段时长、唤醒延迟、PMU（Performance Monitoring Unit，性能监控单元）记录的缓存未命中与业务阶段。
 
+<!-- gracker-diagram: a200-02-cpu-dimensions -->
+![CPU 差异的四个维度](../../assets/diagrams/ch19/a200-02-cpu-dimensions.png)
+
+图：四个维度分别回答软件兼容、执行能力、硬件组织和运行策略；共享调频控制不能证明共享缓存。
+
+<!-- gracker-diagram: a200-04-migration-observation -->
+![相邻运行片段的 CPU 变化](../../assets/diagrams/ch19/a200-04-migration-observation.png)
+
+图：查询按线程排列窗口内的运行片段，再比较相邻 CPU；该计数不等于 sched_migrate_task 事件数量，也不直接衡量缓存代价。
+
 ## GPU：架构名称与驱动能力
 
 ### Adreno、Mali / Immortalis 与 Xclipse
@@ -256,6 +276,11 @@ SoC 产品页、GPU IP 页面和 Android 设备报告回答的是不同问题：
 - 图形 API、着色器变体、纹理格式与帧率上限。
 
 Android GPU Inspector（AGI）的文档列出 Qualcomm Adreno、Arm Mali 和 Imagination PowerVR；快速入门还要求设备在支持列表中、运行 Android 11 或更高版本，并通过兼容 GPU 驱动的校验。文档没有列出 Xclipse，Xclipse 的 AGI 支持状态就要留到实机校验去确认。
+
+<!-- gracker-diagram: a200-05-gpu-capability-gates -->
+![GPU 能力从 IP 到可观测数据](../../assets/diagrams/ch19/a200-05-gpu-capability-gates.png)
+
+图：IP 规格、设备 API、工具支持与实际数据源是逐层核验的条件；跨厂商阶段标签并不保证等价。
 
 ### Perfetto GPU 数据与数据生产端
 
@@ -312,6 +337,11 @@ ISP 负责传感器数据处理、去噪、HDR、对焦和部分计算摄影。�
 
 ISP 通常缺少跨厂商通用的 Perfetto 计数器，我们能用的数据包括相机框架与 HAL 的 trace、BufferQueue、CPU / GPU 运行片段、厂商 ISP 计数器、内存互连计数器和外部功耗测量。相机运行时 UI 掉帧，第一步只能说明两个现象在时间上相关；要证明带宽争用，还需要计数器或受控扰动实验。
 
+<!-- gracker-diagram: a200-06-accelerator-evidence -->
+![专用加速器的执行证据](../../assets/diagrams/ch19/a200-06-accelerator-evidence.png)
+
+图：专用单元的活动可能不出现在 CPU sched 轨道；执行路径需结合运行时日志、HAL trace 和可用硬件计数器确认。
+
 ## LPDDR5 / LPDDR5X：标称速率与有效带宽
 
 一款 SoC “支持 LPDDR5X”，只说明内存控制器的能力范围。OEM 仍会选择颗粒、容量、速率、总线组织和固件策略。
@@ -329,6 +359,11 @@ Snapdragon 8 Elite Gen 5 产品简报写的是 “LP-DDR5x, up to 5300 MHz”，
 Perfetto 没有所有 Android 设备都提供的通用 “DRAM bandwidth” 轨道。设备若公开内存互连、devfreq（内核设备调频框架）、PMU 或厂商内存计数器，可以在时间轴上对齐。
 
 没有计数器时，可用固定负载做受控扰动，例如保持 GPU 场景不变，逐档增加 CPU 内存流量并记录帧时间、频率和功耗。相关性只能支持提出假设，因果判断还需要可重复的负载变化。
+
+<!-- gracker-diagram: a200-07-bandwidth-units -->
+![从内存标称值到有效带宽](../../assets/diagrams/ch19/a200-07-bandwidth-units.png)
+
+图：理论峰值需要明确传输率与总数据位宽；缓存、互连、并发和温控会改变实际工作负载的有效带宽。
 
 ## 工具选择与数据缺口
 
@@ -352,6 +387,11 @@ Snapdragon Profiler 面向受支持的 Snapdragon 平台，可提供 Adreno、CP
 
 Samsung、MediaTek、Google 或 OEM 也可能提供内部或合作伙伴工具。拿不到这些工具时，Perfetto、simpleperf、AGI、应用埋点和外部功耗设备仍能组成一套可复现的基础数据。结论范围要与可见数据一致。
 
+<!-- gracker-diagram: a200-08-tools-evidence -->
+![分析工具与可支持的证据](../../assets/diagrams/ch19/a200-08-tools-evidence.png)
+
+图：公共时间轴定位问题，再按瓶颈补充计数器；工具能力依赖设备、权限、驱动与版本。
+
 ## 一套可复用的跨 SoC 分析流程
 
 把前面这些工具和数据缺口串起来，一次跨 SoC 对比可以按下面七步组织：
@@ -365,6 +405,11 @@ Samsung、MediaTek、Google 或 OEM 也可能提供内部或合作伙伴工具�
 7. **复现实验**：每个结论至少能由固定步骤重复触发，并保留原始 trace、配置和统计脚本。
 
 这套流程得到的是“某个软件版本在某台设备、某种状态下”的结论。扩大到整个 SoC 系列前，需要增加机型、系统版本和运行条件。
+
+<!-- gracker-diagram: a200-09-comparison-loop -->
+![跨 SoC 实验的证据闭环](../../assets/diagrams/ch19/a200-09-comparison-loop.png)
+
+图：对齐输入条件，记录设备实现与数据缺口，再比较瞬态和持续稳态；结论仅覆盖已验证的软件、设备和运行条件。
 
 ## 常见误判
 

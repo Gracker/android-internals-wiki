@@ -124,11 +124,21 @@ Java 泄漏引用链见 [23.2 内存泄漏检测与治理](02-memory-leak-govern
 
 这张表用来确定每项数据能回答什么：判断全局趋势看 PSS 或 RSS；定位 Java 或原生分配，要再结合各自的堆指标与诊断产物。
 
+<!-- gracker-diagram: a259-01-memory-metric-scopes -->
+![同一次采样的指标覆盖范围](../../assets/diagrams/ch23/a259-01-memory-metric-scopes.png)
+
+图：先固定口径、单位、来源和进程，再看趋势；定位具体对象或分配者还需要引用链或调用栈。
+
 单位也要先定死。`Debug.MemoryInfo` 的 PSS 字段以 kB 表示；`Runtime` 和 `Debug.getNativeHeapAllocatedSize()` 返回字节，入库前必须保留单位。`Debug.getMemoryInfo()` 直接读取当前进程，源码注释说明它可能取不到 graphics（图形）等受保护分配；要更完整的进程分类，就用 `ActivityManager.getProcessMemoryInfo()`。
 
 Android 10（API 29）起，普通应用通过 `getProcessMemoryInfo()` 只能取得调用方 UID（应用在系统中的用户标识）下的进程信息，其他 PID（进程编号）的条目只剩零值；平台还会限制采样频率，调用过密时拿到的可能是上一次的结果。所以采样请求时间未必是底层数据的更新时间，高频调用只会制造虚假的高分辨率曲线。
 
 `Debug.getRss()` 同样只读当前进程。`android-17.0.0_r1` 的 JNI 实现读取 `StatusVmRSS()`，并在 memtrack（Android 图形内存统计接口）可用时加入 graphics、GL 和 other 三类未计入 `/proc` 映射的图形内存；直接读 `/proc/self/status` 只能得到原始 `VmRSS`。这一实现细节超出了公开 API 注释承诺的“返回 RSS”，所以 API 35 前后的 RSS 来源要单独标记，拼进同一条比较基线前必须先说明。
+
+<!-- gracker-diagram: a259-02-rss-source-difference -->
+![r1 Debug RSS 与 proc VmRSS 的差异](../../assets/diagrams/ch23/a259-02-rss-source-difference.png)
+
+图：r1 的 Debug RSS 会尝试加入未由 proc 映射覆盖的 memtrack 图形统计；直接 VmRSS 应独立标明来源。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/os/Debug.java`, `frameworks/base/core/jni/android_os_Debug.cpp`, `frameworks/base/core/java/android/app/ActivityManager.java`]
 
@@ -216,6 +226,11 @@ fun collectProcessMemorySample(context: Context): ProcessMemorySample {
 
 事件包还应包含应用版本、Android 版本、ABI、设备 RAM（物理内存）档位、前后台状态、页面类别、采样原因、采样策略版本和每个指标的来源。
 
+<!-- gracker-diagram: a259-03-sample-pipeline -->
+![低频快照从采集到分组](../../assets/diagrams/ch23/a259-03-sample-pipeline.png)
+
+图：快照同时保留来源、单位和缺失状态；高频请求不等于底层数据高频更新。
+
 ### 采样频率由成本和问题决定
 
 指标按采集成本分三类：
@@ -298,6 +313,11 @@ fun classifyHeapPressure(
 ```
 
 分类结果只是候选信号。进入 `CAPTURE_CANDIDATE`（允许进一步评估是否采集诊断产物）状态之前，还要检查前后台状态、用户交互、磁盘、电量、近期采集配额和隐私策略。执行资源收缩后，我们还要再采一次轻量指标，记录释放动作有没有生效。
+
+<!-- gracker-diagram: a259-04-cohort-alert-loop -->
+![告警使用同类样本与动作后回测](../../assets/diagrams/ch23/a259-04-cohort-alert-loop.png)
+
+图：连续高位只是采集候选；先核对设备条件与配额，资源收缩后再次采样验证动作效果。
 
 ### 告警事件的拆分与字段
 
@@ -386,6 +406,11 @@ fun readRecentMemoryExits(
 
 `getPss()` 和 `getRss()` 是系统上一次采样值，可能为零，未必是进程死亡前一刻的精确内存。`getDescription()` 的一般格式没有稳定保证；这里匹配的 `MemoryLimiter:AnonSwap` 是 Android 17 r1 行为文档明确给出的标记，解析范围不要扩展到其他描述文本。[23.5 大内存与多进程策略](05-large-heap-multiprocess.md) 继续说明 Memory Limiter 的设备范围和测试命令。
 
+<!-- gracker-diagram: a259-05-exit-attribution -->
+![重启后的 LMK 与 Limiter 归因](../../assets/diagrams/ch23/a259-05-exit-attribution.png)
+
+图：未支持 LMK 原因报告的设备可能只留下 SIGKILL；将此类样本单独保留，不能把它们全部判为 LMK。
+
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/app/ApplicationExitInfo.java`]
 
 ### Memory Advice 的过渡角色
@@ -397,6 +422,11 @@ Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形�
 库内的监视器（watcher）会在自己创建的线程上按注册间隔检查状态；只有状态不为 `OK` 时才调用 callback（回调）。回调应把压力请求交给线程安全的策略入口，纹理、网格（mesh）数据、音频、场景资源和 GPU 缓冲区仍要回到引擎规定的线程分批释放。注销与正在执行的回调可能交错，`user_data` 指向的调用方数据必须存活到所有回调结束。
 
 迁移时可以保持四层结构：信号层汇总资源数量、PSS/RSS、生命周期与历史退出；策略层按设备和场景输出低、中、高等资源规格；执行层在指定线程降低规格或释放可重建资源；验证层比较峰值、回落、帧时间与 LMK/Memory Limiter。这样旧库移除后，资源模块仍可沿用同一套策略接口。
+
+<!-- gracker-diagram: a259-06-memory-advice-migration -->
+![Memory Advice 迁移保留策略边界](../../assets/diagrams/ch23/a259-06-memory-advice-migration.png)
+
+图：旧库只是一项信号来源；移除后，策略、资源所有权和动作后验证仍可沿用。
 
 ## 线上诊断产物采集
 
@@ -413,6 +443,11 @@ Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形�
 | `ApplicationExitInfo` | LMK、Memory Limiter 及其他退出后的证据 | 记录有限；PSS/RSS 是上次采样值 |
 
 轻量摘要用于筛选，堆转储回答“谁持有对象”，堆分配剖析回答“谁在分配”，系统跟踪回答“何时发生以及与调度、GC 有何关系”。我们先按问题选产物，可以减少无效采集和敏感数据暴露。
+
+<!-- gracker-diagram: a259-07-artifact-selection -->
+![按问题选择诊断产物](../../assets/diagrams/ch23/a259-07-artifact-selection.png)
+
+图：轻量指标先选方向，再按持有、分配或时序问题选择产物，减少无效诊断文件。
 
 `Debug.dumpHprof（记录 Java 堆对象与引用关系的快照文件）Data()` 可以把当前进程 Java Heap 写成 Hprof 快照文件，其中记录了堆对象与引用关系。`Debug.java` 的注释指出该操作可能触发 GC，并可能抛出 `UnsupportedOperationException` 或 `IOException`。它适合本地、内部构建或受控诊断，内存已经很紧张时不要由普通线上规则直接调用。
 
@@ -473,6 +508,11 @@ fun registerMemoryProfilingTriggers(
 
 系统触发器受随机设备采样与系统限流影响，不保证每次事件都有产物。触发器结果只能通过全局监听器接收；如果采集时进程已经退出，系统会在应用再次启动并注册监听器后尝试交付。多个软件包共用同一 UID 且都注册异常触发器时，某些异常可能没有产物。
 
+<!-- gracker-diagram: a259-08-trigger-result-lifecycle -->
+![系统触发采集与结果交付](../../assets/diagrams/ch23/a259-08-trigger-result-lifecycle.png)
+
+图：触发器结果经全局监听器交付；进程已退出时，系统可在下次启动并注册后尝试重交付。
+
 文件位置必须使用 `ProfilingResult.getResultFilePath()`，不要依赖内部目录结构。应用还可以用 `ProfilingTrigger.Builder.setRateLimitingPeriodHours()` 增加自己的冷却期，也就是两次触发之间的最短间隔；该限制会与系统限流同时生效，具体时长应由采样配额和隐私规则决定。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`, `ProfilingTrigger.java`]
@@ -506,6 +546,11 @@ Java heap dump 可能包含对象字符串、用户输入、请求响应、缓�
 | 图片发送与旋转 | 原生内存峰值与大 Bitmap | 第一次解码前没有尺寸约束 | 解码/变换峰值和退出回落 |
 
 三个案例的曲线都可能表现为“内存上涨”，证据却分别指向生命周期持有、短命数组分配和图片解码峰值。案例库应保留这种“现象—证据—所有者”的对应关系，避免按模块名或单一曲线套用结论。
+
+<!-- gracker-diagram: a259-09-case-evidence-chain -->
+![线上内存案例的可验证证据链](../../assets/diagrams/ch23/a259-09-case-evidence-chain.png)
+
+图：Dialog 持有、高频 byte[] 与大图解码都可能造成内存上涨；根因必须由各自证据支持。
 
 修复后保留受影响版本、复现输入、原始证据、被排除的假设、资源所有者、修改与回滚、实验环境中的修复前后数据、分批放量样本和防复发验收条件。没有支持原假设的实验结果也应记录，避免下一次面对相同曲线重新猜测。
 

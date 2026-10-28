@@ -111,6 +111,11 @@ NDK 在 API 36 还加入了 `APerformanceHint_notifyWorkloadIncrease()`、`APerf
 
 Java 侧的一次调用要穿过大半个系统：先经 Android framework（系统框架层） 的 JNI（Java Native Interface，Java 与原生代码的接口） 进入原生客户端，再到 `HintManagerService`，最后落到 Power HAL（电源硬件抽象层）。高频的目标耗时/实际耗时更新，设备支持时可走 FMQ（Fast Message Queue，共享内存消息队列），通道没建立或中途失败时回退到 Binder 跨进程调用，所以“每帧必定一次 Binder”要看设备与通道而定。系统还会按 UID（Linux 用户 ID，通常按应用分配） 的进程状态暂停或恢复 Session；应用调用成功之后，每条数据是否被 HAL 采用，决定权在系统。
 
+<!-- gracker-diagram: a281-01-hint-client-fmq-binder-and-hal -->
+![ADPF上报是协作通道，不保证每帧一次Binder](../../assets/diagrams/ch25/a281-01-hint-client-fmq-binder-and-hal.png)
+
+图：CPU/GPU headroom、能效模式与图形管线能力需分别探测；HAL版本高不等于业务必有节电收益。
+
 ## 适用场景：什么时候该把线程标成节能优先
 
 Power Efficiency Mode（能效优先模式）成立的前提，是工作有稳定周期、业务结果也不要求最短延迟。线程只要在目标耗时内完成，系统就有机会选能耗更低的 CPU 核或频率。
@@ -128,6 +133,11 @@ Power Efficiency Mode（能效优先模式）成立的前提，是工作有稳�
 我们把三件事依次过一遍：这段工作能否定义周期、周期是否留有余量、线程身份是否稳定。三项全部成立，再考虑 Power Efficiency Mode；缺任何一项，通常先别急着选它。
 
 落到具体场景：游戏帧循环通常先保证帧 deadline，Power Efficiency Mode 只适合已经确认有稳定余量的子线程，例如资源准备、后台 AI、低优先级物理预计算。后台计算更关注吞吐与能耗的平衡，较长目标耗时、固定处理批次加上能效提示，是比较典型的配置。
+
+<!-- gracker-diagram: a281-04-uid-state-pauses-session -->
+![业务后台任务不等于后台UID一定能使用ADPF](../../assets/diagrams/ch25/a281-04-uid-state-pauses-session.png)
+
+图：“后台批处理”描述业务性质；普通缓存进程不因创建Session就得到持续资源或保活资格。
 
 ## ADPF Session 的线程集合与生命周期
 
@@ -203,7 +213,17 @@ Session 绑定的是 Linux TID（Thread ID，线程 ID），也就是 `Process.m
 
 适合 ADPF 的协程负载，由单线程或小规模固定 `Executor` 承载，线程启动后再采集 TID；一个周期的业务块中途不要切换协程调度器。Session 创建、`setThreads()`、目标耗时更新、实际耗时上报和 `close()`，都交给同一管理者串行执行。线程池重建时，API 31—33 的做法是关闭旧 Session 再重建；API 34+ 可以在生命周期边界完整替换线程数组，但不要每周期更新。
 
+<!-- gracker-diagram: a281-03-coroutine-tid-migration-versus-fixed-worker -->
+![Session绑定Linux TID，协程身份不能替代线程身份](../../assets/diagrams/ch25/a281-03-coroutine-tid-migration-versus-fixed-worker.png)
+
+图：API31–33线程池重建要关闭旧Session重建；API34+可在边界替换，不要每周期更新。
+
 API 36 的 `APerformanceHint_borrowSessionFromJava()` 让 JNI 代码借用 Java Session，省去重复创建。借用有规矩：关闭操作留在 Java 侧，Java 对象关闭后，这个指针也随之作废。稳定周期、稳定线程和可信的实际耗时测量，是套用 ADPF 的前置条件；这几样还没到位的时候，先处理并发、任务队列与生命周期。
+
+<!-- gracker-diagram: a281-02-session-cycle-and-close-order -->
+![固定线程上创建、完整执行周期，再上报并关闭](../../assets/diagrams/ch25/a281-02-session-cycle-and-close-order.png)
+
+图：主机适配器已验证顺序与取消清理；真实SDK/NDK、HAL效果与设备功耗还需设备验证。
 
 ## Power Efficiency Mode 的系统语义
 
@@ -216,6 +236,11 @@ API 36 的 `APerformanceHint_borrowSessionFromJava()` 让 JNI 代码借用 Java 
 - 业务层面：节能 hint 可能拉长尾部耗时。验收时要同时看 P50 / P90 / P99 耗时、单位任务能耗和热状态。
 
 回到余量这件事：Power Efficiency Mode 允许系统利用任务 deadline 前的余量；业务没有余量时，把线程标成节能优先，可能让平均耗时看着稳定，却让 P95、P99 等尾部耗时上升。
+
+<!-- gracker-diagram: a281-05-deadline-slack-and-power-efficiency -->
+![能效优先利用deadline余量，不承诺固定频率](../../assets/diagrams/ch25/a281-05-deadline-slack-and-power-efficiency.png)
+
+图：平均耗时稳定不保证P99稳定；持续温升、设备档位和前后台切换都纳入测量。
 
 ## PowerMonitor 与 SystemHealthManager 读数模型
 
@@ -232,7 +257,17 @@ AOSP `android-17.0.0_r1` 里，`SystemHealthManager.getSupportedPowerMonitors()`
 
 Android 17 r1 的内部实现还给读数规定了新鲜度和精度上限。普通调用方拿到的是 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000` 的缓存；持有隐藏系统权限 `ACCESS_FINE_POWER_MONITORS` 的调用方走另一组状态缓存，最大年龄 `250 ms`。这个权限只面向系统签名、特权或开发场景，普通第三方应用拿不到。20 秒和 250 ms 都是 r1 的实现细节，公开 API 对其他版本与设备没有这样的承诺。
 
+<!-- gracker-diagram: a281-07-coarse-cache-versus-fine-cache -->
+![高频调用PowerMonitor通常只是重复取缓存](../../assets/diagrams/ch25/a281-07-coarse-cache-versus-fine-cache.png)
+
+图：以返回时间戳判定是否新快照，首次/过期才刷新；不要靠高频轮询提高能量精度。
+
 普通路径与精细路径在返回累计值前都会经过 `IntervalRandomNoiseGenerator`，以降低公开读数在时间和数值上的精度。在 r1 中，下界为 `max(上一次原始读数, 当前原始读数 - 10_000_000 μWs)`，系统在该下界与当前读数之间返回按 UID 稳定的随机值；`10_000_000 μWs` 等于 `10 J`。下一次底层刷新前，同一 UID 会得到同一个扰动样本。公开读数适合较长实验窗口和重复对照，一次短任务的前后差值达不到精密能量计的精度。
+
+<!-- gracker-diagram: a281-08-uid-stable-energy-noise-interval -->
+![公开累计值在有界区间内加入按UID稳定的扰动](../../assets/diagrams/ch25/a281-08-uid-stable-energy-noise-interval.png)
+
+图：下一次实验不以零差值判定任务无耗电；有效差异必须超过缓存与扰动带来的误差。
 
 这个纯函数先检查两次异步快照是否来自不同采样时刻，再计算累计值差；同一缓存快照、不可用读数或累计值回退都会返回空结果。
 
@@ -276,6 +311,16 @@ fun calculatePowerWindowDeltas(
 ```
 
 使用时，先通过 `getPowerMonitorReadings()` 拿到 `before`，执行固定工作负载，再异步拿 `after`。`energyUws == null` 表示读数不可用、累计值回退，或两次调用命中了同一采样时刻。等待时间戳变化时别用高频轮询；实验窗口应覆盖缓存与扰动带来的误差，并把 `startTimestampMillis`、`endTimestampMillis` 一起保存。分析短任务时，优先用设备支持的 Perfetto 电源轨、系统功耗轨道或外部功耗仪。
+
+<!-- gracker-diagram: a281-06-monitor-consumer-versus-measurement -->
+![PowerMonitor提供监测项，不是应用独立电表](../../assets/diagrams/ch25/a281-06-monitor-consumer-versus-measurement.png)
+
+图：监测项覆盖可能重叠，要分列结果；名称相同不保证跨设备同一硬件范围。
+
+<!-- gracker-diagram: a281-09-async-readings-delta-validation -->
+![异步快照做差前先排除缺失、缓存与回退](../../assets/diagrams/ch25/a281-09-async-readings-delta-validation.png)
+
+图：主机验证覆盖正向差值、相同时间戳、0时间戳、负能量、累计回退和缺失项，不含设备测量。
 
 ## 用 Perfetto 电源轨交叉验证
 
@@ -322,6 +367,11 @@ statsd 是 Android 的系统统计服务，atom 是其中一种结构化记录�
 
 `PowerMonitorReadings` 和 Perfetto 电源轨可以在同一实验窗口内互相解释，跨设备就谈不上等价了。做交叉验证时，我们在同一设备、工作负载和温度起点下，同时记录两次 `PowerMonitorReadings` 的时间戳与差值、Perfetto 电源轨差值、CPU 频率、热状态和任务计数；普通应用还要把 r1 的 20 秒缓存与随机扰动计入误差。两类曲线同向变化时，结论写到“同一窗口内趋势一致”为止，电源轨级校准还谈不上完成。Pixel 或单一厂商设备上的结论，也只适用于对应设备组。
 
+<!-- gracker-diagram: a281-10-perfetto-control-behavior-energy -->
+![把提示、调度、任务和能量放进同一实验窗口](../../assets/diagrams/ch25/a281-10-perfetto-control-behavior-energy.png)
+
+图：PowerMonitor差值、Perfetto rails和Power Profiler各保留时间与归因范围，不强合并成单个数字。
+
 ## 实验设计：同时看耗时和单位任务能耗
 
 我们把变量先控制住：Power Efficiency Mode 按单位任务验收，固定设备、温度起点、输入数据和工作负载，再比较耗时与能耗。
@@ -342,6 +392,11 @@ statsd 是 Android 的系统统计服务，atom 是其中一种结构化记录�
 - 单位任务能耗的下降幅度要超过测量噪声；电源轨数据波动大时，延长测试窗口或增加重复次数。
 - 热状态进入 thermal throttling 的时间点不早于对照组；长时任务至少运行到温度进入稳定区间后再判断。
 - 按设备型号、SoC、系统版本、刷新率、充电状态和温度起点分别统计结果，不把 Pixel 上的电源轨名称或收益外推到其他厂商设备。
+
+<!-- gracker-diagram: a281-11-ab-unit-energy-and-tail-latency -->
+![能效模式按相同任务数量同时验收能量与尾延迟](../../assets/diagrams/ch25/a281-11-ab-unit-energy-and-tail-latency.png)
+
+图：空列表与无电源轨时收窄结论；不能只凭CPU时间或电池百分比写精确单位任务能耗收益。
 
 如果只能拿到 `PowerMonitor` 空列表，实验仍可继续，结论范围相应收窄：用 Perfetto 电源轨、Android Studio Power Profiler、系统电量统计 `BatteryStats`、CPU 时间和任务耗时互相验证，`PowerMonitor` 读数带来的收益就先不写。
 
@@ -387,6 +442,11 @@ Power Efficiency Mode 的开关同样要按设备型号来。小流量实验中�
 这些策略要满足业务 SLA（Service Level Agreement，可量化的服务质量约束）。照片备份、日志压缩、离线索引可以降频或暂停；实时通话、导航、录制不能只按能耗目标降级。
 
 热状态进入高档位前主动降低批处理并发，通常比等系统开始 thermal throttling 后再恢复更可控。阈值和收益必须来自具体设备实验，固定温度不具备跨设备意义。
+
+<!-- gracker-diagram: a281-12-thermal-feedback-and-rollout-control -->
+![热状态反馈调节工作量，异常设备及时关闭偏好](../../assets/diagrams/ch25/a281-12-thermal-feedback-and-rollout-control.png)
+
+图：能效偏好不授予温控豁免；能力不支持、线程不稳定或数据不足时先回到普通受控工作。
 
 ## 常见误区
 
@@ -486,6 +546,11 @@ enum SessionMode {
 
 `GRAPHICS_PIPELINE` 属于 `SessionMode`，`SessionTag` 里找不到它。Java SDK 的 `PerformanceHintManager.createHintSession(int[], long)` 不接受 HAL tag 或 mode，`setPreferPowerEfficiency(true)` 由系统映射为能效模式。Android 16 起的 NDK `ASessionCreationConfig` 提供 `setGraphicsPipeline()`、`setUseAutoTiming()` 和 `setPreferPowerEfficiency()` 等高层开关；应用使用这些高层接口，HAL 枚举整数交给编译器处理，公开 NDK 接口里也没有任意挑选 `SessionTag` 或 `AUDIO_PERFORMANCE` 的入口。
 
+<!-- gracker-diagram: a281-13-session-tag-mode-and-boost -->
+![HAL的来源标签、模式与boost是三种不同概念](../../assets/diagrams/ch25/a281-13-session-tag-mode-and-boost.png)
+
+图：图形管线属于mode；Java createHintSession不接受任意HAL tag/mode，普通应用也不直接选音频模式。
+
 ### 电源状态跟踪与统计
 
 `HintManagerService` 还注册了 `ADPF_SYSTEM_COMPONENT_INFO`、`ADPF_SESSION_SNAPSHOT` 和 `ADPF_SUPPORT_INFO` 等 statsd pull atom（由 statsd 主动拉取的结构化统计记录）——statsd 主动拉取的结构化统计记录。会话快照按 UID 与 `SessionTag` 记录最大并发会话数、最大线程数、能效会话数、目标耗时分布和图形管线会话数；支持信息还包含 Power HAL 版本，以及可用的 Session 提示、模式、FMQ、CPU/GPU headroom 能力。这些都是系统统计接口，不是应用的公开诊断 API。
@@ -519,11 +584,21 @@ Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传�
 
 回调通过 `ConcurrentUtils.DIRECT_EXECUTOR` 执行，再等待 Handler 侧的异步结果，超时上限为 `2_000 ms`；异常、超时或空结果一律返回 `PULL_SKIP`。`ON_DEVICE_POWER_MEASUREMENT` 只接收 `durationMs == timestampMs` 的样本，表示能量累计区间从开机开始；缩写成“两个字段为 0”会丢掉“从开机开始”这层含义。
 
+<!-- gracker-diagram: a281-14-powerstats-public-pull-and-local-paths -->
+![PowerStats同源数据有公开读数、系统异步和statsd路径](../../assets/diagrams/ch25/a281-14-powerstats-public-pull-and-local-paths.png)
+
+图：ON_DEVICE_POWER_MEASUREMENT只接durationMs==timestampMs的开机累计样本；不是要求两个字段为0。
+
 `PowerStatsLogger` 使用三个 Handler 消息，分别采集 meter 直接测量值、model 建模值（model）和 residency 状态驻留时间，存入 `/data/system/powerstats/`；日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，并不固定写成六个 `.pb` 文件。
 
 `meterCache`、`modelCache`、`residencyCache` 保存 HAL 元信息的序列化快照（例如 Channel、EnergyConsumer、PowerEntity 的 proto bytes）——`Channel`、EnergyConsumer、PowerEntity 的 proto bytes——用于识别元信息是否变化；元信息一变，对应旧日志随之删除。这些缓存经 `AtomicFile` 更新，临时文件名属于实现细节，别拿它当稳定存储格式。
 
 写入前，`adjustTimeSinceBootToEpoch()` 用服务启动时记录的墙钟时间基准，把 HAL 的开机时间戳换算到墙钟时间线，方便事件报告排序。不过 HAL 的能量和状态驻留时间（residency）都以本次开机为起点，累计能量跨重启直接相减，得到的差值没有意义。
+
+<!-- gracker-diagram: a281-15-powerstats-log-rotation-and-metadata -->
+![系统PowerStats日志按类型轮转，元信息变化使旧日志失效](../../assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.png)
+
+图：开机时间戳可换算墙钟方便排序，累计能量跨重启不能直接相减；公开监测项索引也不可跨重启持久化。
 
 再往 HAL 看，`IPowerStats.aidl` 是带 `@VintfStability` 的接口，定义六个方法：`getPowerEntityInfo()`、`getStateResidency()`、`getEnergyConsumerInfo()`、`getEnergyConsumed()`、`getEnergyMeterInfo()` 与 `readEnergyMeter()`。`Channel` 包含 `id`、`name`、`subsystem`；framework 只透传后两个厂商自定义字符串，不解释其含义。`EnergyMeasurement` 包含 `id`、`timestampMs`、`durationMs`、`energyUWs`，其中时间使用 `CLOCK_BOOTTIME`，能量单位是 μWs。
 

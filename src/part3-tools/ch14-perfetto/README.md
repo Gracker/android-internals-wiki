@@ -23,6 +23,11 @@ last_consolidated_at: '2026-08-24'
 
 Perfetto 把 Android 各层性能事件放到同一条时间轴上；这些事件的采集记录就是 trace。渲染、输入、启动、ANR、调度、锁、Binder、I/O、内存和功耗由不同 data source 产生，data source 是向 trace 写入特定类型数据的组件。Trace Processor 把 trace 导入成可关联的 SQL 表，Perfetto UI 再把结果显示为 track（同类事件所在的时间轨道）和 slice（带起止时间的区间）。本章的目标是采集足以回答问题的数据、读懂各条 track 的语义，并把观察转成可复核的 SQL 查询和源码结论。
 
+<!-- gracker-diagram: ch14-index-01-collection-to-evidence -->
+![从事件来源到可复核的调查结果](../../assets/diagrams/ch14/ch14-index-01-collection-to-evidence.png)
+
+图：不同数据源经配置、导入和查询形成可检查的时间轴与证据。 设备/SDK/分析器/UI分别固定版本；新分析器不能补回采集时未记录的数据。
+
 ## 版本口径
 
 | 层级 | 采用的版本 | 使用边界 |
@@ -54,6 +59,11 @@ Perfetto 把 Android 各层性能事件放到同一条时间轴上；这些事�
 ## 按任务选择阅读路径
 
 系统学习可按“采集与读图（14.1—14.3）→ 帧语义（14.13）→ 事件写入（14.6、14.12）→ SQL 与区间关联（14.7）→ 专题分析（14.5、14.8—14.10）→ 批量分析与 Agent 协作（14.4、14.11）”推进。先掌握数据从哪里来、字段表示什么，再使用自动化聚合和归因。
+
+<!-- gracker-diagram: ch14-index-02-question-to-reading-path -->
+![按待回答的问题选择章节入口](../../assets/diagrams/ch14/ch14-index-02-question-to-reading-path.png)
+
+图：先确定问题类型，再沿相关章节核对采集、语义与依赖。 路径是阅读入口；单一分类或最长slice不构成根因，缺数据先回采集质量。
 
 ### 第一次使用 Perfetto
 
@@ -95,6 +105,11 @@ Perfetto 把 Android 各层性能事件放到同一条时间轴上；这些事�
 8. 保存原始 trace、采集配置、SQL、工具二进制或构建 hash，以及结论适用的设备和版本边界。
 
 UI 截图适合说明事件位置，但不足以支持可重复的回归分析。SQL 聚合适合量化整体分布，也不能代替单帧、单事务或单调用栈的时序证据。
+
+<!-- gracker-diagram: ch14-index-03-reproducible-analysis-cycle -->
+![把假设变成可重放的分析记录](../../assets/diagrams/ch14/ch14-index-03-reproducible-analysis-cycle.png)
+
+图：从假设和采集质量出发，固定对象与窗口，再以查询和源码验证依赖。 截图说明位置，聚合说明分布；两者仍需身份与时序证据，缺口和版本边界一并保存。
 
 ## 官方入口
 

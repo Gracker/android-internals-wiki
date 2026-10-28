@@ -4,6 +4,11 @@
 
 第 5 章和第 11 章分析系统调度与功耗管理，第 12 章讨论网络性能；本章集中处理应用侧功耗诊断与 APK（Android 应用安装包）体积治理。
 
+<!-- gracker-diagram: a285-01-power-size-reading-and-validation-map -->
+![按症状进入章节，再回到同条件验证](../../assets/diagrams/ch25/a285-01-power-size-reading-and-validation-map.png)
+
+图：功耗路径看真实工作量、持续时间与系统约束；体积路径看可删除内容与交付集合。两条路线都用同条件基线验证收益和兼容。
+
 ## 内容索引
 
 

@@ -104,6 +104,11 @@ last_consolidated_at: '2026-08-24'
 
 其中 input、animation、insets animation、traversal 与 commit，分别对应输入、动画、窗口边衬区变化动画（如系统栏或输入法区域变化）、View 树遍历和提交回调；BLAST 负责在应用窗口与 SurfaceFlinger 之间交接缓冲区，present 表示显示系统确认的上屏时刻。
 
+<!-- gracker-diagram: a238-01-window-pipeline -->
+![动画进度与最终呈现的职责分段](../../assets/diagrams/ch22/a238-01-window-pipeline.png)
+
+图：动画回调结束只证明前段完成；GPU、窗口缓冲区和显示时刻仍须关联同一帧。
+
 动画 API 的状态推进主要位于 Android 框架和应用进程；内核基线用来解释线程调度、GPU 驱动、fence（跨 CPU、GPU、显示设备传递完成状态的同步对象） 与显示侧现象，拿内核标签推导 Animator 的 Java 语义会走偏。完整显示路径可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
 
 ## 属性更新、布局触发与 RenderThread
@@ -123,6 +128,11 @@ last_consolidated_at: '2026-08-24'
 `ViewPropertyAnimator.startAnimation()` 创建一个 `ValueAnimator`：更新回调运行在 UI 线程，先算出各属性值并直接更新 View 状态，再把失效请求合并成一次发出。这样分工的结果是：动画回调留在 UI 线程，RenderThread 消费的是更新后的 RenderNode（渲染节点）与 DisplayList 状态。`ViewPropertyAnimator` 的优势正在于此——专用 View 属性接口、组合写法、失效请求合并。
 
 `ObjectAnimator` 的写值路径要看入参：传入 `Property<T, V>` 时可以直接调用 `Property.set()`；传入属性名时，`PropertyValuesHolder` 会解析并缓存 getter（属性读取方法） 与 setter，随后经反射或针对部分数值属性的优化路径写值。无论走哪条，性能判断仍要回到目标 setter 的副作用。
+
+<!-- gracker-diagram: a238-02-property-models -->
+![每帧改变什么决定动画成本](../../assets/diagrams/ch22/a238-02-property-models.png)
+
+图：同一动画 API 也可能因 setter、内容失效和输入规模而产生不同开销。
 
 #### 变换属性与布局语义
 
@@ -152,9 +162,19 @@ view.animate()
 
 `scale（缩放）X` 改变的是绘制变换：measured width（测量宽度）、layout bounds（摆放边界）、触摸命中区域和无障碍节点边界都维持原值。反过来，产品要求周围内容随宽度移动、收起后不可点击，或无障碍边界同步变化时，我们就要更新布局和交互状态，并通过 trace（时间轴） 确认参与重排的子树及其耗时——这类几何语义要靠布局更新完成。
 
+<!-- gracker-diagram: a238-03-scale-input-coordinates -->
+![缩放的布局、触摸与无障碍坐标](../../assets/diagrams/ch22/a238-03-scale-input-coordinates.png)
+
+图：标准 View 输入分发会映射变换后的坐标，布局占位则保持原样。
+
 #### `withLayer()` 的适用条件
 
 `withLayer()` 会在下一次动画开始前设置 `LAYER_TYPE_HARDWARE`，结束时恢复调用前的图层类型。它适合的 View 有个共同点：内容复杂，动画期间内容保持不变，外层只做 `alpha`（透明度） 或 transform（几何变换）。一旦 View 内容每帧失效，硬件图层就得跟着更新；大面积图层还会增加 GPU 内存，并带来先把内容画到中间缓冲区的离屏渲染成本。而默认 View 已有 RenderNode (HWUI 的可记录绘制节点) / DisplayList 复用能力，静态内容没有必要长期强制硬件图层。
+
+<!-- gracker-diagram: a238-04-hardware-layer -->
+![硬件图层适合内容稳定的属性动画](../../assets/diagrams/ch22/a238-04-hardware-layer.png)
+
+图：内容逐帧失效时，中间层仍要更新；图层收益需要目标设备验证。
 
 #### 逐帧图片按解码后像素估算
 
@@ -163,6 +183,11 @@ view.animate()
 `1920 × 1080 × 4 × 30 = 248,832,000 bytes ≈ 237.3 MiB`
 
 这个数字只统计未经额外填充的像素数据；`AnimationDrawable` 的实际驻留内存还要看资源 density（密度） 缩放、采样、Bitmap 复用、硬件位图、Drawable 类型和缓存生命周期，GPU 纹理也可能按绘制时机上传。我们评审时，用目标资源的解码尺寸、内存记录和 GPU 轨迹来验证它。大尺寸长动画通常更适合视频、受控的矢量动画或按需自绘，选型还要比较视觉保真、功耗和启动成本。
+
+<!-- gracker-diagram: a238-05-frame-pixel-budget -->
+![逐帧图片先按解码像素估算](../../assets/diagrams/ch22/a238-05-frame-pixel-budget.png)
+
+图：这是明确假设下的像素算式；实际驻留、复用、density 和纹理上传另外测量。
 
 ### Lottie：以当前稳定版 6.7.1 解释渲染模式
 
@@ -179,6 +204,11 @@ view.animate()
 `LottieAnimationView` 的 `cacheComposition`（Compose 生成并维护 UI 树的组合阶段） 默认开启。常规 assets 目录资源、raw 资源和 URL 加载通过 `LottieCompositionFactory` 返回异步任务，编辑器预览分支仍有同步解析。异步加载只把动画模型的解析与构建移出当前调用，播放期间的进度传播、动态属性回调和 Canvas 绘制仍要计入帧成本。
 
 Lottie 6.7.1 还提供 `setPerformanceTrackingEnabled()` 与 `getPerformanceTracker()`，用于观察各图层的渲染时间。`AsyncUpdates` 在该版本被标为实验 API，`AUTOMATIC` 的注释写明当前按禁用处理；节点更新是否离开 UI 线程，要看项目是否显式启用并验证过。
+
+<!-- gracker-diagram: a238-06-lottie-mode -->
+![Lottie 6.7.1 自动模式与异步边界](../../assets/diagrams/ch22/a238-06-lottie-mode.png)
+
+图：渲染模式、模型缓存和节点异步更新是三条独立路径。
 
 我们评审一份 Lottie 资源时，可以按四组输入记录结果：
 
@@ -236,6 +266,11 @@ class BlurController(
 
 `RenderThread DrawFrame` 变长时，先别急着写成“GPU 慢”：这段时间可能包含 RenderThread 的 CPU 工作、runnable（线程已就绪但仍在等 CPU） 时间、`dequeueBuffer` 等待、驱动调用或 GPU 同步。我们要接着检查线程状态、调度延迟、`dequeueBuffer` / `queueBuffer` 耗时、GPU slice（时间轴上的工作区间） 和 fence；UI 与 RenderThread 都按时而 present 偏晚时，再往下看 BLAST 的缓冲区积压、SurfaceFlinger 的 latch（接收本帧缓冲区）与合成、HWC 和显示反馈。
 
+<!-- gracker-diagram: a238-07-effect-fixed-states -->
+![RenderEffect 固定档位与关闭路径](../../assets/diagrams/ch22/a238-07-effect-fixed-states.png)
+
+图：固定状态避免重复创建相同效果；连续半径动画仍要逐帧评估输入面积和 GPU 工作。
+
 ### 动画与 UI 线程：按显示阶段归因
 
 `Choreographer` 依次执行 input、animation、insets animation、traversal 和 commit 回调。`ValueAnimator`、`ViewPropertyAnimator` 的进度推进以及应用注册的更新回调通常运行在创建它们的 Looper 线程。所以 View 动画应在 UI 线程创建和操作——属性最终写入 RenderNode，UI 线程上的插值、回调和状态更新照旧执行。
@@ -251,6 +286,11 @@ class BlurController(
 | HWC / 显示设备 | composition type（合成类型）、present feedback（上屏反馈）、相关 fence | Android 显示栈观察到的 present 时刻 | 用户已经感知到像素变化 |
 
 这张表的用法是：“某一阶段按时”只能排除该阶段已经观察到的延迟；判断动画是否按期可见，仍要把同一帧从应用回调关联到最终 present。
+
+<!-- gracker-diagram: a238-08-attribution-evidence -->
+![DrawFrame 变长后的归因证据](../../assets/diagrams/ch22/a238-08-attribution-evidence.png)
+
+图：RenderThread 区间包含多类工作和等待，不能直接等同 GPU 执行时长。
 
 #### 把不变计算移出更新回调
 
@@ -283,6 +323,11 @@ ValueAnimator.ofFloat(0f, 1f).apply {
 
 `setSamples()` 只在动画开始前复制数据并建立几何缓存；`setProgress()` 只更新可见区间并调用 `invalidate()`。API 21 起，应用传给 `invalidate(Rect)` 的 dirty rectangle（局部脏区域） 会被忽略，想缩小 View 的重录范围，应把内容分到不同的 View 或 RenderNode。`onDraw()` 的对象复用、刷新和 RenderNode 边界详见 [22.1 自定义 View 性能优化](01-view-layout-custom-drawing.md)。
 
+<!-- gracker-diagram: a238-09-geometry-cache -->
+![把稳定几何准备移出逐帧回调](../../assets/diagrams/ch22/a238-09-geometry-cache.png)
+
+图：预计算减少重复准备，不能把绘制和 GPU 成本一并视为消失。
+
 #### 动画要随可见性停止
 
 页面 `onStop()`、View 从窗口分离或 RecyclerView 列表项回收后，Animator、Lottie、粒子系统和 `postOnAnimation()` 循环都应停止或暂停。恢复时要从业务状态计算进度，避免重复注册回调。生命周期处理既影响帧性能，也影响后台功耗和对象引用。
@@ -293,11 +338,21 @@ ValueAnimator.ofFloat(0f, 1f).apply {
 
 Perfetto 中遇到动画帧间隔异常时，可搜索 `Buffer stuffing recovery`、`buffer stuffed` 和 `Negative offset`，再检查 `dequeueBuffer` 等待、FrameTimeline 的 `Buffer Stuffing`、目标图层的 `BufferTX` 与后续缓冲区积压。出现主动延迟时，应先确认恢复机制的影响，再评估 Animator 计算或 CPU 算力是否不足。`bufferStuffingMultiRecovery`、`bufferStuffingRecoveryThreshold` 等 aconfig（平台功能开关）配置会改变恢复细节，设备行为要以当前构建配置和 trace (按时间记录系统与应用事件的性能轨迹) 为准。
 
+<!-- gracker-diagram: a238-10-stuffing-recovery -->
+![缓冲区积压恢复与动画时间基准](../../assets/diagrams/ch22/a238-10-stuffing-recovery.png)
+
+图：恢复机制可能主动延后一帧并调整动画时间，先排除缓冲区积压再归因 Animator。
+
 ### AnimatedVectorDrawable：先确认运行线程再优化
 
 `AnimatedVectorDrawable`（AVD）默认使用 `VectorDrawableAnimatorRT`，API 25 起可以在 RenderThread 推进动画。动画尚未启动、却先绘制到软件 Canvas 时，源码会调用 `fallbackOntoUI()` 切到 UI 线程实现；平台内部也保留强制 UI 动画的入口。
 
 `Animatable2.AnimationCallback` 不会让动画退回 UI 线程——RenderThread 动画完成后，结束回调经 Handler 返回 UI 侧，而且可能比 RenderThread 完成晚一帧。因此排查时要在 Perfetto 中分别查看主线程、RenderThread 和 GPU；主线程看不到逐帧更新，说明不了动画是否按期 present，还要结合 GPU 与显示侧确认。
+
+<!-- gracker-diagram: a238-11-avd-fallback -->
+![AVD 的 RT 与软件 Canvas 回退门禁](../../assets/diagrams/ch22/a238-11-avd-fallback.png)
+
+图：软件 Canvas 回退要满足明确分支；结束回调所在的线程也不能代替动画运行线程证据。
 
 AVD 适合路径、颜色和 transform 数量有限的图标动画。路径节点、关键帧和同时播放实例越多，属性插值、矢量绘制与 GPU 覆盖成本越高；退回 UI 线程时还要承担主线程更新与绘制记录。可以从 `Drawable.ConstantState` 创建实例以复用不可变配置，但每个可见控件仍需独立的可变动画状态。列表复用时必须在从窗口分离或回收时停止动画并重置进度，避免不可见 ViewHolder 继续占用帧时钟。
 
@@ -321,6 +376,11 @@ filterPanel.isVisible = showFilters
 ```
 
 `resultList` 自身可以随筛选面板展开而移动，RecyclerView 的子 View 不会成为 transition target。`contentContainer` 必须同时包含两个目标；如果页面结构不满足这个前提，应调整 scene root 或改成局部动画。
+
+<!-- gracker-diagram: a238-12-transition-capture -->
+![平台转场先捕获再比较目标](../../assets/diagrams/ch22/a238-12-transition-capture.png)
+
+图：最小共同父容器加 target/exclude 限制捕获和动画范围。
 
 常见转场问题可以按触发条件处理：
 
@@ -378,6 +438,11 @@ Compose 动画每帧会做多少工作，取决于动画值在哪个阶段读取
 
 `drawWithCache` 也会观察缓存构建代码中读取的 `State`，依赖变化时会重建缓存。绘制阶段同样保持 Snapshot 读取观察；把高频值延后到绘制回调或图层回调中读取，组合阶段就无需处理这次更新。
 
+<!-- gracker-diagram: a238-13-compose-read-phase -->
+![动画值在哪里读取就影响哪个阶段](../../assets/diagrams/ch22/a238-13-compose-read-phase.png)
+
+图：延后读取能限制前段失效，但同一值若也在组合中读取，组合观察关系仍存在。
+
 下面的示例用于把透明度动画值延后到图层属性更新。
 
 ```kotlin
@@ -410,6 +475,11 @@ Compose 1.12.0 的 `AndroidUiFrameClock.withFrameNanos()` 会注册 `Choreograph
 
 主线程及时收到回调时，动画按本次帧时间计算已经播放的时长；主线程一旦被阻塞，回调就会延迟，下一次执行看到更大的时间差，动画值随之向前跳。Compose 不会补画所有错过的中间帧，用户通常看到的是画面停顿后直接跳到较后的状态。
 
+<!-- gracker-diagram: a238-14-frame-clock -->
+![默认 Android 帧时钟与错帧后的状态](../../assets/diagrams/ch22/a238-14-frame-clock.png)
+
+图：帧时间驱动动画进度，doFrame 区间也不包含后续 GPU 和系统送显。
+
 再往下一层，`Choreographer.FrameData` 同时携带候选帧时间线、首选帧时间线、截止时间和预计呈现时间；我们做性能判断，用的是当前帧的截止时间，或 `FrameTimeline` 中的预期/实际结果。16.6 ms、11.1 ms、8.3 ms 只是特定刷新率下的周期换算值，可变刷新率、帧率请求和调度选择都会改变某一帧可用的时间。
 
 Perfetto 里的 `Choreographer#doFrame` slice 覆盖应用主线程回调，不含应用 GPU 完成、图形缓冲区入队后的 SurfaceFlinger 合成和送显。它变长只说明主线程帧回调变长，端到端帧耗时还要关联 GPU 与送显一起看。
@@ -421,6 +491,11 @@ Perfetto 里的 `Choreographer#doFrame` slice 覆盖应用主线程回调，不�
 同一个 `Animatable` 启动新的 `animateTo`、`animateDecay`、`snapTo` 或 `stop` 时，`MutatorMutex` 会取消正在运行的变更。新的 `animateTo` 从当前值继续，spring（弹簧动画）还会延续当前速度。取消会以 `CancellationException` 沿协程父子关系传播，需要释放的资源应在 `finally` 中清理。
 
 拖动期间想让手指位置直接跟随时，适合使用 `snapTo`，松手后再用 `animateDecay` 或 `animateTo` 收尾。要是每个触摸采样点都调用 `animateTo`，就会连续取消前一个动画，产生与输入延迟、动画参数和采样频率有关的追赶效果；若产品需要这种柔性跟随，可以保留，只是它仍有逐帧更新和协程取消的成本。
+
+<!-- gracker-diagram: a238-15-animatable-cancellation -->
+![Animatable 中断的是正在运行的变更](../../assets/diagrams/ch22/a238-15-animatable-cancellation.png)
+
+图：拖动可用 snapTo 直接跟随，松手再衰减或收尾；频繁 animateTo 会连续打断。
 
 API 选择可以按控制语义划分：
 
@@ -447,6 +522,11 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 1.12.0 的 `DeferredTransitionState` 与 `mutableTransform` 面向预测性返回等“先手动改变属性、再启动自动过渡”的场景，也不是通用性能开关。
 
+<!-- gracker-diagram: a238-16-transition-coordination -->
+![Transition 协调目标与子动画](../../assets/diagrams/ch22/a238-16-transition-coordination.png)
+
+图：Transition 不是免重组开关，DeferredTransitionState 与 mutableTransform 用于手动控制后接自动过渡。
+
 ### 5. AnimatedVisibility：尺寸变化和退出内容保留
 
 `AnimatedVisibility` 使用自定义 `Layout` 承载界面内容。普通 `AnimatedVisibility(visible=...)` 重载先测量子项，以最大宽高作为容器尺寸，再把子项放在坐标 `(0, 0)`；Row/Column 作用域重载有各自适配的默认过渡。普通重载的默认进入/退出动画包含展开和收缩，因此容器报告给父布局的尺寸会随动画变化；依赖该尺寸的父容器和同级元素也可能反复测量或放置。
@@ -469,6 +549,11 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 独立创建的 `animate*AsState` 不属于 `AnimatedVisibilityScope.transition`，容器不知道它何时结束，因而可能先移除内容。需要与退出完成同步的自定义动画，应注册到作用域提供的 `transition` 上。
 
+<!-- gracker-diagram: a238-17-retained-exit -->
+![退出期间内容、副作用与资源仍可能存活](../../assets/diagrams/ch22/a238-17-retained-exit.png)
+
+图：可见性目标改变不等于立刻离开组合；退出完成边界要覆盖注册在同一 transition 的动画。
+
 缩短退出时长只能缩短保留窗口，保留多久取决于内容轻重与产品要求。内容很重时，可把昂贵订阅移到更高层统一管理，或在退出开始后停止不再需要的数据更新；这属于业务生命周期设计，`visible=false` 自动完成不了。
 
 ### 6. AnimatedContent：过渡期间新旧内容共存
@@ -486,6 +571,11 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 `AnimatedVisibility` 适合一个内容节点的出现与消失，`AnimatedContent` 适合不同内容身份之间的替换。两者都可能保留退出内容，也都可能触发布局；应按业务语义和跟踪结果选择。
 
+<!-- gracker-diagram: a238-18-animated-content -->
+![内容身份与快速切换时的保留](../../assets/diagrams/ch22/a238-18-animated-content.png)
+
+图：内容身份、尺寸动画和退出资源窗口要一起评审。
+
 ### 7. produceState、snapshotFlow 与 derivedStateOf
 
 `produceState` 用 `remember { mutableStateOf(initialValue) }` 保存结果，并由 `LaunchedEffect` 启动一个协程来生产状态值，提供无键、单键和多键重载。这里的键是决定协程何时重启的输入，把实现概括成固定的 `LaunchedEffect(Unit)` 会看错重启时机：键改变时，旧协程取消并启动新协程，离开组合时同样取消。对回调式数据源，我们用 `awaitDispose` 注销回调。
@@ -495,6 +585,11 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 顺着“读取方需要什么”这条线，`snapshotFlow` 把 Snapshot `State` 读取转换成冷流（cold Flow），有人收集时才开始执行，适合驱动埋点、持久化这类副作用；`distinctUntilChanged`、`sample` 或 `debounce` 会改变事件或时间语义，屏幕上的逐帧动画不该交给它驱动。
 
 再往“少通知”的方向走一步就是 `derivedStateOf`：它适合输入变化频繁、输出变化较少的派生结果，例如滚动偏移不断变化，而界面只关心“是否越过阈值”。它根据派生结果的相等性策略决定是否通知读取方；若派生结果每帧都不同，`derivedStateOf` 只会增加观察与计算开销。
+
+<!-- gracker-diagram: a238-19-state-adapters -->
+![状态生产、观察流与低频派生分别做什么](../../assets/diagrams/ch22/a238-19-state-adapters.png)
+
+图：高频输入是否需要降频由读取方语义决定，不能仅按 API 名称推断性能。
 
 ### 8. 强跳过模式能解决什么
 
@@ -597,11 +692,21 @@ class ExpandAnimationBenchmark {
 
 Baseline Profile（基准配置文件（Baseline Profile））可以让 ART 提前编译关键用户流程覆盖的应用与库代码，减少首次运行时的解释执行和 JIT 成本。GPU 着色器预编译、离屏合成的消除、Snapshot 失效范围，都在它的能力之外。用同一组 Macrobenchmark 对比应用基准配置文件前后的数据，才能判断当前动画是否受编译状态影响。
 
+<!-- gracker-diagram: a238-22-benchmark-protocol -->
+![可重复动画基准要等待两个空闲边界](../../assets/diagrams/ch22/a238-22-benchmark-protocol.png)
+
+图：UiAutomator 事件空闲不证明 Compose 动画结束，测试标记要同时验证目标和 Transition 空闲。
+
 ### 13. 无限动画、VectorConverter 与资源动画
 
 `rememberInfiniteTransition()` 表达“进入组合后持续运行，离开组合后停止”。同一个 `InfiniteTransition` 的子动画共享一条逐帧循环，不会为每个值注册独立 VSync；每个子项仍要维护状态并计算插值。只给组件设置 `alpha = 0f`、移到屏外或用其他内容遮挡，都不会使它离开组合。加载指示、呼吸光和背景粒子不可见且无需继续计时时，应让对应分支移出组合，或由业务状态停止动画。
 
 系统动画时长缩放为 0 时，Compose 会把无限动画推进到目标值并等待缩放恢复，不会继续逐帧更新。产品要验证该目标值能否作为合理的静止画面，并为“减少动态效果”保留易于理解的界面状态。
+
+<!-- gracker-diagram: a238-20-lazy-infinite -->
+![惰性项与无限动画的所有权](../../assets/diagrams/ch22/a238-20-lazy-infinite.png)
+
+图：alpha 为零或屏外不等于移出组合；列表动画与项内动画按各自身份管理。
 
 一组视觉值若能由同一相位推导，可以只保留一个 `animateFloat()`，在绘制或图层阶段计算颜色、缩放和偏移。`TwoWayConverter<T, V>` 只负责业务值与 `AnimationVector1D`～`4D` 的双向映射；每个维度应对应一个独立变量，并明确单位和有效范围。若 `convertFromVector()` 每帧都会创建复杂对象，应比较改用内置标量动画或单一相位推导后的对象分配量。
 
@@ -614,6 +719,11 @@ Pager 把“现在滚到哪了”拆成三个页面值，我们先把它们分�
 页面的透明度、缩放、旋转和平移值应在 `graphicsLayer {}` 中读取，让滚动只更新图层属性；在可组合函数体提前读取 `currentPageOffsetFraction`，会让依赖该值的页面持续重组。延后读取高频状态并不会消除动画成本，裁剪、阴影、透明度和大面积旋转仍可能增加离屏合成与 GPU 带宽。
 
 `beyondViewportPageCount` 表示可见区域两侧额外组合、测量和放置的页面，不包含滚动方向上的内部预取页面；应从默认值开始逐页增加，并同时比较首次进入页面的组合/测量耗时、内存峰值与预取命中率。`visiblePagesInfo` 是随测量频繁更新的结果，和页面生命周期是两回事。视频、地图和 `WebView` 等重资源应由 `settledPage`、可见性和生命周期共同控制。
+
+<!-- gracker-diagram: a238-21-pager-values -->
+![Pager 三个页值对应三种语义](../../assets/diagrams/ch22/a238-21-pager-values.png)
+
+图：页间距离用 getOffsetDistanceInPages，滚动高频状态尽量在图层回调中读取。
 
 同向嵌套的 Pager/惰性容器要明确哪个容器消费嵌套滚动、惯性滚动如何交接，以及子容器到达边界后是否继续滚动父容器。负 `pageSpacing` 产生重叠时，还要验证 `zIndex` 层叠顺序、命中区域、裁剪和无障碍顺序。点击标签页启动的 `animateScrollToPage()` 可能被新手势或新的滚动操作取消；调用返回后，还要根据状态确认目标页是否已经稳定展示。
 
@@ -711,6 +821,11 @@ Compose 的 `key()` 可以在组合结构移动时保留节点身份，但要缩
 
 相同 `key` 通常应同时存在一个退出 `entry` 和一个进入 `entry`。快速连续导航可能短暂产生多条记录，源码会从可见记录中选择目标。若同一个 `key` 出现多个正在进入的内容，匹配结果便不明确。
 
+<!-- gracker-diagram: a238-23-scope-key-visibility -->
+![共享 scope 内以业务 key 和可见性匹配](../../assets/diagrams/ch22/a238-23-scope-key-visibility.png)
+
+图：相同 key 负责跨端匹配，可见性 scope 负责进入/退出判定；重复进入候选会使匹配不明确。
+
 ### 3. 一套可维护的基本写法
 
 这段代码让卡片容器使用 `sharedBounds()`，其中视觉内容相同的图片使用 `sharedElement()`。列表端与详情端必须传入相同的业务 ID。
@@ -802,11 +917,21 @@ private fun SharedTransitionScope.ArticleScene(
 
 `Text` 在宽度变化时可能重新换行。对它使用 `RemeasureToBounds`，字符排版和父子尺寸可能逐帧改变；官方文档因此优先建议 `scaleToBounds()`。如果图片需要随宽高比持续改变裁剪结果，`RemeasureToBounds` 可能更符合视觉要求，但要实测 CPU 成本。
 
+<!-- gracker-diagram: a238-24-lookahead-approach -->
+![目标布局与当前动画布局各自的工作](../../assets/diagrams/ch22/a238-24-lookahead-approach.png)
+
+图：Lookahead 与 approach 是布局遍历；不能直接把它们称为两次 GPU 渲染。
+
 #### 4.3 placeholder 决定父布局是否跟随
 
 placeholder 是共享内容过渡时留在原布局中的占位区域。默认的 `PlaceholderSize.ContentSize` 让退出端向父布局报告初始内容尺寸，让进入端报告 Lookahead 目标尺寸；父布局不会跟随每一帧的动画 `bounds` 改变。
 
 `PlaceholderSize.AnimatedSize` 会把动画尺寸报告给父布局。它能让周边内容随共享元素移动，也可能使更大的父子树逐帧重新布局。交互没有这种联动要求时，保留默认值通常更稳定。
+
+<!-- gracker-diagram: a238-25-placeholder -->
+![placeholder 控制父布局是否跟随动画](../../assets/diagrams/ch22/a238-25-placeholder.png)
+
+图：子内容如何缩放与父布局看到什么占位尺寸，是两个配置维度。
 
 ### 5. sharedElement 与 sharedBounds 的性能边界
 
@@ -824,6 +949,11 @@ placeholder 是共享内容过渡时留在原布局中的占位区域。默认�
 
 两者也没有固有的重组范围差异。重组来自各自内容读取的 Compose 可观察状态；`sharedBounds()` 的进入和退出内容同时存活，可能带来更多活跃的 Composition，具体范围仍由调用方的状态结构决定。
 
+<!-- gracker-diagram: a238-26-element-bounds -->
+![相同视觉元素与变化容器的不同路径](../../assets/diagrams/ch22/a238-26-element-bounds.png)
+
+图：不能只凭 Modifier 类型判断速度；两个端点内容与 resize mode 都影响帧成本。
+
 ### 6. GraphicsLayer、overlay 与裁剪
 
 #### 6.1 活跃的 overlay entry 按需持有 GraphicsLayer
@@ -833,6 +963,11 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 这层资源用于在原位置与 overlay 之间移动绘制结果。它与固定大小的 Bitmap 缓存是两回事，全部内存也照 `width × height × 4` 推导不出来；RenderNode、display list（录制后的绘制命令列表）、离屏纹理和 GPU 侧存储是否出现，取决于图形效果与渲染后端。
 
 应用无需在过渡结束时手工清理图形层。实现会在不再需要 overlay 或节点离开 Composition 时释放它。若使用 caller-managed visibility（由调用方管理可见性），不可见节点可能继续留在树中；官方文档建议在 `isTransitionActive == false` 后移除不可见端。
+
+<!-- gracker-diagram: a238-27-graphics-layer-lifecycle -->
+![共享图形层在需要 overlay 时才分配](../../assets/diagrams/ch22/a238-27-graphics-layer-lifecycle.png)
+
+图：内部 GraphicsLayer 用于记录并复用绘制命令，不是把源内容截成 Bitmap。
 
 #### 6.2 overlay 与父级效果
 
@@ -852,6 +987,11 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 共享 `Modifier` 前的尺寸与 padding（内边距） 会参与确定初始和目标 `bounds`；后续 `Modifier` 接收共享节点给出的动画 constraints。列表端与详情端顺序不一致时，位置或尺寸容易在起始帧跳变。
 
 `requiredSize()` 还会覆盖约束，放置位置不同会让父布局观察到不同尺寸。遇到跳变时，应比较两端完整的 `Modifier` 链，再调整动画参数。
+
+<!-- gracker-diagram: a238-28-overlay-clip-order -->
+![overlay 绘制边界与 Modifier 顺序](../../assets/diagrams/ch22/a238-28-overlay-clip-order.png)
+
+图：先比对两端完整 Modifier 链和 scope overlay 顺序，再修改动画参数。
 
 ### 7. 常见性能风险与对应处理
 
@@ -898,6 +1038,11 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 
 若点击后立刻替换整个列表树，源 `entry` 可能在目标端获得 `bounds` 前 detach。`AnimatedContent`、Navigation 或官方 `AnimatedVisibility` 示例会让进入和退出内容在过渡窗口内同时存在，应优先选作可见性容器。
 
+<!-- gracker-diagram: a238-29-scroll-source-lifetime -->
+![共享过渡要等目标可放置再移除源端](../../assets/diagrams/ch22/a238-29-scroll-source-lifetime.png)
+
+图：惯性滚动、图片请求、Lookahead 与绘制并发时，要分别检查预算和源节点生命周期。
+
 预取应准备数据、图片和目标页面不可避免的昂贵资源。提前组合整个详情树会延长对象生命周期，也可能让未展示页面参与状态观察；只有 trace 证明首次组合是瓶颈时，再设计受控的 precompose（预先组合）。
 
 ### 9. Predictive Back
@@ -921,6 +1066,11 @@ Android 17 沿用这套标准机制，没有独立的 SharedTransitionLayout 帧
 自定义进度流应更新专门的动画状态，避免每个事件都重建导航图、重发图片请求或重组整页。取消手势时要恢复初始状态，手势完成后再提交返回栈变化。
 
 手势驱动的过渡可以暂停、反向或取消，比固定 tween 更容易暴露源端 detach、重复 `key` 和目标端尚未放置的问题。测试应覆盖完成、取消、快速往返和滚动中返回。
+
+<!-- gracker-diagram: a238-30-predictive-back-flow -->
+![预测性返回进度经过导航过渡驱动共享元素](../../assets/diagrams/ch22/a238-30-predictive-back-flow.png)
+
+图：SharedTransitionLayout 自身不订阅系统返回进度，完成与取消都要验证匹配和生命周期。
 
 ### 10. Perfetto、Layout Inspector 与可视化调试
 
@@ -972,6 +1122,11 @@ fun SharedTransitionDebugOverlay(
 
 可视化会给整个 `content` 子树增加调试绘制，这批数据要和正式帧耗时分开看。用它排除坐标与匹配错误后，应关闭调试再录制 Perfetto。
 
+<!-- gracker-diagram: a238-31-debug-evidence -->
+![匹配调试与正式性能证据的分工](../../assets/diagrams/ch22/a238-31-debug-evidence.png)
+
+图：共享源码没有为每个 key 固定写 Perfetto slice；业务需要的导航和放置边界应自行埋点。
+
 #### 10.4 建立对照实验
 
 共享过渡评测至少保留三组相同导航：
@@ -995,6 +1150,11 @@ fun SharedTransitionDebugOverlay(
 1.12.0 的 `rememberSharedContentState(key, config)` 允许通过 `SharedContentConfig` 中的 `SharedContentState.isEnabled`，动态决定某个 `key` 是否参与匹配。导航方向、系统“减少动态效果”偏好或设备降级策略适合放在这里。
 
 启停状态在过渡中变化时要定义清楚：立即取消、保持现有动画，还是等下一次导航生效。默认的 `shouldKeepEnabledForOngoingAnimation` 为 `true`，因此正在进行的动画会完成，禁用结果随后生效。若目标 `entry` 在动画中被移除，还可以通过 `alternativeTargetBoundsInTransitionScopeAfterRemoval` 提供替代终点；默认行为是取消这一组共享过渡。
+
+<!-- gracker-diagram: a238-32-config-boundary -->
+![动态禁用与目标移除的不同决策](../../assets/diagrams/ch22/a238-32-config-boundary.png)
+
+图：动态启停、保持在途动画和目标移除是独立语义，不能用一个 enabled 布尔值概括。
 
 #### 11.3 多步骤过渡
 
@@ -1073,6 +1233,11 @@ SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的�
 共享元素可能增加应用侧的图形层记录、裁剪、缩放、透明混合和过绘制，进而推迟窗口 buffer 完成时间；进入 Compose overlay 不会直接增加 HWC 要合成的窗口 layer 数量。
 
 按生产者与结果位置来判断，App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费。只有通过 `SurfaceControl` 独立提交的 buffer，才会自然对应独立的 SurfaceFlinger layer。BufferQueue 的 slot（可循环使用的缓冲槽位）、GraphicBuffer 复用与生产者/消费者模型见 [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)。
+
+<!-- gracker-diagram: a238-33-window-boundary -->
+![Compose overlay 仍由宿主窗口提交](../../assets/diagrams/ch22/a238-33-window-boundary.png)
+
+图：额外图形层与混合可能推迟宿主 buffer 完成，不能把 Compose overlay 当独立 SurfaceFlinger layer。
 
 ### 没有“最多五个元素”的平台阈值
 

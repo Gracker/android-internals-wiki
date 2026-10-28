@@ -31,3 +31,13 @@ Perfetto 擅长把调度、进程、渲染和应用事件放在同一条时间�
 - 系统命令快照与功耗工具见 15.4—15.5；自动化回归、线上 profiling、statsd、StrictMode 和 CLI/Agent 工作流见 15.6—15.9。这里的 Agent 工作流指由自动化代理编排命令、采集和分析步骤。
 - GPU、相机、窗口合成和布局层级问题集中在 15.11—15.15，应按问题选择帧捕获、GPU Counter、Camera Trace、Winscope 或 Layout Inspector。
 - 第三方 Hook、动态可达性、eBPF 与 R8 规则分析分别见 15.10、15.13、15.16 和 15.17。使用前应先确认 Android 版本、构建类型、权限和数据安全边界。
+
+<!-- gracker-diagram: ch15-readme-01-question-and-evidence -->
+![按问题选择证据形态](../../assets/diagrams/ch15/ch15-readme-01-question-and-evidence.png)
+
+图：先区分函数与对象、图形与状态、构建与线上趋势，再选择对应证据。 CPU样本、堆对象图、帧捕获、服务输出和群体指标各有观测边界；结论需要补齐对应证据。
+
+<!-- gracker-diagram: ch15-readme-02-selection-and-validation -->
+![从问题到可验证结论](../../assets/diagrams/ch15/ch15-readme-02-selection-and-validation.png)
+
+图：明确问题后先查现有trace覆盖，再核对专用工具的适用条件，最后关联证据并回归。 记录版本、构建类型、权限、对象和时间窗；快照、计数、采样和回放均需按各自语义解释。

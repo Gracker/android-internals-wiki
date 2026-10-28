@@ -120,6 +120,11 @@ consolidated_from:
 
 我们把生命周期事件、引用路径、持有者语义和重复复现放在一起看，结论才算可靠。
 
+<!-- gracker-diagram: a254-01-leak-conditions -->
+![可达性和业务生命周期必须同时核验](../../assets/diagrams/ch23/a254-01-leak-conditions.png)
+
+图：观察延迟、GC 尚未发生、调试器和合法异步任务都可能解释 retained，单次内存上涨与 OOM 栈本身都不构成泄漏结论。
+
 ### 1.3 OOM 的来源
 
 应用层 OOM 的托管堆上限随设备配置和应用属性浮动，跨设备并没有固定的 256 MB 或 512 MB 阈值；原生分配、线程创建、地址空间、图形缓冲区和 `mmap` 文件/匿名映射也可能触发不同形式的内存失败。排查 OOM 时，我们至少要区分下面几类现象：
@@ -186,6 +191,11 @@ class SensorBinding(
 
 这段代码把所有权交待清楚了：`LifecycleOwner` 进入 `STARTED` 时注册，离开时注销。若业务要求后台继续采集，正确的做法是把所有者提升到 Service 或进程组件——注销这一步在任何方案里都要有人负责。
 
+<!-- gracker-diagram: a254-02-listener-ownership -->
+![注销要切断外部长生命周期持有](../../assets/diagrams/ch23/a254-02-listener-ownership.png)
+
+图：注册与注销绑定同一个所有者生命周期。合法后台采集可以更换所有者，但仍需要明确的注销终点。
+
 ### 2.3 延迟消息和异步任务越过页面生命周期
 
 匿名 `Runnable`、回调 lambda 或协程都可能捕获 Fragment、View 或 Activity。要盯住的是任务队列是否比被捕获对象活得更久，“匿名类”这个语法形式本身无关紧要。
@@ -221,6 +231,11 @@ Fragment 有两个生命周期：本体可以留在 back stack（返回栈） �
 
 `mFragmentManager == null`、`mCalled == true` 之类系统框架内部字段可以放一边：它们不在应用契约里，判断 view 是否销毁，以 view lifecycle（View 生命周期） 的回调为准。
 
+<!-- gracker-diagram: a254-03-fragment-view-tracks -->
+![Fragment 本体可以跨越多代 View](../../assets/diagrams/ch23/a254-03-fragment-view-tracks.png)
+
+图：Fragment 仍在返回栈不能作为保留旧 View 的理由。旧 View 的 binding、Adapter 回调和 viewLifecycleOwner 收集任务应在相应生命周期结束时释放。
+
 ### 2.5 Compose effect 与外部订阅
 
 `DisposableEffect` 适合管理必须显式注册和注销的非 Compose 资源。
@@ -243,6 +258,11 @@ fun NetworkState(source: NetworkStateSource) {
 ```
 
 我们把分工记清楚：`remember` 只管对象在当前 composition 里的存续，外部系统中的 listener（监听器） 要由 `DisposableEffect` 的 `onDispose` 定义释放点。
+
+<!-- gracker-diagram: a254-04-compose-subscription -->
+![DisposableEffect 的 key 与注销边界](../../assets/diagrams/ch23/a254-04-compose-subscription.png)
+
+图：source 身份变化时，remember(source) 重新读取初始状态；DisposableEffect(source) 管理旧 listener 的注销和新 listener 的注册，两种职责要同时对齐。
 
 ### 2.6 `observeForever()`、静态集合与无界缓存
 
@@ -283,6 +303,11 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 `Cursor`、`ParcelFileDescriptor`、`MediaCodec`、`Image`、`Surface` 等对象还带有显式关闭协议。Java wrapper（包装对象） 本身可能很小，背后连着的却是原生分配、图形缓冲区或内核对象。持有者应通过 `use`、try-with-resources 或对应的 `close()` 在业务生命周期终点释放；finalizer 或 Cleaner 只能当延迟兜底，资源的及时归还靠显式关闭。
 
+<!-- gracker-diagram: a254-05-jni-resource-ownership -->
+![JNI 引用和底层资源有各自的释放协议](../../assets/diagrams/ch23/a254-05-jni-resource-ownership.png)
+
+图：从 Java 进入 JNI 的局部引用通常随返回释放；自行 AttachCurrentThread 的线程需 DeleteLocalRef/局部引用帧，并在结束时 detach。MediaCodec、Surface 使用 release。
+
 ### 2.9 案例：常驻 Activity 如何保留已关闭弹窗
 
 我们拿货拉拉司机端公开复盘过的首页弹窗问题收尾：它正好完整走了一遍“业务事件—对象增长—引用链—生命周期缺口”的链路。
@@ -292,6 +317,11 @@ class FeedFragment : Fragment(R.layout.feed) {
 heap dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，一条引用链从弹窗 `mView` 经 `LifecycleRegistry.mObserverMap` 到常驻 `MainActivity`。代码审查确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。
 
 修复后应使用同一事件序列复测，确认观察者、旧 Dialog/View 和布局对象不再随展示次数累积。
+
+<!-- gracker-diagram: a254-06-dialog-observer-case -->
+![常驻 Activity 的观察者表如何留住弹窗](../../assets/diagrams/ch23/a254-06-dialog-observer-case.png)
+
+图：Dialog 初始化 addObserver(this)，dismiss 时未 removeObserver(this)，使旧弹窗随展示次数累积。原复盘的数字仅属于当时测试，不能外推为当前设备测量。
 
 缺陷的根源在这里看得很清楚：注册方、注销方和资源生命周期终点没有对上。同一套排查方法也适用于监听器、回调、Flow collector（收集器） 和外部 SDK observer。
 
@@ -368,6 +398,11 @@ retained size 要和 dominator 关系一起看：它估算的是某对象不可�
 
 leak signature（泄漏签名） 按可疑路径归组，适合统计同类缺陷；Shark 展示的只是便于诊断的一条路径，对象仍可能存在其他到 Root 的路径，修复后必须重新抓取验证。
 
+<!-- gracker-diagram: a254-07-leakcanary-pipeline -->
+![LeakCanary 从观察到泄漏签名的流程](../../assets/diagrams/ch23/a254-07-leakcanary-pipeline.png)
+
+图：leak trace 为定位入口。先核验目标对象的生命周期，再沿 Root 到对象阅读可疑字段；Library Leak 同样需要核对依赖版本与上游修复。
+
 `Library Leak` 表示路径匹配已知库或 Framework 模式，这类泄漏照样要处理：核对依赖版本和上游修复，评估发生频率与 retained bytes；应用侧消除不掉的，记录受影响版本、规避方案和验收条件。
 
 Activity、Fragment、Fragment view 和 ViewModel 等常见类型可以自动观察。业务自定义对象也可以在确认其生命周期结束后交给 `AppWatcher.objectWatcher.watch()`。
@@ -433,6 +468,11 @@ Native heapprofd 走另一条数据源和 `__SIGRTMIN + 4`；Java HeapGraph 能�
 
 两类产物的采集限定在调试、灰度或系统受控触发下；常规高频监控交给轻量信号。
 
+<!-- gracker-diagram: a254-08-capture-artifacts -->
+![完整 HPROF、HeapGraph 和分配画像的三条管线](../../assets/diagrams/ch23/a254-08-capture-artifacts.png)
+
+图：HPROF 是独立堆转储格式，HeapGraph 是 Perfetto trace 数据；分配画像回答创建来源，与堆引用保留关系不同。三条路径的权限、开销和产物都要单独验收。
+
 ### 6.3 注册 trigger 和结果监听
 
 下面的 Kotlin 示例只在 API 37 及以上注册 OOM 与 anomaly trigger（系统事件触发器），并在采集成功时把系统生成的文件路径交给应用自己的上传调度器：
@@ -483,6 +523,11 @@ class MemoryProfileRegistrar(
 
 同一种 trigger 只能保留一个注册项；重复添加会覆盖先前配置。业务若设置 `setRateLimitingPeriodHours()`，该限制会叠加在系统 rate limiter 之上，数值应由样本预算和事件频率确定。
 
+<!-- gracker-diagram: a254-09-trigger-delivery -->
+![系统 trigger 的采集与延后结果交付](../../assets/diagrams/ch23/a254-09-trigger-delivery.png)
+
+图：自定义 OOM uncaught handler 需继续调用默认处理器。结果回调只做有界处理，上传等重工作交给独立调度并遵守用户与产品的数据规则。
+
 ## 7. `ApplicationExitInfo` 能证明什么
 
 采集之外，退出记录是另一条常用线索：`ApplicationExitInfo` 从 API 30 起记录历史进程退出信息。它回答的是“进程为何退出、退出前系统最近采样到多少 PSS/RSS”；“哪条引用造成泄漏”要靠前文的 heap dump 与引用路径分析来回答。
@@ -523,6 +568,11 @@ fun readRecentExits(context: Context): List<ExitSnapshot> {
 ```
 
 `getPss()` 和 `getRss()` 是系统退出前最近一次采样值：可能为零，也未必等于死亡瞬间。`REASON_LOW_MEMORY` 说明系统在低内存情境下终止了进程，具体判断还要结合设备压力、进程重要性和内存分区；部分设备不支持该原因码，可用 `ActivityManager.isLowMemoryKillReportSupported()` 查询。`getTraceInputStream()` 主要用于 ANR（应用无响应） trace 和 API 31 起的 native tombstone（原生崩溃转储）；低内存记录并不保证附带 heap dump。
+
+<!-- gracker-diagram: a254-10-exitinfo-boundaries -->
+![退出原因、内存采样与泄漏证据的边界](../../assets/diagrams/ch23/a254-10-exitinfo-boundaries.png)
+
+图：退出记录用于还原终止背景，不指出哪条引用导致增长。REASON_LOW_MEMORY 不保证有 heap dump，getTraceInputStream 的产物类型也要按退出场景核对。
 
 ## 8. 生产治理：信号、采集与验证分层
 

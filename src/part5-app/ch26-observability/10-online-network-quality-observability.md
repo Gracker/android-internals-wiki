@@ -88,6 +88,11 @@ last_rework_at: '2026-08-15T21:22:20+08:00'
 
 三套记录各管一段：客户端样本解释用户侧经历，接入层日志显示已到达入口的请求，系统状态说明 App 当时可见的默认网络。我们把它们关联（四层请求 ID 的定义见下文「客户端阶段耗时采集」）起来，靠的是 `trace_id`、`request_id` 和 `attempt_id`，四层请求 ID 的定义见下文「客户端阶段耗时采集」。其中有一类记录要特别留意：DNS、connect 或 TLS 阶段失败的 attempt 根本到不了服务器，服务端自然没有同名 ID。对账时这类只在客户端出现的记录必须保留，丢了它们，入口前失败就成了盲区。
 
+<!-- gracker-diagram: a295-01-client-edge-and-network-evidence -->
+![客户端、入口与系统状态各自留下不同的盲区](../../assets/diagrams/ch26/a295-01-client-edge-and-network-evidence.png)
+
+图：接入层PV下降、客户端上传积压和预计样本缺口要共同解释，不能把无上报当零故障。
+
 ## 客户端阶段耗时采集
 
 排查网络慢或失败时，我们要把耗时按请求生命周期拆开记录，只存一个 `duration_ms` 是回答不了“慢在哪一段”的。动手前先区分四个对象：
@@ -111,6 +116,11 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 
 平台这边没有现成入口：AOSP `android-17.0.0_r1` 没有向 App 提供 `android.net.http.RequestFinishedInfo` 这一公共 API，Cronet 独立于平台版本发布，App 应使用 `org.chromium.net` 公共 API，并在事件中记录 Cronet 版本。另外别忘了覆盖面：Cronet 看不到绕过它的 OkHttp、`HttpURLConnection` 或 Native 自研协议。
 
+<!-- gracker-diagram: a295-04-cronet-clock-time-and-byte-boundaries -->
+![Cronet 143 API：同名时间和字节字段仍有不同边界](../../assets/diagrams/ch26/a295-04-cronet-clock-time-and-byte-boundaries.png)
+
+图：公开API工件已逐方法检查；字段可用性、Socket复用与统计范围单独保存。
+
 自研网络库应把阶段事件纳入接口设计。下表用 `observed` 表示采集器看到了该阶段，`not_observed` 表示该阶段未发生或未被回调覆盖，`unsupported` 表示当前库不提供该字段。
 
 | 字段组 | 示例字段 | 说明 |
@@ -124,6 +134,16 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 
 这张表和 26.1 的性能指标模型保持一致：事件回调只记录轻量时间戳、枚举和引用，序列化、压缩、写入本地文件与上传交给后台任务。我们尤其要守住一条底线：在主线程、OkHttp callback（回调函数） 或 Cronet listener（监听器） 里做磁盘 I/O，会直接干扰被测请求。
 
+<!-- gracker-diagram: a295-02-trace-call-route-and-exchange -->
+![四层身份中，连接尝试与 HTTP 交换不是一对一](../../assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.png)
+
+图：attempt是本文端侧模型；公开回调未给所有阶段提供唯一句柄，未知归属应保留。
+
+<!-- gracker-diagram: a295-03-fast-fallback-and-exchange-tracks -->
+![Fast Fallback、胜出连接与后续交换保留各自时间范围](../../assets/diagrams/ch26/a295-03-fast-fallback-and-exchange-tracks.png)
+
+图：路由A失败与路由B成功可在时间上重叠；HTTP发送只发生在选定连接上，回调仍需按其提供的参数配对。
+
 ## QUIC / HTTP/3 指标口径
 
 协议一变，阶段字段的含义就要重新对。QUIC 是在 UDP 之上集成加密与多路复用的传输协议，HTTP/3 以它为基础。落到指标上，`connect_ms` 的含义随协议变化：遇到 QUIC，它就不再是固定的 TCP 三次握手；`secure_handshake_ms` 同理，不再是固定的 TCP 上的 TLS。所以公共指标用协议中性的字段名，并记录 `negotiated_protocol`。Cronet 的 [`UrlResponseInfo#getNegotiatedProtocol()`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlResponseInfo) 返回协商协议，也可能为空。
@@ -131,6 +151,11 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 在 Cronet `143.7445.0` 中，QUIC 的 SSL 开始/结束分别等于 connect 开始/结束；使用 0-RTT（在握手确认前发送早期数据）时，connect end 表示握手确认，可能晚于 sending start。HTTP/2 与 QUIC 会在一条连接上承载多个 stream（独立请求流），首个 stream 之后的 `getSocketReused()` 返回 `true`，DNS、connect 和 SSL 时间随之为空。看到同一请求中 `sendingStart < connectEnd`，我们只能按 Cronet 文档解释时间顺序；要得到准确的 `zero_rtt_used=true` 判定，还得靠别的字段。
 
 该版本公开的 `RequestFinishedInfo.Metrics` 没有稳定字段暴露 0-RTT 是否使用、连接迁移次数、路径验证耗时或丢包率。只有选定引擎通过公开且有版本说明的 API 提供这些数据时，才能把它们放入扩展字段，并同时记录 `engine`、`engine_version`、`metric_source` 和字段可用性。协议内部状态，我们只从公开 API 拿，套接字重用、阶段先后顺序或异常文本都推算不出它。
+
+<!-- gracker-diagram: a295-05-protocol-neutral-stages-and-unknowns -->
+![QUIC、连接复用与缺测状态不能套 TCP 固定阶段](../../assets/diagrams/ch26/a295-05-protocol-neutral-stages-and-unknowns.png)
+
+图：复用连接没有本次建连不是0ms建连；字段缺失也不自动证明连接复用。
 
 ## 流量与网络状态维度
 
@@ -145,6 +170,11 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 
 流量指标常用于三类分析：
 
+<!-- gracker-diagram: a295-06-trafficstats-valid-difference-window -->
+![TrafficStats 差值先验证计数器身份和区间有效性](../../assets/diagrams/ch26/a295-06-trafficstats-valid-difference-window.png)
+
+图：UID聚合同UID所有进程且含TCP/UDP；Android7+普通App查询其他UID不受支持。
+
 - **版本回归**：新版本在同等访问量（PV）下 UID 发送字节数上升，可能是重试次数、图片规格、日志上报或轮询策略变化。
 - **故障旁证**：某个运营商请求失败率升高，同时发送字节数上升、接收字节数下降，常见原因是连接建立后响应读不到，或客户端在短时间内大量重试。
 - **上报通道健康度**：业务请求失败率升高时，监控上报自身的发送/接收量和延迟要单独看，避免把“没有上报”误读成“没有故障”。
@@ -154,6 +184,11 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 网络状态要按样本发生的时刻记录。使用 `registerDefaultNetworkCallback()` 时，Android 8.0 及以上会在 `onAvailable()` 后立即给出 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`，所以在 `onAvailable()` 里同步查询新网络属性会撞上竞态，等后两个回调到了再读。默认网络回调的 `onLost()` 同样要读准：它只说明这张网络不再是 App 的默认网络，它未必已经断开。
 
 默认网络回调运行在 App 的 `ConnectivityManager` 专用线程，所以回调里只更新创建后不再修改的内存快照，耗时计算与上传放到工作线程，并在不再使用时注销该回调。`Network` 对象也一样有生命周期：它仅在该次连接存续期内有效，同一接入点重连后也会得到新对象，端侧短期关联够用，跨会话的设备或网络标识要另想办法。
+
+<!-- gracker-diagram: a295-07-network-callback-snapshot-and-selected-network -->
+![网络快照绑定请求所选网络，不把默认变化当断网](../../assets/diagrams/ch26/a295-07-network-callback-snapshot-and-selected-network.png)
+
+图：快照创建后不再修改，保存transport集合与短期关联键；请求显式绑定时用被选网络。
 
 ## Native Hook（运行时拦截本地函数调用） 与统一网络库
 
@@ -170,6 +205,11 @@ PLT（Procedure Linkage Table，过程链接表）保存动态函数的跳转入
 
 每条 Hook 样本还应记录采集器版本、ABI、命中入口与已知覆盖范围。工程上还有两条护栏：ASM 字节码插桩要配合构建期允许名单和回滚开关；Native Hook 需要按 ABI 小范围启用、监控崩溃率、支持远程关闭和端上自检。采集一旦失败就 fail-open，也就是停用采集并让业务请求继续执行。
 
+<!-- gracker-diagram: a295-08-hook-boundaries-and-fail-open -->
+![统一库与官方事件为主，Hook 仅补命中路径](../../assets/diagrams/ch26/a295-08-hook-boundaries-and-fail-open.png)
+
+图：按API/ABI/库/符号/采集器版本维护覆盖清单；可解释阶段来自库契约。
+
 ## 客户端与接入层对账
 
 进入对账前先摆正预期：客户端与接入层采用不同的采集范围，两边数字本来就可能不同；真出现差异时，差异本身就是故障信号。
@@ -185,6 +225,11 @@ PLT（Procedure Linkage Table，过程链接表）保存动态函数的跳转入
 对账的第一步，我们先把两边记录按 `request_id + attempt_id` 对起来，区分出三种集合：两侧都有记录、只有客户端记录、只有接入层记录。第一类可比较端到端耗时与服务端耗时；第二类用于分析入口前失败；第三类提示客户端采样、ID 注入或上报丢失。重定向和重试还要按 `exchange_id` 或接入层生成的 span（分布式追踪中的单段操作）区分，避免把多次响应的字节数、状态码和耗时相加后误认为一次请求。
 
 未到达入口的样本同样有价值，仍应保存受控的字段，例如候选地址数量、脱敏后的 peer（对端节点） 分组、库级错误枚举、TLS 错误类别、代理/VPN 标记和网络快照。哪些字段留在端侧、哪些能进通用遥测，要划清楚：原始 DNS 列表、完整 IP、完整 URL、查询参数、代理地址与系统 `Network` 标识，都留在通用遥测之外。
+
+<!-- gracker-diagram: a295-09-exchange-reconciliation-and-missing-samples -->
+![交换对账同时保留入口前失败与遥测缺口](../../assets/diagrams/ch26/a295-09-exchange-reconciliation-and-missing-samples.png)
+
+图：只有明确传输与映射契约才把attempt_id加为跨端键；端侧候选关系允许unknown。
 
 ## 实时告警与离线分析
 
@@ -207,6 +252,11 @@ PLT（Procedure Linkage Table，过程链接表）保存动态函数的跳转入
 但算法弥补不了指标缺失：输入里没有阶段耗时、协议、样本覆盖率和上报健康度，模型就只能发现某个总耗时发生了变化，找不到阶段。落到配置上，主入口可采用少量可解释规则，高流量 endpoint 和关键场景再使用按星期、时段和发布状态分组的历史基线。低流量接口独立做 P99 异常检测样本不够，可换用错误样本聚类、相邻 endpoint 联动和人工复核。
 
 误报和漏报本身也要计量：每条规则记录触发、确认故障、误报原因、漏报补录和处置动作；模型版本、训练区间、特征可用性与阈值配置需要可追溯。规则变更先影子运行，也就是只计算结果而不通知值班，再根据历史回放和线上反馈决定是否正式告警。
+
+<!-- gracker-diagram: a295-10-alerting-coverage-and-tail-evidence -->
+![告警同时判断用户伤害、分布与数据健康](../../assets/diagrams/ch26/a295-10-alerting-coverage-and-tail-evidence.png)
+
+图：网络故障可能同时阻断遥测；只统计收到的样本存在幸存者偏差。
 
 ## 网络故障证据包
 

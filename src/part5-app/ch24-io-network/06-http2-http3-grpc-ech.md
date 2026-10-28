@@ -137,6 +137,11 @@ consolidated_from:
 
 连接池、DNS、超时和重试见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)，分段性能与 TLS 见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)；协议与规范的出处集中在文末“源码与规范依据”一节。
 
+<!-- gracker-diagram: a266-01-protocol-layers -->
+![RPC契约、HTTP语义与传输层分开](../../assets/diagrams/ch24/a266-01-protocol-layers.png)
+
+图：gRPC 是调用契约；HTTP/2 与 HTTP/3 分别使用 TCP 与 QUIC，库名不等于实际协商协议。
+
 ### 协议能力来自不同组件
 
 Android 项目里的协议能力来自不同组件：
@@ -187,6 +192,11 @@ RFC 9113 定义了 `PUSH_PROMISE`（服务器在客户端请求前声明将主�
 
 即使换到支持推送的客户端，我们也要先测量推送资源被使用、已缓存、重复传输和取消的比例。协议有这个能力，和它对移动 API 有净收益，是两回事。
 
+<!-- gracker-diagram: a266-02-h2-flow-backpressure -->
+![HTTP2流复用仍受窗口和消费速度约束](../../assets/diagrams/ch24/a266-02-h2-flow-backpressure.png)
+
+图：多路复用不提供无限并发或业务优先级承诺；OkHttp 5.4 默认 PushObserver.CANCEL。
+
 ### HTTP/3 与 QUIC 能改变什么
 
 #### 传输层发生了什么变化
@@ -212,6 +222,11 @@ RFC 9000 定义了连接迁移和路径验证机制。`ConnectionMigrationOption
 
 `HttpEngine.Builder.setConnectionMigrationOptions()` 在同一份源码里也带着 `ConnectionMigrationOptions.Experimental` 注解。要试默认网络迁移，我们先在受控实验里启用；上线前把设备实现、服务端、代理、计费网络和远程关闭开关都验证一遍。
 
+<!-- gracker-diagram: a266-03-quic-path-migration -->
+![QUIC迁移先验证路径且保留业务恢复](../../assets/diagrams/ch24/a266-03-quic-path-migration.png)
+
+图：迁移需要 QUIC、客户端、服务端与新路径共同支持；中断后的业务仍需恢复协议。
+
 #### 0-RTT 的重放风险与适用范围
 
 QUIC 的 0-RTT（零往返恢复）允许恢复中的连接在握手完成前发送早期数据（early data），代价是这类数据缺少跨连接的防重放保证——攻击者可以把捕获的数据重新发送一遍。所以登录、支付、下单和产生一次性副作用的写请求，我们默认让它们走完整握手。
@@ -225,6 +240,11 @@ HTTP/3 依赖 UDP，而部分企业网络、代理、VPN 或热点会阻断或�
 服务端还要用客户端支持的方式声明 HTTP/3 能力，比如发送 Alt-Svc，或者由应用提供可信的 QUIC 能力提示（hint）。`setEnableQuic(true)` 打开后，引擎只是拿到了选择 QUIC 的资格；缺少服务端配置的域名，最终仍落在 HTTP/2 或 HTTP/1.1 上。
 
 Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` 增加了 `setProxyOptions()`。注意应用代理配置会覆盖系统代理配置：企业环境依赖系统代理时，一个错误的应用代理、或者代理列表末尾漏掉 `null` 回退，都可能让网络完全不可达。分批启用协议的实验，也要把企业代理和 VPN 场景包含进来。
+
+<!-- gracker-diagram: a266-04-zero-rtt-and-discovery -->
+![QUIC发现、恢复与0RTT是不同状态](../../assets/diagrams/ch24/a266-04-zero-rtt-and-discovery.png)
+
+图：QUIC 开关、实际协议、会话恢复与 0-RTT 接受分别记录；代理失败策略按所用 API 明确允许或禁止直连。
 
 ### OkHttp、HttpEngine 与 Cronet 的选择
 
@@ -278,6 +298,11 @@ fun UrlResponseInfo.toTerminalResult(): HttpEngineResult {
 
 `FinishedRequestTimings` 和 `UrlRequest.getFinishedRequestTimings()` 是 37.1 / S Extensions 23 新增的能力，只能在成功、失败或取消的终止回调到达后读取，并不属于 API 37 / `android-17.0.0_r1` 这条基线。基础 API 37 上，DNS、连接和 TLS/QUIC 的完整公开时序要等这套新接口才有。
 
+<!-- gracker-diagram: a266-05-engine-lifecycle-metrics -->
+![引擎生命周期与终止回调指标分开](../../assets/diagrams/ch24/a266-05-engine-lifecycle-metrics.png)
+
+图：缓存可能经过网络重验证；接收字节为解压前最小网络计数，空协议不自行填 HTTP/1.1。
+
 ### gRPC 在移动端的实践
 
 #### gRPC 的调用契约与方法形态
@@ -307,15 +332,30 @@ gRPC 默认不设置调用截止时间（deadline），客户端可能因此一�
 
 `wait-for-ready`（等待通道就绪）会在 `Channel` 暂时不可用时把调用留在队列里，等连接恢复再发送；默认模式则更早返回失败。调用截止时间仍然生效，所以它只适合能短暂等待连接恢复的调用，绕不过用户取消，也无限延长不了启动等待。
 
+<!-- gracker-diagram: a266-06-grpc-channel-deadline -->
+![gRPC通道复用与每次调用的生命周期](../../assets/diagrams/ch24/a266-06-grpc-channel-deadline.png)
+
+图：通道是逻辑通信对象；每次 RPC 的凭据、截止时间、取消与最终状态分别管理。
+
 流式 RPC 还要自己定义断线恢复语义：连接中断时未完成的逻辑流会失败，重新建流不会自动恢复业务位置，消息序号、游标、确认、去重和补发都属于应用协议的事。
 
 这类流式调用还受 gRPC 与 HTTP/2 流量控制约束：一次写入只说明消息交给了 gRPC，字节未必已经发到网络；发送方速度长期高于接收方时，框架会等待或缓存。因此应用队列要有界，手动流量控制要保证两端持续读取，别让双方都在等写入空间。
+
+<!-- gracker-diagram: a266-07-grpc-flow-recovery -->
+![流式RPC用有界队列、确认和游标恢复](../../assets/diagrams/ch24/a266-07-grpc-flow-recovery.png)
+
+图：消息交给 gRPC 不等于服务端已处理；重连后从业务确认位置恢复，不能仅重新打开流。
 
 #### 透明重试与 Service Config 重试
 
 重试在 gRPC 里分两层。没有显式重试策略时，框架的透明重试也可能恢复少量底层故障，前提是确认调用还没进入服务端应用逻辑——这类故障来自并发事件顺序的不确定。更大范围的重试靠 Service Config（服务配置），按方法设置尝试次数上限、逐次延长的等待间隔、可重试状态码和重试总量限制。
 
 看到状态码 `UNAVAILABLE`，重试之前先与服务端确认方法语义：
+
+<!-- gracker-diagram: a266-08-grpc-retry-commit -->
+![gRPC重试以提交边界与业务语义约束](../../assets/diagrams/ch24/a266-08-grpc-retry-commit.png)
+
+图：UNAVAILABLE 只提供重试线索；业务写的重复效果由服务端幂等和确认协议保护。
 
 - 查询或幂等操作可以在总截止时间内受控重试。
 - 写操作需要幂等键、版本条件或查询确认兜底，才谈得上按状态码重发。
@@ -359,6 +399,11 @@ gRPC 到 REST 则是两套接口契约，协议层不会自动回退，只有业
 - 分批发布、审计与数据一致性规则。
 
 双路径会增加测试与服务端维护成本。多数业务更适合在当前 RPC 上恢复或显示错误，看到任意 gRPC 失败就改发 REST 并不划算。
+
+<!-- gracker-diagram: a266-09-transport-and-contract-fallback -->
+![传输协商回退与双业务契约区别维护](../../assets/diagrams/ch24/a266-09-transport-and-contract-fallback.png)
+
+图：自动传输回退不等于自动业务重发；双接口必须共享幂等状态与权限语义。
 
 #### 更换传输实现时保持业务契约不变
 
@@ -498,6 +543,11 @@ ECH 保护的是握手中的特定字段，下面这几处它管不到，评估�
 
 所以 ECH 做到的是：网络库和服务端完成协商后，ClientHello 内的真实 SNI 等字段被加密，网络中间设备直接读取这些字段的能力被降低——域名对全部观察者隐身是做不到的。[RFC 9849](https://www.rfc-editor.org/rfc/rfc9849) 给出 ECH 协议细节，[RFC 9460](https://www.rfc-editor.org/rfc/rfc9460) 定义 HTTPS 与服务绑定（SVCB）资源记录。
 
+<!-- gracker-diagram: a266-10-ech-visible-boundary -->
+![ECH内外层与仍可观测的信息](../../assets/diagrams/ch24/a266-10-ech-visible-boundary.png)
+
+图：ECH 保护指定握手字段；加密 DNS、IP 暴露、日志与流量分析仍有各自边界。
+
 走 Android 17 平台 API 接入 ECH 的网络库，处理顺序如下：
 
 1. 网络库通过 `NetworkSecurityPolicy.getDomainEncryptionMode(hostname)` 读取应用对目标域名的策略。
@@ -507,6 +557,11 @@ ECH 保护的是握手中的特定字段，下面这几处它管不到，评估�
 5. 平台 TLS 实现发送 ECH ClientHello；服务端接受配置，或返回配置失配及可选的重试配置。
 
 `domainEncryption` 给到的只是按域名策略，网络库该做的 DNS 查询、握手配置和失配处理一样少不了；Android 官方文档也把网络库已接入 ECH 列为生效前提。
+
+<!-- gracker-diagram: a266-11-ech-api-integration -->
+![平台ECH能力需网络库逐段集成](../../assets/diagrams/ch24/a266-11-ech-api-integration.png)
+
+图：XML 声明需要库版本、DNS HTTPS 记录和 TLS 集成共同执行；只返回 IP 的自定义 DNS 可能丢失 ECH 配置。
 
 ### 在网络安全配置中声明 `domainEncryption`
 
@@ -561,6 +616,11 @@ fun domainEncryptionMode(hostname: String): String {
 
 模式与默认值以 [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config#domain-encryption) 为准，API 常量见 [`NetworkSecurityPolicy`](https://developer.android.com/reference/android/security/NetworkSecurityPolicy)。
 
+<!-- gracker-diagram: a266-12-domain-policy-modes -->
+![固定API37策略值与XML语法分层](../../assets/diagrams/ch24/a266-12-domain-policy-modes.png)
+
+图：区分XML可写模式、平台返回常量和实际协商；后续37.2新增required不纳入r1示例。
+
 ### Android 17 API 与源码位置
 
 `DnsResolver` 在 API 37 增加了返回 `HttpsEndpoint` 的查询重载：并发发出 A、AAAA 和 HTTPS 查询，调用方可以用 `httpsTimeoutMillis` 指定地址记录完成后还要等多久 HTTPS 记录。同在 API 37，`DnsResolver.getInstance()` 已废弃，新代码改用接收 `Context` 与 `Looper` 的构造函数。
@@ -614,6 +674,11 @@ ECH 失败要按发生阶段分类。表中用到的缓存生存时间（time to
 
 配置失配后的重试有一套硬性顺序：`EchConfigMismatchException` 要求客户端先取得 `getPublicHostname()`，用主机名验证器确认证书对该公开名称有效；公开名称为 `null` 时，重试配置必须忽略。验证成功、`getRetryConfigList()` 非空，网络库才可以新建连接重试；校验这一步省不掉。公共 API 的约束见 [`EchConfigMismatchException`](https://developer.android.com/reference/android/net/ssl/EchConfigMismatchException)。
 
+<!-- gracker-diagram: a266-13-ech-mismatch-authentication -->
+![配置失配重试先验证公开名称](../../assets/diagrams/ch24/a266-13-ech-mismatch-authentication.png)
+
+图：先认证公开名称，再解释重试配置；配置轮换、DNS TTL 和总预算共同约束恢复。
+
 还要把 CT 和 ECH 分开：Android 17 对 `targetSdkVersion 37` 及以上的应用默认启用证书透明度（Certificate Transparency，CT），证书颁发机构（CA）签发证书后，签名证书时间戳（SCT）可以证明该证书已提交到 CT 日志。CT 与 ECH 都可能表现为 TLS 失败，但校验阶段不同——用系统 CA 时核对 SCT 与 CT 策略；用用户 CA 或应用内嵌 CA 时，网络安全配置可能因信任锚不是系统 CA 而关闭 CT，除非域名规则显式启用。禁用 ECH 不会改变证书链或 CT 的结果。
 
 `domainEncryption` 位于 APK 的资源 XML 里，普通远程配置改不动它：要把某个域名改成 `disabled`，通常得发布新版本。网络库自带的策略开关属于另一套配置，它和平台策略谁优先，必须先确认清楚；要即时生效的远程开关，得在 XML 之外另找。
@@ -631,6 +696,11 @@ ECH 的耗时影响可能来自几处：HTTPS DNS 查询等待、配置失配后
 | 业务 | 首包、关键接口分位数、页面首屏、媒体首缓冲 | 同时记录网络类型、代理、VPN、地域与运营商 |
 
 `DnsResolver` 的三个等待模式各有代价：`HTTPS_QUERY_WAIT_NONE` 在地址查询完成后立即回调，哪怕 HTTPS 查询还没返回，官方不建议用在安全或延迟敏感场景；`HTTPS_QUERY_WAIT_UNTIL_TIMEOUT` 等待 HTTPS 查询完成或超时，在丢弃 HTTPS 查询的网络里可能增加延迟。网络库通常从 `HTTPS_QUERY_WAIT_AUTO` 起步、按实测调整，应用别随意覆盖这个内部选择。
+
+<!-- gracker-diagram: a266-14-https-dns-wait -->
+![A/AAAA与HTTPS查询的等待边界](../../assets/diagrams/ch24/a266-14-https-dns-wait.png)
+
+图：HTTPS 记录等待可能影响隐私能力与尾延迟；电脑 dig 的结果不能代表 Android 在 VPN、Private DNS 或 HTTPDNS 下的答案。
 
 `dig` 是查询 DNS 记录的命令行工具。下面这条命令用当前电脑配置的解析器，检查域名有没有发布 HTTPS 记录：
 
@@ -654,6 +724,11 @@ dig HTTPS api.example.com +short
 - 分开观察普通网络、企业代理、VPN、校园网、蜂窝网络和不同地域。
 
 对照实验有个陷阱：`targetSdkVersion 36` 与 37 的差异里混着 CT 等其他行为变化，直接对比会把 CT 的效果算进 ECH。实验室可以在相同网络库和代码下构建两份网络安全配置，一份保持 `enabled`，另一份把候选域名设为 `disabled`，这样就只改变了 ECH 策略；生产发布还要把应用版本更新需要的时间算进去。
+
+<!-- gracker-diagram: a266-15-ech-rollout-evidence -->
+![ECH发布按证据链与错误阶段回退](../../assets/diagrams/ch24/a266-15-ech-rollout-evidence.png)
+
+图：不要用target36/37差异单独归因ECH；CT、证书、QUIC与本地权限先按失败阶段分类。
 
 回退手段有三类：
 

@@ -136,6 +136,11 @@ Android 平台分三步向应用公开相关信号：
 
 `NET_CAPABILITY_NOT_METERED` 描述计费属性，`NET_CAPABILITY_NOT_CONGESTED` 描述当前拥塞状况，各自回答各自的问题，带宽约束要看专门的能力位。上下行带宽字段给的是首跳估算值，也就是对设备到接入网络这一段能力的预测；应用到服务端的实际吞吐，我们要靠应用自己实测。
 
+<!-- gracker-diagram: a269-01-independent-network-signals -->
+![卫星、约束与计费分别形成预算](../../assets/diagrams/ch24/a269-01-independent-network-signals.png)
+
+图：卫星但不约束、约束但非卫星都成立；预算还要结合应用可用性与真实请求结果。
+
 ### AndroidManifest.xml 的接入声明
 
 Android 应用默认绕开约束卫星网络，完成数据预算适配之后，才轮到在 `<application>` 中加入平台要求的元数据。下面的清单声明该应用已经针对卫星数据做过优化：
@@ -154,6 +159,11 @@ Android 应用默认绕开约束卫星网络，完成数据预算适配之后，
 `INTERNET` 用于联网，`ACCESS_NETWORK_STATE` 用于注册网络回调；`android:value` 要替换为应用包名。根据 [`constrained satellite networks` 指南](https://developer.android.com/develop/connectivity/satellite/constrained-networks)，这项声明允许应用在约束卫星网络是唯一网络时使用该网络，也让系统设置页能够识别已经优化的应用。声明只说明应用一侧完成了适配；设备是否具备卫星功能、用户是否订阅、运营商是否放行、当前位置有没有覆盖，都要另行确认。
 
 遥测事件是应用为分析运行情况而记录并上传的行为或性能数据。这项元数据要由宿主应用自己加入：声明代表完整应用已经控制数据量和访问频率，而图片、视频、遥测事件和后台任务都握在宿主手里，网络库替它作不了这个承诺。
+
+<!-- gracker-diagram: a269-02-opt-in-and-operator -->
+![宿主优化声明与运营商服务资格分别确认](../../assets/diagrams/ch24/a269-02-opt-in-and-operator.png)
+
+图：优化声明允许仅剩约束卫星网络时接入，并供系统设置识别；不能显示成服务已开通。
 
 ### 以“最佳匹配网络”驱动应用预算
 
@@ -310,6 +320,11 @@ class ConstrainedNetworkMonitor(
 
 `registerBestMatchingNetworkCallback()` 反映的是请求的最佳匹配网络。若应用把某个 `Network` 显式绑定到专用客户端，我们应读取该绑定网络自己的能力，全局快照照搬过去会出错。VPN 也可能改变应用的实际出站路径，测试中要覆盖 VPN 开关。
 
+<!-- gracker-diagram: a269-03-coherent-budget-publication -->
+![切网先失效旧预算再合并回调快照](../../assets/diagrams/ch24/a269-03-coherent-budget-publication.png)
+
+图：null 表示暂时没有可用预算；消费者暂停自动传输，不能将旧 Network 快照继续当作当前状态。
+
 ### NTN（非地面网络） 状态与数据网络能力的分工
 
 NTN 是 non-terrestrial network，即非地面网络。Android 15 的 [`ServiceState.isUsingNonTerrestrialNetwork()`](https://developer.android.com/reference/android/telephony/ServiceState#isUsingNonTerrestrialNetwork%28%29) 表示设备的电话业务注册信息中存在非地面网络。
@@ -342,6 +357,11 @@ NTN 是 non-terrestrial network，即非地面网络。Android 15 的 [`ServiceS
 
 “用户关键”给的是发送优先级，重试的账照样要算：每次尝试都会消耗握手、请求头和载荷字节。客户端要把排队状态、最近一次错误和下一次允许尝试的时间写入持久化存储，进程重启后继续遵守同一策略。
 
+<!-- gracker-diagram: a269-04-priority-and-byte-budget -->
+![请求按用户价值分级并共享数据预算](../../assets/diagrams/ch24/a269-04-priority-and-byte-budget.png)
+
+图：优先级不豁免字节与重试成本；持久保存排队、错误和下次允许尝试时间。
+
 ### 超时、重试与退避
 
 普通移动网络的超时值放到高时延网络上并不合适，把所有超时统一放大同样解决不了问题。建立连接、写入请求、等待响应头和读取响应体是不同阶段，我们应按真实卫星链路的测量分布和业务期限分别配置。
@@ -357,6 +377,11 @@ NTN 是 non-terrestrial network，即非地面网络。Android 15 的 [`ServiceS
 连续失败后，我们逐步延长等待时间，这就是重试退避；再在等待时间上加一点随机偏移，让大量设备错开同一时刻再次请求，这个偏移常称为随机抖动。退避状态按主机、接口和业务队列隔离。HTTP 429 表示请求过多，503 表示服务暂时不可用，这两类要和网络不可达分别记录；TLS 证书错误、身份验证（鉴权）失败和业务校验失败则要另行处理，网络重试帮不上忙。应用从无网络恢复时也别同时启动所有队列，调度器应按优先级分批提交。
 
 Android 后台任务框架 WorkManager 的 `UNMETERED` 约束只表示网络不按流量计费，表达不了 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED`。所以 WorkManager 批量任务开始传输前，需要再次读取应用保存的网络预算；发现约束网络后结束本次工作或延后执行，同时避免反复重新入队造成额外唤醒。
+
+<!-- gracker-diagram: a269-05-retry-eligibility-and-deadline -->
+![重试受幂等、服务端退避和任务期限约束](../../assets/diagrams/ch24/a269-05-retry-eligibility-and-deadline.png)
+
+图：429/503 与无网络分别分类；证书、鉴权和业务校验错误不靠重复网络重试解决。
 
 ### Firebase Cloud Messaging（FCM）的约束网络投递
 
@@ -404,6 +429,11 @@ FCM HTTP v1 的 Android 配置支持 `bandwidth_constrained_ok`。项目内可�
 
 `FCM_REGISTRATION_TOKEN` 要替换为目标应用实例的 FCM 注册令牌。`collapse_key` 是折叠键：同一设备上属于同一组、尚未投递的旧消息可以由新消息替代，适合“只需最新状态”的提示。TTL（time to live，存活时间）决定 FCM 最长为发送端保留消息多久。两者都要按消息语义设置，避免网络恢复后集中投递已经过期的通知。
 
+<!-- gracker-diagram: a269-06-fcm-two-conditions -->
+![FCM投递标记与业务数据拉取分别控制](../../assets/diagrams/ch24/a269-06-fcm-two-conditions.png)
+
+图：TTL 控制等待期限，collapse_key 适合只需最新状态的消息；服务端标记必须对应实际适配。
+
 ### 先减少载荷和网络往返
 
 业务载荷过大时，调协议参数只能省下剩余开销。低数据模式可以从这些位置减少字节：
@@ -427,6 +457,11 @@ FCM HTTP v1 的 Android 配置支持 `bandwidth_constrained_ok`。项目内可�
 - 发送失败，需要用户处理。
 
 卫星覆盖可能间歇中断，本地入队离“已送达”还有一段网络路径，界面要把这两件事分开。删除、支付、权限修改等敏感操作要显示服务端确认结果：客户端把请求写了出去，只说明发送流程启动了。
+
+<!-- gracker-diagram: a269-07-durable-delivery-states -->
+![本地队列与服务端回执区分交付状态](../../assets/diagrams/ch24/a269-07-durable-delivery-states.png)
+
+图：界面状态与协议证据对应；离线缓存不是网络投递凭证，恢复后也要分批放行。
 
 ### 协议选型
 
@@ -638,6 +673,11 @@ Wi-Fi、虚拟专用网络（VPN）、企业专用网络，以及应用主动绑
 
 默认或活动数据订阅变化、飞行模式恢复以及媒体连接从 Wi-Fi 切到蜂窝时，都要重新计算。`subscriptionId` 只在设备本地用于匹配，当作稳定用户标识上传是靠不住的。
 
+<!-- gracker-diagram: a269-08-subscription-route-matching -->
+![流媒体上限先匹配实际承载订阅](../../assets/diagrams/ch24/a269-08-subscription-route-matching.png)
+
+图：默认数据订阅可能不是活动数据订阅；切网与订阅变化后重新匹配，订阅ID不作稳定用户标识。
+
 ### 把运营商上限接入 ABR
 
 ABR 至少有三类输入。Media3 是 AndroidX 的媒体播放库，ExoPlayer 是其中的播放器实现；`BandwidthMeter` 是 Media3 根据近期媒体传输样本估算可用带宽的组件。
@@ -658,6 +698,11 @@ ABR 至少有三类输入。Media3 是 AndroidX 的媒体播放库，ExoPlayer �
 4. 仍由实时吞吐、缓冲状态和解码能力在剩余候选中选择。
 
 运营商上限和 `DefaultBandwidthMeter` 的采样结果应作为两个独立输入。合并成一个数会混淆数据计划允许的速率与当前路径测得的吞吐，网络切换后的估计也会失真。
+
+<!-- gracker-diagram: a269-09-media-plan-and-abr -->
+![运营商上限约束候选而实时ABR继续择档](../../assets/diagrams/ch24/a269-09-media-plan-and-abr.png)
+
+图：计划上限、路径测量和缓冲是不同输入；库默认 0.7 与 1Mbps 是参数，不是普适性能目标。
 
 点播与直播下行可以约束候选视频轨道，RTC 或直播推流则使用上行接口约束编码目标。信令、小型控制请求和鉴权走的是控制路径，不占媒体码率预算；上行速率未知时照样可以建连。
 
@@ -683,6 +728,11 @@ WebView 沿用宿主应用的权限状态。
 
 系统配置的 DNS 服务器位于本地网络时，发往其 53 端口的域名解析流量属于官方列出的例外。这个例外只保证系统 DNS 可用，不允许应用绕过权限访问其他本地 DNS 服务或端口。
 
+<!-- gracker-diagram: a269-10-lan-protection-scope -->
+![本地网络保护按接口和地址范围判定](../../assets/diagrams/ch24/a269-10-lan-protection-scope.png)
+
+图：系统 DNS 例外仅限配置的服务器与 53 端口；手动输入IP或换网络库都不能绕过LNP。
+
 ### Android 16 到 Android 17 的迁移
 
 兼容性变更是系统提供的测试开关，用于在旧目标版本上提前模拟新行为。
@@ -701,6 +751,11 @@ adb reboot
 ```
 
 启用后，应用进程中的本地网络套接字会受到限制。Android 16 文档同时指出，`NsdManager` 等由系统服务代替应用执行网络操作的框架 API，不在这次主动测试的完整覆盖范围内。系统设备选择器和权限拒绝路径仍要在 Android 17 / API 37 真机上复测。
+
+<!-- gracker-diagram: a269-11-lan-target-migration -->
+![Android16测试与Android17目标升级分步验证](../../assets/diagrams/ch24/a269-11-lan-target-migration.png)
+
+图：target SDK 固定在安装包中；对比靠不同构建版本，不能在同一包内按用户随机切换。
 
 ### 两条授权路径
 
@@ -754,6 +809,11 @@ fun showNsdServicePicker(
 
 系统会记住用户批准的服务，授权可跨重启保留，但用户或系统仍可能撤销。再次连接前可用 `checkPermissionForService()` 查询权限，并通过 `registerServiceInfoCallback(NsdServiceInfo, ...)` 获取最新地址。需要在不显示选择界面的情况下查找已批准服务时，使用 `FLAG_USER_APPROVED_ONLY`；它与 `FLAG_SHOW_PICKER` 互斥。
 
+<!-- gracker-diagram: a269-13-nsd-grant-and-refresh -->
+![NSD服务授权可持久但连接地址必须刷新](../../assets/diagrams/ch24/a269-13-nsd-grant-and-refresh.png)
+
+图：USER_APPROVED_ONLY 用于不弹选择器地查找已批准服务；没有服务授权时不能改用保存IP绕过。
+
 #### 路径二：运行时权限
 
 持续扫描、多设备控制、后台维护连接、本地服务器或自定义发现协议通常需要访问整个局域网。目标 API 37 的应用先在清单中声明：
@@ -792,6 +852,11 @@ private fun startLanFeature() {
 ```
 
 权限属于 `NEARBY_DEVICES`（附近设备）权限组。用户已经允许同组其他权限时，系统可能直接返回已授权，不显示新弹窗。拒绝或在设置中撤销后，要停止扫描、关闭相关套接字，并改用系统设备选择器或说明功能暂不可用。手动输入本地 IP 仍会撞上同一道权限，从这里绕不过去；应用也别在后台反复发起权限请求。
+
+<!-- gracker-diagram: a269-12-lan-two-authorizations -->
+![设备选择授权与广泛局域网权限两条路径](../../assets/diagrams/ch24/a269-12-lan-two-authorizations.png)
+
+图：权限路径与选择器路径分别统计；手动输入本地地址仍受保护，拒绝不触发后台反复请求。
 
 ### 失败分类与归因
 
@@ -870,6 +935,11 @@ Android 17 为目标 API 37 及以上应用把 ECH 默认模式设为 `enabled`�
 
 套接字或播放器已经收到数据后，主线程排队仍可能延迟界面更新。Android 17 为目标 API 37 及以上应用启用新的无锁 `MessageQueue` 实现，源码中称为 DeliQueue；它改变的是消息入队和投递，不是网络传输。应分别记录网络完成、播放器消费和界面提交事件，再按 1.8 的回调投递方法排查。
 
+<!-- gracker-diagram: a269-15-network-to-ui-delay -->
+![数据到达、播放器消费与界面提交分别计时](../../assets/diagrams/ch24/a269-15-network-to-ui-delay.png)
+
+图：网络已经完成后，线程排队、播放器处理和主线程提交仍可增加用户等待；分别记录边界。
+
 ### `android-17.0.0_r1` 源码锚点
 
 | 职责 | 源码 | 复核重点 |
@@ -884,6 +954,11 @@ Android 17 为目标 API 37 及以上应用把 ECH 默认模式设为 `enabled`�
 | 阻断原因 | [`connectivity_native.cpp`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/libconnectivity/src/connectivity_native.cpp) | `SO_ANDROID_DROP_REASON` 与 LNP 原因映射 |
 
 这张表用于核对 Android 17 首发版本的实现范围。应用代码仍应调用公开 SDK，并记录设备系统构建、SDK Extension、播放器与网络库版本；隐藏接口与具体 BPF 映射布局留给源码核对，业务代码以公开接口为准。
+
+<!-- gracker-diagram: a269-14-lnp-error-evidence -->
+![TCP超时需明确阻断原因才能归因LNP](../../assets/diagrams/ch24/a269-14-lnp-error-evidence.png)
+
+图：权限经 PermissionMonitor 进入 BPF 策略；更换 OkHttp/Cronet/Socket 不改变系统授权结论。
 
 ### 发布前检查清单
 

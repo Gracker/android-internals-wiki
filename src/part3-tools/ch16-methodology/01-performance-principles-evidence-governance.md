@@ -152,6 +152,11 @@ last_body_apply_at: '2026-10-11T07:16:50+08:00'
 - 「术」规定从现象到证据、从假设到验证的分析顺序。
 - 「器」负责采集、查询和呈现证据，每种工具都有可见范围与扰动成本。
 
+<!-- gracker-diagram: ch16-01-01-goal-method-tool -->
+![目标、分析方法与工具的分工](../../assets/diagrams/ch16/ch16-01-01-goal-method-tool.png)
+
+图：先定义用户结果，再用可证伪假设组织调查，最后配置对应的采集能力。 工具的覆盖和扰动决定能看见什么；单个函数或工具标签不能代表整个用户旅程。
+
 本书的平台结论以 Android 17 为上限，Android 7、10、11 等历史节点只用来解释 API 和观测方式怎么演进；内核行为不在本节展开，版本依据见文首基线。
 
 ### 「道」：从用户场景定义性能
@@ -199,6 +204,11 @@ TTID（Time to Initial Display） 只看首帧什么时候出现；TTFD（Time t
 
 我们推荐的工作顺序是：先用线上数据选择场景和设备层级，再进实验室环境复现并定位，最后用基准测试和按版本、设备等维度分组的线上数据验证改动。
 
+<!-- gracker-diagram: ch16-01-02-lab-and-population -->
+![实验室和线上证据的反馈](../../assets/diagrams/ch16/ch16-01-02-lab-and-population.png)
+
+图：线上分群帮助选择场景和设备，实验室控制变量定位，发布后再复核用户结果。 实验室设备不能代表全部用户，线上聚合也不能独自证明单次代码根因。
+
 #### 性能维护要进入日常变更流程
 
 性能会随业务代码、依赖、编译器、系统版本和设备环境变化。一次专项优化只能改变当时的基线。可持续的维护机制包含四类记录：
@@ -240,6 +250,11 @@ TTID（Time to Initial Display） 只看首帧什么时候出现；TTFD（Time t
 
 用相同协议复测，比较分布与置信区间（估计结果的不确定范围），并检查内存、功耗、稳定性和业务正确性。把主线程工作挪到后台线程可能改善帧耗时，也可能带来 CPU 竞争、启动后的尾部延迟或耗电。
 
+<!-- gracker-diagram: ch16-01-03-six-step-investigation -->
+![从现象到复测的六步流程](../../assets/diagrams/ch16/ch16-01-03-six-step-investigation.png)
+
+图：先保存修改前的基线，再采集区分假设的证据，逐项干预并复测。 一次改变一个主要变量有助归因；最终结论限于已覆盖设备、场景和条件。
+
 #### 用证据等级约束结论
 
 性能调查里，我们很容易从“两个事件同时出现”直接跳到“其中一个导致另一个”。报告要把结论分成四级，写清楚当前停在哪一级：
@@ -252,6 +267,11 @@ TTID（Time to Initial Display） 只看首帧什么时候出现；TTFD（Time t
 | 复现 | 不同轮次、设备或灰度（分批发布）对照是否保持同方向 | 结论适用于已经覆盖的总体 |
 
 每个候选原因还应写成“假设—预期观测—反证—状态”。比如我们假设主线程 CPU bound（耗时主要在 CPU 计算上）。这时预期的 wall time（经过的总时间） 就会接近 on-CPU time（线程真正占用 CPU 的时间），采样栈集中在稳定调用链；如果大部分时间实际花在 Runnable、Binder 等待或锁等待上，这条假设就应降级或被排除。把被证伪的假设也留下来，下一位排查者就不必重复同一条无效路径。
+
+<!-- gracker-diagram: ch16-01-04-evidence-strength -->
+![观测、机制、干预与复现](../../assets/diagrams/ch16/ch16-01-04-evidence-strength.png)
+
+图：把时间上的共同出现，逐步推进到机制连接、受控干预和重复验证。 这是结论强度的检查顺序；未完成后续验证时仍保留假设，不写成确定根因。
 
 #### 测量协议与常见偏差
 
@@ -269,6 +289,11 @@ TTID（Time to Initial Display） 只看首帧什么时候出现；TTFD（Time t
 
 AndroidX 官方把 Macrobenchmark（从进程外测量完整用户交互） 定位为进程外的端到端测量工具，允许控制启动和编译状态；Microbenchmark（在进程内循环测量可独立调用的小段代码） 面向进程内代码片段。两者各有适用范围，结果直接互换会出错。
 
+<!-- gracker-diagram: ch16-01-05-measurement-protocol -->
+![三组必须固定的实验条件](../../assets/diagrams/ch16/ch16-01-05-measurement-protocol.png)
+
+图：分别固定构建编译、设备场景与观测协议，比较分布和测量噪声。 冷进程、清数据和清页缓存不是同一条件；采集本身也需要扰动对照。
+
 #### 平台观测能力与限制
 
 ##### FrameMetrics 与 FrameTimeline
@@ -276,6 +301,11 @@ AndroidX 官方把 Macrobenchmark（从进程外测量完整用户交互） 定�
 `FrameMetrics` 从 API 24 起提供窗口帧的阶段耗时，`FrameMetrics.java` 仍定义 `TOTAL_DURATION`、`DEADLINE`、`GPU_DURATION` 和 `FRAME_TIMELINE_VSYNC_ID` 等指标。源码注释给出的判断关系是 `TOTAL_DURATION < DEADLINE`；用它时我们仍要考虑回调开销、丢失的帧信息和 UI 工具栈差异。
 
 Android 12 引入的 FrameTimeline 为应用帧与 SurfaceFlinger 帧建立关联并给出 jank（卡顿帧） 信息。我们分析 Trace 时，沿实际 vsync ID（垂直同步标识）、deadline 和 jank type（卡顿类型） 追，别只按 60 Hz 预算推断。
+
+<!-- gracker-diagram: ch16-01-06-window-and-display-evidence -->
+![窗口帧指标与完整显示链](../../assets/diagrams/ch16/ch16-01-06-window-and-display-evidence.png)
+
+图：FrameMetrics描述窗口阶段，FrameTimeline把应用生产与系统显示帧联系起来。 后加字段不能统一按API24使用；应用TOTAL_DURATION满足窗口deadline也不证明显示后段及时。
 
 ##### Perfetto（系统 trace 采集与分析工具）
 
@@ -295,6 +325,11 @@ Baseline Profile 是构建、分发和 ART 编译三方的协作能力，不绑�
 
 `art/profman/profman.cc` 仍负责读取、合并和分析 profile，编译决策还会进入 ART 的 dexopt/dex2oat 路径。`ProfileVerifier` 的安装或编译状态要按其枚举语义读取——APK 里有 `baseline.prof`，本身说明不了目标代码已经完成 AOT 编译。
 
+<!-- gracker-diagram: ch16-01-07-profile-three-proofs -->
+![Profile生成、编译状态与收益](../../assets/diagrams/ch16/ch16-01-07-profile-three-proofs.png)
+
+图：将规则覆盖、正确打包、设备编译状态和真实场景收益分别验证。 包内有baseline.prof不证明关键方法已AOT；ProfileVerifier也不能逐方法证明全部编译效果。
+
 ##### BLAST 的版本含义
 
 AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`，Android 17 仍保留该实现。BLAST 负责协调图形 buffer（缓冲区） 与 SurfaceControl transaction（事务）。这个版本节点只说明实现已就位：旧版 BufferQueue 指标是否适用、App 侧某个超时该归因到谁，还要回到渲染诊断里看 FrameTimeline、BufferQueue/SurfaceFlinger 事件、fence（图形生产者与消费者之间的同步信号） 和线程调度。
@@ -312,6 +347,11 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 | 长时间高功耗或发热 | 缩短活动时间、减少唤醒与无效任务、检查 thermal 反馈 | 电量归因窗口过短、设备充电状态、其他进程和屏幕亮度 |
 
 优化时优先删掉不必要的关键路径工作。异步化只能改变执行位置；后台线程仍会消耗 CPU、内存带宽和电量，也可能与渲染线程竞争。
+
+<!-- gracker-diagram: ch16-01-08-running-runnable-waiting -->
+![计算、调度等待与阻塞分开](../../assets/diagrams/ch16/ch16-01-08-running-runnable-waiting.png)
+
+图：把关键线程的wall time拆成实际执行、等待CPU和等待依赖，再决定优化方向。 Runnable不是本线程正在计算；异步化改变执行位置，后台工作仍会竞争资源。
 
 ### 「器」：按问题选择证据工具
 
@@ -357,6 +397,11 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 3. 将调用栈映射到版本一致的函数符号和源码，区分业务持有、allocator 保留和共享内存。
 4. 重复同一 CUJ，验证增长斜率、峰值和退出后的回落。
 
+<!-- gracker-diagram: ch16-01-09-three-tool-combinations -->
+![启动、流畅度与内存的组合取证](../../assets/diagrams/ch16/ch16-01-09-three-tool-combinations.png)
+
+图：三类调查分别先建立结果，再补时间线、调用栈或引用证据，最后用同场景复测。 工具名不能代替本次采集字段；单次曲线和单个标签都不足以完成归因。
+
 ### 投入产出与性能预算
 
 #### 排优先级时看四个维度
@@ -380,6 +425,11 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 - 超限后的复测、审批与回滚规则。
 
 预算也要随产品阶段调整。新增安全检查或无障碍能力可能带来可接受成本；团队应记录成本、用户收益和批准人，避免为了守住旧数字而隐藏必要工作。
+
+<!-- gracker-diagram: ch16-01-10-budget-and-priority -->
+![优先级与可执行预算](../../assets/diagrams/ch16/ch16-01-10-budget-and-priority.png)
+
+图：先按用户影响和修复把握排序，再为具体CUJ写清预算、测量协议与超限动作。 主观评分只是排序辅助；预算目标与已测基线分别评审，低频严重故障可有更高优先级。
 
 #### 回归测试与线上观察
 
@@ -456,6 +506,11 @@ Google Play 的 60,684 条负面评论，是情感分析模型从 909,430 条评
 
 论文部分从五个学术数据库检索，先按 venue（期刊、会议等发表场所）过滤，再做人工排除和前后向 snowballing（沿参考文献与被引论文继续查找），最终纳入 85 篇 2012—2024 年的研究。论文、工具与数据集可以同时覆盖多个性能类别，所以“69/85 篇研究能耗”并不是一张互斥的饼图。
 
+<!-- gracker-diagram: ch16-01-11-research-selection-funnel -->
+![研究样本的筛选与适用范围](../../assets/diagrams/ch16/ch16-01-11-research-selection-funnel.png)
+
+图：现实样本先做关键词筛选再人工核查；论文部分另做数据库检索、排除与snowballing。 图中四个核查数按论文报告；它们不是后续多标签或factor子集图表的统一分母。
+
 #### 比例的适用范围
 
 这些比例描述的是研究最终样本中的分布。拿它们做团队自查，可以用在：
@@ -490,6 +545,11 @@ Google Play 的 60,684 条负面评论，是情感分析模型从 909,430 条评
 
 当然，这些来源之间也有交集：用户评论里能看到能耗、存储和网络流量，开发者也在修响应性问题，研究同样覆盖内存与响应性。研究支持的判断是“各来源的主导类别不同”，说成“各方关注完全分离”就过了。
 
+<!-- gracker-diagram: ch16-01-12-research-label-denominators -->
+![记录数、标签数与筛选子集](../../assets/diagrams/ch16/ch16-01-12-research-label-denominators.png)
+
+图：按固定作者提交复算问题标签，并为每项百分比保留实际分母。 开发者脚本排除factor为No且未按final_label过滤；SO记录数与论文有差异，比例不能外推到所有讨论。
+
 #### 57.14%、63.41%、70.73% 的正确分子
 
 论文先从现实世界样本归纳出 63 个 contributing factor（促成因素）s（促成因素）；把这些因素与文献结果合并后，得到包含 82 个因素的 taxonomy（分类体系）。最终分类体系比 63 个现实因素多 19 项——这个数字由 82−63 推得，论文并没有另列一组 19 项的统计。
@@ -501,6 +561,11 @@ Google Play 的 60,684 条负面评论，是情感分析模型从 909,430 条评
 | 公开数据集对 82 个综合因素的覆盖 | 24/82 | 58/82 | 70.73% |
 
 27/63 是已研究的 42.86%，未研究数是 36，别把 27 项写成未研究数量。14 个公开工具覆盖 30 个因素，12 个公开数据集覆盖 24 个因素；这里的“覆盖”只记录工具或数据集是否涉及某个因素，跟“工具对这些因素有稳定的工业检测率”是两回事。
+
+<!-- gracker-diagram: ch16-01-13-reported-factor-coverage -->
+![研究、工具与数据集覆盖的报告口径](../../assets/diagrams/ch16/ch16-01-13-reported-factor-coverage.png)
+
+图：将论文报告的现实因素覆盖与综合因素覆盖分开，分别写分子、分母和补数。 原稿45个文献因素与27+19不一致；这些是正文报告值，不表示已统一重编码，更不表示工业检测率。
 
 ### 七类性能后果与 63/82 因素
 
@@ -584,6 +649,11 @@ LIMIT 200;
 
 “`requestLayout()` 必然完整 measure + layout + draw”“`invalidate()` 只执行 draw”——这两种说法都把 Android 17 的实现过度简化了。
 
+<!-- gracker-diagram: ch16-01-15-view-state-invalidation -->
+![布局、绘制和渲染属性的触发范围](../../assets/diagrams/ch16/ch16-01-15-view-state-invalidation.png)
+
+图：按状态变化选择布局请求、绘制失效或渲染属性更新，并检查实际traversal。 请求可以合并；一次traversal执行哪些阶段取决于状态、父容器与缓存，不能由API名断言整树重做。
+
 #### 2. Unreleased References（未释放引用）
 
 这一类关注长生命周期 owner（负责管理任务生命周期的对象） 持有短生命周期对象：
@@ -597,6 +667,11 @@ LIMIT 200;
 匿名内部类和 lambda 并不总捕获整个外部对象，我们要看它们实际捕获了哪些字段。注册与注销也一样，按 API 约定和 owner（当前负责推进的人或团队） 生命周期判断即可，不必机械地要求所有 listener 都在 `onDestroy()` 注销。
 
 验证顺序是：先看 retained count（超期仍被保留的对象数）或 heap 增长，再取 heap dump，沿 dominator（释放后可连带释放大量下游对象的支配对象） 树查到 GC root（垃圾回收器起始引用）的路径，最后确认对象确实越过了预期生命周期。工具分工上，LeakCanary 适合开发和自动化场景，Memory Profiler 可继续分析 Java/Kotlin heap，native 分配问题再上 `heapprofd`。另外记住：单次 heap 大并不就是泄漏。
+
+<!-- gracker-diagram: ch16-01-16-reference-lifetime-proof -->
+![从超期对象回到实际持有者](../../assets/diagrams/ch16/ch16-01-16-reference-lifetime-proof.png)
+
+图：先确认对象超过预期生命周期，再沿引用路径识别长生命周期持有关系。 匿名类和lambda要检查实际捕获；大heap或仍有一个引用都不能独自证明泄漏。
 
 #### 3. Redundant Objects（冗余对象）
 
@@ -644,6 +719,11 @@ Android Lint 的 `DrawAllocation` 能发现一部分 draw/layout 内分配。Lin
 
 `InputStream.available()` 既不是文件总大小，也不适合拿来决定“读取完整文件”的 buffer。流式固定大小 buffer 或受控库通常更安全。
 
+<!-- gracker-diagram: ch16-01-17-allocation-and-data-peak -->
+![热点分配和输入规模的两条验证线](../../assets/diagrams/ch16/ch16-01-17-allocation-and-data-peak.png)
+
+图：把高频重复分配和单次大输入峰值分别取证，再决定复用、流式或限流方案。 4000×3000×4仅是48,000,000字节像素数据；副本、行跨度和GPU资源另计，available不是文件总长度。
+
 #### 5. UI Operations（UI 操作）
 
 论文把 draw 循环、重复 UI 工作等归入 UI Operations。View 与 Compose 的审查方式不同，但都要回答同一个问题：哪些状态变化触发了多少工作。
@@ -673,6 +753,11 @@ Compose 这边我们关注 state 读取范围、recomposition（状态变化后�
 
 单次调用快，循环累积后也可能超预算；单次调用慢，只要在后台且不影响目标指标，也可能无需修改。分工是：Code Review 负责发现候选，benchmark、trace 和线上指标负责判定影响。
 
+<!-- gracker-diagram: ch16-01-14-patterns-to-runtime -->
+![六类代码模式怎样进入动态验证](../../assets/diagrams/ch16/ch16-01-14-patterns-to-runtime.png)
+
+图：把API/UI、引用/对象和大数据/任务模式作为候选，再用运行证据验证影响。 论文经验分组不是Android规范或静态定罪规则；命中模式后先记录场景与验证方法。
+
 ### 现代补充：主线程同步 Binder
 
 主线程同步 Binder 会把远端执行时间、服务端排队、锁、I/O 与 CPU 调度一起传给客户端。Android 官方 ANR 指南把 `slow binder call`（耗时 Binder 调用） 和 `many consecutive binder calls`（连续多次 Binder 调用） 列为输入分发 ANR 的常见原因。
@@ -689,6 +774,11 @@ Compose 这边我们关注 state 读取范围、recomposition（状态变化后�
 6. 对照 ANR trace、Perfetto 时间窗和源码服务入口。
 
 `ioctl(BINDER_WRITE_READ)` 只有在 trace 采集了相关 syscall/ftrace 信息时才会直接显示。Binder transaction slice 与 flow 通常更适合作为入口。
+
+<!-- gracker-diagram: ch16-01-18-synchronous-binder-attribution -->
+![同步Binder的等待如何跨进程形成](../../assets/diagrams/ch16/ch16-01-18-synchronous-binder-attribution.png)
+
+图：从客户端等待沿Binder关系找到服务端，逐段区分执行、排队和下游依赖。 客户端wall time包含远端与调度；缺失flow只能形成辅助关联，采集不到syscall不代表没有Binder。
 
 #### 修复要按所有权选择
 
@@ -729,6 +819,11 @@ Cached apps freezer（缓存进程冻结机制）从 Android 11 开始受到平�
 Unfreeze 与慢帧相邻，只说明时间上相关。要在调度、page fault、GC、Binder 或业务工作上找到耗时，归因才能再往下走；短时 CPU 竞争也要通过 Runnable 时间和同核竞争线程验证。
 
 这一节的 Framework 结论以 `CachedAppOptimizer.java` 为准；cgroup（control group，内核资源分组） freezer（通过 control group 暂停进程的内核机制）、Binder driver 与调度器属于内核行为，版本依据见文首基线。
+
+<!-- gracker-diagram: ch16-01-19-freezer-and-resume -->
+![cached进程冻结、恢复与异常IPC](../../assets/diagrams/ch16/ch16-01-19-freezer-and-resume.png)
+
+图：区分cached等待、真正冻结、正常恢复和错误IPC的终止路径。 Freezer instant不独自证明操作成功；10秒是可覆盖资源默认值，Unfreeze邻近慢帧仍需机制和对照证据。
 
 ### 从数据看排查优先级
 
@@ -788,6 +883,11 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 
 审查时还要看读取是否触发磁盘、写入频率、durability（崩溃或重启后数据是否仍可靠保存）、一致性、多进程需求和迁移方案。把 `commit()` 机械替换成 `apply()`，只消除了调用点的同步写盘，生命周期 I/O 的其余问题还在。
 
+<!-- gracker-diagram: ch16-01-20-preferences-lifecycle-wait -->
+![apply异步写入与生命周期等待](../../assets/diagrams/ch16/ch16-01-20-preferences-lifecycle-wait.png)
+
+图：apply先更新内存并安排写盘，生命周期切换仍可能等待未完成写入。 把commit替换成apply不能自动消除生命周期I/O；还要检查读取、频率、一致性与持久化需求。
+
 ### 实践步骤
 
 这套方法可以落实为三项动作：
@@ -841,6 +941,11 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 8. **验收**：在线下同协议复测，并在线上同分群确认用户结果。
 
 工单里缺了指标合同、可回查样本、当前 owner、修复版本或验收条件中的任何一项，流程就停在了中间。告警关闭也未必证明修复成功：采样切换、上报中断或用户构成变化同样会让曲线掉下来。
+
+<!-- gracker-diagram: ch16-01-21-signal-to-acceptance -->
+![信号、调查、修复与验收的回路](../../assets/diagrams/ch16/ch16-01-21-signal-to-acceptance.png)
+
+图：把数据健康、异常分群、可回查样本和当前负责人连到修复与发布验收。 这是本章建议的团队流程；告警消失可能来自采样或上报变化，不能直接等同修复成功。
 
 ### 五项治理要素
 
@@ -899,6 +1004,11 @@ Baseline Profile 是随应用或库发布的类与方法规则，用来指导 AR
 | 线上门禁 | 灰度 ANR/crash、启动 tail（高百分位的慢样本）、慢帧、OOM、退出原因 | 暂停扩量、关闭开关或回滚 |
 
 Benchmark 是带噪测量，噪声指同一条件下重复运行仍会出现的随机波动。Android 官方 CI 文档明确提醒：它不像普通测试那样天然只有 pass/fail。要建可靠的门禁，我们先量出设备自身的历史噪声，再规定：
+
+<!-- gracker-diagram: ch16-01-22-gates-and-release -->
+![三种门禁对应不同的证据与动作](../../assets/diagrams/ch16/ch16-01-22-gates-and-release.png)
+
+图：确定性制品检查、带噪基准测量和线上灰度门禁分别制定失败规则。 预算目标与基线水平分开；测量先检查条件和噪声，灰度扩量与回滚条件应预先写明。
 
 - 候选与基线的最小重复次数；
 - 可以比较的设备池；
@@ -999,6 +1109,11 @@ PR 模板可以要求作者填写：
 
 这类材料覆盖的版本与设备有限，结论要留在对应版本里；更适合的用法是转成工单要求：保存 tombstone、完整 logcat、触发输入、源码 tag、符号文件、对照组和修复验证用例。性能事故里也一样，只有把“谁触发、在哪个线程等待或崩溃、哪段源码解释这个现象、修复后用什么条件复测”写清楚，转交才有可执行入口。[来源: https://juejin.cn/post/7694564397684359208]
 
+<!-- gracker-diagram: ch16-01-23-handoff-evidence -->
+![跨团队交接与公开案例的证据链](../../assets/diagrams/ch16/ch16-01-23-handoff-evidence.png)
+
+图：交接记录保留触发条件、异常现场、版本符号、源码解释和修复验证入口。 所引system_server案例是作者的有限设备记录；时间相关与字符串线索用于提出假设，不能替代对应版本机制与对照。
+
 #### 工单状态与验收责任
 
 性能工单可以使用 `detected（已发现） → triaged（已分诊） → investigating（调查中） → fixing（修复中） → validating（验收中） → resolved（已解决）`。
@@ -1026,6 +1141,11 @@ PR 模板可以要求作者填写：
 
 多业务线共享平台时，`tenant_id`（租户，即一个独立业务或组织） 必须来自受信任的服务端身份或发布配置。查询、缓存、附件、导出、告警和审计全程执行 tenant + role（租户与权限角色） 校验；给 ID 加租户前缀只能避免碰撞，构成访问隔离是做不到的。
 
+<!-- gracker-diagram: ch16-01-24-data-identity-and-clocks -->
+![证据连接键与时间域](../../assets/diagrams/ch16/ch16-01-24-data-identity-and-clocks.png)
+
+图：事件、会话、进程实例和构建键各司其职，诊断制品按受控ID关联。 PID可复用，高基数ID不宜直接作指标标签；跨clock domain不能直接相减，UTC跨设备仍有校时误差。
+
 ### 例外机制
 
 业务可以在明确条件下接受性能回归。例外记录必须包含：
@@ -1037,6 +1157,11 @@ PR 模板可以要求作者填写：
 - 灰度观察与回滚规则。
 
 例外到期后自动恢复原门禁。团队若决定永久调整预算，要提交预算变更评审，展示用户影响、历史趋势和替代指标。想靠更新基线把回归藏起来，或者无限延长同一个例外，都不在允许的做法之内。
+
+<!-- gracker-diagram: ch16-01-25-exceptions-and-operating-cadence -->
+![例外、发布与日常回归的反馈](../../assets/diagrams/ch16/ch16-01-25-exceptions-and-operating-cadence.png)
+
+图：例外记录收益、风险、责任和到期条件，发布与事故结果再反馈到稳定的日常检查。 永久预算调整单独评审；不以更新基线掩盖回归，也不把不稳定检测强行作为硬门禁。
 
 ### 日常、版本和事故
 

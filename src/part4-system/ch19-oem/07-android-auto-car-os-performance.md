@@ -85,6 +85,11 @@ AAOS 还包含 CarService、VHAL、CarWatchdog 和车辆电源状态机。CarSer
 
 下面的图用于定位应用进程、host、网络和车辆接口。Android Auto 子图中的 host 位于手机，末端节点才代表车机显示、输入与音频。
 
+<!-- gracker-diagram: a205-01-platform-placement -->
+![Android Auto 与 AAOS 的实际执行位置](../../assets/diagrams/ch19/a205-01-platform-placement.png)
+
+图：两种平台中的模板都由客户端构建、host 绘制；Android Auto 的应用与 host 同在手机，投射接收端才在车机。
+
 ```mermaid
 flowchart LR
     subgraph auto["Android Auto 手机投射"]
@@ -120,6 +125,11 @@ flowchart LR
 
 Android 17 不会自动开启某个 Car App Library 模板，Jetpack 库升级也不会改变旧 host 的能力。产品代码应查询 host 能力和内容限制。当前文档还区分发布阶段：Car App Library 媒体体验在 Android 17 及更高版本 AAOS 上获得完整支持，在 Android Auto 上仍受早期访问与测试轨道限制；停驻游戏等类别也有各自的平台与发布轨道要求。不能只用 Android API level 推断类别可用性。
 
+<!-- gracker-diagram: a205-02-version-axes -->
+![车载能力由四个版本轴共同决定](../../assets/diagrams/ch19/a205-02-version-axes.png)
+
+图：排查时同时记录设备 SDK、Car App API、客户端依赖与 host/OEM 构建；类别发布状态还需另查当前文档。
+
 ## 模板应用的性能重点
 
 ### 冷启动路径
@@ -127,6 +137,11 @@ Android 17 不会自动开启某个 Car App Library 模板，Jetpack 库升级�
 典型模板应用要经过 `CarAppService` 绑定、`Session` 创建、首个 `Screen` 创建和 `Screen.onGetTemplate()` 返回。`Screen` 是管理一页模板及其生命周期的对象；host 只有拿到首个合法模板后才能呈现内容。
 
 `onGetTemplate()` 是同步取模接口。不要在回调中等待网络、数据库迁移、图片解码或路线计算。更稳妥的结构是：
+
+<!-- gracker-diagram: a205-03-first-template -->
+![首模板只依赖可立即读取的本地状态](../../assets/diagrams/ch19/a205-03-first-template.png)
+
+图：先返回可用模板；后台更新就绪后请求刷新，页面或会话失效时取消旧任务。
 
 1. 进程启动时恢复一份小而完整的本地快照；
 2. `onGetTemplate()` 只读取不可变界面状态（view state）并构建模板；
@@ -152,6 +167,11 @@ val visibleItems = items.take(gridLimit)
 
 `ConstraintManager` 返回 host 设定的内容上限，客户端不能修改。按运行时上限准备模型，比按某个车机分辨率或品牌维护固定列表更可靠；分页和“更多”操作也要服从对应模板的驾驶限制。
 
+<!-- gracker-diagram: a205-04-template-quota -->
+![模板配额和列表上限是两类约束](../../assets/diagrams/ch19/a205-04-template-quota.png)
+
+图：模板任务配额约束交互步骤，ConstraintManager 约束内容容量，两者都必须满足。
+
 ### 模板生成应测什么
 
 模板 UI 由 host 绘制。FrameTimeline 是 Android 记录应用帧生命周期与延迟的工具，但客户端进程中的 FrameTimeline 覆盖不到 host 的完整绘制和车端显示。客户端仍应记录：
@@ -174,6 +194,11 @@ val visibleItems = items.take(gridLimit)
 
 投射断开、host 重建、昼夜模式或配置变化都可能改变 Surface。host 还会通过 `onVisibleAreaChanged()` 告知当前保证无遮挡的 visible area，并通过 `onStableAreaChanged()` 给出考虑动态遮挡后长期稳定的最小区域。当前必须可见的重要内容应位于 visible area；不希望随 host 控件显隐移动的持续内容应位于 stable area。固定安全边距会在超宽屏、远端屏和不同旋转输入布局上出错。
 
+<!-- gracker-diagram: a205-05-surface-lifecycle -->
+![每次 Surface 回调都重新确认几何与资源](../../assets/diagrams/ch19/a205-05-surface-lifecycle.png)
+
+图：Surface 未销毁也可再次报告可用；每个收到的 Surface 实例都要释放，地图布局同时响应可见区域和稳定区域。
+
 ### 地图渲染预算
 
 地图 Surface 才有应用可控的持续帧处理流程。这里的帧预算指生成并提交一帧画面可用的时间。优化时分开观察：
@@ -187,6 +212,11 @@ val visibleItems = items.take(gridLimit)
 RenderThread 是 Android 提交绘制命令的专用线程，BufferQueue 在图形生产者和显示消费者之间传递缓冲区。路线计算、瓦片解码和图标生成不应阻塞渲染线程。快速拖动时可以取消已经离开当前地图范围的请求，合并重复瓦片，限制正在解码的任务数，并复用图形资源。热压力较高或 GPU 可用性能余量（headroom）不足时，可以减少非导航覆盖物、阴影和预取范围；路线、下一转向和安全相关提示仍要保持可读。
 
 不能把地图刷新率固定为 60 Hz。Surface 尺寸、host 显示模式和车辆产品配置会改变每帧可用时间。以设备报告和 trace 为准，并分别记录平均帧率、jank（迟到或丢失的帧）、帧呈现时间与功耗。
+
+<!-- gracker-diagram: a205-06-map-budget -->
+![地图管线按责任拆开观察](../../assets/diagrams/ch19/a205-06-map-budget.png)
+
+图：后台数据准备、应用提交与车端呈现分别量测；以目标设备显示配置确定预算。
 
 ### 导航状态和语音
 
@@ -209,6 +239,11 @@ Car App Library 导航应用通过 `NavigationManager` 更新 `Trip`、`TravelEs
 
 车载扬声器端到端时延还包含 Android 音频栈、AAOS CarAudioService 或 Android Auto host、DSP（数字信号处理器）和车辆放大器。应用 trace 只能覆盖其中一段。测量时分段记录命令接收、播放器状态变化、首个音频缓冲区和车内声学输出。
 
+<!-- gracker-diagram: a205-07-media-path -->
+![媒体控制与声音输出分段观测](../../assets/diagrams/ch19/a205-07-media-path.png)
+
+图：用同一命令标识关联状态和缓冲区事件，声学终点需要外部或平台观测补齐。
+
 视频、游戏和浏览器等停驻体验要按当前平台支持、车辆停驻状态和发布轨道处理。当前文档中，视频与浏览器主要面向 AAOS，停驻游戏可面向 Android Auto 与 AAOS，但部分能力仍处于受限测试阶段。普通媒体应用不能因为屏幕尺寸足够就允许行驶中播放视频。
 
 ## 网络与断线恢复
@@ -218,6 +253,11 @@ Car App Library 导航应用通过 `NavigationManager` 更新 `Trip`、`TravelEs
 Android Auto 的投射传输由手机上的 Android Auto 与车机接收端管理。客户端的业务请求通常使用手机网络，通过 `ConnectivityManager` 观察网络是否可用、是否按流量计费。AAOS 应用使用车机网络，可能来自蜂窝、Wi-Fi、以太网或厂商网关。
 
 应用不应通过私有 Wi-Fi 或蓝牙操作重建 Android Auto 连接。它要处理的是 host 会话生命周期和标准网络变化。两者可能独立发生：投射仍在但业务网络断开，或业务网络可用但 host 已离开。
+
+<!-- gracker-diagram: a205-08-independent-connectivity -->
+![投射会话与业务网络独立恢复](../../assets/diagrams/ch19/a205-08-independent-connectivity.png)
+
+图：投射连接由 Android Auto 管理，应用分别维护 host 会话、业务网络和持久状态。
 
 ### 可恢复的数据管线
 
@@ -248,6 +288,11 @@ AAOS CarWatchdog 通过内核 `/proc/uid_io/stats` 暴露的 per-UID（按应用
 
 写放大指底层实际写入量大于业务数据量。减少反复改写和无效淘汰，通常比单纯扩大缓存更有效。应同时记录逻辑下载字节、文件系统写入字节、缓存命中率和淘汰量。
 
+<!-- gracker-diagram: a205-09-watchdog-writes -->
+![CarWatchdog 按 UTC 自然日累计写入](../../assets/diagrams/ch19/a205-09-watchdog-writes.png)
+
+图：日累计不会因同日重启清零；阈值与动作按系统、类别和 OEM 配置执行。
+
 ### 车辆电源状态
 
 AAOS 的 `CarPowerManagementService`（CPMS）与 VHAL 协调启动（On）、关机准备（Shutdown Prepare）、内存挂起（Suspend-to-RAM，CPU 停止执行而内存继续供电）、磁盘休眠（Suspend-to-Disk，内存写入非易失存储后断电）和关机等状态。`CarPowerPolicyDaemon` 是集中管理电源策略的常驻后台进程，策略可以关闭显示、音频、定位、蓝牙或其他组件。
@@ -255,6 +300,11 @@ AAOS 的 `CarPowerManagementService`（CPMS）与 VHAL 协调启动（On）、�
 `CarPowerManager` 的多项状态与完成回调属于仅面向系统组件的受权限保护 System API。`setListenerWithCompletion()` 需要 `CONTROL_SHUTDOWN_PROCESS` 权限，普通第三方应用不能用它延长电源切换。应用要按常规 Android 生命周期持久化最小恢复状态，接受进程随时被终止，并在网络、位置或音频能力恢复后重建会话。
 
 在 `android-17.0.0_r1` 中，`CarPowerStateListenerWithCompletion` 只会为允许等待完成的状态传入非空 `CompletablePowerStateChangeFuture`，其中包括 `STATE_SHUTDOWN_PREPARE`、`STATE_SUSPEND_ENTER` 和 `STATE_HIBERNATION_ENTER` 等状态。特权服务完成清理后应在 `getExpirationTime()` 给出的期限前调用 `complete()`；到期后系统仍会继续转换。挂起或关机准备阶段不应启动大规模同步与缓存整理。
+
+<!-- gracker-diagram: a205-10-power-boundaries -->
+![车辆电源转换区分普通应用和特权服务](../../assets/diagrams/ch19/a205-10-power-boundaries.png)
+
+图：普通应用接受生命周期与能力变化；受 CONTROL_SHUTDOWN_PROCESS 保护的完成回调也受期限约束。
 
 ### 热环境与充电
 
@@ -269,6 +319,11 @@ Android 17 的 VHAL 接口由 AIDL（Android Interface Definition Language，用
 在 `android-17.0.0_r1` 中，旧的 `registerCallback()` 已弃用。设备开放相应功能开关时，新代码宜使用 `subscribePropertyEvents()`；需要兼容旧系统或未开放该接口的产品时，仍要保留旧订阅路径。连续属性的采样率是请求值，VHAL 不保证按精确频率回调。新接口默认启用可变更新率（variable update rate），数值没有变化时可以省略重复回调；只有业务需要固定频率样本时才关闭它。
 
 同步 `getProperty()` 或各类型的同步读取方法可能耗时数秒，不能从主线程调用。一次读取多个属性时可以使用 `getPropertiesAsync()`，或在受控后台线程执行兼容路径。订阅回调未显式指定 `Executor`（负责调度回调任务的执行器）时，会使用创建 `Car` 时传入的事件线程；没有提供该线程时通常落到主线程。回调中只保存快照并投递后续任务，解析、聚合和网络上传放到有队列上限的线程池。单次回调数据量过大，或 OEM 自定义车辆属性更新过于频繁，都会挤占车辆属性通道。
+
+<!-- gracker-diagram: a205-11-vehicle-data -->
+![车辆属性先过权限，再以有界任务消费](../../assets/diagrams/ch19/a205-11-vehicle-data.png)
+
+图：同步属性读取可能阻塞，回调线程也不宜承载重任务；请求采样率不代表精确回调频率。
 
 Android Auto 客户端不能直接访问 AAOS VHAL。跨平台需要有限车辆信息时，应使用 Car App Library 对应的 Car Hardware API，并处理 host 不支持该能力或权限受限的情况。
 
@@ -290,6 +345,11 @@ ADAS（Advanced Driver Assistance Systems，高级驾驶辅助系统）和其他
 
 应用用 `Trace.beginSection()` 标记业务阶段和模板构建，网络层记录请求 ID 与状态版本，媒体层记录 MediaSession 命令与播放器事件。Android Auto 还要在手机与 DHU 或车机日志中记录同一个测试事件，或使用可对齐的单调时钟；单调时钟只向前递增，不受用户校时影响，适合计算阶段耗时。
 
+<!-- gracker-diagram: a205-12-clock-domains -->
+![跨设备延迟必须先建立时间域映射](../../assets/diagrams/ch19/a205-12-clock-domains.png)
+
+图：单调时间不等于跨设备共享时间；没有时钟映射时不能直接相减两端时间戳。
+
 ### 工具选择
 
 - **Android Auto**：先用 Desktop Head Unit（DHU，在电脑上模拟兼容车机的测试程序）验证连接、旋钮或触摸等输入和 host 行为，再到多款量产车机做只能从外部观察结果的黑盒延迟与断线实验。
@@ -299,6 +359,11 @@ ADAS（Advanced Driver Assistance Systems，高级驾驶辅助系统）和其他
 - **Car App Library 测试**：单元测试 `Screen` 返回栈、模板类型、配额流程，以及不同 host 能力下的分支。
 
 模拟器和 DHU 适合重现逻辑与协议问题，不能代表量产车的 GPU、DSP、触控、无线干扰和散热。性能结论至少要在一台目标硬件上复核。
+
+<!-- gracker-diagram: a205-13-test-layers -->
+![逻辑验证与目标硬件性能验证分层](../../assets/diagrams/ch19/a205-13-test-layers.png)
+
+图：先用可重复环境定位逻辑，再在真实硬件复核分位数、样本数和异常条件。
 
 ### 建议指标
 

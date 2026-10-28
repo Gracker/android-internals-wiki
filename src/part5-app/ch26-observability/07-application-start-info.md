@@ -85,6 +85,11 @@ Android 15 / API 35 引入 `ApplicationStartInfo`，为应用提供系统侧的�
 
 它给每条启动样本补上系统归因，并为业务时间戳和诊断附件提供共同的进程、启动类型与时间基准。
 
+<!-- gracker-diagram: a292-01-three-start-evidence-layers -->
+![启动归因由系统、业务和重型附件共同建立](../../assets/diagrams/ch26/a292-01-three-start-evidence-layers.png)
+
+图：系统启动记录提供归因字段，慢代码定位和用户总体分布仍需其他证据与明确测量口径。
+
 ## Android 15 的两种读取入口
 
 ### 历史记录
@@ -101,11 +106,21 @@ Android 15 / API 35 引入 `ApplicationStartInfo`，为应用提供系统侧的�
 
 `getStartType()` 只在 `STARTUP_STATE_FIRST_FRAME_DRAWN` 时有保证。尚未完成的记录可能返回 `START_TYPE_UNSET`，也可能已经带有部分值；线上协议应使用 nullable 或 `unavailable`，不能把未设置值当成热启动。
 
+<!-- gracker-diagram: a292-02-startup-state-controls-available-fields -->
+![先看 startupState，再解释类型与阶段字段](../../assets/diagrams/ch26/a292-02-startup-state-controls-available-fields.png)
+
+图：成功冷启动耗时分布不包含失败样本，但ERROR/未完成必须进入失败率、完成率和采集健康护栏。
+
 ### 首帧完成回调
 
 `addApplicationStartInfoCompletionListener(executor, listener)` 在当前启动首帧绘制完成时通知应用。`Executor` 决定在哪个线程执行，listener 接收完成记录。回调不等待 `Activity.reportFullyDrawn()`；当前启动若已经完成，系统会立即把记录投递到指定 executor。每个 listener 最多调用一次，调用后自动移除；同一时刻已有 listener 时，新注册项会替换它。回调是异步的，注册和处理都应避免阻塞主线程。
 
 需要 `START_TIMESTAMP_FULLY_DRAWN` 时，应在调用 `reportFullyDrawn()` 后重新查询记录，或重新注册 listener 取得已经完成的记录。首帧回调拿到的是当时的副本，稍后不会自行更新。
+
+<!-- gracker-diagram: a292-03-completion-listener-and-late-fully-drawn -->
+![首帧 listener 不等待 fully-drawn，副本不会自动更新](../../assets/diagrams/ch26/a292-03-completion-listener-and-late-fully-drawn.png)
+
+图：公开注释仍有replace措辞；接入用单一owner管理注册/移除，不依赖新listener替换全部旧项。
 
 ## 字段边界
 
@@ -148,6 +163,11 @@ Android 16 / API 36 增加的 `getStartComponent()` 用于区分 Activity、Serv
 | reason 为 `OTHER` | 保留原始字段，进入待分类样本 |
 
 Android 15 缺少 start component 时，不要仅凭 reason 把样本永久定类。服务端可以标记 `component_source = unavailable`，并让业务入口补充候选分类。
+
+<!-- gracker-diagram: a292-04-component-reason-and-start-type -->
+![组件、原因、冷温热是三个独立维度](../../assets/diagrams/ch26/a292-04-component-reason-and-start-type.png)
+
+图：后台Service/Broadcast/Provider不进首页冷启动耗时分布；通知、深链和推送点击由业务场景进一步区分。
 
 ## 时间戳协议
 
@@ -243,6 +263,16 @@ fun markHomeReadyBeforeFullyDrawn(context: Context) {
 
 `START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START` 在这个示例的数据协议中固定表示 `HOME_READY`。生产实现要维护 key 注册表，避免不同模块复用 21–30 的同一位置。写入后仍应重新读取完成记录；采集层不在字段缺失时补 0。
 
+<!-- gracker-diagram: a292-05-uptime-versus-elapsed-realtime -->
+![都是纳秒单调时钟，也不能混用深睡规则](../../assets/diagrams/ch26/a292-05-uptime-versus-elapsed-realtime.png)
+
+图：阶段差只在同一记录、同一时基且key齐全时计算；纳秒单位相同不能证明时基相同。
+
+<!-- gracker-diagram: a292-06-developer-home-ready-and-fully-drawn-order -->
+![业务 HOME_READY 使用固定 key，并在 fully-drawn 前写入](../../assets/diagrams/ch26/a292-06-developer-home-ready-and-fully-drawn-order.png)
+
+图：markHomeReady函数不替调用者保证顺序；跨模块维护key注册表，不在同一个位置互相覆盖。
+
 ## 启动证据记录（envelope）
 
 系统记录和业务体验记录可以放在同一个 envelope，也就是一条汇集启动证据的结构化记录，但每个字段都要标明来源。
@@ -278,6 +308,11 @@ trigger 是系统事件满足条件后启动或保存 profiling 结果的触发�
 
 `TRIGGER_TYPE_APP_FULLY_DRAWN` 是 API 36 trigger，它在冷启动调用 `reportFullyDrawn()` 后保存正在运行的后台 system trace 快照，与 API 37 新启动采集的 cold-start trigger 语义不同。
 
+<!-- gracker-diagram: a292-07-cold-start-new-profile-versus-fully-drawn-snapshot -->
+![Cold-start 新建采集与 fully-drawn 保存快照不同](../../assets/diagrams/ch26/a292-07-cold-start-new-profile-versus-fully-drawn-snapshot.png)
+
+图：高成本附件只做抽样诊断，不能替代每次启动的轻量记录；回调缺失和无文件保留预期降级状态。
+
 ## 与 ApplicationExitInfo 联合归因
 
 `ApplicationExitInfo` 记录前一次进程退出，`ApplicationStartInfo` 记录本次进程启动。两者的时钟和进程身份不同：
@@ -298,6 +333,11 @@ trigger 是系统事件满足条件后启动或保存 profiling 结果的触发�
 | 用户请求终止 | `wasForceStopped()` 或用户再次显式启动 | 不计为 crash 恢复；检查 alarm/job 是否需重新注册 |
 
 `wasForceStopped()` 是本次启动记录上的直接信号，优先于从模糊 exit reason 推断。匹配失败时保留“无可确认前序退出”，不要把最近的一条退出记录强制关联给当前启动。
+
+<!-- gracker-diagram: a292-08-previous-exit-current-start-confidence-edge -->
+![前序退出和本次启动保留两份记录，再建立关联边](../../assets/diagrams/ch26/a292-08-previous-exit-current-start-confidence-edge.png)
+
+图：崩溃、ANR、LMK恢复、升级首启和用户再开分桶不同；PID不要求相等，包更新也会改变产物版本。
 
 ## 数据保留、采样和隐私
 
@@ -326,6 +366,11 @@ Macrobenchmark 是 AndroidX 在设备上重复执行完整应用场景的基准�
 Macrobenchmark 的 `StartupMode.COLD/WARM/HOT` 控制测试前置状态；`ApplicationStartInfo.START_TYPE_*` 是系统对一次线上启动的记录。两组枚举不要按整数值关联，也不要假定所有语义细节完全相同。CI 负责可重复回归，线上分位数负责用户分布，trace 负责解释异常样本。
 
 门禁配置应带样本量条件、统计窗口、设备和入口分桶、基线版本及回滚规则。平均值容易隐藏长尾，启动评审至少同时观察中位数、尾部分位和异常占比；具体阈值由产品目标、设备实验和稳定版本分布确定。
+
+<!-- gracker-diagram: a292-09-ci-field-distribution-and-coverage -->
+![CI、灰度与线上复用名称，保留各自测量口径](../../assets/diagrams/ch26/a292-09-ci-field-distribution-and-coverage.png)
+
+图：API35/36的Service launch timestamp存在已知边界，不拿它设Service门禁；API37也保留实际版本和原始字段。
 
 ## Android 15 / 16 / 17 能力表
 

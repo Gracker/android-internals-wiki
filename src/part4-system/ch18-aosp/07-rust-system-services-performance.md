@@ -109,6 +109,11 @@ Google 在 2021 年发布 Rust 支持时提到，内存不安全问题长期约�
 
 还有一点容易被忽略：Rust 的安全保证里有一部分是运行时工作。所有权、生命周期与大部分借用规则在编译期检查，数组边界、整数溢出以及某些状态约束则可能留到运行期——Soong 对设备端 Rust 显式开启 `-C overflow-checks=on`，所以“安全检查全部在编译期完成”的说法，在 r1 的构建配置面前站不住。
 
+<!-- gracker-diagram: ch18-07-01-safety-cost -->
+![编译期安全、运行期检查与业务成本分开评估](../../assets/diagrams/ch18/ch18-07-01-safety-cost.png)
+
+图：Rust 用编译期约束降低内存安全风险，运行期检查与 IPC、分配、锁和业务工作仍需测量。 AOSP 固定 tag 的 overflow/abort 等配置参与成本；历史漏洞比例和语言名不能换算成固定性能收益。
+
 ### 1.2 r1 中可核对的代表组件
 
 | 组件 | r1 形态 | 主要跨语言或跨进程边界 |
@@ -124,6 +129,11 @@ Google 在 2021 年发布 Rust 支持时提到，内存不安全问题长期约�
 r1 的 UWB 仓库位于 `packages/modules/Uwb`，Bluetooth Rust 代码位于 `packages/modules/Bluetooth/system/rust`。
 `system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader，在 r1 源码树里找不到对应路径，“已完成重写”也就无从谈起。
 
+<!-- gracker-diagram: ch18-07-04-avf-two-levels -->
+![AVF 的公开 RpcBinder 与全局 kernel Binder 分层](../../assets/diagrams/ch18/ch18-07-04-avf-two-levels.png)
+
+图：公开 Java 包装层连到独立 virtmgr 的 socket RpcBinder，全局内部服务再管理共享资源。 这些 Rust 服务位于不同进程且使用不同传输；不能把整条 AVF 路径画成 Java 经一次 driver 直达全局服务。
+
 ### 1.3 Keystore2 的 Binder 入口
 
 我们先看 Keystore2 的服务入口。它的 `Android.bp` 依赖 `libbinder_rs`，`KeystoreService` 在 Rust 中实现 `IKeystoreService`，进程启动后直接注册 native Binder 对象，创建和注册的位置在这两行：
@@ -137,6 +147,11 @@ binder::add_service(KS2_SERVICE_NAME, ks_service.as_binder())?;
 `libbinder_rs` 构建在 `libbinder_ndk` 上，内部虽然跨了 Rust/C ABI 边界，但那里没有第二笔 Binder IPC，业务层也无需先进入 C++ stub。
 
 生成密钥或签名请求的端到端时延，常见来源是 Binder 排队、数据库事务、SELinux 权限检查、KeyMint HAL、TEE（可信执行环境）/StrongBox 和远程密钥供应；这笔时延要按这些环节逐项拆解，一个空 FFI 函数的纳秒值覆盖不了它。
+
+<!-- gracker-diagram: ch18-07-03-keystore -->
+![Keystore2 直接注册 Rust Binder 服务入口](../../assets/diagrams/ch18/ch18-07-03-keystore.png)
+
+图：Keystore2 用 Rust AIDL 与 libbinder_rs/libbinder_ndk 接收请求，注册失败保留 r1 的 panic 策略。 C ABI 库边界不是额外一次 Binder IPC；业务请求还可涉及数据库、权限和可选硬件路径，不能按空 FFI 成本估计。
 
 ## 2. 三类边界
 
@@ -159,6 +174,11 @@ Java 或 native client → 语言对应的 AIDL proxy → Binder driver → Rust
 
 在这条路径上，Rust backend 让服务端保留 Rust 类型和所有权模型，同时遵守 AIDL wire format（跨进程传输时的字段编码规则）；Binder transaction 的进程跳转结构保持原样。所以我们先测 transaction 的排队与执行，再看生成代码和对象转换是否变成了高占比路径。
 
+<!-- gracker-diagram: ch18-07-05-binder-transports -->
+![按本地、kernel 与 socket 传输解释 Binder 调用](../../assets/diagrams/ch18/ch18-07-05-binder-transports.png)
+
+图：同一 AIDL 对象模型可对应不同传输与同步语义，先按实际目标确定成本边界。 本地优化、socket RpcBinder 与 oneway 都使统一的“每次必经 driver 并等 reply”模型失效。
+
 ### 2.2 Rust 与 C/C++ 的同进程 FFI
 
 `extern "C"` 走 C ABI，标量参数和 ABI 兼容结构体可按普通 native call 传递；成本风险主要落在边界两侧的工作上：
@@ -169,6 +189,11 @@ Java 或 native client → 语言对应的 AIDL proxy → Binder driver → Rust
 - 回调频率过高会放大每次固定成本。
 
 跨 Rust/C++ 编译单元的调用通常没法互相内联，这和 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释写得很清楚：它控制的是最终 Rust 链接的 LTO，cross-language LTO（跨语言链接期优化）在它管辖之外。所以 r1 默认的 ThinLTO（链接期的轻量级全程序优化） 能优化 Rust crate（Rust 编译与依赖单元） 依赖图；至于 Rust/C++ 边界会不会被跨语言内联，从 ThinLTO 默认值本身读不出来。
+
+<!-- gracker-diagram: ch18-07-06-ffi-contract -->
+![C ABI 只规定调用，布局和安全仍需接口契约](../../assets/diagrams/ch18/ch18-07-06-ffi-contract.png)
+
+图：extern C、布局、数据表示与最终优化是独立检查项。 Soong 的最终 Rust ThinLTO 配置不自动证明跨语言内联；ABI 可调用也不证明指针范围和生命周期有效。
 
 数据是否复制取决于接口形态。下面的 CXX bridge 例子用借用 slice 传递指针和长度：
 
@@ -195,6 +220,16 @@ mod ffi {
 
 “字符串一定执行一次 malloc + memcpy”同样说得太满：借用已有的 `CStr` 可以做到零复制，`CString::new` 处理拥有的数据时则要检查内部 NUL，还可能产生新的分配。
 
+<!-- gracker-diagram: ch18-07-07-borrowed-slice -->
+![CXX 借用 slice 传递地址和长度，所有者仍须有效](../../assets/diagrams/ch18/ch18-07-07-borrowed-slice.png)
+
+图：CXX 把受支持的 slice 表示转换为 Rust 借用，调用期间可直接访问原 payload。 不建立第二份 payload 数组不等于零调用开销；所有者、对齐、范围和别名/写入规则由两侧共同遵守。
+
+<!-- gracker-diagram: ch18-07-08-owned-types -->
+![Rust 容器与 C++ opaque 容器的所有权方式不同](../../assets/diagrams/ch18/ch18-07-08-owned-types.png)
+
+图：逐类型检查借用、拥有、移动和析构，不能把所有字符串或容器转换归成固定复制。 CxxString/CxxVector 在 Rust 侧不按值持有；CStr 借用与 CString 构造的扫描、分配条件也不同。
+
 ### 2.3 Rust 与 Java 的 JNI
 
 JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_ffi_shared` 生成可动态加载的 `cdylib`（面向 C ABI 的共享库） 共享库，Rust 借助 `jni` crate 就能直接导出 JNI symbol，只有既有接口或依赖有要求时才需要 C++ wrapper。
@@ -213,6 +248,16 @@ JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_f
 
 顺带澄清一个常见归类：Keystore2 对外的系统服务入口是 Binder，归入“Rust JNI 服务”并不合适；把所有 Java→Rust 交互都归为 JNI，会把 IPC 成本和语言转换成本混成一项。
 
+<!-- gracker-diagram: ch18-07-02-three-boundaries -->
+![同进程 FFI、JNI 与跨进程 IPC 的成本结构不同](../../assets/diagrams/ch18/ch18-07-02-three-boundaries.png)
+
+图：先确定进程和传输边界，再归因语言转换与业务执行成本。 Rust 服务不必同时经过三种路径；JNI 和 CXX 都可在同进程，Binder 的 local/RPC 变体另核对。
+
+<!-- gracker-diagram: ch18-07-09-jni-path -->
+![JNI 的线程状态、引用和 buffer 生命周期逐项核对](../../assets/diagrams/ch18/ch18-07-09-jni-path.png)
+
+图：同进程 JNI 调用要核对线程是否附加、Java 引用、类型转换和共享缓冲区生存期。 原生创建线程按需 attach 并在退出前 detach；direct ByteBuffer 不自动解决释放，也不自动跨进程共享。
+
 ## 3. panic、错误与资源所有权
 
 边界两侧的语言接上之后，错误处理和资源归属要一起设计。这一节依次看三件事：panic 怎么处理、内存由谁释放、`unsafe` 审核看什么。
@@ -224,6 +269,11 @@ JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_f
 所以我们在设计 FFI API 时，要把可预期失败编码成 `Result`、错误码、AIDL `Status` 或明确的 nullable/optional 返回值。panic 只留给违反内部不变量这类不可恢复错误，C++ exception 也不要穿过未声明可 unwind 的 Rust ABI 边界。
 
 `panic=abort` 也没有让 r1 去掉全部 unwind metadata（栈回溯所需的元数据）：Soong 同时设置 `-C force-unwind-tables=yes`，服务于栈回溯、采样和诊断。二进制会因此缩小多少，从 panic 策略是推算不出来的。
+
+<!-- gracker-diagram: ch18-07-10-error-policy -->
+![预期错误、panic=abort 与 unwind table 各自独立](../../assets/diagrams/ch18/ch18-07-10-error-policy.png)
+
+图：预期失败经协议返回，设备 panic 终止进程，回溯信息仍可保留。 CXX Result 的受支持异常转换由生成代码显式处理；它不使任意 ABI 可穿透异常，也不使 abort 可恢复。
 
 ### 3.2 谁分配，谁释放
 
@@ -238,6 +288,11 @@ JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_f
 即便 Rust 与 C++ 最终都走同一份 Scudo，`Vec`、`String`、`std::vector` 和 C++ class 的析构规则仍然不同。
 常见做法是让创建对象的一侧导出配套的 destroy 函数，或者用 CXX 的 `Box`/`UniquePtr` 把所有权约束住。
 
+<!-- gracker-diagram: ch18-07-11-ownership -->
+![跨边界对象沿约定的创建、借用和销毁闭环](../../assets/diagrams/ch18/ch18-07-11-ownership.png)
+
+图：创建对象的一侧或指定 wrapper 管理析构，调用方遵守句柄与借用有效期。 共享同一个 native allocator 不会统一 Vec、String 与 C++ 对象的析构规则；提前返回、重入和失败路径也要覆盖。
+
 ### 3.3 `unsafe` 的审核边界
 
 Rust 编译器证明不了裸指针、C ABI、设备寄存器与外部库满足安全条件。每个 `unsafe` block、每个承诺类型可跨线程传递或共享的 `unsafe impl Send/Sync`（由开发者承诺类型可跨线程传递或共享），都应写明：
@@ -251,6 +306,11 @@ Rust 编译器证明不了裸指针、C ABI、设备寄存器与外部库满足�
 
 我们审查 `unsafe` 的封装质量，看的就是这一点：设计得好，少量 `unsafe` 会被封装在窄接口里，其余业务代码继续写 safe Rust；反过来，把大段逻辑放进 `unsafe`，既减少迁移带来的安全收益，也让性能回归更难定位。
 
+<!-- gracker-diagram: ch18-07-12-unsafe-contract -->
+![unsafe 前置条件成为 safe 封装可依赖的边界](../../assets/diagrams/ch18/ch18-07-12-unsafe-contract.png)
+
+图：把不能由 Rust 编译器验证的外部前置条件限制在窄接口，再让 safe 业务依赖明确契约。 Send/Sync 承诺、裸指针和 C++ 回调仍须人工审核；unsafe 的数量本身不能证明安全或性能。
+
 ## 4. 运行时成本
 
 边界之外，Rust 代码自身还有四块运行时成本要分开评估：分配器、边界与溢出检查、锁与原子、代码体积。我们逐项来看。
@@ -259,6 +319,11 @@ Rust 编译器证明不了裸指针、C ABI、设备寄存器与外部库满足�
 
 没有设置 `#[global_allocator]` 的 Android Rust 标准库代码，默认通过系统分配器路径调用 libc `malloc/free`。
 Android 官方 Scudo 文档的说法是：Android 11 起常规设备的 native 分配由 Scudo 提供，low-memory 设备仍使用 jemalloc；落到具体产品，要以进程映射和设备构建为准。
+
+<!-- gracker-diagram: ch18-07-13-allocator-path -->
+![默认 System allocator 与自定义路径分开](../../assets/diagrams/ch18/ch18-07-13-allocator-path.png)
+
+图：默认 System allocator 通过 libc 分配接口进入设备 native allocator，特殊 allocator 路径另查。 常规设备可为 Scudo，低内存或产品配置可能不同；malloc/calloc/realloc/对齐分配不能一律当成同一个调用。
 
 Scudo 是带强化防护的堆分配器：靠 chunk metadata 校验、隔离和 quarantine（延迟复用已释放的内存块）工作，发现可疑 heap 状态时可以终止进程。它的强度到不了 ASan（AddressSanitizer，内存错误检测器）那种完整检测，也不会为每个小对象配置独立的 guard page（不可访问的保护页），所以“每块分配前后都有 guard page”“释放后统一填随机 pattern”这类想象，都不适合当作通用成本模型。
 
@@ -273,6 +338,11 @@ Rust 和 C++ 共用 native allocator 时，malloc 热点可以用 heapprofd 统�
 选择自定义 allocator 之前，要核对安全策略、APEX（可独立更新的系统模块容器）与进程的边界、malloc 调试工具、heap profiler（堆采样器） 和所有权协议。
 若只是一次 benchmark 里 malloc 时延偏高就替换系统 allocator，搭进去的可能是平台防护、诊断能力和跨模块的一致性。
 
+<!-- gracker-diagram: ch18-07-14-scudo-options -->
+![Scudo 的强化机制与可选 quarantine 不混算](../../assets/diagrams/ch18/ch18-07-14-scudo-options.png)
+
+图：Scudo 提供强化堆防护，具体延迟复用和缓存隔离按设备配置解释。 r1 普通 heap quarantine 两个容量 flag 默认 0；secondary/MTE 机制另看，不能推成逐对象 guard page 或 ASan 式检测。
+
 ### 4.2 边界检查与溢出检查
 
 Rust slice 索引可能生成 bounds check（越界检查），Android device build 还开启整数 overflow check（溢出检查）；LLVM 能在循环边界清晰时消除一部分检查，但结果依赖代码形态。常见的优化方向：
@@ -284,6 +354,11 @@ Rust slice 索引可能生成 bounds check（越界检查），Android device bu
 - 不用 unchecked 访问替代尚未量化的检查成本。
 
 `get_unchecked` 可以移除 bounds check，也把越界责任交给调用者。我们要等 profiler 和反汇编都证明检查位于高占比热点、且不变量能被测试与审核覆盖，再评估它才有价值。
+
+<!-- gracker-diagram: ch18-07-15-runtime-checks -->
+![先量化检查热点，再以等价语义优化](../../assets/diagrams/ch18/ch18-07-15-runtime-checks.png)
+
+图：边界与 overflow 检查是否留在热点，需结合采样、反汇编和输入约束核对。 wrapping/saturating 是明确的业务语义；unchecked 把前置条件交给调用方，不能用来替代尚未测量的成本分析。
 
 ### 4.3 锁、原子与 async
 
@@ -299,6 +374,11 @@ Rust slice 索引可能生成 bounds check（越界检查），Android device bu
 - channel（任务间消息队列） 是否积压并造成内存增长。
 
 safe Rust 的类型规则能挡住数据 race（多个线程无同步地读写同一内存）；业务层的死锁、队头阻塞和优先级反转，还是要我们在分析里自己去找。
+
+<!-- gracker-diagram: ch18-07-16-concurrency -->
+![类型安全之外仍有锁、线程池和队列等待](../../assets/diagrams/ch18/ch18-07-16-concurrency.png)
+
+图：分别观察锁与引用计数、执行器/Binder 线程池和 channel 的资源等待。 safe Rust 不消除死锁、队头阻塞或优先级反转；按真实调度和依赖确认关键路径。
 
 ### 4.4 代码体积与 i-cache（指令缓存）
 
@@ -320,6 +400,11 @@ r1 的几个全局编译选项可从 `build/soong/rust/config/global.go` 直接�
 优化级别、溢出检查和回溯信息会同时影响性能与体积；发布设备模块默认 strip（移除） 掉大部分符号，保留 mini debuginfo。
 我们分析产物大小时，要区分 unstripped、stripped、磁盘文件页和运行时私有页。
 
+<!-- gracker-diagram: ch18-07-17-linkage-costs -->
+![静态、动态链接与 PSS 各有不同的成本口径](../../assets/diagrams/ch18/ch18-07-17-linkage-costs.png)
+
+图：代码生成、最终链接和运行时共享分别影响文件体积、CPU 和内存。 Keystore2 的 prefer_rlib 注释回顾 AndroidS，不能当 Android17 当前收益实测；静态删代码和动态共享都要看最终结果。
+
 ## 5. Soong 中容易写错的部分
 
 ### 5.1 模块类型
@@ -339,6 +424,11 @@ Soong 的 Rust 模块类型不少，我们先把 r1 里实际注册的那些摆�
 
 `rust_ffi_static` 并不直接产出通用的 Rust `staticlib`：r1 的 `library.go` 把它注册到 `RustLibraryRlibFactory`，注释也写明这个 rlib 会留到最终 C/C++ 静态链接步骤处理。这是 Soong 的实现约定。
 
+<!-- gracker-diagram: ch18-07-19-module-products -->
+![按最终使用者选择 Rust 与 FFI 产物](../../assets/diagrams/ch18/ch18-07-19-module-products.png)
+
+图：Rust 依赖、C/C++ 静态 FFI 和动态 JNI 需要不同的 Soong 产物路径。 r1 rust_ffi_static 生成 rlib 留给最终 C/C++ 链接，不能当通用 staticlib；显式模块名与自动 rustlibs linkage 分开。
+
 `rust_dylib` 不是 r1 注册的 Soong 模块类型，需要强制使用 Rust dylib variant 时可以用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择兼容的静态或动态 linkage（静态或动态链接方式）。
 
 ### 5.2 ThinLTO 语法与默认值
@@ -347,6 +437,11 @@ Soong 的 Rust 模块类型不少，我们先把 r1 里实际注册的那些摆�
 
 Soong 注释指出 ThinLTO 对 Rust code size 收益很大，生产构建若要关闭需要清楚的理由。
 sanitizer（运行时错误检测）、fuzz（模糊测试）、构建时间或工具兼容性可能要求例外；这类例外要通过最终的 rustc command 和产物指标来确认，只读一段 Blueprint（`Android.bp` 使用的描述语言） 是不够的。
+
+<!-- gracker-diagram: ch18-07-20-thinlto -->
+![ThinLTO 的属性组、默认值与跨语言边界](../../assets/diagrams/ch18/ch18-07-20-thinlto.png)
+
+图：r1 用 lto.thin 属性控制最终 Rust 链接，默认开启，例外再从命令与产物核实。 lto: "thin" 类型错误；Rust ThinLTO 不自动保证 C++ 边界内联，sanitizer 等可追加其他实际 flags。
 
 ### 5.3 第三方 crate 管理
 
@@ -357,6 +452,16 @@ sanitizer（运行时错误检测）、fuzz（模糊测试）、构建时间或�
 
 这套流程不使用 `external/upstream` 与 `development/tools/regex_gen_cargo2android.py`。
 平台开发要把 crate 版本、license、patch、Soong rule、APEX 可用性和测试都纳入 AOSP 管理，`cargo build` 的依赖解析结果照搬不进系统镜像。
+
+<!-- gracker-diagram: ch18-07-18-build-flags -->
+![固定 tag 的编译默认值还需核对最终命令](../../assets/diagrams/ch18/ch18-07-18-build-flags.png)
+
+图：r1 默认工具链和 flags 定义起点，模块、产品与检测配置再决定最终命令。 默认 Rust1.93.1、edition2021 可被配置覆盖；abort、overflow、unwind 与 strip 是不同选项，不从语言默认值推断设备行为。
+
+<!-- gracker-diagram: ch18-07-21-crate-management -->
+![受管 crate 再生与产品构建验收是两步](../../assets/diagrams/ch18/ch18-07-21-crate-management.png)
+
+图：受管仓库从 vendor 输入、补丁和许可证再生构建规则，随后还需产品集成验证。 metadata-only 跳过 cargo_embargo，CXX 在独立仓库；再生成功不等于目标 Android 镜像可构建或功能已通过。
 
 ## 6. 怎样测 Rust 边界
 
@@ -371,6 +476,11 @@ sanitizer（运行时错误检测）、fuzz（模糊测试）、构建时间或�
 - static Rust std 与 dynamic linkage 对文件体积、PSS（Proportional Set Size） 和启动 relocation 有什么影响？
 
 “Rust 服务快不快”这种问法要先落到可测的对象上；我们把业务语义、输入、线程数、CPU affinity（把线程限制到指定 CPU）、编译配置和设备温度固定下来，再决定用什么工具。
+
+<!-- gracker-diagram: ch18-07-22-experiment-scope -->
+![先固定语义、输入与配置，再比较边界](../../assets/diagrams/ch18/ch18-07-22-experiment-scope.png)
+
+图：每个实验围绕一种成本，先固定业务语义、输入与线程和构建条件。 FFI 空调用、真实 IPC 和堆/内存数据回答不同问题；设备温度、采样权限与工具链版本也须记录。
 
 ### 6.2 同进程 FFI microbenchmark
 
@@ -402,6 +512,11 @@ Perfetto 中建议同时抓：
 Binder 测试要记录五段时间：client 发起请求、driver 排队、server 进入 runnable（可运行但未必已上 CPU）、server 执行，以及 reply 返回。
 计时范围要覆盖全程：只取服务函数入口，调用方阻塞和调度延迟就留在视野外了。
 
+<!-- gracker-diagram: ch18-07-23-binder-timing -->
+![同步 Binder 的调用方等待与服务执行一起计时](../../assets/diagrams/ch18/ch18-07-23-binder-timing.png)
+
+图：对目标同步 kernel Binder 事务关联 client、driver、目标线程和 reply，才能分解总耗时。 runnable 不等于已经上 CPU；服务 slice 可能包含锁、I/O 或硬件等待，异步与 socket 路径另定义时间点。
+
 ### 6.4 CPU 采样
 
 在 userdebug/eng 或具备相应 profiling 权限的设备上，可用下面的命令观察 Keystore2 的事件计数与调用栈：
@@ -420,6 +535,11 @@ adb shell simpleperf record -p "$keystore_pid" \
 Soong 使用 Rust v0 symbol mangling（把函数签名编码进链接符号名），并保留 unwind table，但 Simpleperf/Perfetto 报告仍要核对是否成功加载了对应符号。
 看见大量十六进制地址，应先修正 symbol path 和 build ID（唯一标识该 ELF 构建的值）；采样还归在“unknown”里就继续比较语言，结论也就没了依据。
 
+<!-- gracker-diagram: ch18-07-24-profiling -->
+![锁定进程代际与权限，再解释 PMU 和调用栈](../../assets/diagrams/ch18/ch18-07-24-profiling.png)
+
+图：采样先确认目标进程和采集条件，再用同一构建的符号解释 CPU 热点。 示例 DWARF16KiB 转储可截深栈；FP 需完整链，事件可受权限/硬件限制，unknown 栈不支持语言性能归因。
+
 ### 6.5 文件体积、链接与 PSS
 
 下面的主机和设备命令分别检查 ELF section（代码、数据等分段）、动态依赖与进程映射：
@@ -436,11 +556,21 @@ adb shell showmap "$keystore_pid"
 三者各有分工：磁盘文件更大不等同于私有 RSS 更大，动态库页也可能在多个进程间共享；PSS 会按比例分摊共享页，更适合与 RSS 一起报告。
 读取系统服务映射可能需要 userdebug/eng、root 或额外调试权限。
 
+<!-- gracker-diagram: ch18-07-25-artifact-evidence -->
+![section、动态依赖与运行时映射各自回答一问](../../assets/diagrams/ch18/ch18-07-25-artifact-evidence.png)
+
+图：将 ELF section、DT_NEEDED 与同构建进程映射关联，分别判断文件与运行时成本。 动态表缺库名不证明某 crate 必被静态并入；还需链接命令、依赖图与 unstripped 符号，PSS 和 RSS 分别报告。
+
 ### 6.6 native heap
 
 heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录 interval（采样覆盖的分配字节间隔）、持续时间、进程启动阶段和符号版本，并确认目标没有使用自定义 allocator。
 
 对高频小对象可同时加入源码计数器或 allocator benchmark，避免采样误差掩盖短命分配。
+
+<!-- gracker-diagram: ch18-07-26-heap-evidence -->
+![heap 采样的来源、覆盖率与延迟测量分开](../../assets/diagrams/ch18/ch18-07-26-heap-evidence.png)
+
+图：heapprofd 观察覆盖到的分配来源和存活量，计数与专门 benchmark 再补充热点分析。 自定义 allocator、arena 或优化消除会改变覆盖；短命小对象的未采样不等于没分配，不能直接推出每次 malloc 延迟。
 
 ## 7. 优化顺序
 
@@ -457,6 +587,11 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 
 如果 Binder 排队或硬件操作占掉大部分端到端时间，我们再省下一条普通 call instruction，对总耗时的影响也会很小。
 所以要看 profiler 里 bridge 的占比：已经显示占比高，才值得评估批量调用、借用数据或 ownership transfer（跨边界移交对象所有权）；其余情况先处理占比更高的部分。
+
+<!-- gracker-diagram: ch18-07-27-optimization -->
+![按端到端占比决定优化顺序，再回归接口契约](../../assets/diagrams/ch18/ch18-07-27-optimization.png)
+
+图：先处理高占比的 IPC、I/O、锁、复制与队列，再评估热点 bridge 和构建优化。 固定函数调用省时不自动变成整项业务收益；批量和所有权转移仍须保留大小上限、取消、背压与失败语义。
 
 ### 7.2 接口设计
 

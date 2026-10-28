@@ -139,9 +139,19 @@ Java 堆没有持续增长，进程的内存占用也可能在涨。只要应用
 
 另外，VMA 分类和总量统计走的是两条读取路径：`androidprocheaps.cpp` 必须扫描详细的 `/proc/<pid>/smaps`，因为分类依赖每个 VMA 的名字；而 `ProcMemInfo::SmapsOrRollup()` 用于计算 PSS、RSS 等聚合值，内核提供 `smaps_rollup` 时读取汇总文件，否则改读 `smaps`。汇总文件里没有逐 VMA 名称，这两条路径各有用途。
 
+<!-- gracker-diagram: a255-02-smaps-vs-rollup -->
+![逐VMA分类与聚合总量来自不同读取路径](../../assets/diagrams/ch23/a255-02-smaps-vs-rollup.png)
+
+图：VMA名字可随平台和分配器变化，不能只看标签判定资源类型；Graphics还可能来自memtrack，需与分配路径核对。
+
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/jni/android_os_Debug.cpp`, `system/memory/libmeminfo/androidprocheaps.cpp`, `system/memory/libmeminfo/procmeminfo.cpp`]
 
 四类内存对应的诊断动作也各不相同：原生堆看分配栈；`.so` 映射看装载范围、重定位和脏页；图形缓冲看图像、渲染资源与 memtrack；匿名 `mmap` 要追踪调用方或业务设置的 VMA 名称。把它们合成一个“原生内存”数字固然省事，定位要用的线索也就跟着丢了。
+
+<!-- gracker-diagram: a255-01-memory-accounting -->
+![分配器字节、VMA 和物理页的三层统计](../../assets/diagrams/ch23/a255-01-memory-accounting.png)
+
+图：malloc、匿名映射、共享库和图形缓冲需要分别追踪来源；逻辑释放、地址仍映射、物理页仍驻留可以同时发生。
 
 ### 排查入口：先看趋势，再记录调用栈
 
@@ -174,6 +184,11 @@ heapprofd 是 Perfetto 的原生堆采样分析器，从 Android 10 开始可用
 
 这套接口属于 heapprofd 与系统分配器的内部协作面，没有对外提供应用 SDK 的公共 malloc 拦截 API；源码里的 `heapprofd_get_malloc_leak_info` 和 `heapprofd_write_malloc_leak_info` 就是显式的空实现，所以它们当不了 LeakCanary 或其他原生泄漏 SDK 的基础接口。
 
+<!-- gracker-diagram: a255-03-heapprofd-lifecycle -->
+![heapprofd服务、目标进程拦截器和采集请求](../../assets/diagrams/ch23/a255-03-heapprofd-lifecycle.png)
+
+图：heapprofd不依赖LD_PRELOAD，内部MallocDispatch和空的malloc leak info函数也不是第三方泄漏SDK的公共接口。
+
 [源码锚点: Perfetto `android-17.0.0_r1`, `heapprofd.rc`, `src/profiling/memory/heapprofd.cc`, `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`]
 
 #### 采集配置与采样语义
@@ -204,6 +219,11 @@ Perfetto 官方文档把 `4096` 字节作为默认采样间隔。`Sampler::Sampl
 
 [源码锚点: Perfetto `android-17.0.0_r1`, `src/profiling/memory/sampler.h`, `src/profiling/memory/sampler.cc`]
 
+<!-- gracker-diagram: a255-04-sampling-semantics -->
+![按字节采样不是每N次对象分配取一个](../../assets/diagrams/ch23/a255-04-sampling-semantics.png)
+
+图：小分配使用按字节推进的随机采样，可跨多个间隔；累计估计与单个对象是否被记录是不同问题。降低间隔后需重新测开销。
+
 #### 原生堆与 Java HPROF 是两条独立路径
 
 Perfetto 源码为原生 heapprofd 使用 `__SIGRTMIN + 4`，为 Java HPROF 使用 `__SIGRTMIN + 6`；Java HPROF producer 在发送信号前还会通过 `CanProfile()` 检查目标进程是否允许分析。两者使用不同的数据源、信号与权限路径；某一种转储命令能运行，另一种 Perfetto 数据源还要单独验证。
@@ -227,6 +247,11 @@ adb shell dumpsys -t 600 meminfo --unreachable <process>
 ```
 
 `--unreachable` 报告的是扫描时从可达根走不到的分配块，离语言层意义上的确定泄漏还有一步：保守扫描可能把某些整数误认成指针，第三方分配器或自管理内存也可能不在它的观察范围内。所以下结论要结合可重复的增长趋势、分配栈和资源生命周期一起做。
+
+<!-- gracker-diagram: a255-05-unreachable-scan -->
+![原生不可达扫描仍需业务证据](../../assets/diagrams/ch23/a255-05-unreachable-scan.png)
+
+图：默认不记录每次分配回溯，开启backtrace会增加开销。不可达扫描、持续增长与业务生命周期要一起解释，不把工具输出当成完整覆盖。
 
 Bionic README 还记录了 Android 12 起的一个 `wrap.<APP>` 问题。属性未生效时，可在受控测试设备上按 README 设置 `dalvik.vm.force-java-zygote-fork-loop=true`，再重启 Zygote（应用进程的模板进程）；这会影响设备进程启动方式，别在量产设备上尝试。
 
@@ -282,6 +307,11 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案，
 
 排查时对比同一 `.so` 的 `Shared Clean`、`Private Dirty`、`Private Clean`：某个库的 `Private Dirty` 远高于同类模块时，我们就要检查它是否在启动期写入大块全局状态，或者把可延迟的数据提前初始化了。
 
+<!-- gracker-diagram: a255-07-so-private-dirty -->
+![共享库的映射、共享页与私有脏页](../../assets/diagrams/ch23/a255-07-so-private-dirty.png)
+
+图：延迟装载减少不必要映射，减少启动期大表写入可降低私有脏页；剥离未映射的调试段主要影响文件体积，不能直接当运行时RSS收益。
+
 ### 原生内存监控方案
 
 设计生产监控时，我们先记住目标差异：用户设备上要的是发现趋势、定位版本和场景，完整调用栈在那里做不了长期记录。
@@ -316,6 +346,11 @@ Android 应用通常不直接选择系统分配器，但分配器会影响碎片
 业务调用 `free()` 后，chunk 对外已经不可再访问，但分配器可以把它放进 quarantine、线程缓存或空闲结构，等待复用或批量归还操作系统。Scudo 的 quarantine 会延迟复用已释放块，release interval 是批量向系统归还页面的间隔；两者会影响安全检查、锁竞争、复用速度与 RSS 回落。这类系统配置交由平台管理就好，应用侧不要通过 `SCUDO_OPTIONS` 或 `__scudo_default_options` 把它当常规省内存开关。
 
 判断泄漏，还是要同时满足可重复增长和对象归因：固定场景中已分配量持续上升，heapprofd 的未释放样本集中在稳定调用栈，业务缓存过期后仍不回落，并且 Graphics、线程栈、文件映射等其他分区解释不了增量。
+
+<!-- gracker-diagram: a255-06-free-vs-rss -->
+![free归还对象不等于马上归还物理页](../../assets/diagrams/ch23/a255-06-free-vs-rss.png)
+
+图：allocator已分配字节下降后，Native Heap的RSS/PSS仍可暂时不变；这与对象仍被业务持有是不同证据。
 
 #### Scudo ERROR 与破坏现场
 
@@ -393,13 +428,28 @@ Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以�
 
 错误类型决定排查入口：线程创建失败先看线程和栈，映射失败先看连续地址与资源限制，进程被终止则先看物理内存压力。VSS 在这里是辅助，现场信号才是入口。
 
+<!-- gracker-diagram: a255-09-contiguous-hole -->
+![总空闲地址够用仍可能没有连续空洞](../../assets/diagrams/ch23/a255-09-contiguous-hole.png)
+
+图：虚拟地址必须为同一次映射找到足够连续的区间。总可用地址长度并不能替代最大连续空洞；ENOMEM还要结合VMA数量、RLIMIT_AS和系统压力。
+
 #### 1.3 `VmSwap` 的记账语义
 
 内核 `proc.rst` 把 `VmSwap` 定义为匿名私有数据使用的 swap（换出空间），不包含 shared（共享映射） memory（共享内存） 的换出量。页被换出后，原虚拟地址仍在 VMA 中，所以该页仍计入 `VmSize`；`VmSwap` 是记账量，不是可以再加到 VSS 上的独立地址空间。
 
 Android 17 及以上还支持内存管理守护进程 `mmd`：`mmd_setup` 负责配置 ZRAM（在 RAM 中保存压缩换出页的块设备），`mmd` 再执行重压缩和可选的 writeback（把冷页写到后备存储）。应用从 `VmSwap` 只能看到按页核算的换出量，ZRAM 里压缩后占多少字节、页面此刻在 ZRAM 还是后备存储，都推不出来。分析卡顿时，应同时查看 `VmSwap` 增长、major fault（需要存储 I/O 才能完成的主缺页）、PSI（Pressure Stall Information，资源压力导致的任务停顿统计）、`lmkd` 事件和业务时间线。
 
+<!-- gracker-diagram: a255-08-virtual-vs-resident -->
+![虚拟映射、驻留和换出是不同状态](../../assets/diagrams/ch23/a255-08-virtual-vs-resident.png)
+
+图：VmSize按映射地址长度计算，RSS按驻留页计算，PSS再分摊共享页。换出不会给进程新增一段地址，VmSwap不能再加到VSS。
+
 这套内核还包含 Multi-Gen LRU（按访问时间把可回收页划分为多代的 LRU 实现），它按访问新旧程度把可回收页划分成多代、参与页回收选择，VSS、RSS、PSS 的定义保持原样；目标设备是否启用仍取决于内核与产品配置。应用侧要做的是减少实际工作集、改善访问局部性；某个 VMA 能否手动解除仍取决于它自身的来源，Multi-Gen LRU 改变不了这一点。
+
+<!-- gracker-diagram: a255-10-mmd-swap-maintenance -->
+![mmd处理ZRAM维护，不改变进程统计定义](../../assets/diagrams/ch23/a255-10-mmd-swap-maintenance.png)
+
+图：mmd管理ZRAM维护，Multi-Gen LRU参与回收选择，二者都不会把VSS、RSS、PSS变成对象数。业务侧仍需减少工作集并改善访问局部性。
 
 ### 2. 建立可复现的地址空间快照
 
@@ -520,6 +570,11 @@ for name, stat in sorted(
 
 线程栈通常按需分配物理页，VSS 增长因此早于 RSS 增长。32 位进程中，大量线程还会带来 VMA 数量、调度开销、TLS 和运行时线程元数据的额外负担。
 
+<!-- gracker-diagram: a255-11-thread-stack-size -->
+![ART最终线程栈大小是多步计算的结果](../../assets/diagrams/ch23/a255-11-thread-stack-size.png)
+
+图：线程数越多，地址预留、VMA、TLS与运行时元数据成本越高。真实映射大小从maps读取，再将TID与线程名对应。
+
 #### 3.2 有界线程池
 
 这个 Java 工厂方法展示有界队列、固定工作线程数和线程命名。调用方必须传入经过压测的工作线程数与队列容量，示例不内置设备无关的固定阈值：
@@ -556,6 +611,11 @@ static ThreadPoolExecutor newBoundedExecutor(
 
 固定上限的价值在于挡住突发任务把线程数无限顶上去。`workerCount` 要结合 CPU/I/O 比例和任务驻留内存确定，`queueCapacity` 要结合可接受的排队时延确定。拒绝策略也由调用方显式选择：`CallerRunsPolicy` 会让提交线程执行任务，提交方可能是主线程时，就换成合并、拒绝或异步重试这些符合业务语义的处理。
 
+<!-- gracker-diagram: a255-12-bounded-executor -->
+![线程数和队列都要设置上限](../../assets/diagrams/ch23/a255-12-bounded-executor.png)
+
+图：上限要同时覆盖线程和任务队列。不能用无限缓存线程池或无限队列掩盖压力，任务所有者还要负责取消和退出清理。
+
 线程数量常从这些位置失控：
 
 - `Executors.newCachedThreadPool()` 的无限最大线程数；
@@ -580,6 +640,11 @@ CPU 密集任务的并发度可以从 CPU 核数起步；I/O 任务没有通用�
 `android-17.0.0_r1` 的 libcore 已包含 `Thread.ofVirtual()`、`startVirtualThread()` 和 `VirtualThread` 实现，但 [`api/current.txt`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt) 给创建入口标记了 `com.android.libcore.virtual_thread_api_v1` `FlaggedApi`，表示公开可用性受功能标志控制。[`ThreadBuilders.newVirtualThread()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java) 会检查 `ContinuationSupport.isSupported()`：支持时创建由 continuation（可暂停并恢复执行状态的运行时机制）驱动的 `VirtualThread`；不支持且调用方没有指定自定义 scheduler（任务调度器）时，创建一对一绑定平台线程的 `BoundVirtualThread`。
 
 所以“虚拟线程一定不创建 pthread、每个任务都省下 1 MiB”当不了通用结论。产品采用前，要确认目标镜像是否开放该 API、运行时是否支持 continuation，以及 pinning（虚拟线程因特定阻塞或同步操作而无法暂时脱离承载线程） 的行为、调试工具和关键库兼容性。面向 Android 10—17 的通用实现，仍应以协程、有界线程池和结构化取消为主。
+
+<!-- gracker-diagram: a255-13-virtual-thread-fallback -->
+![虚拟线程API存在不等于所有镜像都节省pthread](../../assets/diagrams/ch23/a255-13-virtual-thread-fallback.png)
+
+图：源码支持、公开API开关和真正continuation能力分别验收。不能承诺每个虚拟任务都省一个固定大小的平台栈。
 
 线程泄漏的完整治理方法参阅 [20.8 线程与协程泄漏治理](../ch20-stability/08-thread-coroutine-leak-governance.md)。
 
@@ -607,6 +672,11 @@ WebView 加载器随后把 `gReservedAddress` 和 `gReservedSize` 交给 `androi
 
 有人会想绕开加载器：用函数拦截取得 `android_dlopen_ext()` 的地址、反射隐藏的 `nativeLoadWithRelroFile()`，或按 `maps` 标签解除映射。这些做法都依赖隐藏实现，而且即使当前进程暂时不用 WebView，广告、登录、支付、帮助页、SDK 和系统组件也可能在后续触发 provider。
 
+<!-- gracker-diagram: a255-14-webview-reservation -->
+![WebView预留由加载器持有状态并随后复用](../../assets/diagrams/ch23/a255-14-webview-reservation.png)
+
+图：未提交的预留不按完整大小消耗RSS；私自munmap会使加载器全局状态与真实映射不一致，后续provider初始化可能失败或破坏地址空间。
+
 安全策略只有两类：
 
 - 业务不需要 WebView 时，避免初始化 provider 和相关 SDK，接受从 Zygote（用于孵化应用进程的模板进程）继承的预留仍计入 VSS；
@@ -625,6 +695,11 @@ HSC（Homogeneous Space Compact，同构空间压缩） 把主分配空间中的
 同一文件的 Heap 构造路径会对 CC（Concurrent Copying，并发复制） 和 CMC（Concurrent Mark Compact，并发标记压缩） 关闭 `use_homogeneous_space_compaction_for_oom_`。所以 HSC 是受回收器与 Space 布局约束的兼容路径，只有满足上面这些条件的进程才会走到；至于“每个应用都有两块固定 512 MiB MainSpace”，ART 实际会按回收器、heap growth limit（托管堆允许增长到的上限）、设备配置和进程类型建立不同 Space，这个说法立不住。
 
 这些 Space 各管一摊：RegionSpace 用分区支持移动回收，zygote space 保存进程孵化前已有的对象，large object space 管理大对象，image space 映射启动镜像，JIT 代码映射保存即时编译生成的机器码，用途和生命周期互不相同。
+
+<!-- gracker-diagram: a255-15-hsc-eligibility -->
+![HSC是受Space和收集器约束的兼容路径](../../assets/diagrams/ch23/a255-15-hsc-eligibility.png)
+
+图：只有匹配配置才可能执行HSC，CC/CMC构造路径会关闭相应OOM压缩选项。源码有此函数不代表应用可释放“备用512MiB空间”。
 
 #### 5.2 JNI 临界区必须成对释放
 
@@ -668,6 +743,11 @@ HSC（Homogeneous Space Compact，同构空间压缩） 把主分配空间中的
 - 被 LMKD 回收后可以恢复。
 
 较大的数据载荷（payload）可考虑通过 `SharedMemory`、文件描述符或流式接口传输；传输之外仍要定义所有权、校验长度并及时关闭 FD。拿多进程规避应用整体内存预算，这条路走不通。
+
+<!-- gracker-diagram: a255-16-multiprocess-cost -->
+![主进程变小还要看所有进程的总成本](../../assets/diagrams/ch23/a255-16-multiprocess-cost.png)
+
+图：同时验收主/子进程PSS、启动时延、Binder流量、冷启动频次与低内存恢复。主进程指标下降本身不证明整机收益。
 
 ### 7. 建立面向原因的监控
 

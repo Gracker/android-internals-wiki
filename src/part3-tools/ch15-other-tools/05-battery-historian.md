@@ -50,6 +50,11 @@ ODPM（On-Device Power Monitoring）是设备端硬件功耗计量，通常由 P
 
 一份有用的报告应写明使用了哪种证据。例如，“WLAN rail 在 20 秒窗口增加 4.2 J”是硬件计量结论；“目标 UID 被 BatteryStats 归因 0.3 mAh”是平台归因结论。两者的原始单位和分配口径都不同。
 
+<!-- gracker-diagram: ch15-05-01-evidence-types -->
+![事件、平台归因与硬件测量的证据分工](../../assets/diagrams/ch15/ch15-05-01-evidence-types.png)
+
+图：事件历史用于定位活动，平台统计用于归因，rail 与外部仪表用于各自边界内的测量。 J、mAh 与事件持有时间不能直接相加；系统级 rail 也不自动属于目标 UID。
+
 ## Battery Historian 还适合做什么
 
 Battery Historian 把 bugreport 中的 BatteryStats 历史渲染成时间线，并提供系统和应用统计表。BatteryStats 是 Android 记录电池状态、系统活动和 UID 耗电归因的框架组件。时间线中的色块只表示事件或状态正在活动，无法据此读出该组件消耗了多少电量。
@@ -120,6 +125,11 @@ Partial WakeLock 在屏幕关闭时仍可让 CPU 保持运行。Android vitals �
 
 过去 28 天内，若受这类过度使用影响的用户会话占比超过 5%，应用在 Google Play 上的展示可能受影响。这些阈值用于线上质量统计，不能替代本地场景的需求判断。
 
+<!-- gracker-diagram: ch15-05-03-wakelock-evaluation -->
+![合法持锁、本地候选与线上质量阈值](../../assets/diagrams/ch15/ch15-05-03-wakelock-evaluation.png)
+
+图：持锁是否合理要结合业务生命周期；本地原因调查与线上质量统计使用不同证据。 Partial WakeLock 阻止 suspend，不要求 CPU 持续忙碌；线上阈值以核对日的官方口径为准。
+
 ### `top_app` 与电池下降曲线
 
 `top_app` 表示前台状态，不表示“耗电最多的应用”。电池百分比由 fuel gauge（电量计量芯片及其估算算法）计算后取整，短测试里可能长时间不变，也可能一次跳变。短时优化应比较 rail 能量、外部仪表或可重复的系统级指标；长时待机测试再把百分比斜率作为辅助证据。
@@ -131,6 +141,12 @@ Historian 页面打不开时，BatteryStats 文本仍然可用。Android 17 的 
 下面的命令用于保留不同粒度的原始证据。
 
 ```bash
+
+<!-- gracker-diagram: ch15-05-02-bugreport-capture -->
+![受控 BatteryStats 窗口与 bugreport 采集](../../assets/diagrams/ch15/ch15-05-02-bugreport-capture.png)
+
+图：先保存旧现场和原开关状态，再执行固定电池供电场景，并尽快保存报告。 reset、重启、自动清零与历史裁剪会影响窗口；详细 history 应恢复原状态。
+
 # 人类可读的当前统计
 adb shell dumpsys batterystats > batterystats.txt
 
@@ -145,6 +161,11 @@ adb shell dumpsys batterystats com.example.app > app-batterystats.txt
 ```
 
 `--checkin` 在 Android 17 的帮助文本中还带有“输出并清除上一次已完成旧统计”的语义。自动化脚本若只想读取当前数据，应先确认使用 `-c` 还是 `--checkin`，不能把两者当作完全等价。
+
+<!-- gracker-diagram: ch15-05-04-raw-output-formats -->
+![文本、history 与 checkin 的不同读取口径](../../assets/diagrams/ch15/ch15-05-04-raw-output-formats.png)
+
+图：保留原始输出并辨明格式，当前统计、历史事件和 checkin 旧记录不是同一读取范围。 -c 读取当前 checkin；--checkin 可输出并清理旧已完成统计，脚本不能混用。
 
 文本字段会随平台演进。解析脚本应记录 build fingerprint（唯一标识该系统构建的字符串）和 Android 版本，并对未知行保留原始内容。按固定列号切分文本，升级后可能在不报错的情况下读错数据。
 
@@ -178,6 +199,11 @@ CPU running 只能说明设备没有完全休眠。要定位 CPU 时间花在何
 ### 网络、定位和传感器
 
 无线功耗受信号、网络制式、批处理和其他进程影响。Historian 圈定活动窗口，请求日志解释业务行为，Perfetto 或 power rail 观察系统级能量变化。定位和传感器还要核对精度、批处理延迟、前后台状态与停止时机。
+
+<!-- gracker-diagram: ch15-05-05-events-to-code -->
+![从活动色块走到可复测的代码原因](../../assets/diagrams/ch15/ch15-05-05-events-to-code.png)
+
+图：事件圈定窗口后，按锁、任务、CPU 或无线方向补证据，再用同条件复测检验原因。 时间重叠只建立候选关联；组件代持锁、系统后台活动和设备环境都需要核对。
 
 ## Perfetto：把 rail 与线程放进同一时间轴
 
@@ -223,6 +249,21 @@ ORDER BY ts, power_rail_name;
 
 `ts` 是区间起点时间戳，`dur` 是区间时长。`energy_delta` 的单位是 `uWs`，数值上等于微焦耳；`average_power` 的单位是 mW。模块会跳过没有形成有效相邻区间的尾部样本。分析时还应同时查询目标进程、线程调度和应用 trace section，避免把系统后台活动算给目标应用。
 
+<!-- gracker-diagram: ch15-05-06-perfetto-power-path -->
+![Perfetto android.power 的轮询与时间戳](../../assets/diagrams/ch15/ch15-05-06-perfetto-power-path.png)
+
+图：producer 周期请求硬件与系统计量，将累计能量和读数时间写入 trace，再由 parser 建立 rail 轨道。 轮询最小 100 ms、0 使用默认 1 秒；这不保证 HAL 更新率，ring buffer 还可能覆盖开头描述符。
+
+<!-- gracker-diagram: ch15-05-07-backward-versus-forward -->
+![power_rails 的向后差值与前向平均功率](../../assets/diagrams/ch15/ch15-05-07-backward-versus-forward.png)
+
+图：标准库 energy_delta 相对前值，而 average_power 使用下一读数；前向区间能量要显式用 end 减 start。 图为合成示例；57.2/58.2 真实导入均复现该区别，不能把两列直接当作同一区间。
+
+<!-- gracker-diagram: ch15-05-08-rail-interval-quality -->
+![计算窗口能量前的区间检查](../../assets/diagrams/ch15/ch15-05-08-rail-interval-quality.png)
+
+图：先固定 track 身份、有效前向区间和计数连续性，再处理业务窗口边缘并计算平均功率。 dur 使用纳秒，µWs × 10^6 / dur 得到 mW；缺样和回退不能解释成零耗电。
+
 ## Android Studio Power Profiler
 
 Android Studio Hedgehog 起，Power Profiler 在 System Trace 中展示 ODPM 数据。官方文档给出的高精度 rail 支持范围是 Pixel 6 及后续 Pixel 设备。平台的 Power Stats HAL 允许其他厂商实现类似能力，但不能据此保证 Studio 会在任意 Android 10+ 设备上提供同样的 rail、名称或分辨率。
@@ -237,6 +278,11 @@ ODPM 测量的是电池下游某个硬件子系统或若干硬件单元的累计
 - 改动前后是否使用同一设备、系统版本、亮度、网络和温度条件。
 
 “硬件计量”也不等于“逐应用计量”。Power Profiler 适合把一次业务动作与设备 rail 变化建立时间相关性，应用归因仍需 BatteryStats、线程活动和受控 A/B 实验。
+
+<!-- gracker-diagram: ch15-05-09-system-rail-attribution -->
+![设备 rail 读数如何与 App 场景关联](../../assets/diagrams/ch15/ch15-05-09-system-rail-attribution.png)
+
+图：同一 rail 可汇合目标 App、其他进程与系统硬件活动，应用影响需要 trace 和对照实验检验。 Power Profiler 的官方 ODPM 条件是 API 29+、Pixel 6 及后续设备；具体 rail 依设备实现。
 
 ## Macrobenchmark `PowerMetric`
 
@@ -282,6 +328,11 @@ class PowerBenchmark {
 基准输出会包含选定的 category（CPU、Display、Network 等大类）、其下的 component（具体计量组件）、total、unselected 和 uncategorized 等指标。unselected 是设备支持但未被选中的类别，uncategorized 是无法映射到已知类别的读数。
 
 `Type.Battery` 可作为没有高精度 rail 时的较粗替代，并可用 `deviceBatteryHasMinimumCharge()` 预检。两种模式的统计口径不同，不能混在同一回归序列里。
+
+<!-- gracker-diagram: ch15-05-10-macrobenchmark-mode -->
+![PowerMetric 的能力检查与模式选择](../../assets/diagrams/ch15/ch15-05-10-macrobenchmark-mode.png)
+
+图：先按设备能力和目的选择 Power/Energy 或 Battery，再固定场景重复测量。 示例预检要求 Benchmark 1.3.0+；TOTAL 汇总类别，BREAKDOWN 展开组件；不同模式不能混成同一回归序列。
 
 CI（持续集成）设备还需要固定系统镜像、充电控制、热状态和后台账号。功耗基准对环境比启动时间更敏感，单次结果不应直接触发发布阻断。
 
@@ -364,6 +415,21 @@ high = currentEnergyUws
 
 PowerMonitor 因此不适合作为毫秒级实时控制信号。它适合对比受控窗口内的累计能量；频繁轮询、过短的相邻样本差分和跨设备固定阈值，都会放大缓存、随机化和硬件差异的影响。
 
+<!-- gracker-diagram: ch15-05-11-monitor-identity-and-delta -->
+![PowerMonitor 的枚举、读取与差分守卫](../../assets/diagrams/ch15/ch15-05-11-monitor-identity-and-delta.png)
+
+图：使用当前枚举结果读取 monitor，保留设备、开机身份、读数能量和 elapsed realtime 时间，再判断能否差分。 空列表、错误回调、无效能量、时间未前进或回退都不能硬算功率；µWs / ms 才是 mW。
+
+<!-- gracker-diagram: ch15-05-12-cache-refresh-policy -->
+![20 秒与 250 毫秒是刷新尝试阈值](../../assets/diagrams/ch15/ch15-05-12-cache-refresh-policy.png)
+
+图：普通和 fine 请求选择不同缓存及年龄阈值，过期时尝试向 HAL 刷新。 阈值不保证实际样本新鲜度；HAL 失败或仍返回旧样本时，要检查结果时间戳，不能声称硬件固定频率。
+
+<!-- gracker-diagram: ch15-05-13-conditional-randomization -->
+![PowerMonitor 随机化的条件与共享抽样槽](../../assets/diagrams/ch15/ch15-05-13-conditional-randomization.png)
+
+图：只有当前和前值均有效才进行有界随机化，首次有效值等分支直接返回；fine 也不普遍绕过它。 先排查计数回退；10,000,000 µWs 是 10 J；17 个槽复用抽样因子，refresh 会清空槽，不能描述为每 UID 永久固定偏移。
+
 ## `BatteryUsageStats` 是平台归因接口
 
 `BatteryStatsManager.getBatteryUsageStats()` 返回按子系统和 UID 归因的结果，但该接口需要 `BATTERY_STATS`，权限级别是 `signature|privileged|development`。普通应用无法获得该权限，不能把这个接口当作线上自助功耗 API。
@@ -381,6 +447,11 @@ BatteryStatsManager
 
 这条流程中的 `BatteryStatsService` 会等待正在进行的统计更新完成，检查数据是否过旧，必要时同步来自调制解调器、Wi-Fi 控制器等组件的外部状态并采集 PowerStats 样本，再由 `BatteryUsageStatsProvider` 生成结果。
 
+<!-- gracker-diagram: ch15-05-14-battery-usage-attribution -->
+![BatteryUsageStats 的平台归因调用链](../../assets/diagrams/ch15/ch15-05-14-battery-usage-attribution.png)
+
+图：平台调用方经 Binder 请求统计，服务等待更新并按需要同步外部数据，再由 provider 生成归因结果。 BatteryStatsManager 是 SystemApi / hide 且受 BATTERY_STATS 限制；Historian 解析 bugreport，共用底层数据并不等于转发此 API。
+
 Binder 是 Android 的跨进程调用机制。Historian 和该 Binder API 共用 BatteryStats 数据源，但 Historian 解析的是 bugreport，没有简单转发这项 API。
 
 ### API 37 查询项的变化
@@ -394,6 +465,11 @@ Binder 是 Android 的跨进程调用机制。Historian 和该 Binder API 共用
 - `PowerStatsAggregator` 位于 `services/core/java/com/android/server/power/stats/processor/`，通过回放 BatteryStats history 聚合样本。
 
 `BatteryConsumer.POWER_MODEL_POWER_PROFILE` 与 `POWER_MODEL_ENERGY_CONSUMPTION` 常量仍在类中，不能由此反推 `includePowerModels()` 仍会返回双列模型数据。阅读 API 演进时应同时检查 builder 实现和使用查询结果的代码。
+
+<!-- gracker-diagram: ch15-05-15-query-evolution -->
+![A17 查询开关的实现区别](../../assets/diagrams/ch15/ch15-05-15-query-evolution.png)
+
+图：检查 builder 的真实实现，deprecated、常量仍存在与行为是否生效是不同问题。 includePowerModels 已空操作；modeledOnly 仍置位不代表旧双列模型继续有效；accumulated 跨重启及大多数 reset。
 
 ## 归因模型的边界
 
@@ -411,6 +487,11 @@ Android 功耗统计通常混合两类输入：
 | PowerEntity state residency | 子系统各状态驻留时间、次数和最近进入时间 | 功耗模型与状态诊断 |
 
 HAL 的能量单位是 `uWs`，时间戳基于启动时钟。Channel 名称和 subsystem 字符串对 framework 是 opaque，即 framework 只传递它们，不解释厂商自定义语义。跨设备比较前，必须建立当前设备的名称与硬件映射。
+
+<!-- gracker-diagram: ch15-05-16-hal-measurement-types -->
+![Power Stats HAL 的三种数据语义](../../assets/diagrams/ch15/ch15-05-16-hal-measurement-types.png)
+
+图：EnergyConsumer、EnergyMeter Channel 和状态驻留分别提供组件归因输入、物理通道能量与活动状态。 名字与 subsystem 依设备实现；累计能量、驻留时间和次数单位不同，跨设备先建立映射。
 
 没有硬件数据时，估算模型仍可用于同设备、同版本的趋势比较。它的误差来自 `power_profile.xml`、活动时间统计和归因规则，报告里应明确写“estimated”。有 rail 数据时也不能把系统级能量无条件分给前台应用。
 
@@ -432,6 +513,11 @@ HAL 的能量单位是 `uWs`，时间戳基于启动时钟。Channel 名称和 s
 
 连续运行十次 A 再运行十次 B，后半段更可能受到热状态和电量变化影响。更稳妥的方式是交错 A/B 顺序，运行间恢复到相近温度，并保留每次原始 trace 与结果。
 
+<!-- gracker-diagram: ch15-05-17-controlled-ab-experiment -->
+![固定边界与交错顺序的 A/B 功耗实验](../../assets/diagrams/ch15/ch15-05-17-controlled-ab-experiment.png)
+
+图：先固定测量边界与设备环境，交错 A/B 顺序并恢复相近状态，再比较多次结果分布。 对齐真实测量样本窗口；温度、网络、充电、缓存和后台活动都要记录，不能用一次结果替代回归分布。
+
 ### 同时保留三层证据
 
 1. Macrobenchmark 或外部仪表给出窗口能量分布；
@@ -439,6 +525,11 @@ HAL 的能量单位是 `uWs`，时间戳基于启动时钟。Channel 名称和 s
 3. Batterystats/Historian 检查较长窗口里的 Wakelock、job、alarm 和后台归因。
 
 若三层证据不一致，先查时间边界、系统噪声、缓存与单位，不要挑选最符合预期的一组数字。
+
+<!-- gracker-diagram: ch15-05-18-triangulate-evidence -->
+![能量、活动与长期归因的三层交叉检查](../../assets/diagrams/ch15/ch15-05-18-triangulate-evidence.png)
+
+图：窗口测量给出变化幅度，trace 解释同时段活动，长期统计帮助发现后台与生命周期问题。 证据冲突先查边界、覆盖、缓存、单位和系统干扰；三层不是可以直接相加的能耗账本。
 
 ## 版本演进
 

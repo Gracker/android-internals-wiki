@@ -14,6 +14,11 @@
 
 [第 4 章](../../part1-fundamentals/ch04-memory/README.md)分析 Android 内存管理机制，[第 10 章](../../part2-performance/ch10-memory-perf/README.md)讨论内存性能诊断与案例；本章整理应用侧的监控、诊断和优化实践。
 
+<!-- gracker-diagram: a260-01-chapter-reading-route -->
+![内存实践按现象选择章节](../../assets/diagrams/ch23/a260-01-chapter-reading-route.png)
+
+图：先用统一口径定位问题，再选本章具体实践；跨进程与设备缓冲的统计不能用 Java Heap 单项代替。
+
 ## 内容索引
 
 

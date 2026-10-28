@@ -177,6 +177,11 @@ last_consolidated_at: '2026-08-24'
 
 可选能力要看设备实现：`IPower.aidl` 明确允许平台忽略某个 `Mode` 或 `Boost`，调用前先用 `isModeSupported()`、`isBoostSupported()` 查询支持情况。看到 AIDL（Android Interface Definition Language，Android 接口定义语言） 枚举，我们知道的只是接口契约存在；往下每一层都要重新确认。
 
+<!-- gracker-diagram: a202-02-four-layers -->
+![从应用预算到硬件动作的职责](../../assets/diagrams/ch19/a202-02-four-layers.png)
+
+图：四层接口与能力分别确认；Mode 或 Boost 枚举存在，仍需查询支持并观察设备响应。
+
 ### 冻结的 Power AIDL 契约
 
 系统与厂商实现之间的跨进程接口契约由 AIDL 描述。`android-17.0.0_r1` 冻结的 `android.hardware.power` AIDL 是 v7：`Mode.aidl` 定义 19 个持续状态，包括 `LOW_POWER`、`SUSTAINED_PERFORMANCE`、`LAUNCH`、`GAME` 与多档相机流模式；`Boost.aidl` 定义 6 个短时提示，包括 `INTERACTION`、`DISPLAY_UPDATE_IMMINENT`、`ML_ACC`、音频和相机提示。
@@ -226,6 +231,11 @@ flowchart TD
 
 图中实线是可验证的标准接口，虚线是厂商可选映射；AOSP 没有定义 Power HAL 直接调用内核调度器辅助函数的通用路径。
 
+<!-- gracker-diagram: a202-03-entry-contracts -->
+![Mode、Boost 与 Hint Session 的入口](../../assets/diagrams/ch19/a202-03-entry-contracts.png)
+
+图：系统场景与应用会话是不同入口；框架校验和厂商支持之后，资源控制仍取决于设备实现。
+
 ### schedutil 的频率决策
 
 `schedutil` 是基于调度器负载的 CPU 调频策略。在内核标签 `android17-6.18-2026-06_r6` 中，它已通过 `sugov_get_util()` 接入 `sched_ext` 的 CPU 性能目标。`sched_ext` 简称 SCX，允许用 BPF 程序定义调度策略，这些 BPF 程序在受约束的内核执行环境中运行；CFS/fair class 是 Linux 普通任务使用的公平调度类。看频率决策时，我们要同时知道 CFS 与 SCX 各自给了多少利用率。
@@ -253,6 +263,11 @@ iowait boost 会在任务等待 I/O 后唤醒时临时抬高利用率，uclamp�
 
 频率更新的节奏是设备相关的，没有跨设备统一的 10 ms 一类约定。`sugov_should_update_freq()` 会检查 policy 是否可以更新以及频率上下限是否变化，普通更新还受 `freq_update_delay_ns` 的速率限制，初值来自 `cpufreq_policy_transition_delay_us(policy)`。`get_next_freq()` 经 `map_util_freq()` 或厂商钩子给出原始频率，再由 `cpufreq_driver_resolve_freq()` 解析成驱动支持的档位；支持 fast switch（快速切换） 时直接更新，否则由工作线程延后执行。还有一点读源码时容易漏：共用一个 policy 的多个 CPU 会取处理后的最大利用率，所以给某个 CPU 写入 target，硬件改变的可能是一组 CPU 的频率。
 
+<!-- gracker-diagram: a202-05-frequency-request -->
+![从性能目标到频率执行](../../assets/diagrams/ch19/a202-05-frequency-request.png)
+
+图：schedutil 先判断是否需要更新，再把利用率映射为驱动支持的频率；共享 policy、温控与硬件限制会影响最终执行。
+
 以下几项都要在目标机上单独确认，SoC 品牌标签回答不了：
 
 - `schedutil` 是否为量产配置中的调频策略；
@@ -268,6 +283,16 @@ iowait boost 会在任务等待 I/O 后唤醒时临时抬高利用率，uclamp�
 `android17-6.18-2026-06_r6/include/trace/hooks/sched.h` 中，名称含 `android_vh_scx_` 的钩子声明共 11 个，覆盖启用状态、异常退出、CPU 可运行性、迁移、入队、时间片和调度类切换修正。它们供 GKI（Generic Kernel Image，通用内核镜像）的厂商模块扩展调度行为，不是 Power HAL 到 SCX 的标准协议；数量和函数签名也只对应这个内核标签。
 
 SCX 遇到 BPF 错误、可运行任务长时间得不到执行（runnable task stall）或 `SysRq-S` 时，会终止调度器并把任务交回 fair class；`SysRq-D` 只输出诊断 dump。退出后 `scx_cpuperf_target()` 返回 0，`scx_switched_all()` 为 false，下次 `schedutil` 更新会重新加入 fair-class 利用率。到这里要分清两条恢复路径：SCX 退出由内核自己完成，设备厂商在 SCX 之外保留的 Boost、uclamp 或固件状态仍需自行设计超时和清理；Power HAL 服务死亡后的封装层（wrapper）重连是另一条，两者互不替代。
+
+<!-- gracker-diagram: a202-04-scx-input-modes -->
+![SCX 状态改变 schedutil 的输入](../../assets/diagrams/ch19/a202-04-scx-input-modes.png)
+
+图：SCX target 是归一化性能值，既不是 kHz 也不是 OPP 序号；full 与 partial 决定是否叠加 fair 利用率。
+
+<!-- gracker-diagram: a202-06-recovery-lifecycles -->
+![SCX 回退与厂商状态清理](../../assets/diagrams/ch19/a202-06-recovery-lifecycles.png)
+
+图：SCX 的内核回退、厂商额外资源状态清理、Power HAL 死亡后的重连，是三个分别设计的生命周期。
 
 ### 三类厂商公开驱动能证明什么
 
@@ -313,6 +338,11 @@ Xclipse GPU 的 DVFS、固件和产品策略要以相应设备的公开驱动、
 - 无线网络制式、信号条件、SIM 与后台账号状态；
 - 工作负载版本、输入数据、持续时间和重复次数。
 
+<!-- gracker-diagram: a202-07-driver-boundaries -->
+![公开驱动与量产实现的边界](../../assets/diagrams/ch19/a202-07-driver-boundaries.png)
+
+图：公开驱动解释一类硬件接入方式；品牌、旧款驱动或节点名不足以还原新设备 Power HAL 与固件策略。
+
 ### 应用侧可用的标准能力
 
 应用很少需要知道某个 Hint 在芯片内部怎样执行。可移植的做法是报告周期任务的目标用时与实际用时，读取系统压力，并在本进程内调整工作量。这三个入口分别是 Hint Session、温控状态与资源余量。
@@ -345,6 +375,11 @@ try {
 
 ADPF（Android Dynamic Performance Framework，Android 动态性能框架）提供反馈信号，频率、核心或功耗结果仍由厂商实现结合温控和整机预算决定。所以应用侧该做的优化一件不少：减少无效工作、控制并发和缩短持锁区间。
 
+<!-- gracker-diagram: a202-08-hint-session-lifetime -->
+![Hint Session 的周期工作闭环](../../assets/diagrams/ch19/a202-08-hint-session-lifetime.png)
+
+图：会话把目标预算与实际用时交给系统；实际频率、核心和功耗由设备结合温控预算决定，应用仍需减少无效工作。
+
 #### thermal headroom 的读数与阈值
 
 `PowerManager.getThermalHeadroom(forecastSeconds)` 的 `forecastSeconds` 参数取 0 到 60 秒，返回值为非负的归一化热压力指标。这个 API 名字里带 headroom（热余量），读数方向却相反：返回值越高表示越接近严重温控阈值，`1.0` 表示到达 `THERMAL_STATUS_SEVERE` 阈值，返回值可以超过 `1.0`；`0.0` 不对应某个固定温度或温控状态，也没有摄氏度单位。
@@ -352,6 +387,11 @@ ADPF（Android Dynamic Performance Framework，Android 动态性能框架）提�
 接口可能返回 `NaN`（Not a Number，表示当前没有有效数值），包括设备不支持、采样尚未稳定或调用过快等情况。AOSP 文档指出慢变化传感器约一秒更新一次，更高频轮询没有收益。我们把 headroom 与 `getCurrentThermalStatus()` 放在一起用，可以决定何时降低画质、减小批量任务或延后预取。
 
 `getThermalHeadroomThresholds()` 从 API 35 开始提供，用于读取设备为各温控状态定义的 headroom 阈值。不同设备的传感器和阈值模型可能不同，跨机比较原始 headroom 数字时要保留这项限制。
+
+<!-- gracker-diagram: a202-09-headroom-direction -->
+![两类 headroom 的读数方向](../../assets/diagrams/ch19/a202-09-headroom-direction.png)
+
+图：thermal headroom 和 CPU/GPU headroom 的读数方向不同；设备阈值、查询间隔和计算窗口均需单独读取。
 
 #### CPU/GPU headroom 的含义
 
@@ -411,6 +451,11 @@ PowerStats AIDL 仍是冻结的 v2。它可以报告电源轨能量，以及 pow
 API 35 起，普通应用可通过 `SystemHealthManager.getSupportedPowerMonitors()` 查询设备公开的功耗监视器，再异步调用 `getPowerMonitorReadings()`；支持列表为空是合法结果。监视器可能来自原始 ODPM rail，也可能来自 energy consumer（按硬件读数或模型归集的耗能组件），分析时要保留监视器类型与名称。
 
 ODPM rail 在电池输出的下游测量子系统能量，充电状态对它的读数没有直接影响；覆盖范围由硬件决定，屏幕、射频或 PMIC 转换损耗可能都不在内。rail 名同样随设备各自定义，互比前要先核对覆盖说明。跨设备总功耗比较仍以校准过的外部功耗仪更稳妥，片上 rail 更适合分析同一台设备内各子系统的贡献。
+
+<!-- gracker-diagram: a202-10-energy-measurements -->
+![能量、电流与测量边界](../../assets/diagrams/ch19/a202-10-energy-measurements.png)
+
+图：任务总能量需结合完成时间、温度和帧性能；电池电流与片上供电支路读数的测量范围不同。
 
 ### 按控制链路做运行态排查
 
@@ -500,6 +545,11 @@ Perfetto 至少同时观察：
 
 应用侧较稳妥的路径是使用 `PerformanceHintManager`、温控状态、资源余量和功耗监视器等公开能力，并通过减少工作量改善能效。系统侧排查要分层观察 Framework 提示、内核调度与频率、温控约束和固件响应。控制变量、记录测量范围并保留跟踪证据，才能让跨 SoC 功耗结论经得起复查。
 
+<!-- gracker-diagram: a202-01-control-statistics -->
+![电源控制与能量统计的两条路径](../../assets/diagrams/ch19/a202-01-control-statistics.png)
+
+图：Power HAL 传递场景策略，schedutil 形成 CPU 频率请求，Power Stats 报告结果；统计接口不直接参与 schedutil 的选频。
+
 ## Power Stats 能量实体、驻留与归因
 
 控制环决定硬件状态，Power Stats 用来观察能量和驻留结果。我们拿到一台设备做功耗分析时，首先要弄清它的统计覆盖、单位和更新频率：这些都由 OEM（设备厂商）实现，设备之间差别可以很大。
@@ -530,6 +580,11 @@ EnergyMeasurement[]        readEnergyMeter(in int[] channelIds);
 3. **计量通道**：`Channel` / `EnergyMeasurement` 记录采集时间 `timestampMs`、累计时长 `durationMs` 和累计能量。通道可能对应总线、采样电阻或电源 rail，名称与子系统字段由设备定义。
 
 能量字段的单位是微瓦秒（µW·s，数值上等于微焦耳），AIDL 时间戳使用从开机起计时且包含休眠时间的 `CLOCK_BOOTTIME`。ID 数组为空时表示请求全部可用对象，某个对象暂时没有结果时 HAL 可以不返回该项。接口约定到这里为止：设备是否覆盖某个组件、是否提供 UID 分摊，要靠后文的能力核查确认。
+
+<!-- gracker-diagram: a202-11-stats-three-objects -->
+![Power Stats 的三类对象](../../assets/diagrams/ch19/a202-11-stats-three-objects.png)
+
+图：六个 HAL 方法配成三组对象与读数；ID、名称和覆盖由设备定义，服务存在不代表三组数据齐全。
 
 #### AOSP 默认实现与真实设备
 
@@ -571,6 +626,11 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 `PowerStatsLogger` 写文件前，会按本次开机的时钟偏移把 HAL 的开机时间戳转换为 Unix 时间。对象元数据在重启后发生变化时，Logger 会清理对应的旧日志。无参数的 `dumpsys powerstats` 列出当前对象与 Logger 状态；`--proto meter/model/residency` 导出各自的二进制 protobuf（Protocol Buffers，结构化序列化格式）日志。
 
+<!-- gracker-diagram: a202-12-stats-service-branches -->
+![PowerStatsService 的三条使用路径](../../assets/diagrams/ch19/a202-12-stats-service-branches.png)
+
+图：日志、公开 Power Monitor 和 StatsD 是从服务分开的使用路径；公开 Monitor 不经过 Logger 文件，HIDL 回退也不提供 EnergyConsumer。
+
 #### 设备能力的四个维度
 
 评估一台设备时，“服务存在”只说明接口可以连接，我们还要检查以下四项：
@@ -596,6 +656,11 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 这两个阈值决定服务何时重新请求 HAL，硬件传感器本身的采样周期要另行确认。服务还会在前后两次累计值之间加入按调用 UID 保持一段时间的随机扰动，两类权限路径都会经过该处理。公开结果以 µW·s 报告自开机以来的累计能量，包含电池供电与外接电源期间的能量，重启后不会延续；该 API 不返回 `EnergyConsumerAttribution[]`。
 
 这里的 granularity 指结果新鲜度等级。排查 Power Monitor 读数时，我们同时确认设备功能开关、对象列表、结果时间戳、累计值是否增长、调用方权限和返回的 granularity；20 秒或 250 毫秒的缓存规则与 HAL 计数器本身的采样说明是两回事。
+
+<!-- gracker-diagram: a202-13-monitor-cache-noise -->
+![Power Monitor 的缓存与读数](../../assets/diagrams/ch19/a202-13-monitor-cache-noise.png)
+
+图：服务缓存新鲜度与硬件采样周期不同；两类权限路径都经过扰动处理，公开结果不包含 EnergyConsumer 的 UID 分摊数组。
 
 ### 能力分级与部署
 
@@ -626,6 +691,11 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 7. **记录来源**：报告中写明机型、软件构建指纹、内核版本、HAL 路径、对象清单、采样时长、权限与 Power Monitor granularity。
 
 不同设备的对象对不上时，我们就比较各自覆盖范围内的趋势，暂不拼统一的绝对总量。
+
+<!-- gracker-diagram: a202-14-energy-difference -->
+![跨设备能量比较前的对齐](../../assets/diagrams/ch19/a202-14-energy-difference.png)
+
+图：先对齐对象、时钟和实验窗口，再做累计值差分；未提供 UID 数据的设备不能被解释成应用耗电更低。
 
 #### 企业设备与实验室设备池
 
@@ -676,6 +746,11 @@ PowerStats 能力：L1/L2/L3/L4
 ```
 
 模板中的 `model/build/kernel` 分别指机型、软件构建指纹和内核版本。`legacy` 只是原模板对“没有细粒度权限”的简称，不是 Framework 的正式路径名，正式报告宜写 `GRANULARITY_UNSPECIFIED` 或 `GRANULARITY_FINE`。
+
+<!-- gracker-diagram: a202-15-collection-cadence -->
+![日志触发、公开缓存与设备采样](../../assets/diagrams/ch19/a202-15-collection-cadence.png)
+
+图：四类节奏属于不同层；采集路径、权限、粒度、计数器与覆盖一致后，才能把功耗榜差异归因到业务行为。
 
 ### 版本与实现边界
 

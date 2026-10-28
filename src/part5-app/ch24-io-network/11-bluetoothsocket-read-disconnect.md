@@ -173,6 +173,11 @@ class BtReadLoop(
 
 `onBytes` 只负责移交字节，并且不抛异常，协议解析错误由独立事件返回状态机；`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。
 
+<!-- gracker-diagram: a271-02-exit-cause-classification -->
+![EOF与异常先按分类时可见的关闭意图归因](../../assets/diagrams/ch24/a271-02-exit-cause-classification.png)
+
+图：原子变量支持线程间可见性，但不能恢复真实断线的物理时间顺序；分类以代码实际读取时为准。
+
 ### 源码中的生效条件
 
 我们从 `android-17.0.0_r1` 源码核对 RFCOMM 负返回值的生效条件，下面这段用于对照，应用无需复制：
@@ -202,6 +207,11 @@ if (ret < 0) {
 [`BluetoothInputStream.java`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothInputStream.java) 的数组读取直接委托给 `BluetoothSocket.read()`。[`sockets.aconfig`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/flags/sockets.aconfig) 则说明 `make_socket_read_behavior_consistent` 的用途是统一 RFCOMM 与 LE CoC 的 EOF 返回值。
 
 LE CoC 在该源码中已经在接收缓冲为空且底层读到 EOF 时直接返回 `-1`。Android 17 的公开行为变更只承诺 RFCOMM 的新语义，同步面向连接（Synchronous Connection-Oriented，SCO）等其他套接字类型的公开契约，要从各自的官方渠道确认，共享实现推不出这些结论；SCO 主要承载蓝牙语音数据。
+
+<!-- gracker-diagram: a271-01-rfcomm-eof-gates -->
+![RFCOMM负返回值由版本、目标与开关共同门控](../../assets/diagrams/ch24/a271-01-rfcomm-eof-gates.png)
+
+图：公开变化只承诺 RFCOMM；兼容工具能覆盖应用门控，不能凭它改变设备版本或模块特性标志。
 
 可调试应用可在 Android 17 测试设备上执行这些命令，切换兼容性变更：
 
@@ -235,6 +245,11 @@ adb shell am compat reset 383671392 com.example.app
 
 阻塞读循环与状态机要分开部署。`HandlerThread` 是带消息循环（Looper）的线程，`read()` 阻塞期间它处理不了关闭或超时消息，两者共用会拖住取消路径。我们改用独立读线程，或由执行器管理的有限 I/O 工作线程，再把事件投递到单线程状态机。活跃连接数量也要受业务限制，因为每个阻塞读循环都会长期占用执行资源。
 
+<!-- gracker-diagram: a271-03-io-ownership-and-cancel -->
+![阻塞读写与串行状态机分配独立执行资源](../../assets/diagrams/ch24/a271-03-io-ownership-and-cancel.png)
+
+图：读任务不能和关闭/超时消息共用被阻塞的 HandlerThread；每个活跃连接都有资源预算。
+
 ### 字节流与消息定界
 
 RFCOMM 向应用提供的只有字节流：发送方一次 `write()`，接收方可能要经过多次 `read()` 才拿全；接收方的一次 `read()` 也可能同时包含多条业务消息。所以协议至少要约定一种明确的定界方式，例如长度前缀、分隔符或固定长度字段，并处理这些情况：
@@ -249,6 +264,11 @@ RFCOMM 向应用提供的只有字节流：发送方一次 `write()`，接收方
 `getMaxReceivePacketSize()` 与 `getMaxTransmitPacketSize()` 描述底层传输的包尺寸，可以用来优化每次读写的大小；业务帧长度由应用协议定义，一次读取也未必恰好对应一个底层包。示例中的 `DEFAULT_BUFFER_SIZE` 同样只是内存选择，不是协议常量。
 
 `isConnected()` 反映的是调用那一刻的套接字连接状态，下一次读写能否成功，它说了不算。业务在线状态应由当前连接代次、读写结果和协议活性共同决定；协议活性通常来自业务心跳，或请求响应是否按时完成。
+
+<!-- gracker-diagram: a271-04-stream-framing-and-bounds -->
+![read边界与业务消息边界相互独立](../../assets/diagrams/ch24/a271-04-stream-framing-and-bounds.png)
+
+图：InputStream 没有业务帧语义；复制有效字节或明确单消费者所有权，避免下一次read覆盖异步数据。
 
 ## 断线归因与状态机
 
@@ -288,9 +308,19 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 - 本地关闭与远端掉线同时发生时，以状态机已经记录的本地意图为归因依据，不宣称知道无线连接事件的先后顺序。
 - 新连接已经进入 `Connected` 后，旧连接的 `EndOfStream` 或 `ReadFailure` 只用来清理旧资源，当前连接不受它影响。
 
+<!-- gracker-diagram: a271-05-connection-generation-fence -->
+![connectionId阻止旧会话事件覆盖新状态](../../assets/diagrams/ch24/a271-05-connection-generation-fence.png)
+
+图：代次同时约束读退出、写失败和连接回调；旧任务清理不能把新界面改成断线。
+
 ## 重连预算与退避
 
 轮到重连时，我们先核对四个前提：业务仍希望保持连接、必要权限仍在、Bluetooth 适配器已开启、当前预算允许重试。任何一项前提消失，重连就停在原地，后台计时器也随之停止创建套接字。状态表中的 `Backoff` 就是失败后等待下一次连接的阶段。
+
+<!-- gracker-diagram: a271-06-reconnect-state-gates -->
+![失败等待与本地关闭走不同状态出口](../../assets/diagrams/ch24/a271-06-reconnect-state-gates.png)
+
+图：重试不是所有终止事件的默认出口；用户断开后停在Idle，缺权限和蓝牙关闭分别等待。
 
 建议分别配置这些预算：
 
@@ -315,6 +345,11 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 - 不能安全重复执行的操作，需要先查询结果或让用户确认。
 - 旧连接写队列中的任务不能自动转移到新 `connectionId`。
 
+<!-- gracker-diagram: a271-07-retry-window-and-replay -->
+![退避、扫描和重放共享会话预算](../../assets/diagrams/ch24/a271-07-retry-window-and-replay.png)
+
+图：已写出不证明远端已处理；幂等键或业务序号决定重放，不能安全重复时先查询结果。
+
 ### 后台连续连接
 
 应用要在后台持续与外部设备传输数据时，按场景评估 `connectedDevice` 前台服务或配套设备管理器（Companion Device Manager）；普通后台线程对进程被系统保留的优先级没有帮助。
@@ -322,6 +357,11 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 [前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) 要求 Android 14 及以上在服务上声明 `android:foregroundServiceType="connectedDevice"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE` 权限。启动服务时还要满足文档列出的至少一项运行前提；已授予 `BLUETOOTH_CONNECT` 的应用可满足蓝牙连接场景的这一条件。
 
 前台服务改变的是进程执行条件，`BluetoothSocket.read()` 的 EOF 语义、扫描和重连的约束都维持原样。用户主动断开、权限撤销或预算用尽后，我们应停止连接任务和不再需要的前台服务。若使用配套设备管理器，恢复流程要按设备进入或离开通信范围的事件设计，旧套接字跨进程存活这条路走不通。
+
+<!-- gracker-diagram: a271-08-background-execution-and-permissions -->
+![后台连续连接与蓝牙授权分别满足前提](../../assets/diagrams/ch24/a271-08-background-execution-and-permissions.png)
+
+图：前台服务改善执行条件，不保证不被停止，也不能豁免蓝牙权限、用户断开和重试预算。
 
 ## 性能与功耗监控字段
 
@@ -342,6 +382,11 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 Perfetto 是 Android 的系统跟踪工具，BatteryStats 统计设备电量使用；把二者与应用跟踪放到一起，我们可以核对断线后的线程、唤醒锁、扫描和重连是否仍在运行。Perfetto 中的 Bluetooth 与电源时间轴随设备实现变化，测试脚本先枚举当前设备可用数据源，再选择分析字段，时间轴名称以当场枚举结果为准。
 
 读观测数据时，我们把两种情况分开：没有业务数据，和读线程已经退出。空闲连接长时间阻塞在 `read()` 是正常形态，本地关闭后仍未退出、或连接换代后旧线程仍存活，才是需要告警的异常。
+
+<!-- gracker-diagram: a271-09-disconnect-work-versus-idle -->
+![空闲阻塞与关闭后残留线程要区分](../../assets/diagrams/ch24/a271-09-disconnect-work-versus-idle.png)
+
+图：以用户关闭与代次为观测边界；指标保留socket_type和阶段，不能混进HTTP DNS或读取超时。
 
 ## Android 17 适配测试表
 

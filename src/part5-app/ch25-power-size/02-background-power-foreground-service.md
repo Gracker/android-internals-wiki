@@ -128,6 +128,11 @@ consolidated_from:
 
 还有一个常见误会：进程活着，任务也未必能一直跑。进程存活、组件生命周期、后台启动资格、Job 配额、资源访问权限是五件不同的事；工作已经进了进程，仍可能因为约束变化、配额用完或服务超时被叫停。
 
+<!-- gracker-diagram: a275-01-background-five-independent-states -->
+![进程存活与后台执行资格分开记录](../../assets/diagrams/ch25/a275-01-background-five-independent-states.png)
+
+图：先定位任务停在哪一层，再决定改调度、权限、生命周期还是业务逻辑。
+
 ### Android 后台执行限制演进（Doze / App Standby / 待机分组）
 
 后台工作能否执行，至少受三组条件共同影响：
@@ -189,6 +194,11 @@ flowchart LR
 - 重复触发时应保留旧工作、替换旧工作，还是追加新工作？
 - 页面关闭、退出账号、权限撤销或数据已被删除时，谁负责取消任务？
 - 任务被系统停止后，哪些进度可以安全恢复，哪些步骤必须保证幂等，也就是重复执行不会产生额外副作用？
+
+<!-- gracker-diagram: a275-02-framework-scheduling-controls -->
+![设备空闲与待机分组分别约束Job](../../assets/diagrams/ch25/a275-02-framework-scheduling-controls.png)
+
+图：内核suspend和wakeup source提供休眠与唤醒事实；把它们与框架调度日志按时间关联。
 
 ### 后台任务最佳实践
 
@@ -269,6 +279,11 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 
 统一封装能一致地记录调度语义，但别把平台差异全部藏起来。业务仍需明确时效、幂等键、取消条件和数据归属；基础组件负责记录调度接口、系统约束、停止原因和资源用量。只修某个 Worker 的执行逻辑，解释不了它为什么被排队、停止或重复触发。
 
+<!-- gracker-diagram: a275-03-persistent-work-constraints-and-intent -->
+![唯一工作合并与取消按业务意图设计](../../assets/diagrams/ch25/a275-03-persistent-work-constraints-and-intent.png)
+
+图：业务定义时效、幂等与取消，基础组件保留pending/stop原因和资源用量。
+
 ### 前台服务的适用场景
 
 前台服务适用于用户明确知道且希望持续进行的工作，例如导航、通话、媒体播放或运动记录。它不是进程保活接口，也不会取消 Doze、Job 配额、后台启动限制或受保护资源的权限检查。
@@ -324,6 +339,11 @@ fun buildPassiveLocationRequest(
 这些权限决定能否访问数据，FGS 后台启动资格仍需独立检查。具体类型与前提条件以[前台服务类型文档](https://developer.android.com/develop/background-work/services/fgs/service-types)为准。
 
 定位和传感器都应按采样预算管理：
+
+<!-- gracker-diagram: a275-04-passive-location-and-health-permissions -->
+![被动定位无交付期限，健康传感器按版本授权](../../assets/diagrams/ch25/a275-04-passive-location-and-health-permissions.png)
+
+图：按目的、精度、间隔和最长时长申请资源；结束、撤权、退出账号时取消订阅。
 
 - 每个业务声明采样目的、前后台状态、精度、最短间隔、最长持续时间。
 - 页面不可见后降级采样；任务结束、权限撤销、账号退出时释放监听。
@@ -422,6 +442,11 @@ flowchart TD
 
 `startForeground()` 成功只代表服务通过了本次晋升检查。后续资源访问、时间额度、用户停止和进程回收仍会改变结果。
 
+<!-- gracker-diagram: a275-05-fgs-start-promotion-runtime -->
+![FGS启动、晋升与持续运行是三次检查](../../assets/diagrams/ch25/a275-05-fgs-start-promotion-runtime.png)
+
+图：startForeground成功代表本次晋升通过，不能推导资源永久可用、额度无限或进程不会退出。
+
 ### 2. 从 `startForegroundService()` 到 `startForeground()`
 
 #### 2.1 两段式调用的职责
@@ -444,6 +469,11 @@ AOSP 中，`ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS
 4. 工作完成、失败或取消时统一调用 `stopSelf()`。
 
 FGS 不会把 Service 回调移出主线程。`onCreate()`、`onStartCommand()`、`onTimeout()` 默认仍由应用主线程接收，重 I/O 和计算要转移到合适的执行器。
+
+<!-- gracker-diagram: a275-06-promotion-before-heavy-initialization -->
+![先轻量晋升，再启动可取消业务](../../assets/diagrams/ch25/a275-06-promotion-before-heavy-initialization.png)
+
+图：冷启动、主线程排队和初始化会占用晋升窗口；通知与晋升不等待业务完成。
 
 ### 3. 类型声明与晋升时校验
 
@@ -548,6 +578,11 @@ fun startUserRequestedSync(context: Context) {
 
 对 `ForegroundServiceStartNotAllowedException`，合适的处理是转入可延期任务或提示用户重试。类型专用权限与运行前提在 Service 调用 `startForeground()` 时校验，那里抛出的 `SecurityException` 不会同步返回这段调用代码；应在启动前核对前提，并把 Service 端异常纳入崩溃监控。
 
+<!-- gracker-diagram: a275-08-start-id-is-not-task-reference-count -->
+![最新startId先完成仍会停止整个Service](../../assets/diagrams/ch25/a275-08-start-id-is-not-task-reference-count.png)
+
+图：多个请求需队列、合并或任务计数；onTimeout取消全部工作后stopSelf，避免旧编号阻止停止。
+
 #### 3.3 `ActiveServices` 的四类校验结果
 
 `setServiceForegroundInnerLocked()` 先读取 Manifest 类型。运行时类型必须是 Manifest 类型位集合的子集，否则抛出 `IllegalArgumentException`。随后 `validateForegroundServiceType()` 调用 `ForegroundServiceTypePolicy`，把结果映射为：
@@ -558,6 +593,11 @@ fun startUserRequestedSync(context: Context) {
 - 校验通过：记录类型、进入 FGS 状态并发布通知。
 
 多个类型可以按位组合，但每个类型的权限和前提都要满足。`shortService` 与其他类型组合时会被系统忽略，服务按其他类型运行，也失去 short 类型的约 3 分钟语义。拿组合类型规避类型要求，是行不通的。
+
+<!-- gracker-diagram: a275-07-type-and-permission-validation -->
+![运行类型必须是Manifest类型的子集](../../assets/diagrams/ch25/a275-07-type-and-permission-validation.png)
+
+图：隐藏fileManagement不在默认公开策略映射中；不能给三方应用当作通用类型。
 
 ### 4. 后台启动许可与 WIU 能力
 
@@ -578,6 +618,11 @@ Camera、Microphone、Location 和部分 Health 场景依赖 while-in-use 权限
 以 API 34+ 为目标时，系统会在创建此类 FGS 时检查应用当前能否使用对应权限。应用在后台且不满足 WIU 例外时，创建服务会直接抛出 `SecurityException`。通用后台 FGS 例外不保证 WIU 能力。
 
 安全的设计方式是让用户在可见 Activity、通知、Widget 或受支持的外部设备交互中发起操作，并在该交互上下文仍有效时启动 FGS。对持续定位，还要分别核对 `ACCESS_BACKGROUND_LOCATION` 的授予与产品用途——`location` 类型本身推不出后台位置权限。
+
+<!-- gracker-diagram: a275-09-temporary-start-wiu-bal-separate -->
+![临时FGS启动、WIU和BAL各有资格](../../assets/diagrams/ch25/a275-09-temporary-start-wiu-bal-separate.png)
+
+图：权限授予记录不等于后台当前可访问资源；位置后台权限与FGS启动例外仍须分别检查。
 
 ### 5. 三种超时的区分
 
@@ -619,6 +664,11 @@ Context.startForegroundService() did not then call Service.startForeground()
 
 `getTimeLimitedFgsType()` 只处理 `dataSync` 和 `mediaProcessing`，源码里没有“其他 FGS 一律运行 24 小时后停止”的规则。播放、位置、通话等类型仍要服从业务合法性、子系统状态、用户停止、后台限制和内存回收。
 
+<!-- gracker-diagram: a275-10-three-timeout-classes -->
+![晋升、shortService与累计额度三种超时](../../assets/diagrams/ch25/a275-10-three-timeout-classes.png)
+
+图：晋升超时不调用Service.onTimeout；short的ANR和限时类型崩溃是不同失败结果。
+
 #### 5.4 Android 16 以后的 Job 配额
 
 从 Android 16 起，FGS 中启动的 `JobScheduler`、WorkManager 或 DownloadManager 工作仍消耗各自的运行配额。FGS 运行时长与 JobScheduler 配额没有合并成同一份计数，FGS 也替 Job 解除不了 App Standby 或调度额度。
@@ -628,6 +678,11 @@ Context.startForegroundService() did not then call Service.startForeground()
 Job 配额与 FGS 时长是两套预算。排障时我们分别保存 FGS 类型、运行区间和超时回调，以及 Job 所属的待机分组、pending reason、stop reason、运行时长和是否与 FGS 同时运行。
 
 pending reason 说明任务为何尚未执行，stop reason 说明本轮执行为何结束。`ForegroundService` 只表达用户可感知的持续工作，不会让同进程 Job 获得无限额度。
+
+<!-- gracker-diagram: a275-11-fgs-and-job-independent-budgets -->
+![限时FGS与Job配额分别记账](../../assets/diagrams/ch25/a275-11-fgs-and-job-independent-budgets.png)
+
+图：同进程不代表同一预算；FGS类型时长与Job运行额度需要两份记录。
 
 #### 5.5 长任务的检查点与恢复
 
@@ -640,6 +695,11 @@ pending reason 说明任务为何尚未执行，stop reason 说明本轮执行�
 - 约束与任务价值匹配：用户正在等待的工作，别被无意义的充电、空闲约束拖住。
 
 Job/Worker 收到停止，只表示调度器结束了本次执行，应用自建线程、C/C++ 原生代码里的工作或子进程并不会跟着终止。取消信号必须一路传到底层，否则旧执行残留会和新一轮恢复并发，既增加 CPU 和功耗，也会破坏幂等性。
+
+<!-- gracker-diagram: a275-12-checkpoint-recovery-single-owner -->
+![检查点、幂等与执行权共同保障恢复](../../assets/diagrams/ch25/a275-12-checkpoint-recovery-single-owner.png)
+
+图：onTimeout只发取消、释放与停止，不在主线程等待网络、数据库或编码器结束。
 
 ### 6. FGS 对进程优先级和性能的影响
 
@@ -657,6 +717,11 @@ Job/Worker 收到停止，只表示调度器结束了本次执行，应用自建
 表中是 FGS 分支给出的基准档位，进程绑定关系、可见组件、ContentProvider 依赖、最近前台状态和 OEM 内存策略还会参与最终计算。LMKD（Low Memory Killer Daemon，低内存终止守护进程） 会结合这些分值与内存压力选择回收对象，所以 FGS 进程仍可能因极端内存压力、崩溃、ANR、用户停止或策略违规而退出。
 
 表格的结论是：FGS 会提高进程在内存压力下的存活优先级，但不会把进程变成不可回收对象；short FGS 的基准保护还弱于普通 FGS。
+
+<!-- gracker-diagram: a275-13-process-priority-bounds -->
+![FGS提升回收优先级，不提供性能资源保证](../../assets/diagrams/ch25/a275-13-process-priority-bounds.png)
+
+图：adj越小通常越晚成为回收候选；它不是CPU频率、调度优先级或独占资源。
 
 #### 6.2 FGS 的能力范围
 
@@ -713,6 +778,11 @@ intentSender.sendIntent(
 
 该重载和 `ALLOW_IF_VISIBLE` 需要按 API 级别做运行时保护。即使发送成功，系统仍会验证创建方、发送方和当前窗口状态；BAL 被拦截时通常没有直接异常，Logcat 会记录 `Background activity launch blocked!`。
 
+<!-- gracker-diagram: a275-14-bal-creator-sender-opt-in -->
+![BAL授权看创建方、发送方与实际可见性](../../assets/diagrams/ch25/a275-14-bal-creator-sender-opt-in.png)
+
+图：发送成功不证明Activity已打开；用同一触发源关联窗口、授权模式和BAL拦截日志。
+
 Android 16+ 可以在测试构建中启用 StrictMode 检测。StrictMode 是开发阶段发现不当 API 使用方式的诊断机制，不是生产环境的授权开关：
 
 ```kotlin
@@ -736,6 +806,11 @@ Android 17 对播放、音频焦点和音量修改增加了后台状态检查。
 - 音频播放和音量 API 可能静默失败；音频焦点请求返回 `AUDIOFOCUS_REQUEST_FAILED`。
 
 播放应用宜使用 Media3 `MediaSessionService`，并在用户启动播放时创建 `mediaPlayback` FGS。播放完成、永久失焦或不可恢复错误后，结束媒体会话并停止 FGS；后续恢复应由新的用户动作触发。
+
+<!-- gracker-diagram: a275-15-audio-default-versus-forced-mode -->
+![音频默认资格与强制调试模式分开验收](../../assets/diagrams/ch25/a275-15-audio-default-versus-forced-mode.png)
+
+图：partial提示缺FGS，full提示FGS无WIU；强制模式用于故障注入，不能替代默认兼容行为。
 
 这组命令用于在测试设备上切换后台音频限制并查看相关记录。这里的 hardening 指平台新增的后台音频访问限制：
 

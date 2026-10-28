@@ -58,6 +58,11 @@ consolidated_from:
 
 Bitmap（位图）是 Android 中表示解码后像素及其描述信息的对象。图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算共同造成。一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB（1 MiB 为 1,048,576 字节）；200×150 的目标 View 只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次像素分配。
 
+<!-- gracker-diagram: a256-01-pixel-budget -->
+![编码文件与解码像素预算](../../assets/diagrams/ch23/a256-01-pixel-budget.png)
+
+图：原图像素数是目标 View 的 400 倍。显示时缩小不会撤销已经发生的原尺寸分配。
+
 像素本身落在哪类内存，决定了后续该看哪个指标。Android 10 到 Android 17 的普通软件 Bitmap 会增加原生堆（Native Heap）占用，Hardware Bitmap 的像素则位于图形缓冲区。
 
 这几组术语在排查里经常混用，本文统一按以下含义：
@@ -85,6 +90,11 @@ bytes ≈ width × height × bytesPerPixel
 ```
 
 这个式子没有体现每行像素的对齐填充，因此只适合预算估算。Android `Bitmap.getByteCount()` 返回当前像素所需的最小字节数，`getAllocationByteCount()` 返回底层分配区大小；Bitmap 被 `inBitmap` 复用，或者经过 `reconfigure()` 调整后，后者可能大于前者。排查内存占用时优先记录 `allocationByteCount`，否则会低估复用池里的大块分配。
+
+<!-- gracker-diagram: a256-04-byte-count-capacity -->
+![当前像素需求与底层容量](../../assets/diagrams/ch23/a256-04-byte-count-capacity.png)
+
+图：复用可能改变当前像素需求，却保留较大的分配区；容量预算应记录 allocationByteCount。
 
 解码前先读尺寸，不直接创建像素内存。`BitmapFactory.Options.inJustDecodeBounds = true` 时，解码方法返回 `null`，但会填充 `outWidth`、`outHeight` 和 `outMimeType`。这一步适合放在所有本地文件、资源图、网络图落盘后的统一解码入口。
 
@@ -133,6 +143,11 @@ fun calculateInSampleSize(
 
 `inSampleSize = 4` 表示宽高约降到原图的 1/4，像素数约降到 1/16。官方文档说明，非 2 的幂会向下取到最接近的 2 的幂；因此采样率计算不能当作任意比例的精确缩放。解码后的图片仍可能需要再按 View 尺寸缩放，但显示阶段的缩放不能替代解码阶段的像素数控制。
 
+<!-- gracker-diagram: a256-02-sample-before-decode -->
+![第一次像素分配前设定采样](../../assets/diagrams/ch23/a256-02-sample-before-decode.png)
+
+图：第一次 decode 只读尺寸；第二次按采样值分配像素。EXIF 方向和最终裁剪属于调用方另需处理的步骤。
+
 API 28 及以上使用 `ImageDecoder` 时，可在 `OnHeaderDecodedListener` 里调用 `setTargetSampleSize()` 或 `setTargetSize()`，在头信息回调中设定输出尺寸，避免默认按编码图的原始尺寸输出。它与 `BitmapFactory` 两阶段解码的差异见 22.9。
 
 `inPreferredConfig` 是解码器尽量满足的请求，不保证结果一定采用指定配置；实际结果应读取 `bitmap.config` 和 `allocationByteCount`。
@@ -146,6 +161,11 @@ Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更�
 AOSP `Bitmap.java` 中，Bitmap 的 Java 对象通过 `mNativePtr` 指向原生 Bitmap。`NativeAllocationRegistry` 用来把 Java 对象关联的原生分配量和释放函数登记给 ART。
 
 Android 17 的 `registerNativeAllocation()` 使用两个登记器：一个以空操作释放函数记录像素数据大小，只负责分配记账；另一个通过 `sRegistry` 登记原生 Bitmap 对象和对应的释放函数。`mRecycler` 是前一个登记器返回的清理任务，`recycle()` 释放像素后运行它，更新 ART 记录的原生分配量。这个设计带来两个工程结论：
+
+<!-- gracker-diagram: a256-03-native-ownership -->
+![Bitmap 可达性与原生分配登记](../../assets/diagrams/ch23/a256-03-native-ownership.png)
+
+图：Android 17 使用两项登记分别处理像素分配记账和原生 Bitmap 释放；不是重复分配两份像素。
 
 - **Bitmap 对象仍受 Java 可达性影响**：Java 层对象被 Activity、Adapter、缓存或回调引用时，原生像素内存也会被保留。Bitmap 泄漏的根不一定在原生层，常常是 Java 引用链没有断开。
 - **原生堆变大不等于 JNI 泄漏**：Android 8.0 之后，图片加载增加会直接推高原生堆。用 `dumpsys meminfo` 或线上内存指标看到原生堆上升时，先区分 Bitmap 分配与 JNI（Java 和原生代码之间的调用接口）或 `.so` 原生库分配，不能直接归因于 JNI 泄漏。
@@ -209,6 +229,11 @@ fun BitmapDecodeRecord.isSuspiciousLargeBitmap(
 ```
 
 调用方需要按场景传入经过实测的字节预算和维度比，不能把示例函数变成全业务共用的固定阈值。这段记录还要和页面生命周期合起来看。页面退出后，如果同一 `scene` 的大图对象仍在 HPROF 中可达，按 23.2 的引用链方法处理；如果对象已释放，但原生堆峰值过高，重点查解码尺寸、缓存上限和并发解码数量。
+
+<!-- gracker-diagram: a256-05-decode-observability -->
+![大图问题的两类证据](../../assets/diagrams/ch23/a256-05-decode-observability.png)
+
+图：先用尺寸和分配量识别高风险图，再结合页面退出后的引用链或峰值变化归因。
 
 生产采样要控制频率，只上报超过阈值的记录。图片问题经常涉及用户隐私，监控只需要尺寸、配置、字节数和页面路径，图片来源用不含用户数据的类别标识，不上传真实 URL、文件名或用户图片内容。
 
@@ -276,6 +301,11 @@ fun decodeWithReuse(
 
 生产实现还要补齐三类约束：复用池必须有总容量上限，避免变成常驻大缓存；候选进入池前必须确认不再显示或被其他解码任务使用；候选选择除字节数外还要考虑宽高、色彩配置和业务场景。把一张超大横图的分配区复用于小图，虽然可能解码成功，却会让 `allocationByteCount` 长期偏大。如果所用图片库已经管理缓存或像素复用，应由图片库统一管理所有权，避免再叠加一套互不知情的自建池。
 
+<!-- gracker-diagram: a256-06-inbitmap-reuse -->
+![inBitmap 候选与失败回退](../../assets/diagrams/ch23/a256-06-inbitmap-reuse.png)
+
+图：候选满足容量条件仍可能复用失败；捕获兼容性异常后普通解码一次，并始终使用解码返回值。
+
 `inBitmap` 不适合和 `Bitmap.Config.HARDWARE` 混用。AOSP `BitmapFactory.Options.validate()` 会拒绝 Hardware Bitmap 作为 `inBitmap`，官方文档也说明 Hardware Bitmap 总是 immutable。需要可变像素、二次绘制或复用池的图片，应走软件 Bitmap。
 
 ## Hardware Bitmap 的使用场景与限制
@@ -293,11 +323,21 @@ Hardware Bitmap 的限制集中在可变性和绘制路径：它不能作为 `in
 
 图片库的默认策略可以按用途区分：展示型图片优先允许 Hardware Bitmap，编辑型图片强制使用软件 Bitmap；列表页则按设备内存、是否有圆角或变换需求以及占位图策略决定。全局开关不能只依据“硬件更省内存”或“软件更兼容”，还要看 Bitmap 的实际使用方式。
 
+<!-- gracker-diagram: a256-07-allocator-choice -->
+![Bitmap 存储按用途选择](../../assets/diagrams/ch23/a256-07-allocator-choice.png)
+
+图：像素处理、软件 Canvas 或 inBitmap 需要软件 Bitmap；只展示时可以允许硬件分配，最终仍以解码结果为准。
+
 ## 案例：在第一次像素分配前限制尺寸
 
 货拉拉公开复盘记录过一个图片发送峰值：发送前后原生内存突增，内存分类显示这部分增长来自大 Bitmap，代码检查发现旋转逻辑先完整解码原图，再做缩放与方向变换。输出图片即使很小，峰值阶段仍可能同时持有原图像素和变换后的中间结果。
 
 这类问题要在第一次像素分配之前限制尺寸：先读取边界与 EXIF 方向，根据上传或展示目标计算采样尺寸，再解码、旋转或裁剪。验收至少覆盖处理前基线、解码峰值、变换峰值、上传结束和页面退出后的回落，并使用接近业务允许上限的图片尺寸与方向组合。只比较操作结束后的平均值，会漏掉触发 OOM 的瞬时峰值。
+
+<!-- gracker-diagram: a256-08-first-allocation-case -->
+![发送图片峰值从第一次分配治理](../../assets/diagrams/ch23/a256-08-first-allocation-case.png)
+
+图：先限制首次解码的像素数，再处理方向和裁剪；验收同时覆盖短时峰值及页面退出后的回落。
 
 ## 排查顺序
 

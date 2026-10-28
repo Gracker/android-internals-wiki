@@ -98,6 +98,11 @@ Instrumentation.callApplicationOnCreate(app)
 
 `installContentProviders()` 对列表逐个调用 `installProvider()`。本地 Provider 的关键路径是：
 
+<!-- gracker-diagram: a224-01-bind-install-order -->
+![Application 先创建，普通 Provider 安装早于 Application.onCreate](../../assets/diagrams/ch21/a224-01-bind-install-order.png)
+
+图：仅普通绑定且列表非空执行Provider段；restrictedBackupMode跳过，动态获取还可能后续安装。
+
 1. 通过应用的 `AppComponentFactory` 实例化 Provider 类，这个工厂负责替系统创建应用组件；
 2. 调用 `ContentProvider.attachInfo(...)`；
 3. `attachInfo(...)` 内设置权限、authority 等信息——authority 是 `content://` URI 中定位 Provider 的唯一名称；
@@ -105,6 +110,11 @@ Instrumentation.callApplicationOnCreate(app)
 5. 把已安装的 `ContentProviderHolder` 汇总起来，一次调用 `publishContentProviders(...)` 发布给 `system_server`；holder 是框架传递 Provider 信息和 Binder 接口的记录对象。
 
 Provider 多时，类加载、实例化、`attachInfo()` 和各自 `onCreate()` 的成本确实会累加；发布环节却是批量的：系统把当前批次的 holder 放进列表，一次 `publishContentProviders()` 调用就全部发布。如果分析里写成“每个 Provider 都单独发起一次发布 Binder 调用”，那就与实现不符了。
+
+<!-- gracker-diagram: a224-02-batch-publish -->
+![逐个实例化与初始化，当前批次 holder 一次发布](../../assets/diagrams/ch21/a224-02-batch-publish.png)
+
+图：Provider类加载和同步入口逐个累积；publishContentProviders不是每个Provider各发一次。
 
 #### 1.2 初始化顺序
 
@@ -144,6 +154,11 @@ Provider 框架本身只占成本的一部分。我们把一次自动初始化�
 
 到这里，Provider 数量只是我们排查的起点；要换算成毫秒，还得靠后面的测量。
 
+<!-- gracker-diagram: a224-03-provider-cost-layers -->
+![固定组件入口、业务工作、后台竞争和进程创建分层取证](../../assets/diagrams/ch21/a224-03-provider-cost-layers.png)
+
+图：删除入口的收益可能来自一并删除的业务工作；同步入口很短也可能留下后台竞争。
+
 ### 3. 从 release Manifest 建立清单
 
 #### 3.1 检查最终合并结果
@@ -179,6 +194,11 @@ for provider in application.findall("provider"):
 ```
 
 脚本的输入应是构建工具生成的可读 XML；APK 里编译后的二进制 XML，这个脚本解析不了。中间产物路径会随 AGP 变化，应从当前构建输出或 Android Studio 获取，避免把某个 AGP 版本的 `intermediates` 路径写死在工具中。
+
+<!-- gracker-diagram: a224-04-manifest-provenance -->
+![发布 APK 的合并结果决定 Provider 身份和进程](../../assets/diagrams/ch21/a224-04-manifest-provenance.png)
+
+图：脚本读取文本XML，不能直接解析APK二进制Manifest；每个发布构建变体独立核对。
 
 #### 3.2 每个 Provider 要记录什么
 
@@ -229,6 +249,11 @@ class AppInitProvider : ContentProvider() {
 
 如果供应商不允许关闭自动初始化，应要求其提供诊断构建、Trace 或源码说明。通过反射跳过私有方法，依赖的是未公开实现，SDK 升级后很容易失效——这种风险要挡在启动关键路径之外。
 
+<!-- gracker-diagram: a224-05-equivalent-provider-ab -->
+![A/B 同时保留等价业务能力，才能分开入口与 SDK 成本](../../assets/diagrams/ch21/a224-05-equivalent-provider-ab.png)
+
+图：完全删除SDK与仅更换入口不是同一实验；闭源库用合并报告、栈与对照构建组合归因。
+
 #### 4.3 观察跨进程等待
 
 主进程通过 `ContentResolver` 获取远端 authority 时，`ActivityThread` 可能向 `system_server` 请求 Provider，并等承载进程完成发布。诊断这段等待，我们要同时看：
@@ -239,6 +264,11 @@ class AppInitProvider : ContentProvider() {
 - 超时、死亡与重试。
 
 调用方线程若是 Main 线程，这段等待会直接进入 UI 关键路径——把 Provider 挪进远端进程，并不会让这次同步访问自动变快。
+
+<!-- gracker-diagram: a224-06-remote-provider-wait -->
+![同步获取远端 Provider 可能把进程冷启动串回调用方](../../assets/diagrams/ch21/a224-06-remote-provider-wait.png)
+
+图：已缓存或已运行的Provider可走快路径；触发冷启动时，Main同步等待仍属于UI关键路径。
 
 ### 5. 按用户可见时机分类
 
@@ -255,6 +285,11 @@ class AppInitProvider : ContentProvider() {
 “崩溃监控 SDK 必须最早”“远程配置必须首帧前”这类结论也要拆开看：崩溃捕获、历史日志整理、符号上传可以处于不同阶段；远程配置通常可以先读取上一次保存且校验通过的本地快照。
 
 分类完成后，每个任务都要有维护负责人（owner）、完成条件、失败结果和验证场景。这些契约缺了任何一项，挪出 Provider 就只是把隐式时序问题挪了个地方。
+
+<!-- gracker-diagram: a224-07-necessity-and-owner -->
+![按用户可见完成条件分阶段，预算来自目标与余量](../../assets/diagrams/ch21/a224-07-necessity-and-owner.png)
+
+图：崩溃捕获、历史日志整理、符号上传可以处于不同阶段；每个任务都有owner和失败结果。
 
 ### 6. 从 Manifest 删除自动入口
 
@@ -295,6 +330,11 @@ Manifest Merger 对 `<provider>` 的匹配键是 `android:name`。如果只想�
 
 `tools:node="remove"` 只改变合并结果，不会阻止供应商以后换类名或新增另一个 Provider。SDK 升级必须重新做 Manifest 差异。
 
+<!-- gracker-diagram: a224-08-remove-entry-verify -->
+![删除合并节点后，显式能力和所有入口都要回归](../../assets/diagrams/ch21/a224-08-remove-entry-verify.png)
+
+图：对外提供content URI的Provider删除属于接口迁移，权限、调用者和数据迁移也要评估。
+
 ### 7. 显式初始化的状态机
 
 按需初始化至少包含这些状态：
@@ -306,6 +346,11 @@ NotStarted → Initializing → Ready
 ```
 
 五个状态按字面理解即可：`NotStarted` 尚未启动，`Initializing` 正在初始化，`Ready` 能力可用，`Degraded` 只剩约定的备用能力，`Failed` 是本次初始化失败。并发调用要共享同一个 `Initializing` 结果，避免重复启动；协程调用者可以挂起等待而不占住线程，其他调用者注册回调即可；Main 线程上则要避开锁和 `Future.get()` 这类阻塞等待。
+
+<!-- gracker-diagram: a224-09-explicit-init-results -->
+![移除 Provider 的隐式时序后，用结果状态机表达完成](../../assets/diagrams/ch21/a224-09-explicit-init-results.png)
+
+图：Main不阻塞等待锁或Future；线程、SDK异步完成、超时、晚到结果与同意撤回均有独立协议。
 
 状态机还要定义：
 
@@ -347,6 +392,11 @@ root.doOnPreDraw {
 
 延后任务可能与下一帧交互争用 CPU/I/O。调度之后，我们仍要用 FrameTimeline 的逐帧期限与卡顿数据、TTID/TTFD 和真实交互场景验证。若任务是“主要内容可用”的必要条件，它属于 TTFD 图，别放进 `DEFERRED`。
 
+<!-- gracker-diagram: a224-10-commit-and-fallback -->
+![硬件提交信号与软件 post 兜底的证据强度不同](../../assets/diagrams/ch21/a224-10-commit-and-fallback.png)
+
+图：onPreDraw本身是绘制前；软件post不证明本轮成功绘制，硬件commit也不证明像素已经物理显示。
+
 ### 9. App Startup 1.2.0 的作用与限制
 
 #### 9.1 减少的入口与留下的成本
@@ -381,6 +431,11 @@ class CrashInitializer : Initializer<CrashClient> {
 ```
 
 `LoggerInitializer.create()` 完成后，App Startup 才调用 `CrashInitializer.create()`。两个方法都要同步返回可用结果；内部若只提交异步任务，依赖图就无从知道何时就绪。
+
+<!-- gracker-diagram: a224-11-startup-synchronous-deps -->
+![共享一个 InitializationProvider，依赖同步执行后才创建根](../../assets/diagrams/ch21/a224-11-startup-synchronous-deps.png)
+
+图：依赖节点无需重复metadata；手动初始化同样要满足调用线程契约，其他剩余根仍可提前触发共享依赖。
 
 Manifest 只需要声明初始化图的入口节点：
 
@@ -442,11 +497,21 @@ val shareClient = AppInitializer.getInstance(context)
 
 [`android:directBootAware="true"`](https://developer.android.com/privacy-and-security/direct-boot) 允许 Provider 在设备重启后、用户首次解锁前运行。此时只能访问 device-protected storage（设备保护存储）和其他支持 Direct Boot 的能力；默认的 credential-encrypted storage（凭据加密存储） 要等用户解锁后才可用。该属性适用于闹钟、短信等确有解锁前需求的组件——当作普通的“提前初始化”开关来用，或者在设备保护存储里随意保存口令、认证令牌，都属于误用。
 
+<!-- gracker-diagram: a224-12-direct-boot-storage -->
+![Direct Boot 能力按用户解锁状态与存储域划分](../../assets/diagrams/ch21/a224-12-direct-boot-storage.png)
+
+图：directBootAware不是通用提前初始化开关；依赖也必须具备解锁前安全和可用的路径。
+
 #### 10.3 `multiprocess` 与同 UID（Linux 用户 ID，Android 用它隔离应用身份） 多实例
 
 Manifest 的 `android:multiprocess="true"` 允许系统在同一 UID（Linux 用户 ID）的其他进程中本地创建 Provider 实例，通常对应应用自己的子进程；Android 就是用 UID (Linux 用户身份) 隔离应用身份的。[`ContentProviderRecord.canRunHere()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java) 同时检查 `multiprocess` 和 UID；不同 UID 的外部应用仍通过 Binder 访问承载进程中的实例。
 
 本地实例可以省去应用自身进程间的部分 Binder 调用，代价是复制对象、缓存和连接，还要各实例自己解决状态一致性。它的适用面很窄，不该当作通用启动优化；迁移前要核对旧应用是否依赖这项少见行为，并在目标 API 37 设备上验证。
+
+<!-- gracker-diagram: a224-13-local-provider-eligibility -->
+![canRunHere 同时检查进程条件与 UID 身份](../../assets/diagrams/ch21/a224-13-local-provider-eligibility.png)
+
+图：本地复制会增加缓存、连接和一致性成本；multiprocess=true不是跨UID共享本地实例。
 
 ### 11. 性能改动下的 Provider 安全
 
@@ -460,6 +525,11 @@ Manifest 的 `android:multiprocess="true"` 允许系统在同一 UID（Linux 用
 - `call()`、`openFile()` 和批处理接口是否暴露越权操作，例如绕过查询权限读取文件或执行管理命令。
 
 将外部 Provider 改成应用进程内单例，或把远端 Provider 改到主进程，都可能同时牵动安全、故障隔离和内存成本。这类迁移需要单独设计，TTID 只是其中一个视角。
+
+<!-- gracker-diagram: a224-14-provider-security-surface -->
+![入口移动也会改变暴露面和权限执行位置](../../assets/diagrams/ch21/a224-14-provider-security-surface.png)
+
+图：远端变本地或Provider变单例需单独评估接口、安全和故障隔离，不能只比较TTID。
 
 ### 12. 验收标准
 
@@ -512,6 +582,11 @@ App 可以控制的部分包括：是否拆进程、何时启动、每个进程�
 
 反过来，多进程自身也有固定成本：
 
+<!-- gracker-diagram: a224-15-process-isolation-cost -->
+![普通私有进程隔离内存，isolated service 还改变 UID](../../assets/diagrams/ch21/a224-15-process-isolation-cost.png)
+
+图：WebView宿主拆进程与Chromium renderer隔离是不同层面；多个WebView可能共享renderer。
+
 - 系统要创建进程并绑定应用；
 - 每个进程都要建立自己的运行时和堆；
 - 该进程中的 Provider、`Application` 和目标组件需要初始化；
@@ -543,6 +618,11 @@ WebView 在多进程模式下会把网页内容放进 renderer process（Chromiu
 ```
 
 这段链路里有两处容易混淆的地方，我们分开说清。
+
+<!-- gracker-diagram: a224-16-component-process-start -->
+![组件请求可触发新进程，Application 分支晚于 Provider](../../assets/diagrams/ch21/a224-16-component-process-start.png)
+
+图：只安装分配给该进程的Provider；Application内进程分支撤销不了已经执行的自动入口。
 
 第一，Provider 按 Manifest 声明的进程归属安装。系统不会把应用里的所有 Provider 安装到每一个进程；默认进程 Provider 属于主进程，声明了 `android:process=":worker"` 的 Provider 属于对应远程进程。一个进程只要分配到了自动初始化 Provider，系统就会在该进程的 `Application.onCreate()` 之前创建并调用它们。
 
@@ -592,6 +672,11 @@ class App : Application() {
 
 初始化清单可以按以下原则收缩：
 
+<!-- gracker-diagram: a224-17-role-before-class-use -->
+![先按进程角色选择最小图，再主动使用 SDK 和类](../../assets/diagrams/ch21/a224-17-role-before-class-use.png)
+
+图：getProcessName从API28可用；packageName识别Main的示例假设application默认进程名未改写。
+
 - 主进程只保留首屏展示、路由、安全校验和首屏必需数据；
 - Web 进程只准备 Web 宿主所需的桥接、Cookie 或安全策略，不复制整套主进程 SDK；
 - 上传进程只准备任务数据库、网络栈和通知能力，不创建图片 UI、页面路由或主进程业务线程池；
@@ -619,6 +704,11 @@ Android 没有面向普通应用的通用“只创建进程、暂不运行组件
 3. 临近功能入口再预热。
 
 比较指标应包括主进程 TTID/TTFD、远程能力 ready（协议已经可以接受请求的时点）、用户进入功能后的等待、全应用 PSS (Proportional Set Size，按比例分摊共享页后的内存)、低内存回收次数和失败率。只有用户等待时间的下降盖得住资源与稳定性代价，这份预热才值得保留。
+
+<!-- gracker-diagram: a224-18-prewarm-tradeoff -->
+![远程预热同时比较入口等待、UI竞争和常驻资源](../../assets/diagrams/ch21/a224-18-prewarm-tradeoff.png)
+
+图：同场景比较TTID/TTFD、remote ready、首次功能等待、PSS、回收与失败；无通用提前量。
 
 ### 5. 把 Binder ready 建模为异步能力
 
@@ -714,6 +804,16 @@ suspend fun transcode(
 
 如果首屏允许降级，超时后应返回本地占位、稍后重试或跳过非核心能力。不要在主线程用同步 Binder、文件锁或数据库锁把远程冷启动串到首帧之前。
 
+<!-- gracker-diagram: a224-19-binder-generation-race -->
+![旧 Binder 的晚到死亡通知不能覆盖新一代 Ready](../../assets/diagrams/ch21/a224-19-binder-generation-race.png)
+
+图：每次绑定实例有独立关闭状态；更换存活Binder先unlink旧监听，注册/Ready发布/死亡检查共用短锁。
+
+<!-- gracker-diagram: a224-20-blocking-binder-timeout -->
+![协程 deadline 不会强行终止已经阻塞的同步 Binder](../../assets/diagrams/ch21/a224-20-blocking-binder-timeout.png)
+
+图：需要严格可控耗时的协议改为异步请求/回调、请求ID、服务端deadline和cancel；还需幂等重试。
+
 ### 6. 跨进程状态要有唯一所有者
 
 `Context.MODE_MULTI_PROCESS` 从 API 23 起已废弃。`Context` 文档明确说明，它协调跨进程 `SharedPreferences` 并不可靠：不同进程各自缓存数据，并发修改也没有可依赖的冲突合并规则。
@@ -727,6 +827,11 @@ suspend fun transcode(
 - 一次性事件携带请求 ID，避免进程死亡后的重复提交产生副作用。
 
 数据库能被多个进程打开，和业务事务已经具备一致性保证是两回事。我们需要核对所用数据库库的多进程能力、WAL（Write-Ahead Logging）与锁行为、数据失效通知和迁移时序。数据库升级只能有一个受控入口；schema（数据库结构） 准备完成前，其他进程应停在带超时的等待状态，由这个入口完成迁移。
+
+<!-- gracker-diagram: a224-21-single-state-owner -->
+![跨进程静态变量不共享，状态需要唯一写入者与版本协议](../../assets/diagrams/ch21/a224-21-single-state-owner.png)
+
+图：SharedPreferences MODE_MULTI_PROCESS不可靠；数据库迁移入口、WAL锁和失效通知仍要独立核对。
 
 ### 7. 面向进程死亡的恢复设计
 
@@ -743,6 +848,11 @@ suspend fun transcode(
 - 不再有页面或任务需要服务时及时解绑，让系统回收空闲进程。
 
 如果一次冷启动很贵，应优先减少远程进程初始化量、缩短协议握手和缓存可复用产物。是否在首帧后预热，应由命中率和资源数据决定。
+
+<!-- gracker-diagram: a224-22-death-and-recovery -->
+![远端会消失，恢复依赖请求描述与持久检查点](../../assets/diagrams/ch21/a224-22-death-and-recovery.png)
+
+图：onServiceDisconnected保留绑定；onBindingDied必须重新绑定；生产进程结束不依赖onTerminate清理。
 
 ### 8. 多进程的观测方法
 
@@ -776,6 +886,11 @@ adb shell dumpsys procstats --hours 3
 第一条查看当前进程与组件状态，第二条分项显示应用内存，第三条读取 `procstats`（系统长期记录的进程状态与内存统计） 长期记录的进程状态与内存统计。不同 Android 版本与设备厂商的 `dumpsys` 文本格式可能变化，自动化采集更适合使用稳定 API、Perfetto 数据源，或只解析明确支持的系统版本。
 
 Perfetto 是系统级时间线分析工具。分析时我们把主进程和远程进程放在同一时间轴上，关注进程创建、`bindApplication`、Provider 初始化、自定义 trace、Binder 阻塞、I/O 和 CPU 竞争。一次优化至少要回答三个问题：主进程首帧有没有改善，远程能力可用时间有没有变慢，合计资源与失败率是否可以接受。
+
+<!-- gracker-diagram: a224-23-memory-and-readiness-metrics -->
+![主进程看首帧，远程看协议 ready，内存按同口径聚合](../../assets/diagrams/ch21/a224-23-memory-and-readiness-metrics.png)
+
+图：按进程身份、启动代次、入口与版本记录；历史启动记录需PID/name/LAUNCH与本地会话核对。
 
 ### 检查清单
 

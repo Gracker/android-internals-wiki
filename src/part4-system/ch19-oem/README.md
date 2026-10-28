@@ -4,6 +4,11 @@
 
 Power HAL 是 Android framework 与厂商电源管理实现之间的硬件抽象层。本章按公开接口、厂商实现、目标设备观测和应用策略四类整理证据，不用品牌名代替测量结果。
 
+<!-- gracker-diagram: a206-01-evidence-levels -->
+![先按证据来源，再解释设备差异](../../assets/diagrams/ch19/a206-01-evidence-levels.png)
+
+图：公开保证、厂商实现和实机现象是不同证据；应用策略应能追溯到具体接口或观测。
+
 ## 内容索引
 
 
@@ -21,3 +26,8 @@ Power HAL 是 Android framework 与厂商电源管理实现之间的硬件抽象
 - 排查调度、触控或功耗控制问题：调度与触控进入 19.3，功耗控制和统计进入 19.4，不把产品模式名当成内核机制。
 - 评估设备公开能力或系统隔离差异：分别使用 19.5 的 Media Performance Class 和 19.6 的 Private Space / 应用锁边界。
 - 每次实验先记录 `Build.FINGERPRINT`（构建指纹）、SoC、内核版本、Power HAL、Thermal HAL 与温控配置、电源模式和测试版本，再区分现象属于单机异常、同一机型共性，还是跨机型规律。
+
+<!-- gracker-diagram: a206-02-chapter-routes -->
+![从问题选择本章阅读入口](../../assets/diagrams/ch19/a206-02-chapter-routes.png)
+
+图：先确定问题归属，再记录设备、系统构建、温控和测试条件，区分单机、同型号与跨型号结论。

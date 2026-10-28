@@ -137,11 +137,26 @@ sources:
 
 Jetpack WebGPU 把 WebGPU 对象模型带到 Kotlin。`GPUInstance` 是入口，`GPUAdapter` 表示选中的后端与设备能力，`GPUDevice` 管理逻辑设备及其资源，`GPUQueue` 接收命令提交。
 
+<!-- gracker-diagram: ch13-14-01-object-model -->
+![Instance、Adapter、Device 与 Queue](../../assets/diagrams/ch13/ch13-14-01-object-model.png)
+
+图：先建立实例、选择 adapter，再创建逻辑设备和提交队列。 这是对象职责与创建关系；物理 GPU、backend 和可用能力需实际查询。
+
 pipeline 保存着色器与固定状态，bind group 组织 shader 可访问的资源，command encoder 则把 render/compute 命令录成 command buffer。
+
+<!-- gracker-diagram: ch13-14-02-encoding-objects -->
+![Pipeline、Bind Group 与 Encoder 各做什么](../../assets/diagrams/ch13/ch13-14-02-encoding-objects.png)
+
+图：管线保存执行状态，绑定组组织资源，编码器生成命令。 资源创建与命令提交是不同阶段，不能由创建 pipeline 推断 GPU 已执行。
 
 AndroidX 在 AAR 中打包 Dawn 原生实现，再由 Dawn 选择 Vulkan 或 OpenGL ES 后端。
 
 三条容易混在一起的路径需要分开：
+
+<!-- gracker-diagram: ch13-14-03-runtime-owners -->
+![Jetpack、WebView 与平台分别更新](../../assets/diagrams/ch13/ch13-14-03-runtime-owners.png)
+
+图：库、网页运行时和公共显示系统由不同入口控制。 Android 版本不单独决定应用内 Dawn；Jetpack 不会自动转换 HWUI 内容。
 
 - Jetpack WebGPU 是应用依赖，版本随 APK/AAB 发布，不随 Android 系统 OTA 更新；
 - WebView 网页中的 WebGPU 由 Chromium/WebView 运行时提供，不复用 Jetpack WebGPU 的 instance、device 或 native handle（原生对象引用）；
@@ -164,17 +179,37 @@ WebGPU 仍处于 alpha 阶段，适合技术评估、原型和能够承担 API �
 
 alpha05 的 AAR 在 `assets/dawn_build_metadata.json` 中记录上述 Dawn SHA。下载到的 AAR SHA-256 为 `f977680085599a1cdfd4f8c5b0289d1fda905e33bcf4f5238042849bee74d1c0`，包含四个 ABI（Application Binary Interface，应用二进制接口）的 `libwebgpu_c_bundled.so`：解压后 arm64-v8a 约 5.8 MiB、armeabi-v7a 约 3.7 MiB、x86 约 6.5 MiB、x86_64 约 6.3 MiB。安装体积应按应用实际包含的 ABI、压缩方式和 App Bundle 拆分结果计算，不能把四个解压尺寸相加后当作单台设备的安装增量。
 
+<!-- gracker-diagram: ch13-14-07-abi-footprint -->
+![ABI 库尺寸与设备安装增量](../../assets/diagrams/ch13/ch13-14-07-abi-footprint.png)
+
+图：AAR 的多 ABI 解压尺寸与单台设备安装成本分开算。 alpha05 的四份 so 不是每台设备都安装四份；压缩与 split 会改变结果。
+
 alpha06 的 AAR SHA-256 为 `10aa7861c4c45796d58040fd2a94b55eae0ab1328daf46c01bf01701a269a02a`；其 `AndroidManifest.xml` 写明 `minSdkVersion="26"`，`assets/dawn_build_metadata.json` 写明 Dawn SHA 为 `4b959fbe989d529e1eee839c48cda465cc1195fe`。因此，API 24 结论只适用于本文的 alpha05 固定基线，不能外推到 alpha06 当前 artifact。
 
 Maven 的 alpha05 source JAR 与 AndroidX 提交 `c48b772dd76241af6af60bee13d3cad0e4520306` 中的 `Functions.kt`、`GPURequestAdapterOptions.kt`、`helper/WebGpu.kt` 逐文件一致，因此本文用该提交固定 Kotlin 层行为，不以持续变化的 `androidx-main` 分支代替发布版本。
 
+<!-- gracker-diagram: ch13-14-06-artifact-provenance -->
+![把发布产物对应到源码](../../assets/diagrams/ch13/ch13-14-06-artifact-provenance.png)
+
+图：从 AAR 元数据和 source JAR 建立固定代码基线。 不能用持续变化的 main 分支替代发布版本，也不把源码审阅称为设备实测。
+
 Android 17 不要求 Jetpack WebGPU 使用 Vulkan 1.4。官方入门文档只把 Vulkan 1.1+ 列为首选后端，Compatibility feature level 还可覆盖 OpenGL ES 路径。Android 17 在本文中只是平台源码基线，无法消除不同 GPU、驱动与 Dawn 后端之间的能力差异。
+
+<!-- gracker-diagram: ch13-14-08-standard-native -->
+![标准 WebGPU 与原生窗口扩展](../../assets/diagrams/ch13/ch13-14-08-standard-native.png)
+
+图：标准资源语义、原生窗口接口和 Android 后端能力分别核对。 GPUSurface 显式 present 属于原生 binding，不是网页 GPUCanvasContext 的同一接口。
 
 ## 库架构与调用链
 
 ### Kotlin binding 与原生实现的边界
 
 下面的图把渲染与纯计算的分叉位置标出来。
+
+<!-- gracker-diagram: ch13-14-09-binding-pipeline -->
+![Kotlin 经过 JNI 与 Dawn 到后端](../../assets/diagrams/ch13/ch13-14-09-binding-pipeline.png)
+
+图：Kotlin 对象经 JNI 和 bundled Dawn 进入所选图形后端。 主图为职责关系；GPU 执行与窗口提交异步，后续显示图另列读取依赖。
 
 ```mermaid
 flowchart LR
@@ -209,6 +244,11 @@ alpha05 源码中，创建资源、编码命令、提交队列和查询状态等
 
 Kotlin 层还提供以下对象包装与适配逻辑：
 
+<!-- gracker-diagram: ch13-14-10-kotlin-wrapper -->
+![Kotlin Binding 的三类工作](../../assets/diagrams/ch13/ch13-14-10-kotlin-wrapper.png)
+
+图：descriptor、handle 与异步 helper 都是绑定层的一部分。 FastNative 只影响部分桥接成本，不能视为直接 NDK 调用或免验证。
+
 - descriptor（创建或配置对象时传入的参数集合）、状态对象和 `IntDef` 类型；
 - 实现 `AutoCloseable` 的 handle 包装，其中 handle 是 Kotlin 对象持有的原生对象引用；
 - 把 callback 结果恢复到 Kotlin `suspend` 调用的适配层；
@@ -230,7 +270,17 @@ Kotlin 层还提供以下对象包装与适配逻辑：
 
 使用 `createWebGpu()` helper 时，它会先加载原生库。若直接从 `GPU.createInstance()` 组织初始化，调用方要在首次调用 WebGPU API 前执行 `initLibrary()`，或自行调用等价的 `System.loadLibrary("webgpu_c_bundled")`。
 
+<!-- gracker-diagram: ch13-14-11-init-library -->
+![直接初始化先加载原生库](../../assets/diagrams/ch13/ch13-14-11-init-library.png)
+
+图：helper 会先加载 so，直接组织初始化则由调用方负责。 未加载 native library 前不能直接调用 external；版本随采用 AAR 固定。
+
 直接初始化时，还要处理异步事件的推进。`instance.processEvents()` 显式驱动 Dawn 回调的事件泵；alpha05 helper 先完成 adapter 和 device 创建，之后才启动事件轮询。源码注释说明它服务于后续异步方法，所以这项轮询不负责推进前面的 `requestAdapter()` 和 `requestDevice()`。
+
+<!-- gracker-diagram: ch13-14-12-init-event-order -->
+![初始化请求与后续事件轮询分开](../../assets/diagrams/ch13/ch13-14-12-init-event-order.png)
+
+图：alpha05 helper 先请求 adapter/device，再启动后续事件 poller。 顺序以固定源码为准；suspend wrapper 自身不会创建常驻事件循环。
 
 不使用 helper 时，应结合实际调用的异步 API、callback mode 和所绑定的 Dawn 版本安排事件泵；Kotlin `suspend` 只把 callback 包装成挂起调用，本身不会创建常驻事件循环。
 
@@ -241,6 +291,11 @@ Kotlin 层还提供以下对象包装与适配逻辑：
 ### Core 与 Compatibility 不等于 Vulkan 与 GLES
 
 `GPURequestAdapterOptions` 有两个容易混用的字段：
+
+<!-- gracker-diagram: ch13-14-13-four-capability-dimensions -->
+![能力档、后端、Feature 与 Limit](../../assets/diagrams/ch13/ch13-14-13-four-capability-dimensions.png)
+
+图：四个维度分别说明能力基线、底层 API、可选功能和数值约束。 Core 不等于 Vulkan，Compatibility 不等于 GLES；都要查询实际结果。
 
 - `featureLevel`：请求 WebGPU 能力档，默认 `FeatureLevel.Core`；
 - `backendType`：请求 Dawn 原生后端，默认 `BackendType.Undefined`，由实现选择。
@@ -268,6 +323,11 @@ Log.i(
 
 `backendType` 是运行时观测结果，不能只靠 GPU 商品名或 Android 大版本推断。benchmark 和错误报告都应记录这个值，静态 SoC 白名单无法覆盖驱动、系统镜像和 Dawn 版本的变化。
 
+<!-- gracker-diagram: ch13-14-14-adapter-observation -->
+![读取实际 Backend 与设备信息](../../assets/diagrams/ch13/ch13-14-14-adapter-observation.png)
+
+图：设备商品名不能替代 adapter 信息和实际后端查询。 同 SoC 的驱动、系统构建和应用 Dawn 版本可能不同。
+
 ### 能力必须查询后再请求
 
 feature level 也不是“所有高级能力”的总开关。alpha05 把 subgroup（同一执行子组内线程的协作操作）、timestamp query（GPU 时间戳查询）、shader f16（着色器中的 16 位浮点类型）和压缩纹理等能力定义为独立 `FeatureName`。使用这些能力前要按以下顺序处理：
@@ -277,15 +337,30 @@ feature level 也不是“所有高级能力”的总开关。alpha05 把 subgro
 3. 只把 workload 必需能力写入 `GPUDeviceDescriptor.requiredFeatures` 和 `requiredLimits`；
 4. 处理 `requestDevice()` 失败，选择降级 workload 或其他实现。
 
+<!-- gracker-diagram: ch13-14-15-enabled-device -->
+![查询支持后再创建设备](../../assets/diagrams/ch13/ch13-14-15-enabled-device.png)
+
+图：先查 adapter 支持范围，再明确请求必需能力。 device 实际启用的 feature / limit 才约束 workload；requestDevice 失败须降级。
+
 例如，使用 subgroup 前既要检查 `FeatureName.Subgroups`，也要读取 adapter info 中的 `subgroupMinSize` / `subgroupMaxSize`。
 
 Compatibility 模式也不能概括成“不支持 storage texture”或“不支持 compute”。storage buffer/texture 是着色器可读写的存储资源；alpha05 的 `GPUCompatibilityModeLimits` 只补充 vertex/fragment stage 的四个相关数量上限，具体可用性仍由 adapter feature 和 limit 决定。
+
+<!-- gracker-diagram: ch13-14-16-compatibility-limits -->
+![Compatibility 的限制按字段检查](../../assets/diagrams/ch13/ch13-14-16-compatibility-limits.png)
+
+图：Compatibility 附加字段描述 vertex/fragment 的 storage 数量约束。 不能据档位名称一概禁止 compute / storage，也不把 immediate limit 改叫 push constant。
 
 `GPULimits.maxImmediateSize` 也不能直接改名为“Vulkan push constant 支持”。WebGPU API 的公开语义应按自身 feature/limit 解读，底层后端如何映射寄存器、uniform buffer 或 push constant 属于 Dawn 和驱动实现细节。
 
 ### Shader 路径不要写死
 
 应用输入 WGSL（WebGPU Shading Language，WebGPU 的着色器语言），Dawn 负责验证、转换并创建后端 pipeline。Vulkan 后端通常生成适合 Vulkan 的 shader 模块，OpenGLES 后端生成适合 GLES 的 shader；中间表示、优化阶段和驱动编译方式会随 Dawn commit 与 backend 改变。把路径固定写成“WGSL → SPIR-V → GLSL ES 3.10”，会把某个版本的实现细节误当成 API 合约。
+
+<!-- gracker-diagram: ch13-14-17-shader-path -->
+![WGSL 到后端 Pipeline 的边界](../../assets/diagrams/ch13/ch13-14-17-shader-path.png)
+
+图：Dawn 验证并转换 WGSL，再创建所选后端的 pipeline。 不写死统一的 WGSL→SPIR-V→GLSL 路线；内部翻译依 Dawn commit / backend。
 
 对应用稳定的边界是：
 
@@ -306,9 +381,24 @@ WebGPU 绘制结果不会进入宿主 HWUI 的 RenderNode/display list，宿主 
 
 `AndroidExternalSurface.onSurface`、`onChanged` 和 `onDestroyed` 的生命周期回调在主线程触发；拿到 `Surface` 后可以切到专用渲染线程。收到 Surface 销毁回调后，渲染线程必须停止 acquire、encode、submit 和 present，不能继续使用已经失效的窗口目标。
 
+<!-- gracker-diagram: ch13-14-18-surface-topology -->
+![独立 Layer 与宿主纹理采样](../../assets/diagrams/ch13/ch13-14-18-surface-topology.png)
+
+图：两种 Compose 承载可使用同一 WebGPU producer，但消费位置不同。 独立 Layer 不保证 overlay；TextureView 采样不等于必有 CPU 拷贝。
+
+<!-- gracker-diagram: ch13-14-19-surface-lifecycle -->
+![Surface 回调与渲染 Owner 的交接](../../assets/diagrams/ch13/ch13-14-19-surface-lifecycle.png)
+
+图：主线程交付尺寸与生命周期事件，owner 协调停止旧窗口工作。 固定实现先 onDestroyed 后 cancel；取消信号本身不证明 owner 已停止。
+
 ### Surface 进入 Dawn 的位置
 
 `createWebGpu(surface)` 最终调用 `windowFromSurface(surface)`，把 Java `Surface` 转为原生窗口指针，再用 `GPUSurfaceSourceAndroidNativeWindow` 创建 `GPUSurface`。此处的 `ANativeWindow` 是 Dawn 后端与 Android WSI（Window System Integration，GPU 后端对接窗口系统的接口）及 BufferQueue 的交界。
+
+<!-- gracker-diagram: ch13-14-20-native-window -->
+![Java Surface 进入 Dawn 的位置](../../assets/diagrams/ch13/ch13-14-20-native-window.png)
+
+图：Surface 经 helper 转为 ANativeWindow，再创建 Dawn surface。 ANativeWindow 是窗口交界，不是 GPU image 或最后显示时刻。
 
 稳健的初始化顺序如下：
 
@@ -319,13 +409,33 @@ WebGPU 绘制结果不会进入宿主 HWUI 的 RenderNode/display list，宿主 
 5. 创建 device 和长期复用的 shader module、pipeline、bind group；
 6. 使用当前宽高调用 `surface.configure()`。
 
+<!-- gracker-diagram: ch13-14-21-configure-surface -->
+![先匹配 Adapter 与 Surface 能力](../../assets/diagrams/ch13/ch13-14-21-configure-surface.png)
+
+图：可见渲染先建立兼容 adapter，再按 surface capabilities 配置。 usage、非零尺寸、device limit 和 pipeline attachment 格式也要一致。
+
 这套顺序适用于手动初始化。`compatibleSurface` 用来要求实现选择的 adapter 能在目标 surface 上呈现。alpha05 的 `createWebGpu(surface)` 虽然先创建 `GPUSurface`，随后却把调用方传入的 `GPURequestAdapterOptions` 原样交给 `requestAdapter()`，不会自动把新建 surface 写入 `compatibleSurface`。若要让目标 surface 参与 adapter 筛选，应分别调用 `initLibrary()`、`createInstance()`、`createSurface()`、`requestAdapter()` 和 `requestDevice()`，再把手动创建的 `GPUSurface` 放进 adapter options。
 
 官方最小示例直接使用 `RGBA8Unorm`，便于演示；产品代码不应假设某个 format、present mode 或 alpha mode 在所有 adapter/surface 组合上都可用。
 
+<!-- gracker-diagram: ch13-14-22-compatible-surface -->
+![Helper 不会自动把 Surface 传给筛选](../../assets/diagrams/ch13/ch13-14-22-compatible-surface.png)
+
+图：两版 helper 都把调用方 adapter options 原样传入。 先创建 GPUSurface 不等于已参与 adapter 筛选；需要手动设置 compatibleSurface。
+
+<!-- gracker-diagram: ch13-14-23-backend-present-cost -->
+![Vulkan 与 GLES 的实际呈现工作](../../assets/diagrams/ch13/ch13-14-23-backend-present-cost.png)
+
+图：所选后端可能引入等待、布局转换或中间纹理 blit。 仅适用于本文固定 alpha05 Dawn SHA；独立 Surface 不能保证内部零拷贝。
+
 ### 一帧的获取、编码、提交与呈现
 
 下面的时序图用于区分 WebGPU 的 `present()` 与物理屏幕 present。
+
+<!-- gracker-diagram: ch13-14-24-submit-vs-display -->
+![命令提交、窗口交接与最终显示](../../assets/diagrams/ch13/ch13-14-24-submit-vs-display.png)
+
+图：提交命令和 buffer 可早于 GPU 写完，下游读取遵守同步。 这是依赖示意；SF latch 与安全读取不同，CPU present 返回也不是光学完成。
 
 ```mermaid
 sequenceDiagram
@@ -356,13 +466,38 @@ sequenceDiagram
 - `Lost`：重建与 Android `Surface` 关联的 `GPUSurface`；
 - `Error`：检查是否尚未 configure、参数是否合法以及错误回调。
 
+<!-- gracker-diagram: ch13-14-26-acquire-success-retry -->
+![成功、次优与超时的处理](../../assets/diagrams/ch13/ch13-14-26-acquire-success-retry.png)
+
+图：检查 current texture 的状态，再决定是否编码本帧。 跨后端状态枚举不保证有限等待，也不能代替 device-lost callback。
+
 尺寸变化时要更新宽高并重新 `configure()`。Surface 销毁时，先停止 render loop，再调用 `unconfigure()`/`close()`；新 Surface 创建后重新建立与原生窗口的关联。旧 Surface 取得的 texture、view 或 command encoder 不能继续用于新 Surface 的帧。
+
+<!-- gracker-diagram: ch13-14-25-present-feedback -->
+![WebGPU Present 与显示反馈分别看](../../assets/diagrams/ch13/ch13-14-25-present-feedback.png)
+
+图：CPU API 返回、写完成、显示反馈与光学响应是不同事件。 物理 present fence 也不证明整屏扫描和像素响应全部结束。
+
+<!-- gracker-diagram: ch13-14-27-acquire-failure -->
+![过期、丢失与错误的恢复层次](../../assets/diagrams/ch13/ch13-14-27-acquire-failure.png)
+
+图：配置过期、Surface 丢失和一般错误需要不同恢复动作。 固定 Dawn 的 lost device 可能给成功 status + error texture，须独立监听。
+
+<!-- gracker-diagram: ch13-14-28-resize-lifetime -->
+![Resize 与 Surface 重建的资源边界](../../assets/diagrams/ch13/ch13-14-28-resize-lifetime.png)
+
+图：重配窗口目标时替换旧 image 依赖，兼容的 device 资源可复用。 不能把引用旧纹理的命令拿去新帧，也不必因每次 resize 重建全部 pipeline。
 
 ### 独立 Surface 的 FrameTimeline 边界
 
 普通 App Window 常有完整的 expected/actual FrameTimeline，用来关联一帧的预期时间与实际时间。`AndroidExternalSurface` 是独立 layer，WebGPU producer 是否为每个 buffer 传递标准 App FrameTimeline token 和 desired-present 信息，要看 Dawn backend、Android WSI 和具体版本实现。
 
 trace 中缺少该独立 layer 的 expected slice，并不表示内容没有显示。此时要结合 layer 名称、BufferQueue frame number、acquire fence、SurfaceFlinger latch、HWC composition 和 present fence 还原时序；宿主 Compose App Window 的 vsync token 不能直接套用到 WebGPU layer。
+
+<!-- gracker-diagram: ch13-14-29-layer-correlation -->
+![独立 Layer 缺少 App 时间线时补哪些证据](../../assets/diagrams/ch13/ch13-14-29-layer-correlation.png)
+
+图：独立 producer 用自己的 buffer、事务和显示证据关联。 宿主 Compose token 不可直接套用；跨工具还需时钟映射。
 
 ## 纯计算管线
 
@@ -382,6 +517,11 @@ WebGPU compute 使用同一组 instance、adapter、device、queue、buffer、te
 
 按 feature level 或 SoC 名称预测模型能否运行不够严谨。计算任务至少检查：
 
+<!-- gracker-diagram: ch13-14-33-compute-limits -->
+![计算任务按资源与工作组检查能力](../../assets/diagrams/ch13/ch13-14-33-compute-limits.png)
+
+图：Storage、工作组和可选 shader 能力分别建立需求。 用实际 adapter/device 的字段与结果，不把 profile 或 SoC 名当能力表。
+
 - `maxStorageBuffersPerShaderStage`、`maxStorageBufferBindingSize`、`maxBufferSize`；
 - workgroup storage、单个 workgroup 的 invocation 数、X/Y/Z size 与 dispatch dimension 上限；
 - shader f16、subgroup、timestamp query 等可选 feature；
@@ -394,9 +534,34 @@ WebGPU compute 使用同一组 instance、adapter、device、queue、buffer、te
 
 `GPUDeviceDescriptor` 的构造函数要求传入 device-lost 与 uncaptured-error 的 `Executor`，callback 参数本身允许为 null；工程代码仍应提供这两类回调。device lost 表示当前逻辑设备已经失效，由它创建的 queue、pipeline 和资源也不能继续用于有效提交。恢复代码应能重新请求 adapter/device、重建资源，并从 CPU、磁盘或网络上的可恢复数据重新填充必要状态。
 
+<!-- gracker-diagram: ch13-14-34-device-lost -->
+![Device Lost 的恢复以资源重建为单位](../../assets/diagrams/ch13/ch13-14-34-device-lost.png)
+
+图：逻辑设备失效后停止有效提交，再重建其资源与数据。 失败原因不限于内存；保存 reason、message、backend 与系统构建。
+
 不能声称“低内存设备更频繁 device lost”，也不能把 device lost 全部归因于内存。驱动 reset、GPU hang、后端错误、显式 destroy 以及进程生命周期都可能影响结果。诊断时记录 reason、message、backend、设备构建和前后 trace。
 
 需要校验数值结果的 compute 任务还要考虑浮点精度、workgroup 划分、越界保护和不同 backend 的 shader 编译差异。吞吐量达标不能证明输出正确；关键 kernel 应保留小规模 CPU reference（用 CPU 实现的对照计算）和误差阈值测试。
+
+<!-- gracker-diagram: ch13-14-30-compute-submit -->
+![纯计算不需要窗口与 Present](../../assets/diagrams/ch13/ch13-14-30-compute-submit.png)
+
+图：Compute 编码后提交到同一 device 的队列，结果可留在 GPU。 图中列出主要步骤，不要求先做 CPU readback；窗口路径不是 compute 的前提。
+
+<!-- gracker-diagram: ch13-14-31-compute-readback -->
+![队列完成不等于 CPU 已映射](../../assets/diagrams/ch13/ch13-14-31-compute-readback.png)
+
+图：按 usage 把计算输出复制到读回 buffer，再等待该 buffer 映射。 标准 MAP_READ 只配 COPY_DST；unmap / destroy 后旧 mapped ByteBuffer 失效。
+
+<!-- gracker-diagram: ch13-14-32-shared-resource -->
+![同 Device 共享不保证硬件并行](../../assets/diagrams/ch13/ch13-14-32-shared-resource.png)
+
+图：共享 buffer/texture 可减少 CPU 往返，但资源依赖与后端调度仍存在。 默认 GPUQueue 不是应用可直接控制的多条 Vulkan queue。
+
+<!-- gracker-diagram: ch13-14-35-compute-correctness -->
+![吞吐与数值正确性分别验收](../../assets/diagrams/ch13/ch13-14-35-compute-correctness.png)
+
+图：用 CPU reference、误差阈值和设备条件验证计算结果。 高吞吐不证明正确；精度、边界保护与后端编译差异都需覆盖。
 
 ## 线程、协程与事件轮询
 
@@ -416,9 +581,34 @@ WebGPU compute 使用同一组 instance、adapter、device、queue、buffer、te
 
 这套约束来自应用架构，用来减少竞态和生命周期错误；它不冒充 WebGPU 规范中的强制线程模型。
 
+<!-- gracker-diagram: ch13-14-36-callback-context -->
+![Callback 线程与协程继续执行的线程](../../assets/diagrams/ch13/ch13-14-36-callback-context.png)
+
+图：Executor 处理回调，continuation 再按协程上下文恢复。 Direct executor 不证明后续 render loop 固定在回调线程或主线程。
+
+<!-- gracker-diagram: ch13-14-37-owner-serialization -->
+![Owner 策略与 Alpha06 Helper 的要求](../../assets/diagrams/ch13/ch13-14-37-owner-serialization.png)
+
+图：应用可用 owner 串行修改状态，alpha06 helper 要进入其 dispatcher。 helper 契约不倒推为所有版本的创建线程亲和；直接调用对象方法不会自动切线程。
+
 ### `createWebGpu()` helper 的 100 ms 主线程 poller
 
 alpha05 的 `androidx.webgpu.helper.createWebGpu()` 为推进异步事件，在主线程 `Handler` 上每 100 ms 调用一次 `instance.processEvents()`。源码注释说明，这是等待 Dawn issue 修复前的临时轮询。
+
+<!-- gracker-diagram: ch13-14-38-alpha05-event-pump -->
+![Alpha05 主线程 Poller 不是 Render Loop](../../assets/diagrams/ch13/ch13-14-38-alpha05-event-pump.png)
+
+图：alpha05 helper 的事件轮询每次延后 100 ms，再处理下一轮。 间隔是排队 delay，不保证准点；事件回调与渲染提交是不同工作。
+
+<!-- gracker-diagram: ch13-14-39-alpha06-event-loop -->
+![Alpha06 事件循环需要显式启动](../../assets/diagrams/ch13/ch13-14-39-alpha06-event-loop.png)
+
+图：调用方管理事件协程，render/compute 与它在同一 owner 线程协作。 16 ms 是 processEvents 后的 delay，不是 60 Hz 渲染时钟；长阻塞会饿死事件泵。
+
+<!-- gracker-diagram: ch13-14-40-alpha06-close -->
+![Alpha06 Close 与 Dispatcher 的所有权](../../assets/diagrams/ch13/ch13-14-40-alpha06-close.png)
+
+图：先协调 owner 任务停止，再按 helper 的关闭上下文清理。 跨线程 close 会 runBlocking(dispatcher)；不要在 UI 等被长任务占满的线程。
 
 因此需要分清两件事：
 
@@ -433,6 +623,16 @@ alpha05 的 `androidx.webgpu.helper.createWebGpu()` 为推进异步事件，在�
 
 alpha05 helper 的 `close()` 有一条明确的源码边界：`device.close()` 仍被注释，旁边记录了待修复 issue；helper 当前会关闭 surface、instance、adapter，并停止事件 poller。应用不能由此推导“helper 会替所有子资源完成释放”。资源管理与版本升级测试仍要覆盖原生堆、GPU memory，以及重复进入和退出页面的场景。
 
+<!-- gracker-diagram: ch13-14-41-handle-destroy -->
+![Close、Destroy 与实际回收](../../assets/diagrams/ch13/ch13-14-41-handle-destroy.png)
+
+图：释放引用、销毁资源语义和 GPU 最后使用完成分别处理。 持有 Kotlin wrapper 不代表 current texture 仍有效，CPU close 也不证明显存立即归零。
+
+<!-- gracker-diagram: ch13-14-42-helper-close-gap -->
+![Helper 关闭不代替所有子资源管理](../../assets/diagrams/ch13/ch13-14-42-helper-close-gap.png)
+
+图：两版 helper 的 device.close TODO 仍在，应用需明确资源所有权。 不能假设 helper.close 自动关闭所有 pipeline、buffer、纹理与 device 引用。
+
 ## 性能边界：只给可验证的判断
 
 目前没有官方 Android benchmark 能证明 Jetpack WebGPU 固定达到 Vulkan 性能的某个百分比，也没有证据支持“Dawn 加载固定需要 50—100 ms”。设备、ABI、Dawn commit、backend、shader、pipeline 缓存、draw/dispatch 数量、分辨率和温度状态都会改变结果。
@@ -442,6 +642,11 @@ alpha05 helper 的 `close()` 有一条明确的源码边界：`device.close()` �
 与直接使用 Vulkan 相比，WebGPU 增加了 Kotlin/JNI 调用、Dawn 对象与状态管理、WebGPU 验证及后端转换。与 GLES 相比，它也可能借助更明确的 pipeline、bind group 和 command buffer，减少运行时的隐式状态处理。单凭 API 所处层级无法判断哪条路径更快。
 
 应优先检查这些可操作项：
+
+<!-- gracker-diagram: ch13-14-43-cpu-cost-controls -->
+![CPU 优化对准实际操作数量](../../assets/diagrams/ch13/ch13-14-43-cpu-cost-controls.png)
+
+图：复用长期对象、批量编码与减少关键路径编译能改变整体开销。 每帧全队列等待会缩小 CPU/GPU 重叠，FastNative 不能替代成本测量。
 
 - pipeline、shader module、bind group layout 和长期 bind group 是否复用；
 - 是否每帧创建大量只使用一次的 Kotlin/原生 wrapper；
@@ -457,6 +662,11 @@ alpha05 helper 的 `close()` 有一条明确的源码边界：`device.close()` �
 
 WebGPU 不会自动减少 shader 的算术量、采样数量、overdraw、render target 带宽或分辨率。Dawn 可能采用不同的资源转换、barrier（资源访问之间的同步与状态转换）、render pass 组织方式或 shader 变换，驱动也可能为同一份 WGSL 生成不同机器码。
 
+<!-- gracker-diagram: ch13-14-44-gpu-costs -->
+![WebGPU 不会消除原始 GPU 工作量](../../assets/diagrams/ch13/ch13-14-44-gpu-costs.png)
+
+图：算术、像素、采样和带宽由 workload 决定，后端组织还可能不同。 Dawn 的 barrier、pass 或 shader 变化需同设备同画质对照，不能仅按 API 名归因。
+
 渲染 workload 要看 vertex/fragment 时间、overdraw、attachment load/store、texture bandwidth 和 present 等待；计算 workload 要看 occupancy（GPU 执行单元的并发占用程度）、workgroup size、访存合并、缓存、带宽和 CPU readback。
 
 遇到性能差异时，应在同一设备上对比 backend、命令规模和 GPU counter（硬件性能计数器），不能只根据“WebGPU vs Vulkan”的 API 名称归因。
@@ -465,7 +675,17 @@ WebGPU 不会自动减少 shader 的算术量、采样数量、overdraw、render
 
 冷路径可能包含原生库加载、instance/adapter/device 创建、shader/pipeline 编译和 Surface 配置。给每一段加入自定义 trace，才能定位某台设备上的实际耗时。脱离设备、版本和测试条件的固定毫秒数没有可比性。
 
+<!-- gracker-diagram: ch13-14-45-cold-start-stages -->
+![冷路径逐阶段打点](../../assets/diagrams/ch13/ch13-14-45-cold-start-stages.png)
+
+图：库加载、设备建立、编译和窗口配置分别记录。 阶段可能包含异步等待与缓存命中；没有跨设备固定的 Dawn 启动毫秒数。
+
 持续测试还要控制：
+
+<!-- gracker-diagram: ch13-14-46-steady-state-baseline -->
+![持续性能比较要对齐实验条件](../../assets/diagrams/ch13/ch13-14-46-steady-state-baseline.png)
+
+图：系统环境、图形配置和 workload 必须同时对齐。 缓存、热状态、刷新模式和同步点变化会改变比较结果。
 
 - 屏幕刷新率与分辨率；
 - 前后台状态和 Surface 重建次数；
@@ -488,6 +708,11 @@ WebGPU 不会自动减少 shader 的算术量、采样数量、overdraw、render
 
 “API 更少”不能推导出“代码量必然少一个数量级”，“Core 命中”也不能证明它适合替代所有 Vulkan compute。选型结论应附带目标设备覆盖率、正确性、稳定性、包体、功耗和持续性能数据。
 
+<!-- gracker-diagram: ch13-14-47-selection-evidence -->
+![选型结论需要四类证据](../../assets/diagrams/ch13/ch13-14-47-selection-evidence.png)
+
+图：功能可用、结果正确、生命周期稳定和持续成本共同决定选型。 统一对象模型不会自动替代所有 Vulkan、引擎或 ML 运行时。
+
 ## 调试与 trace
 
 ### 先把 WebGPU 层错误收干净
@@ -509,9 +734,24 @@ try {
 
 alpha05 的 suspend `popErrorScope()` 捕获到非 `NoError` 类型时会以异常结束，所以调用方要处理异常。其他语言 binding 可能返回错误对象，不能把那套调用方式直接套到 Kotlin API。
 
+<!-- gracker-diagram: ch13-14-48-error-labels -->
+![错误标签与 Scope 各自覆盖什么](../../assets/diagrams/ch13/ch13-14-48-error-labels.png)
+
+图：给可标记对象建立业务名称，再用 scope 和全局回调补错误上下文。 alpha05 instance 没有 label API，需应用 context id；scope 不捕获所有错误。
+
+<!-- gracker-diagram: ch13-14-49-error-scope-result -->
+![Kotlin Error Scope 的异步结果](../../assets/diagrams/ch13/ch13-14-49-error-scope-result.png)
+
+图：Kotlin wrapper 把非 NoError 的结果转换为异常交付。 示例位于 suspend 上下文；生产代码还需处理 transport / device 错误与作用域配对。
+
 ### Perfetto 看系统路径，应用 trace 补 WebGPU 语义
 
 Perfetto 不保证自动显示每个 Kotlin WebGPU 调用、JNI 方法或 Vulkan/GLES API 名称。建议在应用中为以下区间添加自定义 trace：
+
+<!-- gracker-diagram: ch13-14-50-application-trace -->
+![应用 Trace 为系统事件补 WebGPU 语义](../../assets/diagrams/ch13/ch13-14-50-application-trace.png)
+
+图：在创建、获取、编码、提交与等待边界补应用标记。 系统 GPU 数据源需设备支持；自定义 slice 不代表 GPU 实际执行时长。
 
 - library/instance/adapter/device 初始化；
 - shader 与 pipeline 创建；
@@ -535,9 +775,19 @@ Perfetto 不保证自动显示每个 Kotlin WebGPU 调用、JNI 方法或 Vulkan
 | Vulkan 与 GLES 差异大 | `backendType`、同画质命令、shader、driver counter | Core/Compatibility 名称 |
 | 页面反复进入后内存增长 | handle close、helper 的 device close 缺口、Surface 重建、native/GPU memory | Kotlin GC 单一原因 |
 
+<!-- gracker-diagram: ch13-14-51-evidence-triage -->
+![CPU、GPU 与显示变晚分别取证](../../assets/diagrams/ch13/ch13-14-51-evidence-triage.png)
+
+图：先判断开销发生在哪个边界，再定位对应的前驱依赖。 提交无结果不自动等于协程问题，独立 Layer 晚也不自动等于宿主重组。
+
 ### AGI、RenderDoc 与 backend
 
 AGI、RenderDoc 或厂商 profiler 能否抓取，取决于实际 backend、设备驱动、应用是否 debuggable、图形层注入限制和工具版本。先记录 `GPUAdapterInfo.backendType`，再选择对应工具。使用 Vulkan backend 也不保证任意设备都能被某个版本的工具成功抓帧；OpenGLES backend 同样要按工具和设备验证，不能笼统归为“不支持”。
+
+<!-- gracker-diagram: ch13-14-52-capture-tools -->
+![选择抓帧工具前确认 Backend](../../assets/diagrams/ch13/ch13-14-52-capture-tools.png)
+
+图：后端、驱动、权限和工具版本决定可抓取的范围。 使用 Vulkan 不保证任意设备可抓帧；GLES 也不能一概判为不支持。
 
 AGI 主要分析 GPU command、pipeline、shader 和资源，Perfetto 主要观察线程、BufferQueue、SurfaceFlinger、FrameTimeline 与显示时间。两者提供的是互补证据。Vulkan 系统 trace 见 §13.6，GLES 与 ANGLE 的 GLES→Vulkan 边界见 §13.5。
 
@@ -555,6 +805,21 @@ Jetpack WebGPU 在应用进程中加载 AndroidX AAR 内的 Dawn。WebView 页�
 - Dawn 版本假设。
 
 应用同时包含 WebView 与 Jetpack WebGPU 时，要分别记录 AndroidX WebGPU 版本和 WebView package/version。网页端使用 Web API feature detection，原生端查询 adapter feature、limit 和 capability；一侧的结果不能证明另一侧也具备相同能力。
+
+<!-- gracker-diagram: ch13-14-53-webview-processes -->
+![WebView 的 GPU Service 位于宿主进程](../../assets/diagrams/ch13/ch13-14-53-webview-processes.png)
+
+图：WebView 的 browser 与 GPU service 在宿主 App 内，renderer 按实际配置识别。 不能照搬 Chrome 独立 GPU 子进程；同进程也不代表共享 Jetpack device。
+
+<!-- gracker-diagram: ch13-14-54-api-isolation -->
+![同宿主进程不让两套 GPU 对象互换](../../assets/diagrams/ch13/ch13-14-54-api-isolation.png)
+
+图：网页与 Jetpack 各自建立能力、设备和对象生命周期。 原生 handle、command buffer 等没有直接互换契约；仍可能竞争同一物理 GPU。
+
+<!-- gracker-diagram: ch13-14-55-independent-validation -->
+![两条路径分别检测再共同看资源压力](../../assets/diagrams/ch13/ch13-14-55-independent-validation.png)
+
+图：分别保存能力与版本，关联共享 GPU 与内存压力。 一侧可用不证明另一侧可用；共享硬件也不意味着同一缓存与生命周期契约。
 
 ## 常见误判
 
@@ -592,3 +857,13 @@ Jetpack WebGPU 的价值是用统一对象模型组织渲染与计算，同时�
 - kernel `android17-6.18-2026-06_r6` 的 [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c) 与 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：核对共享 buffer 和 sync fence 的内核边界；Dawn 的 feature/profile 逻辑不在内核中。
 - [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu) 与 [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)：核对 GPU producer 能力、expected/actual frame 与系统显示观察口径。
 - [NNAPI migration guide](https://developer.android.com/ndk/guides/neuralnetworks/migration-guide)：确认 NNAPI 自 Android 15 废弃，以及 Android 17 新项目不应把它当作默认 ML 路径。
+
+<!-- gracker-diagram: ch13-14-04-release-baselines -->
+![Alpha05 固定源码与 Alpha06 当前产物](../../assets/diagrams/ch13/ch13-14-04-release-baselines.png)
+
+图：阅读固定 alpha05 行为，同时区分当前 alpha06 的变更。 2026-10-24 核对；两版 Kotlin 与 Dawn SHA 均须分别记录。
+
+<!-- gracker-diagram: ch13-14-05-external-memory -->
+![HardwareBuffer 导入仍需访问同步](../../assets/diagrams/ch13/ch13-14-05-external-memory.png)
+
+图：外部资源访问前传入完成依赖，交接时再输出下游需要的 fence。 alpha06 扩展需匹配 feature / usage；await 是阻塞调用，返回 null / 错误另查。

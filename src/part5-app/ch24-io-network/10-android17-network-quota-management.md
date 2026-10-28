@@ -77,6 +77,11 @@ UID 是 Android 基于 Linux 用户标识符为应用分配的隔离身份。BPF
 
 `NetworkStatsFactory` 还有名为 `per_uid_tag_throttling` 的配置，它限制单个 UID 可进入统计结果的不同流量标签数量，防止标签种类持续增加。这里的 `throttling` 只限制统计标签数量，不会降低网络吞吐。
 
+<!-- gracker-diagram: a270-01-quota-policy-planes -->
+![统计、提醒、总量限制与UID规则分别执行](../../assets/diagrams/ch24/a270-01-quota-policy-planes.png)
+
+图：per_uid_tag_throttling 只限制统计标签种类；机会型 quota 是建议预算，都不是吞吐限速参数。
+
 ## 3. Android 17 中各模块的职责
 
 虚拟专用网络（VPN）会改变流量归因；464xlat 是一种地址转换机制，让 IPv4 应用通过仅支持 IPv6 的网络通信。理解这两个边界后再看模块职责，才能明白接口总量与应用 UID 总量为何可能不同。
@@ -103,6 +108,11 @@ UID 是 Android 基于 Linux 用户标识符为应用分配的隔离身份。BPF
 
 接口汇总走另一条入口：`readNetworkStatsSummaryXt()` 调用 `getNetworkStatsDev()` 读取设备和接口维度统计。Java 原生接口（Java Native Interface，JNI）的实现位于 [`com_android_server_net_NetworkStatsFactory.cpp`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/jni/com_android_server_net_NetworkStatsFactory.cpp)，通过 `BpfNetworkStats` 解析接口和 UID 明细，并填充 `uid`、前后台集合 `set`、流量分类标签 `tag`、收发字节与报文数。
 
+<!-- gracker-diagram: a270-02-bpf-map-swap-rcu -->
+![切换BPF双表后等待RCU再读旧表](../../assets/diagrams/ch24/a270-02-bpf-map-swap-rcu.png)
+
+图：RCU 同步保障本轮旧表读清的安全；仅有 A/B 两张表并不足以保证跨核切换完成。
+
 ### 4.2 `NetworkStatsService` 先读 UID，再读接口
 
 `NetworkStatsService.recordSnapshotLocked()` 明确规定读取顺序：
@@ -123,6 +133,11 @@ UID 是 Android 基于 Linux 用户标识符为应用分配的隔离身份。BPF
 `NetworkStatsService.registerGlobalAlert()` 调用 `INetd.bandwidthSetGlobalAlert()`，同时把阈值发给已注册的统计提供方。内核命名计数器耗尽后，`AlertObserver.onQuotaLimitReached()` 针对 `globalAlert` 安排一次延迟轮询，轮询完成后重新注册全局告警。
 
 全局告警的用途是促使系统及时刷新统计数据。它不会替代某个套餐周期的 `warningBytes` 或 `limitBytes`，也不会单独关闭网络。
+
+<!-- gracker-diagram: a270-03-stats-read-and-alert -->
+![UID先读、接口后读并合并提供方计数](../../assets/diagrams/ch24/a270-03-stats-read-and-alert.png)
+
+图：轮询有多种触发源；globalAlert 促使采样刷新，不能把它解释为套餐耗尽或限速事件。
 
 ## 5. 周期策略如何变成接口剩余字节
 
@@ -163,6 +178,11 @@ Android 17 还会为没有显式 `NetworkPolicy` 的计量接口下发 `Long.MAX
 
 同一策略同时匹配多个接口时，源码会记录 `shared quota unsupported; generating rule for each iface`，表示当前实现不支持跨接口共享同一内核配额。每个接口各自获得一份相同余量，所以不能把多个接口的内核计数器相加视作共享套餐的精确强制限制。策略服务仍以模板历史总量判断周期是否超限。
 
+<!-- gracker-diagram: a270-04-cycle-remaining-budget -->
+![周期总量与snooze决定接口余量](../../assets/diagrams/ch24/a270-04-cycle-remaining-budget.png)
+
+图：Long.MAX_VALUE 为计量接口安装执行入口，表示近似不限总量，不意味着免流或不计费。
+
 ### 5.2 警告值不会进入接口拒绝规则
 
 处理 `MSG_UPDATE_INTERFACE_QUOTAS` 时，服务执行三件事：
@@ -172,6 +192,11 @@ Android 17 还会为没有显式 `NetworkPolicy` 的计量接口下发 `Long.MAX
 - 调用 `NetworkStatsService.setStatsProviderWarningAndLimitAsync()`，把警告和上限告知自定义统计提供方。
 
 `setInterfaceLimit()` 只把 `limitBytes` 传给 `NetworkManagementService.setInterfaceQuota()`。警告值用于提醒和统计提供方回调，平台通过轮询后的周期总量更新通知。文档或监控中的 `warning` 字段应解释为提醒阈值，不能写成内核拒绝流量的阈值。
+
+<!-- gracker-diagram: a270-05-warning-and-limit-dispatch -->
+![warning送统计提供方而limit进入接口拒绝规则](../../assets/diagrams/ch24/a270-05-warning-and-limit-dispatch.png)
+
+图：移除再装配额与提供方通知属于不同执行对象；warning 不进入接口配额的拒绝比较。
 
 ## 6. 接口上限如何进入 `netd` 与内核
 
@@ -204,6 +229,11 @@ StringPrintf("-A %s -m quota2 ! --quota %" PRId64
 
 触发事件只说明某个内核计数器到达阈值。策略判断仍使用强制刷新后的模板周期总量，避免仅凭一次接口事件决定用户套餐状态。
 
+<!-- gracker-diagram: a270-06-packet-quota-decision -->
+![quota2以剩余字节与当前报文长度比较](../../assets/diagrams/ch24/a270-06-packet-quota-decision.png)
+
+图：这是总字节阈值控制；边界报文可使余量直接归零，不保证恰好允许传完每一个预算字节。
+
 ## 7. 超过强制上限后，移动数据还会被策略关闭
 
 `updateNetworkEnabledNL()` 对每个带周期和强制上限的策略查询当前周期总量。当 `policy.isOverLimit(totalBytes)` 成立，且 `lastLimitSnooze` 早于周期起点，匹配网络会被标记为禁用。
@@ -217,6 +247,11 @@ tm.createForSubscriptionId(subId).setPolicyDataEnabled(enabled);
 Telephony 是 Android 的电话与移动网络框架。这段调用在套餐强制上限成立时改变该订阅的策略数据开关，不设置无线连接速率。用户延后限制或进入新周期后，重新计算会把 `enabled` 改回 `true`。
 
 接口 `quota2` 的即时拒绝和 Telephony 策略开关互相补充：前者在剩余字节耗尽时阻止继续传输，后者按模板周期总量控制移动数据连接。VPN、叠加接口和多接口场景中，两者观察的对象并不完全相同。
+
+<!-- gracker-diagram: a270-07-quota-feedback-and-telephony -->
+![接口事件触发复核而周期策略控制移动数据](../../assets/diagrams/ch24/a270-07-quota-feedback-and-telephony.png)
+
+图：quota2 即时拒绝与 Telephony 数据策略互补；一次接口事件不能单独判定共享套餐已用尽。
 
 ## 8. Data Saver 与 UID 计量网络规则
 
@@ -232,6 +267,11 @@ Data Saver 的全局状态由 `NetworkPolicyManagerService.setRestrictBackground
 `BpfNetMaps.setUidRule()` 把规则转换成 UID 所有者位标记，也就是用整数中的不同二进制位记录多种规则；`isUidNetworkingBlocked(uid, isNetworkMetered)` 结合计量属性、UID 规则和 Data Saver 开关给出阻止结果。
 
 在手机移动数据路径中，Data Saver 主要限制后台 UID，前台活动、系统 UID 和用户允许名单会改变有效结果。因此，Data Saver 开启后，不能据此认定该应用的全部网络请求都会失败。[官方 Data Saver 指南](https://developer.android.com/develop/connectivity/network-ops/data-saver) 另行说明，Android TV 会把前台应用限制到 800 Kbit/s、后台应用限制到 10 Kbit/s；排查 TV 时不能套用手机路径的无速率整形结论。
+
+<!-- gracker-diagram: a270-08-data-saver-uid-path -->
+![DataSaver总开关与UID有效规则共同判定](../../assets/diagrams/ch24/a270-08-data-saver-uid-path.png)
+
+图：手机路径主要是计量网络访问控制；Android TV 官方另记录前台800 Kbit/s、后台10 Kbit/s速率限制。
 
 ## 9. 普通应用能够使用的公开接口
 
@@ -277,6 +317,11 @@ val request = OneTimeWorkRequestBuilder<LargeSyncWorker>()
 
 调度器会在约束不满足时停止当前工作并等待条件恢复。应用仍应在传输边界保存进度并支持取消，因为网络能力可在任务执行期间变化。`CONNECTED` 只要求存在可用网络，不代表该网络不计量。
 
+<!-- gracker-diagram: a270-09-public-app-observation -->
+![普通应用用公开状态与任务约束调节传输](../../assets/diagrams/ch24/a270-09-public-app-observation.png)
+
+图：普通应用不能修改 NetworkPolicy 或接口 quota；历史统计和运营商账单也有不同时间与归因口径。
+
 ## 10. 诊断与验证
 
 Android 调试桥（Android Debug Bridge，ADB）的 `dumpsys` 命令可读取系统服务诊断信息。这组命令用于检查策略、统计和 Java 到 `netd` 的状态；`--poll` 会要求系统刷新统计，不应在高频采样循环中反复执行：
@@ -313,6 +358,11 @@ adb shell cmd netpolicy set restrict-background false
 | 自定义统计提供方 | `warning` / `limit` 回调与平台轮询后的数据是否一致 |
 
 这组用例应同时记录设备形态、模板周期、接口和 UID，才能把 Android TV 的速率限制、接口配额耗尽后的拒绝，以及 UID 后台访问限制分开。只记录网络不可用这一结果，无法确定执行规则位于哪一层。
+
+<!-- gracker-diagram: a270-10-diagnosis-by-enforcement-scope -->
+![按设备、计量、周期与执行位置定位故障](../../assets/diagrams/ch24/a270-10-diagnosis-by-enforcement-scope.png)
+
+图：warning、limit、snooze、多接口和UID例外分别验证；没有命令输出不能证明规则不存在。
 
 ## 11. 排查时的判断顺序
 

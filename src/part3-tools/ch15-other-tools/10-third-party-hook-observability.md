@@ -120,6 +120,11 @@ consolidated_from:
 
 接入监控 SDK（Software Development Kit，供应用集成的软件包）之后，官方工具我们仍然要留着：客户端监控负责发现异常、保存线索，Perfetto、系统 dump（进程或系统状态快照）、基准测试与源码负责复现和判断原因。两者是分工，所以选型时要同时核对采集位置、适用系统、构建工具兼容性、运行开销、隐私范围和维护状态。
 
+<!-- gracker-diagram: ch15-10-01-monitor-to-diagnosis -->
+![从线上信号到可复现诊断](../../assets/diagrams/ch15/ch15-10-01-monitor-to-diagnosis.png)
+
+图：线上探针保留异常与会话线索，平台聚合后用可复现场景继续诊断。 采样缺失和探针覆盖要明示，单条慢方法记录不能解释跨进程因果。
+
 > 源码基线：AOSP [`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/)，涉及 ART（Android Runtime，Android 运行时）内部结构时对照同标签 [platform/art](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/)；内核参考 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)，设备可能使用其他内核分支。
 
 三方项目宣称“支持 Android 17”时，README 的一行兼容表可以当线索；真正作数的，是我们自己在目标 ROM（设备系统构建）、ABI（Native 代码面向的 CPU 架构与二进制接口）、4 KB / 16 KB 内存页和构建链上的回归结果。
@@ -166,6 +171,11 @@ Matrix 是腾讯微信团队开源的插件式性能监控框架，APM（Applica
 
 模块清单和公开能力可在 [Matrix README](https://github.com/Tencent/matrix/blob/master/README.md) 核对。不同模块的系统范围、ABI（Application Binary Interface，二进制调用约定）和构建链要求各自独立，所以我们接入哪个模块，就验证哪个模块。
 
+<!-- gracker-diagram: ch15-10-02-matrix-plugins -->
+![Matrix 模块与接入方平台的分工](../../assets/diagrams/ch15/ch15-10-02-matrix-plugins.png)
+
+图：Matrix 统一插件生命周期和问题回调，各模块按不同机制采集。 存储、脱敏、上传、聚合和告警由接入方补齐；模块兼容范围分别验证。
+
 #### Trace Canary：卡顿与 ANR 的观测边界
 
 Trace Canary 关注卡顿、慢方法、启动、帧率和 ANR 线索。我们把它拆成“方法记录”“主线程消息观测”和“ANR 检测”三块来看——三块的触发条件不同，可信程度也不同。
@@ -182,6 +192,11 @@ Trace Canary 关注卡顿、慢方法、启动、帧率和 ANR 线索。我们�
 
 上述判断可由 Matrix 的 [`Constants`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-trace-canary/src/main/java/com/tencent/matrix/trace/constants/Constants.java)、[`LooperAnrTracer`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-trace-canary/src/main/java/com/tencent/matrix/trace/tracer/LooperAnrTracer.java)、[`SignalAnrTracer`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-trace-canary/src/main/java/com/tencent/matrix/trace/tracer/SignalAnrTracer.java) 和 [`MatrixTraceLegacyTransform`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/transform/MatrixTraceLegacyTransform.kt) 交叉核对。
 
+<!-- gracker-diagram: ch15-10-03-matrix-trace-anr -->
+![Trace Canary 的三类证据](../../assets/diagrams/ch15/ch15-10-03-matrix-trace-anr.png)
+
+图：方法记录、消息分发超时与 SIGQUIT 复核是不同证据路径。 700 ms 和 5 秒是库配置默认值；不能据此替代系统 ANR 确认或设备帧预算。
+
 #### Resource Canary：内存泄漏与冗余 Bitmap
 
 Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.onActivityDestroyed()` 接收已销毁的 Activity：先为对象建立 `WeakReference`（不阻止对象被回收的弱引用）、放入待检查队列，再在后台线程按配置重试 GC（Garbage Collection，垃圾回收）与存活检查。对象跨过多轮检查仍可达时，模块按 `DumpMode` 交给对应处理器，例如“不 dump”“自动 dump”“手动 dump”“fork（复制进程） dump / analyze”——fork 表示创建子进程，dump 表示导出堆快照。
@@ -193,6 +208,11 @@ Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.on
 上游 README 还列出重复 Bitmap 检测：分析 heap 中存活 Bitmap 的像素缓冲区，找出内容重复的对象。它能提示同一图片被重复 decode（解码）或分散保存在多份缓存中；从像素相同走到可以合并还差几步——密度、色彩空间、可变性、硬件 Bitmap 和生命周期要逐项确认。
 
 对应实现可查看 [`ActivityRefWatcher`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-resource-canary/matrix-resource-canary-android/src/main/java/com/tencent/matrix/resource/watcher/ActivityRefWatcher.java) 与 [`processor` 目录](https://github.com/Tencent/matrix/tree/master/matrix/matrix-android/matrix-resource-canary/matrix-resource-canary-android/src/main/java/com/tencent/matrix/resource/processor)。当前上游默认观察入口面向 Activity；如果项目声明支持 Fragment 检测，应给出所用 fork 的 `FragmentLifecycleCallbacks` 和 watcher 代码，便于核对。
+
+<!-- gracker-diagram: ch15-10-04-matrix-resource -->
+![Activity 留存观察与可选堆处理](../../assets/diagrams/ch15/ch15-10-04-matrix-resource.png)
+
+图：Activity 销毁进入观察队列，重试后仍留存的对象按配置交给处理器。 弱引用仍存活是尚未回收的证据；是否 dump、裁剪、fork 或分析由 DumpMode 决定。
 
 #### IO Canary：文件 I/O 的问题扫描
 
@@ -210,6 +230,11 @@ Java 侧 `CloseGuardHooker` 通过反射替换 `dalvik.system.CloseGuard.Reporte
 
 默认条件可在 [`io_canary_env.h`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/cpp/core/io_canary_env.h)、[`small_buffer_detector.cc`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/cpp/detector/small_buffer_detector.cc) 和 [`CloseGuardHooker`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/java/com/tencent/matrix/iocanary/detect/CloseGuardHooker.java) 中核对。
 
+<!-- gracker-diagram: ch15-10-05-matrix-io-detectors -->
+![IO Canary 的覆盖与判定条件](../../assets/diagrams/ch15/ch15-10-05-matrix-io-detectors.png)
+
+图：Native I/O 记录交给具体 detector，CloseGuard 另走资源报告入口。 这里只覆盖被拦截路径；小 I/O 与重复读都不是单次调用大小或文件名就能判定。
+
 ### KOOM：聚焦内存问题
 
 KOOM（Kwai OOM）是快手团队开源的内存监控方案，名字里的 OOM 指 Out of Memory——进程再也要不到所需内存。它适合解决已经明确落在内存侧的问题；和 Matrix 的 Resource Canary 相比，KOOM 更像一个专项工具。
@@ -225,6 +250,11 @@ KOOM 的 Java 模块周期性观察 Java heap（Java 对象堆）、线程数、
 代价也要摆出来：Dump、裁剪和分析可能运行数分钟，占用一个 CPU 核和较多内存，README 因此建议配合远程开关和采样。系统剩余内存偏低、内存压力已经较高时启动分析，反而可能放大 OOM 风险；所以触发器要同时检查前后台、剩余磁盘、充电状态、温度和进程重要性。
 
 Java 模块的触发、兼容范围和资源提示见 [`koom-java-leak/README.md`](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-java-leak/README.md)。该模块声明支持 Android 5.0 / API 21 及以上和四种常见 ABI；这份声明到 OEM 修改过的 ART 上是否仍成立，要靠真机验证 fork、dump、解析与恢复路径。
+
+<!-- gracker-diagram: ch15-10-06-koom-java-fork -->
+![KOOM Java 的触发、fork 与分析](../../assets/diagrams/ch15/ch15-10-06-koom-java-fork.png)
+
+图：指标触发后在受控条件下 fork dump，再按配置分析堆证据。 父进程恢复不等于全部 dump 已完成；20 ms 是上游自测，真实暂停与分析资源需实测。
 
 #### Native 堆泄漏检测
 
@@ -242,6 +272,11 @@ Java 模块的触发、兼容范围和资源提示见 [`koom-java-leak/README.md
 
 实现说明见 [`koom-native-leak/README.md`](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-native-leak/README.md)。
 
+<!-- gracker-diagram: ch15-10-07-koom-native-reachability -->
+![KOOM Native 的两类证据交叉匹配](../../assets/diagrams/ch15/ch15-10-07-koom-native-reachability.png)
+
+图：PLT 记录仍未释放分配，私有 libmemunreachable 给出不可达区间，再关联分配栈。 保守扫描会把形似指针值视作引用而漏报；API 24+、arm64 与 ptrace / dumpable 条件分别检查。
+
 #### 线程泄漏检测
 
 KOOM 的 ThreadLeakMonitor 通过 Hook `pthread_create`、`pthread_exit` 等生命周期函数，跟踪创建栈、线程名和回收状态；pthread 是 POSIX 标准的 Native 线程接口。公开 README 聚焦一种明确的资源泄漏：joinable（需要 join 或 detach 回收）线程已经退出，却没执行 `pthread_join()` 或 `pthread_detach()`，退出状态及相关资源就一直保留到被回收。至于业务线程长期运行，那属于另一类问题：判定 pthread 泄漏，看的是线程退出之后有没有被回收。
@@ -249,6 +284,11 @@ KOOM 的 ThreadLeakMonitor 通过 Hook `pthread_create`、`pthread_exit` 等生�
 该模块同样只声明 Android 7.0 / API 24 及以上和 `arm64-v8a`。报告应保留创建栈、退出时刻、join/detach 状态和线程名，避免把 Binder 线程池、线程池 worker、监控线程的长期存活混进同一种告警。
 
 适用范围和判定条件见 [`koom-thread-leak/README.md`](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-thread-leak/README.md)。
+
+<!-- gracker-diagram: ch15-10-08-koom-thread-lifecycle -->
+![joinable 线程退出后的回收状态](../../assets/diagrams/ch15/ch15-10-08-koom-thread-lifecycle.png)
+
+图：ThreadLeakMonitor 聚焦 joinable 线程退出后仍未 join / detach 的资源。 长期运行的业务线程是另一类问题；这里不能把“线程活得久”直接判成 pthread 资源泄漏。
 
 ### Booster：把问题尽量拦在编译期
 
@@ -276,6 +316,11 @@ Booster 以独立模块提供检查、替换和产物处理能力；生产项目
 non-final R 表示资源 ID 不是编译期常量，non-transitive R 表示模块只能直接看到自身或直接依赖暴露的资源，resource shrink 则会删除未使用资源。
 
 这些模块和 Trace Canary 恰好构成静态与动态两类证据：Booster 报告“代码中存在某种调用或改写”，运行时 Trace 回答“调用是否发生、位于哪条路径、成本多大”。读结果时我们把两类分开下结论。
+
+<!-- gracker-diagram: ch15-10-09-booster-artifact-transform -->
+![Booster 构建改写与运行结果](../../assets/diagrams/ch15/ch15-10-09-booster-artifact-transform.png)
+
+图：Android Components 注册产物转换，模块改写 class，运行期再验证实际行为。 Scoped Artifacts 不是旧 AGP Transform；改写可增加运行成本，发布产物版本需与 AGP 精确匹配。
 
 源码依据包括 [`BoosterPlugin.kt`](https://github.com/didi/booster/blob/master/booster-gradle-plugin/src/main/kotlin/com/didiglobal/booster/gradle/BoosterPlugin.kt)、[`RInlineTransformer.kt`](https://github.com/didi/booster/blob/master/booster-transform-r-inline/src/main/kotlin/com/didiglobal/booster/transform/r/inline/RInlineTransformer.kt) 和 [`ToastTransformer.kt`](https://github.com/didi/booster/blob/master/booster-transform-toast/src/main/kotlin/com/didiglobal/booster/transform/toast/ToastTransformer.kt)。
 
@@ -305,6 +350,11 @@ Booster `v5.1.0` README 的发布版兼容表列出：
 但并行数量越多，CPU 竞争、锁冲突、I/O 队列和 class loading 抖动也越大。调度器因此要限制并发、显式区分主线程任务与后台任务，并把首帧必需节点的最长依赖链当作关键路径——任务总耗时下降而关键路径变长时，启动指标照样退化。
 
 我们还要区分“组件发现”和“并行调度”这两件事。[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 通过一个共享 `InitializationProvider` 发现 `Initializer`，由 `dependencies()` 声明顺序，也支持手动延迟初始化；但它的 `create()` 调用并不附带通用后台并行调度器。需要并行 DAG、线程选择或阻塞等待指定节点时，这部分由业务调度层负责。
+
+<!-- gracker-diagram: ch15-10-10-startup-dag -->
+![启动 DAG、并发约束与锚点等待](../../assets/diagrams/ch15/ch15-10-10-startup-dag.png)
+
+图：依赖完成才释放后继，主线程锚点等待会进入启动关键路径。 图中任务是假设示例，不表示实测时长；App Startup 本身不提供通用后台并行调度器。
 
 #### 典型框架对比
 
@@ -372,6 +422,11 @@ Rabbit（`SusionSuc/rabbit-client`）把页面信息、性能观察和调试入�
 
 源码与发布记录见 [SusionSuc/rabbit-client](https://github.com/SusionSuc/rabbit-client)。
 
+<!-- gracker-diagram: ch15-10-11-deployment-boundaries -->
+![本地诊断、平台聚合与研发工具箱](../../assets/diagrams/ch15/ch15-10-11-deployment-boundaries.png)
+
+图：按部署目的区分堆诊断工具、平台和设备端工具箱，再检查采样与上传能力。 版本、Debug/Release、主进程范围和数据预算需分别核对；名字相近不代表能力可互换。
+
 ### 扩展：Rhea / btrace —— 字节跳动的 Trace 工具
 
 Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0”连成一套方法插桩方案，但当前 `btrace 3.x` 已经换了技术路线——我们读历史资料时要按版本拆开，避免把旧架构写成 3.1.0 的现状。
@@ -387,6 +442,11 @@ Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0�
 - Android 8.1 及以上默认使用 Perfetto 模式，合并 App Trace 与设备可提供的 atrace/ftrace；atrace 提供 Android 用户态与 Native 类别事件，ftrace（Linux 内核跟踪机制）提供内核事件。旧系统可退回 simple 模式，只保留 App Trace。
 
 同步回溯省掉了周期性 suspend/resume（暂停并恢复目标线程）的部分成本，还能观察系统方法；但它仍依赖触发点——线程长时间停在没有插桩点的计算或阻塞路径中，采样就会出现空洞。生成的函数时长来自相邻 stack sample（调用栈样本）的重建结果，与逐方法入口/出口的精确计时是两回事。
+
+<!-- gracker-diagram: ch15-10-12-btrace-stack-reconstruction -->
+![btrace 3.x 的同步回溯与时间重建](../../assets/diagrams/ch15/ch15-10-12-btrace-stack-reconstruction.png)
+
+图：动态触发点同步取栈，先保存方法地址，再符号化和重建 Trace。 缺少触发点的执行会形成空洞；相邻栈样本重建不是逐方法进入/退出精确计时，分配监控排除 Android 15+。
 
 #### 当前开源使用边界
 
@@ -445,6 +505,11 @@ Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0�
 
 自建 schema（字段与类型约定）至少保留 event time、monotonic time、session/process start、app/build/mapping ID、设备与系统版本、metric 单位、sampling rule/probability（采样规则/概率），以及大型 artifact 的 hash（内容摘要）、大小、类型、加密和过期时间。数据模型还要能区分“没有发生”“没有采集”“被采样丢弃”“上传失败”和“解析失败”这几种状态；把它们都存成 `null`，发生率与覆盖率就会失真。
 
+<!-- gracker-diagram: ch15-10-13-observability-schema -->
+![观测数据、关联字段与缺失状态](../../assets/diagrams/ch15/ch15-10-13-observability-schema.png)
+
+图：不同类型信号共用版本、会话与时钟关联信息，并保留采集结果状态。 未发生、未采集、采样丢弃、上传失败和解析失败不能都记成 null；时间值需注明 clock ID 与单位。
+
 Session ID 表示一段使用期，Trace ID 表示一次操作或请求树，两者都不要从账号、手机号或设备标识直接生成。跨端传播优先用 W3C `traceparent` 请求头传递 Trace 上下文，并只向允许的自有域名发送。URL、SQL、页面标题和堆对象这类高基数字段可能产生大量不同取值，先归一化或哈希再存储；HPROF、截图与 Trace 则用独立的权限和保留期。
 
 采样预算也按数据类型分开：crash/ANR 事件可保持高覆盖，frame 与网络 span 用稳定规则采样，大型 profile/snapshot 只在异常、系统触发或远程诊断窗口内获取。接入前后我们都在低端设备上比较启动、帧、内存、功耗、磁盘和网络开销；远程开关必须能按模块紧急关闭。
@@ -491,6 +556,11 @@ Hook 适合补上现有观测手段看不到的调用处。例如 Perfetto 已�
 
 表里的缩写先摆出来：PLT（Procedure Linkage Table，过程链接表）与 GOT（Global Offset Table，全局偏移表）用于动态链接调用；JIT 是运行时即时编译，AOT 是安装期或构建期预编译。家族归属也要看清：Xposed、Dexposed、SandHook 和 Epic 属于运行时方法 Hook，与构建期 ASM 工具是两类东西。一个工具还可以组合多种介入方式——Matrix TraceCanary 的方法耗时用构建期插桩，Looper 和帧监控用运行时公开或反射入口。
 
+<!-- gracker-diagram: ch15-10-14-intervention-model -->
+![四种介入方式的修改位置](../../assets/diagrams/ch15/ch15-10-14-intervention-model.png)
+
+图：先按修改位置判断覆盖，构建插桩、调用槽、机器指令与 ART 私有状态分别看待。 Hook 代码需要在目标进程加载；官方 Trace 或公开采样已能满足需求时，不必增加运行时改写。
+
 #### 构建期插桩
 
 对自己维护的 App，构建期插桩通常是方法级监控的低风险方案：插桩器在方法进入、正常返回和异常退出处写入轻量调用，运行期无需推测 `ArtMethod` 布局。
@@ -523,6 +593,11 @@ flowchart LR
 
 从图上看，Hook 修改的是 `libfeature.so` 自己的 GOT 槽，`libc.so` 中的 `malloc` 实现原样未动；另一个 `libcodec.so` 有独立的重定位槽，要单独处理。目标 DSO 内部的局部调用、编译器直接分支、保存过的函数指针以及 `dlsym()` 返回值直接调用，都可能绕过这个槽。
 
+<!-- gracker-diagram: ch15-10-15-plt-before-after -->
+![GOT 改写前后与调用方范围](../../assets/diagrams/ch15/ch15-10-15-plt-before-after.png)
+
+图：PLT Hook 替换调用方自己的槽；原函数实现和其他调用方的槽仍各自独立。 上下两行是安装前后两种状态；内部直调、其他槽、已保存指针或 dlsym 直接调用可能绕过该槽。
+
 #### Android linker 的立即绑定
 
 `bionic/linker/linker.cpp` 在处理 `DT_PLTGOT` 时明确写着 `RTLD_LAZY is not supported`：`link_image()` 调用 `relocate()` 填充跳转槽，随后调用 `protect_relro()` 把 GNU RELRO（Relocation Read-Only，重定位后只读）区域设为只读。也就是说，Android 上没有 glibc 风格的“第一次调用时再解析”窗口。
@@ -530,6 +605,11 @@ flowchart LR
 这带来两个直接推论。Hook 无需赶在 `dlopen()` 返回前完成，但必须先取得 GOT 所在内存页的写权限：ByteHook `v1.1.2` 的 `bh_elf_get_protect()` 识别 `PT_GNU_RELRO`，`bh_util_set_addr_protect()` 按运行时页大小对齐后调用 `mprotect()（修改内存页权限）` 加上写权限。同版本里“写完恢复原权限”的调用仍被注释，改写后未必恢复只读——评估时应单独记录这一实现选择；反过来，把 GOT 描述成始终可写，又会漏掉 full RELRO（所有可保护重定位区都转只读）的常见情况。
 
 IFUNC（indirect function，间接函数）用 resolver（解析函数）在装载时选择具体实现：Android linker 执行 resolver 后，把结果写入相应重定位位置。PLT Hook 能否命中，仍取决于调用路径是否经过被改写的槽，只看符号类型还不够。
+
+<!-- gracker-diagram: ch15-10-16-eager-binding-relro -->
+![立即绑定、RELRO 与改槽权限](../../assets/diagrams/ch15/ch15-10-16-eager-binding-relro.png)
+
+图：Android 链接时解析重定位，再保护 RELRO；Hook 改槽需取得所在页写权限。 立即绑定不能保证初始化期间已发生的调用被晚安装捕获；ByteHook 1.1.2 写后恢复原保护的调用仍被注释。
 
 #### ByteHook 的调用方模型
 
@@ -573,6 +653,11 @@ static bool install_hook(void) {
 
 这段代码只展示代理 API 的形状：假定 ByteHook 已完成初始化，也省略了计数读取和 unhook。`BYTEHOOK_CALL_PREV()` 获取当前代理链中的前一个实现，`BYTEHOOK_POP_STACK()` 维护代理栈状态；C++ 代码可在函数开头使用 `BYTEHOOK_STACK_SCOPE()`，让作用域退出时自动清理，多个 return 分支就不会漏掉 `POP_STACK`。示例只做计数——在线上回调里打印日志或抓完整栈，会明显改变线程创建路径。
 
+<!-- gracker-diagram: ch15-10-17-bytehook-task-and-proxy -->
+![ByteHook 任务、逐调用方结果与命中](../../assets/diagrams/ch15/ch15-10-17-bytehook-task-and-proxy.png)
+
+图：任务登记、逐调用方安装结果与代理命中分别验证；代理需要成对维护框架栈。 示例是 automatic 模式，原子计数须确认无锁；尝试数不等于线程创建成功数，非空 stub 不证明已命中。
+
 #### xHook 的位置
 
 xHook 同样通过 ELF 重定位槽实现 PLT Hook，KOOM 的部分模块仍在用。新项目评估时不妨同时看 ByteHook——它对代理链、多 Hook 和晚加载 DSO 的处理有更完整的公开说明；已有 xHook 项目无需只为名称迁移，重点是验证当前 fork 对 16 KB 页、RELRO、CFI（Control-Flow Integrity，控制流完整性）、晚加载 DSO 和目标 ABI 的处理。
@@ -588,6 +673,11 @@ Inline Hook 换了一个改法：在目标函数入口写入跳转，让所有�
 3. 写入完成后要刷新指令缓存，并处理并发线程可能正在执行入口指令的情况。
 
 落到指令集上：ARM64 指令固定为 4 字节，`B`/`BL` 的直接跳转范围约为 ±128 MiB，远距离代理常借助目标附近的 branch island（分支跳板岛）再从 island 做绝对跳转。AArch32 是 32 位 ARM 执行状态，同时存在 ARM 和 Thumb 编码；函数地址最低位的 Thumb 标记只适用于 AArch32，64 位 AArch64 没有 Thumb 模式。
+
+<!-- gracker-diagram: ch15-10-18-inline-trampoline -->
+![Inline Hook 的入口与原指令恢复路径](../../assets/diagrams/ch15/ch15-10-18-inline-trampoline.png)
+
+图：入口跳转到代理；调用原实现时，先执行重定位的被覆盖指令，再回到剩余函数。 图是简化机制，ARM64 release 常借近址 island；地址范围、重定位、页权限和缓存同步都可能导致安装失败。
 
 #### ShadowHook 的公开 API
 
@@ -625,6 +715,16 @@ static bool uninstall_getpid_hook(void) {
 
 再看实现细节。ShadowHook `v2.0.1` 的 release 配置仍优先使用 branch island，目标地址只需改写一条相对跳转，减少了多指令分步写入的窗口；分配器先尝试在分支范围内用 `mmap()` 创建匿名内存页，再尝试目标 ELF 的空隙，地址范围、页权限或可用空隙不足都可能让安装失败。`v2.0.1` 还修复了 `v2.0.0` 引入的并发 `dlclose()` ANR 和 arm64 可执行段尾部越界等问题，所以 2.0.0 的稳定性测试外推不到当前版本。业务代码仍要处理失败并继续运行——Hook 安装失败时，进程照常启动。
 
+<!-- gracker-diagram: ch15-10-19-shadowhook-mode-contract -->
+![ShadowHook 三种代理调用契约](../../assets/diagrams/ch15/ch15-10-19-shadowhook-mode-contract.png)
+
+图：unique、multi 和 shared 的原函数调用与代理链契约不同，不能只改安装参数。 本例显式 unique；改 shared 必须用 CALL_PREV 和栈清理，multi 的 orig 存储还要长期保持可读写。
+
+<!-- gracker-diagram: ch15-10-20-shadowhook-pending -->
+![非空任务句柄与实际改写状态](../../assets/diagrams/ch15/ch15-10-20-shadowhook-pending.png)
+
+图：按库名和符号名登记时，还需区分同步完成、等待装载和失败。 pending 的后续结果由 callback 确认；安装完成后仍需已知调用验证命中，卸载32/33终态也会释放任务。
+
 #### 可执行内存、W^X 与 SELinux
 
 W^X（Write xor Execute）是内存页避免同时可写、可执行的安全原则，RWX 则表示读、写、执行三种权限同时存在。先澄清一个流传的说法：Android 17 没有一条“targetSdk 34 起普通应用禁止所有 RWX”的统一规则——AOSP `system/sepolicy/private/app.te` 仍允许 `appdomain self:process execmem`，源码注释给出的用途是 WebView 和应用自带的 JIT 编译器。ShadowHook `v2.0.1` 在改写目标页和分配匿名 trampoline 页时都会请求 `PROT_READ | PROT_WRITE | PROT_EXEC`；SELinux 的 `execmem` 许可只是其中一个前提，任意映射操作也未必成功。
@@ -638,6 +738,11 @@ W^X（Write xor Execute）是内存页避免同时可写、可执行的安全原
 - 生产环境还可能启用 CFI、BTI（Branch Target Identification，分支目标识别）、PAC（Pointer Authentication Code，指针认证）或 MTE（Memory Tagging Extension，内存标记扩展）。
 
 所以框架返回的 `mmap`、`mprotect` 和指令重定位错误都要记录，失败时就关闭该项观测；SELinux denial（拒绝日志）只是可能的失败来源之一。
+
+<!-- gracker-diagram: ch15-10-21-mapping-and-exec-policy -->
+![可执行内存的多层条件](../../assets/diagrams/ch15/ch15-10-21-mapping-and-exec-policy.png)
+
+图：可执行映射要同时满足映射属性、页权限、进程策略与架构保护条件。 A17 appdomain 仍有 execmem 许可；这既不保证所有改写成功，也不能概括成 target34 起全面禁止 RWX。
 
 #### 指令缓存
 
@@ -657,6 +762,11 @@ ARM 上用数据写入修改代码后，还要让新指令对 CPU 取指可见�
 - interface/virtual dispatch（接口或虚方法分派）的缓存与解析。
 
 只修改一个 quick entry point，还说明不了所有调用都会经过代理；可靠实现还要处理 deoptimization、编译状态变化、GC 可见性和线程同步。ART 自 Android 12 起由 `com.android.art` APEX 更新，系统小版本或 Google Play system update 也可能改变私有实现——仅按 `SDK_INT` 选择偏移是不够的。
+
+<!-- gracker-diagram: ch15-10-22-art-jvmti-boundary -->
+![ART 入口变化与 JVMTI 的部署条件](../../assets/diagrams/ch15/ch15-10-22-art-jvmti-boundary.png)
+
+图：ART 方法可能走解释、编译、内联或运行时辅助路径，改一个入口不能保证全覆盖。 私有布局随 ART/APEX 与厂商实现变化；公开 attachJvmtiAgent 也要求 debuggable，不能当任意线上注入接口。
 
 #### JVMTI 的适用范围
 
@@ -694,6 +804,11 @@ Hook 框架要处理两类问题：
 
 ShadowHook `v2.0.1` 的构建脚本为 arm64 设置 `-Wl,-z,max-page-size=16384`，地址取整和 `mprotect()` 区间都用运行时 page size。采用预编译 AAR 时，仍要用 `readelf`、APK Analyzer 或官方脚本检查实际产物和所有传递依赖——一个兼容的 Hook 库，救不了 APK 里另一个未对齐的 native SDK。
 
+<!-- gracker-diagram: ch15-10-23-page-size-two-layers -->
+![16 KB 兼容的产物与运行时两层](../../assets/diagrams/ch15/ch15-10-23-page-size-two-layers.png)
+
+图：每个 Native 依赖分别检查产物对齐，运行期按真实页大小做地址与权限计算。 section 偏移不会自动按页大小倍增；一个 Hook 库通过不能代替整个 APK 的传递依赖检查。
+
 #### 32 位与 64 位
 
 | 项目 | AArch64 | AArch32 |
@@ -711,6 +826,11 @@ ShadowHook `v2.0.1` 的构建脚本为 arm64 设置 `-Wl,-z,max-page-size=16384`
 Hook 状态属于当前进程的地址空间：主进程安装成功，并不会自动作用到 `android:process=":remote"` 进程、isolated process（隔离进程）、WebView renderer（渲染进程）或独立 native 进程。每个目标进程都要单独决定是否加载 SDK、何时安装、如何上报。
 
 也别想着在 zygote（应用进程的孵化进程）里预装应用 Hook：普通应用拿不到这个控制点，把系统库修改状态跨 fork 传播还会扩大影响范围。进程级初始化放在目标进程自己的早期组件里就好，Hook 安装也要避开首帧路径。
+
+<!-- gracker-diagram: ch15-10-24-process-and-object-identity -->
+![Hook 的进程、库与构建标识](../../assets/diagrams/ch15/ch15-10-24-process-and-object-identity.png)
+
+图：每个目标进程独立加载和安装，再用当前 DSO 的路径、Build ID 与符号定位。 主进程成功不自动覆盖 remote 或 renderer；私有符号和地址不能跨设备或跨构建直接复用。
 
 ### 回调代码比安装代码更容易出错
 
@@ -767,6 +887,11 @@ Hook 回调不要直接写 `/sys/kernel/tracing/trace_marker`：普通应用通�
 
 时间轴对齐之后，我们才能把代理记录与 sched（调度事件）、Binder、VSync（显示垂直同步）、I/O 和 CPU frequency 交叉验证；只凭一条“函数耗时 40 ms”，分不出真正执行、被抢占、page fault（缺页异常）和锁等待。
 
+<!-- gracker-diagram: ch15-10-25-callback-to-perfetto -->
+![回调预算、聚合与时间轴关联](../../assets/diagrams/ch15/ch15-10-25-callback-to-perfetto.png)
+
+图：低频同步事件现场写入；高频路径采样聚合，再使用明确的时钟与轨道语义关联。 后台同步 slice 记录的是后台线程与发出时刻；要重建原样本轨道，需支持显式 timestamp / track 的接口并保留原时钟域。
+
 ### 验证一项 Hook 是否可信
 
 我们对每个目标做四层验证。
@@ -793,6 +918,11 @@ Hook 回调不要直接写 `/sys/kernel/tracing/trace_marker`：普通应用通�
 #### 故障恢复
 
 注入符号不存在、`mprotect()` 失败、island 耗尽、buffer 满、重复安装和卸载并发。这些场景下应用应继续运行，诊断平台收到明确状态码；Hook 失败后还继续解引用空的原函数指针，就是把观测故障升级成业务崩溃。
+
+<!-- gracker-diagram: ch15-10-26-hook-validation -->
+![Hook 的四层验证与故障降级](../../assets/diagrams/ch15/ch15-10-26-hook-validation.png)
+
+图：依次确认命中、语义、开销与故障恢复，让采集结果有可核对的可信边界。 四组设备实验均需真实执行；本章的主机语法与 mock 检查不代表 Android Hook 已安装或性能已测量。
 
 ### 选型建议
 

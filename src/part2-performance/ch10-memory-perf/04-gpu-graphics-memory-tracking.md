@@ -69,6 +69,11 @@ last_consolidated_at: '2026-08-11'
 
 Android 没有一个能回答全部图形内存问题的数字。`dumpsys meminfo` 按进程 PSS（按引用者比例分摊共享页）和 memtrack（厂商图形内存记账接口）分类，`dumpsys gpu --gpumem` 读取驱动上报的 GPU 地址空间总量，DMA-BUF 描述设备间共享的 buffer，Vulkan tracker 记录 API 级分配事件。它们可能同时覆盖同一块资源，也可能各自漏掉一部分。
 
+<!-- gracker-diagram: ch10-04-01-counter-questions -->
+![图形内存数字先限定问题](../../assets/diagrams/ch10/ch10-04-01-counter-questions.png)
+
+图：同一资源可以进入多套计数，覆盖范围也可能不同。先记录采集接口、build、进程和共享关系，再解释增长。
+
 排查图形内存增长时，先给每个数字补上四项限定：采集接口、设备与系统 build（构建版本）、被归因的进程、资源是否共享。少了这些限定，`Graphics = 120 MB` 既说不清物理内存有多少，也证明不了应用在泄漏。
 
 ## 1. 先区分资源，再选择计数器
@@ -76,6 +81,11 @@ Android 没有一个能回答全部图形内存问题的数字。`dumpsys meminf
 ### 1.1 两类常见图形分配
 
 `GraphicBuffer` / `HardwareBuffer` 由 Gralloc（图形缓冲区分配器）创建，通常以 DMA-BUF 文件描述符跨进程和硬件模块共享。producer（生产者）、SurfaceFlinger、显示控制器、相机、视频编解码器与 GPU 可以引用同一个 buffer；它是否映射到 CPU 地址空间、GPU 地址空间或两者，取决于 usage（用途标志）、mapper（映射接口）和驱动。
+
+<!-- gracker-diagram: ch10-04-02-shared-buffer -->
+![同一个共享 buffer 可被多个进程导入](../../assets/diagrams/ch10/ch10-04-02-shared-buffer.png)
+
+图：示意同一 DMA-BUF 被生产者、合成器和设备共同引用；对象共享不代表多份独立物理分配，也不保证 CPU 与 GPU 映射集合相同。
 
 GPU 驱动还会管理 API 私有资源，例如纹理、render target（渲染目标）、Vulkan device memory（设备内存）、命令与内部缓存。这类资源可能没有可供应用检查的 DMA-BUF fd（文件描述符），也可能采用厂商专用分配器。
 
@@ -90,6 +100,11 @@ AOSP 没有统一的用户态“显存分配器”或“显存碎片整理器”
 
 这些资源不能只按 Java 对象数量换算。一个对象可能没有独立 backing allocation（底层内存分配），多个对象也可能共享同一个 DMA-BUF。
 
+<!-- gracker-diagram: ch10-04-03-resource-paths -->
+![逻辑图片可沿不同分配路径出现](../../assets/diagrams/ch10/ch10-04-03-resource-paths.png)
+
+图：Java 对象数不能换算全部图形字节数。软件像素、硬件 Bitmap 与媒体/Vulkan 资源需要按实际 backing 路径查证。
+
 ### 1.2 同一资源在不同工具里的视角
 
 | 工具或指标 | 主要回答的问题 | 不能直接回答的问题 |
@@ -103,6 +118,11 @@ AOSP 没有统一的用户态“显存分配器”或“显存碎片整理器”
 | ART / native heap profile | Bitmap、Surface 等持有者或 wrapper（包装对象）的引用与调用栈 | DMA-BUF、驱动私有页的完整字节数 |
 
 不同工具的数字不能直接相加。进程 GPU 总量可能把跨进程 import（导入的共享资源）重复计入，memtrack 则要求按 PSS 规则处理共享、排除类型间重叠。
+
+<!-- gracker-diagram: ch10-04-04-tool-selection -->
+![按增长对象选择证据入口](../../assets/diagrams/ch10/ch10-04-04-tool-selection.png)
+
+图：工具选择按问题分流，不表示每个场景必须依次运行所有工具。采样创建栈不能代替存活引用图。
 
 ## 2. `dumpsys meminfo`：Graphics 摘要由什么组成
 
@@ -124,6 +144,16 @@ Android 17 的 `Debug.MemoryInfo.getSummaryGraphics()` 把三项 private memory�
 
 详细表里还可能出现 `Other mtrack`，它来自 memtrack 的 `MULTIMEDIA`、`CAMERA` 与 `OTHER` 分类，不属于 App Summary 的 `Graphics` 项。旧工具或 OEM 定制输出的标签可能不同，分析报告应保存原始文本。
 
+<!-- gracker-diagram: ch10-04-05-graphics-sum -->
+![Graphics 摘要按三个分类字段求和](../../assets/diagrams/ch10/ch10-04-05-graphics-sum.png)
+
+图：固定 r1 的 Graphics 摘要使用三个分类的 private clean + private dirty；mtrack 的填值方式需继续看 JNI，字段名不证明 backing 全部物理私有。
+
+<!-- gracker-diagram: ch10-04-06-memtrack-fields -->
+![同一 HAL 上报值进入多个 Framework 字段](../../assets/diagrams/ch10/ch10-04-06-memtrack-fields.png)
+
+图：固定源码链按 HAL → libmemtrack → JNI → Java 核对。HAL 缺失、错误分类或不完整覆盖会影响最终结果。
+
 ### 2.2 `SMAPS_UNACCOUNTED` 的设计目的
 
 Android 17 的 `android_os_Debug.cpp` 调用以下三个 libmemtrack 聚合函数：
@@ -135,6 +165,16 @@ Android 17 的 `android_os_Debug.cpp` 调用以下三个 libmemtrack 聚合函�
 它们只累加带 `MemtrackRecord.FLAG_SMAPS_UNACCOUNTED` 的记录。该标志表示相应内存尚未由 smaps 计入，可避免 `Debug.MemoryInfo` 重复统计同一映射。
 
 `IMemtrack.aidl` 对类别给出了更具体的要求：
+
+<!-- gracker-diagram: ch10-04-07-unaccounted-types -->
+![SMAPS_UNACCOUNTED 按类型补充](../../assets/diagrams/ch10/ch10-04-07-unaccounted-types.png)
+
+图：HAL 要避免类型重叠，GRAPHICS 的 CPU/GPU DMA-BUF 集合也要去交集。VM_PFNMAP 等 smaps 无法统计的映射需要相应补充。
+
+<!-- gracker-diagram: ch10-04-08-three-capacities -->
+![PSS、GPU 总量与 inode 容量分别解释](../../assets/diagrams/ch10/ch10-04-08-three-capacities.png)
+
+图：PSS 分摊、驱动 GPU-addressable 总量和 DMA-BUF 对象容量回答不同问题。inode 去重不等于物理驻留页去重，也不能与 Graphics 建等式。
 
 - `GRAPHICS + SMAPS_UNACCOUNTED` 报告该 PID 的 CPU-mapped 与 GPU-mapped（映射到 CPU/GPU 地址空间的）DMA-BUF PSS，并去掉两个集合的交集；
 - `GL + SMAPS_UNACCOUNTED` 报告该 PID 未被 smaps 统计的 GPU private allocation（GPU 私有分配）；
@@ -168,6 +208,16 @@ adb shell dumpsys gpu --gpumem
 输出中的 `Global total` 与各项 `Proc PID total` 是原始字节数。若驱动没有发 tracepoint、BPF 程序未加载或 map 初始化失败，命令会返回空 map 或初始化失败；这种设备上不能把 0 当作有效测量。
 
 这条命令适合回答“增长集中在哪个 PID”。它没有 allocation ID（分配标识）、格式、调用栈或资源名称，也不能展示驱动内部碎片。定位创建点还要依赖 API 级 tracker、应用埋点或厂商工具。
+
+<!-- gracker-diagram: ch10-04-09-bpf-update -->
+![驱动事件经 BPF 保存最新上报值](../../assets/diagrams/ch10/ch10-04-09-bpf-update.png)
+
+图：图只表示已实现相应 tracepoint 的驱动路径。map 容量、初始化、事件与读取状态都会影响可见性。
+
+<!-- gracker-diagram: ch10-04-10-bpf-data-quality -->
+![map 缺项、零事件与失败不是同一结果](../../assets/diagrams/ch10/ch10-04-10-bpf-data-quality.png)
+
+图：零事件会删除 key；缺少全局条目时可显示 N/A。读取中途失败还可能留下部分输出，不能把命令成功退出当成完整性证明。
 
 ### 3.2 Perfetto 的初始值与增量
 
@@ -212,12 +262,37 @@ ORDER BY g.ts, p.pid;
 
 `gpu_memory` 是驱动上报的总量，不是 PSS。查询结果为空时，应先检查 trace 配置和设备 tracepoint 支持，再检查 SQL；直接把 `counter` 与通用 `track` 按进程轨道连接，会得到错误的归属关系。
 
+<!-- gracker-diagram: ch10-04-11-snapshot-stream -->
+![初始遍历值与后续事件补足时间覆盖](../../assets/diagrams/ch10/ch10-04-11-snapshot-stream.png)
+
+图：快照线程在启动后逐项遍历，各条目有自己的 MONOTONIC 时间；持续变化来自另一份 ftrace 配置。两者都不能自动补回丢失数据。
+
+<!-- gracker-diagram: ch10-04-12-configuration-gates -->
+![采集片段需要完整配置与可用性证据](../../assets/diagrams/ch10/ch10-04-12-configuration-gates.png)
+
+图：配置能序列化只验证 schema；不会证明 Android 设备能采到所有事件或具备相应权限。
+
+<!-- gracker-diagram: ch10-04-13-sql-gpu-dimension -->
+![多 GPU 查询需要保留轨道维度](../../assets/diagrams/ch10/ch10-04-13-sql-gpu-dimension.png)
+
+图：固定 r1 标准库表没有 GPU 列。修订查询从 track 的 gpu/upid 维度取值，在每个 track_id 内做 LEAD，避免跨 GPU 计算持续时间。
+
+<!-- gracker-diagram: ch10-04-14-parser-version -->
+![同一合成 trace 暴露解析器版本差异](../../assets/diagrams/ch10/ch10-04-14-parser-version.png)
+
+图：主机合成测试仅用于验证解析与 SQL。v54 将同 PID 双 GPU 样本合到一轨，v58.2 保留双轨；丢失维度后无法由查询补回。
+
 ### 3.3 其他 GPU 数据源各有用途
 
 - `gpu.counters` 采集厂商定义的频率、利用率、带宽等硬件 counter；counter 名称和支持范围依设备而变。
 - `gpu.renderstages` 提供 graphics/compute submission（图形与计算提交）的执行阶段和时长，不保证存在名为“texture upload”的统一 stage。
 - `vulkan.memory_tracker` 记录 Vulkan 的 driver/device memory allocation 与 bind（绑定）事件，适合观察 Vulkan 资源生命周期；它不覆盖 OpenGL、HWUI、Camera 和 SurfaceFlinger 的全部资源。
 - 部分旧版或厂商内核还导出 DMA heap allocation/free tracepoint；`android17-6.18-2026-06_r6` 的通用锚点不提供一条可移植的 `dmabuf_heap/dma_heap_stat` 事件，采集配置应以目标设备的 `available_events` 为准。
+
+<!-- gracker-diagram: ch10-04-15-gpu-data-sources -->
+![GPU 数据源按目标证据选择](../../assets/diagrams/ch10/ch10-04-15-gpu-data-sources.png)
+
+图：硬件 counter、提交阶段和 Vulkan allocation/bind 的含义不同。厂商注册名可能带后缀，配置要与设备服务中的名字精确匹配。
 
 `dumpsys gfxinfo` 关注帧时间、HWUI 状态和渲染统计。它可以与内存时间线对齐，却不提供一份通用 GPU 内存总账。
 
@@ -244,6 +319,11 @@ done
 
 Linux 没有通用的 `/proc/PID/dmabuf` 文件。设备私有节点即使存在，也不能写成 Android 平台保证。
 
+<!-- gracker-diagram: ch10-04-16-fdinfo-evidence -->
+![fdinfo 证明的是观测时的文件引用](../../assets/diagrams/ch10/ch10-04-16-fdinfo-evidence.png)
+
+图：脚本会处理多个 pidof 结果并保留 inode 线索。创建点与完整持有链仍需应用记录、API tracker 或其他引用证据。
+
 ### 4.2 全局 sysfs：系统里有哪些唯一 DMA-BUF
 
 在 `CONFIG_DMABUF_SYSFS_STATS` 开启时，`/sys/kernel/dmabuf/buffers/<inode>/` 提供 `size` 与 `exporter_name`。按 inode 生成一份快照：
@@ -261,6 +341,11 @@ done
 
 sysfs（内核对象信息文件系统）覆盖系统中的 DMA-BUF，适合按 inode 去重和按 exporter 聚合。它不保存创建调用栈；把 inode 与进程 fd 对上，只能确认当前持有关系，不能证明最初由哪个分配器或组件创建。Android user build 还可能限制 shell 读取。
 
+<!-- gracker-diagram: ch10-04-17-sysfs-snapshot -->
+![sysfs 汇总对象容量，并保留读取缺口](../../assets/diagrams/ch10/ch10-04-17-sysfs-snapshot.png)
+
+图：目录、对象和属性读取都可能变化；输出不是完全原子、无遗漏快照，也不是实际驻留物理页统计。
+
 ### 4.3 debugfs：实验室设备上的完整快照
 
 实验室设备已 root 且挂载 debugfs 时，可以直接读全局列表：
@@ -271,11 +356,21 @@ adb shell su 0 cat /sys/kernel/debug/dma_buf/bufinfo
 
 debugfs（内核调试文件系统）不适合作为生产接口，格式也不承诺稳定。厂商 GPU 节点同样受驱动、内核版本和 SELinux 约束；报告应记录设备路径与原始输出，避免把 Adreno、Mali、PowerVR 的私有路径互相套用。
 
+<!-- gracker-diagram: ch10-04-18-access-paths -->
+![全局调试接口受配置和权限约束](../../assets/diagrams/ch10/ch10-04-18-access-paths.png)
+
+图：标准 fdinfo、可选 sysfs 和实验室 debugfs 有不同前提。厂商路径还需按对应 GPU、内核、SELinux 与格式记录。
+
 ## 5. 从增长曲线定位资源持有者
 
 ### 5.1 先辨认缓存、延迟释放与泄漏
 
 图形资源释放常受三类延迟影响：
+
+<!-- gracker-diagram: ch10-04-19-deferred-release -->
+![释放请求之后还要核对异步使用与引用](../../assets/diagrams/ch10/ch10-04-19-deferred-release.png)
+
+图：示意队列任务完成与引用清理可能延后于页面退出。缓存平台、异步释放和泄漏需要多轮同状态比较，不能靠一次 System.gc 判断归零。
 
 - GPU command 尚未完成，driver 要等待 fence signal（同步栅栏发出完成信号）后才回收 backing memory；
 - BufferQueue 的 producer、consumer（消费者）或 SurfaceFlinger 仍持有 slot（缓冲槽位）；
@@ -296,17 +391,37 @@ debugfs（内核调试文件系统）不适合作为生产接口，格式也不�
 
 报告要保存原始值与差值。若只有 App Summary 的 `Graphics` 一个数字，就无法区分 Gfx dev、EGL mtrack 和 GL mtrack。
 
+<!-- gracker-diagram: ch10-04-20-diagnostic-loop -->
+![用同状态多轮实验关联增长资源](../../assets/diagrams/ch10/ch10-04-20-diagnostic-loop.png)
+
+图：该流程是诊断方法，不给出设备通用阈值。一个 Graphics 摘要值不能分辨其三个分类来源。
+
 ### 5.3 Java 与 native profile 能发现什么
 
 ART heap dump 适合查找仍被引用的 `Bitmap`、`Drawable`、`Surface`、`SurfaceTexture`、`ImageReader`、`Image`、`HardwareBuffer` 及业务缓存。native heap profile 可以发现 wrapper、命令构建对象和应用自己的 allocator（内存分配器）。
 
 heapprofd 只追踪 `malloc` 家族或显式接入 custom allocator 的分配。Gralloc DMA-BUF 与 GPU driver private allocation 不受普通 malloc hook 管理；heap profile 里的 wrapper 字节数不能代替 GPU backing size。它的用途是找到持有者和创建栈，再用 GPU/DMA-BUF 指标确认 backing memory 是否同步变化。
 
+<!-- gracker-diagram: ch10-04-21-wrapper-backing -->
+![创建栈、保留引用与 backing 指标分开](../../assets/diagrams/ch10/ch10-04-21-wrapper-backing.png)
+
+图：分配 profile 可定位覆盖范围内的创建栈，heap dump 查 Java 引用；GPU/DMA-BUF 指标用于对齐 backing，不能由 wrapper 字节换算全部驱动资源。
+
 ### 5.4 16 KB kernel page 的精确边界
 
 `android17-6.18-2026-06_r6` 的 `dma_heap_buffer_alloc()` 使用 `__PAGE_ALIGN(len)`，DMA heap allocation 的起止按 kernel page（内核页）对齐。16 KB kernel page 下，小 allocation 尾部向上取整后的额外字节数上限更高。
 
+<!-- gracker-diagram: ch10-04-22-page-rounding -->
+![按页取整只解释一部分容量差异](../../assets/diagrams/ch10/ch10-04-22-page-rounding.png)
+
+图：示意数学例子：同为 17 KiB 请求，按 4 KiB 页取整得到 20 KiB，按 16 KiB 页得到 32 KiB；只验证页取整，不冒充实际 Gralloc 分配或固定增长率。
+
 这条规则不能推导出统一的“图形内存增加百分比”。Gralloc 的 stride（行跨度）、plane（图像分量平面）、格式、压缩、tiling（分块布局）、secure heap（受保护内存区域）和驱动页表粒度都可能带来比尾部 page rounding（按页向上取整）更大的差异。比较 4 KB 与 16 KB build 时，应以 DMA-BUF inode size 和 GPU counter 实测，并按 allocation 尺寸分布解释差异。
+
+<!-- gracker-diagram: ch10-04-23-layout-capacity -->
+![像素公式与真实 allocation 有多层差异](../../assets/diagrams/ch10/ch10-04-23-layout-capacity.png)
+
+图：width × height × bytesPerPixel 只适合明确格式的逻辑估计；实际容量还受多平面、行跨度、压缩、tile、保护策略和页对齐影响。
 
 ## 6. 资源类型与修复方向
 
@@ -314,17 +429,47 @@ heapprofd 只追踪 `malloc` 家族或显式接入 custom allocator 的分配。
 
 `Bitmap.Config.HARDWARE` 在 API 26 引入，像素存放在 graphic memory（图形内存）中，Bitmap 不可变。它能避免每次绘制都从软件像素上传纹理，但会占用图形资源，并限制像素读写和部分 Canvas 操作。
 
+<!-- gracker-diagram: ch10-04-24-hardware-bitmap -->
+![Hardware Bitmap 的引用和图形像素分开](../../assets/diagrams/ch10/ch10-04-24-hardware-bitmap.png)
+
+图：Hardware Bitmap 不可变，像素处于图形内存；Java 对象的可达性与图形资源是否仍被其他使用者引用，需要分别核对。
+
 现代 Android 上不应把 `Bitmap.recycle()` 当作 Hardware Bitmap 的常规释放协议。Java 与 native 引用消失后，runtime 会回收 backing resource；手动 recycle 只有在确认 View、Canvas、RenderThread 和缓存都不再使用该 Bitmap 时才安全。官方 API 特别提醒：硬件加速会缓存绘制命令，调用 `invalidate()` 后还要经过一次 draw pass（绘制过程），旧 Bitmap 才能确认退出使用。
 
 图片页面的优先动作是按显示尺寸解码、限制内存缓存权重、在页面和请求取消时移除引用，并让 Glide/Coil 等图片库管理其资源池。`prepareToDraw()` 可以提前触发尚未上传 Bitmap 的 RenderThread 上传，降低首次绘制抖动；它不会降低驻留内存。
+
+<!-- gracker-diagram: ch10-04-25-bitmap-release -->
+![Bitmap 的回收与重配置不是同一协议](../../assets/diagrams/ch10/ch10-04-25-bitmap-release.png)
+
+图：图按 Bitmap 官方方法文档区分语义；不建议用任意延迟或一次 invalidate 作为所有图形资源的释放完成信号。
+
+<!-- gracker-diagram: ch10-04-26-prepare-upload -->
+![prepareToDraw 将部分上传工作提前](../../assets/diagrams/ch10/ch10-04-26-prepare-upload.png)
+
+图：API 24 起 prepareToDraw 可异步触发 RenderThread 上传；函数返回不代表上传完成，像素修改后还可能需要重传。示意轨道不提供性能测量。
 
 ### 6.2 Surface、BufferQueue 与媒体资源
 
 应用自己创建的 `Surface`、`SurfaceTexture`、`ImageReader`、`Image`、`MediaCodec` 和相机 session 要按 API 生命周期关闭。`ImageReader.acquire*()` 得到的每个 `Image` 都需要及时 `close()`；未关闭的 Image 会占用 `maxImages` 配额和对应 buffer。
 
+<!-- gracker-diagram: ch10-04-27-media-ownership -->
+![Surface 与媒体对象各有释放责任](../../assets/diagrams/ch10/ch10-04-27-media-ownership.png)
+
+图：ImageReader 的已获取 Image 要及时 close，其他 API 按各自生命周期关闭。Surface 本地释放、SurfaceTexture 释放与 backing 完全回收是不同边界。
+
 Surface 销毁后，buffer 还可能由 consumer 或 fence 持有。看到内存值延迟下降时，应同时核对 `onSurfaceTextureDestroyed()`、codec stop/release、camera session close、GPU counter 和页面对象是否离开 Activity。
 
 BufferQueue 没有适用于所有 producer/consumer 的固定“三缓冲”结论。可用 slot 与同时分配的 buffer 数由 max dequeued（生产者最多取出的槽位）、min undequeued（必须留在队列中的最少槽位）、max acquired（消费者最多持有的槽位）、异步模式和 producer 行为共同决定。每个 buffer 的逻辑 payload（有效像素数据）可用 `width × height × bytesPerPixel` 粗估，真实 allocation 还要看 stride、plane、格式、压缩和对齐。
+
+<!-- gracker-diagram: ch10-04-28-texture-callback -->
+![TextureView 回调返回值决定 SurfaceTexture 释放方](../../assets/diagrams/ch10/ch10-04-28-texture-callback.png)
+
+图：销毁回调返回 true 时由 TextureView 释放 SurfaceTexture；返回 false 时调用方保留责任。SurfaceTexture.release 后仍可能有外部 buffer 引用。
+
+<!-- gracker-diagram: ch10-04-29-bufferqueue-count -->
+![BufferQueue 数量由配置和状态共同决定](../../assets/diagrams/ch10/ch10-04-29-bufferqueue-count.png)
+
+图：固定 r1 的上限由 maxAcquired、maxDequeued、async/cannotBlock 与 mMaxBufferCount 共同限制；这不是所有场景固定分配三块 buffer 的结论。
 
 ### 6.3 OpenGL ES 与 Vulkan
 
@@ -334,21 +479,61 @@ Vulkan 要区分 object 与 bound memory（绑定到对象的设备内存）：�
 
 RenderScript 已在 API 31 废弃。维护历史代码时仍需销毁 `Allocation` 等对象，新项目应迁移到当前图形、计算或媒体 API。
 
+<!-- gracker-diagram: ch10-04-30-gl-objects -->
+![GL 共享对象与 context 容器分开销毁](../../assets/diagrams/ch10/ch10-04-30-gl-objects.png)
+
+图：GL ES3.2 允许纹理、buffer、renderbuffer 等共享，FBO 是不共享容器。删除名称后，其他绑定或容器附件还可能持有底层对象。
+
+<!-- gracker-diagram: ch10-04-31-egl-surface -->
+![EGL Surface 有独立的 current 状态边界](../../assets/diagrams/ch10/ch10-04-31-egl-surface.png)
+
+图：流程中的条件描述 EGL API 语义，不承诺所有 driver backing 或跨进程资源在调用返回时归零。
+
+<!-- gracker-diagram: ch10-04-32-vulkan-lifetime -->
+![Vulkan object 与 device memory 分别管理](../../assets/diagrams/ch10/ch10-04-32-vulkan-lifetime.png)
+
+图：销毁 VkImage 与释放 VkDeviceMemory 是不同操作；子分配还需归还应用 allocator。两者都要满足已提交使用完成、引用与同步规则。
+
+<!-- gracker-diagram: ch10-04-33-wait-idle -->
+![等待相关 fence 与全设备空闲粒度不同](../../assets/diagrams/ch10/ch10-04-33-wait-idle.png)
+
+图：wait-idle 会等待逻辑设备所有队列；按依赖用 fence 可只等待相关使用完成。以下仅示意等待粒度，不构造测量时长或通用性能收益。
+
 ### 6.4 SurfaceView 与 TextureView
 
 `SurfaceView` 由独立 Surface layer 提供内容，系统有机会交给 Hardware Composer（硬件合成器）；`TextureView` 把 SurfaceTexture 内容作为 View 层级的一部分由 HWUI 采样，因此支持普通 View 的 alpha、旋转和裁剪，但可能增加采样与合成工作。
 
 内存上不能给出固定的“TextureView 一定更大”排序：SurfaceView 自己也有 BufferQueue，TextureView 所在应用窗口也需要 window buffers。分辨率、格式、queue 深度、overlay 资格（能否直接交给硬件合成器）和内容路径共同决定总量。相机和视频页面应在同一设备上比较进程 GPU counter、DMA-BUF inode 与帧时间，再结合变换、HDR、DRM 和生命周期需求选择。
 
+<!-- gracker-diagram: ch10-04-34-view-composition -->
+![SurfaceView 与 TextureView 路径不同](../../assets/diagrams/ch10/ch10-04-34-view-composition.png)
+
+图：SurfaceView 可由合成策略交给 HWC；TextureView 在硬件加速 View 路径采样内容。能力与 overlay 资格受版本和内容限制，不能只按组件名比较内存。
+
 ## 7. Game、Camera 与 AR 的预算方法
 
 游戏的纹理、render target、depth/stencil（深度/模板缓冲）、swapchain image（交换链图像）、staging buffer（传输暂存缓冲区）与 allocator block（分配器管理的大块内存）都要纳入预算。
+
+<!-- gracker-diagram: ch10-04-35-game-budget -->
+![游戏预算按资源与 allocator 大块列账](../../assets/diagrams/ch10/ch10-04-35-game-budget.png)
+
+图：纹理、render target、深度模板、swapchain、staging 与 allocator block 均需纳入对应预算，并标明共享和子分配，防止重复相加。
 
 引擎的 texture streaming（纹理流式加载）或 Vulkan suballocator 只改变资源管理方式，不会让 driver fragmentation（驱动内部碎片）对 AOSP 可见。AGI frame profile 可以查看单帧的纹理、shader、render target 和 RAM/GPU memory；系统级趋势仍要用 Perfetto 或 `--gpumem`。
 
 Camera2 / CameraX 的每路输出 Surface 都可能维护独立 buffer 集合。预览、录制、分析、JPEG/RAW 同时开启时，应按每路分辨率、格式、`maxImages` 和 queue 行为计算，并确认分析线程及时关闭 Image。只按相机传感器分辨率乘一个 buffer 数会漏掉多个 plane、stride 和各 consumer 的独立队列。
 
+<!-- gracker-diagram: ch10-04-36-camera-budget -->
+![相机预算按输出路径分别核对](../../assets/diagrams/ch10/ch10-04-36-camera-budget.png)
+
+图：预览、录制、分析与 JPEG/RAW 的输出路径可能有不同 buffer 集合；不能只用传感器分辨率乘一个固定数量推导全部容量。
+
 AR 场景还包含相机输入、环境纹理、depth（深度数据）、mesh（网格）、点云与 render target。切换 session 后若 GPU 总量和 DMA-BUF inode 都持续增加，应同时查 session 持有者、Surface/Image 生命周期和引擎资源表，避免只从 Java heap 寻找答案。
+
+<!-- gracker-diagram: ch10-04-37-ar-session -->
+![AR 切换 session 要同时查输入与渲染资源](../../assets/diagrams/ch10/ch10-04-37-ar-session.png)
+
+图：这是面向具体 AR 资源表的诊断方法；只有趋势不能单独证明某种驱动泄漏，仍需所有权和销毁证据。
 
 ## 8. Android 17 边界与发布检查
 
@@ -362,7 +547,17 @@ Android 17 的 AOSP 图形内存链提供这几个观测点：
 
 它们不提供跨厂商统一的 allocation call stack（分配调用栈）、资源名或碎片率。AOSP 也没有应用可调用的 GPU 内存 compact（规整）API。需要精确到纹理、VkImage 或厂商 heap 时，应使用应用资源注册表、AGI、Vulkan tracker 或目标 GPU 的官方工具。
 
+<!-- gracker-diagram: ch10-04-38-observability-boundaries -->
+![系统观测点与创建归因不是同一层](../../assets/diagrams/ch10/ch10-04-38-observability-boundaries.png)
+
+图：AOSP 的 mtrack、GpuMem 和 DMA-BUF 提供不同范围的分类或总量。精确资源名、创建栈和驱动碎片率还需 API tracker、资源表或厂商工具。
+
 发布前至少确认：
+
+<!-- gracker-diagram: ch10-04-39-release-check -->
+![发布检查保留可复查证据](../../assets/diagrams/ch10/ch10-04-39-release-check.png)
+
+图：清单用于验收整条证据链；不能用一个 Graphics 数字、一次 GC 或单次峰值替代完整诊断。
 
 - 指标名称、单位、设备 build、GPU driver 与采样时间写进报告。
 - `Graphics` 摘要与 `EGL mtrack`、`GL mtrack`、`Gfx dev` 没有混写。

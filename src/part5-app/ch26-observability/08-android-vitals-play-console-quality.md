@@ -117,6 +117,16 @@ Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计�
 
 Play 阈值只是发版暂停规则之一。一个版本可能尚未达到该阈值，却已经相对上个版本明显恶化；这时内部灰度指标应先阻止继续放量。反过来，Play 上的存量问题也可能在 28 天窗口中继续出现，不能仅凭当天内部指标恢复就宣布问题结束。
 
+<!-- gracker-diagram: a293-01-vitals-apm-and-platform-contracts -->
+![Play 政策、平台事实与内部监控保留三套口径](../../assets/diagrams/ch26/a293-01-vitals-apm-and-platform-contracts.png)
+
+图：核心指标是否列入、何种应用适用、可见性何时生效是三个检查项；内存/代码优化关注2027年2月。
+
+<!-- gracker-diagram: a293-07-memory-and-code-optimization-metric-scope -->
+![内存分位数、DEX 优化比例与坏会话率分别存储](../../assets/diagrams/ch26/a293-07-memory-and-code-optimization-metric-scope.png)
+
+图：内存与代码优化的2027年2月可见性时间单独保存；本地Analyzer优化前分数不保证与Vitals一致。
+
 ## 28 天窗口、整体阈值与机型阈值
 
 Google Play 每天检查 core vitals，通常依据最近 28 天的数据评估质量；Crash 和 ANR 的滚动比例按每日用户数加权。整体阈值与机型阈值约束的范围不同：整体越线可能影响所有设备上的可见性，机型越线主要影响对应设备。下表列出已生效的稳定性与电量阈值；内存指标按设备内存档、进程状态和应用/游戏类别另设阈值，其可见性生效时间见前述政策边界。
@@ -134,15 +144,30 @@ Vitals 的 user session（用户会话）按日聚合，与一次 launch（启�
 
 阈值附近还要注意比较符号。Crash 和 ANR 文档使用 “at least”，达到阈值即属于 bad behavior；partial wake lock 与表盘耗电文档使用 “more than”。内部暂停阈值可以比官方阈值更严格，但字段名必须表明它属于团队规则，不能写成 Play 官方阈值。
 
+<!-- gracker-diagram: a293-02-threshold-operators-device-scopes -->
+![Crash / ANR 阈值同时绑定设备形态和比较符号](../../assets/diagrams/ch26/a293-02-threshold-operators-device-scopes.png)
+
+图：Crash/ANR使用at least，电池规则使用more than；团队更早暂停线单独命名，不能改写官方门槛。
+
 ### Partial wake lock 的当前规则
 
 Partial wake lock（局部唤醒锁）在设备屏幕关闭后仍让 CPU 继续运行，因此持有过久会阻止设备进入低功耗状态。Android Vitals 将所有符合统计条件的 partial wake lock 时长相加：若它们在 24 小时内累计达到 2 小时或以上，这个会话被判为 excessive。统计时只计算应用处于后台、或正在运行前台服务期间持有锁的时间；现行文档列出的豁免包括音频、定位和由用户发起的 JobScheduler API 等具有明确用户收益的场景。28 天内 excessive 会话超过 5%，可能影响 Play 可见性。
 
 这一政策从 2026 年 3 月 1 日起逐步实施可见性约束。旧资料中的“3 小时”或“仍处于不影响可见性的 beta”已不适合作为当前结论；诊断时应以 2026-09-21 更新的 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock) 页面和 [Android Vitals 总览](https://developer.android.com/topic/performance/vitals) 为准。
 
+<!-- gracker-diagram: a293-03-partial-wake-lock-session-classification -->
+![Wake lock：先算合格持有时长，再算受影响会话率](../../assets/diagrams/ch26/a293-03-partial-wake-lock-session-classification.png)
+
+图：2026年3月1日起逐步执行可见性约束；统计豁免不意味着资源生命周期可以不受控。
+
 ### 表盘耗电的当前规则
 
 表盘会话的电量消耗超过 4.44%/hour 时，计入 excessive battery usage；官方给出的优化目标是 80% 会话低于 3.2%/hour。CPU 使用达到 90 秒/小时、partial wakelock 达到 18.5 秒/小时，是控制台为表盘提供的贡献因素。Play 没有把这两个数值设为所有 Android 应用的独立阈值，它们也不能替代手机应用的 wakelock 或 CPU 暂停阈值。
+
+<!-- gracker-diagram: a293-04-denominators-dau-session-and-watch-factors -->
+![用户、日会话、表盘贡献因素不是同一个分母](../../assets/diagrams/ch26/a293-04-denominators-dau-session-and-watch-factors.png)
+
+图：表盘优化目标为80%会话低于3.2%/小时；该专项不能推广所有Wear OS应用或手机应用。
 
 ## User-perceived Crash / ANR 与自建 Crash 上报的差异
 
@@ -169,6 +194,11 @@ Wear OS 的 user-perceived crash 有一项单独规则：官方 crash 文档将�
 
 ANR 不能只看一张堆栈。`Input dispatching timed out` 说明用户输入没有在系统规定时间内得到处理，根因可能发生在输入回调之外。主线程可能在同步 Binder、磁盘 I/O、锁竞争、类初始化或 CPU 密集计算中等待；应回到 ANR trace、Perfetto 和相邻线程状态判断。详细的稳定性归因见 20.1 节。
 
+<!-- gracker-diagram: a293-05-crash-anr-source-association -->
+![Play、系统和应用三层证据用弱关联协作](../../assets/diagrams/ch26/a293-05-crash-anr-source-association.png)
+
+图：手机user-perceived crash包含Activity或FGS活跃使用；手表另有后台崩溃计入口径。当前user-perceived ANR只计输入分发超时。
+
 ## 启动、渲染、LMK 与 Slow Sessions 的归因路径
 
 这些指标只给出症状和影响面。回查时先锁定版本与设备分组，再确认内部指标是否同向变化，然后查找可复现的内部 session（连续使用记录）或 trace，据此决定继续放量、设备降级还是回滚。
@@ -193,6 +223,11 @@ Frozen frame 与 ANR 使用不同判定条件。超过 700ms 的一帧会产生�
 User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 不会收到异常。Android 11 及以上的 `ApplicationExitInfo` 能补充历史退出原因，但查询到 `REASON_LOW_MEMORY` 仍只是诊断起点。设备上同时运行的进程、交换空间（swap）、内核回收压力和应用自身内存峰值都可能参与决策，详见 23.7 节。
 
 现行 LMK 页面把高于 1% 称为需要立即处理的警戒信号。该数字用于诊断优先级；Android Vitals 总览没有把 user-perceived LMK 列为 core vital，也没有为它声明商店可见性阈值，因此发版规则中应标成内部警戒线，不能写成 Play 政策门槛。
+
+<!-- gracker-diagram: a293-06-startup-rendering-slow-session-and-lmk -->
+![严重症状阈值与根因证据分层解释](../../assets/diagrams/ch26/a293-06-startup-rendering-slow-session-and-lmk.png)
+
+图：Slow Sessions根据SurfaceFlinger呈现间隔估计出帧节奏，不能用CPU frame time代替；700ms一帧也不是ANR判定。
 
 ## 功耗类 vitals 与后台任务治理
 
@@ -227,6 +262,11 @@ User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 
 每个团队都可以设置比 Play 更早的趋势预警，但预警值应由历史基线、当前样本量和可接受风险推导，并保留变更记录。直接把 1.09% 或 0.47% 乘一个固定系数，无法处理低流量版本、设备集中度和指标季节性。
 
 A/B 实验同样受质量暂停规则约束。内部 crash、ANR、启动、帧耗时和功耗数据用于实验期间早停；Android Vitals 用于外部复核和较长窗口的风险观察。实验统计与多重检验见 26.4 节。
+
+<!-- gracker-diagram: a293-08-release-harm-versus-data-insufficiency -->
+![发布动作由伤害证据和数据完整性共同决定](../../assets/diagrams/ch26/a293-08-release-harm-versus-data-insufficiency.png)
+
+图：官方may影响可见性不是每次立即降权；7天新出现问题标记与最长21天处理也不是继续放量保证。
 
 ## 数据延迟、采样盲区与误判边界
 
@@ -279,6 +319,16 @@ Play 与内部系统没有共享的事件标识，因此数据仓库应把 Play 
 查询规模也需要控制。官方建议应用越大、breakdown 越多，单次时间范围越短，以免读取过多数据而超时。
 
 分页时除 `pageToken` 外必须保持原查询参数不变；任务还应保存失败重试和缺口检查，避免一页失败后留下看似完整的曲线。
+
+<!-- gracker-diagram: a293-09-reporting-query-completeness-and-upsert -->
+![Reporting API 入仓：冻结查询身份，完整分页后提交](../../assets/diagrams/ch26/a293-09-reporting-query-completeness-and-upsert.png)
+
+图：Crash/ANR可DAILY/HOURLY，slow startup/rendering只DAILY；OS_BETA仅支持其规定维度，不共用万能请求。
+
+<!-- gracker-diagram: a293-10-aggregation-rounded-users-and-quality-incidents -->
+![入仓聚合值、内部事实与质量事件分开关联](../../assets/diagrams/ch26/a293-10-aggregation-rounded-users-and-quality-incidents.png)
+
+图：每次分页保留原查询参数；查整体用户数使用独立不拆分查询，计数与率不能套同一聚合公式。
 
 ## 技术质量政策与商店可见性风险
 

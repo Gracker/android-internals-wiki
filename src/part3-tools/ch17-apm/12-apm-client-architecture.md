@@ -61,6 +61,11 @@ Android 8—17 的应用都能采用以下队列、分片和上传模型；`Appl
 
 “千万级 DAU”改变的是发布风险：一个只在 0.1% 设备出现的采集器回归，也会覆盖大量用户；重试一旦缺少随机错峰，就会在同一时刻形成请求峰值；目标范围过宽的远程指令会迅速消耗系统预算和用户流量。端侧因此要同时控制三样东西：单进程开销、跨进程一致性，以及一次配置或版本发布能影响的设备范围。
 
+<!-- gracker-diagram: ch17-12-01-peak-budgets -->
+![峰值故障与三个控制范围](../../assets/diagrams/ch17/ch17-12-01-peak-budgets.png)
+
+图：故障期会同时增加事件、排队和重采集需求，因此分别限制进程、进程协作和发布人群。 以下预算与策略由 SDK 设计并实测，DAU 数量不能直接给出单机耗时上限。
+
 ## 1. 端侧引擎的职责与不可破坏约束
 
 我们先划清端和云的分工：端侧负责采集、准入、短期存储、受控上传和远程配置执行，聚合、长期检索、因果分析和告警留给服务端。设备上可以承担低成本过滤与摘要，复杂分析要放到业务线程之外。
@@ -84,6 +89,11 @@ Android 8—17 的应用都能采用以下队列、分片和上传模型；`Appl
 1. 业务线程不等待编码、文件、压缩、加密和网络。
 2. 所有内存、文件、重试和重样本都有上限。
 3. 高优先级故障证据有独立容量，普通指标再多也挤不进去。
+
+<!-- gracker-diagram: ch17-12-02-worker-boundary -->
+![从业务入口到慢副作用的线程边界](../../assets/diagrams/ch17/ch17-12-02-worker-boundary.png)
+
+图：业务入口只做最小事件和有界准入，编码、同步和网络交给受控 worker。 非挂起不等于 wait-free，也不保证固定纳秒上限；所有分配、队列和工作区均需预算。
 
 “业务线程不等待”指的是不在编码、文件这类慢操作上阻塞；至于每次调用的耗时，对象分配、CAS（Compare-And-Set，并发代码常用的原子比较后更新） 竞争、缺页（访问尚未驻留内存的页面）和线程调度都可能带来少量高延迟调用。所以我们要在目标低端机上实测入口 P50/P95/P99.9——分别对应 50%、95% 和 99.9% 的样本不高于该耗时——并给主线程路径配上自动降级。
 
@@ -159,6 +169,16 @@ Channel 被取消时，buffer 中尚未消费的 event 也会丢失。若使用 
 
 还有一条契约要记在 `trySend()` 失败的场景上：容量已满或 Channel 已关闭时，元素从未进入 Channel，官方明确此时不会调用这个回调，失败分支要自行计数；event 里也不要携带必须靠该回调释放的复杂资源。
 
+<!-- gracker-diagram: ch17-12-04-memory-budget -->
+![队列容量与 SDK 总内存分别核算](../../assets/diagrams/ch17/ch17-12-04-memory-budget.png)
+
+图：驻留 buffer、并发构造对象、在途批次和编码工作区分别计入内存。 4096 是 buffer 元素数上限，不是总事件数、对象字节数或持久化承诺。
+
+<!-- gracker-diagram: ch17-12-03-channel-admission -->
+![固定 SUSPEND 策略下的准入结果](../../assets/diagrams/ch17/ch17-12-03-channel-admission.png)
+
+图：固定4096容量与 SUSPEND 后，trySend 的成功、满和关闭分别统计。 ACCEPTED 只表示交付或入队；自定义丢弃策略可能成功同时丢样，且不代表持久化。
+
 ### 2.2 三级优先级准入
 
 单个 FIFO（First In, First Out，先进先出） 队列满载时，普通帧样本可能先占满所有 slot，随后到达的 crash breadcrumb（崩溃前留下的少量事件线索）就无处可放。更稳妥的准入模型把事件分成三级：
@@ -171,6 +191,11 @@ Channel 被取消时，buffer 中尚未消费的 event 也会丢失。若使用 
 
 P0 的容量同样要有上限：常见做法是很小的独立 ring，每类只保留最近 N 条，或覆盖最旧 breadcrumb。覆盖发生时把 dropped/overwritten count（丢弃数和覆盖数）记下来，服务端才能识别样本不完整。
 
+<!-- gracker-diagram: ch17-12-05-priority-reserves -->
+![三级优先级与独立故障容量](../../assets/diagrams/ch17/ch17-12-05-priority-reserves.png)
+
+图：P0 使用小而独立的故障容量，P1 留异常样本，P2 先抽样和丢弃。 保留容量同样有上限，覆盖与丢弃都须计数；普通事件入口不能替代 fatal signal 安全路径。
+
 ### 2.3 单写者简化文件一致性
 
 多个业务线程可以并发投递，而编码、分片、游标提交和文件轮转尽量由一个 spool writer（待上传文件的单写入线程）串行执行。active 分片仍在写入，sealed 分片已提交并停止修改，上传 worker 只读 sealed 文件。这样我们能把“记录发布”“文件提交”“上传删除”拆成清晰的状态：
@@ -181,6 +206,11 @@ IN_MEMORY -> ACTIVE -> SEALED -> UPLOADING -> ACKED -> DELETED
 ```
 
 状态迁移写入小型索引，或者干脆由文件名加一次原子 rename 表达。`ACKED` 表示服务端已确认完整接收，收到确认前就停在 `UPLOADING`。App 被杀后，下一次启动修复 `ACTIVE`，继续上传 `SEALED`，并把中断的 `UPLOADING` 恢复成可重试状态。
+
+<!-- gracker-diagram: ch17-12-06-spool-states -->
+![单写者提交与上传删除状态](../../assets/diagrams/ch17/ch17-12-06-spool-states.png)
+
+图：单写者修改 ACTIVE，上传器仅 claim 已提交 SEALED，完整确认后才删除。 状态索引和名称原子切换不自动等于掉电持久性，中断上传需按持久归属恢复。
 
 ## 3. 多进程与进程退出
 
@@ -196,6 +226,11 @@ files/apm/spool/<process-name-hash>/<process-instance-id>/
 
 同一个 mmap（memory-mapped file） active file 也只能有一个写进程：Java/Kotlin 的进程内锁只覆盖本进程，文件锁只提供互斥，记录何时算完整提交要靠 record commit protocol（记录何时算完整提交的协议） 自己约定。Mars xLog 的接入文档同样是这个要求：多进程各用独立日志文件。
 
+<!-- gracker-diagram: ch17-12-07-process-isolation -->
+![每进程独立写入与统一上传协调](../../assets/diagrams/ch17/ch17-12-07-process-isolation.png)
+
+图：每个 SDK 进程实例拥有独立队列与 active 分片，协调者扫描 sealed 文件并统一调度。 PID 会重用；WebView 隔离 renderer 不自动运行宿主 SDK，文件锁也不提供记录提交协议。
+
 ### 3.1 crash handler 的最小职责
 
 Java 未捕获异常、native signal、OOM（Out of Memory，内存耗尽） 和系统结束进程，这几种场景下能安全执行的操作各不相同：
@@ -207,6 +242,11 @@ Java 未捕获异常、native signal、OOM（Out of Memory，内存耗尽） 和
 
 因此 crash 前的 breadcrumb 要持续写入预分配区域。handler 只追加固定大小、无敏感正文的最小头，或设置预留的 crash marker（表示进程异常终止的固定标记），然后交还默认终止链。不要在 handler 中等待 Channel drain（排空队列）、执行全量 `MappedByteBuffer.force()`、上传网络或遍历所有线程。
 
+<!-- gracker-diagram: ch17-12-08-crash-minimum -->
+![故障现场的最小职责与下一次恢复](../../assets/diagrams/ch17/ch17-12-08-crash-minimum.png)
+
+图：故障前持续保留少量 breadcrumb，故障处理只做环境允许的最小动作。 Java、native signal、OOM 与 SIGKILL 能力不同，handler 不等待队列、同步大映射或网络。
+
 ### 3.2 下次启动补系统退出原因
 
 API 30 起可以通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。它能补充 reason、status、importance、timestamp，以及某些 ANR/native crash 的 trace stream（系统保存的诊断数据流）。
@@ -214,6 +254,11 @@ API 30 起可以通过 `ActivityManager.getHistoricalProcessExitReasons()` 读�
 RSS 是进程当时驻留在物理内存中的页面总量，PSS 会按共享比例分摊共享页面；两者都取自系统最近一次采样，不是死亡瞬间的精确值。trace 也可能因系统循环缓冲被后续记录覆盖而返回 `null`。
 
 SDK 要把系统退出记录与本地 `process_instance_id`、wall clock（可对应日历日期的系统时间） 时间窗口和上次已提交 breadcrumb 关联，并对已消费的 exit record 做幂等标记，让重复扫描不会重复上报同一条记录。这份证据要等重启后才拿得到，进程内 crash handler 仍是第一现场。
+
+<!-- gracker-diagram: ch17-12-09-exit-evidence -->
+![系统报告与实际死亡分别确认](../../assets/diagrams/ch17/ch17-12-09-exit-evidence.png)
+
+图：把系统记录与本地实例谨慎匹配，有限读取并持久化摘要后再标记已消费。 NativeTombstoneManager 可合成 Native 报告，reason 本身不能证明死亡；trace 也可能缺失或截断。
 
 ## 4. `mmap` 的收益与代价
 
@@ -235,6 +280,16 @@ Java `MappedByteBuffer.force()` 会把 read/write mapping 的修改强制写到�
 
 `force()` 之前，脏页何时写入由实现和内核决定；进程 crash 后内核仍在运行，这一点并不构成 Java API 的持久性契约。需要承诺的记录，必须有显式提交点。
 
+<!-- gracker-diagram: ch17-12-10-mmap-cache -->
+![mmap 热页、缺页与脏页回写](../../assets/diagrams/ch17/ch17-12-10-mmap-cache.png)
+
+图：mmap 把文件页映射进进程，热页访问、缺页与脏页回写具有不同成本。 省掉逐条 write syscall 不等于零 I/O 或固定低延迟；目标 kernel/build 仍须记录。
+
+<!-- gracker-diagram: ch17-12-11-durable-rename -->
+![记录同步、名称切换与目录持久性](../../assets/diagrams/ch17/ch17-12-11-durable-rename.png)
+
+图：先定义允许丢失窗口，再分别完成映射数据同步、封口与名称提交。 MappedByteBuffer.force 与 FileChannel.force 作用不同，rename 的原子性不能代替父目录同步。
+
 ### 4.2 可恢复分片的文件格式
 
 一个可恢复分片至少包含两类结构：superblock 是记录格式版本和已提交位置的元数据头，record 是单条事件的完整记录。
@@ -253,6 +308,11 @@ record:
 
 跨 crash 的 4 字节游标更新并不是一个 transaction（要么全部成功、要么全部撤销的事务）：文件系统、设备写入粒度和回写顺序都可能影响结果，所以恢复器必须能接受“数据写了但游标没写”“游标较新但尾部校验失败”这类组合。
 
+<!-- gracker-diagram: ch17-12-12-ab-commit -->
+![A/B superblock 的提交与恢复](../../assets/diagrams/ch17/ch17-12-12-ab-commit.png)
+
+图：记录数据先同步，再提交下一代 A/B 元数据，恢复只接受校验完整的已提交前缀。 checksum 正确不代表可信来源；提交点之外的完整字节也不自动成为已提交记录。
+
 ### 4.3 预分配、磁盘满与 `SIGBUS`
 
 `ftruncate()` 可以把文件的逻辑长度扩到指定值，但文件系统可能只创建 sparse region（尚未分配所有物理块的稀疏区），每个映射页未必都有 backing block。后续写 `MAP_SHARED`（修改会回到文件的共享映射）页面时，若空间耗尽，native 进程就可能收到 `SIGBUS`，即访问映射对象失败时触发的总线错误信号。
@@ -268,9 +328,19 @@ Mars 的 `mmap_util.cc` 会把新映射文件写零以实际分配 backing store
 - 清理器只删除 sealed/expired 文件，跳过当前正在写入的 active generation（正在写入的文件代次）；
 - 轮转前关闭旧 writer，再把分片标记为 sealed。
 
+<!-- gracker-diagram: ch17-12-13-preallocation-failures -->
+![预分配、映射失败与截短风险](../../assets/diagrams/ch17/ch17-12-13-preallocation-failures.png)
+
+图：在 worker 上准备有限文件，初始失败受控回退，活跃映射禁止截短和路径复用。 预分配也会失败；已建立映射后的 SIGBUS 不能统一靠 Java catch 恢复，unlink 与 truncate 不同。
+
 纯 Java 还要注意 mapping 生命周期：关闭创建 mapping 的 `FileChannel` 并不会让 `MappedByteBuffer` 立即失效，公开 API 也没有可依赖的同步 unmap（立即解除映射） 操作。
 
 可控的做法是长期复用一块很小的 active journal（按提交顺序追加的日志区），在 worker 上把已提交 block 复制成普通 sealed 文件后再复用 journal；若采用每分片 mapping，就限制同时存在的 mapping 数量，所有引用释放前不复用、不截断底层文件。
+
+<!-- gracker-diagram: ch17-12-14-mapping-lifetime -->
+![映射生命周期与小型 journal 复用](../../assets/diagrams/ch17/ch17-12-14-mapping-lifetime.png)
+
+图：长期小 journal 可在 worker 复制已提交块为普通 sealed 文件，再受控复用。 关闭 FileChannel 不使已有 mapping 立即失效；纯 Java 不依赖同步 unmap 或提前截短复用。
 
 `mmap` 本身只是缓冲与访问方式。crash-safe（进程异常终止后仍可判定并恢复有效记录）这个性质，要靠文件格式和恢复逻辑自己实现。Mars、Logan 的源码适合学习预分配、fallback（主路径失败后的受限备用方案） 和恢复思路；只复制一个 `mmap()` 调用，是学不到这些的。
 
@@ -289,7 +359,17 @@ runtime 在这里指随 App 一起运行的协议支持库。Protobuf Lite 适�
 
 Lite runtime 没有 full runtime 那种能在运行时读取消息结构、按字段动态访问的 descriptor/reflection（运行时读取消息结构并按字段动态访问） 能力，服务端工具要按“端侧没有完整描述信息”来设计。
 
+<!-- gracker-diagram: ch17-12-16-schema-evolution -->
+![字段编号、unknown 与 Lite 能力](../../assets/diagrams/ch17/ch17-12-16-schema-evolution.png)
+
+图：字段编号稳定且删除后 reserved，旧客户端保留未知值处理与批次上限。 Lite 不提供 full runtime 的 descriptor/reflection，不能据 schema 兼容忽略损坏输入限制。
+
 FlatBuffers 的“直接访问”指读取时无需先 unpack（展开） 成第二份对象表示；写入侧照样有成本，遍历快慢也要看具体访问模式。APM 多数场景是“写一次、服务端读一次”，值不值得引入，由写入成本、APK 体积、服务端生态和 schema 维护共同决定。
+
+<!-- gracker-diagram: ch17-12-15-codec-selection -->
+![按读写形状选择事件编码](../../assets/diagrams/ch17/ch17-12-15-codec-selection.png)
+
+图：JSON、Protobuf Lite 与 FlatBuffers 分别按可读性、事件批次与访问模式取舍。 二进制和直接访问不自动更快，定长格式也需自建兼容、工具与校验。
 
 一个常见的存储结构是外层 block envelope 加内部 event；envelope 包住一批事件，描述编码和安全参数：
 
@@ -318,6 +398,21 @@ block envelope:
 
 测试结果按事件类型保存；只有三个整数的 microbenchmark（针对极小代码路径的微型基准测试），推不出包含 stack trace、URL 或 header 的真实批次。
 
+<!-- gracker-diagram: ch17-12-17-block-envelope -->
+![压缩、AEAD 与可认证的 envelope](../../assets/diagrams/ch17/ch17-12-17-block-envelope.png)
+
+图：把有界事件批次压缩后用 AES-GCM 加密，规范化头字段作为 AAD。 同 key 下 IV 不重用，跨重启不从0重置；重传复用原密文，密钥建立另有协议。
+
+<!-- gracker-diagram: ch17-12-18-decode-budget -->
+![认证与解压上限分别执行](../../assets/diagrams/ch17/ch17-12-18-decode-budget.png)
+
+图：先限制格式、字段和工作区，认证成功后再解压并按真实输出持续计数。 未认证的长度字段不能直接用于大数组分配，认证成功也不免除资源上限。
+
+<!-- gracker-diagram: ch17-12-19-codec-benchmark -->
+![真实字段分布与编码成本验收](../../assets/diagrams/ch17/ch17-12-19-codec-benchmark.png)
+
+图：用真实字段分布分设备测编解码时间、字节与分配，并测兼容和异常输入。 只有三个整数的 microbenchmark 不能代表含调用栈、URL 或附件的真实批次。
+
 ## 6. 动态指令的能力与验签
 
 当我们需要追线上少数设备的问题时，远程指令的价值是让这些设备从低成本指标切换到重取证，也就是 trace、heap dump 等成本较高的诊断采集。App 权限不会因远程指令增加；命令到达时内存、磁盘、网络和系统预算是否满足，也要客户端自己再查一遍。
@@ -339,6 +434,11 @@ block envelope:
 重取证优先复用 [15.7 ProfilingManager](../ch15-other-tools/07-profiling-manager.md) 已定义的两类流程：app-driven（App 主动请求）和 system-triggered（App 登记条件、系统决定是否采集）。系统会限流，请求也未必被满足，所以客户端要另设更低的本地预算。Perfetto SDK 的 system mode 适合 adb/lab 场景；in-process mode 无需特权，覆盖范围就是上面说的进程内事件。
 
 Android 17 的 OOM system trigger 还有一个容易遗漏的前提：App 安装了自定义 uncaught exception handler 时，处理结束后必须继续调用系统默认 handler，这类 OOM 触发采集才能由平台完成。远程指令在执行前应把该接入条件也算入 capability（平台能力） 检查。
+
+<!-- gracker-diagram: ch17-12-20-capability-layers -->
+![端内 trace、系统受控采集与 heap dump](../../assets/diagrams/ch17/ch17-12-20-capability-layers.png)
+
+图：按系统版本、SDK模式与授权选择端内 trace、受控 ProfilingManager 或自身 heap dump。 普通 App 没有任意完整系统采集或其他进程 heap 权限；OOM trigger 仍需保留系统默认异常链。
 
 Java heap dump 可能包含 token（访问凭据）、会话、地址、订单和密钥材料。普通用户设备上，只放行有明确数据用途、可审计授权和严格人群范围的方案；端侧类计数或摘要能回答的问题，就让原始 heap 留在端侧。内部 build 与用户支持场景也要设置文件上限、加密、访问审计和短保留期。
 
@@ -364,7 +464,17 @@ wall clock 可能被用户修改。客户端在获取配置时同时记录 serve
 
 服务端 kill switch 依赖网络，端侧 hard limit 仍然要自己兜底。
 
+<!-- gracker-diagram: ch17-12-21-command-validation -->
+![指令从签名到执行资格的核验](../../assets/diagrams/ch17/ch17-12-21-command-validation.png)
+
+图：指令通过签名、版本、新鲜度、人群、授权、能力与预算核验，远端不能放宽本地硬上限。 TLS 与数字签名各有职责；网络失联时本地预算和拒绝规则仍需独立工作。
+
 “特定 UserID”类指令要把原始账号挡在配置和 APM 文件之外。服务端应生成短期、仅限当前 App 使用的 App scoped（只能在当前 App 范围使用） opaque cohort token（不携带可读账号信息的目标令牌）；也可在获得相应授权的支持流程中使用一次性 case ID。指令回执只带 command/case ID、结果码和预算消耗。
+
+<!-- gracker-diagram: ch17-12-22-ttl-clock -->
+![同 boot 单调时间与跨重启新鲜度](../../assets/diagrams/ch17/ch17-12-22-ttl-clock.png)
+
+图：用认证 server time 与 elapsed 锚点推进 TTL，进程重启不重置到期和已用预算。 签名 expires_at 不证明现在的时间；无法确认 boot 或可信时间时先挂起重取证并重新获取配置。
 
 ### 6.3 指令的执行状态机
 
@@ -378,6 +488,11 @@ RECEIVED -> VERIFIED -> ARMED -> RUNNING -> SEALED -> UPLOAD_PENDING
 进入 `RUNNING` 前持久化触发次数与预算预留，防止进程在写计数前被杀而反复执行。启动恢复时清理半成品，归还能够安全归还的预算，并产生一条固定大小的 command result。
 
 crash loop 是 App 启动后很快再次崩溃并反复重启的循环；重取证请求在这种循环里要受触发次数约束，避免每次启动都跑一遍。
+
+<!-- gracker-diagram: ch17-12-23-command-states -->
+![指令验证、布防、预算预留与终止](../../assets/diagrams/ch17/ch17-12-23-command-states.png)
+
+图：指令先验证再布防，进入 RUNNING 前持久预留预算，异常恢复不反复执行。 拒绝可发生在验证阶段，过期或预算耗尽可中止后续阶段；回收只归还能安全归还的预算。
 
 ## 7. 网络投递的两条路径
 
@@ -403,6 +518,11 @@ select SEALED
 
 这里的幂等指：同一 `batch_id` 即使因超时被提交多次，服务端也只确认一个批次。content hash 是内容摘要，用来检查分块重传后字节是否一致；鉴权和数字签名要另走各自的机制。
 
+<!-- gracker-diagram: ch17-12-25-ack-before-delete -->
+![至少一次投递与确认后删除](../../assets/diagrams/ch17/ch17-12-25-ack-before-delete.png)
+
+图：上传可重复发送，服务端按 batch ID 与完整 hash 幂等提交，本地持久 ACKED 后再清理。 content hash 不是鉴权或签名；任意 HTTP 响应与块级接收都不能代替完整提交确认。
+
 重试策略区分响应：
 
 - 网络断开、timeout（超时）、408、429 和多数 5xx：指数退避加 full jitter（随机抖动）；指数退避逐次增大等待上限，full jitter 则在 `0` 到该上限之间重新随机取一个等待时间；
@@ -416,6 +536,21 @@ select SEALED
 Crash/ANR 先传小摘要，等 unmetered（非按流量计费网络）、battery-not-low（电量不低）、storage-not-low（可用存储不低） 等约束满足后再传大附件。
 
 压缩、加密和网络在 worker 中执行。已压缩的 Perfetto/归档文件先检测格式，避免重复压缩浪费 CPU。传输使用 TLS；本地敏感文件若做应用层加密，密钥由 Android Keystore 管理并支持轮换。Keystore 让密钥材料不必以普通文件形式交给 App，具体是否由安全硬件保护取决于设备和密钥配置；服务端按 `key_id` 选择对应密钥解密。
+
+<!-- gracker-diagram: ch17-12-24-upload-two-paths -->
+![前台快路径和 WorkManager 共享批次 claim](../../assets/diagrams/ch17/ch17-12-24-upload-two-paths.png)
+
+图：前台上传与持久 worker 共用同一索引的原子 claim，按 owner/attempt 协调。 unique work 合并的是调度入口，不能替另一条快路径或其他进程提供文件互斥。
+
+<!-- gracker-diagram: ch17-12-26-retry-cooldown -->
+![错误分类与持久冷却截止](../../assets/diagrams/ch17/ch17-12-26-retry-cooldown.png)
+
+图：按暂时失败、服务端冷却、认证与永久错误分流，并持久保存最早重试时间。 WorkManager 仅提供线性/指数 backoff，调度不精确不等于已实现 full jitter 或 Retry-After。
+
+<!-- gracker-diagram: ch17-12-27-key-envelopes -->
+![本地 Keystore 与服务端解密各自需要密钥材料](../../assets/diagrams/ch17/ch17-12-27-key-envelopes.png)
+
+图：按批数据密钥加密内容，服务端公钥封装给服务端，设备 Keystore 另保护本地副本。 key_id 只标识密钥，不能把不可导出设备密钥交给服务端；临时 DEK 仍可能出现在进程内存。
 
 ## 8. 断路器与自我保护
 
@@ -447,6 +582,11 @@ Runtime heap headroom 指 Java heap 当前占用距离运行时上限还剩多�
 
 自保规则由 SDK 内置上限与已验签配置共同计算：远端最多把规则继续收紧，硬上限永远以客户端内置值为准。服务端失联、DNS（域名解析） 故障或 App 离线时，本地规则照常工作。
 
+<!-- gracker-diagram: ch17-12-28-circuit-breaker -->
+![断路器的冷却与有限探测](../../assets/diagrams/ch17/ch17-12-28-circuit-breaker.png)
+
+图：持续超成本或失败后熔断，冷却到期只放少量探测，成功后恢复。 冷却有上限且跨重启保存；服务端失联不解除本地硬限制，P0保留容量仍有限。
+
 ## 9. APM 监控 APM 的指标口径
 
 “SDK CPU 占比 1%”这句话，要在分子、分母和覆盖线程都写清楚之后才有意义：分子可以是全部 SDK 线程消耗的 CPU 时间，分母可以是同一窗口的进程 CPU 时间。少写任何一项，两个“1%”就没法比较。我们建议随批次上传以下自监控窗口：
@@ -470,9 +610,19 @@ profileable build 是清单允许性能分析工具附加、但区别于 debugga
 
 自监控计数器走独立的固定结构；每次 drop 若再投递成一条普通 event，queue 一满就会递归放大。每个窗口只生成一份摘要；摘要也发送失败时覆盖旧摘要并保留累计计数。
 
+<!-- gracker-diagram: ch17-12-29-self-metrics -->
+![自监控分子、计数层与递归保护](../../assets/diagrams/ch17/ch17-12-29-self-metrics.png)
+
+图：入口、worker、文件与请求体分别计量，固定计数器按窗口生成有限摘要。 线程CPU不自动覆盖全部SDK，逻辑脏页不等于持久化，payload字节也不等于全部线上流量。
+
 发布策略从 0.01%/内部设备开始，按 Android 版本、RAM 档位（设备物理内存分组）、ABI（如 `arm64-v8a`）、厂商和 App 进程分别统计成本分布。
 
 入口耗时、ANR/crash、OOM、耗电、流量、storage repair（存储启动修复） 都稳定，且目标样本中成功产出有效数据的比例没有下降后，才扩大发布比例。
+
+<!-- gracker-diagram: ch17-12-32-rollout -->
+![按设备分层验证后逐步扩量](../../assets/diagrams/ch17/ch17-12-32-rollout.png)
+
+图：从内部和极小比例分层发布，成本与有效证据产出同时稳定后扩量。 示例比例与门槛由业务实验决定，平均流量正常不能替代故障峰值和低端设备验收。
 
 ## 10. App 私有存储、备份与隐私
 
@@ -502,6 +652,16 @@ FileProvider 通过 `content://` URI（统一资源标识符） 临时分享 App
 - 上传确认、过期、撤回授权和 command 结束都触发可审计删除。
 
 多进程清理器只删除已不属于任何活跃 `process_instance_id` 的 sealed/expired 文件；owner 指创建并仍可能使用该文件的进程实例。判断不了 owner 是否仍活跃时，删除动作就延迟到下一次冷启动修复，避免另一个进程正在使用 mapping 时文件被 truncate 或删除。
+
+<!-- gracker-diagram: ch17-12-30-storage-backup -->
+![缓存、可靠 spool 与备份排除](../../assets/diagrams/ch17/ch17-12-30-storage-backup.png)
+
+图：普通可丢批次、可靠故障摘要与平台 profiling 文件按清理和备份属性分开存放。 noBackupFilesDir 不防卸载清数据；filesDir 与 profiling 还须验证 cloud 和设备迁移排除规则。
+
+<!-- gracker-diagram: ch17-12-31-privacy-cleanup -->
+![数据最小化与文件 owner 清理](../../assets/diagrams/ch17/ch17-12-31-privacy-cleanup.png)
+
+图：采集先清洗身份与载荷，清理器再按 active writer 和上传 claim 判断可删除分片。 创建进程存活不妨碍清理可删 sealed，但 PID、年龄或冷启动也不能证明 owner 已释放。
 
 ## 11. 完整架构与排查入口
 
@@ -570,6 +730,11 @@ flowchart LR
 - [17.9 崩溃与 ANR 捕获机制](09-crash-anr-internals.md)
 - [17.10 耗电与发热监控 (Battery & Thermal)](10-battery-thermal-apm.md)
 - [17.11 混合栈与跨平台 APM (WebView / Flutter)](11-hybrid-apm.md)
+
+<!-- gracker-diagram: ch17-12-33-architecture -->
+![APM 端侧的数据、控制与恢复总图](../../assets/diagrams/ch17/ch17-12-33-architecture.png)
+
+图：各进程有限准入与单写者提交，上传共用 claim，签名控制和启动修复贯穿全链路。 总图为 SDK 设计模型；fatal signal 的预留 marker 不走普通队列，掉电持久性与真实成本须另验。
 
 ## 参考资料
 

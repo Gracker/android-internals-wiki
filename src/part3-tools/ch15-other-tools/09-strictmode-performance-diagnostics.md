@@ -51,7 +51,17 @@ StrictMode 提供的是 violation（规则违规）信号，不是完整性能�
 
 `VmPolicy` 由 `StrictMode.setVmPolicy()` 安装到进程级静态状态，进程内各线程触发对应检查点时都受它约束。
 
+<!-- gracker-diagram: ch15-09-01-policy-scope -->
+![线程策略、进程策略与另一个进程](../../assets/diagrams/ch15/ch15-09-01-policy-scope.png)
+
+图：ThreadPolicy 绑定当前 OS 线程，VmPolicy 绑定当前进程；每个应用进程分别安装。 主线程安装不自动覆盖线程池或 Binder 线程，普通 Java 新线程的 BlockGuard 初始为 LAX；同步 Binder 的临时传播另有路径。
+
 每次 `setThreadPolicy()` 或 `setVmPolicy()` 都会替换现有策略。Builder 通过连续调用配置方法来组装策略；启用了 detector 却没有显式配置 penalty 时，`build()` 会自动补上 `penaltyLog()`。
+
+<!-- gracker-diagram: ch15-09-02-builder-default-log -->
+![listener-only 与默认日志补充条件](../../assets/diagrams/ch15/ch15-09-02-builder-default-log.png)
+
+图：没有 listener、mask 非零且四种通用 penalty 都没有时，固定 r1 才自动补日志。 listener-only 不自动 log；flash 或 death-on-network 没有单独满足这组通用 penalty 条件，仍可能补 log。
 
 ## 一份可解释的 API 34+ Debug 配置
 
@@ -96,6 +106,11 @@ Android 会为应用的每个进程创建 `Application` 实例，因此同一个
 
 团队可以从少量 detector 开始，确认日志能够及时处理后再逐项增加。`detectNonSdkApiUsage()` 宜尽早安装，因为启用前发生的访问可能不会被补报。
 
+<!-- gracker-diagram: ch15-09-03-startup-install-window -->
+![Application 配置的实际生效窗口](../../assets/diagrams/ch15/ch15-09-03-startup-install-window.png)
+
+图：普通绑定流程先创建 Application、安装 providers，再执行 Application.onCreate；示例策略自安装后才生效。 示例显式 GC detector 需 API 34+，并以 debuggable 限定；onCreate 不能覆盖之前的 provider 初始化，早期入口需单独验证。
+
 ## ThreadPolicy：检查的是操作类别
 
 ### 磁盘读写
@@ -112,6 +127,11 @@ Android 会为应用的每个进程创建 `Application` 实例，因此同一个
 主线程等待后台 I/O 的典型例子是 `SharedPreferences`：`SharedPreferencesImpl` 可以在后台加载 XML，主线程 getter 随后等待加载完成。磁盘 syscall 不在主线程时，主线程 StrictMode 可能没有 `DiskReadViolation`，界面仍会因等待而卡住。遇到这种现象要看 Perfetto 中的线程状态和工作线程 I/O。
 
 `commit()` 允许调用线程同步完成持久化，可能触发主线程磁盘写；`apply()` 把持久化工作排入后台，仍要避免在紧邻路径等待它完成。
+
+<!-- gracker-diagram: ch15-09-04-io-and-wait-checkpoints -->
+![直接 I/O、SharedPreferences 等待与普通 Future](../../assets/diagrams/ch15/ch15-09-04-io-and-wait-checkpoints.png)
+
+图：StrictMode 按检查点归属报告，既可能检测真实 I/O，也可能由 framework 为等待路径显式上报。 SharedPreferences 尚未加载时在调用线程显式 note read；普通 Future 等待未必有同类检查，apply 收尾还可能放开磁盘策略。
 
 ### 网络
 
@@ -140,6 +160,11 @@ decodeStartupConfig();
 
 这些 detector 不会覆盖分配抖动、系统触发 GC、GPU 工作或普通 CPU 密集计算。
 
+<!-- gracker-diagram: ch15-09-05-operation-category -->
+![网络、自定义慢调用与显式 GC 的检查边界](../../assets/diagrams/ch15/ch15-09-05-operation-category.png)
+
+图：detector 识别已接入的操作类别，不会自动测量任意业务耗时。 NetworkOnMainThreadException 的名字不证明线程一定是主线程；noteSlowCall 没有内建耗时阈值，显式 GC detector 不覆盖系统自动 GC。
+
 ## VmPolicy：资源生命周期、API 与安全检查
 
 ### 资源泄漏类检查
@@ -155,6 +180,11 @@ decodeStartupConfig();
 `detectLeakedClosableObjects()` 不是对所有实现了 `Closeable` 的对象做全堆扫描。资源类必须接入 `CloseGuard`（跟踪资源是否显式关闭的 libcore 辅助机制），调用 `open()`、`close()` 与 `warnIfOpen()` 后才能参与检测。
 
 Activity 实例检查会主动 GC 和遍历堆，测试时可能带来明显扰动。它也依赖对象回收与生命周期时序，不宜把一次异步出现的日志当成稳定的单元测试断言。
+
+<!-- gracker-diagram: ch15-09-06-vm-resource-lifecycle -->
+![CloseGuard、Activity 与类实例上限](../../assets/diagrams/ch15/ch15-09-06-vm-resource-lifecycle.png)
+
+图：VM 资源检查依赖不同的生命周期入口和计数机制，不能统一当作全堆泄漏证明。 CloseGuard 需接入 open / close / warnIfOpen；Activity 和类计数可能主动 GC / 扫堆，异步时机与兼容变更要单独核对。
 
 ### API、网络与组件安全类检查
 
@@ -182,6 +212,11 @@ Android 17 的 `VmPolicy.Builder` 还包含：
 在 Android 17 基线内，`detectImplicitUriPermissionGrant()` 可复核的作用是暴露“未显式携带授权 flag 却获得 URI 权限”的路径。若团队把它用于跨版本迁移排查，应在目标平台上重新核对当期兼容变更、feature flag 和官方 API 文档。
 
 `detectAll()` 会根据 target SDK 和设备开关决定是否加入这些检测。面向多版本设备的测试若依赖某个明确 violation，应显式启用并先判断 API/flag 可用性。
+
+<!-- gracker-diagram: ch15-09-07-flagged-api-selection -->
+![显式 Builder、detectAll 与系统报告路径](../../assets/diagrams/ch15/ch15-09-07-flagged-api-selection.png)
+
+图：API 可调用、检测位已设置、detectAll 自动选择与系统真的报告，是不同检查层。 固定 r1 的显式方法只设置位；BAL API 36 与隐式 URI grant API 37 的自动加入另受 target、flag 或 compat 条件影响。
 
 ## Penalty 的执行语义
 
@@ -217,11 +252,26 @@ StrictMode.setThreadPolicy(
 
 不要在回调里同步上传网络、写文件或执行重型符号化（把地址解析成函数名和源码位置）。堆栈、路径与明文网络数据也可能包含敏感信息，发布环境采集前要做数据评审。
 
+<!-- gracker-diagram: ch15-09-09-thread-listener-delivery -->
+![ThreadPolicy listener 的当前接收者与临时放行](../../assets/diagrams/ch15/ch15-09-09-thread-listener-delivery.png)
+
+图：ThreadPolicy 的延迟处理读取当时的 listener / executor，再在回调任务内暂时放开当前线程策略。 中途替换策略可能改变接收者；示例专用 Executor 与并发队列只做收集。VmPolicy callback 的 LAX 是进程级，作用范围不同。
+
 ### Looper 上的 duration 代表什么
 
 线程带 Looper（Android 的消息循环）时，StrictMode 记录 violation 时刻，并把处理任务插到消息队列前部。`durationMillis` 表示从 violation 到 Looper 完成本轮工作、准备再次进入等待之间的时间，可能包含违规操作后的其他同步代码。它不是磁盘 syscall 或网络请求的精确耗时。
 
 同一 Looper 循环的记录数量有上限，日志、Dialog、DropBox 与 VM violation 也有各自限流。日志数量不能直接当成违规发生次数。
+
+<!-- gracker-diagram: ch15-09-08-penalty-execution-order -->
+![death 与 listener 的先后及限流边界](../../assets/diagrams/ch15/ch15-09-08-penalty-execution-order.png)
+
+图：通用 penalty 作用于同一策略的 detector，但执行顺序和限流决定最终可见结果。 不能依赖同一次违规先投递 listener 再终止；默认 logger 的 VM 限流可能在全部后续 penalty 前返回，回调数量不等于发生总数。
+
+<!-- gracker-diagram: ch15-09-10-looper-duration-window -->
+![durationMillis 的真正起点和终点](../../assets/diagrams/ch15/ch15-09-10-looper-duration-window.png)
+
+图：durationMillis 是违规记录到队列前置回调执行时的 uptime 差，可能包含后续同步工作和调度等待。 条长为机制示意；不是 syscall 或网络请求精确耗时，也不保证队列已 idle。无 Looper 或 death-only 快捷路径为 -1，每批待处理记录有上限。
 
 ## 跨 Binder 的 ThreadPolicy 传播
 
@@ -237,6 +287,11 @@ StrictMode.setThreadPolicy(
 所以应用堆栈中可能看到发生在 `system_server` 或其他 Binder 服务里的磁盘违规。它有助于定位同步 IPC（inter-process communication，进程间通信）间接执行的 I/O，也会让“应用源码里没有读文件却报 DiskReadViolation”看起来反常。
 
 这套传播只处理 ThreadPolicy violation。远端进程的 `VmPolicy` 仍属于远端进程，返回的违规信息也不会报告 Binder 调用本身花了多少时间。
+
+<!-- gracker-diagram: ch15-09-11-binder-roundtrip -->
+![同步 Binder 的策略与违规回传](../../assets/diagrams/ch15/ch15-09-11-binder-roundtrip.png)
+
+图：标准同步 Binder 在 token 中携带 mask + gather，远端收集违规，正常 reply 回传有限记录，调用方再补本地栈处理。 最多前三条且 gather 去重；one-way 接收端 mask 为 0，没有同样 reply 闭环，异常 reply 也不保证携带违规；VmPolicy 不随之传播。
 
 ## 临时放行要精确恢复
 
@@ -259,6 +314,11 @@ try {
 - `allowThreadDiskWrites()` 同时清除 disk-write 与 disk-read 检测，因为写文件通常伴随读取元数据。
 
 放行不会让操作更快，也不会证明它适合主线程。注释应写明数据量上限、调用阶段和无法异步化的原因，并留下可搜索的问题单 ID，便于后续迁移。
+
+<!-- gracker-diagram: ch15-09-12-temporary-policy-restore -->
+![放行位差异与 finally 恢复](../../assets/diagrams/ch15/ch15-09-12-temporary-policy-restore.png)
+
+图：最小范围保存完整旧策略，临时放行需要的检查，在同一线程 finally 恢复。 allowThreadDiskReads 只清读位；allowThreadDiskWrites 同时清读写位。放行不能证明操作适合主线程，也不会缩短执行时间。
 
 ## 自动化测试怎样安装策略
 
@@ -293,6 +353,11 @@ instrumentation.runOnMainSync {
 
 Gradle JVM 的 `-D` 属性不会自动出现在设备端应用进程。若需让 CI 选择 log/listener/death 模式，应通过 test manifest、instrumentation argument、BuildConfig 字段或设备端可读取的配置传递，并限制在测试构建。
 
+<!-- gracker-diagram: ch15-09-13-instrumentation-thread -->
+![设备端测试的安装线程与恢复](../../assets/diagrams/ch15/ch15-09-13-instrumentation-thread.png)
+
+图：测试线程与应用主线程分别看待；把安装和恢复操作显式调度到目标线程。 在存活进程内恢复旧策略并等待需要的回调；death 已终止进程时不能依赖 finally。宿主 Gradle -D 不会自动成为设备进程配置。
+
 ## 与协程、Compose 和多进程配合
 
 ### 协程与 Compose 使用执行线程的策略
@@ -306,6 +371,11 @@ Compose 的 composition（界面组合阶段）、`LaunchedEffect` 和事件回�
 `android:process` 创建的是另一个 Linux/ART 进程。系统会在那个进程内创建应用的 `Application`，然后调用其 `onCreate()`。同一配置代码会再次运行，策略状态和违规限流表与主进程相互独立。
 
 ThreadPolicy mask 只在一次 Binder 调用期间传播，不能代替远端进程自己的长期配置。
+
+<!-- gracker-diagram: ch15-09-14-execution-thread-process -->
+![协程调度与多进程仍回到 OS 线程](../../assets/diagrams/ch15/ch15-09-14-execution-thread-process.png)
+
+图：协程和 UI 框架使用实际执行它们的 OS 线程策略，多进程则有独立进程策略。 移动到 IO dispatcher 只改变执行位置，不能证明排队、锁竞争或主线程等待已消失；临时 Binder 传播不能代替远端长期初始化。
 
 ## StrictMode 没覆盖什么
 
@@ -334,6 +404,11 @@ try {
 
 在 Perfetto 中检查这个 slice 与主线程 running/runnable/sleeping（正在执行/等待 CPU/休眠）状态、Binder transaction（一次跨进程调用）和 I/O 事件的重叠，才能判断时间花在 CPU、锁、IPC 还是存储。
 
+<!-- gracker-diagram: ch15-09-15-strictmode-to-perfetto -->
+![从操作违规定位到真实时序调查](../../assets/diagrams/ch15/ch15-09-15-strictmode-to-perfetto.png)
+
+图：StrictMode 给出可疑操作类别和调用栈，再用 Trace section 与实际时间轴判断工作或等待。 Trace.beginSection 不启动采集；只分析实际启用并覆盖该窗口的数据源。近似 violation duration 不等于 CPU、I/O 或 Binder 的独立耗时。
+
 ## Android 17 排障清单
 
 遇到“没有报”“报错线程不对”或“日志数量对不上”时，按这个顺序检查：
@@ -346,6 +421,11 @@ try {
 6. 堆栈是否包含 Binder 远端违规和调用方补上的本地栈；
 7. 多进程场景中，出问题的进程是否运行过初始化代码；
 8. flagged API 在设备构建与运行时配置中是否启用。
+
+<!-- gracker-diagram: ch15-09-16-diagnostic-checklist -->
+![没有报告、线程不对或数量不符时的检查顺序](../../assets/diagrams/ch15/ch15-09-16-diagnostic-checklist.png)
+
+图：先核对目标线程 / 进程与当前策略，再看检查点、版本、限流和远端回传来源。 这组检查定位证据缺口；没有 violation 不等于没有卡顿或泄漏，日志和回调都不是无损发生次数统计。
 
 ## 参考源码与文档
 

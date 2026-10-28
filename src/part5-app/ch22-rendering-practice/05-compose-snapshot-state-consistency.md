@@ -58,6 +58,11 @@ Snapshot 系统同时支撑 `mutableStateOf`、Snapshot State 集合、Compositi
 
 本篇聚焦 Snapshot，同时说明 Recomposer、ComposeView 与业务并发边界。Compose 到 Android 17 显示系统的完整路径见 [§13.8 Jetpack Compose 渲染管线架构](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)。
 
+<!-- gracker-diagram: a236-01-protocol -->
+![Snapshot 的四层协议](../../assets/diagrams/ch22/a236-01-protocol.png)
+
+图：四层职责相连；一次 setter 不等于一次重组或已呈现一帧。
+
 ## 1. 固定版本与术语校正
 
 源码结论使用三组锚点：
@@ -108,6 +113,11 @@ Snapshot 位于 Jetpack Compose Runtime，不属于 Android 平台源码标签�
 
 `Snapshot.current` 使用线程局部状态。`snapshot.enter { ... }` 只在当前线程临时替换它，代码块执行完毕后恢复此前的 Snapshot；其他线程不会随之切换。
 
+<!-- gracker-diagram: a236-02-visible-record -->
+![选择最高的可见状态记录](../../assets/diagrams/ch22/a236-02-visible-record.png)
+
+图：版本可见性和对象初始值是两件事；记录链物理顺序不代表可见版本顺序。
+
 ### 2.2 StateObject 管理状态记录链
 
 `StateObject` 的公开协议很小：
@@ -140,6 +150,11 @@ return candidate
 
 `sync` 中的锁保护的是 Runtime 的状态记录结构，`state.value++` 并不会因此变成原子的复合操作。这个表达式包含一次读取和一次写入，多个生产者同时执行仍会丢更新。
 
+<!-- gracker-diagram: a236-03-read-write -->
+![MutableState 的读写入口](../../assets/diagrams/ch22/a236-03-read-write.png)
+
+图：读与写入口分别建立依赖和记录修改；箭头为相关机制，不是每次读取都紧接写入。
+
 ### 2.4 Snapshot State 集合
 
 `SnapshotStateList`、`SnapshotStateMap` 与 `SnapshotStateSet` 也使用 `StateRecord`。以列表为例，状态记录内保存持久化不可变列表（persistent list）、`modification` 与 `structuralChange`：
@@ -150,6 +165,11 @@ return candidate
 - 迭代器仍可能按集合语义抛出 `ConcurrentModificationException`。
 
 `SnapshotStateList.toList()` 在 Runtime 1.12.0 中是 O(1)，返回当前底层不可变列表；内容变化前通常还是同一实例。把列表送入 `snapshotFlow` 时，`toList()` 比手工复制更合适。
+
+<!-- gracker-diagram: a236-04-persistent-list -->
+![Snapshot 列表的结构快照](../../assets/diagrams/ch22/a236-04-persistent-list.png)
+
+图：不可变列表快照固定列表结构；元素若仍可变，应用还要定义其状态协议。
 
 ## 3. 只读 Snapshot：冻结一份可见版本
 
@@ -184,6 +204,11 @@ try {
 - 嵌套 Snapshot：每一层独立结束；
 - `asContextElement()`：只负责协程恢复时进入或离开 Snapshot，不负责调用 `dispose()`。
 
+<!-- gracker-diagram: a236-05-readonly-pinning -->
+![只读视图与状态记录保留](../../assets/diagrams/ch22/a236-05-readonly-pinning.png)
+
+图：结束快照寿命可解除旧版本保留；dispose 本身不把旧值写回全局。
+
 ## 4. MutableSnapshot：隔离修改与 apply
 
 `Snapshot.takeMutableSnapshot()` 创建可写视图。传给 `enter` 的代码块所做写入只在该 Snapshot 可见；`apply()` 成功后才进入父 Snapshot 或全局状态。
@@ -198,6 +223,11 @@ apply 的主要步骤是：
 6. 回到 `sync` 清理或复用不再需要的状态记录。
 
 apply 不会扫描进程里的全部 StateObject。它以已修改对象集合为入口，但成本不能简写为严格的 `O(changed states)`：每个对象还可能遍历状态记录链、运行自定义合并策略、通知多个观察器，并触发状态记录清理。
+
+<!-- gracker-diagram: a236-06-apply-locks -->
+![根 MutableSnapshot 的 apply 阶段](../../assets/diagrams/ch22/a236-06-apply-locks.png)
+
+图：图中描述根 Snapshot；嵌套 apply 的可见终点是父 Snapshot。
 
 ### 4.1 冲突使用三方记录判断
 
@@ -238,6 +268,11 @@ fun counterPolicy(): SnapshotMutationPolicy<Int> =
 
 若一个 Snapshot 从 10 加 2，另一个分支已把全局值从 10 加到 15，合并结果是 17。这个策略只适合增量计数；业务若允许“把计数设置为 0”，同一公式会给出错误语义。`merge()` 必须是纯函数，结果确定、执行快速，也不能触发外部副作用。
 
+<!-- gracker-diagram: a236-07-three-way-merge -->
+![三方合并与计数溢出](../../assets/diagrams/ch22/a236-07-three-way-merge.png)
+
+图：合并策略承担业务代数；没有策略能把所有赋值自动解释成累加。
+
 ### 4.3 Snapshot 隔离不保证可串行化
 
 Runtime 1.12.0 的 `MutableSnapshot.apply()` 源码明确注明：当前算法不保证可串行化（serializable）的 Snapshot，也没有阻止交叉写入（crossing writes）。两个 Snapshot 读取同一组对象、各自修改不同对象时，已修改对象集合没有交集，双方都可能 apply 成功，却破坏跨对象约束。
@@ -273,6 +308,11 @@ try {
 
 两个分支修改不同 StateObject，所以状态记录级冲突检查允许它们提交。跨对象不变量应放进单一不可变状态、`Mutex`、Actor、StateFlow 原子更新或数据库事务中。把多个字段放进 `withMutableSnapshot` 只能让单次提交原子可见，仍要定义并发写者协议。
 
+<!-- gracker-diagram: a236-08-write-skew -->
+![不同对象写入也会破坏业务不变量](../../assets/diagrams/ch22/a236-08-write-skew.png)
+
+图：这是实际示例的逻辑顺序，没有虚构时长；跨对象读取约束要在写者协议中维护。
+
 ## 5. 嵌套 Snapshot 的父子可见性
 
 在 MutableSnapshot 内调用 `takeMutableSnapshot()` 会创建嵌套的可写 Snapshot。子 Snapshot 的 apply 只把修改合入父 Snapshot；全局状态要等最外层父 Snapshot apply 后才变化。
@@ -288,6 +328,11 @@ try {
 父 Snapshot 已 apply 或 dispose 后，仍存活的子 Snapshot 再调用 apply 会失败。父 Snapshot dispose 后，已经创建的只读子 Snapshot 仍可能按 API 契约继续有效，但它自己仍需 dispose。
 
 嵌套适合把一段可撤销计算放进父事务，但不能模拟数据库保存点（savepoint）的全部行为。外部 I/O、Binder 调用和文件写入不会随 Snapshot 回滚。
+
+<!-- gracker-diagram: a236-09-nested-visibility -->
+![嵌套 Snapshot 的应用边界](../../assets/diagrams/ch22/a236-09-nested-visibility.png)
+
+图：子、父、全局是不同可见终点；每层自己 dispose。
 
 ## 6. 从 State 写入到 RecomposeScope
 
@@ -306,6 +351,11 @@ Composition 执行时，MutableSnapshot 带有读观察器。`Composition.record
 
 布局与绘制阶段使用 `SnapshotStateObserver.observeReads()` 建立各自的作用域映射。状态读取发生在哪一阶段，决定失效可以停在哪一阶段；同一状态若也在 Composition 中读取，变化仍会影响 Composition。
 
+<!-- gracker-diagram: a236-10-read-domains -->
+![State 到观察域的依赖索引](../../assets/diagrams/ch22/a236-10-read-domains.png)
+
+图：读取发生的位置决定失效入口；不能仅从一个 setter 推算执行函数列表。
+
 ### 6.2 写入怎样传播
 
 从 setter 到重组的路径可以分成七步：
@@ -320,6 +370,11 @@ Composition 执行时，MutableSnapshot 带有读观察器。`Composition.record
 
 变更对象集合只包含对象身份，不包含“字段为什么变化”的业务语义，也不等于重组函数列表。一个对象可以被多个作用域读取，一个作用域也可以读多个对象。
 
+<!-- gracker-diagram: a236-11-recompose-notify -->
+![从有效写入到重组调度](../../assets/diagrams/ch22/a236-11-recompose-notify.png)
+
+图：Recomposer 过滤已知从未被 Composition 读取的对象；其 stateLock 不包住所有重组工作。
+
 ### 6.3 SnapshotStateObserver 的边界
 
 `SnapshotStateObserver` 处理 apply 回调与观察线程之间的并发：
@@ -330,6 +385,11 @@ Composition 执行时，MutableSnapshot 带有读观察器。`Composition.record
 - “依赖对象 → 派生状态”索引用于条件失效。
 
 类文档仍明确标注：实例不具备通用线程安全性。`observeReads` 检测到同一次观察嵌套跨线程时会抛错，并指出同一个 AndroidComposeView 的测量、布局和绘制应在同一线程执行。内部原子队列不能当作观察器可被多个布局线程共享的依据。
+
+<!-- gracker-diagram: a236-12-observer-thread -->
+![SnapshotStateObserver 的并发边界](../../assets/diagrams/ch22/a236-12-observer-thread.png)
+
+图：执行器负责回调派发；应用仍要遵守观察器和 Owner 的线程契约。
 
 ## 7. derivedStateOf：依赖缓存与条件失效
 
@@ -361,6 +421,11 @@ AnimatedVisibility(visible = showScrollToTop) {
 
 滚动索引或偏移会频繁变化，派生结果在列表顶部附近只切换少量次数。显式使用结构相等策略，让相同布尔结果被视为等价。`remember(listState)` 保留同一个派生状态对象，并在列表状态实例替换时重建它。
 
+<!-- gracker-diagram: a236-13-derived-cache -->
+![derivedStateOf 的缓存与条件失效](../../assets/diagrams/ch22/a236-13-derived-cache.png)
+
+图：示例用 remember(listState) 固定派生对象，结构相等策略压缩滚动输入为布尔边界。
+
 ### 7.2 缓存也有成本
 
 `derivedStateOf` 会维护依赖表、状态记录哈希、结果记录和条件失效索引，因此并非零成本。下列场景通常不适合：
@@ -382,6 +447,11 @@ AnimatedVisibility(visible = showScrollToTop) {
 | `snapshotFlow` | 代码块读取的 Snapshot State，结果按 `equals` 过滤 | 把当前状态送入冷流与副作用管线 |
 
 冷流（cold Flow）在每次收集时重新执行生产逻辑。`remember` 不会自动观察计算函数内的任意 State 读取，而 `derivedStateOf` 会。`snapshotFlow` 的代码块在只读 Snapshot 中执行，不能修改 State，也可能跳过中间状态。
+
+<!-- gracker-diagram: a236-14-remember-flow -->
+![remember、派生状态和冷流](../../assets/diagrams/ch22/a236-14-remember-flow.png)
+
+图：这三项是并列工具，不能据此替换需要完整事件序列的 Channel 或源 Flow。
 
 ## 8. withMutableSnapshot 的提交语义
 
@@ -410,6 +480,11 @@ fun publish(result: LoadResult) {
 
 若一份 UI 数据天然共同变化，单个不可变 `UiState` 往往比多个 State 再加事务更易维护。多 State 事务适合组件内部已有独立订阅、又需要共同提交的场景。
 
+<!-- gracker-diagram: a236-15-atomic-view -->
+![一次提交与固定读取视图](../../assets/diagrams/ch22/a236-15-atomic-view.png)
+
+图：原子发布的单位是版本提交；它不会把读者的多次普通读取自动包成事务。
+
 ## 9. 跨线程访问
 
 ### 9.1 全局 State 与某个 MutableSnapshot 是两个层次
@@ -422,6 +497,11 @@ fun publish(result: LoadResult) {
 - 多字段可串行化约束。
 
 对单个 MutableSnapshot，源码的状态记录选择按“多个读取者、单个写者”设计。不要让多个线程同时修改同一个 MutableSnapshot。若多个生产者都要写，给每个操作单独创建 Snapshot 并处理冲突，或在 Snapshot 外使用 StateFlow、Actor、Mutex 等方式确定写入顺序。
+
+<!-- gracker-diagram: a236-16-writer-protocol -->
+![跨线程状态与业务写者协议](../../assets/diagrams/ch22/a236-16-writer-protocol.png)
+
+图：这些协议由业务选择；State 可跨线程不代表 View、窗口或 SDK 可以跨线程。
 
 ### 9.2 enter 不会随协程自动传播
 
@@ -443,6 +523,11 @@ try {
 
 这个协程上下文元素会在协程恢复时进入 Snapshot、挂起时离开；它不会 dispose Snapshot，也没有授权多个协程并行修改同一个 MutableSnapshot。
 
+<!-- gracker-diagram: a236-17-coroutine-context -->
+![Snapshot 随协程恢复与挂起](../../assets/diagrams/ch22/a236-17-coroutine-context.png)
+
+图：线程局部 enter 不会自己跨调度器传播；ContextElement 不负责资源释放。
+
 ### 9.3 状态创建时间也受版本约束
 
 在未应用的 MutableSnapshot 内创建的 State 若提前泄露，较早的 Snapshot 可能找不到合法状态记录，并报告：
@@ -450,6 +535,11 @@ try {
 `Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied`
 
 长期状态容器宜在全局上下文创建。需要在事务中创建并初始化时，应在 apply 成功后再发布引用。
+
+<!-- gracker-diagram: a236-18-initial-record -->
+![新建 MutableState 的初始记录例外](../../assets/diagrams/ch22/a236-18-initial-record.png)
+
+图：1.12 的实际记录结构；不能再用新建于事务一项条件推导读取必然异常。
 
 ### 9.4 Dispatchers.Main 的使用边界
 
@@ -474,6 +564,11 @@ Recomposer 注册 Snapshot apply 观察器，把发生变化的 StateObject 与�
 
 每个 `ComposeView` 有独立 Composition，却通常沿 View 树查找并共享同一窗口 Recomposer。不同 Window/ViewRoot、自定义父级 Composition 上下文或测试基础设施才可能创建多个 Recomposer。多个 Composition 仍共享进程内 Snapshot 系统；是否共享线程和帧时钟，不能只靠 ComposeView 数量推断。
 
+<!-- gracker-diagram: a236-19-window-sharing -->
+![Composition 与窗口 Recomposer](../../assets/diagrams/ch22/a236-19-window-sharing.png)
+
+图：标准 WindowRecomposer 使用窗口 UI 线程；自建宿主需要核对其协程上下文。
+
 Snapshot 保证版本可见性和可应用的事务，不替业务选择唯一写者。`state.value++` 仍是读—改—写，多个生产者可能丢更新；搜索、分页和支付结果的代次、取消与重试应由 `MutableStateFlow.update`、Actor、Mutex、数据库事务或明确请求协议处理。多字段天然共同变化时，一份不可变 `UiState` 通常比多个 State 再补事务更清楚。
 
 ## 11. Flow、produceState 与 Effect
@@ -483,6 +578,11 @@ Snapshot 保证版本可见性和可应用的事务，不替业务选择唯一�
 `snapshotFlow` 在只读 Snapshot 中重新执行读取代码块，并按结果的 `equals` 过滤。它可能跳过中间状态，因此适合观察“当前状态”，不适合统计每次点击、传感器样本或业务事件；这些应直接从事件源建立 Channel 或 Flow。它也不能修复两个写者同时执行复合更新的竞争。
 
 Effect 的取消时机要与资源所有者的生命周期对齐：页面内持续工作用 `LaunchedEffect(key)`，用户事件使用 `rememberCoroutineScope()`，跨页面业务请求放在 ViewModel 或生命周期更长的状态持有者中。Snapshot State 可以跨线程读写，不代表 View、Canvas、窗口、Looper 回调和线程绑定 SDK 可以跨线程使用。
+
+<!-- gracker-diagram: a236-20-flow-effects -->
+![外部流、状态生产与事件](../../assets/diagrams/ch22/a236-20-flow-effects.png)
+
+图：事件完整性和并发原子性要在源协议保证，不能靠 snapshotFlow 补齐。
 
 ## 12. 性能成本模型
 
@@ -532,6 +632,11 @@ apply 的热区来自：
 
 选择依据是读取边界与业务不变量，不宜按“State 越少越快”或“拆得越细越快”做统一判断。
 
+<!-- gracker-diagram: a236-21-cost-model -->
+![Snapshot 成本要按实际工作拆分](../../assets/diagrams/ch22/a236-21-cost-model.png)
+
+图：单个大 State 与细粒度 State 按读取边界和业务一致性选择，没有统一快慢结论。
+
 ## 13. 性能剖析：哪些工具能证明什么
 
 ### 13.1 Compose 编译器报告不测 Snapshot 运行时
@@ -553,6 +658,11 @@ Runtime 1.12.0 中可见的 Snapshot 详细跟踪切片是 `Compose:applyObserve
 Composition tracing 通过 `androidx.compose.runtime:runtime-tracing` 暴露可组合函数的源码位置与重组切片。它适合回答“哪个可组合函数在执行”，无法自动显示“哪个 StateObject 的哪次赋值造成这轮失效”。配置与录制见 [§22.3 Compose Runtime Tracing](03-compose-compiler-modifier-diagnostics.md)。
 
 不要依赖固定的 `compose:snapshot-apply` 名称或固定毫秒阈值。跟踪名称、详细跟踪开关与可见粒度会随 Runtime 版本改变。
+
+<!-- gracker-diagram: a236-22-tool-evidence -->
+![编译器、跟踪与工具探针的证据边界](../../assets/diagrams/ch22/a236-22-tool-evidence.png)
+
+图：跟踪开关与构建条件需要随 Runtime 版本记录；缺少切片不能证明没有工作。
 
 ### 13.3 实验性工具观察器
 
@@ -577,6 +687,11 @@ fun installSnapshotProbe(totalChanged: AtomicLong): ObserverHandle =
 
 回调可能从任意线程到达，探针自身必须线程安全。`SnapshotObserver` 回调内不支持调用任何 Snapshot API，也不应读取或写入 MutableState。结束测量后调用返回的 `ObserverHandle.dispose()`；生产构建不要常驻。
 
+<!-- gracker-diagram: a236-23-probe-counts -->
+![工具观察器计数的单位](../../assets/diagrams/ch22/a236-23-probe-counts.png)
+
+图：探针会增加全局开销；计数不携带状态值、耗时或业务因果。
+
 ### 13.4 分层测量
 
 建议把一次性能调查分成四组证据：
@@ -599,6 +714,11 @@ Snapshot 相关测试至少覆盖：
 - **冲突**：同一 StateObject 的并行写按变更策略成功合并或明确失败。
 
 写偏差测试还要覆盖跨对象业务不变量。只测“没有抛异常”会漏掉可串行化约束。
+
+<!-- gracker-diagram: a236-24-consistency-tests -->
+![一致性测试按不同性质断言](../../assets/diagrams/ch22/a236-24-consistency-tests.png)
+
+图：本轮以真实 Runtime 1.12 执行协议探针；这不是 Android UI 或性能测量。
 
 ### 14.2 记录一次计算读了哪些 State
 
@@ -629,6 +749,11 @@ Snapshot apply 只改变应用进程内的状态版本。纯 Compose 页面要�
 `Snapshot / Recomposer → Composition / Layout / Drawing → AndroidComposeView → ViewRootImpl / HWUI → RenderThread → App Window BLASTBufferQueue → SurfaceFlinger → HWC → present`
 
 在 Android 17 / `android-17.0.0_r1` 中，`Choreographer` 驱动应用帧，HWUI 把宿主树交给 RenderThread，BLASTBufferQueue 再把应用窗口缓冲区组织成 SurfaceControl 事务。Snapshot 跟踪结束不代表缓冲区已经提交，`queueBuffer()` 返回也不代表显示面板已经呈现这一帧。
+
+<!-- gracker-diagram: a236-25-present-boundary -->
+![Snapshot 提交到实际显示的责任链](../../assets/diagrams/ch22/a236-25-present-boundary.png)
+
+图：Snapshot apply 完成、缓冲区提交与实际呈现是不同终点。
 
 Android 内核 `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread、Binder 与系统服务线程。CPU 集合控制组（cpuset）限制线程可运行在哪些 CPU 上，利用率钳制（uclamp）为调度器的任务利用率估计设置上下限，进而影响选核和频率决策，CPU 频率框架（cpufreq）负责调整处理器频率。内核不识别 StateObject、状态记录链或 RecomposeScope。Snapshot 锁等待要在应用进程内解释，GPU 同步栅栏与呈现延迟则要沿显示管线解释。
 

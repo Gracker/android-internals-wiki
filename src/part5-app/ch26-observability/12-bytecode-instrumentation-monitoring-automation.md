@@ -96,6 +96,11 @@ APM（Application Performance Monitoring）指应用性能监控。热路径是�
 
 “无业务手写埋点”仍会带来侵入：每条注入指令都会改变 class、构建时间和运行路径。是否启用、覆盖哪些方法以及容许多少成本，都应由当前工程的测量结果决定。
 
+<!-- gracker-diagram: a297-01-class-to-release-evidence-pipeline -->
+![插桩改变 JVM class，发布结果仍须经过 D8/R8 和设备验证](../../assets/diagrams/ch26/a297-01-class-to-release-evidence-pipeline.png)
+
+图：App与选定依赖class可处理；framework、ART与未进入构建输入的代码不在覆盖内。
+
 ## ASM Core API 与 Tree API
 
 ASM 是一个直接读写 JVM class 的字节码库。Core API 采用 visitor（访问器）回调：`ClassVisitor` 接收类级结构，`MethodVisitor` 依次接收方法指令。它适合局部、流式的变换，通常无需把整个类的表示保存在内存中。
@@ -113,6 +118,11 @@ Tree API 把类读入 `ClassNode`，并把方法指令保存在 `InsnList`。需
 ASM 的输入是 JVM class；DEX 在后续阶段产生。Kotlin 编译器、KSP（Kotlin Symbol Processing，在编译期间读取程序符号并生成代码）、Compose Compiler 等前置步骤先生成 class，AGP 插桩随后处理。
 
 D8/R8 再执行 desugar（把较新的 Java 字节码特性转换成旧 Android 版本可执行的形式）、压缩、优化、混淆和 DEX 转换。R8 是 Android 的代码压缩与优化器，D8 则负责把 JVM 字节码转换为 DEX。
+
+<!-- gracker-diagram: a297-02-core-tree-and-scoped-artifacts -->
+![变换需要的信息决定 Core、Tree 或整组产物入口](../../assets/diagrams/ch26/a297-02-core-tree-and-scoped-artifacts.png)
+
+图：新增class先读POST_COMPILATION_CLASSES再append到CLASSES，避免同时消费和生成同一产物形成环。
 
 ## AGP 9.3.1 的插桩入口
 
@@ -171,6 +181,11 @@ class TraceInstrumentationPlugin : Plugin<Project> {
 
 `COMPUTE_FRAMES_FOR_ALL_CLASSES` 会触发非增量的全类计算，只有改变继承关系等特殊变换才应考虑。
 
+<!-- gracker-diagram: a297-03-scope-and-frame-recomputation -->
+![模块范围和 frame 计算模式分别配置](../../assets/diagrams/ch26/a297-03-scope-and-frame-recomputation.png)
+
+图：Transform API已移除；逐类、跨类和编译后生成class有不同迁移入口。
+
 ### Factory 必须支持异步调用
 
 AGP 的 [`AsmClassVisitorFactory`](https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory) 8.6 版本页保留了异步调用约束，当前 AGP 9.3 API 也有相同要求：`isInstrumentable()` 和 `createClassVisitor()` 可能异步调用。
@@ -227,6 +242,11 @@ abstract class TraceClassVisitorFactory :
 `ClassData.className` 使用点分隔的全限定类名。过滤逻辑需要覆盖 `R` 的内部类，并按工程情况排除生成代码、Data Binding、Hilt、Compose synthetic（编译器合成的方法或类）以及监控 SDK 自身。
 
 参数必须通过 Gradle `Property`、`ListProperty`、`RegularFileProperty` 等声明输入。回调中临时读取未声明的 YAML 或 JSON，会让 Gradle 无法正确判断任务是否已是最新状态，也会破坏 `build cache`（跨构建复用任务输出的缓存）命中。
+
+<!-- gracker-diagram: a297-04-factory-parallelism-and-gradle-inputs -->
+![factory 可并发，规则必须是声明式 Gradle 输入](../../assets/diagrams/ch26/a297-04-factory-parallelism-and-gradle-inputs.png)
+
+图：逐类visitor不写共享文件；全局映射与冲突检查放独立可缓存任务。
 
 ## 方法 trace 的控制流必须完整
 
@@ -384,6 +404,21 @@ Android 17 的 [`android.os.Trace`](https://android.googlesource.com/platform/fr
 
 `Trace.isEnabled()` 从 API 29 提供。固定字符串的 `beginSection()` 可以直接调用，因为平台内部会检查 tracing 状态；只有运行时需要构造临时对象或格式化字符串时，才值得先调用 `isEnabled()` 避免无效分配。
 
+<!-- gracker-diagram: a297-05-normal-return-and-propagating-exception -->
+![先保留原 catch/finally，最后的 catch-all 才清理逃逸异常](../../assets/diagrams/ch26/a297-05-normal-return-and-propagating-exception.png)
+
+图：方法树输出会先发异常表再发相关label；只处理RETURN/ATHROW不能覆盖调用点隐式异常退出。
+
+<!-- gracker-diagram: a297-06-tree-emission-marker-and-scope -->
+![MethodNode 同时解决输出顺序、handler 优先级与重复处理](../../assets/diagrams/ch26/a297-06-tree-emission-marker-and-scope.png)
+
+图：自动monitor进入在同步方法体之前；section测方法体执行范围，不自动包含锁获取等待。
+
+<!-- gracker-diagram: a297-07-trace-tag-unicode-and-id-mapping -->
+![Trace tag 在构建期生成并按 UTF-16 限长](../../assets/diagrams/ch26/a297-07-trace-tag-unicode-and-id-mapping.png)
+
+图：Trace.isEnabled从API29公开；固定tag直接beginSection由平台检查启用状态。
+
 ## 选择性插桩比全量插桩更可靠
 
 方法数量不能直接决定开销。成本还与调用频率、tag 构造、采样逻辑、R8 优化结果、CPU 和是否正在采集 trace 有关。文章不应给出通用的“每方法增加多少字节”或“每次调用多少微秒”。
@@ -410,6 +445,11 @@ AGP Instrumentation 产生的 class 会继续进入 D8/R8。需要区分三类�
 若 trace tag 保存插桩前的类名，它可以帮助阅读源码，也可能暴露内部命名。另一种方案是使用稳定 method ID，并随构建产出一份受控的“ID 到源码符号”映射。崩溃栈仍使用 R8 `mapping.txt` 还原，两种映射要分开保存和授权。
 
 不要为了保留 trace 结构而对整包禁用优化。更合适的顺序是缩小插桩范围、确认关键方法在 release 中的形态，再为确有需要的少量边界设置规则。
+
+<!-- gracker-diagram: a297-08-r8-release-shape-and-mapping -->
+![R8 后执行形态与源码方法不能假定一一对应](../../assets/diagrams/ch26/a297-08-r8-release-shape-and-mapping.png)
+
+图：先缩范围与验证发布形态，再为确有必要的边界加规则；不为监控一概禁用优化。
 
 ## 网络监控：优先使用稳定扩展点
 
@@ -452,6 +492,11 @@ OkHttp 已提供 application interceptor、network interceptor 和 `EventListene
 
 若需要使用，应由统一初始化组件协调，并把回调工作限制为轻量记录。为初始化一项监控而修改 `Application.onCreate()` 字节码，通常不如显式声明 App Startup initializer（由 AndroidX Startup 负责调用的初始化器）清晰。
 
+<!-- gracker-diagram: a297-09-library-extension-versus-framework-boundary -->
+![网络和帧监控使用稳定扩展点补业务上下文](../../assets/diagrams/ch26/a297-09-library-extension-versus-framework-boundary.png)
+
+图：Looper.setMessageLogging仅一个当前Printer，统一初始化协调；自有业务slice帮助解释慢帧。
+
 ## Kotlin、协程与 Compose 的特殊形态
 
 Kotlin 默认参数、`inline`、`suspend`、lambda 和 synthetic accessor 会产生与源码不同的方法。synthetic accessor 是编译器为访问受可见性限制的成员而生成的辅助方法。
@@ -461,6 +506,11 @@ Kotlin 默认参数、`inline`、`suspend`、lambda 和 synthetic accessor 会�
 协程需要异步 trace，或使用支持关联信息传播的 tracing API。关联信息传播是让同一个标识跟随协程切换线程；并发实例还要分配不会冲突的 cookie 或 flow 标识，用来把不同线程上的开始与结束事件配成一组。
 
 同步 section 只描述当前线程上的一段执行。
+
+<!-- gracker-diagram: a297-10-coroutine-logical-and-thread-segments -->
+![协程逻辑生命周期与每次线程执行片段分开记录](../../assets/diagrams/ch26/a297-10-coroutine-logical-and-thread-segments.png)
+
+图：物理方法片段可以同步成对结束；把挂起等待和另一线程恢复包进一个同步section会破坏线程语义。
 
 Compose Compiler 会改变 `@Composable` 函数签名并生成重组相关代码。重组是 Compose 在状态变化后重新执行受影响 UI 代码的过程。基于生成参数或内部方法名的 ASM 规则会随 Compose/Kotlin 版本变化。
 
@@ -481,6 +531,11 @@ dynamic feature 是按需交付、独立编译的动态功能模块，它不会�
 - 跨类全局分析使用 Scoped Artifacts 独立 task，并为它比逐 class visitor 更高的构建成本预留预算。
 
 插件版本、规则版本、AGP 版本和 ASM API 版本都应写入构建产物或诊断信息。多插件共同处理 class 时，还要用集成测试固定注册顺序和最终结果。
+
+<!-- gracker-diagram: a297-11-multi-module-idempotence-and-reproducibility -->
+![每个模块 variant 独立注册，依赖发布边界也要验证](../../assets/diagrams/ch26/a297-11-multi-module-idempotence-and-reproducibility.png)
+
+图：多插件顺序、AAR保存标记、版本升级与最终产物由集成测试验证；单次JVM fixture不证明整个AGP链路。
 
 ## 验证一套插桩规则
 
@@ -518,6 +573,11 @@ dynamic feature 是按需交付、独立编译的动态功能模块，它不会�
 
 门禁阈值来自该工程的基线分布，不使用文章中的固定百分比。样本还要记录设备、系统、编译模式、温度、场景和 trace 是否启用，否则不同实验不能直接比较。
 
+<!-- gracker-diagram: a297-12-semantic-build-and-device-validation -->
+![插桩验收从业务语义到 Android 发布产物逐层推进](../../assets/diagrams/ch26/a297-12-semantic-build-and-device-validation.png)
+
+图：COMPUTE_FRAMES不是业务语义证明；主机class测试、AGP集成与设备性能测试有独立范围。
+
 ## 运行时桥接的安全要求
 
 插桩代码只调用参数少、职责单一的接口，采样与存储等复杂策略留在版本化桥接层。桥接层应满足：
@@ -535,6 +595,11 @@ Android trace 通常用于短时诊断，不应把每个方法的原始事件长
 低基数表示字段只有少量可枚举取值，例如页面类型；它比完整 URL 或用户 ID 更适合聚合。
 
 罕见问题可在获得授权并限制采集范围后，通过公开的 `ProfilingManager`、Perfetto 或可重复实验获取更完整证据。`ProfilingManager` 是允许 App 请求系统采集限定类型性能资料的公开 API，结果仍需按隐私与存储策略处理。
+
+<!-- gracker-diagram: a297-13-runtime-bridge-budgets-and-business-semantics -->
+![运行桥接控制自身成本，保留业务失败和配对语义](../../assets/diagrams/ch26/a297-13-runtime-bridge-budgets-and-business-semantics.png)
+
+图：原始全方法trace适合短时诊断；事件schema、插件、规则、App与系统版本必须可追溯。
 
 ## Android 17 验收清单
 

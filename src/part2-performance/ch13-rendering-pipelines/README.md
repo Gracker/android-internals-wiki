@@ -28,3 +28,18 @@ Android 渲染没有一条适用于所有场景的固定流水线。分析前，
 - 任一性能问题都回到 [13.1 Android View 渲染管线与分析方法](01-android-view-pipeline-analysis.md#统一分析方法)，沿同一帧的时间线核对 Producer、BufferQueue（缓冲区队列）、fence（表示操作完成或资源可用的同步信号）、SurfaceFlinger、HWC（硬件合成器）与 present（帧呈现）事件。
 
 PiP、Freeform 与多窗口场景还需结合 [2.14 多窗口、PiP 与桌面模式渲染管线](../../part1-fundamentals/ch02-rendering/14-multiwindow-desktop-rendering.md)，核对窗口几何、Surface 同步与显示模式。
+
+<!-- gracker-diagram: ch13-index-01-consumer-topology -->
+![先按消费者划分渲染与计算路径](../../assets/diagrams/ch13/ch13-index-01-consumer-topology.png)
+
+图：先确认生产者、资源和消费位置，再判断进入哪条输出路径。 这是消费拓扑概览，省略 BLAST 等中间环节；XR runtime 的内部合成与显示需单独取证。
+
+<!-- gracker-diagram: ch13-index-02-reading-map -->
+![按问题选择第十三章阅读入口](../../assets/diagrams/ch13/ch13-index-02-reading-map.png)
+
+图：按 UI 框架、Surface / API、媒体、网页或 XR 选择专项。 这是阅读分组，各格不表示执行先后；具体承载和消费者仍按目标对象确认。
+
+<!-- gracker-diagram: ch13-index-03-evidence-method -->
+![以对象、依赖与终点组织取证](../../assets/diagrams/ch13/ch13-index-03-evidence-method.png)
+
+图：把对象身份、提交依赖、消费者和时间基准联系起来。 箭头表示取证步骤，非固定执行流水线；API 返回、GPU 完成与光学响应分别判断。

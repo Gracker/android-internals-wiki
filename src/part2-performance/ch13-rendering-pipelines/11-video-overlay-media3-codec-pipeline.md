@@ -322,6 +322,11 @@ consolidated_from:
 
 排查视频功耗或掉帧时，我们要先回答一个问题：这一帧视频有没有走显示硬件合成。这里的 Overlay 指显示硬件直接参与某个 Layer 的合成，视频像素无须先由 RenderEngine/GPU 采样进 client target。“使用 `SurfaceView`，视频就会走 Overlay 并绕过 GPU”的说法漏掉了逐帧协商这一条件：`SurfaceView` 会为视频保留独立的 SurfaceFlinger Layer（合成单元），让 HWC 有机会把它判为 `DEVICE`；最终是否采用显示硬件合成，要等 SurfaceFlinger 把当前帧的完整 Layer 栈交给 HWC 后才能确定。视频格式、缩放、旋转、HDR、受保护属性、叠加 UI、可用 plane 数量和显示带宽都会影响这一帧的选择；plane 是显示硬件可独立读取、缩放或混合一路图像的资源。
 
+<!-- gracker-diagram: ch13-11-03-overlay-opportunity -->
+![SurfaceView保留独立视频候选](../../assets/diagrams/ch13/ch13-11-03-overlay-opportunity.png)
+
+图：SurfaceView 让 HWC 有机会单独处理视频 Layer。 独立 Layer 不保证 DEVICE，也不保证固定功耗收益。
+
 所以我们把问题拆成四问：
 
 | 问题 | 谁决定 | 能从哪里确认 |
@@ -360,7 +365,17 @@ sequenceDiagram
     HWC-->>SF: layer release fences + display present fence
 ```
 
+<!-- gracker-diagram: ch13-11-04-ordinary-blast-sequence -->
+![普通视频提交到显示的依赖](../../assets/diagrams/ch13/ch13-11-04-ordinary-blast-sequence.png)
+
+图：普通 SurfaceView 通过 BLAST 事务进入 SF/HWC。 轨道为依赖示意；事务可延后，硬件完成可晚于 CPU 返回。
+
 图中的 access unit 是一份送入 decoder 的压缩数据单元，scanout 则是显示引擎按扫描时序读取最终画面的过程。调用 `releaseOutputBuffer(index, renderTimestampNs)` 时，App 放弃对该输出 buffer 的控制，并要求 codec 按给定时间将它渲染到 Surface；调用返回只说明渲染请求已经提交，本身证明不了这一帧已经显示。Android 17 的 `MediaCodec.java` 仍将这个重载的时间戳定义为纳秒，后续能否按时 latch、合成和 scanout，我们还要沿着 BufferQueue、SurfaceFlinger 与 HWC 继续查。
+
+<!-- gracker-diagram: ch13-11-05-release-output-time -->
+![释放输出、目标时间与可见结果](../../assets/diagrams/ch13/ch13-11-05-release-output-time.png)
+
+图：释放 codec 输出和请求显示时间是提交行为。 调用返回与像素可见不是同一事件。
 
 #### 时间戳决定“希望何时显示”
 
@@ -372,6 +387,16 @@ Android 17 的 `BufferQueueProducer.cpp` 会在 `queueBuffer()` 路径把 reques
 
 requested present timestamp 只表达期望时间，离显示完成凭据还远。codec 产出 buffer、SurfaceFlinger latch 该 buffer、显示硬件完成 present 分属不同阶段；定位视频卡顿时，我们只看 `releaseOutputBuffer()` 正常返回是远远不够的。
 
+<!-- gracker-diagram: ch13-11-06-timestamp-transfer -->
+![BLAST怎样传递显示时间](../../assets/diagrams/ch13/ch13-11-06-timestamp-transfer.png)
+
+图：时间戳由 BufferItem 转成 SF buffer 事务的 desiredPresentTime。 BLAST 不用非零 expectedPresent 来等待目标显示时间。
+
+<!-- gracker-diagram: ch13-11-07-two-time-gates -->
+![BQC通用门控与SF事务门控](../../assets/diagrams/ch13/ch13-11-07-two-time-gates.png)
+
+图：通用 Consumer 时间策略与现代 SF 事务策略属于不同关口。 看到 PRESENT_LATER 需先确认实际调用者与参数。
+
 #### 三类 fence 的分工
 
 | fence | 保护的依赖 | 信号后的含义 |
@@ -382,21 +407,51 @@ requested present timestamp 只表达期望时间，离显示完成凭据还远�
 
 acquire 与 release 的名称描述某次 buffer 所有权交接的两端；离开具体的交接关系，单看名称还确定不了等待落在 codec、GPU 还是显示端。Android 的 fence 最终由内核 `dma_fence` 表示，跨进程 fd（文件描述符） 封装由 `sync_file` 提供。`PRESENT_FENCE_IS_NOT_RELIABLE` 则表示设备声明 present fence 不适合用作精确显示时刻。排查时我们无须记忆 fd 编号，沿生产者、SurfaceFlinger、Composer HAL、显示驱动逐段确认等待关系即可，否则很容易把解码慢、排队晚、fence 晚和显示提交晚都归为“视频掉帧”。
 
+<!-- gracker-diagram: ch13-11-08-three-fences -->
+![acquire、release和present的对象](../../assets/diagrams/ch13/ch13-11-08-three-fences.png)
+
+图：三种 fence 分别保护读取、复用和呈现边界。 fd 返回、fence signal 和像素响应必须分开解释。
+
+<!-- gracker-diagram: ch13-11-09-fence-return-signal -->
+![HWC返回fence与设备完成](../../assets/diagrams/ch13/ch13-11-09-fence-return-signal.png)
+
+图：接口返回与硬件完成是两个时刻。 release 对应旧 buffer，TV 可另有层级反馈。
+
 ### SurfaceView、TextureView 与自定义 GPU 路径
 
 #### SurfaceView：保留独立的合成单元
 
 `SurfaceView` 的 buffer 进入独立的 SurfaceFlinger Layer。即使 App Window 没有重绘，视频 Layer 也可以按自己的帧率更新。这个结构让 HWC 能单独检查视频 Layer 的 YUV 格式、dataspace（色彩与传递特征描述）、crop、transform、alpha、保护属性和目标区域。
 
+<!-- gracker-diagram: ch13-11-10-sv-independent -->
+![SurfaceView内容与宿主窗口独立](../../assets/diagrams/ch13/ch13-11-10-sv-independent.png)
+
+图：SurfaceView 保留独立视频输出和合成属性。 宿主窗口没有重绘不代表视频没有更新。
+
 如果 HWC 接受它为 `DEVICE`，RenderEngine 就无须采样这个视频 Layer。不过屏幕上仍可能同时存在 GPU 生成的 client target——RenderEngine 把一个或多个 `CLIENT` Layer 预先合成得到的整块图像，例如 App UI 或复杂特效。所以 `DEVICE` 只说明视频 Layer 由设备侧合成；这一帧里还有没有 GPU 工作，从这里是推不出来的。
+
+<!-- gracker-diagram: ch13-11-11-device-plus-client -->
+![视频DEVICE与其他GPU工作并存](../../assets/diagrams/ch13/ch13-11-11-device-plus-client.png)
+
+图：视频 DEVICE 和其他 Layer 的 client composition 可以并存。 GPU 忙不能单独证明视频 Overlay 失败。
 
 #### TextureView：视频先成为 App 渲染输入
 
 `TextureView` 通过 `SurfaceTexture` 把视频帧作为纹理交给 App，HWUI 或自定义 GL 渲染再将它画入 App Window buffer。到达 SurfaceFlinger 时，视频像素通常已经与 App UI 合并在同一个 Layer 中，HWC 再想把其中的“视频部分”单独分给硬件 plane，已经没有机会了。
 
+<!-- gracker-diagram: ch13-11-12-texture-host -->
+![TextureView先进入应用再到SF](../../assets/diagrams/ch13/ch13-11-12-texture-host.png)
+
+图：TextureView 的视频先由应用采样进入宿主窗口。 不能将 App 采样等同于 SF RenderEngine 采样。
+
 这条路径适合任意几何变换、透明度、圆角、模糊以及与 UI 紧密混合的场景，代价是每帧增加 GPU 采样和 App Window 写回。是否值得采用，需要比较同一设备、亮度、分辨率和刷新率下的测量结果。
 
 Android 17 的宿主链从 `SurfaceTexture.OnFrameAvailableListener` 进入 `TextureView.updateLayer()` / `invalidate()`；绘制同步后，RenderThread 侧的 `DeferredLayerUpdater::apply()` 调用 `ASurfaceTexture_dequeueBuffer()`，获取最新 `AHardwareBuffer` 并更新 HWUI layer。Codec buffer 已经可读，只说明 TextureView 有新纹理可取；宿主的 View 树遍历、RenderThread 或 App Window 提交迟到时，最终画面仍会沿用旧帧。
+
+<!-- gracker-diagram: ch13-11-13-texture-main-rt -->
+![TextureView主线程与RT的分工](../../assets/diagrams/ch13/ch13-11-13-texture-main-rt.png)
+
+图：主线程记录与 RT 取图、采样属于不同阶段。 新 codec buffer 可读不保证宿主当帧已经显示它。
 
 #### 自定义 GL / Vulkan：按输出 Surface 判定
 
@@ -407,6 +462,11 @@ Android 17 的宿主链从 `SurfaceTexture.OnFrameAvailableListener` 进入 `Tex
 
 单看“使用 Vulkan”还是“使用 OpenGL ES”，推不出 `CLIENT` 或 `DEVICE`；判断依据是最终内容提交到哪个 Surface，以及该 Surface 在 SurfaceFlinger 中形成了怎样的 Layer。
 
+<!-- gracker-diagram: ch13-11-14-custom-output -->
+![自定义GPU路径按最终Surface判定](../../assets/diagrams/ch13/ch13-11-14-custom-output.png)
+
+图：最终输出 Surface 决定 SF 中的合成边界。 使用哪一种图形 API 不能单独推出 DEVICE 或 CLIENT。
+
 ### HWC 负责什么
 
 HWC 位于 SurfaceFlinger 与设备显示实现之间。它根据当前帧的 Layer 栈和硬件能力提出合成方案，并在存在 GPU 合成内容时接收 SurfaceFlinger 的 client target。AIDL Composer3 的 `Composition.aidl` 定义了三种与视频密切相关的 composition type：
@@ -416,6 +476,11 @@ HWC 位于 SurfaceFlinger 与设备显示实现之间。它根据当前帧的 La
 | `CLIENT` | SurfaceFlinger 的 RenderEngine 把该 Layer 画入 client target，再通过 `setClientTarget()` 交给设备 | 该视频 Layer 参与 RenderEngine/GPU 合成 |
 | `DEVICE` | 设备用 hardware overlay 或类似方式处理该 Layer | 该视频 Layer 不由 RenderEngine 采样；具体硬件结构仍由设备决定 |
 | `SIDEBAND` | 设备负责 Layer 合成、buffer 更新和内容同步，要求 `SIDEBAND_STREAM` 能力 | 常见于 tunneled playback，通过 sideband handle 关联设备侧流，不走普通逐帧 BufferQueue 更新 |
+
+<!-- gracker-diagram: ch13-11-15-composition-types -->
+![三类视频合成职责](../../assets/diagrams/ch13/ch13-11-15-composition-types.png)
+
+图：CLIENT、DEVICE 和 SIDEBAND 划分的是合成与更新职责。 SIDEBAND 需要能力支持，不是 DEVICE 的改名。
 
 `DEVICE` 只界定该 Layer 的合成职责，不承诺“一层对应一个物理 plane”，也不承诺固定功耗收益。Composer HAL 不向 framework 暴露具体硬件映射；plane 分配、DPU（Display Processing Unit，显示处理单元）block、色彩单元和带宽策略都属于设备实现。
 
@@ -440,6 +505,11 @@ validate 是 SurfaceFlinger 与 HWC 对本帧合成分工的确认过程；非 s
 4. 如果存在 `CLIENT` Layer，RenderEngine 生成 client target，SurfaceFlinger 用 `setClientTarget()` 把它交给 HWC。
 5. HWC 接收 `DEVICE` Layer、client target 和相关 fence，完成 present，并返回 release fence 与 present fence。
 
+<!-- gracker-diagram: ch13-11-16-validate-flow -->
+![一次常规validate与present](../../assets/diagrams/ch13/ch13-11-16-validate-flow.png)
+
+图：常规路径先确认分工，再准备 client target 和提交显示。 这里只画非快路径；调用返回仍不代表 fence 已完成。
+
 所以 Overlay 属于逐帧决策：即使上一帧的视频 Layer 是 `DEVICE`，新出现的字幕、画中画、颜色变换、旋转或 plane 竞争，也可能让下一帧改为 `CLIENT`。
 
 #### `presentOrValidate()` 快路径
@@ -452,6 +522,11 @@ validate 是 SurfaceFlinger 与 HWC 对本帧合成分工的确认过程；非 s
 条件满足后，SurfaceFlinger 调用 `presentOrValidate()`。返回 `PresentSucceeded` 表示这次调用已经完成 present 阶段，framework 会直接保存 release fence 和 present fence，固定流程里再调一次 `presentDisplay()` 的步骤就此省掉。若返回 validate 结果，framework 仍要处理 changed types，并在需要时执行 client composition。
 
 Composer3 AIDL 已将 `Capability.SKIP_VALIDATE` 标记为 deprecated，并注明该行为默认可用。这里的“默认可用”只说明接口不再依赖显式 capability 位；某台设备的快路径命中率，仍取决于帧状态、时序与 HAL 返回结果。
+
+<!-- gracker-diagram: ch13-11-17-skip-validate -->
+![presentOrValidate的条件与分支](../../assets/diagrams/ch13/ch13-11-17-skip-validate.png)
+
+图：快路径可能完成提交，也可能转入常规协商。 PresentSucceeded 不表示显示硬件已经结束工作。
 
 ### Overlay 为什么会回退
 
@@ -470,6 +545,11 @@ HWC 的可用能力由 SoC 显示模块、Composer HAL、显示模式和当前 L
 
 别用“设置了 alpha 就一定回退”这类说法编写业务判断。更可靠的做法是我们设计 A/B 场景，每次只改变一个变量，再连续采集 SurfaceFlinger layer trace、GPU counters、显示频率和功耗。
 
+<!-- gracker-diagram: ch13-11-18-overlay-constraints -->
+![Overlay候选受哪些条件限制](../../assets/diagrams/ch13/ch13-11-18-overlay-constraints.png)
+
+图：单个状态变化是否影响合成，要看完整栈和设备证据。 圆角、alpha 或 HDR 都不是跨设备固定的回退开关。
+
 #### GPU、DEVICE 与 SIDEBAND 的通路对比
 
 | 路径 | 逐帧像素经过 App / SF 的方式 | 视频 Layer 是否由 RenderEngine 采样 | 适用能力 | 代价与边界 |
@@ -484,9 +564,19 @@ HWC 的可用能力由 SoC 显示模块、Composer HAL、显示模式和当前 L
 
 Tunneled playback 把逐帧选择和 A/V 同步交给 codec、音频或 tuner 时钟以及设备显示链。sideband handle 是 framework 传给 HWC 的不透明流句柄，由设备侧机制更新内容并维持同步；因此，sideband layer 不一定出现普通 Surface 视频那样密集的 `queueBuffer` 和 latch 事件。本节只交代它与 HWC composition type 的关系：确认过 codec capability、sideband 状态、`SIDEBAND` composition 和设备时钟之后，缺少逐帧图形事件才属于正常现象。Codec2 配置、Media3 ABR、音视频同步和完整排障由本文后文统一展开。
 
+<!-- gracker-diagram: ch13-11-19-tunnel-sideband -->
+![sideband控制面与设备数据面](../../assets/diagrams/ch13/ch13-11-19-tunnel-sideband.png)
+
+图：sideband handle 关联设备侧视频流，SF 仍管理 Layer。 普通 queue/latch 事件稀疏需结合实际模式解释。
+
 ### DRM、Secure Video 与 Overlay
 
 本节的 DRM 指 Digital Rights Management（数字版权管理）。`FEATURE_SecurePlayback`、`DEVICE` 和 `FEATURE_TunneledPlayback` 属于不同层面的能力，互相替代不了：
+
+<!-- gracker-diagram: ch13-11-20-security-independent -->
+![secure、protected与tunnel分别查询](../../assets/diagrams/ch13/ch13-11-20-security-independent.png)
+
+图：内容保护、合成职责与 tunnel 是独立能力维度。 需要验证实际组合，不能用其中一项推出另外两项。
 
 - `FEATURE_SecurePlayback` 表示 codec 支持 secure playback，可参与受保护的解码路径；
 - protected buffer / secure Layer 要求像素从解密、解码、分配、合成到输出端都留在允许的安全路径；
@@ -495,6 +585,11 @@ Tunneled playback 把逐帧选择和 A/V 同步交给 codec、音频或 tuner �
 - `SIDEBAND` 是 tunneled 视频常用的 HWC composition type。
 
 受保护视频通常优先使用安全硬件合成，但从“受保护”推不出“必定 DEVICE”或“必定 SIDEBAND”。Android 17 的 CompositionEngine 会查询 RenderEngine 是否支持 protected content，framework 也保留 protected client composition 路径。设备能否使用这条路径，取决于 protected EGL/GPU、gralloc、codec、Composer HAL、显示输出和 DRM 策略能否共同满足要求。
+
+<!-- gracker-diagram: ch13-11-21-protected-client -->
+![protected client composition的条件](../../assets/diagrams/ch13/ch13-11-21-protected-client.png)
+
+图：Android 保留受保护的 client composition 路线。 是否可用由设备安全链和策略共同决定。
 
 Android 17 公开的 `HardwareBuffer.USAGE_PROTECTED_CONTENT` 与 graphics common AIDL `BufferUsage.PROTECTED` 只表达 buffer 的保护用途。单凭 usage 标志还拼不出 secure decoder、allocator、RenderEngine/HWC、显示输出与 HDCP 这条完整安全链，仍要逐段核对能力和运行结果。HDCP 是外接数字显示链路上的内容保护协议。
 
@@ -511,6 +606,11 @@ Android 17 公开的 `HardwareBuffer.USAGE_PROTECTED_CONTENT` 与 graphics commo
 
 帧率 vote 是 Layer 向 SurfaceFlinger Scheduler 提交的帧率偏好，用于显示模式和节奏选择；它不会直接指定视频 Layer 的 `CLIENT`、`DEVICE` 或 `SIDEBAND`。刷新率与 composition type 可能在同一时段变化，我们仍要分别查看 Layer 状态和调度记录，才能判断因果关系。
 
+<!-- gracker-diagram: ch13-11-22-framerate-separate -->
+![帧率vote与合成类型两条线](../../assets/diagrams/ch13/ch13-11-22-framerate-separate.png)
+
+图：帧率偏好影响显示调度，合成类型来自 HWC 协商。 帧率 API 不会直接命令该 Layer 成为 DEVICE。
+
 当问题表现为周期性顿挫时，可以按时间线依次检查：
 
 1. 输入 PTS 是否单调，是否有变帧率或不连续点；
@@ -519,6 +619,16 @@ Android 17 公开的 `HardwareBuffer.USAGE_PROTECTED_CONTENT` 与 graphics commo
 4. SurfaceFlinger 是否在目标 VSync 前 latch；
 5. HWC acquire fence、present fence 或显示驱动提交是否变晚；
 6. 显示刷新率是否与内容帧率形成稳定倍频。
+
+<!-- gracker-diagram: ch13-11-23-24-120-cadence -->
+![24fps在120Hz的理想节奏](../../assets/diagrams/ch13/ch13-11-23-24-120-cadence.png)
+
+图：稳定 24 fps 可在 120 Hz 下形成每帧五个刷新周期。 不要求 decoder 或 SF 每秒提交 120 个新 buffer。
+
+<!-- gracker-diagram: ch13-11-24-jitter-stages -->
+![周期性顿挫的六个关口](../../assets/diagrams/ch13/ch13-11-24-jitter-stages.png)
+
+图：沿同帧依赖查输入、解码、事务、合成与显示。 PTS 要先映射到系统时间，延迟不能混算。
 
 ### 用 dumpsys 与 Perfetto 识别合成路径
 
@@ -534,6 +644,11 @@ grep -niE 'SurfaceView|video|composition( type)?|sideband|protected' sf-video.tx
 命令会生成完整的 `sf-video.txt`，第二行筛出的内容只用于定位，上下文还要回到完整文件里看。不同 Android 版本和厂商 build 的文本布局会变化。Android 17 AOSP 的 CompositionEngine dump 会输出类似 `composition` / `composition type` 的字段；我们先按 Layer 名找到目标 Layer，再在对应 display 的 output-layer 状态中核对 `DEVICE`、`CLIENT` 或 `SIDEBAND`，别依赖固定的 `grep -A5` 行数。
 
 `dumpsys` 只代表采集瞬间。播放控制条刚消失、字幕刚更新或显示模式正在切换时，结果可能与稳态不同，所以我们至少采集两组状态：
+
+<!-- gracker-diagram: ch13-11-25-snapshot-vs-trace -->
+![dumpsys快照与连续证据](../../assets/diagrams/ch13/ch13-11-25-snapshot-vs-trace.png)
+
+图：快照与连续时间线各自回答不同问题。 固定 grep 行数或单次 GPU 空闲不能证明整个播放期。
 
 - 无浮层的稳态播放；
 - 控制条、字幕、圆角或 PiP 出现时。
@@ -561,6 +676,11 @@ adb pull /data/misc/perfetto-traces/video-hwc.perfetto-trace
 
 判断 Overlay，最直接的依据是目标视频 Layer 在问题区间的 composition type 为 `DEVICE`。GPU track 较空只能作为旁证，因为 GPU 还可能执行 App 渲染、其他 client composition 或无关任务；反过来，GPU 忙同样单独说明不了目标视频 Layer 就是 `CLIENT`。
 
+<!-- gracker-diagram: ch13-11-26-trace-source-gates -->
+![composition证据需要显式采集](../../assets/diagrams/ch13/ch13-11-26-trace-source-gates.png)
+
+图：Layer composition 证据依赖相应数据源和字段。 gfx 短命令不自动生成 Layer 快照或完整 vendor 轨道。
+
 #### 一套可复现的 A/B 实验
 
 | 实验 | 只改变什么 | 需要保持不变 | 预期能回答的问题 |
@@ -572,9 +692,19 @@ adb pull /data/misc/perfetto-traces/video-hwc.perfetto-trace
 
 每轮同时记录 SurfaceFlinger、Perfetto、codec 名称、温度、亮度和显示模式。少了这些控制变量，面板亮度、热状态或刷新率切换很容易被误认为 Overlay 带来的功耗变化。
 
+<!-- gracker-diagram: ch13-11-27-controlled-ab -->
+![视频路径功耗实验的控制变量](../../assets/diagrams/ch13/ch13-11-27-controlled-ab.png)
+
+图：功耗与掉帧结论来自受控条件下的实际路径。 设备、温度和亮度差异不能由 API 名称抵消。
+
 ### 内核和驱动侧看什么
 
 Android 通用内核并不选 `CLIENT` 或 `DEVICE`，这个决定由 SurfaceFlinger 与 Composer HAL 协商；内核提供的是 buffer 共享、同步和显示驱动执行机制。这里的 DRM/KMS 指内核图形子系统 Direct Rendering Manager / Kernel Mode Setting，与前文数字版权管理语境中的 DRM 含义不同：
+
+<!-- gracker-diagram: ch13-11-28-kernel-boundaries -->
+![内核共享同步与设备显示实现](../../assets/diagrams/ch13/ch13-11-28-kernel-boundaries.png)
+
+图：通用内核提供共享和同步，合成职责在 SF/HWC 协商。 厂商驱动时序不能靠 common kernel 定义补写出来。
 
 - `dma-buf` 让 codec、GPU、DPU 等设备共享同一块图形内存；
 - `dma_fence` 表示异步硬件任务之间的完成依赖；
@@ -600,6 +730,11 @@ Android 通用内核并不选 `CLIENT` 或 `DEVICE`，这个决定由 SurfaceFli
 | Android 17 | 锚定 `android-17.0.0_r1` | `SKIP_VALIDATE` 注解为默认启用；框架仍受 `canSkipValidate` 和 `presentOrValidate()` 结果约束 |
 
 AIDL Composer3 改变的只是 framework 与 Composer HAL 之间的接口形式，plane 数量、旧硬件的缩放、HDR 或 protected 能力都不会因此升级。所以分析具体机型时，我们要分别记录 Android API 版本、Composer HAL 接口版本和 DPU 硬件代际。
+
+<!-- gracker-diagram: ch13-11-29-interface-vs-hardware -->
+![Composer接口代际与硬件代际](../../assets/diagrams/ch13/ch13-11-29-interface-vs-hardware.png)
+
+图：接口演进不增加旧硬件的 plane 或像素处理能力。 平台版本、HAL 接口和显示硬件要分别记录。
 
 ### 与其他章节的关系
 
@@ -661,6 +796,11 @@ flowchart LR
     AT --> V
 ```
 
+<!-- gracker-diagram: ch13-11-30-player-control-path -->
+![播放器控制与普通和tunnel输出](../../assets/diagrams/ch13/ch13-11-30-player-control-path.png)
+
+图：播放控制面决定候选与配置，输出承载再决定图形与同步链。 component 不等于 vendor 专用硬件；两类输出不可混画。
+
 Media3 负责解析 manifest（媒体清单）、下载 segment（媒体分片）、维护播放 buffer，再从可用 track（不同码率、分辨率或语言的轨道）里选出当前档位。`MediaCodec` 是应用可见的 codec 控制接口，Stagefright 是其 native 媒体框架，再把请求交给 CCodec/Codec2 或 ACodec/OMX。普通视频帧经 Surface 的 BufferQueue 到达 SurfaceFlinger；tunnel 模式则把 sideband handle 绑定到 layer，逐帧选择主要由 codec、音频同步硬件和 HWC 完成。
 
 拿到现象后，我们先按这张表归位：
@@ -704,6 +844,11 @@ Android 10 已把可更新的软件 Codec2 组件纳入 Media Codecs APEX（可�
 | tunnel 配置 | `C2PortTunneledModeTuning` 与 tunnel handle | OMX video tunnel extension 与 sideband window |
 | 诊断重点 | work queue、graphic block、C2 参数、component store | port 状态、buffer ownership、OMX command/event |
 
+<!-- gracker-diagram: ch13-11-31-codec2-omx -->
+![Codec2与OMX的诊断对象](../../assets/diagrams/ch13/ch13-11-31-codec2-omx.png)
+
+图：Android 17 同时保留 CCodec 和 ACodec 路线。 相同 Java 栈不能证明 native 队列或硬件实现相同。
+
 所以 codec 名称是线上诊断的关键字段。API level 只划出框架能力上限：本次实例选中了哪个 vendor component，secure、HDR、低延迟和 tunnel 的组合是否可用，都要另外查。
 
 排查 `MediaCodec` 卡住时，至少记录：
@@ -722,11 +867,21 @@ Android 10 已把可更新的软件 Codec2 组件纳入 Media Codecs APEX（可�
 
 Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设置 `MediaFormat.KEY_LOW_LATENCY`。这项能力要求 decoder 避免额外持有超过编码标准需要的数据，但编码结构所需的 B-frame 重排、吸收网络抖动的 jitter buffer（吸收网络抖动的缓冲）、Surface 排队和显示 VSync 仍可能贡献延迟；运行时还可通过 `PARAMETER_KEY_LOW_LATENCY` 调整。
 
+<!-- gracker-diagram: ch13-11-32-low-latency -->
+![低延迟能力与剩余延迟](../../assets/diagrams/ch13/ch13-11-32-low-latency.png)
+
+图：低延迟模式不能消除码流本身或下游排队的全部延迟。 按目标组合验证首帧、稳态、功耗和热状态。
+
 验收要同时记录 codec name、profile/level、首帧、稳态掉帧、功耗和热状态；固定延迟从 API 可用性里是推不出来的。
 
 HDR、Dolby Vision、secure、high-frame-rate、low-latency 与 tunnel 要按实际组合查询和测试。显示支持、decoder profile、extractor metadata、secure Surface、HWC plane 和 tone mapping 任一环节都可能改变结果。Android 17 还增加 Eclipsa video 的平台播放与采集能力；这只说明 framework 能传递相应动态元数据；各 SoC、显示或 codec 组合是否采用硬件低成本路径，平台并无承诺。
 
 完整音频输出、AAudio/MMAP 与回调预算由 [1.20 音频链路（Audio Pipeline）延迟与性能](../../part1-fundamentals/ch01-architecture/20-audio-pipeline-performance.md) 承载；Camera 到 encoder 的 Surface 管线见 [13.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](10-camera-pipeline.md)；Media3 的 Surface 生命周期、prewarming、effects、HDR/DRM、首帧与播放器侧观测见 [22.17 Media3 视频播放：解码、帧时序与渲染](../../part5-app/ch22-rendering-practice/17-media3-video-rendering.md)。本节只覆盖播放控制面、Codec2/OMX、tunnel 与 ABR 的公共部分。
+
+<!-- gracker-diagram: ch13-11-33-hdr-metadata -->
+![HDR动态元数据与显示能力](../../assets/diagrams/ch13/ch13-11-33-hdr-metadata.png)
+
+图：Eclipsa Video 等能力贯穿内容、库、codec 和显示处理。 API 37 支持不等于所有设备组合都走硬件低成本路径。
 
 ### Tunneled playback 的源码路径
 
@@ -760,6 +915,16 @@ val player = ExoPlayer.Builder(context)
 
 这段代码本身保证不了设备最终进入 tunnel。应用要从 renderer、codec 和 session 日志确认实际模式，并在目标机型上做播放测试。Media3 官方 API 也明确提示 tunneled playback 存在设备特定限制。
 
+<!-- gracker-diagram: ch13-11-34-tunnel-on-demand -->
+![音频时钟点播的tunnel条件](../../assets/diagrams/ch13/ch13-11-34-tunnel-on-demand.png)
+
+图：音频时钟点播需要同时建立 codec、session、音频和显示关系。 偏好与能力查询不保证 configure 或长期播放成功。
+
+<!-- gracker-diagram: ch13-11-35-selector-tunnel -->
+![Media3选择tunnel的门槛](../../assets/diagrams/ch13/ch13-11-35-selector-tunnel.png)
+
+图：DefaultTrackSelector 按支持 tunnel 的已选 renderer 组合配置。 不是简单按全部 renderer 总数判断；也不证明设备实际进入模式。
+
 #### audio session 如何变成硬件同步 ID
 
 Android 17 的 `MediaCodec.configure()` 遍历 `MediaFormat` 时，会把 `KEY_AUDIO_SESSION_ID` 改写为 native key `audio-hw-sync`，值来自：
@@ -768,9 +933,19 @@ Android 17 的 `MediaCodec.configure()` 遍历 `MediaFormat` 时，会把 `KEY_A
 
 `MediaFormat.KEY_AUDIO_SESSION_ID` 保存 AudioTrack session id，用于关联应用侧 audio session；传给 codec component 的则是 AudioFlinger/Audio HAL 为该 session 查询出的 hardware sync id。二者数值与职责各有分工；排查时我们要同时记录 session id、audio route 和最终硬件同步配置，避免把 Java session id 直接当成 `HW_AV_SYNC`。
 
+<!-- gracker-diagram: ch13-11-36-session-hw-sync -->
+![audio session与硬件sync ID](../../assets/diagrams/ch13/ch13-11-36-session-hw-sync.png)
+
+图：Java audio session id 经查询转换为 native 硬件同步 ID。 两个值和职责不同，不能直接画成同一个标识。
+
 #### CCodec 如何建立 sideband
 
 `android-17.0.0_r1` 的 CCodec 路径可以按四步阅读：
+
+<!-- gracker-diagram: ch13-11-37-ccodec-sync -->
+![CCodec的三种同步选择](../../assets/diagrams/ch13/ch13-11-37-ccodec-sync.png)
+
+图：CCodec 按配置键选择 tunnel 同步类型。 REALTIME 的设备时钟细节不能从这个枚举单独推出。
 
 1. `CCodec.cpp` 在有输出 Surface、当前组件为视频 decoder，且消息包含非零 `feature-tunneled-playback` 时调用 `configureTunneledVideoPlayback()`。
 2. 该函数创建 `C2PortTunneledModeTuning::output`，模式为 `SIDEBAND`。有 `audio-hw-sync` 时选择 `AUDIO_HW_SYNC`；有 `hw-av-sync-id` 时选择 `HW_AV_SYNC`；两者都没有时选择 `REALTIME` 同步类型。公开接口没有继续规定该类型在设备侧采用哪套具体时钟。
@@ -779,7 +954,17 @@ Android 17 的 `MediaCodec.configure()` 遍历 `MediaFormat` 时，会把 `KEY_A
 
 `C2Config.h` 把 tunneled mode、sync type、sync id、tunnel handle 和 tunnel render time 定义成独立参数。公开源码能确认 framework 与 component 的协议；sideband handle 之后如何关联 codec 硬件、secure video path 和 display plane，则由 vendor codec/HWC/driver 实现决定。
 
+<!-- gracker-diagram: ch13-11-38-handle-binding -->
+![tunnel handle绑定及重置](../../assets/diagrams/ch13/ch13-11-38-handle-binding.png)
+
+图：tunnel handle 是关联设备流的控制对象。 本 CCodec 分支不逐帧携带普通 graphic-buffer dma-buf fd。
+
 ACodec/OMX 也有对应路径：读取 `feature-tunneled-playback` 和 `audio-hw-sync`，调用 OMX tunnel extension，取得 sideband window，再绑定到 native window。配置成功后，`ACodec` 把输出端口的 `nBufferCountActual` 设为 0，跳过普通 native window buffer 分配。Android 17 仍保留该实现，运行时应通过实际 codec 名称和日志判断走哪条路径。
+
+<!-- gracker-diagram: ch13-11-39-omx-sideband -->
+![OMX tunnel的输出端口处理](../../assets/diagrams/ch13/ch13-11-39-omx-sideband.png)
+
+图：ACodec 的 tunnel 路线不按普通 native-window 输出分配 buffer。 输出端口计数为零不能解释成视频没有设备侧帧。
 
 #### 首帧 ready、首帧 render 与 panel 可见是三个时刻
 
@@ -791,6 +976,11 @@ Tunnel 的首帧控制很容易被误读。Android 17 提供：
 
 peek 关闭时，首帧可以完成解码并触发 first-tunnel-frame-ready，显示却仍停留在上一幅画面或黑屏；等 AudioTrack 开始播放、或应用开启 peek，held frame 才进入后续显示过程。
 
+<!-- gracker-diagram: ch13-11-41-peek-held -->
+![peek关闭时首帧为何仍未显示](../../assets/diagrams/ch13/ch13-11-41-peek-held.png)
+
+图：首帧解码完成后仍可等待显式 peek 或音频时钟。 ready 通知不能单独证明新内容已经可见。
+
 所以我们看，`OnFirstTunnelFrameReadyListener` 离“首帧已上屏”还差最后一段，`OnFrameRenderedListener` 与 panel scanout 完成的 present fence 也不是一回事。应用若要定义“可见首帧”，还要结合显示侧或用户可见层面的记录。
 
 Codec2 侧的对应路径是：
@@ -801,15 +991,45 @@ Codec2 侧的对应路径是：
 - `MediaCodec` 收到 ready 事件且 peek 已开启时发出内部 `android._trigger-tunnel-peek`，`CCodecConfig` 再把它映射到 `C2_PARAMKEY_TUNNEL_START_RENDER`；
 - component 通过 `C2PortTunnelSystemTime` 上报 `CLOCK_MONOTONIC` 纳秒时间，CCodec 再触发 frame-rendered callback。
 
+<!-- gracker-diagram: ch13-11-42-c2-hold-render -->
+![Codec2首帧hold到render回调](../../assets/diagrams/ch13/ch13-11-42-c2-hold-render.png)
+
+图：显式 peek 首帧经过 hold、ready 与 start-render 协议。 work update 可继续返回，render time 仍不等于 panel 扫描完成。
+
 peek 的默认行为需要同时对照公开文档与兼容实现。`MediaCodec.java` 的 API 注释写着 peek 默认开启；Android 17 的 native `MediaCodec.cpp` 在应用未显式设置时仍保留 `kLegacyMode`，`start` 后把 `android._tunnel-peek-set-legacy=1` 传给 component。`CCodecConfig` 将其映射为 `UNSPECIFIED_PEEK`，decoder 可以忽略 hold/start-render 协议。官方设备实现文档也说明，应用未设置 `PARAMETER_KEY_TUNNEL_PEEK` 时，行为由 OEM 决定。
+
+<!-- gracker-diagram: ch13-11-43-legacy-peek -->
+![peek公开默认与legacy实现](../../assets/diagrams/ch13/ch13-11-43-legacy-peek.png)
+
+图：显式设置 peek 可避免依赖 legacy unspecified 行为。 默认描述不能覆盖所有兼容组件的实际行为。
 
 依赖 seek 预览或暂停态首帧的应用应在 codec 第一次 `start` 后、提交第一块有效视频输入前显式设置 `PARAMETER_KEY_TUNNEL_PEEK` 为 0 或 1。Android 17 会在 `flush` 或 `stop/start` 时保留已经显式设置的 enable bit，并把状态重置为“尚无首帧”；如果要改变策略，应在这个重置点之后、下一块有效输入之前设置新值。重建 codec 实例时仍要重新显式设置，避免回到 legacy unspecified 模式。
 
+<!-- gracker-diagram: ch13-11-44-peek-reset -->
+![flush与stop/start后的peek状态](../../assets/diagrams/ch13/ch13-11-44-peek-reset.png)
+
+图：重置首帧状态与保留 peek enable bit 是两件事。 codec 实例重建不能继承旧对象的显式配置。
+
 点播 tunnel 通常以音频时钟推进视频。AudioTrack underrun（音频数据供应不足）、pause 或路由切换让时钟停走时，视频也可能跟着停住。即使业务处于静音状态，也要按官方实现要求继续提交带 PTS 的音频数据，直接停掉 audio feed 是不行的。
+
+<!-- gracker-diagram: ch13-11-40-first-frame-boundaries -->
+![ready、render样本与面板可见](../../assets/diagrams/ch13/ch13-11-40-first-frame-boundaries.png)
+
+图：首帧 ready、渲染样本和用户可见是三个不同指标。 回调到达时刻不等于样本时间，也不等于面板完成扫描。
+
+<!-- gracker-diagram: ch13-11-45-audio-clock-stall -->
+![音频时钟停走如何影响tunnel](../../assets/diagrams/ch13/ch13-11-45-audio-clock-stall.png)
+
+图：音频时钟点播把视频推进与音频同步状态关联。 静音不等于可以停止 audio feed；tuner 路线另行判断。
 
 ### Media3 1.10.1 的 ABR 到底看什么
 
 ABR（Adaptive Bitrate，自适应码率）的工作分两层：
+
+<!-- gracker-diagram: ch13-11-46-abr-two-levels -->
+![候选过滤与ABR实时选档](../../assets/diagrams/ch13/ch13-11-46-abr-two-levels.png)
+
+图：候选能力过滤和动态选档属于两个层级。 默认 ABR 不读取 HWC 类型，也不直接按 decoder 掉帧自动降档。
 
 1. `DefaultTrackSelector` 先按 renderer/codec 能力、viewport（视频显示区域）、用户约束、MIME、语言、HDR 等条件得到可选 track。
 2. `AdaptiveTrackSelection` 再在可选 track 中，根据带宽预算、播放速度、下一个 chunk 时长、buffer 水位和 live edge（直播流当前可播放的最新位置）决定当前档位。传入的 `BandwidthMeter` 若能提供 TTFB（Time to First Byte，首字节等待时间）估计，还会把它计入预算。
@@ -826,6 +1046,16 @@ Media3 1.10.1 的 `DefaultBandwidthMeter` 在一次符合计量条件的全速�
 
 这些阈值属于 Media3 1.10.1 库实现，和 Android 17 平台常量是两回事。更换 Media3 版本后应重新核对源码；设备 API level 在这里帮不上忙。
 
+<!-- gracker-diagram: ch13-11-47-bw-window -->
+![并行网络传输的吞吐采样](../../assets/diagrams/ch13/ch13-11-47-bw-window.png)
+
+图：DefaultBandwidthMeter 结算的是计量窗口中的聚合字节。 并行时不能当作当前结束请求单独的吞吐。
+
+<!-- gracker-diagram: ch13-11-48-bw-percentile -->
+![带宽估计的权重和更新门槛](../../assets/diagrams/ch13/ch13-11-48-bw-percentile.png)
+
+图：带宽估计由加权样本和积累门槛更新。 初始值、采样更新和切网重置策略不能混为一项。
+
 #### 选档与 buffer 门槛
 
 Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
@@ -839,11 +1069,21 @@ Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 | `DEFAULT_BUFFERED_FRACTION_TO_LIVE_EDGE_FOR_QUALITY_INCREASE` | 0.75 | 靠近 live edge 时调整升档门槛 |
 | `DEFAULT_MAX_WIDTH_TO_DISCARD` / `HEIGHT` | 1279 / 719 | 允许为升档丢弃的旧低清 chunk 尺寸上限 |
 
+<!-- gracker-diagram: ch13-11-52-abr-discard -->
+![升档丢弃旧chunk的限制](../../assets/diagrams/ch13/ch13-11-52-abr-discard.png)
+
+图：discard 策略同时约束保留时长、码率和旧帧尺寸。 它与实时 output late-frame drop 不是同一种丢帧。
+
 有效预算还会考虑播放速度。TTFB 或下一 chunk 时长未知时，1.10.1 使用以下计算：
 
 `allocatableBandwidth = bitrateEstimate * bandwidthFraction / playbackSpeed`
 
 当 `BandwidthMeter` 同时提供 TTFB，且下一个 chunk 时长已知时，预算改为：
+
+<!-- gracker-diagram: ch13-11-49-abr-budget -->
+![TTFB已知与未知时的预算](../../assets/diagrams/ch13/ch13-11-49-abr-budget.png)
+
+图：预算按播放速度和可选 TTFB 调整。 d 与 TTFB 必须同单位；DefaultBandwidthMeter 默认 TTFB 未知。
 
 `allocatableBandwidth = cautiousBandwidth × max(chunkDuration / playbackSpeed - TTFB, 0) / chunkDuration`
 
@@ -853,10 +1093,20 @@ Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 
 `updateSelectedTrack()` 先根据当前带宽预算求出理想档位，再用 buffer 健康度抑制过快切换：
 
+<!-- gracker-diagram: ch13-11-51-abr-hysteresis -->
+![理想档位和buffer滞回](../../assets/diagrams/ch13/ch13-11-51-abr-hysteresis.png)
+
+图：先按预算求理想档，再按 buffer 健康度抑制切换。 首次选择与已排除原档有不同分支，门槛不是固定等待时间。
+
 - 升档时 buffer 不足，保留当前档位。点播默认门槛为 10 秒；直播会结合到 live edge 的可用时长和下一 chunk 时长降低门槛。
 - 降档时 buffer 仍有 25 秒或更多，可以暂缓降档。
 
 这种设计减少了短时带宽抖动引起的频繁切档，也意味着网络样本变差后不一定立刻降档。分析一次 rebuffer（播放数据耗尽导致停顿）时，必须把传输完成时间、BandwidthMeter 更新、下一次 track 决策和 buffer 消耗放到同一时间轴。
+
+<!-- gracker-diagram: ch13-11-50-adaptive-shared-budget -->
+![多路adaptive selection分配](../../assets/diagrams/ch13/ch13-11-50-adaptive-shared-budget.png)
+
+图：多路 adaptive selection 可继续按检查点分配带宽。 0.7 乘估计带宽只是一部分，不等于每一路的最终预算。
 
 #### 默认主线的缓存与预测组件
 
@@ -879,6 +1129,11 @@ Media3 1.10.1 的默认 ABR 源码中没有 `AdaptivePlaybackCache` 或 `StreamS
 
 高分辨率、HDR、高帧率或 secure decoder 的解码压力，默认 ABR 是感知不到的。设备即使分别支持 HEVC、HDR10、60 fps、secure 和 tunnel，也未必支持这些能力的组合。所以我们在播放开始前过滤 codec 能力，线上再按实际 codec name 与内容属性分组。
 
+<!-- gracker-diagram: ch13-11-53-abr-decoder-display -->
+![网络、解码与显示瓶颈分开](../../assets/diagrams/ch13/ch13-11-53-abr-decoder-display.png)
+
+图：网络预算、设备解码和最终显示需要独立证据。 分别支持的能力不能直接拼成受支持的组合。
+
 ### Perfetto 与播放器事件要放在同一时钟上
 
 Perfetto 能观察调度、binder、频率、BufferQueue、SurfaceFlinger、HWC 和 audio 事件；Media3 的带宽估计、buffer 水位与选档原因，通常要应用写入 trace event 或记录 `AnalyticsListener` 事件。我们把两组数据映射到同一单调时钟，才能可靠判断事件先后。
@@ -889,6 +1144,11 @@ Perfetto 能观察调度、binder、频率、BufferQueue、SurfaceFlinger、HWC 
 
 TextureView 要在 codec queue 之后加上：
 
+<!-- gracker-diagram: ch13-11-56-normal-timeline -->
+![普通与TextureView的中间关口](../../assets/diagrams/ch13/ch13-11-56-normal-timeline.png)
+
+图：TextureView 比独立视频 Surface 多一段宿主重新生产输出。 宿主帧与视频输入帧需要关联，不能直接沿用同一个编号。
+
 `SurfaceTexture frame available → 宿主 doFrame/RenderThread 采样 → App Window queue → SF`
 
 Tunnel 路径则改为：
@@ -896,6 +1156,11 @@ Tunnel 路径则改为：
 `compressed input PTS → codec/HAL event → audio clock/HW_AV_SYNC → sideband/HWC → render feedback`
 
 Tunnel 的逐帧 decoded buffer 不走普通 BufferQueue 形态，常规 `BufferTX` 数量在这里解释不了每个视频 PTS。SurfaceFlinger 仍管理 sideband layer 的位置、尺寸、层级及其与其他 layer 的合成；HWC 可以在其他 layer 不变时，根据同步时钟独立更新 tunnel 视频。
+
+<!-- gracker-diagram: ch13-11-57-tunnel-clock-timeline -->
+![tunnel的媒体与显示证据](../../assets/diagrams/ch13/ch13-11-57-tunnel-clock-timeline.png)
+
+图：tunnel 需要媒体、同步时钟和设备显示侧证据。 普通 BufferTX 数量不能解释每个 tunnel 视频 PTS。
 
 建议播放器 session 记录这些字段：
 
@@ -910,9 +1175,29 @@ Tunnel 的逐帧 decoded buffer 不走普通 BufferQueue 形态，常规 `Buffer
 
 `FrameTimeline` 对应用宿主窗口和 SurfaceFlinger 显示帧很有价值；Perfetto 官方文档仍说明 SurfaceView 尚未得到完整支持。它覆盖不到 tunnel decoder 的每个视频 PTS，也单独证明不了某个视频帧已经被 panel scanout。视频指标要同时保留媒体 PTS 和 display 时间，这两套时间语义要分开用。
 
+<!-- gracker-diagram: ch13-11-54-clock-mapping -->
+![媒体PTS与系统trace如何对齐](../../assets/diagrams/ch13/ch13-11-54-clock-mapping.png)
+
+图：PTS 和系统时间先建立映射，才能比较先后和迟到。 未校准的跨时钟减法不能当作延迟。
+
+<!-- gracker-diagram: ch13-11-55-incremental-sample -->
+![分片下载与sample解码可重叠](../../assets/diagrams/ch13/ch13-11-55-incremental-sample.png)
+
+图：解码的前置条件是目标 sample 数据可用。 不要求整个 segment 下载完成后才开始所有解码。
+
+<!-- gracker-diagram: ch13-11-58-frametimeline-coverage -->
+![视频独立Surface的FrameTimeline边界](../../assets/diagrams/ch13/ch13-11-58-frametimeline-coverage.png)
+
+图：FrameTimeline 的对象与覆盖范围需和目标视频承载对应。 单一窗口时间线不能证明每个视频 PTS 已完成面板扫描。
+
 ### `KEY_ALLOW_FRAME_DROP` 的适用边界
 
 Android 17 的 `MediaCodec` 文档延续 Android 10 起的 Surface 输出语义：Surface 消费跟不上时，默认允许丢弃过量帧。面向非 View 的 output Surface，例如 ImageReader 或独立 SurfaceTexture，target SDK 为 Android 10 及以上时，可以在 configure format 中设置 `MediaFormat.KEY_ALLOW_FRAME_DROP = 0`，要求 Surface 不丢弃过量帧；consumer 持续跟不上时，backpressure 会逐步传到 decoder。
+
+<!-- gracker-diagram: ch13-11-59-allow-frame-drop -->
+![Surface丢帧策略与反压](../../assets/diagrams/ch13/ch13-11-59-allow-frame-drop.png)
+
+图：ALLOW_FRAME_DROP 只约束特定 Surface 消费策略。 它不是 SurfaceView/TextureView 的通用零丢帧开关。
 
 View surface 在 Android 10 之前就会丢弃过量帧，公开文档只对非 View surface 提供选择退出默认丢帧的语义。在 SurfaceView/TextureView 场景中，这个 key 当不了通用的零丢帧开关。
 
@@ -931,11 +1216,26 @@ View surface 在 Android 10 之前就会丢弃过量帧，公开文档只对非 
 
 Android 17 增加 VVC/H.266 的 framework MIME、MediaCodec/Codec2 API 与 MP4 extractor 支持，但 AOSP 不提供 VVC software decoder，也不提供 VVC encoder。只有 SoC 厂商提供并注册 vendor Codec2 VVC decoder 的设备才能解码。运行 API 37 和本机能否播放 VVC 必须作为两个独立字段记录。
 
+<!-- gracker-diagram: ch13-11-60-bounded-tunnel-fallback -->
+![tunnel失败后的可控回退](../../assets/diagrams/ch13/ch13-11-60-bounded-tunnel-fallback.png)
+
+图：应用可设计受限的 tunnel 到普通输出回退。 这是需要实现和验证的恢复策略，不是框架自动成功保证。
+
+<!-- gracker-diagram: ch13-11-61-vvc-platform-vendor -->
+![VVC平台入口与厂商decoder](../../assets/diagrams/ch13/ch13-11-61-vvc-platform-vendor.png)
+
+图：VVC 框架接入与设备 decoder 是两个条件。 AOSP 也不提供 VVC encoder；不能用版本号替代能力查询。
+
 ### 低延迟直播与倍速播放
 
 点播 ABR 追求较少 rebuffer 和稳定画质；低延迟直播则要多管住 live offset，也就是当前播放点落后直播最新位置的时长——buffer 过厚会逐渐远离 live edge，过薄则放大网络抖动。分析时至少记录 target live offset、current live offset、segment/part duration、playback speed 调整和每次选档原因。
 
 Tunnel 倍速播放还依赖设备的音频与视频硬件能力。官方实现建议我们把 `MediaFormat.KEY_OPERATING_RATE` 设为内容帧率与倍速的乘积，例如 60 fps 内容以 2 倍速播放时请求 120 fps。该值表达 decoder 所需处理速率，不保证当前 codec 在 secure/HDR/tunnel 组合下可以达到。
+
+<!-- gracker-diagram: ch13-11-62-live-speed -->
+![直播buffer与倍速解码需求](../../assets/diagrams/ch13/ch13-11-62-live-speed.png)
+
+图：直播、倍速与解码吞吐要放在同一规格中分析。 operating rate 是请求，不保证 secure/HDR/tunnel 下实际达到。
 
 Media3 Transformer 的离线转码不属于这里讨论的播放路径。Transformer 还涉及 decoder、effect、encoder、muxer（封装音视频轨道）、GPU/CPU 和文件 I/O，应单独分析。
 
@@ -944,6 +1244,11 @@ Media3 Transformer 的离线转码不属于这里讨论的播放路径。Transfo
 普通 codec → Surface 路径通常用 dma-buf 共享 graphic buffer，并用 dma-fence/sync_file 表达 codec、GPU、SurfaceFlinger 与 HWC 之间的异步完成关系。kernel 语义固定到 `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-buf.c`、`drivers/dma-buf/sync_file.c` 与 `include/linux/dma-fence.h`。
 
 sideband handle 也换不来 AOSP common kernel 的完整逐帧路径。codec job、secure buffer、A/V synchronizer、plane 提交和 scanout 通常位于厂商驱动或固件。当 Perfetto 只能看到 framework 事件时，应明确标注“vendor display evidence unavailable”；common kernel 的 fence 定义，在这里补写不出设备没有提供的时序。
+
+<!-- gracker-diagram: ch13-11-63-vendor-evidence -->
+![framework与vendor逐帧证据](../../assets/diagrams/ch13/ch13-11-63-vendor-evidence.png)
+
+图：公开协议与厂商实际执行证据有明确边界。 缺 vendor display 记录时不能虚构解码到扫描的完整时序。
 
 ### 源码与官方资料
 
@@ -983,6 +1288,11 @@ APV（Advanced Professional Video）面向高质量录制、剪辑和后期素�
 
 把这些特征放在一起看，APV 更接近录制母版（保存完整质量的源素材）或剪辑中间格式。HEVC、AV1 常以更高压缩率服务分发；长 GOP（Group of Pictures，一组相互依赖的帧）内容访问任意帧或反复转码时，通常要处理更多帧间依赖。APV 则以更大的文件，换来较快的编辑响应、并行处理能力和更稳定的多代画质。
 
+<!-- gracker-diagram: ch13-11-64-apv-workflow-purpose -->
+![APV母版与分发格式的分工](../../assets/diagrams/ch13/ch13-11-64-apv-workflow-purpose.png)
+
+图：母版、交互编辑和广泛分发承担不同工作目标。 平台识别 APV 不保证每个接收端工具都能处理它。
+
 产品不宜把 APV 设为普通拍摄的默认格式。Pro Video、现场粗剪、调色和素材交换等模式可以提供 APV；分享、上传和广泛播放仍应准备 AVC、HEVC 或 AV1 导出。系统能够识别 `video/apv`，接收文件的 App、桌面软件或云端服务就未必了。
 
 ### “平台支持”要拆成三层
@@ -994,6 +1304,11 @@ APV（Advanced Professional Video）面向高质量录制、剪辑和后期素�
 | 标准与公开 API | `video/apv`、APV profile / level、P210、MediaRecorder APV、MP4 muxing 均有公开入口 | 目标 SDK 与运行版本是否满足接口要求 |
 | AOSP 参考实现 | `frameworks/av` 有 C2 APV 软编码器、软解码器和 MP4 writer | 产品是否启用组件、组件对外公布的规格 |
 | 设备产品能力 | `MediaCodecList` 可查询 vendor 和 platform codec | 硬件加速、Camera 输入组合、4K/8K、持续码率、温控和稳定性 |
+
+<!-- gracker-diagram: ch13-11-65-apv-three-layers -->
+![APV支持的三层含义](../../assets/diagrams/ch13/ch13-11-65-apv-three-layers.png)
+
+图：APV 标准、参考实现和设备能力分别核对。 能解码 APV 也不保证该视频 Layer 成为 DEVICE。
 
 这里的 profile 表示编码工具集与像素格式约束，level 表示分辨率、采样率等复杂度上限；muxing 是把编码轨道及其元数据封装进 MP4。设备能解码 APV，并不保证 APV layer 会由 HWC 用独立硬件 plane 直接 scanout；能否用上 hardware overlay，仍要看 SurfaceFlinger 与 HWC 的逐帧合成选择，普通 Surface 输出走的是同一套机制。
 
@@ -1012,9 +1327,24 @@ Android 16 平台承诺的实现范围是 APV 422-10，即 YUV 4:2:2、10-bit，
 
 P210 是 4:2:2、10-bit 的半平面 YUV 内存格式：Y 单独成平面，Cb/Cr 交错存放。每个 Y、Cb、Cr 样本使用 16-bit 容器，只有高 10 bit 有效，因此平均占用 32 bit/pixel。也就是说，10-bit 说的是有效位深，内存里每个样本仍占满 16 bit。
 
+<!-- gracker-diagram: ch13-11-67-p210-layout -->
+![P210的位深与内存占用](../../assets/diagrams/ch13/ch13-11-67-p210-layout.png)
+
+图：P210 的 10-bit 有效位深需要 16-bit 样本容器。 32 bit/pixel 是紧密有效画面估算，不等于实际 allocator 分配大小。
+
 `MediaRecorder.VideoEncoder.APV = 9` 在 API 文档中标为 36.1。需要兼容 Android 16.0 与 16.1 时，应使用 `Build.VERSION.SDK_INT_FULL` 和 `Build.VERSION_CODES_FULL.BAKLAVA_1` 区分次版本；只查 `SDK_INT == 36`，判断不了高层录制入口是否可用。Android 17 的 `VERSION_CODES.CINNAMON_BUN` 为 37，已经包含该入口。
 
+<!-- gracker-diagram: ch13-11-66-apv-api-evolution -->
+![APV公开入口的版本演进](../../assets/diagrams/ch13/ch13-11-66-apv-api-evolution.png)
+
+图：API 版本界定不同层的公开入口。 高层录制常量、底层 codec 与设备吞吐不能互相替代。
+
 Android 17 新增 `MediaRecorder.setVideoEncodingQuality(int)`。它必须在 `prepare()` 前调用，只在选中的编码器支持 `EncoderCapabilities.BITRATE_MODE_CQ` 时生效；`prepare()` 仍可能检查质量值是否适用于当前编码器。CQ（Constant Quality）让编码器以目标质量为主，码率随内容变化。可用范围来自该编码器的 `getQualityRange()`。同一次配置不要同时设置 encoding quality 和 video bitrate，API 文档将这种组合定义为行为未指定。质量值也没有跨 codec 的统一刻度，vendor A 的 `80` 与 vendor B 的 `80` 之间也就没有可比性。
+
+<!-- gracker-diagram: ch13-11-68-cq-vs-bitrate -->
+![CQ质量与目标码率配置](../../assets/diagrams/ch13/ch13-11-68-cq-vs-bitrate.png)
+
+图：CQ 与目标码率路线需按编码器能力分别配置。 MediaRecorder 同时设置 quality 和 bitrate 的行为未指定。
 
 ### 能力探测要检查完整 MediaFormat
 
@@ -1135,6 +1465,11 @@ fun findApvEncoders(
 
 `requestedLevelCovered == null` 表示调用方没有约束 level/band。传入 `level` 后，代码复刻 Android 17 Java legacy capability 路径，即 Java 侧旧兼容能力实现中的 `supportsProfileLevel()` 初步判断：在同一 profile 下，只要组件公布的 level 常量数值大于或等于请求值，就让请求进入后续 format 检查。APV 常量的高位编码 level，低位编码 band，二者共同影响采样率与码率上限。单纯比较常量大小，证明不了输出严格符合指定 level/band；有此要求时，还要根据 APV 规格表独立核算采样率和码率。
 
+<!-- gracker-diagram: ch13-11-70-apv-level-band -->
+![APV level/band的检查边界](../../assets/diagrams/ch13/ch13-11-70-apv-level-band.png)
+
+图：API 能力通过不等于输出严格符合所请求 level/band。 常量比较是兼容实现，不是完整规格约束证明。
+
 `isFormatSupported()` 会联合检查 MIME、尺寸、帧率、profile、level 和码率等字段。代码仍把输入色彩格式与 `colorFormats` 单独交叉检查，这样 vendor 上报不一致时我们能及时发现。
 
 `KEY_LEVEL` 还有一条 API 上的限制：它参与 profile/level 组合检查，却不保证其他 format 参数符合调用方指定的 level。Android 17 的 Java legacy capability 路径会用该 profile 已公布的最高 level 检查相关参数；native capability 路径同样没有公开契约保证其余参数符合指定 level。若工作流要求码流严格落在某个 APV level/band，除独立核算目标采样率与码率外，还要检查 configure 后的 output format 和生成的编码码流。HDR 录制则应选用 HDR10 或 HDR10+ profile，并继续设置与核对 color standard、transfer、range 及静态或动态 HDR 元数据。只更换一个 profile 常量不足以证明整条 HDR 管线有效。
@@ -1142,6 +1477,21 @@ fun findApvEncoders(
 `supportedPerformancePoints` 有三种状态：`null` 表示 codec 没有公布性能点；空列表表示 codec 明确不保证任何性能点；非空且覆盖目标规格，才代表厂商给出的单实例性能保证。该保证不涵盖 Camera、存储、温控或多个 codec 并发，因此它只能作为启用目标规格的依据之一，长时间录制测试仍然省不掉。
 
 查询通过后，我们还要依次执行 `configure()`、`createInputSurface()`、短录制、`MediaMuxer.stop()`、重新解封装与解码校验。某个组合即使出现在能力表中，仍可能因为资源不足、Camera session 组合不成立或 vendor codec 初始化失败而用不起来。
+
+<!-- gracker-diagram: ch13-11-69-apv-probe-scope -->
+![基础APV探测与完整配置](../../assets/diagrams/ch13/ch13-11-69-apv-probe-scope.png)
+
+图：示例保留基础探测，实际使用还要补完整目标模式。 surfaceFormatSupported 与 cqSupported 同时为真不保证组合可用。
+
+<!-- gracker-diagram: ch13-11-71-performance-points -->
+![性能点列表与探测结果的三态](../../assets/diagrams/ch13/ch13-11-71-performance-points.png)
+
+图：性能点的未知、未保证和覆盖目标要按原始数据解释。 boolean 会压缩部分状态，性能点也不是整条录制管线保证。
+
+<!-- gracker-diagram: ch13-11-72-apv-two-input-tests -->
+![Surface与P210输入分别验证](../../assets/diagrams/ch13/ch13-11-72-apv-two-input-tests.png)
+
+图：两种输入路线有不同的供帧和资源流程。 不能用 createInputSurface 代替 P210 buffer 输入验证。
 
 ### AOSP 软件 APV 的启用条件与规格上限
 
@@ -1151,6 +1501,11 @@ fun findApvEncoders(
 - `c2.android.apv.decoder`。
 
 两者都受固定只读 feature flag `android.media.swcodec.flags.apv_software_codec` 控制。这个开关由系统构建配置决定；关闭时，负责创建组件的 factory 直接返回 `nullptr`，组件完全不会被创建出来。代码还要求系统至少为 API 36 / Baklava。媒体 XML 同时声明 `enabled="false"`、`minsdk="36"` 和 `variant="!slow-cpu"`；最后一项表示 `slow-cpu` 配置变体排除该组件。因此，AOSP 仓库里有这两个组件的源码，和量产设备会在 `MediaCodecList` 里列出它们，是两回事。
+
+<!-- gracker-diagram: ch13-11-73-soft-apv-enabling -->
+![AOSP软APV组件的启用关口](../../assets/diagrams/ch13/ch13-11-73-soft-apv-enabling.png)
+
+图：软件 APV 组件需要通过 flag、版本和产品配置关口。 不能从源码文件存在推出量产设备已经可用。
 
 参考组件自身和 XML 的限制也比 APV 标准上限窄：
 
@@ -1162,9 +1517,24 @@ fun findApvEncoders(
 | encoder C2 接口尺寸 | 代码允许到 `4096x4096`，但产品能力仍受更严格的 XML 与运行时查询约束 |
 | 默认状态 | 组件条目关闭，并受 flag 与 `!slow-cpu` variant 约束 |
 
+<!-- gracker-diagram: ch13-11-74-apv-reference-limits -->
+![标准目标、XML和C2接口上限](../../assets/diagrams/ch13/ch13-11-74-apv-reference-limits.png)
+
+图：理论格式能力、参考声明和运行能力有不同上限。 4K/8K 和 2 Gbps 不能靠此软件参考组件自动兜底。
+
 XML 为软编码器声明 VBR（Variable Bitrate，可变码率）、CQ 和 `quality=0..100`。编码器代码要等另一个固定只读 flag `android.media.swcodec.flags.apv_software_codec_cq` 开启，才加入 CQ 对应的 C2 `bitrate-mode` 参数。静态 XML 的 `bitrate-modes` 单独说明不了 `MediaRecorder.setVideoEncodingQuality()` 可用；应用应以 `EncoderCapabilities.isBitrateModeSupported(BITRATE_MODE_CQ)`、`getQualityRange()` 和一次真实 `configure()` 的结果为准。
 
+<!-- gracker-diagram: ch13-11-75-apv-cq-flags -->
+![XML的CQ声明与组件参数](../../assets/diagrams/ch13/ch13-11-75-apv-cq-flags.png)
+
+图：静态声明与组件实际启用的 CQ 参数需要一起核对。 XML 写有 CQ 不足以证明特定录制配置可用。
+
 2 Gbps、4K 和 8K 需要具备相应能力的 vendor 实现，AOSP 软件 codec 顶不上这个后备。`MediaCodecInfo.java` 映射了 APV level/band 的理论采样率与码率；高等级码率超过 Java `int` 的表达范围时，内部上限会限制为 `Integer.MAX_VALUE`。应用的 `KEY_BIT_RATE` 同样是 `int`，2,000,000,000 bit/s 还表示得下，但已经贴近上界。
+
+<!-- gracker-diagram: ch13-11-76-bitrate-int-boundary -->
+![APV码率单位与Java整数边界](../../assets/diagrams/ch13/ch13-11-76-bitrate-int-boundary.png)
+
+图：理论规格和 API 数值范围、实际吞吐要分别检查。 码率换算与日志不能发生单位或整数溢出。
 
 #### 422-10 码流的输出像素格式
 
@@ -1177,15 +1547,40 @@ AOSP 软编码器默认接受 implementation-defined（由 framework 与设备�
 
 P010 是 4:2:0 10-bit 半平面 YUV，P210 是 4:2:2 10-bit，YV12 通常是 4:2:0 8-bit，RGBA1010102 则为每个 R/G/B 通道 10 bit、alpha 通道 2 bit。剪辑或调色 App 若要保留 4:2:2 与 10-bit，我们要核对 decoder 的 `colorFormats`、configure 后的 output format，以及实际收到的 `Image` 或 `HardwareBuffer` 格式。只看 APV bitstream（编码码流） profile，会漏掉输出阶段的色度降采样或位深损失。
 
+<!-- gracker-diagram: ch13-11-77-encoder-conversion -->
+![APV软编码输入转换和复制](../../assets/diagrams/ch13/ch13-11-77-encoder-conversion.png)
+
+图：Surface 链路可减少应用拷贝，但组件内部仍可能转换和复制。 8-bit/420 转成10-bit/422容器不会恢复源中缺少的信息。
+
+<!-- gracker-diagram: ch13-11-78-decoder-format-selection -->
+![APV解码输出格式选择](../../assets/diagrams/ch13/ch13-11-78-decoder-format-selection.png)
+
+图：APV decoder 在申请 buffer 之前确定输出像素格式。 fetchGraphicBlock 失败会报错，不是逐格式重试的分配兜底。
+
+<!-- gracker-diagram: ch13-11-79-chroma-preservation -->
+![码流profile与输出像素保真](../../assets/diagrams/ch13/ch13-11-79-chroma-preservation.png)
+
+图：码流规格与中间输出像素格式分别验收。 格式兼容不保证整个处理链没有降采样或位深损失。
+
 ### 码率、内存带宽和存储要用同一组规格计算
 
 以下容量和带宽按十进制单位估算：2 Gbps 等于 250 MB/s。按固定码率录制 4 分钟会写入约 60 GB 编码视频数据，其中还没有计入音频、容器与文件系统开销。即使降到 1 Gbps，也要持续写入约 125 MB/s。
+
+<!-- gracker-diagram: ch13-11-80-storage-arithmetic -->
+![高码率素材的写入容量](../../assets/diagrams/ch13/ch13-11-80-storage-arithmetic.png)
+
+图：目标码率可以换算持续写入和素材容量。 60 GB 是固定码率视频估算，不是每次 CQ 录制的保证文件大小。
 
 Camera 到 encoder 的输入流量同样不容小看。P210 分配 32 bit/pixel，3840 × 2160、60 fps 的一遍线性读流量约为：
 
 `3840 × 2160 × 4 byte × 60 ≈ 1.99 GB/s（十进制）`
 
 这只是按有效画面尺寸计算的一遍读取，没有计入 stride（每行像素在内存中的实际跨度）、对齐填充、Camera 写入、codec 内部转换、缓存维护、预览、输出和其他消费者。该估算替不了 SoC 带宽计数器，却足以说明 250 MB/s 的编码输出远代表不了整条管线的内存流量。
+
+<!-- gracker-diagram: ch13-11-81-p210-bandwidth -->
+![4K60 P210一遍读取的带宽](../../assets/diagrams/ch13/ch13-11-81-p210-bandwidth.png)
+
+图：未压缩输入流量可能远高于编码输出码率。 这是尺寸算术，不能替代实际分配和 SoC 带宽计数器。
 
 允许开始录制前，我们至少检查四组条件：
 
@@ -1195,6 +1590,16 @@ Camera 到 encoder 的输入流量同样不容小看。P210 分配 32 bit/pixel�
 - 温控：开始时的 thermal status（系统暴露的热状态等级）、录制期间的降档门槛、codec reset 和相机关闭策略。
 
 一次 10 秒测试只证明初始化和短时写入可用；高规格的开放条件，应来自同一 codec、Camera 组合和存储卷上的长时间压力测试。运行时再根据滚动写入耗时、输出 buffer 积压、thermal status 与剩余空间触发带滞回的降档。滞回是为降档和恢复设置不同门槛，避免条件在临界值附近波动时反复切换档位。
+
+<!-- gracker-diagram: ch13-11-82-recording-admission -->
+![录制规格的四组准入条件](../../assets/diagrams/ch13/ch13-11-82-recording-admission.png)
+
+图：启用高规格需要整条录制链在同组条件下通过验证。 能力表和十秒短测都不能证明长时间录制稳定。
+
+<!-- gracker-diagram: ch13-11-83-recording-hysteresis -->
+![写入压力和温控的滞回策略](../../assets/diagrams/ch13/ch13-11-83-recording-hysteresis.png)
+
+图：运行压力策略应保留触发证据并采用不同恢复门槛。 这是产品策略示意，不代表 Android 固定阈值或自动切档。
 
 ### 专业视频 App 应拆开录制、预览、代理和导出
 
@@ -1213,9 +1618,19 @@ flowchart LR
     T --> X["AVC / HEVC / AV1 导出"]
 ```
 
+<!-- gracker-diagram: ch13-11-84-professional-workflow -->
+![预览、原片、代理与导出的分工](../../assets/diagrams/ch13/ch13-11-84-professional-workflow.png)
+
+图：取景保持独立预览，剪辑可读代理，最终导出读取原片。 双输出先验证 Camera 组合；图为建议工作流，不是系统自动流程。
+
 图中的原片是保留完整质量的 APV 素材；`IS_PENDING` 是 MediaStore 的待发布标记，置为 1 时文件不会作为已完成媒体公开。录制时应保留独立预览 Surface，不把“APV 编码后再解码”加进取景链路。预览 Surface 与 encoder input Surface 能否同时配置，由 Camera2 的 stream combination 和目标动态范围决定。即使 APV encoder 支持 4K60，只要 Camera session 不接受这组输出，录制照样开不了始。
 
 剪辑时间线可以优先读取代理文件，即与原片时间对应的低分辨率替代素材。这样拖动、裁剪、缩略图和音频波形生成，都无须反复读取高码率原片。导出阶段再读取 APV 原片，并根据接收端选择 AVC、HEVC 或 AV1。代理文件必须通过稳定的素材 ID、时间基准和画面变换关系关联原片，只依赖文件名是靠不住的。
+
+<!-- gracker-diagram: ch13-11-85-proxy-association -->
+![代理与原片的稳定关联](../../assets/diagrams/ch13/ch13-11-85-proxy-association.png)
+
+图：项目数据要把原片与派生素材按稳定身份和时间关联。 删除代理不能导致原片或编辑关系丢失。
 
 项目数据库至少记录：
 
@@ -1233,11 +1648,26 @@ Android 的 `MediaMuxer` 从 API 36 起支持把 APV 写入 MP4。`android-17.0.
 
 应用走 scoped storage（应用通过 MediaStore 管理共享媒体的存储模型）、共享媒体经 MediaStore 统一管理时，可以把 `MediaStore` 返回的 `FileDescriptor` 交给 `MediaMuxer`。在 `stop()` 成功、文件能够重新打开并通过基本解码校验前，应保持 `IS_PENDING=1`，校验通过后再发布。进程被杀、存储断开、空间耗尽或 `stop()` 抛出异常时，MP4 可能尚未写完索引等必要结构。这类文件应进入待恢复或安全删除状态，直接标成成功素材是会误导用户的。
 
+<!-- gracker-diagram: ch13-11-86-pending-mux-validation -->
+![MP4完成与待发布状态](../../assets/diagrams/ch13/ch13-11-86-pending-mux-validation.png)
+
+图：写入、muxer 停止、文件可读和发布是独立检查点。 异常退出或 stop 失败的 MP4 不能直接记为成功素材。
+
 写入队列必须设置容量上限。muxer 或文件系统变慢时，无限缓存 encoder output 会让存储停顿进一步演变为内存耗尽。产品可以按风险停止录制、降低下一段录制的规格，或提示用户切换存储；同一个 MP4 track 里静默更换 codec 是要避免的。
+
+<!-- gracker-diagram: ch13-11-87-bounded-output-queue -->
+![muxer变慢时限制输出积压](../../assets/diagrams/ch13/ch13-11-87-bounded-output-queue.png)
+
+图：存储反压必须通过有界队列和明确停止策略处理。 不能用无限缓存掩盖持续写入不足，也不能静默改变同一track的codec。
 
 ### 降级要同时覆盖规格、格式和工作流
 
 APV 的降级分为三组：
+
+<!-- gracker-diagram: ch13-11-88-three-fallbacks -->
+![专业视频的三类降级](../../assets/diagrams/ch13/ch13-11-88-three-fallbacks.png)
+
+图：规格、格式和工作流可分别设计回退。 实际切换需处理 codec 和文件生命周期，不能保证无缝原地改写。
 
 - 规格降级：降低分辨率、帧率或码率；每个档位都要重新通过完整 format 和 Camera session 探测。
 - 格式降级：APV 编码器缺失、只有软件实现或压力测试不稳定时，专业模式可以改用设备已验证的 HEVC 10-bit/HDR 组合，普通模式可以改用 HEVC 或 AVC。
@@ -1245,7 +1675,17 @@ APV 的降级分为三组：
 
 APV 是帧内格式，但录制过程中更换 codec 通常仍要结束当前文件，另起一个独立的录制 segment。项目层应记录每个 segment 的起止、规格、时间戳映射与降级原因，导出时再将这些片段组织成连续时间线。
 
+<!-- gracker-diagram: ch13-11-89-codec-segments -->
+![更换codec时如何组织录制段](../../assets/diagrams/ch13/ch13-11-89-codec-segments.png)
+
+图：更换 codec 通常结束当前文件并开启独立 segment。 帧内编码不取消容器 track 的 codec 配置边界。
+
 用户界面还要区分三种状态：设备不支持、当前温控或存储条件暂时不允许、本次运行失败。设备能力通常不会在同一软硬件组合内改变；温控或存储限制可能在条件改善后解除；运行失败则要保留 codec、Camera 与 I/O 诊断。三者对应不同的提示和恢复操作。
+
+<!-- gracker-diagram: ch13-11-90-recording-ui-states -->
+![不支持、暂时受限与运行失败](../../assets/diagrams/ch13/ch13-11-90-recording-ui-states.png)
+
+图：不同失败层级对应不同的恢复操作。 不能把临时限制写成永久能力缺失，或只靠机型名判断。
 
 ### Perfetto、媒体指标与 kernel 边界
 
@@ -1268,6 +1708,11 @@ Perfetto 调查可按症状挑选观察点：
 | 素材不可播放 | `stop()` 结果、MP4 box、track format、首尾 sample、重新解码结果 |
 
 量产机未必开放 block、vendor codec、Camera HAL 和部分 thermal 数据源。我们可以用 `Trace.beginSection()` 或 Perfetto Track Event 为 configure、start、首个 sample、写入批次、stop、校验与降级打上时间标记，同时保留线上可采集的计数器。即使缺底层数据源，应用时间线仍能判断停顿发生在 encoder output 之前，还是 muxer 写入之后。
+
+<!-- gracker-diagram: ch13-11-91-apv-observability -->
+![从录制事件定位耗时位置](../../assets/diagrams/ch13/ch13-11-91-apv-observability.png)
+
+图：应用时间标记与可用系统证据共同定位录制停顿。 kernel 不定义 APV 算法或承诺422-10与2Gbps吞吐。
 
 每次录制至少记录 codec name、canonical name（去除 alias 后的组件名称）、hardware/software、vendor/platform、profile/level、color format、bitrate mode、目标与实际码率、Camera session 规格、存储卷、thermal status、异常诊断和停止原因。机型名称推断不出 APV 能力；同一机型的 vendor image、存储状态与温控条件也可能不同。
 
@@ -1295,6 +1740,11 @@ Perfetto 调查可按症状挑选观察点：
 
 OpenAPV 的基础与扩展 profile 集合大于 Android 17 平台公开的 APV 422-10 集合。将 OpenAPV 编入应用，只能证明应用带了一套软件实现；设备是否存在 APV 硬件 codec、Camera 能否输出目标规格、MediaCodec 会不会选择这套实现、HWC 会不会用 overlay 显示解码结果，它一个都证明不了。
 
+<!-- gracker-diagram: ch13-11-92-openapv-platform -->
+![OpenAPV参考实现与Android契约](../../assets/diagrams/ch13/ch13-11-92-openapv-platform.png)
+
+图：参考实现、应用自带软件和设备平台是三个边界。 项目的 CQP/平均码率 ABR 与播放器自适应码率 ABR 含义不同。
+
 ### 线上分组统计与启用指标
 
 APV 上线时，我们把静态能力与每次运行结果分开记录，再按这些字段分组统计：
@@ -1308,6 +1758,11 @@ APV 上线时，我们把静态能力与每次运行结果分开记录，再按�
 - 结果：muxer stop、重新解封装、首尾抽样解码、代理生成和导出是否成功。
 
 崩溃率单独回答不了 APV 是否可用。更有意义的指标包括录制成功率、文件可重新打开率、抽样解码成功率、有效录制时长、写入超时率、因温控或空间触发的降档比例，以及导出成功率。高规格只放给已经通过长时间验证的 codec + Camera + 存储组合。
+
+<!-- gracker-diagram: ch13-11-93-apv-outcome-metrics -->
+![静态能力与每次运行结果](../../assets/diagrams/ch13/ch13-11-93-apv-outcome-metrics.png)
+
+图：启用指标需要覆盖生成了什么文件以及能否继续使用。 高规格只开放给同组条件下完成长期验证的组合。
 
 ### 源码与文档依据
 
@@ -1376,3 +1831,18 @@ Media3 1.10.1 的默认 ABR 以带宽估计、播放速度、chunk 时长、buff
 APV 为 Android 提供专业录制与后期素材能力。Android 17 已公开 MIME、422-10 profile、P210、MediaRecorder、MediaMuxer 和录制质量接口，这些 API 定义了共同契约。应用仍要核对 codec、Camera、像素格式、存储与温控，并通过完整录制、重新打开和抽样解码证明目标规格可用。
 
 实现专业视频功能时，要分别验证三件事：平台规格上限是否由当前设备实现，422-10 码流在处理链中是否保留 4:2:2、10-bit 与预期输出格式，codec 可用后显示层是否真的采用 hardware overlay。能力探测、项目数据和线上指标都应记录这些结果，APV 才适合作为可靠的母版格式选项。
+
+<!-- gracker-diagram: ch13-11-01-three-carriers -->
+![普通视频、宿主采样与sideband](../../assets/diagrams/ch13/ch13-11-01-three-carriers.png)
+
+图：三种承载方式有不同的中间消费者和同步责任。 显示前的队列与控制事件不能相互套用。
+
+<!-- gracker-diagram: ch13-11-02-versions -->
+![平台、播放器、参考实现与设备](../../assets/diagrams/ch13/ch13-11-02-versions.png)
+
+图：平台、库、参考实现和设备是独立版本坐标。 源码存在不等于设备启用或实测可达。
+
+<!-- gracker-diagram: ch13-11-94-video-final-evidence -->
+![合成、媒体与专业工作流的复核](../../assets/diagrams/ch13/ch13-11-94-video-final-evidence.png)
+
+图：格式能力、处理保真和显示结果是不同的验收条件。 没有设备实测的图只解释公开机制与建议验证流程。

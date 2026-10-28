@@ -142,6 +142,11 @@ AIDL 用来生成稳定的 Binder 接口，HIDL 是更早一代的 HAL 接口体
 
 HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：0 表示未限制，值越高限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定，适合系统调试和 statsd（Android 的系统指标收集服务） 这类系统指标服务使用，不适合作为普通应用的兼容协议。
 
+<!-- gracker-diagram: a282-01-thermal-policy-actions-and-public-signals -->
+![底层热限制先执行，应用接收信号再减少自身工作](../../assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.png)
+
+图：应用读取热压力，不指定MHz、冷却档位或通用画质参数；Thermal HAL与Power HAL接口各自独立。
+
 ## 全局热状态的含义
 
 `ThermalManagerService.onTemperatureMapChangedLocked()` 遍历缓存温度，只考虑 `Temperature.TYPE_SKIN`，并取最高限制等级作为默认设备的全局热状态。这个聚合方式带来几个直接推论：
@@ -167,6 +172,11 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 
 任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态） 原因请求关机，BATTERY（续航优先） 传感器则使用 battery-thermal（电池过热） 原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾要赶在这一档之前开始。
 
+<!-- gracker-diagram: a282-02-skin-global-status-and-shutdown -->
+![全局状态只聚合SKIN，关机安全检查还覆盖其他热源](../../assets/diagrams/ch25/a282-02-skin-global-status-and-shutdown.png)
+
+图：状态0–6表示产品限制强度；某个severity不能换算为固定摄氏温度、MHz、FPS或码率。
+
 ## Thermal headroom：提前量与读取边界
 
 热状态只给档位；要量化距离，就看 [`PowerManager.getThermalHeadroom()`](https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int))。它基于表面温度这类慢变化传感器，把当前或预测的温度位置归一化到严重热限制阈值附近，数值方向如下：
@@ -176,6 +186,11 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 - 大于 1 表示越过 `SEVERE` 的归一化位置，再往上没有到 CRITICAL、EMERGENCY 的固定映射。
 
 另一类返回值是 `NaN`（Not a Number，非数值哨兵），表示设备不支持、数据不足、HAL 未就绪或调用太频繁。
+
+<!-- gracker-diagram: a282-03-thermal-versus-capacity-headroom -->
+![热headroom越高越紧，容量headroom越低越紧](../../assets/diagrams/ch25/a282-03-thermal-versus-capacity-headroom.png)
+
+图：热阈值表由设备提供，缺项时不硬编码0.7/0.8/0.9；不要把capacity数值当未来温度预测。
 
 `forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提，预测时间越远越容易受场景切换影响，所以别把一次预测值当成未来温度的承诺。
 
@@ -196,6 +211,16 @@ API 35 的 [`getThermalHeadroomThresholds()`](https://developer.android.com/refe
 服务端对相似回调使用 5 秒最小间隔，并以 headroom 差值 0.03、阈值表数值差 0.01 判断显著变化。这些数值是 `android-17.0.0_r1` 的实现常量，公开 API 没有把它们承诺给所有版本。
 
 要持续拿到提前预测，仍要按保守间隔调用 `getThermalHeadroom()`。官方游戏兼容建议按 10 秒量级轮询，可减少旧设备因调用过快返回 `NaN` 的情况。
+
+<!-- gracker-diagram: a282-04-forecast-hal-versus-framework-regression -->
+![预测可能由HAL提供，也可能是近期温度外推](../../assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.png)
+
+图：forecastSeconds为0读当前位置；更远预测更易受场景变化影响，不能用一次值承诺未来温度。
+
+<!-- gracker-diagram: a282-05-headroom-callback-significance-and-throttle -->
+![5秒只抑制相似回调，显著变化可以更快通知](../../assets/diagrams/ch25/a282-05-headroom-callback-significance-and-throttle.png)
+
+图：API36监听不能完整替代getThermalHeadroom；不要根据缺少回调断言热压力不再变化。
 
 ## 应用监听器的安全封装
 
@@ -360,6 +385,11 @@ API 36 的类型被隔离在 `Api36` 中，旧系统不会进入对应分支。�
 
 API 30—35 的 `pollForecast()` 每次只发起一次 headroom 查询。调度器统一管理调用频率，避免多个模块各自轮询；若连续得到 `NaN`，策略回退到热状态监听器，不要用无间隔循环反复查询。
 
+<!-- gracker-diagram: a282-06-observer-generation-and-fresh-forecast -->
+![监听器生命周期与预测新鲜度都进入同一控制队列](../../assets/diagrams/ch25/a282-06-observer-generation-and-fresh-forecast.png)
+
+图：API30+均可按需要低频轮询；调用失败清预测时间戳，停止后不继续查询，不能把NaN当设备已冷却。
+
 ## 从信号映射到工作量档位
 
 信号到手，下一步是把它变成工作量档位。这段函数展示一种不写死设备 headroom 阈值的映射方式，判断从最严重的档位依次放宽：
@@ -415,6 +445,16 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 
 实时处理管线还需要主动丢弃过期输入。热限制把处理速度压低后，相机帧、渲染命令或推理请求若继续无限排队，端到端延迟会一路上升，这时减少工作量也来不及降低当前功耗。
 
+<!-- gracker-diagram: a282-07-tier-hysteresis-and-cooldown -->
+![降载可快速，恢复必须有退出余量与冷却驻留](../../assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.png)
+
+图：映射函数只给目标；恢复有状态、滞回和驻留要求，避免未知预测或短暂回落触发质量振荡。
+
+<!-- gracker-diagram: a282-08-shared-tier-and-stale-queue-discard -->
+![热降载同时改变生产速率、消费能力与积压队列](../../assets/diagrams/ch25/a282-08-shared-tier-and-stale-queue-discard.png)
+
+图：只改频率目标或一个模块不够；主动取消过期工作，防CPU/GPU预算下降后持续消耗于无价值结果。
+
 ## CPU、GPU 与应用性能的证据
 
 信号驱动策略，性能退化则要另行取证：热状态升高可能伴随 CPU/GPU 限制，但热状态本身说明不了系统采取了哪项动作。CPU 主线程变慢、GPU 帧延长、充电速度下降、屏幕亮度变化，每一项都要分别取证。
@@ -432,6 +472,11 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 对照一下缺了哪一环：没有第 2、3 项，观测到的 CPU/GPU 低频可能只是 DVFS 应对普通负载变化的常规选择；没有稳定工作量与对照组，排除不了业务负载本身的变化；没有回落过程，还要检查省电模式、刷新率切换、后台争用和厂商短时提频（boost）策略。
 
 Perfetto 取证时，我们把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline（Android 帧时间线）、RenderThread 与 GPU fence 放在同一时间窗口；单条异常帧或一次温度读数撑不起归因。
+
+<!-- gracker-diagram: a282-09-thermal-causality-evidence-tracks -->
+![热、资源限制、性能退化与降载回落要按时间对齐](../../assets/diagrams/ch25/a282-09-thermal-causality-evidence-tracks.png)
+
+图：频率低不能独立证明热限制；CPU/GPU工作量、上限变化、完成时间和回落都需要证据。
 
 时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的 WakeLock、后台 Job 与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计） 窗口。三类结果靠同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，粒度到不了单个 Java 方法。
 
@@ -453,6 +498,11 @@ GPU devfreq 或厂商固件降低预算时，GPU 完成时间延后，FrameTimel
 ### 充电与其他缓解动作
 
 Thermal HAL 指南要求设备把会限制性能的电池功率约束也报告为限制等级；厂商还可能限制充电、显示、相机、modem 或其他热源。公开热状态没有具体缓解原因字段，所以关心充电场景的应用要额外记录是否接电，并在实验中分开充电与电池供电样本。
+
+<!-- gracker-diagram: a282-10-cpu-gpu-and-other-mitigation-evidence -->
+![CPU、GPU和充电限制分别取证再选择减载项](../../assets/diagrams/ch25/a282-10-cpu-gpu-and-other-mitigation-evidence.png)
+
+图：充电和电池供电样本分开；低频可能是普通DVFS，热状态不能反推固定MHz。
 
 ## Thermal API、ADPF 与 Game Mode 的分工
 
@@ -483,6 +533,11 @@ Game Mode 表达用户选择的偏好：`PERFORMANCE`（性能优先） 性能�
 
 API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负载。应用先调用 `PowerManager.isSustainedPerformanceModeSupported()`，受支持时通过 `Window.setSustainedPerformanceMode(true)` 请求较稳定的性能区间。它通常降低冷机峰值来换取更平稳的长时表现，但不保证固定频率或固定 FPS，也替代不了应用的工作量档位。Fixed Performance Mode（固定性能模式） 用于基准测试，线上想借它绕过热策略是行不通的。
 
+<!-- gracker-diagram: a282-11-thermal-hint-game-and-sustained-roles -->
+![Thermal、Performance Hint、Game Mode各负责不同意图](../../assets/diagrams/ch25/a282-11-thermal-hint-game-and-sustained-roles.png)
+
+图：FixedPerformanceMode用于基准；capacity headroom帮助辨别先减CPU或GPU，但不是热预测。
+
 ## 与后台调度、Doze 和 App Standby（按应用活跃度限制后台任务） 的关系
 
 热状态还会向后台调度传导：[`ThermalStatusRestriction`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java) 监听 PowerManager 热状态，并随限制等级提高而收缩 JobScheduler 的可运行范围。这条规则用到几个 Job 术语，先交代含义：
@@ -498,9 +553,19 @@ API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负�
 - `SEVERE` 及以上限制所有非 TOP_APP job；
 - TOP_APP bias 不受这条限制规则影响。
 
+<!-- gracker-diagram: a282-12-job-thermal-restriction-branches -->
+![Job热限制先看TOP_APP，再按热等级和bias分支](../../assets/diagrams/ch25/a282-12-job-thermal-restriction-branches.png)
+
+图：MODERATE下expedited未运行也可首次启动；已经运行则还须未进overtime，普通HIGH不能新启动。
+
 新的停止/等待原因（stop/pending reason）功能标志和兼容开关同时生效时，应用可以收到专门的热设备状态原因（thermal device-state reason）；旧配置可能只返回通用设备状态原因，任务实现仍要支持停止、保存进度和幂等重试。
 
 Doze（设备空闲节电）、App Standby、Battery Saver（系统省电模式） 和热限制规则是各自独立的状态机。设备可以同时处于多种限制状态，平台没有面向应用的“叠加系数”。排查延迟任务时，我们把执行/停止原因、设备空闲状态、App Standby bucket（应用待机分桶）、充电状态和热状态放在一起看。
+
+<!-- gracker-diagram: a282-13-independent-power-constraints -->
+![热限制、Doze、待机桶与省电规则独立判断](../../assets/diagrams/ch25/a282-13-independent-power-constraints.png)
+
+图：一次pending或stop事件先看平台原因，再关联热、空闲、bucket、充电和真实任务生命周期。
 
 ## 线上监控
 
@@ -517,6 +582,11 @@ Doze（设备空闲节电）、App Standby、Battery Saver（系统省电模式�
 `elapsedRealtime` 只随设备运行时间递增，不受用户改时间或网络校时影响，适合计算状态持续时间。回调日志要做去重，只记录转换和区间持续时间；headroom 适合按区间统计或抽样，不适合高频逐点上传。恢复阶段也要记录，这样才能发现策略在 LIGHT 与 MODERATE 之间反复切换。
 
 我们在线上看板里按热状态和工作量档位拆分统计。把所有状态混在一起，热机样本会拉高尾延迟，冷机与热机的不同退化模式就看不清了。
+
+<!-- gracker-diagram: a282-15-steady-performance-and-state-duration -->
+![发布验收看热稳定后的吞吐与质量，并记录恢复振荡](../../assets/diagrams/ch25/a282-15-steady-performance-and-state-duration.png)
+
+图：用同次开机elapsed时间计算状态区间；重启分段、回调去重、headroom低频抽样而非逐点高频上传。
 
 ### 有用的指标
 
@@ -552,6 +622,11 @@ adb shell cmd thermalservice reset
 ```
 
 `override-status 3` 只覆盖 Framework 全局热状态，用来验证应用在 `SEVERE` 回调下的 UI 和工作量档位切换；它不会让硬件升温，也不会自动压低 CPU/GPU 频率。测试结束必须执行 `reset`，即使中途失败也要先恢复。
+
+<!-- gracker-diagram: a282-14-override-ui-test-versus-hardware-test -->
+![override-status只测试Framework策略，不制造真实热节流](../../assets/diagrams/ch25/a282-14-override-ui-test-versus-hardware-test.png)
+
+图：真实热验收固定设备构建、环境、亮度、网络、充电与输入脚本；同一冷却起点多轮重复。
 
 `dumpsys thermalservice` 能显示 HAL 连接、缓存温度、冷却设备、阈值和全局热状态，所需权限与字段随构建类型变化。正式脚本不要依赖冷却设备的固定编号或名称。
 

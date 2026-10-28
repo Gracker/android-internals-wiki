@@ -202,6 +202,11 @@ PRAGMA wal_checkpoint(PASSIVE);
 
 `wal_checkpoint` 的结果给出三样东西：busy 状态——仍有活跃事务阻止完全推进；WAL frame 总数；已写回主库的 frame 数。后两者长期拉开时，要把长读事务、写入批次和 checkpoint 时机放在一起看。普通 checkpoint 靠 WAL 共享内存中的写锁、checkpoint 锁与读标记协调，说它“先取得主数据库 EXCLUSIVE 锁”并不准确；切换日志模式、恢复和带截断语义的操作，走的是另外的加锁路径。
 
+<!-- gracker-diagram: a262-02-checkpoint-progress -->
+![PASSIVE checkpoint 的忙标志与推进差额](../../assets/diagrams/ch24/a262-02-checkpoint-progress.png)
+
+图：PASSIVE 不等待所有读者结束，第一列为 0 也可能只完成部分写回；同时比较 WAL frame 与 checkpoint frame 数。
+
 #### Room 怎样选择日志模式
 
 判断 Room 2.8.4 的日志模式，我们先要分清看的是哪个 `source set`（Kotlin Multiplatform 按目标平台区分的源码集合）。Android `actual` 实现有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING` 三档，Builder 默认 `AUTOMATIC`：普通设备解析为 WAL，低内存设备解析为 `TRUNCATE`。common/KMP（Kotlin Multiplatform）声明只有后两项，Builder 默认 WAL。官网聚合 API 可能把不同 `source set` 的说明混在一起，所以 Android 项目核对 `RoomDatabase.android.kt`，KMP 或自定义驱动项目核对实际目标和依赖源码。
@@ -231,6 +236,11 @@ WAL 下，平台池用非主连接服务只读工作，写事务通常走主连�
 
 这些数字属于特定路径的当前实现，随时可能变化。看到连接等待，我们排的顺序是：先查长事务、耗时过长的读取、未关闭资源、写入队列和首次打开，最后才考虑扩池。
 
+<!-- gracker-diagram: a262-03-connection-pool-path -->
+![Room 连接池先判断驱动是否自带池](../../assets/diagrams/ch24/a262-03-connection-pool-path.png)
+
+图：先确认驱动、source set 和生效日志模式，再解释连接等待；长事务与慢查询优先于扩池。
+
 WAL 的应用侧检查项：
 
 - 在目标设备读取实际生效的日志/同步模式，Builder 选项只是意图，运行结果以设备为准。
@@ -240,6 +250,11 @@ WAL 的应用侧检查项：
 - 连接池等待先查长事务、慢查询和连接持有者，再考虑改变池大小。
 
 [官方文档：[SQLite 性能建议](https://developer.android.com/topic/performance/sqlite-performance-best-practices)、[`RoomDatabase.JournalMode`](https://developer.android.com/reference/androidx/room/RoomDatabase.JournalMode)、[SQLite WAL](https://sqlite.org/wal.html)]
+
+<!-- gracker-diagram: a262-01-wal-snapshot -->
+![WAL 的单写者与读快照](../../assets/diagrams/ch24/a262-01-wal-snapshot.png)
+
+图：读者按各自 end mark 读取一致快照，写者继续追加；增加读连接不会增加同库并行写者。
 
 ### Room 执行模型与常见性能问题
 
@@ -292,6 +307,11 @@ interface MessageDao {
 
 可观察查询按“引用到的表”失效，与结果集里的具体行无关。表内任意相关写入都可能让查询重跑；`distinctUntilChanged()` 能减少相同结果向下游发射，已经发生的 SQL 查询省不掉。高频更新的表，要么拆小观察范围，要么减少无关写入。
 
+<!-- gracker-diagram: a262-04-flow-invalidation -->
+![Room Flow 失效与去重发生的位置](../../assets/diagrams/ch24/a262-04-flow-invalidation.png)
+
+图：distinctUntilChanged 减少相同结果的下游发射，省不掉已经发生的 SQL 与对象构造。
+
 事务范围画在不可分割的数据变更上：批量插入、删除和状态切换适合放进一个事务，网络请求、文件读取和复杂计算留在事务外。Room 同时最多执行一个事务，事务内等待外部工作，后续事务就得持续排队，需要连接的查询也可能被拖住。
 
 下面的代码展示批量替换的事务范围。传入的 `rows` 应在进入事务前完成网络读取、解码和业务校验。
@@ -331,6 +351,11 @@ framework 驱动下，`SQLiteCursor` 不要求一次把全部结果装进内存�
 窗口装得下多行，未必装得下任意大的单行。单行文本或 BLOB（二进制大对象）放不进窗口时，减少总行数没有帮助，该做的是缩小这一行的宽度、收紧投影列集合。窗口创建成功、滚动时却不断跨出窗口重填，则要减少结果宽度、改进分页，并在 trace 里统计 refill（窗口重新填充） 次数——先别急着放大窗口。调用方还应及时关闭 Cursor，给允许取消的查询传入 `CancellationSignal`。
 
 ContentProvider 跨进程返回 Cursor 时，Provider 侧的 `CursorToBulkCursorAdaptor` 按位置获取或重新填充窗口。原生函数 `CursorWindow::writeToParcel()` 会为基于 ashmem（匿名共享内存）的窗口传递一份文件描述符副本；没有 ashmem（anonymous shared memory，匿名共享内存） FD（file descriptor，文件描述符） 时，则按已用容量把数据写进 Parcel（Binder 传输的数据容器）。所以 `TransactionTooLargeException`、单行过宽和窗口反复填充是三类不同的问题，都归因到“2 MB Binder 限制”会把三类问题混成一类。
+
+<!-- gracker-diagram: a262-05-cursor-window-boundaries -->
+![CursorWindow 重填、单行宽度与 Binder 是三件事](../../assets/diagrams/ch24/a262-05-cursor-window-boundaries.png)
+
+图：窗口反复重填、单行装不下与 Binder 事务过大需要分别诊断；放大窗口不是统一修复。
 
 #### 从 ANR 还原数据库等待
 
@@ -425,6 +450,11 @@ LIMIT :limit;
 ```
 
 对应索引应覆盖 `conversation_id, sent_at, id` 的过滤与排序顺序。基于排序键的分页绕开了深 OFFSET，按页码任意跳转则不再支持；刷新锚点（`refresh anchor`，刷新时重新加载的位置）、数据插入和相同时间值都要按业务语义处理。
+
+<!-- gracker-diagram: a262-06-keyset-stable-order -->
+![复合索引与稳定排序键分页](../../assets/diagrams/ch24/a262-06-keyset-stable-order.png)
+
+图：稳定的复合排序键同时用于 ORDER BY 和续页边界；索引、结果正确性与真实分布都要验证。
 
 #### `WITHOUT ROWID` 与 PRAGMA 的生效范围
 
@@ -591,6 +621,11 @@ Android 上的两种驱动各有实现，性能结论要分别验证后再通用
 
 `AndroidSQLiteDriver.hasConnectionPool` 为 `true`，Room 的 `setSingleConnectionPool()` 与 `setMultipleConnectionPool(...)` 对它不生效。`BundledSQLiteDriver.hasConnectionPool` 为 `false`；默认情况下，Room 对 `TRUNCATE` 使用单连接，对 WAL 使用读写连接池。连接数加上去，吞吐未必跟着涨——写入仍受 SQLite 串行化约束，配置不当还可能撞上 `SQLITE_BUSY`。Android 专用应用应在相同数据库、日志模式、设备和构建类型下比较两种驱动，再决定是否接受随库 SQLite 的体积与初始化代价。
 
+<!-- gracker-diagram: a262-08-room3-driver-migration -->
+![Room 3 迁移同时校验工程与运行时](../../assets/diagrams/ch24/a262-08-room3-driver-migration.png)
+
+图：选择驱动会改变引擎、连接池和结果路径；共用 DAO 不会消除平台和文件系统差异。
+
 ```kotlin
 fun buildAppDatabase(context: Context): AppDatabase =
     Room.databaseBuilder(
@@ -631,6 +666,11 @@ Room 3 移除了 Room 接口中的 `SupportSQLiteDatabase`、`SupportSQLiteOpenH
 每个仍受支持的历史数据库结构都要经过 `MigrationTestHelper`。测试除确认目标结构完全一致外，还应覆盖非空列、默认值、索引、外键、触发器、FTS5 全文检索表、`WITHOUT ROWID` 表、复合关系键、大数据集重建与迁移中断。Room 2 与 Room 3 包名可以共存，迁移同一个数据库文件时只能有一个打开者。
 
 应用版本回退比改回 Maven 依赖版本更困难。新应用把设备上的数据库结构从 N 升到 N+1 后，旧应用必须能识别 N+1，或提供验证过的降级迁移；远程开关撤销不了已经写入数据库的结构变化。`fallbackToDestructiveMigrationOnDowngrade()` 只适用于明确允许丢失的数据。分阶段发布前执行“旧版本写入 → 新版本迁移并读写 → 旧版本重新打开”的完整测试。
+
+<!-- gracker-diagram: a262-07-staged-migration -->
+![大表迁移与应用回退分开验证](../../assets/diagrams/ch24/a262-07-staged-migration.png)
+
+图：数据库结构升级后，应用回退必须能再次打开新结构，或拥有验证过的降级路径；删回依赖版本无济于事。
 
 Room 3 支持 JavaScript 与 WasmJS（以 WebAssembly 为目标的 Kotlin/JS 运行方式）。SQLite 2.7.0 的 `WebWorkerSQLiteDriver` 可把数据库操作放进 Web Worker，并将文件保存到 OPFS（浏览器为站点提供的私有文件系统），Worker 脚本符合消息协议这一项由项目自行提供。Web 与非 Web 平台共用代码时，可以评估异步 SQLite 接口 `androidx.sqlite:sqlite-async:2.7.0`；Android、Web、Apple 与桌面 JVM 分别建立性能基线——共享 DAO 消不掉驱动、文件系统和线程模型的差异。
 
@@ -722,6 +762,11 @@ Moshi 同时支持 Java 和 Kotlin。Kotlin 类可以用反射适配器，也可
 
 这些行为一致了，速度结果才是在比较实现成本；一个库忽略未知字段、另一个库直接失败，耗时差异里就混进了语义差异。
 
+<!-- gracker-diagram: a262-09-json-cost-pipeline -->
+![JSON 解码的工作与可选树结构](../../assets/diagrams/ch24/a262-09-json-cost-pipeline.png)
+
+图：缺失字段、null、默认值、数字和枚举等行为先对齐；否则耗时差异里会混入协议语义差异。
+
 应用场景按下面的顺序筛选：
 
 | 场景 | 候选方案 | 工程判断 |
@@ -797,6 +842,11 @@ Jetpack Microbenchmark 会预热代码，记录执行时间和对象分配次数
 
 可调试包或模拟器结果，决定不了生产环境选型；首次使用成本和完整用户路径，交给 Macrobenchmark（从应用外部测量启动、滚动等场景）与 Perfetto 系统追踪验证。
 
+<!-- gracker-diagram: a262-10-benchmark-scope -->
+![稳态解码与首次用户路径分别测量](../../assets/diagrams/ch24/a262-10-benchmark-scope.png)
+
+图：函数稳态由 Microbenchmark 隔离，首次初始化和用户可见等待由冷启动 Macrobenchmark 与 Perfetto 验证。
+
 [Microbenchmark 概览](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview) · [编写 Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-write) · [`BlackHole`](https://developer.android.com/reference/kotlin/androidx/benchmark/BlackHole)
 
 ### Protocol Buffers 与 FlatBuffers
@@ -832,6 +882,11 @@ FlatBuffers 的目标是直接从序列化字节中读取字段，省去先解�
 [FlatBuffers 项目说明](https://github.com/google/flatbuffers)
 
 选型时可用下面的比较维度：
+
+<!-- gracker-diagram: a262-11-binary-format-evolution -->
+![二进制格式的兼容与访问路径](../../assets/diagrams/ch24/a262-11-binary-format-evolution.png)
+
+图：Protocol Buffers 的重点是字段演进，FlatBuffers 的重点是按字段访问；两者都需要生成代码、版本与输入验证。
 
 | 维度 | JSON | Protocol Buffers | FlatBuffers |
 | --- | --- | --- | --- |
@@ -897,6 +952,11 @@ Microbenchmark 的预热与完整编译，适合比较预热后的函数；“�
 “Binder 每笔事务有 1 MB”的说法不准确。Android 17 的 `ProcessState.cpp` 把普通 `/dev/binder` 映射大小定义为 `1 MiB - 2 × 运行时页大小`（MiB 是二进制兆字节，1 MiB 等于 1,048,576 字节）；`android17-6.18-2026-06_r6` 的 `binder_alloc.c` 允许的映射上限是 4 MiB，实际缓冲区取用户空间请求值与该上限的较小者。Android 平台原生层请求约 1 MiB，`TransactionTooLargeException` 文档因此把当前容量概括为 1 MB；在 16 KiB 内存页设备上，表达式还会扣除两个 16 KiB 页。
 
 这块空间属于进程，由该进程正在处理的 Binder 事务共享，单次调用拿不到独占配额。单个参数看起来很小，并发调用、返回值和其他系统交互同时发生时也可能失败。`TransactionTooLargeException` 不会指出失败发生在发送请求还是返回结果；重试会修改数据的调用前，先采用幂等协议（同一请求重复执行不产生重复副作用），或先查询提交状态。
+
+<!-- gracker-diagram: a262-12-binder-shared-buffer -->
+![Parcel 估算与进程共享 Binder 空间](../../assets/diagrams/ch24/a262-12-binder-shared-buffer.png)
+
+图：本地 Parcel.dataSize 只覆盖编码体积；进程共享缓冲、Binder 元数据和并发返回会共同影响事务是否成功。
 
 `rememberSaveable` / `onSaveInstanceState()` 保存的状态也会经由系统进程参与 Binder 传输。Android 官方建议把这类状态控制在 50 KB 以下；这个数值只针对状态保存，对所有 Binder 接口并不通用。状态里保存恢复界面所需的标识和少量输入，列表、位图或完整接口响应都放别处。
 

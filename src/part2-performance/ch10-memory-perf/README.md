@@ -6,6 +6,11 @@
 2. 谁持有对象或资源；
 3. 这项变化怎样影响 GC、调度、I/O 和用户可感知延迟。
 
+<!-- gracker-diagram: ch10-index-01-three-questions -->
+![从增长、持有到体验影响](../../assets/diagrams/ch10/ch10-index-01-three-questions.png)
+
+图：三个问题互相补充：分类指标定位增长范围，所有权证据说明谁仍持有资源，同一业务窗口的时间线检验体验影响。
+
 本章的平台实现以 Android 17 / API 37 / `android-17.0.0_r1` 为核对版本。涉及 PSI（资源压力导致任务停顿的时间）、cgroup v2（控制组机制）、回收与内核内存统计时，以 `android17-6.18-2026-06_r6` 为内核核对版本。旧版本差异会保留在对应专题中，结论范围不超过 Android 17。
 
 ## 内容索引
@@ -14,6 +19,11 @@
 - [10.2 低内存对系统性能的影响](02-low-memory-impact.md)
 - [10.3 内存抖动与频繁 GC](03-memory-churn.md)
 - [10.4 GPU 与图形内存统计、归因与诊断](04-gpu-graphics-memory-tracking.md)
+
+<!-- gracker-diagram: ch10-index-02-topic-navigation -->
+![四篇专题按现场问题选读](../../assets/diagrams/ch10/ch10-index-02-topic-navigation.png)
+
+图：10.1 提供 App 排障主线；按低内存、分配抖动或图形资源线索进入 10.2–10.4。专题之间可以交叉取证，不是固定执行顺序。
 
 ## 按现象选择入口
 
@@ -35,6 +45,11 @@
 
 把问题写成可重复的操作序列。记录现场条件：设备、build fingerprint（系统构建标识）、ART Mainline（可独立更新的 ART 系统模块）版本、应用版本、ABI（应用二进制接口）、构建类型、数据集、前后台状态和采样时钟。
 
+<!-- gracker-diagram: ch10-index-03-business-window -->
+![先固定现场条件，再对齐阶段](../../assets/diagrams/ch10/ch10-index-03-business-window.png)
+
+图：先定义可重复操作与等待区间，保存设备、构建、ART 模块、应用、ABI、负载和前后台状态。轨道仅示意按共同时间基准对齐；不同统计值不因此变成同一计量口径。
+
 ### 2. 确定内存域
 
 至少区分：
@@ -46,7 +61,17 @@
 - Stack（线程栈）、Code（代码映射）、线程和文件描述符；
 - Swap/ZRAM（交换区与压缩内存）和系统 PSI。
 
+<!-- gracker-diagram: ch10-index-04-investigation-views -->
+![容量、资源与压力分别解释](../../assets/diagrams/ch10/ch10-index-04-investigation-views.png)
+
+图：这些是交叉的调查视角：ART 与 Native 堆可由匿名映射承载，图形资源也可能进入其他统计；线程数、FD 数和 PSI 不是另一套堆字节数。
+
 GC 只能处理 managed heap 中已经不可达的对象。Native owner（native 资源持有者）、Surface、codec（编解码器）、GPU 和内核页需要各自的证据链。
+
+<!-- gracker-diagram: ch10-index-05-gc-native-boundary -->
+![Java 可达性可以关联已登记 Native 清理](../../assets/diagrams/ch10/ch10-index-05-gc-native-boundary.png)
+
+图：部分 Native 分配登记了与 Java 对象关联的释放函数；对象不可达后可经清理机制触发释放。图中不承诺执行时机，也不表示所有 Native 或 GPU backing 已同步回收。
 
 ### 3. 区分 live set、churn 与峰值
 
@@ -59,11 +84,21 @@ GC 只能处理 managed heap 中已经不可达的对象。Native owner（native
 
 工具标签只能缩小调查范围。找到 owner（资源持有者）、生命周期或调用栈后，才能提出可验证的修复方案。
 
+<!-- gracker-diagram: ch10-index-06-tool-evidence -->
+![按问题选择工具，区分创建与持有](../../assets/diagrams/ch10/ch10-index-06-tool-evidence.png)
+
+图：heap dump 查对象引用；分配剖析查创建热点和速率；时间线检验体验相关性；映射与图形统计限定增长范围。工具提供的证据不同，创建栈不能代替保留引用图。
+
 ### 4. 做单变量对照实验
 
 一次只调整一个变量，例如缓存容量、图片目标尺寸、任务并发数、解析批次或 buffer（缓冲区）规格。比较内存指标时，同时观察 CPU、I/O、GC、frame deadline miss（帧没有按期完成）、缓存命中率和业务尾延迟（少数最慢请求的耗时）。
 
 内存降低但重建成本、I/O 或卡顿明显增加，说明方案还需要继续调整。
+
+<!-- gracker-diagram: ch10-index-07-single-variable -->
+![单变量实验同时观察收益与代价](../../assets/diagrams/ch10/ch10-index-07-single-variable.png)
+
+图：保留同一负载和现场条件，一次调整一个变量；同时比较内存、CPU、I/O、GC、帧超期、命中率与尾延迟。根据证据选择保留或继续调整，不预设缓存越小越好。
 
 ## 阅读建议
 
@@ -79,3 +114,8 @@ GC 只能处理 managed heap 中已经不可达的对象。Native owner（native
 - 不把 `System.gc()`、`WeakReference`、对象池、WebP、SparseArray 或异步线程写成通用解法。
 - 不用一次快照证明泄漏，不用一次 GC 证明资源已经释放。
 - 性能收益必须注明设备、构建、负载、指标和对照条件。
+
+<!-- gracker-diagram: ch10-index-08-evidence-boundaries -->
+![结论保留口径、重复性与对照条件](../../assets/diagrams/ch10/ch10-index-08-evidence-boundaries.png)
+
+图：快照、GC 和工具标签都只是一段证据。泄漏与释放结论需结合重复业务、持有关系及资源生命周期；性能收益需保存可复查的现场条件。

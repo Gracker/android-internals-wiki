@@ -99,6 +99,11 @@ last_idle_audit_at: '2026-10-04T10:40:33+08:00'
 
 自建平台应把“被分配”“成功获取”“成功激活”“使用功能”“成功上报”拆成一个漏斗来监控。主分析优先遵循预先指定的实验分配口径；按激活者做补充分析时，要说明这份数据可能受网络、启动成功率和变体自身崩溃的影响。
 
+<!-- gracker-diagram: a289-01-assignment-exposure-and-reporting-funnel -->
+![从分桶到上报：随机分配与处理后选择分开记录](../../assets/diagrams/ch26/a289-01-assignment-exposure-and-reporting-funnel.png)
+
+图：配置拉取、激活与成功上报不是随机分配本身；某变体提前崩溃会改变进入分析的人群。
+
 指标类型决定估计方法，我们逐个看：
 
 - **连续指标**：例如用户级平均启动耗时。样本量计算需要历史方差、最小可检测效应、显著性水平、统计功效与分配比例，只填一个基线均值算不出结果。
@@ -112,6 +117,11 @@ A/A Test 给两组下发同一方案，用来检查分桶、曝光、上报和�
 
 SRM 检查要覆盖全量与预注册关键分群，并沿“实验分配 → 配置拉取 → 配置激活 → 指标产生 → 上传成功”这条链路逐层定位丢失。多项主张、多分群或多次查看结果时，应预先选好多重比较或序贯控制方法；固定终点检验则留给按固定终点执行的实验。
 
+<!-- gracker-diagram: a289-02-cluster-bootstrap-and-estimand-weight -->
+![重复帧不是独立用户：相关性与权重是两个选择](../../assets/diagrams/ch26/a289-02-cluster-bootstrap-and-estimand-weight.png)
+
+图：聚类bootstrap保护单元内相关性，不会自动改变事件加权目标；样本量也要报告独立实验单元数。
+
 ### 长尾指标的判定协议
 
 P90/P99 的主效应要直接定义为 `Qτ(variant) - Qτ(baseline)`：`Qτ` 是分位点函数，`τ` 取 0.90 或 0.99，`variant` 与 `baseline` 分别是实验组和基线组。区间也按同样的定义，直接为两组分位差构造；两组各自的分位值区间是否重叠，回答的是另一个问题，顶替不了差值区间。按用户或安装分桶时，聚类 bootstrap 必须按随机化单元重采样，并让被抽中的单元携带其全部合格事件；改成按帧、启动或请求重采样，会破坏单元内相关性，还会让高活跃用户获得额外权重。
@@ -120,6 +130,11 @@ P90/P99 的主效应要直接定义为 `Qτ(variant) - Qτ(baseline)`：`Qτ` �
 
 分群分位值同样绕不开混合分布。总体分布写作 `F(x) = Σg wgFg(x)`，`wg` 是分群权重，`Fg(x)` 是该群的累积分布函数；总体分位值是混合 CDF 的逆函数，各群分位值的加权和替代不了它。归因时我们要分开回答两个问题：人群构成是否变化，相同分群内部的分布是否变化。需要标准化时，把两组重加权到同一参考构成，再重新计算经验分布；跳过这一步直接算“样本量 × P90 差值”，得不出可用的结果。
 
+<!-- gracker-diagram: a289-03-mixture-cdf-not-average-quantiles -->
+![总体分位值来自混合 CDF，不能平均群体 P90](../../assets/diagrams/ch26/a289-03-mixture-cdf-not-average-quantiles.png)
+
+图：数值是人为构造的无量纲反例；人口结构变化和群内分布变化分开分析。
+
 ### 查看频率、多重比较与异常值
 
 看结果的频率本身就会影响结论：每天查看一次普通固定终点 p 值，又在第一次越过显著性阈值时就停止，假阳性率会被抬高。所以平台要在实验登记时就选好查看方式——固定终点 fixed horizon，或带 alpha spending 的有限次分组序贯检验，把一类错误预算预先分配给每次查看；经过校准、允许按规则随时查看的 anytime-valid inference 是第三条路。Crash、ANR、数据损坏和严重性能伤害可以触发安全停止；安全停止的含义是及时止损，方案本身有效与否还要另行判断。
@@ -127,6 +142,11 @@ P90/P99 的主效应要直接定义为 `Qτ(variant) - Qτ(baseline)`：`Qτ` �
 多个确认性主张要控制家族错误率（family-wise error），即多项判断中至少出现一次假阳性的概率；大量设备、场景和时间分群只能标为探索性（exploratory），发现之后再进入复现实验。
 
 数据清洗的规则同样要在揭盲前登记。可以判无效的是负耗时、时钟混用、重复事件和错误的 join；低端机、热降频、冷缓存与弱网造成的真实慢样本属于用户体验，数值再极端也要保留。缩尾 winsorization 和截尾均值 trimmed mean（前者把极端值替换为边界值，后者去掉两端样本后求均值）可以作为敏感性分析的补充，主结果仍然是原始分位值与违约率。
+
+<!-- gracker-diagram: a289-04-sequential-inspection-and-safety-stop -->
+![查看规则、统计结论与安全停止分别定义](../../assets/diagrams/ch26/a289-04-sequential-inspection-and-safety-stop.png)
+
+图：主指标、MDE、护栏、缺数、SRM、停止规则和数据成熟窗口都应在实验开始前登记。
 
 ### 实验登记与决策结果
 
@@ -158,6 +178,11 @@ Macrobenchmark 适合承担实验室基线，前提是基准设备用物理设�
 - `PowerMetric` 也是实验性 API，测的是系统级功率或能量，不能直接归因于单个 App；官方支持物理 Pixel 6、Pixel 6 Pro 及后续设备，测试时还要减少其他进程干扰。
 
 门禁的数据结构应保存 `metric_name`、`metric_available_api`、设备与系统指纹、场景、编译模式、基线来源、样本数、效应区间和处理动作。Benchmark 库会输出 JSON，并为每个 Macrobenchmark 测量迭代保存 Perfetto trace；两类产物 CI 都要归档，这样聚合数据出现异常后，我们仍能回到单次 Trace 查原因。
+
+<!-- gracker-diagram: a289-05-benchmark-metric-version-contracts -->
+![指标名称相似，也要分别记录版本与测量对象](../../assets/diagrams/ch26/a289-05-benchmark-metric-version-contracts.png)
+
+图：保存metric、可用版本、设备、编译模式、样本量和效应区间；JSON与逐次Perfetto trace都归档。
 
 再看线上这条线。线上回归检测沿用 26.1 节的分位值和采样字段，检测任务至少按 `metric_name`、`scene_id`、`app_version`、`experiment_id`、`variant_id`、`device_tier`、`android_version` 分桶；不分桶的 P90 读的是混合分布，支撑不了版本决策。
 
@@ -193,6 +218,11 @@ CI/CD 里的性能门禁要分层。把所有基准测试塞进每个 PR 是行�
 
 性能门禁可以允许人工豁免。测试环境异常要先标记为无效运行；它和业务豁免是两类事，混记会让豁免记录失真。有效豁免需记录批准人、证据、适用构建、到期条件、用户影响和补偿计划；豁免是临时手段，到期即恢复门禁。
 
+<!-- gracker-diagram: a289-06-layered-ci-gates-and-pinned-baseline -->
+![CI 三层门禁使用固定良好基线与可审计结果](../../assets/diagrams/ch26/a289-06-layered-ci-gates-and-pinned-baseline.png)
+
+图：图中为分层治理流程；实际任务可并行运行，流程层级不表示PR测量是完整发布覆盖。
+
 ## 性能劣化的自动归因
 
 自动归因的职责是把排查范围缩小到一批可验证的候选：相关性只是线索，根因裁定留给验证环节。性能告警应该携带版本、实验、场景、设备分群、变更记录、trace section 与原始样本索引，排查人据此提出并验证假设。
@@ -216,6 +246,11 @@ CI/CD 里的性能门禁要分层。把所有基准测试塞进每个 PR 是行�
 
 `TraceSectionMetric` 和业务 trace 的名称要提前统一。实验室基准测试里 `home.bind_data` 变慢、生产环境同名摘要也变慢时，归因系统就能把告警直接指到首页数据绑定阶段；反过来，实验室叫 `HomeBind`、生产环境叫 `feed_first_render`，后端就只能靠人工判断。26.1 节已经建议自定义 Trace 和生产环境摘要使用同名阶段，这里直接复用该规则。
 
+<!-- gracker-diagram: a289-07-attribution-by-metric-and-evidence -->
+![自动归因按指标类型输出可复核候选](../../assets/diagrams/ch26/a289-07-attribution-by-metric-and-evidence.png)
+
+图：发布、实验、场景、设备和原始样本身份共同进入候选清单，算法排序不代替根因验证。
+
 自动归因可以按固定流程输出候选：
 
 1. 比对实验组和对照组，确认退化是否只出现在某个变体。
@@ -231,6 +266,11 @@ CI/CD 里的性能门禁要分层。把所有基准测试塞进每个 PR 是行�
 性能 A/B Test 要持续监控 SRM。实际分配数量与预设权重的差异一旦超出随机波动能解释的范围，实验数据就应暂停用于决策。常见原因包括分桶哈希函数或盐值变更、安装 ID 重置、目标条件实现不一致、埋点丢失，以及某个变体在配置激活或上报之前崩溃。
 
 我们先做 SRM 检查，再做性能指标判断。大样本且期望频数足够时可以使用卡方检验，小样本或稀疏分群则选择精确方法；检验阈值和查看频率也要预注册。实验平台应输出实验分配、配置拉取、配置激活、指标产生和上传成功率。实验分配已经均衡、激活之后才失衡，问题就出在处理之后的环节；此时只过滤“成功用户”，Crash、ANR 或启动失败造成的损伤会被藏起来。
+
+<!-- gracker-diagram: a289-08-srm-before-outcome-and-attrition -->
+![SRM 先检查分配，再定位处理后的缺失](../../assets/diagrams/ch26/a289-08-srm-before-outcome-and-attrition.png)
+
+图：处理后失衡可能来自真实损伤，不能只筛成功者“修复”样本；定位后按原估计目标重新判断。
 
 ## 实验平台自身也要设护栏
 
@@ -254,6 +294,11 @@ Android 17 / API 37 的 `ApplicationExitInfo.getAnrInfo()` 可在 `REASON_ANR` �
 - Android 17 的 `AnrInfo` 可进入结构化维度；Android 11-16 手里只有 `reason`、trace 和业务现场，从 `description` 反解析不出等价字段。
 
 我们最后回到归因：`ApplicationExitInfo` 补的是 App 上报中断后的那部分进程退出信息，某个变体是否导致退出，它证明不了。有效归因仍需检查实验分配是否随机、各组退出记录的缺失机制是否一致，并结合对照组、代码变更、复现或 Trace。系统证据提高的是事件分类质量，相关性到因果这一步，仍要靠上面的验证手段完成。
+
+<!-- gracker-diagram: a289-09-exit-evidence-and-experiment-membership -->
+![退出证据补充分类，实验归属仍靠分配记录](../../assets/diagrams/ch26/a289-09-exit-evidence-and-experiment-membership.png)
+
+图：PSS/RSS为零标不可用，非空trace不改reason；各组退出缺失机制和系统覆盖窗口都进入解释。
 
 ## 全文小结
 

@@ -147,6 +147,11 @@ CPU、内核、运行库和应用代码都可能发出信号。读现场时，�
 
 所以，一个处理器在这套流程里排在哪，单凭注册时间推不出来；直接绕过 SignalChain 改写内核 disposition，还可能破坏 ART 隐式空检查、Recoverable GWP-ASan 和系统 tombstone。
 
+<!-- gracker-diagram: a209-01-signalchain-dispatch -->
+![SignalChain 先处理平台分支，再转用户 action](../../assets/diagrams/ch20/a209-01-signalchain-dispatch.png)
+
+图：平台特殊处理器或 Recoverable GWP-ASan 分支可先消费信号；保存的用户 action 只有一份，注册顺序不等于一条自动安全链。
+
 #### debuggerd 的收集流程
 
 动态链接器在早期调用 [`linker_debuggerd_init()`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_debuggerd_android.cpp)，把 allocator、GWP-ASan 和 crash detail 等额外崩溃详情回调交给 [`debuggerd_init()`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。平台随后为致命信号安装 `debuggerd_signal_handler`。
@@ -171,6 +176,11 @@ CPU、内核、运行库和应用代码都可能发出信号。读现场时，�
 
 `crash_dump` 还会连接 `/data/system/ndebugsocket` 通知 ActivityManager。Native Crash 走的是这条系统路径，应用自己装的 Java `UncaughtExceptionHandler` 覆盖不到这里。
 
+<!-- gracker-diagram: a209-02-debuggerd-collection -->
+![普通致命诊断把主要采集工作移到进程外](../../assets/diagrams/ch20/a209-02-debuggerd-collection.png)
+
+图：crash_dump 读取线程和快照内存，tombstoned 管理输出槽和轮转；Java 默认异常处理器覆盖不到这条 Native 路径。
+
 ##### 动态链接器接入与 Runtime APEX 边界
 
 动态链接器负责尽早把 allocator、GWP-ASan、crash detail 等回调接入 debuggerd，tombstone 则由后续组件生成。Runtime APEX 的组合会影响接入代码所在文件和条件分支——这是平台内部的装配差异，应用要沿 linker 私有 `soinfo`、debuggerd 私有处理器或 ART 特殊处理器拼出自己的崩溃链，稳定性没有任何保障。
@@ -182,6 +192,11 @@ CPU、内核、运行库和应用代码都可能发出信号。读现场时，�
 `SA_ONSTACK` 让致命信号处理器切换到当前线程事先安装的备用信号栈（alternate signal stack，altstack）上运行，应对的是线程栈损坏或接近耗尽的现场。debuggerd 预留的 pseudothread 栈则专供崩溃转储协作使用，前后设置了不可访问的保护页（guard page）。系统并不会替进程里的每条业务线程自动安装备用信号栈。
 
 自研采集器若依赖 altstack，必须明确谁安装、谁恢复、大小如何按 ABI 验证，以及与其他 SDK 共存时是否覆盖旧配置。把 debuggerd 的 pseudothread 栈大小照搬成业务 `sigaltstack()` 参数没有依据。
+
+<!-- gracker-diagram: a209-03-two-signal-stacks -->
+![备用信号栈和 pseudothread 栈不能混用](../../assets/diagrams/ch20/a209-03-two-signal-stacks.png)
+
+图：Android 17 Bionic 为常规新 pthread 配置带保护区的备用栈；采集器需要确认逐线程现状、覆盖关系与恢复时机。
 
 ##### CrashInfo 进程间协议与地址标签位
 
@@ -241,6 +256,11 @@ backtrace:
 
 ARM64 ABI 规定函数入口的前八个整数或指针参数通常使用 `x0-x7`，但崩溃可能发生在函数中部，编译器早已复用这些寄存器。`x0 == 0` 离“第一个源码参数为空”的结论还差一步验证。同理，`x30` 在优化、叶函数或异常展开中也不一定等于可靠调用者；应优先采用经过 unwind metadata 验证的 backtrace。
 
+<!-- gracker-diagram: a209-04-tombstone-evidence -->
+![Tombstone 的字段共同限定证据](../../assets/diagrams/ch20/a209-04-tombstone-evidence.png)
+
+图：栈顶、近空地址或某个寄存器值只是线索；系统库也可能是应用内存破坏的受害位置。
+
 tombstone 的 `pc` 列通常是模块相对地址，可能还伴随非零的 map offset 或 load bias，这两个修正量在地址归一化一节展开。手工计算时要读同一份 maps；更稳妥的方式是把完整 tombstone 交给 `ndk-stack`，或使用报告中明确标出的 relative pc。把进程绝对 `pc` 原样传给 `addr2line`，经常会得到错误结果。
 
 #### 栈内存转储的证据等级
@@ -271,6 +291,11 @@ tombstone 里的 backtrace 不是凭空来的：`libunwindstack` 根据寄存器
 #### Symbolication：从栈帧地址找到源码
 
 符号化要求模块身份和地址同时正确：
+
+<!-- gracker-diagram: a209-05-unwind-symbolication -->
+![先恢复调用帧，再用匹配符号恢复源码](../../assets/diagrams/ch20/a209-05-unwind-symbolication.png)
+
+图：Unwind 恢复调用关系，symbolication 解释地址；符号再完整，也补不回设备端已经丢失的调用帧。
 
 - ABI、Build ID、模块文件必须匹配；
 - 使用保留符号的 ELF（Executable and Linkable Format，可执行与可链接格式），或使用从该 ELF 同次构建产生的独立符号文件；
@@ -323,6 +348,11 @@ symbols/
 ```
 
 `<module-name>/<module-identifier>/<module-name>.sym` 三层都参与查找。模块同名但构建不同，必须落在不同标识目录。
+
+<!-- gracker-diagram: a209-07-breakpad-artifacts -->
+![Minidump 和 Breakpad .sym 是配对的离线产物](../../assets/diagrams/ch20/a209-07-breakpad-artifacts.png)
+
+图：dump_syms 从匹配 ELF 生成 .sym；符号目录键使用其 MODULE 标识，不能自行截断或用同名最新版替代。
 
 #### `minidump_stackwalk` 的处理步骤
 
@@ -404,6 +434,11 @@ JNI 诊断至少覆盖：
 
 `PushLocalFrame`/`PopLocalFrame` 和 `DeleteLocalRef` 用于约束循环中的局部引用；调试构建开启 CheckJNI 能更早暴露错误。相关基础见 [1.6 JNI、NDK 与 Bionic 原生运行时性能](../../part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md)。
 
+<!-- gracker-diagram: a209-08-fault-hypotheses -->
+![按强证据检验信号含义](../../assets/diagrams/ch20/a209-08-fault-hypotheses.png)
+
+图：信号编号划分类别，根因仍需寄存器、映射、调用链和工具报告互证，不能只凭地址形态。
+
 ### 用内存工具验证地址假设
 
 地址形态只能形成假设，结论要靠内存工具验证。各工具的适用阶段与限制如下：
@@ -420,6 +455,11 @@ Android 14+ 未显式配置时，约 1% 的应用启动会启用 [Recoverable GW
 
 工具选择与当前命令以 [Memory error debugging and mitigation](https://developer.android.com/ndk/guides/memory-debug)、[GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan) 和 [HWASan](https://developer.android.com/ndk/guides/hwasan) 为准。`wrap.sh` 只用于可调试 APK，并需要随 ABI 正确打包；一条 `setprop wrap.<package>` 命令，离“所有设备通用的 ASan 开关”还很远。
 
+<!-- gracker-diagram: a209-09-memory-tools -->
+![内存工具按检测场景和报告边界选择](../../assets/diagrams/ch20/a209-09-memory-tools.png)
+
+图：恢复型 GWP-ASan 的 SIGSEGV 不会调用应用自定义处理器；没有 APM 回调不能否定系统报告。
+
 ### 线上 Native Crash 采集方案
 
 自己搭采集链路之前，先看清楚每种方案能拿到什么、拿不到什么：
@@ -433,6 +473,11 @@ Android 14+ 未显式配置时，约 1% 的应用启动会启用 [Recoverable GW
 | 自研 `sigaction` | 自定义固定大小的最小记录 | 代码入口少 | 容易破坏平台处理器、遗漏 tombstone，或在信号处理上下文中再次崩溃 |
 
 建议把系统与 SDK 记录按进程启动 ID、时间、信号、TID、Build ID 和关键栈帧去重，同时保留来源字段。SDK minidump 与 `ApplicationExitInfo` tombstone 提供互补证据，应同时保留并关联。
+
+<!-- gracker-diagram: a209-10-collector-boundaries -->
+![系统报告与 SDK minidump 保留来源并关联](../../assets/diagrams/ch20/a209-10-collector-boundaries.png)
+
+图：重启后按进程生命周期、时间、信号、TID、Build ID 和关键帧关联，不能删掉互补的原始来源。
 
 #### Signal handler 里允许做什么
 
@@ -508,6 +553,11 @@ C++ 析构和栈展开被跳过，自动变量还受 `setjmp`/`longjmp` 语义�
 - 若转发旧 signal action、恢复 disposition 或重新投递不完整，会干扰 debuggerd。
 
 若业务仍要试验，应限制在可丢弃、无共享可变状态的隔离工作线程（worker）上；命中后停止接收新任务，保存最小证据，并尽快重建独立进程或让宿主按明确策略退出。跳回后再附加到 JVM、分配大量对象并执行普通 Java 回调，谈不上“线程已经恢复”。
+
+<!-- gracker-diagram: a209-12-nonlocal-jump -->
+![跳回线程入口不能修复进程一致性](../../assets/diagrams/ch20/a209-12-nonlocal-jump.png)
+
+图：mooner 示例的进程级 sig_env/handleFlag 会被多线程覆盖；Hook 基础设施不提供线程生命周期或数据一致性保证。
 
 #### ByteHook、shadowhook 与私有 pthread 状态
 
@@ -589,6 +639,11 @@ Native 诊断里经常出现两个缩写相同、含义无关的术语：
 | CFI | Control Flow Integrity，控制流完整性 | 检查间接调用或跳转的目标是否合法，用于控制流安全加固 |
 
 本文没有特别说明时，CFI 均指 Call Frame Information。Control Flow Integrity 违规后的表现取决于编译参数、运行库和触发陷阱的方式，别把它统一写成某个固定信号，也别拿它解释普通的回溯失败。
+
+<!-- gracker-diagram: a209-06-two-cfi-meanings -->
+![两种 CFI 解决不同问题](../../assets/diagrams/ch20/a209-06-two-cfi-meanings.png)
+
+图：本文默认 CFI 是调用帧信息；不能用安全加固违规的解释替代普通回溯失败分析。
 
 ### 2. 系统 tombstone 如何生成
 
@@ -676,6 +731,11 @@ target_compile_options(native-lib PRIVATE
 
 平台内部还有 `android_unsafe_frame_pointer_chase()`。其头文件明确说明，这个函数面向 sanitizer 等平台组件，不是 NDK 应用 API；遇到没有 FP 的帧时，它只保证此前帧可靠，不保证还能继续回溯。应用也不要通过私有头文件或 `dlsym` 动态查找这个符号，把它当作跨版本兼容接口。
 
+<!-- gracker-diagram: a209-13-unwind-trust -->
+![恢复上一帧需要规则和可信现场](../../assets/diagrams/ch20/a209-13-unwind-trust.png)
+
+图：arm64 与 arm32 的 FP 默认策略不同，预编译库和单目标编译选项仍会覆盖默认值；以 Release 产物为准。
+
 #### 3.3 `_Unwind_Backtrace()` 能做什么
 
 `_Unwind_Backtrace()` 可用于当前进程、当前线程的常规 native 调用链。它依赖目标代码提供兼容的回溯表，并可能进入内存分配器、动态链接器或运行库内部状态；这并不代表它能在任意致命信号处理器中安全调用。
@@ -710,6 +770,11 @@ size_t CaptureCurrentThread(uintptr_t* frames, size_t capacity) {
 ```
 
 这段代码只收集 PC。`dladdr()` 只能依据进程内可见的模块和动态导出符号解析有限信息，替代不了带 DWARF 的离线符号化，也不会自动生成 `libunwindstack` 插入的 ART Dex 虚拟帧。
+
+<!-- gracker-diagram: a209-14-current-versus-remote -->
+![当前线程回溯与系统远程快照能力不同](../../assets/diagrams/ch20/a209-14-current-versus-remote.png)
+
+图：普通调用栈 API 不自动具备进程外采集、ART 混合帧或信号安全前提，不能只换一个函数名就宣称更完整。
 
 #### 3.4 回溯性能必须在目标设备实测
 
@@ -755,6 +820,11 @@ rel_pc = runtime_pc - map_start + load_bias + elf_offset
 交给 `ndk-stack` 或匹配 ELF 时，应把 `0000000000012340` 当作 tombstone 已给出的相对 PC，不要再减 ASLR 基址；`(offset 0x2a4000)` 描述的是 ELF 在 APK 等容器文件中的位置，同样不要从 `pc` 再减一次。
 
 若采集系统上报运行时绝对 PC，而非标准 tombstone 文本，服务端必须同时取得当时的内存映射表、CPU 架构和模块标识，才能重算相对地址。
+
+<!-- gracker-diagram: a209-15-address-normalization -->
+![地址只按其来源归一化一次](../../assets/diagrams/ch20/a209-15-address-normalization.png)
+
+图：绝对地址需结合 map、load bias 和 ELF offset；标准 tombstone 的相对 PC 不能再次减 ASLR 基址或 APK 容器偏移。
 
 #### 4.3 Build ID 是符号产物的主键
 
@@ -818,6 +888,11 @@ NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
 
 执行后仍需验证 strip 前后的 Build ID 一致，并确认交付 ELF 保留运行时需要的回溯信息。符号服务建议以 `Build ID + ABI` 建立索引，模块名只作为检索字段。
 
+<!-- gracker-diagram: a209-16-symbol-identity -->
+![符号仓库以真实构建身份检索](../../assets/diagrams/ch20/a209-16-symbol-identity.png)
+
+图：按构建取回不可变符号，验证 strip 前后 Build ID 与运行时 unwind 段；第三方提前剥离的信息不能靠 AGP 重建。
+
 ### 6. 离线符号化工具
 
 #### 6.1 `ndk-stack`
@@ -857,6 +932,11 @@ NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
 ```
 
 `-i` 展开内联帧，`-C` 还原 C++ 名称。不要混用宿主机的 GNU `addr2line` 和 NDK 工具，再直接比较结果；它们面对的目标架构和 DWARF 支持范围可能不同。
+
+<!-- gracker-diagram: a209-17-offline-tools -->
+![离线工具先匹配输入格式与符号产物](../../assets/diagrams/ch20/a209-17-offline-tools.png)
+
+图：工具输出多层内联帧不代表重复上报；返回 ?? 也可能是错地址、错 ABI 或错构建，不能统一归为没有符号。
 
 ### 7. 读 tombstone 时要看哪些证据
 
@@ -904,6 +984,11 @@ backtrace:
 
 服务端可按进程、线程、事件时间和桥接帧关联两类调用链，但不要把 Java dex pc 当作 ELF 地址交给 `llvm-symbolizer`。`artDebuggable_getStackFrameAt` 没有可验证的公开接口依据，别把它写进方案。
 
+<!-- gracker-diagram: a209-18-mixed-stacks -->
+![Java、JIT 与 Native 保留不同地址语义](../../assets/diagrams/ch20/a209-18-mixed-stacks.png)
+
+图：服务端可依据共同事件关联两类调用链，不能把 Dex PC 交给 ELF symbolizer，也不能假设通用 FP 链能重建 Java 栈。
+
 ### 9. 应用侧崩溃采集的安全边界
 
 #### 9.1 信号处理器里只做最小工作
@@ -944,6 +1029,11 @@ static void FatalSignalHandler(
 ```
 
 其中，`CopyFixedSize`、`WriteFullySignalSafe`、处理器链和重新触发信号，都必须由实现方针对 Bionic、部分写入、系统调用被信号中断的 `EINTR`（系统调用被信号中断）、备用栈和线程定向信号逐项验证。代码中的抽象函数只是职责占位，并非通用实现。
+
+<!-- gracker-diagram: a209-11-signal-safe-split -->
+![信号上下文只保存和通知，解析放到外部](../../assets/diagrams/ch20/a209-11-signal-safe-split.png)
+
+图：正常期准备有界资源；handler 只保存并通知，外部解析与继续原退出链分别推进，不能等待网络上传。volatile 标记不提供跨线程互斥。
 
 #### 9.2 优先利用系统提供的 tombstone
 
@@ -992,6 +1082,11 @@ MTE 用指针标签和内存标签不匹配来发现非法访问。`crash_dump` 
 
 16 KB 页会影响 ELF segment 对齐和 APK 内嵌 `.so` 的打包要求，但不会把符号地址统一放大或缩小四倍。符号化仍以内存映射表、ELF program header（程序装载头）、load bias 和 Build ID 为准。16 KB 页兼容检查见 4.5；运行时发布库的只读装载与回滚见 20.13。
 
+<!-- gracker-diagram: a209-19-architecture-features -->
+![架构特性改变取证，不提供统一地址修正常量](../../assets/diagrams/ch20/a209-19-architecture-features.png)
+
+图：使用实际映射、ELF headers、Build ID 和工具链配置验证，避免在服务端堆叠未经证实的常量修正。
+
 ### 11. 回溯失败时定位中断位置
 
 | 现象 | 优先检查 | 常见原因 |
@@ -1023,6 +1118,11 @@ MTE 用指针标签和内存标签不匹配来发现非法访问。`crash_dump` 
 10. 监控符号化率、Build ID 匹配率、完整栈率、业务帧命中率和未知模块占比。
 
 符号化率下降时，按 `Build ID 缺失 -> 产物不匹配 -> 地址归一化失败 -> 设备端回溯截断` 的顺序拆分指标。把所有失败归为“没符号”，会掩盖采集器和构建链中的问题。
+
+<!-- gracker-diagram: a209-20-symbolication-quality -->
+![符号化失败按环节拆开度量](../../assets/diagrams/ch20/a209-20-symbolication-quality.png)
+
+图：发布时注入已知崩溃并检查正确源码 revision、可执行范围和内联帧；一串可读函数名不能独立证明解析正确。
 
 ### 13. 与 Simpleperf / Perfetto 采样栈的关系
 

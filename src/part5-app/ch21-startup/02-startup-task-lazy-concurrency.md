@@ -113,6 +113,11 @@ last_consolidated_at: '2026-08-24'
 
 启动任务只应包含“初始化完成”可以清晰定义的工作。长期轮询、常驻连接和周期任务属于运行期调度，启动任务只负责把它们配置并启动到约定状态，别让启动 DAG 一直挂着等它们。
 
+<!-- gracker-diagram: a223-01-phase-contract -->
+![任务按必须完成的边界分级，提前不代表更快](../../assets/diagrams/ch21/a223-01-phase-contract.png)
+
+图：先按进程、入口、业务依赖删去不必要任务，再安排完成边界；常驻连接只等待约定初始化结果。
+
 ### 2. 用 DAG 表达依赖
 
 #### 2.1 节点契约
@@ -165,6 +170,11 @@ sealed interface TaskResult<out T> {
 
 条件任务的跳过发生在构图阶段：移除节点后，我们要重新检查所有后继，确认每条硬依赖仍有结果提供者、确认是否存在备用节点，以及每个必需结束节点的依赖仍能满足。任务图可以有多个互不依赖的根节点，整张图不要求只有一个连通分量。
 
+<!-- gracker-diagram: a223-02-dependency-results -->
+![有向边表示后继等待，结果语义决定能否继续](../../assets/diagrams/ch21/a223-02-dependency-results.png)
+
+图：超时必须产出明确结果；删除条件节点后重查所有硬依赖及备用提供者。
+
 #### 2.3 构图阶段的输入校验
 
 在任何任务执行前，我们先做这些检查：
@@ -178,6 +188,11 @@ sealed interface TaskResult<out T> {
 - 多个节点写同一非线程安全状态却没有顺序约束。
 
 环检测有两条现成路径。DFS（深度优先搜索）把当前递归路径中的节点标成 `GRAY`，再次遇到 `GRAY` 节点就是有环；Kahn 拓扑排序反复移除入度为 0、没有未完成前驱的节点，处理结束后仍有节点剩下，同样说明图中有环。错误信息应输出完整环路径，例如 `A → B → C → A`，方便配置和模块负责人定位。
+
+<!-- gracker-diagram: a223-03-validate-before-run -->
+![任务运行前检查结构、进程、阶段和资源等待](../../assets/diagrams/ch21/a223-03-validate-before-run.png)
+
+图：图可以有多个独立根；拓扑合法还不足以证明线程或资源不会死锁。
 
 ### 3. 关键路径决定理论下界
 
@@ -204,6 +219,11 @@ Device(12 ms) → Config(10 ms) ┘
 
 所以关键路径要用每次 Trace 的真实开始/结束和依赖关系重建，代码评审里估出来的耗时写死下来没有意义。P50 是样本中位数，P95 表示 95% 的样本不超过该值；典型启动和长尾启动的瓶颈不同，二者的关键路径也可能不同，我们要分开重建。
 
+<!-- gracker-diagram: a223-04-critical-path-model -->
+![最长依赖链给出理论下界，非关键分支变快未必缩短结束时间](../../assets/diagrams/ch21/a223-04-critical-path-model.png)
+
+图：教学假设：max(8+20,12+10)+15+0=43ms；真机还需加入排队、竞争和实际帧成本。
+
 #### 3.2 优先级只影响已经就绪的任务
 
 优先级的作用范围有限：它只在多个任务同时就绪、争用同一执行资源时决定谁先运行，越不过依赖关系。
@@ -216,6 +236,11 @@ Device(12 ms) → Config(10 ms) ┘
 
 把三者压成一个 `priority` 整数，“让高优任务在后台队列靠前”和“调高线程 nice”就混成了同一个操作；框架 API 应该分开建模。
 
+<!-- gracker-diagram: a223-05-priority-layers -->
+![阶段、队列顺序和 Linux nice 分别建模](../../assets/diagrams/ch21/a223-05-priority-layers.png)
+
+图：高优任务仍需等待硬依赖；提高worker优先级可能挤压Main与RenderThread。
+
 ### 4. 失败、超时和取消属于任务协议
 
 #### 4.1 超时之后的底层操作
@@ -223,6 +248,11 @@ Device(12 ms) → Config(10 ms) ┘
 图跑起来之后，超时和失败就要靠任务协议兜住。Java/Kotlin 的超时通常只让等待方停止等待，底层网络、Binder、文件 I/O 或供应商线程可能还在跑。`Future.cancel(true)` 和线程 interrupt（Java 线程的协作式中断信号） 也只是协作取消信号：任务代码要检查取消状态、响应中断或调用底层取消 API，工作才会真正停下来。
 
 每个可超时任务，我们要能回答：
+
+<!-- gracker-diagram: a223-06-timeout-late-result -->
+![超时结束等待不等于底层工作已经停止](../../assets/diagrams/ch21/a223-06-timeout-late-result.png)
+
+图：取消需要底层API和任务代码协作；晚到结果、重试并发与共享状态都必须受会话/代际门控。
 
 - 超时后能否取消底层操作？
 - 晚到结果是否还允许写共享状态？
@@ -288,6 +318,11 @@ class LoggerInitializer : Initializer<Logger> {
 
 App Startup 会先完成 `LocalConfigInitializer.create()`，再调用 `LoggerInitializer.create()`。`create()` 必须同步返回可用实例；内部若只是提交了异步任务，依赖顺序对逻辑就绪就没有保证。
 
+<!-- gracker-diagram: a223-07-startup-discovery -->
+![App Startup 同步发现、递归依赖、创建并缓存](../../assets/diagrams/ch21/a223-07-startup-discovery.png)
+
+图：自动入口位于Provider阶段；手动调用在哪条线程，就在该调用路径同步初始化，不自动并发。
+
 #### 5.2 适用范围与限制
 
 App Startup 适合：
@@ -300,6 +335,11 @@ App Startup 适合：
 它没有任务优先级、内建超时、取消、异步结果或运行期改图；每个由 Manifest 自动发现并立即执行的 eager initializer（由 Manifest 自动发现并立即执行的初始化器），都实打实占用 Provider 启动阶段的主线程时间。
 
 需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。官方文档明确指出：关闭一个组件的自动初始化，会连同关闭由它带入的依赖；反过来，手动初始化时依赖会一并初始化。
+
+<!-- gracker-diagram: a223-08-remaining-eager-roots -->
+![移除一个入口不等于全局禁用该类及其依赖](../../assets/diagrams/ch21/a223-08-remaining-eager-roots.png)
+
+图：应核对所有剩余metadata、dependencies和手动调用；只要另有路径，目标仍可能提前运行。
 
 #### 5.3 多进程边界
 
@@ -331,6 +371,11 @@ class WorkerInitializationProvider : InitializationProvider()
 ```
 
 这会在 `:worker`（线程池中的工作线程） 进程形成独立的 `AppInitializer`、依赖遍历和结果缓存，与默认进程不共享“已初始化”状态。跨进程的完成关系要走 Binder IPC、可查询的 Provider 或持久状态去明确传递，画成一条只在内存中生效的 DAG 边是行不通的。
+
+<!-- gracker-diagram: a223-09-process-local-graphs -->
+![每个进程有独立任务图和单例，内存依赖边不能跨进程](../../assets/diagrams/ch21/a223-09-process-local-graphs.png)
+
+图：:worker是私有进程名称后缀；Provider子类与唯一authority指定它自己的metadata。
 
 #### 5.4 发现、遍历与动态特性边界
 
@@ -387,6 +432,11 @@ manager.start();
 
 采用 Alpha 时至少核对这些实现事实：
 
+<!-- gracker-diagram: a223-10-alpha-completion-gap -->
+![Alpha 的 run 返回立即完成，抛异常会中断后继通知](../../assets/diagrams/ch21/a223-10-alpha-completion-gap.png)
+
+图：固定04fe7f2没有用户run外层finally；抛异常会跳过后续阶段，异步提交则可能过早放行。
+
 - 默认 executor 的核心线程数和最大线程数都是 `availableProcessors()（运行时报告的可用逻辑处理器数）`；队列是无界 `LinkedBlockingQueue`，所有后台任务共用一池。任务可以一直入队，线程数也就停在核心线程数，最大线程数永远不会触发额外扩容。
 - `Task.run()` 返回后立刻标记完成并通知后继，不支持异步完成信号。
 - 用户 `run()` 外层没有 `try/finally`；异常会阻止完成通知，后继可能永远不启动。
@@ -424,6 +474,11 @@ manager.start();
 ```
 
 声明层要把住入口：业务直接拿到 executor、绕过调度器提交任务的口子应该关掉。所有任务都经过调度器，框架才能完整记录排队时间、运行时间和依赖状态，退出或降级时的行为也才一致。
+
+<!-- gracker-diagram: a223-11-scheduler-contract -->
+![调度器统一拥有状态、资源选择与观测](../../assets/diagrams/ch21/a223-11-scheduler-contract.png)
+
+图：应用绕过调度器直接提交会丢失排队、依赖与退出语义；按实际复杂需求再决定是否自研。
 
 ### 8. 异步初始化与 executor 策略
 
@@ -538,6 +593,11 @@ Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先
 
 校验失败只上报低基数错误码和图版本，不执行部分配置。默认图要随客户端一起经过功能与性能测试。
 
+<!-- gracker-diagram: a223-12-safe-config -->
+![远程配置只能选择本地已验证的安全空间](../../assets/diagrams/ch21/a223-12-safe-config.png)
+
+图：不等待本次网络取图，不接受任意类名或代码；不执行只通过部分校验的图。
+
 #### 10.3 实验指标
 
 实验同时观察：
@@ -564,6 +624,11 @@ Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先
 
 检测到连续早期失败时，下一次启动使用内置安全图并禁用实验配置。状态写入本身要轻量，并采用原子替换或等价事务：既别让进程在写到一半时留下解析不了的数据，也别给主线程 I/O 添明显负担。
 
+<!-- gracker-diagram: a223-13-early-failure-safe-graph -->
+![早期失败需要独立状态，下一次启动按条件切安全图](../../assets/diagrams/ch21/a223-13-early-failure-safe-graph.png)
+
+图：状态路径不依赖实验DAG；正常退出、超时和状态过期不能不加区分地计成崩溃。
+
 ### 11. 可观测性：测量排队和结果
 
 每个任务至少记录：
@@ -580,6 +645,11 @@ Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先
 `task start - task ready` 是排队时间，`task finish - task start` 是运行时间。只记录运行时间，executor 饱和和优先级反转就会漏掉；优先级反转指高优先级任务在等低优先级任务持有的锁或资源，结果反而落在后面。
 
 使用 `androidx.tracing` 给任务增加名称稳定的时间区间，并把依赖关系与 Task ID 一同保存在本地基准结果中。线上指标控制采样率和标签种类，不把动态 URL、用户 ID 或异常全文作为标签，以免产生近乎无限的指标组合。
+
+<!-- gracker-diagram: a223-14-task-time-boundaries -->
+![依赖就绪、入队、开始和逻辑完成需要分别打点](../../assets/diagrams/ch21/a223-14-task-time-boundaries.png)
+
+图：ready到start可能含门控；executor队列等待从submit计起，逻辑区间仍含等待，不能直接当CPU时间。
 
 验证优化时使用与 21.1 相同配置的 Macrobenchmark：
 
@@ -658,6 +728,11 @@ Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先
 
 “从主线程移到后台”消除的只是主线程上的直接执行时间。后台任务若占满 CPU 性能核、触发大量 page fault、争用同一数据库，或把结果同步回主线程，TTID、TTFD 或前几帧照样被拖慢。
 
+<!-- gracker-diagram: a223-15-trigger-and-cost -->
+![异步、延后、首次使用与持久调度改变不同条件](../../assets/diagrams/ch21/a223-15-trigger-and-cost.png)
+
+图：移走TTID工作后，同时验收TTFD、前几帧和首次点击；后台CPU/I/O仍与UI争用。
+
 ### 2. 先给初始化任务分级
 
 #### 2.1 分级前的问题清单
@@ -705,6 +780,11 @@ root.viewTreeObserver.registerFrameCommitCallback {
 ```
 
 这个信号针对注册后参与提交的帧，注册太晚就只能观察后续帧。回调表示帧已进入 swap chain，显示系统是否已把它 present 到物理屏幕，它并不保证；软件渲染时该 API 还不会回调。所以我们把它用在性能调度上，业务正确性要有独立条件。若应用允许软件渲染，要提供独立的保守触发，或把任务改成首次使用时再执行。
+
+<!-- gracker-diagram: a223-16-commit-gate -->
+![frame commit 只打开调度门，后续工作仍需资源预算](../../assets/diagrams/ch21/a223-16-commit-gate.png)
+
+图：注册太晚观察的是后续帧；软件渲染不回调，业务正确性应有独立完成条件。
 
 #### 3.2 首帧后队列的限流
 
@@ -798,6 +878,11 @@ class FeatureGate<T : Any>(
 
 loader 要自行选择 `Dispatchers.IO`、受控 CPU dispatcher（协程的执行线程配置） 或主线程，统一入口别替它猜线程。超时值应来自功能允许的最长等待时间和设备实验，不宜写成全项目共用常量。
 
+<!-- gracker-diagram: a223-17-feature-gate-state -->
+![FeatureGate 共享成功，普通失败与取消走不同路径](../../assets/diagrams/ch21/a223-17-feature-gate-state.png)
+
+图：原示例TimeoutCancellationException被CancellationException分支处理：恢复NotLoaded，后续getOrLoad可重新执行。
+
 这个示例在调用者的协程里执行 loader。页面级初始化可以随页面取消；进程级初始化应由 application scope（与应用进程同寿命的作用域）——与 App 进程同生命周期的 `CoroutineScope`——发起，避免第一个 Activity 销毁时把所有等待者一起取消。失败会被缓存，只有显式调用 `retry()` 才会再执行 loader；生产实现还要加入逐步延长等待时间的退避策略和重试次数上限。
 
 #### 4.2 预触发的位置
@@ -844,6 +929,11 @@ Android 17 的 [`CombinedDeliMessageQueue/MessageQueue.java`](https://android.go
 
 不要用反射读取 `MessageQueue` 私有字段。DeliQueue 为兼容二进制仍保留 `mMessages`，但该字段固定为 `null`，旧式队列探测会失效。Android 17 官方指南当前要求相关测试环境至少升级到 Espresso 3.7.0 或 Robolectric 4.17，并把 Robolectric 的 `LEGACY` Looper 模式迁到 `PAUSED`。
 
+<!-- gracker-diagram: a223-19-deli-idle-boundaries -->
+![Android 17 DeliQueue 的核心并发不等于所有操作无锁](../../assets/diagrams/ch21/a223-19-deli-idle-boundaries.png)
+
+图：外部IdleHandler语义保留；Espresso3.7.0+、Robolectric4.17+和PAUSED要求按官方指南核对。
+
 #### 5.3 作为一次性信号使用
 
 下面的 IdleHandler 只通知调度器“主队列曾进入 idle”，不在主线程执行预热：
@@ -856,6 +946,11 @@ Looper.getMainLooper().queue.addIdleHandler {
 ```
 
 调度器收到信号后仍要检查首帧状态、页面可见性、任务 deadline 和资源冲突。返回 `false` 避免每次 idle 都重复触发。
+
+<!-- gracker-diagram: a223-18-idle-is-signal -->
+![IdleHandler 说明所属队列暂时没有到期消息](../../assets/diagrams/ch21/a223-18-idle-is-signal.png)
+
+图：回调仍在所属Looper线程运行，新消息需要等它返回；CPU/GPU低负载和固定预算都不能由idle推出。
 
 这些写法应禁止：
 
@@ -914,6 +1009,11 @@ Play Feature Delivery 的 on-demand module（按需下载的动态功能模块�
 
 访问代码和资源前要再次检查 `installedModules`。为让基础 `Context` 和动态模块中的 Activity 访问新安装的代码与资源，应按官方接入方式启用 SplitCompat；已有的 `Context` 或 Activity 还可能需要刷新或重建。
 
+<!-- gracker-diagram: a223-20-on-demand-install -->
+![收到 session ID 不代表模块已安装和可访问](../../assets/diagrams/ch21/a223-20-on-demand-install.png)
+
+图：deferredInstall是不可跟踪进度的尽力请求，立即要用的功能需显式加载态和失败恢复。
+
 `deferredInstall()` 是后台尽力而为的请求，完成时间没有保证，进度也跟踪不了。功能有明确使用 deadline 时，别只依赖 deferred install。
 
 #### 7.2 外部组件与 base module
@@ -921,6 +1021,11 @@ Play Feature Delivery 的 on-demand module（按需下载的动态功能模块�
 `exported` 组件允许其他应用或系统通过 Intent 调用。可选模块中的 Activity、Service 或 Receiver 可能在模块尚未安装时就被外部调用，因此官方文档要求这类组件留在 base module，别放进 optional module。
 
 需要外部入口时，在 base module 放一个轻量 proxy（代理组件）：
+
+<!-- gracker-diagram: a223-21-base-exported-proxy -->
+![外部入口留在 base，模块安装检查后再转内部能力](../../assets/diagrams/ch21/a223-21-base-exported-proxy.png)
+
+图：optional module不应定义exported组件；平台可能在代码尚未安装时暴露合并后的组件入口。
 
 1. 校验 Intent 和权限；
 2. 检查模块是否安装；
@@ -1079,6 +1184,11 @@ else:
 
 这段顺序解释了一个常见现象：核心线程都忙时，执行器先调 `workQueue.offer()`，入队失败才尝试创建非核心线程。用不限容量的 `LinkedBlockingQueue` 时，执行器几乎不会因为积压走到 `maximumPoolSize`，调大 `maximumPoolSize` 往往就没有效果。
 
+<!-- gracker-diagram: a223-23-executor-admission -->
+![ThreadPoolExecutor 先入队，队列拒收后才尝试扩到最大数](../../assets/diagrams/ch21/a223-23-executor-admission.png)
+
+图：决策图省略并发重试与状态重检；无界队列通常不会走到非核心扩容，调大maximum无效。
+
 #### 2.2 队列是延迟和过载策略
 
 | 队列 | 行为 | 适用边界 | 主要风险 |
@@ -1101,11 +1211,21 @@ else:
 
 拒绝次数的报警阈值别统一设成“大于零就报”。主动丢弃的遥测事件和必须执行的配置加载，对拒绝的容忍度完全不同，监控规则要绑定任务契约。
 
+<!-- gracker-diagram: a223-24-queue-rejection -->
+![队列与拒绝策略同时决定延迟、内存和正确性](../../assets/diagrams/ch21/a223-24-queue-rejection.png)
+
+图：Main提交不要让caller-runs执行后台重活；唯一任务、合并和退避按资源契约选择。
+
 #### 2.4 同池等待会造成饥饿
 
 有一个容易漏掉的故障：池里的每个工作线程都往同一个有界池提交子任务，然后同步等待子任务；所有 worker 被父任务占住，子任务只能在队列里干等，系统就可能永久停住。
 
 修复方向包括取消同步等待、用结构化并发让父任务挂起、把依赖关系交给调度器，或为有明确隔离需求的资源单开执行器。结构化并发要求父任务管理子任务的生命周期、取消和异常。单纯扩大池只是把故障往后推，循环等待关系本身还在。
+
+<!-- gracker-diagram: a223-25-same-pool-starvation -->
+![同池父任务占满线程后等待子任务，会形成线程饥饿](../../assets/diagrams/ch21/a223-25-same-pool-starvation.png)
+
+图：扩大池只推迟触发条件；结构化并发必须真正挂起等待，不能把Future.get换个函数名。
 
 ### 3. 并行度由任务和设备共同决定
 
@@ -1180,6 +1300,11 @@ class AndroidThreadFactory(
 
 `Process.setThreadPriority()` 由 worker 自己执行，设置的是当前工作线程。后台预取可以用 `THREAD_PRIORITY_BACKGROUND`；首屏依赖任务是否适合默认优先级，要看它与主线程、RenderThread 的竞争结果。普通 worker 提升到 display 或 audio 优先级是禁区。
 
+<!-- gracker-diagram: a223-26-java-nice-inheritance -->
+![Java priority 的继承与 Process nice 的修改不能混同](../../assets/diagrams/ch21/a223-26-java-nice-inheritance.png)
+
+图：固定Android17 Thread构造器、ART启动和Process API相互印证；普通worker不要借用display/audio优先级。
+
 #### 4.2 内核调度不只看 nice
 
 在 `android17-6.18-2026-06_r6` 中，普通线程进入 fair 调度类，即 Linux 为普通任务提供的公平调度路径。`fair.c` 使用 EEVDF（Earliest Eligible Virtual Deadline First）：先筛选应该获得运行时间的任务，再从中选择虚拟截止时间最早的任务。nice 能改变调度权重，但给不出“某线程在指定毫秒内获得 CPU”这样的承诺。
@@ -1194,6 +1319,11 @@ Android 还用 cgroup（control group，内核资源分组） 和 task profile�
 
 CPU 亲和性可以用于实验室归因，比如判断某段计算是否受核容量影响；生产应用把硬绑核当通用启动优化就不合适了。trace 若显示关键线程长期在不合适的 CPU 上等待，应同时检查任务优先级、进程状态、Runnable 竞争、设备温度与厂商调度配置。
 
+<!-- gracker-diagram: a223-27-affinity-and-policy -->
+![CPU 选择由多项策略共同约束，硬绑核必须检查结果](../../assets/diagrams/ch21/a223-27-affinity-and-policy.png)
+
+图：生产不能把大核编号当稳定接口；实验归因应控制设备条件，保留正常调度路径。
+
 ### 5. 每个线程都有内存和生命周期成本
 
 #### 5.1 ART（Android Runtime） 不采用“每线程固定 1 MB”的模型
@@ -1206,6 +1336,11 @@ ART 在创建 Java 线程时还要准备 native stack，也就是运行 C/C++、
 4. 满足 `PTHREAD_STACK_MIN`，并向系统页大小取整。
 
 所以，`new Thread(..., stackSize)` 的参数推不出线程最终的栈映射大小。栈地址空间的保留量、已提交页和 RSS（当前常驻物理内存）要分开看：虚拟地址区间再大，也未必有同样大小的物理内存常驻下来。
+
+<!-- gracker-diagram: a223-28-thread-memory-lifetime -->
+![栈地址空间、驻留内存与线程生命周期分别核对](../../assets/diagrams/ch21/a223-28-thread-memory-lifetime.png)
+
+图：先减少重复池、无所有者线程和闭包引用；不统一hook pthread栈大小以换内存。
 
 也别想通过 PLT hook（拦截动态链接函数调用） 统一改写 `pthread_attr_setstacksize()`。Java、JNI、解释器和 sanitizer（内存、线程等错误检测插桩） 构建的栈需求各不相同，过小的栈会把偶发深调用变成难复现的崩溃。线程数量过多时，先减少无所有者线程、重复线程池和空闲 worker，再评估少数明确的 native 线程要不要调整。
 
@@ -1239,6 +1374,11 @@ ART 在创建 Java 线程时还要准备 native stack，也就是运行 C/C++、
 
 这使它适合约束 CPU 工作或实现“挂起点之间串行执行”。`limitedParallelism(1)` 会为这些执行片段建立顺序关系，但拿它当覆盖整个挂起函数的互斥锁是不行的：一个协程挂起后，另一个协程可以进入同一视图。要限制数据库连接、socket 请求或解码器实例等资源的在途数量，用 `Semaphore`；要保护共享可变状态，用 `Mutex`（协程可挂起的互斥锁）。这些资源约束从 dispatcher 名称上推断不出来。
 
+<!-- gracker-diagram: a223-29-dispatcher-vs-inflight -->
+![limitedParallelism 控制执行片段，不锁住整个挂起任务](../../assets/diagrams/ch21/a223-29-dispatcher-vs-inflight.png)
+
+图：limitedParallelism(1)保证片段串行与相应happens-before；A挂起时B仍可进入，不能当覆盖挂起函数的锁。
+
 #### 6.3 用结构化并发表达依赖
 
 下面的通用函数用于并行读取两个互不依赖的启动输入。父协程取消时，两个子任务都会收到取消；函数返回前也不会留下脱离所有者的工作。
@@ -1261,6 +1401,11 @@ suspend fun <A, B> loadStartupInputs(
 
 这段代码表达的只是依赖和取消关系，两个任务是否真的在不同线程上运行，它并不承诺。`loadA` 或 `loadB` 若调用了不可中断的阻塞 API，协程取消也立刻释放不了底层线程，仍要为该 API 配置超时或改用可取消接口。
 
+<!-- gracker-diagram: a223-30-structured-inputs -->
+![结构化并发管理两个独立输入的完成与取消](../../assets/diagrams/ch21/a223-30-structured-inputs.png)
+
+图：loadStartupInputs返回前等待两个输入；子任务失败会取消同scope的兄弟任务，阻塞API仍需协作取消。
+
 `GlobalScope` 不适合启动任务：它创建的协程不隶属于任何调用页面或启动会话，测试、错误传播和取消都难以交回所有者。应用级工作应注入明确的 `CoroutineScope`，页面工作使用 `viewModelScope` 或合适的 Lifecycle scope。
 
 ### 7. App Startup 和 WorkManager 解决不同问题
@@ -1278,6 +1423,11 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 当前稳定版 WorkManager 2.11.2 也不是一个固定“最多 16 个线程”的池。`Worker.doWork()` 跑在 `Configuration.Builder.setExecutor()` 指定的 executor 上；task executor 处理 WorkManager 自身的记账与调度，和业务 worker 是两回事。`CoroutineWorker.doWork()` 默认使用 `Dispatchers.Default`，WorkManager 2.10.0 起可以用 `setWorkerCoroutineContext()` 配置其协程上下文；按当前 `Configuration.Builder` 契约，只要没设置 worker coroutine context，`setExecutor()` 提供的 executor 也会转换成 dispatcher 供 `CoroutineWorker` 使用。方法内部仍可用 `withContext()` 为某一段阻塞调用挑更合适的 dispatcher。
 
 若只是想把 WorkManager 自身移出启动路径，可以移除默认 initializer，让 `Application` 实现 `Configuration.Provider`，首次需要时再调 `WorkManager.getInstance(Context)`。这个动作只挪动了 WorkManager 的初始化时机，已入队的持久任务还是持久任务，不会变成应用进程内的即时启动任务。
+
+<!-- gracker-diagram: a223-22-workmanager-defaults -->
+![WorkManager 2.12.0 负责持久任务，默认执行资源仍有区别](../../assets/diagrams/ch21/a223-22-workmanager-defaults.png)
+
+图：setExecutor与setWorkerCoroutineContext按配置契约互相兜底；移除默认initializer只改变初始化时机。
 
 ### 8. 线程治理从“谁创建、谁负责”开始
 
@@ -1326,6 +1476,11 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 
 线程总 CPU 时间下降，启动未必更快——任务可能只是等得更久了。CPU 利用率升高同样说明不了优化成功：TTID 尾延迟、功耗或首帧掉帧一旦变差，这些新增并发就没有服务到当前目标。
 
+<!-- gracker-diagram: a223-31-executor-vs-cpu-wait -->
+![排在执行器队列与 Runnable 等 CPU 是不同等待](../../assets/diagrams/ch21/a223-31-executor-vs-cpu-wait.png)
+
+图：先用稳定任务事件定位submit/start/finish，再按线程状态归因；CPU利用率或线程总CPU下降都不能单独证明启动改善。
+
 线上持续采样要控制成本。任务计数、直方图（把数值按区间汇总的分布统计）和低频线程数量比周期性抓取所有 Java 栈更适合常驻；完整栈、Perfetto 和 `/proc` 明细留给诊断构建、触发式采样或用户授权的问题复现。
 
 ### 10. Android 17 的两个版本边界
@@ -1343,6 +1498,11 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 截至本轮核对，Android 公共参考文档仍没有列出 `ofVirtual()` 与 `startVirtualThread()`；`Thread.isVirtual()` 的文档也仍写明 Android 尚未实现虚拟线程并返回 `false`。源码、flag 和公开契约没有对齐出一条可供普通应用依赖的一致路径，所以应用不要把虚拟线程用于生产启动路径，也别通过反射绕过 SDK 边界去探测内部实现。
 
 即使后续版本提供了稳定的虚拟线程，它们降低的也只是大量阻塞任务占用平台线程的成本，CPU 密集任务的可用算力并不会因此提高。资源并发、超时、取消和启动关键路径仍要单独设计。
+
+<!-- gracker-diagram: a223-32-legacy-version-edges -->
+![遗留 executor 和 flagged 虚拟线程不能当新启动框架基线](../../assets/diagrams/ch21/a223-32-legacy-version-edges.png)
+
+图：固定源码、SDK公开面和运行flag分别核对；虚拟线程即使可用也不提高CPU计算容量。
 
 ### 诊断与验证清单
 

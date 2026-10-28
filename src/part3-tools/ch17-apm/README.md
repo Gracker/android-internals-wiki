@@ -56,6 +56,11 @@ last_consolidated_at: '2026-08-24'
 
 应用上线后仍会出现卡顿、启动慢、ANR（Application Not Responding，应用无响应）、内存泄漏和 OOM（Out of Memory，内存耗尽），但通常无法通过 `adb`（Android Debug Bridge）直连用户设备采集 trace。APM（Application Performance Monitoring，应用性能监控）通过采样率、触发条件、数据量和上传时机限制额外的 CPU、I/O（输入/输出）与网络开销，用于发现、聚合和定位这些问题。
 
+<!-- gracker-diagram: ch17-00-01-online-lab-loop -->
+![线上线索与受控实验的诊断闭环](../../assets/diagrams/ch17/ch17-00-01-online-lab-loop.png)
+
+图：线上 APM 在预算内发现问题，代表性线索进入实验室复现、修复与回归。 用户设备上的指标与线下 trace 各有覆盖和成本，聚合相关性仍需现场证据支撑。
+
 ## 全景分类
 
 工具按四个层级组织：App 层负责设备内采集，Framework（框架）层提供平台或 Jetpack（Android 官方支持库）API，平台层负责数据汇聚与分析，System 层用于实验室基准测试和自动化。“状态”描述截至 2026-08-14 的公开维护信号和本章建议用途，不代表市场占有率。仓库最近有提交只说明代码仍在变化，不能单独证明它兼容 Android 17、当前 AGP（Android Gradle Plugin）或所有 ABI（Application Binary Interface，应用二进制接口）；接入结论仍需按具体版本实测。
@@ -78,6 +83,11 @@ last_consolidated_at: '2026-08-24'
 | Collie | 开源 | FPS、卡顿、流量、内存、启动 | 线上 | 历史项目；仅作原理参考 |
 | Rabbit | 开源 | 测速、慢函数、网络、卡顿、FPS | 线上+线下 | 历史项目；仅作原理参考 |
 
+<!-- gracker-diagram: ch17-00-03-app-scope -->
+![按运行条件选择客户端工具](../../assets/diagrams/ch17/ch17-00-03-app-scope.png)
+
+图：先确定常驻监控、受控取证或开发测试，再选择工具和具体版本。 固定旧实现仅作原理参考；项目维护信号不能代替 API、ABI、构建链和成本验收。
+
 ### Framework 层：Google 官方 SDK（软件开发工具包）
 
 | 工具 | Jetpack / 平台模块 | 核心能力 | 状态 |
@@ -91,6 +101,16 @@ last_consolidated_at: '2026-08-24'
 | ProfilingManager | `android.os` | Android 15（API 35）起请求堆内存采样（heap profile）、Java 堆转储（heap dump）、调用栈采样（stack sampling）和系统 trace | 新平台能力 |
 
 Tracing 2.0 的新接口把带字段的事件写入应用进程控制的缓冲区，Android Studio 的 System Trace 目前不会自动采集这部分数据；Benchmark 1.5 可以在测试结束后合并，核验时最新版本为 1.5.0-rc01（RC，候选发布版）。低频、希望始终进入系统 trace 缓冲区的事件，仍适合使用 `Trace.beginSection` 或 `androidx.tracing.trace {}`。这里的 slice 指带开始和结束时间的区间事件。
+
+<!-- gracker-diagram: ch17-00-04-official-signals -->
+![帧数据、Window 阶段和系统受控采集](../../assets/diagrams/ch17/ch17-00-04-official-signals.png)
+
+图：JankStats、FrameMetrics 与 ProfilingManager 输出不同类型的性能证据。 jank 启发式不独立证明根因，宿主 Window 也不能替代 Flutter engine 的 FrameTiming。
+
+<!-- gracker-diagram: ch17-00-05-trace-buffers -->
+![系统 trace 与进程内缓冲分别采集](../../assets/diagrams/ch17/ch17-00-05-trace-buffers.png)
+
+图：经典 section、Tracing2.0 进程内事件与旧 Perfetto 组件分别选择采集和导出路径。 当前稳定2.0.5与固定分析2.0.0分开；抓到系统trace不自动证明已包含进程内缓冲。
 
 ### 平台层：商业/服务端 APM
 
@@ -121,11 +141,26 @@ Benchmark（基准测试）用固定的一组操作（工作负载）比较设�
 
 Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推荐入口。它们保留在具体小节里，用于阅读旧报告或理解历史方案：Vellamo 已下架；旧版 AndroBench / A1 SD Bench 以早期存储权限、文件路径和测试模型为前提，结果不能直接代表现代 UFS（Universal Flash Storage，通用闪存存储）或真实应用负载；Emmagee 对 Android 10+ 的权限、后台限制和进程模型覆盖不足。
 
+<!-- gracker-diagram: ch17-00-02-roles -->
+![采集、API、平台和实验室的职责](../../assets/diagrams/ch17/ch17-00-02-roles.png)
+
+图：平台 API、端侧采集器、服务端与实验室分别承担事实读取、有限采集、分析和受控测量。 这是职责与证据关系，Jetpack 仍在应用中运行，实验室工具也不因此获得系统特权。
+
+<!-- gracker-diagram: ch17-00-06-benchmark-baseline -->
+![固定工作负载与版本后才比较分数](../../assets/diagrams/ch17/ch17-00-06-benchmark-baseline.png)
+
+图：工具、测试项目、资源包和设备状态一起固定，重复运行后比较同口径结果。 新大版本建立新基线，旧分数不做无依据换算；设备分数不能替代具体 App 场景测量。
+
 ## 与其他章节的关系
 
 - **第 14 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace/RheaTrace 可以把方法调用写成可导入 Perfetto 的 trace 数据；`Trace.beginSection` / `androidx.tracing.trace {}` 把 slice 写入系统 trace 缓冲区，Tracing 2.0 还提供应用进程控制的记录方式。JankStats 不生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank（异常卡顿帧）和 UI state（当时的界面状态），适合与 Perfetto、FrameTimeline（系统记录的帧时间线）和 Tracing SDK 一起定位原因。
 - **第 15 章（其他分析工具）**：15.10 统一说明第三方性能库、APM 可观测性（通过指标、日志和 trace 了解运行状态）选型与 Hook（拦截或替换调用）基础设施；第 17 章分别展开具体工具。
 - **第 16 章（方法论）**：16.3 和 16.1 说明线上监控，以及问题交接、负责人、修复和回归检查流程；第 17 章说明各工具的能力与边界。
+
+<!-- gracker-diagram: ch17-00-07-chapter-evidence -->
+![第14至17章如何共同组织证据](../../assets/diagrams/ch17/ch17-00-07-chapter-evidence.png)
+
+图：APM 聚合线索经受控复现进入系统 trace 与专项工具，再用方法论组织结论和回归。 btrace3.0提供 Hook 现场的栈候选，JankStats提供帧状态，二者都不自动解释唯一根因。
 
 ## 内容索引
 
@@ -149,3 +184,8 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 的推�
 - 已在使用某个工具：直接进入对应条目核对实现与边界。
 - 需要选型：结合 15.10 的基础设施边界和各工具的详细分析。
 - 关注回归与实验室测试：17.6 负责 Jetpack Benchmark 测量协议，17.7 负责操作复现、设备 Benchmark 与性能档位分组。
+
+<!-- gracker-diagram: ch17-00-08-reading-map -->
+![从工具入口走向采集机制与端侧集成](../../assets/diagrams/ch17/ch17-00-08-reading-map.png)
+
+图：按工具选型、机制定位与端侧集成三个层次阅读，避免重复接入功能重叠的 SDK。 章节路径是本书的组织方式，具体接入仍按固定版本、能力与开销验收。

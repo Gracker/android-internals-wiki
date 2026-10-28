@@ -128,6 +128,11 @@ ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级
 
 论文报告的兼容范围是 **Android 5.0–15+**。Android 17 部分来自源码对照，它说明 ART 实现已与论文时代不同；XTrace 在 Android 17 设备或厂商 ROM 上是否可用，仍要等设备验证。
 
+<!-- gracker-diagram: a300-01-paper-platform-and-engineering-evidence -->
+![论文报告、固定平台源码和工程验证分别回答不同问题](../../assets/diagrams/ch26/a300-01-paper-platform-and-engineering-evidence.png)
+
+图：同名概念不等于公共API；未公开源码/SDK与脚本使内部实现难以独立复现。
+
 ### 为什么会需要“事后指定目标”的方法追踪
 
 论文把一类线上问题称为 Ghost Bug：调用栈里只有 Framework、WebView 或库代码，缺少业务入口。这个词是论文自定义名称，描述的是“故障现场可见，但更早的触发者已经离开当前调用栈”的诊断困境。这里的 Framework 指 Android 系统向应用提供组件、窗口等能力的框架层。
@@ -144,6 +149,11 @@ ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级
 | 编译期 ASM 插桩 | 用 ASM 字节码库在构建时改写自有代码与 APK 内字节码 | 无法修改设备 boot class path 中的系统框架类；事故前必须已有插桩 |
 | JVMTI / ART TI | 通过原生 agent 接收虚拟机事件并执行调试、分析操作 | Android 仅允许向 `debuggable` 应用附加 agent |
 | XTrace 论文方案 | 线上按配置选择目标方法，并记录精确调用事件 | 私有实现、未开源，依赖 ART 内部 C++ 设施 |
+
+<!-- gracker-diagram: a300-02-async-producer-consumer-gap -->
+![异步故障栈缺少更早的写入者，需在下一次发生前布置观察](../../assets/diagrams/ch26/a300-02-async-producer-consumer-gap.png)
+
+图：观察注册/写入/投递时的调用者，关联稍后读取或执行的对象；已经过去且未记录的事件无法追溯生成。
 
 这张表里还有几个名词要交代。Binder IPC 是 Android 的跨进程调用机制，boot class path 是系统启动时提供给应用的核心 Java 类路径。JVMTI（Java Virtual Machine Tool Interface）是虚拟机向调试器和性能分析工具提供事件的 Native 工具接口，ART TI 是 Android 运行时（ART）对这套接口的部分实现；agent 则是加载进目标进程、通过 JVMTI 接口接收回调的 Native 共享库。`debuggable` 表示应用在清单中明确允许调试和插桩，量产发布包通常关闭该标记。
 
@@ -172,6 +182,11 @@ void MethodEnterEvent(Thread* thread, ArtMethod* method) const {
 ```
 
 这个快速分支在没有方法进入监听器时会跳过事件分发；但追踪一旦启用，安装入口/出口 hook、切换 ART 调试状态、遍历已加载类、写入事件并执行监听器这些步骤都会发生。所以“非目标方法零开销”的说法，仍要用完整路径做实验验证。
+
+<!-- gracker-diagram: a300-03-instrumentation-levels-and-fast-check -->
+![ART Instrumentation 内部层级与入口检查有不同作用](../../assets/diagrams/ch26/a300-03-instrumentation-levels-and-fast-check.png)
+
+图：三种级别属于私有ART实现；EXPORT只控制符号可见，不提供应用SDK/NDK稳定承诺。
 
 #### `EXPORT` 与 Android 公共 API 的距离
 
@@ -212,6 +227,11 @@ method tracing 仍不适合长期运行在生产环境，因为普通 tracing �
 
 JIT（Just-In-Time）会在应用运行时编译热点方法，AOT（Ahead-Of-Time）则提前生成机器码。上述状态切换和事件写入都会改变执行条件。Android Studio 官方文档仍建议把 Java/Kotlin 精确方法追踪控制在五秒以内，并提醒插桩会改变被测程序的时间表现。
 
+<!-- gracker-diagram: a300-04-ordinary-trace-start-conditional-costs -->
+![Android17 普通方法追踪：保留分支条件再解释成本](../../assets/diagrams/ch26/a300-04-ordinary-trace-start-conditional-costs.png)
+
+图：不是所有方法统一解释执行，也不是所有Start模式都有相同状态切换；精确事件仍会扰动时序。
+
 #### Android 17 的入口也发生了变化
 
 论文展示的 ARM64 快速入口名为 `art_quick_instrumentation_entry`。`android-17.0.0_r1` 的 [`quick_entrypoints_arm64.S`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/arch/arm64/quick_entrypoints_arm64.S) 已找不到这个旧名称，源码包含 `art_quick_method_entry_hook`，并通过 `artMethodEntryHook` 进入 C++。`Trace::Start()` 还会根据时钟源选择 fast 或 slow listener：fast 路径要求 JIT 代码无需为读取线程 CPU 时钟进入内核，32 位 Arm 因时间戳条件固定使用 slow 路径。这是 ART 内部分类，fast 路径同样带着追踪成本。
@@ -244,11 +264,21 @@ MethodEntryProxy 只处理配置命中的方法
 
 公开论文没有给出 hook 引擎、符号解析、方法重载消歧、入口写入同步或卸载代码。直接把伪代码翻成 native hook，会遗漏暂停线程、原子更新入口、处理 JIT 重编译和恢复原入口等进程安全条件。
 
+<!-- gracker-diagram: a300-05-targeted-entry-and-proxy-dispatch -->
+![XTrace v1：选择目标入口，再由事件代理处理命中方法](../../assets/diagrams/ch26/a300-05-targeted-entry-and-proxy-dispatch.png)
+
+图：机制来自论文而非可运行SDK；同步、JIT重编译、挂起、卸载和失败恢复缺公开实现。
+
 #### “不侵入”的适用范围
 
 XTrace 不改写 DEX 方法体（DEX 是 Android 保存字节码、类型和方法索引的文件格式），也不覆盖目标机器码开头；后一种做法通常称为 inline hook。它仍会 hook ART 私有函数、定位 `ArtMethod` 并改变方法执行入口。所以论文里的“Non-Invasive”，说的是相对其他 hook 路径减少了改写范围；公开 Android API、Play Integrity 结果、SELinux 策略和厂商 ROM 兼容性都没有随之获得保证。Play Integrity 用于评估应用和设备环境完整性，SELinux 则执行系统强制访问控制。
 
 论文称其 SDK 无需 root 或系统权限，并把 `UpdateMethodsCode`、`EnableMethodTracing`、`MethodEntered` 称为 “public subset”。这里的 public 指作者选用的 ART 符号子集；按 Android API 的定义，这些 C++ 接口仍是平台内部实现。我们把作者的部署经验与 Android SDK 的兼容性承诺分开记录。
+
+<!-- gracker-diagram: a300-06-private-art-and-public-runtime-contracts -->
+![私有 ART hook、公共追踪与标准 agent 不共享部署契约](../../assets/diagrams/ch26/a300-06-private-art-and-public-runtime-contracts.png)
+
+图：不改DEX或目标机器码前缀只限定改写方式，不表示不改变ART内部状态或执行入口。
 
 ### 论文实验应该怎样读
 
@@ -264,6 +294,11 @@ DAU（Daily Active Users）是每日活跃用户数。论文报告了一次持�
 非劣界值是实验预先允许的最大相对恶化幅度，95% 置信区间表示样本估计的不确定范围。论文表中的区间上界低于 Crash 的 +0.5% 和 ANR 的 +0.8% 界值，因此按其规则判为通过。p 值高于 0.05 只表示本次检验没有观察到统计显著差异；要下“两组完全等价”的结论，还得看区间和界值，单靠 p 值不够。
 
 这些结果支持的只是该应用、该配置和该统计口径；目标方法数量、命中频率、机型分布或采集动作一变，风险就要重新实验。
+
+<!-- gracker-diagram: a300-07-reported-ab-rates-and-inference-limits -->
+![大规模 A/B 数字按作者报告引用，不能外推完全等价](../../assets/diagrams/ch26/a300-07-reported-ab-rates-and-inference-limits.png)
+
+图：所有数值来自v1；本图不声称重算置信区间、非劣检验或复现作者线上实验。
 
 #### 启动与单次调用
 
@@ -300,6 +335,11 @@ ROM 在这里指设备厂商交付的 Android 系统构建。论文报告的范�
 
 论文未公开 ROM 清单、失败场景、测试代码和 Android 17 数据。而 Android 17 ART 的入口与 tracing 路径已经变了，所以“更新符号表即可适配”的说法目前缺少公开证据支撑。
 
+<!-- gracker-diagram: a300-08-single-device-and-ablation-boundaries -->
+![性能实验与消融只支持所测设备和目标规模](../../assets/diagrams/ch26/a300-08-single-device-and-ablation-boundaries.png)
+
+图：兼容性99.9%与98% DAU覆盖同样是论文内部报告；没有Android17公开设备结果。
+
 ### 两个案例能说明什么
 
 #### Ghost Bug：找到错误 `Context` 的生产者
@@ -315,6 +355,11 @@ XTrace 配置命中该注册方法并记录调用栈。论文展示的调用路�
 论文先用 Perfetto 看到 `Choreographer.doFrame` 多次超过 16.6 ms，并把热点缩小到 measure 阶段。随后 XTrace 同时观察 `FrameDisplayEventListener.run` 与 `View.measure`，报告同一个 `RelativeLayout` 每帧出现三次 measure 调用，并保留了各次调用的 Java 栈。
 
 团队据此找到 layout constraint（布局约束）冲突，论文称半天内修复；后续 A/B 实验中，处理组 UI 掉帧率下降 25.95%。不过论文没有说明两套数据是否共享时钟、trace ID 或自动关联逻辑；trace ID 是跨数据源标识同一次诊断事件的关联编号。公开证据能支持的过程就到这里：先用 Perfetto 缩小阶段，再用方法事件定位具体实例，可复用的数据自动关联能力尚无实现细节。
+
+<!-- gracker-diagram: a300-09-frame-symptom-to-view-instance -->
+![卡顿案例：先缩小阶段，再观察实例与重复调用](../../assets/diagrams/ch26/a300-09-frame-symptom-to-view-instance.png)
+
+图：16.6ms是论文案例阈值，项目需按实际帧预算判断；图示过程不生成本项目测量值。
 
 ### 生产系统的配套与评审
 
@@ -338,6 +383,11 @@ XTrace 配置命中该注册方法并记录调用栈。论文展示的调用路�
 - 目标方法尚未加载、被 JIT 重编译或入口被其他工具修改时怎样处理；
 - ART APEX 版本、ABI、厂商指纹和符号校验失败时是否拒绝启用；
 - 每项配置是否有有效期、设备范围、版本范围和远程停用能力。
+
+<!-- gracker-diagram: a300-10-configuration-activation-and-rollback -->
+![动态配置要管理目标、动作、激活与撤销](../../assets/diagrams/ch26/a300-10-configuration-activation-and-rollback.png)
+
+图：论文0.1%是作者常用起点，不是所有项目阈值；参数与对象内容另需明确采集范围。
 
 #### 回调能否在任意线程运行
 
@@ -382,6 +432,11 @@ XTrace 配置命中该注册方法并记录调用栈。论文展示的调用路�
 
 用自动化控制器驱动 jank、启动或 soak 实验时，实验记录应把外部刺激也写入证据：输入注入路径，人手点击还是自动化点击，连续点击间隔，弹窗 Safety Net/自愈是否改变冷启动或首帧路径，`ARTEMIS_KEEP_DEVICE_AWAKE` 是否保持唤醒，以及 `DeviceExecutionLock` 是否让单设备同一时刻只有一个任务运行。[来源: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md] 这些字段回答的是“这次复现如何施加负载”；ART/JVMTI、Perfetto 和编译期插桩回答的是“目标进程和系统当时发生了什么”。材料还提醒，自动化决策时延会叠在 UI 动画与网络上；因此两类证据要用时间戳或步骤编号对齐；对齐之后，外部控制时延归外部账，应用方法耗时与 ART 事件开销各记各的。[来源: DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md]
 
+
+<!-- gracker-diagram: a300-11-automation-stimulus-and-runtime-evidence -->
+![自动化操作与运行时事件分别保留证据，再关联步骤](../../assets/diagrams/ch26/a300-11-automation-stimulus-and-runtime-evidence.png)
+
+图：章内ARTEMIS材料只是操作与诊断面说明，未声明已实现具体Perfetto集成或本机复现性能。
 
 ## JVMTI 事件、Attach 与去优化边界
 
@@ -438,6 +493,11 @@ agent 与应用处于同一地址空间，共享同一块进程内存；agent �
 
 “标准接口”约束的只是 JVMTI 调用语义，agent 自身的 Native 缺陷仍要靠 agent 自己兜住。
 
+<!-- gracker-diagram: a300-12-attach-permissions-plugin-and-agent -->
+![运行中 attach：授权、plugin、agent 库与事件分开检查](../../assets/diagrams/ch26/a300-12-attach-permissions-plugin-and-agent.png)
+
+图：启动独立dalvikvm的OnLoad用于ART实验；普通Zygote派生App不能在manifest塞agentpath。
+
 ### 两种加载时机
 
 #### 独立 ART 进程的启动参数
@@ -490,6 +550,11 @@ fun attachGcCounterAgent() {
 detach 指在进程继续运行时解除 agent；而 JVMTI 没有与 attach 对称的通用卸载接口。
 
 ART 运行时关闭时会调用 `Agent_OnUnload`，这份源码明确不执行 `dlclose()`，因为已有 agent 可能假设库不会在运行中卸载。agent 自己可以停用事件、停掉工作线程并调用 `DisposeEnvironment()` 释放 JVMTI 环境，但 `.so` 仍留在进程地址空间；需要无 agent 的干净基线时，重启目标进程即可。
+
+<!-- gracker-diagram: a300-13-onload-onattach-onunload-and-dispose -->
+![agent 生命周期没有通用的对称 detach 操作](../../assets/diagrams/ch26/a300-13-onload-onattach-onunload-and-dispose.png)
+
+图：固定Android17不CloseNativeLibrary；干净无agent基线以重启目标进程重新建立。
 
 ### 最小 agent：只统计 GC 事件
 
@@ -585,6 +650,11 @@ extern "C" JNIEXPORT jint JNICALL Agent_OnLoad(
 
 这两个回调发生时虚拟机仍处于暂停期，大多数 JNI 与 JVMTI 调用都不可用；所以示例只做原子加法，需要解析、分配内存或写文件时，应通知 agent 工作线程稍后处理。
 
+<!-- gracker-diagram: a300-15-gc-pauses-not-whole-cycle -->
+![GC Start / Finish 报告暂停边界，不是完整并发 GC 周期](../../assets/diagrams/ch26/a300-15-gc-pauses-not-whole-cycle.png)
+
+图：固定ART通过JvmtiGcPauseListener分发；受限回调避免JNI、分配和阻塞，稍后工作由安全线程处理。
+
 #### 为什么要先查 capability
 
 先查再申请的理由很直接：官方文档说明 ART TI 只实现部分 JVMTI，capability 还可能随 Android 版本变化。`GetPotentialCapabilities()` 返回当前 ART 运行时可申请的功能位，`AddCapabilities()` 再为这个 `jvmtiEnv` 申请所需部分。
@@ -602,6 +672,11 @@ HotSpot 是 OpenJDK 在桌面和服务器环境中常用的虚拟机实现，它
 phase 是 JVMTI 对虚拟机生命周期阶段的划分，例如加载、启动、正常运行和结束阶段。函数与事件各自规定了允许使用的 phase；在错误阶段调用会失败，事件也可能不会发出。
 
 回调通常在触发事件的线程上执行。回调参数中的 JNI 局部引用和指针一般只在回调返回前有效，所以 agent 要把仍需使用的数据复制出来再交给异步线程；消费者线程就是从有界缓冲区取出记录、完成解析、符号化或文件写入的 agent 工作线程。
+
+<!-- gracker-diagram: a300-14-gc-agent-initialization-transaction -->
+![GC 计数 agent：初始化提交前失败就释放新环境](../../assets/diagrams/ch26/a300-14-gc-agent-initialization-transaction.png)
+
+图：Dispose会停用本环境事件但不等在途callback；示例全局计数在callback继续时保持存活。
 
 ### 启用事件会怎样影响 ART
 
@@ -623,6 +698,11 @@ JVMTI 的开销要看启用了哪些事件，一句“一次额外回调”概�
 `kLimited` 同样有成本：breakpoint 是调试器设置的代码暂停位置，ART 要处理目标方法及活动调用栈；method entry/exit 则走 ART Instrumentation 的方法事件路径。
 
 入口替换、解释器 stub 与 JIT 的关系见 [1.5 ART 编译、优化与去优化机制](../../part1-fundamentals/ch01-architecture/05-art-compilation-verification-deoptimization.md)。Instrumentation listener 的回调位置与 XTrace 的选择性入口方案见本文前半篇。
+
+<!-- gracker-diagram: a300-16-event-specific-deoptimization-scopes -->
+![Android17：事件类型与线程过滤共同决定去优化范围](../../assets/diagrams/ch26/a300-16-event-specific-deoptimization-scopes.png)
+
+图：加载agent不等于永久解释执行；表述的是事件启用所需路径，不能从kNone推导零开销。
 
 ### 类重定义的标准入口与 ART 扩展
 
@@ -648,6 +728,11 @@ ART TI 的类定义输入是只包含一个类定义的 DEX；桌面 JVM 通常�
 
 Android Studio Apply Changes 具体走普通重定义、结构性扩展还是其他部署机制，取决于修改内容和工具版本，界面提示本身给不出答案。
 
+<!-- gracker-diagram: a300-17-dex-standard-and-structural-redefinition -->
+![Android 的类重定义输入是单类 DEX，标准与扩展不同](../../assets/diagrams/ch26/a300-17-dex-standard-and-structural-redefinition.png)
+
+图：结构性扩展不改变标准入口语义；删除成员、改父类/接口仍不受支持。
+
 ### 对象 tag 与堆遍历
 
 heap（堆）是 ART 管理 Java/Kotlin 对象的内存区域，堆遍历会访问其中满足条件的对象。tag 是 agent 与某个对象关联的 64 位整数元数据，应用类的字段里找不到它。`SetTag()` / `GetTag()` 依赖 `can_tag_objects`。
@@ -661,6 +746,11 @@ heap（堆）是 ART 管理 Java/Kotlin 对象的内存区域，堆遍历会访�
 allocation 指为对象或 Native 缓冲区申请内存。观察 Native 内存分配时，Perfetto 的 Native 堆采样器 [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler) 更贴近问题，它会按采样规则记录分配调用栈。
 
 观察 Java/Kotlin allocation 时，[Android Studio Memory Profiler](https://developer.android.com/studio/profile/record-java-kotlin-allocations) 已提供受支持的调试路径；自定义 agent 更适合去回答标准工具覆盖不到的窄问题。
+
+<!-- gracker-diagram: a300-18-object-tags-per-environment-and-free -->
+![对象 tag 属于 JVMTI 环境，ObjectFree 不再给出对象](../../assets/diagrams/ch26/a300-18-object-tags-per-environment-and-free.png)
+
+图：堆/引用遍历会扰动进程；JNI局部引用不能复制指针后当作异步有效对象。
 
 ### attach 边界与发布构建的选择
 
@@ -684,6 +774,11 @@ profile 指一次性能采样产生的分析文件或采集过程。
 | ART 私有 hook 实验 | 仅在固定版本和受控设备验证，边界见本文前半篇 |
 
 JVMTI 与 [26.12 编译期字节码插桩与监控自动化](12-bytecode-instrumentation-monitoring-automation.md) 的编译期插桩适用范围不同。编译期插桩能进入发布构建，但只能观察构建时选定的点；JVMTI 能在运行中选择事件和类，却要求 debuggable，并可能改变 ART 执行形态。
+
+<!-- gracker-diagram: a300-19-release-and-lab-tool-selection -->
+![发布构建先选公开可用入口，调试 agent 另建基线](../../assets/diagrams/ch26/a300-19-release-and-lab-tool-selection.png)
+
+图：私有ART目标hook只有在证据缺口确实需要时才由运行时平台工程评估，不能包装成通用SDK。
 
 ### 一次可复现的 JVMTI 实验
 

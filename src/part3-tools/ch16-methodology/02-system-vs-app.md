@@ -76,6 +76,11 @@ related_chapters:
 
 线程处于 Runnable 只能证明它可运行但尚未获得 CPU。这个事实不自动指向系统缺陷；竞争者可能来自同一 App。主线程正在 Running 也不自动指向 App 代码；它可能执行 Android Framework（平台框架层）、系统调用或共享库。归因需要继续追踪调用栈、唤醒关系、跨进程事务和全局资源。
 
+<!-- gracker-diagram: ch16-02-01-four-attribution-layers -->
+![从观测事实到改动责任](../../assets/diagrams/ch16/ch16-02-01-four-attribution-layers.png)
+
+图：把同一窗口中的事实、直接原因、条件所有者和改动责任逐层连接。 运行状态与进程名称只提供起点；同一问题可以需要App、Framework和vendor共同修复。
+
 ## 平台与内核锚点
 
 平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。调度与内存回收部分以 Android common kernel（Android 维护的通用内核基线）`android17-6.18-2026-06_r6` 为参考：
@@ -112,6 +117,11 @@ Perfetto UI 显示的 CPU time 主要来自线程实际 Running 的 sched 区间
 
 Perfetto UI 的颜色会随版本和主题改变，报告应记录 state 值和时间，不依赖“浅绿色”“蓝色”这类描述。`blocked_function` 是线程被切出时的内核位置，能缩小范围，但不一定代表更上层的业务等待原因。
 
+<!-- gracker-diagram: ch16-02-02-window-state-partition -->
+![同窗单线程分解与指标来源](../../assets/diagrams/ch16/ch16-02-02-window-state-partition.png)
+
+图：先固定CUJ起止边界，再裁剪同一线程的互斥状态区间并记录未知范围。 sched区间汇总与slice.thread_dur来源不同；跨线程、GPU和Binder服务端时间可能重叠。
+
 ## CPU 与调度延迟
 
 ### Runnable 时间怎样归因
@@ -128,6 +138,11 @@ Perfetto UI 的颜色会随版本和主题改变，报告应记录 state 值和�
 
 以下组合更接近系统或设备策略：多个前台 App 在相同 build 上出现类似延迟，竞争来自系统服务或不可控进程，或目标线程长期受 cpuset/uclamp/thermal/affinity 限制。即使如此，也要区分“策略按设计工作但资源不足”和“调度配置错误”。
 
+<!-- gracker-diagram: ch16-02-03-waking-runnable-running -->
+![晚唤醒、等CPU与执行变慢](../../assets/diagrams/ch16/ch16-02-03-waking-runnable-running.png)
+
+图：把生产者晚到、Runnable等待和Running执行成本分开，分别寻找证据。 R+可以没有新wakeup；固定所选唤醒事件口径，IRQ上下文不能直接归给被打断的业务线程。
+
 ### “全核满载”只是系统背景
 
 CPU 全核有任务运行，说明算力供给紧张，但还不能确定谁制造了用户可见延迟。需要同时回答：
@@ -143,6 +158,11 @@ CPU 全核有任务运行，说明算力供给紧张，但还不能确定谁制�
 ### 低总利用率也可能有调度延迟
 
 异构 CPU、affinity、cpuset、RT 任务、idle balance（空闲核负载均衡）和容量约束会让“整机还有空闲核”与“目标线程无法立即获得 CPU”同时出现。报告需要展示目标线程的 allowed CPU（允许运行的核心）、wakeup target（唤醒时选择的目标核心）、实际运行 CPU 和同时间窗竞争者，不能用一个总利用率百分比结束分析。
+
+<!-- gracker-diagram: ch16-02-04-allowed-cpu-competition -->
+![低总利用率下检查可用CPU](../../assets/diagrams/ch16/ch16-02-04-allowed-cpu-competition.png)
+
+图：从目标线程的可用CPU集合出发，检查同窗竞争与实际调度，再用干预区分条件。 整机空闲不保证目标线程立即运行；图中检查顺序不表示已经证明系统策略错误。
 
 ## Binder 与跨进程等待
 
@@ -164,6 +184,11 @@ CPU 全核有任务运行，说明算力供给紧张，但还不能确定谁制�
 
 wakeup arrow 说明哪个线程执行了唤醒动作，不等于它制造了此前全部等待。Binder transaction slice 和服务端状态比单独的唤醒箭头更有解释力。
 
+<!-- gracker-diagram: ch16-02-05-binder-dependency-chain -->
+![同步Binder的完整依赖路径](../../assets/diagrams/ch16/ch16-02-05-binder-dependency-chain.png)
+
+图：先确认同步事务和reply，再沿服务端排队、执行状态及下游等待建立完整依赖链。 ioctl附近Sleep可能是空闲服务线程；客户端等待包含远端耗时，不能把两者重复相加。
+
 ## 内存压力、kswapd 与 lmkd
 
 ### kswapd 活跃能证明什么
@@ -184,6 +209,11 @@ GC 频率主要与分配速率、heap（堆）容量、对象存活和 ART 策�
 
 若 App 的 RSS 或 heap 持续增长，它可能是系统压力的贡献者；若 App 内存稳定而 PSI 与其他进程 RSS 同时上升，系统侧资源管理更值得调查。lmkd 的候选选择还受 `oom_score_adj`、策略与 vendor 配置影响，不能把一次 kill 简化成“内存最大的进程被杀”。
 
+<!-- gracker-diagram: ch16-02-06-memory-evidence-paths -->
+![回收、进程终止与GC分别取证](../../assets/diagrams/ch16/ch16-02-06-memory-evidence-paths.png)
+
+图：后台页回收、lmkd决策和ART GC属于不同机制，各自需要对应的时间与对象证据。 kswapd活跃不能串联推出swap、kill或GC；PSI明确系统/cgroup范围，major fault不等于磁盘读。
+
 ## 渲染：App、RenderThread、SurfaceFlinger 与 GPU
 
 ### App 主线程
@@ -195,6 +225,11 @@ GC 频率主要与分配速率、heap（堆）容量、对象存活和 ART 策�
 ### RenderThread 与 GPU
 
 RenderThread 的 `DrawFrame` 变长可能包含录制/提交工作，也可能等待 GPU、buffer、fence 或驱动。App 提交过重的 display list（绘制命令列表）、纹理上传或 shader 是一种来源；GPU 竞争、驱动行为和 thermal 限制属于另一类。仅凭 RenderThread slice 长度不能决定由 App 组或系统组修改。
+
+<!-- gracker-diagram: ch16-02-07-rendering-work-and-wait -->
+![UI、RenderThread和系统显示栈](../../assets/diagrams/ch16/ch16-02-07-rendering-work-and-wait.png)
+
+图：沿同一帧分别检查UI工作、RenderThread/GPU和系统显示栈，区分执行与等待。 各轨可并行；RT长slice不能单独决定责任，独立Surface需要单独核对Layer与token覆盖。
 
 ### SurfaceFlinger
 
@@ -208,9 +243,19 @@ Android 17 的 `SurfaceFlinger.cpp` 明确保留 `commit()`、`composite()` 与 
 
 SurfaceFlinger 侧错过 deadline 说明显示合成阶段晚到；工作量仍可能由 App Layer、系统 UI、HWC、GPU 竞争或驱动产生。多个 App 同时出现 jank 能增强系统侧证据，但共享显示链路上的单帧晚到也可能只影响一个可见 Surface。
 
+<!-- gracker-diagram: ch16-02-08-frame-classification-boundary -->
+![从帧关联到显示栈归因](../../assets/diagrams/ch16/ch16-02-08-frame-classification-boundary.png)
+
+图：先关联目标Layer的SurfaceFrame与DisplayFrame，再把jank分类落实到同帧阶段证据。 SF Actual不等于线程持续占CPU；PredictionError也需区分，分类与颜色不能独自证明代码所有者。
+
 ## Thermal 与频率限制
 
 CPU frequency 下降不等于 thermal throttling（因温度限制性能）。Governor（频率调节器）可能因负载、idle、能效策略或 uclamp 选择较低频率。确认 thermal 影响需要组合 thermal status/trace、频率上限或 capacity 变化、温度/冷却设备事件和对照实验。
+
+<!-- gracker-diagram: ch16-02-09-thermal-evidence -->
+![温控结论需要关联证据与对照](../../assets/diagrams/ch16/ch16-02-09-thermal-evidence.png)
+
+图：低频先作为现象，结合温控状态、限制与同条件对照验证影响，再讨论多侧改动。 温控API表达设备热状态或预测；不能从单个低频值推导throttling或精确到某个CPU原因。
 
 thermal 条件成立后，改动责任仍可能分布在多侧：
 
@@ -234,6 +279,11 @@ Android 17 的 `ActivityManagerConstants.java`、`ActiveServices.java` 和 `Broa
 
 完整阈值与组件行为见第 9 章。方法论章节不复制一张会随 DeviceConfig 和版本变化的固定数字表。
 
+<!-- gracker-diagram: ch16-02-10-anr-event-classification -->
+![先识别ANR类型和FGS异常](../../assets/diagrams/ch16/ch16-02-10-anr-event-classification.png)
+
+图：先按报告识别输入、组件或FGS事件，再重建各自的计时起点、完成信号与相关线程。 shortService ANR与FGS启动/部分限时服务异常分开；超时后才抓到的堆栈不能代表整个窗口。
+
 ## 多 App 共存时怎样归因
 
 跨进程分析按资源类型进行：
@@ -247,6 +297,11 @@ Android 17 的 `ActivityManagerConstants.java`、`ActiveServices.java` 和 `Broa
 | I/O | 发起者、block/device latency（块设备延迟）、page fault、`fsync`（把待写数据同步到存储） | `D` 状态不能自动归因给磁盘 |
 
 优先比较问题窗口与相邻正常窗口。另一个进程 CPU 很高，只能说明它是竞争者；要证明它影响了目标 App，还需展示时间重叠、目标线程 Runnable 变化和关闭/限制该进程后的对照。
+
+<!-- gracker-diagram: ch16-02-11-multi-app-attribution -->
+![竞争者如何成为可验证的影响因素](../../assets/diagrams/ch16/ch16-02-11-multi-app-attribution.png)
+
+图：先按资源识别同窗竞争者，再连接目标线程或帧的变化，最后用受控干预验证影响。 另一个进程CPU高只是候选条件；需要时间重叠、资源依赖和重复对照支持。
 
 ## 系统版本回归的 A/B 方法
 
@@ -269,6 +324,11 @@ A/B 指只改变待验证因素的对照实验。比较系统升级前后时，�
 ### 用源码差异验证假设
 
 若怀疑调度策略，比较 kernel/vendor config、cpuset、uclamp、EAS（Energy Aware Scheduling，能耗感知调度）与 power hint；若怀疑 Framework 服务，比较对应 AOSP（Android Open Source Project，Android 开源项目）tag 和 DeviceConfig；若怀疑显示链路，比较 SurfaceFlinger、HWC、GPU 驱动与 Layer 输入。版本号相关性只能提出假设，不能代替源码或实验。
+
+<!-- gracker-diagram: ch16-02-12-system-ab-regression -->
+![系统版本回归的受控比较](../../assets/diagrams/ch16/ch16-02-12-system-ab-regression.png)
+
+图：固定App和实验协议，记录系统各层版本，先确认稳定的阶段变化再验证源码或配置假设。 跨轨阶段不能直接求和；两台设备量化个体差异，往返刷机控制恢复、编译、缓存和初始化。
 
 ## 归因速查表
 
@@ -296,6 +356,11 @@ A/B 指只改变待验证因素的对照实验。比较系统升级前后时，�
 6. **改动建议**：App、Framework、vendor 各自可做什么，以及验证协议。
 
 报告应直接写清主要工作量由谁产生、哪些背景条件由多方共享，以及哪一侧能先缓解。这样的描述比一句“系统问题”更准确，也更容易推动跨团队修复。
+
+<!-- gracker-diagram: ch16-02-13-report-to-handoff -->
+![把归因结果交付为可复查的修复](../../assets/diagrams/ch16/ch16-02-13-report-to-handoff.png)
+
+图：报告把用户现象、同窗证据、已验证依赖和改动方案连接起来，并保留未排除项。 这是本章建议的交接流程；责任分派不代替因果证据，修复可以由多侧协同完成。
 
 ## 常见误区
 

@@ -90,6 +90,11 @@ last_idle_audit_at: '2026-08-06T18:35:19+08:00'
 
 测试块末尾要断言目标状态已经出现，比如列表加载完成、目标控件可见、视频开始播放。少了这一步，应用崩溃后快速返回一个错误页，也可能贡献出一组“更快”的结果。
 
+<!-- gracker-diagram: ch16-05-01-test-contract -->
+![用合同固定性能比较的对象](../../assets/diagrams/ch16/ch16-05-01-test-contract.png)
+
+图：工作负载、设备条件与统计协议共同形成可复现的测试合同，成功条件先于数值解释。 目标页面失败或错误页不能因耗时短就被当作性能改善。
+
 ## 测试环境标准化
 
 环境标准化要解决的问题是：让每一轮测量发生在可复现的设备状态上。我们从设备、存储、温度、供电、显示到网络逐项过一遍，说清每一项要固定什么。
@@ -116,6 +121,11 @@ Macrobenchmark 的目标应用要尽量接近 release：`debuggable=false`；启
 
 存储剩余空间会影响文件系统回收、数据库、安装和 dexopt（ART 对 DEX 字节码的验证与编译优化）。Android 没有适用于所有设备的统一“至少空闲百分比”，测试池要通过试运行确定自己的拒测线；报告里同时保存可用字节、总容量，以及当时有没有明显的后台 I/O。
 
+<!-- gracker-diagram: ch16-05-02-reference-environment -->
+![参考机、构建与数据分别固定](../../assets/diagrams/ch16/ch16-05-02-reference-environment.png)
+
+图：在参考设备上固定发布构建、数据与存储协议，再按代表用户的设备层补充覆盖。 模拟器用于流程检查；跨机型原始毫秒和不同构建状态不能直接当同机回归百分比。
+
 以下状态要分别定义，一句“清缓存”覆盖不了：
 
 - app data 是否清除；
@@ -126,6 +136,11 @@ Macrobenchmark 的目标应用要尽量接近 release：`debuggable=false`；启
 - 测试数据是否固定并完成准备。
 
 `StartupMode.COLD` 只为冷启动终止应用进程；app data、业务缓存的清除和全新安装的模拟，都由测试用例自己准备。`CompilationMode.None()` 同样只重置编译状态，离 fresh install（全新安装） 还很远。
+
+<!-- gracker-diagram: ch16-05-03-reset-data-boundary -->
+![编译重置何时会清掉应用数据](../../assets/diagrams/ch16/ch16-05-03-reset-data-boundary.png)
+
+图：先按固定库和平台版本确认编译重置路径，再重新准备测量需要的数据与缓存。 1.4.1在API24～33非root会卸载重装；None不是禁用JIT，也不是只改编译且保留数据的保证。
 
 ### 温度状态门控
 
@@ -151,6 +166,11 @@ Macrobenchmark 的目标应用要尽量接近 release：`debuggable=false`；启
 | 持续负载 | 运行目标工作负载，直到温度与性能进入稳定区间 | 预热区间结束后 | 稳态时长、帧/功耗分布、频率与热状态曲线 |
 
 持续负载的“稳定”要由预先定义的滑动窗口条件来判定：在连续的固定窗口里检查温度与性能波动是否收敛。曲线跑完再临时挑一段看起来平的区间，这样的“稳态”说服力存疑。预热数据要保留，单独存放，与稳态统计分开。
+
+<!-- gracker-diagram: ch16-05-04-thermal-protocols -->
+![短路径、稳态与状态覆盖的边界](../../assets/diagrams/ch16/ch16-05-04-thermal-protocols.png)
+
+图：短路径固定初始热状态，持续负载按预定窗口进入稳态，状态覆盖只用于特定行为验证。 override不会取消真实热控制；不能事后挑平坦区间或用覆盖后的状态证明设备未降频。
 
 ### 电量与供电
 
@@ -183,6 +203,11 @@ AndroidX Benchmark 会把低电量设备标成 `LOW-BATTERY` 错误，CI 闸门�
 - 每轮请求数据大小及服务端处理时间。
 
 飞行模式、关 Wi-Fi、代理限速都会改变系统与应用的路径，要写进测试合同。拿真实生产接口当回归闸门，客户端改动与服务端、CDN（内容分发网络） 或公网的变化会搅在一起，很难分清责任。
+
+<!-- gracker-diagram: ch16-05-05-power-display-network -->
+![供电、显示与网络条件怎样对齐](../../assets/diagrams/ch16/ch16-05-05-power-display-network.png)
+
+图：基线与候选使用相同供电、显示和网络协议，并保存请求状态与实际观测。 写入刷新设置不保证生效；关闭动画或替换主题可能改变被测路径。
 
 ## 消除测试干扰
 
@@ -228,6 +253,11 @@ CI 里通过 instrumentation（插桩测试运行） argument（插桩测试参�
 
 Android 17 中，`PackageManagerShellCommand` 只保留 ART Service 命令的兼容分发列表，处理代码在 `art/libartservice/.../ArtShellCommand.java`，调度与执行由 `BackgroundDexoptJob*` 和 `ArtManagerLocal` 完成。旧版 `BackgroundDexOptService` 路径不必再依赖；`setprop`（修改系统属性的命令） 这类权限和恢复行为都确认不了的写法，也换成上面这些命令更稳妥。
 
+<!-- gracker-diagram: ch16-05-06-isolation-and-restoration -->
+![隔离操作必须有恢复与复验](../../assets/diagrams/ch16/ch16-05-06-isolation-and-restoration.png)
+
+图：在专用设备执行有边界的隔离，记录初态、实际操作、恢复结果与环境复验。 1.4.1 listener重启用预置包而非完整快照恢复；dexopt disable只约束调度路径，取消也非同步完成。
+
 ### 锁频的适用范围
 
 Android 官方 CI 文档为 Microbenchmark（在目标进程内测量小段代码的 Jetpack 基准测试库） Gradle plugin 提供了 `lockClocks`/`unlockClocks`，要求 rooted（已取得 root 权限） 设备，并且明确说明锁频只在 Microbenchmark 场景需要。
@@ -239,6 +269,11 @@ Macrobenchmark 测的是完整应用路径，DVFS（动态电压频率调节）�
 Microbenchmark 用 `AndroidBenchmarkRunner`，这个 run（单次运行）ner（插桩测试运行器） 连同它的 `IsolationActivity`、亮度控制和设备能力相关逻辑，只服务于 Microbenchmark 自己的稳定化；Macrobenchmark 由独立测试进程驱动目标应用，官方 CI 文档要求用常规 `AndroidJUnitRunner`。
 
 所以才有了 `MacrobenchmarkRule`。但离温度、网络、目标数据和后台任务的标准化还差一步：SideEffectRunListener、专用设备、状态准备和数据质量检查，仍要我们显式配置。
+
+<!-- gracker-diagram: ch16-05-07-micro-macro-stabilization -->
+![Micro与Macro的运行器和稳定化](../../assets/diagrams/ch16/ch16-05-07-micro-macro-stabilization.png)
+
+图：Microbenchmark和Macrobenchmark使用各自运行器，前者稳定小段代码，后者保留完整应用行为。 锁频是有root和场景边界的实验配置；Macro中的DVFS与热响应不能无条件抹除。
 
 ## 数据采样策略
 
@@ -258,6 +293,11 @@ Microbenchmark 用 `AndroidBenchmarkRunner`，这个 run（单次运行）ner（
 
 样本少的时候，P90/P95（第 90/95 百分位）会紧贴极值，估计很不稳定；十次启动算出的 P90，也代表不了线上 90% 用户的体验。线上分位数来自不同设备和会话，实验室分位数来自同一台设备的重复运行，两者分母本来就不一样。
 
+<!-- gracker-diagram: ch16-05-08-sampling-hierarchy -->
+![独立运行、迭代与帧不是同一层](../../assets/diagrams/ch16/ch16-05-08-sampling-hierarchy.png)
+
+图：先区分独立CI运行、单次运行中的迭代和迭代内样本，再设计检出目标与不确定性评估。 十次启动P90不代表线上用户P90；相邻帧不能一律当成独立实验重复。
+
 ### Macrobenchmark 两类指标的聚合方式
 
 当前 Macrobenchmark 官方文档给出两种常见输出语义：
@@ -270,6 +310,11 @@ Microbenchmark 用 `AndroidBenchmarkRunner`，这个 run（单次运行）ner（
 `StartupTimingMetric` 的 JSON 里没有现成的 P90 字段，需要启动尾部分位时，从 `runs` 按版本化算法自己算，并保证足够的独立启动样本。`FrameTimingMetric` 的 P90/P95/P99 来自帧样本池，写成“10 次滑动的 P90”时，务必说明这 10 轮的帧是怎么合并的。
 
 API 31+ 优先看 `frameOverrunMs`：正值说明错过 deadline，负值说明还有预算富余。`frameDurationCpuMs` 只统计 UI 线程和 RenderThread（承担部分渲染工作的线程） 的 CPU 生产时长，GPU 与 SurfaceFlinger（负责图层合成与呈现的系统服务） 的完整路径不在它的统计范围内。
+
+<!-- gracker-diagram: ch16-05-09-metric-aggregation -->
+![启动run与帧样本池的区别](../../assets/diagrams/ch16/ch16-05-09-metric-aggregation.png)
+
+图：启动按轮保留单值，帧指标保留每轮样本并按固定实现合并，数值范围与方向分别解释。 frameDurationCpuMs是跨UI/RT经过时间，overrun也受匹配过滤影响，二者都不是自动根因结论。
 
 ### 中位数、尾部与指标方向
 
@@ -294,6 +339,11 @@ Warm-up 在不同工具里改变的状态并不相同。JIT（Just-In-Time） �
 | 持续负载预热 | 让温度、频率和工作负载进入定义好的稳态 | 单独保存，不并入稳态统计 |
 
 这三种 warm-up 各管各的状态，要分开对待。尤其 `warmupIterations` 改变的是目标应用的编译状态，本身就是测试条件的一部分。
+
+<!-- gracker-diagram: ch16-05-10-three-warmups -->
+![三种预热各改变什么](../../assets/diagrams/ch16/ch16-05-10-three-warmups.png)
+
+图：Micro稳定化、编译profile收集和持续负载稳态预热分别服务不同状态。 这三类预热不进入对应正式统计，但会改变后续条件，必须分别记录。
 
 ### AndroidX Benchmark 1.4.1 的 CompilationMode
 
@@ -338,6 +388,16 @@ fun coldStartupWithRequiredBaselineProfile() {
 
 `Partial(Require, warmupIterations > 0)` 会先安装 Baseline Profile，再跑 warmup，然后按新收集的 profile 再做一次 profile-guided（由运行热点 profile 引导） 编译。想单独量化 Baseline Profile 与运行时 profile 各自的作用，就用不同测试分别配置，让两种 profile 分开出结果。
 
+<!-- gracker-diagram: ch16-05-11-compilation-mode-choices -->
+![固定版本的编译模式对照](../../assets/diagrams/ch16/ch16-05-11-compilation-mode-choices.png)
+
+图：先固定库版本，再按Profile来源和预编译目标选择模式，所有重置仍需核对平台分支。 本章解释1.4.1；当前稳定版已为1.5.0，升级后需核对实现和噪声。
+
+<!-- gracker-diagram: ch16-05-12-partial-profile-flow -->
+![Baseline安装与运行热点分别控制](../../assets/diagrams/ch16/ch16-05-12-partial-profile-flow.png)
+
+图：固定Partial可先安装Baseline并编译，再可选运行工作负载收集profile并再次编译。 Require验证安装前提，不证明规则覆盖或收益；要隔离两类profile作用需分别配置对照。
+
 ### 启动模式控制的状态范围
 
 Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
@@ -346,7 +406,17 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 - `WARM`：保留进程，重新创建或启动 Activity；
 - `HOT`：保留进程和 Activity，恢复到前台。
 
+<!-- gracker-diagram: ch16-05-13-startup-mode-contracts -->
+![冷温热启动保留的对象不同](../../assets/diagrams/ch16/ch16-05-13-startup-mode-contracts.png)
+
+图：COLD、WARM、HOT分别定义进程与Activity前提，数据、缓存与业务入口另按合同准备。 不能每轮额外force-stop后还声称保留了WARM/HOT状态；TTID/TTFD与业务等待终点也不同。
+
 数据、账号、缓存和入口 Intent（启动请求） 仍要测试自己控制。`setupBlock` 在每轮测量前运行，而冷启动模式会在 setup 与 measure 之间终止进程。凡是必须留在目标进程内存里的准备，都要赶在进程被终止前完成——进程一终止，这部分状态就没了。
+
+<!-- gracker-diagram: ch16-05-14-cold-setup-order -->
+![COLD的setup到正式测量顺序](../../assets/diagrams/ch16/ch16-05-14-cold-setup-order.png)
+
+图：固定1.4.1先运行setup，再清理支持的缓存并终止进程，最后正式启动测量。 仅存在目标进程内存的准备会丢失；WARM/HOT首轮未计入统计的进程预热又是另一层。
 
 ## 排除规则与异常值
 
@@ -359,6 +429,11 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 - 已识别的设备池故障。
 
 看到一个慢值，再补一句“可能遇到 GC”就把它删掉，这会系统性地美化结果。有效但很慢的样本我们先保留，用 trace 判断它是否属于用户路径；每一次排除都要留下原因、原始记录和排除前后的样本量。
+
+<!-- gracker-diagram: ch16-05-15-invalid-failed-slow-samples -->
+![无效环境、目标失败与有效慢样本](../../assets/diagrams/ch16/ch16-05-15-invalid-failed-slow-samples.png)
+
+图：先按预定义规则区分环境无效、目标失败和有效慢值，再决定统计、阻断与补证。 不能把崩溃或错误页删掉后宣称通过；缺失不填零，排除数量和原始记录都需保留。
 
 ## 性能基线与回归检测
 
@@ -383,6 +458,11 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 
 配对比较要保留每个 block（成组执行批次）的顺序、环境状态和两侧结果；多台设备各自算变化，再按设备层次汇总，不同机型的原始毫秒留在各自的设备层里。
 
+<!-- gracker-diagram: ch16-05-16-paired-versioned-baseline -->
+![版本化基线与同机交错对照](../../assets/diagrams/ch16/ch16-05-16-paired-versioned-baseline.png)
+
+图：基线绑定构建、状态、工具和协议，在同机block中交错或随机运行基线与候选。 A/B/B/A是控制漂移的示例；它不自动消除所有热、缓存、网络和顺序效应。
+
 ### 阈值来自 SLO 与噪声下限
 
 “P50 回归 10%、P90 回归 20%”这样的固定阈值，套不到所有 workload 上。回归判定通常要同时满足：
@@ -394,6 +474,11 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 5. 变化达到团队预先定义的工程意义。
 
 样本量不足时，结果可标成 inconclusive（证据不足），随后自动增加独立运行，或转人工复核。p-value（假设检验中的概率指标） 代替不了效应量：统计显著但工程幅度极小的变化，未必需要阻断发布。
+
+<!-- gracker-diagram: ch16-05-17-absolute-relative-gates -->
+![SLO违约与相对回归独立判定](../../assets/diagrams/ch16/ch16-05-17-absolute-relative-gates.png)
+
+图：质量检查后分别评估绝对SLO和相对回归，再按预定义规则形成通过、阻断或证据不足。 相对劣化不必先突破SLO；基线已违约也不能自动放行，反复加样到显著会改变错误率。
 
 ### 趋势与单次闸门并用
 
@@ -443,6 +528,11 @@ PR 闸门拦截明确的回归，长期趋势负责发现一次次小幅累积�
 
 截图只作辅助；报告还要保存可查询的 trace、时间范围、process/thread 和 SQL/metric 定义，让另一位工程师能复核。
 
+<!-- gracker-diagram: ch16-05-18-report-causal-evidence -->
+![从观测到可复核的归因](../../assets/diagrams/ch16/ch16-05-18-report-causal-evidence.png)
+
+图：报告从决策与合同进入质量和结果，再用可查询现场区分观测、证据、假设与验证。 GC恰好同窗只是相关；图表和截图不能代替原始Trace、查询定义和同条件修复对照。
+
 ## Macrobenchmark 在 CI 中的集成
 
 把 Macrobenchmark 放进 CI，runner 选择、产物归档和错误策略是三件主要的事。
@@ -491,6 +581,11 @@ Benchmark JSON 里，single metric（每轮产生一个值的指标） 每轮产
 
 CI 自己计算 P90 或置信区间时，插值方法和 bootstrap（有放回重采样）参数都要固定下来，并给统计脚本单独做回归测试。
 
+<!-- gracker-diagram: ch16-05-19-ci-artifact-pipeline -->
+![CI将流程检查和数值门禁分开](../../assets/diagrams/ch16/ch16-05-19-ci-artifact-pipeline.png)
+
+图：流程smoke、真机数值测试、产物校验和分层判定使用明确的版本与数据协议。 dry run和模拟器结果不入性能基线；suppressErrors不能替代修复环境，缺失/失败不补零。
+
 ## 扩展：Firebase Performance Monitoring 的边界
 
 Firebase Performance Monitoring（FPM）提供线上启动、网络和 custom code trace（自定义代码区间）数据。它适合观察真实用户的版本趋势，与受控设备上的合入前 benchmark 各管一段。
@@ -512,6 +607,11 @@ FPM 的服务端采样和聚合由服务端决定，客户端没法按 benchmark
 ### 延迟与报警
 
 当前 FPM 文档把兼容 SDK 的处理描述为 near real-time（近实时），数据通常在采集后数分钟内显示。SDK 首次检测、批量上传、离线设备和平台故障还会带来额外延迟；发布报警要监控数据新鲜度与覆盖率，把数据延迟到达当作设计前提。
+
+<!-- gracker-diagram: ch16-05-20-firebase-online-boundary -->
+![FPM自定义区间与受控基准的分工](../../assets/diagrams/ch16/ch16-05-20-firebase-online-boundary.png)
+
+图：FPM记录线上自定义区间并按属性聚合，受控Benchmark提供固定条件对照，Perfetto提供有权限边界的现场。 FPM通常几分钟展示不等于时限保证；session采样不是完整系统Trace，线上与实验室的单位和分布要先对齐。
 
 ### 与其他数据源的分工
 
@@ -540,6 +640,11 @@ TTID 与 TTFD 要分开看。`StartupTimingMetric.timeToFullDisplayMs` 依赖应
 帧回归的统一判定交给 `frameOverrunMs` 和 FrameTimeline：API 31+ 用它们判断 miss，再定位到 App、GPU 或合成阶段。动态刷新率和流水线 deadline 都在变，`DrawFrame > 16 ms` 这样的统一阈值用不了，`DrawFrame` 也只是流水线里的一个切片。
 
 trace 和结果对不上时，按顺序检查 metric 语义、测量范围、应用断言、编译/启动模式和环境。后台 I/O 只是可能原因之一，把它写进结论之前，先在 trace 里找到依据。
+
+<!-- gracker-diagram: ch16-05-21-trace-metric-reconciliation -->
+![把结果回接到同轮Trace](../../assets/diagrams/ch16/ch16-05-21-trace-metric-reconciliation.png)
+
+图：将指标关联回同轮Trace与成功断言，逐项核对时间边界、模式、数据和环境后再归因。 TTFD要有匹配的fully-drawn/帧证据；单个DrawFrame或jank分类不能独自证明根因。
 
 ## 常见误区
 

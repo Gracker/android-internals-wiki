@@ -57,6 +57,11 @@ last_review_finalize_at: '2026-08-04T14:07:05+08:00'
 
 这里的 Agent 指能够读取 trace、调用 `trace_processor` 并执行 SQL 的工具型 AI。本文所称“协议”是一套可重复执行的调查流程和记录格式，不涉及网络报文。目标是让 trace 调查可复查：人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。流程吸收了 `android/skills/profilers` 固定提交中的约束，以及 Perfetto 官方 Agent skill 的主机侧能力边界（该 skill 由供 Agent 读取的说明文件、脚本与工具包装组成）：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。
 
+<!-- gracker-diagram: ch14-11-01-investigation-cycle -->
+![把调查写成可重放的输入、查询与证据链](../../assets/diagrams/ch14/ch14-11-01-investigation-cycle.png)
+
+图：固定输入和工具后，用查询验证假设、追依赖，并保存可重放材料。 协议是调查流程；能执行SQL不等于数据完整或归因已成立。
+
 在 14.1 节 Trace 抓取、14.7 节 Perfetto SQL 常用模板、14.10 节 BufferQueue 阻塞案例的基础上，这里聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
 
 本文以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码版本；该标签在 `platform/external/perfetto` 对应提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度和内核等待时，以 `android17-6.18-2026-06_r6` 为内核版本。主机侧 SQL 在 Perfetto v57.2、提交 `da1d152cff27890903d158fe96751de3aab883cc` 的 Trace Processor 上验证，并覆盖 Android 17 标签中的标准库。Perfetto v57.1 引入官方 Agent skill，v57.2 修复 Trace Processor 解析带内嵌 proto descriptor（trace 自带的 Protocol Buffers 字段定义）的部分 trace 时出现的兼容问题。
@@ -82,6 +87,11 @@ Perfetto v57.1 发布了符合 Agent Skills 规范的官方 skill。它教 Agent
 
 普通 Perfetto 教程主要讲概念、UI 操作和案例；这套协议约束 Agent 怎样调查和留存结果。一次合格的 Agent 调查至少要留下四类材料：输入条件、查询语句、查询结果、排除过的方向。没有这些材料，报告里的“主线程卡在 Binder”“GPU 阻塞”“I/O 竞争”都只是口头判断。
 
+<!-- gracker-diagram: ch14-11-03-skills-and-evidence -->
+![两类skill分别帮助取数与开放式调查](../../assets/diagrams/ch14/ch14-11-03-skills-and-evidence.png)
+
+图：perfetto-sql处理取数和执行验证，trace-analysis组织假设、状态与依赖调查。 源码提示仅作候选规范，schema、边界和因果句仍按固定版本验证。
+
 对 Android 性能优化来说，这套流程主要用于三类场景：疑难 trace 复盘、批量定位 Benchmark 指标回退原因、分析真实用户设备采集的 trace 证据包。明确的小问题仍然可以直接用 UI 或 14.7 节的 SQL 模板处理；“这次启动为什么慢”“滑动为什么掉帧”“用户反馈点击后界面冻结”这类开放式问题更适合完整流程。
 
 ## 输入约束：分析前先把问题收窄
@@ -104,6 +114,11 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 
 输入约束还应该反向检查采集质量。缺少 `sched` 调度事件时无法分离经过时间和 CPU 运行时间；缺少 FrameTimeline 时，异常帧分析只能退回到 `Choreographer#doFrame`、RenderThread 和 SurfaceFlinger 轨道；缺少 Binder 事件或 flow 关系时，跨进程等待可能断在客户端。采集规划可回到 14.1 节，真实用户设备的证据包可回到 26.3 节。
 
+<!-- gracker-diagram: ch14-11-04-input-and-coverage -->
+![先收窄问题，再反查采集是否能回答](../../assets/diagrams/ch14/ch14-11-04-input-and-coverage.png)
+
+图：用目标实例、场景和窗口收窄查询，并检查sched、帧、Binder等证据是否存在。 没有相应数据时降低结论范围并补采，不能把表存在或空结果当成机制证据。
+
 trace 可能包含进程名、线程名、URL、日志、文件路径和业务标记。共享报告时保存散列值和权限受控存储中的文件标识即可，不要把本机绝对路径、原始日志或未脱敏 SQL 结果复制到公开问题单。
 
 ## Scratchpad：事实和假设分开
@@ -120,9 +135,19 @@ scratchpad 分成三张表：
 
 假设放在调查计划，不放在事实表。查询证实后转成已验证事实，证伪后转成排除项；证据不足时保留为待验证项，并注明缺少的数据源。
 
+<!-- gracker-diagram: ch14-11-05-facts-hypotheses -->
+![假设、事实、排除与待验证项分开流转](../../assets/diagrams/ch14/ch14-11-05-facts-hypotheses.png)
+
+图：假设经实际查询后转为事实或有范围的排除，证据不足保留待验证项。 工作记录放获准目录并绑定Trace散列；外部要求同目录不覆盖只读/正文目录约束。
+
 ## Perfetto SQL：先查表结构，再写查询
 
 Perfetto SQL 即使语法正确，也可能因为表、字段、模块版本或时间区间口径错误而给出误导性结果。`perfetto-sql` 对 Agent 的约束是：固定 Trace Processor 和 SQL 包，检查当前表结构，再编写查询并对真实输出做语义校验。
+
+<!-- gracker-diagram: ch14-11-06-schema-boundary -->
+![公开schema与区间策略先于SQL结论](../../assets/diagrams/ch14/ch14-11-06-schema-boundary.png)
+
+图：核对公开对象、ID语义、单位与开放区间策略，再选择标准库或自定义关联。 PARTITIONED不能修复同分区重叠；嵌套slice不能直接SUM，提示文本不替代主机回归。
 
 Android 17 的固定源码快照提供三类入口。`slice`、`thread_state`、`thread`、`process` 等基础表由 Trace Processor 预置；`android.startup.startups`、`slices.time_in_state` 等标准库模块要通过 `INCLUDE PERFETTO MODULE` 加载；旧版基于 trace 的 metric 由 metric 运行入口生成，不能因为加载同名标准库模块就假定 metric 表已经存在。
 
@@ -241,6 +266,11 @@ ORDER BY state_dur_ms DESC;
 
 这里选择“最长线程 slice”只为给模板一个可执行目标，正式调查必须把 `target_slice` 换成 scratchpad 已确认的 slice ID 或问题窗口，不能把全局最长项自动当作用户问题的根因。状态时长之和还要与目标 slice 的有效经过时间核对；缺少 `sched` 数据时，状态分布可能无法覆盖完整时长，报告应记录证据缺口。
 
+<!-- gracker-diagram: ch14-11-07-bounded-state-query -->
+![最长项是探索入口，截尾与缺口必须可见](../../assets/diagrams/ch14/ch14-11-07-bounded-state-query.png)
+
+图：查询保留目标行、开放贡献和状态覆盖；最长slice只用于探索演示。 截到trace_end是观测边界估计；无匹配保留NULL，重叠错误时不输出有效统计。
+
 ## 六类问题方向：把开放问题改写成可执行动作
 
 `perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC（Inter-Process Communication，进程间通信）、Memory、Power 六类。下面按“触发条件 → 先查什么 → 再查什么 → 误判边界”组织，便于 Agent 执行。
@@ -257,6 +287,11 @@ ORDER BY state_dur_ms DESC;
 | Power | 屏灭耗电、无法 suspend、modem 或蓝牙电源轨高 | 可用的电源轨、suspend、唤醒源、网络与厂商功耗轨道 | 查唤醒源、UID 流量、蓝牙 / modem / thermal 事件 | 把缺失电源轨或归因字段解释成零功耗 |
 
 这张表用来收窄扫描范围，避免无边界地扫描全部数据。Agent 应根据用户问题和已验证事实选择方向：启动慢通常从启动窗口、主线程状态、I/O 与 Binder 开始；滑动掉帧从 FrameTimeline、UI / RenderThread、SurfaceFlinger 与 CPU 开始；屏灭耗电从 suspend、唤醒源、电源轨与网络归因开始。某个轨道未被采集时，结论应降级为“该证据不可见”，不能写成“该异常不存在”。
+
+<!-- gracker-diagram: ch14-11-08-six-domain-routing -->
+![六类方向用于收窄调查，而非直接判根因](../../assets/diagrams/ch14/ch14-11-08-six-domain-routing.png)
+
+图：根据用户窗口和已验证事实选择CPU、Graphics、I/O、IPC、Memory或Power路径。 缺轨、字段名和hint中的因果句必须复核；例如缺频率不能直接断governor bug。
 
 ## Wall time 与 CPU time 必须分离
 
@@ -281,9 +316,19 @@ Android 17 的 `slices.time_in_state` 会输出 `io_wait` 和 `blocked_function`
 
 函数名出现在 slice 上，只说明线程处于该标记范围；它不能单独证明 CPU 正在执行该函数。报告要分别给出经过时间、CPU 运行时间或调度状态分布，再用 Binder flow、锁事件、调用栈或内核证据定位等待方。
 
+<!-- gracker-diagram: ch14-11-09-wall-versus-cpu -->
+![墙钟由执行、排队和等待共同组成](../../assets/diagrams/ch14/ch14-11-09-wall-versus-cpu.png)
+
+图：slice名称只表明标记范围，先分离Running、Runnable和阻塞，再查依赖。 最大状态占比不必决定关键路径；S/D不唯一对应某个锁、Binder或存储原因。
+
 ## 从局部异常到全局复核
 
 复杂 trace 里可能同时存在 App 主线程等待、系统服务慢 Binder、SurfaceFlinger 合成异常和后台 I/O。发现一个异常只证明它存在；归因还需要证明它与用户可感知窗口重合，并沿依赖关系找到决定总耗时的关键路径（critical path）。
+
+<!-- gracker-diagram: ch14-11-10-local-to-global -->
+![从局部异常追依赖，再复核同一用户窗口](../../assets/diagrams/ch14/ch14-11-10-local-to-global.png)
+
+图：局部异常必须与用户可感知窗口重合，并沿依赖找到影响总耗时的路径。 其他进程同时发生长slice不自动构成依赖，需flow、token、唤醒或调用栈连接。
 
 全局复核至少包括四步：
 
@@ -358,6 +403,16 @@ ORDER BY overlap_dur DESC, depth, id;
 
 缺少关键数据源、trace 被截断、不同时间戳来源无法对齐，或依赖关系追到客户端后失去服务端数据时，应停止归因并输出补采方案。继续生成看似完整的根因会越过证据边界。
 
+<!-- gracker-diagram: ch14-11-11-global-window-identity -->
+![全局候选排序保留身份、窗口来源与嵌套层级](../../assets/diagrams/ch14/ch14-11-11-global-window-identity.png)
+
+图：全局查询分别返回完整观测范围和交集，保留upid、utid、track、parent/depth及窗口来源。 跨线程时间可并行、父子可重叠，排行不能相加为总墙钟；无thread_track的内核工作还需另查。
+
+<!-- gracker-diagram: ch14-11-12-stop-or-collect -->
+![停止调查要回答证据问题，缺关键证据则停止归因](../../assets/diagrams/ch14/ch14-11-12-stop-or-collect.png)
+
+图：已回答问题、依赖和竞争解释可复查时交付；关键一跳缺数据时输出补采方案。 外部skill的“彻底搜索”不能保证无不可见瓶颈；停止条件只约束当前Trace、窗口与schema。
+
 ## 输出模板：证据表、阻塞方、边界与补采建议
 
 Agent 的最终报告是一份可重放的工程调查记录。结构可以固定，条目数量由证据决定：
@@ -376,9 +431,19 @@ Agent 的最终报告是一份可重放的工程调查记录。结构可以固�
 
 报告中的结论应使用“观测 → 依赖 → 归因边界”结构。例如，先记录目标 slice 与状态分布，再写等待关系如何连接到服务端，随后说明调用栈或符号是否足以定位代码。这样不会用一张 UI 截图替代查询，也不会把补采计划写成已经证实的根因。
 
+<!-- gracker-diagram: ch14-11-13-report-replay -->
+![最终报告把观测、依赖和归因边界连接起来](../../assets/diagrams/ch14/ch14-11-13-report-replay.png)
+
+图：报告保存输入/版本、问题窗口、证据表、依赖、排除项、补采与回归方法。 补采计划和优化建议不写成已验证根因或效果；原始业务数据按既定共享范围处理。
+
 ## Trace 采集规划器
 
 采集规划是协议的前置步骤。用户给出问题类型与复现条件后，Agent 要输出可审阅的 `TraceConfig`（数据源和缓冲区等采集参数）、atrace 类别、触发方式、缓冲区规划、采集窗口、预计开销和敏感数据风险。缓冲区大小与采集时长不能写成所有设备通用的常量；它们取决于问题持续时间、事件速率、可接受开销以及是否允许触发采集，并在短时试采后检查丢包、缓冲区覆盖与 trace 截断。
+
+<!-- gracker-diagram: ch14-11-14-recording-planner -->
+![从待回答问题反推采集，再用短采检查质量](../../assets/diagrams/ch14/ch14-11-14-recording-planner.png)
+
+图：问题与场景决定数据源、atrace、触发、缓冲区和窗口，短采后检查实际产出与丢数。 采集配置不能补设备权限或硬件支持；缓冲区、频率、时长和开销没有跨设备通用常数。
 
 | 问题类型 | 必要数据 | 建议补充 | 缺失风险 |
 |---|---|---|---|
@@ -401,6 +466,11 @@ Perfetto SQL 模板不能假设所有 trace 都来自 Pixel 或完整的 userdeb
 - **Android 标准库层**：`android.startup.startups`、`android.frames.timeline`、`slices.time_in_state` 等模块还受采集字段限制。FrameTimeline 从 Android 12 开始可用；Android 10/11 需要回退到 UI、RenderThread、SurfaceFlinger slice 和业务 marker。
 - **厂商扩展层**：显示、thermal、功耗、调度器等自定义轨道要按设备、ROM、构建和采集配置建立词典，不能直接写成平台通用机制。
 
+<!-- gracker-diagram: ch14-11-15-compatibility-layers -->
+![表结构、标准库和设备扩展分三层核对](../../assets/diagrams/ch14/ch14-11-15-compatibility-layers.png)
+
+图：基础表存在、模块可加载与设备实际采集覆盖是不同条件。 Android10/11无原生FrameTimeline时走对应版本替代链；厂商轨道与符号按实际构建限定。
+
 涉及调度和内核等待时，Android 17 kernel common 锚点是 `android17-6.18-2026-06_r6`。设备仍可能使用厂商分支与不同配置，报告要同时记录运行设备的内核版本。`io_wait` 需要采到 `sched/sched_blocked_reason`，`blocked_function` 还依赖 userdebug 与符号；电源轨、GPU 计数器和厂商显示轨道也都属于可选证据。可信度应按结论逐项绑定这些条件。
 
 ## SQL 模板测试集
@@ -416,6 +486,11 @@ Perfetto SQL 模板进入团队工作流后要像代码一样测试。字段变�
 
 空 trace 只能证明 SQL 在零行输入下可解析，不能证明关联、单位和归因正确。Perfetto 的差分测试会把输入 trace、查询或 metric 的输出与固定预期结果比较；项目模板至少要为启动、帧、Binder、I/O 与功耗查询保留代表性 trace、预期输出、Trace Processor 版本和标准库提交。
 
+<!-- gracker-diagram: ch14-11-16-query-regressions -->
+![语法、schema、边界与语义都需要针对性验证](../../assets/diagrams/ch14/ch14-11-16-query-regressions.png)
+
+图：空输入只验证可执行性，合成或golden输入检验关联、单位、覆盖和重复计数。 复用输入与依赖SHA未变的通过记录；新增或变更行为做相应回归，不以冒烟替代语义验证。
+
 ## 源码与 trace 关联
 
 Perfetto 提供事件、状态和时间关系，优化动作通常还要回到源码。Agent 报告定位到 slice、Binder 方法或 native 符号后，应继续建立到 AOSP 或业务代码的映射。
@@ -428,6 +503,11 @@ Perfetto 提供事件、状态和时间关系，优化动作通常还要回到�
 - **FrameTimeline / SurfaceFlinger → 图形栈章节**：队列、fence、BufferQueue、HWC 等机制回到 2.8 与 14.10，不在报告里重复写原理。
 
 源码关联要固定版本边界。平台代码使用 `android-17.0.0_r1`，内核使用 `android17-6.18-2026-06_r6`，业务与厂商代码记录仓库提交和构建 ID。trace 证据可以证明某个窗口里的对象、状态和依赖，源码用于解释这条构建路径怎样产生对应事件。缺少调用栈、符号、transaction 对应关系或业务 marker 时，不能把 trace 现象直接写成具体代码根因。
+
+<!-- gracker-diagram: ch14-11-17-source-mapping -->
+![从Trace对象映射到同一构建的源码](../../assets/diagrams/ch14/ch14-11-17-source-mapping.png)
+
+图：以marker、Binder接口、符号BuildID或图形对象定位固定构建路径，再解释事件产生机制。 名字和版本近似不够；缺栈、符号、transaction或marker时保留具体代码根因边界。
 
 ## 官方资料与固定版本
 
@@ -448,3 +528,8 @@ Perfetto 提供事件、状态和时间关系，优化动作通常还要回到�
 ## 小结
 
 Agent 辅助 Perfetto 分析的最低要求是可复查：输入完整，scratchpad 区分事实与假设，SQL 固定执行环境并检查表结构，长 slice 分离经过时间与 CPU 运行时间，候选瓶颈经过依赖追踪和全局复核。报告还要写清采集缺口、版本边界与停止条件，才能让另一名工程师在同一份 trace 上重放结论。
+
+<!-- gracker-diagram: ch14-11-02-version-layers -->
+![设备、采集、主机、UI、skill与SQL包分别固定](../../assets/diagrams/ch14/ch14-11-02-version-layers.png)
+
+图：升级主机能改变解析与分析能力，不能补出当时未采集的数据。 固定平台tag不是Perfetto版本别名；UI、wrapper和SQL包版本也须分别保存。

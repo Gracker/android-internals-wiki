@@ -70,6 +70,11 @@ AppFlow 是 MobiCom 2026 论文提出的研究原型，它同时协调文件预�
 128KB 文件分界、100MB 预加载预算、每 100ms 统计 12,800 个分配页等值来自论文参数搜索。
 66.5%、67.9%、95% 等结果也只描述论文设备、应用集合和测试方式，不能当作 Android 17 的默认配置或性能承诺。
 
+<!-- gracker-diagram: ch18-08-01-joint-control -->
+![AppFlow 在文件、页面与进程三个层面联合调度](../../assets/diagrams/ch18/ch18-08-01-joint-control.png)
+
+图：论文原型把两阶段预读、预读感知回收和后台进程选择联合起来。 图示为 Android15 研究设计；预算、阈值与论文收益不能当作 Android17 默认能力，完整 patch 尚未从所核对 v1 获得。
+
 ## 冷启动为什么会变成系统问题
 
 Android 官方把 cold start（冷启动）定义为从头创建应用进程，并完成应用和首个 Activity 的初始化。系统终止后台进程后再次打开应用，也属于冷启动。
@@ -97,6 +102,11 @@ PSI（Pressure Stall Information，压力停顿信息）报告任务因资源不
 论文用 `T_cold = T_I/O + T_cpu + T_alloc` 表示问题，并把系统可调部分放在 I/O 与分配等待上。
 这是分析模型，三段在设备上可能并行或互相阻塞，不能直接把 trace 中的 wall time（端到端经过时间）按公式相加。
 
+<!-- gracker-diagram: ch18-08-02-critical-costs -->
+![启动成本按运行、文件和回收等待关联](../../assets/diagrams/ch18/ch18-08-02-critical-costs.png)
+
+图：冷启动的 CPU、文件读取和分配等待会重叠或互相阻塞，沿关键路径解释耗时。 论文的加法模型不等于把所有 trace slice 直接相加；major fault、D 状态和 PSI 也不能各自证明 UFS 是瓶颈。
+
 ## 论文给出的四个观察
 
 AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，应同时保留样本语境。
@@ -112,6 +122,11 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 
 论文还引用既有研究中的“30 分钟内再次访问 92.5%”，并报告 Android 基线终止了其中 62% 的高概率应用。
 前一项不是 AppFlow 自己的 100 天数据，后一项依赖论文的 workload（应用组合与切换序列）和判定方式。产品预测器需要用自身用户群、场景和隐私约束重新训练与验证。
+
+<!-- gracker-diagram: ch18-08-03-interference -->
+![单独预读可能引发逐出、重复读取与冷重启](../../assets/diagrams/ch18/ch18-08-03-interference.png)
+
+图：预读占用 page cache，回收和进程终止又可能增加后续读取与冷启动。 论文的样本比例只说明其负载中的现象；zRAM 主要争用 CPU/DRAM，实际块设备后备才直接增加存储流量。
 
 ## Selective File Preloader
 
@@ -129,11 +144,21 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 128KB 只是论文观察和搜索空间中的代表值，具体应用仍有自己的 `s_i`。
 若产品规则固定预读所有小于 128KB 的文件，就会忽略压缩包内部偏移、资源版本、F2FS/ext4 文件系统布局、UFS 请求队列、16KB page size（内存页大小）和应用更新造成的访问变化。
 
+<!-- gracker-diagram: ch18-08-04-knapsack-budget -->
+![每应用选择一个分界并满足总预读预算](../../assets/diagrams/ch18/ch18-08-04-knapsack-budget.png)
+
+图：每个应用先测离散候选的 P(s_i)、V(s_i)，再在全局预算内选择自己的文件分界。 100MB 与小于0.1ms 是论文配置和求解报告；128KB 不是所有应用共享的固定规则，更新后需重新验证记录。
+
 ### 启动中：吞吐优先
 
 应用开始启动后，预加载器用较大块读取余下的大文件。论文把它放在独立低优先级进程中，希望预读跟不上时给前台读取让路。
 低调度优先级只能减少 CPU 竞争，无法保证 block 层或文件系统一定先完成前台请求。
 产品实现还要观测 I/O priority（存储请求优先级）、queue depth（同时在途的请求数）和读放大（实际读取量与最终使用量之比）。
+
+<!-- gracker-diagram: ch18-08-05-during-launch -->
+![启动前频次优先，启动中吞吐优先](../../assets/diagrams/ch18/ch18-08-05-during-launch.png)
+
+图：启动前少量读取频繁访问内容，启动中以较大块流式读取剩余大文件。 独立低优先级进程不能自动保证前台 block I/O 优先；同时观测队列、读放大与前台延迟。
 
 ### 历史访问记录何时失效
 
@@ -146,6 +171,11 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 - 预读命中后仍出现较高 refault（文件页逐出后很快又被访问）或前台 I/O 延迟。
 
 记录键至少包含包版本、build fingerprint（系统构建标识）、ABI（应用所用指令集接口）、page size 与资源版本。回滚时应能立即停用预测与预读，不能依赖清空用户数据恢复。
+
+<!-- gracker-diagram: ch18-08-06-profile-invalidation -->
+![启动记录须按版本与运行条件失效](../../assets/diagrams/ch18/ch18-08-06-profile-invalidation.png)
+
+图：历史文件记录绑定包、资源、系统与页大小，变化后降低权重或重新采集。 这是产品化约束；同一路径不保证相同内容与访问区间，回滚不能依赖清空用户数据。
 
 ## Adaptive Memory Reclaimer
 
@@ -167,6 +197,16 @@ file-backed 页扫描完成后，原型进入 anonymous rebalance，重新提高
 两者都不保证页面一直留到应用使用时刻，普通 page-cache 访问也没有这种保证。
 论文报告一次活跃度刷新约耗时 10ms，CPU 开销约 0.1%；目标 SoC（系统芯片）、文件集合和电源状态变化后仍需复测。
 
+<!-- gracker-diagram: ch18-08-07-reclaim-guard -->
+![按 Algorithm 1 的条件与顺序理解回收](../../assets/diagrams/ch18/ch18-08-07-reclaim-guard.png)
+
+图：分配计数每100ms更新，事件读取空闲内存；满足双条件后先回收非保护文件页，再调用匿名页回收。 12,800页在4KB/16KB设备分别约50/200MiB；FreeMem 实现、扫描配额和模式切换细节未公开，图不补造状态机。
+
+<!-- gracker-diagram: ch18-08-08-page-retention -->
+![两阶段预读使用不同的页面保留方式](../../assets/diagrams/ch18/ch18-08-08-page-retention.png)
+
+图：启动前内容通过轻量触页刷新活跃度，启动中清单由原型内核回收路径检查。 触页、readahead 和 WILLNEED 都不等于 pin；按清单跳过逐出需要原型扩展，启动结束须清除，成本是论文测量。
+
 ### Android 17 kernel 6.18 的现状
 
 `android17-6.18-2026-06_r6/mm/vmscan.c` 没有 AppFlow 的预加载文件清单或启动窗口。
@@ -180,6 +220,16 @@ Android 17 已经会按运行状态调整扫描比例，但内核仍不知道“
 
 file-backed 页也有不同成本。干净文件页可以直接丢弃，脏文件页要先回写；被丢弃的页若很快 refault，会再次触发存储读取和 stall（任务因资源不足而停顿）。
 匿名页可能压入 zRAM，代价由压缩算法、CPU、swap 空间和后续 swap-in（把页读回内存）共同决定。回收策略不能只按 file/anon 二分。
+
+<!-- gracker-diagram: ch18-08-09-reclaim-baseline -->
+![r6 的扫描选择与通用 hook 仍需运行时核对](../../assets/diagrams/ch18/ch18-08-09-reclaim-baseline.png)
+
+图：classic LRU 按状态决定 file/anon 扫描，符合条件时可进入 MGLRU；通用 hook 允许受控扩展。 这些入口没有自行实现 AppFlow 启动会话与文件清单，vendor 模块是否增加策略要另查；论文函数名与 r6 folio 命名不同。
+
+<!-- gracker-diagram: ch18-08-10-page-costs -->
+![文件页与匿名页的回收代价按实际后备区分](../../assets/diagrams/ch18/ch18-08-10-page-costs.png)
+
+图：干净文件可丢弃，脏页可能回写；匿名页可经 zRAM 压缩或实际块设备后备，重访成本另算。 保护某些页会把压力转移给其他工作集；同时看 refault、CPU、swap 空间与存储 I/O，不能仅按 file/anon 二分。
 
 ## Context-Aware Process Killer
 
@@ -196,6 +246,11 @@ memcg（memory cgroup）的记账归属、isolated process（使用隔离 UID �
 候选集合仍要服从 Android 的进程重要性规则。
 导航、通话、音频、可感知前台服务、设备管理、车载安全界面和系统持久进程，不能因为预测分数低就进入普通 cached process 的可终止集合。
 预测器只能给系统原本允许终止的候选重新排序，还要限制同一应用连续成为候选的次数，并设置公平性和最大等待时间，避免长期得不到运行机会的 starvation（饥饿）。
+
+<!-- gracker-diagram: ch18-08-11-killer-score -->
+![先约束候选，再估算终止与重启后的净释放](../../assets/diagrams/ch18/ch18-08-11-killer-score.png)
+
+图：候选先服从系统重要性与角色约束，再考虑近期返回概率和当前占用减去 relaunch 基线。 ΔM 是长期净释放估计，不等于即时 RSS；relaunch 基线需历史测量，多进程、GPU 和共享页另计，公平性是产品约束。
 
 ## Android 17 r1 的 LMKD 基线
 
@@ -222,6 +277,11 @@ PSI `some` 表示窗口内至少有部分任务因内存不足而停顿，`full`
 `lmkd` 收到压力事件后还会检查 zone watermark（各内存区域的空闲页水位）、swap、thrashing（页面反复逐出又读回）和 direct reclaim 等状态。
 PSI 提供唤醒和压力严重度信号，具体终止哪个进程还要经过候选选择。
 
+<!-- gracker-diagram: ch18-08-12-psi-strategies -->
+![新旧 PSI 策略共存，不能混用阈值](../../assets/diagrams/ch18/ch18-08-12-psi-strategies.png)
+
+图：r1 新 PSI 策略关闭 LOW，并以 partial/complete 属性配置 MEDIUM/CRITICAL；旧策略保留数组初值。 新策略默认 low_ram 或不用 minfree；旧策略需 memcg v1。表内70/200与700ms基于默认1秒窗口，实际配置仍需核对。
+
 ### 候选进程和 `oom_score_adj`
 
 ActivityManagerService（AMS）根据进程状态、组件关系和用户可感知性计算 `oom_score_adj`，数值越高通常越容易成为低内存终止候选。
@@ -231,6 +291,11 @@ ActivityManagerService（AMS）根据进程状态、组件关系和用户可感�
 adj 表达 Android 组件此刻的重要性。
 若把“预计稍后会打开”的应用伪装成 perceptible（用户能感知）或 visible（界面可见），会破坏 AMS、LMKD 和 cached process 管理共同使用的优先级约定。
 这种做法也可能把更多内存压力转移给真正可感知的进程。
+
+<!-- gracker-diagram: ch18-08-13-kill-selection -->
+![压力判定与 adj 分组选择是不同步骤](../../assets/diagrams/ch18/ch18-08-13-kill-selection.png)
+
+图：压力事件结合水位、swap 和 thrashing 决定门槛，再从较高 adj 分组向下寻找。 组内可取队尾或 heaviest；搜索到 adj≤200 强制 heaviest。预测不能把普通 cached 应用伪装成可感知角色。
 
 ### `LMK_PROCS_PRIO` 的准确含义
 
@@ -244,6 +309,11 @@ Android 17 r1 的 `LMK_PROCS_PRIO` 是 framework 到 `lmkd` 控制 socket（进�
 这项批处理可以减少控制消息次数，但没有提供“保护将启动应用”的策略接口。它不能改变文件页回收，也不能接收 AppFlow 的 `ΔM`、访问概率或预加载清单。
 io_uring 是 Linux 的异步 I/O 接口，AOSP 17 r1 的 `lmkd.cpp` 没有相关处理器。移植设计若参考第三方 fork（从 AOSP 分出的代码分支），必须先区分分支扩展与主线能力。
 
+<!-- gracker-diagram: ch18-08-14-priority-protocol -->
+![LMK_PROCS_PRIO 只批量传输进程优先级记录](../../assets/diagrams/ch18/ch18-08-14-priority-protocol.png)
+
+图：Framework 过滤无效记录，每包最多三条、每条五个字段；LMKD 解码后逐条应用。 这是内部控制 socket 协议，既不传文件清单或预测分数，也不改变页回收；r1 所核查文件没有 io_uring 处理器。
+
 ### 全局 LMKD 属性不能代替预测器
 
 `ro.lmk.lowmem_min_oom_score`、`ro.lmk.kill_heaviest_task`、thrashing 门槛等属性影响整台设备。
@@ -251,6 +321,11 @@ io_uring 是 Linux 的异步 I/O 接口，AOSP 17 r1 的 `lmkd.cpp` 没有相关
 这些全局属性无法按应用或启动窗口动态表达预测结果。
 
 `am set-isolated-process-uid-list` 管理 isolated process 的 UID 范围，与后台应用保护、文件页预读或 LMKD 候选排序无关。
+
+<!-- gracker-diagram: ch18-08-15-global-knobs -->
+![全局门槛无法表达一次应用启动的预测](../../assets/diagrams/ch18/ch18-08-15-global-knobs.png)
+
+图：全局 LMKD 属性影响设备策略，lowmem_min_oom_score 只在 LOW_MEM 兜底原因中作为门槛。 它不是覆盖所有 kill reason 的统一门槛；get-isolated-pids 仅查询 PID，所核查 r1 未提供文中纠正的 set-isolated 子命令。
 
 ## CachedAppOptimizer 能做什么
 
@@ -260,6 +335,11 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 
 若要让 AppFlow 的进程终止分数影响 `CachedAppOptimizer`，仍需修改 AMS 的进程策略，还要验证 compaction、freezer、adj 更新和 LMKD 选择之间没有 race condition（执行先后变化导致结果不一致）。
 源码中也没有可直接复用的 AppFlow hook（扩展入口）。
+
+<!-- gracker-diagram: ch18-08-16-cao-profile -->
+![CachedAppOptimizer 的请求 profile 会再次解析](../../assets/diagrams/ch18/ch18-08-16-cao-profile.png)
+
+图：r1 命名上的 file/anon 请求还要经过 profile 解析、节流和取消，freezer 则控制进程调度与 Binder。 r1 关闭 shared/code compaction：SOME→NONE，FULL→ANON；FULL 在空闲swap<20%时先降SOME，最终NONE。这些不实现 AppFlow 热集保护。
 
 ## 原型组件与 Android 17 能力映射
 
@@ -273,6 +353,11 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 `UsageStatsManager.queryEvents()` 需要 `PACKAGE_USAGE_STATS`，在 `AndroidManifest.xml` 声明后还需用户到设置中授予 usage access（使用情况访问权）；只查询本包事件的接口不需要该权限。
 论文使用后台采集应用，不代表普通三方应用可以无提示收集整台设备的应用使用序列。系统镜像内的预测服务也要遵守多用户、工作资料、访客和数据保留期限。
 
+<!-- gracker-diagram: ch18-08-17-capability-map -->
+![原型组件跨越 Framework 与内核边界](../../assets/diagrams/ch18/ch18-08-17-capability-map.png)
+
+图：平台已有启动、I/O、压力与进程能力，AppFlow 还需把跨层短时上下文连接起来。 通用接口存在不等于完整策略已集成；跨应用使用历史需使用情况授权，并受用户隔离与保留期限约束。
+
 ## 三种实施权限下的可做范围
 
 ### 普通应用
@@ -285,6 +370,11 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 普通应用不能访问 `lmkd` 控制 socket、写其它进程的 `oom_score_adj`、修改 `vmscan`、保护 page cache 中的指定文件，也不能默认读取其它应用的使用历史。
 应用内预读可能有收益，但它不等同于 AppFlow。
 
+<!-- gracker-diagram: ch18-08-18-app-scope -->
+![普通应用以自身资源与启动指标形成闭环](../../assets/diagrams/ch18/ch18-08-18-app-scope.png)
+
+图：普通应用可优化自己的初始化、编译 Profile 与资源读取，并记录首次显示和业务可用。 UI_HIDDEN/BACKGROUND 是状态提示；不授予 LMKD、其他进程 adj、跨应用文件热集或内核保护权限。
+
 ### 特权 Framework 原型
 
 系统厂商可以在 platform service（系统服务）中采集经过授权的应用切换序列，维护带版本号的文件访问记录，并在 launch observer（启动事件观察器）收到事件前后调度预读。
@@ -292,6 +382,11 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 
 若 kernel 未改，预读页随时可能按常规策略被回收。
 实验报告要分别记录“读取内容最终被使用”和“页面一直留到使用时刻”，避免把偶然的 page-cache 命中算成回收保护效果。这个阶段也不应随意降低 adj 来模拟后台存活收益。
+
+<!-- gracker-diagram: ch18-08-19-framework-scope -->
+![仅改 Framework 只能验证部分预读收益](../../assets/diagrams/ch18/ch18-08-19-framework-scope.png)
+
+图：特权服务可验证授权数据、版本记录、预测与预读干扰；未改变内核路径时，页面仍可被正常回收。 最终使用了预读数据与一直保留到使用时刻是两个指标，偶然 page-cache 命中不能证明页保护有效。
 
 ### 产品级 OS 与 kernel 原型
 
@@ -301,6 +396,11 @@ freezer 会暂停 cached 进程的调度，并先处理该进程的 Binder 通�
 GKI（Generic Kernel Image，通用内核镜像）允许 vendor module 通过受控 hook 扩展部分功能，但模块不能直接替换 core `mm/vmscan.c` 的回收语义。
 修改 core mm 意味着长期维护产品 kernel 分支、内核 ABI（二进制接口）和安全更新合并。
 验证范围还要覆盖 CTS/VTS/GTS（应用兼容、厂商接口和 Google 认证测试）、SELinux 权限、OTA 升级、suspend/resume（休眠与唤醒）、low-RAM 设备和 kernel OOM 回归。
+
+<!-- gracker-diagram: ch18-08-20-kernel-scope -->
+![产品实现先审 hook 覆盖，再决定内核改动](../../assets/diagrams/ch18/ch18-08-20-kernel-scope.png)
+
+图：启动会话、文件区间、生命周期与候选规则需要跨层协作，先审现有 hook 是否覆盖目标路径。 模块方案尚未证明可完整复现；若改 core mm，需维护内核分支与接口，退出和兼容测试也要覆盖 classic/MGLRU。
 
 ## 如何设计一轮可信实验
 
@@ -313,6 +413,11 @@ cold 表示应用进程不存在；hot 表示进程和 Activity 都仍在内存�
 清空全局 page cache 只适合受控实验室镜像，因为它会改变所有进程和文件系统状态；线上设备不能用这种方式制造 cold 样本。
 线上应观察自然发生的冷启动，并按上次退出原因、包版本、设备 uptime（自开机起的运行时间）和内存压力分层。
 
+<!-- gracker-diagram: ch18-08-21-startup-definition -->
+![进程状态与 page-cache 条件分别定义](../../assets/diagrams/ch18/ch18-08-21-startup-definition.png)
+
+图：cold/warm/hot 先按进程与 Activity 状态分类，缓存条件作为独立实验轴。 论文对 warm/cold 的表述与 Android 官方口径并不完全一致；am start -W 的输出不能证明全局 page cache 状态。
+
 ### 建立负载组合
 
 每个设备至少覆盖：
@@ -324,6 +429,11 @@ cold 表示应用进程不存在；hot 表示进程和 Activity 都仍在内存�
 - 前台导航、音频、通话、端侧模型推理等不可随意中断的并发任务。
 
 每种组合都要报告样本数、P50/P90/P95/P99（有 50%/90%/95%/99% 样本不超过该值）、置信区间和异常值规则，平均数仅作补充。
+
+<!-- gracker-diagram: ch18-08-22-experiment-grid -->
+![固定条件后覆盖负载与分位数](../../assets/diagrams/ch18/ch18-08-22-experiment-grid.png)
+
+图：固定应用、编译、缓存与进程条件，再覆盖内存、页大小、存储、并发和温控状态。 报告有效样本、分位数与异常规则；受控清缓存和限制可见内存不能代替线上自然冷启动。
 
 ### 同时观察四组证据
 
@@ -338,6 +448,11 @@ cold 表示应用进程不存在；hot 表示进程和 Activity 都仍在内存�
 `ActivityManager.isLowMemoryKillReportSupported()` 返回 false 时，低内存终止可能只记录为 `REASON_SIGNALED` 和 `SIGKILL`。
 `ApplicationExitInfo` 也不包含完整的 LMKD 候选评分，平台实验仍需结合 `lmkd` 日志、statsd 和 trace。
 
+<!-- gracker-diagram: ch18-08-23-evidence-pairs -->
+![收益与副作用须成对观察](../../assets/diagrams/ch18/ch18-08-23-evidence-pairs.png)
+
+图：同时观察启动可用性、预读与内存压力、后台存活三组结果，避免把成本转移当收益。 ExitInfo 依设备支持报告 LMK，且没有完整候选评分；用平台日志和 trace 补齐，CPU/存储/功耗也须分开。
+
 ### 分离三个组件的贡献
 
 至少保留四组：
@@ -349,6 +464,11 @@ cold 表示应用进程不存在；hot 表示进程和 Activity 都仍在内存�
 
 AppFlow 论文的 ablation（逐个关闭组件的消融实验）显示，只开 Selective File Preloader 时启动变快，但 cold relaunch 数增加 30%。可以理解为预读带来的内存压力抵消了一部分收益。
 按组件分组后，才能区分“读取时间提前”“页面保留更久”和“后台进程选择变化”各自造成的影响。
+
+<!-- gracker-diagram: ch18-08-24-component-controls -->
+![分组实验区分预读、页保留与进程排序](../../assets/diagrams/ch18/ch18-08-24-component-controls.png)
+
+图：原生基线、仅预读、预读加回收、全部组件逐级比较，可以分离各项贡献。 该四组是本文建议的产品实验；论文单组件 SFP 的耗时下降伴随冷启动次数增加，两种指标不能互换。
 
 ## 论文实验结果该怎样阅读
 
@@ -369,6 +489,11 @@ Pixel 设备通过修改 `arm64_memblock_init()`，把内核可见内存限制�
 这些结果展示了原型潜力，也带有明确的复现限制：公开论文没有提供完整 Android/kernel patch、每个参数的产品配置、全部原始 trace 和功耗数据。
 `am start -W`、清文件缓存和人为限制内存也不同于线上自然发生的启动。产品评估应把论文作为待验证假设，再在目标设备和真实负载上重新测量。
 
+<!-- gracker-diagram: ch18-08-25-results-boundary -->
+![先定位实验语境，再解释论文百分比](../../assets/diagrams/ch18/ch18-08-25-results-boundary.png)
+
+图：每个论文数字绑定设备、可见内存、应用集合、工作负载与统计口径。 最多66.5%、100天95%和机制指标来自不同观察范围；缺少完整 patch 和原始数据，图不把它们折算成目标产品收益。
+
 ## 与 Baseline Profile、Cloud Profile 的关系
 
 Profile 与 AppFlow 处理不同成本：
@@ -382,6 +507,11 @@ Profile 与 AppFlow 处理不同成本：
 同一次启动可能同时受 CPU 和 I/O 限制。做 A/B 实验时，应先固定 dexopt 状态和 Profile 版本，再比较预读策略；评估 Profile 时也要记录 page-cache 和后台进程状态。
 缺少这些控制变量，就无法判断收益来自代码编译、文件缓存还是后台进程存活。
 
+<!-- gracker-diagram: ch18-08-26-profile-coexistence -->
+![编译 Profile 与内存联合调度分别控制](../../assets/diagrams/ch18/ch18-08-26-profile-coexistence.png)
+
+图：Profile 改善编译、方法与类的组织，AppFlow 调整文件读取、页面回收和进程存活。 固定 dexopt/Profile 再比较预读，同时记录缓存与进程条件；同次启动可以同时受 CPU 和 I/O 限制。
+
 ## 车载、端侧模型和大型游戏
 
 车载系统有导航、媒体、语音、仪表、多屏和多用户并发，后台进程的重要性不能仅按最近使用时间推断。
@@ -393,6 +523,11 @@ Profile 与 AppFlow 处理不同成本：
 
 这三类负载适合验证 AppFlow 提出的联合问题，但进程终止规则需要按角色设置硬约束：导航、通话、正在播放音频和安全相关服务不得由预测模型降级。
 模型或游戏只有在温度、电量和前台 I/O 都满足启用条件时才能预读。
+
+<!-- gracker-diagram: ch18-08-27-workload-roles -->
+![模型与游戏的页面类型不能由名称推断](../../assets/diagrams/ch18/ch18-08-27-workload-roles.png)
+
+图：车载、模型与游戏都混合多类资源，先按角色保护连续服务，再核对 file/anon 与 GPU 等占用。 mmap 权重可为 file-backed，中间张量可为匿名页；RSS/PSS 不覆盖全部资源，预测不能降级导航、通话或安全任务。
 
 ## 产品化风险与退出条件
 
@@ -407,6 +542,11 @@ Profile 与 AppFlow 处理不同成本：
 
 任一压力档位出现 kernel OOM、SystemUI/Launcher 被终止、导航或音频中断、P99 变差或 I/O 读放大失控时，策略都应自动停用并恢复 Android 原生行为。
 退出路径也必须经过同等规模的压力测试。
+
+<!-- gracker-diagram: ch18-08-28-rollback -->
+![异常压力必须清除短时策略并恢复基线](../../assets/diagrams/ch18/ch18-08-28-rollback.png)
+
+图：命中、保护预算、候选公平性、功耗与体验共同决定策略是否继续启用。 出现 OOM、关键角色中断、P99 或读放大失控时，停用预测/预读并解除短时保护与排序；退出路径本身也需同规模测试。
 
 ## 源码核对入口
 

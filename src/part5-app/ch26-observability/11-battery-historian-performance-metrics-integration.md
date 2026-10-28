@@ -98,6 +98,11 @@ last_rework_at: '2026-08-15T22:11:00+08:00'
 
 能量与功率也要分开：能量描述一个窗口内的累计消耗，功率描述消耗速率，平均功率等于能量增量除以时间增量。电池百分比经过量化和系统估算，短窗口内读数没有下降，推不出这段窗口就是零消耗。
 
+<!-- gracker-diagram: a296-01-four-power-evidence-scopes -->
+![状态、UID 活动、模型归因与设备能量分别回答问题](../../assets/diagrams/ch26/a296-01-four-power-evidence-scopes.png)
+
+图：Battery Historian不再积极维护；保留历史解释能力，新测量依赖可重复实验和明确scope。
+
 ## 功耗数据的平台结构
 
 四类数据在平台上各有明确的产地。这一节我们沿采集链路走一遍：谁在记录、谁在归因、结果从哪里查出来。
@@ -113,6 +118,11 @@ last_rework_at: '2026-08-15T22:11:00+08:00'
 
 “Streamlined Battery Stats”的 CPU、misc、connectivity 等 `flag` 则要分开看：它们只是平台迁移期间的实现开关，公开 API 层面并没有与之对应的“三层架构”承诺；设备构建、季度版本和 OEM（设备厂商） 各自可以采用不同的开关状态。所以监控协议要依赖公开输出语义，把内部开关当作随时可能变化的实现细节。
 
+<!-- gracker-diagram: a296-02-battery-services-and-hardware -->
+![活动统计与硬件功耗通过系统内部接口协作](../../assets/diagrams/ch26/a296-02-battery-services-and-hardware.png)
+
+图：HAL能量、活动记录与power_profile模型共同支持UID估算；公开API没有承诺内部固定三层结构。
+
 ### 从采集到 BatteryUsageStats
 
 `com.android.server.power.stats` 包内按五种角色分工：`collector`（采集器）、`history`（历史记录）、`processor`（归因计算器）、`store`（达到容量后覆盖旧记录的轮转存储）、`provider`（查询结果组装器），采集、留存、计算、轮转、组装各管一段。
@@ -126,11 +136,21 @@ last_rework_at: '2026-08-15T22:11:00+08:00'
 
 Wi-Fi 与移动网络的归因同样结合控制器活动、网络字节、进程状态和可用的用能组件，最终数值仍是系统模型下的归因结果，宜按估算表述，避免写成电源轨到 UID 的无误差测量。
 
+<!-- gracker-diagram: a296-03-activity-samples-to-uid-attribution -->
+![组件样本进入有界历史，再按状态处理并组装查询](../../assets/diagrams/ch26/a296-03-activity-samples-to-uid-attribution.png)
+
+图：CPU分组与能量校准是归因处理示例；数据不足时仍可能依赖设备模型。
+
 ### PowerStatsLogger 的内部周期
 
 `com.android.server.powerstats.TimerTrigger` 保留高频与低频触发器，默认周期可由资源配置覆盖；`BatteryTrigger` 在观察到电池整数电量下降时记录状态驻留时间。数据由 `PowerStatsLogger` 分别写入计量、模型与状态驻留三类轮转文件，达到容量上限后覆盖旧记录，供系统诊断或 incident 报告（系统故障事件包）使用。
 
 这些触发器属于 `PowerStatsService` 的内部日志策略。Battery Historian 展示的是 bugreport 中可解析的 Batterystats 与系统材料，我们据此能看历史，却定不下它的采集节奏，也就谈不上它按某个周期“实时采集”；App 的监控协议要落在公开输出语义上，内部周期、保留量与文件格式都留在公开承诺之外。
+
+<!-- gracker-diagram: a296-04-logger-versus-historian-cadence -->
+![内部 logger 周期不能推导 Historian 的“实时采样率”](../../assets/diagrams/ch26/a296-04-logger-versus-historian-cadence.png)
+
+图：内部记录、采样、文件轮转与离线可视化分别归属，不能混成统一时钟。
 
 ## 正确采集 Battery Historian 证据
 
@@ -163,6 +183,11 @@ adb shell dumpsys batterystats --disable full-history
 
 bugreport 可能包含账号、网络、日志和设备标识等敏感信息。它的合适场景是实验室和用户明确参与的诊断会话；普通 App 要静默采集上传，得走后面本 UID 指标那条路。
 
+<!-- gracker-diagram: a296-05-controlled-bugreport-capture -->
+![专用测试设备的受控证据采集流程](../../assets/diagrams/ch26/a296-05-controlled-bugreport-capture.png)
+
+图：该协议用于专用测试设备；执行前确认统计可清空，并保留采集和供电切换边界。
+
 ## 如何把性能指标与能量证据关联
 
 性能指标要和能量证据互相对得上，前提是两者出自同一段实验窗口。下面先看窗口怎么设计，再看 Power Profiler 与 Macrobenchmark 各自放在哪一层。
@@ -180,6 +205,11 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 - 正确性：失败率、画质、音质、数据完整性与功能结果。
 
 报告同时给出每任务能量、耗时分布和失败率。A/B 实验在等价条件下交替运行基准实现与候选实现：两组使用同一设备、同一场景与相近初始状态，并保留空闲基线，即不执行待测场景时的对照测量。跨设备汇总时按机型与系统版本分层。
+
+<!-- gracker-diagram: a296-06-energy-power-and-work-denominators -->
+![能量、平均功率与工作产出放在同一有效窗口](../../assets/diagrams/ch26/a296-06-energy-power-and-work-denominators.png)
+
+图：工作量、能量和正确性共同限制“更省电”的解释；跨设备先按型号/系统分层。
 
 ### Power Profiler 与 Macrobenchmark
 
@@ -204,6 +234,11 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 - 电源轨是设备级数据：App 只能在受控实验中用 Trace 时间窗做相关分析，台账里把增量记成设备级观测，当前 App 的能耗要到本 UID 指标那一层回答。
 
 `PowerMonitor` 适合在内部测试版中输出结构化实验记录：类型、原始名称、起止累计值、起止 `timestamp`、增量、设备与 build fingerprint。硬件通道名称可能暴露机型或硬件组合，生产上报前先评估这种设备指纹风险，并对采样频率和保留期设限。
+
+<!-- gracker-diagram: a296-07-power-monitor-valid-window -->
+![PowerMonitor：按每个通道的样本时间验证差分](../../assets/diagrams/ch26/a296-07-power-monitor-valid-window.png)
+
+图：PowerMonitor能量含电池和插电阶段，自开机累计；名称相同也不保证OEM范围相同。
 
 ### API 24：本 UID HealthStats
 
@@ -233,6 +268,11 @@ Android 14 / API 34 的 `EXTRA_CYCLE_COUNT` 可提供充电循环计数，`EXTRA
 
 所以系统设置或 `system_server` 拿全设备 `BatteryUsageStats` 的那条路，普通 App 走不通——这类信息应通过 adb、bugreport、平台测试组件或 OEM 授权的系统应用获取。
 
+<!-- gracker-diagram: a296-08-uid-health-battery-state-and-privileges -->
+![普通 App 的三条公开读取路径保持不同单位与重置语义](../../assets/diagrams/ch26/a296-08-uid-health-battery-state-and-privileges.png)
+
+图：SystemHealthManager没有getBatteryUsageStats等虚构方法；整块电池状态不能精确归因单App。
+
 ## WakeLock：从时间线定位持有者
 
 WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查“屏幕关闭后 CPU 仍在运行”这类电量问题，重点通常在它身上，最常见的是 `PARTIAL_WAKE_LOCK`：屏幕关闭后它仍可让 CPU 保持运行。旧的 `FULL_WAKE_LOCK` 等屏幕级别早已废弃，窗口保持亮屏应使用 `FLAG_KEEP_SCREEN_ON`；“Alarm Wakelock”更多表示系统因 Alarm 代持或归因的唤醒活动，算不上业务可以统一管理的一种 WakeLock 级别。
@@ -246,6 +286,11 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 5. 修改后复跑同一场景，并同时比较任务结果、WakeLock 时长、CPU 时间和能量增量。
 
 多个 WakeLock 的时长直接加总成 CPU awake 时间并不可靠，因为持有区间可能重叠；平台或库代持的锁也可能归因给应用。Android 官方的 [WakeLock 来源指南](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls) 列出了 AlarmManager、JobScheduler、WorkManager、FCM、位置与媒体等常见 tag 和修复方向。
+
+<!-- gracker-diagram: a296-09-wakelock-overlap-and-task-tracks -->
+![WakeLock 重叠时长不是 CPU awake 时间，也不是任务能量](../../assets/diagrams/ch26/a296-09-wakelock-overlap-and-task-tracks.png)
+
+图：两个锁的区间可重叠；还需区分CPU运行、可挂起状态、直接持锁与系统/库代持。
 
 常见修复是减少不必要的唤醒、合并可延期工作、缩短回调、让 JobScheduler/WorkManager/媒体 API 管理其需要的唤醒状态；手动 WakeLock 只留给合适 API 处理不了的短临界区，参见 [WakeLock 使用建议](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock)。
 
@@ -287,6 +332,11 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 
 若候选实现减少了唤醒、却让同步大量超时，“更省电”这三个字就落不到它头上。同样，某次 Historian 时间线看起来更安静，也还要多轮实验和能量增量来支持。优化收益只填写测量得到的分布、样本条件和不确定性，固定百分比或“续航增加几小时”这类数字，要等测完才有。
 
+<!-- gracker-diagram: a296-10-network-activity-and-radio-energy -->
+![网络字节是活动量，能耗还受无线状态与完成方式影响](../../assets/diagrams/ch26/a296-10-network-activity-and-radio-energy.png)
+
+图：HealthStats/TrafficStats字节不能换成固定每MB能量；任务质量与正确性同时验收。
+
 ## 设备级实战：解释电源轨峰值
 
 在 Power Profiler 或 PowerMonitor 里看到 `CPU`、`display`、`cellular` 等电源轨出现增量时，我们先确认这是系统范围数据，再往下解释：
@@ -298,6 +348,11 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 - 分别报告总能量、任务数、耗时和失败，不按假设把电源轨强制分配到进程。
 
 内核调度、驱动、显示与基带（modem）可能共同影响电源轨。需要精确到硬件组件时，优先使用设备厂商的电源轨定义、外置功耗仪和受控 system trace；Battery Historian 的柱状状态只能协助缩小时间窗。
+
+<!-- gracker-diagram: a296-11-rail-samples-noise-and-app-attribution -->
+![轨读数的分辨率和覆盖先于“峰值归因”](../../assets/diagrams/ch26/a296-11-rail-samples-noise-and-app-attribution.png)
+
+图：硬件轨定义与实际采样分辨率限制结论；更精细测量需厂商信息或外置仪器补充。
 
 ## APM 集成与指标留存
 
@@ -348,6 +403,11 @@ APM 应保存各层数据原本的含义：
 跨设备的差异由一整串硬件因素共同决定：SoC（片上系统）的制程、核心数量、DVFS、显示面板、radio、散热、固件和电池容量。DVFS 指按负载动态调整处理器电压与频率的机制；“制程更小”“OLED”“电池更大”这类单点标签，直接拿来推导效率会走偏。
 
 跨设备报告以每个成功任务的能量、性能和质量为主，并保留绝对能量。电源轨名称与组件集合按设备维护映射；语义确认不了的电源轨归入设备专有项，不按名称猜测为 CPU、GPU 或内存。
+
+<!-- gracker-diagram: a296-12-apm-scopes-selection-and-device-health -->
+![线上留存来源与支持状态，跨设备按成功工作量比较](../../assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.png)
+
+图：电池健康公开字段不构成精确内阻/容量衰减模型；省电开关人群也不是随机对照。
 
 ## 验收清单
 

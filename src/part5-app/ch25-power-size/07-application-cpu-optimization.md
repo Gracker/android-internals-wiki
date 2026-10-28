@@ -121,6 +121,11 @@ sources:
 
 回答完这三个问题，应用层 CPU 优化的改动通常落在四件事上：少做工作、减少同一时刻的并行工作、减少唤醒与切换、把非紧急工作安排到合适的系统调度时机。线程池参数只是其中一个控制点。
 
+<!-- gracker-diagram: a280-01-wall-cpu-and-scheduler-time -->
+![用户墙钟等待由运行、排队与阻塞共同组成](../../assets/diagrams/ch25/a280-01-wall-cpu-and-scheduler-time.png)
+
+图：墙钟高而CPU低时，先查Runnable、锁、I/O与调度；CPU高时再看调用栈和无效计算。
+
 ## ThreadPoolExecutor：先理解队列，再谈线程数
 
 ### `execute()` 的三段决策
@@ -133,11 +138,21 @@ sources:
 
 这解释了一个常见疑问：使用容量很大的队列时，任务会长时间停在第 2 步，`maximumPoolSize` 很少参与调度；换成 `SynchronousQueue` 这种没有存储槽位的队列，提交方就更容易触发创建非核心 worker。两种队列没有固定优劣，差别在于系统选择“排队”还是“增加并发”。
 
+<!-- gracker-diagram: a280-02-executor-three-step-decision -->
+![execute先尝试核心worker，再入队，再扩非核心](../../assets/diagrams/ch25/a280-02-executor-three-step-decision.png)
+
+图：大队列优先积压，maximumPoolSize可能很少参与；SynchronousQueue没有可存储任务槽位。
+
 默认配置下，核心线程不会因 `keepAliveTime` 到期而退出，`keepAliveTime` 只约束超出核心数量的 worker。要让核心线程也超时退出，先把 `keepAliveTime` 设为正值，再调用 `allowCoreThreadTimeOut(true)`；存活时间为零时这样调用会抛 `IllegalArgumentException`。本文的示例工厂把该值设为 `0L`，所以启用核心线程超时前要先给出正的存活时间。对应实现可在 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java) 中核对。
 
 ### 线程数从任务模型来
 
 `Runtime.availableProcessors()` 的 API 契约描述 JVM 可用的处理器数，但在此 Android 17 基线上，[`Runtime.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java#728) 实际读取 `_SC_NPROCESSORS_CONF`；bionic 的 [`get_nprocs_conf()`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/sysinfo.cpp#62) 又从 `/sys/devices/system/cpu/possible` 取得数量。它不反映应用线程当前的亲和性或在线 CPU 数，也不能说明性能核有几个、应用能长期占满几个核、合适的 worker 数量是多少。任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
+
+<!-- gracker-diagram: a280-03-configured-cpus-versus-work-budget -->
+![availableProcessors是配置数量，不能代替并行预算](../../assets/diagrams/ch25/a280-03-configured-cpus-versus-work-budget.png)
+
+图：内部并行库会叠加并发；计算、阻塞与混合任务按下游和资源预算分别限制。
 
 线程数需要从任务模型出发：
 
@@ -211,6 +226,11 @@ fun newBoundedCpuExecutor(
 
 `CallerRunsPolicy` 在执行器尚未关闭时，会在提交任务的线程里直接调用 `Runnable.run()`；执行器已经关闭时，它会静默丢弃任务。如果提交方恰好是主线程、Binder（Android 跨进程调用机制） 线程或持有锁的回调线程，计算或阻塞工作就会转移到那里。用它实现反压——让提交速度随执行能力自动放慢——前提是提交线程允许执行该任务，并且接受关闭后的丢弃行为。
 
+<!-- gracker-diagram: a280-04-bounded-pool-rejection-and-lifecycle -->
+![并发、积压与拒绝要一起设计](../../assets/diagrams/ch25/a280-04-bounded-pool-rejection-and-lifecycle.png)
+
+图：主线程、Binder线程和持锁回调通常不能承接任意计算或阻塞；记录拒绝、取消和过期原因。
+
 线程工厂在新线程内部调用 `Process.setThreadPriority()`，修改当前 worker 的优先级。参数先限制在 `-20..19`，权限不足时记录警告并保留当前优先级，继续执行 `command.run()`。这里把优先级视为可失败的调度提示：传给工厂的 `command` 是线程池的 Worker 入口，若包装代码在进入它之前抛异常，Worker 的退出清理就不会执行，可能留下未运行的任务和错误的存活计数。参数与异常契约见 [`Process.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java#1392)，Worker 登记与退出逻辑见 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java#857)。
 
 ### 线程池至少记录哪些数据
@@ -225,6 +245,11 @@ fun newBoundedCpuExecutor(
 - 对应的版本、设备档位、前后台状态和热状态。
 
 任务类型应是低基数标识，也就是可选值数量长期受控，例如 `image_decode`、`feed_diff`；URL、文件名或用户 ID 一旦进入指标维度，监控存储和查询成本会随取值数量增长。
+
+<!-- gracker-diagram: a280-14-pool-task-observability -->
+![把排队时间与CPU时间绑定到低基数任务类型](../../assets/diagrams/ch25/a280-14-pool-task-observability.png)
+
+图：记录线程名与稳定任务标识如image_decode、feed_diff；副作用可能是等待或内存转移。
 
 对线程池调参时，一次只改一个主要变量，并同时检查吞吐、尾延迟、温升和界面帧表现。
 
@@ -275,6 +300,11 @@ fun calculateCpuWindow(
 
 `equivalentCores` 就是这个“等效占用核数”：1.0 表示窗口内累计使用了约一个核的 CPU 时间，多线程并行时可以大于 1.0。再除以 `availableProcessors()`，得到的值只能作为按配置处理器数归一化的粗略提示；它不反映线程当前可用的 CPU 集合，各核性能差异、频率、温控和调度限制也没有计入。
 
+<!-- gracker-diagram: a280-05-cpu-denominator-and-sleep-clock -->
+![CPU占比先声明分子、分母和睡眠时钟](../../assets/diagrams/ch25/a280-05-cpu-denominator-and-sleep-clock.png)
+
+图：1.0等效核表示一个核的累计时间，不表示占用了固定一个核，也不代表整机100%。
+
 采样窗口太短会受毫秒精度影响，太长又会掩盖尖峰，所以窗口长度跟着要观察的用户路径走。告警线同理：来自场景基线、用户影响和设备分层；适用于所有设备的“高 CPU 阈值”，别写死在监控代码里。
 
 ### `/proc/stat` 的整机视角
@@ -294,6 +324,11 @@ cpu  user nice system idle iowait irq softirq steal guest guest_nice
 读 `/proc/self/stat` 时有个细节：进程名字段 `comm` 位于括号内且可能包含空格，直接对整行 `split(" ")` 取固定下标会取错字段，应先识别 `comm` 的结束括号，再解析其后的字段；`utime` 和 `stime` 分别记录用户态与内核态 CPU 时间，是文档中的第 14、15 字段。访问本身也可能因设备策略、SELinux（Linux 的强制访问控制机制） 或未来平台限制而失败，所以采样器要能返回“无数据”，别让业务跟着崩溃。
 
 `/proc/stat` 是整机聚合数据。整机采样显示较多 idle，只说明此刻 CPU 有富余；用户是否即将触摸屏幕、前台应用是否临近帧期限、设备是否处于热约束、自己的任务会不会引起缓存和内存压力，它一个都回答不了。所以我们用它做诊断，单独拿它决定业务时机就走偏了。
+
+<!-- gracker-diagram: a280-06-proc-counters-without-double-counting -->
+![proc统计不要重复guest，也不要错拆comm](../../assets/diagrams/ch25/a280-06-proc-counters-without-double-counting.png)
+
+图：nice字段只计正nice任务；负nice仍计user。不要把整机空闲与当前用户路径预算混同。
 
 ### `times()` 的 USER_HZ 语义
 
@@ -353,6 +388,11 @@ std::optional<double> EquivalentCores(
 
 `sysconf(_SC_CLK_TCK)` 返回用户空间 ABI（应用与系统库之间的二进制接口） 使用的每秒 clock tick 数，正是这里需要的 USER_HZ 计算基准。它来自用户空间接口约定，和内核 `CONFIG_HZ` 是两回事：`CONFIG_HZ` 影响内核自身的定时 tick 配置，拿它推算每秒 tick 数会出错。
 
+<!-- gracker-diagram: a280-07-times-ticks-and-process-cpu -->
+![times的USER_HZ来自sysconf，不来自CONFIG_HZ](../../assets/diagrams/ch25/a280-07-times-ticks-and-process-cpu.png)
+
+图：更细进程计时可用CLOCK_PROCESS_CPUTIME_ID；Java层可直接用getElapsedCpuTime。
+
 精度上，`times()` 较粗，适合低频累计采样；需要更细的进程 CPU 时间时，NDK 可评估 `clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ...)`。只在 Kotlin/Java 层做应用监控时，前面的 `Process.getElapsedCpuTime()` 更直接。
 
 ## 预加载：由收益与生命周期决定，不由“空闲百分比”决定
@@ -372,11 +412,21 @@ std::optional<double> EquivalentCores(
 
 评估预加载时，我们至少同时看命中率、废弃工作比例、CPU 时间、I/O、启动与帧性能变化，以及内存侧的 RSS（进程实际驻留在内存中的页面总量） 和 PSS（按共享比例分摊后的内存量）。只有用户收益覆盖设备成本，这项预加载才值得保留。
 
+<!-- gracker-diagram: a280-08-preload-budget-not-idle-percent -->
+![预加载先看命中收益，再支付有界成本](../../assets/diagrams/ch25/a280-08-preload-budget-not-idle-percent.png)
+
+图：低内存、后台切换和温升都可能停止预加载；结果不用时的CPU、I/O和缓存成本仍然存在。
+
 ## 周期任务：避免固定频率补跑制造恢复尖峰
 
 `scheduleAtFixedRate()` 按预定起点维持固定节拍，而 `scheduleWithFixedDelay()` 从上一次执行结束后再等待指定间隔。任务因进程冻结、长时间未获调度或单次执行过长而错过周期后，旧实现可能连续补跑；面向 Android 16、API 36 及以上版本的应用默认启用 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，回到可执行的进程生命周期后最多立即补一次，详见官方[行为变更说明](https://developer.android.com/about/versions/16/behavior-changes-16)。`android-17.0.0_r1` 的 [`ScheduledThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java) 已直接采用这套时间校正逻辑，不再保留按 target SDK 分支选择旧行为的代码。
 
 进程冻结和整机深度睡眠要分开判断：此执行器用 `System.nanoTime()` 维护到期时间，Android 上这个时间基准不计深度睡眠，见 [`SystemClock.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java#58)。不能把设备睡眠的墙钟时长直接算成漏掉的周期数。
+
+<!-- gracker-diagram: a280-09-fixed-rate-catchup-and-delay -->
+![固定频率漏期校正与固定延迟从结束起算不同](../../assets/diagrams/ch25/a280-09-fixed-rate-catchup-and-delay.png)
+
+图：恢复时当前到期项与最多一次紧接补跑要分开看；业务自写补发和多个定时器仍可能制造尖峰。
 
 平台变化只限制 `ScheduledThreadPoolExecutor` 自己的追赶，业务手写补发循环、多个独立定时器或三方 SDK 队列都不在其管辖内。所以我们先把周期任务按语义分类：
 
@@ -407,6 +457,11 @@ AOSP r1 用 `setProcState >= PROCESS_STATE_HOME` 筛选受检进程，Home（桌
 
 产物类型上，官方文档自己也不一致：`android-17.0.0_r1` 的 [`ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java) 和 API reference 写的是正在运行的 system trace（系统跟踪） 快照，Android 17 [功能页](https://developer.android.com/about/versions/17/features) 写的是调用栈采样。接入端应保存系统返回的原始文件，并根据实际文件类型和错误码选择解析器；只凭 trigger 名称写死产物格式，恰好会踩中这种不一致。
 
+<!-- gracker-diagram: a280-10-excessive-cpu-kill-versus-profiling -->
+![过量CPU终止条件与Profiling取证是两条职责](../../assets/diagrams/ch25/a280-10-excessive-cpu-kill-versus-profiling.png)
+
+图：reference/17r1写system trace快照，功能页写调用栈采样：保存原文件并按实际类型解析。
+
 排查时我们逐层缩小范围：任务未启动，先查 pending reason（系统尚未调度的原因）；启动后被停止，查 Work/Job stop reason（运行中止原因）；进程死亡，查 `ApplicationExitInfo`；退出原因是资源使用过量时，再查 `ProfilingResult` 与 Perfetto（Android 系统级跟踪工具）；任务已经结束而 CPU 仍在持续，回查未取消的线程、协程、JNI 与子进程。
 
 ## 锁竞争：低 CPU 也可能让用户等很久
@@ -430,6 +485,11 @@ Java/Kotlin 的 `synchronized` 在 ART 中由 monitor（与对象关联的互斥
 5. 用相同负载比较修改前后的墙钟时间、CPU 时间、等待分布和内存成本。
 
 把一把锁换成多把锁，可能增加一致性维护难度；把锁换成 CAS，也可能把阻塞等待变成忙碌重试。优化结果最终要由 trace 和基准测试确认。
+
+<!-- gracker-diagram: a280-11-lock-wait-versus-cas-work -->
+![锁等待与CAS重试可能给出相反CPU表象](../../assets/diagrams/ch25/a280-11-lock-wait-versus-cas-work.png)
+
+图：先移出锁内I/O、Binder、回调和重计算，再考虑不可变快照、线程封闭或分段。
 
 ## 协程：控制并发，不隐藏成本
 
@@ -460,6 +520,11 @@ class WorkDispatchers(
 
 `limitedParallelism()` 限制该视图同时执行代码的并行度，不承诺固定数量的物理线程，也不限制排队的协程数。协程挂起后，其他协程仍可进入该视图，所以 `limitedParallelism(1)` 也可能同时保留多个未完成的请求。跨挂起点限制在途请求时，可用 `Semaphore` 在请求开始前取得许可、结束时释放；生产端还要限制积压、合并重复工作或拒绝过期任务。这个边界见官方 [`limitedParallelism()` 文档的 “It is not a mutex!”](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html)。
 
+<!-- gracker-diagram: a280-12-coroutine-parallelism-versus-inflight -->
+![limitedParallelism限制执行片段，不限制在途请求](../../assets/diagrams/ch25/a280-12-coroutine-parallelism-versus-inflight.png)
+
+图：多个请求可同时未完成；suspend不会减少计算指令，IO视图也不是独占新线程池。
+
 阻塞并行度和在途请求额度都应与数据库连接池、服务端限流、文件描述符和内存预算匹配。CPU 任务即使写成 `suspend`（可挂起而不阻塞当前线程）函数，所需指令和 CPU 时间也省不下来；仍要分批、取消过期任务并控制并发。
 
 主线程上用 `runBlocking` 阻塞等待后台结果，是要避开的做法。结构化并发让父任务统一管理子任务的生命周期、取消与错误传播，但它补偿不了不受控的工作量。
@@ -484,6 +549,11 @@ class WorkDispatchers(
 持续负载还有一条协作通道：ADPF（Android Dynamic Performance Framework，Android 动态性能框架），应用向系统反馈持续负载的性能目标就靠它。API 31 起，`PerformanceHintManager` 允许应用为一组工作线程创建 hint session（性能提示会话），持续报告目标工作时长和实际工作时长；设备不支持 hint session，或线程不属于本应用时，创建调用可以返回 `null`。游戏、相机、音视频这类有重复工作周期且能反馈实际耗时的负载最适合它：系统据此调整资源策略，但它不是核心绑定或固定频率接口。接口语义见 [`PerformanceHintManager`](https://developer.android.com/reference/android/os/PerformanceHintManager)。
 
 如果工作没有明确周期、线程集合不稳定，或应用难以可靠报告实际时长，先减少工作与并发通常更有效。使用 ADPF 后，仍要在多档设备、持续温升和前后台切换条件下测量。
+
+<!-- gracker-diagram: a280-13-nice-versus-hint-session-control -->
+![nice表达竞争机会，ADPF反馈工作目标](../../assets/diagrams/ch25/a280-13-nice-versus-hint-session-control.png)
+
+图：先减少无效工作、并发与积压，再在持续负载上验证ADPF；看延迟、能量、温升和可靠性。
 
 ## 一套可执行的检查流程
 

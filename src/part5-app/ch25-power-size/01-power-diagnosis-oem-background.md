@@ -142,11 +142,21 @@ last_rework_at: '2026-10-21T21:38:57+08:00'
 
 外部电源分析仪更接近整机能量基准；ODPM 和电池计数器仍是设备级读数；BatteryStats 按系统可见的活动和模型做 UID 归因；Perfetto 负责解释时间线上发生了什么。所以可靠结论通常要靠其中两层以上互相印证。
 
+<!-- gracker-diagram: a274-01-three-evidence-layers -->
+![设备能量、UID归因与执行行为相互印证](../../assets/diagrams/ch25/a274-01-three-evidence-layers.png)
+
+图：能量、归因和行为分别回答不同问题；同一时间发生，仍需对照与消融确认责任。
+
 ### 设计可比较的测试
 
 归因建立在比较之上，测试先得可比较。基线包与候选包必须在同一台设备、同一系统构建、相近电量和温度下测试；屏幕亮度、刷新率、音量、网络类型、信号条件、账号同步和其他前台应用也要保持一致。若业务依赖服务器响应，还要记录服务端版本和返回数据规模。
 
 场景时长跟着业务周期和仪器分辨率走，各应用按自己的周期定。短场景需要重复执行，直到信号能从测量噪声中辨认出来；后台场景则要覆盖一次完整调度、重试或定位周期。预热、正式采集和冷却阶段分开安排，安装、编译、缓存填充或热节流才不会混进业务耗电。
+
+<!-- gracker-diagram: a274-02-controlled-measurement-window -->
+![预热、正式测量与冷却分开](../../assets/diagrams/ch25/a274-02-controlled-measurement-window.png)
+
+图：正式窗口由业务与仪器分辨率决定；安装、编译和热节流不能无意混进比较。
 
 每轮测试应保存这些信息：
 
@@ -235,6 +245,11 @@ Macrobenchmark `PowerMetric` 把固定操作脚本纳入回归测试很合适；
 
 `PowerMetric` 要求 API 29 及以上；下列两个能力检查函数从 `androidx.benchmark:benchmark-macro` 1.3.0 起提供，旧依赖需要先升级。使用前先调用 [`PowerMetric.deviceSupportsHighPrecisionTracking()`](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric#deviceSupportsHighPrecisionTracking()) 检查高精度追踪能力；不支持时，可按测试目的改用 `Type.Battery` 或跳过测试。选择 `Type.Battery` 时，再通过 `PowerMetric.deviceBatteryHasMinimumCharge()` 检查电量条件。测试设备上应尽量减少其他应用与账号活动。回归阈值应取自同型号设备的重复测试分布，换一款设备，绝对数值就对不上了。
 
+<!-- gracker-diagram: a274-03-power-metric-capability-gates -->
+![PowerMetric先检查版本、能力和电量](../../assets/diagrams/ch25/a274-03-power-metric-capability-gates.png)
+
+图：设备能力和电量先过检查，回归阈值来自同型号重复结果，不能直接跨设备比较绝对值。
+
 ### `dumpsys batterystats` 解读
 
 #### 从包名定位 UID
@@ -318,6 +333,11 @@ CPU 异常在报告里的样子比较固定：目标 UID 的用户态或内核�
 
 同一个 UID 里的多个库会合并计数，订阅细节还是要靠应用侧日志。定位策略见 §25.4。
 
+<!-- gracker-diagram: a274-04-activity-to-code-ownership -->
+![资源活动分别回到责任入口](../../assets/diagrams/ch25/a274-04-activity-to-code-ownership.png)
+
+图：热点线程、请求、订阅和锁标签是四类责任入口；同UID多个库仍需应用侧记录区分。
+
 #### WakeLock：区分应用锁、内核唤醒源和唤醒原因
 
 这三个名词经常被混用：
@@ -331,6 +351,11 @@ CPU 异常在报告里的样子比较固定：目标 UID 的用户态或内核�
 [Android Vitals 的 excessive partial wake lock 判定标准](https://developer.android.com/google/play/vitals/excessive-wakelock)是：24 小时内，应用处于后台或运行前台服务时，所有非豁免 Partial WakeLock 累计达到 2 小时。音频、定位和 JobScheduler 的 user-initiated（由用户主动触发）API 当前有豁免。若该问题在 28 天内影响超过 5% 的应用会话，可能影响 Play 可见性。
 
 [Stuck partial wake lock 口径](https://developer.android.com/google/play/vitals/stuck-wakelock)是：24 小时内至少出现一次在后台连续持有满 1 小时的 Partial WakeLock。Stuck 指标判断一把锁的连续持有时间，excessive 指标计算所有非豁免锁的累计时间，两者条件不同。
+
+<!-- gracker-diagram: a274-05-wake-lock-kernel-and-vitals -->
+![应用锁、内核唤醒源和唤醒原因不能一一对应](../../assets/diagrams/ch25/a274-05-wake-lock-kernel-and-vitals.png)
+
+图：应用锁、驱动对象与一次唤醒只有关联线索；excessive累计口径与stuck连续口径分开记录。
 
 本地诊断可以走在 vitals 门槛之前：锁持续到业务结束之后，或标签对不上责任模块，就该检查了。下面的应用侧示例要求先在 `AndroidManifest.xml` 声明 `<uses-permission android:name="android.permission.WAKE_LOCK" />`；该权限属于普通权限，无须运行时申请。封装使用可定位的标签，并同时设置超时与 `finally` 释放。
 
@@ -359,6 +384,11 @@ suspend fun <T> PowerManager.withPartialWakeLock(
 ```
 
 `timeoutMs` 应来自该操作的业务时限，而非随意复制的常量。超时只是额外保护；正常路径和异常路径仍要在 `finally` 中释放。若 WorkManager（Jetpack 后台任务调度库）、媒体、定位或其他库间接持锁，还要按 Android vitals 显示的标签查对应 API。
+
+<!-- gracker-diagram: a274-06-lock-timeout-versus-business-cancellation -->
+![WakeLock超时释放与业务取消分开](../../assets/diagrams/ch25/a274-06-lock-timeout-versus-business-cancellation.png)
+
+图：锁到时释放后，block仍可能继续运行；业务期限与资源释放需要各自设计。
 
 ### 功耗异常检测与定位
 
@@ -460,6 +490,11 @@ CPU 处理器会把频点模型、硬件总量和 UID time-in-bracket（各功�
 
 一次可复核的应用侧实验应把三组增量放在一起保存：监测项的微瓦秒、`HealthStats` 的本 UID CPU/网络/WakeLock 活动，以及完成任务数。设备能量是否变化、应用行为为何变化，分别靠前两组增量回答；系统设置页那种 UID 精确电量，还在这套数据的能力之外。
 
+<!-- gracker-diagram: a274-08-public-power-readings-delta -->
+![三类接口与PowerMonitor窗口差值的条件](../../assets/diagrams/ch25/a274-08-public-power-readings-delta.png)
+
+图：ENERGY_UNAVAILABLE不能参与相减；时间戳未前进或窗口短于分辨率，应更换测量方式。
+
 #### Android 15 到 Android 17 的变化
 
 | 版本 | 归因开关与调度器 | 需要记住的边界 |
@@ -480,6 +515,11 @@ span（聚合区间）文件名由 19 位补零 ID 和 `.pss` 后缀组成，通
 
 文件是二进制 XML，别按普通文本 XML 或旧资料所说的 Protocol Buffers（Proto）日志去解析；该目录属于系统内部实现，普通应用也不要直接读取。
 
+<!-- gracker-diagram: a274-09-aggregation-store-format -->
+![非唤醒调度聚合后写入二进制XML](../../assets/diagrams/ch25/a274-09-aggregation-store-format.png)
+
+图：典型目录/data/system/power-stats；内部文件格式需按源码解析，不能按Proto或普通文本读取。
+
 #### 唤醒原因如何进入 Perfetto 和 BatteryStats
 
 Android 17 的 `BatteryStatsService.WakeupReasonThread` 等待原生层返回唤醒原因。原生实现位于 [`com_android_server_am_BatteryStatsService.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_BatteryStatsService.cpp)，通过 `ISuspendControlService` 注册唤醒回调。收到原因后，Java 层会：
@@ -489,6 +529,11 @@ Android 17 的 `BatteryStatsService.WakeupReasonThread` 等待原生层返回唤
 - 写入 `BatteryStatsImpl` 事件历史。
 
 这条路径为 Perfetto、CPU 唤醒统计与 BatteryStats 事件历史提供了共同时间点；应用行为与物理功耗之间的因果，还要结合同一时刻的 IRQ（Interrupt Request，中断请求）、线程、Alarm、Job 和应用事件来判断，平台中的功耗追踪入口也不止这一条。
+
+<!-- gracker-diagram: a274-10-wakeup-evidence-delivery -->
+![一次唤醒记录进入Trace与功耗统计](../../assets/diagrams/ch25/a274-10-wakeup-evidence-delivery.png)
+
+图：同一唤醒事件同时可见于Trace与历史，仍需业务、UID活动和受控实验定位触发者。
 
 #### `WakeLockStats` 的访问限制
 
@@ -501,6 +546,11 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 - 开发版设备：把隐藏接口调用限制在内部诊断组件，不随生产 APK（Android 安装包） 发布。
 
 `backgroundWakeLockData` 只是后台计时器的快照字段。Android vitals 的 excessive 和 stuck 判定还包含 24 小时窗口、前后台或前台服务状态、豁免项和会话聚合，单个字段和 Play 指标之间还隔着这些计算。
+
+<!-- gracker-diagram: a274-07-platform-attribution-pipeline -->
+![活动历史经聚合归因生成系统查询结果](../../assets/diagrams/ch25/a274-07-platform-attribution-pipeline.png)
+
+图：平台产生数据，Historian读取报告；系统归因结合模型与可用硬件能量，不是每UID独立测量。
 
 ### SoC（System on a Chip，片上系统）与设备差异：先查能力，再谈精度
 
@@ -566,6 +616,11 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 
 这些状态可能同时出现，也可能只有一项变化。单看进程消失、`dumpsys deviceidle` 或设置页里的“允许后台活动”，还定不了原因。
 
+<!-- gracker-diagram: a274-11-background-control-planes -->
+![后台任务失败先定位到具体机制](../../assets/diagrams/ch25/a274-11-background-control-planes.png)
+
+图：限制等级、待机分组、调度任务、网络、FGS和退出原因需要在同一时间窗分别保存。
+
 ### `AppRestrictionController` 怎样形成限制等级
 
 入口位于 `frameworks/base/services/core/java/com/android/server/am/AppRestrictionController.java`。它维护持久化的 package/UID 限制设置，监听用户限制、App Standby、角色、DeviceConfig 和系统豁免，并汇总多个 `BaseAppStateTracker`（状态跟踪组件）。
@@ -627,6 +682,11 @@ for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
 
 表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，把它简单归因成耗电超限会误判；`EXEMPTED` 也免不了 CPU、网络和前台服务规则各自的约束。
 
+<!-- gracker-diagram: a274-12-restriction-candidate-and-uid-query -->
+![tracker候选最大值与共享UID查询最小值分开](../../assets/diagrams/ch25/a274-12-restriction-candidate-and-uid-query.png)
+
+图：策略汇总与最终查询是两个不同操作；诊断必须保留package、UID和调用入口。
+
 ### OEM 可以改变哪些 AOSP 输入
 
 #### 静态 SystemConfig 豁免
@@ -665,6 +725,11 @@ adb shell dumpsys deviceidle whitelist
 
 三条输出来自不同配置源。不要把某个包出现在 Device Idle 白名单中，写成它已经命中 `bg-restriction-exemption`。
 
+<!-- gracker-diagram: a274-13-background-exemption-sources -->
+![豁免来源分开读取并核对作用范围](../../assets/diagrams/ch25/a274-13-background-exemption-sources.png)
+
+图：同在某个允许名单中不代表命中静态豁免，更不保证Job、Alarm、FGS或网络均可执行。
+
 ### `AppBatteryExemptionTracker` 记录的是耗电扣除区间
 
 这个类按 UID 维护各 package 当前活跃的状态位。多个 package 可以通过 `sharedUserId` 等历史机制共享 UID；同一 UID 中第一个 package 进入某类可豁免状态时，tracker 为 UID 记一条开始事件，等同 UID 的 package 全部离开该状态，再记结束事件。
@@ -691,6 +756,11 @@ if (start) {
 这样可以避免同 UID 的两个 package 把同一段状态重复计时。事件还记录开始和结束时的 UID 电量快照，也就是系统到该时刻为止累计的 UID 耗电估算；`getUidBatteryExemptedUsageSince()` 计算这些区间内的用量，`AppBatteryTracker` 再从总后台用量中扣除它。
 
 这里的 exemption 只作用于耗电归因，算不上给 UID 一个固定时长的后台执行许可。“16 ms 生效延迟”和统一“豁免窗口长度”的公共契约，源码里也找不到，诊断文档别据此写时间保证。
+
+<!-- gracker-diagram: a274-14-uid-exemption-union-interval -->
+![同UID多个package的豁免状态区间取并集](../../assets/diagrams/ch25/a274-14-uid-exemption-union-interval.png)
+
+图：重叠状态只形成一个UID区间；这项exemption不授予固定时长的后台运行资格。
 
 ### 一轮可复现的诊断
 
@@ -800,6 +870,11 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 | AOSP 输出一致，厂商机仍稳定复现差异 | 再检查 bugreport（完整系统诊断报告）中的 vendor（厂商）服务、私有设置、属性和事件日志 |
 
 “AOSP 输出一致”离“AOSP 没有影响”还差一步核对：JobScheduler、Alarm、网络和 FGS 都有自己的状态，要在相同时间窗内一起对比。反过来，看到厂商服务包名也只是线索；它是否执行了清理，要有对应的调用、事件或状态变化来落定。
+
+<!-- gracker-diagram: a274-15-oem-evidence-localization -->
+![OEM差异按状态、任务和退出证据逐层定位](../../assets/diagrams/ch25/a274-15-oem-evidence-localization.png)
+
+图：SIGKILL只表明信号终止；设备不支持低内存专门报告时，LMK也可能记为SIGNALED。
 
 ### 限制设置的 XML 存储
 

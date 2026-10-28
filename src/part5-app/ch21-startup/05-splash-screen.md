@@ -80,7 +80,17 @@ Android 17 可以按启动条件在这些形态之间选择：
 
 选择哪个形态，还取决于启动类型。冷启动表示 App 进程尚不存在；warm start 表示进程还在，但目标 Activity 尚未创建或需要重建；hot start 则是进程和目标 Activity 都在，只需把它带回前台。TaskSnapshot 常用于已有任务切回前台且快照兼容的情况，Splash 常见于冷启动、新任务或 warm start。hot start 不会重复显示 Splash。
 
+<!-- gracker-diagram: a226-02-launch-type -->
+![启动类型与起始画面选择的边界](../../assets/diagrams/ch21/a226-02-launch-type.png)
+
+图：冷温热描述进程与 Activity 状态，具体 surface 还受 system_server 参数和 Shell 算法决定。
+
 “点击图标后看见了一张图”还不足以判断系统走了哪条路径；要解释 Perfetto trace（系统与应用事件的时间线记录），先确认启动类型和 starting window 类型。
+
+<!-- gracker-diagram: a226-01-three-surfaces -->
+![系统起始画面、App 首帧与完整内容](../../assets/diagrams/ch21/a226-01-three-surfaces.png)
+
+图：画面创建者与证据不同；系统反馈更早，不表示 App 初始化或内容加载已经更快。
 
 ## 2. Android 17 的系统链路
 
@@ -117,16 +127,31 @@ StartingSurfaceDrawer
 
 [`PhoneStartingWindowTypeAlgorithm`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/phone/PhoneStartingWindowTypeAlgorithm.java)根据 system_server 传来的参数，在 snapshot、不同 Splash 类型、windowless 和 none 之间给出建议。选中后，[`StartingWindowController`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java)接收 TaskOrganizer 回调，[`StartingSurfaceDrawer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingSurfaceDrawer.java)再交给对应的创建器（源码中的 `creator`）。
 
+<!-- gracker-diagram: a226-04-type-algorithm -->
+![Android 17 手机起始表面按顺序判定](../../assets/diagrams/ch21/a226-04-type-algorithm.png)
+
+图：按 PhoneStartingWindowTypeAlgorithm 的返回顺序简化；输入的快照兼容性由更早系统判断提供。
+
 这条链路说明两个边界：
 
 1. Splash 由系统在 App 第一帧前创建，不需要 App 进程先 `inflate`（从 XML 创建 View 树）一张启动页。
 2. App 主题只是输入之一，最终类型还受任务、进程、snapshot、窗口状态和系统策略影响。
+
+<!-- gracker-diagram: a226-03-system-shell -->
+![系统条件判断到 Shell 表面创建](../../assets/diagrams/ch21/a226-03-system-shell.png)
+
+图：system_server 传递条件和数据，Shell 根据类型创建 Splash、Snapshot 或 windowless 表面。
 
 ### 2.3 移除与退出动画
 
 App 内容可以显示时，system_server 请求 Shell 移除 starting window。若应用注册了退出动画，系统可以把 `SplashScreenView` 复制一份交给 App 继续播放。Android 17 的 [`SplashscreenWindowCreator`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java)包含视图复制、窗口移除和 `SurfaceControlViewHost` 释放路径；这里的 host 是跨进程承载动画图标 View 的容器。
 
 不要把“App 已提交第一帧”“starting window 已移除”“退出动画已完成”视为同一个时间点。自定义动画会在 App 内容已经准备显示后继续覆盖它一段时间。
+
+<!-- gracker-diagram: a226-15-exit-overlap -->
+![首帧准备、系统起始表面与退出覆盖分别观测](../../assets/diagrams/ch21/a226-15-exit-overlap.png)
+
+图：图示一种允许的重叠关系；退出回调只表示可移除，实际首帧和表面移除点应从 Trace 与录屏确认。
 
 ## 3. AndroidX SplashScreen 接入
 
@@ -141,6 +166,11 @@ App 内容可以显示时，system_server 请求 Shell 移除 starting window。
 | API 31～37 | 委托平台 SplashScreen API | 系统 Splash、图标动画和平台退出交接 |
 
 兼容库的 `minSdk` 是 21，启动早期就能显示图标的兼容能力从 API 23 才开始。测试范围至少要覆盖 API 21/22、23～30、31 和当前目标 API，不能只在 Android 17 模拟器上验收。
+
+<!-- gracker-diagram: a226-05-compat-and-build -->
+![core-splashscreen 1.2.0 的运行与构建边界](../../assets/diagrams/ch21/a226-05-compat-and-build.png)
+
+图：运行下限 API21 与构建要求分开：本 AAR 要求 compileSdk≥35、AGP≥8.6.0。
 
 ### 3.2 添加依赖
 
@@ -175,7 +205,17 @@ starting theme 是写在 Manifest 启动入口上的临时主题。下面的配�
 - `windowSplashScreenAnimationDuration` 只描述图标动画时长，不控制 Splash 在屏幕上停留多久；Android 13（API 33）起，平台会直接从 AVD 推断时长；
 - `postSplashScreenTheme` 应指向 Activity 的正常主题。若不使用它，就必须在 `onCreate()` 前自行调用 `setTheme()`，两种方式只能有一套清晰的主题切换责任。
 
+<!-- gracker-diagram: a226-06-theme-handoff -->
+![starting theme 在 onCreate 前交给正常主题](../../assets/diagrams/ch21/a226-06-theme-handoff.png)
+
+图：启动主题提供背景和图标，兼容库安装时切换到正常主题；主题切换责任要明确。
+
 `windowSplashScreenBrandingImage` 可以把品牌图片放在底部，官方设计规范不建议使用。品牌信息优先放在中央图标、颜色和进入内容后的界面中。
+
+<!-- gracker-diagram: a226-07-icon-mask -->
+![启动图标的安全区域与动画含义](../../assets/diagrams/ch21/a226-07-icon-mask.png)
+
+图：圆外内容会被蒙版裁剪；尺寸来自官方规范，图中没有设备性能或动画测量值。
 
 ### 3.4 覆盖每个外部启动入口
 
@@ -194,6 +234,11 @@ starting theme 是写在 Manifest 启动入口上的临时主题。下面的配�
 ```
 
 如果通知、deep link（自定义 scheme 或 URI 链接）或 App Link（经验证、可直接打开 App 的 HTTP(S) 链接）能在冷进程中直接启动另一 Activity，该入口也要配置 starting theme，并在 `super.onCreate()` 前调用 `installSplashScreen()`。只验证桌面图标会漏掉这些路径。
+
+<!-- gracker-diagram: a226-08-external-entry -->
+![所有可能冷启动的外部入口都需要主题与安装](../../assets/diagrams/ch21/a226-08-external-entry.png)
+
+图：每条外部路由都可能在冷进程中直接进入不同 Activity；仅桌面入口接入会漏测其他路径。
 
 ### 3.5 在 `super.onCreate()` 前安装
 
@@ -254,6 +299,11 @@ enum class LaunchState {
 `by viewModels()` 是惰性委托，第一次访问时可能创建 ViewModel。这里的首次访问发生在 `onCreate()` 中，条件回调只使用已取得的状态引用。ViewModel 构造过程仍须保持轻量，文件读取等初始化工作要异步执行，避免阻塞 `onCreate()`。
 
 异步任务必须有失败和超时出口，把 `LoadingLocal` 转成 `Ready` 或 `RecoverableError`。若状态一直不变化，Splash 会持续挡住 Activity，页面也不会开始绘制。
+
+<!-- gracker-diagram: a226-09-keep-condition -->
+![绘制门禁只读取已有内存状态](../../assets/diagrams/ch21/a226-09-keep-condition.png)
+
+图：状态变更由异步任务负责；门禁回调只读内存，失败和超时必须离开 LoadingLocal。
 
 ### 4.2 哪些内容可以等
 
@@ -325,6 +375,11 @@ splashScreen.setOnExitAnimationListener { provider ->
 
 动画只改变画面交接。若主线程仍在执行长任务，动画结束后照样会掉帧或无响应。
 
+<!-- gracker-diagram: a226-10-exit-cleanup -->
+![退出动画的所有路径都移除 Splash View](../../assets/diagrams/ch21/a226-10-exit-cleanup.png)
+
+图：晚到回调不能依赖已经结束的生命周期补发 onDestroy；所有清理分支均在主线程处理。
+
 ## 6. 从旧方案迁移
 
 ### 6.1 旧 `windowBackground`
@@ -346,6 +401,11 @@ Android 12+ 会先显示系统 Splash，再启动旧 `SplashActivity`，容易�
 路由判断（根据登录态、链接参数等条件决定首个页面）最好放进单 Activity，或直接启动目标 Activity。若路由 Activity 暂时不能移除，官方迁移方案允许它保持 Splash、立即跳到下一 Activity 并结束自己；这只适合作为迁移期间的方案，路由判断必须同步、快速且没有网络等待。
 
 开屏广告属于业务页面，不应伪装成系统 Splash。需要展示时，应在系统 Splash 退出后进入可度量、可跳过、失败可恢复的广告页面。
+
+<!-- gracker-diagram: a226-11-migration -->
+![旧 SplashActivity 容易产生重复启动画面](../../assets/diagrams/ch21/a226-11-migration.png)
+
+图：迁移按实际外部入口验证，业务开屏广告应有独立的跳过、度量与失败恢复机制。
 
 ## 7. Splash 后如何交接内容
 
@@ -373,6 +433,11 @@ App 第一帧至少应具备：
 
 没有缓存时显示骨架或空态，不要让 Splash 等网络。
 
+<!-- gracker-diagram: a226-12-cache-to-content -->
+![从缓存与骨架稳定交接到可交互内容](../../assets/diagrams/ch21/a226-12-cache-to-content.png)
+
+图：占位数量、尺寸和间距贴近真实内容；网络加载在 App 首帧后继续，不让 Splash 等待。
+
 骨架元素不应被无障碍服务当成真实按钮或正文；shimmer（在占位块上移动的高光）也要控制面积和时长，并尊重减少动态效果的偏好。
 
 ### 7.3 不要在后台线程普通 inflate View
@@ -388,6 +453,11 @@ App 第一帧至少应具备：
 - 在适用场景评估 AndroidX `AsyncLayoutInflater` 等异步 inflate 工具，并针对具体布局验证它们的限制。
 
 可以在后台准备不可变数据、解析结果或图片，但 View 创建和挂载仍应遵守 UI 线程与生命周期边界。
+
+<!-- gracker-diagram: a226-13-ui-thread-boundary -->
+![后台数据准备与主线程 View 生命周期分开](../../assets/diagrams/ch21/a226-13-ui-thread-boundary.png)
+
+图：把普通 LayoutInflater 整页移到后台并缓存，不是通用的启动优化方案。
 
 ### 7.4 编译与初始化问题另行处理
 
@@ -427,6 +497,11 @@ lifecycleScope.launch {
 这段代码的“可用”条件要由具体页面定义。若自定义 Splash 退出动画仍遮住内容并阻止交互，也应把动画结束纳入可用条件。
 
 如果在系统检测到 TTID 前调用 `reportFullyDrawn()`，系统会把 TTFD 记为 TTID。这样的数据不能说明异步内容已经完成。
+
+<!-- gracker-diagram: a226-14-startup-metrics -->
+![感知观察点、显示指标与原始时间戳](../../assets/diagrams/ch21/a226-14-startup-metrics.png)
+
+图：自定义退出动画还遮挡内容与交互时，应把它的完成条件纳入实际可用状态。
 
 ### 8.2 需要同时观察什么
 
@@ -473,6 +548,11 @@ Trace 解释顺序是：
 5. 慢路径来自 CPU、I/O、Binder、锁、调度还是渲染。
 
 更完整的启动度量见 [启动优化策略](../../part2-performance/ch08-responsiveness/03-launch-optimization.md)。
+
+<!-- gracker-diagram: a226-16-perfetto-actors -->
+![Perfetto 按执行主体追踪启动交接](../../assets/diagrams/ch21/a226-16-perfetto-actors.png)
+
+图：先固定启动类型与入口，再对照系统、Shell 和 App 时间线；自定义 trace 名保持短且稳定。
 
 ## 10. 检查清单
 

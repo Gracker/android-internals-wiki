@@ -69,6 +69,11 @@ related_chapters:
 3. **原始结果**：每次执行的顺序、成功或失败、指标值及对应 Trace；
 4. **结论边界**：观察到了什么、尚未证明什么、下一步需要哪种证据。
 
+<!-- gracker-diagram: ch16-06-01-experiment-records -->
+![竞品比较需要的四类记录](../../assets/diagrams/ch16/ch16-06-01-experiment-records.png)
+
+图：问题、实验条件、逐轮原始证据与结论边界共同定义可复查的比较。 结果仅适用于声明的设备、版本与任务；差异不自动证明竞品内部实现原因。
+
 ### 控制变量的四项基本原则
 
 **同设备**：A/B（成对交替测试两个应用）在同一台物理设备、同一用户和同一显示模式下执行。就算型号相同，芯片个体差异、存储老化和厂商配置也可能有差别。要覆盖多个档位时，让每台设备独立形成一组结果，跨设备的样本分开统计。
@@ -78,6 +83,11 @@ related_chapters:
 **同网络**：记录 Wi-Fi 或蜂窝网络、带宽、往返延迟、丢包、DNS（域名解析）、代理和服务端数据集。可控环境可以使用网络整形和固定响应；真实网络测试则交替执行 A/B（在同一条件下交替测试应用 A 和 B），并把网络时间单列。TLS 会话（加密连接是否复用）是否复用、内容是否命中（内容是否来自边缘缓存） CDN 边缘缓存、服务端负载如何，这三样靠“连同一个 Wi-Fi”消不掉，要单独记录。
 
 **同热状态**：记录电池温度、Thermal Service（热管理服务）状态和测试前的静置条件。测完 A 接着测 B，时间漂移可能都算到其中一方头上，所以我们用 ABBA 交错顺序，例如 A1、B1、B2、A2，或者预先随机排序，减少时间漂移对单方结果的偏置。设备一旦进入新的 thermal status（热状态等级），该轮作废，等它恢复再继续。用户体验测试让 CPU 频率保持自适应——锁定频率会改变商用设备上的调度和温控行为。
+
+<!-- gracker-diagram: ch16-06-02-matched-conditions -->
+![控制变量与自然热响应](../../assets/diagrams/ch16/ch16-06-02-matched-conditions.png)
+
+图：同设备内匹配工作量、网络与初始热状态，按预定顺序执行并保留自然热响应。 ABBA不能消除全部漂移；持续负载自然升温或降频不能事后删样本。
 
 ### 测试前的设备准备
 
@@ -94,6 +104,11 @@ related_chapters:
 
 系统动画关不关，取决于问题定义。测 Activity 自身首帧时可以关；测用户看到的完整转场时必须保留，并固定动画缩放。两种结果分开报。
 
+<!-- gracker-diagram: ch16-06-03-state-reset-manifest -->
+![每个测试维度有自己的复位](../../assets/diagrams/ch16/ch16-06-03-state-reset-manifest.png)
+
+图：把构建和环境写入逐轮清单，再按启动、滚动、网络或能量场景执行可验证的复位。 kill-all和划任务不能恢复整个设备；关闭动画的实验另报条件。
+
 ### 采样、顺序与停止条件
 
 样本量由数据决定：场景波动、想检测的差异大小和设备数量都会改变样本需求，流程里写死的“20 次”“30 次”并没有统计上的保证。我们先做小规模预采样，再在测试计划中固定：
@@ -107,6 +122,11 @@ related_chapters:
 A/B 在同一设备、相近时间内成对执行。报告给出每轮原始值、配对差值、差值中位数、P90/P99（90%/99% 的样本不高于该值） 和置信区间；置信区间描述在既定统计方法下，真实差异的合理范围。
 
 平均值、标准差可以照报；显著性交给检验来回答，“均值相差两倍标准差”这类读数替代不了它。数据有长尾时，用配对 bootstrap（对配对差值重复重采样）估计区间，或用预先选定、不要求正态分布的非参数检验，并同时报告效应量，也就是差异本身有多大。
+
+<!-- gracker-diagram: ch16-06-04-paired-sampling -->
+![配对、相关层级与停止规则](../../assets/diagrams/ch16/ch16-06-04-paired-sampling.png)
+
+图：按设备和独立block保留配对，预先确定统计量、查看批次和停止规则。 差值中位数不等于中位数之差；相关帧不当作独立重复，尾部估计需样本量。
 
 ## 竞品启动速度对比
 
@@ -153,6 +173,16 @@ Complete
 
 旧版本曾输出 `ThisTime`，Android 17 的 [`WaitResult.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/WaitResult.java) 已无该字段，[`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 也不再打印它。所以解析脚本按目标系统版本识别字段，三个时间值未必都在。
 
+<!-- gracker-diagram: ch16-06-06-am-start-wait-path -->
+![正常绘制路径怎样回填TotalTime](../../assets/diagrams/ch16/ch16-06-06-am-start-wait-path.png)
+
+图：正常启动跟踪从shell等待进入窗口绘制报告，再将毫秒延迟写回WaitResult并唤醒等待者。 图中是正常跟踪路径；已有顶部Activity、超时或无有效跟踪需另分类，窗口报告不等于光学完成。
+
+<!-- gracker-diagram: ch16-06-07-shell-output-validity -->
+![启动状态与两个时间字段的边界](../../assets/diagrams/ch16/ch16-06-07-shell-output-validity.png)
+
+图：同时核对Status、组件、LaunchState和时间字段，保存未知、超时与缺失。 WaitTime不含-S的force-stop/250ms等待或完整adb传输；不能用两时间之差自动归因。
+
 ### 冷启动 vs 温启动 vs 热启动
 
 下面四项解释 `am start -W` 返回的 `LaunchState`：它按进程是否运行、Activity 是否新建来分类，比用户层面的通用启动定义窄，报告里要注明用的是哪套口径。
@@ -163,6 +193,11 @@ Complete
 - **Relaunch**：平台还会报告 `RELAUNCH`，例如配置变化使已有 Activity 销毁重建。
 
 测试脚本应让平台返回的 `LaunchState` 参与校验，少用“按了返回键所以一定是 warm”这类间接判断。一个竞品可能通过透明 Activity、deep link（直达指定页面的链接）、多进程或不同 task（Activity 任务栈）策略进入首页，`TotalTime` 覆盖到哪个 Activity，取决于本次实际启动链。要看清这段启动链，我们再借助 Perfetto 中的 Android App Startups 派生指标（由原始 Trace 计算出的启动区间）和 Activity transition（页面切换过程） 补足时间线。
+
+<!-- gracker-diagram: ch16-06-08-launch-state-objects -->
+![启动分类保留哪些对象](../../assets/diagrams/ch16/ch16-06-08-launch-state-objects.png)
+
+图：Cold、Warm、Hot按进程和Activity复用分类；Relaunch与Unknown另存。 返回键、划任务或固定命令意图不能替代平台状态与实际启动链校验。
 
 ### 启动对比的注意事项
 
@@ -181,7 +216,17 @@ adb shell cmd package compile -m speed -f com.example.app
 
 它偏离了用户从 Play 安装后的自然状态，结果别叫“商店体验”。`speed-profile` 只按设备上已有的 profile 预编译热点代码；各 App 的 profile 是否存在、质量是否相近没有核验过，用它反而引入新的不一致。
 
+<!-- gracker-diagram: ch16-06-09-art-state-protocols -->
+![商店状态与统一实验状态](../../assets/diagrams/ch16/ch16-06-09-art-state-protocols.png)
+
+图：先选择保留自然分发/使用状态，或统一安装交互与编译协议，再解释性能差异。 speed不是所有类初始化完成或最快保证；speed-profile需核对各侧profile存在与质量。
+
 **窗口与显示状态**：锁屏、分屏、画中画、外接显示器、刷新率切换和系统转场都会改变启动路径，这些状态在轮与轮之间可能漂移，所以每轮开始前都校验一遍。
+
+<!-- gracker-diagram: ch16-06-05-startup-completion-boundaries -->
+![TTID、TTFD与业务就绪分别测量](../../assets/diagrams/ch16/ch16-06-05-startup-completion-boundaries.png)
+
+图：系统初始画面、App fully-drawn声明与业务成功条件是三种边界。 竞品TTFD埋点未知时不横向排名，缺失不补零；外部UI断言另标起止点。
 
 ## 竞品流畅性对比
 
@@ -202,6 +247,11 @@ Trace 时长要覆盖完整的操作路径：短动画可能几秒就够，长�
 
 滑动可以由 UI Automator（可跨 App 操作界面的自动化测试框架）或坐标事件驱动。坐标相同只说明输入相同；两个应用各自滚了多远、内容工作量多大，还要用可见 item、页面标识或录屏确认终点。`sendevent` 是向 Linux 输入设备节点写事件的低层命令，依赖设备节点和权限，不适合作为可移植方案。
 
+<!-- gracker-diagram: ch16-06-10-frametimeline-object-join -->
+![从目标Layer关联Surface与Display](../../assets/diagrams/ch16/ch16-06-10-frametimeline-object-join.png)
+
+图：按目标Layer与token联系应用Surface帧、合成Display帧和显示反馈，再判断覆盖。 一个DisplayFrame可合成多个SurfaceFrame；空集合、缺失结束事件与不支持Surface不能当无卡顿。
+
 ### 帧耗时分析的关键指标
 
 **deadline（平台为每帧分配的完成时限） miss 率**：未按时完成的帧占比。判断要用每帧自己的 deadline——可变刷新率、App 对期望帧率的投票和 SurfaceFlinger 调度都会让相邻帧的预算不同，硬编码 60 Hz 的 16.6 ms 或 120 Hz 的 8.3 ms 会误判。
@@ -213,6 +263,11 @@ Trace 时长要覆盖完整的操作路径：短动画可能几秒就够，长�
 **归属**：FrameTimeline 的 App Jank、SurfaceFlinger Jank 和 jank type（平台标记的卡顿来源类型）是定位线索。要把责任落到业务代码、GPU 驱动或系统服务，还得回到 UI thread（处理界面事件与布局绘制的主线程）、RenderThread（承担部分渲染工作的线程）、GPU 和 SurfaceFlinger 时间线里找直接阻塞关系。
 
 **有效帧集合**：标出首帧、窗口转场、无内容变化帧和测试脚本空等帧。排除规则我们在看数据之前就定好，并对 A/B 使用同一规则。
+
+<!-- gracker-diagram: ch16-06-11-frame-metric-population -->
+![先固定帧集合再解释分布](../../assets/diagrams/ch16/ch16-06-11-frame-metric-population.png)
+
+图：先定义目标Layer、阶段与有效帧集合，再分别统计时限、尾部和连续卡顿段。 App完成时限、显示呈现、工具overrun与jank type不是同一个指标，缺失与排除另报。
 
 ### FrameMetrics 能做什么
 
@@ -243,9 +298,19 @@ activity.getWindow().addOnFrameMetricsAvailableListener(
 
 `dump（命令原始输出）sys gfxinfo <package> framestats` 可以作为无侵入备选，但它主要反映 HWUI（Android 硬件加速界面渲染管线） 窗口帧，输出字段随平台演进，覆盖面也不等同 FrameTimeline。解析器必须按 API 版本测试，并保留原始 dump 输出。
 
+<!-- gracker-diagram: ch16-06-12-framemetrics-listener -->
+![Window帧报告与显示掉帧的区别](../../assets/diagrams/ch16/ch16-06-12-framemetrics-listener.png)
+
+图：在可控制的Window内立即提取原始ns数值，轻量入队并保留丢失报告，按有效deadline分类。 监听报告丢失不是显示掉帧；TOTAL与DEADLINE是Window生产边界，也不能证明整个显示栈没有jank。
+
 ## 竞品包体积对比
 
 包体积对比的第一步是选定比较对象。“包有多大”至少对应四种对象：AAB（Android App Bundle，上传到应用商店的发布包）、单个 APK、某设备收到的 base + split APK（按设备配置拆分交付的安装包） 集合，以及压缩下载估算。对象选错，比出来的数字就没有意义：只拿竞品的 `base.apk` 对自家 universal APK（含多种设备资源的通用包），就是对象错位。
+
+<!-- gracker-diagram: ch16-06-13-package-size-objects -->
+![发布包、设备安装集与下载量](../../assets/diagrams/ch16/ch16-06-13-package-size-objects.png)
+
+图：先固定比较对象，再按同设备配置整理base/split、动态模块和追加下载。 AAB、universal APK、单个base和实际交付集合不能直接混作一个大小排名。
 
 ### APK Analyzer 的使用
 
@@ -257,6 +322,11 @@ Android Studio 的 APK Analyzer 可以查看 APK 或 App Bundle 的压缩大小�
 2. 对每个文件同时记录 raw file size（文件本身大小）与 download size（传输压缩后的估算大小），两种数字各记各的，汇总时分开引用。
 3. 展开 DEX、`resources.arsc`、`res/`、`assets/` 和 `lib/<abi>/`。
 4. 使用 Compare with previous APK 比较同一个产品的相邻版本。
+
+<!-- gracker-diagram: ch16-06-14-apk-size-measurements -->
+![Raw与下载估算分别回答什么](../../assets/diagrams/ch16/ch16-06-14-apk-size-measurements.png)
+
+图：APK Analyzer按ZIP/APK贡献量与交付压缩估算解释体积，CLI可保存同口径输出。 Raw File Size不等于解压后逻辑大小；download-size不是Play实际交付的保证。
 
 横向对比时，先为目标设备收集完整 split 集合，再按相同 ABI（CPU 指令集）、density（屏幕密度）、language（语言资源） 和动态功能模块计算；取不到完整集合时，报告写明缺哪些 split。
 
@@ -284,6 +354,11 @@ apkanalyzer -h apk compare --different-only app-a.apk app-b.apk
 **Assets**：离线数据、Web bundle（Web 页面文件的打包集合）、模型和预置媒体常放在这里。Play Asset Delivery（Google Play 的大资源交付机制）或运行时下载的内容不在当前 APK 时，要在“首装下载”和“首次使用追加下载”中另行记录。
 
 **交付大小**：用户关心某台设备实际要下载的压缩字节。`apkanalyzer apk download-size` 给的是估算值，和 Play Console 的交付统计对不上；报告里标明数据来源。
+
+<!-- gracker-diagram: ch16-06-15-package-component-evidence -->
+![分类字节不能直接解释实现质量](../../assets/diagrams/ch16/ch16-06-15-package-component-evidence.png)
+
+图：将DEX、native、资源与assets按设备交付口径拆分，再结合功能、配置与运行成本提出候选解释。 DEX大不证明语言或混淆质量；离线内容、按需模块与运行时下载还要单独记账。
 
 ## 注意事项：避免误导性结论
 
@@ -313,6 +388,11 @@ SoC（System on Chip，系统级芯片）、GPU 驱动、内存、存储、厂�
 
 没有竞品源码时，Trace 能证明某线程、Binder（Android 跨进程调用机制） 调用、GPU 或系统阶段占用了时间；再往产品设计动机上推，证据就撑不住了。包体积分类显示的是字节分布，DEX 大小同样说明不了混淆质量。结论分成“观测”“候选原因”“验证办法”三列来写。
 
+<!-- gracker-diagram: ch16-06-16-observations-to-causes -->
+![观测、候选原因与验证](../../assets/diagrams/ch16/ch16-06-16-observations-to-causes.png)
+
+图：先写可复核观测，再列候选解释与能区分解释的验证办法。 Trace关联和字节分布都不自动证明竞品设计动机；跨设备交叉比较不能当同机效应。
+
 ## 扩展：自动化竞品对比测试流水线
 
 ### 基本架构
@@ -328,6 +408,11 @@ SoC（System on Chip，系统级芯片）、GPU 驱动、内存、存储、厂�
 Macrobenchmark 很适合自有应用的启动、滚动和动画基准，并自动输出 JSON 与 Perfetto Trace。官方要求目标包为 profileable，也就是 manifest 中允许 shell 读取详细 Trace；竞品的 manifest 我们改不了，多半过不了这条。这时用外部 UI Automator/adb 驱动加 shell Perfetto 采集，并接受可观测性较低的限制。同样地，`FrameMetrics` 也只能部署到我们改得到的应用里。
 
 `dumpsys gfxinfo` 若作为兼容路径，流水线应按 Android API 版本选择解析器，并用固定样本验证字段。遇到未知格式直接失败——静默填 0 会把错误带进结论。
+
+<!-- gracker-diagram: ch16-06-17-automated-evidence-pipeline -->
+![自动比较按证据和失败分类验收](../../assets/diagrams/ch16/ch16-06-17-automated-evidence-pipeline.png)
+
+图：流水线归档版本、调度设备、准备状态、交错执行，最后按指标所需证据计算与报告。 固定1.4.1的profileable硬检查有API29–30条件；其他版本/API需验收，未知格式与缺失不填零。
 
 ## 扩展：竞品功耗对比方法
 
@@ -350,6 +435,11 @@ AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、
 
 平台的 Power Stats 入口可从 [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 继续追到设备 HAL（Hardware Abstraction Layer，硬件抽象层）；具体可用的 channel（能量测量通道）和 consumer（逻辑耗能单元）由硬件实现决定。
 
+<!-- gracker-diagram: ch16-06-18-power-software-observations -->
+![行为时间线、系统rails与电荷变化](../../assets/diagrams/ch16/ch16-06-18-power-software-observations.png)
+
+图：行为时间线帮助解释活动，高精度rails与电荷变化分别提供不同范围的能耗观测。 PowerMetric是系统级测量；型号名不证明rail支持，Type.Battery也不是同精度能量值。
+
 ### 硬件测量方案
 
 外部电源分析仪需要设备支持的供电夹具或厂商测试接口，别在没有硬件规范的情况下直接断开电池。测量流程包括：
@@ -361,6 +451,11 @@ AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、
 5. 按随机顺序重复 A/B，给出配对差值与区间。
 
 `mAh`（毫安时）只表示电荷量，电压一变，同样的电荷对应的能量就不同。空闲基线相减也可能掩盖后台活动，原始总能量与基线修正值要同时保留。
+
+<!-- gracker-diagram: ch16-06-19-external-power-integration -->
+![从同步电压电流积分到能量](../../assets/diagrams/ch16/ch16-06-19-external-power-integration.png)
+
+图：在明确测量点校准并同步电压电流，按场景积分总能量，再保留配对差值与区间。 mAh是电荷；测量点、USB供电和空闲基线修正会影响结果，原始总能量同时保留。
 
 ## 参考资料
 

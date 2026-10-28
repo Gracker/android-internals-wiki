@@ -134,6 +134,16 @@ ART profile-guided 编译产物
 
 图中的每一层都需要单独验证：源码里有 `baseline-prof.txt`，release 包未必带着它；包里有 `baseline.prof`，设备也未必已完成由 profile 指导的编译。
 
+<!-- gracker-diagram: a225-01-optimization-consumers -->
+![三类 Profile 优化由不同工具消费](../../assets/diagrams/ch21/a225-01-optimization-consumers.png)
+
+图：三条链路按消费者区分；同一预装应用可以受多条链路影响，应分别验收。
+
+<!-- gracker-diagram: a225-02-hrf-to-art -->
+![从可读规则到 ART 编译产物](../../assets/diagrams/ch21/a225-02-hrf-to-art.png)
+
+图：每个箭头都可能失效：采集、符号重写、打包、交付与编译各需独立证据。
+
 ### 2. 四种 profile 不要混用
 
 | 类型 | 生产者 | 主要用途 | 可用边界 |
@@ -148,6 +158,11 @@ CI 是持续集成系统，用来在每次代码变化后自动构建和测试�
 Startup Profile 是 Baseline Profile 的启动子集，但消费方不同：Baseline Profile 给 ART，Startup Profile 给构建工具做 DEX 布局。它们可以来自同一生成脚本，验证方法却各有各的一套。
 
 Android 7 / API 24 已经具备混合执行、JIT、本地 profile 与后台 profile-guided dexopt 的协作；Google Play Cloud Profile 则要到 Android 9 / API 28 才出现。所以 Android 7～8.1 的包内 Baseline Profile 通常要由 ProfileInstaller 写入 current profile 后等待后台编译；Play 用户仅凭安装完成，也还断定不了 Cloud/Baseline Profile 已变成 `speed-profile` 产物。
+
+<!-- gracker-diagram: a225-03-profile-producers -->
+![四种 Profile 的生产与消费位置](../../assets/diagrams/ch21/a225-03-profile-producers.png)
+
+图：生产者与生效时机决定可控范围；不能用一种 profile 的存在证明另一种已生效。
 
 ### 3. 什么场景可能受益
 
@@ -247,6 +262,11 @@ class BaselineProfileGenerator {
 
 每个场景都要固定账号、隐私弹窗、远程配置、语言、数据和网络响应。`waitForIdle()` 只说明界面线程暂时空闲，页面内容对不对还得靠断言：测试应检查业务 UI 或状态。脚本走错页面时应立即失败，避免把错误路径写进 profile。
 
+<!-- gracker-diagram: a225-04-generator-path -->
+![采集场景同时校验页面与启动范围](../../assets/diagrams/ch21/a225-04-generator-path.png)
+
+图：生成稳定性与页面正确性分别检查；非启动 CUJ 仍可贡献 Baseline Profile。
+
 #### 4.4 启动之外的 CUJ
 
 高频滚动、导航和交互可用另一条 `collect` 场景生成 Baseline Profile 规则，并保持 `includeInStartupProfile = false`。这样 ART 仍可编译相关方法，R8 不会把它们当成启动布局依据。
@@ -293,6 +313,11 @@ unzip -l app-release.aab \
 
 库 profile 也要在最终应用产物中验证：AAR 自身有规则只完成了一半，宿主所用 AGP 有没有正确消费，要看最终包。
 
+<!-- gracker-diagram: a225-05-generation-artifacts -->
+![生成变体与最终发布产物分工](../../assets/diagrams/ch21/a225-05-generation-artifacts.png)
+
+图：生成变体负责采集，发布构建负责重写与打包；每次工具链或路径变化后重新验收。
+
 ### 7. 安装与编译状态
 
 #### 7.1 渠道决定时机
@@ -315,6 +340,16 @@ Android 7～8.1 主要依靠 `ProfileInstaller` 在首次运行后写入 current
 `RESULT_CODE_ERROR_NO_PROFILE_EMBEDDED` 表示包内没有规则；ProfileInstaller 1.4.1 起推荐看 `RESULT_CODE_NO_PROFILE_INSTALLED`（旧名 `RESULT_CODE_NO_PROFILE`，已废弃），它通常表示包内有规则，但 ProfileInstaller 没有运行或设备尚无已安装 profile。当前编译用的是 Baseline Profile 还是 Cloud Profile，`ProfileVerifier` 分不出来。`RESULT_CODE_COMPILED_WITH_PROFILE` 说明应用已有可用的 profile 引导编译状态，不说明全部代码已经 AOT。
 
 `ProfileVerifier` 支持 Android 9 / API 28 及以上；更低 API 会返回 `RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION`。`writeProfileVerification()` 会执行 I/O，应在后台线程调用。若关闭 `ProfileInstallerInitializer`，需要在启动数秒后手动调用该方法，否则 `getCompilationStatusAsync()` 返回的 Future（异步结果）可能一直等待或超时。
+
+<!-- gracker-diagram: a225-06-delivery-branches -->
+![安装渠道决定 Profile 到达哪个阶段](../../assets/diagrams/ch21/a225-06-delivery-branches.png)
+
+图：ProfileInstaller、支持 DM 的安装器以及允许读取嵌入规则的 ART 可走不同路径；文件交付与编译产物仍需分别验收。
+
+<!-- gracker-diagram: a225-07-verifier-evidence -->
+![ProfileVerifier 1.4.1 的证据边界](../../assets/diagrams/ch21/a225-07-verifier-evidence.png)
+
+图：固定实现不逐方法验证 AOT，且无法区分 Baseline 与 Cloud 来源；文件大小启发式可能误判。
 
 #### 7.3 `dumpsys package dexopt`
 
@@ -384,6 +419,11 @@ class BaselineProfileStartupBenchmark {
 
 `CompilationMode.Partial(...Require)` 测量 Baseline Profile 已准备并参与部分编译的状态。`CompilationMode.Full()` 可作为全部代码编译后的实验上界，代表不了生产安装常态。
 
+<!-- gracker-diagram: a225-08-compilation-modes -->
+![Macrobenchmark 编译模式的实验含义](../../assets/diagrams/ch21/a225-08-compilation-modes.png)
+
+图：编译状态受控后才比较相同入口的 TTID、TTFD、帧、稳定性与磁盘成本。
+
 #### 8.3 同时观察这些指标
 
 - TTID 与 TTFD；
@@ -429,6 +469,11 @@ Startup Profile 在构建时应用，APK/AAB 中没有供 ART 使用的独立 `s
 
 “类靠近就一定命中 CPU cache”这样的收益表述并不成立：这里优化的是 DEX 文件布局和读取局部性，运行时结果仍受设备、文件映射、编译状态与代码路径影响。
 
+<!-- gracker-diagram: a225-09-dex-layout -->
+![Startup Profile 把启动代码集中到合适布局](../../assets/diagrams/ch21/a225-09-dex-layout.png)
+
+图：这是文件布局示意，不表示全部启动类一定只占一个 DEX，也不承诺 CPU cache 命中。
+
 #### 9.3 证明 release 产物保留了布局
 
 只看到仓库里存在 `startup-prof.txt` 还不够，应逐层回答生成、消费和发布产物是否一致：
@@ -445,6 +490,11 @@ checksum 是用于判断文件内容是否变化的摘要。AGP 8.8+ 可以从 A
 
 主 DEX 容量也是约束。规则过宽时，初始显示以外的 CUJ 会挤占 `classes.dex`，必要的启动代码反而溢出。单 DEX 应用因布局优化变为两个 DEX 不一定是回归：构建工具可能把启动代码集中在主 DEX，并把非启动代码移到后续 DEX。判断依据应是启动类分布、R8 诊断和测量结果，光看 DEX 个数会误判。
 
+<!-- gracker-diagram: a225-10-layout-proof -->
+![验证最终发布 DEX 保留布局](../../assets/diagrams/ch21/a225-10-layout-proof.png)
+
+图：规则存在、构建消费、发布文件未被改写、实际性能改善构成连续证据；任一层都不能跳过。
+
 #### 9.4 用单变量 A/B 隔离布局收益
 
 DEX layout A/B 的源码、资源、R8 规则、签名配置、Baseline Profile、安装步骤和设备端 `CompilationMode` 必须一致，唯一变量是是否向 D8/R8 提供 Startup Profile。若一组同时移除 Baseline Profile，测到的差异就混在一起，分不清 ART 编译和 DEX 布局各自的贡献。
@@ -458,6 +508,16 @@ P50 是中位数，P90/P95 分别表示 90%/95% 的样本不超过该值。实�
 - 反射、动态 DEX 或条件分支是否让关键代码没有进入规则。
 
 杀进程只重建进程状态，设备 page cache 未必跟着变冷——page cache 是内核缓存的文件页，应用进程退出后仍可能保留。除非实验能重复控制存储冷态，否则首轮结果算不上稳定的 DEX I/O 收益。
+
+<!-- gracker-diagram: a225-12-cold-protocol -->
+![Macrobenchmark 1.5.0 的 COLD 准备顺序](../../assets/diagrams/ch21/a225-12-cold-protocol.png)
+
+图：固定版本实现依次执行这些步骤；API 31+ 清页缓存不要求 root，旧设备按能力处理。
+
+<!-- gracker-diagram: a225-11-layout-ab -->
+![隔离 DEX 布局收益的单变量实验](../../assets/diagrams/ch21/a225-11-layout-ab.png)
+
+图：文件缺页不直接等于存储 I/O；还需排除 Binder、锁、数据库或网络掩盖结果。
 
 #### 9.5 常见失效模式
 
@@ -554,6 +614,11 @@ ART 在消费 profile 时还会检查 profile 格式和 DEX 匹配关系；安�
 
 `PackageManager.INSTALL_IGNORE_DEXOPT_PROFILE` 也能说明安装期与后续 dexopt 是两个时机：该安装标志会在安装时忽略 `.dm` 和 APK 内嵌 profile，并不报告无效安装 profile 的警告；以后由后台 dexopt 或 `pm compile` 发起的编译仍可使用 profile。
 
+<!-- gracker-diagram: a225-14-validation-stages -->
+![安装接受 DM 与 ART 接受 Profile 是两道检查](../../assets/diagrams/ch21/a225-14-validation-stages.png)
+
+图：固定 Android 17 r1 方法体核对，不能只凭旧注释推断安装时已验证包名与版本号。
+
 #### 从安装到编译的执行链路
 
 下面的路径图用于区分输入、调度者和编译执行者。Package Manager 负责安装流程，ART Service 负责制定这次 dexopt 参数，`artd` 是执行 ART 文件与编译操作的系统守护进程，`dex2oat` 则把 DEX 编译为设备可执行的 ART 产物。
@@ -577,6 +642,16 @@ Package Manager ──发起安装期 dexopt──► ART Service
 
 从 Android 14（API 34）起，App 的设备端 AOT 编译由 ART Service 管理。`installd/dexopt.cpp` 对理解 Android 13 及更早版本有历史价值，但已不是 Android 17 的主调度链路；核对 Android 17 行为时，应查看 `ArtManagerLocal`、`Dexopter`、`PrimaryDexopter`、`artd` 和 `dex2oat`。
 
+<!-- gracker-diagram: a225-13-dm-inputs -->
+![每个 APK 的外部 Profile 与 DM 输入](../../assets/diagrams/ch21/a225-13-dm-inputs.png)
+
+图：DM 是容器，不能根据扩展名认定它来自 Cloud；base 的成功不能证明 feature split 成功。
+
+<!-- gracker-diagram: a225-15-art-service-chain -->
+![Android 14+ 的设备端 AOT 执行链路](../../assets/diagrams/ch21/a225-15-art-service-chain.png)
+
+图：后台维护与 shell 命令也可进入 ART Service；reason 标记触发原因，filter 标记实际编译策略。
+
 #### compiler filter 与 compilation reason
 
 这两个字段回答不同问题。compiler filter 是编译器工作到什么程度，compilation reason 是这次工作为什么发生：
@@ -591,6 +666,11 @@ Package Manager ──发起安装期 dexopt──► ART Service
 | `speed` | 面向速度 AOT 编译全部方法 | 编译耗时和产物体积更高，不适合作为普通第三方 App 的默认对照目标 |
 
 排查时必须同时记录 requested filter（请求的编译强度）和 actual filter（ART 最终采用的编译强度）。命令参数 `-m speed-profile` 只说明我们请求了什么，profile 是否命中要看 actual：`Dexopter.java` 在找不到有效 profile 时会把它改为 `verify`。
+
+<!-- gracker-diagram: a225-16-filter-and-reason -->
+![请求策略、实际策略与触发原因分别记录](../../assets/diagrams/ch21/a225-16-filter-and-reason.png)
+
+图：profile-guided 请求经过环境降级和输入选择后才形成 actual filter，应逐 APK / ABI 检查。
 
 ### dex2oat、bg-dexopt-job 与空闲编译
 
@@ -612,6 +692,11 @@ Android 14 及更高版本中，后台 dexopt 默认每天在设备空闲且充�
 
 普通 App 进程无权要求用户设备立即完成后台 dexopt。`pm.dexopt.disable_bg_dexopt` 和 `pm bg-dexopt-job --disable` 是系统开发者用于测试的入口，第三方 App 的线上优化方案里用不上它们。
 
+<!-- gracker-diagram: a225-18-background-window -->
+![后台 dexopt 的条件与时机](../../assets/diagrams/ch21/a225-18-background-window.png)
+
+图：后台编译由系统安排；普通 App 不能要求所有线上设备在同一时刻完成它。
+
 #### 查看包的 dexopt 状态
 
 在 Android 14—17 测试设备上，我们用下面的命令读取目标包当前的主 DEX 与 split DEX 编译状态。
@@ -629,6 +714,11 @@ adb shell getprop | grep -E 'pm\.dexopt|dex2oat'
 ```
 
 这些值由系统镜像和 ART 模块决定。不同设备出现差异时，把它们作为实验条件保存下来即可；据此要求线上 App 去改系统属性，是找错了方向。
+
+<!-- gracker-diagram: a225-17-shared-private -->
+![Android 17 共享代码的 Profile 与产物权限](../../assets/diagrams/ch21/a225-17-shared-private.png)
+
+图：外部输入优先；使用本地用户 profile 时优化产物保持私有，公开 VDEX 可供其他 App 走 verify。
 
 ### Profile 命中率与冷启动收益评估
 
@@ -682,6 +772,11 @@ adb shell pm compile -m verify -f -v com.example.app
 
 它与 `--reset` 的差别在于不负责清除 profile。实验记录里要写清使用了哪条命令，否则后续 `speed-profile` 可能读取到上一轮留下的本地 profile。
 
+<!-- gracker-diagram: a225-19-profile-reset-controls -->
+![三类 shell 操作改变的状态不同](../../assets/diagrams/ch21/a225-19-profile-reset-controls.png)
+
+图：这些操作不能重建真实商店安装来源、数据或交付状态，应归档完整命令和每个 APK 的实际结果。
+
 #### `ProfileVerifier` 与 Macrobenchmark 的边界
 
 `ProfileVerifier` 是 AndroidX 提供的 profile 状态检查器，报告范围限于单个 App 的 profile 安装与编译状态。ART 用的是 Baseline Profile 还是 Cloud Profile，它判断不了；方法覆盖率与启动耗时也另有专门的测量要做。
@@ -705,6 +800,11 @@ Macrobenchmark 的 `CompilationMode.None` 与 `Partial` 用来评估 Baseline Pr
 - 是否清进程、清数据，以及是否清过文件页缓存。
 
 “冷进程”与“冷文件页缓存”是两个条件。杀进程只能重建进程状态，系统仍可能把 APK、DEX 和资源文件内容保留在内核页缓存中；常规 App 启动基准也用不着依赖需要 root 权限的全局 cache drop（清空页缓存）。
+
+<!-- gracker-diagram: a225-20-experiment-groups -->
+![无 AOT、目标 Profile 与设备稳态三组比较](../../assets/diagrams/ch21/a225-20-experiment-groups.png)
+
+图：三组固定 APK、设备、ART、账号、温度、入口和缓存协议；产物与性能证据一起归档。
 
 ### 灰度发布中的 Profile 风险
 
@@ -783,9 +883,19 @@ App Bundle 的每个安装单元都要单独检查。Base APK 已按 `speed-prof
 
 若 trace 的主要耗时来自业务初始化，profile 排查到这里应停止。扩大规则不会缩短任务自身耗时，还可能增加 dex2oat 与存储成本。
 
+<!-- gracker-diagram: a225-21-split-release-audit -->
+![发布与动态模块逐 APK 验收](../../assets/diagrams/ch21/a225-21-split-release-audit.png)
+
+图：安装渠道、系统版本、split 与设备编译分层后，再解释启动和灰度回归。
+
 ## 小结
 
 Profile 优化要沿“场景生成 → release 打包 → 渠道交付 → ART 接受 → 实际编译状态 → 启动收益”逐层验证。Baseline/Cloud Profile 负责设备端编译输入，Startup Profile 负责构建期 DEX 布局，DM 只是可能承载外部输入的容器；任何一层存在文件，都替下一层证明不了已生效。最终结论仍要回到固定编译条件下的 TTID、TTFD、帧和功能验证。
+
+<!-- gracker-diagram: a225-22-evidence-chain -->
+![Profile 优化的最终证据链](../../assets/diagrams/ch21/a225-22-evidence-chain.png)
+
+图：沿每一层保留证据；若主要瓶颈是数据库、锁、网络或同步 SDK，应回到业务关键路径治理。
 
 ## 参考资料
 

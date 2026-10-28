@@ -179,6 +179,11 @@ Android 会为每个应用进程设置 Java 堆上限，超限的分配会抛出
 
 体积较大的 `ByteArray`、`IntArray` 或字符串构造结果，除了增加存活字节数，还可能进入不同的分配与回收路径。优化动作仍应从数据形态入手：能否分块读取、缩短生命周期或避免复制，而不是依据 Large Object Space 名称写特殊业务分支。
 
+<!-- gracker-diagram: a253-02-los-allocation -->
+![大对象空间的尝试与失败回退](../../assets/diagrams/ch23/a253-02-los-allocation.png)
+
+图：LOS 成功则返回对象；失败后清除这次异常并重试其他空间。数组和字符串优先从分块、生命周期和减少复制入手。
+
 [源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/gc/heap-inl.h::Heap::ShouldAllocLargeObject()`, `art/runtime/gc/heap-inl.h::Heap::AllocObjectWithAllocator()`]
 
 堆上限和进程物理内存占用是两回事。`Heap::GetMaxMemory()` 对应 `Runtime.maxMemory()`；普通 Android 应用受 `growth_limit_` 限制，声明 `largeHeap` 后会把限制扩展到堆的 `capacity_`。`GetFreeMemoryUntilOOME()` 用 `growth_limit_` 与当前已分配字节数估算 OOM 前的余量。PSS 还包含 Java 堆之外的映射和按比例计入的共享页，必须与逻辑堆值分开分析。
@@ -221,11 +226,21 @@ object JavaHeapPressure {
 
 这段代码提供的是趋势信号：对象能否回收，从比值里看不出来；Native（原生内存）、Graphics（图形内存）等进程分区也在它的覆盖之外；单次超过阈值，离定位泄漏还远。生产监控若采用该信号，还要限制采样频率、合并连续事件，并同时记录场景与缓存命中变化。
 
+<!-- gracker-diagram: a253-01-metric-boundaries -->
+![Java 堆计数、堆限制与 PSS 的口径](../../assets/diagrams/ch23/a253-01-metric-boundaries.png)
+
+图：used/max 比值可以触发有界缓存收缩，却不能单独证明泄漏或覆盖 Native、Graphics 等分区。
+
 ### ART 分配失败与 OOM 触发路径
 
 普通对象快速分配失败后，`Heap::AllocateInternalWithGc()` 并不会立即抛出 OOME，而是逐级尝试：先等待正在运行的 GC，等待期间完成过回收就重试分配；随后按 `next_gc_type_` 执行阻塞式 GC，也就是由分配线程发起并等待完成的回收；仍未取得足够空间时，执行覆盖整个堆的回收，并清除 SoftReference（内存不足时允许 GC 清除的软引用）；部分分配器在配置启用且达到时间间隔后，还会尝试 homogeneous space compaction（同构空间压缩），在两个同类堆空间之间复制对象整理碎片。这些尝试都失败后，才抛出 OOME。
 
 把这条路径读成固定的“Young GC（年轻代回收） → Full GC（全堆回收）”两步，容易读错现场：`next_gc_type_` 取决于收集器、代际状态、上次 GC 和目标堆大小，设备之间没有统一剧本。分配线程也可能把主要时间花在等待另一线程执行 GC 上，所以 Perfetto 中看到的业务停顿可能长于单次 GC 暂停。
+
+<!-- gracker-diagram: a253-03-allocation-oom -->
+![分配失败会逐级回收重试](../../assets/diagrams/ch23/a253-03-allocation-oom.png)
+
+图：分配慢路径的 wall time 可能包含等待其他线程回收和重复尝试；OOME 现场要结合请求大小、growth limit 与分配器连续空间解释。
 
 #### 读懂 OOME 文本
 
@@ -294,6 +309,11 @@ fun buildVisibleItems(
 
 收益主要来自 `take(limit)` 限制结果数量，以及惰性操作避免完整中间集合。`Sequence` 自身也会创建操作包装对象并增加迭代调用；如果源数据已经完整驻留，或集合很小，它未必更省时。应使用分配记录与基准测试，同时比较分配字节数、对象数和 CPU 时间。
 
+<!-- gracker-diagram: a253-04-streaming-copy -->
+![用分块和消费边界限制峰值](../../assets/diagrams/ch23/a253-04-streaming-copy.png)
+
+图：惰性操作主要减少完整 filter/map 中间列表；业务还要决定是否分页、分块或流式输出，不能仅靠切换容器宣称性能改善。
+
 ### 对象池与缓存策略
 
 对象池和缓存都在用空间换时间，目标并不相同。对象池减少重复分配，缓存减少重复计算或重复 I/O（输入输出）。两者都要有上限、失效条件和生命周期归属，否则原本的优化会变成常驻内存。
@@ -333,6 +353,11 @@ class BytePayloadCache(
 这里的计量仍未包含键字符串、`LruCache` 缓存条目和对象头（ART 为对象保存的类型、锁状态等元数据）开销，所以 `maxBytes` 只表示 `ByteArray` 内容的字节预算，不是整个缓存的 shallow size（对象自身占用）。字符串、图片引用和解析对象需要各自的计量方式。两个收缩预算由调用方根据业务测量传入，示例没有设置通用比例。兼容 API 33 及以下时可以处理旧的运行级别；在 17 上这些回调不会到达，主路径要以仍会投递的提示为准。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/content/ComponentCallbacks2.java`, `frameworks/base/core/java/android/util/LruCache.java`]
+
+<!-- gracker-diagram: a253-05-cache-trim -->
+![状态提示、缓存收缩和 GC 是三件事](../../assets/diagrams/ch23/a253-05-cache-trim.png)
+
+图：ByteArray sizeOf 只计值的内容字节；键、条目和对象头另有成本。未来 put 仍可让缓存长回原最大预算。
 
 对象池只适合满足三个条件的对象：创建频繁、初始化成本高、可安全重置。普通 Kotlin `data class`（数据类）、生命周期复杂的对象、持有 `Context`、View 或回调的对象，不建议放进池。池化后的对象一旦忘记清除字段，可能引入泄漏和残留数据。
 
@@ -463,6 +488,11 @@ ART 的并发收集器缩短了许多暂停，但分配、标记、复制或压�
 
 [源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/gc/heap-inl.h::Heap::AllocObjectWithAllocator()`, `Heap::ShouldConcurrentGCForJava()`, `art/runtime/gc/heap.cc::Heap::RequestConcurrentGC()`]
 
+<!-- gracker-diagram: a253-06-gc-trigger -->
+![Java 分配请求并发 GC 的条件](../../assets/diagrams/ch23/a253-06-gc-trigger.png)
+
+图：判定结果可能是不需要 GC、请求 ConcurrentGCTask，或安排 TimeBasedGcThresholdCheckTask。请求入队在允许线程挂起后进行，新对象受 Handle 保护。
+
 从应用层来看，内存抖动通常表现为四种现象：
 
 - **堆曲线呈锯齿状**：内存快速上升，GC 后又下降，周期很短。单次峰值可能不高，但回收频率高。
@@ -488,6 +518,11 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 
 时间重叠只能建立相关性，还要检查主线程和 RenderThread 的状态。`Running` 表示线程正在 CPU 上执行，应查看对应 slice 或调用栈；`Runnable` 表示线程已就绪却没有获得 CPU，才更支持调度延迟或 CPU 竞争；`Sleeping`、`Blocked` 等状态要继续追踪唤醒者、锁、Binder 或其他等待原因。至于 GC 与慢帧相邻却不重叠的现场，因果同样定不下来。
 
+<!-- gracker-diagram: a253-09-gc-frame-tracks -->
+![GC 与慢帧的时间关系需要线程证据](../../assets/diagrams/ch23/a253-09-gc-frame-tracks.png)
+
+图：先确认 expected/actual 帧，再看主线程状态和 GC 暂停、等待、调度证据。修改分配后复跑相同场景，才能判断因果是否得到支持。
+
 #### 应用进程创建后安排的后台 GC
 
 `Heap::PostForkChildAction()` 在 `initial_heap_size_ < growth_limit_` 时安排目标堆大小调整，并为 Zygote 复制出的应用进程加入 `TriggerPostForkCCGcTask`。这个任务的执行有两道前提：计划时间到达，且进程创建后尚未发生其他 GC；期间已经发生过 GC，它就不再执行回收。调度时间还包含一个以 UID 为种子的确定性偏移：同一 UID 得到相同偏移，不同 UID 通常不同。按源码注释的说法，这个偏移用于降低多个进程同时发起此类 GC 的概率。
@@ -502,6 +537,11 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 
 这条队列还承载 HeapTrim（向系统归还可释放堆页）、收集器切换、按时间触发 GC 的阈值复查和部分启动维护。向它注入阻塞任务或暂停守护线程，会一起延迟这些工作。`TaskProcessor::Stop()` 只把处理器标记为停止；`GetTask()` 随后不再等待任务的计划时间，而是继续取出剩余任务，直到队列排空。错误干预可能让未到期任务集中执行。
 
+<!-- gracker-diagram: a253-07-heap-task-queue -->
+![HeapTaskDaemon 串行执行堆维护队列](../../assets/diagrams/ch23/a253-07-heap-task-queue.png)
+
+图：堆任务按计划时间从队列取出，再在守护线程逐个执行。阻塞该线程会推迟整条维护队列；并发收集器的部分工作可以与 mutator 同时发生。
+
 #### 并发 GC 请求如何判定和去重
 
 `ShouldConcurrentGCForJava()` 有字节阈值和“分配增量 × 经过时间”两类判断。它可能返回“不需要 GC”“请求 `ConcurrentGCTask`”或“安排 `TimeBasedGcThresholdCheckTask`”。`num_bytes_allocated_` 会把仍在使用的整块 TLAB 计入，因此是近似已分配字节数，不是逐对象精确值，也不是 PSS。
@@ -509,6 +549,11 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 多个线程同时满足条件时，`RequestConcurrentGC()` 用原子 compare-and-set（仅当旧值未变化时更新）增加 `max_gc_requested_`，只有更新成功的线程把任务加入队列。任务执行时还会核对目标序号：其他路径已经完成更新的 GC，本次任务就跳过收集。去重依赖这个序号协议，而不是扫描（检查线程栈和全局引用等根对象）队列里是否已有同名任务。
 
 新对象在请求入队期间由 Handle 临时保护，因为 `TaskProcessor::AddTask()` 可能让线程挂起，移动式 GC 也可能在此时更新对象地址。这套 Handle 只保证 ART 内部引用的安全，应用代码接触不到，也无从复用。
+
+<!-- gracker-diagram: a253-08-gc-request-dedup -->
+![并发 GC 用序号协议去重](../../assets/diagrams/ch23/a253-08-gc-request-dedup.png)
+
+图：去重同时发生在请求阶段与执行阶段；并非扫描队列找同名任务。Handle 保护入队期间可能被移动 GC 更新的对象引用。
 
 ### 典型内存抖动场景
 
@@ -623,6 +668,11 @@ Android Studio 的 Java/Kotlin 分配记录要求 debuggable（可调试）构�
 
 Perfetto 从 Android 12 起支持 ART allocation profiling，在 `HeapprofdConfig` 中配置 `heaps: "com.android.art"` 后即可采集分配调用栈样本。它记录对象创建时的调用栈与累计分配，对象何时被删除或回收则不在其中；要看对象的保留关系，还是得靠堆转储。在量产 user 系统上，目标应用还必须声明 `debuggable` 或 `profileable`（允许系统分析）。
 
+<!-- gracker-diagram: a253-10-profiling-evidence -->
+![分配画像与堆转储回答不同问题](../../assets/diagrams/ch23/a253-10-profiling-evidence.png)
+
+图：heaps: "com.android.art" 采样创建位置与累计分配；要判断对象为何仍可达，继续看 heap dump。量产 user 系统分析还需应用 debuggable 或 profileable。
+
 #### 按调用频率做分配归因
 
 找到分配栈后，我们按调用频率、单次字节数和存活时间共同分层：每帧调用、每个列表项调用、每次页面打开调用、后台批处理调用。高频小对象可能比低频大对象产生更多累计分配，但优先级必须由目标时间窗内的总字节、次数和慢帧重叠关系决定。
@@ -696,6 +746,11 @@ allocation 表示创建对象并占用 Java Heap 空间，短命对象被频繁�
 
 一份活跃 Composition 至少要保存组合结构、`remember` 的值、重组范围、状态观察关系和待应用的变更。我们先弄清这些内部结构各自保存什么，再区分正常持有、短期分配和生命周期泄漏。
 
+<!-- gracker-diagram: a253-11-composition-retention -->
+![Composition 的正常持有与生命周期泄漏](../../assets/diagrams/ch23/a253-11-composition-retention.png)
+
+图：slot storage、重组范围和状态观察都是正常结构。泄漏调查要沿 dominator 与引用链回到持有者，核对其生命周期是否合理。
+
 #### Slot storage 有两种实现
 
 slot storage 是 Compose Runtime 保存组合层级、节点位置和 `remember` 值的内部存储。1.12.0 同时包含两种实现：gap-buffer（在连续数组中保留可移动空隙）与 LinkTable（用链接结构减少内容移动时的数组复制）。历史稳定提交中的 [`Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt) 和 [1.12.0 `Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt) 都显示，`CompositionImpl.createSlotStorage()` 根据 `ComposeRuntimeFlags.isLinkBufferComposerEnabled` 选择实现。
@@ -711,6 +766,11 @@ slot storage 是 Compose Runtime 保存组合层级、节点位置和 `remember`
 
 slot storage（槽位存储）持有 `remember` 值和组合结构。Composition 被宿主继续引用时，其中的值也会继续存活。找主要持有者时，我们看 heap dump 里的 dominator（支配对象，释放它才可能释放其支配的对象集合）。看到 SlotTable 或 LinkTable 出现在引用链中，要继续检查 Activity、Fragment View、`ComposeView`、Navigation destination（导航目的地）、Recomposer（调度重组的运行时对象）或长期协程；内部表结构通常只是引用路径中的一环。
 
+<!-- gracker-diagram: a253-12-slot-storage -->
+![固定 Runtime 版本与实验存储开关](../../assets/diagrams/ch23/a253-12-slot-storage.png)
+
+图：内部对象形态随实现改变，固定 SlotTable 字节数不适用于所有版本。R8 使用规则固定开关时，运行时赋值不会覆盖优化结果。
+
 #### `RecomposeScopeImpl` 会复用
 
 `RecomposeScopeImpl` 表示可独立失效并重新执行的组合范围。历史稳定版 [`RecomposeScopeImpl.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/RecomposeScopeImpl.kt) 与 [1.12.0 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/RecomposeScopeImpl.kt) 都让 `trackedInstances` 与 `trackedDependencies` 初始为 `null`，读取普通状态或派生状态后才按需创建。`release()` 会清空 `owner`、追踪集合和用于重启该范围的 `block`。
@@ -723,6 +783,11 @@ slot storage（槽位存储）持有 `remember` 值和组合结构。Composition
 - restartable composable（可由运行时重新执行的可组合函数）即使带不稳定参数也可以被跳过；可组合函数内部的 Lambda 会自动缓存（memoize），也就是根据捕获对象缓存并复用。
 
 不稳定参数使用引用相等比较，稳定参数使用对象相等比较。调用方每次构造新 `List`、新 UI 数据模型或捕获值不同的新 Lambda，仍可能让比较失败。优化时应检查输入对象是否稳定复用、状态是否在合适的所有者中更新，以及运行时是否出现高频分配；源码中的 Lambda 表达式数量与运行时分配量是两回事，后者要靠分配记录确认。
+
+<!-- gracker-diagram: a253-14-strong-skipping -->
+![Strong Skipping 的参数比较规则](../../assets/diagrams/ch23/a253-14-strong-skipping.png)
+
+图：可组合函数内 lambda 会按捕获值自动缓存；它的键比较同样区分稳定性，与普通 remember 所有键用 equals 的规则有差异。
 
 #### Snapshot 状态记录随写入演进
 
@@ -761,6 +826,11 @@ fun ContactList(
 `remember` 在 key（决定缓存何时失效的输入）的比较结果不变时返回已保存值，key 变化后重新计算。计算量较大的数据加工可以移到 ViewModel 或数据层。这个示例要求列表内容通过新的不可变列表实例更新；原地修改普通 `List` 中的数据，Compose 和排序缓存都可能观察不到变化。
 
 换成 `SnapshotStateList` 后，内容写入可以被观察，但同一个列表对象作为 `remember` 的 key 仍会比较相等，上述排序缓存可能继续返回旧结果。可以把内容读取放进 `derivedStateOf`，或先在组合中调用具体类型的 `SnapshotStateList.toList()` 取得不可变内容快照，再以快照和比较器作为排序缓存的 key。[1.12.0 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateList.kt)说明，这个成员函数为 O(1)，直接返回底层不可变列表，不复制全部元素；普通 `List.toList()` 通常会创建副本，不能混用这两条路径的分配结论。
+
+<!-- gracker-diagram: a253-13-remember-list-keys -->
+![remember 的 key 不等于列表内容版本](../../assets/diagrams/ch23/a253-13-remember-list-keys.png)
+
+图：SnapshotStateList.toList() 成员函数为 O(1) 内容快照，普通 List.toList() 的复制结论不同。remember 缓存生命周期也仍受 Composition 管理。
 
 #### 原始类型状态 API
 
@@ -819,6 +889,11 @@ fun ScrollToTopButton(listState: LazyListState) {
 
 只要 `showButton` 的结果没有变化，读取它的可组合函数就不需要因每次滚动更新而重组。`derivedStateOf` 自身要维护依赖和缓存；普通字符串拼接、两个低频状态的简单组合，以及每次输入变化都会产生新输出的计算，直接计算通常更清楚。
 
+<!-- gracker-diagram: a253-15-derived-state -->
+![derivedStateOf 把高频输入变成较少结果变化](../../assets/diagrams/ch23/a253-15-derived-state.png)
+
+图：滚动索引变化不必等于按钮状态变化。派生状态缓存仍有管理成本，版本修复也不能替代 remember 对对象复用的作用。
+
 Compose Runtime 1.12.0 稳定版已经包含一项潜在内存泄漏修复：未正确 `remember` 的 `derivedStateOf()` 在 forward write（同一轮组合先读取依赖状态，随后又写入该状态）场景中，可能被 Composition 持有到该 Composition 销毁。该问题影响 1.11.4，修复最早记录于 1.12.0-beta01，随后进入 1.12.0 稳定版。处理要点如下：
 
 - 在可组合函数内创建 `derivedStateOf` 时使用 `remember`；
@@ -851,6 +926,11 @@ fun TrackListPosition(
 
 把 `snapshotFlow` 放在 `LaunchedEffect` 中不会自动造成泄漏。风险来自外部协程作用域比界面所有者存活更久、`LaunchedEffect` 的 key 选择错误、回调捕获 Activity/View，或重复启动未受管理的收集任务。heap dump 中只看到 Snapshot 类不足以确认泄漏，还要继续检查协程 Job（可取消任务）、Flow collector（Flow 收集者） 和宿主生命周期。
 
+<!-- gracker-diagram: a253-16-snapshotflow-lifecycle -->
+![snapshotFlow 的收集与释放由任务生命周期约束](../../assets/diagrams/ch23/a253-16-snapshotflow-lifecycle.png)
+
+图：LaunchedEffect key 控制任务重启，rememberUpdatedState 更新现有任务的回调；外部共享 manager 的 dispose 则由调用方管理。
+
 ### Lazy layout 的 key 维护列表项身份
 
 Lazy layout（按需组合可见内容的布局）默认按位置识别 item（列表项）。数据重排后，同一个业务对象的位置会变化，按位置保存的 `remember` 状态就跟不上业务对象移动。[Lazy list 官方文档](https://developer.android.com/develop/ui/compose/lists)建议为每项提供稳定且唯一的 key，使状态在插入、删除和重排时仍与同一个业务对象关联。
@@ -862,6 +942,11 @@ key 的主要价值包括：
 - 让 `rememberSaveable` 状态在符合条件时恢复。
 
 滚出屏幕的节点照常参与回收，key 管的是身份；列表项内部的对象分配，key 消除不了，要靠分配记录定位。用于 `rememberSaveable` 时，key 类型还要能由 `Bundle` 保存，例如原始类型、枚举或 `Parcelable`。业务稳定 ID 通常适合作为 key；位置只适用于内容和顺序都固定的列表。
+
+<!-- gracker-diagram: a253-17-lazy-key-identity -->
+![Lazy 列表稳定 key 维护业务身份](../../assets/diagrams/ch23/a253-17-lazy-key-identity.png)
+
+图：两条不相交的正交连线表示 A、B 各自的身份映射。稳定 key 让插入、删除与重排后的记忆状态仍属于原业务对象。
 
 ### View 与 Compose 混合时的生命周期
 
@@ -891,6 +976,11 @@ override fun onCreateView(
 ```
 
 [Compose in Views 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)把 `DisposeOnViewTreeLifecycleDestroyed` 列为 Fragment View 的适用策略。普通 View 场景默认使用 `DisposeOnDetachedFromWindowOrReleasedFromPool`：View 脱离窗口时释放；若位于 `RecyclerView` 等复用容器中，则在容器脱离或该项被移出对象池时释放。释放策略要按宿主类型选择。
+
+<!-- gracker-diagram: a253-18-composeview-lifecycle -->
+![Fragment View 的销毁要带走 Composition](../../assets/diagrams/ch23/a253-18-composeview-lifecycle.png)
+
+图：应核对 Fragment 的 View 生命周期，而不是仅看 Fragment 是否仍在返回栈。销毁后仍被长生命周期引用持有的界面树需要沿引用链定位。
 
 #### `AndroidView.factory`、`update` 与 View 复用
 
@@ -922,6 +1012,11 @@ fun ReusableLabel(
 ```
 
 [Views in Compose 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)说明，`onReset` 必须非空才会启用 Lazy 容器中的 View 复用；`onRelease` 在 View 离开 Composition 且不再复用时调用。`update` 应具备幂等性——用相同输入重复执行不会累积副作用；示例的 `setOnClickListener()` 会替换旧监听器。播放器、地图等 View 的资源释放还要调用各自组件提供的接口，普通 View 没有通用的 `release()` 方法。
+
+<!-- gracker-diagram: a253-19-androidview-reuse -->
+![AndroidView 的创建、更新、复用与终止](../../assets/diagrams/ch23/a253-19-androidview-reuse.png)
+
+图：同一 View 可以被多次更新或重新绑定，update 应替换状态而非累积副作用。代码中的 TextView 清监听不能代替 WebView、地图或播放器的专用释放动作。
 
 混合页面的 heap dump 应同时检查 View tree（传统 View 层级）与 Composition。常见 dominator 包括 Fragment view binding（生成的视图绑定对象）、adapter（列表适配器）、listener（监听器）、`AndroidView` 内的 WebView/播放器/地图、Navigation back stack（导航返回栈）和长生命周期 ViewModel。
 
@@ -970,6 +1065,11 @@ composeCompiler {
 | Allocation recording / heap dump | 哪些类型在分配、哪些对象被谁持有 | 分配记录成本高；heap dump 只反映采集时刻 |
 
 [Composition tracing 文档](https://developer.android.com/develop/ui/compose/tooling/tracing)说明，Macrobenchmark（在应用外驱动完整场景的基准测试）可以产出带 Compose tracing 的系统跟踪。滚动、页面切换和启动应写成可重复的 Macrobenchmark；Memory Profiler 用于定位具体分配或持有关系，回归判断还是要靠前面固定场景的重复测量。四类工具提供的是不同侧面，需要按同一时间段、设备和操作关联起来。
+
+<!-- gracker-diagram: a253-20-diagnostic-tools -->
+![编译判断、运行次数、分配与持有分别取证](../../assets/diagrams/ch23/a253-20-diagnostic-tools.png)
+
+图：四类结果按同一设备、构建、时窗和操作关联。release 编译器报告没有运行时分配数，debug Full allocation recording 也不能直接替代发布版性能基线。
 
 #### 先判断分配抖动，再判断泄漏
 

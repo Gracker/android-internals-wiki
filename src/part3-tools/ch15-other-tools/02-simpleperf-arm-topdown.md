@@ -103,6 +103,11 @@ flowchart LR
 
 内核实现入口可从 [`kernel/events/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/events/core.c) 和 [`include/uapi/linux/perf_event.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h) 查看。实际能打开哪些事件，还要看产品内核配置、SELinux 强制访问控制策略、PMU 型号和厂商限制，源码标签替代不了在目标设备上探测。
 
+<!-- gracker-diagram: ch15-02-01-sampling-pipeline -->
+![目标线程、内核采样与主机报告的分工](../../assets/diagrams/ch15/ch15-02-01-sampling-pipeline.png)
+
+图：Simpleperf 配置事件并观测目标线程，内核产出记录，主机报告解析地址与符号。 样本是离散事件位置；报告 Overhead 取决于所选事件权重，不等于每次调用或墙钟时长。
+
 ### 版本与权限边界
 
 #### 版本能力
@@ -158,6 +163,11 @@ NDK 发行包把设备端程序、主机端程序和 Python 脚本放在顶层 `
 
 Android 16/17 上应使用同一版本 NDK 附带的脚本发起应用采样。脚本会优先选择 `simpleperf_app_runner`，由它在受控应用上下文中启动设备内置 Simpleperf。手工 `adb push` 一个二进制再执行，或许还能显示帮助信息，内核样本是拿不到的。
 
+<!-- gracker-diagram: ch15-02-02-authorization-gates -->
+![目标授权、运行器与事件权限的三道门](../../assets/diagrams/ch15/ch15-02-02-authorization-gates.png)
+
+图：应用采样先核对构建授权，再由版本分支选择运行器，最后实际打开事件。 A17 在 Android 16+ 优先内置 runner；NDK 脚本版本、设备程序和内核权限必须分别保存。
+
 ### 一条可靠的应用采样路径
 
 下面以 `profileable` 发布应用为例，记录十秒用户态 CPU 时间和 DWARF 调用栈；“用户态”只统计 App 等普通进程执行的部分，不含内核态。命令从环境变量读取真实包名和未剥离原生库目录，缺少输入时会立即退出。
@@ -191,6 +201,11 @@ Android 16/17 上应使用同一版本 NDK 附带的脚本发起应用采样。�
 ```
 
 脚本会先结束目标进程、布置采样，再启动 Activity。这里的“从启动前采样”保证的是覆盖进程与 Activity 启动；应用数据和系统文件缓存要靠实验自己控制，所以比较冷启动结果时，应固定应用数据、ART 编译状态、存储状态和业务输入。
+
+<!-- gracker-diagram: ch15-02-03-reproducible-app-flow -->
+![应用采样、符号缓存与复测闭环](../../assets/diagrams/ch15/ch15-02-03-reproducible-app-flow.png)
+
+图：固定场景和采样窗口，保存同构建符号，再检查数据质量和业务扰动。 Activity 启动前布置采样不等于自动控制应用数据、文件缓存和 ART 编译状态。
 
 #### 调用栈开销从低频开始校准
 
@@ -246,6 +261,11 @@ simpleperf report \
 
 默认报告的主要维度已经包含 `comm,pid,tid,dso,symbol`：`comm` 是进程或线程名，PID（Process ID，进程编号） 和 TID 分别是进程 ID 与线程 ID，DSO（Dynamic Shared Object）是动态共享库，`symbol` 是函数符号。显式写出排序字段有助于团队保存可复现命令；需要缩小范围时，用 `--comms`、`--pids`、`--tids` 或 `--dsos`。
 
+<!-- gracker-diagram: ch15-02-04-stat-record-report -->
+![计数、位置采样与聚合归属的差别](../../assets/diagrams/ch15/ch15-02-04-stat-record-report.png)
+
+图：stat 给事件总量，record 保存抽样位置，report 按已记录身份和调用链聚合。 计数、样本数和 period 权重分别解释；未记录调用栈或身份的输入不能由报告补齐。
+
 ### 事件选择与解释
 
 #### 时间类事件
@@ -266,6 +286,11 @@ simpleperf report \
 2. 围绕同一稳定负载，分组采集少量 PMU 事件验证瓶颈类型。
 
 用户态后缀 `:u` 会排除内核态样本。分析应用代码时，它能减少无符号内核帧和权限干扰；轮到分析系统调用成本时，就应保留内核态并准备匹配的内核符号。
+
+<!-- gracker-diagram: ch15-02-05-event-weight-units -->
+![事件权重的单位与可比范围](../../assets/diagrams/ch15/ch15-02-05-event-weight-units.png)
+
+图：先确认 CPU 时间、周期和退休指令的单位，再解释热点占比或计算 IPC。 周期受频率与微架构影响；:u 排除内核态，跨簇汇总不能直接套单一 CPU 公式。
 
 ### 调用栈与符号
 
@@ -292,6 +317,11 @@ simpleperf report \
 ```
 
 比较时我们检查 `[unknown]` 比例、栈深、热点归属和被测指标扰动。FP 报告更短时，先怀疑代码没有保留帧指针，这与业务调用路径的深浅无关。
+
+<!-- gracker-diagram: ch15-02-06-unwind-paths -->
+![DWARF、帧指针与 ART 信息的依赖](../../assets/diagrams/ch15/ch15-02-06-unwind-paths.png)
+
+图：调用栈能否还原，取决于采样寄存器、栈数据、编译约定与运行时元数据。 FP 栈更短可能来自断链；Java 解释/JIT/AOT 与原生符号的恢复条件分别核对。
 
 #### Java/Kotlin 符号
 
@@ -324,6 +354,11 @@ APK 内的 `.so` 动态库通常已经剥离调试信息。`app_profiler.py -lib
 ```
 
 生成缓存后重新运行报告。若 `[unknown]` 仍集中在应用库，依次检查 build ID、ABI（Application Binary Interface，二进制接口约定）、拆分 APK，以及被采样进程实际加载的路径。
+
+<!-- gracker-diagram: ch15-02-07-symbol-identity -->
+![符号恢复依赖同构建身份](../../assets/diagrams/ch15/ch15-02-07-symbol-identity.png)
+
+图：将采样映射与同构建二进制、调试信息和混淆映射对应后，再解释源码热点。 文件名相同不能证明匹配；unknown、ABI、拆分 APK 与实际加载路径要一起核对。
 
 ### 多进程、线程与离开 CPU 时间
 
@@ -380,6 +415,11 @@ simpleperf record -a --duration 10
 
 `--trace-offcpu` 要求整次记录只选择 `cpu-clock` 或 `task-clock` 中的一个事件。`on-off-cpu` 报告模式会把两类权重分开显示；离开 CPU 的权重来自调度时间戳，丢失样本或切换记录都会降低精度。问题一旦涉及可运行队列等待、线程唤醒者、Binder（Android 进程间通信机制） 对端或 CPU 频率，我们再换 Perfetto System Trace，它的时间上下文更完整。
 
+<!-- gracker-diagram: ch15-02-08-on-off-cpu -->
+![on-CPU 样本与 off-CPU 时间的证据范围](../../assets/diagrams/ch15/ch15-02-08-on-off-cpu.png)
+
+图：CPU 事件样本说明执行位置，调度切换记录补充离开 CPU 的时间权重。 off-CPU 包含排队、抢占和等待；要区分唤醒者、Binder 对端或频率，仍需系统时间线。
+
 ### 丢样、截断栈与缓冲区
 
 采样数据要经过内核 `perf` 环形缓冲区和 Simpleperf 用户态记录缓冲区两级。内核缓冲区溢出会增加 `kernelspace` 丢失记录；对栈数据超过 1 KiB 的 DWARF 样本，A17 会在用户态缓冲区紧张时先缩短栈、再丢弃样本，把容量留给 mmap（内存映射）和 fork（创建子进程）这些还原地址空间必需的记录。
@@ -408,6 +448,11 @@ A17 的非全系统记录默认使用 64 MiB 或 256 MiB 用户态缓冲区：�
 缓冲区增大是有代价的：分析进程的内存占用随之上涨。系统内存紧张、采样目标很多或栈很深时，要同时观察被测业务是否受到了分析工具的干扰。A17 用户态缓冲区可用空间低于低水位时，会把 DWARF 样本中超过 1 KiB 的有效栈数据裁到 1 KiB；低于临界水位时，直接丢弃这类样本——结束日志能区分这两种结果。
 
 Android 17 的 [`RecordReadThread`](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/RecordReadThread.h) 用独立读取线程把内核缓冲区读取与主线程处理分开，以降低 DWARF 采样的丢失概率。它解决的是排队时间；过高频率、权限限制或硬件事件溢出还要单独处理。
+
+<!-- gracker-diagram: ch15-02-09-buffer-pressure -->
+![两级缓冲与大栈样本的压力处理](../../assets/diagrams/ch15/ch15-02-09-buffer-pressure.png)
+
+图：分别定位内核丢记录与用户态容量压力，再按日志区分栈裁剪和样本丢弃。 图中为配置用户栈容量大于 1 KiB 的分支；其他预留失败也可能丢记录，阈值按源码与配置计算。
 
 ### 报告与时间线工具
 
@@ -453,6 +498,11 @@ simpleperf report-sample \
 生成的文件可在 Android Studio CPU Profiler 中打开，Android 17 对应版本的 Perfetto UI 和 Trace Processor 也能解析。转换入口是 `report-sample`，`--show-callchain` 决定输出中是否包含调用链；要兼容其他版本的 Perfetto UI，AOSP 当前还提供 `gecko_profile_generator.py` 和 `report_sample.py` 两条转换路径。
 
 Perfetto Trace Processor 会把这种 protobuf 中的样本导入 `cpu_profile_stack_sample` 和栈分析表。要注意 Android 17 导入器会忽略 Simpleperf 的 `ContextSwitch` 记录，也没有把 `event_type` 与丢样信息完整映射成时间线语义，所以它适合查看样本火焰图，要看调度数据还是得回到系统跟踪。
+
+<!-- gracker-diagram: ch15-02-10-format-boundaries -->
+![Simpleperf 导入、原生 Perfetto 采集与窗口筛选](../../assets/diagrams/ch15/ch15-02-10-format-boundaries.png)
+
+图：导出 Simpleperf 样本、在 Perfetto 会话采样和按已有 slice 筛选样本是不同入口。 A17 Simpleperf 导入器不恢复完整 ContextSwitch/event_type/丢样语义，不能视为系统调度 trace。
 
 Perfetto 的 `linux.perf` 是另一套采集入口，由 `traced_perf` 组件调用 `perf_event_open` 并直接向 Perfetto 会话写入调用栈样本，这样采到的样本能与 ftrace 数据共享时间轴。已经生成的 Simpleperf `perf.data` 属于另一场采集，我们要另行发起会话，它不会自动并入。
 
@@ -591,6 +641,11 @@ bool prefer_simpleperf_app_runner = GetAndroidVersion() >= kAndroidVersion16;
 
 ETM（Embedded Trace Macrocell）和 ETE（Embedded Trace Extension）是 CoreSight 中的指令控制流 trace 源；CoreSight 是 Arm 的片上硬件跟踪框架，sink 指接收并保存 trace 的终点。TRBE（Trace Buffer Extension）是每 CPU 的内存 sink，ETR（Embedded Trace Router）则可把 trace 写入系统内存——后两者都不负责生成 SPE 微架构样本。
 
+<!-- gracker-diagram: ch15-02-11-pmu-spe-etm -->
+![PMU、SPE 与 CoreSight 控制流的机制](../../assets/diagrams/ch15/ch15-02-11-pmu-spe-etm.png)
+
+图：PMU 计数和溢出样本、SPE 统计 record 与 ETM/ETE 控制流各有不同证据粒度。 SPE packet 是编码单元；TRBE/ETR 是 CoreSight sink，不产生 SPE 样本，也不保证无缺口。
+
 Android 16 与 Android 17 的差异需要分开看：
 
 | 能力 | Android 16 | Android 17 |
@@ -669,6 +724,11 @@ Android 17 的 decoder 没有把以下 packet 信息转换成 perf sample 字段
 
 一条 SPE record 可以同时携带多个事件位，Android 17 的 `report` 会为这些事件分别建立视图，于是同一条 record 可能同时计入 L1 refill、TLB walk 和 remote access。各类 sample 数量拿来分别排序热点是合适的，相加之后当成互斥事件总数就错了。
 
+<!-- gracker-diagram: ch15-02-12-spe-record-decoding -->
+![SPE 从设备发现到按事件位生成样本](../../assets/diagrams/ch15/ch15-02-12-spe-record-decoding.png)
+
+图：读取 sysfs 类型与格式，保存 AUX packet 流，再由 decoder 按事件位形成报告视图。 一条 record 可命中多个事件，视图计数不能相加当互斥总数；A17 样本时间为 0，未输出延迟权重。
+
 SPE 的 packet 由硬件写入 profiling buffer，不需要每个样本触发一次 PMU 溢出中断。但 Linux SPE 驱动仍要处理 AUX 缓冲区装填、截断、碰撞和 IRQ（Interrupt Request，硬件中断请求），采样间隔过小或缓冲消费不及时都会产生丢失记录。开销与丢失率得在目标设备和目标负载上测量，套用固定百分比没有意义。
 
 ### TRBE 是 CoreSight sink
@@ -697,6 +757,11 @@ adb shell su root simpleperf list | grep cs-etm
 
 只有列表中出现显式 ETR 事件时，才能指定它与默认 `cs-etm` 做对照。默认事件是否使用 TRBE，还取决于采集 CPU 的支持集合，产品宣传材料说了不算。
 
+<!-- gracker-diagram: ch15-02-13-coresight-sink-selection -->
+![通用 cs-etm 与显式 ETR 的 sink 选择](../../assets/diagrams/ch15/ch15-02-13-coresight-sink-selection.png)
+
+图：先发现可用 sink，再区分显式 ETR 配置与通用事件的按 CPU 选择。 config2 为 0 还要核对该 CPU 的 TRBE 支持集合；不存在可用 sink 或权限不足时采集仍会失败。
+
 下面的命令用于做一次短时的系统级内核指令 trace，以便先检查权限、sink 和数据丢失情况：
 
 ```bash
@@ -716,6 +781,11 @@ Android 17 新增的 `--background` 适合脚本启动有限时长的采集。�
 3. 子进程把标准输入、标准输出和标准错误重定向到 `/dev/null` 空设备，随后执行采集。
 
 这里没有第二次 `fork()`。命令行解析发生在分叉前，输出文件准备和正式采集发生在子进程中，分叉后的报错也就不会出现在当前终端——所以后台采集应使用绝对输出路径，并在长任务前先做一次短时前台预检。
+
+<!-- gracker-diagram: ch15-02-14-background-processes -->
+![后台采集的父子进程与完成边界](../../assets/diagrams/ch15/ch15-02-14-background-processes.png)
+
+图：父进程返回 PID，子进程独立采集并在正常停止后写完记录。 父进程成功返回不证明采集成功；分叉后错误可能静默，SIGKILL 无法保证完整文件。
 
 下面的脚本在设备端定位目标进程、启动 60 秒采集，并在主机端保存 Simpleperf 返回的后台 PID。它假设当前设备端 `simpleperf` 已有采样目标的权限；`--background` 不会绕过 profileable、root、SELinux 或内核权限：
 
@@ -766,6 +836,11 @@ wait "$stat_adb_pid"
 
 这里的 `stat_adb_pid` 是主机端 adb 进程，不是设备上的 Simpleperf PID。`--app` 单独使用时，别指望它持续纳入全部后续子进程；要动态纳入，得靠 `--monitor-new-thread`。
 
+<!-- gracker-diagram: ch15-02-15-dynamic-process-monitor -->
+![同包名新进程与新线程的增量发现](../../assets/diagrams/ch15/ch15-02-15-dynamic-process-monitor.png)
+
+图：stat 通过周期扫描发现同包名新进程，再为尚未纳入的线程打开事件。 需显式 --monitor-new-thread；扫描可能遗漏短生命周期对象，不是完整进程生命周期审计。
+
 ### `--use-devfreq-counters` 与 `pmu_lib`
 
 devfreq 是 Linux 为内存控制器等非 CPU 设备提供的动态频率框架，governor 是它选择频率的策略。`--use-devfreq-counters` 在 Android 16 已存在；Android 17 新增的是 `pmu_lib` 供应商驱动后备路径。相关处理位于 `DevfreqCounters::Use()`，只在显式传入该选项时运行，而且要求 root。
@@ -789,6 +864,11 @@ adb shell su root simpleperf stat \
 ```
 
 该选项会改变内存延迟相关 governor 或暂时停用供应商计数器，测量结果也会受到状态切换影响。正常退出时，`DevfreqCounters` 对象的析构逻辑负责恢复；进程被 `SIGKILL` 或崩溃时，恢复逻辑没有机会运行。所以实验脚本应在运行前后记录 governor 和 `enable_counters`，发现状态未恢复时按设备内核文档处理。
+
+<!-- gracker-diagram: ch15-02-16-devfreq-fallback -->
+![devfreq 与供应商计数器后备路径](../../assets/diagrams/ch15/ch15-02-16-devfreq-fallback.png)
+
+图：按源码条件临时切换 governor，未找到时才尝试供应商 pmu_lib 后备路径。 这些 magic 值不是通用 PMU API；SIGKILL/崩溃可能跳过恢复，正常退出后也应核对实际状态。
 
 ### 从内核模块 ETM trace 生成 AutoFDO profile
 
@@ -817,6 +897,11 @@ simpleperf inject \
 `--symdir` 会递归查找调试二进制和模块，Android 17 没有 `--kernel-module-dir` 选项。输入的 `perf.data` 或 branch-list 要包含模块 map（运行时地址区间记录），地址对齐还依赖采集时保存的 kallsyms（内核符号表）首符号信息；主机上的 `.ko` 也要与设备运行版本和 build ID 对应。一个 AutoFDO 文件包含多个二进制时，Simpleperf 会提示拆分；`--binary` 可在转换时把范围限定到单个模块。
 
 生成 `zram.afdo` 只算完成了 profile 制备：能否用于内核模块构建、编译器接受哪种 profile，以及优化后是否改善目标负载，要由对应 Android 17 内核构建规则和基准测试确认。
+
+<!-- gracker-diagram: ch15-02-17-kernel-module-autofdo -->
+![从模块运行时地址到 AutoFDO 文件](../../assets/diagrams/ch15/ch15-02-17-kernel-module-autofdo.png)
+
+图：保存模块运行区间和首符号，匹配未剥离 .ko，再建立可执行范围与文件偏移映射。 可直接由 ETM perf.data 转换或先生成 branch-list；输出 profile 不证明构建可用或性能提升。
 
 ### 选择分析手段
 
@@ -907,6 +992,11 @@ Slot 表示一个周期内处理器理论上可以接收或处理的一次操作
 
 表里的几个词：I-cache 与 D-cache 分别保存指令和数据，I-TLB 与 D-TLB 分别缓存两类地址转换，DRAM 指主内存；“发射”表示把操作送往后端执行资源，“执行端口”是操作进入具体执行单元的通道。
 
+<!-- gracker-diagram: ch15-02-18-topdown-categories -->
+![Topdown 一级类别与调查方向](../../assets/diagrams/ch15/ch15-02-18-topdown-categories.png)
+
+图：Topdown 用 CPU 专属公式解释流水线机会的分配，再选择下一轮归因证据。 四个名称不能跨微架构移植公式；Backend 不等于 DRAM，Retiring 也不等于已无可优化工作。
+
 同一次、同一 CPU 上取得的有效计数，代入匹配公式后，四类之和通常应接近 100%。看到负值、明显超过 100% 或相加大幅偏离 100%，先检查 CPU 公式、事件支持、计数复用、线程迁移和采集时段。
 
 ### 公式按 CPU 型号定义
@@ -932,6 +1022,11 @@ AOSP Android 17 的 `simpleperf/event_table.json` 收录了 Arm64 架构事件�
 4. 这些事件在一致的 workload（可重复执行的测试负载）时段内得到可信计数。
 
 任何一道门没有通过，就把结果降级为普通 PMU 线索，先别标成完整的 Arm Topdown 百分比。
+
+<!-- gracker-diagram: ch15-02-19-formula-prerequisites -->
+![计算 Topdown 之前的四道门](../../assets/diagrams/ch15/ch15-02-19-formula-prerequisites.png)
+
+图：确认 CPU 身份、全部必需事件、专属公式与一致计数窗口后，才计算一级占比。 Neoverse V1 的 8 与 4 来自该固定定义；缺条件时只保留普通 PMU 线索，不补造百分比。
 
 ### Android 17 各工具的分工
 
@@ -1056,6 +1151,11 @@ group 所需的计数器超过硬件能力时，内核可能直接拒绝调度�
 
 每组要在可重复的 workload 上独立运行，且每组内部同时计数。跨轮拼接会引入输入、调度、温度和 DVFS 差异，重复次数与离散程度应一并报告；Arm `topdown-tool` 的 `--max-events` 与按 metric 采集同样要为事件拆分重复运行 workload，跨轮误差藏不住。
 
+<!-- gracker-diagram: ch15-02-20-counter-scheduling -->
+![同时计数、复用与跨轮拼接的区别](../../assets/diagrams/ch15/ch15-02-20-counter-scheduling.png)
+
+图：多个事件的比值先要求可信的时间对应，计数器不足时应显式处理调度与跨轮差异。 group 放不下可能无法调度；缩放计数不能恢复各事件在同一时段同时发生的关系。
+
 #### 步骤五：用 CPU 专属定义计算
 
 计算脚本应把这些信息一并写入结果：
@@ -1117,6 +1217,11 @@ adb shell simpleperf report \
 
 “可证伪”的意思是修改前先写出可观察的预测，比如“若主要原因是 I-cache miss，调整布局后耗时与 L1I refill 应同时下降”；结果不符合预测时，就放弃或修改原假设。
 
+<!-- gracker-diagram: ch15-02-21-falsifiable-diagnosis -->
+![从一级方向到可证伪的修改](../../assets/diagrams/ch15/ch15-02-21-falsifiable-diagnosis.png)
+
+图：一级指标给调查方向，再用二级事件、地址与系统上下文区分原因，并提出可观察预测。 保持同设备与工作量，每次只改一个变量；同时检查用户时延、绝对计数和派生占比。
+
 #### Frontend Bound
 
 调查顺序可采用：
@@ -1170,6 +1275,11 @@ DVFS（Dynamic Voltage and Frequency Scaling）动态调整电压与频率。线
 
 优化后 Backend Bound 百分比可能上升，同时总 cycles 大幅下降——这也可能是其他类别下降得更快。所以每轮都要同时保存墙钟耗时、cycles、instructions、绝对事件数和派生百分比。
 
+
+<!-- gracker-diagram: ch15-02-22-absolute-and-relative -->
+![百分比升高与绝对成本下降可以同时发生](../../assets/diagrams/ch15/ch15-02-22-absolute-and-relative.png)
+
+图：同一 CPU 的 Backend Bound 比例升高时，绝对 stall slot 仍可能减少。 归一化数字只作公式示意，非设备测量；实际验收还要比较相同工作量的墙钟时延。
 
 ## 结论
 

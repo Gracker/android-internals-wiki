@@ -88,6 +88,11 @@ consolidated_from:
 
 Hardware Bitmap 与 RenderNode 能减少这条链路上的一部分复制或录制成本，但要受可变性、内存和生命周期约束。
 
+<!-- gracker-diagram: a240-01-request-to-present -->
+![图片请求成功后仍要进入窗口显示](../../assets/diagrams/ch22/a240-01-request-to-present.png)
+
+图：请求、像素和帧身份一起关联，库回调成功不能证明图片已可见。
+
 ## 请求、缓存、尺寸与显示生命周期
 
 这一节我们按链路顺序走：先定加载框架与请求配置，再看解码尺寸与像素内存，然后是大图分块、各级缓存与图片格式，最后给出诊断与上线检查。首图慢、列表掉帧、内存峰值这三类问题，会在每一小节反复出现。
@@ -112,6 +117,11 @@ Glide 5.0.9 的 `Engine` 先查正在使用的资源和内存缓存；未命中�
 
 `Glide.with(fragment)`、`Glide.with(activity)` 或 `Glide.with(view)` 可以获得与界面关联的 `RequestManager`。传入 Application Context（应用级 Context） 得到的是应用级 `RequestManager`，页面停止时它不会自动暂停请求。Glide 返回的 Bitmap 可能受引用计数和 `BitmapPool` 管理：请求清理后继续持有 Bitmap，或在 Transformation（变换实现） 变换中手动调用 `recycle()` 回收原始 Bitmap，都可能造成内容复用错误或崩溃。
 
+<!-- gracker-diagram: a240-02-glide-engine-jobs -->
+![Glide 5.0.9 的内存查询与任务复用条件](../../assets/diagrams/ch22/a240-02-glide-engine-jobs.png)
+
+图：同一 URL 不能替代完整请求 key；onlyRetrieveFromCache 也影响进行中任务的复用。
+
 #### Coil 的实例与网络配置
 
 Coil 3.5.0 建议全应用共享一个 `ImageLoader`：每个实例都持有自己的内存缓存、磁盘缓存和网络资源，按页面创建实例会拆散命中率、增加常驻对象。确实需要不同认证或隔离域时，我们可以显式设计少量 `ImageLoader`，并记录各自的缓存目录和生命周期。
@@ -127,6 +137,11 @@ Coil 3 的网络行为要单独配置：
 
 这些行为与 OkHttp 自身的 HTTP 缓存属于两层。评审缓存命中时，我们要记录命中的具体层和 Coil 网络组件配置。
 
+<!-- gracker-diagram: a240-03-coil-size-network -->
+![Coil 的尺寸解析与网络策略分别配置](../../assets/diagrams/ch22/a240-03-coil-size-network.png)
+
+图：共用 ImageLoader 保持缓存和资源复用；子组合状态插槽要评估 LazyList 热点。
+
 #### 混用两套框架的成本
 
 迁移期允许 Glide 与 Coil 并存，但要留意可能出现的重复开销：一个页面同时请求同一批图片时，两套内存缓存、磁盘缓存、解码任务和网络连接都可能重复。迁移方案应按功能模块或页面切分，并采集两套 data source 指标；同一个 RecyclerView 里按列表项随机挑图片框架，是我们要明确避免的。
@@ -139,9 +154,19 @@ Coil 3 的网络行为要单独配置：
 
 显示目标为 1000 × 750 时，同配置像素约 2.86 MiB，两者像素数量相差 16 倍。这还只是纯像素开销：行跨度（row stride）、色彩配置、复用空间、辅助解码缓冲区和图形驱动资源都会再增加运行时占用。
 
+<!-- gracker-diagram: a240-04-decoded-pixel-budget -->
+![下载字节与解码像素是两种预算](../../assets/diagrams/ch22/a240-04-decoded-pixel-budget.png)
+
+图：目标像素决定基础内存量级，压缩文件更小不保证解码驻留更低。
+
 Android 8.0 / API 26 起，软件 Bitmap 的像素数据位于原生堆（native heap）。`Bitmap` 通过 `NativeAllocationRegistry` 登记原生内存分配，`getAllocationByteCount()` 返回当前底层分配空间的字节数；复用过的 Bitmap 可能出现这个值大于当前 `getByteCount()`。
 
 `Bitmap.Config.HARDWARE` 的像素存放在图形内存，并且始终不可变：`getPixel()`、`getPixels()` 与 `copyPixelsToBuffer()` 等直接访问会抛出异常，软件 Canvas 也画不了它。把硬件 Bitmap 显式复制成软件 Bitmap 时，可能触发把图形内存读回 CPU 可访问内存的回读（readback），这部分开销要单独测量。
+
+<!-- gracker-diagram: a240-05-hardware-cpu-contract -->
+![Hardware Bitmap 是图形存储，不是硬件解码器](../../assets/diagrams/ch22/a240-05-hardware-cpu-contract.png)
+
+图：硬件位图描述最终存储与使用约束，不保证使用专用 JPEG/AVIF 硬件编解码器。
 
 #### BitmapFactory：先读边界尺寸，再按 2 的幂采样
 
@@ -184,6 +209,11 @@ fun decodeSampledFile(
 ```
 
 Android 17 的 `BitmapFactory.Options` 仍说明：`inSampleSize <= 1` 按 1 处理，非 2 的幂会向下取到最近的 2 的幂。采样得到的是解码近似尺寸，ImageView 或图片库还可能执行精确缩放与裁剪。服务端能提供接近目标的资源时，应先减少下载尺寸，再让客户端做末端适配。
+
+<!-- gracker-diagram: a240-06-bitmapfactory-sampling -->
+![BitmapFactory 先读边界再确定粗采样](../../assets/diagrams/ch22/a240-06-bitmapfactory-sampling.png)
+
+图：采样是粗粒度输出尺寸决策；资源 density 还可能改变最终大小。
 
 `inBitmap` 能复用可变 Bitmap 的已分配空间。API 19 起，只要新结果所需字节不超过旧 Bitmap 的 `getAllocationByteCount()`，复用限制比早期版本宽；配置、可变性、色彩空间以及旧对象是否仍在展示，都会影响能否复用。普通业务应交给经过测试的框架资源池，手写池需要处理并发占用、拒绝复用和异常回退。
 
@@ -277,6 +307,11 @@ fun decodeTile(
 
 `BitmapRegionDecoder` 用内部锁保护原生解码器，同一个实例一次只能执行一个 `decodeRegion()`。给同一解码器配很多工作线程，解码仍是一条一条排队，等待和过期任务反而更多。预取队列应支持取消、优先当前视口，并限制尚未消费的结果数量。
 
+<!-- gracker-diagram: a240-09-tile-viewport -->
+![超大图以视口、层级和有界分块管理](../../assets/diagrams/ch22/a240-09-tile-viewport.png)
+
+图：多线程不能让同一个 BitmapRegionDecoder 同时 decodeRegion；完整解码后裁切也不能省掉原图像素。
+
 平台支持的区域解码格式随版本演进：
 
 | 平台 | 源码列出的区域解码格式 |
@@ -286,6 +321,11 @@ fun decodeTile(
 | Android 17 | JPEG、PNG、WebP、HEIF、AVIF |
 
 这是 Android 框架当前公开的格式范围，设备编解码器、具体文件编码特征和损坏输入仍要实测。服务端向 Android 10/11 下发需要平移缩放的超大图时，应准备 JPEG / PNG 分块或客户端支持的替代解码器；AVIF 区域解码要到 Android 17 才进入平台 `BitmapRegionDecoder` 的声明。
+
+<!-- gracker-diagram: a240-10-region-format-versions -->
+![区域解码的格式范围按平台区间核对](../../assets/diagrams/ch22/a240-10-region-format-versions.png)
+
+图：整图格式支持与区域解码支持是两个能力，AVIF 整图从 API 31 开始不等于旧版支持区域解码。
 
 带 `isShareable` 的 `newInstance()` 重载已经弃用，该参数在对应历史版本早已被忽略。一个解码器不再使用且没有并发请求时，可以调用 `recycle()` 释放原生对象；调用后所有读取与解码都会失败。
 
@@ -306,11 +346,21 @@ fun decodeTile(
 
 这些层节省的工作不同，把命中率合并成一个“缓存命中”数字会掩盖差异。我们先确认慢请求缺的是哪一层，再决定调整容量、缓存键还是服务端响应头。
 
+<!-- gracker-diagram: a240-11-cache-work-saved -->
+![缓存命中省掉哪一段工作](../../assets/diagrams/ch22/a240-11-cache-work-saved.png)
+
+图：按缓存层分别统计，避免把内存命中、磁盘命中和分配复用合为同一个指标。
+
 #### 缓存键与内容身份
 
 图片框架会把尺寸、Transformation、Options 和结果类型等请求信息纳入相应缓存键，但“这个 URL 的内容版本”仍由业务和服务端提供，所以优先使用内容哈希或版本化 URL。URL 不变而内容会更新时，Glide 可使用 `signature`；Coil 可以使用请求数据版本或经过审查的自定义缓存键。不同用户、鉴权请求头、租户或隐私域共享缓存前，要确认缓存键和缓存目录不会串数据。
 
 业务层再增加一份 URL → Bitmap 的强引用缓存，往往造成双份持有、错误失效和绕过内存裁剪策略。确有跨框架共享需求时，更适合共享原始文件或统一网络 / 磁盘层，并明确所有权。
+
+<!-- gracker-diagram: a240-12-cache-identity -->
+![缓存键包含内容身份与输出条件](../../assets/diagrams/ch22/a240-12-cache-identity.png)
+
+图：短期签名 URL 与稳定内容身份需要共同设计，同一 URL 不等于同一输出资源。
 
 #### 峰值场景下的缓存容量
 
@@ -319,6 +369,11 @@ fun decodeTile(
 - 多进程各有独立堆和 `ImageLoader`。只有展示图片的进程才应初始化完整图片栈。
 - 收到系统内存压力回调时，先让框架按策略裁剪缓存；页面还要释放 RecyclerView adapter（适配器）、Compose 状态、预取结果和自建强引用。
 - 清空整个缓存会把后续访问变成冷加载。它属于诊断或明确的账户 / 隐私清理操作，不是常规掉帧修复。
+
+<!-- gracker-diagram: a240-13-peak-memory -->
+![图片峰值来自同时存活的多类结果](../../assets/diagrams/ch22/a240-13-peak-memory.png)
+
+图：扩大缓存不能消除同时解码的瞬时峰值；清空整个缓存也不是通用掉帧修复。
 
 #### 响应头与客户端网络缓存
 
@@ -343,6 +398,11 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 | AVIF | 服务端可协商的高压缩静态图；图像序列需另验具体解码器 | 平台解码从 API 31 开始；平台区域解码声明到 Android 17 才包含 AVIF | 低端机解码时间、色彩 / HDR（高动态范围）、兼容回退、图片库解码器 |
 
 文件更小省的是传输和磁盘字节，解码或首个可见帧却不一定更短。同一组代表性图片要在目标设备上比较：
+
+<!-- gracker-diagram: a240-14-format-evaluation -->
+![格式选型同时核对传输与首次可见帧](../../assets/diagrams/ch22/a240-14-format-evaluation.png)
+
+图：同一视觉内容固定尺寸和设备后比较；文件更小不保证解码或首个可见帧更快。
 
 - CDN 输出字节、TTFB（首字节到达时间） 首字节时间与完整下载时间；
 - 冷 / 热原始数据缓存下的解码与变换时间；
@@ -457,7 +517,17 @@ suspend fun decodeForDisplay(
 
 `withContext` 决定代码在哪个线程池执行，`ImageDecoder` 本身仍是同步调用。协程被取消时可以阻止排队任务开始或阻止结果交付，但已经进入原生编解码器的任务不一定会立即中断。列表快速滑动时，结果返回后我们还要核对请求身份。
 
+<!-- gracker-diagram: a240-07-imagedecoder-header -->
+![ImageDecoder 的头信息回调仍在同步调用内](../../assets/diagrams/ch22/a240-07-imagedecoder-header.png)
+
+图：withContext 负责调度，ImageDecoder 不会因存在回调就自动后台执行。
+
 若输出需要 `getPixel()`、`copyPixelsToBuffer()`、软件 `Canvas` 或后续原地修改，应显式选择 `ALLOCATOR_SOFTWARE`。如果只是在解码后画圆角，`ImageDecoder.setPostProcessor()` 可以先在内部软件像素上绘制，再生成不可变结果；业务拿到结果后，像素就改不动了。
+
+<!-- gracker-diagram: a240-08-software-mutability -->
+![软件存储与可写结果是两个配置维度](../../assets/diagrams/ch22/a240-08-software-mutability.png)
+
+图：内存位置、可变性和后处理时机不要合并成一个“software”开关。
 
 #### 2.2 BitmapFactory 的两阶段尺寸决策
 
@@ -509,6 +579,11 @@ fun decodeSampledFile(
 
 `mmap` 是把文件区间映射到进程虚拟地址空间的内存映射机制。源码并不保证文件 Source 必然使用 `mmap`。`SkFILEStream`、C 标准 I/O、内核页缓存和具体编解码器可以减少重复物理读取，但离零拷贝还有距离。即使应用自己建立 `MappedByteBuffer`，编解码器仍要读取压缩数据并写入新的像素存储。
 
+<!-- gracker-diagram: a240-15-source-io -->
+![Source 描述来源，真正读取发生在解码时](../../assets/diagrams/ch22/a240-15-source-io.png)
+
+图：文件 Source 不保证 mmap；映射压缩字节也不会消除解码输出分配。
+
 是否采用映射应由访问模式决定：
 
 - 多次随机访问同一个本地大文件时，映射可能减少应用层缓冲区管理；
@@ -533,6 +608,11 @@ fun decodeSampledFile(
 
 因此 Hardware Bitmap 并未消除 CPU 解码和像素传输：它把图形缓冲准备挪到解码结果构建阶段，免掉普通软件 Bitmap 首次绘制时再由 HWUI 建立纹理副本这一步。成本发生的时间和后续存储形态变了，把它写成“图片由 GPU 直接解码”是错误的。
 
+<!-- gracker-diagram: a240-16-hardware-decode-allocation -->
+![硬件位图把图形分配与上传前移到结果构建](../../assets/diagrams/ch22/a240-16-hardware-decode-allocation.png)
+
+图：Config.HARDWARE 不表示 GPU 直接解码；显式 HARDWARE 分配失败报错，DEFAULT 可以回退软件结果。
+
 #### 4.1 四种分配器的语义
 
 | allocator（分配器） | Android 17 公开语义 | 适合场景 | 主要约束 |
@@ -543,6 +623,11 @@ fun decodeSampledFile(
 | `ALLOCATOR_HARDWARE` | 必须返回 `Config.HARDWARE` | 调用方能满足全部硬件限制的静态图 | 与可变输出、透明度蒙版（alpha mask）等选项冲突时抛异常 |
 
 官方 API 文档说 DEFAULT “通常”产生 Hardware Bitmap，也保留小图走软件或不兼容时回退的权利。业务判断要看返回值的 `config`，默认策略当不了固定兼容性契约。
+
+<!-- gracker-diagram: a240-17-allocator-modes -->
+![四种 allocator 描述最终像素存储](../../assets/diagrams/ch22/a240-17-allocator-modes.png)
+
+图：allocator 决定存储策略，不是线程调度器，也不等同专用硬件编解码器选择。
 
 #### 4.2 可变性、后处理和动画
 
@@ -586,6 +671,11 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 
 `bitmap.setGainmap(null)` 只解除基础 Bitmap 对增益图的关联；其他 Java 或原生层引用结束后，对应资源才具备释放条件。移除增益图还会改变 HDR 效果、显示能力适配和色彩一致性，把它当作低端机无条件的省内存开关是危险的。
 
+<!-- gracker-diagram: a240-19-gainmap-memory -->
+![基础图、增益图与临时像素分别记账](../../assets/diagrams/ch22/a240-19-gainmap-memory.png)
+
+图：setGainmap(null) 解除关联，不保证其他引用持有的资源立即释放，还会改变 HDR 效果。
+
 选择线上格式时，应对同一视觉内容记录：
 
 - 编码字节数与下载时间；
@@ -596,6 +686,11 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 - 失败率，以及服务端回退格式是否生效。
 
 一台旗舰设备的单次结果不足以推导全量策略。设备分组应来自实际 SoC、系统版本、内存等级和业务样本，格式性能则由各组实测给出。
+
+<!-- gracker-diagram: a240-18-gainmap-gates -->
+![Ultra HDR 增益图有独立的提取与存储条件](../../assets/diagrams/ch22/a240-18-gainmap-gates.png)
+
+图：后处理或节省 RAM 策略可能跳过自动增益图提取；HDR 验收要看 hasGainmap 与实际显示。
 
 ### 6. 解码线程调度与并发上限
 
@@ -617,6 +712,11 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 
 两张大尺寸、广色域图片可能先受内存带宽和分配峰值限制，多张小缩略图则可能受调度与请求管理成本限制，所以并发数单看 CPU 核数是定不准的。
 
+<!-- gracker-diagram: a240-20-bounded-decoding -->
+![解码并发同时受 CPU 调度与内存约束](../../assets/diagrams/ch22/a240-20-bounded-decoding.png)
+
+图：Dispatchers.IO 名称不代表解码只有轻量 I/O；并发上限不能只按 CPU 核数决定。
+
 #### 6.1 请求取消的时机与校验
 
 图片请求至少有三种取消时机：
@@ -626,6 +726,11 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 3. 已进入 `BitmapFactory` 或 `ImageDecoder` 原生层解码：公开 API 没有可靠的逐请求强制中断协议。
 
 所以列表复用时，必须在完成回调处比较请求键、条目标识或代次编号（generation）。旧任务返回的 Bitmap 可以进入合适的缓存，但要避开已绑定新数据的 View 或 Compose 状态。
+
+<!-- gracker-diagram: a240-21-cancellation-generation -->
+![取消任务与拒绝过期结果是两道防线](../../assets/diagrams/ch22/a240-21-cancellation-generation.png)
+
+图：旧结果可按所有权进入合适缓存，但不能覆盖已绑定新数据的目标。
 
 ### 7. inBitmap 的复用规则
 
@@ -641,6 +746,11 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 - 无论是否期待复用，都必须使用解码方法的返回值；返回值未必是传入的候选对象。
 
 `ImageDecoder` 没有 `setTargetBitmap()`，也没有等价的公开复用入口。它可以选择目标尺寸和分配器，应用提供的 Bitmap 当不了静态图解码目标。图片库若在某条路径切换到 ImageDecoder，也要重新评估原有 Bitmap 复用池在“解码目标复用”上的收益。
+
+<!-- gracker-diagram: a240-22-inbitmap-ownership -->
+![inBitmap 复用容量需要先证明可变与独占](../../assets/diagrams/ch22/a240-22-inbitmap-ownership.png)
+
+图：BitmapPool 复用的是已分配容量，不能把仍在显示或硬件不可变对象放进池。
 
 手工维护池还要证明对象已经不再显示、不会被另一个请求并发使用，并处理色彩格式与容量匹配。大多数应用应优先使用成熟图片库的缓存和复用策略；自定义池应记录命中、拒绝、错误与峰值内存，无需追求一个通用命中率阈值。
 
@@ -682,6 +792,11 @@ adb shell dumpsys SurfaceFlinger
 
 `dumpsys meminfo` 中 Native Heap、Graphics、GL 和 Other 的归类依赖 Android 版本、图形内存统计接口 memtrack HAL 与厂商实现。PSS 表示按共享关系折算后的物理内存贡献，与某个 Java 对象的独占字节数含义不同。应用内的 `allocationByteCount`、进程 PSS、原生堆分析器 heapprofd 和图形缓冲统计应互相校验。
 
+<!-- gracker-diagram: a240-23-storage-observation -->
+![像素存储、共享句柄与内存统计不能混为一项](../../assets/diagrams/ch22/a240-23-storage-observation.png)
+
+图：HardwareBuffer 不自带颜色空间，也不能凭一个 FD 推断 GPU 完成或物理布局。
+
 ### 9. FrameMetrics 与 Perfetto 的分工
 
 #### 9.1 FrameMetrics 覆盖的阶段
@@ -704,6 +819,11 @@ adb shell dumpsys SurfaceFlinger
 - 软件 Bitmap 首次绘制需要准备 GPU 采样资源，影响 RenderThread 或 GPU。
 
 所以 FrameMetrics 适合回答“用户看到的窗口帧是否受影响”，某一次后台图片解码的耗时它给不了。旧文案中的 `LAYOUT_DRAW_TIME`、`DRAW_TIME`、`SWAP_BUFFERS_TIME` 也不是 Android 17 的公开常量名。
+
+<!-- gracker-diagram: a240-25-framemetrics-limits -->
+![窗口帧指标与后台解码耗时各看一处](../../assets/diagrams/ch22/a240-25-framemetrics-limits.png)
+
+图：后台解码不直接成为 FrameMetrics 的独立字段；UI 调度和图形资源准备可能间接拖慢帧。
 
 #### 9.2 Perfetto 中的 Android 17 源码切片
 
@@ -746,6 +866,11 @@ inline fun <T> tracedImageStage(
 
 不要编写依赖并不存在的 `Bitmap#allocate` 切片参数的 SQL。若平台源码没有记录所需字段，应由应用 trace counter（轨迹计数器）、请求日志或内存采样补齐。
 
+<!-- gracker-diagram: a240-24-request-trace-boundaries -->
+![同步解码切片与异步请求区间分别标记](../../assets/diagrams/ch22/a240-24-request-trace-boundaries.png)
+
+图：同步业务切片关联系统 decode trace；异步跨度不能套同线程 trace 栈。
+
 ### 10. 九宫格和瀑布流的调度策略
 
 列表图片管线的目标，是让当前视口在内存可控的前提下及时得到正确尺寸的结果。
@@ -764,6 +889,11 @@ inline fun <T> tracedImageStage(
 按 dp（密度无关像素）把图片固定分成“小、中、大”，内存是估不准的。解码目标最终是像素尺寸，还要受屏幕密度、输出配置、广色域和增益图影响。预算至少用预计 `rowBytes × height`，解码完成后再用实际 `allocationByteCount` 校准。
 
 动态并发若只由上一帧是否超过某个毫秒值控制，同样靠不住。刷新率、FrameTimeline 记录的帧截止时间（deadline）、CPU 压力和图片内存峰值要一起判断；频繁改变并发本身还会造成队列抖动。可按设备组离线确定安全区间，线上只做缓慢、可回退的调整。
+
+<!-- gracker-diagram: a240-29-list-scheduling -->
+![列表当前视口、预取与错误恢复一起设计](../../assets/diagrams/ch22/a240-29-list-scheduling.png)
+
+图：先控制正确尺寸和结果身份，再用可复现设备数据调整格式、缓存和调度。
 
 ### 11. Glide、Coil 与 Picasso 的版本核查
 
@@ -794,6 +924,11 @@ Android 17 / API 37 的公开 API 差异为 `ImageDecoder` 增加了四个默认
 
 线程级监听器存在 `ThreadLocal` 中，每个线程各自保存一份值；进程级监听器则由进程内所有线程共享。它们适合由基础设施统一附加保守默认值或观测逻辑，但有两个工程风险：
 
+<!-- gracker-diagram: a240-26-decode-default-listeners -->
+![API 37 默认监听器与显式监听器的优先级](../../assets/diagrams/ch22/a240-26-decode-default-listeners.png)
+
+图：默认监听器管理基础设施级默认值，业务请求的具体尺寸和颜色策略仍适合显式配置。
+
 - 进程级设置会影响同进程内的图片库和其他模块；
 - 显式监听器后执行，可以覆盖默认监听器设置的参数。
 
@@ -807,9 +942,19 @@ Android 17 / API 37 的公开 API 差异为 `ImageDecoder` 增加了四个默认
 
 `RecordingCanvas` 会保留所画 Bitmap 的引用，业务缓存移除对象后，仍存活的 View 或 RenderNode 可能还引用着它；自建 RenderNode 结束生命周期时可调用 `discardDisplayList()`，框架 View 的内部节点交给框架管理。
 
+<!-- gracker-diagram: a240-27-rendernode-retention -->
+![图片引用与录制命令可能比业务缓存活得更久](../../assets/diagrams/ch22/a240-27-rendernode-retention.png)
+
+图：RenderNode 缓存的是命令和属性，不是自动缓存整张栅格图；框架内部节点交给框架管理。
+
 HWUI 对非 Hardware Bitmap 可进入 `prepareToDraw()` / `PinAsTexture()` 的显式纹理准备分支；Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。
 
 做对照实验时，我们固定同一图片字节、目标尺寸、色彩空间、缓存冷热和页面，分别采集软件 Bitmap 直接显示、软件 Bitmap 提前 `prepareToDraw()`、Hardware Bitmap 显示，以及三组内存缓存命中。比较从请求开始到目标帧呈现（present）的总等待，并记录解码、上传或准备切片、`DrawFrame`、GPU 完成时刻和 Graphics、dma-buf、PSS。若 Hardware 组首绘更稳定但解码完成更晚，只能说明成本前移；端到端是否改善仍要看总等待。
+
+<!-- gracker-diagram: a240-28-prepare-to-draw -->
+![显式纹理准备改变成本发生时机](../../assets/diagrams/ch22/a240-28-prepare-to-draw.png)
+
+图：三组固定字节、目标像素、颜色与缓存冷热，比较请求到 present 的总等待。
 
 Hardware Bitmap 不会变成 SurfaceFlinger 独立图层，`computeApproximateMemoryUsage()` 也不包含子 RenderNode 和 Bitmap。页面退出后的评审要同时检查图片库仍在使用的资源（active resource）、View、Drawable 和 DisplayList 引用、Graphics/GL/PSS、dma-buf、GPU 内存与 FD 趋势；按“每张图固定一个 FD”或 `width × height × 4` 估算完整代价会漏项。
 

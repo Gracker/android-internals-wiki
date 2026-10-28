@@ -40,6 +40,11 @@ Compose 与 View 互操作有两个方向：
 
 池化容器会暂存离屏子项以便再次使用，`RecyclerView` 是典型例子。把混合页面笼统概括成“更慢”，会盖掉几处关键差异：实例有没有复用、属性设置调用是否重复，嵌套滚动和独立 Surface 也各有各的机制。本文就沿着这几处差异展开。
 
+<!-- gracker-diagram: a237-01-interop-directions -->
+![两个方向的宿主与成本](../../assets/diagrams/ch22/a237-01-interop-directions.png)
+
+图：方向决定桥接对象与生命周期责任，不能把所有混合页面归成一种成本。
+
 ## 版本基线与术语校正
 
 版本基线如下：
@@ -73,6 +78,11 @@ Compose 1.12.0 还要求 `compileSdk 37` 和 Android Gradle Plugin 9。`compileS
 
 Compose Multiplatform 属于另一项跨平台决策，Android 页面迁移成功之后，iOS、桌面或 Web 的组件、输入与性能表现仍要分别评估。
 
+<!-- gracker-diagram: a237-02-migration-scope -->
+![Compose First 的迁移边界](../../assets/diagrams/ch22/a237-02-migration-scope.png)
+
+图：官方维护范围区分 android.widget 控件与 android.view 底层设施。
+
 此外，有三项常见说法需要收窄，我们逐条对照源码：
 
 | 常见说法 | Compose UI 1.12.0 中的边界 |
@@ -98,6 +108,16 @@ Compose Multiplatform 属于另一项跨平台决策，Android 页面迁移成�
 
 这一整套流程里，View 始终是 View：它没有被转成可组合函数，自己的测量、布局、绘制和事件模型都还在；被接管的只是外层调度，现在归 Compose `LayoutNode` 管。
 
+<!-- gracker-diagram: a237-04-measure-spec -->
+![Constraints 与 LayoutParams 如何得到 MeasureSpec](../../assets/diagrams/ch22/a237-04-measure-spec.png)
+
+图：固定外框可以减少尺寸波动；不因此跳过 View 自己的测量工作。
+
+<!-- gracker-diagram: a237-03-androidview-bridge -->
+![AndroidView 的布局与绘制桥](../../assets/diagrams/ch22/a237-03-androidview-bridge.png)
+
+图：ViewFactoryHolder / AndroidViewHolder 把两个树的测量、放置和绘制连接起来。
+
 ### `ComposeView`：一个 ViewGroup 承载一个 Compose 根
 
 再看 ComposeView 方向。`AbstractComposeView` 是 `ViewGroup`，内部只允许 Compose 创建的 `AndroidComposeView` 子节点；`ComposeView.setContent` 会保存内容函数，View 已经附着到窗口时 Composition 立即建立，尚未附着时通常等到首次附着再建立。创建 Composition 时，Compose 按以下顺序解析父级 `CompositionContext`：
@@ -108,6 +128,11 @@ Compose Multiplatform 属于另一项跨平台决策，Android 页面迁移成�
 4. 当前窗口的 `Recomposer`。`Recomposer` 负责接收状态变化并安排重组。
 
 同一窗口中的多个 `ComposeView` 通常会找到相同的窗口 `Recomposer`，但这只是共享了 `Recomposer`；每个实例仍是独立的 Compose 根，有自己的 Composition、`AndroidComposeView`、`LayoutNode` 树、语义管理对象、状态注册和 View 测量边界。
+
+<!-- gracker-diagram: a237-05-parent-context -->
+![ComposeView 解析父级 CompositionContext](../../assets/diagrams/ch22/a237-05-parent-context.png)
+
+图：解析优先级不合并各个 ComposeView 的 Composition、节点和状态。
 
 ### 普通互操作的出图路径
 
@@ -123,6 +148,11 @@ Compose Multiplatform 属于另一项跨平台决策，Android 页面迁移成�
 
 地图、视频、相机控件走哪种结构，取决于控件自身的实现，控件名字说明不了出图结构。排查时要看的，是帧生产者（Producer）、缓冲队列和图层树。
 
+<!-- gracker-diagram: a237-06-output-topology -->
+![普通 View、纹理与独立 Surface 的缓冲去向](../../assets/diagrams/ch22/a237-06-output-topology.png)
+
+图：组件名称不能代替缓冲区与图层证据；WebView 媒体或受保护内容可能另有层。
+
 ## 二、`AndroidView` 的成本模型
 
 ### `factory`、`update`、`onReset` 与 `onRelease`
@@ -137,6 +167,11 @@ Compose Multiplatform 属于另一项跨平台决策，Android 页面迁移成�
 | `onRelease` | 实例永久离开 Compose 管理时调用一次 | 释放播放器、WebView、传感器、线程、回调等资源 |
 
 其中 `factory` 最容易吃掉 UI 线程时间：加载复杂 XML、构造 WebView 或启动播放器，都在当前 UI 线程上直接花时间。把 View 预先放进 `remember` 绕不过这个成本，还可能破坏宿主、附着和复用语义，所以官方建议在 `factory` 内创建 View。
+
+<!-- gracker-diagram: a237-07-callbacks -->
+![AndroidView 的四个生命周期回调](../../assets/diagrams/ch22/a237-07-callbacks.png)
+
+图：这些是不同阶段的职责，factory 与资源终止工作仍在 UI 线程执行。
 
 再次触发 `update` 的条件，是它这次执行读取了哪些状态：`AndroidViewHolder` 会用 `OwnerSnapshotObserver` 观察其中读取的 Snapshot（快照）状态，也就是 Compose 可跟踪的状态。举例来说，如果 `title` 与 `image` 是两个状态属性，而某段代码只读取 `model.title`，那么 `model.image` 变化就不会触发这次观察。
 
@@ -179,6 +214,11 @@ fun LegacyChartHost(
 
 还有一个配套条件：如果模型是可变对象、只在原对象上更新内容，引用比较就识别不出变化，这时应改用不可变界面模型、版本号或字段比较。
 
+<!-- gracker-diagram: a237-08-update-observation -->
+![update 的两种触发来源与执行门禁](../../assets/diagrams/ch22/a237-08-update-observation.png)
+
+图：整体 State<Model> 是一个观察对象；普通可变字段不能自动变成独立 Snapshot State。
+
 ### `AndroidViewBinding` 沿用同一套桥接与复用语义
 
 `AndroidViewBinding` 来自 `androidx.compose.ui:ui-viewbinding:1.12.0`。它调用生成的 ViewBinding 工厂函数加载 XML，把绑定对象保存在根 View 上，再用 `AndroidView` 承载这个根节点。省掉的是手写 `findViewById` 和类型转换；XML 加载、View 测量/布局/绘制和输入桥的成本，原来有多少现在还是多少。
@@ -191,6 +231,11 @@ fun LegacyChartHost(
 - 官方源码不建议为承载 Fragment 的绑定对象刻意启用 Lazy 复用，因为 Fragment 有独立的 View 生命周期，通常也不处于能稳定获益的复用场景。
 
 因此，普通 XML 列表项可以按 `AndroidView` 的复用方法处理；包含 Fragment 的布局则应优先保证 FragmentManager、状态保存和销毁顺序正确，View 创建次数只是其中一个观察维度。
+
+<!-- gracker-diagram: a237-09-binding-fragments -->
+![ViewBinding 复用与 Fragment 清理](../../assets/diagrams/ch22/a237-09-binding-fragments.png)
+
+图：状态已保存时内部不强制 Fragment 事务；临时复用与永久释放各有语义。
 
 ### 状态变化到 View 工作的传导
 
@@ -205,6 +250,11 @@ fun LegacyChartHost(
 Compose UI 1.12.0 还处理了绘制期间发生的 View 失效请求。`AndroidViewHolder` 若正在绘制，会用 `postOnAnimation` 把图层失效延后到下一帧，避免同一帧重复绘制同一内容。
 
 所以分析性能时，我们要区分四个计数：`update` 次数、View `requestLayout` 次数、View `invalidate` 次数和最终帧数；后三项是重组计数替代不了的。
+
+<!-- gracker-diagram: a237-10-invalidations -->
+![状态变化怎样变成 View 工作](../../assets/diagrams/ch22/a237-10-invalidations.png)
+
+图：重组次数不能代替 View 的更新、测量与绘制次数。
 
 ### 避免 View → Compose → View 的反馈循环
 
@@ -248,6 +298,11 @@ fun LegacySliderHost(
 ```
 
 这份实现里，Compose 参数是唯一状态源，View 只上报用户操作，`update` 避免重复赋值。如果旧控件没有 `fromUser` 参数，可以在宿主维护“正在应用外部状态”的标记，或在监听器中比较新旧值；`update` 内的无条件回写，则要避开。
+
+<!-- gracker-diagram: a237-11-feedback-loop -->
+![双向控件的状态反馈环](../../assets/diagrams/ch22/a237-11-feedback-loop.png)
+
+图：rememberUpdatedState 让一次安装的监听器读取当前处理器；旧控件另需来源或等值保护。
 
 ### View 成本按操作拆分
 
@@ -299,6 +354,11 @@ fun LegacyVideoRow(
 
 `onReset` 之后，View 可能进入 `deactivated`（暂时停用但仍由 Compose 保留）状态，下一次 `update` 什么时候到来并没有保证，所以重置后的 View 必须先回到安全状态，把旧列表项的内容清掉。`onRelease` 则是终止语义，同一实例后续不会再复用。
 
+<!-- gracker-diagram: a237-12-reuse-deactivate -->
+![复用、停用与永久释放的时序](../../assets/diagrams/ch22/a237-12-reuse-deactivate.png)
+
+图：Lazy key、contentType 和分组结构共同影响兼容性；非空回调本身不保证每次复用。
+
 ### 复用时应清理什么
 
 复用检查至少覆盖：
@@ -324,6 +384,11 @@ fun LegacyVideoRow(
 - UI 线程、RenderThread 与 FrameTimeline 中的帧期限错过情况。FrameTimeline 是 Perfetto 中关联应用帧、合成帧和显示期限的轨道。
 
 判断就落在这两组数上：同一数据集和相同滚动脚本下，`factory` 次数明显下降而数据绑定耗时稳定，才说明复用减少了创建成本；若 `onReset + update` 比新建还贵，就应回到控件实现，重新划分哪些工作放在重置、哪些放在销毁。
+
+<!-- gracker-diagram: a237-13-reuse-evidence -->
+![用计数和尾部样本判断复用](../../assets/diagrams/ch22/a237-13-reuse-evidence.png)
+
+图：平均帧率无法独自证明复用收益；没有跨控件通用耗时门槛。
 
 ## 四、`ComposeView` 嵌入 View 树
 
@@ -354,6 +419,11 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 ```
 
 该策略在 Fragment 的 View 生命周期进入 `ON_DESTROY` 时销毁 Composition，Fragment 实例即使仍然存活，也不会继续持有已经销毁的 View 树。换成自定义宿主或手工创建的窗口时，我们要额外确认 `ViewTreeLifecycleOwner` 与 `SavedStateRegistryOwner` 是否存在。
+
+<!-- gracker-diagram: a237-14-disposal-strategy -->
+![ComposeView 的销毁策略边界](../../assets/diagrams/ch22/a237-14-disposal-strategy.png)
+
+图：池化策略与 Fragment 生命周期策略适用场景不同；宿主还要提供状态保存 Owner。
 
 ### RecyclerView 临时回收时的 Composition 处理
 
@@ -393,6 +463,11 @@ class ComposeItemHolder(
 
 `setContent` 只执行一次，RecyclerView 的数据绑定转为状态更新；`clearBinding` 清除旧列表项引用，Composition 继续留在池中。若列表项含有通过 `remember` 保存的专属状态，应使用稳定 `key`、把状态提升到列表模型，或明确设计保存与恢复策略。
 
+<!-- gracker-diagram: a237-15-holder-item-identity -->
+![ViewHolder 复用与业务项的组合身份](../../assets/diagrams/ch22/a237-15-holder-item-identity.png)
+
+图：同一 holder 先绑定 A 后绑定 B，不能让 A 的 remember 无条件沿位置留给 B。
+
 ### 多个 ComposeView 的内存模型
 
 “每个 ComposeView 都有一个 Recomposer”是常见误解，默认窗口路径上同一窗口通常共享窗口 `Recomposer`；每个 `ComposeView` 仍保留以下实例级对象：
@@ -408,6 +483,11 @@ class ComposeItemHolder(
 
 多个静态 `ComposeView` 还要使用唯一 View ID，官方文档明确要求这样才能正确恢复 `savedInstanceState`。RecyclerView 列表项内的局部界面状态更适合提升到稳定的列表项模型；把业务状态交给 ViewHolder 的临时 ID 保存，会受复用和进程重建的影响。
 
+<!-- gracker-diagram: a237-16-root-memory -->
+![共享 Recomposer 仍有多个实例根](../../assets/diagrams/ch22/a237-16-root-memory.png)
+
+图：十个小根和一个含十个子项的根，结构与资源开销不同。
+
 ### Compose UI 1.12 的 `ComposeViewContext`
 
 `ComposeViewContext` 在 Compose UI 1.11 引入，1.12.0 已去掉实验注解。多个 `ComposeView` 落在兼容的 `Context` 和同一宿主范围内时，它可以共享一部分宿主对象，例如：
@@ -419,9 +499,19 @@ class ComposeItemHolder(
 
 共享范围受 View `Context`、`LifecycleOwner`、`SavedStateRegistryOwner` 和部分功能开关约束；Fragment 建立新的宿主边界后，查找会在这个边界停住，或者新建一个上下文。合在一起的只是宿主对象，每个 Composition 的业务状态仍归自己。
 
+<!-- gracker-diagram: a237-17-viewcontext-sharing -->
+![ComposeViewContext 的共享范围](../../assets/diagrams/ch22/a237-17-viewcontext-sharing.png)
+
+图：1.12 API 稳定不改变 Owner 与取消释放协议。
+
 该 API 还支持一种预热用法：先用一个已附着的 View 创建 `ComposeViewContext`，再为尚未附着的 `ComposeView` 调用 `createComposition(context)`，可用于 RecyclerView 预组合。构造 `ComposeViewContext` 时，用来创建它的那个 View 必须已经附着，并在这个上下文有效期间保持附着。
 
 若预创建的 `ComposeView` 始终没有附着，调用方必须执行 `disposeComposition()`。这条预热路径的取消与销毁都要自行管理；所有 `ComposeView` 都会自动预取的保证，在这里并不存在。
+
+<!-- gracker-diagram: a237-18-precompose-lifetime -->
+![离树预组合的资源寿命](../../assets/diagrams/ch22/a237-18-precompose-lifetime.png)
+
+图：预热由调用方安排和取消，不是所有 ComposeView 都自动预取。
 
 ## 五、RecyclerView 与 Lazy 容器混合滚动
 
@@ -438,6 +528,11 @@ class ComposeItemHolder(
 | 120 Hz | 8.33 ms |
 
 这些时间由输入、动画、Compose、View 树遍历、RenderThread、GPU、SurfaceFlinger 和显示阶段共同使用，我们做预算时就要按整帧来算：给 Compose 8 ms、View 8 ms 再把两者相加，在 60 Hz 上并不安全，当前帧的系统约束以 FrameTimeline 给出的帧期限为准。
+
+<!-- gracker-diagram: a237-19-frame-deadline -->
+![刷新周期与实际帧期限](../../assets/diagrams/ch22/a237-19-frame-deadline.png)
+
+图：动画可以只失效绘制或布局；刷新率高不要求每帧重组。
 
 ### `AndroidView` 放进 LazyColumn
 
@@ -479,6 +574,11 @@ RecyclerView 预取与 Compose 的组合、布局各有调度成本。Compose UI
 - SurfaceView/地图等组件还有自己的手势和帧循环。
 
 所以多数页面只保留一个主要的竖向滚动容器；竖向列表中放横向轮播，是范围清楚、容易单独验证的常见例外。
+
+<!-- gracker-diagram: a237-20-nested-scroll -->
+![滚动桥转发不代替控制权设计](../../assets/diagrams/ch22/a237-20-nested-scroll.png)
+
+图：requestDisallowInterceptTouchEvent、回弹、AppBar 与无障碍输入需要一起验证。
 
 ### 分批迁移与全量迁移怎样比较
 
@@ -524,6 +624,11 @@ Layout Inspector 会插入额外观测代码并增加开销，所以它的分工
 
 所以编译器报告适合检查宿主函数的生成属性，View 内部交给自定义跟踪区段、计数器和系统跟踪。
 
+<!-- gracker-diagram: a237-21-tool-work -->
+![结构、编译器与动态跟踪各自回答什么](../../assets/diagrams/ch22/a237-21-tool-work.png)
+
+图：使用发布构建、同脚本与真实帧数据比较；工具看到的层次各不相同。
+
 ### 用自定义跟踪区段标出桥接工作
 
 下面用 `androidx.tracing.trace` 标记昂贵的 View 更新和列表项数据绑定。
@@ -567,6 +672,11 @@ Compose 运行时跟踪能提供可组合函数级跟踪信息，但某个 `Andr
 
 主线程空闲时，SurfaceView 的帧生产者、RenderThread、GPU、SurfaceFlinger 或显示设备仍可能迟到，页面照样可能出问题；主线程繁忙时，传统 View 的 XML 加载、文本测量和监听器也可能占掉同一段时间。归因时先看跟踪里的依据，再判断是不是 Compose。
 
+<!-- gracker-diagram: a237-22-perfetto-triage -->
+![从目标帧回到桥接成本](../../assets/diagrams/ch22/a237-22-perfetto-triage.png)
+
+图：主线程空闲不排除内容生产、GPU 或显示侧迟到；主线程忙也需定位具体工作。
+
 ## 七、Compose UI 1.12 相关机制的适用边界
 
 本节只解释这些 Compose 机制会怎样影响互操作边界；编译器诊断、稳定性判定和 Modifier 节点迁移的完整方法由 [Compose 编译器、稳定性与 Modifier.Node 性能诊断](03-compose-compiler-modifier-diagnostics.md) 展开。
@@ -586,6 +696,11 @@ Compose 运行时跟踪能提供可组合函数级跟踪信息，但某个 `Andr
 - 预组合但未附着的 `ComposeView` 仍要遵守主动销毁规则。
 
 所以 PausableComposition 的定位是预取调度工具；互操作组件要提速，还是回到各自的成本模型上想办法。
+
+<!-- gracker-diagram: a237-23-pausable-boundary -->
+![预组合暂停与传统 View 成本](../../assets/diagrams/ch22/a237-23-pausable-boundary.png)
+
+图：PausableComposition 是预取调度能力，不能直接推导整个混合页面变快。
 
 ### Modifier.Node
 
@@ -613,6 +728,11 @@ View 侧仍会收到标准 `MotionEvent`，继续执行 `dispatchTouchEvent`、�
 
 `AndroidView` 只描述 UI 宿主方式；出图类型要看内嵌内容本身——包装普通 TextView 与包装视频 SurfaceView 的性能模型相差很大。
 
+<!-- gracker-diagram: a237-24-surface-clip -->
+![宿主布局、内容 Surface 与裁剪](../../assets/diagrams/ch22/a237-24-surface-clip.png)
+
+图：几何约束、裁剪和缓冲区拓扑是三个不同问题。
+
 ### 自适应刷新率的请求边界
 
 Android 15 QPR1（首个季度平台更新）起，受支持设备可以使用自适应刷新率（Adaptive Refresh Rate，ARR），让系统根据可见内容调整刷新率；Android 17 上仍要先用 `Display.hasArrSupport()` 确认设备支持。请求的入口分两侧：View 可以通过 `requestedFrameRate` 发出请求，Compose 从 1.9 起提供 `Modifier.preferredFrameRate`。
@@ -626,6 +746,11 @@ Android 15 QPR1（首个季度平台更新）起，受支持设备可以使用�
 - 60/90/120 Hz 的切换结果要从性能跟踪、SurfaceFlinger 信息和设备显示状态确认。
 
 例如，我们可以让 Compose 外层动画请求高帧率类别，内嵌视频保持 24/30 fps，两条内容节奏各自独立：宿主界面每帧重组，视频缓冲区仍由视频自己的节奏产生；SurfaceView 的视频更新同样走自己的帧节奏，宿主应用窗口无需跟着重画。
+
+<!-- gracker-diagram: a237-25-arr-votes -->
+![混合树与独立 Surface 的帧率请求](../../assets/diagrams/ch22/a237-25-arr-votes.png)
+
+图：ARR 请求是提示，不是强制面板频率或每帧重组指令。
 
 ## 九、测试互操作边界
 
@@ -656,6 +781,11 @@ fun ChartHost(
 
 测试的分工由此清楚：单元测试覆盖 `ChartModel` 映射和工厂选择；Robolectric 或仪器化测试负责 Looper 消息循环、View 树宿主、测量/布局、输入与资源生命周期。大量模拟 `View` 内部行为，通常重现不了这些平台层面的行为。
 
+<!-- gracker-diagram: a237-26-test-directions -->
+![互操作测试的查询与宿主范围](../../assets/diagrams/ch22/a237-26-test-directions.png)
+
+图：1.12 的范围查询需 ExperimentalTestApi；不能用它反向代替传统 View 匹配。
+
 ### Espresso 与 ComposeTestRule 混用
 
 官方测试 API 支持在同一个仪器化测试中分别查询 View 与 Compose 节点，两套体系可以混用。下面的测试先操作传统按钮，再断言 Compose 文案。
@@ -675,6 +805,11 @@ fun legacyButtonUpdatesComposeState() {
 ```
 
 Compose 测试规则只会同步它能够观察的 Compose 工作，虚拟测试时钟管到的也只有 Compose 一侧；Android View 的测量、绘制、外部线程或播放器回调要另行等待。等待 View 或外部条件时，用能表达“何时空闲”的 `IdlingResource`，或用 `waitUntil` 轮询明确条件；固定时长的休眠只会把竞态盖住。
+
+<!-- gracker-diagram: a237-27-test-clock-idle -->
+![虚拟时钟与等待空闲的边界](../../assets/diagrams/ch22/a237-27-test-clock-idle.png)
+
+图：本篇固定 UI 1.12；后续实验版本的测试线程扩展需要单独核对。
 
 ### 互操作测试范围
 
@@ -738,6 +873,11 @@ Compose 测试规则只会同步它能够观察的 Compose 工作，虚拟测试
 | 统计 | 充分预热并执行多次迭代 | 中位数、P90/P95/P99、异常样本说明 |
 
 迁移验收时，我们要把平均 FPS 和长尾一起看：平均值可能掩盖首次创建、快速滚动和对象池满后释放时的长尾，所以应同时设定错过帧期限的比例、P95/P99 帧耗时、启动耗时、内存峰值和功能正确性阈值。
+
+<!-- gracker-diagram: a237-28-migration-validation -->
+![每批迁移的可复现验收](../../assets/diagrams/ch22/a237-28-migration-validation.png)
+
+图：单页面、Fragment 混合与导航统一各有回归范围；长帧需保留对应 trace。
 
 ## 十一、排查清单
 

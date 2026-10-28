@@ -129,9 +129,19 @@ sources:
 
 Android XR 覆盖多种运行形态。手机或大屏应用可以作为 compatible panel（兼容 2D 面板）运行。XR differentiated app 则可以增加 Subspace、空间面板、3D 模型、环境和感知能力。Unity/OpenXR 应用由引擎向 XR runtime 提交 swapchain image。display glasses 上的 Projected Activity 则运行在 companion host device（负责计算与连接的手机等伴随设备）。
 
+<!-- gracker-diagram: ch13-13-01-content-forms -->
+![先确定内容运行形态](../../assets/diagrams/ch13/ch13-13-01-content-forms.png)
+
+图：面板、空间场景、引擎与投射采用不同提交边界。 形态划分是责任坐标，不能用框架名推断最终显示进程。
+
 这些形态都跑在 Android 进程里，共享 CPU、GPU、内存、I/O 和功耗约束，但显示终点不一样。普通 2D 内容的应用侧仍能观察 `Choreographer`、HWUI RenderThread 和 Surface buffer；到了 XR runtime，还要负责空间放置、视点与姿态、可能的 reprojection（依据更新后的姿态修正已渲染图像），最后向 XR 显示设备提交。Unity/OpenXR 用的是 runtime 管理的 frame loop 和 swapchain，不能直接套用普通 View 的 `doFrame → DrawFrame → queueBuffer`。
 
 分析时先回答三个问题：
+
+<!-- gracker-diagram: ch13-13-02-pipeline-identification -->
+![先把三个问题落到对象上](../../assets/diagrams/ch13/ch13-13-02-pipeline-identification.png)
+
+图：内容形态、观察阶段和数字用途应分别确认。 质量目标、制作建议和设备实测数据不互相替代。
 
 1. 当前内容属于 compatible 2D panel、Jetpack XR 空间内容、Unity/OpenXR，或 Projected/Glimmer；
 2. 帧时间、资源加载和显示延迟分别在哪里观测；
@@ -154,6 +164,26 @@ Android XR 覆盖多种运行形态。手机或大屏应用可以作为 compatib
 Compose for XR 从 `1.0.0-alpha14` 起将 `compileSdk` 更新到 API 37，并要求至少 AGP 9.2.0。alpha16 把库的 `minSdk` 降到 24，但官方同时说明 Jetpack XR API 运行时仍要求 API 34。这三项条件要分开理解：`compileSdk 37` 决定编译时可见 API，manifest minSdk 决定安装兼容范围，XR runtime 条件决定功能能否运行。使用 alpha16 时应按对应 release notes 配置构建环境。本文只采用当前文档仍存在的概念，不用早期 alpha 类名推断长期 API。
 
 公开 AOSP tag 可以验证 Android 的 HWUI、Surface、BufferQueue、fence 和调度公共层，但不能据此补写未公开的 XR compositor 内部调用链。本文对 XR runtime 的描述只覆盖 Jetpack、Unity/OpenXR 与质量文档公开的协议和责任边界。
+
+<!-- gracker-diagram: ch13-13-03-release-channels -->
+![平台 tag 与库的发布渠道](../../assets/diagrams/ch13/ch13-13-03-release-channels.png)
+
+图：平台版本、stable 核心库与预发布 UI 库分别锁定。 2026-10-24 核对；DP4 文档提示不等于每个组件仍在 alpha。
+
+<!-- gracker-diagram: ch13-13-04-known-dependency -->
+![测资源前先修正已知依赖问题](../../assets/diagrams/ch13/ch13-13-04-known-dependency.png)
+
+图：beta02 的 SceneCore rc01 依赖有官方已知泄漏说明。 按 release notes 显式采用 SceneCore 1.0.0，再测业务资源常驻量。
+
+<!-- gracker-diagram: ch13-13-05-build-runtime-capability -->
+![构建、安装与空间能力的条件](../../assets/diagrams/ch13/ch13-13-05-build-runtime-capability.png)
+
+图：artifact 最低要求、可安装范围和 XR 能力是独立检查。 一个 AAR 的 metadata 不代表整个传递依赖图；本文设备分析固定 API 37。
+
+<!-- gracker-diagram: ch13-13-06-public-source-boundary -->
+![公共 Android 层与 XR 黑盒边界](../../assets/diagrams/ch13/ch13-13-06-public-source-boundary.png)
+
+图：公共源码用于验证应用生产与同步，XR 内部按公开协议取证。 没有公开或现场证据时，不命名固定 compositor 线程和 latch slice。
 
 ## Android XR 在渲染体系中的位置
 
@@ -187,11 +217,31 @@ Projected glasses
 Host Activity/Compose → projected session/transport → glasses display/input
 ```
 
+<!-- gracker-diagram: ch13-13-08-four-render-paths -->
+![四条内容路径的责任交接](../../assets/diagrams/ch13/ch13-13-08-four-render-paths.png)
+
+图：从输出对象识别 runtime 接收内容的边界。 保留原概念文本；图是职责示意，未承诺固定进程或 GPU 完成顺序。
+
 这四条路径可能共享 GPU 和显示资源，也可能由不同 runtime 实现。trace 分析应从本帧的 producer、提交目标 surface/swapchain、姿态责任方和最终 present 责任方开始，不能只按框架名寻找最长 slice。
 
 对 compatible panel 与 `SpatialPanel`，可以复用普通 Android 窗口的证据链，追到 `Choreographer`、HWUI、dequeue/queue、应用 Surface buffer 和 transaction。证据到达 XR scene/runtime 接收边界后，就不要再套用标准手机链路；公开文档没有给出固定的 XR compositor 进程、latch slice 或最终 present fence 名称。
 
+<!-- gracker-diagram: ch13-13-09-panel-evidence -->
+![面板生产结束还要继续追 XR 输出](../../assets/diagrams/ch13/ch13-13-09-panel-evidence.png)
+
+图：普通面板可复用应用侧证据，再补 XR runtime 的接收与输出。 FrameTimeline 覆盖先确认；公共 SurfaceFrame 不是最终光学显示。
+
 `SpatialExternalSurface`、SceneCore `SurfaceEntity`、视频和 Camera 内容应按独立 producer/Surface 记录。它们可能与 2D panel 共享 GPU、带宽和 runtime 合成预算，但 panel 的 FrameTimeline 不能覆盖独立 Surface 的完整生产节奏。该 Surface 是否对应可见的 SurfaceFlinger Layer，也要通过设备 trace 或 Layer 树确认，不能只凭 API 类名推断。
+
+<!-- gracker-diagram: ch13-13-07-quality-not-pipeline -->
+![质量等级与管线不是同一维度](../../assets/diagrams/ch13/ch13-13-07-quality-not-pipeline.png)
+
+图：immersive 与 augmented 先分形态，再确定实际管线。 质量档不能替代 panel、SceneCore 或 OpenXR 对象识别。
+
+<!-- gracker-diagram: ch13-13-10-producer-separation -->
+![面板、外部 Surface 与 3D entity 分开统计](../../assets/diagrams/ch13/ch13-13-10-producer-separation.png)
+
+图：外部媒体和模型都有自己的生产对象，不能并入面板帧统计。 共享 GPU 不等于同一 producer；Surface 是否对应 SF Layer 需现场确认。
 
 ## Jetpack XR SDK 的 UI 栈边界
 
@@ -217,6 +267,26 @@ scene graph（用父子关系组织空间实体的场景树）只有挂入可见
 
 业务代码必须锁定具体依赖版本，诊断记录里也应写明 `xr.compose`、`xr.runtime`、`xr.scenecore`、`xr.arcore`、`xr.projected` 与 `xr.glimmer` 的完整版本。
 
+<!-- gracker-diagram: ch13-13-11-spatialization-gate -->
+![Subspace 的运行条件与内容选择](../../assets/diagrams/ch13/ch13-13-11-spatialization-gate.png)
+
+图：先确认 spatialization，再分别核算面板、实体和外部 Surface。 Home Space / 非 XR 忽略 Subspace 代码；需要适用的 2D 内容。
+
+<!-- gracker-diagram: ch13-13-12-animation-version -->
+![模型动画按库与版本分别核对](../../assets/diagrams/ch13/ch13-13-12-animation-version.png)
+
+图：Compose 模型 API 与 SceneCore 动画的成熟度并不一致。 不要用最新参考页中的 1.1 API 替代 stable 1.0.0 契约。
+
+<!-- gracker-diagram: ch13-13-13-entity-visible -->
+![创建模型与显示模型的条件](../../assets/diagrams/ch13/ch13-13-13-entity-visible.png)
+
+图：模型对象、可见场景树与最终可见结果要分开检查。 parent 非 null 仍须核对祖先 enabled、capability、视野与实际输出。
+
+<!-- gracker-diagram: ch13-13-14-asset-owner -->
+![资源清理由谁负责](../../assets/diagrams/ch13/ch13-13-14-asset-owner.png)
+
+图：remember state、手工 state 与 SceneCore 资产按各自契约管理。 beta02 state close 是空实现；CPU 清理调用不能证明显存即时归零。
+
 ## 空间环境资产的成本构成
 
 `SpatialEnvironment` 管理应用的空间环境偏好。按 SceneCore beta01 的当前模型，`SpatialEnvironmentPreference` 接收一个 `ImageBasedLightingAsset` 和一个 glTF geometry，每份偏好最多提供一份 lighting asset 和一份 geometry。用户直接看到的 skybox texture（包围场景的远景纹理）放在 geometry 资产中，独立 IBL ZIP 用于 lighting、reflection 与 specular（镜面反射高光）计算。
@@ -235,7 +305,32 @@ scene graph（用父子关系组织空间实体的场景树）只有挂入可见
 
 拆分可见 skybox 与 lighting map 后，两者可以独立选择分辨率，避免为了光照计算读取过大的可见纹理，从而降低纹理带宽和功耗。自定义环境含 3D 对象时，缺少匹配 IBL 可能导致过亮、过暗，或反射方向与环境不一致。
 
+<!-- gracker-diagram: ch13-13-18-ibl-generation -->
+![可见环境与 IBL 分开制作](../../assets/diagrams/ch13/ch13-13-18-ibl-generation.png)
+
+图：可见纹理进入 geometry，光照源经过预处理生成 ZIP。 生成流程示意；没有执行 cmgen，也不把旧指南 EXR 说法当现行 loader 契约。
+
 官方将环境 view distance 写为距用户 200 m，并建议把用户放在约 1.5 m 高的位置。200 m 是环境制作与渲染的可见距离指导，不代表感知传感器量程；1.5 m 用于减少较大 UI 与地面穿插，也不是平台 API 上限。
+
+<!-- gracker-diagram: ch13-13-15-environment-two-assets -->
+![环境可见内容与 IBL 的职责](../../assets/diagrams/ch13/ch13-13-15-environment-two-assets.png)
+
+图：geometry 中的可见 skybox 与独立 IBL 用于不同工作。 一份偏好最多一份 geometry 和一份 lighting asset；不是两份可见背景。
+
+<!-- gracker-diagram: ch13-13-16-environment-apply -->
+![环境偏好、生效与遮挡](../../assets/diagrams/ch13/ch13-13-16-environment-apply.png)
+
+图：配置偏好不等于已经显示，还要核对空间能力、active 与 passthrough。 null preference 与空 geometry 含义不同；passthrough 能力另查。
+
+<!-- gracker-diagram: ch13-13-17-environment-numbers -->
+![环境制作建议与输入要求](../../assets/diagrams/ch13/ch13-13-17-environment-numbers.png)
+
+图：文件大小与 patch 顶点数是制作预算，输入图像格式条件另列。 80 MB / 10,000 vertices 不是运行时拒绝阈值；示例尺寸不是唯一尺寸。
+
+<!-- gracker-diagram: ch13-13-19-environment-distance -->
+![环境距离与传感器范围分开](../../assets/diagrams/ch13/ch13-13-19-environment-distance.png)
+
+图：200 m 与约 1.5 m 分别是环境可见距离和用户放置指导。 两者均不是平台 API 数值上限，也不能据此推断感知量程。
 
 ## 3D 模型与纹理资源的加载预算
 
@@ -252,7 +347,17 @@ Jetpack XR 的内容规范支持 glTF 2.0，作者工具常输出 `.gltf` 或 `.
 | 纹理转码与 GPU 上传 | KTX2/Basis 压缩纹理、mipmap（按距离选用的多级纹理）、纹理尺寸、材质与 sampler | GPU memory/counter、upload、带宽、首次 shader |
 | scene attach 与首帧 | Entity 创建、Subspace measure/layout、Full Space capability | 首次可见时间、layout、runtime submit |
 
+<!-- gracker-diagram: ch13-13-22-loading-observation -->
+![加载预算的四类观测点](../../assets/diagrams/ch13/ch13-13-22-loading-observation.png)
+
+图：I/O、解析、纹理工作与首次可见分别打点。 这是观测分类；内部阶段可重叠，不是四个固定串行 API 区间。
+
 压缩后的 `.glb` 或 KTX2 文件大小不等于 GPU resident size（解压、转码后实际常驻 GPU 内存的大小）。运行时转码格式、mip chain、每眼目标、材质数量和 runtime 缓存都会改变内存占用。官方建议环境 glb 使用 mipmaps 与 KTX2，主要收益涉及纹理采样、远近层级、内存带宽和包体；仍需在目标 GPU 上确认最终格式与常驻量。
+
+<!-- gracker-diagram: ch13-13-23-resident-memory -->
+![包体、CPU 内存与 GPU 常驻量](../../assets/diagrams/ch13/ch13-13-23-resident-memory.png)
+
+图：压缩资产大小不能直接当运行时 GPU 常驻量。 需记录最终转码格式、mips、render targets、材质与缓存，并在目标 GPU 测量。
 
 大模型宜异步预取，但在启动初期一次性加载全部资源，会把启动、峰值内存与热压力前移。工程上应按可见优先级加载：
 
@@ -261,7 +366,27 @@ Jetpack XR 的内容规范支持 glTF 2.0，作者工具常输出 `.gltf` 或 `.
 3. 远处环境或低概率内容；
 4. 离开场景后可以释放或降级的缓存。
 
+<!-- gracker-diagram: ch13-13-24-load-priority -->
+![按可见优先级安排加载](../../assets/diagrams/ch13/ch13-13-24-load-priority.png)
+
+图：先保证交互和近期可见内容，再安排远处内容与缓存。 预取策略需同时观察启动、峰值内存与热压力，不能一次加载全部。
+
 资源加载、scene attach 与首帧 present 要分别打点。若只记录 `GltfModel.create()` 返回时刻，会漏掉 GPU upload、shader warm-up（首次编译或准备 shader）和首次被 runtime 采用的时间。解除 entity parent 也只改变场景挂载关系；还要处理 `AutoCloseable` 资产，才能建立纹理与模型资源的释放边界。
+
+<!-- gracker-diagram: ch13-13-20-gltf-loader -->
+![内容格式、加载 API 与线程](../../assets/diagrams/ch13/ch13-13-20-gltf-loader.png)
+
+图：内容规范与实际 loader 支持范围要分开核对。 stable 1.0.0 GltfModel 当前只加载 binary GLB；suspend 仍受 MainThread 契约约束。
+
+<!-- gracker-diagram: ch13-13-21-capability -->
+![加载成功还需当前空间能力](../../assets/diagrams/ch13/ch13-13-21-capability.png)
+
+图：空间内容先检查实际 capability，再更新场景。 Full Space 标签和对象创建成功都不是所有显示条件的充分证明。
+
+<!-- gracker-diagram: ch13-13-25-load-first-visible -->
+![加载返回、挂载与显示分别计时](../../assets/diagrams/ch13/ch13-13-25-load-first-visible.png)
+
+图：资源 API 完成与首次被 runtime 采用是不同事件。 不预设所有 GPU 上传都在 create 返回之后；要用实际 CPU/GPU 证据定位。
 
 ## 视点、姿态与显示配置对帧时间的影响
 
@@ -274,11 +399,21 @@ XR 需要同时观察四条时间线：
 | XR runtime | pose 更新、spacewarp/reprojection、空间合成是否采用了 App 本帧 |
 | display | runtime 提交后何时扫描与显示；光学响应是否另有延迟 |
 
+<!-- gracker-diagram: ch13-13-26-four-timelines -->
+![XR 单帧要观察四个阶段](../../assets/diagrams/ch13/ch13-13-26-four-timelines.png)
+
+图：应用更新、应用 GPU、runtime 与显示各自回答不同问题。 这些阶段可跨帧重叠；应用 buffer 完成不是光学显示完成。
+
 应用完成一帧，不代表用户已经看到与该姿态对应的画面。spacewarp/reprojection 可能基于上一张 App 图像和更新后的运动信息生成中间显示帧，因此显示可以继续刷新，而 App 无须为每个 display refresh 生产全新 render frame。引擎 FPS、App FrameTimeline、runtime synthesized cadence 与 display refresh rate 需要分开记录。
 
 ARCore for Jetpack XR 的 `ArDevice` 提供设备 pose，`RenderViewpoint.left/right/mono` 的 state 提供 viewpoint 的 `pose`、`localPose` 与 `fieldOfView`（视场角）。`pose` 与 `localPose` 是不同参考空间中的位姿表达，应用需要按 API 契约选择。
 
 这些数据为渲染提供输入，却不说明 runtime 何时 latch（锁定并采用）这份 pose，也不给出最终 motion-to-photon（头部运动到对应光子进入眼睛）的延迟。读取频率、坐标空间和使用该 pose 的 render frame 必须在应用侧对齐；没有公开时间戳时，不能声称得到了精确的跨层 pose age。
+
+<!-- gracker-diagram: ch13-13-29-pose-latch-boundary -->
+![读到姿态不代表最终锁定姿态](../../assets/diagrams/ch13/ch13-13-29-pose-latch-boundary.png)
+
+图：应用读取 pose、渲染使用 pose 与 runtime latch 必须分别取证。 没有公开时间戳和时钟映射，就不能声称精确跨层 pose age 或 MTP。
 
 Unity Android XR Extensions 提供三类不同优化：
 
@@ -288,7 +423,22 @@ Unity Android XR Extensions 提供三类不同优化：
 | Vulkan subsampling | 借助 Fragment Density Map（区域采样密度图）让不同区域以不同密度渲染/采样 | 目标设备支持、画质、GPU/带宽收益 |
 | late latching | 在帧生成后段更新 head pose，减少渲染使用的姿态与显示时姿态之间的时间差；官方描述收益可接近一个 frame time | 标记节点正确、runtime 支持、MTP 或可替代指标 |
 
+<!-- gracker-diagram: ch13-13-30-unity-optimizations -->
+![Unity 的三种优化各改哪一段](../../assets/diagrams/ch13/ch13-13-30-unity-optimizations.png)
+
+图：Spacewarp、subsampling 与 late latching 有不同输入和作用点。 这些是引擎路径能力；支持条件、画质和收益需目标设备验证，不能相加成固定延迟。
+
 这些能力属于 Unity/OpenXR 引擎路径，不是普通 Compose panel 的开关。各项优化可能作用于同一段时序或改变彼此前提，理论收益不能简单相加成固定延迟数值。
+
+<!-- gracker-diagram: ch13-13-27-cadence -->
+![App 帧与显示帧的节奏分开](../../assets/diagrams/ch13/ch13-13-27-cadence.png)
+
+图：重投影可复用已有图像，Spacewarp 另用 motion vector / depth。 轨道只示意一种交替合成情况；不规定刷新率、占空比或通用 reprojection 输入。
+
+<!-- gracker-diagram: ch13-13-28-viewpoint-space -->
+![设备位姿与渲染视点的空间关系](../../assets/diagrams/ch13/ch13-13-28-viewpoint-space.png)
+
+图：viewpoint pose 由设备 perception-space pose 与局部视点偏移合成。 组合的是位姿变换，不能逐分量相加；禁用 tracking 时数值可能冻结。
 
 ## Android XR 质量分级的性能检查项
 
@@ -303,9 +453,24 @@ Unity Android XR Extensions 提供三类不同优化：
 | 启动 | 记录 cold/warm 与 first interaction | mean cold `<2 s`、mean warm `<1 s` |
 | 稳定性 | crash、ANR、恢复 | 长会话、tracking/runtime 异常、内存与 thermal |
 
+<!-- gracker-diagram: ch13-13-31-immersive-performance -->
+![Immersive 的性能项与分辨率](../../assets/diagrams/ch13/ch13-13-31-immersive-performance.png)
+
+图：当前 immersive 质量项包含帧目标、推荐分辨率和启动目标。 只摘取相应 differentiated 性能项，不套用 audio/display glasses。
+
 11.1 ms 与 13.8 ms 是整个 App render budget 的目标量级，不表示主线程可以独占这段时间。CPU simulation、render thread、GPU、swapchain wait 和 runtime 提交会共同消耗预算；native XR App 还需使用引擎或 OpenXR timing 证据分段定位。
 
 “每眼 1856 × 2160”也不能直接换算成两次完整 render pass。multiview（一次提交处理双眼视图）、foveation（中心区域高质量、外围降低质量）、subsampling、spacewarp 与设备 compositor 都可能改变实际着色像素和 pass 数，必须通过 AGI、引擎 frame debugger 或 GPU counter 观察目标设备。
+
+<!-- gracker-diagram: ch13-13-32-critical-path -->
+![帧预算不能把 CPU 与 GPU 简单相加](../../assets/diagrams/ch13/ch13-13-32-critical-path.png)
+
+图：应用预算按实际依赖与重叠的关键路径解释。 13.8ms 沿用指南；1000/72 的算术周期约 13.89ms，两者口径要写明。
+
+<!-- gracker-diagram: ch13-13-33-resolution-work -->
+![推荐分辨率与实际着色量](../../assets/diagrams/ch13/ch13-13-33-resolution-work.png)
+
+图：获取 runtime 推荐目标后，还需核对实际渲染配置与 GPU 工作。 双眼目标不自动意味着两次完整 pass；实际支持和画质需设备测量。
 
 ## 工具与验证入口
 
@@ -320,6 +485,11 @@ Unity Android XR Extensions 提供三类不同优化：
 | OpenXR/厂商 runtime 工具 | swapchain、runtime timing、reprojection、pose | 普通 View/Compose 内部重组与业务调用栈 |
 | Winscope / SurfaceFlinger dump | Android Window/Layer、resize、可见性、panel Buffer | SceneCore entity graph 与 XR runtime 最终合成 |
 
+<!-- gracker-diagram: ch13-13-34-tool-coverage -->
+![工具覆盖的阶段要互相补充](../../assets/diagrams/ch13/ch13-13-34-tool-coverage.png)
+
+图：系统、引擎与 runtime/设备工具提供不同阶段证据。 先确认驱动与数据源支持；模拟器不能替代真机热状态和光学测量。
+
 ### 推荐的单帧检查顺序
 
 1. 记录设备形态、系统版本、显示 refresh rate、Home/Full Space、passthrough；
@@ -330,7 +500,17 @@ Unity Android XR Extensions 提供三类不同优化：
 6. 查 display cadence、thermal、CPU/GPU frequency 和长会话趋势；
 7. 分别记录 App render miss、runtime miss、tracking stale（姿态或感知数据过旧）和显示延迟。
 
+<!-- gracker-diagram: ch13-13-35-single-frame-check -->
+![一帧复盘先固定环境再追依赖](../../assets/diagrams/ch13/ch13-13-35-single-frame-check.png)
+
+图：从设备、版本、对象到提交、采用和显示建立同帧检查。 GPU、runtime 与 tracking 可能各自 miss，不能只用一个 FPS 归因。
+
 公开文档没有承诺统一的 Android XR Perfetto slice 名。在 trace 中按 `XR` 关键字搜索不到事件，不能证明 runtime 没有工作；应从目标线程、surface/swapchain、GPU 和设备工具逐层建立证据。
+
+<!-- gracker-diagram: ch13-13-36-trace-missing -->
+![XR 关键字缺失时怎样补证](../../assets/diagrams/ch13/ch13-13-36-trace-missing.png)
+
+图：先核对目标对象、采集支持与权限，再解释缺失事件。 没有 XR slice 不能证明 runtime 没有工作，未知阶段应明确保留。
 
 每份报告至少保留设备类型、系统 build、Jetpack XR/Unity package、refresh mode、空间模式、passthrough、模型/环境版本、纹理上限、采集工具版本与复现动作。
 
@@ -341,6 +521,21 @@ Unity for Android XR 建立在 OpenXR 之上，Android XR Extensions 进一步�
 OpenXR 的 `xrWaitFrame → xrBeginFrame → acquire/wait swapchain image → render → release image → xrEndFrame` 是应用与 runtime 的关键协议边界。`xrWaitFrame` 返回 predicted display time 等帧调度信息，应用在 `xrBeginFrame` 后生成内容，释放 swapchain image 后再通过 `xrEndFrame` 提交 composition layers（runtime 要合成的空间图层描述）。这套协议不是 Android `BufferQueue` API；trace 中即使都出现 acquire、wait、release，也要按对象类型区分。
 
 XR 还增加姿态新鲜度和用户舒适度约束。Unity Profiler 的平均 FPS 只能说明引擎吞吐的一部分；还要结合 slow frame 分布、spacewarp 状态、runtime cadence、tracking 与 Android 系统调度。
+
+<!-- gracker-diagram: ch13-13-37-openxr-loop -->
+![OpenXR 常见单线程帧循环](../../assets/diagrams/ch13/ch13-13-37-openxr-loop.png)
+
+图：示例帧先取得调度信息，成功等待 image，再提交内容与 layers。 可有多线程流水线；图不是所有引擎唯一调度，也不是 GPU 完成或光学时间线。
+
+<!-- gracker-diagram: ch13-13-38-should-render -->
+![shouldRender 为 false 仍维持帧同步](../../assets/diagrams/ch13/ch13-13-38-should-render.png)
+
+图：session running 时继续帧循环，按 shouldRender 决定重渲染与 layers。 预测 display period 不保证等于面板刷新周期；停止 session 是另一个状态条件。
+
+<!-- gracker-diagram: ch13-13-39-object-sync-contract -->
+![同名 acquire / wait / release 对应不同对象](../../assets/diagrams/ch13/ch13-13-39-object-sync-contract.png)
+
+图：Android buffer 同步与 OpenXR swapchain 协议不能互套。 CPU 调用返回、写完成和最终显示是三个层次；姿态新鲜度也需另查。
 
 ## 眼镜形态下 host device 的功耗边界
 
@@ -356,7 +551,17 @@ Projected 场景要同时记录 host 与 glasses 两端：
 | --- | --- |
 | Activity 生命周期、Compose、CPU/GPU、相机/编解码、网络、thermal | display on/off、输入、camera/sensor、连接、显示 cadence、设备功耗 |
 
+<!-- gracker-diagram: ch13-13-40-host-glasses -->
+![Host 与眼镜的工作分别记录](../../assets/diagrams/ch13/ch13-13-40-host-glasses.png)
+
+图：Projected Activity 在 host 执行，显示与输入还经过连接到眼镜。 host 帧按时不证明远端 present 按时；两端功耗按各自设备归因。
+
 host 上按时生成帧，不能证明传输和 glasses present 也按时；眼镜发热也不能直接归因于 host GPU。两端时钟若没有同步，应使用可关联的 event id 与往返测量，避免直接拿不同设备的原始 timestamp 相减。
+
+<!-- gracker-diagram: ch13-13-41-cross-device-clock -->
+![跨端延迟先建立时钟映射](../../assets/diagrams/ch13/ch13-13-41-cross-device-clock.png)
+
+图：共同事件用于关联，精确分段还需要有误差界限的时钟映射。 不能直接相减未同步 timestamp，RTT 本身也不能拆出单向时延。
 
 ## 复核清单
 

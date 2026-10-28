@@ -44,6 +44,11 @@ Android Bench 是 Google Android Developers 面向 Android 工程任务的基准
 
 这两个版本都不是「从空目录做完整产品」的综合考试。它们测的是给定任务、给定环境、给定验证器下的完成情况。代码可读性、安全、功耗、长期维护和缺少可执行验收条件的架构取舍，只有在评测协议显式加入检查时才会进入分数。
 
+<!-- gracker-diagram: ch16-08-01-evaluation-configuration -->
+![分数由整套评测配置共同产生](../../assets/diagrams/ch16/ch16-08-01-evaluation-configuration.png)
+
+图：任务、模型与代理、运行环境及验证器共同定义一个可解释的分数。 2.0包含greenfield应用任务；分数只覆盖协议检查的能力，不自动证明所有工程质量。
+
 ## 2.0 和 1.0 不能混用
 
 Android Bench 2.0 和 1.0 的任务规模、数据公开状态和评分方法都不同。
@@ -55,6 +60,11 @@ Android Bench 2.0 和 1.0 的任务规模、数据公开状态和评分方法都
 | 归档仓库 commit `65a86bf` | 1.0 系列源码、指南、技术报告和评分枚举 | 查验首版实现细节 | `PatchScore` 为 `0.0` 或 `1.0`，另有诊断状态 |
 
 因此，不能把 2.0 官方方法页里的 30 个长周期任务，和 Harbor Hub 页面上的 100 个公开任务当成同一套「当前组成」。也不能拿 1.0 的 pass@1 排名直接解释 2.0 的 completion rate。
+
+<!-- gracker-diagram: ch16-08-02-version-coordinates -->
+![方法代次、数据包与归档源码分开](../../assets/diagrams/ch16/ch16-08-02-version-coordinates.png)
+
+图：先区分官方方法代次、公开数据包revision/version/tag和固定归档源码，再比较结果。 Harbor的version2.0.3不自动代表官方30任务的2.0；latest是移动标签。
 
 ## 2.0 任务集怎样组成
 
@@ -97,6 +107,11 @@ Harbor Hub 的 latest 数据集页面列出 100 个任务：88 个来自 GitHub 
 
 Oracle patch 只能证明任务环境和验收测试能跑通。它不能证明测试覆盖了需求的全部语义，也不能证明模型补丁和 canonical 实现等价。
 
+<!-- gracker-diagram: ch16-08-03-oracle-controls -->
+![有效任务先过负对照与阳性对照](../../assets/diagrams/ch16/ch16-08-03-oracle-controls.png)
+
+图：固定任务环境后，分别验证base失败与标准补丁通过，并检查抖动和验收覆盖。 标准补丁通过只支持已编码的验收条件；不证明模型实现等价或需求语义全覆盖。
+
 ## 2.0 怎样执行和验证
 
 Android Bench 2.0 基于 Harbor 运行。官方方法页列出的关键环境约束包括：每个任务在新的 Docker 容器里执行，使用支持 KVM 的 CPU 运行硬件加速 AVD，最低资源要求为 16 个 CPU、72 GB RAM 和 500 GB 存储；模型必须通过结构化工具调用提交 shell 命令，而不是把命令写在 Markdown 文本块里。
@@ -114,6 +129,16 @@ Android Bench 2.0 基于 Harbor 运行。官方方法页列出的关键环境约
 - anti-cheating patch inspection：检查静态图片覆盖、硬编码数据库状态、测试阈值篡改、删除断言、捆绑预编译二进制、包一层旧 API 等投机方式。
 
 这套验证器允许不同实现路径通过，但它仍然是评测协议的一部分。没有写进验证器的质量维度，不会自动进入分数。
+
+<!-- gracker-diagram: ch16-08-04-isolated-execution -->
+![独立运行与最终计分分母](../../assets/diagrams/ch16/ch16-08-04-isolated-execution.png)
+
+图：2.0在隔离环境中执行代理与验证，计划每任务5次独立运行。 30×5=150只是计划数；completed runs的纳入、重跑和排除不能从计划数自行推定。
+
+<!-- gracker-diagram: ch16-08-05-multifaceted-verification -->
+![确定性断言与模型判断分工](../../assets/diagrams/ch16/ch16-08-05-multifaceted-verification.png)
+
+图：确定性功能检查、AVD多模态观察和反投机约束共同构成验证证据。 视觉与层级判断有模型参与；脚本可达性、硬件mock与本地后端限制覆盖范围。
 
 ## 2.0 分数怎样计算
 
@@ -133,6 +158,11 @@ Multipliers 是惩罚项。官方表格里，构建失败、作弊违规和在�
 
 这个口径比 1.0 的二值分数更细，但也更依赖验证器设计。报告 2.0 结果时，至少要同时写出 pass rate、completion rate、任务集版本、编码代理、模型服务商、模型 ID、工具调用接口、预算、运行日期和环境。
 
+<!-- gracker-diagram: ch16-08-06-completion-and-pass -->
+![连续完成度与完整通过频率](../../assets/diagrams/ch16/ch16-08-06-completion-and-pass.png)
+
+图：每次运行先算归一化组件分，再乘惩罚因子；完整通过与平均完成度分别统计。 0.8×0.5=0.4是单次完成度，不能解读为40%的运行通过；完整通过还要求满足全部约束。
+
 ## 1.0 的 pass@1 和状态枚举
 
 归档技术报告把 pass@1 定义为通过任务数除以纳入统计的任务总数。报告的方法段写明每个模型运行 10 次，并使用 bootstrap 计算置信区间；附录中的实际 `num_runs` 为 3～10 次，部分模型的平均任务数少于 100。引用首版统计时，应以附录中具体模型的行和原始结果为准。
@@ -148,6 +178,21 @@ Multipliers 是惩罚项。官方表格里，构建失败、作弊违规和在�
 
 比较模型时，不能只看通过数。报告应公开 scheduled（计划运行）、attempted（实际尝试）、evaluable（按协议计入主分数）、passed、infra failure 和 excluded（预先排除）的数量。基础设施错误是否重跑、是否进入主分数，必须在运行前写进协议。
 
+<!-- gracker-diagram: ch16-08-07-task-level-pass-at-one -->
+![pass@1保留任务与重复运行层级](../../assets/diagrams/ch16/ch16-08-07-task-level-pass-at-one.png)
+
+图：先算各任务c_i/n_i，再按任务聚合；相同任务的重复尝试仍属于同一层级。 只有各任务次数和纳入范围一致时，才等于全部尝试合并比例；它不是多次择优的pass@k。
+
+<!-- gracker-diagram: ch16-08-08-hierarchical-bootstrap -->
+![分层bootstrap如何保留重复结构](../../assets/diagrams/ch16/ch16-08-08-hierarchical-bootstrap.png)
+
+图：归档报告先抽任务，再在任务内抽运行结果，形成模拟均值分布。 固定报告重复1000次取中间95%；同任务重复不等于新增独立任务，CI重叠不是差异检验。
+
+<!-- gracker-diagram: ch16-08-09-score-status-policy -->
+![分数、诊断状态与排除政策分开](../../assets/diagrams/ch16/ch16-08-09-score-status-policy.png)
+
+图：固定首版的二值分数、状态诊断和报告中的纳入规则是三种不同信息。 PASSED_FLAKY仍可score=1；INFRA_FAILURE_AGENT预算等前缀不自动授权剔除。
+
 ## 成本、token 和时延怎么读
 
 成本、token 和时延适合在分数接近的配置之间比较，不适合单独排序。
@@ -159,6 +204,11 @@ Multipliers 是惩罚项。官方表格里，构建失败、作弊违规和在�
 
 2.0 官方方法页也提醒，汇总所有任务的资源消耗会天然偏向失败更早的模型。团队可以补充 cost per solved task（每个已解决任务的平均费用）、成功任务时延和失败任务时延；通过数为 0 时，cost per solved task 没有定义。
 
+<!-- gracker-diagram: ch16-08-10-resource-denominator -->
+![资源效率必须与完成情况一起读](../../assets/diagrams/ch16/ch16-08-10-resource-denominator.png)
+
+图：同一计分范围内保存全部尝试费用，再除以通过数，并分别观察成功与失败时延。 失败更早可能成本更低；通过数为0无有限cost/solved，价格与网络日期也会改变比较。
+
 ## 数据污染与测试投机
 
 公开 GitHub PR 让 1.0 任务贴近真实工程，也带来训练数据污染风险：模型可能在训练阶段见过 issue、代码或标准修改。Harbor Hub 页面写明，所有任务文件包含 BIG-BENCH canary string（用于标记评测数据的固定文本），成功操作轨迹会人工审计，检查是否是真修复而不是 reward hacking。
@@ -169,6 +219,11 @@ canary 不能证明模型从未见过公开仓库。公开数据集发布后，�
 
 测试投机仍然要靠协议和文件权限处理。只在提示内容里写「不要修改测试」不够；应通过只读测试目录、patch allowlist（允许修改的路径清单）、验证前恢复测试文件和静态检查来约束。
 
+<!-- gracker-diagram: ch16-08-11-contamination-and-cheating -->
+![污染防护与投机防护作用不同](../../assets/diagrams/ch16/ch16-08-11-contamination-and-cheating.png)
+
+图：分别处理公开答案记忆风险、验证器被绕过风险和外部审计可复现范围。 canary不能证明训练未见；私有任务不能由公开仓库完整复现，约束也需实际执行。
+
 ## 怎样读公开排行榜
 
 公开分数对应的是「模型 + 模型服务接口 + 编码代理 + 系统指令 + 工具 + 预算 + 数据集 + 验证器」这一整套配置。更换 Android Studio 内置能力、Claude Code、Codex、Gemini CLI 或自研上下文系统后，即使底层模型相同，分数也可能变化。
@@ -178,6 +233,11 @@ canary 不能证明模型从未见过公开仓库。公开数据集发布后，�
 首版博客写的是模型完成率约 16%～72%，Gemini 3.1 Pro 位于当时榜首。这个结果只适合作为 2026-03 首版快照。官方 2.0 方法页已经说明，1.0 后来被前沿模型推到约 90% pass rate，局部 GitHub PR 任务出现饱和。
 
 Android Bench 不是 Android 17 compatibility suite（兼容性测试套件），也不验证 AOSP framework 或 kernel 实现。任务跨 Android、Jetpack、Gradle 和第三方库版本；一个模型得分高，可能来自 Kotlin/Gradle 能力，也可能来自编码代理更会搜索、运行测试和保持上下文。
+
+<!-- gracker-diagram: ch16-08-12-leaderboard-comparison -->
+![比较排行榜先对齐实验坐标](../../assets/diagrams/ch16/ch16-08-12-leaderboard-comparison.png)
+
+图：模型、代理、工具预算与任务/验证版本一起定义结果，再按相同任务比较差异。 小分类与历史榜首都受样本和日期限制；高分不证明AOSP或kernel实现质量。
 
 ## 团队怎样建立私有评测
 
@@ -191,6 +251,11 @@ Android Bench 不是 Android 17 compatibility suite（兼容性测试套件）�
 - 将测试、base commit、oracle patch 和环境镜像一并版本化；
 - 让不参与模型运行的人维护隐藏验证。
 
+<!-- gracker-diagram: ch16-08-13-private-evaluation-pipeline -->
+![私有评测从任务到隐藏验收](../../assets/diagrams/ch16/ch16-08-13-private-evaluation-pipeline.png)
+
+图：从团队任务中固定需求、起点和环境，由独立维护者保存隐藏验收，再验证oracle对照。 覆盖低频高风险工作；采样和验收是否代表真实业务，要由任务设计与复核确认。
+
 ### 对照实验
 
 每轮只改变一个变量：
@@ -200,6 +265,11 @@ Android Bench 不是 Android 17 compatibility suite（兼容性测试套件）�
 - 比较成本预算时固定其余配置；
 - 每个配置重复运行，并随机化任务顺序；
 - 基础设施错误按预设规则重跑，重跑次数公开。
+
+<!-- gracker-diagram: ch16-08-14-controlled-comparisons -->
+![每轮改变一个因素并保留配对](../../assets/diagrams/ch16/ch16-08-14-controlled-comparisons.png)
+
+图：分别设计模型、代理或预算对照，在同一任务集重复并交错运行，按预设政策报告。 只改一个因素是识别该因素影响的实验设计；仍需记录服务负载、日期和实际失败。
 
 ### 报告字段
 

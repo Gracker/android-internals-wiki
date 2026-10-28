@@ -102,6 +102,11 @@ Android 17 / API 37 增加了一个标准 Activity action。调用方发送 `Int
 - AOSP 支持同一 Android 系统内的多 display，这不包含设备到设备同步；
 - 返回值没有 ColorSpace 元数据，只适合作为 UI 色值，不能当成跨屏幕一致的色度测量结果。
 
+<!-- gracker-diagram: a251-01-protocol-boundary -->
+![EyeDropper 的调用、实现与协作边界](../../assets/diagrams/ch22/a251-01-protocol-boundary.png)
+
+图：SDK 协议只返回用户选中的颜色。AOSP 的截图流程和产品的跨设备同步分别属于实现层与业务层。
+
 本文的平台源码版本是 `android-17.0.0_r1`。公开能力边界来自 `frameworks/base` 的 `Intent` 契约，具体流程来自 `packages/apps/EyeDropper` 的 AOSP 参考实现；产品可以采用不同处理器实现。本文分析不依赖 kernel 函数，如需继续追踪显示驱动或 dma-buf，则统一以 `android17-6.18-2026-06_r6` 为 kernel 基线。
 
 ## 公开 API 契约
@@ -171,6 +176,11 @@ class EditorActivity : ComponentActivity() {
 
 这段代码覆盖确认、取消、结果缺失、无 handler 与旧系统五条分支。`RESULT_CANCELED` 表示用户取消或处理器未返回选择结果，通常不应当成应用错误。如果产品仍想用 `resolveActivity()` 控制按钮可见性，应在 manifest 的 `<queries>` 中声明对应 action，同时保留启动时的异常兜底；查询到 Activity、成功启动会话和最终取得有效结果是三个不同阶段。
 
+<!-- gracker-diagram: a251-02-caller-outcomes -->
+![调用方的启动与结果分支](../../assets/diagrams/ch22/a251-02-caller-outcomes.png)
+
+图：SDK 版本、启动成功和有效结果分别检查。RESULT_OK 缺少颜色字段时走异常结果处理，不能使用默认黑色掩盖缺失。
+
 返回值使用 Java/Kotlin 的有符号 `Int` 保存 32-bit ARGB 位模式。最高位为 1 时数值会显示为负数，这不代表错误码；显示十六进制时应按 32 位无符号位模式格式化，颜色计算则使用 `Color` 或 Compose `Color` 的明确转换。
 
 ## Android 17 AOSP 的真实实现
@@ -215,6 +225,11 @@ Caller Activity
 
 准确的隐私表述是：**系统特权实现内部持有 display 截图，普通调用方只收到一个颜色整数。** 调用方无需申请 MediaProjection 授权，是因为屏幕捕获由受信任的系统处理器执行，并不表示内部没有发生屏幕捕获。
 
+<!-- gracker-diagram: a251-03-aosp-capture-path -->
+![AOSP 从屏幕快照到颜色结果](../../assets/diagrams/ch22/a251-03-aosp-capture-path.png)
+
+图：secure/protected 内容在系统捕获中被遮蔽；整帧快照和复制留在系统处理器，最后只把一个颜色 Int 交给调用方。
+
 ### 为什么普通 App 做不了同样的内部流程
 
 AOSP EyeDropper manifest 使用了三个普通第三方应用无法取得的系统权限：
@@ -240,6 +255,11 @@ Android 17 AOSP 实现会：
 
 多屏截图是会话启动阶段某一时刻的快照。取色 UI 出现后，即使底层应用继续播放动画或视频，准星展示和返回的仍是已捕获 Bitmap 上的像素，不会持续从 SurfaceFlinger 采样实时内容。
 
+<!-- gracker-diagram: a251-04-multidisplay-session -->
+![多 display 快照会话的生命周期](../../assets/diagrams/ch22/a251-04-multidisplay-session.png)
+
+图：多屏捕获并发发生在一次系统内会话中。添加或移除显示器、服务收到 configuration 变化会取消会话；取色 UI 使用快照而非持续采样。
+
 ## 颜色语义与安全边界
 
 ### 返回的是 UI 颜色，不是测色数据
@@ -254,6 +274,11 @@ Activity result 只有一个 `int`，没有携带以下上下文：
 - secure/protected 状态标记。
 
 AOSP 捕获参数还设置了 `preserveDisplayColors(false)`，因此 `0xFFRRGGBB` 适合用于色板、画笔或普通 UI 颜色，不能证明两块屏幕上的物理亮度、广色域色度坐标或 HDR 观感一致。即使跨设备同步同一个整数，两台设备仍可能因面板、色彩管理、亮度和 HDR 状态而呈现不同效果。
+
+<!-- gracker-diagram: a251-05-color-semantics -->
+![颜色整数携带的信息与缺失的上下文](../../assets/diagrams/ch22/a251-05-color-semantics.png)
+
+图：同一个 32-bit 色值可以同步，但视觉结果仍取决于屏幕和色彩管理。黑色既可能来自原像素，也可能来自 secure/protected 遮蔽。
 
 ### 与其他取色方案的区别
 
@@ -294,6 +319,11 @@ minimum working-set estimate ≈ width × height × 4 × 2 bytes
 | 3840 × 2160 | 63.3 MiB |
 
 多 display 时还要按各屏分辨率求和。真实峰值可能更高，因为还存在 row stride、分配对齐、合成中间结果、Compose 纹理和运行时对象。PSS 还会按共享页比例计账，因此这张表也不能当成进程 PSS 的精确预测。
+
+<!-- gracker-diagram: a251-06-buffer-cost -->
+![取一个像素之前的全帧内存成本](../../assets/diagrams/ch22/a251-06-buffer-cost.png)
+
+图：3840 × 2160 的两份 4 B/px 像素数据约为 63.3 MiB；这是理想像素负载估算，不是设备实测或进程 PSS 预测。
 
 ### 该量什么
 
@@ -363,6 +393,11 @@ private fun onEyeDropperResult(result: ActivityResult) {
 
 若要测量 overlay 首次可交互时间，需要 UI 自动化可识别的就绪条件，或在可控系统构建中增加内部打点。result 返回后的 `apply_picked_color` 则可直接与调用方 FrameTimeline 对齐，观察状态更新对应的帧是否按时 present。
 
+<!-- gracker-diagram: a251-07-measurement-tracks -->
+![把系统工作、用户停留和结果绘制分开量](../../assets/diagrams/ch22/a251-07-measurement-tracks.png)
+
+图：横向轨道只表示顺序与包含关系，不表示耗时比例。async section 关联会话，最终显示时刻仍需 FrameTimeline 或其他帧呈现证据。
+
 ## 跨设备协作：只同步结果
 
 Android 17 EyeDropper 没有提供设备发现、连接、传输、冲突处理或远端 UI API。若产品希望把颜色同步给另一台设备，这一段完全属于应用自己的协议与传输通道。
@@ -388,6 +423,11 @@ document_revision
 - 日志是否记录了不必要的设备标识或用户操作时间。
 
 `source_elapsed_realtime_ns` 是从本次开机起单调递增的时间，只能在同一设备、同一次开机内排序。两个设备的 elapsed time 没有共同原点，不能直接比较；跨设备冲突应使用服务端分配的 revision/sequence，或由服务端记录接收顺序。`source_boot_id` 只用于区分重启前后的单调时钟区间，不能当作长期设备身份。
+
+<!-- gracker-diagram: a251-08-crossdevice-result -->
+![跨设备颜色协作由应用协议完成](../../assets/diagrams/ch22/a251-08-crossdevice-result.png)
+
+图：取色 action 不提供设备发现、传输或冲突解决。业务协议同步色值后还要处理重连和远端渲染，设备单调时钟不能直接相减或排序。
 
 单个颜色事件的网络负载很小，端到端体验通常受网络往返时延、重连、冲突处理和远端下一帧 present 影响。若协议开始传输截图、准星坐标或连续像素流，需求已经转变为屏幕共享或远程画布，必须重新评估权限、带宽、加密、数据保留和隐私，不能继续沿用一次性颜色结果的风险判断。
 

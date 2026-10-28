@@ -83,6 +83,11 @@ MPC 32 和 36 没有定义。新等级 1、10、20 为低于 MPC 30 的设备提
 
 Android 17 文档中还有两处遗留冲突。CDD 7.11 节仍要求非零值至少为 `Build.VERSION_CODES.R`（30），并保留只谈 Android T、S、R 的旧文字；`Build.java` 注释也仍说非零值定义在 `VERSION_CODES` 中。它们都与 CDD 2.2.7 明确新增 1、10、20 相冲突。应用解析 Android 17 等级时不能沿用“值必须不小于 30”的校验，设备认证与争议判断则应跟随后续 CDD、CTS 或官方勘误。
 
+<!-- gracker-diagram: a203-01-mpc-defined-values -->
+![Android 17 MPC 的显式等级集合](../../assets/diagrams/ch19/a203-01-mpc-defined-values.png)
+
+图：Android 17 的新增低等级打破非零值等于 SDK 版本号的假设；业务应识别明确集合并保留原始整数。
+
 ## 读取字段与声明语义
 
 从 Android 12（API 31）起，公开字段是 `Build.VERSION.MEDIA_PERFORMANCE_CLASS`。Android 17 的 `Build.java` 直接读取构建时写入的设备属性：
@@ -120,11 +125,21 @@ CDD 17 新增的 1、10、20 不是 Android SDK 版本号。平台读取代码�
 
 这四类信号不能互相替换。
 
+<!-- gracker-diagram: a203-02-four-signals -->
+![平台 API、等级、单项能力和体验](../../assets/diagrams/ch19/a203-02-four-signals.png)
+
+图：OTA 到新平台不强制 MPC 同步提高；四类信号分别回答接口、声明、具体能力和当前体验。
+
 ## Jetpack Core Performance 在 Android 17 的兼容性问题
 
 Android 官方建议通过 Jetpack Core Performance 的 `DevicePerformance` 读取 MPC。`PlayServicesDevicePerformance` 先从本地 DataStore 读出 Google Play services 上次写入的结果，与平台默认读取器的值取较大者；同时异步请求新结果并写回 DataStore。
 
 这个实现有两个容易忽略的细节：
+
+<!-- gracker-diagram: a203-04-play-lazy-cache -->
+![Play services 的异步更新与首次读取](../../assets/diagrams/ch19/a203-04-play-lazy-cache.png)
+
+图：异步写入与首次 lazy 读取存在先后关系；同一对象缓存首次结果，新存储值通常由后续进程或后续新对象读取。
 
 1. `mediaPerformanceClass` 采用延迟初始化（lazy）：第一次访问时才计算，之后在该对象中缓存。若第一次访问发生在异步 Play services 更新完成前，这个对象会继续使用旧的本地结果；官方因此建议在 `Application.onCreate()` 中只创建一次对象，新结果通常供后续进程使用。
 2. 截至 2026 年 8 月 14 日的 `androidx-main`，`DefaultDevicePerformance.isPerformanceClassValid()` 仍要求值至少为 `Build.VERSION_CODES.R`，即 30。它会把 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 返回的 1、10、20 视为无效并退回 0。
@@ -184,6 +199,11 @@ fun normalizeMpc(raw: Int): MediaTier = when (raw) {
 
 业务如果使用 `PlayServicesDevicePerformance`，建议同时上报平台原始值 `raw_build_mpc` 与库的最终值 `resolved_mpc`。两者不一致时，可以进一步区分 OTA 后的设备声明、Play services 结果和库兼容问题。
 
+<!-- gracker-diagram: a203-03-default-fallback -->
+![AndroidX 默认读取器的回退路径](../../assets/diagrams/ch19/a203-03-default-fallback.png)
+
+图：归档版本的默认读取器先检查平台属性，再查询内置 fingerprint 表；新低等级被旧校验拒绝，不代表一定立即返回 0。
+
 ## CDD 17 怎样组织要求
 
 Android 17 CDD 2.2.7 按五类组织要求：
@@ -230,6 +250,11 @@ MPC 37 延续 MPC 35 的高规格相机、HDR、编解码器、显示处理单�
 
 这些要求仍围绕媒体体验。MPC 37 不能证明 NPU 算力、通用 CPU 单核性能、网络质量或整机长时间满载表现。
 
+<!-- gracker-diagram: a203-06-threshold-contracts -->
+![单项 MPC 门槛的读取顺序](../../assets/diagrams/ch19/a203-06-threshold-contracts.png)
+
+图：条款、等级集合、工作负载和通过条件共同构成能力约定；并发路数相同不表示被测工作量相同。
+
 ## MPC 与运行时能力怎样组合
 
 MPC 适合决定“默认尝试哪组体验”，单项能力仍要从对应 API 读取。
@@ -252,6 +277,11 @@ MPC 适合决定“默认尝试哪组体验”，单项能力仍要从对应 API
 5. 通过可远程关闭的功能开关保留快速回退能力。
 
 这个顺序可以避免两类故障：高 MPC 设备因某项能力不满足而配置失败，以及 MPC 为 0 的设备被无条件关闭原本可用的功能。
+
+<!-- gracker-diagram: a203-05-feature-decision -->
+![MPC 与运行时能力的组合决策](../../assets/diagrams/ch19/a203-05-feature-decision.png)
+
+图：MPC 用于选择初始候选，能力 API 验证具体配置，实测与功能开关决定是否持续开放；MPC 0 也可通过独立实验规则验证功能。
 
 ## 业务分级不要直接照搬数字比较
 
@@ -284,6 +314,11 @@ fun canOfferHdr(
 ```
 
 这段逻辑把 CDD 等级、显示声明和编解码器档次都设为必要条件。产品若希望在 MPC 0 设备上小范围试验 HDR，可以另建一条依赖完整运行时能力查询与实测名单的实验规则，不要改写正式的 CDD 等级条件。
+
+<!-- gracker-diagram: a203-07-feature-sets -->
+![功能条件采用明确的等级集合](../../assets/diagrams/ch19/a203-07-feature-sets.png)
+
+图：各项能力的适用等级不同；产品分组不能反向替代 CDD 名称，未识别值先走 Unknown。
 
 ## 低等级与 Unknown 的体验设计
 
@@ -324,6 +359,11 @@ Android 17 新增不对应 API 级别的数值后，保留原始 MPC 更有助�
 
 小范围发布结果应按 MPC、运行时能力、设备厂商和 SoC 交叉观察，同时避免直接上报机型这类取值过多的字段。Google Maps 的公开案例按 MPC 切分“界面元素可见所需秒数”，发现各组延迟都有小幅增加，而没有 MPC 的设备增幅最大，因此只向报告 MPC 的设备发布新的透明图层效果。在这个案例里，MPC 只用作实验分组信号，不能据此推断所有 MPC 0 设备都慢。
 
+<!-- gracker-diagram: a203-08-rollout-evidence -->
+![从原始值到可回退的分阶段发布](../../assets/diagrams/ch19/a203-08-rollout-evidence.png)
+
+图：原始 MPC 与库结果能暴露读取兼容、OTA 声明和客户端识别问题；分组还需结合具体能力与线上体验。
+
 ## 设备厂商认证与测试证据
 
 同一款 SoC 可以出现在不同 MPC 等级。相机硬件抽象层（Camera HAL）、编解码器配置、存储、内存、音频路径、显示、散热与整机集成都会影响设备能否声明某一级。
@@ -338,6 +378,11 @@ Android 17 的证据链包括：
 6. 应用的系统跟踪、耗时分布、温度、功耗和错误率确认业务体验。
 
 应用只能使用公开声明和运行时 API，通常无法访问厂商的完整认证报告。缺少 MPC 时，也不能运行少量基准测试（benchmark）后伪造一个“等价 MPC”；内部测试结果只能作为产品自己的能力标签。
+
+<!-- gracker-diagram: a203-09-certification-evidence -->
+![声明、兼容测试与应用体验的证据链](../../assets/diagrams/ch19/a203-09-certification-evidence.png)
+
+图：完整认证分布在多套测试中；应用能使用声明与运行时接口，再用自身指标验证体验，不能用少量基准伪造等价 MPC。
 
 ## Android 17 的工程结论
 

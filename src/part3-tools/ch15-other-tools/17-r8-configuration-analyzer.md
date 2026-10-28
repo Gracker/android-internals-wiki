@@ -65,7 +65,17 @@ R8 体积问题常由多条 keep 规则叠加造成，只看最终 APK，回答�
 
 只读 `proguard-rules.pro` 不够，因为最终生效的配置不止这一份：AGP（Android Gradle Plugin，Android 构建插件）默认规则、App 自定义规则、AAR（Android Library 的发布包）携带的 consumer rules（交给使用方 App 的规则），以及部分工具生成的规则都会合并进来。只看自己写的那份规则文件，不知道这些来源各自留下了什么。
 
+<!-- gracker-diagram: ch15-17-02-merged-rule-inputs -->
+![合并配置与规则来源](../../assets/diagrams/ch15/ch15-17-02-merged-rule-inputs.png)
+
+图：App、库consumer与AGP默认规则合并后共同限制优化，需要按来源追踪。 新增窄规则不能抵消仍生效的宽规则；序列化source是规则原文，来源由origin等信息关联。
+
 Analyzer 的 score（分数）与 rule impact（规则影响范围）统计的是哪些类、字段、方法仍允许被处理，它们算不出单条规则对应多少 DEX 字节，也不预测启动耗时变化。跑分析的独立任务（standalone task）不生成 APK 或 AAB（Android App Bundle，供应用商店生成设备 APK 的发布包）；要归因体积，仍得把报告与同一次完整构建的 APK Analyzer 结果、mapping（混淆映射）和 benchmark（基准测试）配对。
+
+<!-- gracker-diagram: ch15-17-01-three-evidence-scopes -->
+![包体结果、规则约束与运行表现](../../assets/diagrams/ch15/ch15-17-01-three-evidence-scopes.png)
+
+图：包体构成、keep规则约束和运行性能分别使用对应证据，再按同一构建关联。 score与rule impact按元素数量统计，不等于单条规则节省的字节，也不预测启动收益。
 
 ## Android 17 与构建工具版本边界
 
@@ -77,6 +87,11 @@ Android 17 / API 37 在这里有两个作用：
 - 优化后的 release artifact（发布制品）要在 Android 17 实机或模拟器上覆盖反射、JNI（Java Native Interface，Java/Kotlin 与 C/C++ 的调用边界）、序列化、组件启动和动态加载路径。
 
 报告应同时记录 AGP、R8、JDK、Gradle、`compileSdk=37`、`minSdk`、variant（构建变体，如 `release`）、依赖锁和代码提交。只写“已在 Android 17 验证”无法复现 Analyzer 结果；升级 R8 后，分数的统计实现也可能变化。
+
+<!-- gracker-diagram: ch15-17-03-version-and-reproduction -->
+![构建工具、平台库与运行验证](../../assets/diagrams/ch15/ch15-17-03-version-and-reproduction.png)
+
+图：固定构建工具和输入图，平台库与Android运行验证分别记录。 Android17平台tag不提供AGP分析任务；升级R8后先建立新score基线。
 
 ## 三条报告生成路径
 
@@ -109,6 +124,11 @@ mkdir -p /tmp/r8analysis
 
 `dumpkeepradiushtmltodirectory` 是 R8 系统属性，不是 AGP 9.3 那个独立任务的别名。CI（Continuous Integration，持续集成）使用前应固定替换版 R8 的下载来源和校验值，避免 `-dev` 制品在版本字符串不变时被换成另一次构建。
 
+<!-- gracker-diagram: ch15-17-04-three-report-paths -->
+![三条报告入口与对应产物](../../assets/diagrams/ch15/ch15-17-04-three-report-paths.png)
+
+图：AGP独立任务、完整R8构建和旧AGP替换编译器使用不同入口与输出路径。 系统属性只请求报告，不负责升级R8；独立任务不生成APK/AAB，报告不能替代release回归。
+
 ### AGP 9.3 的 optimization DSL
 
 AGP 9.3 及以上改了优化开关和 App keep 规则的存放位置：用 `optimization.enable` 同时开启代码和资源优化，App keep 规则放在 `src/<variant>/keepRules/` source set（按构建变体组织的源码目录）下，文件名以 `.keep` 结尾。下面的 Kotlin DSL（构建配置语法）用于 release variant：
@@ -126,6 +146,11 @@ android {
 ```
 
 例如公共规则可以放在 `src/main/keepRules/app.keep`。AGP 9.3 默认规则等价于 `proguard-android-optimize.txt`。旧版 AGP 继续使用 `isMinifyEnabled=true`、`isShrinkResources=true` 和 `proguardFiles(...)`。AGP 9.3 仍支持这套旧 DSL，`keepRules` source set 也能与旧 DSL 配合使用；采用新 `optimization` DSL 时，App 规则必须放在上述 `.keep` source set 中。
+
+<!-- gracker-diagram: ch15-17-05-optimization-dsl-and-rules -->
+![优化开关与规则 source set](../../assets/diagrams/ch15/ch15-17-05-optimization-dsl-and-rules.png)
+
+图：选择对应AGP版本的优化DSL，规则放入受支持的variant输入位置。 新optimization DSL同时启用代码与资源优化；旧DSL仍支持，版本语法不能混用猜测。
 
 ## 报告里哪些字段该看
 
@@ -148,6 +173,12 @@ android {
 `subsumed rules` 指匹配范围已被另一条规则包含的规则。典型例子是同一个包里同时存在下面两条声明：
 
 ```proguard
+
+<!-- gracker-diagram: ch15-17-06-score-counting -->
+![三类分数的数量分母与去重](../../assets/diagrams/ch15/ch15-17-06-score-counting.png)
+
+图：在固定R89.4.14实现中，按live元素个数和对应受限元素数解释overall分数。 每个类/字段/方法各计1项；任意规则限制即受限，同一元素不因多条规则重复计数；分母须大于0。
+
 # 规则 A：保留整个包
 -keep class com.example.package.** { *; }
 
@@ -157,12 +188,22 @@ android {
 
 规则 A 已经覆盖了规则 B，报告会把这种重叠关系暴露出来。处理时先确认 A 是否过宽：如果只有 `MyClass` 需要保留，应收窄 A；如果整包都要保留，再考虑 B 是否冗余。
 
+<!-- gracker-diagram: ch15-17-07-subsumption-and-constraints -->
+![subsumed 要同时比较集合与修饰符](../../assets/diagrams/ch15/ch15-17-07-subsumption-and-constraints.png)
+
+图：宽窄规则先比较三组元素集合，再核对修饰符和真实运行时契约。 固定R89.4.14要求modifiers相同；包名更宽或数量更多并不保证报告认定subsumed。
+
 报告还会列出两类配置噪声：
 
 - unused rule：当前构建没有匹配任何类、字段或方法；删除前要确认它是否用于其它 flavor（产品变体）、dynamic feature（按需交付模块）或可选依赖；
 - identical rule：同一文件或多个配置来源中存在相同声明；移除副本不会改变当前匹配集合，但仍应通过完整构建确认。
 
 unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不能直接当成所有构建变体通用的删除清单。
+
+<!-- gracker-diagram: ch15-17-08-current-variant-rule-noise -->
+![unused、identical 与 subsumed 的边界](../../assets/diagrams/ch15/ch15-17-08-current-variant-rule-noise.png)
+
+图：三类配置关系用于当前variant的候选筛选，分别检查覆盖和限制。 当前构建未匹配不代表其他flavor、动态feature或可选依赖也不需要该规则。
 
 ## keep 规则的代价分级
 
@@ -182,6 +223,11 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 - 如果反射只要求成员存在，不要求调用点形状和访问级别不变，可以考虑 `allowoptimization`，但要用 release 包跑覆盖测试。
 - 如果 JSON 协议、JNI 查找或服务端下发类名依赖原始名字，不能放开对应的 obfuscation。
 
+<!-- gracker-diagram: ch15-17-09-modifiers-follow-runtime-contract -->
+![按运行时契约放开优化能力](../../assets/diagrams/ch15/ch15-17-09-modifiers-follow-runtime-contract.png)
+
+图：是否允许删除、改名和优化，取决于运行时真实依赖的能力。 Class对象、字符串名字和元数据是不同契约；只加一个allow修饰符不会放开所有能力。
+
 下面的规则展示怎样缩小 JNI 保护范围：只保留 native 方法和 C/C++ 回调需要的 Java/Kotlin 成员，避免固定整个包。
 
 ```proguard
@@ -200,6 +246,11 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 
 `includedescriptorclasses` 会把方法 descriptor（参数与返回值组成的 JVM 签名）中的应用类型一并纳入保护。若 native 代码还按名字访问 `NativePayload` 的构造函数或字段，这些成员需要单独规则。遗漏 native 查找的类或成员可能导致 `UnsatisfiedLinkError` 或 `NoSuchMethodError`，应使用启用 R8 的 release 包覆盖这些调用。二者都比 `-keep class com.example.bridge.** { *; }` 窄。
 
+<!-- gracker-diagram: ch15-17-10-jni-liveness-and-descriptors -->
+![JNI 的存活、名称与成员保护](../../assets/diagrams/ch15/ch15-17-10-jni-liveness-and-descriptors.png)
+
+图：先证明Bridge存活，再精确保留upcall成员、描述符类型和native实际访问的成员。 keepclassmembers不独自保活Bridge；保护描述符类不等于保留其构造函数或全部字段。
+
 ## 高风险规则的排查顺序
 
 规则排查不要从“删规则”开始。更稳的顺序是：先根据 APK Analyzer 或 DEX size diff（体积差异）找增长包，再用 Configuration Analyzer 找规则影响范围，随后回到代码确认运行时入口。
@@ -213,6 +264,11 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 
 排查时同步查看 `build/outputs/mapping/<variant>/` 下的四个文件：`configuration.txt` 是最终合并配置，`mapping.txt` 记录改名前后的对应关系，`seeds.txt` 列出被规则阻止删除的元素，`usage.txt` 列出被删除的元素。只有四个文件和 Analyzer 报告来自同一次构建，才能判断规则收窄之后包体有没有变小。
 
+<!-- gracker-diagram: ch15-17-11-risk-priority-investigation -->
+![从体积异常回到运行时入口](../../assets/diagrams/ch15/ch15-17-11-risk-priority-investigation.png)
+
+图：先定位DEX增长，再找到规则来源和所需动态入口，最后验证收窄效果。 高impact只用于排优先级；mapping、配置、seeds、usage和包体必须来自同次构建。
+
 ## 与 R8 full mode 迁移的配合
 
 在 full mode 下，R8 会做更积极的类合并、方法内联、属性裁剪和访问级别调整。迁移失败时，常见补救动作是往 `proguard-rules.pro` 里加宽规则，甚至在 `gradle.properties` 里保留 `android.enableR8.fullMode=false`。这能让崩溃暂时消失，但会长期限制优化空间。
@@ -223,6 +279,11 @@ Configuration Analyzer 适合放在 full mode 迁移后的第二轮：第一轮�
 - 反射构造只需要无参构造函数时，保构造函数，不要保整个类的所有字段和方法。
 - 注解扫描只需要运行时注解时，保 `RuntimeVisibleAnnotations` 和被扫描成员，不要把包内所有类都固定。
 - native upcall 只需要固定被 native 查找的方法签名时，保 bridge 方法，不要禁用整包混淆和优化。
+
+<!-- gracker-diagram: ch15-17-12-full-mode-metadata-contracts -->
+![full mode 的三类反射契约](../../assets/diagrams/ch15/ch15-17-12-full-mode-metadata-contracts.png)
+
+图：泛型签名、反射构造和成员访问各自保留最小必要对象与元数据。 TypeToken内置规则不保护所有模型；新库版本、注解匹配与App自定义动态路径仍需分别核对。
 
 如果必须临时关闭 full mode，要把它当作定位开关，并给恢复 full mode 设截止时间。长期方案是用 Analyzer 找出压低分数的宽规则，再用 release 回归覆盖序列化、登录、支付、推送、deep link（深链）、插件加载和 JNI 路径。
 
@@ -245,6 +306,11 @@ CI 里至少归档这些产物：
 
 独立任务不生成 APK、AAB、mapping、seeds 或 usage；表中的编译产物来自完整 R8 build，并且必须和被比较的 APK/AAB 属于同一次构建。mapping 会被后续构建覆盖，发布时应按制品校验值归档。
 
+<!-- gracker-diagram: ch15-17-13-same-build-artifact-evidence -->
+![CI 比较与制品归档](../../assets/diagrams/ch15/ch15-17-13-same-build-artifact-evidence.png)
+
+图：基线与候选固定工具和输入，并把规则报告与完整构建制品按校验值对应。 独立报告不生成mapping/seeds/usage或包体；编译器升级先重建基线，绝对分数不作跨项目门槛。
+
 标准开发者工作流把 HTML 作为供人阅读的报告。最新官方 `r8-analyzer` skill 还会读取 protobuf：AGP 9.3 路径使用独立任务生成的 `.pb`，旧 AGP + R8 9.3.7-dev 及以上路径使用 `dumpkeepradiustodirectory`，随后转换成 JSON。该流程服务于 skill 的分析脚本，官方没有把其中的 protobuf/JSON schema（字段结构契约）承诺为稳定的外部 CI API。团队若复用这些数据，应固定 R8 与 skill 版本，为转换和解析脚本加契约测试，格式变化时停止门禁并转人工检查。
 
 门禁规则建议按“变宽”定义，避免把低分本身当作失败。可执行的评审条件包括：
@@ -256,6 +322,11 @@ CI 里至少归档这些产物：
 - 新版 SDK 带入 consumer rules 后，subsumed rules 数量明显增加。
 
 官方 `r8-analyzer` skill 在 2026-08-06 版本中明确分成三条路径：AGP 9.3.0 及以上运行独立任务；旧 AGP 搭配 R8 9.3.7-dev 及以上生成定量数据；更旧 R8 只做启发式规则审查。skill 适合生成报告摘要和候选清单，但不会修改 keep 规则。规则背后是运行时契约，最终仍要由工程师确认反射、JNI、序列化和插件化路径是否被覆盖。
+
+<!-- gracker-diagram: ch15-17-14-workflow-and-schema-validation -->
+![工作流入口与数据契约先验收](../../assets/diagrams/ch15/ch15-17-14-workflow-and-schema-validation.png)
+
+图：使用工作流前先检查入口文件、明确proto输入，再校验schema和统计结果。 当前引用的两个scripts文件未随目录提供；参考示例有缩进问题，文件名排序不能证明是最新构建。
 
 ## 与 APK Analyzer / apkanalyzer 的边界
 
@@ -303,6 +374,11 @@ R8 Analyzer skill 可以汇总分数、影响较大的规则和重叠关系，�
 6. 把失败样本、mapping 和最终规则归档。
 
 第三方登录回调、支付、push receiver（推送接收组件）、dynamic feature、JNI crash 上报和旧数据反序列化通常不在日常 smoke test 中。没有这些路径的用例时，保留规则并记录证据缺口。
+
+<!-- gracker-diagram: ch15-17-15-review-to-release-regression -->
+![从候选规则到可发布验证](../../assets/diagrams/ch15/ch15-17-15-review-to-release-regression.png)
+
+图：候选规则连接到动态入口和必测路径，再完成优化后的release验证与归档。 登录、支付、推送、动态feature、JNI和旧数据反序列化等低频路径不能只靠日常smoke test覆盖。
 
 ## 参考资料
 

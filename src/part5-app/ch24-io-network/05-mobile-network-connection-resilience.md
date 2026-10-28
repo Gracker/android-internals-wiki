@@ -187,6 +187,11 @@ OkHttp 用 `Address`（连接地址配置） 和 `Route`（具体连接路径）
 
 两个域名解析到同一 IP，也未必共享 HTTP/2 连接；反过来，证书覆盖多个域名，同样未必能合并。合并与否，以 OkHttp 5.4.0 的 [`RealConnection.isEligible()`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt) 为准；为便于追溯，5.3.0 的 [`RealConnection.isEligible()`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt) 也一并保留。
 
+<!-- gracker-diagram: a265-01-connection-reuse-eligibility -->
+![连接共享由传输配置和实际路径共同决定](../../assets/diagrams/ch24/a265-01-connection-reuse-eligibility.png)
+
+图：连接池中的空闲数、活跃连接数、域名数与HTTP流数分开统计；合并以固定版本 isEligible 为准。
+
 #### 响应体关闭与连接复用
 
 同步调用必须关闭 `Response` 或 `ResponseBody`。下面的代码用于读取一个短文本响应，并确保成功、异常和提前返回时都执行关闭。
@@ -203,6 +208,11 @@ fun executeText(client: OkHttpClient, request: Request): String {
 ```
 
 `use` 在离开作用域时关闭响应体。响应体一旦漏关，套接字和 HTTP/2 逻辑流就一直被占着，连接池配置得再对也复用不起来。流式下载不要先调用 `string()`，消费结束、取消或异常时同样要关闭响应体。
+
+<!-- gracker-diagram: a265-02-response-ownership -->
+![响应体消费和关闭控制连接占用](../../assets/diagrams/ch24/a265-02-response-ownership.png)
+
+图：收到响应头后仍需消费并关闭响应体；流式下载按需读取，取消与异常路径同样清理。
 
 #### 用事件区分排队、解析、建连与服务端等待
 
@@ -251,6 +261,11 @@ class NetworkEventListener : EventListener() {
 | HTTP 交换 | 重定向、401 跟进、业务层重试 | `exchange_id`、响应码、发送/接收字节 |
 
 逻辑操作成功率、网络调用成功率、连接尝试成功率和缓存可用率，必须各用各的分母。以 Fast Fallback（并行尝试多个候选地址、优先采用先成功连接的机制）为例，把它的每个地址尝试都当成一次请求，会虚增失败率；只保留获胜连接，又看不到某个地址族在持续故障。线上监控只用路由模板、错误分类与匿名化网络标识；完整 URL、查询参数、Cookie、Authorization、原始 IP、证书正文和未经清洗的异常消息，一律不进上报数据。
+
+<!-- gracker-diagram: a265-04-metric-parentage -->
+![操作、调用、连接尝试与交换分别计数](../../assets/diagrams/ch24/a265-04-metric-parentage.png)
+
+图：四层标识与分母分别保留；缓存命中可无新连接，多地址失败后仍可能完成同一次操作。
 
 ### DNS 优化与 HTTPDNS
 
@@ -308,6 +323,11 @@ class CachedHttpDns(
 示例适用于明确允许系统 DNS 回退的策略。严格解析策略应把回退实现作为依赖传入，并让失败显式返回。若客户端绑定到指定 Android `Network`，回退解析也应使用该网络的 `getAllByName()`，并与对应的套接字绑定策略保持一致。
 
 排查时要分清四种事件：HTTPDNS 查询失败、返回空地址，属于解析服务与缓存策略；地址连接失败要落到具体连接路径上；TLS 校验失败则回到证书与主机名。关闭主机名校验换来的“兼容”，只是把故障藏了起来。
+
+<!-- gracker-diagram: a265-05-dns-network-boundaries -->
+![HTTPDNS 缓存与连接必须对齐Network](../../assets/diagrams/ch24/a265-05-dns-network-boundaries.png)
+
+图：解析失败、空答案、地址连接失败与TLS错误分类；HTTPDNS不继承系统Private DNS/分流语义。
 
 ### 网络状态作为动态信号
 
@@ -377,6 +397,11 @@ class DefaultNetworkMonitor(
 
 默认网络从 Wi-Fi 切到蜂窝时，新旧网络对象具有不同身份；接入点断开后重连，也可能得到新的 `Network`。HTTPDNS 缓存、按网络绑定的套接字以及诊断记录都应保留这一身份，只保存“Wi-Fi/蜂窝”字符串是不够的。
 
+<!-- gracker-diagram: a265-06-network-callback-state -->
+![默认网络回调按身份更新状态](../../assets/diagrams/ch24/a265-06-network-callback-state.png)
+
+图：Network 身份与Wi-Fi/蜂窝类型分别记录；默认网络切换时先检查身份再发布丢失。
+
 ### 网络请求优先级与调度
 
 #### Dispatcher 的管辖范围
@@ -422,6 +447,11 @@ fun OkHttpClient.withDispatcherLimits(
 
 派生客户端使用新的 Dispatcher，连接池仍沿用基准客户端的。并发上限应来自本项目的数据，定值时同时观察 Dispatcher 排队、服务端并发能力、HTTP/2 逻辑流、文件吞吐和交互请求的尾延迟——尾延迟指 P95、P99 等较慢分位的耗时，平均值代表不了它。
 
+<!-- gracker-diagram: a265-07-dispatcher-scope -->
+![Dispatcher 限制异步而非所有在途工作](../../assets/diagrams/ch24/a265-07-dispatcher-scope.png)
+
+图：独立 Dispatcher 隔离异步调度；连接仍可共享，活跃流与带宽竞争需另行测量。
+
 请求取消应由持有 `Call` 的业务作用域执行 `Call.cancel()`，或由支持取消传播的协程适配器完成。扫描 `dispatcher.queuedCalls()` 和 `runningCalls()` 后按请求标签（tag）取消，拿到的是一个会变化的快照，还容易误取消其他页面复用的请求；共享请求则要用引用计数或订阅者模型——一个订阅者退出时，其他订阅者仍在等待的调用继续执行。
 
 #### 后台传输要按用户意图选择 API
@@ -438,6 +468,11 @@ Android 官方的[后台数据传输选择指南](https://developer.android.com/
 WorkManager 的长运行 Worker（工作单元）由前台服务与 JobScheduler（系统后台任务调度器）协作执行。Android 16 起这类工作会消耗应用的任务运行配额——系统允许应用占用后台执行资源的额度——Android 17 沿用这一规则；UIDT 走另一条路，不消耗普通任务配额，但仍受系统健康约束。截至本次核验，Jetpack 还没有 UIDT 的兼容抽象，Android 14 以下要准备 WorkManager 长运行 Worker 等回退路径。用户点击后启动的长文件传输，就要按这些配额和时长约束来设计运行方式。
 
 可延迟流量应合并传输，并用 `UNMETERED`、充电和电量等约束表达成本偏好。无线电尾部耗电随设备、制式、信号和运营商配置变化，通用调度算法里写死某个固定秒数行不通。
+
+<!-- gracker-diagram: a265-08-background-transfer-choice -->
+![后台传输按用户意图与可延迟性分流](../../assets/diagrams/ch24/a265-08-background-transfer-choice.png)
+
+图：UIDT 与普通工作配额不同；先遵守用户意图、系统约束和恢复协议，再测吞吐。
 
 #### 大文件传输的可恢复状态
 
@@ -462,6 +497,11 @@ OkHttp 的文件请求体可流式发送，但暂存文件在重试完成前必�
 
 验收时先验证恢复正确性，再比较吞吐：用例要覆盖 `206`/`200`/`416`、远端表示变化、网络切换、进程终止、任务停止、存储不足、URI 失效、多任务争用和计费网络策略；完整传输的本地长度/摘要、正式文件发布状态与服务端完成状态必须一致。
 
+<!-- gracker-diagram: a265-09-range-download-recovery -->
+![断点下载按响应与表示版本决定追加](../../assets/diagrams/ch24/a265-09-range-download-recovery.png)
+
+图：断点针对稳定字节表示；客户端已发送不等于服务端已确认，上传恢复需要服务端协议。
+
 ### 弱网优化从失败阶段开始
 
 弱网优化的第一步，是把失败落到具体阶段上。直接延长全部超时并增加重试次数，失败请求会占用更多连接、线程、电量和用户等待时间，问题本身还留在原地。
@@ -483,6 +523,11 @@ OkHttp 的文件请求体可流式发送，但暂存文件在重试完成前必�
 OkHttp 的超时是分阶段的预算：`connectTimeout` 约束套接字建连，`readTimeout` 和 `writeTimeout` 约束对应的读写操作，`callTimeout` 覆盖整次逻辑调用，包括 DNS、连接、写入、服务端处理和读取。也正因为分阶段，把读超时调大治不了 DNS 或 Dispatcher 排队的慢；只设阶段超时，也拦不住重定向与重试累积后的总等待。
 
 参数由同一接口在不同网络类别下的耗时分位数、用户交互截止时间和服务端服务等级目标得出。分位数描述一组请求中有多少比例不超过该耗时，例如 P95 是 95% 的样本不超过的值；流式下载与短 API 的读取模型不同，共用一组机械常数并不合适。
+
+<!-- gracker-diagram: a265-03-queue-and-call-timeouts -->
+![异步排队与Call执行预算分开计时](../../assets/diagrams/ch24/a265-03-queue-and-call-timeouts.png)
+
+图：异步 Dispatcher 等待不计入 callTimeout；用户路径用外层总截止时间统一限制多次调用与重试。
 
 #### 区分传输恢复与业务重试
 
@@ -509,6 +554,11 @@ HTTP 语义提供起点，但服务端契约仍需确认：
 | 取消状态 | 页面、任务或用户是否已取消 |
 
 重试间隔可以按指数逐次增大，并在每次间隔中加入随机偏移，避免大量客户端同时重试。起始间隔、上限和次数要来自业务恢复目标、服务端容量与整次截止时间；对所有接口都安全的一组毫秒值，并不存在。
+
+<!-- gracker-diagram: a265-10-retry-admission -->
+![重试先核对语义、请求体和剩余预算](../../assets/diagrams/ch24/a265-10-retry-admission.png)
+
+图：多层重试共享同一逻辑操作预算；可重放请求体只是必要条件之一，不能证明业务副作用幂等。
 
 #### 网络状态与端点结果分开看
 
@@ -640,6 +690,11 @@ TLS、代理与套接字配置会参与连接资格判断。使用不同的证�
 
 P50、P95、P99 分别表示 50%、95%、99% 的样本不超过该值；P95/P99 描述分布尾部的慢请求，常称“尾延迟”。三类基线里，确定性基线可以进入 CI（持续集成）随每次提交执行；公共互联网和生产 CDN（内容分发网络）受调度、拥塞、证书、服务端发布与时间段影响，适合定时实验和分阶段发布验证，当不了每次提交的单一阻断条件。分阶段发布是先让少量用户用上候选版本，观察指标后再逐步扩大范围，也常称“灰度发布”。
 
+<!-- gracker-diagram: a265-11-baseline-environments -->
+![三类基线保留各自样本与门槛](../../assets/diagrams/ch24/a265-11-baseline-environments.png)
+
+图：三类样本分别建基线；用户路径完成不由单个 API 平均耗时替代。
+
 基线对象也应从用户路径开始。“首页可交互”这样的路径可能包含配置、列表、图片和本地解码，单个 API 变快，页面未必跟着变快。每条关键路径都要定义：
 
 - 开始事件与完成事件。
@@ -719,6 +774,11 @@ data class NetworkBaselineSample(
 
 分位值只在 `NetworkBaselineKey` 相同、或分析者明确选择的维度内计算；系统版本、网络栈提供程序、缓存路径或计费状态不同的样本直接混合，环境构成变化会被误判成代码回归。
 
+<!-- gracker-diagram: a265-12-missing-and-overlapping-stages -->
+![未发生、不可观测与重叠阶段区别表达](../../assets/diagrams/ch24/a265-12-missing-and-overlapping-stages.png)
+
+图：保留缺失原因；分段只有在边界互斥时才可相加，响应头事件作为代理指标须写明定义。
+
 ### DNS 与地址选择的基线怎么建
 
 我们先看解析这一侧。Android 10 / API 29 起公开的 `DnsResolver` 支持异步查询，并可传入代表某条系统网络的 `Network`；`android-17.0.0_r1` 的 [`DnsResolver.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/DnsResolver.java) 仍按目标网络的 `netId` 发起解析，`netId` 是系统内部标识该网络的编号。它属于系统解析入口，和应用自行请求指定服务的 HTTPDNS 是两回事。
@@ -755,6 +815,11 @@ TTL 规定 DNS 记录可以缓存多久，到期只影响后续解析：已经�
 
 连接池保存可再次使用的连接，省去后续请求的建连和握手成本。HTTP/1.1 的并发通常依赖多条连接；HTTP/2 可在一条 TCP 连接上多路复用多个流，即让多个请求交错传输。TCP 丢包会拖慢该连接的发送进度；HTTP/3 在 QUIC 中为流提供独立的有序交付，单个流的数据丢失不会按 HTTP/2 的 TCP 字节序阻塞其他流——但 QUIC 仍共享连接级拥塞控制和路径容量，某个流占用大量带宽，其他流仍可能受影响。
 
+<!-- gracker-diagram: a265-13-h2-h3-blocking -->
+![HTTP2与HTTP3的交付和共享资源边界](../../assets/diagrams/ch24/a265-13-h2-h3-blocking.png)
+
+图：HTTP/3 缓解传输交付层的跨流队头阻塞；共享拥塞控制、路径容量和大响应干扰仍要测。
+
 连接合并指多个主机在证书、DNS、代理、地址和网络库规则都允许时，共用同一条 HTTP/2 连接；实验里要单独标记这一情况。主机数替换不了连接数，单看连接复用率也证明不了页面更快。
 
 ### Cronet、OkHttp、HttpEngine 与 Mars 的可比性
@@ -788,6 +853,11 @@ QUIC 是主要运行在用户空间、以 UDP 为承载的传输协议，HTTP/3 
 每次切网实验记录旧、新 `Network` 的临时编号和能力快照、切换发生时的请求阶段、已发送与已接收字节、最终协议、是否重新建连、业务层是否重复提交。QUIC 的连接迁移允许连接在 IP 地址或网络变化后继续使用，能否迁移成功取决于提供程序、服务端和路径；代理、VPN、NAT（Network Address Translation，网络地址转换）、服务器配置和连接迁移选项都会改变结果。
 
 UDP 阻断测试必须保留从首次 QUIC 尝试到 HTTP 回退完成的总耗时；只比较成功的 HTTP/3 与成功的 HTTP/2，协议探测失败造成的慢请求就漏掉了。服务端同时记录 ALPN（Application-Layer Protocol Negotiation，TLS 握手中的应用协议协商）、QUIC 版本、连接 ID 迁移、重试令牌和错误分类，协议以这些记录为准，客户端不要从端口或 URL 反推。
+
+<!-- gracker-diagram: a265-14-quic-fallback-experiment -->
+![协议实验固定实现并计入失败回退](../../assets/diagrams/ch24/a265-14-quic-fallback-experiment.png)
+
+图：同时换库与协议无法单独归因；最终协议用网络栈结果或受控服务端记录确认。
 
 0-RTT 是在恢复已有 TLS/QUIC 会话时、握手完成前发送应用数据的能力，可以省去一个往返等待。它单独建组，只用于即使被攻击者重放也不会产生额外副作用的操作；客户端与服务端要共同验证重复到达时的语义，状态变更请求不该只因为耗时更短，就放进早期数据。
 
@@ -829,6 +899,11 @@ QUIC 状态机位于用户空间网络栈，也就是普通进程可实现的协
 
 字节指标必须写清统计范围和定义。Cronet `UrlResponseInfo.getReceivedByteCount()` 返回处理该请求所需的最小网络接收字节，发生在解压前，包含重定向的头部与数据；IP、TCP/UDP、TLS 和代理等开销是否计入，它没有保证。OkHttp 事件字节、响应体长度、`TrafficStats` UID 差值也各有定义——UID 是 Android 分配给应用身份的整数编号，`TrafficStats` 的 UID 数据覆盖该应用的累计流量，与单请求字节放进同一列直接比较会出错。
 
+<!-- gracker-diagram: a265-15-representation-byte-boundaries -->
+![数据表示、压缩与计数字节分层比较](../../assets/diagrams/ch24/a265-15-representation-byte-boundaries.png)
+
+图：数据格式与内容编码是两条独立轴；线上字节、解压后长度和 UID 网络层字节分别解释。
+
 序列化和解压 CPU 用 Microbenchmark 在固定输入上重复测量单段代码；端到端页面用 Macrobenchmark 启动应用并测量完整用户流程。两者都应配合本地固定响应：远程网络波动会混入 CPU 微基准，真实互联网请求就别放进循环测试。
 
 ### 验证与回归测试
@@ -859,6 +934,11 @@ Android 官方性能指南要求使用接近发布版本的构建，并在同一
 5. 页面完成、业务正确性、后台流量和功耗限制。
 
 只对成功样本计算延迟会产生幸存者偏差：失败样本被排除后，留下的成功请求代表不了全部请求；候选方案若更早失败，成功请求反而可能看起来更快。成功率和延迟必须并列展示，失败请求也要保留失败阶段与已消耗时间。
+
+<!-- gracker-diagram: a265-16-release-gate-denominators -->
+![发布判断先看全样本构成再看成功延迟](../../assets/diagrams/ch24/a265-16-release-gate-denominators.png)
+
+图：更早失败会让成功样本看似更快；分母、结果构成、尾延迟与资源成本共同评估。
 
 回归阈值来自用户体验目标、历史波动、样本量和实验成本。固定的通用毫秒阈值盖不住首页 API、媒体、长连接和后台同步之间的差别。自动阻断配置应保存基线版本、适用场景、统计窗口和阈值来源；基线也别一直指向“上一轮结果”，否则连续小幅退化会被逐次接受。
 
@@ -897,6 +977,11 @@ Android 17 / API 37 的网络安全配置需要进入 TLS 基线。`targetSdk` �
 网络安全配置写成 `enabled`，证明不了某条请求已经协商 ECH；要确认协商结果，只有看网络栈公开结果或受控服务端记录。详细机制见 24.6。
 
 性能实验不得安装“信任所有证书”的 `TrustManager`、宽松主机名验证或明文回退。`TrustManager` 负责验证服务端证书是否来自受信任的 CA（Certificate Authority，证书颁发机构）；若测试代理需要解密 HTTPS，应使用只存在于测试构建的调试 CA，并把“经过代理”和“直接连接”分成两组。
+
+<!-- gracker-diagram: a265-17-tls-baseline-conditions -->
+![安全配置与协商结果分别进入实验记录](../../assets/diagrams/ch24/a265-17-tls-baseline-conditions.png)
+
+图：证书策略和代理会改变连接与性能；完整验证保持一致，ECH 实际结果需证据。
 
 Android 官方文档不建议普通应用做证书固定。证书固定是客户端只接受预先记录的公钥或证书，它会把服务端证书轮换与客户端版本覆盖绑定在一起；若风险评估后仍采用，基线必须包含备用公钥、过期策略、旧版本客户端和轮换演练——客户端连不上服务端时，远程配置也未必送得达。
 

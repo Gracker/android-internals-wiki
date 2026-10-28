@@ -78,7 +78,17 @@ FD 是进程文件描述符表中的整数索引。监控记录至少要把下�
 
 generation 是同一编号每次重新创建或复用时递增的代次，用于区分“旧的 123”和“新的 123”。所有者可以是创建该 FD 的对象、模块或任务，其职责是保证每条成功创建路径都有且只有一次关闭。
 
+<!-- gracker-diagram: a213-01-fd-dimensions -->
+![数量、编号、创建代次与对象分别记录](../../assets/diagrams/ch20/a213-01-fd-dimensions.png)
+
+图：单次proc快照说明构成，创建与关闭事件解释责任；相同编号和相同链接目标都不能独立证明同一资源周期。
+
 关闭一个 FD 后，内核通常会把较小的空闲编号分配给后续对象。double-close 指同一编号被关闭两次：第二次关闭时，该编号可能已经指向另一线程刚创建的对象，最终造成 use-after-close（关闭后仍使用）或数据损坏。因此，监控记录不能只保存“编号 123 曾由谁打开”。
+
+<!-- gracker-diagram: a213-04-fd-reuse -->
+![晚到的第二次 close 可能关闭另一所有者的新资源](../../assets/diagrams/ch20/a213-04-fd-reuse.png)
+
+图：A关闭g1后编号可被B复用；A再次按旧整数close时，可能操作B的g2，造成关闭后使用或数据损坏。
 
 procfs 是内核通过 `/proc` 暴露进程和系统状态的虚拟文件系统。`/proc/self/status` 中的 `FDSize` 表示已分配的描述符槽位数，并非当前打开数量。Linux 6.18 的 procfs 文档说明，`/proc/<pid>/fd` 目录包含进程当前打开 FD 的符号链接；应用采集自身进程时应使用 `/proc/self/fd`，这样可避开 PID（进程编号）复用和跨进程访问权限问题。
 
@@ -149,6 +159,11 @@ fun collectFdSnapshot(): FdSnapshot {
 
 需要进一步判断少量可疑 FD 时，再读取 `/proc/self/fdinfo/<fd>`。普通文件至少包含当前位置 `pos`、打开标志 `flags`、挂载点编号 `mnt_id` 和 inode（文件系统对象编号）；eventfd、epoll 等对象还会提供各自字段。逐个读取所有 FD 的 `fdinfo` 成本较高，不适合高频采样。
 
+<!-- gracker-diagram: a213-02-snapshot-quality -->
+![低频计数后按需读取链接，明确快照的数据质量](../../assets/diagrams/ch20/a213-02-snapshot-quality.png)
+
+图：complete只描述已枚举条目的读取结果，并非原子完整快照；目录枚举本身可能占一个FD，不能机械减一。
+
 ## FD 限额和 FD_SET 是两条边界
 
 `RLIMIT_NOFILE` 的取值比进程可打开的最大 FD 编号大 1；由于内核通常分配最小可用编号，它也约束同时打开的 FD 数量。soft limit 是当前生效上限，hard limit 是普通进程可提高 soft limit 的最大值。
@@ -165,6 +180,11 @@ fun collectFdSnapshot(): FdSnapshot {
 - 新代码处理大量 FD 时应优先使用 `poll` 或 `epoll`，避免自行扩大未经验证的 `fd_set`。
 
 tombstone 是 Android 系统生成的 Native 崩溃记录。看到其中出现 `FD_SET: file descriptor ... >= FD_SETSIZE` 时，应先定位把高编号传给 `select()` 的库，再检查进程为何产生该编号。改用合适的等待接口与修复 FD 泄漏可能是两个独立任务。
+
+<!-- gracker-diagram: a213-03-two-limits -->
+![RLIMIT_NOFILE 与 FD_SET 的边界互不等价](../../assets/diagrams/ch20/a213-03-two-limits.png)
+
+图：排查高编号由何处产生，也定位传给fd_set宏的库；修复泄漏与改用poll/epoll可能是两个任务。
 
 ## 用创建代次处理 FD 编号复用
 
@@ -184,6 +204,11 @@ Hook 指在运行时拦截函数调用。如果只拦截 `open()` 与 `close()`�
 
 Hook 实现还要处理：
 
+<!-- gracker-diagram: a213-06-close-errors -->
+![close 报错不统一等于描述符仍然打开](../../assets/diagrams/ch20/a213-06-close-errors.png)
+
+图：保留错误用于诊断与数据完整性处理，不能盲目重试close，否则可能误关其他线程复用的FD。
+
 - 使用 thread-local（每线程独立）标志防止重入，避免展开调用栈、写日志或分配内存时再次打开 FD；
 - 设置固定容量和淘汰规则，避免诊断表自身无限增长；
 - 只在系统调用成功后更新状态；
@@ -202,6 +227,16 @@ AOSP（Android Open Source Project，Android 开源项目）还包含 fdtrack。
 
 `libfdtrack.so` 与 `android_fdtrack_compare_exchange_hook` 属于平台内部接口，不能作为跨 Android 版本稳定可用的 App SDK。线上方案应使用经过验证、开销有上限的自有诊断组件，或采用低频 `/proc` 快照并在资源封装层记录所有者。
 
+<!-- gracker-diagram: a213-05-dup-rules -->
+![复制与覆盖按返回语义更新创建代次](../../assets/diagrams/ch20/a213-05-dup-rules.png)
+
+图：复制描述符可共享底层open file description，但每个描述符各有所有权与关闭责任。
+
+<!-- gracker-diagram: a213-07-fdsan-fdtrack -->
+![所有权校验与创建栈追踪提供不同证据](../../assets/diagrams/ch20/a213-07-fdsan-fdtrack.png)
+
+图：fdsan不逐次检查所有read/write；fdtrack内部符号也不是稳定NDK接口，不能据此包装通用线上SDK。
+
 ## 修复所有权比“崩溃前关几个 FD”更重要
 
 Java/Kotlin 代码优先使用 `use {}` 或 try-with-resources，让作用域结束时自动关闭资源。Native 代码可使用 RAII wrapper：RAII 把资源生命周期绑定到 C++ 对象生命周期，wrapper（封装类）的析构函数负责关闭 FD。
@@ -216,6 +251,11 @@ FD 跨越 JNI（Java 与 Native 代码的调用接口）时，`FileDescriptor`�
 - callback（异步回调）超时、页面销毁和进程切换时怎样释放。
 
 不要根据 `/proc/self/fd` 中“看起来没用”的编号直接调用 `close()`。符号链接目标无法说明所有者；关闭 Binder（Android 进程间通信）、Looper（线程消息循环）、数据库或其他线程正在使用的 FD，会造成关闭后使用和数据损坏。
+
+<!-- gracker-diagram: a213-08-jni-ownership -->
+![跨 JNI 的接口先明确谁负责关闭](../../assets/diagrams/ch20/a213-08-jni-ownership.png)
+
+图：符号链接无法证明资源闲置；不要按看起来没用的编号关闭Binder、Looper、数据库或其他线程资源。
 
 线程也不能因为名称陌生就强制 `interrupt`、`stop` 或 `cancel`。线程生命周期的排查与修复见 20.8；两类资源都应回到创建模块和明确的生命周期所有者。
 
@@ -235,6 +275,11 @@ Linux task 是内核调度的任务实体，线程会各自对应一个 task；`
 
 Binder 线程池无法继续处理请求，常由同步事务阻塞或调用环造成，线程数量只是伴随现象。HandlerThread 是自带 Looper 的线程，Looper/MessageQueue 会正常持有 epoll/eventfd；看到 `anon_inode:[eventpoll]` 只能确定对象类型。只有这些对象随着所属页面或模块反复销毁而持续增长，才构成泄漏证据。
 
+<!-- gracker-diagram: a213-10-fault-evidence -->
+![故障现象、资源证据和根因结论分别保存](../../assets/diagrams/ch20/a213-10-fault-evidence.png)
+
+图：资源趋势需和Native崩溃、ANR主题及系统记录关联；正常Looper持有epoll/eventfd不构成泄漏证明。
+
 Crash、ANR（应用无响应）和 OOM（内存不足）的完整判定分别见 20.3、20.4、20.5。本文只提供故障前的 FD 趋势、创建来源和所有权证据，不能代替 tombstone、ANR trace（ANR 线程记录）或 `ApplicationExitInfo`（系统保存的应用退出信息）。
 
 ## 按进程基线和增长速度触发采样
@@ -252,6 +297,11 @@ Crash、ANR（应用无响应）和 OOM（内存不足）的完整判定分别�
 触发条件应综合绝对值、占 soft limit 的比例、增长速度、持续时间和同类设备分位数。分位数用于表示样本在同类设备分布中的位置，例如 P95 高于 95% 的样本。所有进程共用固定阈值会掩盖进程角色差异；短时峰值随后回落，与每次进入页面都只增不减，两者代表的风险也不同。
 
 进入详细诊断后，应设置：
+
+<!-- gracker-diagram: a213-09-monitoring-flow -->
+![按进程基线触发有时限、有容量的详细诊断](../../assets/diagrams/ch20/a213-09-monitoring-flow.png)
+
+图：主进程、播放器、下载与隔离进程基线不同；保留峰值、回落和缺失原因，避免所有进程共享固定阈值。
 
 - 明确最长运行时间、最大事件数和采样率；
 - 只保留出现次数最多的 K 个来源，并限制调用栈深度与字符串长度；
@@ -285,6 +335,11 @@ FD 持续增长且接近上限时，可按影响范围采取以下动作：
 5. 后台再上传、符号化和聚合；符号化是把机器地址还原为函数名与源码位置。
 
 证据文件要使用原子替换，确保读取方只能看到完整旧版本或完整新版本；还要限制总容量，并为格式设置版本号。Crash/ANR 证据包见 26.2、26.3；Java/Native handler 的职责边界见 20.2、20.3。
+
+<!-- gracker-diagram: a213-11-prebuilt-evidence -->
+![故障前准备摘要，fatal 现场只做最小记录](../../assets/diagrams/ch20/a213-11-prebuilt-evidence.png)
+
+图：系统Native tombstone流允许为空且普通应用无目录读取权；fatal handler不临时开线程、枚举全部栈或遍历fdinfo。
 
 ## 隐私与数据质量
 

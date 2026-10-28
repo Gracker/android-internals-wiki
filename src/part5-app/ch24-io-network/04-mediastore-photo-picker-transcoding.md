@@ -102,6 +102,11 @@ MediaStore 和 MediaProvider 管理共享媒体的索引、权限与文件访问
 
 列表查询往往很快返回，首屏却可能卡在后续工作上：`Cursor`（查询结果游标） 遍历时可能继续读取数据；`Bitmap` 保存解码后的像素，分配量直接影响内存；文件打开和图片解码也要分别计时。
 
+<!-- gracker-diagram: a264-01-index-and-content -->
+![媒体索引查询与内容读取分段](../../assets/diagrams/ch24/a264-01-index-and-content.png)
+
+图：索引查询、Cursor 消费与媒体内容处理分别计时；网格绑定不读取原文件。
+
 相册、即时通信、备份和文件管理应用面对的媒体项可能达到数万甚至更多。常见问题包括：
 
 - 在主线程查询，或者一次读取整个媒体库。
@@ -145,6 +150,11 @@ for (volume in volumes) {
 ```
 
 这段代码用于发现当前已挂载的外部媒体卷。卷名可能随可移动存储的插拔而变化，`getVersion(context, volume)` 和 `getGeneration(context, volume)` 都要求具体卷名，`VOLUME_EXTERNAL` 留给跨卷展示。
+
+<!-- gracker-diagram: a264-02-volume-and-visibility -->
+![可见集合由卷与授权共同决定](../../assets/diagrams/ch24/a264-02-volume-and-visibility.png)
+
+图：VOLUME_EXTERNAL 可聚合读取；插入和同步检查点使用具体卷，先排除不可见原因再做删除对账。
 
 #### 只查询所需列，并让分页可取消
 
@@ -211,6 +221,11 @@ fun queryImagePage(
 
 这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version`（整体版本标识） 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。
 
+<!-- gracker-diagram: a264-03-keyset-pagination -->
+![媒体分页用排序值与ID定位](../../assets/diagrams/ch24/a264-03-keyset-pagination.png)
+
+图：复合锚点区分同秒记录；version 改变后重建映射，跨页变更由后续同步补偿。
+
 #### 用 `IS_PENDING` 发布完整媒体
 
 Android 10 及以上写共享媒体时，先插入 `IS_PENDING=1` 的记录，写完内容后再清除该标记。其他应用通常不会看到未完成的媒体，调用方也不需要等待媒体扫描重新发现自己刚写入的文件。
@@ -258,6 +273,11 @@ fun publishJpeg(
 ```
 
 这段代码应在负责阻塞 I/O 的后台调度器上执行。`IS_PENDING` 表示尚未发布，失败分支会删除调用方刚创建的待发布记录，避免留下长期不可见的半成品。清理操作本身也可能失败，生产实现应记录待清理的 `Uri`，并避免让清理异常覆盖最初的写入异常。创建和移动媒体应使用 `DISPLAY_NAME`、`RELATIVE_PATH` 等列；`DATA` 是旧式绝对路径列，只服务于打开已有媒体。
+
+<!-- gracker-diagram: a264-04-pending-publish -->
+![IS_PENDING 的发布与失败补偿](../../assets/diagrams/ch24/a264-04-pending-publish.png)
+
+图：发布路径与失败清理分开；持久记录待清理 Uri，防止留下不可见半成品。
 
 ### MediaProvider 索引、扫描与元数据更新
 
@@ -343,6 +363,11 @@ SDK 扩展版本让 Mainline 模块在基础 Android API 级别不变时增加�
 
 应用应在运行时检查 SDK 扩展版本：支持时用新增/修改查询配合删除查询，不支持时继续比较当前 `_ID` 集合。即使支持该 API，卷移除和权限收窄仍要单独处理。
 
+<!-- gracker-diagram: a264-05-generation-checkpoint -->
+![版本、增量与删除补偿共同恢复同步](../../assets/diagrams/ch24/a264-05-generation-checkpoint.png)
+
+图：generation 描述索引变更，不是内容哈希；通知只唤醒重查，卷卸载和权限收窄不能记成删除。
+
 #### `ContentObserver` 只负责唤醒重新查询
 
 Android 11 及以上的 `ContentObserver.onChange()` 可以接收一组 `Uri`，以及表示插入、更新或删除的通知标记。这些详细标记由内容提供方选择是否发送，只能作为提示；`MediaProvider` 也可以只对集合根 `Uri` 发送通知。进程未运行时，系统不会为应用保存完整通知序列，回调的合并、顺序和详细程度都不足以构成持久同步协议。
@@ -368,6 +393,11 @@ AOSP 文档记录过一组调优 Pixel 2 的对照测试：通过文件路径和
 - 递归扫描目录、逐个读取长度和 EXIF，再查询 `MediaStore`，会重复索引工作并产生大量小 I/O。
 
 列表和同步先查询轻量元数据。只有上传、编辑、播放或详情展示需要文件内容时，才打开相应 `Uri`。
+
+<!-- gracker-diagram: a264-06-fuse-and-provider -->
+![直接路径仍受 FUSE 访问规则约束](../../assets/diagrams/ch24/a264-06-fuse-and-provider.png)
+
+图：路径访问仍有系统开销和权限边界；Photo Picker 与云 URI 不承诺提供 DATA 路径。
 
 #### 批量用户请求有 2000 项输入上限
 
@@ -404,6 +434,11 @@ fun createDeleteRequestForItems(
 ```
 
 这段校验把代表整张表的集合 `Uri` 和超限列表挡在请求之外，并在所有目标版本上都采用 2000 项上限，便于服务端或共享模块使用同一分批规则。用户取消时，本地媒体状态保持原样；收到 `RESULT_OK` 后要重新查询受影响项，旧缓存一律按待验证处理。
+
+<!-- gracker-diagram: a264-07-batch-user-requests -->
+![系统确认请求的写权限与已执行操作](../../assets/diagrams/ch24/a264-07-batch-user-requests.png)
+
+图：2000 是 targetSdk 36 起的单次输入上限；写请求授予权限后，应用才执行自己的写操作。
 
 ### 缩略图、预览图与解码成本
 
@@ -449,6 +484,11 @@ fun loadMediaThumbnail(
 
 同一 `Uri` 的小网格图和详情预览尺寸不同，缓存键里必须带上尺寸，否则两种用途会错拿同一张图。`generation` 改变时，只让对应媒体的派生图缓存失效；`version` 改变时，重新校验整个 `MediaStore` 缓存索引。
 
+<!-- gracker-diagram: a264-08-thumbnail-budget -->
+![缩略图按像素尺寸、内容版本与窗口调度](../../assets/diagrams/ch24/a264-08-thumbnail-budget.png)
+
+图：缓存按版本和目标尺寸区分；并发数以首屏、丢帧、内存与温度测量确定。
+
 ### 兼容媒体转码只用于明确的格式边界
 
 Android 12 引入兼容媒体转码。设备可以保存 HEVC（H.265，高效率视频编码）或 HDR 媒体；读取方明确声明不支持源格式时，`MediaProvider` 与媒体转码服务可以返回兼容版本，例如把 HDR 视频转为 SDR。首次转码要完成解码、重新编码和文件 I/O，后续读取才可能复用系统缓存。等待时间取决于片长、分辨率、格式、硬件编解码能力、温度和系统负载，一台旧设备上测到的单次耗时，别拿来当固定预算。
@@ -490,6 +530,11 @@ contentResolver.openTypedAssetFileDescriptor(
 调用级声明优先于应用资源中的通用声明，适合“本机播放器支持 HDR、上传服务只接受 SDR”这类不同路径。能力声明过宽，应用可能收到自己处理不了的源格式；声明过窄则会增加转码。应用完全不声明媒体能力时，当前平台按“支持所有格式”处理，兼容转码默认关闭。依赖转换的路径必须显式声明不支持的格式。
 
 资源级声明会影响应用的多条媒体访问路径。仅在各路径能力一致时使用，否则缩略图或本机播放也可能受到不需要的转换影响。
+
+<!-- gracker-diagram: a264-09-capabilities-at-open -->
+![每条媒体访问路径声明自己的能力](../../assets/diagrams/ch24/a264-09-capabilities-at-open.png)
+
+图：能力按读取目的分别声明；转换受设备、来源和资源限制，调用方还要验证结果。
 
 ### 用指标、Perfetto 和 `dumpsys` 分段定位
 
@@ -696,6 +741,11 @@ fun chooseVideo() {
 
 `Uri` 回调到文件描述符返回的这段时间，可能包含云媒体下载或转码；文件描述符是进程访问已打开文件或数据流的句柄。描述符返回后还要单独测“首字节可读”的时间——系统可能先返回管道的一端，再异步供应内容。上传流程能读完整内容、编辑流程拿到可用输入与本地副本，媒体准备才算完成。
 
+<!-- gracker-diagram: a264-10-observable-media-phases -->
+![应用可观测的阶段与系统内部工作](../../assets/diagrams/ch24/a264-10-observable-media-phases.png)
+
+图：URI 回调、描述符返回、首字节与内容就绪分别计时；轨道只表达阶段，长度不代表耗时。
+
 #### API 36 及以上优先使用 `MediaStore.open*`
 
 Android 16 / API 36 起，`MediaStore.openFileDescriptor()`、`openAssetFileDescriptor()` 和 `openTypedAssetFileDescriptor()` 可用于打开 `ACTION_PICK_IMAGES` 返回的 MediaStore URI；同组入口也通过 Android 11 R 的 SDK Extension 15 提供。官方 API 文档建议优先使用这些入口，以增强系统稳定性。AndroidX 回退到 SAF 时，URI authority 不再是 `media`，此时仍需使用 `ContentResolver`。
@@ -742,6 +792,11 @@ fun persistPickerGrant(
 ```
 
 这段代码延长读取授权，不会把远端媒体下载到本地。Android 平台允许每个应用同时保留最多 5000 个媒体授权；继续新增时会移除最早的授权。草稿删除、任务结束和账号退出时应调用 `releasePersistableUriPermission()`，并在后台任务开始前重新验证读取能力。
+
+<!-- gracker-diagram: a264-11-picker-uri-lifetime -->
+![选择授权与后台内容准备分离](../../assets/diagrams/ch24/a264-11-picker-uri-lifetime.png)
+
+图：持久授权不下载内容，也不保证系统转码缓存存活；读取失败应恢复或重新选择。
 
 #### Android 17 可在 Picker 中执行选择限制
 
@@ -798,6 +853,11 @@ Jetpack 提供 `onUriPermissionGranted` 和 `onUriPermissionRevoked`，分别通
 
 折叠屏、多窗口、横竖屏和输入法显示会改变宿主与 `SurfaceView` 尺寸。应用应保存选择 URI 和页面模式，把窗口尺寸更新交给现有会话；不要因为普通布局变化反复销毁并创建嵌入式 Picker。退出页面时关闭会话并释放监听，防止图形表面和回调继续持有 Activity。
 
+<!-- gracker-diagram: a264-12-embedded-selection-state -->
+![嵌入式 Picker 双向维护选择与图形会话](../../assets/diagrams/ch24/a264-12-embedded-selection-state.png)
+
+图：应用主动 deselect 不依赖 revoke 回调回补状态；普通布局变化复用会话，退出关闭并释放监听。
+
 ### 视频转码的时间与存储成本
 
 HDR 能保留更大的亮度与色彩范围，SDR 的兼容面通常更广。Photo Picker 的 HDR→SDR 与 MediaProvider 的兼容媒体转码都根据应用声明的媒体能力决定是否转换，两者属于不同入口：
@@ -808,6 +868,11 @@ HDR 能保留更大的亮度与色彩范围，SDR 的兼容面通常更广。Pho
 | MediaProvider 兼容转码 | 打开媒体时传入 `ApplicationMediaCapabilities`，或使用资源声明 | 支持源格式时返回原内容；不支持时可能返回 AVC/SDR 或缓存结果 | Android 12 及以上；设备、格式、来源、片长和系统资源都影响是否转换 |
 
 两条路径都不会只因应用“可能不支持”就无条件转换，应用必须准确声明能力，并在接收端检查最终媒体能否处理。旧 Pixel 3 的测量值直接拿来当 Android 17 的耗时目标会出偏差；片长、分辨率、源格式、编解码器、存储、温度和并发负载都会改变等待时间。
+
+<!-- gracker-diagram: a264-13-two-transcoding-entries -->
+![Picker 与 MediaProvider 的两条转码入口](../../assets/diagrams/ch24/a264-13-two-transcoding-entries.png)
+
+图：两条入口的能力对象和缓存分别管理；超过边界或不执行转换时，应用仍需处理原内容。
 
 #### Photo Picker HDR→SDR
 
@@ -905,6 +970,16 @@ selected
 ```
 
 状态名依次表示已选择、已持久授权、正在打开、正在复制或转换、内容就绪、正在上传，以及三种终态：完成、可重试失败和放弃。保留这些英文短名，便于直接用作数据库枚举和日志字段。数据库事务是一组要么全部生效、要么全部回滚的状态写入；每次状态变化与文件重命名完成后再提交事务，恢复逻辑便能判断应继续任务还是删除不再被记录引用的文件。
+
+<!-- gracker-diagram: a264-14-three-cache-owners -->
+![系统两种转码缓存与应用副本分别管理](../../assets/diagrams/ch24/a264-14-three-cache-owners.png)
+
+图：系统缓存与应用任务文件所有权不同；不能把持久 URI 授权当作转码结果永久保存承诺。
+
+<!-- gracker-diagram: a264-15-recoverable-private-copy -->
+![媒体准备以持久状态恢复文件窗口](../../assets/diagrams/ch24/a264-15-recoverable-private-copy.png)
+
+图：文件重命名与数据库提交之间可能崩溃；启动对账补偿半成品、已完成但未标记和无引用文件。
 
 ### 大图、多选和云端媒体的 I/O 与内存压力
 
@@ -1010,6 +1085,11 @@ AndroidX 回退到 SAF 时，使用 `ContentResolver.getType()` 与 `OpenableCol
 - 失败：可以重试、重新选择或移除。
 
 URI 打开和顺序复制主要消耗 I/O；图片缩放、编码和哈希摘要计算主要消耗 CPU；上传由网络调度器管理。三个队列分别限流，选择数量增加时不按相同比例增加线程。用户取消某项时，取消该项尚未完成的打开、解码、转换和上传请求。
+
+<!-- gracker-diagram: a264-16-bounded-media-work -->
+![多选工作按资源分队列并逐项取消](../../assets/diagrams/ch24/a264-16-bounded-media-work.png)
+
+图：收到 URI、正在准备、可发送与失败是不同状态；取消要传到该项所有后续工作。
 
 ### 监控与回归测试
 

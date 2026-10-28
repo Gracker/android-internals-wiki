@@ -56,6 +56,11 @@ sources:
 
 策略名称也应描述约束，例如 `memory_constrained`、`media_enhanced`、`render_reduced`。`low`、`middle`、`high` 看似省事，几个月后很难解释每一档究竟约束了 CPU、内存还是媒体能力。策略数量宜少，但“三档”只是习惯，平台并没有这条规则；一项业务只有两个有效配置时，保留两个配置更容易验证。
 
+<!-- gracker-diagram: ch16-04-01-three-policy-lifecycles -->
+![能力、规则与压力分别建模](../../assets/diagrams/ch16/ch16-04-01-three-policy-lifecycles.png)
+
+图：能力画像描述资源基础，规则映射业务预算，动态信号控制临时收缩。 三者生命周期不同；启动/帧时长是结果信号，不是稳定机型身份。
+
 ## 公开 API 能告诉应用什么
 
 这一节我们逐个过一遍公开 API 能给出的信号，看它们各自回答什么问题。
@@ -67,6 +72,11 @@ Media Performance Class（MPC，媒体性能等级）由各 Android 版本的兼
 当前官方文档列出的已定义等级是 30、31、33、34、35，MPC 32 这一档并不存在。该值在一次开机期间不变；厂商 OTA（系统更新） 可能提高它，平台版本升级后等级也未必跟着提高。
 
 Media Performance Class 覆盖媒体、相机、显示、编解码和部分通用要求，适合回答“能否提供某种媒体体验”。它没有承诺所有 App 工作负载的 CPU 或 GPU 吞吐，也当不了整机跑分用。官方建议用 Jetpack Core Performance 统一读取设备声明，并可通过 Google Play services 补充数据；只需要平台声明时，`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 已经给出对应值。
+
+<!-- gracker-diagram: ch16-04-02-mpc-guarantee-boundaries -->
+![MPC声明、版本与业务保证](../../assets/diagrams/ch16/ch16-04-02-mpc-guarantee-boundaries.png)
+
+图：先区分平台声明和服务补充，再用对应CDD条目选择体验，并查询具体特性。 MPC 0表示未声明；系统版本升级不保证等级升级，等级不能代替任意负载跑分。
 
 ### 内存信号
 
@@ -81,6 +91,11 @@ Media Performance Class 覆盖媒体、相机、显示、编解码和部分通�
 
 所以缓存预算要同时受应用堆上限、资源类型和内存回调约束；按整机 `totalMem` 固定取一个百分比，会漏掉进程堆限制以及图形内存等开销。
 
+<!-- gracker-diagram: ch16-04-03-memory-domain-budget -->
+![整机内存、应用堆与实际分配域](../../assets/diagrams/ch16/ch16-04-03-memory-domain-budget.png)
+
+图：把整机容量、Java堆参考和实际分配域分别纳入预算，并保留运行时回收空间。 totalMem或memoryClass的固定百分比都不能保证native/graphics不超限。
+
 ### CPU、SoC（片上系统）、GPU 与屏幕
 
 `Runtime.availableProcessors()` 返回调用当时 Java 虚拟机可用的处理器数量，Java API 明确允许该值在同一进程生命周期内变化。它给出的只是这一个数字，完整 SoC 拓扑、大小核性能、调度容量和当前频率都不在其中；并发策略依赖该值时，应在非关键路径偶尔重读，把每次结果当作当时的快照。
@@ -90,6 +105,11 @@ Media Performance Class 覆盖媒体、相机、显示、编解码和部分通�
 Vulkan 版本、扩展和编解码器能力适合做功能门控，即只在所需接口存在时开放对应功能。支持某个 Vulkan 特性，说明接口可用；着色器吞吐够不够撑住某个场景，要靠实测回答。实验室里我们用输入与操作流程都固定的负载测量 GPU、CPU 和存储；线上冷启动阶段则要避开微基准——它会延长启动、增加发热，产生的样本还深受后台负载影响。
 
 屏幕分辨率和刷新率同时代表能力与负载。120 Hz 面板提供更高刷新上限，每帧时间预算约为 8.3 ms；更高分辨率会增加每帧需要处理的像素量和内存带宽。所以渲染策略要结合当前窗口尺寸、目标刷新率和帧数据来定，屏幕规格只是其中一个输入。
+
+<!-- gracker-diagram: ch16-04-04-feature-versus-budget -->
+![公开特性与实测预算的区别](../../assets/diagrams/ch16/ch16-04-04-feature-versus-budget.png)
+
+图：用公开特性决定接口可用性，用实际窗口和同条件负载确定预算。 CPU数量、SoC型号、64位ABI和120Hz规格都不能独自证明场景吞吐。
 
 ## 采集一份稳定能力画像
 
@@ -148,6 +168,11 @@ fun collectStableDeviceSignals(context: Context): StableDeviceSignals {
 
 若应用最低版本低于示例中的 API 门槛，应保留版本判断。适用范围从 Android 10 开始，`isLowRamDevice`、`memoryClass` 与 `totalMem` 均已可用。
 
+<!-- gracker-diagram: ch16-04-05-signal-cache-lifecycle -->
+![能力采集与缓存失效](../../assets/diagrams/ch16/ch16-04-05-signal-cache-lifecycle.png)
+
+图：后台按公开API采集平台画像，带构建和规则版本缓存，再按各数据源生命周期更新。 示例的CPU数量是快照；窗口、压力和服务补充等级不能永久随静态画像缓存。
+
 ## 从能力向量生成工作负载策略
 
 同一台设备可以同时得到“内存受限”和“媒体能力较强”两个判断。策略解析器按业务维度读取这组能力向量，把每个判断直接送到对应的业务上；先算通用总分再分配功能，会把互相独立的能力搅在一起。
@@ -198,6 +223,11 @@ fun resolvePolicy(
 
 映射函数应保持纯函数特征，也就是相同的信号、规则版本和应用版本总会得到相同结果。这样既能写单元测试，也能在故障报告里复现用户收到的策略。
 
+<!-- gracker-diagram: ch16-04-06-independent-policy-mapping -->
+![同一设备的两个独立策略判断](../../assets/diagrams/ch16/ch16-04-06-independent-policy-mapping.png)
+
+图：同一能力向量按内存与媒体两个独立分支生成负载策略，避免通用总分抹平差异。 192MB、MPC35和缓存比例都是演示规则；native/graphics预算与所需媒体特性仍要单独校准。
+
 ## 会话期压力单独处理
 
 Android 10 起，`PowerManager.getCurrentThermalStatus()` 可读取当前热状态，`isPowerSaveMode()` 可读取省电模式。Android 11 / API 30 增加 `getThermalHeadroom(forecastSeconds)`，参数表示向未来预测 0～60 秒；返回值 `1.0` 对应预计达到 `THERMAL_STATUS_SEVERE` 的阈值；设备不支持时返回 `NaN`（Not a Number，用作当前没有有效数值的标记）。
@@ -212,6 +242,11 @@ Android 16 / API 36 的 `android.os.health.SystemHealthManager` 增加 CPU、GPU
 - 调用方应读取 `getCpuHeadroomMinIntervalMillis()` 或 `getGpuHeadroomMinIntervalMillis()`，遵守设备给出的最小轮询间隔。
 
 这些 headroom 值描述当前工作负载还能获得多少容量，参与会话期调节正合适；稳定的机型分档、首帧前的同步读取，交给更合适的信号去做。
+
+<!-- gracker-diagram: ch16-04-07-headroom-directions -->
+![性能余量和热包络占用方向不同](../../assets/diagrams/ch16/ch16-04-07-headroom-directions.png)
+
+图：CPU/GPU headroom反映近期可追加容量；thermal headroom反映热包络占用或预测。 二者方向不同、都不保证未来性能；无效结果保持未知，查询避开关键线程。
 
 动态质量控制还要防住来回振荡。常用办法是迟滞——为降级和恢复设置不同阈值——再加每个质量档位必须保持的最短驻留时间。下面的状态机只允许画质在 `NORMAL` 与 `REDUCED` 两种状态间按规则切换，用温控和丢帧率说明这套逻辑：
 
@@ -267,6 +302,16 @@ class RenderQualityController(
 
 网络质量属于另一条动态轴：图片规格和预取策略跟着计量网络、Data Saver（系统的数据节省模式）、请求时延和吞吐走，设备等级在这一轴上插不上手。
 
+<!-- gracker-diagram: ch16-04-08-quality-hysteresis -->
+![常规驻留与紧急温控降级](../../assets/diagrams/ch16/ch16-04-08-quality-hysteresis.png)
+
+图：以单调时间执行迟滞与常规驻留，严重温控可绕过驻留立即进入降级态。 这是两态演示；比例需有足量窗口，NaN不作为恢复证据，多级渐进恢复仍需另行实现。
+
+<!-- gracker-diagram: ch16-04-09-memory-callback-lifecycle -->
+![内存回调保留生命周期语义](../../assets/diagrams/ch16/ch16-04-09-memory-callback-lifecycle.png)
+
+图：按UI隐藏和后台状态释放可重建资源，再结合实际占用与系统信号调整预算。 API34后旧运行压力级别与onLowMemory不再通知；现存回调也不是连续压力百分比。
+
 ## 各类策略如何收缩
 
 具体到每一类策略，收缩的动作各有侧重。
@@ -296,11 +341,21 @@ class RenderQualityController(
 - 用 Media Performance Class 选择 CDD 已覆盖的体验，再用 `MediaCodecList`、Camera2 characteristics（相机能力属性） 或图形能力查询确认业务所需特性。
 - 编解码器初始化耗时、掉帧与温控表现应进入实验设备组合——厂商驱动质量的差异，靠这些实测来覆盖。
 
+<!-- gracker-diagram: ch16-04-10-workload-specific-actions -->
+![不同工作负载分别收缩成本](../../assets/diagrams/ch16/ch16-04-10-workload-specific-actions.png)
+
+图：启动、渲染与内存/媒体各沿已确认的成本采取动作，并用对应体验护栏验证。 缩短预取、减并发或降低格式都可能引入代价；Baseline/Startup Profile不因设备慢而关闭。
+
 ### 网络与后台任务
 
 - 图片规格应综合容器像素、屏幕密度、网络策略和缓存，不按 SoC 型号固定。
 - 低带宽或计量网络可以减少预取；设备 CPU 慢，网络未必慢。
 - App 无权修改 JobScheduler 的系统配额。可以减少任务数量、延长周期，并使用充电、空闲、网络类型等约束，让系统选择执行时机。
+
+<!-- gracker-diagram: ch16-04-11-network-and-job-axes -->
+![网络策略与任务约束独立决策](../../assets/diagrams/ch16/ch16-04-11-network-and-job-axes.png)
+
+图：网络规格按容器、计量与实测质量调整，后台任务通过公开约束交由系统调度。 SoC慢不等于网络慢；App可配置任务和约束，不能修改JobScheduler系统配额。
 
 ## 远端策略必须能离线启动
 
@@ -316,7 +371,17 @@ class RenderQualityController(
 
 灰度分组应使用符合隐私规则的稳定标识做确定性散列，使同一用户或安装实例稳定进入同一组；不要读取 IMEI、序列号等硬件标识。随后在能力画像或机型群内随机分配实验组——直接比较“高端组”和“低端组”，用户、系统版本、地区和业务行为的差异都会混进结论。汇总数据还可能出现辛普森悖论：各设备层内都变好，合计结果却因流量构成改变而变差。
 
+<!-- gracker-diagram: ch16-04-13-randomization-and-exposure -->
+![随机分组和实际曝光分别记录](../../assets/diagrams/ch16/ch16-04-13-randomization-and-exposure.png)
+
+图：在能力群内稳定随机分组，保留分配总体及实际曝光，用预先定义的分母评估结果。 只分析曝光者会受生效前失败和选择影响；跨设备层流量权重改变也可能反转合计趋势。
+
 设备等级承担不了安全职能：客户端参数可以被篡改，服务端授予权限、跳过风控或信任内容的依据都要另找。
+
+<!-- gracker-diagram: ch16-04-12-offline-config-rollout -->
+![本地启动与远端更新两条路径](../../assets/diagrams/ch16/ch16-04-12-offline-config-rollout.png)
+
+图：冷启动从有效本地版本或APK默认值选择配置，远端更新异步校验后按约定时机生效。 过期不兼容配置回退默认；kill switch依赖投递，离线安全边界由本地规则保护。
 
 ## 设备老化与厂商模式
 
@@ -325,6 +390,11 @@ class RenderQualityController(
 厂商的游戏模式、性能模式和私有系统属性缺少跨设备契约，通用策略绕开它们。面向持续渲染负载的应用可以检查 `PowerManager.isSustainedPerformanceModeSupported()`，再按公开 API 使用 `Window.setSustainedPerformanceMode()`；该模式追求长时间稳定输出，和通用“高性能模式”说的往往不是一回事。
 
 历史上的 Facebook Device Year Class 把若干规格映射成“年份”，其分解信号的思路仍可帮助理解早期设备分组。仓库已在 2020 年归档，今天的产品策略不再拿它当现成实现。
+
+<!-- gracker-diagram: ch16-04-14-aging-and-vendor-boundaries -->
+![当前状态、持续性能与历史分档](../../assets/diagrams/ch16/ch16-04-14-aging-and-vendor-boundaries.png)
+
+图：当前体验可触发临时收缩；持续性能模式按公开支持度使用，历史Year Class仅作背景。 普通SDK没有通用老化总评分；持续性能模式不承诺最高峰值，归档库不能直接代替当代策略。
 
 ## 验证分级有没有收益
 
@@ -340,6 +410,11 @@ class RenderQualityController(
 6. 规则失效或护栏恶化时回退配置，并保留可复现的配置快照。
 
 实验设备要覆盖低 RAM、不同 MPC、主流 SoC 家族、不同屏幕负载和主要系统版本。机型型号用于定位异常就够用；给每个型号长期维护一份手写策略，分支会迅速多到验证不过来。
+
+<!-- gracker-diagram: ch16-04-15-policy-verification-loop -->
+![从瓶颈到灰度收益的闭环](../../assets/diagrams/ch16/ch16-04-15-policy-verification-loop.png)
+
+图：先确认瓶颈，在代表设备验证，再于同能力群随机发布并同时检查主指标和护栏。 这是本章建议的验证流程；分位数、覆盖和失败需同合同，护栏恶化要可回退且可复现。
 
 ## 检查清单
 

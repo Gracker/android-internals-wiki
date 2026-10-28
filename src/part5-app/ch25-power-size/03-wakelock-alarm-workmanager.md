@@ -89,6 +89,11 @@ WakeLock（唤醒锁）和 Alarm（定时通知）解决两个不同阶段的问
 
 这两个接口常被误当作进程保活接口，但它们各管一段：WakeLock 只管阻止休眠，进程存活和后台启动资格要交给其他机制；Alarm 回调只完成短小的分发工作，耗时任务要另行调度。
 
+<!-- gracker-diagram: a276-01-wake-alarm-work-roles -->
+![WakeLock、Alarm与WorkManager按阶段分工](../../assets/diagrams/ch25/a276-01-wake-alarm-work-roles.png)
+
+图：持锁不提供后台启动权；未来提醒与可延期同步应按各自生命周期选择接口。
+
 搭配出问题时，代价落在三处：持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
 
 系统电源（power）状态机见 §5.2 和 §11.3，后台任务分类见 §25.2，WorkManager 实践见「约束任务、重试与执行窗口」。这里我们只讨论应用侧的选择、生命周期、权限和诊断。
@@ -115,6 +120,11 @@ flowchart LR
 - [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java) 与 [`PowerManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java)
 - [`AlarmManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java) 与 [`AlarmManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)
 - [`drivers/base/power/wakeup.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c) 与 [`kernel/time/alarmtimer.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/time/alarmtimer.c)
+
+<!-- gracker-diagram: a276-02-framework-wake-alarm-boundaries -->
+![两条系统路径分别管理休眠阻止与未来投递](../../assets/diagrams/ch25/a276-02-framework-wake-alarm-boundaries.png)
+
+图：系统在投递前持锁，按完成或超时减少在途计数；最后一笔完成后才物理释放共享锁。
 
 ### WakeLock 类型与使用规范
 
@@ -174,6 +184,11 @@ WakeLock 默认使用引用计数：每次 `acquire()` 增加一次计数，每�
 
 超时到达后 `block()` 仍可能继续运行，所以超时只兜住持锁时长，业务取消和任务成功的判断都要另行处理。
 
+<!-- gracker-diagram: a276-03-synchronous-lock-ownership -->
+![持锁范围必须覆盖实际同步工作](../../assets/diagrams/ch25/a276-03-synchronous-lock-ownership.png)
+
+图：超时释放只兜住锁，不会取消block；业务deadline与底层取消需要另行设计。
+
 ### WakeLock 泄漏检测与治理
 
 线上出现持锁过长或锁泄漏时，我们优先查所有权：异常提前返回、回调没有到达、取消路径遗漏，或者异步工作已经换到其他执行器，原调用方却仍持有锁。定位要靠三份信息一起看：当前状态、历史时序和线上分布。
@@ -205,6 +220,11 @@ Android Vitals 的判定门槛和豁免规则决定线上哪些锁会被记为�
 
 新增 WakeLock 应通过统一封装：标签固定且可定位，超时来自业务上限，每一条退出路径都能释放。单次时长和累计时长阈值应从具体场景的稳定版本与服务目标推导——下载、媒体、导航和短同步各有各的数字。
 
+<!-- gracker-diagram: a276-04-alarm-shared-lock-delivery -->
+![Alarm投递完成与共享锁释放分别记账](../../assets/diagrams/ch25/a276-04-alarm-shared-lock-delivery.png)
+
+图：goAsync只延后有界广播完成，不是长任务通道；任意接收器外线程不自动继承保护。
+
 ### AlarmManager 最佳实践
 
 AlarmManager 解决的是跨越应用生命周期的时间通知。应用还在运行时的界面计时、动画或请求超时，用 Handler（进程内消息调度器）、协程这类进程内工具就够了；允许延后的持久化工作交给 WorkManager。用户指定的闹钟、日历事件和到时提醒，才需要评估 AlarmManager。参见 [Schedule alarms](https://developer.android.com/develop/background-work/services/alarms)。
@@ -230,6 +250,11 @@ Doze 指设备空闲时的低功耗模式。选择接口时，要同时判断是
 - `RTC` / `RTC_WAKEUP` 使用墙上时钟，也就是用户可见且会受校时、时区和夏令时影响的系统时间，适合按当地时间提醒。用户修改时间、时区或夏令时规则时，应用要重新核对下一次触发。
 - `ELAPSED_REALTIME` / `ELAPSED_REALTIME_WAKEUP` 使用 `SystemClock.elapsedRealtime()` 表示开机后持续递增的单调时间，不受墙上时钟调整影响，适合同一次开机内的延迟。
 - 带 `WAKEUP` 的类型可以唤醒休眠设备；不带 `WAKEUP` 的类型会等设备下次清醒后分发。业务允许等待时，选择不唤醒设备的类型。
+
+<!-- gracker-diagram: a276-05-alarm-clock-base-and-wakeup -->
+![先选时间基准，再选是否唤醒](../../assets/diagrams/ch25/a276-05-alarm-clock-base-and-wakeup.png)
+
+图：按当地几点提醒需重算时区与夏令时；同次开机延迟用elapsedRealtime避免墙钟跳变。
 
 这个示例把允许在目标时间附近到达的提醒安排成窗口 Alarm，提醒 ID 写入 `Intent.data`，让 `PendingIntent` 身份稳定，且不依赖 `Long.hashCode()`。
 
@@ -274,6 +299,11 @@ fun scheduleReminderWindow(
 
 设备关机后 Alarm 会被清除。需要跨重启保留的提醒，应先将业务记录持久化，再在 `BOOT_COMPLETED` 后重建。每天按当地时间重复的提醒还要处理时区和夏令时变化，通常按下一次日历时间安排单次 Alarm，比固定毫秒间隔更可靠。
 
+<!-- gracker-diagram: a276-06-alarm-pending-intent-identity -->
+![提醒身份独立于Intent附加字段](../../assets/diagrams/ch25/a276-06-alarm-pending-intent-identity.png)
+
+图：Alarm本身不跨重启保留；取消必须重建等价PendingIntent，extras只能携带数据。
+
 #### Android 17：允许空闲分发的 Listener Alarm
 
 Android 17 / API 37 给 `setExactAndAllowWhileIdle()` 新增了接受 `OnAlarmListener`（Alarm 回调监听器） 与 `Executor`（回调执行器） 的重载，适合这样的场景：组件仍在运行，我们只是不想为等待下一次时机而一直持有 WakeLock。这个示例按开机后的单调时间安排一次回调。
@@ -303,6 +333,11 @@ fun scheduleProcessLocalIdleAlarm(
 `OnAlarmListener` 通过进程内 Binder（Android 进程间通信机制） 回调交付。应用进程进入 cached（缓存进程） 或 frozen（冻结） 状态、监听器对应的 Binder 失效，或者拥有该监听器的组件结束时，系统都可以移除 Alarm；进程死亡后仍需交付的提醒，应使用 `PendingIntent`。
 
 Android 17 为这类 Listener 型 Alarm 单独维护允许空闲分发的配额（quota）。AOSP 里的默认值只能当作理解当前实现的参考；业务承诺固定心跳间隔，要以自己的实测为准。每次回调完成后，再按当前协议状态安排下一次一次性 Alarm，并记录请求时间、实际触发时间和回调完成时间，避免形成来路不明的周期唤醒。
+
+<!-- gracker-diagram: a276-07-listener-alive-and-timeout -->
+![API37 Listener只适合当前组件内的有界等待](../../assets/diagrams/ch25/a276-07-listener-alive-and-timeout.png)
+
+图：进程死亡后仍需提醒用PendingIntent；Listener的系统锁不是任意长回调或异步线程的保护。
 
 ### Exact Alarm 权限变化（Android 12+）
 
@@ -382,6 +417,11 @@ UI 层收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精
 - 提醒记录是否持久化，取消、重启、时间变化和权限变化能否得到一致结果。
 - 相邻提醒是否可以合并，接收器是否只做短小工作。
 
+<!-- gracker-diagram: a276-08-exact-alarm-permission-transition -->
+![精确Alarm资格、安排与重建处理竞态](../../assets/diagrams/ch25/a276-08-exact-alarm-permission-transition.png)
+
+图：拒绝后按用户需求降级；权限授予、启动和重建共用持久业务数据，避免漏提醒或重复。
+
 ### WakeLock 与 Alarm 功耗回归守门
 
 #### Android Vitals 的 excessive 与 stuck 判定
@@ -391,6 +431,11 @@ UI 层收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精
 我们的内部监控至少要同时保存单次最长时长、窗口累计时长、次数和重叠区间。
 
 Vitals 判断豁免看创建锁的平台 API，与手动标签的名称无关。音频、定位或 JobScheduler 用户发起任务（user-initiated job）的系统锁可能在指标中豁免；业务自行调用 `newWakeLock()`，标签哪怕写成 Audio 或 Location，也换不来自动豁免。前台服务持有的锁同样计入统计。
+
+<!-- gracker-diagram: a276-09-wake-lock-metrics-not-tag-exemption -->
+![Vitals累计、连续与系统API豁免分开治理](../../assets/diagrams/ch25/a276-09-wake-lock-metrics-not-tag-exemption.png)
+
+图：音频、定位和用户发起Job等当前豁免不等于标签名豁免；FGS本身不免除非豁免锁统计。
 
 Play Console 给出标签、受影响会话和持续时间分布，端侧还要补充调用现场。
 
@@ -478,6 +523,11 @@ dependencies {
 - 在 API 23–37 上，跨进程、跨重启的系统调度由 `JobScheduler` 负责；应用进程已经存活时，`GreedyScheduler`（WorkManager 的进程内机会调度器）还可以就地运行满足条件的工作。
 
 WorkManager 向 `JobScheduler` 注册的服务是 `androidx.work.impl.background.systemjob.SystemJobService`。系统侧由 `JobSchedulerService` 和一组约束控制器决定 Job 何时具备运行资格，配额由 `QuotaController` 等组件参与计算。WorkManager 能把业务意图转换成 Job 约束，但 Doze、App Standby（应用待机）、后台限制和系统负载的决策权仍在系统手里。
+
+<!-- gracker-diagram: a276-10-workmanager-durable-and-opportunistic -->
+![WorkManager持久数据库与两种调度路径](../../assets/diagrams/ch25/a276-10-workmanager-durable-and-opportunistic.png)
+
+图：进程退出不自动删工作；force-stop阻止调度直到用户再次启动，卸载和取消则有不同后果。
 
 #### Worker 类型与线程语义
 
@@ -591,6 +641,11 @@ val constraints = Constraints.Builder()
 
 工作开始后，网络断开、电量转低或存储状态变化都可能使约束失效，WorkManager 会停止 Worker，并在条件重新满足后重新调度。因此业务代码必须允许同一项工作从检查点再次进入——任务开始只是第一步，能否执行完成，还要看约束是否一直满足。
 
+<!-- gracker-diagram: a276-11-constraints-and-network-binding -->
+![约束AND满足只是执行资格](../../assets/diagrams/ch25/a276-11-constraints-and-network-binding.png)
+
+图：网络请求的能力约束不会自动改写任意客户端库的默认网络；执行与取消都要传到底层。
+
 ### 加急任务与配额
 
 #### 加急任务的语义
@@ -682,6 +737,11 @@ class ExportWorker(
 
 `setForeground()` 应在耗时操作之前调用。前台服务类型只是声明业务类别，JobScheduler 的配额检查照常进行；Android 16、17 上，长时 Worker 仍使用 JobScheduler，可能耗尽应用的 Job 配额。用户主动发起的大文件下载更适合用户发起的数据传输任务或直接前台服务。
 
+<!-- gracker-diagram: a276-12-regular-expedited-long-work-budgets -->
+![普通、加急与长时Worker分别检查预算](../../assets/diagrams/ch25/a276-12-regular-expedited-long-work-budgets.png)
+
+图：用户大文件传输可评估UIDT或直接FGS；可延后任务按约束与恢复语义选择。
+
 ### 重试、取消与幂等
 
 幂等指同一业务操作重复执行时，不会产生重复扣款、重复写入等额外副作用。
@@ -715,6 +775,11 @@ WorkManager 可能因为取消、约束失效、超时或系统抢占停止 Work
 - 文件先写临时文件，再用原子重命名发布，使其他读取者只能看到完整旧文件或完整新文件；
 - 服务端返回的操作结果先持久化，再向 WorkManager 返回成功。
 
+<!-- gracker-diagram: a276-13-retry-business-operation-key -->
+![幂等键绑定业务操作而非所有周期轮次](../../assets/diagrams/ch25/a276-13-retry-business-operation-key.png)
+
+图：周期WorkRequest跨轮次UUID不变；固定UUID作为每轮新同步的永久幂等键会压掉后续业务。
+
 ### 任务链与依赖管理
 
 #### 串行、并行和汇聚
@@ -737,6 +802,11 @@ WorkManager.getInstance(context)
 `enqueue()` 才会把整张有向无环图（依赖方向明确且不存在环的任务图）写入 WorkManager。`merge` 只有在两个下载都成功后才会运行；任一前置工作失败，依赖项会进入失败状态；任一前置工作被取消，依赖项会被取消。
 
 上游失败时，下游 Worker 不会开始，也就轮不到下游去检查上游的失败并执行备用任务。想继续执行备用路径，可以让上游把可接受的业务降级结果作为 `success(Data)` 返回；不可接受的失败则在链外观察终态，再明确入队另一条工作。
+
+<!-- gracker-diagram: a276-14-work-chain-fan-in -->
+![并行前置全部成功后才运行汇聚节点](../../assets/diagrams/ch25/a276-14-work-chain-fan-in.png)
+
+图：任一前置failure使依赖失败，任一前置cancel使依赖取消；下游不会开始后再判断前置失败。
 
 #### 输入合并与 Data 限制
 
@@ -780,6 +850,11 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 ### 任务生命周期监控
 
 `WorkInfo.State` 包含 `ENQUEUED`、`RUNNING`、`BLOCKED`、`SUCCEEDED`、`FAILED` 和 `CANCELLED`，前三项仍会变化，后三项是终态。`BLOCKED` 表示依赖尚未满足，跟设备约束未满足是两回事。
+
+<!-- gracker-diagram: a276-15-unique-periodic-state-semantics -->
+![唯一工作、周期更新与WorkInfo状态分开](../../assets/diagrams/ch25/a276-15-unique-periodic-state-semantics.png)
+
+图：唯一名称避免重复入队，业务幂等仍靠操作ID；WorkInfo状态与一次停止原因不是一回事。
 
 WorkManager 2.9.0 起提供 Kotlin Flow（异步数据流） 查询。这段观察代码绑定到页面可见生命周期，避免 `observeForever()` 留下释放不掉的观察者：
 
@@ -853,6 +928,11 @@ Perfetto 适合分析 Worker 运行时占用的线程和 CPU 时间；至于任�
 
 多个原因可以同时计时，所以各项累计时长之和可能大于 Job 的实际等待时间。这些历史和统计不会跨设备重启保存；Job 成功完成或取消后，统计也会清空。
 
+<!-- gracker-diagram: a276-16-pending-reasons-overlap -->
+![待执行原因可同时计时，累计和超过实际等待](../../assets/diagrams/ch25/a276-16-pending-reasons-overlap.png)
+
+图：多个原因重叠累计不能相加当总等待；调度器没有Job后，应用自己的完成记录仍须保留。
+
 采集查询若正好与 Job 完成或取消同时发生，可能因对象已不存在而抛出 `IllegalArgumentException`，此时应转查应用自己的完成记录。查询范围还受应用 UID（系统分配的应用身份） 与 `JobScheduler` namespace（命名空间） 限制，用 `forNamespace()` 调度的 Job 必须从同一命名空间查询。
 
 原因常量只给出排查方向，我们把它们当索引用：`CONSTRAINT_*` 指向显式约束，`QUOTA` 指向待机分组或运行额度，`BACKGROUND_RESTRICTION` / `APP_STANDBY` 指向应用状态，`DEVICE_STATE` 还可能包含 Doze、热状态、内存压力或并发槽位。它们必须与 WorkInfo、停止原因、`dumpsys jobscheduler` 和业务阶段日志一起解释。
@@ -898,6 +978,11 @@ class App : Application(), Configuration.Provider {
 ```
 
 完成移除后，由 `Configuration.Provider` 提供配置并在首次获取 WorkManager 时初始化。直接调用 `WorkManager.initialize()` 只保留给用不上 Provider 的特殊启动架构，且整个应用生命周期只能初始化一次。
+
+<!-- gracker-diagram: a276-17-custom-initialization-and-executor -->
+![移除默认初始化后Provider配置才生效](../../assets/diagrams/ch25/a276-17-custom-initialization-and-executor.png)
+
+图：只实现Provider而保留默认initializer会忽略自定义配置；也不能重复手动初始化。
 
 #### 并发的多层限制
 
@@ -984,6 +1069,11 @@ val request = OneTimeWorkRequestBuilder<ThumbnailRemoteWorker>()
 `ARGUMENT_PACKAGE_NAME` 与 `ARGUMENT_CLASS_NAME` 描述的是 `RemoteWorkerService` 的 `ComponentName`，不是 `ThumbnailRemoteWorker` 的类名。Worker 类型已经由 `OneTimeWorkRequestBuilder<ThumbnailRemoteWorker>()` 记录。若有多个远端进程，可以为 `RemoteWorkerService` 建立不同子类，并分别在清单中指定进程。
 
 远端执行并不会自动带来业务数据的多进程一致性。Room 数据库、文件和进程内单例仍要按各自的多进程规则设计；进程内互斥锁罩不住另一个进程的写入，跨进程的同步要另找机制。
+
+<!-- gracker-diagram: a276-18-remote-scheduling-versus-worker-process -->
+![远端调度客户端与远端Worker执行是两件事](../../assets/diagrams/ch25/a276-18-remote-scheduling-versus-worker-process.png)
+
+图：setDefaultProcessName不改Manifest；远端依赖注入与业务数据库、文件一致性都需单独验证。
 
 ### 设计检查表
 

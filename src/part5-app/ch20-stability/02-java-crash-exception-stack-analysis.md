@@ -149,6 +149,11 @@ Java Crash 指 `Throwable` 沿当前线程的调用路径传播时一直没有�
 
 三个问题里只要有一个答不清楚，就应让异常沿调用链传播到拥有决策权的边界。
 
+<!-- gracker-diagram: a208-01-exception-boundary -->
+![局部恢复必须同时满足三项条件](../../assets/diagrams/ch20/a208-01-exception-boundary.png)
+
+图：异常类型提供排查方向，能否恢复取决于边界信息、状态一致性和显式结果，不能以 catch 范围代替契约。
+
 ### Android 17 的默认致命异常处理链
 
 #### 从 ART 到 `Thread.dispatchUncaughtException()`
@@ -171,6 +176,11 @@ Java 层的顺序是：
 应用调用 `Thread.setDefaultUncaughtExceptionHandler()` 会替换当前默认处理器。平台前置处理器仍会先执行，但 `KillApplicationHandler` 只有在自定义处理器继续调用安装前保存的处理器时才会运行。
 
 线程级处理器的优先级高于 `ThreadGroup` 和默认处理器。如果某个线程通过 `setUncaughtExceptionHandler()` 安装处理器后不再委托，它也会截断进程级采集链。排查 SDK（Software Development Kit，软件开发工具包） 冲突时，两种注册方式都要检查。
+
+<!-- gracker-diagram: a208-02-handler-dispatch -->
+![线程处理器与默认处理器是两层入口](../../assets/diagrams/ch20/a208-02-handler-dispatch.png)
+
+图：pre-handler 先写致命日志；线程显式 handler 可以截断 ThreadGroup/default 链，自定义默认 handler 也必须委托旧处理器。
 
 #### 自定义处理器的最小正确结构
 
@@ -236,6 +246,11 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 
 普通第三方应用要避免把系统 `DropBoxManager` 当作自有崩溃暂存区。它是系统级、容量受限的诊断设施，条目可能被丢弃，写入与读取还受平台权限和设备策略约束。自有数据应写入应用私有存储，并在下次进程启动后校验、去重、脱敏和上传。
 
+<!-- gracker-diagram: a208-03-fatal-minimal-work -->
+![证据在正常运行期准备，在 fatal 路径限量保存](../../assets/diagrams/ch20/a208-03-fatal-minimal-work.png)
+
+图：OOM、栈空间不足和文件阻塞时记录都只能尽力；异步任务可能随进程结束消失。
+
 #### 安装时机与多 SDK 链
 
 `Application.attachBaseContext()` 是应用侧常用的早期安装点。[`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 先创建 `Application` 并在此过程中调用 `attachBaseContext()`，再安装常规 ContentProvider，随后调用 `Application.onCreate()`。
@@ -252,6 +267,11 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 
 测试要确认平台退出链没有被截断、记录未损坏、重启后只上传一次；仅确认处理器被调用还不够。
 
+<!-- gracker-diagram: a208-04-sdk-chain -->
+![后安装的 SDK 只能委托注册当时的前一个处理器](../../assets/diagrams/ch20/a208-04-sdk-chain.png)
+
+图：主动注入采集失败、并发 Crash 和安装顺序变化；每层记录要有界，不能只验证自家回调到达。
+
 ### Throwable 堆栈的成本与信息边界
 
 默认构造的异常对象从诞生那一刻起就有成本：构造要走一遍栈回溯，跨线程取栈还要挂起目标线程。这一节我们把成本和信息边界拆开看：开销发生在哪里，栈又能信到什么程度。
@@ -267,6 +287,11 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 3. 深度达到或超过 256 时，再执行一次 `WalkStack()` 构造完整结果。
 
 所以 256 只管减少重复回溯；最大 Java 栈深度和日志展示的栈帧数由别处决定——原因链中重复尾部栈帧的折叠、日志截断、采集 SDK 限制和服务端处理都会影响最终结果。
+
+<!-- gracker-diagram: a208-05-stack-256-threshold -->
+![256 是复用优化阈值，绝不是最大栈深度](../../assets/diagrams/ch20/a208-05-stack-256-threshold.png)
+
+图：ART 先遍历计算深度；小于阈值可复用保存帧，达到阈值会再次遍历构造完整结果。
 
 #### `Thread.getStackTrace()` 也有成本
 
@@ -391,6 +416,11 @@ Android 模块的 [`AndroidExceptionPreHandler.kt`](https://github.com/Kotlin/ko
 
 协程记录要带 `CoroutineName`、作用域类型、页面生命周期和 Dispatcher（决定协程在哪个线程或线程池执行的调度器）。`CoroutineExceptionHandler` 可能运行在主线程或已经处于失败传播过程的工作线程上，里面要避免同步访问网络和大规模序列化。
 
+<!-- gracker-diagram: a208-06-coroutine-paths -->
+![协程异常沿结果、父级或最终处理链传播](../../assets/diagrams/ch20/a208-06-coroutine-paths.png)
+
+图：CoroutineExceptionHandler 只能在失败后报告，恢复不了该协程；JVM 兜底会调用服务发现处理器和线程未捕获处理器。
+
 协程异常也应遵守下文 Crash 恢复架构的责任边界：致命路径保留最小证据，下次启动再决定降级与恢复。
 
 ### 第三方 SDK 的线程隔离与进程存活
@@ -506,6 +536,11 @@ for (int i = 0; i < record.count; i++) {
 
 它适合正常运行期诊断、受控 watchdog（看门狗，用于定时检查目标线程是否响应的监控组件） 或测试工具；单靠它证明不了一组严格同时发生的死锁关系。
 
+<!-- gracker-diagram: a208-07-non-atomic-snapshots -->
+![getAllStackTraces 逐线程取得多时刻快照](../../assets/diagrams/ch20/a208-07-non-atomic-snapshots.png)
+
+图：先枚举活动线程，再分别 getStackTrace；线程仍能运行、创建或退出，各条栈不是同一时刻的全局快照。
+
 #### 2.2 当前线程与其他线程走不同路径
 
 `Thread.getStackTrace()` 会进入 Android 私有的 `VMStack.getThreadStackTrace()`。[`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc) 在 `GetThreadStack()` 中区分两种情况：
@@ -516,6 +551,11 @@ for (int i = 0; i < record.count; i++) {
 这一段我们先把两个术语说清：Runnable 是 ART 中可执行托管代码并持有 mutator lock 共享访问权的线程状态；mutator lock 是 ART 用来协调 Java 堆访问、垃圾回收与线程挂起的运行时锁。调用线程要先离开这个状态，才有资格等待并检查另一条线程，跨线程取栈因此变成逐个挂起目标线程，每次只挂一条。目标线程若迟迟到不了 suspend point（安全暂停检查点），取栈延迟会增加；目标已经退出时，结果可以为空。
 
 `CreateInternalStackTrace()` 通过 `StackVisitor` 遍历 managed stack（ART 管理的调用栈），并在 Java 堆上构造内部 trace 和后续的 `StackTraceElement[]`。这条路径的前提，是 ART 的线程协调、对象访问与内存分配仍能工作；它也不满足 async-signal-safe（异步信号安全） 要求，该术语指函数可在异步信号打断任意指令时安全调用。到了 OOM 现场，同样别指望它完成最小数据写入。
+
+<!-- gracker-diagram: a208-08-stack-current-other -->
+![当前线程与跨线程取栈走不同路径](../../assets/diagrams/ch20/a208-08-stack-current-other.png)
+
+图：跨线程取栈会临时挂起目标线程并生成 Java 对象；一次已进入的挂起操作不能被外层处理预算中断。
 
 #### 2.3 `Throwable` 栈记录异常发生点
 
@@ -528,6 +568,11 @@ for (int i = 0; i < record.count; i++) {
 
 handler 再调用 `thread.getStackTrace()` 得到的是较晚的采样，栈顶很可能已经进入 handler。分析时应保留原始 `Throwable`，不要用 handler 时刻的新栈覆盖它。
 
+<!-- gracker-diagram: a208-09-throwable-time -->
+![异常自带栈与 handler 采样是不同时间的证据](../../assets/diagrams/ch20/a208-09-throwable-time.png)
+
+图：保留原始异常的 cause 与 suppressed 栈；不要用处理器时刻的新栈覆盖更早的失败来源。
+
 ### 3. ART SIGQUIT 线程转储与应用 Crash Handler 的边界
 
 #### 3.1 SignalCatcher 在普通线程上下文中处理 SIGQUIT
@@ -539,6 +584,11 @@ ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程通
 [`ThreadList::Dump()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread_list.cc) 创建 `DumpCheckpoint`，通过 `RunCheckpoint()` 请求各线程执行 dump checkpoint，再等待并按诊断价值排序输出。checkpoint 是 ART 发给线程的协作式诊断请求：运行中的线程到达安全位置后执行；已经挂起的线程可由请求方代为检查。native unwind 指沿保存的寄存器和栈内存回溯 C/C++ 调用帧，也在这条诊断路径中发生。
 
 由此得到三条诊断上的限制：
+
+<!-- gracker-diagram: a208-10-sigquit-context -->
+![SIGQUIT 由普通 SignalCatcher 线程组织诊断](../../assets/diagrams/ch20/a208-10-sigquit-context.png)
+
+图：SignalCatcher 具备 ART 正常线程上下文，仍会遇到 checkpoint 延迟和缺帧；不能把这条流程移到任意 Native fatal handler。
 
 - 各线程的 dump 仍不是同一 CPU 指令时刻的原子快照；
 - checkpoint、栈遍历、native unwind 和输出都可能耗时，故障或进程退出也可能让 trace 缺帧；
@@ -567,6 +617,11 @@ monitor owner 是当前持有对象 monitor 的线程，held lock 是线程在�
 ```
 
 我们拿这份样本读一遍：它支持“main 正在等待 thread 23 持有的第一个 monitor”。第二个 `waiting on` 表示 `cache-writer` 在等待通知或超时，第二个对象是否被某线程长期持有，从这里看不出来。`held by thread 23` 应与同一份 ART dump 头部的 Java `tid=23` 对应；`sysTid` 才是 Linux 内核线程 ID，两个编号要分开用。
+
+<!-- gracker-diagram: a208-11-monitor-evidence -->
+![只把有 owner 的等待关系加入 monitor 图](../../assets/diagrams/ch20/a208-11-monitor-evidence.png)
+
+图：held by thread 23 对应同一份 dump 的 Java tid，sysTid 才是 Linux 线程 ID；等待 B 的通知不能凭猜测生成另一条 owner 边。
 
 #### 3.3 `AnnotatedStackTraceElement` 属于隐藏的平台能力
 
@@ -660,6 +715,11 @@ Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空
 
 `ReentrantLock` 底层可能使用 park/futex，但它不属于对象 monitor；Native mutex 也不在 ART monitor 表中。内核的 `futex_wait` 只说明线程进入某个 futex 竞争等待；它对应哪一把上层锁、owner 是谁，都要靠 native/Java 栈和事件去关联。
 
+<!-- gracker-diagram: a208-12-wait-mechanisms -->
+![等待表象必须结合上层同步机制解释](../../assets/diagrams/ch20/a208-12-wait-mechanisms.png)
+
+图：Java 状态和 futex 只描述采样时的等待；monitor、AQS、Native 锁、Binder 和事件循环不能互相代换。
+
 #### 5.2 等待图只接受有 owner 的边
 
 wait-for graph（等待关系图）以线程为节点，以“等待者正在等待 owner”作为有向边。我们从 ART dump 构图时，可以把 `waiting to lock ... held by thread N` 转换为 `waiter -> owner`。`locked ...` 用于核对 owner 当前持有的 monitor；`waiting on ...`、Binder、I/O 和普通 park 没有同类 owner 证据，不要凭猜测加入 monitor 图。
@@ -685,6 +745,11 @@ wait-for graph（等待关系图）以线程为节点，以“等待者正在等
 - 主线程长任务：结合 Looper/atrace slice、帧时间线和多次主线程栈。
 
 Perfetto 没记录到锁竞争事件，竞争仍可能存在；trace 配置、采样窗口、设备实现和数据裁剪都会影响可见性。系统化的锁诊断见 [锁竞争与同步性能分析](../../part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md)。
+
+<!-- gracker-diagram: a208-13-lock-timeline -->
+![等待时长、持锁区间与 CPU 调度分别取证](../../assets/diagrams/ch20/a208-13-lock-timeline.png)
+
+图：堆栈给位置，monitor-contention 给等待区间，sched 给运行状态；只有合并这些证据，才能区分长持锁、I/O 阻塞与释放后调度等待。 ART 争用 slice 还可能覆盖解除阻塞后的可运行等待及取锁收尾，不能等同内核睡眠区间。
 
 ### 6. 推荐的端侧采集分层
 
@@ -728,6 +793,11 @@ Perfetto 没记录到锁竞争事件，竞争仍可能存在；trace 配置、�
 | Android 17 / API 37 | 源码锚点；公开 `Thread` API 仍不给普通应用 monitor owner 或原子全线程快照 |
 
 Java monitor 的解释到 ART 为止，套不到内核上：`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用来说明线程为何睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
+
+<!-- gracker-diagram: a208-14-capture-contexts -->
+![四种故障现场使用不同取证边界](../../assets/diagrams/ch20/a208-14-capture-contexts.png)
+
+图：Java 线程 API 不提供公开的 monitor owner；API 30 退出历史、API 31 Native protobuf 与平台私有能力分别处理。
 
 ### 8. 源码与文档入口
 
@@ -801,6 +871,11 @@ flowchart LR
 
 Crash handler（未捕获异常处理器） 所在的左半段只适合做有上限的同步写入。数据库查询、网络请求、动态配置拉取、复杂序列化和线程切换都放到右半段。尚未完成的异步任务会在默认处理器结束进程时一并消失。
 
+<!-- gracker-diagram: a208-15-now-next-start -->
+![当前进程存最小证据，下次启动决定恢复](../../assets/diagrams/ch20/a208-15-now-next-start.png)
+
+图：数据库、配置拉取、复杂解析和恢复决策属于下次正常启动；不能依赖 fatal 后还未完成的异步任务。
+
 #### Java 未捕获异常入口
 
 [`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 在 `commonInit()` 中安装的两个入口见本章「Android 17 的默认致命异常处理链」，这里补上应用侧要保留的约束：`LoggingHandler` 通过 `RuntimeHooks.setUncaughtExceptionPreHandler()` 注册为 pre-handler（前置处理器，在默认未捕获异常处理器之前运行），应用换不掉它。
@@ -861,6 +936,11 @@ Kotlin 协程改变异常的传播位置，却没有增加一种 Android 进程�
 
 这能让读取者在旧完整版本与新完整版本之间选择，避免直接覆盖目标文件留下半截内容。实现没有对父目录执行 `fsync`（把缓冲中的文件或目录元数据写向存储），所以掉电条件下的严格事务这个说法并不成立。应用若要求重命名后的目录项也尽量持久化，可通过公开的 `android.system.Os.open()`、`Os.fsync()` 和 `Os.close()` 处理父目录的 file descriptor；还要按文件系统能力处理失败，各设备表现未必一致。
 
+<!-- gracker-diagram: a208-16-atomic-file -->
+![AtomicFile 解决单文件替换，不等于严格掉电事务](../../assets/diagrams/ch20/a208-16-atomic-file.png)
+
+图：文件还需长度、版本与校验；AtomicFile 没有父目录 fsync，也不提供线程或跨进程锁。
+
 文件协议本身还要包含 magic（固定文件头，用来快速识别格式）、schema version（结构版本）、payload length（有效内容长度）、序号和校验值。下次启动扫描时：
 
 | 状态 | 处理 |
@@ -901,6 +981,11 @@ API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回近期进
 部分设备不支持准确报告 `REASON_LOW_MEMORY`。官方 API 要求先检查 `ActivityManager.isLowMemoryKillReportSupported()`；不支持时，LMK 可能表现为 `REASON_SIGNALED` 与 `SIGKILL`。因此，单凭 `SIGKILL` 断定不了是 Native Crash 还是业务主动结束。
 
 API 37 的 `ApplicationExitInfo.getAnrInfo()` 只在 `reason == REASON_ANR` 时返回结构化 `AnrInfo`。`getDescription()` 是面向人的不稳定文本，长期分类协议要以结构化字段为准。
+
+<!-- gracker-diagram: a208-17-exit-reason-policy -->
+![启动失败计数先按退出 reason 分类](../../assets/diagrams/ch20/a208-17-exit-reason-policy.png)
+
+图：reason 是系统记录的结局，SafeMode 还要验证时间、进程、版本和阶段；SIGKILL 不能直接归为 LMK 或 Native Crash。
 
 #### 历史记录有容量和持久化边界
 
@@ -960,6 +1045,11 @@ fun isCorrelatedStartupFailure(
 
 启动标记缺失要当作未知状态，而非失败：首次安装、数据被清理或写入尚未开始都会出现这种状态。只有“未完成的启动标记 + 相关系统记录”或“未完成的启动标记 + 本地 fatal 最小记录”才形成一次启动失败证据。生产代码还要持久化已经匹配过的退出记录标识，避免重复计数，并处理系统时间变化。
 
+<!-- gracker-diagram: a208-18-correlate-launch -->
+![只有匹配同一次启动的证据才能增加失败计数](../../assets/diagrams/ch20/a208-18-correlate-launch.png)
+
+图：若本次启动已到成功点，之后的运行期 Crash 不能进入启动循环计数；时钟变化与候选歧义降低证据等级。
+
 ### 安全气囊（SafeMode）机制
 
 这里的 SafeMode 是应用自己的 circuit breaker（熔断器）：检测到重复启动失败后，下一次启动先关闭可疑模块，阻止同一故障不断重演。它与 Android 系统安全模式无关，也救不了已经发生 fatal 的当前进程。
@@ -981,6 +1071,11 @@ stateDiagram-v2
 ```
 
 `Suspected` 避免一次偶发故障直接关闭大量功能；`Probation` 避免兜底页能启动就被误判为原问题已经修复。只有在完整模式或逐步恢复的模块集合下成功，才能消除对应失败计数。
+
+<!-- gracker-diagram: a208-19-safemode-states -->
+![受限模式成功不等于完整模式已修复](../../assets/diagrams/ch20/a208-19-safemode-states.png)
+
+图：一次偶发故障先观察，重复证据才受限；修复后试运行真实模块，只有完整模式或指定恢复集合健康才能消除对应失败计数。
 
 #### 判定输入
 
@@ -1036,6 +1131,11 @@ stateDiagram-v2
 
 `AtomicFile` 可以让单文件保持旧版或新版可读，但不提供线程锁和跨进程锁。单进程仍需串行读写；多进程应使用 `lease-main`、`lease-push`、`lease-web` 等独立文件，再指定一个汇总进程统一处理。格式还要有版本、长度上限、校验和与损坏文件隔离，读不到时按保守默认值运行。
 
+<!-- gracker-diagram: a208-20-launch-lease -->
+![先读取上一轮租约，再建立本轮启动身份](../../assets/diagrams/ch20/a208-20-launch-lease.png)
+
+图：若先覆盖旧文件就会丢失上一轮阶段；wall clock、elapsedRealtime 和开机标识分别保存，多进程各写独立租约。
+
 #### 两阶段证据核对
 
 SafeMode 决策分成快速路径和补全路径：
@@ -1060,6 +1160,11 @@ installationEpoch / versionCode / processRole / startupRoute / signature
 新版本不直接沿用旧版本那组历史记录作决策，但可以保留诊断摘要；经审核后，可以让共用同一 Native 库或配置的版本继承特定计划。恢复时一次只启用一组依赖，并设置两次尝试之间的冷却时间、最长持续时间、最大尝试次数和单独的进入/退出条件，避免在完整模式与受限模式之间来回切换。
 
 计划应表示为 `moduleId + action + scope + reason + expiry`。图片预热、动态插件、推荐和数据分析上报等可选能力可以延迟或关闭；数据库强制迁移、身份认证和支付校验仍要走完。WebView renderer（渲染进程） 退出属于页面级恢复，不直接增加宿主主进程的连续启动崩溃计数。
+
+<!-- gracker-diagram: a208-21-degradation-scope -->
+![降级计划按依赖和证据限定范围](../../assets/diagrams/ch20/a208-21-degradation-scope.png)
+
+图：快速路径只用已确认的本地证据，启动后再补查 ExitInfo；数据库迁移、身份认证和支付校验不能因兜底计划跳过。
 
 #### SafeMode 验证组合
 
@@ -1132,6 +1237,11 @@ override fun onRenderProcessGone(
 
 `didCrash() == false` 表示渲染进程被系统结束，常见背景是内存压力；仅凭该布尔值还断言不了 OOM。恢复策略要限制重建次数；持续内存压力下立即创建同样的 WebView，容易形成反复重建。[20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md) 专门讨论 WebView renderer OOM 恢复。
 
+<!-- gracker-diagram: a208-22-webview-recovery -->
+![WebView renderer 退出是逐实例的页面恢复](../../assets/diagrams/ch20/a208-22-webview-recovery.png)
+
+图：共享 renderer 的多个 WebView 会各收到回调；旧实例不可复用，返回 true 表示宿主已处理，false 可连带宿主终止。
+
 ### 分阶段发布、版本恢复与热修复
 
 异常架构要让每条记录都能关联版本、构建号、渠道、发布轨道（例如 Google Play 的 production 正式发布、open testing 开放测试）、设备/API、ABI、功能开关版本和实验组。缺了这些字段，服务端只看得到故障增加，判断不出该暂停向哪组用户发布。
@@ -1147,6 +1257,11 @@ override fun onRenderProcessGone(
 - 启用已随 APK 交付的本地降级实现。
 
 “暂停 staged rollout（分阶段发布）”只阻止更多用户获得该版本，已安装的设备并不会自动退回旧包。SafeMode 和服务端开关用于保护已经安装新版本的设备，新包用于修复代码。
+
+<!-- gracker-diagram: a208-23-release-recovery -->
+![暂停放量、保护已安装用户与修复代码分别执行](../../assets/diagrams/ch20/a208-23-release-recovery.png)
+
+图：常规安装防止低版本覆盖；Play 外下载 dex/JAR/.so 不能作为应用自更新路径，解释型内容例外仍受其他政策约束。
 
 #### 热修复有分发与安全边界
 
@@ -1177,6 +1292,11 @@ override fun onRenderProcessGone(
 每个文件名带进程名哈希摘要、进程标识 pid 和只增不减的序号。各进程写自己的目录或文件，主进程只在下一次正常阶段汇总，避免 Crash 时争抢跨进程锁。
 
 远程进程死亡可通过 Binder death（对端进程死亡通知）或业务连接回调感知，但“连接断开”未必是 Crash。要结合 `ApplicationExitInfo`、本地最小崩溃记录和服务端记录分类。自动重启采用指数退避，即每次失败后逐步延长等待时间，并设置次数上限；持续重启后关闭对应功能，让用户可以回到主流程。
+
+<!-- gracker-diagram: a208-24-multiprocess-records -->
+![各进程独立留证，由指定进程汇总计划](../../assets/diagrams/ch20/a208-24-multiprocess-records.png)
+
+图：每个进程有自己的 Application 和默认异常入口；记录文件按进程隔离，连接断开再结合系统证据分类，重启有退避和次数上限。
 
 ### 上线前检查
 

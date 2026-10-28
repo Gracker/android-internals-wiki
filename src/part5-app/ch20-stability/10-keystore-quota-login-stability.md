@@ -79,6 +79,11 @@ Android 17 开始，系统按应用 UID 限制 Keystore 密钥条目数量。UID
 
 还有一个容易漏掉的细节：`count_key_entries()` 自身失败时，这份源码会记录错误并放行本次创建。这种放行只是容错设计，别把它当成可用的余量。应用侧盘点用 `KeyStore.aliases()` 或 `KeyStore.size()`，它们给出的是应用视角的可见条目，算不上系统配额查询 API，结果只能当估算用；记录盘点结果时，把枚举失败和耗时一并记下来。
 
+<!-- gracker-diagram: a216-02-uid-counting -->
+![按 APP 域与 UID 统计，跨进程和安全级别共享](../../assets/diagrams/ch20/a216-02-uid-counting.png)
+
+图：应用可见aliases与size用于估算趋势，不是系统配额查询；计数失败可能放行，不能依赖这种余量。
+
 ### 1.2 创建、导入与使用旧密钥走不同路径
 
 AOSP `KeystoreSecurityLevel.check_key_counts()` 在三条路径进入 KeyMint 之前执行：`generate_key()`、`import_key()`，以及 `import_wrapped_key()（导入由另一把包装密钥加密保护的密钥材料）`——最后这条导入的是被另一把包装密钥加密保护的密钥材料。
@@ -86,6 +91,16 @@ AOSP `KeystoreSecurityLevel.check_key_counts()` 在三条路径进入 KeyMint �
 计数到顶，检查直接返回错误；而现有密钥的 `Cipher.init()`、`Signature.initSign()` 等使用路径并不经过这项检查。所以升级 target SDK 之后，旧密钥不会仅因配额变化而一起失效。
 
 这里还有一个顺序上的坑：配额检查发生在 rebind（用新密钥替换同名 alias）之前。应用已经有 50,000 个条目时，哪怕用现有 alias 重新生成密钥，也可能先被拒绝。所以恢复流程要先确认并删除可回收的 alias，把额度腾出来再重建；反复用同名 alias 重试，解决不了满额问题。
+
+<!-- gracker-diagram: a216-01-limit-vs-code -->
+![数量阈值与公开错误码是两次不同的选择](../../assets/diagrams/ch20/a216-01-limit-vs-code.png)
+
+图：Android17所有应用行为变更；系统应用身份改变数量阈值，不自动决定使用哪一版公开错误码。
+
+<!-- gracker-diagram: a216-03-creation-vs-use -->
+![创建检查先于 KeyMint 与同名替换，使用旧密钥另走路径](../../assets/diagrams/ch20/a216-03-creation-vs-use.png)
+
+图：创建在计数检查后才进入KeyMint并保存；已有密钥的Cipher/Signature使用独立走操作路径，同名替换不能绕过满额检查。
 
 ## 2. 容易造成 alias 持续增长的设计
 
@@ -103,6 +118,11 @@ alias 的持续增长大多来自几类固定设计，我们逐项对照：
 | QA/自动化测试 | alias 含测试用例 ID 或运行批次 ID | 共享测试设备长期累积 | 使用测试专用前缀，每轮结束时清理，并设置生成数量硬上限 |
 
 Passkey 的密钥归属与普通应用密钥不同。relying party 是发起注册和登录的网站或应用，credential provider（凭据提供方）是保存并使用 passkey 私钥的密码管理器等组件。普通应用通过 Credential Manager 请求 passkey 时，私钥由用户选定的凭据提供方保存，不能把每个 passkey 都算成本应用的 Android Keystore alias。只有应用自己调用 Keystore 生成密钥，或者自己实现凭据提供方并管理相关密钥，这些条目才要纳入本 UID 的盘点。排查时我们看本应用 `AndroidKeyStore` 可见的 alias 和密钥创建调用栈就够了；按用户拥有的 passkey 数量推算配额，会得出错误的结论。
+
+<!-- gracker-diagram: a216-04-alias-growth -->
+![增长来自命名和保留协议，不能只在故障时删](../../assets/diagrams/ch20/a216-04-alias-growth.png)
+
+图：只有自己在本UID管理的Keystore条目进入本应用盘点，普通relying party不能把用户passkey数直接当alias数。
 
 ## 3. 用错误码、异常类型和调用阶段共同分类
 
@@ -174,6 +194,11 @@ fun classifyAndroid17KeystoreFailure(
 }
 ```
 
+<!-- gracker-diagram: a216-05-failure-classes -->
+![配额、认证、失效与暂时错误使用不同恢复动作](../../assets/diagrams/ch20/a216-05-failure-classes.png)
+
+图：沿最多16层cause定位公开KeyStoreException，同时保留外层专用异常和失败操作阶段。
+
 这段代码把异常消息匹配降为“疑似配额”，并且只在 `isTransientFailure` 为 `true` 时读取重试策略。`@RequiresApi(37)` 划定了 `ERROR_TOO_MANY_KEYS` 的适用范围；旧系统也要共用分类入口的话，把 API 37 分支放进独立实现或版本隔离层。诊断记录里要保留外层异常类、cause 链中的 `KeyStoreException`、公开错误码和清理状态，只保存一段可能变化的消息文本是不够的。
 
 ## 4. 登录与支付故障的恢复顺序
@@ -189,6 +214,11 @@ fun classifyAndroid17KeystoreFailure(
 7. **在新进程中恢复**：启动路径只读取暂停标记和当前 alias；大规模盘点交给有执行时限的后台任务，避免主线程长时间阻塞并触发 ANR（Application Not Responding，应用未响应）。
 
 可选功能遇到配额失败，可以关闭当前入口，并向用户说明可恢复的操作。启动必需密钥若没有可用旧版本，应进入受控的重新绑定或账号验证页面。无论多急，错误处理流程都不退回明文 token、共享外部存储或缺少认证约束的软件密钥；要不要从 StrongBox 改用 TEE，也由预先审查的安全策略决定。
+
+<!-- gracker-diagram: a216-06-recovery-order -->
+![配额恢复先停止新增，再按归属腾出空间](../../assets/diagrams/ch20/a216-06-recovery-order.png)
+
+图：不用清空整个Keystore换取一次重试；保留登录、支付和数据解密依赖，StrongBox降级由预定策略决定。
 
 ## 5. alias 的生命周期
 
@@ -222,11 +252,21 @@ key material（私钥或对称密钥的原始字节）不进登记表，“数�
 
 文件锁只协调本应用的合作进程，Keystore 的 UID 隔离仍由系统负责。第三方 SDK 如果自行创建密钥，宿主应要求它声明 alias 前缀、创建频率和删除 API；责任模块不明的 alias，很难安全回收。
 
+<!-- gracker-diagram: a216-07-alias-lifecycle -->
+![持久化中间状态，让进程中断后能够核对恢复](../../assets/diagrams/ch20/a216-07-alias-lifecycle.png)
+
+图：CREATING在生成前持久化，ACTIVE前验证属性；DELETING后执行delete并复查，最后提交DELETED。
+
 ### 5.3 生物认证与锁屏变化
 
 生物认证密钥什么时候失效，取决于 `KeyGenParameterSpec` 的参数：认证有效期、允许使用的认证器组合、新增生物特征后是否失效，都会改变结果。两类异常要分清：遇到 `UserNotAuthenticatedException`，先请求认证，别急着删密钥；遇到 `KeyPermanentlyInvalidatedException`，密钥已经不可继续使用，完成业务身份验证后再重建。混淆这两类异常，代价是不必要的删密钥和重新登录。
 
 LSKF（Lock Screen Knowledge Factor）指锁屏 PIN、图案或密码等知识型认证因子。设备没有设置 LSKF 时，生成需要用户认证的密钥可能得到 `ERROR_KEYSTORE_UNINITIALIZED`；同一个错误码也可能表示应用还没调用 `KeyStore.load()`。我们结合失败发生的位置区分这两种情况，提示里别直接写“Keystore 损坏”。
+
+<!-- gracker-diagram: a216-08-auth-vs-invalidated -->
+![用户尚未认证与密钥永久失效不能使用同一恢复](../../assets/diagrams/ch20/a216-08-auth-vs-invalidated.png)
+
+图：失效与否取决于生成时的认证器、有效期和失效参数，不能把所有锁屏变化都当作需要删密钥。
 
 ## 6. 盘点与回收实现
 
@@ -269,6 +309,16 @@ fun collectAliasInventory(
 
 回收名单从业务状态里来，“很久没使用”只是参考条件之一。一个候选条目通常要过四道确认：登记状态为 `RETIRED`、替代密钥已成功使用、回滚期结束、相关进程都切换到新版本。非对称身份密钥还要确认服务端不再接受旧公钥；本地数据加密密钥则要确认旧数据已经迁移或不再需要。测试前缀可以按测试环境的明确约定清理；未知前缀先确认责任模块，再动手。
 
+<!-- gracker-diagram: a216-09-inventory-quality -->
+![后台盘点只记录可观测结果，不能保证完整性](../../assets/diagrams/ch20/a216-09-inventory-quality.png)
+
+图：提供程序可把底层失败变成空批次或0，正常返回也可能不完整；重叠前缀采用最长匹配，unknown先查归属。
+
+<!-- gracker-diagram: a216-10-retirement-proof -->
+![可回收候选必须同时具备业务与版本证据](../../assets/diagrams/ch20/a216-10-retirement-proof.png)
+
+图：长期不用只是旁证；未知前缀、SDK条目和加密数据依赖都要由责任方确认。
+
 ## 7. 多进程、升级与回滚
 
 target SDK 从 36 升到 37，系统并不会自动清理已有密钥。如果某个非系统应用 UID 已经积累 50,000 个或更多条目，升级后下一次生成或导入会立即失败。所以发布前，我们按数量区间分析历史设备，只测新安装设备是不够的。
@@ -282,6 +332,11 @@ target SDK 从 36 升到 37，系统并不会自动清理已有密钥。如果�
 - 应用版本回滚时，新旧版本都要能读取生命周期登记表的结构；结构已变更时，保留兼容迁移逻辑。
 
 卸载应用通常会清理对应 UID 的 Keystore 数据。但把“让用户重装或清除数据”当成线上恢复方案是行不通的：这一步同时清除业务数据和认证状态，alias 持续增长的代码问题也原样还在。
+
+<!-- gracker-diagram: a216-11-multiprocess-coordination -->
+![跨进程用单一责任方协调创建、轮换与删除](../../assets/diagrams/ch20/a216-11-multiprocess-coordination.png)
+
+图：containsAlias再generate不是原子创建；target36升37后旧key仍可用，但下一次新增可能立即被拒绝。
 
 ## 8. 线上诊断字段
 
@@ -305,6 +360,11 @@ target SDK 从 36 升到 37，系统并不会自动清理已有密钥。如果�
 
 `ApplicationExitInfo` 是 Android 11 起提供的历史进程退出记录。配额错误导致启动崩溃时，我们在下次启动读取该记录，与本地保存的最近一次密钥操作做关联。退出记录只覆盖“进程因未处理异常、ANR 等原因结束”这一层；要把原因落到 Keystore 头上，还要比对异常时间、进程名和本次启动标识。详细用法见 26.6。
 
+<!-- gracker-diagram: a216-12-diagnostic-fields -->
+![退出记录解释进程结果，Keystore 根因仍需操作证据](../../assets/diagrams/ch20/a216-12-diagnostic-fields.png)
+
+图：历史退出记录需要对应失败进程和那次进程启动身份；仅有退出结果不能证明Keystore根因。
+
 ## 9. 分阶段发布与容量测试
 
 ### 9.1 测试组合
@@ -323,6 +383,11 @@ target SDK 从 36 升到 37，系统并不会自动清理已有密钥。如果�
 | 启动路径失败 | 注入配额异常并模拟进程崩溃 | 下次启动不继续创建，并能关联退出记录 |
 
 50,000 与 200,000 是系统拒绝新密钥的硬限制，我们定业务预警线时设在更低的位置：按每日增长速度、清理能力和一次轮换可能增加的最大数量来算。容量脚本使用独立设备或可重置的测试用户、固定测试前缀和生成数量上限；任务正常结束或中断恢复时，都要清理测试密钥。
+
+<!-- gracker-diagram: a216-13-capacity-test -->
+![发布前在隔离环境验证容量、竞争与中断恢复](../../assets/diagrams/ch20/a216-13-capacity-test.png)
+
+图：预警线低于系统阈值，结合增长速度、回收能力和轮换峰值；测试条目固定前缀且结束后可清理。
 
 ### 9.2 发布前检查
 

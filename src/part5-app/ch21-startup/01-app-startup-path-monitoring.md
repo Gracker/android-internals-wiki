@@ -104,6 +104,11 @@ consolidated_from:
 
 同一个入口在不同时间可能落入不同类型：用户从桌面点击、通知跳转、深链、最近任务恢复，也可能命中不同的 Activity 和任务栈。要判断平台记录的启动类型，光看 `onCreate()` 是否调用还不够。
 
+<!-- gracker-diagram: a222-01-startup-preconditions -->
+![冷温热是启动前状态，生命周期回调不能单独替代分类](../../assets/diagrams/ch21/a222-01-startup-preconditions.png)
+
+图：实验StartupMode构造固定条件，线上系统类型按入口、进程与会话核对；onCreate不是单独分类器。
+
 工程上要区分两件事：
 
 - **实验分类**：Macrobenchmark（AndroidX 宏基准测试库） 的 `StartupMode（启动状态）.COLD/WARM/HOT` 用固定前置条件构造可比较样本。
@@ -118,6 +123,11 @@ consolidated_from:
 冷启动开始时，系统解析启动请求、准备任务与 starting window（应用首帧完成前由系统显示的启动窗口），并向 Zygote 请求 fork 应用进程。Zygote 是预加载常用框架类的进程模板，fork 会从它派生新的 Linux 应用进程。这个阶段已经计入用户看到的启动等待，而应用自己的 `Application` 埋点还没有运行。
 
 子进程进入 `ActivityThread.main()` 后，先准备主线程 Looper（按顺序取出并分发消息的事件循环）、创建 `ActivityThread`，再通过 Binder（Android 跨进程调用机制） 向 system_server（承载主要系统服务的进程） 登记，后续的绑定信息和生命周期事务再送回应用主线程。对写应用的我们来说，这段路径有两个含义：
+
+<!-- gracker-diagram: a222-02-request-to-main -->
+![系统请求与进程创建已经计入等待，早于应用内埋点](../../assets/diagrams/ch21/a222-02-request-to-main.png)
+
+图：Application.attachBaseContext不是完整冷启动起点；进程前的系统工作与调度需平台记录或系统Trace。
 
 1. `Application.attachBaseContext()` 不是整个冷启动的起点，早于它的系统与进程初始化同样消耗 TTID（Time To Initial Display）。
 2. 只汇总应用内埋点会漏掉进程创建、调度等待、系统服务和跨进程通信时间。
@@ -147,6 +157,11 @@ Instrumentation.callApplicationOnCreate(app)
 
 Provider 治理见 [ContentProvider 启动优化](03-contentprovider-multiprocess-startup.md)。多进程应用还要核对每个 Provider 的 `android:process`：默认进程的 Provider 不会自动在每个子进程各运行一次，声明到某个进程的组件只随对应进程安装。
 
+<!-- gracker-diagram: a222-03-provider-application -->
+![Application 先创建，Provider 初始化早于它的 onCreate](../../assets/diagrams/ch21/a222-03-provider-application.png)
+
+图：自动SDK与App Startup可能位于中间段；restrictedBackupMode和空Provider列表会跳过安装。
+
 #### 2.3 Application 阶段
 
 `Application.onCreate()` 在主线程同步执行。适合保留在这里的工作应同时满足：
@@ -158,6 +173,11 @@ Provider 治理见 [ContentProvider 启动优化](03-contentprovider-multiproces
 - 不依赖不受控的网络或长时间锁等待。
 
 常见长任务包括 SDK 初始化、同步数据库打开、反序列化大配置、原生库加载和批量对象构造。把它们全部提交到后台线程也可能延迟启动：主线程若随后等待结果，关键路径没有缩短；如果不等待，后台 CPU、I/O（存储读写） 和类加载仍会与首帧争用资源。
+
+<!-- gracker-diagram: a222-04-background-critical-path -->
+![任务移到后台后，主线程等待仍可能留在关键路径](../../assets/diagrams/ch21/a222-04-background-critical-path.png)
+
+图：等待结果时端到端路径没有消失；即使不等待，后台CPU/I/O/类加载也可能与首帧竞争。
 
 对于 `minSdkVersion >= 21` 的应用，平台原生支持从多个 DEX 加载类，不需要在 `Application` 中调用旧版 `MultiDex.install()`。只有仍支持 API 20 及以下的应用才需要单独审视这条兼容路径。
 
@@ -189,6 +209,11 @@ View 数量、布局深度或 Composable 数量都没有通用的危险阈值，
 | TTID | 系统记录的首帧启动指标 | 页面主要内容已经可用 |
 
 帧预算取决于刷新率、这一帧在 FrameTimeline 里的 deadline 以及渲染流水线阶段，一律写死 16 ms 会把问题简化过头；120 Hz 显示器的节奏与 60 Hz 不同，同一段工作的可用时间也随之变化。一次 traversal 跨过某个 VSync 时，我们还要对照目标时间线和实际时间线，判断是否错过 deadline。
+
+<!-- gracker-diagram: a222-05-frame-observation -->
+![traversal、帧提交与系统显示记录是不同观测点](../../assets/diagrams/ch21/a222-05-frame-observation.png)
+
+图：第一次同名slice未必属于目标窗口；应用frame callback也不能冒充平台TTID。
 
 ### 3. TTID 与 TTFD（Time To Fully Drawn） 回答不同问题
 
@@ -236,6 +261,11 @@ class MainActivity : ComponentActivity() {
 `criticalDataReady` 和 `mainContentLaidOut` 应由对应状态与布局回调更新，每次更新后调用 `maybeReportFullyDrawn()`。报告只发送一次；完成条件应覆盖成功、离线和可恢复错误，避免网络失败后永远没有 TTFD。若调用发生在首帧之前，平台会以系统检测到的首帧时间为下限，因此提前调用不会生成比 TTID 更早的有效 TTFD。
 
 AndroidX `ComponentActivity` 的 Fully Drawn 支持可协调多个组件或异步条件。无论使用平台方法还是 AndroidX 封装，团队都要把“fully drawn”定义写进测试，避免不同页面各自解释。
+
+<!-- gracker-diagram: a222-06-ttid-fullydrawn-endpoints -->
+![初显、业务可用、平台报告与基准渲染终点分别保留](../../assets/diagrams/ch21/a222-06-ttid-fullydrawn-endpoints.png)
+
+图：平台FULLY_DRAWN时间戳与Macrobenchmark timeToFullDisplayMs相关，但后者等包含报告或其后首帧渲染完成。
 
 #### 3.3 自定义里程碑：解释 TTID/TTFD 内部时间
 
@@ -316,6 +346,11 @@ fun initializeRequiredComponents() {
 
 Perfetto 中会显示两个命名切片。切片要包住同步工作本身；代码若只提交异步任务，切片结束就只说明“已提交”，说明不了初始化已经完成。等待异步结果时，应在生产者和消费者两端记录可关联的 async trace，或用 flow（连接两段切片的因果箭头）标出任务从提交到执行的关系，并控制关联 ID 的数量。
 
+<!-- gracker-diagram: a222-09-async-trace-boundary -->
+![提交切片结束只证明已提交，异步工作要关联执行方](../../assets/diagrams/ch21/a222-09-async-trace-boundary.png)
+
+图：同步trace包住真实同步工作；异步提交到完成跨线程时，用受控cookie或flow关联生产者与消费者。
+
 Trace 本身有开销，切片要克制：别给每个小方法都加，单个总切片也定位不了责任。较好的层级是：
 
 1. 启动端到端指标；
@@ -388,6 +423,11 @@ data_sources {
 
 “Runnable 低于 70% 就是异常”这类通用判据并不存在：主线程同步等待 5 ms 可能就卡住关键路径，后台线程消耗大量 CPU 也可能让主线程长时间处于 Runnable。我们判断的依据，是关键路径实际经过的时间，以及任务之间的依赖关系。
 
+<!-- gracker-diagram: a222-10-thread-states -->
+![长启动 slice 先按线程状态拆分，再追依赖](../../assets/diagrams/ch21/a222-10-thread-states.png)
+
+图：端到端slice包含运行和等待，不能把80ms墙时直接计作80ms CPU消耗。
+
 #### 6.4 阅读 bind、Activity 和首帧
 
 `bindApplication` 较长时，依次检查：
@@ -441,6 +481,11 @@ ORDER BY s.startup_id, s.slice_dur DESC;
 
 5 ms 只是缩小诊断结果的查询过滤器，不是性能合格线。当前标准库文档已把 `android_thread_slices_for_all_startups` 标为底层视图、建议避免直接使用；上面的查询适合固定 `trace_processor_shell` 版本后的临时排查。长期 CI 应优先采用 `android_slices_for_startup_and_slice_name(...)`、`android_startup_opinionated_breakdown` 等公开函数或表，并为查询 schema（列名与类型约定）编写测试。
 
+<!-- gracker-diagram: a222-11-sql-window-meaning -->
+![启动视图按 slice 起点选取，原始时长未裁剪且可嵌套](../../assets/diagrams/ch21/a222-11-sql-window-meaning.png)
+
+图：v57.2低层视图slice.ts BETWEEN启动起止，返回整段slice.dur；5ms仅查询过滤条件。
+
 ### 7. ClassLoader（按名称查找并装入类定义的加载器）、编译状态与 DEX 布局
 
 #### 7.1 类首次使用仍可能进入启动关键路径
@@ -465,6 +510,11 @@ ORDER BY s.startup_id, s.slice_dur DESC;
 - **Startup Profile**面向 DEX 布局，把启动所需代码组织到主 DEX 的相邻区域；读取相邻数据所需的文件页更集中，这就是这里的读取局部性。
 
 Baseline Profile 跳过不了业务初始化，也消除不了磁盘、Binder、锁或网络等待；Startup Profile 影响的也只是 DEX 文件组织和读取局部性，把类放到文件前面并不会让它们自动进入 CPU cache。收益要用固定编译模式的启动基准验证。
+
+<!-- gracker-diagram: a222-12-profiles-and-caches -->
+![编译、DEX 布局与文件页缓存影响不同部分](../../assets/diagrams/ch21/a222-12-profiles-and-caches.png)
+
+图：冷启动前置条件与编译模式分别控制；代码排到文件前部不保证自动位于CPU cache。
 
 两者的实践统一见 [Baseline Profile 与 Startup Profile 实战](04-baseline-startup-cloud-profile.md)。启动期 ART/GC 行为见 [ART GC 启动期开销与分配治理](07-art-gc-startup-allocation-governance.md)。
 
@@ -531,6 +581,11 @@ TTID 只说明第一帧出现，骨架屏、空列表或不可点击的占位页
 - `event_elapsed_ns`：用于同一台设备本次启动内的阶段耗时；
 - `duration_ms`：端侧完成起止点检查后生成，服务端不跨设备相减单调时钟。
 
+<!-- gracker-diagram: a222-13-clock-domains -->
+![启动平台时间戳与自建时长必须使用明确时基](../../assets/diagrams/ch21/a222-13-clock-domains.png)
+
+图：ApplicationStartInfo固定系统路径使用uptimeNanos；跨设备不相减单调时钟，墙钟只做事件对齐。
+
 #### 1.3 启动样本的身份
 
 同一设备可能由桌面图标、deep link（直接打开特定页面的链接）、通知、桌面小组件 Widget、Service、Broadcast 或 Provider 启动；多进程 App 还会产生多个进程启动记录。每条样本至少携带：
@@ -546,6 +601,11 @@ TTID 只说明第一帧出现，骨架屏、空列表或不可点击的占位页
 | 结果 | TTID、TTFD、content ready、超时、退出或上报缺失 |
 
 入口 URL、Intent extras（附加参数）、用户 ID 和页面原始参数要留在端上。路由、设备和任务名应转换成有限的受控枚举；确需用哈希关联事件时，应使用服务端可轮换密钥生成的伪匿名标识，并评估它是否仍属于个人数据——普通哈希当不成匿名化。更完整的采集规则见 [性能指标采集与上报](../ch26-observability/01-app-observability-performance-collection.md)。
+
+<!-- gracker-diagram: a222-14-sample-identity -->
+![PID 与进程名还不足以唯一识别当前启动会话](../../assets/diagrams/ch21/a222-14-sample-identity.png)
+
+图：原始URI、extras和用户参数不进入Trace名称；当前PID候选仍需按本地会话与入口验证。
 
 ### 2. 端侧埋点怎样放
 
@@ -565,6 +625,11 @@ TTID 只说明第一帧出现，骨架屏、空列表或不可点击的占位页
 | `fully_drawn_reported` | `reportFullyDrawn()` 调用处 | 应用声明的 TTFD 边界 | 每次页面恢复的完成时间 |
 
 `onResume()` 只表示生命周期走到前台，本身说明不了首帧显示。`ViewTreeObserver.OnPreDrawListener` 发生在即将绘制之前，`Choreographer.FrameCallback` 是 UI 帧调度回调，两个时点都证明不了 SurfaceFlinger 已经把像素显示到屏幕。App 可以把它们当作自定义近似点，但事件名要写成 `pre_draw` 或 `frame_callback`，别冒充平台 TTID。
+
+<!-- gracker-diagram: a222-15-instrumentation-boundaries -->
+![应用点位解释阶段，系统记录校准端到端起止](../../assets/diagrams/ch21/a222-15-instrumentation-boundaries.png)
+
+图：为监控新增重型Provider会进入自己的冷启动关键路径；首帧前仅记录必要身份和时间点。
 
 #### 2.2 准确上报 fully drawn
 
@@ -607,6 +672,11 @@ fun HomeRoute(state: HomeUiState) {
 
 这个条件应表示用户已能完成首个核心操作。若空列表是合法结果，判断条件就要表达“数据请求已完成”；写成 `isNotEmpty()`，合法空态会永远等不到上报。
 
+<!-- gracker-diagram: a222-07-ready-contract -->
+![可报告条件是可操作终态，不能只等待非空成功列表](../../assets/diagrams/ch21/a222-07-ready-contract.png)
+
+图：reportWhenComplete在finally释放reporter，异常或取消也会释放；计数为零本身不证明业务成功。
+
 #### 2.3 慢任务的时间线记录
 
 每个启动任务应记录受控的任务名、调度线程、依赖、开始/结束、结果和是否位于首帧前。对高频短任务，记录动作本身可能比任务还耗时，可以只保留汇总计数，或只在被抽中的慢启动诊断样本里记录细节。
@@ -647,6 +717,11 @@ fun HomeRoute(state: HomeUiState) {
 
 API 35 没有 `getStartComponent()`，调用前必须检查系统版本。官方文档还注明，Service 启动的 `LAUNCH` 时间戳在 Android 16（Baklava / API 36）及更早版本可能不准确；Android 17 不在这个已知限制范围内。
 
+<!-- gracker-diagram: a222-16-api-version-boundaries -->
+![ApplicationStartInfo 的能力按 API 引入版本使用](../../assets/diagrams/ch21/a222-16-api-version-boundaries.png)
+
+图：Service LAUNCH在API36及以下可能不准确；API35类型与调用仍需实际版本判断，注解本身不是运行guard。
+
 #### 3.2 记录形成与状态
 
 system_server 中的 `AppStartInfoTracker` 先建立启动记录，随后由进程创建、应用绑定、首帧和 fully drawn 等路径逐步补入字段。App 通过 `ActivityManager` 读到的是某一时刻的记录副本，也就是快照；它不会自动更新，也不包含线程调度、Binder 和 I/O 的完整时间线。
@@ -660,6 +735,11 @@ system_server 中的 `AppStartInfoTracker` 先建立启动记录，随后由进�
 平台没有 `FULLY_DRAWN` 状态，fully drawn 只是依赖 App 调用 `reportFullyDrawn()` 的可选时间戳；完成监听里的“complete”指记录进入 `FIRST_FRAME_DRAWN`，TTFD 是否完成要看后续的 `FULLY_DRAWN` 时间戳。tracker 也只在加入 `FIRST_FRAME` 节点时触发回调，所以错误记录、以及没有 Activity 首帧的纯 Service、Broadcast 或 Provider 进程启动，都依赖不上这个回调；反过来，没等到回调也说明不了启动失败。
 
 八个系统时间戳的常量编号只是编号，发生顺序要看实际时间值：
+
+<!-- gracker-diagram: a222-17-record-lifecycle -->
+![首帧完成不等于 fully drawn，后者只是可选时间戳](../../assets/diagrams/ch21/a222-17-record-lifecycle.png)
+
+图：FIRST_FRAME_DRAWN公开契约提供相应系统点；FULLY_DRAWN依赖应用报告，副本还可能缺失该点。
 
 | 时间戳 | 语义与限制 |
 | --- | --- |
@@ -710,6 +790,11 @@ fun latestCurrentProcessStart(
 API 35 起，`ActivityManager.addStartInfoTimestamp()` 允许 App 使用 21～30 的保留 key 添加自定义单调时间戳。它能把 `route_resolved`（路由决定完成）这类业务点与系统的 launch、fork、bind 和 first frame 放进同一份记录。
 
 这里存在公开契约与 Android 17 r1 实现的差异。当前 `ActivityManager` API 文档写明：相同 key 会覆盖旧值，只有在 `reportFullyDrawn()` 之后添加的时间戳才会被丢弃；但 `android-17.0.0_r1` 的 `AppStartInfoTracker` 会拒绝重复 key，并在记录进入 `FIRST_FRAME_DRAWN` 后拒绝开发者 key。
+
+<!-- gracker-diagram: a222-19-timestamp-submission -->
+![开发者时间戳区分提交、接受与目标记录归属](../../assets/diagrams/ch21/a222-19-timestamp-submission.png)
+
+图：每个会话每key首帧前只提交一次；API正常返回不证明已接受，也不证明写到了当前入口记录。
 
 把某个版本的内部 tracker 行为当成长期 API 保证是靠不住的，兼容两种行为的写法是：每个开发者 key 在首帧前只写一次，回读时若该 key 缺失就按缺失处理。通常发生在首帧后的 `content_ready` 继续走应用遥测（App 自己采集并上报的事件），约定的完成时点交给 `reportFullyDrawn()` 表达。
 
@@ -765,6 +850,11 @@ class PlatformStartInfoCollector(
 
 `ApplicationStartInfo` 适合校准系统起点和启动分类，Android 10–14 仍需兼容自建埋点。完整 API 设计见[ApplicationStartInfo](../ch26-observability/07-application-start-info.md)。
 
+<!-- gracker-diagram: a222-18-callback-history-race -->
+![监听与历史回读并用，按身份去重仍要保留缺失](../../assets/diagrams/ch21/a222-18-callback-history-race.png)
+
+图：固定登记路径未见已完成回放，UID其他进程可先消费监听；一次回读也不保证补齐，生产在里程碑有限刷新。
+
 #### 3.6 阶段耗时的缺失与乱序处理
 
 不要把缺失 key 补成 0，也不要按常量编号排序。只有起止节点都存在且终点不早于起点时，区间才有效：
@@ -784,6 +874,11 @@ fun startupDurationMs(
 
 采集端应保留原始节点、字段是否存在以及 `startupState`。这样即使 schema 调整或后续发现平台差异，服务端仍能重新计算区间，无须依赖端侧已经算好的单一耗时。
 
+<!-- gracker-diagram: a222-20-duration-validity -->
+![仅对存在、非负且有序的同一时基节点计算区间](../../assets/diagrams/ch21/a222-20-duration-validity.png)
+
+图：startupDurationMs对缺失或非法顺序返回null；原始节点保留，便于修订schema后重新计算。
+
 ### 4. 线上聚合与分位数解读
 
 我们先看分布形态。启动耗时通常呈右偏长尾分布：多数样本集中在较短区间，少数慢样本向更长耗时方向拖出一条“尾巴”。低端设备、升级迁移、磁盘繁忙、首次读取配置和编译状态都会制造这类慢样本。均值容易被少数极慢值拉高，也可能被大量热启动样本稀释。
@@ -798,6 +893,11 @@ fun startupDurationMs(
 | P99 | 极端尾部 | 需要较大样本量，易受异常设备与数据质量影响 |
 
 分位数必须从同一 cohort（版本、启动类型等条件一致的一组样本）的原始数据或可合并分布摘要计算：每台设备先算 P90 再把各设备 P90 求平均，或把每日 P90 平均成周 P90，都会失真。数据量大时可用直方图，或 t-digest、KLL 这类近似分位数摘要；无论选哪种，都要固定直方图区间边界或算法版本，并保留样本数、最小值、最大值和缺失率。
+
+<!-- gracker-diagram: a222-21-quantile-merge -->
+![客户端或每日分位数不能直接平均成总体分位数](../../assets/diagrams/ch21/a222-21-quantile-merge.png)
+
+图：固定直方图区间或摘要算法版本，再合并同cohort分布；设备与每日P90平均都不能还原总体P90。
 
 #### 4.1 先分组，再看分位数
 
@@ -819,6 +919,11 @@ TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会
 
 每个窗口应同时展示：
 
+<!-- gracker-diagram: a222-22-completion-denominators -->
+![更短的成功样本 TTFD 可能掩盖更低的完成率](../../assets/diagrams/ch21/a222-22-completion-denominators.png)
+
+图：失败和放弃会让可见成功样本曲线变好；诊断样本数也不能当作全部启动分母。
+
 - 启动请求或可观测会话数；
 - TTID 有效样本数；
 - TTFD 有效样本数与完成率；
@@ -827,6 +932,11 @@ TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会
 - 采样率、上传成功率、去重率与 schema 版本。
 
 采样策略也要进入总样本数的解释。普通样本可以做稳定随机采样，慢样本与失败样本可以提高诊断采样率；后者被采到的概率更高，两类数据直接混算总体分位数会带偏结果。用于告警的指标数据和用于定位的高采样诊断数据应分开保存；若必须合并，应按每类样本被采中的概率加权。
+
+<!-- gracker-diagram: a222-23-sampling-bias -->
+![慢样本诊断采样与总体指标采样要分别解释](../../assets/diagrams/ch21/a222-23-sampling-bias.png)
+
+图：采样率变化会改变观察到的分布；一次Trace解释单个样本，不能替代线上总体曲线。
 
 ### 5. 回归检测与归因
 
@@ -845,6 +955,11 @@ TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会
 ```
 
 这段规则中的“预算”是产品允许增加的毫秒数，“历史噪声带”是指标在没有代码变化时通常波动的范围。高流量版本可以用 bootstrap（从现有样本反复有放回抽样）估计置信区间（变化可能落入的范围）；低流量灰度可先看中位数、MAD（各样本与中位数偏差的中位数）、样本明细和线下 benchmark，避免把样本不足的 P99 当成发布结论。实验统计细节见 [性能实验统计](../ch26-observability/04-ab-testing-regression.md)。
+
+<!-- gracker-diagram: a222-24-regression-evidence -->
+![回归门禁同时检查幅度、噪声、样本与稳定窗口](../../assets/diagrams/ch21/a222-24-regression-evidence.png)
+
+图：这是工程规则示例；阈值来自产品预算和实验模型，置信区间与连续窗口不是通用固定常量。
 
 #### 5.1 归因顺序
 
@@ -901,6 +1016,11 @@ Android Vitals 的专项限制和 Play Console 使用方式见[Android Vitals �
 
 一条启动问题从发现到验收，我们建议保留四层证据：
 
+<!-- gracker-diagram: a222-25-evidence-layers -->
+![线上趋势、固定实验、单次 Trace 与平台记录相互校准](../../assets/diagrams/ch21/a222-25-evidence-layers.png)
+
+图：修复回到同口径验证；不能用固定系数把应用近似TTID换算成Play Vitals。
+
 | 层级 | 工具 | 产物 |
 | --- | --- | --- |
 | 发布前回归 | Macrobenchmark `StartupTimingMetric`（启动时间测量项） | 固定设备、启动模式、编译模式和重复次数下的 TTID/TTFD 分布 |
@@ -921,6 +1041,11 @@ ORDER BY ts;
 ```
 
 Android 15+ 还可用 `ProfilingManager` 请求 system trace 或 stack sampling（定期采集线程调用栈）。请求会被系统限流，也不保证每次执行；结果会写入 App 数据目录，并按平台规则做脱敏。它比读取 `ApplicationStartInfo` 成本高，只适合问题版本或受控样本，还要限制采集频率、设备开销和上传范围。官方也建议大多数 App 优先使用能正确构造参数的 AndroidX 高层封装。
+
+<!-- gracker-diagram: a222-08-cold-cache-protocol -->
+![Benchmark 1.4.1 的 COLD 协议同时处理进程和缓存](../../assets/diagrams/ch21/a222-08-cold-cache-protocol.png)
+
+图：源码在每轮COLD setup中执行这些步骤；仅手动杀进程与完整库协议不同。
 
 ### 8. 用同一份模板记录复盘
 

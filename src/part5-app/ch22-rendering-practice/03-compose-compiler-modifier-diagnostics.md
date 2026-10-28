@@ -133,6 +133,11 @@ Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadl
 
 普通 `ComposeView` 不会单独创建 Surface，内容仍由当前应用窗口的 HWUI（Android 硬件加速 UI 渲染器）路径输出。我们顺着这条路径走一遍：UI 线程完成 Composition（根据状态生成或更新 UI 树）、Layout（测量与摆放）和 Drawing（记录绘制命令），经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread；随后图形缓冲区经 BLAST BufferQueue 提交、SurfaceFlinger 合成，再交给 HWC（Hardware Composer，硬件合成器）上屏。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，还要跟踪这些组件自己的图像生产者（producer）和 Surface layer（合成图层）。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md) 阅读。
 
+<!-- gracker-diagram: a234-01-window-pipeline -->
+![组合更新只是窗口显示链的前半程](../../assets/diagrams/ch22/a234-01-window-pipeline.png)
+
+图：普通 ComposeView 共用宿主窗口 HWUI；视频等独立生产者还需追踪自身 layer。
+
 这条窗口链路和 Compose Runtime 的内部结构是两层概念。`SlotTable` 保存组合的 group、key、`remember` 值和调用结构，承载 Compose 测量、摆放与绘制节点的则是 `LayoutNode`。重组只重新执行失效的重启作用域，整页并不会重建；大多数普通 `LayoutNode` 的绘制通常记录到最近的图层边界，并不会各自创建一个 Android `RenderNode`。另外，Strong Skipping（强跳过模式）属于编译器行为，Lazy 预取属于 Foundation 行为，两者都由应用依赖决定，平台源码标签里查不到——这也是基线行把依赖版本一并列出的原因。
 
 我们的排查顺序也是这样：先从状态读取、重组范围、测量和绘制判断责任阶段，再用 Compiler 报告和 Runtime Tracing 解释可跳过性与实际重组；Modifier.Node 则改变修饰符节点的生命周期和更新成本。
@@ -150,6 +155,11 @@ Compose 把 UI 更新分成 Composition、Layout 和 Drawing 三个阶段。状�
 | draw lambda 或 layer property lambda | Drawing 或图层属性更新 | 颜色、透明度、绘制偏移、缩放 |
 
 这张表给出的是失效（invalidation，状态变化的失效通知）的起点，后续阶段是否执行要看输出有没有变：Composition 的输出没变，Layout 和 Drawing 仍可跳过。另外，`LazyColumn`、`BoxWithConstraints` 和 `SubcomposeLayout` 会在布局过程中决定子内容，“Composition 总在 Layout 之前一次完成”这个简化模型对它们并不成立。
+
+<!-- gracker-diagram: a234-02-read-phases -->
+![状态在哪里读取，从哪里安排工作](../../assets/diagrams/ch22/a234-02-read-phases.png)
+
+图：阶段表描述失效起点；子组合会把必要的组合安排到测量过程中。
 
 看一个例子：下面的示例把滚动偏移推迟到 placement lambda 中读取，透明度放进 `graphicsLayer` 的属性 lambda，两个高频值都离开了 Composable 函数体。
 
@@ -192,6 +202,11 @@ Kotlin 2.0.20 起默认启用 Strong Skipping，本文基线 Kotlin `2.4.10` 已
 Stability（稳定性）是编译器对“参数能否可靠比较、属性变化能否被观察”的判定。进入重组时，skippable 函数还要比较本次与上次的参数：`stable` 参数使用 `equals()`，`unstable` 参数使用实例相等 `===`。参数相等拦住的只是父级重组向下传播；函数内部读取的 Snapshot 状态或动态 `CompositionLocal`（沿 Composition 树向下提供的值） 发生变化时，对应重组作用域仍会失效。
 
 Strong Skipping 之后，Stability 依然在起作用：它决定参数采用哪种比较方式，也约束可变对象如何通知 Compose。
+
+<!-- gracker-diagram: a234-03-skipping-rules -->
+![强跳过比较参数，内部失效仍生效](../../assets/diagrams/ch22/a234-03-skipping-rules.png)
+
+图：Kotlin 2.0.20 起默认强跳过；标签是允许条件，实际跳过需运行时证据。
 
 - 普通 `List`、`Set`、`Map` 接口仍被编译器视为 unstable。同一个可变集合实例原地修改时，实例比较可能让调用被跳过，集合本身也不会发送 Snapshot 通知。
 - `SnapshotStateList`、`SnapshotStateMap` 能通知运行时；不可变 UI 数据模型配合新集合实例，则能提供边界清晰的新旧快照。
@@ -271,6 +286,11 @@ fun FeedWithScrollToTop(items: List<FeedItem>) {
 
 至于字符串拼接、数值乘法这类“输入每次变、输出也每次变”的表达式，直接计算通常更清楚，运行时工作也更少，用不上 `derivedStateOf`。
 
+<!-- gracker-diagram: a234-04-remember-derived -->
+![缓存身份与降低通知频率分别处理](../../assets/diagrams/ch22/a234-04-remember-derived.png)
+
+图：remember 管缓存生命周期，derivedStateOf 管结果变化频率；两者不能修复不可观察的可变数据。
+
 #### `rememberCoroutineScope` 面向事件，`produceState` 面向外部数据
 
 `rememberCoroutineScope()` 返回与调用点 Composition 生命周期绑定的 `CoroutineScope`；调用点离开 Composition 后，其中的协程会收到取消信号。它适合点击、拖动结束、Snackbar 等事件回调。不要在 Composable 函数体中直接 `launch`；每次函数执行都可能启动新任务。
@@ -301,6 +321,11 @@ fun userProfile(
 
 Strong Skipping 不管理 producer 协程。跳过规则作用于 Composable 调用，协程的启动、取消和异常处理仍由 Effect key 与作用域生命周期决定。
 
+<!-- gracker-diagram: a234-05-producer -->
+![producer 换 key，State 不自动回到初值](../../assets/diagrams/ch22/a234-05-producer.png)
+
+图：结果合并不会自动减少上游解析；节流要放在希望减少的重工作之前。
+
 ### Lazy 列表：身份、类型与预取
 
 本节只说明 Lazy 列表会如何影响重组诊断；RecyclerView / LazyList 的完整复用、预取、缓存窗口与同版本 A/B 流程统一由 [22.2 RecyclerView 与 Compose LazyList 性能](02-recyclerview-compose-lazylist.md) 维护。
@@ -323,6 +348,11 @@ Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基
 4. 组合完成后单独 `apply()`，把结果提交到 Composition，再按约束执行 premeasure。Pausable Composition 切分的只有 precompose；apply、measure 和已进入可见窗口的同步工作，仍按原有路径一次做完。
 
 这个默认值经历过反复：Foundation `1.10.0` 默认开启，`1.10.6` 因稳定性问题改为默认关闭，`1.12.0` 源码又恢复为默认开启。所以现场行为取决于 Foundation 的精确版本和该版本中的开关值，看“Compose 1.x”这样的大版本号是不够的。`ComposeFoundationFlags` 的源码注释还提醒：调试环境应尽早设置开关，发布环境若要改写默认值需配合 R8；因此本文只用它界定版本默认行为，不把它当作稳定的应用配置 API。本文保留 BOM `2025.12.00` / Foundation `1.10.0` 作为历史复现点。
+
+<!-- gracker-diagram: a234-06-lazy-library -->
+![Lazy 能力按精确库版本解释](../../assets/diagrams/ch22/a234-06-lazy-library.png)
+
+图：不要由 targetSdk 或 Compose 大版本推断开关；现场先查最终依赖树。
 
 这项能力的覆盖面也要记牢：普通首帧 Composition、常规重组和非 Lazy 子树都在它的服务范围之外。拆分重组作用域、降低列表项的组合成本、提供稳定 key 和控制状态读取范围，这些手段仍然有效。
 
@@ -448,9 +478,19 @@ LazyColumn {
 
 `onReset` 可能紧接着进入下一次 `update`，也可能先进入暂时停用状态，之后才被释放；清理逻辑应允许重复调用。若嵌入的是 `SurfaceView`、WebView、播放器或相机预览，图形分析还要跟随它自己的 BufferQueue 和 SurfaceFlinger layer，Compose 宿主窗口只是其中一环。
 
+<!-- gracker-diagram: a234-07-interop -->
+![互操作复用需要匹配所有权协议](../../assets/diagrams/ch22/a234-07-interop.png)
+
+图：临时 detach、复用重置和永久释放不同；不要回收时无条件销毁保留中的组合。
+
 ### Effect 与 producer 的生命周期盲区
 
 这一段我们盯住“谁在何时被取消”。`rememberCoroutineScope()` 适合由点击、拖动等事件启动工作；需要随 key 进入、变化和退出自动管理的持续任务，应直接使用 `LaunchedEffect(key)`。把任务从 Effect 转交给 `rememberCoroutineScope()` 保存的作用域，key 变化时就只取消了“启动者”，旧任务还在消费旧数据。Composition 离开时，`Job.cancel()` 只是向协程发出取消信号；阻塞 I/O、不检查取消的 CPU 循环、耗时的 `NonCancellable` 清理和未注销的外部回调都可能拖长退出时间。验证时查看任务的 `finally`、订阅计数和资源所有者；“页面退出后对象还在”只是嫌疑，定案靠这三项。
+
+<!-- gracker-diagram: a234-08-effect-ownership -->
+![把任务交给别的作用域会改变取消边界](../../assets/diagrams/ch22/a234-08-effect-ownership.png)
+
+图：强跳过与可暂停组合不改变外部 Job 和回调的生命周期。
 
 `produceState` 由 `remember` 保留的 `MutableState` 和带 key 的 `LaunchedEffect` 组成，这套实现与 key 语义前面已经交代；它的生命周期还留有两个盲区。长期 Flow 依靠 `collect` 自身的取消与 `finally` 结束，无限收集不会自然返回，把 `awaitDispose` 写在它后面就永远执行不到；需要在切换用户或请求时立即显示“加载中”，producer 必须显式赋值，key 变化本身不会把 `State` 重置成 `initialValue`。
 
@@ -487,6 +527,11 @@ Kotlin/Compose 升级验收还应记录第三方 AAR/JAR 的 POM 与 class 签�
 把这个故障算到 Compose Runtime、Stability 或 `Modifier.Node` 头上是误诊：它是 Kotlin 前端读取依赖 class 元数据时暴露出的 classpath / 发布元数据问题，排查顺序是先锁定 Kotlin、AGP、Firebase 与 FlutterFire 版本，再看报错中的 annotation class、来源 artifact 和 POM 依赖。[来源: https://juejin.cn/post/7678586341090803748；已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom]
 
 处置时别把 `skippable`、重组次数或 FrameTimeline 当主证据。对这个案例，材料记录的 FlutterFire 侧修复是把 `FirebaseAuth.IdTokenListener` / `AuthStateListener` 的 lambda 参数写成显式 `FirebaseAuth` 类型，并在测试工程覆盖 Kotlin `2.4.10`、AGP `8.11.1`、Gradle `8.14`。[来源: https://juejin.cn/post/7678586341090803748]
+
+<!-- gracker-diagram: a234-09-artifact-classpath -->
+![依赖发布问题先查签名与 classpath](../../assets/diagrams/ch22/a234-09-artifact-classpath.png)
+
+图：本轮直接核对 Firebase Auth 24.2.0 AAR/POM；案例处置还要在目标工程复现。
 
 验收可以按下面的顺序执行：
 
@@ -560,6 +605,11 @@ Compose 编译器从 Kotlin 2.0 起随 Kotlin 一同发布，`org.jetbrains.kotl
 
 我们把三个层次分开看：“`unstable` 数量下降”属于静态证据，“重组次数下降”属于运行时证据，“慢帧下降”才对应用户结果。优化结论至少应包含一项静态证据和一项运行时证据。
 
+<!-- gracker-diagram: a234-10-evidence -->
+![四种材料回答四层问题](../../assets/diagrams/ch22/a234-10-evidence.png)
+
+图：把静态标签、运行时执行和最终帧结果关联起来，不能相互替代。
+
 ### 二、按 Kotlin 2.3.20 生成编译器报告
 
 #### 1. 用固定版本复现报告样本
@@ -613,6 +663,11 @@ find app/build/compose_compiler -type f -print | sort
 ```
 
 Kotlin Gradle 插件会按编译目标（target）和编译单元（compilation）组织部分指标目录，多模块工程也会产生不同文件前缀。CI 应从构建产物中发现文件，再按模块和变体归档。
+
+<!-- gracker-diagram: a234-11-report-generation -->
+![固定输入生成可解释报告](../../assets/diagrams/ch22/a234-11-report-generation.png)
+
+图：Kotlin 2.3.20 是固定样例，2.4.10 是本篇工具链基线；不以目录猜测代替产物发现。
 
 #### 3. Kotlin 2.3.20 样本的输出文件
 
@@ -715,6 +770,11 @@ fun lab.NonUnitResult(
 
 `ExplicitlyNonSkippable` 仍是 `restartable`，但 `@NonSkippableComposable` 阻止编译器为它生成 `skippable` 标签。报告中不存在 `@NonSkippableOptIn` 这一注解。
 
+<!-- gracker-diagram: a234-12-report-tags -->
+![实测标签的三个独立维度](../../assets/diagrams/ch22/a234-12-report-tags.png)
+
+图：四个样例在两个固定编译器中保持重启／跳过标签；集合与类稳定性分类有差异，不能称报告逐字相同。
+
 #### 3. `classes.txt` 的实测输出
 
 同一编译任务对 `Snack` 产生以下记录。
@@ -728,6 +788,11 @@ unstable class lab.Snack {
 ```
 
 `val` 固定的是引用本身，引用指向的对象仍可能被修改。`Set<String>` 是接口，运行时对象仍可能是可变集合，所以编译器证明不了它不可变。
+
+<!-- gracker-diagram: a234-35-report-version-diff -->
+![同一源码在两个编译器中的稳定性报告不同](../../assets/diagrams/ch22/a234-35-report-version-diff.png)
+
+图：实测报告按编译器与同版本标准库归档；2.4.10 该 List 参数的比较代码包含运行时稳定性分支。
 
 #### 4. CSV 与模块 JSON 的准确含义
 
@@ -776,6 +841,11 @@ Lambda 是可以作为值传递的函数表达式；它引用外部变量时，�
 
 少数需要每次创建新 Lambda 的场景可以使用 `@DontMemoize`。需要保持可重启、但每次父级重组都执行函数体的场景可以使用 `@NonSkippableComposable`。两个注解都用于表达明确语义，不适合作为常规性能开关。
 
+<!-- gracker-diagram: a234-13-lambda-captures -->
+![自动 Lambda 缓存不等同手写 remember](../../assets/diagrams/ch22/a234-13-lambda-captures.png)
+
+图：Lambda 类型本身按稳定类型处理；捕获对象不稳定不等于函数对象类型不稳定。
+
 #### 3. `skippable` 标签与实际跳过
 
 报告中的 `skippable` 表示“允许跳过”。函数在运行时是否真的被跳过，我们还要逐项核对：
@@ -799,6 +869,11 @@ Lambda 是可以作为值传递的函数表达式；它引用外部变量时，�
 3. 所有公共属性类型也满足稳定性要求。
 
 `@Immutable` 的承诺更强：实例构造完成后，可观察状态不会变化，公开方法也不会破坏这一假设。注解不会把可变实现改造成可观察状态；违反契约可能导致应当执行的重组被跳过。给类型加注解前，要验证实现符合这些条件。
+
+<!-- gracker-diagram: a234-14-stable-contract -->
+![稳定性注解不会改造可变实现](../../assets/diagrams/ch22/a234-14-stable-contract.png)
+
+图：大集合的 equals 可能逐项扫描；追求全部 skippable 可能增加成本与错误契约。
 
 #### 2. 集合与跨模块模型
 
@@ -848,6 +923,11 @@ Android Studio Layout Inspector 可以显示组合节点的重组次数和跳过
 
 计数高也未必是问题：很小的计时文本可以高频重组而成本很低，只执行一次的组合函数也可能同步解析大对象并阻塞一帧。我们把次数与单次成本、作用域大小、帧截止时间放在一起看。
 
+<!-- gracker-diagram: a234-15-inspector-cost -->
+![次数乘单次成本才接近工作量](../../assets/diagrams/ch22/a234-15-inspector-cost.png)
+
+图：Debug 与 Inspector 改变测量环境；同条件发布版数据才支持性能结论。
+
 ### 七、Composition Tracing 定位运行时间
 
 #### 1. 加入 Runtime Tracing 依赖
@@ -886,6 +966,11 @@ Kotlin 2.4.10 的 Compose 插件仍默认注入组合跟踪标记和源码信息
 组合函数切片只覆盖组合阶段的相关执行。Compose UI 的测量、布局和绘制属于后续阶段，可能由不同跟踪标记表达。看到某个组合函数耗时长，我们还要检查它是否触发布局、绘制和 RenderThread 工作——四个阶段要分开看，合不成一个“重组耗时”。
 
 1.12.0 的运行时依赖通过 `ComposeTracingInitializer` 安装 `CompositionTracer`，再把编译器传入的 `info` 写入 `PerfettoSdkTrace.beginSection(info)`。函数名来自编译器标记，因此缺少依赖或关闭标记时不会出现逐函数切片。
+
+<!-- gracker-diagram: a234-16-trace-install -->
+![逐函数切片需要标记、运行时与采集会话](../../assets/diagrams/ch22/a234-16-trace-install.png)
+
+图：API 30+ 按受支持采集方式启用；安装跟踪器只提供写入能力，不代表已录制。
 
 #### 4. 控制采集成本
 
@@ -936,6 +1021,11 @@ vsync-app
 ```
 
 状态写入不保证产生可见重组：等价写入可能被 `SnapshotMutationPolicy` 忽略，没有组合读取者的状态也不会让界面作用域失效。反过来说，把频繁变化的状态读取放在页面根部，会让更大的作用域进入重组判断，哪怕很多子函数随后被跳过。
+
+<!-- gracker-diagram: a234-18-snapshot-invalidation -->
+![从状态写入到必要更新的因果链](../../assets/diagrams/ch22/a234-18-snapshot-invalidation.png)
+
+图：父级参数传播还会比较与跳过；已经由自身状态失效的作用域不能只凭参数相等跳过。
 
 我们回到调用点，重点检查：
 
@@ -1111,6 +1201,11 @@ python3 tools/compose_metrics_snapshot.py \
 
 示例假设团队把脚本保存为 `tools/compose_metrics_snapshot.py`。输出仍是诊断产物；是否阻断合入应由项目基线、函数变化原因和运行时回归共同决定。
 
+<!-- gracker-diagram: a234-19-ci-schema -->
+![报告快照要先验证格式再比较语义](../../assets/diagrams/ch22/a234-19-ci-schema.png)
+
+图：字段相同不等于代码生成相同；快照不是运行时 Snapshot，也不是自动性能评分。
+
 #### 3. 合理的门禁规则
 
 适合自动阻断的情况包括：
@@ -1140,6 +1235,11 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 
 编译成功离运行时性能改善还有一步。迁移前后应使用同一业务代码、Release/R8 设置、Baseline Profile、设备与用户旅程，比较启动时间和帧耗时分位数。编译器报告只能解释代码生成属性，推导不出重组次数或帧截止时间。值类（value class）、Kotlin 元数据、R8、Live Edit 与 kapt 故障属于构建兼容问题，应单独记录，别混入 Compose 帧归因。
 
+<!-- gracker-diagram: a234-20-migration-split -->
+![构建速度与运行帧性能各自做实验](../../assets/diagrams/ch22/a234-20-migration-split.png)
+
+图：Compose 插件随 Kotlin 同版本；AGP 内置 Kotlin、KSP/kapt 和多平台兼容还需分别核对。
+
 ### 十二、Runtime Tracing 的采集与解释边界
 
 `runtime-tracing` 通过 AndroidX Startup 安装全局跟踪器，把编译器注入的可组合函数标记送到 Perfetto SDK。激活跟踪器只是让进程具备写入能力，何时收集数据由录制会话（session）决定。终端采集时，目标进程要成功加载匹配的 `tracing-perfetto` 二进制库，跟踪配置还要订阅用于记录应用事件的 `track_event` 数据源；完整渲染调查还需要 FrameTimeline、内核调度事件（ftrace/sched）、图形与 View 事件、RenderThread 和 SurfaceFlinger 数据源。
@@ -1147,6 +1247,11 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 用于诊断的构建应可被性能工具分析，且不可调试。`tracing-perfetto-binary` 会明显增加体积，只应放进基准测试或诊断变体；通过 adb 广播激活 `TracingReceiver` 需要 `android.permission.DUMP`，普通线上应用拿它当远程开关是行不通的。API 35 及以上的 `ProfilingManager` 可以请求受限且经过隐私删减的系统跟踪，但能否看到逐个可组合函数，仍取决于目标构建是否保留标记、运行时跟踪是否激活——Runtime Tracing 那套配置要求还是要自己满足。
 
 一条可组合函数切片表示同一线程上的同步区间。`dur` 是切片从开始到结束的墙钟时间，既包含线程正在运行（Running）的时间，也包含已经就绪但等待 CPU（Runnable）和阻塞的时间。父切片包含子切片，把所有包含耗时（`inclusive duration`）直接相加会重复计数；分析时按名称、线程和时间筛选候选，再统计出现次数，分别计算包含耗时与扣除直接子切片后的自耗时（`self time`）。切片能证明函数在该时间窗执行过，但回答不了哪个 State 导致失效，也不覆盖布局、绘制、RenderThread 或 GPU 工作。
+
+<!-- gracker-diagram: a234-17-trace-duration -->
+![切片时长与 CPU、父子关系分别解释](../../assets/diagrams/ch22/a234-17-trace-duration.png)
+
+图：先按名称、线程、时间筛选，再统计次数、包含时长和自耗时。
 
 可靠的排查顺序是：先用 FrameTimeline 定位异常帧，在主线程上把组合切片、状态或业务标记、测量、布局和绘制串起来，再检查线程状态、垃圾回收、Binder 与 I/O；UI 线程按时完成的，继续查看 RenderThread、缓冲区、SurfaceFlinger 与最终呈现。线上 APM 用于筛选页面、设备和操作样本组（cohort）。完整跟踪包含源码位置、线程和用户操作时序，采集系统必须设置配额、保留期、访问控制和隐私策略。
 
@@ -1277,6 +1382,11 @@ fun Modifier.articleCard(
 
 需要新行为时，Node 的主要收益来自运行对象复用和明确的阶段接口。它并不保证每个自定义 Modifier 都更快；高频执行路径是否改善，仍要通过对象分配、帧时间和阶段执行记录确认。
 
+<!-- gracker-diagram: a234-21-node-choice -->
+![先用现有 Modifier，必要时才引入 Node](../../assets/diagrams/ch22/a234-21-node-choice.png)
+
+图：避免为使用新 API 增加不必要的自定义行为。
+
 ### 2. Element 与 Node 各自保存什么
 
 一个 Node 型 Modifier 包含两类对象：
@@ -1297,6 +1407,11 @@ Element 负责 `create()` 与 `update(node)`。Node 通过所实现的接口声�
 | `LayoutAwareModifierNode` | 尺寸或放置回调 |
 
 Node 可以同时实现多个接口。运行时会据此计算 `kindSet`——一个位掩码，每一位对应绘制、布局、输入等一种能力。遍历 Modifier 链时，运行时借助它跳过与目标能力无关的链段，并触发对应阶段的自动失效。
+
+<!-- gracker-diagram: a234-22-element-node -->
+![配置对象更新，运行节点可以留下](../../assets/diagrams/ch22/a234-22-element-node.png)
+
+图：NodeChain 管差分，NodeCoordinator 衔接坐标、测量、绘制与命中。
 
 #### 2.1 一个最小、可复用的绘制节点
 
@@ -1360,6 +1475,11 @@ fun Modifier.circle(color: Color): Modifier =
 参数型 Element 使用 `data class` 通常最安全。无参数 Element 可以使用单例，并提供稳定的相等与散列语义。错误的 `equals()` 会让运行时错误地跳过 `update()`；遗漏字段则可能让界面保留旧配置。
 
 还要分清一件事：Node 复用说的是 Element 背后的 Node 及其状态被留下来，Element 本身仍可能在每次重组时新建——Modifier 工厂在 Composable 内执行时就是这样。
+
+<!-- gracker-diagram: a234-23-node-reuse -->
+![NodeChain 的复用、更新与替换门禁](../../assets/diagrams/ch22/a234-23-node-reuse.png)
+
+图：等长且类型顺序稳定可走线性快路径；结构变化使用修改过的 Myers 差分。
 
 ### 4. update() 与自动失效
 
@@ -1426,6 +1546,11 @@ fun Modifier.bottomStripe(
 
 这里关闭自动失效后，`update()` 只在可见结果变化时安排绘制。若节点还实现 `LayoutModifierNode`，尺寸参数变化应调用 `invalidateMeasurement()`；只影响放置逻辑的参数可调用 `invalidatePlacement()`。当前公开 API 中没有 `invalidateLayout()` 这个 `LayoutModifierNode` 扩展函数。
 
+<!-- gracker-diagram: a234-24-invalidate -->
+![默认自动失效与手动模式的责任边界](../../assets/diagrams/ch22/a234-24-invalidate.png)
+
+图：关闭开关抑制更新的自动失效；插入和移除的结构失效仍由框架处理。
+
 默认自动失效适合绝大多数业务节点。只有剖析结果表明无效阶段调用值得优化，并且测试能覆盖每个参数分支时，才考虑手动模式。
 
 ### 5. 生命周期、协程与可复用内容
@@ -1438,6 +1563,11 @@ Node 有四个生命周期入口需要区分：
 - `onReset()` 在 Node 即将随布局进入复用池时调用，例如采用可复用内容机制的 Lazy 列表项滚出视口。调用发生时 Node 仍处于附着状态，随后才解除附着；未进入复用流程的普通离屏变化则未必触发 `onReset()`。
 
 `onDetach()` 后同一个 Node 仍可能再次附着。`onReset()` 还表示它未来可能服务于语义上不同的数据项，因此焦点、按压、拖拽进度和临时选择等数据项级状态需要清理。
+
+<!-- gracker-diagram: a234-25-node-lifecycle -->
+![复用重置与解除附着的顺序](../../assets/diagrams/ch22/a234-25-node-lifecycle.png)
+
+图：onReset 只在相关可复用内容流程出现；同一 Node 之后可以重新附着服务另一实体。
 
 Node 自带的 `coroutineScope` 仅在附着期间可访问。外部作用域无需从 Element 传入；`LaunchedEffect` 留在 Composable 一侧，Node 里调用不了。两个短节点分别展示附着期动画和复用状态清理。
 
@@ -1474,6 +1604,11 @@ private class SelectableNode : Modifier.Node() {
 
 `EntranceOverlayNode` 每次附着都在新作用域中重置并启动动画；解除附着后，作用域由 Node 自动取消。`Animatable.value` 在绘制阶段读取，快照变化会使绘制阶段重新执行。`SelectableNode` 则在进入复用流程时清除与旧数据项绑定的选择状态。
 
+<!-- gracker-diagram: a234-26-node-coroutine -->
+![附着期动画与项目状态分别清理](../../assets/diagrams/ch22/a234-26-node-coroutine.png)
+
+图：生命周期持有动画任务，阶段观察持有更新依赖。
+
 ### 6. Modifier.composed 与 @Composable 工厂的准确边界
 
 `Modifier.composed {}` 可以保存实例专属状态。块中的 `remember` 在组合槽位保持不变时会复用；组合槽位是 Compose 在内部用来标识一次 `@Composable` 调用位置及其状态的记录。`composed` 的成本主要来自这些方面：
@@ -1501,6 +1636,11 @@ fun Modifier.localTint(): Modifier {
 ```
 
 `LocalContentColor` 在 `localTint()` 被调用的位置解析。如果构造出的 Modifier 被传到另一个具有不同 `CompositionLocalProvider` 的子树，它不会自动改用应用位置的值。需要应用位置语义时，应让 Node 实现 `CompositionLocalConsumerModifierNode`。
+
+<!-- gracker-diagram: a234-27-factory-local -->
+![Modifier 工厂调用位置与节点应用位置](../../assets/diagrams/ch22/a234-27-factory-local.png)
+
+图：普通内置 Modifier 工厂可以组合外复用；自定义 Node 也不能阻止父级重组。
 
 ### 7. 在 Node 中读取 CompositionLocal
 
@@ -1556,6 +1696,11 @@ private class LocalPolicyNode :
 
 `observeReads` 的通知是一次性的观察回调。`onObservedReadsChanged()` 必须再次读取，才能继续观察后续变化。`currentValueOf()` 只能在 Node 已附着时调用。
 
+<!-- gracker-diagram: a234-28-local-observation -->
+![阶段外读取必须重建观察](../../assets/diagrams/ch22/a234-28-local-observation.png)
+
+图：读取位置与观察方式都重要；静态 Provider 或结构变化也可能需要组合更新。
+
 ### 8. LayoutModifierNode 的复用与测量缓存
 
 `LayoutModifierNode.measure()` 与 `LayoutModifier.measure()` 遵守相同的单子项测量协议：接收父约束、选择传给被包裹内容的约束、取得 `Placeable`，再返回自身尺寸和放置逻辑。
@@ -1610,9 +1755,19 @@ fun Modifier.horizontalInset(inset: Dp): Modifier {
 
 这段代码用于解释测量协议。业务仅需水平内边距时，应直接使用 `Modifier.padding(horizontal = inset)`；只有内置 Modifier 表达不了这种布局语义时，才值得保留自定义节点。
 
+<!-- gracker-diagram: a234-29-layout-constraints -->
+![水平 inset 显式传播约束并校验像素算术](../../assets/diagrams/ch22/a234-29-layout-constraints.png)
+
+图：乘加溢出直接拒绝；生产还需限定产品尺寸。复用 Node 不承诺缓存上次 MeasureResult。
+
 Node 的持久化可以减少 Node 创建与链结构更新，但“参数不变就复用上次 MeasureResult”这种公开保证，`LayoutModifierNode` 并不提供。是否跳过测量由 `LayoutNode` 的测量状态、父约束、子项状态和读取依赖共同决定——Node 复用与测量缓存是两回事。
 
 `LayoutModifierNode` 已为四种固有尺寸测量方法提供默认实现。固有尺寸查询发生在正式测量前，用于询问组件在给定另一维尺寸时所需的最小或最大宽高；默认实现通过节点的 `measure()` 估算结果。自定义布局若需要不同语义，应覆写对应方法并保持约束一致性；源码没有承诺由 `NodeCoordinator` 为每个 Modifier 单独缓存固有尺寸结果。
+
+<!-- gracker-diagram: a234-30-intrinsics -->
+![Node 复用与测量缓存分开判断](../../assets/diagrams/ch22/a234-30-intrinsics.png)
+
+图：固有尺寸查询与正式测量是不同调用场景，仍须保持约束一致性。
 
 ### 9. PointerInputModifierNode：在 PointerInputChange 上标记消费
 
@@ -1627,6 +1782,11 @@ fun onPointerEvent(
 ```
 
 方法返回 `Unit`。需要消费事件时，对相应的 `PointerInputChange` 调用 `consume()`；Boolean 返回值声明不了消费。
+
+<!-- gracker-diagram: a234-31-pointer-passes -->
+![指针分发与消费有明确协议](../../assets/diagrams/ch22/a234-31-pointer-passes.png)
+
+图：回调返回 Unit；在相应 PointerInputChange 上 consume 才表达消费，消费不自动终止所有分发。
 
 指针事件依次经过 `Initial`、`Main` 和 `Final` 三个分发阶段，节点可按协作需求选择处理阶段。`PointerObserverNode` 只观察 `Initial` 阶段，并把事件交给调用者。
 
@@ -1688,6 +1848,11 @@ Box(
 
 Node 本身拦不住父 Composable 重组。性能收益来自把状态读取放在需要的阶段、复用运行节点并减少 `materialize()` 展开或节点替换；父级是否重组，仍由 Compose Runtime 的状态读取和跳过规则决定。
 
+<!-- gracker-diagram: a234-32-layer-read -->
+![已有 graphicsLayer 节点处理视觉属性](../../assets/diagrams/ch22/a234-32-layer-read.png)
+
+图：把状态读取放在真正需要的阶段，收益由同条件分配与帧证据确认。
+
 ### 11. 迁移步骤
 
 #### 11.1 清点旧实现
@@ -1715,6 +1880,11 @@ Node 本身拦不住父 Composable 重组。性能收益来自把状态读取放
 | 应用位置的 CompositionLocal | `CompositionLocalConsumerModifierNode` |
 
 Element 应保持轻量与不可变。Node 中不要保存 Activity、View 或长生命周期对象，除非拥有明确的释放规则。
+
+<!-- gracker-diagram: a234-33-migration-ownership -->
+![迁移时按所有权分配字段](../../assets/diagrams/ch22/a234-33-migration-ownership.png)
+
+图：先稳定职责与类型，再选默认自动失效；不要为了复用堆叠互斥字段。
 
 #### 11.3 保持 Element 类型稳定
 
@@ -1744,6 +1914,11 @@ Element 应保持轻量与不可变。Node 中不要保存 Activity、View 或�
 - 热点路径中的对象分配和阶段耗时有机会下降。
 
 Macrobenchmark 的目标值应由当前产品基线、设备档位和业务场景确定，脱离项目数据的固定百分比没有意义。若帧时间没有改善，也要检查瓶颈是否位于图片解码、文本布局、GPU、Binder、I/O 或其他部分。
+
+<!-- gracker-diagram: a234-34-migration-evidence -->
+![Node 迁移的收益要落在同条件证据](../../assets/diagrams/ch22/a234-34-migration-evidence.png)
+
+图：Compiler 报告用于解释静态输入与跳过条件，最终性能结论由目标交互数据支持。
 
 #### 12.1 一条实用的源码断言
 

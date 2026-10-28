@@ -143,6 +143,11 @@ consolidated_from:
 
 归因之外，我们还要把事件分类和产品严重度分开：`REASON_CRASH`、`REASON_CRASH_NATIVE` 和 `REASON_ANR` 通常可直接进入内部稳定性事件流；`REASON_LOW_MEMORY` 要结合 `importance` 和场景判断；用户、包更新、权限与多用户状态变化通常作为时间线背景。计算指标前必须跨来源去重，并明确分子、分母和“用户可感知”的定义。
 
+<!-- gracker-diagram: a291-01-source-events-and-process-identities -->
+![先保留来源，再按身份与时间建立候选关系](../../assets/diagrams/ch26/a291-01-source-events-and-process-identities.png)
+
+图：package UID、real UID、defining UID和PID承担不同身份职责；同次故障多来源不能直接相加。
+
 ### API 30+ 的 ApplicationExitInfo
 
 Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)`。结果按时间从新到旧排列：
@@ -205,6 +210,11 @@ PSS/RSS 是系统最近一次采样，进程在采样前死亡时可能为 0。�
 
 `ActivityManager.setProcessStateSummary()` 可保存最多 128 字节的应用状态，系统可能限制高频调用并抛出 `RuntimeException`。这块空间放的是不含个人数据的场景码、实验或配置版本和短状态位；账号、令牌、自由文本，以及恢复界面所需的状态，都要另找去处。更新只在状态变化时进行，实验归属以服务端实验分组记录（assignment）为准。
 
+<!-- gracker-diagram: a291-02-bounded-history-query-and-api37-guard -->
+![退出历史读取：参数、容量与成员版本分别约束](../../assets/diagrams/ch26/a291-02-bounded-history-query-and-api37-guard.png)
+
+图：来源指纹尽力去重，重扫允许重叠与附件补齐；固定条数、PID唯一和跨重启永久保留都非SDK承诺。
+
 ### ANR 与原生崩溃的现场关联
 
 `getTraceInputStream()` 从 API 30 开始存在，常见内容是系统 ANR 跟踪记录；Android 12 / API 31 起，`reason` 为 `REASON_CRASH_NATIVE` 时还可以返回符合 AOSP `tombstone.proto` 的 protobuf——一种二进制结构化数据格式。ANR 文本与 tombstone protobuf 是两种格式，我们解析前先分清拿到的是哪一种：文件扩展名或“流非空”都定不了内容类型。
@@ -229,6 +239,11 @@ API 37 还增加 `ActivityManager.registerAnrWarningListener()`：应用接近 A
 原生崩溃事件有两类独立的原始来源：一类是 Crashpad、Breakpad 或自研 SDK 生成的小型转储（minidump）和事件封装 envelope，另一类是 `REASON_CRASH_NATIVE` 对应的 tombstone。服务端用构建 ID、ABI、操作系统信号、故障地址（fault address）、崩溃线程和符号化后的栈顶帧匹配候选。两边互为补充：SDK 现场缺失时，tombstone 可以补上系统一侧的现场；tombstone 缺失时，SDK 事件照样保留——某个附件缺席，不该连带删掉事故记录。
 
 Play Console、Crashlytics 和自研 APM 在安装来源、采样、去重和用户统计口径上各不相同，`ApplicationExitInfo` 则是系统自己的近期进程记录。同一次崩溃或 ANR 可能同时出现在多个来源里，统一报表必须先归并事件，并保留来源事件 ID 列表（`source_event_ids`）与归并置信度。
+
+<!-- gracker-diagram: a291-03-exit-reason-versus-attachment-type -->
+![退出 reason、ANR 栈与 Native protobuf 不能互相替代](../../assets/diagrams/ch26/a291-03-exit-reason-versus-attachment-type.png)
+
+图：非空trace不能反过来把reason改为ANR；API37 AnrInfo也只在REASON_ANR下可能存在。
 
 ### Android 11 以下的替代路径
 
@@ -273,6 +288,16 @@ Android 5–10 的退出推断，我们要把结论、置信度和原始证据�
 
 调试环境里，`/data/anr/`、系统事件日志、`dumpsys`（导出系统服务状态的诊断命令）和 LMKD 记录都可以补充证据，但普通发布包把它们当稳定的生产接口是行不通的。KOOM 一类 fork-dump 方案只能在进程仍有执行机会时保存 Java 堆现场，并依赖 ART 私有实现；这类记录可以进入 `evidence[]`，但疑似内存压力要升格为系统确认，还差一步。所有 minidump、HPROF、内存映射（maps）、线程栈和日志附件都要分别控制采样、存储、加密、访问和删除。
 
+<!-- gracker-diagram: a291-05-koom-fork-dump-versioned-mechanism -->
+![KOOM 2.2.2：fork dump 的父子职责和私有依赖](../../assets/diagrams/ch26/a291-05-koom-fork-dump-versioned-mechanism.png)
+
+图：按固定commit画出fork后两分支：父进程恢复ART并等待，子进程转储后退出。调用者仍会等待结果，暂停和fork也有成本。
+
+<!-- gracker-diagram: a291-04-legacy-markers-and-evidence-grade -->
+![API21–29：残留启动标记只能生成候选](../../assets/diagrams/ch26/a291-04-legacy-markers-and-evidence-grade.png)
+
+图：SIGKILL不可捕获；未知结束不能自动归LMK或厂商管理，发现时间也不是精确退出时间。
+
 ### 端侧存储与上报设计
 
 退出历史容量有限，应用要在后续活跃进程里及时查询，但查询和附件 I/O 都别进入首帧关键路径。应用可交互后，由后台 executor 读取轻量元数据，再交给受系统调度约束的任务处理 trace 与上传。
@@ -316,6 +341,11 @@ flowchart TD
 
 采样和容量策略没有全项目统一的固定比例：摘要预算按事件率、用户影响和上传成本确定；附件还要按网络、电量、磁盘、用户授权和诊断价值二次决策。崩溃循环时，端侧保留少量代表样本和丢弃计数，服务端按版本、进程和由退出原因与堆栈生成的故障签名限流。
 
+<!-- gracker-diagram: a291-06-metadata-and-attachment-independent-spools -->
+![摘要先入队，后补附件按来源身份独立更新](../../assets/diagrams/ch26/a291-06-metadata-and-attachment-independent-spools.png)
+
+图：摘要持久化、附件生成、上传与跨来源归并分别记状态；已见过元数据不代表之后无需检查新附件。
+
 ### 常见误判
 
 多进程应用容易出现归因错位。`getHistoricalProcessExitReasons(null, 0, maxNum)` 会匹配调用者 UID 下的包，外部服务进程的记录也可能被卷进来；主进程读到推送进程或外部服务进程的 `REASON_LOW_MEMORY`，直接记成主进程启动失败就归错位了。查询包名、`processName`、package UID、real UID 和 defining UID 都要进入明细。
@@ -343,11 +373,21 @@ Android 框架会把退出历史持久化，并在系统服务就绪（system re
 
 `ApplicationExitInfo` 在线 API 参考已经把 `REASON_MEMORY_LIMITER` 与 `REASON_ANOMALY` 标到 Android 17 minor release 37.2，但这两个常量不在 `android-17.0.0_r1` 源码中。覆盖 `android-17.0.0_r1` / API 37 基线的数据协议不要把它们设为必填枚举；若设备实际返回这些 reason，应保存原始整数、API 级别和 `SDK_INT_FULL`，再按后续版本能力扩展解析。
 
+<!-- gracker-diagram: a291-07-reason-version-and-system-facts -->
+![退出 reason 按版本解释，不由推断改写](../../assets/diagrams/ch26/a291-07-reason-version-and-system-facts.png)
+
+图：SIGKILL可由多种原因造成；LOW_MEMORY不是泄漏证明，FREEZER也不是某厂商功能的名字。
+
 ### ApplicationExitInfo 与 GWP-ASan（抽样检测堆内存越界与释放后使用） / MTE（硬件内存标记扩展） 报告拼接
 
 GWP-ASan 抽样检测堆内存越界与释放后使用，MTE 是硬件内存标记扩展，HWASan（基于地址标记的原生内存错误检测器） 基于地址标记检测原生内存错误；它们发现内存安全错误时，进程可能以原生崩溃或 `abort` 结束。这时原生崩溃事件封装应保存构建是否启用相关工具、ABI、操作系统信号、故障地址、构建 ID 和工具提供的结构化信息，后续再用 `REASON_CRASH_NATIVE` 与 tombstone protobuf 补充系统现场。
 
 关联的时间容差要按两类采集来源的时间精度、排队延迟和设备 wall clock 质量确定。`processName`、ABI、操作系统信号、故障地址、原生栈顶帧与构建 ID 一致时，可以提高匹配置信度。工具报告用于解释内存错误类型，tombstone 用于补充线程、寄存器、内存映射和系统现场信息；原始来源仍需保留。GWP-ASan/MTE 原理见 15.10、17.9 和 20.3。
+
+<!-- gracker-diagram: a291-08-native-safety-tool-and-tombstone-association -->
+![Native 内存安全工具与系统转储各保留原始来源](../../assets/diagrams/ch26/a291-08-native-safety-tool-and-tombstone-association.png)
+
+图：Build ID用于精确符号匹配；只按PID或时间相近不能把两份来源强行合并。
 
 ### 低版本可观测性能力对照表
 
@@ -382,6 +422,11 @@ GWP-ASan 抽样检测堆内存越界与释放后使用，MTE 是硬件内存标�
 
 一次问题可以关联多条路径。例如，ANR 发生时系统可能生成触发式 system trace；进程随后被杀，下次启动又能读到 `ApplicationExitInfo`。两者要作为独立来源归档，再通过时间、进程和事件语义建立关联——时间相近，不构成覆盖其中一份的理由。
 
+<!-- gracker-diagram: a291-09-passive-active-trigger-evidence -->
+![三条路径分别保存退出、请求与系统触发证据](../../assets/diagrams/ch26/a291-09-passive-active-trigger-evidence.png)
+
+图：API存在不保证资源、配额、设置、注册和投递都满足；各路径缺失时保留独立错误或未知。
+
 ### 版本能力表
 
 | 系统版本 | 可用的主要能力 | 仍需保留的降级手段 |
@@ -397,6 +442,11 @@ GWP-ASan 抽样检测堆内存越界与释放后使用，MTE 是硬件内存标�
 API 36.1 是 Android 16 的 minor SDK release（次版本 SDK 发布），同一大版本内也可以新增 API；它和 `SdkExtensions.getExtensionVersion()` 表示的 Mainline SDK Extension（可由模块更新提供的扩展版本）是两套版本机制。
 
 调用 36.1 新 API 前，应检查 `Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`；`SDK_INT` 只记录大版本，靠 `SDK_INT >= 36` 分不出 36.0 和 36.1。Android 17 的 `SDK_INT_FULL` 高于该值，同样满足条件。
+
+<!-- gracker-diagram: a291-10-full-sdk-minor-version-and-safe-fallback -->
+![诊断 API 版本分支按成员检查，不只看类存在](../../assets/diagrams/ch26/a291-10-full-sdk-minor-version-and-safe-fallback.png)
+
+图：36.1是minor SDK release，不能拿SdkExtensions模块版本代替；targetSdk也不是运行时能力。
 
 ### Android 10–14：沿用前文退出证据
 
@@ -432,6 +482,11 @@ Android 15 / API 35 引入公开的 `ProfilingManager`，实现位于 Mainline P
 
 主动请求时，应用要把请求类型和自有 request ID 一起保存。系统触发时，应根据 trigger type、tag 和收到的文件类型归档，数据模型中不要虚构 profiling type 字段。
 
+<!-- gracker-diagram: a291-11-profiling-request-result-and-member-guard -->
+![主动请求四类型，共用受限结果交付契约](../../assets/diagrams/ch26/a291-11-profiling-request-result-and-member-guard.png)
+
+图：系统和应用预算都生效；请求成功发出、系统生成文件、客户端收到与服务端ACK分开记录。
+
 ### Android 16-17：系统事件触发 profiling
 
 trigger 注册表达的是“应用希望接收某类系统事件对应的采集结果”。系统并不会一直运行后台 trace，只在系统设定的时间范围内随机启动采样；事件发生时，只有后台 trace 正在运行、应用已注册且限流允许，系统才可能保存结果。后台 trace 用的是 ring buffer（环形缓冲区），空间满后覆盖较早事件，所以附件通常保留触发前最近一段活动。
@@ -466,6 +521,11 @@ trigger 注册表达的是“应用希望接收某类系统事件对应的采集
 | `TRIGGER_TYPE_COLD_START` | `ApplicationStartInfo`（系统启动记录）判断为 cold start | 新启动的 system trace 与 stack sampling profile |
 | `TRIGGER_TYPE_APP_COMPAT` | 系统发现未来版本将不再支持的异常行为 | 产物随兼容性问题变化，tag 提供附加信息 |
 
+<!-- gracker-diagram: a291-12-trigger-specific-artifacts-and-requirements -->
+![Trigger 的产物决定它需要什么采集机制](../../assets/diagrams/ch26/a291-12-trigger-specific-artifacts-and-requirements.png)
+
+图：CPU-kill产物在features与API/reference仍有差异记录，接入端不按名称写死解析器。
+
 #### MemoryLimiter 的退出与触发证据
 
 Android 17 在部分设备上实施 MemoryLimiter，且不受应用 `targetSdkVersion` 限制。被其终止的进程表现为 `REASON_OTHER`，`getDescription()` 包含精确字符串 `"MemoryLimiter:AnonSwap"`；命中限制时，`TRIGGER_TYPE_ANOMALY` 还可能提供 Java heap dump，但仍受设备覆盖、后台采样和限流约束。
@@ -474,6 +534,11 @@ Android 17 在部分设备上实施 MemoryLimiter，且不受应用 `targetSdkVe
 
 `TRIGGER_TYPE_OOM` 依赖默认未捕获异常处理路径。`UncaughtExceptionHandler` 是线程异常无人处理时的末端回调；自定义 handler 如果不继续调用原默认 handler，系统就用不上这个 trigger。应用仍可在合适时机主动请求 Java heap dump，但要评估进程当时是否还有足够资源完成请求。
 
+<!-- gracker-diagram: a291-13-memory-limiter-anomaly-versus-java-oom -->
+![MemoryLimiter 终止与 Java OOM 不是同一个事件](../../assets/diagrams/ch26/a291-13-memory-limiter-anomaly-versus-java-oom.png)
+
+图：匹配完整文档标记而非所有OTHER；采集、处置与listener投递不是同一同步事务。
+
 `TRIGGER_TYPE_ANOMALY` 的产物没有固定格式。Android 17 文档列出的场景包括：命中系统内存限制时返回 heap dump，过量 Binder 调用时返回 stack sample；回调发生在系统实施相应处置之前。
 
 多个 package 共享同一 UID、并同时注册某些异常 trigger 时，系统可能不提供附件。这时结果处理器先看 trigger type、tag 和文件，再选择解析器。
@@ -481,6 +546,11 @@ Android 17 在部分设备上实施 MemoryLimiter，且不受应用 `targetSdkVe
 `TRIGGER_TYPE_COLD_START` 会尽早启动一份新的 system trace 和 stack sampling profile，持续到应用调用 `reportFullyDrawn()`；未调用时，公开 API 文档给出的默认停止时间为 5 秒。它用的 discard buffer（满后丢弃新事件的缓冲区）靠丢弃新事件保住启动初期的内容。采集启动仍可能有延迟，因此产物不保证覆盖进程创建后的每个事件。
 
 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 仍有官方文档差异：`android-17.0.0_r1` 源码注释和 2026-08-03 更新的 API reference 写的是后台 system trace 快照，Android 17 features 页面写的是 call-stack sample。接入端应保存系统返回的原始产物及文件类型，解析器不要按 trigger 名写死。本文以版本化源码和 API reference 作为接口语义依据，并保留差异记录，等待官方文档统一。
+
+<!-- gracker-diagram: a291-14-cold-start-discard-buffer-and-fully-drawn -->
+![冷启动触发新建采集，discard buffer 保留最早事件](../../assets/diagrams/ch26/a291-14-cold-start-discard-buffer-and-fully-drawn.png)
+
+图：冷启动触发可延迟开始；fully-drawn停止采集，未报告时默认5秒。discard满后丢新事件，不能保证捕获进程起点。
 
 ### 系统事实与应用推断的归档
 
@@ -517,6 +587,11 @@ Android 17 在部分设备上实施 MemoryLimiter，且不受应用 `targetSdkVe
 | `caseId`、`sessionId` | 应用侧关联字段 |
 
 主动请求的去重指纹应包含 request ID、requested profiling type、tag 和文件 hash。系统 trigger 结果可使用 trigger type、tag、结果时间和文件 hash。若收到错误回调，应保存 error code；若应用通过其他来源确认事件发生，却没有收到 trigger callback，应另记“未收到 profiling 结果”。这两种状态要分开记录，别混成一个通用失败码，也别靠立即重复请求掩盖系统限流。
+
+<!-- gracker-diagram: a291-15-request-identity-artifact-hash-and-redelivery -->
+![请求身份、附件内容和每次接收时间分开存](../../assets/diagrams/ch26/a291-15-request-identity-artifact-hash-and-redelivery.png)
+
+图：不能把每次接收时间加入稳定去重键；结果重投递是平台尝试，缺少身份时保留冲突与重复计数。
 
 #### 常见事件的关联规则
 
@@ -555,6 +630,11 @@ profiling 文件可能包含比普通日志更敏感的内容：
 采集设计至少要包含用户授权或适用的合规依据、数据最小化、传输与静态加密、访问审计、保留期限、删除机制和远程关闭能力。tag、caseId 和文件名中不要放用户输入、账号、URL、token 或其他敏感值。
 
 采集预算应来自设备实验和线上观测。system trace 按时长与缓冲大小评估，stack sampling 按采样频率评估，heap dump 按停顿、峰值内存和文件大小评估。配置应区分诊断案例、版本、设备和采集类型；系统 rate limiter 之外，应用仍需自己的并发控制与预算。命中限流或跳过采集时，上报轻量状态和原因，不要立即循环重试。
+
+<!-- gracker-diagram: a291-16-versioned-diagnostic-case-and-budget -->
+![版本化证据包按问题选择产物与独立预算](../../assets/diagrams/ch26/a291-16-versioned-diagnostic-case-and-budget.png)
+
+图：高版本能力补充可验证证据；缺结果时说明边界，命中限流不立即循环重试。
 
 ### 与 26.3 证据包模板的关系
 

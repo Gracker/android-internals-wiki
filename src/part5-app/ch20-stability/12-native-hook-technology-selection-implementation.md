@@ -52,6 +52,11 @@ Native Hook 的常见方案分别改写三个不同对象，我们先把它们�
 
 PLT/GOT Hook 按调用方修改重定位槽，Inline Hook 按目标指令地址修改执行流。同样是拦 `malloc`，两者覆盖面也不同：修改 `libfoo.so` 中 `malloc` 的导入槽，只影响 `libfoo.so` 经该槽发出的调用；修改 `libc.so` 中 `malloc` 的入口，可能影响进程内更多调用者，也会放大递归和并发风险。
 
+<!-- gracker-diagram: a218-01-modified-object -->
+![三种 Hook 改写不同对象，命中范围随调用路径变化](../../assets/diagrams/ch20/a218-01-modified-object.png)
+
+图：修改libfoo的malloc导入槽只影响经过该槽的调用；目标入口改写的影响范围与风险更大。
+
 Trap Hook 接近用户态软件断点：用断点指令触发 `SIGTRAP`，再由信号处理函数改写执行现场。它与 debuggerd 之间没有扩展接口；调试器用 `ptrace` 控制目标线程，走的是另一套机制。框架要管理或正确串接 `SIGTRAP` 的 signal disposition（信号处置），识别自有断点，并通过 `ucontext_t` 读取或修改信号发生时的寄存器和 PC（Program Counter，程序计数器）。
 
 ## 2. 选型从“能否命中”开始
@@ -112,6 +117,11 @@ if (r_type == R_GENERIC_JUMP_SLOT) {
 
 主干调用关系可以概括为：`dlopen(name)` → `do_dlopen()` → 库查找与装载 → `soinfo::prelink_image()` → `soinfo::link_image()` → `relocate()` → `process_relocation_impl<General>()` 的 `R_GENERIC_JUMP_SLOT` 分支。中间那些内部函数属于源码实现细节，应用的兼容性假设要建立在这条链路对外的可见行为上。
 
+<!-- gracker-diagram: a218-02-eager-binding -->
+![Android 在装载期写入动态重定位结果](../../assets/diagrams/ch20/a218-02-eager-binding.png)
+
+图：Android不支持RTLD_LAZY式首次调用解析；PLT Hook改的是已经完成重定位的槽。
+
 这段流程带来三个结论：
 
 1. 传入 `RTLD_LAZY` 不会启用桌面 Linux 常见的 lazy binding（首次调用时再解析地址）；Android 仍在装载期间完成相关重定位。
@@ -155,6 +165,11 @@ bool soinfo::link_image(...) {
 
 ByteHook 的当前实现会记录 program header（程序头） 推导出的原页权限，对不可写槽加 `PROT_WRITE`，先回调原函数地址，再用原子写替换 GOT。它的权限恢复语句在源码里目前是被注释掉的，所以“写完是否恢复原权限”要作为框架策略显式记录，别指望库自动恢复。可靠的 PLT/GOT Hook 涵盖 ELF 解析、权限处理、发布顺序和错误恢复，扫一遍 `/proc/self/maps` 再写一个指针远远不够。
 
+<!-- gracker-diagram: a218-03-relro-publication -->
+![GOT 改写要明确权限策略与原函数发布顺序](../../assets/diagrams/ch20/a218-03-relro-publication.png)
+
+图：固定ByteHook提交注释掉恢复权限语句；program-header推导不能代替所有运行时映射变化。
+
 ### 3.3 `DT_TEXTREL` 与 Inline Hook 受不同机制约束
 
 linker 在 LP64（64 位进程）中遇到 `DT_TEXTREL` 或 `DF_TEXTREL` 时会报错并拒绝装载。`TEXTREL` 表示 ELF 需要在装载重定位阶段修改代码段；对应检查位于 `soinfo::prelink_image()`：
@@ -171,6 +186,11 @@ case DT_TEXTREL:
 ```
 
 64 位 `.so` 一旦声明 `DT_TEXTREL`，`dlopen()` 就会失败。这项检查针对 ELF 自己声明的装载期代码重定位。
+
+<!-- gracker-diagram: a218-04-independent-constraints -->
+![TEXTREL、RELRO 与可见范围约束处于不同层](../../assets/diagrams/ch20/a218-04-independent-constraints.png)
+
+图：运行期Inline patch与ELF声明的装载期TEXTREL走不同路径；可见私有符号不等于稳定NDK接口。
 
 Inline Hook 发生在库装载完成后，由进程自己调 `mprotect()` 改内存里的指令，和装载检查走的是两条路径；`DT_TEXTREL` 只约束装载期的代码重定位，Inline Hook 的成败和安全性要单独评估。
 
@@ -190,6 +210,11 @@ Inline Hook 发生在库装载完成后，由进程自己调 `mprotect()` 改内
 - 不把 `4096`、`PAGE_SIZE` 或 4 KB 掩码写死。
 
 ShadowHook 和 ByteHook 的当前源码都通过 `getpagesize()` 初始化页大小，再据此计算保护区间。自研实现同样取 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 的运行时结果，编译期常量替代不了它。
+
+<!-- gracker-diagram: a218-05-page-size-vs-isa -->
+![系统页、指令宽度与 ADRP 粒度不能互相替代](../../assets/diagrams/ch20/a218-05-page-size-vs-isa.png)
+
+图：系统使用16KB页时，ADRP和直接B的编码语义保持不变；需要改变的是映射与保护区间计算。
 
 ## 4. PLT/GOT Hook：改写调用方的重定位结果
 
@@ -218,6 +243,11 @@ runtime_slot = load_bias + relocation.r_offset
 
 上面的公式只完成这一步换算。写入前，我们还要核对 relocation 对应的符号、当前槽值、目标映射和 ABI，确认目标槽对应的是函数入口，而不是同名数据符号或已被其他框架改写的槽。
 
+<!-- gracker-diagram: a218-06-slot-resolution -->
+![从调用方动态表逐步定位目标重定位槽](../../assets/diagrams/ch20/a218-06-slot-resolution.png)
+
+图：JUMP_SLOT、GLOB_DAT、ABS64按实际表项区分；同名字符串或附近地址不能直接用作改写证据。
+
 ### 4.2 安装顺序
 
 一个可审计的安装过程通常包含这些步骤：
@@ -231,6 +261,11 @@ runtime_slot = load_bias + relocation.r_offset
 7. 明确决定是否恢复原权限；若保留写权限，记录原因、影响范围和框架版本。
 
 orig 指代理函数继续调用的原目标地址，它必须先于新槽值发布；如果槽已替换而 `orig` 对其他线程还不可见，proxy 就可能在这个窗口跳到空地址。发布顺序要用与并发模型匹配的原子操作和 memory order（内存序），普通 C 赋值给不了多线程可见性保证。
+
+<!-- gracker-diagram: a218-07-publish-order -->
+![先使 orig 可用，再让调用方看到 proxy](../../assets/diagrams/ch20/a218-07-publish-order.png)
+
+图：入口与orig的发布顺序有依赖，不能用两个普通C赋值假设其他线程必然按顺序观察。
 
 ### 4.3 覆盖盲区
 
@@ -259,6 +294,11 @@ ByteHook 会在动态装载后刷新 ELF 管理器；ShadowHook 也能为尚未�
 - 统一使用 proxy 调度入口，避免多个 SDK 互相覆盖槽；
 - unhook 前确认槽仍指向本框架入口，发现第三方改写时拒绝盲目恢复。
 
+<!-- gracker-diagram: a218-08-dlopen-observation -->
+![安装发生的时点决定能否观察构造函数调用](../../assets/diagrams/ch20/a218-08-dlopen-observation.png)
+
+图：外层dlopen返回后安装无法补采构造函数中的调用；ShadowHook固定手册提供构造前pending任务与回调。
+
 ## 5. Inline Hook：指令搬迁比跳转更难
 
 ### 5.1 基本过程
@@ -284,6 +324,11 @@ AArch64 Inline Hook 一般需要完成：
 
 其中步骤 4 的 PC-relative 重写难度最高。以 `ADRP` 指令为例：
 
+<!-- gracker-diagram: a218-09-trampoline-relocation -->
+![先搬迁并重写原指令，再构建可返回的 trampoline](../../assets/diagrams/ch20/a218-09-trampoline-relocation.png)
+
+图：复制原字节不能自动保留PC-relative语义；发布入口之前，trampoline和返回路径都必须已准备。
+
 ```text
 原始指令：   ADRP   X0, page_of(sym)        ; page 是 PC-relative
              ADD    X0, X0, #lo12_of(sym)
@@ -298,6 +343,11 @@ AArch64 Inline Hook 一般需要完成：
 
 ShadowHook 的 arm64 重写器显式识别 `B`、`BL`、`B.cond`、`ADR`、`ADRP`、literal load、`CBZ/CBNZ`、`TBZ/TBNZ` 等类型，每类指令都有独立的长度计算和 rewrite 分支；“复制几条指令后跳回去”这样的做法，离可靠实现还很远。
 
+<!-- gracker-diagram: a218-10-adrp-target -->
+![ADRP 搬迁的目标地址保持不变，编码依新 PC 改变](../../assets/diagrams/ch20/a218-10-adrp-target.png)
+
+图：算例只展示地址计算，无真实设备故障；ADRP目标=原PC对齐4KB后加signed immediate×4096。
+
 ### 5.2 branch island 与并发改写
 
 AArch64 的直接 `B` 使用 26 位有符号立即数并按 4 字节缩放，目标范围约为当前 PC 的前后 128 MiB。若能在范围内分配 branch island，原入口只需改写一条对齐的 4 字节指令；分配不到时，通常要写入多条指令组成的绝对跳转序列。
@@ -305,6 +355,11 @@ AArch64 的直接 `B` 使用 26 位有符号立即数并按 4 字节缩放，目
 单条对齐的 32 位写入比多指令覆盖容易控制，但它只保证了“数据写入不撕裂”；要让其他核心立即按新指令执行，发布协议还要包含线程协调和指令缓存同步。多指令 patch 的窗口更大，其他核心可能取到新旧混合的指令序列，一次 `memcpy()` 提供不了所需的并发保证。
 
 在可证明安全的前提下，近地址 branch island 还能把原入口的发布动作缩小到一条指令；节省 trampoline 空间只是附带收益。
+
+<!-- gracker-diagram: a218-11-patch-concurrency -->
+![入口写入原子性与跨核心取指同步是两个条件](../../assets/diagrams/ch20/a218-11-patch-concurrency.png)
+
+图：一次memcpy不能证明并发patch安全；__builtin___clear_cache也不能替代完整的安装与回收协议。
 
 ### 5.3 PAC、BTI 与 CFI
 
@@ -315,6 +370,11 @@ arm64 代码可能同时使用几类控制流保护：
 - **CFI（Control-Flow Integrity，控制流完整性）**：函数指针等间接调用到达签名不兼容的代理地址时，可能触发类型检查并终止进程。Hook 私有 CFI helper 以绕过检查，又会新增一组没有兼容性承诺的依赖。
 
 Hook 框架要把这些能力纳入测试组合，CPU 架构只能当第一层筛选；至少覆盖启用 `-mbranch-protection`、LTO/CFI、不同链接可见性和不同系统库 Build ID 的产物。
+
+<!-- gracker-diagram: a218-12-control-flow-protection -->
+![PAC、BTI 与 CFI 分别检查不同控制流条件](../../assets/diagrams/ch20/a218-12-control-flow-protection.png)
+
+图：检查GNU property、编译选项、具体入口与Build ID；不能从同属arm64推出Hook兼容。
 
 ### 5.4 代码页权限
 
@@ -351,6 +411,11 @@ debuggerd_register_handlers(&action);
 应用消费自有 `SIGTRAP` 时未必生成 tombstone，结果取决于 signal chain（信号处理函数调用顺序） 的串接顺序、`si_code`、调试器状态，以及事件是否继续传给 debuggerd。在 ART 进程中，sigchain（ART 的信号串接库）还可能把平台 special handler（优先运行的特殊处理函数） 和用户 handler 组合起来。别把一次 `sigaction()` 调用当作拿到了 `SIGTRAP` 的独占控制权。
 
 这条链路给我们两条硬约束：
+
+<!-- gracker-diagram: a218-13-trap-disposition -->
+![Trap 只消费可证明属于自身的事件，其余保留信号语义](../../assets/diagrams/ch20/a218-13-trap-disposition.png)
+
+图：固定sigchain存在SA_RESETHAND支持限制；不得把默认或忽略处置强转成可调用函数。
 
 1. debuggerd 的接口目标是生成崩溃转储，Trap Hook 想借它的私有 handler 协助恢复，这条路走不通。
 2. 自定义 handler 只能消费能够证明属于本框架的事件。硬件断点、调试器事件和其他组件的断点必须继续按原语义处理。
@@ -395,6 +460,11 @@ ssize_t proxy_read(int fd, void* buffer, size_t count) {
 
 `thread_local` 标记只能约束当前线程的常规递归，记录函数的异步信号安全要另行保证。生产代码里我们用 RAII（让对象析构时自动执行清理） 或等价的 scope guard（退出当前作用域时自动清理） 兜住每条返回路径，清理线程局部状态，并逐项确认代理声明与目标导出声明一致。
 
+<!-- gracker-diagram: a218-14-proxy-errno -->
+![代理保存原调用结果和 errno，再做最小记录](../../assets/diagrams/ch20/a218-14-proxy-errno.png)
+
+图：代码骨架只演示正常路径；异常、信号重入、orig同步初始化与ABI仍需完整实现和验证。
+
 ## 8. 生命周期设计
 
 Hook 装上去只是开始。这一节把生命周期拆成三件事：状态怎么记、怎么安全停用、崩溃后靠什么还原现场。
@@ -412,11 +482,21 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 
 状态机让重复初始化、动态装载、并发关闭和失败重试都有明确结果。`ACTIVE` 必须意味着目标集合、原地址和 proxy 都已发布；`FAILED` 要保留错误阶段与证据，一个布尔值装不下。
 
+<!-- gracker-diagram: a218-15-hook-state-machine -->
+![状态显式表达解析、安装失败与安全停用](../../assets/diagrams/ch20/a218-15-hook-state-machine.png)
+
+图：重复通知、动态装载和关闭都需有明确状态；ACTIVE不是任意一个槽写入成功就成立。
+
 ### 8.2 逻辑停用与物理卸载
 
 恢复 GOT 指针之后，旧 proxy 可能仍有人在执行；恢复函数入口之后，线程也可能仍走在 proxy、原函数 trampoline 或被覆盖区间里，trampoline 要等这些调用都退出才能释放。
 
 风险较低的关闭方式是保留稳定入口，只用原子开关让 proxy 直接调用原函数。若必须物理 unhook，我们就配上活动调用计数、grace period（等旧调用退出的宽限期）或暂停线程的协议，并确认目标 ELF 尚未卸载、槽或指令仍属于本框架。
+
+<!-- gracker-diagram: a218-16-retire-trampoline -->
+![物理卸载先关闭新入口，再等待旧执行退出](../../assets/diagrams/ch20/a218-16-retire-trampoline.png)
+
+图：恢复GOT或原入口后仍可能有旧线程执行proxy/trampoline；瞬时活动数为零不证明入口已关闭。
 
 ### 8.3 记录可复现证据
 
@@ -458,6 +538,11 @@ FD 即 file descriptor（文件描述符）。这类方案适合辅助定位 FD 
 
 自行 Hook linker 私有 `soinfo` 字段会把回调机制绑定到内部结构。ShadowHook 手册也说明，相关偏移需要按 Android 版本扫描和适配；采用这条路径时，适配表、失败停用和回滚策略都要随框架发布。
 
+<!-- gracker-diagram: a218-17-module-generation -->
+![同路径、Build ID 和地址也可能属于不同装载代次](../../assets/diagrams/ch20/a218-17-module-generation.png)
+
+图：generation是框架自己的生命周期身份；Build ID识别二进制内容，不能独自证明实例仍存活。
+
 ### 9.5 API level 与二进制身份校验
 
 对照 `android-16.0.0_r1` 与 `android-17.0.0_r1` 可以确认：两者都不支持 `RTLD_LAZY` 的延迟解析，debuggerd 都会设置 `SA_EXPOSE_TAGBITS`，也都包含 permissive MTE（记录 MTE 故障后允许继续执行的宽松模式） 和 MTE globals 相关路径。所以这些机制区分不了 Android 16 与 17，更当不成某个 Hook 可安装的充分条件。
@@ -488,6 +573,11 @@ API level 只适合作为第一层筛选。安装前还要检查：
 | 卸载后跳到野地址 | ELF 生命周期、活动 proxy、trampoline 所有权 | `dlclose` 后仍保留槽或目标地址 |
 | 与崩溃 SDK 冲突 | `sigaction` 注册顺序和 handler 串接 | 吞信号、错误恢复默认 handler、信号内使用非安全 API |
 | Android 17 某些设备才失败 | Build ID、BTI/CFI、16 KB、厂商 ABI | 用 API level 代替了二进制身份校验 |
+
+<!-- gracker-diagram: a218-18-failure-evidence -->
+![按失败阶段收集证据，避免仅记录 Hook 成功布尔值](../../assets/diagrams/ch20/a218-18-failure-evidence.png)
+
+图：事件同时保存Build ID、相对偏移、框架版本、权限和原始槽/指令；地址只在具体进程生命周期内解释。
 
 ## 11. Android 17 上线检查表
 

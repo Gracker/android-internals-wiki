@@ -94,6 +94,11 @@ consolidated_from:
 
 `android:largeHeap`、多进程和 64 位迁移各自针对不同的限制：`largeHeap` 抬高应用进程的 ART 堆增长上限；多进程让组件用上独立的地址空间和运行时，同时重复支付进程级内存成本；64 位迁移扩大可用虚拟地址范围，指针和部分原生数据结构却可能变大。这三种手段都不会自动降低 PSS（共享页按参与进程数分摊后的物理内存统计），泄漏也不会因此消失。
 
+<!-- gracker-diagram: a257-01-limit-types -->
+![先区分限制，再选择架构手段](../../assets/diagrams/ch23/a257-01-limit-types.png)
+
+图：largeHeap、拆进程和 64 位改变不同的约束；它们都不会自动消除泄漏或降低应用总物理占用。
+
 选择方案之前，我们先按失败类型定位。Java 堆 OOM（内存不足异常） 可参阅 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)；进程被低内存终止，可参阅 [4.3 系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)，lmkd 是 Android 根据系统内存压力终止低优先级进程的守护进程。`pthread_create`、`mmap` 或动态链接器报错时，要检查线程数、映射布局、ABI 及资源限制——ABI 规定指令集、调用约定和二进制布局。WebView、图形内存或原生内存在增长，则要定位实际分配者。
 
 还有一类限制容易被忽略：Android 17 在部分设备上启用了按设备总 RAM 制定的应用内存限制，用来约束极端泄漏和异常占用。它对所有运行在 Android 17 上的应用生效，与 `targetSdkVersion` 无关；某台设备有没有启用、当前限制是多少，都要现场查询，`largeHeap` 和拆进程都绕不开它。怎么识别和归因这类退出，见“Android 17 应用内存限制”一节。
@@ -149,6 +154,11 @@ fun readHeapPolicyInputs(context: Context): HeapPolicyInputs {
 
 评估 `largeHeap` 时，我们在同一设备、场景和输入下比较 Java 堆存活量、分配速率、GC、PSS、RSS（进程当前映射到物理内存的全部页面），以及 Android 17 记录的退出原因。OOM 不再出现，只说明这轮测试没有在原来的 Java 堆上限处失败，系统内存压力可能还在上升。
 
+<!-- gracker-diagram: a257-02-largeheap-bind -->
+![largeHeap 在进程绑定阶段的分支](../../assets/diagrams/ch23/a257-02-largeheap-bind.png)
+
+图：largeHeap 改变 ART Java 堆增长策略；原生堆、图形缓冲和线程栈仍需独立预算。
+
 ## 多进程内存隔离与共享
 
 Android 默认让同一应用的组件共用一个 Linux 进程和一个主线程。进程是拥有独立虚拟地址空间的执行容器；组件也可以在清单中用 `android:process` 指定其他进程。跨进程通信（IPC）常通过 Binder 完成：Binder 把参数序列化到 `Parcel`，再把事务送到目标进程。远程调用进入服务进程后，由系统维护的 Binder 线程池执行，所以服务端方法要能安全处理多个并发调用。进程模型及生命周期见 [1.1 Android 分层架构、进程模型与线程协作](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md)。
@@ -156,6 +166,11 @@ Android 默认让同一应用的组件共用一个 Linux 进程和一个主线�
 多进程带来的是地址空间、组件生命周期和崩溃影响范围的隔离。把图片编辑、插件运行时或任务范围清楚的批处理服务放入独立进程后，系统回收该进程时会连同 Java 堆、原生堆、线程栈、JIT 缓存和文件映射一起释放。不过，进程的寿命由 Android 根据活跃组件、进程重要性和系统资源决定，把主动终止子进程当作常规的资源释放手段是行不通的。任务完成时，我们应停止 `Service`、解除绑定并保存结果，让组件状态如实反映还有没有工作在做。
 
 拆成多个进程，应用总内存并不会自动变少。每个进程都有独立的 ART 运行时、类加载器（`ClassLoader`）、线程、Binder 线程池、原生内存分配器状态和业务缓存。`.so`、`.dex` 与 Android 框架的只读代码页可以共享；被进程修改过的脏页、Java 对象、线程栈和多数原生分配都是各进程私有的。多进程的账要靠 PSS 来算：共享页按参与进程数分摊，私有页全额计入当前进程。RSS 计算较快，但每个进程都会完整计算共享页，多个进程的 RSS 直接相加，得不出应用的物理内存总量。
+
+<!-- gracker-diagram: a257-03-multiprocess-pages -->
+![多进程的私有成本与共享页](../../assets/diagrams/ch23/a257-03-multiprocess-pages.png)
+
+图：私有内存分别付费，共享页按 PSS 分摊。多个进程 RSS 直接相加会重复计算共享页。
 
 适合拆进程的模块通常有这些特征：
 
@@ -170,7 +185,17 @@ Android 默认让同一应用的组件共用一个 Linux 进程和一个主线�
 
 大数据可以改用句柄传递：`ContentProvider`、`ParcelFileDescriptor`、文件或 `SharedMemory` 共享内存接口都是现成通道，同时要规定关闭时机、访问权限和并发读写协议。句柄会减少 `Parcel` 内的数据量，但数据本身仍有内存和 I/O 成本。
 
+<!-- gracker-diagram: a257-04-ipc-task-boundary -->
+![任务进程以小消息和资源句柄协作](../../assets/diagrams/ch23/a257-04-ipc-task-boundary.png)
+
+图：大数据通过文件或共享内存通道传递，Binder 保留小消息；组件停止后，进程回收时机仍由系统决定。
+
 WebView 要单独统计。从 Android 8.0（API 26）起，WebView 可在多进程模式下使用与应用进程隔离的沙箱渲染进程。同一应用进程中的多个 WebView 可能共享渲染进程，该渲染进程不会与其他应用进程共享。把承载 WebView 的 `Activity` 放入应用自定义进程，只会再增加一个应用进程，合并或替代不了 WebView 渲染进程。`WebView.getWebViewRenderProcess()` 从 API 29 起可返回关联渲染进程的句柄；测量时我们要把主进程、WebView 宿主进程、渲染进程和 GPU 使用量分开记。
+
+<!-- gracker-diagram: a257-05-webview-processes -->
+![WebView 宿主与沙箱渲染进程](../../assets/diagrams/ch23/a257-05-webview-processes.png)
+
+图：自定义宿主进程不会替代 WebView 沙箱渲染进程；测量须分别覆盖宿主、渲染与图形成本。
 
 ## 64 位迁移与内存空间扩展
 
@@ -179,6 +204,11 @@ WebView 要单独统计。从 Android 8.0（API 26）起，WebView 可在多进�
 Google Play 的 64 位要求适用于包含原生代码的应用。若继续分发某个 32 位 ABI，应为对应架构提供可工作的 64 位版本，例如 `armeabi-v7a` 对应 `arm64-v8a`、`x86` 对应 `x86_64`；在设备兼容性与分发策略允许时，也可以只提供 64 位 ABI。完全由 Java / Kotlin 编写、依赖中也没有原生库的应用，无需为了在 64 位设备上运行而添加原生库。
 
 线程栈、`.so`、`.dex` / `.oat`、WebView、图形资源和原生缓冲区都会占用虚拟地址。32 位进程即使还有可用物理内存，也可能因为虚拟地址耗尽或找不到足够大的连续区间，导致 `mmap`、动态链接器或 `pthread_create` 失败。64 位进程拿到的是大得多的地址范围，但设备的物理 RAM 和系统施加的应用内存限制都原样不动。
+
+<!-- gracker-diagram: a257-06-abi-address-space -->
+![64 位扩展地址空间，不扩充 RAM](../../assets/diagrams/ch23/a257-06-abi-address-space.png)
+
+图：64 位可以缓解地址范围和碎片问题；迁移后仍需验证指针宽度、ABI 依赖和实际物理内存成本。
 
 64 位指针会增加部分原生对象、表结构和容器节点的体积；二进制大小、冷启动 I/O、指令缓存命中率和内存访问局部性也可能变化。JNI 代码里别把指针存进 `int` 或 `jint`，要使用 `uintptr_t`、`intptr_t` 或其他与指针宽度匹配的字段。ABI 迁移还要覆盖第三方 SDK、插件、热修复、动态加载路径、符号文件和原生崩溃调用栈解析。
 
@@ -240,6 +270,11 @@ Bitmap memory usage 的 P90 阈值只在非前台状态给出：user-perceived s
 
 这张表的重点，是给每个进程指定可观测的输入和明确的释放时机。缺了这两项，单个“内存上限”既说不清是哪类分配在增长，也判断不了任务完成后有没有回收可重建资源。
 
+<!-- gracker-diagram: a257-07-metric-boundaries -->
+![三种内存观察入口](../../assets/diagrams/ch23/a257-07-metric-boundaries.png)
+
+图：Play、场景采样和设备策略回答不同问题；任何一个数字都不能直接替代另一个。
+
 ### 用进程状态信号释放可重建资源
 
 `onTrimMemory()` 的实现应关注 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`。前者表示进程原先显示的 UI 已不可见，后者表示进程进入按最近使用顺序维护的后台 LRU 列表；两者描述的都是状态变化，而不是连续的系统内存压力等级。其余等级已经不在投递范围内：从 Android 14（API 34）开始，系统不再投递 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE`，这些常量在 Android 15（API 35）废弃。低内存设备还要通过 `ActivityManager.isLowRamDevice()` 选择更小的资源规格。
@@ -260,6 +295,11 @@ override fun onTrimMemory(level: Int) {
 ```
 
 用 `>=` 是为了兼容系统以后插入的中间等级。`BACKGROUND` 的数值高于 `UI_HIDDEN`，收到前者时两个分支都会执行，因此两个函数应释放不同资源，并保证重复调用不会重复关闭同一资源或产生错误。兼容 Android 13 及更早版本的实现可以保留旧等级处理，但 Android 17 不会发送这些旧等级。
+
+<!-- gracker-diagram: a257-08-trim-state-resources -->
+![状态变化驱动资源释放](../../assets/diagrams/ch23/a257-08-trim-state-resources.png)
+
+图：示例使用两个 >= 分支；收到 40 时两者都会执行，因此释放职责应明确且可重复调用。
 
 ### 把线程数纳入虚拟地址预算
 
@@ -304,6 +344,16 @@ adb shell am memory-limiter manual "$target_pid" none
 测试前应查看目标系统构建的命令帮助和限制状态，别只根据“Android 17”这个版本名推断参数单位。先用 `status` 保存设备是否启用及 `visible` / `not-visible` 配置，每次 `manual` 后再次查询状态，测试结束用 `none` 恢复设备默认限制。`ignore all` 会改变整台设备的限制策略，拿来掩盖回归测试失败是不可取的。
 
 r1 的 Java 控制逻辑与命令解析见 [`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 [`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)，cgroup 文件访问与 `AnonSwap` 公式见原生层 [`com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)。
+
+<!-- gracker-diagram: a257-09-limiter-enforcement -->
+![Android 17 r1 MemoryLimiter 超限路径](../../assets/diagrams/ch23/a257-09-limiter-enforcement.png)
+
+图：AnonSwap 确认后释放当前限制，再按条件剖析并排队终止；实际终止还受运行时开关控制。
+
+<!-- gracker-diagram: a257-10-manual-source-trace -->
+![r1 manual 帮助与实际参数链](../../assets/diagrams/ch23/a257-10-manual-source-trace.png)
+
+图：r1 实际按 MiB 转换数字；none 的负值进入 native 忽略范围，不能作为已验证的默认策略恢复操作。
 
 ## 实战决策表
 

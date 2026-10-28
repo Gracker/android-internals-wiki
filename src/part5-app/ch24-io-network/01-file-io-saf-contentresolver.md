@@ -127,6 +127,11 @@ class App : Application() {
 
 同时要看清这段策略的管辖范围：它只报告受该线程策略约束的调用。I/O 切到工作线程之后，工作线程是否占满存储队列、是否持有主线程需要的锁、主线程是否在等它的结果，就要靠 Perfetto 来回答了——看线程状态、应用自定义 trace 区间（标记业务操作的起止时间），以及采集配置中可用的文件系统或块设备事件。
 
+<!-- gracker-diagram: a261-01-io-wait-main-thread -->
+![主线程 I/O 的等待不等于 CPU 热点](../../assets/diagrams/ch24/a261-01-io-wait-main-thread.png)
+
+图：StrictMode 发现受策略约束的调用；跨线程锁等待、后台 I/O 排队和主线程等待结果仍需 Perfetto 取证。
+
 [源码锚点：[`StrictMode.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/StrictMode.java)、[`SharedPreferencesImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)]
 
 应用侧处理主线程 I/O，可分为三类场景：
@@ -204,6 +209,11 @@ ANR 出现在页面停止、应用进入后台或 Service 回调结束时，我�
 
 验收要选公开观测得到的指标：同一偏好文件的大小、键值条目数和写入次数，生命周期结束前后的写入分布，Perfetto 中 `queued-work-looper` 与主线程等待，以及 `QueuedWork.waitToFinish()` 相关 ANR 数量除以会话数或活跃用户数后的比例；同一报表要固定分母。“`apply()` 完成耗时”公开观测拿不到，就先排除在指标外。回归场景至少覆盖冷启动首次读取、连续修改后立即切后台、Service 停止、进程终止、存储压力、升级迁移和多进程误用。
 
+<!-- gracker-diagram: a261-02-apply-lifecycle-wait -->
+![apply 的快速返回与后续生命周期等待](../../assets/diagrams/ch24/a261-02-apply-lifecycle-wait.png)
+
+图：apply 把写盘移到后台，但 finisher 会在稍后的 Activity/Service 收尾处等待；调用点快不代表不会影响主线程。
+
 ### MMKV 的原理与适用场景
 
 键值存储还有第三条路线。Tencent MMKV 的设计文档说明，它用 `mmap`（把文件映射进进程虚拟地址空间）读写文件，值使用 Protocol Buffers（protobuf）二进制编码；更新采用追加写，同名键以末次值为准；空间不足时整理有效数据或扩容，文件损坏由 CRC（循环冗余校验）来发现。
@@ -225,6 +235,11 @@ MMKV 适合这些位置：
 - 要求明确持久化确认的交易数据：应使用能表达事务、失败和恢复语义的存储。
 
 MMKV 与 DataStore 的选择应基于访问行为和一致性要求。需要 Jetpack 组件、`Flow` 订阅、SP 迁移或官方多进程一致性时，可优先评估 DataStore；只有当真实设备基准证明 MMKV 更适合读写频繁的小型键值数据，并且团队能维护第三方库与恢复策略时，再选 MMKV。选型依据放在本应用自己的冷启动、尾延迟、内存和异常恢复测试上；库作者的一次基准结果，只能当参考。
+
+<!-- gracker-diagram: a261-03-key-value-choice -->
+![键值存储按一致性和读取路径选择](../../assets/diagrams/ch24/a261-03-key-value-choice.png)
+
+图：用访问模式、进程边界、迁移和持久化要求选型；DataStore 的异步入口也不应被 runBlocking 搬回主线程。
 
 [项目来源：[Tencent/MMKV](https://github.com/Tencent/MMKV)、[MMKV Design](https://github.com/Tencent/MMKV/wiki/design_eng)]
 
@@ -266,6 +281,11 @@ class JsonFileStore(
 
 `AtomicFile.finishWrite()` 返回 `void`，内部同步或 rename 失败主要写日志，业务从这里拿不到丰富的持久化失败信息。支付、订单等需要确认提交的状态，要在这层封装之外另配明确的提交确认。
 
+<!-- gracker-diagram: a261-04-atomicfile-single-writer -->
+![AtomicFile 保护替换，调用方保护并发](../../assets/diagrams/ch24/a261-04-atomicfile-single-writer.png)
+
+图：原子替换与写入互斥是两件事。调用方负责共享锁和跨进程协调，关键状态还需明确的提交与恢复语义。
+
 [源码锚点：[`AtomicFile.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/AtomicFile.java)]
 
 #### `write()`、页缓存与 `fsync()` 的区别
@@ -278,6 +298,11 @@ class JsonFileStore(
 - 不可丢状态要在工作线程等待明确的提交结果，并把失败反馈给上层，只看 `write()` 成功是不够的。
 
 合并同步的前提是业务接受对应时间窗的数据丢失；批次和间隔要按文件类别分别定，一套固定参数覆盖不了所有文件。
+
+<!-- gracker-diagram: a261-05-page-cache-sync -->
+![write 返回与持久化同步](../../assets/diagrams/ch24/a261-05-page-cache-sync.png)
+
+图：可重建日志可以合并同步；不可丢状态必须等待明确提交结果，并验证异常恢复。
 
 [内核锚点：[`fs/sync.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/sync.c)、[`mm/filemap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/filemap.c)]
 
@@ -383,6 +408,11 @@ fun persistDocumentGrant(
 
 Photo Picker 返回的媒体 URI 也可以为长任务持久化逐项读取权限。该权限只覆盖用户选中的图片或视频，不等同于目录树授权。
 
+<!-- gracker-diagram: a261-08-uri-grant-lifecycle -->
+![持久化授权与能力检查分别处理](../../assets/diagrams/ch24/a261-08-uri-grant-lifecycle.png)
+
+图：授权决定能否访问，COLUMN_FLAGS 决定支持什么操作；canWrite 不能概括改写、删除、创建等全部能力。
+
 ### `DocumentFile` 的性能成本来自哪里
 
 AndroidX 官方文档将 `DocumentFile` 定义为模仿 `File` 的便利封装，并明确提示它会增加较多开销。我们把它用在少量文件的便利操作上；需要批量读取元数据或使用完整的文档能力时，直接调用 `DocumentsContract`。截至 2026 年 8 月，稳定版本仍是 `androidx.documentfile:documentfile:1.1.0`。
@@ -406,6 +436,11 @@ val names = directory.listFiles().mapNotNull { it.name }
 少量、低频的交互可以接受这项成本。文件管理器、同步器或大目录扫描应在一次子项查询中取得 ID、名称、媒体类型（MIME type，例如 `image/jpeg`）、大小、修改时间和能力标志位。
 
 `DocumentFile.findFile(name)` 也会先调用 `listFiles()`，再逐项调用 `getName()`。在同一目录中循环查找多个名称，会反复枚举并查询属性。批量查找应先构建一次名称索引，并定义名称重复时的处理规则；Provider 不保证显示名称唯一。
+
+<!-- gracker-diagram: a261-07-documentfile-n-plus-one -->
+![DocumentFile 属性查询与批量投影](../../assets/diagrams/ch24/a261-07-documentfile-n-plus-one.png)
+
+图：一次投影查询取齐列表元数据，避免逐项便利调用；Cursor 分窗装载和 Provider 内部成本仍然存在。
 
 #### 一次查询取齐列表所需字段
 
@@ -518,6 +553,11 @@ Binder 是 Android 的进程间通信机制。`ContentResolver.openFileDescripto
 
 大文件复制缓慢时，我们先把下面几个阶段分开测量，再判断瓶颈在哪里；Binder 缓冲区未必是唯一原因：
 
+<!-- gracker-diagram: a261-06-uri-control-data -->
+![URI 打开协商与描述符传输](../../assets/diagrams/ch24/a261-06-uri-control-data.png)
+
+图：先测 query/open/首字节/传输/关闭；描述符的数据路径和打开协商路径的瓶颈不同。
+
 - `openFileDescriptor()` 返回前的 Provider 启动、权限检查、身份认证和按需下载时间；
 - 打开调用返回到首个字节的时间；
 - 描述符上的持续读写吞吐；
@@ -567,6 +607,11 @@ fun copyDocumentBytes(
 `openFileDescriptor(uri, mode, CancellationSignal)` 可以取消尚未完成的打开请求。描述符返回后，`CancellationSignal` 不会自动中断普通流读取，所以读写循环仍要主动检查取消状态。
 
 复制失败后，目标文档可能留下部分内容。应用要记录任务状态，并在适当时机删除未完成的目标。原子复制要求操作失败时不留下部分结果；两个 Provider 之间没有这项保证。
+
+<!-- gracker-diagram: a261-09-copy-ownership-fallback -->
+![复制优先 Provider 原生能力，回退时管理双流](../../assets/diagrams/ch24/a261-09-copy-ownership-fallback.png)
+
+图：在已打开输入流的 use 范围内再打开输出流；打开、读写、取消或关闭失败时都要保留任务状态与目标清理策略。
 
 如果两个描述符已经确认对应本机可随机访问的普通文件，可以基准测试 `FileChannel.transferTo()`。在部分文件系统和内核上，它能减少应用进程中的数据复制；它的适用范围之外是管道、转码流和云 Provider；带起始偏移的 `AssetFileDescriptor` 也要单独验证后再用。实现以目标设备和目标 Provider 的测量结果为准，接口名称说明不了速度。
 
@@ -655,6 +700,11 @@ Android 17 的 MediaProvider 包含 FUSE-BPF 支持。BPF 是可在内核受控�
 
 从 Android 11 起，普通应用通过 SAF 已经选不到 `Android/data` 或 `Android/obb`。FUSE-BPF 因而不适合作为普通 SAF 文档读写的性能依据。分析 SAF 性能时，仍应先确认具体 Provider、查询次数、打开延迟和描述符类型。
 
+<!-- gracker-diagram: a261-10-fuse-scope -->
+![SAF 与 FUSE 的路径关系](../../assets/diagrams/ch24/a261-10-fuse-scope.png)
+
+图：SAF 是文档访问协议，FUSE 是部分存储路径的实现。应用内部目录、云管道与共享挂载要分别判断。
+
 ### Android 17 的文档 API 变化
 
 AndroidX DocumentFile 1.1.0 没有提供批量元数据、`Path` 转换或回收站封装。Android 17 的新增能力位于平台 `DocumentsContract` 和 `DocumentsProvider`，是否可用仍由 Provider 的列与标志位决定：
@@ -686,6 +736,11 @@ fun trashIfSupported(
 ```
 
 文档进入回收站后，框架会撤销原文档 ID 对应的 URI 授权。Provider 返回的新 URI 可能使用不同的文档 ID；调用方要更新记录，并在访问失败时重新取得合适的授权，此后以新 URI 为准。
+
+<!-- gracker-diagram: a261-11-trash-new-uri -->
+![API 37 回收站调用的能力与 URI 更新](../../assets/diagrams/ch24/a261-11-trash-new-uri.png)
+
+图：回收站能力由 Provider 声明；调用后以返回 URI 为准，同时处理旧授权撤销与访问失败。
 
 云文档列表可以读取 `COLUMN_CONTENT_SYNC_STATE_FLAGS`，区分内容是否已在本机、是否存在待上传的本地修改、上传或下载是否正在进行，以及最近一次同步是否失败。这是可选列；缺失或 `null` 只说明 Provider 没有报告状态，文件是否在本机要另找依据。
 
@@ -752,6 +807,11 @@ WorkManager 负责按约束调度后台工作，不会替应用保存 URI 权限
 | 关闭与提交延迟 | 开始刷新或关闭到操作完成 | Provider 提交、远端上传、错误上报 |
 
 每条指标至少带上 `authority`、MIME 类型、操作类型、文件大小区间、内容是否在本机、网络类型、Android 版本和设备型号。URI、显示名称和用户目录属于敏感信息，采集前应删除或散列可识别用户的部分。
+
+<!-- gracker-diagram: a261-12-io-measurement-phases -->
+![按调用阶段拆分文档访问耗时](../../assets/diagrams/ch24/a261-12-io-measurement-phases.png)
+
+图：每项按 authority、内容是否本地、模式和设备分组；报告分布及错误率，不把单次测量写成平台常量。
 
 #### StrictMode 和 Perfetto
 

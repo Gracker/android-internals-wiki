@@ -74,6 +74,11 @@ statsd 把系统事件和状态样本按配置聚合成 metric 报告，不录�
 
 配置、report、query 这条 Java API 路径不直接经过 `StatsCompanionService`：`StatsManager` 调用 `system_server` 中的 `StatsManagerService`，后者按入口检查 `DUMP` + `PACKAGE_USAGE_STATS`、`REGISTER_STATS_PULL_ATOM` 或 `READ_RESTRICTED_STATS` 等特权权限，再通过 `IStatsd` 的 Binder（Android 跨进程调用机制）接口与 native statsd 通信。
 
+<!-- gracker-diagram: ch15-08-01-three-paths -->
+![配置、pushed atom 与 pulled atom 的三条路径](../../assets/diagrams/ch15/ch15-08-01-three-paths.png)
+
+图：配置和查询经权限检查与 Binder，pushed atom 经专用 socket，pulled atom 由已注册 callback 返回。 StatsCompanionService 提供 alarm、UID 和 ready 桥接；不是全部事件和 pull 数据的中转站。
+
 statsd 重启后，`StatsCompanionService.statsdReady()` 会调用 `StatsManagerService.statsdReady(IStatsd)`。`sayHiToStatsd()` 随后向新进程重新注册五类客户端入口：pull callback、data-fetch operation、active-config-changed operation、broadcast subscriber、restricted-metrics-changed operation；这些 operation 和 subscriber 通过 `PendingIntent` 通知客户端。
 
 注册时源码先在锁保护下复制注册列表，再释放锁执行 Binder 调用，避免跨进程调用长时间占锁。`registerAllPullers()` 完成后还调用 `allPullersFromBootRegistered()`；puller 是向 statsd 提供 pulled atom 的数据源回调。重启恢复的只是客户端注册，`StatsdConfig` 内容不会在 `StatsManagerService` 中缓存或重放。
@@ -89,6 +94,16 @@ Android 17 的 native `main.cpp` 新增 API 37 门槛的 io_uring listener 分�
 AOSP 的 `atoms.proto` 说明 `Atom` 定义 raw stats log events，也就是尚未聚合的原始统计事件；`stats-log-api-gen` 在构建期生成日志常量和方法。顶层 `Atom` 消息用作 schema 容器，不直接编入系统；statsd 按 `atoms.proto` 与 `stats_log.proto` 的格式生成 protobuf 数据。
 
 因此，报告中的 ANR 或 LMK 条目只证明对应 atom 到达 statsd、命中配置并进入报告。它不能替代 ANR trace、tombstone、Perfetto trace 或 dumpsys 现场；报告中没有条目也不能单独证明事件未发生。
+
+<!-- gracker-diagram: ch15-08-02-restart-recovery -->
+![注册恢复、配置恢复与未持久化数据](../../assets/diagrams/ch15/ch15-08-02-restart-recovery.png)
+
+图：statsd 重启时，Java 重新注册客户端入口，native 从磁盘恢复配置。 两条恢复路径不等于恢复崩溃前全部未持久化 metric 数据；注册列表复制后释放锁再发 IPC。
+
+<!-- gracker-diagram: ch15-08-03-socket-queue-pressure -->
+![io_uring 的条件、回退与有界队列](../../assets/diagrams/ch15/ch15-08-03-socket-queue-pressure.png)
+
+图：接收端在 API、flag 与支持检测后选择 listener，io_uring 初始化失败仍可回退；两条路径共用有界队列。 发送端 EAGAIN 和接收队列满都可能丢事件；入队不是报告成功的保证，内核目录存在也不证明设备启用。
 
 ## Atom 模型：事件、拉取样本和 metric 配置
 
@@ -113,9 +128,24 @@ metric 配置定义在 `statsd_config.proto`。这一层不关心“系统怎么
 
 `StatsdConfig` 把这些对象组合在同一个 protobuf 配置里：`event_metric`、`count_metric`、`value_metric`、`gauge_metric`、`duration_metric`、`kll_metric`、`atom_matcher`、`predicate`、`alert`、`subscription` 等字段都在这个 proto 中定义。
 
+<!-- gracker-diagram: ch15-08-05-duration-aggregation -->
+![SUM 的重叠合并与 MAX_SPARSE 的结束归属](../../assets/diagrams/ch15/ch15-08-05-duration-aggregation.png)
+
+图：同一 SUM tracker 的重叠活动只累计一次；MAX_SPARSE 选结束在该 bucket 的完整累计活动时长最大值。 示例假设条件恒真且无丢事件，时间单位相同；MAX_SPARSE 本例为 4，未结束区间可跨 bucket 保留，不能只裁剪为本 bucket 重叠长度。
+
 排障时要把 atom 和 metric 分开看。atom 描述原始事件或状态样本，metric 描述筛选、切分和聚合规则。同一个 atom 可以被多个 metric 以不同维度聚合。
 
+<!-- gracker-diagram: ch15-08-04-atom-config-report -->
+![从平台 atom 到配置选中的报告](../../assets/diagrams/ch15/ch15-08-04-atom-config-report.png)
+
+图：atom 定义事件或状态字段，matcher 筛选，predicate / activation 控制条件，metric 再按维度与规则输出。 同一 atom 可服务多个 metric；pushed 传输 payload 与 protobuf 配置 / 报告是不同格式，不能混用。
+
 报告缺少条目时，按顺序检查：
+
+<!-- gracker-diagram: ch15-08-06-missing-report-checks -->
+![空报告的采集、筛选和导出检查](../../assets/diagrams/ch15/ch15-08-06-missing-report-checks.png)
+
+图：从来源、筛选条件、metric 状态到 bucket / 导出，再检查 pull 超时和写入丢失。 这是诊断检查顺序；空报告不证明事件没有发生，`--keep_data` 也不能恢复从未收到的事件。
 
 - `allowed_log_source`（允许写入该配置的来源）是否匹配
 - matcher / predicate 是否命中
@@ -178,6 +208,12 @@ protoc -I packages/modules/StatsD/statsd/src \
 下面这组命令展示最小调试路径。这里假设 `config.pb` 已经是 wire-encoded `StatsdConfig`（按 protobuf wire format 编码的二进制数据），`123456` 是数字配置 ID。AOSP 源码要求 `config update` 从 stdin（标准输入）读取配置，并把 `NAME` 解析成 int64 配置 ID。
 
 ```shell
+
+<!-- gracker-diagram: ch15-08-07-three-uid-identities -->
+![配置拥有者、写入来源和目标 App 身份](../../assets/diagrams/ch15/ch15-08-07-three-uid-identities.png)
+
+图：配置由调用方 UID 与命令行 ID 标识；allowed_log_source 检查写入者，atom 字段中的目标 App UID 是另一层身份。 例中 shell 拥有配置，AID_SYSTEM 写出 atom 48，事件字段才包含 App UID / 包名；最小 matcher 会收多个符合条件的 App 启动。
+
 # 下发或更新配置；省略 UID 时使用调用方 UID
 adb shell cmd stats config update 123456 < config.pb
 
@@ -193,10 +229,20 @@ adb shell cmd stats config remove 123456
 
 这套流程里有四个容易踩的点：
 
+<!-- gracker-diagram: ch15-08-08-local-debug-lifecycle -->
+![二进制配置到报告的最小本地调试闭环](../../assets/diagrams/ch15/ch15-08-08-local-debug-lifecycle.png)
+
+图：先编码配置，再按固定身份下发，触发场景，导出并保存报告，最后按明确 ID 清理。 这是本地调试流程；示例启动命令不保证必有 atom，需核对真实来源、采样与配置状态，报告保存配置与平台版本。
+
 - `config.pb` 必须是二进制 proto，不是文本 proto。命令帮助里也写明配置通过 stdin 传入 wire-encoded protobuf。
 - 省略 UID 时使用当前调用方 UID；显式读取或写入其他 UID 的配置只对 eng / userdebug（工程或调试系统构建）开放。量产 user 构建不要把跨 UID 调试当成可用能力。
 - `dump-report` 默认会清除已导出的数据；调试时加 `--keep_data`，否则下一次拉取可能拿不到同一批样本。
 - Android 17 的参数解析从命令尾部依次识别 `--proto`、`--include_current_bucket`、`--keep_data`，按示例顺序书写最稳妥。`config remove` 同时省略 UID 与 NAME 会删除内存和磁盘中的全部配置，清理脚本必须传入明确的配置 ID。
+
+<!-- gracker-diagram: ch15-08-09-dump-flags-clear -->
+![报告清理发生在输出格式判断之前](../../assets/diagrams/ch15/ch15-08-09-dump-flags-clear.png)
+
+图：固定 r1 先按参数导出报告，之后才输出二进制或不支持文本的提示。 默认 eraseData 为 true；无 --proto 的提示不回滚导出。调试保留样本时按正文顺序显式传 --keep_data --include_current_bucket --proto。
 
 `cmd stats` 还提供一些辅助命令：
 
@@ -233,6 +279,11 @@ statsd 和 Perfetto 经常出现在同一次排障里，但两者的证据类型
 
 LMK 也一样。`LmkKillOccurred` 能记录“哪个进程被杀”，但不能单独说明为什么内存压力升高。还要查 `lmkd`（low memory killer daemon，低内存杀进程守护进程）日志、PSI（Pressure Stall Information，资源压力造成的停顿时间）、进程 PSS（按共享比例分摊后的内存占用）、zRAM（以内存压缩设备承载的交换空间）、adj（进程被回收的优先级分值）和前后台状态，必要时再回到 10.x 和 23.x 的内存章节。
 
+<!-- gracker-diagram: ch15-08-11-cross-tool-evidence -->
+![ANR 与 LMK 的事件线索如何回到现场](../../assets/diagrams/ch15/ch15-08-11-cross-tool-evidence.png)
+
+图：statsd 给出采到的事件线索，时序、日志和现场数据补足因果调查。 对齐同设备、版本、进程和时间窗口；Perfetto 只提供实际启用数据源覆盖的时序，缺少 trace 不能补造事件顺序。
+
 ## 权限、版本与 OEM 边界
 
 statsd 位于系统侧，权限边界比普通 App 埋点严格。AOSP `StatsService` 对 shell 命令入口检查 root / shell UID，跨 UID 配置和报告操作又受 eng / userdebug 构建限制。`StatsManager` 是 `@SystemApi`（供系统组件和获授权应用使用的 API）；`addConfig()`、`removeConfig()`、`getReports()` 要求 `DUMP` + `PACKAGE_USAGE_STATS`，服务端还检查 usage-stats AppOp（权限之外的运行时操作授权）；`setPullAtomCallback()` 要求 `REGISTER_STATS_PULL_ATOM`；`query()` 与 restricted-metrics operation 要求 `READ_RESTRICTED_STATS`。
@@ -246,6 +297,11 @@ statsd 位于系统侧，权限边界比普通 App 埋点严格。AOSP `StatsSer
 
 团队手册可把 statsd 定位为“系统事件索引”。每个指标旁边写清三件事：atom ID 和字段来自哪个 Android 版本，metric 配置如何聚合，遇到异常后用哪类 trace、日志或 dump 复核。
 
+<!-- gracker-diagram: ch15-08-12-permissions-versions -->
+![本地 shell、特权 API 与产品扩展边界](../../assets/diagrams/ch15/ch15-08-12-permissions-versions.png)
+
+图：shell 调试、StatsManager 特权客户端和产品扩展分别核对权限、版本及实现。 普通 App 不能据此获得平台级配置权；任意跨 UID 通常限调试构建，root→shell 为固定 r1 的例外，Mainline / OEM 仍需目标设备验证。
+
 ## Tradefed / CTS 中的 statsd collector
 
 AOSP Trade Federation（Android 测试执行框架）提供 `com.android.tradefed.util.statsd.ConfigUtil`，官方参考文档把它定义为“创建、交互和推送 statsd 配置文件的工具类”。它支持推送二进制 statsd 配置、按 event atom ID 生成事件型配置、删除配置，并返回新配置 ID。
@@ -254,6 +310,11 @@ AOSP Trade Federation（Android 测试执行框架）提供 `com.android.tradefe
 
 CTS（Compatibility Test Suite，兼容性测试套件）也依赖 statsd 验证平台 atom 和 StatsD 功能。AOSP Statsd 官方文档写明，CTS 会验证 statsd 功能以及发布管理依赖的 atom。ROM 或系统模块团队需要把这些 atom 的兼容性纳入发布验证。
 
+<!-- gracker-diagram: ch15-08-13-test-collector -->
+![Tradefed 配置驱动的回归验证](../../assets/diagrams/ch15/ch15-08-13-test-collector.png)
+
+图：回归测试先固定配置与预期，再下发配置、执行场景、拉取报告并判断指标。 只能分析配置实际选中且采到的数据；测试通过不证明所有厂商或版本具备相同 atom，遗漏现场不能事后补录。
+
 ## statsd 报告与线上 APM 的边界
 
 线上 APM 负责 App 内部事件：页面、用户操作、业务 trace、网络请求、缓存命中、实验分组。statsd 负责系统侧事件和状态样本：进程生命周期、ANR、LMK、Job、wakelock、CPU 时间、电量状态。两者的粒度和权限不同，不应该互相替代。
@@ -261,6 +322,11 @@ CTS（Compatibility Test Suite，兼容性测试套件）也依赖 statsd 验证
 在 App 性能平台里，较清晰的分工是：APM 负责用户会话和业务维度，statsd 或系统指标负责平台事件维度。后端按时间、版本、设备、UID / 包名做关联，同时保留原始来源字段。这样既能知道“用户这次页面卡了”，也能知道“同一窗口系统侧有没有 LMK、CPU 限频、输入延迟或 Job 约束变化”。
 
 26.1 节已经讲过性能指标定义和上报规则。这里补一条工程约束：APM 能稳定采到的数据不必改由 statsd 采集；只有系统侧才知道、App 无权限拿到、或者需要跨进程统一定义的事件，才值得引入 statsd。
+
+<!-- gracker-diagram: ch15-08-14-apm-system-association -->
+![业务会话与系统指标的时间窗口关联](../../assets/diagrams/ch15/ch15-08-14-apm-system-association.png)
+
+图：APM 保留业务维度，系统侧报告保留平台事件维度，再按可比较的时间与身份关联。 关联需要合法系统数据来源和事件时刻的 UID 映射；bucket 或截断时间不能伪装成逐请求因果链。
 
 ## 自定义 Atom 与厂商扩展风险
 
@@ -275,6 +341,11 @@ CTS（Compatibility Test Suite，兼容性测试套件）也依赖 statsd 验证
 
 做到这四点后，statsd 才适合作为长期排障索引；缺少字段契约与版本记录的报告不宜直接跨版本比较。
 
+<!-- gracker-diagram: ch15-08-15-vendor-contract-lifecycle -->
+![自定义 atom 的长期字段契约](../../assets/diagrams/ch15/ch15-08-15-vendor-contract-lifecycle.png)
+
+图：扩展 atom 的配置、字段、验证样本和降级策略一起版本化。 atom ID 范围不是修改 Statsd APEX 的授权；缺 atom、权限或样本时记录缺失并回到可用证据，不能跨版本直接比较同名字段。
+
 ## 参考资料
 
 - [AOSP Statsd 模块说明](https://source.android.com/docs/core/ota/modular-system/statsd)
@@ -288,3 +359,8 @@ CTS（Compatibility Test Suite，兼容性测试套件）也依赖 statsd 验证
 - [Android 17 `atoms.proto`](https://android.googlesource.com/platform/frameworks/proto_logging/+/refs/tags/android-17.0.0_r1/stats/atoms.proto)
 - [Android 17 common kernel `io_uring/`, `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/io_uring/)
 - [Tradefed `ConfigUtil`](https://source.android.com/reference/tradefed/com/android/tradefed/util/statsd/ConfigUtil)
+
+<!-- gracker-diagram: ch15-08-10-auxiliary-observation -->
+![pull-source、健康统计和完整日志各查什么](../../assets/diagrams/ch15/ch15-08-10-auxiliary-observation.png)
+
+图：辅助命令分别检查 pull 返回、statsd 自身统计和完整事件打印。 pull-source 可能命中 cooldown 缓存；print-logs 需要 root 并关闭部分过滤 / logging control，会改变观测开销。

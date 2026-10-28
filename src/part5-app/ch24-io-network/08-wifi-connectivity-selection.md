@@ -106,6 +106,11 @@ Wi-Fi 扫描结果
 
 顺着这张图看，Wi-Fi 模块回答“连接哪个 Wi-Fi 网络或 BSSID（basic service set identifier）”，Connectivity 模块回答“哪个 `Network` 满足某个 `NetworkRequest`”。`Network` 是 Android 对一条可用网络路径的句柄，`NetworkRequest` 是传输类型与网络能力等条件的集合。我们平时说的默认网络，只是系统请求中的一类；VPN 还可能让不同 UID（user identifier，Android 中标识应用身份的整数） 看到不同的应用默认网络。
 
+<!-- gracker-diagram: a268-01-two-selection-layers -->
+![无线候选选择与请求满足分属两层](../../assets/diagrams/ch24/a268-01-two-selection-layers.png)
+
+图：Wi-Fi 选择哪个 AP，Connectivity 选择哪个 Network 满足请求；两层分数不能混为一个公式。
+
 ### Wi-Fi 模块怎样决定连哪个网络
 
 #### 当前连接是否需要重选
@@ -119,6 +124,11 @@ Wi-Fi 扫描结果
 `WifiNetworkSelector.filterScanResults()` 先做排除，低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO（Multi Band Operation）/OCE（Optimized Connectivity Experience） 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果，都进不了候选。MBO 与 OCE 是 Wi-Fi 联盟定义的接入管理和连接优化能力。在这些过滤条件生效前，已连接的当前 BSSID 会先保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
 
 `getCandidatesFromScan()` 调用已注册的 nominator（候选提名器） 产生候选，包括已保存网络、应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等，并把当前连接留在候选集合中。`selectNetwork()` 再把候选交给当时活动的 `CandidateScorer`（候选评分器） 选出结果，并应用兼容旧版用户选择的逻辑。系统预设的评分器是 `ThroughputScorer`。
+
+<!-- gracker-diagram: a268-02-sufficiency-before-filter -->
+![足够好判断先于扫描候选筛选](../../assets/diagrams/ch24/a268-02-sufficiency-before-filter.png)
+
+图：仅靠信号格数无法推导是否切换；当前连接、用户选择、IP 配置和活跃流量也参与判断。
 
 #### 候选如何评分
 
@@ -137,6 +147,11 @@ Wi-Fi 扫描结果
 
 这些参数由 `ScoringParams` 和资源覆盖（设备厂商对 AOSP 默认资源值的替换）控制，资源覆盖指设备厂商对 AOSP 默认资源值的替换，两者决定入网阈值、足够 RSSI、吞吐奖励和多个优先级参数。所以旧资料里的固定阈值只说明特定版本的 AOSP 默认配置，跨版本、跨厂商参考时，要以目标设备的实际配置为准。
 
+<!-- gracker-diagram: a268-03-scoring-buckets -->
+![候选评分先区分优先区间再比较无线奖励](../../assets/diagrams/ch24/a268-03-scoring-buckets.png)
+
+图：预测吞吐是评分输入；实际业务吞吐、RTT 和恢复时间需要独立测量。
+
 ### ConnectivityService 与 NetworkRanker 怎样排序请求
 
 Wi-Fi 模块选出自己的网络之后，轮到 Connectivity 排序：先保留能满足请求能力的网络，再执行 `NetworkRanker.getBestNetworkByPolicy()`，主要规则按源码顺序如下：
@@ -153,6 +168,11 @@ Wi-Fi 模块选出自己的网络之后，轮到 Connectivity 排序：先保留
 | 8 | VCN、未销毁网络、当前满足者 | VCN（Virtual Carrier Network，虚拟运营商网络）供运营商组织底层网络；其余规则处理等价候选并减少无意义切换 |
 
 这张表描述的是逐轮筛选，而非把所有属性相加的公式。Connectivity 把验证状态、VPN 和销毁状态等运行时信息整理成 `FullScore`；网络模块用 `NetworkScore` 携带 `POLICY_TRANSPORT_PRIMARY`、`POLICY_EXITING` 等策略属性。顺带一提，“所有网络一律未计费优先”这条规则在通用排序代码里尚未实现，对应位置还留着表示“待实现”的 TODO 注释。
+
+<!-- gracker-diagram: a268-04-ranker-policy-order -->
+![NetworkRanker以策略顺序逐轮保留候选](../../assets/diagrams/ch24/a268-04-ranker-policy-order.png)
+
+图：这些是有顺序的集合筛选；NOT_METERED 可属于请求条件，不能据此推出所有默认网络未计费优先。
 
 `NET_CAPABILITY_NOT_METERED` 能决定带有该能力要求的请求是否得到满足，Wi-Fi 候选评分也会奖励未计费网络。这两个事实各自作用于自己那一层，源码里并没有一条所有默认网络共用的未计费优先公式。
 
@@ -179,6 +199,11 @@ Wi-Fi 模块选出自己的网络之后，轮到 Connectivity 排序：先保留
 | 业务恢复 | 业务操作进入等待或失败 | 首次满足业务语义的成功结果 | 用户可感知的中断时间 |
 
 默认网络切换的起点，记在 `onAvailable(new)` 上。对默认网络回调（default callback）而言，它表示回调已经开始跟踪新的最佳网络，之后不会再接收旧网络的事件；`onLost()` 只在正在跟踪的默认网络丢失且没有替代网络时，才表示应用失去默认网络，拿 `onLost(old)` 当切换起点会错位。
+
+<!-- gracker-diagram: a268-05-default-callback-order -->
+![默认网络回调在新选择后跟踪新网络](../../assets/diagrams/ch24/a268-05-default-callback-order.png)
+
+图：默认回调的切网起点记新 onAvailable；能力变化不一定伴随新的默认网络。
 
 OkHttp 的事件序列要整段保留，压成“每种事件只留一个时间戳”会丢掉中间过程。重试、重定向和认证会在同一个 `Call` 中产生多组 DNS、连接、请求和响应事件；复用既有连接时没有 DNS 与 `connect` 事件；双工请求的收发事件还可能交错。
 
@@ -302,6 +327,11 @@ class TimelineEventListener(
 
 `defaultGenerationAtStart` 只说明请求开始时的默认网络是哪一个：复用连接可能建立在更早的默认网络上，显式绑定的客户端还可能使用其他 `Network`。要确认套接字实际经过哪条网络，还要结合绑定配置、系统追踪数据或网络数据包捕获结果。
 
+<!-- gracker-diagram: a268-06-call-and-network-timelines -->
+![请求时间线与默认网络时间线只作关联](../../assets/diagrams/ch24/a268-06-call-and-network-timelines.png)
+
+图：HTTPS connect 阶段已包含 TLS；响应头等待是代理指标，不能与连接、TLS 重复累计。
+
 ### 弱网与多网络并存时怎样判断
 
 弱网和多网络并存的场景里，我们先把能力字段放回各自的层级：
@@ -315,6 +345,11 @@ class TimelineEventListener(
 | `TRANSPORT_VPN` | 应用默认网络经过 VPN | 物理承载只有一种；VPN 网络可同时带有 Wi-Fi 或蜂窝传输 |
 
 这张表帮我们把结论限定在正确的层级：能力字段描述系统掌握的网络属性，业务到底可不可用，要靠一次真实请求回答。
+
+<!-- gracker-diagram: a268-07-capability-planes -->
+![无线关联、系统验证与业务成功分别判断](../../assets/diagrams/ch24/a268-07-capability-planes.png)
+
+图：业务可用性由真实请求证明；计费和传输集合同时记录，不能用 Wi-Fi 标记代替未计费判断。
 
 `NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HTTPS 探测，并根据成功、登录门户、部分连通等结果更新 Connectivity。探测 URL、代理、Private DNS（Android 对 DNS-over-TLS 的系统配置） 与设备配置都可能影响结果，其中 Private DNS 指 Android 对 DNS-over-TLS 的系统配置。据此有一组处理原则：
 
@@ -459,6 +494,11 @@ class DefaultNetworkTracker(
 
 `network.toString()` 只适合关联同一次设备运行中的事件，跨重启后要重新建立关联。`linkDownstreamBandwidthKbps` 是系统估计值，应用的实测吞吐量要另外测。`onEvent` 回调应只把事件快速放入队列；数据库写入、上传等耗时工作交给其他线程。追踪器还要与进程生命周期一致，并确保只注册一次。系统为每个 UID 合计限制 100 个未释放的网络回调与请求。
 
+<!-- gracker-diagram: a268-08-callback-lifecycle -->
+![同一Handler维护网络代次并及时释放](../../assets/diagrams/ch24/a268-08-callback-lifecycle.png)
+
+图：不要在回调内另查同步快照；networkId 只用于当前运行期间关联，带宽字段是估计值。
+
 #### 2. 在连接层附近区分失败原因
 
 连接层附近的失败要区分原因。官方文档说明，新连接在默认网络变化后使用新网络，旧默认网络上的既有连接稍后会被系统终止；应用不需要在每次 `onAvailable()` 时销毁共享 `OkHttpClient` 或清空整个连接池，这么做还会破坏仍可复用的健康连接。
@@ -472,6 +512,11 @@ class DefaultNetworkTracker(
 显式使用非默认网络只适合少数场景，把套接字绑定到后台网络还要求 `CHANGE_NETWORK_STATE` 权限。
 
 获取目标 `Network` 后，要同时使用 `network.socketFactory` 建立套接字，并用 `network.getAllByName()` 在同一网络上解析域名；否则套接字和 DNS 可能经过不同网络。目标网络丢失后，应取消相关请求；若需要单独清理连接，该绑定客户端应使用专用连接池。大多数应用应继续使用系统默认网络。
+
+<!-- gracker-diagram: a268-09-recover-by-operation -->
+![切网后的恢复按连接和业务语义推进](../../assets/diagrams/ch24/a268-09-recover-by-operation.png)
+
+图：连接异常后结果可能未知；不要把 VALIDATED 或一次回调当作集中重发全部任务的指令。
 
 #### 3. 弱网降级按请求类型分层
 
@@ -544,6 +589,11 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 应用事件、系统追踪与服务端日志至少要共享请求编号，并记录单调时钟与墙上时钟的对应关系。缺少这种关联时，我们最多知道“切网和超时发生在相近时间”，因果关系要靠这条关联才能确认。
 
+<!-- gracker-diagram: a268-10-evidence-correlate -->
+![系统与请求证据按编号和时钟对齐](../../assets/diagrams/ch24/a268-10-evidence-correlate.png)
+
+图：快照、时间线和服务端日志各有证据范围；时间接近与共享编号都不能单独证明切网导致超时。
+
 ## OEM 差异与 HTTP/3 切网边界
 
 ### OEM Wi-Fi 评分为何不同
@@ -560,6 +610,11 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 外部评分器的输入可来自 `WifiUsabilityStatsEntry`，包括 RSSI、链路速率、频率和数据包统计。接口存在只说明平台提供了这条通道；具体设备有没有安装外部评分器、有没有启用由功能标志控制的行为，要逐台确认。
 
+<!-- gracker-diagram: a268-11-oem-scorer-evidence -->
+![OEM评分通道与三层设备证据](../../assets/diagrams/ch24/a268-11-oem-scorer-evidence.png)
+
+图：notifyScoreUpdate 用于统计；是否采用可用性与预评估策略，取决于目标系统组件和功能标志。
+
 我们做工程判断时，材料要分三层看：
 
 | 层级 | 可验证材料 | 判断边界 |
@@ -575,6 +630,11 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.5.0 为准。OkHttp 自带的传输实现支持 HTTP/1.1 与 HTTP/2，要 HTTP/3 需要另外的方案：HTTP/3 运行在 QUIC 传输协议之上，可选路径包括 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库） 或官方提供的 Cronet Transport for OkHttp 集成；Cronet 是 Chromium 网络栈的 Android 库。
 
 QUIC 用连接 ID 标识一条逻辑连接，连接身份没有完全绑在原来的 IP 地址和端口上，这是连接迁移的协议基础。但迁移并不会因为用了 HTTP/3 就自动发生：`HttpEngine` 和 Cronet 都提供连接迁移选项，只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会在网络变化后继续；允许迁往非默认网络还可能用到按量计费的流量。
+
+<!-- gracker-diagram: a268-12-quic-migration-gates -->
+![HTTP3切网迁移以引擎与协商条件为前提](../../assets/diagrams/ch24/a268-12-quic-migration-gates.png)
+
+图：QUIC连接ID提供迁移基础；引擎设置、网络策略与服务器支持仍决定实际结果。
 
 分批启用 HTTP/3 时，至少分别记录：
 

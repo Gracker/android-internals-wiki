@@ -188,6 +188,11 @@ consolidated_from:
 
 这三层的数据源、单位和误差各不相同：BatteryStats 里的活动时长、PowerStats HAL（硬件抽象层） 的能量读数、ODPM rail（设备级电源轨计量） 和设置页里的应用百分比，属于不同层面的数字，比较之前要先想清楚各自代表什么。
 
+<!-- gracker-diagram: ch11-01-01-accounting-layers -->
+![活动、组件计算与 UID 归因是三个层次](../../assets/diagrams/ch11/ch11-01-01-accounting-layers.png)
+
+图：活动记录、组件总量和 UID 结果需要分别解释。不同组件组合输入的方式不同，设置页占比也不能当作 rail 原始读数。
+
 > 源码基线：AOSP `android-17.0.0_r1`，对应 Android 17 / API 37；内核 `android17-6.18-2026-06_r6`。Fuel Gauge（电量计）、PMIC 与 rail（电源轨） 的具体名称由设备厂商实现。
 
 功耗由 CPU、GPU、屏幕、网络、定位和传感器等组件在时间窗口内的活动共同产生。系统优化通过调度、休眠、批处理和硬件状态控制，缩短高功率状态的驻留时间。
@@ -210,6 +215,11 @@ consolidated_from:
 先分清单位：`µWs` 表示能量，`µAh` 和 `mAh` 表示电荷量，百分比表示电池剩余容量比例；能量与电荷量互相换算还需要电压，这几类数字要先对齐单位再比较。
 
 数据从硬件进入 Framework 后，每一层能走到哪一步取决于设备。缺少 energy consumer 时，组件归因可能退回 controller activity（控制器活动统计） 或 `power_profile.xml` 估算；energy meter 的原始 rail 主要用于观测，参与归因的输入由组件 collector 和 processor 组织，任意 rail 直接按 UID（Linux 用户标识，Android 用它归集应用资源） 时间分配，在归因管线里并没有这样一条现成路径。
+
+<!-- gracker-diagram: ch11-01-02-unit-boundaries -->
+![电荷、能量、功率和百分比分开解释](../../assets/diagrams/ch11/ch11-01-02-unit-boundaries.png)
+
+图：相同单位仍可能有不同覆盖范围；百分比还必须交代分母。区间平均功率需要有效能量差与正的时间差。
 
 ### 2. `power_profile.xml`：软件估算的设备参数
 
@@ -249,6 +259,11 @@ AOSP 默认文件明确声明数值是故意设置的错误值，OEM 出货前�
 
 这段 XML 说明 display、Wi-Fi 和 CPU cluster 的键如何组织。性能报告若拿这些默认电流计算真实设备耗电，结果没有测量意义。
 
+<!-- gracker-diagram: ch11-01-03-profile-calibration -->
+![profile 参数先确认单位与电压域](../../assets/diagrams/ch11/ch11-01-03-profile-calibration.png)
+
+图：默认 0.1 不是目标硬件测量值。一般活动项使用增量电流，battery.capacity、controller voltage 与 memory.bandwidths 等需分别按字段注释解释。
+
 #### 2.2 CPU 参数按 scaling policy（策略） 与频点组织
 
 异构 CPU 要写清 cluster（核簇）的核数、频点和对应活动电流。`CpuPowerStatsProcessor` 从 `CpuScalingPolicies` 取得 scaling policy（共享调频策略的一组 CPU）与频点，再从 `PowerProfile` 读取三类参数：
@@ -260,6 +275,11 @@ AOSP 默认文件明确声明数值是故意设置的错误值，OEM 出货前�
 常规 time-in-state（各频点驻留时间）路径没有 CPU energy consumer 时，处理器按 uptime（设备运行时长）、policy 运行时间和频点时间形成 profile 估算。有 hardware energy（硬件能量读数） 时，这条路径仍会利用 profile 的 power bracket（合并了相近功耗档位的分组） 和 UID 时间，把 energy consumer 的总量按活动比例分配；power bracket 是把相近功耗档位合并后的分组。支持 x86 cycle/RAPL 的设备还可能采用下文 §3.1 的另一条采集路径。
 
 因此，相同 CPU time 不保证相同耗电。任务运行在哪个 policy、哪些频点，以及设备是否提供 measured energy，都会改变结果。
+
+<!-- gracker-diagram: ch11-01-04-cpu-profile-inputs -->
+![CPU 模型分开记录三类活动成本](../../assets/diagrams/ch11/ch11-01-04-cpu-profile-inputs.png)
+
+图：固定 r1 处理器具备整体、policy 与频点成本项，但 CpuTimeInStateCollector 尚未填入 time-in-cluster，不能把模型参数存在等同于该项已被采集。power bracket 与硬件能量输入还会改变后续分配。
 
 #### 2.3 modem、Wi-Fi 与 Bluetooth 的 controller 数据
 
@@ -279,7 +299,17 @@ Android 17 不再使用顶层 `CpuPowerCalculator`。入口变为：
 
 平台还提供 x86 CPU cycle/RAPL 路径。`BatteryStatsImpl` 在 `x86CpuEnergyAttribution` 开关启用且不支持 time-in-state 时选择 `CpuCyclePerUidCollector`；collector 需要底层支持，会把 RAPL 的 CPU package 能量按 UID CPU cycle 占比归因，再结合电压换成 µC。处理器的 `computePowerFromEnergyConsumers()` 直接将设备和 UID 的 µC 转为 mAh，不再经过 profile/bracket 分配。
 
+<!-- gracker-diagram: ch11-01-06-cpu-cycle -->
+![x86 cycle 路径先归因，再由 processor 换单位](../../assets/diagrams/ch11/ch11-01-06-cpu-cycle.png)
+
+图：这条路径的 UID 分配发生在采集侧，不再走常规 profile/bracket 分配。结果仍是共享 package 成本的活动比例归因。
+
 两条路径都要靠活动记录来归属共享的 CPU 能量：前者在 processor 中按 bracket 时间分配，后者在采集侧按 cycle 分配。所以我们把后者的 UID 数值读作按活动比例分摊的结果就好，逐 App 各自的独立硬件测量，它提供不了。
+
+<!-- gracker-diagram: ch11-01-05-cpu-time-state -->
+![常规 CPU 路径用模型组织与分配能量](../../assets/diagrams/ch11/ch11-01-05-cpu-time-state.png)
+
+图：硬件能量改善组件总量，UID 分配仍依赖活动比例。固定实现若有 WakeLock 聚合，还会在 CPU 设备与 UID 估算中扣除对应项并限制为非负。
 
 #### 3.2 Display
 
@@ -292,6 +322,11 @@ UID 分配阶段按 top（最前台） activity duration（最前台 Activity �
 
 硬件 screen energy consumer 仍然是设备级输入：它提高屏幕总量的测量质量，每个应用的屏幕电量依旧来自前台活动时长比例。
 
+<!-- gracker-diagram: ch11-01-07-screen-attribution -->
+![屏幕总量与 UID 分配分两步完成](../../assets/diagrams/ch11/ch11-01-07-screen-attribution.png)
+
+图：硬件 screen energy consumer 不是每 App 的独立屏幕电表。图对应固定 r1 的设备估算与 UID 分配顺序，不继承旧 calculator 的 10 分钟门槛。
+
 #### 3.3 GPU
 
 标准的 `BatteryConsumer.POWER_COMPONENT_*` 集合没有 GPU，`EnergyConsumerType.aidl` 也没有 GPU 专用枚举。GPU rail 可通过下列入口观察：
@@ -303,6 +338,11 @@ UID 分配阶段按 top（最前台） activity duration（最前台 Activity �
 
 `PowerMonitor` consumer 名称可以出现 GPU，但名称和组合方式允许 OEM 自定义。这与 `BatteryConsumer` 是否有标准 GPU 组件是两个不同的 API 层面。
 
+<!-- gracker-diagram: ch11-01-08-gpu-api-layers -->
+![GPU 可观测性与标准归因组件分属不同 API](../../assets/diagrams/ch11/ch11-01-08-gpu-api-layers.png)
+
+图：厂商可用自定义 consumer 或 rail 暴露 GPU。GPU 频率、busy 与调度是负载证据，不能直接换成能量；名称出现 GPU 也不自动产生标准组件。
+
 #### 3.4 Cellular、Wi-Fi 与 Bluetooth
 
 通信组件可能组合使用：
@@ -313,6 +353,11 @@ UID 分配阶段按 top（最前台） activity duration（最前台 Activity �
 - `power_profile.xml` 回退参数。
 
 共享 controller 或共享 rail 需要二次分配。网络字节多，未必代表 radio（无线通信模块）耗电高——短而分散的传输还可能增加唤醒和高功耗状态驻留时间。诊断时我们要同时观察传输窗口、网络状态、controller activity 与 rail。
+
+<!-- gracker-diagram: ch11-01-09-radio-residency -->
+![传输间隔会影响高功率状态驻留](../../assets/diagrams/ch11/ch11-01-09-radio-residency.png)
+
+图：示意分散传输可能反复触发唤醒与 tail，批处理可能减少切换。条宽不按比例，不能由此预测固定节电百分比；实际还取决于网络、芯片、信号和业务延迟约束。
 
 #### 3.5 GNSS、Camera、Audio、Video 与 Sensor
 
@@ -347,6 +392,11 @@ profile 数字反映特定设备测量条件。Camera、GPS 或 Bluetooth 没有
 
 `BatteryStatsImpl` 记录的是 UID 级统计，而一个 UID 未必对应单个进程。共享 UID、多进程应用、系统 UID 和 SDK sandbox（SDK 沙箱进程） 等场景，都要先弄清楚这次统计的 UID 里包含哪些进程。
 
+<!-- gracker-diagram: ch11-01-10-push-pull -->
+![状态推送与累计快照共同支持活动记账](../../assets/diagrams/ch11/ch11-01-10-push-pull.png)
+
+图：BatteryStats 记录活动和归属线索，不是持续读取整机瞬时电流。一个 UID 可覆盖多个进程，归因前要确认共享 UID 与 sandbox 等映射。
+
 #### 4.2 时间窗口与持久化
 
 BatteryStats 会持久化统计，跨重启保留需要的历史信息。`/data/system/batterystats.bin` 是当前实现中的存储文件，不属于应用可依赖的公开接口。
@@ -354,6 +404,11 @@ BatteryStats 会持久化统计，跨重启保留需要的历史信息。`/data/
 拔掉充电器并不会无条件重置所有统计。`shouldResetOnUnplugLocked()` 在允许自动重置、系统就绪且 history 允许重置的前提下，根据满电、高电量、一次明显充电和累计放电量等条件决定是否 reset；它不按 session（统计会话）时长判断。高电量阈值由 `BatteryStatsConfig.getHighBatteryLevelAfterCharge()` 提供，默认值为 90，OEM 可以配置。
 
 实验前执行 `dumpsys batterystats --reset`，是人为建立一个采集窗口，和系统自动 reset 的策略不同。重置会影响整机统计，不要在用户设备或多人共享测试环境随意执行。
+
+<!-- gracker-diagram: ch11-01-11-reset-window -->
+![自动 reset 与实验窗口是不同操作](../../assets/diagrams/ch11/ch11-01-11-reset-window.png)
+
+图：固定 r1 自动 reset 不以 session 时长判断。默认高电量阈值来自 BatteryStatsConfig，OEM 可改；手动重置影响整机统计。
 
 #### 4.3 `dumpsys batterystats` 能回答什么
 
@@ -384,6 +439,11 @@ Coulomb Counter 对电池充放电电流做时间积分，得到 charge（电荷
 
 读取前还要处理不支持属性的返回值：`getLongProperty()` 返回 `Long.MIN_VALUE`；`getIntProperty()` 对 targetSdk 28 及以上应用返回 `Integer.MIN_VALUE`，对更低 targetSdk 返回 `0`，这时“不支持”和有效零值看上去没有区别。精度结论要以目标 Fuel Gauge 的数据手册和整机验证为准，Coulomb Counter 没有跨设备通用的误差范围。
 
+<!-- gracker-diagram: ch11-01-12-battery-properties -->
+![电池属性先检查单位、符号与不可用值](../../assets/diagrams/ch11/ch11-01-12-battery-properties.png)
+
+图：属性支持、更新周期和平均电流窗口取决于设备。无效值先过滤；旧 target 的 0 与有效零值不可直接区分。
+
 #### 5.2 Fuel Gauge
 
 Fuel Gauge 通常结合 Coulomb counting（库仑计量）、电压、温度、电池模型和校准状态估计 State of Charge（SOC，剩余电量比例），部分实现还提供 State of Health（SOH，电池健康状态）。它面对的是整块电池，某次电流由哪个 UID 引起，它分辨不出来。
@@ -402,6 +462,11 @@ Fuel Gauge 通常结合 Coulomb counting（库仑计量）、电压、温度、�
 
 Framework 不会简单地把 Coulomb Counter 总差值按应用比例切分。BatteryUsageStats 的组件算法可能使用 measured energy、controller 数据或 profile，再依据 UID 活动分配；电池总差值还包含系统、屏幕、基带、供电转换损耗和未归因部分。所以我们核对总趋势时可以把两类结果放在一起看，要拆到每个应用，还得回到归因结果。
 
+<!-- gracker-diagram: ch11-01-13-battery-vs-uid -->
+![电池总变化与 Framework 归因分别取证](../../assets/diagrams/ch11/ch11-01-13-battery-vs-uid.png)
+
+图：Coulomb Counter 与 Fuel Gauge 面向整块电池，不能直接识别 UID。整机趋势可交叉检查，不能把总差值按一个统一比例切成各 App。
+
 ### 6. 归因管线
 
 #### 6.1 从 history 到 `BatteryUsageStats`
@@ -418,11 +483,21 @@ Framework 不会简单地把 Coulomb Counter 总差值按应用比例切分。Ba
 
 `PowerAttributor` 是接口，默认实现使用 `MultiStatePowerAttributor`。不同 processor 的算法各自决定 measured energy、profile 和活动时长的组合方式，因此写不出一条覆盖所有组件的统一分摊公式。
 
+<!-- gracker-diagram: ch11-01-14-attribution-pipeline -->
+![从 history 聚合到设备与 UID consumer](../../assets/diagrams/ch11/ch11-01-14-attribution-pipeline.png)
+
+图：这是一条职责图，默认实现内部还包含 aggregator、exporter 和持久化 span。不同 processor 的分配规则不同，不存在覆盖所有组件的统一公式。
+
 #### 6.2 Android 16 到 17 的变化
 
 Android 16 是迁移阶段：`BatteryUsageStatsProvider` 对已支持的组件调用 `PowerAttributor`，其余组件保留 `*PowerCalculator`。在 `android-17.0.0_r1` 中，`BatteryUsageStatsProvider` 已移除这组顶层 calculator 回退，委托 `PowerAttributor` 生成组件结果。
 
 阅读 Android 17 源码时，应从 `PowerAttributor`、`MultiStatePowerAttributor` 和 `processor/` 目录进入；使用 Android 16 或更早 tag 讨论历史行为时，仍需查看 `CpuPowerCalculator`、`ScreenPowerCalculator` 等旧实现。
+
+<!-- gracker-diagram: ch11-01-15-provider-migration -->
+![Android 16 与 17 的 provider 分工不同](../../assets/diagrams/ch11/ch11-01-15-provider-migration.png)
+
+图：图只对比 provider 的顶层 calculator 回退。使用历史 tag 时保留原实现语义，不能把旧 CpuPowerCalculator 或 ScreenPowerCalculator 的细节套到 r1。
 
 #### 6.3 设置页百分比
 
@@ -437,6 +512,11 @@ Settings 展示的是 Framework 归因结果，和 HAL 原始 rail 表是两条�
 - Settings 自身的分组和展示策略。
 
 这个百分比适合排序和寻找异常组件。它达不到实验室仪表的绝对精度，所有 UID 百分比相加也未必覆盖电池端观测到的全部消耗。
+
+<!-- gracker-diagram: ch11-01-16-settings-percentage -->
+![设置页占比还经过查询与展示口径](../../assets/diagrams/ch11/ch11-01-16-settings-percentage.png)
+
+图：应用占比适合定位异常和比较排序。它不是 HAL rail 表，也不保证所有 UID 的展示百分比覆盖全部电池端消耗。
 
 ### 7. PowerStats HAL、ODPM 与 PowerMonitor
 
@@ -456,6 +536,11 @@ Android 12 起的 AIDL `android.hardware.power.stats.IPowerStats` 包含三组�
 
 这三组累计数据都从开机开始记录。接口契约允许某次查询缺少部分对象的结果，调用方需要按返回 ID 匹配并处理缺失。AIDL consumer 可以附带 UID attribution（UID 归因），但供应商是否提供、如何划分均由硬件与 HAL 决定。Channel 更接近物理或逻辑 meter（计量通道），名称不具备跨设备稳定性。
 
+<!-- gracker-diagram: ch11-01-17-hal-families -->
+![PowerStats AIDL 的三组接口分别解释](../../assets/diagrams/ch11/ch11-01-17-hal-families.png)
+
+图：三类数据从开机累计，但覆盖与含义不同。接口允许某次缺少对象结果，不能把缺项补成 0；consumer 的可选 UID attribution 也不保证完整覆盖。
+
 #### 7.2 ODPM 与 Pixel
 
 Android Studio 官方 Power Profiler 文档说明，ODPM（On-Device Power Monitor，设备内功耗监测）rail 目前面向 Pixel 6 及后续 Pixel 设备。可见 rail 随设备变化，常见类别包括 CPU cluster、GPU、memory、display、camera、cellular、WLAN 和 UFS。
@@ -471,7 +556,17 @@ Android 15 / API 35 增加 `PowerMonitor`、`PowerMonitorReadings` 和 `SystemHe
 - `POWER_MONITOR_TYPE_MEASUREMENT`：直接测量的 device-specific rail（设备专用电源轨）；
 - `POWER_MONITOR_TYPE_CONSUMER`：子系统 consumer，可能直接对应 rail，也可能经过模型计算或组合。
 
+<!-- gracker-diagram: ch11-01-18-monitor-types -->
+![PowerMonitor 类型说明数据含义](../../assets/diagrams/ch11/ch11-01-18-monitor-types.png)
+
+图：measurement 与 consumer 是公开类型语义，不能据名称建立跨设备映射，也不能据类型断言客户端拿到原始 HAL 数据。
+
 下面的读取函数保留 monitor 名称、类型、累计能量和各自时间戳，并处理设备不支持与能量不可用。
+
+<!-- gracker-diagram: ch11-01-19-monitor-read-flow -->
+![异步读取保留每个 monitor 的信息](../../assets/diagrams/ch11/ch11-01-19-monitor-read-flow.png)
+
+图：图解释下面 Kotlin 函数的正常分支和异步读数错误分支；公开列表与读数调用仍需按真实 API 和进程生命周期处理。它不执行设备测量，也不保证列表中的每项都有本次有效能量。
 
 ```kotlin
 data class PowerReading(
@@ -531,6 +626,11 @@ fun readSupportedPowerMonitors(
 
 `getConsumedEnergy()` 返回自开机以来的累计 µWs，并包含插电期间的能量；重启后不保留。比较场景要用同一 monitor 的前后差值和对应 timestamp（时间戳），累计值本身当不了“本次操作耗电”。设备不支持 ODPM 时，supported monitor 列表可能为空。
 
+<!-- gracker-diagram: ch11-01-20-monitor-cache-delta -->
+![缓存、扰动与累计差值需共同核对](../../assets/diagrams/ch11/ch11-01-20-monitor-cache-delta.png)
+
+图：固定 r1 按权限选择缓存年龄候选，并可能对返回能量加入 UID 相关扰动；两种粒度都不能推出无扰动原始值。只有同次开机、同一 monitor、有效且推进的时间戳才支持区间平均功率。
+
 ### 8. Perfetto、Power Profiler 与 Battery Historian
 
 #### 8.1 Perfetto `android.power`
@@ -560,6 +660,11 @@ duration_ms: 60000
 
 `collect_power_rails` 只会输出设备提供的 rail。`battery_poll_ms` 是 trace 采样配置，Fuel Gauge 硬件更新频率是另一回事。长窗口需要我们评估 trace buffer（轨迹缓冲区） 占用、文件大小与设备扰动，生产设备采集还要遵守权限和隐私约束。
 
+<!-- gracker-diagram: ch11-01-21-perfetto-power-clock -->
+![Perfetto 轮询与硬件更新不是同一频率](../../assets/diagrams/ch11/ch11-01-21-perfetto-power-clock.png)
+
+图：android.power 根据配置轮询设备支持的 counter 与 rail，硬件可能在多个轮询点之间只更新一次。轨道纯为说明更新与取样区别，不表示真实更新周期或测量结果。
+
 #### 8.2 工具回答的问题不同
 
 | 工具 | 强项 | 边界 |
@@ -572,6 +677,11 @@ duration_ms: 60000
 | PowerMonitor API | 应用内读取累计 monitor 能量 | 设备支持、名称、范围与更新节奏不同 |
 
 工具选择跟着问题走：整机 A/B 更适合外接仪表，模块变化适合 rail，UID 耗电归属适合 BatteryUsageStats，代码和电源事件的时间关系适合 Perfetto。
+
+<!-- gracker-diagram: ch11-01-22-tool-selection -->
+![按整机、rail、UID 或时间关系选择工具](../../assets/diagrams/ch11/ch11-01-22-tool-selection.png)
+
+图：工具覆盖范围决定结论范围。外接仪表不能自动拆成 UID，rail 也不能自动排除其他 App；旧 Historian 流程需要验证当前版本兼容性。
 
 ### 9. 如何做可信的功耗实验
 
@@ -603,6 +713,11 @@ duration_ms: 60000
 
 校准检查的是 profile 或工具与受控参考测量之间的偏差。一个场景得到的校准系数，换到其他组件、温度和设备上就未必成立。
 
+<!-- gracker-diagram: ch11-01-23-controlled-experiment -->
+![先定义测量对象，再做同条件对照](../../assets/diagrams/ch11/ch11-01-23-controlled-experiment.png)
+
+图：降低一个 UID 或一条 rail 不能证明整机总能量必降。比较还需相同任务完成度；不得用一个整机系数统一修正所有组件与 UID。
+
 OEM 制作 `power_profile.xml` 时，应按官方 Power Values 指导在目标硬件上测量组件增量电流。应用团队做回归时，更适合保持工具、设备和条件一致，比较同一指标的差值；用整机系数修正所有 UID 归因，并不可取。
 
 ### 10. 与内核调度和 ADPF 的关系
@@ -612,6 +727,11 @@ Linux EAS（Energy-Aware Scheduling，能耗感知调度）使用 Energy Model �
 在 `android17-6.18-2026-06_r6` 中，EAS 调度路径使用内核 Energy Model 与调度利用率；AOSP 没有标准调用链把 ODPM rail 实时写回 EAS cost table（调度成本表）。PowerStats 与 PowerMonitor 用于观测能量，ADPF（Android Dynamic Performance Framework）`PerformanceHintManager` 则由应用提供工作负载提示。
 
 厂商可以在 Power HAL、调度器和固件中实现额外联动。缺少 vendor 源码和设备 trace 时，这些联动只能标记为设备特性，推广成平台通用机制缺乏依据。
+
+<!-- gracker-diagram: ch11-01-24-eas-adpf-observation -->
+![EAS 决策、Framework 归因与应用提示分别理解](../../assets/diagrams/ch11/ch11-01-24-eas-adpf-observation.png)
+
+图：AOSP 没有标准调用链把 ODPM rail 实时写回 EAS cost table。厂商额外联动需 vendor 源码或设备 trace 证明；图不把三者画成自动闭环。
 
 ### 11. 源码阅读入口
 
@@ -675,7 +795,17 @@ Linux EAS（Energy-Aware Scheduling，能耗感知调度）使用 Energy Model �
 
 下文沿用 Android 文档中的常用名称：FGS 指 Foreground Service（前台服务），BAL 指 Background Activity Launch（后台 Activity 启动）；quota 表示系统分配的资源配额，OEM 指设备厂商，ROM 指设备搭载的系统。它们分别约束不同环节，一个机制的状态推不出另一个机制的状态。
 
+<!-- gracker-diagram: ch11-01-25-policy-dimensions -->
+![后台资源由多组策略共同约束](../../assets/diagrams/ch11/ch11-01-25-policy-dimensions.png)
+
+图：这些状态可以同时存在，约束对象和豁免范围不同。一个机制的状态不能推出另一个机制已放行；图是调查维度，并非固定串行调用顺序。
+
 同一个 Job 可能同时等待充电约束、Doze 维护窗口、standby quota（待机配额） 和 OEM 调度条件。定位“为什么没运行”时，我们要把这些条件逐项核对一遍，只看 WorkManager 状态往往不够。
+
+<!-- gracker-diagram: ch11-01-26-job-gates -->
+![维护窗口只是 Job 获得运行机会的一个条件](../../assets/diagrams/ch11/ch11-01-26-job-gates.png)
+
+图：图是排障检查顺序，不是所有 Job 的逐行执行伪代码。例外、deadline 和 Job 类型会改变部分约束的适用性；窗口打开不保证任务立即开始。
 
 ### Doze：按设备状态集中后台活动
 
@@ -692,11 +822,21 @@ Android 7.0 / API 24 加入限制较轻的 Light Doze。Light Doze 与 Deep Doze
 
 设备移动、点亮屏幕或接入充电器会让 Deep Doze 退出。Light Doze 与 Deep Doze 在 `DeviceIdleController` 中有各自状态，`dumpsys deviceidle` 输出的 `mLightState`、`mState` 也要分开读。
 
+<!-- gracker-diagram: ch11-01-27-doze-states -->
+![Light 与 Deep 有各自状态机](../../assets/diagrams/ch11/ch11-01-27-doze-states.png)
+
+图：固定 r1 的 Deep STATE_IDLE 将 Light 置为 LIGHT_STATE_OVERRIDE 并取消 Light alarm。图不暗示所有设备必须先经过完整 Light 流程才能进入 Deep。
+
 #### 维护窗口的节奏
 
 维护窗口会短暂恢复网络，并分发积压的 Sync、Job 和 Alarm。设备持续空闲时，维护窗口之间的休眠间隔会逐步增长。具体时长由平台版本、资源 overlay（资源覆盖配置）、DeviceConfig（系统动态配置） 与设备实现决定；App 在某款手机上量到的窗口间隔描述的是那台设备的行为，成不了调度 SLA（服务时限承诺）。
 
 维护窗口到来，只是限制暂时放宽；某个任务要不要马上跑，还要依次满足它自身的约束、standby bucket（待机分组）、quota 和并发调度条件。
+
+<!-- gracker-diagram: ch11-01-28-maintenance-window -->
+![维护窗口放宽限制，任务仍需其他资格](../../assets/diagrams/ch11/ch11-01-28-maintenance-window.png)
+
+图：示意空闲期与维护窗口交替。固定实现会在范围内调整后续间隔；图不按比例，不给出固定时长或 SLA，窗口内仍要满足任务自身、quota 与并发条件。
 
 #### Doze 中哪些能力会被限制
 
@@ -707,9 +847,19 @@ Android 7.0 / API 24 加入限制较轻的 Light Doze。Light Doze 与 Deep Doze
 - 后台 Wi‑Fi 扫描停止。
 - FGS 可以提高进程重要性；设备级 Doze 豁免来自电池优化豁免列表，FGS 换不来。
 
+<!-- gracker-diagram: ch11-01-29-doze-ordinary-special -->
+![普通后台工作与特殊交付路径分开看](../../assets/diagrams/ch11/ch11-01-29-doze-ordinary-special.png)
+
+图：FGS 提高进程重要性，并不提供设备级 Doze 通用豁免。特殊 Alarm 仍受适用频率和权限规则约束，不能把它们画成持续后台运行通道。
+
 高优先级 FCM 只适合时间敏感、会产生用户可见通知的消息。系统会给接收方短暂使用网络和 partial WakeLock（只保持 CPU 运行的唤醒锁）的机会，处理完成后设备继续空闲。普通数据刷新使用 normal priority（普通优先级），并接受维护窗口延迟。
 
 `setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 能在空闲期间交付。前两者有频率限制：每个 App 约九分钟一次，系统还可以延长间隔。它们适合用户感知的关键事件；高频轮询不在适用范围里。
+
+<!-- gracker-diagram: ch11-01-30-fcm-version-boundary -->
+![FCM v2 的通知路径与静默同步分开理解](../../assets/diagrams/ch11/ch11-01-30-fcm-version-boundary.png)
+
+图：Firebase 2026-10-22 迁移页仍给出 EAP 版本与 GA 前可变策略。默认通知路径可不执行 App 后台代码；旧 v1 的 priority、回调与 v2 类型不能混用。
 
 #### Android 17 的 listener（监听器） 型 allow-while-idle Alarm
 
@@ -717,17 +867,32 @@ API 37 新增 `setExactAndAllowWhileIdle(int, long, String, Executor, OnAlarmLis
 
 `OnAlarmListener` 形式的 Alarm 依赖调用进程继续有组件运行，进程没有 Activity、Service 或 ContentProvider 时，系统可以取消它。进程退出后仍要收到事件的场景，应使用 `PendingIntent` 形式并遵守精确闹钟权限。新 API 没有改变 allow-while-idle 只能低频使用的原则。
 
+<!-- gracker-diagram: ch11-01-31-alarm-listener-lifetime -->
+![listener 与 PendingIntent 使用不同生命周期](../../assets/diagrams/ch11/ch11-01-31-alarm-listener-lifetime.png)
+
+图：listener 型 API 不要求一直持锁等待，但也不是进程退出后的可靠持久投递。选择形式时同时核对时钟类型、组件生命周期和可取消条件。
+
 #### Doze 豁免的范围
 
 用户可以在系统设置中把 App 加入电池优化豁免列表。豁免 App 在 Doze 中可以访问网络并持有 `PARTIAL_WAKE_LOCK`，普通 Alarm 等限制仍可能存在。App 可用 `PowerManager.isIgnoringBatteryOptimizations()` 检查状态。
 
 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 只适用于官方列出的少数核心场景，Google Play 也限制直接请求豁免。一般应用应打开电池优化设置页，由用户决定，避免在首次启动时把“无限制”当作必选权限。
 
+<!-- gracker-diagram: ch11-01-32-doze-exemption-scope -->
+![电池优化豁免只放宽指定资源](../../assets/diagrams/ch11/ch11-01-32-doze-exemption-scope.png)
+
+图：豁免范围以当前平台与官方场景要求为准。允许网络与持锁不能推出所有后台限制失效，直接请求豁免也不是首次启动必选步骤。
+
 #### 从 Framework 到 kernel suspend
 
 `DeviceIdleController` 决定何时限制 App 资源，`PowerManagerService` 与 SystemSuspend 协调系统休眠。内核 `android17-6.18-2026-06_r6` 的 `kernel/power/suspend.c` 执行 suspend 主流程，`drivers/base/power/wakeup.c` 管理 wakeup source（唤醒源），`kernel/sched/idle.c` 处理 CPU idle（CPU 空闲状态）。
 
 Doze 状态本身说明的是策略进入了 idle 阶段；设备有没有实际进入 suspend，要另看内核一侧：驱动 wakeup source、内核 timer（定时器）、IRQ（中断请求）或 `system_server` 中的工作都可能拦住休眠。我们确认硬件状态时，把 `power/suspend_resume`、wakeup source 与 CPU idle 的 trace 放在一起看。
+
+<!-- gracker-diagram: ch11-01-33-policy-to-suspend -->
+![Framework 策略与内核实际挂起分层验证](../../assets/diagrams/ch11/ch11-01-33-policy-to-suspend.png)
+
+图：Doze idle 是策略状态，不是已经完成硬件 suspend 的证据。这是职责关系图，不表示 DeviceIdleController 每次进入 idle 都直接调用内核 suspend。
 
 #### 强制进入 Doze 的测试方法
 
@@ -746,6 +911,11 @@ adb shell dumpsys battery reset
 ```
 
 `force-idle` 会绕过正常等待时间，适合验证功能恢复和任务延迟；自然进入 Doze 的时延，要用屏幕关闭、设备静止的自然路径来测。性能与续航测试还要覆盖这条路径。
+
+<!-- gracker-diagram: ch11-01-34-doze-test-restoration -->
+![强制 Doze 测试和自然进入实验分别记录](../../assets/diagrams/ch11/ch11-01-34-doze-test-restoration.png)
+
+图：force-idle 用于功能与限制验证，不能测得自然进入所需时间。battery reset 恢复 BatteryService 模拟状态，其他手工修改需分别撤销。
 
 ### App Standby Buckets：按使用关系分配配额
 
@@ -767,6 +937,11 @@ App Standby（应用待机）不要求整台设备空闲。Android 9 / API 28 �
 
 `QuotaController` 负责 JobScheduler 的配额判断，`AppStandbyController` 评估 bucket，`JobSchedulerService` 汇总约束并分发任务。表里的数字来自当前默认策略说明，我们当参照看就好；硬编码进业务重试逻辑并不可取。
 
+<!-- gracker-diagram: ch11-01-35-bucket-quota -->
+![bucket 指导值还受进程与设备状态影响](../../assets/diagrams/ch11/ch11-01-35-bucket-quota.png)
+
+图：正文表格是近似指导值，不能保证执行。Android 16+ 调整了 Active、top-started 与 FGS 并发 Job 的 runtime quota；业务不能把表格数值硬编码为重试定时器。
+
 #### Restricted bucket 的触发与例外
 
 Android 12/12L 的无互动阈值为 45 天；Android 13+ 缩短为 8 天，关机时间不计入。Android 13+ 还可能因为 24 小时内广播或 binding（服务绑定）次数过多，把 App 放入 Restricted。设备厂商能调整非 Active App 的分类标准。
@@ -778,6 +953,11 @@ Companion Device（配套设备应用）、device/profile owner（设备或工�
 Adaptive Battery（自适应电量管理）的公开契约只保证 bucket 会动态变化。设备可能预装使用机器学习预测近期使用情况的系统 App，也可以在没有该组件时按最近使用时间排序；厂商还能实现自己的分类标准。
 
 AOSP 和公开文档没有规定统一的模型框架、网络结构、特征集合或训练方式。App 可以依赖 `UsageStatsManager.getAppStandbyBucket()` 的返回结果；预测器内部结构不属于公开契约。
+
+<!-- gracker-diagram: ch11-01-36-adaptive-classification -->
+![分类器给出 bucket，控制器按状态施加约束](../../assets/diagrams/ch11/ch11-01-36-adaptive-classification.png)
+
+图：公开契约是 bucket 可动态变化，不能推断统一神经网络、特征集合或训练方式。设备可使用预测或最近使用排序，图不指定一个跨设备固定模型。
 
 #### 检查 bucket、quota 与 pending reason（待处理原因）
 
@@ -799,6 +979,11 @@ adb shell dumpsys battery reset
 `battery reset` 只恢复 BatteryService 的电池模拟状态，不会撤销手工分桶；上面的最后两条命令分别还原这两项。设置回原 bucket 数值也不会还原分类器的完整历史，后续仍可能自动重新分桶。测试报告还要记录屏幕、充电、Doze、Battery Saver、网络和 App 进程状态，否则同一 bucket 下的不同结果无从解释。
 
 API 34 提供单个 pending reason，API 36 增加 `getPendingJobReasons()` 与 `getPendingJobReasonsHistory()`。API 37 的 `JobScheduler.getPendingJobReasonStats(jobId)` 返回 `PENDING_JOB_REASON_*` 到累计 `Duration`（持续时间） 的映射；多个原因可同时存在，所以各项时长之和可能大于任务总等待时间。统计不会跨重启保留，任务成功或取消后也会清除。
+
+<!-- gracker-diagram: ch11-01-37-pending-overlap -->
+![多个 pending reason 的累计时长可以重叠](../../assets/diagrams/ch11/ch11-01-37-pending-overlap.png)
+
+图：API 37 reason stats 累计每个原因的时长，重叠区间会分别计入；因此不能把各项直接相加当总等待。轨道是机制示意，不含虚构实测时长。
 
 诊断时区分这几类：
 
@@ -827,6 +1012,11 @@ PendingIntent 与 IntentSender 的授权逐步改为 opt-in（显式选择启用
 
 授权链还必须包含一个原本就有后台启动资格的参与者，设置 mode 不会额外产生启动资格。可见 App 绑定服务并希望被绑定方拉起 Activity 时，Android 14+ 还要核对 `BIND_ALLOW_ACTIVITY_STARTS`。
 
+<!-- gracker-diagram: ch11-01-38-bal-eligibility -->
+![BAL opt-in 必须依附实际已有的资格](../../assets/diagrams/ch11/ch11-01-38-bal-eligibility.png)
+
+图：mode 不会凭空产生后台启动资格。按具体调用链分别核对 sender、creator、IntentSender 和平台例外，不能把双方开关简单当作通用双重授权公式。
+
 #### 后台位置
 
 - Android 8.0+：后台 App 通常每小时只能收到少量位置更新，此限制与 targetSdk 无关。
@@ -836,11 +1026,21 @@ PendingIntent 与 IntentSender 的授权逐步改为 opt-in（显式选择启用
 
 地理围栏和 batched location（批量定位）可以减少 App 主动轮询，但绕不过权限和系统交付规则。
 
+<!-- gracker-diagram: ch11-01-39-location-gates -->
+![定位权限与 FGS 启动资格是不同条件](../../assets/diagrams/ch11/ch11-01-39-location-gates.png)
+
+图：有效 location FGS 属于前台定位语义，界面退到后台不自动变成后台位置访问。App 已在后台启动时，还需分别满足适用后台定位权限与 FGS 启动条件。
+
 #### 后台 Service 与 FGS
 
 Android 8.0+ 对后台 Service 的创建和存活施加限制。可延迟任务交给 JobScheduler 或 WorkManager；用户知情的持续任务使用匹配类型的 FGS，并接受后台启动限制、类型权限和时长规则。
 
 运行 FGS 并不会把 App 一直维持在 Active bucket。`AppStandbyController.reportEventLocked()` 有一个首次使用例外：App 尚在 Never bucket 时，`FOREGROUND_SERVICE_START` 事件会把它临时提升为 Active，其他 bucket 都不走这条提升路径。想拿 FGS 当 Doze、Job quota 或 while-in-use 权限的通用豁免是行不通的；Android 16 起与 FGS 并发的 Job 也受 runtime quota 约束。
+
+<!-- gracker-diagram: ch11-01-40-fgs-bucket-exception -->
+![FGS 启动事件只在 Never 时走首次提升例外](../../assets/diagrams/ch11/ch11-01-40-fgs-bucket-exception.png)
+
+图：图只表达该事件分支，其他用户行为仍可改变 bucket。FGS 也不自动豁免 Doze、Job quota、BAL、while-in-use 或 Low Power Standby。
 
 ### Hibernation 与 Archiving
 
@@ -854,6 +1054,11 @@ Hibernation（应用休眠）与 Archiving（应用归档）都会让长期未�
 Android 15 提供 `PackageInstaller.requestArchive()`，调用者需要 `DELETE_PACKAGES` 或 `REQUEST_DELETE_PACKAGES` 中的一项权限。结果异步交给 `statusReceiver`；若收到 `STATUS_PENDING_USER_ACTION`，还要等系统要求的用户确认走完，调用返回只说明流程开始。是否自动选择长期未用 App、由哪个商店恢复、图标如何显示，取决于安装器和设备体验；Google Play 的 auto-archive（自动归档） 策略是个例，其他 Android 15 设备按各自的实现走。
 
 Hibernation 恢复后，App 应检查权限并重建必要任务。WorkManager 能帮助恢复一部分持久工作，依赖的 Alarm、通知和服务是否重新注册，还要业务自己验证。
+
+<!-- gracker-diagram: ch11-01-41-hibernation-archive -->
+![休眠与归档在包、数据和恢复上有不同语义](../../assets/diagrams/ch11/ch11-01-41-hibernation-archive.png)
+
+图：完整休眠效果受设备版本与 targetSdk 条件限制，不能套到仅权限自动重置。requestArchive 异步返回状态，若待用户确认则流程尚未完成；调用返回不等于归档成功。
 
 ### Battery Saver 与 Low Power Standby
 
@@ -873,6 +1078,11 @@ Android 13 / API 33 公开 Low Power Standby（低功耗待机）状态。启用
 
 App 可用 `isLowPowerStandbyEnabled()` 检查功能是否开启，并监听 `ACTION_LOW_POWER_STANDBY_ENABLED_CHANGED`。排查“FGS 明明活着却断网”时，我们先把 Low Power Standby 与 Doze、Data Saver 分开确认。
 
+<!-- gracker-diagram: ch11-01-42-saver-vs-standby -->
+![Battery Saver 全局策略与 LPS 激活条件分开看](../../assets/diagrams/ch11/ch11-01-42-saver-vs-standby.png)
+
+图：固定 r1 的 LPS enabled 不等于此刻 active；维护期可受配置影响，调试 force 分支另计。激活时非豁免 App 的网络与 WakeLock 受限，FGS 也在范围内。
+
 #### Adaptive Battery 与 Routine Battery Saver
 
 - Adaptive Battery 影响单个 App 的 bucket 分类，分类器可以使用预测或最近使用排序。
@@ -880,6 +1090,11 @@ App 可用 `isLowPowerStandbyEnabled()` 检查功能是否开启，并监听 `AC
 - Adaptive Charging（自适应充电）属于电池健康与充电管理，设备实现可能根据日程、温度和电池状态控制充电。它与 App Standby、Battery Saver 分属不同机制，每台设备的充电曲线由具体实现决定。
 
 三项功能可能同时存在，观察入口分别是 bucket、low-power 状态，以及充电与 battery health（电池健康）服务。
+
+<!-- gracker-diagram: ch11-01-43-three-adaptive-features -->
+![三个 Adaptive / Routine 名称对应不同机制](../../assets/diagrams/ch11/ch11-01-43-three-adaptive-features.png)
+
+图：功能可以同时存在，名字相近不表示共享同一状态机。Routine provider 是 OEM 可选集成；充电策略不能据此推导 App Standby 行为。
 
 #### Battery Saver 测试
 
@@ -904,6 +1119,11 @@ adb shell dumpsys power
 
 `battery reset` 不保证还原 `low_power` 设置项；实际 Battery Saver 状态还受充电和自动策略影响，要用最后的 `dumpsys power` 确认。性能基准要记录 Battery Saver、Low Power Standby、温度、充电和屏幕状态。CPU 频率下降或帧率变化属于设备结果，仅凭 `low_power=1` 预设不出固定幅度。
 
+<!-- gracker-diagram: ch11-01-44-saver-test-restoration -->
+![恢复设置项和 battery 模拟状态是两件事](../../assets/diagrams/ch11/ch11-01-44-saver-test-restoration.png)
+
+图：restore 的目标是撤销本次显式修改并确认设备状态。仅调用 battery reset 不会替代设置项恢复，也不能预设 CPU 或帧率固定下降幅度。
+
 ### OEM 功耗策略与设备差异
 
 AOSP 允许厂商调整 bucket 分类和低功耗策略。ROM 还可能提供自启动、关联启动、后台活动、睡眠待机、冻结和用户白名单等设置，这些名称、默认值和行为会随品牌、机型、地区与系统版本改变。
@@ -924,6 +1144,11 @@ AOSP 允许厂商调整 bucket 分类和低功耗策略。ROM 还可能提供自
 
 只凭 Perfetto 里“线程没有 runnable slice（处于可运行状态的时间段）”证明不了 OEM 冻结：线程可能正在 epoll（I/O 事件等待机制）中等待，Job 也可能尚未分发。判断冻结需要 ROM 侧状态或 vendor 日志支撑。
 
+<!-- gracker-diagram: ch11-01-45-oem-evidence -->
+![后台异常先按调度、进程与包状态分流](../../assets/diagrams/ch11/ch11-01-45-oem-evidence.png)
+
+图：无 runnable slice 不能单独证明冻结。Job 延后、低内存回收、force-stop、Task Manager 停止、休眠与归档的恢复语义不同，应结合正文表格分别定位。
+
 #### 兼容性测试方法
 
 - 为每个目标机型记录 `ro.build.fingerprint`（系统构建标识）、地区、系统更新版本和电池设置。
@@ -932,6 +1157,11 @@ AOSP 允许厂商调整 bucket 分类和低功耗策略。ROM 还可能提供自
 - 读取 `ApplicationExitInfo`，区分 low memory（低内存）、crash（崩溃）、ANR（应用无响应）、user requested（用户请求） 和其他退出原因。
 - 推送测试记录服务端发送时间、设备到达时间、通知展示与用户交互；只记“收到/未收到”是定位不了问题的。
 - 只有核心功能确受限制时才向用户解释设置入口；设置页面名称按设备动态展示，避免写成跨 ROM 固定路径。
+
+<!-- gracker-diagram: ch11-01-46-delivery-time-evidence -->
+![推送链路保存发送、到达与展示的不同时间](../../assets/diagrams/ch11/ch11-01-46-delivery-time-evidence.png)
+
+图：同一消息保存服务端发送、设备到达、通知展示与用户交互证据。轨道表示可独立观测的阶段，并不保证所有消息都有 App 回调或可见通知；时间基准必须先对齐。
 
 删除系统包、禁用电源管理服务或要求所有用户打开“无限制”，都不适合作为产品修复：前两项会改变系统安全与兼容性，后一项会增加用户电量成本。
 

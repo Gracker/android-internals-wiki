@@ -154,6 +154,11 @@ sched_ext、MUSCHED 和 Binder 的优先级传播，都会影响关键线程拿�
 
 这三个层次各自独立，要分别确认：设备可能编入 sched_ext 却从未加载 BPF 程序；也可能本次开机加载过又退出；还可能处于 partial 模式，只处理显式使用 `SCHED_EXT` 的少量线程。
 
+<!-- gracker-diagram: a201-01-scx-three-gates -->
+![sched_ext 生效的三层确认](../../assets/diagrams/ch19/a201-01-scx-three-gates.png)
+
+图：确认编译、运行和接管范围后，才能讨论目标线程是否受 BPF 策略影响；enable_seq 只证明本次开机曾成功启用。
+
 ### sched_ext 在 Android CPU 调度栈中的位置
 
 先看这些工作进了内核之后归谁管。应用创建的 Java 线程、native 线程（通常承载 C/C++ 代码）和 Binder 线程进入内核后，都以 `task_struct`（Linux 的任务数据结构）表示。线程池、协程调度器和 WorkManager 决定工作怎样映射到线程；到了内核这一层，一个 runnable 的普通任务——工作已就绪，但可能仍在等 CPU——选哪颗 CPU、在队列里排第几、什么时候拿到运行时间，由 sched_ext 决定。两者处在不同层级。
@@ -187,6 +192,11 @@ flowchart TD
 
 图中有两条相互关联的输出：任务何时在哪个 CPU 上运行，以及该 CPU 请求多高的性能。我们分析卡顿时，要把调度 trace（时间线记录）和频率、CPU 空闲状态、温控数据放到同一时间轴上看。
 
+<!-- gracker-diagram: a201-02-scheduler-layers -->
+![用户工作、内核策略与硬件约束](../../assets/diagrams/ch19/a201-02-scheduler-layers.png)
+
+图：用户空间调度工作，内核调度线程；sched_ext 不接管 stop、DL 或 RT，也不能绕过亲和性、温控和硬件上限。
+
 ### 从 GKI 编译能力到运行时启用
 
 先看编译能力这一层：`arch/arm64/configs/gki_defconfig` 明确设置 `CONFIG_SCHED_CLASS_EXT=y`。`init/Kconfig` 中的 `EXT_GROUP_SCHED` 依赖 `SCHED_CLASS_EXT && CGROUP_SCHED`，默认值为 `y`。因此 GKI 具备 sched_ext 及其 cgroup（control group，控制组） 相关接口。
@@ -213,6 +223,11 @@ sysfs 是内核向用户空间暴露状态的虚拟文件系统。`/sys/kernel/s
 
 `root` kobject（内核对象） 只在当前调度器对象存在时建立。所以 `root/ops` 读不到时，可能是调度器未启用、权限受限或 sysfs 未挂载，单凭读取失败还区分不了是哪种。
 
+<!-- gracker-diagram: a201-03-lifecycle-fallback -->
+![BPF 调度器的启用和回退](../../assets/diagrams/ch19/a201-03-lifecycle-fallback.png)
+
+图：编译支持还需要用户空间加载与挂载；策略退出、错误或失去进展时，内核回退到 fair，切换窗口应排除出稳定样本。
+
 ### full 与 partial 决定接管范围
 
 sched_ext 文档对接管范围给出了明确规则：
@@ -224,6 +239,11 @@ sched_ext 文档对接管范围给出了明确规则：
 full 模式下，普通应用线程的调度策略字段仍可能显示 `SCHED_NORMAL`。所以在 `/proc/<pid>/sched` 里搜字符串 `ext`，并不能可靠判断该线程是否正被 sched_ext 接管；我们要把 `state`、`switch_all`、调度器名称和目标线程策略放在一起看。
 
 partial 模式同样要看运行状态：厂商节点 `partial_ctrl` 与 `SCX_OPS_SWITCH_PARTIAL` 是否一一对应，节点名字回答不了，需要设备内核源码或运行时切换证据。
+
+<!-- gracker-diagram: a201-04-full-partial -->
+![full、partial 与无调度器状态](../../assets/diagrams/ch19/a201-04-full-partial.png)
+
+图：full/partial 决定接管范围；full 模式下 task 的 policy 仍可显示 SCHED_NORMAL，不能仅按名字判断归属。
 
 ### `struct sched_ext_ops`：回调有默认行为
 
@@ -273,6 +293,11 @@ sequenceDiagram
 
 `select_cpu()` 选出的 CPU 只是提示：结果超出任务的 allowed cpumask（允许 CPU 掩码） 时，内核会忽略它；即使结果合法，任务也可能在后续阶段运行到另一颗允许的 CPU。若 `select_cpu()` 已把任务直接插入 local DSQ，`enqueue()` 会被跳过。
 
+<!-- gracker-diagram: a201-05-dsq-cycle -->
+![sched_ext 唤醒与分发路径](../../assets/diagrams/ch19/a201-05-dsq-cycle.png)
+
+图：直接插入 local 的唤醒路径可跳过 enqueue；CPU 消费 local，先从 global 取任务，仍为空时才让 dispatch 补充任务。
+
 ### DSQ、时间片与进展保障
 
 CPU 只执行自己 local DSQ 中的任务。local DSQ 为空时，sched_ext 核心实现会尝试从 global DSQ 取任务；仍然为空时才调用 `dispatch()`，让 BPF 策略从自定义队列或其他位置补充任务。
@@ -316,6 +341,11 @@ full 模式中，`scx_switched_all()` 为真，schedutil 从 sched_ext 的 CPU �
 - BPF 策略若接管全部普通任务，需要同步提供合理的 CPU 性能目标值；只改 DSQ 排序可能让频率响应与调度意图脱节。
 - sched_ext 提供的目标值仍受 uclamp、CPUFreq 策略、驱动、温控造成的容量折减和硬件频点限制。目标值很高也不保证 CPU 运行在最高频点。
 
+<!-- gracker-diagram: a201-06-frequency-modes -->
+![full 和 partial 的利用率输入](../../assets/diagrams/ch19/a201-06-frequency-modes.png)
+
+图：固定 tag 的 schedutil 对 full 与 partial 采用不同利用率组合；随后仍受 uclamp、策略、驱动和温控限制。
+
 ### Android vendor hook（供厂商模块挂接逻辑的内核钩子） 与 OEM 策略边界
 
 Android common 内核在 sched_ext 核心实现中放置了一组 `android_vh_*` vendor hook，供厂商模块在内核触发点上挂接自己的逻辑。这个 tag 上能看到的触发点涵盖：
@@ -349,6 +379,11 @@ GitHub 上的 `Wuzikh1/sched_ext` 仓库包含 `hmbird_sched_proc_main.c`，代�
 - 这些控制文件等同于完整 BPF `struct sched_ext_ops` 实现。
 
 量产状态要按内核 tag、固件版本和具体型号记录；高通、联发科或某个手机品牌的名称，只能当查找设备证据的起点。
+
+<!-- gracker-diagram: a201-07-vendor-evidence -->
+![OEM 策略证据的强度](../../assets/diagrams/ch19/a201-07-vendor-evidence.png)
+
+图：通用 hook、第三方控制节点和量产实现分别核验；不能从节点命名推出 flag 映射或品牌统一算法。
 
 ### sched_ext 怎样影响前台交互
 
@@ -497,6 +532,11 @@ MUSCHED 把工作分为两侧：
 
 论文公开的队列策略是：每个 CPU 有一个 FIFO VIP 队列，单次时间片为 3 ms；时间片用完但累计预算仍有剩余时回到队尾，累计预算耗尽则临时撤销 VIP。Audio、Video、WebView 和 Display 的预算分别是 20 ms、10 ms、120 ms 和 20 ms。这些数值来自该实现对代表性负载的性能测量（profiling），Android API 里没有对应项，跨设备复制前也要重新验证。
 
+<!-- gracker-diagram: a201-08-vip-budget -->
+![MUSCHED 有界 VIP 服务](../../assets/diagrams/ch19/a201-08-vip-budget.png)
+
+图：MUSCHED 将场景语义转为临时 VIP 服务，并用单次时间片与累计预算限制资源占用；这些参数属于论文实现。
+
 #### 锁与 Binder 依赖传播
 
 只提升等待线程，缩短不了锁持有者或远端服务线程的 runnable 等待。MUSCHED 针对 `futex`（快速用户空间锁机制）、`mutex`（互斥锁） 和 `rwsem`（读写信号量） 三类同步原语提供两种有时间边界的策略：
@@ -509,6 +549,11 @@ MUSCHED 把工作分为两侧：
 Android 17 Binder 驱动已经会在同步事务中处理 Linux 调度策略与优先级（policy/prio），保存服务线程原值，并在回复、失败或线程重新等待进程工作时恢复。MUSCHED 的 VIP 是自有状态，Binder 默认路径不会自动复制它。
 
 论文说明了同步事务上的 VIP 传播，但没有公开它使用 vendor hook、tracepoint、kfunc，还是私有 Binder 改动。单向的 oneway（单向、无需回复）事务、嵌套调用 `A → B → C`、线程池复用、事务失败和调用方死亡，都必须单独验证标签的添加与撤销时机。
+
+<!-- gracker-diagram: a201-09-dependency-propagation -->
+![等待方、依赖方与优先级生命周期](../../assets/diagrams/ch19/a201-09-dependency-propagation.png)
+
+图：提升等待方不足以缩短依赖方的 runnable 等待；Linux policy/prio 的 Binder 处理与 MUSCHED 自定义 VIP 是不同状态。
 
 #### 选核、负载均衡与产品证据
 
@@ -590,6 +635,11 @@ flowchart LR
 
 “输入分发延迟”通常只覆盖 InputDispatcher 发出事件到应用接收或返回 ACK 确认回执的阶段；“触摸到显示延迟”还包括游戏逻辑、渲染、合成，直到关联画面完成 present。两种指标的终点不同，报告中要分开写。
 
+<!-- gracker-diagram: a201-11-input-end-to-end -->
+![从触控前端到屏幕呈现的阶段](../../assets/diagrams/ch19/a201-11-input-end-to-end.png)
+
+图：触摸到画面更新跨越采样、路由、应用与渲染、合成显示；输入交付或 ACK 只是其中一段，不能代替完整物理延迟。
+
 ### AOSP Game Mode 提供了什么
 
 Game Mode API 和相关干预机制在部分 Android 12 设备上可用；从 Android 13 起，该能力面向运行 Android 13 及以上的设备提供。官方文档要求游戏每次从暂停状态恢复时重新调用 `GameManager#getGameMode()`，因为用户可能在暂停期间切换 Standard、Performance 或 Battery 模式。游戏可据此调整画质、目标帧率和资源使用。
@@ -618,6 +668,11 @@ if (boostEnabled) {
 注意这段代码只向 PowerManager 传递电源模式，InputDispatcher 和触摸事件的队列顺序都保持原样。设备厂商可以在 Power HAL 收到 `GAME` 或 `GAME_LOADING` 后提高 CPU 时钟频率或前台游戏任务的 CPU 调度优先级，这些都属于性能、温控与功耗策略。
 
 AOSP 的 Power HAL 文档把“提高前台游戏应用的 CPU 优先级”列为设备厂商可选措施之一。它可能让游戏线程更快获得 CPU 时间，却不会让 InputDispatcher 中的游戏事件自动插到其他事件前面。
+
+<!-- gracker-diagram: a201-10-game-mode-power -->
+![Game Mode 的场景信号和输入路由](../../assets/diagrams/ch19/a201-10-game-mode-power.png)
+
+图：Game Mode 和 Power HAL 影响性能策略；输入窗口选择按 InputDispatcher 的规则执行，标准 API 没有游戏专属输入优先队列。
 
 ### InputDispatcher 的事件目标选择
 
@@ -668,6 +723,11 @@ sp<WindowInfoHandle> DispatcherWindowInfo::findTouchedWindowAt(
 
 `notifyWindowUnresponsive()` 和 `notifyWindowResponsive()` 分别报告输入超时与恢复。前者通知系统窗口无响应，并启动 ANR 处理；后者只会在该窗口先被标记为无响应后调用，用于撤下可能存在的 ANR 对话框并允许以后重新检测。平台把 `notifyWindowResponsive()` 定义为恢复通知，游戏识别或输入重定向都在它的职责之外。
 
+<!-- gracker-diagram: a201-12-window-targets -->
+![InputDispatcher 的目标规则](../../assets/diagrams/ch19/a201-12-window-targets.png)
+
+图：不同输入类型使用不同的目标规则；可触摸窗口未必拥有键盘焦点，观察窗口和安全检查还会附加约束。
+
 ### 异步注入的等待语义
 
 `InputManager.INJECT_INPUT_EVENT_MODE_ASYNC` 在 Android 17 对应 `InputEventInjectionSync.NONE`。调用需要系统级 `INJECT_EVENTS` 权限。InputDispatcher 仍会验证事件、执行策略回调、创建 `EventEntry`，再通过 `enqueueInboundEventLocked()` 放入入站队列 `mInboundQueue`。
@@ -689,6 +749,11 @@ if (syncMode == InputEventInjectionSync::NONE) {
 `NONE` 让注入调用方在事件入队后直接拿到成功结果，不等待目标解析，也不等待应用处理完成。这个返回值只表示事件已被接受入队，证明不了它已经送达目标：事件随后仍要经过窗口选择、输入通道和应用消费，焦点、`targetUid` 所有权与安全条件都可能让事件交付失败。`INJECT_EVENTS` 权限则在进入这条路径前检查。
 
 所以异步注入只是注入 API 的一种等待语义，游戏触控提速方案、“零排队”都谈不上。肩键映射、连招宏或无障碍工具若合成新事件，还要测量从原始事件到合成事件之间新增的识别与转发时间。
+
+<!-- gracker-diagram: a201-13-async-injection -->
+![异步输入注入的返回边界](../../assets/diagrams/ch19/a201-13-async-injection.png)
+
+图：NONE 模式让调用方在接受入队后返回，不等待目标解析和应用完成；后续交付仍可能因窗口或安全条件失败。
 
 ### View 层拦截的作用范围
 
@@ -712,6 +777,11 @@ if (!disallowIntercept) {
 
 Unity、Unreal、GameActivity 或主要使用原生代码的游戏，常把输入交给引擎自己的队列。此时还要检查引擎读取输入的时机、事件合并，以及游戏逻辑更新周期（常称 tick）与渲染帧怎样同步；ViewGroup 可能不在主要输入路径上。
 
+<!-- gracker-diagram: a201-14-view-interception -->
+![ViewGroup 手势拦截的边界](../../assets/diagrams/ch19/a201-14-view-interception.png)
+
+图：requestDisallowInterceptTouchEvent 只约束当前 View 树手势拦截；系统窗口路由、系统手势和受信任 pilfer 仍各按自己的规则运行。
+
 ### 刷新率为什么会改变“跟手”感
 
 `RefreshRatePolicy` 会计算窗口的帧率选择优先级（frame-rate selection priority）。这组优先级只比较窗口焦点与 `preferredDisplayModeId`：
@@ -726,6 +796,11 @@ Unity、Unreal、GameActivity 或主要使用原生代码的游戏，常把输�
 刷新率从 60 Hz 提升到 120 Hz，刷新间隔从约 16.67 ms 变为约 8.33 ms；144 Hz 的间隔约为 6.94 ms。游戏若能按时产出帧，输入等待下一次可见更新的时间可能缩短。应用或 GPU 已经积压时，提高刷新率既换不来 `MotionEvent` 更早送达，也补不回已经错过的渲染提交时限。
 
 Game Mode 还可能通过 FPS throttling 干预设置帧率上限；这种干预只能限速，不能把游戏从 60 FPS 提升到 120 FPS。Perfetto 的 `android.game_interventions` 数据源可在 userdebug 构建上记录当前 Game Mode 与干预配置，SQL 中对应 `android_game_intervention_list` 表。分析时要同时核对屏幕刷新率、游戏目标 FPS 和画面呈现节奏，也就是相邻画面实际显示的间隔。
+
+<!-- gracker-diagram: a201-15-refresh-votes -->
+![帧率偏好到物理刷新率](../../assets/diagrams/ch19/a201-15-refresh-votes.png)
+
+图：帧率偏好需要经 SurfaceFlinger 综合屏幕能力和各图层投票；提高刷新率不能补回已积压的应用或 GPU 工作。
 
 ### OEM 可能改动的层级
 
@@ -789,6 +864,11 @@ ORDER BY event_time;
 
 `getevent -lt` 会持续读取输入设备，可能影响系统行为，它打印的原始 evdev 事件时间戳也不同于终端输出时刻；这条命令适合在实验室短时检查报点间隔，直接拿来算触摸到显示延迟就超出了它的适用范围。
 
+<!-- gracker-diagram: a201-16-input-latency-tracks -->
+![输入交付、ACK 与关联呈现的区间](../../assets/diagrams/ch19/a201-16-input-latency-tracks.png)
+
+图：dispatch、handling 和 ack 组成从分发到确认的区间；end_to_end 从 InputReader 读取延伸到关联帧呈现，缺失或推测关联必须标明。
+
 ### A/B 实验怎样组织
 
 建议至少采集四种条件：
@@ -810,6 +890,11 @@ ORDER BY event_time;
 6. 检查 system_server、SurfaceFlinger、音频和后台工作是否受到挤压。
 
 多轮实验应报告分布，至少包含中位数、P90/P95/P99、样本数与温度区间。一次点击、单帧截图或平均 FPS 反映不了抖动和少量高延迟样本。
+
+<!-- gracker-diagram: a201-17-ab-attribution -->
+![游戏模式与 OEM 触控增强的对照](../../assets/diagrams/ch19/a201-17-ab-attribution.png)
+
+图：逐项改变条件，按输入交付、线程等待、渲染和呈现分段归因；固定固件、场景、FPS、刷新率和温度并重复采样。
 
 ### 多窗口、折叠屏和外设输入
 

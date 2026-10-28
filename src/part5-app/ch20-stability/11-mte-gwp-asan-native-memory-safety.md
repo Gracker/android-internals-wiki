@@ -94,6 +94,11 @@ Android 的标准 Native heap 由 Scudo（Android 默认的加固型 Native 分�
 
 覆盖范围按存储类型分三类，启用条件各不相同：
 
+<!-- gracker-diagram: a217-01-tag-comparison -->
+![CPU 比较指针标签与内存粒度标签](../../assets/diagrams/ch20/a217-01-tag-comparison.png)
+
+图：标签不匹配按有效模式报告；同粒度内越界、相同标签碰撞和未受保护映射仍可能漏掉。
+
 | 存储 | 只设置 `android:memtagMode` 是否足够 | 补充条件 |
 | --- | --- | --- |
 | 标准 Native heap（原生堆） | 对支持 MTE 的 64 位进程生效 | 由 Bionic/Scudo 管理 |
@@ -101,6 +106,11 @@ Android 的标准 Native heap 由 Scudo（Android 默认的加固型 Native 分�
 | Native stack / globals（原生栈 / 全局变量） | 不足 | 需要编译器插桩、ELF（Native 二进制文件格式）标记，以及动态链接器和运行时库支持 |
 
 Java/Kotlin 对象仍由 ART（Android 运行时）管理。保护范围之外的是 32 位进程、未启用 MTE 的映射、落在同一标记粒度内的越界，以及不配合的自定义分配器。面向应用的 Stack MTE（原生栈标记）从 Android 14 QPR3（第三次季度平台更新）开始提供，插桩后的应用只能运行在支持 MTE 的设备上。
+
+<!-- gracker-diagram: a217-02-coverage-conditions -->
+![堆、自定义映射、栈与 globals 需要不同启用条件](../../assets/diagrams/ch20/a217-02-coverage-conditions.png)
+
+图：Java对象由ART管理；Stack MTE应用插桩从Android14QPR3开始，仅用于支持MTE的设备和调试构建。
 
 检测是概率性的：4 位最多编码 16 种标签，释放后重新分配可能碰巧拿到相同标签，越界落在同一个 16 字节粒度内时也跨不过标签边界。官方工具对比把 MTE 的典型漏检概率写作 1/16。MTE 提高的是发现概率，报告里没有 MTE 错误，离“代码没有内存缺陷”的结论还很远。
 
@@ -131,6 +141,11 @@ MTE 也不统计 Native heap 大小。要定位“哪些调用栈分配最多”
 
 最终生效的是 merged manifest（构建工具合并后的 manifest）；依赖库 manifest、构建类型和产品变体都可能改变合并结果，确认配置时以它为准。
 
+<!-- gracker-diagram: a217-03-manifest-values -->
+![manifest 表达请求值，default 不能直接记录为 off](../../assets/diagrams/ch20/a217-03-manifest-values.png)
+
+图：process覆盖application；合并后的manifest、硬件能力和兼容策略共同决定新进程行为。
+
 这段配置表达的只是应用请求；设备有没有 MTE，要由 Zygote 在进程创建时按硬件能力决定。设备缺少 MTE 时，会降级到 TBI（Top Byte Ignore，CPU 忽略指针最高字节）或 NONE（不启用标签）。TBI 下 Bionic 仍可以在释放时检查标签，逐次的内存访问检查就没有了。即使硬件支持，最终检查模式也可能受兼容性开关、系统属性和设备的逐 CPU 策略影响。
 
 ## SYNC、ASYNC 与 ASYMM
@@ -159,6 +174,11 @@ signal 11 (SIGSEGV), code 8 (SEGV_MTEAERR)
 
 报告位置可能是后续系统调用、定时器中断或无关 Native 调用，错误地址通常不可用。它更适合作为低开销的正式版本检测与缓解；报告可以证明发生过 MTE 错误，最初的错误访问点则往往要靠后续排查。
 
+<!-- gracker-diagram: a217-04-sync-async-timing -->
+![SYNC 的访问现场与 ASYNC 的报告点不同](../../assets/diagrams/ch20/a217-04-sync-async-timing.png)
+
+图：SYNC常见SEGV_MTESERR，可用当前PC与地址定位；ASYNC常见MTEAERR，当前栈可能是延迟报告点。
+
 ### ASYMM
 
 ASYMM（非对称检查）对读访问做同步检查，对写访问做异步报告。它是 Armv8.7-A 的 CPU 能力，manifest 里没有对应的可填值。
@@ -171,6 +191,11 @@ ASYMM（非对称检查）对读访问做同步检查，对写访问做异步报
 - ASYNC 请求在某个 CPU 上被增强为 SYNC 时，错误现场可能更精确，但进程并未按 SYNC 配置分配器，分配 / 释放调用栈仍未必可用。
 
 普通应用没有公开的 `asymm` 请求值，也没有可靠 API 读取每次访问所在 CPU 的最终首选模式。事件上报应保留原始 `tagged_addr_ctrl`（线程的 tagged-address 控制位）或 tombstone（系统生成的 Native 崩溃报告）记录，并允许 `effective_mode=unknown`。
+
+<!-- gracker-diagram: a217-05-requested-effective -->
+![允许的模式集合与逐 CPU 实际模式分开保存](../../assets/diagrams/ch20/a217-05-requested-effective.png)
+
+图：线程迁移后实际行为可能变化；ASYNC增强为SYNC也不会自动补齐按SYNC初始化才启用的分配栈记录。
 
 ## 从 manifest 到 Scudo 的生效路径
 
@@ -194,6 +219,11 @@ merged AndroidManifest.xml
 
 Native `SpecializeCommon()` 把运行时标志映射到 `M_HEAP_TAGGING_LEVEL_TBI`、`ASYNC`、`SYNC` 或 `NONE`，再调用 `mallopt(M_BIONIC_SET_HEAP_TAGGING_LEVEL, ...)`。Bionic 的 `malloc_common.cpp` 在锁保护下调用 `SetHeapTaggingLevel()`，标准分配器随后按该级别管理堆标签。
 
+<!-- gracker-diagram: a217-06-activation-chain -->
+![Zygote 决定新进程标志，分配器管理受保护 heap](../../assets/diagrams/ch20/a217-06-activation-chain.png)
+
+图：目标非arm64不设置MTE；请求off的已运行进程没有普通公开远程开关可升级为async。
+
 这条路径也说明了一项发布限制：manifest 配置在进程创建阶段生效。一个已经以 off 启动的进程，业务远程配置切不到 async；新发布的 manifest，也要等进程重新创建才起作用。
 
 ## 怎样确认支持与请求状态
@@ -216,6 +246,11 @@ adb shell debuggerd 12345 | head -30 | grep tagged_addr
 
 应用代码若用 `prctl(PR_GET_TAGGED_ADDR_CTRL)` 检查，得到的也只是调用线程的状态：任意地址映射是否带 `PROT_MTE`、其他线程和其他 CPU 此刻是否同一模式，都要另外核对。
 
+<!-- gracker-diagram: a217-07-support-observation -->
+![支持能力、线程控制与错误报告提供不同证据](../../assets/diagrams/ch20/a217-07-support-observation.png)
+
+图：型号只能分组；CPU能力不证明每个映射或每个线程受保护，调用线程状态也不能证明每次访问的有效模式。
+
 官方设备清单会更新。我们建议工程记录保存设备实测能力、build fingerprint（系统构建指纹）和 MTE 启动方式，型号只作为分组字段。
 
 ## 分批启用：按发布版本和进程控制
@@ -229,6 +264,11 @@ MTE 对标准 Native heap 是进程级属性，普通应用没有安全的远程
 5. 出现不可接受的回归时，停止扩大发布范围，并回到上一版本或发布关闭 MTE 的修正版。
 
 远程配置仍有用途：它可以关闭高风险 Native 功能、降低并发、展示原生错误页或阻止问题页面进入；Zygote 已经创建出的进程，检查模式改不动。
+
+<!-- gracker-diagram: a217-08-rollout-recovery -->
+![通过构建与分阶段发布控制，修正版随新进程生效](../../assets/diagrams/ch20/a217-08-rollout-recovery.png)
+
+图：暂停发布不回退已安装包；远程配置可停高风险功能，但不能替换已创建进程的manifest模式。
 
 发布前要具备：
 
@@ -262,6 +302,11 @@ SYNC 报告优先读取：
 5. 涉及对象的线程与所有权关系。
 
 ASYNC 报告先用于确认受影响版本、进程、设备与业务入口；归并时不要拿当前 PC 强行分组，下一步应制作相同版本、相同测试负载的 SYNC 诊断包，或在后续小范围候选包中把目标进程改为 SYNC。
+
+<!-- gracker-diagram: a217-09-report-evidence -->
+![SYNC 和 ASYNC 使用不同的根因聚合方式](../../assets/diagrams/ch20/a217-09-report-evidence.png)
+
+图：ASYNC当前PC常不代表最初错误指令；复现时用相同版本和负载的SYNC诊断包提高定位质量。
 
 ## APM 事件字段
 
@@ -302,6 +347,11 @@ MTE 错误仍以 `SIGSEGV` 进入 Native 崩溃采集体系。debuggerd 的信�
 
 第三方采集器必须用受控故障验证：SYNC 释放后访问、SYNC 越界、ASYNC 错误、栈溢出和多线程同时崩溃。每个用例都要确认应用报告、系统 tombstone、Build ID、MTE `si_code` 和上传结果。
 
+<!-- gracker-diagram: a217-10-collector-cooperation -->
+![应用采集器保存原始现场并保留系统处理路径](../../assets/diagrams/ch20/a217-10-collector-cooperation.png)
+
+图：debuggerd的SA_EXPOSE_TAGBITS保留可用标签位；备用信号栈与多线程故障必须在受控设备验证。
+
 ## 性能、兼容性与“误报”
 
 MTE 的开销受 CPU 实现、检查模式、分配栈记录、分配行为和测试负载影响，任何单一百分比都代替不了全项目结论。应使用同一个正式版本、相同设备电源状态和相同测试负载比较：
@@ -331,6 +381,11 @@ MTE 标签不匹配通常表示进程违反了 tagged-memory（带标签内存�
 
 排查看报告时，先按这张表把责任落到具体一层。设备厂商内核、SoC 的 MTE 模式性能和发布配置，仍需结合系统构建指纹与实测结果确认。
 
+<!-- gracker-diagram: a217-11-tool-responsibilities -->
+![访问违规检测、堆画像与分配器加固各回答不同问题](../../assets/diagrams/ch20/a217-11-tool-responsibilities.png)
+
+图：标签约束违规应先按真实错误对待；缺陷修复依赖对象所有权，不从检测器输出推导完整内存安全比例。
+
 ## GWP-ASan：抽样保护少量堆分配
 
 MTE 用硬件标签检查受保护内存映射的访问；GWP-ASan（名称来自 “GWP-ASan Will Provide Allocation SANity”）走了另一条路：从 Native 堆分配中抽样，把少量对象放进 guarded pool（由不可访问页面包围的受保护内存池）。两者都能发现释放后访问和越界，命中范围、成本和报告含义各不相同，正式版本可以组合使用，两种覆盖率相加也得不出“内存安全百分比”。
@@ -340,6 +395,11 @@ MTE 用硬件标签检查受保护内存映射的访问；GWP-ASan（名称来�
 GWP-ASan 的覆盖面由两层抽样决定：先决定某次进程启动是否启用，再从该进程的内存分配中抽样。`always` 模式把第一层命中率设为 100%，其他模式交给平台策略。只有同时通过两层选择的对象才进入 guarded slot（受保护池中的对象槽位），“应用启用了 GWP-ASan”离“所有 `malloc` 都受保护”很远，固定的 `1/N` 也推不出某个缺陷的准确发现率。
 
 在 Bionic 适配层里，默认 `Recoverable=true`；`SampleRate=2500` 是被选中进程内的分配级抽样分母，`MaxSimultaneousAllocations=32` 是同一进程同时可占用的保护槽上限；`SYSTEM_PROCESS_OR_SYSTEM_APP` 与 `APP_MANIFEST_DEFAULT` 分支默认 `process_sample_rate=128`，默认覆盖要先过进程启动这一层。
+
+<!-- gracker-diagram: a217-12-gwp-two-sampling -->
+![GWP-ASan 先选进程启动，再选少量分配](../../assets/diagrams/ch20/a217-12-gwp-two-sampling.png)
+
+图：固定Bionic默认进程分母128、分配分母2500、最多32槽，属性可覆盖；不是某个bug的准确发现概率。
 
 进程被选中后，每个分配入口先调用 `GuardedAlloc.shouldSample()`；未命中或 guarded pool 已满时，再委派给下一层原生分配器。[来源: AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
@@ -353,6 +413,11 @@ GWP-ASan 可用于 `targetSdkVersion >= 30`（面向 Android 11 / API 30 或更�
 
 `always` 取消的只是进程启动这一层抽样，每次内存分配仍要过第二层抽样才进入受保护池。进程级配置可以覆盖 application 级配置，最终合并后的 manifest 才算数。
 
+<!-- gracker-diagram: a217-13-gwp-mode-defaults -->
+![manifest 请求、抽样与 Recoverable 配置分开记录](../../assets/diagrams/ch20/a217-13-gwp-mode-defaults.png)
+
+图：官方NDK描述always故障终止，固定Android17源码默认Recoverable为true；报告要同时写请求与实际配置。
+
 开发者文档仍把 `always` 下命中受保护池错误描述为进程终止；核对 Android 17 源码时，还要同时记录 Bionic 的 `Recoverable` 配置，因为 `SetDefaultGwpAsanOptions()` 默认将 `Recoverable` 设为 `true`，系统属性可改变这一行为。无论进程是否继续运行，GWP-ASan 报告都代表真实内存破坏，支付、写入这类有副作用的操作都不要自动重试。[来源: Android NDK GWP-ASan 文档；AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
 启用的大致路径是：Zygote/AndroidRuntime 从应用配置和平台策略得到 GWP-ASan mode，每个 fork 出来的子进程在分配器初始化阶段调用 Bionic 的 `MaybeInitGwpAsan()`；Zygote 自身的 `app_process` 初始化会被显式跳过，避免一次采样影响所有子进程。
@@ -361,11 +426,21 @@ GWP-ASan 可用于 `targetSdkVersion >= 30`（面向 Android 11 / API 30 或更�
 
 还有一层互斥要留意：若本次启动已经由 `malloc_debug`、`malloc_hooks` 或 heapprofd 占用 default dispatch，`MaybeInitGwpAsan()` 会直接返回未启用。泄漏画像和 GWP-ASan 越界 / 释放后访问诊断通常要分开实验，并在报告中记录 allocator hook 状态。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 bionic/libc/bionic/gwp_asan_wrappers.cpp]
 
+<!-- gracker-diagram: a217-14-dispatch-order -->
+![GWP-ASan 是否装入分派链取决于抽样与安装先后](../../assets/diagrams/ch20/a217-14-dispatch-order.png)
+
+图：若其他default dispatch已先安装，GWP初始化可直接返回；GWP先装时可兼容后装的heapprofd/debug/hooks。
+
 ### 受保护槽位怎样暴露错误
 
 每个被抽中的内存分配占用一个槽位，邻近的 guard page（权限设为不可访问的保护页）负责拦住跨页越界。对象释放后，槽位进入隔离状态，旧指针再次访问也会触发错误。metadata（分配器保存的诊断元数据）记录分配 / 释放线程和调用栈，debuggerd 会把这些信息写入 Native 崩溃报告。
 
 它也有明确的盲区：
+
+<!-- gracker-diagram: a217-15-guarded-slot -->
+![保护页与释放后隔离暴露抽样对象的非法访问](../../assets/diagrams/ch20/a217-15-guarded-slot.png)
+
+图：越界跨入guard page或访问已释放隔离槽可触发；仍在可访问区域内的越界、未抽中对象或槽复用可能漏掉。
 
 - 未被抽中的内存分配不受保护；
 - 越界仍落在槽位可访问范围内时可能不触发；
@@ -383,7 +458,17 @@ Android 14 / API 34 及以上，当 manifest 未填写 `android:gwpAsanMode` 或
 
 “进程没有立刻退出”只是表象：发生释放后访问或越界后，官方将后续行为定义为不确定，Recoverable GWP-ASan 事件仍应进入稳定性指标、去重、告警和高优先级修复队列。支付、写入等有副作用的操作不能因为进程继续运行就自动重试。
 
+<!-- gracker-diagram: a217-16-recoverable-first-report -->
+![平台恢复先报告再处理槽位，进程内后续错误不重复完整输出](../../assets/diagrams/ch20/a217-16-recoverable-first-report.png)
+
+图：first_crash锁限制完整报告次数；进程继续运行不保证业务状态有效，也不能自动重放副作用。
+
 Recoverable GWP-ASan 与 Permissive MTE 最终都会把 `process_info.recoverable_crash` 设为 true 来避免按普通 fatal signal 终止进程，但入口条件不同：Permissive MTE 看 `SEGV_MTESERR` / `SEGV_MTEAERR` 与 `is_permissive_mte()`，GWP-ASan 则要求 `SIGSEGV` 带有 fault address，且 Bionic 注入的 `NeedsGwpAsanRecovery(si_addr)` 确认地址属于 guarded pool。APM 分类要把两条路径分开，一条可恢复 `SIGSEGV` 具体走哪条，按上面的入口条件判断。[来源: DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md; AOSP android-17.0.0_r1 system/core/debuggerd/handler/debuggerd_handler.cpp]
+
+<!-- gracker-diagram: a217-17-two-recovery-paths -->
+![Recoverable GWP-ASan 与 Permissive MTE 使用不同入口条件](../../assets/diagrams/ch20/a217-17-two-recovery-paths.png)
+
+图：固定MTE诊断恢复会关闭相关线程的检查，GWP处理受保护分配器槽；不能只按SIGSEGV混成同一种事件。
 
 ### 报告、聚合与修复
 
@@ -404,6 +489,16 @@ error type
 绝对地址、线程 ID 和完整错误文本不适合充当长期聚合特征。一个事件可能同时出现在应用 SDK、tombstone、`ApplicationExitInfo` 和 Play 平台，应按启动 ID、时间、信号、Build ID 与关键栈帧去重，同时保留来源差异。Android 12 / API 31 起，`ApplicationExitInfo.getTraceInputStream()` 可为 Native 崩溃返回 tombstone protobuf（二进制结构化数据），但全局环形缓冲区中的记录可能被覆盖，返回值也可能为空。
 
 修复时我们仍要回答对象所有权问题：谁分配、谁释放，异步任务或容器为何在释放后继续持有地址。先在相同 Build ID 上用报告定位，再用 `always`、HWASan 或 MTE SYNC 的受控构建提高复现概率；抽样率提得再高，也代替不了生命周期修复。
+
+<!-- gracker-diagram: a217-18-gwp-symbols-quality -->
+![GWP 报告由创建、释放与访问三类现场共同解释](../../assets/diagrams/ch20/a217-18-gwp-symbols-quality.png)
+
+图：诊断状态和metadata从libc共享globals传给crash_dump；字段缺失也可能是未启用、未抽中、覆盖或收集不完整。
+
+<!-- gracker-diagram: a217-19-fatal-recoverable-denominators -->
+![报告数量、退出数量与缺陷数量分别统计](../../assets/diagrams/ch20/a217-19-fatal-recoverable-denominators.png)
+
+图：ApplicationExitInfo Native trace API31+允许为空；进程未退出时不能要求它覆盖可恢复事件。
 
 ### MTE、GWP-ASan 与其他工具的分工
 

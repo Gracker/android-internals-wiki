@@ -148,6 +148,11 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 
 表中“允许”只表示通过了后台音频硬化检查；焦点是否拿到、路由是否成功、播放是否完成，还要按各自规则另行确认——焦点锁定、设备断开、播放器错误是独立的问题，我们接下来分别看。
 
+<!-- gracker-diagram: a278-01-background-audio-contract-gates -->
+![Android17后台音频先过基础FGS和目标37WIU门槛](../../assets/diagrams/ch25/a278-01-background-audio-contract-gates.png)
+
+图：不要只按系统版本分组；同一Android17设备上的target36和37可能经过不同的默认检查。
+
 ### 三类 API 的失败表现
 
 后台音频硬化刻意让多数失败保持静默，避免不合规应用借异常改变系统行为。判断一次失败时，我们要把返回值、系统日志和播放状态放在一起看。
@@ -159,6 +164,11 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 | 音量与铃声模式 API | 调用被忽略，目标状态不变 | 抛出 `IllegalStateException` |
 
 拿返回值来说，`AudioTrack.write()` 返回成功，只说明数据被客户端提交了，系统有没有把声音送到输出设备还要另查；Media3 的 `playWhenReady`、`playbackState` 描述的也只是播放器状态机，平台授权状态在别处。所以线上诊断要额外记录焦点结果、前台服务状态、Activity 可见性、音频用途和 `AudioHardening` 日志，这几项拼起来，我们才能还原一次静默失败。
+
+<!-- gracker-diagram: a278-02-player-state-versus-audible-output -->
+![播放器正在播放不等于设备正在出声](../../assets/diagrams/ch25/a278-02-player-state-versus-audible-output.png)
+
+图：确认播放意图结束后，残留解码、网络或持锁才应清理；短暂缓冲与路由切换另行分类。
 
 ### FGS 和 MediaSession（向系统发布播放状态和控制入口的媒体会话） 的正确职责
 
@@ -194,6 +204,11 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 内容播放完成、收到永久 `AUDIOFOCUS_LOSS`、用户明确暂停且不再继续、或发生不可恢复的错误时，应停止音频交互、结束 MediaSession 并停止 FGS。Media3 的 `MediaSessionService` 在播放器暂停、停止或失败超过 10 分钟且没有新的用户交互后，也会自行退出前台服务状态。
 
 这个 10 分钟说的是暂时性失败的窗口，而非空闲额度：能确认播放意图已经结束就立即释放；只有失败仍判断为暂时性时，才保留恢复所需状态。
+
+<!-- gracker-diagram: a278-03-playback-intent-and-resource-lifetime -->
+![播放意图决定临时保留还是完整停止](../../assets/diagrams/ch25/a278-03-playback-intent-and-resource-lifetime.png)
+
+图：MediaSessionService暂停、停止或失败超过10分钟且无新交互会退出前台状态；不能把它当业务长期保活预算。
 
 ### 从 target 36 迁移到 target 37
 
@@ -255,11 +270,21 @@ AudioFlinger 为播放 Track 观察 `OP_CONTROL_AUDIO_PARTIAL` 和 `OP_CONTROL_A
 
 `AfPlaybackCommon` 在 Track 创建时注册两条异步 AppOps（系统按操作检查调用方是否获准的机制） 会话。Offload 把音频处理交给专用音频处理器，MMAP 走内存映射的低延迟路径——这两类 Track 一样要过检查：源码为它们设置了 40 ms 的 `asyncBroadcast` 异步唤醒延迟，让 partial 与 full 两个权限回调都有机会在音频线程唤醒前到达。这个延迟属于权限状态传播的实现细节，应用侧把它当播放缓冲参数去调是调不动的。
 
+<!-- gracker-diagram: a278-05-async-appops-and-thread-wakeup -->
+![Offload与MMAP也持续受权限状态控制](../../assets/diagrams/ch25/a278-05-async-appops-and-thread-wakeup.png)
+
+图：延迟用于让两类权限回调有机会先到达；Offload与MMAP仍不能绕过后台生命周期。
+
 每条 Track 只记录一次对应的后台播放限制事件，避免同一 Track 反复上报；新建 Track 会重新计算决策，所以重新创建播放器修不好不合规的生命周期，只会得到一条新的受限 Track。
 
 #### Java 与原生层的权限判断
 
 Java 的焦点和音量入口用 AppOps，AudioFlinger 的播放路径一边按权限与 target 选择限制级别，一边用异步 AppOps 判断当前是否允许输出，两边各管一段。所以从 `PermissionEnum` 的静态权限检查，推不出“音量被禁，但 Track 一定有声”这类结论：是否静音，要同时看 Track 的 AppOps 状态、限制级别和豁免结果。
+
+<!-- gracker-diagram: a278-04-hardening-three-platform-entrypoints -->
+![焦点、音量与播放在不同平台入口检查](../../assets/diagrams/ch25/a278-04-hardening-three-platform-entrypoints.png)
+
+图：焦点被hardening拒绝时，请求尚未进入常规竞争；Track有写入也不证明当前被允许输出。
 
 ### 调试命令存在版本差异
 
@@ -287,6 +312,11 @@ r1 的 `clear-hardening` 与 `set-hardening default` 都恢复平台默认行为
 r1 的测试覆盖状态会同步写入 `system_server`（承载多数 Java 系统服务的进程） 与 `audioserver`（承载原生音频服务的进程），重启后即失效。系统镜像若只提供新命令、没有 `clear` 或 `default` 子命令，要按设备帮助确认恢复方式，必要时重启专用测试设备。测试报告还要记录命令和构建号。
 
 `enable` 会把完整限制应用到所有应用，并取消 target 与闹钟豁免，适合挖掘潜在问题；默认行为下的 target 36/37 对照测试仍要做。`throw` 还会把静默失败改成异常、持续写入错误或崩溃，只用于开发与回归环境。
+
+<!-- gracker-diagram: a278-06-hardening-default-and-test-override -->
+![默认兼容策略与强制测试模式分开解释](../../assets/diagrams/ch25/a278-06-hardening-default-and-test-override.png)
+
+图：throw使静默路径变成异常、写入错误或崩溃，仅用于测试；恢复后再验证默认兼容行为。
 
 ### 取证：把许可状态和功耗放在一条时间线上
 
@@ -332,6 +362,11 @@ Audio offload 改变的是解码与输出所使用的计算资源，后台硬化
 `codec_manager.cc` 的 `IsLc3ConfigMatched()` 逐项比较采样率、帧时长、每条 ISO（等时）流的通道数和每帧字节数，以此判断 LC3 配置是否匹配；匹配失败影响的是编解码执行路径，FGS 或 WIU 归另一套规则决定。`target_latency` 表示 Bluetooth LE Audio（低功耗蓝牙音频）配置期望的时延等级，它参与配置选择；设备能耗要落到具体控制器、耳机和媒体参数上测量，仅凭“低延迟”推算不出来。
 
 Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统进入 suspend（低功耗挂起）时停止后台扫描，恢复且确有扫描需求时再启动，这是平台蓝牙服务的省电行为，第三方播放器调不到这个接口。应用侧把路由和连接事件记录好，让系统状态变化可见，别再用持续扫描或高频重连去掩盖它。
+
+<!-- gracker-diagram: a278-07-bluetooth-codec-route-versus-authorization -->
+![蓝牙编解码路径与后台发声资格分别取证](../../assets/diagrams/ch25/a278-07-bluetooth-codec-route-versus-authorization.png)
+
+图：LC3不匹配或路由断开不能直接证明后台静音；按平台日志、会话与输出路径确认原因。
 
 ### 验证场景与线上指标
 
@@ -396,6 +431,11 @@ Offload 的收益来自少唤醒、少 CPU 解码和少数据搬运。适用场�
 
 Media3 文档的建议与此一致：短音频或亮屏播放时，音频通常不是主要耗电项；长时间、屏幕关闭后的播放可以评估 ExoPlayer audio offload。官方同时说明设备和格式支持会变化，Offload 会限制变速、跳过静音等效果能力，所以光看 API level 下不了结论。
 
+<!-- gracker-diagram: a278-08-offload-versus-low-latency -->
+![长时省电路径与实时低延迟路径按需求选择](../../assets/diagrams/ch25/a278-08-offload-versus-low-latency.png)
+
+图：CDD的5秒是声明该能力设备的最低缓冲要求，不是所有Offload流的通用深度或性能测量。
+
 ### AAudio Power Saving Offloaded 的探测流程
 
 AAudio 的 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 从 API 36 可用，并且只支持输出流；API 36 同时为 AAudio 公开 MP3、AAC LC、AAC HE V1/V2、AAC ELD、AAC xHE 和 Opus 等压缩格式。Android 17 又定义了可选的 MMAP PCM（未压缩采样数据）offload，设备若声明该能力，必须满足 CDD 对 PCM 格式、采样率、声道与缓冲的要求。所以“offloaded”和“压缩格式”是两回事，探测能力时必须把完整格式带上。
@@ -442,11 +482,21 @@ bool openOffloadProbe(
 
 这个返回值只说明探测流本身拿到了 offloaded 模式，正式播放器还要接着处理打开失败、断开、路由变化和常规播放路径回退，并记录 `result`、实际模式、格式、采样率、声道、设备路由和播放器功能开关。示例为了演示探测流程立即关闭了 `stream`；产品代码应在正式创建路径中记录结果，省得额外再建一条探测流。
 
+<!-- gracker-diagram: a278-09-aaudio-probe-request-and-actual-mode -->
+![AAudio请求Offload后读取实际performance mode](../../assets/diagrams/ch25/a278-09-aaudio-probe-request-and-actual-mode.png)
+
+图：示例立刻close仅展示探测；正式创建时记录实际模式，避免额外开流干扰能力与资源。
+
 API 36 的 `AAudioStreamBuilder_setPresentationEndCallback()` 会在应用请求停止后，等待系统与硬件中已排队的数据播放完，再通知结束。应用提前关闭 stream，回调就不会发生；回调若与数据回调共用框架的实时线程，其中要避免执行阻塞工作。
 
 Android 17 / API 37 又增加了 `AAudio_getFlushFromFrameSupport(builder)` 和 `AAudioStream_flushFromFrame()`。flush 指丢弃已经写入但尚未播放的数据，frame（音频帧） 是这里的位置计数单位；前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码，后者通过 `inOutPosition` 传入目标 frame，并在成功时写回实际 flush 位置。
 
 调用返回前保持串行、别并发写数据；成功后剩余数据不足时要立即补写，否则会出现 underrun。若要求 `AAUDIO_FLUSH_FROM_FRAME_ACCURATE` 而设备做不到从指定位置处理，r1 会返回 `AAUDIO_ERROR_OUT_OF_RANGE`，一次失败也不会被当作成功 flush。
+
+<!-- gracker-diagram: a278-10-flush-result-before-coordinate-update -->
+![按位置flush先验能力并串行，再看结果码](../../assets/diagrams/ch25/a278-10-flush-result-before-coordinate-update.png)
+
+图：AAudio准确失败可返回OUT_OF_RANGE并建议另一位置；AudioTrack错误/异常各有边界，不混用两套契约。
 
 ### AudioTrack Offload 的 API 37 新边界
 
@@ -472,6 +522,11 @@ codec provenance（原始内容的编解码格式来源） 由应用在 Builder 
 - `getTimestamp()` 提供已呈现或承诺呈现的 frame 及其时间估计。
 
 断点续播和 seek（跳转） 应以媒体时间线为主，frame 坐标作为底层执行记录；把写入计数直接保存成“用户已经听到的位置”会出错。
+
+<!-- gracker-diagram: a278-11-written-flushed-and-presented-positions -->
+![写入、实际flush与已呈现是三种坐标](../../assets/diagrams/ch25/a278-11-written-flushed-and-presented-positions.png)
+
+图：codecProvenance只是应用提供的原始格式提示；它与写入计数都不能独立证明DSP实际工作。
 
 这些 API 在四类场景中各有用途：
 
@@ -501,6 +556,11 @@ player.trackSelectionParameters = player.trackSelectionParameters
 `setIsGaplessSupportRequired(true)` 要求歌曲或章节之间 gapless（无缝衔接），也可能缩小可 offload 的设备和格式组合。音乐、播客、有声书应用的取舍不同：音乐更在意 gapless；播客更常用倍速和跳过静音；有声书更在意章节 seek 和断点续播。我们把发布开关至少按 gapless、倍速、跳过静音、空间音频和蓝牙路由拆开，只留“是否开启 Offload”一档并不够用。
 
 Media3 的实际状态应通过事件监听器 `ExoPlayer.AudioOffloadListener` 观察。`onOffloadedPlayback()` 报告当前是否采用 offloaded playback，`onSleepingForOffloadChanged()` 报告播放器主循环是否因 offload scheduling（卸载调度）而暂停。该 listener 标记为 `@UnstableApi`，表示接口仍可能变化；升级 Media3 时要重新核对兼容性。
+
+<!-- gracker-diagram: a278-12-media3-preference-offload-and-sleep -->
+![Media3偏好、实际Offload与主循环休眠分别观察](../../assets/diagrams/ch25/a278-12-media3-preference-offload-and-sleep.png)
+
+图：Offload状态与休眠状态是不同信号；升级库后核对事件语义，缺失时记unknown而不推断。
 
 ### 功耗收益怎么验证
 
@@ -551,6 +611,11 @@ Offload 会把更多数据排入硬件 buffer，也会让部分处理从应用�
 | 禁用 | 短音效、实时互动、倍速刚需、空间音频刚需、目标设备异常率高 | 保持 PCM / low latency 路径 |
 
 复杂功能组合应先按对应路由和格式完成同机 A/B；未满足体验与功耗阈值的组合继续使用 PCM 或低延迟路径。
+
+<!-- gracker-diagram: a278-13-energy-experience-and-release-gates -->
+![同机A/B同时验收能量与播放体验](../../assets/diagrams/ch25/a278-13-energy-experience-and-release-gates.png)
+
+图：Assistant音量、后台发声资格和Offload是三条独立线；Sound Dose与路由规则也不会被Offload免除。
 
 ### Assistant 与后台音频的版本交叉
 

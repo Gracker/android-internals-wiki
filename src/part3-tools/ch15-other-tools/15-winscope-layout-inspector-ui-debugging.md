@@ -92,6 +92,11 @@ consolidated_from:
 
 两者分工明确：Winscope 观察 WindowManager、SurfaceFlinger 和输入状态随时间变化，适合窗口与合成时序问题；Layout Inspector 观察应用当前的 View 或 Compose 结构，适合布局层级和属性问题。本文前半部分讲 Winscope 记录的系统状态时间线，后半部分讲应用内部的 View 与 Compose 结构检查。
 
+<!-- gracker-diagram: ch15-15-01-evidence-scopes -->
+![系统状态、应用结构与执行时序](../../assets/diagrams/ch15/ch15-15-01-evidence-scopes.png)
+
+图：窗口与图层状态、应用内部UI结构、执行时序使用各自的证据。 节点存在、layer可见或状态机结束，都不能单独证明像素正确、事件送达或按时呈现。
+
 具体到排障，Winscope 适合回答这些问题：目标窗口是否进入可见状态，目标 layer 是否带 buffer，哪一层遮住了它，哪笔 transaction 修改了位置或透明度，转场参与者是否被合并或中止，触摸区域与焦点是否匹配。
 
 本文沿用 trace 与源码里的英文名：layer 是 SurfaceFlinger 管理的合成节点，buffer 是 Producer 提交的一帧像素数据，transaction 是一批状态修改，fence 是跨 CPU、GPU 和显示硬件协调读写完成时间的同步对象，present 表示一帧进入显示链路并交付给屏幕。
@@ -124,6 +129,16 @@ Winscope 中的主要证据如下。
 
 `LayerTracing` 有两种模式，区别在于 snapshot 从哪来：active 模式在采集期间直接写 snapshot，记录运行时状态序列；generated 模式根据 transaction ring buffer 的记录重建 snapshot。ring buffer 是容量固定的循环缓冲区，写满后会覆盖最旧记录。所以排查本地一两帧错位时，我们优先采短时 active trace；要在 bugreport 中保留较长的故障前历史时，generated bugreport 模式运行开销更低。
 
+<!-- gracker-diagram: ch15-15-02-geometry-buffer-channels -->
+![几何事务与像素提交是两条输入](../../assets/diagrams/ch15/ch15-15-02-geometry-buffer-channels.png)
+
+图：WM/Shell提交几何状态，Producer提交buffer，两条输入在SF状态模型中汇合。 原子状态事务不保证写入fence已完成或多Display同一光学时刻更新。
+
+<!-- gracker-diagram: ch15-15-03-tracing-modes -->
+![active、generated 与单快照的触发时机](../../assets/diagrams/ch15/ch15-15-03-tracing-modes.png)
+
+图：运行时snapshot、事务重建与停止阶段单快照采用不同的采样时机。 generated依赖已有transaction历史且重建仍有成本；SF/WMS的Perfetto单dump与dumpsys入口分开。
+
 ### 2. 读 layer tree 前先判断出图拓扑
 
 读 layer tree 之前，我们要先判断“出图拓扑”：像素从哪里产生、经过哪些 Surface、最终对应哪些 SF layer。同一张画面，在 SurfaceFlinger 里可能只有一个 App Window buffer layer，也可能包含宿主窗口加多个独立内容 layer。跳过这一步，很容易把“没找到视频 layer”误判成“视频没有提交”。
@@ -152,11 +167,21 @@ container 的状态进入 SF snapshot，说明的只是几何或层级已经生�
 
 TextureView 的外部 buffer 先交给应用进程内的 SurfaceTexture queue（纹理缓冲队列），由 HWUI 采样进宿主 App Window buffer，所以 SurfaceFlinger 通常看不到独立的 TextureView 可见 layer。TextureView 黑屏时，Winscope 最多能证明宿主窗口有没有提交和显示；外部 SurfaceTexture queue（缓冲队列）、宿主 RenderThread 采样和纹理内容，要换成应用、Perfetto 或 AGI 侧的线索去查。
 
+<!-- gracker-diagram: ch15-15-04-drawing-topologies -->
+![View、SurfaceView 与 TextureView 拓扑](../../assets/diagrams/ch15/ch15-15-04-drawing-topologies.png)
+
+图：先按内容进入哪个Surface判断应在SF中寻找什么对象。 两棵树没有逐节点对应关系，找不到独立TextureView layer通常是正常拓扑。
+
 #### 多窗口、PiP、分屏与多 Display
 
 分析顺序是 `Display → Window/Task → SF layer/leash → 内容 Producer`。屏幕上两个 pane（并排区域）可能只是同一 Window 内的普通 View，也可能是两个 Task 或两个顶层 Window；layer 偏多时，还要想到壁纸、系统栏、IME、dim layer（压暗背景的图层）或 transition leash。
 
 多 Display 场景要分开记录 `displayId`（逻辑显示设备编号）、目标窗口、可见 layer 集、刷新率、color mode 与 present 时间。一个进程可以在多个 Display 上有窗口，而每个 Display 都有自己的帧与 present 时间线，两个 Display 在相近时刻的 present 要分开解释。
+
+<!-- gracker-diagram: ch15-15-05-display-object-identities -->
+![从 Display 到实际内容对象](../../assets/diagrams/ch15/ch15-15-05-display-object-identities.png)
+
+图：按Display、Window/Task、layer/leash和Producer建立对象映射。 同名layer、同一进程或相近present时间都不足以证明对象相同；多个Display分别对齐。
 
 ### 3. Winscope 面板与源码对象对照
 
@@ -265,11 +290,21 @@ adb pull /data/misc/perfetto-traces/winscope_window_debug.perfetto-trace .
 
 配置启动后复现问题，15 秒结束时 trace 落到设备文件，最后一条命令把它拉回当前目录。`MODE_ACTIVE` 会写入采集期间的初始状态和后续变化，适合短时稳定复现；SF layer active 模式计算开销较高，我们不用它做长时间的性能测量。
 
+<!-- gracker-diagram: ch15-15-06-capture-and-validate -->
+![短时采集的配置、复现与有效性检查](../../assets/diagrams/ch15/ch15-15-06-capture-and-validate.png)
+
+图：确认root与数据源，再录制短时复现，取回后用viewer验证有效数据。 脚本在重连、root检查或录制失败时停止；schema通过不代表设备暴露了全部数据源。
+
 问题只涉及当前静态状态时改用 dump（单个状态快照）；要在 bugreport 中保留故障前历史时，可评估 `MODE_GENERATED_BUGREPORT_ONLY` 和 transaction continuous ring buffer。continuous 模式持续维护循环缓冲区，到 flush（请求输出当前缓冲内容） 或 bugreport 时输出其中记录。
 
 默认配置没有启用 `TRACE_FLAG_EXTRA`、`TRACE_FLAG_HWC`、WindowManager verbose、ProtoLog stacktrace（调用栈）和全量 input event。`TRACE_FLAG_EXTRA` 增加额外 layer 元数据，`TRACE_FLAG_HWC` 增加非结构化的 HWC 信息，这些选项会明显增加内存、运行开销或隐私风险，所以只有当前问题需要对应字段时，才在短时本地 trace 中启用。
 
 WindowManager 的 `LOG_FREQUENCY_FRAME` 在 WMS 提交一帧窗口状态时记录快照；纯显示刷新不包含新的 WMS frame commit，因此不会自动增加记录。`LOG_FREQUENCY_TRANSACTION` 在每次 WMS transaction commit 时记录快照，可能保留同一显示周期内的中间状态，适合追一帧错位，但数据量和开销通常更高。日常用默认的 `LOG_LEVEL_DEBUG + LOG_FREQUENCY_FRAME` 就覆盖了多数窗口问题。
+
+<!-- gracker-diagram: ch15-15-07-frequency-and-flags -->
+![采样频率、buffer 更新与成本](../../assets/diagrams/ch15/ch15-15-07-frequency-and-flags.png)
+
+图：WMS按日志触发与frame callback采样，SF按flags决定是否记录纯buffer变化。 WMS frame不是每次display刷新；TRACE_FLAG_ALL不包含BUFFERS，EXTRA/HWC与active模式成本另算。
 
 ### 6. 从录像到窗口、layer 与 transaction
 
@@ -289,6 +324,11 @@ WindowManager 的 `LOG_FREQUENCY_FRAME` 在 WMS 提交一帧窗口状态时记�
 
 layer 名称只是检索入口，确认对象要结合 owner PID/UID、layer id、parent、buffer、frame number（该 buffer 流中的帧序号）、bounds 和 transaction，避免把同名旧 layer 或 container 当成当前内容 layer。
 
+<!-- gracker-diagram: ch15-15-08-object-search-order -->
+![录像、逻辑窗口与内容 layer 的对齐](../../assets/diagrams/ch15/ch15-15-08-object-search-order.png)
+
+图：先锁定现象和逻辑对象，再确认当前内容layer及其buffer身份。 名字只是搜索入口，owner、layer id、parent与frame number才共同确定当前实例。
+
 #### 6.4 解释 SurfaceFlinger 可见性
 
 Winscope 的 rects view（矩形视图） 用 layer 的 bounds、z-order（前后层级）、opacity（是否不透明）、relative Z 和圆角画出屏幕占位。SF viewer 的 `V` chip 是可见性标记，表示该 layer 经 SF 计算后可见。Android 15 起旧的 HWC/GPU hierarchy chips 已弃用；当前这层由 HWC 还是 GPU 合成，以新字段为准，别再拿旧 chip 判断。
@@ -304,9 +344,19 @@ Winscope 的 rects view（矩形视图） 用 layer 的 bounds、z-order（前�
 
 SF 中 layer `visible` 也不保证 buffer 像素正确：应用可能提交一张纯黑帧，decoder（解码器） 或 shader（GPU 着色程序） 也可能写出错误内容。Winscope 能证明该 buffer layer 参与了当前状态；像素内容对不对，还要 Producer 或 GPU 侧的线索。
 
+<!-- gracker-diagram: ch15-15-09-visibility-and-occlusion -->
+![可见标记、遮挡与实际像素](../../assets/diagrams/ch15/ch15-15-09-visibility-and-occlusion.png)
+
+图：可见属性、opaque遮挡和非opaque覆盖分别检查，最后核对真实像素。 V chip和calculated visible仍可能被遮住；非opaque层也可能写出全不透明像素。
+
 #### 6.5 对比 requested 与 calculated
 
 Requested geometry/effects 是该 layer 提交的几何与效果请求，Calculated 是叠加父层继承、坐标变换和裁剪后用于当前合成的值。所以 requested 正确而 calculated 错误时，我们去查 parent、leash、crop、relative Z、transform 与 display 变换；requested 本身就错时，沿 transaction 找提交者。
+
+<!-- gracker-diagram: ch15-15-10-requested-calculated-triage -->
+![requested、calculated 与下游问题分流](../../assets/diagrams/ch15/ch15-15-10-requested-calculated-triage.png)
+
+图：按请求值、继承计算值和实际输出逐层定位异常。 请求与计算都正确时，像素和呈现时序仍可能出错；状态快照不能给出全部执行成本。
 
 #### 6.6 回到 transaction 与 transition
 
@@ -317,6 +367,11 @@ SurfaceFlinger transaction trace 提供 transaction id、PID、UID、layer id �
 这里有个容易踩的点：源码里有两份同名的 `PerfettoTransitionTracer`。system_server 中的 `com.android.server.wm.PerfettoTransitionTracer` 记录 transition id、create/send/finish/abort 时间、start/finish transaction id、目标 leash layer id、window id、起止 display/rotation/bounds；WM Shell 中的 `com.android.wm.shell.transition.tracing.PerfettoTransitionTracer` 记录 handler 分派、merge request（合并请求）、merged（从子节点合并） 和 aborted。两者都通过 `TransitionDataSource` 注册 `com.android.wm.shell.transition`。
 
 拿同一个 transition id，我们可以把 Shell transition 与 SF transaction、WM container、目标 layer 对齐。transition 已 finish 只说明系统状态机走完，目标 layer 显示是否正确还要再看。
+
+<!-- gracker-diagram: ch15-15-11-transition-transaction-join -->
+![转场与事务的稳定标识关联](../../assets/diagrams/ch15/ch15-15-11-transition-transaction-join.png)
+
+图：用transition、start/finish transaction、目标window/layer等身份关联两侧状态。 system_server记录创建/发送/完成等，Shell记录分派/合并/中止；finish不是显示正确证明。
 
 #### 6.7 时序问题转到 Perfetto
 
@@ -339,6 +394,11 @@ Winscope 能指出“哪一个状态从哪一帧开始错误”。状态序列�
 
 官方 Winscope flicker 样例就是这样：Activity layer 被设为 visible/opaque，但 visible region 为空，当前真正可见的是上方 opaque 的 `NotificationShade`。它演示的正是 WM visible 与 SF 最终可见结果要分开验证。
 
+<!-- gracker-diagram: ch15-15-12-black-screen-triage -->
+![黑白屏先确认状态还是像素问题](../../assets/diagrams/ch15/ch15-15-12-black-screen-triage.png)
+
+图：从异常画面定位窗口与内容buffer，再检查遮挡、保护策略和Producer像素。 有layer、有buffer、WM visible三者都不能单独证明用户看到了正确内容。
+
 #### 首帧与 starting window
 
 首帧问题，我们把 Activity/Window、starting window、splash layer、App Window buffer 和 transition 放到同一时间轴上：splash 是 starting window 中显示的启动画面，而 WM Activity visible、App 第一块 buffer 进入 SF、splash 移除 transaction、用户看到首帧这四个时刻可能各不相同。App layer 没有 buffer 时走启动/BLAST 路径；buffer 已存在但 splash 过早移除时，检查 transition 与 starting-window policy（启动窗口的显示和移除策略）。
@@ -350,6 +410,11 @@ SurfaceView 一帧错位时，同时选中宿主 App Window、SurfaceView contai
 container 已移动而 child 沿用旧 buffer，未必是异常：几何和内容本来就来自不同状态源。只有走同步组、同一 `SurfaceControl.Transaction`，或按指定 frame number 把几何 transaction 合入下一次 buffer transaction，才谈得上两类更新同时生效。
 
 若 crop、relative Z 或内容/几何持续错位，继续查 `mergeWithNextTransaction()`、`applyTransactionOnDraw()`、`applyTransactionToFrame()` 等同步入口和 Producer 的提交节奏；注意 `applyTransactionToFrame()` 在 SurfaceView 持续出帧时不保证精确对应哪一帧。
+
+<!-- gracker-diagram: ch15-15-13-surfaceview-sync-conditions -->
+![SurfaceView 几何与内容的同步条件](../../assets/diagrams/ch15/ch15-15-13-surfaceview-sync-conditions.png)
+
+图：同时追container几何和BLAST child内容，验证所需的同步关系及帧绑定条件。 applyTransactionToFrame精确绑定要求先暂停再产下一帧；持续出帧未定义对应帧，无新帧还可能不应用。 下方为合成状态示意，条长非实测时间。
 
 #### TextureView 黑屏
 
@@ -366,6 +431,11 @@ SF 中找不到独立 TextureView layer 属于正常拓扑。我们先确认宿�
 SF `TRACE_FLAG_INPUT` 提供 layer 输入窗口属性、touchable region 和 focus 线索，但完整的事件派发它不记录；需要事件链时增加 `android.input.inputevent`。`TRACE_MODE_TRACE_ALL` 是全量输入事件模式，会记录系统处理的全部输入事件，只能用于本地设备或测试；现场/线上采集必须配置隐私规则。
 
 分析顺序是：触摸坐标对应的 Display → 顶层可触摸窗口/layer → focused window → input target → InputDispatcher（系统输入事件分发器）→ 应用回调。遮挡 layer 能显示，输入未必送到它那里；视觉 z-order 与 input region 也可能对不上。
+
+<!-- gracker-diagram: ch15-15-14-pointer-focus-input -->
+![触摸命中与键盘焦点分开](../../assets/diagrams/ch15/ch15-15-14-pointer-focus-input.png)
+
+图：指针按坐标、区域和手势目标分派，按键及非指针motion主要走焦点目标。 可见最上层、focused window和触摸target可能不同；还需追应用回调和窗口输入策略。
 
 ### 8. Search viewer 与 Perfetto SQL
 
@@ -407,6 +477,11 @@ ORDER BY ts;
 
 拿到 transaction id 后，结合底层表 `android_surfaceflinger_transaction` 的 PID/UID/layer id 和 ProtoLog 定位提交方；查询里要做数值比较时，先把字符串显式转换成数值类型，避免按字典序比较。
 
+<!-- gracker-diagram: ch15-15-15-search-view-sampling -->
+![Search helper view 与离散状态采样](../../assets/diagrams/ch15/ch15-15-15-search-view-sampling.png)
+
+图：初始化helper view后查询候选状态，再用稳定身份和采样覆盖解释时间关系。 独立SQL查询没有自动做区间连接；WM/SF采样先后可能来自频率差或缺失，不能直接量真实延迟。
+
 ### 9. Dump、bugreport 与 trace
 
 静态问题，比如“当前点不到”或“当前谁盖住谁”，可以用 WM/SF proto dump：proto dump 把服务当前状态序列化为 Protocol Buffers 二进制快照。下面两条命令分别保存 WindowManager 与 SurfaceFlinger 快照，供 Winscope 加载。
@@ -417,6 +492,11 @@ adb exec-out dumpsys SurfaceFlinger --proto > surfaceflinger_dump.winscope
 ```
 
 命令执行成功后，当前目录会得到两个 `.winscope` 文件。dump 记录的只是单个时刻，闪屏、转场顺序或一帧错位这类时序问题，要靠连续 trace 才能看到，而连续 trace 又受开销和 ring buffer 容量影响；bugreport 是 Android 的综合故障报告，适合保留故障前的 ring-buffer 历史，代价是包含的系统信息更多、隐私等级更高。三种产物按问题选用。
+
+<!-- gracker-diagram: ch15-15-16-dump-trace-bugreport -->
+![单时刻、连续复现与历史保留](../../assets/diagrams/ch15/ch15-15-16-dump-trace-bugreport.png)
+
+图：静态dump、短时trace和bugreport历史各自选择并验证产物有效性。 文件存在不代表有效proto；ring buffer会覆盖历史，bugreport生成也有采集与重建成本。
 
 ### 10. 采集成本、隐私与保真度
 
@@ -491,6 +571,11 @@ Layout Inspector 能直接确认什么、什么要转其它工具，见下表。
 
 一个节点在 Component Tree 中存在，说明应用进程里有这个 UI 对象；节点最终有没有可见像素、输入事件有没有送到它，还要分别到渲染和输入链路上确认。
 
+<!-- gracker-diagram: ch15-15-17-inspector-entry-and-proof -->
+![Inspector 从可调试进程到节点证据](../../assets/diagrams/ch15/ch15-15-17-inspector-entry-and-proof.png)
+
+图：连接正确的前台debuggable进程，用组件树、属性和snapshot保存错误现场。 内部节点存在不能证明最终像素可见或输入抵达，跨窗口与独立buffer另查。
+
 ### 2. Live 检查、snapshot 与参考图
 
 嵌入模式下，要让 UI 变化实时反映到 Inspector，需要启用 Live Edit；独立 Layout Inspector 仍可在设置中开启，用工具栏的 Live Updates 开关。官方建议优先用默认嵌入模式，性能更好。
@@ -500,6 +585,11 @@ Snapshot 会保存详细渲染结果、View/Compose/hybrid（混合） 组件树
 参考图 overlay 适合核对设计稿：Inspector 把 bitmap（位图） 缩放到布局显示区域，Overlay Alpha 控制叠加图透明度，可以暴露间距、尺寸和文字基线的差异。像素级截图对比还是要单独做——缩放、设备镜像、字体栅格化（字形转成像素）、动态颜色与系统栏都会影响视觉结果。
 
 Android Studio Panda 2 已将 Layout Inspector 3D Mode 标为 deprecated（已弃用）。当前文档以标准 2D Layout Display 与 Component Tree 为主，团队文档里不必再把 3D 当成必需步骤。
+
+<!-- gracker-diagram: ch15-15-18-live-snapshot-overlay -->
+![实时更新、离线快照与参考图](../../assets/diagrams/ch15/ch15-15-18-live-snapshot-overlay.png)
+
+图：Live更新、snapshot和bitmap overlay分别用于观察当前变化、保留现场与核对视觉布局。 snapshot不能还原采样前历史；overlay有缩放与栅格化差异，3D模式也不是当前必需步骤。
 
 ### 3. View 属性检查会重启前台 Activity
 
@@ -517,6 +607,11 @@ adb shell settings delete global debug_view_attributes
 
 `View.mAttributes` 以“属性名、属性值”相邻成对的数组保存这类调试信息，`debug_view_attributes` 对应的开发者选项负责启用 View 属性检查。属性缺失时，依次检查构建是否 debuggable、Activity 是否已按新设置重启、目标是否为前台进程，以及厂商系统是否限制调试通道。
 
+<!-- gracker-diagram: ch15-15-19-attribute-flag-lifecycle -->
+![View 属性开关与 Activity 重启](../../assets/diagrams/ch15/ch15-15-19-attribute-flag-lifecycle.png)
+
+图：检查前记录debug_view_attributes原值，启用属性采集，退出时恢复并复核实际状态。 启用可能重启前台Activity；只有原先unset才delete，恢复命令成功与页面恢复都需确认。
+
 ### 4. 读懂坐标、变换与层级
 
 View 的 `left/top/right/bottom` 是相对父 View 的布局边界，`translationX/Y` 只改绘制位置、不重定义这组 layout bounds，View 的 `x/y` 则包含 translation。把 Inspector 数值与整屏截图比较时，还要算上父层滚动、matrix（缩放/旋转等坐标变换矩阵）、窗口在屏幕上的偏移、Insets、letterbox（为适配宽高比留下的边带）和 Display 变换。
@@ -533,6 +628,11 @@ View 的 `left/top/right/bottom` 是相对父 View 的布局边界，`translatio
 
 点击区域要再加一组检查：`enabled`、`clickable`、`focusable`、`TouchDelegate`、父 View 的 `onInterceptTouchEvent()（是否拦截子节点触摸）`、Compose pointer input（指针输入处理）、semantics merge（把子节点语义合并到父节点）和窗口级 input target（系统选中的输入目标）。视觉上位于最上方的节点不一定收到事件；`clickable=true` 也不证明事件已经抵达。
 
+<!-- gracker-diagram: ch15-15-20-coordinate-and-hit-boundaries -->
+![布局坐标、父层变换与输入区域](../../assets/diagrams/ch15/ch15-15-20-coordinate-and-hit-boundaries.png)
+
+图：从局部layout与translation逐层换算到窗口和Display，再单独验证输入目标。 VISIBLE、alpha和clickable属性均不是最终可见或事件已送达的证明。
+
 ### 5. Compose 层级、重组计数与 semantics
 
 Layout Inspector 可显示 composable 层级、参数、recomposition count（composition/recomposition 计数）、skipped count（Compose 运行时判定本轮无需执行的次数） 和 semantics。查看计数要求设备 API 29+ 且 Compose 1.2.0+。若 Component Tree 没有 Compose 节点，先确认 APK 没有移除 `META-INF/androidx.compose.*.version` 文件——这些版本元数据供 Inspector 识别 Compose 运行时。
@@ -547,7 +647,17 @@ Layout Inspector 可显示 composable 层级、参数、recomposition count（co
 
 读这两个计数要小心：高 recomposition count 只说明函数频繁重新执行，单次执行可能很轻；skipped count 只说明本轮被跳过。状态读取范围过大、参数不稳定、在 composition（Compose 生成并维护 UI 节点的过程）中反复创建不稳定对象、列表 key 不稳定，都可能扩大重组范围；要下性能结论，仍以源码与 trace 为准。
 
+<!-- gracker-diagram: ch15-15-21-compose-count-validation -->
+![重组次数用于定位，成本用 trace 验证](../../assets/diagrams/ch15/ch15-15-21-compose-count-validation.png)
+
+图：清零后执行受控交互，定位计数变化的子树，再验证源码与目标帧成本。 API29+与Compose1.2.0+是计数条件；高次数不等于单次昂贵，skipped也不等于性能已优化。
+
 选中 composable 后，Attributes 可以显示参数，inline function（编译器把函数体展开到调用点的内联函数） 的参数可能展示不出来。Semantics 信息要区分 declared（节点直接声明） 与 merged：前者由节点直接声明，后者从子节点合并。视觉树、Compose composition tree、semantics tree 和测试节点树用途不同，节点合并或清除 semantics 后，自动化工具看到的层级可能与 Component Tree 不同。
+
+<!-- gracker-diagram: ch15-15-22-different-ui-trees -->
+![视觉、composition 与 semantics 树](../../assets/diagrams/ch15/ch15-15-22-different-ui-trees.png)
+
+图：视觉节点、composition层级与semantics/测试暴露具有不同组织目的。 declared与merged不同，合并或清除semantics可改变自动化树；inline参数也可能无法展示。
 
 ### 6. Layout Inspector、`ViewDebug` 与 typed inspector 的职责
 
@@ -568,6 +678,11 @@ API 29 起的 typed inspector（强类型检查接口）使用 `InspectionCompan
 `ViewDebug` 仍提供 `@ExportedProperty` 与 `@CapturedViewProperty`：`View` 本身就大量用 `@ExportedProperty` 标记 measurement、layout、drawing、focus、accessibility 等字段或 getter。`ViewDebug` 按 Class 缓存反射得到的属性描述，再按 category（分类）、resource ID、enum/flag mapping（枚举/位标志映射）等规则格式化。
 
 `dumpCapturedView()` 会把 `@CapturedViewProperty` 标记的值格式化后写入 log。它适合在受控环境中临时取证，不适合作为线上高频监控：反射、字符串构造与日志都会增加运行成本，输出也可能包含业务数据。
+
+<!-- gracker-diagram: ch15-15-23-property-export-mechanisms -->
+![XML、typed inspector 与反射导出](../../assets/diagrams/ch15/ch15-15-23-property-export-mechanisms.png)
+
+图：区分XML属性来源、强类型属性映射读取和ViewDebug反射导出。 这些是不同机制；工具支持与隐藏注解不能当成应用公共API承诺，反射日志也会扰动现场。
 
 ### 7. `invalidate()`、`requestLayout()` 与 RenderNode
 
@@ -598,6 +713,11 @@ View.invalidate()
 
 前三项属于应用 UI 和渲染提交，第四项已经离开 Layout Inspector 能看到的范围；这条调用链本身也证明不了“像素已经出现在屏幕上”。
 
+<!-- gracker-diagram: ch15-15-24-invalidate-to-present -->
+![更新请求、UI 录制与渲染提交](../../assets/diagrams/ch15/ch15-15-24-invalidate-to-present.png)
+
+图：按状态写入、更新请求、UI traversal/display list和渲染提交分段检查。 有效invalidation才进入相应调度；同步屏障允许异步消息，display list更新不证明已present。
+
 ### 8. SurfaceView、TextureView 与宿主窗口
 
 Layout Inspector 展示 View/Compose 层级，SurfaceFlinger 展示参与系统合成的 layer；两棵树描述的层次不同，节点之间没有一一对应关系。
@@ -619,6 +739,11 @@ Layout Inspector 读取可调试应用的内部 View/Compose 结构；UI Automat
 | Accessibility service | 无源码辅助功能与自动化检查 | 受权限、隐私、semantics 和窗口策略限制 |
 
 Accessibility bounds 可用于复核自动化工具看到的点击区域；View 私有字段、RenderNode 绘制命令或 Compose 重组记录这些内部状态，要回到 Inspector 或 trace 里看。
+
+<!-- gracker-diagram: ch15-15-25-accessibility-vs-internal -->
+![内部组件树与可访问性暴露](../../assets/diagrams/ch15/ch15-15-25-accessibility-vs-internal.png)
+
+图：Inspector读取可调试进程内部结构，自动化与Accessibility读取已暴露节点。 semantics合并、权限与窗口策略可造成节点缺失，dump XML不是完整View或RenderNode证明。
 
 ### 10. px、dp 与坐标系
 
@@ -663,6 +788,11 @@ FrameTimeline 把 App 帧和 SurfaceFlinger 帧的 expected/actual 时间关联�
 
 一份可复查记录至少包含：设备与构建信息、复现步骤、snapshot、目标节点路径、异常属性、源码位置和后续 trace 链接。点击或遮挡问题还要记录 Window/displayId；SurfaceView/TextureView 问题还要记录内容 Producer 与对应 SF layer。
 
+
+<!-- gracker-diagram: ch15-15-26-controlled-reproduction -->
+![错误快照与无 Inspector 的性能基线](../../assets/diagrams/ch15/ch15-15-26-controlled-reproduction.png)
+
+图：先保存结构异常与环境，再断开工具、恢复设置，用相同操作验证系统和性能证据。 镜像、属性开关、重组计数与重启都会影响被测条件；snapshot与trace分别保留。
 
 ## 参考资料
 

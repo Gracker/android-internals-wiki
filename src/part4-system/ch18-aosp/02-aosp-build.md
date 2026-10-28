@@ -58,6 +58,11 @@ related_chapters:
 
 平台和内核分属两套独立的源码树与构建系统，两个 tag（固定源码快照的标签）也各自只在自己那套树里有效；平台仓库里的预编译 kernel 对应哪个 Android Common Kernel 提交，要在内核侧单独确认。
 
+<!-- gracker-diagram: ch18-02-01-build-observe-loop -->
+![平台修改从固定版本到运行证据](../../assets/diagrams/ch18/ch18-02-01-build-observe-loop.png)
+
+图：固定平台与内核各自的版本，按模块构建、安装激活，再观察目标路径。 源码推导、磁盘产物和进程实际执行是不同证据，不能用编译成功替代运行验证。
+
 ## 构建主机：先满足官方基线
 
 我们先看官方对构建主机的要求：64 位 x86 Linux 主机、glibc 2.17 或以上、至少 400 GB 可用磁盘和至少 64 GB 内存。这里的 glibc 指 GNU C Library，是 Linux 的基础 C 运行库。
@@ -85,6 +90,11 @@ sudo apt-get install git-core gnupg flex bison build-essential \
 
 安装完成后运行 `repo version`，确认 Repo launcher（负责初始化源码工作区并下载完整 Repo 工具的启动脚本）可以工作。官方当前要求 Repo 2.4 或以上；团队环境里最好记录各主机的实际版本，避免差异过大的 launcher 混用。
 
+<!-- gracker-diagram: ch18-02-02-host-baseline -->
+![编译主机与虚拟设备运行条件分开](../../assets/diagrams/ch18/ch18-02-02-host-baseline.png)
+
+图：AOSP 编译先满足 x86_64 Linux、磁盘与内存基线，Cuttlefish 再检查 KVM 和主机包。 官方耗时样例不是本机承诺；ARM64 运行匹配预编译虚拟镜像不等于支持本地完整平台构建。
+
 ## 固定 Android 17 源码
 
 官方面向日常构建和贡献工作推荐 `android-latest-release`。它是供 Repo 使用的 manifest branch（清单分支），指向最新的公开 release branch；截至 2026-08-14，这个分支是 `android17-release`。指向会随时间移动：跟进最新代码时用它合适，复现固定版本的结论要用下面的固定 tag。
@@ -109,6 +119,11 @@ git -C build describe --tags --always
 
 `pinned-manifest.xml` 应与实验记录一起归档。即便有它，本地的 cherry-pick（把选定提交应用到当前分支）、未提交修改或后来单独切换的项目仍可能漏掉，所以还要保存 `repo status` 和补丁集标识。
 
+<!-- gracker-diagram: ch18-02-03-pin-checkout -->
+![移动 manifest、固定项目与本地改动](../../assets/diagrams/ch18/ch18-02-03-pin-checkout.png)
+
+图：移动 manifest 服务日常跟进，固定 tag 与 revision-locked manifest 用于复现具体项目状态。 manifest -r 不打包未提交或未跟踪输入；状态列表也不能还原补丁和外部二进制。
+
 ## Soong、Kati 与 Ninja 的职责
 
 AOSP 平台用 Soong 做构建：Soong 读取 `Android.bp`，Kati 处理仍留存的 `Android.mk`，两者生成构建图，Ninja 负责执行图里的具体命令。日常入口是构建环境提供的 `m`，直接调用 Ninja 的场合很少。
@@ -128,6 +143,11 @@ m nothing
 这个目标只解析并验证构建结构，产物留到真正构建时生成。通过之后仍要编译受影响的模块：类型检查、链接和生成代码的错误，要到对应 action 真正执行时才会暴露。
 
 平台构建文档把 `Android.bp` 描述为语法接近 Bazel BUILD 文件。平台的常规构建入口仍是 Soong；Android Common Kernel 走的是 Kleaf（基于 Bazel 的 Android 内核构建规则）。在平台树里看到 Bazel 文件时，构建命令仍按平台这一套来用。
+
+<!-- gracker-diagram: ch18-02-04-build-roles -->
+![Soong 与 Kati 生成图，Ninja 执行](../../assets/diagrams/ch18/ch18-02-04-build-roles.png)
+
+图：Soong 与 Kati 负责各自规则，平台入口组合依赖图，再由 Ninja 执行具体 action。 m nothing 只验证结构，不替代编译和链接；Android 17 的生成产物应写构建输出目录。
 
 ## lunch 的三段式 target
 
@@ -163,6 +183,11 @@ m
 
 改 Framework 时，我们通常在 `userdebug` 上完成定位和功能验证；要报告绝对性能数字，再换到匹配的 `user` 或量产构建复测。报告里要写清 `userdebug` 和 `user` 之间的差异，这一步省不得，“足够接近”替代不了差异本身。
 
+<!-- gracker-diagram: ch18-02-05-lunch-and-variant -->
+![产品、发布配置与 variant 分别决定什么](../../assets/diagrams/ch18/ch18-02-05-lunch-and-variant.png)
+
+图：显式选择 product、release 与 variant，并核对最终配置变量和输出目录。 r1 的 aosp_current 别名为 cp2a；无参数菜单已移除，退出码为零也不能单独证明配置成功。
+
 ## 模块编译与产物归属
 
 `m` 会构建当前 lunch target。小改动可以编译模块名：
@@ -183,6 +208,11 @@ m surfaceflinger
 - `packages/modules/`：Mainline（可独立更新的系统模块） 模块源码，产物可能位于 APEX（可独立更新的系统组件包） 或 APK。
 
 增量构建的耗时取决于改动触发的依赖图：Java API 变化、`Android.bp` 变化、生成代码、APEX、bootclasspath（运行时启动类路径）都可能扩大构建范围，耗时随改动浮动。
+
+<!-- gracker-diagram: ch18-02-06-module-ownership -->
+![源码、构建模块、安装位置与激活分开追踪](../../assets/diagrams/ch18/ch18-02-06-module-ownership.png)
+
+图：沿源码输入追到 module、安装分区和激活方式，再决定增量构建范围。 目录名不是模块名；API、生成输入和 bootclasspath 变化可扩大依赖图，同步成功不证明已执行新代码。
 
 ## 用 Cuttlefish 验证 Framework
 
@@ -218,6 +248,16 @@ Cuttlefish 启动后会自动向 ADB 注册设备，手工连接 `0.0.0.0:6520` 
 
 默认启动会打开 WebRTC（浏览器实时音视频与控制协议）界面，用浏览器访问 `https://localhost:8443` 就能看到设备。跨主机访问时，还要配置防火墙、TLS 加密连接，以及 WebRTC 使用的 TCP/UDP 端口；本地开发端口只暴露给可信网络。
 
+<!-- gracker-diagram: ch18-02-07-kvm-host -->
+![Cuttlefish 的 KVM、主机包和权限准备](../../assets/diagrams/ch18/ch18-02-07-kvm-host.png)
+
+图：Cuttlefish 先准备主机 Debian 包、组与 udev，再验证 KVM 运行能力。 节点、权限位和 CPU 特征只是前置检查；完整运行能力仍须通过实际启动验证。
+
+<!-- gracker-diagram: ch18-02-08-pair-launch -->
+![同 build 主机工具与设备镜像配对启动](../../assets/diagrams/ch18/ch18-02-08-pair-launch.png)
+
+图：从同一 CI build 取匹配架构的 host package 和 images，按运行目录说明启动，再核对 ADB 与 WebRTC。 同 build 只保证这组产物的来源配对，不替代 KVM、主机依赖和网络验证；启动服务不自动打开浏览器。
+
 ### 编译、同步、重启
 
 下面的命令展示 system 分区内模块的常见同步流程：
@@ -237,6 +277,11 @@ adb shell start
 
 Native（C/C++）服务可以单独重启，前提是先确认 `init` 配置和依赖。SurfaceFlinger 崩溃或退出后通常由 `init` 拉起；这类操作会中断显示，还可能让当前测试状态失效，自动化脚本要等服务重新注册后再开始采样。
 
+<!-- gracker-diagram: ch18-02-09-sync-activation -->
+![编译、同步、激活与就绪的不同边界](../../assets/diagrams/ch18/ch18-02-09-sync-activation.png)
+
+图：构建成功后选择正确分区或 APEX 安装路径，再按组件条件重启并等待就绪。 stop/start 还涉及 native 服务；SurfaceFlinger 的 onrestart 可联动 zygote，不能代替完整开机。
+
 ### 把测试纳入调试循环
 
 源码改完，我们至少要过三层验证：
@@ -253,6 +298,11 @@ atest FrameworksServicesTests
 
 `atest` 是 AOSP 的定向测试入口，会按测试配置构建、安装并执行。模块名要从目标目录的 `Android.bp` 或 `TEST_MAPPING`（声明目录相关测试的文件）确认；跑通了大型聚合测试，改动附近的单元测试仍然要补上。
 
+<!-- gracker-diagram: ch18-02-10-test-loop -->
+![模块、定向测试和干净实例形成回归闭环](../../assets/diagrams/ch18/ch18-02-10-test-loop.png)
+
+图：构建相关模块与测试，通过 atest 按 host/device 配置执行，再在干净实例保留现场证据。 测试模块从当前定义与 TEST_MAPPING 确认；大型测试通过不覆盖所有改动附近的分支与性能场景。
+
 ## 调试信息：优先低扰动证据
 
 ### 日志与 Trace
@@ -260,6 +310,11 @@ atest FrameworksServicesTests
 在高频路径上加 Log 会改变锁竞争、调度和 I/O；Choreographer、Binder（Android 进程间调用机制）、SurfaceFlinger 这些路径尤其敏感。我们通常用临时日志确认控制流，进入测量阶段就把它移除，或改成受控的 trace 点。
 
 动态日志级别的前提，是目标代码确实读取了这个属性，且属性策略允许：`setprop log.tag.Choreographer VERBOSE` 只影响遵循 log tag 属性的调用，其余 Choreographer 诊断是否打开，要看对应代码是否读取它。日志时间戳还要先与 Perfetto（Android 系统性能追踪工具） 的时钟域对齐，再做关联分析。
+
+<!-- gracker-diagram: ch18-02-11-logging-gates -->
+![日志属性、编译常量和读取时机分别核对](../../assets/diagrams/ch18/ch18-02-11-logging-gates.png)
+
+图：日志是否启用取决于消费者、编译常量、属性读取时机和访问策略。 setprop 不自动打开所有同名类的诊断；新增日志或抓栈也会改变被测调度与成本。
 
 ### System properties
 
@@ -277,6 +332,11 @@ atest FrameworksServicesTests
 
 低层 `android.os.SystemProperties` 仍可用，官方建议在可行时改用 Sysprop API。读一个现有属性之前，先找到它的定义和消费者；`getprop` 里有值，只说明属性当前存在，目标代码是否会在运行时重新读取，要看代码本身。
 
+<!-- gracker-diagram: ch18-02-12-sysprop-contract -->
+![新增系统属性从 owner 到类型安全 API](../../assets/diagrams/ch18/ch18-02-12-sysprop-contract.png)
+
+图：先定 owner、读写者与稳定性，再配置 sepolicy、property_contexts 和生成 API。 persist 不是可绕过策略的前缀；有值不证明消费者重新读取，SystemProperties 也不是普通 App 公开 SDK。
+
 ### dumpsys
 
 下面这些命令取得系统服务的当前快照：
@@ -290,6 +350,11 @@ adb shell dumpsys SurfaceFlinger
 ```
 
 `dumpsys` 通过 Binder 调用服务的 dump 接口，执行本身有开销；输出通常是某一时刻的状态或有限历史，适合作为连续 trace 的补充。分析卡顿时，我们可以先用 Perfetto 定位时间段，再用 `dumpsys` 拿到进程、内存、显示 Layer 或服务配置的细节。
+
+<!-- gracker-diagram: ch18-02-13-dump-trace -->
+![连续 trace 与服务快照共同定位](../../assets/diagrams/ch18/ch18-02-13-dump-trace.png)
+
+图：先用连续 trace 确定目标时段，再用服务 dump 补进程、内存、Layer 和配置细节。 dump 有自身开销且通常是快照或有限历史；取样时间不同不能直接拼成同一瞬间的全局状态。
 
 ## adb root、remount 与 OverlayFS
 
@@ -307,6 +372,11 @@ adb remount
 动态分区和只读文件系统的修改通常经 OverlayFS 落盘：只读下层保持原样，修改写进可写上层；重刷、清理 overlay 或切换镜像后，这些修改就消失了。
 
 单文件 push 的风险高于分区同步：类路径里可能还留着 dexpreopt（构建期 DEX 预编译）产物、架构变体、映射表或关联 APEX。稳妥的做法是先确认 Soong 的安装路径，用对应分区的 `adb sync`，再按组件的激活条件执行重启。
+
+<!-- gracker-diagram: ch18-02-14-overlay -->
+![OverlayFS 合并视图与跨重启覆盖状态](../../assets/diagrams/ch18/ch18-02-14-overlay.png)
+
+图：OverlayFS 将只读 lower 与可写 upper 合并，开发修改可能跨重启继续遮住原分区内容。 remount 是否走 overlay 由设备决定；换镜像不等于自动清理，enable-verity 等恢复流程需核对结果。
 
 ## Pixel 真机：先核对四个条件
 
@@ -329,6 +399,11 @@ fastboot flashall -w
 
 `fastboot flashing unlock` 和 `fastboot flashall -w` 都会涉及数据清除；前者由设备端再次确认，后者的 `-w` 会清除 `/data` 分区。刷写前记下 factory image（官方出厂镜像），并准备官方恢复路径；平台调试设备上，个人数据和生产凭据一律提前清掉。
 
+<!-- gracker-diagram: ch18-02-15-physical-gates -->
+![Pixel 刷写前的四个匹配条件](../../assets/diagrams/ch18/ch18-02-15-physical-gates.png)
+
+图：产品配置、专用二进制、固件启动链和解锁恢复条件都满足后，才按匹配输出刷写真机。 drivers 页面有型号不证明 r1 存在产品；vendor image 与历史自解压包也不是同一种交付形式。
+
 ## Android 17 内核必须单独构建
 
 AOSP 平台树里主要是预编译 kernel binary；完整的 kernel 源码、工具链和构建规则在独立的 kernel checkout 里。Android 17 的 GKI（Generic Kernel Image，通用内核镜像）新分支是 `android17-6.18`，对应的 release tag 为 `android17-6.18-2026-06_r6`。
@@ -345,6 +420,11 @@ tools/bazel run //common:kernel_aarch64_dist
 
 Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的内存文件系统）产物，适合验证 Android Common Kernel 与平台的组合。物理设备还要加上厂商模块和设备启动链——GKI Image 只是完整方案的一部分。
 
+<!-- gracker-diagram: ch18-02-16-kernel-build -->
+![平台预编译内核与独立 Kleaf 构建](../../assets/diagrams/ch18/ch18-02-16-kernel-build.png)
+
+图：平台可使用预编译 kernel；修改内核时进入独立源码、工具链和 Kleaf 构建，再配套启动资源验证。 本文 r6 是固定快照，不是唯一 release；Image 不包含 vendor modules、DTBO、签名和完整启动链。
+
 ## 性能实验的构建记录
 
 每次实验，我们至少保存这些字段：
@@ -359,6 +439,11 @@ Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的�
 | 测试 | 用例 revision、数据集、轮次、温度与电源条件 |
 
 `userdebug`、Cuttlefish、remount、附加 Log、关闭 verity 都会改变环境。把这些信息留在报告里，其他人才能判断结果适合功能验证、方向判断，还是量产性能结论。
+
+<!-- gracker-diagram: ch18-02-17-experiment-record -->
+![构建记录让结论对应到真实运行环境](../../assets/diagrams/ch18/ch18-02-17-experiment-record.png)
+
+图：把源码、构建选项、设备状态、模块与内核、测试输入一起归档，才能复核结论适用范围。 userdebug、overlay、额外日志和关闭 verity 都改变环境，功能验证不能直接冒充量产绝对性能。
 
 ## 常见故障判断
 
@@ -377,6 +462,11 @@ Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的�
 ### Cuttlefish 结果和真机不同
 
 先确认差异落在 HAL、kernel、GPU、thermal（热管理）、Power HAL 还是 vendor service。纯 Framework 状态机适合在 Cuttlefish 上复现；硬件相关的性能问题，我们要回到目标设备上看。
+
+<!-- gracker-diagram: ch18-02-18-troubleshooting -->
+![按配置、构建、激活和设备差异排查](../../assets/diagrams/ch18/ch18-02-18-troubleshooting.png)
+
+图：配置找不到、文件没重编、同步无变化和虚实设备差异分别回到对应证据。 先定位故障环节再更改构建或重启策略，不能靠清全量输出或反复刷机替代归因。
 
 ## 参考资料
 

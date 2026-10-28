@@ -104,6 +104,11 @@ Perfetto 提供了几套名称相近、用途不同的机制。选错层次后�
 
 PerfettoSQL 还定义了 `CREATE PERFETTO MACRO`，在查询执行前展开表达式或子查询。它和 UI 设置里的命令宏是两套东西，配置不共享，执行方式也不同。
 
+<!-- gracker-diagram: ch14-04-01-reuse-mechanisms -->
+![四类复用机制的输入与输出](../../assets/diagrams/ch14/ch14-04-01-reuse-mechanisms.png)
+
+图：按查询语义、结构化指标和界面步骤选择复用层。 SQL 宏和 UI 宏是两套执行机制，不能互换配置。
+
 ### 自定义指标：新项目从 Trace Summarization 开始
 
 #### v1 指标的现状与选择顺序
@@ -148,6 +153,11 @@ metric_spec {
 
 `DURATION_WEIGHTED_MEAN` 按每个样本覆盖的时间长度加权，适合由计数器样本还原出的区间数据。例如一个值保持 9 秒、另一个值只保持 1 秒时，前者应获得九倍权重；普通算术平均会忽略这项差异。
 
+<!-- gracker-diagram: ch14-04-02-weighted-intervals -->
+![持续时间加权与普通样本平均的区别](../../assets/diagrams/ch14/ch14-04-02-weighted-intervals.png)
+
+图：以区间持续时间作为权重，计算 Σ(value × dur) / Σ(dur)。 9∶1 是正文的教学例子；缺失区间与 NULL 的覆盖另行检查。
+
 这份规格可以用子命令接口执行：
 
 ```bash
@@ -158,6 +168,11 @@ trace_processor summarize \
 ```
 
 输出是 `TraceSummary`，结果位于 `metric_bundles`（结果包列表）；每个 bundle 可以保存一组共享维度结构的指标。`--format binary` 可生成二进制 protobuf，默认 textproto 更适合人工检查。v57.2 仍完整支持旧式 `--summary` 参数，新脚本应采用子命令接口并固定二进制版本。
+
+<!-- gracker-diagram: ch14-04-03-summary-contract -->
+![从进程区间到统一 TraceSummary](../../assets/diagrams/ch14/ch14-04-03-summary-contract.png)
+
+图：标准库区间经实例分组与指标规格，输出带维度和单位的结果。 upid 只在当前 Trace 内有效；示例没有限定特定业务窗口。
 
 同一份规格也能从 Python 调用：
 
@@ -217,6 +232,11 @@ extend TraceMetrics {
 
 字段号 `450` 来自 Perfetto 为本地开发保留的 `450–500` 区间。字段号是 protobuf 在线路格式中识别字段的数字，重复就会冲突，所以团队内部仍要登记。扩展字段名 `top_five_processes` 还决定 SQL 文件名和输出视图名。
 
+<!-- gracker-diagram: ch14-04-04-legacy-contract -->
+![v1 的文件、扩展字段与输出视图约定](../../assets/diagrams/ch14/ch14-04-04-legacy-contract.png)
+
+图：SQL 与同名 proto 注册自定义字段，由规定名称的输出视图生成根结果。 450–500 为本地开发区间，团队仍需登记字段号避免冲突。
+
 对应 SQL 统计 `sched` 中已经运行完的调度时间片：
 
 ```sql
@@ -267,6 +287,11 @@ trace_processor metrics \
 
 `--dev` 开启的是可能随时变化的本地开发功能，生产流水线默认不要打开。升级主机工具时，先在固定测试 Trace 上对比新旧输出，再更新锁定版本。
 
+<!-- gracker-diagram: ch14-04-05-cpu-ranking -->
+![CPU 榜单保留实例与排序精度](../../assets/diagrams/ch14/ch14-04-05-cpu-ranking.png)
+
+图：闭合调度时间按实例求和，用原始精度排序，再输出展示值。 多核 CPU 时间可以相加超过墙钟；调度线程数不是进程全部线程数。
+
 #### 指标空结果与采集条件
 
 SQL 返回空表时，我们先从采集条件查起：空表说明这次没有拿到足够的数据，测得零是另一回事。常见原因包括：
@@ -279,6 +304,11 @@ SQL 返回空表时，我们先从采集条件查起：空表说明这次没有�
 - 进程名、包名或启动模式与查询条件不一致。
 
 每个指标规格应同时记录依赖的数据源、支持的系统版本、单位、方向、空值含义和已知失效场景。CI（Continuous Integration，持续集成） 里的处理遵循同一条原则：空值和零分开对待，零才是测得的数值。
+
+<!-- gracker-diagram: ch14-04-06-result-states -->
+![零、NULL、空表与执行失败分开处理](../../assets/diagrams/ch14/ch14-04-06-result-states.png)
+
+图：保留查询状态和数值缺失含义，再决定是否进入比较。 成功空表只表示无匹配，不能直接推出系统没有问题。
 
 ### 两类宏：SQL 复用与 UI 自动化
 
@@ -307,6 +337,11 @@ LIMIT 20;
 ```
 
 `TableOrSubquery` 和 `Expr` 是宏参数类型，分别表示表或子查询、普通 SQL 表达式；宏调用以 `!` 结尾，参数在查询真正执行前展开。查询里的 8 ms 只是筛选条件的示例值，判断一帧是否超期，要比较该帧自己的显示期限。
+
+<!-- gracker-diagram: ch14-04-07-sql-macro-expansion -->
+![SQL 宏在执行前展开表与表达式参数](../../assets/diagrams/ch14/ch14-04-07-sql-macro-expansion.png)
+
+图：宏接收表或子查询及阈值表达式，再展开为实际 SQL。 dur ≥ 0 独立排除未闭合事件；8 ms 只是筛选值，不是统一帧期限。
 
 供多人使用的 SQL，值得从查询页里拿出来，组织成自定义 SQL 包，再用 `TraceProcessorConfig.add_sql_packages` 或命令行 `--add-sql-package` 注册。包名相当于模块命名空间，用来避免团队模块与标准库或其他团队重名；包名、查询接口和测试 Trace 都应纳入版本控制。
 
@@ -349,6 +384,11 @@ Perfetto UI 的宏是命名后的稳定命令序列。当前配置入口为 `Set
 
 多人共享更适合使用 Perfetto 扩展服务器。当前接口能分发宏、SQL 模块和 protobuf descriptor（描述字段结构的类型信息），既支持 GitHub 仓库，也支持带认证的 HTTPS 端点。服务器要声明反向域名命名空间，例如 `com.example.perfetto`；宏 ID 和 SQL 模块名必须以该命名空间开头，避免不同服务器重名。扩展加载失败时 UI 照样能打开 Trace，所以团队仍要把服务端清单、源码和已发布版本纳入版本控制，分析结果要能对应到固定的提交。
 
+<!-- gracker-diagram: ch14-04-08-ui-command-sequence -->
+![UI 宏逐条等待执行并传播异常](../../assets/diagrams/ch14/ch14-04-08-ui-command-sequence.png)
+
+图：折叠、固定和创建调试轨道按顺序执行，分组键保留实例身份。 固定 Android 17 的宏遇抛错或 rejected Promise 会中断；内部吞错另论。
+
 #### 单轨迹仪表板与跨轨迹仪表板
 
 Perfetto UI 擅长对一份轨迹做交互诊断。工作区、查询页和调试轨道可以组成单轨迹仪表板，跨构建趋势则要交给后面的指标文件和时序存储来保存。
@@ -363,6 +403,11 @@ Perfetto UI 擅长对一份轨迹做交互诊断。工作区、查询页和调�
 | 可视化与告警 | 分位数、基线区间、Trace 链接 | 是否需要人工复核 |
 
 这张表只画了骨架，信息量在回溯路径上：趋势图上的每个异常点，都应能跳回原始 Trace、构建信息和指标规格版本。分位数表示样本排序后所处的位置，P50 就是中位数；这类聚合值要保存，只保存它们会丢掉根因线索。
+
+<!-- gracker-diagram: ch14-04-09-trend-backtrace -->
+![趋势异常点回查原始测量与 Trace](../../assets/diagrams/ch14/ch14-04-09-trend-backtrace.png)
+
+图：从趋势点沿样本、规格和原始轨迹回查，才能解释变化。 P50 / P95 等聚合值不保留每次迭代的完整因果线索。
 
 ### Trace Processor Python API
 
@@ -396,6 +441,11 @@ with TraceProcessor(
 
 `with` 上下文管理器会在代码块结束时关闭 Trace Processor 子进程。`as_pandas_dataframe()` 把结果复制成 Pandas DataFrame（带列名的内存表格），适合后续统计；只需逐行处理少量结果时，直接遍历查询结果能少保留一份表格数据。
 
+<!-- gracker-diagram: ch14-04-10-python-native-pinning -->
+![Python 包与原生工具分别锁定](../../assets/diagrams/ch14/ch14-04-10-python-native-pinning.png)
+
+图：显式选择原生二进制，并把实际版本与摘要写入报告。 perfetto 0.57.2 的包内清单固定 v56.1；包号不能证明运行的是 v57.2。
+
 #### 批量查询
 
 `BatchTraceProcessor` 为每份 Trace 启动独立实例，并行执行同一查询：`query()` 返回每份 Trace 各自的数据表，`query_and_flatten()` 把这些表纵向合并，再由 resolver（把 URI 或路径解析成数据来源的组件） 组件补上来源列。
@@ -418,9 +468,19 @@ with BatchTraceProcessor(trace_paths) as batch:
     print(summary)
 ```
 
+<!-- gracker-diagram: ch14-04-11-slice-sum-overlap -->
+![Slice 的累计时长不等于墙钟或 CPU 时间](../../assets/diagrams/ch14/ch14-04-11-slice-sum-overlap.png)
+
+图：slice 是通用事件视图，嵌套与并行会重复覆盖相同墙钟。 图中条长只示意包含关系；SUM(dur) 不自动得到业务独占耗时。
+
 来源列的名称取决于所用 Trace 地址 resolver，读取结果的代码要先确认实际列名，再决定怎么引用 `source` 这类名字。每份 Trace 解析后的数据都驻留内存，并发数要按 Trace 内容和机器内存实测，压缩文件大小只能作为参考。官方文档给出的 `2 × 平均文件大小 × Trace 数量` 适合粗略起步，数据类型和压缩率会让实际占用明显偏离。
 
 批量规模超过单机资源后，可评估 Bigtrace。它是分布式 Trace Processor 服务，用 Kubernetes（容器集群编排系统） 调度多个工作进程，适合已经具备对象存储和集群运维能力的团队。单纯为了几十份 Trace 引入 Bigtrace，运维成本通常高于收益。
+
+<!-- gracker-diagram: ch14-04-12-batch-memory -->
+![批处理实例与结果合并的生命周期](../../assets/diagrams/ch14/ch14-04-12-batch-memory.png)
+
+图：每份 Trace 各有一个驻留实例，结果表再纵向合并。 worker 限额不限制驻留实例总数；内存不足需拆分输入批次。
 
 #### 远程 Trace Processor 服务
 
@@ -434,6 +494,11 @@ trace_processor server http trace.perfetto-trace
 
 `external/perfetto/src/trace_processor/rpc/` 中的 `Rpc` 负责 protobuf 编解码，HTTP、stdio 和 WebAssembly 桥接负责传输。Python 客户端已经封装好协议协商、分批响应和错误处理；业务脚本调用 Python API 或命令行接口即可，`/rpc` 请求、分块传输和序列号管理这些细节都交给封装层。
 
+<!-- gracker-diagram: ch14-04-13-native-rpc -->
+![UI 经回环 RPC 访问原生 Trace Processor](../../assets/diagrams/ch14/ch14-04-13-native-rpc.png)
+
+图：UI 或封装客户端把查询交给本机原生进程，Trace 数据驻留在主机。 原生进程仍受主机内存限制；版本与 RPC 协议需成套验证。
+
 服务应只监听回环地址，即仅本机可访问的 `127.0.0.1` 或 `::1`。Trace 可能包含进程名、文件路径、埋点文本和业务标识，9001 端口要留在本机，避免直接暴露到共享网络。UI 和服务器版本相差过大时还可能出现 RPC 版本不匹配，升级时要成套验证。
 
 ### 把 Perfetto 放进持续集成
@@ -444,6 +509,11 @@ AndroidX Macrobenchmark 是在 Android 设备上重复执行启动、滚动等�
 
 - Benchmark JSON 作为门禁的主要数值来源；
 - Perfetto SQL 或 Trace Summarization 生成诊断指标，并保留异常样本的原始轨迹。
+
+<!-- gracker-diagram: ch14-04-14-ci-measurement-evidence -->
+![门禁数值、诊断轨迹与条件记录分工](../../assets/diagrams/ch14/ch14-04-14-ci-measurement-evidence.png)
+
+图：一次 Macrobenchmark 测试保留数值报告、迭代 Trace 和实验条件。 自定义 Slice 名称重算的启动时间不能直接冒充 StartupTimingMetric。
 
 从某个可能变化的 Slice 名称重新计算启动时间，再与 Macrobenchmark 的 `StartupTimingMetric` 混为同一个指标，这里藏着隐患：系统升级或埋点名称变化后，两套定义可能出现不易察觉的偏差。
 
@@ -554,6 +624,11 @@ if __name__ == "__main__":
 
 脚本自身不内置百分比，只拒绝完全没有样本的报告，业务要求的最小样本数要由正式流水线另行校验。比值计算适用于“数值越低越好”且基线中位数大于零的指标；基线为零、可能为负或方向相反的指标要改用对应规则。首次超过阈值后，应在同一设备复测，并把两轮报告与 Trace 一起交给评审，场景参数、编译模式和样本数的校验也放在正式流水线里。
 
+<!-- gracker-diagram: ch14-04-15-finite-gate -->
+![标量门禁先验证输入，再比较中位数](../../assets/diagrams/ch14/ch14-04-15-finite-gate.png)
+
+图：只对有限非负标量与正基线中位数执行越低越好的回归比较。 机型和指纹一致仍不足以证明条件一致；样本数、场景和编译模式另行校验。
+
 #### 门禁采集与深度诊断的分离
 
 增加 ftrace 事件、堆采样或密集应用埋点，本身就会改变被测程序和系统的采集开销。为了不让诊断开销污染测量结果，门禁配置和深度诊断配置可以分开：
@@ -565,11 +640,21 @@ if __name__ == "__main__":
 
 这样既能控制日常测量开销，异常发生后也能拿到调度、Binder、内存或渲染方面的线索。
 
+<!-- gracker-diagram: ch14-04-16-measurement-diagnostic -->
+![常规门禁与深度诊断分开采集](../../assets/diagrams/ch14/ch14-04-16-measurement-diagnostic.png)
+
+图：门禁样本用于判定变化，详细复测用于定位原因。 诊断开销可能改变现场；变更采集配置需建立对应新基线。
+
 ### 自定义 Trace Point（埋点）
 
 #### 选择平台 API 还是 Perfetto SDK
 
 给应用或引擎加 Trace Point，先要在平台 API 和 Perfetto SDK 之间做选择。这里的 Trace Point 指代码主动写入 Trace 的应用或平台埋点，与 Linux 内核预定义的 Tracepoint 分属不同机制。事件可以分三类来看：同步时间片是同一线程上有明确起止的工作，异步时间片可跨线程或跨回调配对，计数器记录随时间变化的数值。Android 应用只用到这三类时，平台 Trace 或 NDK（Native Development Kit，C/C++ 开发工具包） 提供的 `ATrace_*` 已经足够；遇到 C++ 引擎、跨平台程序，或者需要分类过滤、流事件、强类型扩展，再上 Perfetto SDK。
+
+<!-- gracker-diagram: ch14-04-17-instrumentation-kinds -->
+![同步、异步与计数器的不同语义](../../assets/diagrams/ch14/ch14-04-17-instrumentation-kinds.png)
+
+图：按工作配对方式选择应用 Trace API 或更丰富的 SDK 能力。 应用埋点不会自动赋予整机采集权限，SDK 与平台版本分别确认。
 
 | 接口 | 可用边界 | 适合场景 |
 |---|---|---|
@@ -601,6 +686,11 @@ val bitmap = tracedSection("ImageDecode") {
 
 `Trace.java` 把名称限制在 127 个 UTF-16 代码单元；普通汉字通常占一个，部分 emoji 等字符占两个。`beginSection()` 在应用追踪启用时检查长度，超长名称会抛出 `IllegalArgumentException`；`|`、换行和空字符则会在底层被替换为空格。名称应保持短、稳定且不含用户数据。
 
+<!-- gracker-diagram: ch14-04-18-try-finally -->
+![同步 Trace 用 finally 保持线程内平衡](../../assets/diagrams/ch14/ch14-04-18-try-finally.png)
+
+图：进入区间后在 finally 中结束，异常也保留正确的嵌套关系。 名称短且稳定；固定版本按 UTF-16 单元检查 127 上限。
+
 跨线程任务要使用相同名称和 cookie 配对：
 
 ```kotlin
@@ -618,6 +708,11 @@ fun updateQueueDepth(depth: Int) {
 ```
 
 cookie 是异步区间的整数关联 ID。时间上重叠的同名异步事件必须使用不同 cookie，结束事件再用同一名称与 cookie 找回对应起点。cookie 只负责配对，账号、文件名或其他敏感信息不要放进去。
+
+<!-- gracker-diagram: ch14-04-19-async-cookie -->
+![异步区间用名称与 cookie 找回起点](../../assets/diagrams/ch14/ch14-04-19-async-cookie.png)
+
+图：在开始和完成回调中使用同一名称与 cookie，允许跨线程配对。 重叠的同名任务需不同 cookie；配对标识不应携带敏感业务内容。
 
 #### NDK `ATrace_*`
 
@@ -671,6 +766,11 @@ data_sources {
 
 `RING_BUFFER` 表示缓冲区满后覆盖最早的数据。`atrace_apps` 可以填写具体包名；`*` 会扩大到所有应用的 ATrace 事件，数据量和隐私暴露一起变大，不适合作为团队默认配置。
 
+<!-- gracker-diagram: ch14-04-20-atrace-collection -->
+![平台 ATrace 事件进入系统 Trace 的条件](../../assets/diagrams/ch14/ch14-04-20-atrace-collection.png)
+
+图：目标应用允许列表与 ftrace 采集把平台埋点送入系统缓冲。 配置请求不保证设备实际覆盖；RING_BUFFER 满后会覆盖最早数据。
+
 #### Native（C/C++） Perfetto SDK
 
 如果系统 Trace 要把应用事件与调度、ftrace 等数据放在同一时间轴，应使用 system backend（系统后端）。下面是 TrackEvent 的最小初始化与同步时间片：
@@ -704,6 +804,16 @@ TrackEvent 已支持时间片、计数器、Flow（事件之间的因果连线�
 
 只定义一个独立 `.proto`，指望代码生成器产生的 setter（字段写入方法） 自动进入上游 `TracePacket`，这条路走不通；`TracePacket` 是 Perfetto Trace 的顶层数据包容器，缺少平台 protobuf 扩展、descriptor 或自定义导入器，这类代码就形成不了可查询的结构化数据。
 
+<!-- gracker-diagram: ch14-04-21-sdk-backends -->
+![ATrace、system SDK 与进程内 SDK 的会话边界](../../assets/diagrams/ch14/ch14-04-21-sdk-backends.png)
+
+图：事件接口、数据源和会话控制者要成套匹配。 SDK 注册本身不会开始采集；两个后端也不会自动合并输出。
+
+<!-- gracker-diagram: ch14-04-22-typed-import -->
+![结构化业务字段需要可识别的导入路径](../../assets/diagrams/ch14/ch14-04-22-typed-import.png)
+
+图：字段描述与导入能力共同决定 Trace Processor 能否查询结构化内容。 独立 proto 生成 setter 不会自动扩展上游 TracePacket。
+
 #### 生产包治理
 
 Trace 点的设计质量会直接影响轨迹可读性和线上信息暴露：
@@ -736,6 +846,11 @@ object AppTrace {
 ```
 
 把 `ENABLE_APP_TRACE` 设为构建期常量后，R8 可以移除不可达的 Trace 调用分支。发布前仍要检查 APK、混淆映射文件和实际 Trace，确认敏感字符串已移除、需要的诊断点仍存在。
+
+<!-- gracker-diagram: ch14-04-23-release-trace-governance -->
+![团队可选埋点的构建期治理](../../assets/diagrams/ch14/ch14-04-23-release-trace-governance.png)
+
+图：用团队包装和构建期常量管理可选埋点，发布前核对实际产物。 移除效果要用 APK 与现场验证；埋点开销需目标设备实测。
 
 ### 团队级 Perfetto 分析知识库
 
@@ -775,6 +890,11 @@ perfetto-analysis/
 知识库的评审重点应放在语义变化。格式调整可以自动化；指标定义、时间窗口、连接键（JOIN 的匹配字段）、阈值和采集依赖的变化，必须由熟悉该领域的工程师确认。
 
 
+<!-- gracker-diagram: ch14-04-24-golden-knowledge -->
+![查询知识库随工具与语义一起回归](../../assets/diagrams/ch14/ch14-04-24-golden-knowledge.png)
+
+图：把查询、规格、宏、策略和固定测试 Trace 作为版本化资产。 窗口、JOIN、单位和阈值变化属于语义变更，需要领域复核。
+
 ## 分析平台的任务、证据与版本治理
 
 单个指标回答的是固定的问题；分析平台要接着管理 Trace 输入、查询版本、任务编排和结果依据，让每个结果都能回到原始时间线。
@@ -784,6 +904,11 @@ perfetto-analysis/
 下文涉及字段、阈值、runtime（调用模型和工具的执行适配层） 选择和企业迁移的实现细节，固定在 SmartPerfetto v1.3.0、提交 `24eba544cebf231524294aa50def33ee0e267c9e`，该版本固定使用 Perfetto v57.2 的 host 侧 `trace_processor_shell`。截至 2026-08-13，最新公开版本已经是 v1.5.4、提交 `0ea90aec784ca865d9f952502f87b86dc688bbe5`；v1.4～v1.5 的新增行为，不会自动套用到这份 v1.3.0 快照上。
 
 Android 版本与 host 工具版本是两条独立的版本线，要分开对待：Android 版本决定设备能采到哪些数据源，host 侧 Perfetto 版本决定 trace 解析器、SQL schema 和 stdlib（PerfettoSQL 标准库）能力。用 v57.2 分析 Android 10～17 的 trace，设备端未必也在运行 v57.2。
+
+<!-- gracker-diagram: ch14-04-25-version-axes -->
+![设备、主机和分析平台是独立版本线](../../assets/diagrams/ch14/ch14-04-25-version-axes.png)
+
+图：分别核对采集能力、解析语义和平台实现快照。 本文平台细节固定 v1.3.0；新版 release 的行为不能倒灌进旧快照。
 
 ### 从单次 Trace 问答到可复用分析结果
 
@@ -797,6 +922,11 @@ Android 版本与 host 工具版本是两条独立的版本线，要分开对待
 | analysis result snapshot（分析结果快照） | 跨窗口、跨人员、跨版本比较 | 保存标准化指标、证据引用和报告身份 |
 
 四类产物的保存周期不同。聊天答案可以随会话结束；snapshot 和报告则要携带指标来源、证据引用、运行模式、provider（模型服务提供方）、runtime 和部分失败原因。团队做回归分析时应优先保存 snapshot 或报告——后来的人如果只有一句模型结论，就无从确认它来自 trace 数据、外部知识，还是模型推断。
+
+<!-- gracker-diagram: ch14-04-26-analysis-dataflow -->
+![查询结果经过合约再进入解释与持久化](../../assets/diagrams/ch14/ch14-04-26-analysis-dataflow.png)
+
+图：确定性取数保留来源与状态，模型解释和报告复用同一证据身份。 模型结论不能代替可回查的查询结果；单条 Trace 也不代表全量用户分布。
 
 SmartPerfetto 处理的是单条和少量 trace，线上性能平台另有分工。线上第 90 / 99 百分位值（P90 / P99（第 90 / 99 百分位值））、慢帧率和启动耗时用于判断影响范围与趋势；少量代表性 trace 用于解释阶段耗时、线程状态和资源竞争怎样变化。两类材料的采样方式不同，复盘时应并列呈现；拿一条 trace 推导全量用户分布，结论是站不住的。
 
@@ -820,6 +950,11 @@ Smart Profile 负责选择分析场景：preview 阶段先识别可分析的时�
 
 复核时要记录 Result ID（一次分析结果的标识）、`evidenceRefId`（证据引用标识）、表格行列、查询限制和 runtime 身份。只反馈“回答不对”不足以定位缺陷；这些字段能帮维护者区分 SQL 条件或单位错误、Skill 兼容问题、trace 数据源缺失、模型推断过度，以及报告展示错误。
 
+<!-- gracker-diagram: ch14-04-27-analysis-modes -->
+![分析模式决定工具与预算，场景另行选择](../../assets/diagrams/ch14/ch14-04-27-analysis-modes.png)
+
+图：fast、full 与 auto 选择运行深度，私有来源或对照轨迹需要完整工具。 Smart Profile 的 preview 选择场景，不等同于 fast / full 模式。
+
 ### YAML Skill 与场景策略的分层设计
 
 把可复用分析写成一段提示词，还是写成可执行的定义，直接决定它能否被测试。SmartPerfetto 把可复用分析分成 Skill、strategy 和 template 三层；v1.3.0 仓库中的 Skill 是可执行的 YAML 分析定义，和一段提示词是两回事。
@@ -834,9 +969,19 @@ Skill 可以声明参数、SQL、其他 Skill 引用、迭代、并行、条件�
 
 这组分层减少了临时生成 SQL 的比例。重复使用的查询放进 Skill，场景决策由 strategy 约束，报告格式交给 template。模型仍可解释数据、提出下一步查询和排列假设，但查询条件、单位换算与空结果含义应留在可测试的执行层。
 
+<!-- gracker-diagram: ch14-04-28-skill-strategy-template -->
+![Skill、strategy 与 template 分别约束哪一层](../../assets/diagrams/ch14/ch14-04-28-skill-strategy-template.png)
+
+图：把取数、场景编排和报告呈现分开维护，减少临时 SQL 的语义漂移。 模型可提出假设，窗口、单位和缺失分支仍需可测试的定义。
+
 Skill 输出经兼容适配器转换为 `DataEnvelope`，即 SmartPerfetto 的标准结果对象。
 
 `meta` 保存 schema 版本、来源、时间、Skill/step、执行状态和证据身份；`data` 保存表格、图表、文本或诊断内容；`display` 保存展示层级、列定义与格式。`observed` 表示得到数据，`empty` 表示查询成功但没有匹配行，`optional_error` 表示可选查询失败。这三种状态要分开解读：把查询失败写成“没有发现问题”，就把故障藏进结论里了。
+
+<!-- gracker-diagram: ch14-04-29-envelope-execution -->
+![DataEnvelope 的三个执行状态](../../assets/diagrams/ch14/ch14-04-29-envelope-execution.png)
+
+图：展示层同时携带数据与执行状态，避免把可选错误藏进正常结论。 empty 与 optional_error 都不能被直接改写为“没有问题”。
 
 ### SQL guardrail（规则式风险检查）、stdlib 文档与证据来源索引
 
@@ -850,17 +995,32 @@ SmartPerfetto 对用户直接提交的 raw SQL（用户直接提交的 SQL） �
 
 完整 Query Review 会随 DataEnvelope 或 Artifact（保存下来的分析产物） 进入报告；给模型的 compact projection（压缩后的内容片段） 不含可执行 SQL。所以报告里的可执行 SQL 是完整的，模型每轮分析看到的却可能是截断版本。
 
+<!-- gracker-diagram: ch14-04-30-query-review-evidence -->
+![查询复核元数据与诊断证据的分工](../../assets/diagrams/ch14/ch14-04-30-query-review-evidence.png)
+
+图：Query Review 解释查询行为，Evidence Contract 支持结论回查。 复杂 SQL 解析不全时标 partial；review_metadata_only 不能单独证明诊断。
+
 诊断证据由独立的 Evidence Contract 表达。这里的 contract 是一组必填字段，用来规定结论怎样指回原始查询结果。
 
 一个数值证据可以记录 `traceId`、current（当前 trace）/reference（当前或对照 trace）、producer kind（数据生产方类型）、Skill 与 step、`queryHash`、`queryReviewId`、artifact、计划阶段，以及具体的 row selector（行定位条件）、column、actual value、单位和时间范围。claim（结论陈述）的支持等级分为 `verified`（证据完整）、`partial`、`inference`（推断） 和 `unsupported`（无支持）。
 
 例如报告写“主线程 Runnable 120 ms”，至少要能定位到相应证据行和列；若再写“CPU 争用导致这 120 ms”，还需调度关系或其他证据支持因果判断。
 
+<!-- gracker-diagram: ch14-04-31-numeric-causal -->
+![数值成立与因果成立需要不同证据](../../assets/diagrams/ch14/ch14-04-31-numeric-causal.png)
+
+图：数值结论先落到具体行列，因果结论再补唤醒、竞争或跨层关系。 观察到 Runnable 120 ms 不足以单独证明 CPU 争用是原因。
+
 guardrail 覆盖的是规则里已经列出的风险，规则之外的正确性仍要靠人工判断。缺少 FrameTimeline、Binder、sched、GPU counter 或关键应用标记时，报告应列出缺失数据、降低支持等级，并给出补采配置；`empty` 同样要如实呈现，写成“系统没有问题”就失真了。
 
 ### 多 Trace 对比与性能回归判断
 
 SmartPerfetto 支持两类对比。raw reference trace 对比要求当前会话同时能够访问 current 与 reference 两份原始 trace，适合围绕同一问题继续写查询。analysis result snapshot 对比读取已经完成的分析产物，适合版本回归、A/B、多候选结果和跨窗口复盘；这项对比只使用快照中保存的标准化指标与证据引用，不会重新查询原始 trace。
+
+<!-- gracker-diagram: ch14-04-32-two-comparisons -->
+![原始对照与快照对照的两条路径](../../assets/diagrams/ch14/ch14-04-32-two-comparisons.png)
+
+图：原始 Trace 可继续取数，结果快照只能比较已经保存的指标与依据。 快照比较不会重新查询原始 Trace；缺指标必须显式呈现。
 
 标准指标键覆盖这些类别：
 
@@ -877,9 +1037,24 @@ v1.3.0 的变化高亮同时使用相对阈值和按单位设置的绝对阈值�
 
 例如，发现启动 P90 上升后，我们可以分别抽取改动前的 baseline（改动前基线） 与改动后的 candidate（改动后候选版本） 两份 trace，生成 snapshot，再比较启动阶段、主线程状态、Binder、I/O 和首帧提交记录。若设备、温控、编译状态或抓取配置不一致，先标注环境差异再比较；把不可比样本的变化直接解释为代码回归，容易得出错误结论。
 
+<!-- gracker-diagram: ch14-04-33-global-backfill -->
+![v1.3.0 默认回填是全局候选](../../assets/diagrams/ch14/ch14-04-33-global-backfill.png)
+
+图：默认 SQL 未限制应用、Layer 和业务窗口，需验证后才可用于场景回归。 启动取全局最大 dur，帧统计可混入多进程、多 Layer 与 SF 行。
+
+<!-- gracker-diagram: ch14-04-34-highlight-threshold -->
+![变化高亮按单位选择判断分支](../../assets/diagrams/ch14/ch14-04-34-highlight-threshold.png)
+
+图：有效变化先按单位检查绝对与相对阈值，再决定界面高亮。 这是 UI 变化规则，不是统计显著性检验；NULL 和 unknown 分支需保留。
+
 ### Provider Manager：模型服务与执行适配层
 
 模型配置分三层，各管一段：Connection 保存前端要访问的 SmartPerfetto 后端地址与可选的后端 token；Provider profile 保存模型 endpoint（服务地址）、模型凭证、模型 ID、通信协议及 runtime 选择；runtime 决定由哪套 Agent SDK 或 server adapter 调用 SmartPerfetto 工具。
+
+<!-- gracker-diagram: ch14-04-35-connection-provider-runtime -->
+![后端连接、模型配置和执行适配层](../../assets/diagrams/ch14/ch14-04-35-connection-provider-runtime.png)
+
+图：Connection、Provider profile 与 runtime 分别管理服务入口、模型与执行机制。 后端 token 与 provider key 授权对象不同，健康检查也需看实际 runtime。
 
 | 配置项 | 作用 | 常见误解 |
 | --- | --- | --- |
@@ -907,7 +1082,17 @@ Qoder SDK 不随默认 Docker、portable 或 npm 安装提供，启用前要审�
 
 v1.3.0 的会话快照还有一个缺口。常规 runtime 选择器已经接受 `qoder-agent-sdk`，但 `providerSnapshot.ts` 解析纯环境变量配置时只列出 Claude、OpenAI、Pi 和 OpenCode。只设置 `SMARTPERFETTO_AGENT_RUNTIME=qoder-agent-sdk` 时，本次运行可以进入 Qoder，env/default 会话快照却证明不了 Qoder 身份已被正确保存。这个限制不影响显式 provider 的存在性检查；恢复这类 Qoder session 前，应先在已修复版本上做回归，或重新创建 session。
 
+<!-- gracker-diagram: ch14-04-37-resume-identity -->
+![历史会话按快照恢复而非重读 active](../../assets/diagrams/ch14/ch14-04-37-resume-identity.png)
+
+图：恢复固定 provider/runtime 身份，已删除的绑定 provider 应明确失败。 v1.3.0 的纯 env Qoder 快照存在缺口，应在修复版本回归或新建会话。
+
 排障时要读取需要鉴权的 `GET /api/runtime-health`，检查 runtime、模型和 credential source（凭证来源）。公开的 `GET /health` 只表示服务进程存活；要确认分析 runtime 已按预期切换，仍以 `GET /api/runtime-health` 的结果为准。
+
+<!-- gracker-diagram: ch14-04-36-new-session-priority -->
+![常规新会话的 provider 与 runtime 优先级](../../assets/diagrams/ch14/ch14-04-36-new-session-priority.png)
+
+图：普通新请求按显式 provider、active、env、默认顺序选择执行身份。 显式无效 provider 立即失败；null、runtimeOverride 与实验路径另走分支。
 
 ### 运行分发、权限与隐私
 
@@ -918,6 +1103,11 @@ v1.3.0 的会话快照还有一个缺口。常规 runtime 选择器已经接受 
 trace 可能含有进程名、线程名、业务路径、URL 片段、用户操作节奏、设备信息与 slice 参数。上传给 provider 的内容片段、Result ID、HTML 报告、日志、workspace（隔离的工作空间） 分享和过期清理都应按敏感数据管理。
 
 私有源码与外部知识源只有在本次请求明确选择、scope 与授权校验通过后才进入 runtime，不会自动提供给普通 trace 会话。使用 `provider_send` 时还要同时具备“该来源允许发送给 provider”和“本次运行允许发送”两项许可。
+
+<!-- gracker-diagram: ch14-04-38-private-context-permission -->
+![私有上下文按本次请求与许可进入 runtime](../../assets/diagrams/ch14/ch14-04-38-private-context-permission.png)
+
+图：显式选择、scope 与许可共同限制私有材料的检索和外发。 背景知识不能冒充当前 Trace 证据；授权变化应使旧私有会话失效。
 
 SmartPerfetto 只能分析调用方有权提供的 trace。Perfetto SDK 或 AndroidX Tracing 可以增加应用内事件，但不会赋予应用读取整机 ftrace、其他进程或系统服务内部数据的权限。系统级采集仍受 Manifest 中的 `profileable` / `debuggable` 属性、adb、ProfilingManager、系统签名权限和设备策略约束，参见 14.12 与 26.6 节。
 
@@ -947,6 +1137,11 @@ Skill 进入团队流程后，我们就要按可执行代码来维护它。最�
 3. 关键指标与 golden 基准处于允许误差内；
 4. 报告中的 evidence anchor 能返回表格行列，claim support 没有把 `partial` 升级成 `verified`。
 
+<!-- gracker-diagram: ch14-04-39-skill-regression-gates -->
+![Skill 回归逐层验证取数、契约与证据](../../assets/diagrams/ch14/ch14-04-39-skill-regression-gates.png)
+
+图：固定 Trace 上逐层核对可执行性、结果语义、基准和证据回查。 YAML 能解析不代表指标正确，partial 不能因报告完成而升级为 verified。
+
 启动、滑动、ANR、Binder、I/O、内存和功耗场景都要准备成功样本与缺字段样本。缺字段样本用于验证降级路径，例如缺少 FrameTimeline 时，帧级结论必须标为不完整。SmartPerfetto 固定 trace processor 版本后，仍要在 canonical trace（团队指定的标准测试 trace） 上做回归；升级 v57.2 之后的版本时，还要重新核对 schema、stdlib symbol index、标准指标和 golden 输出。
 
 14.7 的 SQL 查询条件、单位与 Jank/CUJ 查询，14.11 的调查协议，以及 26.4 的回归判定可以转为 Skill contract。contract 应声明输入、输出、单位、证据解释、适用版本、缺失数据分支和人工复核入口。
@@ -973,6 +1168,11 @@ Skill 进入团队流程后，我们就要按可执行代码来维护它。最�
 
 一种可执行的维护方法是：从章节选定一个可观察问题，编写 Skill，在固定 trace 上运行，检查报告里的依据是否成立，再把缺字段、厂商差异和误诊条件补回章节。章节修订后还要判断 Skill contract 是否需要同步修改，从而保持“机制说明—可执行查询—真实样本”三者一致。
 
+<!-- gracker-diagram: ch14-04-40-knowledge-feedback -->
+![机制章节与可执行 Skill 互相校验](../../assets/diagrams/ch14/ch14-04-40-knowledge-feedback.png)
+
+图：从可观察问题生成查询，在固定样本上验证，再把失效条件补回章节。 设备、版本和厂商假设需写进适用边界，不能从单次成功泛化。
+
 ### 企业版迁移与 404 排查
 
 SmartPerfetto 的企业迁移阶段决定 trace metadata（文件路径、归属和访问范围等元数据） 从文件系统还是数据库读取。v1.3.0 的状态如下：
@@ -985,6 +1185,11 @@ SmartPerfetto 的企业迁移阶段决定 trace metadata（文件路径、归属
 | `retired` | DB | 否 | 是 | 恢复退役前快照；不承诺反向转换 |
 
 企业功能启用且未配置 `SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE` 时，默认阶段是 `dual-write`。进入 `cutover` 还要求 `SMARTPERFETTO_ENTERPRISE_CUTOVER_CONFIRMED=true`；缺少该确认时，服务会在解析迁移计划时拒绝启动。
+
+<!-- gracker-diagram: ch14-04-41-migration-phases -->
+![企业迁移阶段改变 metadata 的权威来源](../../assets/diagrams/ch14/ch14-04-41-migration-phases.png)
+
+图：先双写并核对数据，再把读写权威切换到数据库。 cutover 确认开关不是数据一致性证明；回退依赖已验证快照。
 
 这项启动检查要求运维人员已经完成 filesystem 与 DB 的 reconciliation（逐项比对并处理不一致记录），并验证可用于恢复的快照。
 
@@ -1011,6 +1216,11 @@ RequestContext 表示这次请求携带的身份与授权信息，RBAC（Role-Ba
 6. 若切换数据不完整，停止写入，按项目提供的 snapshot restore 流程恢复文件系统和 SQLite 快照，再重新处理 reconciliation 中发现的不一致记录。
 
 只把环境变量改回 `dual-write`，然后假设 DB 数据会自动写回文件系统，是行不通的：源码明确说明 dual-write 没有实现 reverse importer（从数据库反向导回文件系统的工具）。快照恢复会覆盖目标文件或目录，必须在维护窗口内由部署负责人执行，并在恢复前保留现场副本。
+
+<!-- gracker-diagram: ch14-04-42-scoped-404 -->
+![cutover 后沿 scope、记录与文件排查 404](../../assets/diagrams/ch14/ch14-04-42-scoped-404.png)
+
+图：按生效阶段、授权范围、记录和文件逐项查证，必要时按快照恢复。 DB 查不到不会回退旧文件系统；改回 dual-write 不会自动反向导回数据。
 
 404 率、trace 访问成功率和数据库延迟的阈值应由团队按 SLO（Service Level Objective，服务等级目标） 与流量设定，SmartPerfetto 源码没有规定 99.5% 或 0.5% 这类通用目标。迁移监控还应包含 reconciliation 失败数、snapshot 完整性、按 scope 查询时未命中的原因分类，以及恢复演练结果。
 

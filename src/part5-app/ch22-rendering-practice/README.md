@@ -4,6 +4,11 @@
 
 [第 2 章](../../part1-fundamentals/ch02-rendering/README.md)和[第 13 章](../../part2-performance/ch13-rendering-pipelines/README.md)分析系统渲染管线，[第 7 章](../../part2-performance/ch07-smoothness/README.md)讨论卡顿定位；这里聚焦 View、Jetpack Compose、WebView、Flutter、视频播放和 CameraX 等 App 侧场景。
 
+<!-- gracker-diagram: a252-01-rendering-reading-map -->
+![渲染实战各场景的阅读入口](../../assets/diagrams/ch22/a252-01-rendering-reading-map.png)
+
+图：按框架和症状选入口，所有分支都需要实际设备、刷新率与帧时间线作为测量基线。此图是阅读导航，不是模块调用图。
+
 ## 内容索引
 
 

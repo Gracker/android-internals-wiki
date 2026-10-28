@@ -36,6 +36,11 @@ related_chapters:
 
 用 Perfetto SQL 分析输入延迟，先要把三件事定下来：用哪个 ID 作为这次输入的身份、统计落在哪段时间窗口、延迟算到哪个终点。InputDispatcher 侧的分发、应用侧的消费和帧呈现是三段不同的数据，只有对齐到同一个事件上，算出来的端到端延迟才可复查。
 
+<!-- gracker-diagram: ch14-05-01-measurement-contract -->
+![输入身份、业务窗口与终点](../../assets/diagrams/ch14/ch14-05-01-measurement-contract.png)
+
+图：先固定投递身份、业务时间窗与延迟终点，再选择可核验的数据。 通道内序号和包名都不足以独立标识一次投递。
+
 ## 分析边界与源码基线
 
 输入延迟排障常遇到三类问题：慢事件藏在大量正常样本中、ANR（Application Not Responding，应用无响应）发生前的队列状态不清楚、一次输入究竟关联了哪一帧。时间线界面适合观察单个现场，SQL 更适合筛选异常样本、计算分位数和复用判定逻辑。分位数描述样本排序后的位置，例如 P50 是中位数，P95 表示约 95% 的样本不高于该值。
@@ -50,6 +55,16 @@ related_chapters:
 
 三段数据的来源和缺失条件不同。没有帧关联时，输入往返时间仍可能完整；没有完整的发送、接收和确认切片时，`android_input_events` 不会生成该行。分析时要把“没有记录”与“耗时为零”分开。
 
+<!-- gracker-diagram: ch14-05-02-version-axes -->
+![设备版本与分析工具分别核对](../../assets/diagrams/ch14/ch14-05-02-version-axes.png)
+
+图：系统埋点、标准库与原生工具分别记录版本和摘要。 Android 12 的 FrameTimeline 起点不保证输入解析格式全版本一致。
+
+<!-- gracker-diagram: ch14-05-03-time-precision -->
+![计算保留纳秒，展示保留小数](../../assets/diagrams/ch14/ch14-05-03-time-precision.png)
+
+图：身份、窗口和连接用原始纳秒，显示毫秒用浮点除法。 time_to_ms 返回 LONG；PERCENTILE 的浮点结果不能直接传入。
+
 ## `android.input` 中的两条数据链路
 
 ### 生命周期与帧关联
@@ -62,6 +77,11 @@ related_chapters:
 - `actual_frame_timeline_slice`：把应用帧映射到 `SurfaceFlinger` 帧，并取得呈现时间。
 
 这条链路不依赖 `android.input.inputevent` 调试数据源。常规 `user` 量产构建也可以采集所需的 ATrace 与 FrameTimeline，但采集配置必须包含 `input`、`view`、`gfx` 类别、目标应用和 FrameTimeline 数据源。
+
+<!-- gracker-diagram: ch14-05-04-independent-chains -->
+![ATrace 生命周期与调试原始事件两条链](../../assets/diagrams/ch14/ch14-05-04-independent-chains.png)
+
+图：ATrace 与 FrameTimeline 生成生命周期候选，调试数据源生成原始视图。 只启用 inputevent 不会补齐四消息与帧关联。
 
 下面这条查询用于确认标准库对象能够加载，并快速观察当前跟踪的覆盖率：
 
@@ -79,6 +99,16 @@ FROM android_input_events;
 
 这里的覆盖率指有多少输入行同时具备读取时间、帧关联或端到端延迟。结果全为零时，应先检查采集配置和场景是否产生输入，不能据此判断输入很快。`NULL` 表示字段缺失，不代表耗时为零；`with_frame` 明显少于 `event_count` 时，需要核对 FrameTimeline、应用 ATrace 和场景结束位置是否完整。
 
+<!-- gracker-diagram: ch14-05-05-coverage-states -->
+![原始行、缺字段与零耗时分别判断](../../assets/diagrams/ch14/ch14-05-05-coverage-states.png)
+
+图：先看采集覆盖、原始行数和候选字段，再决定可统计的样本集合。 字段非空不证明关联正确，空结果不能当作零延迟。
+
+<!-- gracker-diagram: ch14-05-06-cross-channel -->
+![同序号跨通道导致帧附件放大](../../assets/diagrams/ch14/ch14-05-06-cross-channel.png)
+
+图：两个独立通道共享序号时，固定实现可把两次投递扩成四行。 这是受控合成 Trace 的实现复现；全行 DISTINCT 不能修复附件污染。
+
 ### 调试级原始事件
 
 `android_motion_events`、`android_key_events` 与 `android_input_event_dispatch` 来自 `android.input.inputevent`。Android 17 的配置协议明确限制该数据源只能用于 `userdebug` 或 `eng` 调试构建，不能在普通 `user` 量产构建上启用。它记录 `InputDispatcher` 处理的原始事件字段和窗口分发决策，适合回答事件来源、动作、设备、窗口及隐私规则是否生效等问题。
@@ -86,6 +116,11 @@ FROM android_input_events;
 两条链路不能当作同一张表拆分后的结果。原始视图使用数值型 `event_id`；生命周期表的 `input_event_id` 来自 ATrace 名称，通常是带 `0x` 等表示方式的十六进制文本。标准库没有公开、稳定的桥接视图。
 
 原始事件与窗口分发可以用同为数值型的 `event_id` 关联，但要跨到 `android_input_events`，就应回到同一事件的时间线和源码格式核验；直接用 `CAST` 转换类型后做等值连接，可能把格式差异或 ID 碰撞误当成同一事件。
+
+<!-- gracker-diagram: ch14-05-07-raw-id-bridge -->
+![原始事件与窗口分发的身份边界](../../assets/diagrams/ch14/ch14-05-07-raw-id-bridge.png)
+
+图：数值 event_id 可连接原始事件和多窗口分发，跨 ATrace 需另证身份。 十六进制文本转数值不能建立稳定的官方桥接关系。
 
 这条查询展示原始动作事件、内核事件时间和窗口分发的一对多关系：
 
@@ -111,6 +146,11 @@ LIMIT 200;
 ```
 
 解析器会把协议消息中单调时钟域的 `event_time_nanos` 转为 Trace 时间域；单调时钟只持续向前，不受墙上时间校准影响。转换后的值以 `kernel_time` 写入 `args`，`EXTRACT_ARG` 从 `arg_set_id` 对应的键值参数集中读出它。原始表的 `ts` 直接取自对应 TracePacket 的时间戳，不能解释成分析机器上 Trace Processor 解析数据包的时刻。同一事件可能投递给前台窗口、监视窗口或其他目标，因此结果出现多行并非重复数据。
+
+<!-- gracker-diagram: ch14-05-08-raw-timestamps -->
+![事件时间、处理时间与窗口投递时间](../../assets/diagrams/ch14/ch14-05-08-raw-timestamps.png)
+
+图：原始事件语义时间经时钟映射进入 args，包时间保留其生产端含义。 窗口 vsync_id 表示分发决策时的帧，不等同于最终呈现 token。
 
 ## 公共表结构与延迟公式
 
@@ -146,6 +186,16 @@ LIMIT 200;
 
 输入传输使用基于 socket 的输入通道，ACK 是 acknowledgment（确认消息）的缩写。`ack_latency_dur` 不是 Binder（Android 进程间通信机制）往返耗时；将它归因于 Binder 拥塞会把排查方向带偏。应用收到事件后，`handling_latency_dur` 也可能覆盖输入批处理和框架分发开销，不能直接等同于某个业务回调的执行时间。
 
+<!-- gracker-diagram: ch14-05-09-finish-identity -->
+![公开线程身份来自 FINISHED 发送者](../../assets/diagrams/ch14/ch14-05-09-finish-identity.png)
+
+图：用接收轨道寻找实际接收线程，公开线程字段描述确认发送端。 upid 区分当前 Trace 内实例；不能把 finish 线程当成 receive 线程。
+
+<!-- gracker-diagram: ch14-05-10-four-messages -->
+![四个消息节点与往返分段](../../assets/diagrams/ch14/ch14-05-10-four-messages.png)
+
+图：dispatch、receive、finish、finish_ack 依次界定分发、处理与确认。 输入通道是 socket；ACK 段不能称为 Binder 往返。
+
 ### 三张原始视图
 
 原始视图的公开列在 Android 17 中保持紧凑，复杂 protobuf 消息字段通过 `arg_set_id` 对应的参数集查询：
@@ -157,6 +207,11 @@ LIMIT 200;
 | `android_input_event_dispatch` | `id`, `event_id`, `arg_set_id`, `vsync_id`, `window_id` | 事件到窗口的分发决策 |
 
 坐标、指针轴、策略标志、`down_time` 和 `kernel_time` 等字段保存在 `args`。字段是否存在还受脱敏等级影响；脱敏会省略敏感字段，因此查询必须允许 `NULL`。
+
+<!-- gracker-diagram: ch14-05-11-redacted-defaults -->
+![脱敏省略与公开标量默认值](../../assets/diagrams/ch14/ch14-05-11-redacted-defaults.png)
+
+图：敏感参数缺失应保留未知，公开 key_code 的 0 也可能来自省略字段。 固定解析器的默认 getter 行为已用省略 key_code 的合成包核对。
 
 ## 输入往返延迟
 
@@ -189,6 +244,11 @@ LIMIT 100;
 ```
 
 使用时只需修改 `VALUES` 中的进程名。`dispatch_ms` 高时检查 `InputDispatcher` 与目标线程的可运行、运行和睡眠状态；`handling_ms` 高时展开应用接收线程；`ack_ms` 高时检查应用发出确认后的调度与输入通道路径。单个分段偏高只能提供排查入口，不能独立证明根因。
+
+<!-- gracker-diagram: ch14-05-12-roundtrip-dedup -->
+![慢往返查询先固定样本身份](../../assets/diagrams/ch14/ch14-05-12-roundtrip-dedup.png)
+
+图：唯一进程实例与半开窗口内，对消息字段去重后筛出时序合法的慢样本。 候选帧侧字段不参与去重；负分段另作关联异常。
 
 ### 建立同场景分布
 
@@ -234,6 +294,11 @@ END;
 
 输入延迟没有脱离设备、刷新率、手势类型和负载的通用毫秒阈值。可靠的性能回退判定应固定设备、构建、Trace 配置、交互脚本、温度区间和样本量，再比较分位数及尾部样本。最大值对单次调度抖动很敏感，不适合单独作为门禁；门禁是持续集成中自动决定构建是否通过的规则。
 
+<!-- gracker-diagram: ch14-05-13-percentiles -->
+![同场景分布与尾部样本的口径](../../assets/diagrams/ch14/ch14-05-13-percentiles.png)
+
+图：在固定实验条件下比较分位数、样本量和尾部现场。 P95 并列值可使尾部超过 5%；最大值不能独立担当通用门禁。
+
 ## 从事件发生到帧呈现
 
 ### 三段时间的组合
@@ -265,9 +330,24 @@ LIMIT 100;
 
 这里的 `event_time` 由 `InputReader` 的 ATrace 输出，取自输入事件自身携带的时间，不是原始 evdev（Linux 输入设备事件接口）上的 Tracepoint（内核预定义事件记录点）。它比 `dispatch_ts` 更靠近设备事件，但仍不能描述成触摸控制器中断时间。FrameTimeline 的呈现时间是 SurfaceFlinger 帧区间的结束，不代表屏幕像素实际发光的物理时刻。
 
+<!-- gracker-diagram: ch14-05-14-clock-domain -->
+![内联事件时间与 Trace 端点先统一时钟](../../assets/diagrams/ch14/ch14-05-14-clock-domain.png)
+
+图：将读取与呈现 Trace 端点转为 MONOTONIC，再与内联事件时间相减。 缺映射保留 NULL；统一时钟不会修复错误的事件或帧附件。
+
+<!-- gracker-diagram: ch14-05-15-reader-proxy -->
+![Reader 代理边界与真实设备读取分开](../../assets/diagrams/ch14/ch14-05-15-reader-proxy.png)
+
+图：read_time 取 TracedInputListener 包装 Slice 起点，属于 Reader 监听链路代理。 它不是 EventHub readTime；软件候选 present 也不是面板发光时刻。
+
 ### 输入与 `doFrame` 的关联规则
 
 标准库会在同一应用线程上查找与 `deliverInputEvent` 区间相交的 `Choreographer#doFrame`。找到交集时标记为精确关联；没有交集时，选择该线程上紧随其后的帧并标记 `is_speculative_frame = 1`。这里的“精确”只表示两个区间按规则相交，不自动证明业务因果。映射到 SurfaceFlinger 的步骤再按应用帧时间筛选未丢弃帧。
+
+<!-- gracker-diagram: ch14-05-16-doframe-candidates -->
+![区间相交与后续帧都是候选规则](../../assets/diagrams/ch14/ch14-05-16-doframe-candidates.png)
+
+图：同线程输入与 doFrame 相交时取规则匹配，否则取随后帧并标推测。 exact 只是区间关系，不能证明该帧包含业务反馈。
 
 这些规则带来三个限制：
 
@@ -307,6 +387,16 @@ LIMIT 200;
 
 同时使用 `frame_id` 和 `upid` 可以避开不同进程复用 Vsync ID 造成的误连接。帧持续时间长不等于输入处理慢，仍需展开 `doFrame`、负责渲染提交的 `RenderThread`、SurfaceFlinger 和调度上下文。
 
+<!-- gracker-diagram: ch14-05-17-frame-failure-gates -->
+![帧候选需要分层核验](../../assets/diagrams/ch14/ch14-05-17-frame-failure-gates.png)
+
+图：分别核验输入身份、应用 Surface、显示帧与实际采用的 buffer。 全局 LIMIT 1 无进程过滤和排序；下游补 upid 不能修复已污染字段。
+
+<!-- gracker-diagram: ch14-05-18-frame-context-leftjoin -->
+![候选帧与 HWUI 上下文保留缺失](../../assets/diagrams/ch14/ch14-05-18-frame-context-leftjoin.png)
+
+图：候选 token 加 upid 只约束当前上下文连接，LEFT JOIN 保留未匹配与歧义。 android_frames 也是聚合候选，缺 Expected 或多 Layer 时仍需底层 ID。
+
 ### 展开 `doFrame` 的全部后代切片
 
 直接连接 `slice.parent_id = do_frame_id` 只能看到第一层子切片。定位输入、动画或遍历阶段时，应遍历完整的切片子树。下面的参数行选择一个应用和帧 ID：
@@ -335,6 +425,11 @@ ORDER BY slice.ts, slice.depth;
 
 `descendant_slice()` 是递归遍历 Slice 父子关系的表函数。修改参数行后，查询会返回 `doFrame` 下所有层级的后代 Slice；具体回调名称受系统版本、应用埋点和采集类别影响，应先查看完整结果，再筛选当前 Trace 中存在的名称。
 
+<!-- gracker-diagram: ch14-05-19-descendant-tree -->
+![完整后代与第一层子 Slice 的区别](../../assets/diagrams/ch14/ch14-05-19-descendant-tree.png)
+
+图：从选定 doFrame 遍历完整子树，按时间、深度和 ID 展开。 未闭合 dur=-1 保留 unclosed 状态，时长显示 NULL。
+
 ## `InputDispatcher` 的 `iq`、`oq` 与 `wq`
 
 `InputDispatcher` 运行在承载 Android 核心系统服务的 `system_server` 进程中。Android 17 的 `InputDispatcher.cpp` 直接用 ATrace 计数器记录三类队列：
@@ -344,6 +439,11 @@ ORDER BY slice.ts, slice.depth;
 - `wq:<channel>`（wait queue）：已经写给应用、仍等待 `FINISHED` 确认的队列。
 
 这里的 channel 是 InputDispatcher 与一个输入目标之间的连接。源码中的计数器名称缓冲区长度为 40 字节，过长的通道名可能被截断。查询应使用 `oq:`、`wq:` 前缀，并在需要时结合目标时间和进程现场定位连接。
+
+<!-- gracker-diagram: ch14-05-20-queue-lifecycle -->
+![iq、oq 与 wq 的位置](../../assets/diagrams/ch14/ch14-05-20-queue-lifecycle.png)
+
+图：入站事件经分发进入连接出站队列，写入通道后等待完成确认。 三类长度均是计数器；通道名称缓冲区 40 字节可能截断。
 
 这条查询用于确认当前跟踪中存在的 `InputDispatcher` 计数器：
 
@@ -412,6 +512,16 @@ LIMIT 200;
 
 `LEAD()` 取得同一轨道的下一条采样时间，最后一条没有后继时，`COALESCE()` 改用 `trace_end()`。瞬间出现非零值是正常流转的一部分。持续的 `iq` 表明 InputDispatcher 尚未消费完入站事件；持续的 `oq` 表明连接上仍有待写入事件；持续的 `wq` 表明已写入事件还在等待完成确认。队列堆积能缩小范围，但不能单独证明应用主线程、socket 写入或 `system_server` 调度中的哪一项是根因。
 
+<!-- gracker-diagram: ch14-05-22-queue-evidence -->
+![持续非零队列提供排查入口](../../assets/diagrams/ch14/ch14-05-22-queue-evidence.png)
+
+图：队列非零区间提示等待发生的位置，再结合线程和通道现场定位。 队列长度本身不能独立证明主线程、socket 或系统调度根因。
+
+<!-- gracker-diagram: ch14-05-21-counter-intervals -->
+![计数器采样转区间的边界](../../assets/diagrams/ch14/ch14-05-21-counter-intervals.png)
+
+图：按轨道的 (ts,id) 构造阶梯区间，裁至进程或 Trace 边界。 首采样前未知，末值外推与采集缺口不等于连续观测。
+
 ## ANR 前的输入状态
 
 ### 以 `android_anrs` 为时间锚点
@@ -443,6 +553,11 @@ ORDER BY ts;
 ```
 
 `InputDispatcher` 的超时时长并非固定五秒。Android 17 会优先读取目标窗口的分发超时时长，找不到窗口时才使用默认值，并可能按平台的硬件超时倍率放大。Perfetto 的 `anr_dur_ms` 优先来自平台计时器；`default_anr_dur_ms` 只是 AOSP / Pixel 的参考默认值，OEM 厂商可以修改。
+
+<!-- gracker-diagram: ch14-05-23-anr-candidates -->
+![ANR 记录与进程、计时器候选](../../assets/diagrams/ch14/ch14-05-23-anr-candidates.png)
+
+图：ErrorId、subject 和最近计时器构成 ANR 候选，进程候选数单独输出。 PID-only 连接会受复用影响；平台默认值不是所有设备固定超时。
 
 ### 查看 ANR 窗口内已完成的输入
 
@@ -507,6 +622,11 @@ ORDER BY timeout_end_ts, recency;
 ```
 
 `dispatch_ts + total_latency_dur` 是系统收到完成确认的时刻；额外的上界条件排除了超时后才完成的投递。`android_input_events` 只包含四个消息节点都匹配成功的投递。卡住并触发 ANR 的事件可能没有 `finish_ack`（系统收到完成确认的节点），因此不会出现在结果里。ANR 附近没有行并不等于没有输入；此时应查看 `wq:` 计数器、目标主线程调度状态和 ANR 主题字段。
+
+<!-- gracker-diagram: ch14-05-25-completed-blindspot -->
+![完成往返与卡住输入的不同覆盖](../../assets/diagrams/ch14/ch14-05-25-completed-blindspot.png)
+
+图：只统计窗口内分发并截至到期已完成的往返，同时保留没有完成行的 ANR。 导致超时的未确认输入可能完全不在 android_input_events 中。
 
 下面的查询先把队列采样展开成持续区间，再与超时窗口求交集，保留窗口开始前已经出现的非零状态：
 
@@ -578,6 +698,16 @@ ORDER BY timeout_end_ts, start_ts, queue_name;
 
 `overlap_dur_ms` 是已知非零状态与窗口相交的时长；同轨道的后继采样会结束该状态，首条采样之前的值仍然未知。结果包含 `system_server` 的所有匹配队列，不能直接归给 ANR 进程。目标连接名可能被截断，仍需在 `Perfetto UI` 中对齐同一时间段的 `InputDispatcher`、应用主线程和调度轨道。
 
+<!-- gracker-diagram: ch14-05-24-anr-window -->
+![ANR 记录、超时到期与查询窗口](../../assets/diagrams/ch14/ch14-05-24-anr-window.png)
+
+图：到期候选等于 ErrorId 记录时刻减 timer_delay，窗口向前展开超时长度。 estimated_timer 只标缺字段回退；0 也不证明计时器归属正确。
+
+<!-- gracker-diagram: ch14-05-26-queue-window-overlap -->
+![先还原队列区间，再裁 ANR 窗口](../../assets/diagrams/ch14/ch14-05-26-queue-window-overlap.png)
+
+图：先从完整队列采样还原状态，再求与 ANR 窗口的正交集。 不能先删掉窗口前的采样；system_server 队列不能直接归给 ANR 进程。
+
 ## 三个可复用场景模板
 
 ### 滑动卡顿：按场景区间找尾部样本
@@ -622,6 +752,11 @@ ORDER BY event.total_latency_dur DESC;
 
 该模板把当前区间本身作为 baseline（比较基准），用其中的 P95 选出尾部样本，不给出脱离场景的固定阈值。把异常时间带回 UI 后，依次检查接收线程状态、`doFrame`、Binder Slice、GC（Garbage Collection，垃圾回收）、锁等待和 CPU 频率。
 
+<!-- gracker-diagram: ch14-05-27-tail-to-ui -->
+![滑动尾部样本回到实际接收线程](../../assets/diagrams/ch14/ch14-05-27-tail-to-ui.png)
+
+图：相同实例和窗口的 P95 筛出尾部后，用消息轨道和原始时刻回查 UI。 P95 是当前场景基准；候选帧需独立核验，不能套统一毫秒阈值。
+
 ### 输入 ANR：标准化 ANR 加队列
 
 输入 ANR 的 SQL 已在上一节给出。实际排查应把三份证据并排：
@@ -631,6 +766,11 @@ ORDER BY event.total_latency_dur DESC;
 - 应用主线程在超时窗口内的运行、可运行、睡眠状态及长切片。
 
 已完成事件的分段延迟用于观察超时前是否已经退化，不能替代未完成投递的现场。
+
+<!-- gracker-diagram: ch14-05-28-anr-evidence-triad -->
+![输入 ANR 的三份证据](../../assets/diagrams/ch14/ch14-05-28-anr-evidence-triad.png)
+
+图：标准 ANR 候选、队列状态和线程现场共同约束排查。 已完成往返只能观察退化，不能代替未完成投递现场。
 
 ### 冷启动：第一个目标进程输入
 
@@ -698,6 +838,11 @@ ORDER BY startup_ts;
 
 这里用应用侧 `receive_ts` 表示收到输入的时刻，并以同包下一次启动的开始时间为上界，避免把后一次启动的输入归入前次。模板保留各类 `startup_type`，分析冷启动时再筛选对应结果。第一条目标输入可能发生在启动结束很久之后，`first_input_after_start_ms` 因而不能直接当作可交互时间。若目标是启动手势到首帧，应结合 `android_startups`、启动方输入事件、Flow（Trace 事件之间的因果连线）或自定义场景标记，并对跨进程因果关系单独建模。
 
+<!-- gracker-diagram: ch14-05-29-startup-mapping -->
+![启动到第一条目标实例输入](../../assets/diagrams/ch14/ch14-05-29-startup-mapping.png)
+
+图：startup_id 经标准映射找到各 upid，再选其窗口内最早 receive_ts。 缺映射、多实例保留；第一条完整输入不等于可交互时间。
+
 ## SQL 与 Perfetto UI 的分工
 
 SQL 适合重复执行的筛选和统计：
@@ -715,6 +860,11 @@ SQL 适合重复执行的筛选和统计：
 - SQL 的进程、通道和帧关联是否符合现场。
 
 实用流程是用 SQL 产出时间戳、事件 ID、进程、通道、帧 ID 和异常分段，再到 UI 展开该点；修复后用相同 SQL 与相同采集条件复测。§14.7 提供通用查询框架，这里进一步给出输入处理链路的可重复量化入口。
+
+<!-- gracker-diagram: ch14-05-30-sql-ui-loop -->
+![SQL 筛选与 UI 证据复核闭环](../../assets/diagrams/ch14/ch14-05-30-sql-ui-loop.png)
+
+图：SQL 产出可回查样本，UI 核验身份和依赖，再以相同条件复测。 候选输入 ID 与 frame_id 均需复核，不能独立充当因果证据。
 
 ## `TraceConfig`：按问题选择采集面
 
@@ -757,6 +907,11 @@ data_sources {
 
 `input` 类别提供 InputDispatcher 与队列计数器；应用侧 Slice 需要目标应用进入 ATrace 采集范围；FrameTimeline 用于 `frame_id` 和 `end_to_end_latency_dur`。缓冲区大小要按设备事件量和场景时长实测，不能把示例值视为固定配置。
 
+<!-- gracker-diagram: ch14-05-31-collection-coverage -->
+![常规配置的三类采集面](../../assets/diagrams/ch14/ch14-05-31-collection-coverage.png)
+
+图：input ATrace、应用图形埋点与 FrameTimeline 分别提供消息、上下文和候选帧。 RING_BUFFER 可覆盖最早数据，配置请求不保证设备实际覆盖完整。
+
 ### 原始输入与窗口分发
 
 需要原始 `MotionEvent`、`KeyEvent` 或窗口分发决策时，可以在 `userdebug` 或 `eng` 调试设备上追加下面的数据源。示例使用 `TRACE_MODE_USE_RULES`，表示逐条按规则决定记录等级：
@@ -779,11 +934,21 @@ data_sources {
 
 没有匹配条件的规则会匹配所有事件；规则按声明顺序处理，首个匹配项决定记录等级。`TRACE_LEVEL_REDACTED` 是脱敏记录等级，会省略指针坐标、按键码和硬件扫描码。事件没有匹配任何规则时，默认使用 `TRACE_LEVEL_NONE`，即不记录。
 
+<!-- gracker-diagram: ch14-05-32-raw-rule-order -->
+![原始事件按首个匹配规则决定等级](../../assets/diagrams/ch14/ch14-05-32-raw-rule-order.png)
+
+图：规则按声明顺序匹配，首个命中决定 NONE、REDACTED 或完整记录等级。 无条件规则匹配所有事件；没有规则命中时为 NONE。
+
 `TRACE_MODE_TRACE_ALL` 会绕过隐私措施并记录系统处理的全部输入，只适合本地受控设备和测试，禁止用于线上采集。
 
 包名规则检查一次事件的所有目标：`match_any_packages` 在任一目标包命中列表时成立，`match_all_packages` 要求所有目标包都位于列表中。同一事件常被发送给前台应用、监视窗口等多个目标，因此两种规则的覆盖面可能与直觉不同。坐标、按键、IME（Input Method Editor，输入法）连接状态和安全窗口均属于敏感信息。
 
 原始事件数据源不会替代常规配置中的 ATrace 和 FrameTimeline。只打开它可以得到三张原始视图，却不保证 `android_input_events` 的消息往返与帧关联完整。
+
+<!-- gracker-diagram: ch14-05-33-package-allowlists -->
+![any、all 与永久允许的系统 UID](../../assets/diagrams/ch14/ch14-05-33-package-allowlists.png)
+
+图：包名配置在后端映射到 UID；all 还计入永久允许的系统 UID。 多窗口或监视目标会改变匹配结果；隐私规则不能只看前台包。
 
 ## 批量跟踪对比
 
@@ -850,7 +1015,17 @@ print(summary.to_string(index=False))
 
 `pd.concat()` 把每份 Trace 的 DataFrame（带列名的内存表格）纵向合并。修改查询参数行中的目标进程后，脚本会显式用文件路径标识每份结果，避免依赖地址解析器自动添加列的具体命名。
 
+<!-- gracker-diagram: ch14-05-34-batch-two-populations -->
+![批处理中的消息统计与候选附件质量](../../assets/diagrams/ch14/ch14-05-34-batch-two-populations.png)
+
+图：每份 Trace 内分别计算合法去重往返与候选附件质量，再按来源合并。 候选率只是可用性；无歧义也不证明全局帧候选正确。
+
 `event_count`、帧匹配率和推测关联率必须与延迟分位数一起看；覆盖率变化意味着两组统计来自不同完整程度的样本，分位数可能失去可比性。每份 Trace 的解析结果都会常驻内存，输入规模较大时需要分批处理。
+
+<!-- gracker-diagram: ch14-05-35-batch-residency -->
+![批处理的原生版本与驻留实例](../../assets/diagrams/ch14/ch14-05-35-batch-residency.png)
+
+图：每份 Trace 各有解析实例，显式选原生工具并在内存不足时拆分输入。 worker 限额不限制驻留实例总数；压缩 Trace 大小不代表解析内存。
 
 ## 版本边界与核对清单
 
@@ -866,6 +1041,11 @@ print(summary.to_string(index=False))
 - ANR 时间来自 `android_anrs`，超时长度没有写死；
 - 队列轨道使用 Android 17 源码中的 `iq`、`oq:`、`wq:`；
 - 修复前后采集条件、覆盖率与样本量一致。
+
+<!-- gracker-diagram: ch14-05-36-evidence-contract -->
+![提交结论前核对可复查证据](../../assets/diagrams/ch14/ch14-05-36-evidence-contract.png)
+
+图：版本、数据语义、关联质量与实验条件共同决定结论是否可复查。 升级系统或工具后重核公开列、时钟与连接，合成验证不代表设备性能。
 
 ## 参考资料
 

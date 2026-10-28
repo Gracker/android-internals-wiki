@@ -87,6 +87,11 @@ Android Automotive 的 App Lock 容易造成名称误读。它从 Android 14 起
 
 业务代码不能把 `Private Space locked`（私密空间已锁定）、`OEM authentication canceled`（厂商认证已取消）和 `App session expired`（应用内会话已过期）归为同一种状态。三者的生命周期、权限与恢复路径都不同。
 
+<!-- gracker-diagram: a204-01-four-lock-models -->
+![四类“锁”保护的对象与生命周期](../../assets/diagrams/ch19/a204-01-four-lock-models.png)
+
+图：名称相近的机制保护不同对象；Private Space、厂商认证取消与应用会话过期，应分成不同状态和恢复路径。
+
 ## Private Space 的系统模型
 
 Private Space 从 Android 15 / API 35 引入，建立在 Android 多用户框架上，资料用户类型是 `android.os.usertype.profile.PRIVATE`。同一个包分别安装到主用户和私密资料用户后，会形成两份相互隔离的 App 实例：
@@ -100,6 +105,11 @@ Private Space 从 Android 15 / API 35 引入，建立在 Android 多用户框架
 
 Private Space 的主要状态如下：
 
+<!-- gracker-diagram: a204-03-profile-visibility-states -->
+![运行状态与入口可见性分开建模](../../assets/diagrams/ch19/a204-03-profile-visibility-states.png)
+
+图：锁定的两种 UI 状态都意味着资料用户停止；解锁重新启动用户，应用仍应按进程死亡后的常规恢复流程重建状态。
+
 | 状态 | 资料用户运行状态 | Launcher | 通知与最近任务 | 跨空间选择 |
 | --- | --- | --- | --- | --- |
 | 已解锁 | 用户已启动（`started`） | 展示容器和应用 | 可以显示 | 用户主动选择且系统策略允许时，分享面板和 Photo Picker 可提供内容 |
@@ -111,6 +121,11 @@ Private Space 的主要状态如下：
 一台设备只能创建一个 Private Space，而且只能归主用户所有。AOSP 的资料模型允许它与工作资料、clone profile（用于运行另一份 App 实例的克隆资料）共存。Settings 在锁定时也要遵守隐藏要求，不能通过应用列表泄露私密空间中安装了什么。
 
 “模型允许共存”不代表所有受管设备都会开放 Private Space。Android Enterprise 文档说明，个人所有且带工作资料的设备可以使用；公司所有的混合用途设备上，管理员可以阻止创建或移除已有空间。全托管设备、主空间存在受监督账号，或厂商与管理员关闭该功能时，也可能没有 Private Space。业务 App 应把“设备没有该入口”视为正常配置差异，不能当成系统故障。
+
+<!-- gracker-diagram: a204-02-user-data-isolation -->
+![同包代码与两份用户数据](../../assets/diagrams/ch19/a204-02-user-data-isolation.png)
+
+图：在两个用户安装同一包会形成独立数据和运行环境；主空间的登录、数据库、缓存和下载内容不会自动复制。
 
 ## 普通 App 所处的边界
 
@@ -186,6 +201,11 @@ fun readPrivateProfileStates(
 
 Launcher 还应监听 `Intent.ACTION_PROFILE_AVAILABLE` 与 `Intent.ACTION_PROFILE_UNAVAILABLE`，并从 `Intent.EXTRA_USER` 读取发生变化的资料用户。这两个广播是系统发出的状态变化通知，表示 quiet mode 已改变。收到广播后仍应重新查询当前值，不要继续使用本地保存的旧结果。`ACTION_MANAGED_PROFILE_AVAILABLE` 一类广播只针对 managed profile，不适合作为 Private Space 的唯一监听入口。
 
+<!-- gracker-diagram: a204-04-hidden-profile-access -->
+![访问隐藏资料的两条权限路径](../../assets/diagrams/ch19/a204-04-hidden-profile-access.png)
+
+图：默认 Launcher 需声明 normal 权限并持有 HOME 角色；具备 FULL 权限的系统组件有另一条路径，单独声明 normal 权限不足以访问。
+
 ## 启动、最近任务与通知
 
 Private Space 锁定后，系统隐藏其中应用的 Launcher 图标、最近任务和通知。这里有三项容易写错：
@@ -216,6 +236,11 @@ val promptInfo = BiometricPrompt.PromptInfo.Builder()
 
 `FLAG_SECURE` 也不是应用锁。它可限制窗口截图和在非安全显示器上的呈现，适合保护已打开的敏感内容；它不会认证用户，也不会阻止其他入口启动 Activity。
 
+<!-- gracker-diagram: a204-05-sensitive-entry-gate -->
+![敏感页面的统一入口校验](../../assets/diagrams/ch19/a204-05-sensitive-entry-gate.png)
+
+图：所有直接入口都经过相同业务校验；BiometricPrompt 完成本次认证，App 还需定义过期、进程死亡与取消后的安全路径。
+
 ## 系统分享面板、Photo Picker 与 URI 授权
 
 Private Space 解锁时，系统可以通过 Sharesheet（系统分享面板）和 Photo Picker（照片选择器）提供受控的跨空间交互。锁定后，私密资料用户停止，其中的应用和内容会从这些系统入口中消失。
@@ -237,7 +262,17 @@ Private Space 解锁时，系统可以通过 Sharesheet（系统分享面板）�
 
 Android 16 QPR2 增加了从主空间向 Private Space 移动或复制文件的可选能力。QPR 是 Quarterly Platform Release，即在 Android 大版本之间发布的季度平台更新。用户从 Private Space 的 Launcher 容器选择 `Add files`（添加文件），通过系统文件选择器选取内容，再由私密资料用户中的系统前台服务完成传输并写入 `Downloads`。前台服务是一种用于执行用户可感知持续任务的 Service。AOSP 发布说明标注该功能由设备厂商选择是否集成，因此 App 不能假定所有 API 36 QPR2 或后续设备都有同一入口。
 
+<!-- gracker-diagram: a204-07-file-transfer -->
+![Add files 的受控文件转移](../../assets/diagrams/ch19/a204-07-file-transfer.png)
+
+图：系统 Add files 从 Android 16 QPR2 起可选集成；由私密资料中的系统前台服务转移文件，复制保留原文件，移动在成功后删除原文件。
+
 媒体解码、转码与缓存的性能处理见 24.4；这里仅讨论 Android 用户与资料用户、`ContentProvider` 可用性和 URI 授权之间的关系。
+
+<!-- gracker-diagram: a204-06-uri-two-conditions -->
+![URI 授权与来源可用性是两个条件](../../assets/diagrams/ch19/a204-06-uri-two-conditions.png)
+
+图：拥有 URI grant 还需要来源用户和 Provider 可用；读取异常不能单独证明授权已撤销，重新解锁后也需重新验证来源。
 
 ## 设备厂商应用锁的兼容策略
 
@@ -258,6 +293,11 @@ Android 17 没有供普通 App 查询“厂商应用锁是否锁了我”的统�
 `ProcessLifecycleOwner` 用于观察整个 App 进入前台或后台，`savedInstanceState` 保存 Activity 被系统重建时需要的少量界面状态。两者只能描述 App 自己的生命周期，不能证明外部厂商应用锁处于什么状态。
 
 系统认证页属于 App 进程外的 UI。测试脚本如果只等待某个 Activity 出现，很容易把“用户还没完成认证”误判成启动超时。自动化用例应把“出现厂商认证页”“用户取消”“认证成功后继续启动”分成不同结果。
+
+<!-- gracker-diagram: a204-08-observable-results -->
+![围绕 App 可见结果处理 OEM 应用锁](../../assets/diagrams/ch19/a204-08-observable-results.png)
+
+图：普通 App 没有统一厂商应用锁状态码，应根据自身生命周期、页面到达和读取结果恢复，并固定固件与入口复现。
 
 ## 观测与隐私
 
@@ -283,6 +323,11 @@ Private Space 的存在本身带有隐私含义。普通 App 的线上日志不�
 - 厂商应用锁开启与关闭，并分别执行认证成功、取消和超时。
 
 测试报告要写明设备、Build fingerprint（构建指纹，标识具体固件版本的字符串）、API 级别、QPR 或厂商版本、Launcher 版本和复现入口。只写“Android 17 应用锁异常”无法判断问题来自 AOSP Private Space、AAOS App Lock、厂商策略，还是 App 自有鉴权。
+
+<!-- gracker-diagram: a204-09-privacy-test-matrix -->
+![兼容性测试的输入和可记录结果](../../assets/diagrams/ch19/a204-09-privacy-test-matrix.png)
+
+图：测试矩阵覆盖资料用户生命周期与多入口；业务上报只描述自己看到的结果，不能声称识别了私密空间或 OEM 锁定状态。
 
 ## Android 17 结论
 

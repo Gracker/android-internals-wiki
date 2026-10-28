@@ -98,11 +98,21 @@ Jetpack Benchmark 把场景、编译状态、重复次数和产物格式都写�
 | 主要产物 | 指标 JSON；每个测量迭代一份系统 Trace | 指标 JSON 与最小系统 Trace；采集条件允许时默认再生成方法 Trace |
 | 适合回答 | 一次交互整体是否回归，慢在哪个系统阶段 | 某个热点实现是否更快，分配是否减少 |
 
+<!-- gracker-diagram: ch15-06-01-measurement-levels -->
+![Macro 与 Micro 的进程边界和测量对象](../../assets/diagrams/ch15/ch15-06-01-measurement-levels.png)
+
+图：Macro 从外部测试进程驱动完整场景，Micro 在基准进程中循环热点代码。 两者都绑定设备与编译条件；局部热点改善需要再回到完整场景验证。
+
 #### Macrobenchmark：端到端的用户体验测量
 
 Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系统 Trace，测的是启动、滚动和动画这类完整交互。写测试代码时，模块和构建各有一条硬要求：代码放在独立的 `com.android.test` 模块中，目标 APK 用接近 release 的非 debuggable 构建，并保留 R8（Android 构建中的代码压缩与优化工具）的压缩和优化。Manifest 中的 `<profileable>` 则让 shell 可以对非 debuggable 应用做低干扰 Trace 采集。
 
 入口是 `MacrobenchmarkRule.measureRepeated()`：`setupBlock` 把应用放到一致的初始状态，`measureBlock` 定义计入测量的操作。iteration 指同一次测试启动中的一次重复测量；一次 `measureRepeated()` 会执行多个 iteration，并为每个测量 iteration 保存一份系统 Trace。
+
+<!-- gracker-diagram: ch15-06-02-macro-iteration -->
+![Macrobenchmark 的编译、准备和测量循环](../../assets/diagrams/ch15/ch15-06-02-macro-iteration.png)
+
+图：先按编译模式配置应用，再逐次准备场景、执行测量并保存证据。 编译和 setup 不属于 measureBlock；启动与帧指标按各自口径提取，不能把完整 Trace 长度当指标。
 
 `StartupTimingMetric` 的汇总值是 min、median（中位数）、max；`FrameTimingMetric` 输出 P50、P90、P95、P99。P90 表示 90% 的样本不超过该值，其余分位数同理。我们按分位数读这些数字，不把它们概括成“重复 N 次取平均值”。
 
@@ -142,6 +152,11 @@ class JsonBenchmark {
 
 准备输入数据或重置容器时，把不参与测量的部分放进 `runWithMeasurementDisabled {}`。旧名 `runWithTimingDisabled {}` 在 Benchmark 1.4.0 已弃用，因为它暂停的除了计时还有测量。
 
+<!-- gracker-diagram: ch15-06-03-micro-hot-loop -->
+![Microbenchmark 的预热与热点测量](../../assets/diagrams/ch15/ch15-06-03-micro-hot-loop.png)
+
+图：预热和自适应循环围绕热点代码，非测量准备与结果消费需要显式安排。 循环结果更接近预热状态；BlackHole 防止结果及其计算被删除，不能把热点数字直接当首次启动表现。
+
 #### 什么时候用哪个？
 
 完整交互选 Macrobenchmark，能独立调用的热点选 Microbenchmark。两者常按下面这条路径配合：
@@ -152,6 +167,11 @@ class JsonBenchmark {
 4. Macrobenchmark 回到原场景，确认端到端指标与 Trace 都得到改善。
 
 版本上的硬条件集中在三处：Macrobenchmark 最低支持 API 23，`frameOverrunMs` 属于 API 31+ 指标，`PowerMetric` 最低支持 API 29。
+
+<!-- gracker-diagram: ch15-06-04-local-to-global -->
+![局部优化如何回到端到端验收](../../assets/diagrams/ch15/ch15-06-04-local-to-global.png)
+
+图：先以完整场景发现回归，再隔离热点比较，最后回到同一场景复测。 Trace 负责解释机制，Micro 负责隔离实验；单个函数更快不保证整体体验改善。
 
 ### 使用 Macrobenchmark 测量启动时间和滑动帧率
 
@@ -188,6 +208,16 @@ class StartupBenchmark {
 `StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`：前者从系统收到启动 Intent 计到目标 Activity 首帧，后者计到应用调用 `reportFullyDrawn()` 后的首个完整帧。应用没调用该 API，TTFD 就无从解释；API 29 及以下还可能拿不到这个字段。报告比较以 median 为主，同时保留 min、max 和单次 Trace。
 
 `StartupMode` 提供 `COLD`、`WARM`、`HOT`，三种模式改变启动前的进程和 Activity 状态，趋势曲线要按模式分开画，所以测试名称、JSON 基线和告警规则都应带上启动模式。
+
+<!-- gracker-diagram: ch15-06-05-startup-boundaries -->
+![冷启动准备与 TTID、TTFD 两个终点](../../assets/diagrams/ch15/ch15-06-05-startup-boundaries.png)
+
+图：COLD 由库在 setup 后停止进程并处理缓存；TTID 与 TTFD 使用同一起点和不同显示终点。 轨道仅表示边界，长度不是测量值；TTFD 依赖正确 fully drawn 信号，API 29 之前可能不可用。
+
+<!-- gracker-diagram: ch15-06-06-frame-elapsed-time -->
+![帧的经过时间与 deadline 超期](../../assets/diagrams/ch15/ch15-06-06-frame-elapsed-time.png)
+
+图：frameDurationCpuMs 跨 UI 起点与 RT 终点；frameOverrunMs 使用实际与预期帧的结束边界。 按固定源码公式绘制；条长仅为示意。经过时间可含阻塞与调度等待，不是实际占核时间相加，也不是直接的 FPS。
 
 #### 测量滑动帧率
 
@@ -257,6 +287,11 @@ Android 14（API 34）起，Macrobenchmark 可以在重置编译状态时保留�
 
 Baseline Profile 的收益，应由同一 APK、同一设备、同一启动模式下的 `None()` 与 `Partial()` 实测得出；跨项目引用“提升约 30%”替代不了本应用自己的数据。
 
+<!-- gracker-diagram: ch15-06-07-compilation-contract -->
+![编译模式与缓存状态的实验选择](../../assets/diagrams/ch15/ch15-06-07-compilation-contract.png)
+
+图：先明确希望观察的编译状态，再把模式与启动状态写入同一条基线。 Partial() 默认 Require；DEFAULT 在 API 24+ 是 UseIfAvailable；Full 不保证最快。API 23 仅支持全量编译。
+
 ### adb（Android Debug Bridge） shell am instrument：性能测试的命令行入口
 
 无论从 Gradle、Android Studio 还是云设备平台出发，最后都汇聚到同一个入口：启动 instrumentation。这是 Android 的系统测试机制——系统启动测试 APK 中的 runner，并为它建立测试连接。ADB（Android Debug Bridge）下最直接的入口是 `am instrument`，基本语法如下：
@@ -301,6 +336,11 @@ Benchmark 1.1.0 之前要用 `androidx.benchmark.output.enable=true` 手动开�
 
 [`ActivityManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 的帮助文本也明确区分了 `am instrument` 入口。平台这一层只负责启动和传递参数，指标含义由 AndroidX Benchmark 决定。
 
+<!-- gracker-diagram: ch15-06-08-instrument-call-chain -->
+![am instrument 到 AndroidX 指标的调用链](../../assets/diagrams/ch15/ch15-06-08-instrument-call-chain.png)
+
+图：Am 解析测试参数，Instrument 经 Binder 建立测试，再由 runner 与 Benchmark 解释用例和指标。 -e 是参数传递，平台不定义 Benchmark 指标；本例 -w 建立结果等待及 UiAutomationConnection。
+
 ### UI Automator 与 Espresso：在性能测试中的角色
 
 UI Automator 从应用进程外驱动完整场景，Espresso 在应用 instrumentation 环境中做功能断言：前者视角更接近用户，后者能访问目标应用内部的 View 和同步状态。两者同步方式不同，测量上的用法也要分开。
@@ -328,6 +368,11 @@ Espresso 是白盒测试工具，测试代码可以访问目标应用内部的 V
 #### 两套驱动的分工界限
 
 Macrobenchmark 的自 instrumentation 测试 APK 运行在目标应用进程之外，Espresso 的 `onView()` 进不了目标应用进程当 matcher 用。跨应用操作、权限弹窗和系统界面统一交给 UI Automator；目标应用内部要暴露“主要内容已就绪”这类语义，可以调用 `reportFullyDrawn()` 或写自定义 Trace section，再由 Macrobenchmark 从 Trace 读取。按这条分工，`measureBlock` 里放的是 UI Automator 驱动。
+
+<!-- gracker-diagram: ch15-06-09-ui-drivers -->
+![外部 UI Automator 与进程内 Espresso](../../assets/diagrams/ch15/ch15-06-09-ui-drivers.png)
+
+图：Macro 的独立测试进程使用 UI Automator 跨应用驱动；Espresso 用于目标应用 instrumentation 中的 View 断言。 外部驱动仍共享 CPU、调度与 Binder 资源；准备和查找尽量在 setup，测量窗口保留必要输入与等待。
 
 ### Monkey、SoloPi 与 Appium：自动化工具的另一类用途
 
@@ -359,6 +404,11 @@ SoloPi 提供录制回放、CPU / 内存 / FPS（每秒帧数） 性能面板和
 Appium 3 是基于 W3C WebDriver 的模块化自动化框架：W3C WebDriver 定义查找元素、点击和创建会话等标准命令，driver 把这些命令转换为 Android、iOS 等平台的操作。这套架构适合统一 Android、iOS、WebView 和桌面端的业务脚本。
 
 WebDriver 服务、driver、设备自动化后端和显式/隐式等待都会影响输入时序。所以 Appium 负责场景编排时，性能指标仍由设备侧 Macrobenchmark、Perfetto 或明确的系统 counter（计数器读数）采集。
+
+<!-- gracker-diagram: ch15-06-10-stability-tool-roles -->
+![压力、回放和跨端编排的证据边界](../../assets/diagrams/ch15/ch15-06-10-stability-tool-roles.png)
+
+图：Monkey、SoloPi 与 Appium 各自帮助触发或重放问题，定量回归仍要使用受控测量。 固定 seed 不保证业务路径完全一致；回放面板与远程驱动等待均不能直接替代 Benchmark 的指标定义。
 
 ### 性能自动化测试的 CI/CD（持续集成与持续交付） 集成方案
 
@@ -405,6 +455,11 @@ buildTypes {
 **产物收集阶段**保存 JSON 与 `.perfetto-trace`，并把 Git commit、目标 APK 哈希、测试 APK 哈希和设备指纹写入同一次运行记录——哈希是由文件内容计算的固定长度摘要，用来确认实际测量的 APK。Macrobenchmark 每个测量 iteration 一份系统 Trace；Microbenchmark 默认生成最小系统 Trace，是否额外生成方法 Trace，取决于 profiling 配置，以及当前系统能否在不影响后续测量的前提下采集。
 
 **回归判定阶段**比较同名测试、同名指标、同一启动/编译模式和同类设备：启动看 median，帧指标看 P50 与尾部分位，功耗看设备是否支持对应数据源。阈值要从该设备的历史方差（数据波动幅度）与业务预算推导；想拿一个固定百分比套住所有项目，是行不通的。
+
+<!-- gracker-diagram: ch15-06-11-ci-pipeline -->
+![性能 CI 的五段流水线与证据](../../assets/diagrams/ch15/ch15-06-11-ci-pipeline.png)
+
+图：构建、设备准备、执行、收集与判定共同组成性能回归流水线。 同名测试、指标与条件才能比较；dry run 和错误抑制的诊断产物不能进入发布性能基线。
 
 #### Firebase Test Lab 与 GitHub Actions
 
@@ -472,6 +527,11 @@ APK 文件名会随 product flavor、AGP 和项目配置变化，`APP_APK`、`TE
 
 Google 的 [performance-samples FTL workflow](https://github.com/android/performance-samples/blob/main/.github/workflows/firebase_test_lab.yml) 可作为完整参考。结果路径靠 `bucket/latest/*.json` 去猜并不可靠，应读取本次 gcloud 返回的 test matrix（这次测试的设备与配置组合）信息，或由 Cloud Storage 事件处理对应结果目录。
 
+<!-- gracker-diagram: ch15-06-12-cloud-evidence -->
+![现有 FTL 流程中的设备与产物归属](../../assets/diagrams/ch15/ch15-06-12-cloud-evidence.png)
+
+图：查询可用设备后提交两份 APK，按本次 test matrix 与结果目录收集证据。 FTL 已弃用并计划 2027-09-30 关闭，迁移目标当前 Preview；示例是现有流程维护。更换平台后重新建立基线。
+
 #### 结果持久化与趋势追踪
 
 JSON 的 `context` 包含设备型号、build fingerprint（构建的唯一标识字符串） 和 CPU 等运行上下文。写入趋势数据库时，这些上下文要和测试名、参数、指标数组一起保存，只取一个 median 数字是不够的。设备重刷系统、Benchmark 库升级、编译模式变化或 Baseline Profile 更新时，应建立新基线，把环境迁移和代码回归分开看。
@@ -491,6 +551,11 @@ AndroidX JSON schema（字段与类型约定）会随库版本扩展。门禁前
 稳定门禁可采用配对设计：在同一设备和环境区组内，分别运行 baseline（参考构建）与 candidate（候选构建），交替或随机安排顺序；每次 invocation 先形成一个摘要，再把环境接近的 baseline/candidate 摘要组成一对。
 
 预算同时包含业务定义的绝对增量和相对增量。样本不足时拒绝比较；置信区间（根据样本估计的效果可能范围）一旦跨越门槛，就标为 inconclusive（证据不足），待设备冷却后补充独立配对。在同一 invocation 的 iteration 里重复抽样，添不出新的独立样本。
+
+<!-- gracker-diagram: ch15-06-13-paired-invocation-gate -->
+![独立 invocation 配对与三态门禁](../../assets/diagrams/ch15/ch15-06-13-paired-invocation-gate.png)
+
+图：先校验可比条件，再以 invocation 为单位配对，按预先定义的门槛区分通过、回归和证据不足。 这是正文建议的统计协议；iteration 共享环境，不能冒充独立设备样本。置信区间跨门槛或样本不足要补独立配对。
 
 波动控制至少记录电量与充电状态、thermal、CPU frequency/idle（频率/空闲状态）、刷新率、后台账号与每轮时间。后半段随温度单调变慢时，停止并冷却设备。网络用固定离线数据、测试服务器或录制响应，账号、缓存、A/B flag（分组实验开关）和列表内容都要固定。
 
@@ -520,6 +585,11 @@ project_root/module/build/outputs/connected_android_test_additional_output/debug
 滚动 Trace 以 FrameTimeline 的 expected/actual slice 为主——它们分别表示系统预期的帧时序与实际执行时序，jank 标记表示帧未按预期时序完成。看完标记再回到主线程 `doFrame`、RenderThread 与 GPU 轨道定位原因。只拿固定的 16.67 ms 去卡 `doFrame`，在高刷新率、可变刷新率和 GPU / 合成侧超期面前容易误判。
 
 
+<!-- gracker-diagram: ch15-06-14-trace-investigation -->
+![从异常指标回到线程与帧的证据](../../assets/diagrams/ch15/ch15-06-14-trace-investigation.png)
+
+图：固定异常 iteration 和同机基线的业务窗口，再按启动或帧路径追踪工作与等待。 FrameTimeline 超期不能单独证明重组、CPU 或 GPU 原因；墙钟空洞要结合 sched 与 Binder，查询版本也要固定。
+
 ## CLI 编排、Agent 任务与证据回传
 
 测试协议稳定之后，剩下的大头是重复步骤：CLI 和 Agent 负责执行、收集产物和生成候选结论。这里我们守一条底线：回不到原始证据的自动结论，进不了门禁。
@@ -540,6 +610,11 @@ Android CLI 把项目、SDK、设备、APK、UI 状态和 IDE 查询接到同一
 
 先把三个词说清：trace 是按时间记录系统与 App 事件的文件；slice 是带时间戳和持续时间的一段事件；counter 是随时间变化的数值轨道。Baseline Profile 则是帮助系统提前编译常用代码路径的规则。一次排查的顺序也就清楚了：我们先用 CLI 固定复现状态，再用 Trace 或 Profiler 采集数据，最后通过 SQL、APA 或 Benchmark 得出可复查的结果。
 
+<!-- gracker-diagram: ch15-06-17-profiler-session -->
+![CLI 系统 Trace 的会话生命周期](../../assets/diagrams/ch15/ch15-06-17-profiler-session.png)
+
+图：prepare 设置 profiling 状态，start 录制片段，stop 拉取文件；daemon 连接分开的命令并负责会话恢复。 prepare 可选；keep-session 保留会话供下一片段，卡住可 terminate。实际 GPU / Vulkan 数据依设备与配置，不自动建立回归统计。
+
 ### 源码基线与版本记录
 
 第一件事是分清 Android CLI 的身份：它是独立发布、运行在开发机或 CI 机器上的主机工具，既不属于 `android-17.0.0_r1` framework，也没有名为“Android CLI”的 API 37 SDK 接口。所以一次实验要同时记录三组版本信息：
@@ -549,6 +624,11 @@ Android CLI 把项目、SDK、设备、APK、UI 状态和 IDE 查询接到同一
 - 设备实际 kernel 与 vendor driver（厂商驱动） 版本：决定 scheduler tracepoint（调度器事件记录点）、CPU/GPU 能力和设备特有数据。`android17-6.18-2026-06_r6` 只能作为 Android common kernel 的源码参照，真机可能包含厂商修改。
 
 举例来说，APA 或 Perfetto 读取的录制配置，对应 `external/perfetto/protos/perfetto/config/trace_config.proto`；调度分析使用 `include/trace/events/sched.h` 中的 `sched_switch`、`sched_wakeup` 等事件，分析真机 trace 时以该设备内核实际提供的事件为准。CLI 能启动 App、保存画面或触发测试，这些事件的含义不会因它而变。
+
+<!-- gracker-diagram: ch15-06-15-version-coordinates -->
+![主机 CLI、平台与设备实现的三个版本坐标](../../assets/diagrams/ch15/ch15-06-15-version-coordinates.png)
+
+图：主机命令、Android 平台与实际内核驱动分别决定编排接口、事件语义和硬件能力。 CLI 不属于 API 37；AOSP / common kernel tag 是源码参照，设备 fingerprint 与实际 driver 不能省略。
 
 截图、布局树和 Journey 结果只能证明“agent 看到了什么、执行了什么”；帧耗时、CPU 调度、GPU 执行和功耗结论，依据仍是 trace、benchmark metric（基准测试指标） 或硬件测量。官方 Macrobenchmark 文档不建议用模拟器产出的性能数字代表终端用户体验，并把模拟器测量视为配置错误；模拟器的长处在验证安装、页面路径和断言，发布级性能结论放到受控的物理设备上采集。
 
@@ -602,6 +682,11 @@ android run --apks=app-debug.apk --type=ACTIVITY --activity=.MainActivity
 
 性能复现的完整流程：依次安装目标 APK、进入目标页面、截屏确认状态、导出布局树并执行交互，最后把 trace 或 benchmark 输出放进同一份报告。这样得到的是一组可复查的输入与结果：APK、设备、页面状态、操作坐标、trace 文件和指标数据。
 
+<!-- gracker-diagram: ch15-06-16-ui-evidence-flow -->
+![APK、布局树、截图与实际输入的链路](../../assets/diagrams/ch15/ch15-06-16-ui-evidence-flow.png)
+
+图：绑定同一 serial 部署应用，记录 UI 状态，再由对应画面或节点得到可复查的输入。 run 可接受 build reference；本文用已有 APK 固定身份。layout --diff 是 no-op；resolve 只输出坐标字符串，画面变化需重采集。
+
 ### Journeys 与关键用户路径回归
 
 Journeys 用自然语言描述用户在 App 中要完成的路径：agent 把指令转换成界面交互，再依据设备画面判断断言是否成立——断言是对预期结果的可检查描述，例如“详情页标题已经出现”。官方页面 2026 年 7 月 17 日更新后，Journey 仍由 agent 和 CLI 附带的 skills 创建和运行，并明确提到可接入 CI/CD。
@@ -616,6 +701,11 @@ Journeys 用自然语言描述用户在 App 中要完成的路径：agent 把指
 - 失败处理：页面未出现、登录失效、网络超时、权限弹窗干扰时如何退出并保存截图。
 
 Journey 擅长准备登录态、导航到目标页面、确认异常是否出现，并记录失败画面。它的波动来源也多：自然语言理解、视觉识别、坐标选择和 agent 模型都会带来执行差异，所以 benchmark 的计时区间交给它控制并不合适；测量窗口内的启动、滚动和动画，由 Macrobenchmark 与 UI Automator 驱动——UI Automator 是 Android 的跨 App 界面自动化框架。
+
+<!-- gracker-diagram: ch15-06-18-journey-handoff -->
+![Journey 准备状态与受控测量窗口](../../assets/diagrams/ch15/ch15-06-18-journey-handoff.png)
+
+图：Journey 负责可观察状态和失败画面，测量区间交给固定 Benchmark 与 UI Automator 操作。 轨道仅表示本文建议的职责边界；自然语言、视觉与模型会引入差异，Journey 成功无法推出耗时、帧分布或功耗。
 
 指标应来自 Macrobenchmark、Perfetto Trace、APA 或线上 APM（Application Performance Monitoring，应用性能监控）。冷启动耗时、帧时间分布、CPU 调度、GPU counter、GC（garbage collection，垃圾回收）暂停和 Binder 等待时间，从 Journey 的成功或失败里推不出来。
 
@@ -639,6 +729,11 @@ Journey 擅长准备登录态、导航到目标页面、确认异常是否出现
 
 `version-lookup` 返回仓库或工具渠道中的可用新版本，适合与否由项目自己判断，Stable、Beta、Canary 之间的选择也轮不到它替团队做——三者大致对应稳定发布、较成熟预览和早期预览。升级时仍要检查版本目录、依赖锁、AGP/Gradle 兼容表和回归测试。
 
+<!-- gracker-diagram: ch15-06-19-ide-evidence -->
+![从 Trace 符号到源码修复的复核链](../../assets/diagrams/ch15/ch15-06-19-ide-evidence.png)
+
+图：先验证 IDE 与项目，再定位声明、核对调用方，检查修改后回到受控实验。 当前 studio 参考要求 Quail 2+ 已打开项目；混淆与 native 地址需对应 mapping / symbols。预览与静态检查都不能证明帧时间改善。
+
 ### Android skills 与性能专项能力
 
 Android skills 是供 AI 工具和 agent 使用的指令包：每个 skill 通常以 `SKILL.md` 说明适用任务和执行步骤，还可以附带脚本、模板与参考资料。官方文档列出的能力包括 XML 到 Compose 迁移、AGP 9 升级、Navigation 3、edge-to-edge UI（内容延伸到系统栏区域）和 R8 配置检查。skill 给 agent 提供的是特定 Android 任务的操作方法，输出仍需验证。
@@ -656,6 +751,11 @@ Android skills 是供 AI 工具和 agent 使用的指令包：每个 skill 通�
 当前官方仓库中与性能工作较相关的目录有四个：`profilers/perfetto-sql` 把自然语言问题转换成有效的 Perfetto SQL 并对本地 trace 执行；`profilers/perfetto-trace-analysis` 调查延迟、内存或卡顿的原因；`testing/testing-setup` 分析并建立原生 Android 测试策略与测试基础设施；`performance/r8-analyzer` 检查构建文件和 R8 keep rules（指定哪些类或成员必须保留的规则），找出重复或范围过大的规则。这些名称是仓库目录和 skill 名称，要按目录找，别当成 `android` 子命令。
 
 安装或升级后，先检查 `SKILL.md`、附带脚本和资源，再允许 agent 执行。当前 CLI 文档只描述“更新到最新版”，没有固定 skill 版本的参数；要重复同一实验，就在记录中保存已审核内容对应的提交或归档。skill 得出的结论还要复核 trace 表结构、字段单位、编译模式和设备条件。
+
+<!-- gracker-diagram: ch15-06-20-skill-reproducibility -->
+![Skill 安装、审核、冻结与更新后复测](../../assets/diagrams/ch15/ch15-06-20-skill-reproducibility.png)
+
+图：确认实际 skill ID 和来源后审查内容，冻结已审核快照，再验证生成的脚本与证据。 当前 add/update 面向最新版；自定义技能改名保存。固定树中 profiler 已整合为 android-profiler，目录不是 CLI 子命令。
 
 ### 与 APA / Perfetto / Macrobenchmark 的分工
 
@@ -741,6 +841,11 @@ Telemetry 是工具为了解使用情况和故障而发送的数据。Android CL
 `screen capture` 和 `layout` 直接读取设备画面与 UI 树，比 `android info` 或 `sdk list` 更容易带上业务数据；Perfetto SQL skill 还可能读取本地 trace，Journey agent 会接收自然语言步骤和设备画面。涉及用户数据、测试账号、订单页、聊天页或健康数据时，用隔离测试环境，并在报告发布前删除或遮盖可识别个人与业务的信息。
 
 
+<!-- gracker-diagram: ch15-06-22-data-destinations -->
+![CLI 遥测、命令产物与 Agent 上下文](../../assets/diagrams/ch15/ch15-06-22-data-destinations.png)
+
+图：分别核对 CLI 自身遥测、本地证据产物和 agent 可能外发的上下文。 --no-metrics 只关闭官方 CLI 数据收集；截图、布局树、Trace 和自行记录的日志仍按各自保存与发布流程处理。
+
 ## 常见误区
 
 **模拟器上可以跑基准测试吗？** 验证构建、安装和脚本路径可以；但 AndroidX Benchmark 会报告模拟器配置错误，抑制错误后产生的数据和物理设备没有可比性，发布门禁也不用它。
@@ -793,3 +898,8 @@ Telemetry 是工具为了解使用情况和故障而发送的数据。Android CL
 - [Perfetto documentation](https://perfetto.dev/docs/)
 - [Android 17 Perfetto `TraceConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto)
 - [Android 17 common kernel scheduler tracepoints](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
+
+<!-- gracker-diagram: ch15-06-21-smoke-workflow -->
+![CLI 冒烟脚本的设备身份守卫](../../assets/diagrams/ch15/ch15-06-21-smoke-workflow.png)
+
+图：启动已创建的 AVD 后核对名称与 serial，再以同一设备身份部署和保存前后 UI。 当前 start 同步等待就绪；CI 外层仍设总超时。步骤 6 是待接入的项目测试命令，前后截图本身不代表已经测量性能。

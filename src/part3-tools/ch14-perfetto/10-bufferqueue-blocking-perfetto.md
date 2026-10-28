@@ -57,7 +57,17 @@ related_chapters:
 
 `BufferQueue` 是连接图形 Producer（生产者）与 Consumer（消费者）的有界缓冲队列。Producer 通过 `dequeueBuffer()` 取得可复用的 slot（带编号的 buffer 位置），完成绘制后用 `queueBuffer()` 提交；Consumer 通过 `acquireBuffer()` 取走 buffer，并在不再使用时 release。fence 是表示 GPU、合成器或显示硬件何时完成访问的同步对象。下游迟迟不 release，Producer 便可能因没有可用 slot 而等待，这就是本文所说的 BufferQueue backpressure（背压）。
 
+<!-- gracker-diagram: ch14-10-01-slot-fence-cycle -->
+![slot所有权循环与fence访问依赖](../../assets/diagrams/ch14/ch14-10-01-slot-fence-cycle.png)
+
+图：slot在Producer、queued、Consumer与free状态间流转，fence约束读写安全。 非shared常规路径示意；slot可取与fence已signal是两件事，下游持有可形成背压。
+
 Perfetto 文档把 `Buffer Stuffing` 定义为一种队列状态：App 在前一帧尚未 present（显示到屏幕）时继续提交新帧，未显示的 buffer 增加，后续帧即使按时完成也会带着额外延迟。可复用 slot 用尽后，Producer 还可能进入 `dequeueBuffer()` 等待。这个分类不能单独证明 App 绘制超时，也不能直接指出哪一条 BufferQueue 阻塞。
+
+<!-- gracker-diagram: ch14-10-02-stuffing-latency -->
+![按时完成的帧也可能累积排队延迟](../../assets/diagrams/ch14/ch14-10-02-stuffing-latency.png)
+
+图：App继续生产、前帧仍待present时，可出现排队与dequeue等待。 分类不直接给出目标队列长度、App CPU超时或输入延迟实测。
 
 可靠诊断需要把 FrameTimeline、目标 layer（合成图层）、Producer 线程、BLAST 计数器、SurfaceFlinger（系统合成服务，后文简写为 SF）帧和 release 时刻放进同一时间窗。开始查询前，还要确认画面经过哪些队列和 layer：
 
@@ -65,6 +75,11 @@ Perfetto 文档把 `Buffer Stuffing` 定义为一种队列状态：App 在前一
 - SurfaceView 内容拥有独立 Surface、BufferQueue 和 SurfaceFlinger child layer，宿主窗口与内容队列不能合并归因；
 - TextureView 先由外部 Producer 写 SurfaceTexture，再由宿主 HWUI 采样进 App Window，至少要区分输入队列与宿主窗口队列；
 - Camera、视频和游戏的 Producer 可能跨进程，并且可以有不同的排队策略。
+
+<!-- gracker-diagram: ch14-10-03-surface-topology -->
+![先确认标准窗口、SurfaceView与TextureView拓扑](../../assets/diagrams/ch14/ch14-10-03-surface-topology.png)
+
+图：标准窗口走宿主BLAST；SurfaceView有独立child队列；TextureView另有输入队列。 同进程和RenderThread不代表同队列，Camera/视频还要确认实际载体和Producer。
 
 BufferQueue 的 slot 与 fence 细节见 2.8；标准窗口、SurfaceView、TextureView、混合渲染和 Camera 的路径选择见 13.1。
 
@@ -87,6 +102,16 @@ FrameTimeline 文档明确标注 SurfaceView 尚未完整支持。SurfaceView �
 
 TextureView 的 App FrameTimeline 主要描述宿主窗口，外部 SurfaceTexture 输入帧仍要另行关联。UI 颜色会随版本与主题调整，报告中应保存 `jank_type` 原始字符串。
 
+<!-- gracker-diagram: ch14-10-04-frame-end-identity -->
+![App Actual结束点与帧身份分别核对](../../assets/diagrams/ch14/ch14-10-04-frame-end-identity.png)
+
+图：App Actual通常取queue与acquire signal较晚者，pending时固定实现回退queue。 Actual end不无条件证明GPU完成或物理显示；关联保留upid、Layer和Actual行ID。
+
+<!-- gracker-diagram: ch14-10-05-coverage-identity -->
+![FrameTimeline覆盖不足时沿真实队列补证](../../assets/diagrams/ch14/ch14-10-05-coverage-identity.png)
+
+图：宿主FrameTimeline与外部内容帧分开，缺App Actual时继续查Producer/Layer/fence。 固定文档标注SurfaceView未完整支持，不能据此推定所有版本、厂商或无更新。
+
 ## `dequeueBuffer` 为什么会等
 
 `android-17.0.0_r1` 的 `BufferQueueProducer::dequeueBuffer()` 会调用 `waitForFreeSlotThenRelock()`。源码中有两类等待条件：
@@ -98,6 +123,11 @@ TextureView 的 App FrameTimeline 主要描述宿主窗口，外部 SurfaceTextu
 
 - 通用 `BufferQueueProducer` 仍在条件变量 `mDequeueCondition` 上执行 `wait()` 或带超时的 `wait_for()`；条件变量用于让线程睡眠，直到释放方发出状态可能已变化的通知；
 - App Window 使用的 `BBQBufferQueueProducer` 覆盖了该函数，通过 `BufferReleaseReader::readBlocking()` 在 `BufferReleaseChannel` 上等待。这个通道是 SurfaceFlinger 到 App 的 Unix domain socket（同一设备上进程间通信所用的本地套接字），消息携带 `ReleaseCallbackId`、release fence 和当前 `maxAcquiredBufferCount`；`eventfd` 是内核提供的事件通知文件描述符，出现其他释放原因时用它中断阻塞读取，让等待方重新检查 slot。
+
+<!-- gracker-diagram: ch14-10-07-wait-transports -->
+![条件变量与release通道最终都回到谓词检查](../../assets/diagrams/ch14/ch14-10-07-wait-transports.png)
+
+图：通用队列等条件变量，BLAST专用队列等socket，eventfd中断可促使重查slot。 socket携带ID/fence/max acquired；收到句柄不等于fence signal，超时或中断不是成功回收证明。
 
 非阻塞或 async 模式满足源码条件时返回 `WOULD_BLOCK`。Producer 已经 dequeue 到上限时返回 `INVALID_OPERATION`，这和等待空闲 slot 是不同分支。Android 17 的 BLAST 覆盖函数带有 `ATRACE_CALL()`，因此外层 `dequeueBuffer` 内可能出现嵌套的 `waitForBufferRelease` slice；通用队列未必有这条内层 slice。
 
@@ -114,6 +144,21 @@ CPU 采样主要覆盖线程正在运行的时段，通常无法给睡眠区间�
 `AppDeadlineMissed` 常见于主线程、RenderThread 或 GPU 工作超过预算。BufferQueue 背压的观察点更靠近 buffer 获取、提交和回收，但两者可以同时出现：下游合成变慢会把压力传回 Producer，Producer 等待又会扩大 App 帧时长。
 
 Android 17 还把 BLAST 的等待时长回调到 `Choreographer.onWaitForBufferRelease()`。等待超过上一帧间隔的一半时，Choreographer 会标记 stuffed 状态；后续 `doFrame()` 可以主动延迟一帧，让排队深度下降，并在恢复期间调整动画时间。Perfetto 中可搜索 `Buffer stuffing recovery`、`buffer stuffed` 和 `Negative offset`。这些事件说明系统正在降低生产节奏，不代表 CPU 执行变慢。
+
+<!-- gracker-diagram: ch14-10-06-slot-predicate -->
+![等待、非阻塞与超额dequeue是不同分支](../../assets/diagrams/ch14/ch14-10-06-slot-predicate.png)
+
+图：缺可用buffer或队列超限时重试，非阻塞返回还受acquired数量条件约束。 简化主要非shared分支；已有queued且dequeue到上限先报INVALID_OPERATION，唤醒不保证获得slot。
+
+<!-- gracker-diagram: ch14-10-08-walltime-not-slot-time -->
+![外层与嵌套等待的墙钟不能相加](../../assets/diagrams/ch14/ch14-10-08-walltime-not-slot-time.png)
+
+图：dequeue可含执行、锁、分配、排队和slot重试；内层也含回调处理。 先用状态与明确等待点拆分；嵌套slice重叠，不能跨层相加当总睡眠。
+
+<!-- gracker-diagram: ch14-10-09-stuffing-recovery -->
+![Choreographer恢复由回调、时长与flag共同决定](../../assets/diagrams/ch14/ch14-10-09-stuffing-recovery.png)
+
+图：成功release回调后可上报调用时长，超过上一帧间隔一半时标记stuffed。 multi-recovery与累计阈值由flag控制；恢复事件不等同FrameTimeline分类或CPU变慢。
 
 ## 三种“积压”信号不能当成同一个队列长度
 
@@ -141,9 +186,19 @@ Android 17 的 `BLASTBufferQueue.cpp` 为每个实例建立 `QueuedBuffer - <nam
 
 多个 Surface 同时更新时，应把计数器名、`layer_name`、layer id、BufferQueue 名和 frame token 配对。主窗口的 `Buffer Stuffing` 不能自动归因给同进程的视频 layer。
 
+<!-- gracker-diagram: ch14-10-10-counter-domains -->
+![四类信号属于不同对象与计数口径](../../assets/diagrams/ch14/ch14-10-10-counter-domains.png)
+
+图：FrameTimeline是分类，BLAST是组合状态，BufferTX是SF待处理buffer事务，mQueue是本地queued数。 先确认计数器实例/track与Layer、buffer身份；不能把它们互换为同一队列长度。
+
 ## Producer 到 display 的证据时间线
 
 这张时序骨架描述 Android 17 App Window 的 BLAST 路径，读图时要分清 App 进程内的 BufferQueue Consumer 与 SurfaceFlinger 的 layer transaction。RenderEngine 是 SurfaceFlinger 的 GPU 合成引擎，HWC（Hardware Composer）是对显示硬件合成能力的抽象层。
+
+<!-- gracker-diagram: ch14-10-11-forward-release-branches -->
+![BLAST提交、显示与buffer回收是分支链路](../../assets/diagrams/ch14/ch14-10-11-forward-release-branches.png)
+
+图：本地BLAST把buffer送到SF，回收按ID和fence返回，不是当前帧present后的固定下一步。 drop/替换也可回收，BLAST可能暂存已回调buffer；释放通知与fence signal分别检查。
 
 ```text
 App / RenderThread Producer
@@ -172,6 +227,11 @@ App / Producer
 
 release fence 还要单独理解。slot 回到 Producer 后可能携带尚未 signal 的 fence；图形栈在复写 buffer 前必须遵守该 fence。slot 等待回答“有没有可复用 buffer”，fence 等待回答“这个 buffer 何时安全可写”，两种等待在 trace 中不能混为一类。
 
+<!-- gracker-diagram: ch14-10-12-slot-versus-fence -->
+![取得slot与安全复写需要两层条件](../../assets/diagrams/ch14/ch14-10-12-slot-versus-fence.png)
+
+图：slot归还后dequeue可返回仍未signal的release fence，复写前必须满足依赖。 present fence与per-layer release fence分别关联；不能仅凭S/D判定是哪一种等待。
+
 present fence 与 per-layer release fence 也不能合并。present fence 描述本次 display present 的完成边界；per-layer release fence 描述 HWC 或 RenderEngine 不再读取某个 layer buffer 的边界。若 SF 对应帧及时 present、release 消息很快返回，`dequeueBuffer` 长窗口就要继续查 fence、调度或应用同步。若 buffer transaction 到达后长期未 latch、App 与 SurfaceFlinger 两侧计数器同期升高且 release 明显延后，这组信号才足以支持 BufferQueue 背压判断。
 
 ## 多 Surface 场景
@@ -188,12 +248,22 @@ present fence 与 per-layer release fence 也不能合并。present fence 描述
 
 只有确认每个队列和 layer 的身份后，token、计数器和 `dequeueBuffer` 才能进入同一条证据时间线。跨 layer、跨窗口或跨 TextureView 两套队列拼接事件，会把同时发生误写成因果关系。
 
+<!-- gracker-diagram: ch14-10-13-queue-identity -->
+![多窗口与多Surface按真实队列建立关联](../../assets/diagrams/ch14/ch14-10-13-queue-identity.png)
+
+图：把Producer/Consumer、队列、Layer和buffer/frame身份连起来，再使用token和计数器。 同进程、同线程、同名Layer或同token都不能单独证明同队列；同时发生不等于因果。
+
 ## 容易混淆的四类等待
 
 1. **App 执行超时**：`doFrame`、`performTraversals`、RecyclerView bind 或 Binder 回调超过预算，dequeue 窗口没有明显等待。
 2. **GPU 或 fence 等待**：GPU 写入、SF/HWC 读取或 release fence 尚未完成，证据落在 fence、GPU timeline 和 driver wait。
 3. **SF/HWC 合成慢**：SF Actual Timeline 变长，jank type 指向 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 或 `DisplayHAL`。Producer 等待可能是下游变慢的反馈。
 4. **应用同步或 Binder 等待**：渲染相关线程卡在应用锁、Binder 进程间调用或资源加载，时间窗与 BufferQueue release 对不上。
+
+<!-- gracker-diagram: ch14-10-14-wait-differential -->
+![四类候选原因需要对应证据](../../assets/diagrams/ch14/ch14-10-14-wait-differential.png)
+
+图：长帧和长dequeue可由App工作、fence、SF/HWC或应用同步形成，先分解证据。 类别可并存；App Deadline Missed和S/D状态都不是唯一根因判据。
 
 BufferQueue 背压需要同一 layer 上的成组证据：`Buffer Stuffing`、BLAST 计数器高位、Producer 等待以及可解释的 acquire/present/release 延迟。报告应逐项列出目标 layer/BufferQueue 身份、候选帧 token、`QueuedBuffer` 与 `BufferTX` 变化、等待 slice、线程状态、latch/present/release 时间，并为每个数值附上 SQL 行、时间区间或截图。缺少队列身份时只能写“同进程等待与该帧重叠”，不能写成目标 Surface 已经确认阻塞。
 
@@ -208,6 +278,11 @@ BufferQueue 背压需要同一 layer 上的成组证据：`Buffer Stuffing`、BL
 | `android-17.0.0_r1` | 无条件调用虚函数，默认实现仍等待 `mDequeueCondition` | `BufferReleaseChannel` 成为无条件实现；BLAST 覆盖函数用 `epoll_wait` 读取 release 消息，`BBQBufferQueueCore` 用 `eventfd` 中断等待 |
 
 Android 17 的通道消息带有明确的 `ReleaseCallbackId` 与 release fence，SurfaceFlinger 可经该通道把 release 结果直接送到对应 BLAST 客户端。BLAST 的阻塞读取使用 `epoll_wait`（等待文件描述符事件的系统调用），并可由 `eventfd` 唤醒。这个变化只覆盖使用 BLAST 专用 Producer 的队列；SurfaceTexture、ImageReader 或其他通用 BufferQueue 仍可能走条件变量。源码结构变化也不能证明某台设备已经消除 BufferQueue 阻塞，Perfetto 仍要核对等待时长、目标队列、release fence 和下游帧时序。
+
+<!-- gracker-diagram: ch14-10-15-release-version-boundary -->
+![15、16、17的等待传输边界](../../assets/diagrams/ch14/ch14-10-15-release-version-boundary.png)
+
+图：15直接等条件变量，16由编译flag选择，17虚调用与BLAST通道路径无该条件编译分支。 只覆盖BLAST专用Producer；代码变化不证明目标设备flag、性能收益或已经消除阻塞。
 
 ## PerfettoSQL：先找候选帧
 
@@ -233,6 +308,11 @@ ORDER BY afts.ts;
 ```
 
 查询结果回答哪个进程、哪个 layer、哪些 token 进入候选集合。`GLOB` 是 SQLite 的通配符匹配运算。`on_time_finish = 1` 也可能出现 `Buffer Stuffing`，因为 App 可以按期完成，但排队使帧延迟 present。`jank_type` 仍要原样保留，便于核对分析器版本和 UI 展示。
+
+<!-- gracker-diagram: ch14-10-16-sql-candidate-quality -->
+![候选发现保留Actual行身份与质量](../../assets/diagrams/ch14/ch14-10-16-sql-candidate-quality.png)
+
+图：发现查询保留Actual ID、track、token、Layer与时长质量，再固定真实upid和Layer。 Is Buffer?来自args；Yes/No/Unspecified分开，开放/零时长只作质量诊断，正时长求交排除。
 
 ## PerfettoSQL：关联同进程的 dequeue slice
 
@@ -290,6 +370,11 @@ ORDER BY stuffing.ts, producer_wait.dur DESC;
 ```
 
 只比较 slice 起点会漏掉从窗口前开始、持续到窗口内的等待；不约束 `upid` 会误关联其他进程的同名 slice。查询结果仍是候选集：同一进程可能拥有多个窗口、SurfaceView 或 TextureView 队列，厂商渲染后端也可能使用不同的 slice 名称。还要用 layer、BLAST id、thread track、frame number 和相邻计数器确认队列身份。
+
+<!-- gracker-diagram: ch14-10-17-sql-overlap-window -->
+![完整调用时长与帧内重叠分别计量](../../assets/diagrams/ch14/ch14-10-17-sql-overlap-window.png)
+
+图：合成校验：帧[1000,1020)ms，外层dequeue45ms但帧内20ms，内层wait20ms但帧内15ms。 同进程/同Layer名称仍只是队列候选；嵌套slice或重叠模型帧不能跨行直接相加。
 
 ## PerfettoSQL：核对线程状态
 
@@ -360,9 +445,19 @@ ORDER BY intersection.wait_slice_id, overlap_ms DESC;
 
 `blocked_function` 主要来自内核 `sched_blocked_reason` 事件，对 `D` 状态更有帮助。字段为 `NULL` 可能是线程处于可中断睡眠、事件未采集或内核符号不可见，不能反向证明没有等待。线程状态只说明调度层发生了什么，仍需和等待 slice、release 消息与目标队列相互印证。
 
+<!-- gracker-diagram: ch14-10-18-sql-state-coverage -->
+![线程状态裁切要报告闭合覆盖与开放缺口](../../assets/diagrams/ch14/ch14-10-18-sql-state-coverage.png)
+
+图：合成外层slice45ms中，闭合状态30ms：Running10、S17、R3，覆盖率66.67%。 首段5ms无状态、末段10ms开放状态被排除；缺匹配保留NULL，输入重叠时数值置NULL先排错。
+
 ## 小结
 
 BufferQueue 背压需要多项信号在同一时间线上相互吻合：FrameTimeline 提供排队状态，layer 与 BLAST id 确认目标队列，Producer 线程暴露等待，`QueuedBuffer` / `BufferTX` 描述两侧积压，SurfaceFlinger、HWC 和 release 通道解释 buffer 返回过程。缺少队列身份、release 或 display 时序时，应写成“疑似 BufferQueue 背压”，并列出还需补采的数据。
+
+<!-- gracker-diagram: ch14-10-19-evidence-verdict -->
+![按目标队列连接等待与回收后再给结论](../../assets/diagrams/ch14/ch14-10-19-evidence-verdict.png)
+
+图：同队列的Producer等待与下游持有/回收互证，再排除分配、fence、调度和应用同步。 标准BLAST轨道是补充；证据不足时报告疑似与待补项，不以某条特有轨道缺失作为反证。
 
 ## 源码与官方资料
 

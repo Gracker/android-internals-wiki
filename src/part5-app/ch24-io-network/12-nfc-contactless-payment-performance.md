@@ -90,6 +90,11 @@ flowchart LR
 
 顺着图看路由：NFCC 路由表先把用于选择应用的 `SELECT AID` 命令指向 host 或 SE。走 host 的一路进入 `NfcService`，由 `RegisteredAidCache` 与 `HostEmulationManager` 从已注册的 HCE 服务里挑出目标组件；走 off-host 的一路直接把 APDU 交给 SE。off-host 省掉了应用处理这一环，但端到端延迟仍由终端、射频、SE 中的卡应用和支付协议共同决定。
 
+<!-- gracker-diagram: a272-01-host-and-se-routing -->
+![NFCC路由将主机HCE与安全元件交易分流](../../assets/diagrams/ch24/a272-01-host-and-se-routing.png)
+
+图：交易 APDU 是否经过应用，是两条路径的关键边界；off-host 的声明服务并不参与逐条交易处理。
+
 ## 2. HCE 交易的延迟来自哪些阶段
 
 一笔 HCE 交易为什么慢？我们先把它拆成六个可观测阶段：
@@ -111,11 +116,21 @@ flowchart LR
 
 有了这六个阶段，排查就有了分流判据：首个 APDU 慢而后续正常，先查进程启动和服务绑定；每个 APDU 都慢，就去查应用计算、锁竞争、存储访问和异步依赖。
 
+<!-- gracker-diagram: a272-02-hce-latency-phases -->
+![HCE延迟按射频、路由绑定、应用与回传拆分](../../assets/diagrams/ch24/a272-02-hce-latency-phases.png)
+
+图：首条慢先看路由和服务就绪；每条都慢再看主线程、锁、存储、密钥操作和异步依赖。
+
 ### 首选支付服务的预绑定
 
 `HostEmulationManager.bindPaymentServiceLocked()` 用 `BIND_AUTO_CREATE` 预绑定当前首选支付服务，并保留独立的 `mPaymentService` 连接；普通服务则可能要等 AID 命中后才临时绑定。服务死亡后系统会尝试重新绑定，但进程重建、内存状态丢失和支付令牌（token，用来代替真实卡号的受限凭据）失效这些事，仍要应用自己处理。
 
 从 Android 15 开始，`CATEGORY_PAYMENT` 类别（category）通常由默认钱包角色持有者（Wallet role holder）处理；前台 Activity 也可以用 `CardEmulation.setPreferredService()` 临时指定服务。AID 组是一组必须整体路由到同一服务的标识符，系统同一时刻只启用一个支付类别 AID 组。所以 HCE 服务收不到命令时，我们先核对钱包角色、AID 和用户选择——配置错了，APDU 在路由层就走丢了，再快的应用也接不到。
+
+<!-- gracker-diagram: a272-03-host-manager-state-flow -->
+![HostEmulationManager缓存首条命令等待服务就绪](../../assets/diagrams/ch24/a272-03-host-manager-state-flow.png)
+
+图：服务预绑定、普通绑定和应用处理分别记录；没有SELECT回调时先核对AID、角色与解锁条件。
 
 ## 3. Android 17 / API 37 的 NFC 变化
 
@@ -169,6 +184,11 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 
 Android 16 起，含 HTTP/HTTPS 链接的 NFC 标签改走 `ACTION_VIEW`；Android 17 会先显示打开链接通知，用户确认后才触发 `ACTION_VIEW`。需要接收自有域名的应用应配置 Android App Links，不再等待 `ACTION_NDEF_DISCOVERED`。
 
+<!-- gracker-diagram: a272-04-intent-target-and-url -->
+![目标37的标签Intent保护与URL入口分别处理](../../assets/diagrams/ch24/a272-04-intent-target-and-url.png)
+
+图：ACTION_TAG_DISCOVERED 已废弃；优先采用具体 NDEF 或技术过滤，URL 不再等待旧NDEF入口。
+
 ### 3.2 Reader Mode 的标签离场回调
 
 这个示例展示前台 Reader Mode 的生命周期和 API 37 标签离场处理：
@@ -209,6 +229,11 @@ Reader Mode 只在 Activity 位于前台时有效。API 并未承诺 `ReaderCall
 标签离场、手机移动和射频噪声都可能让 `connect()` 或 `transceive()` 抛出 I/O 异常；`onTagLost()` 管的是任务取消和界面清理这一层，每次 I/O 自己的异常处理仍然要写。
 
 `FLAG_READER_SKIP_NDEF_CHECK` 留给明确无需 NDEF 解析的专有协议。启用后平台跳过 NDEF 检查，也不像常规流程那样枚举 `Ndef` 标签技术；对原本依赖 NDEF 的标签，无条件开启可能让它们处理不了。
+
+<!-- gracker-diagram: a272-05-reader-lifecycle-and-io -->
+![ReaderMode按前台生命周期管理Tag任务](../../assets/diagrams/ch24/a272-05-reader-lifecycle-and-io.png)
+
+图：SKIP_NDEF_CHECK 仅用于无需NDEF的协议；开启后不枚举Ndef，不能当所有标签的通用加速开关。
 
 ## 4. HCE 服务：注册、路由与 APDU 延迟敏感路径
 
@@ -294,6 +319,11 @@ class DemoApduService : HostApduService() {
 
 生产实现还要校验 APDU 长度与字段：CLA 是命令类别，INS 是指令，P1/P2 是指令参数，Lc 是命令数据长度，Le 是期望响应长度；返回值要带协议状态字，密钥隔离、重放防护和认证要求也一样要满足。
 
+<!-- gracker-diagram: a272-06-async-apdu-submission-boundary -->
+![异步APDU发送前失效检查与框架排队边界](../../assets/diagrams/ch24/a272-06-async-apdu-submission-boundary.png)
+
+图：停用递增交易代次并取消工作；应用发送前检查不能替代协议对迟到响应、当前命令和交易的验证。
+
 ### 4.3 APDU 路径的优化顺序
 
 APDU 是半双工交换，同一时刻只有一方在发，终端发出一条命令后就等响应；Android HCE 又只有一个逻辑通道，一段耗时任务会拖住同一交易里的后续命令。所以排查 APDU 路径时，我们按这个顺序来：
@@ -339,6 +369,11 @@ NFC 终端会循环发送轮询帧（polling frames），找附近可用的卡�
 
 这个方法管的只是 Observe Mode 下的那一笔 HCE 交易，NFC 调度优先级与它无关。普通标签应用本来就在调用资格之外；钱包也要等轮询序列匹配自身过滤规则后再调用，免得对任意终端放行。
 
+<!-- gracker-diagram: a272-08-observe-one-transaction -->
+![ObserveMode按调用资格临时放行一笔HCE交易](../../assets/diagrams/ch24/a272-08-observe-one-transaction.png)
+
+图：退出帧、自动交易过滤和Reader注释帧另查NFCC支持；Android扩展不保证POS识别。
+
 ### 退出帧与注释帧的能力查询
 
 退出帧让 NFCC 固件在特定的自动交易轮询过滤器命中时离开 Observe Mode；我们判断它可用与否，看 `isExitFramesSupported()`——固件支持、且控制器报告了至少一个可用退出帧，它才会返回 `true`。
@@ -360,6 +395,11 @@ API 37 SDK 提供三个接口：
 `NfcService.setPowerSavingModeInternal()` 会根据当前 NFC 适配器状态临时启停芯片，再调用设备实现；查询 SE 访问权限、准备发送首选支付服务变化事件的代码，在节电模式中也会提前返回。这套机制服务于系统待机和硬件集成——指望它加速 HCE 响应，或在用户靠近终端时动态切换，都用错了地方。
 
 `NfcService.isPowerSavingModeSupported()` 在 NFC 适配器未开启时直接返回 `false`，开启后才向设备抽象层 `DeviceHost` 查询能力。所以 NFC 关着时拿到的 `false` 只说明当下没开；系统集成代码要等开启后再查，把它长期缓存成“硬件不支持”是要误判的。
+
+<!-- gracker-diagram: a272-09-power-saving-state-and-support -->
+![节电模式能力必须结合适配器状态判断](../../assets/diagrams/ch24/a272-09-power-saving-state-and-support.png)
+
+图：分别测静态功耗、恢复可发现时间与失败；不从“节电”这个名字推导交易更快。
 
 系统集成方评估这个模式，要分开测这几项：
 
@@ -404,6 +444,11 @@ OMAPI（Open Mobile API）是应用访问 SE 的另一套接口，访问规则�
 
 `T_apdu_in - T_select_tx` 覆盖 Android 路由和可能的服务绑定；`T_response_ready - T_apdu_in` 是应用生成响应的区间；`T_response_rx - T_response_ready` 覆盖 Binder、NCI、NFCC 和射频回传。两端时钟对不上时，就用同一测试动作的序号和相对间隔把记录关联起来——亚毫秒精度已经超出这些记录能支撑的范围。
 
+<!-- gracker-diagram: a272-10-two-clock-measurement -->
+![外部往返与应用处理可各用本端时钟测量](../../assets/diagrams/ch24/a272-10-two-clock-measurement.png)
+
+图：同序号支持事件关联，不会自动同步两个时钟；分位数连同设备、终端、协议和样本条件报告。
+
 ### 8.2 Android 侧只读诊断
 
 这些只读命令保存 NFC 适配器、路由、HCE 绑定和关键日志状态，NFC 配置一个都不会动：
@@ -419,6 +464,11 @@ adb logcat -v threadtime \
 `dumpsys nfc` 会输出 NFC 适配器状态、屏幕状态、节电模式、Observe Mode、轮询与监听技术、当前发现参数、卡模拟管理器、路由表和 NFC 事件日志。`cmd nfc help` 还会列出修改 Observe Mode、Reader Mode、路由与控制器常开状态的命令，其中多数需要 `root`（超级用户） 权限，只适合受控测试设备；日常排查用 `status` 与 `dumpsys` 就够。
 
 HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_active`、`hce_bind_payment_service`、`hce_bind_service`、`hce_command_apdu`、`hce_response_apdu` 和 `hce_polling_frames` 异步 Trace。`hce_command_apdu` 从系统发出命令开始，到应用 `Handler` 完成回调并回复确认消息（ACK）为止；应用返回 `null` 之后继续跑的异步工作，落在这个区间之外。`hce_response_apdu` 覆盖应用发送响应到系统回复 ACK 的过程。
+
+<!-- gracker-diagram: a272-07-trace-command-versus-response -->
+![命令ACK、应用异步工作和响应ACK分别测量](../../assets/diagrams/ch24/a272-07-trace-command-versus-response.png)
+
+图：同步回调计时不含返回null后继续运行的异步工作；响应ACK也不替代外部读卡器接收时间。
 
 这些 slice 要在设备构建启用相应功能开关后才会产生；slice 缺席，说明不了 NFC 是不是在正常工作。
 
@@ -464,6 +514,11 @@ HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_a
 - 问题只跟某个 NFCC、固件或 OEM 构建相关。
 
 AID 选择、HCE 服务绑定、`processCommandApdu()` 主线程和钱包角色属于 Android 框架或 NFC 模块的行为，仅凭内核调度器状态是直接推不出来的；跨层排查时保留同一交易序号，应用 Trace、NFC 日志、HAL 日志、内核事件和外部读卡器记录才能相互对应。
+
+<!-- gracker-diagram: a272-11-nfc-evidence-layers -->
+![按分发、服务、控制器与外部终端分层取证](../../assets/diagrams/ch24/a272-11-nfc-evidence-layers.png)
+
+图：共同内核标签只是边界起点；具体驱动、设备树、固件与支付协议仍以目标设备和终端证据为准。
 
 ## 11. 性能改动的安全约束
 

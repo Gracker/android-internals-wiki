@@ -23,3 +23,13 @@
 - 处理线上问题并推动修复：先用 `16.3` 定义监控信号和指标，再用 `16.1` 的治理方法跟到发布验收。
 - 从证据继续追源码或研究数据：阅读 `16.7` 和 `16.1`。评估 AI 修改 Android 代码的能力时，再阅读 `16.8`。
 - 制定跨启动、渲染、内存和媒体的设备差异化策略：阅读 `16.4`，并回到对应机制章验证每项预算。
+
+<!-- gracker-diagram: ch16-readme-01-investigation-evidence-loop -->
+![从问题定义走到发布验证](../../assets/diagrams/ch16/ch16-readme-01-investigation-evidence-loop.png)
+
+图：先明确现象和指标，再结合现场与源码检验归因，以对照实验和发布监控验证修复。 设备策略按场景验证；AI编码评测另有任务与验证协议，不能替代App性能实测。
+
+<!-- gracker-diagram: ch16-readme-02-question-driven-reading -->
+![按问题选择方法论章节](../../assets/diagrams/ch16/ch16-readme-02-question-driven-reading.png)
+
+图：基础调查、实验策略和源码/编码评测各有阅读入口，再回到具体机制与验证对象。 这些是阅读分组而非互斥责任；16.8评估编码能力，不能用榜单推断平台或App性能。
