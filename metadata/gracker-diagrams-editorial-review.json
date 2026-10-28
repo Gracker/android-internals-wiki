@@ -15898,9 +15898,602 @@
       "before_count": 46,
       "before_all_images": 46,
       "sha256_before": "63132f33fddfd18a0f907e4ab769f1c045a381f64a0d9b82f0d3b34e78e070a0",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 18,
+      "decisions": [
+        {
+          "original_id": "ch11-01-01-accounting-layers",
+          "title": "活动、组件计算与 UID 归因是三个层次",
+          "decision": "merge",
+          "reason": "开篇活动→组件→UID三层总览并入真实Push/Pull→history→按组件processor→consumer数据流，避免同一归因主线在开篇与6.1各画一次。",
+          "original_line": 191,
+          "heading": "# Android 功耗模型与系统级优化",
+          "replacement_id": "ed11-01-activity-to-uid-pipeline"
+        },
+        {
+          "original_id": "ch11-01-02-unit-boundaries",
+          "title": "电荷、能量、功率和百分比分开解释",
+          "decision": "remove",
+          "reason": "六张单位/百分比卡逐项复述紧邻六行层次/记录/单位表与214完整单位、分母、电压段；没有具体换算算例或测量曲线，原表与限制全文保留。",
+          "original_line": 217,
+          "heading": "### 1. 功耗统计全景"
+        },
+        {
+          "original_id": "ch11-01-03-profile-calibration",
+          "title": "profile 参数先确认单位与电压域",
+          "decision": "remove",
+          "reason": "默认profile需OEM测量、字段单位与电压域、mA×ms/3600000三框直接压缩229公式及235-260完整参数与校准段，原公式和字段范围更精确。",
+          "original_line": 262,
+          "heading": "#### 2.1 AOSP 默认文件与设备参数"
+        },
+        {
+          "original_id": "ch11-01-04-cpu-profile-inputs",
+          "title": "CPU 模型分开记录三类活动成本",
+          "decision": "merge",
+          "reason": "CPU active/policy/step三模型项以及固定collector尚未填time-in-cluster边界并入常规与x86路径对照，避免模型存在被读成当前采集已填。",
+          "original_line": 279,
+          "heading": "#### 2.2 CPU 参数按 scaling policy（策略） 与频点组织",
+          "replacement_id": "ed11-01-cpu-attribution-paths"
+        },
+        {
+          "original_id": "ch11-01-05-cpu-time-state",
+          "title": "常规 CPU 路径用模型组织与分配能量",
+          "decision": "merge",
+          "reason": "常规无能量profile、有CPUconsumer校正bracket后按UID时间分配，以及提供WakeLock聚合时扣对应项并clamp0，接入同一CPU两路径图。",
+          "original_line": 300,
+          "heading": "#### 3.1 CPU",
+          "replacement_id": "ed11-01-cpu-attribution-paths"
+        },
+        {
+          "original_id": "ch11-01-06-cpu-cycle",
+          "title": "x86 cycle 路径先归因，再由 processor 换单位",
+          "decision": "merge",
+          "reason": "x86开关且不支持TIS时采集侧按UIDcycle分RAPLpackage、有效电压转µC后processor只换mAh，与常规processor内分配并列，保留底层能力和非逐App硬件计量边界。",
+          "original_line": 307,
+          "heading": "#### 3.1 CPU",
+          "replacement_id": "ed11-01-cpu-attribution-paths"
+        },
+        {
+          "original_id": "ch11-01-07-screen-attribution",
+          "title": "屏幕总量与 UID 分配分两步完成",
+          "decision": "keep",
+          "reason": "屏幕组件总量先估算或取硬件输入，再以亮屏总topActivity时长为分母、0时跳过UID分配的具体计算关系；doze显示与亮屏成本边界独立。",
+          "original_line": 325,
+          "heading": "#### 3.2 Display"
+        },
+        {
+          "original_id": "ch11-01-08-gpu-api-layers",
+          "title": "GPU 可观测性与标准归因组件分属不同 API",
+          "decision": "remove",
+          "reason": "GPU名字/API所属层次两卡直接复述330-339三段：无标准BatteryConsumer/ConsumerType GPU项、ODPM/vendor监测与共享域、busy/freq不是能量；没有实际设备映射实例，全部限制保留。",
+          "original_line": 341,
+          "heading": "#### 3.3 GPU"
+        },
+        {
+          "original_id": "ch11-01-09-radio-residency",
+          "title": "传输间隔会影响高功率状态驻留",
+          "decision": "keep",
+          "reason": "同负载分散传输的多段tail与集中传输后空闲机会的两条驻留轨道，解释时间结构而非仅数据量；无固定收益或跨无线组件同一路径承诺。",
+          "original_line": 357,
+          "heading": "#### 3.4 Cellular、Wi-Fi 与 Bluetooth"
+        },
+        {
+          "original_id": "ch11-01-10-push-pull",
+          "title": "状态推送与累计快照共同支持活动记账",
+          "decision": "merge",
+          "reason": "系统服务Push状态和切换/采样点Pull累计快照接入合并归因管线双输入；UID可含多进程、BatteryStats不持续读整机瞬时电流的范围保留。",
+          "original_line": 395,
+          "heading": "#### 4.1 Push 与 Pull",
+          "replacement_id": "ed11-01-activity-to-uid-pipeline"
+        },
+        {
+          "original_id": "ch11-01-11-reset-window",
+          "title": "自动 reset 与实验窗口是不同操作",
+          "decision": "keep",
+          "reason": "系统条件化unplug reset与人为整机--reset两分支影响不同统计窗口；不能把拔电等同无条件reset或App私有开关。",
+          "original_line": 408,
+          "heading": "#### 4.2 时间窗口与持久化"
+        },
+        {
+          "original_id": "ch11-01-12-battery-properties",
+          "title": "电池属性先检查单位、符号与不可用值",
+          "decision": "remove",
+          "reason": "电池各属性单位/符号/不支持返回值六卡逐项复述430-440五条属性清单和target>=28/<28返回值段；原文还保留瞬时/平均和厂商算法边界，更精确。",
+          "original_line": 442,
+          "heading": "#### 5.1 Coulomb Counter"
+        },
+        {
+          "original_id": "ch11-01-13-battery-vs-uid",
+          "title": "电池总变化与 Framework 归因分别取证",
+          "decision": "keep",
+          "reason": "同一测试窗电池/仪表整机链与组件输入+UID活动归因链的并行对照，明确没有Coulomb总差值统一切分到App的路径，独立于数据流内部各阶段。",
+          "original_line": 465,
+          "heading": "#### 5.3 按问题选数据源"
+        },
+        {
+          "original_id": "ch11-01-14-attribution-pipeline",
+          "title": "从 history 聚合到设备与 UID consumer",
+          "decision": "merge",
+          "reason": "history、AggregatedPowerStatsConfig维度、默认MultiStatePowerAttributor、各processor和consumer职责接入Push/Pull真实输入；配置是依赖而非history派生产物，各组件无统一分摊公式。",
+          "original_line": 486,
+          "heading": "#### 6.1 从 history 到 `BatteryUsageStats`",
+          "replacement_id": "ed11-01-activity-to-uid-pipeline"
+        },
+        {
+          "original_id": "ch11-01-15-provider-migration",
+          "title": "Android 16 与 17 的 provider 分工不同",
+          "decision": "keep",
+          "reason": "Android16保留未迁移calculator回退与17顶层委托PowerAttributor的源码入口差异，防止历史算法细节套到r1，独立于固定17内部数据流。",
+          "original_line": 497,
+          "heading": "#### 6.2 Android 16 到 17 的变化"
+        },
+        {
+          "original_id": "ch11-01-16-settings-percentage",
+          "title": "设置页占比还经过查询与展示口径",
+          "decision": "remove",
+          "reason": "归因侧与查询展示侧两卡逐项缩写506-514七条占比影响因素和516精度/未归因限制，且主线已在合图输出标明窗口与分母；原清单全文保留。",
+          "original_line": 516,
+          "heading": "#### 6.3 设置页百分比"
+        },
+        {
+          "original_id": "ch11-01-17-hal-families",
+          "title": "PowerStats AIDL 的三组接口分别解释",
+          "decision": "remove",
+          "reason": "PowerEntity/Consumer/Meter三卡直接重排528-535三行HAL接口/返回/用途对照表和先枚举ID/匹配返回ID/非固定顺序段；没有具体设备ID或共享rail映射，原表更精确。",
+          "original_line": 539,
+          "heading": "#### 7.1 HIDL 与 AIDL（Android 接口定义语言） 的版本差异"
+        },
+        {
+          "original_id": "ch11-01-18-monitor-types",
+          "title": "PowerMonitor 类型说明数据含义",
+          "decision": "remove",
+          "reason": "measurement/consumer两分支逐项复述556-557两条公开类型定义及562名称/缓存/跨设备限制；不单独画两项枚举卡，后续缓存差值图和原文类型语义保留。",
+          "original_line": 559,
+          "heading": "#### 7.3 API 35 `PowerMonitor`"
+        },
+        {
+          "original_id": "ch11-01-19-monitor-read-flow",
+          "title": "异步读取保留每个 monitor 的信息",
+          "decision": "remove",
+          "reason": "四阶段图是紧邻Kotlin53行读取函数的逐段释义，服务为空/列表空/ENERGY_UNAVAILABLE/异步错误都在代码中直观呈现；累计值跨次比较另有20专图，不重复画代码。",
+          "original_line": 566,
+          "heading": "#### 7.3 API 35 `PowerMonitor`"
+        },
+        {
+          "original_id": "ch11-01-20-monitor-cache-delta",
+          "title": "缓存、扰动与累计差值需共同核对",
+          "decision": "keep",
+          "reason": "HAL累计值→按权限缓存/UID扰动→同开机同monitor有效delta的实际数据处理链，明确timestamp不推进、缺项/重启/负差无效，独立于读取函数调用流程。",
+          "original_line": 631,
+          "heading": "#### 7.3 API 35 `PowerMonitor`"
+        },
+        {
+          "original_id": "ch11-01-21-perfetto-power-clock",
+          "title": "Perfetto 轮询与硬件更新不是同一频率",
+          "decision": "keep",
+          "reason": "应用配置轮询和硬件可见值更新的两轨时钟差异，说明多次读取沿用前值而非提高硬件频率，不能由配置序列化成功推有效rail；独立于API服务缓存。",
+          "original_line": 665,
+          "heading": "#### 8.1 Perfetto `android.power`"
+        },
+        {
+          "original_id": "ch11-01-22-tool-selection",
+          "title": "按整机、rail、UID 或时间关系选择工具",
+          "decision": "remove",
+          "reason": "六工具卡逐项复述紧邻674-681六行工具/用途/限制表；原表保留Historian维护、各接口单位范围及不互换规则，不另做同义卡阵。",
+          "original_line": 683,
+          "heading": "#### 8.2 工具回答的问题不同"
+        },
+        {
+          "original_id": "ch11-01-23-controlled-experiment",
+          "title": "先定义测量对象，再做同条件对照",
+          "decision": "remove",
+          "reason": "定义对象→固定状态→交错AB→比较校准四步直接重排690-716完整实验控制清单与校准范围段；没有实际曲线/数值或额外依赖，原可执行步骤全部保留。",
+          "original_line": 718,
+          "heading": "#### 9.3 校准的适用范围"
+        },
+        {
+          "original_id": "ch11-01-24-eas-adpf-observation",
+          "title": "EAS 决策、Framework 归因与应用提示分别理解",
+          "decision": "remove",
+          "reason": "EAS/Framework/ADPF三卡逐项重排727-731三条完整职责和733无ODPM自动回写EAS成本表限制；没有真实反馈连接，全部接口与OEM额外路径取证要求保留。",
+          "original_line": 733,
+          "heading": "### 10. 与内核调度和 ADPF 的关系"
+        },
+        {
+          "original_id": "ch11-01-25-policy-dimensions",
+          "title": "后台资源由多组策略共同约束",
+          "decision": "remove",
+          "reason": "六调查维度卡逐项重排788-797六行策略/机制/对象表，原表更完整；独立控制器可叠加与非固定顺序限制仍在正文。",
+          "original_line": 800,
+          "heading": "### 系统为什么要限制后台工作"
+        },
+        {
+          "original_id": "ch11-01-26-job-gates",
+          "title": "维护窗口只是 Job 获得运行机会的一个条件",
+          "decision": "merge",
+          "reason": "Job显式约束、适用Doze/bucket/quota/用户限制及用户包Service并发条件合入维护窗口图，以并行资格汇合替代容易误读为固定串行代码的四步。",
+          "original_line": 807,
+          "heading": "### 系统为什么要限制后台工作",
+          "replacement_id": "ed11-01-maintenance-and-job-gates"
+        },
+        {
+          "original_id": "ch11-01-27-doze-states",
+          "title": "Light 与 Deep 有各自状态机",
+          "decision": "merge",
+          "reason": "Light/Deep独立状态机、DeepSTATE_IDLE设LightOVERRIDE并取消Lightalarm，合入策略idle与实际suspend分层证据图，不强制完整Light为Deep前序。",
+          "original_line": 827,
+          "heading": "#### Light Doze 与 Deep Doze",
+          "replacement_id": "ed11-01-doze-policy-and-suspend-evidence"
+        },
+        {
+          "original_id": "ch11-01-28-maintenance-window",
+          "title": "维护窗口放宽限制，任务仍需其他资格",
+          "decision": "merge",
+          "reason": "非比例idle/维护期交替接入Job多组资格；窗口只放宽对应Doze限制，不提供固定时长/SLA，也不虚构某Job必在窗口某时开始。",
+          "original_line": 838,
+          "heading": "#### 维护窗口的节奏",
+          "replacement_id": "ed11-01-maintenance-and-job-gates"
+        },
+        {
+          "original_id": "ch11-01-29-doze-ordinary-special",
+          "title": "普通后台工作与特殊交付路径分开看",
+          "decision": "remove",
+          "reason": "普通工作与局部豁免两框直接重述845-850网络/WakeLock/Alarm/Job/Sync/scan限制和特殊路径完整段；listener、FGS、LPS仍各有独立机制图。",
+          "original_line": 852,
+          "heading": "#### Doze 中哪些能力会被限制"
+        },
+        {
+          "original_id": "ch11-01-30-fcm-version-boundary",
+          "title": "FCM v2 的通知路径与静默同步分开理解",
+          "decision": "remove",
+          "reason": "RemoteNotification/BackgroundSync两框逐项缩写854-857完整Firebasev2迁移/EAP/SDK/GMS、默认不可变由GMS展示与同步延迟段；未给组件桥接或调度时序，原版本边界与不保证App执行全文保留。",
+          "original_line": 859,
+          "heading": "#### Doze 中哪些能力会被限制"
+        },
+        {
+          "original_id": "ch11-01-31-alarm-listener-lifetime",
+          "title": "listener 与 PendingIntent 使用不同生命周期",
+          "decision": "keep",
+          "reason": "API37 listener依赖仍有运行组件的生命周期与进程结束后仍需交付的PendingIntent选择分支，具体影响接口选择，非通用Doze豁免图可替代。",
+          "original_line": 872,
+          "heading": "#### Android 17 的 listener（监听器） 型 allow-while-idle Alarm"
+        },
+        {
+          "original_id": "ch11-01-32-doze-exemption-scope",
+          "title": "电池优化豁免只放宽指定资源",
+          "decision": "remove",
+          "reason": "网络/partialWakeLock局部放宽与其余控制器另查两卡直接复述879-881完整allowlist范围及请求入口限制；原文精确说明GooglePlay与核心功能条件，全部保留。",
+          "original_line": 883,
+          "heading": "#### Doze 豁免的范围"
+        },
+        {
+          "original_id": "ch11-01-33-policy-to-suspend",
+          "title": "Framework 策略与内核实际挂起分层验证",
+          "decision": "merge",
+          "reason": "DeviceIdle策略、PMS/SystemSuspend条件、kernel suspend/wakeup和独立CPUidle证据接入Light/Deep状态图，虚线仅表示休眠机会，避免逐次同步调用/策略idle等于硬件挂起。",
+          "original_line": 894,
+          "heading": "#### 从 Framework 到 kernel suspend",
+          "replacement_id": "ed11-01-doze-policy-and-suspend-evidence"
+        },
+        {
+          "original_id": "ch11-01-34-doze-test-restoration",
+          "title": "强制 Doze 测试和自然进入实验分别记录",
+          "decision": "remove",
+          "reason": "四阶段逐项复述紧邻9行forceidle测试/恢复命令与915自然进入差异段，没有额外状态条件；unforce与batteryreset职责以及自然路径续航测试原文保留。",
+          "original_line": 917,
+          "heading": "#### 强制进入 Doze 的测试方法"
+        },
+        {
+          "original_id": "ch11-01-35-bucket-quota",
+          "title": "bucket 指导值还受进程与设备状态影响",
+          "decision": "merge",
+          "reason": "近似bucket配额与版本/现场覆盖关系接入动态分桶→各资源控制器图，不重复画数值表；Job普通/加急、Alarm、网络各自判断，FGS/充电等独立条件保留。",
+          "original_line": 942,
+          "heading": "#### 当前官方指导额度",
+          "replacement_id": "ed11-01-bucket-classification-and-fgs-exception"
+        },
+        {
+          "original_id": "ch11-01-36-adaptive-classification",
+          "title": "分类器给出 bucket，控制器按状态施加约束",
+          "decision": "merge",
+          "reason": "动态分类可预测/最近使用/OEM且无统一模型架构的输入，接入当前bucket与控制器图，并与FGS_START这一个特殊事件路径区分。",
+          "original_line": 959,
+          "heading": "#### Adaptive Battery 的公开契约",
+          "replacement_id": "ed11-01-bucket-classification-and-fgs-exception"
+        },
+        {
+          "original_id": "ch11-01-37-pending-overlap",
+          "title": "多个 pending reason 的累计时长可以重叠",
+          "decision": "keep",
+          "reason": "connectivity与quota两条重叠轨道说明每原因累计Duration之和可超过总等待；保留成功/取消清除、不跨重启和无效JobID异常，独立于Job资格总图。",
+          "original_line": 985,
+          "heading": "#### 检查 bucket、quota 与 pending reason（待处理原因）"
+        },
+        {
+          "original_id": "ch11-01-38-bal-eligibility",
+          "title": "BAL opt-in 必须依附实际已有的资格",
+          "decision": "keep",
+          "reason": "sender与creator已有BAL资格、target34/35及IntentSender37 optin不同来源的实际替代路径，不能简化成所有条件统一AND；与Job或FGS配额不是同一控制器。",
+          "original_line": 1017,
+          "heading": "#### Background Activity Launch（后台 Activity 启动，BAL）"
+        },
+        {
+          "original_id": "ch11-01-39-location-gates",
+          "title": "定位权限与 FGS 启动资格是不同条件",
+          "decision": "keep",
+          "reason": "定位授权、启动时whileinuse/可见性/FGS限制、locationFGS类型权限多条件同时核对，说明后台定位权限不自动放行FGS启动，独立于BAL与bucket。",
+          "original_line": 1031,
+          "heading": "#### 后台位置"
+        },
+        {
+          "original_id": "ch11-01-40-fgs-bucket-exception",
+          "title": "FGS 启动事件只在 Never 时走首次提升例外",
+          "decision": "merge",
+          "reason": "固定reportEventLocked的FGS_START仅Never临时Active/保留期与其他bucket不走此提升两支接入动态分类图；不误导为其他行为无法改变bucket或FGS持续全豁免。",
+          "original_line": 1042,
+          "heading": "#### 后台 Service 与 FGS",
+          "replacement_id": "ed11-01-bucket-classification-and-fgs-exception"
+        },
+        {
+          "original_id": "ch11-01-41-hibernation-archive",
+          "title": "休眠与归档在包、数据和恢复上有不同语义",
+          "decision": "remove",
+          "reason": "休眠/归档两卡逐项复述1049-1056机制/版本/动作/恢复表和后续异步archive状态/installer段；原表更精确含target30/31区别及旧JobAlarm不自动恢复，全部保留。",
+          "original_line": 1060,
+          "heading": "### Hibernation 与 Archiving"
+        },
+        {
+          "original_id": "ch11-01-42-saver-vs-standby",
+          "title": "Battery Saver 全局策略与 LPS 激活条件分开看",
+          "decision": "keep",
+          "reason": "BatterySaver全局policy与LPS enabled/非交互/timeout/维护期独立激活条件的对照，说明前者不统一Rare、后者FGS也非自动豁免，不能由Doze状态替代。",
+          "original_line": 1083,
+          "heading": "#### Low Power Standby 的直接限制"
+        },
+        {
+          "original_id": "ch11-01-43-three-adaptive-features",
+          "title": "三个 Adaptive / Routine 名称对应不同机制",
+          "decision": "remove",
+          "reason": "AdaptiveBattery/RoutineSaver/AdaptiveCharging三卡逐项重排1089-1094三条完整说明与观察入口段；原文还有provider权限/唯一控制者/OEM条件，更精确且全部保留。",
+          "original_line": 1096,
+          "heading": "#### Adaptive Battery 与 Routine Battery Saver"
+        },
+        {
+          "original_id": "ch11-01-44-saver-test-restoration",
+          "title": "恢复设置项和 battery 模拟状态是两件事",
+          "decision": "remove",
+          "reason": "保存原值→测试→按null分支恢复设置和batteryreset→回读四步直接复述紧邻14行可执行脚本与1122完整限制段；不另画代码流程，状态恢复与无固定性能幅度仍在原文。",
+          "original_line": 1124,
+          "heading": "#### Battery Saver 测试"
+        },
+        {
+          "original_id": "ch11-01-45-oem-evidence",
+          "title": "后台异常先按调度、进程与包状态分流",
+          "decision": "remove",
+          "reason": "等待仍存活/进程包改变两卡压缩1135-1147七行调度/冻结/LMKD/forcestop/TaskManager/hibernate/archive证据表，原表和后面兼容性步骤更精确；未提供实际归因例子，全部保留。",
+          "original_line": 1149,
+          "heading": "#### 区分几种容易混淆的现象"
+        },
+        {
+          "original_id": "ch11-01-46-delivery-time-evidence",
+          "title": "推送链路保存发送、到达与展示的不同时间",
+          "decision": "keep",
+          "reason": "服务端发送、设备到达处理、用户可见展示/交互三条不同观测阶段，防止把没有App回调等同未投递；需消息ID和时间基准对齐、阶段可缺证据的边界保留。",
+          "original_line": 1163,
+          "heading": "#### 兼容性测试方法"
+        }
+      ],
+      "sha256_after": "c1c713fe23f26dff4ece5b33632d6d1eb302cfce44d5fa05d270d3544227f298",
+      "new_diagrams": [
+        {
+          "id": "ed11-01-activity-to-uid-pipeline",
+          "title": "状态推送与累计快照怎样进入组件和 UID 归因",
+          "article": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-01-activity-to-uid-pipeline.svg",
+            "src/assets/diagrams/ch11/ed11-01-activity-to-uid-pipeline.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-01-activity-to-uid-pipeline",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/PowerProfile.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java",
+            "https://source.android.com/docs/core/power",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerAttributor.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/AggregatedPowerStatsConfig.java",
+            "本文冻结全文：统计输入、组件处理器、独立控制器及固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-01-01-accounting-layers",
+              "ch11-01-10-push-pull",
+              "ch11-01-14-attribution-pipeline"
+            ],
+            "boundary": "职责图而非逐行同步调用。BatteryStats记录活动与归属不持续测整机电流；同UID可含多进程。配置维度供聚合而非由history生成；默认PowerAttributor实现内部含aggregator/exporter/span，组件各有输入/算法，无任意rail按UID时间统一分摊公式。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a111/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-01-cpu-attribution-paths",
+          "title": "常规 bracket 分配与 x86 采集侧 cycle 分配在不同位置发生",
+          "article": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-01-cpu-attribution-paths.svg",
+            "src/assets/diagrams/ch11/ed11-01-cpu-attribution-paths.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-01-cpu-attribution-paths",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/PowerProfile.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/CpuTimeInStateCollector.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/format/CpuPowerStatsLayout.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/CpuCyclePerUidCollector.java",
+            "本文冻结全文：统计输入、组件处理器、独立控制器及固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-01-04-cpu-profile-inputs",
+              "ch11-01-05-cpu-time-state",
+              "ch11-01-06-cpu-cycle"
+            ],
+            "boundary": "固定r1。模型含policy项不等collector已填time-in-cluster；常规无硬件能量用profile，有则校正bracket后UID时间分配。若提供WakeLock聚合则常规CPU设备/UID估算减对应项clamp0。x86开关且无time-in-state时选择需底层支持的cyclecollector，按UIDcycles先分RAPLpackage能量再有效电压转µC，processor只换mAh，不再profile/bracket。两者都是共享成本归因非逐App硬件测量。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a111/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-01-maintenance-and-job-gates",
+          "title": "Doze 维护期只放宽一部分限制，Job 还要同时满足其他条件",
+          "article": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-01-maintenance-and-job-gates.svg",
+            "src/assets/diagrams/ch11/ed11-01-maintenance-and-job-gates.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-01-maintenance-and-job-gates",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java",
+            "https://developer.android.com/topic/performance/power/power-details",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java",
+            "https://developer.android.com/training/monitoring-device-state/doze-standby",
+            "本文冻结全文：统计输入、组件处理器、独立控制器及固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-01-26-job-gates",
+              "ch11-01-28-maintenance-window"
+            ],
+            "boundary": "轨道非比例、无SLA。持续idle间隔可随版本/配置/设备状态调整。Job显式约束、适用Doze/bucket/quota/用户限制、用户/包/Service/并发调度须结合deadline/Job类型与例外判断；各控制器可同时限制，不是假定固定逐行检查顺序。具备机会不保证开始。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a111/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-01-doze-policy-and-suspend-evidence",
+          "title": "Light 与 Deep 的策略状态，和设备实际 suspend 分开确认",
+          "article": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-01-doze-policy-and-suspend-evidence.svg",
+            "src/assets/diagrams/ch11/ed11-01-doze-policy-and-suspend-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-01-doze-policy-and-suspend-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java",
+            "https://developer.android.com/training/monitoring-device-state/doze-standby",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/power/suspend.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/idle.c",
+            "本文冻结全文：统计输入、组件处理器、独立控制器及固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-01-27-doze-states",
+              "ch11-01-33-policy-to-suspend"
+            ],
+            "boundary": "固定r1。Light通常屏幕关/未充电且无需静止；Deep典型需静止等但motion/quickdoze依实现配置，不强制先过完整Light流程。Deep STATE_IDLE设LightOVERRIDE并取消Lightalarm。策略idle不证明suspend；PMS/SystemSuspend协调条件、内核suspend/wakeup与CPUidle分别看，虚线仅表示活动限制有助于创造休眠机会非每次同步调用。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a111/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-01-bucket-classification-and-fgs-exception",
+          "title": "动态 bucket、FGS 首次提升例外与资源限制分层判断",
+          "article": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-01-bucket-classification-and-fgs-exception.svg",
+            "src/assets/diagrams/ch11/ed11-01-bucket-classification-and-fgs-exception.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-01-bucket-classification-and-fgs-exception",
+          "sources": [
+            "https://developer.android.com/topic/performance/power/power-details",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java",
+            "https://developer.android.com/topic/performance/appstandby",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java",
+            "本文冻结全文：统计输入、组件处理器、独立控制器及固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-01-35-bucket-quota",
+              "ch11-01-36-adaptive-classification",
+              "ch11-01-40-fgs-bucket-exception"
+            ],
+            "boundary": "分类实现可预测/最近使用/OEM，不能假定统一神经网络。固定reportEventLocked这条FGS_START分支仅Never临时Active并保留期，其他bucket不走此提升但别的用户行为可改bucket。Job regular/expedited、Alarm、网络规则独立，充电/可见性/FGS/用户限制/Doze/并发条件另查；近似额度非SLA，FGS不自动豁免Jobquota/Doze/BAL/whileinuse/LPS。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a111/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T12:31:32.373546+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 46,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a111/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a111/visual-review.json",
+      "retired_diagrams": [
+        "ch11-01-01-accounting-layers",
+        "ch11-01-02-unit-boundaries",
+        "ch11-01-03-profile-calibration",
+        "ch11-01-04-cpu-profile-inputs",
+        "ch11-01-05-cpu-time-state",
+        "ch11-01-06-cpu-cycle",
+        "ch11-01-08-gpu-api-layers",
+        "ch11-01-10-push-pull",
+        "ch11-01-12-battery-properties",
+        "ch11-01-14-attribution-pipeline",
+        "ch11-01-16-settings-percentage",
+        "ch11-01-17-hal-families",
+        "ch11-01-18-monitor-types",
+        "ch11-01-19-monitor-read-flow",
+        "ch11-01-22-tool-selection",
+        "ch11-01-23-controlled-experiment",
+        "ch11-01-24-eas-adpf-observation",
+        "ch11-01-25-policy-dimensions",
+        "ch11-01-26-job-gates",
+        "ch11-01-27-doze-states",
+        "ch11-01-28-maintenance-window",
+        "ch11-01-29-doze-ordinary-special",
+        "ch11-01-30-fcm-version-boundary",
+        "ch11-01-32-doze-exemption-scope",
+        "ch11-01-33-policy-to-suspend",
+        "ch11-01-34-doze-test-restoration",
+        "ch11-01-35-bucket-quota",
+        "ch11-01-36-adaptive-classification",
+        "ch11-01-40-fgs-bucket-exception",
+        "ch11-01-41-hibernation-archive",
+        "ch11-01-43-three-adaptive-features",
+        "ch11-01-44-saver-test-restoration",
+        "ch11-01-45-oem-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-111/retired-assets.json"
     },
     {
       "index": 112,
@@ -15909,9 +16502,637 @@
       "before_count": 44,
       "before_all_images": 44,
       "sha256_before": "934fcb1f5a9a8d034ae2cf1f77871f2751965950e0e2f2db28cab010b4c2178f",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 23,
+      "decisions": [
+        {
+          "original_id": "ch11-02-01-request-to-hardware",
+          "title": "从请求链缩短不必要的资源活动",
+          "decision": "remove",
+          "reason": "业务→系统→硬件三层卡直接概括100-107四条资源/工作量/可延后检查和设备条件段；三层取证稍后合为窗口验收图，不在开篇重复职责总链。",
+          "original_line": 109,
+          "heading": "### 从系统行为理解 App 耗电"
+        },
+        {
+          "original_id": "ch11-02-02-execution-contract",
+          "title": "执行入口决定系统可调度的空间",
+          "decision": "remove",
+          "reason": "三执行入口卡缩写紧邻116-121五行入口/系统边界表，原表更完整含进程内异步与推送；案例业务表再次列同类选择，全部原文保留。",
+          "original_line": 126,
+          "heading": "#### 先选合适的执行机制"
+        },
+        {
+          "original_id": "ch11-02-03-fgs-not-idle-exemption",
+          "title": "前台服务和 Job 的准入各自判断",
+          "decision": "merge",
+          "reason": "FGS存活不自动放行Job/网络的并行准入关系与FGS类型时长、Jobruntime两套独立预算合为一张，保留Android16适用范围和非Doze豁免。",
+          "original_line": 135,
+          "heading": "#### Doze 与前台服务",
+          "replacement_id": "ed11-02-fgs-and-job-independent-gates"
+        },
+        {
+          "original_id": "ch11-02-04-wakelock-owner",
+          "title": "持锁区间与业务所有者对齐",
+          "decision": "keep",
+          "reason": "受控业务开始/结束与WakeLock持有、取消失败finally/timeout及Doze/LPS实际有效性双轨，明确客户端held不等系统/内核blocker，独立于FGS与Job准入。",
+          "original_line": 148,
+          "heading": "### WakeLock 的适用窗口"
+        },
+        {
+          "original_id": "ch11-02-05-constraints-and-stop",
+          "title": "约束检查会影响开始和执行中的工作",
+          "decision": "keep",
+          "reason": "Work开始前业务约束/正常调度与运行中约束失效可停止的动态条件链，非单次enqueue流程；示例充电AND不计费不等WiFi，仍需处理取消与重复。",
+          "original_line": 187,
+          "heading": "#### 约束表达的是业务条件"
+        },
+        {
+          "original_id": "ch11-02-07-period-flex",
+          "title": "周期窗口给系统选择执行时机",
+          "decision": "keep",
+          "reason": "不同周期尾部flex候选窗口的真实时间结构，区分15min请求下限、相位和约束/quota可延后；不能被通用Job条件链替代。",
+          "original_line": 202,
+          "heading": "#### 周期、加急与唯一工作"
+        },
+        {
+          "original_id": "ch11-02-06-keep-running",
+          "title": "KEEP 会忽略同名排队中或运行中的新请求",
+          "decision": "merge",
+          "reason": "KEEP同名ENQUEUED/RUNNING忽略新request及input、无待运行链登记两分支，与消息持久状态/游标/幂等恢复和低频兜底合为一条可靠性关系。",
+          "original_line": 206,
+          "heading": "#### 周期、加急与唯一工作",
+          "replacement_id": "ed11-02-unique-work-and-message-recovery"
+        },
+        {
+          "original_id": "ch11-02-08-adpf-scheduler",
+          "title": "排队与线程能效提示位于两个环节",
+          "decision": "remove",
+          "reason": "Work排队与ADPF运行线程两卡逐项复述210单个完整段及215设备采纳/非绑定CPU边界，没有真实反馈或耗时；原接口/API35/AB验证全文保留。",
+          "original_line": 212,
+          "heading": "#### 周期、加急与唯一工作"
+        },
+        {
+          "original_id": "ch11-02-09-independent-budgets",
+          "title": "FGS 类型时长和 Job 配额是两套预算",
+          "decision": "merge",
+          "reason": "FGS按类型/前后台条件时长与Job按自身类型/bucket/状态runtime独立两轨，接入FGS/Job准入图，不能互转预算或由FGS剩余时长推Job可运行。",
+          "original_line": 227,
+          "heading": "#### Android 16 的 Job runtime quota",
+          "replacement_id": "ed11-02-fgs-and-job-independent-gates"
+        },
+        {
+          "original_id": "ch11-02-10-alarm-process-lifetime",
+          "title": "精确 Alarm 的形式决定交付寿命",
+          "decision": "keep",
+          "reason": "精确listener仅进程活期与进程外PendingIntent交付的实际接口选择分支，权限/重启/恢复条件不同；后面通用代次检查不替代该生命周期选择。",
+          "original_line": 251,
+          "heading": "#### 精确闹钟权限与例外"
+        },
+        {
+          "original_id": "ch11-02-11-alarm-three-axes",
+          "title": "精确、空闲交付与唤醒是三个独立选择",
+          "decision": "keep",
+          "reason": "Alarm精确性、allowwhileidle交付与WAKEUP三个相互独立轴，防止idle必唤醒/不限频的误读，权限限频不同状态量级原文保留。",
+          "original_line": 265,
+          "heading": "#### Doze 与 allow-while-idle"
+        },
+        {
+          "original_id": "ch11-02-12-fgs-three-gates",
+          "title": "FGS 声明、权限与启动资格分别修复",
+          "decision": "remove",
+          "reason": "类型声明、权限WIU、后台启动三卡逐项重排274-278三条异常与修复位置清单，类型/权限/资格不能替代的原文完整保留，未提供额外调用顺序或具体例子。",
+          "original_line": 280,
+          "heading": "### 前台服务的运行限制"
+        },
+        {
+          "original_id": "ch11-02-13-fgs-timeout-paths",
+          "title": "shortService 与累计类型走不同超时路径",
+          "decision": "keep",
+          "reason": "shortService独立ANR timer与dataSync/mediaProcessing按类型共享累计额度、超时crash三条路径，含回调/foreground重置等限制，不能合成同一种FGS结束。",
+          "original_line": 297,
+          "heading": "#### Android 14 与 Android 15 的超时"
+        },
+        {
+          "original_id": "ch11-02-14-audio-two-gates",
+          "title": "Android 17 后台音频先过基础门槛，再查 WIU",
+          "decision": "keep",
+          "reason": "Android17后台音频基础资格和target37额外WIU串联、alarmusage例外只豁免WIU的具体条件关系；按方法特权flag/override边界不可省。",
+          "original_line": 313,
+          "heading": "#### Android 17 后台音频"
+        },
+        {
+          "original_id": "ch11-02-15-location-quality",
+          "title": "定位 priority 是偏好，结果仍要验收",
+          "decision": "remove",
+          "reason": "产品容差→priority参数→验accuracy时间三框直接概括323-332四行priority用途表和非固定传感器/精度段，后面真实批量/owner/系统合并图保留；无实际数据验收例。",
+          "original_line": 334,
+          "heading": "### 位置服务：priority 与请求参数"
+        },
+        {
+          "original_id": "ch11-02-16-location-batch-clock",
+          "title": "采样时间与批量回调时间分开记录",
+          "decision": "keep",
+          "reason": "位置A/B/C各自采样和批量回调的两时钟轨道，明确interval期望、mininterval/跨批乱序与maxdelay2倍才可批量且不保证采用，独立于取消协议。",
+          "original_line": 360,
+          "heading": "#### 间隔、批量与生命周期"
+        },
+        {
+          "original_id": "ch11-02-17-location-owner",
+          "title": "请求随实际所有者结束",
+          "decision": "keep",
+          "reason": "UI页面结束移除与用户导航locationFGS可跨页面持续的两种实际所有者时序，保留权限/停止导航/撤销/服务结束取消；不能把Activity不可见统一当请求结束。",
+          "original_line": 367,
+          "heading": "#### 间隔、批量与生命周期"
+        },
+        {
+          "original_id": "ch11-02-18-geofence-events",
+          "title": "区域事件交给系统，避免短周期轮询",
+          "decision": "remove",
+          "reason": "定义围栏→Playservices维护→进入离开事件三框重排376-385完整事件契约/分钟级延迟/非硬件路径证明/权限段，没有实际硬件关系或时序；全部边界原文保留。",
+          "original_line": 378,
+          "heading": "#### Geofencing 的适用范围"
+        },
+        {
+          "original_id": "ch11-02-20-retry-classification",
+          "title": "重试先分类，再控制恢复成本",
+          "decision": "keep",
+          "reason": "网络瞬断、限流RetryAfter和参数/鉴权修复三类可恢复性分支，业务状态/幂等键与有界退避明确不同动作；outbox图仅复用分类结果不重画三类。",
+          "original_line": 400,
+          "heading": "#### 合并可延迟请求"
+        },
+        {
+          "original_id": "ch11-02-19-network-batching",
+          "title": "批量给无线链路留下空闲机会",
+          "decision": "keep",
+          "reason": "同业务完成量分散请求驻留和集中传输后空闲机会的双轨对照，解释批量时间结构而非固定tail/收益；交互即时路径与批次大小成本保留。",
+          "original_line": 406,
+          "heading": "#### 合并可延迟请求"
+        },
+        {
+          "original_id": "ch11-02-21-push-intent-version",
+          "title": "推送意图和持久恢复各自设计",
+          "decision": "remove",
+          "reason": "旧配置normal/high与v2预览消息意图两卡逐项重述413-422三段，持久恢复又由合图详述；EAP/默认GMS展示/不自动执行权限及游标全部保留。",
+          "original_line": 417,
+          "heading": "#### 推送替代固定轮询"
+        },
+        {
+          "original_id": "ch11-02-22-camera-async-close",
+          "title": "相机停止与关闭需要处理在途请求",
+          "decision": "keep",
+          "reason": "停止repeating、在途capture与sessionclose异步拆除/自有输出释放三轨，区分deviceclose直接丢弃请求且不等capture回调，真实资源同步条件不可由一般生命周期卡代替。",
+          "original_line": 436,
+          "heading": "#### Camera"
+        },
+        {
+          "original_id": "ch11-02-23-audio-release",
+          "title": "音频成本与用户会话一起收尾",
+          "decision": "remove",
+          "reason": "用户会话结束→播放器/焦点/mediaSession→WakeLock/FGS三步直接重排442-444两个完整段，无新分支或异步条件；可恢复中断/永久结束与offload/采样率依设备原文保留。",
+          "original_line": 446,
+          "heading": "#### Audio"
+        },
+        {
+          "original_id": "ch11-02-24-measurement-window",
+          "title": "复测窗口对齐业务、活动和能量",
+          "decision": "merge",
+          "reason": "受控操作/收尾与事件trace能量取证窗口合入三侧证据和功能验收总图，不在机制、案例开头和结尾重复画三个复测总流程。",
+          "original_line": 457,
+          "heading": "#### 建立可复现窗口",
+          "replacement_id": "ed11-02-aligned-evidence-and-validation"
+        },
+        {
+          "original_id": "ch11-02-25-triangulate-evidence",
+          "title": "同时建立发起方、系统决策和硬件证据",
+          "decision": "merge",
+          "reason": "App请求/回调/完成量、系统准入/所有权、硬件共享/并行能量三类独立证据接入同一窗口验收图，不把UID活动和整机能量互换。",
+          "original_line": 512,
+          "heading": "### 案例分析的共同步骤",
+          "replacement_id": "ed11-02-aligned-evidence-and-validation"
+        },
+        {
+          "original_id": "ch11-02-26-polling-loop",
+          "title": "无消息时轮询仍反复制造工作",
+          "decision": "keep",
+          "reason": "故障onStartCommand每次新建线程导致多轮询循环叠加的实际并行轨道，5s来自真实示例而非平台推荐；STARTSTICKY不保证可靠投递，持续通知不省掉成本。",
+          "original_line": 561,
+          "heading": "#### 故障代码"
+        },
+        {
+          "original_id": "ch11-02-27-message-recovery",
+          "title": "事件触发同步与可靠消息恢复分工",
+          "decision": "merge",
+          "reason": "消息触发→本地游标/待处理状态→KEEP两状态→Worker幂等恢复+低频兜底，与原7唯一调度合为一图，保留无新input合并/非实时/exactlyonce边界。",
+          "original_line": 605,
+          "heading": "#### 按业务时效选择机制",
+          "replacement_id": "ed11-02-unique-work-and-message-recovery"
+        },
+        {
+          "original_id": "ch11-02-28-pending-overlap",
+          "title": "Job 等待原因可同时累计",
+          "decision": "keep",
+          "reason": "同原生JobID/namespace中connectivity与quota累计时长及并集三轨，解释和大于总等待；成功取消重启清除、空Map不证明无延迟和ID异常保留。",
+          "original_line": 639,
+          "heading": "#### 调度限制与应用契约"
+        },
+        {
+          "original_id": "ch11-02-29-current-location-generation",
+          "title": "一次定位替换请求时取消旧请求并拒绝旧回调",
+          "decision": "merge",
+          "reason": "一次定位CancellationSignal+generation拒绝已排队旧回调时序与网络/Alarm相同结构合为一个双轨图，单列API30/公共FUSED使示例31+、null/缓存与位置验收。",
+          "original_line": 741,
+          "heading": "#### 把定位需求写成产品参数",
+          "replacement_id": "ed11-02-generation-guards-across-callback-apis"
+        },
+        {
+          "original_id": "ch11-02-30-provider-active-merge",
+          "title": "只有有效定位请求参与当前 provider 合并",
+          "decision": "merge",
+          "reason": "LocationProviderManager逐请求active判断、有效才合入provider/无效不驱动与其他客户端独立输入，接入BatterySaver模式与App热适配来源图。",
+          "original_line": 758,
+          "heading": "#### 系统端的检查链",
+          "replacement_id": "ed11-02-location-policy-and-active-provider"
+        },
+        {
+          "original_id": "ch11-02-31-battery-thermal-location",
+          "title": "Battery Saver 策略与 App 热适配来自不同输入",
+          "decision": "merge",
+          "reason": "系统BatterySaverhelper传locationmode与App监听Thermal按容差调整请求两个独立来源接入activeprovider图，明确没有自动把热状态换mode的公共链，也不假设当前UID独占GNSS。",
+          "original_line": 773,
+          "heading": "#### Battery Saver 与 Thermal 的分工",
+          "replacement_id": "ed11-02-location-policy-and-active-provider"
+        },
+        {
+          "original_id": "ch11-02-32-radio-state-vs-rrc",
+          "title": "Android 无线电开关状态与 RRC 驻留分层观察",
+          "decision": "keep",
+          "reason": "AndroidRadioHAL控制面RadioState/开关与modem网络RRC/DRX不同对象的对照，避免ON等于CONNECTED或通用mA/tail表，普通App不依赖setRadioPower优化。",
+          "original_line": 793,
+          "heading": "#### Android 与 modem 的分工"
+        },
+        {
+          "original_id": "ch11-02-33-outbox-race-recovery",
+          "title": "outbox 与调度之间的缝隙需要恢复入口",
+          "decision": "merge",
+          "reason": "业务先写库再enqueue非同事务、写后崩溃与Worker结束附近RUNNING KEEP忽略的新记录缝隙，接入outbox批量/确认/事务删除闭环，明确低频恢复独立入口。",
+          "original_line": 834,
+          "heading": "#### 使用持久化 outbox 合并可延迟上传",
+          "replacement_id": "ed11-02-outbox-scheduling-gaps-and-ack"
+        },
+        {
+          "original_id": "ch11-02-34-outbox-ack-idempotency",
+          "title": "确认、删除和幂等共同处理重复传输",
+          "decision": "merge",
+          "reason": "受限批次→服务器幂等提交确认→事务删除，未确认保留/有界恢复、确认后删除前崩溃会重发，与调度缝隙合成同一持久协议图。",
+          "original_line": 841,
+          "heading": "#### 使用持久化 outbox 合并可延迟上传",
+          "replacement_id": "ed11-02-outbox-scheduling-gaps-and-ack"
+        },
+        {
+          "original_id": "ch11-02-36-network-callback-generation",
+          "title": "主线程与代次检查共同限定 UI 回调",
+          "decision": "merge",
+          "reason": "API26mainHandler网络回调registered+generation、每轮新callback和onStop失效再注销，与定位/Alarm旧新会话双轨合图；onAvailable不是validated的边界单列。",
+          "original_line": 930,
+          "heading": "#### 对称释放",
+          "replacement_id": "ed11-02-generation-guards-across-callback-apis"
+        },
+        {
+          "original_id": "ch11-02-35-leak-work-energy",
+          "title": "从对象保留到耗电需要补足中间证据",
+          "decision": "remove",
+          "reason": "四步保留对象→继续回调→资源活动→修复复测逐项复制944-947紧邻四条证据清单，三侧验收已有合图；对象/RSS不换算能量、GC内核条件原文保留。",
+          "original_line": 939,
+          "heading": "#### 从泄漏到功耗的证据链"
+        },
+        {
+          "original_id": "ch11-02-37-profiling-anomaly",
+          "title": "异常触发器给线索，功耗结论仍需交叉取证",
+          "decision": "remove",
+          "reason": "核对开关/注册→可能异常产物→交叉取证三框逐段重述951单个完整段和956不保证每次泄漏heapdump限制；没有额外真实触发分支，原文tag/共享UID条件全部保留。",
+          "original_line": 953,
+          "heading": "#### 从泄漏到功耗的证据链"
+        },
+        {
+          "original_id": "ch11-02-38-idle-antipattern",
+          "title": "先按业务时效选通道，再接受 idle 边界",
+          "decision": "remove",
+          "reason": "推送/Work/精确Alarm三卡第三次重排执行机制表116-121、案例表568-573和967同一段；原文Doze忽略普通锁、限频及WAKEUP与精确性区别完整保留，不再画通道router。",
+          "original_line": 969,
+          "heading": "#### 长持锁与精确闹钟的组合"
+        },
+        {
+          "original_id": "ch11-02-39-listener-alarm-generation",
+          "title": "进程内 listener Alarm 跟随组件会话",
+          "decision": "merge",
+          "reason": "API37mainExecutor/elapsedRealtime listenerAlarm取消/替换使旧token失效，与定位和网络相同代次保护图合并；listener一次消费清空推进代次、活组件依赖与PI跨进程提醒独立边界保留。",
+          "original_line": 1024,
+          "heading": "#### Android 17 的 listener 型 idle Alarm",
+          "replacement_id": "ed11-02-generation-guards-across-callback-apis"
+        },
+        {
+          "original_id": "ch11-02-40-lps-effective-state",
+          "title": "LPS 从支持与启用到实际限制还需状态检查",
+          "decision": "keep",
+          "reason": "LPS支持/enabled→现场active→按UID/功能例外限制网络WakeLock的具体状态判断，不由Doze或FGS活着代替；timeout/维护配置原文保留。",
+          "original_line": 1033,
+          "heading": "#### Doze 与 Low Power Standby"
+        },
+        {
+          "original_id": "ch11-02-41-merge-semantic-gate",
+          "title": "后台任务合并先核对业务语义",
+          "decision": "merge",
+          "reason": "约束、时限、可见性、失败语义相同才共享队列，不同保留独立调度两分支，接入稳定JobInfo与持久化工作项的执行/确认/停止恢复图。",
+          "original_line": 1063,
+          "heading": "#### 问题",
+          "replacement_id": "ed11-02-semantic-merge-and-persisted-workitems"
+        },
+        {
+          "original_id": "ch11-02-42-persisted-job-workitem",
+          "title": "持久化工作项的排队、确认与业务幂等",
+          "decision": "merge",
+          "reason": "API34persistedextras非Intent、稳定JobInfo与清单保护→异步dequeue→成功completeWork循环、取空全确认系统自动结束不jobFinished，以及系统中止onStopJob可恢复重排合入语义准入。",
+          "original_line": 1107,
+          "heading": "#### 同约束工作使用一个 JobInfo",
+          "replacement_id": "ed11-02-semantic-merge-and-persisted-workitems"
+        },
+        {
+          "original_id": "ch11-02-43-quota-waiting-evidence",
+          "title": "等待由约束与系统政策共同解释",
+          "decision": "remove",
+          "reason": "分类→quota约束→pending/history/stats三框重复本节1118/1125两段、前面Job准入/预算合图和pending重叠专图；业务SLA不容等待须重选API、ID接口区别与统计清除条件保留。",
+          "original_line": 1120,
+          "heading": "#### App Standby 与等待原因"
+        },
+        {
+          "original_id": "ch11-02-44-case-validation",
+          "title": "修复收益须与功能完成度一起验证",
+          "decision": "merge",
+          "reason": "同条件多轮前后修复、请求→活动→能量链与成功/延迟/丢失重复恢复同时验收，接入同窗三侧证据图；下方跨案例判断表仍完整保留。",
+          "original_line": 1139,
+          "heading": "### 跨案例判断表",
+          "replacement_id": "ed11-02-aligned-evidence-and-validation"
+        }
+      ],
+      "sha256_after": "9e2dd85bb78de149990e1e9bf94b95048c0641723062a161c56a823ae0504918",
+      "new_diagrams": [
+        {
+          "id": "ed11-02-fgs-and-job-independent-gates",
+          "title": "同一 App 的 FGS 与 Job，准入和时间预算都分别判断",
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-02-fgs-and-job-independent-gates.svg",
+            "src/assets/diagrams/ch11/ed11-02-fgs-and-job-independent-gates.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-02-fgs-and-job-independent-gates",
+          "sources": [
+            "https://developer.android.com/training/monitoring-device-state/doze-standby",
+            "https://developer.android.com/about/versions/16/behavior-changes-all#job-quota-opt",
+            "https://developer.android.com/topic/performance/power/power-details",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java",
+            "https://developer.android.com/develop/background-work/services/fgs/timeout",
+            "本文冻结全文与对应公开API示例、业务协议和固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-02-03-fgs-not-idle-exemption",
+              "ch11-02-09-independent-budgets"
+            ],
+            "boundary": "轨道仅并行示意无时长比例、维护窗口SLA或共享预算。FGS按类型/权限/启动资格及类型时长；Job按适用约束、Doze/bucket/quota和调度。Android16起相关top-started及FGS并发Job受runtimequota，不由FGS存活或剩余时长推Job或网络放行。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-02-unique-work-and-message-recovery",
+          "title": "KEEP 只减少调度重复，消息恢复依靠持久状态与游标",
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-02-unique-work-and-message-recovery.svg",
+            "src/assets/diagrams/ch11/ed11-02-unique-work-and-message-recovery.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-02-unique-work-and-message-recovery",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.12.0/work-runtime-2.12.0-sources.jar",
+            "https://developer.android.com/reference/androidx/work/ExistingWorkPolicy",
+            "https://firebase.google.com/docs/cloud-messaging/send/v2-api",
+            "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work",
+            "本文冻结全文与对应公开API示例、业务协议和固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-02-06-keep-running",
+              "ch11-02-27-message-recovery"
+            ],
+            "boundary": "依正文WorkManager2.12.0：同名ENQUEUED/RUNNING忽略新request及其input；保留旧Worker不保证看见新业务记录或立即执行，仍受约束/quota。消息可重复延迟丢失，先持久化业务游标/待处理状态，再通过Worker幂等恢复，低频兜底；15min下限、START_STICKY和推送都非实时/exactlyonce保证。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-02-aligned-evidence-and-validation",
+          "title": "在同一业务窗口对齐应用、系统、硬件证据并验收功能",
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-02-aligned-evidence-and-validation.svg",
+            "src/assets/diagrams/ch11/ed11-02-aligned-evidence-and-validation.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-02-aligned-evidence-and-validation",
+          "sources": [
+            "https://developer.android.com/topic/performance/power/power-details",
+            "https://developer.android.com/topic/performance/power/setup-battery-historian",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java",
+            "本文冻结全文与对应公开API示例、业务协议和固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-02-24-measurement-window",
+              "ch11-02-25-triangulate-evidence",
+              "ch11-02-44-case-validation"
+            ],
+            "boundary": "只示测试与取证窗口关系，不执行adb、不伪造样本或收益。固定设备build脚本负载信号亮度温度供电，多轮对照；单dumpsys是快照，缺轨不等无活动，Historian兼容另查。UID活动与rail/仪表整机能量不互换，系统并行/共享成本保留。成功率/延迟/丢失重复恢复必须与同单位窗口能量共验。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-02-generation-guards-across-callback-apis",
+          "title": "定位、网络与 listener Alarm 共用代次保护，各自保留 API 条件",
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-02-generation-guards-across-callback-apis.svg",
+            "src/assets/diagrams/ch11/ed11-02-generation-guards-across-callback-apis.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-02-generation-guards-across-callback-apis",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/location/java/android/location/LocationManager.java",
+            "https://developer.android.com/reference/android/location/LocationManager",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CancellationSignal.java",
+            "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java",
+            "https://developer.android.com/reference/android/net/ConnectivityManager",
+            "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java",
+            "https://developer.android.com/reference/android/app/AlarmManager",
+            "本文冻结全文与对应公开API示例、业务协议和固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-02-29-current-location-generation",
+              "ch11-02-36-network-callback-generation",
+              "ch11-02-39-listener-alarm-generation"
+            ],
+            "boundary": "三个独立业务示例，不要求三API同时调用。本文均在主线程操作/回调，取消/替换使旧generation失效但不假设撤回已排队Runnable。LocationAPI30但FUSED_PROVIDER示例31+，CancellationSignal+token；Network26+mainHandler/registered+token，onAvailable非validated；Alarm37mainExecutor/elapsedRealtimeWakeup，listener+token且一次消费清空listener推进代次，不跨进程重建App。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-02-location-policy-and-active-provider",
+          "title": "省电策略与 App 热适配先影响请求，active registration 才参与合并",
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-02-location-policy-and-active-provider.svg",
+            "src/assets/diagrams/ch11/ed11-02-location-policy-and-active-provider.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-02-location-policy-and-active-provider",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/location/java/android/location/LocationManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java",
+            "本文冻结全文与对应公开API示例、业务协议和固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-02-30-provider-active-merge",
+              "ch11-02-31-battery-thermal-location"
+            ],
+            "boundary": "固定r1职责图非完整逐行算法。BatterySaver通过系统helper模式更新registration，Thermal不自动换成locationpower-save mode，App若按容差适配才改自身请求且避免高频轮询。权限/AppOps/用户设置/UID状态/后台资格/电源/节流和豁免须看具体分支，只有active参与当前provider合并。其他客户端可独立驱动，同UID无回调不等整机GNSS关或零能量。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-02-outbox-scheduling-gaps-and-ack",
+          "title": "持久化 outbox 的调度恢复、服务端确认与事务删除形成闭环",
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-02-outbox-scheduling-gaps-and-ack.svg",
+            "src/assets/diagrams/ch11/ed11-02-outbox-scheduling-gaps-and-ack.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-02-outbox-scheduling-gaps-and-ack",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.12.0/work-runtime-2.12.0-sources.jar",
+            "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work",
+            "本文冻结全文与对应公开API示例、业务协议和固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-02-33-outbox-race-recovery",
+              "ch11-02-34-outbox-ack-idempotency"
+            ],
+            "boundary": "业务协议图非WorkManager exactlyonce。写库与enqueue非同事务；写后崩溃、结束附近新记录碰RUNNING KEEP都可漏调度，低频扫描恢复。Worker有界批次与执行额度，未空按可恢复性retry；确认后事务删除/标记，确认后删除前崩溃仍会重发须服务端稳定业务幂等键。交互请求另即时路径，网络错误分类/超时/配额仍适用。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-02-semantic-merge-and-persisted-workitems",
+          "title": "同契约工作共享稳定 JobInfo，再按工作项确认与恢复",
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-02-semantic-merge-and-persisted-workitems.svg",
+            "src/assets/diagrams/ch11/ed11-02-semantic-merge-and-persisted-workitems.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-02-semantic-merge-and-persisted-workitems",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobInfo.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobWorkItem.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java",
+            "https://developer.android.com/reference/android/app/job/JobParameters#dequeueWork()",
+            "本文冻结全文与对应公开API示例、业务协议和固定r1实现边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-02-41-merge-semantic-gate",
+              "ch11-02-42-persisted-job-workitem"
+            ],
+            "boundary": "条件/时限/可见性/失败语义不同保留独立调度。API34 extras可持久化而Intent不可；setPersisted需RECEIVE_BOOT_COMPLETED且JobService BIND_JOB_SERVICE保护，UNMETERED不等WiFi。异步dequeue非空幂等处理成功completeWork再取；null且取出均确认系统结束不要jobFinished，避免并发入队丢失。中止停止工作按业务可恢复性onStopJob true重排未完成，业务存储才是真相；稳定JobInfo避免变参导致stop/restart，150/频率/quota限制继续。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T12:38:52.933400+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 44,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a112/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a112/visual-review.json",
+      "retired_diagrams": [
+        "ch11-02-01-request-to-hardware",
+        "ch11-02-02-execution-contract",
+        "ch11-02-03-fgs-not-idle-exemption",
+        "ch11-02-06-keep-running",
+        "ch11-02-08-adpf-scheduler",
+        "ch11-02-09-independent-budgets",
+        "ch11-02-12-fgs-three-gates",
+        "ch11-02-15-location-quality",
+        "ch11-02-18-geofence-events",
+        "ch11-02-21-push-intent-version",
+        "ch11-02-23-audio-release",
+        "ch11-02-24-measurement-window",
+        "ch11-02-25-triangulate-evidence",
+        "ch11-02-27-message-recovery",
+        "ch11-02-29-current-location-generation",
+        "ch11-02-30-provider-active-merge",
+        "ch11-02-31-battery-thermal-location",
+        "ch11-02-33-outbox-race-recovery",
+        "ch11-02-34-outbox-ack-idempotency",
+        "ch11-02-35-leak-work-energy",
+        "ch11-02-36-network-callback-generation",
+        "ch11-02-37-profiling-anomaly",
+        "ch11-02-38-idle-antipattern",
+        "ch11-02-39-listener-alarm-generation",
+        "ch11-02-41-merge-semantic-gate",
+        "ch11-02-42-persisted-job-workitem",
+        "ch11-02-43-quota-waiting-evidence",
+        "ch11-02-44-case-validation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-112/retired-assets.json"
     },
     {
       "index": 113,
@@ -15920,9 +17141,512 @@
       "before_count": 33,
       "before_all_images": 33,
       "sha256_before": "b1e89b92c5830f634e3f13c2b65f7e139a6770f8f98cef903187a4d7c6679de1",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 16,
+      "decisions": [
+        {
+          "original_id": "ch11-03-02-observe-layers",
+          "title": "同一问题在不同层级留下不同记录",
+          "decision": "remove",
+          "reason": "开篇App/Framework/NativeKernel三框概括62-64完整边界段，与后文诊断四层表和原27逐层定位图重复；held/实际有效性合图及CPU汇总/AIDL/内核映射合图保留真实关系，不再开篇第三次总览。",
+          "original_line": 66,
+          "heading": "# WakeLock 机制与功耗分析"
+        },
+        {
+          "original_id": "ch11-03-01-sleep-layers",
+          "title": "单核 idle、整机挂起与硬件唤醒分开理解",
+          "decision": "remove",
+          "reason": "CPUidle/system suspend/硬件wakeup三卡逐项重排82-84三条完整定义，后面精确ASCII和3有效锁/线程idle轨道已经解释作用位置；所有forceSuspend/非固定频率范围保留。",
+          "original_line": 77,
+          "heading": "## 11.3.1 WakeLock 阻止的是哪一层睡眠"
+        },
+        {
+          "original_id": "ch11-03-03-idle-with-lock",
+          "title": "持 partial 锁期间 CPU 仍可空闲",
+          "decision": "keep",
+          "reason": "有效partial区间和线程计算/idle/继续工作的真实双轨区别，说明持锁仍可CPUidle且频繁短锁会打碎正常挂起机会；不是CPU忙碌或能量数值证明。",
+          "original_line": 114,
+          "heading": "### WakeLock level（级别）"
+        },
+        {
+          "original_id": "ch11-03-04-api-before-lock",
+          "title": "先选择工作所有者，再判断是否需要手工持锁",
+          "decision": "remove",
+          "reason": "专用API/亮屏/自定义工作三卡摘要123-132八行代持所有者表、134FGS条件和96窗口亮屏段；原表更完整，API代持仅执行窗/非无限配额等限制全部保留。",
+          "original_line": 136,
+          "heading": "## 11.3.2 申请之前先检查专用 API"
+        },
+        {
+          "original_id": "ch11-03-05-reference-count",
+          "title": "引用计数锁要平衡每个所有者的申请",
+          "decision": "merge",
+          "reason": "默认引用计数两acquire两release、普通内部计数1→2→1→0与nonref错误共享并列对照，保留无自动超时前提及r1 internal/external区别，配对不能由held判断替代。",
+          "original_line": 149,
+          "heading": "### 引用计数",
+          "replacement_id": "ed11-03-reference-count-and-shared-nonref"
+        },
+        {
+          "original_id": "ch11-03-06-synchronous-finally",
+          "title": "同步导出由本次调用持锁并统一收尾",
+          "decision": "merge",
+          "reason": "工作线程独占局部nonref同步export真返回后finally释放，与异步成功失败取消超时销毁同owner真实完成边界合图，不能把发起异步的函数返回当完成。",
+          "original_line": 156,
+          "heading": "### 引用计数",
+          "replacement_id": "ed11-03-sync-and-async-release-owner"
+        },
+        {
+          "original_id": "ch11-03-07-nonref-owner",
+          "title": "非引用计数锁不能被重叠任务共享",
+          "decision": "merge",
+          "reason": "两个任务共享nonref后任意release解除全部保护的故障时序，与引用计数正常配对放同图，说明isHeld不修复owner且原局部示例不能共享；两组轨道不共用时间轴。",
+          "original_line": 190,
+          "heading": "### 引用计数",
+          "replacement_id": "ed11-03-reference-count-and-shared-nonref"
+        },
+        {
+          "original_id": "ch11-03-08-stable-tag",
+          "title": "稳定标签与业务请求 ID 分开保存",
+          "decision": "remove",
+          "reason": "固定tag→日志业务ID→聚合三框直接复述199-204四条稳定tag规则与高基数/PII段，以及594-596故障说明；没有实际标签样例或不同聚合结果，完整正文保留。",
+          "original_line": 206,
+          "heading": "### Tag"
+        },
+        {
+          "original_id": "ch11-03-09-worksource-permission",
+          "title": "持有者与被归因方可能不同",
+          "decision": "merge",
+          "reason": "空/无归因WorkSource归一null、含归因需UPDATE_DEVICE_STATS两分支接入PMS保存owner/WorkSource→Notifier→BatteryStats，区分持有方、归因UID和nativePID。",
+          "original_line": 215,
+          "heading": "### WorkSource",
+          "replacement_id": "ed11-03-worksource-and-notifier-attribution"
+        },
+        {
+          "original_id": "ch11-03-10-held-enabled-events",
+          "title": "客户端 held 与服务端启停事件各有时间",
+          "decision": "merge",
+          "reason": "客户端held与服务端生效/禁用/恢复/释放双轨接入PMS逐锁条件及逻辑通知图；enabledfalse正常release/策略禁用、异步非原子快照、监听不替释放均保留。",
+          "original_line": 237,
+          "heading": "### held 与 enabled",
+          "replacement_id": "ed11-03-held-policy-and-logical-events"
+        },
+        {
+          "original_id": "ch11-03-11-binder-lifetime",
+          "title": "Binder death 只能清理进程死亡这一类故障",
+          "decision": "keep",
+          "reason": "Binder token正常ownerrelease与客户端进程死亡清理的不同分支；进程仍活但业务泄漏不能由death机制判断，独立于保护timeout或PMS逻辑disable。",
+          "original_line": 264,
+          "heading": "### PowerManager.WakeLock 到 PowerManagerService"
+        },
+        {
+          "original_id": "ch11-03-12-notifier-attribution",
+          "title": "事件通知与统计按 owner 和 WorkSource 组织",
+          "decision": "merge",
+          "reason": "PMS token/flags/owner/WorkSource→Notifier实际/逻辑事件→BatteryStats UIDtag归因接入WorkSource权限图；不能数Apprelease代全部逻辑事件或视归因记录为硬件电表。",
+          "original_line": 271,
+          "heading": "### PowerManager.WakeLock 到 PowerManagerService",
+          "replacement_id": "ed11-03-worksource-and-notifier-attribution"
+        },
+        {
+          "original_id": "ch11-03-13-pms-disable-gates",
+          "title": "PMS 是否尊重锁由多类状态共同决定",
+          "decision": "merge",
+          "reason": "WorkSourcecached、ownerfrozen、NO_CACHED、deep/配置light和allowlists、LPS/强制全局/电源组类别并入held/disabled变化图，不把类别画成固定全AND或由bucket单独推出有效性。",
+          "original_line": 280,
+          "heading": "### PowerManagerService 会禁用已申请的锁",
+          "replacement_id": "ed11-03-held-policy-and-logical-events"
+        },
+        {
+          "original_id": "ch11-03-14-logical-notification",
+          "title": "策略禁用会发逻辑通知，客户端可仍 held",
+          "decision": "merge",
+          "reason": "disabled变化才逻辑release/acquire通知与DIRTY/summary重算、仍held可恢复生效接入同一图，区分应用方法调用与服务端逻辑转换。",
+          "original_line": 295,
+          "heading": "### PowerManagerService 会禁用已申请的锁",
+          "replacement_id": "ed11-03-held-policy-and-logical-events"
+        },
+        {
+          "original_id": "ch11-03-15-cpu-blocker-aggregation",
+          "title": "CPU 锁汇总之后还有其他 blocker",
+          "decision": "merge",
+          "reason": "多CPU需求保留PMS token/UID/tag后汇总为WAKE_LOCK_CPU及PowerManagerService.WakeLocks，与AIDL桥接和其他native计数输入合图，释放这一个blocker不等全局0。",
+          "original_line": 304,
+          "heading": "### 多把 App 锁会汇总成一个 suspend blocker",
+          "replacement_id": "ed11-03-app-summary-native-counter-and-kernel"
+        },
+        {
+          "original_id": "ch11-03-16-native-aidl-chain",
+          "title": "当前 native 桥接路径使用 AIDL",
+          "decision": "merge",
+          "reason": "PMSblocker→JNI→libpower按名缓存IWakeLock→当前AIDLSystemSuspend/native计数接入汇总图，这条PID是system_server而非每原App；历史HIDL/默认counter与兼容路径边界保留。",
+          "original_line": 322,
+          "heading": "### 多把 App 锁会汇总成一个 suspend blocker",
+          "replacement_id": "ed11-03-app-summary-native-counter-and-kernel"
+        },
+        {
+          "original_id": "ch11-03-17-wakeup-count-handshake",
+          "title": "自动挂起要依次跨过用户态与内核检查",
+          "decision": "keep",
+          "reason": "自动挂起循环读取wakeup_count、counter/client检查、互斥写回失败重来不写mem、成功才内核尝试的具体准入路径；握手成功不保证挂起，失败/短挂起回轮策略保留。",
+          "original_line": 335,
+          "heading": "### SystemSuspend 的 wakeup_count 握手"
+        },
+        {
+          "original_id": "ch11-03-18-userspace-abort-race",
+          "title": "临时 userspace-abort 覆盖申请锁时的竞态",
+          "decision": "keep",
+          "reason": "incSuspendCounter先临时userspaceabort覆盖等待互斥与增加counter，取得互斥加完才解除的真实竞态双轨；非每App长期同名kernelsource，默认/兼容边界保留。",
+          "original_line": 350,
+          "heading": "### SystemSuspend 的 wakeup_count 握手"
+        },
+        {
+          "original_id": "ch11-03-19-kernel-source-mapping",
+          "title": "App 标签和内核唤醒源没有逐把映射",
+          "decision": "merge",
+          "reason": "App多tag与默认用户counter汇总、驱动/兼容来源内核source非逐把映射接入CPU汇总与AIDL合图；独立内核来源框不伪造每App到kernel同名连线。",
+          "original_line": 368,
+          "heading": "### 用户态锁与内核 source 没有逐把映射",
+          "replacement_id": "ed11-03-app-summary-native-counter-and-kernel"
+        },
+        {
+          "original_id": "ch11-03-20-kernel-event-counters",
+          "title": "事件上报次数与激活次数分别累计",
+          "decision": "keep",
+          "reason": "同次wakeup_source_report_event的event_count每报增加与inactive→active才加active_count两种统计环节，非互斥分支；wakeup_count检查窗口近似且非成功唤醒数。",
+          "original_line": 398,
+          "heading": "### `/sys/kernel/debug/wakeup_sources`"
+        },
+        {
+          "original_id": "ch11-03-21-stats-window-overlap",
+          "title": "累计差值、当前段年龄与重叠区间分开读",
+          "decision": "keep",
+          "reason": "同基线累计差、active_since结束归零及多source重叠并集三轨，解释时长相加重复与单调时钟/墙钟差；prevent_suspend_time受autosleep限制非总真值。",
+          "original_line": 405,
+          "heading": "### `/sys/kernel/debug/wakeup_sources`"
+        },
+        {
+          "original_id": "ch11-03-22-power-policy-roles",
+          "title": "Doze、LPS 与 bucket 各自检查",
+          "decision": "remove",
+          "reason": "Doze/LPS/bucket三卡逐项摘要416-426四个完整策略段，前述PMS条件合图与正文解释更精确；LPSallowed禁用时可true、非公开持锁分钟预算/非统一开关完整保留。",
+          "original_line": 428,
+          "heading": "### App Standby"
+        },
+        {
+          "original_id": "ch11-03-23-delegated-locks",
+          "title": "没有直接 newWakeLock 也要回查实际工作 API",
+          "decision": "remove",
+          "reason": "三类平台代持卡重排442-449六行来源/行为/排查表与开篇代持API八行表；实际Alarminflight单独保留，FCMv2路径/库代持不自动豁免/Work停止配额原文不变。",
+          "original_line": 437,
+          "heading": "## 11.3.7 由系统或库代持的 WakeLock"
+        },
+        {
+          "original_id": "ch11-03-24-alarm-inflight-refcount",
+          "title": "Alarm 投递共享锁等最后一项完成",
+          "decision": "keep",
+          "reason": "两个广播inflight与全局共享alarm锁直到最后一项完成才释放三轨，onReceive返回/goAsyncfinish与directlistener分开，不能由客户端普通refcount图替代。",
+          "original_line": 457,
+          "heading": "### Alarm Receiver"
+        },
+        {
+          "original_id": "ch11-03-25-listener-alarm-owner",
+          "title": "Listener Alarm 的生存期与持久提醒分开",
+          "decision": "keep",
+          "reason": "API37listener当前组件内回调与进程外PI用户提醒的实际生命周期选择，API24setExact/权限例外/限频/WAKEUP边界保留；非保活通道。",
+          "original_line": 472,
+          "heading": "### Android 17 listener 型 allow-while-idle Alarm"
+        },
+        {
+          "original_id": "ch11-03-27-monitor-observation",
+          "title": "PowerMonitor 先确认描述类型，再比较有效差值",
+          "decision": "remove",
+          "reason": "measurement/consumer两卡直接复述488单个完整段及11.1交叉引用，未给具体monitor映射或差值；类型、共享、电压/单位范围、缓存/时戳有效性全文保留。",
+          "original_line": 490,
+          "heading": "### 四层证据表"
+        },
+        {
+          "original_id": "ch11-03-26-diagnostic-drilldown",
+          "title": "沿所有权和状态逐层定位",
+          "decision": "keep",
+          "reason": "业务owner日志→PMS tokenWorkSource/disabledsummary→SystemSuspend NativeKernel单位→同窗kernel/能量的实际排障路径，具体分层证据关系有用；开篇与结尾泛化总览删除。",
+          "original_line": 508,
+          "heading": "### 第一步：确认 Framework 记录"
+        },
+        {
+          "original_id": "ch11-03-28-perfetto-config-parser",
+          "title": "采集配置、解析结果和测量范围逐层验收",
+          "decision": "keep",
+          "reason": "真实采集配置→固定解析器按名称count0/1边界形成slice→丢失截断/同名验证→正确单位时间戳能量对齐流程，防止假定只有raw表或缺轨等零能量；不是泛化工具选择卡。",
+          "original_line": 559,
+          "heading": "### 第三步：Perfetto 对齐 kernel 与能量"
+        },
+        {
+          "original_id": "ch11-03-29-terminal-owner",
+          "title": "所有业务终态汇到同一个释放所有者",
+          "decision": "merge",
+          "reason": "成功/失败/取消/业务超时/销毁统一终态与真实完成/中止后同owner按锁模式配对，接入同步finally对照；Handler锁timeout不取消底层业务的区别不能省。",
+          "original_line": 572,
+          "heading": "### 异常路径没有 release",
+          "replacement_id": "ed11-03-sync-and-async-release-owner"
+        },
+        {
+          "original_id": "ch11-03-30-owner-mismatch",
+          "title": "组件生命周期不同会制造释放竞争",
+          "decision": "remove",
+          "reason": "Activity申请/页面结束与Service继续工作两轨是原7nonref共享owner故障的组件名称变体，579完整段已有说明，新的所有权/计数及同步异步合图保留核心机制；原段与跨组件取消要求不变。",
+          "original_line": 581,
+          "heading": "### acquire 与 release 所有者不同"
+        },
+        {
+          "original_id": "ch11-03-31-verify-energy-and-service",
+          "title": "修复要同时改变原因链并保住业务",
+          "decision": "remove",
+          "reason": "固定脚本→held有效blockerkernel→同窗能量+功能三框直接摘要600-611完整五项验证清单，四层证据/诊断图和开头测量范围已覆盖；不凭时长换能量的限制全文保留。",
+          "original_line": 602,
+          "heading": "### 只看持锁时长"
+        },
+        {
+          "original_id": "ch11-03-32-vitals-denominators",
+          "title": "质量指标使用两个不同的时间窗口与分母",
+          "decision": "merge",
+          "reason": "24h非豁免partial合计≥2h的单会话判定与28天>5%appsession不同窗口分母，接入实际API来源与指标豁免范围图，非系统quota或每用户时间比例。",
+          "original_line": 617,
+          "heading": "## 11.3.10 Google Play excessive partial wake lock",
+          "replacement_id": "ed11-03-vitals-scope-and-denominators"
+        },
+        {
+          "original_id": "ch11-03-33-vitals-exemption-scope",
+          "title": "指标豁免依实际 API 路径，标签不能授予豁免",
+          "decision": "merge",
+          "reason": "当前列明audio/location/JobScheduleruserinitiated真实来源豁免与普通手工/SDK/调度不能凭tag自授豁免，接入分母图；豁免不证零能耗/无限执行或DozeLPS放行，不推未公开算法。",
+          "original_line": 630,
+          "heading": "## 11.3.10 Google Play excessive partial wake lock",
+          "replacement_id": "ed11-03-vitals-scope-and-denominators"
+        }
+      ],
+      "sha256_after": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
+      "new_diagrams": [
+        {
+          "id": "ed11-03-reference-count-and-shared-nonref",
+          "title": "引用计数配对与共享 non-ref 提前解除，是两种不同的所有权问题",
+          "article": "src/part2-performance/ch11-power/03-wakelock.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-03-reference-count-and-shared-nonref.svg",
+            "src/assets/diagrams/ch11/ed11-03-reference-count-and-shared-nonref.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-03-reference-count-and-shared-nonref",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+            "https://developer.android.com/reference/android/os/PowerManager.WakeLock",
+            "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices",
+            "本文冻结全文及固定r1客户端计数、策略/归因、AIDL默认counter与线上质量指标边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-03-05-reference-count",
+              "ch11-03-07-nonref-owner"
+            ],
+            "boundary": "两组轨道独立非同一时间轴、无实测时长。普通引用计数例排除自动超时；r1 internal/external计数在超时释放时不同，调用方仍要完成释放配对。非引用计数任意release可解除此前acquire，isHeld不修复共享owner；原示例只适用独占局部锁。acquiretimeout非业务取消或系统quota。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a113/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-03-sync-and-async-release-owner",
+          "title": "同步 finally 与异步统一终态，都要跟随真正工作结束",
+          "article": "src/part2-performance/ch11-power/03-wakelock.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-03-sync-and-async-release-owner.svg",
+            "src/assets/diagrams/ch11/ed11-03-sync-and-async-release-owner.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-03-sync-and-async-release-owner",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+            "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices",
+            "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock",
+            "https://developer.android.com/develop/background-work/background-tasks/persistent",
+            "本文冻结全文及固定r1客户端计数、策略/归因、AIDL默认counter与线上质量指标边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-03-06-synchronous-finally",
+              "ch11-03-29-terminal-owner"
+            ],
+            "boundary": "正文同步示例工作线程独占nonref局部锁，export必须真同步完成才返回，finally只检查并释放自己的锁。异步提交后函数返回不能据此提前释放，所有终态由同owner先确定真实完成/中止并按模式配对。Handler锁保护timeout不是严格实时业务deadline也不取消业务；复杂跨进程/长生命周期评估调度API。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a113/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-03-worksource-and-notifier-attribution",
+          "title": "WorkSource 的权限与 owner 信息如何进入归因通知",
+          "article": "src/part2-performance/ch11-power/03-wakelock.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-03-worksource-and-notifier-attribution.svg",
+            "src/assets/diagrams/ch11/ed11-03-worksource-and-notifier-attribution.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-03-worksource-and-notifier-attribution",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/Notifier.java",
+            "本文冻结全文及固定r1客户端计数、策略/归因、AIDL默认counter与线上质量指标边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-03-09-worksource-permission",
+              "ch11-03-12-notifier-attribution"
+            ],
+            "boundary": "固定r1。WAKE_LOCK基础权限仍需；非null且含归因内容WorkSource校验UPDATE_DEVICE_STATS，空归一null。通过权限后PMS保存token/flags/owner/WorkSource，按真实有效性触发Notifier相应通知，逻辑启停可更新统计，不是只数Apprelease。普通App不能伪造转移成本；BatteryStats活动非硬件电表，归因UID、持有方和native调用PID不同。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a113/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-03-held-policy-and-logical-events",
+          "title": "客户端仍 held 时，PMS 可以禁用、通知并重新启用同一把锁",
+          "article": "src/part2-performance/ch11-power/03-wakelock.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-03-held-policy-and-logical-events.svg",
+            "src/assets/diagrams/ch11/ed11-03-held-policy-and-logical-events.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-03-held-policy-and-logical-events",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/Notifier.java",
+            "https://developer.android.com/reference/android/os/PowerManager.WakeLockStateListener",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/LowPowerStandbyController.java",
+            "本文冻结全文及固定r1客户端计数、策略/归因、AIDL默认counter与线上质量指标边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-03-10-held-enabled-events",
+              "ch11-03-13-pms-disable-gates",
+              "ch11-03-14-logical-notification"
+            ],
+            "boundary": "固定r1逐锁分支依类型/UID/procstate，不是全部条件固定AND。WorkSourcecached/ownerfrozen/NO_CACHED、deep或配置light、allowlists、LPS及全局/电源组force条件决定disabled。仅disabled转换时逻辑release/acquire并DIRTY/重算summary，不是客户端对应调用。enabledfalse也可正常release；监听异步事件与回调时held非原子，移除监听不撤回已排队事件，监听不替释放。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a113/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-03-app-summary-native-counter-and-kernel",
+          "title": "多把 App 锁汇总后走 AIDL，内核源按独立来源解释",
+          "article": "src/part2-performance/ch11-power/03-wakelock.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-03-app-summary-native-counter-and-kernel.svg",
+            "src/assets/diagrams/ch11/ed11-03-app-summary-native-counter-and-kernel.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-03-app-summary-native-counter-and-kernel",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+            "https://android.googlesource.com/platform/system/hardware/interfaces/+/refs/tags/android-17.0.0_r1/suspend/aidl/default/SystemSuspend.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_power_PowerManagerService.cpp",
+            "https://android.googlesource.com/platform/hardware/libhardware_legacy/+/refs/tags/android-17.0.0_r1/power.cpp",
+            "https://android.googlesource.com/platform/system/hardware/interfaces/+/refs/tags/android-17.0.0_r1/suspend/aidl/default/SystemSuspendAidl.cpp",
+            "https://android.googlesource.com/platform/system/hardware/interfaces/+/refs/tags/android-17.0.0_r1/suspend/aidl/android/system/suspend/ISystemSuspend.aidl",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/power/wakelock.c",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c",
+            "本文冻结全文及固定r1客户端计数、策略/归因、AIDL默认counter与线上质量指标边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-03-15-cpu-blocker-aggregation",
+              "ch11-03-16-native-aidl-chain",
+              "ch11-03-19-kernel-source-mapping"
+            ],
+            "boundary": "固定r1默认counter路径。PMS保留token/UID/tag，多有效CPU需求汇总为PowerManagerService.WakeLocks；JNI→libpower按名缓存IWakeLock→AIDLSystemSuspend创建native锁，这条调用PID为system_server。releaseOnce/析构配对减计数，显示/启动/其他进程native锁也参与全局counter，释放CPUblocker非全局0。kernel驱动/兼容接口和短时userspaceabort不同，不逐App同名映射；关闭counter路径才按名兼容wake_lock。归零仍须auto/client/握手/内核实际检查。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a113/change-proof.json"
+          }
+        },
+        {
+          "id": "ed11-03-vitals-scope-and-denominators",
+          "title": "先核对质量指标范围，再分别解释 24 小时与 28 天分母",
+          "article": "src/part2-performance/ch11-power/03-wakelock.md",
+          "assets": [
+            "src/assets/diagrams/ch11/ed11-03-vitals-scope-and-denominators.svg",
+            "src/assets/diagrams/ch11/ed11-03-vitals-scope-and-denominators.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed11-03-vitals-scope-and-denominators",
+          "sources": [
+            "https://developer.android.com/google/play/vitals/excessive-wakelock",
+            "https://developer.android.com/blog/posts/raising-the-bar-on-battery-performance-excessive-partial-wake-locks-metric-is-now-out-of-beta",
+            "https://developer.android.com/blog/posts/battery-technical-quality-enforcement-is-here-how-to-optimize-common-wake-lock-use-cases",
+            "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls",
+            "https://developer.android.com/develop/background-work/background-tasks/awake",
+            "本文冻结全文及固定r1客户端计数、策略/归因、AIDL默认counter与线上质量指标边界"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-28",
+          "editorial_merge": {
+            "merged_from": [
+              "ch11-03-32-vitals-denominators",
+              "ch11-03-33-vitals-exemption-scope"
+            ],
+            "boundary": "仅依本文已核对的当前指标范围：后台或FGS的非豁免partial合计24h≥2h；28天超过5%app sessions命中可能影响可见性。当前豁免audio/location/JobScheduler userinitiated来源，不凭tag自己认定；不推定平台未公开合并/采样算法。豁免非零耗电/无限执行/DozeLPS豁免，2h非系统API配额，5%非每用户时间比例。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a113/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-28T12:47:12.445697+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 33,
+        "contexts_actually_viewed": 8,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a113/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a113/visual-review.json",
+      "retired_diagrams": [
+        "ch11-03-01-sleep-layers",
+        "ch11-03-02-observe-layers",
+        "ch11-03-04-api-before-lock",
+        "ch11-03-05-reference-count",
+        "ch11-03-06-synchronous-finally",
+        "ch11-03-07-nonref-owner",
+        "ch11-03-08-stable-tag",
+        "ch11-03-09-worksource-permission",
+        "ch11-03-10-held-enabled-events",
+        "ch11-03-12-notifier-attribution",
+        "ch11-03-13-pms-disable-gates",
+        "ch11-03-14-logical-notification",
+        "ch11-03-15-cpu-blocker-aggregation",
+        "ch11-03-16-native-aidl-chain",
+        "ch11-03-19-kernel-source-mapping",
+        "ch11-03-22-power-policy-roles",
+        "ch11-03-23-delegated-locks",
+        "ch11-03-27-monitor-observation",
+        "ch11-03-29-terminal-owner",
+        "ch11-03-30-owner-mismatch",
+        "ch11-03-31-verify-energy-and-service",
+        "ch11-03-32-vitals-denominators",
+        "ch11-03-33-vitals-exemption-scope"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-113/retired-assets.json"
     },
     {
       "index": 114,
@@ -17630,8 +19354,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 49,
-  "next_article": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+  "reviewed_articles": 52,
+  "next_article": "src/part2-performance/ch11-power/04-bluetooth-scan-connection-power.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -17641,7 +19365,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-28T12:21:25.866239+08:00",
+  "updated_at": "2026-10-28T12:47:12.445697+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
@@ -17686,6 +19410,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+      "registered_sha256": "934108b65efab25cf4221b051f4384878cf761a5d7cab5ac193a52fe8d1b647d",
+      "observed_sha256": "37ff3f623cd7f6653ae0c2c49f9cc9601a72a36b4cc08e5d093cd99d770cf32c",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "registered_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
       "observed_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
@@ -17693,9 +19424,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 1458,
-  "reviewed_placements_after": 772,
-  "net_removed_placements": 686,
+  "reviewed_placements_before": 1581,
+  "reviewed_placements_after": 829,
+  "net_removed_placements": 752,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
