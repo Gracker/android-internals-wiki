@@ -10814,6 +10814,29 @@
       "summary": "相关章节将 Perfetto 误指向第 13 章",
       "type": "wrong-cross-reference",
       "updated_at": "2026-10-28T22:41:21.689701+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "close_note": "已删除将退出线程对象引用等同于存活原生线程的错误清单项；改为仍在运行的 HandlerThread/线程池工作线程，并区分 ThreadLocal 对象持有、Java detached pthread 栈回收和 native joinable 线程收尾。Android 17 固定标签下 thread.cc、pthread_exit.cpp、pthread_join.cpp、pthread_detach.cpp、ThreadLocal.java、ThreadPoolExecutor.java 与 HandlerThread.java 已核对；目标元数据、SUMMARY 链接及作用域 diff 检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261029-183520-idle-audit-91863483",
+      "created_at": "2026-10-29T18:40:00.156875+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261029-183520-idle-audit-91863483",
+      "details": "原文将“线程退出后仍被 ThreadLocal、HandlerThread 或线程池引用”列作线程数量失控原因。固定 Android 17 标签中，ART 创建 Java 平台线程时使用 PTHREAD_CREATE_DETACHED；Bionic 对 detached 线程在退出时拆除自管栈映射。ThreadLocal 值的长期持有应与仍存活的工作线程关联，已终止 Thread 对象的 Java 引用不等于仍有活跃 TID 或原生栈。应直接替换错误列表项并说明对象、工作线程与 native joinable 线程的回收边界。",
+      "id": "finding-ch23-3-terminated-thread-resource-lifetime",
+      "log_path": "logs/audit/2026-10-29-20261029-183520-idle-audit-91863483-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_exit.cpp",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadLocal.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "status": "verified",
+      "summary": "线程数量失控清单把已退出线程对象被引用误写成原生线程资源未释放",
+      "type": "lifecycle-mismatch",
+      "updated_at": "2026-10-29T18:42:20.892273+08:00"
     }
   ],
   "schema_version": 1
