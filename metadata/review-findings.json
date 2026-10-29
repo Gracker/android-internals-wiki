@@ -10924,6 +10924,90 @@
       "summary": "预测返回版本说明把平台 onBackPressed 写成不存在的 OnBackPressed 方法且遗漏 Android 16 回调 API flag",
       "type": "predictive-back-api-boundary",
       "updated_at": "2026-10-29T22:21:10.140284+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
+      "close_note": "已统一修正普通 fork、USAP、职责表和诊断清单的 PostFork 边界；源码顺序断言、正文旧错误清除检查与目标本地 gate 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "created_at": "2026-10-29T22:39:12.482926+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "details": "正文普通 fork 段、职责表和诊断清单将原生特化计入 PostFork。android-17.0.0_r1 的 Zygote.java:385-403、451-472 在 nativeForkAndSpecialize/nativeSpecializeAppProcess 返回后才开始 PostFork；JNI 中 SpecializeCommon 已先完成。必须同步修正所有同一事实的表述。",
+      "id": "aiw-ch01-03-postfork-native-boundary",
+      "log_path": "logs/audit/2026-10-29-20261029-223520-idle-audit-ce43abaa-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "frameworks/base/core/java/com/android/internal/os/Zygote.java:376-404,445-472,888-903 @ android-17.0.0_r1",
+        "frameworks/base/core/jni/com_android_internal_os_Zygote.cpp:2652-2663,2840-2858 @ android-17.0.0_r1",
+        "frameworks/base/core/java/com/android/internal/os/ZygoteConnection.java:507-534 @ android-17.0.0_r1"
+      ],
+      "status": "verified",
+      "summary": "PostFork 被误当成挂载、SELinux 等原生特化步骤的计时区间",
+      "type": "trace-attribution-error",
+      "updated_at": "2026-10-29T22:41:47.248150+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
+      "close_note": "已删除脱敏断言并写入 am_proc_start/30014、am_proc_bound/30010；与固定标签 logtags 逐项一致。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "created_at": "2026-10-29T22:39:12.542762+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "details": "android-17.0.0_r1 的 services/core/java/com/android/server/am/EventLogTags.logtags:19-25 明确列出 30010 am_proc_bound 与 30014 am_proc_start。删除无来源的脱敏断言，给出真实 tag，同时保留设备 logtags 与 events 采集条件。",
+      "id": "aiw-ch01-03-eventlog-tags-not-redacted",
+      "log_path": "logs/audit/2026-10-29-20261029-223520-idle-audit-ce43abaa-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags:19-25 @ android-17.0.0_r1"
+      ],
+      "status": "verified",
+      "summary": "公开 EventLogTags 中进程启动和绑定 tag 被错误描述为脱敏",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-29T22:41:47.306496+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
+      "close_note": "已按 ABI 修正父 Zygote 选择，并限定 Java App Zygote 表项、说明原生服务的 NATIVE_ZYGOTE_PROCESS 分支。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "created_at": "2026-10-29T22:39:12.600907+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "details": "WebViewZygote 和 Java AppZygote 把目标 ABI 传给 startChildZygote，随后 ZygoteProcess 按 ABI 选择主/次套接字。AppZygote.java 还会为原生服务选择 NATIVE_ZYGOTE_PROCESS 并跳过 Java preloadApp；表格与说明须限定这里讨论的 Java 隔离服务路径。",
+      "id": "aiw-ch01-03-child-zygote-parent-abi",
+      "log_path": "logs/audit/2026-10-29-20261029-223520-idle-audit-ce43abaa-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/webkit/WebViewZygote.java:105-127 @ android-17.0.0_r1",
+        "frameworks/base/core/java/android/os/AppZygote.java:214-251 @ android-17.0.0_r1",
+        "frameworks/base/core/java/android/os/ZygoteProcess.java:1075-1095,1272-1305 @ android-17.0.0_r1"
+      ],
+      "status": "verified",
+      "summary": "子 Zygote 的父进程被固定为主 Zygote，App Zygote 预加载范围未区分 Java 与原生服务",
+      "type": "implementation-scope-error",
+      "updated_at": "2026-10-29T22:41:47.363831+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
+      "close_note": "已修正混杂版本的链接文字与目标路径；正确 Android 13 源文件 HTTP 200，Gralloc 2/3/4 调用已验证。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "created_at": "2026-10-29T22:39:12.659224+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261029-223520-idle-audit-ce43abaa",
+      "details": "原始 Markdown 链接标签同时写 Android 14/13，目标路径以 GraphicBufferMapper.cpp（android-16.0.0_r1）结尾。修正为已实际读取并返回 HTTP 200 的 android-13.0.0_r1/libs/ui/GraphicBufferMapper.cpp；该文件 preloadHal 仅调用 Gralloc 2/3/4。",
+      "id": "aiw-ch01-03-mapper13-source-url",
+      "log_path": "logs/audit/2026-10-29-20261029-223520-idle-audit-ce43abaa-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-13.0.0_r1/libs/ui/GraphicBufferMapper.cpp"
+      ],
+      "status": "verified",
+      "summary": "Android 13 映射器参考链接混入 Android 14 标签及 Android 16 路径后缀",
+      "type": "malformed-source-link",
+      "updated_at": "2026-10-29T22:41:47.422831+08:00"
     }
   ],
   "schema_version": 1
