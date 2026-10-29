@@ -10837,6 +10837,93 @@
       "summary": "线程数量失控清单把已退出线程对象被引用误写成原生线程资源未释放",
       "type": "lifecycle-mismatch",
       "updated_at": "2026-10-29T18:42:20.892273+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已按 Android 17 IGraphicBufferProducer 与 Surface/BufferQueueProducer 源码分开槽所有权、复用 fence 和新写入 acquire fence；同步修正 Perfetto 诊断及对应检查表。没有将 dequeue slice 直接归因为 release fence，也未断言所有内部实现都不等待 fence。源码断言、中文门与本章 diff 检查通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261029-220519-e0b93a5e",
+      "created_at": "2026-10-29T22:10:39.738863+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261029-220519-e0b93a5e",
+      "details": "公共主线将 dequeueBuffer 描述为取得可写缓冲槽，Perfetto 诊断又将该调用等待直接归因于 release fence。Android 17 IGraphicBufferProducer.h:214-236 明确返回槽所有权和 fence，fence signal 前不得覆盖内容；Surface.cpp:752-863 返回 fenceFd，BufferQueueProducer.cpp:347-459 的槽等待与 fence 依赖应分开观察。修复生产阶段、诊断段及对应检查表，保留上游旧 EGL fence 条件分支的边界，不声称所有 dequeue 路径都绝不等待 fence。",
+      "id": "finding-f02aeafbda2b",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+      ],
+      "status": "fixed",
+      "summary": "dequeueBuffer 成功被等同于 buffer 已可覆写，诊断混淆缓冲槽等待与 release fence 等待",
+      "type": "buffer-readiness-boundary",
+      "updated_at": "2026-10-29T22:21:09.962741+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已补 target SDK37 下临时退出属性失效，明确按 DisplayContent.smallestScreenWidthDp>=600 判断，保留游戏、小屏和用户比例例外；补升级 target SDK 后按显示屏检查旋转、分屏、resize 和相机预览的入口。官方页面与 Android17 固定源码均已核对。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261029-220519-e0b93a5e",
+      "created_at": "2026-10-29T22:10:39.799682+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261029-220519-e0b93a5e",
+      "details": "大屏段未保留官方 Android 17 指南的迁移说明：target SDK 37 起，Android 16 的 PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY 临时退出失效。原文将 sw 概括为当前配置的最小可用宽度，容易被读成当前分屏窗口宽度；ActivityRecord.isUniversalResizeable 使用 DisplayContent.isLargeScreen，后者按该显示屏 Configuration.smallestScreenWidthDp>=600 判断。应保留游戏/用户选择/小屏例外，并给 display 与 target SDK 的排查入口。",
+      "id": "finding-8c06a57c0dfd",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatResizeOverrides.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 大屏适配遗漏临时退出属性失效及显示屏级 sw 判定边界",
+      "type": "version-and-display-scope",
+      "updated_at": "2026-10-29T22:21:10.020927+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "BufferTX 解释已限定到有效图形 buffer 的常规事务；零值仅代表已接入计数的路径，补充 Layer.gatherBufferInfoRenderCommandBuffer 尚未接入计数的源码边界。上游 TODO(b/485971052) 保留在证据中，没有误删为作者占位。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261029-220519-e0b93a5e",
+      "created_at": "2026-10-29T22:14:32.160092+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261029-220519-e0b93a5e",
+      "details": "SurfaceFlinger.cpp:5649-5666 只在有效 buffer 更新分支递增计数；Layer.cpp:1290-1305 的 gatherBufferInfoRenderCommandBuffer 路径保留 TODO(b/485971052)，明确尚未接入 pending buffer count trace。原文接近零即系统侧无这类积压的说明缺少路径前提，应限制到已接入计数的常规图形 buffer 事务，不能据零值排除全部服务端工作。该 TODO 是上游实现边界，须保留为证据，不当作作者占位清理。",
+      "id": "finding-f55b0e39d271",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+      ],
+      "status": "fixed",
+      "summary": "BufferTX 诊断未说明 Android 17 渲染命令路径尚未接入 pending buffer 计数",
+      "type": "trace-coverage-boundary",
+      "updated_at": "2026-10-29T22:21:10.078836+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已改为真实的平台 Activity.onBackPressed() 与 KeyEvent.KEYCODE_BACK 事件分发，补 OS/target SDK 双条件；明确两个方法所属类，以及 Android16 r1 的 predictive_back_system_override_callback 注解到 Android17 r1 移除注解的边界。Android15 API 文本无该类，16/17 签名已逐项核对。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261029-220519-e0b93a5e",
+      "created_at": "2026-10-29T22:20:05.538856+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261029-220519-e0b93a5e",
+      "details": "Android 16 官方目标版本变更说明规定 target API36+ 且运行于 Android16+ 时平台不再调用 onBackPressed，也不再分发 KEYCODE_BACK，不是两项 API 调用被忽略。current-16.txt:63057-63059 的 SystemOnBackInvokedCallbacks 两个方法带 predictive_back_system_override_callback；current-17.txt:63953-63955 已移除该注解。应修正平台方法名与事件方向，并保留历史功能开关边界。",
+      "id": "finding-2b991dc3b513",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/16/behavior-changes-16?hl=en",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/api/current.txt",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt"
+      ],
+      "status": "fixed",
+      "summary": "预测返回版本说明把平台 onBackPressed 写成不存在的 OnBackPressed 方法且遗漏 Android 16 回调 API flag",
+      "type": "predictive-back-api-boundary",
+      "updated_at": "2026-10-29T22:21:10.140284+08:00"
     }
   ],
   "schema_version": 1
