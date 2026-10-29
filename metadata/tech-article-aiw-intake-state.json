@@ -6608,6 +6608,66 @@
       "status": "appended",
       "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
     },
+    "source/juejin-android/2026-10-30-76949678-Kotlin Toolchain 0.1.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "26b08d6e06e9acd7",
+      "last_appended": "2026-10-30T05:25:20.231684+08:00",
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793305330.2809198,
+      "score": 10,
+      "sha256": "e4aaab642ea599e66ce0c412dad2e8168fa9de4ddabf4f882910ada86646cc1a",
+      "size": 9781,
+      "status": "appended",
+      "title": "Kotlin Toolchain 0.13，JetBrains 推荐 KMP 都切换到到全新工具链这套从 Amper 演"
+    },
+    "source/juejin-android/2026-10-30-76964376-Flutter Android 改动：A.md": {
+      "chapter": "待分类",
+      "entry_id": "c38ab657b8d8a85d",
+      "last_appended": "2026-10-30T05:25:20.231684+08:00",
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793305330.2803097,
+      "score": 14,
+      "sha256": "9d1fa7257ff4d4197387ef12fb0295b8ebd631e67e0ac8e4c544f6eacd1830b6",
+      "size": 10176,
+      "status": "appended",
+      "title": "Flutter Android 改动：APK 不再允许通过 Intent 动态修改 Engine 参数最近刚刚合并了两个"
+    },
+    "source/juejin-android/2026-10-30-76974529-Android 协程实践：为什么不应将.md": {
+      "chapter": "待分类",
+      "entry_id": "b7e5765c4575919f",
+      "last_appended": "2026-10-30T05:25:20.231684+08:00",
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793305330.280704,
+      "score": 11,
+      "sha256": "01bd040d9ef9a1ba59648c3c0d3c15f5a3d2d0b17044fdc6edadc1f32695a0ad",
+      "size": 13835,
+      "status": "appended",
+      "title": "Android 协程实践：为什么不应将 supervisorScope 作为常规方案在 Android 项目中，s"
+    },
+    "source/juejin-android/2026-10-30-76987098-Flutter 的文字为什么比 Swif.md": {
+      "chapter": "待分类",
+      "entry_id": "0f20dcade3864bb0",
+      "last_appended": "2026-10-30T05:25:20.231684+08:00",
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793305330.28004,
+      "score": 12,
+      "sha256": "5aaadfef5bc46095d56ac628dd907808bfb0f93fee897fbd2f2c6348247de8d1",
+      "size": 12655,
+      "status": "appended",
+      "title": "Flutter 的文字为什么比 SwiftUI 更细？问题主要在 Skia 的 256 项查找表里最近看了一篇文章 《W"
+    },
+    "source/juejin-android/2026-10-30-77003806-Flutter 紧急发布 3.47.8.md": {
+      "chapter": "待分类",
+      "entry_id": "e64bbbb7f6655d0e",
+      "last_appended": "2026-10-30T05:25:20.231684+08:00",
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793305330.2804918,
+      "score": 10,
+      "sha256": "91c3a3aefce618f2d1568be1ad4b338abc54db884690ec11fb4cb0d49a8b6ff0",
+      "size": 3134,
+      "status": "appended",
+      "title": "Flutter 紧急发布 3.47.8 安全升级版本，建议都升级Flutter 周末紧急发布了 Flutter 3.47"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7292,6 +7352,191 @@
       "mtime": 1793214216.334648,
       "sha256": "0b23a6dbe9dedaf5cadd8a60fc031ed5c63e3d790abae45f568faad02768277c",
       "size": 1664,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-A-New-Kind-of-Chemistry.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300512.5605192,
+      "sha256": "31ea6cdad482ec301307aac4ac8c25142f495972954677621ebc21367f33369c",
+      "size": 29466,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Apple-Creator-Studio-Updated-With-a-Slew-of-AI-F.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300641.988324,
+      "sha256": "8adde1555a298f1a428e568825f4fbe649a616926e1b36831d087b52ad64787a",
+      "size": 35421,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Avoid-Public-Functions-Calling-Other-Public-Func.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300555.5980232,
+      "sha256": "ae6664039e9cacf806ccdb295fbd99025a6e4b906f02d635229c1621ce87c402",
+      "size": 3427,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Building-a-multiplayer-game-world-with-autonomou.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300495.1815886,
+      "sha256": "228dc22e848dc9b5b5d20fca84cec770def1bdbdfb71295477427d5d71904669",
+      "size": 4901,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-C-WinRT-overcorrection-Using-make-self-and-immed.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300601.853116,
+      "sha256": "dab9b3573f82e88a60775eee0c8e1b54e3c45753c321b754eb96b47e7f615394",
+      "size": 4691,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Celebrating-SIM-Cards.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300491.351805,
+      "sha256": "0b1a53db52e42a7c38963cc0ecafb08240fd122a496177f1da1623b5df858b9e",
+      "size": 1425,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Deus-ex-machina.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300574.5257409,
+      "sha256": "1fc7954c7eb9244f0675d32a6805fbea1cdca83c09a2e410a4dde699ed68bcfb",
+      "size": 18060,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Exit-Liquidity.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300579.0284595,
+      "sha256": "b85921789b259f33fff8814de6d5586cee7448c5c43d92166c689d18ee8950ff",
+      "size": 59605,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Extremely-brief-history-of-PDP-computers.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300566.7052314,
+      "sha256": "dcefd17b5de194147bbf513c2e7ef431cbeb117d041d0f0971201fc793b0f813",
+      "size": 4183,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Fake-it-til-you-make-it-and-then-keep-faking-it.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300588.110162,
+      "sha256": "89c93e3da86ac7248b0987fd148ea9a94bf693ce7d2c63e978ea3167a48752da",
+      "size": 32376,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Gadget-Review-SoundPEATS-CC3-Pro-Bluetooth-Headp.md": {
+      "chapter": "待分类",
+      "entry_id": "7587e6aa125830d6",
+      "last_appended": "2026-10-30T05:25:20.231684+08:00",
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300610.771618,
+      "score": 9,
+      "sha256": "9121fdcce04b75724161e225d368c5cf46dcf0b7df8aad786f8c763722e860e2",
+      "size": 8966,
+      "status": "appended",
+      "title": "Gadget Review: SoundPEATS CC3 Pro Bluetooth Headphones"
+    },
+    "source/rss-snapshot/2026-10-30-Game-Boy-Color-on-My-Conference-Badge.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300646.903856,
+      "sha256": "6b22b06c1b530b3ae0e9a0ada4a2338a818d66a7b967edec9987e321ffdac6c3",
+      "size": 1361,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Getting-good-at-AI-takes-time-and-practice.md": {
+      "chapter": "待分类",
+      "entry_id": "a4b2f6f11df32c57",
+      "last_appended": "2026-10-30T05:25:20.231684+08:00",
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300629.1457248,
+      "score": 8,
+      "sha256": "91781f636c840156f01b6abe26be69be8301cd7add84b9ae7c808688eb0c9ec7",
+      "size": 11242,
+      "status": "appended",
+      "title": "Getting good at AI takes time and practice"
+    },
+    "source/rss-snapshot/2026-10-30-GitHub-Octoverse-2026.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300580.814617,
+      "sha256": "c8b7a56600e66b2d3b2b5bea1c1b5aa6e384c2dabaa644b2ea87f4d1c616b7e0",
+      "size": 2968,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Guessing-the-Name-MacBook-Studio.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300597.3545613,
+      "sha256": "49473d777f0bb5a47ac973abfc7fc7928fb05bda8d2d38f72c775934665306b3",
+      "size": 2709,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Making-agents-fast-what-I-ve-learnt-over-the-las.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300560.0491102,
+      "sha256": "ac3d47979eedb5a943daba42db934d3879c6c1ce7d1869dd2199157a9415c948",
+      "size": 13276,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Pluralistic-Agents-vs-ecommerce-28-Oct-2026.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300619.5484612,
+      "sha256": "848a51f885336a0edca6c91fee44c7bfc6cd7aa6e05d634edf0b71a546d33fac",
+      "size": 23134,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Prestructured-WYSIWYG.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300645.1575243,
+      "sha256": "009d0cf386a62598cd662e9e0b0465c7eafa9ecce6a67bb3f2ed714e402b7937",
+      "size": 6576,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Psychometrics-vaccines-meat-Kowloon-luggage-dest.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300633.782764,
+      "sha256": "ff96dfa5a2fb41b98189b10cc1eaa0ba08d70762edd9256b2e8a5bbf7cefafcf",
+      "size": 12183,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Quoting-Ben-Hylak.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300532.2658236,
+      "sha256": "d0299cef66bd95157fd15663e9709502cbeadfd09737b97547de2a531e73fb71",
+      "size": 558,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Quoting-Ted-Sanders.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300562.707732,
+      "sha256": "15500743b2a463886ece0cf6540b6b8b40cffb106309bfdf44d16cd33c2946c6",
+      "size": 1350,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Quoting-Terk-Terkowitz.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300621.2923124,
+      "sha256": "a3a90de9711a156a338ef91d7ed6d0e4136a7ddd540a18c54c34733ac9008055",
+      "size": 747,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Siri-AI-Expands-to-More-Languages-in-OS-27-2.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300638.0119503,
+      "sha256": "8b556a65638d7188970fed1e843217e019932906f1be9efabe4142fd8aa4ba3d",
+      "size": 5986,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-Steven-Levy-on-the-New-MacBook-Pro-With-Yes-a-To.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793301339.0344968,
+      "sha256": "6c1358ae16eba15807495cc1ce39eb14b4574b17341606542b983a87c2a280bd",
+      "size": 11366,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-30-The-October-inflection-point-for-vibe-game-devel.md": {
+      "last_seen": "2026-10-30T05:25:20.231684+08:00",
+      "mtime": 1793300603.6249154,
+      "sha256": "3d0c1e7355c844ca39f831c0cac9eceacb03af86658fcb62acd6ffb59b704f09",
+      "size": 22877,
       "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
@@ -9101,24 +9346,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 14,
-    "cutoff": "2026-10-28T05:20:20.280932+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-29.md",
+    "appended": 7,
+    "considered": 35,
+    "cutoff": "2026-10-29T05:20:20.098064+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-30.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2278,
+    "scanned": 2313,
     "skipped": {
       "existing_link": 0,
-      "low_score": 12,
-      "max_files": 0,
+      "low_score": 23,
+      "max_files": 5,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 819
+      "unchanged": 833
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-29T05:25:20.098064+08:00",
+  "last_run_at": "2026-10-30T05:25:20.231684+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
