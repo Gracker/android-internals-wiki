@@ -1,0 +1,196 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 115,
+  "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-30T18:46:48.158696+08:00",
+  "source_sha256": "4382bd5b7d6c0185d899e74c13f562a8549c6e3564c6655ecbfa5d9201478f96",
+  "accepted_before_sha256": "752f746b3845be976375a1163f03222e3b70705ec64c01648ed0f86fd342f478",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 259,
+  "reading_characters": 19061,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 17,
+  "current_pngs_actually_viewed": 17,
+  "current_contexts_actually_viewed": 17,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a115/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a115/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a115/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a115/01/compact-115-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a115/01/compact-115-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a115/01/compact-115-3.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "code_blocks_preserved": 1,
+  "code_lines_preserved": 7,
+  "asset_sha256": {
+    "src/assets/diagrams/ch11/ed11-05-display-cost-and-uid-share.svg": "db34d1300a5eaf5f99cfe4d92d0de037b01d162a5ffa7cbfe268db810db5ff00",
+    "src/assets/diagrams/ch11/ed11-05-display-cost-and-uid-share.png": "69f586e2f0e6ab81d83fd7c766f39b23588306725e4ea71a090359ce191224d6",
+    "src/assets/diagrams/ch11/ch11-05-06-label-conflict.svg": "120853a07a2fde20f5ccfa21229cd0425684bbafdc4dc1d3778332c5b78084ce",
+    "src/assets/diagrams/ch11/ch11-05-06-label-conflict.png": "8a900420415f96de689e688e0c791c52e0f0cfd4e3a30c73c05eb5543e905865",
+    "src/assets/diagrams/ch11/ch11-05-07-power-energy-overall.svg": "dcbfec03d638955a26ed45b0804e0a792ca59672465162afe77a3c4227a7412b",
+    "src/assets/diagrams/ch11/ch11-05-07-power-energy-overall.png": "c78736d86bb1f97ed56e517c8e1c3736fd2d1668878fa0863ddaa084a7f8f1cc",
+    "src/assets/diagrams/ch11/ch11-05-08-brightness-mapping.svg": "edf3a37a4fe0f1b94cdce01c38f7522f122884ccaf23299e35d827d5c55ed6f9",
+    "src/assets/diagrams/ch11/ch11-05-08-brightness-mapping.png": "f818740c8f18b5a95c53e4e5158bbbdb613edbea5bb3279d275249487b35b776",
+    "src/assets/diagrams/ch11/ch11-05-10-brightness-thermal.svg": "a3602c7bbe04827708bc6a81b03bf5a13ea17503b88c2788e4c0bee2b4ffe14f",
+    "src/assets/diagrams/ch11/ch11-05-10-brightness-thermal.png": "38477824dd98e9caaf9ec858e340d2c90b998e7fa2e9f9e2435314f3849020e2",
+    "src/assets/diagrams/ch11/ch11-05-12-display-cadences.svg": "0fdc346177ab3df448431f3596c19be3d37f3e4da35153cfdc2c274ebd29e4c1",
+    "src/assets/diagrams/ch11/ch11-05-12-display-cadences.png": "2ee2f54d9726afb7c4cfb7b1c3852322b060ef12b38ec04eb345d5a658d7994e",
+    "src/assets/diagrams/ch11/ch11-05-14-policy-and-layer-hints.svg": "2ab2943b3e747a40e3ecaf9e2ffc20c6d8f3297f277eb5bd601f1498fc6d5f80",
+    "src/assets/diagrams/ch11/ch11-05-14-policy-and-layer-hints.png": "72fd0c23807c791d43d80932ca0f55ad9c8831fe08b48940244f3659284bb63f",
+    "src/assets/diagrams/ch11/ch11-05-15-priority-vote-loop.svg": "83173aa9168cb6862c82b6cf32493bdd1fe548c17ab493556e777c80217b1edb",
+    "src/assets/diagrams/ch11/ch11-05-15-priority-vote-loop.png": "897eb76f0cae41f78979fd7f91955e9aa7c4033425423bfffcce5ea489dff7a2",
+    "src/assets/diagrams/ch11/ch11-05-16-surface-vote-lifecycle.svg": "e7b8db716e539e6a7b0bd7e7c26aec97533e4079d8ef967f79016d0b9d32782f",
+    "src/assets/diagrams/ch11/ch11-05-16-surface-vote-lifecycle.png": "95930b8e51e6d9011a7b5d272f1d1b1aadfbca5ba329ab88171a7d2893ea487d",
+    "src/assets/diagrams/ch11/ch11-05-18-arr-te-cadence.svg": "ffb7cb28109510727219a104cb2e1fef072f78e7faa298e5be964a33cc55c29d",
+    "src/assets/diagrams/ch11/ch11-05-18-arr-te-cadence.png": "1060f3c4eacc9fe1185975c1f37a9328a686597e5be5c68c68382a3a7b589ebf",
+    "src/assets/diagrams/ch11/ed11-05-theme-content-and-panel.svg": "2f3c313a3ce6b4e631fd58c3e0c579faeb67c92ba35f266233393c797f532f92",
+    "src/assets/diagrams/ch11/ed11-05-theme-content-and-panel.png": "b05473a568709fafbd6335f42a89fa8e3d01c6287399cccadd6736b6d1a9f13a",
+    "src/assets/diagrams/ch11/ed11-05-saver-state-policy-and-evidence.svg": "9145b8aef1598e7d752fdc99bd3a1f86334210c31a9c5336a35379a278b7ea90",
+    "src/assets/diagrams/ch11/ed11-05-saver-state-policy-and-evidence.png": "d5ee68b8966d492cd583ab890d924674c119e03c7413c310fe9a2d7201358d5e",
+    "src/assets/diagrams/ch11/ch11-05-24-video-power-path.svg": "435df53e1dfa75dfbc5288549e157216c9ba29aa2bd19208aab8bc6a9b4aca96",
+    "src/assets/diagrams/ch11/ch11-05-24-video-power-path.png": "838ae4ddd8f0cd4edda3090b636b13862030e371bd297c2c9bd96bc0800f0527",
+    "src/assets/diagrams/ch11/ch11-05-25-message-task-energy.svg": "7143f400db641044223bfe860d937988bb19bff868f42868b69882c8a6c0d2eb",
+    "src/assets/diagrams/ch11/ch11-05-25-message-task-energy.png": "c3278dbdfda8302a156ba890e17820a4e63cb0cc0f47b06cc5280ae9399c8280",
+    "src/assets/diagrams/ch11/ch11-05-26-network-state-tail.svg": "3e63ba6151178ade4e83121145b1d6e1ed0d7ca909cd468ed40037077681f38c",
+    "src/assets/diagrams/ch11/ch11-05-26-network-state-tail.png": "2dd6f09555160f4eb2e5739ae9967aca11621ddfc9854ff4030671d10716a26e",
+    "src/assets/diagrams/ch11/ed11-05-controlled-and-user-experiments.svg": "f71c6dc1c06cea4e8bbdd46efa94851e7fa1c2365cd9f99995a1cf3cc9b10da8",
+    "src/assets/diagrams/ch11/ed11-05-controlled-and-user-experiments.png": "41e0e1258e2b2442e8dc9420224b5371c654da375012927bf05b86c28fb3b501",
+    "src/assets/diagrams/ch11/ch11-05-29-snapshot-continuous.svg": "b8a38805e3b6719bb369d18d01494e43b7262d8a708844989661670c42f5034e",
+    "src/assets/diagrams/ch11/ch11-05-29-snapshot-continuous.png": "7aae7a5e8bb67014843af8483cc34aa1163d29e9277ea019689b4bad376e6ab6"
+  },
+  "figure_reviews": [
+    {
+      "id": "ed11-05-display-cost-and-uid-share",
+      "heading": "### 显示归因的测量与模型两条路径",
+      "line": 95,
+      "decision": "keep",
+      "reason": "计量/模型两支和UID时长占比分配是实际数据依赖，当前88–93段仍完整对应；consumer0、零总时长、首次基线/单次失败限制均保留，非逐像素测量。"
+    },
+    {
+      "id": "ch11-05-06-label-conflict",
+      "heading": "## 11.5.2 如何阅读 2026 年单机实验",
+      "line": 125,
+      "decision": "keep",
+      "reason": "列标签与路径标签交叉冲突的具体合流图，当前121段的三组数量与12960总体一致；图未擅自选择真值，未把冲突当设备设置失败次数。"
+    },
+    {
+      "id": "ch11-05-07-power-energy-overall",
+      "heading": "## 11.5.2 如何阅读 2026 年单机实验",
+      "line": 134,
+      "decision": "keep",
+      "reason": "mAh→J→W与累计能量分支、Overall等权汇总及kJ错标是不同量纲机制，当前116–123及137仍对应；未把软件归因等同完整整机能量。"
+    },
+    {
+      "id": "ch11-05-08-brightness-mapping",
+      "heading": "### 滑块位置、窗口值与物理 nit",
+      "line": 154,
+      "decision": "keep",
+      "reason": "滑块/窗口值、自动亮度lux输入、设备映射与面板生效值的真实双入口；当前152–166仍区分三个量，图注已限定自动策略而非所有手动滑块必经同一路。"
+    },
+    {
+      "id": "ch11-05-10-brightness-thermal",
+      "heading": "### 面板类型改变内容与亮度的关系",
+      "line": 175,
+      "decision": "keep",
+      "reason": "亮度/thermal/频率帧时间三轨是待验证时间关联，当前173段仍明确候选因果而非论文已测结果；条长和阈值均无伪造测量，位置贴近热状态说明。"
+    },
+    {
+      "id": "ch11-05-12-display-cadences",
+      "heading": "## 11.5.4 刷新率：显示链路里的四个频率",
+      "line": 200,
+      "decision": "keep",
+      "reason": "30fps内容在120Hz刷新机会重复的具体事件示意补足四频率列表，当前191–205仍区分回调/产帧/合成/面板，视频独立生产及非trace边界完整。"
+    },
+    {
+      "id": "ch11-05-14-policy-and-layer-hints",
+      "heading": "## 11.5.5 系统如何决定刷新率",
+      "line": 231,
+      "decision": "keep",
+      "reason": "DMD策略与Surface/View/Layer提示两入口汇入SF选择和HWC生效的对象关系，当前221–236仍支持；提示不被当作同类DMD硬约束，调用成功不等硬件切换。"
+    },
+    {
+      "id": "ch11-05-15-priority-vote-loop",
+      "heading": "## 11.5.5 系统如何决定刷新率",
+      "line": 238,
+      "decision": "keep",
+      "reason": "vote交集为空后移除最低优先级约束、成功选择或回默认的真实循环，当前236段一致；不是把全部vote同时当永远有效硬条件，与上一幅入口图区别清晰。"
+    },
+    {
+      "id": "ch11-05-16-surface-vote-lifecycle",
+      "heading": "### `Surface.setFrameRate()` 的用法与限制",
+      "line": 249,
+      "decision": "keep",
+      "reason": "播放/可见暂停/恢复/隐藏的Surface帧率提示生命周期及阶段轨，当前245–247/API版本表仍支持；图未套用View类别语义，也未声称API给Producer限帧。"
+    },
+    {
+      "id": "ch11-05-18-arr-te-cadence",
+      "heading": "### View 与 ARR",
+      "line": 261,
+      "decision": "keep",
+      "reason": "240Hz TE与120/60Hz呈现事件间隔的具体双示例，当前198、256–264及设备能力边界一致；同模式呈现间隔变化不被误当Choreographer固定回调频率。"
+    },
+    {
+      "id": "ed11-05-theme-content-and-panel",
+      "heading": "## 11.5.6 深色模式：屏幕技术与内容共同决定收益",
+      "line": 295,
+      "decision": "keep",
+      "reason": "主题UI与视频照片独立内容汇合后再按OLED/LCD解释的真实内容范围图，当前281–303对应；没有固定节能比例，用户调亮与受控配色结果仍分开。"
+    },
+    {
+      "id": "ed11-05-saver-state-policy-and-evidence",
+      "heading": "## 11.5.7 省电模式：策略联动与观察项",
+      "line": 322,
+      "decision": "keep",
+      "reason": "省电状态分设备策略与普通App查询/适配两路，再核对生效和业务结果，当前307–325一致；0–60render vote不冒充面板恒60Hz，权限与隐藏设置界限未丢。"
+    },
+    {
+      "id": "ch11-05-24-video-power-path",
+      "heading": "### 视频分辨率",
+      "line": 343,
+      "decision": "keep",
+      "reason": "分辨率经网络/解码/Surface缩放/面板成本的候选机制链，当前333–346仍支持；图明确不是+5.5%成分分解，codec/缓存/内容和整次窗口边界保留。"
+    },
+    {
+      "id": "ch11-05-25-message-task-energy",
+      "heading": "### 消息长度",
+      "line": 354,
+      "decision": "keep",
+      "reason": "100→200字符整次脚本的交互/网络/计量三轨对齐，当前350–357仍限定+115.6%是任务相对结果；未拆成单字符能量，也无各阶段虚构分摊或时长。"
+    },
+    {
+      "id": "ch11-05-26-network-state-tail",
+      "heading": "### 网络状态",
+      "line": 365,
+      "decision": "keep",
+      "reason": "应用请求/实际传输/蜂窝tail的不同持续阶段，当前361–368仍支持；记录真实无线接口、制式与缓存，不把飞行模式当精确弱网或自动关WiFi。"
+    },
+    {
+      "id": "ed11-05-controlled-and-user-experiments",
+      "heading": "### 分三层安排实验",
+      "line": 394,
+      "decision": "keep",
+      "reason": "受控单变量回归与恢复用户自动条件的两条实验分支，当前386–397及428仍完整对应；两结果分别报告，联动/补偿和随机化/温度漂移均明确。"
+    },
+    {
+      "id": "ch11-05-29-snapshot-continuous",
+      "heading": "### 快速采集系统快照",
+      "line": 421,
+      "decision": "keep",
+      "reason": "前后快照与测试窗口连续证据的不同采集时段，当前401–424及7行bash代码对应；dumpsys/bugreport放短测试外，--charged累计口径不被当自动净增量。"
+    }
+  ],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a115/01/layout-report.json",
+  "layout_report_sha256": "83d595f6213f407994c077e03f30a4f4bf06daca554d6466b6a8ba8711117791",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "technical_scope": "独立复核当前完整正文与所有现有图的语义、位置、数量及页面显示；保留先前外部正文修订。没有重新运行论文真机实验或将此次改写记作本任务撰写。",
+  "findings": "17幅仍各自表达不同对象关系、决策分支或具体时间轨，没有新增重复/图文冲突/位置不当；17原尺寸图经3联系表逐一实际查看，全部17正文上下文经3联系表实际查看。1400/640加载、顺序、标题归属、非代码/列表/表格和无横向溢出通过；无原生图；1bash块7行逐字保留。原32→17独立精简决策不重写，原candidate/proof/visual/frozen不覆盖；当前来源以完整SHA为准，精确diff另存并绑定。当前无需再删有效机制图。"
+}
