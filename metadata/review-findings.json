@@ -11093,6 +11093,67 @@
       "summary": "Surface 隐藏或销毁时清除帧率请求的建议相互矛盾",
       "type": "inconsistent-api-lifecycle",
       "updated_at": "2026-10-30T14:46:08.481616+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+      "close_note": "已修正风险表及迁移解释：SP XML 在后台加载解析，主线程风险是同步等待；源码对照、正文断言与本轮作用域检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261030-183520-idle-audit-67238274",
+      "created_at": "2026-10-30T18:38:46.863500+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261030-183520-idle-audit-67238274",
+      "details": "android-17.0.0_r1 的 startLoadFromDisk 将 loadFromDisk 提交到 sLoadExecutor，XML 解析在该任务中执行；awaitLoadedLocked 才让读取调用线程等待。风险表写成首次加载与解析落在主线程，迁移说明又暗示 SP 由调用方同步打开 XML，与源码及本节前文冲突。",
+      "id": "finding-59d984fedb3c",
+      "log_path": "logs/audit/2026-10-30-20261030-183520-idle-audit-67238274-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "status": "verified",
+      "summary": "SharedPreferences 风险表与迁移说明混淆后台 XML 加载和主线程同步等待",
+      "type": "technical-accuracy",
+      "updated_at": "2026-10-30T18:42:21.075015+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+      "close_note": "已限定普通流复制的源文档范围，并说明虚拟文档替代 MIME 协商、typed 打开、输出类型一致及无支持表示的失败处理；代码块保持原样。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261030-183520-idle-audit-67238274",
+      "created_at": "2026-10-30T18:38:46.925962+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261030-183520-idle-audit-67238274",
+      "details": "文章列出虚拟文档，却在通用流复制入口直接使用 openInputStream，未交代 FLAG_VIRTUAL_DOCUMENT 没有所声明 MIME 的原始字节表示；官方 SAF 指南与 DocumentsContract 要求查询替代可流式类型并通过 typed 打开路径读取。需缩小现有示例范围并说明 MIME 协商和不支持时的处理。",
+      "id": "finding-880dfc0f6da4",
+      "log_path": "logs/audit/2026-10-30-20261030-183520-idle-audit-67238274-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/training/data-storage/shared/documents-files#open-virtual-file",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/provider/DocumentsContract.java"
+      ],
+      "status": "verified",
+      "summary": "大文件复制示例缺少虚拟文档的替代 MIME 输入边界",
+      "type": "missing-api-boundary",
+      "updated_at": "2026-10-30T18:42:21.134222+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+      "close_note": "已补充 HDR 转码默认关闭、显式声明能力、Android 13/API 33、AndroidX Activity 1.11.0-alpha01 起、1 分钟上限及资源/缓存生命周期；与官方指南逐项核对。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261030-183520-idle-audit-67238274",
+      "created_at": "2026-10-30T18:41:44.690218+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261030-183520-idle-audit-67238274",
+      "details": "官方 Photo Picker 指南规定 HDR 转码不默认启用，需通过 AndroidX Activity 的 setMediaCapabilitiesForTranscoding 显式声明能力；设备需 Android 13/API 33 及以上，库需包含该 API（1.11.0-alpha01 及后续版本），视频时长上限为 1 分钟。原文只写按解码能力可能转码，缺少用于判断打开延迟与可用性的前提。",
+      "id": "finding-c9b593f58e1f",
+      "log_path": "logs/audit/2026-10-30-20261030-183520-idle-audit-67238274-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/training/data-storage/shared/photo-picker#hdr-video-transcoding"
+      ],
+      "status": "verified",
+      "summary": "Photo Picker HDR 转码描述缺少启用方式与适用范围",
+      "type": "missing-api-boundary",
+      "updated_at": "2026-10-30T18:42:21.200209+08:00"
     }
   ],
   "schema_version": 1
