@@ -11162,7 +11162,7 @@
           "heading": "### 13. 一份联合诊断报告应包含什么"
         }
       ],
-      "sha256_after": "6e2c4133f9e43ef6f7367704dafc6bfaf0f29cf429397181ea14af494d8a7738",
+      "sha256_after": "7dfa24034125c9357a75f7e7805acc936b9c47a5500c7aabd6b276cd20e494cf",
       "new_diagrams": [
         {
           "id": "ed09-02-binder-transaction-and-resume",
@@ -11315,15 +11315,94 @@
       ],
       "removed_but_shared_diagrams": [],
       "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-99/retired-assets.json",
-      "post_review_source_revalidation_required": {
-        "index": 99,
-        "article": "src/part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md",
-        "accepted_sha256": "6e2c4133f9e43ef6f7367704dafc6bfaf0f29cf429397181ea14af494d8a7738",
-        "observed_sha256": "ed914b059a92632873ad29e9b32e29452ba9c50c36615b97cb40f5140b917a9c",
-        "observed_at": "2026-10-30T18:46:48.246920+08:00",
-        "status": "requires_independent_revalidation",
-        "diagram_count_unchanged": true
-      }
+      "sha256_after_initial_editorial": "6e2c4133f9e43ef6f7367704dafc6bfaf0f29cf429397181ea14af494d8a7738",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 99,
+          "article": "src/part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md",
+          "revision": 1,
+          "accepted_sha256": "6e2c4133f9e43ef6f7367704dafc6bfaf0f29cf429397181ea14af494d8a7738",
+          "reviewed_sha256": "7dfa24034125c9357a75f7e7805acc936b9c47a5500c7aabd6b276cd20e494cf",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/candidate.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/final-source.diff",
+          "diff_sha256": "0b549aef0dae836916e4e8045405becf0db5095e09e9d29c959dd4ba9b314bd2",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/99-20261030-01.json",
+          "report_sha256": "ec5c8fa7e355726fd343fbe77d92da6248ee299ac673061919338b45eaf52963",
+          "caption_revisions": [
+            {
+              "id": "ch09-02-02-modern-dump-path",
+              "before": "正式循环有共享预算，early dump 与 fallback 另有成本；文件存在不等于全部候选进程都抓取成功。",
+              "after": "正式循环有共享预算，early dump 与 fallback 另有成本；文件存在，也说明不了全部候选进程都抓取成功。",
+              "status": "independently_reviewed",
+              "reason": "文件存在不保证所有候选dump成功，仅改写否定措辞，正文112及图中超时缺失分支仍一致。"
+            },
+            {
+              "id": "ch09-02-08-monitor-wait-edge",
+              "before": "地址只用于同一转储的关联；单向等待也可能是未采完整的等待链，不能据此排除死锁或漏唤醒。",
+              "after": "地址只用于同一转储的关联；单向等待也可能是未采完整的等待链，死锁、漏唤醒此时还排除不掉。",
+              "status": "independently_reviewed",
+              "reason": "单向等待不能排除未采到的环或漏唤醒，与213及393段语义不变。"
+            },
+            {
+              "id": "ch09-02-14-detector-window",
+              "before": "Android17默认finish-attach可能把初始化放在广播/服务执行timer之前；先确认设备实际计时边界。",
+              "after": "Android17默认finish-attach可能把初始化放在广播/服务执行timer之前；先确认设备实际计时起点。",
+              "status": "independently_reviewed",
+              "reason": "计时边界改为计时起点，对应真实timer开始；未改变ANR类型和初始化前后关系。"
+            },
+            {
+              "id": "ch09-02-20-apply-lifecycle-wait",
+              "before": "这是可能的等待关系；后台I/O仍需恢复语义，不应把异步返回当作磁盘已经安全落盘。",
+              "after": "这是可能的等待关系；后台I/O仍需恢复语义，异步返回时磁盘还没保证安全落盘。",
+              "status": "independently_reviewed",
+              "reason": "异步返回不提供持久化保证，语义仍是缺少保证而不是断言所有返回都未落盘。"
+            },
+            {
+              "id": "ch09-02-38-cross-clock-alignment",
+              "before": "没有系统instant时，用业务起点和日志补证；应用标记本身不能代替系统detector到期记录。",
+              "after": "没有系统instant时，用业务起点和日志建立带误差范围的时间参照；应用标记不等于系统detector到期记录。",
+              "status": "independently_reviewed",
+              "reason": "外部新图注过度确定到期记录；本任务仅此句明确用业务起点/日志建立带误差时间参照，应用标记不等detector到期记录，符合145/895–900及图面。"
+            },
+            {
+              "id": "ed09-02-state-window-and-open-tail",
+              "before": "区间为概念示意，不是测量结果。先用is_main_thread选本次生命周期及当前trace的utid/upid，统一ns时钟，再与[start,end)取交集。sched行本身是Running，示例end_state=D说明离开CPU后进入的状态；D的等待时长来自thread_state。原段dur=-1仅统计到min(trace_bounds.end_ts,window_end)，保留observed_open，图中的R*不意味着线程已恢复。覆盖空洞始终未知，不能补为Sleeping；统计总覆盖需与窗口长度核对，状态分布本身不直接证明根因。",
+              "after": "区间为概念示意，不是测量结果。先用is_main_thread选本次生命周期及当前trace的utid/upid，统一ns时钟，再与[start,end)取交集。sched行本身是Running，示例end_state=D说明离开CPU后进入的状态；D的等待时长来自thread_state。原段dur=-1仅统计到min(trace_bounds.end_ts,window_end)，保留observed_open，图中的R*只表示区间在此截断，线程是否已恢复未知。覆盖空洞始终未知，别把它补成Sleeping；统计总覆盖需与窗口长度核对，状态分布本身不直接证明根因。",
+              "status": "independently_reviewed",
+              "reason": "R*明确为观察窗口截断且恢复未知；未知覆盖不补Sleeping，与SQL开放区间裁剪和956段一致。"
+            },
+            {
+              "id": "ch09-02-45-binder-sql-scope",
+              "before": "查询只覆盖可关联且客户端已闭合的同步事务；没有行不能证明没有Binder等待。",
+              "after": "查询只覆盖可关联且客户端已闭合的同步事务；没有行，也证明不了没有Binder等待。",
+              "status": "independently_reviewed",
+              "reason": "无查询行不证明不存在Binder等待，仍保留未闭合/未关联事务边界。"
+            },
+            {
+              "id": "ch09-02-48-block-request-stages",
+              "before": "原始事件通常不带稳定request ID；完成事件的发射线程可能是IRQ或kworker，不能当作原始应用归属。",
+              "after": "原始事件通常不带稳定request ID；完成事件的发射线程可能是IRQ或kworker，别记到原始应用头上。",
+              "status": "independently_reviewed",
+              "reason": "IRQ/kworker发射线程不当原始App归属，与1231及图面request部分完成限制一致。"
+            }
+          ],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/input.md",
+          "external_input_sha256": "ed914b059a92632873ad29e9b32e29452ba9c50c36615b97cb40f5140b917a9c",
+          "own_caption_corrections": [
+            {
+              "id": "ch09-02-38-cross-clock-alignment",
+              "before": "没有系统instant时，用业务起点和日志补证；应用标记只作旁证，时间原点仍是系统detector的到期记录。",
+              "after": "没有系统instant时，用业务起点和日志建立带误差范围的时间参照；应用标记不等于系统detector到期记录。",
+              "reason": "图面明确时钟映射与带误差窗口，正文145及895–900允许用日志/业务标记辅助对齐；缺系统instant不保证已采到detector精确到期记录，避免把推定时间原点写成已观测事实。只改此图注，不改技术正文或图像。"
+            }
+          ],
+          "revalidated_at": "2026-10-30T18:56:14.210531+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-30T18:56:14.525089+08:00"
     },
     {
       "index": 100,
@@ -12284,7 +12363,7 @@
         "article": "src/part2-performance/ch09-anr/04-case-studies.md",
         "accepted_sha256": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
         "observed_sha256": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
-        "observed_at": "2026-10-30T18:46:48.247423+08:00",
+        "observed_at": "2026-10-30T18:56:14.528104+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -14871,7 +14950,7 @@
         "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
         "accepted_sha256": "67b6818a9bd73a9fb4ca22bb22448d54abee40d45c9e5f6c8721f24bd8338793",
         "observed_sha256": "ff6e55fd7fe3b2f10afd2048f3fd3f4511691d660afd83b8b7e16f545ad4d969",
-        "observed_at": "2026-10-30T18:46:48.247935+08:00",
+        "observed_at": "2026-10-30T18:56:14.528650+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -15334,7 +15413,7 @@
         "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
         "accepted_sha256": "8bc1f79f3bb8987396ee130ac79bb197e081a2da428c88e0caa999cc961f03ba",
         "observed_sha256": "0019b6407d6cb76b85760f69cea2a9c82f3630b4442c72d457d9e9f179a56a9b",
-        "observed_at": "2026-10-30T18:46:48.248144+08:00",
+        "observed_at": "2026-10-30T18:56:14.528873+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -15931,7 +16010,7 @@
         "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
         "accepted_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
         "observed_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
-        "observed_at": "2026-10-30T18:46:48.248358+08:00",
+        "observed_at": "2026-10-30T18:56:14.529094+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -17697,7 +17776,7 @@
         "article": "src/part2-performance/ch11-power/03-wakelock.md",
         "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
         "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-        "observed_at": "2026-10-30T18:46:48.248743+08:00",
+        "observed_at": "2026-10-30T18:56:14.529482+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -28074,7 +28153,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-30T18:46:48.249742+08:00",
+  "updated_at": "2026-10-30T18:56:14.530614+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
@@ -28209,20 +28288,11 @@
   ],
   "post_review_external_source_revalidations_pending": [
     {
-      "index": 99,
-      "article": "src/part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md",
-      "accepted_sha256": "6e2c4133f9e43ef6f7367704dafc6bfaf0f29cf429397181ea14af494d8a7738",
-      "observed_sha256": "ed914b059a92632873ad29e9b32e29452ba9c50c36615b97cb40f5140b917a9c",
-      "observed_at": "2026-10-30T18:46:48.246920+08:00",
-      "status": "requires_independent_revalidation",
-      "diagram_count_unchanged": true
-    },
-    {
       "index": 101,
       "article": "src/part2-performance/ch09-anr/04-case-studies.md",
       "accepted_sha256": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
       "observed_sha256": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
-      "observed_at": "2026-10-30T18:46:48.247423+08:00",
+      "observed_at": "2026-10-30T18:56:14.528104+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     },
@@ -28231,7 +28301,7 @@
       "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
       "accepted_sha256": "67b6818a9bd73a9fb4ca22bb22448d54abee40d45c9e5f6c8721f24bd8338793",
       "observed_sha256": "ff6e55fd7fe3b2f10afd2048f3fd3f4511691d660afd83b8b7e16f545ad4d969",
-      "observed_at": "2026-10-30T18:46:48.247935+08:00",
+      "observed_at": "2026-10-30T18:56:14.528650+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     },
@@ -28240,7 +28310,7 @@
       "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
       "accepted_sha256": "8bc1f79f3bb8987396ee130ac79bb197e081a2da428c88e0caa999cc961f03ba",
       "observed_sha256": "0019b6407d6cb76b85760f69cea2a9c82f3630b4442c72d457d9e9f179a56a9b",
-      "observed_at": "2026-10-30T18:46:48.248144+08:00",
+      "observed_at": "2026-10-30T18:56:14.528873+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     },
@@ -28249,7 +28319,7 @@
       "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
       "accepted_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
       "observed_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
-      "observed_at": "2026-10-30T18:46:48.248358+08:00",
+      "observed_at": "2026-10-30T18:56:14.529094+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     },
@@ -28258,10 +28328,10 @@
       "article": "src/part2-performance/ch11-power/03-wakelock.md",
       "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
       "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-      "observed_at": "2026-10-30T18:46:48.248743+08:00",
+      "observed_at": "2026-10-30T18:56:14.529482+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     }
   ],
-  "currently_matching_reviewed_source_count": 58
+  "currently_matching_reviewed_source_count": 59
 }

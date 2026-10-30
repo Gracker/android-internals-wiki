@@ -1,0 +1,240 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 99,
+  "article": "src/part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-30T18:56:14.080123+08:00",
+  "source_sha256": "7dfa24034125c9357a75f7e7805acc936b9c47a5500c7aabd6b276cd20e494cf",
+  "accepted_before_sha256": "6e2c4133f9e43ef6f7367704dafc6bfaf0f29cf429397181ea14af494d8a7738",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 599,
+  "reading_characters": 41617,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 14,
+  "current_pngs_actually_viewed": 14,
+  "current_contexts_actually_viewed": 14,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/current-contact-2.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/compact-99-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/compact-99-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/compact-99-3.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "code_blocks_preserved": 19,
+  "code_lines_preserved": 353,
+  "asset_sha256": {
+    "src/assets/diagrams/ch09/ch09-02-02-modern-dump-path.svg": "379e457bc803c7b296029926f541bf09a05c1bad0c0494654239d001b99bca96",
+    "src/assets/diagrams/ch09/ch09-02-02-modern-dump-path.png": "05e7e0bfdc3ea35242badef2d4f87f44d13bc0e4d0710acf288f878d544b7637",
+    "src/assets/diagrams/ch09/ch09-02-04-exit-trace-subset.svg": "f60efb91ddc681640da539521c92d142d4605ec641021fc3f064bdd7941a553e",
+    "src/assets/diagrams/ch09/ch09-02-04-exit-trace-subset.png": "4eb50abfbb1b3bd9771133a566a305107d02d073e268efc58822dbbefcf7d020",
+    "src/assets/diagrams/ch09/ch09-02-08-monitor-wait-edge.svg": "3d0ac82c9b1cee34c3afc9f48a2c04c55b6fd4688f12d561df794ff23a431efa",
+    "src/assets/diagrams/ch09/ch09-02-08-monitor-wait-edge.png": "31338fd579156eeec4046820fe87bc3b8e44e3d4aee82dfea4035722756ad79c",
+    "src/assets/diagrams/ch09/ch09-02-09-thread-id-translation.svg": "708780abc80afe1b203d45e3be58d296186881d1aab94d6898bf64989db1a03b",
+    "src/assets/diagrams/ch09/ch09-02-09-thread-id-translation.png": "407c7345435671944350de646e177c92d634994d9f867862cd3abd4302c0b810",
+    "src/assets/diagrams/ch09/ed09-02-sampling-latency-and-scope.svg": "1542a35b7b6c49628889e2977d0d69197e90fd3786c948b0a9f1561f2847183e",
+    "src/assets/diagrams/ch09/ed09-02-sampling-latency-and-scope.png": "709bea883ec4aeb09510d6170705ca18197c6c50ae14cd87b6148525b858c51d",
+    "src/assets/diagrams/ch09/ch09-02-14-detector-window.svg": "d3a0d8b09fe631f616abde2cdff0fd1751206a51c64f701a8d32900fb08d8019",
+    "src/assets/diagrams/ch09/ch09-02-14-detector-window.png": "e850d4b9b69897b32652c6df14942bb53c98717f98ef2f03d7754fe74ab34a1b",
+    "src/assets/diagrams/ch09/ed09-02-binder-transaction-and-resume.svg": "27d16ac1838c49cce294b9c6c951f7b90760a1b7661f3a18014fd361b11a975b",
+    "src/assets/diagrams/ch09/ed09-02-binder-transaction-and-resume.png": "c44ac361f7a1ce3dd709d2cba6c7be378e93473a769c3e38a9533616c1b6d615",
+    "src/assets/diagrams/ch09/ch09-02-20-apply-lifecycle-wait.svg": "2b68902cd2b03cf53c2f33346c937fb53f80ed0d810d7a8732c494e257ef1040",
+    "src/assets/diagrams/ch09/ch09-02-20-apply-lifecycle-wait.png": "b5f2695696d2d1de06956d75ed96d5645cc4486251be64501b652de17c4bdb08",
+    "src/assets/diagrams/ch09/ch09-02-26-two-cpu-sampling-windows.svg": "8c7ecc07b06001c1c0e5dedfede71072d941b3752783a65f7a8ba8669f5a19f2",
+    "src/assets/diagrams/ch09/ch09-02-26-two-cpu-sampling-windows.png": "a67ce899df13db8e00e84433d7a363dde2a39dd502d3ee0d6cca734e52180cf0",
+    "src/assets/diagrams/ch09/ch09-02-31-random-trigger-history.svg": "96af9907109c9056306253574ed1b0437ad42bfe704607fe3457b46151cef7ab",
+    "src/assets/diagrams/ch09/ch09-02-31-random-trigger-history.png": "330b3d873355cc0270fdc8ac7263743bfcd5998a98a76f23071f86fd96998ebc",
+    "src/assets/diagrams/ch09/ch09-02-38-cross-clock-alignment.svg": "b05ae7b6176b280a68324d7dee04f95ab59fe43d22c1b7f9e80d1b8d9760534f",
+    "src/assets/diagrams/ch09/ch09-02-38-cross-clock-alignment.png": "d9788400e36eb165af7a721efad5b9aaebda53b9edabd0e9e56594403bc75b92",
+    "src/assets/diagrams/ch09/ed09-02-state-window-and-open-tail.svg": "cf715cb465890c893532a53db26e7e1ce5c94447f08416d9134a76bc8765c52f",
+    "src/assets/diagrams/ch09/ed09-02-state-window-and-open-tail.png": "88b52c64e0fb2312dce264edcc32b02f1d09c04932ff884a9702967d649528fb",
+    "src/assets/diagrams/ch09/ch09-02-45-binder-sql-scope.svg": "9c6cdde14ecfe8e5914a6551fd60290e91fb2f178f7eb3ad99b25054fb6a0c78",
+    "src/assets/diagrams/ch09/ch09-02-45-binder-sql-scope.png": "1ee9cded770e8c98f8e142f7bafa623b0bbe03925ff51d3b4c7e2acab0c1135d",
+    "src/assets/diagrams/ch09/ch09-02-48-block-request-stages.svg": "3d1dff13d7ae57da4f235c7457d955a5cfaa91390fbc0c4cc181936c90fa17bb",
+    "src/assets/diagrams/ch09/ch09-02-48-block-request-stages.png": "8240f3441f91719ff1035ed13d5f2444771e101cb216fc1c4740801999a018e3"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a099/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "7106affdc089131b1b9d3c66768ecf3aead6217ba342d810d402477e752f92de",
+    "git_commit": "68a9a6b31241dfa169818fad4028a8eaad64bc41"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch09-02-02-modern-dump-path",
+      "heading": "### ANR trace 是怎样生成的",
+      "line": 114,
+      "decision": "keep",
+      "reason": "创建文件后按正常/降级选择Debug-tombstoned或SIGQUIT的实际分支，与102–112现文和正式/early/fallback预算一致；新图注只改否定表达，未夸大完整抓栈保证。"
+    },
+    {
+      "id": "ch09-02-04-exit-trace-subset",
+      "heading": "#### 应用能回捞到哪一段",
+      "line": 136,
+      "decision": "keep",
+      "reason": "完整文件与AppExitInfo保存前缀的真实文件区间，仍对应134–139；未把回捞子集当全部PID、同时快照或保证文件永久存在。"
+    },
+    {
+      "id": "ch09-02-08-monitor-wait-edge",
+      "heading": "#### 沿锁地址建立等待图",
+      "line": 215,
+      "decision": "keep",
+      "reason": "同一转储monitor地址连接main与ARTtid89持锁线程的具体等待边，与代码块2和213段一致；新版图注仍不由单向边排除未采全死锁/漏唤醒。"
+    },
+    {
+      "id": "ch09-02-09-thread-id-translation",
+      "heading": "#### 沿锁地址建立等待图",
+      "line": 222,
+      "decision": "keep",
+      "reason": "ARTtid→同段sysTid→Perfetto utid/upid的实际身份转换，仍对应220–225及后面进程实例SQL；数字相同不被当同一跨工具线程标识。"
+    },
+    {
+      "id": "ed09-02-sampling-latency-and-scope",
+      "heading": "### 用采集延迟校准线程栈",
+      "line": 266,
+      "decision": "keep",
+      "reason": "early executor、report queue、不同PID抓栈时刻和onlyDumpSelf范围合图，仍对应102–110、243–269、1296–1311；没有固定完成顺序或500ms可信阈值，区别于下一幅协议窗口。"
+    },
+    {
+      "id": "ch09-02-14-detector-window",
+      "heading": "#### 选对时间窗",
+      "line": 303,
+      "decision": "keep",
+      "reason": "实际timer开始/deadline、dump、较晚UI日志三个不同区段，仍对应299–306及ANR类型起点；图注边界改起点更精确，未把所有类型统一回看五秒。"
+    },
+    {
+      "id": "ed09-02-binder-transaction-and-resume",
+      "heading": "#### 跟踪同步 Binder",
+      "line": 328,
+      "decision": "keep",
+      "reason": "同次Binder总wall、组包/投递调度/server等待/reply/调用方再运行的具体分段，仍对应229–238、331与1076–1086及真实SQL；不把send→received全部算驱动或预设10ms阈值。"
+    },
+    {
+      "id": "ch09-02-20-apply-lifecycle-wait",
+      "heading": "#### 主线程 I/O",
+      "line": 384,
+      "decision": "keep",
+      "reason": "apply返回、后台写入、后续生命周期等待的三轨，与382–389一致；新版图注仍表达返回不能保证落盘，未断言每次必定未落盘或必定触发ANR。"
+    },
+    {
+      "id": "ch09-02-26-two-cpu-sampling-windows",
+      "heading": "#### CPU 摘要的两种采样窗口",
+      "line": 497,
+      "decision": "keep",
+      "reason": "长期CPU采样器、ANR处理、临时200ms采样器不同窗口，仍对应488–506及CPU样例；不把两个百分比分母或只覆盖dump的样本误当deadline全过程。"
+    },
+    {
+      "id": "ch09-02-31-random-trigger-history",
+      "heading": "#### ProfilingManager 触发式采集",
+      "line": 608,
+      "decision": "keep",
+      "reason": "后台间歇随机录制/无覆盖间隙/触发截取历史三轨，仍对应606–641；未把触发当从头启动录制、持续常开或进程尚未被杀的保证。"
+    },
+    {
+      "id": "ch09-02-38-cross-clock-alignment",
+      "heading": "### 4. 建立可靠的时间参照",
+      "line": 902,
+      "decision": "keep",
+      "reason": "单位时钟→clock snapshot/同一事件映射→身份和采集时段→带误差窗口的真实对齐链，与145及895–900一致；修正过于确定的外部新图注，明确缺系统instant时只能用业务起点/日志建立误差范围，不能冒充系统detector到期记录。"
+    },
+    {
+      "id": "ed09-02-state-window-and-open-tail",
+      "heading": "#### 5.1 `sched` 与 `thread_state` 各自表示什么",
+      "line": 958,
+      "decision": "keep",
+      "reason": "同一水平坐标展示Running、离开CPU后的D、空洞和dur=-1开放尾段及窗口交集，仍对应911–997和SQL13/14/15；新版图注R*截断不证明恢复，未知空洞不补Sleeping。"
+    },
+    {
+      "id": "ch09-02-45-binder-sql-scope",
+      "heading": "#### 6.1 优先使用 Perfetto Binder 标准库",
+      "line": 1123,
+      "decision": "keep",
+      "reason": "client_upid选实例/is_sync排oneway/窗口相交/整次wall与未知NULL的查询约束图，仍对应SQL16/17与1121–1126；新图注无结果不证明无Binder等待，未更改查询适用范围。"
+    },
+    {
+      "id": "ch09-02-48-block-request-stages",
+      "heading": "#### 7.2 Android 17 / kernel 6.18 的块事件",
+      "line": 1233,
+      "decision": "keep",
+      "reason": "request insert→issue、issue→部分complete、后续完成/唤醒三个不同阶段，与1222–1236及SQL19对应；新图注仍不将IRQ/kworker发射上下文误归原始App，无稳定requestid和dev+sector错配限制完整。"
+    }
+  ],
+  "caption_revisions": [
+    {
+      "id": "ch09-02-02-modern-dump-path",
+      "before": "正式循环有共享预算，early dump 与 fallback 另有成本；文件存在不等于全部候选进程都抓取成功。",
+      "after": "正式循环有共享预算，early dump 与 fallback 另有成本；文件存在，也说明不了全部候选进程都抓取成功。",
+      "status": "independently_reviewed",
+      "reason": "文件存在不保证所有候选dump成功，仅改写否定措辞，正文112及图中超时缺失分支仍一致。"
+    },
+    {
+      "id": "ch09-02-08-monitor-wait-edge",
+      "before": "地址只用于同一转储的关联；单向等待也可能是未采完整的等待链，不能据此排除死锁或漏唤醒。",
+      "after": "地址只用于同一转储的关联；单向等待也可能是未采完整的等待链，死锁、漏唤醒此时还排除不掉。",
+      "status": "independently_reviewed",
+      "reason": "单向等待不能排除未采到的环或漏唤醒，与213及393段语义不变。"
+    },
+    {
+      "id": "ch09-02-14-detector-window",
+      "before": "Android17默认finish-attach可能把初始化放在广播/服务执行timer之前；先确认设备实际计时边界。",
+      "after": "Android17默认finish-attach可能把初始化放在广播/服务执行timer之前；先确认设备实际计时起点。",
+      "status": "independently_reviewed",
+      "reason": "计时边界改为计时起点，对应真实timer开始；未改变ANR类型和初始化前后关系。"
+    },
+    {
+      "id": "ch09-02-20-apply-lifecycle-wait",
+      "before": "这是可能的等待关系；后台I/O仍需恢复语义，不应把异步返回当作磁盘已经安全落盘。",
+      "after": "这是可能的等待关系；后台I/O仍需恢复语义，异步返回时磁盘还没保证安全落盘。",
+      "status": "independently_reviewed",
+      "reason": "异步返回不提供持久化保证，语义仍是缺少保证而不是断言所有返回都未落盘。"
+    },
+    {
+      "id": "ch09-02-38-cross-clock-alignment",
+      "before": "没有系统instant时，用业务起点和日志补证；应用标记本身不能代替系统detector到期记录。",
+      "after": "没有系统instant时，用业务起点和日志建立带误差范围的时间参照；应用标记不等于系统detector到期记录。",
+      "status": "independently_reviewed",
+      "reason": "外部新图注过度确定到期记录；本任务仅此句明确用业务起点/日志建立带误差时间参照，应用标记不等detector到期记录，符合145/895–900及图面。"
+    },
+    {
+      "id": "ed09-02-state-window-and-open-tail",
+      "before": "区间为概念示意，不是测量结果。先用is_main_thread选本次生命周期及当前trace的utid/upid，统一ns时钟，再与[start,end)取交集。sched行本身是Running，示例end_state=D说明离开CPU后进入的状态；D的等待时长来自thread_state。原段dur=-1仅统计到min(trace_bounds.end_ts,window_end)，保留observed_open，图中的R*不意味着线程已恢复。覆盖空洞始终未知，不能补为Sleeping；统计总覆盖需与窗口长度核对，状态分布本身不直接证明根因。",
+      "after": "区间为概念示意，不是测量结果。先用is_main_thread选本次生命周期及当前trace的utid/upid，统一ns时钟，再与[start,end)取交集。sched行本身是Running，示例end_state=D说明离开CPU后进入的状态；D的等待时长来自thread_state。原段dur=-1仅统计到min(trace_bounds.end_ts,window_end)，保留observed_open，图中的R*只表示区间在此截断，线程是否已恢复未知。覆盖空洞始终未知，别把它补成Sleeping；统计总覆盖需与窗口长度核对，状态分布本身不直接证明根因。",
+      "status": "independently_reviewed",
+      "reason": "R*明确为观察窗口截断且恢复未知；未知覆盖不补Sleeping，与SQL开放区间裁剪和956段一致。"
+    },
+    {
+      "id": "ch09-02-45-binder-sql-scope",
+      "before": "查询只覆盖可关联且客户端已闭合的同步事务；没有行不能证明没有Binder等待。",
+      "after": "查询只覆盖可关联且客户端已闭合的同步事务；没有行，也证明不了没有Binder等待。",
+      "status": "independently_reviewed",
+      "reason": "无查询行不证明不存在Binder等待，仍保留未闭合/未关联事务边界。"
+    },
+    {
+      "id": "ch09-02-48-block-request-stages",
+      "before": "原始事件通常不带稳定request ID；完成事件的发射线程可能是IRQ或kworker，不能当作原始应用归属。",
+      "after": "原始事件通常不带稳定request ID；完成事件的发射线程可能是IRQ或kworker，别记到原始应用头上。",
+      "status": "independently_reviewed",
+      "reason": "IRQ/kworker发射线程不当原始App归属，与1231及图面request部分完成限制一致。"
+    }
+  ],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": false,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a099/01/layout-report.json",
+  "layout_report_sha256": "f2502743e93855cfdf927b2f811c5aa7d1113f720fbdb0f31b61e91d455e1813",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "own_caption_corrections": [
+    {
+      "id": "ch09-02-38-cross-clock-alignment",
+      "before": "没有系统instant时，用业务起点和日志补证；应用标记只作旁证，时间原点仍是系统detector的到期记录。",
+      "after": "没有系统instant时，用业务起点和日志建立带误差范围的时间参照；应用标记不等于系统detector到期记录。",
+      "reason": "图面明确时钟映射与带误差窗口，正文145及895–900允许用日志/业务标记辅助对齐；缺系统instant不保证已采到detector精确到期记录，避免把推定时间原点写成已观测事实。只改此图注，不改技术正文或图像。"
+    }
+  ],
+  "findings": "当前全文599阅读行41617字符、14组SVG标签、2联系表全部14PNG、19代码块353行完整阅读；最终14正文上下文经3联系表全部实际查看。14图仍是独立对象/分支/具体时序，无新增重复；8处图注修订逐项语义核对，时钟图注1处从过度确定的系统到期记录改为带误差的参照。外部input快照保留，当前除了声明图注修正外逐字相同；代码/原生/图像标识路径顺序未改。早期原审核没有PNG哈希表，未伪造补写历史记录：当前14SVG精确匹配原bounds SHA，28资产另与包含原accepted正文的固定Git提交逐字校验，当前全部PNG独立实际复看。1400/640加载、顺序、标题归属、非代码/列表/表格及无横向溢出，mdbook构建通过。原55→14精简历史和原candidate/proof/visual保持不动；本次不新增或删除有效图。"
+}
