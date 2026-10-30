@@ -461,7 +461,18 @@
       "processed_at": "2026-07-18T10:33:46.781497",
       "status": "queued",
       "summary": "DisplayModeController 四态状态机、RefreshRateSelector 三组输入评分、FrameRateOverrideMappings 双路 override 合并",
-      "title": "SurfaceFlinger DisplayMode 选择与 RefreshRateSelector 评分机制"
+      "title": "SurfaceFlinger DisplayMode 选择与 RefreshRateSelector 评分机制",
+      "previous_route_status": null,
+      "target_path": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "surfaceflinger",
+        "displaymode",
+        "refreshrateselector",
+        "displaymodecontroller"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-10-31T06:20:20.242188+08:00"
     },
     {
       "action": "indexed-only-chapter-freeze",
@@ -6137,6 +6148,34 @@
       "summary": "> 来源: https://juejin.cn/post/7698709811564068915 > 标题: Flutter 的文字为什么比 SwiftUI 更细？问题主要在 Skia 的 256 项查找表里 > 作者: 恋猫de小郭 > 发布: 2026-10-21 > 抓取: 2026-10-30 04:22 (opencli web read) > 发布时间: 20...",
       "chapter": "ch16",
       "processed_at": "2026-10-30T06:20:20.221144+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://devblogs.microsoft.com/oldnewthing/20261029-00/?p=112808/",
+      "title": "[RSS订阅]",
+      "summary": "互斥三态密封类在下拉刷新场景失效，UI 状态应建模为渲染所需全部信息的不可变快照，刷新进度、筛选条件与内容可并存；持有位置按最低公共祖先提升，页面状态与元素状态分离，覆盖状态恢复、性能与测试。",
+      "chapter": "ch02",
+      "processed_at": "2026-10-31T06:20:20.127795+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "rss",
+        "case",
+        "all",
+        "old"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-31-76809960-日常修改，3秒生效：腾讯音乐 Andro.md",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件",
+      "summary": "> 发布时间: 2026-09-03T12:51:33.000Z > 原文链接: https://juejin.cn/post/7680996030843125796 2026-09-03 2,731 阅读29分钟 Android 编译优化 > 本文首发自公众号：腾讯音乐技术团队 > 5 年研发和内部使用，累积 80 万次生产工程编译验证，让大型 Android 工程日常...",
+      "chapter": "ch16",
+      "processed_at": "2026-10-31T06:20:20.127795+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
