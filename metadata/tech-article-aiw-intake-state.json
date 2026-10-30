@@ -6668,6 +6668,102 @@
       "status": "appended",
       "title": "Flutter 紧急发布 3.47.8 安全升级版本，建议都升级Flutter 周末紧急发布了 Flutter 3.47"
     },
+    "source/juejin-android/2026-10-31-76604358-Android 架构这些年，其实一直在消.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "55c090db7b8db75f",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.7772388,
+      "score": 12,
+      "sha256": "7dc8db2915a511d33f2442943eeef68fc1e92c8949c87fcb421d8c335b8b9e37",
+      "size": 10248,
+      "status": "appended",
+      "title": "Android 架构这些年，其实一直在消灭碎片化异步很多 Android 开发者刚入行的时候都会觉得： 后来工作几年才"
+    },
+    "source/juejin-android/2026-10-31-76610856-Android Studio 新版 Lo.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "51624ce65a97a8a6",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.7782881,
+      "score": 8,
+      "sha256": "552ddfed8f29d8614e47fc0d107f7b2ecd6cd55cc84bdd453da6ad2479ff7039",
+      "size": 7229,
+      "status": "appended",
+      "title": "Android Studio 新版 Logcat 一、新版核心变化（和旧版区别） 采用 字段:值 键值对语法，支持精确匹"
+    },
+    "source/juejin-android/2026-10-31-76678955-别再只用 Loading、Success.md": {
+      "chapter": "待分类",
+      "entry_id": "64333e07fb43ea57",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.7759418,
+      "score": 9,
+      "sha256": "71afb607fdc97c212173c0d69f473b448eec047a01fbefb8d4bbcf3ae1a3d58a",
+      "size": 33267,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-10-31-76696126-你敢信吗？同样是跨端，KMP 跟 RN.md": {
+      "chapter": "待分类",
+      "entry_id": "0f62b009fc094b2c",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.7790134,
+      "score": 8,
+      "sha256": "fce8f03b67ae907cf74c7b66bd6e6479ec9286a29c879705ff7d160881e8e56d",
+      "size": 6908,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-10-31-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "7479b572fc6b7abb",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.773764,
+      "score": 24,
+      "sha256": "0eea95e15db5a86bd8210260c8f53310f5dee41d25b6d6c5366a92e60f5f05fb",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-10-31-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "7e46916ed45cb67f",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.7749734,
+      "score": 9,
+      "sha256": "87df9fe4d2bb7f38135d32e29b0439fa3034afd7fb2440381e731be121778ed2",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-10-31-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "fc771b2411f8c7ff",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.7710207,
+      "score": 19,
+      "sha256": "8674ae4fb30f56663b1e402907535caf366e047c1643818c0d2d1c14d7478165",
+      "size": 33822,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
+    "source/juejin-android/2026-10-31-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "0fd60da9c82f365c",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793391576.7723937,
+      "score": 15,
+      "sha256": "bc6d9f2dac03e2905ec908f9be8934e5937a01cc9fdc5c1a936f2236b8636e7d",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7537,6 +7633,95 @@
       "mtime": 1793300603.6249154,
       "sha256": "3d0c1e7355c844ca39f831c0cac9eceacb03af86658fcb62acd6ffb59b704f09",
       "size": 22877,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-A-New-Kind-of-Chemistry.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386940.6584287,
+      "sha256": "7e47d374cc0896799c3d4c7107bfd72e46e97618eda4bbebad51ff6baf1c134e",
+      "size": 29483,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-Apple-Drops-App-Store-Commission-by-a-Whopping-4.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386910.635489,
+      "sha256": "4c762e8740fb2923bb9bbe4c9b080917a91c19fe81ebf41800e2e5f935f7ebe1",
+      "size": 1259,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-Building-a-multiplayer-game-world-with-autonomou.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386915.6539524,
+      "sha256": "228dc22e848dc9b5b5d20fca84cec770def1bdbdfb71295477427d5d71904669",
+      "size": 4901,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-Deus-ex-machina.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793387010.6503654,
+      "sha256": "b6f2dc44f138e2979ed034cdb8a0cd0fdc753caf52eb78e31f8b75fbb9b27186",
+      "size": 18063,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-Making-agents-fast-what-I-have-learnt-over-the-l.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793387468.2428613,
+      "sha256": "b540e0cf5da94dded1f1fd8749a72129fc775883ce44bd29aeea17c4ad5ca7cc",
+      "size": 13229,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-Quoting-Ben-Hylak.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386962.6077409,
+      "sha256": "d0299cef66bd95157fd15663e9709502cbeadfd09737b97547de2a531e73fb71",
+      "size": 558,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-Robert-Caro-The-master-biographer-reflects-at-91.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386900.685172,
+      "sha256": "2ba937d4b60cf4d150cc2efbf3fc8d9c2f7afd1cc503b503bb1f1996fc242de6",
+      "size": 54048,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-Steven-Levy-on-the-New-MacBook-Pro-With-Yes-a-To.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386985.6350539,
+      "sha256": "e4a4478974d2a5bfe3575d29ead144bfff52ab28578ccccefb7b8791c5e10f4f",
+      "size": 16213,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-The-Space-Shuttle-Discovery-s-Starboard-Side-s-I.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386959.818884,
+      "sha256": "a8264e616234c63dd04e2c5e91d36944bc992f18bec31dd76310d928427dc89c",
+      "size": 11664,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-The-support-case-of-a-customer-who-said-that-all.md": {
+      "chapter": "ch05-cpu-power",
+      "entry_id": "0c1acbc2d7b21663",
+      "last_appended": "2026-10-31T05:25:20.247023+08:00",
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386967.6257894,
+      "score": 11,
+      "sha256": "6444fc1c67b4ae26ec75cf55e3894ab0c9d941ce24d12c8fc95ee5ba19880c41",
+      "size": 3211,
+      "status": "appended",
+      "title": "The support case of a customer who said that all they could see was a black screen"
+    },
+    "source/rss-snapshot/2026-10-31-What-I-learned-about-power-from-LBJ-and-Robert-M.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386922.6443548,
+      "sha256": "b7a45e2b0761774d37de3d7e06f269c9b0f854081e4c5d89343db1056cdac642",
+      "size": 30981,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-31-You-can-just-ask-AI-to-do-things.md": {
+      "last_seen": "2026-10-31T05:25:20.247023+08:00",
+      "mtime": 1793386991.6299703,
+      "sha256": "0e2d1c8d93b403578c3b4a970a8bd1bcd0f6489d781bee3c59c5664bb7117513",
+      "size": 7243,
       "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
@@ -9346,24 +9531,24 @@
     }
   },
   "last_report": {
-    "appended": 7,
-    "considered": 35,
-    "cutoff": "2026-10-29T05:20:20.098064+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-30.md",
+    "appended": 9,
+    "considered": 20,
+    "cutoff": "2026-10-30T05:20:20.231684+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-31.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2313,
+    "scanned": 2333,
     "skipped": {
       "existing_link": 0,
-      "low_score": 23,
-      "max_files": 5,
-      "old_unseen": 1414,
+      "low_score": 11,
+      "max_files": 0,
+      "old_unseen": 1419,
       "path": 31,
-      "unchanged": 833
+      "unchanged": 863
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-30T05:25:20.231684+08:00",
+  "last_run_at": "2026-10-31T05:25:20.247023+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
