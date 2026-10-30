@@ -11154,6 +11154,48 @@
       "summary": "Photo Picker HDR 转码描述缺少启用方式与适用范围",
       "type": "missing-api-boundary",
       "updated_at": "2026-10-30T18:42:21.200209+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "close_note": "已用 NDK CPU features 官方文档替换 Armv9 标签等同指令集的结论，补充 getauxval 的 HWCAP/HWCAP2 查询入口，保留旧设备误报能力警告；正文及新增行硬门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261030-223519-idle-audit-d5fde35d",
+      "created_at": "2026-10-30T22:41:58.832287+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261030-223519-idle-audit-d5fde35d",
+      "details": "CPU 维度段把两个核心都支持 Armv9 等同于软件可用指令集相同，忽略具体架构版本、扩展及系统公开能力。应给出设备 CPU 特性查询入口，并保留官方关于部分旧设备误报能力的警告。",
+      "id": "finding-613c681cbb03",
+      "log_path": "logs/audit/2026-10-30-20261030-223519-idle-audit-d5fde35d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/cpu-features"
+      ],
+      "status": "verified",
+      "summary": "Armv9 标签不能证明软件可用的指令扩展相同",
+      "type": "cpu-feature-boundary",
+      "updated_at": "2026-10-30T22:44:18.723756+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "close_note": "已根据 AGI 推荐横幅、APA 首页及 quickstart 限定游戏与 Vulkan 用途，保留公开测试版、Android 12 最低版本及设备支持/校验要求，并指向其他应用的 Android Studio 分析器。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261030-223519-idle-audit-d5fde35d",
+      "created_at": "2026-10-30T22:41:58.891992+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261030-223519-idle-audit-d5fde35d",
+      "details": "工具选择段把 APA 概括为系统分析的新推荐工具，遗漏当前官网限定的游戏与 Vulkan 图形适用范围、AGI 文档标注的公开测试版，以及 APA 系统分析的 Android 12 最低版本和设备校验要求。",
+      "id": "finding-d299d4177ae1",
+      "log_path": "logs/audit/2026-10-30-20261030-223519-idle-audit-d5fde35d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/agi/start",
+        "https://developer.android.com/android-performance-analyzer",
+        "https://developer.android.com/android-performance-analyzer/quickstart"
+      ],
+      "status": "verified",
+      "summary": "APA 推荐缺少游戏与 Vulkan 适用范围及公开测试版边界",
+      "type": "tool-availability-boundary",
+      "updated_at": "2026-10-30T22:44:18.783241+08:00"
     }
   ],
   "schema_version": 1
