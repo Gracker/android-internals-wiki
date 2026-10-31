@@ -90,10 +90,6 @@ consolidated_from:
 
 先用记账与现场信息区分 Java 对象、native 分配、图形缓冲区、非法访问和系统压力，再沿对应路径采集对象图、分配栈或系统证据。
 
-<!-- gracker-diagram: ch15-03-01-question-to-tool -->
-![先定位内存类别，再选归因证据](../../assets/diagrams/ch15/ch15-03-01-question-to-tool.png)
-
-图：把进程记账、对象保留、分配调用栈和非法访问分开，再按问题取证。 单次曲线或快照只给线索；整机压力需结合 PSS、LMKD 与 PSI，不能直接归成 Java 泄漏。
 
 图里几个词先说清楚：OOM（Out of Memory） 是内存不足错误，native crash 指 C/C++ 代码或本地运行库中的崩溃；dma-buf 是内核中跨设备、跨进程共享缓冲区的机制，memtrack 是 Android 图形内存记账接口；LMKD（Low Memory Killer Daemon，低内存终止守护进程） 根据系统内存压力选择终止进程，PSI（Pressure Stall Information）记录任务因 CPU、内存或 I/O 资源紧张而停顿的时间。
 
@@ -310,10 +306,6 @@ Retained size 很大，说明该对象控制着大块对象图；这些字节最
 
 单个 HPROF 适合判断持有关系，两份或多份同条件 HPROF 才适合判断增长。对象数量上涨一次也可能来自懒加载，要用重复轮次确认它是否停止增长并趋于稳定。
 
-<!-- gracker-diagram: ch15-03-06-repeatable-snapshots -->
-![从快照 A/B 到持有关系修复的验证闭环](../../assets/diagrams/ch15/ch15-03-06-repeatable-snapshots.png)
-
-图：固定场景与清理时点，比较多份快照，再沿具体实例的 root 路径验证生命周期。 一次增长可能来自懒加载或缓存；大 retained、对象数量与分配来源需要分别解释。
 
 #### Bitmap 的版本边界
 
@@ -465,10 +457,6 @@ PSS 可以避免共享页在进程间重复记账，但把所有进程 PSS 相�
 
 内核提供 SwapPss 时，`Debug.MemoryInfo.getTotalPss()` 会把按比例分摊的换出页加入总值。解析脚本应保存原始列名和系统版本，避免把 `TOTAL PSS` 与单独显示的 swap 列重复相加。
 
-<!-- gracker-diagram: ch15-03-09-rss-pss-uss -->
-![RSS、PSS、USS 与 swap 的记账边界](../../assets/diagrams/ch15/ch15-03-09-rss-pss-uss.png)
-
-图：先区分驻留、共享分摊与独占驻留，再处理换出页的单独口径。 共享页按内核映射计数等规则分摊；Debug 总 PSS 可能已含 SwapPss，解析时保留原列名与版本。
 
 Private Dirty 表示页面由该进程独占且内容已经改变，这类页面没法像干净文件页那样直接丢弃；匿名页和私有 COW（Copy-on-Write，写时复制）页仍可换出到 zRAM/swap。可回写文件的共享脏页属于另一种记账，与 Private Dirty 分开看。Private Clean 多为可从文件重新加载的私有页，内存压力下更容易回收。
 
@@ -663,10 +651,6 @@ hook 指针更新没有线程安全保证，应在线程并发分配前完成。
 
 多数项目应优先使用 heapprofd。malloc hooks 更适合编写专用测试器，维护成本和测量扰动都更高。
 
-<!-- gracker-diagram: ch15-03-11-native-allocator-observation -->
-![采样、分配器检查与自定义 hooks 的区别](../../assets/diagrams/ch15/ch15-03-11-native-allocator-observation.png)
-
-图：按需要选择分配采样、内存破坏检查或专用分配回调。 hooks 需显式启用、保存原函数并在并发前安装；回调内再分配可能递归，不能当作低扰动基准。
 
 ### HWASan 与 MTE：定位 native 内存安全错误
 
@@ -740,10 +724,6 @@ endfunction()
 
 这组产物只能在支持 MTE 的设备上运行，应限制在 native 内存安全测试变体。清单中的 `sync` 决定堆检查模式，`-fsanitize=memtag` 则给栈增加标记与检查，两者覆盖范围不同。
 
-<!-- gracker-diagram: ch15-03-12-tagging-coverage -->
-![HWASan、MTE 堆与 MTE 栈的覆盖范围](../../assets/diagrams/ch15/ch15-03-12-tagging-coverage.png)
-
-图：编译器插桩、硬件堆标记和栈标记需要不同的构建与运行条件。 标记粒度与概率限制仍在，不能覆盖所有内存错误；SYNC 精确定位，ASYNC 报告可能延后，ASYMM 不是清单值。
 
 内核接口与标记故障处理可从 [`memory-tagging-extension.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/memory-tagging-extension.rst) 和 [`arch/arm64/include/asm/mte.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/mte.h) 核对。
 
@@ -923,10 +903,6 @@ Header
 
 ART 的实现会在生成堆数据时收集字符串和类信息，再按分析工具需要的顺序组织输出。自行编写裁剪器时，还要处理 Android 扩展 tag（记录类型编号）、分段起止、对象 ID 和交叉引用。
 
-<!-- gracker-diagram: ch15-03-15-hprof-record-layout -->
-![HPROF 的头部、记录与交叉引用](../../assets/diagrams/ch15/ch15-03-15-hprof-record-layout.png)
-
-图：HPROF 通过带 tag 与长度的记录保存类、对象、root 和数组引用。 固定 A17 magic 为 JAVA PROFILE 1.0.3、对象 ID 为 4 B；示意顺序不能替代扩展 tag、分段和引用完整性校验。
 
 #### app、zygote 与 image 只是空间归类
 
@@ -1034,10 +1010,6 @@ Android 12 及更早版本默认只在数据源启动时扫描 PID；Android 13 
 
 `profileable_from_shell` 表示应用允许 Shell 发起性能分析，`profileable` 表示允许受信任的系统会话分析，`debuggable` 表示应用允许调试。这组检查与 `am dumpheap` 的 `SET_ACTIVITY_WATCHER`、`enforceDebuggable()` 不是同一套权限模型。排查“抓不到图”时，应同时确认 trace 发起者、应用 Manifest 中的 profileable/debuggable 属性、目标进程 UID 和 installer 条件。
 
-<!-- gracker-diagram: ch15-03-18-permission-models -->
-![AMS、进程内 Debug 与 HeapGraph 的授权边界](../../assets/diagrams/ch15/ch15-03-18-permission-models.png)
-
-图：跨进程完整堆转储、进程内公开 API 与 Perfetto producer 使用不同授权路径。 CanProfile 还按构建、UID、发起者与包分支提前返回；installer 条件只在进入包检查的路径生效。
 
 ART 插件还会在 `DumpPerfetto()` 中检测 Chromium/WebView 的严格 seccomp（限制进程可执行系统调用的沙箱机制）沙箱。命中时会记录 `Chromium seccomp detected, skipping Perfetto heap dump` 并跳过采集，即使 `CanProfile()` 已允许目标也不会生成引用图。排查空报告时，应检查目标进程日志及沙箱类型。
 
@@ -1047,10 +1019,6 @@ Perfetto 文档把 `android.java_hprof` 的结果称为 ART Heap Dump。它记�
 
 Trace Processor 也能导入完整 ART HPROF，导入后填充 HPROF 专用的数据表。这是分析器多支持的一种输入格式；实时 `android.java_hprof` 采集产出的仍是 `HeapGraph` 数据包。
 
-<!-- gracker-diagram: ch15-03-19-artifact-value-boundaries -->
-![完整 HPROF、HeapGraph 与解析器能力分别确认](../../assets/diagrams/ch15/ch15-03-19-artifact-value-boundaries.png)
-
-图：对象图、普通字段值和专项元数据要按采集产物与分析器版本分别判断。 Bitmap 像素需显式转储；HeapGraph 可有受 flag 控制的 Bitmap 元数据，固定 r1 导入器仍可能不消费新增字段。
 
 | 能力 | 实时 `android.java_hprof` | 导入完整 ART HPROF |
 | --- | --- | --- |
@@ -1086,10 +1054,6 @@ Trace Processor 也能导入完整 ART HPROF，导入后填充 HPROF 专用的�
 
 没有一张名为 `heap_graph` 的采样元信息表。同一 `(upid, graph_sample_ts)` 的全部 `heap_graph_object` 行构成一次 dump，其中 `graph_sample_ts` 是采样时间戳。trace 中包含多次采集时，选图、比较与聚合必须保留进程和时间戳两个键。最大时间戳只表示已导入对象中最新的一份，不证明完整性；先检查 `heap_graph_*` 相关 stats、packet 连续性和采集日志，缺图或截断时不能直接下增长结论。
 
-<!-- gracker-diagram: ch15-03-21-quality-before-latest -->
-![有结果行不代表最新快照完整](../../assets/diagrams/ch15/ch15-03-21-quality-before-latest.png)
-
-图：先检查质量并定位受影响的图，再选取目标快照并解释大小变化。 合成缺包测试仍可输出看似正常的最新行；MAX(graph_sample_ts) 不是完整性标志，不能自动恢复缺失引用。
 
 #### 统计最新快照中各类的 shallow size
 
@@ -1170,10 +1134,6 @@ LIMIT 100;
 
 表中的 `parent_id` 组成按最短 root 路径聚合后的树，`cumulative_size` 是节点及其后代的总和。flamegraph（火焰图） 会用层级块展示这些路径及其大小；这里的类路径树与单对象 dominator tree 含义不同，阅读时不要混用。
 
-<!-- gracker-diagram: ch15-03-22-three-size-views -->
-![自身大小、支配聚合与 root 路径树的不同含义](../../assets/diagrams/ch15/ch15-03-22-three-size-views.png)
-
-图：自身字节、dominator 聚合和按最短 root 路径形成的类树分别回答不同问题。 后两段示例按各图保留进程和时间键，但 LIMIT 是全局排名；路径树父子边不能当作支配关系。
 
 ### 工具选择与采集流程
 

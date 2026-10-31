@@ -40081,9 +40081,224 @@
       "before_count": 23,
       "before_all_images": 23,
       "sha256_before": "941b7109326b6ab2d8bde6d1a785232cb3f129f88ac1a8013205327402074694",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 13,
+      "decisions": [
+        {
+          "original_id": "ch15-03-01-question-to-tool",
+          "title": "先定位内存类别，再选归因证据",
+          "decision": "remove",
+          "reason": "工具问题分类逐项重复开篇选型表与后续Java/native/VMA/graphics/非法访问五类说明，没有额外数据关系；保留所有权限、产物和版本要求。",
+          "original_line": 93,
+          "heading": "### 先确定要测哪一种内存"
+        },
+        {
+          "original_id": "ch15-03-02-leakcanary-order",
+          "title": "LeakCanary 从弱引用到堆分析的实际顺序",
+          "decision": "keep",
+          "reason": "生命周期弱引用监视、延迟保留、触发器GC重数、条件允许后HPROF与Shark分析的实际责任链独立，不能将retained等同于永远泄漏。",
+          "original_line": 132,
+          "heading": "#### 从弱引用到泄漏引用链"
+        },
+        {
+          "original_id": "ch15-03-03-watch-versus-dump-policy",
+          "title": "等待期、计数阈值与转储资格互相独立",
+          "decision": "keep",
+          "reason": "watch延迟与GC后可见5对象/不可见延迟非零以及转储资格分别有独立守卫，保留避免把三个时间和计数条件混成一个触发器。",
+          "original_line": 189,
+          "heading": "#### 配置等待时间与触发阈值"
+        },
+        {
+          "original_id": "ch15-03-04-test-rule-order",
+          "title": "测试规则顺序决定泄漏断言发生在哪个生命周期点",
+          "decision": "keep",
+          "reason": "测试Rule外层/内层两行展示Activity销毁和断言的实际先后反例，测试成功才检测与finally清理说明均留。",
+          "original_line": 238,
+          "heading": "#### Android Studio LeakCanary task 与 CI 接入"
+        },
+        {
+          "original_id": "ch15-03-05-reference-and-dominator",
+          "title": "对象引用、支配关系与分配来源是不同坐标",
+          "decision": "keep",
+          "reason": "Owner10和Data20由Owner支配但Shared30另有Cache5根路径的真实引用案例，图明确字段引用不等于支配边，保留。",
+          "original_line": 296,
+          "heading": "#### 四个概念"
+        },
+        {
+          "original_id": "ch15-03-06-repeatable-snapshots",
+          "title": "从快照 A/B 到持有关系修复的验证闭环",
+          "decision": "remove",
+          "reason": "六步重复本节A/B快照、histogram、roots、修复复测工作流清单，没有具体图差分或对象关系；原文及MAT操作全部保留。",
+          "original_line": 313,
+          "heading": "#### 一套可复现的 MAT 流程"
+        },
+        {
+          "original_id": "ch15-03-07-allocator-versus-pages",
+          "title": "分配器存活字节与进程驻留页为什么不同",
+          "decision": "keep",
+          "reason": "live allocations、分配器arena与VMA/RSS页三个不同责任层对应，帮助避免把已free但未归还页面误读为采样泄漏，保留。",
+          "original_line": 334,
+          "heading": "#### Native 模式的模型"
+        },
+        {
+          "original_id": "ch15-03-08-heapprofd-data-path",
+          "title": "heapprofd 的采样、传输与聚合路径",
+          "decision": "keep",
+          "reason": "目标进程权限及字节概率采样经共享缓冲到独立heapprofd展开和加权的实际数据路径独立，保留。",
+          "original_line": 395,
+          "heading": "#### 推荐命令"
+        },
+        {
+          "original_id": "ch15-03-09-rss-pss-uss",
+          "title": "RSS、PSS、USS 与 swap 的记账边界",
+          "decision": "remove",
+          "reason": "RSS/PSS/USS三框重复相邻指标定义及swap重复相加说明，无具体共享页数值案例，精确公式和Debug总量边界正文完整留。",
+          "original_line": 468,
+          "heading": "#### PSS、RSS、USS 与 swap"
+        },
+        {
+          "original_id": "ch15-03-10-graphics-shared-identity",
+          "title": "dma-buf 的 fd、映射与跨进程去重",
+          "decision": "keep",
+          "reason": "同inode对象两进程各持有、A有fd与map而B仅fd的实际共享关系独立，明确showmap未出现不等于不持有DMA-BUF。",
+          "original_line": 567,
+          "heading": "### Graphics 与 dma-buf：从 memtrack 转向缓冲区归因"
+        },
+        {
+          "original_id": "ch15-03-11-native-allocator-observation",
+          "title": "采样、分配器检查与自定义 hooks 的区别",
+          "decision": "remove",
+          "reason": "heapprofd/debugshim/hooks三列重复工具选型与后续各项配置、代价及限制；所有forward原函数/回调禁分配/启用条件代码保留，删表格摘要。",
+          "original_line": 666,
+          "heading": "### malloc hooks：自定义分配器回调"
+        },
+        {
+          "original_id": "ch15-03-12-tagging-coverage",
+          "title": "HWASan、MTE 堆与 MTE 栈的覆盖范围",
+          "decision": "remove",
+          "reason": "HWASan编译器shadow、MTE堆硬件模式和MTE栈编译三列重复紧邻版本与覆盖范围说明，保留全部平台/硬件/编译条件及同步异步差异，无新增关系。",
+          "original_line": 743,
+          "heading": "#### MTE"
+        },
+        {
+          "original_id": "ch15-03-13-dumpheap-control-data",
+          "title": "am dumpheap 的控制调用与文件数据路径",
+          "decision": "keep",
+          "reason": "Shell开fd经AMS与Binder派发到目标ActivityThread及ART写文件和回调的控制/数据路径独立，Freezer与ART暂停分工保留。",
+          "original_line": 852,
+          "heading": "#### 调用链中每一层做什么"
+        },
+        {
+          "original_id": "ch15-03-14-two-pass-pause",
+          "title": "传统 HPROF 的暂停覆盖计数与正式输出",
+          "decision": "keep",
+          "reason": "GC互斥与托管暂停范围覆盖计数、清状态、正式遍历及I/O，再恢复线程的实际包含关系独立，保留非固定耗时边界。",
+          "original_line": 900,
+          "heading": "#### 停顿覆盖完整的两遍遍历"
+        },
+        {
+          "original_id": "ch15-03-15-hprof-record-layout",
+          "title": "HPROF 的头部、记录与交叉引用",
+          "decision": "remove",
+          "reason": "五框只是把紧邻完整文本HPROF结构树重画，源码magic/4B对象ID/tag/length/扩展记录与交叉引用要求均由正文保留，删同结构副本。",
+          "original_line": 926,
+          "heading": "#### Android 17 HPROF 的结构"
+        },
+        {
+          "original_id": "ch15-03-16-direct-heap-graph-fork",
+          "title": "普通 android.java_hprof 的信号与父子进程链路",
+          "decision": "keep",
+          "reason": "producer授权发信号、handler只写pipe、listener进入GC锁和fork、父恢复/子daemon/孙遍历写HeapGraph的真实跨进程分支独立，普通路径与OOME DEFERRED区别正文与图注保留。",
+          "original_line": 969,
+          "heading": "#### 从 Android 11 起的采集链路"
+        },
+        {
+          "original_id": "ch15-03-17-continuous-request-times",
+          "title": "启动请求、phase 延迟与追加采集间隔",
+          "decision": "keep",
+          "reason": "配置实例0/30/90/150秒请求及180秒停止的具体时间例独立，直观区分phase只延后首次追加与interval后续间隔，非保证成功快照。",
+          "original_line": 1005,
+          "heading": "#### TraceConfig 示例"
+        },
+        {
+          "original_id": "ch15-03-18-permission-models",
+          "title": "AMS、进程内 Debug 与 HeapGraph 的授权边界",
+          "decision": "remove",
+          "reason": "AMS跨进程、进程内Debug和CanProfile三列摘要重复授权段落与完整UID/build/initiator/installer分支；全部提前返回、sandbox拒绝及权限差异仍保留。",
+          "original_line": 1037,
+          "heading": "#### `CanProfile()` 如何决定能否采集"
+        },
+        {
+          "original_id": "ch15-03-19-artifact-value-boundaries",
+          "title": "完整 HPROF、HeapGraph 与解析器能力分别确认",
+          "decision": "remove",
+          "reason": "完整HPROF、实时HeapGraph、导入器三列重复紧邻能力对照表与Bitmap/native_size/受flag字段段落，删表格卡片复本；版本和不能补未采字段边界全留。",
+          "original_line": 1050,
+          "heading": "### Perfetto 引用图和完整 HPROF 差在哪"
+        },
+        {
+          "original_id": "ch15-03-20-heap-graph-join-keys",
+          "title": "从目标快照的对象行关联类型与引用",
+          "decision": "keep",
+          "reason": "对象快照upid/time到type_id类、object.id引用与HPROF field_set_id字段三种不同键的实际跨表关联独立，保留同名类加载器不可混算。",
+          "original_line": 1082,
+          "heading": "#### 表结构"
+        },
+        {
+          "original_id": "ch15-03-21-quality-before-latest",
+          "title": "有结果行不代表最新快照完整",
+          "decision": "remove",
+          "reason": "五步重排日志stats、定位坏图、选快照、按口径聚合与同条件比较清单，没有具体丢包图；MAX时间不证明完整性的原文及SQL全部保留。",
+          "original_line": 1089,
+          "heading": "#### 表结构"
+        },
+        {
+          "original_id": "ch15-03-22-three-size-views",
+          "title": "自身大小、支配聚合与 root 路径树的不同含义",
+          "decision": "remove",
+          "reason": "self_size、dominator聚合和root路径树三列重复各自紧邻SQL、定义和误读边界，5保留实际引用反例、20保留跨表关系，无须第三次三卡总结。",
+          "original_line": 1173,
+          "heading": "#### 查看按 root 路径聚合的类树"
+        },
+        {
+          "original_id": "ch15-03-23-koom-adaptation-gates",
+          "title": "KOOM fork dump 的适配门槛与父子路径",
+          "decision": "keep",
+          "reason": "KOOM适配门槛、suspendAndFork后父resumeAndWait与子Debug转储、裁剪补全检查的真实并行父子分支独立，保留非A17已适配和非固定停顿边界。",
+          "original_line": 1212,
+          "heading": "#### KOOM fork-dump 的适用条件"
+        }
+      ],
+      "sha256_after": "20cf3f35b2604420203622740fc33f29bb58a1fd1ea56c9d72f4e1a9bb973dc6",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:02:28.385907+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 23,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a151/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a151/visual-review.json",
+      "retired_diagrams": [
+        "ch15-03-01-question-to-tool",
+        "ch15-03-06-repeatable-snapshots",
+        "ch15-03-09-rss-pss-uss",
+        "ch15-03-11-native-allocator-observation",
+        "ch15-03-12-tagging-coverage",
+        "ch15-03-15-hprof-record-layout",
+        "ch15-03-18-permission-models",
+        "ch15-03-19-artifact-value-boundaries",
+        "ch15-03-21-quality-before-latest",
+        "ch15-03-22-three-size-views"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-151/retired-assets.json"
     },
     {
       "index": 152,
@@ -41417,8 +41632,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 85,
-  "next_article": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
+  "reviewed_articles": 86,
+  "next_article": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -41428,7 +41643,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:56:10.342677+08:00",
+  "updated_at": "2026-10-31T13:02:28.385907+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -41816,9 +42031,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3145,
-  "reviewed_placements_after": 1425,
-  "net_removed_placements": 1720,
+  "reviewed_placements_before": 3168,
+  "reviewed_placements_after": 1438,
+  "net_removed_placements": 1730,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -41842,5 +42057,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 85
+  "currently_matching_reviewed_source_count": 86
 }
