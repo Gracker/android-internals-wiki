@@ -56,7 +56,7 @@ consolidated_from:
 
 排查卡顿时，我们手里常有两条数据：FrameTimeline 判断某个 SurfaceFrame 或 DisplayFrame 是否按预测时间完成——SurfaceFrame 是某个 layer 提交的一帧，DisplayFrame 是 SurfaceFlinger 把一个或多个 SurfaceFrame 合成后送去显示的一帧；FrameTracer 则记录 buffer 从 Producer（生成并提交 buffer 的一方）持有，经过提交、可供读取，到 latch（SurfaceFlinger 选中该 buffer 用于合成）和 present（显示系统给出呈现反馈）的各个时间点。
 
-> 源码基线：AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`（Android 17 / API 37）。FrameTracer 在 `frameworks/native` 的 SurfaceFlinger 中，只解释它发出的事件时不必依赖内核函数；追查 DMA-BUF（跨驱动共享的 buffer）、`sync_file`（把 fence 暴露为文件描述符的内核接口） 或 `dma-fence`（同步栅栏） 时以该内核版本为准。本轮 SQL 以固定的 native Perfetto v57.2 `trace_processor_shell` 为主，并与 v58.2 对照；实际执行边界和合成输入见文末说明。平台 producer、proto 与主机 importer 的版本分别固定。
+> 源码基线：AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`（Android 17 / API 37）。FrameTracer 事件在 `frameworks/native` 的 SurfaceFlinger 里解读；追查 DMA-BUF（跨驱动共享的 buffer）、`sync_file`（把 fence 暴露为文件描述符的内核接口） 或 `dma-fence`（同步栅栏） 时以该内核版本为准。本轮 SQL 以 native Perfetto v57.2 `trace_processor_shell` 为主并与 v58.2 对照，实际执行边界和合成输入见文末说明；平台 producer、proto 与主机 importer 的版本分别固定。
 
 两套数据经常出现在同一条 trace 中，却使用不同的 ID 和时间含义，中间还隔着三种 fence：acquire fence（限制 Consumer 读取时机的同步栅栏） 约束 Consumer（读取 buffer 的一方） 何时可以读取 buffer，present fence 标记显示设备何时完成该帧的 present，release fence 通知 Producer 何时可以安全复用旧 buffer。一旦混用 `frame_number`、FrameTimeline token 和这三种 fence，语法正确的查询也会得出错误归因。
 
@@ -73,9 +73,9 @@ SurfaceFlinger（下文简称 SF）注册了两条独立的 Perfetto 数据源�
 | `android.surfaceflinger`<br>`.frametimeline`<br>实现：`Scheduler/`<br>`FrameTimeline.cpp` | expected（预测）与 actual（实际）的 SurfaceFrame、DisplayFrame | 帧是否晚到、丢弃或发生 Buffer Stuffing（队列持续积压），App 与 SF 哪一侧错过预测时间 |
 | `android.surfaceflinger`<br>`.frame`<br>实现：`FrameTracer/`<br>`FrameTracer.cpp` | 每个 layer/buffer 的阶段事件 | Producer 何时持有和提交 buffer、producer fence 何时 signal（变为已完成）、SF 何时 latch、显示 present 反馈何时到达 |
 
-两条数据源的 ID 体系也是分开的。FrameTimeline 用 `surface_frame_token` 与 `display_frame_token` 标识帧，一个 DisplayFrame 可以包含多个 SurfaceFrame；FrameTracer 这边用的是 layer、buffer id 与 BufferQueue frame number，其中 buffer id 标识被循环使用的 buffer 对象，frame number 标识该 BufferQueue 上的一次提交。Perfetto 导入后，buffer id 主要编码在 track name 中，`frame_number` 与 `layer_name` 作为 `frame_slice` 字段提供给 SQL，但不能只靠这两列认定一次唯一提交。固定17 wire schema 的 buffer id 和 frame number 都是 uint32；C++侧的uint64值写入后不能当成无损64位身份。`GraphicsFrameEvent` 没有显式 layer id 或 display id，importer又按名称组织轨道；同名重建、多display、缺字段或截断后应保留原始slice/track、时间窗及关联证据，不能声称已恢复全局唯一对象。
+两条数据源的 ID 体系也是分开的。FrameTimeline 用 `surface_frame_token` 与 `display_frame_token` 标识帧，一个 DisplayFrame 可以包含多个 SurfaceFrame；FrameTracer 这边用的是 layer、buffer id 与 BufferQueue frame number，其中 buffer id 标识被循环使用的 buffer 对象，frame number 标识该 BufferQueue 上的一次提交。Perfetto 导入后，buffer id 主要编码在 track name 中，`frame_number` 与 `layer_name` 作为 `frame_slice` 字段提供给 SQL；要认定一次唯一提交，这两列之外还要结合 track 与时间上下文核对。固定17 wire schema 的 buffer id 和 frame number 都是 uint32；C++侧的uint64值写入后，无损的 64 位身份就没有保证了，我们按 uint32 的宽度使用它们。`GraphicsFrameEvent` 没有显式 layer id 或 display id，importer又按名称组织轨道；遇到同名重建、多display、缺字段或截断，我们保留原始slice/track、时间窗及关联证据，结论只下到这些证据能支撑的对象身份。
 
-两套数据之间没有可直接等值连接的“全程帧号”：FrameTracer 的 `frame_number` 与 `surface_frame_token`、`display_frame_token` 分属两套 ID 体系，做联合分析时，我们要先限定同一个 layer，再看时间是否重叠、是否靠近同一次 present，并借助相关 transaction（提交给 SF 的状态更新）建立对应关系。 还要先确认时钟映射：固定17 FrameTracer packet使用MONOTONIC，FrameTimeline使用BOOTTIME并做偏移换算；联合SQL使用Trace Processor在有效ClockSnapshot下归一后的ts，不能直接把两种原始packet时间或FrameData的System.nanoTime值相减。缺时钟映射时保留时间对齐的不确定性。
+两套数据之间没有可直接等值连接的“全程帧号”：FrameTracer 的 `frame_number` 与 `surface_frame_token`、`display_frame_token` 分属两套 ID 体系，做联合分析时，我们先限定同一个 layer，再看时间是否重叠、是否靠近同一次 present，并借助相关 transaction（提交给 SF 的状态更新）建立对应关系。时钟映射也要先确认：固定17 FrameTracer packet使用MONOTONIC，FrameTimeline使用BOOTTIME并做偏移换算；联合SQL里用来相减的，是Trace Processor在有效ClockSnapshot下归一后的ts，两种原始packet时间和FrameData的System.nanoTime值各有各的时基。缺时钟映射时保留时间对齐的不确定性。
 
 <!-- gracker-diagram: ch14-13-01-two-source-identities -->
 ![两套数据源用不同对象和ID回答不同问题](../../assets/diagrams/ch14/ch14-13-01-two-source-identities.png)
@@ -97,50 +97,16 @@ SurfaceFlinger（下文简称 SF）注册了两条独立的 Perfetto 数据源�
 
 下面这张图把六个事件放回 Producer、SurfaceFlinger 与显示系统的公共路径。Producer 生成并提交图像内容，BufferQueue 在 Producer 与 Consumer 之间传递 buffer；在这条路径中，SF 选择要使用的 buffer，RenderEngine 或 HWC 再负责后续合成。虚线 release 路径只用于说明真实的 buffer 回收关系，不属于 AOSP FrameTracer 的 emit 集合。
 
-<!-- gracker-diagram: ch14-13-02-six-events-main-path -->
-![六类emit回到提交、读取与显示依赖](../../assets/diagrams/ch14/ch14-13-02-six-events-main-path.png)
+<!-- gracker-diagram: ed14-13-six-emits-read-dependencies-and-release-branch -->
+![latch、实际读取与显示反馈之间保留 fence 依赖](../../assets/diagrams/ch14/ed14-13-six-emits-read-dependencies-and-release-branch.png)
 
-图：DEQUEUE与QUEUE记录提交上下文，acquire、latch、可选CLIENT和present各有独立含义。 这是公共路径示意；acquire signal可晚于latch，release路径不属于六类emit。
+图：固定17常规路径示意，实际六emit为DEQUEUE/QUEUE/ACQUIRE_FENCE/LATCH/FALLBACK_COMPOSITION/PRESENT_FENCE。前两者仅在transaction带正dequeueTime块内发射；QUEUE不是GPU完成。SF可先latch尚未signal的buffer，实际读取仍须满足原acquire fence：DEVICE由HWC处理，CLIENT由RenderEngine遵守后把target及完成fence交HWC。FALLBACK只记进入CLIENT安排时间，不是GPU完成；同display可混合DEVICE与CLIENT。present反馈按display/frame，不是光学响应或旧buffer释放。release按旧buffer身份及读依赖返回，可伴drop/替换；句柄可未signal，消息与访问完成分开。release真实存在但非该AOSP六emit，不经当前帧present作为固定先决条件。
 
-```mermaid
-sequenceDiagram
-    participant P as Producer
-    participant BQ as BufferQueue / BLAST
-    participant SF as SurfaceFlinger
-    participant RE as RenderEngine
-    participant HWC as HWC / Composer HAL
-    participant D as Display
-
-    P->>BQ: dequeue buffer
-    Note over P,BQ: DEQUEUE
-    P->>BQ: queue/post buffer + producer fence
-    Note over P,BQ: QUEUE
-    BQ->>SF: buffer transaction + acquire fence
-    Note over SF: ACQUIRE_FENCE 记录 fence signal
-    SF->>SF: latch selected buffer
-    Note over SF: LATCH
-    opt layer 需要 CLIENT composition
-        SF->>RE: prepare / draw client composition
-        Note over SF,RE: FALLBACK_COMPOSITION 记录排入时间
-        RE->>HWC: client target + fence
-    end
-    SF->>HWC: DEVICE layers / client target
-    HWC->>D: present display frame
-    HWC-->>SF: present fence fd + per-layer release fence fds
-    D-->>SF: present fence later signals
-    Note over SF,D: PRESENT_FENCE
-    SF-->>BQ: release callback / merged release fence
-    BQ-->>P: release fence signal 后旧 buffer 可复用
-```
 
 图中的 `PRESENT_FENCE` 是 Android 显示栈的 present 参考时间，要判断面板像素是否完成光学响应，或者旧 buffer 何时可安全复用，还得分别去看光学测量和每个 layer 的 release fence。AOSP 虽然在 proto 中保留 `RELEASE_FENCE = 9`，FrameTracer 没有对应 emit 调用。
 
-<!-- gracker-diagram: ch14-13-03-three-fence-boundaries -->
-![acquire、present与release分别约束不同边界](../../assets/diagrams/ch14/ch14-13-03-three-fence-boundaries.png)
 
-图：写完成、显示参考时间与旧buffer安全复用由不同同步信号说明。 proto有RELEASE_FENCE枚举不等于AOSP发射它；present不能代替release或光学测量。
-
-允许 unsignaled latch（fence 尚未 signal 时先选中 buffer）时，acquire fence 的等待被推迟到后续真正读取 buffer 的位置。DEVICE composition 由 HWC 直接合成 layer，SF 会把原 layer 的 acquire fence 随 buffer 交给 HWC；CLIENT composition 由 RenderEngine 使用 GPU 合成，它会消费或等待原 layer 的 fence，再把 client target（GPU 合成后的整屏目标 buffer）及其完成 fence 交给 HWC。所以在 trace 里看到 `LATCH` 早于 `AcquireFenceSignaled` 时，我们要先想起这条机制，而不是认定 SF 在没有同步的情况下读取了 buffer。
+允许 unsignaled latch（fence 尚未 signal 时先选中 buffer）时，acquire fence 的等待被推迟到后续真正读取 buffer 的位置。DEVICE composition 由 HWC 直接合成 layer，SF 会把原 layer 的 acquire fence 随 buffer 交给 HWC；CLIENT composition 由 RenderEngine 使用 GPU 合成，它会消费或等待原 layer 的 fence，再把 client target（GPU 合成后的整屏目标 buffer）及其完成 fence 交给 HWC。所以 trace 里 `LATCH` 早于 `AcquireFenceSignaled` 时，我们先把这条机制想起来，再到后续读取 buffer 的位置去找 fence 等待——同步条件仍在，只是挪了地方。
 
 #### `HWC_COMPOSITION_QUEUED` 与 `RELEASE_FENCE`
 
@@ -158,7 +124,7 @@ sequenceDiagram
 2. trace 结束前没有后续同 layer/buffer 的有效检查时，尾部 pending fence 可能没有机会补写；invalid fence 的 `traceFence()` 不进入这一检查分支；
 3. 重检查时，已signal fence只有 `now - signalTime < 60 s` 才补写，随后从pending列表移除；仍pending的fence会继续保留。这是已signal事件的年龄过滤，不是等待60秒就强制让fence超时或signal。
 
-因此，看到某一帧缺少 `AcquireFenceSignaled` 或 `PresentFenceSignaled`，我们要结合 trace 尾部、buffer 是否继续复用、fence 有效性和数据源采集区间下判断，正确的写法是“这条 fence 在本段 trace 中没有留下 signal 事件”，而非“fence 从未 signal”。
+因此，看到某一帧缺少 `AcquireFenceSignaled` 或 `PresentFenceSignaled`，我们要结合 trace 尾部、buffer 是否继续复用、fence 有效性和数据源采集区间下判断，正确的写法是“这条 fence 在本段 trace 中没有留下 signal 事件”；“fence 从未 signal”已经越出了证据范围。
 
 <!-- gracker-diagram: ch14-13-04-pending-fence-recheck -->
 ![pending fence靠同buffer后续调用重检查](../../assets/diagrams/ch14/ch14-13-04-pending-fence-recheck.png)
@@ -167,7 +133,7 @@ sequenceDiagram
 
 ### Perfetto v57.2 怎样导入 Graphics Frame Event
 
-Perfetto 的 `GraphicsFrameEventParser` 会把一条 proto 事件导入成两种东西：raw event（单个原始事件）和 phase slice（由起止事件配对生成的阶段区间）。在 Perfetto v57.2 中，SQL查询入口是 `gpu_track` 和 `frame_slice`，筛选条件为 `gpu_track.scope = 'graphics_frame_event'`。其 `graphics_frame_event_parser_errors` 计数在特定default分支也会增长，例如PRESENT_FENCE/FALLBACK_COMPOSITION仍被导入raw event；因此非零计数要结合具体输入、raw/phase完整性与源码判断，不能一律等同trace损坏。
+Perfetto 的 `GraphicsFrameEventParser` 会把一条 proto 事件导入成两种东西：raw event（单个原始事件）和 phase slice（由起止事件配对生成的阶段区间）。在 Perfetto v57.2 中，SQL查询入口是 `gpu_track` 和 `frame_slice`，筛选条件为 `gpu_track.scope = 'graphics_frame_event'`。其 `graphics_frame_event_parser_errors` 计数在特定default分支也会增长，例如PRESENT_FENCE/FALLBACK_COMPOSITION仍被导入raw event；因此非零计数要结合具体输入、raw/phase完整性与源码来解读，trace损坏只是可能性之一。
 
 | track name | slice 内容 | `dur` 的含义 |
 | --- | --- | --- |
@@ -177,16 +143,16 @@ Perfetto 的 `GraphicsFrameEventParser` 会把一条 proto 事件导入成两种
 | `SF_<bufferId> <layer>` | 按同buffer/layer事件配对的phase；缺事件时可能开放或缺失 | `LATCH → PRESENT_FENCE signal` |
 | `Display_<layer>` | 连续 present 之间的 phase slice | 当前 present → 同 layer 下一次 present |
 
-`APP_` phase 表示 Producer 持有 buffer 的时间，里面可能装着 CPU 准备、GPU 提交、主动 pacing（按目标帧率控制提交节奏）、锁等待或其他 Producer 行为，所以给它统一命名为“App 绘制耗时”是错的。`GPU_` phase 表示从提交到 producer fence signal 的间隔；对 HWUI，它常能反映等待 GPU 完成的时间；对 Camera、Video 和其他硬件 Producer，我们要按对应设备的完成信号解释。
+`APP_` phase 表示 Producer 持有 buffer 的时间，里面可能装着 CPU 准备、GPU 提交、主动 pacing（按目标帧率控制提交节奏）、锁等待或其他 Producer 行为，把它统一读成“App 绘制耗时”，会盖住这些差别。`GPU_` phase 表示从提交到 producer fence signal 的间隔；对 HWUI，它常能反映等待 GPU 完成的时间；对 Camera、Video 和其他硬件 Producer，我们要按对应设备的完成信号解释。
 
 `SF_` phase 把 latch 到 display present feedback 合成一个区间，覆盖 SF 调度、CLIENT/DEVICE composition 和显示后段，想单独量出 HWC 或 RenderEngine 的执行时间，得去别的数据里找。`Display_` phase 表示相邻 present 的 cadence（重复出现的帧节奏），不含 buffer 从 present 到 release 的生命周期；末尾的 `Display_` slice 没有下一次 present 与它配对时，`dur` 为 `-1`，表示区间尚未闭合。
 
 <!-- gracker-diagram: ch14-13-05-raw-and-four-phases -->
 ![raw事件与四类phase的端点范围](../../assets/diagrams/ch14/ch14-13-05-raw-and-four-phases.png)
 
-图：APP、GPU、SF与Display阶段分别由不同端点配对。 条长仅示意；APP不是doFrame，GPU等待不等于执行，SF不是HWC纯耗时，Display不是release。
+图：APP、GPU、SF与Display阶段分别由不同端点配对。 条长仅示意；APP只覆盖持有buffer的时段，GPU等待只是等待，SF混着调度与合成，Display量的是present间隔。
 
-还有一个具体parser分支：处理 `QUEUE` 时，若同一buffer/layer仍有已识别的 `DequeueInfo`，且保存的 `last_acquire_ts` 晚于该DEQUEUE时间，importer会结束APP阶段并跳过新建GPU阶段。不能把它泛化为“任何先signal的fence都不建GPU”。缺QUEUE、重复DEQUEUE或缺尾部事件还可能产生未闭合/占位phase；raw event参数也可能来自该key先前保存的时间，不能未经同次提交核验就直接作为精确阶段值。
+还有一个具体parser分支：处理 `QUEUE` 时，若同一buffer/layer仍有已识别的 `DequeueInfo`，且保存的 `last_acquire_ts` 晚于该DEQUEUE时间，importer会结束APP阶段并跳过新建GPU阶段。这条行为只绑定上面那组状态，推广到“任何先signal的fence都不建GPU”就过了适用范围。缺QUEUE、重复DEQUEUE或缺尾部事件还可能产生未闭合/占位phase；raw event参数也可能来自该key先前保存的时间，要当精确阶段值用，先核验它确实来自同一次提交。
 
 <!-- gracker-diagram: ch14-13-06-parser-state-quality -->
 ![GPU省略与异常phase由具体parser状态决定](../../assets/diagrams/ch14/ch14-13-06-parser-state-quality.png)
@@ -206,12 +172,8 @@ data_sources {
 }
 ```
 
-完整排障应按问题补充 sched（CPU 调度）、atrace、GPU counter 或应用 track event，并根据采集时长与数据量设置 buffer。另外，`gfx` 这类 atrace category（Android trace 事件分类）与这两条原生 Perfetto 数据源是两套开关：只打开 `gfx` 并不会连带启用它们，我们要看配置里有没有上面的数据源项，才能判断这两条数据源是否启用。
+完整排障应按问题补充 sched（CPU 调度）、atrace、GPU counter 或应用 track event，并根据采集时长与数据量设置 buffer。另外，`gfx` 这类 atrace category（Android trace 事件分类）与这两条原生 Perfetto 数据源是两套开关：`gfx` 的开关管不到这两条数据源，它们由各自的配置项启用；有没有启用，我们直接看配置里有没有上面的数据源项。
 
-<!-- gracker-diagram: ch14-13-07-recording-switches -->
-![原生数据源与atrace category分别选择](../../assets/diagrams/ch14/ch14-13-07-recording-switches.png)
-
-图：FrameTracer、FrameTimeline与gfx/view等采集开关分别配置。 gfx不会连带打开原生数据源；还要核对权限、实际数据、窗口、时钟与丢数。
 
 ### SQL 1：列出目标 layer 的 raw event 与 phase
 
@@ -236,14 +198,10 @@ ORDER BY fs.ts, fs.id;
 
 把包名替换为目标 layer 名称中稳定不变的片段。`Buffer:` 轨迹用于查看六类 raw event；`APP_`、`GPU_`、`SF_`、`Display_` 轨迹已经由 importer 计算好阶段时长。查询结果中 `dur = -1` 的未闭合 slice 要先剔除，再算均值、P95（第 95 百分位值）或总时长统计。
 
-<!-- gracker-diagram: ch14-13-08-raw-query-identity -->
-![raw查询先保留身份，再解释时间字段](../../assets/diagrams/ch14/ch14-13-08-raw-query-identity.png)
-
-图：从scope筛选目标候选，保留原始slice、track、layer、frame和时间。 名称模式可混入多实例；参数可能来自旧状态，先核验同次提交再求阶段差。
 
 ### SQL 2：按轨道与 frame number 检查四类 phase
 
-下面的查询给phase分类并逐条保留原始身份，不把同名layer/frame的不同buffer强行合成四列。`APP_`、`GPU_`、`SF_` 的轨道后缀携带buffer id与layer名；`Display_` 按layer组织相邻present，不能假装它拥有同样的buffer身份。
+下面的查询给phase分类并逐条保留原始身份，不把同名layer/frame的不同buffer强行合成四列。`APP_`、`GPU_`、`SF_` 的轨道后缀携带buffer id与layer名；`Display_` 按layer组织相邻present，buffer身份是前三类轨道才有的东西。
 
 ```sql
 WITH phase AS (
@@ -277,26 +235,22 @@ WHERE phase_name IS NOT NULL
 ORDER BY ts_ns, phase_slice_id;
 ```
 
-开放phase的 `duration_ms` 为NULL；完全未生成的phase没有结果行，必须与该次提交预期阶段清单另行比对，不能当成0。`phase_slice_id`、`track_id` 和原始时间保留在结果中；phase分类与排序只用于发现候选，归因还需当前刷新率、内容帧率、FrameTimeline、线程状态、GPU与composition证据。
+开放phase的 `duration_ms` 为NULL；完全未生成的phase没有结果行，要和该次提交预期阶段清单另行比对，它连0都算不上。`phase_slice_id`、`track_id` 和原始时间保留在结果中；phase分类与排序只用于发现候选，归因还需当前刷新率、内容帧率、FrameTimeline、线程状态、GPU与composition证据。
 
-即使保留 `buffer_track_suffix`，也不能恢复协议未携带的layer生命周期或display身份。窗口重建、同名对象、wire位宽截断、缺QUEUE等异常都要检查。只有确认同一实例/窗口、各phase唯一且状态完整后，才可做进一步透视；不同phase可能重叠，不能相加成端到端耗时。
+`buffer_track_suffix` 保留得再完整，协议未携带的layer生命周期与display身份也补不回来；窗口重建、同名对象、wire位宽截断、缺QUEUE等异常都要检查。确认同一实例/窗口、各phase唯一且状态完整后，才可做进一步透视；不同phase可能重叠，端到端耗时要在这些phase之外另算。
 
-<!-- gracker-diagram: ch14-13-09-phase-query-preserves-rows -->
-![phase分类不强制合并不同buffer](../../assets/diagrams/ch14/ch14-13-09-phase-query-preserves-rows.png)
-
-图：APP/GPU/SF保留buffer轨道后缀，Display单独保留layer节奏。 同名/frame取MAX会丢信息；只有身份、唯一性和质量通过后才能进一步透视。
 
 ### FrameTimeline 与 FrameTracer 怎样配合
 
 FrameTimeline 从 Android 12 起提供 expected/actual SurfaceFrame 与 DisplayFrame。Android 17 的 `ActualSurfaceFrameStart` 包含多组判断字段：`present_type` 表示早到、准时或晚到，`on_time_finish` 表示 App 是否按时完成，`gpu_composition` 表示是否使用 GPU 合成，`jank_type` 与 `jank_severity_type` 描述卡顿类型和严重程度，`prediction_type` 描述预测是否仍有效，`is_buffer` 区分 buffer 帧与动画状态。`present_delay_millis`（present 延迟）、`vsync_resynced_jitter_millis`（VSync 重同步抖动） 和 `jank_severity_score` 则提供延迟、VSync 重新同步抖动与评分。SQL 视图会把 jank bitmask（用不同二进制位同时表示多个原因的整数）转换成可读分类。
 
-相比 `android-16.0.0_r1`，Android 17 的 proto 增加了五个 jank 枚举值，取值和诊断含义见下文「Android 17 新增的分类」。同时新增的还有 `jank_type_experimental`、`present_type_experimental` 与 `jank_debug_metadata`，proto 明确要求 experimental 字段不得用于正式 jank 判定。这些新增项来自 Android 16 与 Android 17 固定 tag 的 proto 对比；某个字段存在于当前文件，也就说明不了更早版本支持它。
+相比 `android-16.0.0_r1`，Android 17 的 proto 增加了五个 jank 枚举值，取值和诊断含义见下文「Android 17 新增的分类」。同时新增的还有 `jank_type_experimental`、`present_type_experimental` 与 `jank_debug_metadata`，proto 明确要求 experimental 字段不得用于正式 jank 判定。这些新增项来自 Android 16 与 Android 17 固定 tag 的 proto 对比；一个字段在当前文件里出现，只说明当前版本，更早版本是否支持要回到对应 tag 确认。
 
 #### `gpu_composition` 与 `FALLBACK_COMPOSITION`
 
 把两条数据源对上之后我们会发现，`Layer.cpp` 在 `OutputLayer::requiresClientComposition()` 为真时记录 `FALLBACK_COMPOSITION`，并对相关 SurfaceFrame 调用 `setGpuComposition()`，所以 FrameTimeline 的 `gpu_composition` 与 FrameTracer raw event 来自同一条 client-composition 判定分支。
 
-`requiresClientComposition()` 在当前 output layer 没有 HWC state，或 HWC composition type 为 `CLIENT` 时返回真。一次 display frame 可以同时包含由 HWC 直接合成的 DEVICE layer 和由 RenderEngine 生成的 CLIENT target。某个 layer 出现 `FallbackComposition`，只说明它进入 client composition；overlay plane（显示硬件可直接合成的图层通道） 有没有用完、RenderEngine 的 GPU 时长是多少，这条事件单独回答不了——像素 format、几何 transform、alpha blend、dataspace、color transform、protected content 和 vendor HWC 策略都可能影响这一选择。
+`requiresClientComposition()` 在当前 output layer 没有 HWC state，或 HWC composition type 为 `CLIENT` 时返回真。一次 display frame 可以同时包含由 HWC 直接合成的 DEVICE layer 和由 RenderEngine 生成的 CLIENT target。某个 layer 出现 `FallbackComposition`，只说明它进入 client composition；overlay plane（显示硬件可直接合成的图层通道） 是否用完、RenderEngine 的 GPU 时长是多少，要另查——像素 format、几何 transform、alpha blend、dataspace、color transform、protected content 和 vendor HWC 策略都可能影响这一选择。
 
 <!-- gracker-diagram: ch14-13-11-client-composition-observation -->
 ![CLIENT判定同时影响两种观测](../../assets/diagrams/ch14/ch14-13-11-client-composition-observation.png)
@@ -315,10 +269,6 @@ FrameTimeline 从 Android 12 起提供 expected/actual SurfaceFrame 与 DisplayF
 
 标准 HWUI App Window 的 FrameTimeline 覆盖较完整。SurfaceView、Camera、Video、游戏、WebView overlay（独立叠加层）、Flutter PlatformView 等路径可能有独立 Producer、独立 layer，或没有完整的 App SurfaceFrame。这时我们先识别真正提交 buffer 的 Producer 与目标 layer，再决定能否主要依靠 FrameTimeline 定位帧。
 
-<!-- gracker-diagram: ch14-13-10-cross-source-evidence -->
-![从FrameTimeline目标帧找到FrameTracer候选](../../assets/diagrams/ch14/ch14-13-10-cross-source-evidence.png)
-
-图：固定目标进程/Layer与窗口，再用transaction和present核对跨源候选。 框架名和时间接近不证明同一帧；独立Surface先确认覆盖和真正Producer。
 
 ### 四类耗时怎样读
 
@@ -326,18 +276,14 @@ FrameTimeline 从 Android 12 起提供 expected/actual SurfaceFrame 与 DisplayF
 
 `DEQUEUE → QUEUE` 增长说明 Producer 拿到 buffer 后较晚提交。对标准 HWUI，我们检查 MainThread、RenderThread、`DrawFrame`、Skia/GPU submit 与 pacing；对游戏检查 Logic、Render/RHI（Rendering Hardware Interface，渲染硬件抽象层）和 swap；对 Camera/Video 检查 HAL、codec 与时间戳策略。即使 CPU 线程不忙，也可能存在主动 pacing、GPU backpressure（GPU 处理不过来导致上游放慢）或同步依赖。
 
-<!-- gracker-diagram: ch14-13-12-producer-phase-causes -->
-![APP与GPU阶段要按Producer类型继续调查](../../assets/diagrams/ch14/ch14-13-12-producer-phase-causes.png)
-
-图：buffer持有时间和producer完成差分别查业务、pacing、同步与硬件工作。 CPU不忙不排除长持有；Camera/Video fence不统一归GPU，时间差也不等于Consumer线程阻塞。
 
 #### `GPU_` 偏长：producer completion fence 晚
 
-`QUEUE → ACQUIRE_FENCE signal` 增长表示提交后producer完成信号较晚，不证明Consumer线程这整段都在同步阻塞；它可能尚未尝试读取或继续其他工作。分析 HWUI 或游戏时，通常还要补充 GPU stage、frequency、utilization、shader 和内存带宽数据；Camera、Video 和硬件 blitter（用于复制、缩放或格式转换图像的硬件单元）则要按对应生产设备的 completion fence 解释。判定阈值也一样：固定使用 16.5 ms，会在 90/120 Hz、30 fps 内容、VRR（Variable Refresh Rate，可变刷新率）、ARR（Adaptive Refresh Rate，自适应刷新率）和非整数帧节奏场景中产生误报，我们应改为与当前 expected timeline 和目标帧率比较。
+`QUEUE → ACQUIRE_FENCE signal` 增长表示提交后producer完成信号较晚；这段时间里Consumer线程可能还没尝试读取，也可能在做别的事，把整段记作同步阻塞并没有依据。分析 HWUI 或游戏时，通常还要补充 GPU stage、frequency、utilization、shader 和内存带宽数据；Camera、Video 和硬件 blitter（用于复制、缩放或格式转换图像的硬件单元）则要按对应生产设备的 completion fence 解释。判定阈值也一样：固定使用 16.5 ms，会在 90/120 Hz、30 fps 内容、VRR（Variable Refresh Rate，可变刷新率）、ARR（Adaptive Refresh Rate，自适应刷新率）和非整数帧节奏场景中产生误报，更稳的比较对象是当前 expected timeline 和目标帧率。
 
 #### acquire 已 signal，latch 仍晚：检查 transaction 与 SF 调度
 
-FrameTracer importer 没有生成独立的 acquire-to-latch phase track。我们可以从 raw event 时间或事件参数计算二者间隔，再查看 transaction readiness（transaction 是否满足提交条件）、同步 transaction、`BufferTX - <layerName>`、SF actual timeline，以及该 layer 是否被本轮合成选中。Android 13+ 的 unsignaled latch 还会让 latch 与 fence signal 的先后关系更灵活，只看事件顺序，就读不出真正的读取等待发生在哪里。
+FrameTracer importer 没有生成独立的 acquire-to-latch phase track。我们可以从 raw event 时间或事件参数计算二者间隔，再查看 transaction readiness（transaction 是否满足提交条件）、同步 transaction、`BufferTX - <layerName>`、SF actual timeline，以及该 layer 是否被本轮合成选中。Android 13+ 的 unsignaled latch 还会让 latch 与 fence signal 的先后关系更灵活，读取等待的真实位置，要靠上面这些 transaction 与调度证据来确定。
 
 #### `SF_` 偏长：系统输出段的综合延迟
 
@@ -347,10 +293,6 @@ FrameTracer importer 没有生成独立的 acquire-to-latch phase track。我们
 
 `Display_` 的 duration 是同一 layer 相邻两次 present feedback 的间隔，适合观察帧节奏和继续显示旧 buffer 的时段，但它量的是 present 间隔；某个 buffer 的 release latency（从 present 到允许复用的延迟）要靠其他数据。30 fps 内容在 60 Hz display 上出现约 33.3 ms 间隔可能完全符合预期，必须结合 requested frame rate、内容帧率与 FrameTimeline 判断。
 
-<!-- gracker-diagram: ch14-13-13-output-phase-causes -->
-![SF综合输出延迟与Display节奏分别解释](../../assets/diagrams/ch14/ch14-13-13-output-phase-causes.png)
-
-图：latch到present是综合输出段，相邻present是内容显示节奏。 HWC或RenderEngine纯耗时另找证据；33.3ms可能符合30fps内容，固定阈值会误判。
 
 ### 按出图类型修正解释
 
@@ -368,10 +310,6 @@ FrameTracer importer 没有生成独立的 acquire-to-latch phase track。我们
 
 这张表按渲染管线中的 Producer、Surface、layer 与 composition 关系区分场景。我们排障时如果只看事件名，很容易把宿主窗口、独立 Surface 和 display frame 都当成同一条“App 帧”。
 
-<!-- gracker-diagram: ch14-13-14-rendering-path-routing -->
-![宿主窗口、独立Surface和离屏路径分开定位](../../assets/diagrams/ch14/ch14-13-14-rendering-path-routing.png)
-
-图：按实际Producer、Surface与Layer拓扑选择记录，而不是按框架名套解释。 宿主token不能代替独立Surface；Camera/sideband和纯离屏可能缺少普通逐帧链路。
 
 ### 不同 Android 版本的能力
 
@@ -385,10 +323,6 @@ FrameTracer importer 没有生成独立的 acquire-to-latch phase track。我们
 
 联合诊断的范围因此从 Android 12 开始，这条路径依赖 FrameTimeline；Android 11 的 FrameTracer 可以作为历史兼容路径保留。Android10及更早的目标build应另行检查实际数据源；本文不把Android11的实现直接推广到旧版本，可先使用当时可用的BufferQueue、atrace、SF与fence数据。
 
-<!-- gracker-diagram: ch14-13-15-platform-query-version -->
-![平台数据能力与主机解析版本分别固定](../../assets/diagrams/ch14/ch14-13-15-platform-query-version.png)
-
-图：Android11核对buffer事件、Android12起联合FrameTimeline，API33才提供应用回调。 17分类和固定parser不倒推历史支持；旧build、OEM和独立Surface需分别核验。
 
 ### 使用限制
 
@@ -434,12 +368,12 @@ FrameTimeline 同时记录应用的 SurfaceFrame 和 SurfaceFlinger 的 DisplayF
 
 token 在这里是用于关联记录的帧 ID。一个 DisplayFrame 可以组合来自多个进程、多个 layer 的 SurfaceFrame，因此多条应用行可以共享同一个 `display_frame_token`：它适合从应用帧追到显示帧，而应用 Expected 与应用 Actual 之间的连接，要用同一 `upid` 下的 `surface_frame_token`。`upid` 是 Trace Processor 为进程分配的内部唯一 ID，可避免直接使用可能被系统复用的 PID。
 
-<!-- gracker-diagram: ch14-13-16-surface-display-cardinality -->
-![同一App token可有多个Layer Actual](../../assets/diagrams/ch14/ch14-13-16-surface-display-cardinality.png)
+<!-- gracker-diagram: ed14-13-actual-expected-display-matching-and-quality -->
+![每条 Actual 分别查询共享 Expected 与 DisplayFrame](../../assets/diagrams/ch14/ed14-13-actual-expected-display-matching-and-quality.png)
 
-图：应用Expected按upid/token共享，多个Layer Actual再连接DisplayFrame。 Actual不能按token去重；DisplayFrame的surface token为NULL，重复display token是正常多对一。
+图：示例关系是同upid和surface token下LayerA/B有独立Actual行，可共享Expected，并各自按display token关联同一DisplayFrame；不能按token去重Actual。Q1按upid+surface token LEFT查Expected，只有Expected恰1且Actual/Expected都闭合正值才算端点差，其余保留数量/raw/质量并返回NULL。Q3固定App/SF upid与machine，再按display token查surface token为NULL的DisplayFrame；候选0或>1保留App行和数量，SF详情NULL，不自动挑一行。多App/Layers共享display正常，Expected不直接生成DisplayFrame，连接分别由Actual记录的两类token发起。
 
-DisplayFrame 的 protobuf 记录只有自己的 display token，没有 surface token。Perfetto v57.2 因此把 DisplayFrame 行的 `surface_frame_token` 保留为 `NULL`，也就是 SQL 中的空值，部分文档示例则把这一格显示为 0；查询时我们按字段是否为空区分两类帧，不把 0 当作依据。
+DisplayFrame 的 protobuf 记录只有自己的 display token，没有 surface token。Perfetto v57.2 因此把 DisplayFrame 行的 `surface_frame_token` 保留为 `NULL`，也就是 SQL 中的空值，部分文档示例则把这一格显示为 0；查询时我们按字段是否为空区分两类帧，0 只是部分文档示例的展示写法。
 
 数据覆盖上，标准 HWUI App Window 的 SurfaceFrame 最完整。SurfaceView 由独立 Producer 和独立 Surface 出帧，Perfetto 官方文档仍将其列为 FrameTimeline 不支持的路径；Camera、Video、游戏 Surface、WebView overlay 和跨进程嵌入也一样，要先确认真正生成并提交 buffer 的 Producer 与 layer，宿主窗口的 token 代替不了独立 Surface 的帧 ID。
 
@@ -451,9 +385,9 @@ DisplayFrame 的 protobuf 记录只有自己的 display token，没有 surface t
 
 - Expected slice 的起点是 Choreographer 回调被计划运行的时刻；slice 表示系统为应用准备该帧安排的时间窗口。
 - Actual slice 的起点是 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始运行的时刻。
-- 对有buffer且完成信号有效的SurfaceFrame，Actual终点取producer acquire fence signal与queue/post时刻的较晚者；固定17实现遇到pending acquire fence时先回退到queue时刻。bufferless记录另有路径；这一终点不能统一当成GPU已完成证明。
+- 对有buffer且完成信号有效的SurfaceFrame，Actual终点取producer acquire fence signal与queue/post时刻的较晚者；固定17实现遇到pending acquire fence时先回退到queue时刻。bufferless记录另有路径；把这一终点统一读成“GPU已完成”，超出了它承载的信息。
 
-`Choreographer#doFrame` 只覆盖主线程回调区间，Actual SurfaceFrame 还考虑异步 GPU 工作和提交时刻，所以 `doFrame` 较短，也证明不了该帧在 ready（应当就绪）deadline（必须准备完成的时间）之前就绪。Android 17 的 trace 名为 `Choreographer#doFrame <vsyncId>`，例如 `Choreographer#doFrame 12345`；方括号形式不符合该 tag 的源码。
+`Choreographer#doFrame` 只覆盖主线程回调区间，Actual SurfaceFrame 还考虑异步 GPU 工作和提交时刻，所以 `doFrame` 较短只说明主线程回调占用短；该帧有没有赶在 ready（应当就绪）deadline（必须准备完成的时间）之前就绪，要由 Actual 的终点回答。Android 17 的 trace 名为 `Choreographer#doFrame <vsyncId>`，例如 `Choreographer#doFrame 12345`；方括号形式不符合该 tag 的源码。
 
 <!-- gracker-diagram: ch14-13-17-app-expected-actual -->
 ![App预期窗口与实际ready端点](../../assets/diagrams/ch14/ch14-13-17-app-expected-actual.png)
@@ -464,16 +398,12 @@ DisplayFrame 的 protobuf 记录只有自己的 display token，没有 surface t
 
 SF Expected slice 表示当前 DisplayFrame 的预测工作窗口；SF Actual slice 从 SF 主线程开始处理该帧，覆盖 Composer 与 Display HAL（显示硬件抽象层） 相关路径，终点是 Android 显示栈报告 on-screen update 的时刻。
 
-这个 present 时间可以用于分析 Android 显示管线；面板像素是否完成扫描和光学响应，它给不出答案。测量从触摸到屏幕发光的端到端延迟，仍要同时记录输入时间戳、显示链路，并使用外部光学设备。
+这个 present 时间可以用于分析 Android 显示管线；面板像素的扫描与光学响应，在它的范围之外。测量从触摸到屏幕发光的端到端延迟，仍要同时记录输入时间戳、显示链路，并使用外部光学设备。
 
-<!-- gracker-diagram: ch14-13-18-sf-display-boundary -->
-![SF Actual覆盖显示栈，release与光学另查](../../assets/diagrams/ch14/ch14-13-18-sf-display-boundary.png)
-
-图：SF Actual从系统处理起点延伸到显示栈present反馈。 Composer/DisplayHAL包含在综合路径中，不能把这一段当SF CPU时长或光学响应时间。
 
 #### Expected 宽度与刷新周期的关系
 
-Expected slice 的宽度来自该回调的调度预算，即系统预计 App 或 SF 完成工作的可用时间。官方示例中应用 Expected slice 约 20.5 ms，SF Expected slice 约 10.5 ms；拿“90 Hz 就应固定为 11.1 ms”去校验它们，校验的对象就错了。
+Expected slice 的宽度来自该回调的调度预算，即系统预计 App 或 SF 完成工作的可用时间。官方示例中应用 Expected slice 约 20.5 ms，SF Expected slice 约 10.5 ms；校验它们的基准同样是调度预算，“90 Hz 就应固定为 11.1 ms”这把尺子量错了对象。
 
 Android 17 的 `VSyncDispatchTimerQueueEntry::schedule()` 以预测的目标 VSYNC 为参考时间，并使用 `workDuration`、`readyDuration` 计算 wakeup（唤醒） 与 ready 时刻：
 
@@ -482,12 +412,12 @@ nextReadyTime  = nextVsyncTime - readyDuration
 nextWakeupTime = nextReadyTime - workDuration
 ```
 
-这里写的是候选时间。固定17 `schedule()` 还把唤醒时刻夹到 `max(now, nextVsyncTime - workDuration - readyDuration)`，并有VSYNC选择与重新调度约束；不能把过去的候选时刻当成实际唤醒。理解了这一点就能看出，固定的“VSYNC-app 提前 1～3 ms、再叠加 SF 预算”模型覆盖不了动态刷新率、不同工作预算、VSync 重同步或 Buffer Stuffing 等情况，我们反推 Expected slice 时以公式为准。
+这里写的是候选时间。固定17 `schedule()` 还把唤醒时刻夹到 `max(now, nextVsyncTime - workDuration - readyDuration)`，并有VSYNC选择与重新调度约束；实际唤醒以夹取和重新调度的结果为准，过去的候选时刻只作参考。理解了这一点就能看出，固定的“VSYNC-app 提前 1～3 ms、再叠加 SF 预算”模型只覆盖静态场景，动态刷新率、不同工作预算、VSync 重同步或 Buffer Stuffing 都在它的范围外；我们反推 Expected slice 时以公式为准。
 
 <!-- gracker-diagram: ch14-13-19-dynamic-work-ready-budget -->
 ![动态work与ready预算决定候选唤醒](../../assets/diagrams/ch14/ch14-13-19-dynamic-work-ready-budget.png)
 
-图：目标VSYNC、ready预算与work预算决定调度候选，实际唤醒还受now和重新调度约束。 Expected宽度不是刷新周期；固定提前1–3ms模型不能替代实际版本的调度逻辑。
+图：目标VSYNC、ready预算与work预算决定调度候选，实际唤醒还受now和重新调度约束。 Expected宽度来自调度预算；固定提前1–3ms模型只覆盖静态场景，调度逻辑以实际版本的公式为准。
 
 ### 三个字段要一起看
 
@@ -504,7 +434,7 @@ Actual slice 至少包含以下三组相互独立的信息：
 <!-- gracker-diagram: ch14-13-20-independent-frame-fields -->
 ![present、ready与jank类别分别回答不同问题](../../assets/diagrams/ch14/ch14-13-20-independent-frame-fields.png)
 
-图：present类型、按时完成和jank归属需要联合读取。 on_time_finish=1仍可能Buffer Stuffing；颜色与分类不能替代关键路径因果证据。
+图：present类型、按时完成和jank归属需要联合读取。 on_time_finish=1仍可能Buffer Stuffing；关键路径的因果证据要在颜色与分类之外另找。
 
 Perfetto UI 用颜色表示状态，以及原因归在当前进程还是其他进程：
 
@@ -518,14 +448,10 @@ Perfetto UI 用颜色表示状态，以及原因归在当前进程还是其他�
 
 Android 17 `SurfaceFrame::isSelfJanky()` 将 `AppDeadlineMissed`、`AppResyncedJitter` 和 `Unknown` 视为应用自身 jank；SF scheduling、SF CPU/GPU deadline、Display HAL 和 Prediction Error 则形成系统侧原因。看到黄色，我们只知道 FrameTimeline 把当前帧归到了系统侧，而复杂 layer、GPU 负载或 composition 变化仍可能由应用行为触发，排障时还要顺着 flow（跨 track 的事件关联线）检查 layer 和系统负载。
 
-<!-- gracker-diagram: ch14-13-21-ui-classification-causality -->
-![UI状态提示调查方向，因果还需现场证据](../../assets/diagrams/ch14/ch14-13-21-ui-classification-causality.png)
-
-图：先看jank_tag与原始类型，再沿当前对象的线程、GPU和显示依赖继续调查。 Self/Other是归类口径；应用负载可能影响系统侧，good/stuffing/dropped也要分开统计。
 
 `jank_type` 是把 bitmask 转换成的字符串，一帧可以同时带多个原因。Perfetto v57.2 还提供 `jank_tag`，把结果归并为 `Self Jank`、`Other Jank`、`Buffer Stuffing`、`SurfaceFlinger Stuffing`、`Dropped Frame`、`Non-perceivable Jank` 等预计算类别。做统计时应优先使用这个分类，避免靠字符串包含关系自行分组。
 
-Android 17 的 Actual SurfaceFrame protobuf 记录还包含 `present_delay_millis`、`vsync_resynced_jitter_millis`、`jank_severity_type` 与 `jank_severity_score`，前两者分别是 present 延迟与 VSync 重同步抖动；DisplayFrame 没有 VSync 重同步抖动字段。Perfetto v57.2 在内置表中把 severity score 命名为 `jank_score`。这些值可以描述偏差幅度和严重程度，我们要把它们和 `jank_type`、present 状态与采集版本放在一起读；脱离这些上下文另起一套 jank 判定，是行不通的。protobuf 中带 `experimental` 的 jank、present 与 debug 字段明确标注为调试数据，正式 jank 指标里不该出现。
+Android 17 的 Actual SurfaceFrame protobuf 记录还包含 `present_delay_millis`、`vsync_resynced_jitter_millis`、`jank_severity_type` 与 `jank_severity_score`，前两者分别是 present 延迟与 VSync 重同步抖动；DisplayFrame 没有 VSync 重同步抖动字段。Perfetto v57.2 在内置表中把 severity score 命名为 `jank_score`。这些值可以描述偏差幅度和严重程度，我们要把它们和 `jank_type`、present 状态与采集版本放在一起读；另起一套脱离上下文的 jank 判定，站不住。protobuf 中带 `experimental` 的 jank、present 与 debug 字段明确标注为调试数据，正式 jank 指标要避开它们。
 
 ### API 33 的 `FrameData` 用法
 
@@ -540,7 +466,7 @@ API 33 新增 `Choreographer.postVsyncCallback(VsyncCallback)`。这个一次性
 | `FrameTimeline` | `getExpectedPresentationTimeNanos()` | 预测 present 时间，使用 `System.nanoTime()` 时基 |
 | `FrameTimeline` | `getDeadlineNanos()` | 该候选帧应当 ready 的时间，使用 `System.nanoTime()` 时基 |
 
-`FrameData.getLastFrameTimeNanos()`、`FrameData.getIntervalNanos()`、`Choreographer.getFrameData()` 都不属于公共 API。deadline 也不等同于“主线程 CPU 工作结束时间”；应用的 buffer 与 GPU 工作要在这个时刻前满足后续 Consumer 的读取条件。
+`FrameData.getLastFrameTimeNanos()`、`FrameData.getIntervalNanos()`、`Choreographer.getFrameData()` 都不属于公共 API。deadline 要求应用的 buffer 与 GPU 工作赶在它之前满足后续 Consumer 的读取条件，主线程 CPU 工作结束时间只是其中一段。
 
 下面的 Java 片段演示如何在 API 33+ 复制一次回调中的标量值。
 
@@ -575,7 +501,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 
 Android 17 内部的 `DisplayEventReceiver.VsyncEventData` 为候选数组预留 7 个槽位，但 `FrameData.update()` 会按事件携带的 `frameTimelinesLength` 重新分配数组。公共 API 没有承诺固定返回 7 项，业务代码应读取实际数组长度，并使用平台标出的 preferred 项。
 
-这些 API 提供的是本次回调可选的调度计划，替代不了 FrameTimeline trace：应用进程只凭 `FrameData`，拿不到最终 present、SF 分类、其他 layer 或 Display HAL 结果。
+这些 API 提供的是本次回调可选的调度计划；应用进程只凭 `FrameData` 得到的就止于这些计划，最终 present、SF 分类、其他 layer 与 Display HAL 结果要由 FrameTimeline trace 补上。
 
 ### 正确启用数据源
 
@@ -606,7 +532,7 @@ data_sources {
 }
 ```
 
-采集时长和 buffer 容量按复现窗口、设备内存与实际数据速率设定，适用于所有场景的固定数值并不存在。`android.surfaceflinger.frame` 是可选的buffer阶段数据源，见本文前半部分。定位单个应用时，我们把 `atrace_apps` 换成目标包名；使用全局 `*` 会增加 ftrace 数据量。生产问题还要按待验证的原因加入 GPU counter、Binder、memory 或 power 数据，避免无关数据占满 ring buffer（写满后覆盖旧数据的环形缓冲区）。
+采集时长和 buffer 容量按复现窗口、设备内存与实际数据速率设定，每个场景各有合适的值。`android.surfaceflinger.frame` 是可选的buffer阶段数据源，见本文前半部分。定位单个应用时，我们把 `atrace_apps` 换成目标包名；使用全局 `*` 会增加 ftrace 数据量。生产问题还要按待验证的原因加入 GPU counter、Binder、memory 或 power 数据，避免无关数据占满 ring buffer（写满后覆盖旧数据的环形缓冲区）。
 
 下面的命令使用文本配置采集并拉回 trace。
 
@@ -620,10 +546,6 @@ adb pull /data/misc/perfetto-traces/frame_timeline.perfetto-trace
 
 命令依次把文本配置推到设备、启动 Perfetto 采集，再把 trace 文件拉回电脑。采集结束后，我们先在 Trace Processor 中确认两张 FrameTimeline 表有数据；若 UI 缺少应用 Expected/Actual track，再依次检查平台是否为 Android 12+、原生数据源是否启用、目标应用在采集区间内是否产生可见帧，以及目标路径是否属于独立 Surface 或未覆盖的 SurfaceView。
 
-<!-- gracker-diagram: ch14-13-23-capture-delivery-quality -->
-![配置、采集、交付后先检查实际覆盖](../../assets/diagrams/ch14/ch14-13-23-capture-delivery-quality.png)
-
-图：把完整采集配置交给授权consumer，产物交付后先检查两类帧数据。 命令语法与配置编码通过不等于设备采集成功；缺App轨道先核对平台、目标窗口和出图路径。
 
 ### UI 排障顺序
 
@@ -638,14 +560,10 @@ adb pull /data/misc/perfetto-traces/frame_timeline.perfetto-trace
 
 `doFrame` 较长只能说明主线程回调占用明显；`doFrame` 较短而 Actual 较长时，RenderThread、GPU、提交等待或 Producer 与 SF 的交接过程仍可能有问题，要确认原因，还需查询对应线程、GPU、fence 或 BufferQueue 数据。
 
-<!-- gracker-diagram: ch14-13-24-ui-investigation-order -->
-![从异常帧沿证据追到等待位置](../../assets/diagrams/ch14/ch14-13-24-ui-investigation-order.png)
-
-图：先固定目标帧和Expected，再沿显示flow与分类检查相应依赖。 doFrame短不能证明ready按时；同token多Layer保留，缺关键采集证据时限制归因。
 
 ### Perfetto SQL：按正确身份对齐
 
-`expected_frame_timeline_slice` 与 `actual_frame_timeline_slice` 是公开查询对象，不需要先INCLUDE `android.frames.timeline`；importer写入slice及参数，prelude生成对应查询对象。固定17 prelude使用 `CREATE PERFETTO TABLE`，不能将其描述为两张直接由importer独立写入的底层表。共同身份字段与Actual分类字段要区分，不能在Expected上查询 `present_type/on_time_finish/jank_type/jank_tag`。先确认目标 `upid` 与SF的 `upid`，把示例123/456替换；包名只用于找候选。查询同时保留原始ID、区间质量与 `Is Buffer?`，后者来自参数，可为Yes/No/Unspecified。
+`expected_frame_timeline_slice` 与 `actual_frame_timeline_slice` 是公开查询对象，直接查询即可，无需先INCLUDE `android.frames.timeline`：importer写入slice及参数，prelude生成对应查询对象。固定17 prelude使用 `CREATE PERFETTO TABLE`，它们更准确的出身是“prelude 生成的查询对象”，与“直接由importer独立写入的底层表”是两回事。共同身份字段与Actual分类字段要分开用，`present_type/on_time_finish/jank_type/jank_tag` 只在 Actual 侧存在。先确认目标 `upid` 与SF的 `upid`，把示例123/456替换；包名只用于找候选。查询同时保留原始ID、区间质量与 `Is Buffer?`，后者来自参数，可为Yes/No/Unspecified。
 
 #### 查询 1：逐帧比较应用 Expected 与 Actual
 
@@ -684,10 +602,6 @@ ORDER BY a.ts, a.id;
 
 `end_delta_ms` 仅在Actual与唯一Expected都闭合且为正时计算，它是两端点之差，不是完整jank判定；其余情况返回NULL并保留质量列。若同一 token 对应多个 layer，结果会保留多条 Actual 行，每一行都代表一个 layer，用 `DISTINCT` 去重会把真实信息藏起来。
 
-<!-- gracker-diagram: ch14-13-25-expected-left-quality-query -->
-![Expected关联不丢掉目标Actual](../../assets/diagrams/ch14/ch14-13-25-expected-left-quality-query.png)
-
-图：Q1保留所有目标Actual，并显式列出Expected数量和区间质量。 唯一Expected与Actual都闭合为正才算端点差；缺失、重复、开放或零时长均不冒充有效差值。
 
 #### 查询 2：按原因归属、present 与 ready 状态统计
 
@@ -709,12 +623,8 @@ GROUP BY a.upid, a.layer_name, is_buffer,
 ORDER BY surface_frame_rows DESC;
 ```
 
-统计单位是SurfaceFrame结果行，不是独立App回调数或DisplayFrame数；同token多Layer分别计数。开放、零时长与bufferless记录单独可见，平均值仅纳入闭合正时长。分类字段能帮助区分工作是否按时、present类型、stuffing及当前进程归属；具体字段未采到时保留未知，不能补为正常。`dur` 来自 FrameTimeline 的 Actual slice，统一解释成主线程、GPU 或端到端显示耗时都会出错。
+统计单位是SurfaceFrame结果行，不是独立App回调数或DisplayFrame数；同token多Layer分别计数。开放、零时长与bufferless记录单独可见，平均值仅纳入闭合正时长。分类字段能帮助区分工作是否按时、present类型、stuffing及当前进程归属；具体字段未采到时保留未知，补成正常值会引入假数据。`dur` 来自 FrameTimeline 的 Actual slice，主线程、GPU、端到端显示耗时分别要到各自的数据里去量。
 
-<!-- gracker-diagram: ch14-13-26-surface-row-aggregate -->
-![统计分母是SurfaceFrame行，质量分列](../../assets/diagrams/ch14/ch14-13-26-surface-row-aggregate.png)
-
-图：Q2按目标upid、Layer、is_buffer和分类统计SurfaceFrame记录。 多Layer同App token仍多行；开放/零时长不进入正时长均值，记录行数不是用户帧数。
 
 #### 查询 3：把应用帧连接到 SF DisplayFrame
 
@@ -753,12 +663,8 @@ FROM app_frame app LEFT JOIN display_summary sf
 ORDER BY app.ts, app.id;
 ```
 
-一个 SF DisplayFrame 对应多条应用 SurfaceFrame，查询结果出现重复的 `display_frame_token` 是正常的多对一关系。这里的SF实例用已确认的upid固定；SF候选数为0或大于1时，回查数据覆盖、token范围、进程和machine，不把缺失或歧义消去。排查单帧时，我们还可以借助 UI flow——它保留时间位置与其他 layer，通常比只看表格直观。
+一个 SF DisplayFrame 对应多条应用 SurfaceFrame，查询结果出现重复的 `display_frame_token` 是正常的多对一关系。这里的SF实例用已确认的upid固定；SF候选数为0或大于1时，回查数据覆盖、token范围、进程和machine，缺失或歧义原样留在结果里。排查单帧时，我们还可以借助 UI flow——它保留时间位置与其他 layer，通常比只看表格直观。
 
-<!-- gracker-diagram: ch14-13-27-display-match-ambiguity -->
-![DisplayFrame关联先约束scope，再检查候选数](../../assets/diagrams/ch14/ch14-13-27-display-match-ambiguity.png)
-
-图：Q3固定App/SF实例与machine，按display token检查唯一显示帧候选。 多个App帧共享同一显示帧正常；缺失或多SF候选不强行选择，保留App目标与歧义状态。
 
 ### Android 17 新增的分类
 
@@ -776,10 +682,6 @@ Android 17 `frame_timeline_event.proto` 继续用 bitmask 表示原因，并在 
 
 Buffer Stuffing、SurfaceFlinger Stuffing、Non Animating 和三项 display 状态在 Android 17 `FrameTimeline.cpp` 中都位于 non-jank bitmask。这些位单独出现时不会增加 `jank_severity_score`，却仍可能描述高延迟、不可感知或显示状态变化。性能报告应对它们分别统计：全部并入 `No Jank` 会掩盖高延迟状态，全部算作应用 jank 会把系统问题记到应用头上。
 
-<!-- gracker-diagram: ch14-13-28-android17-bits-and-boundaries -->
-![Android17原始bit、标签与严重度分别保存](../../assets/diagrams/ch14/ch14-13-28-android17-bits-and-boundaries.png)
-
-图：17新增bit与non-jank mask描述不同状态，统计时保留原始类型、工具标签和幅度。 stuffing等可描述高延迟而不增加severity；experimental字段不用于正式jank指标，标签组合有优先级。
 
 ### 按出图路径选择主要记录
 
@@ -797,7 +699,7 @@ Buffer Stuffing、SurfaceFlinger Stuffing、Non Animating 和三项 display 状�
 | Native EGL / Vulkan | 优先定位 ANativeWindow 对应的 layer | 引擎线程、swap/present、GPU queue、BufferQueue 与 fence |
 | 多窗口 / 多 display | 每个可见窗口或独立 Surface 分别找 layer | 窗口可见性、目标 display、刷新模式与同一 DisplayFrame 的 layer 集合 |
 
-`queueBuffer` 返回只代表 Producer 已提交 buffer；acquire fence 决定 Consumer 何时可以安全读取。present fence 按 display/frame 生成，release fence 按 layer/frame 生成并决定旧 buffer 何时可复用。FrameTimeline 的 present 时间回答不了 release fence 的问题，token 里也推不出 BufferQueue frame number。
+`queueBuffer` 返回只代表 Producer 已提交 buffer；acquire fence 决定 Consumer 何时可以安全读取。present fence 按 display/frame 生成，release fence 按 layer/frame 生成并决定旧 buffer 何时可复用。release fence 的时机与 BufferQueue frame number，都在 FrameTimeline 的 present 时间和 token 能给出的范围之外。
 
 ### 不同 Android 版本的能力
 

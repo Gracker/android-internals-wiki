@@ -39361,9 +39361,352 @@
       "before_count": 28,
       "before_all_images": 28,
       "sha256_before": "717188506307ade4bb579ac616a841bcf45ae55bac4543ebfc22df470ef8d888",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch14-13-01-two-source-identities",
+          "title": "两套数据源用不同对象和ID回答不同问题",
+          "decision": "keep",
+          "reason": "两条独立原生源到不同对象/ID域及跨源证据的映射独立，保留token不能等值frame_number、wire字段缺失和位宽限制，非一般查询工作流。",
+          "original_line": 80,
+          "heading": "### 两条数据源分别保存什么"
+        },
+        {
+          "original_id": "ch14-13-02-six-events-main-path",
+          "title": "六类emit回到提交、读取与显示依赖",
+          "decision": "merge",
+          "reason": "原图“六类emit回到提交、读取与显示依赖”并入：合并公共六事件PNG、三类fence边界和重复原生时序，按DEVICE/CLIENT读取路径和独立release分支表达，避免暗示signal必须先于latch。；锚点原图2，新图分别说明真实读取依赖/独立release，或Actual发起的Expected与Display两种匹配及候选质量，不让线条误示固定signal顺序或Expected直接关联显示。",
+          "original_line": 100,
+          "heading": "### Android 17 的六个实际发射事件",
+          "replacement_id": "ed14-13-six-emits-read-dependencies-and-release-branch"
+        },
+        {
+          "original_id": "ch14-13-03-three-fence-boundaries",
+          "title": "acquire、present与release分别约束不同边界",
+          "decision": "merge",
+          "reason": "原图“acquire、present与release分别约束不同边界”并入：合并公共六事件PNG、三类fence边界和重复原生时序，按DEVICE/CLIENT读取路径和独立release分支表达，避免暗示signal必须先于latch。；锚点原图2，新图分别说明真实读取依赖/独立release，或Actual发起的Expected与Display两种匹配及候选质量，不让线条误示固定signal顺序或Expected直接关联显示。",
+          "original_line": 138,
+          "heading": "### Android 17 的六个实际发射事件",
+          "replacement_id": "ed14-13-six-emits-read-dependencies-and-release-branch"
+        },
+        {
+          "original_id": "ch14-13-04-pending-fence-recheck",
+          "title": "pending fence靠同buffer后续调用重检查",
+          "decision": "keep",
+          "reason": "同layer/buffer后续检查下signal/pending/invalid与过旧的具体状态分支独立，保留按原signal时间补写及60s年龄过滤非超时，解释尾部缺信号不能断从未signal。",
+          "original_line": 163,
+          "heading": "### `traceFence()` 为什么可能缺尾部事件"
+        },
+        {
+          "original_id": "ch14-13-05-raw-and-four-phases",
+          "title": "raw事件与四类phase的端点范围",
+          "decision": "keep",
+          "reason": "四个实际phase按不同端点和重叠关系画四轨，明确APP持有/GPU完成差/SF综合/Display节奏，不误画串行互斥或release生命周期。",
+          "original_line": 184,
+          "heading": "### Perfetto v57.2 怎样导入 Graphics Frame Event"
+        },
+        {
+          "original_id": "ch14-13-06-parser-state-quality",
+          "title": "GPU省略与异常phase由具体parser状态决定",
+          "decision": "keep",
+          "reason": "QUEUE存在DequeueInfo且last_acquire_ts晚于DEQUEUE时跳GPU的精确parser状态条件独立，保留非任意提前signal通用规则及缺失质量。",
+          "original_line": 191,
+          "heading": "### Perfetto v57.2 怎样导入 Graphics Frame Event"
+        },
+        {
+          "original_id": "ch14-13-07-recording-switches",
+          "title": "原生数据源与atrace category分别选择",
+          "decision": "remove",
+          "reason": "三列六卡逐项重述200–209配置片段与原生源独立于gfx的开关段，第二份完整配置584–609也重复；全部数据源项与权限/实际覆盖要求原文留。",
+          "original_line": 211,
+          "heading": "### 确认 trace 中是否有这组数据"
+        },
+        {
+          "original_id": "ch14-13-08-raw-query-identity",
+          "title": "raw查询先保留身份，再解释时间字段",
+          "decision": "remove",
+          "reason": "四步逐项摘要216–237实际SQL与scope/ID/开放质量说明，无实际raw输出或时序，1身份映射/5phase端点保留，全文参数来自旧状态需核验等限定全留。",
+          "original_line": 239,
+          "heading": "### SQL 1：列出目标 layer 的 raw event 与 phase"
+        },
+        {
+          "original_id": "ch14-13-09-phase-query-preserves-rows",
+          "title": "phase分类不强制合并不同buffer",
+          "decision": "remove",
+          "reason": "三列六卡逐项重述246/280/282两段原始phase身份和Display非buffer/开放NULL，5已保留实际四轨端点，29行SQL原样保留，不再将字段说明复画。",
+          "original_line": 284,
+          "heading": "### SQL 2：按轨道与 frame number 检查四类 phase"
+        },
+        {
+          "original_id": "ch14-13-11-client-composition-observation",
+          "title": "CLIENT判定同时影响两种观测",
+          "decision": "keep",
+          "reason": "同一个CLIENT判定分别映射FrameTimelinegpu_composition与FrameTracerFallback两种观测的真实一因多观测关系独立，保留独立开关/混合DEVICE及不可反推overlay原因。",
+          "original_line": 301,
+          "heading": "#### `gpu_composition` 与 `FALLBACK_COMPOSITION`"
+        },
+        {
+          "original_id": "ch14-13-10-cross-source-evidence",
+          "title": "从FrameTimeline目标帧找到FrameTracer候选",
+          "decision": "remove",
+          "reason": "四框逐项复写310–314完整五步跨源关联清单，与1同样ID边界和新Actual匹配机制重复，全部transaction/BufferTX/present证据与信心范围原文全留。",
+          "original_line": 318,
+          "heading": "#### 两套 frame identity 的对齐方式"
+        },
+        {
+          "original_id": "ch14-13-12-producer-phase-causes",
+          "title": "APP与GPU阶段要按Producer类型继续调查",
+          "decision": "remove",
+          "reason": "三组逐项摘录327–340三个小节APP/GPU/acquire晚latch诊断说明，未画具体测量或依赖实例，5端点关系和新DEVICE/CLIENT读取机制保留，全部Producer差异/非线程阻塞/阈值限定正文全留。",
+          "original_line": 329,
+          "heading": "#### `APP_` 偏长：Producer 长时间持有 buffer"
+        },
+        {
+          "original_id": "ch14-13-13-output-phase-causes",
+          "title": "SF综合输出延迟与Display节奏分别解释",
+          "decision": "remove",
+          "reason": "三组逐项重述344–348 SF综合输出/Display内容节奏/release区别，5四轨和新显示/release独立分支已提供实际关系，30fps33.3ms与HWC/光学限制全文留。",
+          "original_line": 350,
+          "heading": "#### `Display_` 偏长：相邻 present 的帧节奏出现空档"
+        },
+        {
+          "original_id": "ch14-13-14-rendering-path-routing",
+          "title": "宿主窗口、独立Surface和离屏路径分开定位",
+          "decision": "remove",
+          "reason": "三列六卡将359–367九种路径完整表缩成三类，788–798还有按路径选择记录表，全文比图更具体，删无实际路径连线的实体分组卡。",
+          "original_line": 371,
+          "heading": "### 按出图类型修正解释"
+        },
+        {
+          "original_id": "ch14-13-15-platform-query-version",
+          "title": "平台数据能力与主机解析版本分别固定",
+          "decision": "remove",
+          "reason": "三列六卡重排380–386平台能力表与API33后文，804–811也保留版本表，所有Android11/12/13/17与主机边界完整留，删版本提醒图。",
+          "original_line": 388,
+          "heading": "### 不同 Android 版本的能力"
+        },
+        {
+          "original_id": "ch14-13-16-surface-display-cardinality",
+          "title": "同一App token可有多个Layer Actual",
+          "decision": "merge",
+          "reason": "原图“同一App token可有多个Layer Actual”并入：合并多Layer基数与Expected/SF候选数量守卫，修正Expected直接指向DisplayFrame的原图关系，保留缺失和歧义。；锚点原图16，新图分别说明真实读取依赖/独立release，或Actual发起的Expected与Display两种匹配及候选质量，不让线条误示固定signal顺序或Expected直接关联显示。",
+          "original_line": 437,
+          "heading": "### 两类帧",
+          "replacement_id": "ed14-13-actual-expected-display-matching-and-quality"
+        },
+        {
+          "original_id": "ch14-13-17-app-expected-actual",
+          "title": "App预期窗口与实际ready端点",
+          "decision": "keep",
+          "reason": "Expected计划窗与AppActual异步ready终点的两轨偏差示意独立，保留pending回退queue/bufferless另分支和非doFrameCPU边界。",
+          "original_line": 458,
+          "heading": "#### 应用侧"
+        },
+        {
+          "original_id": "ch14-13-18-sf-display-boundary",
+          "title": "SF Actual覆盖显示栈，release与光学另查",
+          "decision": "remove",
+          "reason": "三框线性逐项复述465–467两段SFActual范围，没有实际阶段/异步区间示例，新公共路径已区分SF/HWC/CLIENT/DEVICE/present/release/光学，原描述全留。",
+          "original_line": 469,
+          "heading": "#### SurfaceFlinger 侧"
+        },
+        {
+          "original_id": "ch14-13-19-dynamic-work-ready-budget",
+          "title": "动态work与ready预算决定候选唤醒",
+          "decision": "keep",
+          "reason": "workDuration+readyDuration到目标VSYNC的真实预算几何关系配max(now,candidate)约束，解释Expected非刷新周期且候选不能当实际唤醒，保留。",
+          "original_line": 487,
+          "heading": "#### Expected 宽度与刷新周期的关系"
+        },
+        {
+          "original_id": "ch14-13-20-independent-frame-fields",
+          "title": "present、ready与jank类别分别回答不同问题",
+          "decision": "keep",
+          "reason": "present_type、on_time_finish与jank类别三个独立维度的责任对应，保留on_time=1仍stuffing、bitmask多因及分类优先级，不把端点差当完整判定。",
+          "original_line": 504,
+          "heading": "### 三个字段要一起看"
+        },
+        {
+          "original_id": "ch14-13-21-ui-classification-causality",
+          "title": "UI状态提示调查方向，因果还需现场证据",
+          "decision": "remove",
+          "reason": "四卡逐项重述511–519颜色/归属表与526预分类标签说明，原Self/Other非根因及应用可影响系统侧正文全留，20独立字段维度保留，删状态调查清单。",
+          "original_line": 521,
+          "heading": "### 三个字段要一起看"
+        },
+        {
+          "original_id": "ch14-13-22-callback-lifetime",
+          "title": "API33回调只复制有效期内的标量",
+          "decision": "keep",
+          "reason": "一次callback有效期内取preferred计划、复制标量再在外使用/重注册的生命周期具体依赖独立，避免FrameData逃逸回调或假定固定7候选。",
+          "original_line": 571,
+          "heading": "### API 33 的 `FrameData` 用法"
+        },
+        {
+          "original_id": "ch14-13-23-capture-delivery-quality",
+          "title": "配置、采集、交付后先检查实际覆盖",
+          "decision": "remove",
+          "reason": "四步骤逐项复述613–621 push采集pull命令与采后实际帧覆盖说明，完整命令/窗口/独立Surface缺口全留，无采集数据例，删交付流程重复。",
+          "original_line": 623,
+          "heading": "### 正确启用数据源"
+        },
+        {
+          "original_id": "ch14-13-24-ui-investigation-order",
+          "title": "从异常帧沿证据追到等待位置",
+          "decision": "remove",
+          "reason": "五步逐项摘录632–637六条UI排障编号清单，新的Actual关系和公共依赖路径已给真实结构，所有Self/Other/Stuffing/多Layer/短doFrame限定原文全留。",
+          "original_line": 641,
+          "heading": "### UI 排障顺序"
+        },
+        {
+          "original_id": "ch14-13-25-expected-left-quality-query",
+          "title": "Expected关联不丢掉目标Actual",
+          "decision": "merge",
+          "reason": "原图“Expected关联不丢掉目标Actual”并入：合并多Layer基数与Expected/SF候选数量守卫，修正Expected直接指向DisplayFrame的原图关系，保留缺失和歧义。；锚点原图16，新图分别说明真实读取依赖/独立release，或Actual发起的Expected与Display两种匹配及候选质量，不让线条误示固定signal顺序或Expected直接关联显示。",
+          "original_line": 687,
+          "heading": "#### 查询 1：逐帧比较应用 Expected 与 Actual",
+          "replacement_id": "ed14-13-actual-expected-display-matching-and-quality"
+        },
+        {
+          "original_id": "ch14-13-26-surface-row-aggregate",
+          "title": "统计分母是SurfaceFrame行，质量分列",
+          "decision": "remove",
+          "reason": "三列六卡逐项重述696–712实际聚合SQL和分母质量解释，原No/Unspecified/open/zero/闭合均值和行数非回调数全留，新Actual图明确分母不同，不重复字段清单。",
+          "original_line": 714,
+          "heading": "#### 查询 2：按原因归属、present 与 ready 状态统计"
+        },
+        {
+          "original_id": "ch14-13-27-display-match-ambiguity",
+          "title": "DisplayFrame关联先约束scope，再检查候选数",
+          "decision": "merge",
+          "reason": "原图“DisplayFrame关联先约束scope，再检查候选数”并入：合并多Layer基数与Expected/SF候选数量守卫，修正Expected直接指向DisplayFrame的原图关系，保留缺失和歧义。；锚点原图16，新图分别说明真实读取依赖/独立release，或Actual发起的Expected与Display两种匹配及候选质量，不让线条误示固定signal顺序或Expected直接关联显示。",
+          "original_line": 758,
+          "heading": "#### 查询 3：把应用帧连接到 SF DisplayFrame",
+          "replacement_id": "ed14-13-actual-expected-display-matching-and-quality"
+        },
+        {
+          "original_id": "ch14-13-28-android17-bits-and-boundaries",
+          "title": "Android17原始bit、标签与严重度分别保存",
+          "decision": "remove",
+          "reason": "四卡逐项分组769–777新增bit表与nonjank/severity/experimental说明，原bit数值/原始类型/标签优先级和高延迟不加severity限定全留，20独立维度图保留，删分类摘要。",
+          "original_line": 779,
+          "heading": "### Android 17 新增的分类"
+        }
+      ],
+      "sha256_after": "ba69a9d9ab6c25aaa49223d4be1174bbc7475828c4c69d8181da32a1ea763078",
+      "new_diagrams": [
+        {
+          "id": "ed14-13-six-emits-read-dependencies-and-release-branch",
+          "title": "latch、实际读取与显示反馈之间保留 fence 依赖",
+          "article": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-13-six-emits-read-dependencies-and-release-branch.svg",
+            "src/assets/diagrams/ch14/ed14-13-six-emits-read-dependencies-and-release-branch.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-13-six-emits-read-dependencies-and-release-branch",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/OutputLayer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp",
+            "https://source.android.com/docs/core/graphics/sync",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace/android/graphics_frame_event.proto"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-13-02-six-events-main-path",
+              "ch14-13-03-three-fence-boundaries"
+            ],
+            "boundary": "固定17常规路径示意，实际六emit为DEQUEUE/QUEUE/ACQUIRE_FENCE/LATCH/FALLBACK_COMPOSITION/PRESENT_FENCE。前两者仅在transaction带正dequeueTime块内发射；QUEUE不是GPU完成。SF可先latch尚未signal的buffer，实际读取仍须满足原acquire fence：DEVICE由HWC处理，CLIENT由RenderEngine遵守后把target及完成fence交HWC。FALLBACK只记进入CLIENT安排时间，不是GPU完成；同display可混合DEVICE与CLIENT。present反馈按display/frame，不是光学响应或旧buffer释放。release按旧buffer身份及读依赖返回，可伴drop/替换；句柄可未signal，消息与访问完成分开。release真实存在但非该AOSP六emit，不经当前帧present作为固定先决条件。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a147/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-13-actual-expected-display-matching-and-quality",
+          "title": "每条 Actual 分别查询共享 Expected 与 DisplayFrame",
+          "article": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-13-actual-expected-display-matching-and-quality.svg",
+            "src/assets/diagrams/ch14/ed14-13-actual-expected-display-matching-and-quality.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-13-actual-expected-display-matching-and-quality",
+          "sources": [
+            "https://raw.githubusercontent.com/google/perfetto/v57.2/src/trace_processor/importers/proto/frame_timeline_event_parser.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-13-16-surface-display-cardinality",
+              "ch14-13-25-expected-left-quality-query",
+              "ch14-13-27-display-match-ambiguity"
+            ],
+            "boundary": "示例关系是同upid和surface token下LayerA/B有独立Actual行，可共享Expected，并各自按display token关联同一DisplayFrame；不能按token去重Actual。Q1按upid+surface token LEFT查Expected，只有Expected恰1且Actual/Expected都闭合正值才算端点差，其余保留数量/raw/质量并返回NULL。Q3固定App/SF upid与machine，再按display token查surface token为NULL的DisplayFrame；候选0或>1保留App行和数量，SF详情NULL，不自动挑一行。多App/Layers共享display正常，Expected不直接生成DisplayFrame，连接分别由Actual记录的两类token发起。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a147/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:50:45.857416+08:00",
+      "inline_mermaid_blocks_removed": 1,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 28,
+        "contexts_actually_viewed": 5,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a147/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a147/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 147,
+        "article": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
+        "registered_sha256": "717188506307ade4bb579ac616a841bcf45ae55bac4543ebfc22df470ef8d888",
+        "frozen_sha256": "717188506307ade4bb579ac616a841bcf45ae55bac4543ebfc22df470ef8d888",
+        "review_input_sha256": "ef59b5b6a338acd6a0ba5be24e7ce54558814a422e16f20f0778602bce733785",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a147/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a147/external-source.diff",
+        "diff_sha256": "bc7d06700c8dbb4ca08a0e6653fd6f2ccbfded2a9cde232d1f717f54967fad93",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 372 current narrative/table reading rows, 38502 characters, 28 SVG label sets and all 28 original PNGs in 4 contact sheets independently read/viewed; all 10 non-Mermaid code blocks, 166 lines read. One native Mermaid sequence source read, successfully rendered on desktop/mobile and actual image viewed."
+      },
+      "sha256_review_input": "ef59b5b6a338acd6a0ba5be24e7ce54558814a422e16f20f0778602bce733785",
+      "retired_diagrams": [
+        "ch14-13-02-six-events-main-path",
+        "ch14-13-03-three-fence-boundaries",
+        "ch14-13-07-recording-switches",
+        "ch14-13-08-raw-query-identity",
+        "ch14-13-09-phase-query-preserves-rows",
+        "ch14-13-10-cross-source-evidence",
+        "ch14-13-12-producer-phase-causes",
+        "ch14-13-13-output-phase-causes",
+        "ch14-13-14-rendering-path-routing",
+        "ch14-13-15-platform-query-version",
+        "ch14-13-16-surface-display-cardinality",
+        "ch14-13-18-sf-display-boundary",
+        "ch14-13-21-ui-classification-causality",
+        "ch14-13-23-capture-delivery-quality",
+        "ch14-13-24-ui-investigation-order",
+        "ch14-13-25-expected-left-quality-query",
+        "ch14-13-26-surface-row-aggregate",
+        "ch14-13-27-display-match-ambiguity",
+        "ch14-13-28-android17-bits-and-boundaries"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-147/retired-assets.json"
     },
     {
       "index": 149,
@@ -40730,8 +41073,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 82,
-  "next_article": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
+  "reviewed_articles": 83,
+  "next_article": "src/part3-tools/ch15-other-tools/01-as-profiler.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -40741,7 +41084,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:44:47.388416+08:00",
+  "updated_at": "2026-10-31T12:50:45.857416+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -40790,13 +41133,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
-      "registered_sha256": "717188506307ade4bb579ac616a841bcf45ae55bac4543ebfc22df470ef8d888",
-      "observed_sha256": "ef59b5b6a338acd6a0ba5be24e7ce54558814a422e16f20f0778602bce733785",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -41143,10 +41479,10 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3083,
-  "reviewed_placements_after": 1394,
-  "net_removed_placements": 1689,
-  "removed_inline_mermaid_blocks": 19,
+  "reviewed_placements_before": 3111,
+  "reviewed_placements_after": 1405,
+  "net_removed_placements": 1706,
+  "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
   "selection_basis": "Union of frozen201 Gracker-image-threshold articles plus all other articles whose visible image/inline-diagram count exceeds10; never drop initially eligible articles after pruning.",
@@ -41169,5 +41505,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 82
+  "currently_matching_reviewed_source_count": 83
 }
