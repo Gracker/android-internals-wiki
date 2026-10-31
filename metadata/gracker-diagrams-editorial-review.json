@@ -63265,9 +63265,252 @@
       "before_count": 25,
       "before_all_images": 25,
       "sha256_before": "63e3a81835f28022bac21ed85142f8e8482c7ceb3bb5c00149862f7eabf067d4",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "a250-01-update-three-process-tracks",
+          "title": "更新跨越提供方、服务和宿主消息队列",
+          "decision": "remove",
+          "reason": "四轨重复前置六参与方原生时序图的两个Binder和Handler队列，未画新的依赖关系。",
+          "original_line": 120,
+          "heading": "### 1. `RemoteViews` 是布局说明和动作集合"
+        },
+        {
+          "original_id": "a250-02-host-apply-branches",
+          "title": "宿主决定复用，失败时仍可能重建",
+          "decision": "remove",
+          "reason": "四行条件/结果只是紧邻apply与reapply段落的改写，原生图已有复用分支，异常恢复和异步范围正文更完整。",
+          "original_line": 129,
+          "heading": "### 2. `apply()` 与 `reapply()` 由宿主选择"
+        },
+        {
+          "original_id": "a250-03-plugin-vs-appwidget",
+          "title": "进程内插件卡片与标准Widget走不同路径",
+          "decision": "remove",
+          "reason": "两列列举标准Widget与插件差异，没有绘出类加载或跨进程边界，正文三段已清楚交代。",
+          "original_line": 152,
+          "heading": "### 3. Launcher 插件卡片与标准 App Widget 的分界"
+        },
+        {
+          "original_id": "a250-04-three-update-semantics",
+          "title": "完整、局部与集合更新改变不同对象",
+          "decision": "remove",
+          "reason": "重复紧邻三种更新接口表格，集合转换和完整基线条件由后文详述。",
+          "original_line": 169,
+          "heading": "## 二、三种更新语义的分工"
+        },
+        {
+          "original_id": "a250-05-full-snapshot-recovery",
+          "title": "完整快照与业务持久数据各自负责恢复",
+          "decision": "keep",
+          "reason": "持久业务状态到完整快照再到system_server及宿主的恢复链，帮助区分提供方死亡、宿主重连和设备重启三个生命周期。",
+          "original_line": 178,
+          "heading": "### 1. 完整更新是缓存基线"
+        },
+        {
+          "original_id": "a250-06-partial-merge-effective-snapshot",
+          "title": "局部更新缩小提供方负载，宿主收到合并结果",
+          "decision": "remove",
+          "reason": "四行条目没有把delta合并到缓存再通知宿主画成依赖链，正文含unique key/mergeBehavior和有效快照副本的更精确信息。",
+          "original_line": 230,
+          "heading": "### 2. 局部更新依赖已经存在的完整快照"
+        },
+        {
+          "original_id": "a250-07-legacy-vs-snapshot-collection",
+          "title": "集合适配器是否转换决定取数位置",
+          "decision": "remove",
+          "reason": "传统服务、RemoteCollectionItems及转换开启的对照重复本节连续三段，未增加流程分叉。",
+          "original_line": 245,
+          "heading": "### 3. 集合刷新与适配器转换"
+        },
+        {
+          "original_id": "a250-08-collection-capacity-stop",
+          "title": "集合转换在加入超限当前项之前停止",
+          "decision": "keep",
+          "reason": "顺序getViewAt、序列化和bitmap容量检查在addItem前的停止位置有明确顺序价值，帮助解释尾部缺项。",
+          "original_line": 252,
+          "heading": "### 3. 集合刷新与适配器转换"
+        },
+        {
+          "original_id": "a250-09-immutable-row-snapshot",
+          "title": "集合回调从安全发布的不可变快照读取",
+          "decision": "remove",
+          "reason": "简单四步快照映射重复五条编号列表，正文对可见性和发布后不可变已有更完整约束。",
+          "original_line": 275,
+          "heading": "### 4. 集合项的优化位置"
+        },
+        {
+          "original_id": "a250-11-receiver-budget-and-finish",
+          "title": "广播必须及时结束，goAsync仍有超时",
+          "decision": "remove",
+          "reason": "广播入口、长任务、goAsync及ANR四行摘要不表达排队/finish时序，正文已列一般建议和版本优先级边界。",
+          "original_line": 310,
+          "heading": "### 2. `AppWidgetProvider` 广播入口的返回时限"
+        },
+        {
+          "original_id": "a250-10-refresh-scheduling-contract",
+          "title": "更新周期、后台任务与数据时效分开",
+          "decision": "remove",
+          "reason": "0/30分钟/15分钟/业务事件两列表重复本节周期规则和WorkManager段落，未表现可执行时间窗。",
+          "original_line": 322,
+          "heading": "### 2. `AppWidgetProvider` 广播入口的返回时限"
+        },
+        {
+          "original_id": "a250-12-listener-alarm-lifetime",
+          "title": "监听器闹钟免特殊访问，仍依赖组件存活",
+          "decision": "remove",
+          "reason": "监听器存活、死亡、PendingIntent和配额四行说明重复相邻生命周期段落，无状态机增量。",
+          "original_line": 337,
+          "heading": "### 3. API 37 的监听器精确闹钟有进程生命周期限制"
+        },
+        {
+          "original_id": "a250-13-freshness-and-local-clock",
+          "title": "数据新鲜度、可见性与本地计时分别设计",
+          "decision": "remove",
+          "reason": "可见性、去重、本地时钟和时基条目重复本节列表及Chronometer说明。",
+          "original_line": 354,
+          "heading": "### 4. 可见状态与刷新节奏"
+        },
+        {
+          "original_id": "a250-15-provider-target-memory-branch",
+          "title": "图像强制上限由提供方targetSdk决定",
+          "decision": "remove",
+          "reason": "提供方target分支只作四行文字映射，正文已清楚区分≤37及>37、清缓存异常和Icon警告。",
+          "original_line": 371,
+          "heading": "### 1. Widget 有独立于通用 Binder 缓冲区的图像上限"
+        },
+        {
+          "original_id": "a250-14-bitmap-and-binder-limits",
+          "title": "Binder事务与Widget图像预算是两套限制",
+          "decision": "remove",
+          "reason": "Binder与图像预算两类限制通过正文公式、解释和估算规则更精确，图只重排同样文字。",
+          "original_line": 380,
+          "heading": "### 1. Widget 有独立于通用 Binder 缓冲区的图像上限"
+        },
+        {
+          "original_id": "a250-16-image-source-and-stale-result",
+          "title": "按图像来源降载，并拒绝旧结果回写",
+          "decision": "remove",
+          "reason": "静态图、网络图和URI来源的对应条目与前后来源列表重复，旧结果核身份也无独立时序。",
+          "original_line": 396,
+          "heading": "### 2. 图像优化按来源处理"
+        },
+        {
+          "original_id": "a250-17-action-growth-and-batch",
+          "title": "动作合并与批量实例更新都有剩余成本",
+          "decision": "remove",
+          "reason": "版本去重、合并、批量和非事务四行已由紧邻列表与段落完整涵盖，没有画多实例部分失败关系。",
+          "original_line": 413,
+          "heading": "### 3. 动作数量也会累积"
+        },
+        {
+          "original_id": "a250-18-glance-runtime-to-remoteviews",
+          "title": "Glance组合翻译后仍经AppWidget与宿主",
+          "decision": "keep",
+          "reason": "Glance后台初始数据经Compose Runtime内容树、AppWidgetSession翻译到RemoteViews与宿主，明确区别Compose UI绘制管线。",
+          "original_line": 434,
+          "heading": "### 1. Glance 使用 Compose Runtime，输出仍是 `RemoteViews`"
+        },
+        {
+          "original_id": "a250-19-glance-session-state",
+          "title": "活跃会话重新读状态，结束后再启动worker",
+          "decision": "remove",
+          "reason": "活跃/结束会话、约45秒生命周期只是文字摘要，没有实际状态迁移关系，正文更完整解释先持久化再update。",
+          "original_line": 441,
+          "heading": "### 1. Glance 使用 Compose Runtime，输出仍是 `RemoteViews`"
+        },
+        {
+          "original_id": "a250-20-glance-size-modes",
+          "title": "有限断点与精确尺寸各有组合成本",
+          "decision": "remove",
+          "reason": "Single/Responsive/Exact/副作用的两列表重复正文对模式和独立组合的比较，16变体限制正文保留。",
+          "original_line": 462,
+          "heading": "### 3. 响应式尺寸的模式选择"
+        },
+        {
+          "original_id": "a250-21-raw-versus-glance-choice",
+          "title": "两种写法共享同一宿主交付约束",
+          "decision": "remove",
+          "reason": "完整重复手写RemoteViews与Glance五维对比表，性能结论仍由完整链路测量判断。",
+          "original_line": 479,
+          "heading": "### 4. 选择手写 `RemoteViews` 还是 Glance"
+        },
+        {
+          "original_id": "a250-22-user-instance-and-uri-identity",
+          "title": "用户、实例与URI身份必须一起核对",
+          "decision": "remove",
+          "reason": "身份、用户、缓存和资料移除条目重复权限检查列表和用户隔离段落，未画交叉用户访问边界。",
+          "original_line": 502,
+          "heading": "### 2. 每个用户和配置文件分别维护状态"
+        },
+        {
+          "original_id": "a250-23-last-good-and-glance-error",
+          "title": "最近可用数据策略与Glance默认错误UI分开",
+          "decision": "remove",
+          "reason": "最近可用状态和Glance错误UI的四行说明重复紧邻恢复列表及默认错误处理段落。",
+          "original_line": 521,
+          "heading": "### 3. 保留最近可用快照"
+        },
+        {
+          "original_id": "a250-24-three-process-measurement",
+          "title": "按同次业务版本关联三段测量",
+          "decision": "remove",
+          "reason": "三段测量条目重复本节编号三段模型，原生时序图已有进程边界，证据不足时不补屏幕时间由正文明确。",
+          "original_line": 546,
+          "heading": "### 1. 三段耗时的拆分测量"
+        },
+        {
+          "original_id": "a250-25-symptom-first-checks",
+          "title": "先判更新语义与身份，再定位负载",
+          "decision": "remove",
+          "reason": "现象与检查对应完全重复上方七行排查对照表，图反而缩减诊断内容。",
+          "original_line": 578,
+          "heading": "### 3. 常见现象与检查顺序"
+        }
+      ],
+      "sha256_after": "9a09527113d3a4c53f5792f67f2dce908dcf80b587e46103012b5410b4e147fa",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:15:49.739954+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 25,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a250/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a250/visual-review.json",
+      "retired_diagrams": [
+        "a250-01-update-three-process-tracks",
+        "a250-02-host-apply-branches",
+        "a250-03-plugin-vs-appwidget",
+        "a250-04-three-update-semantics",
+        "a250-06-partial-merge-effective-snapshot",
+        "a250-07-legacy-vs-snapshot-collection",
+        "a250-09-immutable-row-snapshot",
+        "a250-10-refresh-scheduling-contract",
+        "a250-11-receiver-budget-and-finish",
+        "a250-12-listener-alarm-lifetime",
+        "a250-13-freshness-and-local-clock",
+        "a250-14-bitmap-and-binder-limits",
+        "a250-15-provider-target-memory-branch",
+        "a250-16-image-source-and-stale-result",
+        "a250-17-action-growth-and-batch",
+        "a250-19-glance-session-state",
+        "a250-20-glance-size-modes",
+        "a250-21-raw-versus-glance-choice",
+        "a250-22-user-instance-and-uri-identity",
+        "a250-23-last-good-and-glance-error",
+        "a250-24-three-process-measurement",
+        "a250-25-symptom-first-checks"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-250/retired-assets.json"
     },
     {
       "index": 253,
@@ -63622,8 +63865,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 174,
-  "next_article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+  "reviewed_articles": 175,
+  "next_article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -63633,7 +63876,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:13:03.324589+08:00",
+  "updated_at": "2026-10-31T18:15:49.739954+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -63703,13 +63946,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
-      "registered_sha256": "0577816a8fb43ef0730bf4ba50e17c0b97bef42b3250603fa414a03e5dbc8f77",
-      "observed_sha256": "5748be61dc3c28bc03f6ac0e01bd037b804a4adb6435e83aefc1840856af71e5",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -63783,9 +64019,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5353,
-  "reviewed_placements_after": 2095,
-  "net_removed_placements": 3258,
+  "reviewed_placements_before": 5378,
+  "reviewed_placements_after": 2098,
+  "net_removed_placements": 3280,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -63809,5 +64045,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 174
+  "currently_matching_reviewed_source_count": 175
 }
