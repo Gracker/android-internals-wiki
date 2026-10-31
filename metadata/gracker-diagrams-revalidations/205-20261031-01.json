@@ -1,0 +1,90 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 205,
+  "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T16:15:17.682854+08:00",
+  "source_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
+  "accepted_before_sha256": "a70335b2ae03074a10b889d4aaf732ac32dcf387bbdd66535abb61e965bd1448",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 216,
+  "reading_characters": 15483,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 5,
+  "current_pngs_actually_viewed": 5,
+  "current_contexts_actually_viewed": 5,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/01/current-contact-1.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/01/compact-205-1.jpg"
+  ],
+  "native_diagrams_preserved": 1,
+  "native_diagrams_actually_viewed": 1,
+  "code_blocks_preserved": 1,
+  "code_lines_preserved": 5,
+  "asset_sha256": {
+    "src/assets/diagrams/ch19/a205-03-first-template.svg": "68a795e227a9c984d15d825ddd75b21f76acabf1170d956bb6a3db6cfc21aa44",
+    "src/assets/diagrams/ch19/a205-03-first-template.png": "85927771eb7296e9c6518cee30e8be725513e4e38f4b7b7a40208aba4cff5e4c",
+    "src/assets/diagrams/ch19/a205-05-surface-lifecycle.svg": "7b1c7fadc3f1e884b44fd02c0995683be1ffefa81282057ecf6a4612e567e128",
+    "src/assets/diagrams/ch19/a205-05-surface-lifecycle.png": "58f463c672ff38b39abbd320411231841b6a2ec6047d5f6991688e624d03f686",
+    "src/assets/diagrams/ch19/a205-07-media-path.svg": "2fa3ed13e44ee7579e5012a3e027d7e5bb9d33cb3e9e965914d5ce60f501e03b",
+    "src/assets/diagrams/ch19/a205-07-media-path.png": "0aff1bfd837737b4c9e9485477e8f75a18aed7bc234971859c1adac4057a661d",
+    "src/assets/diagrams/ch19/a205-09-watchdog-writes.svg": "d16f6916946fe97224c0c63651404451af255e343055662c5dd226aec2bfb069",
+    "src/assets/diagrams/ch19/a205-09-watchdog-writes.png": "eb1e63bb4176464f974bd6a1824d9658e3f1227d8870f3d54cd1c0b178da6957",
+    "src/assets/diagrams/ch19/a205-11-vehicle-data.svg": "ef773f98ea192a29c5318b878122feec9897c4c6d8235f7bffd7cc75970da01c",
+    "src/assets/diagrams/ch19/a205-11-vehicle-data.png": "1624904b9a1b9a4c14a987a32bf6730e37f665431f218256fda8ff190487afcb"
+  },
+  "asset_baseline": {
+    "kind": "original_visual_asset_sha256"
+  },
+  "figure_reviews": [
+    {
+      "id": "a205-03-first-template",
+      "heading": "### 冷启动路径",
+      "line": 138,
+      "decision": "keep",
+      "reason": "首模板本地快照同步返回、后台更新再主线程invalidate链与134–149新正文一致，STARTED/合并/host节流未变。"
+    },
+    {
+      "id": "a205-05-surface-lifecycle",
+      "heading": "### Surface 生命周期",
+      "line": 190,
+      "decision": "keep",
+      "reason": "Surface available更新几何、可能重复回调和destroy释放与184–193新正文一致，每个实例release与visible/stable区别仍保留。"
+    },
+    {
+      "id": "a205-07-media-path",
+      "heading": "## 媒体应用",
+      "line": 231,
+      "decision": "keep",
+      "reason": "媒体命令到播放器/首缓冲/系统音频/DSP声学输出与220–234新正文一致，应用trace可见范围未扩大。"
+    },
+    {
+      "id": "a205-09-watchdog-writes",
+      "heading": "### CarWatchdog 与磁盘写入",
+      "line": 276,
+      "decision": "keep",
+      "reason": "内核UID统计到UTC日累计和配置通知/重复超限停用链与264–279新正文一致，同日重启不清零和非每次即停用未变。"
+    },
+    {
+      "id": "a205-11-vehicle-data",
+      "heading": "## VHAL、车辆属性与 ADAS",
+      "line": 304,
+      "decision": "keep",
+      "reason": "属性请求经CarService权限/VHAL到快照回调和有界后台任务与298–309新正文一致，AAOS专属及同步阻塞/请求Hz非实际回调仍保留。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/01/layout-report.json",
+  "layout_report_sha256": "f208b85e01f1f25ebca90d55962a1d5489476d19c76c44fbe05a3c72850105b2",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "独立阅读当前216行15483字符正文表格、319行外部修订diff并补读审核期间追加的3处FrameTimeline/渲染线程/导航状态同义修订，读取全部5份SVG标签和1段5行Kotlin、17行原生源码。实际查看5PNG联系表、最终全部5正文上下文与成功原生平台责任图。外部修订改变文风和两处章节标题，保持Android Auto手机应用/host与末端车端、AAOS车端权限/VHAL和各自网络分工；图中责任边界仍准确。四版本轴、首模板本地快照/主线程STARTED合并刷新、模板配额非Screen数、Surface重复available与每实例release、媒体端到端外部观测、网络与投射独立、CarWatchdog UTC日累计/阈值配置、特权电源完成期限、VHAL异步有界消费和ADAS安全控制独立、跨设备时钟偏移漂移和原机热环境仍完整。5图ID/路径/顺序/图注/alt、10资产SHA、代码和原生字节等于接受版本，1400/640全部加载/结构/标题/边界通过，原生1无raw回退，未重画或删除图。首次冻结后源码又变，旧W快照保存在superseded-inputs/attempt-01，重新冻结最新SHA并重建复验；未覆盖R外部正文。未进行新发布政策研究、车辆设备操作或实际性能测试。"
+}
