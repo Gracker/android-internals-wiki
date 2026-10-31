@@ -111,7 +111,7 @@ APM（Application Performance Monitoring，应用性能监控）负责回答三�
 - 影响面有多大，是否值得进入修复队列；
 - 能否保留一份足以继续诊断的现场样本。
 
-APM SDK通常只能看到应用有权限采集的信号。慢帧报告首先表示满足该SDK的指标定义，还需检查帧范围、刷新率、报告丢失和采样；它不能独自证明主线程、RenderThread、CPU调度、Binder、I/O、GPU或SurfaceFlinger哪一段是根因，需接回同一事件的运行证据。
+APM SDK 通常看得到的，是应用有权限采集的那部分信号。一份慢帧报告，首先说明它满足了该 SDK 的指标定义；帧范围、刷新率、报告丢失和采样这几项检查也要跟着做。至于责任段在主线程、RenderThread、CPU调度、Binder、I/O、GPU还是SurfaceFlinger，要等我们把同一事件的运行证据接回来才能判断。
 
 进程死亡同样有多种来源：Java crash、native（C/C++ 等本地代码） crash、ANR（Application Not Responding，应用无响应）、LMK（Low Memory Kill）、force-stop、安装更新或系统策略。光凭一个耗时数字或 `reason`（退出原因字段），我们还到不了根因；要往下走，手里得有一份能继续展开的现场。
 
@@ -119,10 +119,6 @@ APM SDK通常只能看到应用有权限采集的信号。慢帧报告首先表�
 
 ### Android 17 复核基线
 
-<!-- gracker-diagram: ch17-01-02-three-version-coordinates -->
-![平台、应用库和设备权限各自固定](../../assets/diagrams/ch17/ch17-01-02-three-version-coordinates.png)
-
-图：平台tag、SDK制品与设备现场是三组独立坐标。 同名接口、minSdk或仓库可下载均不证明目标机上的采集与开销。
 
 | 层级 | 版本基线 | APM 能看到什么 |
 |---|---|---|
@@ -140,14 +136,14 @@ Android 平台版本与 APM SDK 版本要分别记录。平台升级不会自动
 
 ### 从异常指标到可验证结论
 
-一条慢帧问题从线上发现到修复验证，中间要经过几步证据升级，下面的流程图画出了这条路径。
+一条慢帧问题从线上发现到修复验证，中间要经过几步证据升级；我们把这条路径画成了下面的流程图。
 
 这条路径连接指标、上下文、样本、深证据、受控复现与修复验证；各阶段保留关联标识和统计合同。
 
 <!-- gracker-diagram: ch17-01-01-evidence-escalation -->
 ![从线上异常到受控修复验证](../../assets/diagrams/ch17/ch17-01-01-evidence-escalation.png)
 
-图：先由指标定位影响面，再把场景、样本与深证据接回复现和修复对照。 箭头表示调查顺序，指标或时间接近不能单独证明根因。
+图：先由指标定位影响面，再把场景、样本与深证据接回复现和修复对照。 箭头表示调查顺序；指标或时间接近，离判定根因还差一层证据。
 
 事件合同中的 `slow_frame_rate` 是慢帧占比，`stack`（线程调用栈）保存问题发生时的调用现场，`session_id`（使用会话标识） 用于关联同一次使用会话。这些字段负责把范围缩小到版本、设备和页面；至于慢帧发生在哪一行代码，要等后面的深证据才能回答。
 
@@ -170,14 +166,10 @@ Android 性能工具至少分成四类，依据是采集位置、运行阶段、
 
 这四类各有所长：客户端 APM 覆盖大量真实设备，代价是权限与采样预算；线下工具证据更深，覆盖的却是少量可复现场景；Benchmark 适合改动前后对比，结论限于测试环境；平台信号的指标口径更稳定，受制于版本、设备支持和数据可见性。
 
-Android vitals与自建APM的数值可能不同。Play数据受设备认证、安装来源、数据共享和隐私门槛约束；crash/ANR核心问题率常按DAU统计，启动和渲染另有事件/会话口径，不能把所有指标都称为DAU问题率。比较前须对齐人群、窗口、分母、去重与定义。
+Android vitals与自建APM的数值可能不同。Play数据受设备认证、安装来源、数据共享和隐私门槛约束；crash/ANR核心问题率常按DAU统计，启动和渲染另有事件/会话口径，一律称作DAU问题率会出错。比较之前，人群、窗口、分母、去重与定义先对齐。
 
 ### 四类证据各有用途
 
-<!-- gracker-diagram: ch17-01-03-four-evidence-roles -->
-![指标、样本、深证据与上下文的关系](../../assets/diagrams/ch17/ch17-01-03-four-evidence-roles.png)
-
-图：四类证据分别支持趋势、现场、依赖和可比性判断。 它们互相补足；深采集也受权限、采样和完整性约束。
 
 指标、样本、trace 与上下文各自回答一层问题。先分清我们手里拿的是哪一类证据，才知道下一步该补什么。
 
@@ -234,10 +226,6 @@ Android vitals与自建APM的数值可能不同。Play数据受设备认证、�
 
 ### 常见采集路线的工程代价
 
-<!-- gracker-diagram: ch17-01-04-collection-route-costs -->
-![按采集路线识别兼容与开销](../../assets/diagrams/ch17/ch17-01-04-collection-route-costs.png)
-
-图：公开API、消息观察和插桩/Hook各有不同的证据范围及工程成本。 监控到message、方法或窗口帧，不等于直接观察完整屏幕呈现。
 
 证据类型定了，接下来是采集路线。每条路线决定了能看到的现象，也决定了要付出的代价：
 
@@ -267,12 +255,12 @@ PLT/inline hook 改写 native 函数跳转，JVMTI（Java Virtual Machine Tool I
 | <span style="white-space:nowrap">API 24—30</span> | <code>Window.<wbr>OnFrameMetrics<wbr>AvailableListener</code> | 可获得 UI/CPU 相关耗时；回调由 FrameMetrics 线程交付 |
 | <span style="white-space:nowrap">API 31—37</span> | FrameMetrics + deadline（帧截止时间）信息 | 可使用 `frameOverrunNanos` / `DEADLINE` 判断超过目标帧期限的时长 |
 
-JankStats在启用跟踪并取得有效帧数据时调用listener；没有回调不证明没有渲染或没有卡顿。回调应快速返回，FrameData会复用，异步处理需复制所需数值与状态。固定1.0.0的isJank比较UI时长和乘过heuristic multiplier的预期时长（默认2.0）；API31+的frameOverrunNanos另由TOTAL_DURATION−DEADLINE计算，正overrun不等于isJank必为true。
+JankStats在启用跟踪并取得有效帧数据时才调用listener；回调一直静默，渲染和卡顿也可能照常发生。回调要快速返回，FrameData会复用，异步处理需复制所需数值与状态。固定1.0.0的isJank比较UI时长和乘过heuristic multiplier的预期时长（默认2.0）；API31+的frameOverrunNanos另由TOTAL_DURATION−DEADLINE计算，正overrun与isJank判为true是两条独立判定。
 
 <!-- gracker-diagram: ch17-01-05-jank-and-deadline -->
 ![JankStats启发式判定与deadline超时](../../assets/diagrams/ch17/ch17-01-05-jank-and-deadline.png)
 
-图：固定JankStats1.0.0的isJank和API31+ overrun使用不同输入与边界。 默认multiplier为2.0；正overrun不能直接替换isJank，回调报告丢失也不是显示丢帧数。
+图：固定JankStats1.0.0的isJank和API31+ overrun使用不同输入与边界。 默认multiplier为2.0；正overrun换算不出isJank，回调报告丢失也推不出显示丢帧数。
 
 FrameMetrics 的 `TOTAL_DURATION` 表示该帧从开始到提交给显示子系统的总时长；各 stage 可能重叠，子项之和与 total 对不上是正常现象。它也量不到物理屏幕真正 present 的时间——要回答这一段，我们转向 Perfetto FrameTimeline、SurfaceFlinger/HWC（Hardware Composer，显示硬件合成器） 和 GPU/display 证据，分析 display present。
 
@@ -322,10 +310,6 @@ UID 是 Android 基于 Linux 用户标识实现的应用隔离身份。上面的
 
 `getPss()` 与 `getRss()` 取的是系统上一次采样值：可能为 0，也不是死亡瞬间的内存。`getTraceInputStream()` 通常用于 ANR；API 31+ 还可返回 native tombstone（native 崩溃转储文件） protobuf。进程曾发生并恢复的 ANR，其 trace 也可能附在之后因其他 reason 死亡的记录上。trace 和 tombstone 由独立循环存储管理，可能被更新事件覆盖，因此返回 `null` 是合法结果。
 
-<!-- gracker-diagram: ch17-01-07-exit-reason-evidence -->
-![退出reason不能代替内存与附件证据](../../assets/diagrams/ch17/ch17-01-07-exit-reason-evidence.png)
-
-图：退出原因、内存采样与trace附件分别回答不同问题。 LMK不等于Java OOM；旧ANR附件可能跟随后来的其他原因退出，null也合法。
 
 下面的代码用于展示一次低优先级、可去重的历史退出查询；生产代码还要接入自己的持久化和上传队列。
 
@@ -352,7 +336,7 @@ executor.execute {
 }
 ```
 
-`packageName = null`时服务端按调用方UID过滤；这是UID范围，不保证只含当前package，历史shared UID需另区分，isolated caller也不能调用。`timestamp + processName + reason/status` 只能作为去重基础，跨 reinstall（重装）、数据清除和时钟变化时还要加入 install/build/session 标识。
+`packageName = null`时服务端按调用方UID过滤；过滤的单位是整个UID，其中可能还包含历史shared UID的包，要另作区分，isolated caller也在可调用范围之外。`timestamp + processName + reason/status` 作为去重基础已经够用；跨 reinstall（重装）、数据清除和时钟变化时，还要加入 install/build/session 标识。
 
 ### ProfilingManager 的请求与触发器
 
@@ -429,12 +413,8 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 }
 ```
 
-`event_id`示例是ULID形状的占位文本，并非有效ULID；`schema_version`（事件结构版本） 表示事件结构版本。耗时字段要在名称或 schema 中固定单位；`sample_probability`记录所声明采样阶段的已知入选概率；联合采样和条件丢失仍须另记，不能凭该字段直接声称无偏；Mapping ID 与 Build-ID 用于还原 Java/Kotlin 和 native 栈。原始机型、URL、文件路径和用户信息取值多、识别风险高，应按数据最小化原则处理。
+`event_id`示例是ULID形状的占位文本，并非有效ULID；`schema_version`（事件结构版本） 表示事件结构版本。耗时字段要在名称或 schema 中固定单位。`sample_probability`记录所声明采样阶段的已知入选概率；联合采样和条件丢失仍须另记——采样是否无偏，要连同这两项一起判断。Mapping ID 与 Build-ID 用于还原 Java/Kotlin 和 native 栈。原始机型、URL、文件路径和用户信息取值多、识别风险高，应按数据最小化原则处理。
 
-<!-- gracker-diagram: ch17-01-09-contract-and-missingness -->
-![事件合同保留定义与可见性](../../assets/diagrams/ch17/ch17-01-09-contract-and-missingness.png)
-
-图：事件内容、关联身份和采样可见性共同决定服务端能解释什么。 sample_probability只描述已知采样阶段；选择性缺失不能靠全局上传率自动校正。
 
 一份可执行的数据合同至少定义：
 
@@ -459,13 +439,13 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 - 每帧、每请求等高频数据先在端侧聚合；
 - trace、heap dump 等重文件只对少量候选样本采集；
 - 用户/session 采样尽量使用稳定 hash（相同输入得到相同分组），让相同输入每次落到相同分组，避免每次启动换一批人，导致同一批用户的前后变化难以比较；
-- 保存采样单位及非零入选概率；只有丢失机制和概率已知并满足估计前提，才做加权。异常触发、离线、进程死亡等选择性缺失，不能靠一个全局上传成功率自动还原总体发生率。
+- 保存采样单位及非零入选概率；只有丢失机制和概率已知并满足估计前提，才做加权。异常触发、离线、进程死亡等选择性缺失，光靠一个全局上传成功率是还原不回总体发生率的。
 
 只在异常时采样，会把偏差带进结论。例如只在设备空闲、充电且网络良好时上传 trace，样本天然偏向特定设备状态；结论中要保留这项限制。
 
 #### 本地缓冲
 
-缓冲区应有总字节、单事件、单文件、条数和年龄上限。临时文件完整写入后在同一文件系统原子rename，可减少读到半份文件；原子目录项替换不等于断电持久性，仍需处理文件/目录同步、恢复和损坏校验，或使用事务存储。重文件与普通指标分目录管理，优先淘汰过期和低价值事件。
+缓冲区应有总字节、单事件、单文件、条数和年龄上限。临时文件完整写入后在同一文件系统原子rename，可减少读到半份文件；原子目录项替换之外，断电持久性仍需处理文件/目录同步、恢复和损坏校验，或使用事务存储。重文件与普通指标分目录管理，优先淘汰过期和低价值事件。
 
 敏感数据应在写盘前完成裁剪或脱敏。原始 URL、token（认证凭据）、日志和用户数据一旦落盘，进程死亡后就可能留在磁盘上，等上传阶段再处理已经晚了。
 
@@ -478,7 +458,7 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 <!-- gracker-diagram: ch17-01-10-bounded-client-pipeline -->
 ![采样、缓冲和上传的失效边界](../../assets/diagrams/ch17/ch17-01-10-bounded-client-pipeline.png)
 
-图：事件经过预算、落盘、上传和服务端去重，每层都记录丢弃原因。 同文件系统rename的原子替换不等于断电持久；服务端事件只覆盖走完整条链的样本。
+图：事件经过预算、落盘、上传和服务端去重，每层都记录丢弃原因。 同文件系统rename的原子替换给不了断电持久保证；服务端事件只覆盖走完整条链的样本。
 
 ### 选型：从团队约束推导组合
 
@@ -502,10 +482,6 @@ CPU 用 Perfetto 里的进程/线程 running time（实际占用 CPU 的时间�
 
 发布表同时给绝对差值、相对差值、中位数、尾部值、最差有效轮和样本数。没有实测的数据保留为空；性能差但流程完整的轮次要保留在表里，按异常值删除会丢信息。最终 APK/AAB（Android 安装包/应用包） 中的所有 native 依赖，还要分别检查 ELF 的 LOAD segment（可加载段） 对齐、ZIP 内文件对齐和真机 page size（内存页大小）；三项检查回答的问题不同。
 
-<!-- gracker-diagram: ch17-01-11-sdk-overhead-variants -->
-![用成对变体测量SDK自身成本](../../assets/diagrams/ch17/ch17-01-11-sdk-overhead-variants.png)
-
-图：同commit下比较不含SDK、依赖关闭、单模块和生产组合，并另测异常峰值。 变体顺序与现场条件受控，慢而有效的轮次保留；源码操作数不产生开销百分比。
 
 #### APM 接入准入清单
 
@@ -546,10 +522,6 @@ Matrix、KOOM、btrace/RheaTrace、Measure、Firebase、Sentry、APMPlus 等工�
 
 每一步都应能单独关闭和回滚。没有远程 kill switch 的 hook、每帧监听或重文件采集，先留在小流量阶段，等开关齐了再进大规模 Release。
 
-<!-- gracker-diagram: ch17-01-12-admission-and-rollout -->
-![从固定制品到可关闭的分阶段建设](../../assets/diagrams/ch17/ch17-01-12-admission-and-rollout.png)
-
-图：先统一合同并建立基础指标，再加入专项与少量深采集，最后形成回归和自监控。 每步都验证采集、失败降级和停用恢复；构建成功或一次启动不能代替生产准入。
 
 ### 后续章节怎样分工
 
@@ -599,7 +571,7 @@ Firebase Performance Monitoring 是 Firebase 提供的托管型性能监控服�
 
 它适合中小团队快速建立基础性能看板（汇总关键指标的 dashboard），也可以补充成熟监控体系，用来观察各版本的长期变化。限制也要先说清：它没有自托管采集服务，端侧会采样和限流，控制台展示也到不了秒级。实时故障发现、还原单次请求的完整过程、解释每一帧为何变慢、诊断 native 问题，这些场景要与其他工具配合完成。
 
-本篇机制和源码分析固定使用下表版本。2026-10-26仓库最新BoM为35.1.0，对应Performance SDK23.0.1；Performance plugin仍为2.0.2、Google services plugin为4.5.0。下表22.0.6是可复核的分析基线，不能称为当前最新版。
+本篇机制和源码分析固定使用下表版本。2026-10-26仓库最新BoM为35.1.0，对应Performance SDK23.0.1；Performance plugin仍为2.0.2、Google services plugin为4.5.0。下表22.0.6是可复核的分析基线，与前面查到的最新版本要区分开。
 
 | 组件 | 版本 | 说明 |
 | --- | --- | --- |
@@ -625,10 +597,6 @@ metric 适合记录条目数、重试次数等整数；trace duration 由 `start
 
 这套模型擅长回答“哪个版本变慢”“哪类设备更慢”“哪条业务路径分布异常”；一次故障的完整调用栈，要靠样本和 trace 去还原。
 
-<!-- gracker-diagram: ch17-01-13-firebase-model -->
-![Firebase的trace、metric与attribute](../../assets/diagrams/ch17/ch17-01-13-firebase-model.png)
-
-图：稳定trace名组织区间，metric记录整数计数，attribute提供受控分组。 网络事件另有URL pattern等字段；高基数名称和PII不应作为性能维度。
 
 ### 构建接入：插件与运行库分工
 
@@ -638,7 +606,7 @@ Performance Gradle plugin 与运行时 SDK 负责不同工作。字节码插桩�
 - `firebase-perf` 在进程中记录、采样、暂存并上传性能事件。
 - `com.google.gms.google-services` 读取 `google-services.json`，把 Firebase 项目配置转换成 Android resource（应用资源）。
 
-下面给出根脚本与app脚本两个Kotlin DSL模板，固定使用BoM34.17.0，对应本篇22.0.6分析基线。它不是当前最新版本的升级建议；AGP占位符须替换为项目已验证的实际版本，不能原样构建。
+下面给出根脚本与app脚本两个Kotlin DSL模板，固定使用BoM34.17.0，对应本篇22.0.6分析基线。它不是当前最新版本的升级建议；AGP占位符须替换为项目已验证的实际版本，直接原样构建是跑不通的。
 
 ```kotlin
 // 根 build.gradle.kts
@@ -691,10 +659,6 @@ dependencies {
 
 此Manifest配置不关闭构建插桩。固定22.0.6先看deactivated，再看缓存的运行时enabled选择，之后才看Manifest enabled及高层默认配置；已有安装曾启用采集时，仅改默认值不保证立刻关闭。构建期Project Property又优先于variant Extension，两套开关须分别验收。
 
-<!-- gracker-diagram: ch17-01-14-firebase-build-runtime -->
-![Firebase构建期与运行期开关分别生效](../../assets/diagrams/ch17/ch17-01-14-firebase-build-runtime.png)
-
-图：插桩开关决定构建产物，运行时优先级决定SDK是否采集。 固定22.0.6：deactivated最优先，缓存的API选择高于Manifest enabled默认值。
 
 Firebase 没有“debug 构建默认关闭”的通用规则。可采用这样的发布策略：debug variant 明确关闭插桩与采集，内部测试包只对少量受控设备启用，release 再按产品政策开放。接入清单还应覆盖 Firebase IAM（Identity and Access Management，身份与权限管理）、BigQuery 数据仓库权限、服务可用地区、数据保留说明、用户同意机制和隐私政策。Google Analytics 权限不属于 Performance Monitoring 的基本接入条件。
 
@@ -722,7 +686,7 @@ Firebase Performance 并没有随 Android 平台版本另立统计规则，我�
 2. 终点：第一个 Activity 的 `onResume()` 回调时间。
 3. 子区间：到首次 `onCreate()`、`onStart()` 和 `onResume()` 的几个阶段耗时。
 
-公开app-start说明页将起点写作FirebasePerfProvider.onCreate完成；本篇固定22.0.6源码实际取class-load近似起点，图按该实现标注。它不覆盖此前全部进程时间，也不等待首帧或首屏内容。API24+的Process.getStartElapsedRealtime用于实验性TTID和相关子区间，稳定_app_start仍另取class-load起点。固定A17由ActivityThread.handleBindApplication调用Process.setStartTimes登记该值，不能当Zygote fork时间；getStartRequestedElapsedRealtime另有起点，uptime与elapsedRealtime也不能混算。
+公开app-start说明页将起点写作FirebasePerfProvider.onCreate完成；本篇固定22.0.6源码实际取class-load近似起点，图按该实现标注。这段区间覆盖不到此前全部进程时间，也等不到首帧或首屏内容。API24+的Process.getStartElapsedRealtime用于实验性TTID和相关子区间，稳定_app_start仍另取class-load起点。固定A17由ActivityThread.handleBindApplication调用Process.setStartTimes登记该值，这个时刻要与Zygote fork时间区分开；getStartRequestedElapsedRealtime另有起点，uptime与elapsedRealtime也各自独立，不可混算。
 
 <!-- gracker-diagram: ch17-01-15-firebase-start-boundaries -->
 ![固定Firebase启动区间与其他启动坐标](../../assets/diagrams/ch17/ch17-01-15-firebase-start-boundaries.png)
@@ -747,7 +711,7 @@ SDK `22.0.6` 对FrameMetricsAggregator收集的整数毫秒桶分类：
 - slow frame：毫秒桶值 `> 16`；
 - frozen frame：毫秒桶值 `> 700`，同时计入slow frame。
 
-例如AndroidX core1.13.0先用`(durationNs + 500000) / 1000000`四舍五入到整数毫秒：16.4ms落在16桶，16.6ms落在17桶。实际应用可能解析到不同core版本，需保存依赖版本，不能解释成所有原始耗时大于16ms都会计入。
+例如AndroidX core1.13.0先用`(durationNs + 500000) / 1000000`四舍五入到整数毫秒：16.4ms落在16桶，16.6ms落在17桶。实际应用可能解析到不同core版本，需保存依赖版本；“所有原始耗时大于16ms都会计入”这样的读法在这里立不住。
 
 官方文档明确指出，自动 screen rendering trace 按固定 60 Hz 阈值计算。在 60 Hz 屏幕上，每个刷新周期约为 16.67 ms；在 90/120 Hz 设备上，刷新周期缩短为约 11.11/8.33 ms。一帧即使错过设备的真实刷新周期，也可能没有超过 16 ms，因此 Firebase 可能低估高刷新率设备上的卡顿。
 
@@ -776,7 +740,7 @@ custom trace 的命名要保持长期稳定，也要符合控制台和后端的�
 | attribute key | 文档口径最长 32 个字符，只使用英文字母与 `_` | 遵循文档口径，不依赖 SDK 的宽松校验 |
 | attribute value | 最长 100 个字符 | 不写 PII、认证 token 或自由文本 |
 
-公开资料与端侧校验有差异。固定22.0.6允许attribute key最多40字符、首字母后的数字，并拒绝firebase_/google_/ga_前缀；专题文档要求最多32字符、字母和下划线且不以下划线开头。共同范围可取ASCII字母开头、后接字母/下划线、最多32字符且避开保留前缀。另有FAQ将trace/metric名称上限写成32，与专题页100及固定SDK校验不一致；应明确所用规则和SDK版本，不把不同资料拼成统一后端保证。
+公开资料与端侧校验之间存在差异。固定22.0.6允许attribute key最多40字符、首字母后的数字，并拒绝firebase_/google_/ga_前缀；专题文档则要求最多32字符、字母和下划线，开头避开下划线。两边都稳妥的共同范围，可取ASCII字母开头、后接字母/下划线、最多32字符且避开保留前缀。另有FAQ将trace/metric名称上限写成32，与专题页100及固定SDK校验对不上；我们要明确所用规则和SDK版本，别把不同资料拼成统一后端保证。
 
 | <span style="white-space:nowrap">场景</span> | trace 名 | metric 名 | attribute | 不要写 |
 | --- | --- | --- | --- | --- |
@@ -805,10 +769,6 @@ suspend fun loadFirstFeed(): List<FeedItem> {
 
 `trace {}` 内部使用 `try/finally` 停止 trace，因此抛出异常或协程被取消时也能执行 `stop()`。若项目不用该扩展，应显式写 `start()`、`try/finally` 和 `stop()`，避免 trace 一直没有结束时间。`@AddTrace` 适合简单方法计时；要附带 custom metric 和 attribute 时，改用显式 API。
 
-<!-- gracker-diagram: ch17-01-17-firebase-custom-trace -->
-![自定义trace的字段和结束路径](../../assets/diagrams/ch17/ch17-01-17-firebase-custom-trace.png)
-
-图：业务区间先采用稳定词典和保守字段规则，成功或异常都结束trace。 固定SDK校验与专题页/FAQ上限有差异，图采用正文交集，不承诺未验证后端行为。
 
 ### 网络请求聚合和 URL pattern
 
@@ -852,14 +812,10 @@ suspend fun executeWithMetric(request: ApiRequest): ApiResponse {
 
 `HttpMetric` 不保证线程安全，一次请求应创建一个实例，避免放进 singleton（全局共享的单例对象） 反复使用。异常分支也要执行 `stop()`。若网络 client 能区分 DNS、TLS、timeout 等错误，可在应用自己的少量固定分类字段或错误监控中记录；`HttpMetric` 没有通用的 network-stage 字段。
 
-<!-- gracker-diagram: ch17-01-18-firebase-network-capture -->
-![自动网络插桩与手工HttpMetric](../../assets/diagrams/ch17/ch17-01-18-firebase-network-capture.png)
-
-图：受支持调用由插件插桩，其他网络栈按每请求实例手工记录，再进入统一事件链。 固定plugin公开支持OkHttp3.x、URL连接及Apache；HttpMetric不提供通用DNS/TLS阶段字段。
 
 #### URL pattern 要在控制台中统一分组
 
-固定22.0.6在HttpUrl可解析时移除URL的user-info、query和fragment，再限长2000字符并尽量保留完整path段；stripSensitiveInfo解析失败会返回原字符串。path中的订单号/用户信息也不会因去query而消失，不能把这层清理当全面隐私保证。凭据不应进入URL，attribute也不写PII、token、签名或自由文本。
+固定22.0.6在HttpUrl可解析时移除URL的user-info、query和fragment，再限长2000字符并尽量保留完整path段；stripSensitiveInfo解析失败会返回原字符串。这层清理管的是可解析URL的传输内容：path中的订单号/用户信息仍会随URL保留下来，把它当全面的隐私保证是靠不住的。凭据要从URL里挡出去，attribute里也不写PII、token、签名或自由文本。
 
 控制台会生成 automatic URL pattern，也允许创建 custom URL pattern。这里的 segment 指 URL path 中由 `/` 分隔的一段；pattern 语法不接受 `{id}` 这种参数写法：
 
@@ -914,16 +870,12 @@ Performance alerts 也有样本门槛。App start、custom trace、network 和 s
 <!-- gracker-diagram: ch17-01-20-firebase-observability-chain -->
 ![采样、限流、告警和导出的可见性](../../assets/diagrams/ch17/ch17-01-20-firebase-observability-chain.png)
 
-图：设备记录经采样、限流、批量传输和服务端处理后，才形成控制台及导出数据。 告警有相应样本门槛；BigQuery导出captured events，不能恢复被采样或丢弃的总体事件。
+图：设备记录经采样、限流、批量传输和服务端处理后，才形成控制台及导出数据。 告警有相应样本门槛；BigQuery导出captured events，被采样或丢弃的总体事件恢复不回来。
 
 ### 和 JankStats、FrameMetrics、Android Vitals 的分工
 
 这些工具都会出现渲染或稳定性指标，但观察对象不同：
 
-<!-- gracker-diagram: ch17-01-21-cross-tool-denominators -->
-![跨平台比较先对齐统计合同](../../assets/diagrams/ch17/ch17-01-21-cross-tool-denominators.png)
-
-图：将逐帧启发式、窗口时序、屏幕实例和Play人群分别解释，再建立同场景对照。 同名jank、slow或ANR并不自动具有相同分母、窗口、阈值和采样。
 
 | 工具 | 主要样本 | 长处 | 不足 |
 | --- | --- | --- | --- |
@@ -998,7 +950,7 @@ Firebase 的 16/700 ms、screen instance 占比与 Android Vitals 的用户或�
 
 APM 收集和分析的是 App 的稳定性、耗时与运行上下文；Sentry、APMPlus、Bugly 这类商业平台在此基础上，把付费内容扩展到 SDK、服务端、看板、告警、权限、符号文件、数据保留、工单协作和技术支持。其中符号文件包括 R8/ProGuard 的 `mapping` 与 native symbol，用于把混淆名或 native 地址还原成可读堆栈；团队由此省下的是采集后端维护、值班运营、告警规则维护和跨端数据分析这些工作。
 
-选型前要先确认团队缺少哪种能力：崩溃治理、性能指标、用户会话回看、跨端追踪、国内访问、合规审计、私有化部署，或数据迁移。商业 APM 接入后会进入 App 启动、异常捕获、网络、页面和用户标识等敏感路径，采购评审必须同时看能力、成本和退出方式。
+选型前我们先确认团队缺少哪种能力：崩溃治理、性能指标、用户会话回看、跨端追踪、国内访问、合规审计、私有化部署，或数据迁移。商业 APM 接入后会进入 App 启动、异常捕获、网络、页面和用户标识等敏感路径，采购评审必须同时看能力、成本和退出方式。
 
 以下实现分析固定Sentry8.53.0及plugin6.19.0；厂商公开接入页于2026-10-26重核。当天Maven最新Sentry Android为8.61.1、Bugly Pro两组制品均为4.4.8.2。固定源码结论不自动适用于新版，PoC须保存实际artifact哈希、合同能力表与部署清单。
 
@@ -1009,12 +961,8 @@ APM 收集和分析的是 App 的稳定性、耗时与运行上下文；Sentry�
 | APMPlus 海外版 | `apm_insight:1.5.24.oversea`、`apm_insight_crash:1.5.21.oversea` | 当前公开接入页写明上报到马来西亚柔佛 |
 | Bugly Pro | 2026-10-26 Maven Central 最新为 `com.tencent.bugly:bugly-pro:4.4.8.2` | 16KB page size 要选择 `com.tencent.bugly_16kb` 下的同版本；公开更新日志目前只说明到 `4.4.7.8` |
 
-仓库元数据只说明发布坐标，不能补足未公开的行为说明。Bugly公开changelog仍只说明到4.4.7.8，而仓库已到4.4.8.2；其间新增/修复什么，须以实际AAR、厂商说明和PoC结果核对。
+仓库元数据只说明发布坐标这一层，未公开的行为说明要另找证据补上。Bugly公开changelog仍只说明到4.4.7.8，而仓库已到4.4.8.2；其间新增/修复什么，须以实际AAR、厂商说明和PoC结果核对。
 
-<!-- gracker-diagram: ch17-01-22-commercial-proof-layers -->
-![厂商能力说明与运行验收分层](../../assets/diagrams/ch17/ch17-01-22-commercial-proof-layers.png)
-
-图：发布坐标、能力说明、实际制品和目标环境PoC逐层提供不同证据。 元数据、minSdk和版本号不能填补changelog缺口，也不能证明API37或16KB的行为。
 
 Android 17 / API 37 没有一套通用于所有商业 APM 的新采集协议，所以要逐项验证厂商 SDK 在 API 37 上使用的公开 API、native library（C/C++ 等本地代码库）、前后台判断、网络插桩和采样行为。“兼容 Android 17”这句宣传本身形成不了可复现的验收结论。
 
@@ -1030,14 +978,14 @@ Sentry Android 除了错误捕获，还支持 tracing、profiling（抽样调用
 - 需要异常、performance transaction、profiling 和 release health 放在一起看。
 - 面向海外用户，Sentry SaaS（由厂商托管的在线服务）可稳定访问。
 
-固定Sentry8.53.0沿用8.51.0的UI/continuous profiling分支：API35+通过ProfilingManager请求PROFILING_TYPE_STACK_SAMPLING，产生Perfetto格式的调用栈采样文件，不能据此承诺完整scheduler/Binder/system trace。API22–34默认使用legacy ART tracer；API21虽可接入core SDK，profiling路径会提前返回。enableLegacyProfiling=false关闭旧设备回退及全部transaction-based profiling，API35+的该系统采样不受此开关影响。
+固定Sentry8.53.0沿用8.51.0的UI/continuous profiling分支：API35+通过ProfilingManager请求PROFILING_TYPE_STACK_SAMPLING，产生Perfetto格式的调用栈采样文件；完整的scheduler/Binder/system trace，这份文件还撑不起这样的承诺。API22–34默认使用legacy ART tracer；API21虽可接入core SDK，profiling路径会提前返回。enableLegacyProfiling=false关闭旧设备回退及全部transaction-based profiling，API35+的该系统采样在这个开关的作用范围之外。
 
 <!-- gracker-diagram: ch17-01-23-sentry-profiler-branch -->
 ![Sentry固定8.53的profiling分支](../../assets/diagrams/ch17/ch17-01-23-sentry-profiler-branch.png)
 
-图：固定8.53.0的UI/continuous profiling在API35+请求系统调用栈采样，旧系统走有条件的legacy profiler。 Perfetto格式不等于完整system trace；SDK core min21不表示profiling支持API21。
+图：固定8.53.0的UI/continuous profiling在API35+请求系统调用栈采样，旧系统走有条件的legacy profiler。 Perfetto格式离完整system trace还有距离；SDK core min21也说明不了profiling支持API21。
 
-两条profiling路径均需采样预算。系统会限制ProfilingManager请求，SDK命中采样不保证有profile，该后端也不支持app-start profiling。Sentry文档所述ART tracer崩溃风险属于legacy路径；若开启后runtime崩溃增加，先按SDK、系统与机型分组，关闭legacy或降低采样做受控对照，再核对设备是否收到相关runtime修复。仅凭runtime栈或时间接近，不能断定业务代码或SDK是根因。
+两条profiling路径均需采样预算。系统会限制ProfilingManager请求，SDK命中采样不保证有profile，该后端也不支持app-start profiling。Sentry文档所述ART tracer崩溃风险属于legacy路径；若开启后runtime崩溃增加，先按SDK、系统与机型分组，关闭legacy或降低采样做受控对照，再核对设备是否收到相关runtime修复。仅凭runtime栈或时间接近，断定不了业务代码或SDK是根因。
 
 Sentry Android 各能力存在 SDK/API 版本门槛，接入前要按版本表核对：
 
@@ -1050,12 +998,8 @@ Sentry Android 各能力存在 SDK/API 版本门槛，接入前要按版本表�
 
 Sentry 的主 profiling 页和 `8.51.0` changelog 都把 `ProfilingManager` 的起始版本写为 `8.51.0`，但 legacy 页导语目前写成 `8.47.0`。我们采用有对应发布记录的 `8.51.0` 作为可验证依据。
 
-Session Replay需逐屏验证遮盖结果。默认PixelCopy先取截图，再按View hierarchy计算遮盖位置，时序差可使其错位；实验Canvas策略改为重绘时拦截文本与bitmap绘制，仍有未支持的绘制API，不能承诺所有内容均可靠遮盖，额外重绘开销也需实测。SurfaceView内容在独立surface中，实验采集须单独开启，且不能只遮盖其中某个标签或视频元素。支付、健康、聊天和身份页面应直接检查实际录制附件。固定8.53.0修复了一类硬件视频编码器卡住引发ANR的问题，仍须验证目标机型。
+Session Replay需逐屏验证遮盖结果。默认PixelCopy先取截图，再按View hierarchy计算遮盖位置，时序差可使其错位；实验Canvas策略改为重绘时拦截文本与bitmap绘制，仍有未支持的绘制API，全部内容都可靠遮盖这一点还承诺不了，额外重绘开销也需实测。SurfaceView内容在独立surface中，实验采集须单独开启，也没法只遮盖其中某个标签或视频元素。支付、健康、聊天和身份页面应直接检查实际录制附件。固定8.53.0修复了一类硬件视频编码器卡住引发ANR的问题，仍须验证目标机型。
 
-<!-- gracker-diagram: ch17-01-24-sentry-replay-mask -->
-![Replay截图、遮盖与特殊surface边界](../../assets/diagrams/ch17/ch17-01-24-sentry-replay-mask.png)
-
-图：PixelCopy与实验Canvas通过不同路径生成遮盖截图，独立SurfaceView另行处理。 默认遮盖和策略名均不能代替逐屏检查；绘制支持、时序及开销须按实际版本验证。
 
 #### APMPlus：国内移动 APM 平台型方案
 
@@ -1091,12 +1035,8 @@ Bugly Pro 要按 Pro 版自己的文档评估。Pro 版公开文档覆盖 crash�
 
 ### 商业 APM 的评审维度
 
-16KB静态检查包括ELF LOAD segment对齐和APK中未压缩.so的ZIP位置对齐，两者不能互相替代；AAB还需检查实际生成的APK。两项通过只是静态前提，仍须在真实16KB环境、关闭backcompat时验证安装、运行及采集路径，代码里的4KB假设也可能出问题。
+16KB静态检查包括ELF LOAD segment对齐和APK中未压缩.so的ZIP位置对齐，两者回答的问题不同，互相替代不了；AAB还需检查实际生成的APK。两项通过只是静态前提，仍须在真实16KB环境、关闭backcompat时验证安装、运行及采集路径，代码里的4KB假设也可能出问题。
 
-<!-- gracker-diagram: ch17-01-25-vendor-region-build-size -->
-![数据地域、构建支持和16KB分别验收](../../assets/diagrams/ch17/ch17-01-25-vendor-region-build-size.png)
-
-图：厂商制品选择、现代构建链支持和16KB产物/运行验证是三条独立检查。 APMPlus公开plugin仍列AGP7.0.2上限；Bugly的16KB group坐标不能代替最终包和环境验证。
 
 | 维度 | 要问的问题 | 验收方式 |
 |---|---|---|
@@ -1165,10 +1105,6 @@ fun loadHome(): Feed {
 
 如果后端也接了 Sentry 或 OpenTelemetry（跨厂商的可观测数据标准），移动请求携带 trace headers（传播 trace 标识的 HTTP header）后，可以从 App span 关联到服务器路径。应通过 `tracePropagationTargets` 只允许自有 API host；host 在这里指服务器域名。`sentry-trace` 和 baggage（随 trace 传播的附加键值）不要发给广告、支付等第三方域名。客户端与后端的采样规则也要一起核对；一端有数据、另一端缺失，可能来自两端各自的采样决定。
 
-<!-- gracker-diagram: ch17-01-26-sentry-finish-propagation -->
-![transaction结束与跨服务关联](../../assets/diagrams/ch17/ch17-01-26-sentry-finish-propagation.png)
-
-图：子span与根transaction分别结束并标记异常；自有请求在发起时按实际上下文传播关联标识。 trace关联不保证两端都采样；传播目标须限制，避免向第三方泄露trace headers。
 
 Tracing、profiling、Session Replay 和附件要使用彼此独立的采样预算。接入评审里要单列 `tracesSampleRate` 与 sampler（按上下文决定是否采样的函数）、`profileSessionSampleRate`、replay 的 `sessionSampleRate` 与 `onErrorSampleRate`，还要记录回放时长、脱敏规则、附件大小、丢弃原因和上传失败策略。`1.0` 适合白名单验收设备，默认生产配置要另选。
 
@@ -1178,10 +1114,6 @@ Tracing、profiling、Session Replay 和附件要使用彼此独立的采样预�
 
 APMPlus 公开文档中的“卡顿分析”监控的是主线程 message 执行超时；这里的 message 是 Looper 消息队列中一次待执行任务，默认卡顿阈值为 2.5 秒、严重卡顿为 4 秒。“流畅性/丢帧”属于另一组数据，与 Android Vitals 慢帧、JankStats jank 或系统 ANR 各是各的指标。这些名字先对清楚，我们再在接入时逐项验证下面这些问题：
 
-<!-- gracker-diagram: ch17-01-27-apmplus-lag-versus-frames -->
-![APMPlus消息卡顿、帧与ANR的区别](../../assets/diagrams/ch17/ch17-01-27-apmplus-lag-versus-frames.png)
-
-图：Looper消息超时、帧流畅性和系统ANR来自不同触发与统计合同。 默认2.5s/4s可配置；ANR证据还需要相应崩溃组件，不能从性能模块卡顿直接推断。
 
 - ANR 是系统 ANR、SDK 自判卡死，还是两者都有。
 - 卡顿是 Looper message timeout、慢帧，还是方法 trace；各自阈值和分母是什么。
@@ -1190,7 +1122,7 @@ APMPlus 公开文档中的“卡顿分析”监控的是主线程 message 执行
 - SDK 采样是否能按版本和灰度动态调整。
 - 私有化是否给出存储容量、查询 QPS（Queries Per Second，每秒查询数）、冷热分层、备份恢复和升级窗口。
 
-网络模块示例通过ApmPlugin.okHttp3Switch启用OkHttp3插桩。2026-10-26所读接入页仍把plugin支持上限写为AGP7.0.2，不能据1.4.2可下载就认定适配当前AGP。现代构建链先核对厂商更新说明，必要时采用非插桩接入；OkHttp4/5、Cronet、native或自研client仍需真实请求验收。
+网络模块示例通过ApmPlugin.okHttp3Switch启用OkHttp3插桩。2026-10-26所读接入页仍把plugin支持上限写为AGP7.0.2；1.4.2在仓库里可下载，离适配当前AGP还隔着一层核对。现代构建链先核对厂商更新说明，必要时采用非插桩接入；OkHttp4/5、Cronet、native或自研client仍需真实请求验收。
 
 这些名词在不同平台里的口径可能不同。合同和接入文档里要写明起止点、阈值、采样、上报时机和聚合分母；写清楚了，多个控制台的同名指标才有可比性。
 
@@ -1205,7 +1137,7 @@ Bugly 普通版常见价值在：
 - mapping / symbol 管理。
 - Webhook 对接内部流程。
 
-Bugly Pro的评审范围还包括ANR发生时线程栈、发生前主线程记录、卡顿抓栈与启动Span，须分别构造样本。2026-10-26 Maven最新4.4.8.2与公开changelog截至4.4.7.8之间存在说明缺口；版本号不能证明其间的行为变化，须保存实际制品、远端开关、采样、开销、上报时机与留存配置并做PoC。
+Bugly Pro的评审范围还包括ANR发生时线程栈、发生前主线程记录、卡顿抓栈与启动Span，须分别构造样本。2026-10-26 Maven最新4.4.8.2与公开changelog截至4.4.7.8之间存在说明缺口；版本号说明不了其间的行为变化，须保存实际制品、远端开关、采样、开销、上报时机与留存配置并做PoC。
 
 公开Android接入页称crash、ANR、OOM不受采样控制，其他性能项支持采样；这描述采样策略，不保证在进程死亡、离线或上传失败时100%送达。这个差异会直接影响事件费用、流量与隐私评审，估算 Bugly Pro 成本时要按这两类分开算。
 
@@ -1222,14 +1154,10 @@ Bugly Pro 各增强能力存在 SDK 版本门槛，PoC 前要确认当前集成�
 | 页面回放 | Android SDK `4.4.7.3+` | 检查二次启动后的附件上报、采样、敏感页面与数据遮盖 |
 | 16KB Page Size | `4.4.6.2+` 开始提供独立 16KB artifact；2026-10-26 Maven 版本为 `4.4.8.2` | 依赖必须来自 `com.tencent.bugly_16kb`；对 release APK 做 ELF/ZIP alignment 和运行验证 |
 
-Bugly的16KB文档存在历史措辞差异：changelog和Android接入页从4.4.6.2开始说明，升级指南以4.4.6.4举例。2026-10-26仓库已发布`com.tencent.bugly_16kb:bugly-pro:4.4.8.2`；这里只核对了元数据，实际接入还须固定AAR哈希、检查最终release包并运行验证。groupId是发布组织坐标，仅升级版本号而仍选com.tencent.bugly，不能证明选用了16KB制品。
+Bugly的16KB文档存在历史措辞差异：changelog和Android接入页从4.4.6.2开始说明，升级指南以4.4.6.4举例。2026-10-26仓库已发布`com.tencent.bugly_16kb:bugly-pro:4.4.8.2`；这里只核对了元数据，实际接入还须固定AAR哈希、检查最终release包并运行验证。groupId是发布组织坐标，仅升级版本号而仍选com.tencent.bugly，证明不了选用了16KB制品。
 
 页面回放在当前文档中仍标为完善中的功能。它每秒采集一张 view hierarchy 与 screenshot，crash 后缓存为附件，等 App 二次启动再上传；截图采用整图马赛克，敏感信息是否已被可靠识别要逐屏确认。默认采样率是 0，文档建议 `0.01～0.1`。PoC 应检查 `replay.zip` 中的 JPEG 和 JSON 原始内容、资源开销、附件权限与删除流程。
 
-<!-- gracker-diagram: ch17-01-28-bugly-evidence-replay -->
-![Bugly的诊断时点与延后上传](../../assets/diagrams/ch17/ch17-01-28-bugly-evidence-replay.png)
-
-图：ANR当时线程、此前主线程记录和replay附件来自不同观察时点。 按实际版本和远端开关分别构造样本；默认回放采样0，崩溃缓存后二次启动上传并非即时全量送达。
 
 以上门槛来自 Bugly Pro 官方 Android 接入页、更新日志和功能页。Bugly 是商业 SDK，版本阈值由厂商制品控制；当前集成版本低于门槛时，应先在独立分支升级并做小流量验证。
 
@@ -1279,10 +1207,6 @@ TCO（Total Cost of Ownership，总拥有成本）不只包含“每年多少钱
 
 ROI（Return on Investment，投资回报）要用可比较的数据计算。可量化的收益包括：崩溃率下降带来的留存改善、ANR / 慢帧定位时间缩短、值班误报减少、内部 APM 后端维护人力减少、合规审计时间缩短。PoC 阶段至少记录“接入前定位一次线上 ANR 的耗时”和“接入后用平台样本定位同类问题的耗时”。
 
-<!-- gracker-diagram: ch17-01-29-poc-then-cost -->
-![PoC结果进入容量与成本估算](../../assets/diagrams/ch17/ch17-01-29-poc-then-cost.png)
-
-图：先用受控样本验证证据和开销，再按事件、附件、保留与运维责任估算成本。 30次、30分钟、1%和7天均为规划示例；实际样本量、尾部精度和稀有事件覆盖需单独判断。
 
 ### 私有化责任表
 
@@ -1342,12 +1266,8 @@ interface AppMonitor {
 | `device.tier` | 低端 / 中端 / 高端规则固定，避免迁移后设备分桶（按规则分组）发生变化 |
 | `trace.name` | 由内部词典生成，不直接使用 vendor 自动名 |
 
-稳定字段合同和facade可把多数更换工作收敛到适配层；厂商独有能力、不同采样和生命周期语义仍需显式处理，不能承诺任意平台完全互换。
+稳定字段合同和facade可把多数更换工作收敛到适配层；厂商独有能力、不同采样和生命周期语义仍需显式处理，任意平台完全互换的保证则给不了。
 
-<!-- gracker-diagram: ch17-01-30-facade-symbol-contract -->
-![facade、身份与符号的解耦](../../assets/diagrams/ch17/ch17-01-30-facade-symbol-contract.png)
-
-图：业务通过内部facade提交受控字段，由适配层匹配厂商语义，并独立归档构建符号。 统一接口不能抹平能力、生命周期和采样差异；finish需幂等，退出登录须清理用户上下文。
 
 ### 退出成本与迁移失败样本
 

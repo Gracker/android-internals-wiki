@@ -45306,9 +45306,314 @@
       "before_count": 31,
       "before_all_images": 31,
       "sha256_before": "63297b2959f5b24b8850649e4f402f4b3d9c95b489112da066fcfa9a2cd5561c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch17-01-02-three-version-coordinates",
+          "title": "平台、应用库和设备权限各自固定",
+          "decision": "remove",
+          "reason": "三组版本坐标重复紧邻五层基线表与两段版本/权限说明，未增加实际实现对应关系。",
+          "original_line": 122,
+          "heading": "### Android 17 复核基线"
+        },
+        {
+          "original_id": "ch17-01-01-evidence-escalation",
+          "title": "从线上异常到受控修复验证",
+          "decision": "keep",
+          "reason": "保留线上指标到上下文、个例、深证据、受控复现和修复对照的全章调查主链，并对应图片编辑页实例。",
+          "original_line": 147,
+          "heading": "### 从异常指标到可验证结论"
+        },
+        {
+          "original_id": "ch17-01-03-four-evidence-roles",
+          "title": "指标、样本、深证据与上下文的关系",
+          "decision": "remove",
+          "reason": "共同上下文分到指标/样本/profile只是后续四个专节的分类标题，调查联系已由图2呈现。",
+          "original_line": 177,
+          "heading": "### 四类证据各有用途"
+        },
+        {
+          "original_id": "ch17-01-04-collection-route-costs",
+          "title": "按采集路线识别兼容与开销",
+          "decision": "remove",
+          "reason": "三列采集路线与成本重复紧邻七行详细表，原表保留更具体可见范围。",
+          "original_line": 237,
+          "heading": "### 常见采集路线的工程代价"
+        },
+        {
+          "original_id": "ch17-01-05-jank-and-deadline",
+          "title": "JankStats启发式判定与deadline超时",
+          "decision": "keep",
+          "reason": "保留旧OnPreDraw、API24+ UI启发式isJank及API31+ total-deadline三条不同输入/版本路径，防止正overrun替代isJank。",
+          "original_line": 272,
+          "heading": "### JankStats 与 FrameMetrics 的版本差异"
+        },
+        {
+          "original_id": "ch17-01-06-exit-info-query",
+          "title": "历史退出查询经过UID过滤与记录补充",
+          "decision": "keep",
+          "reason": "保留应用后台查询经AMS范围校验、tracker有限历史、tombstone补充到应用去重队列的跨Binder查询链。",
+          "original_line": 300,
+          "heading": "#### 应用 API 与服务端路径"
+        },
+        {
+          "original_id": "ch17-01-07-exit-reason-evidence",
+          "title": "退出reason不能代替内存与附件证据",
+          "decision": "remove",
+          "reason": "reason/status、旧PSS/RSS与附件三列重复reason表及循环存储/旧ANR段落，没有实际同记录证据实例。",
+          "original_line": 325,
+          "heading": "#### reason 来自多路事实合并"
+        },
+        {
+          "original_id": "ch17-01-08-profiling-requests-triggers",
+          "title": "主动profile与系统trigger的共同交付边界",
+          "decision": "keep",
+          "reason": "保留请求/trigger经过系统条件限流到全局listener、重启交付和文件期限去重的生命周期。",
+          "original_line": 363,
+          "heading": "### ProfilingManager 的请求与触发器"
+        },
+        {
+          "original_id": "ch17-01-09-contract-and-missingness",
+          "title": "事件合同保留定义与可见性",
+          "decision": "remove",
+          "reason": "统计/关联/可见性三列重复JSON示例解释和七项完整合同清单。",
+          "original_line": 434,
+          "heading": "### 线上采样的数据合同"
+        },
+        {
+          "original_id": "ch17-01-10-bounded-client-pipeline",
+          "title": "采样、缓冲和上传的失效边界",
+          "decision": "keep",
+          "reason": "保留采样、写盘前裁剪、有界持久缓冲、退避上传、幂等去重和丢弃自监控的事件路径，说明服务端样本的多重损失。",
+          "original_line": 478,
+          "heading": "#### 上传"
+        },
+        {
+          "original_id": "ch17-01-11-sdk-overhead-variants",
+          "title": "用成对变体测量SDK自身成本",
+          "decision": "remove",
+          "reason": "baseline/linked-off/module-on等是独立对照变体，连续箭头只是表格行顺序，可能误当同包运行阶段；变体表和随机成对试验说明更准确。",
+          "original_line": 505,
+          "heading": "#### 用成对变体测量 APM 自身开销"
+        },
+        {
+          "original_id": "ch17-01-12-admission-and-rollout",
+          "title": "从固定制品到可关闭的分阶段建设",
+          "decision": "remove",
+          "reason": "五框重复紧邻六项建设有序列表，并与调查主链及缓冲上传管线重复。",
+          "original_line": 549,
+          "heading": "### 分阶段建设顺序"
+        },
+        {
+          "original_id": "ch17-01-13-firebase-model",
+          "title": "Firebase的trace、metric与attribute",
+          "decision": "remove",
+          "reason": "trace/metric/attribute三列重复紧邻四行数据模型表，无具体关联结构。",
+          "original_line": 628,
+          "heading": "### 数据模型：trace、metric、attribute"
+        },
+        {
+          "original_id": "ch17-01-14-firebase-build-runtime",
+          "title": "Firebase构建期与运行期开关分别生效",
+          "decision": "remove",
+          "reason": "三列开关与优先级是前方控制项表和固定版本优先级段落的摘抄，未给额外决策实例。",
+          "original_line": 694,
+          "heading": "#### 构建插桩与运行采集的两套开关"
+        },
+        {
+          "original_id": "ch17-01-15-firebase-start-boundaries",
+          "title": "固定Firebase启动区间与其他启动坐标",
+          "decision": "keep",
+          "reason": "保留Firebase class-load近似起点到onResume的稳定启动区间，与此前进程创建和首帧/完整内容边界分开。",
+          "original_line": 727,
+          "heading": "### App start：`_app_start` 的真实区间"
+        },
+        {
+          "original_id": "ch17-01-16-firebase-screen-population",
+          "title": "从窗口帧到屏幕实例比例",
+          "decision": "keep",
+          "reason": "保留Window原始帧经core整数毫秒桶、生命周期计数、问题实例判定到screen-instance分母的两级聚合链。",
+          "original_line": 761,
+          "heading": "### Screen rendering：指标是“屏幕实例比例”"
+        },
+        {
+          "original_id": "ch17-01-17-firebase-custom-trace",
+          "title": "自定义trace的字段和结束路径",
+          "decision": "remove",
+          "reason": "start/业务/finally stop流程直接重复其上短Kotlin示例与异常取消说明，字段词典和规则表均保留。",
+          "original_line": 808,
+          "heading": "### 自定义 trace：字段规则与服务端边界"
+        },
+        {
+          "original_id": "ch17-01-18-firebase-network-capture",
+          "title": "自动网络插桩与手工HttpMetric",
+          "decision": "remove",
+          "reason": "受支持库/手工HttpMetric/最终字段三列重复库清单与21行每请求实例示例，无额外分支连线。",
+          "original_line": 855,
+          "heading": "#### 手工记录不受支持的网络栈"
+        },
+        {
+          "original_id": "ch17-01-19-firebase-url-contract",
+          "title": "URL清理与聚合规则的不同职责",
+          "decision": "keep",
+          "reason": "保留请求前安全URL、端侧解析清理/限长到服务端custom优先及特异性选择/不追溯聚合的分层处理顺序。",
+          "original_line": 880,
+          "heading": "#### URL pattern 要在控制台中统一分组"
+        },
+        {
+          "original_id": "ch17-01-20-firebase-observability-chain",
+          "title": "采样、限流、告警和导出的可见性",
+          "decision": "keep",
+          "reason": "保留采样限流到服务端后分叉控制台告警/BigQuery的实际数据流，明确导出不能恢复未捕获事件。",
+          "original_line": 914,
+          "heading": "#### BigQuery 导出与采样的关系"
+        },
+        {
+          "original_id": "ch17-01-21-cross-tool-denominators",
+          "title": "跨平台比较先对齐统计合同",
+          "decision": "remove",
+          "reason": "三类工具及各分母重复紧邻四行分工表；Firebase两级聚合和Jank/deadline路径已单独保留。",
+          "original_line": 923,
+          "heading": "### 和 JankStats、FrameMetrics、Android Vitals 的分工"
+        },
+        {
+          "original_id": "ch17-01-22-commercial-proof-layers",
+          "title": "厂商能力说明与运行验收分层",
+          "decision": "remove",
+          "reason": "文档/制品/构建/PoC/合同五框复述版本表和后续核验证据层清单，与通用准入流程重复。",
+          "original_line": 1014,
+          "heading": "### 商业平台的能力构成"
+        },
+        {
+          "original_id": "ch17-01-23-sentry-profiler-branch",
+          "title": "Sentry固定8.53的profiling分支",
+          "decision": "keep",
+          "reason": "保留固定Sentry8.53.0按API35+系统stack、22–34legacy、21提前返回的真实三分支，core minSdk不代表profiling支持。",
+          "original_line": 1035,
+          "heading": "#### Sentry：错误监控起家，移动端 APM 能力逐步补齐"
+        },
+        {
+          "original_id": "ch17-01-24-sentry-replay-mask",
+          "title": "Replay截图、遮盖与特殊surface边界",
+          "decision": "remove",
+          "reason": "PixelCopy/Canvas/SurfaceView三列逐项摘录紧邻完整遮盖风险段落，无时序错位或surface捕获结构实例。",
+          "original_line": 1055,
+          "heading": "#### Sentry：错误监控起家，移动端 APM 能力逐步补齐"
+        },
+        {
+          "original_id": "ch17-01-25-vendor-region-build-size",
+          "title": "数据地域、构建支持和16KB分别验收",
+          "decision": "remove",
+          "reason": "地域/构建链/16KB三列重复后方详细评审表及静态/运行检查段落。",
+          "original_line": 1096,
+          "heading": "### 商业 APM 的评审维度"
+        },
+        {
+          "original_id": "ch17-01-26-sentry-finish-propagation",
+          "title": "transaction结束与跨服务关联",
+          "decision": "remove",
+          "reason": "span生命周期、异常finish和请求传播三列重复26行try/finally示例、树状代码和传播目标段落，没有具体跨端父子链。",
+          "original_line": 1168,
+          "heading": "### Sentry 的 transaction 和 profiling"
+        },
+        {
+          "original_id": "ch17-01-27-apmplus-lag-versus-frames",
+          "title": "APMPlus消息卡顿、帧与ANR的区别",
+          "decision": "remove",
+          "reason": "message卡顿、帧、ANR三列重复前后完整指标定义/验收清单，保留原文2.5s/4s和各自分母限制。",
+          "original_line": 1181,
+          "heading": "### APMPlus 的移动专项能力"
+        },
+        {
+          "original_id": "ch17-01-28-bugly-evidence-replay",
+          "title": "Bugly的诊断时点与延后上传",
+          "decision": "remove",
+          "reason": "ANR当时/此前/replay三列重复紧邻门槛表及二次启动上传段落，没有实际三时点关联实例。",
+          "original_line": 1229,
+          "heading": "### Bugly 的稳定性边界"
+        },
+        {
+          "original_id": "ch17-01-29-poc-then-cost",
+          "title": "PoC结果进入容量与成本估算",
+          "decision": "remove",
+          "reason": "PoC到成本五框重复验收表、TCO表和同类问题ROI说明，与通用调查主链语义重复。",
+          "original_line": 1282,
+          "heading": "### 成本模型与 ROI 估算"
+        },
+        {
+          "original_id": "ch17-01-30-facade-symbol-contract",
+          "title": "facade、身份与符号的解耦",
+          "decision": "remove",
+          "reason": "facade适配和独立符号归档被串成线性流程，正文接口与字段表更精确表达独立归档和厂商语义限制。",
+          "original_line": 1347,
+          "heading": "### 内部 APM facade 与字段合同"
+        },
+        {
+          "original_id": "ch17-01-31-shadow-migration",
+          "title": "影子迁移先解释差异再切流",
+          "decision": "keep",
+          "reason": "保留旧平台正式告警、新平台影子记录、对齐统计合同和失败样本再切流回退的迁移顺序，避免双平台直接同时发正式告警。",
+          "original_line": 1366,
+          "heading": "### 退出成本与迁移失败样本"
+        }
+      ],
+      "sha256_after": "09aeac9c27a4279e5820aa7ccb876c46be571fb4842007299aa5c9dae7269122",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:27:16.974875+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 31,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a176/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a176/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 176,
+        "article": "src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
+        "registered_sha256": "63297b2959f5b24b8850649e4f402f4b3d9c95b489112da066fcfa9a2cd5561c",
+        "frozen_sha256": "63297b2959f5b24b8850649e4f402f4b3d9c95b489112da066fcfa9a2cd5561c",
+        "review_input_sha256": "c38908018d4e977f55b26b57d1501aec7f701d28a98e4936933d2e8509b5f01e",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a176/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a176/external-source.diff",
+        "diff_sha256": "9a244ace80523a1926214aa6290752fad2fb235b8f6a371be15da5d512692666",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 749, \"characters\": 59486, \"svg_labels_read\": 31, \"actual_pngs_viewed\": 31, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 13, \"code_lines\": 172, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "c38908018d4e977f55b26b57d1501aec7f701d28a98e4936933d2e8509b5f01e",
+      "retired_diagrams": [
+        "ch17-01-02-three-version-coordinates",
+        "ch17-01-03-four-evidence-roles",
+        "ch17-01-04-collection-route-costs",
+        "ch17-01-07-exit-reason-evidence",
+        "ch17-01-09-contract-and-missingness",
+        "ch17-01-11-sdk-overhead-variants",
+        "ch17-01-12-admission-and-rollout",
+        "ch17-01-13-firebase-model",
+        "ch17-01-14-firebase-build-runtime",
+        "ch17-01-17-firebase-custom-trace",
+        "ch17-01-18-firebase-network-capture",
+        "ch17-01-21-cross-tool-denominators",
+        "ch17-01-22-commercial-proof-layers",
+        "ch17-01-24-sentry-replay-mask",
+        "ch17-01-25-vendor-region-build-size",
+        "ch17-01-26-sentry-finish-propagation",
+        "ch17-01-27-apmplus-lag-versus-frames",
+        "ch17-01-28-bugly-evidence-replay",
+        "ch17-01-29-poc-then-cost",
+        "ch17-01-30-facade-symbol-contract"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-176/retired-assets.json"
     },
     {
       "index": 177,
@@ -46389,8 +46694,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 108,
-  "next_article": "src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
+  "reviewed_articles": 109,
+  "next_article": "src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -46400,7 +46705,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:24:29.189546+08:00",
+  "updated_at": "2026-10-31T14:27:16.974875+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -46456,13 +46761,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
-      "registered_sha256": "63297b2959f5b24b8850649e4f402f4b3d9c95b489112da066fcfa9a2cd5561c",
-      "observed_sha256": "c38908018d4e977f55b26b57d1501aec7f701d28a98e4936933d2e8509b5f01e",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -46704,9 +47002,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3627,
-  "reviewed_placements_after": 1587,
-  "net_removed_placements": 2040,
+  "reviewed_placements_before": 3658,
+  "reviewed_placements_after": 1598,
+  "net_removed_placements": 2060,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -46730,5 +47028,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 108
+  "currently_matching_reviewed_source_count": 109
 }
