@@ -192,10 +192,6 @@ RFC 9113 定义了 `PUSH_PROMISE`（服务器在客户端请求前声明将主�
 
 即使换到支持推送的客户端，我们也要先测量推送资源被使用、已缓存、重复传输和取消的比例。协议有这个能力，和它对移动 API 有净收益，是两回事。
 
-<!-- gracker-diagram: a266-02-h2-flow-backpressure -->
-![HTTP2流复用仍受窗口和消费速度约束](../../assets/diagrams/ch24/a266-02-h2-flow-backpressure.png)
-
-图：多路复用不提供无限并发或业务优先级承诺；OkHttp 5.4 默认 PushObserver.CANCEL。
 
 ### HTTP/3 与 QUIC 能改变什么
 
@@ -222,10 +218,6 @@ RFC 9000 定义了连接迁移和路径验证机制。`ConnectionMigrationOption
 
 `HttpEngine.Builder.setConnectionMigrationOptions()` 在同一份源码里也带着 `ConnectionMigrationOptions.Experimental` 注解。要试默认网络迁移，我们先在受控实验里启用；上线前把设备实现、服务端、代理、计费网络和远程关闭开关都验证一遍。
 
-<!-- gracker-diagram: a266-03-quic-path-migration -->
-![QUIC迁移先验证路径且保留业务恢复](../../assets/diagrams/ch24/a266-03-quic-path-migration.png)
-
-图：迁移需要 QUIC、客户端、服务端与新路径共同支持；中断后的业务仍需恢复协议。
 
 #### 0-RTT 的重放风险与适用范围
 
@@ -298,10 +290,6 @@ fun UrlResponseInfo.toTerminalResult(): HttpEngineResult {
 
 `FinishedRequestTimings` 和 `UrlRequest.getFinishedRequestTimings()` 是 37.1 / S Extensions 23 新增的能力，只能在成功、失败或取消的终止回调到达后读取，并不属于 API 37 / `android-17.0.0_r1` 这条基线。基础 API 37 上，DNS、连接和 TLS/QUIC 的完整公开时序要等这套新接口才有。
 
-<!-- gracker-diagram: a266-05-engine-lifecycle-metrics -->
-![引擎生命周期与终止回调指标分开](../../assets/diagrams/ch24/a266-05-engine-lifecycle-metrics.png)
-
-图：缓存可能经过网络重验证；接收字节为解压前最小网络计数，空协议不自行填 HTTP/1.1。
 
 ### gRPC 在移动端的实践
 
@@ -332,19 +320,11 @@ gRPC 默认不设置调用截止时间（deadline），客户端可能因此一�
 
 `wait-for-ready`（等待通道就绪）会在 `Channel` 暂时不可用时把调用留在队列里，等连接恢复再发送；默认模式则更早返回失败。调用截止时间仍然生效，所以它只适合能短暂等待连接恢复的调用，绕不过用户取消，也无限延长不了启动等待。
 
-<!-- gracker-diagram: a266-06-grpc-channel-deadline -->
-![gRPC通道复用与每次调用的生命周期](../../assets/diagrams/ch24/a266-06-grpc-channel-deadline.png)
-
-图：通道是逻辑通信对象；每次 RPC 的凭据、截止时间、取消与最终状态分别管理。
 
 流式 RPC 还要自己定义断线恢复语义：连接中断时未完成的逻辑流会失败，重新建流不会自动恢复业务位置，消息序号、游标、确认、去重和补发都属于应用协议的事。
 
 这类流式调用还受 gRPC 与 HTTP/2 流量控制约束：一次写入只说明消息交给了 gRPC，字节未必已经发到网络；发送方速度长期高于接收方时，框架会等待或缓存。因此应用队列要有界，手动流量控制要保证两端持续读取，别让双方都在等写入空间。
 
-<!-- gracker-diagram: a266-07-grpc-flow-recovery -->
-![流式RPC用有界队列、确认和游标恢复](../../assets/diagrams/ch24/a266-07-grpc-flow-recovery.png)
-
-图：消息交给 gRPC 不等于服务端已处理；重连后从业务确认位置恢复，不能仅重新打开流。
 
 #### 透明重试与 Service Config 重试
 
@@ -400,10 +380,6 @@ gRPC 到 REST 则是两套接口契约，协议层不会自动回退，只有业
 
 双路径会增加测试与服务端维护成本。多数业务更适合在当前 RPC 上恢复或显示错误，看到任意 gRPC 失败就改发 REST 并不划算。
 
-<!-- gracker-diagram: a266-09-transport-and-contract-fallback -->
-![传输协商回退与双业务契约区别维护](../../assets/diagrams/ch24/a266-09-transport-and-contract-fallback.png)
-
-图：自动传输回退不等于自动业务重发；双接口必须共享幂等状态与权限语义。
 
 #### 更换传输实现时保持业务契约不变
 
@@ -543,10 +519,6 @@ ECH 保护的是握手中的特定字段，下面这几处它管不到，评估�
 
 所以 ECH 做到的是：网络库和服务端完成协商后，ClientHello 内的真实 SNI 等字段被加密，网络中间设备直接读取这些字段的能力被降低——域名对全部观察者隐身是做不到的。[RFC 9849](https://www.rfc-editor.org/rfc/rfc9849) 给出 ECH 协议细节，[RFC 9460](https://www.rfc-editor.org/rfc/rfc9460) 定义 HTTPS 与服务绑定（SVCB）资源记录。
 
-<!-- gracker-diagram: a266-10-ech-visible-boundary -->
-![ECH内外层与仍可观测的信息](../../assets/diagrams/ch24/a266-10-ech-visible-boundary.png)
-
-图：ECH 保护指定握手字段；加密 DNS、IP 暴露、日志与流量分析仍有各自边界。
 
 走 Android 17 平台 API 接入 ECH 的网络库，处理顺序如下：
 
@@ -558,10 +530,6 @@ ECH 保护的是握手中的特定字段，下面这几处它管不到，评估�
 
 `domainEncryption` 给到的只是按域名策略，网络库该做的 DNS 查询、握手配置和失配处理一样少不了；Android 官方文档也把网络库已接入 ECH 列为生效前提。
 
-<!-- gracker-diagram: a266-11-ech-api-integration -->
-![平台ECH能力需网络库逐段集成](../../assets/diagrams/ch24/a266-11-ech-api-integration.png)
-
-图：XML 声明需要库版本、DNS HTTPS 记录和 TLS 集成共同执行；只返回 IP 的自定义 DNS 可能丢失 ECH 配置。
 
 ### 在网络安全配置中声明 `domainEncryption`
 
@@ -594,10 +562,6 @@ Android 17 正式版的 XML 语法只接受两个值：
 
 `NetworkSecurityPolicy` 的公开常量里还有 `DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC` 和 `DOMAIN_ENCRYPTION_MODE_UNKNOWN`：`OPPORTUNISTIC` 表示有服务端配置时尝试 ECH、没有配置时不发送 GREASE；`UNKNOWN` 要求网络库退回普通 TLS。这两个值是网络库读策略时可能遇到的 API 值，XML 语法并不接受它们，`mode="opportunistic"` 写进配置是无效的。 本段描述的是固定 API 37 / r1 的模式边界；当前 API 参考还列出了 37.2 / C Extension 24 新增的 `DOMAIN_ENCRYPTION_MODE_REQUIRED`（无法启用 ECH 时连接失败），并在 37.2 弃用 `OPPORTUNISTIC`。这些后续 API 不能反推 r1 XML 已支持新模式；需要强制加密的库还必须按实际版本适配新策略，不能把未知返回值自动当作普通 TLS 回退。下方诊断函数只打印策略，不执行握手策略。
 
-<!-- gracker-diagram: a266-12-domain-policy-modes -->
-![固定API37策略值与XML语法分层](../../assets/diagrams/ch24/a266-12-domain-policy-modes.png)
-
-图：区分XML可写模式、平台返回常量和实际协商；后续37.2新增required不纳入r1示例。
 
 要确认某个主机名经过 Network Security Configuration 匹配后拿到的策略值，可以用这段诊断函数：
 
@@ -725,10 +689,6 @@ dig HTTPS api.example.com +short
 
 对照实验有个陷阱：`targetSdkVersion 36` 与 37 的差异里混着 CT 等其他行为变化，直接对比会把 CT 的效果算进 ECH。实验室可以在相同网络库和代码下构建两份网络安全配置，一份保持 `enabled`，另一份把候选域名设为 `disabled`，这样就只改变了 ECH 策略；生产发布还要把应用版本更新需要的时间算进去。
 
-<!-- gracker-diagram: a266-15-ech-rollout-evidence -->
-![ECH发布按证据链与错误阶段回退](../../assets/diagrams/ch24/a266-15-ech-rollout-evidence.png)
-
-图：不要用target36/37差异单独归因ECH；CT、证书、QUIC与本地权限先按失败阶段分类。
 
 回退手段有三类：
 

@@ -64665,9 +64665,160 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "7e3d382ff00a0f504c95d6e8a990ccb5dbe853399f2605df173b6d308e905a7d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a266-01-protocol-layers",
+          "title": "RPC契约、HTTP语义与传输层分开",
+          "decision": "keep",
+          "reason": "RPC/HTTP顶层到HTTP2TCP和HTTP3QUIC两条分层路径，区分契约、流语义与用户空间传输，不由库名推协商协议。",
+          "original_line": 140,
+          "heading": "### 三个协议各自解决的问题"
+        },
+        {
+          "original_id": "a266-02-h2-flow-backpressure",
+          "title": "HTTP2流复用仍受窗口和消费速度约束",
+          "decision": "remove",
+          "reason": "把调度/窗口/应用读取/Push摘要连线，没有表达窗口信用或实际背压传播，正文分节和H1/H2对照表更精确。",
+          "original_line": 195,
+          "heading": "#### 服务器推送（Server Push）在 OkHttp 上的现状"
+        },
+        {
+          "original_id": "a266-03-quic-path-migration",
+          "title": "QUIC迁移先验证路径且保留业务恢复",
+          "decision": "remove",
+          "reason": "连接→网络变化→路径验证→恢复四框重复迁移条件列表，没有旧新路径、验证成功失败的实际分叉。",
+          "original_line": 225,
+          "heading": "#### 连接迁移的生效条件"
+        },
+        {
+          "original_id": "a266-04-zero-rtt-and-discovery",
+          "title": "QUIC发现、恢复与0RTT是不同状态",
+          "decision": "keep",
+          "reason": "服务发现之后无恢复状态完整握手与有状态评估0RTT分叉，配早期拒绝和TCP协商回退，区分开关、实际协议及接受结果。",
+          "original_line": 244,
+          "heading": "#### UDP、代理与 HTTP/3 发现机制"
+        },
+        {
+          "original_id": "a266-05-engine-lifecycle-metrics",
+          "title": "引擎生命周期与终止回调指标分开",
+          "decision": "remove",
+          "reason": "长期引擎、独占目录、终态指标、细时序版本四框是前面引擎段落与代码说明摘要，缺生命周期分支关系。",
+          "original_line": 301,
+          "heading": "#### 基础 API 37 能观测什么"
+        },
+        {
+          "original_id": "a266-06-grpc-channel-deadline",
+          "title": "gRPC通道复用与每次调用的生命周期",
+          "decision": "remove",
+          "reason": "Channel、每RPC凭据/期限、waitready和终态几个框重复紧邻三段定义，未画RPC与多条物理连接的关系。",
+          "original_line": 335,
+          "heading": "#### 调用截止时间、取消和 Wait-for-Ready"
+        },
+        {
+          "original_id": "a266-07-grpc-flow-recovery",
+          "title": "流式RPC用有界队列、确认和游标恢复",
+          "decision": "remove",
+          "reason": "有界队列→流控→业务确认→重连四框重复两个流式RPC段落，未显示发送信用/读取或确认游标的具体往返。",
+          "original_line": 344,
+          "heading": "#### 调用截止时间、取消和 Wait-for-Ready"
+        },
+        {
+          "original_id": "a266-08-grpc-retry-commit",
+          "title": "gRPC重试以提交边界与业务语义约束",
+          "decision": "keep",
+          "reason": "逻辑RPC下透明重试、ServiceConfig策略与收到头已提交不能继续同策略重试三分支，突出RPC提交不等业务写幂等。",
+          "original_line": 355,
+          "heading": "#### 透明重试与 Service Config 重试"
+        },
+        {
+          "original_id": "a266-09-transport-and-contract-fallback",
+          "title": "传输协商回退与双业务契约区别维护",
+          "decision": "remove",
+          "reason": "HTTP传输与gRPCREST两列文字框重复前文回退解释及四条契约一致性列表，无额外执行路径。",
+          "original_line": 403,
+          "heading": "#### 协议回退与业务回退"
+        },
+        {
+          "original_id": "a266-10-ech-visible-boundary",
+          "title": "ECH内外层与仍可观测的信息",
+          "decision": "remove",
+          "reason": "inner经HPKE到outer再到可见信息四框重复本节五项隐私边界，未画内外字段嵌套或两端处理。",
+          "original_line": 546,
+          "heading": "### ECH 的 Android 17 适配路径"
+        },
+        {
+          "original_id": "a266-11-ech-api-integration",
+          "title": "平台ECH能力需网络库逐段集成",
+          "decision": "remove",
+          "reason": "读取策略、并发DNS、解析配置、握手配置、接受失配、证据六框逐字重复上方五步集成编号列表，版本注释正文已有。",
+          "original_line": 561,
+          "heading": "### ECH 的 Android 17 适配路径"
+        },
+        {
+          "original_id": "a266-12-domain-policy-modes",
+          "title": "固定API37策略值与XML语法分层",
+          "decision": "remove",
+          "reason": "XMLenabled/disabled与API其他常量的文字框重复紧邻两行模式表和API37/37.2区分段落。",
+          "original_line": 597,
+          "heading": "### 在网络安全配置中声明 `domainEncryption`"
+        },
+        {
+          "original_id": "a266-13-ech-mismatch-authentication",
+          "title": "配置失配重试先验证公开名称",
+          "decision": "keep",
+          "reason": "公开名称null/证书失败拒用retry、认证成功才取retry、无配置与有预算可新建连接两级门槛，表达失配配置必须先认证再用。",
+          "original_line": 677,
+          "heading": "### 失败与回退判定"
+        },
+        {
+          "original_id": "a266-14-https-dns-wait",
+          "title": "A/AAAA与HTTPS查询的等待边界",
+          "decision": "keep",
+          "reason": "A/AAAA完成、HTTPS查询及地址完成后额外等待三轨解释DNS等待策略对端点配置和尾延迟影响，非时间刻度实测。",
+          "original_line": 700,
+          "heading": "### 性能观测方法"
+        },
+        {
+          "original_id": "a266-15-ech-rollout-evidence",
+          "title": "ECH发布按证据链与错误阶段回退",
+          "decision": "remove",
+          "reason": "固定制品、DNS轮换、同target实验、回退四框重复发版六条条件和三条回退清单，没有实际证据状态或回退条件分支。",
+          "original_line": 728,
+          "heading": "### 分阶段发布策略"
+        }
+      ],
+      "sha256_after": "fbe948036c24c2f0ba24c0cad68658f967bbc352f1396e7b343729210a118109",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:39:21.661007+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a266/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a266/visual-review.json",
+      "retired_diagrams": [
+        "a266-02-h2-flow-backpressure",
+        "a266-03-quic-path-migration",
+        "a266-05-engine-lifecycle-metrics",
+        "a266-06-grpc-channel-deadline",
+        "a266-07-grpc-flow-recovery",
+        "a266-09-transport-and-contract-fallback",
+        "a266-10-ech-visible-boundary",
+        "a266-11-ech-api-integration",
+        "a266-12-domain-policy-modes",
+        "a266-15-ech-rollout-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-266/retired-assets.json"
     },
     {
       "index": 267,
@@ -64934,8 +65085,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 182,
-  "next_article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+  "reviewed_articles": 183,
+  "next_article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -64945,7 +65096,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:36:09.547809+08:00",
+  "updated_at": "2026-10-31T18:39:21.661007+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -65011,6 +65162,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "registered_sha256": "761b954a66804fd547d198201c2a5100c52f5e47384917a8787dcf3ab0ab311b",
+      "observed_sha256": "dcd8b4dbb0e0b1512c12bc27624e096a9d8cdd4bdaf55ac26e172a99a2fcbf3d",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part2-performance/ch10-memory-perf/README.md",
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
@@ -65036,6 +65194,13 @@
       "registered_sha256": "ca6c47f543bd260e7baed6903c571de2599f508db526a91c96784c547343b2f4",
       "observed_sha256": "29c574fb3725684e9c4843318f240c61ff13fcf7e16710dad97f998199b2edaa",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "registered_sha256": "0f947f3fdf115aef4dcb5b96ca728e5a3f8272fcc5e7456bad8e8d34cef4bdd7",
+      "observed_sha256": "a439bc9a8092646fa5af50ed42ebb1dd2d68864514d9579badb83b2d66e72819",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -65074,9 +65239,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5482,
-  "reviewed_placements_after": 2144,
-  "net_removed_placements": 3338,
+  "reviewed_placements_before": 5497,
+  "reviewed_placements_after": 2149,
+  "net_removed_placements": 3348,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -65100,5 +65265,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 182
+  "currently_matching_reviewed_source_count": 183
 }
