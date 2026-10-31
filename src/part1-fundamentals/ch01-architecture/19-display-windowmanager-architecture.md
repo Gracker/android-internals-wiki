@@ -282,7 +282,7 @@ consolidated_from:
 
 ## 从应用窗口到显示设备
 
-在 Perfetto 里看到掉帧或 present 偏晚时，先要回答的是这一帧慢在哪一段。这一节把一帧从应用窗口到屏幕的路径拆成可观察的阶段，配上 fence 与三个时间边界，再按出图拓扑分类。
+在 Perfetto 里看到掉帧或 present 偏晚，我们先要回答这一帧慢在哪一段。这一节把一帧从应用窗口到屏幕的路径拆成可观察的阶段，配上 fence 与三个时间点，再按出图拓扑分类。
 
 ### 讨论范围与源码基线
 
@@ -364,7 +364,7 @@ buffer 到了 SurfaceFlinger 这边，FrontEnd 先以 `RequestedLayerState` 保�
 
 `latch` 表示 SurfaceFlinger 在本轮采纳了某个 layer 的新 buffer。Android 13 引入并默认启用 `AutoSingleLayer`，允许受限的单 layer buffer 更新先被采纳，再在读取内容前等待 acquire fence；它不适用于跨 layer 的几何变化或同步事务。RenderEngine 或 HWC 读取内容时仍须遵守 acquire fence。版本与适用范围见 [AutoSingleLayer 官方说明](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)。
 
-在 `android-17.0.0_r1` 中，`getLatchUnsignaledConfig()` 读取 `debug.sf.auto_latch_unsignaled`，默认值为 `true`，只返回 `AutoSingleLayer` 或 `Disabled`。`shouldLatchUnsignaled()` 还检查单 layer、首笔事务条件 `firstTransaction` 和非 early VSync 配置，调用处再用 `isSimpleBufferUpdate()` 过滤。排查时可关联 `fence unsignaled try allowLatchUnsignaled` trace 与这些条件。旧配置 `debug.sf.latch_unsignaled=true` 对应的 `Always` 模式已不在该标签的配置选择中，不能照搬 Android 13 文档中的强制开关；官方也提示旧模式可能破坏同步事务、造成显示冻结。当前实现见 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp#598)。
+在 `android-17.0.0_r1` 中，`getLatchUnsignaledConfig()` 读取 `debug.sf.auto_latch_unsignaled`，默认值为 `true`，只返回 `AutoSingleLayer` 或 `Disabled`。`shouldLatchUnsignaled()` 还检查单 layer、首笔事务条件 `firstTransaction` 和非 early VSync 配置，调用处再用 `isSimpleBufferUpdate()` 过滤。排查时可关联 `fence unsignaled try allowLatchUnsignaled` trace 与这些条件。旧配置 `debug.sf.latch_unsignaled=true` 对应的 `Always` 模式已不在该标签的配置选择中，Android 13 文档里的强制开关在当前标签上已经失效；官方也提示旧模式可能破坏同步事务、造成显示冻结。当前实现见 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp#598)。
 
 #### 1.4 HWC、RenderEngine 与 present
 
@@ -374,13 +374,13 @@ SurfaceFlinger 会按显示屏上的可见 layer 集合，与硬件合成器（H
 - `CLIENT`：RenderEngine 把相关 layer 画入客户端合成目标（client target），再由 HWC 提交显示；
 - `SOLID_COLOR`、`CURSOR`、`SIDEBAND` 等类型用于对应的 Composer3 场景。
 
-几何变换、像素格式、dataspace、混合方式、色彩变换、受保护内容、硬件叠加平面（overlay plane）数量和厂商策略，都会改变协商结果。所以“使用 SurfaceView 就一定由硬件叠加平面直接合成”的说法不成立。
+几何变换、像素格式、dataspace、混合方式、色彩变换、受保护内容、硬件叠加平面（overlay plane）数量和厂商策略，都会改变协商结果。所以 SurfaceView 是否由硬件叠加平面直接合成，要按当帧的整屏 layer 集合判断，没有固定答案。
 
 SurfaceFlinger 也不是每轮都单独执行 `validate()`。`HWComposer::getDeviceCompositionChanges()` 在满足 `canSkipValidate` 条件时尝试 `presentOrValidate()`：
 
 - 返回 `PresentSucceeded`，组合调用已经完成显示提交，后续流程不会再次提交；
 - 返回 `Validated`，验证已在该调用中完成，SurfaceFlinger 继续读取变化后的 composition type 和 request；
-- 无法跳过验证时，流程走 `validate()`，必要的 client composition 完成后再调用 `present()`。
+- 跳不过验证这一步时，流程走 `validate()`，必要的 client composition 完成后再调用 `present()`。
 
 FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，覆盖 Composer / Display HAL 等显示栈时间，所以这段区间里只有一部分能计入 SurfaceFlinger 主线程的 CPU 时间。
 
@@ -400,7 +400,7 @@ FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，�
 - `latch`：SurfaceFlinger 已采纳该 layer 的新 buffer；
 - present fence signal：本轮 present 到达用户态可观察的显示时间点。
 
-present fence 不能证明整块面板已完成扫描、像素响应或用户已经感知到内容。`android-17.0.0_r1` 的 Composer3 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl) 还定义了电视画质处理的受限例外：特定 layer 的 buffer 可能晚于整屏其他内容呈现，由 `LayerPresentFence` 及其延迟字段描述；该例外偏离通常的 `SurfaceControl.Transaction` API 约定，只允许用于需要此能力的电视设备。定位端到端显示延迟时，应确认 fence 对应的显示屏和 layer，光学延迟仍需显示驱动、面板数据或外部测量证据。
+present fence 只标记本轮显示提交的时间点；整块面板是否完成扫描、像素是否响应、用户是否已经感知，还要另行确认。`android-17.0.0_r1` 的 Composer3 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl) 还定义了电视画质处理的受限例外：特定 layer 的 buffer 可能晚于整屏其他内容呈现，由 `LayerPresentFence` 及其延迟字段描述；该例外偏离通常的 `SurfaceControl.Transaction` API 约定，只允许用于需要此能力的电视设备。定位端到端显示延迟时，我们要确认 fence 对应的显示屏和 layer；光学延迟要靠显示驱动、面板数据或外部测量。
 
 <!-- gracker-diagram: ch01-19-fence-directions -->
 ![三类 fence 的方向与回答的问题](../../assets/diagrams/ch01/ch01-19-fence-directions.png)
@@ -427,12 +427,12 @@ present fence 不能证明整块面板已完成扫描、像素响应或用户已
 | Game（以 Godot 4.5-stable 为例） | OpenGL ES 的 GLThread 或 Vulkan 的 VkThread 驱动渲染，目标由 SurfaceView 承载 | 引擎版本、图形后端、实际渲染线程、目标 Surface、GPU 完成与 present | [游戏引擎](../../part2-performance/ch13-rendering-pipelines/12-game-engine.md) |
 | React Native 0.82.0（Fabric，普通原生 View） | UI 线程创建和挂载 Android View，硬件加速时随宿主 HWUI 绘制；嵌入组件的 Surface 要另行识别 | JS、挂载与布局、宿主遍历；逐项确认原生组件是否使用独立 Surface | [类型识别总览](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) |
 
-第三方条目的版本固定到表中标签，用于说明它们接入 Android 显示系统的方式。实际排查仍需记录应用使用的提供方、插件版本和图形后端，不能仅凭框架名计算 SurfaceFlinger 的 layer 数量。
+第三方条目的版本固定到表中标签，用于说明它们接入 Android 显示系统的方式。实际排查时，我们要记录应用使用的提供方、插件版本和图形后端；SurfaceFlinger 的 layer 数量按这些信息逐项清点，框架名只够当入口。
 
-- WebView 的 [Chromium 架构文档](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/architecture.md#L36-L56)区分了宿主内的浏览器侧代码、GPU 服务与渲染进程。在 Android 17 上，[渲染进程使用独立沙箱](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/renderer/README.md#L12-L33)；硬件绘制经 [`AwDrawFnImpl`](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/aw_draw_fn_impl.cc#L207-L226)注册 functor（HWUI 调用 WebView 绘制的回调桥接对象）。Android 17 的 [`RecordingCanvas.drawWebViewFunctor()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java#161)是内部接口，带 `@hide`，应用不应直接调用。视频成为 [overlay（独立叠加层）候选](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/overlay_processor_webview.cc#L991-L1005)后才可能使用额外的 SurfaceControl，不能把网页内部合成层逐个当成系统 layer。该标签还将[软件绘制列为已弃用的兼容路径](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/software_draw_deprecated.md#L1-L15)，并注明缺失 `<video>`、`<webgl>` 等功能。
-- Flutter 的 [`FlutterSurfaceView`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java#L242-L255)把 holder 的 Surface 交给引擎；[`FlutterTextureView`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java#L221-L239)则从 SurfaceTexture 创建渲染 Surface，之后由宿主采样。两者不能共用「主体必有独立可见 layer」的判断。该版本 [`PlatformViewsController`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java#L211-L236)的纹理混合路径要求 API 23 及以上，遇到嵌入的 SurfaceView 时按请求回退到混合合成或虚拟显示；虚拟显示不支持软件模式。其旧混合合成路径还会拒绝与 HC++ 同时启用。排查嵌入页面时，应核对实际回退结果，以及是否为同步而切换到 FlutterImageView，不能只记录根视图最初的渲染模式。
-- React Native 的 [`ReactSurfaceView`](https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/runtime/ReactSurfaceView.kt#L31-L37)继承 ReactRootView，后者是 FrameLayout；[`SurfaceMountingManager`](https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/fabric/mounting/SurfaceMountingManager.java#L649-L679)在 UI 线程通过 ViewManager 创建原生 View，并挂入 Android View 树。Fabric 的渲染根名称带有 Surface，不代表每个渲染根都新增一个 Android 图形 Surface。视频、相机或自定义原生组件是否另有生产者与 Surface，仍由该组件的实现决定。
-- 游戏条目限定为 Godot 的具体实现：其 [`GLSurfaceView`](https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/gl/GLSurfaceView.java#L1587-L1601)由 GLThread 调用绘制并交换缓冲区；[`VkSurfaceView`](https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/vulkan/VkSurfaceView.kt#L38-L64)也继承 SurfaceView，并由专用 VkThread 驱动 Vulkan 渲染。这两条路径都要关联独立 Surface 的 buffer 和 fence；其他引擎的线程划分须按引擎版本确认，不能把 RHI 线程当成所有游戏共有的对象。
+- WebView 的 [Chromium 架构文档](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/architecture.md#L36-L56)区分了宿主内的浏览器侧代码、GPU 服务与渲染进程。在 Android 17 上，[渲染进程使用独立沙箱](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/renderer/README.md#L12-L33)；硬件绘制经 [`AwDrawFnImpl`](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/aw_draw_fn_impl.cc#L207-L226)注册 functor（HWUI 调用 WebView 绘制的回调桥接对象）。Android 17 的 [`RecordingCanvas.drawWebViewFunctor()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java#161)是内部接口，带 `@hide`，应用不应直接调用。视频成为 [overlay（独立叠加层）候选](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/browser/gfx/overlay_processor_webview.cc#L991-L1005)后才可能使用额外的 SurfaceControl；网页内部合成层停在渲染进程里，交给系统的是合成后的帧，系统 layer 按 SurfaceControl 清点。该标签还将[软件绘制列为已弃用的兼容路径](https://github.com/chromium/chromium/blob/140.0.7339.155/android_webview/docs/software_draw_deprecated.md#L1-L15)，并注明缺失 `<video>`、`<webgl>` 等功能。
+- Flutter 的 [`FlutterSurfaceView`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java#L242-L255)把 holder 的 Surface 交给引擎；[`FlutterTextureView`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java#L221-L239)则从 SurfaceTexture 创建渲染 Surface，之后由宿主采样。这两条入口的 layer 形态不同，「主体必有独立可见 layer」要按实际入口分别判断。该版本 [`PlatformViewsController`](https://github.com/flutter/flutter/blob/3.35.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java#L211-L236)的纹理混合路径要求 API 23 及以上，遇到嵌入的 SurfaceView 时按请求回退到混合合成或虚拟显示；虚拟显示不支持软件模式。其旧混合合成路径还会拒绝与 HC++ 同时启用。排查嵌入页面时，应核对实际回退结果，以及是否为同步而切换到 FlutterImageView；根视图最初的渲染模式只能作为起点。
+- React Native 的 [`ReactSurfaceView`](https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/runtime/ReactSurfaceView.kt#L31-L37)继承 ReactRootView，后者是 FrameLayout；[`SurfaceMountingManager`](https://github.com/facebook/react-native/blob/v0.82.0/packages/react-native/ReactAndroid/src/main/java/com/facebook/react/fabric/mounting/SurfaceMountingManager.java#L649-L679)在 UI 线程通过 ViewManager 创建原生 View，并挂入 Android View 树。Fabric 的渲染根名称里带有 Surface，从渲染根数量推不出 Android 图形 Surface 的数量。视频、相机或自定义原生组件是否另有生产者与 Surface，仍由该组件的实现决定。
+- 游戏条目限定为 Godot 的具体实现：其 [`GLSurfaceView`](https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/gl/GLSurfaceView.java#L1587-L1601)由 GLThread 调用绘制并交换缓冲区；[`VkSurfaceView`](https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/vulkan/VkSurfaceView.kt#L38-L64)也继承 SurfaceView，并由专用 VkThread 驱动 Vulkan 渲染。这两条路径都要关联独立 Surface 的 buffer 和 fence；其他引擎的线程划分按各自版本确认，RHI 线程只是特定引擎的实现选择。
 
 SurfaceView 与 TextureView 的差异值得单独记，这直接影响我们选哪条排查路径：
 
@@ -456,21 +456,21 @@ Camera、视频、游戏描述生产者或业务类型，SurfaceView、TextureVi
 | Android 16 / API 36 | [`SurfaceView.setCompositionOrder()`](https://developer.android.com/reference/android/view/SurfaceView#setCompositionOrder(int)) 标为 API 36；API 文本中带 `surface_view_set_composition_order` flag | 多 Surface 页面要记录 parent、relative layer 和 Z-order；flag-gated API 不能当成所有设备无条件可用 |
 | Android 17 / API 37 | 现行 FrontEnd 帧快照、预测显示调度与 HWC 流程；[`SurfaceView.setBlurRegions()`](https://developer.android.com/reference/android/view/SurfaceView#setBlurRegions(java.util.Collection%3Candroid.view.BlurRegion%3E)) 标为 API 37，源码仍带 `surface_view_set_blur_regions` 开关 | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力和功能开关状态仍需设备证据 |
 
-ARR 的平台引入时间与应用侧可用范围要分开记录。[应用侧指南](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)明确要求 Android 15 QPR1 及以上、设备实现特定 HAL 接口；[系统实现说明](https://source.android.com/docs/core/graphics/arr#implementation)还要求 `android.hardware.graphics.composer3` 接口版本 3 和配套的内核、系统实现。显示模式的 `DisplayConfiguration.vrrConfig` 为非空时才是 ARR 配置，为 `null` 则是非 ARR 模式。ARR 允许在同一显示模式内解耦 VSync 与刷新节奏，不能直接用 VSync 频率代表实际刷新率。
+ARR 的平台引入时间与应用侧可用范围要分开记录。[应用侧指南](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)明确要求 Android 15 QPR1 及以上、设备实现特定 HAL 接口；[系统实现说明](https://source.android.com/docs/core/graphics/arr#implementation)还要求 `android.hardware.graphics.composer3` 接口版本 3 和配套的内核、系统实现。落实到配置上，显示模式的 `DisplayConfiguration.vrrConfig` 为非空时才是 ARR 配置，为 `null` 则是非 ARR 模式。ARR 允许在同一显示模式内解耦 VSync 与刷新节奏，实际刷新率要看 present 节奏，VSync 频率只能作间接参考。
 
-在 Android 17 上，可以用 [`Display.hasArrSupport()`](https://developer.android.com/reference/android/view/Display#hasArrSupport()) 查询目标显示屏是否支持 ARR。该方法从 API 36 起公开，不能在 API 35 设备上无条件调用；`android-17.0.0_r1` 的 [`Display.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java#1372) 仍带 `enable_has_arr_support` 的 `@FlaggedApi` 注解。查询支持情况后，还要结合当前显示模式和 present 节奏判断实际行为，不能从一个帧率请求推导系统已启用 ARR。
+在 Android 17 上，可以用 [`Display.hasArrSupport()`](https://developer.android.com/reference/android/view/Display#hasArrSupport()) 查询目标显示屏是否支持 ARR。该方法从 API 36 起公开，面向 API 35 设备要先做版本判断再调用；`android-17.0.0_r1` 的 [`Display.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java#1372) 仍带 `enable_has_arr_support` 的 `@FlaggedApi` 注解。查询支持情况只是第一步，实际行为还要结合当前显示模式和 present 节奏判断；单凭一个帧率请求，推导不出系统已启用 ARR。
 
-SurfaceView 的 alpha 有具体的作用范围：合成顺序非负时，alpha 直接作用于 Surface 内容，也作用于嵌入的 `SurfacePackage`；合成顺序为负、SurfaceView 位于宿主窗口下方时，alpha 作用于宿主的挖洞区域，不直接修改 Surface 或 `SurfacePackage` 内容。官方明确提示，窗口下方的多个 SurfaceView 重叠时可能无法正确混合。排查半透明视频或叠层预览时，应同时记录合成顺序与重叠关系，不能只检查 View 的 alpha 值。依据见 [`setAlpha()` 官方说明](https://developer.android.com/reference/android/view/SurfaceView#setAlpha(float))和固定标签的 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#683)。
+SurfaceView 的 alpha 也有具体的作用范围：合成顺序非负时，alpha 直接作用于 Surface 内容，也作用于嵌入的 `SurfacePackage`；合成顺序为负、SurfaceView 位于宿主窗口下方时，alpha 作用于宿主的挖洞区域，不直接修改 Surface 或 `SurfacePackage` 内容。官方明确提示，窗口下方的多个 SurfaceView 重叠时可能无法正确混合。排查半透明视频或叠层预览时，我们把合成顺序与重叠关系一起记录；View 的 alpha 值只是其中一个变量。依据见 [`setAlpha()` 官方说明](https://developer.android.com/reference/android/view/SurfaceView#setAlpha(float))和固定标签的 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#683)。
 
-`setCompositionOrder()` 的非负值表示在宿主窗口上方合成，负值表示在下方；同级 SurfaceView 中数值更大的排在上方，相同值之间的相对顺序未定义。复现遮挡错误时，应记录各 SurfaceView 的具体值；相同值不能作为稳定排序依据。
+`setCompositionOrder()` 的非负值表示在宿主窗口上方合成，负值表示在下方；同级 SurfaceView 中数值更大的排在上方，相同值之间的相对顺序未定义。复现遮挡错误时，我们把各 SurfaceView 的具体值记录下来，稳定排序以不同的具体值为依据。
 
 HDR 亮度余量也要按目标对象分别设置。`Window.setDesiredHdrHeadroom()` 仅在窗口的 `colorMode` 为 `ActivityInfo.COLOR_MODE_HDR` 时生效，不影响独立的 SurfaceView 或 SurfaceControl；`SurfaceView.setDesiredHdrHeadroom()` 则独立于宿主 Window 的 `colorMode` 和 headroom。HDR 视频或相机预览位于独立 SurfaceView 时，只设置宿主 Window 的参数不会同时设置该 SurfaceView。作用域见固定标签的 [`Window.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java#1420) 与 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#1102)。
 
 这两个接口的 `desiredHeadroom` 表示 HDR 白点亮度相对 SDR 白点亮度的比值，不是绝对亮度（nits）。`1.0` 表示无 HDR 亮度余量，`0.0` 恢复系统自动选择；其余合法值为有限数，范围是 `1.0`—`10000.0`。`Window.getDesiredHdrHeadroom()` 返回设置的请求值，实际余量仍受环境、显示能力与面板位深影响。排查时应分别记录 Window 的 `colorMode`、headroom 请求值和独立 SurfaceView 的请求值，再核对目标 layer 的 HDR 内容与显示能力。
 
-历史功能开关也有版本边界：[`android-15.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-15.0.0_r1/core/api/current.txt) 与 [`android-16.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/api/current.txt) 的 API 文本为这些 headroom 方法保留 `limited_hdr` 注解；[`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt) 已移除该注解。注解变化不能替代目标设备的 HDR 能力检查。
+历史功能开关也分版本：[`android-15.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-15.0.0_r1/core/api/current.txt) 与 [`android-16.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/api/current.txt) 的 API 文本为这些 headroom 方法保留 `limited_hdr` 注解；[`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt) 已移除该注解。目标设备的 HDR 能力仍要单独检查，注解只提示版本差异。
 
-这些版本差异没有建立“版本越新，所有页面越快”的因果关系。做渲染评审时，我们把版本能力、应用用法、设备实现和运行时证据分别记录，四者不互相代表。
+这些版本差异没有建立“版本越新，所有页面越快”的因果关系。做渲染评审时，我们把版本能力、应用用法、设备实现和运行时表现分别记录，四者互相替代不了。
 
 #### 4.1 常见“新技术”说法与源码事实
 
@@ -513,7 +513,7 @@ HDR 亮度余量也要按目标对象分别设置。`Window.setDesiredHdrHeadroo
 
 最后对齐合成与显示。检查 SurfaceFlinger 的 CPU/GPU 截止时间、RenderEngine 客户端合成、每个 layer 的合成类型、HWC/DisplayHAL 事件和 present fence。若 buffer 入队与 latch 都按时、present 仍晚，我们就要把排查范围移向合成阶段、显示模式切换、Composer HAL、显示驱动与面板。
 
-FrameTimeline 对标准应用窗口很有价值；[Perfetto 文档](https://perfetto.dev/docs/data-sources/frametimeline)注明要求 Android 12 及以上，SurfaceView 尚不在支持范围。SurfaceView 主体、Camera、视频和某些引擎 layer 不能默认具有完整的应用侧实际帧区间。缺少这类区间时，我们回到生产者入队、layer、`BufferTX`、fence、latch 和 present 这些更原始的信号。
+FrameTimeline 对标准应用窗口很有价值；[Perfetto 文档](https://perfetto.dev/docs/data-sources/frametimeline)注明要求 Android 12 及以上，SurfaceView 尚不在支持范围。SurfaceView 主体、Camera、视频和某些引擎 layer 的完整应用侧实际帧区间，要靠生产者侧信号逐个确认。缺少这类区间时，我们回到生产者入队、layer、`BufferTX`、fence、latch 和 present 这些更原始的信号。
 
 ### 6. 优化动作与证据对应
 
@@ -915,9 +915,9 @@ void doTraversal(long frameTimeNanos) {
 }
 ```
 
-`requestLayout()` → `scheduleTraversals()` → `performTraversals()` 先在 App 进程内推进；命中前述五类条件后，才会进入 `relayoutWindow()` 的同步或异步 Binder 路径。代码是内部实现节选，不能作为应用可调用的 API。
+`requestLayout()` → `scheduleTraversals()` → `performTraversals()` 先在 App 进程内推进；命中前述五类条件后，才会进入 `relayoutWindow()` 的同步或异步 Binder 路径。上面这段代码是内部实现节选，用来说明调度机制；把它当应用可调用的 API 是误用。
 
-Perfetto 中要区分源码方法与实际写入的 trace 名称。该标签的 `doTraversal()`、`performTraversals()` 没有各自的同名显式 slice，不能依赖 `ViewRootImpl#doTraversal` 或 `ViewRootImpl#performTraversals` 搜索定位。可从以下 trace 点观察：
+Perfetto 中要区分源码方法与实际写入的 trace 名称。该标签的 `doTraversal()`、`performTraversals()` 没有各自的同名显式 slice，按 `ViewRootImpl#doTraversal` 或 `ViewRootImpl#performTraversals` 去搜索会落空；我们改从以下 trace 点观察：
 
 | Trace 名称或前缀 | 进程 | 线程 | 含义 |
 |-----------|------|------|------|
@@ -926,7 +926,7 @@ Perfetto 中要区分源码方法与实际写入的 trace 名称。该标签的 
 | `relayoutSync ...` | App | UI Thread | 同步 relayout 的原因；这是 instant 事件，不是耗时 slice |
 | `measure`、`layout`、`draw-VRI[...]` | App | UI Thread | 对应实际执行的测量、布局和绘制阶段 |
 
-同步路径的 App 侧 relayout slice 可以包含 Binder 等待；oneway 异步发送不表示服务端已经完成。服务端耗时要继续关联 Binder 入口与 `performSurfacePlacement`，不能从客户端 slice 结束时间推导。
+同步路径的 App 侧 relayout slice 可以包含 Binder 等待；oneway 异步发送只说明请求已经发出。服务端耗时要关联 Binder 入口与 `performSurfacePlacement` 才能量到，客户端 slice 的结束时间推导不出它。
 
 **时序判读**：
 
@@ -964,7 +964,7 @@ relative position changed AND size changed
 <!-- gracker-diagram: ch01-19-relayout-selection -->
 ![traversal 内部如何选择 relayout 路径](../../assets/diagrams/ch01/ch01-19-relayout-selection.png)
 
-图：并非每次 traversal 都调用 WMS。进入 relayout 后，canRelayoutAsync 先决定能否本地计算；允许时继续比较 frame。相对位置和尺寸同时变化仍要同步获取同步序号，其余可异步发送。
+图：traversal 命中特定条件后才会调用 WMS。进入 relayout 后，canRelayoutAsync 先决定能否本地计算；允许时继续比较 frame。相对位置和尺寸同时变化仍要同步获取同步序号，其余可异步发送。
 
 优化 resize 时，我们查看 `TRACE_TAG_VIEW` 下源码明确写入的 `relayoutSync ...` instant（瞬时 trace 事件）事件，结合 frame、sync id 与应用 draw 时长判断同步原因。
 
@@ -1059,7 +1059,7 @@ Transition 创建 SyncGroup
 - **sync group timeout（同步组超时）**：组没有正常完成。`isReadinessTimeout=true` 对应所有成员 `isSyncFinished()` 均为 true、依赖已清空，但 `mReady=false`；`false` 时则可能是成员未完成或依赖未清空；
 - **transaction commit timeout（事务提交超时）**：合并 transaction 已交给 listener 或 organizer，却迟迟等不到 committed callback（提交完成回调）。
 
-看到 sync timeout，应检查日志里的 `Unfinished container`（未完成容器）、draw state、sync state 和 `Unfinished dependency`（未完成依赖）。这些状态不能单凭一个“应用 buffer 没 acquire”概括。commit timeout 则继续核对 organizer、SurfaceFlinger transaction 和 commit callback。
+看到 sync timeout，我们先检查日志里的 `Unfinished container`（未完成容器）、draw state、sync state 和 `Unfinished dependency`（未完成依赖），逐项对上卡点；“应用 buffer 没 acquire”只是其中一种可能。commit timeout 则继续核对 organizer、SurfaceFlinger transaction 和 commit callback。
 
 <!-- gracker-diagram: ch01-19-syncgroup-readiness -->
 ![BLASTSyncEngine 完成同步组的三个门槛](../../assets/diagrams/ch01/ch01-19-syncgroup-readiness.png)
@@ -1070,9 +1070,9 @@ Transition 创建 SyncGroup
 
 #### 与公开 `SurfaceSyncGroup` 的关系
 
-API 34 起公开的 `SurfaceSyncGroup` 用于收集多个 Surface 的事务；调用 `markSyncReady()` 后不再添加数据，等待子组完成，再合并提交。公开 `add()` 重载接受 `AttachedSurfaceControl` 或 `SurfaceControlViewHost.SurfacePackage`，后者可跨进程收集嵌入窗口。`add(AttachedSurfaceControl, Runnable)` 必须在创建该 UI 对象的线程调用；两个重载都返回是否成功加入，失败后不能继续假定该 Surface 已受同步组保护。
+API 34 起公开的 `SurfaceSyncGroup` 用于收集多个 Surface 的事务；调用 `markSyncReady()` 后不再添加数据，等待子组完成，再合并提交。公开 `add()` 重载接受 `AttachedSurfaceControl` 或 `SurfaceControlViewHost.SurfacePackage`，后者可跨进程收集嵌入窗口。`add(AttachedSurfaceControl, Runnable)` 必须在创建该 UI 对象的线程调用；两个重载都返回是否成功加入；返回失败时，要把该 Surface 当作仍未纳入同步组处理。
 
-类说明也提到 SurfaceView，但 `android-17.0.0_r1` 中直接接受 `SurfaceView` 的 `add()` 重载带 `@hide`，不在公开 SDK 的 `current.txt` 中。应用不能把它当作 API 34 起可直接调用的公开接口。接口范围见[官方 API 参考](https://developer.android.com/reference/android/window/SurfaceSyncGroup)；它与 system_server 内部的 `BLASTSyncEngine` 调用方和同步对象不同。
+类说明也提到 SurfaceView，但 `android-17.0.0_r1` 中直接接受 `SurfaceView` 的 `add()` 重载带 `@hide`，不在公开 SDK 的 `current.txt` 中；API 34 起可调用的，是前面列出的公开重载。接口范围见[官方 API 参考](https://developer.android.com/reference/android/window/SurfaceSyncGroup)；它与 system_server 内部的 `BLASTSyncEngine` 调用方和同步对象不同。
 
 看到 sync id 或超时，先确认它属于 WMS 的 WindowContainer 同步，还是应用/组件侧的 `SurfaceSyncGroup`：前者继续检查 `WindowState` draw state、SyncGroup 依赖和 transition ready，后者检查参与 Surface 是否报告 ready、回调进程是否存活，以及合并 transaction 是否真正提交。
 
