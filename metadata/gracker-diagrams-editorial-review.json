@@ -30990,9 +30990,632 @@
       "before_count": 41,
       "before_all_images": 41,
       "sha256_before": "f6a74823e1876c05b66654995eb5481dbd8f90106f53cc5e6c15130dcefc35e2",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 14,
+      "decisions": [
+        {
+          "original_id": "ch13-13-01-content-forms",
+          "title": "先确定内容运行形态",
+          "decision": "remove",
+          "reason": "四内容形式孤立卡逐项复述130全文与201–207对照表，无额外依赖关系；保留正文与代码完整四路径。",
+          "original_line": 132,
+          "heading": "## Android XR 渲染需要区分哪些边界"
+        },
+        {
+          "original_id": "ch13-13-02-pipeline-identification",
+          "title": "先把三个问题落到对象上",
+          "decision": "remove",
+          "reason": "三类问题卡逐项重复146–148编号清单，新pose与producer图已画真正跨层证据关系，删重复目录。",
+          "original_line": 141,
+          "heading": "## Android XR 渲染需要区分哪些边界"
+        },
+        {
+          "original_id": "ch13-13-03-release-channels",
+          "title": "平台 tag 与库的发布渠道",
+          "decision": "remove",
+          "reason": "版本卡逐项重复156–164完整版本/渠道表，原表保留更完整的版本边界。",
+          "original_line": 166,
+          "heading": "### 当前版本与源码边界"
+        },
+        {
+          "original_id": "ch13-13-04-known-dependency",
+          "title": "测资源前先修正已知依赖问题",
+          "decision": "keep",
+          "reason": "Compose beta02→SceneCore1.0修复→重新测量驻留的具体依赖修复验证链独立，保留版本限定不扩张到所有release。",
+          "original_line": 173,
+          "heading": "### 当前版本与源码边界"
+        },
+        {
+          "original_id": "ch13-13-05-build-runtime-capability",
+          "title": "构建、安装与空间能力的条件",
+          "decision": "remove",
+          "reason": "AAR/build/install/runtime四卡逐项重复178完整段落；传递依赖和打包检查全文保留。",
+          "original_line": 180,
+          "heading": "### 当前版本与源码边界"
+        },
+        {
+          "original_id": "ch13-13-06-public-source-boundary",
+          "title": "公共 Android 层与 XR 黑盒边界",
+          "decision": "remove",
+          "reason": "Android公开/协议/vendor三卡重复185与236公开私有边界，新producer图给具体交接，不再重画边界清单。",
+          "original_line": 187,
+          "heading": "### 当前版本与源码边界"
+        },
+        {
+          "original_id": "ch13-13-07-quality-not-pipeline",
+          "title": "质量等级与管线不是同一维度",
+          "decision": "remove",
+          "reason": "质量/管线三卡重复194以及201表，质量分类不等管线的正文原样保留。",
+          "original_line": 196,
+          "heading": "## Android XR 在渲染体系中的位置"
+        },
+        {
+          "original_id": "ch13-13-08-four-render-paths",
+          "title": "四条内容路径的责任交接",
+          "decision": "remove",
+          "reason": "四路径孤立卡重复213–227完整text代码，代码精确保留，删代码摘要副本。",
+          "original_line": 229,
+          "heading": "## Android XR 在渲染体系中的位置"
+        },
+        {
+          "original_id": "ch13-13-09-panel-evidence",
+          "title": "面板生产结束还要继续追 XR 输出",
+          "decision": "merge",
+          "reason": "原图“面板生产结束还要继续追 XR 输出”并入：合并面板生产边界与外部Surface/模型各自所有者，不把同一panel FrameTimeline覆盖当全部空间内容完成。；在原图10处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 238,
+          "heading": "## Android XR 在渲染体系中的位置",
+          "replacement_id": "ed13-13-producers-and-xr-evidence"
+        },
+        {
+          "original_id": "ch13-13-10-producer-separation",
+          "title": "面板、外部 Surface 与 3D entity 分开统计",
+          "decision": "merge",
+          "reason": "原图“面板、外部 Surface 与 3D entity 分开统计”并入：合并面板生产边界与外部Surface/模型各自所有者，不把同一panel FrameTimeline覆盖当全部空间内容完成。；在原图10处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 245,
+          "heading": "## Android XR 在渲染体系中的位置",
+          "replacement_id": "ed13-13-producers-and-xr-evidence"
+        },
+        {
+          "original_id": "ch13-13-11-spatialization-gate",
+          "title": "Subspace 的运行条件与内容选择",
+          "decision": "keep",
+          "reason": "Subspace的spatial enabled与Home/nonXR忽略/2D fallback真实分支独立，保留能力变化和退路。",
+          "original_line": 266,
+          "heading": "## Jetpack XR SDK 的 UI 栈边界"
+        },
+        {
+          "original_id": "ch13-13-12-animation-version",
+          "title": "模型动画按库与版本分别核对",
+          "decision": "remove",
+          "reason": "动画版本三卡逐项复述271完整stable/alpha/缺Compose API段落；所有者与loader新图版本限定保留。",
+          "original_line": 273,
+          "heading": "## Jetpack XR SDK 的 UI 栈边界"
+        },
+        {
+          "original_id": "ch13-13-13-entity-visible",
+          "title": "创建模型与显示模型的条件",
+          "decision": "merge",
+          "reason": "原图“创建模型与显示模型的条件”并入：把GLB/MainThread loader、parent默认空、动态capability和首次可见接起来，同时单独标出内部GPU阶段不能由返回点推断。；在原图25处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 280,
+          "heading": "## Jetpack XR SDK 的 UI 栈边界",
+          "replacement_id": "ed13-13-glb-load-attach-and-visibility"
+        },
+        {
+          "original_id": "ch13-13-14-asset-owner",
+          "title": "资源清理由谁负责",
+          "decision": "keep",
+          "reason": "remember/manual/SceneCore所有者三分支，beta02 state close空实现与MainThread model/IBL close须停止使用，具体生命周期保留。",
+          "original_line": 289,
+          "heading": "## Jetpack XR SDK 的 UI 栈边界"
+        },
+        {
+          "original_id": "ch13-13-15-environment-two-assets",
+          "title": "环境可见内容与 IBL 的职责",
+          "decision": "merge",
+          "reason": "原图“环境可见内容与 IBL 的职责”并入：合并可见skybox、光照EXR/blackPNG预处理与environmentPreference资产组合，保留旧EXR说法和现行loader角色区别。；在原图18处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 300,
+          "heading": "## 空间环境资产的成本构成",
+          "replacement_id": "ed13-13-visible-environment-and-ibl-build"
+        },
+        {
+          "original_id": "ch13-13-16-environment-apply",
+          "title": "环境偏好、生效与遮挡",
+          "decision": "keep",
+          "reason": "preference→FullSpace/capability/active→passthrough遮挡的实际生效gate保留，null偏好和nullgeometry区别仍在完整图注。",
+          "original_line": 309,
+          "heading": "## 空间环境资产的成本构成"
+        },
+        {
+          "original_id": "ch13-13-17-environment-numbers",
+          "title": "环境制作建议与输入要求",
+          "decision": "remove",
+          "reason": "资产预算三卡逐项重复316–320完整表及327限制，正文定量条件保留。",
+          "original_line": 322,
+          "heading": "## 空间环境资产的成本构成"
+        },
+        {
+          "original_id": "ch13-13-18-ibl-generation",
+          "title": "可见环境与 IBL 分开制作",
+          "decision": "merge",
+          "reason": "原图“可见环境与 IBL 分开制作”并入：合并可见skybox、光照EXR/blackPNG预处理与environmentPreference资产组合，保留旧EXR说法和现行loader角色区别。；在原图18处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 331,
+          "heading": "## 空间环境资产的成本构成",
+          "replacement_id": "ed13-13-visible-environment-and-ibl-build"
+        },
+        {
+          "original_id": "ch13-13-19-environment-distance",
+          "title": "环境距离与传感器范围分开",
+          "decision": "remove",
+          "reason": "距离/高度/成本三卡重复338完整段落，200m与1.5指导非传感器/API契约的正文保留。",
+          "original_line": 340,
+          "heading": "## 空间环境资产的成本构成"
+        },
+        {
+          "original_id": "ch13-13-20-gltf-loader",
+          "title": "内容格式、加载 API 与线程",
+          "decision": "merge",
+          "reason": "原图“内容格式、加载 API 与线程”并入：把GLB/MainThread loader、parent默认空、动态capability和首次可见接起来，同时单独标出内部GPU阶段不能由返回点推断。；在原图25处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 349,
+          "heading": "## 3D 模型与纹理资源的加载预算",
+          "replacement_id": "ed13-13-glb-load-attach-and-visibility"
+        },
+        {
+          "original_id": "ch13-13-21-capability",
+          "title": "加载成功还需当前空间能力",
+          "decision": "merge",
+          "reason": "原图“加载成功还需当前空间能力”并入：把GLB/MainThread loader、parent默认空、动态capability和首次可见接起来，同时单独标出内部GPU阶段不能由返回点推断。；在原图25处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 356,
+          "heading": "## 3D 模型与纹理资源的加载预算",
+          "replacement_id": "ed13-13-glb-load-attach-and-visibility"
+        },
+        {
+          "original_id": "ch13-13-22-loading-observation",
+          "title": "加载预算的四类观测点",
+          "decision": "merge",
+          "reason": "原图“加载预算的四类观测点”并入：把四类观测点、压缩资产/CPU/GPU不同量纲与分批预取策略相连，不画成API固定串行阶段。；在原图24处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 370,
+          "heading": "## 3D 模型与纹理资源的加载预算",
+          "replacement_id": "ed13-13-loading-priority-and-residency"
+        },
+        {
+          "original_id": "ch13-13-23-resident-memory",
+          "title": "包体、CPU 内存与 GPU 常驻量",
+          "decision": "merge",
+          "reason": "原图“包体、CPU 内存与 GPU 常驻量”并入：把四类观测点、压缩资产/CPU/GPU不同量纲与分批预取策略相连，不画成API固定串行阶段。；在原图24处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 377,
+          "heading": "## 3D 模型与纹理资源的加载预算",
+          "replacement_id": "ed13-13-loading-priority-and-residency"
+        },
+        {
+          "original_id": "ch13-13-24-load-priority",
+          "title": "按可见优先级安排加载",
+          "decision": "merge",
+          "reason": "原图“按可见优先级安排加载”并入：把四类观测点、压缩资产/CPU/GPU不同量纲与分批预取策略相连，不画成API固定串行阶段。；在原图24处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 389,
+          "heading": "## 3D 模型与纹理资源的加载预算",
+          "replacement_id": "ed13-13-loading-priority-and-residency"
+        },
+        {
+          "original_id": "ch13-13-25-load-first-visible",
+          "title": "加载返回、挂载与显示分别计时",
+          "decision": "merge",
+          "reason": "原图“加载返回、挂载与显示分别计时”并入：把GLB/MainThread loader、parent默认空、动态capability和首次可见接起来，同时单独标出内部GPU阶段不能由返回点推断。；在原图25处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 396,
+          "heading": "## 3D 模型与纹理资源的加载预算",
+          "replacement_id": "ed13-13-glb-load-attach-and-visibility"
+        },
+        {
+          "original_id": "ch13-13-26-four-timelines",
+          "title": "XR 单帧要观察四个阶段",
+          "decision": "remove",
+          "reason": "四时间线卡逐项重复405–410四行表，27独立跨帧节奏图保留，无需同表再画孤立卡。",
+          "original_line": 412,
+          "heading": "## 视点、姿态与显示配置对帧时间的影响"
+        },
+        {
+          "original_id": "ch13-13-27-cadence",
+          "title": "App 帧与显示帧的节奏分开",
+          "decision": "keep",
+          "reason": "App A/B产帧、runtime交替合成、display三条时间轨具体表现cadence差异，不承诺固定倍率，独立保留。",
+          "original_line": 419,
+          "heading": "## 视点、姿态与显示配置对帧时间的影响"
+        },
+        {
+          "original_id": "ch13-13-28-viewpoint-space",
+          "title": "设备位姿与渲染视点的空间关系",
+          "decision": "merge",
+          "reason": "原图“设备位姿与渲染视点的空间关系”并入：将devicePose/localPose实际变换与tracking冻结和应用使用/runtime latch/光学时间边界放在一个对象到事件链中。；在原图29处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 428,
+          "heading": "## 视点、姿态与显示配置对帧时间的影响",
+          "replacement_id": "ed13-13-viewpoint-transform-and-pose-age"
+        },
+        {
+          "original_id": "ch13-13-29-pose-latch-boundary",
+          "title": "读到姿态不代表最终锁定姿态",
+          "decision": "merge",
+          "reason": "原图“读到姿态不代表最终锁定姿态”并入：将devicePose/localPose实际变换与tracking冻结和应用使用/runtime latch/光学时间边界放在一个对象到事件链中。；在原图29处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 435,
+          "heading": "## 视点、姿态与显示配置对帧时间的影响",
+          "replacement_id": "ed13-13-viewpoint-transform-and-pose-age"
+        },
+        {
+          "original_id": "ch13-13-30-unity-optimizations",
+          "title": "Unity 的三种优化各改哪一段",
+          "decision": "remove",
+          "reason": "Unity三优化卡逐项复制442–446完整表及453不可叠加收益限制，33具体工作派生图保留。",
+          "original_line": 448,
+          "heading": "## 视点、姿态与显示配置对帧时间的影响"
+        },
+        {
+          "original_id": "ch13-13-31-immersive-performance",
+          "title": "Immersive 的性能项与分辨率",
+          "decision": "remove",
+          "reason": "质量目标三卡逐项复制459–466完整指南表，全部数字与限定留在原表。",
+          "original_line": 468,
+          "heading": "## Android XR 质量分级的性能检查项"
+        },
+        {
+          "original_id": "ch13-13-32-critical-path",
+          "title": "帧预算不能把 CPU 与 GPU 简单相加",
+          "decision": "remove",
+          "reason": "CPU/GPU/runtime三卡重复473关键路径段落和405表，没有实际依赖或时间轴；新加载/内存图保留具体量纲边界。",
+          "original_line": 475,
+          "heading": "## Android XR 质量分级的性能检查项"
+        },
+        {
+          "original_id": "ch13-13-33-resolution-work",
+          "title": "推荐分辨率与实际着色量",
+          "decision": "keep",
+          "reason": "recommended resolution→views/targets→multiview/foveation/subsample/spacewarp→实际GPU验证的工作派生链独立，保留不能相加收益限定。",
+          "original_line": 482,
+          "heading": "## Android XR 质量分级的性能检查项"
+        },
+        {
+          "original_id": "ch13-13-34-tool-coverage",
+          "title": "工具覆盖的阶段要互相补充",
+          "decision": "remove",
+          "reason": "工具三卡逐项复制491–498完整工具表，36具体缺证流程保留。",
+          "original_line": 500,
+          "heading": "## 工具与验证入口"
+        },
+        {
+          "original_id": "ch13-13-35-single-frame-check",
+          "title": "一帧复盘先固定环境再追依赖",
+          "decision": "remove",
+          "reason": "六步卡重复507–513七项清单，不含额外机制，原步骤全留，36与新producer/pose/OpenXR给具体证据关系。",
+          "original_line": 515,
+          "heading": "### 推荐的单帧检查顺序"
+        },
+        {
+          "original_id": "ch13-13-36-trace-missing",
+          "title": "XR 关键字缺失时怎样补证",
+          "decision": "keep",
+          "reason": "缺XR关键词→真实生产者/数据可用性→runtime/engine/clock补证→未知边界的排查链独立，不将缺slice当没有工作。",
+          "original_line": 522,
+          "heading": "### 推荐的单帧检查顺序"
+        },
+        {
+          "original_id": "ch13-13-37-openxr-loop",
+          "title": "OpenXR 常见单线程帧循环",
+          "decision": "merge",
+          "reason": "原图“OpenXR 常见单线程帧循环”并入：将单线程frame loop与shouldRender false/非running真实分支合并，明确成功wait与graphicsbinding同步、统一目标时间。；在原图39处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 537,
+          "heading": "## XR 与游戏 / Vulkan 渲染路径的交叉",
+          "replacement_id": "ed13-13-openxr-running-and-frame-loop"
+        },
+        {
+          "original_id": "ch13-13-38-should-render",
+          "title": "shouldRender 为 false 仍维持帧同步",
+          "decision": "merge",
+          "reason": "原图“shouldRender 为 false 仍维持帧同步”并入：将单线程frame loop与shouldRender false/非running真实分支合并，明确成功wait与graphicsbinding同步、统一目标时间。；在原图39处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 544,
+          "heading": "## XR 与游戏 / Vulkan 渲染路径的交叉",
+          "replacement_id": "ed13-13-openxr-running-and-frame-loop"
+        },
+        {
+          "original_id": "ch13-13-39-object-sync-contract",
+          "title": "同名 acquire / wait / release 对应不同对象",
+          "decision": "merge",
+          "reason": "原图“同名 acquire / wait / release 对应不同对象”并入：将单线程frame loop与shouldRender false/非running真实分支合并，明确成功wait与graphicsbinding同步、统一目标时间。；在原图39处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 551,
+          "heading": "## XR 与游戏 / Vulkan 渲染路径的交叉",
+          "replacement_id": "ed13-13-openxr-running-and-frame-loop"
+        },
+        {
+          "original_id": "ch13-13-40-host-glasses",
+          "title": "Host 与眼镜的工作分别记录",
+          "decision": "merge",
+          "reason": "原图“Host 与眼镜的工作分别记录”并入：把Projected执行端/显示端职责与跨端时间映射和RTT边界接起来，避免将远端热与延迟直接记到hostGPU。；在原图41处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 570,
+          "heading": "## 眼镜形态下 host device 的功耗边界",
+          "replacement_id": "ed13-13-projected-devices-and-clock-mapping"
+        },
+        {
+          "original_id": "ch13-13-41-cross-device-clock",
+          "title": "跨端延迟先建立时钟映射",
+          "decision": "merge",
+          "reason": "原图“跨端延迟先建立时钟映射”并入：把Projected执行端/显示端职责与跨端时间映射和RTT边界接起来，避免将远端热与延迟直接记到hostGPU。；在原图41处展示完整合图，API返回、场景挂载、采用及光学结果分别保留边界，适用条件见完整图注。",
+          "original_line": 579,
+          "heading": "## 眼镜形态下 host device 的功耗边界",
+          "replacement_id": "ed13-13-projected-devices-and-clock-mapping"
+        }
+      ],
+      "sha256_after": "e929a4c9bd1f93417733de460e8274052bda77acb8ada7f822316438c80a7aa2",
+      "new_diagrams": [
+        {
+          "id": "ed13-13-producers-and-xr-evidence",
+          "title": "按生产对象补齐各自证据，再追 XR runtime 与显示",
+          "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-13-producers-and-xr-evidence.svg",
+            "src/assets/diagrams/ch13/ed13-13-producers-and-xr-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-13-producers-and-xr-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://perfetto.dev/docs/data-sources/frametimeline",
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/ui-compose",
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/add-3d-models"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-13-09-panel-evidence",
+              "ch13-13-10-producer-separation"
+            ],
+            "boundary": "compatible/SpatialPanel由UI/HWUI生产Surfacebuffer，按覆盖记录Choreographer/RenderThread/queue/fence；external Surface由codec/Camera等生产，独立追媒体/相机buffer与fence，API类名不保证对应SF Layer。SceneCore model为资源/entity/layout/animation，不套doFrame。三者可共享GPU/带宽/runtime预算，进入XR scene后的pose、合成、reprojection、显示需runtime/设备证据；公开API不固定compositor进程/线程/latch/fence名，AppSurfaceFrame不等最终光学显示。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-13-glb-load-attach-and-visibility",
+          "title": "资源返回、实体挂载与首次可见分别确认",
+          "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-13-glb-load-attach-and-visibility.svg",
+            "src/assets/diagrams/ch13/ed13-13-glb-load-attach-and-visibility.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-13-glb-load-attach-and-visibility",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/xr/scenecore/scenecore/1.0.0/scenecore-1.0.0-sources.jar",
+            "https://developer.android.com/reference/kotlin/androidx/xr/scenecore/Entity",
+            "https://developer.android.com/reference/kotlin/androidx/xr/scenecore/GltfModelEntity",
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/add-3d-models",
+            "https://developer.android.com/reference/kotlin/androidx/xr/scenecore/GltfModel",
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/add-subspace",
+            "https://dl.google.com/dl/android/maven2/androidx/xr/compose/compose/1.0.0-beta02/compose-1.0.0-beta02-sources.jar"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-13-13-entity-visible",
+              "ch13-13-20-gltf-loader",
+              "ch13-13-21-capability",
+              "ch13-13-25-load-first-visible"
+            ],
+            "boundary": "固定SceneCore stable1.0 GltfModel.create只支持binaryGLB，@MainThread suspend仍在主线程调用并遵守path/URI契约。create返回只说明加载API完成，不能预设GPUupload全在返回后或shader全部ready。GltfModelEntity.create默认parentnull，须设activitySpace等可见parent；挂入还需entity与祖先enabled、SPATIAL_3D_CONTENT等当前capability及视野/runtime采用。capability随空间模式变，非一次检查即永久有效；detach/close依版本所有者另管，CPU返回不证明GPU内存归零。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-13-visible-environment-and-ibl-build",
+          "title": "用户看到的 geometry 与照明 IBL 分别制作和加载",
+          "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-13-visible-environment-and-ibl-build.svg",
+            "src/assets/diagrams/ch13/ed13-13-visible-environment-and-ibl-build.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-13-visible-environment-and-ibl-build",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/xr/scenecore/scenecore/1.0.0/scenecore-1.0.0-sources.jar",
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/optimize-environment-assets",
+            "https://developer.android.com/reference/kotlin/androidx/xr/scenecore/SpatialEnvironment.SpatialEnvironmentPreference",
+            "https://developer.android.com/reference/kotlin/androidx/xr/scenecore/ImageBasedLightingAsset"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-13-15-environment-two-assets",
+              "ch13-13-18-ibl-generation"
+            ],
+            "boundary": "SceneCore stable1.0一份environmentPreference最多一份geometry和一份lightingasset；用户看到的skybox在geometry，独立IBLZIP用于lighting/reflection/specular。可见纹理与lighting分辨率可独立选择；HDR EXR经cmgen预处理成IBLZIP，blackPNG参与优化预处理用户不可见；示例cmgen未执行，旧指南EXR说法不能替代现行loader契约。preference只表达期望，FullSpace/APP_ENVIRONMENT/active与passthrough另核，缺IBL可使自定义对象光照不匹配。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-13-loading-priority-and-residency",
+          "title": "先安排近期可见内容，再分别观测交付、加载与常驻",
+          "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-13-loading-priority-and-residency.svg",
+            "src/assets/diagrams/ch13/ed13-13-loading-priority-and-residency.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-13-loading-priority-and-residency",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/xr/scenecore/scenecore/1.0.0/scenecore-1.0.0-sources.jar",
+            "https://dl.google.com/dl/android/maven2/androidx/xr/compose/compose/1.0.0-beta02/compose-1.0.0-beta02-sources.jar",
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/optimize-environment-assets",
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/add-3d-models",
+            "https://developer.android.com/docs/quality-guidelines/android-xr/immersive"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-13-22-loading-observation",
+              "ch13-13-23-resident-memory",
+              "ch13-13-24-load-priority"
+            ],
+            "boundary": "可见优先级先交互面板必要模型、再近期纹理动画、远处低概率内容分批异步预取，离场按所有者释放/降级cache。四类成本I/O、解析对象、纹理转码上传、attach首次可见是观测分类，可重叠或由runtime内部完成，不是四个串行区间。压缩GLB/KTX2文件大小不等CPU工作集或GPU resident，实际GPU转码格式、mips、双眼targets、材质与cache改变常驻；同时测启动、峰值内存、首次可见和热，不从包体换算显存。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-13-viewpoint-transform-and-pose-age",
+          "title": "位姿空间组合与本帧姿态采用是两组问题",
+          "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-13-viewpoint-transform-and-pose-age.svg",
+            "src/assets/diagrams/ch13/ed13-13-viewpoint-transform-and-pose-age.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-13-viewpoint-transform-and-pose-age",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/xr/arcore/arcore/1.0.0/arcore-1.0.0-sources.jar",
+            "https://developer.android.com/reference/kotlin/androidx/xr/arcore/RenderViewpoint.State",
+            "https://developer.android.com/reference/kotlin/androidx/xr/arcore/ArDevice.State",
+            "https://registry.khronos.org/OpenXR/specs/1.1-khr/html/xrspec.html",
+            "https://perfetto.dev/docs/concepts/clock-sync"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-13-28-viewpoint-space",
+              "ch13-13-29-pose-latch-boundary"
+            ],
+            "boundary": "ARCore stable1.0 ArDevice.devicePose为perception-space设备位姿，RenderViewpoint.localPose为设备中心trackingpoint到视点偏移，变换组合得到viewpoint.pose，不能逐分量相加。left/right仅STEREO，mono在MONO单视图或STEREO双眼中心，FOV为弧度。DISABLEDtracking数值可冻结原点/旧状态，存在数值非仍更新。应用读取、render实际使用、runtime后段latch与光学输出分别取证；精确poseage/MTP需公开时间戳和有误差界限的clock映射，不由平均FPS或read数值推断。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-13-openxr-running-and-frame-loop",
+          "title": "running 时继续帧同步，再按 shouldRender 选择内容路径",
+          "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-13-openxr-running-and-frame-loop.svg",
+            "src/assets/diagrams/ch13/ed13-13-openxr-running-and-frame-loop.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-13-openxr-running-and-frame-loop",
+          "sources": [
+            "https://registry.khronos.org/OpenXR/specs/1.1-khr/html/xrspec.html",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://perfetto.dev/docs/data-sources/frametimeline"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-13-37-openxr-loop",
+              "ch13-13-38-should-render",
+              "ch13-13-39-object-sync-contract"
+            ],
+            "boundary": "示例OpenXR frame loop在running时waitframe取得predictedtime/period/shouldRender，beginframe后按shouldRender决定重渲染。true路径acquire并成功wait后才能提交写image，release前也须成功wait并遵守graphicsbindingGPU同步，再endframe提交layers；false可避重GPU并提交空layers，但running仍继续必要begin/end。xrWaitFrame可独立线程但外部同步，多线程同帧目标displaytime一致；predicted period非硬件刷新保证。OpenXR image协议非AndroidBQslot，release/endCPU返回不代表GPU或光学完成。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-13-projected-devices-and-clock-mapping",
+          "title": "Host 与眼镜分别记工作，用共同事件和时钟映射连接",
+          "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-13-projected-devices-and-clock-mapping.svg",
+            "src/assets/diagrams/ch13/ed13-13-projected-devices-and-clock-mapping.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-13-projected-devices-and-clock-mapping",
+          "sources": [
+            "https://developer.android.com/develop/xr/jetpack-xr-sdk/glasses/first-activity",
+            "https://developer.android.com/docs/quality-guidelines/android-xr/augmented",
+            "https://perfetto.dev/docs/concepts/clock-sync"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-13-40-host-glasses",
+              "ch13-13-41-cross-device-clock"
+            ],
+            "boundary": "ProjectedActivity在companionhost运行，Glimmer提供透明displayglassesUI；host记录Activity/Compose/CPU/GPU/codec/camera/network/thermal，glasses记录连接/display/input/sensor/power/cadence，按capability选择功能，audio无display可降级。host产帧准时不证明transport和remote present准时，两端功耗分别归因。两端事件id只关联，精确跨端分段需要有误差界限clockmapping；未同步rawtimestamp不可直接相减，RTT观察不能自动拆单向时延，无法映射时用共同事件/往返而非伪造精确oneway。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T11:25:10.231106+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 41,
+        "contexts_actually_viewed": 8,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a132/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a132/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 132,
+        "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+        "registered_sha256": "f6a74823e1876c05b66654995eb5481dbd8f90106f53cc5e6c15130dcefc35e2",
+        "frozen_sha256": "f6a74823e1876c05b66654995eb5481dbd8f90106f53cc5e6c15130dcefc35e2",
+        "review_input_sha256": "c7d2706127579a2ebc9ad64184960c47c2a47e61b945053c9a4f31ad57517f5a",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a132/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a132/external-source.diff",
+        "diff_sha256": "af036da204533e0804e5c3e648e36c308229bd413154251aafbd36e456e490b9",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 279 current narrative/table reading rows, 26058 characters, 41 SVG label sets, 41 original PNGs in 6 contact sheets independently read/viewed; native Mermaid count zero; all 1 non-Mermaid code block, 13 lines independently read."
+      },
+      "sha256_review_input": "c7d2706127579a2ebc9ad64184960c47c2a47e61b945053c9a4f31ad57517f5a",
+      "retired_diagrams": [
+        "ch13-13-01-content-forms",
+        "ch13-13-02-pipeline-identification",
+        "ch13-13-03-release-channels",
+        "ch13-13-05-build-runtime-capability",
+        "ch13-13-06-public-source-boundary",
+        "ch13-13-07-quality-not-pipeline",
+        "ch13-13-08-four-render-paths",
+        "ch13-13-09-panel-evidence",
+        "ch13-13-10-producer-separation",
+        "ch13-13-12-animation-version",
+        "ch13-13-13-entity-visible",
+        "ch13-13-15-environment-two-assets",
+        "ch13-13-17-environment-numbers",
+        "ch13-13-18-ibl-generation",
+        "ch13-13-19-environment-distance",
+        "ch13-13-20-gltf-loader",
+        "ch13-13-21-capability",
+        "ch13-13-22-loading-observation",
+        "ch13-13-23-resident-memory",
+        "ch13-13-24-load-priority",
+        "ch13-13-25-load-first-visible",
+        "ch13-13-26-four-timelines",
+        "ch13-13-28-viewpoint-space",
+        "ch13-13-29-pose-latch-boundary",
+        "ch13-13-30-unity-optimizations",
+        "ch13-13-31-immersive-performance",
+        "ch13-13-32-critical-path",
+        "ch13-13-34-tool-coverage",
+        "ch13-13-35-single-frame-check",
+        "ch13-13-37-openxr-loop",
+        "ch13-13-38-should-render",
+        "ch13-13-39-object-sync-contract",
+        "ch13-13-40-host-glasses",
+        "ch13-13-41-cross-device-clock"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-132/retired-assets.json"
     },
     {
       "index": 133,
@@ -32513,8 +33136,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 68,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
+  "reviewed_articles": 69,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -32524,7 +33147,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T11:18:01.953859+08:00",
+  "updated_at": "2026-10-31T11:25:10.231106+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -32573,13 +33196,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
-      "registered_sha256": "f6a74823e1876c05b66654995eb5481dbd8f90106f53cc5e6c15130dcefc35e2",
-      "observed_sha256": "c7d2706127579a2ebc9ad64184960c47c2a47e61b945053c9a4f31ad57517f5a",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -32975,9 +33591,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2482,
-  "reviewed_placements_after": 1145,
-  "net_removed_placements": 1337,
+  "reviewed_placements_before": 2523,
+  "reviewed_placements_after": 1159,
+  "net_removed_placements": 1364,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -33001,5 +33617,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 68
+  "currently_matching_reviewed_source_count": 69
 }
