@@ -60738,9 +60738,276 @@
       "before_count": 26,
       "before_all_images": 26,
       "sha256_before": "3d455456ac466a744db0f562777a4043e100ff820f2edc5f76c745f0f4f60393",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 4,
+      "decisions": [
+        {
+          "original_id": "a243-01-runtime-window-inputs",
+          "title": "自适应输入来自当前窗口与姿态",
+          "decision": "remove",
+          "reason": "运行时窗口/姿态输入与版本独立三行卡片重复51–72正文及版本表，没有新增空间关系。",
+          "original_line": 57,
+          "heading": "## 版本范围与源码依据"
+        },
+        {
+          "original_id": "a243-02-width-height-breakpoints",
+          "title": "宽度五档与高度三档要一起判断",
+          "decision": "keep",
+          "reason": "五个宽度断点按序并列，并在下方同时给出高度三档及1.2.0显式开关，便于与矮窗口情境对照；保留在分类表后。",
+          "original_line": 93,
+          "heading": "### 1. 宽度有五档，高度有三档"
+        },
+        {
+          "original_id": "a243-06-pane-maxima",
+          "title": "横向分区上限不等于可见窗格总数",
+          "decision": "remove",
+          "reason": "横向分区1/1/2、最多三格及纵向例外均由105–108逐条说明；图只是三行配对文字，并未示出真实横纵窗格摆放。",
+          "original_line": 100,
+          "heading": "### 1. 宽度有五档，高度有三档"
+        },
+        {
+          "original_id": "a243-03-discrete-mode-continuous-size",
+          "title": "尺寸档不变仍可能持续重新测量",
+          "decision": "remove",
+          "reason": "连续约束/离散模式/跳过限制三行逐条重述112–119，图无时间轨道或实际断点样本。",
+          "original_line": 121,
+          "heading": "### 2. 类别切换与连续调整是两种频率"
+        },
+        {
+          "original_id": "a243-04-coordinate-insets",
+          "title": "窗口尺寸、内容尺寸与局部约束分层处理",
+          "decision": "remove",
+          "reason": "窗口信息、统一Insets、局部约束三行重复128–135，未画坐标嵌套或实际扣除区域。",
+          "original_line": 132,
+          "heading": "### 3. 系统栏和窗口装饰仍占用内容空间"
+        },
+        {
+          "original_id": "a243-05-single-layout-directive",
+          "title": "页面入口计算同一份布局指令",
+          "decision": "keep",
+          "reason": "当前窗口到单次指令、导航器与窗格共用、独立内容owner的链路连接43行入口代码中的责任；位于代码和状态说明后。",
+          "original_line": 206,
+          "heading": "### 2. 一个页面只计算一次上层布局指令"
+        },
+        {
+          "original_id": "a243-07-component-subcomposition",
+          "title": "BoxWithConstraints 只在局部确有需要时使用",
+          "decision": "remove",
+          "reason": "局部Subcompose与强跳过限制已由215–223及三个问题完整说明，三行卡片没有增加测量路径。",
+          "original_line": 225,
+          "heading": "### 3. `BoxWithConstraints` 只处理组件级约束"
+        },
+        {
+          "original_id": "a243-08-content-layout-owners",
+          "title": "内容状态独立于窗格位置与姿态",
+          "decision": "remove",
+          "reason": "内容/短期UI/窗口状态三行重复234–240及后文319–324的所有者表，未呈现跨调用位置迁移。",
+          "original_line": 242,
+          "heading": "### 4. 窗格变化时要保留用户状态"
+        },
+        {
+          "original_id": "a243-09-folding-feature-fields",
+          "title": "FoldingFeature 描述姿态和区域，不提供角度",
+          "decision": "remove",
+          "reason": "FoldingFeature字段分组与角度限制由251–266完整列出，卡片不展示遮挡几何。",
+          "original_line": 261,
+          "heading": "### 1. `FoldingFeature` 提供哪些信息"
+        },
+        {
+          "original_id": "a243-10-window-tracker-lifecycle",
+          "title": "折叠特征订阅跟随当前 Activity 实例",
+          "decision": "keep",
+          "reason": "Activity创建、STARTED清旧、首值等待、退出finally清理的生命周期链便于检查31行订阅代码，明确新实例重订阅。",
+          "original_line": 308,
+          "heading": "### 2. 订阅必须跟随当前 Activity 生命周期"
+        },
+        {
+          "original_id": "a243-11-hwui-to-display",
+          "title": "标准窗口出图仍沿应用到显示链路",
+          "decision": "remove",
+          "reason": "标准出图链已由332箭头和334–341解释，原生多窗口图也覆盖UI/RT/BLAST/SF/HWC，没有再保留线性缩写图的必要。",
+          "original_line": 336,
+          "heading": "### 1. 单窗口标准路径"
+        },
+        {
+          "original_id": "a243-12-multiwindow-topology",
+          "title": "多窗口、进程与显示设备是三层拓扑",
+          "decision": "remove",
+          "reason": "与前方保留的原生多窗口拓扑图重复同进程共享线程、独立缓冲、WMS几何和逐display呈现，保留原生更完整表达。",
+          "original_line": 379,
+          "heading": "### 2. 窗口、进程和显示设备要分别分析"
+        },
+        {
+          "original_id": "a243-13-three-resize-milestones",
+          "title": "窗口几何、内容缓冲与实际呈现分别取证",
+          "decision": "remove",
+          "reason": "三组文字卡片重述388–396的几何/提交/呈现三边界，未画真正对齐的时间轨道；完整限定保留在正文。",
+          "original_line": 398,
+          "heading": "### 3. 窗口几何、缓冲区和显示呈现对应三个时间点"
+        },
+        {
+          "original_id": "a243-14-per-display-results",
+          "title": "内屏正常不能证明外接屏正常",
+          "decision": "remove",
+          "reason": "逐屏模式与present及厂商证据三行重复405–412并已由原生图两条display分支表达。",
+          "original_line": 407,
+          "heading": "### 4. 每个显示设备有自己的呈现结果"
+        },
+        {
+          "original_id": "a243-15-target-sdk-rotation",
+          "title": "Android16 临时 opt-out 到 Android17 取消",
+          "decision": "remove",
+          "reason": "target36/37适用范围及例外已由416–440详细说明，三行卡片不增加布局或时间关系。",
+          "original_line": 429,
+          "heading": "## 五、Android 17 让固定方向假设失效"
+        },
+        {
+          "original_id": "a243-16-actual-pixel-work",
+          "title": "面板像素数不等于应用帧成本倍数",
+          "decision": "remove",
+          "reason": "实际缓冲尺寸、内容节点和合成争用三行逐项重复446–454，不是像素面积或工作量比较图。",
+          "original_line": 456,
+          "heading": "### 1. 面板分辨率与实际渲染工作量"
+        },
+        {
+          "original_id": "a243-17-resize-image-requests",
+          "title": "按展示尺寸合并图片请求并守住缓存容量",
+          "decision": "remove",
+          "reason": "有限采样档、合并后台解码、预览升级与内存检查由463–472完整列表说明，线性框图未新增请求取消或并发分支。",
+          "original_line": 474,
+          "heading": "### 2. 图片按展示目标请求"
+        },
+        {
+          "original_id": "a243-18-pane-working-set",
+          "title": "更多窗格扩大活跃工作集，也可能重复工作",
+          "decision": "remove",
+          "reason": "活跃资源、不可见降载和重复订阅三行重述481–489，未呈现实际多窗格工作集关系。",
+          "original_line": 491,
+          "heading": "### 3. 更多窗格会扩大活跃工作集"
+        },
+        {
+          "original_id": "a243-19-lifecycle-focus-policy",
+          "title": "生命周期、可见性与焦点是不同信号",
+          "decision": "remove",
+          "reason": "生命周期/焦点/业务组合由498–507列出，图是规则文字配对，没有状态机或策略分支。",
+          "original_line": 509,
+          "heading": "## 七、多窗口的生命周期与输入焦点"
+        },
+        {
+          "original_id": "a243-20-multi-instance-state",
+          "title": "多实例状态分层，缓存不隐含当前窗口",
+          "decision": "remove",
+          "reason": "多实例三层状态与入口权限边界由516–527完整说明，图未画共享数据竞争与实例连接。",
+          "original_line": 520,
+          "heading": "### 桌面窗口的多实例、拖拽与共享状态"
+        },
+        {
+          "original_id": "a243-21-cross-window-drag",
+          "title": "拖放授权、导入工作与未处理降级分开",
+          "decision": "remove",
+          "reason": "拖放授权、同UID与未处理IntentSender前提已在529单段完整给出，图没有真实接收/拒绝分支。",
+          "original_line": 531,
+          "heading": "### 桌面窗口的多实例、拖拽与共享状态"
+        },
+        {
+          "original_id": "a243-22-resource-runtime-boundaries",
+          "title": "资源限定符与窗口分类各处理自己的层级",
+          "decision": "remove",
+          "reason": "资源/窗口分类/局部约束三行重复542–556，图不是Configuration变化的具体路径。",
+          "original_line": 551,
+          "heading": "## 八、资源限定符与运行时分类的分工"
+        },
+        {
+          "original_id": "a243-23-validation-scope",
+          "title": "视觉布局与真实帧性能分别验证",
+          "decision": "remove",
+          "reason": "视觉/基准/手势三类验证及环境字段由564–585表和段落完整覆盖。",
+          "original_line": 576,
+          "heading": "### 1. 尺寸测试组合覆盖断点两侧"
+        },
+        {
+          "original_id": "a243-24-sql-frame-identity",
+          "title": "SQL 按进程实例、帧 token 与目标图层关联",
+          "decision": "keep",
+          "reason": "进程实例、完整目标层片段、按upid/token/layer LEFT JOIN及缺失NULL四步便于检视48行SQL，保留缺失与实际呈现token边界。",
+          "original_line": 644,
+          "heading": "### 3. FrameTimeline 要按 SurfaceFrame 和 DisplayFrame 读取"
+        },
+        {
+          "original_id": "a243-25-resize-attribution-order",
+          "title": "窗口调整从对象身份追到最早偏离的时间线",
+          "decision": "remove",
+          "reason": "四步摘要重复653–660八项分析顺序，删图保留详细清单及同线程排队误判说明。",
+          "original_line": 662,
+          "heading": "### 4. 调整窗口轨迹的分析顺序"
+        },
+        {
+          "original_id": "a243-26-adaptive-validation-loop",
+          "title": "运行时适配和性能证据共同闭合验收",
+          "decision": "remove",
+          "reason": "结尾四步重复706–708小结和686–702检查清单，没有回路或新机制。",
+          "original_line": 710,
+          "heading": "## 全文小结"
+        }
+      ],
+      "sha256_after": "906d90f485353f9493db204f0cbdc22ede23a36a4fcf0799409d48770a3bb2be",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:46:29.483069+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 26,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a243/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a243/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 243,
+        "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+        "registered_sha256": "3d455456ac466a744db0f562777a4043e100ff820f2edc5f76c745f0f4f60393",
+        "frozen_sha256": "3d455456ac466a744db0f562777a4043e100ff820f2edc5f76c745f0f4f60393",
+        "review_input_sha256": "ee58b3691a46e08dda199d5555189e25f5a1b4c247400cd6192044041d4f9f0e",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a243/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a243/external-source.diff",
+        "diff_sha256": "b32969c40b537b07fa49867c1f9b153b9d69feba74b266f8d6b59ab85da2b9a6",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 356, \"characters\": 22853, \"svg_labels_read\": 26, \"actual_pngs_viewed\": 26, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 4, \"code_lines\": 128, \"native_mermaid\": 1, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "ee58b3691a46e08dda199d5555189e25f5a1b4c247400cd6192044041d4f9f0e",
+      "retired_diagrams": [
+        "a243-01-runtime-window-inputs",
+        "a243-03-discrete-mode-continuous-size",
+        "a243-04-coordinate-insets",
+        "a243-06-pane-maxima",
+        "a243-07-component-subcomposition",
+        "a243-08-content-layout-owners",
+        "a243-09-folding-feature-fields",
+        "a243-11-hwui-to-display",
+        "a243-12-multiwindow-topology",
+        "a243-13-three-resize-milestones",
+        "a243-14-per-display-results",
+        "a243-15-target-sdk-rotation",
+        "a243-16-actual-pixel-work",
+        "a243-17-resize-image-requests",
+        "a243-18-pane-working-set",
+        "a243-19-lifecycle-focus-policy",
+        "a243-20-multi-instance-state",
+        "a243-21-cross-window-drag",
+        "a243-22-resource-runtime-boundaries",
+        "a243-23-validation-scope",
+        "a243-25-resize-attribution-order",
+        "a243-26-adaptive-validation-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-243/retired-assets.json"
     },
     {
       "index": 244,
@@ -61172,8 +61439,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 167,
-  "next_article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+  "reviewed_articles": 168,
+  "next_article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -61183,7 +61450,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:43:39.159960+08:00",
+  "updated_at": "2026-10-31T17:46:29.483069+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -61256,31 +61523,10 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
-      "registered_sha256": "df29d49860051d04ce6c918a8c5a7b8f1460008f06b858d1ba70a01da7127a61",
-      "observed_sha256": "6a8c2779f73b8ab7446f753ed87bb1d0517a7cdccc65b6b92439378c82cd31b4",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
-      "registered_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
-      "observed_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
-      "registered_sha256": "3d455456ac466a744db0f562777a4043e100ff820f2edc5f76c745f0f4f60393",
-      "observed_sha256": "ee58b3691a46e08dda199d5555189e25f5a1b4c247400cd6192044041d4f9f0e",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -61361,9 +61607,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5112,
-  "reviewed_placements_after": 2050,
-  "net_removed_placements": 3062,
+  "reviewed_placements_before": 5138,
+  "reviewed_placements_after": 2054,
+  "net_removed_placements": 3084,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -61387,5 +61633,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 167
+  "currently_matching_reviewed_source_count": 168
 }

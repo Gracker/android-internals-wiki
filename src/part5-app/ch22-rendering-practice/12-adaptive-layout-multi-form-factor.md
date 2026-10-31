@@ -54,10 +54,6 @@ consolidated_from:
 
 自适应界面（Adaptive UI）依据当前应用窗口的可用空间、折叠姿态和输入方式调整布局。同一台设备上，窗口的实际类别可以差得很远：平板上开一个分屏窗口，宽度可能落到紧凑档；手机连接桌面显示器，反而可能是大档甚至超大档。排查布局问题时，我们以窗口的实际测量为准。
 
-<!-- gracker-diagram: a243-01-runtime-window-inputs -->
-![自适应输入来自当前窗口与姿态](../../assets/diagrams/ch22/a243-01-runtime-window-inputs.png)
-
-图：设备名不能代替运行时窗口信息；固定Adaptive1.2.0行为与当前1.3.0版本现状分开核对。
 
 本文采用这些版本：
 
@@ -71,7 +67,7 @@ consolidated_from:
 
 2026-10-25 复核，Material 3 Adaptive 1.3.0 已是稳定版，1.3.0-rc01 只是此前的候选发布物；部分窗口信息 API 已调整。生产项目若采用 1.3.x，应按该版本的迁移说明改写调用；反过来说，1.3.x 里标记弃用的 API，在 1.2.0 中仍可能是正确用法。
 
-## 一、窗口尺寸类别描述窗口，不描述设备
+## 一、窗口尺寸类别按当前窗口计算
 
 ### 1. 宽度有五档，高度有三档
 
@@ -97,15 +93,11 @@ consolidated_from:
 
 Material 3 Adaptive 1.2.0 对宽度分类和窗格数量有几处默认行为：
 
-<!-- gracker-diagram: a243-06-pane-maxima -->
-![横向分区上限不等于可见窗格总数](../../assets/diagrams/ch22/a243-06-pane-maxima.png)
-
-图：固定1.2.0分别计算横向与纵向分区，Medium双栏变体还需评估内容密度。
 
 - `currentWindowAdaptiveInfo()` 默认仍按 Compact、Medium、Expanded 三档计算；传入 `supportLargeAndXLargeWidth = true` 后，计算才会包含 1200dp 与 1600dp 两个断点。
 - `calculatePaneScaffoldDirective()` 生成窗格布局指令：Compact 和 Medium 默认允许一个横向分区，Expanded 允许两个，Large 和 Extra-large 最多允许三个。
 - `calculatePaneScaffoldDirectiveWithTwoPanesOnMediumWidth()` 会让 Medium 使用双窗格，但源码文档也提醒，这可能使内容过密，只适合确有需求的页面。
-- 上述横向分区数是最大布局指令，不保证窗格都可见；目的地历史、适配策略、铰链和局部约束还会参与实际选择。1.2.0 在 tabletop 姿态，或单横向分区且 Expanded 高度时，也会允许两个纵向分区，不能把“一个横向分区”直接当成“总共一个窗格”。
+- 上述横向分区数是最大布局指令，窗格是否都可见，还要看目的地历史、适配策略、铰链和局部约束的实际选择。1.2.0 在 tabletop 姿态，或单横向分区且 Expanded 高度时，还会允许两个纵向分区；读到“一个横向分区”时按横向分区上限理解即可，窗格总数以实际布局为准。
 
 ### 2. 类别切换与连续调整是两种频率
 
@@ -116,12 +108,8 @@ Material 3 Adaptive 1.2.0 对宽度分类和窗格数量有几处默认行为：
 - `remember` 保存计算结果或对象身份；约束变化引发的重新测量，它拦不住；
 - `derivedStateOf` 只适合把高频可观察输入转换成变化较少的派生状态，普遍加速窗口尺寸调整超出了它的能力范围。
 
-窗口尺寸类别我们只在页面级决策里用。组件能不能排下按钮、图表或卡片内容，仍要看它自己收到的约束，不必把整个窗口类别逐层传到每个子组件。
+窗口尺寸类别我们只在页面级决策里用。组件要排下按钮、图表或卡片内容，靠的是它自己收到的约束，整个窗口类别不必逐层传到每个子组件。
 
-<!-- gracker-diagram: a243-03-discrete-mode-continuous-size -->
-![尺寸档不变仍可能持续重新测量](../../assets/diagrams/ch22/a243-03-discrete-mode-continuous-size.png)
-
-图：将连续窗口变化收敛为少量页面模式，不代表断点内布局没有成本。
 
 ### 3. 系统栏和窗口装饰仍占用内容空间
 
@@ -129,16 +117,12 @@ Material 3 Adaptive 1.2.0 对宽度分类和窗格数量有几处默认行为：
 
 `LocalWindowInfo.current.containerSize`、平台 `WindowMetrics`、布局阶段得到的内容约束，这是三套不同层次的尺寸。页面模式可以由窗口级信息决定；具体窗格怎么排，以它自己的测量约束为准。三者混用又不注明坐标空间，就容易重复扣除 Insets，或者把窗口尺寸当成内容尺寸。
 
-<!-- gracker-diagram: a243-04-coordinate-insets -->
-![窗口尺寸、内容尺寸与局部约束分层处理](../../assets/diagrams/ch22/a243-04-coordinate-insets.png)
-
-图：尺寸输入来自不同层级，Insets不是每个子组件都应再扣一次的固定常量。
 
 ## 二、把自适应决策集中在页面入口
 
 ### 1. 各依赖使用自己的版本号
 
-这些依赖用于 Compose 的典型列表—详情布局，以及直接读取折叠特征。三个 Material 3 Adaptive 依赖模块保持同一版本，WindowManager 单独指定版本。
+先把依赖版本钉住，后面讨论入口写法时才有共同的参照。这些依赖用于 Compose 的典型列表—详情布局，以及直接读取折叠特征。三个 Material 3 Adaptive 依赖模块保持同一版本，WindowManager 单独指定版本。
 
 ```kotlin
 dependencies {
@@ -222,10 +206,6 @@ fun AdaptiveArticleRoute(
 
 还要把它的开销和 Compose 已有的几类优化分开：强跳过（strong skipping）、稳定参数、Lazy 列表项键解决的是各自的问题——强跳过决定参数满足条件时能否省略一次可组合函数调用，稳定的键用于维持列表项身份；父约束变化后的测量和布局，强跳过和稳定的键都取消不了。
 
-<!-- gracker-diagram: a243-07-component-subcomposition -->
-![BoxWithConstraints 只在局部确有需要时使用](../../assets/diagrams/ch22/a243-07-component-subcomposition.png)
-
-图：局部约束容器不适合承载数据库、解析、排序和图片请求等业务工作。
 
 ### 4. 窗格变化时要保留用户状态
 
@@ -239,12 +219,8 @@ fun AdaptiveArticleRoute(
 
 说“移动已有界面”只是视觉层面的描述。Compose 用槽位表（slot table）记录组合结构，调用位置一变，原来的组合实例不一定能复用。性能目标应写成可验证的状态保留、组合范围和帧时间。
 
-<!-- gracker-diagram: a243-08-content-layout-owners -->
-![内容状态独立于窗格位置与姿态](../../assets/diagrams/ch22/a243-08-content-layout-owners.png)
 
-图：相同数据键不保证跨调用位置复用Composition；布局变化不应清空内容或重发相同请求。
-
-## 三、折叠姿态不等于连续铰链角度
+## 三、折叠姿态信息的读取与使用
 
 ### 1. `FoldingFeature` 提供哪些信息
 
@@ -256,12 +232,8 @@ WindowManager 1.5.1 的 `FoldingFeature` 公开：
 - `isSeparating`：显示特征是否把内容区域分成两个逻辑区域；
 - `bounds`：该特征在当前窗口坐标空间中的边界。
 
-这里要先交代一个限制：`FoldingFeature` 不提供连续的铰链角度。产品若需要角度传感器数据，必须用设备明确支持的其他 API，并单独处理能力探测、权限、采样频率和兼容性；`HALF_OPENED` 推导不出固定角度。
+这里要先交代一个限制：`FoldingFeature` 给出的是姿态和区域信息；产品若需要连续的铰链角度，必须用设备明确支持的其他 API，并单独处理能力探测、权限、采样频率和兼容性；`HALF_OPENED` 同样推导不出固定角度。
 
-<!-- gracker-diagram: a243-09-folding-feature-fields -->
-![FoldingFeature 描述姿态和区域，不提供角度](../../assets/diagrams/ch22/a243-09-folding-feature-fields.png)
-
-图：典型适配可用WindowAdaptiveInfo的Posture；直接处理遮挡或预览时再订阅窗口特征。
 
 Material 3 Adaptive 的 `WindowAdaptiveInfo` 已包含由窗口折叠特征计算出的姿态对象 `Posture`。只做典型布局时，直接用这份信息就够了；等页面要处理遮挡区域、相机预览或设备特定交互时，再直接订阅 `WindowInfoTracker`。
 
@@ -333,10 +305,6 @@ class FoldAwareActivity : ComponentActivity() {
 
 这条链上每一站都有自己的职责：`ViewRootImpl` 遍历里做的是一轮测量、布局和绘制准备；BLAST 协调窗口缓冲区与 `SurfaceControl` 事务；SurfaceFlinger 决定 DEVICE / CLIENT 分工，CLIENT 部分可由 RenderEngine 在 GPU 上合成，再交 HWC（硬件合成器）参与最终呈现；一轮呈现结束时，显示设备发出呈现栅栏，作为本轮完成的同步信号。
 
-<!-- gracker-diagram: a243-11-hwui-to-display -->
-![标准窗口出图仍沿应用到显示链路](../../assets/diagrams/ch22/a243-11-hwui-to-display.png)
-
-图：窗口大小变化没有替换显示管线；客户端合成可使用RenderEngine GPU，不能把全部图层都当硬件直出。
 
 约束变化可能让 Compose 重新组合、测量、布局、记录绘制命令，也可能只触发其中一部分。而向系统侧请求重新布局的动作由 `ViewRootImpl.performTraversals()` 发起：尺寸、可见性、Insets、`LayoutParams`、Surface 等条件满足时，它才通过 `IWindowSession.relayout()` 请求 WMS 重新布局；内容稳定的帧不会固定执行一次 `relayout()`。再往上，WMS 维护窗口状态，WM Shell 在系统界面进程中负责多窗口和转场等上层交互。
 
@@ -376,10 +344,6 @@ flowchart LR
 
 顺着图往下读：同一 UI Looper 上的多个 `ViewRootImpl` 共享 Choreographer 回调队列，同进程的硬件加速窗口还共享进程级 RenderThread，但每个窗口有自己的 Surface 和缓冲区周转。进程之间呢？UI 线程和 RenderThread 各自独立，可只要落在同一显示设备上，SurfaceFlinger、GPU/内存带宽、HWC 硬件合成平面和显示截止时间就还是共享的。
 
-<!-- gracker-diagram: a243-12-multiwindow-topology -->
-![多窗口、进程与显示设备是三层拓扑](../../assets/diagrams/ch22/a243-12-multiwindow-topology.png)
-
-图：同进程窗口可以共享UI Looper与RenderThread，但每窗有独立缓冲区；跨进程仍可能争用同一显示设备资源。
 
 所以判断窗口数量，要看事实而不是视觉形态。双栏 Compose/View 布局通常仍只有一个顶层窗口、一个应用窗口缓冲区；Activity Embedding 会在同一任务中嵌入多个 Activity；再叠加 Dialog、Popup、画中画（PiP）、自由窗口或多实例，顶层窗口到底有几个，必须根据实际的 pid、UI 线程编号（tid）、`ViewRootImpl`、`WindowState`、SurfaceFlinger 图层和 `displayId` 判断。
 
@@ -395,41 +359,29 @@ flowchart LR
 
 这里有一个常见的定位偏差：应用的 `queueBuffer()` 返回，只说明生产者（Producer）已经提交缓冲区。此刻 GPU 完成栅栏可能尚未发出信号，SurfaceFlinger 也可能还没采纳这个缓冲区，目标显示设备自然尚未完成呈现。所以排查窗口调整卡顿，别只盯 Compose 测量；反过来，应用帧都按时，也排除不了显示端。
 
-<!-- gracker-diagram: a243-13-three-resize-milestones -->
-![窗口几何、内容缓冲与实际呈现分别取证](../../assets/diagrams/ch22/a243-13-three-resize-milestones.png)
-
-图：同步组只协调加入其中的对象；相机、解码器或独立引擎的生产时序要另行确认。
 
 ### 4. 每个显示设备有自己的呈现结果
 
 窗口一旦移到外接屏，密度、刷新率、色彩模式、Insets、HWC 能力和输入路由都可能跟着变。SurfaceFlinger 是按显示设备分别建立可见图层集合的，HWC 策略与呈现栅栏也各产各的。所以默认屏正常，证明不了外接屏正常；同一进程的两个窗口，也不要求在两个屏幕同时呈现。
 
-<!-- gracker-diagram: a243-14-per-display-results -->
-![内屏正常不能证明外接屏正常](../../assets/diagrams/ch22/a243-14-per-display-results.png)
 
-图：跨屏窗口不要求同步显示；目标displayId和具体呈现结果必须分别记录。
-
-分析能用的公共证据到这里为止：内核源码标签可以解释线程调度、限制线程可用 CPU 范围的 cpuset，以及在设备间同步缓冲区访问的 dma-fence。某台设备的硬件叠加平面、DPU 缩放单元、GPU 调度或显示驱动延迟，仍需厂商轨迹、设备配置和实际同步栅栏作证据。
+公共分析依据到这里为止：内核源码标签可以解释线程调度、限制线程可用 CPU 范围的 cpuset，以及在设备间同步缓冲区访问的 dma-fence。某台设备的硬件叠加平面、DPU 缩放单元、GPU 调度或显示驱动延迟，还要靠厂商轨迹、设备配置和实际同步栅栏来说明。
 
 ## 五、Android 17 让固定方向假设失效
 
 我们先交代这条行为变化的时间线。Android 16 的大屏设备上，面向 API 36 的应用会被系统忽略方向、宽高比和可调整大小限制；应用或单个 Activity 可以用清单属性 `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` 暂时恢复旧的兼容模式，但这个属性保证不了大屏设备锁定方向。到了 Android 17，面向 API 37 的应用连这个临时选项也没有了。
 
-变化的适用范围是显示设备最小宽度达到 600dp 的大屏，也就是官方资料里的 `sw600dp` 及以上。在这类设备上，下面这些配置或调用不能再当作布局前提：
+变化的适用范围是显示设备最小宽度达到 600dp 的大屏，也就是官方资料里的 `sw600dp` 及以上。在这类设备上，布局前提里要拿掉下面这些配置或调用：
 
 - `screenOrientation` 的 `portrait` / `landscape` 系列固定值；
 - `setRequestedOrientation()` 请求的固定方向值；
 - `resizeableActivity`；
 - `minAspectRatio` 与 `maxAspectRatio`。
 
-`getRequestedOrientation()` 读取请求值，不代表当前窗口已经按该方向显示；实际布局仍以当前窗口和配置为准。
+`getRequestedOrientation()` 读回的是请求值，当前窗口是否按该方向显示，还要以实际窗口和配置为准。
 
 例外也要记全：游戏类别、低于 `sw600dp` 的屏幕，以及用户在设备宽高比设置中明确选择应用原有行为的情况，都是官方列出的例外。加上不同厂商的桌面窗口能力和窗口策略本身有差异，验收记录要写清设备与窗口模式。
 
-<!-- gracker-diagram: a243-15-target-sdk-rotation -->
-![Android16 临时 opt-out 到 Android17 取消](../../assets/diagrams/ch22/a243-15-target-sdk-rotation.png)
-
-图：变化增加可变窗口场景，没有更换HWUI或显示管线；方向请求不再是布局前提。
 
 渲染路径没有换：这项变化没有替换 `ViewRootImpl`、BLAST 或 SurfaceFlinger；变化在于应用会更常遇到旋转、自由调整窗口、分屏和多种宽高比。兼容工作集中在：
 
@@ -439,7 +391,7 @@ flowchart LR
 - 相机预览使用传感器方向、目标旋转和 `Matrix` 变换，不把设备自然方向当成窗口方向；
 - 动画起止位置按当前窗口边界计算，避免沿用启动时缓存的屏幕宽高。
 
-## 六、大屏成本由实际窗口和内容决定
+## 六、大屏渲染成本的实际构成
 
 ### 1. 面板分辨率与实际渲染工作量
 
@@ -453,10 +405,6 @@ flowchart LR
 
 我们也别忘了内容本身：同一页面在更大窗口中通常会显示更多列表项、文字、图片和窗格，节点数量和像素填充可能同时增加，也可能只增加一项。性能报告应使用 Perfetto 轨迹、GPU 工具和内存数据描述实际变化；“进入大屏就固定增加四倍成本”这类预设，代替不了实测。
 
-<!-- gracker-diagram: a243-16-actual-pixel-work -->
-![面板像素数不等于应用帧成本倍数](../../assets/diagrams/ch22/a243-16-actual-pixel-work.png)
-
-图：4K像素数是1080p四倍是算术事实，不能据此推断窗口耗时固定四倍。
 
 ### 2. 图片按展示目标请求
 
@@ -471,10 +419,6 @@ flowchart LR
 
 窗口变大后要不要立刻加载更高分辨率的资源，取决于内容清晰度、网络与内存目标。可以等窗口尺寸稳定后再升级图片，也可以保留已有预览、异步替换；两种策略都要检查闪烁、峰值内存和无障碍缩放。
 
-<!-- gracker-diagram: a243-17-resize-image-requests -->
-![按展示尺寸合并图片请求并守住缓存容量](../../assets/diagrams/ch22/a243-17-resize-image-requests.png)
-
-图：不在每个拖动像素上请求最大原图；更高清资源升级时机要结合产品清晰度和内存目标。
 
 ### 3. 更多窗格会扩大活跃工作集
 
@@ -488,12 +432,8 @@ flowchart LR
 
 缓存策略要围绕可重复使用的数据与明确容量设计；窗口再大，容量上限该守还得守。
 
-<!-- gracker-diagram: a243-18-pane-working-set -->
-![更多窗格扩大活跃工作集，也可能重复工作](../../assets/diagrams/ch22/a243-18-pane-working-set.png)
 
-图：按需组合不能自动暂停所有窗格资源；关闭界面与业务缓存释放是不同边界。
-
-## 七、多窗口生命周期和输入不能只看 `onPause()`
+## 七、多窗口的生命周期与输入焦点
 
 多窗口环境下，生命周期和焦点是两回事。多窗口支持多恢复（multi-resume）：多个 Activity 可以同时处于 `RESUMED`，但只有一个是 top-resumed，也就是系统当前优先交互的那个；可见窗口也可能没有输入焦点。所以播放器、相机、动画、协作光标和轮询任务做降载决策时，我们要综合：
 
@@ -506,10 +446,6 @@ flowchart LR
 
 两个极端都有代价：“失去焦点便停止全部工作”会中断仍需显示的内容，“只在 `onPause()` 降载”又可能让后台可见窗口持续高频刷新。策略应按业务类型定义，再到分屏切焦点、PiP、桌面多实例和外接屏里验证。
 
-<!-- gracker-diagram: a243-19-lifecycle-focus-policy -->
-![生命周期、可见性与焦点是不同信号](../../assets/diagrams/ch22/a243-19-lifecycle-focus-policy.png)
-
-图：失焦就停全部工作与仅onPause才降载都可能不符合产品需求，策略由业务明确。
 
 ### 桌面窗口的多实例、拖拽与共享状态
 
@@ -517,49 +453,37 @@ flowchart LR
 
 状态可以分成三层：
 
-<!-- gracker-diagram: a243-20-multi-instance-state -->
-![多实例状态分层，缓存不隐含当前窗口](../../assets/diagrams/ch22/a243-20-multi-instance-state.png)
-
-图：系统新窗口入口不替应用解决启动路由、草稿冲突和数据库并发；跨显示设备再加独立配置。
 
 - 实例内的滚动、选择和窗格状态；
 - 由数据仓库管理、带修订版本号和事务的共享业务状态；
 - 可以共享、但不隐含“当前窗口”的进程级缓存与连接池。
 
-再看拖放。跨窗口拖放只在回调中传递轻量的 `ClipData`、URI 和访问授权，MIME 类型校验、Bitmap 解码、缩略图生成与导入事务放到后台。Android 15 提供 `DRAG_FLAG_GLOBAL_SAME_APPLICATION`，允许拖放送到同 UID 且 targetSdk≥24 的可见应用窗口；`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 会在没有窗口处理 drop 时请求系统启动提供的 `IntentSender`，但系统可按屏幕尺寸或窗口模式拒绝。`ClipData.Item` 必须包含指向 Activity 的不可变 `IntentSender`，不能拿 service / broadcast 目标代替。这两个入口仍要重新过一遍任务路由和权限验证，大对象不要序列化进 Intent 或 Binder 调用。
+再看拖放。跨窗口拖放只在回调中传递轻量的 `ClipData`、URI 和访问授权，MIME 类型校验、Bitmap 解码、缩略图生成与导入事务放到后台。Android 15 提供 `DRAG_FLAG_GLOBAL_SAME_APPLICATION`，允许拖放送到同 UID 且 targetSdk≥24 的可见应用窗口；`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 会在没有窗口处理 drop 时请求系统启动提供的 `IntentSender`，但系统可按屏幕尺寸或窗口模式拒绝。`ClipData.Item` 必须包含指向 Activity 的不可变 `IntentSender`，service / broadcast 目标在这里不符合要求。这两个入口仍要重新过一遍任务路由和权限验证，大对象不要序列化进 Intent 或 Binder 调用。
 
-<!-- gracker-diagram: a243-21-cross-window-drag -->
-![拖放授权、导入工作与未处理降级分开](../../assets/diagrams/ch22/a243-21-cross-window-drag.png)
-
-图：大对象不序列化进Intent或Binder；拖放跨窗仍需验证访问授权和任务路由。
 
 同一进程的多个窗口各有 `ViewRootImpl` 和缓冲区周转，却可能共享 UI Looper 与进程级 RenderThread。后果是：窗口 B 自己的 `DrawFrame` 很短，也可能排在窗口 A 的长任务后面，错过显示截止时间。跨显示器时，`displayId`、密度、刷新率、色彩模式和每个屏幕的呈现结果要分别记录；连接或断开外屏、跨屏拖动、最大化或还原、输入焦点切换，都算独立用例。
 
 桌面窗口还要覆盖鼠标悬停、滚轮、右键、键盘快捷键、Tab 焦点和窗口标题栏 Insets。精确指针参与模式 `EngagementMode.PRECISE_POINTER` 到 WindowManager 1.6.0-alpha05 才加入，1.5.1 稳定版里还没有它；描述稳定版的实现时，这项预览 API 要排除在外。
 
-## 八、资源限定符只处理稳定的资源差异
+## 八、资源限定符与运行时分类的分工
 
 我们先把资源限定符和运行时窗口分类的关系分清。`sw<N>dp`、`w<N>dp`、方向、密度这些限定符适合选择资源，但它们与运行时窗口分类并不完全等价：
 
-- `sw<N>dp` 匹配当前 Configuration 的 `smallestScreenWidthDp`，不等于不可变的设备类别。Android 17 对浮动任务可按任务边界的较短边 / 密度重算它，嵌入式窗口也有更新路径，因此自由窗口调整时资源可能重选；
+- `sw<N>dp` 匹配当前 Configuration 的 `smallestScreenWidthDp`，把它当成不可变的设备标签会出错。Android 17 对浮动任务可按任务窗口的较短边 / 密度重算它，嵌入式窗口也有更新路径，因此自由窗口调整时资源可能重选；
 - `w<N>dp` 更接近当前可用宽度，但资源重选仍经过 Configuration/Resources 路径；
 - Compose 窗口尺寸类别是运行时布局输入；
 - 组件测量约束描述的是局部可用空间。
 
 同一项目可以同时使用这些机制，但每一种只处理自己的层级：间距、最小窗格宽度和列数放在 `values` 资源中，页面结构由窗口尺寸类别和姿态决定，组件内部由约束完成排版。复制多份完整布局则会让维护与状态恢复难度上升，某个资源目录也容易长期无人测试。
 
-<!-- gracker-diagram: a243-22-resource-runtime-boundaries -->
-![资源限定符与窗口分类各处理自己的层级](../../assets/diagrams/ch22/a243-22-resource-runtime-boundaries.png)
-
-图：sw不是不可变设备标签，资源重选与Compose模式变化都要覆盖窗口调整测试。
 
 检查资源时覆盖横竖屏、分屏、自由窗口、字体缩放、显示缩放、外接屏，以及不同语言和地区设置（locale）；另外，图片资源目录只解决资源选择这一层，运行时的图片尺寸策略还要有它之外的输入。
 
-## 九、视觉正确性和帧性能要分别验证
+## 九、视觉验证与帧性能分析
 
 ### 1. 尺寸测试组合覆盖断点两侧
 
-每个关键页面至少覆盖：
+先从尺寸组合入手，每个关键页面至少覆盖：
 
 | 维度 | 建议样本 |
 |---|---|
@@ -571,12 +495,8 @@ flowchart LR
 | 输入 | 触摸、鼠标、键盘、焦点切换、IME |
 | 状态恢复 | Activity 重建、进程恢复、多实例、显示设备断开 |
 
-Compose Preview、Compose UI Check、`DeviceConfigurationOverride` 和截图测试适合验证布局，但它们不运行完整的真实设备显示路径，UI 线程、RenderThread、GPU、SurfaceFlinger 或 HWC 的帧时间，它们证明不了。
+Compose Preview、Compose UI Check、`DeviceConfigurationOverride` 和截图测试适合验证布局；完整显示路径上的帧时间——UI 线程、RenderThread、GPU、SurfaceFlinger 或 HWC——要在真实运行的设备上另测。
 
-<!-- gracker-diagram: a243-23-validation-scope -->
-![视觉布局与真实帧性能分别验证](../../assets/diagrams/ch22/a243-23-validation-scope.png)
-
-图：Preview和截图不覆盖完整RenderThread、GPU、SF/HWC显示路径，平均FPS也解释不了短时异常。
 
 ### 2. Macrobenchmark 只测试可重复的用户操作
 
@@ -586,7 +506,7 @@ Compose Preview、Compose UI Check、`DeviceConfigurationOverride` 和截图测�
 
 ### 3. FrameTimeline 要按 SurfaceFrame 和 DisplayFrame 读取
 
-窗口调整的问题，我们最终要落到 FrameTimeline 上看。这段 PerfettoSQL 比较目标应用窗口的 Expected 和 Actual `SurfaceFrame`：Expected 是系统预期的帧时间窗，Actual 是实际执行记录。`$target_upid` 是 Perfetto `process.upid` 的唯一进程实例标识，不能直接填操作系统 pid；可先查询 `process` 表核对 pid、名称与生命周期，`$layer_glob` 是目标窗口图层的匹配模式；两者必须依据本次轨迹确定，仅凭包名模糊匹配整个系统是不够的。
+窗口调整的问题，我们最终要落到 FrameTimeline 上看。这段 PerfettoSQL 比较目标应用窗口的 Expected 和 Actual `SurfaceFrame`：Expected 是系统预期的帧时间窗，Actual 是实际执行记录。`$target_upid` 是 Perfetto `process.upid` 的唯一进程实例标识，与操作系统 pid 要区分开：可先查询 `process` 表核对 pid、名称与生命周期，`$layer_glob` 是目标窗口图层的匹配模式；两者必须依据本次轨迹确定，仅凭包名模糊匹配整个系统是不够的。
 
 ```sql
 WITH actual_app AS (
@@ -639,14 +559,14 @@ LEFT JOIN expected_app AS e
 ORDER BY a.actual_start_ns;
 ```
 
-查询先筛掉 `dur < 0` 的未闭合记录；这些记录的数量应另计作采集质量。Expected 关联键 `(upid, surface_frame_token, layer_name)` 应先核查唯一性，重复键不能直接聚合。`expected_slice_id` / `overrun_ns` 为 NULL 表示未找到同层完整 Expected，不能补成按时或零超期。`overrun_ns > 0` 才表示该已匹配 Actual 的结束时间晚于 Expected 截止时间，单位是纳秒，数值本身仍不说明原因。往下查分两条路：应用 `SurfaceFrame` 异常，查 UI 线程、RenderThread、GPU、缓冲区和同步栅栏；应用按时，而 `display_frame_token` 对应的 `DisplayFrame` 异常，再查 WMS/Shell 事务、SurfaceFlinger、客户端合成、HWC 与目标屏幕的呈现时间。
+查询先筛掉 `dur < 0` 的未闭合记录；这些记录的数量应另计作采集质量。Expected 关联键 `(upid, surface_frame_token, layer_name)` 应先核查唯一性，重复键要单独列出来看。`expected_slice_id` / `overrun_ns` 为 NULL 表示未找到同层完整 Expected，这类行要按数据缺失记录，按时或零超期都还只是猜测。`overrun_ns > 0` 才表示该已匹配 Actual 的结束时间晚于 Expected 截止时间，单位是纳秒，数值本身仍不说明原因。往下查分两条路：应用 `SurfaceFrame` 异常，查 UI 线程、RenderThread、GPU、缓冲区和同步栅栏；应用按时，而 `display_frame_token` 对应的 `DisplayFrame` 异常，再查 WMS/Shell 事务、SurfaceFlinger、客户端合成、HWC 与目标屏幕的呈现时间。
 
 <!-- gracker-diagram: a243-24-sql-frame-identity -->
 ![SQL 按进程实例、帧 token 与目标图层关联](../../assets/diagrams/ch22/a243-24-sql-frame-identity.png)
 
-图：关联键先查唯一性，监控缺失与重复不能补成按时；时间差为正也不能直接给出根因。
+图：关联键先查唯一性；缺失与重复要如实记录，时间差为正也只是归因的起点。
 
-多窗口、多进程时，查询结果要按窗口和进程分别看：同一进程有多个窗口，分别查各自的图层、`ViewRootImpl` 和缓冲区队列；同一显示设备有多个进程，分别确认每个应用是否按时提交。`surface_frame_token` 与 `display_frame_token` 是关联应用帧和显示帧的标识；显示帧 token 的值可能为 0 或暂不可关联，也不能直接当作某块屏幕的实际呈现时间；把它和缓冲区事务 `BufferTX`、图层快照、呈现栅栏放在一起，才构成完整证据——单看某个时间片名称，定位不了责任模块。
+多窗口、多进程时，查询结果要按窗口和进程分别看：同一进程有多个窗口，分别查各自的图层、`ViewRootImpl` 和缓冲区队列；同一显示设备有多个进程，分别确认每个应用是否按时提交。`surface_frame_token` 与 `display_frame_token` 是关联应用帧和显示帧的标识；显示帧 token 的值可能为 0 或暂不可关联；这个 token 本身代表不了某块屏幕的实际呈现时间，要和缓冲区事务 `BufferTX`、图层快照、呈现栅栏放在一起看，才构成完整依据——单看某个时间片名称，定位不了责任模块。
 
 ### 4. 调整窗口轨迹的分析顺序
 
@@ -659,13 +579,10 @@ ORDER BY a.actual_start_ns;
 7. 检查获取、释放和呈现同步栅栏，以及 HWC 合成策略。
 8. 找到最早偏离目标时间线的对象，再决定优化应用、Shell/WMS、SurfaceFlinger/HWC 或设备驱动。
 
-<!-- gracker-diagram: a243-25-resize-attribution-order -->
-![窗口调整从对象身份追到最早偏离的时间线](../../assets/diagrams/ch22/a243-25-resize-attribution-order.png)
-
-图：双窗格不等于两个窗口，共享线程也可能使小窗口排在其他工作后迟到。
 
 ## 十、常见误判
 
+这一节把容易踩的场景集中起来对照：左列是现场现象，中列是先查的对象，右列提醒我们哪些结论容易下得太早，判定前要回到对应小节再核对。
 
 | 现象 | 先查什么 | 不能直接下的结论 |
 |---|---|---|
@@ -706,10 +623,6 @@ ORDER BY a.actual_start_ns;
 
 性能验收也要分层：应用侧区分组合、测量与布局，系统侧区分 WMS/Shell 几何变化、应用缓冲区提交和各显示设备的呈现。测试矩阵至少覆盖断点两侧、连续拖拽、多窗口、多实例、多显示设备以及状态恢复。
 
-<!-- gracker-diagram: a243-26-adaptive-validation-loop -->
-![运行时适配和性能证据共同闭合验收](../../assets/diagrams/ch22/a243-26-adaptive-validation-loop.png)
-
-图：优化目标是状态保留、受控工作范围和真实帧结果，设备名与一次屏幕宽度都不能替代实时输入。
 
 ## 参考资料
 
