@@ -40955,9 +40955,178 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "0924b8de209eb7912437c62ce455854e2820a69e2424635cd0f082b4dd31a1f3",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "ch15-07-01-choose-artifact",
+          "title": "四类请求与不同证据对象",
+          "decision": "remove",
+          "reason": "四产物分支逐项复制85–90完整builder/问题/产物/参数/读数边界表，所有HeapGraph非HPROF、native或Java采样而非完整调用记录的精确说明保留。",
+          "original_line": 94,
+          "heading": "## 从待回答的问题选择采集类型"
+        },
+        {
+          "original_id": "ch15-07-02-sdk-capabilities",
+          "title": "API 35、36、36.1 与 37 的能力分层",
+          "decision": "remove",
+          "reason": "四框逐项复写105–116版本说明与286–295完整trigger版本表，36.1完整SDK守卫代码不变，没有必要再串版本摘要图。",
+          "original_line": 118,
+          "heading": "## API 层与版本判断"
+        },
+        {
+          "original_id": "ch15-07-03-asynchronous-request",
+          "title": "请求返回、实际采集与结果到达",
+          "decision": "remove",
+          "reason": "六步总结125–160请求代码、业务slice、异步取消和回调段落，未画实际请求返回/开始/业务窗口的时间关系；17保留更具体服务/FD责任链，正文所有无started回调条件全留。",
+          "original_line": 155,
+          "heading": "## 发起一次显式请求"
+        },
+        {
+          "original_id": "ch15-07-04-buffer-retention",
+          "title": "缓冲区满时保留开头还是近期活动",
+          "decision": "keep",
+          "reason": "两轨显示同一时间轴RING保留近期而DISCARD保留开头的真实范围差异独立，非测量条长及服务参数裁剪边界保留。",
+          "original_line": 173,
+          "heading": "## `BufferFillPolicy` 只有两个公开值"
+        },
+        {
+          "original_id": "ch15-07-08-result-success-guard",
+          "title": "错误码与文件路径的双重守卫",
+          "decision": "remove",
+          "reason": "根框写结果到达后却并列分出同步异常/无trigger回调，易把没有回调误读为已经返回ProfilingResult；正文187及347精确成功守卫、非空失败路径和无回调区分完整保留，删除语义混杂的额外总结图。",
+          "original_line": 189,
+          "heading": "## 两类 listener 与结果再次投递"
+        },
+        {
+          "original_id": "ch15-07-05-listener-demultiplex",
+          "title": "专用回调、全局回调与进程重启后的接收",
+          "decision": "remove",
+          "reason": "专用/全局/trigger持久化三列复写182–194回调表与重启注册段落，未画实际双路重复投递；原完整executor/listener、UID范围、后加覆盖与路径去重边界全留。",
+          "original_line": 196,
+          "heading": "## 两类 listener 与结果再次投递"
+        },
+        {
+          "original_id": "ch15-07-06-result-file-lifecycle",
+          "title": "应用创建 FD 到上传确认后删除",
+          "decision": "remove",
+          "reason": "上传后删除阶段重复紧邻原生时序图，FD创建与服务复制前半段在17更完整服务链已覆盖；保留原生五参与者上传确认后删文件的完整时序及全部幂等/容量/期限说明。",
+          "original_line": 236,
+          "heading": "### 结果文件生命周期"
+        },
+        {
+          "original_id": "ch15-07-07-format-data-boundary",
+          "title": "HeapGraph 与其他诊断产物的数据边界",
+          "decision": "remove",
+          "reason": "HeapGraph/profile/原HPROF三列重述207及255–258格式数据差别，没画对象关系；所有有限NAR/Bitmap元数据与普通字段payload不等、敏感数据边界完整留。",
+          "original_line": 260,
+          "heading": "### Java Heap Dump 的敏感数据风险"
+        },
+        {
+          "original_id": "ch15-07-09-trigger-dispatch",
+          "title": "历史快照、新冷启动与 OOM 的触发分流",
+          "decision": "keep",
+          "reason": "近期后台快照、COLD新开trace+stack、OOM/anomaly独立产物三种真实触发来源对应独立，不能把全部trigger当后台ring快照，保留注册与子类型条件。",
+          "original_line": 277,
+          "heading": "## System-triggered profiling 的运行方式"
+        },
+        {
+          "original_id": "ch15-07-10-startup-trigger-windows",
+          "title": "两个启动 trigger 的不同时间窗口",
+          "decision": "keep",
+          "reason": "已有后台Trace事件后异步快照与新COLD异步开录到fullydrawn/配置时长两条时间轨道，保留两种启动样本的真实起止范围差异。",
+          "original_line": 308,
+          "heading": "## 两个启动 trigger 的时间窗口"
+        },
+        {
+          "original_id": "ch15-07-11-memory-investigation",
+          "title": "分配来源与存活关系分两步调查",
+          "decision": "remove",
+          "reason": "五步复写325原分配栈后HeapGraph根引用与修复复验段落，未画具体对象/调用栈；JavaOOM不含LMKD/native与默认handler要求全留。",
+          "original_line": 327,
+          "heading": "### 内存持续增长"
+        },
+        {
+          "original_id": "ch15-07-12-failure-categories",
+          "title": "八类失败结果对应的处理方向",
+          "decision": "remove",
+          "reason": "三类处理列摘要336–345更细八类错误码表，反而不显示各码区别；保留原表及部分trigger无回调不同于失败码说明，删表格图片副本。",
+          "original_line": 349,
+          "heading": "## 覆盖全部失败结果"
+        },
+        {
+          "original_id": "ch15-07-14-test-config-restore",
+          "title": "测试开关的作用范围与原状态恢复",
+          "decision": "remove",
+          "reason": "四步复写354整段测试开关原值及存在性恢复、显式/trigger作用域说明，没有实际配置状态前后变化，全部恢复要求原文留且设备命令不执行。",
+          "original_line": 356,
+          "heading": "## 覆盖全部失败结果"
+        },
+        {
+          "original_id": "ch15-07-13-quota-paths",
+          "title": "普通请求、trigger 与 anomaly 的限流差异",
+          "decision": "keep",
+          "reason": "显式按类型成本走UID/整机时日周预算、普通trigger加应用间隔、anomaly多数绕通用而memorylimit专用三种实际规则对应独立，非统一固定次数门槛。",
+          "original_line": 363,
+          "heading": "## 覆盖全部失败结果"
+        },
+        {
+          "original_id": "ch15-07-15-redaction-query-quality",
+          "title": "查询空结果之前先核对覆盖与脱敏",
+          "decision": "remove",
+          "reason": "五步复写383–385覆盖/数据源/脱敏/SQL空行核对段落，没有实际裁剪前后查询或缺口实例，所有空行非零非没问题与测试来源区别保留。",
+          "original_line": 387,
+          "heading": "## 设备验证与旧版本降级"
+        },
+        {
+          "original_id": "ch15-07-16-device-fallback",
+          "title": "设备能力验证与旧版本降级",
+          "decision": "remove",
+          "reason": "三列重复383覆盖表字段与392低版本降级说明，未画具体运行时分支或失败回退；所有API35门槛、API30ExitInfo与Trace.beginSection非启动采集边界完整留。",
+          "original_line": 394,
+          "heading": "## 设备验证与旧版本降级"
+        },
+        {
+          "original_id": "ch15-07-17-service-pipeline",
+          "title": "请求检查、采集、脱敏与 FD 交付",
+          "decision": "keep",
+          "reason": "应用Binder到服务身份/并发/配额/裁剪/Perfetto后处理、App创建可写FD并复制后投递结果的真实跨层链独立，保留显式主路径和部分失败无回调边界。",
+          "original_line": 413,
+          "heading": "### 源码调用链核对"
+        }
+      ],
+      "sha256_after": "d49dde6bb181d80d7585c1dfddc23e0dcca9bd5a04b3f7c273f99713537ae097",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:12:50.581749+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a155/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a155/visual-review.json",
+      "retired_diagrams": [
+        "ch15-07-01-choose-artifact",
+        "ch15-07-02-sdk-capabilities",
+        "ch15-07-03-asynchronous-request",
+        "ch15-07-05-listener-demultiplex",
+        "ch15-07-06-result-file-lifecycle",
+        "ch15-07-07-format-data-boundary",
+        "ch15-07-08-result-success-guard",
+        "ch15-07-11-memory-investigation",
+        "ch15-07-12-failure-categories",
+        "ch15-07-14-test-config-restore",
+        "ch15-07-15-redaction-query-quality",
+        "ch15-07-16-device-fallback"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-155/retired-assets.json"
     },
     {
       "index": 156,
@@ -42247,8 +42416,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 89,
-  "next_article": "src/part3-tools/ch15-other-tools/07-profiling-manager.md",
+  "reviewed_articles": 90,
+  "next_article": "src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -42258,7 +42427,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:09:55.488385+08:00",
+  "updated_at": "2026-10-31T13:12:50.581749+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -42639,9 +42808,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3228,
-  "reviewed_placements_after": 1458,
-  "net_removed_placements": 1770,
+  "reviewed_placements_before": 3245,
+  "reviewed_placements_after": 1463,
+  "net_removed_placements": 1782,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -42665,5 +42834,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 89
+  "currently_matching_reviewed_source_count": 90
 }
