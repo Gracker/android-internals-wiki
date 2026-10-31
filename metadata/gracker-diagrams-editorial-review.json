@@ -67151,9 +67151,187 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "35e7f67e78c1c0bac805178e2bed0dbfaa1be59a3ff8e61aaeff95e8002bebb6",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a287-01-crash-preservation-and-next-healthy-window",
+          "title": "崩溃现场保全与后续上报使用不同执行窗口",
+          "decision": "keep",
+          "reason": "两行分开崩溃现场最小保全及默认退出链、下一健康窗口补充上传符号化，没有暗示故障进程可继续运行。",
+          "original_line": 156,
+          "heading": "### Crash SDK 的四段路径：捕获、序列化、持久化、上报"
+        },
+        {
+          "original_id": "a287-03-debuggerd-crash-dump-and-tombstoned-fds",
+          "title": "crash_dump 负责抓取和写入，tombstoned 管理输出 FD",
+          "decision": "keep",
+          "reason": "目标进程handler、crash_dump抓取、tombstoned提供FD、engrave写入及完成通知按职责串联，避免服务注册信号处理误读。",
+          "original_line": 180,
+          "heading": "#### 捕获：Java 与 Native 的执行环境"
+        },
+        {
+          "original_id": "a287-02-java-versus-native-capture-environment",
+          "title": "Java 默认退出链与 Native 信号安全分开处理",
+          "decision": "remove",
+          "reason": "Java和Native环境四卡复述前文handler finally退出、预分配审计和成熟SDK说明。",
+          "original_line": 185,
+          "heading": "#### 捕获：Java 与 Native 的执行环境"
+        },
+        {
+          "original_id": "a287-04-envelope-persistence-and-attachments",
+          "title": "事件摘要、诊断附件与提交状态分别演进",
+          "decision": "remove",
+          "reason": "Envelope字段、附件、提交和索引四卡重复字段表及持久化四规则与健康窗口流程。",
+          "original_line": 233,
+          "heading": "#### 持久化：按捕获环境选择写入方式"
+        },
+        {
+          "original_id": "a287-06-renderer-gone-cleanup-all-affected-webviews",
+          "title": "renderer 退出后清理每个受影响 WebView，再决定重建",
+          "decision": "keep",
+          "reason": "共享renderer影响多个WebView后清理销毁再重建，以及任一未处理可能终止宿主的分支，强调全部实例处理。",
+          "original_line": 275,
+          "heading": "#### WebView 渲染进程：由宿主应用观察退出"
+        },
+        {
+          "original_id": "a287-05-ordinary-isolated-and-renderer-processes",
+          "title": "三类进程不能套同一 SDK 初始化与上传假设",
+          "decision": "remove",
+          "reason": "三类进程及退出关联四卡重复普通进程可靠性表、隔离服务和renderer分节。",
+          "original_line": 286,
+          "heading": "#### 隔离服务进程的采集与上传"
+        },
+        {
+          "original_id": "a287-07-exit-history-versus-rotating-traces",
+          "title": "退出记录有界，trace 是另一份可能被覆盖的证据",
+          "decision": "remove",
+          "reason": "退出历史、循环trace、Native格式和低内存四卡重复ExitInfo四项边界及后文补偿说明。",
+          "original_line": 310,
+          "heading": "### 用 `ApplicationExitInfo` 补偿退出记录"
+        },
+        {
+          "original_id": "a287-08-release-symbols-and-exact-build-identity",
+          "title": "发布包、Java mapping 与 Native symbols 绑定同一构建",
+          "decision": "remove",
+          "reason": "Java mapping、Native BuildID、符号级别和CI枚举四卡重复绑定键、Native匹配表和发布门禁。",
+          "original_line": 350,
+          "heading": "#### Native：用 Build ID 找到准确的共享库"
+        },
+        {
+          "original_id": "a287-10-crash-rate-user-session-and-exposure",
+          "title": "用户率、会话率和 issue 影响面不能混作分母",
+          "decision": "remove",
+          "reason": "日用户、user-perceived、crash-free和issue四卡重复定义、公式和分母段落。",
+          "original_line": 379,
+          "heading": "#### 崩溃率指标的分母"
+        },
+        {
+          "original_id": "a287-09-event-issue-and-release-gates",
+          "title": "稳定事件 ID 与可重算问题组分开保留",
+          "decision": "remove",
+          "reason": "传输、问题组、告警、发布四卡重复签名三项及告警和发布门禁清单。",
+          "original_line": 408,
+          "heading": "#### 发布门禁检查可诊断性"
+        },
+        {
+          "original_id": "a287-11-anr-authority-levels-and-api37-warning",
+          "title": "预警、疑似卡顿、系统退出与 Play 聚合分层记证据",
+          "decision": "remove",
+          "reason": "疑似、退出、warning与Play四卡重复四层能力表、authority字段和API37说明。",
+          "original_line": 479,
+          "heading": "### 能力与证据分层"
+        },
+        {
+          "original_id": "a287-12-early-dump-serialized-anr-and-recording",
+          "title": "early dump 抢现场，完整 ANR 处理由消费者串行执行",
+          "decision": "keep",
+          "reason": "early任务、完整ANR串行处理、持久记录三轨分开，并显示前两者重叠及总预算，区分抓取与退出记录。",
+          "original_line": 492,
+          "heading": "### 系统侧 ANR 记录与 trace 采集"
+        },
+        {
+          "original_id": "a287-13-sigquit-signal-catcher-and-output",
+          "title": "SIGQUIT 由 ART 专用线程等待，不是主线程普通 handler",
+          "decision": "keep",
+          "reason": "Debug经debuggerd到ART专用SignalCatcher/sigwait及输出的调用链，说明不是主线程sigaction，保留信号消费兼容边界。",
+          "original_line": 507,
+          "heading": "#### SIGQUIT 在平台抓栈中的位置"
+        },
+        {
+          "original_id": "a287-14-anr-play-rate-type-and-weighted-window",
+          "title": "Play 用户感知 ANR 只取当前定义的输入派发类型",
+          "decision": "remove",
+          "reason": "输入超时、日用户、阈值与加权窗口四卡重复紧邻两段Play定义及六指标表。",
+          "original_line": 531,
+          "heading": "### ANR 率统计与 Android vitals 比对"
+        },
+        {
+          "original_id": "a287-15-watchdog-lateness-and-bounded-snapshots",
+          "title": "哨兵观察的是任务迟到，系统 ANR 另按组件期限判定",
+          "decision": "remove",
+          "reason": "Looper、帧、watchdog迟到和限栈四卡重复三类信号列表与三段成本限定。",
+          "original_line": 563,
+          "heading": "### 主线程卡顿监控与 ANR 预警"
+        },
+        {
+          "original_id": "a287-16-raw-derived-transport-incident-and-issue",
+          "title": "去重分三层，原始事实始终可追溯",
+          "decision": "remove",
+          "reason": "原始事实和三层去重四卡重复envelope、持久化优先级表和三层去重段落，没有新的关联示例。",
+          "original_line": 603,
+          "heading": "### 事件、落盘与去重"
+        },
+        {
+          "original_id": "a287-17-thread-state-wait-peer-and-release-context",
+          "title": "从证据来源到等待对端，再回到发布影响面",
+          "decision": "remove",
+          "reason": "来源、线程状态、等待对象及对端四卡重复五步分析顺序。",
+          "original_line": 632,
+          "heading": "### 现场还原的分析顺序"
+        },
+        {
+          "original_id": "a287-18-coroutine-suspension-blocking-and-component-deadline",
+          "title": "协程挂起不阻塞线程，但组件 deadline 仍要完成",
+          "decision": "remove",
+          "reason": "runBlocking、挂起、调度器饱和和组件期限四卡重复两段协程边界说明。",
+          "original_line": 655,
+          "heading": "#### Kotlin 协程与 ANR 现场"
+        }
+      ],
+      "sha256_after": "2b4c84470ce068a6a412b5994e3f6e73ce6ab9103478284e57447eb602de5983",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:30:04.274835+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a287/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a287/visual-review.json",
+      "retired_diagrams": [
+        "a287-02-java-versus-native-capture-environment",
+        "a287-04-envelope-persistence-and-attachments",
+        "a287-05-ordinary-isolated-and-renderer-processes",
+        "a287-07-exit-history-versus-rotating-traces",
+        "a287-08-release-symbols-and-exact-build-identity",
+        "a287-09-event-issue-and-release-gates",
+        "a287-10-crash-rate-user-session-and-exposure",
+        "a287-11-anr-authority-levels-and-api37-warning",
+        "a287-14-anr-play-rate-type-and-weighted-window",
+        "a287-15-watchdog-lateness-and-bounded-snapshots",
+        "a287-16-raw-derived-transport-incident-and-issue",
+        "a287-17-thread-state-wait-peer-and-release-context",
+        "a287-18-coroutine-suspension-blocking-and-component-deadline"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-287/retired-assets.json"
     },
     {
       "index": 288,
@@ -67255,8 +67433,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 197,
-  "next_article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+  "reviewed_articles": 198,
+  "next_article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -67266,7 +67444,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:28:03.951344+08:00",
+  "updated_at": "2026-10-31T19:30:04.274835+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -67388,9 +67566,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5709,
-  "reviewed_placements_after": 2238,
-  "net_removed_placements": 3471,
+  "reviewed_placements_before": 5727,
+  "reviewed_placements_after": 2243,
+  "net_removed_placements": 3484,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -67414,7 +67592,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 197,
+  "currently_matching_reviewed_source_count": 198,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

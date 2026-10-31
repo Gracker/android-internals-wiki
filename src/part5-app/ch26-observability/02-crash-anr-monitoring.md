@@ -182,10 +182,6 @@ Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原
 
 图：公开ExitInfo的native trace需按reason和版本解码；不能把protobuf tombstone直接当Java文本栈。
 
-<!-- gracker-diagram: a287-02-java-versus-native-capture-environment -->
-![Java 默认退出链与 Native 信号安全分开处理](../../assets/diagrams/ch26/a287-02-java-versus-native-capture-environment.png)
-
-图：异步信号安全不代表没有阻塞成本；alternate signal stack与辅助伪线程栈也不是同一份栈。
 
 #### 最小记录的字段设计
 
@@ -230,10 +226,6 @@ SQLite 适合在进程恢复后做索引，记录“待上传、上传中、已�
 
 对 Native 路径，应使用经过验证的 minidump 实现、预打开文件描述符与固定大小缓冲区，或把复杂抓取交给健康的进程外组件。平台 debuggerd 用的是专用架构，别把它当成应用层任意信号处理器的通用模板。
 
-<!-- gracker-diagram: a287-04-envelope-persistence-and-attachments -->
-![事件摘要、诊断附件与提交状态分别演进](../../assets/diagrams/ch26/a287-04-envelope-persistence-and-attachments.png)
-
-图：文件名原子切换不能证明完整信号处理安全或有界完成；数据库索引留在健康窗口。
 
 #### 上报的执行者与优先级
 
@@ -283,10 +275,6 @@ WebView 渲染进程由系统和 WebView 实现管理，应用没有在里面安
 
 可行的设计是：应用的管理进程通过受控 IPC（Inter-Process Communication，进程间通信） 接收隔离服务平时产生的有限诊断数据；进程退出后，再用 `ApplicationExitInfo` 对照进程名、Linux 用户标识（UID）、时间和退出原因补齐记录。隔离进程崩溃后，Binder（Android 跨进程调用机制） 调用还能不能执行下去并无保证，收尾保存也别指望崩溃后的跨进程调用。
 
-<!-- gracker-diagram: a287-05-ordinary-isolated-and-renderer-processes -->
-![三类进程不能套同一 SDK 初始化与上传假设](../../assets/diagrams/ch26/a287-05-ordinary-isolated-and-renderer-processes.png)
-
-图：动态feature随应用版本管理，记录已安装split/模块和实验配置，不虚构独立模块版本。
 
 #### 动态特性模块的版本记录
 
@@ -307,10 +295,6 @@ API 30 起，应用可以通过 [`ActivityManager.getHistoricalProcessExitReason
 
 公开模型见 [`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)；服务端怎么记录退出、怎么管理诊断 trace，可以接着读 [`AppExitInfoTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)。
 
-<!-- gracker-diagram: a287-07-exit-history-versus-rotating-traces -->
-![退出记录有界，trace 是另一份可能被覆盖的证据](../../assets/diagrams/ch26/a287-07-exit-history-versus-rotating-traces.png)
-
-图：ANR恢复后因其他原因退出仍可能附旧ANR trace；退出原因与附件存在性独立判断。
 
 ### 符号化与反混淆服务
 
@@ -347,10 +331,6 @@ Native 样本和符号产物至少要通过以下信息匹配：
 
 对第三方库或放在非默认目录的 Native 库，只验证主模块里 CMake（Native 构建工具） 的输出是不够的。以 Crashlytics 为例，额外库可能需要通过 `unstrippedNativeLibsDir` 指定未剥离库的目录；自建流水线同样应枚举最终 APK 或 AAB 中的每个 `.so` 文件，检查其 Build ID，并确认产物库中存在匹配的符号文件。缺失任一目标 ABI 的符号文件时，都应阻断相应发布产物。
 
-<!-- gracker-diagram: a287-08-release-symbols-and-exact-build-identity -->
-![发布包、Java mapping 与 Native symbols 绑定同一构建](../../assets/diagrams/ch26/a287-08-release-symbols-and-exact-build-identity.png)
-
-图：Retrace与Native符号化先于问题分组；符号制品独立保存，不为分析而把完整调试库交付用户。
 
 #### 问题聚合的签名设计
 
@@ -376,10 +356,6 @@ Native 样本和符号产物至少要通过以下信息匹配：
 
 这里的“目标致命崩溃”“活跃用户”“有效会话”和统计窗口必须写进指标定义。致命崩溃、非致命异常与业务主动捕获的异常分别统计；非致命异常留在自己的指标里，别混进 Vitals 风格的用户感知崩溃率。
 
-<!-- gracker-diagram: a287-10-crash-rate-user-session-and-exposure -->
-![用户率、会话率和 issue 影响面不能混作分母](../../assets/diagrams/ch26/a287-10-crash-rate-user-session-and-exposure.png)
-
-图：灰度暴露不足时保留不确定性，不能用几个样本就自动扩量或回滚。
 
 #### 告警使用暴露量、基线和严重性
 
@@ -405,10 +381,6 @@ S0/S1/S2 在这里仅作为内部响应级别示例；Android 平台没有这套
 
 这类门禁把“应用是否稳定”和“出问题后是否能定位”同时纳入发布判断。
 
-<!-- gracker-diagram: a287-09-event-issue-and-release-gates -->
-![稳定事件 ID 与可重算问题组分开保留](../../assets/diagrams/ch26/a287-09-event-issue-and-release-gates.png)
-
-图：S0/S1/S2只是内部响应示例；采样与分母发生变化先确认口径，再判断版本回归。
 
 ### Crash 数据隐私与成本控制
 
@@ -476,10 +448,6 @@ ANR 监控要回答两个问题：用户遇到无响应时，我们是否统计�
 
 API 37 的 `ActivityManager.registerAnrWarningListener()` 会在应用接近 ANR 超时时，以 `AnrWarningResult` 传递已消耗时长、总期限、ANR 类型和关联 ID；注册的执行器要避开主线程。这个回调是 best-effort（尽力通知、不保证到达）的，系统也可能没留出执行时间，所以收到预警，还说明不了 ANR 已经判定。`ApplicationExitInfo.AnrInfo` 则只出现在 `REASON_ANR` 退出记录上。API 与系统生产路径详见 [§9.7 Android 17 ANR 预警回调](../../part2-performance/ch09-anr/07-android17-anr-prewarning.md)。
 
-<!-- gracker-diagram: a287-11-anr-authority-levels-and-api37-warning -->
-![预警、疑似卡顿、系统退出与 Play 聚合分层记证据](../../assets/diagrams/ch26/a287-11-anr-authority-levels-and-api37-warning.png)
-
-图：warning关联ID可帮助对应后续ANR；收到warning说明不了已判定，未收到也不能排除ANR。
 
 ### 系统侧 ANR 记录与 trace 采集
 
@@ -528,10 +496,6 @@ Play 当前把用户感知 ANR 率列为 core vital（会影响应用可发现�
 
 Play 的“用户”按设备和自然日去重：同一账号在两台设备上会计为两个日活用户，同一设备上的多个账号计为一个。Android vitals 的数据又只来自满足这些条件的设备：从 Google Play 安装、通过 Play 认证，且用户选择共享使用情况与诊断信息。内部用户 ANR 率可以用相同的分子和分母去比趋势；逐条对齐 Play Console 的数值，这个预期本身就不成立。
 
-<!-- gracker-diagram: a287-14-anr-play-rate-type-and-weighted-window -->
-![Play 用户感知 ANR 只取当前定义的输入派发类型](../../assets/diagrams/ch26/a287-14-anr-play-rate-type-and-weighted-window.png)
-
-图：Play授权与认证/安装来源改变覆盖；内部相同事件与分母可以比趋势，数值不承诺一致。
 
 内部指标别照搬“ANR 次数 / 启动次数”。更稳的拆法是：
 
@@ -560,10 +524,6 @@ Play 的“用户”按设备和自然日去重：同一账号在两台设备上
 
 主线程快照的采集要控制成本。全线程 `Thread.getAllStackTraces()` 可能带来停顿，也会放大低端机问题；高频抓栈还会扰动被观测进程。端侧实现应采用退避策略，即连续触发时逐步延长采集间隔，并设置字节预算：同一会话、同一页面只保留有限样本，栈摘要相同就累加计数，应用进入后台后降低频率。相关线程优先沿着锁、Binder 调用或自有线程池的线索挑，别在每个阶段都遍历全部线程。
 
-<!-- gracker-diagram: a287-15-watchdog-lateness-and-bounded-snapshots -->
-![哨兵观察的是任务迟到，系统 ANR 另按组件期限判定](../../assets/diagrams/ch26/a287-15-watchdog-lateness-and-bounded-snapshots.png)
-
-图：不把统一五秒当所有组件阈值；后台异步广播/Job等也各有必须完成的期限。
 
 ### ANR 快照字段设计
 
@@ -600,10 +560,6 @@ ANR 发生时主线程已经指望不上，进程也可能很快被终止。所�
 
 去重分三层进行：传输层按事件 ID 与附件内容摘要做幂等处理，即重复提交不会新增记录；事故层用 `(anrType, anrId)` 或带时间约束的进程身份，关联预警、主线程哨兵与系统退出；问题层在符号化后按检测规则、主线程卡点、锁或 Binder 对端和构建版本聚类。关联后的信号仍保留各自证据来源，避免把同一次事故的预警、疑似卡顿和系统退出计成三次 ANR。
 
-<!-- gracker-diagram: a287-16-raw-derived-transport-incident-and-issue -->
-![去重分三层，原始事实始终可追溯](../../assets/diagrams/ch26/a287-16-raw-derived-transport-incident-and-issue.png)
-
-图：不能把一条事故的warning、疑似卡顿和系统退出算三次ANR；关联失败的信号保持独立。
 
 ### 服务端处理与治理
 
@@ -629,10 +585,6 @@ trace、breadcrumb、URL、文件路径、Intent 和线程名都可能含敏感�
 
 这个顺序可以减少两个常见误判：把每个固定时长的卡顿都叫 ANR，或只盯主线程栈而忽略对端线程。有效的 ANR 记录应当给出下一步排查动作，而非单纯增加事件数量。
 
-<!-- gracker-diagram: a287-17-thread-state-wait-peer-and-release-context -->
-![从证据来源到等待对端，再回到发布影响面](../../assets/diagrams/ch26/a287-17-thread-state-wait-peer-and-release-context.png)
-
-图：BinderProxy.transact栈只证明调用现场，不能独立证明对端慢；I/O或缺页也不是自动根因。
 
 ### 扩展
 
@@ -652,10 +604,6 @@ WebView renderer（WebView 渲染进程，负责解析和绘制网页内容的�
 
 协程项目的 ANR 快照至少保留主线程栈，并在可观测时补充调度线程栈与自定义 dispatcher（协程调度器） / executor（任务执行器） 的队列摘要。Kotlin 公共 API 不保证应用可以在发布构建中安全枚举全部活跃协程；没有稳定观测接口时，应保留线程栈和业务任务标识，避免把调试探针设为生产环境必选项。`Dispatchers.IO`或`Default`饱和本身不是ANR类型；但它既可能让主线程同步等结果，也可能推迟广播`goAsync()`后的`PendingResult.finish()`、JobService回调或其他组件期限内必须完成的工作。后一类超时即使主线程仍能处理消息，也可能形成系统ANR；应按实际超时来源判断，不能只看主线程是否阻塞。Java 崩溃与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
 
-<!-- gracker-diagram: a287-18-coroutine-suspension-blocking-and-component-deadline -->
-![协程挂起不阻塞线程，但组件 deadline 仍要完成](../../assets/diagrams/ch26/a287-18-coroutine-suspension-blocking-and-component-deadline.png)
-
-图：公开Kotlin API不保证release安全枚举所有协程；保线程栈、业务任务ID与可用队列摘要。
 
 ### ANR 部分小结
 
