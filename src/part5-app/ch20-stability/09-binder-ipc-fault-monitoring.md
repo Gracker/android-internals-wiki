@@ -89,10 +89,6 @@ Binder 是 Android 最主要的本机 IPC 机制。socket、pipe（字节流管�
 
 Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分失败”（partial failure）处理：请求可能尚未送达，也可能已经执行，只因回复过大而送不回来。客户端看到的都是调用失败，服务端处于哪种状态，要靠服务端侧的证据确认；服务端提交副作用后死亡，结果同样未知。
 
-<!-- gracker-diagram: a215-01-failure-locations -->
-![同步调用四个阶段都可能失败，副作用状态另查](../../assets/diagrams/ch20/a215-01-failure-locations.png)
-
-图：请求可能未到达，也可能已经提交但回复失败；异常类型不能替代服务端request ID与提交状态。
 
 扣款、提交订单、删除文件这类非幂等操作，重放一次就多一次副作用；看到异常先查提交状态，再决定是否重放。
 
@@ -128,10 +124,6 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 
 第三类问题出在协议本身。Stable AIDL 要求接口跨版本保持兼容演进，`BadParcelableException`、`ParcelFormatException` 这类异常，加上类加载器找不到 Parcelable、Stable AIDL 版本不兼容，既可能发生在客户端读取回复时，也可能发生在服务端读取请求时，跟远端进程死没死是两回事。我们记录时至少写下接口版本、transaction code（方法在协议中的编号）、Parcelable 字段结构版本和出错方向；只按最外层异常名归类，会丢掉这些线索。
 
-<!-- gracker-diagram: a215-02-exception-paths -->
-![传输错误、远端异常与本地解包分开分类](../../assets/diagrams/ch20/a215-02-exception-paths.png)
-
-图：oneway没有远端回复异常通道；Java checked规则也不代表Kotlin编译器强制捕获。
 
 ## 3. `TransactionTooLargeException` 的成因与预算
 
@@ -145,10 +137,6 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 
 驱动还要为对象偏移、Binder 引用和 FD 等元数据留空间。发送方手里的 `Parcel.dataSize()` 只描述当前 Parcel 直接写入的数据大小；目标进程的并发占用、回复的大小，它都覆盖不到。
 
-<!-- gracker-diagram: a215-03-shared-buffer -->
-![1 MiB 近似额度由接收进程的在途事务共享](../../assets/diagrams/ch20/a215-03-shared-buffer.png)
-
-图：不同方向由不同接收进程承受缓冲区压力，发送方估算值不能证明线上事务一定可投递。
 
 ### 3.2 Java 异常名来自启发式映射
 
@@ -156,10 +144,6 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 
 这解释了两个排障现象：
 
-<!-- gracker-diagram: a215-04-jni-heuristic -->
-![FAILED_TRANSACTION 的异常名来自请求大小启发式](../../assets/diagrams/ch20/a215-04-jni-heuristic.png)
-
-图：严格大于200KiB才进该分支；请求小并不排除回复过大或并发缓冲压力。
 
 - 小 Parcel 也可能因并发占用而失败，异常未必叫 `TransactionTooLargeException`。
 - 回复过大时，客户端日志中的请求大小可能很小；服务端可能已经执行完成，只在返回结果时失败。
@@ -200,10 +184,6 @@ fun marshalledSize(bundle: Bundle): Int {
 
 切分本身救不了非幂等操作。每个分片都需要 request ID（一次业务请求的唯一标识）、序号、总数、校验和与提交规则，进程死亡或消息重复投递后才有恢复依据。
 
-<!-- gracker-diagram: a215-05-large-payload -->
-![大块数据放到共享区域或流，Binder 传小量控制信息](../../assets/diagrams/ch20/a215-05-large-payload.png)
-
-图：CursorWindow容量、共享区域尺寸和Parcel字节数不是同一个量；分片也需要提交协议避免重复副作用。
 
 ## 4. 死亡通知、重连与幂等性
 
@@ -235,10 +215,6 @@ fun marshalledSize(bundle: Bundle): Int {
 
 下面的包装器用在自有同步 AIDL 调用处。它只给结果分类，不自动重试，以免重复执行结果未知的操作：
 
-<!-- gracker-diagram: a215-07-retry-contract -->
-![传输异常后的重放必须由业务提交契约决定](../../assets/diagrams/ch20/a215-07-retry-contract.png)
-
-图：Indeterminate和TransportUnavailable都可能不知道服务端是否执行；不能从自定义分类名推断安全重试。
 
 ```kotlin
 inline fun <T> callRemote(block: () -> T): IpcCallResult<T> {
@@ -276,17 +252,9 @@ Binder Freezer 冻结的是缓存状态的应用进程：它们暂时不参与�
 
 API 36 起，`IBinder.addFrozenStateChangeCallback()` 是公开 API。服务端持有客户端的远程回调 Binder 时，可以用它观察对方当前是冻结还是解冻。注册后会收到初始状态，但连续变化可能被合并，因此它适合维护当前状态，统计冻结发生了多少次就靠不住了。它只支持远程 Binder；内核驱动不支持冻结通知时还可能抛出 `UnsupportedOperationException`。
 
-<!-- gracker-diagram: a215-08-freezer-paths -->
-![冻结进程接收同步和 oneway 走不同路径](../../assets/diagrams/ch20/a215-08-freezer-paths.png)
-
-图：固定framework会按冻结同步调用或异步空间错误终止相应冻结进程；REASON_FREEZER与普通ANR区分。
 
 管理一组远程回调时，可以通过 API 36 起提供的 `RemoteCallbackList.Builder` 配置 frozen callee policy，指定接收方被冻结时的回调处理方式：
 
-<!-- gracker-diagram: a215-09-frozen-coalescing -->
-![TF_UPDATE_TXN 替换只扫描节点尚未分派的异步队列](../../assets/diagrams/ch20/a215-09-frozen-coalescing.png)
-
-图：首笔异步事务可能已分派；替换条件属于固定驱动实现，应用层状态合并要自己设计。
 
 - `FROZEN_CALLEE_POLICY_DROP`：直接丢弃，适合过期后没有价值的实时事件。
 - `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT`：只保留最新一条，适合状态同步。
@@ -295,10 +263,6 @@ API 36 起，`IBinder.addFrozenStateChangeCallback()` 是公开 API。服务端�
 
 设置冻结策略后应通过 `broadcast(Consumer)` 广播回调；`beginBroadcast()` 只支持 `FROZEN_CALLEE_POLICY_UNSET`，其他策略下会抛 `UnsupportedOperationException`。
 
-<!-- gracker-diagram: a215-10-callback-policy -->
-![API36 远程回调冻结策略按事件含义选择](../../assets/diagrams/ch20/a215-10-callback-policy.png)
-
-图：使用broadcast(Consumer)；非UNSET策略不能用beginBroadcast，且不支持驱动通知时会退回即时发送。
 
 API 35 及以下不能依赖这组冻结策略接口。驱动不支持冻结通知时，Android 17 的 `RemoteCallbackList` 会捕获 `UnsupportedOperationException`，继续按未冻结状态即时发送回调，配置的丢弃或排队策略就不会生效。使用这些策略前，需要在目标设备上验证冻结通知支持和实际回调行为。
 
@@ -314,10 +278,6 @@ Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表�
 
 排障时，我们从 Perfetto trace 或 bugreport（系统诊断报告） 读取目标进程实际存在的 Binder 线程及其状态。看到 15 个线程先别急着下结论，看到 16 个也未必触到了哪个通用上限，各进程的配置本来就不一样。
 
-<!-- gracker-diagram: a215-11-threadpool-capacity -->
-![Binder 池实际容量由启动方式和进程配置共同决定](../../assets/diagrams/ch20/a215-11-threadpool-capacity.png)
-
-图：看到15或16条线程不能直接宣告统一上限；耗尽取决于忙时、锁和下游等待。
 
 ### 6.2 三类常见耗尽路径
 
@@ -334,10 +294,6 @@ Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表�
 
 服务端 `onTransact()` 应快速校验并复制必要参数，把可以异步执行的耗时任务交给有容量上限的业务 executor，再尽快释放 Binder 线程。转交 executor 后，Binder 的同节点分派顺序不再自动约束后台业务任务的完成顺序，需要由协议或单消费者执行器保持；同步接口也不能仅因转交后台就声称业务已完成。持有应用锁去发起外部同步 Binder 调用是危险的组合；实在避不开，就要规定统一的跨进程加锁顺序，并设计超时和取消方式。
 
-<!-- gracker-diagram: a215-13-oneway-order -->
-![同节点异步分派串行不等于后台业务完成顺序](../../assets/diagrams/ch20/a215-13-oneway-order.png)
-
-图：oneway不扩大线程池或接收缓冲，多个发送线程的业务先后也应由序号协议表达。
 
 ## 7. `oneway` 缓冲区与滥发检测
 
@@ -347,10 +303,6 @@ Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表�
 
 这些数值属于当前内核版本的实现细节，应用协议只能把它们当参考信号。检测器提供的是诊断信号，状态合并和可靠投递都要应用自己解决。
 
-<!-- gracker-diagram: a215-14-async-budget -->
-![异步配额与滥发信号是驱动边界，不是应用流控协议](../../assets/diagrams/ch20/a215-14-async-budget.png)
-
-图：固定驱动阈值只提供诊断信号；应用仍须采样、状态合并、背压与明确确认。
 
 高频事件应在发送前采样、去重，或只保留最新状态。每条消息都必须保留时，应使用带背压和确认的协议：接收方变慢后，发送方主动降速，并等待明确确认，`oneway` 的发送量始终有上限。
 
@@ -455,10 +407,6 @@ inline fun <T> measuredIpc(
 
 服务端包装层记录 `server_enter` 和 `server_exit`。两端需要关联时，把 request ID 纳入业务协议；两端日志可能存在时钟偏差，拿日志猜关联不可靠。
 
-<!-- gracker-diagram: a215-16-own-interface-monitor -->
-![监控贴着自有接口，关键路径只写有界样本](../../assets/diagrams/ch20/a215-16-own-interface-monitor.png)
-
-图：同步耗时含序列化、排队、执行与回复，不宜命名Binder传输耗时；oneway本地提交时长不能代表远端完成。
 
 ### 长尾采样与 Perfetto
 
@@ -466,10 +414,6 @@ inline fun <T> measuredIpc(
 
 常驻指标发现慢接口后，再用 Perfetto 对齐 `android.binder`、`binder_driver`、`sched`、AIDL atrace 和应用 slice：先看客户端线程，再沿 flow 判断服务端是在排队、等待 CPU、等待锁、执行代码，还是发起下游 IPC，随后观察回复返回后客户端何时恢复。trace debug ID 只适合在同一份 trace 中关联事件，跨会话的业务主键要另选协议字段。
 
-<!-- gracker-diagram: a215-17-sampling-unknown-results -->
-![总体分布、慢调用诊断与死亡计数用不同统计单位](../../assets/diagrams/ch20/a215-17-sampling-unknown-results.png)
-
-图：一笔远端死亡可以让多个并发调用失败；只上报慢样本不能还原总体延迟分布。
 
 监控代码在关键路径上不做第二次 Binder 调用，不写同步日志，不访问磁盘或网络，也不争用全局重锁。采样决定在调用前完成；配置出错时可以直接停用监控，业务异常、重试次数和返回值都保持原样。
 

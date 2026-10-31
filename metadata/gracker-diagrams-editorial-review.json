@@ -54532,9 +54532,180 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "bd135c51d7a233ed0ebabd2492b025b6ea65136182309e354e7a9d8b4588c2aa",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "a215-01-failure-locations",
+          "title": "同步调用四个阶段都可能失败，副作用状态另查",
+          "decision": "remove",
+          "reason": "四阶段失败/可见异常/是否执行表更完整，四框只是表格阶段标题，最终两端时间线另保留。",
+          "original_line": 92,
+          "heading": "## 1. 一次同步 Binder 调用有四个失败位置"
+        },
+        {
+          "original_id": "a215-02-exception-paths",
+          "title": "传输错误、远端异常与本地解包分开分类",
+          "decision": "remove",
+          "reason": "RemoteException家族表及远端reply/本地解包两个分节已完整，三行分类卡重复。",
+          "original_line": 131,
+          "heading": "### 2.3 本地解包和协议错误"
+        },
+        {
+          "original_id": "a215-03-shared-buffer",
+          "title": "1 MiB 近似额度由接收进程的在途事务共享",
+          "decision": "remove",
+          "reason": "接收映射公式、并发共享和Parcel.dataSize范围三段明确，三行缓冲卡不展示真实占用或方向关系。",
+          "original_line": 148,
+          "heading": "### 3.1 1 MiB 的进程共享额度"
+        },
+        {
+          "original_id": "a215-04-jni-heuristic",
+          "title": "FAILED_TRANSACTION 的异常名来自请求大小启发式",
+          "decision": "remove",
+          "reason": "严格大于200KiB启发式、较小DeadObject和64KiB公开建议由文本精确限定，三行阈值卡不是驱动机制新图。",
+          "original_line": 159,
+          "heading": "### 3.2 Java 异常名来自启发式映射"
+        },
+        {
+          "original_id": "a215-05-large-payload",
+          "title": "大块数据放到共享区域或流，Binder 传小量控制信息",
+          "decision": "remove",
+          "reason": "大数据五种传输方式列表、描述符成本和分片提交协议正文已完整，四框只是步骤清单。",
+          "original_line": 203,
+          "heading": "### 3.4 在自有协议里设置可测预算"
+        },
+        {
+          "original_id": "a215-06-death-epoch",
+          "title": "死亡通知让旧连接失效，重建后再协商和恢复",
+          "decision": "keep",
+          "reason": "死亡或注册失效到epoch递增/旧代理作废、有界重连再协商恢复与查提交的具体时序，强调回调不等新服务。",
+          "original_line": 220,
+          "heading": "## 4. 死亡通知、重连与幂等性"
+        },
+        {
+          "original_id": "a215-07-retry-contract",
+          "title": "传输异常后的重放必须由业务提交契约决定",
+          "decision": "remove",
+          "reason": "六类操作的传输失败动作表和不自动重试Kotlin包装器完整，三行重放规则卡是子集。",
+          "original_line": 238,
+          "heading": "## 4. 死亡通知、重连与幂等性"
+        },
+        {
+          "original_id": "a215-08-freezer-paths",
+          "title": "冻结进程接收同步和 oneway 走不同路径",
+          "decision": "remove",
+          "reason": "冻结同步/oneway/替换条件三项完整说明含首笔待办与async_todo区别，三行冻结卡是缩写未画队列状态。",
+          "original_line": 279,
+          "heading": "## 5. Binder Freezer：同步调用和 `oneway` 走不同路径"
+        },
+        {
+          "original_id": "a215-09-frozen-coalescing",
+          "title": "TF_UPDATE_TXN 替换只扫描节点尚未分派的异步队列",
+          "decision": "remove",
+          "reason": "同节第三项准确列新旧flag/事务码/发送PID/节点及只扫描async_todo，三行条件图未增加队列结构，是文字复述。",
+          "original_line": 286,
+          "heading": "## 5. Binder Freezer：同步调用和 `oneway` 走不同路径"
+        },
+        {
+          "original_id": "a215-10-callback-policy",
+          "title": "API36 远程回调冻结策略按事件含义选择",
+          "decision": "remove",
+          "reason": "四回调策略列表含1000上限/满丢最旧和broadcast接口/不支持fallback正文更完整，三行策略卡重复。",
+          "original_line": 298,
+          "heading": "## 5. Binder Freezer：同步调用和 `oneway` 走不同路径"
+        },
+        {
+          "original_id": "a215-11-threadpool-capacity",
+          "title": "Binder 池实际容量由启动方式和进程配置共同决定",
+          "decision": "remove",
+          "reason": "默认15含义、首线程/手动join和不同进程配置两段已清楚，三行容量卡重复且无池布局。",
+          "original_line": 317,
+          "heading": "### 6.1 Binder 线程数的构成"
+        },
+        {
+          "original_id": "a215-12-nested-reentry",
+          "title": "同步嵌套回调可以重入原等待线程",
+          "decision": "keep",
+          "reason": "A同步请求到B再嵌套回调复用A原等待线程的返回路径，防止把所有A等B/B回调A都误判死锁。",
+          "original_line": 330,
+          "heading": "### 6.2 三类常见耗尽路径"
+        },
+        {
+          "original_id": "a215-13-oneway-order",
+          "title": "同节点异步分派串行不等于后台业务完成顺序",
+          "decision": "remove",
+          "reason": "同节点跨进程oneway串行、不同节点/混合无保证、转executor后完成顺序三段已完整，三行映射未画业务完成时序。",
+          "original_line": 337,
+          "heading": "### 6.2 三类常见耗尽路径"
+        },
+        {
+          "original_id": "a215-14-async-budget",
+          "title": "异步配额与滥发信号是驱动边界，不是应用流控协议",
+          "decision": "remove",
+          "reason": "异步一半配额与10%/50块/25%检测阈值两段有明确条件，三行卡是固定驱动常量复述。",
+          "original_line": 350,
+          "heading": "## 7. `oneway` 缓冲区与滥发检测"
+        },
+        {
+          "original_id": "a215-15-binder-timeline",
+          "title": "沿同一 trace 的 flow 关联请求、处理、回复与调度",
+          "decision": "keep",
+          "reason": "客户端端到端等待、服务端排队调度/执行下游、回复客户端恢复的三轨嵌套时间线，分离传输和业务及调度证据。",
+          "original_line": 380,
+          "heading": "### 8.3 工具边界"
+        },
+        {
+          "original_id": "a215-16-own-interface-monitor",
+          "title": "监控贴着自有接口，关键路径只写有界样本",
+          "decision": "remove",
+          "reason": "45行自有接口监控代码和两端enter/exit/requestID/有界缓冲正文已经完整，四框并不新增监控结构。",
+          "original_line": 458,
+          "heading": "## 9. 自有 AIDL 的持续监控"
+        },
+        {
+          "original_id": "a215-17-sampling-unknown-results",
+          "title": "总体分布、慢调用诊断与死亡计数用不同统计单位",
+          "decision": "remove",
+          "reason": "长尾均匀与慢样本双路径、死亡epoch去重一段明确，三行统计单位卡重复。",
+          "original_line": 469,
+          "heading": "### 长尾采样与 Perfetto"
+        }
+      ],
+      "sha256_after": "e65081daa307e83d7fb1de135950d8c1b7cce824625954025d7a55ad7d3ca993",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:26:37.781141+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a215/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a215/visual-review.json",
+      "retired_diagrams": [
+        "a215-01-failure-locations",
+        "a215-02-exception-paths",
+        "a215-03-shared-buffer",
+        "a215-04-jni-heuristic",
+        "a215-05-large-payload",
+        "a215-07-retry-contract",
+        "a215-08-freezer-paths",
+        "a215-09-frozen-coalescing",
+        "a215-10-callback-policy",
+        "a215-11-threadpool-capacity",
+        "a215-13-oneway-order",
+        "a215-14-async-budget",
+        "a215-16-own-interface-monitor",
+        "a215-17-sampling-unknown-results"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-215/retired-assets.json"
     },
     {
       "index": 216,
@@ -55252,8 +55423,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 141,
-  "next_article": "src/part5-app/ch20-stability/09-binder-ipc-fault-monitoring.md",
+  "reviewed_articles": 142,
+  "next_article": "src/part5-app/ch20-stability/10-keystore-quota-login-stability.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -55263,7 +55434,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:24:21.892078+08:00",
+  "updated_at": "2026-10-31T16:26:37.781141+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -55448,9 +55619,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4511,
-  "reviewed_placements_after": 1889,
-  "net_removed_placements": 2622,
+  "reviewed_placements_before": 4528,
+  "reviewed_placements_after": 1892,
+  "net_removed_placements": 2636,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -55474,5 +55645,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 141
+  "currently_matching_reviewed_source_count": 142
 }
