@@ -150,7 +150,7 @@ CPU、内核、运行库和应用代码都可能发出信号。读现场时，�
 <!-- gracker-diagram: a209-01-signalchain-dispatch -->
 ![SignalChain 先处理平台分支，再转用户 action](../../assets/diagrams/ch20/a209-01-signalchain-dispatch.png)
 
-图：平台特殊处理器或 Recoverable GWP-ASan 分支可先消费信号；保存的用户 action 只有一份，注册顺序不等于一条自动安全链。
+图：平台特殊处理器或 Recoverable GWP-ASan 分支可先消费信号；保存的用户 action 只有一份，注册顺序决定不了这条链的安全性。
 
 #### debuggerd 的收集流程
 
@@ -199,7 +199,7 @@ debuggerd 的注册标志包含 `SA_EXPOSE_TAGBITS`，允许内核在支持时�
 
 #### 文件、轮转与可访问性
 
-采集完成后，tombstone 交由 [`tombstoned`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp) 保管：`/data/tombstones/tombstone_<slot>` 与对应的 `.pb` 都归它分配。保留数量由 `tombstoned.max_tombstone_count` 控制，AOSP 默认保留 32 组产物；设备厂商可以调整该属性，固定槽号与长期保留因此不能当成前提。
+采集完成后，tombstone 交由 [`tombstoned`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp) 保管：`/data/tombstones/tombstone_<slot>` 与对应的 `.pb` 都归它分配。保留数量由 `tombstoned.max_tombstone_count` 控制，AOSP 默认保留 32 组产物；设备厂商可以调整该属性，固定槽号与长期保留都要按设备实际配置确认。
 
 生产应用通常没有直接遍历 `/data/tombstones` 的权限，能走的入口有下面几条：
 
@@ -308,7 +308,7 @@ ndk-stack \
 
 ### Breakpad `.sym` 与 minidump（保存寄存器、线程栈和模块信息的紧凑崩溃快照） 离线符号化
 
-#### 先明确两种产物
+#### tombstone 与 minidump 两种产物
 
 系统链路之外，应用级收集器走的是另一条离线路径：系统 debuggerd 生成 tombstone，Breakpad/Crashpad 一类收集器通常生成 minidump；两种产物的字段和格式不同，minidump 保存线程上下文、模块表和选定内存。
 
@@ -339,7 +339,7 @@ symbols/
 <!-- gracker-diagram: a209-07-breakpad-artifacts -->
 ![Minidump 和 Breakpad .sym 是配对的离线产物](../../assets/diagrams/ch20/a209-07-breakpad-artifacts.png)
 
-图：dump_syms 从匹配 ELF 生成 .sym；符号目录键使用其 MODULE 标识，不能自行截断或用同名最新版替代。
+图：dump_syms 从匹配 ELF 生成 .sym；符号目录键原样使用其 MODULE 标识，自行截断或同名替代都不可取。
 
 #### `minidump_stackwalk` 的处理步骤
 
@@ -370,7 +370,7 @@ Breakpad 客户端还要处理信号上下文之外的采集流程，远比“�
 
 ### 常见崩溃模式与排查顺序
 
-#### 先读系统给出的强证据
+#### 排查顺序与系统强证据
 
 有了前面的字段与工具，排查可以按固定顺序展开：
 
@@ -424,7 +424,7 @@ JNI 诊断至少覆盖：
 
 ### 用内存工具验证地址假设
 
-地址形态只能形成假设，结论要靠内存工具验证。各工具的适用阶段与限制如下：
+地址形态只能形成假设，我们还要靠内存工具验证结论。各工具的适用阶段与限制如下：
 
 | 工具 | 适合阶段 | 能发现什么 | 关键限制 |
 |---|---|---|---|
@@ -499,7 +499,7 @@ int SnapshotHandler(int signo, HandlerSnapshot* out) {
 
 每个支持的 ABI 和主要 Android 版本至少注入 `abort()`、空指针读写、栈溢出、多线程同时故障，以及设备支持时的 MTE/GWP-ASan 错误。通过标准同时覆盖应用产物、`ApplicationExitInfo`、系统 tombstone、离线符号化和服务端接收；缺少其中一项时，把失败阶段标出来；笼统的一个“堆栈完整率”只会掩盖原因。
 
-### 线程级跳转恢复点：仅用于实验性故障隔离
+### 线程级跳转恢复点的适用范围
 
 #### `sigsetjmp` / `siglongjmp` 能做什么
 
@@ -523,8 +523,8 @@ int SnapshotHandler(int signo, HandlerSnapshot* out) {
 
 - 当前示例把 `sig_env` 和 `handleFlag` 定义为进程级 `static` 全局变量，多条线程会共享并覆盖跳转上下文；其 JNI 初始化里的 `sigaltstack()` 也只改变调用线程，不会为之后 Hook 到的每个工作线程安装示例的 128 KB 栈；
 - 代理 `pthread_create` 只能覆盖经指定 Hook 点创建、并在包装函数内执行的任务；
-- `siglongjmp` 可能跳过被跨越栈帧中的锁释放、RAII（用对象生命周期自动清理资源）析构与显式 JNI 清理；一次跳转不能代替完整的退出与清理协议；
-- 故障已经破坏共享堆或全局状态时，结束单个线程也不能恢复进程一致性；
+- `siglongjmp` 可能跳过被跨越栈帧中的锁释放、RAII（用对象生命周期自动清理资源）析构与显式 JNI 清理；跳转只改变控制流，退出与清理仍要走完整协议；
+- 故障已经破坏共享堆或全局状态时，靠结束单个线程恢复不了进程一致性；
 - 若转发旧 signal action、恢复 disposition 或重新投递不完整，会干扰 debuggerd。
 
 若业务仍要试验，应限制在可丢弃、无共享可变状态的隔离工作线程（worker）上；命中后停止接收新任务，保存最小证据，并尽快重建独立进程或让宿主按明确策略退出。跳回后再附加到 JVM、分配大量对象并执行普通 Java 回调，谈不上“线程已经恢复”。
@@ -673,7 +673,7 @@ CFI 的强项是能表达省略 FP、动态调整 SP、signal frame（信号处�
 
 - 栈或寄存器已被破坏时，恢复规则没有可信输入。
 - 当前 PC 找不到对应 FDE（Frame Description Entry，描述一段指令地址范围的帧规则） 时，规则无从执行。
-- 回溯器无法读取 ELF、内存映射表或目标内存时，会停止或进入能力有限的推测路径。
+- 回溯器读不到 ELF、内存映射表或目标内存时，会停止或进入能力有限的推测路径。
 - 手写汇编、运行时生成代码需要提供兼容的回溯信息。
 - 一帧的 CFI 能描述如何恢复直接调用者，却无法越过任意损坏的栈数据自动修复后续调用链。
 
@@ -701,7 +701,7 @@ target_compile_options(native-lib PRIVATE
 
 #### 3.3 `_Unwind_Backtrace()` 能做什么
 
-`_Unwind_Backtrace()` 可用于当前进程、当前线程的常规 native 调用链。它依赖目标代码提供兼容的回溯表，并可能进入内存分配器、动态链接器或运行库内部状态；这并不代表它能在任意致命信号处理器中安全调用。
+`_Unwind_Backtrace()` 可用于当前进程、当前线程的常规 native 调用链。它依赖目标代码提供兼容的回溯表，并可能进入内存分配器、动态链接器或运行库内部状态；能否放进任意致命信号处理器安全调用，还要单独验证。
 
 下面的示例只用于普通诊断路径，不是信号处理器模板：
 
@@ -776,14 +776,14 @@ rel_pc = runtime_pc - map_start + load_bias + elf_offset
     (offset 0x2a4000) (Foo::run()+84) (BuildId: 4d7c...)
 ```
 
-交给 `ndk-stack` 或匹配 ELF 时，应把 `0000000000012340` 当作 tombstone 已给出的相对 PC，不要再减 ASLR 基址；`(offset 0x2a4000)` 描述的是 ELF 在 APK 等容器文件中的位置，同样不要从 `pc` 再减一次。
+我们把它交给 `ndk-stack` 或匹配 ELF 时，应把 `0000000000012340` 当作 tombstone 已给出的相对 PC，不要再减 ASLR 基址；`(offset 0x2a4000)` 描述的是 ELF 在 APK 等容器文件中的位置，同样不要从 `pc` 再减一次。
 
 若采集系统上报运行时绝对 PC，而非标准 tombstone 文本，服务端必须同时取得当时的内存映射表、CPU 架构和模块标识，才能重算相对地址。
 
 <!-- gracker-diagram: a209-15-address-normalization -->
 ![地址只按其来源归一化一次](../../assets/diagrams/ch20/a209-15-address-normalization.png)
 
-图：绝对地址需结合 map、load bias 和 ELF offset；标准 tombstone 的相对 PC 不能再次减 ASLR 基址或 APK 容器偏移。
+图：绝对地址需结合 map、load bias 和 ELF offset；标准 tombstone 的相对 PC 已完成归一化，ASLR 基址和 APK 容器偏移都无须再减。
 
 #### 4.3 Build ID 是符号产物的主键
 
@@ -975,12 +975,12 @@ static void FatalSignalHandler(
 }
 ```
 
-其中，`CopyFixedSize`、`WriteFullySignalSafe`、处理器链和重新触发信号，都必须由实现方针对 Bionic、部分写入、系统调用被信号中断的 `EINTR`（系统调用被信号中断）、备用栈和线程定向信号逐项验证。代码中的抽象函数只是职责占位，并非通用实现。`volatile sig_atomic_t` 标记也不是跨线程的原子 test-and-set；多线程同时收到信号时，需要另行审计始终无锁的原子操作与重入策略，不能直接复制这段伪代码。
+其中，`CopyFixedSize`、`WriteFullySignalSafe`、处理器链和重新触发信号，都必须由实现方针对 Bionic、部分写入、系统调用被信号中断的 `EINTR`（系统调用被信号中断）、备用栈和线程定向信号逐项验证。代码中的抽象函数只是职责占位，通用实现要由接入方自己补齐。`volatile sig_atomic_t` 标记也不是跨线程的原子 test-and-set；多线程同时收到信号时，需要另行审计始终无锁的原子操作与重入策略，不能直接复制这段伪代码。
 
 <!-- gracker-diagram: a209-11-signal-safe-split -->
 ![信号上下文只保存和通知，解析放到外部](../../assets/diagrams/ch20/a209-11-signal-safe-split.png)
 
-图：正常期准备有界资源；handler 只保存并通知，外部解析与继续原退出链分别推进，不能等待网络上传。volatile 标记不提供跨线程互斥。
+图：正常期准备有界资源；handler 只保存并通知，外部解析与继续原退出链分别推进，网络上传一类工作留在信号上下文之外。volatile 标记不提供跨线程互斥。
 
 #### 9.2 优先利用系统提供的 tombstone
 
