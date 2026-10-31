@@ -4,8 +4,10 @@ chapter: '24.1'
 section: '24.1'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: AOSP android-17.0.0_r1 (SharedPreferencesImpl / QueuedWork / ActivityThread / StrictMode / AtomicFile); Android common kernel android17-6.18-2026-06_r6; Android Developers DataStore and 16 KiB page documentation; Tencent MMKV design
+last_verified: '2026-10-30'
+last_source_verified_at: '2026-10-30T18:42:44+08:00'
+last_idle_audit_at: '2026-10-30T18:42:44+08:00'
+last_verified_against: AOSP android-17.0.0_r1 (SharedPreferencesImpl / QueuedWork / ActivityThread / StrictMode / AtomicFile / DocumentsContract / DocumentsProvider / ContentResolver); Android common kernel android17-6.18-2026-06_r6; AndroidX DocumentFile source 27495ca3d1fe4a1166bea16413ecf8cff5d85855; Android Developers DataStore, SAF, Photo Picker and 16 KiB page documentation; Tencent MMKV design
 confidence: high
 sources:
 - type: aosp
@@ -56,6 +58,10 @@ sources:
   path: https://developer.android.com/training/data-storage/shared/photo-picker
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/provider/DocumentsProvider.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/provider/DocumentsContract.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentResolver.java
 - type: aosp
   path: https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp
 - type: kernel
@@ -127,10 +133,6 @@ class App : Application() {
 
 同时要看清这段策略的管辖范围：它只报告受该线程策略约束的调用。I/O 切到工作线程之后，工作线程是否占满存储队列、是否持有主线程需要的锁、主线程是否在等它的结果，就要靠 Perfetto 来回答了——看线程状态、应用自定义 trace 区间（标记业务操作的起止时间），以及采集配置中可用的文件系统或块设备事件。
 
-<!-- gracker-diagram: a261-01-io-wait-main-thread -->
-![主线程 I/O 的等待不等于 CPU 热点](../../assets/diagrams/ch24/a261-01-io-wait-main-thread.png)
-
-图：StrictMode 发现受策略约束的调用；跨线程锁等待、后台 I/O 排队和主线程等待结果仍需 Perfetto 取证。
 
 [源码锚点：[`StrictMode.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/StrictMode.java)、[`SharedPreferencesImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)]
 
@@ -157,7 +159,7 @@ SP 适合少量、低频、轻量配置。以下场景应迁移或拆分：
 
 | 场景 | 风险 | 处理方式 |
 | --- | --- | --- |
-| XML 持续增长，启动路径又同步读取 | 首次加载与解析时间落在主线程 | 按访问域拆分，首屏只等待必要数据 |
+| XML 持续增长，启动路径又同步读取 | 主线程可能等待后台首次加载与 XML 解析完成 | 按访问域拆分，首屏只等待必要数据 |
 | 高频写入埋点开关、实验参数、草稿状态 | `apply()` 堆积，生命周期收尾等待 | 合并写入，切到 DataStore 或专用文件队列 |
 | 多进程同时读写同一份配置 | SP 不支持跨进程一致性 | 使用 `MultiProcessDataStoreFactory`、数据库或单进程服务 |
 | 结构化对象被序列化成字符串塞进 SP | XML 体积膨胀，解析成本上升 | Proto DataStore 或数据库 |
@@ -188,7 +190,7 @@ fun observeLaunchFlag(context: Context): Flow<Boolean> =
     context.settingsStore.data.map { prefs -> prefs[launchFlagKey] ?: false }
 ```
 
-这段代码把同步打开 XML 文件的动作从调用方拿掉了，但 `data` 流的读取异常和迁移失败仍要业务自己处理。默认的 `preferencesDataStore` 委托面向单进程；多个进程访问同一文件时，要让所有进程统一使用官方多进程工厂；单进程与多进程实例混用会破坏一致性。
+这段代码让调用方通过 `data` 流异步接收配置，读取异常和迁移失败仍要业务自己处理。SP 的 XML 加载与解析本来就由后台执行；迁移后，调用方可以挂起等待数据，避免在主线程同步等待首次加载。默认的 `preferencesDataStore` 委托面向单进程；多个进程访问同一文件时，要让所有进程统一使用官方多进程工厂；单进程与多进程实例混用会破坏一致性。
 
 DataStore 面向少量配置、强类型设置和 SP 键值迁移；多表查询、条件检索、分页和关系事务应交给 Room/SQLite。
 
@@ -236,10 +238,6 @@ MMKV 适合这些位置：
 
 MMKV 与 DataStore 的选择应基于访问行为和一致性要求。需要 Jetpack 组件、`Flow` 订阅、SP 迁移或官方多进程一致性时，可优先评估 DataStore；只有当真实设备基准证明 MMKV 更适合读写频繁的小型键值数据，并且团队能维护第三方库与恢复策略时，再选 MMKV。选型依据放在本应用自己的冷启动、尾延迟、内存和异常恢复测试上；库作者的一次基准结果，只能当参考。
 
-<!-- gracker-diagram: a261-03-key-value-choice -->
-![键值存储按一致性和读取路径选择](../../assets/diagrams/ch24/a261-03-key-value-choice.png)
-
-图：用访问模式、进程边界、迁移和持久化要求选型；DataStore 的异步入口也不应被 runBlocking 搬回主线程。
 
 [项目来源：[Tencent/MMKV](https://github.com/Tencent/MMKV)、[MMKV Design](https://github.com/Tencent/MMKV/wiki/design_eng)]
 
@@ -299,10 +297,6 @@ class JsonFileStore(
 
 合并同步的前提是业务接受对应时间窗的数据丢失；批次和间隔要按文件类别分别定，一套固定参数覆盖不了所有文件。
 
-<!-- gracker-diagram: a261-05-page-cache-sync -->
-![write 返回与持久化同步](../../assets/diagrams/ch24/a261-05-page-cache-sync.png)
-
-图：可重建日志可以合并同步；不可丢状态必须等待明确提交结果，并验证异常恢复。
 
 [内核锚点：[`fs/sync.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/sync.c)、[`mm/filemap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/filemap.c)]
 
@@ -408,10 +402,6 @@ fun persistDocumentGrant(
 
 Photo Picker 返回的媒体 URI 也可以为长任务持久化逐项读取权限。该权限只覆盖用户选中的图片或视频，不等同于目录树授权。
 
-<!-- gracker-diagram: a261-08-uri-grant-lifecycle -->
-![持久化授权与能力检查分别处理](../../assets/diagrams/ch24/a261-08-uri-grant-lifecycle.png)
-
-图：授权决定能否访问，COLUMN_FLAGS 决定支持什么操作；canWrite 不能概括改写、删除、创建等全部能力。
 
 ### `DocumentFile` 的性能成本来自哪里
 
@@ -569,7 +559,9 @@ Binder 是 Android 的进程间通信机制。`ContentResolver.openFileDescripto
 
 在同一个 Provider 内，如果源文档声明 `FLAG_SUPPORTS_COPY`，应优先调用 `DocumentsContract.copyDocument()`。Provider 可能在自身存储或云服务端完成复制，无需让文件内容经过应用进程。跨 Provider 复制，或 Provider 未声明复制能力时，再由应用流式传输内容。
 
-这个实现兼容由管道提供内容的 URI，不要求随机访问；调用方在读写循环中检查取消状态：
+下面的实现用于能由 `openInputStream()` 直接打开的源文档，兼容管道等顺序输入，不要求随机访问；调用方在读写循环中检查取消状态。
+
+源文档带有 `FLAG_VIRTUAL_DOCUMENT` 时，没有以 `COLUMN_MIME_TYPE` 所声明类型提供的字节表示。应用应先用 `getStreamTypes()` 查询自身支持的替代 MIME 类型，再通过 `openTypedAssetFileDescriptor()` 和 `createInputStream()` 读取该表示；目标文档的 MIME 类型与扩展名也要与选定表示一致。没有应用支持的表示时，应提示无法导出，不能直接套用下面的普通流复制。
 
 ```kotlin
 @Throws(IOException::class)
@@ -671,8 +663,10 @@ Photo Picker 的范围比 SAF 窄：
 - 不提供目录树编辑；
 - `PickVisualMedia` 返回的 URI 只读，不会授予写权限；
 - 返回项可能来自云媒体 Provider；
-- 高动态范围（HDR）视频可能根据应用的解码能力转码；
+- 高动态范围（HDR）视频可能根据应用声明的媒体能力转码，但 Photo Picker 不默认启用转码；
 - 打开延迟取决于本地缓存、云端下载和转码，未必比 SAF 快。
+
+Photo Picker 的 HDR 转码适用于 Android 13 / API 33 及以上设备。应用需使用包含 `setMediaCapabilitiesForTranscoding()` 的 AndroidX Activity 版本（1.11.0-alpha01 及其后续版本），在启动选择器时显式传入支持的媒体能力；传入 `null` 会禁用转码。视频时长上限为 1 分钟，转码会额外占用处理时间和存储空间，生成的缓存文件也会被系统定期清理。
 
 需要修改其他应用拥有的 MediaStore 项目时，可以用 `createWriteRequest()` 请求用户成组授权。该写权限与发起请求的 `Activity` 生命周期绑定，不支持持久化授权或 URI 前缀授权。后台服务或作业需要继续使用时，要按 API 文档通过带授权标志的 `ClipData` 或 `Intent` 传递 URI。长时间后台读取 Photo Picker 结果属于另一种场景，应持久化用户所选项目的逐项读取权限。
 
@@ -698,10 +692,6 @@ Android 17 的 MediaProvider 包含 FUSE-BPF 支持。BPF 是可在内核受控�
 
 从 Android 11 起，普通应用通过 SAF 已经选不到 `Android/data` 或 `Android/obb`。FUSE-BPF 因而不适合作为普通 SAF 文档读写的性能依据。分析 SAF 性能时，仍应先确认具体 Provider、查询次数、打开延迟和描述符类型。
 
-<!-- gracker-diagram: a261-10-fuse-scope -->
-![SAF 与 FUSE 的路径关系](../../assets/diagrams/ch24/a261-10-fuse-scope.png)
-
-图：SAF 是文档访问协议，FUSE 是部分存储路径的实现。应用内部目录、云管道与共享挂载要分别判断。
 
 ### Android 17 的文档 API 变化
 
@@ -735,10 +725,6 @@ fun trashIfSupported(
 
 文档进入回收站后，框架会撤销原文档 ID 对应的 URI 授权。Provider 返回的新 URI 可能使用不同的文档 ID；调用方要更新记录，并在访问失败时重新取得合适的授权，此后以新 URI 为准。
 
-<!-- gracker-diagram: a261-11-trash-new-uri -->
-![API 37 回收站调用的能力与 URI 更新](../../assets/diagrams/ch24/a261-11-trash-new-uri.png)
-
-图：回收站能力由 Provider 声明；调用后以返回 URI 为准，同时处理旧授权撤销与访问失败。
 
 云文档列表可以读取 `COLUMN_CONTENT_SYNC_STATE_FLAGS`，区分内容是否已在本机、是否存在待上传的本地修改、上传或下载是否正在进行，以及最近一次同步是否失败。这是可选列；缺失或 `null` 只说明 Provider 没有报告状态，文件是否在本机要另找依据。
 
@@ -806,10 +792,6 @@ WorkManager 负责按约束调度后台工作，不会替应用保存 URI 权限
 
 每条指标至少带上 `authority`、MIME 类型、操作类型、文件大小区间、内容是否在本机、网络类型、Android 版本和设备型号。URI、显示名称和用户目录属于敏感信息，采集前应删除或散列可识别用户的部分。
 
-<!-- gracker-diagram: a261-12-io-measurement-phases -->
-![按调用阶段拆分文档访问耗时](../../assets/diagrams/ch24/a261-12-io-measurement-phases.png)
-
-图：每项按 authority、内容是否本地、模式和设备分组；报告分布及错误率，不把单次测量写成平台常量。
 
 #### StrictMode 和 Perfetto
 

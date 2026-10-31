@@ -63909,9 +63909,149 @@
       "before_count": 12,
       "before_all_images": 12,
       "sha256_before": "94df36be2b80df0c363a416435bfd04915ea3e919293c27f1633cb514f02403e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a261-01-io-wait-main-thread",
+          "title": "主线程 I/O 的等待不等于 CPU 热点",
+          "decision": "remove",
+          "reason": "消息循环→IO→页缓存/等待三个框重复主线程风险段落，工作线程有界和锁等待由正文列表更完整说明。",
+          "original_line": 136,
+          "heading": "### 主线程 I/O 的危害与 StrictMode 检测"
+        },
+        {
+          "original_id": "a261-02-apply-lifecycle-wait",
+          "title": "apply 的快速返回与后续生命周期等待",
+          "decision": "keep",
+          "reason": "apply内存提交后分为主线程继续与后台写盘，两路在稍后waitToFinish/latch形成等待依赖，解释调用点快但收尾仍阻塞。",
+          "original_line": 155,
+          "heading": "### SharedPreferences 的风险与 DataStore 迁移"
+        },
+        {
+          "original_id": "a261-03-key-value-choice",
+          "title": "键值存储按一致性和读取路径选择",
+          "decision": "remove",
+          "reason": "SP/DataStore/MMKV三列只摘要各自前文说明，未表达一致性选型条件的真实决策，正文含迁移与持久性更准确。",
+          "original_line": 245,
+          "heading": "### MMKV 的原理与适用场景"
+        },
+        {
+          "original_id": "a261-04-atomicfile-single-writer",
+          "title": "AtomicFile 保护替换，调用方保护并发",
+          "decision": "keep",
+          "reason": "互斥下startWrite新文件到sync/close/rename和异常failWrite删除新文件的分叉，帮助区分调用方并发控制与原子替换。",
+          "original_line": 290,
+          "heading": "### 文件读写的线程安全与性能"
+        },
+        {
+          "original_id": "a261-05-page-cache-sync",
+          "title": "write 返回与持久化同步",
+          "decision": "remove",
+          "reason": "write→fsync→回写→业务核对四步骤重复紧邻持久化段落及两条规则，未画缓存与设备状态变化。",
+          "original_line": 308,
+          "heading": "#### `write()`、页缓存与 `fsync()` 的区别"
+        },
+        {
+          "original_id": "a261-08-uri-grant-lifecycle",
+          "title": "持久化授权与能力检查分别处理",
+          "decision": "remove",
+          "reason": "保存已有grant、任务重查、能力检查四框重复授权代码及说明，权限与能力边界正文已明确。",
+          "original_line": 417,
+          "heading": "#### 持久化 URI 授权"
+        },
+        {
+          "original_id": "a261-07-documentfile-n-plus-one",
+          "title": "DocumentFile 属性查询与批量投影",
+          "decision": "keep",
+          "reason": "便利listFiles+逐项getName的1+N与一次投影遍历的两路对照明确查询放大来源，同时保留CursorWindow和可选分页边界。",
+          "original_line": 446,
+          "heading": "#### 属性读取会形成 N+1"
+        },
+        {
+          "original_id": "a261-06-uri-control-data",
+          "title": "URI 打开协商与描述符传输",
+          "decision": "keep",
+          "reason": "URI/mode/grant经Provider打开返回PFD后分普通文件与pipe/socket两路，区分Binder控制协商与描述符数据路径及顺序限制。",
+          "original_line": 562,
+          "heading": "### `ContentResolver`：Binder 负责协商，文件描述符负责传输"
+        },
+        {
+          "original_id": "a261-09-copy-ownership-fallback",
+          "title": "复制优先 Provider 原生能力，回退时管理双流",
+          "decision": "keep",
+          "reason": "同Provider能力可内部copy，否则input.use内打开output形成嵌套所有权，突出失败时关闭已取得资源及部分目标恢复职责。",
+          "original_line": 617,
+          "heading": "#### 大文件复制的通用实现"
+        },
+        {
+          "original_id": "a261-10-fuse-scope",
+          "title": "SAF 与 FUSE 的路径关系",
+          "decision": "remove",
+          "reason": "SAF→共享挂载→passthrough及孤立BPF框没有画本地/云/内部目录实际分叉，正文三节已明确适用范围。",
+          "original_line": 711,
+          "heading": "#### Android 17 FUSE-BPF 的适用范围"
+        },
+        {
+          "original_id": "a261-11-trash-new-uri",
+          "title": "API 37 回收站调用的能力与 URI 更新",
+          "decision": "remove",
+          "reason": "flags检查、trash、新URI和授权更新四步与紧邻代码/段落重复，正文对可选同步字段和旧grant撤销更完整。",
+          "original_line": 748,
+          "heading": "### Android 17 的文档 API 变化"
+        },
+        {
+          "original_id": "a261-12-io-measurement-phases",
+          "title": "按调用阶段拆分文档访问耗时",
+          "decision": "remove",
+          "reason": "查询、打开、传输、关闭四轨只重复上方七项测量起止点表，条长无时长且没有新增依赖/并发关系。",
+          "original_line": 819,
+          "heading": "#### 分段记录运行时指标"
+        }
+      ],
+      "sha256_after": "149df426ae97ecfdf87001bf9ba9dcc09fa565e694fc77a41ff04e68b99c1c07",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:23:52.161768+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 12,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a261/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a261/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 261,
+        "article": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+        "registered_sha256": "94df36be2b80df0c363a416435bfd04915ea3e919293c27f1633cb514f02403e",
+        "frozen_sha256": "94df36be2b80df0c363a416435bfd04915ea3e919293c27f1633cb514f02403e",
+        "review_input_sha256": "4e4fc1d8ce23fe2b55bd07efef838f25edced8bb31bcc923f2a538cdfbeb2cb3",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a261/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a261/external-source.diff",
+        "diff_sha256": "32ca77d0cbc02e020e5bd545802fac8a60b37d2cb61d2c3fa185105ee12c4394",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 361, \"characters\": 28531, \"svg_labels_read\": 12, \"actual_pngs_viewed\": 12, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 8, \"code_lines\": 199, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "4e4fc1d8ce23fe2b55bd07efef838f25edced8bb31bcc923f2a538cdfbeb2cb3",
+      "retired_diagrams": [
+        "a261-01-io-wait-main-thread",
+        "a261-03-key-value-choice",
+        "a261-05-page-cache-sync",
+        "a261-08-uri-grant-lifecycle",
+        "a261-10-fuse-scope",
+        "a261-11-trash-new-uri",
+        "a261-12-io-measurement-phases"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-261/retired-assets.json"
     },
     {
       "index": 262,
@@ -64233,8 +64373,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 177,
-  "next_article": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+  "reviewed_articles": 178,
+  "next_article": "src/part5-app/ch24-io-network/02-database-serialization-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -64244,7 +64384,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:21:23.152147+08:00",
+  "updated_at": "2026-10-31T18:23:52.161768+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -64338,13 +64478,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
-      "registered_sha256": "94df36be2b80df0c363a416435bfd04915ea3e919293c27f1633cb514f02403e",
-      "observed_sha256": "4e4fc1d8ce23fe2b55bd07efef838f25edced8bb31bcc923f2a538cdfbeb2cb3",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
       "registered_sha256": "fe4d4fea0f5bfc1adcdbca5d7601f09f4406f26e0082bcc91e6430cc669fc4fb",
       "observed_sha256": "2c994f030458c70debe3aa9fb82fbe1c2cb3336f710b5bf7e5b89998ff07ffa2",
@@ -64380,9 +64513,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5414,
-  "reviewed_placements_after": 2112,
-  "net_removed_placements": 3302,
+  "reviewed_placements_before": 5426,
+  "reviewed_placements_after": 2117,
+  "net_removed_placements": 3309,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -64406,5 +64539,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 177
+  "currently_matching_reviewed_source_count": 178
 }
