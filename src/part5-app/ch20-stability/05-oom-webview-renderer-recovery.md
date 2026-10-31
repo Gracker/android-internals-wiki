@@ -117,17 +117,19 @@ consolidated_from:
 
 # OOM（Out of Memory）、进程资源治理与 WebView Renderer 恢复
 
-OOM 通常指内存不足，但稳定性平台统计时，常把线程、文件描述符和虚拟地址空间耗尽也归入同一类资源问题，本文一并讨论。OOME 专指 Java 的 `OutOfMemoryError` 异常，是资源失败的表现之一。
+OOM 通常指内存不足，但在线上做稳定性统计时，线程、文件描述符和虚拟地址空间耗尽也常被归进同一类资源问题，本文把它们放在一起讨论。其中 OOME 专指 Java 的 `OutOfMemoryError` 异常，只是资源失败诸多表现中的一种。
 
 > 源码基线：framework（Android 系统框架） 按 AOSP `android-17.0.0_r1`、Android 17 / API 37 核对；Linux 资源限制按 `android17-6.18-2026-06_r6` 内核源码核对。
 
-同样是“资源不够”，暴露形式随所在层面各不相同：Java heap 达到 ART 的 growth limit、由 native 层提供存储的 Java API 分配失败、线程创建失败，都可能抛出 OOME；普通 `malloc()` / `mmap()` 失败则往往只返回错误——FD（文件描述符）耗尽通常表现为 `EMFILE`，把高编号 FD（file descriptor，文件描述符） 误交给 `select()` 还可能触发 FORTIFY（Bionic 运行时边界检查）并 `abort()`；LMKD（低内存终止守护进程）结束进程时，进程连抛 Java 异常的机会都没有。
+同样是“资源不够”，暴露形式随所在层面各不相同。走到 Java 这一层，Java heap 达到 ART 的 growth limit、由 native 层提供存储的 Java API 分配失败、线程创建失败，都可能抛出 OOME。留在 native 层，普通 `malloc()` / `mmap()` 失败往往只返回错误——FD（文件描述符）耗尽通常表现为 `EMFILE`，把高编号 FD（file descriptor，文件描述符） 误交给 `select()` 还可能触发 FORTIFY（Bionic 运行时边界检查）并 `abort()`。最极端的情况是 LMKD（低内存终止守护进程）结束进程：进程连抛 Java 异常的机会都没有。
 
 面对这张错误清单，我们治理的第一步是保留原始错误、退出原因和进程资源快照，再按资源类型和内存区域选择排查入口——先弄清败在哪类资源上，再谈优化。
 
 OOM 可能来自 Java Heap、Native、图形内存、地址空间或系统低内存终止。WebView Renderer 是其中一个特殊角色：它位于独立进程，退出时页面可能白屏，应用也可以通过回调重建页面。
 
 ## OOM 类型、现场证据与恢复边界
+
+这一节按资源类型展开：我们先看各类失败分别怎样暴露自己，再逐项过 Java heap、native、线程、FD 和虚拟地址空间，最后讨论 OOM 前的降级与资源预算。排查的主线只有一条——先定位败在哪类资源上，采集和治理才有方向。
 
 ### OOM 与 OOME 如何出现
 
@@ -143,7 +145,7 @@ OOM 可能来自 Java Heap、Native、图形内存、地址空间或系统低内
 | FD 耗尽或高编号 FD 误用 | `EMFILE`、创建 socket/pipe/Looper 失败，或 FORTIFY abort | `/proc/self/fd`、rlimit、FD 创建与关闭记录 | 通常否 |
 | 虚拟地址空间或 VMA（virtual memory area，虚拟内存区域）耗尽 | `mmap` 返回 `ENOMEM`，后续表现取决于调用方 | `/proc/self/maps`、VmSize、映射数、失败栈 | 不一定 |
 
-类别放对之后，采集工具的选择也随之确定：Heap dump 记录 Java 对象与引用关系，覆盖不到全部 native 映射；heapprofd 采样 native 分配调用栈，覆盖不到 Java 对象引用；LMKD（Low Memory Killer Daemon，低内存终止守护进程） 则是直接终止进程，崩溃捕获 SDK 连执行收尾代码的机会都没有。
+类别放对之后，该用什么工具采集也就清楚了，而且这几样工具的视野要拼起来看：Heap dump 记录 Java 对象与引用关系，覆盖不到全部 native 映射；heapprofd 采样 native 分配调用栈，覆盖不到 Java 对象引用；LMKD（Low Memory Killer Daemon，低内存终止守护进程） 则是直接终止进程，崩溃捕获 SDK 连执行收尾代码的机会都没有。
 
 
 #### ART 如何抛出 OOME
@@ -175,7 +177,7 @@ void Thread::ThrowOutOfMemoryError(const char* msg) {
 
 OOME 成为 ART 的待处理异常后，控制流回到由 ART 执行的 Java/Kotlin 代码。业务没有捕获时，它交给 `Thread.UncaughtExceptionHandler`（未捕获异常的最终处理器），Android 默认处理器随后结束进程。所以自定义处理器必须继续调用安装前保存的默认处理器——API 37 的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 也把这条调用路径作为自动生成 Java heap dump 的前提之一。
 
-OOME 错误文本用于诊断，格式会随分配器和平台版本变化。监控平台可以提取 allocation size、growth limit 等已知字段做辅助分组；原始文本和栈必须保留，正则结果只作辅助，不作长期接口。
+OOME 错误文本用于诊断，格式会随分配器和平台版本变化。监控平台可以提取 allocation size、growth limit 等已知字段做辅助分组；原始文本和栈必须保留，正则结果只当临时分组依据，别当长期接口。
 
 ### Java Heap OOM 分类与治理
 
@@ -272,7 +274,7 @@ void Heap::ThrowOutOfMemoryError(
 根据 [Android Bitmap 内存说明](https://developer.android.com/topic/performance/graphics/manage-memory)，普通 Bitmap 自 Android 8.0 起由 native heap 持有像素；`Bitmap.Config.HARDWARE` 使用 GraphicBuffer / AHardwareBuffer（供图形栈使用的硬件缓冲区）。两者都可能增加进程或系统内存压力，只是采集方式和归属不同。所以评估 Bitmap 成本时，我们要看像素和图形缓冲本身；Java heap dump 里那个体积很小的 Bitmap 包装对象，与真实成本相去甚远。
 
 <!-- gracker-diagram: a211-05-bitmap-domains -->
-![小型 Java 包装对象不能代表 Bitmap 总成本](../../assets/diagrams/ch20/a211-05-bitmap-domains.png)
+![小型 Java 包装对象只是 Bitmap 总成本的一角](../../assets/diagrams/ch20/a211-05-bitmap-domains.png)
 
 图：普通像素与硬件图形缓冲属于不同资源域；Java引用分析仍用于找到所有者，但大小要结合native与图形证据。
 
@@ -295,7 +297,7 @@ void Heap::ThrowOutOfMemoryError(
 
 1. Android 11 / API 30 及以上，先用 [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)) 读取 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)（系统保存的历史进程退出记录），把 OOME crash、native crash 和 `REASON_LOW_MEMORY` 分开；Android 10 / API 29 没有这组历史退出 API，只能靠 LMKD/系统日志、崩溃记录和重启前的轻量本地标记。API 30+ 还要先调用 `ActivityManager.isLowMemoryKillReportSupported()` 确认设备支持低内存退出原因；设备不支持时，低内存终止可能记录成 `REASON_SIGNALED` 与 `SIGKILL`，此时就算记录里没有 `REASON_LOW_MEMORY`，系统内存压力也仍然可能存在。系统直接终止进程时，也没有可依赖的未捕获异常回调。
 2. 对比同场景的 PSS（Proportional Set Size）/RSS（Resident Set Size）、Java heap、native malloc、图形内存、线程和映射数，先确定哪一类内存在增长。
-3. `malloc` 分配使用 [heapprofd 或 Android Studio native allocation profiler](https://developer.android.com/studio/profile/record-native-allocations)，保留分配调用栈及释放/存活记录；其中 [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler) 的聚合栈是分配位置，不能当作每次 `free()` 的调用栈。接入条件受构建类型、`profileable`（允许性能工具连接）配置、设备和系统策略影响。
+3. `malloc` 分配使用 [heapprofd 或 Android Studio native allocation profiler](https://developer.android.com/studio/profile/record-native-allocations)，保留分配调用栈及释放/存活记录；其中 [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler) 的聚合栈只标记分配发生的位置，读不到每次 `free()` 的调用栈。接入条件受构建类型、`profileable`（允许性能工具连接）配置、设备和系统策略影响。
 4. `mmap()` 映射解析 `/proc/self/maps` 与 `smaps`（逐映射的内存统计），按文件路径、匿名映射名称和权限汇总。
 5. 图形与媒体对象结合 Perfetto（系统性能时间线工具）、`dumpsys meminfo`、dma-buf（内核共享缓冲区）/GraphicBuffer 工具和对象生命周期检查。
 6. 对 JNI 资源建立明确的所有权与释放协议：`close()`、RAII（作用域结束自动释放资源）、引用计数和失败路径都要覆盖；`Cleaner`（GC 触发、时机不确定的清理机制）只宜当作补充，释放要以明确的所有权协议为主。
@@ -304,7 +306,7 @@ void Heap::ThrowOutOfMemoryError(
 
 ### 线程数 OOM（pthread_create 失败）
 
-线程数 OOM 的错误文本我们在前面的表格里已经见过：`Could not allocate JNI Env` 或 `pthread_create (...) failed`。`pthread_create()` 是 POSIX 线程创建接口，每个已经启动的 Java platform thread 都对应一个 native thread，占用线程栈、guard 区（栈边缘的越界检测保护页）、ART `Thread`、JNI 环境和内核 task（可调度执行单元）等资源。线程数一涨，虚拟地址空间、native 内存和调度能力会同时被消耗；协程或排队任务的数量，与操作系统线程数之间没有直接的换算关系。
+线程数 OOM 的错误文本我们在前面的表格里已经见过：`Could not allocate JNI Env` 或 `pthread_create (...) failed`。这类失败的根源，是每个线程都要占住一串资源：`pthread_create()` 是 POSIX 线程创建接口，每个已经启动的 Java platform thread 都对应一个 native thread，占用线程栈、guard 区（栈边缘的越界检测保护页）、ART `Thread`、JNI 环境和内核 task（可调度执行单元）等资源。线程数一涨，虚拟地址空间、native 内存和调度能力就同时被消耗；协程或排队任务的数量，与操作系统线程数之间也没有直接的换算关系。
 
 #### 线程创建的失败分支
 
@@ -346,7 +348,7 @@ soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 
 ### FD 泄漏导致的资源型崩溃
 
-FD 是内核分配给文件、socket、pipe 等已打开资源的整数句柄。`RLIMIT_NOFILE` 的软限制规定新分配 FD 编号的上界：正常分配需找到小于该值的空闲编号，而不是只比较一个 FD 总数。找不到可用编号时，`open()`、`socket()`、`pipe()`、`eventfd()` 或 `epoll_create1()` 可能返回 `EMFILE`；系统级打开文件表耗尽还可能表现为 `ENFILE`。`android17-6.18-2026-06_r6/fs/file.c` 的 FD 分配路径会按当前进程的 files table 和限制返回 `-EMFILE`。
+FD 是内核分配给文件、socket、pipe 等已打开资源的整数句柄。新分配 FD 的编号上界由 `RLIMIT_NOFILE` 的软限制规定：正常分配要找到小于该值的空闲编号，光看 FD 总数说明不了问题。找不到可用编号时，`open()`、`socket()`、`pipe()`、`eventfd()` 或 `epoll_create1()` 可能返回 `EMFILE`；系统级打开文件表耗尽还可能表现为 `ENFILE`。`android17-6.18-2026-06_r6/fs/file.c` 的 FD 分配路径，就是按当前进程的 files table 和限制返回 `-EMFILE` 的。
 
 FD 耗尽一般不走 ART OOME 这条路，但治理上我们仍应把内存、线程、FD 和地址空间放进同一套进程资源看板，事件类型各自分开统计。
 
@@ -519,7 +521,7 @@ OOM 治理达到可发布状态时，每个接近资源预算的事件都有责�
 
 ## Renderer 退出、回调与页面重建
 
-应用进程的 OOM 之外，还有一类退出要单独讨论：WebView Renderer。它和应用进程的 OOM 分属两类问题，归因要分开；Renderer 被终止后，能否安全恢复，取决于 WebView 状态、业务导航和资源释放怎么处理。
+应用进程的 OOM 之外，还有一类退出要单独讨论：WebView Renderer。它与应用自身的 OOM 分属两类问题，归因要分开；页面能否安全恢复，则取决于 WebView 状态、业务导航和资源释放怎么处理。
 
 我们常见的现场是：WebView 页面突然变白，宿主 Activity 还能响应，导航栏和原生按钮也都正常。如果这时收到 `onRenderProcessGone()`，就可以确认关联的 Renderer（负责网页解析、脚本执行与绘制的渲染进程）已经退出。旧 `WebView` 随之失效，`reload()`、`goBack()`、`evaluateJavascript()` 和 JS Bridge（JavaScript 与原生代码的通信接口）都救不回它。
 
@@ -577,7 +579,7 @@ Android 8 / API 26 起，`WebViewClient.onRenderProcessGone(view, detail)` 是 R
 - `true`：Renderer 被观察到发生崩溃；
 - `false`：Renderer 被系统结束，AOSP 注释说明最常见背景是低内存。
 
-要把 `false` 读成“页面 OOM”，得先排除两个干扰：应用在 API 29 及以上可能主动调用 `WebViewRenderProcess.terminate()`，设备实现和系统资源管理也会影响进程寿命。provider 更新通常会结束已经加载 WebView 的整个应用进程，这类进程重启要单独记录，别指望它一定留下 renderer-only 的 gone 事件。
+要把 `false` 读成“页面 OOM”，先得排除两个干扰：应用在 API 29 及以上可能主动调用 `WebViewRenderProcess.terminate()`；设备实现和系统资源管理也会影响进程寿命。另外，provider 更新通常会结束已经加载 WebView 的整个应用进程，这类进程重启要单独记录，别指望它一定留下 renderer-only 的 gone 事件。
 
 若应用会主动终止 Renderer，应在调用前生成一条短时有效的“预期终止标记”（下文简称 termination token），至少包含会话、调用时间、有效期和关联的 WebView 实例。随后到达且命中这条标记的 gone 事件，才归为预期终止。未命中时，再结合设备内存档位、前后台状态、Renderer 优先级、系统内存压力和问题页面是否反复出现来判断。
 
