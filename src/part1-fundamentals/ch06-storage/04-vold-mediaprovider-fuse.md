@@ -49,13 +49,13 @@ consolidated_from:
 
 # vold、MediaProvider 与 FUSE（Filesystem in Userspace）：共享存储 I/O 路径
 
-共享存储把三件事叠在一起：挂载与权限的控制面、文件数据面、MediaProvider 的元数据管理。我们定位 I/O 问题时，第一步是确认调用入口是文件路径还是 ContentResolver URI，再核对返回的 fd 或文件操作是否经过 FUSE；这些不是互斥分类，之后再分别算跨进程调用和逐项访问的开销。
+共享存储把三件事叠在一起：挂载与权限的控制面、文件数据面、MediaProvider 的元数据管理。我们定位 I/O 问题时，第一步是确认调用入口是文件路径还是 ContentResolver URI，再核对返回的 fd 或文件操作有没有经过 FUSE；这几类判断常常落在同一次访问上，把跨进程调用和逐项访问的开销分别算清，后面的排查才有落脚点。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。设备可能使用其他内核分支，以实机配置为准。
 
 ## 排障范围
 
-看到 `/storage/emulated/0/DCIM/Camera/a.jpg` 这样一条普通路径时，我们要意识到它背后叠着一整串环节：挂载会话、调用方身份、媒体归属、权限、元数据脱敏、兼容转码，最后才轮到底层文件系统访问。把所有耗时归结成一句“FUSE 慢”或“UFS（Universal Flash Storage） 慢”，结论很难复现——FUSE（Filesystem in Userspace，用户空间文件系统）是用户态的文件系统机制，UFS（Universal Flash Storage，通用闪存存储）是 Android 设备常用的闪存接口标准，两者本来就位于不同的层。
+看到 `/storage/emulated/0/DCIM/Camera/a.jpg` 这样一条普通路径，我们要意识到它背后叠着一整串环节：挂载会话、调用方身份、媒体归属、权限、元数据脱敏、兼容转码，最后才轮到底层文件系统访问。把所有耗时归结成一句“FUSE 慢”或“UFS（Universal Flash Storage）慢”，等于把好几层压成一个词——FUSE（Filesystem in Userspace，用户空间文件系统）是用户态的文件系统机制，UFS（Universal Flash Storage，通用闪存存储）是 Android 设备常用的闪存接口标准，两者本来就位于不同的层，这样的结论自然很难复现。
 
 这篇文章回答三个排障问题：
 
@@ -70,7 +70,7 @@ consolidated_from:
 
 ### `vold` 管卷和挂载会话
 
-`vold` 负责发现存储卷、准备挂载点、处理用户切换、挂载/卸载卷和响应设备插拔；卷挂好之后，需要经 daemon 处理的 lookup、open 等策略判断由会话另一端的 MediaProvider 负责；缓存命中、passthrough 或 BPF/backing 已处理的操作不一定逐次进入用户态。
+`vold` 负责发现存储卷、准备挂载点、处理用户切换、挂载/卸载卷和响应设备插拔。卷挂好之后，需要经 daemon 处理的 lookup、open 等策略判断就交到会话另一端的 MediaProvider 手上；缓存命中、passthrough 或 BPF/backing 已处理的操作，则不一定每次都进用户态。
 
 我们用下面这段源码定位 `vold` 把 FUSE 会话交给上层的位置：
 
@@ -88,7 +88,7 @@ if (callback) {
 }
 ```
 
-AOSP r1 的回调由 system_server 的 StorageManagerService 接收，再经 StorageSessionController → StorageUserConnection 把 fd、session id 与 upper/lower path 送给 ExternalStorageService。这个过程建立会话，不代表每次 read/write 都重新调用 vold。
+AOSP r1 的回调由 system_server 的 StorageManagerService 接收，再经 StorageSessionController → StorageUserConnection 把 fd、session id 与 upper/lower path 送给 ExternalStorageService。这一串交接负责建立会话；日常的 read/write 复用这条会话，并不会每次都重新调用 vold。
 
 <!-- gracker-diagram: ch06-04-mount-session -->
 ![FUSE 会话的 fd 交接链路](../../assets/diagrams/ch06/ch06-04-mount-session.png)
@@ -119,7 +119,7 @@ MediaProvider 同时扮演两种角色：
 
 ### 直接文件路径
 
-下图把直接文件访问拆成路径检查与后续数据分流；BPF/backing 另在后文展开。下方折叠区保留简化路径的 Mermaid 源码。图中几个术语先说清楚：VFS 是 Linux 虚拟文件系统抽象层，FUSE driver 是对应的内核驱动；redaction（元数据脱敏） 是敏感元数据脱敏，transcode 是兼容格式转码；lower file system 实际保存数据，backing path 是它对应的真实路径。
+下图把直接文件访问拆成路径检查与后续数据分流两段，BPF/backing 另在后文展开，下方折叠区保留简化路径的 Mermaid 源码。图里几个术语先说清楚：VFS 是 Linux 虚拟文件系统抽象层，FUSE driver 是对应的内核驱动；redaction（元数据脱敏）作用在敏感元数据上，transcode 负责兼容格式转码；lower file system 实际保存数据，backing path 是它对应的真实路径。
 
 <!-- gracker-diagram: ch06-04-direct-path -->
 ![直接路径的打开与数据读写](../../assets/diagrams/ch06/ch06-04-direct-path.png)
@@ -160,7 +160,7 @@ App 内部目录 `/data/user/<userId>/<package>/` 位于共享存储的 FUSE 挂
 
 ## FUSE 的成本出现在哪些操作
 
-要看 FUSE 的成本落在哪些操作上，我们不妨回到 Android 11 的那次 FUSE 调优：调优涵盖 read-ahead、writeback cache（回写缓存）、权限缓存、App 专属目录绕过和 all-files（所有文件访问）批量操作优化；官方曾在调优后的 Pixel 2 上对比直接路径与 MediaStore，结果顺序读取接近，FUSE 顺序写略差，随机读写在该测试中最高慢了约两倍。这个数字说明的是随机小 I/O 更容易暴露用户态转发的成本；要把它外推成 Android 17 或任意设备的固定倍率，还需要在目标设备上重新测。
+要看 FUSE 的成本落在哪些操作上，我们不妨回到 Android 11 的那次 FUSE 调优。官方曾在调优后的 Pixel 2 上对比直接路径与 MediaStore：顺序读取接近，FUSE 顺序写略差，随机读写在该测试中最高慢了约两倍——这个数字说明的是随机小 I/O 更容易暴露用户态转发的成本。调优本身还涵盖 read-ahead、writeback cache（回写缓存）、权限缓存、App 专属目录绕过和 all-files（所有文件访问）批量操作优化；至于这组数字能不能外推成 Android 17 或任意设备的固定倍率，还要在目标设备上重新测。
 
 | 访问模式 | 可能放大的环节 | 优先检查 |
 | --- | --- | --- |
@@ -186,7 +186,7 @@ App 内部目录 `/data/user/<userId>/<package>/` 位于共享存储的 FUSE 挂
 | FUSE BPF + backing | 取决于操作 | BPF/backing 已处理的操作可以不交给 daemon | inode/dentry（索引节点/目录项）关联 backing path，BPF 决定保留、移除或替换 |
 
 
-`direct_io` 改变的只是 FUSE 页缓存语义：没有 passthrough 或 BPF backing 时，请求仍要经 `/dev/fuse` 到 MediaProvider。而 passthrough 缩短的是数据搬运那一段，Scoped Storage（分区存储）的规则仍然生效：open 会检查身份、访问权与脱敏/转码条件，并决定本次打开能否直通；需要 daemon 的读取仍可能在 pf_read() 执行转码和按区间脱敏，不能把全部处理都归到 open。
+`direct_io` 改变的只是 FUSE 页缓存语义：没有 passthrough 或 BPF backing 时，请求仍要经 `/dev/fuse` 到 MediaProvider。passthrough 缩短的则是数据搬运那一段，Scoped Storage（分区存储）的规则原样生效：open 会检查身份、访问权与脱敏/转码条件，决定本次打开能否直通；需要 daemon 的读取仍可能在 pf_read() 里执行转码和按区间脱敏，这部分处理落在 open 获准之后的读取阶段。
 
 <!-- gracker-diagram: ch06-04-read-transform-redaction -->
 ![脱敏与转换可能延续到 read](../../assets/diagrams/ch06/ch06-04-read-transform-redaction.png)
@@ -213,7 +213,7 @@ if (contents == "supported\n") {
 <!-- gracker-diagram: ch06-04-passthrough-capabilities -->
 ![passthrough 的会话启用条件](../../assets/diagrams/ch06/ch06-04-passthrough-capabilities.png)
 
-图：r1 先由产品属性决定是否尝试启用，pf_init 再协商 legacy 或 upstream 接口；upstream 分支额外核对 sysfs。supported 不能证明单个 open 已直通。
+图：r1 先由产品属性决定是否尝试启用，pf_init 再协商 legacy 或 upstream 接口；upstream 分支额外核对 sysfs。supported 只覆盖内核能力这一层，单个 open 是否直通要看逐次判断。
 
 下面两行位于 create_handle_for_node() 的 fuse->passthrough && allow_passthrough 分支内；它们不是完整的 open 条件表。pf_open() 在 fd 来自 Java 时还会禁止 passthrough，避免把可能指回 FUSE 的 fd 注册成 backing。
 
@@ -222,23 +222,23 @@ bool passthrough = !redaction_needed && transforms_complete;
 bool direct_io = open_info_direct_io && !passthrough;
 ```
 
-这两行的含义是：文件需要做位置元数据脱敏，或者转码还没完成时，MediaProvider 会让后续读取继续走 daemon。passthrough 省的是已获准文件在 `read`/`write` 数据搬运阶段的往返，对目录枚举、MediaStore 查询和首次 `open` 起不到同等作用。
+这两行翻译过来：文件需要做位置元数据脱敏，或者转码还没完成时，MediaProvider 会让后续读取继续走 daemon。passthrough 省掉的是已获准文件在 `read`/`write` 数据搬运阶段的往返；目录枚举、MediaStore 查询和首次 `open`，仍然走在原来的路径上。
 
-当 handle 已选择 passthrough，但 do_passthrough_enable() 注册或绑定失败时，这个 r1 的 pf_open() 会回复 EFAULT，并非总会自动回退到普通 daemon 读写。
+当 handle 已选择 passthrough，但 do_passthrough_enable() 注册或绑定失败时，这个 r1 的 pf_open() 会回复 EFAULT，本次打开以失败告终；自动回退到普通 daemon 读写在这里没有保证。
 
 <!-- gracker-diagram: ch06-04-passthrough-open-gate -->
 ![passthrough 的逐次 open 决策](../../assets/diagrams/ch06/ch06-04-passthrough-open-gate.png)
 
 图：r1 pf_open 主分支：未选用 passthrough 时按普通缓存策略建 handle；已选用后若注册/绑定失败，返回 EFAULT。
 
-MediaProvider 源码同时兼容 Android 早期 passthrough 接口与 upstream FUSE passthrough。上游协议中，daemon 把 lower-fs fd 注册到 FUSE connection（连接会话）并取得 backing_id，再在 open 回复中携带 FOPEN_PASSTHROUGH 与该 ID。r1 MediaProvider 将 ID 缓存在 node 上，可供后续打开复用；内核仍为每次 FUSE open 创建独立 backing file。关闭某次 open 会释放其引用，但不等于立即撤销 connection 的 ID 登记；node 的 forget 清理等路径才关闭相应登记。
+MediaProvider 源码同时兼容 Android 早期 passthrough 接口与 upstream FUSE passthrough。上游协议中，daemon 把 lower-fs fd 注册到 FUSE connection（连接会话）并取得 backing_id，再在 open 回复中携带 FOPEN_PASSTHROUGH 与该 ID。r1 MediaProvider 将 ID 缓存在 node 上，可供后续打开复用；内核仍为每次 FUSE open 创建独立 backing file。关闭某次 open 会释放它这一次的引用；connection 上的 ID 登记要等 node 的 forget 清理等路径才关闭。
 
 <!-- gracker-diagram: ch06-04-backing-lifetime -->
 ![backing ID 登记与每次打开的引用](../../assets/diagrams/ch06/ch06-04-backing-lifetime.png)
 
 图：一个 node 可复用 connection 中的 backing_id；每次 FUSE open 仍创建自己的 backing file。关闭一次 open 与撤销 ID 登记属于不同生命周期。
 
-内核的 `backing_file_read_iter()` / `backing_file_write_iter()` 省掉的是 FUSE 数据请求的往返；VFS、lower filesystem、fscrypt（Linux 文件系统加密层）、页缓存、块层和闪存都还在路径上。r6 的 passthrough read 还会先调用 write_inode_now(..., 1) 处理 FUSE 脏缓存；passthrough 写要拿 inode lock（文件对象锁），并更新 FUSE inode 属性、失效相应缓存范围。因此它缩短主数据路径，也不等于完全没有缓存协调或附带 FUSE 工作；多个 writer（写入方） 访问同一个 inode 时，并发协调仍然省不掉。
+内核的 `backing_file_read_iter()` / `backing_file_write_iter()` 省掉的是 FUSE 数据请求的往返；VFS、lower filesystem、fscrypt（Linux 文件系统加密层）、页缓存、块层和闪存都还在路径上。r6 的 passthrough read 还会先调用 write_inode_now(..., 1) 处理 FUSE 脏缓存；passthrough 写要拿 inode lock（文件对象锁），并更新 FUSE inode 属性、失效相应缓存范围。所以 passthrough 缩短的是主数据路径，缓存协调和附带的 FUSE 工作可能仍然存在；多个 writer（写入方） 访问同一个 inode 时，并发协调照样要做。
 
 <!-- gracker-diagram: ch06-04-passthrough-cache-coordination -->
 ![passthrough 仍需缓存与锁协调](../../assets/diagrams/ch06/ch06-04-passthrough-cache-coordination.png)
@@ -267,7 +267,7 @@ Android common kernel 为 MediaProvider 的 mixed-mode（混合模式）用例�
 
 ### FUSE BPF 当前主要服务 App 专属目录
 
-`android17-6.18-2026-06_r6` 的 GKI（Generic Kernel Image，通用内核镜像）配置同时包含 `CONFIG_FUSE_FS=y` 与 `CONFIG_FUSE_BPF=y`；MediaProvider 源码则注明，FUSE BPF 当前限制在 `Android/data` 与 `Android/obb`，通过 backing fd 把符合规则的请求交给底层文件系统。r1 的 fuse_bpf_install() 还限定 PRIMARY_VOLUME_PREFIX；不能把它推广到任意可移除卷或所有外部目录。
+`android17-6.18-2026-06_r6` 的 GKI（Generic Kernel Image，通用内核镜像）配置同时包含 `CONFIG_FUSE_FS=y` 与 `CONFIG_FUSE_BPF=y`；MediaProvider 源码则注明，FUSE BPF 当前限制在 `Android/data` 与 `Android/obb`，通过 backing fd 把符合规则的请求交给底层文件系统。r1 的 fuse_bpf_install() 还限定 PRIMARY_VOLUME_PREFIX，覆盖到主卷的这两个目录为止；可移除卷和其他外部目录都在这套机制之外。
 
 而且这些能力从源码配置到实机生效，中间还隔着几层条件：
 
@@ -310,7 +310,7 @@ Android 10 及更高版本写媒体可以用 `IS_PENDING`：条目先保持待�
 
 ### 文档与 Downloads
 
-用户选择的 PDF、压缩包这类文档走 SAF；App 自己生成、希望用户长期保留的下载文件，可按官方 API 写入 Downloads。查找用户选中的文件时直接保存 URI；若 ACTION_OPEN_DOCUMENT 等返回可持久化授权，再按实际授予的读写 flags 调用 takePersistableUriPermission()。ACTION_GET_CONTENT 的临时授权不能一概持久化，文档被移动、删除或授权失效后仍需重新选择。
+用户选择的 PDF、压缩包这类文档走 SAF；App 自己生成、希望用户长期保留的下载文件，可按官方 API 写入 Downloads。查找用户选中的文件时直接保存 URI；若 ACTION_OPEN_DOCUMENT 等返回可持久化授权，再按实际授予的读写 flags 调用 takePersistableUriPermission()。ACTION_GET_CONTENT 的临时授权不都能持久化，具体以实际授予的授权为准，文档被移动、删除或授权失效后仍需重新选择。
 
 Provider 可能返回管道 fd，它不支持 seek（随机定位）。调用前先确认业务是否需要随机访问；需要的话，复制到受控的临时文件，操作结束后清理掉。
 
@@ -359,7 +359,7 @@ adb shell 'dumpsys -l | grep -i media'
 <!-- gracker-diagram: ch06-04-diagnostic-alignment -->
 ![用同一时间轴对齐 I/O 证据](../../assets/diagrams/ch06/ch06-04-diagnostic-alignment.png)
 
-图：示意区间不按比例，不能当实测耗时。先把查询、打开、首字节和完整读写分开埋点，再对齐 Binder/FUSE、线程状态与块事件；D 状态不能单独锁定 FUSE。
+图：示意区间不按比例，耗时以实测为准。先把查询、打开、首字节和完整读写分开埋点，再对齐 Binder/FUSE、线程状态与块事件；单凭 D 状态定不到 FUSE。
 
 目录扫描的场景，建议把下面几项一并记录：
 
@@ -380,12 +380,12 @@ grep "^fuse:" "$TRACE/available_events"
 '
 ```
 
-受控窗口出现 FUSE_READ / FUSE_WRITE 的 send 事件，可以确认请求进入了 FUSE 发送/排队路径。r6 在分配请求 unique 时记录这个事件，随后才入待处理队列，因此单凭 send 不能证明 daemon 已经读取、处理或成功完成。可按 connection + unique 配对 send/end，并检查 end.error；这个区间还含排队和等待，不能直接当成 daemon CPU 时间或设备服务时间。
+受控窗口出现 FUSE_READ / FUSE_WRITE 的 send 事件，可以确认请求进入了 FUSE 发送/排队路径。r6 在分配请求 unique 时记录这个事件，随后才入待处理队列，所以 send 只走到排队这一步，daemon 是否已经读取、处理或成功完成，要看 send 之后的事件。可按 connection + unique 配对 send/end，并检查 end.error；配对出来的区间还含排队和等待，属于端到端跨度，daemon CPU 时间、设备服务时间是另外两个量。
 
 <!-- gracker-diagram: ch06-04-fuse-send-end -->
 ![FUSE send/end 事件的证明边界](../../assets/diagrams/ch06/ch06-04-fuse-send-end.png)
 
-图：r6 send 在分配 unique 时记录，随后才入 pending 队列；end 记录结束与 error。配对区间包含排队和等待，不能直接当 daemon CPU 时间。
+图：r6 send 在分配 unique 时记录，随后才入 pending 队列；end 记录结束与 error。配对区间包含排队和等待，读出来是端到端跨度。
 
 反过来，如果只看到 `FUSE_OPEN`、read/write 缺席，可能是 passthrough/BPF backing 在起作用，也可能是页缓存命中、测试没打出预期的 syscall（系统调用）、读取失败或采集窗口不完整。我们要按时间对齐文件来源、冷暖缓存、MediaProvider 日志、应用 syscall，以及底层文件系统和块层事件，再下结论。
 
@@ -437,7 +437,7 @@ adb shell su 0 strace -f -ttT \
 const size_t MAX_READ_SIZE = FUSE_MAX_MAX_PAGES * getpagesize();
 ```
 
-页大小改变的是 FUSE 连接协商的最大读取上限；单次请求仍受 App buffer（缓冲区）、read-ahead、内核限制和文件状态影响。所以 16 KB 页并不会自动让共享存储吞吐提高四倍，光看 `MAX_READ_SIZE` 也推不出尾延迟的改善——这两项都要在 4 KB 与 16 KB 设备上用相同 workload（工作负载） 实测。
+页大小改变的是 FUSE 连接协商的最大读取上限；单次请求仍受 App buffer（缓冲区）、read-ahead、内核限制和文件状态影响。所以 16 KB 页换不来自动提高四倍的共享存储吞吐，`MAX_READ_SIZE` 的变化也回答不了尾延迟问题——这两项都要在 4 KB 与 16 KB 设备上用相同 workload（工作负载） 实测。
 
 <!-- gracker-diagram: ch06-04-page-size-read-limit -->
 ![页大小改变读取上限而非固定请求](../../assets/diagrams/ch06/ch06-04-page-size-read-limit.png)
