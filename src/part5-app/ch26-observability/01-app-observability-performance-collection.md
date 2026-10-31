@@ -134,10 +134,6 @@ Firebase Performance Monitoring 更接近应用内部性能观测：自动采集
 
 所以应用自建体系通常组合两类数据：Android vitals 提供 Play 侧质量结果，自建指标补充内部维度，日志和追踪提供现场证据。只看 vitals，能发现质量变化；要解释变化出现在哪个业务场景、由什么触发，还得靠后者。
 
-<!-- gracker-diagram: a286-01-metrics-logs-traces-and-play-baseline -->
-![指标找群体回归，日志与追踪还原单次证据](../../assets/diagrams/ch26/a286-01-metrics-logs-traces-and-play-baseline.png)
-
-图：当前内存core vitals为Anonymous RSS+Swap与bitmap内存，不直接复用App PSS数值。
 
 #### 事件数据模型设计示例
 
@@ -242,19 +238,11 @@ Firebase Performance Monitoring 更接近应用内部性能观测：自动采集
 
 `trace_id`、`span_id` 和 `parent_span_id` 构成父子关联，单调时钟给出同设备会话内的起点与时长。
 
-<!-- gracker-diagram: a286-02-event-identity-clocks-and-schema -->
-![公共信封分开管理身份、关联、时钟和版本](../../assets/diagrams/ch26/a286-02-event-identity-clocks-and-schema.png)
-
-图：会话跨重启要开启新时钟区间；字段名是应用协议，不是Android统一事件格式。
 
 Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求系统追踪（system trace）、Java 堆转储（heap dump）、原生堆采样（heap profile）或调用栈采样（stack sampling）；请求受系统限流且不保证执行，结果会脱敏并只包含请求应用的相关信息。Android 16 / API 36 起可注册系统触发器；Android 17 / API 37 又增加冷启动（`TRIGGER_TYPE_COLD_START`）、异常行为（`TRIGGER_TYPE_ANOMALY`）等类型。异常发生后想拿完整设备 Perfetto 数据，这条能力给不了保证；回调失败、文件配额、用户数据政策与上传策略都要单独处理。
 
 数据模型的兼容靠版本机制维持，而非“字段永不删除”的约定。每条事件都要携带数据结构（schema）版本；服务端至少兼容当前版本和迁移窗口内的旧版本。新增字段必须有缺省语义；废弃字段应先让服务端同时读取新旧格式，验证新格式数据后再停止发送旧字段。
 
-<!-- gracker-diagram: a286-03-profiling-public-request-and-trigger-versions -->
-![线上 Profiling 是受限补充证据，不是常态全设备追踪](../../assets/diagrams/ch26/a286-03-profiling-public-request-and-trigger-versions.png)
-
-图：失败、无制品、文件配额与重启后监听恢复都要处理；不能承诺拿到完整设备Perfetto。
 
 最小版本只需要事件类型、双时钟、构建版本、会话/场景 ID、采样纳入概率与业务核心字段；取值数量庞大的高基数字段，要放在指标标签集合之外。
 
@@ -303,10 +291,6 @@ Crash 还要走一条独立于普通异步队列的最小保全路径：进程�
 
 服务端分析层要保留几类关联键：`event_id`、`session_id`、`trace_id`、`span_id`、`scene_id`、`build_version`、`device_model`、`android_version` 和 `network_type`。有了它们，Crash、ANR、性能指标、用户日志和发布记录才能互相查询。其中 `session_id` 应是短期、可重置且用途受限的标识，永久设备 ID 替代不了它。详见 16.1 节的采集到治理过程设计。
 
-<!-- gracker-diagram: a286-05-server-query-alert-and-verification -->
-![从告警到修复，用同一关联键找回证据](../../assets/diagrams/ch26/a286-05-server-query-alert-and-verification.png)
-
-图：TTID看首帧，TTFD由产品可用定义与reportFullyDrawn落点约束；总耗时不能解释阶段。
 
 ### 采样策略与数据量控制
 
@@ -323,10 +307,6 @@ Crash 还要走一条独立于普通异步队列的最小保全路径：进程�
 
 采样后的数据必须携带 `sampling_rule_id`、分层字段和该事件的 `inclusion_probability`（纳入样本的概率）。服务端要按权重估计总体，前提就是抽样设计与纳入概率已知；异常补采、失败全量和成功抽样混在一起时，必须按层分别计算，总体估计靠“所有样本除以一个采样率”是得不到的。单用户排查界面还要显示采样命中与丢弃原因，别把“没有采到”误判成“没有发生”。
 
-<!-- gracker-diagram: a286-06-sampling-strata-and-inclusion-probability -->
-![采样要保分母、概率和缺失原因](../../assets/diagrams/ch26/a286-06-sampling-strata-and-inclusion-probability.png)
-
-图：概率来自抽样设计；基线摘要、诊断附件和失败全量各有预算，服务端按已知层次重算。
 
 ### 可观测性建设的常见陷阱
 
@@ -378,10 +358,6 @@ Crash 还要走一条独立于普通异步队列的最小保全路径：进程�
 
 隐私处理可以参考 Firebase Performance Monitoring 的做法：对 HTTP 请求使用不含查询参数的 URL 构造聚合模式，并声明不永久保存个人可识别信息。自建系统也应在采集前完成字段允许列表、脱敏与用途分级；个人信息的删除流程无法用哈希替代。[Firebase Performance Monitoring：User data](https://firebase.google.com/docs/perf-mon/#user_data)
 
-<!-- gracker-diagram: a286-07-baseline-versus-authorized-diagnostics -->
-![低成本基线与目标诊断分别设预算和生命周期](../../assets/diagrams/ch26/a286-07-baseline-versus-authorized-diagnostics.png)
-
-图：对原文做SHA不等于匿名化；HMAC聚合也要先最小化字段、控制密钥和保留用途。
 
 ### 平台源码基线
 
@@ -617,10 +593,6 @@ String gcTime  = Debug.getRuntimeStat("art.gc.gc-time");
 
 两个返回值都有讲究：`getNativeHeapAllocatedSize()` 返回的是 Native heap allocator 统计，进程全部 Native 映射比它大；`getRuntimeStat()` 在键不受支持时可能返回 `null`。
 
-<!-- gracker-diagram: a286-10-memory-metric-attribution-and-version -->
-![PSS、Native allocator 和系统 RAM 是不同读数](../../assets/diagrams/ch26/a286-10-memory-metric-attribution-and-version.png)
-
-图：长期采样带时钟、进程序列、版本和状态；公开快照不能单独说明哪个系统策略触发。
 
 #### 3.3 Compaction、Freezer 与 Android 17 MemoryLimiter
 
@@ -650,10 +622,6 @@ enum CompactProfile {
 
 `MemoryLimiter` 由 system_server 的 Java 控制层与 JNI / Native 监控层组成。启用时，它为目标进程配置 cgroup v2 内存控制组（memcg）的 `memory.high`、`memory.swap.high` 等限制，并监听越界事件。启用条件有四项：功能开关开启、代码运行在系统用户标识（system UID）下、存在有效厂商配置、设备内存满足条件。
 
-<!-- gracker-diagram: a286-11-compaction-freezer-and-visible-gaps -->
-![内存整理、冻结与限制器，不能只从 PSS 曲线反推](../../assets/diagrams/ch26/a286-11-compaction-freezer-and-visible-gaps.png)
-
-图：图中系统策略不保证所有设备开启；应用恢复后记真实缺口，不能补0或确定标成冻结。
 
 内核语义以 `android17-6.18-2026-06_r6` 为准。该版本的 [cgroup v2 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst) 把 `memory.high` 定义为内存使用节流线：超过后进程承受回收压力，但内核不会仅因越过 `memory.high` 就调用 OOM killer（内存耗尽时选择进程终止的内核机制）。MemoryLimiter 在此基础上监控事件，并在匿名内存与交换空间总量（anon+swap）分支由 system_server 另行安排进程终止。所以这里的完整链条是“节流靠内核、终止由 system_server 安排”，合并描述成“内核越界后自动终止”就错了。
 
@@ -713,10 +681,6 @@ if (proc_mem.SmapsOrRollup(&stats)) {
 
 按成本分两层用：常态用聚合快照发现 PSS、nativePss、GC 或后台回落异常；命中诊断条件后，再在受控设备或受信系统组件中上 VMA 扫描、`libmemevents`、Perfetto、heap dump（堆转储）或 Perfetto 的 Native 堆分析器 heapprofd。聚合值负责发现趋势，深度工具负责解释来源，两者各干各的活。
 
-<!-- gracker-diagram: a286-13-native-memory-two-sources-and-read-failure -->
-![图形 memtrack 与 smaps 页统计是两条路径](../../assets/diagrams/ch26/a286-13-native-memory-two-sources-and-read-failure.png)
-
-图：默认库在受信平台组件中使用；普通应用继续公开MemoryInfo和受支持的诊断工具。
 
 ---
 
@@ -740,10 +704,6 @@ adb bugreport bugreport.zip
 
 两者配合的节奏是：App APM 持续记录受控的低成本指标，Battery Historian、Power Profiler 和 Perfetto 做抽样复现与深入归因。线上告警先确定版本、设备和场景，再在可复现设备上采集系统级证据。另外别忘了 StatsD config/report 仍是特权路径——Battery Historian 能读 bugreport，推不出普通 App 能在线读取同一批系统数据。
 
-<!-- gracker-diagram: a286-14-online-apm-versus-offline-power-evidence -->
-![线上低成本趋势，离线系统证据做深入归因](../../assets/diagrams/ch26/a286-14-online-apm-versus-offline-power-evidence.png)
-
-图：工具能读bugreport，不意味着普通应用有权限持续读取StatsD或全设备系统记录。
 
 ---
 
@@ -931,10 +891,6 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 
 状态转换只由实际生命周期、任务开始/停止和公开系统结果驱动。App 查询“当前是否被冻结”没有可靠途径——被冻结时本身就没有执行代码的机会；恢复后我们只能承认这段数据缺失，记录`unsupported`、`not_scheduled`、`unobserved_gap`、`budget_exhausted`等已知状态；只有关联到系统冻结证据时才进一步标记`frozen_gap`，拿零填充只会骗过看板。
 
-<!-- gracker-diagram: a286-18-lifecycle-constraint-and-unobserved-intervals -->
-![采集按真实执行机会降级，冻结间隔不补零](../../assets/diagrams/ch26/a286-18-lifecycle-constraint-and-unobserved-intervals.png)
-
-图：内存压力时拒绝大附件并缩缓冲；不能为了诊断压力马上制造大量分配和网络。
 
 ---
 
@@ -1008,10 +964,6 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 
 保留时长由数据分类、业务 SLO、地区法规和成本共同确定；所有项目通用的固定天数并不存在。
 
-<!-- gracker-diagram: a286-20-monitor-the-monitor-and-release-budgets -->
-![SDK 自监控必须进入同设备与场景的发布预算](../../assets/diagrams/ch26/a286-20-monitor-the-monitor-and-release-budgets.png)
-
-图：对象池默认不启用；复用降低分配也引入所有权、同步和旧字段残留，需要实测取舍。
 
 ---
 

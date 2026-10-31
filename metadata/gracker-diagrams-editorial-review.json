@@ -66947,9 +66947,202 @@
       "before_count": 20,
       "before_all_images": 20,
       "sha256_before": "7ff4818f0a10de1890989f0a8068d39b78029df3cffad41801edde0516d9ad04",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a286-01-metrics-logs-traces-and-play-baseline",
+          "title": "指标找群体回归，日志与追踪还原单次证据",
+          "decision": "remove",
+          "reason": "三信号及Play四卡重复信号用途表和相邻三段产品定位。",
+          "original_line": 137,
+          "heading": "### 指标、日志与追踪分别回答什么问题"
+        },
+        {
+          "original_id": "a286-02-event-identity-clocks-and-schema",
+          "title": "公共信封分开管理身份、关联、时钟和版本",
+          "decision": "remove",
+          "reason": "身份、关联、双时钟与版本四卡重复完整公共信封和每个字段解释。",
+          "original_line": 245,
+          "heading": "#### 事件数据模型设计示例"
+        },
+        {
+          "original_id": "a286-03-profiling-public-request-and-trigger-versions",
+          "title": "线上 Profiling 是受限补充证据，不是常态全设备追踪",
+          "decision": "remove",
+          "reason": "Profiling版本与限流四卡重复API35至37及无结果说明，没有额外失败状态。",
+          "original_line": 254,
+          "heading": "#### 事件数据模型设计示例"
+        },
+        {
+          "original_id": "a286-04-bounded-client-data-and-control-plane",
+          "title": "端侧按数据流串联，配置与自监控另走控制面",
+          "decision": "keep",
+          "reason": "轻量采集到有界队列、持久化和批量上传的数据流，与签名配置和SDK自监控的控制方向分开。",
+          "original_line": 269,
+          "heading": "### 应用侧监控体系分层设计"
+        },
+        {
+          "original_id": "a286-05-server-query-alert-and-verification",
+          "title": "从告警到修复，用同一关联键找回证据",
+          "decision": "remove",
+          "reason": "接入、分析、告警和证据四卡重复完整七阶段数据路径表和SLO段落。",
+          "original_line": 306,
+          "heading": "### 从采集到告警的完整数据路径"
+        },
+        {
+          "original_id": "a286-06-sampling-strata-and-inclusion-probability",
+          "title": "采样要保分母、概率和缺失原因",
+          "decision": "remove",
+          "reason": "稳定分桶、分层、权重和缺失四卡重复四策略、概率估计和陷阱解释。",
+          "original_line": 326,
+          "heading": "### 采样策略与数据量控制"
+        },
+        {
+          "original_id": "a286-07-baseline-versus-authorized-diagnostics",
+          "title": "低成本基线与目标诊断分别设预算和生命周期",
+          "decision": "remove",
+          "reason": "基线诊断、字段与配置四卡重复目标采集三类能力和前文两通道预算。",
+          "original_line": 381,
+          "heading": "### 用户日志与远程诊断：现场证据层"
+        },
+        {
+          "original_id": "a286-09-pull-provider-request-reply-and-cooldown",
+          "title": "Pull 是 statsd 请求提供方，不是提供方订阅读数",
+          "decision": "keep",
+          "reason": "statsd和provider两轨区分请求、executor填数据、pullFinished响应和聚合结果，避免把pull误读为提供方读取报告。",
+          "original_line": 492,
+          "heading": "#### 1.2 数据流路径"
+        },
+        {
+          "original_id": "a286-08-statsd-three-directions-and-permissions",
+          "title": "StatsD 三条方向不同，普通 App 不获得系统报告",
+          "decision": "keep",
+          "reason": "公开breadcrumb入站、特权config/report和pull提供方三条不同方向与权限概览，补充双轨图的整体位置。",
+          "original_line": 501,
+          "heading": "#### 1.2 数据流路径"
+        },
+        {
+          "original_id": "a286-10-memory-metric-attribution-and-version",
+          "title": "PSS、Native allocator 和系统 RAM 是不同读数",
+          "decision": "remove",
+          "reason": "PSS、allocator、GC和freeMem四卡重复各API示例及版本含义分节。",
+          "original_line": 620,
+          "heading": "#### 3.2 Native 内存与运行时统计"
+        },
+        {
+          "original_id": "a286-11-compaction-freezer-and-visible-gaps",
+          "title": "内存整理、冻结与限制器，不能只从 PSS 曲线反推",
+          "decision": "remove",
+          "reason": "compaction/freezer/limiter/缺口四卡重复机制原文，内核和系统真实链条另有保留图。",
+          "original_line": 653,
+          "heading": "##### MemoryLimiter：内存控制组的内核级节流"
+        },
+        {
+          "original_id": "a286-12-memory-limiter-kernel-throttle-system-kill",
+          "title": "memory.high 先由内核节流，anon+swap 终止由系统安排",
+          "decision": "keep",
+          "reason": "memcg配置到内核回收节流、Native事件和Java anon+swap剖析/延迟kill链，区分内核high阈值与系统终止决定。",
+          "original_line": 666,
+          "heading": "##### MemoryLimiter：内存控制组的内核级节流"
+        },
+        {
+          "original_id": "a286-13-native-memory-two-sources-and-read-failure",
+          "title": "图形 memtrack 与 smaps 页统计是两条路径",
+          "decision": "remove",
+          "reason": "memtrack、rollup、失败和特权四卡复述C++示例、版本表与系统边界，没有实际选路关系。",
+          "original_line": 716,
+          "heading": "#### 3.5 `libmeminfo` 与 `libmemevents` 的系统侧边界"
+        },
+        {
+          "original_id": "a286-14-online-apm-versus-offline-power-evidence",
+          "title": "线上低成本趋势，离线系统证据做深入归因",
+          "decision": "remove",
+          "reason": "APM、Historian、Power工具与复现四卡重复离线分析和线上配合原文。",
+          "original_line": 743,
+          "heading": "#### 4.2 与 App 侧监控的配合"
+        },
+        {
+          "original_id": "a286-15-network-stage-route-and-bytes",
+          "title": "网络观测分阶段、逻辑请求与实际尝试次数",
+          "decision": "keep",
+          "reason": "网络阶段与逻辑请求两轨区分阶段耗时、实际尝试和业务重试放大，配合字节编码口径说明。",
+          "original_line": 782,
+          "heading": "#### 5.3 传输体积（Payload Size）统计"
+        },
+        {
+          "original_id": "a286-16-jankstats-frame-data-ownership",
+          "title": "JankStats 回调对象会复用，跨回调保存先复制",
+          "decision": "keep",
+          "reason": "Window回调到copy快照再后台处理的对象所有权转移，避免将复用FrameData跨回调直接持有。",
+          "original_line": 843,
+          "heading": "#### 6.3 实际接入建议"
+        },
+        {
+          "original_id": "a286-17-leakcanary-retained-dump-and-reference-path",
+          "title": "弱引用观察只是候选，堆转储与分析才找保留路径",
+          "decision": "keep",
+          "reason": "弱引用观察、retained候选、阈值堆转储和Shark引用链解释的流水线，明确暂停发生阶段。",
+          "original_line": 875,
+          "heading": "#### 7.3 线上边界"
+        },
+        {
+          "original_id": "a286-18-lifecycle-constraint-and-unobserved-intervals",
+          "title": "采集按真实执行机会降级，冻结间隔不补零",
+          "decision": "remove",
+          "reason": "前后台、冻结和恢复四卡重复五状态降级表，没有状态迁移边；正文还保留内存压力状态。",
+          "original_line": 934,
+          "heading": "#### 8.3 约束驱动的采集降级状态机"
+        },
+        {
+          "original_id": "a286-19-durable-batches-ack-retry-and-isolation",
+          "title": "持久化批次按 ID 幂等确认，ACK 后回收",
+          "decision": "keep",
+          "reason": "持久化批次到受约束上传和服务端幂等ACK，再分失败保留与成功回收，表达重复投递与回收条件。",
+          "original_line": 960,
+          "heading": "#### 9.2 上报策略"
+        },
+        {
+          "original_id": "a286-20-monitor-the-monitor-and-release-budgets",
+          "title": "SDK 自监控必须进入同设备与场景的发布预算",
+          "decision": "remove",
+          "reason": "入口、本地、网络和开关对照四卡重复SDK预算分节及监控范围清单。",
+          "original_line": 1011,
+          "heading": "#### 10.3 数据生命周期"
+        }
+      ],
+      "sha256_after": "d83da3c923f67ada72bf12cdbaef50e6bda06d06ab5c360cf2cfeda223d1cfad",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:28:03.951344+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 20,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a286/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a286/visual-review.json",
+      "retired_diagrams": [
+        "a286-01-metrics-logs-traces-and-play-baseline",
+        "a286-02-event-identity-clocks-and-schema",
+        "a286-03-profiling-public-request-and-trigger-versions",
+        "a286-05-server-query-alert-and-verification",
+        "a286-06-sampling-strata-and-inclusion-probability",
+        "a286-07-baseline-versus-authorized-diagnostics",
+        "a286-10-memory-metric-attribution-and-version",
+        "a286-11-compaction-freezer-and-visible-gaps",
+        "a286-13-native-memory-two-sources-and-read-failure",
+        "a286-14-online-apm-versus-offline-power-evidence",
+        "a286-18-lifecycle-constraint-and-unobserved-intervals",
+        "a286-20-monitor-the-monitor-and-release-budgets"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-286/retired-assets.json"
     },
     {
       "index": 287,
@@ -67062,8 +67255,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 196,
-  "next_article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+  "reviewed_articles": 197,
+  "next_article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -67073,7 +67266,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:26:18.925846+08:00",
+  "updated_at": "2026-10-31T19:28:03.951344+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -67195,9 +67388,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5689,
-  "reviewed_placements_after": 2230,
-  "net_removed_placements": 3459,
+  "reviewed_placements_before": 5709,
+  "reviewed_placements_after": 2238,
+  "net_removed_placements": 3471,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -67221,7 +67414,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 196,
+  "currently_matching_reviewed_source_count": 197,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
