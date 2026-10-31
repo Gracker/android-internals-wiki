@@ -91,10 +91,6 @@ WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面
 
 为什么要拆开？把所有耗时压成一个“WebView 加载时间”，很难判断改动省下了哪一段。预热能缩短首次 provider 装载，也会提高 App 启动期内存；离线包能省掉网络等待，版本混用时却会制造白屏；WebView 池能省掉实例构造，也可能把旧页面状态带入新页面。每项优化都要带上命中、代价、失败和回退四类指标，方便判断收益落在哪一段。
 
-<!-- gracker-diagram: a247-01-four-domains -->
-![WebView打开与显示的四个执行域](../../assets/diagrams/ch22/a247-01-four-domains.png)
-
-图：把命中收益与启动、流量、内存和恢复代价同时度量。
 
 这条基线怎么用要看内容：框架、HWUI 和显示系统的行为查平台源码；内存回收，以及 dma-buf（设备间共享缓冲区）、fence（跨 CPU、GPU 和显示设备传递完成状态的同步对象）这类基础语义查内核；provider 是实现包，随设备上的可更新软件包变化。平台源码能说明 `WebViewFactory` 怎样选择和加载 provider，对应的 Chromium 源码版本（revision）仍要单独核对。更完整的线程与显示路径见 [13.9 Android 17 WebView 渲染管线](../../part2-performance/ch13-rendering-pipelines/09-webview-rendering.md)。
 
@@ -115,10 +111,6 @@ WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面
 
 `onPageFinished()` 只说明 main frame（页面顶层框架）完成加载。Android 官方文档明确指出，它不保证下一帧已经反映当时的 DOM 状态，也说明不了首屏数据和交互处理已经就绪。`onPageCommitVisible()` 的用途更窄：它保证后续绘制不会带出上一次导航的旧内容，适合控制复用 WebView 的显示时机。
 
-<!-- gracker-diagram: a247-02-completion-contracts -->
-![页面完成回调的不同承诺](../../assets/diagrams/ch22/a247-02-completion-contracts.png)
-
-图：页面可用、可绘制与屏幕呈现是不同终点。
 
 `page_usable_signal` 应由页面按业务定义发出。例如商品页可在标题、价格、主图占位和购买按钮事件完成后上报；帮助页可在首屏正文与目录点击就绪后上报。页面侧还可以上报 FCP（首次内容绘制）、LCP（最大内容绘制）、Long Task（网页主线程长任务）与资源时间，但这些指标由可更新 provider 的 Web 能力实现，采集前要在目标 provider 上验证。
 
@@ -160,10 +152,6 @@ class H5OpenTiming(
 
 `elapsedRealtimeNanos()` 不受用户改时间或网络校时影响，适合计算进程内耗时。每次需要单独统计的导航创建独立 collector；调用 `mark()` 必须传递回调捕获的 `navigationId`，不要在回调发生时读取可变的“当前 ID”。重定向链是否共享一次业务打开的 ID 由采集协议定义；缺少它时，旧页面的迟到回调可能写进新导航。`WebView.getCurrentWebViewPackage()` 自 API 26 起可用，查询本身不会装载 provider；适用范围最低为 API 29。
 
-<!-- gracker-diagram: a247-03-navigation-time-identity -->
-![导航身份与单调时钟一起采集](../../assets/diagrams/ch22/a247-03-navigation-time-identity.png)
-
-图：ID必须参与写入判断，不能只出现在报告字段中。
 
 报告里我们还要带上页面 bundle（前端构建产物）版本、离线包版本、预热状态、实例来源、网络类型、设备内存档位、前后台状态和错误码。平均值只适合观察趋势；要判定一次发布，至少要看分位数、低内存设备、弱网和各 provider 版本。
 
@@ -183,19 +171,11 @@ class H5OpenTiming(
 
 在 Perfetto（Android 系统跟踪工具） 里看到 `CrRendererMain`、raster worker（光栅化工作线程） 或 GPU service（GPU 服务） 线程出现，只说明对应执行域已经活动。线程名会随 provider 改版变化，诊断时还要结合进程关系、slice（时间片）、调用栈与 SurfaceFlinger layer（合成图层）。
 
-<!-- gracker-diagram: a247-04-startup-instance-navigation -->
-![启动初始化与页面成本分开](../../assets/diagrams/ch22/a247-04-startup-instance-navigation.png)
-
-图：线程出现只表示执行域已活动，不证明整个页面已就绪。
 
 ### AndroidX WebKit 1.16.0 起稳定的异步启动初始化
 
 启动初始化这段的现成解法是异步启动 API：截至 2026-10-25，AndroidX WebKit 最新稳定版是 1.18.0，异步启动 API 在 1.16.0 进入稳定状态，该版本把 `androidx.webkit:webkit` 的最低支持 SDK 提升到 24。`WebViewCompat.startUpWebView()` 把可以后台执行的启动工作交给指定 executor（任务执行器），provider 支持相应异步模式时，把 UI 工作按配置分段；缺少底层能力时库有兼容回退，不能假定每个 provider 都有相同分段和诊断能力。启动初始化每个进程只发生一次；回调到达前访问其他 `android.webkit` 或 `androidx.webkit` API，UI 线程仍可能等待尚未完成的部分。
 
-<!-- gracker-diagram: a247-05-startup-api-provider-fallback -->
-![异步启动依赖provider能力](../../assets/diagrams/ch22/a247-05-startup-api-provider-fallback.png)
-
-图：API无需先检查WebViewFeature；先调用检查本身也可能影响启动收益。
 
 下面的代码用于在可控时机启动 WebView，并记录启动初始化是否曾阻塞 UI 线程。
 
@@ -241,17 +221,9 @@ class WebViewBootstrap(
 
 `WebViewStartupMetrics` 是业务接口，以上两项应接收可空 `List<StartUpLocation>?`：null 记为“不支持诊断”，空列表才是已支持但未记录到阻塞位置。executor 拒绝提交等同步调用失败及 provider 装载阶段异常也不等于一定经 `onError()` 送达；owner 应提供受控失败状态，避免在未收到成功回调时误判已就绪。
 
-<!-- gracker-diagram: a247-06-startup-null-diagnostics -->
-![启动诊断必须区分未知与空结果](../../assets/diagrams/ch22/a247-06-startup-null-diagnostics.png)
-
-图：保留可空结果，明确库回调与同步失败的边界。
 
 那该在什么时机调用？这取决于页面是不是启动主路径：
 
-<!-- gracker-diagram: a247-07-startup-policy -->
-![预启动时机服从用户路径](../../assets/diagrams/ch22/a247-07-startup-policy.png)
-
-图：用进入率、命中和启动期CPU/内存验证触发时机。
 
 - App 启动不依赖 H5：在首屏关键工作结束后、预测用户即将进入 H5 前启动，并尽量等待回调；
 - App 启动依赖 H5：可在 `Application.onCreate()` 较早调用，让后台部分与其他启动工作并行；创建 WebView 前仍要减少同一时段的 UI 线程任务；
@@ -337,10 +309,6 @@ class ActivityWebViewSlot(
 
 池容量没有跨设备通用值，应从空闲实例 PSS（按比例归属进程的物理内存）与图形内存增量、并发打开数量、低内存设备回收率和池命中率推导。支付、第三方登录、用户输入 URL、外部网页、文件上传和权限敏感页面更适合新建实例或交给 Custom Tabs。
 
-<!-- gracker-diagram: a247-10-pool-admission -->
-![池化准入和全局状态边界](../../assets/diagrams/ch22/a247-10-pool-admission.png)
-
-图：池化只有在收益和状态污染测试同时通过后采用。
 
 归还实例时还要避开几类会影响共享状态的全局操作：
 
@@ -355,10 +323,6 @@ class ActivityWebViewSlot(
 
 最多一个使用 WebView 的进程使用默认目录，其余进程各用唯一 suffix，且 suffix 必须避开路径分隔符。目录分开之后，Cookie、LocalStorage 与缓存也就不会直接共享；确有跨进程登录需求时，要通过受控协议显式同步。大多数 App 更合适的做法是把 WebView 集中在一个进程，并在其他进程尽早调用 `WebView.disableWebView()`，防止 SDK 意外初始化。
 
-<!-- gracker-diagram: a247-11-process-data-directory -->
-![多进程必须先确定数据目录](../../assets/diagrams/ch22/a247-11-process-data-directory.png)
-
-图：suffix不是启动后可随时切换的账号隔离开关。
 
 ## 离线包与资源拦截
 
@@ -376,10 +340,6 @@ WebView 的缓存与预取，我们按谁来控制拆开看：
 
 这些缓存层要守住一条底线：命中本地内容时仍保留 HTTP 与 origin（来源） 语义。把任意 URL 映射到本地文件、忽略 MIME（媒体类型）、把多个版本的 HTML 与 JS 混用，都会让“加速”转成安全或一致性问题。
 
-<!-- gracker-diagram: a247-12-cache-ownership -->
-![缓存与离线资源各有所有者](../../assets/diagrams/ch22/a247-12-cache-ownership.png)
-
-图：不能通过任意URL到文件映射破坏来源与响应语义。
 
 ### `shouldInterceptRequest()` 的线程与协议边界
 
@@ -426,10 +386,6 @@ class SignedOfflineClient(
 
 `OfflineIndex`、entry 类型是应用自定义契约：必须在更新阶段完成签名/路径穿越防护/资源大小校验，为每次导航固定清单和账号范围，并按 Cookie、授权及 Vary 等响应语义决定是否允许本地命中。仅通过 GET+HTTPS 检查不足以允许用户私有接口或任意同域资源；返回流由 WebView 消费，异常分支由实现关闭尚未交付的流。
 
-<!-- gracker-diagram: a247-13-offline-intercept-gates -->
-![离线拦截先验证资格再交付流](../../assets/diagrams/ch22/a247-13-offline-intercept-gates.png)
-
-图：高频回调不解压整包，不等待UI；签名和发布提前完成。
 
 这个示例把 Range（字节范围） 请求交回 provider；若离线包需要承载音视频或大文件，必须完整实现字节范围与 `206 Partial Content` 语义。返回 `null` 表示交回 provider 正常加载。
 
@@ -443,10 +399,6 @@ class SignedOfflineClient(
 
 因此，导航策略还要独立校验可信主文档及受控跳转；主框架白名单也不能替代对子资源、iframe 与 Bridge 权限的校验。拦截器看不到重定向后的每一跳，不能据此声称已完整检查最终来源。
 
-<!-- gracker-diagram: a247-14-interception-exclusions -->
-![拦截器看不到的请求与跳转](../../assets/diagrams/ch22/a247-14-interception-exclusions.png)
-
-图：拦截成功不是完整导航或权限校验的证明。
 
 ### 静态本地内容使用 `WebViewAssetLoader`
 
@@ -454,10 +406,6 @@ class SignedOfflineClient(
 
 使用默认的 `https://appassets.androidplatform.net/` 时，要划清资源路径与线上 origin 各自的范围；使用自有域名时，要防止本地映射和线上同域资源混在一起。动态离线包仍需自己的签名、版本与回退系统，`WebViewAssetLoader` 不负责这些发布问题。
 
-<!-- gracker-diagram: a247-15-asset-loader-origin -->
-![本地静态内容通过HTTP(S)来源加载](../../assets/diagrams/ch22/a247-15-asset-loader-origin.png)
-
-图：来源映射与动态离线包管理是不同职责。
 
 ### 动态离线包的发布协议
 
@@ -487,26 +435,14 @@ HTML、JS 与 CSS 必须来自同一兼容集合。只更新主文档或只更�
 
 `prerenderUrlAsync()` 必须从 UI 线程发起。
 
-<!-- gracker-diagram: a247-17-speculation-granularity -->
-![推测加载按origin和URL区分](../../assets/diagrams/ch22/a247-17-speculation-granularity.png)
-
-图：提前做的工作越多，未命中与副作用代价也越大。
 
 预取的后台请求会跳过 `shouldInterceptRequest()`；用户导航时，主 HTML 才进入拦截回调。如果此时返回自定义 `WebResourceResponse`，provider 会采用拦截结果并绕过预取缓存。离线包与 provider 预取同时启用时，必须设计清楚谁拥有主文档。
 
 预取匹配也受请求与 profile 状态影响；旧接口文档明确 `loadUrl(url, additionalHttpHeaders)` 的附加头不参与预取匹配，不能仅以 URL 相同就断言认证/业务变体相同。取消是 best effort，仍需统计未命中流量和迟到完成。
 
-<!-- gracker-diagram: a247-19-prefetch-offline-ownership -->
-![预取缓存与离线主文档必须协调](../../assets/diagrams/ch22/a247-19-prefetch-offline-ownership.png)
-
-图：一次导航只能有明确的主文档所有者与回退优先级。
 
 2026-10-25 核对 1.18.0 发布源码：`Profile.preconnect()` 仍标 `ExperimentalPreconnect`；旧 `Profile.prefetchUrlAsync()` 已标 `@Deprecated` 且仍为 `ExperimentalUrlPrefetch`。源码推荐的 `PrefetchCache.prefetchUrlAsync()` 也仍实验，其获取入口 `Profile.getPrefetchCache()` 在该发布包中还带 `@RestrictTo(LIBRARY_GROUP)`；即使滚动指南出现该入口，也不能把它当作外部应用的稳定公开 API。迁移需同时核对已发布公共接口、lint、provider feature 和实际 SDK，避免只按方法存在就调用受限接口。带参数的 prerender 配置也需逐个核对注解、灰度与回退。
 
-<!-- gracker-diagram: a247-18-prefetch-api-boundaries -->
-![WebKit1.18预取接口仍需核对发布注解](../../assets/diagrams/ch22/a247-18-prefetch-api-boundaries.png)
-
-图：不能从文档出现某方法推出它已是外部应用稳定入口。
 
 触发阈值怎么定？固定点击率或固定字节数都靠不住，要由页面转化率、网络类型、未命中流量、服务端 QPS（每秒请求数）、取消率、过期率、内存压力和用户隐私共同决定，并通过远程配置与 A/B 实验调整。预渲染只适合用户高度可能进入且副作用受控的页面；带登录写操作、支付、音视频或敏感权限的页面要单独评估。
 
@@ -538,10 +474,6 @@ Bridge 的处理步骤更适合保持短小：
 
 支持 `WEB_MESSAGE_LISTENER` 的 provider 可以通过 `WebViewCompat.addWebMessageListener()` 指定 origin 规则，并在回调中获得 `sourceOrigin` 与 `isMainFrame`。下面的代码把耗时工作移到传入的协程调度器，并使用 reply proxy（消息回复代理） 返回结果。
 
-<!-- gracker-diagram: a247-21-bridge-origin-authority -->
-![Bridge权限按消息来源而非主URL判断](../../assets/diagrams/ch22/a247-21-bridge-origin-authority.png)
-
-图：可信主页面可能包含不可信iframe，主URL检查不足以授权桥。
 
 ```kotlin
 @MainThread
@@ -625,10 +557,6 @@ origin 规则应写成明确的 HTTPS origin，避免通配符。`scope` 必须�
 
 每个方法记录调用量、排队时间、执行时间、响应大小、失败码、超时和取消原因。只记录总平均耗时，会漏掉某个高频小调用造成的累计调度成本。
 
-<!-- gracker-diagram: a247-23-bridge-envelope-and-batching -->
-![Bridge协议支持配对、预算和批量](../../assets/diagrams/ch22/a247-23-bridge-envelope-and-batching.png)
-
-图：减少调用次数仍要防止单包变得无界。
 
 ### `evaluateJavascript()` 只负责异步执行
 
@@ -654,10 +582,6 @@ fun WebView.resolveBridgeCall(
 
 用这个辅助函数时注意：`onEvaluated` 收到的是 JavaScript 表达式结果的编码形式，页面业务响应本身要另行配对：业务通常依靠 `requestId` 完成响应配对；页面已销毁或导航身份变化时直接丢弃。脚本函数名也要固定在受控协议中，页面传入任意 JavaScript 代码是不接受的。
 
-<!-- gracker-diagram: a247-24-evaluate-json-result -->
-![evaluateJavascript执行与业务响应分开](../../assets/diagrams/ch22/a247-24-evaluate-json-result.png)
-
-图：不能用await/get把UI回调改成主线程同步等待。
 
 ## 页面侧需要一起治理
 
@@ -673,10 +597,6 @@ fun WebView.resolveBridgeCall(
 
 资源预算应按页面类型制定。资讯正文、商品详情和活动页的 DOM、JS、图片与交互目标不同，统一的固定阈值会把合理页面误报，也会放过高端机上暂时不明显的问题。预算由线上分位数、低端机 trace 和发布回归共同校准。
 
-<!-- gracker-diagram: a247-25-page-work-budget -->
-![页面侧减少关键路径与资源压力](../../assets/diagrams/ch22/a247-25-page-work-budget.png)
-
-图：原生预热省不掉网页自身执行和资源成本。
 
 ## WebView 卡顿要沿显示路径定位
 
@@ -692,10 +612,6 @@ fun WebView.resolveBridgeCall(
 
 这是内容与提交职责关系，不是每帧严格串行的五段：宿主主线程可能先记录 functor，而 renderer 后续才产生新帧；HWUI draw 再消费届时可用内容。GPU Service、Network Service 在 Chromium WebView 架构中运行于宿主进程内，不能因名称含 GPU 就预设有独立 GPU 进程；实际 PID 与 provider revision 需取证。
 
-<!-- gracker-diagram: a247-26-webview-display-topology -->
-![普通网页主体和可选overlay的不同路径](../../assets/diagrams/ch22/a247-26-webview-display-topology.png)
-
-图：这是内容依赖拓扑；functor记录可早于新renderer帧。
 
 普通 DOM 图层、CSS transform、canvas 和图片通常不会逐个成为 SurfaceFlinger layer。视频、受保护内容、provider overlay（叠加层） 或 `WebChromeClient.onShowCustomView()` 托管的全屏媒体可能增加独立 Surface / `SurfaceControl` layer。所以看到额外 layer 时，先核对所有者、父节点、缓冲区与 transaction（合成事务），再下结论。
 
@@ -715,10 +631,6 @@ fun WebView.resolveBridgeCall(
 
 长时间片还要结合线程状态解释。Running 表示 CPU 正在执行；Runnable 长通常指向调度等待；Sleeping（休眠）、futex（用户态互斥量等待） 或 blocked（阻塞） 状态可能在等 IPC（进程间通信）、任务或 fence。只看时间片的 wall time（实际经过时间），容易把等待误算成计算。
 
-<!-- gracker-diagram: a247-27-trace-attribution -->
-![慢帧要按执行域和线程状态归因](../../assets/diagrams/ch22/a247-27-trace-attribution.png)
-
-图：slice wall time不能直接当作CPU计算或shader执行时间。
 
 追到这里还有一个常见误判要留意：网页合成器帧就绪，只说明内容已经备好，有没有被用户看到还要沿着显示路径往后追：普通主体要继续追宿主 App 窗口缓冲区与 FrameTimeline；媒体叠加层还要分别追视频缓冲区、几何事务和显示上屏。
 
@@ -734,10 +646,6 @@ fun WebView.resolveBridgeCall(
 - 宿主进程内 GPU Service 及驱动关联的纹理和图形资源（不能另算成必有的独立 GPU 进程）；
 - 宿主 HWUI、窗口缓冲区与可选媒体图层。
 
-<!-- gracker-diagram: a247-28-memory-process-roles -->
-![WebView内存按实际进程归属](../../assets/diagrams/ch22/a247-28-memory-process-roles.png)
-
-图：WebView GPU Service运行在宿主进程内，不能重复计成必有的独立GPU进程。
 
 只盯宿主进程的 Java 堆，会漏掉渲染进程和图形内存。所以我们排查时先把宿主及关联渲染进程的 PID（进程号） 记下来：`dumpsys meminfo` 看各类内存汇总，`/proc/<pid>/smaps_rollup`（内存映射汇总） 核对单进程内存映射汇总，Perfetto 的 process / memory counter（进程与内存计数器） 还原时间变化，再结合 LeakCanary 和 Chrome DevTools Memory 定位对象。空闲 WebView 池也要纳入 PSS（按共享页比例折算的实际物理内存） 和图形内存统计。
 
@@ -767,10 +675,6 @@ fun destroyWebView(
 
 如果实例将进入池，流程又不同：它要先进入 `RESETTING`，完成异步空白导航、旧内容不可见确认、历史与业务状态清理，再进入 `IDLE`。销毁和复用是两条流程，不要共用一个语义含糊的 `release()`。
 
-<!-- gracker-diagram: a247-29-destroy-versus-reset -->
-![销毁与池化重置是两条不同流程](../../assets/diagrams/ch22/a247-29-destroy-versus-reset.png)
-
-图：destroy无需先about:blank；共享profile数据也不在单实例释放时顺手清空。
 
 ### 渲染进程退出后的恢复
 
@@ -816,10 +720,6 @@ class RecoveringWebViewClient(
 
 重试策略要区分程序崩溃与内存回收，并受页面 URL 模板、前后台状态、Activity 生命周期和次数预算限制。同一页面连续崩溃时自动反复重载会形成 crash loop（崩溃循环），此时应转到错误页，并上报 provider 版本、页面版本与复现信息。也只有先具备这条恢复路径，才谈得上调用 `setRendererPriorityPolicy()` 降低不可见渲染进程的优先级。
 
-<!-- gracker-diagram: a247-31-recovery-budget-and-memory -->
-![内存回收与崩溃循环分别治理](../../assets/diagrams/ch22/a247-31-recovery-budget-and-memory.png)
-
-图：不通过私有符号或munmap破坏provider初始化前提。
 
 OOM（out of memory，内存不足）与恢复设计见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。
 
@@ -858,10 +758,6 @@ OOM（out of memory，内存不足）与恢复设计见 [20.5 OOM、进程资源
 
 单个 P50（中位数） 变快不足以证明方案有效。还要确认 P95 / P99（尾部高分位） 尾部分位、低内存设备、弱网、后台切前台、provider 更新、页面回退与 App 启动都没有出现超出可接受范围的回归。
 
-<!-- gracker-diagram: a247-32-validation-and-rollout -->
-![每项优化都带回归与回退证据](../../assets/diagrams/ch22/a247-32-validation-and-rollout.png)
-
-图：按P95/P99、低端机和真实可用/显示终点验收，不只报告平均加载时间。
 
 ## 全文小结
 

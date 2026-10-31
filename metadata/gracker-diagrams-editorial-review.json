@@ -62095,9 +62095,312 @@
       "before_count": 32,
       "before_all_images": 32,
       "sha256_before": "630a3103039ae4ef8c558d3d99c8f5b37075cf92d0d25f0e85ad35b592c63802",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a247-01-four-domains",
+          "title": "WebView打开与显示的四个执行域",
+          "decision": "remove",
+          "reason": "四执行域卡片逐项重复87–99四段定义，没有实际线程拓扑。",
+          "original_line": 94,
+          "heading": "## WebView 优化要同时看四段"
+        },
+        {
+          "original_id": "a247-02-completion-contracts",
+          "title": "页面完成回调的不同承诺",
+          "decision": "remove",
+          "reason": "四类完成承诺重复107–125完整时间点表及限定，图未展示实际发生次序。",
+          "original_line": 118,
+          "heading": "### 用业务可用性定义终点"
+        },
+        {
+          "original_id": "a247-03-navigation-time-identity",
+          "title": "导航身份与单调时钟一起采集",
+          "decision": "remove",
+          "reason": "独立collector/捕获ID/时钟/关联四步由27行代码及161–168完整说明，未新增旧回调过滤分支。",
+          "original_line": 163,
+          "heading": "### 使用单调时钟并记录导航身份"
+        },
+        {
+          "original_id": "a247-04-startup-instance-navigation",
+          "title": "启动初始化与页面成本分开",
+          "decision": "remove",
+          "reason": "启动/构造/导航/显示四步是176–189五阶段对照表缩写，原表信息更完整。",
+          "original_line": 186,
+          "heading": "### 把启动初始化、实例创建和首个页面分开"
+        },
+        {
+          "original_id": "a247-05-startup-api-provider-fallback",
+          "title": "异步启动依赖provider能力",
+          "decision": "remove",
+          "reason": "目录配置到初始化完成再构造由193–242 API说明及35行代码完整呈现，图未画provider兼容分支或失败状态。",
+          "original_line": 195,
+          "heading": "### AndroidX WebKit 1.16.0 起稳定的异步启动初始化"
+        },
+        {
+          "original_id": "a247-06-startup-null-diagnostics",
+          "title": "启动诊断必须区分未知与空结果",
+          "decision": "remove",
+          "reason": "null/空列表/失败/成功四行是240–247诊断段落的逐项重述，没有状态转换。",
+          "original_line": 244,
+          "heading": "### AndroidX WebKit 1.16.0 起稳定的异步启动初始化"
+        },
+        {
+          "original_id": "a247-07-startup-policy",
+          "title": "预启动时机服从用户路径",
+          "decision": "remove",
+          "reason": "H5路径三类与后台only策略由256–262清单完整说明，图没有决策树。",
+          "original_line": 251,
+          "heading": "### AndroidX WebKit 1.16.0 起稳定的异步启动初始化"
+        },
+        {
+          "original_id": "a247-08-blank-slot-ownership",
+          "title": "Activity空白实例槽的所有权转移",
+          "decision": "keep",
+          "reason": "Activity空白槽prepare、take转移所有权、slot.close仅清槽、页面另毁已交付实例的责任链帮助检查33行代码，避免混淆两个owner。",
+          "original_line": 315,
+          "heading": "### 预创建的适用条件与所有权"
+        },
+        {
+          "original_id": "a247-09-pool-reset-state-machine",
+          "title": "复用实例必须经过异步重置",
+          "decision": "keep",
+          "reason": "ACTIVE→RESETTING→IDLE→ACTIVE和重置失败到DESTROYED的真实状态机展示异步空白导航不得立即复用，匹配322–350。",
+          "original_line": 324,
+          "heading": "### WebView 池的状态机与准入"
+        },
+        {
+          "original_id": "a247-10-pool-admission",
+          "title": "池化准入和全局状态边界",
+          "decision": "remove",
+          "reason": "准入、资源、共享profile与业务清理四行重复331–350两套清单，图没有准入分支。",
+          "original_line": 340,
+          "heading": "### WebView 池的状态机与准入"
+        },
+        {
+          "original_id": "a247-11-process-data-directory",
+          "title": "多进程必须先确定数据目录",
+          "decision": "remove",
+          "reason": "多进程目录顺序及不共享数据由354–361完整说明，四步卡片无多进程映射结构。",
+          "original_line": 358,
+          "heading": "### 多进程要先配置数据目录"
+        },
+        {
+          "original_id": "a247-12-cache-ownership",
+          "title": "缓存与离线资源各有所有者",
+          "decision": "remove",
+          "reason": "缓存四类所有者逐项重述369–382五列表，没有真实层间调用。",
+          "original_line": 379,
+          "heading": "### 缓存层各自解决什么"
+        },
+        {
+          "original_id": "a247-13-offline-intercept-gates",
+          "title": "离线拦截先验证资格再交付流",
+          "decision": "remove",
+          "reason": "离线拦截四步由32行代码及425–444契约说明完整表达，图未新增拒绝分支。",
+          "original_line": 429,
+          "heading": "### `shouldInterceptRequest()` 的线程与协议边界"
+        },
+        {
+          "original_id": "a247-14-interception-exclusions",
+          "title": "拦截器看不到的请求与跳转",
+          "decision": "remove",
+          "reason": "排除URL/重定向/Range/授权四行重复434–449清单，未画逐跳盲区实际路径。",
+          "original_line": 446,
+          "heading": "### `shouldInterceptRequest()` 的线程与协议边界"
+        },
+        {
+          "original_id": "a247-15-asset-loader-origin",
+          "title": "本地静态内容通过HTTP(S)来源加载",
+          "decision": "remove",
+          "reason": "AssetLoader来源四步由453–460完整说明，图不是origin隔离拓扑。",
+          "original_line": 457,
+          "heading": "### 静态本地内容使用 `WebViewAssetLoader`"
+        },
+        {
+          "original_id": "a247-16-manifest-atomic-publish",
+          "title": "动态离线包按完整清单发布",
+          "decision": "keep",
+          "reason": "更新线程临时目录验证→不可变manifest→原子指针与单导航快照→整包回退的发布链，便于复核更新端与请求端的版本一致性。",
+          "original_line": 475,
+          "heading": "### 动态离线包的发布协议"
+        },
+        {
+          "original_id": "a247-17-speculation-granularity",
+          "title": "推测加载按origin和URL区分",
+          "decision": "remove",
+          "reason": "三种推测加载和能力四行对应484–509逐条说明，图没有额外工作量或生命周期关系。",
+          "original_line": 490,
+          "heading": "### 预连接、预取与预渲染"
+        },
+        {
+          "original_id": "a247-19-prefetch-offline-ownership",
+          "title": "预取缓存与离线主文档必须协调",
+          "decision": "remove",
+          "reason": "预取跳过拦截/导航拦截/URL匹配/取消四行重述495–511，没有主文档优先级分支。",
+          "original_line": 499,
+          "heading": "### 预连接、预取与预渲染"
+        },
+        {
+          "original_id": "a247-18-prefetch-api-boundaries",
+          "title": "WebKit1.18预取接口仍需核对发布注解",
+          "decision": "remove",
+          "reason": "旧新接口注解四行完整重复504–509发布包说明，删除后实验/弃用/RestrictTo边界均保留。",
+          "original_line": 506,
+          "heading": "### 预连接、预取与预渲染"
+        },
+        {
+          "original_id": "a247-20-bridge-sync-and-async",
+          "title": "Bridge入口短返回，业务异步执行",
+          "decision": "keep",
+          "reason": "JS同步等待、Bridge短返回、业务executor工作、主线程有效导航回复四轨区分线程与等待，直观说明后台接口仍会阻塞JS调用方。",
+          "original_line": 523,
+          "heading": "### 明确两侧线程"
+        },
+        {
+          "original_id": "a247-21-bridge-origin-authority",
+          "title": "Bridge权限按消息来源而非主URL判断",
+          "decision": "remove",
+          "reason": "Java接口/消息接口/mainframe/兼容四行重复537–609授权说明与代码，没有iframe来源拓扑。",
+          "original_line": 541,
+          "heading": "### 优先采用可校验 origin 的消息通道"
+        },
+        {
+          "original_id": "a247-22-bridge-lifecycle-and-failure",
+          "title": "Bridge任务跟随导航结束并处理异常",
+          "decision": "keep",
+          "reason": "校验→导航scope有界工作→主线程reply/受控失败→导航终止取消收尾的生命周期链补足53行代码的scope契约，区分Activity存活与导航有效。",
+          "original_line": 604,
+          "heading": "### 优先采用可校验 origin 的消息通道"
+        },
+        {
+          "original_id": "a247-23-bridge-envelope-and-batching",
+          "title": "Bridge协议支持配对、预算和批量",
+          "decision": "remove",
+          "reason": "协议字段和批量四行逐项重述615–631表及段落，未增加队列或分批调度关系。",
+          "original_line": 628,
+          "heading": "### 协议要支持批量、超时和取消"
+        },
+        {
+          "original_id": "a247-24-evaluate-json-result",
+          "title": "evaluateJavascript执行与业务响应分开",
+          "decision": "remove",
+          "reason": "编码/异步执行/表达式回调/业务配对四步由15行代码及655–660说明完整保留，图未展示异步分支。",
+          "original_line": 657,
+          "heading": "### `evaluateJavascript()` 只负责异步执行"
+        },
+        {
+          "original_id": "a247-25-page-work-budget",
+          "title": "页面侧减少关键路径与资源压力",
+          "decision": "remove",
+          "reason": "网页关键路径四行重述666–679七项清单，无实际加载瀑布。",
+          "original_line": 676,
+          "heading": "## 页面侧需要一起治理"
+        },
+        {
+          "original_id": "a247-26-webview-display-topology",
+          "title": "普通网页主体和可选overlay的不同路径",
+          "decision": "remove",
+          "reason": "名为显示拓扑但实际仅四行文字配对，未画renderer、宿主functor与可选overlay连接；687–702完整依赖说明保留即可。",
+          "original_line": 695,
+          "heading": "### 普通网页主体通常进入宿主窗口"
+        },
+        {
+          "original_id": "a247-27-trace-attribution",
+          "title": "慢帧要按执行域和线程状态归因",
+          "decision": "remove",
+          "reason": "慢帧域与线程状态四行是706–723完整证据表及解释的摘要，无实测线程轨道。",
+          "original_line": 718,
+          "heading": "### Perfetto 证据表"
+        },
+        {
+          "original_id": "a247-28-memory-process-roles",
+          "title": "WebView内存按实际进程归属",
+          "decision": "remove",
+          "reason": "进程/资源/工具四行重述731–744，图没有实际PID与共享页归属拓扑。",
+          "original_line": 737,
+          "heading": "### WebView 内存分散在多个进程和内存类型中"
+        },
+        {
+          "original_id": "a247-29-destroy-versus-reset",
+          "title": "销毁与池化重置是两条不同流程",
+          "decision": "remove",
+          "reason": "销毁/复用/已交付/profile四行重复746–773、槽所有权保留图和池状态机，删除同义摘要。",
+          "original_line": 770,
+          "heading": "### 展示实例的销毁顺序"
+        },
+        {
+          "original_id": "a247-30-renderer-recovery",
+          "title": "渲染进程退出后重建实例",
+          "decision": "keep",
+          "reason": "renderer gone→owner快照与detach→销毁旧实例→有限策略新建的恢复链帮助检查26行代码，强调不能再读旧getUrl、共享renderer逐实例回调。",
+          "original_line": 812,
+          "heading": "### 渲染进程退出后的恢复"
+        },
+        {
+          "original_id": "a247-31-recovery-budget-and-memory",
+          "title": "内存回收与崩溃循环分别治理",
+          "decision": "remove",
+          "reason": "回收/崩溃预算/优先级/VMA四行重复817–830，完整错误页与虚拟地址限定保留。",
+          "original_line": 819,
+          "heading": "### 渲染进程退出后的恢复"
+        },
+        {
+          "original_id": "a247-32-validation-and-rollout",
+          "title": "每项优化都带回归与回退证据",
+          "decision": "remove",
+          "reason": "验证四步重述836–870操作清单和证据表，无新增回路或数据。",
+          "original_line": 861,
+          "heading": "## 一套可执行的优化顺序"
+        }
+      ],
+      "sha256_after": "f686f0516b16a3d7e2e801ba06588256ae69aa36dbda13b2145cdb0899db43aa",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:59:46.526012+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 32,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a247/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a247/visual-review.json",
+      "retired_diagrams": [
+        "a247-01-four-domains",
+        "a247-02-completion-contracts",
+        "a247-03-navigation-time-identity",
+        "a247-04-startup-instance-navigation",
+        "a247-05-startup-api-provider-fallback",
+        "a247-06-startup-null-diagnostics",
+        "a247-07-startup-policy",
+        "a247-10-pool-admission",
+        "a247-11-process-data-directory",
+        "a247-12-cache-ownership",
+        "a247-13-offline-intercept-gates",
+        "a247-14-interception-exclusions",
+        "a247-15-asset-loader-origin",
+        "a247-17-speculation-granularity",
+        "a247-18-prefetch-api-boundaries",
+        "a247-19-prefetch-offline-ownership",
+        "a247-21-bridge-origin-authority",
+        "a247-23-bridge-envelope-and-batching",
+        "a247-24-evaluate-json-result",
+        "a247-25-page-work-budget",
+        "a247-26-webview-display-topology",
+        "a247-27-trace-attribution",
+        "a247-28-memory-process-roles",
+        "a247-29-destroy-versus-reset",
+        "a247-31-recovery-budget-and-memory",
+        "a247-32-validation-and-rollout"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-247/retired-assets.json"
     },
     {
       "index": 248,
@@ -62485,8 +62788,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 171,
-  "next_article": "src/part5-app/ch22-rendering-practice/16-webview-optimization.md",
+  "reviewed_articles": 172,
+  "next_article": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -62496,7 +62799,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:56:56.435620+08:00",
+  "updated_at": "2026-10-31T17:59:46.526012+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -62646,9 +62949,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5248,
-  "reviewed_placements_after": 2077,
-  "net_removed_placements": 3171,
+  "reviewed_placements_before": 5280,
+  "reviewed_placements_after": 2083,
+  "net_removed_placements": 3197,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -62672,5 +62975,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 171
+  "currently_matching_reviewed_source_count": 172
 }
