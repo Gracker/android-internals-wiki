@@ -66019,9 +66019,151 @@
       "before_count": 14,
       "before_all_images": 14,
       "sha256_before": "2ab1c0b5ee35baaae5cd606b3f1e97be2adc7ed84ffa4d024cea0f1ef21676ac",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a280-01-wall-cpu-and-scheduler-time",
+          "title": "用户墙钟等待由运行、排队与阻塞共同组成",
+          "decision": "keep",
+          "reason": "任务墙钟、线程状态和CPU累计三轨显示排队/阻塞不计CPU，补充指标表的时间组成关系。",
+          "original_line": 124,
+          "heading": "## CPU 优化先回答三个问题"
+        },
+        {
+          "original_id": "a280-02-executor-three-step-decision",
+          "title": "execute先尝试核心worker，再入队，再扩非核心",
+          "decision": "keep",
+          "reason": "核心worker、入队复查与非核心/拒绝三阶段各自连向结果，直观看出大队列为何延后maximumPoolSize作用。",
+          "original_line": 141,
+          "heading": "### `execute()` 的三段决策"
+        },
+        {
+          "original_id": "a280-03-configured-cpus-versus-work-budget",
+          "title": "availableProcessors是配置数量，不能代替并行预算",
+          "decision": "remove",
+          "reason": "availableProcessors到possible的四框调用链复述紧邻实现段落和并行预算列表，无额外硬件集合示例。",
+          "original_line": 152,
+          "heading": "### 线程数从任务模型来"
+        },
+        {
+          "original_id": "a280-04-bounded-pool-rejection-and-lifecycle",
+          "title": "并发、积压与拒绝要一起设计",
+          "decision": "remove",
+          "reason": "有界并发、Abort和CallerRuns四卡重复工厂及两段拒绝策略说明，没有实际满载或关闭分支。",
+          "original_line": 229,
+          "heading": "### 一个可观测、可拒绝的计算执行器"
+        },
+        {
+          "original_id": "a280-14-pool-task-observability",
+          "title": "把排队时间与CPU时间绑定到低基数任务类型",
+          "decision": "remove",
+          "reason": "排队/CPU/结果分类和维度四卡逐项重复紧邻六项监控列表。",
+          "original_line": 249,
+          "heading": "### 线程池至少记录哪些数据"
+        },
+        {
+          "original_id": "a280-05-cpu-denominator-and-sleep-clock",
+          "title": "CPU占比先声明分子、分母和睡眠时钟",
+          "decision": "remove",
+          "reason": "CPU分子、elapsed与uptime分母和等效核数四框重复完整窗口代码与源码解释，没有同窗深睡数值对照。",
+          "original_line": 303,
+          "heading": "### 公开 SDK 的低成本窗口采样"
+        },
+        {
+          "original_id": "a280-06-proc-counters-without-double-counting",
+          "title": "proc统计不要重复guest，也不要错拆comm",
+          "decision": "remove",
+          "reason": "proc字段去重、comm解析与失败处理四卡重复本节各段，不增加计数关系示例。",
+          "original_line": 328,
+          "heading": "### `/proc/stat` 的整机视角"
+        },
+        {
+          "original_id": "a280-07-times-ticks-and-process-cpu",
+          "title": "times的USER_HZ来自sysconf，不来自CONFIG_HZ",
+          "decision": "remove",
+          "reason": "times线程组、tick换算与USER_HZ四框重复45行示例与精确定义，正文足够核对。",
+          "original_line": 391,
+          "heading": "### `times()` 的 USER_HZ 语义"
+        },
+        {
+          "original_id": "a280-08-preload-budget-not-idle-percent",
+          "title": "预加载先看命中收益，再支付有界成本",
+          "decision": "remove",
+          "reason": "预加载收益成本和执行入口四卡重复六项预算清单与IdleHandler/Work段落，未展示独立生命周期。",
+          "original_line": 415,
+          "heading": "## 预加载：由收益与生命周期决定，不由“空闲百分比”决定"
+        },
+        {
+          "original_id": "a280-09-fixed-rate-catchup-and-delay",
+          "title": "固定频率漏期校正与固定延迟从结束起算不同",
+          "decision": "keep",
+          "reason": "旧逐次补跑、r1固定频率校正和固定延迟三轨对照恢复时不同节拍，表达真实时间关系。",
+          "original_line": 426,
+          "heading": "## 周期任务：避免固定频率补跑制造恢复尖峰"
+        },
+        {
+          "original_id": "a280-10-excessive-cpu-kill-versus-profiling",
+          "title": "过量CPU终止条件与Profiling取证是两条职责",
+          "decision": "remove",
+          "reason": "AMS状态检查到Profiling解析四框复述终止和取证的详细说明，文本保留限频/重投/可能关联和格式差异更精确。",
+          "original_line": 460,
+          "heading": "## Android 17：CPU 使用过量终止与取证"
+        },
+        {
+          "original_id": "a280-11-lock-wait-versus-cas-work",
+          "title": "锁等待与CAS重试可能给出相反CPU表象",
+          "decision": "keep",
+          "reason": "持锁、阻塞等锁与CAS竞争三轨比较低CPU长墙钟和忙重试，说明替换同步结构的成本转移。",
+          "original_line": 489,
+          "heading": "### 优化顺序"
+        },
+        {
+          "original_id": "a280-12-coroutine-parallelism-versus-inflight",
+          "title": "limitedParallelism限制执行片段，不限制在途请求",
+          "decision": "keep",
+          "reason": "单并行代码片段与A/B同时在途三轨反例，直观显示挂起后其他协程进入而并发请求未完成。",
+          "original_line": 523,
+          "heading": "## 协程：控制并发，不隐藏成本"
+        },
+        {
+          "original_id": "a280-13-nice-versus-hint-session-control",
+          "title": "nice表达竞争机会，ADPF反馈工作目标",
+          "decision": "remove",
+          "reason": "nice竞争机会与ADPF时长反馈两行重复相邻控制边界和API条件，未画系统反馈闭环或应用例子。",
+          "original_line": 553,
+          "heading": "### ADPF 是持续负载的协作接口"
+        }
+      ],
+      "sha256_after": "26da50f787bbf38a4240d8c905ee9f41307f7d47434fb3fa95f3d3b4202a4f93",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:08:07.220441+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 14,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a280/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a280/visual-review.json",
+      "retired_diagrams": [
+        "a280-03-configured-cpus-versus-work-budget",
+        "a280-04-bounded-pool-rejection-and-lifecycle",
+        "a280-05-cpu-denominator-and-sleep-clock",
+        "a280-06-proc-counters-without-double-counting",
+        "a280-07-times-ticks-and-process-cpu",
+        "a280-08-preload-budget-not-idle-percent",
+        "a280-10-excessive-cpu-kill-versus-profiling",
+        "a280-13-nice-versus-hint-session-control",
+        "a280-14-pool-task-observability"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-280/retired-assets.json"
     },
     {
       "index": 281,
@@ -66189,8 +66331,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 191,
-  "next_article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+  "reviewed_articles": 192,
+  "next_article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -66200,7 +66342,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:05:41.438501+08:00",
+  "updated_at": "2026-10-31T19:08:07.220441+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -66336,9 +66478,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5607,
-  "reviewed_placements_after": 2203,
-  "net_removed_placements": 3404,
+  "reviewed_placements_before": 5621,
+  "reviewed_placements_after": 2208,
+  "net_removed_placements": 3413,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -66362,7 +66504,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 191,
+  "currently_matching_reviewed_source_count": 192,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
