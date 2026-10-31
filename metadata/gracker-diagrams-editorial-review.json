@@ -63723,9 +63723,184 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "bb2b01ae907f832e993e3879da06201db2657fa5768ac80700a83dd03ad76bc8",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a255-02-smaps-vs-rollup",
+          "title": "逐VMA分类与聚合总量来自不同读取路径",
+          "decision": "remove",
+          "reason": "smaps分类与rollup总量两条文字路径完全由紧邻源码读取段落说清，无复杂调用关系。",
+          "original_line": 152,
+          "heading": "### 原生内存包含哪些部分"
+        },
+        {
+          "original_id": "a255-01-memory-accounting",
+          "title": "分配器字节、VMA 和物理页的三层统计",
+          "decision": "remove",
+          "reason": "分配器/VMA/物理页三个术语框重复全文引言、四类内存列表及后文四口径表。",
+          "original_line": 161,
+          "heading": "### 原生内存包含哪些部分"
+        },
+        {
+          "original_id": "a255-03-heapprofd-lifecycle",
+          "title": "heapprofd服务、目标进程拦截器和采集请求",
+          "decision": "remove",
+          "reason": "中央服务到client采样producer线性骨架重复前文实现段落，正文更精确区分init监听与目标进程连接及persist条件。",
+          "original_line": 198,
+          "heading": "#### 中央服务默认禁用，由采集请求按需启动"
+        },
+        {
+          "original_id": "a255-04-sampling-semantics",
+          "title": "按字节采样不是每N次对象分配取一个",
+          "decision": "keep",
+          "reason": "alloc_size≥N直接记原始大小与小分配概率采样、0/k权重分支体现采样算法，避免把N理解为每N个对象或固定对象倍数。",
+          "original_line": 233,
+          "heading": "#### 采集配置与采样语义"
+        },
+        {
+          "original_id": "a255-05-unreachable-scan",
+          "title": "原生不可达扫描仍需业务证据",
+          "decision": "remove",
+          "reason": "扫描、启用backtrace重启和证据归因的方框重复命令及其前后说明，正文保守扫描限制更完整。",
+          "original_line": 263,
+          "heading": "### libmemunreachable 与 malloc_debug：本地复现时补充泄漏证据"
+        },
+        {
+          "original_id": "a255-07-so-private-dirty",
+          "title": "共享库的映射、共享页与私有脏页",
+          "decision": "remove",
+          "reason": "只读共享与可写MAP_PRIVATE写脏的二分法重复上一段COW解释，没有映射页变化或跨进程页关系。",
+          "original_line": 323,
+          "heading": "#### 可写脏页：少改共享映射，少做启动期全量初始化"
+        },
+        {
+          "original_id": "a255-06-free-vs-rss",
+          "title": "free归还对象不等于马上归还物理页",
+          "decision": "keep",
+          "reason": "free后的空闲块分向复用与满足页条件归还OS两路，直观解释allocator逻辑释放与RSS不立降可以同时发生。",
+          "original_line": 363,
+          "heading": "#### `free()` 后的 RSS 回落时机"
+        },
+        {
+          "original_id": "a255-09-contiguous-hole",
+          "title": "总空闲地址够用仍可能没有连续空洞",
+          "decision": "keep",
+          "reason": "地址线以映射分隔两个空洞A/B，表达总和够但任一连续区间不足L的空间碎片，比单纯总量更易理解。",
+          "original_line": 444,
+          "heading": "#### 1.2 32 位与 64 位的风险差异"
+        },
+        {
+          "original_id": "a255-08-virtual-vs-resident",
+          "title": "虚拟映射、驻留和换出是不同状态",
+          "decision": "remove",
+          "reason": "VMA、预留、驻留与VmSwap几个框是指标定义重排，前文四指标表及VmSwap段落已精确说明不可相加。",
+          "original_line": 455,
+          "heading": "#### 1.3 `VmSwap` 的记账语义"
+        },
+        {
+          "original_id": "a255-10-mmd-swap-maintenance",
+          "title": "mmd处理ZRAM维护，不改变进程统计定义",
+          "decision": "remove",
+          "reason": "mmd_setup→维护请求→重压缩/writeback四步重复上文mmd段落，未呈现实际页状态或具体故障证据。",
+          "original_line": 462,
+          "heading": "#### 1.3 `VmSwap` 的记账语义"
+        },
+        {
+          "original_id": "a255-11-thread-stack-size",
+          "title": "ART最终线程栈大小是多步计算的结果",
+          "decision": "remove",
+          "reason": "固定标签FixStackSize六框逐字对应上方七条编号算法，编号列表更便于逐项核对条件。",
+          "original_line": 586,
+          "heading": "#### 3.1 Java 线程栈的预留大小计算"
+        },
+        {
+          "original_id": "a255-12-bounded-executor",
+          "title": "线程数和队列都要设置上限",
+          "decision": "remove",
+          "reason": "提交者、有界队列、线程数和满队列处理四框重复紧邻完整Java示例及CallerRunsPolicy说明。",
+          "original_line": 627,
+          "heading": "#### 3.2 有界线程池"
+        },
+        {
+          "original_id": "a255-13-virtual-thread-fallback",
+          "title": "虚拟线程API存在不等于所有镜像都节省pthread",
+          "decision": "keep",
+          "reason": "公开API前提下continuation支持与自定义scheduler双判定，分别落VirtualThread、Bound平台线程或异常，具有实际条件分叉价值。",
+          "original_line": 663,
+          "heading": "#### 3.4 虚拟线程的可用条件"
+        },
+        {
+          "original_id": "a255-14-webview-reservation",
+          "title": "WebView预留由加载器持有状态并随后复用",
+          "decision": "keep",
+          "reason": "Zygote预留→PROT_NONE→加载器记住地址大小→android_dlopen_ext的所有权链，帮助理解私自munmap后状态不一致和子进程不自动移除预留。",
+          "original_line": 694,
+          "heading": "#### 4.2 这块预留为什么归加载器管"
+        },
+        {
+          "original_id": "a255-15-hsc-eligibility",
+          "title": "HSC是受Space和收集器约束的兼容路径",
+          "decision": "keep",
+          "reason": "main/backup和CMS先验条件、移动限制二级筛选到HSC或拒绝分支，避免把兼容路径或源码函数存在当所有设备双空间保证。",
+          "original_line": 718,
+          "heading": "#### 5.1 Homogeneous Space Compact 的适用条件"
+        },
+        {
+          "original_id": "a255-16-multiprocess-cost",
+          "title": "主进程变小还要看所有进程的总成本",
+          "decision": "remove",
+          "reason": "主/子进程与IPC三框重复本节进程隔离说明，代价验收列表已有更完整指标且不由箭头推内存收益。",
+          "original_line": 766,
+          "heading": "### 6. 多进程：改变故障边界，也增加固定成本"
+        }
+      ],
+      "sha256_after": "503cbf321e67cb5fa8564b8aec5fa799fb996577302e66c0be7acba3c60d386c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:21:23.152147+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a255/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a255/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 255,
+        "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+        "registered_sha256": "bb2b01ae907f832e993e3879da06201db2657fa5768ac80700a83dd03ad76bc8",
+        "frozen_sha256": "bb2b01ae907f832e993e3879da06201db2657fa5768ac80700a83dd03ad76bc8",
+        "review_input_sha256": "2073a41ad7ca8d66ac64d0a1212dffd051dd9f802821e2e1e22ae440920bed97",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a255/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a255/external-source.diff",
+        "diff_sha256": "612fa28645a85a67b0695a3c046f1613852da20d83754eb25d9269dfad7154c5",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 396, \"characters\": 32010, \"svg_labels_read\": 16, \"actual_pngs_viewed\": 16, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 9, \"code_lines\": 123, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "2073a41ad7ca8d66ac64d0a1212dffd051dd9f802821e2e1e22ae440920bed97",
+      "retired_diagrams": [
+        "a255-01-memory-accounting",
+        "a255-02-smaps-vs-rollup",
+        "a255-03-heapprofd-lifecycle",
+        "a255-05-unreachable-scan",
+        "a255-07-so-private-dirty",
+        "a255-08-virtual-vs-resident",
+        "a255-10-mmd-swap-maintenance",
+        "a255-11-thread-stack-size",
+        "a255-12-bounded-executor",
+        "a255-16-multiprocess-cost"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-255/retired-assets.json"
     },
     {
       "index": 261,
@@ -64058,8 +64233,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 176,
-  "next_article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+  "reviewed_articles": 177,
+  "next_article": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -64069,7 +64244,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:18:41.042352+08:00",
+  "updated_at": "2026-10-31T18:21:23.152147+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -64156,13 +64331,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "registered_sha256": "bb2b01ae907f832e993e3879da06201db2657fa5768ac80700a83dd03ad76bc8",
-      "observed_sha256": "2073a41ad7ca8d66ac64d0a1212dffd051dd9f802821e2e1e22ae440920bed97",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
       "registered_sha256": "ca6c47f543bd260e7baed6903c571de2599f508db526a91c96784c547343b2f4",
       "observed_sha256": "29c574fb3725684e9c4843318f240c61ff13fcf7e16710dad97f998199b2edaa",
@@ -64212,9 +64380,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5398,
-  "reviewed_placements_after": 2106,
-  "net_removed_placements": 3292,
+  "reviewed_placements_before": 5414,
+  "reviewed_placements_after": 2112,
+  "net_removed_placements": 3302,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -64238,5 +64406,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 176
+  "currently_matching_reviewed_source_count": 177
 }

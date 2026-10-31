@@ -4,8 +4,10 @@ chapter: '23.3'
 section: '23.3'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Perfetto heapprofd；Android NDK 内存调试、MTE、GWP-ASan、Scudo 与 16 KiB 官方文档
+last_verified: '2026-10-29'
+last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Perfetto heapprofd；Android NDK 内存调试、MTE、GWP-ASan、Scudo 与 16 KiB 官方文档；ART/Bionic 线程退出与栈回收、ThreadLocal 和线程池生命周期
+last_source_verified_at: '2026-10-29T18:40:00+08:00'
+last_idle_audit_at: '2026-10-29T18:40:00+08:00'
 last_review_finalize_at: '2026-08-15T07:14:34+08:00'
 confidence: high
 sources:
@@ -41,6 +43,14 @@ sources:
   path: art/runtime/thread.cc @ android-17.0.0_r1 (FixStackSize, CreateNativeThread)
 - type: aosp
   path: art/runtime/native/java_lang_Thread.cc @ android-17.0.0_r1
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_exit.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadLocal.java
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/HandlerThread.java
 - type: aosp
   path: frameworks/base/core/java/android/webkit/WebViewLibraryLoader.java @ android-17.0.0_r1
 - type: aosp
@@ -139,19 +149,11 @@ Java 堆没有持续增长，进程的内存占用也可能在涨。只要应用
 
 另外，VMA 分类和总量统计走的是两条读取路径：`androidprocheaps.cpp` 必须扫描详细的 `/proc/<pid>/smaps`，因为分类依赖每个 VMA 的名字；而 `ProcMemInfo::SmapsOrRollup()` 用于计算 PSS、RSS 等聚合值，内核提供 `smaps_rollup` 时读取汇总文件，否则改读 `smaps`。汇总文件里没有逐 VMA 名称，这两条路径各有用途。
 
-<!-- gracker-diagram: a255-02-smaps-vs-rollup -->
-![逐VMA分类与聚合总量来自不同读取路径](../../assets/diagrams/ch23/a255-02-smaps-vs-rollup.png)
-
-图：VMA名字可随平台和分配器变化，不能只看标签判定资源类型；Graphics还可能来自memtrack，需与分配路径核对。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/jni/android_os_Debug.cpp`, `system/memory/libmeminfo/androidprocheaps.cpp`, `system/memory/libmeminfo/procmeminfo.cpp`]
 
 四类内存对应的诊断动作也各不相同：原生堆看分配栈；`.so` 映射看装载范围、重定位和脏页；图形缓冲看图像、渲染资源与 memtrack；匿名 `mmap` 要追踪调用方或业务设置的 VMA 名称。把它们合成一个“原生内存”数字固然省事，定位要用的线索也就跟着丢了。
 
-<!-- gracker-diagram: a255-01-memory-accounting -->
-![分配器字节、VMA 和物理页的三层统计](../../assets/diagrams/ch23/a255-01-memory-accounting.png)
-
-图：malloc、匿名映射、共享库和图形缓冲需要分别追踪来源；逻辑释放、地址仍映射、物理页仍驻留可以同时发生。
 
 ### 排查入口：先看趋势，再记录调用栈
 
@@ -185,10 +187,6 @@ heapprofd 是 Perfetto 的原生堆采样分析器，从 Android 10 开始可用
 
 这套接口属于 heapprofd 与系统分配器的内部协作面，没有对外提供应用 SDK 的公共 malloc 拦截 API；源码里的 `heapprofd_get_malloc_leak_info` 和 `heapprofd_write_malloc_leak_info` 就是显式的空实现，所以它们当不了 LeakCanary 或其他原生泄漏 SDK 的基础接口。
 
-<!-- gracker-diagram: a255-03-heapprofd-lifecycle -->
-![heapprofd服务、目标进程拦截器和采集请求](../../assets/diagrams/ch23/a255-03-heapprofd-lifecycle.png)
-
-图：heapprofd不依赖LD_PRELOAD，内部MallocDispatch和空的malloc leak info函数也不是第三方泄漏SDK的公共接口。
 
 [源码锚点: Perfetto `android-17.0.0_r1`, `heapprofd.rc`, `src/profiling/memory/heapprofd.cc`, `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`]
 
@@ -250,10 +248,6 @@ adb shell dumpsys -t 600 meminfo --unreachable PROCESS_NAME
 
 `--unreachable` 报告的是扫描时从可达根走不到的分配块，离语言层意义上的确定泄漏还有一步：保守扫描可能把某些整数误认成指针，第三方分配器或自管理内存也可能不在它的观察范围内。所以下结论要结合可重复的增长趋势、分配栈和资源生命周期一起做。
 
-<!-- gracker-diagram: a255-05-unreachable-scan -->
-![原生不可达扫描仍需业务证据](../../assets/diagrams/ch23/a255-05-unreachable-scan.png)
-
-图：默认不记录每次分配回溯，开启backtrace会增加开销。不可达扫描、持续增长与业务生命周期要一起解释，不把工具输出当成完整覆盖。
 
 Bionic README 还记录了 Android 12 起的一个 `wrap.<APP>` 问题。属性未生效时，可在受控测试设备上按 README 设置 `dalvik.vm.force-java-zygote-fork-loop=true`，再重启 Zygote（应用进程的模板进程）；这会影响设备进程启动方式，别在量产设备上尝试。
 
@@ -310,10 +304,6 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案，
 
 排查时对比同一 `.so` 的 `Shared Clean`、`Private Dirty`、`Private Clean`：某个库的 `Private Dirty` 远高于同类模块时，我们就要检查它是否在启动期写入大块全局状态，或者把可延迟的数据提前初始化了。
 
-<!-- gracker-diagram: a255-07-so-private-dirty -->
-![共享库的映射、共享页与私有脏页](../../assets/diagrams/ch23/a255-07-so-private-dirty.png)
-
-图：延迟装载减少不必要映射，减少启动期大表写入可降低私有脏页；剥离未映射的调试段主要影响文件体积，不能直接当运行时RSS收益。
 
 ### 原生内存监控方案
 
@@ -442,17 +432,9 @@ Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以�
 
 Android 17 及以上还支持内存管理守护进程 `mmd`：`mmd_setup` 负责配置 ZRAM（在 RAM 中保存压缩换出页的块设备），`mmd` 再执行重压缩和可选的 writeback（把冷页写到后备存储）。应用从 `VmSwap` 只能看到按页核算的换出量，ZRAM 里压缩后占多少字节、页面此刻在 ZRAM 还是后备存储，都推不出来。分析卡顿时，应同时查看 `VmSwap` 增长、major fault（需要存储 I/O 才能完成的主缺页）、PSI（Pressure Stall Information，资源压力导致的任务停顿统计）、`lmkd` 事件和业务时间线。
 
-<!-- gracker-diagram: a255-08-virtual-vs-resident -->
-![虚拟映射、驻留和换出是不同状态](../../assets/diagrams/ch23/a255-08-virtual-vs-resident.png)
-
-图：VmSize按映射地址长度计算，RSS按驻留页计算，PSS再分摊共享页。换出不会给进程新增一段地址，VmSwap不能再加到VSS。
 
 这套内核还包含 Multi-Gen LRU（按访问时间把可回收页划分为多代的 LRU 实现），它按访问新旧程度把可回收页划分成多代、参与页回收选择，VSS、RSS、PSS 的定义保持原样；目标设备是否启用仍取决于内核与产品配置。应用侧要做的是减少实际工作集、改善访问局部性；某个 VMA 能否手动解除仍取决于它自身的来源，Multi-Gen LRU 改变不了这一点。
 
-<!-- gracker-diagram: a255-10-mmd-swap-maintenance -->
-![mmd处理ZRAM维护，不改变进程统计定义](../../assets/diagrams/ch23/a255-10-mmd-swap-maintenance.png)
-
-图：mmd管理ZRAM维护，Multi-Gen LRU参与回收选择，二者都不会把VSS、RSS、PSS变成对象数。业务侧仍需减少工作集并改善访问局部性。
 
 ### 2. 建立可复现的地址空间快照
 
@@ -573,10 +555,6 @@ for name, stat in sorted(
 
 线程栈通常按需分配物理页，VSS 增长因此早于 RSS 增长。32 位进程中，大量线程还会带来 VMA 数量、调度开销、TLS 和运行时线程元数据的额外负担。
 
-<!-- gracker-diagram: a255-11-thread-stack-size -->
-![ART最终线程栈大小是多步计算的结果](../../assets/diagrams/ch23/a255-11-thread-stack-size.png)
-
-图：线程数越多，地址预留、VMA、TLS与运行时元数据成本越高。真实映射大小从maps读取，再将TID与线程名对应。
 
 #### 3.2 有界线程池
 
@@ -614,10 +592,6 @@ static ThreadPoolExecutor newBoundedExecutor(
 
 固定上限的价值在于挡住突发任务把线程数无限顶上去。`workerCount` 要结合 CPU/I/O 比例和任务驻留内存确定，`queueCapacity` 要结合可接受的排队时延确定。拒绝策略也由调用方显式选择：`CallerRunsPolicy` 会让提交线程执行任务，提交方可能是主线程时，就换成合并、拒绝或异步重试这些符合业务语义的处理。
 
-<!-- gracker-diagram: a255-12-bounded-executor -->
-![线程数和队列都要设置上限](../../assets/diagrams/ch23/a255-12-bounded-executor.png)
-
-图：上限要同时覆盖线程和任务队列。不能用无限缓存线程池或无限队列掩盖压力，任务所有者还要负责取消和退出清理。
 
 线程数量常从这些位置失控：
 
@@ -626,7 +600,13 @@ static ThreadPoolExecutor newBoundedExecutor(
 - 定时任务每次创建新线程；
 - 协程调度器或 RxJava Scheduler 配置不当；
 - native SDK 内部的 `pthread_create()`；
-- 线程退出后仍被 ThreadLocal、HandlerThread 或线程池引用。
+- 业务结束后仍在 `Looper.loop()` 中等待消息的 HandlerThread，或未关闭且保留工作线程的线程池。
+
+任务执行完后，线程池中的工作线程仍可能存活；长寿命工作线程中的 `ThreadLocal` 值也可能继续持有业务对象。业务退出时要分别确认工作线程是否结束、排队任务是否取消；任务作用域内设置的 `ThreadLocal` 值应在使用结束后调用 `remove()` 清理。
+
+ART 为 Java 平台线程创建的是 detached（分离状态、退出后自动回收底层资源）pthread；Bionic 在线程退出时拆除其自管栈映射。已经终止的 `Thread` 对象即使仍有 Java 引用，也不会因此继续占用对应的 TID 和原生栈，这类对象持有应从 Java 堆排查。直接创建的 native joinable（可等待回收）线程则要通过 `pthread_join()` 或 `pthread_detach()` 处理退出后保留的资源。
+
+底层回收路径见 [`Thread::CreateNativeThread()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 和 [`pthread_exit()`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_exit.cpp)；工作线程与线程局部值的生命周期见 [`ThreadPoolExecutor`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java) 和 [`ThreadLocal`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadLocal.java)。
 
 CPU 密集任务的并发度可以从 CPU 核数起步；I/O 任务没有通用的“64—128 线程”答案，要看服务端并发限制、文件描述符、尾延迟和内存预算再定。
 
@@ -747,10 +727,6 @@ HSC（Homogeneous Space Compact，同构空间压缩） 把主分配空间中的
 
 较大的数据载荷（payload）可考虑通过 `SharedMemory`、文件描述符或流式接口传输；传输之外仍要定义所有权、校验长度并及时关闭 FD。拿多进程规避应用整体内存预算，这条路走不通。
 
-<!-- gracker-diagram: a255-16-multiprocess-cost -->
-![主进程变小还要看所有进程的总成本](../../assets/diagrams/ch23/a255-16-multiprocess-cost.png)
-
-图：同时验收主/子进程PSS、启动时延、Binder流量、冷启动频次与低内存恢复。主进程指标下降本身不证明整机收益。
 
 ### 7. 建立面向原因的监控
 
