@@ -77,10 +77,6 @@ Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径：�
 
 表中的差异来自 `android-17.0.0_r1` 源码调用关系：`Runtime.load0()` 检查文件后调用 `nativeLoad()`；`loadLibrary0()` 让 `ClassLoader` 找到文件，再直接调用 `nativeLoad()`。C/C++ 中的 `dlopen()` 直接进入 bionic 动态链接器，全程不经过 Java 的 `Runtime.load0()`。要判断某个入口是否经过可写检查，以这一版本的调用关系为准；未来版本是否相同，需要另行核对。
 
-<!-- gracker-diagram: a219-01-entry-boundaries -->
-![加载入口不同，Android 17 Java 只读检查范围也不同](../../assets/diagrams/ch20/a219-01-entry-boundaries.png)
-
-图：仅描述android-17.0.0_r1边界；所有DCL入口仍执行可信来源、只读发布和动态链接校验。
 
 改用 `dlopen()` 绕开的只是这段 Java 检查，下载的代码并不会因此变得可信：原生库仍受链接器命名空间、ELF 格式、`DT_NEEDED` 依赖项、符号解析、进程位数和 16 KB 页面大小等条件限制，远程 DCL 还可能违反 Google Play 政策。
 
@@ -98,19 +94,11 @@ Android 17 把原生 DCL 的只读要求加到了 `System.load(path)` 路径：�
 4. Android 17 的功能开关已启用、系统 API 不低于 37，且兼容性变更对该应用生效时，抛出“`Attempt to load writable file: ...`”。`VMRuntime.java` 把该变更标为从 target SDK 37 启用。
 5. 检查通过后才调用 `nativeLoad(filename, classLoader, caller)`。
 
-<!-- gracker-diagram: a219-02-load0-gates -->
-![先执行 load0 权限门，再进入 ART 与 linker](../../assets/diagrams/ch20/a219-02-load0-gates.png)
-
-图：root/system/shell被固定检查排除；普通应用可写文件在默认生效条件下抛UnsatisfiedLinkError。
 
 线上诊断要同时记录 mode bit 与 `canWrite()` 两项，并在调用 `System.load()` 前确认 `canWrite()` 为 `false`。这两个概念要分清：`File.canWrite()` 给出当前进程对该路径的可写判断；mode bit 是 `stat` 返回的 Unix 所有者、组和其他用户权限位。`0400` 代表“仅所有者可读”，而平台检查看的是 `canWrite()` 的返回值，单看 mode bit 推不出检查一定通过。
 
 文件权限和目录权限也要分开看。inode 是文件系统保存文件内容位置与权限等元数据的对象；目录项负责把文件名指向 inode。文件改成 `0400` 后，拥有可写父目录的进程仍可能执行 `unlink`（删除目录项）或 `rename`（更换目录项名称或目标）。所以仅去掉写权限不能构成同 UID 代码的隔离边界：已打开的可写 fd 仍可写，文件所有者也可能重新更改权限；发布者必须关闭自身写 fd，其他合作组件也不得保留可写句柄或重新开放写入。要让某个路径始终指向同一组字节，还需要版本化路径、禁止覆盖、签名校验和版本选择记录配合使用。
 
-<!-- gracker-diagram: a219-03-readonly-scope -->
-![0400、路径目录项与已打开写 FD 提供不同边界](../../assets/diagrams/ch20/a219-03-readonly-scope.png)
-
-图：先只读再通过已打开fd写入可以缩短新写句柄窗口，但发布前必须关闭自己的写fd。
 
 ## 可信发布与回滚协议
 
@@ -125,10 +113,6 @@ Android 官方建议尽量避免动态代码加载，并把代码放在可信位
 
 清单里有几个名字，我们先解释含义：SHA-256 是文件内容摘要；ABI（应用二进制接口）描述 CPU 架构、位数和调用约定；ELF 是 Android 原生库采用的可执行与可链接文件格式；Build ID 是链接器写入的构建标识。
 
-<!-- gracker-diagram: a219-04-signed-artifact -->
-![签名清单把可信发布者与具体字节、ABI 和版本绑定](../../assets/diagrams/ch20/a219-04-signed-artifact.png)
-
-图：与文件一起从未认证响应取得的摘要不能认证发布者；正确签名也要结合撤销、兼容与版本策略。
 
 Android 官方安全指南还指出，许多 DCL 形式，尤其是从远端获取代码，可能违反 Google Play 政策并导致应用被暂停。“系统允许加载”和“商店允许发布”是两个独立的判断，后者要按实际下载内容和分发方式单独审查。
 
@@ -254,10 +238,6 @@ private fun publishLibrary(
 
 原子 `rename` 保证的是运行中的观察者看不到半次目录项切换；掉电后的目录更新是否已持久化、选择清单是否已更新，都在它的保证范围之外。所以恢复逻辑应分别处理“文件未发布”“文件已发布但尚未选择”“选择记录已提交”这几种状态：启动扫描只接受签名完整且状态为 `PUBLISHED` 的版本，未被引用的临时文件可以延迟清理。
 
-<!-- gracker-diagram: a219-08-atomic-durable -->
-![运行时原子替换、持久化与无覆盖是三个要求](../../assets/diagrams/ch20/a219-08-atomic-durable.png)
-
-图：File.renameTo只给boolean，Os.rename有ErrnoException；两者都不能由前置exists检查获得原子不覆盖保证。
 
 ### ABI、ELF 与动态链接条件
 
@@ -282,10 +262,6 @@ private fun publishLibrary(
 
 在本文的基线源码中，`System.load()` 与 `System.loadLibrary()` 最终都会把调用类及其 `ClassLoader` 传给 `nativeLoad()`。前者直接使用绝对路径，并额外经过 `load0()` 的只读检查；后者先由 `ClassLoader.findLibrary()` 把逻辑库名解析为文件。排查命名空间问题时，我们应记录实际调用类、`ClassLoader` 和解析后的路径，仅凭 API 名称判断依赖环境，会把这两个入口的差异漏掉。
 
-<!-- gracker-diagram: a219-09-abi-linker -->
-![加载只读检查通过后，仍要通过二进制与链接条件](../../assets/diagrams/ch20/a219-09-abi-linker.png)
-
-图：System.load和loadLibrary最终携带调用类与ClassLoader；同为UnsatisfiedLinkError也可能来自不同阶段。
 
 #### 16 KB 页面大小要检查 ELF 程序头
 
@@ -293,10 +269,6 @@ ELF 程序头描述运行时如何把文件映射进内存；其中 `PT_LOAD` �
 
 APK ZIP 对齐只影响从 APK 直接 `mmap` 未压缩库的路径；`mmap` 是把文件内容映射到进程虚拟内存的系统调用。文件解压到私有目录后，加载条件就回到这个独立文件自身的 ELF 段对齐上，ZIP 中的偏移对齐不再是考虑因素。所以 ELF 段对齐与 APK ZIP 对齐应分别检查。
 
-<!-- gracker-diagram: a219-10-zip-vs-elf -->
-![随包 mmap 与解压后独立文件使用不同对齐检查](../../assets/diagrams/ch20/a219-10-zip-vs-elf.png)
-
-图：16KB详细基线引用4.5；ZIP对齐不能修复ELF段对齐或运行时代码写死4KB。
 
 ### 多进程与回滚
 
@@ -333,10 +305,6 @@ APK ZIP 对齐只影响从 APK 直接 `mmap` 未压缩库的路径；`mmap` 是�
 
 可选功能可以在加载处捕获 `UnsatisfiedLinkError`，记录失败并关闭该功能入口，捕获后应停用对应 JNI 方法的调用。启动必需库应优先使用随 APK/AAB 发布的版本。
 
-<!-- gracker-diagram: a219-12-failure-categories -->
-![以失败阶段分类，避免把所有加载失败都算权限问题](../../assets/diagrams/ch20/a219-12-failure-categories.png)
-
-图：可选模块捕获加载错误后关闭JNI入口；原生致命信号无法靠catch UnsatisfiedLinkError继续主流程。
 
 若存在已签名、兼容且最近一次确认可用的动态版本，可以在新进程中回退；已经执行过新版 JNI 代码的进程，不要强行换库。
 

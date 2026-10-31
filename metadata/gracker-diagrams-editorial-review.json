@@ -55260,9 +55260,142 @@
       "before_count": 13,
       "before_all_images": 13,
       "sha256_before": "1266a2275a762e5dde771686906592ff237b55b4c1d88e60ad376b8c9d2e49ed",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a219-01-entry-boundaries",
+          "title": "加载入口不同，Android 17 Java 只读检查范围也不同",
+          "decision": "remove",
+          "reason": "四入口调用路径表完整保留Java可写检查范围与版本边界，三行映射卡重复。",
+          "original_line": 80,
+          "heading": "### 四条加载路径的检查范围"
+        },
+        {
+          "original_id": "a219-02-load0-gates",
+          "title": "先执行 load0 权限门，再进入 ART 与 linker",
+          "decision": "remove",
+          "reason": "load0五步列表精确列UID排除、文件系统固定实现和compat条件，四框仅缩写同序。",
+          "original_line": 101,
+          "heading": "### `Runtime.load0()` 的检查顺序"
+        },
+        {
+          "original_id": "a219-03-readonly-scope",
+          "title": "0400、路径目录项与已打开写 FD 提供不同边界",
+          "decision": "remove",
+          "reason": "两段正文明确区分mode/canWrite、旧写FD、目录项和同UID所有者边界，三行分类卡重复。",
+          "original_line": 110,
+          "heading": "### `Runtime.load0()` 的检查顺序"
+        },
+        {
+          "original_id": "a219-04-signed-artifact",
+          "title": "签名清单把可信发布者与具体字节、ABI 和版本绑定",
+          "decision": "remove",
+          "reason": "来源/内容/位置/生命周期四项清单更完整覆盖签名、摘要与回滚约束，四框摘要重复。",
+          "original_line": 128,
+          "heading": "### 来源、内容、位置与生命周期校验"
+        },
+        {
+          "original_id": "a219-05-publish-state",
+          "title": "文件发布、进程加载与业务健康分别确认",
+          "decision": "keep",
+          "reason": "STAGED到LOADED再到健康确认的状态转换，强调发布、选择、加载返回与last-known-good是独立进度。",
+          "original_line": 151,
+          "heading": "### 用发布状态机隔离未完成文件"
+        },
+        {
+          "original_id": "a219-06-publish-order",
+          "title": "暂存字节先验证并关闭写 FD，之后才对外发布",
+          "decision": "keep",
+          "reason": "先只读再经旧fd写入、关闭验证后发布选择的先后关系，直观解释为何不能先暴露半成品。",
+          "original_line": 170,
+          "heading": "#### 发布顺序"
+        },
+        {
+          "original_id": "a219-07-borrowed-fd-owner",
+          "title": "Android 的流借用 FD，发布者负责最终关闭",
+          "decision": "keep",
+          "reason": "Android借用fd的流结束不关闭原始fd、外层拥有者最后关闭的生命周期，配合58行示例说明责任。",
+          "original_line": 242,
+          "heading": "#### 发布顺序"
+        },
+        {
+          "original_id": "a219-08-atomic-durable",
+          "title": "运行时原子替换、持久化与无覆盖是三个要求",
+          "decision": "remove",
+          "reason": "原子目录切换、父目录持久化及no-replace三个区别在本节完整段落保留，三行分类卡重复。",
+          "original_line": 257,
+          "heading": "#### `File.renameTo()` 的用途与局限"
+        },
+        {
+          "original_id": "a219-09-abi-linker",
+          "title": "加载只读检查通过后，仍要通过二进制与链接条件",
+          "decision": "remove",
+          "reason": "ABI四项检查和DT_NEEDED/namespace段落详述，三行条件卡重复。",
+          "original_line": 285,
+          "heading": "#### 检查 `DT_NEEDED` 与链接器命名空间"
+        },
+        {
+          "original_id": "a219-10-zip-vs-elf",
+          "title": "随包 mmap 与解压后独立文件使用不同对齐检查",
+          "decision": "remove",
+          "reason": "同节两段及4.5交叉引用清楚区分APK ZIP、独立ELF与运行时页大小，三行对照卡重复。",
+          "original_line": 296,
+          "heading": "#### 16 KB 页面大小要检查 ELF 程序头"
+        },
+        {
+          "original_id": "a219-11-multiprocess-retention",
+          "title": "选择切到 B 不证明旧进程已停止引用 A",
+          "decision": "keep",
+          "reason": "发布B和选择切换发生时旧远程进程仍持续引用A的三轨，解释仅留双版本不足以立即清理。",
+          "original_line": 312,
+          "heading": "### 多进程与回滚"
+        },
+        {
+          "original_id": "a219-12-failure-categories",
+          "title": "以失败阶段分类，避免把所有加载失败都算权限问题",
+          "decision": "remove",
+          "reason": "八行失败分类/证据/处理表比三行图完整，保留错误证据表及致命信号限制。",
+          "original_line": 336,
+          "heading": "### 失败分类与处理"
+        },
+        {
+          "original_id": "a219-13-new-process-rollback",
+          "title": "回滚选择记录后，由新进程加载已确认可用的版本",
+          "decision": "keep",
+          "reason": "隔离失败B、验证允许回退A、提交选择再由新进程加载的恢复顺序，强调已加载旧进程不热卸载。",
+          "original_line": 343,
+          "heading": "### 失败分类与处理"
+        }
+      ],
+      "sha256_after": "e5416b1c1a89604a21a4561cb5fdc43c1cf7fc91443e368fdd1a1f4d5fe026cb",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:38:06.075271+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 13,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a219/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a219/visual-review.json",
+      "retired_diagrams": [
+        "a219-01-entry-boundaries",
+        "a219-02-load0-gates",
+        "a219-03-readonly-scope",
+        "a219-04-signed-artifact",
+        "a219-08-atomic-durable",
+        "a219-09-abi-linker",
+        "a219-10-zip-vs-elf",
+        "a219-12-failure-categories"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-219/retired-assets.json"
     },
     {
       "index": 220,
@@ -55936,8 +56069,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 145,
-  "next_article": "src/part5-app/ch20-stability/13-native-dcl-secure-loading.md",
+  "reviewed_articles": 146,
+  "next_article": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -55947,7 +56080,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:36:32.191590+08:00",
+  "updated_at": "2026-10-31T16:38:06.075271+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -56083,6 +56216,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
+      "registered_sha256": "ca6c47f543bd260e7baed6903c571de2599f508db526a91c96784c547343b2f4",
+      "observed_sha256": "51589991b45da4fc8b8a932f9a5624d192cc2d57b7a149d80ab8e94ace951715",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
       "registered_sha256": "94df36be2b80df0c363a416435bfd04915ea3e919293c27f1633cb514f02403e",
       "observed_sha256": "4e4fc1d8ce23fe2b55bd07efef838f25edced8bb31bcc923f2a538cdfbeb2cb3",
@@ -56125,9 +56265,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4578,
-  "reviewed_placements_after": 1908,
-  "net_removed_placements": 2670,
+  "reviewed_placements_before": 4591,
+  "reviewed_placements_after": 1913,
+  "net_removed_placements": 2678,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -56151,5 +56291,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 145
+  "currently_matching_reviewed_source_count": 146
 }
