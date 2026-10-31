@@ -62409,9 +62409,330 @@
       "before_count": 34,
       "before_all_images": 34,
       "sha256_before": "1683af57afee4f22c67bde65d9bbd7c4e71fb4fe570fcd6ead76b221c73631b3",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a248-01-evidence-domains",
+          "title": "解码到显示分属不同证据域",
+          "decision": "remove",
+          "reason": "四种证据域重复45–78职责和术语，图未画线程或数据连接。",
+          "original_line": 49,
+          "heading": "# Media3 视频播放：解码、帧时序与渲染"
+        },
+        {
+          "original_id": "a248-02-normal-codec-topology",
+          "title": "普通Surface输出的对象拓扑",
+          "decision": "remove",
+          "reason": "与同节保留原生对象图重复CCodec/ACodec二选一到Surface/SF/HWC，原生还保留媒体时钟和VSync输入。",
+          "original_line": 103,
+          "heading": "## 二、普通播放的分层模型"
+        },
+        {
+          "original_id": "a248-03-adapter-default-selection",
+          "title": "异步adapter的默认值与例外",
+          "decision": "remove",
+          "reason": "异步默认与AmazonTV例外四行由139–144完整说明，图未画真实决策分支。",
+          "original_line": 141,
+          "heading": "### API 31 及以上的默认行为"
+        },
+        {
+          "original_id": "a248-04-adapter-thread-domains",
+          "title": "异步回调、输入排队与playback各司其职",
+          "decision": "keep",
+          "reason": "framework、callback、playback、普通queueing四轨分开，直观说明专用callback不运行完整renderer，另由正文限定API36 crypto输入例外。",
+          "original_line": 153,
+          "heading": "### API 31 及以上的默认行为"
+        },
+        {
+          "original_id": "a248-06-crypto-enqueuer",
+          "title": "API36异步crypto配置改变输入提交",
+          "decision": "remove",
+          "reason": "crypto普通/36分支四行重述148–175说明，线程图和正文限定已足够。",
+          "original_line": 164,
+          "heading": "### Android 17 的 crypto async 分支"
+        },
+        {
+          "original_id": "a248-05-scheduling-four-mechanisms",
+          "title": "四种异步与节奏机制不能混同",
+          "decision": "remove",
+          "reason": "四种异步/节奏机制逐行重复181–193三列表，保留详细机制范围即可。",
+          "original_line": 190,
+          "heading": "### 它与 BufferQueue asyncMode 无关"
+        },
+        {
+          "original_id": "a248-10-late-threshold-guards",
+          "title": "1.11.0阈值必须连同保护条件解释",
+          "decision": "remove",
+          "reason": "四项阈值及保护条件重复235–245完整表，判断顺序另保留图8，不把候选区间当互斥状态。",
+          "original_line": 230,
+          "heading": "### renderer 计算的是“还早多少”"
+        },
+        {
+          "original_id": "a248-08-release-decision-order",
+          "title": "释放决策有顺序和前置条件",
+          "decision": "keep",
+          "reason": "earlyUs→decodeonly/Surface/首帧/强制释放→追赶/drop/joining→过早或计划释放的次序链帮助解释候选阈值重叠，不替代源码完整状态。",
+          "original_line": 247,
+          "heading": "### renderer 计算的是“还早多少”"
+        },
+        {
+          "original_id": "a248-09-release-action-meaning",
+          "title": "六种release action对应不同处理",
+          "decision": "remove",
+          "reason": "六action四组配对逐项重复254–268六项定义与统计变化，无实际状态转移。",
+          "original_line": 263,
+          "heading": "### 六种 frame release action"
+        },
+        {
+          "original_id": "a248-11-surface-timestamp-fence",
+          "title": "时间戳与fence是不同约束",
+          "decision": "keep",
+          "reason": "计划release→携timestamp与acquire的queue→expectedPresent/PRESENT_LATER→消费fence及显示的链路区分时间目标与内容就绪，保留acquire未signal限定。",
+          "original_line": 287,
+          "heading": "### timestamp 进入 BufferQueue 后会发生什么"
+        },
+        {
+          "original_id": "a248-12-drop-observation-domains",
+          "title": "未显示新画面可能发生在多层",
+          "decision": "remove",
+          "reason": "未显示新画面四组来源重复296–310六类表，图片比表信息更少。",
+          "original_line": 307,
+          "heading": "## 五、一次掉帧可能发生在哪一层"
+        },
+        {
+          "original_id": "a248-13-allow-frame-drop-policy",
+          "title": "ALLOW_FRAME_DROP决定帧取舍边界",
+          "decision": "remove",
+          "reason": "ALLOW_FRAME_DROP四种条件由314–336完整列明，图未新增帧取舍或背压连接。",
+          "original_line": 333,
+          "heading": "### Media3 1.11.0 何时写 `0`"
+        },
+        {
+          "original_id": "a248-14-surface-output-topology",
+          "title": "SurfaceView与TextureView的路径差异",
+          "decision": "remove",
+          "reason": "SurfaceView/TextureView/effects/DEVICE四行重复344–367路径及规则，后方effects和原生图另承担结构。",
+          "original_line": 364,
+          "heading": "### TextureView 增加宿主采样阶段"
+        },
+        {
+          "original_id": "a248-15-surface-owner-transfer",
+          "title": "Player与输出Surface的生命周期",
+          "decision": "keep",
+          "reason": "生命周期感知API→注册callback→先新后旧切目标→raw调用方清输出释放包装的所有权链补足5行switch代码与边界。",
+          "original_line": 391,
+          "heading": "### 优先交给 Player 跟踪生命周期"
+        },
+        {
+          "original_id": "a248-16-attachment-and-compose",
+          "title": "View、Surface和Compose不是同一生命周期",
+          "decision": "remove",
+          "reason": "composition/attachment/holder/绑定/兼容四行由398–424具体段落和清单完整覆盖，未画不同寿命轨道。",
+          "original_line": 412,
+          "heading": "### Compose 中使用 PlayerView"
+        },
+        {
+          "original_id": "a248-17-surface-switch-branches",
+          "title": "换面可复用codec，也可能重建",
+          "decision": "remove",
+          "reason": "可更新/重建/videoSink/join四行重复432–443五项算法条件，图没有真实决策树。",
+          "original_line": 438,
+          "heading": "### Media3 会先判断能否更新输出面"
+        },
+        {
+          "original_id": "a248-18-surface-generation",
+          "title": "generation检查连接归属，不是永久ID",
+          "decision": "remove",
+          "reason": "generation创建/连接/用途/日志四步由447–458公式与两段说明完整表达，未展示新旧buffer归属对照。",
+          "original_line": 455,
+          "heading": "### generation number 解决旧 buffer 归属"
+        },
+        {
+          "original_id": "a248-19-codec-reuse-and-prewarm",
+          "title": "格式复用与第二renderer预热分别验证",
+          "decision": "remove",
+          "reason": "reuse/prewarm/progression/修复四行对应462–488完整说明与条件列表，无实际双renderer拓扑。",
+          "original_line": 485,
+          "heading": "### playlist transition 与 prewarming"
+        },
+        {
+          "original_id": "a248-20-native-codec-owner",
+          "title": "native codec选择优先看owner",
+          "decision": "remove",
+          "reason": "owner选择四行重复496–534列表，原生图已给两条分支，优先级细节留正文。",
+          "original_line": 502,
+          "heading": "### Android 17 仍保留两条实现"
+        },
+        {
+          "original_id": "a248-21-ccodec-output-callback",
+          "title": "CCodec输出队列与回调边界",
+          "decision": "remove",
+          "reason": "CCodec output与回调四行逐句重述509–516，图无回调时点的实际分支。",
+          "original_line": 513,
+          "heading": "### CCodec 的输出 Surface 路径"
+        },
+        {
+          "original_id": "a248-22-effects-two-surfaces",
+          "title": "效果链路必须画出输入与输出两个Surface",
+          "decision": "keep",
+          "reason": "decoder输出即graph输入Surface→纹理/多pass→graph输出显示Surface→系统呈现，明确两套队列与fence，区别普通直接输出拓扑。",
+          "original_line": 555,
+          "heading": "### 启用效果后多了一次应用侧处理"
+        },
+        {
+          "original_id": "a248-23-effects-input-and-angle",
+          "title": "效果输入丢弃与后端归因",
+          "decision": "remove",
+          "reason": "效果15ms/ANGLE/非ANGLE/预热四行重复562–605规则清单，无测量或后端分支连接。",
+          "original_line": 595,
+          "heading": "### 效果预热要测总成本"
+        },
+        {
+          "original_id": "a248-24-hdr-protected-chain",
+          "title": "HDR与DRM要求连续链路满足条件",
+          "decision": "remove",
+          "reason": "HDR/保护四行重述611–642连续约束清单，不是实际完整保护链连接。",
+          "original_line": 639,
+          "heading": "### SurfaceView 也不保证 HDR overlay"
+        },
+        {
+          "original_id": "a248-25-tunnel-sideband-topology",
+          "title": "tunnel经sideband连接系统图层",
+          "decision": "keep",
+          "reason": "track选择与会话→codec/AudioTrack HWsync→sideband到SF层→HWCvendor的真实路径不同于普通逐帧图像队列，保留能力不满足回普通限定。",
+          "original_line": 679,
+          "heading": "### sideband 仍由 SurfaceFlinger 管理"
+        },
+        {
+          "original_id": "a248-26-tunnel-event-boundaries",
+          "title": "tunnel就绪、rendered与呈现分别记",
+          "decision": "remove",
+          "reason": "tunnel四种回调/显示配对重复695–704说明，未展示实际时序或完成依赖。",
+          "original_line": 699,
+          "heading": "### tunnel callback 也不是 panel present"
+        },
+        {
+          "original_id": "a248-27-frame-rate-cadence",
+          "title": "播放fps与系统显示Hz不要求相等",
+          "decision": "remove",
+          "reason": "fps/默认策略/重复次数/TV四行重复712–749帧率与倍速说明，没有画实际刷新节拍轨道。",
+          "original_line": 733,
+          "heading": "### 出帧节奏与刷新率不要求相等"
+        },
+        {
+          "original_id": "a248-28-first-frame-stages",
+          "title": "首帧指标从数据拆到显示",
+          "decision": "remove",
+          "reason": "首帧四组配对重复757–770五阶段表及派发时间/重复事件限定，非事件时序。",
+          "original_line": 767,
+          "heading": "### 首帧至少拆成五个阶段"
+        },
+        {
+          "original_id": "a248-29-joining-and-seek",
+          "title": "joining就绪窗口与seek可见延迟分开",
+          "decision": "remove",
+          "reason": "joining/seek/追帧/显示四行重复774–798，正文保留5000ms非SLA及flush顺序。",
+          "original_line": 795,
+          "heading": "### seek 后要识别 decode-only 与追帧"
+        },
+        {
+          "original_id": "a248-30-transition-shutter-policy",
+          "title": "黑屏与旧帧保留是明确的产品策略",
+          "decision": "remove",
+          "reason": "旧帧/shutter/DRM/移除遮罩四行由802–814产品清单完整说明，没有状态机。",
+          "original_line": 806,
+          "heading": "### 黑屏与旧帧是两种策略"
+        },
+        {
+          "original_id": "a248-07-time-domains",
+          "title": "媒体时间、计划释放和事件时钟分开",
+          "decision": "remove",
+          "reason": "四类时域卡片重复882段的单位、时基、休眠映射说明；图没有画实际时钟同步点或换算关系。",
+          "original_line": 884,
+          "heading": "### AnalyticsListener 的边界"
+        },
+        {
+          "original_id": "a248-31-analytics-aggregation",
+          "title": "计数器与offset聚合避免重复和平均偏差",
+          "decision": "remove",
+          "reason": "dropped子集/offset加权/屏障/session四行重复882–908，保留完整统计边界不增加重排文字图。",
+          "original_line": 905,
+          "heading": "### DecoderCounters 怎么读"
+        },
+        {
+          "original_id": "a248-32-trace-path-specific",
+          "title": "Perfetto证据按实际输出路径追加",
+          "decision": "remove",
+          "reason": "四种取证路径是945–1001详细步骤摘要，原生普通图、effects与tunnel保留图已解释结构差异。",
+          "original_line": 998,
+          "heading": "### tunnel 要换证据"
+        },
+        {
+          "original_id": "a248-33-symptom-localization",
+          "title": "声音继续画面停住先看最后正常边界",
+          "decision": "remove",
+          "reason": "症状四行逐项重复1030–1035排查列表，未画有连接的条件分支。",
+          "original_line": 1025,
+          "heading": "### 声音继续、画面停住"
+        },
+        {
+          "original_id": "a248-34-regression-matrix",
+          "title": "回归按内容与设备能力组合",
+          "decision": "remove",
+          "reason": "回归四步重述1065–1084组合列表和后方检查清单，无实际矩阵数据。",
+          "original_line": 1077,
+          "heading": "### HDR 或 DRM 设备分化"
+        }
+      ],
+      "sha256_after": "5c85ed3edc3ac719eb25ddffe2a994fec15ad9f091748890eca7c1e68514f2b8",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:03:51.722903+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 34,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a248/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a248/visual-review.json",
+      "retired_diagrams": [
+        "a248-01-evidence-domains",
+        "a248-02-normal-codec-topology",
+        "a248-03-adapter-default-selection",
+        "a248-05-scheduling-four-mechanisms",
+        "a248-06-crypto-enqueuer",
+        "a248-07-time-domains",
+        "a248-09-release-action-meaning",
+        "a248-10-late-threshold-guards",
+        "a248-12-drop-observation-domains",
+        "a248-13-allow-frame-drop-policy",
+        "a248-14-surface-output-topology",
+        "a248-16-attachment-and-compose",
+        "a248-17-surface-switch-branches",
+        "a248-18-surface-generation",
+        "a248-19-codec-reuse-and-prewarm",
+        "a248-20-native-codec-owner",
+        "a248-21-ccodec-output-callback",
+        "a248-23-effects-input-and-angle",
+        "a248-24-hdr-protected-chain",
+        "a248-26-tunnel-event-boundaries",
+        "a248-27-frame-rate-cadence",
+        "a248-28-first-frame-stages",
+        "a248-29-joining-and-seek",
+        "a248-30-transition-shutter-policy",
+        "a248-31-analytics-aggregation",
+        "a248-32-trace-path-specific",
+        "a248-33-symptom-localization",
+        "a248-34-regression-matrix"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-248/retired-assets.json"
     },
     {
       "index": 249,
@@ -62788,8 +63109,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 172,
-  "next_article": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+  "reviewed_articles": 173,
+  "next_article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -62799,7 +63120,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:59:46.526012+08:00",
+  "updated_at": "2026-10-31T18:03:51.722903+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -62949,9 +63270,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5280,
-  "reviewed_placements_after": 2083,
-  "net_removed_placements": 3197,
+  "reviewed_placements_before": 5314,
+  "reviewed_placements_after": 2089,
+  "net_removed_placements": 3225,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -62975,5 +63296,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 172
+  "currently_matching_reviewed_source_count": 173
 }
