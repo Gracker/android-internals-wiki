@@ -61016,9 +61016,239 @@
       "before_count": 24,
       "before_all_images": 24,
       "sha256_before": "ff2a619e78cb23e7f9b642373419b996a3941940f45fd2e789d64ca89fa9cafc",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a244-01-three-rates",
+          "title": "内容、产帧与刷新三个量",
+          "decision": "remove",
+          "reason": "三种帧率定义及成本边界已由46–64逐条说明，图只是文字配对；保留下一张真实节拍轨道即可。",
+          "original_line": 52,
+          "heading": "## 从三个帧率开始判断"
+        },
+        {
+          "original_id": "a244-02-uniform-hold-cadence",
+          "title": "60fps内容与120Hz刷新的均匀保持",
+          "decision": "keep",
+          "reason": "六个刷新周期与A/B/C双周期保持的两轨直接展示60fps/120Hz关系，标明均匀按时且非设备测量，优于定义卡片。",
+          "original_line": 59,
+          "heading": "## 从三个帧率开始判断"
+        },
+        {
+          "original_id": "a244-03-arr-te-constraints",
+          "title": "ARR在同一模式内选择呈现节奏",
+          "decision": "remove",
+          "reason": "TE基础周期、最短间隔及离散选择是68和350的字段解释，三行卡片没有画离散呈现点。",
+          "original_line": 70,
+          "heading": "## 从三个帧率开始判断"
+        },
+        {
+          "original_id": "a244-04-public-api-evolution",
+          "title": "Android15至17公开接口边界",
+          "decision": "remove",
+          "reason": "API35–37边界由84–100完整API表覆盖，三行概要重复且信息更少。",
+          "original_line": 79,
+          "heading": "## Android 15—17 API 边界"
+        },
+        {
+          "original_id": "a244-05-capability-result-branches",
+          "title": "能力查询的三个分支",
+          "decision": "remove",
+          "reason": "QueryUnavailable/false/true三支已由26行sealed interface代码及133解释完整呈现，图未新增分支条件。",
+          "original_line": 135,
+          "heading": "## Android 15—17 API 边界"
+        },
+        {
+          "original_id": "a244-06-velocity-unit-conversion",
+          "title": "滚动速度从像素到dp的单位路径",
+          "decision": "keep",
+          "reason": "OverScroller px/s经每帧View提示、当前density换算再到Display映射的单位路径补足应用只上报px/s与映射dp/s的边界，避免直接比较。",
+          "original_line": 142,
+          "heading": "## Android 15—17 API 边界"
+        },
+        {
+          "original_id": "a244-07-view-vote-aggregation",
+          "title": "局部View偏好汇总到宿主窗口",
+          "decision": "keep",
+          "reason": "局部绘制View→ViewRoot→宿主图层→SF的责任链说明请求聚合位置，配合157全局选择限定，避免把每View当独立显示层。",
+          "original_line": 159,
+          "heading": "## View 帧率请求要贴近会更新的内容"
+        },
+        {
+          "original_id": "a244-08-group-propagation-reset",
+          "title": "ViewGroup设置、传播与撤销",
+          "decision": "remove",
+          "reason": "设置自身、显式传播false/true、DEFAULT不恢复历史三个API差异由164完整说明，图为逐句重复而非子树传播示意。",
+          "original_line": 166,
+          "heading": "## View 帧率请求要贴近会更新的内容"
+        },
+        {
+          "original_id": "a244-09-fling-velocity-lifecycle",
+          "title": "惯性滚动与逐帧速度提示",
+          "decision": "remove",
+          "reason": "start/fling/compute/逐帧invalidate链由26行滚动骨架和214说明完整覆盖，图没有真实循环连线或增量信息。",
+          "original_line": 216,
+          "heading": "## View 帧率请求要贴近会更新的内容"
+        },
+        {
+          "original_id": "a244-10-window-policy-controls",
+          "title": "窗口两项开关应独立回退",
+          "decision": "remove",
+          "reason": "两Window开关及独立回退由225–242及10行封装说明完整覆盖，三行卡片重复。",
+          "original_line": 244,
+          "heading": "## Window 开关属于回退手段"
+        },
+        {
+          "original_id": "a244-11-touch-response-evidence",
+          "title": "触摸升帧实验的端到端观察",
+          "decision": "remove",
+          "reason": "输入到可见反馈链及200ms实验窗口由256–259四项验收清单完整说明，没有实际测量时序。",
+          "original_line": 251,
+          "heading": "## Window 开关属于回退手段"
+        },
+        {
+          "original_id": "a244-12-view-surface-topologies",
+          "title": "普通View、TextureView与SurfaceView的拓扑",
+          "decision": "remove",
+          "reason": "View/TextureView/SurfaceView三行配对重复270–276拓扑表，非真正队列与宿主图层结构；保留条件回传路径及正文表。",
+          "original_line": 265,
+          "heading": "## SurfaceView、TextureView 与普通 View 的请求路径"
+        },
+        {
+          "original_id": "a244-13-texture-frame-rate-feedback",
+          "title": "TextureView帧率回传的条件路径",
+          "decision": "keep",
+          "reason": "特性开关→安装监听器→生产方setFrameRate→TextureView/HWUI宿主的条件路径有助定位固定实现，不把回传误读为独立SF层。",
+          "original_line": 278,
+          "heading": "## SurfaceView、TextureView 与普通 View 的请求路径"
+        },
+        {
+          "original_id": "a244-14-video-request-lifecycle",
+          "title": "固定源视频偏好的更新与清除",
+          "decision": "keep",
+          "reason": "Surface有效生命周期中设置准确源帧率、固定源、暂停清除、复用更新完整连接仅设置请求的20行代码和清除规则。",
+          "original_line": 316,
+          "heading": "## SurfaceView、TextureView 与普通 View 的请求路径"
+        },
+        {
+          "original_id": "a244-15-surface-compatibility-semantics",
+          "title": "不同生产方的Surface兼容性语义",
+          "decision": "remove",
+          "reason": "UI至少值、视频固定源、游戏默认、相机另评估由321及480–482完整说明，四行文字映射不是生产方拓扑。",
+          "original_line": 323,
+          "heading": "## SurfaceView、TextureView 与普通 View 的请求路径"
+        },
+        {
+          "original_id": "a244-16-selector-choice-path",
+          "title": "Android17刷新率选择链",
+          "decision": "remove",
+          "reason": "LayerHistory/Scheduler/Selector/配置四步是332–336五项源码顺序的缩写，文章已链接系统选择专篇，保留细节正文。",
+          "original_line": 338,
+          "heading": "## Android 17 怎样处理这些帧率请求"
+        },
+        {
+          "original_id": "a244-17-explicit-vote-types",
+          "title": "内部票型保留不同请求语义",
+          "decision": "remove",
+          "reason": "内部票型三行逐一重复343完整分类，未增加候选评分或条件分支。",
+          "original_line": 345,
+          "heading": "## Android 17 怎样处理这些帧率请求"
+        },
+        {
+          "original_id": "a244-18-composer-panel-boundary",
+          "title": "Composer3与面板能力约束",
+          "decision": "remove",
+          "reason": "Composer字段与可选通知链重复350–357，线性卡片未呈现设备支持分支。",
+          "original_line": 352,
+          "heading": "## Android 17 怎样处理这些帧率请求"
+        },
+        {
+          "original_id": "a244-19-arr-evidence-layers",
+          "title": "ARR验收需要四层证据",
+          "decision": "remove",
+          "reason": "四层证据由368–375完整三列表说明，配图逐行重复同一表格。",
+          "original_line": 363,
+          "heading": "## Perfetto 验收：把请求、生产和呈现放在一起"
+        },
+        {
+          "original_id": "a244-20-producer-fence-dependencies",
+          "title": "独立生产方的缓冲区与栅栏依赖",
+          "decision": "keep",
+          "reason": "queueBuffer同时送候选采纳与acquire就绪两条依赖，到合成汇合，直观避免将latch与fence强行串行；图注明确非比例时序。",
+          "original_line": 390,
+          "heading": "## Perfetto 验收：把请求、生产和呈现放在一起"
+        },
+        {
+          "original_id": "a244-21-test-settings-transaction",
+          "title": "实验设置修改与可靠恢复",
+          "decision": "keep",
+          "reason": "改设置前读取两项原值、注册trap后再写入、保留失败状态且两项恢复都尝试的生命周期连接43行脚本，防止异常路径遗漏。",
+          "original_line": 445,
+          "heading": "## Perfetto 验收：把请求、生产和呈现放在一起"
+        },
+        {
+          "original_id": "a244-22-cross-device-ab-buckets",
+          "title": "能力分桶与功耗实验条件",
+          "decision": "remove",
+          "reason": "API/能力/跨屏及AB条件由461–476清单完整列出，图只是四行文字摘要没有实验分支图。",
+          "original_line": 456,
+          "heading": "## 跨设备实验与回退"
+        },
+        {
+          "original_id": "a244-23-compose-preferred-layer",
+          "title": "Compose帧率偏好的图形层路径",
+          "decision": "remove",
+          "reason": "Compose graphicsLayer/draw与宿主路径及清除默认由484–486完整说明，卡片不显示不同图层归属，避免再重复聚合链。",
+          "original_line": 488,
+          "heading": "## 游戏、视频与 Compose"
+        },
+        {
+          "original_id": "a244-24-arr-acceptance-loop",
+          "title": "应用帧率策略的验证闭环",
+          "decision": "remove",
+          "reason": "结尾请求/证据/回退四步重复495–497小结与前方验收章节，无新增回路关系。",
+          "original_line": 499,
+          "heading": "## 全文小结"
+        }
+      ],
+      "sha256_after": "f7717811bbee3ba6b1c86bbb2b26c8618eddef5ad1a1ab5eacecb1fab7037e3c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:49:20.699164+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 24,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a244/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a244/visual-review.json",
+      "retired_diagrams": [
+        "a244-01-three-rates",
+        "a244-03-arr-te-constraints",
+        "a244-04-public-api-evolution",
+        "a244-05-capability-result-branches",
+        "a244-08-group-propagation-reset",
+        "a244-09-fling-velocity-lifecycle",
+        "a244-10-window-policy-controls",
+        "a244-11-touch-response-evidence",
+        "a244-12-view-surface-topologies",
+        "a244-15-surface-compatibility-semantics",
+        "a244-16-selector-choice-path",
+        "a244-17-explicit-vote-types",
+        "a244-18-composer-panel-boundary",
+        "a244-19-arr-evidence-layers",
+        "a244-22-cross-device-ab-buckets",
+        "a244-23-compose-preferred-layer",
+        "a244-24-arr-acceptance-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-244/retired-assets.json"
     },
     {
       "index": 245,
@@ -61439,8 +61669,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 168,
-  "next_article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+  "reviewed_articles": 169,
+  "next_article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -61450,7 +61680,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:46:29.483069+08:00",
+  "updated_at": "2026-10-31T17:49:20.699164+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -61607,9 +61837,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5138,
-  "reviewed_placements_after": 2054,
-  "net_removed_placements": 3084,
+  "reviewed_placements_before": 5162,
+  "reviewed_placements_after": 2061,
+  "net_removed_placements": 3101,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -61633,5 +61863,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 168
+  "currently_matching_reviewed_source_count": 169
 }
