@@ -52,10 +52,6 @@ sources:
 
 Dagger/Hilt 在编译期分析依赖关系并生成 Java 代码；Koin 4.2 的经典 DSL 会在运行时注册 definition（Koin 对创建规则的描述）并按 key 查找。两者把成本放在不同阶段，不过启动长尾通常来自被 DI 拉起的重构造函数、`@Provides` 方法或 definition lambda，而非一次轻量查找本身。这里的“长尾”指 P90/P99（分别有 90%、99% 样本不超过的耗时）明显高于中位数。
 
-<!-- gracker-diagram: a229-01-cost-stages -->
-![DI 将图分析、注册与对象构造放在不同阶段](../../assets/diagrams/ch21/a229-01-cost-stages.png)
-
-图：框架名称不决定启动长尾；先找实际入口及递归请求的对象图。
 
 Android 17 的平台边界也很清楚：`ActivityThread.handleBindApplication()` 先安装进程内 Android `ContentProvider`，之后才调用 `Application.onCreate()`。DI 框架无法改变这个顺序。`ContentProvider` 中若访问 DI 容器，可能把 component 创建或 runtime resolution（运行时查找并取得实例）提前到 `Application.onCreate()` 之前。文中的 Android `ContentProvider` 与 Dagger/JSR-330 的 `Provider<T>` 是两种不同概念。
 
@@ -96,10 +92,6 @@ Hilt Gradle 插件默认启用 `fastInit`，用更集中式的 provider 生成�
 
 代价是 `fastInit` 下的 `Provider` 会持有整个 component，而默认模式下通常只持有传递依赖的 provider。若短生命周期对象泄漏了一个 `Provider`，`fastInit` 模式下可能连带保留更大的对象关系。Hilt 2.60 起可以用 Gradle 属性 `-Pdagger.hilt.fastInit=false` 做发布构建对照；不要把它写进 annotation processor 参数，也不要预设关闭后一定更快。官方边界见 [Hilt Fast Init](https://dagger.dev/hilt/flags.html#fast-init)。
 
-<!-- gracker-diagram: a229-04-fastinit-retention -->
-![fastInit 减少初始化类加载，同时扩大 Provider 持有范围](../../assets/diagrams/ch21/a229-04-fastinit-retention.png)
-
-图：fastInit 不会自动延迟重构造，也不会删除 binding；收益与保留风险须在等价发布产物验证。
 
 ## Eager、direct、`Lazy` 与 `Provider`
 
@@ -121,10 +113,6 @@ eager 表示在 component/container 启动阶段主动创建实例；direct inje
 
 同一个 `dagger.Lazy<T>` 会缓存一次结果；对 unscoped binding，分别创建的 Lazy 包装器各自缓存，不能据此保证调用者拿到同一对象。scoped binding 则仍共享对应 scope 的实例，包装器本身也未必不同：2.60.1 的 [`DoubleCheck.lazy()`](https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java) 会直接复用已经实现 `Lazy` 的 provider。需要共享对象时应由正确的 scope 保证，不能依赖包装器身份。
 
-<!-- gracker-diagram: a229-05-lazy-scope-cache -->
-![Lazy 缓存语义与 scope 的实例身份分别判断](../../assets/diagrams/ch21/a229-05-lazy-scope-cache.png)
-
-图：直接字段在宿主注入时请求；Provider.get 每次请求图，但 scoped 结果仍复用。
 
 `@Inject lateinit var` 只是由 Hilt 稍后赋值的 Kotlin 字段，不具备“第一次业务使用时再注入”的语义。若 Application 直接注入 `Analytics`，Hilt 会在 Application 注入时构造 `Analytics` 及其递归依赖。
 
@@ -149,10 +137,6 @@ Hilt 在 Application 注入时提供延迟访问入口，不会仅因给该字�
 
 适合 `@Binds` 的接口到实现映射，不应写成只返回参数的 `@Provides`。这主要减少手写 module 实例与生成路径的复杂度；性能收益仍需用 release 构建验证。
 
-<!-- gracker-diagram: a229-06-provider-workload -->
-![重构造会沿按需请求路径进入启动](../../assets/diagrams/ch21/a229-06-provider-workload.png)
-
-图：Provides 是按 binding 请求执行；延后整个非必要 feature 入口才能移走其同步依赖工作。
 
 ## Hilt 与 `Application.onCreate()` 关键路径
 
@@ -203,10 +187,6 @@ Koin 4.2 还提供 Compiler Plugin，可在编译期自动连接构造参数并�
 
 `single` 默认在首次解析时创建。`createdAtStart = true` 只负责标记 eager singleton；标准 `startKoin` 会在配置注册完后自动调用 `createEagerInstances()`，创建此时已注册的 eager 实例。直接使用 `KoinApplication` 或后续加载 module 时也可以显式控制这一步。优化时应先删除没有业务必要的 `createdAtStart`。
 
-<!-- gracker-diagram: a229-08-koin-start-order -->
-![Koin 先注册配置，再创建当时已登记的 eager 实例](../../assets/diagrams/ch21/a229-08-koin-start-order.png)
-
-图：createdAtStart 标记 eager definition；普通 single 仍按需，factory 每次获取按定义创建。
 
 Koin 4.2 的 `lazyModules()` 会用协程在后台载入 module；多个 lazy module 从 4.2.0 起各用一个协程并行加载，默认 dispatcher 是 `Dispatchers.Default`。`waitAllStartJobs()` 会阻塞等待，`awaitAllStartJobs()` 则挂起等待；在主线程调用前者可能把成本重新放回启动关键路径。
 
@@ -219,10 +199,6 @@ Koin 4.2 的 `lazyModules()` 会用协程在后台载入 module；多个 lazy mo
 
 同步 module 若依赖尚未载入的 lazy module，解析可能失败，Koin 目前也不会自动校验这种跨边界依赖。适合延迟的是依赖边界清晰且首屏不会访问的 feature，不能机械地把所有 module 移进后台。详细限制见 [Lazy Modules and Background Loading](https://insert-koin.io/docs/reference/koin-core/lazy-modules/)。
 
-<!-- gracker-diagram: a229-10-lazy-eager-race -->
-![懒模块注册与 eager 快照之间没有自动等待关系](../../assets/diagrams/ch21/a229-10-lazy-eager-race.png)
-
-图：未标 eager 的 single 仍在请求线程构造；Koin 不自动校验常规模块到懒模块的跨边界依赖。
 
 Koin 4.2 默认使用不输出内容的 `EmptyLogger`。Release 构建不应显式启用 DEBUG/INFO 级 `AndroidLogger`；开发期日志可定位 resolution，但日志本身会改变时序，不能作为线上或 benchmark 的默认配置。
 
@@ -249,10 +225,6 @@ Dagger/Hilt 没有 `@Module(isDefault = true)` 这个优化参数。scope 也有
 
 Baseline Profile 能让启动用到的 generated code 更早进行 AOT（Ahead-Of-Time，运行前预编译），Startup Profile 能改善这些类在 DEX 中的排列。Profile 不会提前创建 component 或 binding。生成规则时按正常启动 CUJ（Critical User Journey，关键用户路径）覆盖 DI 路径即可，不要写“预热所有 binding”的测试。具体方法见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](04-baseline-startup-cloud-profile.md)。
 
-<!-- gracker-diagram: a229-11-release-artifacts -->
-![生成源码经过 R8 后，编译与 DEX 布局分别影响运行](../../assets/diagrams/ch21/a229-11-release-artifacts.png)
-
-图：Module 文件合并不改变 Hilt 的生命周期 component；Profile 也不能替代缩减启动注入面。
 
 ## KSP 与 KAPT：只把它当构建优化
 
@@ -262,10 +234,6 @@ kapt（Kotlin Annotation Processing Tool）通过生成 Java stub（供处理器
 
 若项目使用 AGP 9 的 built-in Kotlin（Android Gradle Plugin 内置 Kotlin 支持），`org.jetbrains.kotlin.kapt` 插件不兼容；仍未支持 KSP 的 processor 可保留原 `kapt` 依赖，并在所在 Gradle module 应用 `com.android.legacy-kapt`；指南并未要求为此额外拆一个 module。Data Binding 目前也没有 KSP 迁移计划。这个限制属于构建系统兼容性，与设备运行时的 DI 性能分开评估。
 
-<!-- gracker-diagram: a229-12-ksp-build-boundary -->
-![KSP 优化构建处理，不直接改变设备上的 DI 工作](../../assets/diagrams/ch21/a229-12-ksp-build-boundary.png)
-
-图：KSP 迁移按 clean / 增量构建验证；只有发布产物或布局变化，才另测运行时影响。
 
 迁移应这样验收：
 
@@ -287,10 +255,6 @@ scope 的首要目标是对象身份和生命周期正确性，也就是规定�
 
 过度 scope 会扩大 live set（GC 时仍能访问到的对象集合），也会给 provider 增加缓存与同步路径。取消 scope 后又可能反复创建昂贵对象。选择应由身份语义、构造成本和内存保留共同决定；内存侧的验证见 [23.1 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/01-java-heap-gc-compose-allocation.md)。
 
-<!-- gracker-diagram: a229-13-scope-lifetime -->
-![scope 缓存既决定身份，也形成内存持有边](../../assets/diagrams/ch21/a229-13-scope-lifetime.png)
-
-图：scope 先满足身份和生命周期，再评估构造复用与 live set；Reusable 不承诺唯一实例。
 
 ## 怎样测量 DI 启动成本
 
@@ -316,10 +280,6 @@ override fun onCreate() {
 
 第一段覆盖默认 Hilt Application 的成员注入；只有 `SingletonComponent` 尚未创建时，组件创建才计入这一段。若启动阶段的 `ContentProvider` 已通过 entry point 创建组件，这部分耗时发生在 `Application.onCreate()` 之前，需要在对应 `ContentProvider` 的访问处另加 trace section。第二段覆盖用户显式初始化。还应给重 `@Provides`、Koin `startKoin`、首个 `get()`、首屏 ViewModel 构造分别加点，才能定位移动后的成本。
 
-<!-- gracker-diagram: a229-14-measurement-boundaries -->
-![组件首次创建位置决定 App trace 如何解释](../../assets/diagrams/ch21/a229-14-measurement-boundaries.png)
-
-图：try/finally 配对 trace 结束；区间结束不代表业务内容已经显示，也不代表初始化成功。
 
 测量口径：
 
@@ -345,10 +305,6 @@ Allocation Recording（对象分配记录）会明显扰动时序，只用于找
 
 手写替换也要保留相同对象图、生命周期和线程安全再比较。若手写版本通过删除功能、改成全局单例或把错误推迟到运行时获得更快数字，这不是等价实验。
 
-<!-- gracker-diagram: a229-15-optimization-order -->
-![先移走不必要的图，再验证剩余关键路径](../../assets/diagrams/ch21/a229-15-optimization-order.png)
-
-图：确认 Lazy.get 未提前发生；延迟后还需检查首交互、并发注册依赖、取消与生命周期。
 
 ## 排查清单
 

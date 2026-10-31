@@ -57135,9 +57135,161 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "c749bba4eda6b2febe8f9de7defed71b6e0484afb8c5e8291dba577658b7a98b",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 4,
+      "decisions": [
+        {
+          "original_id": "a229-01-cost-stages",
+          "title": "DI 将图分析、注册与对象构造放在不同阶段",
+          "decision": "remove",
+          "reason": "开篇四类工作和Hilt/Koin阶段定义及后文六维比较表完整，三行成本分类卡重复。",
+          "original_line": 55,
+          "heading": "# 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化"
+        },
+        {
+          "original_id": "a229-02-provider-before-application",
+          "title": "Android Provider 可把 Hilt 首次组件访问提前",
+          "decision": "keep",
+          "reason": "Application已建到Provider访问entrypoint、super内Hilt注入再业务请求的顺序，说明组件可能在用户onCreate前创建。",
+          "original_line": 62,
+          "heading": "# 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化"
+        },
+        {
+          "original_id": "a229-03-demand-subgraph",
+          "title": "组件建立规则，实际请求决定构造哪条依赖链",
+          "decision": "keep",
+          "reason": "直接字段Analytics递归拉起Repository配置SDK与未请求feature无箭头的对照子图，解释binding总数不等实例构造数。",
+          "original_line": 88,
+          "heading": "## Dagger/Hilt component 创建到底做了什么"
+        },
+        {
+          "original_id": "a229-04-fastinit-retention",
+          "title": "fastInit 减少初始化类加载，同时扩大 Provider 持有范围",
+          "decision": "remove",
+          "reason": "fastInit两段精确列引用范围、类加载、Gradle开关和不保证更快，三行映射卡未画实际持有对象图而重复。",
+          "original_line": 99,
+          "heading": "### Hilt `fastInit` 的边界"
+        },
+        {
+          "original_id": "a229-05-lazy-scope-cache",
+          "title": "Lazy 缓存语义与 scope 的实例身份分别判断",
+          "decision": "remove",
+          "reason": "五种注入时机表和Lazy包装/scoped/DoubleCheck复用段落更完整，三行缓存卡重复。",
+          "original_line": 124,
+          "heading": "### `@Singleton` 不等于 eager"
+        },
+        {
+          "original_id": "a229-06-provider-workload",
+          "title": "重构造会沿按需请求路径进入启动",
+          "decision": "remove",
+          "reason": "Provides/definition重工作段落和Binds说明完整，三行调用工作映射卡重复。",
+          "original_line": 152,
+          "heading": "### `@Provides` 也不是自动 eager"
+        },
+        {
+          "original_id": "a229-07-viewmodel-first-create",
+          "title": "ViewModelStore 命中时跳过 Hilt 新建路径",
+          "decision": "keep",
+          "reason": "按owner/key查ViewModelStore命中直接复用与未命中建组件构造两分支，说明不是每次获取都有初始化成本。",
+          "original_line": 188,
+          "heading": "## HiltViewModel 的成本边界"
+        },
+        {
+          "original_id": "a229-08-koin-start-order",
+          "title": "Koin 先注册配置，再创建当时已登记的 eager 实例",
+          "decision": "remove",
+          "reason": "Koin启动两段编号及createdAtStart末尾创建当前注册eager的段落完整，四框线性摘要重复。",
+          "original_line": 206,
+          "heading": "## Koin 的运行时成本"
+        },
+        {
+          "original_id": "a229-09-lazy-modules-tracks",
+          "title": "Koin 懒模块在启动时并行注册，首次实例构造另算",
+          "decision": "keep",
+          "reason": "启动发协程后lazyA/B并行注册与eager快照、后续请求构造四轨，直观解释注册和实例创建不同就绪边界。",
+          "original_line": 215,
+          "heading": "## Koin 的运行时成本"
+        },
+        {
+          "original_id": "a229-10-lazy-eager-race",
+          "title": "懒模块注册与 eager 快照之间没有自动等待关系",
+          "decision": "remove",
+          "reason": "三段正文明确eager不等lazy、wait阻塞与await挂起、同步依赖可能失败，三行竞态分类卡重复且前时序已保留。",
+          "original_line": 222,
+          "heading": "## Koin 的运行时成本"
+        },
+        {
+          "original_id": "a229-11-release-artifacts",
+          "title": "生成源码经过 R8 后，编译与 DEX 布局分别影响运行",
+          "decision": "remove",
+          "reason": "R8最终产物、Module不改component、BaselineStartup各职责段落完整，三行工具产物卡重复。",
+          "original_line": 252,
+          "heading": "## 生成代码、DEX 与 Startup Profile"
+        },
+        {
+          "original_id": "a229-12-ksp-build-boundary",
+          "title": "KSP 优化构建处理，不直接改变设备上的 DI 工作",
+          "decision": "remove",
+          "reason": "KSP/kapt/AGP9三段和五项迁移验收完整，三行构建边界卡重复。",
+          "original_line": 265,
+          "heading": "## KSP 与 KAPT：只把它当构建优化"
+        },
+        {
+          "original_id": "a229-13-scope-lifetime",
+          "title": "scope 缓存既决定身份，也形成内存持有边",
+          "decision": "remove",
+          "reason": "五项scope生命周期规则和live-set取舍段落更完整，三行生命周期分类卡重复。",
+          "original_line": 290,
+          "heading": "## 作用域与内存生命周期"
+        },
+        {
+          "original_id": "a229-14-measurement-boundaries",
+          "title": "组件首次创建位置决定 App trace 如何解释",
+          "decision": "remove",
+          "reason": "15行两区间trace代码和前置Provider组件取证说明完整，三行测量映射卡重复。",
+          "original_line": 319,
+          "heading": "## 怎样测量 DI 启动成本"
+        },
+        {
+          "original_id": "a229-15-optimization-order",
+          "title": "先移走不必要的图，再验证剩余关键路径",
+          "decision": "remove",
+          "reason": "七项风险收益优化顺序编号清单更完整，四框总结步骤重复。",
+          "original_line": 348,
+          "heading": "## 优化顺序"
+        }
+      ],
+      "sha256_after": "5c74dc46572a01783cce604d4c2cda17c524cc1431259183ad3dd728fa6207fd",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:02:08.240101+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a229/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a229/visual-review.json",
+      "retired_diagrams": [
+        "a229-01-cost-stages",
+        "a229-04-fastinit-retention",
+        "a229-05-lazy-scope-cache",
+        "a229-06-provider-workload",
+        "a229-08-koin-start-order",
+        "a229-10-lazy-eager-race",
+        "a229-11-release-artifacts",
+        "a229-12-ksp-build-boundary",
+        "a229-13-scope-lifetime",
+        "a229-14-measurement-boundaries",
+        "a229-15-optimization-order"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-229/retired-assets.json"
     },
     {
       "index": 230,
@@ -57712,8 +57864,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 154,
-  "next_article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+  "reviewed_articles": 155,
+  "next_article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -57723,7 +57875,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:00:02.806241+08:00",
+  "updated_at": "2026-10-31T17:02:08.240101+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -57894,9 +58046,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4757,
-  "reviewed_placements_after": 1964,
-  "net_removed_placements": 2793,
+  "reviewed_placements_before": 4772,
+  "reviewed_placements_after": 1968,
+  "net_removed_placements": 2804,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -57920,5 +58072,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 154
+  "currently_matching_reviewed_source_count": 155
 }
