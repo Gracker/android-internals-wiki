@@ -442,7 +442,7 @@
                         if (f === currentFlavor) return;
                         currentFlavor = f;
                         var palette = PALETTES[f] || PALETTES.latte;
-                        var blocks = document.querySelectorAll('pre.mermaid');
+                        var blocks = document.querySelectorAll('pre.mermaid, pre > code.language-mermaid');
                         if (!blocks.length) return;
                         window.mermaid.initialize({
                             startOnLoad: false,
@@ -454,6 +454,7 @@
                         // Replace each <pre class="mermaid"> with rendered SVG.
                         blocks.forEach(function (block, idx) {
                             var src = block.textContent;
+                            if (block.tagName === 'CODE') block = block.parentNode;
                             var id = 'mermaid-' + f + '-' + idx;
                             try {
                                 window.mermaid.render(id, src).then(function (result) {
