@@ -39128,9 +39128,231 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "e4da93532c5aa9d6f21775484fb2d6c1b3b171636352094d5d29738d8803e538",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "ch14-12-01-instrumentation-choices",
+          "title": "按表达能力与采集控制选择埋点接口",
+          "decision": "remove",
+          "reason": "三列六卡逐项复制59–63接口/表达/采集控制/用途完整表，原65推荐和custom选择条件完整保留，删同一表的第二份方框。",
+          "original_line": 67,
+          "heading": "## 1. Perfetto SDK 和 Android Trace API 的边界"
+        },
+        {
+          "original_id": "ch14-12-02-private-schema-pipeline",
+          "title": "私有packet可保留原始字节，但SQL需要解析链路",
+          "decision": "keep",
+          "reason": "私有schema→pbzero→importer/storage→SQL的真实解析依赖链独立，直接说明原始未知字节保留不等业务SQL可见，保留。",
+          "original_line": 81,
+          "heading": "## 1. Perfetto SDK 和 Android Trace API 的边界"
+        },
+        {
+          "original_id": "ch14-12-03-inprocess-topology",
+          "title": "进程内producer、service与consumer共同组成自采集",
+          "decision": "merge",
+          "reason": "原图“进程内producer、service与consumer共同组成自采集”并入：并列进程内三角色和系统service/授权consumer拓扑，使用独立箭头区分事件写入、配置启停与产物读取。；锚点原图3，进程内/系统两组不自动合并，写入和配置/读取双向箭头分开，producer权限与consumer控制范围明确区分。",
+          "original_line": 90,
+          "heading": "## 2. in-process backend：应用自己控制 session",
+          "replacement_id": "ed14-12-inprocess-and-system-control-data-topologies"
+        },
+        {
+          "original_id": "ch14-12-04-inprocess-session",
+          "title": "普通进程内session从启动到导出",
+          "decision": "keep",
+          "reason": "本例注册→StartBlocking→目标draw→同步提交停止→二选一导出及事件前后边界实际时间关系独立，保留跨线程flush和耗用读取原文限制。",
+          "original_line": 155,
+          "heading": "## 2. in-process backend：应用自己控制 session"
+        },
+        {
+          "original_id": "ch14-12-05-two-buffer-layers",
+          "title": "共享内存暂存与service保留buffer分层",
+          "decision": "keep",
+          "reason": "producerSMB耗尽与serviceRing/Discard三种不同责任和保留方向对应关系独立，避免扩consumer容量当SMB丢数修复。",
+          "original_line": 162,
+          "heading": "## 2. in-process backend：应用自己控制 session"
+        },
+        {
+          "original_id": "ch14-12-06-system-control-data",
+          "title": "系统consumer控制会话，应用producer只贡献数据",
+          "decision": "merge",
+          "reason": "原图“系统consumer控制会话，应用producer只贡献数据”并入：并列进程内三角色和系统service/授权consumer拓扑，使用独立箭头区分事件写入、配置启停与产物读取。；锚点原图3，进程内/系统两组不自动合并，写入和配置/读取双向箭头分开，producer权限与consumer控制范围明确区分。",
+          "original_line": 173,
+          "heading": "## 3. system backend：应用只作为 producer",
+          "replacement_id": "ed14-12-inprocess-and-system-control-data-topologies"
+        },
+        {
+          "original_id": "ch14-12-07-system-trackevent-gates",
+          "title": "缺少SDK事件时逐层检查采集条件",
+          "decision": "remove",
+          "reason": "四步骤逐项复制192–194外部配置/连接/descriptor/category/事件窗口段，无额外实例，完整ftrace不证SDK开启与profileable权限区别全留，新后端拓扑已明确控制边界。",
+          "original_line": 196,
+          "heading": "## 3. system backend：应用只作为 producer"
+        },
+        {
+          "original_id": "ch14-12-08-custom-lifecycle",
+          "title": "custom实例生命周期与调用线程写入",
+          "decision": "remove",
+          "reason": "四步骤与218–221四行生命周期表逐行相同，GetDataSourceLocked空handle与并发重复写入限定原文205–207全留，9保留异步停止严格次序机制。",
+          "original_line": 209,
+          "heading": "## 4. custom data source：schema 与 importer 要成对设计"
+        },
+        {
+          "original_id": "ch14-12-09-async-stop-finalize",
+          "title": "异步停止先完整写尾packet，再提交和确认",
+          "decision": "keep",
+          "reason": "异步OnStop先取ack、末packetFinalize、ctxFlush再确认的真实先后依赖独立，保留consumer超时、单线程实例作用域和callback可能永不来边界。",
+          "original_line": 225,
+          "heading": "## 4. custom data source：schema 与 importer 要成对设计"
+        },
+        {
+          "original_id": "ch14-12-10-schema-evolution-tests",
+          "title": "私有协议的四处演进要一起验收",
+          "decision": "remove",
+          "reason": "四卡与239–242四步完整私有协议维护列表相同，也与2同一四环节依赖重复；2有实际解析链箭头，字段/单位/兼容/损坏packet/未知枚举测试完整原文全留。",
+          "original_line": 234,
+          "heading": "## 4. custom data source：schema 与 importer 要成对设计"
+        },
+        {
+          "original_id": "ch14-12-11-startup-adoption",
+          "title": "启动早期记录等待系统会话接管",
+          "decision": "keep",
+          "reason": "startup临时目标→匹配接管/继续等/超时Abort三个真实状态分支及早期buffer轨独立，保留system-only、0禁超时、析构不Abort和已接管不受Abort限制。",
+          "original_line": 264,
+          "heading": "## 5. startup tracing、触发器与环形缓冲"
+        },
+        {
+          "original_id": "ch14-12-12-trigger-prehistory",
+          "title": "触发信号不创建会话，事前数据需要预先记录",
+          "decision": "keep",
+          "reason": "consumer预置session→预先记录→应用仅发trigger→既定策略响应的控制顺序和故障前后轨独立，明确TTL不是历史缓冲窗、trigger不建会话不授读取。",
+          "original_line": 283,
+          "heading": "## 5. startup tracing、触发器与环形缓冲"
+        },
+        {
+          "original_id": "ch14-12-13-three-version-abi",
+          "title": "协议兼容、平台版本与SDK ABI分开管理",
+          "decision": "remove",
+          "reason": "三列六卡逐项重述296–300三版本表及302–311协议/C++ABI/CAPI边界段，原全部静态同ELF/不导出跨DSO/未稳CAPI要求全留，删版本表/条件提醒复写。",
+          "original_line": 306,
+          "heading": "## 6. 构建、体积和版本兼容"
+        },
+        {
+          "original_id": "ch14-12-14-build-size-matrix",
+          "title": "体积与兼容按构建配置和设备分层验证",
+          "decision": "remove",
+          "reason": "四卡逐项分组315–318四条APK构建体积测量清单和320集中初始化段，原多ABI/strip/LTO/异常/RTTI/压缩等参数与重复Initialize规则全留，无实际测量数据，删矩阵提醒。",
+          "original_line": 322,
+          "heading": "## 6. 构建、体积和版本兼容"
+        },
+        {
+          "original_id": "ch14-12-15-privacy-delivery",
+          "title": "从事件设计到文件交付的治理链路",
+          "decision": "remove",
+          "reason": "四步逐项摘要339–350数据治理段和341–346完整规则列表，无额外具体文件权限或处理关系，所有隐私访问保留期/平台redaction边界原文全留，删清单工作流。",
+          "original_line": 352,
+          "heading": "## 7. 隐私与数据治理"
+        },
+        {
+          "original_id": "ch14-12-16-profiling-config-boundary",
+          "title": "SDK producer不会自动进入ProfilingManager结果",
+          "decision": "keep",
+          "reason": "SDK/ProfilingManager/APM三种职责与具体采集配置对应，固定平台未选SDK源是关键可用性边界，保持与通用backend控制拓扑不同层，保留。",
+          "original_line": 369,
+          "heading": "## 8. Perfetto SDK、ProfilingManager 与 APM 的组合"
+        },
+        {
+          "original_id": "ch14-12-17-query-identity-open",
+          "title": "查询保留身份和开放边界，并区分线程与自定义Track",
+          "decision": "remove",
+          "reason": "四卡逐项重述391/416/423两查询解释及20+8行SQL，原线程track排除custom/开放末边界NULL/分类集合/Counter快照非FPS全部保留，图无具体边界值或轨例，删字段清单。",
+          "original_line": 418,
+          "heading": "## 9. Trace Processor 查询与验收"
+        },
+        {
+          "original_id": "ch14-12-18-verification-evidence",
+          "title": "接入验收从原始packet一直核对到SQL",
+          "decision": "remove",
+          "reason": "四步逐项摘要436私有验收五项及447–452六条证据清单，2保留真实编码解析依赖，所有具体验收/输出SHA/主机与实机未测范围原文完整留，删收尾工作流。",
+          "original_line": 442,
+          "heading": "## 9. Trace Processor 查询与验收"
+        }
+      ],
+      "sha256_after": "b7a5b16f40a151fbd3f9b083aa88d79447e362ed48261a49572880f898536ad0",
+      "new_diagrams": [
+        {
+          "id": "ed14-12-inprocess-and-system-control-data-topologies",
+          "title": "两种 backend 分别确定事件来源与 consumer 控制范围",
+          "article": "src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-12-inprocess-and-system-control-data-topologies.svg",
+            "src/assets/diagrams/ch14/ed14-12-inprocess-and-system-control-data-topologies.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-12-inprocess-and-system-control-data-topologies",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/instrumentation/tracing-sdk.md",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/include/perfetto/tracing/tracing.h",
+            "https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/public/te_macros"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-12-03-inprocess-topology",
+              "ch14-12-06-system-control-data"
+            ],
+            "boundary": "左侧in-process backend的producer、service、consumer都在本进程，仅含注册到该backend的数据源，不连接系统producer socket，不自动包含ftrace/Binder/SF/其它进程。右侧应用system producer经/dev/socket/traced_producer向系统traced注册并写入，实际采到哪些系统源由获准consumer配置；consumer负责整机会话的配置、启停和读取。producer可连接不等于可启动或读取整机trace，enable_system_consumer=false仅帮助裁掉未用代码，不负责授权。同进程可另启进程内backend，两条路径保持独立；图未把两个service连成自动合并链。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a146/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:44:47.388416+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 4,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a146/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a146/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 146,
+        "article": "src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
+        "registered_sha256": "e4da93532c5aa9d6f21775484fb2d6c1b3b171636352094d5d29738d8803e538",
+        "frozen_sha256": "e4da93532c5aa9d6f21775484fb2d6c1b3b171636352094d5d29738d8803e538",
+        "review_input_sha256": "6b6ce9dc5e979c0c054fef692f9c184c5d189a0898c21b45371a2222f778b772",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a146/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a146/external-source.diff",
+        "diff_sha256": "55c1b363084d3d616e738a2e7f85a5d12d5157928c66aef4c144a452f7fc84b1",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 204 current narrative/table reading rows, 19275 characters, 18 SVG label sets and all 18 original PNGs in 3 contact sheets independently read/viewed; all 6 non-Mermaid code blocks, 96 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "6b6ce9dc5e979c0c054fef692f9c184c5d189a0898c21b45371a2222f778b772",
+      "retired_diagrams": [
+        "ch14-12-01-instrumentation-choices",
+        "ch14-12-03-inprocess-topology",
+        "ch14-12-06-system-control-data",
+        "ch14-12-07-system-trackevent-gates",
+        "ch14-12-08-custom-lifecycle",
+        "ch14-12-10-schema-evolution-tests",
+        "ch14-12-13-three-version-abi",
+        "ch14-12-14-build-size-matrix",
+        "ch14-12-15-privacy-delivery",
+        "ch14-12-17-query-identity-open",
+        "ch14-12-18-verification-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-146/retired-assets.json"
     },
     {
       "index": 147,
@@ -40508,8 +40730,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 81,
-  "next_article": "src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
+  "reviewed_articles": 82,
+  "next_article": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -40519,7 +40741,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:41:45.576751+08:00",
+  "updated_at": "2026-10-31T12:44:47.388416+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -40568,13 +40790,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
-      "registered_sha256": "e4da93532c5aa9d6f21775484fb2d6c1b3b171636352094d5d29738d8803e538",
-      "observed_sha256": "6b6ce9dc5e979c0c054fef692f9c184c5d189a0898c21b45371a2222f778b772",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -40928,9 +41143,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3065,
-  "reviewed_placements_after": 1386,
-  "net_removed_placements": 1679,
+  "reviewed_placements_before": 3083,
+  "reviewed_placements_after": 1394,
+  "net_removed_placements": 1689,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -40954,5 +41169,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 81
+  "currently_matching_reviewed_source_count": 82
 }

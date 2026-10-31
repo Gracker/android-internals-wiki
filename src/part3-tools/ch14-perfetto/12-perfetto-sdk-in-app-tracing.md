@@ -4,8 +4,10 @@ chapter: '14.12'
 section: '14.12'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)；system backend 依赖设备侧 traced 服务，低版本按设备能力降级
-last_verified: '2026-08-13'
+last_verified: '2026-10-28'
 last_verified_against: AOSP external/perfetto android-17.0.0_r1 / Perfetto v57.2 / Android Developers ProfilingManager API 35 / ProfilingTrigger API 36
+last_source_verified_at: '2026-10-28'
+last_idle_audit_at: '2026-10-28T18:35:20+08:00'
 confidence: medium
 sources:
 - type: official
@@ -16,6 +18,8 @@ sources:
   path: https://perfetto.dev/docs/design-docs/api-and-abi
 - type: aosp
   path: https://android.googlesource.com/platform/external/perfetto/+show/android-17.0.0_r1/docs/instrumentation/tracing-sdk.md
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
 - type: official
   path: https://developer.android.com/topic/performance/tracing/custom-events
 - type: official
@@ -60,10 +64,6 @@ Perfetto SDK（Software Development Kit）负责把应用自定义事件写进 P
 
 官方 SDK 文档建议 Android 专用埋点优先沿用 `android.os.Trace` / `ATrace_*`，前提是平台接口已经能表达所需信息。atrace 标记可以进入 Perfetto，不需要为了工具统一而迁移现有 Java/Kotlin 埋点。
 
-<!-- gracker-diagram: ch14-12-01-instrumentation-choices -->
-![按表达能力与采集控制选择埋点接口](../../assets/diagrams/ch14/ch14-12-01-instrumentation-choices.png)
-
-图：平台标记、TrackEvent 与私有数据源分别承担不同表达需求。 Android既有ATrace可进入Perfetto；选择SDK还要核对session控制与解析成本。
 
 `track_event` 是 SDK 的默认选择。它已经处理线程安全、增量状态、string interning（用整数 ID 复用重复字符串）和 flush（把暂存数据提交给 service）。Trace Processor（负责导入和查询 trace 的分析引擎）也能直接生成 `slice`、`counter`、flow 等标准数据。custom data source 适用于以下条件同时成立的场景：
 
@@ -83,10 +83,10 @@ custom data source 写出的私有 protobuf 不会自动变成 PerfettoSQL 表�
 
 in-process backend（进程内后端）把 tracing service、consumer 和 producer 都放在当前进程，不连接 Android 的 `/dev/socket/traced_producer`。应用可以创建、停止并读取 session；这里的 session 指一次拥有独立配置和 buffer 的采集会话。产物只含注册到该进程内 backend 的数据源，不包含 ftrace、Binder、SurfaceFlinger 或其他进程事件。
 
-<!-- gracker-diagram: ch14-12-03-inprocess-topology -->
-![进程内producer、service与consumer共同组成自采集](../../assets/diagrams/ch14/ch14-12-03-inprocess-topology.png)
+<!-- gracker-diagram: ed14-12-inprocess-and-system-control-data-topologies -->
+![两种 backend 分别确定事件来源与 consumer 控制范围](../../assets/diagrams/ch14/ed14-12-inprocess-and-system-control-data-topologies.png)
 
-图：应用自己控制进程内service的配置、启停和导出。 只有注册到本backend的数据源；不连接系统producer socket，不自动包含其他进程或ftrace。
+图：左侧in-process backend的producer、service、consumer都在本进程，仅含注册到该backend的数据源，不连接系统producer socket，不自动包含ftrace/Binder/SF/其它进程。右侧应用system producer经/dev/socket/traced_producer向系统traced注册并写入，实际采到哪些系统源由获准consumer配置；consumer负责整机会话的配置、启停和读取。producer可连接不等于可启动或读取整机trace，enable_system_consumer=false仅帮助裁掉未用代码，不负责授权。同进程可另启进程内backend，两条路径保持独立；图未把两个service连成自动合并链。
 
 下面的示例固定使用 `kInProcessBackend`，并让调用方传入经过实测的 buffer 容量与应用私有输出 fd（file descriptor，文件描述符）：
 
@@ -166,10 +166,6 @@ system backend（系统后端）通过 producer socket `/dev/socket/traced_produ
 
 Android 17 的 `system/sepolicy/private/app.te` 对 `appdomain` 使用 `perfetto_producer(appdomain)`，允许应用向 `traced` 写数据。consumer socket 的权限要求更严格；producer 能够连接，只说明应用可以提交数据，不能据此判断它有权启动或读取整机 trace。
 
-<!-- gracker-diagram: ch14-12-06-system-control-data -->
-![系统consumer控制会话，应用producer只贡献数据](../../assets/diagrams/ch14/ch14-12-06-system-control-data.png)
-
-图：应用通过producer接口注册/写事件，授权consumer控制整机采集。 producer策略、关闭consumer实现与系统读取权限是不同条件；进程内session另有独立路径。
 
 应用只贡献 TrackEvent 时，初始化可以关闭 system consumer 实现。下面的配置来自 Android 17 SDK API 的推荐形态：
 
@@ -189,10 +185,6 @@ adb 或受控实验环境的外部 TraceConfig 要显式请求 `track_event`，�
 
 应用进程必须在 session 期间运行并完成 data source 注册。若配置能抓到 ftrace 却没有 `rendering` slice，应依次检查 producer 是否连接、`track_event` descriptor（注册时上报的数据源说明）是否出现、category 是否匹配、进程是否在采集窗口内写事件。Manifest 中的 `profileable` / `debuggable` 属性会影响若干平台 profiler 和 shell profiling 能力，但不会让应用获得 system trace consumer 权限。
 
-<!-- gracker-diagram: ch14-12-07-system-trackevent-gates -->
-![缺少SDK事件时逐层检查采集条件](../../assets/diagrams/ch14/ch14-12-07-system-trackevent-gates.png)
-
-图：按进程存活、producer连接、descriptor、category和写入窗口排查缺事件。 ftrace存在不证明TrackEvent已启用；profileable/debuggable不授予系统consumer权限。
 
 `linux.ftrace` 的可用事件由设备内核决定。本文核对的内核版本是 `android17-6.18-2026-06_r6`；量产设备使用的 vendor 内核与 GKI（Generic Kernel Image，通用内核镜像）组合、SELinux 策略，以及 tracefs（内核跟踪文件系统）配置仍要实机确认。
 
@@ -202,10 +194,6 @@ custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session
 
 访问实例状态时，在 `Trace()` lambda 内调用 `ctx.GetDataSourceLocked()` 取得带锁句柄，并先检查句柄是否为空；停止可能恰好发生在取锁之前。确认非空后，在句柄存活期间访问状态，避免与实例销毁竞态。`Trace()` lambda 在调用线程同步执行；昂贵计算放在其中仍可能因并发 session 重复执行，不应无条件重复消费队列或改变业务状态。
 
-<!-- gracker-diagram: ch14-12-08-custom-lifecycle -->
-![custom实例生命周期与调用线程写入](../../assets/diagrams/ch14/ch14-12-08-custom-lifecycle.png)
-
-图：每个活动session拥有独立实例，Trace同步遍历活动实例写packet。 无实例则不执行lambda；并发会重复执行，昂贵计算和业务副作用需单独处理。
 
 自定义数据源的四个边界如下：
 
@@ -227,10 +215,6 @@ custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session
 
 强类型 packet 需要扩展 TracePacket schema。原版 amalgamated SDK 不会为项目私有消息生成 setter，完整实现至少包含四处同步修改：
 
-<!-- gracker-diagram: ch14-12-10-schema-evolution-tests -->
-![私有协议的四处演进要一起验收](../../assets/diagrams/ch14/ch14-12-10-schema-evolution-tests.png)
-
-图：稳定字段、写入接口、importer与SQL测试必须同步维护。 应用仅增加proto不保证公开UI能解释；无法长期维护解析链路时优先标准TrackEvent。
 
 1. 为 packet 定义稳定的 protobuf 字段和编号；
 2. 生成 SDK 侧 pbzero 写入接口；pbzero 是 Perfetto 的轻量级 protobuf 写入代码；
@@ -299,10 +283,6 @@ Perfetto tracing protocol 的 socket、共享内存和 protobuf 协议维持双�
 
 公开 C++ `TrackEvent` 与 custom data source 属于官方 API，发布形态是静态库。公开 API 不保证跨动态库的 C++ ABI 稳定。`include/perfetto/ext/` 是内部接口，不应在应用中依赖。
 
-<!-- gracker-diagram: ch14-12-13-three-version-abi -->
-![协议兼容、平台版本与SDK ABI分开管理](../../assets/diagrams/ch14/ch14-12-13-three-version-abi.png)
-
-图：设备service、应用SDK和主机分析工具分别锁定版本。 长期稳定的是socket/共享内存/protobuf协议；不保证所有新特性或跨动态库C++ ABI。
 
 Android 17 源码文档和当前官方稳定性文档都把 `include/perfetto/public` 下的 C API/ABI 标为未稳定。纯 C 或 Rust FFI（Foreign Function Interface，跨语言调用接口）项目采用它时要锁定 revision，并在每次升级时回归验证编译、运行和 trace 解析。
 
@@ -315,10 +295,6 @@ APK 体积不能用一个固定数字描述。`stripped release` 指已移除调
 
 `Tracing::Initialize()` 对已初始化 backend 的重复调用不会重建它，后续参数也大多被忽略。一个进程应集中管理 backend 初始化和 category 注册，避免多个 SDK 各自携带一份 amalgamated 实现。
 
-<!-- gracker-diagram: ch14-12-14-build-size-matrix -->
-![体积与兼容按构建配置和设备分层验证](../../assets/diagrams/ch14/ch14-12-14-build-size-matrix.png)
-
-图：集中管理初始化，并分别测量producer-only、进程内service及各ABI产物。 重复Initialize可加入尚未启用的backend，不能重设已有backend；API35/36不是SDK revision。
 
 平台版本差异如下：
 
@@ -345,10 +321,6 @@ in-process trace 只含本进程数据，但文件仍可能带有敏感业务上
 
 `ProfilingManager` 返回给应用的是经过 redaction（按规则删除或模糊敏感字段）的结果。自定义 packet 或新字段是否保留取决于 redactor 规则，不能把未脱敏 trace 中可见的字段当成公开 API 保证。
 
-<!-- gracker-diagram: ch14-12-15-privacy-delivery -->
-![从事件设计到文件交付的治理链路](../../assets/diagrams/ch14/ch14-12-15-privacy-delivery.png)
-
-图：事件字段、文件访问和交付路径都要按团队数据规则设计。 进程内文件也可能有业务上下文；平台redaction按规则处理，不保证保留任意私有字段。
 
 ## 8. Perfetto SDK、ProfilingManager 与 APM 的组合
 
@@ -375,6 +347,10 @@ Android 17 的 `packages/modules/Profiling/service/.../Configs.java` 给出了�
 | 系统/内测版本 | SDK system backend + 平台数据源 | 具备 `traced_consumer` 策略权限的系统组件或 shell | 授权配置范围内的 system trace |
 
 `ProfilingManager.requestProfiling()` 从 API 35 可用，系统触发注册从 API 36 可用。请求受系统限流且不保证执行；回调成功后也要使用 `ProfilingResult.getResultFilePath()` 取得交付文件。API 37 没有开放任意 TraceConfig 注入，所以应用不能要求它顺带启用私有 custom data source。
+
+`requestProfiling()` 的官方说明建议多数场景使用 AndroidX 高层封装。直接发起请求时，必须已设置完整的 executor（回调执行器）和 listener（结果监听器）组合。两者要在同一次调用中传入：可以随请求传给 `requestProfiling()`，也可以先通过 `registerForAllProfilingResults()` 注册全局回调。缺少完整组合时，请求会被丢弃，且不会收到结果回调；Android 17 固定源码在没有任何已注册回调时抛出 `IllegalArgumentException`。
+
+API 36 的系统触发结果只交付给全局监听器，注册触发器前应先完成全局回调注册。
 
 APM 若需要 SDK 专属事件，可以管理短时间运行的 in-process session，并上传应用自己的文件；若需要系统调度证据，应调用公开 profiling API 或依赖受控 consumer。两类文件的访问权限、脱敏状态和查询 schema 要分别记录。
 
@@ -407,10 +383,6 @@ ORDER BY slice.ts, slice.id;
 
 `raw_dur_ns = -1` 表示未闭合。`observed_dur_ms` 对开放区间只给出到有效 trace 结束边界的观测值，不是完成时长；若结束边界不晚于事件时间，返回 NULL。本机 SDK 产物在 Trace Processor v57.2 中实际出现末端开放事件的 `trace_end() = slice.ts - 1 ns`，原查询输出 -0.000001 ms；v58.2 对同一产物的边界等于该事件时间，原查询输出 0。两者都不能解释为事件已经完成。`TRACE_EVENT` 的墙钟也不等于 CPU time。结果为空时，不要只看事件宏是否执行。检查 trace 配置是否选择 `track_event`、category 过滤是否匹配、producer 是否在 session 内连接，以及事件是否发生在 `StartBlocking()` 之后。
 
-<!-- gracker-diagram: ch14-12-17-query-identity-open -->
-![查询保留身份和开放边界，并区分线程与自定义Track](../../assets/diagrams/ch14/ch14-12-17-query-identity-open.png)
-
-图：从标准importer查线程slice与counter，保留ID、轨道与有效观测边界。 开放末端无有效结束则NULL；thread_track查询排除自定义Track，帧编号counter不等于FPS。
 
 下面的查询检查示例 counter；counter 名来自 `TRACE_COUNTER` 的 track name；`SubmittedFrameId` 是帧编号快照，不是帧率或帧数增量，同名 track 仍需按 `track_id` 区分：
 
@@ -425,14 +397,12 @@ WHERE counter_track.name = 'SubmittedFrameId'
 ORDER BY counter.ts, counter.id;
 ```
 
-custom data source 的验收标准更高：原始 trace 中有 packet、Trace Processor 没有 importer error（导入错误）、目标 storage 表有行、未知枚举按兼容规则处理、SQL 输出与写入样本一致，五项都要通过；“没有 importer error”本身不能证明未知字段已被导入。 本轮只在macOS主机用固定v57.2 C++ SDK运行进程内示例，验证fd直写与停止后读取两种产物，并用native Trace Processor57.2/58.2核对SQL。系统producer/startup/trigger代码只验证公开接口与编译，不声明Android设备录制、SELinux运行、service接管、异常退出或APK性能测量已通过。
+custom data source 的验收标准更高：原始 trace 中有 packet、Trace Processor 没有 importer error（导入错误）、目标 storage 表有行、未知枚举按兼容规则处理、SQL 输出与写入样本一致，五项都要通过；“没有 importer error”本身不能证明未知字段已被导入。
+
+进程内示例的验证环境为 macOS 主机和固定 v57.2 C++ SDK，覆盖 fd 直写与停止后读取两种产物；SQL 使用原生 Trace Processor v57.2 / v58.2 核对。system producer、startup 和 trigger 代码的验证范围仅限公开接口与编译，尚未覆盖 Android 设备录制、SELinux 运行、service 接管、异常退出或 APK 性能测量。
 
 一次完整接入至少保存这些证据：
 
-<!-- gracker-diagram: ch14-12-18-verification-evidence -->
-![接入验收从原始packet一直核对到SQL](../../assets/diagrams/ch14/ch14-12-18-verification-evidence.png)
-
-图：同时保存构建、平台、配置、产物、丢数与可重放查询。 主机进程内运行不证明Android系统权限、startup接管、故障退出或release APK性能。
 
 1. 应用使用的 Perfetto SDK revision 和构建选项；
 2. 设备 Android build、`android-17.0.0_r1` 对应关系与实际 vendor 版本；
@@ -444,7 +414,7 @@ custom data source 的验收标准更高：原始 trace 中有 packet、Trace Pr
 ## 10. 已确认的限制与待实测项
 
 - Android 17 `ProfilingManager` 默认 system-trace 配置不采集 SDK `track_event` 或 custom data source；它会采集目标包的 atrace。
-- startup tracing 只支持 system backend，默认等待匹配 session 10 秒；它不提供应用读取 system trace 的权限。
+- startup tracing 不支持 in-process backend；本文示例使用 system backend，默认等待匹配 session 10 秒。它不提供应用读取 system trace 的权限。
 - SDK C++ client 与 system service 依赖长期兼容的 tracing protocol；具体新能力仍需检查 service 是否声明对应 capability。
 - C API/ABI 仍处于不稳定状态；C++ SDK 采用静态链接，不把 C++ 接口导出为共享库 ABI。
 - C SDK/C++ SDK 针对不同 ABI（如 arm64-v8a、x86_64）生成的包体积、启动耗时和常驻内存，需要用目标 release APK 测量，不能从官方示例推算。
@@ -463,6 +433,7 @@ custom data source 的验收标准更高：原始 trace 中有 packet、Trace Pr
 - [AOSP `TrackEvent` 宏接口](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/include/perfetto/tracing/track_event.h)
 - [Android 17 appdomain Perfetto producer policy](https://android.googlesource.com/platform/system/sepolicy/+/refs/tags/android-17.0.0_r1/private/app.te)
 - [Android 17 `ProfilingManager` TraceConfig 生成逻辑](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java)
+- [Android 17 `ProfilingManager` 请求与回调契约](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
 - [`android17-6.18-2026-06_r6` kernel tag](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
 
 ### 官方接口与使用文档
