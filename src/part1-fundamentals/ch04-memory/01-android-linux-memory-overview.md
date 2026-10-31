@@ -224,20 +224,6 @@ Android 应用遇到的“内存问题”至少有四类，每一类的触发条
 
 排查过程涉及以下层次：
 
-```mermaid
-flowchart TB
-    A["物理内存与设备保留区"] --> B["Linux 页管理<br/>匿名页、文件页、共享内存"]
-    B --> C["回收、压缩、ZRAM / Swap"]
-    B --> D["进程虚拟地址空间"]
-    D --> E["ART 托管堆"]
-    D --> F["Native 堆与匿名映射"]
-    D --> G["代码、资源与文件映射"]
-    D --> H["线程栈"]
-    D --> I["图形与 DMA-BUF 映射"]
-    B --> J["PSI、procfs、cgroup v2"]
-    J --> K["lmkd"]
-    J --> L["Android 17 MemoryLimiter<br/>仅部分设备启用"]
-```
 
 图中的箭头表示管理或记账关系：procfs 是挂载在 `/proc` 的虚拟文件系统，暴露进程和内核状态；cgroup v2 按进程组统计和限制资源。ART 堆、原生堆和图形内存最终都依赖内核提供的页面、映射或设备缓冲区，同一物理页还可能被多个进程和设备共享。
 
@@ -522,10 +508,6 @@ adb shell cat /proc/pressure/memory
 
 `memory.stat` 的 `file` 已经包含 `shmem`，把 `anon + file + shmem` 相加会把 shmem 算两遍；内核内存等其他占用也另有去处，这一求和只能当分类参考，用量以 `memory.current` 节点原值为准。共享页按 cgroup 所有权记账，各进程之间不做 PSS 那种比例分摊。父级节点的读数已汇总其子组用量，直接读即可；只想定位当前层级的事件，则读 `memory.events.local`。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/cgroup-v2.rst` 的 `Memory Interface Files` 与 `Memory Ownership`]
 
-<!-- gracker-diagram: ch04-01-cgroup-controls-and-accounting -->
-![cgroup 的回收、硬上限与 Swap 限制各管一层](../../assets/diagrams/ch04/ch04-01-cgroup-controls-and-accounting.png)
-
-图：memory.high 越界会让相关分配进入回收与节流，本身不直接调用 OOM killer；memory.max 是回收仍不能满足时可能触发组内 OOM 的硬上限；memory.swap.max 限制继续换出匿名页。memory.current 已包含后代，共享页按所有权计账，file 内又包含 shmem，不能重复相加或按进程 PSS 解释。
 
 Android 通过 `libprocessgroup` 与 task profile 管理进程所在的 cgroup。设备可以采用不同控制器和层级配置；定位时读取该构建的 `cgroups.json`、`task_profiles.json` 以及运行设备的 cgroup 文件系统，比凭版本号推断路径可靠。
 
@@ -854,23 +836,6 @@ Android 内存分析要先区分三件事：
 
 物理页从分配到回收的主路径如下：
 
-```mermaid
-flowchart LR
-    A["应用或内核申请内存"] --> B["页分配快速路径"]
-    B --> C{"满足 zone、水位与 order？"}
-    C -->|"是"| D["返回页面"]
-    C -->|"否"| E["页分配慢路径"]
-    E --> F["按 GFP 条件唤醒 kswapd"]
-    E --> G["允许时执行 direct reclaim"]
-    E --> H["高阶请求允许时执行 compaction"]
-    F --> I["回收文件页或可换出的匿名页"]
-    G --> I
-    H --> J["迁移可移动页并形成连续空闲块"]
-    I --> K["重试分配"]
-    J --> K
-    K --> D
-    K --> L["返回失败或进入 OOM 处理<br/>取决于分配上下文"]
-```
 
 分配走哪条分支由上下文决定：GFP 分配标志、表示连续页数量级的 order、可用 zone、memcg，以及是否允许阻塞和 I/O。所以只凭 `MemFree`，我们推断不出一次分配会走到哪里。
 
@@ -1109,15 +1074,6 @@ r6 的 `try_to_compact_pages()` 是直接规整入口；`kcompactd_do_work()` �
 
 DMA-BUF Heaps 提供从指定内存堆分配 dma-buf 的用户空间接口（UAPI）。下图展示分配、导出与设备导入之间的关系：
 
-```mermaid
-flowchart LR
-    A["用户空间分配请求"] --> B["/dev/dma_heap/heap_name"]
-    B --> C["heap 分配物理页"]
-    C --> D["导出 dma_buf fd"]
-    D --> E["App / Codec / SurfaceFlinger 持有或传递 fd"]
-    D --> F["GPU / HWC / Camera 驱动导入"]
-    F --> G["按设备能力建立 IOMMU / DMA 映射"]
-```
 
 传递 fd 时，各方共享的是同一个 dma-buf 对象，整块像素数据不用复制。至于各进程是否建立了 CPU `mmap`、设备怎样映射、哪一方还持着引用，要分别核对。
 
