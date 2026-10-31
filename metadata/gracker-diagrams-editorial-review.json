@@ -38653,9 +38653,239 @@
       "before_count": 19,
       "before_all_images": 19,
       "sha256_before": "9d8a538b9756a817e8f4939d6edb0288a96d62ad1ec859b65cd2000f5e14620f",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch14-10-01-slot-fence-cycle",
+          "title": "slot所有权循环与fence访问依赖",
+          "decision": "merge",
+          "reason": "原图“slot所有权循环与fence访问依赖”并入：把非shared常规队列的slot循环与取得slot后可能仍不可安全复写的fence条件放进同一闭环。；锚点原图1，循环中分开slot谓词与release/acquire fence读写依赖，通知与实际获取以及display反馈边界详见新图图注。",
+          "original_line": 60,
+          "heading": "# BufferQueue 阻塞的 Perfetto 识别",
+          "replacement_id": "ed14-10-slot-ownership-and-fence-access-cycle"
+        },
+        {
+          "original_id": "ch14-10-02-stuffing-latency",
+          "title": "按时完成的帧也可能累积排队延迟",
+          "decision": "keep",
+          "reason": "实际生产a/b/c与延后present反馈两轨，直观说明按时产出仍可能排队且缺slot再等，和机制循环及SQL交集图分别回答不同问题。",
+          "original_line": 67,
+          "heading": "# BufferQueue 阻塞的 Perfetto 识别"
+        },
+        {
+          "original_id": "ch14-10-03-surface-topology",
+          "title": "先确认标准窗口、SurfaceView与TextureView拓扑",
+          "decision": "keep",
+          "reason": "宿主BLAST、SurfaceView独立child和TextureView输入再采样的三种真实路径不同，避免按同进程/线程把不同队列串成因果，保留。",
+          "original_line": 79,
+          "heading": "# BufferQueue 阻塞的 Perfetto 识别"
+        },
+        {
+          "original_id": "ch14-10-04-frame-end-identity",
+          "title": "App Actual结束点与帧身份分别核对",
+          "decision": "keep",
+          "reason": "AppActual结束点max(queue,signal)/pending回退及SurfaceFrame与DisplayFrame对象不同的边界独立，软件时序不等物理显示，保留。",
+          "original_line": 90,
+          "heading": "## 从 FrameTimeline 找到目标 Surface"
+        },
+        {
+          "original_id": "ch14-10-05-coverage-identity",
+          "title": "FrameTimeline覆盖不足时沿真实队列补证",
+          "decision": "remove",
+          "reason": "四框逐项重述104–108三段身份/SurfaceView覆盖/TextureView宿主限制，和13/19通用证据链重复；3拓扑和4对象边界保留，正文所有实际缺口核对方法全留。",
+          "original_line": 110,
+          "heading": "## 从 FrameTimeline 找到目标 Surface"
+        },
+        {
+          "original_id": "ch14-10-07-wait-transports",
+          "title": "条件变量与release通道最终都回到谓词检查",
+          "decision": "keep",
+          "reason": "通用CV、BLAST socket/回调与eventfd中断三种实际等待运输机制对照独立，明确唤醒不总有release消息，放在两实现段落之后。",
+          "original_line": 127,
+          "heading": "## `dequeueBuffer` 为什么会等"
+        },
+        {
+          "original_id": "ch14-10-06-slot-predicate",
+          "title": "等待、非阻塞与超额dequeue是不同分支",
+          "decision": "keep",
+          "reason": "INVALID_OPERATION、受acquired条件约束的WOULD_BLOCK与可等待超时的实际分支独立，不把slot状态失败当GPU超时，简化非shared条件全在原文。",
+          "original_line": 134,
+          "heading": "## `dequeueBuffer` 为什么会等"
+        },
+        {
+          "original_id": "ch14-10-08-walltime-not-slot-time",
+          "title": "外层与嵌套等待的墙钟不能相加",
+          "decision": "remove",
+          "reason": "外层/内层/状态三轨与17具体995–1040合成时轴同一嵌套墙钟关系重复；17有可复核完整45/交20/内20交15数值，147组成和不能加总正文全留。",
+          "original_line": 149,
+          "heading": "## `dequeueBuffer` 为什么会等"
+        },
+        {
+          "original_id": "ch14-10-09-stuffing-recovery",
+          "title": "Choreographer恢复由回调、时长与flag共同决定",
+          "decision": "keep",
+          "reason": "成功release回调→半上一帧间隔阈值→状态flag→恢复路径的具体控制链独立，避免把recovery标记当CPU变慢或FrameTimeline分类。",
+          "original_line": 160,
+          "heading": "## `dequeueBuffer` 为什么会等"
+        },
+        {
+          "original_id": "ch14-10-10-counter-domains",
+          "title": "四类信号属于不同对象与计数口径",
+          "decision": "keep",
+          "reason": "四信号对应不同真实对象和公式，尤其BLAST组合状态与SFBufferTX、Corequeued及分类不可互换，具体字段/增减点独立，不是通用检查清单。",
+          "original_line": 191,
+          "heading": "## 三种“积压”信号不能当成同一个队列长度"
+        },
+        {
+          "original_id": "ch14-10-11-forward-release-branches",
+          "title": "BLAST提交、显示与buffer回收是分支链路",
+          "decision": "keep",
+          "reason": "Producer/本地BQ/BLAST/SF到release通道回本地队列的七节点回路和display独立分支为实际拓扑，避免当前present后才固定release的错误串行关系。",
+          "original_line": 200,
+          "heading": "## Producer 到 display 的证据时间线"
+        },
+        {
+          "original_id": "ch14-10-12-slot-versus-fence",
+          "title": "取得slot与安全复写需要两层条件",
+          "decision": "merge",
+          "reason": "原图“取得slot与安全复写需要两层条件”并入：把非shared常规队列的slot循环与取得slot后可能仍不可安全复写的fence条件放进同一闭环。；锚点原图1，循环中分开slot谓词与release/acquire fence读写依赖，通知与实际获取以及display反馈边界详见新图图注。",
+          "original_line": 229,
+          "heading": "## Producer 到 display 的证据时间线",
+          "replacement_id": "ed14-10-slot-ownership-and-fence-access-cycle"
+        },
+        {
+          "original_id": "ch14-10-13-queue-identity",
+          "title": "多窗口与多Surface按真实队列建立关联",
+          "decision": "remove",
+          "reason": "四框逐步重述238、248身份清单和同队列关联要求，与5/19重复；完整多Surface表和具体3拓扑保留，删一般证据建立流程复写。",
+          "original_line": 250,
+          "heading": "## 多 Surface 场景"
+        },
+        {
+          "original_id": "ch14-10-14-wait-differential",
+          "title": "四类候选原因需要对应证据",
+          "decision": "remove",
+          "reason": "四卡逐项复制259–262四类候选原因列表，原文类别可并存、需要成组证据等限定完整保留，6运输机制和17/18量化裁剪图实际更具体。",
+          "original_line": 264,
+          "heading": "## 容易混淆的四类等待"
+        },
+        {
+          "original_id": "ch14-10-15-release-version-boundary",
+          "title": "15、16、17的等待传输边界",
+          "decision": "remove",
+          "reason": "三列六卡与275–279完整三版本×通用/BLAST对照表逐格同义，没有额外配置或调用路径例；表中flag开关/虚调度变化和281设备边界全留，6已保留当前真实运输机制。",
+          "original_line": 283,
+          "heading": "## Android 15、16、17 的源码边界"
+        },
+        {
+          "original_id": "ch14-10-16-sql-candidate-quality",
+          "title": "候选发现保留Actual行身份与质量",
+          "decision": "remove",
+          "reason": "四框逐项重述311查询说明与16行实际SQL，未额外给候选数据；Actual/track/token/Layer/IsBuffer开放质量字段与原始jank全留，4身份关系与17/18具体计量保留。",
+          "original_line": 313,
+          "heading": "## PerfettoSQL：先找候选帧"
+        },
+        {
+          "original_id": "ch14-10-17-sql-overlap-window",
+          "title": "完整调用时长与帧内重叠分别计量",
+          "decision": "keep",
+          "reason": "真实比例合成帧20ms、外层45ms交20ms、内层20ms交15ms的三轨半开求交独立，展示帧前开始仍可命中及嵌套不可累加，保留原始身份限定。",
+          "original_line": 359,
+          "heading": "## PerfettoSQL：关联同进程的 dequeue slice"
+        },
+        {
+          "original_id": "ch14-10-18-sql-state-coverage",
+          "title": "线程状态裁切要报告闭合覆盖与开放缺口",
+          "decision": "keep",
+          "reason": "45ms完整调用中30ms闭合状态及Running10/S17/R3、66.67覆盖的受控数值分母对照独立，首未知5ms尾开放10ms不补睡眠，输入重叠置NULL原文全留。",
+          "original_line": 422,
+          "heading": "## PerfettoSQL：核对线程状态"
+        },
+        {
+          "original_id": "ch14-10-19-evidence-verdict",
+          "title": "按目标队列连接等待与回收后再给结论",
+          "decision": "remove",
+          "reason": "四框逐项摘要431小结和269同队列等待/回收/替代原因证据链，与5/13重复，原最终结论与待补方法全文保留，删通用收尾流程。",
+          "original_line": 433,
+          "heading": "## 小结"
+        }
+      ],
+      "sha256_after": "a4527ea8969f32a477a62dff2dfb3e33f7aea516c99fa7970877a0eca04b77ef",
+      "new_diagrams": [
+        {
+          "id": "ed14-10-slot-ownership-and-fence-access-cycle",
+          "title": "slot 流转与 fence 读写依赖属于两层条件",
+          "article": "src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-10-slot-ownership-and-fence-access-cycle.svg",
+            "src/assets/diagrams/ch14/ed14-10-slot-ownership-and-fence-access-cycle.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-10-slot-ownership-and-fence-access-cycle",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferReleaseChannel.cpp",
+            "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-10-01-slot-fence-cycle",
+              "ch14-10-12-slot-versus-fence"
+            ],
+            "boundary": "非shared常规路径示意：Producer dequeue取得可复用slot及上次release fence，但fence可能尚未signal；必须按图形API/driver满足该依赖后才可安全复写，依赖可以在CPU或GPU侧处理。绘制后queue提交buffer及acquire fence，Consumer acquire取得buffer，读取前遵守acquire fence，Consumer结束本轮持有后release归还slot并传回release fence，实际访问完成仍由fence依赖约束。release通知只促使Producer重查谓词，不保证本线程立刻获slot；SF present fence与per-layer release fence分开关联，回收不是当前帧present后固定立即发生。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a144/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:37:36.797473+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 19,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a144/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a144/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 144,
+        "article": "src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
+        "registered_sha256": "9d8a538b9756a817e8f4939d6edb0288a96d62ad1ec859b65cd2000f5e14620f",
+        "frozen_sha256": "9d8a538b9756a817e8f4939d6edb0288a96d62ad1ec859b65cd2000f5e14620f",
+        "review_input_sha256": "ed99725159634056cc1748fd96f56e3b3c13431e4b13080a17dfb55718d557ae",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a144/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a144/external-source.diff",
+        "diff_sha256": "9e4e31782bef4a183b272dedc1fe6e8bdb6246f70a0636811f03424b49457d0a",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 160 current narrative/table reading rows, 17282 characters, 19 SVG label sets and all 19 original PNGs in 3 contact sheets independently read/viewed; all 4 non-Mermaid code blocks, 114 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "ed99725159634056cc1748fd96f56e3b3c13431e4b13080a17dfb55718d557ae",
+      "retired_diagrams": [
+        "ch14-10-01-slot-fence-cycle",
+        "ch14-10-05-coverage-identity",
+        "ch14-10-08-walltime-not-slot-time",
+        "ch14-10-12-slot-versus-fence",
+        "ch14-10-13-queue-identity",
+        "ch14-10-14-wait-differential",
+        "ch14-10-15-release-version-boundary",
+        "ch14-10-16-sql-candidate-quality",
+        "ch14-10-19-evidence-verdict"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-144/retired-assets.json",
+      "pre_commit_caption_refinement": "/tmp/gracker-diagrams-editorial-review-20261028/a144/caption-refinement.json"
     },
     {
       "index": 145,
@@ -40055,8 +40285,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 79,
-  "next_article": "src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
+  "reviewed_articles": 80,
+  "next_article": "src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -40066,7 +40296,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:34:43.780815+08:00",
+  "updated_at": "2026-10-31T12:37:36.797473+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -40115,13 +40345,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
-      "registered_sha256": "9d8a538b9756a817e8f4939d6edb0288a96d62ad1ec859b65cd2000f5e14620f",
-      "observed_sha256": "ed99725159634056cc1748fd96f56e3b3c13431e4b13080a17dfb55718d557ae",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -40482,9 +40705,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3029,
-  "reviewed_placements_after": 1372,
-  "net_removed_placements": 1657,
+  "reviewed_placements_before": 3048,
+  "reviewed_placements_after": 1383,
+  "net_removed_placements": 1665,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -40508,5 +40731,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 79
+  "currently_matching_reviewed_source_count": 80
 }
