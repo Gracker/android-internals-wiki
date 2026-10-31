@@ -105,7 +105,7 @@ consolidated_from:
 - 变化是否集中在某个版本、设备档位、ABI（应用二进制接口，规定指令集、调用约定和二进制布局）、进程或用户路径。
 - 需要保留轻量指标、退出记录、Java heap dump，还是 native heap profile（按采样记录原生内存分配调用栈的剖析产物）。
 
-只上报一个“内存占用”指标回答不了这些问题。PSS、RSS、Java Heap 和 Native Heap（原生堆）统计的对象各不相同，单独任何一项都代表不了应用的全部内存。多进程应用还要为每个样本带上进程名：把所有进程混成一个分布，主进程回归或独立任务进程的峰值就被埋掉了。
+只上报一个“内存占用”指标，回答不了这些问题：PSS、RSS、Java Heap 和 Native Heap（原生堆）各自统计的对象不同，单独任何一项都代表不了应用的全部内存。多进程应用还要为每个样本带上进程名——把所有进程混成一个分布，主进程回归或独立任务进程的峰值就被埋掉了。
 
 Java 泄漏引用链见 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，原生分配诊断见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，Java Heap 预算见 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)，OOM（`OutOfMemoryError`，无法满足分配时抛出的内存不足异常）分类见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。本文聚焦生产环境中的指标、判断、降级和证据采集。
 
@@ -229,7 +229,7 @@ fun collectProcessMemorySample(context: Context): ProcessMemorySample {
 <!-- gracker-diagram: a259-03-sample-pipeline -->
 ![低频快照从采集到分组](../../assets/diagrams/ch23/a259-03-sample-pipeline.png)
 
-图：快照同时保留来源、单位和缺失状态；高频请求不等于底层数据高频更新。
+图：快照同时保留来源、单位和缺失状态；采样请求频率高，底层更新频率未必跟着高。
 
 ### 采样频率由成本和问题决定
 
@@ -341,15 +341,15 @@ fun classifyHeapPressure(
 
 ### 预警阶段的可释放资源与所有权
 
-预警阶段，我们能安全释放的只有业务可控资源：缩小图片缓存、停止预取、取消尚未开始的批处理、减少播放器预缓冲、关闭闲置 WebView、释放页面级对象并降低后续输入规格。流、游标、文件描述符、`ParcelFileDescriptor`、`SharedMemory` 映射和 native handle（原生资源句柄）都要有明确的所有者负责关闭；所有权约定缺失时，重复关闭和遗漏释放都可能发生。
+告警触发后进入预警阶段。这时我们能安全释放的，是业务自己可控的资源：缩小图片缓存、停止预取、取消尚未开始的批处理、减少播放器预缓冲、关闭闲置 WebView、释放页面级对象并降低后续输入规格。另外一些资源要靠所有权约定兜底：流、游标、文件描述符、`ParcelFileDescriptor`、`SharedMemory` 映射和 native handle（原生资源句柄），都要有明确的所有者负责关闭；所有者一旦含糊，重复关闭和遗漏释放就都可能出现。
 
-`System.gc()` 不是常规回收接口。GC 只处理不可达对象，仍被缓存、单例、JNI global reference（JNI 全局引用，会让原生代码长期持有 Java 对象）或活跃组件持有的数据，它碰不到；显式 GC 还可能增加停顿。同样要避免在全局捕获 `OutOfMemoryError` 后继续运行：OOM 发生时，错误处理路径本身可能分配不了对象，进程状态也可能已经偏离业务依赖的状态约束。范围清楚的单次分配可以设计局部降级，例如图片解码失败后改用更小规格。
+`System.gc()` 指望不上。它只处理不可达对象，缓存、单例、JNI global reference（JNI 全局引用，会让原生代码长期持有 Java 对象）和活跃组件仍然持有的数据，它一概碰不到；显式调用还可能增加停顿。全局捕获 `OutOfMemoryError` 之后继续运行，问题类似：OOM 发生时，错误处理路径本身可能分配不了对象，进程状态也可能已经偏离业务依赖的状态约束。可控的降级反过来要做小：范围清楚的单次分配设计局部降级，例如图片解码失败后改用更小规格。
 
-`onTrimMemory()` 应聚焦 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`：这两个等级表示界面隐藏或进程进入后台 LRU（按最近使用时间维护的进程列表）。从 Android 14（API 34）起，其余旧内存压力等级不再投递，并在 Android 15（API 35）废弃。设备压力用 `ActivityManager.MemoryInfo` 观察；应用内存限制的事前取证用 `TRIGGER_TYPE_ANOMALY`，退出后再读 `ApplicationExitInfo`。
+`onTrimMemory()` 的处理等级已经收敛：值得盯的是 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`，分别表示界面隐藏或进程进入后台 LRU（按最近使用时间维护的进程列表）。其余旧内存压力等级从 Android 14（API 34）起不再投递，并在 Android 15（API 35）废弃。设备压力用 `ActivityManager.MemoryInfo` 观察；应用内存限制的事前取证交给 `TRIGGER_TYPE_ANOMALY`，退出后再读 `ApplicationExitInfo`。
 
 ### 重启后核对退出原因
 
-Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。下面只筛出明确标记的 LMK，以及 `android-17.0.0_r1` 定义的 Memory Limiter。先检查 `ActivityManager.isLowMemoryKillReportSupported()`：部分设备不能报告 `REASON_LOW_MEMORY`，内存压力终止可能只记录为 `REASON_SIGNALED` + `SIGKILL`。因此这段筛选不是完整 LMK 计数；信号退出应单独保留并结合日志与 Vitals 补证据，不能把所有 `SIGKILL` 都判为 LMK。
+进程被系统终止后重启，第一手材料在 `ApplicationExitInfo` 里：Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。下面的实现只筛两类：明确标记的 LMK，以及 `android-17.0.0_r1` 定义的 Memory Limiter。动手前，我们先用 `ActivityManager.isLowMemoryKillReportSupported()` 确认设备能力：部分设备报告不了 `REASON_LOW_MEMORY`，内存压力终止可能只留下 `REASON_SIGNALED` + `SIGKILL` 的记录。所以信号退出要单独保留，结合日志与 Vitals 补证据，LMK 计数才算完整。
 
 ```kotlin
 import android.app.ActivityManager
@@ -404,22 +404,22 @@ fun readRecentMemoryExits(
 }
 ```
 
-`getPss()` 和 `getRss()` 是系统上一次采样值，可能为零，未必是进程死亡前一刻的精确内存。`getDescription()` 的一般格式没有稳定保证；这里匹配的 `MemoryLimiter:AnonSwap` 是 Android 17 r1 行为文档明确给出的标记，解析范围不要扩展到其他描述文本。[23.5 大内存与多进程策略](05-large-heap-multiprocess.md) 继续说明 Memory Limiter 的设备范围和测试命令。
+读记录时留意这两个字段的时间性：`getPss()` 和 `getRss()` 是系统上一次采样值，可能为零，未必是进程死亡前一刻的精确内存。`getDescription()` 的一般格式没有稳定保证；这里匹配的 `MemoryLimiter:AnonSwap` 是 Android 17 r1 行为文档明确给出的标记，解析就锁定在这个字符串上，其余描述文本一概不碰。[23.5 大内存与多进程策略](05-large-heap-multiprocess.md) 继续说明 Memory Limiter 的设备范围和测试命令。
 
 <!-- gracker-diagram: a259-05-exit-attribution -->
 ![重启后的 LMK 与 Limiter 归因](../../assets/diagrams/ch23/a259-05-exit-attribution.png)
 
-图：未支持 LMK 原因报告的设备可能只留下 SIGKILL；将此类样本单独保留，不能把它们全部判为 LMK。
+图：未支持 LMK 原因报告的设备可能只留下 SIGKILL；此类样本单独保留，归因时再结合日志与 Vitals 核对。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/app/ApplicationExitInfo.java`]
 
 ### Memory Advice 的过渡角色
 
-Memory Advice API beta 已被[官方内存管理概述](https://developer.android.com/games/optimize/memory-overview)标记为 deprecated（已弃用），不再推荐使用。新项目不要再引入这项依赖；已接入的游戏或引擎可以在迁移期间把它保留为一项压力信号。
+Memory Advice API beta 已被[官方内存管理概述](https://developer.android.com/games/optimize/memory-overview)标记为 deprecated（已弃用）。怎么用取决于项目阶段：新项目别再引入这项依赖；已接入的游戏或引擎，可以在迁移期间把它保留为一项压力信号。
 
-Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形式提供，不由 Android framework 服务管理。公开 C API `MemoryAdvice_getAvailableMemory()` 返回“可安全分配字节数”的估算。Memory Advice 2.1.0 的 AOSP 实现用预测可用百分比乘以初始化时记录的设备总内存；这个值与 `/proc/meminfo` 的 `MemAvailable` 是两回事，系统当前也未必有同样多的空闲页。`OK`、`APPROACHING_LIMIT`、`CRITICAL` 是模型和规则给出的建议状态，预测不了下一次分配、`lmkd` 或 Android 17 Memory Limiter 的结果。
+把它当信号用之前，我们先看清它的来历：Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形式提供，Android framework 服务并不管理它。公开 C API `MemoryAdvice_getAvailableMemory()` 返回“可安全分配字节数”的估算。Memory Advice 2.1.0 的 AOSP 实现用预测可用百分比乘以初始化时记录的设备总内存；这个值与 `/proc/meminfo` 的 `MemAvailable` 是两回事，系统当前也未必有同样多的空闲页。`OK`、`APPROACHING_LIMIT`、`CRITICAL` 是模型和规则给出的建议状态，预测不了下一次分配、`lmkd` 或 Android 17 Memory Limiter 的结果。
 
-库内的监视器（watcher）会在自己创建的线程上按注册间隔检查状态；只有状态不为 `OK` 时才调用 callback（回调）。回调应把压力请求交给线程安全的策略入口，纹理、网格（mesh）数据、音频、场景资源和 GPU 缓冲区仍要回到引擎规定的线程分批释放。注销与正在执行的回调可能交错，`user_data` 指向的调用方数据必须存活到所有回调结束。
+回调的线程纪律要提前定好：库内的监视器（watcher）会在自己创建的线程上按注册间隔检查状态，只有状态不为 `OK` 时才调用 callback（回调）。回调应把压力请求交给线程安全的策略入口，纹理、网格（mesh）数据、音频、场景资源和 GPU 缓冲区仍要回到引擎规定的线程分批释放。注销与正在执行的回调可能交错，`user_data` 指向的调用方数据必须存活到所有回调结束。
 
 迁移时可以保持四层结构：信号层汇总资源数量、PSS/RSS、生命周期与历史退出；策略层按设备和场景输出低、中、高等资源规格；执行层在指定线程降低规格或释放可重建资源；验证层比较峰值、回落、帧时间与 LMK/Memory Limiter。这样旧库移除后，资源模块仍可沿用同一套策略接口。
 
@@ -519,7 +519,7 @@ fun registerMemoryProfilingTriggers(
 
 ### 诊断产物的治理要求
 
-Java heap dump 可能包含对象字符串、用户输入、请求响应、缓存键、文件路径和业务标识。文件放在应用私有目录，并不意味着内容已经脱敏。上线前我们要完成：
+Java heap dump 可能包含对象字符串、用户输入、请求响应、缓存键、文件路径和业务标识。文件放在应用私有目录，守住的是存储位置；内容里有没有敏感信息，要靠采集、传输和访问环节的治理。上线前我们要完成：
 
 - 采集资格：版本、进程、场景、设备状态、磁盘和配额均满足策略。
 - 最小化：能用指标或摘要定位时不采完整 dump；原生内存问题不采 Java dump。
