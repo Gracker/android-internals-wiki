@@ -49742,9 +49742,203 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "2cc8c9a97a56243dec68b6812e17bd23faa03c8534a160db0440961652f26b66",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "ch18-02-01-build-observe-loop",
+          "title": "平台修改从固定版本到运行证据",
+          "decision": "remove",
+          "reason": "Opening build-observe recap repeats the firstparagraph and all later concrete workflows; retained module/activation diagrams carry actual distinctions.",
+          "original_line": 61,
+          "heading": "# AOSP 源码编译与调试环境"
+        },
+        {
+          "original_id": "ch18-02-02-host-baseline",
+          "title": "编译主机与虚拟设备运行条件分开",
+          "decision": "remove",
+          "reason": "Host capacity/tool inventory duplicates precise requirement paragraphs and software bullets; no workload or measured scaling shown.",
+          "original_line": 93,
+          "heading": "## 构建主机：先满足官方基线"
+        },
+        {
+          "original_id": "ch18-02-03-pin-checkout",
+          "title": "移动 manifest、固定项目与本地改动",
+          "decision": "remove",
+          "reason": "Checkout/sync/manifest/localdiff four-step recap repeats exact commands and their detailed artifact boundaries.",
+          "original_line": 122,
+          "heading": "## 固定 Android 17 源码"
+        },
+        {
+          "original_id": "ch18-02-04-build-roles",
+          "title": "Soong 与 Kati 生成图，Ninja 执行",
+          "decision": "keep",
+          "reason": "Retain two independent Android.bp/Soong and Android.mk/Kati inputs joining buildgraph then Ninjaactions; graphvalidation is not compilation.",
+          "original_line": 149,
+          "heading": "## Soong、Kati 与 Ninja 的职责"
+        },
+        {
+          "original_id": "ch18-02-05-lunch-and-variant",
+          "title": "产品、发布配置与 variant 分别决定什么",
+          "decision": "remove",
+          "reason": "Product/release/variant columns duplicate the three parameter bullets and variant table; precise r1alias/default/exitcode caveats remain in text.",
+          "original_line": 192,
+          "heading": "### 三种 build variant 怎么选"
+        },
+        {
+          "original_id": "ch18-02-06-module-ownership",
+          "title": "源码、构建模块、安装位置与激活分开追踪",
+          "decision": "keep",
+          "reason": "Retain source/generatedinputs -> module/variant -> dependency/installpartition/bootjar/APEX -> build/activation/runtimeproof, preventing directoryname-asmodule assumptions.",
+          "original_line": 218,
+          "heading": "## 模块编译与产物归属"
+        },
+        {
+          "original_id": "ch18-02-07-kvm-host",
+          "title": "Cuttlefish 的 KVM、主机包和权限准备",
+          "decision": "remove",
+          "reason": "KVM/hostpackage/group preparation sequence repeats local exact prerequisite paragraphs and concretecommand; actualstartup remains the validation criterion.",
+          "original_line": 244,
+          "heading": "### 主机包与设备镜像的配对"
+        },
+        {
+          "original_id": "ch18-02-08-pair-launch",
+          "title": "同 build 主机工具与设备镜像配对启动",
+          "decision": "remove",
+          "reason": "Samebuild/extract/launch/ADB/WebRTC foursteps repeat the adjacent concretecommands and startup explanation.",
+          "original_line": 262,
+          "heading": "### 主机包与设备镜像的配对"
+        },
+        {
+          "original_id": "ch18-02-09-sync-activation",
+          "title": "编译、同步、激活与就绪的不同边界",
+          "decision": "keep",
+          "reason": "Retain independent systempartition, APEX and earlyboot/kernel activation paths with root/remount/ready, activeversion and fullreboot differences.",
+          "original_line": 287,
+          "heading": "### 编译、同步、重启"
+        },
+        {
+          "original_id": "ch18-02-10-test-loop",
+          "title": "模块、定向测试和干净实例形成回归闭环",
+          "decision": "remove",
+          "reason": "Build/atest/cleanCuttlefish/retest workflow repeats explicit three-item test list and atest contract paragraph.",
+          "original_line": 308,
+          "heading": "### 把测试纳入调试循环"
+        },
+        {
+          "original_id": "ch18-02-11-logging-gates",
+          "title": "日志属性、编译常量和读取时机分别核对",
+          "decision": "remove",
+          "reason": "Logging consumer/property/readtime/lowoverhead sequence repeats two precise localparagraphs; no actual propertyconsumer dependency shown.",
+          "original_line": 321,
+          "heading": "### 日志与 Trace"
+        },
+        {
+          "original_id": "ch18-02-12-sysprop-contract",
+          "title": "新增系统属性从 owner 到类型安全 API",
+          "decision": "remove",
+          "reason": "Owner/policy/context/generatedAPI/testing workflow directly repeats five numbered sysprop steps and reading-contract paragraph.",
+          "original_line": 342,
+          "heading": "### System properties"
+        },
+        {
+          "original_id": "ch18-02-13-dump-trace",
+          "title": "连续 trace 与服务快照共同定位",
+          "decision": "remove",
+          "reason": "Trace/dump/build columns duplicate dumpsys explanation and experimentmetadata table; no actual samplingtime correlation shown.",
+          "original_line": 361,
+          "heading": "### dumpsys"
+        },
+        {
+          "original_id": "ch18-02-14-overlay",
+          "title": "OverlayFS 合并视图与跨重启覆盖状态",
+          "decision": "keep",
+          "reason": "Retain separate read-onlylower and writableupper joining visiblemount, with independent upperpersistence/cleanup so oldoverlay may mask newimage.",
+          "original_line": 383,
+          "heading": "## adb root、remount 与 OverlayFS"
+        },
+        {
+          "original_id": "ch18-02-15-physical-gates",
+          "title": "Pixel 刷写前的四个匹配条件",
+          "decision": "remove",
+          "reason": "Four physicaldevicegates cards repeat exact four-item Pixelprecondition list; no additional conjunction or deviceartifact identity graph.",
+          "original_line": 399,
+          "heading": "## Pixel 真机：先核对四个条件"
+        },
+        {
+          "original_id": "ch18-02-16-kernel-build",
+          "title": "平台预编译内核与独立 Kleaf 构建",
+          "decision": "keep",
+          "reason": "Retain platformprebuiltkernel provenance -> separatekernelcheckout/Kleaf -> companionramdisk/vendor/KMI/signature -> virtualversusphysical validation.",
+          "original_line": 430,
+          "heading": "## 修改 Android 17 内核时使用独立构建"
+        },
+        {
+          "original_id": "ch18-02-17-experiment-record",
+          "title": "构建记录让结论对应到真实运行环境",
+          "decision": "remove",
+          "reason": "Experimentmetadata columns duplicate complete six-category reporttable and exact environment caveat.",
+          "original_line": 450,
+          "heading": "## 性能实验的构建记录"
+        },
+        {
+          "original_id": "ch18-02-18-troubleshooting",
+          "title": "按配置、构建、激活和设备差异排查",
+          "decision": "remove",
+          "reason": "Fourtroubleshooting cards repeat four headed diagnostic paragraphs; each points to earlier retainedmodule/activation mechanisms.",
+          "original_line": 473,
+          "heading": "### Cuttlefish 结果和真机不同"
+        }
+      ],
+      "sha256_after": "e0eb6c9061600629a2a03150a62353fbb94237c704345cb14b03add00c0e7751",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:20:40.388049+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a190/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a190/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 190,
+        "article": "src/part4-system/ch18-aosp/02-aosp-build.md",
+        "registered_sha256": "2cc8c9a97a56243dec68b6812e17bd23faa03c8534a160db0440961652f26b66",
+        "frozen_sha256": "2cc8c9a97a56243dec68b6812e17bd23faa03c8534a160db0440961652f26b66",
+        "review_input_sha256": "191c0cb7df096814db9e98d0a7c7b48e567327175735bc088b598cfa6676f82c",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part4-system/ch18-aosp/02-aosp-build.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a190/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a190/external-source.diff",
+        "diff_sha256": "808bf247f039aa130761644ee2bc6aa7ff11b66a77b49e83cbfd4713f2ab7a37",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 224, \"characters\": 17142, \"svg_labels_read\": 18, \"actual_pngs_viewed\": 18, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 15, \"code_lines\": 47, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "191c0cb7df096814db9e98d0a7c7b48e567327175735bc088b598cfa6676f82c",
+      "retired_diagrams": [
+        "ch18-02-01-build-observe-loop",
+        "ch18-02-02-host-baseline",
+        "ch18-02-03-pin-checkout",
+        "ch18-02-05-lunch-and-variant",
+        "ch18-02-07-kvm-host",
+        "ch18-02-08-pair-launch",
+        "ch18-02-10-test-loop",
+        "ch18-02-11-logging-gates",
+        "ch18-02-12-sysprop-contract",
+        "ch18-02-13-dump-trace",
+        "ch18-02-15-physical-gates",
+        "ch18-02-17-experiment-record",
+        "ch18-02-18-troubleshooting"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-190/retired-assets.json"
     },
     {
       "index": 191,
@@ -50682,8 +50876,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 121,
-  "next_article": "src/part4-system/ch18-aosp/02-aosp-build.md",
+  "reviewed_articles": 122,
+  "next_article": "src/part4-system/ch18-aosp/03-android17-kernel-arm64-security.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -50693,7 +50887,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:17:30.510965+08:00",
+  "updated_at": "2026-10-31T15:20:40.388049+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -50756,13 +50950,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch18-aosp/02-aosp-build.md",
-      "registered_sha256": "2cc8c9a97a56243dec68b6812e17bd23faa03c8534a160db0440961652f26b66",
-      "observed_sha256": "191c0cb7df096814db9e98d0a7c7b48e567327175735bc088b598cfa6676f82c",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/02-aosp-build.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -50941,9 +51128,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4063,
-  "reviewed_placements_after": 1741,
-  "net_removed_placements": 2322,
+  "reviewed_placements_before": 4081,
+  "reviewed_placements_after": 1746,
+  "net_removed_placements": 2335,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -50967,5 +51154,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 121
+  "currently_matching_reviewed_source_count": 122
 }
