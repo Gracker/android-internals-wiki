@@ -101,7 +101,9 @@ sources:
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6
   role: 调度、cpuset、uclamp、cpufreq、dma-buf 与 sync_file 的统一 kernel 锚点
-last_verified: '2026-07-31'
+last_verified: '2026-10-31'
+last_source_verified_at: '2026-10-31'
+last_idle_audit_at: '2026-10-31'
 last_consolidated_at: '2026-08-24'
 ---
 
@@ -441,7 +443,7 @@ Compose 独立于 Android platform 发布，我们在这里只说明它在标准
 
 #### ⓪ 帧为什么被安排
 
-输入、动画、`invalidate()`、`requestLayout()`、Insets 或窗口状态变化会让后续帧有工作。`ViewRootImpl.scheduleTraversals()` 在尚未安排 traversal 时，向主线程消息队列插入同步屏障，并向 `Choreographer` 注册 `CALLBACK_TRAVERSAL` runnable；`Choreographer` 再用 `mFrameScheduled` 合并尚未执行的帧申请。异步帧消息可以越过普通同步消息，但同步屏障不替代 CPU 调度，也不会越过正在执行的任务。
+输入、动画、`invalidate()`、`requestLayout()`、Insets 或窗口状态变化会让后续帧有工作。`ViewRootImpl.scheduleTraversals()` 在尚未安排 traversal 时，向主线程消息队列插入同步屏障，并通过 `Choreographer.postVsyncCallback()` 注册 `CALLBACK_TRAVERSAL` 阶段的 `TraversalCallback`；固定 r1 中该对象实现 `Choreographer.VsyncCallback`。`Choreographer` 再用 `mFrameScheduled` 合并尚未执行的帧申请。异步帧消息可以越过普通同步消息，但同步屏障不替代 CPU 调度，也不会越过正在执行的任务。
 
 `invalidate()` 只标记需要重绘的脏区域并安排后续 traversal，绘制发生在后面的 traversal 里。同一个 pending（尚未执行） frame 内的连续调用会被合并，并不会各自申请一份 VSync。
 
@@ -725,14 +727,14 @@ sequenceDiagram
 |---|---|---|
 | App 收帧 | `Choreographer#doFrame`、app FrameTimeline | App 是按时醒来，还是 runnable 等待或消息队列处理已经延误 |
 | MainThread | INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT | 哪个 callback 或业务工作先增加 |
-| UI→RT | `syncAndDrawFrame`、RenderThread `DrawFrame` | UI 在等状态同步，还是 RT 已进入 draw |
+| UI→RT | `syncAndDrawFrame`、RenderThread `DrawFrames <vsyncId>` | UI 在等状态同步，还是 RT 已进入 draw |
 | Buffer 生产 | `dequeueBuffer`、GPU slice/fence、`queueBuffer` | slot 等待、CPU submission、GPU completion、queue 中哪一段较晚 |
 | App→SF | `BufferTX - <layerName>`、transaction、latch | buffer update 是否到达 SurfaceFlinger，是否被本轮采纳 |
 | SF/HWC | SF actual、composition type、DisplayHAL、present feedback | 系统 CPU、CLIENT GPU、HWC/display 哪段晚 |
 
 #### MainThread、RenderThread 与 GPU 分开看
 
-`DrawFrame` 是 RenderThread 上的追踪区间，其 wall time 也可包含阻塞等待；它既不等于纯 CPU Running 时间，也不代表 GPU duration（GPU 执行时长）。线程状态还要区分：
+固定 r1 的 [`DrawFrameTask::run()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp#89) 用 `DrawFrames <vsyncId>` 标记 RenderThread 帧区间，`<vsyncId>` 对应本帧的 FrameTimeline VSync id。该区间的 wall time 也可包含阻塞等待；它既不等于纯 CPU Running 时间，也不代表 GPU duration（GPU 执行时长）。线程状态还要区分：
 
 - Running 长：线程获得 CPU 后工作量大；
 - Runnable 长：线程已可运行但没有及时上 CPU；
@@ -750,7 +752,7 @@ sequenceDiagram
 3. `queueBuffer` 之后，`BufferTX`、latch 是否按时？
 4. App 按时交付后，SF actual、composition type、HWC/DisplayHAL 和 present 是否按时？
 
-`主线程短 + RenderThread 短 + Jank`，还不够下“SurfaceFlinger 或 HWC 问题”的结论。Jank 表示帧未满足预期时间，GPU completion、buffer transaction、acquire fence、display prediction error 都可能发生在两个 CPU slice 之外。
+`主线程短 + RenderThread 短 + Jank`，还不够下“SurfaceFlinger 或 HWC 问题”的结论。应同时核对 `jank_type`、`present_type`、`on_time_finish` 与 expected/actual 的区间末端；非 `None` 分类本身不等于 App 超过 deadline。固定 r1 的 [`SurfaceFrame::classifyJankLegacyLocked()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp#724) 在 App 按时完成但提前 present 时，也可能标记 `Prediction Error` 或 `SurfaceFlinger Scheduling`。GPU completion、buffer transaction、acquire fence、display prediction error 都可能发生在两个 CPU slice 之外。
 
 
 #### 用 RecyclerView 滑动校准观察顺序
@@ -950,6 +952,6 @@ Vendor governor（厂商的频率调节策略）、Power HAL、GPU driver、Comp
 
 标准 HWUI 页面的一帧由 MainThread 准备状态，RenderThread/GPU 生成 App Window buffer，BLAST 把 BufferItem 包装成 SurfaceControl transaction，SurfaceFlinger/HWC 完成合成与 present。
 
-定位问题时，我们依次对齐 `doFrame`、`syncAndDrawFrame`/`DrawFrame`、dequeue/GPU/queue、`BufferTX`、latch、FrameTimeline 和 present feedback。每个信号只回答一个阶段；只有按同一 SurfaceFrame、frame number 或明确的相邻时序把它们对齐，才能区分 UI 工作量、调度等待、GPU 执行、BufferQueue 等待、SF 合成与 display 后段延迟。
+定位问题时，我们依次对齐 `doFrame`、`syncAndDrawFrame`/`DrawFrames <vsyncId>`、dequeue/GPU/queue、`BufferTX`、latch、FrameTimeline 和 present feedback。每个信号只回答一个阶段；只有按同一 SurfaceFrame、frame number 或明确的相邻时序把它们对齐，才能区分 UI 工作量、调度等待、GPU 执行、BufferQueue 等待、SF 合成与 display 后段延迟。
 
 
