@@ -82,10 +82,6 @@ App 的 `Choreographer#doFrame` 和 RenderThread（渲染线程） slice 按时�
 
 这里先提醒一句：composition type 变化本身算不上故障。要把“合成方式变化导致问题”这个结论立起来，除了与 DisplayFrame、GPU/DPU（图形/显示处理器）或 fence 异常对齐，还要确认它位于最早拖延目标帧的依赖链，并用同场景控制实验验证。单纯同时出现只能作为线索。
 
-<!-- gracker-diagram: ch07-05-composition-causality-gates -->
-![合成策略变化的归因证据](../../assets/diagrams/ch07/ch07-05-composition-causality-gates.png)
-
-图：类型变化是调查起点。沿目标帧依赖解释新增工作或等待，再用控制实验验证；不能仅凭 CLIENT 出现认定降级导致卡顿。
 
 ## 先分清 Surface、Layer 与显示合成对象
 
@@ -144,10 +140,6 @@ App 的 `Choreographer#doFrame` 和 RenderThread（渲染线程） slice 按时�
 
 `DEVICE` 的接口定义特意保留了 “hardware overlay or other similar means”。所以从 `DEVICE` 出发，我们能确认的只有一件事：这一层交给了设备处理。至于该 Layer 是否独占一个物理 overlay plane、设备 plane 总数是多少、后续帧是否维持相同分配，`DEVICE` 本身给不了答案——统计 `DEVICE` Layer 数反推 plane 总数，或因某一帧是 `DEVICE` 就认定后续帧分配不变，都站不住脚。合成策略按当前帧的 Layer 与显示状态适用；HWC 可以给出不同结果，但并非每帧都必须重新 validate。状态允许时可以跳过 validate，client target 也可能命中复用缓存；“类型为 CLIENT”与“本帧实际重新做了 GPU 合成”应分别记录。混合合成也很常见：一部分 Layer 为 `CLIENT` 时，RenderEngine 会把它们画进一张 client target，HWC 再把 client target 与剩余的 `DEVICE`、`CURSOR` 或其他 Layer 一起提交显示。
 
-<!-- gracker-diagram: ch07-05-composition-types-versus-planes -->
-![Composition 类型与物理平面的区别](../../assets/diagrams/ch07/ch07-05-composition-types-versus-planes.png)
-
-图：图中箭头表示职责分类，不表示类型可以任意转换。CLIENT/DEVICE 与特殊类型描述合成及更新语义，不能由类型数量推算物理 plane 拓扑或独占关系；完整枚举条件见正文。
 
 ## Overlay 能力没有通用的 plane 数字
 
@@ -181,19 +173,11 @@ App 的 `Choreographer#doFrame` 和 RenderThread（渲染线程） slice 按时�
 
 格式、缩放、颜色混合与 plane 往往共享 DPU 资源。所以除了 Layer 数，我们还要同时看格式、色彩与缩放需求，才能把“plane 不够”“该格式不支持缩放”“HDR/SDR 混合超出色彩能力”和“厂商策略主动选择 client composition”区分开。
 
-<!-- gracker-diagram: ch07-05-plane-resource-constraints -->
-![合成选择是多类约束的交集](../../assets/diagrams/ch07/ch07-05-plane-resource-constraints.png)
-
-图：Layer 数、色彩、几何、混合、安全与显示资源都可能影响选择。哪些限制真正生效，须用目标设备日志和控制实验确认。
 
 ## validate、presentOrValidate 与 present
 
 很多旧资料把每帧画成固定两步：先调 `validateDisplay()（校验各 Layer 的合成方式）`，再调 `presentDisplay()（提交本轮显示）`。实际的提交路径有两种：`HWComposer::getDeviceCompositionChanges()` 支持快速分支：`presentOrValidate()` 尝试直接提交；不允许跳过时执行 validate，而不是保证一次调用同时完成两者。
 
-<!-- gracker-diagram: ch07-05-present-or-validate-gates -->
-![presentOrValidate 的尝试条件与结果](../../assets/diagrams/ch07/ch07-05-present-or-validate-gates.png)
-
-图：只有无需 client 且 earliest 条件允许时才尝试 presentOrValidate；它正常情况下返回已提交或仅已 validate 两种结果，不能理解为总把两个步骤都执行完。
 
 下面的状态图展示未展开策略预测的常规路径。r1 的快速条件是 `!frameUsesClientComposition && (!earliestPresentTime || steady_clock::now() >= earliestPresentTime)`；不存在 earliestPresentTime 时允许尝试，否则必须已到该时间。`prepareFrameAsync()` 还可把策略预测与 client 准备并行，不能把所有设备 trace 强行排成同一顺序。
 
@@ -241,19 +225,11 @@ flowchart TD
 
 排查时还有一个容易踩的坑：工具里如果同时展示“客户端原始请求类型”和“validate 后的最终类型”，我们要采用最终被接受的那个，避免把 `DEVICE` 的初始请求误当成该帧的实际结果。接受 HWC 修改这一步就是 `acceptDisplayChanges()`。
 
-<!-- gracker-diagram: ch07-05-accepted-composition-strategy -->
-![从请求类型到最终被接受策略](../../assets/diagrams/ch07/ch07-05-accepted-composition-strategy.png)
-
-图：常规路径先读取并接受 HWC 修改，再由 CompositionEngine 应用并计算最终策略。工具同时显示请求值和结果值时，应核对采样时机与最终已接受状态。
 
 ## 证据采集：从 DisplayFrame 回到合成决策
 
 取证时我们按一条固定的顺序走：先定位迟到的 DisplayFrame，判断本轮是否使用 GPU composition，再查看 Layer composition、RenderEngine/HWC slice（时间区间） 与 fence。每一步都要落到具体时间和具体 Layer 上，快照类证据只够做前后对照。
 
-<!-- gracker-diagram: ch07-05-display-to-composition-evidence -->
-![从异常帧回到合成决策的证据链](../../assets/diagrams/ch07/ch07-05-display-to-composition-evidence.png)
-
-图：先确定目标帧，再关联 Layer 状态和实际执行依赖。静态快照、类型字段和时间重叠提供不同层级的线索，最终需控制实验验证。
 
 ### FrameTimeline：定位责任范围
 
@@ -288,10 +264,6 @@ order by actual.ts;
 
 查到记录后，先看 `frame_kind`：同表同时包含 SurfaceFrame 与 DisplayFrame。`surface_frame_token` 与 `display_frame_token` 分属不同命名空间，数值相等不构成关联；应结合 flow、Layer/进程身份和 `display_frame_token` 核对。DisplayFrame 的 `gpu_composition` 在 r1 按是否记录了 GPU fence 设置，它不是每层最终类型、物理 plane 分配，也不等价于本帧新增 GPU 重绘的计数；复用 client 内容时仍可能沿用 fence。值为 0 同样不能直接证明所有 Layer 都是 DEVICE。
 
-<!-- gracker-diagram: ch07-05-frametimeline-query-field-scope -->
-![FrameTimeline SQL 的类型与字段范围](../../assets/diagrams/ch07/ch07-05-frametimeline-query-field-scope.png)
-
-图：同表中的 SurfaceFrame/DisplayFrame 要先区分，再解释 token 与 GPU 字段。jank 筛选不等于只筛迟到；GPU fence 标记也不能给出 plane 占用或新绘制次数。
 
 FrameTimeline 的三类显示侧结果可用于缩小检查范围：
 
@@ -301,10 +273,6 @@ FrameTimeline 的三类显示侧结果可用于缩小检查范围：
 
 这三类结果指出的是继续检查的方向，原因还要往下挖。`SurfaceFlingerGpuDeadlineMissed` 可能来自像素工作较多的 client composition，也可能来自 GPU 降频或其他 GPU 工作竞争。
 
-<!-- gracker-diagram: ch07-05-display-jank-investigation-branches -->
-![SF CPU、GPU 与 DisplayHAL 的调查分支](../../assets/diagrams/ch07/ch07-05-display-jank-investigation-branches.png)
-
-图：分类缩小调查范围；还要核对 CPU 调度、输入 ready、GPU/带宽竞争与显示时序。图中列的是后续证据入口，不是固定因果结论。
 
 ### SurfaceFlinger Layer trace 与 Winscope：查看最终 Layer 状态
 
@@ -338,10 +306,6 @@ data_sources {
 
 `MODE_ACTIVE` 和 HWC/buffer flags 会增加采集开销与内存占用，只适合受控的短时间测试；性能敏感的长时间采集应使用官方建议的 generated/bugreport（系统生成/错误报告） 模式，再根据设备构建确认能保留哪些 composition 信息。上面的 adb/Winscope 流程以官方说明的 `userdebug` 或 `eng`（工程调试） 构建与相应权限为前提。该最小配置只含 FrameTimeline 和 Layer 状态；分析 CPU 调度、Binder、RenderEngine/HWC slice 或 GPU 时，还需按目标设备补齐 ftrace/atrace 与相关数据源。
 
-<!-- gracker-diagram: ch07-05-capture-configuration-coverage -->
-![FrameTimeline 与 Layer trace 的采集覆盖](../../assets/diagrams/ch07/ch07-05-capture-configuration-coverage.png)
-
-图：最小配置提供帧与 Layer 状态，不能据此承诺完整 CPU/GPU/Binder 轨道。MODE_ACTIVE 与额外 HWC/buffer 数据会增加开销，须按设备与调查范围选择。
 
 Winscope 分析时应在同一时间范围内检查：
 
@@ -358,10 +322,6 @@ Winscope 分析时应在同一时间范围内检查：
 
 dumpsys 的时间粒度也要留意：一份 dumpsys 反映的是执行命令那一刻附近的状态。若 composition type 每帧变化，静态快照可能恰好采到正常帧；这时要靠 Layer trace 或 HWC 日志补上每一帧的变化过程。
 
-<!-- gracker-diagram: ch07-05-snapshot-versus-layer-sequence -->
-![静态快照与 Layer 状态序列的证据粒度](../../assets/diagrams/ch07/ch07-05-snapshot-versus-layer-sequence.png)
-
-图：快照能对照执行附近的状态，动态序列才能捕捉变化过程；Winscope 的字段也受采集配置和版本约束。按原始属性与源码含义解释类型。
 
 ### SurfaceFlinger、RenderEngine 与 HWC slice：定位耗时段
 
@@ -376,10 +336,6 @@ Layer 状态核对完，我们进入 `/system/bin/surfaceflinger` 进程，按�
 
 只有第 2～4 类问题在时间上与类型变化、显示配置或 HWC 约束对应，才适合继续优化 overlay / composition strategy。
 
-<!-- gracker-diagram: ch07-05-earliest-delay-dependencies -->
-![从四类线索寻找最早延迟依赖](../../assets/diagrams/ch07/ch07-05-earliest-delay-dependencies.png)
-
-图：四类线索先分开取证，再沿目标帧依赖确定最早延迟。只有证据指向合成策略或设备约束时，才有理由把优化落到 overlay/composition。
 
 ### Fence 与 kernel：确认所有权何时释放
 
@@ -404,19 +360,11 @@ kernel 这边，`android17-6.18-2026-06_r6` 中 dma-buf（设备间共享缓冲�
 
 我们在同一台设备上固定视频分辨率、HDR 状态、刷新率和窗口尺寸，每轮只改变一个浮层。每组都记录最终 composition、FrameTimeline、RenderEngine、GPU/DPU 频率与 fence。
 
-<!-- gracker-diagram: ch07-05-video-overlay-controlled-experiment -->
-![SurfaceView 视频浮层的控制实验](../../assets/diagrams/ch07/ch07-05-video-overlay-controlled-experiment.png)
-
-图：同一设备固定视频和显示条件，每轮只改一个因素，再看类型、绘制/缓存、fence 与目标帧是否按假设变化。图是实验流程，不是设备测量结果。
 
 ### TextureView 视频
 
 TextureView 已把视频纹理采样进宿主窗口。即使宿主 App Window 最终为 `DEVICE`，视频也未必获得了独立 overlay；若问题发生在宿主 RenderThread 的 texture acquire（纹理获取）、采样或 GPU 绘制阶段，HWC trace 里能看到的就只剩后续的合成结果。
 
-<!-- gracker-diagram: ch07-05-textureview-gpu-cost-boundary -->
-![TextureView 的宿主 GPU 与 SF 合成成本](../../assets/diagrams/ch07/ch07-05-textureview-gpu-cost-boundary.png)
-
-图：TextureView 的视频内容通常已在宿主窗口内采样；宿主最终 DEVICE 只描述后续合成。应分开核对 texture acquire、App GPU 和 SF client composition。
 
 选择 SurfaceView 或 TextureView 时，要同时评估动画与裁剪需求、延迟、功耗、安全内容，以及保留独立 Layer 的价值。只为减少 Layer 就把视频迁进 TextureView，HWC 可选的合成方式可能反而更少。
 
@@ -426,10 +374,6 @@ TextureView 已把视频纹理采样进宿主窗口。即使宿主 App Window �
 
 测试条件至少包含预览分辨率、帧率、Surface 类型、横竖屏、浮层开关和录制状态。预览 producer 产出慢、App 标注提交晚与 HWC composition 变化，需要分别判断原因。
 
-<!-- gracker-diagram: ch07-05-camera-preview-annotation-dependencies -->
-![相机预览与业务标注的独立依赖](../../assets/diagrams/ch07/ch07-05-camera-preview-annotation-dependencies.png)
-
-图：先确认相机和标注实际用哪些 Surface、何时 ready，再检查合成策略。图显式区分独立层与宿主内部采样两种路径，不把相机帧率变化直接归到 HWC。
 
 ### 画中画、多窗口与外接屏
 
@@ -448,10 +392,6 @@ TextureView 已把视频纹理采样进宿主窗口。即使宿主 App Window �
 
 应分别测试设备温度较低和升温后的状态、60/90/120 Hz，以及正常和省电模式。composition type 保持稳定时，实际像素工作、缓存命中、输入 ready fence、共享 GPU/带宽和显示侧等待仍可能变化。先找最早拖延目标帧的依赖，再检查时钟、温控、内容与显示配置；类型不变本身不足以排除 Layer 或 producer。
 
-<!-- gracker-diagram: ch07-05-refresh-thermal-stable-type -->
-![高刷新率与温控下的稳定类型并不代表稳定成本](../../assets/diagrams/ch07/ch07-05-refresh-thermal-stable-type.png)
-
-图：类型稳定仍可能有内容、缓存、频率和等待变化。按实际依赖取证，再做同设备冷热、刷新率和省电模式对照。图不提供未经测量的阈值或收益数字。
 
 ## 优化动作：根据证据选择拆分或合并
 
@@ -498,10 +438,6 @@ plane 怎么分配由 HWC 按帧协商决定，App/上层通常先调整输入 L
 
 下结论前我们先问一遍：FPS、主线程耗时或一次 dumpsys，任何单项都撑不起“修复完成”。一个可信结论至少要同时满足：目标 DisplayFrame 改善；合成或 fence 证据按假设变化；同一设备上重复测试能复现结果；视觉和功耗没有出现新的问题。
 
-<!-- gracker-diagram: ch07-05-composition-fix-validation -->
-![合成优化的机制与用户结果验证](../../assets/diagrams/ch07/ch07-05-composition-fix-validation.png)
-
-图：验证既看策略和依赖是否按假设变化，也看目标显示、正确性和功耗是否受益。FPS、一次 dumpsys 或单条 CPU slice 都不足以单独证明修复完成。
 
 ## 线上可观测性
 
@@ -514,10 +450,6 @@ plane 怎么分配由 HWC 按帧协商决定，App/上层通常先调整输入 L
 
 两边的分工是：线上数据找出问题集中在哪些设备和场景，实验室 trace 确认 composition 发生了什么变化及其原因。代理指标只用来触发进一步复核；把它直接标记成“CLIENT composition 率”，排查方向会被带偏。
 
-<!-- gracker-diagram: ch07-05-online-proxy-laboratory-proof -->
-![线上代理指标与实验室 HWC 证据](../../assets/diagrams/ch07/ch07-05-online-proxy-laboratory-proof.png)
-
-图：线上指标适合发现集中问题的设备和场景；实验室再核对最终合成、fence 和约束。普通 App 没有稳定公开逐帧 plane/合成类型接口，代理率不能冒充 CLIENT 率。
 
 ## 版本边界
 
