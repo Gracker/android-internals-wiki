@@ -132,7 +132,7 @@ Perfetto 里看到一帧超时，我们先回答三个问题，再去看各段 t
 
 ### 用四个坐标识别出图类型
 
-框架名称在这里帮不上忙：`SurfaceView`、`TextureView`、WebView、Flutter 和 Compose 都是 API 或框架名称，单凭名称还确定不了 trace 里的图形路径。同一个 Flutter 页面可能用 `SurfaceView` 或 `TextureView` 作宿主，嵌入的 Platform View（嵌入 Flutter 的原生平台视图） 还会改变 layer 拓扑；同一个播放器也可能在普通 BufferQueue、SurfaceView 独立 layer 与 tunneled/sideband（绕开普通 buffer 队列的专用媒体路径） 之间切换。
+框架名称在这里帮不上忙：`SurfaceView`、`TextureView`、WebView、Flutter 和 Compose 都是 API 或框架名称，要确定 trace 里的图形路径，还得看页面实际用到的宿主和队列。同一个 Flutter 页面可能用 `SurfaceView` 或 `TextureView` 作宿主，嵌入的 Platform View（嵌入 Flutter 的原生平台视图） 还会改变 layer 拓扑；同一个播放器也可能在普通 BufferQueue、SurfaceView 独立 layer 与 tunneled/sideband（绕开普通 buffer 队列的专用媒体路径） 之间切换。
 
 所以每次分析，我们先固定四个坐标：
 
@@ -162,7 +162,7 @@ Android 9 到 Android 17 的图形栈，用“Legacy”与“BLAST”二分来�
 | Android 16 / API 36 | SurfaceView 源码增加整数 `compositionOrder`，r1 API 签名带 `@FlaggedApi`；公共主线延续 | 多 Surface 页面要记录 parent、relative layer、flag 状态与 Z-order |
 | Android 17 / API 37 | 锚定 FrontEnd `RequestedLayerState` / `LayerSnapshot`、预测 present time、现行 BLAST/HWC 路径；SurfaceView blur region 与 `compositionOrder` 仍带 flag 边界 | 源码按 `android-17.0.0_r1` 的对象名解释；旧 `DispSync`、固定 phase offset（相位偏移）和逐个旧 Layer latch 模型不能直接套用 |
 
-这张表列出的是各版本的观测方法差异；图形栈并没有每个版本重做一套，BLAST 改变的是 buffer 与窗口状态进入 SurfaceFlinger 的组织方式，Producer/Consumer 分工和 acquire/release fence 仍然存在。 历史边界分别核对 [Android 10 libgui 目录](https://android.googlesource.com/platform/frameworks/native/+/android-10.0.0_r1/libs/gui/)、[Android 11 BLAST](https://android.googlesource.com/platform/frameworks/native/+/android-11.0.0_r1/libs/gui/BLASTBufferQueue.cpp)、[Android 13 默认 latch 策略](https://android.googlesource.com/platform/frameworks/native/+/android-13.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [当前 SurfaceView](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)；默认值仍可被设备配置覆盖。
+这张表列出的是各版本的观测方法差异；图形栈并未每版重做，BLAST 改变的只是 buffer 与窗口状态进入 SurfaceFlinger 的组织方式，Producer/Consumer 分工和 acquire/release fence 一直都在。 历史边界分别核对 [Android 10 libgui 目录](https://android.googlesource.com/platform/frameworks/native/+/android-10.0.0_r1/libs/gui/)、[Android 11 BLAST](https://android.googlesource.com/platform/frameworks/native/+/android-11.0.0_r1/libs/gui/BLASTBufferQueue.cpp)、[Android 13 默认 latch 策略](https://android.googlesource.com/platform/frameworks/native/+/android-13.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [当前 SurfaceView](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)；默认值仍可被设备配置覆盖。
 
 
 ### 典型模式对比
@@ -223,7 +223,7 @@ Framework 工程师可先读前面的公共主线，再看 [13.6 SurfaceControl 
 
 `vsync-app → doFrame → syncAndDrawFrame → dequeueBuffer → GPU submit → queueBuffer → BLAST transaction → SF snapshot/latch → HWC strategy → 可选 CLIENT composition → present → present feedback`
 
-这十二个点只是跨路径的坐标：实际动作未必同步、依次执行，特殊 Producer 也未必具备完整的 HWUI slice。标准 View 的逐调用链解释放在后文；这里只保留比较不同 Producer 所需的公共检查点。
+这十二个点只是跨路径的坐标：实际动作可能重叠执行，特殊 Producer 也可能只走其中几段，未必凑齐完整的 HWUI slice。标准 View 的逐调用链解释放在后文；这里只保留比较不同 Producer 所需的公共检查点。
 
 
 | 检查点 | 先回答的问题 | 不能据此断言 |
@@ -244,7 +244,7 @@ Framework 工程师可先读前面的公共主线，再看 [13.6 SurfaceControl 
 
 ### 统一分析方法
 
-分清类型只是第一步；要定位一帧的问题，还得把观察、关联和结论分开，落到可核对的对象上。
+分清类型只是第一步；要定位一帧的问题，我们还得把观察、关联和结论分开，落到可核对的对象上。
 
 #### 先区分事实、关联与结论
 
@@ -254,7 +254,7 @@ Framework 工程师可先读前面的公共主线，再看 [13.6 SurfaceControl 
 | 时间关联 | 等待与上一帧 release fence 较晚发出 signal 的时段重合 | 还要核对对象 |
 | 因果结论 | 同一队列无可复用 slot，因为 HWC 延迟归还上一轮 buffer | 是，但必须有队列、fence 和 layer 证据 |
 
-“同一时间发生”未必就是“前者导致后者”。对象身份没对上时，长 slice 只能列为候选。
+“同一时间发生”离“前者导致后者”还差一步：对象身份对上之前，长 slice 只能列为候选。
 
 
 #### Step 1：锁定对象与路径
@@ -284,14 +284,14 @@ Framework 工程师可先读前面的公共主线，再看 [13.6 SurfaceControl 
 | WebView | Chromium 与宿主 HWUI | functor（把 Chromium 绘制接入 HWUI 的桥接对象）或 child Surface | 以现场拓扑为准 |
 | HardwareBufferRenderer | HWUI RenderThread / GPU | 调用方 `HardwareBuffer` | 调用方提交后才送显 |
 
-三类 fence 各回答一个问题：acquire fence 说明“buffer 何时可读”，release fence 说明“buffer 何时可复用”，present fence 说明“本轮 Display 何时到达显示边界”。顺着这组关系，我们把两类常见现象分开查：`dequeueBuffer` 长时间等待时，检查同一队列的可用 slot、Consumer 持有量和上一轮 release；`BufferTX` 积压时，检查 transaction readiness（事务是否满足处理条件）、acquire 的状态，以及 buffer 最终被 latch 还是 drop（丢弃）。增加队列深度可能增加 buffer 内存占用，并在实际排队变深时增加延迟；仅提高上限不保证二者都会增加，不能把它当成默认修复。
+三类 fence 各回答一个问题：acquire fence 说明“buffer 何时可读”，release fence 说明“buffer 何时可复用”，present fence 说明“本轮 Display 何时到达显示边界”。顺着这组关系，我们把两类常见现象分开查：`dequeueBuffer` 长时间等待时，检查同一队列的可用 slot、Consumer 持有量和上一轮 release；`BufferTX` 积压时，检查 transaction readiness（事务是否满足处理条件）、acquire 的状态，以及 buffer 最终被 latch 还是 drop（丢弃）。增加队列深度可能增加 buffer 内存占用，并在实际排队变深时增加延迟；反过来，仅提高上限未必带来这两样变化，动手前先确认排队确实变深了。
 
 <!-- gracker-diagram: ed13-01-fence-ownership-and-optical-boundary -->
 ![acquire 管可读，release 管复用，present 管显示反馈](../../assets/diagrams/ch13/ed13-01-fence-ownership-and-optical-boundary.png)
 
 图：三类同步与光学边界合图：Producer写完成信号在Consumer侧作为acquire，真正读取前须遵守；受限latch-unsignaled只是先采纳。release约束旧buffer下次安全写入，slot归FREE或收到callback/channel通知不等fencesignal，SF还可按CLIENT/DEVICE合成路径合并/替换释放信息。present是目标display时间基准，不能替代release，也不证明panel扫描或像素光学完成；触摸到发光需driver或外部测量补证。
 
-API 37 的 `Surface.isProducerThrottlingEnabled()` 查询 EGL/Vulkan Producer 的 CPU throttling 配置；它本身不能证明当前调用确实发生背压。`setProducerThrottlingEnabled(false)` 关闭 queue/present 侧的这一类节流，不改变帧率投票，也不消除 dequeue 或 swapchain acquire 的正常同步等待。Android 17 r1 中这组 API 带 `bq_producer_backpressure_control` flag；异步模式始终启用此节流，设置无效。
+API 37 的 `Surface.isProducerThrottlingEnabled()` 查询 EGL/Vulkan Producer 的 CPU throttling 配置；要证明当前调用确实发生了背压，还得回到等待证据本身。`setProducerThrottlingEnabled(false)` 关掉的只是 queue/present 侧的这一类节流，帧率投票照旧，dequeue 和 swapchain acquire 的正常同步等待也照旧。Android 17 r1 中这组 API 带 `bq_producer_backpressure_control` flag；异步模式始终启用此节流，设置无效。
 
 
 #### Step 3：对齐同一帧
@@ -342,7 +342,7 @@ ORDER BY a.ts DESC
 LIMIT 20;
 ```
 
-这里按 Actual id 保留完整记录。固定 r1 的 [Perfetto 解析器](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/frame_timeline_event_parser.cc) 按 `upid + surface_frame_token` 只保留一份 Expected，因为共享该 token 的工作使用同一预测；Expected 的 Layer 名可能仅属于最先出现的 Layer，不能强制与每条 Actual 的 Layer 相等。查询仅在该进程/token 有恰好一条完整 Expected 时关联；`expected_id` 为 NULL 表示缺失、未结束或异常重复。带 jank 分类的记录也可能是 Buffer Stuffing 等类型，不都意味着 Late Present。独立 Surface 缺少完整 App FrameTimeline 时，回到 Producer、BufferQueue、layer、fence 和 present。
+这里按 Actual id 保留完整记录。固定 r1 的 [Perfetto 解析器](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/frame_timeline_event_parser.cc) 按 `upid + surface_frame_token` 只保留一份 Expected，因为共享该 token 的工作使用同一预测；Expected 的 Layer 名可能仅属于最先出现的 Layer，与每条 Actual 的 Layer 未必一一对应。查询仅在该进程/token 有恰好一条完整 Expected 时关联；`expected_id` 为 NULL 表示缺失、未结束或异常重复。带 jank 分类的记录也可能是 Buffer Stuffing 等类型，Late Present 只是其中一种。独立 Surface 缺少完整 App FrameTimeline 时，回到 Producer、BufferQueue、layer、fence 和 present。
 
 
 #### Step 4：按证据模式归因
@@ -375,7 +375,7 @@ LIMIT 20;
     └── 否：RenderNode 输出到自管 HardwareBuffer？是 → HardwareBufferRenderer
 ```
 
-SurfaceView 提供独立 layer 条件，不保证 DEVICE、低功耗或低延迟；TextureView 通常增加一次宿主采样。WebView、Flutter 和游戏必须核查真实宿主、Producer、BufferQueue、layer 与 HWC。
+SurfaceView 提供的是独立 layer 条件，DEVICE、低功耗或低延迟还要看现场合成结果；TextureView 通常增加一次宿主采样。WebView、Flutter 和游戏必须核查真实宿主、Producer、BufferQueue、layer 与 HWC。
 
 
 复盘完成前确认：
@@ -413,20 +413,20 @@ SurfaceView 提供独立 layer 条件，不保证 DEVICE、低功耗或低延迟
 
 看到任何 App 出图问题，我们先确定 Producer、Surface/layer、合成位置和 present 边界，再进入线程耗时。标准窗口从 `vsync-app → doFrame → RenderThread → BLAST → SurfaceFlinger → HWC` 建立基线；特殊框架与硬件 Producer 只是在某些节点替换角色或增加分支。
 
-`queueBuffer` 说明内容已提交，`BufferTX` 说明 SurfaceFlinger 侧仍有待处理的 buffer 更新，latch 说明本轮已经采纳，present fence 提供显示管线完成呈现的时间反馈。按顺序对齐这四类记录，才能区分帧开始晚、Producer 完成晚、Consumer 等待、退回 GPU 合成和显示后段延迟。
+四个信号各管一段：`queueBuffer` 说明内容已提交，`BufferTX` 说明 SurfaceFlinger 侧仍有待处理的 buffer 更新，latch 说明本轮已经采纳，present fence 提供显示管线完成呈现的时间反馈。要区分帧开始晚、Producer 完成晚、Consumer 等待、退回 GPU 合成和显示后段延迟，我们得按顺序把这四类记录对齐。
 
 
 ## View、HWUI 与 BLAST 标准路径
 
 分类确定内容属于普通 App Window 之后，我们沿 ViewRootImpl、RenderThread、BLAST 和 SurfaceFlinger 还原一帧。
 
-标准 HWUI App Window 的页面主体由普通 View 或 Compose host（Compose 宿主容器） 组织，RenderThread 生成宿主窗口 buffer。承载主体内容的独立 Surface、浏览器 compositor（合成器）、游戏引擎 swapchain、Camera HAL 或视频解码器 Producer 属于其他管线，这条标准路径并不适用于它们。
+标准 HWUI App Window 的页面主体由普通 View 或 Compose host（Compose 宿主容器） 组织，RenderThread 生成宿主窗口 buffer。承载主体内容的独立 Surface、浏览器 compositor（合成器）、游戏引擎 swapchain、Camera HAL 或视频解码器 Producer 走的是其他管线，要按各自的路径分析。
 
 Compose 独立于 Android platform 发布，我们在这里只说明它在标准 App Window 中的位置；某个 Jetpack 版本的行为要从它自己的版本核对，从 Android 平台源码推不出来。
 
 ### 如何确认这是标准 HWUI 页面
 
-要确认页面属于标准类型，我们依据的是主体内容由谁生产、经哪里提交。普通 View、纯 Compose 或 `ComposeView` 页面通常属于标准类型；单看页面里出现的某个框架控件名，还定不了类。
+要确认页面属于标准类型，我们依据的是主体内容由谁生产、经哪里提交。普通 View、纯 Compose 或 `ComposeView` 页面通常属于标准类型；页面里出现的框架控件名只能当线索。
 
 | 条件 | 标准类型的证据 | 需要切换章节的信号 |
 |---|---|---|
@@ -443,7 +443,7 @@ Compose 独立于 Android platform 发布，我们在这里只说明它在标准
 
 #### ⓪ 帧为什么被安排
 
-输入、动画、`invalidate()`、`requestLayout()`、Insets 或窗口状态变化会让后续帧有工作。`ViewRootImpl.scheduleTraversals()` 在尚未安排 traversal 时，向主线程消息队列插入同步屏障，并通过 `Choreographer.postVsyncCallback()` 注册 `CALLBACK_TRAVERSAL` 阶段的 `TraversalCallback`；固定 r1 中该对象实现 `Choreographer.VsyncCallback`。`Choreographer` 再用 `mFrameScheduled` 合并尚未执行的帧申请。异步帧消息可以越过普通同步消息，但同步屏障不替代 CPU 调度，也不会越过正在执行的任务。
+输入、动画、`invalidate()`、`requestLayout()`、Insets 或窗口状态变化会让后续帧有工作。`ViewRootImpl.scheduleTraversals()` 在尚未安排 traversal 时，向主线程消息队列插入同步屏障，并通过 `Choreographer.postVsyncCallback()` 注册 `CALLBACK_TRAVERSAL` 阶段的 `TraversalCallback`；固定 r1 中该对象实现 `Choreographer.VsyncCallback`。`Choreographer` 再用 `mFrameScheduled` 合并尚未执行的帧申请。异步帧消息可以越过普通同步消息；至于 CPU 调度和正在执行的任务，同步屏障管不到它们。
 
 `invalidate()` 只标记需要重绘的脏区域并安排后续 traversal，绘制发生在后面的 traversal 里。同一个 pending（尚未执行） frame 内的连续调用会被合并，并不会各自申请一份 VSync。
 
@@ -456,7 +456,7 @@ Compose 独立于 Android platform 发布，我们在这里只说明它在标准
 
 Scheduler 根据预测 present time，以及描述工作时长和就绪余量的 app `workDuration`、`readyDuration` 参数计算应用 wakeup（唤醒时刻），再经 EventThread / DisplayEventReceiver 把 VSync 事件送到进程。
 
-SurfaceFlinger 里的 `vsync-app` 事件是调度和分发线索，不能仅凭它断言目标应用已成功收到事件；EventThread 的发送也有失败分支。还需核对 App 接收侧事件、`Choreographer#doFrame` 和调度记录，区分事件分发、目标线程可运行与真正上 CPU。线程本来就在运行时，也不一定出现新的 `sched_wakeup`。
+SurfaceFlinger 里的 `vsync-app` 事件是调度和分发线索；要确认目标应用真的收到了事件，还得核对 App 接收侧事件、`Choreographer#doFrame` 和调度记录，EventThread 的发送本身就有失败分支。这几条记录同时帮我们区分事件分发、目标线程可运行与真正上 CPU；线程本来就在运行时，可能不会出现新的 `sched_wakeup`。
 
 <!-- gracker-diagram: ch13-01-18-vsync-delivery -->
 ![VSync 计划、分发与 App 执行](../../assets/diagrams/ch13/ch13-01-18-vsync-delivery.png)
@@ -518,7 +518,7 @@ DrawFrameTask::run()
 
 RenderThread 使用 App Window 的 `Surface` / BufferQueue Producer：
 
-1. `dequeueBuffer()` 取得候选 slot 与 release fence。没有可用 slot 或队列约束不满足时，可能等待、超时或返回 `WOULD_BLOCK`；已 queue 过 buffer 且达到 max-dequeued 上限时，固定 r1 返回 `INVALID_OPERATION`。返回的 release fence 由 Producer 的 EGL/Vulkan 等实现遵守，等待可能移到后端或首次写入前，不能一概算成 BufferQueue 的选槽等待。
+1. `dequeueBuffer()` 取得候选 slot 与 release fence。没有可用 slot 或队列约束不满足时，可能等待、超时或返回 `WOULD_BLOCK`；已 queue 过 buffer 且达到 max-dequeued 上限时，固定 r1 返回 `INVALID_OPERATION`。返回的 release fence 由 Producer 的 EGL/Vulkan 等实现遵守，等待可能移到后端或首次写入前；分析时要把这部分等待和 BufferQueue 的选槽等待分开记。
 2. HWUI 的 Skia OpenGL/Vulkan pipeline 录制并提交 GPU 命令。
 3. `queueBuffer()` 提交 slot、frame number、timestamp（内容时间戳）、dataspace、crop/transform（裁剪与变换） 等元数据，以及表示 Producer 写入完成的 producer completion fence（Producer 写入完成的同步信号）。
 
@@ -528,7 +528,7 @@ CPU 命令提交完成、`queueBuffer()` 返回时，GPU 仍可能继续写入�
 #### ⑥' BLAST 把 buffer 变成 transaction
 
 
-标准 App Window 的 BLASTBufferQueue 位于应用进程。`onFrameAvailable()` 接到可用通知后，在可获取 buffer 时经 `acquireNextBufferLocked()` 从 Consumer 取得 `BufferItem`，再调用 `Transaction::setBuffer()` 填入 buffer、acquire fence、frame number 和 release callback。普通路径合并 pending transaction 后自行 `apply()`；同步窗口更新可先合入调用方提供的 transaction，由同步协调方统一提交，并非每个通知都立即独立 apply。
+标准 App Window 的 BLASTBufferQueue 位于应用进程。`onFrameAvailable()` 接到可用通知后，在可获取 buffer 时经 `acquireNextBufferLocked()` 从 Consumer 取得 `BufferItem`，再调用 `Transaction::setBuffer()` 填入 buffer、acquire fence、frame number 和 release callback。普通路径合并 pending transaction 后自行 `apply()`；同步窗口更新可先合入调用方提供的 transaction，由同步协调方统一提交，apply 的时机也就落在协调方手里。
 
 SurfaceFlinger 进程收到含 buffer 的 transaction、计入 pending 之后，`BufferTX - <layerName>` 增加；buffer 被 latch 或 drop 后减少。App 侧 `queueBuffer()` 与 SurfaceFlinger 侧 `BufferTX` 是两个不同的时间点。
 
@@ -550,7 +550,7 @@ SurfaceFlinger::setTransactionState(...)
     TransactionHandler::queueTransaction(...)
 ```
 
-这段路径传递的是 slot、buffer handle（缓冲区句柄）、元数据和同步对象，整帧像素不会经 Binder（Android 进程间通信机制） 复制。SF 侧收到 transaction 后还要检查 readiness、生成本轮 layer snapshot（状态快照），再执行 latch 和 composition。走到这里任何一步，都还代替不了 present 一侧的记录。
+这段路径传递的是 slot、buffer handle（缓冲区句柄）、元数据和同步对象，整帧像素不会经 Binder（Android 进程间通信机制） 复制。SF 侧收到 transaction 后还要检查 readiness、生成本轮 layer snapshot（状态快照），再执行 latch 和 composition；至于显示侧走到了哪一步，要由 present 一侧的记录来回答。
 
 <!-- gracker-diagram: ed13-01-blast-apply-and-pending-outcomes -->
 ![BLAST 提交所有者分两支，BufferTX 只计 SF 待处理更新](../../assets/diagrams/ch13/ed13-01-blast-apply-and-pending-outcomes.png)
@@ -591,7 +591,7 @@ SurfaceFlinger 为目标 display 筛选并组织参与输出的 layer，与 HWC 
 
 HWC 返回每个 display 的 present fence 和每个 layer 的 release fence。SurfaceFlinger 还会根据 CLIENT/DEVICE composition 合并或替换 release 信息，再通过 callback/release channel（释放通知通道） 回传 Producer。
 
-Present fence 是 Android 显示栈里 display-present 的时间基准；panel 扫描、像素响应，以及从触摸输入到屏幕发光的完整延迟，还需要 driver trace（驱动追踪） 或外部测量。Release fence 约束旧 buffer 何时能安全复用，present fence 替代不了它。
+Present fence 是 Android 显示栈里 display-present 的时间基准；panel 扫描、像素响应，以及从触摸输入到屏幕发光的完整延迟，还需要 driver trace（驱动追踪） 或外部测量。Release fence 约束旧 buffer 何时能安全复用，present fence 管的是 present 时间。
 
 
 ### BLAST Buffer 生命周期
@@ -609,7 +609,7 @@ stateDiagram-v2
     ACQUIRED --> FREE: Consumer releaseBuffer
 ```
 
-`releaseBuffer()` 把 slot 归还到可 dequeue 的状态，但 slot 仍可能携带上一轮 release fence。Producer 再次写入前必须遵守该 fence；`FREE` 只表示 slot 已成为候选，不保证硬件已经允许立即覆盖内容。
+`releaseBuffer()` 把 slot 归还到可 dequeue 的状态，但 slot 仍可能携带上一轮 release fence。Producer 再次写入前必须遵守该 fence；`FREE` 只表示 slot 已成为候选，硬件是否允许立即覆盖，要看它携带的 fence。
 
 
 | 状态 | 主要持有方 | 含义 |
@@ -630,10 +630,10 @@ stateDiagram-v2
 - release fence、BLAST pending release（等待处理的释放信息）；
 - 当前/最大刷新率对应的 acquired-count 策略。
 
-Triple buffering（三缓冲） 是常见运行状态，但每台设备、每个窗口是否固定用三个 slot，要看上面的约束。它可以减少 Producer 与 Consumer 相互等待，也可能让 in-flight frame（仍在处理链中的帧）增多。是否增加一整帧延迟，取决于 pacing（帧节奏）、queue depth（排队深度）、latch 和 present，单看“有第三个 slot”推不出来。
+Triple buffering（三缓冲） 是常见运行状态，但每台设备、每个窗口是否固定用三个 slot，要看上面的约束。它可以减少 Producer 与 Consumer 相互等待，也可能让 in-flight frame（仍在处理链中的帧）增多。是否增加一整帧延迟，取决于 pacing（帧节奏）、queue depth（排队深度）、latch 和 present；要下这个判断，光看“有第三个 slot”还不够。
 
 
-`dequeueBuffer()` 等的未必是“上一帧那块 buffer”。普通模式可选择满足队列和分配约束的 FREE slot，并把该 slot 的 release fence 返回；未 signal 的 fence 不自动将这个 FREE slot 排除。没有合适候选时再按阻塞/超时配置处理，达到 max-dequeued 上限则可能直接报错。Producer 安全写入前的 fence 等待要另行定位。
+`dequeueBuffer()` 等的未必是“上一帧那块 buffer”。普通模式可选择满足队列和分配约束的 FREE slot，并把该 slot 的 release fence 返回；哪怕该 fence 尚未 signal，这个 FREE slot 也仍在候选之列。没有合适候选时再按阻塞/超时配置处理，达到 max-dequeued 上限则可能直接报错。Producer 安全写入前的 fence 等待要另行定位。
 
 <!-- gracker-diagram: ed13-01-dequeue-outcomes-and-safe-reuse -->
 ![dequeue 的等待、上限错误与返回 fence 分开定位](../../assets/diagrams/ch13/ed13-01-dequeue-outcomes-and-safe-reuse.png)
@@ -663,14 +663,14 @@ Release 信息可携带与当前刷新率相关的 current max acquired count（
 Android 17 r1（`android-17.0.0_r1`）的阈值是最近 frame interval（帧间隔） 的一半。进入 recovery 后，`DELAY_FRAME` 会请求下一次 VSync 并跳过当前 `doFrame()`；后续 recovery 还可能对 animation frame time 应用一个 frame interval 的负 offset，即从动画帧时间中减去一个 frame interval。
 
 
-`buffer_stuffing_multi_recovery` 控制同一段动画是否允许多次恢复；`buffer_stuffing_recovery_threshold` 启用时，在允许多次 recovery 的分支中，已累计 delay 达到 100 ms 后不再追加此次主动 delay；它按帧间隔累计，最后一次追加可能跨过 100 ms，并非精确截断在 100 ms。两项都是可变的 aconfig flag（平台配置开关），目标设备的取值必须从配置或 trace 确认。
+`buffer_stuffing_multi_recovery` 控制同一段动画是否允许多次恢复；`buffer_stuffing_recovery_threshold` 启用时，在允许多次 recovery 的分支中，已累计 delay 达到 100 ms 后不再追加此次主动 delay；它按帧间隔累计，最后一次追加可能跨过 100 ms，100 ms 只是一条近似封顶线。两项都是可变的 aconfig flag（平台配置开关），目标设备的取值必须从配置或 trace 确认。
 
 <!-- gracker-diagram: ed13-01-stuffing-trigger-flags-and-delay -->
 ![Stuffing 恢复先看触发与资格，再判断是否追加主动 delay](../../assets/diagrams/ch13/ed13-01-stuffing-trigger-flags-and-delay.png)
 
 图：固定r1恢复条件合图，不是完整Choreographer状态机。buffer释放等待超过最近frameinterval一半触发isStuffed；multi flag控制同段动画是否允许重复。仅允许多次恢复分支且threshold flag开启时检查追加前累计delay是否已达100ms；未达按frameinterval追加，最后可跨100，非精确封顶。本次允许时DELAYFRAME请求nextVSync并跳当前doFrame，后续可能OFFSET减去一个动画帧间隔；足够长空闲再复位，不表示每次都OFFSET或立即复位。它降低积压机会，不提高GPU/显示处理能力；设备flag、dequeuewait、BufferStuffing/recovery与backlog回落联合验证。
 
-这项机制用于降低队列过深带来的额外输入到显示延迟，不用于提升 GPU 或显示硬件的处理能力。Perfetto 中看到 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset` 时，要同时检查 dequeue wait、FrameTimeline `Buffer Stuffing` 和 queue backlog 是否回落。
+这项机制的收益是降低队列过深带来的额外输入到显示延迟；GPU 和显示硬件的处理能力维持原样。Perfetto 中看到 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset` 时，要同时检查 dequeue wait、FrameTimeline `Buffer Stuffing` 和 queue backlog 是否回落。
 
 ### 渲染时序图（BLAST Sequence）
 
@@ -712,7 +712,7 @@ sequenceDiagram
     SF-->>BBQ: release callback/channel
 ```
 
-图里 BLAST 消费 BufferItem 的位置在 App 进程，SF 侧消费的是 SurfaceControl transaction。`queueBuffer()` 返回不是 SF 合成或 present 完成的凭证；调用本身仍可能因 Producer throttling、BLAST 同步或回调路径等待。后续 `dequeueBuffer()` 也可能因可用 slot 或队列约束等待；要以实际 slice 和 fence 区分这些等待。
+图里 BLAST 消费 BufferItem 的位置在 App 进程，SF 侧消费的是 SurfaceControl transaction。`queueBuffer()` 返回只说明提交动作完成：这一路仍可能因 Producer throttling、BLAST 同步或回调路径等待，后续 `dequeueBuffer()` 也可能因可用 slot 或队列约束等待，我们要用实际 slice 和 fence 把这些等待区分开。
 
 <!-- gracker-diagram: ed13-01-submit-gpu-and-consumer-overlap -->
 ![CPU 提交可先返回，Consumer 真正读取仍等写入完成](../../assets/diagrams/ch13/ed13-01-submit-gpu-and-consumer-overlap.png)
@@ -734,13 +734,13 @@ sequenceDiagram
 
 #### MainThread、RenderThread 与 GPU 分开看
 
-固定 r1 的 [`DrawFrameTask::run()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp#89) 用 `DrawFrames <vsyncId>` 标记 RenderThread 帧区间，`<vsyncId>` 对应本帧的 FrameTimeline VSync id。该区间的 wall time 也可包含阻塞等待；它既不等于纯 CPU Running 时间，也不代表 GPU duration（GPU 执行时长）。线程状态还要区分：
+固定 r1 的 [`DrawFrameTask::run()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp#89) 用 `DrawFrames <vsyncId>` 标记 RenderThread 帧区间，`<vsyncId>` 对应本帧的 FrameTimeline VSync id。该区间的 wall time 也可包含阻塞等待，和纯 CPU Running 时间、GPU duration（GPU 执行时长）是三个不同的量。线程状态还要区分：
 
 - Running 长：线程获得 CPU 后工作量大；
 - Runnable 长：线程已可运行但没有及时上 CPU；
 - Sleeping/blocked 长：线程处于睡眠或阻塞状态，可能在等待 futex（线程同步原语）、Binder、buffer、fence 或其他资源。
 
-提高 CPU 频率消不掉所有阻塞等待。我们应把 `sched_wakeup`、`sched_switch`、线程状态、CPU frequency 和目标 slice 对齐，再讨论调度、cpuset（可运行的 CPU 集合）、uclamp（调度利用率上下限） 或 thermal（温控限制）。
+提高 CPU 频率对阻塞等待的帮助有限；要解释这些等待，我们应把 `sched_wakeup`、`sched_switch`、线程状态、CPU frequency 和目标 slice 对齐，再讨论调度、cpuset（可运行的 CPU 集合）、uclamp（调度利用率上下限） 或 thermal（温控限制）。
 
 
 #### 四个关口
@@ -752,7 +752,7 @@ sequenceDiagram
 3. `queueBuffer` 之后，`BufferTX`、latch 是否按时？
 4. App 按时交付后，SF actual、composition type、HWC/DisplayHAL 和 present 是否按时？
 
-`主线程短 + RenderThread 短 + Jank`，还不够下“SurfaceFlinger 或 HWC 问题”的结论。应同时核对 `jank_type`、`present_type`、`on_time_finish` 与 expected/actual 的区间末端；非 `None` 分类本身不等于 App 超过 deadline。固定 r1 的 [`SurfaceFrame::classifyJankLegacyLocked()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp#724) 在 App 按时完成但提前 present 时，也可能标记 `Prediction Error` 或 `SurfaceFlinger Scheduling`。GPU completion、buffer transaction、acquire fence、display prediction error 都可能发生在两个 CPU slice 之外。
+`主线程短 + RenderThread 短 + Jank` 只是起点；要下“SurfaceFlinger 或 HWC 问题”的结论，应同时核对 `jank_type`、`present_type`、`on_time_finish` 与 expected/actual 的区间末端。分类不是 `None`，App 也可能仍按时完成：固定 r1 的 [`SurfaceFrame::classifyJankLegacyLocked()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp#724) 在 App 按时完成但提前 present 时，也可能标记 `Prediction Error` 或 `SurfaceFlinger Scheduling`。GPU completion、buffer transaction、acquire fence、display prediction error 都可能发生在两个 CPU slice 之外。
 
 
 #### 用 RecyclerView 滑动校准观察顺序
@@ -765,7 +765,7 @@ sequenceDiagram
 4. BLAST 把 `BufferItem` 放入 transaction。SurfaceFlinger 计入待处理队列时 `BufferTX` 增加，latch 或 drop 后下降。
 5. SF 与 HWC 协商 composition type，DisplayFrame 与 present fence 给出显示栈时间边界；触摸到光子的完整时延还需要输入、driver 与外部测量。
 
-手指抬起进入 fling 后，RecyclerView 的 `ViewFlinger` runnable 通过 `postOnAnimation()` 继续调度，在主线程回调中调用 `OverScroller.computeScrollOffset()` 计算位移；`OverScroller` 是状态/插值对象，不是独立动画线程。INPUT 工作减少属于正常变化。该实现按本次归档的 [AndroidX RecyclerView 源码快照](https://android.googlesource.com/platform/frameworks/support/+/37226c5aa663533d0eae15507b9d3d3d3e0a7fd5/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java) 核对，目标应用仍需记录实际依赖版本。
+手指抬起进入 fling 后，RecyclerView 的 `ViewFlinger` runnable 通过 `postOnAnimation()` 继续调度，在主线程回调中调用 `OverScroller.computeScrollOffset()` 计算位移——`OverScroller` 只承担状态与插值，动画节奏仍由主线程按帧驱动。INPUT 工作减少属于正常变化。该实现按本次归档的 [AndroidX RecyclerView 源码快照](https://android.googlesource.com/platform/frameworks/support/+/37226c5aa663533d0eae15507b9d3d3d3e0a7fd5/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java) 核对，目标应用仍需记录实际依赖版本。
 
 <!-- gracker-diagram: ch13-01-41-scroll-fling -->
 ![拖动与 fling 的位移来源](../../assets/diagrams/ch13/ch13-01-41-scroll-fling.png)
@@ -781,7 +781,7 @@ FrameTimeline 从 Android 12 起为标准 App Window 提供 `SurfaceFrame` 和 `
 - `surface_frame_token` 是应用工作对应的 VSync token，同一进程的多个 layer 可以共享它；须结合 `upid` 与 `layer_name` 区分记录；
 - `display_frame_token` 关联合成后的 DisplayFrame。
 
-一个 DisplayFrame 可以包含多个进程、多个 layer 的 SurfaceFrame，两种 token 合不成一个“端到端 token”。
+一个 DisplayFrame 可以包含多个进程、多个 layer 的 SurfaceFrame；追踪端到端要同时携带 surface token 与 display token 两个标识，二者各管一段。
 
 <!-- gracker-diagram: ch13-01-42-surface-display-token -->
 ![多个 SurfaceFrame 汇入一个 DisplayFrame](../../assets/diagrams/ch13/ch13-01-42-surface-display-token.png)
@@ -796,7 +796,7 @@ FrameTimeline 从 Android 12 起为标准 App Window 提供 `SurfaceFrame` 和 `
 - actual end = `actual.ts + actual.dur`；
 - overrun = actual end - expected end，表示超出预期截止时间的时长。
 
-`SurfaceFrame::setAcquireFenceTime()` 把 App actual end 设置为 `max(acquire fence signal time, queue time)`；fence 尚未 signal 时，暂用 queue time。对标准 HWUI 窗口，actual end 因而反映 Producer 完成可读与 buffer post（提交入队） 两个时间点中较晚的一项，UI thread 返回时刻替代不了它。
+`SurfaceFrame::setAcquireFenceTime()` 把 App actual end 设置为 `max(acquire fence signal time, queue time)`；fence 尚未 signal 时，暂用 queue time。对标准 HWUI 窗口，actual end 因而反映 Producer 完成可读与 buffer post（提交入队） 两个时间点中较晚的一项；UI thread 返回时刻在这里派不上用场。
 
 
 `jank_type` 给出的是卡顿分类线索，根因还要靠对应阶段的记录来确定。`Buffer Stuffing` 要结合 dequeue wait、queued backlog、`BufferTX`、latch、release fence 和 recovery trace 来看；SQL `jank_type` 中的 `SurfaceFlinger CPU Deadline Missed`、`SurfaceFlinger GPU Deadline Missed`、`Display HAL`、`Prediction Error` 分别指向 SF CPU、SF GPU、显示 HAL 或预测误差，也要与对应的线程或硬件记录对齐。
@@ -835,7 +835,7 @@ WHERE p.name = 'com.example.app'
 ORDER BY a.ts;
 ```
 
-先把 `com.example.app` 和 `TARGET_LAYER_FROM_TRACE` 替换为现场进程名与精确 Layer 名；Layer 不保证包含包名。Actual 按 id/Layer 保留，Expected 按解析器的 `upid + surface_frame_token` 语义关联，不要求 Layer 相等；同 token 的多个 Layer 可共享一份预测。Expected 缺失、未结束或异常重复时，`overrun_ns` 为 NULL。`overrun_ns > 0` 只表示 Actual end 晚于 Expected end，不能单独说明根因；不同 Layer 的 Actual 仍应分别统计，再检查对应时窗的 CPU、GPU、BufferQueue 与 SF/HWC。
+先把 `com.example.app` 和 `TARGET_LAYER_FROM_TRACE` 替换为现场进程名与精确 Layer 名；Layer 不保证包含包名。Actual 按 id/Layer 保留，Expected 按解析器的 `upid + surface_frame_token` 语义关联，不要求 Layer 相等；同 token 的多个 Layer 可共享一份预测。Expected 缺失、未结束或异常重复时，`overrun_ns` 为 NULL。`overrun_ns > 0` 只表示 Actual end 晚于 Expected end；要落到根因，还得回到对应时窗的 CPU、GPU、BufferQueue 与 SF/HWC，不同 Layer 的 Actual 也应分别统计。
 
 <!-- gracker-diagram: ed13-01-frame-join-completeness-and-deadline -->
 ![Actual 按 Layer 保留，Expected 按进程与应用 token 唯一关联](../../assets/diagrams/ch13/ed13-01-frame-join-completeness-and-deadline.png)
@@ -857,7 +857,7 @@ Compose 改变的是 MainThread 生成 UI 内容的方式：
 - Layout 测量节点尺寸并确定放置位置；
 - Drawing 把绘制操作交给 Android Canvas/HWUI。
 
-状态在不同阶段被读取时，可能只触发对应阶段或后续阶段的必要工作，不表示每帧完整重做三阶段。`SubcomposeLayout`、Lazy layout 等可以在布局期间组合子项；intrinsic 查询与 Lookahead 也有自己的测量/预测边界。它们不能概括为“普通测量过程允许同一 child 随意反复 measure”，需按对应 Compose 实现分析阶段交错。
+状态在不同阶段被读取时，可能只触发对应阶段或后续阶段的必要工作，不表示每帧完整重做三阶段。`SubcomposeLayout`、Lazy layout 等可以在布局期间组合子项；intrinsic 查询与 Lookahead 也有自己的测量/预测边界。套用“普通测量过程允许同一 child 随意反复 measure”的概括会走偏，阶段交错要按对应的 Compose 实现逐个分析。
 
 
 判断类型时看 Producer、Surface 和 layer：
@@ -870,30 +870,30 @@ Compose 改变的是 MainThread 生成 UI 内容的方式：
 | Compose 中嵌 `TextureView` | TextureView 或混合类型 |
 | 页面主体为 WebView/Flutter 等引擎 | 对应引擎类型 |
 
-Compose Runtime、Compiler、Kotlin、BOM（集中约束依赖版本的版本清单） 和 tracing 的版本必须单独记录，用 `android-17.0.0_r1` 推断 strong skipping（跳过输入未变化的 composable）、slice 名或 compiler 行为，是推不出来的。没有 composition tracing 时，可以判断窗口级 MainThread/HWUI 成本，宿主 slice 要精确归因到某个 composable 就做不到了。
+Compose Runtime、Compiler、Kotlin、BOM（集中约束依赖版本的版本清单） 和 tracing 的版本必须单独记录，strong skipping（跳过输入未变化的 composable）、slice 名或 compiler 行为要到对应版本里自己核对，`android-17.0.0_r1` 在这里给不出答案。没有 composition tracing 时，我们能看到窗口级 MainThread/HWUI 成本；要精确归因到某个 composable，就得补上 composition tracing。
 
 
 ### 系统策略的核对方法
 
 #### ADPF hint 的效果核对
 
-ADPF（Android Dynamic Performance Framework，Android 动态性能框架）的 `PerformanceHintManager.Session` 可以报告 target/actual work duration（目标/实际工作时长）。HWUI 的 `CanvasContext` / `HintSessionWrapper` 也会管理 hint session。提示交给 Power HAL（电源硬件抽象层） 和 vendor 实现后，API 不承诺绑定固定 CPU、保持固定频率或每次都提升性能。
+ADPF（Android Dynamic Performance Framework，Android 动态性能框架）的 `PerformanceHintManager.Session` 可以报告 target/actual work duration（目标/实际工作时长）。HWUI 的 `CanvasContext` / `HintSessionWrapper` 也会管理 hint session。提示交给 Power HAL（电源硬件抽象层） 和 vendor 实现后，效果由实现决定：绑定固定 CPU、保持固定频率或每次提升性能都只是可能性，API 并未把它们承诺下来。
 
-若要证明 ADPF 产生效果，至少应对齐 session 上报、vendor hint 响应和后续调度/频率变化。只看到频率升高或只看到 API 调用，都不够。
+若要证明 ADPF 产生效果，至少应对齐 session 上报、vendor hint 响应和后续调度/频率变化；单看频率升高或 API 调用，结论立不住。
 
 
 #### HWC 路径看 composition 结果
 
 HWC 能否使用 overlay，以及是否支持某种 transform（变换）、format（像素格式）、dataspace（颜色空间与范围）、blend（混合） 或 protected content（受保护内容），取决于设备实现和当时可用资源。应查看每个 layer 的 composition type、client composition、FrameTimeline GPU composition、HWC trace 或 dumpsys。
 
-功耗下降、SF slice 变短或 present 提前，单独哪一项都证明不了目标 layer 使用 DEVICE composition。
+功耗下降、SF slice 变短或 present 提前，每一项都只是旁证；要坐实目标 layer 使用 DEVICE composition，还是回到 per-layer 的 composition type 和 HWC/GPU composition 证据。
 
 
 #### 预取的实际收益
 
 RecyclerView GapWorker、Compose Lazy prefetch（预取）、图片预热和 shader/pipeline cache 可以把能够提前确定的工作移到关键 deadline 之前，但未知的后续 UI 状态它生成不了，`INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT` 顺序也不因此改变。
 
-证明预取有效，需要看到 prefetch 工作提前执行，并且后续关键帧的 bind/measure/upload 或 pipeline creation 成本下降；只凭滑动变顺，推断不出系统“提前补帧”。
+证明预取有效，需要看到 prefetch 工作提前执行，并且后续关键帧的 bind/measure/upload 或 pipeline creation 成本下降；滑动变顺只是结果。要认定“系统提前补帧”，还得看上面两条是否成立。
 
 <!-- gracker-diagram: ch13-01-50-prefetch-critical-path -->
 ![预取把已知工作移出后续关键帧](../../assets/diagrams/ch13/ch13-01-50-prefetch-critical-path.png)
