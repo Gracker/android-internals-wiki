@@ -81,10 +81,6 @@ FrameTimeline 里的绿色帧，只说明这一帧没有被判成 jank。FrameTi
 
 再看运动本身：减速 fling（惯性滑动）的每帧位移本来就该逐渐缩小，直接计算 `Δx`（相邻帧位移）的方差，会把设计曲线里的减速也算成抖动。所以测量时我们要么比较观测轨迹与目标轨迹，要么选一个期望速度近似恒定的短时间窗口，在窗口内比较步幅。
 
-<!-- gracker-diagram: ch07-03-three-observations -->
-![帧准时、运动轨迹与跟手性的证据](../../assets/diagrams/ch07/ch07-03-three-observations.png)
-
-图：FrameTimeline 不保存对象坐标。减速运动的位移本来就变化，需要和目标曲线比较；帧分类、轨迹残差与输入到画面延迟分别回答不同问题。
 
 ### 先按现象分类
 
@@ -205,10 +201,6 @@ buffer 一侧的问题要换一层看。Buffer stuffing 描述的是生产与消
 - View 层消费后的结果，例如 RecyclerView 本帧累计 `dx/dy` 或稳定 item anchor（条目参照点）的 decorated position（含装饰偏移的位置）；
 - FrameTimeline 中的 App SurfaceFrame（应用 Surface 帧记录）与 SurfaceFlinger DisplayFrame（整屏显示帧记录）。
 
-<!-- gracker-diagram: ch07-03-four-data-streams -->
-![从模型到实际显示的四组记录](../../assets/diagrams/ch07/ch07-03-four-data-streams.png)
-
-图：先保留原始评估时间和候选呈现时间，再记录模型状态、View 消费结果及实际显示关联。UI counter 是准备状态的证据，不能把它的记录时刻直接当成像素出现时刻。
 
 这里有个容易踩的坑：UI 线程 counter 记录的只是应用在该时刻准备好的状态，像素是否已经上屏，它说了不算。要证明“用户看到的步幅”，应保留进程、layer、actual slice ID 与 surface/display token，再把应用状态关联到实际被呈现的 buffer/显示帧；同一 surface token 可能出现在多个 layer，配对时只按 token 等值是不够的。
 
@@ -263,10 +255,6 @@ FrameTimeline 从 Android 12 / API 31 起可用。在有效提交与 fence 时�
 
 两组都使用相同的布局与绘制。若 B 的轨迹残差出现与整数毫秒取值相关的周期，而 A 的残差明显减小，实验就支持时间量化假设；它验证的是我们自己的模型，RecyclerView 的感知问题是否都由 `OverScroller` 造成，还要另行验证。
 
-<!-- gracker-diagram: ch07-03-quantization-controlled-test -->
-![时间量化假设怎样做对照](../../assets/diagrams/ch07/ch07-03-quantization-controlled-test.png)
-
-图：两组使用同一帧输入时间、初始条件、运动曲线与绘制路径，分别保留 ns 和截断绝对时间到 ms。若差异随量化序列稳定出现，可支持自有模型的时间量化假设；不能外推为所有 RecyclerView 问题的根因。
 
 ### 实验 B：模型与呈现分离
 
@@ -288,10 +276,6 @@ FrameTimeline 从 Android 12 / API 31 起可用。在有效提交与 fence 时�
 
 设备是否支持固定模式要看机型；开发者选项的强制刷新率只用于实验控制，不能当成产品修复。
 
-<!-- gracker-diagram: ch07-03-refresh-phase-experiment -->
-![刷新率、起始相位与热状态的实验分组](../../assets/diagrams/ch07/ch07-03-refresh-phase-experiment.png)
-
-图：固定模式与 ARR 分组，初值和内容保持一致；起始相位、冷热状态与重复次数都要保留。设备不一定支持所需模式，开发者选项只用于实验控制，不能直接当作产品修复。
 
 ## 优化策略
 
@@ -339,19 +323,11 @@ RecyclerView 1.4.0 的 `ViewFlinger` 使用 `OverScroller`，应用没有公开 
 
 而重写 LayoutManager 或 fling，会牵动 nested scrolling（嵌套滚动）、边界回弹、无障碍、焦点和手势行为约定，维护成本很高。
 
-<!-- gracker-diagram: ch07-03-recyclerview-change-boundary -->
-![RecyclerView 的模型改造边界](../../assets/diagrams/ch07/ch07-03-recyclerview-change-boundary.png)
-
-图：RecyclerView 1.4.0 的 ViewFlinger 使用 OverScroller，未公开替换内部 time source 的注入接口。先证明量化达到可感知程度，再选择参数/行为调整、特定控件自定义路径或提交最小复现；滚动行为还要完整回归。
 
 ### 呈现节奏异常时的排查路径
 
 如果 App 模型平稳而 present 不稳，继续调插值器就没有帮助了；这时应检查 expected/actual FrameTimeline、buffer backpressure（缓冲区反压，即生产速度超过消费速度）、RenderThread/GPU、SurfaceFlinger、刷新率选择和 present fence。完整过程参见[可变刷新率与帧率选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md) 与 [标准 View/HWUI 渲染管线](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
 
-<!-- gracker-diagram: ch07-03-presentation-investigation -->
-![轨迹平稳时怎样继续追显示链](../../assets/diagrams/ch07/ch07-03-presentation-investigation.png)
-
-图：模型状态平稳仍需检查 App GPU、提交和 buffer，再沿实际就绪关系追 SurfaceFlinger/HWC 与显示。优化应对准最早异常依赖，复验实际呈现节拍和端到端响应。
 
 ## AppJankStats 与 RelativeFrameTimeHistogram
 
