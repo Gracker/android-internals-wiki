@@ -45622,9 +45622,349 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "80ea11d51c374f6b51ad307d0db46136781857edc271e8ea275b37c36a574f21",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 12,
+      "decisions": [
+        {
+          "original_id": "ch17-02-01-three-layers",
+          "title": "业务标记、方法现场与客户端框架",
+          "decision": "remove",
+          "reason": "三类工具分工重复导语和后方详细工具对照表，三列不是实际依赖或执行链。",
+          "original_line": 68,
+          "heading": "# Matrix、btrace 与 Tracing SDK"
+        },
+        {
+          "original_id": "ch17-02-02-event-contracts",
+          "title": "三类事件分别表达时间与状态",
+          "decision": "remove",
+          "reason": "三事件类型及配对规则是后续三个专节标题和解释的摘抄，无真正嵌套/重叠时间示例。",
+          "original_line": 137,
+          "heading": "### 三种事件：同步 slice、异步 slice、counter"
+        },
+        {
+          "original_id": "ch17-02-03-sync-finally",
+          "title": "同步区间的嵌套与异常闭合",
+          "decision": "remove",
+          "reason": "四框复述相邻Kotlin/Java try-finally示例，未画实际父子区间包含关系。",
+          "original_line": 180,
+          "heading": "#### 同步 slice：同一线程上的嵌套区间"
+        },
+        {
+          "original_id": "ch17-02-04-async-terminals",
+          "title": "异步跨度与实际提交终点",
+          "decision": "keep",
+          "reason": "保留跨IO与Main同步工作、外层async直到submitList返回的具体示例流程，提交完成/可见仍另定义。",
+          "original_line": 221,
+          "heading": "#### 异步 slice：跨线程、跨挂起点的逻辑跨度"
+        },
+        {
+          "original_id": "ch17-02-05-bounded-names",
+          "title": "稳定名称与UTF16长度合同",
+          "decision": "remove",
+          "reason": "稳定词典、有限枚举、保留字符与127UTF16限制重复命名表和完整规则段落。",
+          "original_line": 275,
+          "heading": "### 命名是一份可维护的诊断协议"
+        },
+        {
+          "original_id": "ch17-02-06-a17-call-path",
+          "title": "Android17经典Trace调用链",
+          "decision": "keep",
+          "reason": "保留AndroidX到平台Trace、JNI和A17tracing_perfetto跨层调用，区分旧trace_marker描述。",
+          "original_line": 297,
+          "heading": "### Android 17 的同步调用链"
+        },
+        {
+          "original_id": "ch17-02-07-visibility-and-versions",
+          "title": "制品下限、进程允许与采集会话",
+          "decision": "remove",
+          "reason": "制品/进程允许/采集会话三列重复详细API版本权限表及会话配置清单。",
+          "original_line": 325,
+          "heading": "### 版本与采集可见性"
+        },
+        {
+          "original_id": "ch17-02-08-lazy-label",
+          "title": "lazy label只延迟诊断计算",
+          "decision": "remove",
+          "reason": "lazy流程只画启用路径，没有画禁用直达业务分支；相邻短代码与明确始终执行业务段落更准确且足够。",
+          "original_line": 358,
+          "heading": "### 开销控制：少而稳定，动态内容延迟计算"
+        },
+        {
+          "original_id": "ch17-02-09-native-same-thread",
+          "title": "Native RAII与跨线程关联",
+          "decision": "remove",
+          "reason": "三列同线程JNI/RAII/跨线程规则重复20行RAII代码和两段配对解释，无实际嵌套与flow实例。",
+          "original_line": 394,
+          "heading": "### Native 标注：与 Java 使用同一套名称"
+        },
+        {
+          "original_id": "ch17-02-10-inprocess-output",
+          "title": "系统标记与进程内输出的生命周期",
+          "decision": "remove",
+          "reason": "经典/core抽象/wire三列重复详细工具表及分包说明，未画driver持有与sink输出的结构关系。",
+          "original_line": 418,
+          "heading": "### 与 Perfetto SDK、btrace、Macrobenchmark 的分工"
+        },
+        {
+          "original_id": "ch17-02-11-shared-stage-index",
+          "title": "业务阶段映射与JankStats状态清理",
+          "decision": "keep",
+          "reason": "保留统一阶段词典下进入写state、离开关闭/清理到线上入口和线下复现的生命周期，防止过期场景状态污染后续帧。",
+          "original_line": 443,
+          "heading": "### 与线上指标建立同名索引"
+        },
+        {
+          "original_id": "ch17-02-12-reading-and-sql",
+          "title": "slice身份、未闭合区间与CPU归因",
+          "decision": "remove",
+          "reason": "阅读顺序和dur/身份检查重复六步清单、SQL及完整字段解释，没有实际查询结果图。",
+          "original_line": 478,
+          "heading": "### 在 Perfetto 里的阅读顺序"
+        },
+        {
+          "original_id": "ch17-02-13-btrace-compat-gates",
+          "title": "btrace固定源码的兼容性证据",
+          "decision": "remove",
+          "reason": "tag/Maven、旧ART符号、ELF三列重复兼容性四项详细证据列表，原文风险与实测限制更精确。",
+          "original_line": 545,
+          "heading": "### 官方产物在 Android 17 上的兼容现状"
+        },
+        {
+          "original_id": "ch17-02-14-hook-sampling",
+          "title": "Hook点、间隔门槛与手动采样",
+          "decision": "keep",
+          "reason": "保留Hook或手动入口、最小间隔/force、私有抓栈、缓冲到停止后符号化的实际采样链。",
+          "original_line": 563,
+          "heading": "### 3.0 的运行时 Hook 与同步抓栈"
+        },
+        {
+          "original_id": "ch17-02-15-capture-control-data",
+          "title": "PC控制、App样本与系统trace合并",
+          "decision": "keep",
+          "reason": "保留PC控制路径与App样本路径，以及独立系统trace汇入pb的双支数据流，文件存在不保证样本完整。",
+          "original_line": 577,
+          "heading": "### 从构建到 Perfetto 的采集链"
+        },
+        {
+          "original_id": "ch17-02-16-btrace-package-switch",
+          "title": "真实库、noop与初始化范围",
+          "decision": "remove",
+          "reason": "真实/noop选择后只画真实初始化链，没有noop分支；构建if/else代码和主进程/单次初始化说明更直接。",
+          "original_line": 614,
+          "heading": "#### 接入包要有明确开关"
+        },
+        {
+          "original_id": "ch17-02-17-perfetto-vs-simple",
+          "title": "两种模式的系统证据差异",
+          "decision": "remove",
+          "reason": "两种模式和显式选择三列重复五行完整对照表及README差异段落，系统trace输入已在图15独立分支表示。",
+          "original_line": 649,
+          "heading": "### perfetto 与 simple 模式"
+        },
+        {
+          "original_id": "ch17-02-18-parameters-and-loss",
+          "title": "参数改变可见性与丢失风险",
+          "decision": "remove",
+          "reason": "间隔/缓冲/等待三列重复完整参数表，无采样丢失量或覆盖时间实例。",
+          "original_line": 671,
+          "heading": "### 参数决定“能看到什么”"
+        },
+        {
+          "original_id": "ch17-02-19-wall-versus-cpu",
+          "title": "墙钟跨度与线程调度状态",
+          "decision": "remove",
+          "reason": "Running/Runnable/Sleep三列只是邻近六步调度阅读说明，30ms/4ms示例并未在图中画出，文字更清楚。",
+          "original_line": 689,
+          "heading": "### Perfetto UI 要从线程状态读起"
+        },
+        {
+          "original_id": "ch17-02-20-cold-start-coverage",
+          "title": "SDK初始化前后的冷启动覆盖",
+          "decision": "keep",
+          "reason": "保留fork/bind到SDK初始化后Provider/Application/Activity首帧的覆盖先后关系，早期系统证据不能由后期样本补齐。",
+          "original_line": 716,
+          "heading": "### 冷启动案例"
+        },
+        {
+          "original_id": "ch17-02-21-frame-window",
+          "title": "列表提交、Java工作与呈现分阶段",
+          "decision": "remove",
+          "reason": "Main/RT/系统呈现三列重复紧邻帧边界四条说明，没有实际deadline与线程交错时间线。",
+          "original_line": 744,
+          "heading": "### 列表滑动案例"
+        },
+        {
+          "original_id": "ch17-02-22-porting-acceptance",
+          "title": "私有Hook移植的交付门槛",
+          "decision": "remove",
+          "reason": "移植五框是紧邻十项验收清单的缩写，不增加具体符号/ABI或页面映射机制。",
+          "original_line": 789,
+          "heading": "### Android 17 移植与验收"
+        },
+        {
+          "original_id": "ch17-02-23-matrix-origins",
+          "title": "Matrix模块按观测来源解读",
+          "decision": "remove",
+          "reason": "三模块来源与局限重复前方十行模块观测表，模块各自机制后续已单独保留。",
+          "original_line": 832,
+          "heading": "### 按“数据来源”理解模块"
+        },
+        {
+          "original_id": "ch17-02-24-matrix-agp",
+          "title": "Matrix旧Transform与task模式的依赖",
+          "decision": "keep",
+          "reason": "保留inject先无条件注册旧Transform，再afterEvaluate选择模式的真实顺序，解释切task仍不能绕开已删API。",
+          "original_line": 858,
+          "heading": "#### 构建插件的 AGP 兼容性"
+        },
+        {
+          "original_id": "ch17-02-25-matrix-static-runtime",
+          "title": "现代构建、16KB产物与Hook运行",
+          "decision": "remove",
+          "reason": "现代构建/产物/运行三列重复两个门槛专节，静态与目标采集验收限制完整保留。",
+          "original_line": 869,
+          "heading": "#### 预编译 native 库与 16 KB page size"
+        },
+        {
+          "original_id": "ch17-02-26-matrix-lifecycle",
+          "title": "Matrix build与安装单例的不同副作用",
+          "decision": "keep",
+          "reason": "保留builder.build期间plugin.init副作用先于Matrix.init安装单例，及显式启动依赖顺序。",
+          "original_line": 878,
+          "heading": "### 接入结构：注册、build 初始化、安装单例、启动"
+        },
+        {
+          "original_id": "ch17-02-27-method-map-window",
+          "title": "方法映射、缓存时钟与消息窗口",
+          "decision": "keep",
+          "reason": "保留构建方法ID映射到i/o探针、缓存毫秒ringbuffer、Looper窗口和构建匹配解码的完整链。",
+          "original_line": 936,
+          "heading": "### Trace Canary：插桩记录与 Looper 窗口如何配合"
+        },
+        {
+          "original_id": "ch17-02-28-io-aggregation",
+          "title": "限定IO入口与聚合字段的含义",
+          "decision": "keep",
+          "reason": "保留限定运行库主线程IO open/read/write/close到检测器的生命周期，区分请求字节/首次类型/open栈/调用累计。",
+          "original_line": 957,
+          "heading": "### IO Canary 的覆盖范围"
+        },
+        {
+          "original_id": "ch17-02-29-closeguard-state",
+          "title": "CloseGuard安装尝试与停止状态",
+          "decision": "keep",
+          "reason": "保留CloseGuard保存Reporter、安装尝试、泄漏Issue和停止恢复Reporter但强制enabled=false的状态变更，揭示恢复不完整。",
+          "original_line": 964,
+          "heading": "### IO Canary 的覆盖范围"
+        },
+        {
+          "original_id": "ch17-02-30-activity-to-hprof",
+          "title": "Activity弱引用复检与堆分析分离",
+          "decision": "keep",
+          "reason": "保留Activity销毁弱引用、GC请求复检、存活候选到独立dump mode/预算和Hprof分析的两阶段生命周期。",
+          "original_line": 992,
+          "heading": "### Resource Canary：Activity 观察和 Hprof 分开看"
+        },
+        {
+          "original_id": "ch17-02-31-native-modules",
+          "title": "行为、分配与抽样保护的证据差异",
+          "decision": "remove",
+          "reason": "Battery/Memory/Pthread/MemGuard三列重复紧邻四模块风险表，原文包含commit前安装及采样范围细节。",
+          "original_line": 1012,
+          "heading": "### Battery、Memory Hook、MemGuard 与 Pthread Hook"
+        },
+        {
+          "original_id": "ch17-02-32-issue-envelope",
+          "title": "Issue外层协议、符号与采样分母",
+          "decision": "remove",
+          "reason": "外层协议与映射归档流程重复字段表、JSON和图27精确构建解码链；归档不是逐事件必经串行阶段。",
+          "original_line": 1059,
+          "heading": "### 报告入库：原始 Issue 之外再建稳定协议"
+        },
+        {
+          "original_id": "ch17-02-33-io-envelope",
+          "title": "IO协议中的观测量与推断边界",
+          "decision": "remove",
+          "reason": "三列观测/单位/推断重复合成JSON及原字段/累计跨度解释，真实IO聚合机制已保留图28。",
+          "original_line": 1086,
+          "heading": "### 报告入库：原始 Issue 之外再建稳定协议"
+        },
+        {
+          "original_id": "ch17-02-34-matrix-system-causality",
+          "title": "从Matrix候选到系统机制对照",
+          "decision": "remove",
+          "reason": "五框重复紧邻五条竞争解释与受控复现段落，是通用候选到对照回归摘要，无额外Matrix机制。",
+          "original_line": 1103,
+          "heading": "### 从 Matrix 样本到系统时间线"
+        },
+        {
+          "original_id": "ch17-02-35-release-contract",
+          "title": "从构建归档到关闭恢复的上线闭环",
+          "decision": "remove",
+          "reason": "发布五框重复紧邻十二项上线检查清单，具体构建、映射与生命周期机制图已保留。",
+          "original_line": 1110,
+          "heading": "### 上线前检查表"
+        }
+      ],
+      "sha256_after": "81b9fa6c250c1b4af79de924fdfa3ff7037a9cc8858a816c7e036f5b486e6cdf",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:30:12.737118+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a177/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a177/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 177,
+        "article": "src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
+        "registered_sha256": "80ea11d51c374f6b51ad307d0db46136781857edc271e8ea275b37c36a574f21",
+        "frozen_sha256": "80ea11d51c374f6b51ad307d0db46136781857edc271e8ea275b37c36a574f21",
+        "review_input_sha256": "497d630692f08a6735ae946c7e64dda912cf5226e03c252865d613f38b44d3d1",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a177/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a177/external-source.diff",
+        "diff_sha256": "2a98f5c3bfe7944d024ad4741b516a7191150e5bf22b34ae7b8d017ea8f55dba",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 585, \"characters\": 51886, \"svg_labels_read\": 35, \"actual_pngs_viewed\": 35, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 17, \"code_lines\": 194, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "497d630692f08a6735ae946c7e64dda912cf5226e03c252865d613f38b44d3d1",
+      "retired_diagrams": [
+        "ch17-02-01-three-layers",
+        "ch17-02-02-event-contracts",
+        "ch17-02-03-sync-finally",
+        "ch17-02-05-bounded-names",
+        "ch17-02-07-visibility-and-versions",
+        "ch17-02-08-lazy-label",
+        "ch17-02-09-native-same-thread",
+        "ch17-02-10-inprocess-output",
+        "ch17-02-12-reading-and-sql",
+        "ch17-02-13-btrace-compat-gates",
+        "ch17-02-16-btrace-package-switch",
+        "ch17-02-17-perfetto-vs-simple",
+        "ch17-02-18-parameters-and-loss",
+        "ch17-02-19-wall-versus-cpu",
+        "ch17-02-21-frame-window",
+        "ch17-02-22-porting-acceptance",
+        "ch17-02-23-matrix-origins",
+        "ch17-02-25-matrix-static-runtime",
+        "ch17-02-31-native-modules",
+        "ch17-02-32-issue-envelope",
+        "ch17-02-33-io-envelope",
+        "ch17-02-34-matrix-system-causality",
+        "ch17-02-35-release-contract"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-177/retired-assets.json"
     },
     {
       "index": 178,
@@ -46694,8 +47034,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 109,
-  "next_article": "src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
+  "reviewed_articles": 110,
+  "next_article": "src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -46705,7 +47045,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:27:16.974875+08:00",
+  "updated_at": "2026-10-31T14:30:12.737118+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -46761,13 +47101,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
-      "registered_sha256": "80ea11d51c374f6b51ad307d0db46136781857edc271e8ea275b37c36a574f21",
-      "observed_sha256": "497d630692f08a6735ae946c7e64dda912cf5226e03c252865d613f38b44d3d1",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -47002,9 +47335,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3658,
-  "reviewed_placements_after": 1598,
-  "net_removed_placements": 2060,
+  "reviewed_placements_before": 3693,
+  "reviewed_placements_after": 1610,
+  "net_removed_placements": 2083,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -47028,5 +47361,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 109
+  "currently_matching_reviewed_source_count": 110
 }
