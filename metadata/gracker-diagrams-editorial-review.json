@@ -41767,9 +41767,230 @@
       "before_count": 23,
       "before_all_images": 23,
       "sha256_before": "89571babf17e9c76039cc20357e685e40ead8472dafe512fc37eb8c5eac4e0cd",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "ch15-11-01-async-display",
+          "title": "提交、采纳与完成的异步依赖",
+          "decision": "keep",
+          "reason": "CPU提交分别通向GPU完成与queueBuffer，latch与写完成双条件汇入Consumer读，再合成与present的真实异步依赖拓扑独立，避免强制GPU完成先于入队/latch。",
+          "original_line": 108,
+          "heading": "### 显示时间线与数据来源"
+        },
+        {
+          "original_id": "ch15-11-02-evidence-depth",
+          "title": "从系统异常窗口深入到帧内资源",
+          "decision": "remove",
+          "reason": "三框逐项摘要127行先系统时间窗再单变量实验最后帧资源的顺序，未画异常帧实际关联，原步骤与counter限制保留。",
+          "original_line": 129,
+          "heading": "### 工具按证据深度分层"
+        },
+        {
+          "original_id": "ch15-11-03-gpu-data-sources",
+          "title": "GPU 数据源分别观察什么",
+          "decision": "remove",
+          "reason": "ftrace/renderstages/counters三列复制143–150更完整数据源/用途/不能推出结论表，所有descriptor/producer/内核事件与厂商单位区别全文留。",
+          "original_line": 138,
+          "heading": "### Perfetto 的 GPU 数据源"
+        },
+        {
+          "original_id": "ch15-11-04-config-to-producer",
+          "title": "配置请求到实际 GPU 轨道",
+          "decision": "remove",
+          "reason": "查询能力→请求配置→看结果三框复写152–180TraceConfig与必要条件段落，未画具体缺源失败或producer数据链，代码及lowoverhead默认/合并条件全留。",
+          "original_line": 182,
+          "heading": "### Perfetto 的 GPU 数据源"
+        },
+        {
+          "original_id": "ch15-11-05-counter-scope",
+          "title": "计数器 ID、语义与对照条件",
+          "decision": "remove",
+          "reason": "三框逐项压缩206–220descriptor作用域、厂商语义与同设备A/B条件，未画实际ID或counter反例，全部全局/序列ID差别与无通用阈值说明保留。",
+          "original_line": 222,
+          "heading": "#### 频率、利用率和带宽怎么读"
+        },
+        {
+          "original_id": "ch15-11-06-apa-tool-paths",
+          "title": "APA 与固定 AGI 的三条分析路径",
+          "decision": "remove",
+          "reason": "APA系统/APAcanaryGFXR/AGIgfxtrace三列重复246–268完整不同数据与执行链说明，后文AGI原生架构和7重放实际流程更具体，所有模式/通道/设备范围留。",
+          "original_line": 256,
+          "heading": "### Android Performance Analyzer（APA）"
+        },
+        {
+          "original_id": "ch15-11-07-apa-replay-measurement",
+          "title": "APA canary 的重放测量条件",
+          "decision": "keep",
+          "reason": "GFXR捕获→compute最高频预热→最多100次过滤污染后平均→可导出rdc的真实实验链独立，明确不是原App自然一帧性能。",
+          "original_line": 263,
+          "heading": "### Android Performance Analyzer（APA）"
+        },
+        {
+          "original_id": "ch15-11-08-native-gles-angle",
+          "title": "原生 GLES 与 ANGLE 捕获的区别",
+          "decision": "keep",
+          "reason": "原生GLES、GLES经ANGLE转Vulkan捕获、原生Vulkan直接捕获三条真实后端路线对应独立，原生driver异常不能由换backend自动等价复现。",
+          "original_line": 287,
+          "heading": "#### OpenGL ES（GLES） on ANGLE"
+        },
+        {
+          "original_id": "ch15-11-09-profiling-access",
+          "title": "profileable、调试包与设备能力",
+          "decision": "remove",
+          "reason": "profileable/debuggable或root/设备能力三列复写340–353权限与注入条件段落，未画实际权限判断分支，全部非自动获得数据源与低扰动/注入结果分开条件留。",
+          "original_line": 355,
+          "heading": "### `profileable`、`debuggable` 与 root"
+        },
+        {
+          "original_id": "ch15-11-10-bottleneck-experiments",
+          "title": "瓶颈假设与单变量实验",
+          "decision": "remove",
+          "reason": "三类实验卡片摘要362–382五个瓶颈小节，没有真实改变量与stage/counter测量对照，详细单变量方法、CPU提交/队列/热条件全文留。",
+          "original_line": 384,
+          "heading": "#### 怀疑热限制"
+        },
+        {
+          "original_id": "ch15-11-11-baseline-capture-replay",
+          "title": "正常运行、详细捕获与重放分别记录",
+          "decision": "remove",
+          "reason": "基线/capture/replay三列重述389–400扰动与报告字段和产品帧率不同采集段落，无真实时间窗对比；全部包类型/backend/validation/频率不可混比边界留。",
+          "original_line": 402,
+          "heading": "### 捕获扰动与报告要求"
+        },
+        {
+          "original_id": "ch15-11-12-platform-tool-version",
+          "title": "平台注入机制与 AGI 工具分别固定",
+          "decision": "remove",
+          "reason": "平台tag/AGItag/设备三列复写433–442版本分层两条清单，固定提交非同名branch与真机验证文本原样留，删版本检查卡片。",
+          "original_line": 444,
+          "heading": "### 版本边界：分别确定 Android 平台与 AGI 工具版本"
+        },
+        {
+          "original_id": "ch15-11-13-host-device-architecture",
+          "title": "AGI 捕获与重放的主机设备分工",
+          "decision": "remove",
+          "reason": "PNG捕获→主机→设备重放链与紧邻原生主机/Android设备分组架构重复，保留原生全部Loader/App/Spy/GAPIC/GAPIS/gfxtrace/GAPIR/driver双向结果路径和原图引导，不放第二套概览。",
+          "original_line": 503,
+          "heading": "### System Profile 与 Frame Profile 的分工"
+        },
+        {
+          "original_id": "ch15-11-14-layer-injection",
+          "title": "从全局选择到进程内拦截",
+          "decision": "keep",
+          "reason": "四global键→目标loader权限与ABI→GraphicsSpy wrapper→dlopen同目录libgapii转发地址查询的真实装载责任链独立，JSON与Android导出名区别保留。",
+          "original_line": 535,
+          "heading": "#### GraphicsSpy 是 wrapper（薄封装层），拦截实现位于 libgapii"
+        },
+        {
+          "original_id": "ch15-11-15-package-process-pid",
+          "title": "包、进程名与 PID 的选择范围",
+          "decision": "remove",
+          "reason": "package→procname→PID三框逐项重述547–549参数作用域，无真实不匹配NullWriter条件分支；原空值接受/匹配失败无连接/PID仅确认全文留。",
+          "original_line": 551,
+          "heading": "#### `debug.agi.procname` 的进程过滤"
+        },
+        {
+          "original_id": "ch15-11-16-capture-handshake",
+          "title": "连接、参数与帧边界捕获",
+          "decision": "keep",
+          "reason": "设备5字节gapii握手、主机28字节spy0连接头、6字节消息头到帧边界初态/命令记录/Endflush的真实协议层与捕获顺序独立，不把几种头部混为一个。",
+          "original_line": 588,
+          "heading": "### 一帧捕获从连接到结束发生了什么"
+        },
+        {
+          "original_id": "ch15-11-17-protopack-container",
+          "title": "ProtoPack 的类型、对象与父子关系",
+          "decision": "remove",
+          "reason": "四框将605–627容器magic/chunk类型先于对象/父回指/内容两段和清单重新排成流程，没有真实记录结构或父子树实例；16字节magic/变长chunk/非单proto/非自动压缩随机恢复说明全留。",
+          "original_line": 615,
+          "heading": "### `.gfxtrace` 的内容与边界"
+        },
+        {
+          "original_id": "ch15-11-18-mutate-versus-replay",
+          "title": "主机状态演算与真实 GPU 执行",
+          "decision": "keep",
+          "reason": "capture读取、GAPIS CPU mutate可得绑定逻辑状态、命令opcode→GAPIR driver真实图形结果三种实际计算分工对应独立，强调mutate不计算像素。",
+          "original_line": 666,
+          "heading": "#### GAPIR：在目标设备 driver 上执行"
+        },
+        {
+          "original_id": "ch15-11-19-replay-resource-budget",
+          "title": "按需传输与设备资源预算",
+          "decision": "keep",
+          "reason": "replay资源ID→GAPIR cache或向GAPIS取缺资源→设备重建buffer/texture的真实按需数据链独立，传输减少不保证不OOM。",
+          "original_line": 673,
+          "heading": "#### GAPIR：在目标设备 driver 上执行"
+        },
+        {
+          "original_id": "ch15-11-20-frame-investigation",
+          "title": "从重 pass 到资源与 shader",
+          "decision": "remove",
+          "reason": "五步重画701–706六条视图分析清单，未画具体draw/attachment/driver异常；全部视图来源与单变量验证及回正常运行核对fencepresent原文留。",
+          "original_line": 708,
+          "heading": "### Frame Profiler 的视图与分析路径"
+        },
+        {
+          "original_id": "ch15-11-21-capture-coverage",
+          "title": "应用抓帧与系统显示证据的接点",
+          "decision": "remove",
+          "reason": "四框显示路径重复1更准确的异步依赖拓扑、717完整箭头链与728–734覆盖表，本图线性总览未增作用域；保留同帧buffer身份、非光学present与CLIENT系统GPU额外成本全文。",
+          "original_line": 721,
+          "heading": "#### Frame Profile 的覆盖终点"
+        },
+        {
+          "original_id": "ch15-11-22-capture-failure-chain",
+          "title": "按连接、窗口和重放分别排错",
+          "decision": "remove",
+          "reason": "三种失败到核对条件的三列摘要751–771连接/空文件/replay完整排错清单，没有实际新条件分支，所有API/backend/ABI/socket/extension与允许尝试不证正确边界留。",
+          "original_line": 775,
+          "heading": "#### replay 与原画面不同或崩溃"
+        },
+        {
+          "original_id": "ch15-11-23-restore-debug-settings",
+          "title": "采集前快照与采集后恢复",
+          "decision": "remove",
+          "reason": "保存→恢复→重启验证三框与782–795原值恢复条件和清理命令同义，未画具体原存在/缺失两分支；所有共享设置不可无条件删、跨重启残留和属性空值要求完整留。",
+          "original_line": 797,
+          "heading": "#### 清理残留设置"
+        }
+      ],
+      "sha256_after": "d5d470ec1e81dcaba01f536b7c4ecf70d08b4d30ef74c5f7f428589f3652226c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:26:07.269819+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 23,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a159/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a159/visual-review.json",
+      "retired_diagrams": [
+        "ch15-11-02-evidence-depth",
+        "ch15-11-03-gpu-data-sources",
+        "ch15-11-04-config-to-producer",
+        "ch15-11-05-counter-scope",
+        "ch15-11-06-apa-tool-paths",
+        "ch15-11-09-profiling-access",
+        "ch15-11-10-bottleneck-experiments",
+        "ch15-11-11-baseline-capture-replay",
+        "ch15-11-12-platform-tool-version",
+        "ch15-11-13-host-device-architecture",
+        "ch15-11-15-package-process-pid",
+        "ch15-11-17-protopack-container",
+        "ch15-11-20-frame-investigation",
+        "ch15-11-21-capture-coverage",
+        "ch15-11-22-capture-failure-chain",
+        "ch15-11-23-restore-debug-settings"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-159/retired-assets.json"
     },
     {
       "index": 160,
@@ -43015,8 +43236,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 93,
-  "next_article": "src/part3-tools/ch15-other-tools/11-gpu-debug-agi-frame-analysis.md",
+  "reviewed_articles": 94,
+  "next_article": "src/part3-tools/ch15-other-tools/12-gpu-counter-memory-observability.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -43026,7 +43247,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:21:23.956729+08:00",
+  "updated_at": "2026-10-31T13:26:07.269819+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -43386,9 +43607,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3302,
-  "reviewed_placements_after": 1488,
-  "net_removed_placements": 1814,
+  "reviewed_placements_before": 3325,
+  "reviewed_placements_after": 1495,
+  "net_removed_placements": 1830,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -43412,5 +43633,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 93
+  "currently_matching_reviewed_source_count": 94
 }
