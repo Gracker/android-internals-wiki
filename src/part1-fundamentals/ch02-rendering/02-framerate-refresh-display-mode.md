@@ -4,8 +4,11 @@ chapter: '2.2'
 section: '2.2'
 status: finalized
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
-last_verified: '2026-08-24'
-last_verified_against: 'AOSP android-17.0.0_r1: Choreographer/Display/View/ViewGroup/Window/Surface/SurfaceControl/FrameMetrics, SurfaceFlinger RefreshRateSelector/LayerHistory/Scheduler/FrameTimeline; Composer3 ARR AIDL; kernel android17-6.18-2026-06_r6 DRM vblank boundary; Writer rendering_pipelines S01/S02/S13'
+last_verified: '2026-10-30'
+last_source_verified_at: '2026-10-30T14:46:17+08:00'
+last_idle_audit_at: '2026-10-30T14:46:17+08:00'
+last_verified_against: 'AOSP android-17.0.0_r1: Surface/Display, LayerHistory, RefreshRateSelector.h/.cpp, DisplayModeController, SurfaceFlinger; kernel android17-6.18-2026-06_r6 drm_vblank.c; Perfetto FrameTimeline; Android Developers Frame rate; Khronos vkQueuePresentKHR'
+verification_scope_note: '通读正文并抽检候选生成、投票、模式切换、FrameTimeline 支持范围、Surface 生命周期与显示内核边界；未做设备时延、功耗或厂商面板行为实测。'
 confidence: high
 sources:
 - type: official
@@ -184,6 +187,8 @@ sources:
   path: frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp
 - type: aosp
   path: frameworks/native/libs/nativewindow/include/android/native_window.h
+- type: official
+  path: https://docs.vulkan.org/refpages/latest/refpages/source/vkQueuePresentKHR.html
 tags:
   - framerate
   - refresh-rate
@@ -222,7 +227,7 @@ consolidated_from:
 
 > 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；内核 `android17-6.18-2026-06_r6`。
 
-下文说明这些量如何进入 Choreographer、Layer（图层）History、RefreshRateSelector、FrameTimeline 和 HWC（Hardware Composer，硬件合成器）；涉及 Linux 显示子系统 DRM/KMS（Direct Rendering Manager / Kernel Mode Setting） 与 VBlank 的通用机制时，见后文内核部分。
+下文说明这些量如何进入 Choreographer、`LayerHistory`（图层历史记录）、RefreshRateSelector、FrameTimeline 和 HWC（Hardware Composer，硬件合成器）；涉及 Linux 显示子系统 DRM/KMS（Direct Rendering Manager / Kernel Mode Setting） 与 VBlank 的通用机制时，见后文内核部分。
 
 应用帧率、显示刷新率和物理显示模式各有自己的控制路径。系统先收集内容需求和设备约束，再选择模式并安排切换；掉帧、抖动与功耗问题需要分别检查帧生产、模式评分和切换时序。
 
@@ -637,13 +642,15 @@ Android 17 的 Choreographer/HWUI 还包含 buffer stuffing recovery（积压恢
 
 API 37 增加 `Surface.setProducerThrottlingEnabled(boolean)`，用于控制 Vulkan/EGL Producer 的 CPU throttling（主动阻塞生产线程以限制提交速度）。默认机制会在 Consumer 仍处理前一缓冲区时给 Producer 施加背压。
 
-这个 API 管的是队列节拍，既不负责选择刷新率，也代替不了 frame pacing。官方建议 Vulkan Producer 在具备正确显式同步时关闭默认 throttling，避免把 `vkPresentKHR()` 中的 CPU stall（阻塞等待） 当成 Producer/Consumer 同步；队列耗尽时的自然 dequeue 背压仍会发生。异步模式下 throttling 始终启用，此开关没有效果。
+这个 API 管的是队列节拍，既不负责选择刷新率，也代替不了 frame pacing。官方建议 Vulkan Producer 在具备正确显式同步时关闭默认 throttling，避免把 `vkQueuePresentKHR()` 中的 CPU stall（阻塞等待） 当成 Producer/Consumer 同步；队列耗尽时的自然 dequeue 背压仍会发生。异步模式下 throttling 始终启用，此开关没有效果。
 
 ### 7. Janky、late、dropped 与 missed
 
 这些词在口语中经常混用，诊断时我们还是要回到工具字段。
 
 #### 7.1 FrameTimeline 的两类帧
+
+Perfetto 的 FrameTimeline 数据源要求 Android 12 / API 31 及以上。[官方文档](https://perfetto.dev/docs/data-sources/frametimeline)目前明确注明尚不支持 `SurfaceView`；分析独立 `SurfaceView`、视频或游戏输出时，应核对它自己的 Layer、buffer 时间戳、fence、HWC 与 present，不能用宿主 HWUI 窗口的时间线代替。
 
 FrameTimeline 同时描述：
 
@@ -673,7 +680,7 @@ Expected timeline 是调度器给该帧的预期时间窗口，Actual timeline �
 | 蓝色 | 丢帧（dropped frame） |
 | 浅绿色 | 高延迟状态（high-latency state），节拍可能稳定但整体呈现偏晚 |
 
-颜色是 UI 辅助。结论应读取 `jank（卡顿）_type`（异常原因分类）、`present_type`（呈现结果类型）、`on_time_finish`（是否按期完成）、Layer 名称和对应的 flow（Perfetto 中连接相关事件的因果线）。
+颜色是 UI 辅助。结论应读取 `jank_type`（卡顿类型，即异常原因分类）、`present_type`（呈现结果类型）、`on_time_finish`（是否按期完成）、Layer 名称和对应的 flow（Perfetto 中连接相关事件的因果线）。
 
 #### 7.4 Janky 的判定条件
 
@@ -889,7 +896,7 @@ Swappy 或引擎 pacing 应根据这些数据选择 swap interval，而不是每
 
 RefreshRateSelector 在 policy 允许的候选中给 Layer 投票评分排序，Composer HAL 再把所选配置或 present 时机交给设备实现。再往下可能涉及 vendor display driver、面板 TE、DRM/KMS（Linux 的显示与模式设置框架）、VBlank、时钟和电源管理。DRM/KMS 是 Linux 内核的显示设备与模式设置框架，VBlank 是一次扫描结束到下一次扫描开始之间的垂直消隐事件。
 
-在 `android17-6.18-2026-06_r6` 中，`drivers/gpu/drm/drm_vblank（垂直消隐期）.c` 与 `include/drm/drm_vblank.h` 提供通用 DRM VBlank 计数、事件和时间戳机制。但要注意：
+在 `android17-6.18-2026-06_r6` 中，`drivers/gpu/drm/drm_vblank.c`（垂直消隐期相关实现）与 `include/drm/drm_vblank.h` 提供通用 DRM VBlank 计数、事件和时间戳机制。但要注意：
 
 - Android 设备不保证都用相同 DRM 驱动路径；
 - common kernel 不包含所有 vendor 面板与显示控制器实现；
@@ -900,7 +907,7 @@ RefreshRateSelector 在 policy 允许的候选中给 Layer 投票评分排序，
 
 - Composer HAL 调用与返回；
 - display mode/refresh callbacks；
-- vendor display tracepoint（显示驱动跟踪事件点）s（内核或驱动记录的显示事件点）；
+- vendor display tracepoints（显示驱动跟踪事件点，用于记录内核或驱动中的显示事件）；
 - DRM VBlank/page-flip 事件（设备支持时）；page-flip 表示显示控制器切换到另一扫描缓冲区；
 - present fence；
 - 面板或外接显示器的硬件测量。
@@ -1259,7 +1266,7 @@ Choreographer.getInstance().postVsyncCallback(frameData -> {
 
 滑动期间应用节拍变短，fling 减速后逐步变长，同时 FrameTimeline 没有连续 jank，通常符合 ARR 策略。若 mode change 附近出现黑屏或长间隔，更接近传统 MRR 的非无缝切换。若 Producer 已经晚交 buffer，刷新率变化只是背景条件，根因就别写到 SurfaceFlinger 选错档位上。
 
-Perfetto 官方文档目前对 SurfaceView 的 FrameTimeline 支持有限。标准 HWUI 应用窗口可以优先查看应用的 actual/expected timeline；SurfaceView、视频和游戏还需要核对独立 Layer、buffer timestamp、fence、HWC 与 present。
+Perfetto 官方文档注明尚不支持 SurfaceView 的 FrameTimeline。标准 HWUI 应用窗口可以优先查看应用的 actual/expected timeline；SurfaceView、视频和游戏还需要核对独立 Layer、buffer timestamp、fence、HWC 与 present。
 
 #### 6.3 用正确的键关联 expected/actual FrameTimeline
 
@@ -1873,7 +1880,7 @@ MRR 在多个固定刷新率模式之间切换，VRR 允许显示器在可变范
 
 - 帧率覆盖关闭时，只生成除数 1，也就是渲染节拍与物理频率相同；
 - 没有 VRR 配置的模式按 VSYNC 频率的整数除数枚举；除数大于 1 时，低于 20 Hz 的候选会被截掉；
-- 有 VRR 配置的模式先使用除数集合 `{1, 2, 5, 10, 15, 20, 24, 30, 48, 60}`，再加入范围端点，并在最大间隙中补充候选，最多形成 15 个除数；
+- 有 VRR 配置的模式先使用帧率锚点 `{1, 2, 5, 10, 15, 20, 24, 30, 48, 60} Hz`，加入允许范围的端点，并过滤范围或峰值之外的锚点；每个锚点再按 `round(vsyncRate / anchorFps)` 转成整数除数，去重后在较大的帧率间隙中补充候选，目标数量为 15；
 - 同一个渲染帧率、同一个组出现多个物理模式时，通常保留物理峰值更低的那个；主物理范围是单值时，优先保留该范围内的模式。
 
 这里的 VRR 候选不表示面板能在 1 Hz 到 120 Hz 之间任意连续取值。它是 SurfaceFlinger 为调度和帧率覆盖建立的一组离散 `FrameRateMode`，仍然受 HWC 能力与设备策略约束。
@@ -2092,7 +2099,7 @@ surface.setFrameRate(
         Surface.CHANGE_FRAME_RATE_ALWAYS);
 ```
 
-`FIXED_SOURCE` 告诉系统，24、48、72、96、120 Hz 这类整数倍频率通常更有利于稳定播放。`ALWAYS` 允许发生可能黑屏或闪烁的非无缝切换，适合切换收益足以抵消干扰的长视频；列表页中的短视频预览通常更适合 `ONLY_IF_SEAMLESS`。播放结束、`Surface` 改作其他用途或不再可见时，应调用 `surface.clearFrameRate()` 清除旧的帧率意见。
+`FIXED_SOURCE` 告诉系统，24、48、72、96、120 Hz 这类整数倍频率通常更有利于稳定播放。`ALWAYS` 允许发生可能黑屏或闪烁的非无缝切换，适合切换收益足以抵消干扰的长视频；列表页中的短视频预览通常更适合 `ONLY_IF_SEAMLESS`。视频暂停或播放结束后，若 `Surface` 仍可见但已停止提交 buffer，应在 API 34 及以上调用 `surface.clearFrameRate()`，或传入帧率 0 清除旧请求；改作其他用途时按新内容更新请求。Surface 已销毁，或因切换应用而隐藏时，无需额外清除。
 
 Android 17 还提供受功能开关控制的 `Surface.FrameRateParams`。源码中的 TODO 明确说明当前传递链路尚未完成：实现会在固定源帧率与最小、最大范围之间选择一种表达，仅看 API 的字段形态推断不出完整区间语义已在所有设备上可用。生产代码使用它之前，应确认设备功能开关、SDK 暴露情况，以及 CTS 和厂商实现行为。
 
@@ -2293,6 +2300,8 @@ Android 17 的帧率协作分为四层：应用通过 View、Compose 或 Surface
 - [Perfetto：FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Perfetto Android 17 metric：`frames.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/frames.sql)
 - [Android Frame Pacing Library](https://developer.android.com/games/sdk/frame-pacing)
+- [Khronos：`vkQueuePresentKHR`](https://docs.vulkan.org/refpages/latest/refpages/source/vkQueuePresentKHR.html)
+- [Android 17 `RefreshRateSelector.h`：ARR 帧率锚点与候选数量](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.h)
 
 - [AOSP `DisplayModeController`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp)
 - [AOSP `SurfaceFlinger`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp)
