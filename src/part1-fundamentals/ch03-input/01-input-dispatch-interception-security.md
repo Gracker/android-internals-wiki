@@ -96,26 +96,13 @@ evdev 是 Linux 内核向用户空间提供输入事件的设备接口，也是�
 
 主路径如下：
 
-```mermaid
-flowchart LR
-    HW["输入设备与驱动"] --> EV["Linux input core / evdev<br/>/dev/input/eventX"]
-    EV --> EH["EventHub<br/>epoll + read"]
-    EH --> IR["InputReader<br/>InputMapper 生成 NotifyArgs"]
-    IR --> LS["InputListener stages<br/>blocker / choreographer / processor / filter"]
-    LS --> ID["InputDispatcher<br/>目标选择与连接队列"]
-    ID -->|"AF_UNIX SOCK_SEQPACKET"| IC["App InputChannel"]
-    IC --> NIR["NativeInputEventReceiver<br/>主线程 Looper"]
-    NIR --> VRI["ViewRootImpl<br/>pending queue + InputStage"]
-    VRI --> VIEW["Window / DecorView / View 树"]
-    VRI -->|"FINISHED"| ID
-```
-
-这张图省略了焦点监视器、输入监视器、指针捕获、拖放、IME 异步回调和注入事件，它要建立的是主路径。每个事件实际经过的业务处理并不相同：触摸和按键在 `InputDispatcher` 中使用不同的目标选择规则，批量 `MotionEvent` 到达应用后还可能等待下一次 `CALLBACK_INPUT` 回调。
-
 <!-- gracker-diagram: ch03-01-hardware-to-window -->
 ![输入先在系统选窗口，再在应用内分发并返回完成消息](../../assets/diagrams/ch03/ch03-01-hardware-to-window.png)
 
 图：驱动通过 evdev 提供事件，system_server 中的 InputReader 完成读取与映射，经过监听链进入 InputDispatcher 选择窗口；应用窗口线程从 InputChannel 接收，再经 ViewRootImpl 与 View 树处理，最后回传 FINISHED。完成输入处理和绘制结果上屏是不同边界。
+
+这张图省略了焦点监视器、输入监视器、指针捕获、拖放、IME 异步回调和注入事件，它要建立的是主路径。每个事件实际经过的业务处理并不相同：触摸和按键在 `InputDispatcher` 中使用不同的目标选择规则，批量 `MotionEvent` 到达应用后还可能等待下一次 `CALLBACK_INPUT` 回调。
+
 
 #### 1.1 进程与线程边界
 
