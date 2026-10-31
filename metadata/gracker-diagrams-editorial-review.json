@@ -56623,9 +56623,169 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "0e16dd4800ea444cb50c814dbae5b5b83bf6df7f73cea39ec3c461446606c295",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a226-01-three-surfaces",
+          "title": "系统起始画面、App 首帧与完整内容",
+          "decision": "remove",
+          "reason": "三画面/创建者/阶段/职责表及TTIDTTFD端点说明完整，三行画面映射卡重复。",
+          "original_line": 64,
+          "heading": "## 1. 先区分三种画面"
+        },
+        {
+          "original_id": "a226-02-launch-type",
+          "title": "启动类型与起始画面选择的边界",
+          "decision": "remove",
+          "reason": "冷温热与任务快照选择的相邻段落明确，三行启动类型卡重复。",
+          "original_line": 88,
+          "heading": "## 1. 先区分三种画面"
+        },
+        {
+          "original_id": "a226-03-system-shell",
+          "title": "系统条件判断到 Shell 表面创建",
+          "decision": "remove",
+          "reason": "十二行原生文本链完整保留systemserver/Shell与三creator分支，四框缩写同链重复。",
+          "original_line": 111,
+          "heading": "### 2.2 WM Shell 负责类型细化和绘制"
+        },
+        {
+          "original_id": "a226-04-type-algorithm",
+          "title": "Android 17 手机起始表面按顺序判定",
+          "decision": "keep",
+          "reason": "按windowless、任务进程、快照等条件的返回先后列五组对应结果，保存正文未逐一列出的固定算法决策细节。",
+          "original_line": 135,
+          "heading": "### 2.2 WM Shell 负责类型细化和绘制"
+        },
+        {
+          "original_id": "a226-15-exit-overlap",
+          "title": "首帧准备、系统起始表面与退出覆盖分别观测",
+          "decision": "keep",
+          "reason": "App执行、系统表面和App可选退出覆盖三轨，说明首帧准备/表面移除/退出结束可重叠而非同一点。",
+          "original_line": 151,
+          "heading": "### 2.3 移除与退出动画"
+        },
+        {
+          "original_id": "a226-05-compat-and-build",
+          "title": "core-splashscreen 1.2.0 的运行与构建边界",
+          "decision": "remove",
+          "reason": "API21/22、23–30、31+三行兼容矩阵及构建要求段落完整，版本卡重复。",
+          "original_line": 170,
+          "heading": "### 3.1 版本边界"
+        },
+        {
+          "original_id": "a226-06-theme-handoff",
+          "title": "starting theme 在 onCreate 前交给正常主题",
+          "decision": "remove",
+          "reason": "主题XML及8行Activity接入代码明确install紧邻super与postTheme切换责任，四框同序重复。",
+          "original_line": 208,
+          "heading": "### 3.3 配置 starting theme"
+        },
+        {
+          "original_id": "a226-07-icon-mask",
+          "title": "启动图标的安全区域与动画含义",
+          "decision": "keep",
+          "reason": "有背景240/160与无背景288/192的资源和安全圆规格为正文没有展开的具体尺寸参考，保留图中数值及裁剪提醒。",
+          "original_line": 215,
+          "heading": "### 3.3 配置 starting theme"
+        },
+        {
+          "original_id": "a226-08-external-entry",
+          "title": "所有可能冷启动的外部入口都需要主题与安装",
+          "decision": "remove",
+          "reason": "外部入口段落已明确launcher/通知/deeplink/AppLink各实际Activity配置安装，三入口合流没有额外复杂依赖。",
+          "original_line": 238,
+          "heading": "### 3.4 覆盖每个外部启动入口"
+        },
+        {
+          "original_id": "a226-09-keep-condition",
+          "title": "绘制门禁只读取已有内存状态",
+          "decision": "keep",
+          "reason": "LoadingLocal与每次predraw只读value的循环、Ready和RecoverableError两放行出口，解释门禁不执行加载。",
+          "original_line": 303,
+          "heading": "### 4.1 回调运行在主线程"
+        },
+        {
+          "original_id": "a226-10-exit-cleanup",
+          "title": "退出动画的所有路径都移除 Splash View",
+          "decision": "keep",
+          "reason": "晚到退出回调已销毁立即remove与存活动画后结束/取消/销毁统一幂等清理分支，配合生命周期代码。",
+          "original_line": 377,
+          "heading": "## 5. 退出动画"
+        },
+        {
+          "original_id": "a226-11-migration",
+          "title": "旧 SplashActivity 容易产生重复启动画面",
+          "decision": "remove",
+          "reason": "旧SplashActivity双启动成本、迁移目标和过渡路由三段明确，三行方案卡重复。",
+          "original_line": 412,
+          "heading": "### 6.2 专用 `SplashActivity`"
+        },
+        {
+          "original_id": "a226-12-cache-to-content",
+          "title": "从缓存与骨架稳定交接到可交互内容",
+          "decision": "remove",
+          "reason": "五步缓存首屏刷新替换重试列表及骨架无障碍说明完整，四框缓存内容流程重复。",
+          "original_line": 443,
+          "heading": "### 7.2 优先显示缓存，再异步刷新"
+        },
+        {
+          "original_id": "a226-13-ui-thread-boundary",
+          "title": "后台数据准备与主线程 View 生命周期分开",
+          "decision": "remove",
+          "reason": "普通inflate线程/Context生命周期段落和五项优化方向完整，三行UI边界映射卡重复。",
+          "original_line": 464,
+          "heading": "### 7.3 不要在后台线程普通 inflate View"
+        },
+        {
+          "original_id": "a226-14-startup-metrics",
+          "title": "感知观察点、显示指标与原始时间戳",
+          "decision": "remove",
+          "reason": "三指标表及Macrobenchmark/原始FULLYDRAWN差别段落完整，四行指标卡并重复首节画面分类。",
+          "original_line": 508,
+          "heading": "### 8.1 三个时间不能互换"
+        },
+        {
+          "original_id": "a226-16-perfetto-actors",
+          "title": "Perfetto 按执行主体追踪启动交接",
+          "decision": "remove",
+          "reason": "三个执行主体/观察内容表和五步Trace解释顺序更完整，三行主体映射卡重复。",
+          "original_line": 559,
+          "heading": "## 9. Perfetto 定位"
+        }
+      ],
+      "sha256_after": "72d64e38b14399c623fc8b911eac3c0b5c4f83f1392c118c865fccda0dc2bedb",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:55:33.325216+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a226/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a226/visual-review.json",
+      "retired_diagrams": [
+        "a226-01-three-surfaces",
+        "a226-02-launch-type",
+        "a226-03-system-shell",
+        "a226-05-compat-and-build",
+        "a226-06-theme-handoff",
+        "a226-08-external-entry",
+        "a226-11-migration",
+        "a226-12-cache-to-content",
+        "a226-13-ui-thread-boundary",
+        "a226-14-startup-metrics",
+        "a226-16-perfetto-actors"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-226/retired-assets.json"
     },
     {
       "index": 227,
@@ -57233,8 +57393,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 151,
-  "next_article": "src/part5-app/ch21-startup/05-splash-screen.md",
+  "reviewed_articles": 152,
+  "next_article": "src/part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -57244,7 +57404,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:53:10.209524+08:00",
+  "updated_at": "2026-10-31T16:55:33.325216+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -57422,9 +57582,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4711,
-  "reviewed_placements_after": 1950,
-  "net_removed_placements": 2761,
+  "reviewed_placements_before": 4727,
+  "reviewed_placements_after": 1955,
+  "net_removed_placements": 2772,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -57448,5 +57608,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 151
+  "currently_matching_reviewed_source_count": 152
 }

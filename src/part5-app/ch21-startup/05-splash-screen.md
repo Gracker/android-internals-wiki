@@ -61,10 +61,6 @@ last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0 
 
 ## 1. 先区分三种画面
 
-<!-- gracker-diagram: a226-01-three-surfaces -->
-![系统起始画面、App 首帧与完整内容](../../assets/diagrams/ch21/a226-01-three-surfaces.png)
-
-图：画面创建者与证据不同；系统反馈更早，不表示 App 初始化或内容加载已经更快。
 
 启动期间可能连续出现三类画面。第一类是系统在 App 窗口可显示前临时展示的 starting surface（起始表面），它不一定是带品牌图标的 Splash。TTID（Time to Initial Display）衡量 App 首帧显示；TTFD（Time to Full Display）依赖应用在主要内容和关键交互就绪后报告充分绘制。具体结束点要写明工具口径，例如 Macrobenchmark 使用报告所对应帧的完成点，不能把业务状态改变、方法调用与帧完成都视为同一时刻：
 
@@ -85,10 +81,6 @@ Android 17 可以按启动条件在这些形态之间选择：
 
 选择哪个形态，还取决于启动类型。冷启动表示 App 进程尚不存在；warm start 表示进程还在，但目标 Activity 尚未创建或需要重建；hot start 则是进程和目标 Activity 都在，只需把它带回前台。TaskSnapshot 常用于已有任务切回前台且快照兼容的情况，Splash 常见于冷启动、新任务或 warm start。hot start 不会重复显示 Splash。
 
-<!-- gracker-diagram: a226-02-launch-type -->
-![启动类型与起始画面选择的边界](../../assets/diagrams/ch21/a226-02-launch-type.png)
-
-图：冷温热描述进程与 Activity 状态，具体 surface 还受 system_server 参数和 Shell 算法决定。
 
 “点击图标后看见了一张图”还不足以判断系统走了哪条路径；要解释 Perfetto trace（系统与应用事件的时间线记录），先确认启动类型和 starting window 类型。
 
@@ -108,10 +100,6 @@ Android 17 的 `ActivityRecord` 是 system_server 内部保存 Activity 运行�
 
 ### 2.2 WM Shell 负责类型细化和绘制
 
-<!-- gracker-diagram: a226-03-system-shell -->
-![系统条件判断到 Shell 表面创建](../../assets/diagrams/ch21/a226-03-system-shell.png)
-
-图：system_server 传递条件和数据，Shell 根据类型创建 Splash、Snapshot 或 windowless 表面。
 
 下面是 Android 17 上的主要调用关系。向下的箭头表示请求继续交给下一层，末端分支是负责创建不同表面的组件：
 
@@ -167,10 +155,6 @@ App 内容可以显示时，system_server 请求 Shell 移除 starting window。
 
 兼容库的 `minSdk` 是 21，启动早期就能显示图标的兼容能力从 API 23 才开始。测试范围至少要覆盖 API 21/22、23～30、31 和当前目标 API，不能只在 Android 17 模拟器上验收。
 
-<!-- gracker-diagram: a226-05-compat-and-build -->
-![core-splashscreen 1.2.0 的运行与构建边界](../../assets/diagrams/ch21/a226-05-compat-and-build.png)
-
-图：运行下限 API21 与构建要求分开：本 AAR 要求 compileSdk≥35、AGP≥8.6.0。
 
 ### 3.2 添加依赖
 
@@ -205,10 +189,6 @@ starting theme 是写在 Manifest 启动入口上的临时主题。下面的配�
 - `windowSplashScreenAnimationDuration` 只描述图标动画时长，不控制 Splash 在屏幕上停留多久；Android 13（API 33）起，平台会直接从 AVD 推断时长；
 - `postSplashScreenTheme` 应指向 Activity 的正常主题。若不使用它，就必须在 `onCreate()` 前自行调用 `setTheme()`，两种方式只能有一套清晰的主题切换责任。
 
-<!-- gracker-diagram: a226-06-theme-handoff -->
-![starting theme 在 onCreate 前交给正常主题](../../assets/diagrams/ch21/a226-06-theme-handoff.png)
-
-图：启动主题提供背景和图标，兼容库安装时切换到正常主题；主题切换责任要明确。
 
 `windowSplashScreenBrandingImage` 可以把品牌图片放在底部，官方设计规范不建议使用。品牌信息优先放在中央图标、颜色和进入内容后的界面中。
 
@@ -235,10 +215,6 @@ starting theme 是写在 Manifest 启动入口上的临时主题。下面的配�
 
 如果通知、deep link（自定义 scheme 或 URI 链接）或 App Link（经验证、可直接打开 App 的 HTTP(S) 链接）能在冷进程中直接启动另一 Activity，该入口也要配置 starting theme，并在 `super.onCreate()` 前调用 `installSplashScreen()`。只验证桌面图标会漏掉这些路径。
 
-<!-- gracker-diagram: a226-08-external-entry -->
-![所有可能冷启动的外部入口都需要主题与安装](../../assets/diagrams/ch21/a226-08-external-entry.png)
-
-图：每条外部路由都可能在冷进程中直接进入不同 Activity；仅桌面入口接入会漏测其他路径。
 
 ### 3.5 在 `super.onCreate()` 前安装
 
@@ -409,10 +385,6 @@ Android 12+ 会先显示系统 Splash，再启动旧 `SplashActivity`，容易�
 
 开屏广告属于业务页面，不应伪装成系统 Splash。需要展示时，应在系统 Splash 退出后进入可度量、可跳过、失败可恢复的广告页面。
 
-<!-- gracker-diagram: a226-11-migration -->
-![旧 SplashActivity 容易产生重复启动画面](../../assets/diagrams/ch21/a226-11-migration.png)
-
-图：迁移按实际外部入口验证，业务开屏广告应有独立的跳过、度量与失败恢复机制。
 
 ## 7. Splash 后如何交接内容
 
@@ -440,10 +412,6 @@ App 第一帧至少应具备：
 
 没有缓存时显示骨架或空态，不要让 Splash 等网络。
 
-<!-- gracker-diagram: a226-12-cache-to-content -->
-![从缓存与骨架稳定交接到可交互内容](../../assets/diagrams/ch21/a226-12-cache-to-content.png)
-
-图：占位数量、尺寸和间距贴近真实内容；网络加载在 App 首帧后继续，不让 Splash 等待。
 
 骨架元素不应被无障碍服务当成真实按钮或正文；shimmer（在占位块上移动的高光）也要控制面积和时长，并尊重减少动态效果的偏好。
 
@@ -461,10 +429,6 @@ App 第一帧至少应具备：
 
 可以在后台准备不可变数据、解析结果或图片，但 View 创建和挂载仍应遵守 UI 线程与生命周期边界。
 
-<!-- gracker-diagram: a226-13-ui-thread-boundary -->
-![后台数据准备与主线程 View 生命周期分开](../../assets/diagrams/ch21/a226-13-ui-thread-boundary.png)
-
-图：把普通 LayoutInflater 整页移到后台并缓存，不是通用的启动优化方案。
 
 ### 7.4 编译与初始化问题另行处理
 
@@ -505,10 +469,6 @@ lifecycleScope.launch {
 
 按官方启动指标说明，首帧之前就报告充分绘制时，TTFD 会折合为 TTID；这不能证明异步内容已经完成。Macrobenchmark 的 `timeToFullDisplayMs` 看报告对应帧，原始 `ApplicationStartInfo` 的 `FULLY_DRAWN` 时间戳则记录报告处理点。分析时应固定工具与版本，不能把后者直接当成显示帧完成时间；详见 [21.1 启动路径与度量](01-app-startup-path-monitoring.md)。
 
-<!-- gracker-diagram: a226-14-startup-metrics -->
-![感知观察点、显示指标与原始时间戳](../../assets/diagrams/ch21/a226-14-startup-metrics.png)
-
-图：自定义退出动画还遮挡内容与交互时，应把它的完成条件纳入实际可用状态。
 
 ### 8.2 需要同时观察什么
 
@@ -556,10 +516,6 @@ Trace 解释顺序是：
 
 更完整的启动度量见 [启动优化策略](../../part2-performance/ch08-responsiveness/03-launch-optimization.md)。
 
-<!-- gracker-diagram: a226-16-perfetto-actors -->
-![Perfetto 按执行主体追踪启动交接](../../assets/diagrams/ch21/a226-16-perfetto-actors.png)
-
-图：先固定启动类型与入口，再对照系统、Shell 和 App 时间线；自定义 trace 名保持短且稳定。
 
 ## 10. 检查清单
 
