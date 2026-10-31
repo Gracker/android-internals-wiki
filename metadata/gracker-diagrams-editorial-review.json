@@ -58034,9 +58034,338 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "31510c3ea59e6d215dbb92bb7c2f8e974fdc71b4ffc5c325effb77ef67591629",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a234-01-window-pipeline",
+          "title": "组合更新只是窗口显示链的前半程",
+          "decision": "keep",
+          "reason": "宿主UI组合测绘经RenderThread/GPU、BLAST缓冲到合成present的责任链，为全文跨层诊断提供共同定位轴。",
+          "original_line": 136,
+          "heading": "# Compose 性能、Compiler 与 Modifier.Node 诊断"
+        },
+        {
+          "original_id": "a234-02-read-phases",
+          "title": "状态在哪里读取，从哪里安排工作",
+          "decision": "remove",
+          "reason": "三行阶段图重复读取位置/失效起点/适用变化表与placement代码。",
+          "original_line": 159,
+          "heading": "### 从状态读取阶段控制工作范围"
+        },
+        {
+          "original_id": "a234-03-skipping-rules",
+          "title": "强跳过比较参数，内部失效仍生效",
+          "decision": "remove",
+          "reason": "父级参数比较、自身Snapshot失效、非重启组的段落完整，分类卡重复且后半报告标签再次展开。",
+          "original_line": 206,
+          "heading": "#### 跳过条件要分函数和参数"
+        },
+        {
+          "original_id": "a234-04-remember-derived",
+          "title": "缓存身份与降低通知频率分别处理",
+          "decision": "remove",
+          "reason": "remember与derived频率和普通列表不可观察的两段代码及段落更完整，分类卡重复。",
+          "original_line": 289,
+          "heading": "#### `derivedStateOf` 的适用频率场景"
+        },
+        {
+          "original_id": "a234-05-producer",
+          "title": "producer 换 key，State 不自动回到初值",
+          "decision": "remove",
+          "reason": "producer key更换不重置State、取消与无限collect清理在正文和后续盲区完整，分类卡重复。",
+          "original_line": 324,
+          "heading": "#### `rememberCoroutineScope` 面向事件，`produceState` 面向外部数据"
+        },
+        {
+          "original_id": "a234-06-lazy-library",
+          "title": "Lazy 能力按精确库版本解释",
+          "decision": "remove",
+          "reason": "1.10.0开/1.10.6关/1.12开及窗口控制范围的正文完整，混合三行卡不是真正版本时间线。",
+          "original_line": 352,
+          "heading": "#### Pausable Composition 的能力范围"
+        },
+        {
+          "original_id": "a234-07-interop",
+          "title": "互操作复用需要匹配所有权协议",
+          "decision": "remove",
+          "reason": "pooling默认策略与两套互操作代码完整且链接专篇，分类卡重复。",
+          "original_line": 481,
+          "heading": "#### Lazy 列表中的 `AndroidView`"
+        },
+        {
+          "original_id": "a234-08-effect-ownership",
+          "title": "把任务交给别的作用域会改变取消边界",
+          "decision": "keep",
+          "reason": "并列直接Effect任务与转交外scope的取消边界，能清楚看见key仅取消启动者时的owner改变。",
+          "original_line": 490,
+          "heading": "### Effect 与 producer 的生命周期盲区"
+        },
+        {
+          "original_id": "a234-09-artifact-classpath",
+          "title": "依赖发布问题先查签名与 classpath",
+          "decision": "remove",
+          "reason": "Firebase签名/POM与二手FlutterFire案例范围段落完整，三行故障分类卡重复。",
+          "original_line": 531,
+          "heading": "#### Kotlin 升级时把 classpath 故障与 Compose 诊断分开"
+        },
+        {
+          "original_id": "a234-10-evidence",
+          "title": "四种材料回答四层问题",
+          "decision": "remove",
+          "reason": "四类证据可答/不可答表更完整，四行工具对应卡重复。",
+          "original_line": 608,
+          "heading": "### 一、先分清四层证据"
+        },
+        {
+          "original_id": "a234-11-report-generation",
+          "title": "固定输入生成可解释报告",
+          "decision": "remove",
+          "reason": "同版插件、目标变体、DSL与产物发现命令完整，四框生成步骤卡重复。",
+          "original_line": 667,
+          "heading": "#### 2. 固定构建变体和编译输入"
+        },
+        {
+          "original_id": "a234-12-report-tags",
+          "title": "实测标签的三个独立维度",
+          "decision": "remove",
+          "reason": "四函数原始报告加逐项标签解释完整，四行报告卡重复。",
+          "original_line": 773,
+          "heading": "#### 2. `composables.txt` 的实测输出"
+        },
+        {
+          "original_id": "a234-35-report-version-diff",
+          "title": "同一源码在两个编译器中的稳定性报告不同",
+          "decision": "keep",
+          "reason": "同一源码2.3.20与2.4.10的Snack/Set分类及模块1到0、0到1具体并排变化，帮助对齐两份原始报告而不将字段相同当语义相同。",
+          "original_line": 804,
+          "heading": "#### 3. `classes.txt` 的实测输出"
+        },
+        {
+          "original_id": "a234-13-lambda-captures",
+          "title": "自动 Lambda 缓存不等同手写 remember",
+          "decision": "remove",
+          "reason": "捕获stable/unstable与DontMemoize/NonSkippable语义段落完整，三行缓存卡重复。",
+          "original_line": 856,
+          "heading": "#### 2. Lambda 会被自动记住"
+        },
+        {
+          "original_id": "a234-14-stable-contract",
+          "title": "稳定性注解不会改造可变实现",
+          "decision": "remove",
+          "reason": "Stable三契约与Immutable、外部审计清单段落完整，三行注解卡重复。",
+          "original_line": 885,
+          "heading": "#### 1. `@Stable` 的三项要求"
+        },
+        {
+          "original_id": "a234-15-inspector-cost",
+          "title": "次数乘单次成本才接近工作量",
+          "decision": "remove",
+          "reason": "高频小文本与单次重解析两例及Inspector环境限制段落完整，三行成本卡重复。",
+          "original_line": 938,
+          "heading": "### 六、Layout Inspector 观察次数"
+        },
+        {
+          "original_id": "a234-16-trace-install",
+          "title": "逐函数切片需要标记、运行时与采集会话",
+          "decision": "keep",
+          "reason": "编译器info标记、Startup安装CompositionTracer、Perfetto写入到track_event会话的跨组件连接链，说明具备写入能力与实际采集的区别。",
+          "original_line": 982,
+          "heading": "#### 3. 正确阅读系统跟踪"
+        },
+        {
+          "original_id": "a234-18-snapshot-invalidation",
+          "title": "从状态写入到必要更新的因果链",
+          "decision": "keep",
+          "reason": "状态写入policy、已读作用域失效、Recomposer帧时钟到必要节点更新的四段因果链，便于回查读写与帧证据。",
+          "original_line": 1037,
+          "heading": "### 九、从状态写入追到重组作用域"
+        },
+        {
+          "original_id": "a234-19-ci-schema",
+          "title": "报告快照要先验证格式再比较语义",
+          "decision": "remove",
+          "reason": "142行严格CSV/JSON解析代码与门禁清单完整，三行schema卡重复。",
+          "original_line": 1222,
+          "heading": "#### 2. 严格解析当前格式"
+        },
+        {
+          "original_id": "a234-20-migration-split",
+          "title": "构建速度与运行帧性能各自做实验",
+          "decision": "remove",
+          "reason": "构建速度与运行帧同条件各自实验段落完整，二行迁移分类卡重复。",
+          "original_line": 1266,
+          "heading": "### 十一、K2 / Compose Compiler 迁移：先固定构建语义"
+        },
+        {
+          "original_id": "a234-17-trace-duration",
+          "title": "切片时长与 CPU、父子关系分别解释",
+          "decision": "remove",
+          "reason": "wall与CPU状态、父子inclusive不求和、组合阶段范围段落完整，三行时间解释卡未画真实重叠区间。",
+          "original_line": 1279,
+          "heading": "### 十二、Runtime Tracing 的采集与解释边界"
+        },
+        {
+          "original_id": "a234-21-node-choice",
+          "title": "先用现有 Modifier，必要时才引入 Node",
+          "decision": "remove",
+          "reason": "已有Modifier优先的需求表及7行工厂完整，三行选型卡重复。",
+          "original_line": 1413,
+          "heading": "### 1. 先判断是否需要自定义节点"
+        },
+        {
+          "original_id": "a234-22-element-node",
+          "title": "配置对象更新，运行节点可以留下",
+          "decision": "remove",
+          "reason": "Element/Node职责、接口表与Circle示例完整，三行对象卡重复。",
+          "original_line": 1439,
+          "heading": "### 2. Element 与 Node 各自保存什么"
+        },
+        {
+          "original_id": "a234-23-node-reuse",
+          "title": "NodeChain 的复用、更新与替换门禁",
+          "decision": "remove",
+          "reason": "相等复用/同型更新/异型替换表与后文三行源码断言完整，三行规则卡重复。",
+          "original_line": 1507,
+          "heading": "### 3. NodeChain 如何决定复用、更新或替换"
+        },
+        {
+          "original_id": "a234-24-invalidate",
+          "title": "默认自动失效与手动模式的责任边界",
+          "decision": "remove",
+          "reason": "默认自动和手动失效说明、42行Stripe与API限制完整，三行调用卡重复。",
+          "original_line": 1577,
+          "heading": "#### 4.1 何时关闭自动失效"
+        },
+        {
+          "original_id": "a234-25-node-lifecycle",
+          "title": "复用重置与解除附着的顺序",
+          "decision": "keep",
+          "reason": "create未附着、attach、仍附着时reset、detach后取消scope的先后链，突出复用重置不能等同解除附着。",
+          "original_line": 1595,
+          "heading": "### 5. 生命周期、协程与可复用内容"
+        },
+        {
+          "original_id": "a234-26-node-coroutine",
+          "title": "附着期动画与项目状态分别清理",
+          "decision": "remove",
+          "reason": "28行动画与选择清理节点代码、附着期新scope与draw状态读取解释完整，三行任务卡重复。",
+          "original_line": 1635,
+          "heading": "### 5. 生命周期、协程与可复用内容"
+        },
+        {
+          "original_id": "a234-27-factory-local",
+          "title": "Modifier 工厂调用位置与节点应用位置",
+          "decision": "remove",
+          "reason": "工厂调用处Local与节点应用处Local的段落及示例完整，三行位置分类卡没有具体树形示例。",
+          "original_line": 1668,
+          "heading": "### 6. Modifier.composed 与 @Composable 工厂的准确边界"
+        },
+        {
+          "original_id": "a234-28-local-observation",
+          "title": "阶段外读取必须重建观察",
+          "decision": "remove",
+          "reason": "阶段内读取与阶段外observeReads重新订阅两代码和边界段落完整，三行规则卡未画订阅循环。",
+          "original_line": 1727,
+          "heading": "### 7. 在 Node 中读取 CompositionLocal"
+        },
+        {
+          "original_id": "a234-29-layout-constraints",
+          "title": "水平 inset 显式传播约束并校验像素算术",
+          "decision": "keep",
+          "reason": "有限非负inset像素校验、收缩约束、单子测量、加回constrain与placeRelative的方向链，为41行自定义布局代码提供输入输出协议。",
+          "original_line": 1786,
+          "heading": "### 8. LayoutModifierNode 的复用与测量缓存"
+        },
+        {
+          "original_id": "a234-30-intrinsics",
+          "title": "Node 复用与测量缓存分开判断",
+          "decision": "remove",
+          "reason": "Node复用非MeasureResult缓存和四种intrinsic默认measure语义段落完整，二行缓存卡重复。",
+          "original_line": 1795,
+          "heading": "### 8. LayoutModifierNode 的复用与测量缓存"
+        },
+        {
+          "original_id": "a234-31-pointer-passes",
+          "title": "指针分发与消费有明确协议",
+          "decision": "remove",
+          "reason": "Initial/Main/Final顺序已由段落直接列出，三框没有命中树传播或消费交互新信息。",
+          "original_line": 1814,
+          "heading": "### 9. PointerInputModifierNode：在 PointerInputChange 上标记消费"
+        },
+        {
+          "original_id": "a234-32-layer-read",
+          "title": "已有 graphicsLayer 节点处理视觉属性",
+          "decision": "remove",
+          "reason": "graphicsLayer属性lambda代码及内建Node无需复制的段落完整，三行图层卡重复。",
+          "original_line": 1879,
+          "heading": "### 10. graphicsLayer 与阶段读取"
+        },
+        {
+          "original_id": "a234-33-migration-ownership",
+          "title": "迁移时按所有权分配字段",
+          "decision": "remove",
+          "reason": "字段归属五行表及迁移清单更完整，三行owner卡重复。",
+          "original_line": 1912,
+          "heading": "#### 11.2 分开配置与运行状态"
+        },
+        {
+          "original_id": "a234-34-migration-evidence",
+          "title": "Node 迁移的收益要落在同条件证据",
+          "decision": "remove",
+          "reason": "四种性能证据表及收益预期与其他瓶颈列表完整，三行验证卡重复。",
+          "original_line": 1946,
+          "heading": "### 12. 性能验证：测什么，怎样解释"
+        }
+      ],
+      "sha256_after": "14d495413b252d3b3fd801347c59019c03cefc5b4c4df5667ddc9d1b8214ff68",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:16:00.941938+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a234/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a234/visual-review.json",
+      "retired_diagrams": [
+        "a234-02-read-phases",
+        "a234-03-skipping-rules",
+        "a234-04-remember-derived",
+        "a234-05-producer",
+        "a234-06-lazy-library",
+        "a234-07-interop",
+        "a234-09-artifact-classpath",
+        "a234-10-evidence",
+        "a234-11-report-generation",
+        "a234-12-report-tags",
+        "a234-13-lambda-captures",
+        "a234-14-stable-contract",
+        "a234-15-inspector-cost",
+        "a234-17-trace-duration",
+        "a234-19-ci-schema",
+        "a234-20-migration-split",
+        "a234-21-node-choice",
+        "a234-22-element-node",
+        "a234-23-node-reuse",
+        "a234-24-invalidate",
+        "a234-26-node-coroutine",
+        "a234-27-factory-local",
+        "a234-28-local-observation",
+        "a234-30-intrinsics",
+        "a234-31-pointer-passes",
+        "a234-32-layer-read",
+        "a234-33-migration-ownership",
+        "a234-34-migration-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-234/retired-assets.json"
     },
     {
       "index": 235,
@@ -58567,8 +58896,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 158,
-  "next_article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+  "reviewed_articles": 159,
+  "next_article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -58578,7 +58907,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:13:45.737108+08:00",
+  "updated_at": "2026-10-31T17:16:00.941938+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -58756,9 +59085,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4845,
-  "reviewed_placements_after": 1985,
-  "net_removed_placements": 2860,
+  "reviewed_placements_before": 4880,
+  "reviewed_placements_after": 1992,
+  "net_removed_placements": 2888,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -58782,5 +59111,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 158
+  "currently_matching_reviewed_source_count": 159
 }
