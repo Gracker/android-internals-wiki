@@ -44023,9 +44023,278 @@
       "before_count": 27,
       "before_all_images": 27,
       "sha256_before": "56470d2b8eedf4f0c0dbc3e34bece85d7293e983ffa7c164cb07601b7531cdfe",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch16-03-01-metric-contract",
+          "title": "可比较指标从合同开始",
+          "decision": "remove",
+          "reason": "四框逐项压缩指标合同11行字段表，未画实际同名不同分母例；全部source/schema单位起止负责人定义原文留。",
+          "original_line": 165,
+          "heading": "### 指标合同"
+        },
+        {
+          "original_id": "ch16-03-02-four-metric-roles",
+          "title": "四种职责对应不同合同",
+          "decision": "remove",
+          "reason": "四块定义卡与指标职责四行完整表逐项重复，无新增决策依赖，Play外部健康线不同内部场景门禁全文留。",
+          "original_line": 185,
+          "heading": "### 指标的四种职责"
+        },
+        {
+          "original_id": "ch16-03-03-rendering-observation-scopes",
+          "title": "FPS、View报表与实际帧时序",
+          "decision": "remove",
+          "reason": "三列重述FPS、Viewslowfrozen、逐帧时序三个小节，无实际长帧平均掩盖示例；16/700ms报表非实时deadline及游戏独立Surface范围全文留。",
+          "original_line": 214,
+          "heading": "#### Android Vitals 的 slow/frozen rendering"
+        },
+        {
+          "original_id": "ch16-03-04-benchmark-frame-interval",
+          "title": "Macrobenchmark帧指标的固定实现",
+          "decision": "keep",
+          "reason": "固定1.4.1的RT末减UI始与max实际RT末减expected末两种不同精确公式、通过匹配的frameCount三组实际计算对应独立，保留经过时间不同CPU计时器与版本口径。",
+          "original_line": 243,
+          "heading": "#### Macrobenchmark FrameTimingMetric"
+        },
+        {
+          "original_id": "ch16-03-05-startup-result-boundaries",
+          "title": "TTID、TTFD和业务可用的边界",
+          "decision": "remove",
+          "reason": "三列复制TTID/TTFD/业务可用完整表和输入显示边界段，后文启动源表更详细；coldwarmhot、missingfullydrawn与光学不同present全文留。",
+          "original_line": 297,
+          "heading": "#### Click-to-Display"
+        },
+        {
+          "original_id": "ch16-03-06-play-population-denominators",
+          "title": "Play稳定性的人群与分母",
+          "decision": "keep",
+          "reason": "共享诊断/认证设备/Play安装选择→用户设备日单位→受影响单位比例→28天评估实际统计链独立，区分事件数session和手机单型号/overall。",
+          "original_line": 319,
+          "heading": "#### Android Vitals 的分母"
+        },
+        {
+          "original_id": "ch16-03-07-exit-evidence-lifecycle",
+          "title": "退出历史如何成为补充证据",
+          "decision": "keep",
+          "reason": "退出现场→有限历史artifact→后续进程读取去重→同现场reason时间类型关联实际跨进程证据生命周期独立，恢复ANR可附后续其他reason图注保留。",
+          "original_line": 348,
+          "heading": "#### ApplicationExitInfo"
+        },
+        {
+          "original_id": "ch16-03-08-memory-metric-domains",
+          "title": "占用域、Play匿名内存与系统压力",
+          "decision": "remove",
+          "reason": "三列摘录进程内存四行表/Play匿名内存/PSI定义，无实际共享页计量反例；匿名RSSSwap不同totalPSS与未来2027处理和PSI范围全文留。",
+          "original_line": 381,
+          "heading": "#### PSI 与系统压力"
+        },
+        {
+          "original_id": "ch16-03-09-memory-failure-classification",
+          "title": "GC、OOM与LMK分别分析",
+          "decision": "remove",
+          "reason": "三列重述GC及OOM/nativefailure/LMK完整表，无实际失败路径样例，未必有tombstone与各分母不同/GC次数非影响全文留。",
+          "original_line": 404,
+          "heading": "#### OOM、native allocation（分配）failure 与 LMK"
+        },
+        {
+          "original_id": "ch16-03-10-energy-counter-power",
+          "title": "累计能量怎样换算平均功率",
+          "decision": "keep",
+          "reason": "累计能量类型→同bootID时域校验→uWs差乘1000除ms得到uW→重叠范围归因的实际单位变换链独立，EnergyMeasurementduration与EnergyConsumer开机累计区别原文留。",
+          "original_line": 425,
+          "heading": "#### Battery drain rate"
+        },
+        {
+          "original_id": "ch16-03-11-wake-lock-reporting",
+          "title": "唤醒锁持有、会话分类与健康率",
+          "decision": "keep",
+          "reason": "非豁免后台FGS锁持有→24h累计>=2h session分类→28天命中session>5%健康率两个不同统计层次实际链独立，非CPU连续执行与豁免原文留。",
+          "original_line": 452,
+          "heading": "#### Excessive partial wake locks"
+        },
+        {
+          "original_id": "ch16-03-12-merge-distributions",
+          "title": "跨分片分布怎样合并",
+          "decision": "remove",
+          "reason": "三列逐项重述跨分片分位数/均值/采样权重段，无真正分布合并数值例；P90均值非总体、用户与事件层、未知丢失不可权重修复全文留。",
+          "original_line": 493,
+          "heading": "#### 采样率由误差预算决定"
+        },
+        {
+          "original_id": "ch16-03-13-three-monitoring-layers",
+          "title": "信号、证据与分析的分工",
+          "decision": "keep",
+          "reason": "信号可按需到有限诊断证据再分析，基线信号又可直接入聚合的真实可选双通路架构独立，不误当所有基线必须先生成重型证据。",
+          "original_line": 585,
+          "heading": "### 监控系统的三个层次"
+        },
+        {
+          "original_id": "ch16-03-14-event-identity-clock",
+          "title": "事件关联键与时钟域",
+          "decision": "remove",
+          "reason": "三列重排事件schema八行完整表和时钟域段，无实际两个clock换算例；ApplicationStartInfoMONOTONIC不同BOOTTIME/跨设备UTC校时及未知缺失全文留。",
+          "original_line": 607,
+          "heading": "#### 事件协议与字段设计"
+        },
+        {
+          "original_id": "ch16-03-15-framecallback-probe",
+          "title": "FrameCallback是节奏探针",
+          "decision": "keep",
+          "reason": "同Choreographer一次性注册→接调整帧时刻轻量记录→需时续订→退出移除的实际回调生命周期独立，回调不是新buffer/present/回调上CPU/GPU耗时保留。",
+          "original_line": 654,
+          "heading": "#### Choreographer.FrameCallback：VSync（显示垂直同步） 邻近信号"
+        },
+        {
+          "original_id": "ch16-03-16-framemetrics-window-proof",
+          "title": "窗口分项、总时长与采集丢弃",
+          "decision": "remove",
+          "reason": "三列逐项摘录FrameMetrics完整12字段表与两行hitmiss代码/回调段，无实际分项重叠图；严格小于且等于miss/无效不补0/Handlerdrop与低版周期估算全文留。",
+          "original_line": 693,
+          "heading": "#### FrameMetrics：窗口内的帧耗时分项"
+        },
+        {
+          "original_id": "ch16-03-17-jankstats-classification",
+          "title": "JankStats分类、帧值与UI状态",
+          "decision": "remove",
+          "reason": "三列重述FrameData复制代码、overrun与isJank两算法段，未画实际复用覆盖或两判定数值反例；1.0.0CPU命名差值公式、默认2与数据版本/容量丢弃完整保留。",
+          "original_line": 735,
+          "heading": "#### JankStats：启发式分类加 UI 状态"
+        },
+        {
+          "original_id": "ch16-03-18-startup-source-by-api",
+          "title": "系统启动记录、手动区间与初始化",
+          "decision": "remove",
+          "reason": "三列重画系统API35启动/低版手动/初始化库三个小节，无实际启动记录字段可用性例；一次首帧监听不等TTFD、缺字段不补零/焦点非TTID全文留。",
+          "original_line": 809,
+          "heading": "#### Jetpack App Startup 的职责"
+        },
+        {
+          "original_id": "ch16-03-19-anr-three-signals",
+          "title": "停顿候选、预警和退出证据",
+          "decision": "keep",
+          "reason": "watchdog停顿可恢复、API37尽力预警、后续REASONANR退出三个独立信号与不同现场关联条件对应独立，避免主线程stall或dialog字段替代PlayANR类别。",
+          "original_line": 885,
+          "heading": "#### API 37：ANR 预警与结构化 AnrInfo"
+        },
+        {
+          "original_id": "ch16-03-20-anr-platform-boundaries",
+          "title": "旧文件监听与SIGQUIT的迁移边界",
+          "decision": "remove",
+          "reason": "三列复制旧traces监听、ARTSIGQUIT、公开替代三个段，无具体系统取栈信号时序，/data/anr权限前缀与不能吞SignalCatcher路径全文留。",
+          "original_line": 909,
+          "heading": "#### SIGQUIT 与 ART SignalCatcher 的信号归属"
+        },
+        {
+          "original_id": "ch16-03-21-baseline-and-diagnostics",
+          "title": "概率基线与异常诊断两条通道",
+          "decision": "keep",
+          "reason": "稳定概率baseline与结果触发diagnostic两个独立采样通道及共同去重健康边界清楚，已知p前置/1p权重不同结果选择偏差原文留。",
+          "original_line": 937,
+          "heading": "#### 异常触发的诊断样本"
+        },
+        {
+          "original_id": "ch16-03-22-client-aggregation",
+          "title": "设备端聚合保留算法和丢弃",
+          "decision": "remove",
+          "reason": "四框重复设备聚合五条清单与客户端平台责任表，无实际固定桶事件编码例；桶边界schema/有界队列/回调本地上传丢弃分开与高基数诊断全文留。",
+          "original_line": 954,
+          "heading": "#### 设备端聚合"
+        },
+        {
+          "original_id": "ch16-03-23-slo-alert-gates",
+          "title": "告警先验证数据健康与分母",
+          "decision": "keep",
+          "reason": "同分群目标发布对照→有效样本健康→预设窗口或适用burnrate→带样本owner流转的核心告警前置校验链独立，坏事件比例不同P99除阈值/SDK关闭非改善图注保留。",
+          "original_line": 999,
+          "heading": "### 报警：SLO、回归与数据质量"
+        },
+        {
+          "original_id": "ch16-03-24-profiling-result-path",
+          "title": "主动Profiling与系统触发的结果",
+          "decision": "remove",
+          "reason": "三列重画主动request/systemtrigger/结果处理说明和trigger表，没有实际异步回调成功/无结果分支；API35/36/36.1/37与全局listener和flag/limit/COLDdiscard全部原文留。",
+          "original_line": 1035,
+          "heading": "### ProfilingManager：由系统提供重型证据"
+        },
+        {
+          "original_id": "ch16-03-25-sdk-backend-choice",
+          "title": "Trace标签与两种SDK后端",
+          "decision": "remove",
+          "reason": "三列逐项重画Trace标签/两后端完整表和控制范围段，未画producer进程与外部controller实际通信拓扑；system会话进程外控制且producer不可读回完整trace全文留。",
+          "original_line": 1055,
+          "heading": "### 扩展：Perfetto SDK 的线上边界"
+        },
+        {
+          "original_id": "ch16-03-26-monitoring-to-reproduction",
+          "title": "线上聚合怎样回到可复查现场",
+          "decision": "keep",
+          "reason": "线上分群→带事件键artifact→线下同帧token启动Binder线程现场→单因素复测并回线上验收的跨数据层可复查责任链独立，单帧时长不同GPUSF根因与watchdog非系统ANR图注留。",
+          "original_line": 1115,
+          "heading": "### 在 Perfetto 中核对线上结论"
+        },
+        {
+          "original_id": "ch16-03-27-monitoring-rollout",
+          "title": "监控接入与持续校准流程",
+          "decision": "remove",
+          "reason": "四框总结完整八步接入顺序，与13监控架构/21采样/23告警/26回查主线摘要重复，所有轻基线先行/健康/按预算重型/升级可比性文字留。",
+          "original_line": 1131,
+          "heading": "### 接入顺序"
+        }
+      ],
+      "sha256_after": "994dde26ec0a22d75d27a4999b0ab5e574ab5ca72805e3db2a96ef0fa5c0acb5",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:09:02.660271+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 27,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a169/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a169/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 169,
+        "article": "src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
+        "registered_sha256": "56470d2b8eedf4f0c0dbc3e34bece85d7293e983ffa7c164cb07601b7531cdfe",
+        "frozen_sha256": "56470d2b8eedf4f0c0dbc3e34bece85d7293e983ffa7c164cb07601b7531cdfe",
+        "review_input_sha256": "af14564d44ff6b11d5016e9d68f954bbca3a2a4e8daea96941cb859b81145ae3",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a169/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a169/external-source.diff",
+        "diff_sha256": "8e1be485079582c6fccb6bdeee77b9345791473dabed4d7b6c7499aa8a7ee5e6",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 643, \"characters\": 43550, \"svg_labels_read\": 27, \"actual_pngs_viewed\": 27, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 5, \"code_lines\": 55, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "af14564d44ff6b11d5016e9d68f954bbca3a2a4e8daea96941cb859b81145ae3",
+      "retired_diagrams": [
+        "ch16-03-01-metric-contract",
+        "ch16-03-02-four-metric-roles",
+        "ch16-03-03-rendering-observation-scopes",
+        "ch16-03-05-startup-result-boundaries",
+        "ch16-03-08-memory-metric-domains",
+        "ch16-03-09-memory-failure-classification",
+        "ch16-03-12-merge-distributions",
+        "ch16-03-14-event-identity-clock",
+        "ch16-03-16-framemetrics-window-proof",
+        "ch16-03-17-jankstats-classification",
+        "ch16-03-18-startup-source-by-api",
+        "ch16-03-20-anr-platform-boundaries",
+        "ch16-03-22-client-aggregation",
+        "ch16-03-24-profiling-result-path",
+        "ch16-03-25-sdk-backend-choice",
+        "ch16-03-27-monitoring-rollout"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-169/retired-assets.json"
     },
     {
       "index": 170,
@@ -45172,8 +45441,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 102,
-  "next_article": "src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
+  "reviewed_articles": 103,
+  "next_article": "src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -45183,7 +45452,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:04:50.303710+08:00",
+  "updated_at": "2026-10-31T14:09:02.660271+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -45242,13 +45511,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
-      "registered_sha256": "56470d2b8eedf4f0c0dbc3e34bece85d7293e983ffa7c164cb07601b7531cdfe",
-      "observed_sha256": "af14564d44ff6b11d5016e9d68f954bbca3a2a4e8daea96941cb859b81145ae3",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
       "registered_sha256": "982f48dbecddfefcb1e8b128640146a9a463723bed816f954306c2895187d869",
       "observed_sha256": "ecdb454622d5c670cb379e4fe971eed20c6a5e4bc5f2ca70a9eb184d8defc81f",
@@ -45281,6 +45543,13 @@
       "registered_sha256": "63297b2959f5b24b8850649e4f402f4b3d9c95b489112da066fcfa9a2cd5561c",
       "observed_sha256": "c38908018d4e977f55b26b57d1501aec7f701d28a98e4936933d2e8509b5f01e",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
+      "registered_sha256": "80ea11d51c374f6b51ad307d0db46136781857edc271e8ea275b37c36a574f21",
+      "observed_sha256": "53e3646fb6a3f7219843f09905e59b2135f9ee45e09364484dbc53fe9993776f",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -45515,9 +45784,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3510,
-  "reviewed_placements_after": 1545,
-  "net_removed_placements": 1965,
+  "reviewed_placements_before": 3537,
+  "reviewed_placements_after": 1556,
+  "net_removed_placements": 1981,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -45541,5 +45810,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 102
+  "currently_matching_reviewed_source_count": 103
 }
