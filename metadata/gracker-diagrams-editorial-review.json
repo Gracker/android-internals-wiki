@@ -67850,9 +67850,136 @@
       "before_count": 12,
       "before_all_images": 12,
       "sha256_before": "03ad2ee06ff87d51780b57aebac34bf23d80c41b6e1a1d0b8ee6bf4927f01b1c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 2,
+      "decisions": [
+        {
+          "original_id": "a294-01-measurement-clocks-and-thread-scopes",
+          "title": "同一耗时区间，先固定时钟与线程范围",
+          "decision": "remove",
+          "reason": "时钟、线程CPU、协程和下钻四卡重复两段scope与时间定义。",
+          "original_line": 99,
+          "heading": "## 观测对象分层"
+        },
+        {
+          "original_id": "a294-02-collector-coverage-and-build-scope",
+          "title": "采集覆盖取决于调用路径与实际构建范围",
+          "decision": "remove",
+          "reason": "封装、PROJECT/ALL、StrictMode和Hook四卡重复六行采集覆盖表。",
+          "original_line": 117,
+          "heading": "## I/O 采集路径选择"
+        },
+        {
+          "original_id": "a294-03-strictmode-and-resource-signals",
+          "title": "StrictMode 的“发生”信号通向受控复现",
+          "decision": "remove",
+          "reason": "线程VM策略、CloseGuard和复现四卡重复配置及API边界说明。",
+          "original_line": 151,
+          "heading": "### StrictMode 能证明什么"
+        },
+        {
+          "original_id": "a294-04-io-rules-and-confounders",
+          "title": "不良 I/O 规则按场景建立可比较分母",
+          "decision": "remove",
+          "reason": "四类访问模式卡复述六规则表与固定基线流程，没有实际反例时序。",
+          "original_line": 188,
+          "heading": "## 不良 I/O 规则模板"
+        },
+        {
+          "original_id": "a294-05-dao-transaction-driver-callback",
+          "title": "DAO、事务、driver 与回调分别回答不同问题",
+          "decision": "remove",
+          "reason": "DAO、事务、driver和callback四卡复写五scope起止范围表。",
+          "original_line": 205,
+          "heading": "## SQLite 耗时、损坏与查询计划"
+        },
+        {
+          "original_id": "a294-06-room-285-driver-and-callback-boundary",
+          "title": "Room 2.8.5：先检查 driver 与回调是否可组合",
+          "decision": "remove",
+          "reason": "Support路径、driver组合拒绝、异步时序和参数持有四卡重复QueryCallback示例及前后源码限定。",
+          "original_line": 231,
+          "heading": "### Room QueryCallback 能测到什么"
+        },
+        {
+          "original_id": "a294-07-sql-fingerprint-and-parser-failure",
+          "title": "SQL 指纹先去数据，再保留受控结构",
+          "decision": "keep",
+          "reason": "SQL进入观测后词法解析、去注释字面量、解析失败unknown到受控指纹与分层聚合的处理链，强调不能失败回退原文。",
+          "original_line": 238,
+          "heading": "### Room QueryCallback 能测到什么"
+        },
+        {
+          "original_id": "a294-08-framework-diagnostics-and-cache-layers",
+          "title": "框架诊断常量不是业务门槛，也不是生产公开 API",
+          "decision": "remove",
+          "reason": "OperationLog、cache、miss和Room四卡重复各常量和隐藏API段落。",
+          "original_line": 262,
+          "heading": "### 系统框架内部的诊断信息"
+        },
+        {
+          "original_id": "a294-09-eqp-consistency-and-versioned-analysis",
+          "title": "执行计划复现依赖一致副本与同一 SQLite 实现",
+          "decision": "remove",
+          "reason": "快照、同driver、计划节点和EQP格式四卡重复SQL样例解释及Matrix未知格式规则。",
+          "original_line": 285,
+          "heading": "### 查询计划的验证环境"
+        },
+        {
+          "original_id": "a294-10-error-recovery-and-file-atomicity",
+          "title": "错误恢复与文件替换不能掩盖数据丢失",
+          "decision": "remove",
+          "reason": "错误、恢复类别、AtomicFile和rename四卡重复错误分节与文件协议原文，无恢复决策路径。",
+          "original_line": 320,
+          "heading": "## 存储容量与文件损坏指标"
+        },
+        {
+          "original_id": "a294-11-library-version-driver-and-legacy-rules",
+          "title": "库版本独立于系统版本，旧 Hook 规则重新验证",
+          "decision": "remove",
+          "reason": "两库版本、扩展码、Room变化和Matrix四卡重复版本四项列表与历史Hook验证表。",
+          "original_line": 382,
+          "heading": "## 扩展：AndroidX SQLite/Room 新版本诊断能力"
+        },
+        {
+          "original_id": "a294-12-io-and-block-trace-tracks",
+          "title": "应用 I/O、页缓存与块设备请求在时间轴上建立候选关系",
+          "decision": "keep",
+          "reason": "应用read缓存命中、write返回与页缓存脏页/延迟回写和后续块请求四轨错位，表达调用与设备IO非一一对应。",
+          "original_line": 403,
+          "heading": "## 扩展：Perfetto 文件系统 trace 与线上指标对照"
+        }
+      ],
+      "sha256_after": "42ef8a422123c59d8a37120501d858e3171abcb8c159fbb0c385c2a2d4fb8ff4",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:38:22.540056+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 12,
+        "contexts_actually_viewed": 2,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a294/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a294/visual-review.json",
+      "retired_diagrams": [
+        "a294-01-measurement-clocks-and-thread-scopes",
+        "a294-02-collector-coverage-and-build-scope",
+        "a294-03-strictmode-and-resource-signals",
+        "a294-04-io-rules-and-confounders",
+        "a294-05-dao-transaction-driver-callback",
+        "a294-06-room-285-driver-and-callback-boundary",
+        "a294-08-framework-diagnostics-and-cache-layers",
+        "a294-09-eqp-consistency-and-versioned-analysis",
+        "a294-10-error-recovery-and-file-atomicity",
+        "a294-11-library-version-driver-and-legacy-rules"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-294/retired-assets.json"
     },
     {
       "index": 296,
@@ -67910,8 +68037,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 201,
-  "next_article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+  "reviewed_articles": 202,
+  "next_article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -67921,7 +68048,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:36:21.738249+08:00",
+  "updated_at": "2026-10-31T19:38:22.540056+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -67994,6 +68121,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+      "registered_sha256": "9e2dd85bb78de149990e1e9bf94b95048c0641723062a161c56a823ae0504918",
+      "observed_sha256": "f97ffd2642c5cdbdb9aba04199dd9dd9fb5753a4740c91785169a1fe91e89bd0",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
@@ -68043,9 +68177,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5774,
-  "reviewed_placements_after": 2252,
-  "net_removed_placements": 3522,
+  "reviewed_placements_before": 5786,
+  "reviewed_placements_after": 2254,
+  "net_removed_placements": 3532,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,

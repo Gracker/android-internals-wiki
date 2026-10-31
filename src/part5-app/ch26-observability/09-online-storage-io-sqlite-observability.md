@@ -96,10 +96,6 @@ AndroidX SQLite、Room 和 Matrix（腾讯开源的性能诊断工具集）是�
 
 路径、SQL 和文件内容都可能带用户数据。默认只采集稳定类别、用于聚合同类对象的受控指纹和应用调用点；需要原始证据时走 26.3 的受限诊断流程，常规事件维持较低的敏感数据采集范围。
 
-<!-- gracker-diagram: a294-01-measurement-clocks-and-thread-scopes -->
-![同一耗时区间，先固定时钟与线程范围](../../assets/diagrams/ch26/a294-01-measurement-clocks-and-thread-scopes.png)
-
-图：跨线程CPU差不能直接解释DAO耗时；低CPU也不能单独证明磁盘慢。
 
 ## I/O 采集路径选择
 
@@ -114,10 +110,6 @@ AndroidX SQLite、Room 和 Matrix（腾讯开源的性能诊断工具集）是�
 | Android Debug Bridge（adb）+ Perfetto | 调度状态、频率、应用 trace、database atrace（数据库追踪事件），以及设备允许的 ftrace（内核追踪框架）、block（块设备请求）和 filemap（文件页缓存）数据 | 没有启用或无权限的数据源；一次 trace 之外的长期分布 | 实验室复现和开发设备诊断 |
 | `ProfilingManager` system trace（系统性能轨迹） | Android 15+ 受系统限流的应用请求采集；Android 17 还可结合部分系统 trigger（触发条件） | 不保证每次请求成功，也不等同于任意 adb Perfetto 配置 | 线上小范围诊断，版本细节见 26.6 |
 
-<!-- gracker-diagram: a294-02-collector-coverage-and-build-scope -->
-![采集覆盖取决于调用路径与实际构建范围](../../assets/diagrams/ch26/a294-02-collector-coverage-and-build-scope.png)
-
-图：ALL不能用于library项目；反射可见性取决于被插桩位置，不能一概排除三方依赖。
 
 ### StrictMode 能证明什么
 
@@ -148,10 +140,6 @@ StrictMode.setVmPolicy(
 
 [`CloseGuard.setReporter()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/CloseGuard.java) 在 Android 17 仍标记为隐藏/System API，普通应用拿不到稳定的公开调用契约。反射替换 reporter 会同时引入 non-SDK 限制和版本兼容风险；长期监控我们优先用公开的 StrictMode VM policy，并把使用范围限制在测试与受控诊断场景。
 
-<!-- gracker-diagram: a294-03-strictmode-and-resource-signals -->
-![StrictMode 的“发生”信号通向受控复现](../../assets/diagrams/ch26/a294-03-strictmode-and-resource-signals.png)
-
-图：线程策略和VM泄漏信号覆盖不同；一次磁盘访问不自动等于一次卡顿。
 
 ### Native Hook 的验证清单
 
@@ -185,10 +173,6 @@ Hook 覆盖不完整，数据照样有用，前提是事件带上 `collector` �
 
 主线程磁盘访问在 debug 阶段可以“发生即检查”；到了线上告警，每次访问和用户卡顿要分开看。调用发生时数据可能已在页缓存，耗时也可能短于一次帧预算；我们把 FrameTimeline（帧时间线）、主线程 slice（带起止时间的轨迹片段） 和用户操作关联起来，再定优先级。
 
-<!-- gracker-diagram: a294-04-io-rules-and-confounders -->
-![不良 I/O 规则按场景建立可比较分母](../../assets/diagrams/ch26/a294-04-io-rules-and-confounders.png)
-
-图：设备、场景、版本与覆盖共同建立基线，文件系统块大小不推导万能buffer。
 
 ## SQLite 耗时、损坏与查询计划
 
@@ -202,10 +186,6 @@ SQLite 可观测性要把执行、事务、连接等待、错误和恢复分开�
 | query callback | Room 在查询执行时通知 SQL 与 bind 参数 | SQL 文本、bind（绑定）参数和调用频率 | 精确耗时；回调可能在另一个 Executor（任务执行器）上 |
 | exception/recovery | 捕获异常到恢复动作结束 | 错误类别、数据可用性和恢复结果 | 错误发生前所有磁盘状态 |
 
-<!-- gracker-diagram: a294-05-dao-transaction-driver-callback -->
-![DAO、事务、driver 与回调分别回答不同问题](../../assets/diagrams/ch26/a294-05-dao-transaction-driver-callback.png)
-
-图：同一个duration字段不可混入不同scope；回调Executor上计时只能量到回调自身。
 
 ### Room QueryCallback 能测到什么
 
@@ -228,10 +208,6 @@ Room.databaseBuilder(context, AppDatabase::class.java, "main.db")
     .build()
 ```
 
-<!-- gracker-diagram: a294-06-room-285-driver-and-callback-boundary -->
-![Room 2.8.5：先检查 driver 与回调是否可组合](../../assets/diagrams/ch26/a294-06-room-285-driver-and-callback-boundary.png)
-
-图：fun interface允许lambda，但不能推导所有Room driver都有回调覆盖；仅回调采样也不免除上游成本。
 
 SQL 文本本身也可能通过字符串拼接带上账号、搜索词或 URL，光丢弃 `bindArgs` 还不够。`normalizer`应使用与目标SQLite语法匹配的词法/解析器，先去除可能带数据的注释，并替换字符串、数值和BLOB字面量，再做受控归一化指纹；不能靠简单正则覆盖引号与转义。解析失败时只记unknown/错误类别，不回退上传原始SQL。用 DAO 外围计时的话，字段名明确写成 `dao_end_to_end`，免得与 driver 执行耗时混在一起。
 
@@ -259,10 +235,6 @@ private static final long LONG_OPERATION_THRESHOLD_MS = 2_000;
 
 Android 17 仍提供 lookaside（小对象内存复用区）和空闲连接超时配置，但“可配置”和“生产上该调”之间还差一层论证。`SQLiteDatabase.OpenParams.Builder#setIdleConnectionTimeout()` 已废弃，文档明确警告重建连接会清除 per-connection PRAGMA，也就是每条连接各自的 SQLite 运行时配置；系统又没有供 App 恢复这些状态的回调。`setLookasideConfig(0, 0)` 可以请求禁用 lookaside（SQLite 的小对象内存复用区），但系统可能按设备选择不同值；等目标 driver、内存和查询基准都证明有收益，我们再考虑修改。
 
-<!-- gracker-diagram: a294-08-framework-diagnostics-and-cache-layers -->
-![框架诊断常量不是业务门槛，也不是生产公开 API](../../assets/diagrams/ch26/a294-08-framework-diagnostics-and-cache-layers.png)
-
-图：17r1的POOL STATS cache size是缓存语句数；慢查询属性与SQLiteTime是两套开发诊断机制。
 
 ### 查询计划的验证环境
 
@@ -282,10 +254,6 @@ LIMIT 50;
 
 Android 官方建议用目标设备上的 `adb shell sqlite3`，因为不同 Android 版本带的 SQLite revision（源码修订版） 不一样。用`BundledSQLiteDriver`时，应用携带自己的 SQLite 实现，设备自带的 `sqlite3` 可能对应另一个实现；这时要在同一 driver、同一 schema 的测试工具里跑执行计划。
 
-<!-- gracker-diagram: a294-09-eqp-consistency-and-versioned-analysis -->
-![执行计划复现依赖一致副本与同一 SQLite 实现](../../assets/diagrams/ch26/a294-09-eqp-consistency-and-versioned-analysis.png)
-
-图：计划、代表性数据与真实执行成本共同判断，不能看到SCAN就自动加索引。
 
 ### SQLite 错误分类与恢复
 
@@ -317,10 +285,6 @@ Android 官方建议用目标设备上的 `adb shell sqlite3`，因为不同 And
 
 远程清理是破坏性能力，要有固定 allowlist、规则版本、dry-run（只统计而不执行删除）、幂等执行（重复运行结果一致）和远程关闭这几道约束。未知文件、唯一用户数据、正在打开的数据库文件，以及现有规则识别不了的目录，都要排除在“疑似缓存”之外。
 
-<!-- gracker-diagram: a294-10-error-recovery-and-file-atomicity -->
-![错误恢复与文件替换不能掩盖数据丢失](../../assets/diagrams/ch26/a294-10-error-recovery-and-file-atomicity.png)
-
-图：rename的命名替换不单独承诺断电持久化；数据库相关文件不能按缓存随意清理。
 
 ## 上报、采样与隐私
 
@@ -379,10 +343,6 @@ SQLiteLint 的 wiki 明确说明，其系统 SQLite 路径通过 Hook 向 C 层 
 
 线上事件建议保留 `room_version`、`androidx_sqlite_version`、driver 类型、SQLite 是否随应用打包、journal mode（日志模式） 和 schema version（数据库结构版本）。从系统 `AndroidSQLiteDriver` 换到 `BundledSQLiteDriver` 或其他实现后，性能基线和错误码能力都可能变化，时间序列上应标记切换点。
 
-<!-- gracker-diagram: a294-11-library-version-driver-and-legacy-rules -->
-![库版本独立于系统版本，旧 Hook 规则重新验证](../../assets/diagrams/ch26/a294-11-library-version-driver-and-legacy-rules.png)
-
-图：历史规则可以复用，2019 wiki的Hook覆盖不能直接外推Android17。
 
 ## 扩展：Perfetto 文件系统 trace 与线上指标对照
 
