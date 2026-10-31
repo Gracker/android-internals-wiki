@@ -455,11 +455,15 @@
       "routed_at": "2026-08-27T06:20:09.720139+08:00"
     },
     {
-      "action": "queue",
+      "action": "body-applied",
       "chapter": "ch02 §2.31",
       "path": "vault/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md",
       "processed_at": "2026-07-18T10:33:46.781497",
-      "status": "queued",
+      "status": "body-applied",
+      "applied_at": "2026-10-31T21:20:57+08:00",
+      "applied_run_id": "20261031-211520-fc7dd9b7",
+      "previous_action": "queue",
+      "application_note": "核心评分与 UID 覆盖已在正文中有稳定来源标记；此次只补入材料 §2 的模式设置失败边界，并按 android-17.0.0_r1 源码修正 HasDesiredMode/PendingModeFps 的诊断含义。未采用材料中错误的通用评分公式、API 路由和固定切换帧数。",
       "summary": "DisplayModeController 四态状态机、RefreshRateSelector 三组输入评分、FrameRateOverrideMappings 双路 override 合并",
       "title": "SurfaceFlinger DisplayMode 选择与 RefreshRateSelector 评分机制",
       "previous_route_status": null,
