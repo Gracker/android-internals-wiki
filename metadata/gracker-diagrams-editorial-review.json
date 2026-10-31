@@ -57737,9 +57737,295 @@
       "before_count": 30,
       "before_all_images": 30,
       "sha256_before": "cdfd88583dfb70a61348d0a26164f7572f871c1dcb85ed3a113781d7d3c0ad02",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a233-01-layout-steps",
+          "title": "完整布局的三步状态机",
+          "decision": "remove",
+          "reason": "三步状态表及AutoMeasure移动重复step2的段落完整，线性三框不足表达重复路径，删除重复总览。",
+          "original_line": 120,
+          "heading": "### `dispatchLayout()` 三步与 AutoMeasure"
+        },
+        {
+          "original_id": "a233-02-holder-lookup",
+          "title": "Holder 查找按状态逐层降级",
+          "decision": "keep",
+          "reason": "逐级未命中回退到扩展缓存、Pool和新建的横向链，结合下方更细查找表避免把缓存命中等同免bind。",
+          "original_line": 146,
+          "heading": "#### 实际的 holder 查找顺序"
+        },
+        {
+          "original_id": "a233-03-pool-contract",
+          "title": "共享 Pool 共享的是整数类型契约",
+          "decision": "remove",
+          "reason": "共享池结构契约与cache2/Pool5各自语义段落完整，三行分类卡重复。",
+          "original_line": 182,
+          "heading": "#### 实际的 holder 查找顺序"
+        },
+        {
+          "original_id": "a233-05-async-generations",
+          "title": "AsyncListDiffer 的同步与异步路径",
+          "decision": "remove",
+          "reason": "同步快路径、后台差分代次丢弃非取消与回调取代段落完整，三行规则卡未增加代次竞速示例。",
+          "original_line": 197,
+          "heading": "### DiffUtil 与增量更新"
+        },
+        {
+          "original_id": "a233-04-identity-diff",
+          "title": "三个身份与变化判断各司其职",
+          "decision": "remove",
+          "reason": "身份内容payload三项列表和完整代码更精确，分类卡重复。",
+          "original_line": 204,
+          "heading": "### DiffUtil 与增量更新"
+        },
+        {
+          "original_id": "a233-06-payload-merge",
+          "title": "Payload 只选字段，最终值取当前快照",
+          "decision": "remove",
+          "reason": "多payload字段合并和未知空回退的41行代码与段落完整，二行规则卡重复。",
+          "original_line": 263,
+          "heading": "### DiffUtil 与增量更新"
+        },
+        {
+          "original_id": "a233-07-gapworker-main",
+          "title": "GapWorker 将创建与绑定提前到主线程",
+          "decision": "keep",
+          "reason": "滚动post、主线程GapWorker创建绑定、下一帧仍测量布局的时间链，明确预取工作的执行线程与剩余阶段。",
+          "original_line": 278,
+          "heading": "### 预取机制与配置"
+        },
+        {
+          "original_id": "a233-08-prefetch-budgets",
+          "title": "两种紧急预取的预算检查不同",
+          "decision": "keep",
+          "reason": "并列对照RV普通估计、FOREVER跳过估计、Compose紧急仍需正剩余预算，横跨两节机制便于比较。",
+          "original_line": 285,
+          "heading": "### 预取机制与配置"
+        },
+        {
+          "original_id": "a233-09-nested-bounds",
+          "title": "嵌套列表先限制工作范围",
+          "decision": "remove",
+          "reason": "嵌套五项措施及fixedSize仅容器、initialPrefetch仅嵌套的正文代码完整，三行措施卡重复。",
+          "original_line": 338,
+          "heading": "### 嵌套滚动与多 RecyclerView 场景优化"
+        },
+        {
+          "original_id": "a233-10-animation",
+          "title": "非空 payload 与默认动画器",
+          "decision": "remove",
+          "reason": "DefaultItemAnimator非空payload复用与其他动画限制在紧邻段落完整，三行规则卡重复。",
+          "original_line": 347,
+          "heading": "### 变更动画与局部刷新的配合"
+        },
+        {
+          "original_id": "a233-11-deliqueue",
+          "title": "无锁入队之后仍要等主线程执行",
+          "decision": "remove",
+          "reason": "Treiber入队、Looper私有堆与仍有主线程工作的段落完整，线性卡重复且并非实际并发时间轴。",
+          "original_line": 370,
+          "heading": "### Android 17 的 DeliQueue"
+        },
+        {
+          "original_id": "a233-12-velocity",
+          "title": "列表速度只是刷新率策略的输入",
+          "decision": "remove",
+          "reason": "API35速度报告由平台决定刷新策略的单段与图注信息重复。",
+          "original_line": 403,
+          "heading": "### RecyclerView 1.4 与自适应刷新率协作"
+        },
+        {
+          "original_id": "a233-13-scroll-phases",
+          "title": "滚动不等于重新组合所有行",
+          "decision": "remove",
+          "reason": "三条滚动阶段路径列表完整，三行分类卡重复。",
+          "original_line": 457,
+          "heading": "### 1. LazyLayout 每次滚动会做什么"
+        },
+        {
+          "original_id": "a233-14-keys",
+          "title": "位置键会把状态留给错误实体",
+          "decision": "keep",
+          "reason": "头部插入前后位置key与实体稳定key的具体对应示例，可直接看到X插入时A/B身份变化。",
+          "original_line": 473,
+          "heading": "### 2. key 管业务身份"
+        },
+        {
+          "original_id": "a233-15-content-type",
+          "title": "身份和结构兼容性是两条轴",
+          "decision": "remove",
+          "reason": "contentType结构兼容与内部每类型7槽非业务承诺的正文完整，三行分类卡重复。",
+          "original_line": 513,
+          "heading": "### 3. contentType 管复用兼容性"
+        },
+        {
+          "original_id": "a233-16-state-lifetimes",
+          "title": "项目状态按生命周期选择持有者",
+          "decision": "remove",
+          "reason": "remember、可恢复小状态与业务VM三种生命周期段落完整，三行分类卡重复。",
+          "original_line": 524,
+          "heading": "### 4. 项目状态：remember、rememberSaveable 与数据状态"
+        },
+        {
+          "original_id": "a233-17-scroll-signals",
+          "title": "同一滚动源分离界面阈值与副作用",
+          "decision": "remove",
+          "reason": "derived阈值、snapshotFlow首次true与后期阶段连续效果的代码段落完整，三行API卡重复。",
+          "original_line": 580,
+          "heading": "### 5. 高频滚动状态放在合适的观察位置"
+        },
+        {
+          "original_id": "a233-18-item-size",
+          "title": "虚拟化单位与占位尺寸共同决定首轮工作",
+          "decision": "remove",
+          "reason": "DSL虚拟化单元、合理占位、零高度连取的段落完整，三行规则卡重复。",
+          "original_line": 600,
+          "heading": "### 6. 项目切分与尺寸对首屏的影响"
+        },
+        {
+          "original_id": "a233-19-compose-prefetch",
+          "title": "Compose 预取的阶段门禁",
+          "decision": "keep",
+          "reason": "compose、apply、resolve-nested、measure四阶段顺序标明只有组合合法边界可暂停，便于后续预算和开关讨论。",
+          "original_line": 615,
+          "heading": "### 7. 预取运行在主线程的剩余时间里"
+        },
+        {
+          "original_id": "a233-20-cache-window",
+          "title": "窗口用距离，不用 item 个数",
+          "decision": "remove",
+          "reason": "ahead准备与behind保留以及dp窗口非项目数段落完整，三行对应卡没有画出真正空间窗口。",
+          "original_line": 652,
+          "heading": "#### LazyLayoutCacheWindow 的前向与后向窗口"
+        },
+        {
+          "original_id": "a233-21-nested-constraints",
+          "title": "嵌套滚动先解决约束",
+          "decision": "remove",
+          "reason": "同轴无限约束、交叉轴有限约束与少量Row的列表完整，三行分类卡重复。",
+          "original_line": 667,
+          "heading": "### 8. 嵌套滚动先处理约束和轴向"
+        },
+        {
+          "original_id": "a233-22-paging",
+          "title": "Paging 数据窗口与 UI 预取分开调",
+          "decision": "remove",
+          "reason": "Paging数据请求与LazyUI准备两个窗口和占位键类型段落完整，三行规则卡重复。",
+          "original_line": 678,
+          "heading": "### 9. Paging 3 的数据预取与界面预取"
+        },
+        {
+          "original_id": "a233-23-grid",
+          "title": "网格算法与平台刷新机制分层",
+          "decision": "remove",
+          "reason": "line/span与lane及类型兼容限制段落完整，三行分类卡重复。",
+          "original_line": 731,
+          "heading": "### 10. 网格与交错网格"
+        },
+        {
+          "original_id": "a233-24-retention",
+          "title": "内存来自多个并存的保留集合",
+          "decision": "remove",
+          "reason": "保留项目六类及状态图片业务缓存不同生命周期列表更全面，三行归因卡重复。",
+          "original_line": 751,
+          "heading": "### 11. 内存边界"
+        },
+        {
+          "original_id": "a233-25-frame-evidence",
+          "title": "先找迟到帧，再沿同一帧归因",
+          "decision": "remove",
+          "reason": "六步发布构建帧指标、FrameTimeline、UI、RT/GPU定位流程更完整，四框卡重复。",
+          "original_line": 771,
+          "heading": "### 12. 用 Perfetto 和 Macrobenchmark 归因"
+        },
+        {
+          "original_id": "a233-26-sql-window",
+          "title": "查询保留身份、交集和时长含义",
+          "decision": "remove",
+          "reason": "SQL交集完整时长、upid/layer/id身份与inclusive非CPU的查询代码和解释完整，三行证据卡重复。",
+          "original_line": 824,
+          "heading": "### 12. 用 Perfetto 和 Macrobenchmark 归因"
+        },
+        {
+          "original_id": "a233-27-pausable-machine",
+          "title": "PausableComposition 的公开状态门禁",
+          "decision": "remove",
+          "reason": "公开暂停句柄的resume循环、完成复核、cancel丢弃正文完整，三行卡未画出循环与完成失效回路，删除避免与19重复。",
+          "original_line": 837,
+          "heading": "### 13. PausableComposition 的适用范围"
+        },
+        {
+          "original_id": "a233-28-budget-origin",
+          "title": "预取预算与实际显示截止时间来源不同",
+          "decision": "remove",
+          "reason": "估算drawingTime刷新周期和平台实际FrameTimeline区别在紧邻段落完整，二行来源卡重复。",
+          "original_line": 844,
+          "heading": "### 13. PausableComposition 的适用范围"
+        },
+        {
+          "original_id": "a233-29-platform-boundary",
+          "title": "库、平台与内核各自拥有的规则",
+          "decision": "remove",
+          "reason": "库、平台、内核三层边界正文完整，三行版本分类卡重复。",
+          "original_line": 859,
+          "heading": "### 14. Android 17 与内核边界"
+        },
+        {
+          "original_id": "a233-30-ab-variants",
+          "title": "同版本独立进程验证暂停预取回退",
+          "decision": "remove",
+          "reason": "固定依赖、加载前静态开关、独立冷进程同条件与四阶段归因列表完整，四框实验卡重复。",
+          "original_line": 895,
+          "heading": "### 16. 版本升级、同版本 A/B 与回退"
+        }
+      ],
+      "sha256_after": "e8dc43b6de0ef5e80310b8e1bc55ef8bb35f46b2f8835e643ed64341ad410ae9",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:13:45.737108+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 30,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a233/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a233/visual-review.json",
+      "retired_diagrams": [
+        "a233-01-layout-steps",
+        "a233-03-pool-contract",
+        "a233-04-identity-diff",
+        "a233-05-async-generations",
+        "a233-06-payload-merge",
+        "a233-09-nested-bounds",
+        "a233-10-animation",
+        "a233-11-deliqueue",
+        "a233-12-velocity",
+        "a233-13-scroll-phases",
+        "a233-15-content-type",
+        "a233-16-state-lifetimes",
+        "a233-17-scroll-signals",
+        "a233-18-item-size",
+        "a233-20-cache-window",
+        "a233-21-nested-constraints",
+        "a233-22-paging",
+        "a233-23-grid",
+        "a233-24-retention",
+        "a233-25-frame-evidence",
+        "a233-26-sql-window",
+        "a233-27-pausable-machine",
+        "a233-28-budget-origin",
+        "a233-29-platform-boundary",
+        "a233-30-ab-variants"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-233/retired-assets.json"
     },
     {
       "index": 234,
@@ -58281,8 +58567,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 157,
-  "next_article": "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
+  "reviewed_articles": 158,
+  "next_article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -58292,7 +58578,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:07:42.406960+08:00",
+  "updated_at": "2026-10-31T17:13:45.737108+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -58470,9 +58756,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4815,
-  "reviewed_placements_after": 1980,
-  "net_removed_placements": 2835,
+  "reviewed_placements_before": 4845,
+  "reviewed_placements_after": 1985,
+  "net_removed_placements": 2860,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -58496,5 +58782,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 157
+  "currently_matching_reviewed_source_count": 158
 }
