@@ -13,11 +13,11 @@ tags:
   - wms
   - windowmanagerservice
   - surface
-last_verified: '2026-10-28'
-last_source_verified_at: '2026-10-28'
+last_verified: '2026-10-31'
+last_source_verified_at: '2026-10-31'
 last_rework_at: '2026-10-28T09:41:03+08:00'
-last_deep_review_at: '2026-10-28T08:40:14+08:00'
-verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。补核 Window/SurfaceView HDR headroom 的 HDR 模式前提、独立作用域、比值及输入范围、自动默认值和 Android 15/16 limited_hdr 注解到 Android 17 移除注解的边界；复核 SurfaceView 四项 API 与 alpha。WebView、Flutter、React Native 和游戏拓扑分别补核到 Chromium 140.0.7339.155、Flutter 3.35.0、React Native 0.82.0 与 Godot 4.5-stable；结论限定于相应承载与合成路径，不外推其他组件版本、插件或设备表现。
+last_deep_review_at: '2026-10-31T20:40:22+08:00'
+verification_scope_note: 已复核 Android 17 dequeueBuffer 的槽位所有权、返回 fence、安全覆写时机、分配等待与旧 EGL/弃用包装分支，以及按 Display 持有的 InputMonitor、Handler 调度和立即更新事务；WindowTracingPerfetto 默认实现与旧命令迁移、预测返回迁移边界复核一致。已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。补核 Window/SurfaceView HDR headroom 的 HDR 模式前提、独立作用域、比值及输入范围、自动默认值和 Android 15/16 limited_hdr 注解到 Android 17 移除注解的边界；复核 SurfaceView 四项 API 与 alpha。WebView、Flutter、React Native 和游戏拓扑分别补核到 Chromium 140.0.7339.155、Flutter 3.35.0、React Native 0.82.0 与 Godot 4.5-stable；结论限定于相应承载与合成路径，不外推其他组件版本、插件或设备表现。
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: medium-high
 sources:
@@ -259,6 +259,18 @@ sources:
   path: https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/vulkan/VkSurfaceView.kt
 - type: official
   path: https://github.com/godotengine/godot/blob/4.5-stable/platform/android/java/lib/src/org/godotengine/godot/vulkan/VkThread.kt
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowTracing.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowTracingPerfetto.java
 related_chapters:
 - '2.1'
 - '2.9'
@@ -354,7 +366,7 @@ sequenceDiagram
 
 `ViewRootImpl.performDraw()` 经 `ThreadedRenderer`、`HardwareRenderer.syncAndDrawFrame()` 进入原生 HWUI。RenderThread 同步 `RenderNode` 状态、组织 Skia 绘制工作并向 GPU 提交命令。我们要留意，主线程可能在同步阶段等 RenderThread；`syncAndDrawFrame()` 返回，说明不了 GPU 已经完成。
 
-RenderThread 通过 `dequeueBuffer` 取得可写的缓冲槽，再用 `queueBuffer` 把该 slot 和描述信息、生产完成 fence 交回。fence 表示异步图形工作何时完成，消费者把它当作 acquire fence 使用。`queueBuffer(slot, QueueBufferInput, ...)` 传入裁剪区域、变换、色彩空间标识（dataspace）、时间戳和同步对象等信息；buffer 对象与 slot 的关联由 `requestBuffer()` 等接口管理。整帧像素不经过 Binder 复制。
+RenderThread 通过 `dequeueBuffer` 取得缓冲槽和约束旧内容何时可安全覆盖的 fence。返回成功后，生产者仍须遵守该 fence；`Fence::NO_FENCE` 表示可以立即写入。随后用 `queueBuffer` 把该 slot 和描述信息、本轮生产完成 fence 交回。后一个 fence 表示本轮异步图形工作何时完成，消费者把它当作 acquire fence 使用。`queueBuffer(slot, QueueBufferInput, ...)` 传入裁剪区域、变换、色彩空间标识（dataspace）、时间戳和同步对象等信息；buffer 对象与 slot 的关联由 `requestBuffer()` 等接口管理。整帧像素不经过 Binder 复制。
 
 标准应用窗口的 `BLASTBufferQueue` 位于应用进程。它取得 `BufferItem` 后，用 `SurfaceComposerClient::Transaction::setBuffer()` 携带 buffer、acquire fence、帧号与释放回调，再把事务提交给 SurfaceFlinger；窗口几何事务还可以按帧号与 buffer 更新对齐。
 
@@ -501,7 +513,9 @@ HDR 亮度余量也要按目标对象分别设置。`Window.setDesiredHdrHeadroo
 
 标准路径关注 `VSYNC-app`（显示刷新同步信号）、`Choreographer#doFrame`、五类回调、`syncAndDrawFrame`、`dequeueBuffer` 和 `queueBuffer`。原生图形路径还要观察 swapchain 图像获取、CPU 提交、GPU 完成和交换链深度（swapchain depth）。
 
-`dequeueBuffer` 长时间等待，常指向可复用 slot 不足或 release fence 迟到；CPU 调度只是候选原因之一，先看 buffer 周转再看调度。
+`dequeueBuffer` 耗时要按实际调用层拆开。`android-17.0.0_r1` 的 `BufferQueueProducer::dequeueBuffer()` 可能等待可用 slot，也可能等待正在进行的分配，或自行分配、重分配 GraphicBuffer。先对齐消费者 acquire/release、队列深度和 `buffer reallocation` 事件，再检查线程调度与分配开销。
+
+带 fence 输出的现代接口可在 release fence 尚未 signal 时返回，该 fence 约束后续写入。`Surface::dequeueBuffer()` 把 fence fd 交给调用方，单凭一个 `dequeueBuffer` slice 无法确定其中是否等待了 release fence。兼容分支另有等待：弃用的 `dequeueBuffer_DEPRECATED` 包装会在返回前等待 fence；`BufferQueueProducer` 保留的旧 EGL fence 分支也可能等待。排查时，把调用耗时、返回 fence 的 signal 时刻与实际 CPU/GPU 等待对应起来。接口约定见 [`IGraphicBufferProducer.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h#214)，实现见 [`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp#752) 与 [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp#347)。
 
 #### 5.4 对齐系统消费阶段
 
@@ -523,7 +537,7 @@ FrameTimeline 对标准应用窗口很有价值；[Perfetto 文档](https://perf
 |---|---|
 | `doFrame` 中 INPUT/ANIMATION/TRAVERSAL 超预算 | 同步 I/O、布局反复失效、过深层级、对象分配、主线程锁竞争 |
 | `syncAndDrawFrame` 等待明显 | RenderThread 任务积压、复杂 DisplayList、GPU 提交压力、UI 线程与 RenderThread 同步 |
-| `dequeueBuffer` 长等待 | BufferQueue 可用缓冲槽数量、消费者持有时间、release fence、过深的在途队列 |
+| `dequeueBuffer` 长等待 | 可用 slot、消费者持有时间与在途队列、buffer 分配或重分配、具体调用层的 fence 等待 |
 | GPU 完成时间迟到 | 着色器、纹理带宽、过度绘制（overdraw）、离屏渲染阶段、分辨率和热降频 |
 | `BufferTX` 积压或 latch 迟到 | 生产者出帧节奏、acquire fence、事务屏障，以及下游阻塞迫使上游等待的反压（backpressure） |
 | `DEVICE` 频繁变为 `CLIENT` | 几何变换、透明度、像素格式、dataspace、受保护内容、硬件叠加平面竞争 |
@@ -1173,17 +1187,20 @@ InputReader 和 InputDispatcher 位于 native InputFlinger：前者读取并规�
 - 当前 focused window；
 - PIP、wallpaper、recents、drag 等 input consumer（消费特定输入事件的系统对象）。
 
-`DisplayContent.InputMonitor` 把这些信息写进 `SurfaceControl.Transaction.setInputWindowInfo()`，并通过 transaction 与 Layer 状态一起提交。这样输入命中区域可以和可见 Surface 几何保持同一批更新，输入系统随后按这份输入窗口快照选择目标。
+每个 `DisplayContent` 持有的 `InputMonitor` 把这些信息写进 `SurfaceControl.Transaction.setInputWindowInfo()`，并通过 transaction 与 Layer 状态一起提交。这样输入命中区域可以和可见 Surface 几何保持同一批更新，输入系统随后按这份输入窗口快照选择目标。
 
-主要关系如下：
+常规更新先调度到 AnimationThread，再填充输入窗口信息：
 
 ```text
 WMS add/relayout/focus/layout
-  → InputMonitor.updateInputWindows()
-    → SurfaceControl.Transaction.setInputWindowInfo()
-      → SurfaceFlinger / InputFlinger 更新输入窗口快照
-        → InputDispatcher 命中目标并投递事件
+  → InputMonitor.updateInputWindowsLw(force)
+    → AnimationThread 上的 UpdateInputWindows.run()
+      → SurfaceControl.Transaction.setInputWindowInfo()
+        → SurfaceFlinger / InputFlinger 更新输入窗口快照
+          → InputDispatcher 命中目标并投递事件
 ```
+
+`updateInputWindowsImmediately(t)` 则移除待执行回调、立即运行更新，并把结果合入调用方事务；立即生成 input info 也不代表 InputDispatcher 已收到新快照。调度与事务合并见 [`InputMonitor.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/InputMonitor.java#344)，按 Display 持有该对象的关系见 [`DisplayContent.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java#1365)。
 
 当 InputDispatcher 判断无焦点窗口或窗口无响应时，通过 `InputManagerCallback` 回到 WMS，随后由 `AnrController` 解析窗口/Activity/进程并通知 ActivityManager。窗口 ANR 超时受目标窗口和应用状态影响，把所有输入超时硬编码成一个通用 5 秒结论是错的。
 
