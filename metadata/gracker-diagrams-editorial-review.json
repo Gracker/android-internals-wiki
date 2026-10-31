@@ -68770,13 +68770,201 @@
       "before_count": 19,
       "before_all_images": 19,
       "sha256_before": "564807f2aae6ad3fff1fafb014f2231dc541dead66bb3d7336c9fb112b071d2c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 4,
+      "decisions": [
+        {
+          "original_id": "a300-01-paper-platform-and-engineering-evidence",
+          "title": "论文报告、固定平台源码和工程验证分别回答不同问题",
+          "decision": "remove",
+          "reason": "四类证据卡逐项重复紧邻证据分类表与正文的论文/源码/设备验证限制，没有新增对象或流程。",
+          "original_line": 131,
+          "heading": "### 证据范围"
+        },
+        {
+          "original_id": "a300-02-async-producer-consumer-gap",
+          "title": "异步故障栈缺少更早的写入者，需在下一次发生前布置观察",
+          "decision": "keep",
+          "reason": "注册者已返回后异步消费者才出错的多轨时间关系，直观说明应观察未来注册而无法补造历史。",
+          "original_line": 153,
+          "heading": "### 为什么会需要“事后指定目标”的方法追踪"
+        },
+        {
+          "original_id": "a300-03-instrumentation-levels-and-fast-check",
+          "title": "ART Instrumentation 内部层级与入口检查有不同作用",
+          "decision": "remove",
+          "reason": "三种Instrumentation级别和快速检查已由紧邻11行代码逐项准确列出，四卡只是重复代码和成本段落。",
+          "original_line": 186,
+          "heading": "#### 事件监听器位于 ART 内部"
+        },
+        {
+          "original_id": "a300-04-ordinary-trace-start-conditional-costs",
+          "title": "Android17 普通方法追踪：保留分支条件再解释成本",
+          "decision": "keep",
+          "reason": "普通追踪与sampling/low-overhead先区分，再由Java-debuggable状态决定转换成本，两路汇入监听器和entry/exit hooks，保留必要条件分支。",
+          "original_line": 230,
+          "heading": "#### Android 17 的方法追踪不再必然全量解释执行"
+        },
+        {
+          "original_id": "a300-05-targeted-entry-and-proxy-dispatch",
+          "title": "XTrace v1：选择目标入口，再由事件代理处理命中方法",
+          "decision": "keep",
+          "reason": "目标集合依编译代码或解释状态分两种入口再汇入事件代理，保留论文选择性入口的核心关系及Android17限制。",
+          "original_line": 267,
+          "heading": "#### 事件代理"
+        },
+        {
+          "original_id": "a300-06-private-art-and-public-runtime-contracts",
+          "title": "私有 ART hook、公共追踪与标准 agent 不共享部署契约",
+          "decision": "remove",
+          "reason": "四卡重复本节私有ART、公开Debug、JVMTI和profileable边界，前后工具表和段落已完整解释。",
+          "original_line": 278,
+          "heading": "#### “不侵入”的适用范围"
+        },
+        {
+          "original_id": "a300-07-reported-ab-rates-and-inference-limits",
+          "title": "大规模 A/B 数字按作者报告引用，不能外推完全等价",
+          "decision": "remove",
+          "reason": "论文A/B分母、相对变化、非劣界值和外推限制已由紧邻表格及两段解释给出，四卡不增加统计关系。",
+          "original_line": 298,
+          "heading": "#### 在线稳定性"
+        },
+        {
+          "original_id": "a300-08-single-device-and-ablation-boundaries",
+          "title": "性能实验与消融只支持所测设备和目标规模",
+          "decision": "remove",
+          "reason": "单设备与消融四卡重复两张实验表及兼容性列表，所有数字和不可线性外推说明均保留。",
+          "original_line": 338,
+          "heading": "#### 兼容性"
+        },
+        {
+          "original_id": "a300-09-frame-symptom-to-view-instance",
+          "title": "卡顿案例：先缩小阶段，再观察实例与重复调用",
+          "decision": "remove",
+          "reason": "六框逐步复述本节Perfetto定位阶段→方法观察同实例→约束修改→A/B的两个段落，末框只是未公开自动关联的限制，不是额外步骤。",
+          "original_line": 359,
+          "heading": "#### UI 卡顿：从 measure 阶段定位到实例"
+        },
+        {
+          "original_id": "a300-10-configuration-activation-and-rollback",
+          "title": "动态配置要管理目标、动作、激活与撤销",
+          "decision": "remove",
+          "reason": "图将异常撤销与健康扩大/完成合并到一个后续节点，可能误读失败后仍扩大；紧邻生产流程和四组评审清单已更精确说明激活与撤销，删除重复图。",
+          "original_line": 387,
+          "heading": "#### 配置是否能安全命中方法"
+        },
+        {
+          "original_id": "a300-11-automation-stimulus-and-runtime-evidence",
+          "title": "自动化操作与运行时事件分别保留证据，再关联步骤",
+          "decision": "remove",
+          "reason": "四卡再次复述紧邻外部刺激、截图录屏、内部事件与时钟对齐两个完整段落；未给出实际关联轨道。",
+          "original_line": 435,
+          "heading": "#### 自动化复现链路的证据分工"
+        },
+        {
+          "original_id": "a300-12-attach-permissions-plugin-and-agent",
+          "title": "运行中 attach：授权、plugin、agent 库与事件分开检查",
+          "decision": "remove",
+          "reason": "已有紧邻完整文本架构区分宿主/ART/plugin/agent，再由加载时机和代码解释权限路径；PNG重复同一链路与capability清单。",
+          "original_line": 496,
+          "heading": "### ART TI、JVMTI plugin 与 agent 的关系"
+        },
+        {
+          "original_id": "a300-13-onload-onattach-onunload-and-dispose",
+          "title": "agent 生命周期没有通用的对称 detach 操作",
+          "decision": "remove",
+          "reason": "OnLoad/Attach/Unload三卡逐项重复紧邻生命周期表，Dispose及进程重启边界已由专段说明；未画出真实状态转换。",
+          "original_line": 554,
+          "heading": "### Agent_OnLoad、Agent_OnAttach 与 Agent_OnUnload"
+        },
+        {
+          "original_id": "a300-14-gc-agent-initialization-transaction",
+          "title": "GC 计数 agent：初始化提交前失败就释放新环境",
+          "decision": "remove",
+          "reason": "六框直接复述紧邻85行最小agent初始化代码与说明，失败释放未提交环境仍只作为框内文字，无额外失败分支；保留完整代码。",
+          "original_line": 655,
+          "heading": "### 最小 agent：只统计 GC 事件"
+        },
+        {
+          "original_id": "a300-15-gc-pauses-not-whole-cycle",
+          "title": "GC Start / Finish 报告暂停边界，不是完整并发 GC 周期",
+          "decision": "keep",
+          "reason": "完整GC与多个STW暂停及并发工作三条时间轨道说明暂停计数非完整周期/CPU工作，保留核心度量边界。",
+          "original_line": 666,
+          "heading": "### 最小 agent：只统计 GC 事件"
+        },
+        {
+          "original_id": "a300-16-event-specific-deoptimization-scopes",
+          "title": "Android17：事件类型与线程过滤共同决定去优化范围",
+          "decision": "remove",
+          "reason": "四卡逐项重复紧邻去优化事件表，线程过滤和多请求撤销已由正文完整解释；表更便于查找具体事件。",
+          "original_line": 710,
+          "heading": "### 启用事件会怎样影响 ART"
+        },
+        {
+          "original_id": "a300-17-dex-standard-and-structural-redefinition",
+          "title": "Android 的类重定义输入是单类 DEX，标准与扩展不同",
+          "decision": "remove",
+          "reason": "标准方法体替换、活动旧frame、结构性扩展条件和成本四卡重复紧邻分节段落，未新增新旧方法生命周期轨道。",
+          "original_line": 739,
+          "heading": "#### 结构性重定义的支持范围"
+        },
+        {
+          "original_id": "a300-18-object-tags-per-environment-and-free",
+          "title": "对象 tag 属于 JVMTI 环境，ObjectFree 不再给出对象",
+          "decision": "remove",
+          "reason": "四卡重复对象tag能力、每环境表、ObjectFree与回调对象限制的紧邻段落，全部协议和隐私说明保留。",
+          "original_line": 758,
+          "heading": "### 对象 tag 与堆遍历"
+        },
+        {
+          "original_id": "a300-19-release-and-lab-tool-selection",
+          "title": "发布构建先选公开可用入口，调试 agent 另建基线",
+          "decision": "remove",
+          "reason": "四卡与紧邻公开入口选型表逐项重复，且此前生产方案选择另有更细表格；保留两表完整信息。",
+          "original_line": 786,
+          "heading": "### attach 边界与发布构建的选择"
+        }
+      ],
+      "sha256_after": "bede3855c190c5c5e2dab7ab595a08ad44120c777a172a3019d202433165a136",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:57:44.104498+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 19,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a300/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a300/visual-review.json",
+      "retired_diagrams": [
+        "a300-01-paper-platform-and-engineering-evidence",
+        "a300-03-instrumentation-levels-and-fast-check",
+        "a300-06-private-art-and-public-runtime-contracts",
+        "a300-07-reported-ab-rates-and-inference-limits",
+        "a300-08-single-device-and-ablation-boundaries",
+        "a300-09-frame-symptom-to-view-instance",
+        "a300-10-configuration-activation-and-rollback",
+        "a300-11-automation-stimulus-and-runtime-evidence",
+        "a300-12-attach-permissions-plugin-and-agent",
+        "a300-13-onload-onattach-onunload-and-dispose",
+        "a300-14-gc-agent-initialization-transaction",
+        "a300-16-event-specific-deoptimization-scopes",
+        "a300-17-dex-standard-and-structural-redefinition",
+        "a300-18-object-tags-per-environment-and-free",
+        "a300-19-release-and-lab-tool-selection"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-300/retired-assets.json"
     }
   ],
-  "reviewed_articles": 206,
-  "next_article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+  "reviewed_articles": 207,
+  "next_article": null,
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -68786,7 +68974,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:55:30.979232+08:00",
+  "updated_at": "2026-10-31T19:57:44.104498+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -68901,9 +69089,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5848,
-  "reviewed_placements_after": 2271,
-  "net_removed_placements": 3577,
+  "reviewed_placements_before": 5867,
+  "reviewed_placements_after": 2275,
+  "net_removed_placements": 3592,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -68927,7 +69115,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 206,
+  "currently_matching_reviewed_source_count": 207,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
