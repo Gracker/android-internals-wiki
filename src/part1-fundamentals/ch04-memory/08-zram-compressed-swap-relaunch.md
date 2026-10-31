@@ -103,10 +103,6 @@ ZRAM 用 CPU 换取匿名页的压缩驻留空间，为系统争取时间和容�
 
 用户说“感觉像冷启动”，描述的只是体验；判断进程是否真的重建过，要靠现场记录。先记下 PID、进程启动时间与 Activity 启动类型，避免 PID 复用造成误判；在 Android 11（API 30）及以上再结合 `ApplicationExitInfo`，低版本则需要日志、`dumpsys activity` 或自有启动埋点。
 
-<!-- gracker-diagram: ch04-08-alive-swapin-or-new-process -->
-![恢复慢的第一处分流：原进程存活，还是已被重建](../../assets/diagrams/ch04/ch04-08-alive-swapin-or-new-process.png)
-
-图：先确认进程身份与启动记录，再解释 VmSwap。存活进程访问换出页时，才沿原有 swap PTE 换入；原进程终止后的新进程要重建运行时、组件和业务状态。ApplicationExitInfo 的最后采样 RSS/PSS 既非退出瞬间峰值，也不记录旧页面在 ZRAM 中的完整历史。
 
 ## ZRAM 位于匿名页回收与进程淘汰之间
 
@@ -463,10 +459,6 @@ Android 17 的按进程写回和预取与 Ariadne 的“提前准备热数据”
 
 截至 Android 17 基线，没有证据表明 Ariadne 的完整论文设计已经合入 AOSP。它适合用来说明相关研究方向；性能数字方面，Android 系统并没有给出对应的承诺。
 
-<!-- gracker-diagram: ch04-08-aosp-and-ariadne-boundary -->
-![AOSP 预取与 Ariadne 主动解压：准备层次与依据不同](../../assets/diagrams/ch04/ch04-08-aosp-and-ariadne-boundary.png)
-
-图：Android 17 MMD 主要按进程、条目类型和策略维护基础页槽位；对已写回进程，在 Activity 解冻时请求条目读回 ZRAM。Ariadne 研究原型按恢复历史估计热度，组合自适应压缩块与预测解压。二者有提前准备的共同方向，但 AOSP 预取并不等于采用整套论文设计；研究收益绑定其实验环境。
 
 ## 观测：把交换、压力和启动放到同一时间窗
 
@@ -531,10 +523,6 @@ adb shell cat /sys/kernel/tracing/available_events \
 4. 检查主线程处于可运行（runnable）还是阻塞（blocked）状态，以及它是否与 `kswapd`、MMD 或解压任务争用 CPU。
 5. 再关联 LMKD、PSI 和文件缓存重新缺页，判断系统是否在持续反复换入换出。
 
-<!-- gracker-diagram: ch04-08-restore-observation-window -->
-![按三个时间点取增量，再对齐恢复关键路径](../../assets/diagrams/ch04/ch04-08-restore-observation-window.png)
-
-图：后台稳定、点击前和首帧后三个点记录身份与计数，再用 trace 还原点击、Activity 解冻、页面访问、首帧和完整显示。进程内归属、ZRAM 设备状态与全系统压力来自不同范围，要按同一窗口交叉解释。RSS/PSS 最后采样、pgmajfault 或单次 PSI 都不能单独证明解压长尾。
 
 ### 退出原因
 
