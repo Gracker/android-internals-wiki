@@ -10090,7 +10090,7 @@
           "heading": "## 10. 检查清单"
         }
       ],
-      "sha256_after": "efd07971e0b27d8662cbf035baecbd90a1fbd390f8132d7e719155273e3f3918",
+      "sha256_after": "5f7944fe526bb5a693fc15f78413c537031e969f5e80db898a2ca4dbc2cfc52f",
       "new_diagrams": [
         {
           "id": "ed08-07-provider-generation-state",
@@ -10228,7 +10228,68 @@
         "ch08-07-48-integration-review-flow"
       ],
       "removed_but_shared_diagrams": [],
-      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-96/retired-assets.json"
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-96/retired-assets.json",
+      "sha256_after_initial_editorial": "efd07971e0b27d8662cbf035baecbd90a1fbd390f8132d7e719155273e3f3918",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 96,
+          "article": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+          "revision": 1,
+          "accepted_sha256": "efd07971e0b27d8662cbf035baecbd90a1fbd390f8132d7e719155273e3f3918",
+          "reviewed_sha256": "5f7944fe526bb5a693fc15f78413c537031e969f5e80db898a2ca4dbc2cfc52f",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/source.diff",
+          "diff_sha256": "8db92f821c7ef593a12225b999ac8562cdb3a6939b263cac32458379637c51df",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/96-20261031-01.json",
+          "report_sha256": "9624b086d015dffcc274c542e0817c20d91159fcaa7a73b2602396e27d949d12",
+          "caption_revisions": [
+            {
+              "id": "ch08-07-01-signals-and-policy",
+              "before": "API 给出判定信号；服务端仍须验证请求并作业务决定，不能让客户端自行宣布已授权。",
+              "after": "API 给出判定信号；服务端仍须验证请求并作业务决定，授权这一步始终留在服务端手里。",
+              "status": "independently_reviewed",
+              "reason": "判定信号到服务端策略两支仍匹配新导语和授权留服务端图注；调用成功不等于业务放行。"
+            },
+            {
+              "id": "ed08-07-provider-generation-state",
+              "before": "这是业务生产组件的目标协议，正文短类仅说明类型与调用分工。未就绪时按策略合并同代次prepare；状态/缓存更新串行化，当前成功回调先写缓存再发布READY，Task完成不代表main listener已执行。旧prepare结果和clear后的旧success不能写回，PROVIDER_INVALID仅在引用和代次仍匹配时清理重建；晚旧错误不能清新引用。READY的provider供每个动作申请新token，重建仍遵守频控/退避，不把全部业务request画成必须串行。",
+              "after": "这是业务生产组件的目标协议，正文短类仅说明类型与调用分工。未就绪时按策略合并同代次prepare；状态/缓存更新串行化，当前成功回调先写缓存再发布READY，Task完成时main listener可能尚未执行。旧prepare结果、clear后的旧success都留在各自代次里，写回只对当前代次生效；PROVIDER_INVALID仅在引用和代次仍匹配时清理重建，晚旧错误由旧代次自行吸收。READY的provider供每个动作申请新token，重建仍遵守频控/退避，全部业务request必须串行的画法一并避免。",
+              "status": "independently_reviewed",
+              "reason": "代次协议图是生产目标而非短代码的已实现并发保证；当前回调先缓存再READY、旧成功不写回/旧错误不清新引用匹配修订图注。"
+            },
+            {
+              "id": "ch08-07-29-five-measurement-scopes",
+              "before": "轨道只表示阶段安排；客户端业务条包含等待和返回。单程上行需先解决跨端时钟对齐，总耗时与分位数也不能由各段直接相加。",
+              "after": "轨道只表示阶段安排；客户端业务条包含等待和返回。单程上行需先解决跨端时钟对齐；总耗时与分位数按整段单独统计，各段直接相加得不出正确值。",
+              "status": "independently_reviewed",
+              "reason": "五阶段轨道示意与客户端等待/返回嵌套关系一致；修订图注明确整段独立统计和跨端时钟，未声称分段P95或重叠区间直接相加。"
+            },
+            {
+              "id": "ch08-07-36-ui-deadline-versus-task",
+              "before": "结束 UI 等待或协程取消不等于底层请求停止；当前 provider.request 没有 CancellationToken 参数，晚结果按业务代次隔离。",
+              "after": "结束 UI 等待或协程取消后，底层请求可能仍在执行；provider.request 目前没有 CancellationToken 参数，晚结果按业务代次隔离。",
+              "status": "independently_reviewed",
+              "reason": "UI截止与Task继续运行是两轨，晚结果按业务代次隔离；新图注未声称取消底层或CancellationToken存在。"
+            },
+            {
+              "id": "ch08-07-39-separate-quota-buckets",
+              "before": "两桶独立估算，不能把普通 Standard token 的生成量直接加进 Classic + prepare 桶。",
+              "after": "两桶独立估算，普通 Standard token 的生成量走单独的账，加进 Classic + prepare 桶会把用量算错。",
+              "status": "independently_reviewed",
+              "reason": "两桶仍为Classic+prepare生成和两模式decode；普通Standardrequest不入前桶，新图注的单独记账不代表有第三个公开配额桶或无限调用保证。"
+            }
+          ],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/input.md",
+          "external_input_sha256": "5f7944fe526bb5a693fc15f78413c537031e969f5e80db898a2ca4dbc2cfc52f",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T14:42:38.607915+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T14:42:39.031397+08:00"
     },
     {
       "index": 98,
@@ -48016,7 +48077,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:39:50.574691+08:00",
+  "updated_at": "2026-10-31T14:42:39.039010+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -48318,5 +48379,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 112
+  "currently_matching_reviewed_source_count": 113
 }

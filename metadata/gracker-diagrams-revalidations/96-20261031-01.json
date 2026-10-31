@@ -1,0 +1,250 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 96,
+  "article": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T14:42:38.461756+08:00",
+  "source_sha256": "5f7944fe526bb5a693fc15f78413c537031e969f5e80db898a2ca4dbc2cfc52f",
+  "accepted_before_sha256": "efd07971e0b27d8662cbf035baecbd90a1fbd390f8132d7e719155273e3f3918",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 268,
+  "reading_characters": 20904,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 18,
+  "current_pngs_actually_viewed": 18,
+  "current_contexts_actually_viewed": 18,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/compact-96-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/compact-96-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/compact-96-3.jpg"
+  ],
+  "native_diagrams_preserved": 1,
+  "native_diagrams_actually_viewed": 1,
+  "code_blocks_preserved": 5,
+  "code_lines_preserved": 107,
+  "asset_sha256": {
+    "src/assets/diagrams/ch08/ch08-07-01-signals-and-policy.svg": "666b81dfb7a696986f6bdc7e77b3a688ce34e57afc8adc6bfc0a31c4b278f212",
+    "src/assets/diagrams/ch08/ch08-07-01-signals-and-policy.png": "0ac69c164b709b1b07082b7676e14f01ff134eaa59a5faecaa2cc317e045a581",
+    "src/assets/diagrams/ch08/ch08-07-06-independent-verdicts.svg": "18dcc9bbb2ee5404c06504e6f2d8fd82020fa1c8d847fe257c509950660b64fa",
+    "src/assets/diagrams/ch08/ch08-07-06-independent-verdicts.png": "12b854967a1aef8fa94a39c75c6e76712c930d707bef79266402ed423578cc77",
+    "src/assets/diagrams/ch08/ch08-07-09-optional-label-gates.svg": "a4c1aa345c495a47f6a72b6182e2e804d25e49ad0ded5ca3984a5e5669b944fa",
+    "src/assets/diagrams/ch08/ch08-07-09-optional-label-gates.png": "cbfbe6d90e1f44caabbba3ae8f6c7c34f99307ddb3b632cded9927100be71a5e",
+    "src/assets/diagrams/ch08/ch08-07-13-standard-sequence.svg": "01d89fe052488b6ed592081b7987d65e33c05f583ccf4c41df78bb0def296c5f",
+    "src/assets/diagrams/ch08/ch08-07-13-standard-sequence.png": "68dd3bb910bef501ae95dd96b21cf9d755c9dcbb111bd587a43399352febc081",
+    "src/assets/diagrams/ch08/ed08-07-provider-generation-state.svg": "eb2132814e7657d9a486d825ab4bde413a0772741a293e180e29873ef2a5e9ba",
+    "src/assets/diagrams/ch08/ed08-07-provider-generation-state.png": "87451eb703160b1d9ea8e66f0fcf0361702b67f382515cd3e76c6119ce2ed373",
+    "src/assets/diagrams/ch08/ch08-07-18-hash-binding-pipeline.svg": "d0118c8a9c1707fc998b535da85e0b424418b03d0e2696306d9ac7d71b5da2ed",
+    "src/assets/diagrams/ch08/ch08-07-18-hash-binding-pipeline.png": "84ec7286df63745653ef145f63c6f62ce1b5b3aaca50ecc4bfeca4e3af1629c6",
+    "src/assets/diagrams/ch08/ch08-07-20-frozen-payload-and-authority.svg": "cb64892e029535ab6688ab38ba683771bf93ed933386ceb726105f874d8f970b",
+    "src/assets/diagrams/ch08/ch08-07-20-frozen-payload-and-authority.png": "dfb8e6eba5fbd3a81b83ef395a3f2c2652e0f8fd00c1ed19361902d7852e4c6d",
+    "src/assets/diagrams/ch08/ch08-07-22-two-replay-scopes.svg": "911ef629d9836ae21976e2faf66f1ec8408967a918f9ad7d5c4fcb83bbeb96c2",
+    "src/assets/diagrams/ch08/ch08-07-22-two-replay-scopes.png": "fa1f7e550b3c2974afb7e15dcff6afbd404fd93936ad731629da6e24c8dec51f",
+    "src/assets/diagrams/ch08/ch08-07-23-classic-request-flow.svg": "7c26250100789006ad50a222a5fd0d23cc08edb41a3dc27f5be3a411cc54881f",
+    "src/assets/diagrams/ch08/ch08-07-23-classic-request-flow.png": "665a90f38409a0f4a152ab1c2a53e3da915b13187545a35c42b3d0305b0c34b8",
+    "src/assets/diagrams/ch08/ch08-07-29-five-measurement-scopes.svg": "acc0dcde86f240940f076629732182de037fad3a537eacd9996d5c5261245c0b",
+    "src/assets/diagrams/ch08/ch08-07-29-five-measurement-scopes.png": "f2be1f53a784e29cb24adbe030d79f05f2e0d8eeecb56c7b1132e62655c0d700",
+    "src/assets/diagrams/ch08/ed08-07-prewarm-and-safe-parallelism.svg": "5f03f86a5b34b3fb1f4aeb652ad40eb72faca5c26d1dca848e26251e4f0eefa5",
+    "src/assets/diagrams/ch08/ed08-07-prewarm-and-safe-parallelism.png": "333bdeee6592858d042a83b843499e61e915b35557074caeaa0d3cd5a79f83c1",
+    "src/assets/diagrams/ch08/ch08-07-34-retry-classification.svg": "f7a556e83dc599ff26b2dcfca2d3867698bbf08517633a02b09236b92e4f05ef",
+    "src/assets/diagrams/ch08/ch08-07-34-retry-classification.png": "1b54ae4ff0b80701f94309f34e40c9595241f5753239037807fac527521856dc",
+    "src/assets/diagrams/ch08/ch08-07-35-retry-sequence.svg": "db67a61b79324fa6327be1a94029d71a092520d39b2a042ce76891155ee2fbb6",
+    "src/assets/diagrams/ch08/ch08-07-35-retry-sequence.png": "c973672d6386461aa4370f54b84abcf1e8bfd7f17f1df35ee23f3f3577577778",
+    "src/assets/diagrams/ch08/ch08-07-36-ui-deadline-versus-task.svg": "56b8f82b20e05a02eb0585a5087518836c9bc6225245203d1ea542a0a910f617",
+    "src/assets/diagrams/ch08/ch08-07-36-ui-deadline-versus-task.png": "24e7277ca52511c6f44ffeb92b7d5c3be5c78af48266407a0b95d105a4fdb79d",
+    "src/assets/diagrams/ch08/ch08-07-37-remediation-and-rewarm.svg": "6da5d7610c2e7ac9ce163bf9be41bc10d344a2941a96ee9e9282748a09c88618",
+    "src/assets/diagrams/ch08/ch08-07-37-remediation-and-rewarm.png": "cbef0d82a12301157178e424d5eccb27b5003dcc710b968fde49a57a04d8e8c9",
+    "src/assets/diagrams/ch08/ch08-07-39-separate-quota-buckets.svg": "c853a0eb1f6c21e10fa1894b10ce23bcbd1aa4766992e12b5f12095779d0c195",
+    "src/assets/diagrams/ch08/ch08-07-39-separate-quota-buckets.png": "e26184d3d4086c1dd044aed0a9679ba1d3a98eac8812dc45ba701434862c41b0",
+    "src/assets/diagrams/ch08/ed08-07-async-trace-lifecycle-and-cookies.svg": "321adbfa9ebf25183ea249bfb52076a6a67279f3915578f2bacf7e0b66c2445f",
+    "src/assets/diagrams/ch08/ed08-07-async-trace-lifecycle-and-cookies.png": "3bf974fe23d2a7961318a6d8649b2de2f2619fa74b65a65cdde0dfc32a5cb32e",
+    "src/assets/diagrams/ch08/ch08-07-42-completion-observation.svg": "bc86d9a324da67d4e713b743db0a3167597fc6f17221548090b3c3967a1f9746",
+    "src/assets/diagrams/ch08/ch08-07-42-completion-observation.png": "2846c4531515ba39049416fc17eb7b9927d4d3dcd7cb36666b78d0ce80f70386"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a096/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "b14658c0475b57fdb98d81cb157a96983f20da27b748d21d7844b6ec1cf8d055",
+    "git_commit": "78ecada887ab44c6ee4e52b85dbdfbb9ad7b47bc"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch08-07-01-signals-and-policy",
+      "heading": "# Play Integrity API 性能与集成延迟",
+      "line": 49,
+      "decision": "keep",
+      "reason": "判定信号到服务端策略两支仍匹配新导语和授权留服务端图注；调用成功不等于业务放行。"
+    },
+    {
+      "id": "ch08-07-06-independent-verdicts",
+      "heading": "### 1.1 服务端会看到哪些主要判定",
+      "line": 79,
+      "decision": "keep",
+      "reason": "账号授权与应用识别两个独立字段及未知语义和两张表一致，业务登录独立。"
+    },
+    {
+      "id": "ch08-07-09-optional-label-gates",
+      "heading": "### 1.2 设备标签的分级与读取",
+      "line": 118,
+      "decision": "keep",
+      "reason": "可选标签配置/Android13+授权/设备前提与缺失sdkVersion对应当前说明，不从缺失推出root或旧系统。"
+    },
+    {
+      "id": "ch08-07-13-standard-sequence",
+      "heading": "## 2. Standard 与 Classic 是两套调用方式",
+      "line": 149,
+      "decision": "keep",
+      "reason": "Standard预热和动作token、上行、decode、服务端原子业务决定顺序与保留原生时序图一致。"
+    },
+    {
+      "id": "ed08-07-provider-generation-state",
+      "heading": "### 3.1 prepare 与 provider 的生命周期",
+      "line": 248,
+      "decision": "keep",
+      "reason": "代次协议图是生产目标而非短代码的已实现并发保证；当前回调先缓存再READY、旧成功不写回/旧错误不清新引用匹配修订图注。"
+    },
+    {
+      "id": "ch08-07-18-hash-binding-pipeline",
+      "heading": "### 3.2 `requestHash` 与当前动作的绑定",
+      "line": 262,
+      "decision": "keep",
+      "reason": "requestHash规范化稳定字节到服务端重算再授权的链与UTF16长度/UTF8编码和v1范围说明一致。"
+    },
+    {
+      "id": "ch08-07-20-frozen-payload-and-authority",
+      "heading": "### 3.2 `requestHash` 与当前动作的绑定",
+      "line": 295,
+      "decision": "keep",
+      "reason": "冻结业务快照与摘要一致后仍核对可信订单/账号权限，两层检查和每动作新token限制仍在。"
+    },
+    {
+      "id": "ch08-07-22-two-replay-scopes",
+      "heading": "### 3.3 服务端校验顺序",
+      "line": 320,
+      "decision": "keep",
+      "reason": "同token重复decode与不同token同订单/并发原子消费是三种不同重放范围，修订正文保留。"
+    },
+    {
+      "id": "ch08-07-23-classic-request-flow",
+      "heading": "## 4. Classic 请求与 nonce",
+      "line": 331,
+      "decision": "keep",
+      "reason": "Classic服务端唯一值、绑定业务摘要nonce、现场请求、服务端验证原子消费仍与示例及长度边界矛盾说明一致。"
+    },
+    {
+      "id": "ch08-07-29-five-measurement-scopes",
+      "heading": "### 5.2 一次业务请求至少记录五段",
+      "line": 402,
+      "decision": "keep",
+      "reason": "五阶段轨道示意与客户端等待/返回嵌套关系一致；修订图注明确整段独立统计和跨端时钟，未声称分段P95或重叠区间直接相加。"
+    },
+    {
+      "id": "ed08-07-prewarm-and-safe-parallelism",
+      "heading": "### 5.3 关键路径优化",
+      "line": 422,
+      "decision": "keep",
+      "reason": "预热与绘制可交叠，最终快照后token仅与安全独立工作并行；未就绪等待仍在关键路径，新正文无依赖取消。"
+    },
+    {
+      "id": "ch08-07-34-retry-classification",
+      "heading": "### 6.2 按错误类别重试",
+      "line": 457,
+      "decision": "keep",
+      "reason": "按请求模式+错误码区分瞬态、provider代次、配置环境，重试与风险处置相符。"
+    },
+    {
+      "id": "ch08-07-35-retry-sequence",
+      "heading": "### 6.2 按错误类别重试",
+      "line": 466,
+      "decision": "keep",
+      "reason": "初失败后5/10/20秒后台示意有上限，不要求前台等待或诊断攻击，与修订处置段落一致。"
+    },
+    {
+      "id": "ch08-07-36-ui-deadline-versus-task",
+      "heading": "### 6.2 按错误类别重试",
+      "line": 473,
+      "decision": "keep",
+      "reason": "UI截止与Task继续运行是两轨，晚结果按业务代次隔离；新图注未声称取消底层或CancellationToken存在。"
+    },
+    {
+      "id": "ch08-07-37-remediation-and-rewarm",
+      "heading": "### 6.3 给用户可修复的出口",
+      "line": 482,
+      "decision": "keep",
+      "reason": "修复由服务端verdict或客户端可修复异常入口进入manager.showDialog，关闭后重新预热/校验，未把响应码当通过。"
+    },
+    {
+      "id": "ch08-07-39-separate-quota-buckets",
+      "heading": "## 7. 配额与流量模型",
+      "line": 500,
+      "decision": "keep",
+      "reason": "两桶仍为Classic+prepare生成和两模式decode；普通Standardrequest不入前桶，新图注的单独记账不代表有第三个公开配额桶或无限调用保证。"
+    },
+    {
+      "id": "ed08-07-async-trace-lifecycle-and-cookies",
+      "heading": "## 8. 可观测性：应用侧的 Perfetto 视角",
+      "line": 549,
+      "decision": "keep",
+      "reason": "正常Task终态和同步抛错汇入AtomicBoolean endOnce，交叠同名独立cookie与代码一致，结束观测不等于底层停止。"
+    },
+    {
+      "id": "ch08-07-42-completion-observation",
+      "heading": "## 8. 可观测性：应用侧的 Perfetto 视角",
+      "line": 556,
+      "decision": "keep",
+      "reason": "内部Task终态、默认main排队监听和inline观察分开，修订正文未用观察时刻冒充闭源精确完成。"
+    }
+  ],
+  "caption_revisions": [
+    {
+      "id": "ch08-07-01-signals-and-policy",
+      "before": "API 给出判定信号；服务端仍须验证请求并作业务决定，不能让客户端自行宣布已授权。",
+      "after": "API 给出判定信号；服务端仍须验证请求并作业务决定，授权这一步始终留在服务端手里。",
+      "status": "independently_reviewed",
+      "reason": "判定信号到服务端策略两支仍匹配新导语和授权留服务端图注；调用成功不等于业务放行。"
+    },
+    {
+      "id": "ed08-07-provider-generation-state",
+      "before": "这是业务生产组件的目标协议，正文短类仅说明类型与调用分工。未就绪时按策略合并同代次prepare；状态/缓存更新串行化，当前成功回调先写缓存再发布READY，Task完成不代表main listener已执行。旧prepare结果和clear后的旧success不能写回，PROVIDER_INVALID仅在引用和代次仍匹配时清理重建；晚旧错误不能清新引用。READY的provider供每个动作申请新token，重建仍遵守频控/退避，不把全部业务request画成必须串行。",
+      "after": "这是业务生产组件的目标协议，正文短类仅说明类型与调用分工。未就绪时按策略合并同代次prepare；状态/缓存更新串行化，当前成功回调先写缓存再发布READY，Task完成时main listener可能尚未执行。旧prepare结果、clear后的旧success都留在各自代次里，写回只对当前代次生效；PROVIDER_INVALID仅在引用和代次仍匹配时清理重建，晚旧错误由旧代次自行吸收。READY的provider供每个动作申请新token，重建仍遵守频控/退避，全部业务request必须串行的画法一并避免。",
+      "status": "independently_reviewed",
+      "reason": "代次协议图是生产目标而非短代码的已实现并发保证；当前回调先缓存再READY、旧成功不写回/旧错误不清新引用匹配修订图注。"
+    },
+    {
+      "id": "ch08-07-29-five-measurement-scopes",
+      "before": "轨道只表示阶段安排；客户端业务条包含等待和返回。单程上行需先解决跨端时钟对齐，总耗时与分位数也不能由各段直接相加。",
+      "after": "轨道只表示阶段安排；客户端业务条包含等待和返回。单程上行需先解决跨端时钟对齐；总耗时与分位数按整段单独统计，各段直接相加得不出正确值。",
+      "status": "independently_reviewed",
+      "reason": "五阶段轨道示意与客户端等待/返回嵌套关系一致；修订图注明确整段独立统计和跨端时钟，未声称分段P95或重叠区间直接相加。"
+    },
+    {
+      "id": "ch08-07-36-ui-deadline-versus-task",
+      "before": "结束 UI 等待或协程取消不等于底层请求停止；当前 provider.request 没有 CancellationToken 参数，晚结果按业务代次隔离。",
+      "after": "结束 UI 等待或协程取消后，底层请求可能仍在执行；provider.request 目前没有 CancellationToken 参数，晚结果按业务代次隔离。",
+      "status": "independently_reviewed",
+      "reason": "UI截止与Task继续运行是两轨，晚结果按业务代次隔离；新图注未声称取消底层或CancellationToken存在。"
+    },
+    {
+      "id": "ch08-07-39-separate-quota-buckets",
+      "before": "两桶独立估算，不能把普通 Standard token 的生成量直接加进 Classic + prepare 桶。",
+      "after": "两桶独立估算，普通 Standard token 的生成量走单独的账，加进 Classic + prepare 桶会把用量算错。",
+      "status": "independently_reviewed",
+      "reason": "两桶仍为Classic+prepare生成和两模式decode；普通Standardrequest不入前桶，新图注的单独记账不代表有第三个公开配额桶或无限调用保证。"
+    }
+  ],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": false,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a096/01/layout-report.json",
+  "layout_report_sha256": "a180868a3a11c42ef4277f6b639ad9bbf67af974428d67da1b5f6b15740bdae1",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "当前268行/20904字符全文、全部18组SVG标签和18PNG（三张原图sheet）、全部18实际位置（三张context sheet）、5段代码107行和1原生Mermaid源码与渲染均已独立核对。五处图注变化逐项审查；图像标识/路径/顺序、alt、代码、原生图及36资产SHA不变。桌面1400/移动640图像加载/标题/结构/溢出通过，原生图1成功无原码fallback。18图语义仍与修订全文匹配；provider世代与短类边界、UTF16/UTF8规范化、token与业务两级重放、预热安全并行、独立时钟与总分位、UI取消与底层Task、双配额桶和观测完成时刻限制均保留。未修改图注或技术正文，未执行Play请求、Cloud解密、配额/策略修改、Android设备/Gradle编译或新在线资料研究；本次仅复核既有图与外部来源版本一致性。"
+}
