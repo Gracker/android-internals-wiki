@@ -31624,9 +31624,910 @@
       "before_count": 55,
       "before_all_images": 55,
       "sha256_before": "edb5c64a102e97d762ac68092821f2ef72288da7058434cb9c8d9afaa7bdf66c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 18,
+      "decisions": [
+        {
+          "original_id": "ch13-14-01-object-model",
+          "title": "Instance、Adapter、Device 与 Queue",
+          "decision": "remove",
+          "reason": "四对象创建链逐格复述138首段完整定义；新能力查询/启用图给真正请求和观察约束，删对象词典副本。",
+          "original_line": 140,
+          "heading": "# Android 17 Jetpack WebGPU 渲染与计算管线"
+        },
+        {
+          "original_id": "ch13-14-02-encoding-objects",
+          "title": "Pipeline、Bind Group 与 Encoder 各做什么",
+          "decision": "remove",
+          "reason": "pipeline/bindgroup/encoder三组六卡逐项复述145完整段落，计算合图已显示绑定编码与提交交接，删职责卡。",
+          "original_line": 147,
+          "heading": "# Android 17 Jetpack WebGPU 渲染与计算管线"
+        },
+        {
+          "original_id": "ch13-14-03-runtime-owners",
+          "title": "Jetpack、WebView 与平台分别更新",
+          "decision": "merge",
+          "reason": "原图“Jetpack、WebView 与平台分别更新”进入合图：合并Jetpack/WebView不同发布主体、WebView真实进程关系和对象隔离/共享GPU压力，避免把Chrome独立GPU进程搬到WebView。；锚点原图55，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 156,
+          "heading": "# Android 17 Jetpack WebGPU 渲染与计算管线",
+          "replacement_id": "ed13-14-webview-processes-and-object-isolation"
+        },
+        {
+          "original_id": "ch13-14-04-release-baselines",
+          "title": "Alpha05 固定源码与 Alpha06 当前产物",
+          "decision": "remove",
+          "reason": "alpha05/06/platform三组六卡重复165–167版本段落和185–189完整基线表，minSdk/DawnSHA全部留正文，两版本事件泵具体图另保留。",
+          "original_line": 169,
+          "heading": "# Android 17 Jetpack WebGPU 渲染与计算管线"
+        },
+        {
+          "original_id": "ch13-14-05-external-memory",
+          "title": "HardwareBuffer 导入仍需访问同步",
+          "decision": "keep",
+          "reason": "外部producer写fence→导入能力usage→beginAccess→WebGPU访问→endAccess→下游等待的真实双向访问交接，alpha06/null/阻塞await限定全留。",
+          "original_line": 178,
+          "heading": "# Android 17 Jetpack WebGPU 渲染与计算管线"
+        },
+        {
+          "original_id": "ch13-14-07-abi-footprint",
+          "title": "ABI 库尺寸与设备安装增量",
+          "decision": "remove",
+          "reason": "三组六卡逐格摘录192完整ABI尺寸和split/压缩/实际下发解释；原文保留全部数字与计量边界，无需重排预算卡。",
+          "original_line": 194,
+          "heading": "## 复核基线"
+        },
+        {
+          "original_id": "ch13-14-06-artifact-provenance",
+          "title": "把发布产物对应到源码",
+          "decision": "keep",
+          "reason": "Maven产物→AAR元数据→sourceJAR逐文件匹配→固定Dawn后端的可复核来源链，独立于运行时机制，保留静态核对非设备实测限定。",
+          "original_line": 203,
+          "heading": "## 复核基线"
+        },
+        {
+          "original_id": "ch13-14-08-standard-native",
+          "title": "标准 WebGPU 与原生窗口扩展",
+          "decision": "remove",
+          "reason": "标准/native/Android三组六卡逐项复述208完整段落，GPUSurface与网页API区别、Vulkan1.1首选非API37必然1.4全文保留。",
+          "original_line": 210,
+          "heading": "## 复核基线"
+        },
+        {
+          "original_id": "ch13-14-09-binding-pipeline",
+          "title": "Kotlin 经过 JNI 与 Dawn 到后端",
+          "decision": "remove",
+          "reason": "六框Kotlin/JNI/Dawn/backend/GPU图重复紧接226–243保留原生flow，原生还明确compute/window分叉和GPU安全读取依赖，删简化副本。",
+          "original_line": 221,
+          "heading": "### Kotlin binding 与原生实现的边界"
+        },
+        {
+          "original_id": "ch13-14-10-kotlin-wrapper",
+          "title": "Kotlin Binding 的三类工作",
+          "decision": "remove",
+          "reason": "三组六卡逐项摘录266–270五条binding清单及257FastNative限制，完整正文更全，不重复包装层词典。",
+          "original_line": 261,
+          "heading": "### Kotlin binding 与原生实现的边界"
+        },
+        {
+          "original_id": "ch13-14-11-init-library",
+          "title": "直接初始化先加载原生库",
+          "decision": "merge",
+          "reason": "原图“直接初始化先加载原生库”进入合图：把native库加载、adapter/device先请求和100ms后续poller合并，显式排除poller驱动前置初始化/渲染的误解。；锚点原图38，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 287,
+          "heading": "### 版本由应用控制",
+          "replacement_id": "ed13-14-alpha05-initialization-and-event-pump"
+        },
+        {
+          "original_id": "ch13-14-12-init-event-order",
+          "title": "初始化请求与后续事件轮询分开",
+          "decision": "merge",
+          "reason": "原图“初始化请求与后续事件轮询分开”进入合图：把native库加载、adapter/device先请求和100ms后续poller合并，显式排除poller驱动前置初始化/渲染的误解。；锚点原图38，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 294,
+          "heading": "### 版本由应用控制",
+          "replacement_id": "ed13-14-alpha05-initialization-and-event-pump"
+        },
+        {
+          "original_id": "ch13-14-13-four-capability-dimensions",
+          "title": "能力档、后端、Feature 与 Limit",
+          "decision": "merge",
+          "reason": "原图“能力档、后端、Feature 与 Limit”进入合图：合并四能力维度、实际adapter观测、feature/limit请求和compute/Compatibility字段，表示支持范围到启用范围的真实约束关系。；锚点原图16，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 309,
+          "heading": "### 能力档与后端是两组维度",
+          "replacement_id": "ed13-14-capability-request-and-enabled-device"
+        },
+        {
+          "original_id": "ch13-14-14-adapter-observation",
+          "title": "读取实际 Backend 与设备信息",
+          "decision": "merge",
+          "reason": "原图“读取实际 Backend 与设备信息”进入合图：合并四能力维度、实际adapter观测、feature/limit请求和compute/Compatibility字段，表示支持范围到启用范围的真实约束关系。；锚点原图16，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 340,
+          "heading": "### 能力档与后端是两组维度",
+          "replacement_id": "ed13-14-capability-request-and-enabled-device"
+        },
+        {
+          "original_id": "ch13-14-15-enabled-device",
+          "title": "查询支持后再创建设备",
+          "decision": "merge",
+          "reason": "原图“查询支持后再创建设备”进入合图：合并四能力维度、实际adapter观测、feature/limit请求和compute/Compatibility字段，表示支持范围到启用范围的真实约束关系。；锚点原图16，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 354,
+          "heading": "### 能力查询与请求的顺序",
+          "replacement_id": "ed13-14-capability-request-and-enabled-device"
+        },
+        {
+          "original_id": "ch13-14-16-compatibility-limits",
+          "title": "Compatibility 的限制按字段检查",
+          "decision": "merge",
+          "reason": "原图“Compatibility 的限制按字段检查”进入合图：合并四能力维度、实际adapter观测、feature/limit请求和compute/Compatibility字段，表示支持范围到启用范围的真实约束关系。；锚点原图16，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 363,
+          "heading": "### 能力查询与请求的顺序",
+          "replacement_id": "ed13-14-capability-request-and-enabled-device"
+        },
+        {
+          "original_id": "ch13-14-17-shader-path",
+          "title": "WGSL 到后端 Pipeline 的边界",
+          "decision": "remove",
+          "reason": "WGSL四框逐项重复372完整翻译说明和379–384四项契约清单；原文版本/backend变动与诊断入口完整保留。",
+          "original_line": 374,
+          "heading": "### Shader 的编译路径"
+        },
+        {
+          "original_id": "ch13-14-18-surface-topology",
+          "title": "独立 Layer 与宿主纹理采样",
+          "decision": "keep",
+          "reason": "同一WebGPU生产者的SurfaceView独立BLAST/SF输出与TextureView经HWUI采样两类消费拓扑有独立价值，保留非overlay保证与非CPUcopy限定。",
+          "original_line": 396,
+          "heading": "### AndroidExternalSurface 提供独立 layer"
+        },
+        {
+          "original_id": "ch13-14-19-surface-lifecycle",
+          "title": "Surface 回调与渲染 Owner 的交接",
+          "decision": "merge",
+          "reason": "原图“Surface 回调与渲染 Owner 的交接”进入合图：把主线程Surface回调、owner停稳确认与resize/新窗口的资源代次相连，保留可复用device资源的条件。；锚点原图28，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 403,
+          "heading": "### AndroidExternalSurface 提供独立 layer",
+          "replacement_id": "ed13-14-surface-owner-and-resource-generations"
+        },
+        {
+          "original_id": "ch13-14-20-native-window",
+          "title": "Java Surface 进入 Dawn 的位置",
+          "decision": "merge",
+          "reason": "原图“Java Surface 进入 Dawn 的位置”进入合图：合并JavaSurface/ANativeWindow转换与compatibleSurface缺口，区分helper原样options和手动筛选两路。；锚点原图22，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 412,
+          "heading": "### Surface 进入 Dawn 的位置",
+          "replacement_id": "ed13-14-window-compatible-adapter-and-configure"
+        },
+        {
+          "original_id": "ch13-14-21-configure-surface",
+          "title": "先匹配 Adapter 与 Surface 能力",
+          "decision": "merge",
+          "reason": "原图“先匹配 Adapter 与 Surface 能力”进入合图：合并JavaSurface/ANativeWindow转换与compatibleSurface缺口，区分helper原样options和手动筛选两路。；锚点原图22，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 426,
+          "heading": "### Surface 进入 Dawn 的位置",
+          "replacement_id": "ed13-14-window-compatible-adapter-and-configure"
+        },
+        {
+          "original_id": "ch13-14-22-compatible-surface",
+          "title": "Helper 不会自动把 Surface 传给筛选",
+          "decision": "merge",
+          "reason": "原图“Helper 不会自动把 Surface 传给筛选”进入合图：合并JavaSurface/ANativeWindow转换与compatibleSurface缺口，区分helper原样options和手动筛选两路。；锚点原图22，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 433,
+          "heading": "### Surface 进入 Dawn 的位置",
+          "replacement_id": "ed13-14-window-compatible-adapter-and-configure"
+        },
+        {
+          "original_id": "ch13-14-23-backend-present-cost",
+          "title": "Vulkan 与 GLES 的实际呈现工作",
+          "decision": "merge",
+          "reason": "原图“Vulkan 与 GLES 的实际呈现工作”进入合图：把原来分散的后端职责卡改成两条实际WSI依赖链，明确CPU acquire可能阻塞与GLES中间纹理/Yblit。；锚点原图23，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 442,
+          "heading": "### Surface 进入 Dawn 的位置",
+          "replacement_id": "ed13-14-alpha05-backend-wsi-work"
+        },
+        {
+          "original_id": "ch13-14-24-submit-vs-display",
+          "title": "命令提交、窗口交接与最终显示",
+          "decision": "remove",
+          "reason": "三轨重画456–475保留时序图的CPU交接/GPU异步/下游安全读取；原生完整表示actualread依赖与present非光学返回，无实测刻度的第二份依赖摘要删除。",
+          "original_line": 451,
+          "heading": "### 一帧的获取、编码、提交与呈现"
+        },
+        {
+          "original_id": "ch13-14-25-present-feedback",
+          "title": "WebGPU Present 与显示反馈分别看",
+          "decision": "remove",
+          "reason": "四孤立卡逐项复述477完整present/GPU/fence/光学边界段落，两原生及新WSI依赖图已保留具体关系，删事件清单副本。",
+          "original_line": 479,
+          "heading": "### 一帧的获取、编码、提交与呈现"
+        },
+        {
+          "original_id": "ch13-14-26-acquire-success-retry",
+          "title": "成功、次优与超时的处理",
+          "decision": "merge",
+          "reason": "原图“成功、次优与超时的处理”进入合图：合并六状态处理，同时将device-lost的独立观察边界接入成功status，防止把error texture当可用。；锚点原图27，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 493,
+          "heading": "### 一帧的获取、编码、提交与呈现",
+          "replacement_id": "ed13-14-texture-status-and-device-health"
+        },
+        {
+          "original_id": "ch13-14-27-acquire-failure",
+          "title": "过期、丢失与错误的恢复层次",
+          "decision": "merge",
+          "reason": "原图“过期、丢失与错误的恢复层次”进入合图：合并六状态处理，同时将device-lost的独立观察边界接入成功status，防止把error texture当可用。；锚点原图27，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 500,
+          "heading": "### 一帧的获取、编码、提交与呈现",
+          "replacement_id": "ed13-14-texture-status-and-device-health"
+        },
+        {
+          "original_id": "ch13-14-28-resize-lifetime",
+          "title": "Resize 与 Surface 重建的资源边界",
+          "decision": "merge",
+          "reason": "原图“Resize 与 Surface 重建的资源边界”进入合图：把主线程Surface回调、owner停稳确认与resize/新窗口的资源代次相连，保留可复用device资源的条件。；锚点原图28，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 507,
+          "heading": "### 一帧的获取、编码、提交与呈现",
+          "replacement_id": "ed13-14-surface-owner-and-resource-generations"
+        },
+        {
+          "original_id": "ch13-14-29-layer-correlation",
+          "title": "独立 Layer 缺少 App 时间线时补哪些证据",
+          "decision": "keep",
+          "reason": "独立layer→bufferframe/fence→BLAST/SF/HWC→共同帧标识与clock锚的具体缺FrameTimeline补证链，不能以宿主token代替，保留。",
+          "original_line": 518,
+          "heading": "### 独立 Surface 的 FrameTimeline 边界"
+        },
+        {
+          "original_id": "ch13-14-30-compute-submit",
+          "title": "纯计算不需要窗口与 Present",
+          "decision": "merge",
+          "reason": "原图“纯计算不需要窗口与 Present”进入合图：把compute编码提交、同device render共享和标准usage/map读回合成双分支资源链，分开queue完成与映射可读。；锚点原图32，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 535,
+          "heading": "## 纯计算管线",
+          "replacement_id": "ed13-14-compute-gpu-reuse-or-readback"
+        },
+        {
+          "original_id": "ch13-14-31-compute-readback",
+          "title": "队列完成不等于 CPU 已映射",
+          "decision": "merge",
+          "reason": "原图“队列完成不等于 CPU 已映射”进入合图：把compute编码提交、同device render共享和标准usage/map读回合成双分支资源链，分开queue完成与映射可读。；锚点原图32，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 542,
+          "heading": "## 纯计算管线",
+          "replacement_id": "ed13-14-compute-gpu-reuse-or-readback"
+        },
+        {
+          "original_id": "ch13-14-32-shared-resource",
+          "title": "同 Device 共享不保证硬件并行",
+          "decision": "merge",
+          "reason": "原图“同 Device 共享不保证硬件并行”进入合图：把compute编码提交、同device render共享和标准usage/map读回合成双分支资源链，分开queue完成与映射可读。；锚点原图32，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 549,
+          "heading": "## 纯计算管线",
+          "replacement_id": "ed13-14-compute-gpu-reuse-or-readback"
+        },
+        {
+          "original_id": "ch13-14-33-compute-limits",
+          "title": "计算任务按资源与工作组检查能力",
+          "decision": "merge",
+          "reason": "原图“计算任务按资源与工作组检查能力”进入合图：合并四能力维度、实际adapter观测、feature/limit请求和compute/Compatibility字段，表示支持范围到启用范围的真实约束关系。；锚点原图16，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 558,
+          "heading": "### 计算 workload 的能力分层",
+          "replacement_id": "ed13-14-capability-request-and-enabled-device"
+        },
+        {
+          "original_id": "ch13-14-34-device-lost",
+          "title": "Device Lost 的恢复以资源重建为单位",
+          "decision": "keep",
+          "reason": "device-lost→停旧device及关联资源→重新请求adapter/device→恢复必要数据的设备级恢复链，区别SurfaceLost只重建窗口，保留。",
+          "original_line": 575,
+          "heading": "### Device lost 与结果正确性"
+        },
+        {
+          "original_id": "ch13-14-35-compute-correctness",
+          "title": "吞吐与数值正确性分别验收",
+          "decision": "remove",
+          "reason": "三组六卡逐项复述582数值精度/workgroup/越界/reference阈值段落，新计算合图也明确正确性独立验证，完整正文保留。",
+          "original_line": 584,
+          "heading": "### Device lost 与结果正确性"
+        },
+        {
+          "original_id": "ch13-14-36-callback-context",
+          "title": "Callback 线程与协程继续执行的线程",
+          "decision": "keep",
+          "reason": "native结果→callback executor→continuation→协程dispatcher的两段执行环境真实交接，区别helper硬性owner契约和创建线程亲和，保留。",
+          "original_line": 595,
+          "heading": "### 回调、协程与执行线程"
+        },
+        {
+          "original_id": "ch13-14-37-owner-serialization",
+          "title": "Owner 策略与 Alpha06 Helper 的要求",
+          "decision": "merge",
+          "reason": "原图“Owner 策略与 Alpha06 Helper 的要求”进入合图：把owner串行修改策略和alpha06helper的硬性dispatcher契约/显式loop合并为UI转交和两协程协作图。；锚点原图39，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 612,
+          "heading": "### 回调、协程与执行线程",
+          "replacement_id": "ed13-14-alpha06-owner-and-cooperative-event-loop"
+        },
+        {
+          "original_id": "ch13-14-38-alpha05-event-pump",
+          "title": "Alpha05 主线程 Poller 不是 Render Loop",
+          "decision": "merge",
+          "reason": "原图“Alpha05 主线程 Poller 不是 Render Loop”进入合图：把native库加载、adapter/device先请求和100ms后续poller合并，显式排除poller驱动前置初始化/渲染的误解。；锚点原图38，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 621,
+          "heading": "### `createWebGpu()` helper 的 100 ms 主线程 poller",
+          "replacement_id": "ed13-14-alpha05-initialization-and-event-pump"
+        },
+        {
+          "original_id": "ch13-14-39-alpha06-event-loop",
+          "title": "Alpha06 事件循环需要显式启动",
+          "decision": "merge",
+          "reason": "原图“Alpha06 事件循环需要显式启动”进入合图：把owner串行修改策略和alpha06helper的硬性dispatcher契约/显式loop合并为UI转交和两协程协作图。；锚点原图39，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 637,
+          "heading": "### alpha06：显式启动事件循环",
+          "replacement_id": "ed13-14-alpha06-owner-and-cooperative-event-loop"
+        },
+        {
+          "original_id": "ch13-14-40-alpha06-close",
+          "title": "Alpha06 Close 与 Dispatcher 的所有权",
+          "decision": "merge",
+          "reason": "原图“Alpha06 Close 与 Dispatcher 的所有权”进入合图：把alpha06close线程分支、dispatcher所有者和两版device.close TODO接成生命周期清理链，保留应用子资源责任。；锚点原图42，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 644,
+          "heading": "### alpha06：显式启动事件循环",
+          "replacement_id": "ed13-14-helper-close-and-owned-resources"
+        },
+        {
+          "original_id": "ch13-14-41-handle-destroy",
+          "title": "Close、Destroy 与实际回收",
+          "decision": "keep",
+          "reason": "wrapper降引用、buffer/texture destroy和GPU最后使用/缓存实际回收三种正交作用域有独立视觉对照价值，不和helper.close线程分支混为通用销毁顺序。",
+          "original_line": 653,
+          "heading": "### handle 生命周期"
+        },
+        {
+          "original_id": "ch13-14-42-helper-close-gap",
+          "title": "Helper 关闭不代替所有子资源管理",
+          "decision": "merge",
+          "reason": "原图“Helper 关闭不代替所有子资源管理”进入合图：把alpha06close线程分支、dispatcher所有者和两版device.close TODO接成生命周期清理链，保留应用子资源责任。；锚点原图42，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 660,
+          "heading": "### handle 生命周期",
+          "replacement_id": "ed13-14-helper-close-and-owned-resources"
+        },
+        {
+          "original_id": "ch13-14-43-cpu-cost-controls",
+          "title": "CPU 优化对准实际操作数量",
+          "decision": "remove",
+          "reason": "CPU优化三组六卡逐项复制680–686七条清单及688整体开销解释，原文更全，删优化清单图。",
+          "original_line": 675,
+          "heading": "### CPU 侧成本"
+        },
+        {
+          "original_id": "ch13-14-44-gpu-costs",
+          "title": "WebGPU 不会消除原始 GPU 工作量",
+          "decision": "remove",
+          "reason": "render/compute/backend三组六卡逐项复述692及699–701GPU工作量与同设备counter对照段落，完整条件全留。",
+          "original_line": 694,
+          "heading": "### GPU 侧成本"
+        },
+        {
+          "original_id": "ch13-14-45-cold-start-stages",
+          "title": "冷路径逐阶段打点",
+          "decision": "remove",
+          "reason": "冷启动六框逐项展开705完整阶段清单，原文无统一固定毫秒数和自定义trace要求保留，初始化及窗口合图已有真实依赖。",
+          "original_line": 707,
+          "heading": "### 冷启动与持续运行"
+        },
+        {
+          "original_id": "ch13-14-46-steady-state-baseline",
+          "title": "持续性能比较要对齐实验条件",
+          "decision": "remove",
+          "reason": "实验条件三组六卡逐项复制719–724六条持续对照清单，原文warmup/热/同步终点完整保留。",
+          "original_line": 714,
+          "heading": "### 冷启动与持续运行"
+        },
+        {
+          "original_id": "ch13-14-47-selection-evidence",
+          "title": "选型结论需要四类证据",
+          "decision": "remove",
+          "reason": "四证据孤立卡逐项摘录728–736选型对照表及738完整限定，表含替代方案更完整，删再次摘要。",
+          "original_line": 740,
+          "heading": "## 选型约束与替代方案"
+        },
+        {
+          "original_id": "ch13-14-48-error-labels",
+          "title": "错误标签与 Scope 各自覆盖什么",
+          "decision": "merge",
+          "reason": "原图“错误标签与 Scope 各自覆盖什么”进入合图：合并label/context关联、scope异步返回两分支以及独立uncaptured/device-lost监听，避免无scope错误当整体正确。；锚点原图49，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 751,
+          "heading": "### WebGPU 层的错误收集",
+          "replacement_id": "ed13-14-error-scope-and-global-callbacks"
+        },
+        {
+          "original_id": "ch13-14-49-error-scope-result",
+          "title": "Kotlin Error Scope 的异步结果",
+          "decision": "merge",
+          "reason": "原图“Kotlin Error Scope 的异步结果”进入合图：合并label/context关联、scope异步返回两分支以及独立uncaptured/device-lost监听，避免无scope错误当整体正确。；锚点原图49，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 771,
+          "heading": "### WebGPU 层的错误收集",
+          "replacement_id": "ed13-14-error-scope-and-global-callbacks"
+        },
+        {
+          "original_id": "ch13-14-50-application-trace",
+          "title": "应用 Trace 为系统事件补 WebGPU 语义",
+          "decision": "remove",
+          "reason": "六框trace清单逐项复制785–792八条自定义区间，原文数据源/counter/显示对齐与clock完整保留，29具体缺证关联链独立留。",
+          "original_line": 780,
+          "heading": "### Perfetto 看系统路径，应用 trace 补 WebGPU 语义"
+        },
+        {
+          "original_id": "ch13-14-51-evidence-triage",
+          "title": "CPU、GPU 与显示变晚分别取证",
+          "decision": "remove",
+          "reason": "CPU/GPU/layer三组六卡逐项复述798–805完整六行症状证据表，原表首帧/backend/内存覆盖更多，删除重排摘要。",
+          "original_line": 807,
+          "heading": "### Perfetto 看系统路径，应用 trace 补 WebGPU 语义"
+        },
+        {
+          "original_id": "ch13-14-52-capture-tools",
+          "title": "选择抓帧工具前确认 Backend",
+          "decision": "remove",
+          "reason": "后端/工具/系统三组六卡逐项重述814具体工具/驱动/权限/版本条件及821互补说明，完整正文保留，无需工具清单再画。",
+          "original_line": 816,
+          "heading": "### AGI、RenderDoc 与 backend"
+        },
+        {
+          "original_id": "ch13-14-53-webview-processes",
+          "title": "WebView 的 GPU Service 位于宿主进程",
+          "decision": "merge",
+          "reason": "原图“WebView 的 GPU Service 位于宿主进程”进入合图：合并Jetpack/WebView不同发布主体、WebView真实进程关系和对象隔离/共享GPU压力，避免把Chrome独立GPU进程搬到WebView。；锚点原图55，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 827,
+          "heading": "## Jetpack WebGPU 与 WebView WebGPU 的边界",
+          "replacement_id": "ed13-14-webview-processes-and-object-isolation"
+        },
+        {
+          "original_id": "ch13-14-54-api-isolation",
+          "title": "同宿主进程不让两套 GPU 对象互换",
+          "decision": "merge",
+          "reason": "原图“同宿主进程不让两套 GPU 对象互换”进入合图：合并Jetpack/WebView不同发布主体、WebView真实进程关系和对象隔离/共享GPU压力，避免把Chrome独立GPU进程搬到WebView。；锚点原图55，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 834,
+          "heading": "## Jetpack WebGPU 与 WebView WebGPU 的边界",
+          "replacement_id": "ed13-14-webview-processes-and-object-isolation"
+        },
+        {
+          "original_id": "ch13-14-55-independent-validation",
+          "title": "两条路径分别检测再共同看资源压力",
+          "decision": "merge",
+          "reason": "原图“两条路径分别检测再共同看资源压力”进入合图：合并Jetpack/WebView不同发布主体、WebView真实进程关系和对象隔离/共享GPU压力，避免把Chrome独立GPU进程搬到WebView。；锚点原图55，固定版本与对象/访问/回调/显示边界保留，完整条件见合图图注。",
+          "original_line": 848,
+          "heading": "## Jetpack WebGPU 与 WebView WebGPU 的边界",
+          "replacement_id": "ed13-14-webview-processes-and-object-isolation"
+        }
+      ],
+      "sha256_after": "91f01209062eb23e482c22926b87d59dff254c56bdcebc6770958abdbf1ff178",
+      "new_diagrams": [
+        {
+          "id": "ed13-14-capability-request-and-enabled-device",
+          "title": "请求选项、实际 Adapter 与启用后的 Device 分层核对",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-capability-request-and-enabled-device.svg",
+            "src/assets/diagrams/ch13/ed13-14-capability-request-and-enabled-device.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-capability-request-and-enabled-device",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestAdapterOptions.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/FeatureName.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPULimits.kt",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/Instance.cpp",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUAdapter.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUAdapterInfo.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUDeviceDescriptor.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUDevice.kt",
+            "https://www.w3.org/TR/webgpu/",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUCompatibilityModeLimits.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-13-four-capability-dimensions",
+              "ch13-14-14-adapter-observation",
+              "ch13-14-15-enabled-device",
+              "ch13-14-16-compatibility-limits",
+              "ch13-14-33-compute-limits"
+            ],
+            "boundary": "featureLevel与backendType是两组请求选项，不是Core=Vulkan或Compatibility=GLES；读取实际backend/vendor/device、features与limits。Adapter支持范围需按workload写requiredFeatures/requiredLimits，requestDevice可失败；执行以Device启用范围为准。Compatibility附加vertex/fragment storage数量不等compute全面禁用；compute检查buffer绑定/大小、workgroup storage/invocations/X-Y-Z/dispatch limits，f16/subgroup/timestamp独立请求，subgroup还查min/maxsize。maxImmediateSize不是Vulkanpushconstant别名。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-window-compatible-adapter-and-configure",
+          "title": "窗口转换后显式参与 Adapter 筛选，再配置组合能力",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-window-compatible-adapter-and-configure.svg",
+            "src/assets/diagrams/ch13/ed13-14-window-compatible-adapter-and-configure.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-window-compatible-adapter-and-configure",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/Util.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/WebGpu.kt",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/Surface.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/native_window_jni.h",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestAdapterOptions.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUSurfaceConfiguration.kt",
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar",
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-20-native-window",
+              "ch13-14-21-configure-surface",
+              "ch13-14-22-compatible-surface"
+            ],
+            "boundary": "JavaSurface经windowFromSurface取ANativeWindow，再用AndroidNativeWindow source创建GPUSurface；此处是窗口交界。alpha05/06 helper虽先创建surface，仍原样传入调用方adapteroptions，不会自动回填compatibleSurface。需要目标窗口参与筛选时手动initLibrary/createInstance/createSurface/requestAdapter/requestDevice并显式设置该surface。getCapabilities(adapter)核对formats/usages/presentModes/alphaModes，device资源与pipelineattachment格式、非零尺寸和limit匹配后configure；不保证零拷贝或最终显示完成。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-surface-owner-and-resource-generations",
+          "title": "停止旧窗口访问，再区分窗口代次与 Device 资源",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-surface-owner-and-resource-generations.svg",
+            "src/assets/diagrams/ch13/ed13-14-surface-owner-and-resource-generations.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-surface-owner-and-resource-generations",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/AndroidExternalSurface.android.kt",
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar",
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/Surface.cpp",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/SwapChain.cpp",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUSurfaceConfiguration.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-19-surface-lifecycle",
+              "ch13-14-28-resize-lifetime"
+            ],
+            "boundary": "onSurface/onChanged/onDestroyed在主线程触发，应用可交给专用owner；固定实现先调用onDestroyed再cancel创建协程，取消信号不等owner停稳。停止acquire/encode/submit/present、确认不再访问旧窗口后按状态unconfigure/close；不要主线程长阻塞。resize重查尺寸/attachment配置并取新currenttexture，旧image相关view/pass/录制命令失效重录；Surface销毁需新GPUSurface。device级pipeline与不依赖旧image资源可在device健康、格式/能力兼容和所有权允许时复用。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-alpha05-backend-wsi-work",
+          "title": "固定 Alpha05 的 Vulkan 与 GLES 呈现路径分别看",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-alpha05-backend-wsi-work.svg",
+            "src/assets/diagrams/ch13/ed13-14-alpha05-backend-wsi-work.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-alpha05-backend-wsi-work",
+          "sources": [
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/vulkan/SwapChainVk.cpp",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/opengl/SwapChainEGL.cpp",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/SwapChain.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-23-backend-present-cost"
+            ],
+            "boundary": "仅适用于Dawn9d41fdf与alpha05固定分析，不外推alpha06。Vulkan取得image后连接acquiresemaphore，必要时CPU等该image之前保存的acquirefence以限在途，getCurrentTexture可能阻塞；呈现可能transition/可选blit，以semaphore串写完成和vkQueuePresentKHR。GLES创建临时surfacetexture，present时反向Yblit到EGL默认framebuffer再eglSwapBuffers。两路都需Android窗口/下游同步，CPU present返回不是GPU/光学完成，独立Surface不保证内部零拷贝。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-texture-status-and-device-health",
+          "title": "Texture 状态选择恢复层次，Device 健康独立监听",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-texture-status-and-device-health.svg",
+            "src/assets/diagrams/ch13/ed13-14-texture-status-and-device-health.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-texture-status-and-device-health",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/SurfaceGetCurrentTextureStatus.kt",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/vulkan/SwapChainVk.cpp",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/Surface.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-26-acquire-success-retry",
+              "ch13-14-27-acquire-failure"
+            ],
+            "boundary": "GPUSurfaceTexture状态是跨后端分类，固定Vulkan acquire用无限timeout不保证所有状态都会产生或限时返回。SuccessOptimal正常，Suboptimal本帧可用再按当前尺寸能力计划重配；Timeout跳过限速；Outdated重查尺寸配置；Lost重建关联GPUSurface；Error查configure/参数与错误回调。固定Dawn device已lost仍可能给SuccessOptimal+errortexture，必须独立监听device-lost并走device级重建，状态成功不保证健康。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-compute-gpu-reuse-or-readback",
+          "title": "计算结果先留在 GPU，CPU 需要时才走合法读回",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-compute-gpu-reuse-or-readback.svg",
+            "src/assets/diagrams/ch13/ed13-14-compute-gpu-reuse-or-readback.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-compute-gpu-reuse-or-readback",
+          "sources": [
+            "https://www.w3.org/TR/webgpu/",
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUQueue.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUCommandEncoder.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUBuffer.kt",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/Queue.cpp",
+            "https://dawn.googlesource.com/dawn/+/9d41fdf36977cca92361c6ae2769129bbaaafd9b/src/dawn/native/vulkan/SwapChainVk.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-30-compute-submit",
+              "ch13-14-31-compute-readback",
+              "ch13-14-32-shared-resource"
+            ],
+            "boundary": "同一device按能力/usage建立storage/uniform/输入输出、WGSLpipeline和bindings，写入并结束CPUmap后dispatch/endpass/finish/submit。结果可直接供同device后续render按pass/usage/依赖读取，不保证多hardwarequeue或并行，也不免barrier。CPU读回常用storageoutput COPY_SRC→readback MAP_READ|COPY_DST，提交copy后等待该buffer成功map再读mappedrange，检查对齐范围；unmap/destroy后旧ByteBuffer失效。标准MAP_READ仅配COPY_DST，MAP_WRITE仅配COPY_SRC，native扩展需另查启用；onSubmittedWorkDone不能代替map。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-alpha05-initialization-and-event-pump",
+          "title": "Alpha05 初始化完成后才启动主线程事件轮询",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-alpha05-initialization-and-event-pump.svg",
+            "src/assets/diagrams/ch13/ed13-14-alpha05-initialization-and-event-pump.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-alpha05-initialization-and-event-pump",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/Functions.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/WebGpu.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/helper/Util.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUInstance.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestCallback.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-11-init-library",
+              "ch13-14-12-init-event-order",
+              "ch13-14-38-alpha05-event-pump"
+            ],
+            "boundary": "固定alpha05helper先加载webgpu_c_bundled/createinstance/可选surface/requestadapter/requestdevice，之后才在MainHandler每100ms排队processEvents推进后续异步回调，不能用后启动poller解释前置请求；手动API按callbackmode与Dawn版本管理事件泵。suspendwrapper不创建常驻循环，directcallback与协程dispatcher另查。100ms是排队delay不是FPS或延迟上限，render/compute由应用单独调度，callback重工作转适当executor；Kotlin取消不保证native请求取消/结果回收。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-alpha06-owner-and-cooperative-event-loop",
+          "title": "Alpha06 业务与显式事件循环共用 Owner，必须让出线程",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-alpha06-owner-and-cooperative-event-loop.svg",
+            "src/assets/diagrams/ch13/ed13-14-alpha06-owner-and-cooperative-event-loop.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-alpha06-owner-and-cooperative-event-loop",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar",
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-37-owner-serialization",
+              "ch13-14-39-alpha06-event-loop"
+            ],
+            "boundary": "alpha06helper在单线程dispatcher初始化，所有相关WebGPU操作须经execute等在其上下文串行；直接读取device/surface调用不会自动切线程。createWebGpu返回后不自动launchprocessEventsLoop，调用方在受生命周期管理协程显式启动取消；processEvents后delay16ms直到cancel/isClosed，非固定60Hz。render/compute适时挂起让出同一dispatcher，长while/阻塞等待会饿死事件泵。该helper契约不倒推alpha05手动API存在创建线程亲和；UI交输入尺寸/生命周期，不争抢修改encoder/surface。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-helper-close-and-owned-resources",
+          "title": "先停业务使用，再按清理上下文与所有者关闭",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-helper-close-and-owned-resources.svg",
+            "src/assets/diagrams/ch13/ed13-14-helper-close-and-owned-resources.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-helper-close-and-owned-resources",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar",
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-40-alpha06-close",
+              "ch13-14-42-helper-close-gap"
+            ],
+            "boundary": "alpha06close用原子isClosed防重复；初始化线程直接cleanup，其他线程runBlocking(dispatcher)等清理，不要UI等被长任务占满的owner。默认创建dispatcher由helper关闭，外部dispatcher调用方管理。alpha05/06helper device.close仍TODO，应用长期/临时资源与device引用须明确所有者分别close，按实际API依赖和生命周期组织，不能GC代替。close降引用不等destroy或GPU驻留立即归零，重复进入退出采集nativeheap/GPUmemory并验证恢复。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-error-scope-and-global-callbacks",
+          "title": "局部 Scope 的结果与全局错误分别收集",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-error-scope-and-global-callbacks.svg",
+            "src/assets/diagrams/ch13/ed13-14-error-scope-and-global-callbacks.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-error-scope-and-global-callbacks",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUDevice.kt",
+            "https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestCallback.kt"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-48-error-labels",
+              "ch13-14-49-error-scope-result"
+            ],
+            "boundary": "支持label的surface/device/queue/buffer/texture/pipeline/pass设置业务标签，alpha05instance无labelAPI用contextid/trace。push/pop匹配过滤类型并正确配对，suspendpopErrorScope返回NoError不证明整体正确，其他ErrorType由Kotlinwrapper抛WebGpuRuntimeException；生产代码另管transport/WebGpuException和device错误。uncaptured/device-lost全局回调始终保留，device-lost走设备恢复；数值结果CPUreference另验，不把别的语言返回错误对象写法套到Kotlin。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-14-webview-processes-and-object-isolation",
+          "title": "同一宿主中的两套运行时各自检测，共同观察物理资源",
+          "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-14-webview-processes-and-object-isolation.svg",
+            "src/assets/diagrams/ch13/ed13-14-webview-processes-and-object-isolation.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-14-webview-processes-and-object-isolation",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha05/webgpu-1.0.0-alpha05-sources.jar",
+            "https://chromium.googlesource.com/chromium/src/+/main/android_webview/docs/architecture.md",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp",
+            "https://developer.android.com/topic/performance/memory/guide/webview-memory",
+            "https://www.w3.org/TR/webgpu/"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-14-03-runtime-owners",
+              "ch13-14-53-webview-processes",
+              "ch13-14-54-api-isolation",
+              "ch13-14-55-independent-validation"
+            ],
+            "boundary": "Jetpack在宿主App加载AARbundledDawn，随应用依赖发布；WebViewbrowser/GPUservice在宿主App内，现代renderer可隔离，按目标构建/进程确认，不照搬ChromeGPUchild模型。网页navigator.gpu依WebViewprovider/securitycontext/flags/device检测，原生adapter/devicefeatures/limits独立查询。一进程不赋予instance/device/nativehandle/commandbuffer/pipelinecache/surface/Dawn版本直接互换契约。仍共享物理GPU/内存/宿主线程压力，分别记版本对象帧和clock再关联公共Surface/fence/display证据。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T11:32:07.793760+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 55,
+        "contexts_actually_viewed": 12,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "native_source_exact_except_declared_semicolon_entities": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a133/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a133/visual-review.json",
+      "inline_mermaid_syntax_repairs": [
+        {
+          "kind": "mermaid_semicolon_entity_escape",
+          "original_ordinal": 2,
+          "before": "```mermaid\nsequenceDiagram\n    participant R as \"Render owner\"\n    participant D as \"Dawn surface / device\"\n    participant Q as \"GPU queue / driver\"\n    participant B as \"ANativeWindow / BufferQueue\"\n    participant C as \"Client BLAST\"\n    participant S as \"SF / HWC\"\n    R->>D: getCurrentTexture + check status\n    D-->>R: current texture / status\n    R->>D: encode render / compute commands\n    R->>Q: submit commands (asynchronous GPU execution)\n    R->>D: surface.present()\n    D->>B: submit image + write-completion dependency\n    B->>C: buffer available (GPU fence may be unsignaled)\n    C->>S: setBuffer transaction\n    Note over Q,S: CPU transfer may precede GPU completion; actual reads obey acquire dependency\n    S->>S: readiness / latch / optional CLIENT / HWC output\n    Note over R,S: present CPU return is not final display or optical response\n```\n",
+          "after": "```mermaid\nsequenceDiagram\n    participant R as \"Render owner\"\n    participant D as \"Dawn surface / device\"\n    participant Q as \"GPU queue / driver\"\n    participant B as \"ANativeWindow / BufferQueue\"\n    participant C as \"Client BLAST\"\n    participant S as \"SF / HWC\"\n    R->>D: getCurrentTexture + check status\n    D-->>R: current texture / status\n    R->>D: encode render / compute commands\n    R->>Q: submit commands (asynchronous GPU execution)\n    R->>D: surface.present()\n    D->>B: submit image + write-completion dependency\n    B->>C: buffer available (GPU fence may be unsignaled)\n    C->>S: setBuffer transaction\n    Note over Q,S: CPU transfer may precede GPU completion#59; actual reads obey acquire dependency\n    S->>S: readiness / latch / optional CLIENT / HWC output\n    Note over R,S: present CPU return is not final display or optical response\n```\n",
+          "semicolon_count": 1,
+          "before_sha256": "449501185c7c1aef6edf17cb4f15eb765a7e5ea46c5a6278d40c85361dabb8fa",
+          "after_sha256": "e42f0b1cff59914a4499fc0d8e4be65f8c7489628db14e19e398027448dd9d3e",
+          "reason": "Actual bundled Mermaid parser rejects original sequence messages containing literal ASCII semicolons. Entity escaping preserves visible words, punctuation, nodes and arrows.",
+          "parse_and_render_test": {
+            "original_failed": {
+              "ok": false,
+              "message": "Error: Parse error on line 16:\n...y acquire dependency    S->>S: readines\n-----------------------^\nExpecting 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'DOTTED_ARROW', 'SOLID_CROSS', 'DOTTED_CROSS', 'SOLID_POINT', 'DOTTED_POINT', got 'NEWLINE'"
+            },
+            "escaped_parse_render_passed": true
+          },
+          "preview": "/tmp/gracker-diagrams-editorial-review-20261028/a133/native-2-repaired-preview.png"
+        }
+      ],
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 133,
+        "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+        "registered_sha256": "edb5c64a102e97d762ac68092821f2ef72288da7058434cb9c8d9afaa7bdf66c",
+        "frozen_sha256": "edb5c64a102e97d762ac68092821f2ef72288da7058434cb9c8d9afaa7bdf66c",
+        "review_input_sha256": "bedc4fb377e447fa2789fe90d10096dfb20363a112969889c7c57064c9d6afd3",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a133/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a133/external-source.diff",
+        "diff_sha256": "f28f9fe345ecd48ab04565a7c499c09fc1a8954a753a25094154ba96a15fb8b3",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 418 current narrative/table reading rows, 38439 characters, 55 SVG label sets and all 55 original PNGs in 7 contact sheets independently read/viewed; both native Mermaid sources read, original flow actually viewed, failed sequence parsed and semicolon-only repair preview rendered and actually viewed; 3 non-Mermaid code blocks, 25 lines independently read."
+      },
+      "sha256_review_input": "bedc4fb377e447fa2789fe90d10096dfb20363a112969889c7c57064c9d6afd3",
+      "retired_diagrams": [
+        "ch13-14-01-object-model",
+        "ch13-14-02-encoding-objects",
+        "ch13-14-03-runtime-owners",
+        "ch13-14-04-release-baselines",
+        "ch13-14-07-abi-footprint",
+        "ch13-14-08-standard-native",
+        "ch13-14-09-binding-pipeline",
+        "ch13-14-10-kotlin-wrapper",
+        "ch13-14-11-init-library",
+        "ch13-14-12-init-event-order",
+        "ch13-14-13-four-capability-dimensions",
+        "ch13-14-14-adapter-observation",
+        "ch13-14-15-enabled-device",
+        "ch13-14-16-compatibility-limits",
+        "ch13-14-17-shader-path",
+        "ch13-14-19-surface-lifecycle",
+        "ch13-14-20-native-window",
+        "ch13-14-21-configure-surface",
+        "ch13-14-22-compatible-surface",
+        "ch13-14-23-backend-present-cost",
+        "ch13-14-24-submit-vs-display",
+        "ch13-14-25-present-feedback",
+        "ch13-14-26-acquire-success-retry",
+        "ch13-14-27-acquire-failure",
+        "ch13-14-28-resize-lifetime",
+        "ch13-14-30-compute-submit",
+        "ch13-14-31-compute-readback",
+        "ch13-14-32-shared-resource",
+        "ch13-14-33-compute-limits",
+        "ch13-14-35-compute-correctness",
+        "ch13-14-37-owner-serialization",
+        "ch13-14-38-alpha05-event-pump",
+        "ch13-14-39-alpha06-event-loop",
+        "ch13-14-40-alpha06-close",
+        "ch13-14-42-helper-close-gap",
+        "ch13-14-43-cpu-cost-controls",
+        "ch13-14-44-gpu-costs",
+        "ch13-14-45-cold-start-stages",
+        "ch13-14-46-steady-state-baseline",
+        "ch13-14-47-selection-evidence",
+        "ch13-14-48-error-labels",
+        "ch13-14-49-error-scope-result",
+        "ch13-14-50-application-trace",
+        "ch13-14-51-evidence-triage",
+        "ch13-14-52-capture-tools",
+        "ch13-14-53-webview-processes",
+        "ch13-14-54-api-isolation",
+        "ch13-14-55-independent-validation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-133/retired-assets.json"
     },
     {
       "index": 135,
@@ -33136,8 +34037,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 69,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
+  "reviewed_articles": 70,
+  "next_article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -33147,7 +34048,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T11:25:10.231106+08:00",
+  "updated_at": "2026-10-31T11:32:07.793760+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -33196,13 +34097,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
-      "registered_sha256": "edb5c64a102e97d762ac68092821f2ef72288da7058434cb9c8d9afaa7bdf66c",
-      "observed_sha256": "bedc4fb377e447fa2789fe90d10096dfb20363a112969889c7c57064c9d6afd3",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/14-webgpu-android-pipeline.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -33591,9 +34485,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2523,
-  "reviewed_placements_after": 1159,
-  "net_removed_placements": 1364,
+  "reviewed_placements_before": 2578,
+  "reviewed_placements_after": 1177,
+  "net_removed_placements": 1401,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -33617,5 +34511,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 69
+  "currently_matching_reviewed_source_count": 70
 }
