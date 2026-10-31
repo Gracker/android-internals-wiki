@@ -68220,9 +68220,160 @@
       "before_count": 13,
       "before_all_images": 13,
       "sha256_before": "572cafb49498509e5c52bd82f40035d34035a080958acbdcb73be115a1045763",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "a297-01-class-to-release-evidence-pipeline",
+          "title": "插桩改变 JVM class，发布结果仍须经过 D8/R8 和设备验证",
+          "decision": "remove",
+          "reason": "总流程将运行时桥接放到D8/R8之前，易混淆构建期注入调用与运行时真正执行；四层职责已有正文表，删除该含混总图。",
+          "original_line": 99,
+          "heading": "## 先确定插桩边界"
+        },
+        {
+          "original_id": "a297-02-core-tree-and-scoped-artifacts",
+          "title": "变换需要的信息决定 Core、Tree 或整组产物入口",
+          "decision": "remove",
+          "reason": "Core、Tree、逐类和Scoped四卡重复三项入口选择及前后编译步骤说明。",
+          "original_line": 122,
+          "heading": "### ASM 在构建流程中的位置"
+        },
+        {
+          "original_id": "a297-03-scope-and-frame-recomputation",
+          "title": "模块范围和 frame 计算模式分别配置",
+          "decision": "remove",
+          "reason": "PROJECT/ALL和两类frame四卡重复scope与计算模式两个完整段落。",
+          "original_line": 182,
+          "heading": "### 注册 AsmClassVisitorFactory"
+        },
+        {
+          "original_id": "a297-04-factory-parallelism-and-gradle-inputs",
+          "title": "factory 可并发，规则必须是声明式 Gradle 输入",
+          "decision": "remove",
+          "reason": "并行、输入、排除和ASM版本四卡重复factory示例与参数说明。",
+          "original_line": 244,
+          "heading": "### Factory 回调的异步约束"
+        },
+        {
+          "original_id": "a297-05-normal-return-and-propagating-exception",
+          "title": "先保留原 catch/finally，最后的 catch-all 才清理逃逸异常",
+          "decision": "keep",
+          "reason": "原方法体分正常return清理和最后catchall逃逸Throwable清理后原样抛出，表达原异常表优先级与隐式异常路径。",
+          "original_line": 263,
+          "heading": "### 显式退出与隐式退出"
+        },
+        {
+          "original_id": "a297-06-tree-emission-marker-and-scope",
+          "title": "MethodNode 同时解决输出顺序、handler 优先级与重复处理",
+          "decision": "remove",
+          "reason": "读取、插入、标记和输出四卡重复129行MethodNode代码及两段解释，异常清理结构另有保留分支图。",
+          "original_line": 402,
+          "heading": "### 显式退出与隐式退出"
+        },
+        {
+          "original_id": "a297-07-trace-tag-unicode-and-id-mapping",
+          "title": "Trace tag 在构建期生成并按 UTF-16 限长",
+          "decision": "remove",
+          "reason": "同步限制、UTF16截断、隐私和查重四卡重复Trace契约与tag实现解释。",
+          "original_line": 415,
+          "heading": "### 显式退出与隐式退出"
+        },
+        {
+          "original_id": "a297-08-r8-release-shape-and-mapping",
+          "title": "R8 后执行形态与源码方法不能假定一一对应",
+          "decision": "remove",
+          "reason": "直接调用、反射JNI、优化形态和映射四卡重复三类R8处理及两种映射段落。",
+          "original_line": 447,
+          "heading": "## 与 R8 的关系"
+        },
+        {
+          "original_id": "a297-09-library-extension-versus-framework-boundary",
+          "title": "网络和帧监控使用稳定扩展点补业务上下文",
+          "decision": "remove",
+          "reason": "扩展点、依赖风险、framework和帧工具四卡重复网络五风险及帧工具列表。",
+          "original_line": 493,
+          "heading": "## 帧与主线程监控的边界"
+        },
+        {
+          "original_id": "a297-10-coroutine-logical-and-thread-segments",
+          "title": "协程逻辑生命周期与每次线程执行片段分开记录",
+          "decision": "keep",
+          "reason": "逻辑协程跨挂起由异步cookie关联，线程A执行、挂起非运行、线程B恢复各轨，说明同步section不能跨线程。",
+          "original_line": 508,
+          "heading": "## Kotlin、协程与 Compose 的特殊形态"
+        },
+        {
+          "original_id": "a297-11-multi-module-idempotence-and-reproducibility",
+          "title": "每个模块 variant 独立注册，依赖发布边界也要验证",
+          "decision": "remove",
+          "reason": "library、feature、ALL和Scoped四卡重复五项模块范围策略。",
+          "original_line": 533,
+          "heading": "## 多模块与依赖范围"
+        },
+        {
+          "original_id": "a297-12-semantic-build-and-device-validation",
+          "title": "插桩验收从业务语义到 Android 发布产物逐层推进",
+          "decision": "keep",
+          "reason": "fixture语义执行、重复pass和Unicode、Gradle缓存多模块、优化后DEX及设备成本逐级验收，避免只看编译成功。",
+          "original_line": 576,
+          "heading": "### 设备与性能验证"
+        },
+        {
+          "original_id": "a297-13-runtime-bridge-budgets-and-business-semantics",
+          "title": "运行桥接控制自身成本，保留业务失败和配对语义",
+          "decision": "remove",
+          "reason": "桥接、缓冲、隔离和聚合四卡重复桥接七项清单及生产诊断分工。",
+          "original_line": 599,
+          "heading": "## 运行时桥接的安全要求"
+        }
+      ],
+      "sha256_after": "ba94822c78908d457ac67dea0900a0b2eb54367ab1dd1b1050d1e6434d942935",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:47:24.891594+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 13,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a297/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a297/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 297,
+        "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+        "registered_sha256": "572cafb49498509e5c52bd82f40035d34035a080958acbdcb73be115a1045763",
+        "frozen_sha256": "572cafb49498509e5c52bd82f40035d34035a080958acbdcb73be115a1045763",
+        "review_input_sha256": "1806615ee734c191d59c3174931067fcf63a5712283420f30f3d515a0bb10477",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a297/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a297/external-source.diff",
+        "diff_sha256": "ca8089b146fa4448d44d840c00a6c39865d29f00df5fb25b419b517374c51295",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 199, \"characters\": 16057, \"svg_labels_read\": 13, \"actual_pngs_viewed\": 13, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 3, \"code_lines\": 199, \"native_mermaid\": 0, \"changed_since_frozen\": true, \"external_review_input_sha256\": \"1806615ee734c191d59c3174931067fcf63a5712283420f30f3d515a0bb10477\"}"
+      },
+      "sha256_review_input": "1806615ee734c191d59c3174931067fcf63a5712283420f30f3d515a0bb10477",
+      "retired_diagrams": [
+        "a297-01-class-to-release-evidence-pipeline",
+        "a297-02-core-tree-and-scoped-artifacts",
+        "a297-03-scope-and-frame-recomputation",
+        "a297-04-factory-parallelism-and-gradle-inputs",
+        "a297-06-tree-emission-marker-and-scope",
+        "a297-07-trace-tag-unicode-and-id-mapping",
+        "a297-08-r8-release-shape-and-mapping",
+        "a297-09-library-extension-versus-framework-boundary",
+        "a297-11-multi-module-idempotence-and-reproducibility",
+        "a297-13-runtime-bridge-budgets-and-business-semantics"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-297/retired-assets.json"
     },
     {
       "index": 298,
@@ -68258,8 +68409,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 203,
-  "next_article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+  "reviewed_articles": 204,
+  "next_article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -68269,7 +68420,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:44:55.345599+08:00",
+  "updated_at": "2026-10-31T19:47:24.891594+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -68382,18 +68533,11 @@
       "observed_sha256": "c84f1da287ea7f2f86d61f891ccc3d88556792dea0078ac87fcc9e28e96cbd01",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
-      "registered_sha256": "572cafb49498509e5c52bd82f40035d34035a080958acbdcb73be115a1045763",
-      "observed_sha256": "1806615ee734c191d59c3174931067fcf63a5712283420f30f3d515a0bb10477",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5798,
-  "reviewed_placements_after": 2259,
-  "net_removed_placements": 3539,
+  "reviewed_placements_before": 5811,
+  "reviewed_placements_after": 2262,
+  "net_removed_placements": 3549,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -68417,7 +68561,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 203,
+  "currently_matching_reviewed_source_count": 204,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
