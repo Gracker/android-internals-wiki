@@ -6,11 +6,15 @@ status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 version_notes: DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用
 confidence: medium
-last_verified: '2026-09-06'
+last_verified: '2026-10-31'
+last_source_verified_at: '2026-10-31'
+last_idle_audit_at: '2026-10-31'
 last_verified_against: AOSP android-17.0.0_r1 View/GestureDetector/VelocityTracker paths
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/view/VelocityTracker.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/MotionEvent.java
 - type: aosp
   path: frameworks/native/libs/input/VelocityTracker.cpp
 - type: aosp
@@ -23,6 +27,8 @@ sources:
   path: frameworks/base/core/res/res/values/config.xml
 - type: androidx
   path: frameworks/support/core/core/src/main/java/androidx/core/widget/NestedScrollView.java
+- type: official-doc
+  path: https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures
 tags:
   - input
   - gesture
@@ -59,7 +65,7 @@ related_chapters:
 
 ### 生命周期与多指语义
 
-典型用法是从 `ACTION_DOWN` 开始收样，需要速度时才算一次，手势结束后回收：
+下面是单指生命周期的代码节选：从 `ACTION_DOWN` 开始收样，需要速度时才算一次，手势结束后回收。`updateDrag()` 和 `finishGesture()` 是应用自行实现的回调；多指扩展还应将 `ACTION_POINTER_DOWN`、`ACTION_POINTER_UP` 交给同一个 `VelocityTracker`，并维护当前拖动指针：
 
 ```java
 private VelocityTracker velocityTracker;
@@ -102,7 +108,7 @@ public boolean onTouchEvent(MotionEvent event) {
 这段代码里有三处容易用错：
 
 1. `addMovement()` 只负责加入样本，供查询方法读取的速度要由 `computeCurrentVelocity()` 生成；`ACTION_MOVE` 到来时记下样本就好，速度留到要读的时候再算。
-2. `getXVelocity(id)`、`getYVelocity(id)` 传的是指针 ID，它在整个手势里稳定不变；`MotionEvent` 里随指针增减变化的是位置索引（index），两者别混用。
+2. `getXVelocity(id)`、`getYVelocity(id)` 传的是指针 ID，同一指针从按下到抬起或取消期间，ID 保持不变；`MotionEvent` 中的指针位置索引（index）可能随事件变化，两者别混用。
 3. 一个 `VelocityTracker` 本来就能同时记录多个指针 ID。源码里的对象池容量为 2，含义只是最多缓存两个按默认策略（框架内置的轴级策略表）创建的实例，多指场景用同一个实例就够了。
 
 Java 封装层把默认策略实例放进 `Pools.SynchronizedPool<VelocityTracker>(2)`：用默认策略创建的实例在 `recycle()` 时清空并回到池中，显式策略实例则留在池外。我们要做的只是成对调用 `obtain()` 和 `recycle()`；池有没有命中由框架处理，设计手势算法时可以把它放在一边。
@@ -122,7 +128,7 @@ static const std::map<int32_t, VelocityTracker::Strategy>
 
 触摸屏的 X、Y 是位置轴，默认走 `LSQ2` 二阶最小二乘拟合（`LSQ2`）：用近期的位置与时间样本拟合出二次曲线，再求速度；`AXIS_SCROLL` 是只报告变化量的差分轴，默认走 `IMPULSE`，按冲量模型从连续差分样本估算速度。`configureStrategy()` 还明确禁止差分轴改用调用方覆盖的策略。
 
-Java 层还保留着 `obtain(int)`、`obtain(String)` 这些隐藏入口，它们服务于系统调试、测试和算法比较；普通 SDK 应用拿公开的 `obtain()` 用就好。
+Java 层还保留着 `obtain(int)`、`obtain(String)` 这些隐藏入口，用于系统调试、测试和算法比较。其中 `obtain(String)` 已标记为弃用，源码要求隐藏接口调用方改用 `obtain(int)`；这两种重载都不属于公开 SDK，普通应用使用公开的 `obtain()`。
 
 原生层的收样逻辑里，还有几处会影响诊断的细节：
 
@@ -133,7 +139,7 @@ Java 层还保留着 `obtain(int)`、`obtain(String)` 这些隐藏入口，它�
 - 原生层用共享的 `mLastEventTime` 判断停顿：对已有 pointer ID，新移动样本距最近一次移动超过 40 ms 时会清空已配置策略；抬手时也有对应的停顿检查；
 - `getComputedVelocity()` 最终按 `units / 1000` 缩放，并限制在 `[-maxVelocity, maxVelocity]`。
 
-Android 14（API 34）起，公开 API 增加了 `isAxisSupported()` 与 `getAxisVelocity()`，`AXIS_SCROLL` 也进入公开可跟踪范围。各版本的默认策略演进如下：
+Android 14（API 34）起，公开 API 增加了 `isAxisSupported()` 与 `getAxisVelocity()`，`AXIS_SCROLL` 也进入公开可跟踪范围。读取轴速度前先用 `isAxisSupported(axis)` 确认支持情况；不支持的轴返回 0，不能据此判断设备停止运动。各版本的默认策略演进如下：
 
 | 平台版本 | 默认策略模型 |
 |---|---|
@@ -192,7 +198,7 @@ flowchart LR
 - `ACTION_MOVE`：以多指焦点的位移与 TouchSlop 比较。越界后取消点击和长按候选并调用 `onScroll()`；后续移动只要焦点变化至少 1 像素即可继续产生 `onScroll()` 回调。
 - `ACTION_POINTER_UP`：计算各指针的速度。如果离开的指针与剩余指针速度向量点积为负，会清空 `VelocityTracker`，避免相反方向的多指运动生成错误 Fling。
 - `ACTION_UP`：按双击、长按、单击候选、Fling 的优先顺序收尾；Fling 分支会计算速度并与最小速度阈值比较。
-- `ACTION_CANCEL`：取消消息、回收事件与 `VelocityTracker`，并清理所有状态位。
+- `ACTION_CANCEL`：取消消息、回收 `VelocityTracker`，并清理识别状态。`cancel()` 保留已保存的 `MotionEvent` 副本，这些副本在后续事件替换时回收。
 
 `onDown()` 的返回值很重要：控件要从 `ACTION_DOWN` 起就接受整个触摸序列。等到 `ACTION_MOVE` 才开始返回 `true`，后续事件常常就交不到识别器手里了。
 
@@ -201,16 +207,16 @@ flowchart LR
 启用 `OnDoubleTapListener` 后，需要区分三组回调：
 
 - `onSingleTapUp()`：第一次点击在点击候选区域内抬手时立即调用，适合即时视觉反馈；
-- `onSingleTapConfirmed()`：等待双击时间窗后仍没有合格的第二次点击，才确认单击；
+- `onSingleTapConfirmed()`：首次 `ACTION_DOWN` 安排的 `TAP` 确认消息到期、没有形成双击且手指已抬起时调用；消息到期时仍按下，则延至后续合格的 `ACTION_UP` 再确认；
 - `onDoubleTap()`、`onDoubleTapEvent()`：第二次 `ACTION_DOWN` 被识别为双击后调用，后者还会收到这次点击的后续事件。
 
 `isConsideredDoubleTap()` 同时检查：
 
-1. 第一次点击是否一直处于范围更大的双击触摸容差区；
+1. 第一次点击是否一直处于 `doubleTapTouchSlop` 容差区；Android 17 中这个阈值与 TouchSlop 相同，区别于两次按下位置之间的 `doubleTapSlop`；
 2. 第二次 `ACTION_DOWN` 与第一次 `ACTION_UP` 的间隔是否落在 `doubleTapMinTime` 到 `doubleTapTimeout` 之间；
 3. 两次 `ACTION_DOWN` 的距离平方是否小于 `doubleTapSlopSquare`。
 
-框架后备的 `doubleTapMinTime` 是 40 ms，`doubleTapTimeout` 是 300 ms；运行时阈值来自资源与系统配置，业务代码里抄这些数字没有意义，交给 `GestureDetector` 或从对应配置 API 读取就好。
+框架后备的 `doubleTapMinTime` 是 40 ms，`doubleTapTimeout` 是 300 ms。Android 17 的 `GestureDetector` 在持有带 `Context` 构造的配置实例且 `viewconfigurationApis` 开启时读取实例的资源值，否则沿用静态配置方法。业务代码应交给 `GestureDetector` 判断双击，避免硬编码这些默认数字。
 
 ### 长按：默认 400 ms，运行时可调整
 
@@ -222,7 +228,7 @@ mHandler.sendMessageAtTime(
         mCurrentDownEvent.getDownTime() + getLongPressTimeoutMillis());
 ```
 
-`ViewConfiguration.getLongPressTimeout()` 读取的是 `Settings.Secure.LONG_PRESS_TIMEOUT`，带 `Context` 的新 API 由实例读取设置值。所以“所有 Android 设备固定 400 ms”这个说法并不成立，400 ms 只是当前平台的默认值。
+`ViewConfiguration.getLongPressTimeout()` 读取的是 `Settings.Secure.LONG_PRESS_TIMEOUT`。Android 17 源码中的实例方法 `getLongPressTimeoutMillis()` 带有 `@FlaggedApi` 标记；`GestureDetector` 仅在持有带 `Context` 构造的 `ViewConfiguration` 且 `viewconfigurationApis` 标志开启时使用它，否则仍调用静态方法。400 ms 是平台默认值，运行时设置可以改变长按阈值。
 
 移动越过 TouchSlop、进入滚动、收到额外的 `ACTION_POINTER_DOWN` 或 `ACTION_CANCEL` 都可能取消长按。
 
@@ -470,9 +476,9 @@ Modifier.pointerInput(Unit) {
 }
 ```
 
-选 API 时从高层往低层走：`clickable`、`scrollable`、`draggable`、`transformable` 这些高层组件和修饰符（modifier），同时处理语义、焦点、可访问性、视觉反馈和事件消费；等现有识别器表达不了所需交互，再下沉到 `awaitEachGesture`、`awaitFirstDown`、`awaitTouchSlopOrCancellation` 这些原始 API。
+选 API 时从高层往低层走：优先使用 `clickable`、`scrollable`、`draggable`、`transformable` 等现成修饰符（modifier），具体附加能力要按组件区分。例如 `clickable` 除点击检测外，还提供语义、视觉反馈、悬停、焦点和键盘支持；不能据此认定每种手势修饰符都具备这些能力。现有识别器无法表达所需交互时，再下沉到 `awaitEachGesture`、`awaitFirstDown`、`awaitTouchSlopOrCancellation` 这些原始 API。
 
-Compose 对新指针的第一个事件做命中测试，形成可接收指针输入的节点链，同一指针的后续事件沿这条链传播。每个事件要经过三个传播阶段（pass）：
+对按下后的指针序列，Compose 为新指针的第一个事件做命中测试，形成可接收指针输入的节点链，同一指针的后续事件沿这条链传播。鼠标或触控笔的悬停事件例外，它们按当前位置命中节点，越过边界后接收事件的节点也会改变。沿命中链分发时，事件经过三个传播阶段（pass）：
 
 | 传播阶段 | 方向 | 常见用途 |
 |---|---|---|
@@ -485,7 +491,7 @@ Compose 对新指针的第一个事件做命中测试，形成可接收指针输
 <!-- gracker-diagram: ch03-04-compose-three-passes -->
 ![Compose 沿命中链三次传播，consume 只设置消费标记](../../assets/diagrams/ch03/ch03-04-compose-three-passes.png)
 
-图：首个指针事件建立命中链，同一指针后续事件通常复用它。每个事件按 Initial 父到子、Main 子到父、Final 父到子传播；consume 不会自动阻断传播，其他处理器要检查 isConsumed。高层组件已有焦点、语义、无障碍和反馈职责，只有确有需要时再自行写 pointerInput。
+图：按下序列的首个指针事件建立命中链，同一指针后续事件通常复用它；悬停事件按当前位置命中。每个事件按 Initial 父到子、Main 子到父、Final 父到子传播；consume 不会自动阻断传播，其他处理器要检查 isConsumed。clickable 等高层 API 按各自职责提供焦点、语义、无障碍或视觉反馈，所需交互无法由现成 API 表达时再自行写 pointerInput。
 
 平台事件会被适配成 Compose 内部结构，这项转换未必是性能瓶颈；我们判断 Compose 手势卡顿，看的还是指针处理器的执行时间、状态写入引起的重组、布局与绘制，以及帧时间线。
 
@@ -503,6 +509,7 @@ Compose 对新指针的第一个事件做命中测试，形成可接收指针输
 ## 源码与文档
 
 - AOSP `android-17.0.0_r1`：[VelocityTracker.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/VelocityTracker.java)
+- AOSP `android-17.0.0_r1`：[MotionEvent.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/MotionEvent.java)
 - AOSP `android-17.0.0_r1`：[VelocityTracker.cpp](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/input/VelocityTracker.cpp)
 - AOSP `android-17.0.0_r1`：[GestureDetector.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/GestureDetector.java)
 - AOSP `android-17.0.0_r1`：[ViewConfiguration.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewConfiguration.java)
