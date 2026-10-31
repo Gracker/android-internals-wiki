@@ -34284,9 +34284,626 @@
       "before_count": 40,
       "before_all_images": 40,
       "sha256_before": "934108b65efab25cf4221b051f4384878cf761a5d7cab5ac193a52fe8d1b647d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 16,
+      "decisions": [
+        {
+          "original_id": "ch14-03-01-evidence-order",
+          "title": "用状态定位阶段，再用独立证据解释原因",
+          "decision": "remove",
+          "reason": "四框依次重述59及61图注完整定位-独立证据-归因步骤，文末39再次复制，保留正文，删通用工作清单副本。",
+          "original_line": 61,
+          "heading": "# 线程 CPU 状态分析"
+        },
+        {
+          "original_id": "ch14-03-02-three-state-layers",
+          "title": "任务位、事件报告与解析状态的三个层次",
+          "decision": "merge",
+          "reason": "原图“任务位、事件报告与解析状态的三个层次”并入：合并三个状态层与版本解码、特殊状态兼容，画出实际转换边界而非按UI颜色猜含义。；锚点原图6，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 76,
+          "heading": "### 从任务位到 UI 状态的三个层次",
+          "replacement_id": "ed14-03-versioned-state-reconstruction"
+        },
+        {
+          "original_id": "ch14-03-03-event-state-transition",
+          "title": "切换与唤醒共同重建状态区间",
+          "decision": "merge",
+          "reason": "原图“切换与唤醒共同重建状态区间”并入：合并switch与waking重建、R不只由唤醒产生、重复唤醒与R+拆段特例，保留固定处理器行为的边界。；锚点原图25，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 87,
+          "heading": "### 从任务位到 UI 状态的三个层次",
+          "replacement_id": "ed14-03-waking-state-branches"
+        },
+        {
+          "original_id": "ch14-03-04-identity-and-waker",
+          "title": "线程身份与唤醒状态行的关联",
+          "decision": "merge",
+          "reason": "原图“线程身份与唤醒状态行的关联”并入：合并utid/waker_id身份与compact事件IRQ信息、锁/Binder/中断三路归因，避免把当前执行任务当资源根因。；锚点原图26，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 94,
+          "heading": "### 从任务位到 UI 状态的三个层次",
+          "replacement_id": "ed14-03-waker-identity-and-causal-evidence"
+        },
+        {
+          "original_id": "ch14-03-05-cpu-vs-thread",
+          "title": "同一调度事实的 CPU 与线程视角",
+          "decision": "keep",
+          "reason": "CPU视角与线程状态视角具体区间对照，区分sched_slice的运行CPU与非Running状态无执行CPU，独立跨视角关系保留。",
+          "original_line": 101,
+          "heading": "### 从任务位到 UI 状态的三个层次"
+        },
+        {
+          "original_id": "ch14-03-06-state-version-decoding",
+          "title": "状态字符随报告编码与输入格式解释",
+          "decision": "merge",
+          "reason": "原图“状态字符随报告编码与输入格式解释”并入：合并三个状态层与版本解码、特殊状态兼容，画出实际转换边界而非按UI颜色猜含义。；锚点原图6，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 123,
+          "heading": "### 常见状态与跨版本字符",
+          "replacement_id": "ed14-03-versioned-state-reconstruction"
+        },
+        {
+          "original_id": "ch14-03-07-rplus-meaning",
+          "title": "R+ 记录抢占标志，不保存抢占者身份",
+          "decision": "keep",
+          "reason": "抢占报告位到R+及不能推出用户/内核态或抢占者的语义分叉，与保留21精确SQL相邻关系互补，正文preempt分支代码全留。",
+          "original_line": 141,
+          "heading": "### `R+` 的抢占编码"
+        },
+        {
+          "original_id": "ch14-03-08-r-not-only-wake",
+          "title": "R 的两个常见来源",
+          "decision": "merge",
+          "reason": "原图“R 的两个常见来源”并入：合并switch与waking重建、R不只由唤醒产生、重复唤醒与R+拆段特例，保留固定处理器行为的边界。；锚点原图25，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 148,
+          "heading": "### `R+` 的抢占编码",
+          "replacement_id": "ed14-03-waking-state-branches"
+        },
+        {
+          "original_id": "ch14-03-09-two-ring-buffers",
+          "title": "服务端 Trace buffer 与内核 ftrace buffer",
+          "decision": "remove",
+          "reason": "中央service和perCPUftrace两层buffer四框重述204段，14.1已保留完整三缓冲独立机制，本篇无新时间/容量实例，删段落摘要。",
+          "original_line": 206,
+          "heading": "## 14.3.2 采集与 UI 读取"
+        },
+        {
+          "original_id": "ch14-03-10-capture-events",
+          "title": "构建状态、唤醒与阻塞线索所需的事件",
+          "decision": "remove",
+          "reason": "三种sched事件三组六框逐项复述211完整采集角色表述，采集protobuf44行和compact/waker/blocked合图全留，删事件词典。",
+          "original_line": 213,
+          "heading": "## 14.3.2 采集与 UI 读取"
+        },
+        {
+          "original_id": "ch14-03-11-compact-irq-flags",
+          "title": "紧凑唤醒记录决定中断标志是否保留",
+          "decision": "merge",
+          "reason": "原图“紧凑唤醒记录决定中断标志是否保留”并入：合并utid/waker_id身份与compact事件IRQ信息、锁/Binder/中断三路归因，避免把当前执行任务当资源根因。；锚点原图26，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 220,
+          "heading": "## 14.3.2 采集与 UI 读取",
+          "replacement_id": "ed14-03-waker-identity-and-causal-evidence"
+        },
+        {
+          "original_id": "ch14-03-12-symbol-resolution",
+          "title": "从睡眠地址到 blocked_function 的条件",
+          "decision": "merge",
+          "reason": "原图“从睡眠地址到 blocked_function 的条件”并入：合并采集符号化、最近阻塞状态匹配、io_wait与caller字段的独立边界，展示NULL为何不能直接排除等待。；锚点原图30，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 227,
+          "heading": "## 14.3.2 采集与 UI 读取",
+          "replacement_id": "ed14-03-blocked-reason-field-chain"
+        },
+        {
+          "original_id": "ch14-03-13-capture-diagnostics",
+          "title": "采集失败、事件损失与空字段的诊断顺序",
+          "decision": "remove",
+          "reason": "四框逐项摘要232–234完整诊断段，stats/metadata查询名和FtraceStats字段区别正文全留，不再按步骤重排。",
+          "original_line": 234,
+          "heading": "## 14.3.2 采集与 UI 读取"
+        },
+        {
+          "original_id": "ch14-03-14-ui-reading-order",
+          "title": "从业务窗口进入 CPU 与线程状态视图",
+          "decision": "remove",
+          "reason": "四框重述241–244两种UI入口及业务窗口清单，原指引和CPU-Thread独立区间图5全留，删操作目录副本。",
+          "original_line": 246,
+          "heading": "## 14.3.2 采集与 UI 读取"
+        },
+        {
+          "original_id": "ch14-03-15-running-interrupt-layers",
+          "title": "Running 外层可以包含中断处理",
+          "decision": "keep",
+          "reason": "Running外层内嵌HardIRQ/SoftIRQ的实际轨道包围，直观解释无switch也会占用CPU，与35线程化softirq单独调度关系互补。",
+          "original_line": 255,
+          "heading": "## 14.3.3 Running：已被调度，不等于应用代码独占 CPU"
+        },
+        {
+          "original_id": "ch14-03-16-running-evidence",
+          "title": "长 Running 的工作内容和关键路径检查",
+          "decision": "remove",
+          "reason": "六框逐项摘录262–268五项Running证据清单及后台CPU限定，无具体栈/窗口示例，正文更全，删证据目录。",
+          "original_line": 270,
+          "heading": "## 14.3.3 Running：已被调度，不等于应用代码独占 CPU"
+        },
+        {
+          "original_id": "ch14-03-17-frame-deadline",
+          "title": "doFrame 的 CPU 时间与整帧截止时间",
+          "decision": "remove",
+          "reason": "三组六卡重述277完整帧周期/CPU预算/ExpectedActual定义，14.2具体帧端点与stuffing图已保留，删阈值摘要而非改预算。",
+          "original_line": 281,
+          "heading": "### 单帧 Running 与名义刷新周期"
+        },
+        {
+          "original_id": "ch14-03-18-cpu-environment",
+          "title": "CPU 编号、容量和频率提供不同证据",
+          "decision": "remove",
+          "reason": "三组六卡逐项重述288完整capacity/拓扑/频率段，新资格合图保留环境与核型限制，删上下文词典。",
+          "original_line": 290,
+          "heading": "### CPU 类型、容量与频率"
+        },
+        {
+          "original_id": "ch14-03-19-eligibility-vs-hints",
+          "title": "affinity、cpuset 与 uclamp 的作用边界",
+          "decision": "merge",
+          "reason": "原图“affinity、cpuset 与 uclamp 的作用边界”并入：合并资格约束、uclamp提示与排队原因，给出空闲CPU不能单独证明调度错误的实际分支。；锚点原图20，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 297,
+          "heading": "### CPU 类型、容量与频率",
+          "replacement_id": "ed14-03-runnable-eligibility-and-placement"
+        },
+        {
+          "original_id": "ch14-03-20-runnable-causes",
+          "title": "Runnable 延迟从约束和竞争两侧排查",
+          "decision": "merge",
+          "reason": "原图“Runnable 延迟从约束和竞争两侧排查”并入：合并资格约束、uclamp提示与排队原因，给出空闲CPU不能单独证明调度错误的实际分支。；锚点原图20，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 318,
+          "heading": "## 14.3.4 Runnable：测量唤醒到运行的等待",
+          "replacement_id": "ed14-03-runnable-eligibility-and-placement"
+        },
+        {
+          "original_id": "ch14-03-21-latency-sql-adjacency",
+          "title": "Runnable 延迟查询必须复核邻接关系",
+          "decision": "keep",
+          "reason": "R/R+行与sched_slice.id、下一Running行严格邻接/闭合的结构关系独立，37行SQL保持逐字，避免duration相近就误连。",
+          "original_line": 369,
+          "heading": "### 查询每次运行前的 Runnable 延迟"
+        },
+        {
+          "original_id": "ch14-03-22-preemption-followup",
+          "title": "R+ 的归因从同 CPU 后继任务开始",
+          "decision": "remove",
+          "reason": "三组六框逐项重述376一段抢占后跟同CPU继任者/调度类/allowedCPU的清单，新资格合图已纳入实际竞争路径，不重复放后续检查卡。",
+          "original_line": 378,
+          "heading": "### 解读 `R` 与 `R+`"
+        },
+        {
+          "original_id": "ch14-03-23-sleeping-wait-chain",
+          "title": "同步等待的完整墙钟路径",
+          "decision": "keep",
+          "reason": "S→R→Running三种实际区间及waking边界，展示完整资源等待与排队组成，不把S单独当全部响应延迟，保留具体时轴。",
+          "original_line": 405,
+          "heading": "## 14.3.5 Sleeping：找到等待条件和唤醒者"
+        },
+        {
+          "original_id": "ch14-03-24-waking-state-branches",
+          "title": "固定导入器对 waking 的不同分支",
+          "decision": "merge",
+          "reason": "原图“固定导入器对 waking 的不同分支”并入：合并switch与waking重建、R不只由唤醒产生、重复唤醒与R+拆段特例，保留固定处理器行为的边界。；锚点原图25，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 414,
+          "heading": "### Woken by 的来源与实现",
+          "replacement_id": "ed14-03-waking-state-branches"
+        },
+        {
+          "original_id": "ch14-03-25-rplus-wake-split",
+          "title": "R+ 内再次 waking 可把原区间分成两段",
+          "decision": "merge",
+          "reason": "原图“R+ 内再次 waking 可把原区间分成两段”并入：合并switch与waking重建、R不只由唤醒产生、重复唤醒与R+拆段特例，保留固定处理器行为的边界。；锚点原图25，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 421,
+          "heading": "### Woken by 的来源与实现",
+          "replacement_id": "ed14-03-waking-state-branches"
+        },
+        {
+          "original_id": "ch14-03-26-waker-causal-limit",
+          "title": "执行唤醒者与业务依赖的区分",
+          "decision": "merge",
+          "reason": "原图“执行唤醒者与业务依赖的区分”并入：合并utid/waker_id身份与compact事件IRQ信息、锁/Binder/中断三路归因，避免把当前执行任务当资源根因。；锚点原图26，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 433,
+          "heading": "### Woken by 的来源与实现",
+          "replacement_id": "ed14-03-waker-identity-and-causal-evidence"
+        },
+        {
+          "original_id": "ch14-03-27-event-sampling",
+          "title": "事件触发调用栈需要限制目标与检查丢样",
+          "decision": "keep",
+          "reason": "linux.perf按sched事件触发→事件字段过滤→样本状态/调用栈→丢失覆盖的具体采样链，和状态重建/资源归因不是同义，保留。",
+          "original_line": 442,
+          "heading": "### Woken by 的来源与实现"
+        },
+        {
+          "original_id": "ch14-03-28-d-state-inference",
+          "title": "D 是等待状态，设备原因仍需独立证据",
+          "decision": "merge",
+          "reason": "原图“D 是等待状态，设备原因仍需独立证据”并入：合并D状态候选分类和原因验证，保留I/O、内存和驱动/同步各自需要的证据。；锚点原图31，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 453,
+          "heading": "## 14.3.6 Uninterruptible Sleep：D 只说明不可中断等待",
+          "replacement_id": "ed14-03-d-state-candidate-validation"
+        },
+        {
+          "original_id": "ch14-03-29-blocked-fields",
+          "title": "io_wait 与睡眠函数分别提供什么线索",
+          "decision": "merge",
+          "reason": "原图“io_wait 与睡眠函数分别提供什么线索”并入：合并采集符号化、最近阻塞状态匹配、io_wait与caller字段的独立边界，展示NULL为何不能直接排除等待。；锚点原图30，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 469,
+          "heading": "### `io_wait` 与 `blocked_function` 的源码含义",
+          "replacement_id": "ed14-03-blocked-reason-field-chain"
+        },
+        {
+          "original_id": "ch14-03-30-blocked-row-association",
+          "title": "阻塞原因字段需要成功关联状态行",
+          "decision": "merge",
+          "reason": "原图“阻塞原因字段需要成功关联状态行”并入：合并采集符号化、最近阻塞状态匹配、io_wait与caller字段的独立边界，展示NULL为何不能直接排除等待。；锚点原图30，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 478,
+          "heading": "### `io_wait` 与 `blocked_function` 的源码含义",
+          "replacement_id": "ed14-03-blocked-reason-field-chain"
+        },
+        {
+          "original_id": "ch14-03-31-d-cause-validation",
+          "title": "D 区间的归因从线索走向资源证据",
+          "decision": "merge",
+          "reason": "原图“D 区间的归因从线索走向资源证据”并入：合并D状态候选分类和原因验证，保留I/O、内存和驱动/同步各自需要的证据。；锚点原图31，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 518,
+          "heading": "### 查询 D 状态",
+          "replacement_id": "ed14-03-d-state-candidate-validation"
+        },
+        {
+          "original_id": "ch14-03-32-d-to-anr",
+          "title": "D 只有阻断受监控工作才参与 ANR 因果",
+          "decision": "remove",
+          "reason": "D→受监控工作→框架期限→ANR解释四框逐项复制523完整限定句，D候选新合图图注明确业务影响门槛，无新增具体ANR路径，删段落复述。",
+          "original_line": 525,
+          "heading": "### 查询 D 状态"
+        },
+        {
+          "original_id": "ch14-03-33-special-state-format",
+          "title": "特殊状态保留原值并按版本解释",
+          "decision": "merge",
+          "reason": "原图“特殊状态保留原值并按版本解释”并入：合并三个状态层与版本解码、特殊状态兼容，画出实际转换边界而非按UI颜色猜含义。；锚点原图6，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 536,
+          "heading": "## 14.3.7 Stopped 与其他状态",
+          "replacement_id": "ed14-03-versioned-state-reconstruction"
+        },
+        {
+          "original_id": "ch14-03-34-irq-window-union",
+          "title": "IRQ 汇总候选需要同 CPU 裁剪和并集",
+          "decision": "keep",
+          "reason": "从全CPU IRQ候选到目标业务线程实际Running CPU的同CPU窗口裁剪再取并集，给出与全局SUM不同的集合计算关系，保留。",
+          "original_line": 566,
+          "heading": "## 14.3.8 IRQ / SoftIRQ：调度区间里的隐含执行"
+        },
+        {
+          "original_id": "ch14-03-35-ksoftirqd-overlap",
+          "title": "ksoftirqd 的调度时间可包住 SoftIRQ Slice",
+          "decision": "keep",
+          "reason": "ksoftirqd Running外层包含SoftIRQ内层的两轨具体重叠，防止把线程调度时长和IRQ时长二次求和，独立于无switch的15保留。",
+          "original_line": 573,
+          "heading": "## 14.3.8 IRQ / SoftIRQ：调度区间里的隐含执行"
+        },
+        {
+          "original_id": "ch14-03-36-window-target-selection",
+          "title": "业务状态查询先消除进程实例与 Slice 歧义",
+          "decision": "merge",
+          "reason": "原图“业务状态查询先消除进程实例与 Slice 歧义”并入：合并唯一进程/稳定Slice选择、FrameTimeline身份坐标和已知未知覆盖，展示窗口分析前提与统计失真闸门。；锚点原图38，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 628,
+          "heading": "## 14.3.9 在业务区间内量化状态",
+          "replacement_id": "ed14-03-window-identity-and-state-coverage"
+        },
+        {
+          "original_id": "ch14-03-37-known-unknown-coverage",
+          "title": "已知状态与未知覆盖分别报告",
+          "decision": "merge",
+          "reason": "原图“已知状态与未知覆盖分别报告”并入：合并唯一进程/稳定Slice选择、FrameTimeline身份坐标和已知未知覆盖，展示窗口分析前提与统计失真闸门。；锚点原图38，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 635,
+          "heading": "## 14.3.9 在业务区间内量化状态",
+          "replacement_id": "ed14-03-window-identity-and-state-coverage"
+        },
+        {
+          "original_id": "ch14-03-38-frame-object-coordinates",
+          "title": "FrameTimeline 选帧后明确目标线程窗口",
+          "decision": "merge",
+          "reason": "原图“FrameTimeline 选帧后明确目标线程窗口”并入：合并唯一进程/稳定Slice选择、FrameTimeline身份坐标和已知未知覆盖，展示窗口分析前提与统计失真闸门。；锚点原图38，固定版本/对象/事件来源/业务窗口和代码证据范围保留，详见新图图注。",
+          "original_line": 642,
+          "heading": "## 14.3.9 在业务区间内量化状态",
+          "replacement_id": "ed14-03-window-identity-and-state-coverage"
+        },
+        {
+          "original_id": "ch14-03-39-state-to-fix",
+          "title": "从状态分解走到可验证修改点",
+          "decision": "remove",
+          "reason": "四框逐项摘录658段完整最终结论要求，与1开头同一工作清单；新窗口图给统计闸门，原六行状态→证据→结论表全留。",
+          "original_line": 660,
+          "heading": "### 从状态走到修改点"
+        },
+        {
+          "original_id": "ch14-03-40-cpu-percent-denominator",
+          "title": "CPU 百分比先说明对象与分母",
+          "decision": "keep",
+          "reason": "原始CPU时间、单核wallclock分母、在线核数时间积分三口径并列比较，保留多线程>100和在线核变化不能固定N的实际量纲差异。",
+          "original_line": 691,
+          "heading": "### “把各进程 CPU 利用率相加后应小于 100%”"
+        }
+      ],
+      "sha256_after": "218960f863528056c9a8e8bcf3e09003b490f79c117c26b34a8309a5ab61b4c4",
+      "new_diagrams": [
+        {
+          "id": "ed14-03-versioned-state-reconstruction",
+          "title": "从内核位图到报告编码，再到可见线程状态",
+          "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-03-versioned-state-reconstruction.svg",
+            "src/assets/diagrams/ch14/ed14-03-versioned-state-reconstruction.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-03-versioned-state-reconstruction",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched.h",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/types/task_state.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/common/thread_state_tracker.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-03-02-three-state-layers",
+              "ch14-03-06-state-version-decoding",
+              "ch14-03-33-special-state-format"
+            ],
+            "boundary": "内核task.__state位图、sched_switch prev_state报告编码和TP重建字符串是不同层；TASK_RUNNING=0覆盖实际运行与可运行，需调度事件区分。固定内核版本与二进制/文本输入，旧版缺内核版本可能走兼容解码。Android17/内核6.18语境中R+来自抢占报告位，不直接证明用户/内核来源或谁抢占。T/t/Z及兼容字母保留原始state/end_state结合生命周期，不能假定旧表全部在当前编码可达。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-03-waking-state-branches",
+          "title": "同一次 waking 在不同当前状态下走不同重建分支",
+          "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-03-waking-state-branches.svg",
+            "src/assets/diagrams/ch14/ed14-03-waking-state-branches.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-03-waking-state-branches",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/common/thread_state_tracker.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-03-03-event-state-transition",
+              "ch14-03-08-r-not-only-wake",
+              "ch14-03-24-waking-state-branches",
+              "ch14-03-25-rplus-wake-split"
+            ],
+            "boundary": "sched_switch切出按报告打开后继状态，切入Running；正常阻塞→waking打开R，R也可能来自可运行切出。原文固定TP实现PushWakingEvent无历史打开R，当前Running或恰为R忽略冗余；其它当前状态关闭旧行并开R。IsRunnable仅识别R，故waking落在R+内会截断R+另开R并附waker线索，完整等待需看两段。这是原文固定tag/合成trace观察的导入行为，不是内核必然重新唤醒承诺。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-03-waker-identity-and-causal-evidence",
+          "title": "先识别观测到的 waker，再验证真正的业务依赖",
+          "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-03-waker-identity-and-causal-evidence.svg",
+            "src/assets/diagrams/ch14/ed14-03-waker-identity-and-causal-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-03-waker-identity-and-causal-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/common/thread_state_tracker.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/sched_tables.py",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/compact_sched.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_sched_event_tracker.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc",
+            "https://perfetto.dev/docs/case-studies/scheduling-blockages"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-03-04-identity-and-waker",
+              "ch14-03-11-compact-irq-flags",
+              "ch14-03-26-waker-causal-limit"
+            ],
+            "boundary": "utid/upid为trace内身份，不按复用的tid/pid混线程。waker_utid是执行waking时的任务，waker_id关联它已有的Running状态行，后者缺失可能前者仍在；UIWokenby需有效waker_id。compactwaking保留common_flags至irq_context，原文rawParseSchedWaking未传，NULL是未知不是非IRQ。irq_context=1只说明Hard/SoftIRQ标志，当前任务可能被中断；锁owner、Binder业务发起者、设备完成来源要另证，waker不保证是唯一根因。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-03-blocked-reason-field-chain",
+          "title": "blocked reason 先匹配阻塞行，再解释字段和符号",
+          "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-03-blocked-reason-field-chain.svg",
+            "src/assets/diagrams/ch14/ed14-03-blocked-reason-field-chain.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-03-blocked-reason-field-chain",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/kallsyms/lazy_kernel_symbolizer.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/cpu_reader.cc",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/common/thread_state_tracker.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-03-12-symbol-resolution",
+              "ch14-03-29-blocked-fields",
+              "ch14-03-30-blocked-row-association"
+            ],
+            "boundary": "sched_blocked_reason携带pid/caller/io_wait，TP需按线程找到最近阻塞状态行才补字段。io_wait来自in_iowait是I/O等待记账，1不证明设备/文件/API，0不证明内核锁。caller来自__get_wchan为内核观测睡眠位置，非原始应用调用或owner；采集端可将地址改写interned kernel symbol索引，名字在InternedData.kernel_symbols，导入需有效索引/映射，不把索引当raw地址。符号来自继承kallsymsFD或平台允许路径，不以root作为唯一前提；NULL可能缺事件/状态历史/符号链，须查完整性。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-03-runnable-eligibility-and-placement",
+          "title": "看到 Runnable 排队，先确认哪些 CPU 真有资格运行它",
+          "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-03-runnable-eligibility-and-placement.svg",
+            "src/assets/diagrams/ch14/ed14-03-runnable-eligibility-and-placement.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-03-runnable-eligibility-and-placement",
+          "sources": [
+            "https://www.kernel.org/doc/html/latest/scheduler/sched-util-clamp.html",
+            "https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html",
+            "https://www.kernel.org/doc/html/latest/scheduler/sched-capacity.html",
+            "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-03-19-eligibility-vs-hints",
+              "ch14-03-20-runnable-causes"
+            ],
+            "boundary": "R/R+说明可运行未执行，延迟需检查affinity/cpuset/online交集、优先级/实时竞争、quotas/throttling、负载与放置偏好。uclamp为有效util约束提示，不改变allowedmask，也不承诺核心或频率。先查CPUcapacity/cluster/频率/thermal实际环境，不能按固定编号猜核型；idleCPU可能不在允许集或迁移代价/能耗策略保留当前放置。原文SQL还需closed/dur>=0和R/R+结束精确相邻Running，空结果不等于零延迟。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-03-d-state-candidate-validation",
+          "title": "D 只给等待候选，三类资源方向分别验证",
+          "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-03-d-state-candidate-validation.svg",
+            "src/assets/diagrams/ch14/ed14-03-d-state-candidate-validation.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-03-d-state-candidate-validation",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched.h",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h",
+            "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+            "https://man7.org/linux/man-pages/man2/getrusage.2.html",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/sched_tables.py",
+            "https://perfetto.dev/docs/case-studies/scheduling-blockages",
+            "https://www.kernel.org/doc/html/latest/accounting/psi.html"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-03-28-d-state-inference",
+              "ch14-03-31-d-cause-validation"
+            ],
+            "boundary": "D为不可中断等待类，TASK_KILLABLE另允许fatalwake，不等于磁盘I/O。文件/块I/O/Swap、reclaim/压缩/迁页以及驱动/内核同步都可能；minor fault通常不必睡眠，major fault是否涉及实际I/O需独立证据。io_wait/wchan只是候选，不把0解释锁或1解释文件。非Running行没有正在执行CPU，相邻CPU/targetCPU仅是放置线索。影响ANR需证明阻断实际受监控工作与对应框架期限，不设通用D秒数。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-03-window-identity-and-state-coverage",
+          "title": "先选唯一业务对象，再裁状态覆盖并报告未知",
+          "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-03-window-identity-and-state-coverage.svg",
+            "src/assets/diagrams/ch14/ed14-03-window-identity-and-state-coverage.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-03-window-identity-and-state-coverage",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/sched/time_in_state.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/sched_tables.py",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/common/thread_state_tracker.cc",
+            "https://perfetto.dev/docs/data-sources/frametimeline"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-03-36-window-target-selection",
+              "ch14-03-37-known-unknown-coverage",
+              "ch14-03-38-frame-object-coordinates"
+            ],
+            "boundary": "原SQL仅同名候选进程恰一个upid才继续，选择正闭合最长doFrame并按dur/ts/id稳定排序，保留sliceid/utid；最长doFrame仅候选非最差帧。FrameTimeline另按实际/Expected、进程layer、完整区间与token身份选帧，rowid/app token/display token不可互换，GPU/SF另线关联。固定同一线程半开窗口，只裁dur>0闭合状态；known来自observed正区间和，unknown=窗口-覆盖，非已知状态。目标存在无状态LEFTJOIN保留且state_msNULL而非0；覆盖超窗/unknown负值需先查重叠/输入错误。标准库/批量函数各按当前版本schema。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T11:55:05.889713+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 40,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a137/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a137/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 137,
+        "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+        "registered_sha256": "934108b65efab25cf4221b051f4384878cf761a5d7cab5ac193a52fe8d1b647d",
+        "frozen_sha256": "934108b65efab25cf4221b051f4384878cf761a5d7cab5ac193a52fe8d1b647d",
+        "review_input_sha256": "37ff3f623cd7f6653ae0c2c49f9cc9601a72a36b4cc08e5d093cd99d770cf32c",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a137/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a137/external-source.diff",
+        "diff_sha256": "90446225e5ab619f2ee8fa117aa16d7f693bf970fbc4e0ef466678197a1ad385",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 265 current narrative/table reading rows, 22504 characters, 40 SVG label sets and all 40 original PNGs in 5 contact sheets independently read/viewed; all 7 non-Mermaid code blocks, 161 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "37ff3f623cd7f6653ae0c2c49f9cc9601a72a36b4cc08e5d093cd99d770cf32c",
+      "retired_diagrams": [
+        "ch14-03-01-evidence-order",
+        "ch14-03-02-three-state-layers",
+        "ch14-03-03-event-state-transition",
+        "ch14-03-04-identity-and-waker",
+        "ch14-03-06-state-version-decoding",
+        "ch14-03-08-r-not-only-wake",
+        "ch14-03-09-two-ring-buffers",
+        "ch14-03-10-capture-events",
+        "ch14-03-11-compact-irq-flags",
+        "ch14-03-12-symbol-resolution",
+        "ch14-03-13-capture-diagnostics",
+        "ch14-03-14-ui-reading-order",
+        "ch14-03-16-running-evidence",
+        "ch14-03-17-frame-deadline",
+        "ch14-03-18-cpu-environment",
+        "ch14-03-19-eligibility-vs-hints",
+        "ch14-03-20-runnable-causes",
+        "ch14-03-22-preemption-followup",
+        "ch14-03-24-waking-state-branches",
+        "ch14-03-25-rplus-wake-split",
+        "ch14-03-26-waker-causal-limit",
+        "ch14-03-28-d-state-inference",
+        "ch14-03-29-blocked-fields",
+        "ch14-03-30-blocked-row-association",
+        "ch14-03-31-d-cause-validation",
+        "ch14-03-32-d-to-anr",
+        "ch14-03-33-special-state-format",
+        "ch14-03-36-window-target-selection",
+        "ch14-03-37-known-unknown-coverage",
+        "ch14-03-38-frame-object-coordinates",
+        "ch14-03-39-state-to-fix"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-137/retired-assets.json"
     },
     {
       "index": 138,
@@ -35763,8 +36380,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 72,
-  "next_article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
+  "reviewed_articles": 73,
+  "next_article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -35774,7 +36391,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T11:47:42.068361+08:00",
+  "updated_at": "2026-10-31T11:55:05.889713+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -35823,13 +36440,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
-      "registered_sha256": "934108b65efab25cf4221b051f4384878cf761a5d7cab5ac193a52fe8d1b647d",
-      "observed_sha256": "37ff3f623cd7f6653ae0c2c49f9cc9601a72a36b4cc08e5d093cd99d770cf32c",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -36218,9 +36828,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2704,
-  "reviewed_placements_after": 1224,
-  "net_removed_placements": 1480,
+  "reviewed_placements_before": 2744,
+  "reviewed_placements_after": 1240,
+  "net_removed_placements": 1504,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -36244,5 +36854,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 72
+  "currently_matching_reviewed_source_count": 73
 }
