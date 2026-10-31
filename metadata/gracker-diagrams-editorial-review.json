@@ -27514,9 +27514,1088 @@
       "before_count": 74,
       "before_all_images": 74,
       "sha256_before": "f3c4629af8b425eae0f50101fcf9ab6046ffd2722d6b3589829cc45ff1fd6900",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 21,
+      "decisions": [
+        {
+          "original_id": "ch13-10-01-three-responsibilities",
+          "title": "Camera 内容、宿主与显示的分工",
+          "decision": "remove",
+          "reason": "211总览三组六卡重述开篇配置/生产/消费三方，后续247–271原生多输出flow与保留预览/录像路径已给具体关系，不再重复泛化分工卡。",
+          "original_line": 211,
+          "heading": "# Android Camera 平台管线：HAL3、Buffer、ZSL 与显示"
+        },
+        {
+          "original_id": "ch13-10-02-version-coordinates",
+          "title": "平台、HAL、库与内核分别固定",
+          "decision": "remove",
+          "reason": "平台r1/库1.6.1/HAL内核三组六卡逐格压缩固定基线段及版本演进表，正文契约/设备样本边界更全，删除第二份基线摘要。",
+          "original_line": 218,
+          "heading": "# Android Camera 平台管线：HAL3、Buffer、ZSL 与显示"
+        },
+        {
+          "original_id": "ch13-10-03-request-targets",
+          "title": "已配置输出与本次 request 的目标",
+          "decision": "remove",
+          "reason": "已配置output→preview/record/analysis/still分支紧邻原生247–271多目标flow，原生继续展开各消费者和frame/fence；正文session与request目标关系保留。",
+          "original_line": 229,
+          "heading": "## Camera 管线和普通 UI 有什么不同"
+        },
+        {
+          "original_id": "ch13-10-04-result-boundaries",
+          "title": "metadata、buffer 描述与写入完成",
+          "decision": "merge",
+          "reason": "metadata/buffer描述/fence三种时点接27inflight移除及56sensor/result/display，一图关联frame与stream，避免三处将CPU返回和实际访问完成混淆。",
+          "original_line": 240,
+          "heading": "## HAL3 的 request-result 与多消费者",
+          "replacement_id": "ed13-10-metadata-inflight-and-device-completion"
+        },
+        {
+          "original_id": "ch13-10-05-configuration-negotiation",
+          "title": "输出组合先经过配置协商",
+          "decision": "remove",
+          "reason": "App配置→service→configure→HAL返回→队列六框逐步复述配置协商有序正文和下一张字段表，保留原生目标flow及真实API37更新分支，不再抄配置步骤。",
+          "original_line": 281,
+          "heading": "### 配置阶段决定这组输出能不能成立"
+        },
+        {
+          "original_id": "ch13-10-06-combination-throughput",
+          "title": "组合支持与可达帧率的区别",
+          "decision": "remove",
+          "reason": "单项支持/组合支持/吞吐三组六卡逐格复述配置能力表，表含mandatory、level、duration/stall完整查询，不把表格改成第二份卡片。",
+          "original_line": 292,
+          "heading": "### 配置阶段决定这组输出能不能成立"
+        },
+        {
+          "original_id": "ch13-10-07-halstream-fields",
+          "title": "HalStream 的三组关键返回值",
+          "decision": "remove",
+          "reason": "HalStream format/usage/maxBuffers三组六卡逐项摘录同节字段说明表，原文覆盖允许override和输入输出方向，保留新容量机制图，删字段表副本。",
+          "original_line": 310,
+          "heading": "#### `HalStream` 返回的格式、usage 与 buffer 约束"
+        },
+        {
+          "original_id": "ch13-10-08-queue-capacity",
+          "title": "基础队列容量的两部分",
+          "decision": "merge",
+          "reason": "consumer最小保留量+HAL max_buffers基础容量接26outstanding/framework cached/handle cache的不同口径，一图同时保留配置与运行配额区别。",
+          "original_line": 327,
+          "heading": "#### 队列容量与 `maxBuffers` 的构成",
+          "replacement_id": "ed13-10-capacity-and-handout-limits"
+        },
+        {
+          "original_id": "ch13-10-09-two-buffer-managers",
+          "title": "两类 BufferManager 的责任边界",
+          "decision": "remove",
+          "reason": "内部Camera3BufferManager/HAL buffer API/普通队列三组六卡直接复制该节三项责任说明；14保留普通dequeue/内部池attach/批量预取实际分支，20新图保留管理模式。",
+          "original_line": 347,
+          "heading": "#### `Camera3BufferManager` 与 HAL buffer management"
+        },
+        {
+          "original_id": "ch13-10-11-dynamic-limits",
+          "title": "动态输出替换的允许范围",
+          "decision": "merge",
+          "reason": "deferred补齐/替换/不匹配的契约分支接11stream id映射及新旧Surface生命周期，不画成任意增删output或零停顿保证。",
+          "original_line": 356,
+          "heading": "### API 37 的运行中 Surface 替换",
+          "replacement_id": "ed13-10-dynamic-output-and-old-surface-return"
+        },
+        {
+          "original_id": "ch13-10-10-dynamic-surface-swap",
+          "title": "API 37 动态替换的调用与收尾",
+          "decision": "merge",
+          "reason": "旧active目标停止后新request与旧队列/fence收尾两支接10API37守卫，明确弱引用非native保活与两支无固定先后。",
+          "original_line": 369,
+          "heading": "### API 37 的运行中 Surface 替换",
+          "replacement_id": "ed13-10-dynamic-output-and-old-surface-return"
+        },
+        {
+          "original_id": "ch13-10-12-usecase-intent",
+          "title": "stream use case 与 capture intent",
+          "decision": "remove",
+          "reason": "stream use case/capture intent/能力三组六卡逐格复述387前后的用途和当前请求定义，原文能力/生效/版本限制完整，不增加机制关系。",
+          "original_line": 387,
+          "heading": "### Stream Use Case 与 capture intent"
+        },
+        {
+          "original_id": "ch13-10-13-framework-buffers",
+          "title": "Framework-managed 的输出借还",
+          "decision": "merge",
+          "reason": "framework request前借真实buffer接19管理模式对比及20HAL按需同步请求，合图分开提交request与实际借buffer时机，返回路径由fence闭环承担。",
+          "original_line": 400,
+          "heading": "### Framework-managed buffer：先借 buffer，再提交 request",
+          "replacement_id": "ed13-10-buffer-management-request-timing"
+        },
+        {
+          "original_id": "ch13-10-14-dequeue-paths",
+          "title": "取得输出 buffer 的实际分支",
+          "decision": "keep",
+          "reason": "getBufferLockedCommon按普通dequeue、内部池取图attach及批量预取分发三个真实实现分支，对应409附近源码；不同于两种管理模式的时间关系，保留。",
+          "original_line": 409,
+          "heading": "#### Surface 交出可写 buffer"
+        },
+        {
+          "original_id": "ch13-10-16-async-result-fence",
+          "title": "buffer 返回与硬件完成的先后",
+          "decision": "merge",
+          "reason": "HAL result可先还buffer且release fence未signal的异步轨接17旧访问及18命名闭环；图内保留CPU交还、HAL访问和consumer读取可交叠。",
+          "original_line": 435,
+          "heading": "#### HAL 以 release fence 归还结果",
+          "replacement_id": "ed13-10-fence-cycle-and-async-return"
+        },
+        {
+          "original_id": "ch13-10-17-queue-cancel",
+          "title": "CameraService 正常交付与丢弃分支",
+          "decision": "keep",
+          "reason": "正常有效timestamp queue、ERROR/丢帧cancel、timestamp0 cancel三条真实分支，保留queue有效新图与归槽的差别，fence合图不展开全部判定。",
+          "original_line": 444,
+          "heading": "#### CameraService 决定 queue 或 cancel"
+        },
+        {
+          "original_id": "ch13-10-18-slot-vs-access",
+          "title": "槽位取回不等于可以覆盖",
+          "decision": "merge",
+          "reason": "旧consumer release→dequeue取slot→HAL acquire→写入接15异步返回及18consumer新acquire，完整一轮借还不将slot取回当可覆盖。",
+          "original_line": 459,
+          "heading": "#### consumer 释放后才能再次出队",
+          "replacement_id": "ed13-10-fence-cycle-and-async-return"
+        },
+        {
+          "original_id": "ch13-10-15-fence-perspectives",
+          "title": "同一轮交接中 fence 的命名",
+          "decision": "merge",
+          "reason": "同一访问依赖在consumer release/HAL acquire及HAL release/新consumer acquire的命名接15/17闭环，保留cancel不产生有效新图和错误原样退依赖。",
+          "original_line": 482,
+          "heading": "#### consumer 释放后才能再次出队",
+          "replacement_id": "ed13-10-fence-cycle-and-async-return"
+        },
+        {
+          "original_id": "ch13-10-19-hal-managed-decoupling",
+          "title": "HAL 管理让 request 与取 buffer 解耦",
+          "decision": "merge",
+          "reason": "framework前借与HAL按需借的管理模式接13/20，SESSION_CONFIGURABLE逐流与AIDL_DEVICE所有输出范围明确，不把session内所有流一概画相同。",
+          "original_line": 493,
+          "heading": "### HAL buffer management：request 先走，buffer 按需借",
+          "replacement_id": "ed13-10-buffer-management-request-timing"
+        },
+        {
+          "original_id": "ch13-10-20-request-stream-buffers",
+          "title": "按需请求 buffer 的同步调用",
+          "decision": "merge",
+          "reason": "requestStreamBuffers校验/配额/借图同步调用接13/19request时间，两支共用真实buffer+acquire依赖，HAL之后选frame，非预先绑定capture。",
+          "original_line": 514,
+          "heading": "#### `requestStreamBuffers()` 不预先绑定 frame",
+          "replacement_id": "ed13-10-buffer-management-request-timing"
+        },
+        {
+          "original_id": "ch13-10-21-buffer-request-status",
+          "title": "调用级状态与逐流错误",
+          "decision": "remove",
+          "reason": "调用级/逐stream status三组六卡逐项复制同节错误状态表及解释，保留PARTIAL、MAX_BUFFER_EXCEEDED与NO_BUFFER_AVAILABLE细节原文，不再重排表格。",
+          "original_line": 527,
+          "heading": "#### `requestStreamBuffers()` 不预先绑定 frame"
+        },
+        {
+          "original_id": "ch13-10-22-buffer-id-cache",
+          "title": "bufferId 与 handle 缓存的有效期",
+          "decision": "merge",
+          "reason": "首次id+handle/缓存可省handle/移除映射接50有效input三分支，统一辨认缓存命中与无application input；映射数量不等持有图像。",
+          "original_line": 544,
+          "heading": "#### `bufferId`、handle 与 cache 生命周期",
+          "replacement_id": "ed13-10-cached-ids-and-valid-input"
+        },
+        {
+          "original_id": "ch13-10-23-extra-buffer-return",
+          "title": "capture 结果与额外 buffer 的归还",
+          "decision": "keep",
+          "reason": "已借buffer是否关联capture这一条件分别走processCaptureResult与returnStreamBuffers真实归还分支，防止把额外buffer套frame，保留。",
+          "original_line": 553,
+          "heading": "#### `returnStreamBuffers()` 归还未关联 capture 结果的额外 buffer"
+        },
+        {
+          "original_id": "ch13-10-24-flush-contracts",
+          "title": "signalStreamFlush 与 flush",
+          "decision": "remove",
+          "reason": "signalStreamFlush/flush/downstream三组六卡逐格复述紧邻责任差异表，原文oneway、未还对象、下游所有权更全；25保留迟到counter实际守卫。",
+          "original_line": 562,
+          "heading": "#### `signalStreamFlush()` 与 `flush()` 的责任差异"
+        },
+        {
+          "original_id": "ch13-10-25-configuration-generation",
+          "title": "streamConfigCounter 防止迟到提示误用",
+          "decision": "keep",
+          "reason": "配置counter更新→oneway迟到提示→代次比较实际守卫，避免旧配置flush应用于新stream，API37替换及flush文字均不能代替具体分支。",
+          "original_line": 574,
+          "heading": "#### `signalStreamFlush()` 与 `flush()` 的责任差异"
+        },
+        {
+          "original_id": "ch13-10-26-three-cache-meanings",
+          "title": "三种容易混淆的持有或缓存",
+          "decision": "merge",
+          "reason": "HAL outstanding、framework cached image、handle映射接8容量计算，区分handout与组合上限、真正queue后通知及reader独立额度。",
+          "original_line": 583,
+          "heading": "### `maxBuffers` 由 HAL 逐流返回",
+          "replacement_id": "ed13-10-capacity-and-handout-limits"
+        },
+        {
+          "original_id": "ch13-10-27-inflight-boundary",
+          "title": "in-flight 收尾与下游完成",
+          "decision": "merge",
+          "reason": "request移除map的源码收尾条件接4metadata/各stream返回及56时间观测，inflight消失不等fence signal或显示完成，统一以frame/stream证据关联。",
+          "original_line": 592,
+          "heading": "### `maxBuffers` 由 HAL 逐流返回",
+          "replacement_id": "ed13-10-metadata-inflight-and-device-completion"
+        },
+        {
+          "original_id": "ch13-10-28-three-fence-roles",
+          "title": "Camera 与显示侧的三类依赖",
+          "decision": "remove",
+          "reason": "HAL acquire/HAL release/display consumer release三组六卡重复新15/17/18完整借还闭环以及本节定义表，原文三类依赖和display present边界全部保留。",
+          "original_line": 607,
+          "heading": "### 三类 fence 要分别看"
+        },
+        {
+          "original_id": "ch13-10-29-disconnect-lifetime",
+          "title": "Surface 断开后的对象收尾",
+          "decision": "remove",
+          "reason": "Surface断开→停新提交→归还→cache队列收尾四框逐项复述本节完整段落，API37新旧目标合图已保留旧队列在途回收；不把通用清单再成图。",
+          "original_line": 624,
+          "heading": "#### Surface 断开是逐 stream 错误"
+        },
+        {
+          "original_id": "ch13-10-30-close-resources",
+          "title": "关闭控制链与释放图像资源",
+          "decision": "remove",
+          "reason": "控制链/HAL对象/App对象三组六卡逐项复述关闭生命周期清单，所有owner和fence责任原文保留，新Image所有权与reprocess交接具体图继续保留。",
+          "original_line": 635,
+          "heading": "#### `flush()`、关闭与 cache 失效"
+        },
+        {
+          "original_id": "ch13-10-31-unique-memory",
+          "title": "图像内存按唯一分配计算",
+          "decision": "remove",
+          "reason": "列stream→按allocation去重→布局→工作区四框逐条重复驻留估算编号步骤及公式表，原文stride/tile/BLOB更全，删除步骤列表副本。",
+          "original_line": 659,
+          "heading": "### 按 stream 估算驻留量与跨流反压"
+        },
+        {
+          "original_id": "ch13-10-32-raw14-layout",
+          "title": "RAW14 有效载荷与真实行大小",
+          "decision": "remove",
+          "reason": "RAW14有效载荷/形状/实际分配三组六卡逐格摘录RAW14和PRIVATE/JPEG布局表，原表精确7字节、stride、pixelStride和容量边界完整，无新增机制。",
+          "original_line": 676,
+          "heading": "### 按 stream 估算驻留量与跨流反压"
+        },
+        {
+          "original_id": "ch13-10-33-cross-stream-pressure",
+          "title": "独立队列与共享 pipeline 的反压",
+          "decision": "merge",
+          "reason": "某consumer持有→本流缺buffer→共享资源才影响他流接66App关键超时依赖，两种后果分别补额外证据，不把独立队列等同无耦合。",
+          "original_line": 683,
+          "heading": "### 按 stream 估算驻留量与跨流反压",
+          "replacement_id": "ed13-10-cross-stream-pressure-and-anr-proof"
+        },
+        {
+          "original_id": "ch13-10-34-preview-carriers",
+          "title": "三种预览承载的最终显示对象",
+          "decision": "remove",
+          "reason": "SurfaceView/TextureView/自研三组六卡逐项复述本节承载对照表，35保留独立SF路径、新36/37/38实际输入输出两段合图更具体。",
+          "original_line": 692,
+          "heading": "### Preview：SurfaceView、TextureView 与自研 renderer"
+        },
+        {
+          "original_id": "ch13-10-35-surfaceview-preview",
+          "title": "SurfaceView 预览的提交与显示",
+          "decision": "keep",
+          "reason": "HAL→CameraService→BLAST/SurfaceControl→SF/HWC独立预览具体资源链，保留buffer/fence和几何协调；Texture宿主二次生产是另一条路径。",
+          "original_line": 705,
+          "heading": "### Preview：SurfaceView、TextureView 与自研 renderer"
+        },
+        {
+          "original_id": "ch13-10-36-textureview-two-queues",
+          "title": "TextureView 的输入与窗口两条队列",
+          "decision": "merge",
+          "reason": "Texture相机输入队列→Main/RT→HWUI生产窗口接37通知/记录/取图时点及38自研导入输出，两段生产端各自Surface与fence清晰。",
+          "original_line": 712,
+          "heading": "### Preview：SurfaceView、TextureView 与自研 renderer",
+          "replacement_id": "ed13-10-texture-input-and-app-output"
+        },
+        {
+          "original_id": "ch13-10-37-texture-three-moments",
+          "title": "TextureView 的通知、记录与取图",
+          "decision": "merge",
+          "reason": "frameavailable、Main记录与RT native取图三个不同进度接36/38完整对象链，回调非可读或显示、GPU采样还须满足依赖。",
+          "original_line": 719,
+          "heading": "### Preview：SurfaceView、TextureView 与自研 renderer",
+          "replacement_id": "ed13-10-texture-input-and-app-output"
+        },
+        {
+          "original_id": "ch13-10-38-app-gpu-reproducer",
+          "title": "自研 renderer 同时消费与生产",
+          "decision": "merge",
+          "reason": "自研App既消费Camera又生产最终Surface接36/37Texture路径，同图分支保留自研GPU成本与最终SF落点，不将两队列逐帧强制一一对应。",
+          "original_line": 726,
+          "heading": "### Preview：SurfaceView、TextureView 与自研 renderer",
+          "replacement_id": "ed13-10-texture-input-and-app-output"
+        },
+        {
+          "original_id": "ch13-10-39-recording-consumer",
+          "title": "录像 buffer 与码流输出的后半段",
+          "decision": "keep",
+          "reason": "record stream→codec input→硬件编码→muxer/storage后半段具体链，预览正常仍可能录像迟到，区别显示路线和ImageReader分析路径。",
+          "original_line": 735,
+          "heading": "### Recording：MediaCodec 是独立 consumer"
+        },
+        {
+          "original_id": "ch13-10-40-analysis-acquire-limit",
+          "title": "maxImages 与上游反压的关系",
+          "decision": "merge",
+          "reason": "acquire额度占用→上限异常/上游等待接41latest余量与42同步/异步唯一owner，保留maxImages非已分配数，增加额度不能治无界排队。",
+          "original_line": 746,
+          "heading": "### Analysis：归还速度就是吞吐上限",
+          "replacement_id": "ed13-10-analysis-quota-and-image-owner"
+        },
+        {
+          "original_id": "ch13-10-42-latest-margin",
+          "title": "latest 与 next 的选择及余量",
+          "decision": "merge",
+          "reason": "latest/next选择与maxImages-已持有>=2条件接40/42所有权管理，区分丢旧帧与及时关闭已取得图像，避免相邻三张卡重复同一反压链。",
+          "original_line": 753,
+          "heading": "### Analysis：归还速度就是吞吐上限",
+          "replacement_id": "ed13-10-analysis-quota-and-image-owner"
+        },
+        {
+          "original_id": "ch13-10-41-analysis-ownership",
+          "title": "分析任务的 Image 所有权",
+          "decision": "merge",
+          "reason": "同步finally/异步任务负责close/漏close分支接40/41配额与策略，正常异常路径唯一owner及并发排队限制同图，保留8代码块原样。",
+          "original_line": 771,
+          "heading": "### Analysis：归还速度就是吞吐上限",
+          "replacement_id": "ed13-10-analysis-quota-and-image-owner"
+        },
+        {
+          "original_id": "ch13-10-43-two-zsl-controls",
+          "title": "Device ZSL 与 App reprocess",
+          "decision": "remove",
+          "reason": "deviceZSL/appZSL/失败三组六卡逐格摘录两种机制总表，44原始时间轨、47device实际分支和新reprocess具体链保留，删总览副本。",
+          "original_line": 780,
+          "heading": "## ZSL 的两种机制"
+        },
+        {
+          "original_id": "ch13-10-44-zsl-time-saving",
+          "title": "ZSL 成功路径省掉的阶段",
+          "decision": "keep",
+          "reason": "候选按键前采集/按键后重处理的相位轨，具体呈现ZSL省哪段而非仅列阶段；不是定量耗时或最近帧保证，保留。",
+          "original_line": 789,
+          "heading": "### ZSL 省掉了哪一段延迟"
+        },
+        {
+          "original_id": "ch13-10-47-zsl-submit-order",
+          "title": "CameraPipe 从候选帧提交重处理",
+          "decision": "merge",
+          "reason": "CameraPipe InputRequest→builder/targets→queueInputImage→HAL接52交接后Java Image无效及失败回收，一图完整request与input两路关系。",
+          "original_line": 823,
+          "heading": "### ZSL 省掉了哪一段延迟",
+          "replacement_id": "ed13-10-reprocess-handoff-and-image-validity"
+        },
+        {
+          "original_id": "ch13-10-45-zsl-preparation",
+          "title": "CameraX 候选帧先配对再过滤",
+          "decision": "merge",
+          "reason": "image timestamp与TotalCaptureResult配对→AF/AE/AWB过滤→ring接49三帧与九图额度，保留最旧合格选择而非最近帧搜索。",
+          "original_line": 830,
+          "heading": "### ZSL 省掉了哪一段延迟",
+          "replacement_id": "ed13-10-zsl-pairing-ring-and-quotas"
+        },
+        {
+          "original_id": "ch13-10-48-device-zsl-hint",
+          "title": "CONTROL_ENABLE_ZSL 的能力边界",
+          "decision": "keep",
+          "reason": "CONTROL_ENABLE_ZSL key/intent gate下允许历史帧或本次图像、其他intent不影响的真实分支，避免把hint当必用历史候选，保留。",
+          "original_line": 839,
+          "heading": "### Device-operated ZSL：`CONTROL_ENABLE_ZSL`"
+        },
+        {
+          "original_id": "ch13-10-49-application-zsl-requirements",
+          "title": "应用自管 ZSL 所需的三类条件",
+          "decision": "remove",
+          "reason": "重处理能力/session/input三组六卡逐项重述应用ZSL条件清单，原文输入尺寸输出组合更全，新45/52真实交接和46/49配对ring图保留。",
+          "original_line": 850,
+          "heading": "### Application-operated ZSL：ring buffer + reprocess"
+        },
+        {
+          "original_id": "ch13-10-46-ring-and-quotas",
+          "title": "三帧 ring、九图额度与 HAL 上限",
+          "decision": "merge",
+          "reason": "ring容量3、MAX_IMAGES9、HAL逐流maxBuffers接46待配对/候选/在途所有权，图上不建立9块已分配等式，不把3误当最新候选算法。",
+          "original_line": 862,
+          "heading": "### Application-operated ZSL：ring buffer + reprocess",
+          "replacement_id": "ed13-10-zsl-pairing-ring-and-quotas"
+        },
+        {
+          "original_id": "ch13-10-51-cached-input-id",
+          "title": "识别有效 input 不能只看 handle",
+          "decision": "merge",
+          "reason": "有效input首次/缓存省handle/streamId-1与id0无input三分支接22cache生命周期，输入有效性不由handle空值猜测。",
+          "original_line": 890,
+          "heading": "#### HAL 以 `inputBuffer` 识别重处理请求",
+          "replacement_id": "ed13-10-cached-ids-and-valid-input"
+        },
+        {
+          "original_id": "ch13-10-50-input-mapping",
+          "title": "CameraX InputRequest 到 HAL input",
+          "decision": "remove",
+          "reason": "InputRequest→Camera2→mInputStream→AIDL→HAL六框逐步重述本节编号源码调用链；新45/52保留输入交接与capture关联，不再单独同路径副本。",
+          "original_line": 903,
+          "heading": "#### HAL 以 `inputBuffer` 识别重处理请求"
+        },
+        {
+          "original_id": "ch13-10-52-input-ownership",
+          "title": "ImageWriter 交接后原 Image 的有效期",
+          "decision": "merge",
+          "reason": "queueInputImage后原Image失效、HAL访问等待fence、最终回收需重新取得对象接45具体提交链，绝不画成旧Java Image重新有效。",
+          "original_line": 923,
+          "heading": "#### 输入 buffer 的所有权与 sensor 边界",
+          "replacement_id": "ed13-10-reprocess-handoff-and-image-validity"
+        },
+        {
+          "original_id": "ch13-10-53-reprocess-no-exposure",
+          "title": "重处理复用源图像但仍有等待",
+          "decision": "remove",
+          "reason": "已有源图/重处理/输出三组六卡逐项复述934前后source时刻与回调/等待段落，44前后时间轨和新45/52完整路径已保留，不重复零延迟澄清卡。",
+          "original_line": 934,
+          "heading": "#### 输入 buffer 的所有权与 sensor 边界"
+        },
+        {
+          "original_id": "ch13-10-54-zsl-support-enabled",
+          "title": "支持、启用与成功取帧分别检查",
+          "decision": "remove",
+          "reason": "supported/enabled/InputRequest成功三组六卡逐项复制ZSL排查表，原文flash/video/extension及交接前后失败范围更全，保留具体配对与交接图。",
+          "original_line": 944,
+          "heading": "### 怎样判断 ZSL 卡在哪里"
+        },
+        {
+          "original_id": "ch13-10-55-timestamp-defaults",
+          "title": "默认时间戳按输出目标选择",
+          "decision": "merge",
+          "reason": "默认timestamp按SurfaceView/SurfaceTexture/codec/其他目标的真实分支接57clock校准与重写，明确Texture仍sensor域但交付可重排。",
+          "original_line": 961,
+          "heading": "## 时间戳：先确认每一路的 time base",
+          "replacement_id": "ed13-10-timestamp-policy-and-frame-association"
+        },
+        {
+          "original_id": "ch13-10-57-exposure-result-present",
+          "title": "曝光、读出、metadata 与显示",
+          "decision": "merge",
+          "reason": "sensor/readout、final metadata、display present轨接4返回描述与27inflight收尾，以事件依赖示意而非固定时间，分析录像不必进显示。",
+          "original_line": 973,
+          "heading": "## 时间戳：先确认每一路的 time base",
+          "replacement_id": "ed13-10-metadata-inflight-and-device-completion"
+        },
+        {
+          "original_id": "ch13-10-56-clock-vs-rewrite",
+          "title": "时钟换算与显示时间重写的区别",
+          "decision": "merge",
+          "reason": "SENSOR source REALTIME/UNKNOWN、校准与显示重写区别接55目标分支，SurfaceView靠frame/stream/buffer而非原始sensor时间硬对；两类变化不混为偏移。",
+          "original_line": 980,
+          "heading": "## 时间戳：先确认每一路的 time base",
+          "replacement_id": "ed13-10-timestamp-policy-and-frame-association"
+        },
+        {
+          "original_id": "ch13-10-58-secure-camera",
+          "title": "Secure Camera 与窗口安全标记",
+          "decision": "remove",
+          "reason": "secure memory/FLAG_SECURE/元数据三组六卡逐项摘录本节安全边界段，59保留能力默认尺寸query真实分支，不用三卡再次表述像素访问限制。",
+          "original_line": 989,
+          "heading": "## Secure Camera Path"
+        },
+        {
+          "original_id": "ch13-10-59-secure-size",
+          "title": "Secure 默认尺寸的查询分支",
+          "decision": "keep",
+          "reason": "secure capability后默认尺寸有值/其他尺寸格式/空值按stream map的实际查询分支，特定条件决策区别一般安全标记对照，保留。",
+          "original_line": 996,
+          "heading": "## Secure Camera Path"
+        },
+        {
+          "original_id": "ch13-10-60-capture-environment",
+          "title": "相机现场配置的证据集合",
+          "decision": "remove",
+          "reason": "版本/输出/负载三组六卡逐项压缩采集前固定现场清单，原文camera id、transport、实际内核等更完整，删除配置清单副本。",
+          "original_line": 1025,
+          "heading": "### 采集前固定现场"
+        },
+        {
+          "original_id": "ch13-10-61-five-diagnostic-domains",
+          "title": "五段诊断的对象与异常",
+          "decision": "remove",
+          "reason": "App/service/HAL/consumer/display五框逐项复述紧邻五阶段表，表含实际对象与异常更多信息，原生及各具体资源链保留。",
+          "original_line": 1042,
+          "heading": "### 分五个阶段定位"
+        },
+        {
+          "original_id": "ch13-10-62-frame-dependencies",
+          "title": "单帧复原须先 queue 再消费",
+          "decision": "remove",
+          "reason": "单帧复原七框重画247–271原生多消费者flow及单帧编号步骤，新管理时机/fence/实际预览具体图均保留，不在诊断节再放同一端到端总览。",
+          "original_line": 1051,
+          "heading": "### 单帧复原顺序"
+        },
+        {
+          "original_id": "ch13-10-63-trace-coverage",
+          "title": "相机输入与显示轨道的覆盖",
+          "decision": "remove",
+          "reason": "metadata/Texture宿主/独立SurfaceView三组六卡逐项复述采集覆盖说明表，新metadata事件图和Texture双队列图、独立预览图已保留，原文所有覆盖缺口保留。",
+          "original_line": 1065,
+          "heading": "### 单帧复原顺序"
+        },
+        {
+          "original_id": "ch13-10-64-cpu-and-device-waits",
+          "title": "CPU 执行、调度与硬件等待",
+          "decision": "remove",
+          "reason": "Running/Runnable/blocked三组六卡逐格复述CPU与等待类型表，原表调用栈和证据更全；新fence异步轨保留具体设备等待依赖。",
+          "original_line": 1081,
+          "heading": "### CPU 工作、调度等待和 fence 等待"
+        },
+        {
+          "original_id": "ch13-10-65-camera-source-evidence",
+          "title": "CameraService 的直接等待证据",
+          "decision": "remove",
+          "reason": "maxbuffers/dequeue/inflight三组六卡逐项摘录CameraService dump锚点与完整命令输出，新容量与inflight机制图保留，删除诊断清单副本。",
+          "original_line": 1101,
+          "heading": "#### cameraserver 的源码与 dump 锚点"
+        },
+        {
+          "original_id": "ch13-10-66-anr-causality",
+          "title": "buffer wait 怎样才构成 ANR 因果",
+          "decision": "merge",
+          "reason": "buffer wait→App关键调用依赖→同窗阻塞→实际detector接33跨流条件，两条条件因果分别取证，不由service等待直接宣布App ANR或ISP硬件根因。",
+          "original_line": 1121,
+          "heading": "#### buffer wait 与 ANR 的关系",
+          "replacement_id": "ed13-10-cross-stream-pressure-and-anr-proof"
+        },
+        {
+          "original_id": "ch13-10-67-session-reconfiguration",
+          "title": "反复重配造成的停流与首帧成本",
+          "decision": "remove",
+          "reason": "变配置→drain→重建→新首帧四框逐条复述session反复重配段，原文计数/资源和API37边界更全，新10/11保留真实允许替换分支与回收。",
+          "original_line": 1136,
+          "heading": "### Session 反复重配"
+        },
+        {
+          "original_id": "ch13-10-68-analysis-fix",
+          "title": "分析反压的持有与排队控制",
+          "decision": "remove",
+          "reason": "记录acquireclose→定位owner→限队列→异常close四框重复746–771分析段代码与新40/41/42机制，故障表对应证据原样保留。",
+          "original_line": 1147,
+          "heading": "### Analysis consumer 反压"
+        },
+        {
+          "original_id": "ch13-10-69-late-preview-choice",
+          "title": "SurfaceView 与 TextureView 的迟到检查",
+          "decision": "remove",
+          "reason": "SurfaceView/Texture/自研三组六卡重复承载对照与35及新36/37/38具体路径，故障文字层面的fence/TX/GPU检查全留，不在后文再画同一承载三卡。",
+          "original_line": 1164,
+          "heading": "### Preview carrier 晚"
+        },
+        {
+          "original_id": "ch13-10-70-memory-thermal",
+          "title": "多流负载、内存与热的关联",
+          "decision": "remove",
+          "reason": "分配/CPU映射/ISP温控三组六卡逐项复制内存带宽热限制故障表，原文PSI/频率/共享分配边界更精确，删证据清单副本。",
+          "original_line": 1173,
+          "heading": "### 内存、带宽与热限制"
+        },
+        {
+          "original_id": "ch13-10-71-platform-evolution",
+          "title": "平台接口、库策略与设备能力",
+          "decision": "remove",
+          "reason": "Android10/13/17三组六卡逐项摘录版本演进表，表中可选能力与库版本范围完整；原文从10到17全保留，不用图再做时间表。",
+          "original_line": 1192,
+          "heading": "## Android 12—17 的版本演进"
+        },
+        {
+          "original_id": "ch13-10-72-page-alignment",
+          "title": "16 KB 页粒度与图像布局",
+          "decision": "remove",
+          "reason": "页粒度/图像布局/设备导入三组六卡逐格复制16KB与layout边界说明表，原文rowStride和mapper实践更全，删除表格副本。",
+          "original_line": 1211,
+          "heading": "#### 16 KB page size 与 Camera buffer 对齐"
+        },
+        {
+          "original_id": "ch13-10-73-dmabuf-responsibilities",
+          "title": "gralloc、heap、dma-buf 与 fence",
+          "decision": "remove",
+          "reason": "gralloc→heap→dma-buf→fence→syncfile五框逐项复述共享内存职责表，图已声明非固定调用序；原表与后续源码详细保留，新fence闭环体现实际依赖。",
+          "original_line": 1229,
+          "heading": "#### Android 17 的共享内存构成"
+        },
+        {
+          "original_id": "ch13-10-74-end-to-end-evidence",
+          "title": "Camera 从 request 到显示的完整复核",
+          "decision": "remove",
+          "reason": "结尾request→cache→queue→consumer→present六框再次总结完整原生flow与结论编号清单，所有总结文字保留，删除全篇最后一份重复总览。",
+          "original_line": 1305,
+          "heading": "## 小结"
+        }
+      ],
+      "sha256_after": "82d441a0b95e60155742e020665b29516fbd0a5b199e205c532c839d27f0c42e",
+      "new_diagrams": [
+        {
+          "id": "ed13-10-capacity-and-handout-limits",
+          "title": "基础队列容量、HAL 持有与 framework 暂存分别计算",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-capacity-and-handout-limits.svg",
+            "src/assets/diagrams/ch13/ed13-10-capacity-and-handout-limits.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-capacity-and-handout-limits",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Stream.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3IOStreamBase.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/PreviewFrameSpacer.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/StreamBuffer.aidl"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-08-queue-capacity",
+              "ch13-10-26-three-cache-meanings"
+            ],
+            "boundary": "固定r1：Consumer最小不可出队保留量由NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS查询，基础mTotalBufferCount加HAL逐stream声明max_buffers；显示同步/PreviewFrameSpacer等路径可再加缓冲或framework暂存。HAL outstanding是交给HAL尚未归还，framework cached image是未queue最终consumer的图像，两类进入相应handout/组合上限判断；普通归还或cached实际queue才通知相应等待。bufferId→handle映射不等持有图像数，ImageReader.maxImages另有独立额度。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-dynamic-output-and-old-surface-return",
+          "title": "新目标提交与旧 Surface 回收分支分别推进",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-dynamic-output-and-old-surface-return.svg",
+            "src/assets/diagrams/ch13/ed13-10-dynamic-output-and-old-surface-return.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-dynamic-output-and-old-surface-return",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCaptureSession.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraDeviceImpl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/params/OutputConfiguration.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-11-dynamic-limits",
+              "ch13-10-10-dynamic-surface-swap"
+            ],
+            "boundary": "固定API37 updateOutputConfigurations需output数量不变、size/format等可映射现有配置，允许补deferred Surface或替换/退回deferred，不允许任意增删output或改属性。CameraDeviceImpl映射已有stream id并更新，针对旧目标active request停止；应用重新提交新Surface目标，同时旧在途buffer依原Surface队列/fence归还后再断连接。mReplacedOutputs的WeakReference只辅助旧目标识别，native引用/旧队列管理在途对象，不靠Java弱引用保活。新提交与旧回收无固定先后，也不保证零停顿。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-buffer-management-request-timing",
+          "title": "按流管理模式决定 request 何时携带真实 buffer",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-buffer-management-request-timing.svg",
+            "src/assets/diagrams/ch13/ed13-10-buffer-management-request-timing.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-buffer-management-request-timing",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Device.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/aidl/AidlCamera3Device.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/StreamBuffer.aidl",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/HalStream.aidl",
+            "https://source.android.com/docs/core/camera/buffer-management-api",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/aidl/AidlCamera3OutputUtils.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-13-framework-buffers",
+              "ch13-10-19-hal-managed-decoupling",
+              "ch13-10-20-request-stream-buffers"
+            ],
+            "boundary": "固定r1未启用HAL管理的流先getBuffer并随request带真实buffer/acquire；启用输出流的request先带stream占位bufferId0/空handle与acquire，HAL接近输出时同步requestStreamBuffers。CameraService检查流/管理模式/重复id/连接/配额/configure，返回的buffer不预先绑定capture，HAL之后选择frame；多流批量或失败须单独处理，专用线程建议不表示固定开销。SESSION_CONFIGURABLE逐流选，AIDL_DEVICE管理全部输出。空handle也可能缓存省略，不能只看空句柄判占位；所有真实访问遵守fence，已使用与额外buffer归还路径另核。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-fence-cycle-and-async-return",
+          "title": "槽位借还与前后两次访问的完成依赖分开看",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-fence-cycle-and-async-return.svg",
+            "src/assets/diagrams/ch13/ed13-10-fence-cycle-and-async-return.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-fence-cycle-and-async-return",
+          "sources": [
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/StreamBuffer.aidl",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-16-async-result-fence",
+              "ch13-10-18-slot-vs-access",
+              "ch13-10-15-fence-perspectives"
+            ],
+            "boundary": "同一输出buffer复用：consumer可先归还slot并附未signal release fence，dequeue取回slot与依赖后作为HAL acquire交接；HAL读写前必须等待。HAL result归还buffer可携尚未signal release fence，CameraService按状态queue/cancel仍传依赖；正常queue下它成为新consumer acquire，实际读前满足写完成；consumer归还后下轮复用。空fence按接口表示无需等待/已结束访问，错误未等待acquire须原样退依赖。图示阶段可交叠，dequeue/result/queue/inflight移除都不替代signal；不是同fd数即同对象，cancel不交付有效新图。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-metadata-inflight-and-device-completion",
+          "title": "metadata、request 收尾与图像完成是三组证据",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-metadata-inflight-and-device-completion.svg",
+            "src/assets/diagrams/ch13/ed13-10-metadata-inflight-and-device-completion.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-metadata-inflight-and-device-completion",
+          "sources": [
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/StreamBuffer.aidl",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Device.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputUtils.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCaptureSession.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/params/OutputConfiguration.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-04-result-boundaries",
+              "ch13-10-27-inflight-boundary",
+              "ch13-10-57-exposure-result-present"
+            ],
+            "boundary": "固定HAL3同frame partial/final metadata和各stream buffer可分批返回，仍遵守相应FIFO及ZSL/错误例外契约。mInFlightMap按frame跟踪metadata/shutter/input-output归还和请求类型，满足源码条件可移除，此时带回buffer的HAL release fence仍可能未signal。onCaptureStarted/ReadoutStarted描述sensor阶段，onCaptureCompleted是final metadata，buffer实际读取须满足依赖；只有进入显示的输出另追present，analysis/record/still可能完全不进SF。轨道仅普通成功预览一种允许样例，不能推所有callback固定先后或ZSL源图时刻，其他分支各自取证。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-cached-ids-and-valid-input",
+          "title": "有效 ID 的缓存省略与没有 input 分别识别",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-cached-ids-and-valid-input.svg",
+            "src/assets/diagrams/ch13/ed13-10-cached-ids-and-valid-input.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-cached-ids-and-valid-input",
+          "sources": [
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/StreamBuffer.aidl",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/aidl/AidlCamera3Device.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/aidl/AidlCamera3OutputUtils.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CaptureRequest.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-22-buffer-id-cache",
+              "ch13-10-51-cached-input-id"
+            ],
+            "boundary": "固定StreamBuffer首次交接携streamId/bufferId+handle，HAL保存映射；重复有效buffer可只传ID省handle，CaptureResult通常只回已知标识，framework按frame/stream/buffer记录找回对象。cachesToRemove、移除流/关闭按契约失效，不能跨会话复用。识别input还看原生input_buffer与输入流：AIDL无input用streamId=-1/bufferId=0，有效缓存input可无handle仍是reprocess；没有appinput是采集类但deviceZSL仍可能选历史图像。实际input读取前等acquire、随result归还；缓存记录本身不是图像占用或访问权限证明。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-texture-input-and-app-output",
+          "title": "TextureView 与自研 GPU 都要区分 Camera 输入和 App 输出",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-texture-input-and-app-output.svg",
+            "src/assets/diagrams/ch13/ed13-10-texture-input-and-app-output.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-texture-input-and-app-output",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/StreamBuffer.aidl",
+            "https://developer.android.com/reference/android/media/ImageReader",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-36-textureview-two-queues",
+              "ch13-10-37-texture-three-moments",
+              "ch13-10-38-app-gpu-reproducer"
+            ],
+            "boundary": "Camera是第一Producer，queue相机图像及HAL完成fence。TextureView路线先SurfaceTexture消费输入，frameavailable只标记更新/invalidate，Main draw记录drawTextureLayer，RT DeferredLayerUpdater::apply经ASurfaceTexture_dequeueBuffer取image/AHB并处理fence，GPU满足输入依赖后采样进HWUI宿主窗口；Java栈不必有updateTexImage。自研GL/Vulkan可从OES/AHB/ImageReader导入，满足输入依赖后做滤镜/分割/AR等App GPU pass，再向自己的output Surface生产。二者都另有App输出buffer/完成fence及显示反馈，相机输入到达不等App已绘制/显示，不能将App GPU等待全归ISP；不保证逐输入对应逐显示帧。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-analysis-quota-and-image-owner",
+          "title": "先核对 acquire 额度，再把 close 交给真正完成方",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-analysis-quota-and-image-owner.svg",
+            "src/assets/diagrams/ch13/ed13-10-analysis-quota-and-image-owner.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-analysis-quota-and-image-owner",
+          "sources": [
+            "https://developer.android.com/reference/android/media/ImageReader",
+            "https://developer.android.com/media/camera/camerax/analyze"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-40-analysis-acquire-limit",
+              "ch13-10-42-latest-margin",
+              "ch13-10-41-analysis-ownership"
+            ],
+            "boundary": "ImageReader.maxImages限制同时acquired且未close的Image；达到上限再acquire抛IllegalStateException，不是保证返回null或HAL立刻停流。latest按预期丢旧要求maxImages-当前已持有>=2，maxImages1无此效果；next逐帧需持续吞吐。正文监听串行、consume同步有界、无其他并发acquire，故finally close；异步接管则真实任务结束后close，正常/异常均唯一owner，提前close使planes失效，无界排队把压力移到线程池。CameraX应close ImageProxy本身。持续不归还会耗尽底层队列并可能反压上游，增加额度只缓冲不提高长期消费速度。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-reprocess-handoff-and-image-validity",
+          "title": "先创建请求，再交接 input；原 Image 有效期到此结束",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-reprocess-handoff-and-image-validity.svg",
+            "src/assets/diagrams/ch13/ed13-10-reprocess-handoff-and-image-validity.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-reprocess-handoff-and-image-validity",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/camera/camera-camera2/1.6.1/camera-camera2-1.6.1-sources.jar",
+            "https://dl.google.com/dl/android/maven2/androidx/camera/camera-camera2-pipe/1.6.1/camera-camera2-pipe-1.6.1-sources.jar",
+            "https://developer.android.com/reference/android/media/ImageWriter",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/StreamBuffer.aidl",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3InputStream.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-47-zsl-submit-order",
+              "ch13-10-52-input-ownership"
+            ],
+            "boundary": "固定CameraX/CameraPipe1.6.1从合格图像及FrameInfo形成InputRequest，先基于TotalCaptureResult创建reprocess builder并设置已有output target，再queueInputImage交接到session input Surface，之后提交capture request。queueInputImage可能因输入额度阻塞；交接后原Image不可访问，HAL读取前满足input acquire fence，再随result/release fence归还。后续复用须池中正确归还后重新取得，不会因fence signal恢复原Java Image。input已交接后的失败不保证透明重试普通拍照；reprocess不为该输出采集新sensor数据，但仍可等input/输出/JPEG/fence。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-zsl-pairing-ring-and-quotas",
+          "title": "图像与 metadata 配对、状态过滤、FIFO 取帧分别发生",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-zsl-pairing-ring-and-quotas.svg",
+            "src/assets/diagrams/ch13/ed13-10-zsl-pairing-ring-and-quotas.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-zsl-pairing-ring-and-quotas",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/camera/camera-camera2/1.6.1/camera-camera2-1.6.1-sources.jar",
+            "https://dl.google.com/dl/android/maven2/androidx/camera/camera-core/1.6.1/camera-core-1.6.1-sources.jar",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/HalStream.aidl"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-45-zsl-preparation",
+              "ch13-10-46-ring-and-quotas"
+            ],
+            "boundary": "固定CameraX1.6.1 PRIVATE image与TotalCaptureResult按timestamp配对后由ZslRingBuffer检查AF已对焦、AE/AWB收敛，合格才进入容量3的ring，不合格/淘汰图像close。ArrayRingBuffer addFirst/removeLast取当前最旧合格帧，不按快门时间全局搜索最近帧。该reader MAX_IMAGES9限制acquire，可有未配对及在途持有；HAL maxBuffers逐stream由HAL声明，三层不等于总驻留/实际分配数。HAL不执行App三帧策略；支持、当前允许使用ZSL、这次候选可用仍分别核对，具体flash/Video/Extensions影响见正文。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-timestamp-policy-and-frame-association",
+          "title": "先按输出选择 time base，再区分校准时钟与图像时间重写",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-timestamp-policy-and-frame-association.svg",
+            "src/assets/diagrams/ch13/ed13-10-timestamp-policy-and-frame-association.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-timestamp-policy-and-frame-association",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/params/OutputConfiguration.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/PreviewFrameSpacer.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraMetadata.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-55-timestamp-defaults",
+              "ch13-10-56-clock-vs-rewrite"
+            ],
+            "boundary": "固定r1默认策略：SurfaceView用CHOREOGRAPHER_SYNCED，固定fps时改写图像时间为显示节奏相关值，非单纯偏移；SurfaceTexture可调整交付间隔但timestamp保留sensor域；MediaCodec/Recorder或video-encode usage目标用MONOTONIC；其他通常SENSOR。sensor真实域查询SENSOR_INFO_TIMESTAMP_SOURCE，REALTIME对应elapsed，UNKNOWN按契约检查精度/范围；可校准时钟域差异才按单位和依据换算，改写的图像时间不能用固定偏移还原曝光。Camera frame number、BufferQueue frame number、显示token也不直接相等，需stream/buffer/flow关联。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-10-cross-stream-pressure-and-anr-proof",
+          "title": "跨流反压与 App ANR 要用两组依赖分别证明",
+          "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-10-cross-stream-pressure-and-anr-proof.svg",
+            "src/assets/diagrams/ch13/ed13-10-cross-stream-pressure-and-anr-proof.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-10-cross-stream-pressure-and-anr-proof",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Device.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Stream.cpp",
+            "https://developer.android.com/media/camera/camera2/multiple-camera-streams-simultaneously",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/aidl/AidlCamera3OutputUtils.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-10-33-cross-stream-pressure",
+              "ch13-10-66-anr-causality"
+            ],
+            "boundary": "consumer处理/归还变慢导致某stream图像滞留，可耗尽可用buffer并出现get/request buffer等待。只有目标设备共享ISP stage、request多目标、带宽/内部池等实际耦合被证实时，才能关联其他stream迟到；独立队列不证明隔离，也不意味着一定全局堵塞。App ANR还需主线程/广播/服务/输入等关键路径实际依赖该相机操作，调用栈/Binder等待与buffer/fence阻塞区间对齐并满足对应detector超时。两种后果分开取证，CameraService线程等待本身不足以证明AppANR或ISP硬件根因。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T10:54:34.003996+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 74,
+        "contexts_actually_viewed": 13,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a129/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a129/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 129,
+        "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+        "registered_sha256": "f3c4629af8b425eae0f50101fcf9ab6046ffd2722d6b3589829cc45ff1fd6900",
+        "frozen_sha256": "f3c4629af8b425eae0f50101fcf9ab6046ffd2722d6b3589829cc45ff1fd6900",
+        "review_input_sha256": "ec28b41fcd075c4c22b65497a6efddad83d76221618732b2cafbe276a54a5ea5",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a129/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a129/external-source.diff",
+        "diff_sha256": "d0c259976650ca4a840ab3873614618e11cfe87df2b9a164ea3a807c340115c8",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 582 current narrative/table reading rows, 50689 characters, 74 SVG label sets, 74 original PNGs in 10 contact sheets and 1 rendered native flow read/viewed; native flow additionally viewed at 2400 width; 8 code blocks, 52 lines independently read."
+      },
+      "sha256_review_input": "ec28b41fcd075c4c22b65497a6efddad83d76221618732b2cafbe276a54a5ea5",
+      "retired_diagrams": [
+        "ch13-10-01-three-responsibilities",
+        "ch13-10-02-version-coordinates",
+        "ch13-10-03-request-targets",
+        "ch13-10-04-result-boundaries",
+        "ch13-10-05-configuration-negotiation",
+        "ch13-10-06-combination-throughput",
+        "ch13-10-07-halstream-fields",
+        "ch13-10-08-queue-capacity",
+        "ch13-10-09-two-buffer-managers",
+        "ch13-10-10-dynamic-surface-swap",
+        "ch13-10-11-dynamic-limits",
+        "ch13-10-12-usecase-intent",
+        "ch13-10-13-framework-buffers",
+        "ch13-10-15-fence-perspectives",
+        "ch13-10-16-async-result-fence",
+        "ch13-10-18-slot-vs-access",
+        "ch13-10-19-hal-managed-decoupling",
+        "ch13-10-20-request-stream-buffers",
+        "ch13-10-21-buffer-request-status",
+        "ch13-10-22-buffer-id-cache",
+        "ch13-10-24-flush-contracts",
+        "ch13-10-26-three-cache-meanings",
+        "ch13-10-27-inflight-boundary",
+        "ch13-10-28-three-fence-roles",
+        "ch13-10-29-disconnect-lifetime",
+        "ch13-10-30-close-resources",
+        "ch13-10-31-unique-memory",
+        "ch13-10-32-raw14-layout",
+        "ch13-10-33-cross-stream-pressure",
+        "ch13-10-34-preview-carriers",
+        "ch13-10-36-textureview-two-queues",
+        "ch13-10-37-texture-three-moments",
+        "ch13-10-38-app-gpu-reproducer",
+        "ch13-10-40-analysis-acquire-limit",
+        "ch13-10-41-analysis-ownership",
+        "ch13-10-42-latest-margin",
+        "ch13-10-43-two-zsl-controls",
+        "ch13-10-45-zsl-preparation",
+        "ch13-10-46-ring-and-quotas",
+        "ch13-10-47-zsl-submit-order",
+        "ch13-10-49-application-zsl-requirements",
+        "ch13-10-50-input-mapping",
+        "ch13-10-51-cached-input-id",
+        "ch13-10-52-input-ownership",
+        "ch13-10-53-reprocess-no-exposure",
+        "ch13-10-54-zsl-support-enabled",
+        "ch13-10-55-timestamp-defaults",
+        "ch13-10-56-clock-vs-rewrite",
+        "ch13-10-57-exposure-result-present",
+        "ch13-10-58-secure-camera",
+        "ch13-10-60-capture-environment",
+        "ch13-10-61-five-diagnostic-domains",
+        "ch13-10-62-frame-dependencies",
+        "ch13-10-63-trace-coverage",
+        "ch13-10-64-cpu-and-device-waits",
+        "ch13-10-65-camera-source-evidence",
+        "ch13-10-66-anr-causality",
+        "ch13-10-67-session-reconfiguration",
+        "ch13-10-68-analysis-fix",
+        "ch13-10-69-late-preview-choice",
+        "ch13-10-70-memory-thermal",
+        "ch13-10-71-platform-evolution",
+        "ch13-10-72-page-alignment",
+        "ch13-10-73-dmabuf-responsibilities",
+        "ch13-10-74-end-to-end-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-129/retired-assets.json"
     },
     {
       "index": 130,
@@ -29070,8 +30149,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 65,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+  "reviewed_articles": 66,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -29081,7 +30160,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T10:40:52.186727+08:00",
+  "updated_at": "2026-10-31T10:54:34.003996+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -29130,13 +30209,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
-      "registered_sha256": "f3c4629af8b425eae0f50101fcf9ab6046ffd2722d6b3589829cc45ff1fd6900",
-      "observed_sha256": "ec28b41fcd075c4c22b65497a6efddad83d76221618732b2cafbe276a54a5ea5",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -29546,9 +30618,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2254,
-  "reviewed_placements_after": 1075,
-  "net_removed_placements": 1179,
+  "reviewed_placements_before": 2328,
+  "reviewed_placements_after": 1096,
+  "net_removed_placements": 1232,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -29572,5 +30644,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 65
+  "currently_matching_reviewed_source_count": 66
 }
