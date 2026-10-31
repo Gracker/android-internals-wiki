@@ -35550,9 +35550,590 @@
       "before_count": 36,
       "before_all_images": 36,
       "sha256_before": "fc0389d5fd6d48f422301c9c8da45ce40a9eea7b62ba1f0ab0bcaa178c934223",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 20,
+      "decisions": [
+        {
+          "original_id": "ch14-05-01-measurement-contract",
+          "title": "输入身份、业务窗口与终点",
+          "decision": "remove",
+          "reason": "三框依次重述37完整开头三条件，实例/窗口/终点原文保留，后续独立时间图与去重合图给实际关系，删开篇摘要。",
+          "original_line": 41,
+          "heading": "# Perfetto 输入延迟 SQL 深度分析"
+        },
+        {
+          "original_id": "ch14-05-02-version-axes",
+          "title": "设备版本与分析工具分别核对",
+          "decision": "remove",
+          "reason": "三组六卡重复50版本段及后续批处理版本说明，14.4刚保留完整独立版本/toolchain机制图；本篇原限定/API格式差异仍全留，不再放相同提醒卡。",
+          "original_line": 52,
+          "heading": "## 分析边界"
+        },
+        {
+          "original_id": "ch14-05-03-time-precision",
+          "title": "计算保留纳秒，展示保留小数",
+          "decision": "keep",
+          "reason": "500000ns经整数time_to_ms变0与浮点/1e6变0.5的具体运算对照，直观显示精度与返回类型，保留原始纳秒作JOIN键。",
+          "original_line": 59,
+          "heading": "## 分析边界"
+        },
+        {
+          "original_id": "ch14-05-04-independent-chains",
+          "title": "ATrace 生命周期与调试原始事件两条链",
+          "decision": "merge",
+          "reason": "原图“ATrace 生命周期与调试原始事件两条链”并入：合并生命周期来源与常规配置覆盖，把ATrace/FrameTimeline联合依赖和debuginputevent独立链画清。；锚点原图31，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 85,
+          "heading": "### 生命周期与帧关联",
+          "replacement_id": "ed14-05-independent-input-collection-paths"
+        },
+        {
+          "original_id": "ch14-05-05-coverage-states",
+          "title": "原始行、缺字段与零耗时分别判断",
+          "decision": "remove",
+          "reason": "四卡逐项摘录104覆盖段及111放大限定，候选非空非正确/空表非零正文全留；新消息-附件双集合合图具体显示统计口径，不重复字段目录。",
+          "original_line": 106,
+          "heading": "### 生命周期与帧关联"
+        },
+        {
+          "original_id": "ch14-05-06-cross-channel",
+          "title": "同序号跨通道导致帧附件放大",
+          "decision": "merge",
+          "reason": "原图“同序号跨通道导致帧附件放大”并入：合并跨通道同序号放大、慢往返去重及批处理两类样本集合，明确哪些字段不能进入消息DISTINCT。；锚点原图34，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 113,
+          "heading": "### 生命周期与帧关联",
+          "replacement_id": "ed14-05-delivery-dedup-and-candidate-populations"
+        },
+        {
+          "original_id": "ch14-05-07-raw-id-bridge",
+          "title": "原始事件与窗口分发的身份边界",
+          "decision": "keep",
+          "reason": "原始数值eventid到motion/key和多个窗口的一对多图，虚线明确跨ATraceID无稳定桥接；这一身份拓扑独立于消息seq污染机制。",
+          "original_line": 126,
+          "heading": "### 调试级原始事件"
+        },
+        {
+          "original_id": "ch14-05-08-raw-timestamps",
+          "title": "事件时间、处理时间与窗口投递时间",
+          "decision": "keep",
+          "reason": "MONO语义eventTime经映射入kernel_time、motion/key包processingTimestamp和窗口deliveryTime三种真实时间来源并列，保留TP解析时刻不是生产端ts。",
+          "original_line": 156,
+          "heading": "### 调试级原始事件"
+        },
+        {
+          "original_id": "ch14-05-09-finish-identity",
+          "title": "公开线程身份来自 FINISHED 发送者",
+          "decision": "keep",
+          "reason": "finish发送者公开字段与receive_track_id→utid实际接收者两条身份路径独立，保留消息channel/seq加upid/ns定位，避免看错线程。",
+          "original_line": 184,
+          "heading": "### `android_input_events`"
+        },
+        {
+          "original_id": "ch14-05-10-four-messages",
+          "title": "四个消息节点与往返分段",
+          "decision": "keep",
+          "reason": "四消息节点及三段实际连续轨道，直观显示total=sum和FINISHED并非呈现；输入ACK属socket而非Binder，保留独立消息时序。",
+          "original_line": 200,
+          "heading": "### `android_input_events`"
+        },
+        {
+          "original_id": "ch14-05-11-redacted-defaults",
+          "title": "脱敏省略与公开标量默认值",
+          "decision": "merge",
+          "reason": "原图“脱敏省略与公开标量默认值”并入：合并debug规则顺序与脱敏默认值，保留NONE无记录和key_code默认0不能解释为真实观测值。；锚点原图32，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 217,
+          "heading": "### 三张原始视图",
+          "replacement_id": "ed14-05-raw-rule-order-and-redacted-values"
+        },
+        {
+          "original_id": "ch14-05-12-roundtrip-dedup",
+          "title": "慢往返查询先固定样本身份",
+          "decision": "merge",
+          "reason": "原图“慢往返查询先固定样本身份”并入：合并跨通道同序号放大、慢往返去重及批处理两类样本集合，明确哪些字段不能进入消息DISTINCT。；锚点原图34，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 286,
+          "heading": "### 找出慢样本",
+          "replacement_id": "ed14-05-delivery-dedup-and-candidate-populations"
+        },
+        {
+          "original_id": "ch14-05-13-percentiles",
+          "title": "同场景分布与尾部样本的口径",
+          "decision": "merge",
+          "reason": "原图“同场景分布与尾部样本的口径”并入：合并同场景分位数口径与P95尾部回UI的流程，保留样本量、并列值和收发线程身份边界。；锚点原图27，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 359,
+          "heading": "### 建立同场景分布",
+          "replacement_id": "ed14-05-scene-percentiles-and-tail-evidence"
+        },
+        {
+          "original_id": "ch14-05-14-clock-domain",
+          "title": "内联事件时间与 Trace 端点先统一时钟",
+          "decision": "keep",
+          "reason": "MONOTONIC与BOOTTIME两轨受控9秒偏移和同域5ms示例说明混域误差，保留缺mappingNULL与跨挂起不混加，和15真实代理边界互补。",
+          "original_line": 370,
+          "heading": "### 三段时间的组合"
+        },
+        {
+          "original_id": "ch14-05-15-reader-proxy",
+          "title": "Reader 代理边界与真实设备读取分开",
+          "decision": "keep",
+          "reason": "EventHub→InputReader→TracedInputListener包装→下游的具体源码边界链，定位read_time是后续代理非设备读取/控制器IRQ；并非14时钟域转换同义。",
+          "original_line": 419,
+          "heading": "### 三段时间的组合"
+        },
+        {
+          "original_id": "ch14-05-16-doframe-candidates",
+          "title": "区间相交与后续帧都是候选规则",
+          "decision": "merge",
+          "reason": "原图“区间相交与后续帧都是候选规则”并入：合并doFrame相交/随后帧规则、全局LIMIT候选缺陷、跨通道附件和HWUI上下文LEFTJOIN保留限制。；锚点原图18，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 428,
+          "heading": "### 输入与 `doFrame` 的关联规则",
+          "replacement_id": "ed14-05-frame-candidate-and-context-gates"
+        },
+        {
+          "original_id": "ch14-05-17-frame-failure-gates",
+          "title": "帧候选需要分层核验",
+          "decision": "merge",
+          "reason": "原图“帧候选需要分层核验”并入：合并doFrame相交/随后帧规则、全局LIMIT候选缺陷、跨通道附件和HWUI上下文LEFTJOIN保留限制。；锚点原图18，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 443,
+          "heading": "### 输入与 `doFrame` 的关联规则",
+          "replacement_id": "ed14-05-frame-candidate-and-context-gates"
+        },
+        {
+          "original_id": "ch14-05-18-frame-context-leftjoin",
+          "title": "候选帧与 HWUI 上下文保留缺失",
+          "decision": "merge",
+          "reason": "原图“候选帧与 HWUI 上下文保留缺失”并入：合并doFrame相交/随后帧规则、全局LIMIT候选缺陷、跨通道附件和HWUI上下文LEFTJOIN保留限制。；锚点原图18，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 489,
+          "heading": "### 输入与 `doFrame` 的关联规则",
+          "replacement_id": "ed14-05-frame-candidate-and-context-gates"
+        },
+        {
+          "original_id": "ch14-05-19-descendant-tree",
+          "title": "完整后代与第一层子 Slice 的区别",
+          "decision": "keep",
+          "reason": "doFrame根到第一层和更深后代的实际树，直接显示parent_id等值只拿一层而descendant_slice拿全子树，未闭合行保留NULL而非负耗时。",
+          "original_line": 527,
+          "heading": "### 展开 `doFrame` 的全部后代切片"
+        },
+        {
+          "original_id": "ch14-05-20-queue-lifecycle",
+          "title": "iq、oq 与 wq 的位置",
+          "decision": "merge",
+          "reason": "原图“iq、oq 与 wq 的位置”并入：合并队列生命周期与持续非零证据分类，把确认只更新等待队列而非证明业务画面完成画清。；锚点原图21，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 542,
+          "heading": "## `InputDispatcher` 的 `iq`、`oq` 与 `wq`",
+          "replacement_id": "ed14-05-input-queue-lifecycle-and-evidence"
+        },
+        {
+          "original_id": "ch14-05-22-queue-evidence",
+          "title": "持续非零队列提供排查入口",
+          "decision": "merge",
+          "reason": "原图“持续非零队列提供排查入口”并入：合并队列生命周期与持续非零证据分类，把确认只更新等待队列而非证明业务画面完成画清。；锚点原图21，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 567,
+          "heading": "## `InputDispatcher` 的 `iq`、`oq` 与 `wq`",
+          "replacement_id": "ed14-05-input-queue-lifecycle-and-evidence"
+        },
+        {
+          "original_id": "ch14-05-21-counter-intervals",
+          "title": "计数器采样转区间的边界",
+          "decision": "keep",
+          "reason": "counter采样点至下一样本和末值假设两种保持值轨道，表达同track排序/进程末裁剪/end_basis真实统计边界；首前未知不补值，保留。",
+          "original_line": 610,
+          "heading": "## `InputDispatcher` 的 `iq`、`oq` 与 `wq`"
+        },
+        {
+          "original_id": "ch14-05-23-anr-candidates",
+          "title": "ANR 记录与进程、计时器候选",
+          "decision": "merge",
+          "reason": "原图“ANR 记录与进程、计时器候选”并入：合并标准ANR来源/候选进程计时器与记录延迟窗口，保留PID复用、timer估算和起点非阻塞起点。；锚点原图24，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 643,
+          "heading": "### 以 `android_anrs` 为时间锚点",
+          "replacement_id": "ed14-05-anr-timer-identity-and-window"
+        },
+        {
+          "original_id": "ch14-05-24-anr-window",
+          "title": "ANR 记录、超时到期与查询窗口",
+          "decision": "merge",
+          "reason": "原图“ANR 记录、超时到期与查询窗口”并入：合并标准ANR来源/候选进程计时器与记录延迟窗口，保留PID复用、timer估算和起点非阻塞起点。；锚点原图24，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 652,
+          "heading": "### 查看 ANR 窗口内已完成的输入",
+          "replacement_id": "ed14-05-anr-timer-identity-and-window"
+        },
+        {
+          "original_id": "ch14-05-25-completed-blindspot",
+          "title": "完成往返与卡住输入的不同覆盖",
+          "decision": "merge",
+          "reason": "原图“完成往返与卡住输入的不同覆盖”并入：合并完成往返盲区与ANR三证据，把结果无行不等零输入放在同窗口复核链。；锚点原图28，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 734,
+          "heading": "### 查看 ANR 窗口内已完成的输入",
+          "replacement_id": "ed14-05-anr-completion-blindspot-and-cross-checks"
+        },
+        {
+          "original_id": "ch14-05-26-queue-window-overlap",
+          "title": "先还原队列区间，再裁 ANR 窗口",
+          "decision": "keep",
+          "reason": "状态在ANR窗口前已开始的两轨实际重叠，展示先还原再max起点/min终点求正交集，防止提前按窗口过滤采样丢首状态，保留。",
+          "original_line": 804,
+          "heading": "### 查看 ANR 窗口内已完成的输入"
+        },
+        {
+          "original_id": "ch14-05-27-tail-to-ui",
+          "title": "滑动尾部样本回到实际接收线程",
+          "decision": "merge",
+          "reason": "原图“滑动尾部样本回到实际接收线程”并入：合并同场景分位数口径与P95尾部回UI的流程，保留样本量、并列值和收发线程身份边界。；锚点原图27，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 876,
+          "heading": "### 滑动卡顿：按场景区间找尾部样本",
+          "replacement_id": "ed14-05-scene-percentiles-and-tail-evidence"
+        },
+        {
+          "original_id": "ch14-05-28-anr-evidence-triad",
+          "title": "输入 ANR 的三份证据",
+          "decision": "merge",
+          "reason": "原图“输入 ANR 的三份证据”并入：合并完成往返盲区与ANR三证据，把结果无行不等零输入放在同窗口复核链。；锚点原图28，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 891,
+          "heading": "### 输入 ANR：标准化 ANR 加队列",
+          "replacement_id": "ed14-05-anr-completion-blindspot-and-cross-checks"
+        },
+        {
+          "original_id": "ch14-05-29-startup-mapping",
+          "title": "启动到第一条目标实例输入",
+          "decision": "keep",
+          "reason": "startupid→多个upid分别选最早receive以及同包下次启动半开右界的具体映射与窗口图独立，保留缺映射和首条目标输入不等可交互/Launcher启动手势。",
+          "original_line": 988,
+          "heading": "### 冷启动：第一个目标进程输入"
+        },
+        {
+          "original_id": "ch14-05-30-sql-ui-loop",
+          "title": "SQL 筛选与 UI 证据复核闭环",
+          "decision": "remove",
+          "reason": "四框逐项摘录995–1009两组SQL/UI职责清单和最后工作顺序，新尾部分位-真实接收线程合图提供具体统计与复核机制，正文同条件复测原文全留。",
+          "original_line": 1011,
+          "heading": "## SQL 与 Perfetto UI 的分工"
+        },
+        {
+          "original_id": "ch14-05-31-collection-coverage",
+          "title": "常规配置的三类采集面",
+          "decision": "merge",
+          "reason": "原图“常规配置的三类采集面”并入：合并生命周期来源与常规配置覆盖，把ATrace/FrameTimeline联合依赖和debuginputevent独立链画清。；锚点原图31，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 1057,
+          "heading": "### 常规输入往返与帧关联",
+          "replacement_id": "ed14-05-independent-input-collection-paths"
+        },
+        {
+          "original_id": "ch14-05-32-raw-rule-order",
+          "title": "原始事件按首个匹配规则决定等级",
+          "decision": "merge",
+          "reason": "原图“原始事件按首个匹配规则决定等级”并入：合并debug规则顺序与脱敏默认值，保留NONE无记录和key_code默认0不能解释为真实观测值。；锚点原图32，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 1084,
+          "heading": "### 原始输入与窗口分发",
+          "replacement_id": "ed14-05-raw-rule-order-and-redacted-values"
+        },
+        {
+          "original_id": "ch14-05-33-package-allowlists",
+          "title": "any、all 与永久允许的系统 UID",
+          "decision": "keep",
+          "reason": "any单目标命中与all全目标UID集合约束、显式集合加System/Shell/Root永久允许的并列集合语义独立，保留多窗口/监视目标改变结果，不与首规则顺序混为同项。",
+          "original_line": 1093,
+          "heading": "### 原始输入与窗口分发"
+        },
+        {
+          "original_id": "ch14-05-34-batch-two-populations",
+          "title": "批处理中的消息统计与候选附件质量",
+          "decision": "merge",
+          "reason": "原图“批处理中的消息统计与候选附件质量”并入：合并跨通道同序号放大、慢往返去重及批处理两类样本集合，明确哪些字段不能进入消息DISTINCT。；锚点原图34，固定Android17实现/原始身份/时钟/统计窗口、候选失败和代码验证范围保留，详见合图图注。",
+          "original_line": 1219,
+          "heading": "## 批量跟踪对比",
+          "replacement_id": "ed14-05-delivery-dedup-and-candidate-populations"
+        },
+        {
+          "original_id": "ch14-05-35-batch-residency",
+          "title": "批处理的原生版本与驻留实例",
+          "decision": "remove",
+          "reason": "四框重述1109与1224包API/native/binpath/每trace驻留和分批关闭说明，14.4完整生命周期及版本合图已保留；本篇新双样本集合给输入特有统计，删通用批处理摘要。",
+          "original_line": 1226,
+          "heading": "## 批量跟踪对比"
+        },
+        {
+          "original_id": "ch14-05-36-evidence-contract",
+          "title": "提交结论前核对可复查证据",
+          "decision": "remove",
+          "reason": "四卡逐项分组重排1235–1244十项完整提交清单，全部版本/身份/时钟/候选/实验要求原文全留，删最终核对表复写。",
+          "original_line": 1246,
+          "heading": "## 版本边界与核对清单"
+        }
+      ],
+      "sha256_after": "6feb154383c31eb34f0bca5b61a4018782d133b0f85fd1136948b72eed98494f",
+      "new_diagrams": [
+        {
+          "id": "ed14-05-independent-input-collection-paths",
+          "title": "消息往返、帧候选和调试原始事件来自不同采集链",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-independent-input-collection-paths.svg",
+            "src/assets/diagrams/ch14/ed14-05-independent-input-collection-paths.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-independent-input-collection-paths",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/protos/perfetto/config/android/android_input_event_config.proto",
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-04-independent-chains",
+              "ch14-05-31-collection-coverage"
+            ],
+            "boundary": "android_input_events由ATrace四消息匹配和FrameTimeline派生，不依赖android.input.inputevent。常规user可请求input/view/gfx、目标应用atrace_apps、FrameTimeline及sched上下文；只有四消息匹配才有往返行，呈现候选需额外帧关联核验。debuginputevent仅userdebug/eng记录motion/key/window，不能补齐四消息或帧关联。RING_BUFFER满覆盖最早数据，配置请求不保证实际完整性；原始数值eventid与ATrace十六进制文本无稳定官方桥接。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-05-delivery-dedup-and-candidate-populations",
+          "title": "先修复跨通道消息权重，再单独计算候选附件质量",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-delivery-dedup-and-candidate-populations.svg",
+            "src/assets/diagrams/ch14/ed14-05-delivery-dedup-and-candidate-populations.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-delivery-dedup-and-candidate-populations",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql",
+            "https://github.com/google/perfetto/blob/v57.2/python/perfetto/batch_trace_processor/api.py"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-06-cross-channel",
+              "ch14-05-12-roundtrip-dedup",
+              "ch14-05-34-batch-two-populations"
+            ],
+            "boundary": "固定Android17最终帧附件只按event_seq连接，两个通道同序号的受控合成trace可将两投递扩四行并污染inputid/action/readtime/frame等附件。往返统计固定唯一upid和半开dispatch窗口，仅消息字段DISTINCT，候选字段不得加入，四时长非负再统计。候选元组另外按投递分组，统计可用/推测/歧义，不混入消息权重。0歧义不证明全局候选正确，同名多实例不算分位，无样本分位/比例NULL，路径标识每份Trace，比较同采集条件。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-05-scene-percentiles-and-tail-evidence",
+          "title": "同场景消息分布筛尾部，再回实际接收线程查原因",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-scene-percentiles-and-tail-evidence.svg",
+            "src/assets/diagrams/ch14/ed14-05-scene-percentiles-and-tail-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-scene-percentiles-and-tail-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-13-percentiles",
+              "ch14-05-27-tail-to-ui"
+            ],
+            "boundary": "名称必须唯一upid，半开业务窗口对消息字段去重且四时长合法；P50/P95/P99/MAX按原始ns统计并以/1e6浮点展示，样本量与缺失分开。当前窗口自身P95是场景基准，dur>=P95并列可超5%，小样本尾部不稳。receive_track_id→thread_track.utid取实际接收线程，公开thread字段是finish端；接收线程状态/doFrame/Binder/GC/锁/频率需独立依赖。无固定通用ms阈值，MAX不单独门禁，同设备构建场景采集温度样本复测。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-05-frame-candidate-and-context-gates",
+          "title": "帧附件先当候选，逐层核对后才解释业务呈现",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-frame-candidate-and-context-gates.svg",
+            "src/assets/diagrams/ch14/ed14-05-frame-candidate-and-context-gates.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-frame-candidate-and-context-gates",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-16-doframe-candidates",
+              "ch14-05-17-frame-failure-gates",
+              "ch14-05-18-frame-context-leftjoin"
+            ],
+            "boundary": "同线程deliverInputEvent与doFrame相交标exact规则匹配，否则随后帧speculative1，exact不证明业务因果。内部未丢弃帧标量app_ts>=frame_ts LIMIT1无upid无ORDERBY，可能取其它应用/非最早帧，多个MOVE可合帧，丢帧可能指后继。最终event_seq连接可跨通道污染inputid/readtime/present，补下游upid不修上游。候选token+upid LEFTJOIN android_frames仅当前上下文，保留歧义/未匹配；聚合视图缺Expected/多Layer需底层Actual/Expected/doFrame/DrawFrame/SFid、Surface/Layer、displaytoken及实际采用buffer确认。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-05-input-queue-lifecycle-and-evidence",
+          "title": "从 iq 到每连接 oq / wq，分别定位尚未完成的位置",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-input-queue-lifecycle-and-evidence.svg",
+            "src/assets/diagrams/ch14/ed14-05-input-queue-lifecycle-and-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-input-queue-lifecycle-and-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/dispatcher/InputDispatcher.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-20-queue-lifecycle",
+              "ch14-05-22-queue-evidence"
+            ],
+            "boundary": "固定Android17InputDispatcher在system_server用ATracecounter记录全局iq尚未消费、每连接oq待写socket、wq已写待FINISHED；应用确认后更新wq及超时状态。名称缓冲40字节可截断，旧别名不能套。counter无dur，相关操作采当前值，持续性需按同track(ts,id)阶梯模型且首前未知末值假设，详见保留采样图。瞬时非零正常，持续非零仅缩范围，不能独自判主线程/系统调度/socket根因，更不表示FINISHED画面已显示。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-05-anr-timer-identity-and-window",
+          "title": "ANR 记录先核进程与计时器归属，再计算到期窗口",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-anr-timer-identity-and-window.svg",
+            "src/assets/diagrams/ch14/ed14-05-anr-timer-identity-and-window.png"
+          ],
+          "layout": "flow-with-timeline",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-anr-timer-identity-and-window",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql",
+            "https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/dispatcher/InputDispatcher.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-23-anr-candidates",
+              "ch14-05-24-anr-window"
+            ],
+            "boundary": "android_anrs从system_serverErrorId/subject/timer派生，输入类两type限定；固定模块按PID取最近前序timer并PID-onlyjoinprocess，PID复用可能多行，核心ANR去重报candidate_process_count后独立选upid。ts是ErrorId记录时刻，timeout_end=ts-timer_delay纳秒，缺失回退0；timeoutms用anr_dur_ms或default并time_from_ms转ns，估算窗口半开。estimated_timer仅缺timer_delay回退标记，0不证明最近timer属于本次ANR，默认超时非所有设备五秒，窗口start不是实际阻塞start。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-05-anr-completion-blindspot-and-cross-checks",
+          "title": "完成事件表看退化，未确认输入靠队列与线程补现场",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-anr-completion-blindspot-and-cross-checks.svg",
+            "src/assets/diagrams/ch14/ed14-05-anr-completion-blindspot-and-cross-checks.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-anr-completion-blindspot-and-cross-checks",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql",
+            "https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/dispatcher/InputDispatcher.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-25-completed-blindspot",
+              "ch14-05-28-anr-evidence-triad"
+            ],
+            "boundary": "android_input_events需要四节点完整；ANR查询仅dispatch落超时窗口且dispatch+total<=到期的已完成往返，LEFTJOIN保留ANR无event。导致ANR投递可能无finish_ack因此完全不在完成表，不能由空结果推无输入。三路同窗口：ErrorId/subject/timer/目标生命周期；iqoqwq完整采样还原再裁正交集、system_server所有队列尚需目标通道归属；实际应用线程Running/Runnable/Sleep/长slice。已完成只观察退化，未完成现场归因需资源/调度因果。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-05-raw-rule-order-and-redacted-values",
+          "title": "原始输入按首个匹配规则记录，字段省略保留未知",
+          "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-05-raw-rule-order-and-redacted-values.svg",
+            "src/assets/diagrams/ch14/ed14-05-raw-rule-order-and-redacted-values.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-05-raw-rule-order-and-redacted-values",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/importers/proto/winscope/android_input_event_parser.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/protos/perfetto/trace/android/android_input_event.proto",
+            "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/protos/perfetto/config/android/android_input_event_config.proto",
+            "https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/trace/InputTracingPerfettoBackend.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-05-11-redacted-defaults",
+              "ch14-05-32-raw-rule-order"
+            ],
+            "boundary": "固定android.input.inputevent仅userdebug/eng，TRACE_MODE_USE_RULES依声明顺序首个匹配等级NONE/REDACTED/COMPLETE，无条件匹配全部，无命中NONE。REDACTED省略坐标/keycode/scan等敏感信息，args允许NULL；固定公开key_code用proto getter，字段省略可显示0，已合成包核对，不据0断真实按键。包名any/all按全部目标UID集合另见保留图33，System/Shell/Root永久允许。TRACE_ALL绕隐私措施只原文受控本地测试范围，不能推为线上默认。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:08:47.844628+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 36,
+        "contexts_actually_viewed": 10,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a139/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a139/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 139,
+        "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+        "registered_sha256": "fc0389d5fd6d48f422301c9c8da45ce40a9eea7b62ba1f0ab0bcaa178c934223",
+        "frozen_sha256": "fc0389d5fd6d48f422301c9c8da45ce40a9eea7b62ba1f0ab0bcaa178c934223",
+        "review_input_sha256": "ac051388c7172ac69f20e6e751583c6eb7e6c3b5347b7f688b108f7f2cba12b3",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a139/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a139/external-source.diff",
+        "diff_sha256": "296b55971d9f112e9016cf363877e6fc84eb1c2d27d21620ff0dad23ef164507",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 291 current narrative/table reading rows, 22695 characters, 36 SVG label sets and all 36 original PNGs in 5 contact sheets independently read/viewed; all 17 non-Mermaid code blocks, 706 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "ac051388c7172ac69f20e6e751583c6eb7e6c3b5347b7f688b108f7f2cba12b3",
+      "retired_diagrams": [
+        "ch14-05-01-measurement-contract",
+        "ch14-05-02-version-axes",
+        "ch14-05-04-independent-chains",
+        "ch14-05-05-coverage-states",
+        "ch14-05-06-cross-channel",
+        "ch14-05-11-redacted-defaults",
+        "ch14-05-12-roundtrip-dedup",
+        "ch14-05-13-percentiles",
+        "ch14-05-16-doframe-candidates",
+        "ch14-05-17-frame-failure-gates",
+        "ch14-05-18-frame-context-leftjoin",
+        "ch14-05-20-queue-lifecycle",
+        "ch14-05-22-queue-evidence",
+        "ch14-05-23-anr-candidates",
+        "ch14-05-24-anr-window",
+        "ch14-05-25-completed-blindspot",
+        "ch14-05-27-tail-to-ui",
+        "ch14-05-28-anr-evidence-triad",
+        "ch14-05-30-sql-ui-loop",
+        "ch14-05-31-collection-coverage",
+        "ch14-05-32-raw-rule-order",
+        "ch14-05-34-batch-two-populations",
+        "ch14-05-35-batch-residency",
+        "ch14-05-36-evidence-contract"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-139/retired-assets.json"
     },
     {
       "index": 140,
@@ -37007,8 +37588,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 74,
-  "next_article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+  "reviewed_articles": 75,
+  "next_article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -37018,7 +37599,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:01:36.818447+08:00",
+  "updated_at": "2026-10-31T12:08:47.844628+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -37067,13 +37648,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
-      "registered_sha256": "fc0389d5fd6d48f422301c9c8da45ce40a9eea7b62ba1f0ab0bcaa178c934223",
-      "observed_sha256": "ac051388c7172ac69f20e6e751583c6eb7e6c3b5347b7f688b108f7f2cba12b3",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -37301,6 +37875,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
+      "registered_sha256": "a1eb3e88de2f6d7d40ff9396abc1bd32f9fb7b78ac1859f52ff8dc58963ba66a",
+      "observed_sha256": "07dfdf1b1fa9959726be0e9d23c192bf3d48b3da5d3646296d3e08a8d4a56962",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "registered_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
       "observed_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
@@ -37455,9 +38036,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2786,
-  "reviewed_placements_after": 1264,
-  "net_removed_placements": 1522,
+  "reviewed_placements_before": 2822,
+  "reviewed_placements_after": 1284,
+  "net_removed_placements": 1538,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -37481,5 +38062,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 74
+  "currently_matching_reviewed_source_count": 75
 }
