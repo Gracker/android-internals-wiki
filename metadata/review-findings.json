@@ -11406,6 +11406,69 @@
       "summary": "改写成果被并发的配图复核提交 97665478a 吸收，manifest 无法按 changed 收口",
       "type": "manifest-closure-conflict",
       "updated_at": "2026-10-31T17:37:11.577238+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "close_note": "重写5.3，明确RX/RW和RWX分支、内部完整页权限及边界页仍可能RWX；7.3区分最大支持页和运行时页。检查全部七幅配套SVG文字后，发现链接器旧图也含无条件恢复RELRO表述，已在章节内替换为准确的Mermaid分支图，未改图像资产。原函数C++探针六项通过；mprotect为记录调用的桩，无真机测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-183519-idle-audit-ab14067a",
+      "created_at": "2026-10-31T18:39:19.093597+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-183519-idle-audit-ab14067a",
+      "details": "android-17.0.0_r1 同时具有 RX/RW 和 RWX 兼容路径。前者将 RO/RX/RELRO 合并为 RX；后者先映射 RWX，仅对段内部完整基础页恢复权限，并只将 RELRO 内部完整页改为只读。跨权限边界的页不能保证完整 RELRO 或 W^X。原 5.3 的无条件保护保证与源码不符；7.3 将 max_android_page_size() 误称为运行时页大小也应同步更正。",
+      "id": "finding-f5bcec88c2f0",
+      "log_path": "logs/audit/2026-10-31-20261031-183519-idle-audit-ab14067a-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr_16kib_compat.cpp",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/WriteProtected.h"
+      ],
+      "status": "verified",
+      "summary": "16 KiB 兼容加载被误述为完整恢复原段权限和 RELRO 保护",
+      "type": "incorrect-security-boundary",
+      "updated_at": "2026-10-31T18:44:13.476399+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "close_note": "3.3 加入 llvm-readelf 观察命令、共享 LOAD 中 RELRO 末端公式及独占 LOAD 例外；5.2 补充 FixMinAlignFor16KiB 的 RELRO 与段覆盖修正。官方 2026-10-16 指南和 r1 实现相互印证，原函数探针验证有效对齐降低及独占段例外。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-183519-idle-audit-ab14067a",
+      "created_at": "2026-10-31T18:39:19.151651+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-183519-idle-audit-ab14067a",
+      "details": "官方指南 2026-10-16 版本给出 RELRO 末端对齐检查及独占 LOAD 段例外；r1 CheckProgramHeaderAlignment 调用 FixMinAlignFor16KiB，RELRO 前缀末端不对齐或 LOAD 页覆盖重叠即使 p_align>=16KiB 仍可能降低 min_align 并触发兼容。现文只泛称留意 RELRO，且将 min_align 直接解释为 PT_LOAD 最小 p_align。",
+      "id": "finding-ff15d89ce546",
+      "log_path": "logs/audit/2026-10-31-20261031-183519-idle-audit-ab14067a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/guide/practices/page-sizes#relro-flag",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr_16kib_compat.cpp"
+      ],
+      "status": "verified",
+      "summary": "ELF 检查缺少 RELRO 边界与有效 min_align 修正条件",
+      "type": "incomplete-elf-validation",
+      "updated_at": "2026-10-31T18:43:00.805353+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "close_note": "3.2 补上 AGP<=8.0 的 android.bundle.enableUncompressedNativeLibs=false；6 第四步列出 Pixel 机型及 QPR1/QPR2/Android16 门槛；5.4 保留 attrs_manifest 对仅旧布局应用生效、4KiB/已原生16KiB适配时忽略属性的边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-183519-idle-audit-ab14067a",
+      "created_at": "2026-10-31T18:39:19.213554+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-183519-idle-audit-ab14067a",
+      "details": "官方迁移指南对 AGP<=8.0 除 useLegacyPackaging 外还要求 android.bundle.enableUncompressedNativeLibs=false。设备开关限定 Pixel8/8Pro/8a Android15 QPR1+，Pixel9/9Pro/9ProXL Android15 QPR2+，Pixel9a Android16+；原文使用 Pixel9 系列且未注明 QPR 门槛。",
+      "id": "finding-1d033828d39f",
+      "log_path": "logs/audit/2026-10-31-20261031-183519-idle-audit-ab14067a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/guide/practices/page-sizes#update-packaging",
+        "https://developer.android.com/guide/practices/page-sizes#developer-option"
+      ],
+      "status": "verified",
+      "summary": "迁移步骤遗漏 AGP 8.0 及以下的 AAB 配置和 Pixel QPR 可用性边界",
+      "type": "missing-migration-availability-boundary",
+      "updated_at": "2026-10-31T18:43:00.862653+08:00"
     }
   ],
   "schema_version": 1
