@@ -53933,9 +53933,194 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "66bc85c2f92d6ecff451c690e521127d311885e53a8b1e23c46c0405b45bf687",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a212-01-limiter-states",
+          "title": "MemoryLimiter 由进程状态调整资源限制",
+          "decision": "remove",
+          "reason": "AMS档位/cgroup文件与越界语义已有正文和列表，三行状态卡与后续更具体保留异常退出分支图重叠。",
+          "original_line": 62,
+          "heading": "## 1. Android 17 的 App Memory Limits"
+        },
+        {
+          "original_id": "a212-02-limiter-config",
+          "title": "公开配置说明与固定 r1 实现分别保留",
+          "decision": "remove",
+          "reason": "system/vendor配置、MiB/MB和r1 parser差异由正文分别详细限定，三行映射卡重复且容易脱离段落条件。",
+          "original_line": 71,
+          "heading": "## 1. Android 17 的 App Memory Limits"
+        },
+        {
+          "original_id": "a212-03-limiter-exit",
+          "title": "异常取证与延迟退出不保证都得到 profile",
+          "decision": "keep",
+          "reason": "固定r1 red组合阈值后取证请求与约30秒结束两条分支，说明无profile也继续安排退出而非保证恢复窗口。",
+          "original_line": 114,
+          "heading": "## 1. Android 17 的 App Memory Limits"
+        },
+        {
+          "original_id": "a212-04-memory-domains",
+          "title": "先判断哪类内存在增长，再追业务所有者",
+          "decision": "remove",
+          "reason": "七类内存来源/能回答/不能回答表更完整，三行概念卡重复。",
+          "original_line": 156,
+          "heading": "## 2. 先分清各类“内存”"
+        },
+        {
+          "original_id": "a212-05-mallinfo-dispatch",
+          "title": "bionic 接口别名与当前 allocator 实现共同决定统计",
+          "decision": "remove",
+          "reason": "mallinfo2别名和Scudo字段列表、Debug三个接口字段段落已逐一说明，三行映射图是文本复述。",
+          "original_line": 205,
+          "heading": "### 3.1 `mallinfo2()` 在 bionic 中的实现"
+        },
+        {
+          "original_id": "a212-06-malloc-info-cost",
+          "title": "malloc_info 适合有界诊断附件",
+          "decision": "remove",
+          "reason": "malloc_info调用成本、失败结果、原始XML按allocator版本解析三段已清楚，四框只重排诊断步骤。",
+          "original_line": 229,
+          "heading": "### 3.3 `malloc_info()` 的 XML 不是稳定业务协议"
+        },
+        {
+          "original_id": "a212-07-vma-classification",
+          "title": "rollup 给总览，完整 smaps 才能拆映射类别",
+          "decision": "remove",
+          "reason": "rollup非Native分类与六类完整smaps语义列表已经完整，三行分类卡不画具体映射布局。",
+          "original_line": 257,
+          "heading": "### 4.2 `[heap]` 只是一小部分 Native Heap"
+        },
+        {
+          "original_id": "a212-08-comparable-windows",
+          "title": "在相同业务与进程状态下比较资源回落",
+          "decision": "keep",
+          "reason": "基线稳态A、重复业务/退出清理、同一稳态B的两轨采样位置，说明固定启动后时刻不保证场景可比。",
+          "original_line": 284,
+          "heading": "### 4.3 用时间窗口看能否回到基线"
+        },
+        {
+          "original_id": "a212-09-plt-coverage",
+          "title": "改写导入调用不能等同于替换进程 allocator",
+          "decision": "keep",
+          "reason": "目标分配经命中的PLT/GOT代理与静态/内联/本地绑定/自研allocator旁路分支，直观显示hook覆盖边界。",
+          "original_line": 309,
+          "heading": "### 5.1 PLT hook 的工作方式"
+        },
+        {
+          "original_id": "a212-10-realloc-ledger",
+          "title": "realloc 结果决定旧账本该保留还是迁移",
+          "decision": "remove",
+          "reason": "realloc四种条件已有准确四项列表及分配周期字段说明，三行账本卡不是新状态图。",
+          "original_line": 333,
+          "heading": "### 5.2 分配账本要覆盖的路径"
+        },
+        {
+          "original_id": "a212-11-bounded-hook",
+          "title": "hook 热路径只写固定事件，重工作交给消费者",
+          "decision": "keep",
+          "reason": "代理重入保护到预分配缓冲、独立消费再离线BuildID符号化的热冷路径分离，丢弃与完整性限制仍在正文。",
+          "original_line": 354,
+          "heading": "### 5.3 hook 热路径的设计约束"
+        },
+        {
+          "original_id": "a212-12-sampling-accounting",
+          "title": "采样概率与释放配对决定估计能否成立",
+          "decision": "remove",
+          "reason": "事件等概率/尺寸分层加权/采样对象free配对两段已说明，三行规则卡未增加概率计算或配对时间线。",
+          "original_line": 365,
+          "heading": "### 5.4 按事件计数采样的偏向"
+        },
+        {
+          "original_id": "a212-13-heapprofd-window",
+          "title": "heapprofd 按窗口记录入样分配与存活变化",
+          "decision": "keep",
+          "reason": "采样窗口前存量无原分配栈，与窗口内入样分配/后续free记账三轨关系，避免unreleased等于引用泄漏。",
+          "original_line": 395,
+          "heading": "## 6. heapprofd：按触发采样调用栈"
+        },
+        {
+          "original_id": "a212-14-safety-versus-leak",
+          "title": "内存破坏检测与资源泄漏归因需要不同工具",
+          "decision": "remove",
+          "reason": "六工具适用环境/能力/泄漏边界表更完整，三行工具分类图重复。",
+          "original_line": 425,
+          "heading": "## 7. Scudo、GWP-ASan、HWASan、MTE 各自查什么"
+        },
+        {
+          "original_id": "a212-15-purge-boundary",
+          "title": "purge 只尝试归还 allocator 已空闲且可释放的页",
+          "decision": "remove",
+          "reason": "mallopt API列表/快速purge代码和已空闲可释放页边界段落已明确，三行语义卡无新增页布局。",
+          "original_line": 461,
+          "heading": "## 8. Scudo 选项与 `mallopt` 的实际作用"
+        },
+        {
+          "original_id": "a212-16-owner-ledgers",
+          "title": "malloc 之外的资源由 owner 建立独立账本",
+          "decision": "remove",
+          "reason": "直接mmap/arena owner五项账本与图片SDK媒体案例详细列资源域和生命周期，三行owner映射重复。",
+          "original_line": 480,
+          "heading": "## 9. `mmap`、自研内存池与图形内存的账本"
+        },
+        {
+          "original_id": "a212-17-monitoring-levels",
+          "title": "按成本逐层增加证据，最终回到可复现场景",
+          "decision": "remove",
+          "reason": "L0–L3各小节已经列出按成本增加的证据深度和开始结束窗口，四框结尾总结重复。",
+          "original_line": 571,
+          "heading": "### 11.4 L3：测试环境复现"
+        }
+      ],
+      "sha256_after": "a79ce43a93a7ea9e156543e18f2cd38d835a19e2b283fbe1b30c234a4a4da363",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:19:38.757762+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a212/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a212/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 212,
+        "article": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+        "registered_sha256": "66bc85c2f92d6ecff451c690e521127d311885e53a8b1e23c46c0405b45bf687",
+        "frozen_sha256": "66bc85c2f92d6ecff451c690e521127d311885e53a8b1e23c46c0405b45bf687",
+        "review_input_sha256": "b7356914af758ec887ea57fdb7fe43da8f9d72f3fab7fcc3677d44c824ccd11e",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a212/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a212/external-source.diff",
+        "diff_sha256": "6f2f8d77728873027b7ba963c848eed7fb7b1b5496f317274a98c95b607cc370",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 321, \"characters\": 22448, \"svg_labels_read\": 17, \"actual_pngs_viewed\": 17, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 4, \"code_lines\": 42, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "b7356914af758ec887ea57fdb7fe43da8f9d72f3fab7fcc3677d44c824ccd11e",
+      "retired_diagrams": [
+        "a212-01-limiter-states",
+        "a212-02-limiter-config",
+        "a212-04-memory-domains",
+        "a212-05-mallinfo-dispatch",
+        "a212-06-malloc-info-cost",
+        "a212-07-vma-classification",
+        "a212-10-realloc-ledger",
+        "a212-12-sampling-accounting",
+        "a212-14-safety-versus-leak",
+        "a212-15-purge-boundary",
+        "a212-16-owner-ledgers",
+        "a212-17-monitoring-levels"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-212/retired-assets.json"
     },
     {
       "index": 213,
@@ -54686,8 +54871,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 138,
-  "next_article": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+  "reviewed_articles": 139,
+  "next_article": "src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -54697,7 +54882,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:17:38.266222+08:00",
+  "updated_at": "2026-10-31T16:19:38.757762+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -54767,13 +54952,6 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
-      "registered_sha256": "66bc85c2f92d6ecff451c690e521127d311885e53a8b1e23c46c0405b45bf687",
-      "observed_sha256": "b7356914af758ec887ea57fdb7fe43da8f9d72f3fab7fcc3677d44c824ccd11e",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -54896,9 +55074,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4457,
-  "reviewed_placements_after": 1874,
-  "net_removed_placements": 2583,
+  "reviewed_placements_before": 4474,
+  "reviewed_placements_after": 1879,
+  "net_removed_placements": 2595,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -54922,5 +55100,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 138
+  "currently_matching_reviewed_source_count": 139
 }
