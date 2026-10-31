@@ -67529,9 +67529,146 @@
       "before_count": 13,
       "before_all_images": 13,
       "sha256_before": "1dd5a81a7b9bf264702fa6f1765888c5cc31d641107e062670d02ce67a0261db",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 1,
+      "decisions": [
+        {
+          "original_id": "a290-01-gate-evidence-contract",
+          "title": "门禁先冻结身份和证据，再做发布判断",
+          "decision": "remove",
+          "reason": "产物、测量、有效性和决策四卡重复七项门禁字段及七域证据表。",
+          "original_line": 137,
+          "heading": "### 发版前性能检查清单"
+        },
+        {
+          "original_id": "a290-02-android17-two-compatibility-paths",
+          "title": "Android 17 兼容性分两条验证路径",
+          "decision": "remove",
+          "reason": "运行兼容、目标兼容、隔离定位和完整候选四卡重复两轮验证与逐项开关和完整行为组合段落。",
+          "original_line": 157,
+          "heading": "#### Android 17 要做两轮兼容性验证"
+        },
+        {
+          "original_id": "a290-03-vitals-current-core-and-window",
+          "title": "外部 vitals：适用范围、窗口和生效日期缺一不可",
+          "decision": "remove",
+          "reason": "稳定、电池、内存和窗口四卡重复Corevitals分组及28天加权、分母和生效日期原文。",
+          "original_line": 172,
+          "heading": "#### 门禁阈值的来源"
+        },
+        {
+          "original_id": "a290-04-benchmark-contract-and-evidence-archive",
+          "title": "自动化报告按指标契约归档，不只给红绿灯",
+          "decision": "remove",
+          "reason": "Startup、Frame、TraceSection和Power四卡重复四项指标契约及归档字段表。",
+          "original_line": 209,
+          "heading": "### 自动化性能测试集成"
+        },
+        {
+          "original_id": "a290-05-rollout-target-versus-effective-exposure",
+          "title": "目标 userFraction 与有效暴露之间有一条漏斗",
+          "decision": "keep",
+          "reason": "从发布资格到安装、实际进入场景、指标入库、分群判断和发布决定的暴露漏斗，直观展示userFraction不能直接推可用样本量。",
+          "original_line": 235,
+          "heading": "### 灰度发布与性能监控联动"
+        },
+        {
+          "original_id": "a290-06-rollout-state-and-idempotent-control",
+          "title": "发布状态与控制请求都需要读取后确认",
+          "decision": "remove",
+          "reason": "状态、比例、变更前与变更后四卡重复API规则和轨道读回核对说明，没有实际状态转换边。",
+          "original_line": 263,
+          "heading": "### 版本回滚决策流程"
+        },
+        {
+          "original_id": "a290-07-three-mitigation-actions-installed-users",
+          "title": "暂停、配置回退、修复 APK 作用范围不同",
+          "decision": "remove",
+          "reason": "暂停灰度、暂停全量、配置回退和修复包四卡重复六行信号处置表及作用范围段落。",
+          "original_line": 283,
+          "heading": "### 版本回滚决策流程"
+        },
+        {
+          "original_id": "a290-08-static-dynamic-score-and-field-coverage",
+          "title": "App Performance Score 与线上质量各有数据范围",
+          "decision": "remove",
+          "reason": "静态、动态、线上和Preview四卡重复五类工具表和后文两类分数对照表。",
+          "original_line": 321,
+          "heading": "### App Performance Score 的定位"
+        },
+        {
+          "original_id": "a290-09-profiles-build-time-and-art-time",
+          "title": "Profile 进入产物与实际编译完成是两步",
+          "decision": "remove",
+          "reason": "profile生成、release重写、Startup布局和Baseline编译四卡重复生成与发布条件及实际编译说明，没有产物转换连线。",
+          "original_line": 351,
+          "heading": "### 静态评分的检查项"
+        },
+        {
+          "original_id": "a290-10-dynamic-ttfd-rendering-and-measurement",
+          "title": "动态评分必须固定业务完成点和测量场景",
+          "decision": "remove",
+          "reason": "启动、渲染、设备与证据四卡重复动态类别表、三档投入表和TTFD入口定义。",
+          "original_line": 381,
+          "heading": "### 动态评分的运行条件"
+        },
+        {
+          "original_id": "a290-11-score-to-action-queues",
+          "title": "评分缺口拆到四类有交付物的工程任务",
+          "decision": "remove",
+          "reason": "四队列四卡直接复写四行进入条件/顺序/交付物表。",
+          "original_line": 401,
+          "heading": "### 从 0-100 分到工程优先级"
+        },
+        {
+          "original_id": "a290-12-tool-selection-and-representative-device-pool",
+          "title": "从异常类型选分析工具，再回到同设备复测",
+          "decision": "remove",
+          "reason": "Perfetto、APA、设备池和保留材料四卡重复工具选择表与六类设备池表。",
+          "original_line": 467,
+          "heading": "### App Performance Score 与 Android Performance Analyzer 联动"
+        },
+        {
+          "original_id": "a290-13-headroom-sample-versus-hint-session",
+          "title": "Headroom 是环境样本，Hint Session 是运行协作",
+          "decision": "remove",
+          "reason": "API、值域、窗口和Hint四卡重复headroom边界和两套API测量调节分工段落。",
+          "original_line": 526,
+          "heading": "### Android 17 的 CPU/GPU headroom 边界"
+        }
+      ],
+      "sha256_after": "08b7f9ff40e410401fe0d1b0d9fc37b9e5105022656e81a50c04b37621777145",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:34:12.477619+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 13,
+        "contexts_actually_viewed": 1,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a290/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a290/visual-review.json",
+      "retired_diagrams": [
+        "a290-01-gate-evidence-contract",
+        "a290-02-android17-two-compatibility-paths",
+        "a290-03-vitals-current-core-and-window",
+        "a290-04-benchmark-contract-and-evidence-archive",
+        "a290-06-rollout-state-and-idempotent-control",
+        "a290-07-three-mitigation-actions-installed-users",
+        "a290-08-static-dynamic-score-and-field-coverage",
+        "a290-09-profiles-build-time-and-art-time",
+        "a290-10-dynamic-ttfd-rendering-and-measurement",
+        "a290-11-score-to-action-queues",
+        "a290-12-tool-selection-and-representative-device-pool",
+        "a290-13-headroom-sample-versus-hint-session"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-290/retired-assets.json"
     },
     {
       "index": 291,
@@ -67611,8 +67748,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 199,
-  "next_article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+  "reviewed_articles": 200,
+  "next_article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -67622,7 +67759,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:32:08.955356+08:00",
+  "updated_at": "2026-10-31T19:34:12.477619+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -67744,9 +67881,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5745,
-  "reviewed_placements_after": 2248,
-  "net_removed_placements": 3497,
+  "reviewed_placements_before": 5758,
+  "reviewed_placements_after": 2249,
+  "net_removed_placements": 3509,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -67770,7 +67907,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 199,
+  "currently_matching_reviewed_source_count": 200,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

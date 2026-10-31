@@ -134,10 +134,6 @@ consolidated_from:
 
 每个检查域都要在发布单里留下证据链接和判定结果；哪一项失败，就直接执行表中对应的动作，并记下审批人。
 
-<!-- gracker-diagram: a290-01-gate-evidence-contract -->
-![门禁先冻结身份和证据，再做发布判断](../../assets/diagrams/ch26/a290-01-gate-evidence-contract.png)
-
-图：总分不能覆盖单项伤害；每个失败域都有明确动作，静态项与线上风险分别保留。
 
 #### Android 17 要做两轮兼容性验证
 
@@ -154,10 +150,6 @@ Android 官方迁移指南把升级验证分成两条可以并行推进的路径
 
 兼容性开关适合逐项定位问题，而用户设备上跑的是多项行为变化同时生效的系统。所以正式候选包还要在 Android 17 的完整行为组合下运行主流程、后台流程、升级安装、数据迁移、权限拒绝、进程重建和大屏场景，并检查受限非 SDK 接口告警与第三方 SDK 的兼容性。
 
-<!-- gracker-diagram: a290-02-android17-two-compatibility-paths -->
-![Android 17 兼容性分两条验证路径](../../assets/diagrams/ch26/a290-02-android17-two-compatibility-paths.png)
-
-图：无锁MessageQueue和static-final不可修改是独立变化；CT及native只读加载等按目标版本文档选择场景。
 
 #### 门禁阈值的来源
 
@@ -169,10 +161,6 @@ Android vitals 是 Google Play 汇总的外部质量信号，Play每天用最近
 
 做发布报告时，我们要把自建应用性能监控（APM）与 vitals 的分子、分母、统计窗口和设备范围分别保存：内部会话数与 Play 的用户、会话统计方式不同，分母要各算各的。
 
-<!-- gracker-diagram: a290-03-vitals-current-core-and-window -->
-![外部 vitals：适用范围、窗口和生效日期缺一不可](../../assets/diagrams/ch26/a290-03-vitals-current-core-and-window.png)
-
-图：内存/位图/代码优化阈值的商店影响可能从2027年2月开始；当前采集和未来生效日期分开。
 
 ### 自动化性能测试集成
 
@@ -206,10 +194,6 @@ Benchmark 库输出测量 JSON 和性能剖析 Trace，Macrobenchmark 还会为�
 
 拉取请求（PR）阶段适合跑编译校验和试运行（dry run），确认测试能执行起来；固定物理设备上的重复测量，放在主干定时任务和候选包门禁更合适。噪声大的单次 Benchmark 不足以自动判定业务回归——门禁还要区分测试基础设施失败、环境漂移和可重复的应用退化，并给每类失败定义不同的动作。
 
-<!-- gracker-diagram: a290-04-benchmark-contract-and-evidence-archive -->
-![自动化报告按指标契约归档，不只给红绿灯](../../assets/diagrams/ch26/a290-04-benchmark-contract-and-evidence-archive.png)
-
-图：固定良好版本和滚动环境趋势分别保留；不把上一轮自动当作无回归基线。
 
 ### 灰度发布与性能监控联动
 
@@ -260,10 +244,6 @@ Google Play 也允许暂停已全量发布的版本，内部测试轨道除外�
 
 按可逆性和剩余影响面选择动作：
 
-<!-- gracker-diagram: a290-06-rollout-state-and-idempotent-control -->
-![发布状态与控制请求都需要读取后确认](../../assets/diagrams/ch26/a290-06-rollout-state-and-idempotent-control.png)
-
-图：网络超时使客户端不知道操作是否成功，盲目重试可能覆盖并发发布变化。
 
 | 信号 | 判断 | 推荐动作 |
 | --- | --- | --- |
@@ -280,10 +260,6 @@ Google Play 也允许暂停已全量发布的版本，内部测试轨道除外�
 
 处置之后要验证恢复是否与动作时间对得上：配置回退要检查配置拉取、激活与功能实际使用的转化步骤；修复包要检查新 `versionCode` 的有效覆盖和关键指标；Play 侧的长期质量继续看 vitals 的滚动窗口。恢复可以证明处置有效，根因仍要靠代码、Trace 或受控实验确认。我们在事故中发现的设备群、场景或数据缺口，应加入下一版门禁。
 
-<!-- gracker-diagram: a290-07-three-mitigation-actions-installed-users -->
-![暂停、配置回退、修复 APK 作用范围不同](../../assets/diagrams/ch26/a290-07-three-mitigation-actions-installed-users.png)
-
-图：全量暂停排除内部测试轨道和该轨道首版，前一版本也不能有阻止使用的政策问题。
 
 ### 发布单的证据留存
 
@@ -318,10 +294,6 @@ App Performance Score 适合研发阶段的快速评估。官方页面给出 0�
 
 评分项命中后，我们要带着它回到受测场景：启动问题结合 TTID（首次画面显示所需时间）、TTFD、主线程和进程状态；渲染问题结合 FrameTimeline（每帧预期与实际时间线记录）、UI thread、RenderThread、SurfaceFlinger 与 GPU；设备差异结合 SoC（系统级芯片）、内存、存储、温度和后台负载。分数用来选调查方向，根因还是要靠可复现路径与 trace。
 
-<!-- gracker-diagram: a290-08-static-dynamic-score-and-field-coverage -->
-![App Performance Score 与线上质量各有数据范围](../../assets/diagrams/ch26/a290-08-static-dynamic-score-and-field-coverage.png)
-
-图：静态分不需要运行App；动态分有设备和覆盖限制，实验室高分不能否定线上伤害。
 
 ### 静态评分的检查项
 
@@ -348,10 +320,6 @@ profile 生成构建与发布构建的配置不同：生成 profile 的 variant�
 
 静态检查应当成为版本基线：新用户路径没有 profile 覆盖、keep 规则范围扩大、release 关闭 R8、关键启动入口缺少 TTFD 报告，都要生成带模块、产物和负责人信息的诊断结果。
 
-<!-- gracker-diagram: a290-09-profiles-build-time-and-art-time -->
-![Profile 进入产物与实际编译完成是两步](../../assets/diagrams/ch26/a290-09-profiles-build-time-and-art-time.png)
-
-图：仓库存在文本规则不证明发布包消费，更不证明每个渠道第一次启动前已完成AOT。
 
 ### 动态评分的运行条件
 
@@ -378,10 +346,6 @@ profile 生成构建与发布构建的配置不同：生成 profile 的 variant�
 
 TTFD 依赖 App 在合适的时机调用 `reportFullyDrawn()`。首页首帧已经显示、核心内容尚未加载或输入仍被阻塞时，报告点就不该停在 Activity 第一次 draw。通知、深链、支付、扫码和搜索等入口的内容可用点各不相同，路径要分别定义；少了这次调用，动态启动评估就缺一个可信的业务完成边界。
 
-<!-- gracker-diagram: a290-10-dynamic-ttfd-rendering-and-measurement -->
-![动态评分必须固定业务完成点和测量场景](../../assets/diagrams/ch26/a290-10-dynamic-ttfd-rendering-and-measurement.png)
-
-图：低端机可放大问题，但一台设备不能覆盖全部用户；路径脚本决定能看到哪些风险。
 
 ### 从 0-100 分到工程优先级
 
@@ -398,10 +362,6 @@ TTFD 依赖 App 在合适的时机调用 `reportFullyDrawn()`。首页首帧已�
 
 高分仍可能带着评分表没覆盖的风险。当前页面明确说明这是 App Performance Score 的第一版，评分、评估与建议以后都可能变化。版本报告应保存评分日期、页面版本或规则快照，避免把不同规则生成的分数画在同一条趋势线上。
 
-<!-- gracker-diagram: a290-11-score-to-action-queues -->
-![评分缺口拆到四类有交付物的工程任务](../../assets/diagrams/ch26/a290-11-score-to-action-queues.png)
-
-图：静态缺口通常便于先处理；核心业务动态伤害出现时也要立即止损，不能等静态满分。
 
 ### 和 Android Vitals / Play Console 的关系
 
@@ -464,10 +424,6 @@ App Performance Score 接入门禁时，总分只是入口，门禁要保存的�
 
 不论使用哪种查看器，报告都要保留原始 trace、关键时间戳、设备与构建信息、采集配置、查询语句和工具版本。截图只能辅助说明，替代不了可复查的 trace。
 
-<!-- gracker-diagram: a290-12-tool-selection-and-representative-device-pool -->
-![从异常类型选分析工具，再回到同设备复测](../../assets/diagrams/ch26/a290-12-tool-selection-and-representative-device-pool.png)
-
-图：弱网是业务额外条件；刷新率采用运行时VSync期限，不把16.6ms套给所有设备。
 
 ### 分数口径的团队协作模板
 
@@ -523,10 +479,6 @@ Android 17 实现见 [`PerformanceHintManager.java`](https://android.googlesourc
 
 把这两套 API 放进性能报告时，我们要分清“测量”和“调节”：`SystemHealthManager` 的 headroom 是可选的环境样本，`PerformanceHintManager` 是运行时协作机制。二者都不会自动抬高 App Performance Score；评分改善仍要由同一构建产物、同一设备和同一路径上的动态结果来验证。
 
-<!-- gracker-diagram: a290-13-headroom-sample-versus-hint-session -->
-![Headroom 是环境样本，Hint Session 是运行协作](../../assets/diagrams/ch26/a290-13-headroom-sample-versus-hint-session.png)
-
-图：近期历史headroom有时效和TOCTOU限制；同设备同负载比较，不能由单值判断设备档位或根因。
 
 
 ## 全文小结
