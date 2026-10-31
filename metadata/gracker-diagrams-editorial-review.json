@@ -26770,9 +26770,742 @@
       "before_count": 54,
       "before_all_images": 54,
       "sha256_before": "13ff8a098852782a36cfe9870aa1d5d517bef382bec46a28c6963ba8df263f04",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 14,
+      "decisions": [
+        {
+          "original_id": "ch13-09-01-two-rendering-systems",
+          "title": "网页内容与宿主窗口的协作",
+          "decision": "remove",
+          "reason": "总览六节点重画226–243保留原生完整请求/结果/RT/Viz/窗口/overlay flow，并与6/14/40/54重复；162–166概述完整保留，删首次粗流程副本。",
+          "original_line": 168,
+          "heading": "## 这条管线为什么容易看错"
+        },
+        {
+          "original_id": "ch13-09-02-version-coordinates",
+          "title": "平台、provider 与 WebKit 三组坐标",
+          "decision": "remove",
+          "reason": "平台/provider/WebKit三组六卡逐项重述180完整固定基线和182独立更新说明；原文精确revision/minSdk/内核样本边界比摘要卡更全。",
+          "original_line": 175,
+          "heading": "## 这条管线为什么容易看错"
+        },
+        {
+          "original_id": "ch13-09-03-three-boundaries",
+          "title": "官方 provider、全屏托管与 SDK 扩展",
+          "decision": "remove",
+          "reason": "官方provider/fullscreen/第三方三组六卡逐格复制188–194边界表，原表owner/形态/不能推出什么更完整；具体对象图与代码继续保留。",
+          "original_line": 196,
+          "heading": "## 先分清三个边界"
+        },
+        {
+          "original_id": "ch13-09-05-profile-renderers",
+          "title": "WebView 数量与 renderer 数量",
+          "decision": "merge",
+          "reason": "Profile A/B共享renderer的对象关系接42每受影响WebView回调恢复链，统一一幅图在生命周期段落，保留错误页例外且不按实例数推renderer数。",
+          "original_line": 205,
+          "heading": "## 进程模型与宿主线程",
+          "replacement_id": "ed13-09-profile-sharing-and-renderer-loss"
+        },
+        {
+          "original_id": "ch13-09-04-process-thread-map",
+          "title": "进程边界与宿主线程的位置",
+          "decision": "remove",
+          "reason": "四节点进程/线程图重复210–212三角色完整清单与保留原生flow中显式host/renderer/SF边界；服务不等独立进程和旧API历史正文全部保留。",
+          "original_line": 214,
+          "heading": "## 进程模型与宿主线程"
+        },
+        {
+          "original_id": "ch13-09-06-request-to-window",
+          "title": "从异步 child 请求到窗口提交",
+          "decision": "remove",
+          "reason": "Main请求→future→functor→RT→Viz→窗口六框逐边压缩紧接226–243保留原生flow，219下图指引仍指原生；删除同路径第二份。",
+          "original_line": 221,
+          "heading": "## 进程模型与宿主线程"
+        },
+        {
+          "original_id": "ch13-09-14-future-wait-sites",
+          "title": "child future 可以在哪些位置等待",
+          "decision": "keep",
+          "reason": "Main SetFrameOnUI已有队列、RT OnSync/CommitFrame和RT Draw三个具体等待入口，对应245/250；原生序列不展开Main旧队列和ABI阻塞边界，保留。",
+          "original_line": 247,
+          "heading": "## 进程模型与宿主线程"
+        },
+        {
+          "original_id": "ch13-09-07-independent-bottlenecks",
+          "title": "Main 空闲时还要查哪些执行者",
+          "decision": "remove",
+          "reason": "资源准备/宿主消费/设备显示三组六卡重述252及400–405两个具体迟到方向；执行者和等待已由原生及新异步图展开，不再重复三组诊断卡。",
+          "original_line": 254,
+          "heading": "## 进程模型与宿主线程"
+        },
+        {
+          "original_id": "ch13-09-08-provider-query",
+          "title": "查询已加载包与当前候选包",
+          "decision": "keep",
+          "reason": "当前provider查询已加载实际包与未加载候选包两真实分支，与代码1及275契约对应；防止版本查询被误算为冷启动，保留。",
+          "original_line": 277,
+          "heading": "## 平台版本与 provider 版本要一起记录"
+        },
+        {
+          "original_id": "ch13-09-09-provider-loading",
+          "title": "provider factory 装入宿主进程",
+          "decision": "remove",
+          "reason": "provider装载六框逐步复述291–294四条完整调用链，原文含cache/校验/native/factory及provider决定后续边界，删除编号列表的流程副本。",
+          "original_line": 286,
+          "heading": "### provider 怎样装入宿主进程"
+        },
+        {
+          "original_id": "ch13-09-10-cold-start-scope",
+          "title": "冷启动的多个不同完成点",
+          "decision": "remove",
+          "reason": "装载/Chromium/首页面三组六卡重述296–310全文与692冷启动段；预热非首帧由新12/13能力配置图明确，无需两处冷启动卡片。",
+          "original_line": 298,
+          "heading": "### provider 怎样装入宿主进程"
+        },
+        {
+          "original_id": "ch13-09-11-startup-parts",
+          "title": "异步启动的全部与部分配置",
+          "decision": "merge",
+          "reason": "允许UI任务true/false分支接13provider V2/V1/fallback能力，独立两个判断维度同图，不把所有旧fallback画成完成完整UI初始化。",
+          "original_line": 305,
+          "heading": "### provider 怎样装入宿主进程",
+          "replacement_id": "ed13-09-startup-capability-and-config"
+        },
+        {
+          "original_id": "ch13-09-12-startup-compatibility",
+          "title": "启动 API 按 provider 能力选择分支",
+          "decision": "merge",
+          "reason": "V2成功失败/V1适配/无特性fallback接12独立配置，固定1.16.0/minSdk24与provider决定诊断/完成范围保留，回调不等renderer/网络/首帧。",
+          "original_line": 312,
+          "heading": "### provider 怎样装入宿主进程",
+          "replacement_id": "ed13-09-startup-capability-and-config"
+        },
+        {
+          "original_id": "ch13-09-13-hardware-main-path",
+          "title": "Main 准备与 RT/Viz 消费的硬件主线",
+          "decision": "remove",
+          "reason": "硬件主线六框逐条重复330–335六步与保留原生sequence，323步骤引导仍准确；硬件失败不自动软件由新19/20实际分支详解。",
+          "original_line": 325,
+          "heading": "### 一次硬件绘制怎样发生"
+        },
+        {
+          "original_id": "ch13-09-15-late-future-example",
+          "title": "一次 child future 晚到的时序",
+          "decision": "remove",
+          "reason": "child晚到四轨重复紧接344–368保留原生晚到sequence，原生还明确UI在OnSync阻塞；337下方时序图指引继续指原生，删额外简化轨道副本。",
+          "original_line": 339,
+          "heading": "### 一次硬件绘制怎样发生"
+        },
+        {
+          "original_id": "ch13-09-16-internal-swap",
+          "title": "Chromium Swap 与 Android 窗口提交",
+          "decision": "merge",
+          "reason": "Chromium内部DrawAndSwap/MaybeDidPresent、宿主queue、系统present三个观测点接41CPU/GPU/显示异步轨，用实际buffer依赖同图分开反馈和完成。",
+          "original_line": 372,
+          "heading": "### 一次硬件绘制怎样发生",
+          "replacement_id": "ed13-09-internal-feedback-and-display-completion"
+        },
+        {
+          "original_id": "ch13-09-17-drawfn-backends",
+          "title": "DrawFn 的 GLES 与 Vulkan 回调",
+          "decision": "keep",
+          "reason": "当前HWUI pipeline对应GLES draw与Vulkan init/draw/postDraw两真实回调分支，init受context生命周期非逐帧初始化，保留准确ABI选择关系。",
+          "original_line": 386,
+          "heading": "### GL 与 Vulkan 的分支识别"
+        },
+        {
+          "original_id": "ch13-09-18-dom-vs-system-layer",
+          "title": "DOM layer 与系统显示 Layer",
+          "decision": "keep",
+          "reason": "DOM/CSS/canvas内部层经compositor资源/DrawFn进入host target再到窗口SF Layer的对象层次关系，区别于时序原生图，保留内部layer非逐项SF映射。",
+          "original_line": 395,
+          "heading": "### 这条路径的性能含义"
+        },
+        {
+          "original_id": "ch13-09-19-software-branch-guard",
+          "title": "AwContents 的硬件与软件分流",
+          "decision": "merge",
+          "reason": "AwContents硬件条件/硬件false直接返回/软件早退的真实入口接20最终软件窗口或软件layer两路线，不将硬件失败误作自动fallback。",
+          "original_line": 411,
+          "heading": "## 软件绘制 fallback",
+          "replacement_id": "ed13-09-software-entry-and-final-window"
+        },
+        {
+          "original_id": "ch13-09-20-software-host-forms",
+          "title": "软件窗口与单 View 软件层",
+          "decision": "merge",
+          "reason": "已确认软件结果再分整个窗口Surface Canvas与单View软件layer由硬件宿主采样，接19守卫与早退，不自动多出独立SF Layer。",
+          "original_line": 418,
+          "heading": "## 软件绘制 fallback",
+          "replacement_id": "ed13-09-software-entry-and-final-window"
+        },
+        {
+          "original_id": "ch13-09-21-software-proof",
+          "title": "确认软件 fallback 的证据",
+          "decision": "remove",
+          "reason": "Canvas状态→软件调用栈→earlyout→宿主四框逐项重述426完整证据段与新19/20守卫路线；保留所有缺DrawFn/白屏/CSS不足定型文字。",
+          "original_line": 428,
+          "heading": "## 软件绘制 fallback"
+        },
+        {
+          "original_id": "ch13-09-22-overlay-platform-gates",
+          "title": "HWUI 提供 overlay 容器的条件",
+          "decision": "remove",
+          "reason": "四条件卡片逐项复制446–449四条平台gate清单；原文明确共同条件及GL/Vulkan判定，删除无新增决策的列表副本，Enabled不保证提升正文保留。",
+          "original_line": 441,
+          "heading": "### 平台侧先决定“能不能提供 overlay 容器”"
+        },
+        {
+          "original_id": "ch13-09-23-overlay-container",
+          "title": "overlay 容器与实际内容 child",
+          "decision": "keep",
+          "reason": "App Window root分别连接宿主buffer与-1 underlay容器，再到实际buffer child的具体对象树，451–458对应；容器名不等实际候选出图，保留。",
+          "original_line": 453,
+          "heading": "### 平台侧先决定“能不能提供 overlay 容器”"
+        },
+        {
+          "original_id": "ch13-09-24-transaction-merge",
+          "title": "provider transaction 的合并与独立 apply",
+          "decision": "merge",
+          "reason": "active context且merge成功才合入HWUI、否则单独apply的分支接27几何/完成依赖与系统读取，一图共同核对而非相邻两卡。",
+          "original_line": 460,
+          "heading": "### 平台侧先决定“能不能提供 overlay 容器”",
+          "replacement_id": "ed13-09-overlay-transactions-and-buffer-dependencies"
+        },
+        {
+          "original_id": "ch13-09-25-overlay-candidates",
+          "title": "provider 如何筛选可提升候选",
+          "decision": "remove",
+          "reason": "四节点candidate筛选串逐项重述469–475五条完整条件与失败回硬件主体说明；原文含buffer/crop/protected/fence更多细节，删条件列表副本。",
+          "original_line": 477,
+          "heading": "### Chromium 侧再决定“哪个候选能提升”"
+        },
+        {
+          "original_id": "ch13-09-26-two-output-objects",
+          "title": "普通主体与 overlay 的双输出",
+          "decision": "remove",
+          "reason": "普通主体与候选两输出图重复491–495完整Producer/Consumer表及保留原生flow的window/overlay双支；实际容器树23和新24/27保留对象/同步边界。",
+          "original_line": 484,
+          "heading": "### 一帧里可能同时存在两条提交"
+        },
+        {
+          "original_id": "ch13-09-27-geometry-buffer-readiness",
+          "title": "buffer 依赖与几何状态的同步",
+          "decision": "merge",
+          "reason": "buffer/acquire依赖、几何transaction、per-layer合成三组六卡接24合并/apply真实路径，明确实际读取前写完成、缺新图可旧内容和独立layer非DEVICE保证。",
+          "original_line": 499,
+          "heading": "### 一帧里可能同时存在两条提交",
+          "replacement_id": "ed13-09-overlay-transactions-and-buffer-dependencies"
+        },
+        {
+          "original_id": "ch13-09-28-overlay-interface-history",
+          "title": "WebView overlay 接口的历史边界",
+          "decision": "remove",
+          "reason": "10/11无接口、12已有、17reporting三组六卡逐条摘录504完整历史边界段；接口存在非首发与运行使用原文完整，不作第二份版本表。",
+          "original_line": 506,
+          "heading": "### 一帧里可能同时存在两条提交"
+        },
+        {
+          "original_id": "ch13-09-29-imagereader-middle",
+          "title": "ImageReader 是中间消费边界",
+          "decision": "merge",
+          "reason": "Producer写reader Surface→async acquire/AHB/fence接30额度选择与31最终采样/overlay，用一个中间资源链追最终对象，不由reader名推输出。",
+          "original_line": 515,
+          "heading": "## ImageReader：中间 buffer 与最终 layer",
+          "replacement_id": "ed13-09-imagereader-quota-and-output"
+        },
+        {
+          "original_id": "ch13-09-30-imagereader-limits",
+          "title": "可用 image 额度与旧图保留",
+          "decision": "merge",
+          "reason": "max_images1先release及额度不足2Next/足够Latest接29/31，取新图失败可能无旧图、CPU acquire不等GPU完与持续生产backpressure都保留。",
+          "original_line": 522,
+          "heading": "## ImageReader：中间 buffer 与最终 layer",
+          "replacement_id": "ed13-09-imagereader-quota-and-output"
+        },
+        {
+          "original_id": "ch13-09-31-imagereader-destination",
+          "title": "同一 reader 可以通向不同显示对象",
+          "decision": "merge",
+          "reason": "AHardwareBuffer后续采样进host或提升child两路线接29reader/30额度，类名不识别第三方、SF独立层或端到端零拷贝。",
+          "original_line": 529,
+          "heading": "## ImageReader：中间 buffer 与最终 layer",
+          "replacement_id": "ed13-09-imagereader-quota-and-output"
+        },
+        {
+          "original_id": "ch13-09-32-fullscreen-view-handoff",
+          "title": "全屏回调移交的是 View",
+          "decision": "remove",
+          "reason": "fullscreen交接四框逐项复制536协议段及545–585 Kotlin2，具体实现34保留状态切换，不再把公开回调API画成同样步骤。",
+          "original_line": 538,
+          "heading": "## 宿主全屏托管：`onShowCustomView()`"
+        },
+        {
+          "original_id": "ch13-09-34-fullscreen-exit",
+          "title": "全屏主动退出与真正移除 View",
+          "decision": "remove",
+          "reason": "requestExit清callback→通知→onHide→remove四框逐步重述Kotlin2和587/592，原代码已精确呈现重入防护；保留34实际AwContents委托迁移机制。",
+          "original_line": 589,
+          "heading": "## 宿主全屏托管：`onShowCustomView()`"
+        },
+        {
+          "original_id": "ch13-09-33-fullscreen-ownership",
+          "title": "固定 Chromium 的 FullScreenView 切换",
+          "decision": "keep",
+          "reason": "同一AwContents从WebView切FullScreenView container/draw委托、新onDraw重建functor再切回的实际状态/所有权变化，594–599对应；不把类名作为API保证。",
+          "original_line": 596,
+          "heading": "## 宿主全屏托管：`onShowCustomView()`"
+        },
+        {
+          "original_id": "ch13-09-35-fullscreen-content-types",
+          "title": "全屏 View 子树仍要按对象分类",
+          "decision": "remove",
+          "reason": "SurfaceView/TextureView/容器三组六卡逐项复制601–603三个具体分支和608说明，普通路径图及新Texture双Producer链已有实际对象关系。",
+          "original_line": 605,
+          "heading": "## 宿主全屏托管：`onShowCustomView()`"
+        },
+        {
+          "original_id": "ch13-09-36-fullscreen-vs-overlay",
+          "title": "全屏托管与 provider overlay 可并存",
+          "decision": "remove",
+          "reason": "fullscreen/overlay/可并存三组六卡重复188–194边界表与610段，原文owner/parent核对完整，删除再次对照相同机制的卡片。",
+          "original_line": 612,
+          "heading": "## 宿主全屏托管：`onShowCustomView()`"
+        },
+        {
+          "original_id": "ch13-09-37-texture-owner-direction",
+          "title": "SurfaceTexture 的生产端与消费端",
+          "decision": "merge",
+          "reason": "SDK写Surface/ANativeWindow而SurfaceTexture消费的资源方向接38三时点和39源输入/最终窗口双Producer，合实际完整对象链避免相邻三图重复。",
+          "original_line": 623,
+          "heading": "## 第三方 SDK 的 Texture-like 扩展",
+          "replacement_id": "ed13-09-texture-input-and-host-window"
+        },
+        {
+          "original_id": "ch13-09-38-texture-three-moments",
+          "title": "Texture-like 的三个不同消费时点",
+          "decision": "merge",
+          "reason": "frameavailable→Main记录→RT native dequeue/GPU采样三个不等价时点接37/39，保留Java不一定见updateTexImage和回调不等读取完成。",
+          "original_line": 635,
+          "heading": "## 第三方 SDK 的 Texture-like 扩展",
+          "replacement_id": "ed13-09-texture-input-and-host-window"
+        },
+        {
+          "original_id": "ch13-09-39-texture-two-producers",
+          "title": "中间提交与最终窗口提交",
+          "decision": "merge",
+          "reason": "SDK源图像交付与宿主采样后生产最终window两段接37/38，源swap不等GPU写完、输入非逐帧一一显示与成本需测都保留。",
+          "original_line": 642,
+          "heading": "## 第三方 SDK 的 Texture-like 扩展",
+          "replacement_id": "ed13-09-texture-input-and-host-window"
+        },
+        {
+          "original_id": "ch13-09-40-six-diagnostic-stages",
+          "title": "一帧的六个诊断阶段",
+          "decision": "remove",
+          "reason": "六诊断阶段图逐项复述658–663六条完整清单，并重复原生flow和新16/41异步边界；651六阶段引导仍接原清单，删第二总览。",
+          "original_line": 653,
+          "heading": "## 从网页更新到显示的一帧"
+        },
+        {
+          "original_id": "ch13-09-41-async-write-display",
+          "title": "DrawFn、GPU 与显示是不同边界",
+          "decision": "merge",
+          "reason": "RT CPU、GPU完成、SF采纳/实际读取三轨接16内部Swap/CPU反馈范围，区分queue/latch不统一等写完、同buffer依赖与光学边界。",
+          "original_line": 667,
+          "heading": "## 从网页更新到显示的一帧",
+          "replacement_id": "ed13-09-internal-feedback-and-display-completion"
+        },
+        {
+          "original_id": "ch13-09-42-renderer-gone",
+          "title": "共享 renderer 终止后的恢复",
+          "decision": "merge",
+          "reason": "受影响renderer消失后逐WebView回调→移除/destroy→新建的生命周期接4Profile共享结构；在此锚点完整展示多实例责任，不将两个renderer画成必同时死。",
+          "original_line": 678,
+          "heading": "### renderer 消失后的恢复",
+          "replacement_id": "ed13-09-profile-sharing-and-renderer-loss"
+        },
+        {
+          "original_id": "ch13-09-43-renderer-priority",
+          "title": "renderer 优先级与恢复责任",
+          "decision": "remove",
+          "reason": "可见性→优先级→回收→恢复四框逐项重述683完整段，风险和恢复先决条件已在新4/42合图footer与正文保留，不重复恢复链。",
+          "original_line": 685,
+          "heading": "### renderer 消失后的恢复"
+        },
+        {
+          "original_id": "ch13-09-44-startup-vs-steady",
+          "title": "冷启动与稳态滚动分别取样",
+          "decision": "remove",
+          "reason": "冷启动/首次导航/稳态三组六卡逐项复述692完整比较段和前文296–310；固定页面/provider/构建的取样要求留，不再加第二份冷/稳态对照。",
+          "original_line": 694,
+          "heading": "### 冷启动和稳态卡顿要分开"
+        },
+        {
+          "original_id": "ch13-09-45-memory-owners",
+          "title": "大页面的多个内存归属",
+          "decision": "remove",
+          "reason": "DOMJS/图形资源/共享buffer三组六卡压缩701内存工作集与压力路径段及708共享机制；正文更详，新ImageReader具体资源链保留，不重排段落成卡片。",
+          "original_line": 703,
+          "heading": "### Android 17 / kernel 6.18 下的内存证据"
+        },
+        {
+          "original_id": "ch13-09-46-thread-state-cost",
+          "title": "CPU wall time 中的执行与等待",
+          "decision": "remove",
+          "reason": "Running/Runnable/Blocked三组六卡逐项复述708完整线程状态定义及713限定；新异步CPU/GPU图保留等待不同完成关系，不用三卡再抄状态字典。",
+          "original_line": 710,
+          "heading": "### Android 17 / kernel 6.18 下的内存证据"
+        },
+        {
+          "original_id": "ch13-09-47-evidence-collection",
+          "title": "现场分类所需的版本与对象证据",
+          "decision": "remove",
+          "reason": "版本→页面→callback→trace→layer→记录六框逐项压缩721命令、731完整输出、740–744场景清单和795–802结论清单，原文可执行更详，删除通用采集摘要。",
+          "original_line": 733,
+          "heading": "### 1. 固定版本与复现场景"
+        },
+        {
+          "original_id": "ch13-09-48-fullscreen-evidence",
+          "title": "全屏外观与交接协议的判别",
+          "decision": "remove",
+          "reason": "全屏外观→callback→Viewtree→对象四框重复748完整判定段、536协议与保留34实际实现；回调非外观、View类型另查的正文全留。",
+          "original_line": 750,
+          "heading": "### 2. 先看 fullscreen 交接和 View owner"
+        },
+        {
+          "original_id": "ch13-09-49-trace-five-domains",
+          "title": "沿线程、资源和显示连接 Perfetto",
+          "decision": "remove",
+          "reason": "五域/视频六框逐项重述762–769完整现象证据下一步表，表中条件更精确；保留50覆盖分支与新async/texture各对象链，不再串行化诊断域。",
+          "original_line": 757,
+          "heading": "### 3. 在 Perfetto 中连接五段证据"
+        },
+        {
+          "original_id": "ch13-09-50-timeline-coverage",
+          "title": "宿主与独立输入的采集覆盖",
+          "decision": "keep",
+          "reason": "先查目标Layer/输入流是否有可靠覆盖，再按token区间或buffer/TX/fence补齐两路，是实际取证决策；与771–776具体SurfaceView覆盖缺口对应，保留。",
+          "original_line": 773,
+          "heading": "### 3. 在 Perfetto 中连接五段证据"
+        },
+        {
+          "original_id": "ch13-09-51-layer-tree-validation",
+          "title": "用 Layer tree 验证真实内容落点",
+          "decision": "remove",
+          "reason": "host/overlay/SurfaceTexture三组六卡逐项重复785–789五条详细Layer验证清单，23对象树和新ImageReader/Texture仍呈现关系；原清单所有owner/parent/buffer约束保留。",
+          "original_line": 780,
+          "heading": "### 4. 用 layer tree 验证内容落点"
+        },
+        {
+          "original_id": "ch13-09-52-path-comparison",
+          "title": "三类官方路径对应不同后半段",
+          "decision": "remove",
+          "reason": "硬件/overlay/软件三组六卡逐格压缩813–819五路Producer/Consumer完整表，新软件守卫/容器树和原生flow具体路径保留，删除表格摘要副本。",
+          "original_line": 808,
+          "heading": "## 常见现场对比表"
+        },
+        {
+          "original_id": "ch13-09-53-platform-provider-evolution",
+          "title": "平台能力与 provider 演进分别核对",
+          "decision": "remove",
+          "reason": "平台/provider/App三组六卡重述846–853六条平台边界和180基线，原文含16KB/ABI/研究内核非全设备等精确条件，不再第三次版本概览。",
+          "original_line": 841,
+          "heading": "## Android 12—17 的版本边界"
+        },
+        {
+          "original_id": "ch13-09-54-end-to-end",
+          "title": "从 provider 身份到最终显示复核",
+          "decision": "remove",
+          "reason": "末尾六框再画原生完整主线及895–899三段总结，固定版本/依赖/实际拓扑文字全部保留，删除全篇最后一份重复端到端概览。",
+          "original_line": 902,
+          "heading": "## 小结"
+        }
+      ],
+      "sha256_after": "b194ab35a88c89dabc3942317fd0e1952915d162901026c9977f98e066604ec9",
+      "new_diagrams": [
+        {
+          "id": "ed13-09-startup-capability-and-config",
+          "title": "启动能力分支与 UI 启动配置分别核对",
+          "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-09-startup-capability-and-config.svg",
+            "src/assets/diagrams/ch13/ed13-09-startup-capability-and-config.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-09-startup-capability-and-config",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/support/+/5744fa6296a0f6147952e836b3d92dd87ff7d4dd/webkit/webkit/src/main/java/androidx/webkit/WebViewCompat.java",
+            "https://android.googlesource.com/platform/frameworks/support/+/5744fa6296a0f6147952e836b3d92dd87ff7d4dd/webkit/webkit/src/main/java/androidx/webkit/WebViewStartUpConfig.java",
+            "https://developer.android.com/jetpack/androidx/releases/webkit",
+            "https://developer.android.com/develop/ui/views/layout/webapps/optimize-webview-startup"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-09-11-startup-parts",
+              "ch13-09-12-startup-compatibility"
+            ],
+            "boundary": "固定WebKit1.16.0 minSdk24：稳定OutcomeReceiver重载按provider能力选择ASYNC_WEBVIEW_STARTUP_V2、V1适配或旧fallback。V2可成功/失败反馈，V1转接旧callback，fallback可仅加载class loader等。另核对runUiThreadStartUpTasks配置：默认true允许UI启动任务，false仅完成本次允许部分；实际完成范围和诊断依provider能力，不能把旧fallback当完整启动。启动回调不保证renderer、网络、页面首帧就绪，立即调用其他WebView API仍可阻塞Main。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-09-software-entry-and-final-window",
+          "title": "先判断软件入口，再确认最终由哪种窗口承接",
+          "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-09-software-entry-and-final-window.svg",
+            "src/assets/diagrams/ch13/ed13-09-software-entry-and-final-window.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-09-software-entry-and-final-window",
+          "sources": [
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/aw_contents.cc",
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/browser_view_renderer.cc",
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/java/src/org/chromium/android_webview/AwContents.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebView.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-09-19-software-branch-guard",
+              "ch13-09-20-software-host-forms"
+            ],
+            "boundary": "固定AwContents::OnDraw先按硬件Canvas、attached且未强制辅助bitmap判断。满足时走OnDrawHardware，返回false也直接返回，不自动落入软件分支；不满足才准备SoftwareCanvas，空尺寸或取不到Canvas可早退，成功才OnDrawSoftware→CompositeSW→DemandDrawSw。软件结果若是整个软件窗口由ViewRootImpl.drawSoftware/Surface Canvas提交，若单View软件layer则由硬件宿主继续采样。两形态不自动创建独立SF Layer，也不能仅凭DrawFn缺失或白屏判软件路径。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-09-overlay-transactions-and-buffer-dependencies",
+          "title": "几何 transaction 的应用路线与 buffer 写完成依赖合并核对",
+          "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-09-overlay-transactions-and-buffer-dependencies.svg",
+            "src/assets/diagrams/ch13/ed13-09-overlay-transactions-and-buffer-dependencies.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-09-overlay-transactions-and-buffer-dependencies",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/WebViewFunctorManager.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp",
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/overlay_processor_webview.cc",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-09-24-transaction-merge",
+              "ch13-09-27-geometry-buffer-readiness"
+            ],
+            "boundary": "固定HWUI mergeTransaction：有active CanvasContext且合并成功则合入HWUI窗口更新，没有context或merge未成功才独立apply。候选buffer携AHardwareBuffer/acquire fence，几何可随宿主更新协调，但实际读取仍须满足Producer写完成依赖；几何和buffer未必分开无同步apply。缺新buffer可继续旧内容，迟到几何或媒体更新仍可错位；独立child layer不保证HWC DEVICE，composition type另取证。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-09-imagereader-quota-and-output",
+          "title": "ImageReader 额度选择与最终输出对象放在同一条资源链",
+          "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-09-imagereader-quota-and-output.svg",
+            "src/assets/diagrams/ch13/ed13-09-imagereader-quota-and-output.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-09-imagereader-quota-and-output",
+          "sources": [
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/gpu/command_buffer/service/image_reader_gl_owner.cc",
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/overlay_processor_webview.cc",
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/hardware_renderer.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-09-29-imagereader-middle",
+              "ch13-09-30-imagereader-limits",
+              "ch13-09-31-imagereader-destination"
+            ],
+            "boundary": "固定ImageReaderGLOwner按TextureOwner mode设置private format和sampled/protected/composer-overlay usage。Producer写reader Surface；max_images==1时先释放当前image，再按可用额度选择Next/Latest async acquire：余量不足2用Next，足够用Latest。失败不保证保留旧图；成功取得image/AHardwareBuffer与完成fence，CPU acquire返回不保证GPU已写完，也不证明发生CPU复制。下游可采样进宿主HWUI窗口或作为合格overlay候选更新child SurfaceControl。额度、image引用/release fence和backpressure须核对，类名不识别第三方SDK、独立SF Layer或端到端零拷贝。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-09-texture-input-and-host-window",
+          "title": "中间纹理输入与最终窗口输出分别取证",
+          "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-09-texture-input-and-host-window.svg",
+            "src/assets/diagrams/ch13/ed13-09-texture-input-and-host-window.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-09-texture-input-and-host-window",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/SurfaceTexture.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-09-37-texture-owner-direction",
+              "ch13-09-38-texture-three-moments",
+              "ch13-09-39-texture-two-producers"
+            ],
+            "boundary": "仅已由SDK版本/对象证据确认Texture-like的现场：SDK renderer/decoder向Surface/ANativeWindow生产源图像，SurfaceTexture为消费端。frame-available只标记更新/invalidate；Main TextureView.draw记录drawTextureLayer；RT DeferredLayerUpdater::apply经ASurfaceTexture_dequeueBuffer取image，满足源完成依赖后GPU采样进入宿主target；HWUI再生产App Window buffer并queue/BLAST交给SF。源swap、回调或Java draw返回均不等GPU写完/宿主采样完成；每个输入不保证对应一最终显示帧，Java栈未必出现updateTexImage。额外采样/同步成本按实际SDK/页面/设备量测。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-09-internal-feedback-and-display-completion",
+          "title": "Chromium 内部反馈、宿主 queue 与设备完成分开判断",
+          "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-09-internal-feedback-and-display-completion.svg",
+            "src/assets/diagrams/ch13/ed13-09-internal-feedback-and-display-completion.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-09-internal-feedback-and-display-completion",
+          "sources": [
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/hardware_renderer.cc",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://perfetto.dev/docs/data-sources/frametimeline"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-09-16-internal-swap",
+              "ch13-09-41-async-write-display"
+            ],
+            "boundary": "固定Chromium DrawAndSwapOnViz的Swap属于内部Display语义；CPU路径TimeTicks::Now构造MaybeDidPresent反馈不证明Android窗口已queue或实际显示。主体由宿主HWUI生产窗口buffer；queue交付与Producer GPU完成为不同观测点，SF可先组织readiness/latch，真正读取需满足对应acquire依赖，最终present fence查SF/HWC。按frame token、buffer frame number、transaction和fence关联同对象，不把相邻slice当同帧，不把DrawFn wall time当GPU设备时长，present也不是光学测量。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-09-profile-sharing-and-renderer-loss",
+          "title": "先按 Profile 找共享 renderer，再逐实例恢复",
+          "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-09-profile-sharing-and-renderer-loss.svg",
+            "src/assets/diagrams/ch13/ed13-09-profile-sharing-and-renderer-loss.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-09-profile-sharing-and-renderer-loss",
+          "sources": [
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/renderer/README.md",
+            "https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/docs/architecture.md",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewClient.java",
+            "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-09-05-profile-renderers",
+              "ch13-09-42-renderer-gone"
+            ],
+            "boundary": "固定现代provider普通同Profile共享renderer，多个Profile可各有renderer，内置错误页/webui另有例外；实例数与renderer数不换算。API26+同一受影响renderer消失时，对每个受影响WebView分别调用onRenderProcessGone；每个只处理自己收到的对象，返回true仍需从hierarchy移除、清引用/destroy，继续展示则新建实例。图下方恢复链按实际受影响renderer进入，不表示两个renderer必然同时死亡，优先级降低不保证常驻或自动恢复。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T10:40:52.186727+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 54,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a128/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a128/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 128,
+        "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+        "registered_sha256": "13ff8a098852782a36cfe9870aa1d5d517bef382bec46a28c6963ba8df263f04",
+        "frozen_sha256": "13ff8a098852782a36cfe9870aa1d5d517bef382bec46a28c6963ba8df263f04",
+        "review_input_sha256": "384d5ce388d0973f5e6a72eb60be01b071a24a8aad4ab590218936905a1665b1",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a128/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a128/external-source.diff",
+        "diff_sha256": "db6c73a864a1ed7521ab5bf9d430fa34460cc956e478980c147d8d2badfc7ba7",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All391 current narrative/table reading rows35548characters,54 SVG label sets,54 original PNGs/7contact sheets and2 rendered native diagrams read/viewed;sequence also viewed at2400width;3 code blocks51lines independently read."
+      },
+      "sha256_review_input": "384d5ce388d0973f5e6a72eb60be01b071a24a8aad4ab590218936905a1665b1",
+      "retired_diagrams": [
+        "ch13-09-01-two-rendering-systems",
+        "ch13-09-02-version-coordinates",
+        "ch13-09-03-three-boundaries",
+        "ch13-09-04-process-thread-map",
+        "ch13-09-05-profile-renderers",
+        "ch13-09-06-request-to-window",
+        "ch13-09-07-independent-bottlenecks",
+        "ch13-09-09-provider-loading",
+        "ch13-09-10-cold-start-scope",
+        "ch13-09-11-startup-parts",
+        "ch13-09-12-startup-compatibility",
+        "ch13-09-13-hardware-main-path",
+        "ch13-09-15-late-future-example",
+        "ch13-09-16-internal-swap",
+        "ch13-09-19-software-branch-guard",
+        "ch13-09-20-software-host-forms",
+        "ch13-09-21-software-proof",
+        "ch13-09-22-overlay-platform-gates",
+        "ch13-09-24-transaction-merge",
+        "ch13-09-25-overlay-candidates",
+        "ch13-09-26-two-output-objects",
+        "ch13-09-27-geometry-buffer-readiness",
+        "ch13-09-28-overlay-interface-history",
+        "ch13-09-29-imagereader-middle",
+        "ch13-09-30-imagereader-limits",
+        "ch13-09-31-imagereader-destination",
+        "ch13-09-32-fullscreen-view-handoff",
+        "ch13-09-34-fullscreen-exit",
+        "ch13-09-35-fullscreen-content-types",
+        "ch13-09-36-fullscreen-vs-overlay",
+        "ch13-09-37-texture-owner-direction",
+        "ch13-09-38-texture-three-moments",
+        "ch13-09-39-texture-two-producers",
+        "ch13-09-40-six-diagnostic-stages",
+        "ch13-09-41-async-write-display",
+        "ch13-09-42-renderer-gone",
+        "ch13-09-43-renderer-priority",
+        "ch13-09-44-startup-vs-steady",
+        "ch13-09-45-memory-owners",
+        "ch13-09-46-thread-state-cost",
+        "ch13-09-47-evidence-collection",
+        "ch13-09-48-fullscreen-evidence",
+        "ch13-09-49-trace-five-domains",
+        "ch13-09-51-layer-tree-validation",
+        "ch13-09-52-path-comparison",
+        "ch13-09-53-platform-provider-evolution",
+        "ch13-09-54-end-to-end"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-128/retired-assets.json"
     },
     {
       "index": 129,
@@ -28337,8 +29070,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 64,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+  "reviewed_articles": 65,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -28348,8 +29081,22 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T10:33:29.953409+08:00",
+  "updated_at": "2026-10-31T10:40:52.186727+08:00",
   "external_article_changes_observed": [
+    {
+      "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
+      "registered_sha256": "a5a9ff341df25abd1f05a6da7455c2c9b429435d0c7cdfb4cab5905cc24932f2",
+      "observed_sha256": "83307577677a6370216622ff0fc2b74b4b1bcfaa66e23cf20eef1e9f728e871b",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part1-fundamentals/ch01-architecture/04-class-loading-art-boot-image.md",
+      "registered_sha256": "f2a7fc3b8aaef90ebfe224e29741e50819bc0718f37f3f4c01a4865d922c6def",
+      "observed_sha256": "5de2bd93823b810fba36a0a1072d6d4e0e2cf5a89a5d7cff491b5dbd4512a432",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/04-class-loading-art-boot-image.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
     {
       "article": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
       "registered_sha256": "694b561ae6f02dbbb0f5dae49edc616c09fd279156d96a693c3ca4806fe73a80",
@@ -28360,22 +29107,29 @@
     {
       "article": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
       "registered_sha256": "c4e18831e4fa1b9df967db73745d2c583be7abee191a3f3f0d118b2609de91ab",
-      "observed_sha256": "3a9d35933e7f1fd1a4f76e9cfb44d20f8a2246d2308098e877c5bc08c7bffe8c",
+      "observed_sha256": "6fd08d5bfbc682e8d7a4fe2148c185194387fe565e1e9adb6ea6b695b5264e2a",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
-      "registered_sha256": "752f746b3845be976375a1163f03222e3b70705ec64c01648ed0f86fd342f478",
-      "observed_sha256": "4382bd5b7d6c0185d899e74c13f562a8549c6e3564c6655ecbfa5d9201478f96",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch11-power/05-user-settings-energy-impact.md",
+      "article": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "registered_sha256": "4312d7f32f4a0cd03a32f6a4210bafafc628bb7b05178207d939301854def972",
+      "observed_sha256": "35f4f52776aaea2dc66ac2719ae618ea909e7b5b3f07b710c0cb6f8ecf6bef32",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
-      "registered_sha256": "13ff8a098852782a36cfe9870aa1d5d517bef382bec46a28c6963ba8df263f04",
-      "observed_sha256": "384d5ce388d0973f5e6a72eb60be01b071a24a8aad4ab590218936905a1665b1",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/09-webview-rendering.md",
+      "article": "src/part1-fundamentals/ch02-rendering/14-multiwindow-desktop-rendering.md",
+      "registered_sha256": "9e51ca011c58adcee244fb684a12651f29920f740781e858a9b34d8656b4b95d",
+      "observed_sha256": "68e729a3e1570a503ae5cfaa9decc15818f333f00c2986d336ad0937af7e28f6",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch02-rendering/14-multiwindow-desktop-rendering.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part2-performance/ch10-memory-perf/README.md",
+      "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
+      "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -28383,6 +29137,20 @@
       "registered_sha256": "f3c4629af8b425eae0f50101fcf9ab6046ffd2722d6b3589829cc45ff1fd6900",
       "observed_sha256": "ec28b41fcd075c4c22b65497a6efddad83d76221618732b2cafbe276a54a5ea5",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+      "registered_sha256": "831145607dbd047adf361d0526280c100b36e33f02a805b4d6119655af17b5ae",
+      "observed_sha256": "e4a1fee53ba499884cc0e6605c64f9dba867af5a233d42d5e97e6c39d09ad51c",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+      "registered_sha256": "c996195091e6eabeebc45632ae0e3e96ffbff36142dbd24d01dd27944fee5575",
+      "observed_sha256": "b445b882829a96e5b602d015575764ec44adf47ef0bc80227eb90b1f038fac40",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -28414,10 +29182,31 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+      "registered_sha256": "b5591a2152c13d577624b1612233bf43a9ee65ce4042094f0672aab3d2670745",
+      "observed_sha256": "5774dc318a9c52adb772104c21f8a2ec3c81b9b71190adb5acfaebba626c1af7",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
       "registered_sha256": "3de69fb83be00408a082a0477d6fc278f3dda8b0e23255a531432a36af23b430",
       "observed_sha256": "4cfbb57f0cb7b76238ca01d6fbe150b58f8a74eeebda7bdb3d54b3d53360bb75",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+      "registered_sha256": "a3b970aad91d03ae5f33f0fab3504de72d4866672209de60215d5a925a24674a",
+      "observed_sha256": "281226d7268568d6a331d3b0e9116e474dd23232af05f77539e5de832d43bbaa",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
+      "registered_sha256": "9d8a538b9756a817e8f4939d6edb0288a96d62ad1ec859b65cd2000f5e14620f",
+      "observed_sha256": "ed99725159634056cc1748fd96f56e3b3c13431e4b13080a17dfb55718d557ae",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -28435,10 +29224,262 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part3-tools/ch15-other-tools/01-as-profiler.md",
+      "registered_sha256": "cb94b960fbc30393e8a4ab84d8022ae92d86cd6ac227510d25ffc43d4edd1b51",
+      "observed_sha256": "50ac83aa77a50fedbfd7eba7b1b07dbfac0bc2be14133c1ec34570676856c644",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/01-as-profiler.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
+      "registered_sha256": "0a63f08b7f19b57e79dddb836eb2baca59ace8fab332885f36002d42b9e84bc8",
+      "observed_sha256": "97c015f52485f56c65ce7f88dfa4be4e43d08a02e16d3ef271671907a413e2f4",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/04-dumpsys.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/05-battery-historian.md",
+      "registered_sha256": "52fd33c93ca49461f4c047d993823736a3d45a3db7109ccf455df54093caa02d",
+      "observed_sha256": "e679613ce588480e780a8b34bd84d7b864403b15189014ace1a3f0b9fb582e85",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/05-battery-historian.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
+      "registered_sha256": "a78a63dd2e30f4006cc64c3c9da0665d606b0ff225577ffcda5f615ed3a08c43",
+      "observed_sha256": "b868d7a347c7eef6b957bde56d3c66c8a6455de4d642f9b7dcc3f537918d10f0",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
+      "registered_sha256": "735f69ed1a3f5f836c726a161883daf34276789d034ff7b9bbcf7f92cdc2aeab",
+      "observed_sha256": "7d73c10799c886b077750677cb8ad332fc5551502b51d0ff8b195d42c7266b87",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
+      "registered_sha256": "8ec13cfeb494ec3229e1b0dc04dded2b45a0381ad01c473037c9a4e290e05b6e",
+      "observed_sha256": "cf801456ae000c08c30d43f5ab85d69a3af272267d0aabee4dbb0711bce2e02e",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
+      "registered_sha256": "1ea4640e8d3cf2a545abeb714cbb5eea3c3ce4540a569988cc4b8da9df361e66",
+      "observed_sha256": "3f11bc012f7b927bc343f891d132f6f717eeb8d8d1af98fb3f2381244539c67c",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+      "registered_sha256": "2a4ad4148a5366e6bfcb9a5f7d823e612fdaddc2b57601ac20216c2d0e091f65",
+      "observed_sha256": "1b942a382dd9e40e52c32bf083c6dc5ccedffe1858bddc4106df3487d4407289",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
+      "registered_sha256": "b6f7cca7e05da565e2f2dae1024a126393c4a3674e5a295ea76ad6baff06f610",
+      "observed_sha256": "4a2c8cf4f8bffd9195b643511087cb067cac40d56947ecc6898a1a473ad8d7ae",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
+      "registered_sha256": "56470d2b8eedf4f0c0dbc3e34bece85d7293e983ffa7c164cb07601b7531cdfe",
+      "observed_sha256": "af14564d44ff6b11d5016e9d68f954bbca3a2a4e8daea96941cb859b81145ae3",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
+      "registered_sha256": "982f48dbecddfefcb1e8b128640146a9a463723bed816f954306c2895187d869",
+      "observed_sha256": "ecdb454622d5c670cb379e4fe971eed20c6a5e4bc5f2ca70a9eb184d8defc81f",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch16-methodology/05-testing-best-practices.md",
+      "registered_sha256": "83c6d3a71aa4ca9f1d5d0393c73d5acb3e7cc0880cb79710f231958c478d7803",
+      "observed_sha256": "b3f26a30b3bcae07ef94d0e8ff99fc869d8b79a20186c7bb8e2435c7923d0a85",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/05-testing-best-practices.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch16-methodology/06-competitive-analysis.md",
+      "registered_sha256": "555342870b20dfb529d015890e7c5157e193e4dca326f34440e2abdfbc890beb",
+      "observed_sha256": "28f0df5b0940f3958d92e10c1dc540f78a10a49924c75d5489e2ddae77f221d3",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/06-competitive-analysis.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
+      "registered_sha256": "c73cbb565f98d3e4de2e9ed35e3d71983a01e4dc25360e042517f19219d54679",
+      "observed_sha256": "d70c068eb576966af8dc0251334552c80e1e980c509415c90fdca4f8b3812942",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/07-aosp-reading.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
+      "registered_sha256": "63297b2959f5b24b8850649e4f402f4b3d9c95b489112da066fcfa9a2cd5561c",
+      "observed_sha256": "c38908018d4e977f55b26b57d1501aec7f701d28a98e4936933d2e8509b5f01e",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
+      "registered_sha256": "1ce2247a72cbbf9628a56ea557254af12fa170790a80b73f6b3cd290244e43c4",
+      "observed_sha256": "d5efe03254d2c1e10dbcaeea5e00440235315a99a5b8c4b6f9c9b905e94eaf81",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
+      "registered_sha256": "e3488b9374b3d836e4ca9cafb82240e678d8240a5a1693576314c76d41104e29",
+      "observed_sha256": "5fa4a8caf4bfbc75fc39d837b5b9cfa90a405d12d05f208d183c4913c86ace89",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/05-open-source-apm-history.md",
+      "registered_sha256": "3745930bee7581466b89c422c0c7a43cabf2d2f31e0d9fd2ce89bd71df1326be",
+      "observed_sha256": "07346d69192ad9b4febc777da4befd76e033660d4bbf4c0fbb8b38a1711f6dca",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/05-open-source-apm-history.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/08-network-apm-internals.md",
+      "registered_sha256": "8135d67bfc19e1262a44f8fe478ace0ea1e2a28a9b994075d9c29547d77b91a6",
+      "observed_sha256": "0d1574ed8990392ac42c4a675019935eee7fd6635867b9b00d4577ed6358203f",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/08-network-apm-internals.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/09-crash-anr-internals.md",
+      "registered_sha256": "969cada7a2ece84bb8506bcf5914562e36487b6391bc7b1bd0cb9245839edf0e",
+      "observed_sha256": "b7e945ec58ec1be34a877349122dce7cff2b2c81cb3b62e1d7f95da940d2efd6",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/09-crash-anr-internals.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
+      "registered_sha256": "77108caa51c0e27ec72847ef53624ffc6441256b24925707fe1358ca0238d5f0",
+      "observed_sha256": "ab4fa905484bf15d789b2c6574d8563b7dddaecac05df9b4873cd91afd600835",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/11-hybrid-apm.md",
+      "registered_sha256": "d49348a7f063ff1b4b902089e28df4c426dea96862b569fb7db101a73ac55ceb",
+      "observed_sha256": "15f3b76de00c0c94491c9cadbfb181d2b6e961a0aba3b4bc19b00981c80abc60",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/11-hybrid-apm.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch17-apm/12-apm-client-architecture.md",
+      "registered_sha256": "c495b4b8f76ae2e167772a2b854eafcea009d77328cf2280154b36a2e26f8972",
+      "observed_sha256": "e79630c0d2357c6f51d51a0d3c088aee253f3230a2544198025c23783c1578ae",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/12-apm-client-architecture.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part4-system/ch18-aosp/02-aosp-build.md",
+      "registered_sha256": "2cc8c9a97a56243dec68b6812e17bd23faa03c8534a160db0440961652f26b66",
+      "observed_sha256": "191c0cb7df096814db9e98d0a7c7b48e567327175735bc088b598cfa6676f82c",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/02-aosp-build.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "registered_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
       "observed_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
+      "registered_sha256": "7cf8ac1356853e7999411bc8be5da7bf165bca2c52cfa5cab4917e166ab91996",
+      "observed_sha256": "52757ef831136115a359fb593f7e528d65a0c489e30b9a02d074773b5dd673a4",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+      "registered_sha256": "089242234aa4c96658e7f52f0cdabe1c80468ade0e95aa640053a00803d5d232",
+      "observed_sha256": "b46db489ce78df29b147e491b60292830434f72cb8d14fe769afa2a47cab9a4c",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part4-system/ch18-aosp/09-agent-native-os.md",
+      "registered_sha256": "ba976e27fbc456e2d8b89a0afc099c4bad763f7274d8a964ae9b9b4486e507bc",
+      "observed_sha256": "56e6265fe737d7ca2356189ee973a3f041bcc134a3d12db21c11df80311797a8",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/09-agent-native-os.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+      "registered_sha256": "a8c60056c0fad846433110d535f9deb0130f07996e8ba521805d8f7bdf2d3cef",
+      "observed_sha256": "600d6a27db272c45e6b99fbda8dfb1e1a30743c01f3efea1e9c43f57c2bc2861",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
+      "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+      "registered_sha256": "66bc85c2f92d6ecff451c690e521127d311885e53a8b1e23c46c0405b45bf687",
+      "observed_sha256": "b7356914af758ec887ea57fdb7fe43da8f9d72f3fab7fcc3677d44c824ccd11e",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
+      "registered_sha256": "f74f9c7960c5ad9f5ac8f7272cda92cc632a111fb951fd324bfda36859beac9d",
+      "observed_sha256": "f5d3a9d9567b2039401dbf073de08ff5ccb9bc58ade269401e0c82afc8b83a3f",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+      "registered_sha256": "43b57607ec5740c9d7223adb78fceccd64f6940ddc11b7042587cd390ecd59ce",
+      "observed_sha256": "194797d1f8ffdd3ccc95005bd95d19ea18233dec89a46570b87afe26ad99d013",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+      "registered_sha256": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
+      "observed_sha256": "2f701ca8d683fc3722ca3bbd8163a889d4a753358f06972f863846dd508e9420",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "registered_sha256": "80378d1a6e30909a8ae413191cc4132d19752d3c1315703e8379fff28ad38d1c",
+      "observed_sha256": "1935b1d4d231b86fa3f0b733df8dba0f849e64b09b158990fc8dc927aef07fd3",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "registered_sha256": "59b194ac2298421ba0472c201d43e66f141c6d64d9d6b2977f147929329ce176",
+      "observed_sha256": "76e6f89726aad6476c3f847ce13bf797594c1e11e5be5ae3b69d6a87c3451f1c",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "registered_sha256": "3d455456ac466a744db0f562777a4043e100ff820f2edc5f76c745f0f4f60393",
+      "observed_sha256": "ee58b3691a46e08dda199d5555189e25f5a1b4c247400cd6192044041d4f9f0e",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -28449,16 +29490,65 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "registered_sha256": "604da5c370426caf934588be3ac893d7533aead438ef46addd19b65b6e14b05a",
+      "observed_sha256": "b8a45e79a49b3b0b8b4e5f5b96cf0092fc5f90a12c4485df2926b2d98e83ae6f",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "registered_sha256": "f288a321e459b5f30a7bbec00e073c8678d4193f49ebff0be66a66415a864941",
+      "observed_sha256": "158d08bd15c3d1727638754a8dec87df432d4946be74eb44c5a62ac3eabd1d74",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "registered_sha256": "bb2b01ae907f832e993e3879da06201db2657fa5768ac80700a83dd03ad76bc8",
+      "observed_sha256": "2073a41ad7ca8d66ac64d0a1212dffd051dd9f802821e2e1e22ae440920bed97",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+      "registered_sha256": "94df36be2b80df0c363a416435bfd04915ea3e919293c27f1633cb514f02403e",
+      "observed_sha256": "4e4fc1d8ce23fe2b55bd07efef838f25edced8bb31bcc923f2a538cdfbeb2cb3",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "registered_sha256": "fe4d4fea0f5bfc1adcdbca5d7601f09f4406f26e0082bcc91e6430cc669fc4fb",
+      "observed_sha256": "2c994f030458c70debe3aa9fb82fbe1c2cb3336f710b5bf7e5b89998ff07ffa2",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
       "registered_sha256": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
       "observed_sha256": "9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "registered_sha256": "57b1576547abe3748c0cca9aa5487bdfcd50e9d30df953f693f0766b18e441bf",
+      "observed_sha256": "c84f1da287ea7f2f86d61f891ccc3d88556792dea0078ac87fcc9e28e96cbd01",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "registered_sha256": "572cafb49498509e5c52bd82f40035d34035a080958acbdcb73be115a1045763",
+      "observed_sha256": "1806615ee734c191d59c3174931067fcf63a5712283420f30f3d515a0bb10477",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2200,
-  "reviewed_placements_after": 1061,
-  "net_removed_placements": 1139,
+  "reviewed_placements_before": 2254,
+  "reviewed_placements_after": 1075,
+  "net_removed_placements": 1179,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -28482,5 +29572,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 64
+  "currently_matching_reviewed_source_count": 65
 }
