@@ -61257,9 +61257,354 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "93cf9c1c7710045cbe7e538879755f6b82973403a98891751f3b1b33680a734e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a245-01-consumer-boundaries",
+          "title": "SurfaceView与TextureView的消费边界",
+          "decision": "remove",
+          "reason": "两类消费者与宿主三行重复59–69定义，并由后方原生双路径拓扑更完整表达。",
+          "original_line": 64,
+          "heading": "# SurfaceView 与 TextureView：渲染路径、选型与排障"
+        },
+        {
+          "original_id": "a245-02-buffer-state-fence",
+          "title": "队列槽位与三类栅栏",
+          "decision": "remove",
+          "reason": "slot及三类fence已由75–83术语列表和362–372回调表详细说明；图不是状态机或同步依赖图。",
+          "original_line": 85,
+          "heading": "# SurfaceView 与 TextureView：渲染路径、选型与排障"
+        },
+        {
+          "original_id": "a245-03-surfaceview-layer-tree",
+          "title": "SurfaceView的container与内容子层",
+          "decision": "keep",
+          "reason": "真实树结构区分宿主bounds、SurfaceView container及BLAST内容/背景两个子层，补足后方原生端到端图未展开的内部层级。",
+          "original_line": 132,
+          "heading": "### SurfaceView：宿主和内容各走一条生产线"
+        },
+        {
+          "original_id": "a245-04-hole-punch-composition",
+          "title": "默认Z-below与宿主透明孔",
+          "decision": "remove",
+          "reason": "Z-below透明孔和非负order三个配对卡片重复137–142及571/810规则，未画实际几何遮罩。",
+          "original_line": 139,
+          "heading": "### SurfaceView：宿主和内容各走一条生产线"
+        },
+        {
+          "original_id": "a245-05-host-content-independence",
+          "title": "宿主与内容各自提交",
+          "decision": "remove",
+          "reason": "宿主与内容独立在146–156及原生图两路完整表达，当前线性框图即使有脚注也不如原生并行分支清楚。",
+          "original_line": 151,
+          "heading": "### SurfaceView：宿主和内容各走一条生产线"
+        },
+        {
+          "original_id": "a245-06-texture-two-queues",
+          "title": "TextureView两套队列的连接",
+          "decision": "remove",
+          "reason": "两套队列关系由167–188完整说明，原生拓扑已展示输入队列到RT再宿主队列，重复的四步链可删。",
+          "original_line": 162,
+          "heading": "### TextureView：外部流先回到宿主 HWUI"
+        },
+        {
+          "original_id": "a245-07-texture-update-callback",
+          "title": "TextureView回调到RenderThread更新",
+          "decision": "keep",
+          "reason": "frameavailable投递UI→提交更新→RT pending apply→AHardwareBuffer/SkImage采样的执行链比原生拓扑细，突出UI回调不等present及取最新策略。",
+          "original_line": 172,
+          "heading": "### TextureView：外部流先回到宿主 HWUI"
+        },
+        {
+          "original_id": "a245-08-end-to-end-topologies",
+          "title": "两条端到端路径与宿主层",
+          "decision": "remove",
+          "reason": "与同节原生拓扑语义重复，原生图分别保留SV独立内容/宿主和TV宿主路径，更完整地区分对象。",
+          "original_line": 216,
+          "heading": "### 一张图比较两条路径"
+        },
+        {
+          "original_id": "a245-09-latency-boundary-comparison",
+          "title": "两条路径的额外等待点",
+          "decision": "remove",
+          "reason": "三行路径是229/233两条文本链的逐字缩写，没有展示到达时刻或截止点；保留235的同帧/下一帧条件。",
+          "original_line": 237,
+          "heading": "### 两条路径的延迟组成"
+        },
+        {
+          "original_id": "a245-10-device-client-opportunity",
+          "title": "独立图层与HWC合成机会",
+          "decision": "remove",
+          "reason": "硬件条件、有限资源与DEVICE/CLIENT三行重述255–281，不呈现实际HWC决策分支。",
+          "original_line": 259,
+          "heading": "### 功耗差异与合成策略"
+        },
+        {
+          "original_id": "a245-11-graphics-memory-accounting",
+          "title": "缓冲区占用按stride单位与实际池核算",
+          "decision": "remove",
+          "reason": "stride单位两式和池核算由285–304完整公式列表保留，卡片没有真实allocation分布。",
+          "original_line": 293,
+          "heading": "### 内存按两套队列核算"
+        },
+        {
+          "original_id": "a245-12-benchmark-controlled-conditions",
+          "title": "跨SoC比较的受控测量",
+          "decision": "remove",
+          "reason": "四步基准摘要重复312–321条件与输出完整表，无实测数据或新对照。",
+          "original_line": 323,
+          "heading": "### 跨 SoC 对比的受控基准"
+        },
+        {
+          "original_id": "a245-13-geometry-buffer-transactions",
+          "title": "几何事务和内容缓冲区分别流入",
+          "decision": "remove",
+          "reason": "几何/内容/目标合并三行已在334–345逐项说明，原生拓扑及层树已给出各自对象归属，图无真实事务汇合。",
+          "original_line": 336,
+          "heading": "### 几何 transaction 与内容 buffer"
+        },
+        {
+          "original_id": "a245-14-transaction-apply-modes",
+          "title": "apply的同步标志与one-way分开",
+          "decision": "remove",
+          "reason": "公开apply与隐藏入口的sync/oneWay边界由349–356完整解释，三行API映射不是时序。",
+          "original_line": 351,
+          "heading": "### `apply()`、sync 与 async"
+        },
+        {
+          "original_id": "a245-15-transaction-callback-fences",
+          "title": "transaction回调与实际同步信号",
+          "decision": "remove",
+          "reason": "Committed/Completed/fence引用三行是362–372完整回调表和资源段落的重复，没有画回调与fence时间关系。",
+          "original_line": 374,
+          "heading": "### `BufferChangedListener` 与公开回调"
+        },
+        {
+          "original_id": "a245-16-blast-frame-merge",
+          "title": "BLAST按内容frame number合并事务",
+          "decision": "remove",
+          "reason": "BLAST取BufferItem到frame number合并的四步由381–388两段详细描述，图没有额外待合并状态分支。",
+          "original_line": 385,
+          "heading": "### BLAST 怎样提交内容"
+        },
+        {
+          "original_id": "a245-17-surface-sync-participants",
+          "title": "SurfaceSyncGroup只等待已注册参与者",
+          "decision": "remove",
+          "reason": "注册参与者到markReady合并的线性摘要重复392–401，未真正画已入组与独立外部源两支。",
+          "original_line": 396,
+          "heading": "### 多 Surface 同步的参与者"
+        },
+        {
+          "original_id": "a245-18-holder-producer-lifecycle",
+          "title": "SurfaceHolder回调约束生产方所有权",
+          "decision": "keep",
+          "reason": "创建前注册、created连接、changed调整、destroyed返回前全部停访的所有权链紧贴31行骨架，突出同步停止边界与非异步stop。",
+          "original_line": 464,
+          "heading": "### SurfaceView 以 SurfaceHolder 回调为边界"
+        },
+        {
+          "original_id": "a245-19-surface-lifecycle-strategies",
+          "title": "可见性与attachment两种Surface寿命",
+          "decision": "remove",
+          "reason": "visibility/attachment寿命与资源驻留三行由469段完整说明；图未展示两种生命周期区间。",
+          "original_line": 471,
+          "heading": "### SurfaceView 以 SurfaceHolder 回调为边界"
+        },
+        {
+          "original_id": "a245-20-texture-owned-wrapper-lifecycle",
+          "title": "TextureView与应用Surface包装的释放方",
+          "decision": "keep",
+          "reason": "available创建应用包装、连接失败收尾、destroyed停访并release及true/false的ST释放方，连接50行只返回true代码与另一所有权选择。",
+          "original_line": 539,
+          "heading": "### TextureView 以 SurfaceTextureListener 为边界"
+        },
+        {
+          "original_id": "a245-21-texture-replacement-transfer",
+          "title": "手动替换SurfaceTexture的移交",
+          "decision": "keep",
+          "reason": "显式停旧产者/释放包装→新ST脱离GL→替换释放旧ST→owner接入新对象的移交链，突出手动替换不会自动发两个生命周期回调。",
+          "original_line": 546,
+          "heading": "### TextureView 以 SurfaceTextureListener 为边界"
+        },
+        {
+          "original_id": "a245-22-black-screen-object-diagnosis",
+          "title": "黑屏按对象边界逐级定位",
+          "decision": "remove",
+          "reason": "黑屏三组卡片是555–569八步完整对象检查的缩写，不是可执行分支树。",
+          "original_line": 566,
+          "heading": "### 黑屏按对象逐项检查"
+        },
+        {
+          "original_id": "a245-23-camerax-source-doc-boundary",
+          "title": "CameraX1.6.2实际回退与文档差异",
+          "decision": "remove",
+          "reason": "CameraX源码回退与文档旋转TODO差异在579–584单段完整说明，三行文字卡片未增加条件树。",
+          "original_line": 581,
+          "heading": "### 相机预览"
+        },
+        {
+          "original_id": "a245-24-video-overlay-or-processing",
+          "title": "视频覆盖控件与统一像素处理",
+          "decision": "remove",
+          "reason": "普通overlay与统一像素pass选择由605–624及快速决策表完整说明，三组配对卡片重复。",
+          "original_line": 621,
+          "heading": "### 视频播放"
+        },
+        {
+          "original_id": "a245-25-vulkan-native-window-ownership",
+          "title": "Vulkan与ANativeWindow引用计数",
+          "decision": "keep",
+          "reason": "ANativeWindow本地引用与成功后Vulkan引用到最终VkSurface销毁的生命周期补足18行创建代码，保留独占连接和引用非可用性限定。",
+          "original_line": 659,
+          "heading": "### 地图与游戏"
+        },
+        {
+          "original_id": "a245-26-live-overlay-options",
+          "title": "直播弹幕的三种内容组合",
+          "decision": "remove",
+          "reason": "三种直播组合逐项重述670–681完整对照表，没有画真实pass或媒体时钟。",
+          "original_line": 678,
+          "heading": "### 直播与弹幕"
+        },
+        {
+          "original_id": "a245-27-trace-surfaceview-object-map",
+          "title": "SurfaceView取证对象表",
+          "decision": "remove",
+          "reason": "SV对象三行重复714–727五行对象表，信息比表少，层树和原生图已承担结构表达。",
+          "original_line": 724,
+          "heading": "### SurfaceView 的对象表"
+        },
+        {
+          "original_id": "a245-28-trace-textureview-object-map",
+          "title": "TextureView从外部输入追到宿主呈现",
+          "decision": "remove",
+          "reason": "TV取证链重复731–745完整对象表及保留的7执行链，没有新增追踪对象。",
+          "original_line": 742,
+          "heading": "### TextureView 的对象表"
+        },
+        {
+          "original_id": "a245-29-present-backward-investigation",
+          "title": "从异常present反向追责",
+          "decision": "remove",
+          "reason": "异常present反查四步摘要重复751–759七项清单，正文保留更完整的队列与fence归属。",
+          "original_line": 761,
+          "heading": "### 从异常 present 反向查"
+        },
+        {
+          "original_id": "a245-30-dequeue-wait-ownership",
+          "title": "四种等待必须记录所属队列",
+          "decision": "remove",
+          "reason": "等待位置三行对应780–787四行对象表，图没有队列反压关系。",
+          "original_line": 789,
+          "heading": "### 四类常见等待"
+        },
+        {
+          "original_id": "a245-31-visual-effects-and-protection",
+          "title": "现代视觉API仍保留拓扑边界",
+          "decision": "remove",
+          "reason": "视觉API/包装裁剪/保护颜色三行重复806–827具体边界和版本表，不是拓扑变更图。",
+          "original_line": 812,
+          "heading": "### SurfaceView 动画和半透明"
+        },
+        {
+          "original_id": "a245-32-compose-view-binding-lifecycle",
+          "title": "Compose复用时的生产方门控",
+          "decision": "keep",
+          "reason": "factory/update绑定→onReset停用防迟到回调→再启用时有效holder连接→onRelease移除callback的链帮助检查39行Compose骨架，保留reset后可能无update的正文前提。",
+          "original_line": 885,
+          "heading": "### Compose 中包装 SurfaceView/TextureView"
+        },
+        {
+          "original_id": "a245-33-compose-producer-identity",
+          "title": "producer身份键与equality边界",
+          "decision": "remove",
+          "reason": "equality与显式===身份键由代码及890–892详细解释，图是三行文字重复。",
+          "original_line": 894,
+          "heading": "### Compose 中包装 SurfaceView/TextureView"
+        },
+        {
+          "original_id": "a245-34-compose-external-surface-choices",
+          "title": "Compose外部Surface类型仍决定消费者",
+          "decision": "remove",
+          "reason": "两类Compose外部Surface与生命周期三行重述899–906，原生图已解释系统独立层与宿主采样差异。",
+          "original_line": 903,
+          "heading": "### Compose 中包装 SurfaceView/TextureView"
+        },
+        {
+          "original_id": "a245-35-selection-measurement-loop",
+          "title": "Surface选型与排障的验证闭环",
+          "decision": "remove",
+          "reason": "结尾选型/所有权/测量/反查四步重复959–963小结与921–955检查清单，无新增机制。",
+          "original_line": 965,
+          "heading": "## 全文小结"
+        }
+      ],
+      "sha256_after": "2f953879c4d2d34cf20b1710b2fd8e249e83829459f4e36f36575dc8118a3261",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:52:37.092146+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a245/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a245/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 245,
+        "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+        "registered_sha256": "93cf9c1c7710045cbe7e538879755f6b82973403a98891751f3b1b33680a734e",
+        "frozen_sha256": "93cf9c1c7710045cbe7e538879755f6b82973403a98891751f3b1b33680a734e",
+        "review_input_sha256": "ea3457cf082cf783d3b8a7930b9eedf7cca40d7b362518318ef1f2c6a66413da",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a245/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a245/external-source.diff",
+        "diff_sha256": "a41d699fe86d9fe382bd919194e8ac795835c1ebb423a88d67ce10efbe9074b3",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 498, \"characters\": 35527, \"svg_labels_read\": 35, \"actual_pngs_viewed\": 35, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 6, \"code_lines\": 147, \"native_mermaid\": 1, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "ea3457cf082cf783d3b8a7930b9eedf7cca40d7b362518318ef1f2c6a66413da",
+      "retired_diagrams": [
+        "a245-01-consumer-boundaries",
+        "a245-02-buffer-state-fence",
+        "a245-04-hole-punch-composition",
+        "a245-05-host-content-independence",
+        "a245-06-texture-two-queues",
+        "a245-08-end-to-end-topologies",
+        "a245-09-latency-boundary-comparison",
+        "a245-10-device-client-opportunity",
+        "a245-11-graphics-memory-accounting",
+        "a245-12-benchmark-controlled-conditions",
+        "a245-13-geometry-buffer-transactions",
+        "a245-14-transaction-apply-modes",
+        "a245-15-transaction-callback-fences",
+        "a245-16-blast-frame-merge",
+        "a245-17-surface-sync-participants",
+        "a245-19-surface-lifecycle-strategies",
+        "a245-22-black-screen-object-diagnosis",
+        "a245-23-camerax-source-doc-boundary",
+        "a245-24-video-overlay-or-processing",
+        "a245-26-live-overlay-options",
+        "a245-27-trace-surfaceview-object-map",
+        "a245-28-trace-textureview-object-map",
+        "a245-29-present-backward-investigation",
+        "a245-30-dequeue-wait-ownership",
+        "a245-31-visual-effects-and-protection",
+        "a245-33-compose-producer-identity",
+        "a245-34-compose-external-surface-choices",
+        "a245-35-selection-measurement-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-245/retired-assets.json"
     },
     {
       "index": 246,
@@ -61669,8 +62014,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 169,
-  "next_article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+  "reviewed_articles": 170,
+  "next_article": "src/part5-app/ch22-rendering-practice/15-vulkan-impeller-shader-compilation.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -61680,7 +62025,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:49:20.699164+08:00",
+  "updated_at": "2026-10-31T17:52:37.092146+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -61760,13 +62105,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
-      "registered_sha256": "93cf9c1c7710045cbe7e538879755f6b82973403a98891751f3b1b33680a734e",
-      "observed_sha256": "ea3457cf082cf783d3b8a7930b9eedf7cca40d7b362518318ef1f2c6a66413da",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
       "registered_sha256": "604da5c370426caf934588be3ac893d7533aead438ef46addd19b65b6e14b05a",
       "observed_sha256": "b8a45e79a49b3b0b8b4e5f5b96cf0092fc5f90a12c4485df2926b2d98e83ae6f",
@@ -61837,9 +62175,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5162,
-  "reviewed_placements_after": 2061,
-  "net_removed_placements": 3101,
+  "reviewed_placements_before": 5197,
+  "reviewed_placements_after": 2068,
+  "net_removed_placements": 3129,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -61863,5 +62201,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 169
+  "currently_matching_reviewed_source_count": 170
 }
