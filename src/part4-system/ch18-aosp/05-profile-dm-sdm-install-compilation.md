@@ -81,13 +81,13 @@ consolidated_from:
 
 # Profile、DM 与 Secure Dex Metadata 安装编译
 
-Profile、Dex Metadata 与 Secure Dex Metadata 三样东西名称接近，交付与校验的阶段却各不相同。要判断安装编译的收益，我们要沿安装会话、ART Service 和运行时消费路径走一遍，弄清元数据在什么条件下被接受、验证并实际用上。
+Profile、Dex Metadata 与 Secure Dex Metadata 三样东西名称接近，交付与校验的阶段却各不相同。要判断安装编译的收益，我们要沿安装会话、ART Service 和运行时消费路径走一遍，弄清元数据在什么条件下被接受、验证并实际用上；云端如何选择设备配置并生成 SDM 属于分发侧实现，不在本文核对的设备端源码之内。
 
-> 源码基线：AOSP `android-17.0.0_r1`。云端如何选择设备配置并生成 SDM 属于分发侧实现，不在 AOSP 设备端源码之内；本文讨论的是系统能够验证的接收、决策和加载行为。
+> 源码基线：AOSP `android-17.0.0_r1`。
 
 ## SDM 的定义与收益边界
 
-SDM 的全名是 **Secure Dex Metadata**，Android 16 引入了这种文件，用它携带面向特定 ISA 的云端 AOT（ahead-of-time） 产物；ISA（instruction set architecture）指 `arm64` 这类 CPU 指令集。SDM 必须由与 APK 相同的 signer（签名证书身份）签名。还要说明一点：AOSP `android-17.0.0_r1` 中没有名为 “Staged Dalvik Compilation” 的架构，安装流程里也没有把 SDM 解包到应用 `oat` 目录这一步——运行时是直接从 ZIP 内部打开它的。
+先看 SDM 本身。它的全名是 **Secure Dex Metadata**，Android 16 引入了这种文件，用它携带面向特定 ISA 的云端 AOT（ahead-of-time）产物，ISA（instruction set architecture）指 `arm64` 这类 CPU 指令集。它的来源约束很硬：必须由与 APK 相同的 signer（签名证书身份）签名。另外，AOSP `android-17.0.0_r1` 中没有名为 “Staged Dalvik Compilation” 的架构，安装流程里也没有把 SDM 解包到应用 `oat` 目录这一步——运行时是直接从 ZIP 内部打开它的。
 
 一组可供 ART 使用的云端产物由三个文件配合：
 
@@ -97,14 +97,10 @@ SDM 的全名是 **Secure Dex Metadata**，Android 16 引入了这种文件，�
 | `.sdm` | 至少包含供运行时打开的 `primary.odex` | 云端编译服务 | 提供指定 ISA 的 AOT 代码 |
 | `.sdc` | SDM 时间戳与 boot classpath 相关 APEX 环境标识 | 设备端 `artd` | 记录 SDM 文件代际与设备 ART 环境 |
 
-SDM 针对已安装 base/split APK 的 primary dex 容器，包含同一 APK 内的 classes.dex、classes2.dex 等；这里的 primary 不是只指第一个 DEX 条目。APK 之外另外生成或加载的 secondary dex 不在该机制范围。ClassLoader 的类型本身不定义 primary/secondary，仍须看代码容器与包的对应关系。r1 ArtFileManager 明确限定 SDM 只用于 primary dex files。
+SDM 的作用对象是已安装 base/split APK 的 primary dex 容器：primary 按容器界定，同一 APK 内的 classes.dex、classes2.dex 等条目都在其列。一个 dex 算 primary 还是 secondary，依据是代码容器与包的对应关系，与 ClassLoader 的类型无关。APK 之外另外生成或加载的 secondary dex 就落在这套机制之外，r1 ArtFileManager 也明确限定 SDM 只用于 primary dex files。
 
-<!-- gracker-diagram: ch18-05-01-four-roles -->
-![Profile、DM、SDM 与 SDC 在不同阶段各司其职](../../assets/diagrams/ch18/ch18-05-01-four-roles.png)
 
-图：Profile 提供编译输入，DM/SDM 交付元数据与云端产物，SDC 保存设备首次接收的环境上下文。 primary dex 按已安装 APK 容器界定，包含 classes2.dex 等；不是只优化首个 DEX，也不按 ClassLoader 名字分类。
-
-收益的范围也很清楚。当 SDM、DM、SDC 与当前 APK、ISA、boot classpath 和编译目标兼容时，安装期可以直接复用云端产物，无需为同一目标在设备上再次运行 `dex2oat`；`dex2oat` 是 ART 把 DEX 编译为本地产物的工具，boot classpath 则是应用运行时依赖的框架核心类集合。
+收益的成立条件同样明确：当 SDM、DM、SDC 与当前 APK、ISA、boot classpath 和编译目标都兼容时，安装期可以直接复用云端产物，省掉为同一目标在设备上再跑一次 `dex2oat`。`dex2oat` 是 ART 把 DEX 编译为本地产物的工具；boot classpath 则是应用运行时依赖的框架核心类集合。
 
 省掉的只有安装期编译这一段：安装会话写盘、APK 与 SDM 签名校验、包扫描、原生库处理、`fsync`、SELinux 检查以及首次启动的其余工作照常发生，`fsync` 负责把文件数据及相关元数据同步到稳定存储。AOSP 也没有承诺过固定的安装或启动提升百分比。
 
@@ -114,7 +110,7 @@ SDM 针对已安装 base/split APK 的 primary dex 容器，包含同一 APK 内
 
 ### 1.1 三类 Profile 解决不同问题
 
-Profile 为 ART 提供热点方法、类使用与布局等信息；speed-profile 根据有效 Profile 和编译策略选择 AOT 工作，不保证每个记录的方法都生成独立机器码，类记录也不是“把类整体编译成一个函数”。verify 主要验证 DEX。SDM 则携带已经生成的指定 ISA AOT 产物：Profile 是输入，SDM 是交付产物，两者的生成方、校验和采用证据分别追踪。
+Profile 为 ART 提供热点方法、类使用与布局等信息。speed-profile 根据有效 Profile 和编译策略挑选 AOT 工作，记录在案的方法未必各自得到一段独立机器码，类记录也不等于“把类整体编译成一个函数”；verify 主要验证 DEX。SDM 则携带已经生成好的指定 ISA AOT 产物。所以我们说 Profile 是输入、SDM 是交付产物，两者的生成方、校验和采用证据要分别追踪。
 
 | 类型 | 生产者与位置 | 主要作用 | 开发者控制度 |
 | --- | --- | --- | --- |
@@ -124,10 +120,6 @@ Profile 为 ART 提供热点方法、类使用与布局等信息；speed-profile
 
 Baseline Profile 面向 Day-0，也就是新安装或更新后、设备还没有积累本地运行样本的阶段；Startup Profile 只负责构建期布局；Cloud Profile 提供 Profile 输入，设备仍可能需要运行 `dex2oat`。Cloud Compilation/SDM 分发的才是预生成编译产物。这几种机制可以同时存在，但职责各管一段，谁也顶替不了谁。
 
-<!-- gracker-diagram: ch18-05-02-profile-types -->
-![Baseline、Startup、Cloud 与云端 AOT 的边界](../../assets/diagrams/ch18/ch18-05-02-profile-types.png)
-
-图：Baseline 和 Cloud 可作 ART 编译输入，Startup Profile 在构建期影响 DEX 布局。 SDM 直接交付云端 AOT 产物；DM 携带 Cloud Profile 仍可能需要本机 dex2oat。
 
 按照 [Baseline Profile 调试文档](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)，APK 中的稳定检查点是 `assets/dexopt/baseline.prof`，AAB 中则是 `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`。Startup Profile 的源规则通常是 `startup-prof.txt`；[现行验证文档](https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles)建议检查最终 DEX 布局，或在 AGP 8.8 及以上检查 AAB 中的 `BUNDLE-METADATA/com.android.tools/r8.json`。另外，安装后的文件系统里没有一个叫 `startup.prof` 的文件可供查找。
 
@@ -140,7 +132,7 @@ Baseline Profile 面向 Day-0，也就是新安装或更新后、设备还没有
 | `base.apk` | `base.dm` |
 | `split_feature.apk` | `split_feature.dm` |
 
-r1 的 getType() 只按 ZIP 是否有 primary.prof 与 primary.vdex 条目返回 PROFILE、VDEX、PROFILE_AND_VDEX 或 NONE，不验证其中二进制内容。getDexMetadataInfo() 负责打开归档与解析可选 config.pb；缺配置用默认值，文件不存在按 NONE，其他读取或解析错误按 ERROR。类型分类、Profile/VDEX 语义校验和最终采用是三件事。
+r1 的 getType() 只看 ZIP 里有没有 primary.prof 与 primary.vdex 条目，据此返回 PROFILE、VDEX、PROFILE_AND_VDEX 或 NONE，条目里的二进制内容它并不检查。getDexMetadataInfo() 负责打开归档与解析可选 config.pb：缺配置用默认值，文件不存在按 NONE，其他读取或解析错误按 ERROR。所以类型分类、Profile/VDEX 语义校验和最终采用是三件独立的事。
 
 <!-- gracker-diagram: ch18-05-03-dm-classification -->
 ![DM 分类只说明 ZIP 条目存在](../../assets/diagrams/ch18/ch18-05-03-dm-classification.png)
@@ -152,7 +144,7 @@ r1 的 getType() 只按 ZIP 是否有 primary.prof 与 primary.vdex 条目返回
 - `primary.prof` 列出适合 `speed-profile` 的方法和类，可作为本机 dexopt 输入；
 - `primary.vdex` 保存验证相关数据。SDM 路径打开 AOT 代码时，运行时会从配套 DM 读取它。
 
-平台层的 `android.content.pm.dex.DexMetadataHelper.validateDexMetadataFile()` 在 r1 中通过 `StrictJarFile` 打开归档，确认文件结构可读。这个方法的 JavaDoc 仍提到 manifest，但 r1 的方法体没有读取 `manifest.json`，其中也没有 `pm.dexopt.dm.require_manifest` 与 `pm.dexopt.dm.require_fsverity` 属性，`pm install` 同样没有受支持的 `--dm` 参数。判断 DM 状态时，这三项都要排除在依据之外。
+平台层的 `android.content.pm.dex.DexMetadataHelper.validateDexMetadataFile()` 在 r1 中通过 `StrictJarFile` 打开归档，确认文件结构可读。这个方法的 JavaDoc 仍提到 manifest，但 r1 的方法体没有读取 `manifest.json`，r1 里也找不到 `pm.dexopt.dm.require_manifest` 与 `pm.dexopt.dm.require_fsverity` 属性，`pm install` 同样没有受支持的 `--dm` 参数。判断 DM 状态时，这三项都要排除在依据之外。
 
 AOSP 的 [Configure ART](https://source.android.com/docs/core/runtime/configure) 文档描述了常见的 Pixel 策略：Play 分发的 DM 可携带 cloud profile，ART 对其中列出的方法做 AOT 编译；没有 DM 时，该策略可能在安装期不做 AOT。这描述的是一种产品配置，OEM 仍可以通过 ART Service 配置选择不同的安装 compiler filter。
 
@@ -167,12 +159,8 @@ SDM 的文件名多一段指令集名称，`artd/path_utils.cc` 的构造规则�
 
 同一个 APK 若要覆盖两种 ISA，需要两个不同的 SDM；`arm64` 产物也供不了 `arm` 进程使用。
 
-<!-- gracker-diagram: ch18-05-04-filenames -->
-![APK、DM、SDM 和安装重命名必须对应](../../assets/diagrams/ch18/ch18-05-04-filenames.png)
 
-图：DM 与 APK 同基名，SDM 还带目标 ISA，安装器要在重命名时同步维护映射。 伴随文件需在对应目录；正常协调的重命名可接受，错误映射和不支持的 native ISA 会失败。
-
-在 artManagedInstallFilesValidationApi 新分支，ArtManagedInstallFileHelper.validateSdmFile() 以 APK v3 及以上签名验证身份，并比较当前 signer 集合；它不以历史签名轮换链替代精确相等。下列条件会使 SDM 被标为无效：
+在 artManagedInstallFilesValidationApi 新分支，ArtManagedInstallFileHelper.validateSdmFile() 以 APK v3 及以上签名验证身份，并要求 signer 集合与当前 APK 精确相等，历史签名轮换链在这里替代不了这层匹配。下列条件会使 SDM 被标为无效：
 
 - 文件名没有受支持的 ISA 后缀；
 - 找不到同基名 APK；
@@ -180,12 +168,8 @@ SDM 的文件名多一段指令集名称，`artd/path_utils.cc` 的构造规则�
 - SDM 的 v3 签名校验失败；
 - APK 与 SDM 的 signer 集合不完全相同。
 
-<!-- gracker-diagram: ch18-05-05-sdm-validation -->
-![新 API 验证 SDM 的名称与 signer](../../assets/diagrams/ch18/ch18-05-05-sdm-validation.png)
 
-图：新 helper 依次核对支持的 ISA、对应 APK、双方 v3 签名和当前 signer 集合。 这是新 API 分支的检查；历史签名轮换链不能替代 signer 精确匹配，身份有效也不等于运行时兼容。
-
-新 API 把上述 SDM 错误返回为 RESULT_SHOULD_DELETE_AND_CONTINUE；PackageInstallerSession 删除成功后保存 warning 并继续，若删除抛 IOException，安装仍会失败。旧分支 verifySdmSignatures() 对 SDM 要求至少 v3，再与安装会话已获得的 APK SigningDetails 比较；它没有重复调用新 helper 对 APK 做相同的 v3 最低方案检查。无效 SDM 在旧分支可能直接拒绝安装，所以先核对设备实际 flag 与分支，再解释日志。
+新 API 把上述 SDM 错误返回为 RESULT_SHOULD_DELETE_AND_CONTINUE：PackageInstallerSession 删除成功后保存 warning 并继续安装，若删除抛 IOException，安装仍会失败。旧分支走的是另一套逻辑，verifySdmSignatures() 对 SDM 要求至少 v3，再与安装会话已获得的 APK SigningDetails 比较，新 helper 对 APK 做的那套 v3 最低方案检查并不重复执行。无效 SDM 在旧分支可能直接拒绝安装，所以我们先核对设备实际 flag 与分支，再解释日志。
 
 <!-- gracker-diagram: ch18-05-06-installer-branches -->
 ![新旧验证分支与删除失败分别处理](../../assets/diagrams/ch18/ch18-05-06-installer-branches.png)
@@ -213,14 +197,14 @@ sdm-timestamp-ns=<SDM 的 mtime，纳秒>
 apex-versions=<当前设备 ART 看到的 APEX 版本串>
 ```
 
-运行时把 SDC 保存的正整数纳秒时间戳与 SDM 的 st_mtim 比较，失配就拒绝这份伴随记录。apex-versions 来自 SDM 首次被设备看到时的 Runtime::GetApexVersions：按 boot classpath 涉及的活动 APEX 组织标识，非 factory APEX 优先用 lastUpdateMillis，缺少时才用 versionCode，factory 等情况用空标记。这能识别版本号不变但更新时间改变的 samegrade placebo，不能把它简写成单个 ART APEX versionCode。
+运行时把 SDC 保存的正整数纳秒时间戳与 SDM 的 st_mtim 比较，失配就拒绝这份伴随记录。apex-versions 来自 SDM 首次被设备看到时的 Runtime::GetApexVersions：按 boot classpath 涉及的活动 APEX 组织标识，非 factory APEX 优先用 lastUpdateMillis，缺少时才用 versionCode，factory 等情况用空标记。版本号不变但更新时间改变的 samegrade placebo 正是靠这层细节识别的，所以单个 ART APEX versionCode 概括不了它。
 
 <!-- gracker-diagram: ch18-05-08-apex-context -->
 ![SDC 的时间戳与 APEX 环境如何参与验证](../../assets/diagrams/ch18/ch18-05-08-apex-context.png)
 
 图：SDC 绑定 SDM 修改时间与首次接收时的 BCP APEX 环境，运行时再与当前环境检查。 APEX 标识优先用更新时间而非仅 versionCode；允许子集 BCP 的前缀兼容，不是永远整串相等。
 
-已有可解析 SDC 且 SDM mtime 相同时，maybeCreateSdc() 会直接复用，不因本次调用重写 APEX 上下文；缺失、格式错误或时间戳改变时才新建。运行时用 SDC 的上下文覆盖 SDM 内 OAT 的 APEX 字段，再按 ImageSpace 的兼容规则核对当前环境，包含允许子集 boot classpath 的前缀匹配，不是永远要求整串逐字相等。
+已有可解析 SDC 且 SDM mtime 相同时，maybeCreateSdc() 会直接复用，本次调用不会重写其中的 APEX 上下文；缺失、格式错误或时间戳改变时才新建。运行时用 SDC 的上下文覆盖 SDM 内 OAT 的 APEX 字段，再按 ImageSpace 的兼容规则核对当前环境：这套规则允许子集 boot classpath 的前缀匹配，整串逐字相等并非硬性要求。
 
 <!-- gracker-diagram: ch18-05-07-sdc-lifecycle -->
 ![SDC 的缺失、复用与重建条件](../../assets/diagrams/ch18/ch18-05-07-sdc-lifecycle.png)
@@ -231,9 +215,11 @@ SDC 的位置由目标 OAT 位置决定：常见情况是应用旁 `oat/<isa>/` 
 
 ## 2. 从安装会话到 ART Service
 
+从安装会话到 ART Service，中间有一段职责交接。我们沿一次安装把这段路走完：安装器怎么接收伴随文件，dexopt 交给谁执行，什么时候可以跳过本机编译。
+
 ### 2.1 安装器接收伴随文件
 
-`PackageInstallerSession` 把 `.dm`、`.sdm` 等识别为 ART-managed install files，并在提交前校验文件名映射与 SDM 签名。它处理的是会话中的独立文件，不会从 APK 内“提取 SDM”。
+`PackageInstallerSession` 把 `.dm`、`.sdm` 等识别为 ART-managed install files，并在提交前校验文件名映射与 SDM 签名。它处理的一直是会话中的独立文件，并不会从 APK 内部“提取 SDM”。
 
 文件名映射与安装过程中的重命名要配套。验证器从 base.arm64.sdm 反推同目录 base.apk；getTargetPathForApk() 还负责把伴随文件重写为目标 APK 的对应名称。安装器正常协调的重命名并不自动出错，出错的是映射、目录或伴随命名没有一起更新。
 
@@ -259,10 +245,6 @@ Android 14 起，应用 dexopt 的调度入口已经迁到 ART Service。r1 中�
 
 入口迁走之后，`installd` 仍处理安装系统中的其他受特权文件操作；应用 dexopt 的主线要看 ART Service——DM Profile 处理和 SDM 调度的入口都在那里，具体受保护操作交给 `artd`，`frameworks/native/cmds/installd/dexopt.cpp` 只适合当作旧流程的对照。
 
-<!-- gracker-diagram: ch18-05-09-install-to-art -->
-![安装会话和 ART Service 的职责交接](../../assets/diagrams/ch18/ch18-05-09-install-to-art.png)
-
-图：Package Manager 完成安装事务并按需发起 dexopt，ART Service 与 artd 决定和执行后续工作。 Android14+ 主线由 ART Service 管理应用 dexopt；installd 的其他安装文件职责仍需另看。
 
 ### 2.3 ART 如何决定跳过本机编译
 
@@ -279,7 +261,7 @@ Android 14 起，应用 dexopt 的调度入口已经迁到 ART Service。r1 中�
 
 图：ART Service 先准备 SDC 与目标输入，再结合 trigger 判断是否需要本机编译。 存在 SDM 不保证跳过；force、Profile 缺失降级、取消和存储条件都要按目标分别解释。
 
-OatFileAssistant 组织多个编译产物候选，SDM 是其中一种。AIDL 的 SDM_DALVIK_CACHE 与 SDM_NEXT_TO_DEX 区分的是 SDC 位于全局缓存还是 APK 旁；两种情况下 SDM 与 DM 本身都在对应 APK 旁，不能把前者解释成 SDM 文件搬到了 dalvik-cache。调度器继续判断这些候选能否满足当前目标。
+OatFileAssistant 组织多个编译产物候选，SDM 是其中一种。AIDL 的 SDM_DALVIK_CACHE 与 SDM_NEXT_TO_DEX 区分的是 SDC 位于全局缓存还是 APK 旁——这两个常量说的只是 SDC 的位置，SDM 与 DM 本身两种情况下都留在对应 APK 旁，并没有随之搬进 dalvik-cache。调度器再继续判断这些候选能否满足当前目标。
 
 若本机编译已执行，`PrimaryDexopter` 会尽早删除对应 SDM 与 SDC，释放空间。相关源码条件可缩写为：
 
@@ -289,12 +271,8 @@ if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
 }
 ```
 
-删除针对本次 dexopt target 的 primary dex、ISA 和对应 SDC，不能由某一个 ABI 成功外推整个包所有 SDM 都已删除。它表示云端产物可被本机结果替代；后续 ART 文件 GC 也会检查失效产物。SDC 缺失对安装准备阶段可能是暂态，运行时却会把该 SDM 视为不完整，两个观察时点须分开。
+删除的范围只覆盖本次 dexopt target 的 primary dex、ISA 和对应 SDC，某一个 ABI 成功，推不出整个包的 SDM 都已清掉；它表示云端产物可被本机结果替代，后续 ART 文件 GC 也会再检查失效产物。另外，SDC 缺失在安装准备阶段可能只是暂态，到了运行时却会把该 SDM 视为不完整，这两个观察时点要分开。
 
-<!-- gracker-diagram: ch18-05-11-local-cleanup -->
-![本机编译后按目标与 ISA 清理云端产物](../../assets/diagrams/ch18/ch18-05-11-local-cleanup.png)
-
-图：本机 dexopt 已执行且不是 pre-reboot 时，PrimaryDexopter 尽早删除该目标的 SDM/SDC。 清理范围按 primary dex 与 ISA 对应；单个 ABI 成功不能外推整个包，其他失效文件由 GC 再判断。
 
 ### 2.4 安装编译与后台 dexopt 是两个时点
 
@@ -302,14 +280,12 @@ Android 14 之后，ART Service 负责应用设备端 AOT 编译的调度与策�
 
 [ART Service 配置文档](https://source.android.com/docs/core/runtime/configure/art-service)写明，默认后台 dexopt 每日运行一次，条件是设备空闲且充电；设备退出空闲状态时，任务会立即取消。新安装后立即启动时，后台 dexopt 可能还未发生；多次启动后的编译状态也可能已经被本地 JIT（just-in-time） Profile 和后台编译改变。所以比较 Profile 或 SDM 收益时，应固定安装来源和编译状态，把“安装结束”“首次启动”“后台 dexopt 后启动”分成三组。
 
-<!-- gracker-diagram: ch18-05-12-install-background -->
-![安装、首次启动和后台 dexopt 的时点分开](../../assets/diagrams/ch18/ch18-05-12-install-background.png)
 
-图：安装策略、首次运行的 JIT/Profile 积累和后续后台编译会改变同一 APK 的执行状态。 默认后台任务在空闲充电时每日调度，退出空闲即取消；OEM 可定制，因此各时点要独立记录。
-
-speed-profile 不能独立识别 Baseline、Cloud 或本地 Profile 来源；install-dm 只在安装 reason 下标记传给 dex2oat 的 DM，甚至可能是内容未使用的空 DM。请求 speed-profile 但没有有效 Profile 时，r1 Dexopter 会显式降到 verify；-f 强制重编也不单独证明 Baseline 被消费。应同时记录请求与最终 filter、Profile 来源、reason、产物和 trace。
+speed-profile 自己分辨不出 Baseline、Cloud 还是本地 Profile 来源；install-dm 只在安装 reason 下标记传给 dex2oat 的 DM，甚至可能是内容未使用的空 DM。请求 speed-profile 而有效 Profile 缺位时，r1 Dexopter 会显式降到 verify；-f 强制重编同样说明不了 Baseline 被消费。所以我们要同时记录请求与最终 filter、Profile 来源、reason、产物和 trace。
 
 ## 3. 运行时怎样使用 SDM
+
+安装结束后，问题转到运行时：这份 SDM 有没有被用上。我们看它如何被打开、如何过兼容性检查，以及怎样确认内容被采用。
 
 ### 3.1 直接从 ZIP 打开 `primary.odex`
 
@@ -322,9 +298,9 @@ std::string elf_filename = sdm_filename + kZipSeparator + "primary.odex";
 ret->vdex_ = VdexFile::OpenFromDm(dm_filename, error_msg);
 ```
 
-ODEX 来自 SDM，VDEX 来自同 APK 的 DM。缺少可用 DM/VDEX 时，仅有 SDM 也组不成这条运行时加载路径；运行时还需要 APK 自身校验 dex checksum 与依赖关系。
+ODEX 来自 SDM，VDEX 来自同 APK 的 DM。这条运行时加载路径要凑齐两样东西：可用的 DM/VDEX，加上 APK 自身校验 dex checksum 与依赖关系；仅有 SDM 时它走不通。
 
-OatFile::OpenFromSdm() 的 ScopedTrace 名为 Open sdm file <path>，在检查 DM 是否存在之前就开始。因此该 slice 只证明进入了尝试打开路径，不能证明 SDM 加载或机器码执行成功；它还可能来自 artd 的产物检查。分析应用启动时须先对应进程、包和时间窗，再结合成功加载日志、实际映射及必要的执行采样确认采用。
+OatFile::OpenFromSdm() 的 ScopedTrace 名为 Open sdm file <path>，在检查 DM 是否存在之前就开始。所以该 slice 只说明进入了尝试打开路径，SDM 加载或机器码执行是否成功还要看后续证据；它甚至可能来自 artd 的产物检查。分析应用启动时，我们先对应进程、包和时间窗，再结合成功加载日志、实际映射及必要的执行采样确认采用。
 
 <!-- gracker-diagram: ch18-05-13-zip-load -->
 ![运行时组合 SDM、DM、SDC 和 APK](../../assets/diagrams/ch18/ch18-05-13-zip-load.png)
@@ -342,12 +318,8 @@ OatFile::OpenFromSdm() 的 ScopedTrace 名为 Open sdm file <path>，在检查 D
 - SDM 与 SDC 的时间戳关系；
 - SDC 保存的 ART APEX 版本上下文。
 
-候选格式、DEX/依赖与 SDC 检查决定产物是否有效，compiler filter 比较还影响是否安排更合适的本机编译；不能把这两类判断合成一个全有全无开关。系统可能使用其他已有产物、解释/JIT 或重新 dexopt，取决于现场状态。SDM 文件存在只说明文件当前存在，不能独立证明安装签名验证、运行时加载或实际执行云端代码成功。
+候选格式、DEX/依赖与 SDC 检查决定产物是否有效；compiler filter 比较影响的则是要不要安排更合适的本机编译——这是两类判断，合不成一个全有全无的开关。系统可能使用其他已有产物、解释/JIT 或重新 dexopt，取决于现场状态。SDM 文件存在同样只说明文件当前存在；安装签名验证、运行时加载与实际执行云端代码，每一步都需要各自的证据。
 
-<!-- gracker-diagram: ch18-05-14-compatibility-policy -->
-![候选有效性与是否重编是两类判断](../../assets/diagrams/ch18/ch18-05-14-compatibility-policy.png)
-
-图：格式与依赖检查决定候选是否可用，filter/trigger 再影响是否安排目标编译。 filter 不足不等于所有场景立即禁止现有代码执行；回退、JIT 与重编取决于当前策略和状态。
 
 ### 3.3 确认内容被采用的三类证据
 
@@ -359,14 +331,12 @@ OatFile::OpenFromSdm() 的 ScopedTrace 名为 Open sdm file <path>，在检查 D
 2. trace 中是否出现本机 `dex2oat`，以及是否出现 `Open sdm file`；
 3. 安装日志中的 SDM validation warning、artd 错误和 dexopt 结果；若结论需要精确到“应用已执行 SDM 机器码”，还要补目标进程成功映射/选用记录或对应代码地址的执行证据。
 
-三类证据先区分接收、候选有效、尝试加载与成功采用。只看 install-dm、文件存在、入口 slice 或安装总耗时，都不能单独确认应用执行了 SDM 代码。
+三类证据分别对应接收、候选有效、尝试加载与成功采用四个层次；install-dm、文件存在、入口 slice 或安装总耗时，任一单个信号都确认不了应用执行了 SDM 代码。
 
-<!-- gracker-diagram: ch18-05-15-evidence-levels -->
-![接收、候选、入口尝试与实际采用分开取证](../../assets/diagrams/ch18/ch18-05-15-evidence-levels.png)
-
-图：安装验证、ART 状态、入口 trace 与目标进程执行证据分别对应不同层次。 dump location 是不稳定调试字符串，Open sdm file 仅表示尝试，单一信号不能证明应用已执行云端机器码。
 
 ## 4. 性能收益来自哪里
+
+评估 SDM 的收益，要把省掉的成本和照付的成本分开算，再谈百分比有没有依据。
 
 ### 4.1 能省掉的工作
 
@@ -400,10 +370,6 @@ AOSP r1 源码没有给出 “安装时间减少 40%～60%”“冷启动减少 
 
 冷启动还可能出现方向不同的变化：省掉安装期编译通常有利于安装体验，SDM 的映射、ZIP 访问和页缺失特征却可能与本地产物不同。我们把安装 wall time、首次启动与后续启动分开测量。
 
-<!-- gracker-diagram: ch18-05-16-partial-cost -->
-![云端 AOT 只可能省掉安装编译的一部分](../../assets/diagrams/ch18/ch18-05-16-partial-cost.png)
-
-图：可用云端产物可替代部分本机 dex2oat，安装事务和应用启动的其他成本仍需测量。 原策略仅 verify 时编译可省空间很小；新增文件 I/O 与映射也影响总成本，没有固定整机收益百分比。
 
 ## 5. 建立可复现的 A/B/C 实验
 
@@ -417,12 +383,8 @@ AOSP r1 源码没有给出 “安装时间减少 40%～60%”“冷启动减少 
 | B | APK + DM | cloud profile 或 VDEX 对本机 dexopt 的影响 |
 | C | APK + DM + 对应 ISA 的 SDM | 云端 AOT 产物能否避开本机 dex2oat |
 
-A 组 APK 本身也可能包含 Baseline Profile，因此不是天然“无 Profile”组。三组还须固定或记录本地/参考 Profile、JIT、既有编译产物和后台 dexopt，避免后跑组继承前组状态。固定设备构建、相关 APEX 环境标识、电量、温度区间、存储余量、网络条件和 APK 字节。每组至少多次冷安装，并报告中位数、P90（90% 样本不超过的值）与失败/回退次数。更新安装和全新安装应分开统计。
+要注意 A 组 APK 本身也可能包含 Baseline Profile，它并不是天然的“无 Profile”组。三组还须固定或记录本地/参考 Profile、JIT、既有编译产物和后台 dexopt，避免后跑组继承前组状态；设备构建、相关 APEX 环境标识、电量、温度区间、存储余量、网络条件和 APK 字节也都要固定。每组至少多次冷安装，报告中位数、P90（90% 样本不超过的值）与失败/回退次数；更新安装和全新安装分开统计。
 
-<!-- gracker-diagram: ch18-05-17-abc -->
-![三组安装输入与前置编译状态共同控制](../../assets/diagrams/ch18/ch18-05-17-abc.png)
-
-图：同一 APK 比较单包、加 DM、再加指定 ISA SDM 三组，分别验证输入与候选是否采用。 A 组可已有 Baseline；还需控制本地 Profile、旧产物、JIT 与后台任务，更新安装和全新安装分开。
 
 ### 5.2 采集指标
 
@@ -445,10 +407,6 @@ A 组 APK 本身也可能包含 Baseline Profile，因此不是天然“无 Prof
 
 `am start -W` 适合做快速筛查，替代不了 Macrobenchmark 或带统计设计的 Perfetto 实验。Macrobenchmark 是 Jetpack 提供的跨进程性能测试框架，能重复控制启动和编译状态。测试 C 组时，还要把“SDM 被接收”和“SDM 被运行时采用”分成两个检查点。
 
-<!-- gracker-diagram: ch18-05-18-metrics -->
-![安装阶段与启动阶段分别测量](../../assets/diagrams/ch18/ch18-05-18-metrics.png)
-
-图：安装观测分解编译与事务成本，启动观测分解加载、缺页和应用关键路径。 adb 总耗时、ART 编译 wall time、CPU time 与 RSS 是不同口径；快速 am start 结果不能替代受控多轮实验。
 
 ## 6. 用命令与 Perfetto 定位问题
 
@@ -462,12 +420,8 @@ adb shell getprop pm.dexopt.install
 adb shell logcat -s artd PackageManager DexMetadataHelper
 ```
 
-pm art dump 列出 dex container、ABI、compiler filter、reason 与 location。location 指向 SDM 内 primary.odex 时，说明这次状态查询选到了相应候选，仍不等于应用进程已执行其中代码；该调试字符串格式不稳定。getprop 只显示产品属性当前值，空值可能使用默认映射，callback 和 reason 也可调整最终 filter，不能把属性值当成某次已完成安装的完整决策。
+pm art dump 列出 dex container、ABI、compiler filter、reason 与 location。location 指向 SDM 内 primary.odex 时，说明这次状态查询选到了相应候选，离应用进程已执行其中代码还差一步；该调试字符串格式也不稳定。getprop 只显示产品属性当前值：空值可能使用默认映射，callback 和 reason 还能再调整最终 filter，所以属性值还原不出某次已完成安装的完整决策。
 
-<!-- gracker-diagram: ch18-05-19-diagnostic -->
-![属性、ART dump 与现场执行各答一问](../../assets/diagrams/ch18/ch18-05-19-diagnostic.png)
-
-图：getprop 显示当前属性，ART dump 报告候选状态，trace/日志继续核对实际决策与加载。 空属性可能使用默认值，回调可改 filter；dump 候选和属性都不是应用已执行 SDM 的证明。
 
 生产版设备通常不允许 shell 枚举 `/data/app` 内部目录。文件级核对只适用于 root、userdebug/eng 或测试基础设施已经授予访问权的环境；普通设备上，我们依赖 `pm art dump`、日志和 trace。
 
@@ -480,7 +434,7 @@ pm art dump 列出 dex container、ABI、compiler filter、reason 与 location�
 3. 应用进程的 `Open sdm file <path>`：运行时是否尝试打开 SDM。
 4. 应用启动主线程：SDM 之外的初始化、I/O 与首帧瓶颈。
 
-没有 dex2oat 可能来自 verify、兼容本地产物或采集窗口/数据缺口；Open sdm file 又只是入口尝试。先核对采集是否覆盖目标安装与启动，再把编译进程、ART 状态、运行时结果和目标包关联，不能用任一缺失事件单独证明 SDM 生效。
+trace 里没有 dex2oat，可能来自 verify、兼容本地产物或采集窗口/数据缺口；Open sdm file 又只是入口尝试。我们先核对采集是否覆盖目标安装与启动，再把编译进程、ART 状态、运行时结果和目标包关联起来——任一事件缺失，单独都证明不了 SDM 生效。
 
 先查询编译进程，再查询线程 slice；分别执行下方两条 SELECT。只在 slice.name 搜 dex2oat 会遗漏没有同名 slice 的编译进程，名称大小写也要考虑。进程起止时刻可能为 NULL，表示 trace 未提供完整生命周期，不能补成零时长。
 
@@ -500,12 +454,8 @@ WHERE lower(s.name) GLOB '*dex2oat*'
 ORDER BY s.ts;
 ```
 
-结果仍须与目标包、安装时间窗及父子/调用关系对应；编译进程名不直接给出所属 APK，线程外轨道也可能没有可关联 PID。系统后台可能同时为其他包 dexopt，不能把所有编译与 SDM 尝试计入当前样本。
+结果仍须与目标包、安装时间窗及父子/调用关系对应：编译进程名不直接给出所属 APK，线程外轨道也可能没有可关联 PID；系统后台还可能同时为其他包 dexopt。归因时只把能与当前样本对上的事件计入。
 
-<!-- gracker-diagram: ch18-05-20-trace-sql -->
-![编译进程查询与 SDM slice 查询分开](../../assets/diagrams/ch18/ch18-05-20-trace-sql.png)
-
-图：先在 process 表找编译进程，再沿 slice、thread_track、thread、process 还原 SDM 尝试归属。 编译器可没有同名 slice；进程生命周期与轨道归属可能缺失，后台其他包的事件不能自动计入当前样本。
 
 ### 6.3 常见现象
 
@@ -531,7 +481,7 @@ ORDER BY s.ts;
 - 在应用更新、签名轮换、split 变化和 ART 环境变化时避免投递陈旧产物；
 - 监控设备端 validation warning 与本机 dexopt 回退率。
 
-本文核对的 AOSP 设备端源码定义接收、验证与消费条件，不定义商店的服务端生成、机型覆盖、分发时机或目标 filter。不能从客户端具备 SDM 支持推导某渠道已给所有用户投递可用产物；这些覆盖与发布证据另向分发侧核实。
+本文核对的 AOSP 设备端源码只定义接收、验证与消费条件；商店的服务端生成、机型覆盖、分发时机和目标 filter 属于分发侧，要另向分发侧核实。客户端具备 SDM 支持，也推导不出某渠道已经给所有用户投递了可用产物——覆盖与发布证据得看分发侧自己的数据。
 
 ### 7.2 应用工程师需要做什么
 
@@ -545,21 +495,13 @@ ORDER BY s.ts;
 
 Baseline Profile 与 cloud profile 的覆盖来源不同：前者随应用构建发布，后者由分发侧运行数据生成。两者都可能成为 ART 编译输入，SDM 替代不了 Baseline Profile。
 
-<!-- gracker-diagram: ch18-05-21-responsibilities -->
-![分发、设备和应用团队各自提供哪些证据](../../assets/diagrams/ch18/ch18-05-21-responsibilities.png)
-
-图：分发侧准备相容且签名匹配的产物，设备端验证与选择，应用团队持续建设 Profile 与启动回归。 设备端支持不能推出渠道实际覆盖；SDM 不替代应用 Baseline Profile，也不免除应用自身初始化工作。
 
 ### 7.3 OEM dexpreopt 与应用 Profile
 
 OEM dexpreopt 在系统镜像构建期处理 boot classpath、`system_server`、系统组件和预装 APK。`WITH_DEXPREOPT`、`WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY` 等构建开关决定镜像预编译范围，产物进入 system 分区或 boot image 相关目录；应用 Baseline Profile 则随 APK/AAB 交付，由安装端 ART、渠道或 ProfileInstaller 消费。
 
-预装应用可能同时获得镜像 dexpreopt 与后续 profile-guided dexopt，但两者发生的阶段、权限、输入和产物归属不同。`WITH_DEXPREOPT_*` 管不到第三方应用的 Profile；某家 OEM 的私有预装策略，也写不进 AOSP 的应用分发规则。做实验时，我们分别记录镜像构建配置、安装输入、ART Service 的 compiler filter/reason 和应用侧 Macrobenchmark 结果。
+预装应用可能同时获得镜像 dexpreopt 与后续 profile-guided dexopt，但两者发生的阶段、权限、输入和产物归属各不相同：`WITH_DEXPREOPT_*` 只管镜像构建，管不到第三方应用的 Profile；某家 OEM 的私有预装策略，也进不了 AOSP 的应用分发规则。做实验时，我们分别记录镜像构建配置、安装输入、ART Service 的 compiler filter/reason 和应用侧 Macrobenchmark 结果。
 
-<!-- gracker-diagram: ch18-05-22-dexpreopt -->
-![镜像 dexpreopt 与应用交付 Profile 的阶段不同](../../assets/diagrams/ch18/ch18-05-22-dexpreopt.png)
-
-图：OEM dexpreopt 在镜像构建期生成产物，应用 Profile 在交付与设备端消费环节参与优化。 预装应用可以经历两种路径；WITH_DEXPREOPT 系列开关不是第三方应用的 Profile 开关。
 
 ### 7.4 应用团队可复核的产物与状态
 
@@ -573,12 +515,8 @@ adb shell pm compile -m speed-profile -f -v com.example.app
 adb shell pm art dump com.example.app
 ```
 
-前两条命令只确认精确 ZIP 条目名，仍需检查 Profile 可解析、非空且匹配 DEX。adb install -r 是更新安装，会保留已有数据与部分运行历史；后续 compile 请求和 art dump 读取当前状态，不证明 APK 中这份 Baseline 就是实际输入。Baseline 启动收益用 Macrobenchmark 的受控 Profile/编译组验证，SDM 用第 5 节三组输入并独立核实接收、候选与运行时采用，两类实验分别报告。
+前两条命令只确认精确 ZIP 条目名，Profile 可解析、非空且匹配 DEX 还要另外检查。adb install -r 是更新安装，会保留已有数据与部分运行历史；后续 compile 请求和 art dump 读取的是当前状态，APK 中这份 Baseline 是否就是实际输入，还要靠后面的实验确认。Baseline 启动收益用 Macrobenchmark 的受控 Profile/编译组验证；SDM 用第 5 节三组输入，独立核实接收、候选与运行时采用——两类实验分别报告。
 
-<!-- gracker-diagram: ch18-05-23-ci-evidence -->
-![ZIP 条目、Profile 有效性与编译采用逐步检查](../../assets/diagrams/ch18/ch18-05-23-ci-evidence.png)
-
-图：CI 先精确检查条目名，再确认 Profile 内容与 DEX 匹配，最后验证设备实际编译和启动结果。 install -r 保留运行历史；compile -f 请求会改变编译状态，不能据条目存在或 filter 请求识别输入来源。
 
 ## 8. 版本边界
 

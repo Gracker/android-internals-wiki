@@ -50457,9 +50457,247 @@
       "before_count": 23,
       "before_all_images": 23,
       "sha256_before": "a1eb3e88de2f6d7d40ff9396abc1bd32f9fb7b78ac1859f52ff8dc58963ba66a",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch18-05-01-four-roles",
+          "title": "Profile、DM、SDM 与 SDC 在不同阶段各司其职",
+          "decision": "remove",
+          "reason": "四项职责在导言及表格逐一说明，四张无连接卡片没有补充交付或消费关系；保留实际加载输入汇合图13。",
+          "original_line": 102,
+          "heading": "## SDM 的定义与收益边界"
+        },
+        {
+          "original_id": "ch18-05-02-profile-types",
+          "title": "Baseline、Startup、Cloud 与云端 AOT 的边界",
+          "decision": "remove",
+          "reason": "三类 Profile 的来源、阶段、作用已由紧邻表格完整比较，平行卡片重复；不据图将 Startup 当运行时文件。",
+          "original_line": 127,
+          "heading": "### 1.1 三类 Profile 解决不同问题"
+        },
+        {
+          "original_id": "ch18-05-03-dm-classification",
+          "title": "DM 分类只说明 ZIP 条目存在",
+          "decision": "keep",
+          "reason": "区分文件缺失、读取错误及归档可读后的条目存在性分类；分支关系帮助避免把类型当作语义有效或已采用。",
+          "original_line": 145,
+          "heading": "### 1.2 `.dm`：Dex Metadata"
+        },
+        {
+          "original_id": "ch18-05-04-filenames",
+          "title": "APK、DM、SDM 和安装重命名必须对应",
+          "decision": "remove",
+          "reason": "base/split 与 ISA 文件名已有两张精确表及重命名说明，三列示例图重复且不增加验证路径。",
+          "original_line": 170,
+          "heading": "### 1.3 `.sdm`：Secure Dex Metadata"
+        },
+        {
+          "original_id": "ch18-05-05-sdm-validation",
+          "title": "新 API 验证 SDM 的名称与 signer",
+          "decision": "remove",
+          "reason": "新 helper 的 ISA、APK、v3 和 signer 检查在紧邻列表完整给出；保留更需要区分的安装器新旧错误处理图6。",
+          "original_line": 183,
+          "heading": "### 1.3 `.sdm`：Secure Dex Metadata"
+        },
+        {
+          "original_id": "ch18-05-06-installer-branches",
+          "title": "新旧验证分支与删除失败分别处理",
+          "decision": "keep",
+          "reason": "并列展示新 helper 的删除后继续、删除 IOException 失败与旧签名分支硬失败，防止混用 flag 下不同安装结果。",
+          "original_line": 190,
+          "heading": "### 1.3 `.sdm`：Secure Dex Metadata"
+        },
+        {
+          "original_id": "ch18-05-08-apex-context",
+          "title": "SDC 的时间戳与 APEX 环境如何参与验证",
+          "decision": "keep",
+          "reason": "串联首次 SDM 时间戳、BCP APEX 更新时间优先标识、覆盖 OAT 上下文和前缀兼容核验，是 SDC 环境绑定的独立机制。",
+          "original_line": 218,
+          "heading": "### 1.4 `.sdc`：Secure Dex Metadata Companion"
+        },
+        {
+          "original_id": "ch18-05-07-sdc-lifecycle",
+          "title": "SDC 的缺失、复用与重建条件",
+          "decision": "keep",
+          "reason": "明确无 SDM 正常返回、相同 mtime 保留首次环境、缺失或变化才重建的条件分支，放在生命周期正文后正确。",
+          "original_line": 225,
+          "heading": "### 1.4 `.sdc`：Secure Dex Metadata Companion"
+        },
+        {
+          "original_id": "ch18-05-09-install-to-art",
+          "title": "安装会话和 ART Service 的职责交接",
+          "decision": "remove",
+          "reason": "紧邻职责表已覆盖 PM、ART Service、artd、dex2oat 和 runtime；线性职责交接与决策图10重复。",
+          "original_line": 264,
+          "heading": "### 2.2 dexopt 由谁执行"
+        },
+        {
+          "original_id": "ch18-05-10-dexopt-decision",
+          "title": "兼容候选、目标 filter 与 force 共同决定重编",
+          "decision": "keep",
+          "reason": "保留输入准备到候选/filter/trigger判断，再分别跳过或受资源取消条件限制的编译分支；不把 SDM 存在等同免编译。",
+          "original_line": 279,
+          "heading": "### 2.3 ART 如何决定跳过本机编译"
+        },
+        {
+          "original_id": "ch18-05-11-local-cleanup",
+          "title": "本机编译后按目标与 ISA 清理云端产物",
+          "decision": "remove",
+          "reason": "当前目标 PERFORMED 且非 pre-reboot 的清理条件已有三行代码与范围说明；GC 另有说明，不需再画三路卡片。",
+          "original_line": 296,
+          "heading": "### 2.3 ART 如何决定跳过本机编译"
+        },
+        {
+          "original_id": "ch18-05-12-install-background",
+          "title": "安装、首次启动和后台 dexopt 的时点分开",
+          "decision": "remove",
+          "reason": "安装、首启、样本积累和后台编译时点已用连续正文解释，图不增加采样数据，实验状态控制段也重复覆盖。",
+          "original_line": 307,
+          "heading": "### 2.4 安装编译与后台 dexopt 是两个时点"
+        },
+        {
+          "original_id": "ch18-05-13-zip-load",
+          "title": "运行时组合 SDM、DM、SDC 和 APK",
+          "decision": "keep",
+          "reason": "ODEX 来自 SDM、VDEX 来自 DM、SDC 环境与实际 APK 依赖共同汇入加载检查，汇合结构有助解释非解包路径及入口尝试边界。",
+          "original_line": 333,
+          "heading": "### 3.1 直接从 ZIP 打开 `primary.odex`"
+        },
+        {
+          "original_id": "ch18-05-14-compatibility-policy",
+          "title": "候选有效性与是否重编是两类判断",
+          "decision": "remove",
+          "reason": "候选有效性与策略判断在列表及正文清楚区分，三列卡片再重复图10和13的输入条件。",
+          "original_line": 351,
+          "heading": "### 3.2 运行时的兼容性检查"
+        },
+        {
+          "original_id": "ch18-05-15-evidence-levels",
+          "title": "接收、候选、入口尝试与实际采用分开取证",
+          "decision": "remove",
+          "reason": "四层采用证据已有三项清单与精确边界说明；卡片链也易被读成 artd 尝试后必到 App 成功，保留条件化正文更清楚。",
+          "original_line": 368,
+          "heading": "### 3.3 确认内容被采用的三类证据"
+        },
+        {
+          "original_id": "ch18-05-16-partial-cost",
+          "title": "云端 AOT 只可能省掉安装编译的一部分",
+          "decision": "remove",
+          "reason": "可省与必付成本已分两节枚举，图无实测比例；其串行概览不能替代不同阶段独立测量。",
+          "original_line": 409,
+          "heading": "### 4.3 固定百分比的来源与测量"
+        },
+        {
+          "original_id": "ch18-05-17-abc",
+          "title": "三组安装输入与前置编译状态共同控制",
+          "decision": "remove",
+          "reason": "A/B/C 三组表与控制条件已完整描述，三列再次复述输入和检查事项，不增加实验对照信息。",
+          "original_line": 428,
+          "heading": "### 5.1 三组输入"
+        },
+        {
+          "original_id": "ch18-05-18-metrics",
+          "title": "安装阶段与启动阶段分别测量",
+          "decision": "remove",
+          "reason": "安装与启动指标已有两份详细列表和统计边界，三列卡片只是缩写清单。",
+          "original_line": 454,
+          "heading": "### 5.2 采集指标"
+        },
+        {
+          "original_id": "ch18-05-19-diagnostic",
+          "title": "属性、ART dump 与现场执行各答一问",
+          "decision": "remove",
+          "reason": "命令及紧邻正文已逐项解释当前属性、候选状态、执行证据边界，与证据段重复。",
+          "original_line": 473,
+          "heading": "### 6.1 读取 ART Service 状态"
+        },
+        {
+          "original_id": "ch18-05-20-trace-sql",
+          "title": "编译进程查询与 SDM slice 查询分开",
+          "decision": "remove",
+          "reason": "双 SELECT 已明确 process 查询与 slice/thread/process 关联，图三列概览未画实际 join 关系且不增加代码可读性。",
+          "original_line": 511,
+          "heading": "### 6.2 Perfetto 的四个时间点"
+        },
+        {
+          "original_id": "ch18-05-21-responsibilities",
+          "title": "分发、设备和应用团队各自提供哪些证据",
+          "decision": "remove",
+          "reason": "分发和应用职责已有两份具体列表，设备消费机制也已在前文展开，角色卡片作为总结重复。",
+          "original_line": 554,
+          "heading": "### 7.2 应用工程师需要做什么"
+        },
+        {
+          "original_id": "ch18-05-22-dexpreopt",
+          "title": "镜像 dexpreopt 与应用交付 Profile 的阶段不同",
+          "decision": "remove",
+          "reason": "镜像 dexpreopt、预装后续更新及普通应用 Profile 的阶段和权限已用两段正文区分，三列卡片不再增加路径条件。",
+          "original_line": 565,
+          "heading": "### 7.3 OEM dexpreopt 与应用 Profile"
+        },
+        {
+          "original_id": "ch18-05-23-ci-evidence",
+          "title": "ZIP 条目、Profile 有效性与编译采用逐步检查",
+          "decision": "remove",
+          "reason": "精确 ZIP 检查命令与后文已区分有效性、消费及启动实验，通用 CI 步骤再重复证据和实验段。",
+          "original_line": 584,
+          "heading": "### 7.4 应用团队可复核的产物与状态"
+        }
+      ],
+      "sha256_after": "da1c73d4509a58b437c26441664bdbb2ee61ae45fd1eacf2b78edb268d49788c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:33:13.976523+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 23,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a193/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a193/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 193,
+        "article": "src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
+        "registered_sha256": "a1eb3e88de2f6d7d40ff9396abc1bd32f9fb7b78ac1859f52ff8dc58963ba66a",
+        "frozen_sha256": "a1eb3e88de2f6d7d40ff9396abc1bd32f9fb7b78ac1859f52ff8dc58963ba66a",
+        "review_input_sha256": "46ccf722828adffc9663c617627dbb88d7a035569f60079abbd8d3ac0765e4ac",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a193/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a193/external-source.diff",
+        "diff_sha256": "7535592fd52abd8e17a55d11fef2a56817d9c84bc8417d4e0a5492340b38c5f4",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 312, \"characters\": 23459, \"svg_labels_read\": 23, \"actual_pngs_viewed\": 23, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 8, \"code_lines\": 30, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "46ccf722828adffc9663c617627dbb88d7a035569f60079abbd8d3ac0765e4ac",
+      "retired_diagrams": [
+        "ch18-05-01-four-roles",
+        "ch18-05-02-profile-types",
+        "ch18-05-04-filenames",
+        "ch18-05-05-sdm-validation",
+        "ch18-05-09-install-to-art",
+        "ch18-05-11-local-cleanup",
+        "ch18-05-12-install-background",
+        "ch18-05-14-compatibility-policy",
+        "ch18-05-15-evidence-levels",
+        "ch18-05-16-partial-cost",
+        "ch18-05-17-abc",
+        "ch18-05-18-metrics",
+        "ch18-05-19-diagnostic",
+        "ch18-05-20-trace-sql",
+        "ch18-05-21-responsibilities",
+        "ch18-05-22-dexpreopt",
+        "ch18-05-23-ci-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-193/retired-assets.json"
     },
     {
       "index": 194,
@@ -51364,8 +51602,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 124,
-  "next_article": "src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
+  "reviewed_articles": 125,
+  "next_article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -51375,7 +51613,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:28:48.835683+08:00",
+  "updated_at": "2026-10-31T15:33:13.976523+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -51438,13 +51676,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
-      "registered_sha256": "a1eb3e88de2f6d7d40ff9396abc1bd32f9fb7b78ac1859f52ff8dc58963ba66a",
-      "observed_sha256": "46ccf722828adffc9663c617627dbb88d7a035569f60079abbd8d3ac0765e4ac",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -51616,9 +51847,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4133,
-  "reviewed_placements_after": 1768,
-  "net_removed_placements": 2365,
+  "reviewed_placements_before": 4156,
+  "reviewed_placements_after": 1774,
+  "net_removed_placements": 2382,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -51642,5 +51873,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 124
+  "currently_matching_reviewed_source_count": 125
 }
