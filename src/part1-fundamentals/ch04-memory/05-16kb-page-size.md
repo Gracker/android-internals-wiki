@@ -4,8 +4,10 @@ chapter: '4.5'
 section: '4.5'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-08-29'
-last_verified_against: Android Developers Support 16 KB page sizes and Play requirements checked 2026-08-29; source.android.com 16 KB architecture/backcompat/page-size/system-property docs checked 2026-08-29; AOSP android-17.0.0_r1 bionic/linker and manifest attrs; Android common kernel android17-6.18-2026-06_r6 ARM64 THP/contpte sources; ARM Architecture Reference Manual
+last_verified: '2026-10-31'
+last_source_verified_at: '2026-10-31T18:43:00+08:00'
+last_idle_audit_at: '2026-10-31T18:43:00+08:00'
+last_verified_against: Android Developers page-sizes (updated 2026-10-16), application manifest and Play technical quality docs checked 2026-10-31; AOSP 16 KB backcompat docs checked 2026-10-31; AOSP android-17.0.0_r1 linker, 16kib compat, page.h, WriteProtected.h and attrs_manifest.xml checked 2026-10-31; Android common kernel android17-6.18-2026-06_r6 THP, contpte, page-table geometry and GKI defconfig checked 2026-10-31
 confidence: medium-high
 sources:
 - type: official
@@ -186,7 +188,13 @@ target_link_options(
 
 链接参数之外，打包环节还有自己的对齐要求：AGP 8.3 到 8.5 可能已经生成满足要求的 ELF，但 bundletool 默认生成的 Play APK 仍可能缺少正确的 ZIP 对齐，所以本地 `.so` 检查通过之后，还要单独验证 Play 分发产物是否可安装。
 
-工具链暂时升不到 AGP 8.5.1+ 时，可按官方迁移方案启用 `useLegacyPackaging`，把共享库压缩进 APK 并在安装时解压。这种过渡方式会增加安装后占用，也可能在存储紧张时提高安装失败风险，工具链升级仍要按计划推进。
+工具链暂时升不到 AGP 8.5.1+ 时，可按官方迁移方案启用 `useLegacyPackaging`，把共享库压缩进 APK 并在安装时解压。若使用 AGP 8.0 或更低版本，还要在 `gradle.properties` 中关闭 AAB 的未压缩原生库选项：
+
+```properties
+android.bundle.enableUncompressedNativeLibs=false
+```
+
+这项额外配置适用于 AGP 8.0 及以下版本，不能只设置 `useLegacyPackaging` 就省略。压缩打包会增加安装后占用，也可能在存储紧张时提高安装失败风险，工具链升级仍要按计划推进。
 
 若 NDK r27 项目出现与 `WriteProtected` 相关的报告，应保存完整错误、构建参数和库 Build ID，再与 NDK r28+ 全量重编结果对照。单个 issue 样本说明的是个例，所有 r27 静态库是否兼容，要靠这次全量重编的对照结果来回答。
 
@@ -200,7 +208,13 @@ Android 官方提供 `check_elf_alignment.sh` 扫描 APK 内的共享库，并�
 llvm-objdump -p libyour.so | grep -A 1 LOAD
 ```
 
-官方检查标准要求可加载段的 `align` 至少为 `2**14`。检查时也要留意 `GNU_RELRO`，它表示重定位完成后会改成只读的一段区域；段布局和权限的划分都可能受链接参数影响。
+官方检查标准要求可加载段的 `align` 至少为 `2**14`。这个结果只覆盖 `PT_LOAD` 的声明对齐，还要检查 `GNU_RELRO`（Relocation Read-Only，重定位后只读区域）与相邻可写数据的边界。以下命令同时列出可加载段和 RELRO，便于对照它们的虚拟地址与内存大小：
+
+```bash
+llvm-readelf -Wl libyour.so | grep -E 'Type|LOAD|GNU_RELRO'
+```
+
+当 RELRO 是可写 `LOAD` 段的前缀，后面还接着 `.data` 或 `.bss` 时，其末端应满足 `(VirtAddr + MemSiz) % 0x4000 == 0`。否则，按 16 KiB 页扩大只读范围会覆盖后续可写数据，可能导致运行时崩溃。若 RELRO 独占整个 `LOAD` 段，且后续可写段从独立的 16 KiB 页开始，则不能仅凭这个余数非零判为不兼容。应结合完整段布局判断，并用支持 16 KiB 的链接参数重新构建有问题的库。[官方检查说明](https://developer.android.com/guide/practices/page-sizes#relro-flag)
 
 用 `llvm-objcopy` 修改现成二进制来“补齐”对齐，这条路走不通：`p_align` 只是程序头中的一个字段，文件偏移、虚拟地址、各段的起止位置、重定位和源码中的页大小假设必须彼此一致。
 
@@ -287,9 +301,9 @@ bionic 自己的页大小接口统一放在 `libc/platform/bionic/page.h`：固�
 
 ### 5.2 `ElfReader::Read()` 的兼容模式入口
 
-页大小确认之后，加载决策从 `ElfReader::Read()` 开始：它先检查程序头，得到所有可加载段的最小对齐值 `min_align_`；只有当前系统页为 16 KiB 且 `min_align_ < 16 KiB` 时，动态链接器才会读取兼容模式开关。
+页大小确认之后，加载决策从 `ElfReader::Read()` 开始。`CheckProgramHeaderAlignment()` 先按 `PT_LOAD` 的 `p_align` 计算 `min_align_`，在 16 KiB 系统上再调用 `FixMinAlignFor16KiB()` 修正：RELRO 前缀末端未按 16 KiB 对齐，或相邻 `LOAD` 段按系统页取整后发生内容覆盖，都可能让有效的 `min_align_` 降低。因此，即使所有 `LOAD align` 都达到 `2**14`，也可能需要兼容加载。
 
-下面是保留控制关系后的精简代码：
+只有当前系统页为 16 KiB 且修正后的 `min_align_ < 16 KiB` 时，动态链接器才会读取兼容模式开关。下面是保留控制关系后的精简代码：
 
 ```cpp
 if (kPageSize == 16 * 1024 && min_align_ < kPageSize) {
@@ -317,22 +331,34 @@ program alignment (4096) cannot be smaller than system page size (16384)
 
 ### 5.3 `CompatMapSegment()` 做了什么
 
-正常路径中的 `MapSegment()` 可以把 ELF 文件段直接映射到进程地址空间；兼容路径面对的矛盾是段按 4 KiB 对齐、物理页按 16 KiB 划分，两边对不上，所以它会：
+正常路径中的 `MapSegment()` 可以把 ELF 文件段直接映射到进程地址空间；兼容路径要处理旧的 4 KiB 段边界与 16 KiB 基础页不一致的布局。`android-17.0.0_r1` 的主要步骤是：
 
 1. 为加载范围（load range）预留额外地址空间；
-2. 按旧的 4 KiB 段边界读取内容；
-3. 把内容放进匿名映射；
-4. 调整加载偏移 `load_bias_`，按 16 KiB 页重新划定各段权限；
-5. 在加载完成后恢复代码段、数据段和 RELRO 的保护。
+2. `Setup16KiBAppCompat()` 检查能否形成单一的 RX/RW 权限边界；满足条件时调整加载偏移 `load_bias_`，让这个边界对齐到 16 KiB 页，否则转入 RWX 兼容路径；
+3. `CompatMapSegment()` 按旧的 4 KiB 段边界，通过 `pread64()` 把文件内容读入匿名映射；
+4. 完成重定位后，`protect_16kib_app_compat_code()` 设置兼容代码区域的权限；
+5. 若使用 RWX 路径，再对段内部的完整 16 KiB 页恢复权限，先处理 `PT_LOAD`，后处理 `PT_GNU_RELRO`。
 
-`linker_phdr_16kib_compat.cpp` 中的 `protect_segment_middle_pages()` 遇到 `PT_GNU_RELRO` 时会强制使用 `PROT_READ`；兼容模式保留了 RELRO 保护，把权限恢复放进专用的 16 KiB 兼容处理流程。
+两条兼容路径的保护范围不同。RX/RW 路径把原来的只读段、代码段和 RELRO 前缀合并到 RX 区域，后面的可写数据位于 RW 区域。
 
-兼容模式让旧库有机会运行，但可能带来匿名拷贝、更多私有内存、额外读入和启动开销，具体增量取决于 ELF 布局和共享方式。评估它时我们要记住，系统依旧使用 16 KiB 基础页：应用是否因此失去 TLB 收益、`Shared_Clean` 是否归零、PSS 增加多少，都要按这两个因素来判断。
+RWX 路径先将兼容区域设为可读、可写、可执行，再由 `protect_segment_middle_pages()` 对起点向上、终点向下取整后的完整页恢复权限；遇到 `PT_GNU_RELRO` 时，这些内部完整页会设为 `PROT_READ`。跨越权限边界的页可能仍为 RWX，因此兼容加载不能保证完整保留原来的 RELRO 与写入/执行隔离。排查时可核对链接器的 `falling back to RWX compat` 警告，并在有权限时检查 `/proc/<pid>/maps` 的映射权限。[r1 兼容加载实现](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr_16kib_compat.cpp)
 
-<!-- gracker-diagram: ch04-05-linker-native-versus-compat -->
-![16 KiB 链接器先查 ELF 对齐，再决定是否进入兼容加载](../../assets/diagrams/ch04/ch04-05-linker-native-versus-compat.png)
+兼容模式让旧库有机会运行，但可能带来匿名拷贝、更多私有内存、额外读入和启动开销，具体增量取决于 ELF 布局和共享方式。系统依旧使用 16 KiB 基础页；TLB 事件、`Shared_Clean` 和 PSS 的变化仍需按实际映射测量。
 
-图：r1 在 16 KiB 系统且 min_align 小于页大小时才检查兼容开关。可兼容且布局满足要求的旧 ELF，会按旧 4 KiB 段边界 pread 到匿名映射，再调整加载与权限、处理 RELRO；未允许兼容则报对齐错误。正常兼容 ELF 可直接按文件映射。兼容路径有布局限制，也不会把内核页大小变回 4 KiB。
+加载决策与两条兼容路径可以按以下流程核对：
+
+```mermaid
+flowchart TD
+    A["16 KiB 系统：检查 PT_LOAD、RELRO 末端与段覆盖"] --> B{"修正后的 min_align_ 小于 16 KiB？"}
+    B -- 否 --> N["原生加载：段文件映射"]
+    B -- 是 --> C{"允许兼容？"}
+    C -- 否 --> E["拒绝加载，报告对齐错误"]
+    C -- 是 --> D{"布局满足 RX/RW 条件？"}
+    D -- 是 --> R["调整 load_bias_，匿名复制，重定位后设置 RX/RW"]
+    D -- 否 --> W["匿名复制，重定位后设为 RWX 并恢复内部完整页权限"]
+```
+
+图：r1 在 16 KiB 系统且修正后的 min_align 小于页大小时检查兼容开关。允许兼容时，按旧 4 KiB 段边界 pread 到匿名映射，再根据布局采用 RX/RW 或 RWX 权限处理；RWX 路径只恢复段内部完整页的权限。未允许兼容则报对齐错误，满足原生 16 KiB 布局要求的 ELF 可直接按文件映射。兼容路径不会把内核页大小变回 4 KiB。
 
 ### 5.4 兼容模式的验证开关
 
@@ -365,7 +391,7 @@ adb shell setprop pm.16kb.app_compat.disabled true
     ... />
 ```
 
-AOSP `attrs_manifest.xml` 将该属性定义为 `enabled` / `disabled` 枚举。`enabled` 可强制启用兼容路径并隐藏首次提示，适合迁移诊断；`disabled` 适合让未适配 ELF 在测试阶段直接失败。这个属性只控制兼容模式，不是合格证明；发布前要让所有原生产物直接满足 16 KiB 要求。
+AOSP `attrs_manifest.xml` 将该属性定义为 `enabled` / `disabled` 枚举。它只影响 16 KiB 系统上仍按旧 4 KiB 方式构建的应用；在 4 KiB 系统上，或应用已原生适配 16 KiB 时，系统会忽略该属性。`enabled` 可启用兼容路径并隐藏首次提示，适合迁移诊断；`disabled` 适合让未适配 ELF 在测试阶段直接失败。这个属性只控制兼容模式，不是合格证明；发布前要让所有原生产物直接满足 16 KiB 要求。
 
 ## 6. 迁移流程
 
@@ -394,7 +420,7 @@ adb shell getprop ro.build.fingerprint
 
 期望 `PAGE_SIZE` 输出 `16384`。Android 16 起还可以检查 `ro.product.page_size`、`ro.product.cpu.pagesize.max` 和 `ro.product.build.16k_page.enabled`，但运行时页大小最终仍以 `getconf`、`AT_PAGESZ` 或进程接口为准。
 
-可用的测试环境包括 16 KiB 模拟器和 Cuttlefish；Pixel 8/8 Pro、Pixel 8a、Pixel 9 系列和 Android 16+ 的 Pixel 9a 提供“Boot with 16KB page size”开发者选项。设备能切换页大小时，4 KiB/16 KiB 对比更容易控制硬件差异。
+可用的测试环境包括 16 KiB 模拟器和 Cuttlefish。真机的“Boot with 16KB page size”开发者选项有系统版本限制：Pixel 8/8 Pro、Pixel 8a 需要 Android 15 QPR1 或更高版本；Pixel 9、9 Pro、9 Pro XL 需要 Android 15 QPR2 或更高版本；Pixel 9a 需要 Android 16 或更高版本。使用前应安装可用的系统更新，重启后再用 `getconf PAGE_SIZE` 确认。设备能切换页大小时，4 KiB/16 KiB 对比更容易控制硬件差异。
 
 ### 第五步：关闭兼容模式再跑完整用例
 
@@ -432,7 +458,7 @@ adb shell getprop ro.build.fingerprint
 
 ### 7.3 `mprotect()` 返回 `EINVAL`
 
-先检查起始地址是否按运行时页大小对齐，并重新计算保护范围。bionic 源码里就有按运行时页大小对齐的现成写法：`WriteProtected<T>` 用 `max_android_page_size()` 对齐存储区和 `mprotect()` 长度。旧工具或静态组件中的相似代码要按各自的源码和版本单独确认，NDK r27 产物之间未必是同一个实现。
+先检查起始地址是否按运行时页大小对齐，并重新计算保护范围。bionic 的 `WriteProtected<T>` 用 `max_android_page_size()` 对齐存储区和 `mprotect()` 长度；在页大小可变的构建中，这个函数返回支持的最大页大小 16 KiB，当前基础页大小则由 `page_size()` 查询。旧工具或静态组件中的相似代码要按各自的源码和版本单独确认，NDK r27 产物之间未必是同一个实现。
 
 ### 7.4 只在某个业务页面崩溃
 

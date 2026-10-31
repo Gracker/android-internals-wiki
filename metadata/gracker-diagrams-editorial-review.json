@@ -65265,5 +65265,15 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 183
+  "currently_matching_reviewed_source_count": 183,
+  "external_registry_reconciliations": [
+    {
+      "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "report": "metadata/gracker-diagrams-revalidations/external-16kb-20261031-01.json",
+      "sha256": "106d89418e5015bbb4c794b92a76f1d86f9706730586454ba8457259dfac97b0",
+      "removed_unreferenced_png": 1,
+      "native_replacement": 1,
+      "selected_scope_unchanged": true
+    }
+  ]
 }

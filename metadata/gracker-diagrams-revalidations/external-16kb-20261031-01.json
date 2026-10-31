@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "kind": "external_outside_selected_scope_registry_reconciliation",
+  "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+  "registered_before_sha256": "761b954a66804fd547d198201c2a5100c52f5e47384917a8787dcf3ab0ab311b",
+  "current_sha256": "106d89418e5015bbb4c794b92a76f1d86f9706730586454ba8457259dfac97b0",
+  "source_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-registry-reconciliation/16kb/current.md",
+  "prior_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-registry-reconciliation/16kb/accepted-before.md",
+  "external_diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-registry-reconciliation/16kb/external-source.diff",
+  "external_diff_sha256": "e7586fe4f3c55e1c014c0cd9c4833a269cb515c71a252fe51b124f6e277fd25d",
+  "png_before": 7,
+  "png_after": 6,
+  "native_before": 0,
+  "native_after": 1,
+  "selected_scope_unchanged": 207,
+  "reason": "External source revision replaced the linker PNG with a native flowchart separating RX/RW and RWX compatibility outcomes; old PNG implied RELRO preservation without the newer qualification and is no longer referenced. Preserve all current external prose/code and native source. This reconciliation is diagram editorial QA, not independent technical source verification.",
+  "review_evidence": {
+    "narrative_rows": 303,
+    "narrative_characters": 20756,
+    "non_mermaid_code_blocks_read": 19,
+    "code_lines_read": 56,
+    "old_svg_label_sets_read": 7,
+    "old_pngs_actually_viewed": 7,
+    "current_contexts_actually_viewed": 6,
+    "current_native_actually_viewed": 1,
+    "desktop_mobile_layout": "/tmp/gracker-diagrams-editorial-review-20261028/external-registry-reconciliation/16kb/layout.json",
+    "findings": "Six retained diagrams remain with their matching topic paragraphs: theoretical reach, independent ELF/ZIP checks, numeric page rounding, migration order, endpoint/mechanism evidence and distinct large-page mechanisms. The replacement native flowchart has distinct native/reject/RX-RW/RWX leaves and renders cleanly at desktop/mobile. All native labels and seven original PNGs visually read; six final PNG contexts viewed. No native or prose edits introduced by this review."
+  },
+  "retired_assets": [
+    {
+      "original_path": "src/assets/diagrams/ch04/ch04-05-linker-native-versus-compat.svg",
+      "archive_path": "/tmp/gracker-diagrams-editorial-review-20261028/retired-assets/src/assets/diagrams/ch04/ch04-05-linker-native-versus-compat.svg",
+      "sha256": "8376898922021451db35ae15bbfd8c41c67d1a87865249dd4f0ddb961e07e559"
+    },
+    {
+      "original_path": "src/assets/diagrams/ch04/ch04-05-linker-native-versus-compat.png",
+      "archive_path": "/tmp/gracker-diagrams-editorial-review-20261028/retired-assets/src/assets/diagrams/ch04/ch04-05-linker-native-versus-compat.png",
+      "sha256": "c829ceafebc754b28db7cbde857692ac8b3e576c4651ca65ab835b1cfc0c2201"
+    }
+  ],
+  "recorded_at": "2026-10-31T18:47:36.059385+08:00"
+}
