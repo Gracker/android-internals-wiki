@@ -64195,9 +64195,123 @@
       "before_count": 11,
       "before_all_images": 11,
       "sha256_before": "af858ff6c20538ae25d8b1a03202c19bd6bc9c6944ead4ebb846a167a93cb47e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a263-01-compression-negotiation",
+          "title": "压缩协商决定谁负责解压",
+          "decision": "keep",
+          "reason": "显式AcceptEncoding与默认Bridge的责任分叉，配合Compression/Brotli替代配置提示，帮助判断何时自动解压及移除长度标头。",
+          "original_line": 167,
+          "heading": "#### OkHttp 5.4.0 的透明解压行为"
+        },
+        {
+          "original_id": "a263-02-cache-storage-lifetimes",
+          "title": "四种缓存与持久真源的生命周期",
+          "decision": "remove",
+          "reason": "内存/文件/HTTP/真源四个孤立卡片完整重复上方四层载体、淘汰、风险表，未新增生命周期关系。",
+          "original_line": 219,
+          "heading": "#### 四层各自的语义"
+        },
+        {
+          "original_id": "a263-03-cache-cleanup-semantics",
+          "title": "系统缓存清理的 Group 与 Tombstone",
+          "decision": "remove",
+          "reason": "默认/Group/Tombstone文字框重复紧邻目录设置及自动/用户清理区别段落，没有具体目录清理前后示例。",
+          "original_line": 235,
+          "heading": "#### 四层各自的语义"
+        },
+        {
+          "original_id": "a263-04-http-cache-decision",
+          "title": "HTTP 缓存区分新鲜复用与条件验证",
+          "decision": "keep",
+          "reason": "匹配变体后直接复用与条件验证分叉，再到304本地体或200新表示，体现新鲜命中与有网络条件命中不同路径。",
+          "original_line": 289,
+          "heading": "#### ETag 与 Last-Modified 的适用条件"
+        },
+        {
+          "original_id": "a263-05-business-cache-refresh",
+          "title": "业务缓存按键合并刷新与按依赖失效",
+          "decision": "remove",
+          "reason": "依赖失效、同键合并、临时文件与恢复四框被画成单链，正文实际是多项独立一致性职责，图没有增加依赖关系。",
+          "original_line": 344,
+          "heading": "#### 处理并发、损坏和陈旧数据"
+        },
+        {
+          "original_id": "a263-06-offline-read-source",
+          "title": "离线优先固定本地读取入口",
+          "decision": "keep",
+          "reason": "本地数据指向UI而Repository同时连接远端与本地持久层，明确远端响应不绕过本地真源直接上界面的数据流。",
+          "original_line": 426,
+          "heading": "#### 本地数据源是读取入口"
+        },
+        {
+          "original_id": "a263-07-outbox-atomic-scheduling",
+          "title": "本地变更与 Outbox 原子提交，调度随后执行",
+          "decision": "keep",
+          "reason": "本地实体和Outbox同事务后才安排WorkManager，启动/登录/后继补扫保留提交后未调度的恢复路径，区别业务事实和工作记录。",
+          "original_line": 572,
+          "heading": "#### 本地变更与 Outbox 同事务写入"
+        },
+        {
+          "original_id": "a263-08-worker-error-states",
+          "title": "同步失败按原因进入不同持久状态",
+          "decision": "remove",
+          "reason": "三条错误分支加两张独立错误卡片重复上方七行错误分类表，还把412与409并置；正文表更精确。",
+          "original_line": 635,
+          "heading": "#### 按失败类别处理队列"
+        },
+        {
+          "original_id": "a263-09-idempotency-and-version",
+          "title": "幂等键与版本条件解决两类问题",
+          "decision": "keep",
+          "reason": "服务端成功而本地未确认的崩溃窗口到原幂等键重发，再确认具体本地操作，表达唯一调度不能防重复请求的恢复顺序。",
+          "original_line": 642,
+          "heading": "#### 按失败类别处理队列"
+        },
+        {
+          "original_id": "a263-10-remote-mediator-transaction",
+          "title": "RemoteMediator 的数据与分页键同事务",
+          "decision": "remove",
+          "reason": "远端页→数据分页键事务→新PagingSource→UI四步重复本节三段解释，与已保留本地真源数据流呼应即可，原子键数据条件正文保留。",
+          "original_line": 696,
+          "heading": "#### Paging 3 仍以数据库驱动界面"
+        },
+        {
+          "original_id": "a263-11-late-ack-account-fence",
+          "title": "迟到确认只作用于对应账号和操作",
+          "decision": "keep",
+          "reason": "新本地操作、旧响应和账号退出三个输入汇聚到短事务账号/当前操作门，表达迟到确认不得清新操作或回写退出账号。",
+          "original_line": 731,
+          "heading": "### 同步可观测性与恢复验证"
+        }
+      ],
+      "sha256_after": "356002fc3a4e5a83efe03005717ee017d6ddaadc6d1502100b3ac4b2dc86c0e7",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:29:18.142004+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 11,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a263/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a263/visual-review.json",
+      "retired_diagrams": [
+        "a263-02-cache-storage-lifetimes",
+        "a263-03-cache-cleanup-semantics",
+        "a263-05-business-cache-refresh",
+        "a263-08-worker-error-states",
+        "a263-10-remote-mediator-transaction"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-263/retired-assets.json"
     },
     {
       "index": 264,
@@ -64497,8 +64611,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 179,
-  "next_article": "src/part5-app/ch24-io-network/03-data-cache-offline-first.md",
+  "reviewed_articles": 180,
+  "next_article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -64508,7 +64622,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:26:33.622927+08:00",
+  "updated_at": "2026-10-31T18:29:18.142004+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -64637,9 +64751,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5438,
-  "reviewed_placements_after": 2122,
-  "net_removed_placements": 3316,
+  "reviewed_placements_before": 5449,
+  "reviewed_placements_after": 2128,
+  "net_removed_placements": 3321,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -64663,5 +64777,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 179
+  "currently_matching_reviewed_source_count": 180
 }

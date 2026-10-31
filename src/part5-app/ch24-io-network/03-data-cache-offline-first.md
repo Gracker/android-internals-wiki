@@ -216,10 +216,6 @@ OkHttp 5.4.0 还提供通用 `CompressionInterceptor`。它把注册算法组成
 
 `LruCache` 的 LRU 是“最近最少使用”策略：空间不足时优先淘汰最久未访问的条目。容量要按对象的实际成本算——以 `Bitmap` 为例，条目大小应来自分配字节数这类可验证数据，只数条目个数会严重失真。系统给出的内存等级只作为容量输入之一；界面对象、数据库游标、原生内存和图形资源仍在共同消耗进程预算。
 
-<!-- gracker-diagram: a263-02-cache-storage-lifetimes -->
-![四种缓存与持久真源的生命周期](../../assets/diagrams/ch24/a263-02-cache-storage-lifetimes.png)
-
-图：容量、淘汰和陈旧策略属于缓存；离线实体和待发送操作属于持久真源，不能因缓存缺失而丢掉用户操作。
 
 AOSP `Context.getCacheDir()` 的文档说明了以下几点：
 
@@ -232,10 +228,6 @@ API 26 起，`StorageManager.setCacheBehaviorGroup()` 可以让一个目录在�
 
 两种行为都只能设置在目录上并递归生效，也都只影响系统的自动清理。用户主动清除缓存时，墓碑设置会被忽略；分组设置也不提供持久性保证。
 
-<!-- gracker-diagram: a263-03-cache-cleanup-semantics -->
-![系统缓存清理的 Group 与 Tombstone](../../assets/diagrams/ch24/a263-03-cache-cleanup-semantics.png)
-
-图：Group 改变自动清理粒度，Tombstone 保留零长度痕迹；两者都不把缓存提升为用户数据存储。
 
 `externalCacheDir` 可能不可用，使用前先检查返回值和卷状态。要在应用升级、进程重启或设备重启后仍可靠恢复的数据，放进持久数据源，缓存目录只当加速层用。
 
@@ -341,10 +333,6 @@ TTL 规定缓存条目可直接使用多久，但固定 TTL 只认时间：用�
 
 展示陈旧数据时，界面状态至少要分得清“已有旧数据、正在刷新”“已有旧数据、刷新失败”和“没有数据”三种情形。字段 `lastSyncedAt` 只记录最近一次成功同步的时间，失败的尝试别去改写它。预取任务要设业务范围和淘汰优先级，别让一次性内容挤占高复用资源。
 
-<!-- gracker-diagram: a263-05-business-cache-refresh -->
-![业务缓存按键合并刷新与按依赖失效](../../assets/diagrams/ch24/a263-05-business-cache-refresh.png)
-
-图：TTL 之外仍需依赖失效、同键合并与完整性校验；lastSyncedAt 只在成功同步后更新。
 
 ### 缓存与离线真源的分工
 
@@ -632,10 +620,6 @@ WorkManager 对开始时间只有尽力而为的保证。要用户当场等结�
 
 表中这几类错误——临时传输错误、身份失效、数据错误、版本冲突——会进入不同的队列状态；退避时间、服务端限流时间和业务重试上限也是三档不同的约束。服务端明确给出等待时间时，业务队列把它保存下来，WorkManager 的退避只负责工作级重新调度。
 
-<!-- gracker-diagram: a263-08-worker-error-states -->
-![同步失败按原因进入不同持久状态](../../assets/diagrams/ch24/a263-08-worker-error-states.png)
-
-图：重试、服务端限流时间和业务错误上限是不同约束；取消后的 Result 不作为成功确认。
 
 “服务端已成功、本地尚未确认时进程终止”这种情形，靠发送端复用原操作的幂等键来兜底：服务端返回已有结果后，本地按普通成功确认。WorkManager 的唯一工作防不住这种重复请求。
 
@@ -693,10 +677,6 @@ WorkManager 对开始时间只有尽力而为的保证。要用户当场等结�
 
 分页键必须包含查询条件、账号和排序方式——只用一个全局 `nextKey`，不同搜索词或账号就会共享分页位置。服务端改变排序或游标格式时，清理相应分页键并启动完整刷新。
 
-<!-- gracker-diagram: a263-10-remote-mediator-transaction -->
-![RemoteMediator 的数据与分页键同事务](../../assets/diagrams/ch24/a263-10-remote-mediator-transaction.png)
-
-图：数据与续页键必须同时推进，避免恢复后跳页或重复请求；远端响应不直接绕过本地上界面。
 
 #### 乐观更新需要持久状态机
 
