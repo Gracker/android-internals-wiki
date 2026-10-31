@@ -55609,9 +55609,247 @@
       "before_count": 25,
       "before_all_images": 25,
       "sha256_before": "563eb66717dfebe6a39fb3155fca1935c21e95d3b7e49cad782002361c81f9cc",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a222-01-startup-preconditions",
+          "title": "冷温热是启动前状态，生命周期回调不能单独替代分类",
+          "decision": "remove",
+          "reason": "冷温热前置状态表及实验/线上分类段落完整，三行对照卡重复。",
+          "original_line": 107,
+          "heading": "### 1. 冷、温、热描述的是启动前状态"
+        },
+        {
+          "original_id": "a222-02-request-to-main",
+          "title": "系统请求与进程创建已经计入等待，早于应用内埋点",
+          "decision": "keep",
+          "reason": "系统启动请求经fork到主线程绑定事务的路径，明确应用内首个时间点之前仍有端到端成本。",
+          "original_line": 127,
+          "heading": "#### 2.1 从启动请求到应用主线程"
+        },
+        {
+          "original_id": "a222-03-provider-application",
+          "title": "Application 先创建，Provider 初始化早于它的 onCreate",
+          "decision": "remove",
+          "reason": "紧邻七行原生文本链已完整保留Application/Provider/Instrumentation顺序，PNG同链重复。",
+          "original_line": 151,
+          "heading": "#### 2.2 `ContentProvider`（内容提供者） 早于 `Application.onCreate()`"
+        },
+        {
+          "original_id": "a222-04-background-critical-path",
+          "title": "任务移到后台后，主线程等待仍可能留在关键路径",
+          "decision": "keep",
+          "reason": "主线程提交后等待后台工作再布局首帧的双轨时序，解释移线程但关键路径不缩短。",
+          "original_line": 177,
+          "heading": "#### 2.3 Application 阶段"
+        },
+        {
+          "original_id": "a222-05-frame-observation",
+          "title": "traversal、帧提交与系统显示记录是不同观测点",
+          "decision": "remove",
+          "reason": "四行观测点/可说明/不可说明表更完整，三行帧边界卡重复。",
+          "original_line": 213,
+          "heading": "#### 2.5 第一帧从 traversal 到系统确认绘制"
+        },
+        {
+          "original_id": "a222-06-ttid-fullydrawn-endpoints",
+          "title": "初显、业务可用、平台报告与基准渲染终点分别保留",
+          "decision": "remove",
+          "reason": "TTID与TTFD两节和三种终点差异段落完整保留，三行端点映射卡重复。",
+          "original_line": 234,
+          "heading": "#### 3.2 TTFD：由应用声明“主要内容可用”"
+        },
+        {
+          "original_id": "a222-09-async-trace-boundary",
+          "title": "提交切片结束只证明已提交，异步工作要关联执行方",
+          "decision": "keep",
+          "reason": "提交切片结束后异步工作仍执行的三轨，并用cookie/flow关联，解释提交时间不同于完成时间。",
+          "original_line": 349,
+          "heading": "### 5. 自定义 Trace 与业务切片"
+        },
+        {
+          "original_id": "a222-10-thread-states",
+          "title": "长启动 slice 先按线程状态拆分，再追依赖",
+          "decision": "remove",
+          "reason": "线程状态四条分析列表完整区分Running/Runnable/Sleep/D状态，三行摘要重复。",
+          "original_line": 426,
+          "heading": "#### 6.3 分解主线程的“运行”和“等待”"
+        },
+        {
+          "original_id": "a222-11-sql-window-meaning",
+          "title": "启动视图按 slice 起点选取，原始时长未裁剪且可嵌套",
+          "decision": "keep",
+          "reason": "启动窗口、起点在窗内但越过尾部的完整slice、嵌套slice空间时间关系，解释原始dur不能相加。",
+          "original_line": 484,
+          "heading": "#### 6.5 用标准库批量列出启动"
+        },
+        {
+          "original_id": "a222-12-profiles-and-caches",
+          "title": "编译、DEX 布局与文件页缓存影响不同部分",
+          "decision": "remove",
+          "reason": "Baseline/Startup的两条定义与文件页/进程缓存段落完整，三行工具分类卡重复。",
+          "original_line": 514,
+          "heading": "#### 7.2 Baseline Profile 与 Startup Profile 分工"
+        },
+        {
+          "original_id": "a222-13-clock-domains",
+          "title": "启动平台时间戳与自建时长必须使用明确时基",
+          "decision": "remove",
+          "reason": "时钟语义和三项上报字段段落详述同一时基与墙钟用途，三行时钟分类卡重复。",
+          "original_line": 580,
+          "heading": "#### 1.2 使用同一种时钟"
+        },
+        {
+          "original_id": "a222-14-sample-identity",
+          "title": "PID 与进程名还不足以唯一识别当前启动会话",
+          "decision": "remove",
+          "reason": "八维样本身份表及PID复用/相邻启动限制完整，三行字段摘要重复。",
+          "original_line": 605,
+          "heading": "#### 1.3 启动样本的身份"
+        },
+        {
+          "original_id": "a222-15-instrumentation-boundaries",
+          "title": "应用点位解释阶段，系统记录校准端到端起止",
+          "decision": "remove",
+          "reason": "六点位含可说明/不可说明的四列表更完整，三行点位分类图重复。",
+          "original_line": 629,
+          "heading": "#### 2.1 最早的埋点点位"
+        },
+        {
+          "original_id": "a222-07-ready-contract",
+          "title": "可报告条件是可操作终态，不能只等待非空成功列表",
+          "decision": "remove",
+          "reason": "两段明确成功空态离线错误统一终态及finally计数不证明成功，三行分类卡重复。",
+          "original_line": 674,
+          "heading": "#### 2.2 准确上报 fully drawn"
+        },
+        {
+          "original_id": "a222-16-api-version-boundaries",
+          "title": "ApplicationStartInfo 的能力按 API 引入版本使用",
+          "decision": "remove",
+          "reason": "API35/36/37能力矩阵完整，三行版本卡重复。",
+          "original_line": 719,
+          "heading": "#### 3.1 Android 15、16、17 的能力范围"
+        },
+        {
+          "original_id": "a222-17-record-lifecycle",
+          "title": "首帧完成不等于 fully drawn，后者只是可选时间戳",
+          "decision": "keep",
+          "reason": "STARTED分支到ERROR或首帧完成，再连接可选FULLY_DRAWN时间戳的生命周期，直观区分状态与字段。",
+          "original_line": 738,
+          "heading": "#### 3.2 记录形成与状态"
+        },
+        {
+          "original_id": "a222-19-timestamp-submission",
+          "title": "开发者时间戳区分提交、接受与目标记录归属",
+          "decision": "remove",
+          "reason": "两段原文精确列公开覆盖契约、r1重复拒绝、最新容器非PID以及回读策略，三行对照卡重复。",
+          "original_line": 796,
+          "heading": "#### 3.5 把业务点写进平台启动记录"
+        },
+        {
+          "original_id": "a222-18-callback-history-race",
+          "title": "监听与历史回读并用，按身份去重仍要保留缺失",
+          "decision": "keep",
+          "reason": "监听回调和注册后历史回读两条候选路径汇入身份过滤去重，说明竞态下两路互补但非原子完整性。",
+          "original_line": 867,
+          "heading": "#### 3.5 把业务点写进平台启动记录"
+        },
+        {
+          "original_id": "a222-20-duration-validity",
+          "title": "仅对存在、非负且有序的同一时基节点计算区间",
+          "decision": "remove",
+          "reason": "11行duration函数与缺失/非负/有序条件正文完整，四框验证步骤重复。",
+          "original_line": 894,
+          "heading": "#### 3.6 阶段耗时的缺失与乱序处理"
+        },
+        {
+          "original_id": "a222-21-quantile-merge",
+          "title": "客户端或每日分位数不能直接平均成总体分位数",
+          "decision": "keep",
+          "reason": "两组同cohort原始分布汇合后计算总P90/P95的有向结构，区别于先算分位数再平均。",
+          "original_line": 914,
+          "heading": "### 4. 线上聚合与分位数解读"
+        },
+        {
+          "original_id": "a222-22-completion-denominators",
+          "title": "更短的成功样本 TTFD 可能掩盖更低的完成率",
+          "decision": "remove",
+          "reason": "本节幸存者偏差解释和六项分母/质量字段清单完整，三行分类卡重复。",
+          "original_line": 939,
+          "heading": "#### 4.2 把缺失和退出当成结果"
+        },
+        {
+          "original_id": "a222-23-sampling-bias",
+          "title": "慢样本诊断采样与总体指标采样要分别解释",
+          "decision": "remove",
+          "reason": "指标随机样本与慢失败诊断高采样的完整段落已有明确分别保存/概率加权条件，三行分类卡重复。",
+          "original_line": 953,
+          "heading": "#### 4.2 把缺失和退出当成结果"
+        },
+        {
+          "original_id": "a222-24-regression-evidence",
+          "title": "回归门禁同时检查幅度、噪声、样本与稳定窗口",
+          "decision": "remove",
+          "reason": "七行门禁规则和样本量/噪声/置信区间段落更详细，四框规则摘要重复。",
+          "original_line": 976,
+          "heading": "### 5. 回归检测与归因"
+        },
+        {
+          "original_id": "a222-25-evidence-layers",
+          "title": "线上趋势、固定实验、单次 Trace 与平台记录相互校准",
+          "decision": "remove",
+          "reason": "下方四层工具产物表完整，三行证据映射卡重复且移除后引导句直接接表。",
+          "original_line": 1036,
+          "heading": "### 7. 线下与线上怎样互证"
+        },
+        {
+          "original_id": "a222-08-cold-cache-protocol",
+          "title": "Benchmark 1.4.1 的 COLD 协议同时处理进程和缓存",
+          "decision": "keep",
+          "reason": "固定Benchmark1.4.1每轮setup的shader缓存/杀进程/内核页缓存顺序，强调完整COLD实验协议和能力失败记录。",
+          "original_line": 1050,
+          "heading": "### 7. 线下与线上怎样互证"
+        }
+      ],
+      "sha256_after": "9f2cb8cfe8e7ed9e2a4d874b2b48df0eeaa750d2fd56d83cfbef699031181361",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:42:07.569949+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 25,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a222/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a222/visual-review.json",
+      "retired_diagrams": [
+        "a222-01-startup-preconditions",
+        "a222-03-provider-application",
+        "a222-05-frame-observation",
+        "a222-06-ttid-fullydrawn-endpoints",
+        "a222-07-ready-contract",
+        "a222-10-thread-states",
+        "a222-12-profiles-and-caches",
+        "a222-13-clock-domains",
+        "a222-14-sample-identity",
+        "a222-15-instrumentation-boundaries",
+        "a222-16-api-version-boundaries",
+        "a222-19-timestamp-submission",
+        "a222-20-duration-validity",
+        "a222-22-completion-denominators",
+        "a222-23-sampling-bias",
+        "a222-24-regression-evidence",
+        "a222-25-evidence-layers"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-222/retired-assets.json"
     },
     {
       "index": 223,
@@ -56263,8 +56501,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 147,
-  "next_article": "src/part5-app/ch21-startup/01-app-startup-path-monitoring.md",
+  "reviewed_articles": 148,
+  "next_article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -56274,7 +56512,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:39:50.929568+08:00",
+  "updated_at": "2026-10-31T16:42:07.569949+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -56452,9 +56690,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4609,
-  "reviewed_placements_after": 1918,
-  "net_removed_placements": 2691,
+  "reviewed_placements_before": 4634,
+  "reviewed_placements_after": 1926,
+  "net_removed_placements": 2708,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -56478,5 +56716,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 147
+  "currently_matching_reviewed_source_count": 148
 }
