@@ -17634,7 +17634,7 @@
           "replacement_id": "ed11-03-vitals-scope-and-denominators"
         }
       ],
-      "sha256_after": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
+      "sha256_after": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
       "new_diagrams": [
         {
           "id": "ed11-03-reference-count-and-shared-nonref",
@@ -17858,15 +17858,123 @@
       ],
       "removed_but_shared_diagrams": [],
       "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-113/retired-assets.json",
-      "post_review_source_revalidation_required": {
-        "index": 113,
-        "article": "src/part2-performance/ch11-power/03-wakelock.md",
-        "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
-        "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-        "observed_at": "2026-10-31T10:32:06.568363+08:00",
-        "status": "requires_independent_revalidation",
-        "diagram_count_unchanged": true
-      }
+      "sha256_after_initial_editorial": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 113,
+          "article": "src/part2-performance/ch11-power/03-wakelock.md",
+          "revision": 1,
+          "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
+          "reviewed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a113/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a113/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a113/01/source.diff",
+          "diff_sha256": "6681e11d43b2cbf2b3dd32f9c7518968d3c596d078c425ceaf3168e481389802",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/113-20261031-01.json",
+          "report_sha256": "1ba9f3ec3504ff9f6fc8201e2457895250fe37f6dd09698cf56be74117c00786",
+          "caption_revisions": [
+            {
+              "id": "ch11-03-03-idle-with-lock",
+              "before": "轨道只示意活动关系，没有真实时长或收益。CPU idle 不是 system suspend；被 PMS 禁用的 held 锁也不能按这条有效区间推断。",
+              "after": "轨道只示意活动关系，不带真实时长或收益。CPU idle 与 system suspend 是两层；被 PMS 禁用的 held 锁，别按这条有效区间推断。",
+              "status": "independently_reviewed",
+              "reason": "有效partial与线程计算/idle两轨对应74–109；新图注只改表达，仍区分CPU idle/system suspend、有效锁与PMS已禁用held，无时长或能耗测量。"
+            },
+            {
+              "id": "ed11-03-sync-and-async-release-owner",
+              "before": "同步与异步依真实完成边界管理同一owner的锁。正文工作线程示例每次创建独占局部non-ref，exportCurrentItem真正同步返回/抛出才finally检查并release；若只提交异步就返回，这个finally会过早。异步由成功失败取消业务超时销毁统一终态，先确认完成/中止、收尾并保存进度，再按锁模式配对。客户端Handler保护超时可能延后且不取消业务，10分钟仅示例值非推荐/配额；业务另设可响应取消deadline，复杂跨进程或长任务应评估调度API/合格FGS。",
+              "after": "同步与异步都贴着真实完成边界管理同一个 owner 的锁。正文的示例每次创建独占的局部非引用计数锁，exportCurrentItem 同步返回或抛出后，才在 finally 里检查并 release；如果只提交了异步请求就返回，这个 finally 会来得过早。异步路径把成功、失败、取消、业务超时、销毁收进同一个终态：先确认完成或中止、收尾并保存进度，再按锁模式配对释放。客户端 Handler 的保护超时可能延后，也不会取消业务；10 分钟只是示例值，不是推荐值或配额。业务要另设可响应取消的 deadline，复杂跨进程或长任务应改评估调度 API 或合格的 FGS。",
+              "status": "independently_reviewed",
+              "reason": "同步独占局部锁finally与异步统一终态两路对应Java2及138–172；新图注保留真正返回/中止、先收尾、Handler超时可能延后且不取消业务，10分钟仅例。"
+            },
+            {
+              "id": "ed11-03-reference-count-and-shared-nonref",
+              "before": "两组独立非比例示意：上半为默认引用计数、无自动超时介入的普通配对，2次acquire对应2次release，内部计数1→2→1→0，过度release可under-lock。下半是两任务错误共享non-ref的反例，任意release可解除此前acquire，另一个任务仍工作却失去锁。固定r1自动超时另有internal/external计数，锁不再held不等每owner都完成配对，超时也不取消业务。isHeld不能修复共享owner，正文独占局部锁不可套给重叠任务；两部分不共用时间轴。",
+              "after": "两组独立示意，不按时间比例。上半部分是默认引用计数、无自动超时介入的普通配对：2 次 acquire 对应 2 次 release，内部计数走 1→2→1→0，release 过度就是 under-lock。下半部分是两个任务错误共享一把非引用计数锁的反例：任意一次 release 都会解除此前的 acquire，另一个任务还在工作，锁却已经没了。固定 r1 的自动超时另有 internal/external 计数：锁不再 held，每个 owner 未必都完成了配对；超时同样取消不了业务。isHeld 修不了共享 owner 的问题，正文那种独占局部锁也不要套给重叠任务；上下两部分不共用时间轴。",
+              "status": "independently_reviewed",
+              "reason": "默认引用计数1→2→1→0和共享non-ref任务提前失保护两个独立反例，对应135/172–177；新图注保留无自动超时的普通配对前提、internal/external和owner边界。"
+            },
+            {
+              "id": "ch11-03-11-binder-lifetime",
+              "before": "进程还活着但业务忘记结束时，token 仍可能有效；系统无法凭 token 判断业务已完成。死亡清理与 acquire 超时都是保护，不能代替正常释放。",
+              "after": "进程还活着但业务忘记结束时，token 仍可能有效，系统凭 token 判断业务已完成的路走不通。死亡清理与 acquire 超时都只是保护，正常释放仍要应用自己做。",
+              "status": "independently_reviewed",
+              "reason": "正常owner release与客户端Binder death两清理分支对应234–239；新图注没有由token存活推业务完成，故障保护不代正常release。"
+            },
+            {
+              "id": "ed11-03-worksource-and-notifier-attribution",
+              "before": "固定r1权限与归因数据流：基础WAKE_LOCK仍需，无归因空WorkSource归一null；实际含归因内容才额外校验UPDATE_DEVICE_STATS，普通App不可任意转移成本。PMS保存token/flags/owner/WorkSource并按状态判断有效性，经Notifier相应acquire/release/change更新监听/日志/BatteryStats。逻辑启停也可能更新统计，不是每条事件都对应App直接调用；系统服务代持不自动计在服务名下。持有者、归因UID、nativePID不同，活动归因不是独立硬件电量。",
+              "after": "固定 r1 的权限与归因数据流。基础的 WAKE_LOCK 权限仍然需要；不带归因的空 WorkSource 会被归一成 null，只有实际含归因内容的才额外校验 UPDATE_DEVICE_STATS，普通 App 因此改不了成本归属。PMS 保存 token/flags/owner/WorkSource 并按状态判断有效性，再经 Notifier 用相应的 acquire/release/change 更新监听、日志与 BatteryStats。逻辑启停同样可能更新统计，每条事件未必对应 App 的直接调用；系统服务代持的锁也不会自动记在服务名下。持有者、归因 UID、nativePID 是三个不同的概念，活动归因算不上独立的硬件电量。",
+              "status": "independently_reviewed",
+              "reason": "空/非空归因WorkSource权限分支→PMS保存/有效性→Notifier逻辑事件→BatteryStats的数据流，对应193/241–246；新图注仍区分owner/UID/nativePID与硬件电量。"
+            },
+            {
+              "id": "ed11-03-held-policy-and-logical-events",
+              "before": "固定r1逐锁分支依类型/UID/procstate及归因cached、ownerfrozen、NO_CACHED、deep/配置light、allowlists、LPS与强制策略，不是全部条件固定AND，bucket不能单独推有效性。状态改变会重查已有锁，仅disabled发生转换才逻辑release/acquire、DIRTY与summary重算，客户端可能一直held，策略恢复可使同锁重新生效。非比例轨道只示可能时序。API33listener异步，enabledfalse也可正常释放，事件值与回调现读held非原子；撤监听不撤回所有排队事件，监听不能替正常释放，更非统一持锁配额信号。",
+              "after": "固定 r1 里逐把锁走分支：类型、UID、procstate，加上归因 cached、owner frozen、NO_CACHED、deep/配置 light、allowlists、LPS 与强制策略，这些条件并不是固定地全 AND 在一起，bucket 单独推有效性也推不动。状态改变会重查已有锁，只有 disabled 发生转换才发逻辑 release/acquire、置 DIRTY 并重算 summary；客户端可能一直 held，策略恢复时同一把锁还能重新生效。非比例轨道只示可能时序。API 33 的 listener 异步，enabled=false 也可能只是正常释放，事件值与回调里现读的 held 非原子；撤掉监听，排队中的事件未必都会跟着撤回。监听代替不了正常释放，也算不上统一的持锁配额信号。",
+              "status": "independently_reviewed",
+              "reason": "客户端held轨道与服务端禁用/恢复轨道及disabled转换逻辑通知，对应211/250–266；新图注保留各锁类型条件非全AND、listener异步/排队事件、正常release非配额信号。"
+            },
+            {
+              "id": "ed11-03-app-summary-native-counter-and-kernel",
+              "before": "固定r1默认counter路径的多对一汇总与独立来源：PMS保留多token/UID/tag，有效CPU需求统一成PowerManagerService.WakeLocks，经JNI→libpower按名缓存IWakeLock→AIDL ISystemSuspend/SystemSuspendAidl参与native计数，这条调用PID是system_server。releaseOnce/析构配对减少，显示/启动等和其他进程native锁也参与，所以释放CPUblocker不等全局0。右侧内核驱动/兼容接口与短时userspaceabort独立解释，不画逐App同名映射。关闭counter路径才按名兼容wake_lock，历史HIDL不能替代当前AIDL；归零仍需auto/client/握手/内核实际检查。",
+              "after": "固定 r1 默认 counter 路径下的多对一汇总与独立来源。PMS 保留多个 token/UID/tag，把有效的 CPU 需求统一成 PowerManagerService.WakeLocks，经 JNI 到按名缓存 IWakeLock 的 libpower，再经 AIDL ISystemSuspend/SystemSuspendAidl 进入 native 计数，这条调用的 PID 是 system_server。releaseOnce 与析构配对地减少计数；显示、启动等 blocker 和其他进程的 native 锁也在这层参与，所以 CPU blocker 释放了，全局计数离 0 可能还差几项。右侧的内核驱动、兼容接口与短时 userspace abort 是独立来源，图里也就不画逐 App 的同名映射。只有关闭 counter 路径才按名走兼容 wake_lock；历史 HIDL 对应的是迁移前的实现。计数归零之外，挂起还要 auto/client/握手与内核检查都实际通过。",
+              "status": "independently_reviewed",
+              "reason": "多App token/UID/tag→CPU summary→JNI/libpower/AIDL→native counter，旁列其他native和内核来源，符合270–291；新图注保留多对一、system_server调用PID、非逐App内核同名与计数零外检查。"
+            },
+            {
+              "id": "ch11-03-18-userspace-abort-race",
+              "before": "图只说明执行先后，不按时长比例；临时 abort 不代表每个 App tag 都在 kernel 有长期同名 source。关闭 counter 路径时才按名称走兼容 wake_lock 接口。",
+              "after": "图只说明执行先后，不按时长比例；临时 abort 只是短暂写入，别据它推断每个 App tag 在 kernel 都有长期同名 source。关闭 counter 路径时才按名称走兼容 wake_lock 接口。",
+              "status": "independently_reviewed",
+              "reason": "inc先临时userspace-abort，再互斥等待/更新计数，后解除的双轨对应312–317；新图注只是措辞，未把临时写入推长期逐App同名source，非比例。"
+            },
+            {
+              "id": "ch11-03-20-kernel-event-counters",
+              "before": "两条箭头表示同次上报的不同统计环节，不是互斥分支。wakeup_count 也可包含导致挂起中止的事件，不能当作成功恢复次数。",
+              "after": "两条箭头表示同次上报的不同统计环节，属于并列关系。wakeup_count 也可包含导致挂起中止的事件，别当成功恢复次数读。",
+              "status": "independently_reviewed",
+              "reason": "同次report event的事件计数与inactive才转active两并列统计环节，符合348–361；新图注仍非互斥分支，wakeup_count不等成功恢复次数。"
+            },
+            {
+              "id": "ch11-03-21-stats-window-overlap",
+              "before": "条宽不表示测量值。prevent_suspend_time 还受 autosleep 条件影响，不能当所有阻止挂起的总真值；跨工具对齐前检查时钟域、reset 与来源生命周期。",
+              "after": "条宽不表示测量值。prevent_suspend_time 还受 autosleep 条件影响，覆盖不了所有被阻止的挂起；跨工具对齐前先检查时钟域、reset 与来源生命周期。",
+              "status": "independently_reviewed",
+              "reason": "两个source重叠active与并集轨道符合363–368；新图注保留autosleep限定、时钟/reset/生命周期，累计相加不能当互斥占比或所有阻止挂起真值。"
+            },
+            {
+              "id": "ch11-03-26-diagnostic-drilldown",
+              "before": "逐层证据互补。Native/Kernel 行并不都是应用锁；当前 dump 不能还原整个历史，某个 kernel source 名称也不能独自证明归因 UID。",
+              "after": "几层信息互相补齐。Native/Kernel 行并不都是应用锁；单次 dump 还原不了整个历史，某个 kernel source 名称也独自证明不了归因 UID。",
+              "status": "independently_reviewed",
+              "reason": "应用业务owner→PMS token/归因/disabled→SystemSuspend分类/计数→内核/trace/能量的互补证据链，与433–459一致；新图注不把Native/Kernel全当App、单次dump当历史或名称当UID。"
+            },
+            {
+              "id": "ch11-03-28-perfetto-config-parser",
+              "before": "图只对应该固定解析器，不承诺其他版本的 raw/track 表现。缺轨道不代表没有锁或零能耗；charge 为 µAh，capacity 为百分比，rail energy 为 µWs。",
+              "after": "图只对应该固定解析器，其他版本的 raw/track 表现要另行确认。轨道缺失时，锁可能仍在，能耗也未必为零；charge 为 µAh，capacity 为百分比，rail energy 为 µWs。",
+              "status": "independently_reviewed",
+              "reason": "采集→固定r1按source活动计数解析slice→丢失/同名/截断检查→对齐正确能量单位，对应配置9与505–512；新图注保留版本限定和缺轨不等无锁/零能耗。"
+            },
+            {
+              "id": "ed11-03-vitals-scope-and-denominators",
+              "before": "仅按本文已核对指标解释计算范围：先辨实际API/SDK来源和线上分类，当前列明audio/location/JobScheduleruserinitiated豁免，普通手工或调度代持不能凭tag自认。对后台或FGS中的非豁免partial，24h合计≥2h用于单会话excessive判定；28天>5%appsession命中是另一个窗口与会话分母，可能影响Play可见性。2h非系统APIquota，5%非用户时间比；豁免不证零能耗/无限执行或DozeLPS放行，也不推平台未公开合并/采样算法。按name/affectedsessions/P90P99回查业务，能量和功能另验。",
+              "after": "只按本文已核对的指标解释计算范围。先分清锁的实际 API/SDK 来源与线上分类：当前列明的豁免是 audio、location、JobScheduler user-initiated，普通手工或调度代持的锁凭 tag 自认豁免是不算数的。对后台或 FGS 中的非豁免 partial 锁，24 小时合计 ≥ 2 小时用于单会话的 excessive 判定；28 天内超过 5% 的 app session 命中是另一套窗口与会话分母，可能影响 Play 可见性。2 小时在系统 API quota 之外，5% 也不是用户时间占比；拿到豁免也证明不了零能耗、无限执行或 Doze/LPS 放行，更推不出平台未公开的合并/采样算法。按 name、affected sessions、P90/P99 回查业务，能量和功能要另行验证。",
+              "status": "independently_reviewed",
+              "reason": "按来源/线上分类选择豁免或非豁免，再分24小时单会话>=2h与28天>5%会话分母路径，符合551–565；新图注仍是质量阈值非系统quota、5%非时间比，豁免不等零能耗/无限执行/DozeLPS放行。"
+            }
+          ],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a113/01/input.md",
+          "external_input_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T10:33:29.596717+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T10:33:29.949014+08:00"
     },
     {
       "index": 114,
@@ -28240,7 +28348,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T10:32:06.569547+08:00",
+  "updated_at": "2026-10-31T10:33:29.953409+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
@@ -28373,16 +28481,6 @@
       "eligibility_proof": "/tmp/gracker-diagrams-editorial-review-20261028/scope-additions-rendered-proof.json"
     }
   ],
-  "post_review_external_source_revalidations_pending": [
-    {
-      "index": 113,
-      "article": "src/part2-performance/ch11-power/03-wakelock.md",
-      "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
-      "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-      "observed_at": "2026-10-31T10:32:06.568363+08:00",
-      "status": "requires_independent_revalidation",
-      "diagram_count_unchanged": true
-    }
-  ],
-  "currently_matching_reviewed_source_count": 63
+  "post_review_external_source_revalidations_pending": [],
+  "currently_matching_reviewed_source_count": 64
 }
