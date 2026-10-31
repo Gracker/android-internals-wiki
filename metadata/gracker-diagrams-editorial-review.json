@@ -55057,9 +55057,201 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "43b57607ec5740c9d7223adb78fceccd64f6940ddc11b7042587cd390ecd59ce",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a218-01-modified-object",
+          "title": "三种 Hook 改写不同对象，命中范围随调用路径变化",
+          "decision": "remove",
+          "reason": "PLT/Inline/Trap所改对象及适用边界已由三列选型表完整对照，三行分类卡重复。",
+          "original_line": 55,
+          "heading": "## 1. 先确定要改写哪一层"
+        },
+        {
+          "original_id": "a218-02-eager-binding",
+          "title": "Android 在装载期写入动态重定位结果",
+          "decision": "remove",
+          "reason": "紧邻dlopen到RELRO的文本链与RTLD_LAZY实际处理代码完整，四框仅复述同一加载顺序。",
+          "original_line": 120,
+          "heading": "### 3.1 立即绑定：装载时完成函数地址解析"
+        },
+        {
+          "original_id": "a218-03-relro-publication",
+          "title": "GOT 改写要明确权限策略与原函数发布顺序",
+          "decision": "remove",
+          "reason": "原始回调先发布再改GOT的关键顺序由第7图专门表达，本图权限四步及ByteHook是否恢复的限制正文保留。",
+          "original_line": 168,
+          "heading": "### 3.2 RELRO 限制写权限，同进程修改仍需显式处理"
+        },
+        {
+          "original_id": "a218-04-independent-constraints",
+          "title": "TEXTREL、RELRO 与可见范围约束处于不同层",
+          "decision": "remove",
+          "reason": "TEXTREL/RELRO/namespace三个独立约束正文逐项明确，分类卡没有附加结构。",
+          "original_line": 190,
+          "heading": "### 3.3 `DT_TEXTREL` 与 Inline Hook 受不同机制约束"
+        },
+        {
+          "original_id": "a218-05-page-size-vs-isa",
+          "title": "系统页、指令宽度与 ADRP 粒度不能互相替代",
+          "decision": "remove",
+          "reason": "系统页大小/指令宽度/ADRP粒度三种尺度及16KB注意事项表述清楚，三行数值卡重复。",
+          "original_line": 214,
+          "heading": "### 3.5 16 KB page size（页大小）"
+        },
+        {
+          "original_id": "a218-06-slot-resolution",
+          "title": "从调用方动态表逐步定位目标重定位槽",
+          "decision": "remove",
+          "reason": "从PT_DYNAMIC到符号、重定位类型、load_bias及旧值ABI检查的逐步列表更完整，四框缩略重复。",
+          "original_line": 246,
+          "heading": "### 4.1 从 ELF 到目标槽"
+        },
+        {
+          "original_id": "a218-07-publish-order",
+          "title": "先使 orig 可用，再让调用方看到 proxy",
+          "decision": "keep",
+          "reason": "先保存并同步发布orig、再原子切换GOT、最后取证的顺序，突出代理可达之前原链必须可用。",
+          "original_line": 265,
+          "heading": "### 4.2 安装顺序"
+        },
+        {
+          "original_id": "a218-08-dlopen-observation",
+          "title": "安装发生的时点决定能否观察构造函数调用",
+          "decision": "keep",
+          "reason": "linker加载、构造函数与dlopen返回扫描三轨，直观区分返回后安装的盲区及私有早期回调窗口。",
+          "original_line": 288,
+          "heading": "### 4.4 动态装载和多框架共存"
+        },
+        {
+          "original_id": "a218-09-trampoline-relocation",
+          "title": "先搬迁并重写原指令，再构建可返回的 trampoline",
+          "decision": "keep",
+          "reason": "保存原指令、重写PC相对、补跳回到发布入口的依赖顺序，说明trampoline须先准备完成。",
+          "original_line": 327,
+          "heading": "### 5.1 基本过程"
+        },
+        {
+          "original_id": "a218-10-adrp-target",
+          "title": "ADRP 搬迁的目标地址保持不变，编码依新 PC 改变",
+          "decision": "keep",
+          "reason": "同一ADRP在原PC、新PC原样复制及重算立即数三种数值结果，展示为何必须保持绝对目标。",
+          "original_line": 342,
+          "heading": "### 5.1 基本过程"
+        },
+        {
+          "original_id": "a218-11-patch-concurrency",
+          "title": "入口写入原子性与跨核心取指同步是两个条件",
+          "decision": "remove",
+          "reason": "单条写入与多指令补丁、跨核取指同步的正文逐条区分，三行约束卡重复。",
+          "original_line": 359,
+          "heading": "### 5.2 branch island 与并发改写"
+        },
+        {
+          "original_id": "a218-12-control-flow-protection",
+          "title": "PAC、BTI 与 CFI 分别检查不同控制流条件",
+          "decision": "remove",
+          "reason": "PAC/BTI/CFI职责与触发条件的表格和段落更详尽，三行机制映射卡重复。",
+          "original_line": 374,
+          "heading": "### 5.3 PAC、BTI 与 CFI"
+        },
+        {
+          "original_id": "a218-13-trap-disposition",
+          "title": "Trap 只消费可证明属于自身的事件，其余保留信号语义",
+          "decision": "remove",
+          "reason": "自有trap、其它信号和平台handler三个分支已由信号链说明完整覆盖，分类卡重复。",
+          "original_line": 415,
+          "heading": "## 6. Trap Hook：框架必须维护完整的信号语义"
+        },
+        {
+          "original_id": "a218-14-proxy-errno",
+          "title": "代理保存原调用结果和 errno，再做最小记录",
+          "decision": "keep",
+          "reason": "TLS重入直接调用原函数与首次调用保存errno/记录/恢复的分支，解释代理递归和调用者可见结果。",
+          "original_line": 463,
+          "heading": "## 7. 代理函数的 ABI 和重入约束"
+        },
+        {
+          "original_id": "a218-15-hook-state-machine",
+          "title": "状态显式表达解析、安装失败与安全停用",
+          "decision": "keep",
+          "reason": "解析安装分支到失败或ACTIVE，再禁用的状态机，明确安装完成语义及失败出口。",
+          "original_line": 485,
+          "heading": "### 8.1 状态机"
+        },
+        {
+          "original_id": "a218-16-retire-trampoline",
+          "title": "物理卸载先关闭新入口，再等待旧执行退出",
+          "decision": "keep",
+          "reason": "先关闭新入口、再等待已有执行和宽限期、最后回收trampoline，保留并发回收的先后依赖。",
+          "original_line": 496,
+          "heading": "### 8.2 逻辑停用与物理卸载"
+        },
+        {
+          "original_id": "a218-17-module-generation",
+          "title": "同路径、Build ID 和地址也可能属于不同装载代次",
+          "decision": "remove",
+          "reason": "同路径ELF卸载与重新加载必须区分generation的连续文字已清楚，三行生命周期卡重复。",
+          "original_line": 539,
+          "heading": "### 9.4 新 ELF 装载"
+        },
+        {
+          "original_id": "a218-18-failure-evidence",
+          "title": "按失败阶段收集证据，避免仅记录 Hook 成功布尔值",
+          "decision": "remove",
+          "reason": "失败阶段、现象、证据九行排查表比三行分类图完整，保留原表即可。",
+          "original_line": 577,
+          "heading": "## 10. 常见故障定位"
+        }
+      ],
+      "sha256_after": "f60e1d0b0e4a20bcf0b721837c31c649bf9a2e2d4a8f55b033d1ab73bc2b81d8",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:36:32.191590+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a218/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a218/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 218,
+        "article": "src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+        "registered_sha256": "43b57607ec5740c9d7223adb78fceccd64f6940ddc11b7042587cd390ecd59ce",
+        "frozen_sha256": "43b57607ec5740c9d7223adb78fceccd64f6940ddc11b7042587cd390ecd59ce",
+        "review_input_sha256": "194797d1f8ffdd3ccc95005bd95d19ea18233dec89a46570b87afe26ad99d013",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a218/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a218/external-source.diff",
+        "diff_sha256": "6c2d0620e4887b73d0bdb891941f5e40c23862fda21ab5cb594bac1c3df6e0ab",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 317, \"characters\": 21944, \"svg_labels_read\": 18, \"actual_pngs_viewed\": 18, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 11, \"code_lines\": 77, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "194797d1f8ffdd3ccc95005bd95d19ea18233dec89a46570b87afe26ad99d013",
+      "retired_diagrams": [
+        "a218-01-modified-object",
+        "a218-02-eager-binding",
+        "a218-03-relro-publication",
+        "a218-04-independent-constraints",
+        "a218-05-page-size-vs-isa",
+        "a218-06-slot-resolution",
+        "a218-11-patch-concurrency",
+        "a218-12-control-flow-protection",
+        "a218-13-trap-disposition",
+        "a218-17-module-generation",
+        "a218-18-failure-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-218/retired-assets.json"
     },
     {
       "index": 219,
@@ -55744,8 +55936,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 144,
-  "next_article": "src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+  "reviewed_articles": 145,
+  "next_article": "src/part5-app/ch20-stability/13-native-dcl-secure-loading.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -55755,7 +55947,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:30:59.299397+08:00",
+  "updated_at": "2026-10-31T16:36:32.191590+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -55825,13 +56017,6 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
-      "registered_sha256": "43b57607ec5740c9d7223adb78fceccd64f6940ddc11b7042587cd390ecd59ce",
-      "observed_sha256": "194797d1f8ffdd3ccc95005bd95d19ea18233dec89a46570b87afe26ad99d013",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -55940,9 +56125,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4560,
-  "reviewed_placements_after": 1901,
-  "net_removed_placements": 2659,
+  "reviewed_placements_before": 4578,
+  "reviewed_placements_after": 1908,
+  "net_removed_placements": 2670,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -55966,5 +56151,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 144
+  "currently_matching_reviewed_source_count": 145
 }
