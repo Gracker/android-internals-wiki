@@ -62,14 +62,10 @@ App 进程从 Zygote（预先加载公共 framework 代码的系统进程） for
 2. **分配线程等待**：分配失败，或分配线程必须等正在运行的 GC 结束时，主线程可能阻塞；`heap.cc` 用 `kGcCauseForAlloc` 标记这类“为完成分配而触发的 GC”。
 3. **共享资源竞争**：`HeapTaskDaemon` 执行标记、扫描、复制或整理时，要消耗 CPU、内存带宽和 CPU cache（处理器缓存）。主线程即使没有被挂起，也可能因资源竞争只拿到更少的运行时间。
 
-`HeapTaskDaemon` 是 ART 执行堆任务的后台守护线程。除了回收，它还负责前后台状态切换时的 collector（回收器） transition（前后台状态变化时切换回收策略）、尝试把空闲页归还系统的 heap trim（尝试把空闲页归还系统），以及启动完成清理。所以 Perfetto 里看到它 Running（正在 CPU 上执行），只说明这个线程当时正在 CPU 上执行；要判断 GC 是否拖慢了启动，我们还得把具体的 ART slice（时间线上的一段事件）、主线程状态和对象分配记录放到同一时间窗里对照着看。
+`HeapTaskDaemon` 是 ART 执行堆任务的后台守护线程。除了回收，它还负责前后台状态切换时的 collector（回收器） transition（前后台状态变化时切换回收策略）、heap trim（尝试把空闲页归还系统），以及启动完成清理。所以在 Perfetto 里看到它 Running（正在 CPU 上执行），只说明这个线程当时正在 CPU 上执行；要判断 GC 是否拖慢了启动，我们还得把具体的 ART slice（时间线上的一段事件）、主线程状态和对象分配记录放进同一时间窗里对照。
 
-<!-- gracker-diagram: a228-01-gc-impact-paths -->
-![GC 通过暂停、分配等待与资源竞争影响启动](../../assets/diagrams/ch21/a228-01-gc-impact-paths.png)
 
-图：daemon Running 不等于全在 GC；trim、transition 与启动清理同样使用该后台线程。
-
-## Android 17 的 HeapTaskDaemon 调度链
+## HeapTaskDaemon 的调度链
 
 我们顺着调用链，看 Java 侧的常驻后台线程和 ART native（C++ 运行时） 任务队列是怎么衔接的：
 
@@ -81,14 +77,10 @@ Daemons.HeapTaskDaemon.runInternal()
             └─ GetTask() → HeapTask::Run()
 ```
 
-先看队列本身：`TaskProcessor` 用 `multiset` 保存任务。`multiset` 是有序容器，允许出现相同的排序键；排序键 `target_run_time` 以 `NanoTime()` 单调时钟为基准，是任务的目标执行时间。
+先看队列本身：`TaskProcessor` 用 `multiset` 保存任务，`multiset` 是有序容器、允许出现相同的排序键，排队就按排序键 `target_run_time` 来；这个键以 `NanoTime()` 单调时钟为基准，正是任务的目标执行时间。
 
 守护线程怎么等，由队首任务决定：队列为空时在 condition variable（条件变量） 上等待，队首任务还没到期就按目标时间定时等待。`AddTask()` 每次插入都会发一次 signal（唤醒信号） 唤醒；新任务的目标时间更早时，daemon 会重新检查队首。
 
-<!-- gracker-diagram: a228-02-heap-task-chain -->
-![HeapTaskDaemon 连接 Java 守护线程与 ART 队列](../../assets/diagrams/ch21/a228-02-heap-task-chain.png)
-
-图：空队列等待，未来任务定时等待；每次 AddTask 发唤醒信号，再检查按目标时间排序的队首。
 
 排进这个队列的常见任务包括：
 
@@ -103,21 +95,17 @@ Daemons.HeapTaskDaemon.runInternal()
 
 我们最关心的 `ConcurrentGCTask` 入队时直接用当前 `NanoTime()` 作目标时间，相当于一进队就具备执行资格。前面即使已经排着延时的 `ReduceTargetFootprintTask` 或 post-fork GC 请求，它照样能排到更早的位置；至于何时拿到 CPU，仍取决于线程调度。
 
-<!-- gracker-diagram: a228-03-queue-order -->
-![立即 GC 任务可排在未来维护任务之前](../../assets/diagrams/ch21/a228-03-queue-order.png)
 
-图：TaskProcessor 使用有序 multiset；优先级来自目标时间，不是按入队先后无限等待。
+## post-fork 启动期策略
 
-## Android 17 的 post-fork 启动期策略
-
-启动期策略的关键源码入口是 `Heap::PostForkChildAction()`，处理分四步：
+看完队列怎么排，我们再看 ART 在进程 fork 之后对 heap 做了哪些安排：关键源码入口是 `Heap::PostForkChildAction()`，处理分四步：
 
 1. 把 `gcs_completed_` 计数加一，让在 Zygote 中或 fork 后极早期按旧 GC 编号排队的请求失效；这一步只改请求是否过期的判据，回收本身尚未执行。
 2. 把 `target_footprint_` 暂时提高到 `growth_limit_`，再重算 `concurrent_start_bytes_`（并发 GC 的启动阈值）。源码注释写明的目的，就是减少 App launch 期间的 GC。
 3. 若 `initial_heap_size_ < growth_limit_`，2 秒后先把 target footprint 降到 `max(growth_limit / 4, initial_heap_size)`；该值仍高于初始 heap 时，再过 8 秒降到 `initial_heap_size`，第二次降低的目标时间约为 fork 后 10 秒。这期间已经完成过 GC、或任务执行时已有 collector（实际执行的回收器类型） 在运行，降低任务就保持目标值不动。
 4. 随后安排 `TriggerPostForkCCGcTask`。它的目标时间取决于前面安排了几个降低任务：零个、一个、两个分别约为 fork 后 8—28 秒、10—30 秒和 18—38 秒；这个区间来自固定的 8 秒延迟，加上按 UID（系统分配给 App 的用户标识） 生成的 0—19,999 ms jitter（确定性的错峰伪随机量）。任务执行时如果 GC 编号仍与 fork 后相同，才请求一次后台并发 GC。
 
-这里我们要澄清一点：这两秒内 collector 并未关闭，`TaskProcessor` 也没有全局冻结——源码只是放宽了 target footprint、让 fork 前后的旧请求失效。启动分配触及阈值、发生 allocation failure（对象分配失败）、收到其他 GC 请求或遇到进程状态变化时，GC 仍可能发生。
+读到这里，容易把这两秒理解成“GC 被关掉了”。源码里实际发生的，只是放宽 target footprint、让 fork 前后的旧请求失效，collector 和 `TaskProcessor` 都照常工作：启动分配一旦触及阈值、发生 allocation failure（对象分配失败）、收到其他 GC 请求或遇到进程状态变化，GC 照样可能发生。
 
 <!-- gracker-diagram: a228-04-postfork-threshold -->
 ![post-fork 放宽目标堆并按条件分阶段降低](../../assets/diagrams/ch21/a228-04-postfork-threshold.png)
@@ -133,15 +121,15 @@ Daemons.HeapTaskDaemon.runInternal()
 
 ## 用 Perfetto 建立因果证据
 
-判断 GC 与启动的因果关系，我们主要靠 Perfetto，Android 的系统级时间线追踪工具。采集配置至少要包含 scheduler 事件（`sched_switch`、`sched_wakeup`）、CPU frequency/idle（频率与空闲状态），以及 `am`、`view`、`dalvik` 等 atrace 类别，并为目标包启用 App trace。可用的 atrace 类别随系统版本变化，采集前先在 Perfetto UI 或命令行里确认设备支持哪些；官方 Perfetto UI 录制流程要求 Android 11（API 30）及更高版本，本章覆盖的 Android 8—10 要用 `record_android_trace` 等命令行流程。配置方法见 [Recording system traces](https://perfetto.dev/docs/getting-started/system-tracing) 和 [CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)。
+前面两节看的是 GC 任务怎么排队、ART 在 fork 后怎么放宽阈值；要把 GC 和启动变慢连成因果，我们主要靠 Perfetto，Android 的系统级时间线追踪工具。采集配置至少要包含 scheduler 事件（`sched_switch`、`sched_wakeup`）、CPU frequency/idle（频率与空闲状态），以及 `am`、`view`、`dalvik` 等 atrace 类别，并为目标包启用 App trace。可用的 atrace 类别随系统版本变化，采集前先在 Perfetto UI 或命令行里确认设备支持哪些；官方 Perfetto UI 录制流程要求 Android 11（API 30）及更高版本，本章覆盖的 Android 8—10 要用 `record_android_trace` 等命令行流程。配置方法见 [Recording system traces](https://perfetto.dev/docs/getting-started/system-tracing) 和 [CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)。
 
-拿到 trace 后，先标出进程创建、`bindApplication`（framework 绑定新 App 进程并开始初始化）、首帧显示与充分绘制报告四个边界。记录 TTID/TTFD 所用工具与版本后，再看 GC 是否与启动关键路径重叠；业务就绪报告与工具识别的显示帧结束点要分别对齐。
+拿到 trace 后，我们先标出四个时间点：进程创建、`bindApplication`（framework 绑定新 App 进程并开始初始化）、首帧显示与充分绘制报告。记录 TTID/TTFD 所用工具与版本后，再看 GC 是否与启动关键路径重叠；业务就绪报告与工具识别的显示帧结束点要分别对齐。
 
 推荐按下面的顺序判断：
 
 1. 在 App 进程中找到 `HeapTaskDaemon`，确认它在启动窗口内是否 Running。
 2. 查看同一窗口的 ART/GC slice，区分 concurrent GC（并发回收）、blocking GC（调用线程要等它结束）、trim 与其他 heap task。
-3. 检查主线程在重叠区间是 Running、Runnable（就绪但在等 CPU）、Sleeping，还是卡在 suspend/wait slice。长时间 Runnable 更支持 CPU 竞争的解释，但还不能证明竞争来自 GC。判断线程是否在等回收，应把明确的 GC 等待区间、线程状态或调用栈与当次 GC 对齐，不能仅凭 daemon Running 或主线程 Runnable 下结论。
+3. 检查主线程在重叠区间是 Running、Runnable（就绪但在等 CPU）、Sleeping，还是卡在 suspend/wait slice。长时间 Runnable 更支持 CPU 竞争的解释；要坐实竞争来自 GC，还得把明确的 GC 等待区间、线程状态或调用栈与当次 GC 对齐，光凭 daemon Running 或主线程 Runnable 还下不了这个结论。
 4. 对照 TTID/TTFD，确认事件落在关键路径上；首帧之后发生的 GC，解释不了 TTID 变慢。
 5. 再用对象分配记录定位制造短命对象或保留大量对象的代码。
 
@@ -173,7 +161,9 @@ WHERE p.name = 'com.example.app'
 GROUP BY p.upid, p.name;
 ```
 
-这条查询只统计已知非负时长的 Running 区间与窗口的交集，并按 trace 内的 `upid` 区分同名进程的不同生命周期。`dur < 0` 的未定时长区间被排除，Trace 截断或调度事件丢失时这个已观测总量可能偏低；没有匹配行也不能直接当作零。它回答 daemon 已观测的 CPU 时间，区分不了具体 heap task，要回到对应 slice 和采集完整性检查。字段定义见 [`thread_state` 表](https://perfetto.dev/docs/analysis/sql-tables#thread_state)。若目标是 `:remote` 等子进程，把包名换成对应进程名。“超过启动窗口 10% 就要抑制”这样适用于所有 App 的阈值并不存在，判断依据应是同一设备、同一构建和同一启动入口的 A/B 单变量对照结果。
+这条查询统计的是已知非负时长的 Running 区间与启动窗口的交集，并按 trace 内的 `upid` 区分同名进程的不同生命周期；`dur < 0` 的未定时长区间落在统计之外。所以 Trace 截断或调度事件丢失时，这个已观测总量可能偏低；查不到匹配行时，把它当成零之前先回 trace 确认。它回答的是 daemon 已观测的 CPU 时间；想进一步区分具体是哪个 heap task，要看对应的 slice 和采集完整性。字段定义见 [`thread_state` 表](https://perfetto.dev/docs/analysis/sql-tables#thread_state)。若目标是 `:remote` 等子进程，把包名换成对应进程名。
+
+至于“超过启动窗口 10% 就要抑制”这样适用于所有 App 的阈值，现实中并不存在；判断依据应是同一设备、同一构建和同一启动入口的 A/B 单变量对照结果。
 
 <!-- gracker-diagram: a228-07-running-intersection -->
 ![SQL 只累加 Running 区间与启动窗口的交集](../../assets/diagrams/ch21/a228-07-running-intersection.png)
@@ -189,7 +179,7 @@ Logcat 中的 ART GC 行可以补充 cause、freed bytes（回收字节数）、
 
 ## 从 GC 事件追到分配调用栈
 
-Perfetto 负责确认时序和关键路径；查对象类型与分配调用栈，我们换用 Java/Kotlin Allocation Recording（对象分配记录）。当前 Android Studio 要求使用 debuggable 构建：Full 模式记录每次分配，分配密集时会明显拖慢 App；Sampled 模式按间隔采样。两种模式都用于归因，采集期间的启动耗时不能作为发布性能结论。详细限制见 [Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)。
+Perfetto 负责确认时序和关键路径；查对象类型与分配调用栈，我们换用 Java/Kotlin Allocation Recording（对象分配记录）。当前 Android Studio 要求使用 debuggable 构建：Full 模式记录每次分配，分配密集时会明显拖慢 App；Sampled 模式按间隔采样。两种模式都用于归因；发布性能结论交给下面第一轮的 release 采集。详细限制见 [Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)。
 
 Android 8（API 26）及更高版本的分配分析器还可能把部分分析工具开销显示为 App 的 native 内存。这部分增长来自工具本身，归因时要把它与应用自己的分配分开；比较原生内存占用时，应另外保留一份未开启分配记录的采集结果。
 
@@ -198,12 +188,8 @@ Android 8（API 26）及更高版本的分配分析器还可能把部分分析�
 - **release/profileable system trace**：用发布构建或允许性能分析的 release-like 构建复现 TTID/TTFD，确认 GC、主线程与 CPU 调度关系；
 - **debuggable allocation recording**：只截取 `ContentProvider`、`Application.onCreate()`、首个 Activity 和首屏构建窗口，按 allocated bytes（分配字节数）、allocation count（分配次数） 和 Remaining Size 排序。
 
-Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已释放大小”，适合寻找采集结束时仍未释放的对象。整棵对象引用图的 retained size（移除某个对象后可一起释放的总大小）在它的范围之外；判断泄漏或完整保留关系，还得结合 heap dump（堆快照） 和引用链。
+Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已释放大小”，适合寻找采集结束时仍未释放的对象。整棵对象引用图的 retained size（移除某个对象后可一起释放的总大小）超出了它的范围，判断泄漏或完整保留关系，要结合 heap dump（堆快照） 和引用链。
 
-<!-- gracker-diagram: a228-08-two-recordings -->
-![发布时序与分配归因分两轮采集](../../assets/diagrams/ch21/a228-08-two-recordings.png)
-
-图：API26+ 工具可能带来额外 native 记账；保留一轮未启用分配记录的结果区分应用与工具。
 
 具体排查时，我们把对象分成三类：
 
@@ -213,12 +199,8 @@ Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已�
 | 大量启动后仍存活对象 | Remaining Size 高 | 检查全局缓存、SDK、DI graph（依赖注入创建的对象关系）、图片和首屏模型 |
 | 单个或少量大对象 | byte[]、Bitmap、大数组占比高 | 延后加载、降低尺寸、流式处理或按需映射 |
 
-把工作移到后台线程，并不能自动降低 GC 压力：Java heap 由进程内线程共享，后台线程仍在同一个 heap 里分配。迁移线程可以减少主线程的 CPU 工作，并发 GC 和内存带宽竞争却仍然存在。
+把工作移到后台线程，可以省下主线程的 CPU 时间；但 Java heap 由进程内线程共享，后台线程仍在同一个 heap 里分配，并发 GC 和内存带宽竞争也就仍由整个进程承担。
 
-<!-- gracker-diagram: a228-09-allocation-shapes -->
-![短命分配、live set 与大对象分别治理](../../assets/diagrams/ch21/a228-09-allocation-shapes.png)
-
-图：Java heap 为进程内线程共享；把相同分配移到 Worker，不会自动消除 GC 与带宽压力。
 
 ## 可发布应用的治理顺序
 
@@ -251,10 +233,6 @@ trace 和分配记录都拿到手之后，我们按下面的顺序治理：先�
 
 启动期缓存要预先定好容量、逐出规则和生命周期。对象池只适合已经测出高频构造、且重置成本可控的对象；随意池化会扩大 live set、增加状态错误，还可能让 GC 更慢。业务缓存的容量与冷热分段见 [4.4 App 内存优化与诊断](../../part1-fundamentals/ch04-memory/04-app-memory-optimization.md#业务缓存的容量与冷热分段)，CPU 硬件缓存与数据局部性见 [5.8 CPU Cache 友好代码与数据布局优化](../../part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md)。
 
-<!-- gracker-diagram: a228-10-allocation-governance -->
-![先减首帧前对象图，再降低分配与保留](../../assets/diagrams/ch21/a228-10-allocation-governance.png)
-
-图：延后的任务仍需错峰，不能把所有分配与 GC 一次性推到首帧后的同一回调。
 
 ### 4. 同时检查 native 与 graphics memory
 
@@ -262,12 +240,8 @@ native 侧的压力统计把两笔账加在一起：系统 malloc 已用字节�
 
 `RegisterNativeAllocation()` 按字节补记 malloc 统计覆盖不到的非 malloc 分配，同时将登记次数计数加一；该次数触及 `kNotifyNativeInterval` 周期，或单次登记字节数超过 `kCheckImmediatelyThreshold` 时，才会调用 `CheckGCForNative()`。前者按次数检查，不是累计登记字节阈值；`NotifyNativeAllocations()` 也会触发检查。检查把原生内存计数与 Java 堆占用放在一起判断压力，满足条件时以 `kGcCauseForNativeAlloc` 请求或执行 GC。统计范围和检查时机是两回事：原生内存增长之后，回收要等检查发生、条件满足才会到来。
 
-<!-- gracker-diagram: a228-12-native-check-triggers -->
-![Native 分配检查区分次数周期与单次字节数](../../assets/diagrams/ch21/a228-12-native-check-triggers.png)
 
-图：登记次数周期与单次分配大小是两条检查门槛；检查并不保证一定发生回收。
-
-Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折算的驻留内存）、native heap、graphics 分类和对应调用栈。这些数据衡量的是进程总内存压力，并不等同于 ART heap 的触发阈值；`Runtime.totalMemory() - freeMemory()` 只给出 Java heap 的一个瞬时近似值，代表不了进程总内存，也不适合设置跨设备统一的百分比告警。
+Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折算的驻留内存）、native heap、graphics 分类和对应调用栈——这些数据衡量的是进程总内存压力，和 ART heap 的触发阈值是两回事。`Runtime.totalMemory() - freeMemory()` 只给出 Java heap 的一个瞬时近似值，代表不了进程总内存，跨设备统一的百分比告警也不适合用它来设。
 
 <!-- gracker-diagram: a228-11-native-accounting -->
 ![ART native 压力不是进程 PSS 的同义词](../../assets/diagrams/ch21/a228-11-native-accounting.png)
@@ -280,7 +254,7 @@ Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折
 
 ## 不应采用的“GC 抑制”方案
 
-我们把三类方案逐个过一遍，说明各自为什么不能采用。
+我们把三类方案逐个过一遍，说清各自的问题出在哪里。
 
 ### Hook `ConcurrentGCTask::Run`
 
@@ -312,10 +286,6 @@ Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折
 
 `System.gc()` 向 runtime 发出显式回收请求，ART 可以忽略或调整；被执行的请求可能引入暂停以及 CPU/内存带宽竞争。只有 trace 和对照实验都证明某个无交互窗口的请求能改善后续关键路径，才有继续评估的依据；常规 App 应避免在首帧后、页面切换或滑动开始前调用它。
 
-<!-- gracker-diagram: a228-14-unsupported-controls -->
-![阻塞 daemon、隐藏 API 与显式 GC 都不能替代分配治理](../../assets/diagrams/ch21/a228-14-unsupported-controls.png)
-
-图：可发布策略是减少分配、缩小存活对象并控制缓存；固定条件验证启动及后续交互。
 
 ## 实验设计与发布判断
 
@@ -344,11 +314,11 @@ Java heap 看起来不大时，我们仍要查看进程 PSS（按共享比例折
 - 低内存/OOM 相关退出、崩溃和 ANR（应用无响应）；
 - 新进程冷启动与复用进程启动的分布。
 
-## Android 8—17 的版本边界
+## Android 8—17 的版本差异
 
 Android Studio 官方文档说明：Android 7.1 及更低版本最多保留 65,535 条分配记录，Android 8 及更高版本没有这一实际限制。这说的是记录数量，debuggable 要求和采集开销仍然存在。ART 内部 heap 策略会随系统版本与 Mainline 模块演进，把 Android 8 的某个实现细节直接外推到 Android 17 并不可靠。
 
-本章涉及的 Android 17 结论都出自 `android-17.0.0_r1`：
+把前面几节关于启动期 GC 的结论收拢在一起：
 
 - post-fork 阶段先放宽 heap 阈值，再分阶段降低；
 - 2 秒不是 GC 全局冻结窗口；

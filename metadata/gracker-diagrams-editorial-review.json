@@ -56967,9 +56967,166 @@
       "before_count": 14,
       "before_all_images": 14,
       "sha256_before": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a228-01-gc-impact-paths",
+          "title": "GC 通过暂停、分配等待与资源竞争影响启动",
+          "decision": "remove",
+          "reason": "三条GC影响路径编号定义与daemon任务区别段落完整，三行成本映射卡重复。",
+          "original_line": 67,
+          "heading": "## GC 对启动性能的影响路径"
+        },
+        {
+          "original_id": "a228-02-heap-task-chain",
+          "title": "HeapTaskDaemon 连接 Java 守护线程与 ART 队列",
+          "decision": "remove",
+          "reason": "五行原生文本链完整保留JavaDaemon/VMRuntime/TaskProcessor/GetTaskRun，四框同链重复。",
+          "original_line": 88,
+          "heading": "## HeapTaskDaemon 的调度链"
+        },
+        {
+          "original_id": "a228-03-queue-order",
+          "title": "立即 GC 任务可排在未来维护任务之前",
+          "decision": "remove",
+          "reason": "有序multiset、目标时间入队唤醒和立即GC段落完整，三行队列分类卡重复，阻塞daemon影响在后文明确。",
+          "original_line": 106,
+          "heading": "## HeapTaskDaemon 的调度链"
+        },
+        {
+          "original_id": "a228-04-postfork-threshold",
+          "title": "post-fork 放宽目标堆并按条件分阶段降低",
+          "decision": "keep",
+          "reason": "fork代次、目标提高growthlimit、约2秒首降和约10秒可选二降的顺序，解释阈值变化不是冻结GC。",
+          "original_line": 122,
+          "heading": "## post-fork 启动期策略"
+        },
+        {
+          "original_id": "a228-05-postfork-gc-jitter",
+          "title": "post-fork 后台 GC 的目标时间随降低任务数改变",
+          "decision": "keep",
+          "reason": "零/一/二次降低任务分别对应8–28/10–30/18–38秒目标的对照，便于核对UIDjitter与lastadjusttime。",
+          "original_line": 129,
+          "heading": "## post-fork 启动期策略"
+        },
+        {
+          "original_id": "a228-07-running-intersection",
+          "title": "SQL 只累加 Running 区间与启动窗口的交集",
+          "decision": "keep",
+          "reason": "启动窗口和跨边界Running区间的交集三轨，直观展示SQL min/max裁剪只统计窗口内CPU时间。",
+          "original_line": 180,
+          "heading": "## 用 Perfetto 建立因果证据"
+        },
+        {
+          "original_id": "a228-06-gc-causal-tracks",
+          "title": "把 GC、主线程状态与关键路径放在同一窗口",
+          "decision": "keep",
+          "reason": "主线程暂停/等待/Runnable与GC阶段和首帧关键路径三轨，区分暂停、竞争线索和实际重叠边界。",
+          "original_line": 187,
+          "heading": "## 用 Perfetto 建立因果证据"
+        },
+        {
+          "original_id": "a228-08-two-recordings",
+          "title": "发布时序与分配归因分两轮采集",
+          "decision": "remove",
+          "reason": "release时序与debuggable分配两轮列表及RemainingSize非retained的段落完整，三行工具映射卡重复。",
+          "original_line": 205,
+          "heading": "## 从 GC 事件追到分配调用栈"
+        },
+        {
+          "original_id": "a228-09-allocation-shapes",
+          "title": "短命分配、live set 与大对象分别治理",
+          "decision": "remove",
+          "reason": "三类对象/信号/治理表完整，三行分配形态卡重复。",
+          "original_line": 220,
+          "heading": "## 从 GC 事件追到分配调用栈"
+        },
+        {
+          "original_id": "a228-10-allocation-governance",
+          "title": "先减首帧前对象图，再降低分配与保留",
+          "decision": "remove",
+          "reason": "五项治理章节逐一展开删对象图、减临时分配、控live/cache及固定实验，四框步骤摘要重复。",
+          "original_line": 256,
+          "heading": "### 3. 控制存活对象和 cache"
+        },
+        {
+          "original_id": "a228-12-native-check-triggers",
+          "title": "Native 分配检查区分次数周期与单次字节数",
+          "decision": "remove",
+          "reason": "相邻完整段落准确说明登记次数周期与单次大bytes检查及Notify检查，三行门槛分类卡重复。",
+          "original_line": 267,
+          "heading": "### 4. 同时检查 native 与 graphics memory"
+        },
+        {
+          "original_id": "a228-11-native-accounting",
+          "title": "ART native 压力不是进程 PSS 的同义词",
+          "decision": "keep",
+          "reason": "系统malloc与显式非malloc登记两输入汇入GetNativeBytes再综合压力检查的结构，区分统计与触发时机。",
+          "original_line": 274,
+          "heading": "### 4. 同时检查 native 与 graphics memory"
+        },
+        {
+          "original_id": "a228-13-startup-completed",
+          "title": "StartupCompletedTask 按条件写 image 并释放启动元数据",
+          "decision": "keep",
+          "reason": "首次Notify后条件尝试image、释放startupcache与linearalloc、最后删线程池的顺序及重复任务例外，保留原图独有补充。",
+          "original_line": 308,
+          "heading": "### 反射调用 `VMRuntime`"
+        },
+        {
+          "original_id": "a228-14-unsupported-controls",
+          "title": "阻塞 daemon、隐藏 API 与显式 GC 都不能替代分配治理",
+          "decision": "remove",
+          "reason": "三节分别说明hook/sensitivehiddenAPI/Systemgc机制风险与条件，三行分类卡重复。",
+          "original_line": 317,
+          "heading": "### 在首帧后主动调用 `System.gc()`"
+        }
+      ],
+      "sha256_after": "2695421aa23b00264348e1b33beed5a42c628a1d754c1c77ad242a2ca733614e",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:00:02.806241+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 14,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a228/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a228/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 228,
+        "article": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+        "registered_sha256": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
+        "frozen_sha256": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
+        "review_input_sha256": "2f701ca8d683fc3722ca3bbd8163a889d4a753358f06972f863846dd508e9420",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a228/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a228/external-source.diff",
+        "diff_sha256": "d4b53e08dd4153b708403df1e36c3b6d7cd1ee69618252055eaa4663de38f706",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 187, \"characters\": 15698, \"svg_labels_read\": 14, \"actual_pngs_viewed\": 14, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 2, \"code_lines\": 28, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "2f701ca8d683fc3722ca3bbd8163a889d4a753358f06972f863846dd508e9420",
+      "retired_diagrams": [
+        "a228-01-gc-impact-paths",
+        "a228-02-heap-task-chain",
+        "a228-03-queue-order",
+        "a228-08-two-recordings",
+        "a228-09-allocation-shapes",
+        "a228-10-allocation-governance",
+        "a228-12-native-check-triggers",
+        "a228-14-unsupported-controls"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-228/retired-assets.json"
     },
     {
       "index": 229,
@@ -57555,8 +57712,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 153,
-  "next_article": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+  "reviewed_articles": 154,
+  "next_article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -57566,7 +57723,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:57:56.765063+08:00",
+  "updated_at": "2026-10-31T17:00:02.806241+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -57636,13 +57793,6 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
-      "registered_sha256": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
-      "observed_sha256": "2f701ca8d683fc3722ca3bbd8163a889d4a753358f06972f863846dd508e9420",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -57744,9 +57894,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4743,
-  "reviewed_placements_after": 1958,
-  "net_removed_placements": 2785,
+  "reviewed_placements_before": 4757,
+  "reviewed_placements_after": 1964,
+  "net_removed_placements": 2793,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -57770,5 +57920,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 153
+  "currently_matching_reviewed_source_count": 154
 }
