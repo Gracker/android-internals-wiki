@@ -128,7 +128,7 @@ last_consolidated_at: '2026-08-24'
 5. 在帧窗口内分析线程状态、Binder、GC（垃圾回收）、I/O、GPU 与 fence；
 6. 用相同设备状态和操作脚本验证修复。
 
-每一步都要记下帧 token（标识）、进程、线程、layer 和时间区间。只看界面上位置相邻的 slice，容易把后台事件误归给目标帧。
+每一步都要记下帧 token（标识）、进程、线程、layer 和时间区间；界面里位置相邻的 slice 可能属于后台事件，凭位置归组容易误归因。
 
 
 ### 抓取前先固定现场
@@ -187,12 +187,12 @@ duration_ms: 15000
 
 该配置提供 FrameTimeline、应用/系统 atrace（Android 跟踪标记）、调度、blocked reason（阻塞原因）、CPU 频率和 Binder 基线。GPU render stages（GPU 渲染阶段）、memory counters（内存计数器）、heapprofd（堆分析数据源）、thermal 或厂商图形数据源，需要根据设备支持情况和问题类型追加；一次加入所有高频 probe 会增加采集开销并缩短有效窗口。
 
-采集结束后要检查 `traced` / `traced_probes` 错误、数据源是否启动、目标 App 是否出现在 atrace 中、FrameTimeline 表是否有记录，以及 trace buffer 是否发生 overwrite（旧数据被覆盖）。某项数据缺失时，先检查数据源支持、采集配置、目标时间窗口、过滤条件，以及该路径是否在工具覆盖范围内；现场也可能没有触发相应事件。空轨道本身不能区分这些情况，结论应明确哪些证据尚不可得。
+采集结束后要检查 `traced` / `traced_probes` 错误、数据源是否启动、目标 App 是否出现在 atrace 中、FrameTimeline 表是否有记录，以及 trace buffer 是否发生 overwrite（旧数据被覆盖）。某项数据缺失时，先检查数据源支持、采集配置、目标时间窗口、过滤条件，以及该路径是否在工具覆盖范围内；现场也可能没有触发相应事件。空轨道只说明这一列没有数据；结论里应写清哪些证据暂时拿不到，以及下一步补采什么。
 
 
 ### 帧级定位：Expected、Actual 与两类 token（帧标识）
 
-Android 12 / API 31 起，FrameTimeline 是标准入口。应用的 SurfaceFrame 和 SurfaceFlinger 的 DisplayFrame 各有一对 expected/actual timeline（预期/实际时间线）；Perfetto 通过 flow（跨轨道关联线） 把两者关联起来。`surface_frame_token` 与 `display_frame_token` 是不同标识，一个 DisplayFrame 可以合成多个 layer frame。
+在 Perfetto 里圈定异常帧，Android 12 / API 31 起的标准入口是 FrameTimeline。应用的 SurfaceFrame 和 SurfaceFlinger 的 DisplayFrame 各有一对 expected/actual timeline（预期/实际时间线）；Perfetto 通过 flow（跨轨道关联线） 把两者关联起来。`surface_frame_token` 与 `display_frame_token` 是不同标识，一个 DisplayFrame 可以合成多个 layer frame。
 
 选择应用 `Actual Timeline` slice 后，依次记录：
 
@@ -205,7 +205,7 @@ Android 12 / API 31 起，FrameTimeline 是标准入口。应用的 SurfaceFrame
 颜色只用于导航。红色、黄色或浅绿色都只是界面提示，我们读取的是字段本身：`JankType` 是位标志，同一帧可能有多个原因。分析 `BufferStuffing`、Dropped、PredictionError 和显示模式切换时，还要读取相邻帧。
 
 
-SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。这时我们改从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示呈现栅栏）与 release fence（buffer 可复用栅栏）组织证据。这几个对象各管一段：acquire fence（缓冲区可读栅栏）要等生产完成，SF latch 锁定本帧 buffer，按 HWC 接口定义，常见物理屏的 present fence 对应本帧开始扫描显示或开始传到面板内存的 VSync，不能解读为全屏扫描结束；虚拟显示则对应输出 buffer 写完。release fence 表示相应消费者已读完 buffer，随后才可安全重写，实际仍要遵守缓冲队列的所有权规则。接口语义见 [HWC 基线头文件](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h)。出图类型识别参见 [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
+SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。这时我们改从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示呈现栅栏）与 release fence（buffer 可复用栅栏）组织证据。这几个对象各管一段：acquire fence（缓冲区可读栅栏）要等生产完成，SF latch 锁定本帧 buffer，按 HWC 接口定义，常见物理屏的 present fence 对应本帧开始扫描显示或开始传到面板内存的 VSync，全屏扫描要在这之后才结束；虚拟显示则对应输出 buffer 写完。release fence 表示相应消费者已读完 buffer，随后才可安全重写，实际仍要遵守缓冲队列的所有权规则。接口语义见 [HWC 基线头文件](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h)。出图类型识别参见 [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
 
 ### 从帧回到线程与系统
 
@@ -213,7 +213,7 @@ SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径
 
 #### MainThread 与 RenderThread（渲染线程）
 
-`Choreographer#doFrame` 是应用帧调度入口，常见 callback（回调） 顺序为 Input（输入）、Animation（动画）、Insets Animation（系统栏等区域的动画）、Traversal（测量、布局和绘制遍历）、Commit（提交），其中 Traversal 覆盖测量、布局和绘制，Commit 处理 traversal 之后的 post-draw 回调，并可能校正回调可见的 frame time；它不是 GPU 提交或显示 present 完成的统一标志。`DrawFrame` 位于 RenderThread，覆盖 HWUI 的渲染准备与提交工作。这两个 slice 适合作为回溯的起点，帧的完成与呈现结论仍要看 FrameTimeline。
+`Choreographer#doFrame` 是应用帧调度入口，常见 callback（回调） 顺序为 Input（输入）、Animation（动画）、Insets Animation（系统栏等区域的动画）、Traversal（测量、布局和绘制遍历）、Commit（提交），其中 Traversal 覆盖测量、布局和绘制，Commit 处理 traversal 之后的 post-draw 回调，并可能校正回调可见的 frame time，是应用侧帧工作的收尾阶段；GPU 提交与显示 present 的完成，要另外确认。`DrawFrame` 位于 RenderThread，覆盖 HWUI 的渲染准备与提交工作。这两个 slice 适合作为回溯的起点，帧的完成与呈现结论仍要看 FrameTimeline。
 
 <!-- gracker-diagram: ch07-02-choreographer-boundaries -->
 ![doFrame、DrawFrame 与帧完成边界](../../assets/diagrams/ch07/ch07-02-choreographer-boundaries.png)
@@ -222,13 +222,13 @@ SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径
 
 主线程 `doFrame` 开始较晚时，我们先检查前序 Looper（消息循环） 消息、同步 Binder、锁、I/O 和 wakeup（唤醒） latency（唤醒延迟）。`doFrame` 内部耗时较长时，再分别检查 callback 与业务 slice。MainThread 在 `syncFrameState` 附近等待，可能是与 RenderThread 的预期同步，也可能被前一帧、纹理上传或 buffer backpressure（缓冲区背压） 放大；这时沿 wait 的唤醒源继续追。
 
-RenderThread 的 `DrawFrame` 较长时，我们先分清时间去了哪里：Running（运行中） 是正在执行，Runnable（可运行但未获得 CPU） 是可运行但还没拿到 CPU，buffer/fence wait（等待） 是在等缓冲或栅栏，GPU completion（GPU 完成时间） 要看 GPU 侧何时完成。`DrawFrame` 的 slice 长度是该记录区间的 wall time，实际 CPU 执行还要从 Running 区间统计；短 slice 也不能证明整帧或 GPU 工作已经完成。GPU 是否按时完成仍要核对 FrameTimeline 的 finish、GPU track（轨道）与 acquire fence。
+RenderThread 的 `DrawFrame` 较长时，我们先分清时间去了哪里：Running（运行中） 是正在执行，Runnable（可运行但未获得 CPU） 是可运行但还没拿到 CPU，buffer/fence wait（等待） 是在等缓冲或栅栏，GPU completion（GPU 完成时间） 要看 GPU 侧何时完成。`DrawFrame` 的 slice 长度是该记录区间的 wall time，实际 CPU 执行还要从 Running 区间统计。整帧与 GPU 是否按时完成，要核对 FrameTimeline 的 finish、GPU track（轨道）与 acquire fence。
 
 #### SurfaceFlinger 与显示末端
 
 遇到 `SurfaceFlingerCpuDeadlineMissed`，我们检查 SF 主线程、transaction（图层状态事务）、layer snapshot（图层快照）、composition strategy（合成策略） 和 HWC validate（能力校验）/present（验证合成方案/提交显示）。遇到 `SurfaceFlingerGpuDeadlineMissed`（SF GPU 合成错过截止时间），检查 RenderEngine、client target（客户端合成目标） 和 GPU fence（同步栅栏）。遇到 `DisplayHAL`，继续检查 Composer HAL、present fence、显示模式与驱动。
 
-`onMessageReceived` 是旧版和底层 trace 中常见的 SF 工作入口，但 slice 名称、拆分方式和厂商插桩都会变化。现代分析优先依赖 DisplayFrame、flow 与明确的 SF/HWC 事件；SF 有没有做合成，要看 DisplayFrame 与 flow，某个 slice 名称缺失本身给不出这个判断。
+`onMessageReceived` 是旧版和底层 trace 中常见的 SF 工作入口，但 slice 名称、拆分方式和厂商插桩都会变化。现代分析优先依赖 DisplayFrame、flow 与明确的 SF/HWC 事件；SF 有没有做合成，以 DisplayFrame 与 flow 为准，slice 名称只作参考。
 
 
 ### CPU 调度与等待状态
@@ -242,7 +242,7 @@ RenderThread 的 `DrawFrame` 较长时，我们先分清时间去了哪里：Run
 | Sleeping (`S`) | 可中断等待 | 查找等待对象、Binder flow、锁 owner（持有者）或唤醒源 |
 | Uninterruptible Sleep (`D`) | 内核不可中断等待 | 结合 `io_wait`、`blocked_function` 与内核事件 |
 
-Runnable（可运行但尚未获得 CPU） duration（持续时间）描述等待 CPU 的时间，不是前一条 `sched_slice` 的 `dur`。`sched_slice.end_state = R` 或 `R+` 表示线程离开 CPU 时仍可运行，适合解释它为何被切出；该字段不直接给出后续等待时长。测量调度延迟应使用 `thread_state` 的 Runnable 区间，必要时再结合 `sched_waking` 的唤醒关系。
+Runnable（可运行但尚未获得 CPU） duration（持续时间）量的是等待 CPU 的时间，要测它就用 `thread_state` 的 Runnable 区间，必要时结合 `sched_waking` 的唤醒关系；前一条 `sched_slice` 的 `dur` 量的是上一次在 CPU 上的运行。`sched_slice.end_state = R` 或 `R+` 表示线程离开 CPU 时仍可运行，适合解释它为何被切出，后续的等待时长则回到 Runnable 区间读。
 
 <!-- gracker-diagram: ch07-02-thread-state-waits -->
 ![区间耗时如何拆成运行与等待](../../assets/diagrams/ch07/ch07-02-thread-state-waits.png)
@@ -253,7 +253,7 @@ Runnable（可运行但尚未获得 CPU） duration（持续时间）描述等�
 
 ### FrameMetrics 与 JankStats（应用内卡顿监测库） 的线上角色
 
-`Window.OnFrameMetricsAvailableListener` 从 API 24 起提供 HWUI 窗口的逐帧指标。listener（监听器） 会在指定 Handler（消息处理器） 上回调，处理过慢会产生 `dropCountSinceLastInvocation`；这个 drop count 表示指标回调丢失，别把它当成显示帧被 SurfaceFlinger 丢弃。跨线程保存数据时应复制 `FrameMetrics`，避免后续回调复用同一对象带来数据变化。
+`Window.OnFrameMetricsAvailableListener` 从 API 24 起提供 HWUI 窗口的逐帧指标。listener（监听器） 会在指定 Handler（消息处理器） 上回调，处理过慢会产生 `dropCountSinceLastInvocation`；这个 drop count 表示指标回调丢失，和显示帧被 SurfaceFlinger 丢弃是两回事。跨线程保存数据时应复制 `FrameMetrics`，避免后续回调复用同一对象带来数据变化。
 
 | 指标 | API 边界 | 解释 |
 |------|----------|------|
@@ -274,7 +274,7 @@ Runnable（可运行但尚未获得 CPU） duration（持续时间）描述等�
 
 Trace Processor（跟踪数据处理器）导入并分析 trace；SQL 模块和表结构取决于分析时使用的 Trace Processor 版本，不由采集设备的 Android 版本单独决定。AOSP（Android 开源项目） 参考实现位于 `platform/external/perfetto` 的 `android.frames.timeline`、`android.binder` 与 `android.binder_breakdown` 模块。字段或模块不存在时，应核对查询与分析器的兼容性；数据源未采到或现场没有对应事件时，表也可能只是空表。SQL 报错和零行结果要分别排查。
 
-本文三段查询已用 Perfetto v58.2 在[官方测试 trace](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/test/data/wattson_jank_cuj.pb.sha256)上运行校验，并分别检查内置标准库与上述 r1 SQL 模块。此校验确认示例的执行与区间筛选语义，不代表目标应用的测量结果；分析其他 trace 时仍须确认数据覆盖。
+本文三段查询已用 Perfetto v58.2 在[官方测试 trace](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/test/data/wattson_jank_cuj.pb.sha256)上运行校验，并分别检查内置标准库与上述 r1 SQL 模块。此校验确认的是示例的执行与区间筛选语义；换一份 trace，数据覆盖要重新确认。
 
 #### 查询异常 SurfaceFrame
 
@@ -310,7 +310,7 @@ WHERE a.dur >= 0
 ORDER BY a.ts;
 ```
 
-`finish_delta_ms` 比较的是 actual end（实际结束时间） 与 expected end（预期结束时间），只表示该 SurfaceFrame 的窗口偏差；最终责任仍以 `jank_type`、DisplayFrame 和 flow 为准。`android_frames_layers` 适合分析关联到 HWUI doFrame/DrawFrame 的逐 layer 记录，`android_frames` 则按进程与 frame 聚合；两者都不等于全部 producer 的原始 FrameTimeline 数据。基线模块对 DrawFrame 与 layer 的匹配仍有 TODO，同一 actual slice 可能因多个 DrawFrame 重复出现。上述查询按 actual slice 身份去重；缺少 expected 或有效配对时，偏差为 NULL，不能当作 0。
+`finish_delta_ms` 比较的是 actual end（实际结束时间） 与 expected end（预期结束时间），只表示该 SurfaceFrame 的窗口偏差；最终责任仍以 `jank_type`、DisplayFrame 和 flow 为准。`android_frames_layers` 适合分析关联到 HWUI doFrame/DrawFrame 的逐 layer 记录，`android_frames` 则按进程与 frame 聚合；两者覆盖的都是加工后的视角，全部 producer 的原始 FrameTimeline 数据，要回到未聚合的 timeline 记录去看。基线模块对 DrawFrame 与 layer 的匹配仍有 TODO，同一 actual slice 可能因多个 DrawFrame 重复出现。上述查询按 actual slice 身份去重；缺少 expected 或有效配对时，偏差为 NULL，读作缺失，别补成 0。
 
 <!-- gracker-diagram: ch07-02-sql-frame-identity -->
 ![帧查询的联结、去重与缺失值](../../assets/diagrams/ch07/ch07-02-sql-frame-identity.png)
@@ -353,7 +353,7 @@ LIMIT 100;
 
 #### 把 Binder 限制在 AppDeadlineMissed 帧内
 
-下面的查询只保留目标应用 UI/RenderThread 与 `App Deadline Missed` 实际帧窗口有重叠的同步 Binder，包括窗口之前发起、窗口内仍未返回的事务；它用于寻找依赖候选，不能从全局慢事务直接反推帧责任。
+下面的查询只保留目标应用 UI/RenderThread 与 `App Deadline Missed` 实际帧窗口有重叠的同步 Binder，包括窗口之前发起、窗口内仍未返回的事务；它用来找依赖候选；从全局慢事务走到帧责任，中间要经过这道帧窗口重叠。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
@@ -404,7 +404,7 @@ WHERE b.is_sync = 1 AND b.client_dur > 0
 ORDER BY b.client_dur DESC;
 ```
 
-查询结果只能证明 Binder 与责任线程的帧窗口重叠。要解释延迟来源，还要包含 `android.binder_breakdown`，按 `binder_txn_id` 汇总 `android_binder_client_breakdown` 和 `android_binder_server_breakdown` 中的 `reason`。`server_ts - client_ts` 比较客户端事务 slice 与服务端处理 slice 的起点；这段差值可能含传输和调度等阶段，不等于线程池排队时间，也不直接表示服务线程首次获得 CPU 的时刻。判断线程池是否饱和，还需要服务端 worker（工作线程）、Runnable、嵌套 Binder 与队列证据，固定毫秒阈值给不出这个结论。
+查询结果只能证明 Binder 与责任线程的帧窗口重叠。要解释延迟来源，还要包含 `android.binder_breakdown`，按 `binder_txn_id` 汇总 `android_binder_client_breakdown` 和 `android_binder_server_breakdown` 中的 `reason`。`server_ts - client_ts` 比较客户端事务 slice 与服务端处理 slice 的起点；这段差值可能含传输和调度等阶段，线程池排队时间、服务线程首次获得 CPU 的时刻，都要从其他证据里读。判断线程池是否饱和，看服务端 worker（工作线程）、Runnable、嵌套 Binder 与队列证据；固定毫秒阈值替代不了它们。
 
 <!-- gracker-diagram: ch07-02-binder-frame-overlap -->
 ![同步 Binder 与实际帧窗口的交集](../../assets/diagrams/ch07/ch07-02-binder-frame-overlap.png)
@@ -516,7 +516,7 @@ ORDER BY b.client_dur DESC;
 
 图：拖动时重点看输入分发、消费与位置更新；fling 时重点看动画时钟和滚动计算。两者都可能受后续 bind/layout、RenderThread、GPU、buffer 与显示链影响。
 
-FrameTimeline 可以先圈定异常帧。随后我们把异常帧与正常帧放在一起比较，查看 UI Thread（主线程）、RenderThread、对应的 App Window buffer 和 DisplayFrame。只盯着某个较长的 slice、没有相邻正常帧作对照，常会把稳定存在的初始化或后台任务误判成根因。
+FrameTimeline 可以先圈定异常帧。随后我们把异常帧与正常帧放在一起比较，查看 UI Thread（主线程）、RenderThread、对应的 App Window buffer 和 DisplayFrame。对照相邻的正常帧，稳定存在的初始化或后台任务往往就能从嫌疑里排除；只盯一个长 slice，常会把它们误判成根因。
 
 #### RecyclerView 的三组内建线索
 
@@ -532,7 +532,7 @@ AndroidX RecyclerView 在系统跟踪中留下了自己的一组 slice；不同�
 
 `onCreateViewHolder()` 偶尔出现是正常行为。只有它在用户可感知的滚动区间反复出现、并与异常帧对齐，创建或复用才需要处理。盲目增大 `RecycledViewPool` 会增加常驻 View 的数量，也可能错误共享配置或语义不同的 ViewHolder；缓存大小由 viewType 分布、窗口尺寸、嵌套列表结构和内存实验共同决定。
 
-布局容器没有固定的性能排名。ConstraintLayout 可以减少某些嵌套，也可能因约束求解、helper（辅助对象） 或频繁变化增加工作。我们优化时依据的是目标 item 的 measure/layout 次数和耗时；容器名称给不出这个依据。
+布局容器没有固定的性能排名。ConstraintLayout 可以减少某些嵌套，也可能因约束求解、helper（辅助对象） 或频繁变化增加工作。我们优化时依据的是目标 item 的 measure/layout 次数和耗时，先把这个量出来，再谈选哪个容器。
 
 
 #### 图片完成后仍可能影响三条路径
@@ -550,7 +550,7 @@ AndroidX RecyclerView 在系统跟踪中留下了自己的一组 slice；不同�
 
 图：后台下载或解码完成后，图片应用到 View 仍可能触发布局、绘制和纹理成本。稳定尺寸、绑定身份和取消旧请求分别解决不同问题，fixed-size 也不能替代这些检查。
 
-`RecyclerView.setHasFixedSize(true)` 表达的是 RecyclerView 自身尺寸不受 adapter（列表数据适配器） 内容变化影响；它不跳过 bind，也不保证子项不再请求布局；RecyclerView 1.4.0 会据此选择部分测量和 adapter 更新处理路径，仍需按实际布局次数验证。
+`RecyclerView.setHasFixedSize(true)` 表达的是 RecyclerView 自身尺寸不受 adapter（列表数据适配器） 内容变化影响；bind 照常执行，子项也可能继续请求布局。RecyclerView 1.4.0 会据此选择部分测量和 adapter 更新处理路径，效果仍要按实际布局次数验证。
 
 #### 小核、频率与调度结论
 
@@ -587,7 +587,7 @@ Activity 跳转可能发生在同一进程，也可能拉起已有进程或新�
 
 #### Fragment transaction
 
-AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它经 `enqueueAction()` / `scheduleCommit()`，通过宿主的 `Handler` 调用 `post`，投递一个 `mExecCommit`，随后由宿主主线程执行 pending actions（待处理操作）。它不承诺与某个 VSync 对齐。`mExecCommit` 与 Choreographer 帧回调共享同一个主 Looper，但实际执行顺序取决于主 MessageQueue（消息队列） 中已有消息、同步屏障、异步 Choreographer 消息，以及 `commit()` 的发生时刻；“`execPendingActions()` 必定早于或晚于某次 `doFrame`”的固定顺序并不存在。
+AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它经 `enqueueAction()` / `scheduleCommit()`，通过宿主的 `Handler` 调用 `post`，投递一个 `mExecCommit`，随后由宿主主线程执行 pending actions（待处理操作）。`mExecCommit` 与 Choreographer 帧回调共享同一个主 Looper，实际执行顺序取决于主 MessageQueue（消息队列） 中已有消息、同步屏障、异步 Choreographer 消息，以及 `commit()` 的发生时刻；这条链路与 VSync 之间同样没有对齐承诺，“`execPendingActions()` 必定早于或晚于某次 `doFrame`”的固定顺序并不存在。
 
 使用 `commitNow()` 会把工作放进当前调用栈，改变这一相对位置。一次切换可能把 Fragment 状态推进、View 创建/移除、SpecialEffectsController（转场与动画效果控制器）、measure/layout 和动画准备集中到相邻几帧。
 
@@ -637,7 +637,7 @@ Android 12（API 31）起，系统 SplashScreen API 为冷启动和温启动提�
 2. starting/splash window（启动占位窗口/启动画面）可见；
 3. 应用目标窗口提交第一块可用 buffer；
 4. 目标窗口相关 DisplayFrame 的 present；
-5. splash 退出动画结束/移除的时刻。两者不能合并成同一个时间点；交接期间，目标内容可能在 splash 仍存在时先参与合成。
+5. splash 退出动画结束/移除的时刻。present 时刻和 splash 退出时刻要分开记；交接期间，目标内容可能在 splash 仍存在时先参与合成。
 
 若第 2 到第 3 个时间点间隔很长，应检查进程启动、Application/Activity 主线程、资源和首帧。若应用 buffer 已经到达而交接仍然抖动，我们检查 splash exit listener（启动画面退出监听器）、Shell/WMS transaction（Shell/WindowManagerService 窗口事务）、目标 layer 和 SurfaceFlinger。自定义退出动画完成后还要移除 splash view；持续保留它会延长交接窗口。
 
@@ -663,7 +663,7 @@ Android 15 移除了预测性返回的开发者选项。应用完成 opt-in（�
 
 不要预设现场存在名为 `predictive_back_progress` 的标准 counter。返回手势的输入、进度和参与者可沿 SystemUI `EdgeBackGestureHandler`、WindowManager Shell transition 与 Winscope 的相关记录追踪；Perfetto 中可见的事件取决于平台版本、插桩和已启用的数据源。
 
-需要验证 progress 回调时序时，用应用自身插桩（例如 `Trace.beginSection("onBackProgressed")`）或 Winscope 的 Shell 参与者，别预设某个标准 counter 名称。
+需要验证 progress 回调时序时，用应用自身插桩（例如 `Trace.beginSection("onBackProgressed")`）或 Winscope 的 Shell 参与者。
 
 <!-- gracker-diagram: ch07-02-back-progress-cancel -->
 ![返回手势的提交与取消路径](../../assets/diagrams/ch07/ch07-02-back-progress-cancel.png)
@@ -779,7 +779,7 @@ HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放
 
 #### 地图 SDK
 
-地图 SDK 可能使用 SurfaceView、TextureView、GLSurfaceView、自建 SurfaceControl，或把部分内容画进宿主窗口。瓦片下载、矢量解析、标注布局和 GL/Vulkan 提交也可能分属不同线程。手里没有 SDK 版本、实际 View 类型和 layer tree，我们没法把“地图卡顿”归到固定的 GL 线程。
+地图 SDK 可能使用 SurfaceView、TextureView、GLSurfaceView、自建 SurfaceControl，或把部分内容画进宿主窗口。瓦片下载、矢量解析、标注布局和 GL/Vulkan 提交也可能分属不同线程。要把“地图卡顿”归到固定的 GL 线程，先得拿到 SDK 版本、实际 View 类型和 layer tree。
 
 排查时先确认：
 
@@ -796,7 +796,7 @@ SurfaceView 与 TextureView 的差别参见[SurfaceView 与 TextureView 渲染�
 
 标准硬件加速 WebView 的网页主体通常经 Chromium renderer（渲染进程）、compositor/GPU 服务和 WebView functor（连接 Chromium 与 Android HWUI 的绘制桥接对象） 合入宿主 App Window。视频、受保护内容、provider overlay（WebView 实现提供方添加的叠加层） 或定制内核可能增加独立的 SurfaceControl layer。网页主体与媒体 overlay 需要分开追踪。
 
-WebView 是可以独立更新的组件。平台源码可以锚定 `android-17.0.0_r1`，分析 Chromium 行为时还必须记录设备上的 WebView provider 包名、版本与 revision（修订版本）。仅凭 Android 17 平台版本标签，确认不了某个 Chromium slice 名称或进程结构。
+WebView 是可以独立更新的组件。平台源码可以锚定 `android-17.0.0_r1`，分析 Chromium 行为时还必须记录设备上的 WebView provider 包名、版本与 revision（修订版本）。某个 Chromium slice 名称或进程结构，要从这些 provider 信息里确认，平台版本标签只覆盖平台那一半。
 
 | 现象 | 优先查看 |
 |---|---|
@@ -850,7 +850,7 @@ RecyclerView、Fragment、WebView provider 和地图 SDK 都可以独立更新�
 7. 修复改变了哪项可测量证据，相邻正常帧和异常帧是否收敛？
 8. 结论依赖的平台、AndroidX、WebView provider、OEM 和 kernel 版本是什么？
 
-场景归类的作用是减少待检查对象；真正的归因仍要依靠源码、trace 和对照实验。证据跨不过 Surface、进程或显示边界时，结论就停在当前层级。
+场景归类的作用是减少待检查对象；归因仍要依靠源码、trace 和对照实验。证据到 Surface、进程或显示边界为止时，结论也停在当前层级。
 
 ## 案例：从现场证据到修复判断
 
@@ -947,7 +947,7 @@ RecyclerView、Fragment、WebView provider 和地图 SDK 都可以独立更新�
 
 #### 从现象到根因
 
-“使用一段时间后变慢，重启恢复”可能由多种因素造成：Java/native（Java 堆/原生内存） 泄漏、图片/GPU 缓存、线程增长、热限制、系统内存压力或存储 I/O。下面四组证据可用于构建“泄漏或缓存增长 → 分配/回收压力 → 异常帧”的强证据链；它们不是所有 GC 卡顿都必须满足的条件，短期分配高峰也可能在没有泄漏时触发停顿：
+“使用一段时间后变慢，重启恢复”可能由多种因素造成：Java/native（Java 堆/原生内存） 泄漏、图片/GPU 缓存、线程增长、热限制、系统内存压力或存储 I/O。把下面四组证据放在一起，可以构建“泄漏或缓存增长 → 分配/回收压力 → 异常帧”的强证据链；短期分配高峰在没有泄漏时也可能触发停顿，这类停顿另有来源：
 
 1. 相同操作循环下，Java/native/graphics（原生/图形） 内存或存活对象持续增长；
 2. ART（Android Runtime，Android 运行时） GC 的 pause 或 allocation（内存分配） stall（分配停顿） 更频繁，并与异常帧相交；
@@ -981,7 +981,7 @@ AndroidPerformance 还公开过一组整机低内存冷启动对照：
 
 ![正常内存冷启动 trace](https://www.androidperformance.com/images/15688228638217.jpg)
 
-表中原文把两个等待类别合计：`Uninterruptible Sleep | WakeKill - Block I/O` 与普通 `Uninterruptible Sleep`。其中 `D` 表示不可中断等待，组合 `K` 才含“可被致命信号唤醒”的标志，不能把所有 D 都解释为 WakeKill 或存储 I/O。Running 是线程实际执行时间；原文在低内存一节分别写了 682 ms 与约 600 ms，因此表格保留该来源差异。两次 Running 时间接近，支持优先排查额外等待与内存活动，但仅凭总时长仍不能排除调用路径、频率或计算量变化，还需调用栈与同条件对照。
+表中原文把两个等待类别合计：`Uninterruptible Sleep | WakeKill - Block I/O` 与普通 `Uninterruptible Sleep`。其中 `D` 表示不可中断等待，组合 `K` 才含“可被致命信号唤醒”的标志；解释 D 状态要按这些标志拆开，WakeKill 和存储 I/O 只是其中的可能项。Running 是线程实际执行时间；原文在低内存一节分别写了 682 ms 与约 600 ms，因此表格保留该来源差异。两次 Running 时间接近，提示优先排查额外等待与内存活动；要把调用路径、频率或计算量的变化一并排除，还需调用栈与同条件对照。
 
 
 整机内存的证据链上，我们查看 PSI memory（内存压力指标）、direct reclaim（内存回收）、kswapd（内核后台回收线程）、swap/zram（压缩内存交换区） I/O（交换空间/压缩内存读写）、major fault（需要从存储读取数据的主缺页）、lmkd（低内存终止守护进程） 事件和前台线程状态。现代 lmkd 主要依据 PSI 与进程优先级工作，旧内核中的 lowmemorykiller 日志和固定 minfree 阈值方案直接套用行不通。
@@ -1015,7 +1015,7 @@ WeSing 5.68 的版本对比发现：
 
 #### 从相关性到根因
 
-线程数增加本身证明不了调度导致卡顿。这个案例的证据价值来自版本二分、线程来源定位和 CPU 时间汇总；SDK 方移除与业务无关的功能后，相关指标恢复。
+线程数增加本身还只是间接现象；这个案例的证据价值来自版本二分、线程来源定位和 CPU 时间汇总——SDK 方移除与业务无关的功能后，相关指标恢复。
 
 在 Android 17 上，还应补两项证据：
 
@@ -1049,7 +1049,7 @@ WeSing 5.68 的版本对比发现：
 
 #### 公开 trace 观察
 
-AndroidPerformance 的系统案例展示了 `hasClientComposition`、`FrameMissed` 和较长的 SurfaceFlinger 处理区间；放大截图还把 HWC service 执行时间列为线索。它没有提供独立 GPU 执行轨道，也不足以排除 App 侧其他问题。原始 Systrace 图片仍可访问：
+AndroidPerformance 的系统案例展示了 `hasClientComposition`、`FrameMissed` 和较长的 SurfaceFlinger 处理区间；放大截图还把 HWC service 执行时间列为线索。独立 GPU 执行轨道和 App 侧的完整排除，都超出了这份旧现场的范围，要靠后面的重建步骤补齐。原始 Systrace 图片仍可访问：
 
 ![SurfaceFlinger GPU 合成案例一](https://www.androidperformance.com/images/15683644397329.jpg)
 
@@ -1106,7 +1106,7 @@ Android Developers 的 Netmarble 案例介绍了《Game of Thrones: Kingsroad》
 
 #### 从现象到根因
 
-温度升高和频率下降同时出现，仍不足以单独确认 thermal 是最早原因。我们需要的证据包括：
+温度升高和频率下降同时出现，还只是并存现象；要坐实 thermal 是最早原因，我们需要下面这些证据：
 
 - 相同内容和输入下，frame time（单帧耗时） 随会话时间变差；
 - thermal status/headroom（温控等级/热余量） 或 cooling state（冷却状态） 同期变化；
@@ -1125,7 +1125,7 @@ Thermal API 提供 thermal status 与 headroom。应用需要自行决定降低�
 
 图：应用根据热反馈主动调整实际工作量，并用滞回和保持时间稳定档位。Performance Hint 是调度提示；持续帧率还取决于负载、设备容量和热保护，不能把提示当作频率或绑核保证。
 
-ADPF Performance Hint Session（性能提示会话） 可以报告参与周期性工作的一组线程，以及 target duration（目标耗时） 和 actual duration（实际耗时）。它只向系统提供调度提示，不保证锁定频率、提高频率或绑定某个 CPU；热保护仍可能限制性能。
+ADPF Performance Hint Session（性能提示会话） 可以报告参与周期性工作的一组线程，以及 target duration（目标耗时） 和 actual duration（实际耗时）。它向系统提供的是调度提示；频率是否锁定或提高、CPU 是否绑定，都由系统侧决定，热保护仍可能限制性能。
 
 官方最佳实践建议进行长时间运行测试，至少覆盖 15 分钟，以观察温度和性能趋于稳定后的状态。测试还要固定亮度、充电状态、环境温度、网络和游戏内容。
 
