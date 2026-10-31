@@ -1,0 +1,338 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 138,
+  "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T15:43:34.604223+08:00",
+  "source_sha256": "2fdfb3371ff8e2ac68c3b4c8ed5305d0893163008242e3572cf892823c575f37",
+  "accepted_before_sha256": "f000841ee99b708cabe616231266fe379e72b4edcf8db6a566643197c499e432",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 456,
+  "reading_characters": 37809,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 24,
+  "current_pngs_actually_viewed": 24,
+  "current_contexts_actually_viewed": 24,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/compact-138-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/compact-138-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/compact-138-3.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/compact-138-4.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 23,
+  "code_lines_preserved": 365,
+  "asset_sha256": {
+    "src/assets/diagrams/ch14/ch14-04-02-weighted-intervals.svg": "ee7aa1dcbe81492d5218baaa86c461408ce56d6ebcf6561bb7795dd8f658e890",
+    "src/assets/diagrams/ch14/ch14-04-02-weighted-intervals.png": "ee5eacf92d977814a38b603818f0d4545bb32e3052dfbce7f2f2425b788d6323",
+    "src/assets/diagrams/ch14/ch14-04-04-legacy-contract.svg": "09b40a55289d54240f0506d9192a45e16daa1465710076781b8837245ad1ece4",
+    "src/assets/diagrams/ch14/ch14-04-04-legacy-contract.png": "8583a8be3f769da82312149b8bbb9e5e3a7d558a922f09330a81104e005fa629",
+    "src/assets/diagrams/ch14/ch14-04-05-cpu-ranking.svg": "c1eae4d882aa14d0dd8819b05aefb396d164855952003a7b27c171c692563dd8",
+    "src/assets/diagrams/ch14/ch14-04-05-cpu-ranking.png": "0acd289c58160ae0ff20b37954e3048c651c72d982827a3b5d513e17368e4e40",
+    "src/assets/diagrams/ch14/ch14-04-06-result-states.svg": "89a89638faf5fbf84e0da92f6158b5a2351036846974847cf29e6f030f0c852c",
+    "src/assets/diagrams/ch14/ch14-04-06-result-states.png": "0a4f837e539090b7be4f2dc28bff9fa51d1fc2174acaf50e2eb8b711b70c2d6e",
+    "src/assets/diagrams/ch14/ed14-04-sql-and-ui-macro-execution.svg": "ac680772c38f51b6e1bda640f237d0e887fd31f5693f6b2c0581b5c1bfd0bae5",
+    "src/assets/diagrams/ch14/ed14-04-sql-and-ui-macro-execution.png": "94b49ae6e0173c732135fb7e320b41de16feed42b017f0e8c91d8d072de05b36",
+    "src/assets/diagrams/ch14/ch14-04-09-trend-backtrace.svg": "abb76f97c358aa37b8b333bdeff24712f138a23c6a8a292c71436f0362dc4da3",
+    "src/assets/diagrams/ch14/ch14-04-09-trend-backtrace.png": "10983c160202a284811245bd409cc25c1fae39e614a52a3ce669062e8b210462",
+    "src/assets/diagrams/ch14/ch14-04-11-slice-sum-overlap.svg": "d5df77ca9634a7a93c2573ae676858cbe1b02b078dc4b148b4db1a42113930a6",
+    "src/assets/diagrams/ch14/ch14-04-11-slice-sum-overlap.png": "238f517f505e2c9c751f572851967ffb7ba0e6c73fcd1fb49d021d499a175a30",
+    "src/assets/diagrams/ch14/ch14-04-12-batch-memory.svg": "f57a85fe62f558dec5e2f63252aa7fa388700ad77800b8329e1a0933cca8c457",
+    "src/assets/diagrams/ch14/ch14-04-12-batch-memory.png": "0b7548a48caa19ee8113e92e8707545670fd2aa47918d7d4a103c33578b22734",
+    "src/assets/diagrams/ch14/ch14-04-13-native-rpc.svg": "b75f35411628185a24ecc50372155c355a60e77b4699e755ef6612f38e3c12c7",
+    "src/assets/diagrams/ch14/ch14-04-13-native-rpc.png": "0556dc5c688d89159d8c07b0463281d491d0eceb1bb6b540ccbe51e1eaebd3ac",
+    "src/assets/diagrams/ch14/ch14-04-15-finite-gate.svg": "23824b5034938f7ba26e990b3aa0d4ae76454421ef824cba3230bd2fe36e2fdd",
+    "src/assets/diagrams/ch14/ch14-04-15-finite-gate.png": "4351e3a233c847b3f9aee20421725d62683f360d44bdcaff3a83e81bcf14d833",
+    "src/assets/diagrams/ch14/ed14-04-gate-evidence-and-diagnostic-capture.svg": "5b29df8dd4032cdbcb922331292989860320e84ffcfd3e413e851f654221c766",
+    "src/assets/diagrams/ch14/ed14-04-gate-evidence-and-diagnostic-capture.png": "7832b7c28f2d78e83cae3101b6cbac134712d318a24c30f2d6ba435be184a7d8",
+    "src/assets/diagrams/ch14/ch14-04-19-async-cookie.svg": "1c1432ff1b4e1487526c11b456ea713f1215afede7f527a9ba0688e4d5dec7f7",
+    "src/assets/diagrams/ch14/ch14-04-19-async-cookie.png": "4b518406f84d0b4df2d195d322cec01c16a70947324ebe189d32d31eaec3a593",
+    "src/assets/diagrams/ch14/ed14-04-event-source-and-session-matching.svg": "12becd5c8555ea331a64bf1e6f1d15d93264e663ac5d54b6df58495fd2eabcc9",
+    "src/assets/diagrams/ch14/ed14-04-event-source-and-session-matching.png": "d5152fc8a7740462d6945bb039518ae7e1d9d390073535ca128b7387036865a5",
+    "src/assets/diagrams/ch14/ch14-04-22-typed-import.svg": "a1427eda4f0875cd03a1150f232e00bc9f07f6ccb365ca97637378d443c40fe0",
+    "src/assets/diagrams/ch14/ch14-04-22-typed-import.png": "84334b496b14612deca2624e82cdbad36da2c676b2c7b029980190a66354400c",
+    "src/assets/diagrams/ch14/ed14-04-independent-version-axes-and-toolchain.svg": "b994e79e04eabf0ac35d340dd3bd6e047ed72227094679e9b8a578160e276084",
+    "src/assets/diagrams/ch14/ed14-04-independent-version-axes-and-toolchain.png": "b3b31fa2ad580c0929c461db5f0649d0af38fef30a761f7364a1992c4816201b",
+    "src/assets/diagrams/ch14/ed14-04-query-metadata-evidence-and-claims.svg": "701fb458952eb0818e3b08c85eb37860cd13b12fedf0c2dd8aa21e6563c4a517",
+    "src/assets/diagrams/ch14/ed14-04-query-metadata-evidence-and-claims.png": "11a3c6a32c684c58e5881fb14304694309b83ed48b60029df01f19026cc55b47",
+    "src/assets/diagrams/ch14/ch14-04-32-two-comparisons.svg": "884705c3ac4e2253485be431dcac48817e19a9cf42e047a0801e174936596321",
+    "src/assets/diagrams/ch14/ch14-04-32-two-comparisons.png": "e5ad839ce0d40539d04bfb4f97cac21c73d0a7bfe21a69bd3a6f8c5903b31143",
+    "src/assets/diagrams/ch14/ch14-04-33-global-backfill.svg": "d7427208971b9c7f9eb2498ff068500186f586eee4f6081cc5b982b41288c6d5",
+    "src/assets/diagrams/ch14/ch14-04-33-global-backfill.png": "7f0362c2542e148b207a26cea239d2eb88141c69499429c3a3f5dccf959eef8f",
+    "src/assets/diagrams/ch14/ch14-04-34-highlight-threshold.svg": "968a93a52870f815c0eb55e1cbf750d182ea609ff7a2dd4f1c8b1e55eb5099ed",
+    "src/assets/diagrams/ch14/ch14-04-34-highlight-threshold.png": "f9b6936fb178047c0d78cfd463763440d45b199e4e733deda184fa97e906e730",
+    "src/assets/diagrams/ch14/ch14-04-35-connection-provider-runtime.svg": "cde22aab1f07108924660cca8ba6bd9af2337518b6e99d6d4b3b7f2c9fae9448",
+    "src/assets/diagrams/ch14/ch14-04-35-connection-provider-runtime.png": "82311e33dd8d635e3f07412af5345d09e271b9134d1fc238f4d02d1af2c95a0f",
+    "src/assets/diagrams/ch14/ed14-04-new-versus-resumed-session-identity.svg": "8375b9a01e9635d709d7bf139d0d1ae3f2edd6947e6f9ea69718b7d7c01be196",
+    "src/assets/diagrams/ch14/ed14-04-new-versus-resumed-session-identity.png": "44d201729bd152c126069d6a383aaa7376c8168e8f26fbe10f5e1816a8712e84",
+    "src/assets/diagrams/ch14/ch14-04-38-private-context-permission.svg": "ea1d1060da1bb1105ae3f42d31896d86ac66bfd6065586fd546df86d835b29b9",
+    "src/assets/diagrams/ch14/ch14-04-38-private-context-permission.png": "58a8eb9a45386ff4ce5094cd4ce3345a7dfc0b8e44079aab4e65ce5721ddde64",
+    "src/assets/diagrams/ch14/ed14-04-versioned-semantic-regression-loop.svg": "f520b18b20ef06beccf487d4e4459a957165c5a614285b03e73689637f78fd3e",
+    "src/assets/diagrams/ch14/ed14-04-versioned-semantic-regression-loop.png": "39c1fe3d2202ddf436636b41e9efd3caa837d8ff92163bf3dab4939489cdcf88",
+    "src/assets/diagrams/ch14/ed14-04-migration-authority-and-scoped-404.svg": "067aef31d380cf8606de84d89bbf83d4c2dbcac0be51dd03d6026f116c6dd90d",
+    "src/assets/diagrams/ch14/ed14-04-migration-authority-and-scoped-404.png": "f6c2e9e1be7f3e0406ea83b72841a34d5def11c69e069ee052346637fc543514"
+  },
+  "asset_baseline": {
+    "kind": "original_visual_asset_sha256"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch14-04-02-weighted-intervals",
+      "heading": "#### Trace Summarization 的完整示例",
+      "line": 154,
+      "decision": "keep",
+      "reason": "加权区间9:1教学图与125–159的Σvalue×dur/Σdur及NULL规则一致，非采样点平均或业务窗口全覆盖。"
+    },
+    {
+      "id": "ch14-04-04-legacy-contract",
+      "heading": "#### 存量 v1 指标：SQL 与 protobuf 的约定",
+      "line": 233,
+      "decision": "keep",
+      "reason": "同目录同基本名SQL/proto、扩展字段和_output视图的链与192–236约定一致。"
+    },
+    {
+      "id": "ch14-04-05-cpu-ranking",
+      "heading": "#### 存量 v1 指标：SQL 与 protobuf 的约定",
+      "line": 277,
+      "decision": "keep",
+      "reason": "闭合正dur排idle、upid聚合、原始纳秒排名后展示ms与238–280代码一致。"
+    },
+    {
+      "id": "ch14-04-06-result-states",
+      "heading": "#### 指标空结果与采集条件",
+      "line": 308,
+      "decision": "keep",
+      "reason": "零/NULL/成功空表/执行失败四格与295–311的独立状态一致，新图注保留无匹配不等无问题。"
+    },
+    {
+      "id": "ed14-04-sql-and-ui-macro-execution",
+      "heading": "#### UI 命令宏",
+      "line": 379,
+      "decision": "keep",
+      "reason": "SQL宏执行前展开与UI逐条await两链对应313–386，错误中断、Pivot列/upid、稳定ID和扩展命名空间仍完整。"
+    },
+    {
+      "id": "ch14-04-09-trend-backtrace",
+      "heading": "#### 单轨迹仪表板与跨轨迹仪表板",
+      "line": 403,
+      "decision": "keep",
+      "reason": "趋势点回查样本/规格/迭代trace，与388–406的跨trace聚合和单样本因果分工一致。"
+    },
+    {
+      "id": "ch14-04-11-slice-sum-overlap",
+      "heading": "#### 批量查询",
+      "line": 470,
+      "decision": "keep",
+      "reason": "slice父子包含示意与445–475的并行嵌套重复覆盖一致，新alt只是同义换写，不变成真实CPU或独占时间。"
+    },
+    {
+      "id": "ch14-04-12-batch-memory",
+      "heading": "#### 批量查询",
+      "line": 477,
+      "decision": "keep",
+      "reason": "多TP驻留实例扇出合并及批末关闭，与443–480的worker限额非实例限额一致。"
+    },
+    {
+      "id": "ch14-04-13-native-rpc",
+      "heading": "#### 远程 Trace Processor 服务",
+      "line": 496,
+      "decision": "keep",
+      "reason": "UI经回环RPC到原生解析数据路径与484–501一致，非绕过主机内存或外网授权。"
+    },
+    {
+      "id": "ch14-04-15-finite-gate",
+      "heading": "#### 门禁阈值与设备噪声",
+      "line": 637,
+      "decision": "keep",
+      "reason": "非空有限非负标量、机型fingerprint、正基线、中位数ratio和退出码与88行标量脚本一致，正式实验条件另验。"
+    },
+    {
+      "id": "ed14-04-gate-evidence-and-diagnostic-capture",
+      "heading": "#### 门禁采集与深度诊断的分离",
+      "line": 653,
+      "decision": "keep",
+      "reason": "JSON数值与对应trace诊断两支、超限详细复测及保留原样本与505–656一致，新图注仍严格区分自定义slice与StartupTimingMetric。"
+    },
+    {
+      "id": "ch14-04-19-async-cookie",
+      "heading": "#### Java/Kotlin 同步时间片",
+      "line": 714,
+      "decision": "keep",
+      "reason": "同名异步任务独立cookie、begin/end跨线程配对与696–717代码一致，新图注保留敏感内容约束。"
+    },
+    {
+      "id": "ed14-04-event-source-and-session-matching",
+      "heading": "#### Native（C/C++） Perfetto SDK",
+      "line": 799,
+      "decision": "keep",
+      "reason": "平台APP/SDK system/SDK inprocess三路数据源和session控制与660–802一致，注册不是录制且无额外系统权限。"
+    },
+    {
+      "id": "ch14-04-22-typed-import",
+      "heading": "#### Native（C/C++） Perfetto SDK",
+      "line": 810,
+      "decision": "keep",
+      "reason": "业务字段/descriptor/导入器到args查询与804–813一致，独立proto setter并不自动扩展TracePacket。"
+    },
+    {
+      "id": "ed14-04-independent-version-axes-and-toolchain",
+      "heading": "## 分析平台的任务、证据与版本治理",
+      "line": 898,
+      "decision": "keep",
+      "reason": "设备/host/SmartPerfetto三版本轴和Python包内v56.1对显式v57.2与412、894–901一致，新图注保留固定v1.3.0解释。"
+    },
+    {
+      "id": "ed14-04-query-metadata-evidence-and-claims",
+      "heading": "### SQL guardrail（规则式风险检查）、stdlib 文档与证据来源索引",
+      "line": 979,
+      "decision": "keep",
+      "reason": "DataEnvelope之后QueryReview元数据与EvidenceContract两支再组合支持等级，与955–984一致，120ms非独立CPU争用因果。"
+    },
+    {
+      "id": "ch14-04-32-two-comparisons",
+      "heading": "### 多 Trace 对比与性能回归判断",
+      "line": 990,
+      "decision": "keep",
+      "reason": "raw reference可再取数而snapshot仅已存指标的双支与986–993一致，缺指标仍须显式保留。"
+    },
+    {
+      "id": "ch14-04-33-global-backfill",
+      "heading": "### 多 Trace 对比与性能回归判断",
+      "line": 1004,
+      "decision": "keep",
+      "reason": "全局未过滤回填值到身份窗口核验与995–1007一致，不自动指称目标App或某次滚动。"
+    },
+    {
+      "id": "ch14-04-34-highlight-threshold",
+      "heading": "### 多 Trace 对比与性能回归判断",
+      "line": 1011,
+      "decision": "keep",
+      "reason": "按单位分支高亮及NULL相对值兜底与1009–1016一致，非显著性检验或统一双门。"
+    },
+    {
+      "id": "ch14-04-35-connection-provider-runtime",
+      "heading": "### Provider Manager：模型服务与执行适配层",
+      "line": 1024,
+      "decision": "keep",
+      "reason": "Connection/provider/runtime并列授权对象与1020–1047一致，后端token不同模型key且health非runtime有效性。"
+    },
+    {
+      "id": "ed14-04-new-versus-resumed-session-identity",
+      "heading": "### Provider Manager：模型服务与执行适配层",
+      "line": 1056,
+      "decision": "keep",
+      "reason": "新请求优先链和保存身份恢复两链与1049–1061一致，缺provider立即失败、Qoder快照缺口及鉴权health仍保留。"
+    },
+    {
+      "id": "ch14-04-38-private-context-permission",
+      "heading": "### 运行分发、权限与隐私",
+      "line": 1073,
+      "decision": "keep",
+      "reason": "显式私有来源、scope/generation及双provider_send许可到有界报告与1063–1078一致，新图注区分背景与当前trace证据。"
+    },
+    {
+      "id": "ed14-04-versioned-semantic-regression-loop",
+      "heading": "### SmartPerfetto 与技术知识库联动",
+      "line": 1133,
+      "decision": "keep",
+      "reason": "章节contract/固定样本到执行/数值/证据三验证再评审回写与873–884、1095–1136一致，新alt循环与原环形返回线语义一致。"
+    },
+    {
+      "id": "ed14-04-migration-authority-and-scoped-404",
+      "heading": "### 企业版迁移与 404 排查",
+      "line": 1178,
+      "decision": "keep",
+      "reason": "legacy/dualwrite/cutover/retired权威、scope查404及停写负责人恢复与1140–1183一致，不把确认开关当一致性或改phase当reverse importer。"
+    }
+  ],
+  "caption_revisions": [
+    {
+      "id": "ch14-04-06-result-states",
+      "before": "保留查询状态和数值缺失含义，再决定是否进入比较。 成功空表只表示无匹配，不能直接推出系统没有问题。",
+      "after": "保留查询状态和数值缺失含义，再决定是否进入比较。 成功空表只表示无匹配，距离“系统没有问题”的结论还很远。",
+      "status": "independently_reviewed",
+      "reason": "四格图仍将成功空表定义为无匹配，295–311要求核查覆盖与过滤；同义图注未将无匹配升级为无问题。"
+    },
+    {
+      "id": "ed14-04-gate-evidence-and-diagnostic-capture",
+      "before": "Macrobenchmark JSON是主要门禁数值源，各次迭代Perfetto Trace是诊断证据，保存APK/设备/编译模式/场景/采集/toolchain/策略等条件。自定义Slice重算不能冒充StartupTimingMetric。按设备自然波动与已批准阈值判定，首次超限同设备同提交复测，更密集数据源改变开销，诊断不替换原样本；采集配置更改需新基线。原标量脚本只处理metrics.<id>.runs，sampledMetrics嵌套需另设计。",
+      "after": "Macrobenchmark JSON是主要门禁数值源，各次迭代Perfetto Trace是诊断证据，保存APK/设备/编译模式/场景/采集/toolchain/策略等条件。自定义Slice重算与StartupTimingMetric分开定义，避免混用。按设备自然波动与已批准阈值判定，首次超限同设备同提交复测，更密集数据源改变开销，诊断不替换原样本；采集配置更改需新基线。原标量脚本只处理metrics.<id>.runs，sampledMetrics嵌套需另设计。",
+      "status": "independently_reviewed",
+      "reason": "新图注明确自定义Slice重算与StartupTimingMetric分别定义，与513及JSON/trace两支图相符；诊断复测不替换原门禁，标量/嵌套边界未变。"
+    },
+    {
+      "id": "ch14-04-19-async-cookie",
+      "before": "在开始和完成回调中使用同一名称与 cookie，允许跨线程配对。 重叠的同名任务需不同 cookie；配对标识不应携带敏感业务内容。",
+      "after": "在开始和完成回调中使用同一名称与 cookie，允许跨线程配对。 重叠的同名任务需不同 cookie；配对标识只用于配对，不放敏感业务内容。",
+      "status": "independently_reviewed",
+      "reason": "begin/end使用同名同cookie且同名重叠用不同cookie，对应696–717；新句仍禁止敏感标识，未改变配对语义。"
+    },
+    {
+      "id": "ed14-04-independent-version-axes-and-toolchain",
+      "before": "Android17设备/内核决定实际数据源和权限，主机TP/Python/UI决定schema/stdlib/RPC，SmartPerfetto固定v1.3.0提交决定runtime/证据/存储实现。perfetto Python0.57.2清单绑定nativev56.1，包号不证明运行v57.2；原文显式bin_path需放置验证所选v57.2。保存实际version/hash/toolchain，升级任何一线用canonical/goldentrace核对输入与contract，最新release不能倒灌旧快照。",
+      "after": "Android17设备/内核决定实际数据源和权限，主机TP/Python/UI决定schema/stdlib/RPC，SmartPerfetto固定v1.3.0提交决定runtime/证据/存储实现。perfetto Python0.57.2清单绑定nativev56.1，包号不证明运行v57.2；原文显式bin_path需放置验证所选v57.2。保存实际version/hash/toolchain，升级任何一线用canonical/goldentrace核对输入与contract，最新release仅作版本参考，旧快照解释仍以v1.3.0为准。",
+      "status": "independently_reviewed",
+      "reason": "三版本轴及固定v1.3.0图不变；新句只把新release作为参考，未倒灌行为，包0.57.2/native56.1和显式57.2区别仍在。"
+    },
+    {
+      "id": "ed14-04-query-metadata-evidence-and-claims",
+      "before": "SQL/YAMLSkill经TP取数，DataEnvelope的meta/data/display保留来源与状态，observed/empty/optional_error不互换。QueryReviewV1记录表/过滤/include/列/时长/行数/截断，静态解析不全partial，用途review_metadata_only；完整SQL留报告，模型compactprojection不含可执行SQL。EvidenceContract另绑定tracecurrent/reference、Skill/step/queryhash/reviewid/artifact、行列实际值/单位/窗口。Runnable120ms的数值证据不能独自证明CPU竞争因果，claim标verified/partial/inference/unsupported。报告/snapshot保留运行身份与缺失原因，模型不直接读取整份trace字节，也不以单条trace推全量用户分布。",
+      "after": "SQL/YAMLSkill经TP取数，DataEnvelope的meta/data/display保留来源与状态，observed/empty/optional_error不互换。QueryReviewV1记录表/过滤/include/列/时长/行数/截断，静态解析不全partial，用途review_metadata_only；完整SQL留报告，模型compactprojection不含可执行SQL。EvidenceContract另绑定tracecurrent/reference、Skill/step/queryhash/reviewid/artifact、行列实际值/单位/窗口。Runnable120ms的数值证据单独看还撑不起CPU竞争的因果结论，claim标verified/partial/inference/unsupported。报告/snapshot保留运行身份与缺失原因，模型不直接读取整份trace字节，也不以单条trace推全量用户分布。",
+      "status": "independently_reviewed",
+      "reason": "QueryReview和Evidence两支图仍需独立因果证据，新句同义说明Runnable120ms本身不足，未把可回查数值升级verified因果。"
+    },
+    {
+      "id": "ed14-04-new-versus-resumed-session-identity",
+      "before": "原文SmartPerfettov1.3.0常规新请求限定未传runtimeOverride/未显式providerId:null/未启experimental，依请求providerId→activeprofile→runtimeenv→默认Claude选择，不适用才下一层，显式provider不存在failfast。历史用已保存provider/runtime，绑定provider删除立即失败，env/default保存override优先当前env，不受后来active影响。纯envQoder选择器可运行但snapshot解析没Qoder，不能证明身份保存，修复版本回归或新建。真实身份用鉴权/api/runtime-health核验，公开/health仅存活，backendtoken与providerkey不同。",
+      "after": "原文SmartPerfettov1.3.0常规新请求限定未传runtimeOverride/未显式providerId:null/未启experimental，依请求providerId→activeprofile→runtimeenv→默认Claude选择，不适用才下一层，显式provider不存在failfast。历史用已保存provider/runtime，绑定provider删除立即失败，env/default保存override优先当前env，不受后来active影响。纯envQoder选择器可运行但snapshot解析没Qoder，身份保存情况存疑，应在修复版本上回归或新建。真实身份用鉴权/api/runtime-health核验，公开/health仅存活，backendtoken与providerkey不同。",
+      "status": "independently_reviewed",
+      "reason": "新图注将Qoder快照身份未被证明表述为存疑，与正文1054及图中快照缺口一致；保留修复版回归或新建而非静默fallback。"
+    },
+    {
+      "id": "ch14-04-38-private-context-permission",
+      "before": "显式选择、scope 与许可共同限制私有材料的检索和外发。 背景知识不能冒充当前 Trace 证据；授权变化应使旧私有会话失效。",
+      "after": "显式选择、scope 与许可共同限制私有材料的检索和外发。 背景知识与当前 Trace 证据要分开；授权变化应使旧私有会话失效。",
+      "status": "independently_reviewed",
+      "reason": "来源scope及双许可链未变，新句仍要求背景知识与当前trace证据分开，与1071–1078一致，未增加自动私有材料访问。"
+    },
+    {
+      "id": "ed14-04-versioned-semantic-regression-loop",
+      "before": "知识库固定toolchain/配置/SQL包/summary/UI宏/门禁策略/goldenmanifest，固定Trace记录来源系统许可预期，敏感样本受控。从机制章节可观察问题写Skillcontract，固定参数/窗口/JOIN/单位/缺失分支；SQL能执行与YAML能解析不证明指标正确。代表样本/空trace/缺字段分别验SQL、DataEnvelope列单位层级状态、golden误差、evidenceanchor行列及claim支持；partial不升级verified。新旧工具/schema/stdlibsymbolindex比较经领域审核，失效条件回写章节/Skill，不能从单次成功推所有厂商版本。",
+      "after": "知识库固定toolchain/配置/SQL包/summary/UI宏/门禁策略/goldenmanifest，固定Trace记录来源系统许可预期，敏感样本受控。从机制章节可观察问题写Skillcontract，固定参数/窗口/JOIN/单位/缺失分支；SQL能执行与YAML能解析不证明指标正确。代表样本/空trace/缺字段分别验SQL、DataEnvelope列单位层级状态、golden误差、evidenceanchor行列及claim支持；partial不升级verified。新旧工具/schema/stdlibsymbolindex比较经领域审核，失效条件回写章节/Skill；单次成功仅覆盖当次条件，推广到所有厂商版本前要再验证。",
+      "status": "independently_reviewed",
+      "reason": "固定样本三类验证和领域评审回写路径不变，新句限定单次成功只覆盖当次条件，与1097–1136一致，不自动推广所有厂商版本。"
+    }
+  ],
+  "alt_revisions": [
+    {
+      "id": "ch14-04-11-slice-sum-overlap",
+      "before": "Slice 的累计时长不等于墙钟或 CPU 时间",
+      "after": "Slice 累计时长与墙钟、CPU 时间是不同的量",
+      "status": "independently_reviewed",
+      "reason": "“不等于墙钟或CPU时间”改为“不同的量”与父子slice重复覆盖图及445–475一致，计算与单位定义不变。"
+    },
+    {
+      "id": "ed14-04-versioned-semantic-regression-loop",
+      "before": "机制章节、可执行规则与固定样本组成回归闭环",
+      "after": "机制章节、可执行规则与固定样本组成回归循环",
+      "status": "independently_reviewed",
+      "reason": "“回归闭环”改为“回归循环”仍准确描述图的回写返回线，contract/样本验证与批准条件不变。"
+    }
+  ],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": false,
+  "figure_image_prefix_order_byte_identical": false,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a138/01/layout-report.json",
+  "layout_report_sha256": "1f22070673a38831d4537f81cf1df1984dcb23a32cfc84adfca29fcb065db3db",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "独立通读当前456行37809字符正文表格和23块365行全部代码，24份SVG标签及三张联系表全部24张PNG、四张上下文联系表中全部24个当前正文位置实际查看。八处图注和两处alt同义调整逐项对照，无新机制承诺或位置错配；图片ID/路径/顺序、代码、native0与48个资产SHA严格等于此前接受版本。1400/640图片完整加载、正确标题及非列表/表格/代码结构，无页面溢出，native0无raw回退；长机制图的链/分支与新正文范围仍相符。保留原审查历史并登记当前外部正文来源，不新创图或删图，也不新技术研究或执行文章命令/编译/SQL/采集/门禁/模型调用。"
+}
