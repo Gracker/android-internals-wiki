@@ -51,7 +51,7 @@ related_chapters:
 6. 已在运行的目标线程从队列取出任务，并执行恢复与取消检查。
 7. 协程继续业务代码，或以取消 / 失败结束。
 
-直接恢复可以跳过排队阶段；正在运行的 worker 也不必为每个任务重新唤醒。线程必须已经取得 CPU，才能执行出队代码；不能把“出队后才取得 CPU”画成固定顺序。
+直接恢复可以跳过排队阶段；已经在运行的 worker 直接复用即可，无须为每个任务重新唤醒。线程必须已经取得 CPU，才能执行出队代码，把“出队后才取得 CPU”画成固定顺序，方向就反了。
 
 <!-- gracker-diagram: ch08-04-01-resume-paths -->
 ![恢复路径先分直接执行与排队](../../assets/diagrams/ch08/ch08-04-01-resume-paths.png)
@@ -100,12 +100,12 @@ Android 17 为 target API 37+ 的应用默认启用新的无全局队列锁 Mess
 
 Default 面向持续占用 CPU 的任务。当前 JVM 调度器使用共享 worker、本地队列、全局队列和 work stealing（空闲 worker 从其他队列窃取任务）；CPU 任务的有效并行度接近可用处理器数量，并保留最低并行度。这些内部实现可能随 kotlinx.coroutines 版本变化，我们写业务代码时，要把具体的 worker 数量、队列顺序和线程名当成会变的细节。
 
-CPU 任务数量超过并行度后，新增任务排队属于预期行为。把阻塞调用放进 Default，会一直占住 worker；调度器可以给被正确标记为 blocking 的内部任务增加补偿线程，但普通业务代码不会自动获得这个标记，所以我们要主动把阻塞调用放到 IO 或专用的受限 Dispatcher。
+CPU 任务数量超过并行度后，新增任务排队属于预期行为。把阻塞调用放进 Default，会一直占住 worker。调度器的补偿线程只面向被正确标记为 blocking 的内部任务，普通业务代码需要自己安排，所以我们要主动把阻塞调用放到 IO 或专用的受限 Dispatcher。
 
 
 #### IO：默认限制与弹性视图
 
-`Dispatchers.IO` 默认允许并行执行的阻塞任务数，是 64 与处理器数量二者中的较大值，可以通过 `kotlinx.coroutines.io.parallelism` 调整。这个数限制的是默认 IO 视图中同时执行的阻塞任务；进程里能同时存在多少协程或线程，它管不着。
+`Dispatchers.IO` 默认允许并行执行的阻塞任务数，是 64 与处理器数量二者中的较大值，可以通过 `kotlinx.coroutines.io.parallelism` 调整。这个数管的是默认 IO 视图中同时执行的阻塞任务；进程里能同时存在多少协程或线程，是另一回事。
 
 `Dispatchers.IO` 之所以容易出现更多 worker，有两层原因。一层是默认 IO 并行度较大；另一层在 1.11.0 的实现里：`DefaultScheduler.dispatch()` 默认用 `NonBlockingContext`，`Dispatchers.IO` 则通过 `UnlimitedIoScheduler` 把 `Runnable` 以 `BlockingContext` 交给同一个 `CoroutineScheduler`。`TaskContext` 只是一个 blocking / non-blocking 标记，至于 `Runnable` 是不是真的在等 I/O，调度器并不查看；同一段代码放到 Default 或 IO，在它眼里就是两种任务类型。[来源：固定版本的调度器与任务标记源码][coro-scheduler]。
 
@@ -123,11 +123,11 @@ CPU 任务数量超过并行度后，新增任务排队属于预期行为。把�
 
 图：每个 IO 视图有自己的执行上限；100 与 60 可叠加，默认 IO 的限制不是进程总线程或在途请求上限。
 
-Default 与 IO 共享底层线程：协程当前已经在 Default worker 上时，切换到 IO 后可能用的还是同一条线程。官方把这种复用描述为 best effort（尽力而为）——线程能否保持一致并无保证，业务代码要按“随时可能换线程”来设计。
+Default 与 IO 共享底层线程：协程当前已经在 Default worker 上时，切换到 IO 后可能用的还是同一条线程。官方把这种复用描述为 best effort（尽力而为）：线程可能保持一致，也可能随时换掉，业务代码要按“随时可能换线程”来设计。
 
 #### Unconfined：线程不受约束，结构仍可存在
 
-Unconfined 会在调用者当前调用栈中开始执行，第一次挂起后的恢复线程则由挂起函数决定。嵌套的 Unconfined 协程使用内部事件循环避免栈溢出，但执行顺序没有稳定保证。
+Unconfined 会在调用者当前调用栈中开始执行，第一次挂起后的恢复线程则由挂起函数决定。嵌套的 Unconfined 协程靠内部事件循环避免栈溢出；执行顺序没有稳定保证，写代码时以实际调用为准。
 
 线程约束和 Job 父子关系是两个独立维度。Unconfined 保留了结构化并发的父子关系，代价是代码究竟在哪个线程运行变得难以推断。需要“在当前调用栈执行到首次挂起，后续仍回到指定 Dispatcher”时，可以评估 `CoroutineStart.UNDISPATCHED`；普通 UI 和数据层代码，我们优先选线程约束明确的 Dispatcher。
 
@@ -163,7 +163,7 @@ class ThumbnailRepository(
 
 ### limitedParallelism 的执行并行预算与线程亲和
 
-`Dispatchers.Default.limitedParallelism(2)` 表示同一时刻最多有两个任务在这个视图中执行。并行度为 1 时，两次挂起之间的执行片段串行，并建立 happens-before 关系；某个协程挂起后，其他协程仍可进入这个视图，因此整个 suspend 操作不会自动互斥。跨挂起的临界区用 `Mutex`，在途操作数量用 `Semaphore` 等协议限制。片段还可能落到不同 worker，固定 TID、JNI 会话或 Looper 亲和须选择相应线程设施；仅需传播 ThreadLocal 值时，也可用 `asContextElement()`，无需仅为这一点新建线程。
+`Dispatchers.Default.limitedParallelism(2)` 表示同一时刻最多有两个任务在这个视图中执行。并行度为 1 时，两次挂起之间的执行片段串行，并建立 happens-before 关系；但某个协程挂起后，其他协程仍可进入这个视图，跨挂起的临界区要另用 `Mutex`，在途操作数量用 `Semaphore` 等协议限制。片段还可能落到不同 worker，固定 TID、JNI 会话或 Looper 亲和须选择相应线程设施；仅需传播 ThreadLocal 值时，也可用 `asContextElement()`，无需仅为这一点新建线程。
 
 <!-- gracker-diagram: ch08-04-11-limited-interleave -->
 ![串行片段不等于整个挂起操作互斥](../../assets/diagrams/ch08/ch08-04-11-limited-interleave.png)
@@ -192,7 +192,7 @@ class ThumbnailRepository(
 | `yield()` | 检查取消并给其他任务执行机会；可能不真正挂起 | 不保证迁移，也不保证其他任务已完成 |
 | I/O 回调恢复 continuation | 可能直接恢复，也可能入队；完成早于挂起时也可立即返回 | 取决于 continuation、Dispatcher 和回调时机 |
 
-表中“至少有两个线程参与”说的是执行线程的数量，`sched_switch` 的实际次数未必恰好是两次：等待期间还可能发生抢占、GC 和其他任务，内核记录的切换次数可以更多。
+表中“至少有两个线程参与”说的是执行线程的数量；`sched_switch` 记下多少次，要看等待期间发生了什么——抢占、GC 和其他任务都可能发生，内核记录的次数可以更多。
 
 ### 在目标设备上测四个数
 
@@ -207,7 +207,7 @@ class ThumbnailRepository(
 
 对照组应保留相同的业务工作，只移除 Dispatcher 切换。空 block 测到的主要是框架、循环和计时器噪声；block 过重又会掩盖调度成本。所以我们至少准备“空对照、短任务、真实任务”三档，报告时给出分位数——平均值回答不了尾部的问题。
 
-我们拿一帧预算做个换算：120 Hz 屏幕的一帧约为 8.33 ms。若一次实际测得的操作串行发生 10 次往返，每次都耗时 0.20 ms，那么合计为 2 ms。这只是算术示例：不能把单次 P95 直接乘 10 当作整条路径的 P95；排队相关性和分布会改变结果，应直接测量完整操作的分位数。
+我们拿一帧预算做个换算：120 Hz 屏幕的一帧约为 8.33 ms。若一次实际测得的操作串行发生 10 次往返，每次都耗时 0.20 ms，那么合计为 2 ms。这只是算术示例：排队相关性和分布会改变结果，“单次 P95 乘 10”给不出整条路径的 P95，应直接测量完整操作的分位数。
 
 
 ## 结构化并发：控制寿命、失败和取消
@@ -223,7 +223,7 @@ class ThumbnailRepository(
 - 取消是协作式的。挂起函数通常会检查取消；长 CPU 循环和不响应中断的阻塞 API 需要主动配合。
 
 
-Android 的 `viewModelScope` 和生命周期 scope 使用 `SupervisorJob` 风格的根作用域，一个顶层 `launch` 失败，兄弟任务可以继续运行。进入普通 `coroutineScope` 后，内部又回到普通父子 Job 规则，失败照常传播。所以设计异常策略时，我们要把这两层分开对待。监督只规定 Job 传播，不会自动处理异常：顶层 `launch` 的未捕获异常仍可能交给 Android 的未捕获异常处理链并导致进程崩溃；需要显式捕获或配置合适的 `CoroutineExceptionHandler`。`async` 的异常在 `await()` 处重新抛出，调用方也要决定怎样处理。
+Android 的 `viewModelScope` 和生命周期 scope 使用 `SupervisorJob` 风格的根作用域，一个顶层 `launch` 失败，兄弟任务可以继续运行。进入普通 `coroutineScope` 后，内部又回到普通父子 Job 规则，失败照常传播。所以设计异常策略时，我们要把这两层分开对待。监督只规定 Job 传播这一层，异常要另行处理：顶层 `launch` 的未捕获异常仍可能交给 Android 的未捕获异常处理链并导致进程崩溃，需要显式捕获或配置合适的 `CoroutineExceptionHandler`。`async` 的异常在 `await()` 处重新抛出，调用方也要决定怎样处理。
 
 <!-- gracker-diagram: ed08-04-job-propagation-and-errors -->
 ![Job 失败传播与异常处理分开判断](../../assets/diagrams/ch08/ed08-04-job-propagation-and-errors.png)
@@ -243,7 +243,7 @@ viewLifecycleOwner.lifecycleScope.launch {
 }
 ```
 
-`repeatOnLifecycle` 会在 STOPPED 时取消内部子协程，回到 STARTED 时再重新创建。这里假定两条流长期收集；各用一个子协程，才能并发观察而不被前一个 collect 阻挡。重新进入 STARTED 也不保证补回停订期间的事件：`effects` 若来自 replay=0 的 SharedFlow，无订阅者时的事件可能直接丢失；关键事件须另有持久化或确认协议。Fragment 里我们用 `viewLifecycleOwner`，避免 View 已销毁后仍更新旧视图。
+`repeatOnLifecycle` 会在 STOPPED 时取消内部子协程，回到 STARTED 时再重新创建。这里假定两条流长期收集；各用一个子协程，才能并发观察而不被前一个 collect 阻挡。重新进入 STARTED 时，停订期间的事件能否补回，取决于流本身的配置：`effects` 若来自 replay=0 的 SharedFlow，无订阅者期间的事件可能已经直接丢失，关键事件须另有持久化或确认协议。Fragment 里我们用 `viewLifecycleOwner`，避免 View 已销毁后仍更新旧视图。
 
 <!-- gracker-diagram: ch08-04-16-lifecycle-restart -->
 ![可见性收集与 View 所有权](../../assets/diagrams/ch08/ch08-04-16-lifecycle-restart.png)
@@ -264,7 +264,7 @@ viewLifecycleOwner.lifecycleScope.launch {
 ### 常见的脱离结构路径
 
 
-- `GlobalScope` 没有业务生命周期所有者，属于 delicate API（需要谨慎使用的 API）。它不会保证进程常驻，也不会随页面退出而取消。
+- `GlobalScope` 没有业务生命周期所有者，属于 delicate API（需要谨慎使用的 API）。它既不为进程保活，也不随页面退出而取消。
 - 手动创建 `CoroutineScope(Job() + dispatcher)` 后未在 owner 结束时调用 `cancel()`。
 - 向 `withContext` 传入新的 Job，会切断它与调用者 Job 的关系。当前官方 API 明确不支持这种模式。
 - 使用 `suspendCoroutine` 包装回调却不注销监听；支持取消的回调应使用 `suspendCancellableCoroutine`，并在取消处理器中注销监听。
@@ -275,7 +275,7 @@ viewLifecycleOwner.lifecycleScope.launch {
 
 ### 默认 Flow 是顺序执行
 
-收集 Flow 时，我们最先要回答的问题是：生产快、消费慢时，多出来的值放到哪、要不要丢。普通冷 Flow 的答案是顺序执行：上游、中间操作和 collector 默认跑在同一个协程里，`emit()` 会按调用链执行下游 collector，处理完当前值才返回；只有下游实际挂起时，调用链才随之挂起。顺序路径没有额外队列，也不会主动丢中间值，但每项串行处理成本会相加。失败、取消或数据源本身丢值仍可中止交付，事务和审计记录不能仅靠 collect 获得持久化或恰好一次保证。
+收集 Flow 时，我们最先要回答的问题是：生产快、消费慢时，多出来的值放到哪、要不要丢。普通冷 Flow 的答案是顺序执行：上游、中间操作和 collector 默认跑在同一个协程里，`emit()` 会按调用链执行下游 collector，处理完当前值才返回；只有下游实际挂起时，调用链才随之挂起。顺序路径没有额外队列，也不会主动丢中间值——多出来的值留在生产侧，靠调用链挂起形成天然背压，代价是每项串行处理成本会相加。交付仍可能被失败、取消或数据源本身丢值中止；事务和审计记录要的持久化或恰好一次保证，得由 collect 之外的机制提供。
 
 <!-- gracker-diagram: ch08-04-19-sequential-flow -->
 ![默认冷 Flow 顺序调用下游](../../assets/diagrams/ch08/ch08-04-19-sequential-flow.png)
@@ -339,7 +339,7 @@ suspend fun collectPipelines(
 }
 ```
 
-三条路径对应三种语义：事件缓冲区满后会让上游挂起，buffer 自身不主动丢值，但取消、失败及热上游仍可能影响交付；UI 快照允许跳过中间值；新查询则取消旧的 collector action。示例假定函数从 Main scope 调用，`persist()` 和 `repository.search()` 自己满足 main-safe 契约。`buffer()` 会增加协程和 Channel，但不会自动选择后台 Dispatcher。第三条路径只有在搜索支持协作式取消时才能及时停止；不可中断的阻塞 SDK 即使放在 IO 中，也可能一直执行到调用返回。
+三条路径对应三种语义。事件这一路：缓冲区满后让上游挂起，buffer 自身不主动丢值，但取消、失败及热上游仍可能影响交付。UI 快照这一路允许跳过中间值，新查询这一路则取消旧的 collector action。示例假定函数从 Main scope 调用，`persist()` 和 `repository.search()` 自己满足 main-safe 契约；`buffer()` 会增加协程和 Channel，后台 Dispatcher 要另行指定。第三条路能多快停下来，取决于搜索是否支持协作式取消：遇到不可中断的阻塞 SDK，即使放在 IO 中，也可能一直执行到调用返回。
 
 <!-- gracker-diagram: ed08-04-conflate-versus-latest -->
 ![conflate 跳过待处理值，collectLatest 取消当前 action](../../assets/diagrams/ch08/ed08-04-conflate-versus-latest.png)
@@ -348,14 +348,14 @@ suspend fun collectPipelines(
 
 ### StateFlow、SharedFlow 与 flatten 的资源语义
 
-`StateFlow` 是只保存一个当前值的状态容器，按照 `Any.equals` 合并相同值；有效状态更新的官方复杂度为 O(N)，N 为活跃订阅者数量；写入 equals 相同的值可直接返回，不是每次赋值都遍历。复杂度也不保证订阅者翻倍时墙钟时间恰好翻倍，实际成本仍要测量。
+`StateFlow` 是只保存一个当前值的状态容器，按照 `Any.equals` 合并相同值。有效状态更新的官方复杂度为 O(N)，N 为活跃订阅者数量；写入 equals 相同的值可直接返回，遍历只发生在值有变化的时候。订阅者翻倍时墙钟时间是否随之翻倍，要以实际测量为准。
 
 <!-- gracker-diagram: ch08-04-24-stateflow-equality -->
 ![StateFlow 的当前值、等值与慢订阅者](../../assets/diagrams/ch08/ch08-04-24-stateflow-equality.png)
 
 图：StateFlow 是状态容器；equals 相同值可早退，慢订阅者可跳过快速更新，不是逐事件队列。
 
-`SharedFlow` 是广播流，`replay`（为新订阅者重放的值数量）、`extraBufferCapacity` 和 `onBufferOverflow` 共同决定慢订阅者如何影响 emitter。只有通过 `shareIn` / `stateIn` 从其他 Flow 共享而来时，上游运行才由相应 scope 和 `SharingStarted` 控制；直接构造 MutableStateFlow / MutableSharedFlow 时，生产者寿命由调用方自己管理。SharedFlow 没有订阅者时只保留 replay 个值，extraBufferCapacity 不额外存值，emit 不会因 SUSPEND 策略等待未来订阅者。
+`SharedFlow` 是广播流，`replay`（为新订阅者重放的值数量）、`extraBufferCapacity` 和 `onBufferOverflow` 共同决定慢订阅者如何影响 emitter。只有通过 `shareIn` / `stateIn` 从其他 Flow 共享而来时，上游运行才由相应 scope 和 `SharingStarted` 控制；直接构造 MutableStateFlow / MutableSharedFlow 时，生产者寿命由调用方自己管理。SharedFlow 没有订阅者时只保留 replay 个值，extraBufferCapacity 在这一阶段闲置，emit 也没有 SUSPEND 策略意义上的等待对象——它约束的是已经在收听的慢订阅者。
 
 <!-- gracker-diagram: ch08-04-25-sharedflow-subscribers -->
 ![SharedFlow 缓冲要分有无订阅者](../../assets/diagrams/ch08/ch08-04-25-sharedflow-subscribers.png)
@@ -369,7 +369,7 @@ suspend fun collectPipelines(
 
 ### flowOn 只改变上游
 
-`flowOn(dispatcher)` 只改变它前方上游操作符的执行上下文，下游 collector 原样不动。跨 Dispatcher 时通常会加入 Channel 和额外协程，所以执行位置变了，缓冲和取消的传播也跟着变。只改变非 Dispatcher 上下文时不一定增加协程；相邻边界还会融合。跨 Dispatcher 的取消可能丢弃已经发出但尚未交给下游的在途元素，不能把这个 Channel 当成可靠消息存储。数据层已经提供 main-safe suspend API 时，我们就不必在每一层重复叠加 `flowOn(IO)`。
+`flowOn(dispatcher)` 只改变它前方上游操作符的执行上下文，下游 collector 原样不动。跨 Dispatcher 时通常会加入 Channel 和额外协程，所以执行位置变了，缓冲和取消的传播也跟着变。只改变非 Dispatcher 上下文时不一定增加协程；相邻边界还会融合。跨 Dispatcher 的取消可能丢弃已经发出但尚未交给下游的在途元素，这个 Channel 当不了可靠的消息存储。数据层已经提供 main-safe suspend API 时，`flowOn(IO)` 留在数据层一处就够了，我们无须在每一层重复叠加。
 
 <!-- gracker-diagram: ch08-04-28-flowon-upstream -->
 ![flowOn 的上游边界与取消损失](../../assets/diagrams/ch08/ch08-04-28-flowon-upstream.png)
@@ -449,7 +449,7 @@ GROUP BY t.upid, t.utid, t.tid, t.name, p.name
 ORDER BY running_ms DESC;
 ```
 
-`sched` 的每一行记录线程的一段 Running 时间，所以 `scheduled_slices` 数的是调度片段，不是 coroutine resume 次数。这里按 trace 内部身份 upid / utid 分组；tid 可复用，名字也可重复或被平台截断，应先检查真实线程名，必要时调整过滤条件。`dur=-1` 等未闭合片段已排除，此查询不声称覆盖 trace 边界外的运行时间。要看一次业务操作，先选择正确进程和 async slice，取得半开窗口 `[t0,t1)`；对相交 Running 片段按 `min(ts+dur,t1)-max(ts,t0)` 裁剪后求和。不能只筛选起点，也不能把跨窗片段的整段 dur 相加。同一 worker 可能交替执行多个协程，时间重叠仍不能单独证明因果归属。
+`sched` 的每一行记录线程的一段 Running 时间，所以 `scheduled_slices` 数的是调度片段，不是 coroutine resume 次数。这里按 trace 内部身份 upid / utid 分组；tid 可复用，名字也可重复或被平台截断，应先检查真实线程名，必要时调整过滤条件。`dur=-1` 等未闭合片段已排除，此查询覆盖的是 trace 边界之内的运行时间。要看一次业务操作，先选择正确进程和 async slice，取得半开窗口 `[t0,t1)`；对相交 Running 片段按 `min(ts+dur,t1)-max(ts,t0)` 裁剪后求和——只筛选起点会漏掉从窗口前开始、仍在窗口内运行的片段，把跨窗片段的整段 dur 直接相加又会算进窗口之外的时间。同一 worker 可能交替执行多个协程，时间重叠本身说明不了因果归属。
 
 
 ### 识别常见 trace 形态
@@ -479,7 +479,7 @@ Android Studio 的 Java / Kotlin 方法 instrumentation（插桩跟踪）会引�
 | 生命周期 | Job 树与 scope | Disposable/CompositeDisposable |
 | 融合优化 | 相邻 Flow 通道操作会融合 | 部分操作符支持 queue fusion |
 
-基准必须统一热流 / 冷流、缓冲容量、丢值策略、错误处理、调度方式和消费者工作量。只比较“启动一百万个空任务”，说明的只是空任务的开销，网络、数据库或 UI 路径的表现还得另行测量。已有 RxJava 项目要整体迁移，光凭微基准还不够，应先测量高频路径和维护成本。
+基准必须统一热流 / 冷流、缓冲容量、丢值策略、错误处理、调度方式和消费者工作量。只比较“启动一百万个空任务”，说明的只是空任务的开销，网络、数据库或 UI 路径的表现还得另行测量。已有 RxJava 项目考虑整体迁移时，光凭微基准还不够，我们先测量高频路径和维护成本，再做决定。
 
 
 ## 自定义 Dispatcher：优先复用线程，再考虑专用线程
@@ -496,7 +496,7 @@ private val legacySdkDispatcher =
     Dispatchers.IO.limitedParallelism(4)
 ```
 
-前者最多并行执行两个 CPU 解码片段；Default 的实际计算并行度大于 2 时，可以限制这组工作对预算的占用，但不承诺独占或保留特定 worker / CPU；后者限制实际占线程执行的旧阻塞 SDK 调用；若 API 会挂起或只是提交异步请求，限制整个在途操作仍需 Semaphore 等协议。IO 弹性视图的并发量会与其他 IO 视图叠加，因此仍要检查整个进程中的阻塞任务总数。
+前者最多并行执行两个 CPU 解码片段。Default 的实际计算并行度大于 2 时，它可以限制这组工作对预算的占用，独占或保留特定 worker / CPU 则超出了它的承诺范围；后者限制实际占线程执行的旧阻塞 SDK 调用，若 API 会挂起或只是提交异步请求，限制整个在途操作仍需 Semaphore 等协议。IO 弹性视图的并发量会与其他 IO 视图叠加，因此我们仍要检查整个进程中的阻塞任务总数。
 
 
 ### 线程亲和与专用 Executor
@@ -519,7 +519,7 @@ class NativeSessionExecutor : Closeable {
 }
 ```
 
-这个 Executor 默认按需启动单个 Java worker，首次提交后通常保留到关闭；它不提供 Looper，也不自动完成 JNI attach/detach 或 native 会话销毁。示例只封装同步调用的执行位置，完整 owner 仍须实现停止接单、等待 / 取消在途操作、在规定线程释放 native 会话、最后关闭 Dispatcher 的协议。worker 若被替换，还须重建依赖线程身份的资源。线程创建和销毁都有开销。它应由 Application 级服务、Repository 或其他明确的 owner 复用，并在 owner 生命周期结束时关闭；按请求新建 Executor、用 Java 的 `Thread.MAX_PRIORITY` 顶替 Android 线程优先级配置和负载测量，这两种做法都要避开。
+这个 Executor 默认按需启动单个 Java worker，首次提交后通常保留到关闭；它不提供 Looper，也不自动完成 JNI attach/detach 或 native 会话销毁。示例只封装同步调用的执行位置，完整 owner 仍须实现停止接单、等待 / 取消在途操作、在规定线程释放 native 会话、最后关闭 Dispatcher 的协议。worker 若被替换，还须重建依赖线程身份的资源。线程创建和销毁都有开销，所以它应由 Application 级服务、Repository 或其他明确的 owner 复用，并在 owner 生命周期结束时关闭。按请求新建 Executor、用 Java 的 `Thread.MAX_PRIORITY` 顶替 Android 线程优先级配置和负载测量，这两种做法都要避开。
 
 <!-- gracker-diagram: ch08-04-36-affinity-owner -->
 ![专用线程的资源寿命由 owner 管理](../../assets/diagrams/ch08/ch08-04-36-affinity-owner.png)
@@ -528,14 +528,14 @@ class NativeSessionExecutor : Closeable {
 
 ### Executor、HandlerThread 与队列所有权
 
-自定义 `ExecutorCoroutineDispatcher` 的 owner 还要定义队列（queue）、拒绝新任务的策略（rejection）、停止接单、关闭超时（shutdown timeout）和未完成任务的处理方式。`Executors.newFixedThreadPool()` 使用无界队列，线程数固定不表示提交方会受到背压。需要限制队列容量时，应显式构造 `ThreadPoolExecutor`，并让 rejection 对应明确的业务失败或降级结果。通过 `asCoroutineDispatcher()` 提交而被 Executor 拒绝时，协程库会取消相应 Job，并把恢复任务转交 IO 以执行取消清理；不能在关闭或队列拒绝后仍假设 finally 必定运行于原来的专用线程。
+自定义 `ExecutorCoroutineDispatcher` 的 owner 还要定义队列（queue）、拒绝新任务的策略（rejection）、停止接单、关闭超时（shutdown timeout）和未完成任务的处理方式。`Executors.newFixedThreadPool()` 使用无界队列，线程数固定不表示提交方会受到背压。需要限制队列容量时，应显式构造 `ThreadPoolExecutor`，并让 rejection 对应明确的业务失败或降级结果。通过 `asCoroutineDispatcher()` 提交而被 Executor 拒绝时，协程库会取消相应 Job，并把恢复任务转交 IO 以执行取消清理；到了关闭或队列拒绝之后，“finally 必定运行于原来的专用线程”这个假设就靠不住了。
 
 <!-- gracker-diagram: ch08-04-37-executor-rejection -->
 ![Executor 队列与拒绝后的清理线程](../../assets/diagrams/ch08/ch08-04-37-executor-rejection.png)
 
 图：固定线程数不限制无界待办；Executor 拒绝时协程取消并回退 IO 清理，原线程亲和不再保证。
 
-API 明确要求 `Looper` / `Handler` 或 MessageQueue 语义时，可以使用 `HandlerThread`；仅要求固定 Java 线程而不依赖 Looper 时，单线程 Executor 也是候选。它包含一个常驻线程和一条串行队列，长 callback 会阻塞所有后续消息；owner 结束时先停止接单并释放线程资源，再调用 `quitSafely()`；它处理当时已到期的消息，未来的延迟消息会被丢弃，不保证所有队列任务都执行。必要时从其他线程使用带超时的 `join()` 等待退出。
+API 明确要求 `Looper` / `Handler` 或 MessageQueue 语义时，可以使用 `HandlerThread`；仅要求固定 Java 线程而不依赖 Looper 时，单线程 Executor 也是候选。HandlerThread 包含一个常驻线程和一条串行队列，长 callback 会阻塞所有后续消息；owner 结束时先停止接单并释放线程资源，再调用 `quitSafely()`；它处理当时已到期的消息，未来的延迟消息会被丢弃，不保证所有队列任务都执行。必要时从其他线程使用带超时的 `join()` 等待退出。
 
 <!-- gracker-diagram: ch08-04-38-handlerthread-shutdown -->
 ![HandlerThread 的串行队列与退出](../../assets/diagrams/ch08/ch08-04-38-handlerthread-shutdown.png)
