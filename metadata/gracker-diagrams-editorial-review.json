@@ -58908,9 +58908,277 @@
       "before_count": 28,
       "before_all_images": 28,
       "sha256_before": "28421de8214cbea0e0fd4d9049110810d960dfa728ba343773778de4e93d9c09",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a237-01-interop-directions",
+          "title": "两个方向的宿主与成本",
+          "decision": "remove",
+          "reason": "开头两个方向的列表及各自成本段落已完整，二行方向卡重复。",
+          "original_line": 43,
+          "heading": "# Compose First 与 View/Compose 互操作性能实战"
+        },
+        {
+          "original_id": "a237-02-migration-scope",
+          "title": "Compose First 的迁移边界",
+          "decision": "remove",
+          "reason": "ComposeFirst维护范围、长期共存边界和分批迁移段落完整，三行策略卡重复。",
+          "original_line": 81,
+          "heading": "### Compose First 路线下的新页面与存量应用"
+        },
+        {
+          "original_id": "a237-04-measure-spec",
+          "title": "Constraints 与 LayoutParams 如何得到 MeasureSpec",
+          "decision": "keep",
+          "reason": "补充正文未展开的obtainMeasureSpec固定/有限wrap与match/无限三类具体映射，保留作为Constraints加LayoutParams桥的实现对照。",
+          "original_line": 111,
+          "heading": "### `AndroidView`：一个 Compose 布局节点代理一个 View 承载器"
+        },
+        {
+          "original_id": "a237-03-androidview-bridge",
+          "title": "AndroidView 的布局与绘制桥",
+          "decision": "keep",
+          "reason": "Constraints和LP到View.measure返回尺寸、Compose放置调用View.layout再handler.draw的跨树调用链，便于区分两个布局对象。",
+          "original_line": 116,
+          "heading": "### `AndroidView`：一个 Compose 布局节点代理一个 View 承载器"
+        },
+        {
+          "original_id": "a237-05-parent-context",
+          "title": "ComposeView 解析父级 CompositionContext",
+          "decision": "keep",
+          "reason": "显式父、View树、有效缓存到窗口Recomposer按未设/无/失效回退的实际优先级链，突出共享Recomposer不合并根。",
+          "original_line": 132,
+          "heading": "### `ComposeView`：一个 ViewGroup 承载一个 Compose 根"
+        },
+        {
+          "original_id": "a237-06-output-topology",
+          "title": "普通 View、纹理与独立 Surface 的缓冲去向",
+          "decision": "remove",
+          "reason": "普通窗口、Texture采样、Surface独立子层的三段解释与后文四列表更完整，三行拓扑卡重复且未画汇入/独立缓冲连接。",
+          "original_line": 151,
+          "heading": "### 普通互操作的出图路径"
+        },
+        {
+          "original_id": "a237-07-callbacks",
+          "title": "AndroidView 的四个生命周期回调",
+          "decision": "remove",
+          "reason": "四回调调用语义/工作表完整，四个孤立框无实际生命周期分支，删除重复。",
+          "original_line": 171,
+          "heading": "### `factory`、`update`、`onReset` 与 `onRelease`"
+        },
+        {
+          "original_id": "a237-08-update-observation",
+          "title": "update 的两种触发来源与执行门禁",
+          "decision": "remove",
+          "reason": "独立State读取与新update函数两来源以及附着parent门禁两段完整，三行规则卡未画汇合门禁路径。",
+          "original_line": 180,
+          "heading": "### `factory`、`update`、`onReset` 与 `onRelease`"
+        },
+        {
+          "original_id": "a237-09-binding-fragments",
+          "title": "ViewBinding 复用与 Fragment 清理",
+          "decision": "remove",
+          "reason": "ViewBinding与Fragment清理四条源码边界完整，三行卡重复。",
+          "original_line": 235,
+          "heading": "### `AndroidViewBinding` 沿用同一套桥接与复用语义"
+        },
+        {
+          "original_id": "a237-10-invalidations",
+          "title": "状态变化怎样变成 View 工作",
+          "decision": "remove",
+          "reason": "五条失效传导及绘制中postOnAnimation段落完整，三行失效卡重复。",
+          "original_line": 254,
+          "heading": "### 状态变化到 View 工作的传导"
+        },
+        {
+          "original_id": "a237-11-feedback-loop",
+          "title": "双向控件的状态反馈环",
+          "decision": "keep",
+          "reason": "Compose唯一源经等值update、View同步监听、fromUser过滤回到源的真正反馈回路及独立用户入口，能直接看到断环门禁。",
+          "original_line": 302,
+          "heading": "### 避免 View → Compose → View 的反馈循环"
+        },
+        {
+          "original_id": "a237-12-reuse-deactivate",
+          "title": "复用、停用与永久释放的时序",
+          "decision": "remove",
+          "reason": "非空onReset/分组兼容、停用可等待与终止不可复用正文代码完整；三行末将onReuse指向onRelease，易被当连续必经，删去重复且含糊的卡。",
+          "original_line": 357,
+          "heading": "### `onReset` 与 View 实例复用"
+        },
+        {
+          "original_id": "a237-13-reuse-evidence",
+          "title": "用计数和尾部样本判断复用",
+          "decision": "remove",
+          "reason": "六项计数与factory下降但resetbind可能抵消的段落完整，三行证据卡重复。",
+          "original_line": 388,
+          "heading": "### 创建数与绑定数的记录"
+        },
+        {
+          "original_id": "a237-14-disposal-strategy",
+          "title": "ComposeView 的销毁策略边界",
+          "decision": "remove",
+          "reason": "默认策略三条分支和FragmentViewOwner代码完整，三行策略卡重复。",
+          "original_line": 423,
+          "heading": "### Composition 的销毁策略"
+        },
+        {
+          "original_id": "a237-15-holder-item-identity",
+          "title": "ViewHolder 复用与业务项的组合身份",
+          "decision": "remove",
+          "reason": "31行Holder一次setContent/key/clear及清空非同步停资源、跨回收状态提升解释完整，三行身份卡未呈现图注A到B具体前后例。",
+          "original_line": 470,
+          "heading": "### RecyclerView 临时回收时的 Composition 处理"
+        },
+        {
+          "original_id": "a237-16-root-memory",
+          "title": "共享 Recomposer 仍有多个实例根",
+          "decision": "remove",
+          "reason": "六类实例对象与唯一ID保存恢复段落完整，三行内存卡未画一共享多根真实结构。",
+          "original_line": 490,
+          "heading": "### 多个 ComposeView 的内存模型"
+        },
+        {
+          "original_id": "a237-17-viewcontext-sharing",
+          "title": "ComposeViewContext 的共享范围",
+          "decision": "remove",
+          "reason": "四类共享对象、OwnerContext边界与参考View延迟解析及使用期附着正文完整，三行共享卡重复。",
+          "original_line": 506,
+          "heading": "### Compose UI 1.12 的 `ComposeViewContext`"
+        },
+        {
+          "original_id": "a237-18-precompose-lifetime",
+          "title": "离树预组合的资源寿命",
+          "decision": "keep",
+          "reason": "参考View附着、目标离树createComposition、附着继续或取消不附着dispose的条件链，明确预热资源取消路径。",
+          "original_line": 515,
+          "heading": "### Compose UI 1.12 的 `ComposeViewContext`"
+        },
+        {
+          "original_id": "a237-19-frame-deadline",
+          "title": "刷新周期与实际帧期限",
+          "decision": "remove",
+          "reason": "三刷新率周期表和UI共享/后端重叠真实deadline段落完整，三行预算卡重复。",
+          "original_line": 536,
+          "heading": "### 整帧共享的帧预算"
+        },
+        {
+          "original_id": "a237-20-nested-scroll",
+          "title": "滚动桥转发不代替控制权设计",
+          "decision": "remove",
+          "reason": "Parent3转发和六项控制权冲突与一主滚动建议完整，三行滚动卡重复。",
+          "original_line": 582,
+          "heading": "### 嵌套滚动桥的传递范围"
+        },
+        {
+          "original_id": "a237-21-tool-work",
+          "title": "结构、编译器与动态跟踪各自回答什么",
+          "decision": "remove",
+          "reason": "Inspector四项定位和Compiler六项不覆盖清单及插桩代码完整，三行工具卡重复。",
+          "original_line": 631,
+          "heading": "### 编译器指标的适用范围"
+        },
+        {
+          "original_id": "a237-22-perfetto-triage",
+          "title": "从目标帧回到桥接成本",
+          "decision": "remove",
+          "reason": "六步Perfetto真实帧/线程/生产者/拓扑归因与线程忙闲段落完整，四框诊断卡重复。",
+          "original_line": 679,
+          "heading": "### Perfetto 的阅读顺序"
+        },
+        {
+          "original_id": "a237-23-pausable-boundary",
+          "title": "预组合暂停与传统 View 成本",
+          "decision": "remove",
+          "reason": "暂停预组合精确开关及五类不能覆盖成本清单完整，三行机制卡重复。",
+          "original_line": 704,
+          "heading": "### PausableComposition"
+        },
+        {
+          "original_id": "a237-24-surface-clip",
+          "title": "宿主布局、内容 Surface 与裁剪",
+          "decision": "remove",
+          "reason": "三拓扑四列表与clipToOutline有效outline段落完整，三行裁剪卡重复。",
+          "original_line": 735,
+          "heading": "### 三种出图拓扑"
+        },
+        {
+          "original_id": "a237-25-arr-votes",
+          "title": "混合树与独立 Surface 的帧率请求",
+          "decision": "remove",
+          "reason": "ARR五请求边界和宿主动画/24或30视频各自节奏段落完整，三行请求卡未画多方汇总真实投票拓扑。",
+          "original_line": 754,
+          "heading": "### 自适应刷新率的请求边界"
+        },
+        {
+          "original_id": "a237-26-test-directions",
+          "title": "互操作测试的查询与宿主范围",
+          "decision": "remove",
+          "reason": "工厂接口、Espresso/Compose查询方向与实验宿主范围API段落完整，三行测试卡重复。",
+          "original_line": 788,
+          "heading": "### 把 View 构造抽成窄接口"
+        },
+        {
+          "original_id": "a237-27-test-clock-idle",
+          "title": "虚拟时钟与等待空闲的边界",
+          "decision": "remove",
+          "reason": "虚拟MainTestClock不驱动平台、waitForIdle仍等测绘、外部明确idle条件的完整段落已清楚，三行同步卡重复。",
+          "original_line": 813,
+          "heading": "### Espresso 与 ComposeTestRule 混用"
+        },
+        {
+          "original_id": "a237-28-migration-validation",
+          "title": "每批迁移的可复现验收",
+          "decision": "remove",
+          "reason": "三迁移阶段逐项验收和六维AB表及尾部阈值段落更完整，四框验收卡重复。",
+          "original_line": 881,
+          "heading": "### 可复现的 A/B 记录"
+        }
+      ],
+      "sha256_after": "d2152f8b296497a2d9d1bb0bc094374e0f56ba8a374b3e202715a0df5ec9411e",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:22:39.449184+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 28,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a237/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a237/visual-review.json",
+      "retired_diagrams": [
+        "a237-01-interop-directions",
+        "a237-02-migration-scope",
+        "a237-06-output-topology",
+        "a237-07-callbacks",
+        "a237-08-update-observation",
+        "a237-09-binding-fragments",
+        "a237-10-invalidations",
+        "a237-12-reuse-deactivate",
+        "a237-13-reuse-evidence",
+        "a237-14-disposal-strategy",
+        "a237-15-holder-item-identity",
+        "a237-16-root-memory",
+        "a237-17-viewcontext-sharing",
+        "a237-19-frame-deadline",
+        "a237-20-nested-scroll",
+        "a237-21-tool-work",
+        "a237-22-perfetto-triage",
+        "a237-23-pausable-boundary",
+        "a237-24-surface-clip",
+        "a237-25-arr-votes",
+        "a237-26-test-directions",
+        "a237-27-test-clock-idle",
+        "a237-28-migration-validation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-237/retired-assets.json"
     },
     {
       "index": 238,
@@ -59408,8 +59676,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 161,
-  "next_article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+  "reviewed_articles": 162,
+  "next_article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -59419,7 +59687,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:20:25.289872+08:00",
+  "updated_at": "2026-10-31T17:22:39.449184+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -59590,9 +59858,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4932,
-  "reviewed_placements_after": 2006,
-  "net_removed_placements": 2926,
+  "reviewed_placements_before": 4960,
+  "reviewed_placements_after": 2011,
+  "net_removed_placements": 2949,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -59616,5 +59884,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 161
+  "currently_matching_reviewed_source_count": 162
 }
