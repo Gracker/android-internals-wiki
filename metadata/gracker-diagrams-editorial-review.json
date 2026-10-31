@@ -41135,9 +41135,175 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "a78a63dd2e30f4006cc64c3c9da0665d606b0ff225577ffcda5f615ed3a08c43",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch15-08-01-three-paths",
+          "title": "配置、pushed atom 与 pulled atom 的三条路径",
+          "decision": "keep",
+          "reason": "特权StatsManager经服务权限/Binder、pushed经socket、pull请求与callback样本返回的三条真实数据与控制路线独立，Companion非统一数据中转边界保留。",
+          "original_line": 80,
+          "heading": "## statsd 适合回答什么问题"
+        },
+        {
+          "original_id": "ch15-08-02-restart-recovery",
+          "title": "注册恢复、配置恢复与未持久化数据",
+          "decision": "remove",
+          "reason": "Java注册/native配置/metric完整性三列逐项复写85–87恢复段落，无实际重启过程或前后状态；五类重注册、复制解锁后IPC、ConfigManager读盘与未落盘不恢复全文留。",
+          "original_line": 89,
+          "heading": "## statsd 适合回答什么问题"
+        },
+        {
+          "original_id": "ch15-08-03-socket-queue-pressure",
+          "title": "io_uring 的条件、回退与有界队列",
+          "decision": "keep",
+          "reason": "API/flag/运行时支持选择io_uring、初始化失败回退传统listener、汇入共用50000有界队列并Startup后消费的真实分支/合流独立，保留丢失而非阻塞与非预分配。",
+          "original_line": 102,
+          "heading": "## statsd 适合回答什么问题"
+        },
+        {
+          "original_id": "ch15-08-05-duration-aggregation",
+          "title": "SUM 的重叠合并与 MAX_SPARSE 的结束归属",
+          "decision": "keep",
+          "reason": "A1–5与B3–7各4、SUM区间并集1–7为6不是8的具体重叠时间案例，MAX_SPARSE完整区间结束bucket归属图注保留，非所有对象简单相加。",
+          "original_line": 134,
+          "heading": "## Atom 模型：事件、拉取样本和 metric 配置"
+        },
+        {
+          "original_id": "ch15-08-04-atom-config-report",
+          "title": "从平台 atom 到配置选中的报告",
+          "decision": "keep",
+          "reason": "atom源到来源/matcher筛选、条件启用、metric维度bucket及选中报告的真实加工责任链独立于1传输链，保留pushed编码与protobuf报告不同层。",
+          "original_line": 141,
+          "heading": "## Atom 模型：事件、拉取样本和 metric 配置"
+        },
+        {
+          "original_id": "ch15-08-06-missing-report-checks",
+          "title": "空报告的采集、筛选和导出检查",
+          "decision": "remove",
+          "reason": "五步完全复写153–159七条空报告检查清单，没有实际缺样本/状态实例，keep_data不能补丢失等原说明完整留。",
+          "original_line": 148,
+          "heading": "## Atom 模型：事件、拉取样本和 metric 配置"
+        },
+        {
+          "original_id": "ch15-08-07-three-uid-identities",
+          "title": "配置拥有者、写入来源和目标 App 身份",
+          "decision": "keep",
+          "reason": "shell owner+configID、AID_SYSTEM写入源、atom48目标App UID三个具体角色对应独立，保留为何allowedlogsource不是目标UID及最小配置未限包，正文直接引图指向仍有效。",
+          "original_line": 211,
+          "heading": "## adb / cmd stats 本地调试流程"
+        },
+        {
+          "original_id": "ch15-08-08-local-debug-lifecycle",
+          "title": "二进制配置到报告的最小本地调试闭环",
+          "decision": "remove",
+          "reason": "六步重画184–230配置编码、下发、触发、导出、删除完整代码，9保留真正有副作用的导出/输出顺序分支；所有显式ID与二进制stdin命令及注意项原文留。",
+          "original_line": 234,
+          "heading": "## adb / cmd stats 本地调试流程"
+        },
+        {
+          "original_id": "ch15-08-09-dump-flags-clear",
+          "title": "报告清理发生在输出格式判断之前",
+          "decision": "keep",
+          "reason": "先onDumpReport按eraseData导出/清理、之后才按proto分支输出二进制或不支持文本的真实先后/条件图独立，提示不回滚导出关键边界保留。",
+          "original_line": 244,
+          "heading": "## adb / cmd stats 本地调试流程"
+        },
+        {
+          "original_id": "ch15-08-10-auxiliary-observation",
+          "title": "pull-source、健康统计和完整日志各查什么",
+          "decision": "remove",
+          "reason": "pullsource/printstats/printlogs三列重复251–267命令与缓存、健康统计、root完整解析开销说明，未画缓存命中机制，所有副作用全文留且未执行设备命令。",
+          "original_line": 269,
+          "heading": "## adb / cmd stats 本地调试流程"
+        },
+        {
+          "original_id": "ch15-08-11-cross-tool-evidence",
+          "title": "ANR 与 LMK 的事件线索如何回到现场",
+          "decision": "remove",
+          "reason": "statsd/Perfetto/logdump三列重述280–287四步工具分工与ANR/LMK例，未画实际同窗对象关联或线程依赖，所有PSI/PSS/adj与缺trace不补时序原文留。",
+          "original_line": 289,
+          "heading": "## 与 Perfetto、logcat、dumpsys 的交叉验证"
+        },
+        {
+          "original_id": "ch15-08-12-permissions-versions",
+          "title": "本地 shell、特权 API 与产品扩展边界",
+          "decision": "remove",
+          "reason": "三列摘要296–303权限和版本说明，没有实际按入口权限分支；全部DUMP+usage/AppOp/pull/restricted不同授权及APEX/OEM扩展限制完整留。",
+          "original_line": 307,
+          "heading": "## 权限、版本与 OEM 边界"
+        },
+        {
+          "original_id": "ch15-08-13-test-collector",
+          "title": "Tradefed 配置驱动的回归验证",
+          "decision": "remove",
+          "reason": "五步摘要314–318Tradefed与CTS配置推送/场景/报告/清理原流程，没有具体测试结果差异；配置实际选中和遗漏不能补录边界原文留。",
+          "original_line": 320,
+          "heading": "## Tradefed / CTS 中的 statsd collector"
+        },
+        {
+          "original_id": "ch15-08-14-apm-system-association",
+          "title": "业务会话与系统指标的时间窗口关联",
+          "decision": "remove",
+          "reason": "APM/关联坐标/statsd三列复写327–336业务与系统粒度分工，未画按事件时刻UID和时间窗口实际关联；全部合法来源/截断bucket非逐请求因果说明留。",
+          "original_line": 331,
+          "heading": "## statsd 报告与线上 APM 的边界"
+        },
+        {
+          "original_id": "ch15-08-15-vendor-contract-lifecycle",
+          "title": "自定义 atom 的长期字段契约",
+          "decision": "remove",
+          "reason": "四框与344–347四条长期规则逐项完全一致，删字段契约清单图片，所有atomID/fieldnumber/版本/测试/降级要求完整保留。",
+          "original_line": 351,
+          "heading": "## 自定义 Atom 与厂商扩展风险"
+        }
+      ],
+      "sha256_after": "7a1837504dbf3f46a2e2f55232241ca470aa05bca44207c4e83a0e1457d72cff",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:14:58.560534+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a156/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a156/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 156,
+        "article": "src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
+        "registered_sha256": "a78a63dd2e30f4006cc64c3c9da0665d606b0ff225577ffcda5f615ed3a08c43",
+        "frozen_sha256": "a78a63dd2e30f4006cc64c3c9da0665d606b0ff225577ffcda5f615ed3a08c43",
+        "review_input_sha256": "b868d7a347c7eef6b957bde56d3c66c8a6455de4d642f9b7dcc3f537918d10f0",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a156/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a156/external-source.diff",
+        "diff_sha256": "320d8d717c0722c6a131b2ff3d9e60fb80aeef014a55ee34d277bab4ad585c6e",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 169, \"characters\": 19959, \"svg_labels_read\": 15, \"actual_pngs_viewed\": 15, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 4, \"code_lines\": 41, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "b868d7a347c7eef6b957bde56d3c66c8a6455de4d642f9b7dcc3f537918d10f0",
+      "retired_diagrams": [
+        "ch15-08-02-restart-recovery",
+        "ch15-08-06-missing-report-checks",
+        "ch15-08-08-local-debug-lifecycle",
+        "ch15-08-10-auxiliary-observation",
+        "ch15-08-11-cross-tool-evidence",
+        "ch15-08-12-permissions-versions",
+        "ch15-08-13-test-collector",
+        "ch15-08-14-apm-system-association",
+        "ch15-08-15-vendor-contract-lifecycle"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-156/retired-assets.json"
     },
     {
       "index": 157,
@@ -42416,8 +42582,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 90,
-  "next_article": "src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
+  "reviewed_articles": 91,
+  "next_article": "src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -42427,7 +42593,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:12:50.581749+08:00",
+  "updated_at": "2026-10-31T13:14:58.560534+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -42483,13 +42649,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
-      "registered_sha256": "a78a63dd2e30f4006cc64c3c9da0665d606b0ff225577ffcda5f615ed3a08c43",
-      "observed_sha256": "b868d7a347c7eef6b957bde56d3c66c8a6455de4d642f9b7dcc3f537918d10f0",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/08-statsd-system-metrics.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -42808,9 +42967,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3245,
-  "reviewed_placements_after": 1463,
-  "net_removed_placements": 1782,
+  "reviewed_placements_before": 3260,
+  "reviewed_placements_after": 1469,
+  "net_removed_placements": 1791,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -42834,5 +42993,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 90
+  "currently_matching_reviewed_source_count": 91
 }
