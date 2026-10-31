@@ -52847,9 +52847,230 @@
       "before_count": 23,
       "before_all_images": 23,
       "sha256_before": "f8e8d7a37f957bf63cc986c7b5cd84cb0467fb345acf48622282298cd2c258a9",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a207-01-phenomenon-evidence",
+          "title": "用户现象先分层，再选取证据",
+          "decision": "remove",
+          "reason": "同节完整文本故障树已按进程退出/仍在/WebView分流，三行映射PNG是树的子集，保留原始文本树及系统reason不能单独定根因的说明。",
+          "original_line": 120,
+          "heading": "### 先区分“故障事件”和“进程退出”"
+        },
+        {
+          "original_id": "a207-02-java-fatal-chain",
+          "title": "Java 未捕获异常继续交给原默认处理器",
+          "decision": "keep",
+          "reason": "展示Throwable逃出线程后先预处理日志、再自定义短记录并委托默认处理、最后报告与终止的顺序，强调上传非现场保证。",
+          "original_line": 136,
+          "heading": "#### Java Crash：未捕获异常到默认处理器"
+        },
+        {
+          "original_id": "a207-03-native-fatal-chain",
+          "title": "Native 致命信号到 tombstone 的实际链路",
+          "decision": "keep",
+          "reason": "信号处理器、crash_dump进程读取、tombstoned输出描述符和libunwindstack写入的跨进程诊断路径有助于区分取证职责。",
+          "original_line": 160,
+          "heading": "#### Native Crash：信号处理器、`crash_dump` 与 `tombstoned`"
+        },
+        {
+          "original_id": "a207-04-anr-deadlines",
+          "title": "ANR 按系统入口使用不同期限",
+          "decision": "remove",
+          "reason": "紧邻ANR类型/触发/默认期限表更完整，四行超时卡是表格复述且省略广播条件和异步消费限制。",
+          "original_line": 180,
+          "heading": "### ANR：系统的超时判定"
+        },
+        {
+          "original_id": "a207-05-resource-failures",
+          "title": "资源失败分别看分配域与系统压力",
+          "decision": "remove",
+          "reason": "资源失败分类表和LMKD段落已完整区分Java堆、映射、线程/FD和系统终止，四行映射卡重复。",
+          "original_line": 223,
+          "heading": "#### LMKD 与内核 OOM"
+        },
+        {
+          "original_id": "a207-06-exit-history",
+          "title": "退出原因、内存采样与 trace 分别解释",
+          "decision": "remove",
+          "reason": "退出历史各字段语义和trace/PSS/RSS限制已由紧邻API示例与条目说明，三行字段卡不增加时序。",
+          "original_line": 265,
+          "heading": "### 用 `ApplicationExitInfo` 读取“上一次进程发生了什么”"
+        },
+        {
+          "original_id": "a207-07-vitals-versus-sdk",
+          "title": "Play 与 SDK 指标先比范围，再比数值",
+          "decision": "remove",
+          "reason": "Play/SDK范围和阈值已由表格及解释限定，三行平台映射无法新增口径或可换算证据。",
+          "original_line": 310,
+          "heading": "#### Play 的口径和阈值"
+        },
+        {
+          "original_id": "a207-08-identity-contracts",
+          "title": "事件重传去重与问题归类使用不同身份",
+          "decision": "remove",
+          "reason": "原始事件身份字段表逐项列出event/process/session/launch/cluster语义，三行归类图重复表格。",
+          "original_line": 479,
+          "heading": "#### 原始事件和派生指标分开保存"
+        },
+        {
+          "original_id": "a207-10-period-dedup",
+          "title": "观察期去重不能替换成每日百分比平均",
+          "decision": "keep",
+          "reason": "两日分别50%而全期0%的具体反例有助于识别跨日集合去重和日均错误，明确为算术演示而非实际数据。",
+          "original_line": 516,
+          "heading": "#### Crash-Free Users"
+        },
+        {
+          "original_id": "a207-09-metric-denominators",
+          "title": "无崩溃用户、无崩溃会话和事件率不同",
+          "decision": "remove",
+          "reason": "Crash-Free Users/Sessions和事件率公式已完整展示，三行公式图重复且不含新增集合关系。",
+          "original_line": 533,
+          "heading": "#### Crash-Free Sessions"
+        },
+        {
+          "original_id": "a207-11-startup-outcomes",
+          "title": "首帧是里程碑，成功与故障是终态",
+          "decision": "keep",
+          "reason": "启动尝试经过首帧仍未成功、fully_drawn成功与fatal/abandoned互斥终态的分支图，解释失败率不等于1减成功率。",
+          "original_line": 550,
+          "heading": "#### 启动失败率"
+        },
+        {
+          "original_id": "a207-12-observability-api",
+          "title": "采集能力按版本开放，结果仍允许缺席",
+          "decision": "remove",
+          "reason": "API30/31/35/36/37能力和限制对照表更完整，四行版本图没有增加交付保证边界。",
+          "original_line": 650,
+          "heading": "#### 四类数据源的比较"
+        },
+        {
+          "original_id": "a207-14-release-evidence",
+          "title": "发布结论需要质量和采集完整性同时成立",
+          "decision": "remove",
+          "reason": "质量/版本/问题/采集四层看板已有完整表格和灰度分母说明，四行检查卡是表的缩写。",
+          "original_line": 715,
+          "heading": "#### 采集链路健康"
+        },
+        {
+          "original_id": "a207-13-error-budget",
+          "title": "错误预算的单位跟随 SLI 分母",
+          "decision": "remove",
+          "reason": "错误预算0.2%×3000万=6万及burn3的演示已由公式与段落说明，线性四框只是算式复述。",
+          "original_line": 759,
+          "heading": "#### 错误预算（Error Budget）的计算单位"
+        },
+        {
+          "original_id": "a207-15-aggregation-layers",
+          "title": "原始事件到责任归因分成四层",
+          "decision": "remove",
+          "reason": "紧邻原生Mermaid完整区分四事件族解析、精确指纹、variant和跨构建候选，四框PNG是重复的简化流水线。",
+          "original_line": 843,
+          "heading": "### 聚合流水线"
+        },
+        {
+          "original_id": "a207-18-native-artifacts",
+          "title": "Native 符号化先验证构建身份",
+          "decision": "remove",
+          "reason": "Native符号化的Build ID/ABI/相对PC/故障类型已在紧邻表格详述，三行字段映射重复且精确/家族分层另保留图。",
+          "original_line": 887,
+          "heading": "#### Native：Build ID 决定符号版本"
+        },
+        {
+          "original_id": "a207-16-fingerprint-levels",
+          "title": "构建内位置要精确，跨构建候选要保守",
+          "decision": "keep",
+          "reason": "构建内精确与跨构建family指纹及schema重算映射的层级关系，配合代码区分保留行号/相对PC和弱化位置的场景。",
+          "original_line": 949,
+          "heading": "#### 行号和偏移在指纹中的权重"
+        },
+        {
+          "original_id": "a207-17-java-features",
+          "title": "Java 指纹保留异常结构和失败语义",
+          "decision": "remove",
+          "reason": "Java特征保留/降权/过滤表已完整覆盖cause/suppressed/有序帧/消息，三行特征卡是表格子集。",
+          "original_line": 970,
+          "heading": "#### Java 指纹该保留什么"
+        },
+        {
+          "original_id": "a207-19-nontransitive-similarity",
+          "title": "相似关系不能沿桥接样本自动传递",
+          "decision": "keep",
+          "reason": "A近B、B近C而A与C仍可能不同根因的桥接结构及下方代表variant/组内距离/人工拆分约束，直接解释非传递误合并。",
+          "original_line": 1022,
+          "heading": "#### 防止传递式误合并"
+        },
+        {
+          "original_id": "a207-20-attribution-exposure",
+          "title": "归因比较发生率，再核对首次引入证据",
+          "decision": "remove",
+          "reason": "归因分母表与first observed/introduced两段明确解释相关与因果，三行映射未增加实际版本时间线或曝光数据。",
+          "original_line": 1068,
+          "heading": "#### 首次观测与引入版本"
+        },
+        {
+          "original_id": "a207-21-issue-workflow",
+          "title": "修复发布后仍要等待足够样本",
+          "decision": "keep",
+          "reason": "工单从分类修复到等待足够暴露、验证与回归重开的回路，正文完整状态与3/n独立性条件保留。",
+          "original_line": 1113,
+          "heading": "#### 工单状态与幂等"
+        },
+        {
+          "original_id": "a207-22-event-and-ingestion",
+          "title": "故障发生时间与服务端收到时间分开使用",
+          "decision": "remove",
+          "reason": "event time与ingestion time分工及静默仍更新影响量已有正文说明，三行时间字段卡是分类复述。",
+          "original_line": 1144,
+          "heading": "#### 每个 issue 同时看影响面和频率"
+        },
+        {
+          "original_id": "a207-23-ai-evidence",
+          "title": "AI 输出候选、反证与缺失证据",
+          "decision": "remove",
+          "reason": "AI安全输入与权限检索/输出schema/人工决定已由列表和JSON证据结构更完整表达，四框概括没有新增控制或数据分支。",
+          "original_line": 1199,
+          "heading": "#### 输入是不可信数据"
+        }
+      ],
+      "sha256_after": "5b5c503187e62ae14ae0b5f638585e7583c86a0b99bb52044a4c005943037d82",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:05:50.664505+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 23,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a207/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a207/visual-review.json",
+      "retired_diagrams": [
+        "a207-01-phenomenon-evidence",
+        "a207-04-anr-deadlines",
+        "a207-05-resource-failures",
+        "a207-06-exit-history",
+        "a207-07-vitals-versus-sdk",
+        "a207-08-identity-contracts",
+        "a207-09-metric-denominators",
+        "a207-12-observability-api",
+        "a207-13-error-budget",
+        "a207-14-release-evidence",
+        "a207-15-aggregation-layers",
+        "a207-17-java-features",
+        "a207-18-native-artifacts",
+        "a207-20-attribution-exposure",
+        "a207-22-event-and-ingestion",
+        "a207-23-ai-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-207/retired-assets.json"
     },
     {
       "index": 208,
@@ -53655,8 +53876,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 133,
-  "next_article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+  "reviewed_articles": 134,
+  "next_article": "src/part5-app/ch20-stability/02-java-crash-exception-stack-analysis.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -53666,7 +53887,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:59:53.812790+08:00",
+  "updated_at": "2026-10-31T16:05:50.664505+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -53865,9 +54086,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4353,
-  "reviewed_placements_after": 1839,
-  "net_removed_placements": 2514,
+  "reviewed_placements_before": 4376,
+  "reviewed_placements_after": 1846,
+  "net_removed_placements": 2530,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -53891,5 +54112,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 133
+  "currently_matching_reviewed_source_count": 134
 }

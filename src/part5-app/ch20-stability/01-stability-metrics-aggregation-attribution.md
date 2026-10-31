@@ -117,10 +117,6 @@ consolidated_from:
 
 `OutOfMemoryError` 表示进程内分配失败；`REASON_LOW_MEMORY` 是系统在进程退出历史中记录的低内存终止原因，两个概念各说一件事。ANR 也不止是“主线程卡住五秒”：`BroadcastReceiver` 可以运行在自定义 `Handler` 对应的线程，系统还会为 Service、Provider 等组件使用不同的期限。
 
-<!-- gracker-diagram: a207-01-phenomenon-evidence -->
-![用户现象先分层，再选取证据](../../assets/diagrams/ch20/a207-01-phenomenon-evidence.png)
-
-图：故障事件、进程结局和数据来源分别记录；ANR 不等于必然退出，OOM 不等于 LMKD 终止。
 
 ### Crash 的两条终止链
 
@@ -177,10 +173,6 @@ ANR 表示系统认定应用没有在规定时间内完成某类交互或组件�
 
 主线程栈看起来空闲时，ANR 依然可能成立。以广播为例，广播接收器可以通过自定义 `Handler` 运行在非主线程，也可以调用 `goAsync()` 转交异步工作；同步接收器以 `onReceive()` 返回为完成点，异步接收器以 `PendingResult.finish()` 为完成点。这时我们要检查实际执行线程、Binder 对端和 CPU 调度情况。输入 ANR 也可能来自无焦点窗口、窗口尚未就绪、主线程等待 Binder 或锁。
 
-<!-- gracker-diagram: a207-04-anr-deadlines -->
-![ANR 按系统入口使用不同期限](../../assets/diagrams/ch20/a207-04-anr-deadlines.png)
-
-图：广播的延长与 CPU 调度不足相关；goAsync 要追踪 PendingResult.finish，不能只看主线程。
 
 进入 [`AnrHelper`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java) 后，Android 核心系统服务进程 `system_server` 会协调堆栈与进程状态采集，再依据可见性、后台策略和用户操作处理事件。前台可能出现“应用无响应”对话框；后台静默 ANR 可能只留下报告。用户选择等待后，进程可以继续运行，把每次 ANR 都计为一次退出会把影响面算大。
 
@@ -220,10 +212,6 @@ FD（File Descriptor，文件描述符） 耗尽的典型信号是 `EMFILE`（�
 
 内核 OOM killer 是更底层的终止机制，在系统释放不出足够内存时触发，对应实现见 [`android17-6.18-2026-06_r6/mm/oom_kill.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/oom_kill.c)。我们排查线上 LMK 时，优先用 `ApplicationExitInfo`、Android vitals 和设备内存分层数据；每次应用低内存退出不一定都有内核 OOM 日志。
 
-<!-- gracker-diagram: a207-05-resource-failures -->
-![资源失败分别看分配域与系统压力](../../assets/diagrams/ch20/a207-05-resource-failures.png)
-
-图：同样表现为页面消失或 OOM，可能属于不同资源域；largeHeap 不能解决所有进程和系统资源限制。
 
 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)会继续区分 Java heap、Native heap、线程、映射、图形内存与 LMK。
 
@@ -262,10 +250,6 @@ fun readRecentExits(context: Context): List<ApplicationExitInfo> {
 
 `getTraceInputStream()` 的数据保存在全局环形缓冲区中，可能被其他应用的新记录覆盖而返回 `null`。如果进程发生 ANR 后恢复，随后因别的原因死亡，该退出记录仍可能附带之前的 ANR trace，所以原因码与 trace 内容要分别判断。
 
-<!-- gracker-diagram: a207-06-exit-history -->
-![退出原因、内存采样与 trace 分别解释](../../assets/diagrams/ch20/a207-06-exit-history.png)
-
-图：重启后后台读取并持久去重历史记录；原因码和 trace 内容分别判断，不能把一份旧 ANR trace 当作本次退出原因。
 
 从事件到证据，可以用下面这条路径做快速分流。
 
@@ -307,10 +291,6 @@ Google Play 通常使用最近 28 天数据评估质量，出现突增时也可�
 
 所以，期待两个系统使用相同数据源、得到接近的数值并不现实；我们要做的是明确每张看板各自回答的问题，两套数字不必强行拉到一致。定义与数据条件见 [Android Vitals](https://developer.android.com/topic/performance/vitals) 和 [Crash 指标说明](https://developer.android.com/topic/performance/vitals/crash)。
 
-<!-- gracker-diagram: a207-07-vitals-versus-sdk -->
-![Play 与 SDK 指标先比范围，再比数值](../../assets/diagrams/ch20/a207-07-vitals-versus-sdk.png)
-
-图：分母、事件范围、纳入设备和数据延迟不同，两个看板数值不必相等；手机 Crash/ANR 阈值分别为 1.09%/0.47%，单型号 8%。
 
 #### 团队内部指标必须写清分子与分母
 
@@ -476,10 +456,6 @@ Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中引用的�
 
 原始事件表保留每次故障。“同一安装实例、同一问题组、五分钟只算一次”这类规则，只放在从原始数据计算指标的那一层；一旦拿它去改写原始事件，重复崩溃和 crash loop（连续启动崩溃）就会被数据清洗隐藏。
 
-<!-- gracker-diagram: a207-08-identity-contracts -->
-![事件重传去重与问题归类使用不同身份](../../assets/diagrams/ch20/a207-08-identity-contracts.png)
-
-图：保留每次真实故障原始记录；时间窗内受影响实体去重只用于派生指标，不能把 crash loop 清洗掉。
 
 分母同样要经得起检查。会话开始记录没有成功上传、旧版本没有接入 SDK、用户关闭采集、进程在 SDK 初始化前退出，都会让指标显得比实际更好，所以建议同时展示：
 
@@ -530,10 +506,6 @@ Crashlytics 当前把冷启动视为新会话；应用进入后台至少 30 分�
 
 会话指标把“重度用户只计一个 user”的影响压小了一些，但会话长度、前后台切换习惯和事件上报完整率的差异仍在。所以跨应用比较前，先确认两边的会话定义和采集范围一致。
 
-<!-- gracker-diagram: a207-09-metric-denominators -->
-![无崩溃用户、无崩溃会话和事件率不同](../../assets/diagrams/ch20/a207-09-metric-denominators.png)
-
-图：前两项按选定观察期去重受影响实体；non-fatal 和 ANR 不进入 Crashlytics Crash-Free 图表，事件率用于观察重复频次。
 
 #### 启动失败率
 
@@ -647,10 +619,6 @@ fun registerAnrWarningCollector(
 
 接上面的代码：调用方要保存返回的同一个 `Consumer`，停止采集时传给 `unregisterAnrWarningListener()`。回调走非主线程的 Executor，`persist` 也要有严格的耗时上限。预警回调可能缺席，也可能来不及执行，网络请求或复杂恢复都别放在这里。
 
-<!-- gracker-diagram: a207-12-observability-api -->
-![采集能力按版本开放，结果仍允许缺席](../../assets/diagrams/ch20/a207-12-observability-api.png)
-
-图：按 SDK 和能力分支接入；结果监听器、后台 executor、去重和空值处理都要具备，OOM 触发还要求委托默认异常处理链。
 
 ### Crash 采集与问题分组
 
@@ -712,10 +680,6 @@ Native Crash 的采集要更费周折，只写“读取 debuggerd tombstone”�
 
 最后一层是采集链路健康，单独展示 SDK 覆盖率、上报成功率、延迟分布、事件重传率、会话配对率、符号匹配率和各数据源差异。这一层出问题时，质量曲线下降可能只是漏报。
 
-<!-- gracker-diagram: a207-14-release-evidence -->
-![发布结论需要质量和采集完整性同时成立](../../assets/diagrams/ch20/a207-14-release-evidence.png)
-
-图：曲线下降可能来自漏报，低事件数也可能只是灰度暴露少；发布通过必须同时满足证据条件。
 
 ### 告警与分阶段发布规则
 
@@ -756,10 +720,6 @@ Native Crash 的采集要更费周折，只写“读取 debuggerd tombstone”�
 
 假设滚动 30 天有 3000 万个有效会话，目标为 99.8%，预算是 6 万个受影响会话。一个受影响会话里出现多条 Crash 记录，仍只消耗一个会话单位。
 
-<!-- gracker-diagram: a207-13-error-budget -->
-![错误预算的单位跟随 SLI 分母](../../assets/diagrams/ch20/a207-13-error-budget.png)
-
-图：预算按受影响会话消耗；同一会话的重复 Crash 记录仍只消耗一个会话单位，短长窗口联合观察燃烧速度。
 
 如果 SLI 使用日活受影响率，预算单位则是“受影响安装实例日”，不是跨 30 天去重后的“用户数”。把 `30 × DAU × 0.2%` 描述成允许崩溃的独立用户数，会重复计算多日活跃的同一实例。
 
@@ -840,10 +800,6 @@ flowchart LR
 
 符号化失败的事件仍要保留，放进 `unsymbolicated`（未符号化）队列等待处理。我们要避免的做法，是先用不可读的混淆名或绝对地址建立长期 issue，等符号文件到齐之后再静默改它的含义。
 
-<!-- gracker-diagram: a207-15-aggregation-layers -->
-![原始事件到责任归因分成四层](../../assets/diagrams/ch20/a207-15-aggregation-layers.png)
-
-图：先恢复构建对应的真实帧，再做确定性指纹与保守相似度；未符号化事件保留在待处理队列。
 
 #### 先按事件族隔离
 
@@ -884,10 +840,6 @@ retrace 的结果还可能一对多：Kotlin inline、协程状态机和 R8 优�
 
 把这些要求前移到发布流水线，逐项验证：
 
-<!-- gracker-diagram: a207-18-native-artifacts -->
-![Native 符号化先验证构建身份](../../assets/diagrams/ch20/a207-18-native-artifacts.png)
-
-图：stripped 与 unstripped 文件 Build ID 必须相同，不能只按 .so 文件名或绝对地址找源码。
 
 - 每个随包交付的 `.so` 都有 Build ID；
 - stripped（已裁剪调试信息） 与 unstripped（保留调试信息） 文件的 Build ID 完全相同；
@@ -967,10 +919,6 @@ if event.family == NATIVE_FATAL:
 
 “系统帧一律删除”也过于粗糙。系统帧是 Android 或 Java 框架代码产生的调用帧；`Looper.loop()`、`ActivityThread.main()` 等公共尾帧几乎没有区分度，可以赋予较低权重。`SQLiteConnection`、`WebView`、Binder proxy 或特定库帧可能正是失败语义的一部分，应保留在辅助特征中。
 
-<!-- gracker-diagram: a207-17-java-features -->
-![Java 指纹保留异常结构和失败语义](../../assets/diagrams/ch20/a207-17-java-features.png)
-
-图：只取栈顶或最底层异常都会丢语义；完整自由文本和所有无关线程不能直接拼入强指纹。
 
 #### Native 指纹该保留什么
 
@@ -1065,10 +1013,6 @@ Java OOME 至少按 ART message 类别、分配点、进程阶段和堆摘要分
 
 判断 introduced（首次引入） build（首次引入问题的构建）则要费一番功夫：结合各版本的实际使用量、旧构建故障率上界、代码差异、功能开关和复现证据。`git bisect` 是在提交历史中二分查找首次坏提交的工具，只适用于有稳定自动复现、明确 good/bad（正常/异常）边界且每个中间构建都可运行的情况；没有复现条件时，候选提交范围、代码所有权与发布变更只能提供调查线索。
 
-<!-- gracker-diagram: a207-20-attribution-exposure -->
-![归因比较发生率，再核对首次引入证据](../../assets/diagrams/ch20/a207-20-attribution-exposure.png)
-
-图：聚合找相似事件，归因找集中条件；高频机型与最早出现版本都只是调查线索。
 
 #### 场景和 breadcrumb 要受控
 
@@ -1141,10 +1085,6 @@ Java OOME 至少按 ART message 类别、分配点、进程阶段和堆摘要分
 
 报告补传和处理延迟会让旧事件在短时间涌入。所以告警用 event time（故障实际发生时间）计算趋势，用 ingestion time（服务端收到事件的时间）监控处理延迟；两个时间混用，会把补传误判成线上突增。
 
-<!-- gracker-diagram: a207-22-event-and-ingestion -->
-![故障发生时间与服务端收到时间分开使用](../../assets/diagrams/ch20/a207-22-event-and-ingestion.png)
-
-图：旧事件集中补传不能解释为当时的新故障突增；静默通知也不能停止更新影响量。
 
 #### 静默期的持续评估
 
@@ -1196,10 +1136,6 @@ MTTD（Mean Time to Detect，平均发现时间）、MTTA（Mean Time to Acknowl
 
 输出里的 `confidence` 也只是该模型在当前标注集上给候选排序的分数，离客观概率还远。分派器仍要检查 mapping、Build ID、事件族和权限，缺少关键证据时保持待确认。
 
-<!-- gracker-diagram: a207-23-ai-evidence -->
-![AI 输出候选、反证与缺失证据](../../assets/diagrams/ch20/a207-23-ai-evidence.png)
-
-图：模型分数不是客观概率；不可信日志中的指令不能进入控制流，不能由模型凭空认定根因或个人责任。
 
 #### 用标注集评估效果
 
