@@ -59504,9 +59504,292 @@
       "before_count": 30,
       "before_all_images": 30,
       "sha256_before": "bf2b86a73264e006b86de5cbc26b6674e21ee24f02b79c90c006791c6446da5f",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a239-01-effect-offscreen",
+          "title": "RenderEffect 改变窗口内的图像处理工作",
+          "decision": "keep",
+          "reason": "目标RenderNode经离屏输入处理生成同窗口内容再提交的图像数据链，明确效果增加窗口内工作而非抓取后方窗口。",
+          "original_line": 138,
+          "heading": "### RenderEffect 的适用场景"
+        },
+        {
+          "original_id": "a239-02-blur-boundaries",
+          "title": "自身模糊、同窗口背板与跨窗口模糊",
+          "decision": "remove",
+          "reason": "三种模糊输入边界在六场景表和两段Windowblur解释完整，三行分类卡重复。",
+          "original_line": 158,
+          "heading": "### RenderEffect 的适用场景"
+        },
+        {
+          "original_id": "a239-03-blur-api-guard",
+          "title": "版本判断必须包住设置与清理",
+          "decision": "remove",
+          "reason": "19行版本保护与NaN非有限/禁用清理代码完整，三行条件卡重复。",
+          "original_line": 189,
+          "heading": "### RenderEffect 的适用场景"
+        },
+        {
+          "original_id": "a239-04-pixel-area",
+          "title": "全屏离屏纹理的逻辑像素量",
+          "decision": "remove",
+          "reason": "1080乘2400乘4逻辑像素9.9MiB与实际stride格式限制单段完整，四框拆算式没有额外示例。",
+          "original_line": 200,
+          "heading": "### HWUI 管线中的成本来源"
+        },
+        {
+          "original_id": "a239-05-cost-dimensions",
+          "title": "效果成本由面积、变化与处理共同决定",
+          "decision": "remove",
+          "reason": "四项分配采样失效链式成本列表完整，三行维度卡重复。",
+          "original_line": 216,
+          "heading": "### HWUI 管线中的成本来源"
+        },
+        {
+          "original_id": "a239-06-agsl-input-binding",
+          "title": "AGSL 使用局部像素坐标读取内容",
+          "decision": "keep",
+          "reason": "RuntimeShader编译、contentuniform绑定目标节点、局部像素eval到预乘输出的输入输出链，帮助区分像素shader与完整GPU管线。",
+          "original_line": 225,
+          "heading": "### RuntimeShader 与 AGSL 的实践"
+        },
+        {
+          "original_id": "a239-07-uniform-effect-copy",
+          "title": "RuntimeShader 更新与 RenderEffect 快照是两层状态",
+          "decision": "keep",
+          "reason": "长期shader分别指向旧效果参数副本与写入COW再创建新效果的分叉，直接呈现旧效果不会自动更新的关键资源关系。",
+          "original_line": 272,
+          "heading": "### RuntimeShader 与 AGSL 的实践"
+        },
+        {
+          "original_id": "a239-08-premultiplied-highlight",
+          "title": "高光保留 alpha 与预乘颜色关系",
+          "decision": "remove",
+          "reason": "高光mix到alpha白和保留srca的代码及SDR/HDR说明完整，四框颜色卡没有实际像素前后比较。",
+          "original_line": 279,
+          "heading": "### RuntimeShader 与 AGSL 的实践"
+        },
+        {
+          "original_id": "a239-09-compile-first-use",
+          "title": "着色器的创建、GPU 首用和稳定绘制",
+          "decision": "remove",
+          "reason": "构造AGSL与首次驱动准备两个不同阶段、稳定逐像素成本段落完整，三行阶段卡重复。",
+          "original_line": 286,
+          "heading": "### RuntimeShader 与 AGSL 的实践"
+        },
+        {
+          "original_id": "a239-12-diagnostic-frame",
+          "title": "从应用提交继续追到显示结果",
+          "decision": "remove",
+          "reason": "FrameTimeline到UI/RT/GPU/提交/DisplayFrame的四项诊断列表与端点边界段落完整，四框卡重复。",
+          "original_line": 312,
+          "heading": "### Perfetto 与 GPU 工具观测"
+        },
+        {
+          "original_id": "a239-13-tools-headroom",
+          "title": "性能工具与质量调节信号的边界",
+          "decision": "remove",
+          "reason": "Perfetto计数器设备差异、AGIANGLE、Headroom非关键线程同步Binder细则段落完整，三行工具卡重复。",
+          "original_line": 326,
+          "heading": "### Perfetto 与 GPU 工具观测"
+        },
+        {
+          "original_id": "a239-10-runtime-paint-scope",
+          "title": "节点效果与 Paint 级 AGSL 的作用位置",
+          "decision": "remove",
+          "reason": "RenderNode效果与Paint新色/当前覆盖区srcdst及sRGB契约三段完整，三行作用域卡没有实际混合目标示例。",
+          "original_line": 350,
+          "heading": "### RuntimeColorFilter 与 RuntimeXfermode：区分节点效果和绘制命令"
+        },
+        {
+          "original_id": "a239-11-paint-uniform-refresh",
+          "title": "Paint 级动态参数在绘制前取得新 native 对象",
+          "decision": "keep",
+          "reason": "更新复用Paint级对象uniform、主动invalidate、Paint绘制前取新native、执行命令的消费链，和旧RenderEffect副本路径形成必要对照。",
+          "original_line": 359,
+          "heading": "### RuntimeColorFilter 与 RuntimeXfermode：区分节点效果和绘制命令"
+        },
+        {
+          "original_id": "a239-14-canvas-identity",
+          "title": "Compose Canvas 是带绘制回调的布局节点",
+          "decision": "remove",
+          "reason": "Canvas等于Spacer加drawBehind的一行源码与四点含义完整，四框身份卡重复。",
+          "original_line": 444,
+          "heading": "#### 2.1 `Canvas` 是没有子内容的绘制 Modifier"
+        },
+        {
+          "original_id": "a239-15-canvas-recording",
+          "title": "DrawScope 包装后的硬件窗口路径",
+          "decision": "keep",
+          "reason": "UI几何计算/Canvas录制RenderNode、RT/Skia提交到窗口合成的跨线程责任链，明确draw同步耗时非GPU执行时间。",
+          "original_line": 468,
+          "heading": "#### 2.2 `DrawScope` 包装 Android Canvas"
+        },
+        {
+          "original_id": "a239-16-draw-targets",
+          "title": "目标 Canvas 决定硬件或软件执行方式",
+          "decision": "remove",
+          "reason": "四种目标/行为/诊断重点表更全面，三行目标卡重复。",
+          "original_line": 486,
+          "heading": "#### 2.3 绘制目标决定执行方式"
+        },
+        {
+          "original_id": "a239-17-draw-order",
+          "title": "绘制 Modifier 通过 drawContent 定义顺序",
+          "decision": "remove",
+          "reason": "drawBehind顺序与drawWithContent前后无多次四种列表完整，三行调用顺序卡未画覆盖效果新例。",
+          "original_line": 516,
+          "heading": "#### 3.2 `drawWithContent`"
+        },
+        {
+          "original_id": "a239-18-cache-draw-invalidation",
+          "title": "drawWithCache 的缓存依赖与每帧绘制分开",
+          "decision": "keep",
+          "reason": "缓存输入重建Path与每帧progress直接汇入drawPath两路径，清楚区分重建几何和仅重录命令。",
+          "original_line": 574,
+          "heading": "#### 3.3 `drawWithCache`"
+        },
+        {
+          "original_id": "a239-19-restart-phases",
+          "title": "高频状态放在哪里读取决定失效范围",
+          "decision": "remove",
+          "reason": "五种读取位置表与颜色前后例完整，三行阶段卡重复。",
+          "original_line": 608,
+          "heading": "#### 4.1 状态的读取位置决定阶段"
+        },
+        {
+          "original_id": "a239-20-paint-and-resources",
+          "title": "DrawScope 已复用 Paint，业务资源仍要管理",
+          "decision": "remove",
+          "reason": "内部fill/strokePaint复用、六类应用资源与五类放置位置表和Drawable代码完整，三行资源卡重复。",
+          "original_line": 680,
+          "heading": "#### 5.2 `remember` 与 `drawWithCache` 的选择"
+        },
+        {
+          "original_id": "a239-21-layer-recording",
+          "title": "GraphicsLayer 首先隔离绘制命令",
+          "decision": "keep",
+          "reason": "创建RenderNode、beginend独立命令、父Canvas重引稳定层、合成条件另决定离屏的分层链，明确命令复用与像素中间目标不同。",
+          "original_line": 716,
+          "heading": "#### 6.2 图形层不等于离屏纹理"
+        },
+        {
+          "original_id": "a239-22-compositing-decision",
+          "title": "合成策略与强制离屏条件",
+          "decision": "remove",
+          "reason": "三合成策略表和四种后端强制离屏列表完整，四行规则卡重复。",
+          "original_line": 736,
+          "heading": "#### 6.2 图形层不等于离屏纹理"
+        },
+        {
+          "original_id": "a239-23-outsets-alpha",
+          "title": "可视边界扩展与重叠透明度是两个选择",
+          "decision": "remove",
+          "reason": "LayerOutsets仅可视边界与ModulateAlpha重叠结果两个段落完整，二行分类卡未画实际几何和像素区别。",
+          "original_line": 749,
+          "heading": "#### 6.3 `ModulateAlpha` 会改变重叠像素"
+        },
+        {
+          "original_id": "a239-24-blend-scope",
+          "title": "需要隔离时才建立最小混合目标",
+          "decision": "remove",
+          "reason": "最小saveLayer/offscreen作用域与六项中间成本列表及混合段落完整，四框流程卡重复。",
+          "original_line": 815,
+          "heading": "#### 7.2 BlendMode 要先定义作用域"
+        },
+        {
+          "original_id": "a239-25-brush-uniform",
+          "title": "ShaderBrush 直接绘制读取更新后的 shader",
+          "decision": "keep",
+          "reason": "remembershader、按size缓存resolution、draw读取time更新uniform、BrushPaint取新native的分阶段链，与效果副本路径形成第二个具体直接绘制对照。",
+          "original_line": 862,
+          "heading": "#### 7.3 渐变与 RuntimeShader"
+        },
+        {
+          "original_id": "a239-26-bitmap-contract",
+          "title": "Hardware Bitmap 的只读显示边界",
+          "decision": "remove",
+          "reason": "Hardware只读图片源及软件目标限制/修改上传三小节完整，三行契约卡重复。",
+          "original_line": 875,
+          "heading": "#### 8.1 Hardware Bitmap 适合作为只读绘制源"
+        },
+        {
+          "original_id": "a239-27-charts-particles",
+          "title": "图表与粒子的计算、绘制和语义分别设计",
+          "decision": "remove",
+          "reason": "图表六步与粒子六项和语义专题完整，四框流程卡把语义接在录制后并非真实实现顺序，删除重复总览。",
+          "original_line": 916,
+          "heading": "#### 9.2 粒子与动画背景"
+        },
+        {
+          "original_id": "a239-28-surface-choice",
+          "title": "刷新节奏与像素生产者决定是否独立 Surface",
+          "decision": "remove",
+          "reason": "六需求Canvas与独立Surface表更全面，三行选型卡重复。",
+          "original_line": 965,
+          "heading": "### 10. 何时转向 SurfaceView"
+        },
+        {
+          "original_id": "a239-29-measurement-boundaries",
+          "title": "回归指标与绘制 marker 各自证明什么",
+          "decision": "remove",
+          "reason": "指标三项、六步帧归因和marker/Inspector边界段落完整，四框测量卡重复。",
+          "original_line": 1005,
+          "heading": "#### 11.3 自定义 trace 只测 draw recording"
+        },
+        {
+          "original_id": "a239-30-versions-and-profile",
+          "title": "平台、库与编译优化各自有边界",
+          "decision": "remove",
+          "reason": "平台31到37各段、库基线和Profile六项不能覆盖列表完整，三行版本分类卡重复。",
+          "original_line": 1061,
+          "heading": "#### Android 17 / API 37"
+        }
+      ],
+      "sha256_after": "7c365bc4350a27d4c482810e51c0087cfadf69d8a94c82c52fd67aee4ebeb191",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:28:20.314890+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 30,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a239/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a239/visual-review.json",
+      "retired_diagrams": [
+        "a239-02-blur-boundaries",
+        "a239-03-blur-api-guard",
+        "a239-04-pixel-area",
+        "a239-05-cost-dimensions",
+        "a239-08-premultiplied-highlight",
+        "a239-09-compile-first-use",
+        "a239-10-runtime-paint-scope",
+        "a239-12-diagnostic-frame",
+        "a239-13-tools-headroom",
+        "a239-14-canvas-identity",
+        "a239-16-draw-targets",
+        "a239-17-draw-order",
+        "a239-19-restart-phases",
+        "a239-20-paint-and-resources",
+        "a239-22-compositing-decision",
+        "a239-23-outsets-alpha",
+        "a239-24-blend-scope",
+        "a239-26-bitmap-contract",
+        "a239-27-charts-particles",
+        "a239-28-surface-choice",
+        "a239-29-measurement-boundaries",
+        "a239-30-versions-and-profile"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-239/retired-assets.json"
     },
     {
       "index": 240,
@@ -59982,8 +60265,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 163,
-  "next_article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+  "reviewed_articles": 164,
+  "next_article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -59993,7 +60276,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:25:32.822773+08:00",
+  "updated_at": "2026-10-31T17:28:20.314890+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -60164,9 +60447,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4993,
-  "reviewed_placements_after": 2023,
-  "net_removed_placements": 2970,
+  "reviewed_placements_before": 5023,
+  "reviewed_placements_after": 2031,
+  "net_removed_placements": 2992,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -60190,5 +60473,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 163
+  "currently_matching_reviewed_source_count": 164
 }
