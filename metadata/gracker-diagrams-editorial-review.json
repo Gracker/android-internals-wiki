@@ -64488,9 +64488,175 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "bcb670d89d6d2709fc45f0de8dac3182eac0b024499b51d3bc06ebe85530680b",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a265-01-connection-reuse-eligibility",
+          "title": "连接共享由传输配置和实际路径共同决定",
+          "decision": "remove",
+          "reason": "共享客户端、派生、资格及跨host条件几个摘要框重复前文Address/Route列表，未画出完整资格决策。",
+          "original_line": 190,
+          "heading": "#### 连接池的空闲连接上限"
+        },
+        {
+          "original_id": "a265-02-response-ownership",
+          "title": "响应体消费和关闭控制连接占用",
+          "decision": "remove",
+          "reason": "Call作用域、取得Response、消费和关闭四步重复use代码与关闭段落，Body移交后资源寿命限制正文保留。",
+          "original_line": 212,
+          "heading": "#### 响应体关闭与连接复用"
+        },
+        {
+          "original_id": "a265-04-metric-parentage",
+          "title": "操作、调用、连接尝试与交换分别计数",
+          "decision": "keep",
+          "reason": "operation父级到Call再分连接attempt与HTTPexchange的标识层级树，明确四类分母不同且缓存可无新连接。",
+          "original_line": 265,
+          "heading": "#### 用事件区分排队、解析、建连与服务端等待"
+        },
+        {
+          "original_id": "a265-05-dns-network-boundaries",
+          "title": "HTTPDNS 缓存与连接必须对齐Network",
+          "decision": "remove",
+          "reason": "保留主机名、Network缓存、引导解析和回退线性框重复HTTPDNS七条策略，正文对DNS与socket同Network但非原子快照更精确。",
+          "original_line": 327,
+          "heading": "#### HTTPDNS 接入前的策略约定"
+        },
+        {
+          "original_id": "a265-06-network-callback-state",
+          "title": "默认网络回调按身份更新状态",
+          "decision": "remove",
+          "reason": "回调四框逐字重复DefaultNetworkMonitor代码，当前Network guard与onLost旧网络条件由代码和正文说明充分。",
+          "original_line": 400,
+          "heading": "#### 用回调维护有时序的状态"
+        },
+        {
+          "original_id": "a265-07-dispatcher-scope",
+          "title": "Dispatcher 限制异步而非所有在途工作",
+          "decision": "keep",
+          "reason": "业务调度下enqueue受Dispatcher而execute绕过的分叉，再到独立Dispatcher共享池与同步/移交Body资源限流，区分调度与传输寿命。",
+          "original_line": 450,
+          "heading": "#### Dispatcher 的管辖范围"
+        },
+        {
+          "original_id": "a265-08-background-transfer-choice",
+          "title": "后台传输按用户意图与可延迟性分流",
+          "decision": "remove",
+          "reason": "可延迟/UIDT/专用API三支与WorkManager资源框重复紧邻四行选型表和配额解释，图还省掉前台服务适用条件。",
+          "original_line": 472,
+          "heading": "#### 后台传输要按用户意图选择 API"
+        },
+        {
+          "original_id": "a265-09-range-download-recovery",
+          "title": "断点下载按响应与表示版本决定追加",
+          "decision": "keep",
+          "reason": "固定表示Range恢复的206核范围追加、200重建和416重验三路，配合最终校验发布，体现实际响应决策。",
+          "original_line": 500,
+          "heading": "#### 大文件传输的可恢复状态"
+        },
+        {
+          "original_id": "a265-03-queue-and-call-timeouts",
+          "title": "异步排队与Call执行预算分开计时",
+          "decision": "keep",
+          "reason": "业务总期限、异步Dispatcher排队、执行期callTimeout三条时间轨道明确包含范围，体现AsyncCall.run才启动的预算边界。",
+          "original_line": 525,
+          "heading": "#### 超时是分阶段预算"
+        },
+        {
+          "original_id": "a265-10-retry-admission",
+          "title": "重试先核对语义、请求体和剩余预算",
+          "decision": "keep",
+          "reason": "安全或取消结束、结果未知业务写、允许预算内重试三分支，后两者汇总同一operation所有尝试，体现非盲重试准入。",
+          "original_line": 558,
+          "heading": "#### 区分传输恢复与业务重试"
+        },
+        {
+          "original_id": "a265-11-baseline-environments",
+          "title": "三类基线保留各自样本与门槛",
+          "decision": "remove",
+          "reason": "确定CI/实验室/线上三列各自目标完全重复上方环境与自动阻断指标表，无样本关系增量。",
+          "original_line": 693,
+          "heading": "### 三类基线各自回答一个问题"
+        },
+        {
+          "original_id": "a265-12-missing-and-overlapping-stages",
+          "title": "未发生、不可观测与重叠阶段区别表达",
+          "decision": "keep",
+          "reason": "网络响应读取、应用内联解压消费与已有连接三轨表现可能重叠及未发生DNS/连接/TLS不能填零，与排队预算图职责不同。",
+          "original_line": 725,
+          "heading": "### 请求阶段拆分使用同一份指标字典"
+        },
+        {
+          "original_id": "a265-13-h2-h3-blocking",
+          "title": "HTTP2与HTTP3的交付和共享资源边界",
+          "decision": "remove",
+          "reason": "H2共享TCP与H3每流交付两列文字重复紧邻机制段落，没有实际丢包/流轨道或共享资源示意。",
+          "original_line": 818,
+          "heading": "### 连接复用与队头阻塞要分路径测试"
+        },
+        {
+          "original_id": "a265-14-quic-fallback-experiment",
+          "title": "协议实验固定实现并计入失败回退",
+          "decision": "keep",
+          "reason": "固定同一实现后仅QUIC开关A/B，并把UDP失败加HTTP回退汇入逻辑操作测量，避免只成功协议或换库混杂归因。",
+          "original_line": 857,
+          "heading": "### HTTP/3、QUIC 与网络切换的实验设计"
+        },
+        {
+          "original_id": "a265-15-representation-byte-boundaries",
+          "title": "数据表示、压缩与计数字节分层比较",
+          "decision": "remove",
+          "reason": "数据格式→编码→线上/解码字节→范围四框重复上方六行变量固定/测量/兼容表，未画真实独立坐标或数据量。",
+          "original_line": 902,
+          "heading": "### 数据体积与传输成本分两个轴比较"
+        },
+        {
+          "original_id": "a265-16-release-gate-denominators",
+          "title": "发布判断先看全样本构成再看成功延迟",
+          "decision": "keep",
+          "reason": "全样本结果构成、成功延迟及每操作资源成本三输入汇聚发布门，帮助识别早失败让成功耗时看似改善的幸存者偏差。",
+          "original_line": 938,
+          "heading": "#### 统计时先看总样本构成"
+        },
+        {
+          "original_id": "a265-17-tls-baseline-conditions",
+          "title": "安全配置与协商结果分别进入实验记录",
+          "decision": "remove",
+          "reason": "安全版本到CT/ECH和调试CA/协商证据的框线并非真实因果关系，正文分开解释安全配置与实际协商已完整。",
+          "original_line": 981,
+          "heading": "### 扩展：安全策略也是基线条件"
+        }
+      ],
+      "sha256_after": "e51809c0a841914898138d4ec1ad4393fd5756e732f389a63707ce559c812610",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:36:09.547809+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a265/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a265/visual-review.json",
+      "retired_diagrams": [
+        "a265-01-connection-reuse-eligibility",
+        "a265-02-response-ownership",
+        "a265-05-dns-network-boundaries",
+        "a265-06-network-callback-state",
+        "a265-08-background-transfer-choice",
+        "a265-11-baseline-environments",
+        "a265-13-h2-h3-blocking",
+        "a265-15-representation-byte-boundaries",
+        "a265-17-tls-baseline-conditions"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-265/retired-assets.json"
     },
     {
       "index": 266,
@@ -64768,8 +64934,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 181,
-  "next_article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+  "reviewed_articles": 182,
+  "next_article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -64779,7 +64945,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:32:44.694846+08:00",
+  "updated_at": "2026-10-31T18:36:09.547809+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -64908,9 +65074,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5465,
-  "reviewed_placements_after": 2136,
-  "net_removed_placements": 3329,
+  "reviewed_placements_before": 5482,
+  "reviewed_placements_after": 2144,
+  "net_removed_placements": 3338,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -64934,5 +65100,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 181
+  "currently_matching_reviewed_source_count": 182
 }

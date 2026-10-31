@@ -187,10 +187,6 @@ OkHttp 用 `Address`（连接地址配置） 和 `Route`（具体连接路径）
 
 两个域名解析到同一 IP，也未必共享 HTTP/2 连接；反过来，证书覆盖多个域名，同样未必能合并。合并与否，以 OkHttp 5.4.0 的 [`RealConnection.isEligible()`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt) 为准；为便于追溯，5.3.0 的 [`RealConnection.isEligible()`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt) 也一并保留。
 
-<!-- gracker-diagram: a265-01-connection-reuse-eligibility -->
-![连接共享由传输配置和实际路径共同决定](../../assets/diagrams/ch24/a265-01-connection-reuse-eligibility.png)
-
-图：连接池中的空闲数、活跃连接数、域名数与HTTP流数分开统计；合并以固定版本 isEligible 为准。
 
 #### 响应体关闭与连接复用
 
@@ -209,10 +205,6 @@ fun executeText(client: OkHttpClient, request: Request): String {
 
 `use` 在离开作用域时关闭响应体。响应体未正确消费或关闭时，可能持续占用套接字、HTTP/2 流和其他资源，降低复用能力；是否仍能复用还取决于内容是否读完、协议和关闭方式，不能只靠池配置修复。流式下载不要先调用 `string()`，消费结束、取消或异常时同样要关闭响应体。
 
-<!-- gracker-diagram: a265-02-response-ownership -->
-![响应体消费和关闭控制连接占用](../../assets/diagrams/ch24/a265-02-response-ownership.png)
-
-图：收到响应头后仍需消费并关闭响应体；流式下载按需读取，取消与异常路径同样清理。
 
 #### 用事件区分排队、解析、建连与服务端等待
 
@@ -324,10 +316,6 @@ class CachedHttpDns(
 
 排查时要分清四种事件：HTTPDNS 查询失败、返回空地址，属于解析服务与缓存策略；地址连接失败要落到具体连接路径上；TLS 校验失败则回到证书与主机名。关闭主机名校验换来的“兼容”，只是把故障藏了起来。
 
-<!-- gracker-diagram: a265-05-dns-network-boundaries -->
-![HTTPDNS 缓存与连接必须对齐Network](../../assets/diagrams/ch24/a265-05-dns-network-boundaries.png)
-
-图：解析失败、空答案、地址连接失败与TLS错误分类；HTTPDNS不继承系统Private DNS/分流语义。
 
 ### 网络状态作为动态信号
 
@@ -397,10 +385,6 @@ class DefaultNetworkMonitor(
 
 默认网络从 Wi-Fi 切到蜂窝时，新旧网络对象具有不同身份；接入点断开后重连，也可能得到新的 `Network`。HTTPDNS 缓存、按网络绑定的套接字以及诊断记录都应保留这一身份，只保存“Wi-Fi/蜂窝”字符串是不够的。
 
-<!-- gracker-diagram: a265-06-network-callback-state -->
-![默认网络回调按身份更新状态](../../assets/diagrams/ch24/a265-06-network-callback-state.png)
-
-图：Network 身份与Wi-Fi/蜂窝类型分别记录；默认网络切换时先检查身份再发布丢失。
 
 ### 网络请求优先级与调度
 
@@ -469,10 +453,6 @@ WorkManager 的长运行 Worker（工作单元）由前台服务与 JobScheduler
 
 可延迟流量应合并传输，并用 `UNMETERED`、充电和电量等约束表达成本偏好。无线电尾部耗电随设备、制式、信号和运营商配置变化，通用调度算法里写死某个固定秒数行不通。
 
-<!-- gracker-diagram: a265-08-background-transfer-choice -->
-![后台传输按用户意图与可延迟性分流](../../assets/diagrams/ch24/a265-08-background-transfer-choice.png)
-
-图：UIDT 与普通工作配额不同；先遵守用户意图、系统约束和恢复协议，再测吞吐。
 
 #### 大文件传输的可恢复状态
 
@@ -690,10 +670,6 @@ TLS、代理与套接字配置会参与连接资格判断。使用不同的证�
 
 P50、P95、P99 分别表示 50%、95%、99% 的样本不超过该值；P95/P99 描述分布尾部的慢请求，常称“尾延迟”。三类基线里，确定性基线可以进入 CI（持续集成）随每次提交执行；公共互联网和生产 CDN（内容分发网络）受调度、拥塞、证书、服务端发布与时间段影响，适合定时实验和分阶段发布验证，当不了每次提交的单一阻断条件。分阶段发布是先让少量用户用上候选版本，观察指标后再逐步扩大范围，也常称“灰度发布”。
 
-<!-- gracker-diagram: a265-11-baseline-environments -->
-![三类基线保留各自样本与门槛](../../assets/diagrams/ch24/a265-11-baseline-environments.png)
-
-图：三类样本分别建基线；用户路径完成不由单个 API 平均耗时替代。
 
 基线对象也应从用户路径开始。“首页可交互”这样的路径可能包含配置、列表、图片和本地解码，单个 API 变快，页面未必跟着变快。每条关键路径都要定义：
 
@@ -815,10 +791,6 @@ TTL 规定 DNS 记录可以缓存多久，到期只影响后续解析：已经�
 
 连接池保存可再次使用的连接，省去后续请求的建连和握手成本。HTTP/1.1 的并发通常依赖多条连接；HTTP/2 可在一条 TCP 连接上多路复用多个流，即让多个请求交错传输。TCP 丢包会拖慢该连接的发送进度；HTTP/3 在 QUIC 中为流提供独立的有序交付，单个流的数据丢失不会按 HTTP/2 的 TCP 字节序阻塞其他流——但 QUIC 仍共享连接级拥塞控制和路径容量，某个流占用大量带宽，其他流仍可能受影响。
 
-<!-- gracker-diagram: a265-13-h2-h3-blocking -->
-![HTTP2与HTTP3的交付和共享资源边界](../../assets/diagrams/ch24/a265-13-h2-h3-blocking.png)
-
-图：HTTP/3 缓解传输交付层的跨流队头阻塞；共享拥塞控制、路径容量和大响应干扰仍要测。
 
 连接合并指多个主机在证书、DNS、代理、地址和网络库规则都允许时，共用同一条 HTTP/2 连接；实验里要单独标记这一情况。主机数替换不了连接数，单看连接复用率也证明不了页面更快。
 
@@ -899,10 +871,6 @@ QUIC 状态机位于用户空间网络栈，也就是普通进程可实现的协
 
 字节指标必须写清统计范围和定义。Cronet `UrlResponseInfo.getReceivedByteCount()` 返回处理该请求所需的最小网络接收字节，发生在解压前，包含重定向的头部与数据；IP、TCP/UDP、TLS 和代理等开销是否计入，它没有保证。OkHttp 事件字节、响应体长度、`TrafficStats` UID 差值也各有定义——UID 是 Android 分配给应用身份的整数编号，`TrafficStats` 的 UID 数据覆盖该应用的累计流量，与单请求字节放进同一列直接比较会出错。
 
-<!-- gracker-diagram: a265-15-representation-byte-boundaries -->
-![数据表示、压缩与计数字节分层比较](../../assets/diagrams/ch24/a265-15-representation-byte-boundaries.png)
-
-图：数据格式与内容编码是两条独立轴；线上字节、解压后长度和 UID 网络层字节分别解释。
 
 序列化和解压 CPU 用 Microbenchmark 在固定输入上重复测量单段代码；端到端页面用 Macrobenchmark 启动应用并测量完整用户流程。两者都应配合本地固定响应：远程网络波动会混入 CPU 微基准，真实互联网请求就别放进循环测试。
 
@@ -978,10 +946,6 @@ Android 17 / API 37 的网络安全配置需要进入 TLS 基线。`targetSdk` �
 
 性能实验不得安装“信任所有证书”的 `TrustManager`、宽松主机名验证或明文回退。`TrustManager` 负责验证服务端证书是否来自受信任的 CA（Certificate Authority，证书颁发机构）；若测试代理需要解密 HTTPS，应使用只存在于测试构建的调试 CA，并把“经过代理”和“直接连接”分成两组。
 
-<!-- gracker-diagram: a265-17-tls-baseline-conditions -->
-![安全配置与协商结果分别进入实验记录](../../assets/diagrams/ch24/a265-17-tls-baseline-conditions.png)
-
-图：证书策略和代理会改变连接与性能；完整验证保持一致，ECH 实际结果需证据。
 
 Android 官方文档不建议普通应用做证书固定。证书固定是客户端只接受预先记录的公钥或证书，它会把服务端证书轮换与客户端版本覆盖绑定在一起；若风险评估后仍采用，基线必须包含备用公钥、过期策略、旧版本客户端和轮换演练——客户端连不上服务端时，远程配置也未必送得达。
 
