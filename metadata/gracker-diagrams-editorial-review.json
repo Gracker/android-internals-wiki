@@ -47340,9 +47340,368 @@
       "before_count": 39,
       "before_all_images": 39,
       "sha256_before": "0a72af0e2e3eb2bc3c9b6982cfb965c893d0493731f171d21efa3f11ce71eb8e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 13,
+      "decisions": [
+        {
+          "original_id": "ch17-07-01-evidence-scopes",
+          "title": "场景、设备与线上数据的分工",
+          "decision": "remove",
+          "reason": "Opening three-scope summary repeats the opening comparison table and scope paragraphs; later concrete field and dictionary diagrams supply relationships.",
+          "original_line": 135,
+          "heading": "# 实验室测试工具与设备 Benchmark（基准测试）"
+        },
+        {
+          "original_id": "ch17-07-02-device-modes",
+          "title": "手机组件模式与采集连接",
+          "decision": "remove",
+          "reason": "Installation/display mode and USB/Wi-Fi independence are already stated explicitly in the adjacent two-mode table; three isolated columns add no mechanism.",
+          "original_line": 169,
+          "heading": "#### Android 的两种设备模式"
+        },
+        {
+          "original_id": "ch17-07-03-field-capability",
+          "title": "字段支持、启用与缺失",
+          "decision": "keep",
+          "reason": "Retain the ordered supported -> enabled -> valid-sample gate, separating device capability, configuration and observed values before rejecting missing required metrics.",
+          "original_line": 182,
+          "heading": "### 指标范围与可用条件"
+        },
+        {
+          "original_id": "ch17-07-04-observer-overhead",
+          "title": "连接方式与采集扰动",
+          "decision": "remove",
+          "reason": "USB/power/screenshot restrictions and observer overhead are separate prose checklist items already in the local metric table; do not repeat as three boxes.",
+          "original_line": 209,
+          "heading": "### 指标范围与可用条件"
+        },
+        {
+          "original_id": "ch17-07-05-jank-thresholds",
+          "title": "PerfDog 的双门槛帧判定",
+          "decision": "keep",
+          "reason": "Retain the simultaneous relative and absolute PerfDog jank thresholds beside the 120Hz budget, preventing platform frame misses from being mistaken for the tool thresholds.",
+          "original_line": 230,
+          "heading": "### PerfDog 的帧指标定义"
+        },
+        {
+          "original_id": "ch17-07-06-window-selection",
+          "title": "从包名追到本轮目标窗口",
+          "decision": "keep",
+          "reason": "Retain target identity -> window enumeration -> visible-path validation -> lifecycle recheck; this is a concrete measurement-object selection sequence.",
+          "original_line": 248,
+          "heading": "#### 目标窗口的确认"
+        },
+        {
+          "original_id": "ch17-07-07-controlled-runs",
+          "title": "同条件重复与热稳定",
+          "decision": "remove",
+          "reason": "Generic freeze/reset/interleave/save protocol repeats local checklist and the final repeated-run protocol; no additional causal or quantitative encoding.",
+          "original_line": 274,
+          "heading": "### 测试条件与可复现性"
+        },
+        {
+          "original_id": "ch17-07-08-frame-distributions",
+          "title": "平均值、尾部与连续性",
+          "decision": "remove",
+          "reason": "Mean FPS, tail and time-series definitions repeat the adjacent comparison table; no actual distribution or burst example is drawn.",
+          "original_line": 298,
+          "heading": "### 平均 FPS 之外的保留指标"
+        },
+        {
+          "original_id": "ch17-07-09-power-scope",
+          "title": "整机功耗与每帧能量",
+          "decision": "keep",
+          "reason": "Retain the parallel Battery Power, opaque FPower and independently integrated energy-per-frame scopes, with separate units and denominator caveats.",
+          "original_line": 309,
+          "heading": "### 功耗、温度与频率的联合阅读"
+        },
+        {
+          "original_id": "ch17-07-10-thermal-evidence",
+          "title": "从升温到帧退化的证据链",
+          "decision": "remove",
+          "reason": "Temperature-frequency-frame hypothesis investigation repeats the local four evidence points and later thermal scope diagram; arrows are a proposed investigation, not proof.",
+          "original_line": 323,
+          "heading": "### 功耗、温度与频率的联合阅读"
+        },
+        {
+          "original_id": "ch17-07-11-investigation-loop",
+          "title": "从外部异常到可验证修复",
+          "decision": "remove",
+          "reason": "Generic discover-trace-change-regress-online loop repeats the tool division table and the final concrete device-dictionary investigation.",
+          "original_line": 348,
+          "heading": "### PerfDog、Perfetto、Profiler 与 Macrobenchmark（Jetpack 宏基准测试） 的分工"
+        },
+        {
+          "original_id": "ch17-07-12-startup-markers",
+          "title": "重新拉起与启动完成标记",
+          "decision": "remove",
+          "reason": "StartupTiming/TTID/TTFD sequence adds no actual time interval and repeats the adjacent start-mode and completion-marker paragraphs.",
+          "original_line": 355,
+          "heading": "### PerfDog、Perfetto、Profiler 与 Macrobenchmark（Jetpack 宏基准测试） 的分工"
+        },
+        {
+          "original_id": "ch17-07-13-service-lifecycle",
+          "title": "Service 结束、保存与缓存",
+          "decision": "keep",
+          "reason": "Retain all-outcome cleanup -> confirmed stopTest -> independently checked save or persisted cache -> next run, including billing and cache-overwrite safeguards.",
+          "original_line": 403,
+          "heading": "### 自动化的操作与判废规则"
+        },
+        {
+          "original_id": "ch17-07-14-sf-independent-check",
+          "title": "SurfaceFlinger 的独立帧核验",
+          "decision": "keep",
+          "reason": "Retain actual SF command dispatch and Layer timeline data path; distinguishes pacing period, three timestamps and FrameTimeline from a claimed FrameTracer read.",
+          "original_line": 489,
+          "heading": "#### 帧时间：SurfaceFlinger 与 FrameTimeline"
+        },
+        {
+          "original_id": "ch17-07-15-thermal-hal",
+          "title": "Thermal 接口与状态",
+          "decision": "remove",
+          "reason": "Linear thermal checklist omits detailed AIDL/HIDL fallback branches and repeats the more precise source paragraphs; retain those source and hysteresis boundaries in prose.",
+          "original_line": 510,
+          "heading": "#### 温度与限频：`thermalservice`"
+        },
+        {
+          "original_id": "ch17-07-16-powerstats-independent",
+          "title": "PowerStats 与 Battery Power",
+          "decision": "remove",
+          "reason": "PowerStats fields and independent PerfDog provenance are fully explained by the local comparison and retained power-scope diagram9; avoid a second three-column reminder.",
+          "original_line": 529,
+          "heading": "#### 能耗：PowerStats 与 Battery Power 的口径"
+        },
+        {
+          "original_id": "ch17-07-17-solopi-identity",
+          "title": "SoloPi 发布、源码与设备验收",
+          "decision": "remove",
+          "reason": "SoloPi fixed release/build versus retargeting identity is an adjacent inventory, not a process relationship; tabular admission checks are clearer.",
+          "original_line": 550,
+          "heading": "### SoloPi 的复现能力与指标边界"
+        },
+        {
+          "original_id": "ch17-07-19-projection-stop",
+          "title": "投影授权与结束路径",
+          "decision": "keep",
+          "reason": "Retain fresh projection authorization -> typed service -> VirtualDisplay -> all stop/lock/revoke callbacks -> release and incomplete-result classification.",
+          "original_line": 570,
+          "heading": "#### 准入验收项"
+        },
+        {
+          "original_id": "ch17-07-18-solopi-admission",
+          "title": "SoloPi 准入与逐字段状态",
+          "decision": "remove",
+          "reason": "Control/metrics/artifact admission columns duplicate the detailed per-field table and status vocabulary; no actual alternative branch or data path.",
+          "original_line": 589,
+          "heading": "#### 字段口径的逐项标注"
+        },
+        {
+          "original_id": "ch17-07-20-replay-fixture",
+          "title": "复现正确性先于性能",
+          "decision": "remove",
+          "reason": "Fixture, state waiting and separate correctness/performance accounting are already the explicit replay checklist; generic five-step boxes add little.",
+          "original_line": 596,
+          "heading": "#### 字段口径的逐项标注"
+        },
+        {
+          "original_id": "ch17-07-21-historical-tools",
+          "title": "历史报告的可解释边界",
+          "decision": "remove",
+          "reason": "Emmagee/SoloPi/PerfDog summary repeats the preceding history and field-admission tables; not a shared execution pipeline.",
+          "original_line": 607,
+          "heading": "### Emmagee 的历史定位"
+        },
+        {
+          "original_id": "ch17-07-22-version-comparability",
+          "title": "分数身份与序列迁移",
+          "decision": "keep",
+          "reason": "Retain three-part score identity -> compatibility rule check -> separate series migration, useful across multiple benchmark products and versions.",
+          "original_line": 668,
+          "heading": "### 版本号与分数可比性"
+        },
+        {
+          "original_id": "ch17-07-23-geekbench-score",
+          "title": "Geekbench 6 的两层评分",
+          "decision": "keep",
+          "reason": "Retain the two-layer geometric-mean then 65/35 arithmetic score construction with independently calculated single/multicore outputs.",
+          "original_line": 699,
+          "heading": "#### Geekbench 6 的单核分数由什么组成"
+        },
+        {
+          "original_id": "ch17-07-24-proxy-validation",
+          "title": "从通用负载到业务假设",
+          "decision": "remove",
+          "reason": "Generic proxy-to-business validation repeats the workload mapping table and later actual dictionary/confounding path; no new relation beyond the prose.",
+          "original_line": 719,
+          "heading": "#### Geekbench 6 的单核分数由什么组成"
+        },
+        {
+          "original_id": "ch17-07-25-parallel-compute",
+          "title": "多核吞吐与GPU计算的边界",
+          "decision": "remove",
+          "reason": "GB6/GB7/GPU Compute coverage is already clearly separated in the immediately preceding paragraphs; columns merely restate those definitions.",
+          "original_line": 736,
+          "heading": "#### Compute 分数的适用范围"
+        },
+        {
+          "original_id": "ch17-07-26-graphics-modes",
+          "title": "图形测试选择与 Maxed out",
+          "decision": "remove",
+          "reason": "Graphics eligibility/mode/Maxed out checklist repeats the detailed requirements table and explicit missing-value rules; no capability decision branches drawn.",
+          "original_line": 759,
+          "heading": "#### 选择设备能稳定完成的测试"
+        },
+        {
+          "original_id": "ch17-07-27-stress-results",
+          "title": "持续性能必须保留整条曲线",
+          "decision": "keep",
+          "reason": "Retain the independent short-term level, 20-loop trajectory and stability/absolute-FPS dimensions; high stability need not mean sufficient speed.",
+          "original_line": 775,
+          "heading": "#### Stability 需要和帧率共同解释"
+        },
+        {
+          "original_id": "ch17-07-28-thermal-status-scope",
+          "title": "框架温控等级与局部限频",
+          "decision": "keep",
+          "reason": "Retain framework SKIN aggregation, device-specific sensors and observed frequency as different scopes; NONE is neither cooling-reset evidence nor exclusion of local throttling.",
+          "original_line": 788,
+          "heading": "#### 热数据的记录方式"
+        },
+        {
+          "original_id": "ch17-07-29-pcmark-paths",
+          "title": "PCMark 工作流与执行引擎",
+          "decision": "remove",
+          "reason": "PCMark implementation inventory repeats the specific WebView/media/document/SQLite bullet list without showing the actual workload execution.",
+          "original_line": 808,
+          "heading": "### PCMark 工作负载与总分"
+        },
+        {
+          "original_id": "ch17-07-30-storage-protocol",
+          "title": "存储成绩绑定完整协议",
+          "decision": "remove",
+          "reason": "Storage parameter-freezing list duplicates the adjacent four-metric protocol table and small-sample rules; retain the stronger durability-boundary diagram31.",
+          "original_line": 842,
+          "heading": "#### 四类指标与必要参数"
+        },
+        {
+          "original_id": "ch17-07-31-storage-durability",
+          "title": "缓存返回、文件同步与目录项",
+          "decision": "keep",
+          "reason": "Retain distinct buffered-write return, required file synchronization and conditional directory synchronization boundaries, including error checks and cache perturbation.",
+          "original_line": 862,
+          "heading": "#### 路径、缓存与持久化语义"
+        },
+        {
+          "original_id": "ch17-07-32-io-causal-loop",
+          "title": "设备存储背景到业务因果",
+          "decision": "remove",
+          "reason": "Storage-proxy -> trace -> business A/B loop repeats the concrete nearby example and final dictionary hypothesis-validation loop.",
+          "original_line": 871,
+          "heading": "#### 路径、缓存与持久化语义"
+        },
+        {
+          "original_id": "ch17-07-33-composite-score",
+          "title": "综合分与资源结构",
+          "decision": "remove",
+          "reason": "Similar total score with different resource structure is already explicit in prose and the later A/B device example; boxes show no actual vector values.",
+          "original_line": 891,
+          "heading": "### 安兔兔总分的沟通定位"
+        },
+        {
+          "original_id": "ch17-07-34-web-container",
+          "title": "Speedometer 与 App WebView",
+          "decision": "remove",
+          "reason": "Chrome and App WebView scope and charging conditions are fully covered in three adjacent paragraphs; three summary columns add no execution relationship.",
+          "original_line": 904,
+          "heading": "### Speedometer 与 WebView 实测的分工"
+        },
+        {
+          "original_id": "ch17-07-35-mpc-capability",
+          "title": "MPC 是能力下限标签",
+          "decision": "remove",
+          "reason": "MPC limitations repeat the three-signal comparison table and declaration/zero/version paragraphs; no actual lookup or compatibility branches shown.",
+          "original_line": 929,
+          "heading": "### Performance Class 的能力下限定位"
+        },
+        {
+          "original_id": "ch17-07-36-repeat-invalidation",
+          "title": "小样本重复与预先判废",
+          "decision": "remove",
+          "reason": "Freeze/warmup/invalidate/summarize checklist repeats the explicit small-sample protocol, including valid slow runs; no statistical example is provided.",
+          "original_line": 977,
+          "heading": "#### 重复、取值与作废规则"
+        },
+        {
+          "original_id": "ch17-07-37-capability-vector",
+          "title": "能力向量与业务分档",
+          "decision": "remove",
+          "reason": "Business-resource vector mapping repeats the dimension/source/problem table and four-tier discussion; no actual computed vector or boundary shown.",
+          "original_line": 1010,
+          "heading": "#### 四档的边界计算"
+        },
+        {
+          "original_id": "ch17-07-38-dictionary-causality",
+          "title": "设备字典关联与混杂检验",
+          "decision": "keep",
+          "reason": "Retain client identity -> versioned server dictionary -> explicit unknown -> stratified confounder checks -> direct business-path verification.",
+          "original_line": 1046,
+          "heading": "#### 关联表背后的混杂因素"
+        },
+        {
+          "original_id": "ch17-07-39-migration-report",
+          "title": "基线迁移与结论可追溯",
+          "decision": "remove",
+          "reason": "Migration and report-summary loop repeats retained version-migration22, dictionary38 and the full YAML report; no additional traceability mechanism.",
+          "original_line": 1133,
+          "heading": "### 测试报告模板"
+        }
+      ],
+      "sha256_after": "970e0c9b1ff424112f2327fb21ae84c5879ea43a7c8cd488ad6a83bb17d12016",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:52:32.727560+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 39,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a182/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a182/visual-review.json",
+      "retired_diagrams": [
+        "ch17-07-01-evidence-scopes",
+        "ch17-07-02-device-modes",
+        "ch17-07-04-observer-overhead",
+        "ch17-07-07-controlled-runs",
+        "ch17-07-08-frame-distributions",
+        "ch17-07-10-thermal-evidence",
+        "ch17-07-11-investigation-loop",
+        "ch17-07-12-startup-markers",
+        "ch17-07-15-thermal-hal",
+        "ch17-07-16-powerstats-independent",
+        "ch17-07-17-solopi-identity",
+        "ch17-07-18-solopi-admission",
+        "ch17-07-20-replay-fixture",
+        "ch17-07-21-historical-tools",
+        "ch17-07-24-proxy-validation",
+        "ch17-07-25-parallel-compute",
+        "ch17-07-26-graphics-modes",
+        "ch17-07-29-pcmark-paths",
+        "ch17-07-30-storage-protocol",
+        "ch17-07-32-io-causal-loop",
+        "ch17-07-33-composite-score",
+        "ch17-07-34-web-container",
+        "ch17-07-35-mpc-capability",
+        "ch17-07-36-repeat-invalidation",
+        "ch17-07-37-capability-vector",
+        "ch17-07-39-migration-report"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-182/retired-assets.json"
     },
     {
       "index": 183,
@@ -48357,8 +48716,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 114,
-  "next_article": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+  "reviewed_articles": 115,
+  "next_article": "src/part3-tools/ch17-apm/08-network-apm-internals.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -48368,7 +48727,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:46:07.971139+08:00",
+  "updated_at": "2026-10-31T14:52:32.727560+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -48644,9 +49003,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3823,
-  "reviewed_placements_after": 1650,
-  "net_removed_placements": 2173,
+  "reviewed_placements_before": 3862,
+  "reviewed_placements_after": 1663,
+  "net_removed_placements": 2199,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -48670,5 +49029,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 114
+  "currently_matching_reviewed_source_count": 115
 }
