@@ -43612,9 +43612,264 @@
       "before_count": 25,
       "before_all_images": 25,
       "sha256_before": "b6f7cca7e05da565e2f2dae1024a126393c4a3674e5a295ea76ad6baff06f610",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "ch16-01-01-goal-method-tool",
+          "title": "目标、分析方法与工具的分工",
+          "decision": "remove",
+          "reason": "道术器三列逐项复写三条定义与后文工具表，没有实际调查例，首帧/内容/交互与工具扰动全部正文留。",
+          "original_line": 155,
+          "heading": "### 道、术、器的分工"
+        },
+        {
+          "original_id": "ch16-01-02-lab-and-population",
+          "title": "实验室和线上证据的反馈",
+          "decision": "remove",
+          "reason": "四框摘要线上选分群→实验室→机制干预→线上验收，与保留3分析流程及21治理主线重复，样本代表性限制全文留。",
+          "original_line": 207,
+          "heading": "#### 实验室数据与线上数据各有职责"
+        },
+        {
+          "original_id": "ch16-01-03-six-step-investigation",
+          "title": "从现象到复测的六步流程",
+          "decision": "keep",
+          "reason": "本章核心六步单问题调查流程独立，保存改前基线→能区分假设的证据→反证假设→单变量干预→同协议副作用复测的必要先后清楚。",
+          "original_line": 253,
+          "heading": "##### 6. 复测并检查副作用"
+        },
+        {
+          "original_id": "ch16-01-04-evidence-strength",
+          "title": "观测、机制、干预与复现",
+          "decision": "remove",
+          "reason": "四框逐项重画观测/机制/干预/复现完整表，无实际反证或升级结论例，假设预期反证状态与CPUbound反例全文留。",
+          "original_line": 271,
+          "heading": "#### 用证据等级约束结论"
+        },
+        {
+          "original_id": "ch16-01-05-measurement-protocol",
+          "title": "三组必须固定的实验条件",
+          "decision": "remove",
+          "reason": "三列逐项重排实验偏差七行表和同协议说明，无实际随机化顺序或噪声样本，冷进程清数据清页缓存不同与采集对照原文留。",
+          "original_line": 292,
+          "heading": "#### 测量协议与常见偏差"
+        },
+        {
+          "original_id": "ch16-01-06-window-and-display-evidence",
+          "title": "窗口帧指标与完整显示链",
+          "decision": "remove",
+          "reason": "三列重述窗口指标和FrameTimeline两个段，无实际AppSF关联轨，字段版本/严格TOTAL小于deadline/应用actual端点全文留。",
+          "original_line": 305,
+          "heading": "##### FrameMetrics 与 FrameTimeline"
+        },
+        {
+          "original_id": "ch16-01-07-profile-three-proofs",
+          "title": "Profile生成、编译状态与收益",
+          "decision": "keep",
+          "reason": "稳定CUJ生成→构建分发文件→设备安装编译→同条件实测的实际profile产物责任链独立，打包存在不同已编译不同场景收益保留。",
+          "original_line": 328,
+          "heading": "##### Baseline Profiles 与 ART（Android Runtime）"
+        },
+        {
+          "original_id": "ch16-01-08-running-runnable-waiting",
+          "title": "计算、调度等待与阻塞分开",
+          "decision": "remove",
+          "reason": "三列逐项复写瓶颈选择表与线程状态定义，没有真实walltime三轨，Running/Runnable/Sleeping及异步仍有资源成本全文留。",
+          "original_line": 351,
+          "heading": "#### 按瓶颈类型选择优化方向"
+        },
+        {
+          "original_id": "ch16-01-09-three-tool-combinations",
+          "title": "启动、流畅度与内存的组合取证",
+          "decision": "remove",
+          "reason": "三列逐项摘要三套四步工具组合列表，无实际同个CUJ多源例，工具字段而非名字和内存各域归属正文留。",
+          "original_line": 400,
+          "heading": "##### 内存"
+        },
+        {
+          "original_id": "ch16-01-10-budget-and-priority",
+          "title": "优先级与可执行预算",
+          "decision": "remove",
+          "reason": "四框重排优先级四维和预算最低字段清单，后文预算完整表更具体，无实际风险排序结果，低频严重故障优先及预算非基线全文留。",
+          "original_line": 429,
+          "heading": "#### 预算的最低字段与三层结构"
+        },
+        {
+          "original_id": "ch16-01-11-research-selection-funnel",
+          "title": "研究样本的筛选与适用范围",
+          "decision": "remove",
+          "reason": "三步筛选加限制卡只是摘录原始/过滤/人工核查四行完整表，未保阶段每类数量且易反复对读；87关键词/114148469222及85论文独立路线全文表留。",
+          "original_line": 509,
+          "heading": "### 数据从哪里来"
+        },
+        {
+          "original_id": "ch16-01-12-research-label-denominators",
+          "title": "记录数、标签数与筛选子集",
+          "decision": "keep",
+          "reason": "114记录到122多标签与76/122、开发者不同factor子集923/1396和15/25及179/222、论文69/85三个真实数量分母对应独立，避免把核查记录当统一分母。",
+          "original_line": 546,
+          "heading": "#### 同一张表中的分母不同"
+        },
+        {
+          "original_id": "ch16-01-13-reported-factor-coverage",
+          "title": "研究、工具与数据集覆盖的报告口径",
+          "decision": "keep",
+          "reason": "研究27/63补36/63、工具30/82补52/82、数据24/82补58/82真实分子/分母/补数可比关系独立，原稿45与27+19不一致和非工业检出率图注留。",
+          "original_line": 565,
+          "heading": "#### 57.14%、63.41%、70.73% 的正确分子"
+        },
+        {
+          "original_id": "ch16-01-15-view-state-invalidation",
+          "title": "布局、绘制和渲染属性的触发范围",
+          "decision": "remove",
+          "reason": "三列逐项复写requestLayout/invalidate/属性更新三段，不画实际traversal合并或缓存复用路径，非必完整测布局绘制全部原文留。",
+          "original_line": 652,
+          "heading": "##### `requestLayout()` 与 `invalidate()` 的分工"
+        },
+        {
+          "original_id": "ch16-01-16-reference-lifetime-proof",
+          "title": "从超期对象回到实际持有者",
+          "decision": "remove",
+          "reason": "四步复写超期对象引用验证段，无实际GCroot对象持有图，lambda实际捕获/owner协议/heap大非泄漏条件全文留。",
+          "original_line": 671,
+          "heading": "#### 2. Unreleased References（未释放引用）"
+        },
+        {
+          "original_id": "ch16-01-17-allocation-and-data-peak",
+          "title": "热点分配和输入规模的两条验证线",
+          "decision": "remove",
+          "reason": "三列重复高频分配/大输入检查与修复段，无实际分配生命周期或4000x3000峰值图，48000000bytes像素仅值及available非总长全文留。",
+          "original_line": 722,
+          "heading": "#### 4. Large-Scale Data（大规模数据）"
+        },
+        {
+          "original_id": "ch16-01-14-patterns-to-runtime",
+          "title": "六类代码模式怎样进入动态验证",
+          "decision": "remove",
+          "reason": "三列把六模式重分组三组重复CodeReview完整表，无新模式运行证据实例，模式非Android规范和非静态定bug说明全文留。",
+          "original_line": 756,
+          "heading": "#### 6. Other Patterns（其他模式）"
+        },
+        {
+          "original_id": "ch16-01-18-synchronous-binder-attribution",
+          "title": "同步Binder的等待如何跨进程形成",
+          "decision": "remove",
+          "reason": "六框逐项摘要六步Binder确认顺序和修复所有权清单，未画真实clientwait/server线程两轨，缺flow辅助关联与缓存/线程正确性全文留。",
+          "original_line": 778,
+          "heading": "#### Perfetto 确认顺序"
+        },
+        {
+          "original_id": "ch16-01-19-freezer-and-resume",
+          "title": "cached进程冻结、恢复与异常IPC",
+          "decision": "keep",
+          "reason": "cached→debounce→成功冻结后分别正常生命周期解冻恢复与冻结server同步IPC终止两个真实分支独立，默认10s可改/instant非成功/关联非因果图注保留。",
+          "original_line": 823,
+          "heading": "#### 解冻与短时卡顿的关联判断"
+        },
+        {
+          "original_id": "ch16-01-20-preferences-lifecycle-wait",
+          "title": "apply异步写入与生命周期等待",
+          "decision": "keep",
+          "reason": "apply内存更新→异步持久化与生命周期可能等待未完成写入的实际跨阶段依赖独立，异步调用点不同生命周期IO成本和正确性条件保留。",
+          "original_line": 886,
+          "heading": "#### SharedPreferences 的完整审查项"
+        },
+        {
+          "original_id": "ch16-01-21-signal-to-acceptance",
+          "title": "信号、调查、修复与验收的回路",
+          "decision": "keep",
+          "reason": "采样/数据健康→异常分群owner→技术归因→修复版本风险→线下及线上验收的本章治理主线独立，与3单问题实验方法不同，保留已知概率基线和触发样本不混及报警消失非成功。",
+          "original_line": 945,
+          "heading": "### 从信号到验收的反馈回路"
+        },
+        {
+          "original_id": "ch16-01-22-gates-and-release",
+          "title": "三种门禁对应不同的证据与动作",
+          "decision": "remove",
+          "reason": "三列逐项重画确定性/测量/线上门禁表，无实际失败转复测/阻断案例，噪声样本及线上暂停回滚、模拟器仅冒烟/产profile等全文留。",
+          "original_line": 1008,
+          "heading": "#### 3. 回归门禁：按证据确定强度"
+        },
+        {
+          "original_id": "ch16-01-23-handoff-evidence",
+          "title": "跨团队交接与公开案例的证据链",
+          "decision": "remove",
+          "reason": "四框摘要交接清单与systemserver公开案例，但未画8触发8崩溃及OK对照实际证据，无新内容；tombstone/logcat/版本symbols与有限案例范围全文留。",
+          "original_line": 1112,
+          "heading": "### 角色与交接"
+        },
+        {
+          "original_id": "ch16-01-24-data-identity-and-clocks",
+          "title": "证据连接键与时间域",
+          "decision": "remove",
+          "reason": "三列重排六个连接键完整表和clockdomain段，未画具体event到session/artifact/build关系，PID复用/高基数/tenantrole隔离及时间域换算全文留。",
+          "original_line": 1140,
+          "heading": "### 证据连接与数据生命周期"
+        },
+        {
+          "original_id": "ch16-01-25-exceptions-and-operating-cadence",
+          "title": "例外、发布与日常回归的反馈",
+          "decision": "remove",
+          "reason": "四框重复例外五条清单/到期恢复规则和发布流程，无批准拒绝或到期状态实例；永久预算评审不同更新基线、稳定检测才门禁全文留。",
+          "original_line": 1161,
+          "heading": "### 例外机制"
+        }
+      ],
+      "sha256_after": "316ef3c892dc8d5119a8cb2fa05fe20132dd503e4cb7c94a8fa9ac70068e1d68",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:02:44.797783+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 25,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a167/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a167/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 167,
+        "article": "src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
+        "registered_sha256": "b6f7cca7e05da565e2f2dae1024a126393c4a3674e5a295ea76ad6baff06f610",
+        "frozen_sha256": "b6f7cca7e05da565e2f2dae1024a126393c4a3674e5a295ea76ad6baff06f610",
+        "review_input_sha256": "4a2c8cf4f8bffd9195b643511087cb067cac40d56947ecc6898a1a473ad8d7ae",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a167/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a167/external-source.diff",
+        "diff_sha256": "75dc54aaef569d67880dcb5d89bb0c7aafc4ad309310940995274eb9ba3a20ac",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 717, \"characters\": 47090, \"svg_labels_read\": 25, \"actual_pngs_viewed\": 25, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 2, \"code_lines\": 27, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "4a2c8cf4f8bffd9195b643511087cb067cac40d56947ecc6898a1a473ad8d7ae",
+      "retired_diagrams": [
+        "ch16-01-01-goal-method-tool",
+        "ch16-01-02-lab-and-population",
+        "ch16-01-04-evidence-strength",
+        "ch16-01-05-measurement-protocol",
+        "ch16-01-06-window-and-display-evidence",
+        "ch16-01-08-running-runnable-waiting",
+        "ch16-01-09-three-tool-combinations",
+        "ch16-01-10-budget-and-priority",
+        "ch16-01-11-research-selection-funnel",
+        "ch16-01-14-patterns-to-runtime",
+        "ch16-01-15-view-state-invalidation",
+        "ch16-01-16-reference-lifetime-proof",
+        "ch16-01-17-allocation-and-data-peak",
+        "ch16-01-18-synchronous-binder-attribution",
+        "ch16-01-22-gates-and-release",
+        "ch16-01-23-handoff-evidence",
+        "ch16-01-24-data-identity-and-clocks",
+        "ch16-01-25-exceptions-and-operating-cadence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-167/retired-assets.json"
     },
     {
       "index": 168,
@@ -44783,8 +45038,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 100,
-  "next_article": "src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
+  "reviewed_articles": 101,
+  "next_article": "src/part3-tools/ch16-methodology/02-system-vs-app.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -44794,7 +45049,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:59:02.013152+08:00",
+  "updated_at": "2026-10-31T14:02:44.797783+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -44850,13 +45105,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
-      "registered_sha256": "b6f7cca7e05da565e2f2dae1024a126393c4a3674e5a295ea76ad6baff06f610",
-      "observed_sha256": "4a2c8cf4f8bffd9195b643511087cb067cac40d56947ecc6898a1a473ad8d7ae",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -45133,9 +45381,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3472,
-  "reviewed_placements_after": 1534,
-  "net_removed_placements": 1938,
+  "reviewed_placements_before": 3497,
+  "reviewed_placements_after": 1541,
+  "net_removed_placements": 1956,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -45159,5 +45407,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 100
+  "currently_matching_reviewed_source_count": 101
 }
