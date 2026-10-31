@@ -54273,9 +54273,257 @@
       "before_count": 26,
       "before_all_images": 26,
       "sha256_before": "12eef489af639f6985db028ca4487c59740c2eb06c383841080cb4227e7dbc63",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a214-01-leak-objects",
+          "title": "泄漏对象决定观测与回收协议",
+          "decision": "remove",
+          "reason": "六类泄漏对象/活task可见性/证据/修复表已完整，三行分类卡是表格子集。",
+          "original_line": 122,
+          "heading": "### 1. 先定义“泄漏”的对象"
+        },
+        {
+          "original_id": "a214-02-terminated-thread-retention",
+          "title": "ART 线程退出与 Java 对象回收是两个边界",
+          "decision": "remove",
+          "reason": "ART Destroy不调用Java exit与终止Thread被外部集合持有的两类引用链已由三段明确，三行映射没有画实际引用图。",
+          "original_line": 133,
+          "heading": "### 1. 先定义“泄漏”的对象"
+        },
+        {
+          "original_id": "a214-03-identity-domains",
+          "title": "线程名、Java ID、Linux TID 分别用于不同关联",
+          "decision": "remove",
+          "reason": "短名称15字节、Java ID非LinuxTID和创建代次关联分段说明及factory代码更完整，三行身份卡重复。",
+          "original_line": 150,
+          "heading": "### 2. “匿名线程”指来源不明"
+        },
+        {
+          "original_id": "a214-04-observation-surfaces",
+          "title": "四种观测面拼出线程、任务与资源关系",
+          "decision": "remove",
+          "reason": "同节紧邻四观测入口/能力/盲区表更完整，三行观测卡重复。",
+          "original_line": 159,
+          "heading": "### 3. 四个观测面"
+        },
+        {
+          "original_id": "a214-05-snapshot-quality",
+          "title": "线程目录竞态分别记录缺测、跳过与真实截断",
+          "decision": "remove",
+          "reason": "39行proc快照代码与紧邻缺测/skipped/truncated/listFiles先枚举的完整解释已有，四框只复述代码步骤。",
+          "original_line": 231,
+          "heading": "#### 3.3 `/proc` 快照与并发退出"
+        },
+        {
+          "original_id": "a214-06-factory-worker-task",
+          "title": "worker 生命周期与每个提交任务分开登记",
+          "decision": "keep",
+          "reason": "工厂创建worker、真正启动才登记JavaID/TID、多任务复用、入口finally移除的生命周期，区分worker和单次任务。",
+          "original_line": 289,
+          "heading": "### 4. 从创建入口保存来源"
+        },
+        {
+          "original_id": "a214-07-pthread-reclaim",
+          "title": "Linux task 退出后，joinable 映射还可能保留",
+          "decision": "keep",
+          "reason": "task运行结束但joinable主映射继续保留直到owner join的三轨先后关系，展示proc活线程盲区。",
+          "original_line": 321,
+          "heading": "#### 5.1 Java `Thread` 与 raw pthread 的回收协议不同"
+        },
+        {
+          "original_id": "a214-08-thread-mapping",
+          "title": "bionic 主映射与实际驻留成本分别观察",
+          "decision": "keep",
+          "reason": "guard、stack/staticTLS、专用libgen buffers、另一guard的相邻主映射布局，区分附属栈另计和虚拟映射非RSS。",
+          "original_line": 348,
+          "heading": "### 6. 每条线程的资源成本"
+        },
+        {
+          "original_id": "a214-09-creation-failure",
+          "title": "pthread_create OOM 要沿失败层定位",
+          "decision": "remove",
+          "reason": "线程创建多层来源六项列表及原始errno/realUID限制段落已完整，三行失败层卡重复。",
+          "original_line": 380,
+          "heading": "### 7. 线程创建失败的多层来源"
+        },
+        {
+          "original_id": "a214-10-pool-evidence",
+          "title": "空闲 worker、队列积压与重复 pool 各有证据",
+          "decision": "remove",
+          "reason": "pool和任务多指标列表、固定/缓存队列与scheduled取消策略三段已完整，四行类型卡未画新队列关系。",
+          "original_line": 407,
+          "heading": "#### 8.2 `ScheduledThreadPoolExecutor` 要看取消策略"
+        },
+        {
+          "original_id": "a214-11-component-resources",
+          "title": "第三方组件先核对资源共享与进程边界",
+          "decision": "remove",
+          "reason": "OkHttp共享/WorkManager两executor/多进程初始化三个段落详述，三行组件卡重复。",
+          "original_line": 443,
+          "heading": "#### 10.2 WorkManager"
+        },
+        {
+          "original_id": "a214-12-bounded-diagnostics",
+          "title": "按增长和回落分层触发有界诊断",
+          "decision": "remove",
+          "reason": "同节五步分层触发和六行告警信号表更完整，四框总结没有新增曲线或阈值机制。",
+          "original_line": 475,
+          "heading": "### 11. 告警要看基线、增量和持续时间"
+        },
+        {
+          "original_id": "a214-13-perfetto-correlation",
+          "title": "Perfetto 历史线程与创建来源按身份关联",
+          "decision": "remove",
+          "reason": "ftrace配置、各事件、utid和创建来源/未join映射盲区已由正文解释，三行字段映射不是实际关联样例。",
+          "original_line": 512,
+          "heading": "### 12. 用 Perfetto 还原生命周期"
+        },
+        {
+          "original_id": "a214-14-virtual-boundary",
+          "title": "查询 API 与虚拟线程默认可用性分别核对",
+          "decision": "remove",
+          "reason": "isVirtual公开查询、创建FlaggedApi/ARTflag与未来carrier模型三段完整，三行边界卡重复。",
+          "original_line": 563,
+          "heading": "### 14. Android 17 的虚拟线程边界"
+        },
+        {
+          "original_id": "a214-15-job-propagation",
+          "title": "监督改变失败传播，owner 取消仍向所有 child 传播",
+          "decision": "keep",
+          "reason": "普通child失败向parent传播与Supervisor只隔离child失败的两种方向对照，底部共同owner取消约束保留。",
+          "original_line": 691,
+          "heading": "### 2. `Job` 树决定生命周期"
+        },
+        {
+          "original_id": "a214-16-owner-scope",
+          "title": "scope 的取消点来自 owner 的真实生命周期",
+          "decision": "remove",
+          "reason": "七类owner/scope/取消点/误用表更完整，三行scope卡是表格子集，另保留repeat生命周期时间线。",
+          "original_line": 746,
+          "heading": "#### 2.2 Android owner 的推荐 scope"
+        },
+        {
+          "original_id": "a214-17-flow-two-lifetimes",
+          "title": "collector 停止未必结束独立 producer",
+          "decision": "remove",
+          "reason": "冷流独立collect与热流共享scope/三SharingStarted策略列表详述，三行分类卡没有画独立producer结构，重复文本。",
+          "original_line": 770,
+          "heading": "#### 3.1 冷流、热流的泄漏边界不同"
+        },
+        {
+          "original_id": "a214-18-repeat-lifecycle",
+          "title": "可见性取消当轮 children，销毁结束外层 View scope",
+          "decision": "keep",
+          "reason": "View START/STOP/START/DESTROY、两轮collectorchildren与外层scope的三轨，展示STOP取消当轮与DESTROY结束外层不同边界。",
+          "original_line": 801,
+          "heading": "#### 3.2 View 层使用 `repeatOnLifecycle`"
+        },
+        {
+          "original_id": "a214-19-callback-cleanup",
+          "title": "回调注册、Channel 与底层资源成对结束",
+          "decision": "keep",
+          "reason": "callbackFlow注册、trySend、取消/channel关闭awaitClose解除再核对句柄/上游的成对资源流程，强调丢弃元素需自行释放。",
+          "original_line": 829,
+          "heading": "#### 3.3 callback bridge 要在取消时注销"
+        },
+        {
+          "original_id": "a214-20-parallel-vs-concurrency",
+          "title": "dispatcher 限执行，Semaphore 约束跨挂起业务并发",
+          "decision": "remove",
+          "reason": "limitedParallelism执行片段与Semaphore跨挂起持permit已由准确段落和19行对照代码说明，三行映射卡没有额外并发时序。",
+          "original_line": 888,
+          "heading": "#### 4.2 限并行与限业务并发"
+        },
+        {
+          "original_id": "a214-21-android-debug-boundary",
+          "title": "Android 线上只能枚举主动接入的 operation",
+          "decision": "remove",
+          "reason": "ART不支持debug agent/私有continuation不稳定与显式operation登记三节已经完整，三行能力卡重复。",
+          "original_line": 927,
+          "heading": "#### 5.2 线上方案从受控创建入口登记"
+        },
+        {
+          "original_id": "a214-22-operation-timing",
+          "title": "operation 时长、调度等待与 CPU 执行分别测量",
+          "decision": "keep",
+          "reason": "operation创建排队到started-completed逻辑持续、async包含挂起、worker两段CPU的三轨对比，避免把长slice当CPU。",
+          "original_line": 999,
+          "heading": "#### 5.2 线上方案从受控创建入口登记"
+        },
+        {
+          "original_id": "a214-23-compose-ownership",
+          "title": "Compose effect 与事件任务使用不同启动入口",
+          "decision": "remove",
+          "reason": "28行Compose代码和key/updatedcallback/eventscope生命周期说明完整，三行API字典卡重复。",
+          "original_line": 1076,
+          "heading": "### 7. Compose 的 scope 边界"
+        },
+        {
+          "original_id": "a214-24-cancel-blocking-anr",
+          "title": "suspend 与 timeout 都不能自动解除任意阻塞",
+          "decision": "remove",
+          "reason": "Main阻塞六项列表与timeout协作/可中断API/底层资源close段落完整，三行约束映射重复。",
+          "original_line": 1096,
+          "heading": "### 8. 协程如何引发 ANR"
+        },
+        {
+          "original_id": "a214-25-background-contract",
+          "title": "任务可靠性来自调度与持久化契约",
+          "decision": "remove",
+          "reason": "五种任务存活与可靠性执行方式列表已完整，三行后台契约卡是列表子集。",
+          "original_line": 1119,
+          "heading": "### 9. Android 17 的后台边界"
+        },
+        {
+          "original_id": "a214-26-leak-candidate",
+          "title": "超期、未结束与资源仍注册共同构成候选证据",
+          "decision": "remove",
+          "reason": "五项泄漏候选条件和operation约定阈值已有准确列表，四框将条件串为步骤不增加新证据。",
+          "original_line": 1153,
+          "heading": "#### 10.2 泄漏候选判定"
+        }
+      ],
+      "sha256_after": "6f2ccb86fc4f4fabe372b219fed38bc1fc10babaf664b553333787eac8f35e4c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:24:21.892078+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 26,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a214/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a214/visual-review.json",
+      "retired_diagrams": [
+        "a214-01-leak-objects",
+        "a214-02-terminated-thread-retention",
+        "a214-03-identity-domains",
+        "a214-04-observation-surfaces",
+        "a214-05-snapshot-quality",
+        "a214-09-creation-failure",
+        "a214-10-pool-evidence",
+        "a214-11-component-resources",
+        "a214-12-bounded-diagnostics",
+        "a214-13-perfetto-correlation",
+        "a214-14-virtual-boundary",
+        "a214-16-owner-scope",
+        "a214-17-flow-two-lifetimes",
+        "a214-20-parallel-vs-concurrency",
+        "a214-21-android-debug-boundary",
+        "a214-23-compose-ownership",
+        "a214-24-cancel-blocking-anr",
+        "a214-25-background-contract",
+        "a214-26-leak-candidate"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-214/retired-assets.json"
     },
     {
       "index": 215,
@@ -55004,8 +55252,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 140,
-  "next_article": "src/part5-app/ch20-stability/08-thread-coroutine-leak-governance.md",
+  "reviewed_articles": 141,
+  "next_article": "src/part5-app/ch20-stability/09-binder-ipc-fault-monitoring.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -55015,7 +55263,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:21:33.669183+08:00",
+  "updated_at": "2026-10-31T16:24:21.892078+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -55200,9 +55448,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4485,
-  "reviewed_placements_after": 1882,
-  "net_removed_placements": 2603,
+  "reviewed_placements_before": 4511,
+  "reviewed_placements_after": 1889,
+  "net_removed_placements": 2622,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -55226,5 +55474,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 140
+  "currently_matching_reviewed_source_count": 141
 }

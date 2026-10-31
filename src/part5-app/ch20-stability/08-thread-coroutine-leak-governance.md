@@ -119,10 +119,6 @@ pthread 的回收分两种：joinable pthread 退出后保留回收信息，必�
 
 上表几类问题可以同时发生。OOM 的含义是某层内存或相关资源满足不了分配请求，`ThreadLocal` 是按线程保存值的线程局部存储：某个 SDK 每次初始化都创建一个 pool，每个 worker 又持有 `ThreadLocal<Activity>`，每个任务还打开 socket，于是 Linux task、Java heap 和 FD 一起增长——这推不出“每条线程固定占一个 FD”。
 
-<!-- gracker-diagram: a214-01-leak-objects -->
-![泄漏对象决定观测与回收协议](../../assets/diagrams/ch20/a214-01-leak-objects.png)
-
-图：多种资源可以同时增长，但没有每个线程固定占一个FD的规则。
 
 OpenJDK 的 `Thread.exit()` 会调用 `clearReferences()`，清空 `target`、`threadLocals`、`inheritableThreadLocals`、`blocker` 和未捕获异常处理器等引用；Android 17 的行为不同，`android-17.0.0_r1` 标签的 `Thread.getThreadGroup()` 源码明确注明 ART 在线程退出时没有调用 `Thread.exit()`。
 
@@ -130,10 +126,6 @@ ART 的 `Thread::Destroy()` 会分发未捕获异常、从 `ThreadGroup` 移除 
 
 这里要区分两类对象链。仍存活的线程会作为 GC root 保留栈和线程局部引用；已经终止的 `Thread` 不再对应 Linux task，但业务静态集合、线程注册表或其他长生命周期对象若仍强引用它，`target`、`ThreadLocalMap` 或线程子类字段仍可能继续保留对象。等终止线程本身不再被引用，这些字段才随整个 `Thread` 对象一起回收。所以 heap dominator 分析要确认具体强引用链，单看线程状态是推断不出来的。
 
-<!-- gracker-diagram: a214-02-terminated-thread-retention -->
-![ART 线程退出与 Java 对象回收是两个边界](../../assets/diagrams/ch20/a214-02-terminated-thread-retention.png)
-
-图：固定Android标签未调用Java Thread.exit来统一清字段；须沿实际堆引用链判定滞留。
 
 ### 2. “匿名线程”指来源不明
 
@@ -147,19 +139,11 @@ Linux task 名称还有长度限制。`comm` 是内核保存的 task 短名称�
 
 命名格式推荐短而稳定的 `模块-用途-序号`，例如 `img-dec-3`、`net-dns-2`；账号、URL、订单号等用户数据不要放进线程名。改名补不回历史创建栈，所以命名要和创建入口记录一起实施。
 
-<!-- gracker-diagram: a214-03-identity-domains -->
-![线程名、Java ID、Linux TID 分别用于不同关联](../../assets/diagrams/ch20/a214-03-identity-domains.png)
-
-图：通用名称说明来源不足；命名不补历史创建栈，身份关联须同时保存创建代次和采样时间。
 
 ### 3. 四个观测面
 
 TID 是 Linux 分配给 task 的线程 ID。下面四个入口分别观察内核 task、ART Java 线程和组件自己的任务模型，各自统计的范围不一样：
 
-<!-- gracker-diagram: a214-04-observation-surfaces -->
-![四种观测面拼出线程、任务与资源关系](../../assets/diagrams/ch20/a214-04-observation-surfaces.png)
-
-图：原生pthread、已退出未join映射与协程生命周期都有各自盲区，不能把不同计数直接相减。
 
 | 观测入口 | 能回答什么 | 主要盲区 |
 | --- | --- | --- |
@@ -228,10 +212,6 @@ fun snapshotNativeThreads(
 
 `listFiles()` 失败通过 `Result.failure` 表示，调用方应把它记录为“缺测”，别上报成 0 条线程。遍历期间某个 TID 目录消失通常是正常退出竞态；读取失败也可能来自权限或 I/O，示例统一计入 `skipped`，不能仅凭失败断定线程已退出。`truncated` 为 `true` 时只能分析已采到的名称分布，`rows.size` 代表的也只是返回的有效行数；`skipped` 只覆盖为取得这些行而实际尝试读取的数字条目，未处理的余项并未统计。`listFiles()` 仍会先枚举整个目录，这个上限限制返回量，不是目录枚举的硬 I/O 预算。这个函数会产生文件 I/O 和对象分配，不要放在主线程、crash handler（崩溃回调） 或高频定时器中。
 
-<!-- gracker-diagram: a214-05-snapshot-quality -->
-![线程目录竞态分别记录缺测、跳过与真实截断](../../assets/diagrams/ch20/a214-05-snapshot-quality.png)
-
-图：listFiles先枚举整个目录；返回上限不代表硬IO预算，跳过条目也不能一概当成正常退出。
 
 Java `Thread.threadId()` 从 API 36 起可用，加上旧的 `getId()`，两者都是 Java 生命周期 ID，和 Linux TID 是两个体系。要拿到真正的 TID，得在线程内部调用 `Process.myTid()`，或在可靠的 Native 创建事件中取得，这样才能与 Perfetto、tombstone 和 `/proc` 对齐。TID 在线程退出后会复用，跨时间关联还必须带进程启动标识和采样时间。
 
@@ -377,10 +357,6 @@ Java `Thread` 还会经过 ART 的 `FixStackSize()`：传入 0 时先取运行�
 
 诊断时要保存 bionic/ART 原始错误和 errno（C 库错误编号），以及进程角色、ABI、task 数、`VmSize`（虚拟地址空间总量）、RSS 和近期增长，别只记 Java heap 剩余空间。
 
-<!-- gracker-diagram: a214-09-creation-failure -->
-![pthread_create OOM 要沿失败层定位](../../assets/diagrams/ch20/a214-09-creation-failure.png)
-
-图：RLIMIT_NPROC按真实UID记账，不能从Max processes直接算出本进程还可创建多少线程。
 
 Android 17 bionic 还在线程映射中加入页对齐的专用 libgen buffers，并加强备用信号栈初始化失败的处理。这些是内存布局和错误处理层面的变化，从中推导不出“应用最多 500 条线程”之类的平台规则。
 
@@ -404,10 +380,6 @@ Android 17 bionic 还在线程映射中加入页对齐的专用 libgen buffers�
 
 `ScheduledThreadPoolExecutor` 基于固定数量的 core worker（核心 worker） 和无界 delay queue，调大 `maximumPoolSize` 通常没有作用。“worker 没退出”和“取消任务仍在队列”要分开看，两者的修复点不同。
 
-<!-- gracker-diagram: a214-10-pool-evidence -->
-![空闲 worker、队列积压与重复 pool 各有证据](../../assets/diagrams/ch20/a214-10-pool-evidence.png)
-
-图：关闭协议由owner负责；ScheduledThreadPoolExecutor用core worker和无界delay queue，增maximumPoolSize通常无效。
 
 #### 8.3 重复创建 pool 的排查信号
 
@@ -440,10 +412,6 @@ OkHttp 官方建议复用一个 `OkHttpClient`：通过已有 client 的 `newBui
 
 WorkManager 里重复的 `WorkRequest` 更常见的是任务重复，未必产生一条新 worker。unique work 用业务唯一名称约束同类工作，`WorkInfo` 记录任务状态、输出和停止原因；排查时还要检查约束与重试策略。自定义 `Configuration` 时，执行器要有容量上限，并区分运行 Worker 的 executor 与 WorkManager 内部协调任务用的 task executor。
 
-<!-- gracker-diagram: a214-11-component-resources -->
-![第三方组件先核对资源共享与进程边界](../../assets/diagrams/ch20/a214-11-component-resources.png)
-
-图：单例复用和模块隔离都需要明确owner；不要为压低线程快照关闭全局共享client。
 
 多进程应用要按进程记录 PID（进程 ID）、进程名和角色。每个进程都有自己的 ART、Binder 和库初始化开销，把主进程与远程进程 task 数相加再套单进程阈值会误报；若某个依赖在每个进程都自动初始化，应通过 AndroidX Startup、manifest 配置或进程判断缩小初始化范围。
 
@@ -472,10 +440,6 @@ WorkManager 里重复的 `WorkRequest` 更常见的是任务重复，未必产�
 
 崩溃 handler 中不要调用 `Thread.getAllStackTraces()`、遍历几百个 `/proc` 文件或启动上传线程。资源紧张阶段这些动作可能再次分配失败，甚至覆盖原始现场。
 
-<!-- gracker-diagram: a214-12-bounded-diagnostics -->
-![按增长和回落分层触发有界诊断](../../assets/diagrams/ch20/a214-12-bounded-diagnostics.png)
-
-图：页面退出后的回落、同类分位和增长贡献共同解释风险；固定200/400/500不是平台规则。
 
 ### 12. 用 Perfetto 还原生命周期
 
@@ -509,10 +473,6 @@ data_sources: {
 
 Perfetto 不会自动给出 Java 创建调用点，也看不到已退出未 join 的 pthread 用户空间映射；前一类来源要与 `ThreadFactory` 或受控采样关联，后一类要靠 pthread 成对事件或内存映射证据。
 
-<!-- gracker-diagram: a214-13-perfetto-correlation -->
-![Perfetto 历史线程与创建来源按身份关联](../../assets/diagrams/ch20/a214-13-perfetto-correlation.png)
-
-图：历史thread表可保留退出记录，缺少创建/销毁事件时边界也可能为空。
 
 ### 13. 四类案例怎样判
 
@@ -560,10 +520,6 @@ Android 17 还包含 `Thread.ofVirtual()`、`startVirtualThread()`、`Executors.
 
 所以面向普通应用的设计，要当作 Project Loom（OpenJDK 的虚拟线程项目）尚未成为默认能力；生产监控仍要把 Java platform thread 和 Native pthread 映射到 Linux task，Kotlin coroutine 和 Java virtual thread 也是两回事。若未来版本全面公开并启用虚拟线程，监控模型要新增“虚拟线程数量”和“carrier platform thread 数量”两个维度——carrier thread 是某一时刻承载并执行虚拟线程的操作系统线程，届时“一条 Java 线程对应一个 Linux task”的假设就不再成立。
 
-<!-- gracker-diagram: a214-14-virtual-boundary -->
-![查询 API 与虚拟线程默认可用性分别核对](../../assets/diagrams/ch20/a214-14-virtual-boundary.png)
-
-图：当前生产线程模型以已验证的平台线程能力为准，协程Job与Java虚拟线程仍是不同对象。
 
 ### 15. 验证方案
 
@@ -743,10 +699,6 @@ class FeatureScope(
 
 `lifecycleScope` 在 `DESTROYED` 时取消，不会因为 `STOPPED` 自动取消。只应在界面可见时运行的 Flow，需要 `repeatOnLifecycle`。
 
-<!-- gracker-diagram: a214-16-owner-scope -->
-![scope 的取消点来自 owner 的真实生命周期](../../assets/diagrams/ch20/a214-16-owner-scope.png)
-
-图：ViewModel可注入测试scope；库版本独立于Android平台版本，scope必须对应真正需要的存活边界。
 
 AndroidX Lifecycle 2.8 的重要变化是 `viewModelScope` 可作为 `ViewModel` 构造参数注入，便于替换 dispatcher、`SupervisorJob` 或测试 scope，`lifecycleScope` 的销毁取消约定没有变。Lifecycle 2.11.0 又为 Compose 增加了 scoped `ViewModelStore`，可把 ViewModel 绑定到 Pager 页面等特定 UI 范围，并在对应 Composable 永久移出层次结构时清理。这些是库演进，和 Android 17 平台行为是两回事。
 
@@ -767,10 +719,6 @@ collector 是从 Flow 接收数据的下游任务，producer 是生成数据或�
 
 `collectLatest` 只会在新值到达时取消上一轮 action，它不会把 collector 绑定到 Lifecycle。`launchIn(scope)` 的生命周期就是传入 scope；`collectIn` 不是 `kotlinx.coroutines` 或 AndroidX Lifecycle 的标准公开 API，项目里若有同名扩展，要单独审阅它的 scope 语义。
 
-<!-- gracker-diagram: a214-17-flow-two-lifetimes -->
-![collector 停止未必结束独立 producer](../../assets/diagrams/ch20/a214-17-flow-two-lifetimes.png)
-
-图：collectLatest只取消上一轮action；生命周期绑定由scope与repeatOnLifecycle决定。
 
 #### 3.2 View 层使用 `repeatOnLifecycle`
 
@@ -885,10 +833,6 @@ suspend fun fetch(request: Request): Response =
 
 图片处理每次占用 CPU 时最多并行 2 个；`Semaphore` 的 permit 会跨 `withContext` 和挂起点持续持有，把 in-flight（已经开始、尚未完成）请求限制在 8 个。数据库连接池、服务端配额这类资源，用 `Semaphore` 或资源池本身限流，别从 dispatcher 线程数间接推断。
 
-<!-- gracker-diagram: a214-20-parallel-vs-concurrency -->
-![dispatcher 限执行，Semaphore 约束跨挂起业务并发](../../assets/diagrams/ch20/a214-20-parallel-vs-concurrency.png)
-
-图：IO与Default共享线程；IO弹性view的额度之和不受默认IO值约束，不代表固定专用线程。
 
 如果通过 `ExecutorService.asCoroutineDispatcher()` 创建独立 dispatcher，owner 结束时要关闭返回的 `ExecutorCoroutineDispatcher`；公共的 `Dispatchers.Default`、`IO`、`Main` 则轮不到业务去关。
 
@@ -924,10 +868,6 @@ JVM agent 是在 JVM 启动时或运行中附加、用于观察或改写类行�
 
 线上我们不拦截所有 continuation，改为给关键 root scope 和 operation 建立显式注册表。注册表只覆盖团队主动接入的创建入口，谈不上枚举进程内所有协程，至少记录：
 
-<!-- gracker-diagram: a214-21-android-debug-boundary -->
-![Android 线上只能枚举主动接入的 operation](../../assets/diagrams/ch20/a214-21-android-debug-boundary.png)
-
-图：ThreadContextElement只传播上下文，不产生进程全局创建完成计数；CoroutineName也不自动生成Perfetto切片。
 
 - 有界的 operation/owner ID；
 - 创建、开始执行、完成的单调时钟，也就是只向前推进、不受系统时间调整影响的时钟；
@@ -1073,10 +1013,6 @@ fun DetailScreen(
 
 `itemId` 变化会重启加载；`rememberUpdatedState` 让 effect 读到最新的 callback，又不会因 callback 实例变化重启 effect。点击任务使用与 Composition 生命周期绑定的 scope。代码显式重抛 `CancellationException`，避免 `runCatching` 把正常取消改写成失败处理。
 
-<!-- gracker-diagram: a214-23-compose-ownership -->
-![Compose effect 与事件任务使用不同启动入口](../../assets/diagrams/ch20/a214-23-compose-ownership.png)
-
-图：取消异常必须重抛；跨页面存活的工作提升到合适owner，不能把Composition scope保存在单例。
 
 高频变化或不稳定的 key 会造成反复取消和重启，表现为请求抖动与重复分配；这未必泄漏，却浪费计算与网络资源。需要跨页面或跨 configuration change（例如旋转屏幕引发的 Activity 重建）——例如旋转屏幕引发的 Activity 重建——的工作，应提升到合适的 `ViewModel`/repository owner，不要把 Compose scope 存进单例。
 
@@ -1093,10 +1029,6 @@ fun DetailScreen(
 
 `delay` 会挂起并让出线程，`Thread.sleep` 则占住当前线程。`withTimeout` 通过取消协程实现，自动中断不了不响应取消的阻塞调用：对支持线程中断的 Java 阻塞 API 可用 `runInterruptible(Dispatchers.IO)`，对 socket、stream、codec 等资源还要提供能关闭底层对象的 close/cancel 方法。
 
-<!-- gracker-diagram: a214-24-cancel-blocking-anr -->
-![suspend 与 timeout 都不能自动解除任意阻塞](../../assets/diagrams/ch20/a214-24-cancel-blocking-anr.png)
-
-图：CPU循环适度ensureActive，清理阶段也要有界；ANR需关联operation、排队与当前线程栈。
 
 CPU 密集循环应放到 `Dispatchers.Default`，并在合适粒度调用 `ensureActive()` 或使用本身可取消的操作。检查过密会增加开销，检查过疏会拉长取消延迟，需要按一次迭代成本实测。
 
@@ -1116,10 +1048,6 @@ Android 17 没有一项“挂起函数后台特权”：协程不会提高进程
 
 WorkManager 可以在 `CoroutineWorker` 内使用协程，但可靠性来自 WorkManager 的系统调度与持久化，而非协程本身。后台限制测试要验证进程退出、约束变化、重试和幂等（重复执行结果仍一致），别只在前台等一个 `delay()` 跑完。
 
-<!-- gracker-diagram: a214-25-background-contract -->
-![任务可靠性来自调度与持久化契约](../../assets/diagrams/ch20/a214-25-background-contract.png)
-
-图：协程没有后台运行特权，也不提升进程重要性；系统约束、幂等与重试需在后台测试。
 
 ### 10. 告警算法与测试
 
@@ -1150,10 +1078,6 @@ WorkManager 可以在 `CoroutineWorker` 内使用协程，但可靠性来自 Wor
 
 不要把所有超过固定 30 秒的协程归为泄漏。WebSocket 可能预期长期存活，页面请求按自身约定运行 10 秒就可能异常。阈值属于 operation 的生命周期约定。
 
-<!-- gracker-diagram: a214-26-leak-candidate -->
-![超期、未结束与资源仍注册共同构成候选证据](../../assets/diagrams/ch20/a214-26-leak-candidate.png)
-
-图：按owner和operation保存未完成数、取消延迟、订阅者与队列，结合任务允许的寿命判断，不能统一用30秒定泄漏。
 
 #### 10.3 自动化验证
 
