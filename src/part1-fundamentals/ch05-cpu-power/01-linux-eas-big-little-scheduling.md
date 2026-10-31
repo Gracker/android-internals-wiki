@@ -119,10 +119,6 @@ last_consolidated_at: '2026-08-24'
 
 CPU 编号更没有跨设备语义：CPU 7 可能是全机 capacity 最高的那颗，也可能只是某个同构簇里的普通成员。所以我们先识别拓扑，再谈“大核”“小核”。
 
-<!-- gracker-diagram: ch05-01-topology-four-dimensions -->
-![微架构、capacity、频率 policy 与 EM 性能域要分别确认](../../assets/diagrams/ch05/ch05-01-topology-four-dimensions.png)
-
-图：微架构影响每周期完成量，capacity 描述调度器的相对算力，cpufreq policy 决定共享频率控制范围，EM 性能域提供活跃态成本表。它们经常相关，却不能仅凭 CPU 编号或产品的大中小核名称相互推导；具体 EM 与 policy 的拓扑约束以设备注册结果为准。
 
 ### 从 big.LITTLE 到多档异构 CPU
 
@@ -391,10 +387,6 @@ ORDER BY transitions DESC;
 
 相邻切片跨 CPU，只说明两次运行之间目标 CPU 变了，中间可能隔着睡眠、唤醒和排队。缓存迁移是不是延迟根因，还要把结果与业务切片、频率、缓存和性能监控单元（Performance Monitoring Unit，PMU）数据对齐之后再判断。
 
-<!-- gracker-diagram: ch05-01-migration-cache-policy-and-thermal -->
-![迁移成本来自工作集与新环境，不能由迁移次数直接推出](../../assets/diagrams/ch05/ch05-01-migration-cache-policy-and-thermal.png)
-
-图：CPU 迁移不会把源核私有缓存内容整体复制到目标核。目标访问可能从共享缓存、其他缓存或内存获取，代价受工作集与拓扑影响；新 policy 还可能处于低频或受温控上限限制。相邻 Running 切片变核只能证明位置变化，应按同 utid 比较迁移前后等待、执行、缓存与频率，验证是否造成业务长尾。
 
 ### schedutil 怎样选频
 
@@ -692,10 +684,6 @@ Linux 的 nice 范围是 -20 到 19。权重表近似按每一级 1.25 倍变化
 
 nice 不会让一段代码里的每条指令执行得更快，它改变的是 CPU 竞争结果。提高 nice 数值会降低权重；降低 nice 数值会提高权重，而且通常需要相应权限。如果线程大部分时间在等待 Binder、锁、I/O 或 GPU，修改 nice 很可能没有收益。
 
-<!-- gracker-diagram: ch05-01-policy-priority-and-nice-share -->
-![调度策略先分层，nice 在 fair 类中改变长期份额](../../assets/diagrams/ch05/ch05-01-policy-priority-and-nice-share.png)
-
-图：常见用户态策略中，DEADLINE 高于 FIFO/RR，再到 OTHER/BATCH/IDLE。RT 的用户优先级数字越大越高；fair nice 越小权重越大，内核常见编号为 120+nice，数字方向不同。nice 调整竞争份额，不能缩短锁、I/O、Binder 或加速器执行，也不能让任务必去高 capacity CPU。
 
 Android framework 的 `android.os.Process` 定义了一组常用线程优先级，例如：
 
@@ -772,10 +760,6 @@ UClamp 为任务或 cgroup 提供利用率上下界：
 
 UClamp 与 EEVDF 处理的层面不同。EEVDF 在公平调度运行队列中处理运行资格和虚拟截止时间；UClamp 参与算力适配、能量感知选核和频率决策。提高 `uclamp.min` 不保证线程会立刻得到 CPU，也不会越过实时线程或截止时间调度线程。
 
-<!-- gracker-diagram: ch05-01-affinity-cpuset-uclamp-nice -->
-![CPU 范围、利用率提示与 fair 权重分别限制不同问题](../../assets/diagrams/ch05/ch05-01-affinity-cpuset-uclamp-nice.png)
-
-图：affinity 与 cpuset、在线 CPU 共同限定能去哪里；nice 决定 fair 竞争份额；UClamp 提供适配与调频的利用率边界。它们可以相互影响，但修改对象不同，UClamp 也不是 CPU 时间配额。缩窄亲和性会失去避开拥塞、降频或热压力核心的空间。
 
 SchedTune 的 `schedtune.boost` 常见于旧版 Android 或厂商内核。阅读历史跟踪或旧设备配置时仍可能遇到它；对于 Android 17 / Linux 6.18 这套基线，应先检查 cgroup v2 与 `cpu.uclamp.*`，再根据设备源码判断是否保留了厂商扩展。
 
@@ -935,10 +919,6 @@ SurfaceFlinger、AudioFlinger 或 HAL 线程的策略，应根据目标设备的
 
 调度优化常把延迟从一个线程转移到另一个线程。只看目标线程变快，还不足以证明系统收益。
 
-<!-- gracker-diagram: ch05-01-scheduler-diagnosis-decision -->
-![从业务期限拆线程时间，再选调度、代码或依赖证据](../../assets/diagrams/ch05/ch05-01-scheduler-diagnosis-decision.png)
-
-图：先定义目标操作与完成期限，再分开 Running、R/R+ 和 S/D。执行长查代码与频率，排队长查竞争者和允许 CPU，阻塞长查具体依赖；随后对齐 topology、policy、UClamp、任务配置和温控。每次只验证一个变化，同时验收目标长尾、其他关键线程、吞吐、功耗与热稳态。
 
 ### 版本基线与源码索引
 
