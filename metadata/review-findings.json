@@ -11469,6 +11469,49 @@
       "summary": "迁移步骤遗漏 AGP 8.0 及以下的 AAB 配置和 Pixel QPR 可用性边界",
       "type": "missing-migration-availability-boundary",
       "updated_at": "2026-10-31T18:43:00.862653+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已修复 1.2、5.3 与优化表：区分 dequeue 槽位归还、release fence 与 queue 的本轮 acquire fence；补充 allocation 与旧 EGL/DEPRECATED 分支。固定 android-17.0.0_r1 接口及实现逐项核对，三项本地 gate 和新增中文硬门通过。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261031-203520-deep-review-f805dc05",
+      "created_at": "2026-10-31T20:38:50.702541+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261031-203520-deep-review-f805dc05",
+      "details": "{\"claim\":\"正文称 dequeueBuffer 取得可写缓冲槽，并将其长等待直接关联 release fence 迟到；遗漏分配及并发分配等待。\",\"evidence\":\"android-17.0.0_r1 IGraphicBufferProducer.h:214-236 要求返回 fence signal 后才能覆盖 buffer；BufferQueueProducer.cpp:422-458 等待队列条件，508-514 等待分配，648-654 返回 mFence，672-699 执行分配；Surface.cpp:784-789,839-863 返回 fence fd，633-651 的 DEPRECATED 包装另行等待。\",\"target_range\":\"正文 1.2 与 5.3、优化证据表（原行 357、504、526）\",\"recommended_action\":\"区分槽位所有权和安全覆写时机；按队列条件、分配、实际调用层中的 fence 等待分别归因，保留兼容分支。\"}",
+      "id": "finding-86efdf957e08",
+      "log_path": "logs/deep-review/2026-10-31-20261031-203520-deep-review-f805dc05-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h#214",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp#347",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp#752"
+      ],
+      "status": "verified",
+      "summary": "dequeueBuffer 将取得槽位等同于可立即写入，并混淆槽位等待与 release fence 等待",
+      "type": "fence-boundary",
+      "updated_at": "2026-10-31T20:44:07.295579+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已改为 DisplayContent 持有的顶层 InputMonitor，图示列出 updateInputWindowsLw(force) 与 AnimationThread/UpdateInputWindows.run()，补充立即更新只合入事务的边界；固定标签源码与本地 gate 通过。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261031-203520-deep-review-f805dc05",
+      "created_at": "2026-10-31T20:38:50.761444+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261031-203520-deep-review-f805dc05",
+      "details": "{\"claim\":\"DisplayContent.InputMonitor 不是该标签的源码类名，流程图中的 InputMonitor.updateInputWindows() 也未说明外层实际入口及 Handler 调度。\",\"evidence\":\"android-17.0.0_r1 InputMonitor.java:78 是顶层类，344-359 为 updateInputWindowsLw(force) 经 Handler 投递 UpdateInputWindows；117-139 在全局锁下更新。DisplayContent.java:670,1365,6028-6029 持有、创建并返回 InputMonitor。\",\"target_range\":\"WMS 与输入系统的分工（原行 1176、1182）\",\"recommended_action\":\"改为 DisplayContent 持有的 InputMonitor；流程图列出 updateInputWindowsLw() 与常规 Handler/UpdateInputWindows.run()，注明立即更新分支。\"}",
+      "id": "finding-12e58144e738",
+      "log_path": "logs/deep-review/2026-10-31-20261031-203520-deep-review-f805dc05-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/InputMonitor.java#344",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java#1365"
+      ],
+      "status": "verified",
+      "summary": "输入窗口路径把 InputMonitor 误作 DisplayContent 内部类并省略实际调度入口",
+      "type": "source-symbol-mismatch",
+      "updated_at": "2026-10-31T20:44:07.353740+08:00"
     }
   ],
   "schema_version": 1
