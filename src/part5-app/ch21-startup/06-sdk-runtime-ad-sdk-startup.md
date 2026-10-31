@@ -83,10 +83,6 @@ Android 上的 Privacy Sandbox 曾是一组用于隐私广告与第三方 SDK �
 
 API 符号仍然存在，只说明代码可以编译；设备上的能力是否可用，`SDK_INT >= 34` 判断不了，要以 API 37 的废弃说明和运行期行为为准。Android 17 新项目的广告架构要避开 `SdkSandboxManager`、runtime-enabled SDK（为 SDK Runtime 改造的 SDK）交付包和旧 sandbox 生命周期。
 
-<!-- gracker-diagram: a227-01-retirement-evidence -->
-![API 符号保留与平台能力可用是两回事](../../assets/diagrams/ch21/a227-01-retirement-evidence.png)
-
-图：公开废弃说明、固定源码和运行期错误共同约束迁移；SDK_INT≥34 不能单独证明可加载。
 
 ### 1.2 其他 AdServices API 也不能作为新依赖
 
@@ -103,10 +99,6 @@ Android 17 Framework 源码里的行为更具体：
 
 旧 Topics epoch（主题更新周期）、竞价 JavaScript、registration（注册） URI（注册端点地址）的网络获取与延迟报告，如今只用来解释遗留流量，算不上还要继续优化的高频启动路径。
 
-<!-- gracker-diagram: a227-02-adservices-status -->
-![Android 17 各 AdServices 入口的退场边界](../../assets/diagrams/ch21/a227-02-adservices-status.png)
-
-图：Android 技术列入官方 Deprecate and remove；不能推断所有能力在同一 Android 版本同时移除。
 
 标识符这边要单独对待：Privacy Sandbox 退场并不会自动扩大 GAID（Google Advertising ID，广告标识符）、App Set ID（同一开发者应用集合标识）或第一方标识的用途，替代方案仍要重新通过隐私、政策、安全和性能评审。
 
@@ -122,10 +114,6 @@ Android 17 Framework 源码里的行为更具体：
 
 Privacy Sandbox 的 SDK Runtime architecture 与 developer guide 仍可用于理解 Android 14–16 的设计，但页面也注明内容属于可能变化的设计提案。判断 Android 17 当前能力时，以 API 37 的废弃说明、AndroidX release note（版本说明）和 `android-17.0.0_r1` 源码为准。
 
-<!-- gracker-diagram: a227-03-version-matrix -->
-![系统版本与 AndroidX 的迁移决策](../../assets/diagrams/ch21/a227-03-version-matrix.png)
-
-图：版本区间只描述历史 API 表面；实际遗留能力还受设备状态与 AdServices 更新影响。
 
 ## 2. Android 14–16 的历史行为
 
@@ -147,10 +135,6 @@ App process
 
 对照上面的调用链，三个对象各司其职：`system_server` 承载 Android 核心系统服务，SDK sandbox process 是为当前 App 创建的隔离进程，`IBinder`（Android 进程间通信机制） 是跨进程接口句柄。整条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder 回调。`loadSdk()` 是异步 API，结果稍后经 receiver（结果接收回调）返回，但这份工作本身有成本：调用方如果在首帧前等 receiver，页面仍然要等 sandbox 冷启动。
 
-<!-- gracker-diagram: a227-04-legacy-load -->
-![Android 14–16 的历史 SDK 加载链路](../../assets/diagrams/ch21/a227-04-legacy-load.png)
-
-图：异步仅改变调用形式；首帧前等待 receiver 仍可能把进程创建、类加载与准备串入关键路径。
 
 这套历史 API 还带着几条约束：
 
@@ -170,10 +154,6 @@ App process
 
 同步适合少量稳定标量，也就是字符串、数字、布尔值这类单个值，不适合复制整份业务配置。每个 key 都应有数据所有者、默认值、版本与隐私用途。
 
-<!-- gracker-diagram: a227-05-preference-sync -->
-![历史 SharedPreferences 同步只覆盖显式登记键](../../assets/diagrams/ch21/a227-05-preference-sync.png)
-
-图：这是历史隔离进程中的有限配置通道；高频业务状态和大对象应选择适合的接口。
 
 高频状态走一次调用，接口本身携带完整的业务含义；大对象则用文件描述符或受支持的数据通道传递，避免在 Binder 与 `Bundle` 中反复复制。
 
@@ -211,10 +191,6 @@ API 37 上这段判断直接返回 `false`，不再尝试 deprecated 的 `loadSd
 
 alpha19 本来就是尚未稳定的预发布版本，而这个库已经停止更新。现有产品若仍依赖它，应固定版本、保留兼容测试，并与 SDK/广告供应方确认替代交付；只给 `SdkSandboxManagerCompat` 换一层名字再继续扩展新功能，算不上迁移。
 
-<!-- gracker-diagram: a227-06-compat-isolation -->
-![旧兼容 ClassLoader 与平台隔离的区别](../../assets/diagrams/ch21/a227-06-compat-isolation.png)
-
-图：接口形式一致不代表隔离级别相同；已废弃兼容库不能承担新架构的长期维护。
 
 ## 3. Android 17 上的广告 SDK 启动模型
 
@@ -252,10 +228,6 @@ SDK Runtime 退场后，广告 SDK 的常见形态回到宿主进程：AAR、dyn
 
 “首帧后”仍可能影响 TTFD（Time to Full Display，主要内容完整可用时间）和第一段交互。在低端设备、首屏动画或 Jetpack Compose 首次生成并稳定 UI 期间，初始化要延迟到明确的空闲窗口或临近广告入口，并用实验确认首个广告可用率与启动体验之间的取舍。
 
-<!-- gracker-diagram: a227-08-startup-phases -->
-![广告 SDK 初始化按页面阶段分配](../../assets/diagrams/ch21/a227-08-startup-phases.png)
-
-图：延后不等于成本消失；需同时评估启动体验、低端设备帧竞争和首个广告可用率。
 
 ### 3.3 用状态机管理一次会话的初始化
 
@@ -352,10 +324,6 @@ class AdSdkGateway(
 
 若供应方要求主线程调用 init，`initializer` 可以只在主线程提交轻量入口，后续重工作是否异步仍由 trace 验证。`Dispatchers.IO` 是 Kotlin 协程面向阻塞 I/O 的共享线程池；把整个 gateway 切到这里，也改不了内部实现不可见的 SDK 自己的线程行为。
 
-<!-- gracker-diagram: a227-11-timeout-cancellation -->
-![超时、取消与初始化失败有不同返回语义](../../assets/diagrams/ch21/a227-11-timeout-cancellation.png)
-
-图：完成钩子也覆盖任务体未开始就取消的情况，状态不滞留在 Initializing。
 
 ## 4. 首屏广告怎样取舍
 
@@ -370,10 +338,6 @@ class AdSdkGateway(
 
 广告容器还要避免素材出现后让正文突然移位。预留尺寸时使用产品确定的广告规格；跳过广告时及时移除占位。远程素材到达后触发的布局和图片解码，应纳入首屏帧耗时与内存 guardrail（实验不可越过的保护指标）。
 
-<!-- gracker-diagram: a227-12-ad-placement-policy -->
-![首屏广告的超时策略由业务显式决定](../../assets/diagrams/ch21/a227-12-ad-placement-policy.png)
-
-图：固定容器尺寸，避免填充后的布局跳变；独立广告加载页也要可取消并计入内容可用时间。
 
 ## 5. Provider 与多进程边界
 
@@ -381,10 +345,6 @@ class AdSdkGateway(
 
 广告 SDK 通过 Provider 自动初始化时，`Application.onCreate()` 里的进程分支和延迟开关已经来不及阻止 Provider `onCreate()`。我们要检查的是最终 merged manifest（App 与所有依赖合并后的最终清单）：
 
-<!-- gracker-diagram: a227-07-automatic-entry -->
-![Provider 可在 Application 开关之前触发 SDK](../../assets/diagrams/ch21/a227-07-automatic-entry.png)
-
-图：从最终构建产物检查组件、进程和 initializer 依赖；Application 内开关不能撤回已执行的 Provider。
 
 - SDK 是否支持移除 Provider metadata 或切换手动初始化；
 - Provider 属于主进程还是指定远程进程；
@@ -406,10 +366,6 @@ class AdSdkGateway(
 
 这与历史 SDK sandbox 的独立 UID、受控 API 和独立 SDK package（安装包）模型不同。没有供应方明确支持和完整测试时，不要强行把内部实现不可见的广告 SDK 移到远程进程。
 
-<!-- gracker-diagram: a227-13-private-process -->
-![自有远程进程不能替代历史 SDK sandbox](../../assets/diagrams/ch21/a227-13-private-process.png)
-
-图：改变进程名不会自动产生 sandbox 的权限隔离，也不会自动移走所有首帧等待。
 
 ## 6. 失败与回退策略
 
@@ -476,10 +432,6 @@ A/B 实验是随机把条件相同的用户分到基准组与改动组，再对�
 
 实验要同时观察启动、稳定性和广告业务保护指标。首帧变快但广告填充骤降，或收入改善但 ANR/P99（99% 的样本不超过的耗时） 上升，都要产品与技术一起决定，单个指标说了不算。
 
-<!-- gracker-diagram: a227-15-resource-guardrails -->
-![启动、资源与广告业务放进同一实验](../../assets/diagrams/ch21/a227-15-resource-guardrails.png)
-
-图：相同账号、广告源、网络、入口、占位与超时策略下比较；缺失或终止样本也要归档。
 
 ## 8. 迁移清单
 
@@ -533,10 +485,6 @@ A/B 实验是随机把条件相同的用户分到基准组与改动组，再对�
 
 Android 17 已终止 SDK sandbox 的平台支持，旧的 `loadSdk()` 启动隔离方案只剩下维护 Android 14–16 遗留产品这个用途。API 37 新代码应停止探测和调用已废弃的平台路径，AndroidX 向后兼容库也接替不了长期维护职责。
 
-<!-- gracker-diagram: a227-16-retirement-migration -->
-![退出旧平台路径并验证替代交付](../../assets/diagrams/ch21/a227-16-retirement-migration.png)
-
-图：遗留14–16产品留受控迁移窗口；新架构把并发合并、调用线程、失败与资源成本纳入网关契约。
 
 广告 SDK 的启动问题随之回到常规工程：检查最终 Manifest，控制 Provider 和 Application 的工作，合并并发初始化，明确首帧、TTFD 与广告可用时间的关系，处理失败与重试，并把主线程、帧、内存、稳定性和广告指标放进同一次实验。隔离能力退场不影响这些原则，团队要做的是重新选择受支持的 SDK 交付和运行方式。
 

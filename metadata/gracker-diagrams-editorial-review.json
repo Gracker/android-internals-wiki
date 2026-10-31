@@ -56794,9 +56794,171 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "35697c23a84ffbdb175123098914c93f7371f59c7b0113964005fa0f28210abe",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "a227-01-retirement-evidence",
+          "title": "API 符号保留与平台能力可用是两回事",
+          "decision": "remove",
+          "reason": "公开废弃/源码flag/noop错误与类存在非能力的两段列表完整，三行退场证据卡重复。",
+          "original_line": 86,
+          "heading": "### 1.1 平台 API 已明确退场"
+        },
+        {
+          "original_id": "a227-02-adservices-status",
+          "title": "Android 17 各 AdServices 入口的退场边界",
+          "decision": "remove",
+          "reason": "四能力Android17行为/迁移判断表更完整，四行状态图重复。",
+          "original_line": 106,
+          "heading": "### 1.2 其他 AdServices API 也不能作为新依赖"
+        },
+        {
+          "original_id": "a227-03-version-matrix",
+          "title": "系统版本与 AndroidX 的迁移决策",
+          "decision": "remove",
+          "reason": "五行版本与工具矩阵及扩展支持说明完整，四行版本卡重复。",
+          "original_line": 125,
+          "heading": "### 1.3 版本表"
+        },
+        {
+          "original_id": "a227-04-legacy-load",
+          "title": "Android 14–16 的历史 SDK 加载链路",
+          "decision": "remove",
+          "reason": "七行原生文本链完整保留历史loadSdk到Binder，四框缩写同链重复。",
+          "original_line": 150,
+          "heading": "### 2.1 `loadSdk()` 做了什么"
+        },
+        {
+          "original_id": "a227-05-preference-sync",
+          "title": "历史 SharedPreferences 同步只覆盖显式登记键",
+          "decision": "remove",
+          "reason": "SharedPreferences仅登记key和三生命周期限制列表完整，三行同步映射卡重复。",
+          "original_line": 173,
+          "heading": "### 2.2 SharedPreferences 同步的用途"
+        },
+        {
+          "original_id": "a227-06-compat-isolation",
+          "title": "旧兼容 ClassLoader 与平台隔离的区别",
+          "decision": "remove",
+          "reason": "兼容assets提取到codecache和五条进程/UID/调用成本边界完整，三行隔离分类卡重复。",
+          "original_line": 214,
+          "heading": "### 2.4 AndroidX compat 的历史语义"
+        },
+        {
+          "original_id": "a227-08-startup-phases",
+          "title": "广告 SDK 初始化按页面阶段分配",
+          "decision": "remove",
+          "reason": "六阶段允许/禁止依赖表比三行阶段卡完整，保留原表与首帧后竞争段落。",
+          "original_line": 255,
+          "heading": "### 3.2 把广告能力拆成阶段"
+        },
+        {
+          "original_id": "a227-10-shared-waiters",
+          "title": "页面等待有自己的时限，共享初始化由 App 持有",
+          "decision": "keep",
+          "reason": "页面A/B各自awaitReady汇入同一私有Deferred网关，再由App持有初始化的结构，解释等待超时不取消共享任务。",
+          "original_line": 341,
+          "heading": "### 3.3 用状态机管理一次会话的初始化"
+        },
+        {
+          "original_id": "a227-09-gateway-states",
+          "title": "网关只创建一次初始化任务并缓存会话结果",
+          "decision": "keep",
+          "reason": "Idle到已发布共享任务Initializing，再到Ready或Failed的状态分支，表达会话级只创建一次和结果缓存。",
+          "original_line": 348,
+          "heading": "### 3.3 用状态机管理一次会话的初始化"
+        },
+        {
+          "original_id": "a227-11-timeout-cancellation",
+          "title": "超时、取消与初始化失败有不同返回语义",
+          "decision": "remove",
+          "reason": "三段正文准确区分本地超时null、取消传播、普通Exception缓存及致命Error/预启动取消，四行结果分类卡重复。",
+          "original_line": 355,
+          "heading": "### 3.3 用状态机管理一次会话的初始化"
+        },
+        {
+          "original_id": "a227-12-ad-placement-policy",
+          "title": "首屏广告的超时策略由业务显式决定",
+          "decision": "remove",
+          "reason": "首屏广告四种产品策略及布局/同步备用风险正文完整，三行策略卡重复。",
+          "original_line": 373,
+          "heading": "## 4. 首屏广告怎样取舍"
+        },
+        {
+          "original_id": "a227-07-automatic-entry",
+          "title": "Provider 可在 Application 开关之前触发 SDK",
+          "decision": "remove",
+          "reason": "本节首段已明确Provider早于Application开关，后五项合并Manifest清单具体，四框通用启动链重复。",
+          "original_line": 384,
+          "heading": "### 5.1 自动初始化发生在 `Application` 之前"
+        },
+        {
+          "original_id": "a227-13-private-process",
+          "title": "自有远程进程不能替代历史 SDK sandbox",
+          "decision": "remove",
+          "reason": "私有ads五项约束及与旧sandboxUID模型差别段落完整，三行进程卡重复。",
+          "original_line": 409,
+          "heading": "### 5.2 自有远程进程与 SDK Runtime 的差异"
+        },
+        {
+          "original_id": "a227-14-ad-timeline",
+          "title": "把初始化、请求、素材与曝光拆成不同时间线",
+          "decision": "keep",
+          "reason": "初始化回调、广告请求响应、素材Ready曝光的三轨顺序，直观区分同一会话多个完成边界。",
+          "original_line": 446,
+          "heading": "### 7.1 时间线"
+        },
+        {
+          "original_id": "a227-15-resource-guardrails",
+          "title": "启动、资源与广告业务放进同一实验",
+          "decision": "remove",
+          "reason": "七领域资源稳定性表及A/B固定项列表更完整，三行护栏卡重复。",
+          "original_line": 479,
+          "heading": "### 7.3 A/B 条件"
+        },
+        {
+          "original_id": "a227-16-retirement-migration",
+          "title": "退出旧平台路径并验证替代交付",
+          "decision": "remove",
+          "reason": "三套迁移/启动检查清单和结尾正文已经完整，四框退场总结重复。",
+          "original_line": 536,
+          "heading": "## 小结"
+        }
+      ],
+      "sha256_after": "a4d497a0263a7a00a2d016363080c98581155014529bb4f3884121d91816e641",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:57:56.765063+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a227/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a227/visual-review.json",
+      "retired_diagrams": [
+        "a227-01-retirement-evidence",
+        "a227-02-adservices-status",
+        "a227-03-version-matrix",
+        "a227-04-legacy-load",
+        "a227-05-preference-sync",
+        "a227-06-compat-isolation",
+        "a227-07-automatic-entry",
+        "a227-08-startup-phases",
+        "a227-11-timeout-cancellation",
+        "a227-12-ad-placement-policy",
+        "a227-13-private-process",
+        "a227-15-resource-guardrails",
+        "a227-16-retirement-migration"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-227/retired-assets.json"
     },
     {
       "index": 228,
@@ -57393,8 +57555,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 152,
-  "next_article": "src/part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md",
+  "reviewed_articles": 153,
+  "next_article": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -57404,7 +57566,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:55:33.325216+08:00",
+  "updated_at": "2026-10-31T16:57:56.765063+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -57582,9 +57744,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4727,
-  "reviewed_placements_after": 1955,
-  "net_removed_placements": 2772,
+  "reviewed_placements_before": 4743,
+  "reviewed_placements_after": 1958,
+  "net_removed_placements": 2785,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -57608,5 +57770,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 152
+  "currently_matching_reviewed_source_count": 153
 }
