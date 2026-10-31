@@ -41312,9 +41312,182 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "735f69ed1a3f5f836c726a161883daf34276789d034ff7b9bbcf7f92cdc2aeab",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "ch15-09-01-policy-scope",
+          "title": "线程策略、进程策略与另一个进程",
+          "decision": "remove",
+          "reason": "线程/VM/另一进程三列重复46–53策略范围表与说明，没有实际线程进程容器关系；原普通新线程LAX、线程池不继承和每进程独立完整留。",
+          "original_line": 55,
+          "heading": "## 先分清 ThreadPolicy 和 VmPolicy"
+        },
+        {
+          "original_id": "ch15-09-02-builder-default-log",
+          "title": "listener-only 与默认日志补充条件",
+          "decision": "keep",
+          "reason": "Builder监听器非空、无监听器+mask非零且缺四通用penalty、mask0或已有penalty的真实条件分支独立，明确listeneronly不自动log而flash/deathnetwork可能补log。",
+          "original_line": 62,
+          "heading": "## 先分清 ThreadPolicy 和 VmPolicy"
+        },
+        {
+          "original_id": "ch15-09-03-startup-install-window",
+          "title": "Application 配置的实际生效窗口",
+          "decision": "keep",
+          "reason": "普通绑定创建Application→providers→onCreate安装→后续检查的真实生命周期顺序独立，直观说明示例无法覆盖更早provider初始化。",
+          "original_line": 108,
+          "heading": "## 一份可解释的 API 34+ Debug 配置"
+        },
+        {
+          "original_id": "ch15-09-04-io-and-wait-checkpoints",
+          "title": "直接 I/O、SharedPreferences 等待与普通 Future",
+          "decision": "keep",
+          "reason": "直接I/O检查、SharedPreferences未加载时显式note后等、普通Future后台I/O等待无同检查三种具体路径对应独立，不能用无主线程violation排除等待。",
+          "original_line": 127,
+          "heading": "### 磁盘读写"
+        },
+        {
+          "original_id": "ch15-09-05-operation-category",
+          "title": "网络、自定义慢调用与显式 GC 的检查边界",
+          "decision": "remove",
+          "reason": "网络/noteSlowCall/显式GC三列重述134–159三节操作类别说明，所有异常类名非线程身份、无内建慢阈值和GC范围原文完整留。",
+          "original_line": 161,
+          "heading": "### 资源不匹配、未缓冲 I/O 与显式 GC"
+        },
+        {
+          "original_id": "ch15-09-06-vm-resource-lifecycle",
+          "title": "CloseGuard、Activity 与类实例上限",
+          "decision": "remove",
+          "reason": "CloseGuard/Activity实例/类上限三列复写170–180行为表和接入条件，没有实际资源open-close时序或超限计数例，全部GC扰动/清理/异步compat边界原文留。",
+          "original_line": 182,
+          "heading": "### 资源泄漏类检查"
+        },
+        {
+          "original_id": "ch15-09-07-flagged-api-selection",
+          "title": "显式 Builder、detectAll 与系统报告路径",
+          "decision": "remove",
+          "reason": "常规/BAL/URI grant三列摘要205–212版本方法表及显式位/detectAll/实际报告不同门槛段落，没有真实运行时条件分支，完整原说明留存。",
+          "original_line": 214,
+          "heading": "### 受 flag 控制的 API 36/37 detector"
+        },
+        {
+          "original_id": "ch15-09-08-penalty-execution-order",
+          "title": "death 与 listener 的先后及限流边界",
+          "decision": "keep",
+          "reason": "deathonnetwork检查点立即抛、ThreadPolicy通用death在listener安排前抛、VM先可受限流再death的三个具体执行阶段差异独立，保留后续回调不保证。",
+          "original_line": 232,
+          "heading": "## Penalty 的执行语义"
+        },
+        {
+          "original_id": "ch15-09-09-thread-listener-delivery",
+          "title": "ThreadPolicy listener 的当前接收者与临时放行",
+          "decision": "keep",
+          "reason": "ViolationInfo延迟处理读当前线程局部listener/executor、调度callback、回调线程暂放LAX后finally恢复的真实责任与时序链独立，保留策略替换与VM放行进程级不同。",
+          "original_line": 259,
+          "heading": "### 正确使用 penaltyListener"
+        },
+        {
+          "original_id": "ch15-09-10-looper-duration-window",
+          "title": "durationMillis 的真正起点和终点",
+          "decision": "keep",
+          "reason": "记录violation到前置Runnable取时的跨当前消息与队列回调时间轨独立，说明可包含后续同步工作/调度而非精确syscall，-1快捷和每批上限图注保留。",
+          "original_line": 272,
+          "heading": "### Looper 上的 duration 代表什么"
+        },
+        {
+          "original_id": "ch15-09-11-binder-roundtrip",
+          "title": "同步 Binder 的策略与违规回传",
+          "decision": "keep",
+          "reason": "同步token携mask+gather到服务检查点、正常reply最多前三、调用方readException补栈的真实跨Binder往返链独立，保留oneway/异常reply/VM不传播边界。",
+          "original_line": 294,
+          "heading": "## 跨 Binder 的 ThreadPolicy 传播"
+        },
+        {
+          "original_id": "ch15-09-12-temporary-policy-restore",
+          "title": "放行位差异与 finally 恢复",
+          "decision": "remove",
+          "reason": "四框逐项重画303–310六行try/finally代码与allowreads/writes两条说明，没有实际嵌套策略例，完整旧策略恢复/读写位差异与放行不提速文字保留。",
+          "original_line": 321,
+          "heading": "## 临时放行要精确恢复"
+        },
+        {
+          "original_id": "ch15-09-13-instrumentation-thread",
+          "title": "设备端测试的安装线程与恢复",
+          "decision": "keep",
+          "reason": "测试线程@Before到runOnMainSync目标线程安装、固定场景、原目标线程恢复的真实跨线程职责链独立，图注区分存活进程恢复与death后无执行者。",
+          "original_line": 359,
+          "heading": "### CI 结果的稳定性"
+        },
+        {
+          "original_id": "ch15-09-14-execution-thread-process",
+          "title": "协程调度与多进程仍回到 OS 线程",
+          "decision": "remove",
+          "reason": "Main/IO/另一进程三列重复368–376协程与多进程三段，且与开篇策略表同义，无实际协程切线程例，原执行线程归属/排队锁等待边界留。",
+          "original_line": 378,
+          "heading": "### 每个进程分别安装"
+        },
+        {
+          "original_id": "ch15-09-15-strictmode-to-perfetto",
+          "title": "从操作违规定位到真实时序调查",
+          "decision": "remove",
+          "reason": "三步逐项重复395–408可疑检查点加Trace再看真实时间轴段落与6行代码，未画实际重叠轨道；全覆盖表/Trace不启动采集与独立耗时说明保留。",
+          "original_line": 410,
+          "heading": "## StrictMode 没覆盖什么"
+        },
+        {
+          "original_id": "ch15-09-16-diagnostic-checklist",
+          "title": "没有报告、线程不对或数量不符时的检查顺序",
+          "decision": "remove",
+          "reason": "六框重排419–426八条排障清单，没有具体策略覆盖、限流或远端案例，原七种缺信息核对条件完整保留。",
+          "original_line": 428,
+          "heading": "## 排障清单"
+        }
+      ],
+      "sha256_after": "f8e889597c268f6b6a3b4054e8458cf9dfe5a73ec1b2851d8f0a65b955e3d01a",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:17:26.399299+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a157/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a157/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 157,
+        "article": "src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
+        "registered_sha256": "735f69ed1a3f5f836c726a161883daf34276789d034ff7b9bbcf7f92cdc2aeab",
+        "frozen_sha256": "735f69ed1a3f5f836c726a161883daf34276789d034ff7b9bbcf7f92cdc2aeab",
+        "review_input_sha256": "7d73c10799c886b077750677cb8ad332fc5551502b51d0ff8b195d42c7266b87",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a157/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a157/external-source.diff",
+        "diff_sha256": "918b969fa4842aa0860e34ea878f6505d5cc32f49a8143e0be73a2dce33b13bb",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 195, \"characters\": 18394, \"svg_labels_read\": 16, \"actual_pngs_viewed\": 16, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 6, \"code_lines\": 69, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "7d73c10799c886b077750677cb8ad332fc5551502b51d0ff8b195d42c7266b87",
+      "retired_diagrams": [
+        "ch15-09-01-policy-scope",
+        "ch15-09-05-operation-category",
+        "ch15-09-06-vm-resource-lifecycle",
+        "ch15-09-07-flagged-api-selection",
+        "ch15-09-12-temporary-policy-restore",
+        "ch15-09-14-execution-thread-process",
+        "ch15-09-15-strictmode-to-perfetto",
+        "ch15-09-16-diagnostic-checklist"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-157/retired-assets.json"
     },
     {
       "index": 158,
@@ -42582,8 +42755,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 91,
-  "next_article": "src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
+  "reviewed_articles": 92,
+  "next_article": "src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -42593,7 +42766,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:14:58.560534+08:00",
+  "updated_at": "2026-10-31T13:17:26.399299+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -42649,13 +42822,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
-      "registered_sha256": "735f69ed1a3f5f836c726a161883daf34276789d034ff7b9bbcf7f92cdc2aeab",
-      "observed_sha256": "7d73c10799c886b077750677cb8ad332fc5551502b51d0ff8b195d42c7266b87",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/09-strictmode-performance-diagnostics.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -42967,9 +43133,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3260,
-  "reviewed_placements_after": 1469,
-  "net_removed_placements": 1791,
+  "reviewed_placements_before": 3276,
+  "reviewed_placements_after": 1477,
+  "net_removed_placements": 1799,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -42993,5 +43159,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 91
+  "currently_matching_reviewed_source_count": 92
 }
