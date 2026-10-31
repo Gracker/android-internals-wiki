@@ -53316,9 +53316,205 @@
       "before_count": 20,
       "before_all_images": 20,
       "sha256_before": "399dd2217d0c58c3c921b13ad9eb75e053914907f4bbc1ab2cd0ccc4e5d84575",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a209-01-signalchain-dispatch",
+          "title": "SignalChain 先处理平台分支，再转用户 action",
+          "decision": "keep",
+          "reason": "平台特殊处理槽、android_handle_signal和已处理返回/未处理用户action分支，显示注册时间不能推导处理次序。",
+          "original_line": 150,
+          "heading": "#### Android SignalChain 的平台处理与用户处理"
+        },
+        {
+          "original_id": "a209-02-debuggerd-collection",
+          "title": "普通致命诊断把主要采集工作移到进程外",
+          "decision": "remove",
+          "reason": "同节8行文本完整流程及后半节7行流程更完整包括tombstoned/快照/退出，四框PNG是重复缩略而无进程泳道。",
+          "original_line": 178,
+          "heading": "#### debuggerd 的收集流程"
+        },
+        {
+          "original_id": "a209-03-two-signal-stacks",
+          "title": "备用信号栈和 pseudothread 栈不能混用",
+          "decision": "remove",
+          "reason": "相邻两段已经明确内核选择已配置altstack/Bionic常规pthread初始化与pseudothread不同职责，三行映射重复且没有栈布局。",
+          "original_line": 195,
+          "heading": "##### 备用信号栈（alternate signal stack，也称 altstack）与 pseudothread 栈各有用途"
+        },
+        {
+          "original_id": "a209-04-tombstone-evidence",
+          "title": "Tombstone 的字段共同限定证据",
+          "decision": "remove",
+          "reason": "六项读tombstone顺序、寄存器ABI限制及示例已完整，三行字段卡是清单复述。",
+          "original_line": 258,
+          "heading": "#### 头部、寄存器与调用栈"
+        },
+        {
+          "original_id": "a209-05-unwind-symbolication",
+          "title": "先恢复调用帧，再用匹配符号恢复源码",
+          "decision": "keep",
+          "reason": "原始寄存器maps、可信unwind帧、归一化与构建符号再到源码的分层链，明确符号不能补回已丢调用帧。",
+          "original_line": 294,
+          "heading": "#### Symbolication：从栈帧地址找到源码"
+        },
+        {
+          "original_id": "a209-07-breakpad-artifacts",
+          "title": "Minidump 和 Breakpad .sym 是配对的离线产物",
+          "decision": "keep",
+          "reason": "minidump现场经模块名/identifier取.sym，再以STACK CFI恢复和行记录符号化的具体离线链，与系统tombstone分工不同。",
+          "original_line": 351,
+          "heading": "#### 先明确两种产物"
+        },
+        {
+          "original_id": "a209-08-fault-hypotheses",
+          "title": "按强证据检验信号含义",
+          "decision": "remove",
+          "reason": "信号来源/误判表及SIGSEGV/ABRT/BUS/JNI分节已经列出强证据，四行排查映射重复。",
+          "original_line": 436,
+          "heading": "#### JNI 边界"
+        },
+        {
+          "original_id": "a209-09-memory-tools",
+          "title": "内存工具按检测场景和报告边界选择",
+          "decision": "remove",
+          "reason": "工具/阶段/检测/限制五行表更完整，三行工具图不增加机制或选择分支。",
+          "original_line": 457,
+          "heading": "### 用内存工具验证地址假设"
+        },
+        {
+          "original_id": "a209-10-collector-boundaries",
+          "title": "系统报告与 SDK minidump 保留来源并关联",
+          "decision": "remove",
+          "reason": "线上采集五方案表及按生命周期/信号/线程/BuildID关联的段落已完整，三行来源卡是子集且没有画关联。",
+          "original_line": 476,
+          "heading": "### 线上 Native Crash 采集方案"
+        },
+        {
+          "original_id": "a209-12-nonlocal-jump",
+          "title": "跳回线程入口不能修复进程一致性",
+          "decision": "remove",
+          "reason": "非局部跳转最低条件和mooner具体共享上下文/析构/altstack缺陷列表已详细，四行限制卡没有新增跳转控制流。",
+          "original_line": 556,
+          "heading": "#### mooner `prevent_pthread_crash` 的适用范围"
+        },
+        {
+          "original_id": "a209-06-two-cfi-meanings",
+          "title": "两种 CFI 解决不同问题",
+          "decision": "remove",
+          "reason": "两种CFI含义对照表及默认术语定义就在同节，三行词典图重复。",
+          "original_line": 642,
+          "heading": "### 1. 两个 CFI 表示不同概念"
+        },
+        {
+          "original_id": "a209-13-unwind-trust",
+          "title": "恢复上一帧需要规则和可信现场",
+          "decision": "remove",
+          "reason": "DWARF/EHABI、FP、栈扫描三行比较表和后续详细前提已有，三行信任卡不展示帧恢复规则。",
+          "original_line": 733,
+          "heading": "#### 3.2 Frame Pointer 链"
+        },
+        {
+          "original_id": "a209-14-current-versus-remote",
+          "title": "当前线程回溯与系统远程快照能力不同",
+          "decision": "remove",
+          "reason": "普通_Unwind_Backtrace示例与dladdr/远程快照/ART能力段落已说明，三行能力映射重复。",
+          "original_line": 773,
+          "heading": "#### 3.3 `_Unwind_Backtrace()` 能做什么"
+        },
+        {
+          "original_id": "a209-15-address-normalization",
+          "title": "地址只按其来源归一化一次",
+          "decision": "keep",
+          "reason": "绝对PC加映射/ELF修正与标准tombstone相对PC直接入符号化的双入口，避免重复减基址或APK偏移。",
+          "original_line": 823,
+          "heading": "#### 4.2 Tombstone 的 `pc` 列通常已完成归一化"
+        },
+        {
+          "original_id": "a209-16-symbol-identity",
+          "title": "符号仓库以真实构建身份检索",
+          "decision": "remove",
+          "reason": "BuildID主键及归档列表、SYMBOL_TABLE/FULL配置和strip验证命令更完整，三行身份卡重复。",
+          "original_line": 890,
+          "heading": "#### 5.2 自建符号服务"
+        },
+        {
+          "original_id": "a209-17-offline-tools",
+          "title": "离线工具先匹配输入格式与符号产物",
+          "decision": "remove",
+          "reason": "三种离线工具各节都有准确输入/产物/参数示例，三行工具卡重复且不增加查询路径。",
+          "original_line": 935,
+          "heading": "#### 6.2 `llvm-symbolizer` 与 `llvm-addr2line`"
+        },
+        {
+          "original_id": "a209-18-mixed-stacks",
+          "title": "Java、JIT 与 Native 保留不同地址语义",
+          "decision": "remove",
+          "reason": "混合栈三组数据清单与libunwindstack/ART协作、DexPC不能送ELF段落已明确，三行语义卡重复。",
+          "original_line": 986,
+          "heading": "### 8. Java、JIT 与 native 混合调用链"
+        },
+        {
+          "original_id": "a209-11-signal-safe-split",
+          "title": "信号上下文只保存和通知，解析放到外部",
+          "decision": "keep",
+          "reason": "正常期准备后handler发有界通知，外部解析与及时继续原action分成独立路径，避免等上传再退出。",
+          "original_line": 1032,
+          "heading": "#### 9.1 信号处理器里只做最小工作"
+        },
+        {
+          "original_id": "a209-19-architecture-features",
+          "title": "架构特性改变取证，不提供统一地址修正常量",
+          "decision": "remove",
+          "reason": "PAC/BTI/MTE/16KB四分节完整解释不同取证影响，四行特性卡只是缩写并未给出新地址流程。",
+          "original_line": 1084,
+          "heading": "#### 10.4 16 KB 页"
+        },
+        {
+          "original_id": "a209-20-symbolication-quality",
+          "title": "符号化失败按环节拆开度量",
+          "decision": "remove",
+          "reason": "发布十项门禁/失败八行表及BuildID缺失到设备端截断的排查顺序已详细，四框质量卡重复链路且未增加实际质量数据。",
+          "original_line": 1121,
+          "heading": "### 12. Native 发布门禁"
+        }
+      ],
+      "sha256_after": "da9f728af58c4a00460ef2ef2e7390116e7ae68863b3557e2b65af29d68e9efd",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:10:32.107607+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 20,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a209/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a209/visual-review.json",
+      "retired_diagrams": [
+        "a209-02-debuggerd-collection",
+        "a209-03-two-signal-stacks",
+        "a209-04-tombstone-evidence",
+        "a209-06-two-cfi-meanings",
+        "a209-08-fault-hypotheses",
+        "a209-09-memory-tools",
+        "a209-10-collector-boundaries",
+        "a209-12-nonlocal-jump",
+        "a209-13-unwind-trust",
+        "a209-14-current-versus-remote",
+        "a209-16-symbol-identity",
+        "a209-17-offline-tools",
+        "a209-18-mixed-stacks",
+        "a209-19-architecture-features",
+        "a209-20-symbolication-quality"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-209/retired-assets.json"
     },
     {
       "index": 210,
@@ -54102,8 +54298,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 135,
-  "next_article": "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
+  "reviewed_articles": 136,
+  "next_article": "src/part5-app/ch20-stability/04-anr-governance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -54113,7 +54309,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:08:16.602093+08:00",
+  "updated_at": "2026-10-31T16:10:32.107607+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -54312,9 +54508,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4400,
-  "reviewed_placements_after": 1857,
-  "net_removed_placements": 2543,
+  "reviewed_placements_before": 4420,
+  "reviewed_placements_after": 1862,
+  "net_removed_placements": 2558,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -54338,5 +54534,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 135
+  "currently_matching_reviewed_source_count": 136
 }
