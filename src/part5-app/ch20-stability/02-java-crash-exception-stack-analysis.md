@@ -149,10 +149,6 @@ Java Crash 指 `Throwable` 沿当前线程的调用路径传播时一直没有�
 
 三个问题里只要有一个答不清楚，就应让异常沿调用链传播到拥有决策权的边界。
 
-<!-- gracker-diagram: a208-01-exception-boundary -->
-![局部恢复必须同时满足三项条件](../../assets/diagrams/ch20/a208-01-exception-boundary.png)
-
-图：异常类型提供排查方向，能否恢复取决于边界信息、状态一致性和显式结果，不能以 catch 范围代替契约。
 
 ### Android 17 的默认致命异常处理链
 
@@ -246,10 +242,6 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 
 普通第三方应用要避免把系统 `DropBoxManager` 当作自有崩溃暂存区。它是系统级、容量受限的诊断设施，条目可能被丢弃，写入与读取还受平台权限和设备策略约束。自有数据应写入应用私有存储，并在下次进程启动后校验、去重、脱敏和上传。
 
-<!-- gracker-diagram: a208-03-fatal-minimal-work -->
-![证据在正常运行期准备，在 fatal 路径限量保存](../../assets/diagrams/ch20/a208-03-fatal-minimal-work.png)
-
-图：OOM、栈空间不足和文件阻塞时记录都只能尽力；异步任务可能随进程结束消失。
 
 #### 安装时机与多 SDK 链
 
@@ -416,10 +408,6 @@ Android 模块的 [`AndroidExceptionPreHandler.kt`](https://github.com/Kotlin/ko
 
 协程记录要带 `CoroutineName`、作用域类型、页面生命周期和 Dispatcher（决定协程在哪个线程或线程池执行的调度器）。`CoroutineExceptionHandler` 可能运行在主线程或已经处于失败传播过程的工作线程上，里面要避免同步访问网络和大规模序列化。
 
-<!-- gracker-diagram: a208-06-coroutine-paths -->
-![协程异常沿结果、父级或最终处理链传播](../../assets/diagrams/ch20/a208-06-coroutine-paths.png)
-
-图：CoroutineExceptionHandler 只能在失败后报告，恢复不了该协程；JVM 兜底会调用服务发现处理器和线程未捕获处理器。
 
 协程异常也应遵守下文 Crash 恢复架构的责任边界：致命路径保留最小证据，下次启动再决定降级与恢复。
 
@@ -552,10 +540,6 @@ for (int i = 0; i < record.count; i++) {
 
 `CreateInternalStackTrace()` 通过 `StackVisitor` 遍历 managed stack（ART 管理的调用栈），并在 Java 堆上构造内部 trace 和后续的 `StackTraceElement[]`。这条路径的前提，是 ART 的线程协调、对象访问与内存分配仍能工作；它也不满足 async-signal-safe（异步信号安全） 要求，该术语指函数可在异步信号打断任意指令时安全调用。到了 OOM 现场，同样别指望它完成最小数据写入。
 
-<!-- gracker-diagram: a208-08-stack-current-other -->
-![当前线程与跨线程取栈走不同路径](../../assets/diagrams/ch20/a208-08-stack-current-other.png)
-
-图：跨线程取栈会临时挂起目标线程并生成 Java 对象；一次已进入的挂起操作不能被外层处理预算中断。
 
 #### 2.3 `Throwable` 栈记录异常发生点
 
@@ -715,10 +699,6 @@ Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空
 
 `ReentrantLock` 底层可能使用 park/futex，但它不属于对象 monitor；Native mutex 也不在 ART monitor 表中。内核的 `futex_wait` 只说明线程进入某个 futex 竞争等待；它对应哪一把上层锁、owner 是谁，都要靠 native/Java 栈和事件去关联。
 
-<!-- gracker-diagram: a208-12-wait-mechanisms -->
-![等待表象必须结合上层同步机制解释](../../assets/diagrams/ch20/a208-12-wait-mechanisms.png)
-
-图：Java 状态和 futex 只描述采样时的等待；monitor、AQS、Native 锁、Binder 和事件循环不能互相代换。
 
 #### 5.2 等待图只接受有 owner 的边
 
@@ -794,10 +774,6 @@ Perfetto 没记录到锁竞争事件，竞争仍可能存在；trace 配置、�
 
 Java monitor 的解释到 ART 为止，套不到内核上：`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用来说明线程为何睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
 
-<!-- gracker-diagram: a208-14-capture-contexts -->
-![四种故障现场使用不同取证边界](../../assets/diagrams/ch20/a208-14-capture-contexts.png)
-
-图：Java 线程 API 不提供公开的 monitor owner；API 30 退出历史、API 31 Native protobuf 与平台私有能力分别处理。
 
 ### 8. 源码与文档入口
 
@@ -876,10 +852,6 @@ flowchart LR
 
 Crash handler（未捕获异常处理器） 所在的左半段只适合做有上限的同步写入。数据库查询、网络请求、动态配置拉取、复杂序列化和线程切换都放到右半段。尚未完成的异步任务会在默认处理器结束进程时一并消失。
 
-<!-- gracker-diagram: a208-15-now-next-start -->
-![当前进程存最小证据，下次启动决定恢复](../../assets/diagrams/ch20/a208-15-now-next-start.png)
-
-图：数据库、配置拉取、复杂解析和恢复决策属于下次正常启动；不能依赖 fatal 后还未完成的异步任务。
 
 #### Java 未捕获异常入口
 
@@ -987,10 +959,6 @@ API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回近期进
 
 API 37 的 `ApplicationExitInfo.getAnrInfo()` 只在 `reason == REASON_ANR` 时可能返回结构化 `AnrInfo`；该返回值仍需判空，其他 reason 返回 `null`。`getDescription()` 是面向人的不稳定文本，长期分类协议要以结构化字段为准。
 
-<!-- gracker-diagram: a208-17-exit-reason-policy -->
-![启动失败计数先按退出 reason 分类](../../assets/diagrams/ch20/a208-17-exit-reason-policy.png)
-
-图：reason 是系统记录的结局，SafeMode 还要验证时间、进程、版本和阶段；SIGKILL 不能直接归为 LMK 或 Native Crash。
 
 #### 历史记录有容量和持久化边界
 
@@ -1050,10 +1018,6 @@ fun isCorrelatedStartupFailure(
 
 启动标记缺失要当作未知状态，而非失败：首次安装、数据被清理或写入尚未开始都会出现这种状态。只有“未完成的启动标记 + 相关系统记录”或“未完成的启动标记 + 本地 fatal 最小记录”才形成一次启动失败证据。生产代码还要持久化已经匹配过的退出记录标识，避免重复计数，并处理系统时间变化。
 
-<!-- gracker-diagram: a208-18-correlate-launch -->
-![只有匹配同一次启动的证据才能增加失败计数](../../assets/diagrams/ch20/a208-18-correlate-launch.png)
-
-图：若本次启动已到成功点，之后的运行期 Crash 不能进入启动循环计数；时钟变化与候选歧义降低证据等级。
 
 ### 安全气囊（SafeMode）机制
 
@@ -1082,10 +1046,6 @@ stateDiagram-v2
 
 `Suspected` 避免一次偶发故障直接关闭大量功能；`Probation` 避免兜底页能启动就被误判为原问题已经修复。只有在完整模式或逐步恢复的模块集合下成功，才能消除对应失败计数。
 
-<!-- gracker-diagram: a208-19-safemode-states -->
-![受限模式成功不等于完整模式已修复](../../assets/diagrams/ch20/a208-19-safemode-states.png)
-
-图：一次偶发故障先观察，重复证据才受限；修复后试运行真实模块，只有完整模式或指定恢复集合健康才能消除对应失败计数。
 
 #### 判定输入
 
@@ -1171,10 +1131,6 @@ installationEpoch / versionCode / processRole / startupRoute / signature
 
 计划应表示为 `moduleId + action + scope + reason + expiry`。图片预热、动态插件、推荐和数据分析上报等可选能力可以延迟或关闭；数据库强制迁移、身份认证和支付校验仍要走完。WebView renderer（渲染进程） 退出属于页面级恢复，不直接增加宿主主进程的连续启动崩溃计数。
 
-<!-- gracker-diagram: a208-21-degradation-scope -->
-![降级计划按依赖和证据限定范围](../../assets/diagrams/ch20/a208-21-degradation-scope.png)
-
-图：快速路径只用已确认的本地证据，启动后再补查 ExitInfo；数据库迁移、身份认证和支付校验不能因兜底计划跳过。
 
 #### SafeMode 验证组合
 
@@ -1268,10 +1224,6 @@ override fun onRenderProcessGone(
 
 “暂停 staged rollout（分阶段发布）”只阻止更多用户获得该版本，已安装的设备并不会自动退回旧包。恢复旧逻辑也需要发布更高版本号的新构建，见[Android 版本号与降级保护](https://developer.android.com/studio/publish/versioning)和[暂停分阶段发布的官方说明](https://support.google.com/googleplay/android-developer/answer/6346149?hl=en)。SafeMode 和服务端开关用于保护已经安装新版本的设备，新包用于修复代码。
 
-<!-- gracker-diagram: a208-23-release-recovery -->
-![暂停放量、保护已安装用户与修复代码分别执行](../../assets/diagrams/ch20/a208-23-release-recovery.png)
-
-图：常规安装防止低版本覆盖；Play 外下载 dex/JAR/.so 不能作为应用自更新路径，解释型内容例外仍受其他政策约束。
 
 #### 热修复有分发与安全边界
 
@@ -1303,10 +1255,6 @@ override fun onRenderProcessGone(
 
 远程进程死亡可通过 Binder death（对端进程死亡通知）或业务连接回调感知，但“连接断开”未必是 Crash。要结合 `ApplicationExitInfo`、本地最小崩溃记录和服务端记录分类。自动重启采用指数退避，即每次失败后逐步延长等待时间，并设置次数上限；持续重启后关闭对应功能，让用户可以回到主流程。
 
-<!-- gracker-diagram: a208-24-multiprocess-records -->
-![各进程独立留证，由指定进程汇总计划](../../assets/diagrams/ch20/a208-24-multiprocess-records.png)
-
-图：每个进程有自己的 Application 和默认异常入口；记录文件按进程隔离，连接断开再结合系统证据分类，重启有退避和次数上限。
 
 ### 上线前检查
 

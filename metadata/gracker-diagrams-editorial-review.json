@@ -53079,9 +53079,235 @@
       "before_count": 24,
       "before_all_images": 24,
       "sha256_before": "fd34d9f013764f57b98bff59a46f9e424f89ebabfcd4d9f56ec609db1c268705",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "a208-01-exception-boundary",
+          "title": "局部恢复必须同时满足三项条件",
+          "decision": "remove",
+          "reason": "三个恢复条件已有连续编号问题和任一不成立传播的明确规则，四框只把清单排成箭头。",
+          "original_line": 152,
+          "heading": "### Java 异常分类与恢复策略"
+        },
+        {
+          "original_id": "a208-02-handler-dispatch",
+          "title": "线程处理器与默认处理器是两层入口",
+          "decision": "keep",
+          "reason": "pre-handler之后线程显式handler与ThreadGroup/default两条入口及继续委托的分支，解释SDK截断位置。",
+          "original_line": 180,
+          "heading": "#### 从 ART 到 `Thread.dispatchUncaughtException()`"
+        },
+        {
+          "original_id": "a208-03-fatal-minimal-work",
+          "title": "证据在正常运行期准备，在 fatal 路径限量保存",
+          "decision": "remove",
+          "reason": "正常期/fatal/下次启动三行职责是同节清单缩写，后半篇原生恢复架构更完整，保留后者。",
+          "original_line": 249,
+          "heading": "#### 致命路径只做最少工作"
+        },
+        {
+          "original_id": "a208-04-sdk-chain",
+          "title": "后安装的 SDK 只能委托注册当时的前一个处理器",
+          "decision": "keep",
+          "reason": "后安装SDK C反向委托B/A再到平台的实际注册逆序链，补充平台分发图未画出的多SDK顺序。",
+          "original_line": 270,
+          "heading": "#### 安装时机与多 SDK 链"
+        },
+        {
+          "original_id": "a208-05-stack-256-threshold",
+          "title": "256 是复用优化阈值，绝不是最大栈深度",
+          "decision": "keep",
+          "reason": "首次遍历后按小于256复用与达到256再遍历分叉，说明256是优化阈值而非栈深上限。",
+          "original_line": 291,
+          "heading": "#### `kMaxSavedFrames = 256` 是优化阈值"
+        },
+        {
+          "original_id": "a208-06-coroutine-paths",
+          "title": "协程异常沿结果、父级或最终处理链传播",
+          "decision": "remove",
+          "reason": "相邻协程传播表完整区分父子launch/async/cancellation及版本边界，四行分类卡重复且不画父子关系。",
+          "original_line": 419,
+          "heading": "### Kotlin Coroutine 异常处理"
+        },
+        {
+          "original_id": "a208-07-non-atomic-snapshots",
+          "title": "getAllStackTraces 逐线程取得多时刻快照",
+          "decision": "keep",
+          "reason": "A/B/C不同时间分别取栈的多轨示意直接解释非原子快照，无刻度避免伪造时长。",
+          "original_line": 539,
+          "heading": "#### 2.1 它逐线程取栈，不做全局 `SuspendAll`"
+        },
+        {
+          "original_id": "a208-08-stack-current-other",
+          "title": "当前线程与跨线程取栈走不同路径",
+          "decision": "remove",
+          "reason": "当前线程直接取栈与跨线程先离开Runnable再挂起目标两条编号路径和预算说明已经完整，三行映射重复。",
+          "original_line": 555,
+          "heading": "#### 2.2 当前线程与其他线程走不同路径"
+        },
+        {
+          "original_id": "a208-09-throwable-time",
+          "title": "异常自带栈与 handler 采样是不同时间的证据",
+          "decision": "keep",
+          "reason": "Throwable构造/保存/稍后抛出到handler重新采样的时间顺序，防止用较晚handler栈覆盖原始证据。",
+          "original_line": 571,
+          "heading": "#### 2.3 `Throwable` 栈记录异常发生点"
+        },
+        {
+          "original_id": "a208-10-sigquit-context",
+          "title": "SIGQUIT 由普通 SignalCatcher 线程组织诊断",
+          "decision": "keep",
+          "reason": "SignalCatcher普通线程sigwait到协作checkpoint/注解输出的运行时诊断链，区分异步fatal handler安全前提。",
+          "original_line": 588,
+          "heading": "#### 3.1 SignalCatcher 在普通线程上下文中处理 SIGQUIT"
+        },
+        {
+          "original_id": "a208-11-monitor-evidence",
+          "title": "只把有 owner 的等待关系加入 monitor 图",
+          "decision": "keep",
+          "reason": "main等待A的实线owner边与cache-writer等待通知B的虚线状态区分，示范只接受有owner证据的锁关系。",
+          "original_line": 621,
+          "heading": "#### 3.2 ART dump 可以附加 Java monitor（`synchronized` 和 `Object.wait()` 使用的对象锁结构） 关系"
+        },
+        {
+          "original_id": "a208-12-wait-mechanisms",
+          "title": "等待表象必须结合上层同步机制解释",
+          "decision": "remove",
+          "reason": "monitor/Object.wait/AQS/futex/Binder/Looper六行表更完整，四行映射图是表格子集。",
+          "original_line": 718,
+          "heading": "#### 5.1 从线程状态到锁类型"
+        },
+        {
+          "original_id": "a208-13-lock-timeline",
+          "title": "等待时长、持锁区间与 CPU 调度分别取证",
+          "decision": "keep",
+          "reason": "owner持锁/CPU运行与IO、main争用slice和阻塞到可运行/运行的四轨先后关系，区分释放锁和实际取锁。",
+          "original_line": 749,
+          "heading": "#### 5.3 需要时长时，引入时间轴"
+        },
+        {
+          "original_id": "a208-14-capture-contexts",
+          "title": "四种故障现场使用不同取证边界",
+          "decision": "remove",
+          "reason": "本节开头四种故障现场证据/禁用动作表及分层清单已完整，末尾四行现场卡重复。",
+          "original_line": 797,
+          "heading": "### 7. Android 版本边界"
+        },
+        {
+          "original_id": "a208-15-now-next-start",
+          "title": "当前进程存最小证据，下次启动决定恢复",
+          "decision": "remove",
+          "reason": "同一小节原生Mermaid完整画出退出证据与本地记录汇合、下次启动关联及SafeMode分支，PNG只是四框缩略。",
+          "original_line": 879,
+          "heading": "#### 把“当前进程”和“下次启动”分开"
+        },
+        {
+          "original_id": "a208-16-atomic-file",
+          "title": "AtomicFile 解决单文件替换，不等于严格掉电事务",
+          "decision": "keep",
+          "reason": "AtomicFile.new写入、文件sync关闭、rename到读者旧新选择、下次校验的次序，突出原子替换不代表目录持久化或互斥。",
+          "original_line": 944,
+          "heading": "#### 原子替换的用途与局限"
+        },
+        {
+          "original_id": "a208-17-exit-reason-policy",
+          "title": "启动失败计数先按退出 reason 分类",
+          "decision": "remove",
+          "reason": "reason分类和SafeMode处理表保留全部17个常量及条件，四行图重复且省略具体类别。",
+          "original_line": 990,
+          "heading": "#### Android 17 的 reason 边界"
+        },
+        {
+          "original_id": "a208-18-correlate-launch",
+          "title": "只有匹配同一次启动的证据才能增加失败计数",
+          "decision": "remove",
+          "reason": "相关性步骤已有五项条件与Kotlin例子，后文租约图保留旧证据到本次计划及启动后补查顺序，避免两张相近链反复。",
+          "original_line": 1053,
+          "heading": "#### 关联必须指向同一次启动尝试"
+        },
+        {
+          "original_id": "a208-19-safemode-states",
+          "title": "受限模式成功不等于完整模式已修复",
+          "decision": "remove",
+          "reason": "紧邻原生状态图包含同样Normal/Suspected/Safe/Probation迁移并额外保留Safe自循环，PNG语义重复。",
+          "original_line": 1085,
+          "heading": "#### SafeMode 的状态机设计"
+        },
+        {
+          "original_id": "a208-20-launch-lease",
+          "title": "先读取上一轮租约，再建立本轮启动身份",
+          "decision": "keep",
+          "reason": "先读旧租约/已确认失败、选计划再建新launchId、启动推进阶段、事后补查消费的协议顺序，避免覆盖旧证据。",
+          "original_line": 1144,
+          "heading": "#### 启动租约：先记录进度，再判断失败"
+        },
+        {
+          "original_id": "a208-21-degradation-scope",
+          "title": "降级计划按依赖和证据限定范围",
+          "decision": "remove",
+          "reason": "L1/L2/L3动作表与分组冷却恢复正文已表达作用范围，四行降级卡是分类复述。",
+          "original_line": 1174,
+          "heading": "#### 多进程、版本和恢复计划"
+        },
+        {
+          "original_id": "a208-22-webview-recovery",
+          "title": "WebView renderer 退出是逐实例的页面恢复",
+          "decision": "keep",
+          "reason": "renderer退出到清理回调指定实例/注册表、destroy、轻量兜底与有预算才重建的逐实例生命周期，区分宿主启动故障。",
+          "original_line": 1250,
+          "heading": "#### WebView renderer 退出"
+        },
+        {
+          "original_id": "a208-23-release-recovery",
+          "title": "暂停放量、保护已安装用户与修复代码分别执行",
+          "decision": "remove",
+          "reason": "分阶段发布动作列表和已安装用户/更高版本重建/解释型政策边界均由正文明确，四行发布职责图重复。",
+          "original_line": 1271,
+          "heading": "#### 分阶段发布规则"
+        },
+        {
+          "original_id": "a208-24-multiprocess-records",
+          "title": "各进程独立留证，由指定进程汇总计划",
+          "decision": "remove",
+          "reason": "各进程记录恢复职责表以及独立文件/主进程正常期汇总/死亡分类退避段落已完整，三行职责卡重复。",
+          "original_line": 1306,
+          "heading": "#### 按进程分配职责"
+        }
+      ],
+      "sha256_after": "c7b267c919c35471d6e76ce054b86c65275d39585814cda251690618092ea018",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:08:16.602093+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 24,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a208/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a208/visual-review.json",
+      "retired_diagrams": [
+        "a208-01-exception-boundary",
+        "a208-03-fatal-minimal-work",
+        "a208-06-coroutine-paths",
+        "a208-08-stack-current-other",
+        "a208-12-wait-mechanisms",
+        "a208-14-capture-contexts",
+        "a208-15-now-next-start",
+        "a208-17-exit-reason-policy",
+        "a208-18-correlate-launch",
+        "a208-19-safemode-states",
+        "a208-21-degradation-scope",
+        "a208-23-release-recovery",
+        "a208-24-multiprocess-records"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-208/retired-assets.json"
     },
     {
       "index": 209,
@@ -53876,8 +54102,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 134,
-  "next_article": "src/part5-app/ch20-stability/02-java-crash-exception-stack-analysis.md",
+  "reviewed_articles": 135,
+  "next_article": "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -53887,7 +54113,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:05:50.664505+08:00",
+  "updated_at": "2026-10-31T16:08:16.602093+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -54086,9 +54312,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4376,
-  "reviewed_placements_after": 1846,
-  "net_removed_placements": 2530,
+  "reviewed_placements_before": 4400,
+  "reviewed_placements_after": 1857,
+  "net_removed_placements": 2543,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -54112,5 +54338,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 134
+  "currently_matching_reviewed_source_count": 135
 }
