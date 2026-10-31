@@ -98,10 +98,6 @@ last_rework_at: '2026-08-15T22:11:00+08:00'
 
 能量与功率也要分开：能量描述一个窗口内的累计消耗，功率描述消耗速率，平均功率等于能量增量除以时间增量：ΔE以微瓦秒、Δt以毫秒记录时，P[mW]=ΔE[μWs]/Δt[ms]；必须先确认Δt>0且读数有效，不能用请求回调耗时替代硬件样本时间。电池百分比经过量化和系统估算，短窗口内读数没有下降，推不出这段窗口就是零消耗。
 
-<!-- gracker-diagram: a296-01-four-power-evidence-scopes -->
-![状态、UID 活动、模型归因与设备能量分别回答问题](../../assets/diagrams/ch26/a296-01-four-power-evidence-scopes.png)
-
-图：Battery Historian不再积极维护；保留历史解释能力，新测量依赖可重复实验和明确scope。
 
 ## 功耗数据的平台结构
 
@@ -147,10 +143,6 @@ Wi-Fi 与移动网络的归因同样结合控制器活动、网络字节、进�
 
 这些触发器属于 `PowerStatsService` 的内部日志策略。Battery Historian 展示的是 bugreport 中可解析的 Batterystats 与系统材料，我们据此能看历史，却定不下它的采集节奏，也就谈不上它按某个周期“实时采集”；App 的监控协议要落在公开输出语义上，内部周期、保留量与文件格式都留在公开承诺之外。
 
-<!-- gracker-diagram: a296-04-logger-versus-historian-cadence -->
-![内部 logger 周期不能推导 Historian 的“实时采样率”](../../assets/diagrams/ch26/a296-04-logger-versus-historian-cadence.png)
-
-图：内部记录、采样、文件轮转与离线可视化分别归属，不能混成统一时钟。
 
 ## 正确采集 Battery Historian 证据
 
@@ -206,10 +198,6 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 
 报告同时给出每任务能量、耗时分布和失败率。A/B 实验在等价条件下交替运行基准实现与候选实现：两组使用同一设备、同一场景与相近初始状态，并保留空闲基线，即不执行待测场景时的对照测量。跨设备汇总时按机型与系统版本分层。
 
-<!-- gracker-diagram: a296-06-energy-power-and-work-denominators -->
-![能量、平均功率与工作产出放在同一有效窗口](../../assets/diagrams/ch26/a296-06-energy-power-and-work-denominators.png)
-
-图：工作量、能量和正确性共同限制“更省电”的解释；跨设备先按型号/系统分层。
 
 ### Power Profiler 与 Macrobenchmark
 
@@ -268,10 +256,6 @@ Android 14 / API 34 的 `EXTRA_CYCLE_COUNT` 可提供充电循环计数，`EXTRA
 
 所以系统设置或 `system_server` 拿全设备 `BatteryUsageStats` 的那条路，普通 App 走不通——这类信息应通过 adb、bugreport、平台测试组件或 OEM 授权的系统应用获取。
 
-<!-- gracker-diagram: a296-08-uid-health-battery-state-and-privileges -->
-![普通 App 的三条公开读取路径保持不同单位与重置语义](../../assets/diagrams/ch26/a296-08-uid-health-battery-state-and-privileges.png)
-
-图：SystemHealthManager没有getBatteryUsageStats等虚构方法；整块电池状态不能精确归因单App。
 
 ## WakeLock：从时间线定位持有者
 
@@ -332,10 +316,6 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 
 若候选实现减少了唤醒、却让同步大量超时，“更省电”这三个字就落不到它头上。同样，某次 Historian 时间线看起来更安静，也还要多轮实验和能量增量来支持。优化收益只填写测量得到的分布、样本条件和不确定性，固定百分比或“续航增加几小时”这类数字，要等测完才有。
 
-<!-- gracker-diagram: a296-10-network-activity-and-radio-energy -->
-![网络字节是活动量，能耗还受无线状态与完成方式影响](../../assets/diagrams/ch26/a296-10-network-activity-and-radio-energy.png)
-
-图：HealthStats/TrafficStats字节不能换成固定每MB能量；任务质量与正确性同时验收。
 
 ## 设备级实战：解释电源轨峰值
 
@@ -349,10 +329,6 @@ Power Profiler或PowerMonitor的CPU/display/cellular等轨都先按系统范围�
 
 内核调度、驱动、显示与基带（modem）可能共同影响电源轨。需要精确到硬件组件时，优先使用设备厂商的电源轨定义、外置功耗仪和受控 system trace；Battery Historian 的柱状状态只能协助缩小时间窗。
 
-<!-- gracker-diagram: a296-11-rail-samples-noise-and-app-attribution -->
-![轨读数的分辨率和覆盖先于“峰值归因”](../../assets/diagrams/ch26/a296-11-rail-samples-noise-and-app-attribution.png)
-
-图：硬件轨定义与实际采样分辨率限制结论；更精细测量需厂商信息或外置仪器补充。
 
 ## APM 集成与指标留存
 
@@ -404,10 +380,6 @@ APM 应保存各层数据原本的含义：
 
 跨设备报告以每个成功任务的能量、性能和质量为主，并保留绝对能量。电源轨名称与组件集合按设备维护映射；语义确认不了的电源轨归入设备专有项，不按名称猜测为 CPU、GPU 或内存。
 
-<!-- gracker-diagram: a296-12-apm-scopes-selection-and-device-health -->
-![线上留存来源与支持状态，跨设备按成功工作量比较](../../assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.png)
-
-图：电池健康公开字段不构成精确内阻/容量衰减模型；省电开关人群也不是随机对照。
 
 ## 验收清单
 

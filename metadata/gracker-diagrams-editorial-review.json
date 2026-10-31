@@ -68085,9 +68085,133 @@
       "before_count": 12,
       "before_all_images": 12,
       "sha256_before": "68575ecfe9e7f0b89a25e0fdaa8b15c3115082a6ffed7734f4b6edadcd70fd0f",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a296-01-four-power-evidence-scopes",
+          "title": "状态、UID 活动、模型归因与设备能量分别回答问题",
+          "decision": "remove",
+          "reason": "四种scope卡复写四类数据表与量化电量解释。",
+          "original_line": 101,
+          "heading": "## 先分清四种数据"
+        },
+        {
+          "original_id": "a296-02-battery-services-and-hardware",
+          "title": "活动统计与硬件功耗通过系统内部接口协作",
+          "decision": "keep",
+          "reason": "BatteryStats活动模型与PowerStats硬件读数通过内部接口协作，分支表达两系统职责而非固定三层。",
+          "original_line": 121,
+          "heading": "### BatteryStatsService 与 PowerStatsService 的分工"
+        },
+        {
+          "original_id": "a296-03-activity-samples-to-uid-attribution",
+          "title": "组件样本进入有界历史，再按状态处理并组装查询",
+          "decision": "keep",
+          "reason": "组件采集、有界历史、归因处理、CPU校准示例和查询组装的流水线，区别采集和模型结果。",
+          "original_line": 139,
+          "heading": "### 从采集到 BatteryUsageStats"
+        },
+        {
+          "original_id": "a296-04-logger-versus-historian-cadence",
+          "title": "内部 logger 周期不能推导 Historian 的“实时采样率”",
+          "decision": "remove",
+          "reason": "内部触发、logger和Historian四卡重复两个内部周期段落。",
+          "original_line": 150,
+          "heading": "### PowerStatsLogger 的内部周期"
+        },
+        {
+          "original_id": "a296-05-controlled-bugreport-capture",
+          "title": "专用测试设备的受控证据采集流程",
+          "decision": "keep",
+          "reason": "保存基线、清统计、断USB、执行、重接取bugreport及关闭fullhistory的受控顺序，明确供电边界。",
+          "original_line": 186,
+          "heading": "## 正确采集 Battery Historian 证据"
+        },
+        {
+          "original_id": "a296-06-energy-power-and-work-denominators",
+          "title": "能量、平均功率与工作产出放在同一有效窗口",
+          "decision": "remove",
+          "reason": "能量、功率、每成功任务和正确性四卡重复公式及实验产出列表，未增加测量实例。",
+          "original_line": 209,
+          "heading": "### 用同一实验窗口对齐"
+        },
+        {
+          "original_id": "a296-07-power-monitor-valid-window",
+          "title": "PowerMonitor：按每个通道的样本时间验证差分",
+          "decision": "keep",
+          "reason": "逐通道同boot身份读数和严格递增样本时间验证后计算差分，失效不进入能量窗口。",
+          "original_line": 238,
+          "heading": "### API 35：PowerMonitor"
+        },
+        {
+          "original_id": "a296-08-uid-health-battery-state-and-privileges",
+          "title": "普通 App 的三条公开读取路径保持不同单位与重置语义",
+          "decision": "remove",
+          "reason": "三公开路径和权限四卡重复各API子节、单位与unsupported条件。",
+          "original_line": 271,
+          "heading": "### 隐藏接口与受限权限"
+        },
+        {
+          "original_id": "a296-09-wakelock-overlap-and-task-tracks",
+          "title": "WakeLock 重叠时长不是 CPU awake 时间，也不是任务能量",
+          "decision": "keep",
+          "reason": "屏幕、直接锁、代持锁与任务四轨重叠，直观解释锁时长不能求和为CPU awake或能量。",
+          "original_line": 290,
+          "heading": "## WakeLock：从时间线定位持有者"
+        },
+        {
+          "original_id": "a296-10-network-activity-and-radio-energy",
+          "title": "网络字节是活动量，能耗还受无线状态与完成方式影响",
+          "decision": "remove",
+          "reason": "网络活动、硬件、优化和对照四卡重复网络五字段及四类假设和同步六步。",
+          "original_line": 335,
+          "heading": "## 应用级实战：验证一个后台同步假设"
+        },
+        {
+          "original_id": "a296-11-rail-samples-noise-and-app-attribution",
+          "title": "轨读数的分辨率和覆盖先于“峰值归因”",
+          "decision": "remove",
+          "reason": "累计点、对齐、对照和质量四卡重复峰值解释五项检查。",
+          "original_line": 352,
+          "heading": "## 设备级实战：解释电源轨峰值"
+        },
+        {
+          "original_id": "a296-12-apm-scopes-selection-and-device-health",
+          "title": "线上留存来源与支持状态，跨设备按成功工作量比较",
+          "decision": "remove",
+          "reason": "协议、偏差、状态和跨设备四卡重复APM五层表和电池健康/设备比较段落。",
+          "original_line": 407,
+          "heading": "### 跨设备比较以任务为单位"
+        }
+      ],
+      "sha256_after": "6bce415bda6852714cf2eecd222b0f7d3bed376230d1b16ba449bd3f032dc87b",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:44:55.345599+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 12,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a296/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a296/visual-review.json",
+      "retired_diagrams": [
+        "a296-01-four-power-evidence-scopes",
+        "a296-04-logger-versus-historian-cadence",
+        "a296-06-energy-power-and-work-denominators",
+        "a296-08-uid-health-battery-state-and-privileges",
+        "a296-10-network-activity-and-radio-energy",
+        "a296-11-rail-samples-noise-and-app-attribution",
+        "a296-12-apm-scopes-selection-and-device-health"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-296/retired-assets.json"
     },
     {
       "index": 297,
@@ -68134,8 +68258,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 202,
-  "next_article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+  "reviewed_articles": 203,
+  "next_article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -68145,7 +68269,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:42:16.430548+08:00",
+  "updated_at": "2026-10-31T19:44:55.345599+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -68218,13 +68342,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
-      "registered_sha256": "9e2dd85bb78de149990e1e9bf94b95048c0641723062a161c56a823ae0504918",
-      "observed_sha256": "f97ffd2642c5cdbdb9aba04199dd9dd9fb5753a4740c91785169a1fe91e89bd0",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
@@ -68274,9 +68391,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5786,
-  "reviewed_placements_after": 2254,
-  "net_removed_placements": 3532,
+  "reviewed_placements_before": 5798,
+  "reviewed_placements_after": 2259,
+  "net_removed_placements": 3539,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -68300,7 +68417,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 202,
+  "currently_matching_reviewed_source_count": 203,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
