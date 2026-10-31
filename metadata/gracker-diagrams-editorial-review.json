@@ -65531,9 +65531,159 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "a98fe564f0e47cdb902ffa113eb9753d75627d139acb8ddcb669e6a108355a71",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a275-01-background-five-independent-states",
+          "title": "进程存活与后台执行资格分开记录",
+          "decision": "remove",
+          "reason": "五种独立状态已由紧邻一段完整点明，五卡没有增加条件或关联结构。",
+          "original_line": 131,
+          "heading": "### 治理范围"
+        },
+        {
+          "original_id": "a275-02-framework-scheduling-controls",
+          "title": "设备空闲与待机分组分别约束Job",
+          "decision": "keep",
+          "reason": "设备空闲、待机分组经QuotaController、任务自身约束三路汇入JobScheduler，定位不同平台控制器的关系。",
+          "original_line": 165,
+          "heading": "#### 平台源码中的职责分工"
+        },
+        {
+          "original_id": "a275-03-persistent-work-constraints-and-intent",
+          "title": "唯一工作合并与取消按业务意图设计",
+          "decision": "remove",
+          "reason": "四框复述唯一工作KEEP示例、约束及取消恢复说明，未新增持久调度分支。",
+          "original_line": 272,
+          "heading": "### 后台任务最佳实践"
+        },
+        {
+          "original_id": "a275-04-passive-location-and-health-permissions",
+          "title": "被动定位无交付期限，健康传感器按版本授权",
+          "decision": "remove",
+          "reason": "被动定位和健康权限两列属于不同业务，分别重复示例与版本权限列表，合在一图没有共同决策关系。",
+          "original_line": 333,
+          "heading": "### 后台定位与传感器管控"
+        },
+        {
+          "original_id": "a275-05-fgs-start-promotion-runtime",
+          "title": "FGS启动、晋升与持续运行是三次检查",
+          "decision": "keep",
+          "reason": "三个连续阶段各自分出失败结果，直观区分启动拒绝、晋升校验、运行资源/时限失败，补充检查表的日志路径。",
+          "original_line": 410,
+          "heading": "### 1. FGS 启动的三道检查"
+        },
+        {
+          "original_id": "a275-06-promotion-before-heavy-initialization",
+          "title": "先轻量晋升，再启动可取消业务",
+          "decision": "keep",
+          "reason": "系统启动、服务主线程晋升、异步业务三轨显示晋升必须在重初始化之前，不与三道资格门图重复。",
+          "original_line": 440,
+          "heading": "#### 2.2 晋升前的初始化时机"
+        },
+        {
+          "original_id": "a275-08-start-id-is-not-task-reference-count",
+          "title": "最新startId先完成仍会停止整个Service",
+          "decision": "keep",
+          "reason": "旧任务仍运行而最新startId较早完成导致整个Service销毁的时间反例，明确编号不是并发工作引用计数。",
+          "original_line": 533,
+          "heading": "#### 3.2 Manifest 类型与运行时类型"
+        },
+        {
+          "original_id": "a275-07-type-and-permission-validation",
+          "title": "运行类型必须是Manifest类型的子集",
+          "decision": "remove",
+          "reason": "类型位子集、专用权限与通知四框重复紧邻四类校验清单和示例解释，保留正文更完整兼容开关边界。",
+          "original_line": 573,
+          "heading": "#### 3.3 `ActiveServices` 的四类校验结果"
+        },
+        {
+          "original_id": "a275-09-temporary-start-wiu-bal-separate",
+          "title": "临时FGS启动、WIU和BAL各有资格",
+          "decision": "remove",
+          "reason": "FGS启动/WIU/BAL三卡及两条限制重复独立资格两小节和后文BAL解释，没有实际授权流程。",
+          "original_line": 598,
+          "heading": "#### 4.2 WIU 能力的独立检查"
+        },
+        {
+          "original_id": "a275-10-three-timeout-classes",
+          "title": "晋升、shortService与累计额度三种超时",
+          "decision": "keep",
+          "reason": "三种超时各自连到不同回调/降档/ANR/崩溃结果，横向区分晋升、short和累计额度，避免混用时钟与失败类型。",
+          "original_line": 643,
+          "heading": "#### 5.3 `dataSync` 与 `mediaProcessing` 的累计额度"
+        },
+        {
+          "original_id": "a275-11-fgs-and-job-independent-budgets",
+          "title": "限时FGS与Job配额分别记账",
+          "decision": "remove",
+          "reason": "FGS与Job两份预算四卡重复紧邻多段按UID/类型共享与独立Job额度说明。",
+          "original_line": 658,
+          "heading": "#### 5.4 Android 16 以后的 Job 配额"
+        },
+        {
+          "original_id": "a275-12-checkpoint-recovery-single-owner",
+          "title": "检查点、幂等与执行权共同保障恢复",
+          "decision": "remove",
+          "reason": "租约、分片、检查点和恢复四框逐项复述五步持久任务列表，没有展示确认和未确认恢复分支。",
+          "original_line": 675,
+          "heading": "#### 5.5 长任务的检查点与恢复"
+        },
+        {
+          "original_id": "a275-13-process-priority-bounds",
+          "title": "FGS提升回收优先级，不提供性能资源保证",
+          "decision": "remove",
+          "reason": "adj四卡重复紧邻状态/基准值/进程状态表，表格还保留最近TOP保护期与最终档位条件。",
+          "original_line": 697,
+          "heading": "#### 6.1 常见内存回收档位"
+        },
+        {
+          "original_id": "a275-14-bal-creator-sender-opt-in",
+          "title": "BAL授权看创建方、发送方与实际可见性",
+          "decision": "keep",
+          "reason": "创建方、发送方和17IntentSender条件三路汇入系统资格/窗口检查，表达两方分别贡献授权的关系。",
+          "original_line": 757,
+          "heading": "### 7. FGS 与 BAL 的授权关系"
+        },
+        {
+          "original_id": "a275-15-audio-default-versus-forced-mode",
+          "title": "音频默认资格与强制调试模式分开验收",
+          "decision": "remove",
+          "reason": "默认和强制音频资格四卡重复紧邻规则与命令模式解释，保留正文准确的target及enable/disable/default差异。",
+          "original_line": 786,
+          "heading": "### 8. Android 17 后台音频边界"
+        }
+      ],
+      "sha256_after": "78ac4e75ff7e32d78844c5776260fca9ec9a9a0e39641223ccf20380fb961129",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:59:46.955765+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a275/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a275/visual-review.json",
+      "retired_diagrams": [
+        "a275-01-background-five-independent-states",
+        "a275-03-persistent-work-constraints-and-intent",
+        "a275-04-passive-location-and-health-permissions",
+        "a275-07-type-and-permission-validation",
+        "a275-09-temporary-start-wiu-bal-separate",
+        "a275-11-fgs-and-job-independent-budgets",
+        "a275-12-checkpoint-recovery-single-owner",
+        "a275-13-process-priority-bounds",
+        "a275-15-audio-default-versus-forced-mode"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-275/retired-assets.json"
     },
     {
       "index": 276,
@@ -65734,8 +65884,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 188,
-  "next_article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+  "reviewed_articles": 189,
+  "next_article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -65745,7 +65895,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:57:14.688682+08:00",
+  "updated_at": "2026-10-31T18:59:46.955765+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -65881,9 +66031,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5561,
-  "reviewed_placements_after": 2181,
-  "net_removed_placements": 3380,
+  "reviewed_placements_before": 5576,
+  "reviewed_placements_after": 2187,
+  "net_removed_placements": 3389,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -65907,7 +66057,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 188,
+  "currently_matching_reviewed_source_count": 189,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

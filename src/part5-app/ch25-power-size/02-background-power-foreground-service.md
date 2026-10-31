@@ -128,10 +128,6 @@ consolidated_from:
 
 还有一个常见误会：进程活着，任务也未必能一直跑。进程存活、组件生命周期、后台启动资格、Job 配额、资源访问权限是五件不同的事；工作已经进了进程，仍可能因为约束变化、配额用完或服务超时被叫停。
 
-<!-- gracker-diagram: a275-01-background-five-independent-states -->
-![进程存活与后台执行资格分开记录](../../assets/diagrams/ch25/a275-01-background-five-independent-states.png)
-
-图：先定位任务停在哪一层，再决定改调度、权限、生命周期还是业务逻辑。
 
 ### Android 后台执行限制演进（Doze / App Standby / 待机分组）
 
@@ -269,10 +265,6 @@ Android 16 进一步扩大了 Job 运行配额的适用范围：
 
 统一封装能一致地记录调度语义，但别把平台差异全部藏起来。业务仍需明确时效、幂等键、取消条件和数据归属；基础组件负责记录调度接口、系统约束、停止原因和资源用量。只修某个 Worker 的执行逻辑，解释不了它为什么被排队、停止或重复触发。
 
-<!-- gracker-diagram: a275-03-persistent-work-constraints-and-intent -->
-![唯一工作合并与取消按业务意图设计](../../assets/diagrams/ch25/a275-03-persistent-work-constraints-and-intent.png)
-
-图：业务定义时效、幂等与取消，基础组件保留pending/stop原因和资源用量。
 
 ### 前台服务的适用场景
 
@@ -330,10 +322,6 @@ fun buildPassiveLocationRequest(
 
 定位和传感器都应按采样预算管理：
 
-<!-- gracker-diagram: a275-04-passive-location-and-health-permissions -->
-![被动定位无交付期限，健康传感器按版本授权](../../assets/diagrams/ch25/a275-04-passive-location-and-health-permissions.png)
-
-图：按目的、精度、间隔和最长时长申请资源；结束、撤权、退出账号时取消订阅。
 
 - 每个业务声明采样目的、前后台状态、精度、最短间隔、最长持续时间。
 - 页面不可见后降级采样；任务结束、权限撤销、账号退出时释放监听。
@@ -570,10 +558,6 @@ private fun startSyncOnApi31(context: Context, intent: Intent) {
 
 多个类型可以按位组合，但每个类型的权限和前提都要满足。`shortService` 与其他类型组合时会被系统忽略，服务按其他类型运行，也失去 short 类型的约 3 分钟语义。拿组合类型规避类型要求，是行不通的。
 
-<!-- gracker-diagram: a275-07-type-and-permission-validation -->
-![运行类型必须是Manifest类型的子集](../../assets/diagrams/ch25/a275-07-type-and-permission-validation.png)
-
-图：隐藏fileManagement不在默认公开策略映射中；不能给三方应用当作通用类型。
 
 ### 4. 后台启动许可与 WIU 能力
 
@@ -595,10 +579,6 @@ Camera、Microphone、Location 和部分 Health 场景依赖 while-in-use 权限
 
 安全的设计方式是让用户在可见 Activity、通知、Widget 或受支持的外部设备交互中发起操作，并在该交互上下文仍有效时启动 FGS。对持续定位，还要分别核对 `ACCESS_BACKGROUND_LOCATION` 的授予与产品用途——`location` 类型本身推不出后台位置权限。
 
-<!-- gracker-diagram: a275-09-temporary-start-wiu-bal-separate -->
-![临时FGS启动、WIU和BAL各有资格](../../assets/diagrams/ch25/a275-09-temporary-start-wiu-bal-separate.png)
-
-图：权限授予记录不等于后台当前可访问资源；位置后台权限与FGS启动例外仍须分别检查。
 
 ### 5. 三种超时的区分
 
@@ -655,10 +635,6 @@ Job 配额与 FGS 时长是两套预算。排障时我们分别保存 FGS 类型
 
 pending reason 说明任务为何尚未执行，stop reason 说明本轮执行为何结束。`ForegroundService` 只表达用户可感知的持续工作，不会让同进程 Job 获得无限额度。
 
-<!-- gracker-diagram: a275-11-fgs-and-job-independent-budgets -->
-![限时FGS与Job配额分别记账](../../assets/diagrams/ch25/a275-11-fgs-and-job-independent-budgets.png)
-
-图：同进程不代表同一预算；FGS类型时长与Job运行额度需要两份记录。
 
 #### 5.5 长任务的检查点与恢复
 
@@ -672,10 +648,6 @@ pending reason 说明任务为何尚未执行，stop reason 说明本轮执行�
 
 Job/Worker 收到停止，只表示调度器结束了本次执行，应用自建线程、C/C++ 原生代码里的工作或子进程并不会跟着终止。取消信号必须一路传到底层，否则旧执行残留会和新一轮恢复并发，既增加 CPU 和功耗，也会破坏幂等性。
 
-<!-- gracker-diagram: a275-12-checkpoint-recovery-single-owner -->
-![检查点、幂等与执行权共同保障恢复](../../assets/diagrams/ch25/a275-12-checkpoint-recovery-single-owner.png)
-
-图：onTimeout只发取消、释放与停止，不在主线程等待网络、数据库或编码器结束。
 
 ### 6. FGS 对进程优先级和性能的影响
 
@@ -694,10 +666,6 @@ Job/Worker 收到停止，只表示调度器结束了本次执行，应用自建
 
 表格的结论是：FGS 会提高进程在内存压力下的存活优先级，但不会把进程变成不可回收对象；short FGS 的基准保护还弱于普通 FGS。
 
-<!-- gracker-diagram: a275-13-process-priority-bounds -->
-![FGS提升回收优先级，不提供性能资源保证](../../assets/diagrams/ch25/a275-13-process-priority-bounds.png)
-
-图：adj越小通常越晚成为回收候选；它不是CPU频率、调度优先级或独占资源。
 
 #### 6.2 FGS 的能力范围
 
@@ -783,10 +751,6 @@ Android 17 对播放、音频焦点和音量修改增加了后台状态检查。
 
 播放应用宜使用 Media3 `MediaSessionService`，并在用户启动播放时创建 `mediaPlayback` FGS。播放完成、永久失焦或不可恢复错误后，结束媒体会话并停止 FGS；后续恢复应由新的用户动作触发。
 
-<!-- gracker-diagram: a275-15-audio-default-versus-forced-mode -->
-![音频默认资格与强制调试模式分开验收](../../assets/diagrams/ch25/a275-15-audio-default-versus-forced-mode.png)
-
-图：partial提示缺FGS，full提示FGS无WIU；强制模式用于故障注入，不能替代默认兼容行为。
 
 音频调试命令要先用 `adb shell cmd audio help` 核对设备镜像。固定 `android-17.0.0_r1` 的 [`AudioManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java) 使用下面的覆盖和恢复命令：
 
