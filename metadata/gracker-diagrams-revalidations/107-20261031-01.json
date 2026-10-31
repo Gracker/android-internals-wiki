@@ -1,0 +1,131 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 107,
+  "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T10:30:18.021874+08:00",
+  "source_sha256": "ff6e55fd7fe3b2f10afd2048f3fd3f4511691d660afd83b8b7e16f545ad4d969",
+  "accepted_before_sha256": "67b6818a9bd73a9fb4ca22bb22448d54abee40d45c9e5f6c8721f24bd8338793",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 223,
+  "reading_characters": 18186,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 9,
+  "current_pngs_actually_viewed": 9,
+  "current_contexts_actually_viewed": 9,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a107/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a107/01/current-contact-2.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a107/01/compact-107-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a107/01/compact-107-2.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 4,
+  "code_lines_preserved": 66,
+  "asset_sha256": {
+    "src/assets/diagrams/ch10/ed10-02-allocation-and-reclaim-conditions.svg": "0505529a614a051d4c0cf72dc3b913629f60019d1d370d9b1e00ce7ea8731476",
+    "src/assets/diagrams/ch10/ed10-02-allocation-and-reclaim-conditions.png": "90bb55e343eae8ef43d018dfe8551b3b89d71f68ebe23d0f605e0100d4d8711e",
+    "src/assets/diagrams/ch10/ed10-02-psi-task-sets-and-time-views.svg": "7775cd6dfd7a7dea8c4e1922074b4cea57f8df420ca540cc00a28eb59fe4a287",
+    "src/assets/diagrams/ch10/ed10-02-psi-task-sets-and-time-views.png": "d3f1653085fc6ed7e7e801c795543c836c99a3fc94638d457bfe3f11e982539b",
+    "src/assets/diagrams/ch10/ed10-02-psi-consumers-and-detector-state.svg": "7358eeffa39991639f9b2b15d09b3d3da8a3960b7c03e9f4fdff8436d9fbf420",
+    "src/assets/diagrams/ch10/ed10-02-psi-consumers-and-detector-state.png": "b0b40dd2b0a0857ffdae4c205d175f924506c6de9bd707f0e24f3e5c9af317e5",
+    "src/assets/diagrams/ch10/ed10-02-kill-submission-to-return-evidence.svg": "cfc60b0a6bad8d647d851df22548130ef494f9d0c7e99e9b74145f282296018e",
+    "src/assets/diagrams/ch10/ed10-02-kill-submission-to-return-evidence.png": "9de0b2997f38c7597847607295aa3ae3a769c50a68fc0090bbce70f10d6bc9ec",
+    "src/assets/diagrams/ch10/ch10-02-14-memevents-gates.svg": "7382969dc5663b49126aef7bf512b201002d45555e68fbd3669eec79888d7d8b",
+    "src/assets/diagrams/ch10/ch10-02-14-memevents-gates.png": "7c38a7028b4e6edd3854d271d83e3c4a456cdb81ae1daa3122adc15d0a7a5f27",
+    "src/assets/diagrams/ch10/ch10-02-19-swap-readahead-scale.svg": "a2ded178de1638f413a93674c23081d2aea5b6e42ed91d52d9c3ea2d4ce4c97f",
+    "src/assets/diagrams/ch10/ch10-02-19-swap-readahead-scale.png": "c15a2702e88f13e89fb2cd476f8ee8213ea3ca11904ce506f5f7fae02bb3e764",
+    "src/assets/diagrams/ch10/ch10-02-22-cached-compaction-resolution.svg": "83dff9ffed31a73132f8a132355a156e6d54c0005ec098a4ea7b20cefb08fbd5",
+    "src/assets/diagrams/ch10/ch10-02-22-cached-compaction-resolution.png": "75af18fafd15ae5b6eef1c734519a604e7723e7c8c760a86380b2f7dabcb59a2",
+    "src/assets/diagrams/ch10/ch10-02-24-memory-limiter-real-path.svg": "a64aa425c9b08c3bbfa84807f4d68b9cf83a51fb472b9522e14285f8302a7fb9",
+    "src/assets/diagrams/ch10/ch10-02-24-memory-limiter-real-path.png": "e5157d1cebe320e7813753fa0e7a0163f962325e5354969e2016c01605f67dd1",
+    "src/assets/diagrams/ch10/ch10-02-25-manual-limit-version-trap.svg": "23f766f3bc3006f225b014be1f5732eea776a952dd5f6f529dc3f6b4d7ffadeb",
+    "src/assets/diagrams/ch10/ch10-02-25-manual-limit-version-trap.png": "f6700685294a35c2686da30415cc79c9ba2ee2e186fd4c1d3894a6b957cad81c"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a107/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "1d1c7f27429999d0ea356bc571f21f0c887cd3e17098adc39f8835f32d8856a7",
+    "git_commit": "776bf0d0c8fafe13ac12f7276dbe40d79a254f84"
+  },
+  "figure_reviews": [
+    {
+      "id": "ed10-02-allocation-and-reclaim-conditions",
+      "heading": "### 1.3 回收成本来自哪里",
+      "line": 107,
+      "decision": "keep",
+      "reason": "按请求node/zone、order、GFP分开后台回收、同步回收与连续物理页规整，仍对应70–112，不把水位当固定流水线或D状态当回收根因。"
+    },
+    {
+      "id": "ed10-02-psi-task-sets-and-time-views",
+      "heading": "## 2. PSI 怎样描述系统停顿",
+      "line": 137,
+      "decision": "keep",
+      "reason": "两任务停顿的并集some/交集full及avg指数平均/total差分独立比较，对应116–140；统计范围和无重置前提完整。"
+    },
+    {
+      "id": "ed10-02-psi-consumers-and-detector-state",
+      "heading": "### 3.2 system_server 的 LowMemDetector",
+      "line": 178,
+      "decision": "keep",
+      "reason": "同一PSI源到lmkd与LowMemDetector两个消费者的触发器、状态和后续动作，与146–181一致；未混淆两fd与重复记账、critical区间与raw full。"
+    },
+    {
+      "id": "ed10-02-kill-submission-to-return-evidence",
+      "heading": "## 4. lmkd kill 怎样转化为用户性能损失",
+      "line": 189,
+      "decision": "keep",
+      "reason": "终止请求instant→按PID代次核对死亡与资源→用户是否返回入口→重建和同设备比较的分支，仍对应160、185–200；箭头不强制死亡晚于instant，回收量不等RSS。"
+    },
+    {
+      "id": "ch10-02-14-memevents-gates",
+      "heading": "## 6. Android 17 中 `memevents` 与旧 `mm_events`",
+      "line": 223,
+      "decision": "keep",
+      "reason": "memevents四必需事件失败回退与两可选事件缺失继续使用的实际分支，与220/226一致；未替代App TID ftrace证据。"
+    },
+    {
+      "id": "ch10-02-19-swap-readahead-scale",
+      "heading": "### 8.1 ZRAM",
+      "line": 342,
+      "decision": "keep",
+      "reason": "n=3至多8页在4KiB/16KiB分别32/128KiB的明确算例，仍与340/345一致；不是虚拟地址相邻，不保证读满。"
+    },
+    {
+      "id": "ch10-02-22-cached-compaction-resolution",
+      "heading": "### 8.3 Cached App Optimizer",
+      "line": 369,
+      "decision": "keep",
+      "reason": "请求profile经策略节流、swap/file配置降级再选实际后端，仍与367–374一致；MADV_COLD不承诺立刻降RSS，不混GC或物理页compaction。"
+    },
+    {
+      "id": "ch10-02-24-memory-limiter-real-path",
+      "heading": "### 8.4 cgroup、Task Profiles 与 Android 17 Memory Limiter",
+      "line": 385,
+      "decision": "keep",
+      "reason": "实际high/swap.max、anon+shmem+swap组合超限、撤限/有条件profiling和延迟终止链，对应381–388；不是PSS，30秒不是退出保证。"
+    },
+    {
+      "id": "ch10-02-25-manual-limit-version-trap",
+      "heading": "### 8.4 cgroup、Task Profiles 与 Android 17 Memory Limiter",
+      "line": 400,
+      "decision": "keep",
+      "reason": "手动测试固定r1 MiB乘法、none负数被JNI跳过、重启进程后读实际节点链对应命令4及398–403；不采用帮助中百分比或把测试值作产品阈值。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a107/01/layout-report.json",
+  "layout_report_sha256": "3cf991c070f3c835b5a2203a5c023ed209e4e0295143177bab1ee14f4da98265",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "当前全文223阅读行18186字符、9组SVG标签、全部9PNG和9上下文实际复看，4代码块66行完整阅读，原生0。外部修订仅正文表达和标题附近引导调整，所有图注/替代文字/标识/路径/顺序及代码逐字相同。9图仍分别呈现请求条件、PSI集合、不同消费者、用户回访分支和具体控制路径，无新增重复/错位；资产严格匹配初审。1400/640加载、标题归属、结构位置和无横溢出通过，当前source已在mdbook成功构建中。保留外部正文，不新增或删除有效图；原初审历史不动。"
+}
