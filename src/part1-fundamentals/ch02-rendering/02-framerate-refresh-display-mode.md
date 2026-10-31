@@ -2,13 +2,14 @@
 title: 帧率、刷新率与显示模式选择
 chapter: '2.2'
 section: '2.2'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 last_verified: '2026-10-30'
-last_source_verified_at: '2026-10-30T14:46:17+08:00'
+last_source_verified_at: '2026-10-31T21:20:57+08:00'
 last_idle_audit_at: '2026-10-30T14:46:17+08:00'
+last_body_apply_at: '2026-10-31T21:20:57+08:00'
 last_verified_against: 'AOSP android-17.0.0_r1: Surface/Display, LayerHistory, RefreshRateSelector.h/.cpp, DisplayModeController, SurfaceFlinger; kernel android17-6.18-2026-06_r6 drm_vblank.c; Perfetto FrameTimeline; Android Developers Frame rate; Khronos vkQueuePresentKHR'
-verification_scope_note: '通读正文并抽检候选生成、投票、模式切换、FrameTimeline 支持范围、Surface 生命周期与显示内核边界；未做设备时延、功耗或厂商面板行为实测。'
+verification_scope_note: '通读全文并以 android-17.0.0_r1 源码核验模式设置返回值、失败清理和模式计数器语义；候选评分与 UID 覆盖复核关键分支，其余 API 与内核边界沿用既有来源核验。未做设备运行、切换时延、功耗或厂商面板行为实测。'
 confidence: high
 sources:
 - type: official
@@ -189,6 +190,10 @@ sources:
   path: frameworks/native/libs/nativewindow/include/android/native_window.h
 - type: official
   path: https://docs.vulkan.org/refpages/latest/refpages/source/vkQueuePresentKHR.html
+- type: research
+  path: vault/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Display/DisplayModeController.cpp
 tags:
   - framerate
   - refresh-rate
@@ -1685,10 +1690,12 @@ ORDER BY c.ts;
 
 读数时注意：
 
-- `HasDesiredMode` 变化：存在尚未提交或合并处理的目标请求；
-- `PendingModeFps` 变化：物理模式切换已经提交到显示路径，仍在等待完成；
+- `HasDesiredMode` 为 1：存在尚未消费的目标请求；归零表示请求已被取走或清除，不能据此确认 HWC 已接受请求。[已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp::takeDesiredModeIfMatches、clearDesiredMode @ android-17.0.0_r1]
+- `PendingModeFps` 写入目标 VSYNC 频率：`initiateModeChange()` 返回 `Changed`，说明设置模式的调用已成功；它不表示切换仍在等待完成。[已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp::initiateModeChange @ android-17.0.0_r1]
 - `ActiveModeFps` 变化：SurfaceFlinger 已完成模式状态更新；
 - 只有 `RenderRateFps` 变化：可能只是调度节奏变化，没有发生物理 modeset。
+
+Android 17 的 `clearPendingMode()` 和 `finalizeModeChange()` 不会把 `PendingModeFps` 清零。该计数器保留的非零值不能用作 pending 状态开关；切换完成时刻需要结合 `finalizeDisplayModeChange` 区间、`ActiveModeFps` 和相关显示提交的 present fence 判断。DisplayCommand 的成功路径还可能立即完成平台状态更新，无须等待额外刷新帧。[已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp::clearPendingMode、finalizeModeChange; SurfaceFlinger.cpp::initiateDisplayModeChanges @ android-17.0.0_r1]
 
 计数器名字包含 physical display ID（物理显示标识）。折叠屏、外接屏或虚拟显示场景中，我们先确认分析的是哪块物理显示。
 
@@ -1700,7 +1707,7 @@ SurfaceFlinger 的 trace 中可见 `Refresh Rate Selection` 一类选择区间�
 
 1. 找到用户可见的 jank 帧；
 2. 查看相邻时间内的 `HasDesiredMode` 和选择事件；
-3. 查看 `PendingModeFps` 到 `ActiveModeFps` 的间隔；
+3. 按物理显示 ID 和目标模式，对照 `initiateDisplayModeChanges`、`finalizeDisplayModeChange` 区间与模式计数器；`PendingModeFps` 的非零区间不等于切换等待区间。[已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp::initiateModeChange; SurfaceFlinger.cpp::initiateDisplayModeChanges、finalizeDisplayModeChange @ android-17.0.0_r1]
 4. 对齐 SurfaceFlinger commit、present fence 和 FrameTimeline；
 5. 回到应用、RenderThread、GPU/HWC 路径确定最长阶段。
 
@@ -2021,7 +2028,9 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 
 源码中的“立即”只描述 SurfaceFlinger 在 DisplayCommand 成功分支中的状态处理，外推不到“面板像素会在固定帧数内完成响应”。另一条路径的时间线由厂商 HAL 提供，AOSP 同样没有统一规定 1～3 帧的切换延迟。
 
-取证时两条路径要分开记录：`setActiveModeWithConstraints()` 的时间线来自 HAL 返回值；DisplayCommand 的 `setDisplayMode(seamlessRequired)` 成功后，SurfaceFlinger 只在该分支把 `refreshRequired` 设为 `false`、把 `newVsyncAppliedTimeNanos` 设为 `systemTime()`，这一步说明不了面板像素的光学响应已经完成。
+`initiateModeChange()` 的结果还决定后续是否进入完成路径：`OK` 返回 `Changed`，`FAILED_TRANSACTION` 返回 `Rejected`，其他错误返回 `Aborted`。HAL 调用失败时，启用 `modeset_state_machine` 的分支会清除 `pendingModeOpt`；旧分支则把 `isModeSetPending` 设为 `false`。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md §2; 已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp::initiateModeChange @ android-17.0.0_r1]
+
+SurfaceFlinger 只在结果为 `Changed` 时把切换时间线交给 Scheduler，再根据 `refreshRequired` 选择立即完成或等待刷新帧。返回 `Rejected` 或 `Aborted` 时，它会清除 Scheduler 的模式切换待处理标记；`Rejected` 还会通知 `onDisplayModeRejected()`。排查目标模式没有变成 active 的问题时，应先核对 Composer 返回码和这三个结果，再判断是否需要沿 present fence 等待路径继续检查。[已验证: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp::initiateDisplayModeChanges @ android-17.0.0_r1]
 
 #### 6.3 完成模式切换的边界
 
@@ -2161,15 +2170,17 @@ Perfetto 中至少关联这些证据：
 |---|---|
 | `ActiveModeFps <displayId>` | 当前物理模式的 VSYNC 频率是否变化 |
 | `RenderRateFps <displayId>` | Scheduler 采用的渲染节拍是否变化 |
-| `PendingModeFps <displayId>` | 是否已有物理模式请求交给 HWC |
-| `HasDesiredMode <displayId>` | 是否还有尚待消费的目标请求 |
+| `PendingModeFps <displayId>` | 成功设置模式的请求写入了哪个目标 VSYNC 频率，不能据此判断请求是否仍在等待完成 |
+| `HasDesiredMode <displayId>` | 是否还有尚待消费的目标请求，不代表 HWC 已受理 |
 | `FrameRateOverride <uid>` | 该 UID 是否取得内容推导值或内部接口直接写入的覆盖值 |
 | 图层投票与帧率类别 | 哪个可见图层推动了这次选择 |
 | FrameTimeline 预期值与实际值 | 帧是否赶上当前调度预测 |
 | 缓冲区时间戳、获取栅栏、锁存 | 生产者是否按时交付且内容可读 |
 | 显示送显栅栏 | 本轮显示在 Android 用户态可观察的送显边界何时完成 |
 
-`ActiveModeFps` 不变而 `RenderRateFps` 改变，通常表示系统在同一个物理模式内调整了渲染节拍。`PendingModeFps` 出现后仍需等待模式切换完成；不要把计数器写入时刻当作面板的光学响应时刻。送显栅栏是 Android 显示栈中较靠后的时间参照，也不等同于像素已经完成扫描或人眼已经看到画面。
+表中 `HasDesiredMode` 与 `PendingModeFps` 的读数分别对应目标请求是否待消费、成功调用设置模式时写入的频率；`PendingModeFps` 在完成切换时不清零。判断切换起止应结合 Composer 结果和 `finalizeDisplayModeChange` 区间，详见前文[模式计数器的读数限制](#61-先看-android-17-的四组显示计数器)。[已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp::takeDesiredModeIfMatches、initiateModeChange、finalizeModeChange; SurfaceFlinger.cpp::finalizeDisplayModeChange @ android-17.0.0_r1]
+
+`ActiveModeFps` 不变而 `RenderRateFps` 改变，通常表示系统在同一个物理模式内调整了渲染节拍。不要把成功设置模式时的计数器写入时刻当作面板的光学响应时刻。送显栅栏是 Android 显示栈中较靠后的时间参照，也不等同于像素已经完成扫描或人眼已经看到画面。
 
 推荐按下面的顺序检查一段异常：
 
