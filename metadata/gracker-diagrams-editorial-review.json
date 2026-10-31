@@ -54129,9 +54129,142 @@
       "before_count": 11,
       "before_all_images": 11,
       "sha256_before": "f74f9c7960c5ad9f5ac8f7272cda92cc632a111fb951fd324bfda36859beac9d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "a213-01-fd-dimensions",
+          "title": "数量、编号、创建代次与对象分别记录",
+          "decision": "remove",
+          "reason": "数量/编号/类型/generation/owner/dup已有六项定义，三行维度卡重复；保留真正显示复用时序的后图。",
+          "original_line": 83,
+          "heading": "## 数量、编号、对象与所有者"
+        },
+        {
+          "original_id": "a213-04-fd-reuse",
+          "title": "晚到的第二次 close 可能关闭另一所有者的新资源",
+          "decision": "keep",
+          "reason": "编号123的g1关闭后被B复用为g2，A晚到第二次close误关B资源的三轨时间线，解释裸整数不足以判所有权。",
+          "original_line": 90,
+          "heading": "## 数量、编号、对象与所有者"
+        },
+        {
+          "original_id": "a213-02-snapshot-quality",
+          "title": "低频计数后按需读取链接，明确快照的数据质量",
+          "decision": "remove",
+          "reason": "8行计数与37行快照代码及complete/skipped并发限制说明完整，四框采集清单不增加快照语义。",
+          "original_line": 160,
+          "heading": "### 常规计数与触发式详细快照"
+        },
+        {
+          "original_id": "a213-03-two-limits",
+          "title": "RLIMIT_NOFILE 与 FD_SET 的边界互不等价",
+          "decision": "remove",
+          "reason": "RLIMIT_NOFILE与FD_SETSIZE两节及四结论准确解释独立边界，三行映射卡重复且非编号区间图。",
+          "original_line": 186,
+          "heading": "## FD 限额和 FD_SET 是两条边界"
+        },
+        {
+          "original_id": "a213-05-dup-rules",
+          "title": "复制与覆盖按返回语义更新创建代次",
+          "decision": "remove",
+          "reason": "成功复制/覆盖先结束旧周期、dup2自赋无操作与dup3自赋EINVAL已有同段明确条件，三行契约卡只是逐句排版。",
+          "original_line": 207,
+          "heading": "## 用创建代次处理 FD 编号复用"
+        },
+        {
+          "original_id": "a213-06-close-errors",
+          "title": "close 报错不统一等于描述符仍然打开",
+          "decision": "remove",
+          "reason": "同节Hook列表准确限定Linux晚报错误/EBADF和Bionic EINTR行为，三行close结果卡复述，不额外展示复用危害（前图已保留）。",
+          "original_line": 214,
+          "heading": "## 用创建代次处理 FD 编号复用"
+        },
+        {
+          "original_id": "a213-07-fdsan-fdtrack",
+          "title": "所有权校验与创建栈追踪提供不同证据",
+          "decision": "remove",
+          "reason": "fdsan owner交换关闭检查非每次readwrite、fdtrack32帧内部边界三段已完整，三行工具映射重复。",
+          "original_line": 237,
+          "heading": "### fdsan 与 fdtrack 的准确用途"
+        },
+        {
+          "original_id": "a213-08-jni-ownership",
+          "title": "跨 JNI 的接口先明确谁负责关闭",
+          "decision": "remove",
+          "reason": "JNI借用/转移/detach/dup/异常取消六项责任已有列表，三行所有权卡是列表子集。",
+          "original_line": 257,
+          "heading": "## 修复所有权"
+        },
+        {
+          "original_id": "a213-10-fault-evidence",
+          "title": "故障现象、资源证据和根因结论分别保存",
+          "decision": "remove",
+          "reason": "七类故障资源证据与不能推出结论表完整，三行卡是表格子集。",
+          "original_line": 282,
+          "heading": "## 与 OOM、ANR 和 Native Crash 的证据关系"
+        },
+        {
+          "original_id": "a213-09-monitoring-flow",
+          "title": "按进程基线触发有时限、有容量的详细诊断",
+          "decision": "keep",
+          "reason": "常驻趋势按角色和增长触发有界详细事件，再以proc核对unknown/到期停止的监控阶段，串联计数与生命周期证据。",
+          "original_line": 305,
+          "heading": "## 按进程基线和增长速度触发采样"
+        },
+        {
+          "original_id": "a213-11-prebuilt-evidence",
+          "title": "故障前准备摘要，fatal 现场只做最小记录",
+          "decision": "keep",
+          "reason": "故障前预生成摘要、fatal只保存ID、下次启动关联退出再后台聚合的跨生命周期顺序，避免资源耗尽时再开线程采全栈。",
+          "original_line": 343,
+          "heading": "## 崩溃现场的最小证据"
+        }
+      ],
+      "sha256_after": "5b409ed871213ae818967afd0aab80767ed157469346f12fd64e9d38f4841015",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:21:33.669183+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 11,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a213/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a213/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 213,
+        "article": "src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
+        "registered_sha256": "f74f9c7960c5ad9f5ac8f7272cda92cc632a111fb951fd324bfda36859beac9d",
+        "frozen_sha256": "f74f9c7960c5ad9f5ac8f7272cda92cc632a111fb951fd324bfda36859beac9d",
+        "review_input_sha256": "f5d3a9d9567b2039401dbf073de08ff5ccb9bc58ade269401e0c82afc8b83a3f",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a213/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a213/external-source.diff",
+        "diff_sha256": "04831bcc7bce62e4a8b2f09bd74caf176352af28bbfb510c14fd3faeec1fb934",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 195, \"characters\": 13296, \"svg_labels_read\": 11, \"actual_pngs_viewed\": 11, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 2, \"code_lines\": 45, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "f5d3a9d9567b2039401dbf073de08ff5ccb9bc58ade269401e0c82afc8b83a3f",
+      "retired_diagrams": [
+        "a213-01-fd-dimensions",
+        "a213-02-snapshot-quality",
+        "a213-03-two-limits",
+        "a213-05-dup-rules",
+        "a213-06-close-errors",
+        "a213-07-fdsan-fdtrack",
+        "a213-08-jni-ownership",
+        "a213-10-fault-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-213/retired-assets.json"
     },
     {
       "index": 214,
@@ -54871,8 +55004,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 139,
-  "next_article": "src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
+  "reviewed_articles": 140,
+  "next_article": "src/part5-app/ch20-stability/08-thread-coroutine-leak-governance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -54882,7 +55015,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:19:38.757762+08:00",
+  "updated_at": "2026-10-31T16:21:33.669183+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -54952,13 +55085,6 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
-      "registered_sha256": "f74f9c7960c5ad9f5ac8f7272cda92cc632a111fb951fd324bfda36859beac9d",
-      "observed_sha256": "f5d3a9d9567b2039401dbf073de08ff5ccb9bc58ade269401e0c82afc8b83a3f",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -55074,9 +55200,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4474,
-  "reviewed_placements_after": 1879,
-  "net_removed_placements": 2595,
+  "reviewed_placements_before": 4485,
+  "reviewed_placements_after": 1882,
+  "net_removed_placements": 2603,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -55100,5 +55226,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 139
+  "currently_matching_reviewed_source_count": 140
 }
