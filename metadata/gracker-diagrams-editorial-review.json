@@ -58643,9 +58643,263 @@
       "before_count": 25,
       "before_all_images": 25,
       "sha256_before": "80378d1a6e30909a8ae413191cc4132d19752d3c1315703e8379fff28ad38d1c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a236-01-protocol",
+          "title": "Snapshot 的四层协议",
+          "decision": "keep",
+          "reason": "版本视图、记录、apply和观察域四个协议层按依赖相接，给后续16节提供读写提交调度定位框架。",
+          "original_line": 63,
+          "heading": "# Compose Snapshot、状态一致性与并发"
+        },
+        {
+          "original_id": "a236-02-visible-record",
+          "title": "选择最高的可见状态记录",
+          "decision": "remove",
+          "reason": "三条可见条件与maxID伪代码及初始记录、线程enter正文完整，三行规则卡未画具体记录选择实例。",
+          "original_line": 112,
+          "heading": "### 2.1 Snapshot 是一份版本视图"
+        },
+        {
+          "original_id": "a236-03-read-write",
+          "title": "MutableState 的读写入口",
+          "decision": "remove",
+          "reason": "读写不同入口被线性箭头连在一起，需图注解释不必相继；正文读写段落更准确独立，删除减少误读。",
+          "original_line": 149,
+          "heading": "### 2.3 MutableState 的取值与赋值"
+        },
+        {
+          "original_id": "a236-04-persistent-list",
+          "title": "Snapshot 列表的结构快照",
+          "decision": "remove",
+          "reason": "四步持久化列表修改和O1toList结构非元素快照段落完整，三行集合卡重复。",
+          "original_line": 165,
+          "heading": "### 2.4 Snapshot State 集合"
+        },
+        {
+          "original_id": "a236-05-readonly-pinning",
+          "title": "只读视图与状态记录保留",
+          "decision": "remove",
+          "reason": "v1/v2只读测试11行与pinning/dispose四条规则完整，三行卡重复。",
+          "original_line": 203,
+          "heading": "### 3.1 未 dispose 的 Snapshot 会保留旧版本"
+        },
+        {
+          "original_id": "a236-06-apply-locks",
+          "title": "根 MutableSnapshot 的 apply 阶段",
+          "decision": "remove",
+          "reason": "六步锁外预合并、锁内合入推进、锁外回调、锁内清理完整，三行配对卡没有锁区时序新信息。",
+          "original_line": 223,
+          "heading": "## 4. MutableSnapshot：隔离修改与 apply"
+        },
+        {
+          "original_id": "a236-07-three-way-merge",
+          "title": "三方合并与计数溢出",
+          "decision": "keep",
+          "reason": "previous10/current15/applied12到17具体代数映射并列默认冲突与溢出处理，帮助理解14行自定义merge的三方变量。",
+          "original_line": 271,
+          "heading": "### 4.2 自定义变更策略必须满足领域代数"
+        },
+        {
+          "original_id": "a236-08-write-skew",
+          "title": "不同对象写入也会破坏业务不变量",
+          "decision": "keep",
+          "reason": "两个分支共同旧视图、各读对方写自己、依次apply均成功的真实逻辑轨道，清楚看到无交集写对象仍破坏至少一人在线。",
+          "original_line": 311,
+          "heading": "### 4.3 Snapshot 隔离不保证可串行化"
+        },
+        {
+          "original_id": "a236-09-nested-visibility",
+          "title": "嵌套 Snapshot 的应用边界",
+          "decision": "remove",
+          "reason": "子/父/全局三列三时点可见性表及两类观察器边界更完整，三行卡混排时点与观察器重复。",
+          "original_line": 332,
+          "heading": "## 5. 嵌套 Snapshot 的父子可见性"
+        },
+        {
+          "original_id": "a236-10-read-domains",
+          "title": "State 到观察域的依赖索引",
+          "decision": "remove",
+          "reason": "Composition观察表与布局绘制阶段关系和对象身份非函数列表段落完整，三行分类卡未画实际多对多依赖。",
+          "original_line": 354,
+          "heading": "### 6.1 读依赖怎样建立"
+        },
+        {
+          "original_id": "a236-11-recompose-notify",
+          "title": "从有效写入到重组调度",
+          "decision": "keep",
+          "reason": "有效写记录、changed进入Recomposer、锁外分发匹配、帧时钟重组applyChanges的跨组件通知链，明确setter到执行之间的间隔。",
+          "original_line": 373,
+          "heading": "### 6.2 写入怎样传播"
+        },
+        {
+          "original_id": "a236-12-observer-thread",
+          "title": "SnapshotStateObserver 的并发边界",
+          "decision": "remove",
+          "reason": "四项内部机制及同实例跨线程嵌套检测的正文完整，三行线程规则卡重复。",
+          "original_line": 389,
+          "heading": "### 6.3 SnapshotStateObserver 的边界"
+        },
+        {
+          "original_id": "a236-13-derived-cache",
+          "title": "derivedStateOf 的缓存与条件失效",
+          "decision": "keep",
+          "reason": "派生读取时检查ID计数、验证哈希、失效重算重建依赖、策略抑制同结果的分层流程，说明derived不只是remember别名。",
+          "original_line": 424,
+          "heading": "### 7.1 适合“输入频繁、输出低频”的映射"
+        },
+        {
+          "original_id": "a236-14-remember-flow",
+          "title": "remember、派生状态和冷流",
+          "decision": "remove",
+          "reason": "三工具失效依据/用途表及只读冷流纯计算边界完整，三行API卡重复。",
+          "original_line": 451,
+          "heading": "### 7.3 与 remember、snapshotFlow 的差别"
+        },
+        {
+          "original_id": "a236-15-atomic-view",
+          "title": "一次提交与固定读取视图",
+          "decision": "remove",
+          "reason": "同步封装apply.check/dispose、固定读视图原子可见与裸全局两次读可插提交段落完整，三行卡未给具体读交错实例。",
+          "original_line": 474,
+          "heading": "## 8. withMutableSnapshot 的提交语义"
+        },
+        {
+          "original_id": "a236-16-writer-protocol",
+          "title": "跨线程状态与业务写者协议",
+          "decision": "remove",
+          "reason": "单MutableSnapshot多读单写与全局State复合更新仍需业务协议四项列表完整，三行并发规则卡重复。",
+          "original_line": 501,
+          "heading": "### 9.1 全局 State 与某个 MutableSnapshot 是两个层次"
+        },
+        {
+          "original_id": "a236-17-coroutine-context",
+          "title": "Snapshot 随协程恢复与挂起",
+          "decision": "keep",
+          "reason": "take只读、协程恢复enter、挂起离开再恢复、退出finallydispose的顺序链，明确上下文传播不代替释放。",
+          "original_line": 526,
+          "heading": "### 9.2 enter 不会随协程自动传播"
+        },
+        {
+          "original_id": "a236-18-initial-record",
+          "title": "新建 MutableState 的初始记录例外",
+          "decision": "keep",
+          "reason": "事务创建initial带ID1、事务改ready未apply外部仍initial、apply安全发布新视图ready的具体三时点示例，呈现1.12初始记录例外。",
+          "original_line": 541,
+          "heading": "### 9.3 状态创建时间也受版本约束"
+        },
+        {
+          "original_id": "a236-19-window-sharing",
+          "title": "Composition 与窗口 Recomposer",
+          "decision": "remove",
+          "reason": "各Composition通常共享窗口Recomposer与多窗口/自定义例外、锁外工作正文完整，三行共享卡没有真实树与窗口图。",
+          "original_line": 569,
+          "heading": "## 10. Recomposer、ComposeView 与业务并发边界"
+        },
+        {
+          "original_id": "a236-20-flow-effects",
+          "title": "外部流、状态生产与事件",
+          "decision": "remove",
+          "reason": "外部Flow、producer、snapshotFlow和Effect owner三段完整，三行API卡重复。",
+          "original_line": 584,
+          "heading": "## 11. Flow、produceState 与 Effect"
+        },
+        {
+          "original_id": "a236-21-cost-model",
+          "title": "Snapshot 成本要按实际工作拆分",
+          "decision": "remove",
+          "reason": "读写apply三个完整成本列表与状态模型优劣表更完整，三行成本卡重复。",
+          "original_line": 639,
+          "heading": "### 12.3 apply 成本"
+        },
+        {
+          "original_id": "a236-22-tool-evidence",
+          "title": "编译器、跟踪与工具探针的证据边界",
+          "decision": "remove",
+          "reason": "Compiler非Snapshot指标、verbose仅applyObservers、runtime-tracing非State因果段落完整，三行工具卡重复。",
+          "original_line": 666,
+          "heading": "### 13.2 Perfetto 中没有默认逐 State 轨道"
+        },
+        {
+          "original_id": "a236-23-probe-counts",
+          "title": "工具观察器计数的单位",
+          "decision": "remove",
+          "reason": "12行AtomicLong工具观察器及累计changed出现次数非唯一/非setter/非全局事务解释完整，三行探针卡重复。",
+          "original_line": 694,
+          "heading": "### 13.3 实验性工具观察器"
+        },
+        {
+          "original_id": "a236-24-consistency-tests",
+          "title": "一致性测试按不同性质断言",
+          "decision": "remove",
+          "reason": "隔离、固定视图原子可见、同对象冲突三断言与写偏差额外要求列表完整，三行测试卡重复。",
+          "original_line": 722,
+          "heading": "### 14.1 固定三类断言"
+        },
+        {
+          "original_id": "a236-25-present-boundary",
+          "title": "Snapshot 提交到实际显示的责任链",
+          "decision": "keep",
+          "reason": "版本提交、重组布局、HWUI/RT、BLAST事务、SF/HWC实际present的跨层终点链，和开篇进程内协议形成清楚的责任出口。",
+          "original_line": 757,
+          "heading": "## 15. Android 17 与内核边界"
+        }
+      ],
+      "sha256_after": "964358e559f281956923de93399a925dc1a32c428be117b3910fc1c2c8ce83c0",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:20:25.289872+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 25,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a236/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a236/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 236,
+        "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+        "registered_sha256": "80378d1a6e30909a8ae413191cc4132d19752d3c1315703e8379fff28ad38d1c",
+        "frozen_sha256": "80378d1a6e30909a8ae413191cc4132d19752d3c1315703e8379fff28ad38d1c",
+        "review_input_sha256": "1935b1d4d231b86fa3f0b733df8dba0f849e64b09b158990fc8dc927aef07fd3",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a236/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a236/external-source.diff",
+        "diff_sha256": "b2b563708e120c94722ba1bde95a3c192371761152495885a8276862a16ba20d",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 384, \"characters\": 25672, \"svg_labels_read\": 25, \"actual_pngs_viewed\": 25, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 9, \"code_lines\": 105, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "1935b1d4d231b86fa3f0b733df8dba0f849e64b09b158990fc8dc927aef07fd3",
+      "retired_diagrams": [
+        "a236-02-visible-record",
+        "a236-03-read-write",
+        "a236-04-persistent-list",
+        "a236-05-readonly-pinning",
+        "a236-06-apply-locks",
+        "a236-09-nested-visibility",
+        "a236-10-read-domains",
+        "a236-12-observer-thread",
+        "a236-14-remember-flow",
+        "a236-15-atomic-view",
+        "a236-16-writer-protocol",
+        "a236-19-window-sharing",
+        "a236-20-flow-effects",
+        "a236-21-cost-model",
+        "a236-22-tool-evidence",
+        "a236-23-probe-counts",
+        "a236-24-consistency-tests"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-236/retired-assets.json"
     },
     {
       "index": 237,
@@ -59154,8 +59408,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 160,
-  "next_article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+  "reviewed_articles": 161,
+  "next_article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -59165,7 +59419,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:18:01.283998+08:00",
+  "updated_at": "2026-10-31T17:20:25.289872+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -59242,13 +59496,6 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
-      "registered_sha256": "80378d1a6e30909a8ae413191cc4132d19752d3c1315703e8379fff28ad38d1c",
-      "observed_sha256": "1935b1d4d231b86fa3f0b733df8dba0f849e64b09b158990fc8dc927aef07fd3",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -59343,9 +59590,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4907,
-  "reviewed_placements_after": 1998,
-  "net_removed_placements": 2909,
+  "reviewed_placements_before": 4932,
+  "reviewed_placements_after": 2006,
+  "net_removed_placements": 2926,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -59369,5 +59616,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 160
+  "currently_matching_reviewed_source_count": 161
 }
