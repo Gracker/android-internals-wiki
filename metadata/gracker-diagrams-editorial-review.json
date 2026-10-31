@@ -41496,9 +41496,269 @@
       "before_count": 26,
       "before_all_images": 26,
       "sha256_before": "8ec13cfeb494ec3229e1b0dc04dded2b45a0381ad01c473037c9a4e290e05b6e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch15-10-01-monitor-to-diagnosis",
+          "title": "从线上信号到可复现诊断",
+          "decision": "remove",
+          "reason": "三框逐项摘要118–122线上探针/上传聚合/实验室复诊的开篇分工，未画真实会话到现场关系，工具范围原文留。",
+          "original_line": 124,
+          "heading": "### 三方性能库补足的场景"
+        },
+        {
+          "original_id": "ch15-10-02-matrix-plugins",
+          "title": "Matrix 模块与接入方平台的分工",
+          "decision": "keep",
+          "reason": "三类插件采集结果真实汇入统一PluginListener与生命周期，再到接入方数据平台的结构合流独立，避免Matrix被误读为完整APM后端。",
+          "original_line": 175,
+          "heading": "#### 整体架构"
+        },
+        {
+          "original_id": "ch15-10-03-matrix-trace-anr",
+          "title": "Trace Canary 的三类证据",
+          "decision": "remove",
+          "reason": "方法记录/dispatch超时/SIGQUIT三列逐项复写184–188三段，没有消息开始结束取消定时器的实际时序；全部700ms/5s非系统ANR判线、ROM符号与构建兼容边界原文留。",
+          "original_line": 196,
+          "heading": "#### Trace Canary：卡顿与 ANR 的观测边界"
+        },
+        {
+          "original_id": "ch15-10-04-matrix-resource",
+          "title": "Activity 留存观察与可选堆处理",
+          "decision": "remove",
+          "reason": "三框顺序复制203–207Activity销毁、弱引用重试和DumpMode三段，未画暂留复检条件或多个处理分支；原弱引用非泄漏证明和可选裁剪/客户端分析全文留。",
+          "original_line": 213,
+          "heading": "#### Resource Canary：内存泄漏与冗余 Bitmap"
+        },
+        {
+          "original_id": "ch15-10-05-matrix-io-detectors",
+          "title": "IO Canary 的覆盖与判定条件",
+          "decision": "remove",
+          "reason": "三列重复226–230检测项阈值段落，左列又从PLT文件记录连到写着独立的CloseGuard报告，容易弱化不同采集入口；所有小IO三个联合条件与重复读17ms/5次/写清记录精确条件及独立Java反射路径原文保留。",
+          "original_line": 234,
+          "heading": "#### IO Canary：文件 I/O 的问题扫描"
+        },
+        {
+          "original_id": "ch15-10-06-koom-java-fork",
+          "title": "KOOM Java 的触发、fork 与分析",
+          "decision": "keep",
+          "reason": "阈值轮询→暂停ART/fork→父恢复与子写HPROF→Shark分析的实际转储责任链独立，保留上游20ms非真机保证与资源预算条件。",
+          "original_line": 255,
+          "heading": "#### Java 堆泄漏检测"
+        },
+        {
+          "original_id": "ch15-10-07-koom-native-reachability",
+          "title": "KOOM Native 的两类证据交叉匹配",
+          "decision": "keep",
+          "reason": "仍未free的分配元数据与libmemunreachable不可达区间两路真实交叉匹配，再输出栈的证据合流独立，保守形似指针漏报/ptrace条件保留。",
+          "original_line": 276,
+          "heading": "#### Native 堆泄漏检测"
+        },
+        {
+          "original_id": "ch15-10-08-koom-thread-lifecycle",
+          "title": "joinable 线程退出后的回收状态",
+          "decision": "keep",
+          "reason": "运行中、退出已join/detach、退出仍未回收的真实状态分支独立，避免把长期worker存活当已退出joinable资源泄漏。",
+          "original_line": 289,
+          "heading": "#### 线程泄漏检测"
+        },
+        {
+          "original_id": "ch15-10-09-booster-artifact-transform",
+          "title": "Booster 构建改写与运行结果",
+          "decision": "keep",
+          "reason": "onVariants选择变体、Scope.ALL转换CLASSES、模块改写、实际最终包与运行复验的真实构建产物链独立，保留ScopedArtifacts不是旧Transform和运行成本边界。",
+          "original_line": 321,
+          "heading": "#### Booster 的主要优化能力"
+        },
+        {
+          "original_id": "ch15-10-10-startup-dag",
+          "title": "启动 DAG、并发约束与锚点等待",
+          "decision": "keep",
+          "reason": "A→C、B与C共同约束D、主线程锚点等D的具体依赖拓扑独立，非只列并行调度步骤，保留假设任务非时长与AppStartup非后台调度器。",
+          "original_line": 355,
+          "heading": "#### 核心思路：有向无环图（DAG）调度"
+        },
+        {
+          "original_id": "ch15-10-11-deployment-boundaries",
+          "title": "本地诊断、平台聚合与研发工具箱",
+          "decision": "remove",
+          "reason": "堆工具/平台/研发工具三列重述377–424多个工具段落及472–481选型表，没有新部署关系，版本/主进程/debug与上传范围全文留。",
+          "original_line": 426,
+          "heading": "#### Rabbit：设备端调试入口"
+        },
+        {
+          "original_id": "ch15-10-12-btrace-stack-reconstruction",
+          "title": "btrace 3.x 的同步回溯与时间重建",
+          "decision": "keep",
+          "reason": "动态叶子/阻塞触发点到当前线程同步ART取栈，再方法地址批量符号化与wall/threadCPU重建的实际采样链独立，保留触发空洞非精确入口出口。",
+          "original_line": 447,
+          "heading": "#### 2.0 与 3.x 的边界"
+        },
+        {
+          "original_id": "ch15-10-13-observability-schema",
+          "title": "观测数据、关联字段与缺失状态",
+          "decision": "remove",
+          "reason": "数据类型/大产物/共同键三列逐项摘要505–516schema段落与字段清单，未画实际session/process/clock关联，所有缺失状态非一律null、单位采样与artifact管理全文留。",
+          "original_line": 509,
+          "heading": "### 从信号到平台：统一可观测性数据定义"
+        },
+        {
+          "original_id": "ch15-10-14-intervention-model",
+          "title": "四种介入方式的修改位置",
+          "decision": "remove",
+          "reason": "四行箭头逐项重复551–556四种介入方式/修改位置/覆盖/代价表，15已有原生具体GOT关系、18保留inline实际路径，无需表格图片副本。",
+          "original_line": 560,
+          "heading": "### 四种介入方式"
+        },
+        {
+          "original_id": "ch15-10-15-plt-before-after",
+          "title": "GOT 改写前后与调用方范围",
+          "decision": "remove",
+          "reason": "安装前后两行PNG与紧邻原生GOT槽→原函数/替换proxy→原函数图表达同一调用方槽改写关系；保留原生及595原实现不变/另调用方独立槽/绕过条件，删除第二幅配图。",
+          "original_line": 597,
+          "heading": "### PLT/GOT Hook：改的是调用方"
+        },
+        {
+          "original_id": "ch15-10-16-eager-binding-relro",
+          "title": "立即绑定、RELRO 与改槽权限",
+          "decision": "keep",
+          "reason": "linker relocate先解析再protectRELRO只读、Hook按实际页大小加写再原子改槽的真实权限时序独立，保留ByteHook该版写后恢复注释与构造函数错过窗口。",
+          "original_line": 610,
+          "heading": "#### Android linker 的立即绑定"
+        },
+        {
+          "original_id": "ch15-10-17-bytehook-task-and-proxy",
+          "title": "ByteHook 任务、逐调用方结果与命中",
+          "decision": "remove",
+          "reason": "任务范围/hooked状态/proxy执行三列复写617及662–664完整代码解释，未连实际逐调用方成功与命中/晚加载状态；CALLPREV/POPSTACK/errno/无锁确认和尝试非成功数全留。",
+          "original_line": 666,
+          "heading": "#### ByteHook 的调用方模型"
+        },
+        {
+          "original_id": "ch15-10-18-inline-trampoline",
+          "title": "Inline Hook 的入口与原指令恢复路径",
+          "decision": "keep",
+          "reason": "被改入口→近island→proxy→重定位trampoline→原函数剩余部分的真实指令执行与原路径链独立，保留简化/ABI/范围/权限/缓存失败条件。",
+          "original_line": 687,
+          "heading": "### Inline Hook：改写函数入口"
+        },
+        {
+          "original_id": "ch15-10-19-shadowhook-mode-contract",
+          "title": "ShadowHook 三种代理调用契约",
+          "decision": "keep",
+          "reason": "unique原函数、multi可更新orig存储、shared CALLPREV与栈清理三种不同真实调用契约对应独立，切模式须同时改调用方式而非共用orig规则。",
+          "original_line": 735,
+          "heading": "#### ShadowHook 的公开 API"
+        },
+        {
+          "original_id": "ch15-10-20-shadowhook-pending",
+          "title": "非空任务句柄与实际改写状态",
+          "decision": "keep",
+          "reason": "非空stub+errno0完成、非空+1pending、空失败三种实际登记状态分支独立，保留后续callback/命中验证和卸载32/33终态释放句柄。",
+          "original_line": 742,
+          "heading": "#### ShadowHook 的公开 API"
+        },
+        {
+          "original_id": "ch15-10-21-mapping-and-exec-policy",
+          "title": "可执行内存的多层条件",
+          "decision": "remove",
+          "reason": "四框把751–761同时约束概括为顺序检查清单，未画具体VMA权限/失败分支，所有execmem/execmod/映射属性/厂商架构防护与失败降级原文更精确，保留全文。",
+          "original_line": 763,
+          "heading": "#### 可执行内存、W^X 与 SELinux"
+        },
+        {
+          "original_id": "ch15-10-22-art-jvmti-boundary",
+          "title": "ART 入口变化与 JVMTI 的部署条件",
+          "decision": "remove",
+          "reason": "解释/JIT-AOT/JVMTI三列摘要774–794字段与执行路径及部署条件，没有真实入口分发拓扑，全部ART/APEX私有布局/内联/去优化与debuggable权限完整留。",
+          "original_line": 787,
+          "heading": "### ART 方法 Hook 的版本风险"
+        },
+        {
+          "original_id": "ch15-10-23-page-size-two-layers",
+          "title": "16 KB 兼容的产物与运行时两层",
+          "decision": "remove",
+          "reason": "ELF/ZIP/运行期三列重复813–826对齐与两类问题清单，未画具体segment或页取整案例；所有每依赖最终产物检查、p_align/section偏移和getpagesize要求全留。",
+          "original_line": 828,
+          "heading": "#### 16 KB page size"
+        },
+        {
+          "original_id": "ch15-10-24-process-and-object-identity",
+          "title": "Hook 的进程、库与构建标识",
+          "decision": "remove",
+          "reason": "主/remote/系统renderer三列复写847–849逐进程安装说明和804–809标识清单，未画实际独立地址空间/库映射，所有当前DSO BuildID地址不可跨用原文留。",
+          "original_line": 851,
+          "heading": "#### 多进程"
+        },
+        {
+          "original_id": "ch15-10-25-callback-to-perfetto",
+          "title": "回调预算、聚合与时间轴关联",
+          "decision": "remove",
+          "reason": "低频/高频/关联三列摘要897–909回调到Perfetto段落与记录字段，没有实际缓冲到后台聚合再显式timestamp/track轨道关系，原时钟/实际线程/后台slice非原样本说明完整留。",
+          "original_line": 911,
+          "heading": "### 把 Hook 数据放进 Perfetto"
+        },
+        {
+          "original_id": "ch15-10-26-hook-validation",
+          "title": "Hook 的四层验证与故障降级",
+          "decision": "remove",
+          "reason": "四框与920–941命中/语义/开销/故障四个标题逐项一致，没有真实已执行结果，原四状态实验及所有故障降级验收清单留，避免摘要图重复。",
+          "original_line": 943,
+          "heading": "#### 故障恢复"
+        }
+      ],
+      "sha256_after": "8b9883958b34efa3e6206a2f45052f7013dac86836a7b32e136c125741b8ff12",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:21:23.956729+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 26,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a158/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a158/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 158,
+        "article": "src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
+        "registered_sha256": "8ec13cfeb494ec3229e1b0dc04dded2b45a0381ad01c473037c9a4e290e05b6e",
+        "frozen_sha256": "8ec13cfeb494ec3229e1b0dc04dded2b45a0381ad01c473037c9a4e290e05b6e",
+        "review_input_sha256": "cf801456ae000c08c30d43f5ab85d69a3af272267d0aabee4dbb0711bce2e02e",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a158/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a158/external-source.diff",
+        "diff_sha256": "b27bcb19f81a0cd821f90bc8636b3211bca7ccfccb556d6a1e7b55213d21de12",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 499, \"characters\": 45288, \"svg_labels_read\": 26, \"actual_pngs_viewed\": 26, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 2, \"code_lines\": 72, \"native_mermaid\": 1, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "cf801456ae000c08c30d43f5ab85d69a3af272267d0aabee4dbb0711bce2e02e",
+      "retired_diagrams": [
+        "ch15-10-01-monitor-to-diagnosis",
+        "ch15-10-03-matrix-trace-anr",
+        "ch15-10-04-matrix-resource",
+        "ch15-10-05-matrix-io-detectors",
+        "ch15-10-11-deployment-boundaries",
+        "ch15-10-13-observability-schema",
+        "ch15-10-14-intervention-model",
+        "ch15-10-15-plt-before-after",
+        "ch15-10-17-bytehook-task-and-proxy",
+        "ch15-10-21-mapping-and-exec-policy",
+        "ch15-10-22-art-jvmti-boundary",
+        "ch15-10-23-page-size-two-layers",
+        "ch15-10-24-process-and-object-identity",
+        "ch15-10-25-callback-to-perfetto",
+        "ch15-10-26-hook-validation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-158/retired-assets.json"
     },
     {
       "index": 159,
@@ -42755,8 +43015,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 92,
-  "next_article": "src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
+  "reviewed_articles": 93,
+  "next_article": "src/part3-tools/ch15-other-tools/11-gpu-debug-agi-frame-analysis.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -42766,7 +43026,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:17:26.399299+08:00",
+  "updated_at": "2026-10-31T13:21:23.956729+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -42822,13 +43082,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
-      "registered_sha256": "8ec13cfeb494ec3229e1b0dc04dded2b45a0381ad01c473037c9a4e290e05b6e",
-      "observed_sha256": "cf801456ae000c08c30d43f5ab85d69a3af272267d0aabee4dbb0711bce2e02e",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/10-third-party-hook-observability.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -43133,9 +43386,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3276,
-  "reviewed_placements_after": 1477,
-  "net_removed_placements": 1799,
+  "reviewed_placements_before": 3302,
+  "reviewed_placements_after": 1488,
+  "net_removed_placements": 1814,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -43159,5 +43412,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 92
+  "currently_matching_reviewed_source_count": 93
 }
