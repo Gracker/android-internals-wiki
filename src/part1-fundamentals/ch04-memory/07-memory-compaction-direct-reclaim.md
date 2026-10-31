@@ -112,10 +112,6 @@ Framework 的 `CachedAppOptimizer` 也使用 compaction 这个名称，其 JNI �
 
 这套机制针对缓存进程的 RSS，与 `mm/compaction.c` 中的伙伴系统物理页规整同名而含义不同。所以我们在 Perfetto 中看到 `Compaction` 轨道时，第一步是确认它来自 Framework 的 ATrace，还是 `compaction/mm_compaction_*` 内核跟踪点（tracepoint）——两个名字相同的事件，讲的并不是同一件事。
 
-<!-- gracker-diagram: ch04-07-four-memory-mechanisms -->
-![四种内存工作：连续性、数量、存放位置与目标进程](../../assets/diagrams/ch04/ch04-07-four-memory-mechanisms.png)
-
-图：物理页规整迁移存活页以形成连续空闲块；页面回收丢弃或换出内容以增加可用页；ZRAM 是交换后端，可压缩数据才有容量收益。CachedAppOptimizer 面向目标缓存进程执行冷却或回收建议，名字虽叫 compaction，处理的仍是驻留页面，并非伙伴系统物理布局。
 
 ## 2. order 描述连续物理页数量
 
@@ -147,10 +143,6 @@ order-0 是一个基础页，order-1 是两个相邻基础页。要把高阶分�
 
 注意这个表只做页数换算：设备是否使用 2 MiB THP、某次 2 MiB 虚拟内存申请是否会进入对应 order 的伙伴系统分配，都要另行确认。
 
-<!-- gracker-diagram: ch04-07-order-and-physical-contiguity -->
-![连续虚拟地址与连续物理页要分开判断](../../assets/diagrams/ch04/ch04-07-order-and-physical-contiguity.png)
-
-图：大块 malloc 或 Java 对象通常只要求虚拟地址连续，物理页可能逐次缺页获得。伙伴系统 order 则要求 2^order 个连续基础页；相同 order 的字节数随 PAGE_SIZE 改变。CMA、DMA heap、IOMMU 和驱动要求必须单独核对，不能从应用对象大小直接推导高阶分配。
 
 ## 3. 规整如何形成连续空闲区
 
@@ -237,10 +229,6 @@ flowchart TD
 
 图里没有 `lmkd`，因为它是独立的用户空间守护进程：内核慢路径可以走进内核 OOM Killer，`lmkd` 则根据另一组压力证据，异步选择要终止的 Android 进程。
 
-<!-- gracker-diagram: ch04-07-allocation-slowpath-order -->
-![高阶慢路径可能先规整，常规重试才先回收](../../assets/diagrams/ch04/ch04-07-allocation-slowpath-order.png)
-
-图：空闲链表仍失败后，只有允许直接回收、允许规整、满足 costly 或非 MOVABLE 高阶等条件的请求，才先做初次规整。普通重试再次查链表并检查许可，然后直接回收、再直接规整。各次取得页面都可返回；GFP 策略可能提前失败。order-0 在直接规整入口立即返回，不会执行其中的物理页迁移。
 
 ### 4.3 order-0 分配与直接规整
 
@@ -305,10 +293,6 @@ if (suitable) {
 
 当前内核源码标签的 sysctl 文档写明 `extfrag_threshold` 默认值为 500；设备的实际值仍应现场读取。该阈值参与高成本阶数的规整适用性判断，即使超过阈值也不保证规整成功。
 
-<!-- gracker-diagram: ch04-07-extfrag-display-and-threshold -->
-![同一碎片指数有两种尺度，主动规整另用一套分数](../../assets/diagrams/ch04/ch04-07-extfrag-display-and-threshold.png)
-
-图：extfrag_index 按三位小数显示：-1.000 表示已有满足 order 的块，0.000 与 1.000 两端分别偏向容量不足和碎片。内部 fragmentation_index 使用 -1000 或 0—1000。compaction_suitable 先查迁移所需水位；costly order 才用内部整数与默认 500 的阈值比较。主动规整的 0—100 分数另行计算。
 
 读取 `extfrag_index` 需要 `CONFIG_DEBUG_FS`、`CONFIG_COMPACTION` 和相应权限，量产设备上往往读不到。这时可以退而求其次，用伙伴系统空闲块分布、迁移类型、规整结果和分配 order 建立间接证据；仅凭 `MemAvailable` 就宣布存在物理碎片，依据是不足的。
 
@@ -444,10 +428,6 @@ Android 17 新增内存管理守护进程（memory management daemon，`mmd`）�
 
 它们共享同一台设备的 CPU、物理内存、交换空间和 I/O，所以可能互相影响，但实现职责仍然分开。
 
-<!-- gracker-diagram: ch04-07-allocation-lmkd-mmd-responsibilities -->
-![分配慢路径、lmkd 与 mmd 共享资源，职责各自独立](../../assets/diagrams/ch04/ch04-07-allocation-lmkd-mmd-responsibilities.png)
-
-图：内核分配、回收与规整在请求线程或内核后台线程执行；lmkd 根据压力证据选择进程；mmd 管理 ZRAM 配置、重压缩、写回和预取。缓存进程经 CachedAppOptimizer 回收页面后，system_server 可延迟请求 mmd 写回相应 ZRAM 页；这不改变物理页规整与 kill 选择的归属。
 
 ## 8. Perfetto：先确认事件，再解释影响
 
@@ -704,10 +684,6 @@ Android 17 通用内核的 arm64 GKI 配置（`arch/arm64/configs/gki_defconfig`
 | 目标高阶分配反复规整失败，CMA/驱动证据一致 | 连续页供应或不可迁移页问题 | 驱动、DMA 堆、CMA 与系统配置 |
 | 只有 Framework 的 `Compaction` 持续区间 | CachedAppOptimizer 正在回收缓存进程页面 | 分析冻结/回收策略与前台资源竞争 |
 
-<!-- gracker-diagram: ch04-07-camera-latency-diagnosis -->
-![相机首帧延迟：先找目标线程，再按入口分流证据](../../assets/diagrams/ch04/ch04-07-camera-latency-diagnosis.png)
-
-图：案例中的 200 ms 是假设值。先定位相机请求线程、调度与调用栈，再识别是否有直接回收、高阶规整或仅有 Framework 应用回收。把目标 zone/order、buddyinfo、水位与区间计数对齐；CMA、DMA heap 和驱动证据一致时，才转向连续页供应。应用侧仍要量分配峰值和释放时机，再做单变量复测。
 
 ## 14. 复核清单
 
