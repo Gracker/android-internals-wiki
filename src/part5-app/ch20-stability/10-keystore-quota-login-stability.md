@@ -67,10 +67,6 @@ Android 17 开始，系统按应用 UID 限制 Keystore 密钥条目数量。UID
 
 这条规则属于 Android 17 的“所有应用行为变更”，所以 target SDK 低于 37 的应用同样要遵守 200,000 的上限。落到具体应用，数量上限同时取决于是否为系统应用与 target SDK；公开错误码也取决于有效 target SDK。系统应用的上限固定为 200,000；若以 API 37 或更高版本为目标，超限时仍返回 `ERROR_TOO_MANY_KEYS`。
 
-<!-- gracker-diagram: a216-01-limit-vs-code -->
-![数量阈值与公开错误码是两次不同的选择](../../assets/diagrams/ch20/a216-01-limit-vs-code.png)
-
-图：Android17所有应用行为变更；系统应用身份改变数量阈值，不自动决定使用哪一版公开错误码。
 
 ### 1.1 源码按 UID 计数
 
@@ -84,10 +80,6 @@ Android 17 开始，系统按应用 UID 限制 Keystore 密钥条目数量。UID
 
 还有一个容易漏掉的细节：`count_key_entries()` 自身失败时，这份源码会记录错误并放行本次创建。这种放行只是容错设计，别把它当成可用的余量。固定源码先执行计数检查，再生成/导入并保存新条目，这不是为整个 UID 预留名额的跨调用原子事务；并发创建仍需要业务协调，不能把阈值当成任何瞬间都绝不会超出的数据库不变量。应用侧盘点用 `KeyStore.aliases()` 或 `KeyStore.size()`，它们给出的是应用视角的可见条目，算不上系统配额查询 API，结果只能当估算用；记录盘点结果时，把枚举失败和耗时一并记下来。
 
-<!-- gracker-diagram: a216-02-uid-counting -->
-![按 APP 域与 UID 统计，跨进程和安全级别共享](../../assets/diagrams/ch20/a216-02-uid-counting.png)
-
-图：应用可见aliases与size用于估算趋势，不是系统配额查询；计数失败可能放行，不能依赖这种余量。
 
 ### 1.2 创建、导入与使用旧密钥走不同路径
 
@@ -119,10 +111,6 @@ alias 的持续增长大多来自几类固定设计，我们逐项对照：
 
 Passkey 的密钥归属与普通应用密钥不同。relying party 是发起注册和登录的网站或应用，credential provider（凭据提供方）是保存并使用 passkey 私钥的密码管理器等组件。普通应用通过 Credential Manager 请求 passkey 时，私钥由用户选定的凭据提供方保存，不能把每个 passkey 都算成本应用的 Android Keystore alias。只有应用自己调用 Keystore 生成密钥，或者自己实现凭据提供方并管理相关密钥，这些条目才要纳入本 UID 的盘点。排查时我们看本应用 `AndroidKeyStore` 可见的 alias 和密钥创建调用栈就够了；按用户拥有的 passkey 数量推算配额，会得出错误的结论。
 
-<!-- gracker-diagram: a216-04-alias-growth -->
-![增长来自命名和保留协议，不能只在故障时删](../../assets/diagrams/ch20/a216-04-alias-growth.png)
-
-图：只有自己在本UID管理的Keystore条目进入本应用盘点，普通relying party不能把用户passkey数直接当alias数。
 
 ## 3. 用错误码、异常类型和调用阶段共同分类
 
@@ -193,10 +181,6 @@ fun classifyAndroid17KeystoreFailure(
 }
 ```
 
-<!-- gracker-diagram: a216-05-failure-classes -->
-![配额、认证、失效与暂时错误使用不同恢复动作](../../assets/diagrams/ch20/a216-05-failure-classes.png)
-
-图：沿最多16层cause定位公开KeyStoreException，同时保留外层专用异常和失败操作阶段。
 
 这段代码把异常消息匹配降为“疑似配额”，并且只在 `isTransientFailure` 为 `true` 时读取重试策略。`@RequiresApi(37)` 只向静态检查声明调用要求，不执行运行时版本判断；调用方仍须确认 `Build.VERSION.SDK_INT >= 37`，旧系统共用入口时则使用版本隔离实现。诊断记录里要保留外层异常类、cause 链中的 `KeyStoreException`、公开错误码和清理状态，只保存一段可能变化的消息文本是不够的。
 
@@ -262,10 +246,6 @@ key material（私钥或对称密钥的原始字节）不进登记表，“数�
 
 LSKF（Lock Screen Knowledge Factor）指锁屏 PIN、图案或密码等知识型认证因子。设备没有设置 LSKF 时，生成需要用户认证的密钥可能得到 `ERROR_KEYSTORE_UNINITIALIZED`；同一个错误码也可能表示应用还没调用 `KeyStore.load()`。我们结合失败发生的位置区分这两种情况，提示里别直接写“Keystore 损坏”。
 
-<!-- gracker-diagram: a216-08-auth-vs-invalidated -->
-![用户尚未认证与密钥永久失效不能使用同一恢复](../../assets/diagrams/ch20/a216-08-auth-vs-invalidated.png)
-
-图：失效与否取决于生成时的认证器、有效期和失效参数，不能把所有锁屏变化都当作需要删密钥。
 
 ## 6. 盘点与回收实现
 
@@ -307,17 +287,9 @@ fun collectAliasInventory(
 
 这个函数返回的 `total`，是 `AndroidKeyStore` 安全提供程序向应用暴露的条目数，我们拿它观察趋势和接近阈值的风险是合适的；keystore2 内部的配额计数是另一回事。示例按最长匹配前缀归类，避免 `auth` 与 `auth.device` 重叠时随集合顺序改变责任模块。`unknownCount` 只说明有 alias 没匹配上任何已知前缀，处理方式是先查清归属，批量删除要等确认之后。盘点任务还要记录耗时、能观察到的枚举异常和触发原因，并限制运行频率与诊断窗口。固定 Android 17 提供程序的 `getAliasesBatch()` 会把底层 `KeyStoreException` 记入日志并转换为空批次，`engineSize()` 则可能在失败时返回 0。因此示例即使正常返回，也可能只有部分 alias 或得到看似为空的结果，公开接口无法保证完整性；遥测应标明完整性未知，不把数量骤降或 0 自动解释成配额恢复。截止时间通常只能在调用之间检查；普通协程取消不能自动中断已经进入 Keystore 的 Binder 调用，不能承诺任意时刻硬终止枚举。
 
-<!-- gracker-diagram: a216-09-inventory-quality -->
-![后台盘点只记录可观测结果，不能保证完整性](../../assets/diagrams/ch20/a216-09-inventory-quality.png)
-
-图：提供程序可把底层失败变成空批次或0，正常返回也可能不完整；重叠前缀采用最长匹配，unknown先查归属。
 
 回收名单从业务状态里来，“很久没使用”只是参考条件之一。一个候选条目通常要过四道确认：登记状态为 `RETIRED`、替代密钥已成功使用、回滚期结束、相关进程都切换到新版本。非对称身份密钥还要确认服务端不再接受旧公钥；本地数据加密密钥则要确认旧数据已经迁移或不再需要。测试前缀可以按测试环境的明确约定清理；未知前缀先确认责任模块，再动手。
 
-<!-- gracker-diagram: a216-10-retirement-proof -->
-![可回收候选必须同时具备业务与版本证据](../../assets/diagrams/ch20/a216-10-retirement-proof.png)
-
-图：长期不用只是旁证；未知前缀、SDK条目和加密数据依赖都要由责任方确认。
 
 ## 7. 多进程、升级与回滚
 
@@ -333,10 +305,6 @@ target SDK 从 36 升到 37，系统并不会自动清理已有密钥。如果�
 
 卸载应用通常会清理对应 UID 的 Keystore 数据。但把“让用户重装或清除数据”当成线上恢复方案是行不通的：这一步同时清除业务数据和认证状态，alias 持续增长的代码问题也原样还在。
 
-<!-- gracker-diagram: a216-11-multiprocess-coordination -->
-![跨进程用单一责任方协调创建、轮换与删除](../../assets/diagrams/ch20/a216-11-multiprocess-coordination.png)
-
-图：containsAlias再generate不是原子创建；target36升37后旧key仍可用，但下一次新增可能立即被拒绝。
 
 ## 8. 线上诊断字段
 
@@ -360,10 +328,6 @@ target SDK 从 36 升到 37，系统并不会自动清理已有密钥。如果�
 
 `ApplicationExitInfo` 是 Android 11 起提供的历史进程退出记录。配额错误导致启动崩溃时，我们在下次启动读取该记录，与本地保存的最近一次密钥操作做关联。退出记录只覆盖“进程因未处理异常、ANR 等原因结束”这一层；要把原因落到 Keystore 头上，还要比对异常时间、进程名和本次启动标识。详细用法见 26.6。
 
-<!-- gracker-diagram: a216-12-diagnostic-fields -->
-![退出记录解释进程结果，Keystore 根因仍需操作证据](../../assets/diagrams/ch20/a216-12-diagnostic-fields.png)
-
-图：历史退出记录需要对应失败进程和那次进程启动身份；仅有退出结果不能证明Keystore根因。
 
 ## 9. 分阶段发布与容量测试
 
@@ -384,10 +348,6 @@ target SDK 从 36 升到 37，系统并不会自动清理已有密钥。如果�
 
 50,000 与 200,000 是系统正常计数路径拒绝创建的阈值，我们定业务预警线时设在更低的位置：按每日增长速度、清理能力和一次轮换可能增加的最大数量来算。容量脚本使用独立设备或可重置的测试用户、固定测试前缀和生成数量上限；任务正常结束或中断恢复时，都要清理测试密钥。
 
-<!-- gracker-diagram: a216-13-capacity-test -->
-![发布前在隔离环境验证容量、竞争与中断恢复](../../assets/diagrams/ch20/a216-13-capacity-test.png)
-
-图：预警线低于系统阈值，结合增长速度、回收能力和轮换峰值；测试条目固定前缀且结束后可清理。
 
 ### 9.2 发布前检查
 

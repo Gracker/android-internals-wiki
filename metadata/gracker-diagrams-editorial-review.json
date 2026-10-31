@@ -54714,9 +54714,144 @@
       "before_count": 13,
       "before_all_images": 13,
       "sha256_before": "3379f172616e7ac1a249ed3d489f1106af1918978723a581e92deed5a7c147df",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "a216-01-limit-vs-code",
+          "title": "数量阈值与公开错误码是两次不同的选择",
+          "decision": "remove",
+          "reason": "环境/身份/上限/公开码表及系统身份与target分别决定规则的段落更完整，三行卡复述表格。",
+          "original_line": 70,
+          "heading": "## 1. Android 17 配额的适用范围"
+        },
+        {
+          "original_id": "a216-02-uid-counting",
+          "title": "按 APP 域与 UID 统计，跨进程和安全级别共享",
+          "decision": "remove",
+          "reason": "DomainAPP+UID计数、legacy加总、跨进程安全级别共享和sharedUID规则已有五项推论，三行映射重复。",
+          "original_line": 87,
+          "heading": "### 1.1 源码按 UID 计数"
+        },
+        {
+          "original_id": "a216-03-creation-vs-use",
+          "title": "创建检查先于 KeyMint 与同名替换，使用旧密钥另走路径",
+          "decision": "keep",
+          "reason": "生成/导入先计数再KeyMint保存重绑定，与旧key密码操作独立路径的结构，解释同名替换不能绕过满额而旧key仍可用。",
+          "original_line": 100,
+          "heading": "### 1.2 创建、导入与使用旧密钥走不同路径"
+        },
+        {
+          "original_id": "a216-04-alias-growth",
+          "title": "增长来自命名和保留协议，不能只在故障时删",
+          "decision": "remove",
+          "reason": "八类alias增长来源/风险/调整表及passkey归属段落更完整，三行增长卡重复。",
+          "original_line": 122,
+          "heading": "## 2. 容易造成 alias 持续增长的设计"
+        },
+        {
+          "original_id": "a216-05-failure-classes",
+          "title": "配额、认证、失效与暂时错误使用不同恢复动作",
+          "decision": "remove",
+          "reason": "九类可靠证据/处理表及39行cause分类代码完整，四行失败分类图是表格子集。",
+          "original_line": 196,
+          "heading": "## 3. 用错误码、异常类型和调用阶段共同分类"
+        },
+        {
+          "original_id": "a216-06-recovery-order",
+          "title": "配额恢复先停止新增，再按归属腾出空间",
+          "decision": "keep",
+          "reason": "共享暂停新增、优先使用旧key核对授权、分批只回收明确无引用项、重新盘点恢复的顺序，强调跨进程和启动路径限制。",
+          "original_line": 217,
+          "heading": "## 4. 登录与支付故障的恢复顺序"
+        },
+        {
+          "original_id": "a216-07-alias-lifecycle",
+          "title": "持久化中间状态，让进程中断后能够核对恢复",
+          "decision": "keep",
+          "reason": "ABSENT/CREATING/ACTIVE/RETIRED/DELETING/DELETED持久状态链，突出创建与删除中断核对和退役期保留条件。",
+          "original_line": 254,
+          "heading": "### 5.2 用持久状态保护创建与删除"
+        },
+        {
+          "original_id": "a216-08-auth-vs-invalidated",
+          "title": "用户尚未认证与密钥永久失效不能使用同一恢复",
+          "decision": "remove",
+          "reason": "用户待认证/永久失效/未初始化两条件已经同节两段说明且分类表覆盖，三行异常映射重复。",
+          "original_line": 265,
+          "heading": "### 5.3 生物认证与锁屏变化"
+        },
+        {
+          "original_id": "a216-09-inventory-quality",
+          "title": "后台盘点只记录可观测结果，不能保证完整性",
+          "decision": "remove",
+          "reason": "29行后台盘点和最长前缀/unknown/可能空批或0/完整性未知/Binder不能硬中断的解释更完整，四框只是代码摘要。",
+          "original_line": 310,
+          "heading": "## 6. 盘点与回收实现"
+        },
+        {
+          "original_id": "a216-10-retirement-proof",
+          "title": "可回收候选必须同时具备业务与版本证据",
+          "decision": "remove",
+          "reason": "回收四道确认及服务端公钥撤销/旧数据迁移段落完整，三行回收证据卡重复而无新增依赖图。",
+          "original_line": 317,
+          "heading": "## 6. 盘点与回收实现"
+        },
+        {
+          "original_id": "a216-11-multiprocess-coordination",
+          "title": "跨进程用单一责任方协调创建、轮换与删除",
+          "decision": "remove",
+          "reason": "集中管理或合作锁两方案和五项多进程要求已有列表，四框只是协调检查顺序。",
+          "original_line": 336,
+          "heading": "## 7. 多进程、升级与回滚"
+        },
+        {
+          "original_id": "a216-12-diagnostic-fields",
+          "title": "退出记录解释进程结果，Keystore 根因仍需操作证据",
+          "decision": "remove",
+          "reason": "十三行诊断字段表和隐私/ExitInfo关联说明完整，三行字段图重复。",
+          "original_line": 363,
+          "heading": "## 8. 线上诊断字段"
+        },
+        {
+          "original_id": "a216-13-capacity-test",
+          "title": "发布前在隔离环境验证容量、竞争与中断恢复",
+          "decision": "remove",
+          "reason": "十类隔离测试构造/预期表和容量预警/固定前缀清理条件更完整，三行测试卡重复且无新测量。",
+          "original_line": 387,
+          "heading": "### 9.1 测试组合"
+        }
+      ],
+      "sha256_after": "fd0cc18ee7baf871d7d62277eeb35621b7ec498db216c44fc3fb91b00744b1ff",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:28:35.121513+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 13,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a216/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a216/visual-review.json",
+      "retired_diagrams": [
+        "a216-01-limit-vs-code",
+        "a216-02-uid-counting",
+        "a216-04-alias-growth",
+        "a216-05-failure-classes",
+        "a216-08-auth-vs-invalidated",
+        "a216-09-inventory-quality",
+        "a216-10-retirement-proof",
+        "a216-11-multiprocess-coordination",
+        "a216-12-diagnostic-fields",
+        "a216-13-capacity-test"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-216/retired-assets.json"
     },
     {
       "index": 217,
@@ -55423,8 +55558,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 142,
-  "next_article": "src/part5-app/ch20-stability/10-keystore-quota-login-stability.md",
+  "reviewed_articles": 143,
+  "next_article": "src/part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -55434,7 +55569,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:26:37.781141+08:00",
+  "updated_at": "2026-10-31T16:28:35.121513+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -55619,9 +55754,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4528,
-  "reviewed_placements_after": 1892,
-  "net_removed_placements": 2636,
+  "reviewed_placements_before": 4541,
+  "reviewed_placements_after": 1895,
+  "net_removed_placements": 2646,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -55645,5 +55780,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 142
+  "currently_matching_reviewed_source_count": 143
 }
