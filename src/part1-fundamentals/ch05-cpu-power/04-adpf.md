@@ -134,10 +134,6 @@ HintSession 绑定的是 Linux TID（Thread ID，线程 ID），协程 ID、Java
 
 `setThreads()` 同步执行 `IHintManager.setHintSessionThreads()`，校验 TID 并替换线程集合；API 文档列出了空数组、TID 归属和前后台状态这些异常情况。r1 服务端在 UID 不允许更新时会暂存新 TID，等恢复后再提交，因此调用返回也不证明 HAL 已立即更新。只在线程组成或场景变化时更新，不要每次协程调度都调用。Session 的更新、上报和 `close()` 还必须由应用串行化；Java 与 NDK 文档都没有承诺会话方法线程安全。
 
-<!-- gracker-diagram: ch05-04-linux-tid-coroutines-and-thread-update -->
-![会话跟踪 Linux 线程，不跟踪协程或业务任务](../../assets/diagrams/ch05/ch05-04-linux-tid-coroutines-and-thread-update.png)
-
-图：协程可能迁移，session 内的 Linux TID 集合不会自动变化。尽量使用可控制的长生命周期线程，线程组成变化时 API 34+ 用 setThreads，旧版则关闭并重建。r1 服务端可能在后台暂存新集合，恢复后才提交，调用返回只说明请求已受理。所有会话操作由应用保证线程安全。
 
 ### 从 Java API 到 Power HAL 的调用链
 
@@ -200,10 +196,6 @@ session.reportActualWorkDuration(duration);
 
 除了上报时长，session 还能声明节能偏好：`Session#setPreferPowerEfficiency(boolean)` 从 API 35 起公开。开启后表示这组线程可以优先采用节能调度，工作完成得稍慢也能接受。它适合周期明确、允许延长完成时间的任务；视频处理、同步或推理是否适用，要按产品的延迟目标判断，业务名称本身说明不了问题。
 
-<!-- gracker-diagram: ch05-04-power-efficiency-preference-with-work-budget -->
-![节能偏好改变策略取舍，仍需报告真实目标与结果](../../assets/diagrams/ch05/ch05-04-power-efficiency-preference-with-work-budget.png)
-
-图：API 35 的 setPreferPowerEfficiency 表达该线程组可安全偏向能效，适合不处于感知性能关键路径的工作。它不直接指定低频或核心，也不会替应用更改 target 或测量 actual。是否节能以及完成时间变化，应在相同工作量和业务期限下验证；任务叫“同步”或“推理”并不自动意味着适用。
 
 ### Android 16 workload hint
 
@@ -217,10 +209,6 @@ session.reportActualWorkDuration(duration);
 
 Java `sendHint()` 及 `CPU_LOAD_*`、`GPU_LOAD_*` 常量属于测试 API（`@TestApi`）或隐藏接口，普通应用不要依赖它们。
 
-<!-- gracker-diagram: ch05-04-workload-increase-reset-spike-before-cycle -->
-![突发提示提前表达变化，长期负载仍靠周期反馈](../../assets/diagrams/ch05/ch05-04-workload-increase-reset-spike-before-cycle.png)
-
-图：API 36 的 NDK workload hint 用于周期开始前或尽早表达大幅变化：Increase 表示负载增加，Reset 丢弃旧负载假设，Spike 表示一次性高成本周期。持续高负载继续通过 target/actual 报告。调用按应用限流，CPU 与 GPU 同发按两条计；EBUSY、EPIPE 应处理，返回 0 也不证明设备支持或已经执行策略。
 
 ## Headroom API：CPU/GPU 容量余量
 
@@ -428,10 +416,6 @@ ADPF 没有向所有设备承诺提供固定名为 `power.hint_session` 或 `pow
 
 API 37 的 `core/api/current.txt` 以及 NDK `performance_hint.h` 都没有 `setPreferIdle(boolean)`。预览版 SDK（preview SDK）、厂商 SDK 或内部接口都不算 Android 17 的公共能力；Java `sendHint()` 也仍属于测试或隐藏接口。
 
-<!-- gracker-diagram: ch05-04-public-api-milestones-and-internal-boundaries -->
-![先检查公开版本与设备能力，再选择会话功能](../../assets/diagrams/ch05/ch05-04-public-api-milestones-and-internal-boundaries.png)
-
-图：Java HintSession 从 API 31 起提供，NDK Session 从 API 33 起公开；API 35 增加 WorkDuration 和能效偏好，API 36 提供 workload hint、会话配置及更多余量能力。版本可用与每台设备实际支持是两回事。r1 的 Java/NDK 公共接口没有 setPreferIdle，内部 Binder、HAL 和测试常量对普通应用都算不上 SDK 能力。
 
 ## 常见误区
 
@@ -481,10 +465,6 @@ Android Developers 提供 Unreal ADPF 插件（plugin）；当前引擎支持表
 
 具备系统权限或使用工程机时，可以结合系统服务诊断命令 `dumpsys performance_hint`、Power HAL 日志和厂商 trace 进一步定位；普通应用应以公开 API 返回值和可观测性能为准。
 
-<!-- gracker-diagram: ch05-04-engine-provider-and-device-policy-validation -->
-![引擎处理接入，项目仍要确认预算和设备效果](../../assets/diagrams/ch05/ch05-04-engine-provider-and-device-policy-validation.png)
-
-图：Unity Android provider 与 Unreal ADPF 插件可连接周期提示和质量调节，但线程模型、target 与计时方式仍要随引擎版本核对。项目应先建立基线，再标定自己的 scaler 或 Scalability 档位；设备 HAL 如何兑现提示仍由实现决定。跨设备记录创建结果、实际线程、生命周期、热条件与 A/B 数据，插件启用与否或 SoC 品牌本身都推不出收益。
 
 ## 与其他章节的关系
 
