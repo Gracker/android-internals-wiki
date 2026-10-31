@@ -11385,6 +11385,23 @@
       "summary": "Compose 命中链复用缺少悬停例外且高层修饰符能力被统一泛化",
       "type": "compose-input-scope-boundary",
       "updated_at": "2026-10-31T14:43:50.529945+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "created_at": "2026-10-31T16:18:31.637811+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261031-160020-cn-rewrite-a652c959b80f8cea",
+      "details": "run 20261031-160020-cn-rewrite-a652c959b80f8cea 完成整篇改写且 style_lint compare pass / check-metadata pass / GPT 一轮修复完毕（neg 4.14→1.08/1k，我们 0→16，最终 sha256_utf8_16=94ad870811e45b32）。在 agent 写 result 与 completer 运行之间，配图复核车道提交 97665478a『复核车载篇正文修订后的全部配图』把本仍为 dirty 的目标文件按当前工作区内容（即本次改写稿，52 行增删完全一致）一并提交，导致 HEAD(97665478a)≠base_sha(72c5f4d) 且 commits_touch_paths 命中目标，completer 按设计拒绝。正文内容零丢失：HEAD 中该文件与改写终稿逐字节一致。需要人工处理：确认该提交即可（无需重做正文）；本 run 的 commit_message（含文风指标）未能挂到任何 Git 提交，如需追溯请在 97665478a 上补注或接受 manifest 记录。另注意 rank 冷却按 --grep=aiw-chinese-rewrite 匹配不到 97665478a，该章理论上可被重选，但其新分值约 2.2，实际难进 top。",
+      "id": "finding-b0be04c5adfd",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "git show 97665478a --stat; shasum worktree vs HEAD both 94ad870811e45b32; aiw-run-complete.py output"
+      ],
+      "status": "open",
+      "summary": "改写成果被并发的配图复核提交 97665478a 吸收，manifest 无法按 changed 收口",
+      "type": "manifest-closure-conflict",
+      "updated_at": "2026-10-31T16:18:31.637811+08:00"
     }
   ],
   "schema_version": 1
