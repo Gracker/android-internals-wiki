@@ -44480,9 +44480,226 @@
       "before_count": 21,
       "before_all_images": 21,
       "sha256_before": "83c6d3a71aa4ca9f1d5d0393c73d5acb3e7cc0880cb79710f231958c478d7803",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "ch16-05-01-test-contract",
+          "title": "用合同固定性能比较的对象",
+          "decision": "remove",
+          "reason": "四框重画完整测试合同九行表，没有实际错误页快速结果反例；成功断言优先/方向/排除/产物定义全文留。",
+          "original_line": 93,
+          "heading": "## 先写测试合同"
+        },
+        {
+          "original_id": "ch16-05-02-reference-environment",
+          "title": "参考机、构建与数据分别固定",
+          "decision": "remove",
+          "reason": "三列摘要参考机/发布构建/数据存储三小节，无实际同机vs跨机结果，模拟器仅流程与profileable/R8及数据协议全文留。",
+          "original_line": 124,
+          "heading": "### 存储与数据状态"
+        },
+        {
+          "original_id": "ch16-05-03-reset-data-boundary",
+          "title": "编译重置何时会清掉应用数据",
+          "decision": "keep",
+          "reason": "固定1.4.1在API34verifyclearprofile、API24–33rootreset、同区间非root卸载重装三实际重置分支对应独立，指出None也可能清Appdata且非禁用JIT。",
+          "original_line": 142,
+          "heading": "### 存储与数据状态"
+        },
+        {
+          "original_id": "ch16-05-04-thermal-protocols",
+          "title": "短路径、稳态与状态覆盖的边界",
+          "decision": "remove",
+          "reason": "三列逐项复制短路径/持续热稳态两行表与override段，无实际热收敛曲线；不事后挑平段和override不取消真实热控制全文留。",
+          "original_line": 172,
+          "heading": "### 峰值路径与热稳定态"
+        },
+        {
+          "original_id": "ch16-05-05-power-display-network",
+          "title": "供电、显示与网络条件怎样对齐",
+          "decision": "remove",
+          "reason": "三列逐项摘要供电/显示/本地网络三组清单，无requestedobserved不一致样本；动画主题改变workload与设置不保证生效原文留。",
+          "original_line": 209,
+          "heading": "### 本地路径与网络路径的测试方案"
+        },
+        {
+          "original_id": "ch16-05-06-isolation-and-restoration",
+          "title": "隔离操作必须有恢复与复验",
+          "decision": "remove",
+          "reason": "三列摘录专用设备/SideEffectlistener/dexopt三段与命令表，未画setup失败外层恢复真实分支；名单非快照/disable只JobScheduler且systemserver重启丢/cancel非同步全文留。",
+          "original_line": 258,
+          "heading": "### 后台 dexopt 的手动控制"
+        },
+        {
+          "original_id": "ch16-05-07-micro-macro-stabilization",
+          "title": "Micro与Macro的运行器和稳定化",
+          "decision": "remove",
+          "reason": "三列重画Micro/Macro runner与环境职责段，无实际跨进程运行结构；锁频root仅Micro/常规runner与MacroAPI33主动cancel有限范围全文留。",
+          "original_line": 275,
+          "heading": "### Microbenchmark 与 Macrobenchmark 的稳定化差异"
+        },
+        {
+          "original_id": "ch16-05-08-sampling-hierarchy",
+          "title": "独立运行、迭代与帧不是同一层",
+          "decision": "keep",
+          "reason": "独立CIjob/block→同job迭代→迭代内帧三个实际嵌套抽样层次独立，结合检出目标噪声与错误率，避免把相邻帧当独立实验重复。",
+          "original_line": 298,
+          "heading": "### 迭代次数由噪声与最小可检测回归决定"
+        },
+        {
+          "original_id": "ch16-05-09-metric-aggregation",
+          "title": "启动run与帧样本池的区别",
+          "decision": "keep",
+          "reason": "Startup每run单值minmedianmax/runs与Frame每轮数组展平样本池percentile两种实际输出数据形状对应独立，固定RT−UI非CPU和零缺失保留。",
+          "original_line": 318,
+          "heading": "### Macrobenchmark 两类指标的聚合方式"
+        },
+        {
+          "original_id": "ch16-05-10-three-warmups",
+          "title": "三种预热各改变什么",
+          "decision": "remove",
+          "reason": "三列逐行重画三种warmup完整表，无真实预热到测量时间轴；Micro/JIT不同Partialprofile编译不同持续负载热稳态全文留。",
+          "original_line": 347,
+          "heading": "### Warm-up（预热） 有三种不同含义"
+        },
+        {
+          "original_id": "ch16-05-11-compilation-mode-choices",
+          "title": "固定版本的编译模式对照",
+          "decision": "remove",
+          "reason": "三列压缩六行CompilationMode表，未展示完整选择分支且表更准确，None仍JIT/Full未必快/Ignore外部精控与固定版本全文留。",
+          "original_line": 356,
+          "heading": "### AndroidX Benchmark 1.4.1 的 CompilationMode"
+        },
+        {
+          "original_id": "ch16-05-12-partial-profile-flow",
+          "title": "Baseline安装与运行热点分别控制",
+          "decision": "keep",
+          "reason": "平台重置→可选Baseline安装speedprofile→可选warmup收集profile→再次speedprofile正式测量实际编译状态路径独立，Require失败不正常样本/覆盖收益另验保留。",
+          "original_line": 400,
+          "heading": "### AndroidX Benchmark 1.4.1 的 CompilationMode"
+        },
+        {
+          "original_id": "ch16-05-13-startup-mode-contracts",
+          "title": "冷温热启动保留的对象不同",
+          "decision": "remove",
+          "reason": "三列逐项复写COLD/WARM/HOT三条定义，14保留精确COLD实际顺序，全部首轮WarmHot额外进程预热与缓存数据独立条件全文留。",
+          "original_line": 413,
+          "heading": "### 启动模式控制的状态范围"
+        },
+        {
+          "original_id": "ch16-05-14-cold-setup-order",
+          "title": "COLD的setup到正式测量顺序",
+          "decision": "keep",
+          "reason": "setup→shadercache清理→killprocess内存丢失→kernelpagecache清理后正式启动实际1.4.1顺序独立，不能在目标进程内存准备后宣称setup幸存。",
+          "original_line": 420,
+          "heading": "### 启动模式控制的状态范围"
+        },
+        {
+          "original_id": "ch16-05-15-invalid-failed-slow-samples",
+          "title": "无效环境、目标失败与有效慢样本",
+          "decision": "keep",
+          "reason": "环境装置无效排除/目标崩溃错误页阻断失败/有效慢值保留三个不同结果处理真实分类独立，防失败或GC慢值从总体消失的幸存偏差。",
+          "original_line": 437,
+          "heading": "## 排除规则与异常值"
+        },
+        {
+          "original_id": "ch16-05-16-paired-versioned-baseline",
+          "title": "版本化基线与同机交错对照",
+          "decision": "keep",
+          "reason": "版本化合同→同机ABBA或随机block→两侧原始顺序环境→按设备层变化汇总的实际配对协议独立，控制漂移但非消除所有效应。",
+          "original_line": 465,
+          "heading": "### 同机配对与交错运行"
+        },
+        {
+          "original_id": "ch16-05-17-absolute-relative-gates",
+          "title": "SLO违约与相对回归独立判定",
+          "decision": "keep",
+          "reason": "质量成功前置后分叉独立绝对SLO与相对工程幅度噪声判定再汇通过阻断证据不足的真实逻辑独立，非要先破SLO且不反复补到显著。",
+          "original_line": 482,
+          "heading": "### 阈值来自 SLO 与噪声下限"
+        },
+        {
+          "original_id": "ch16-05-18-report-causal-evidence",
+          "title": "从观测到可复核的归因",
+          "decision": "remove",
+          "reason": "四步复制报告七条结构清单与观测证据假设决策定义，无实际可证伪根因例，GC同窗非因果和原trace/SQL可复查全文留。",
+          "original_line": 535,
+          "heading": "### 相关性与根因的区分"
+        },
+        {
+          "original_id": "ch16-05-19-ci-artifact-pipeline",
+          "title": "CI将流程检查和数值门禁分开",
+          "decision": "keep",
+          "reason": "目标测试两APK构建→流程冒烟与真机测量→JSONtrace日志环境归档解析→分层趋势门禁本章CI交付主线独立，dryrun不入基线/环境错误不能靠suppress修复图注留。",
+          "original_line": 588,
+          "heading": "### JSON 的正确使用"
+        },
+        {
+          "original_id": "ch16-05-20-firebase-online-boundary",
+          "title": "FPM自定义区间与受控基准的分工",
+          "decision": "remove",
+          "reason": "三列复制FPM/受控Benchmark/Perfetto分工表与32metric5attributes限制，无实际上线分布比较，全部名字规则/分钟非保证/旧SDK36h及会话非systemtrace全文留。",
+          "original_line": 615,
+          "heading": "### 延迟与报警"
+        },
+        {
+          "original_id": "ch16-05-21-trace-metric-reconciliation",
+          "title": "把结果回接到同轮Trace",
+          "decision": "remove",
+          "reason": "四框摘要结果回同轮trace五条检查清单，与19归档门禁及18报告流程重复，无实际边界不匹配例；TTFD声明所在或后首匹配帧/缺失不补0/独立Surface覆盖全文留。",
+          "original_line": 648,
+          "heading": "## 在 Perfetto 中复核 benchmark"
+        }
+      ],
+      "sha256_after": "4c0889805559a5249fded5fb7e2f29c78abe59e4b75ccb068c65e04981d67251",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:14:56.429568+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 21,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a171/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a171/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 171,
+        "article": "src/part3-tools/ch16-methodology/05-testing-best-practices.md",
+        "registered_sha256": "83c6d3a71aa4ca9f1d5d0393c73d5acb3e7cc0880cb79710f231958c478d7803",
+        "frozen_sha256": "83c6d3a71aa4ca9f1d5d0393c73d5acb3e7cc0880cb79710f231958c478d7803",
+        "review_input_sha256": "b3f26a30b3bcae07ef94d0e8ff99fc869d8b79a20186c7bb8e2435c7923d0a85",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch16-methodology/05-testing-best-practices.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a171/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a171/external-source.diff",
+        "diff_sha256": "ee8bd78efcc3e69233b8f50fb78eb95208e66d61526fd7b525cacbff830bee64",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 382, \"characters\": 25206, \"svg_labels_read\": 21, \"actual_pngs_viewed\": 21, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 2, \"code_lines\": 23, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "b3f26a30b3bcae07ef94d0e8ff99fc869d8b79a20186c7bb8e2435c7923d0a85",
+      "retired_diagrams": [
+        "ch16-05-01-test-contract",
+        "ch16-05-02-reference-environment",
+        "ch16-05-04-thermal-protocols",
+        "ch16-05-05-power-display-network",
+        "ch16-05-06-isolation-and-restoration",
+        "ch16-05-07-micro-macro-stabilization",
+        "ch16-05-10-three-warmups",
+        "ch16-05-11-compilation-mode-choices",
+        "ch16-05-13-startup-mode-contracts",
+        "ch16-05-18-report-causal-evidence",
+        "ch16-05-20-firebase-online-boundary",
+        "ch16-05-21-trace-metric-reconciliation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-171/retired-assets.json"
     },
     {
       "index": 172,
@@ -45607,8 +45824,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 104,
-  "next_article": "src/part3-tools/ch16-methodology/05-testing-best-practices.md",
+  "reviewed_articles": 105,
+  "next_article": "src/part3-tools/ch16-methodology/06-competitive-analysis.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -45618,7 +45835,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:11:35.624229+08:00",
+  "updated_at": "2026-10-31T14:14:56.429568+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -45674,13 +45891,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch16-methodology/05-testing-best-practices.md",
-      "registered_sha256": "83c6d3a71aa4ca9f1d5d0393c73d5acb3e7cc0880cb79710f231958c478d7803",
-      "observed_sha256": "b3f26a30b3bcae07ef94d0e8ff99fc869d8b79a20186c7bb8e2435c7923d0a85",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/05-testing-best-practices.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -45943,9 +46153,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3552,
-  "reviewed_placements_after": 1562,
-  "net_removed_placements": 1990,
+  "reviewed_placements_before": 3573,
+  "reviewed_placements_after": 1571,
+  "net_removed_placements": 2002,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -45969,5 +46179,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 104
+  "currently_matching_reviewed_source_count": 105
 }
