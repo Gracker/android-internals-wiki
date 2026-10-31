@@ -106,10 +106,6 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程
 
 这几组指标可以同时报告。横向比较之前，先确认两边用的是同一个分母，再谈“模型能效”的高下。如果 API 只交付文本分片而不暴露逐 token 时间，应报告首分片与分片间隔；按 tokenizer 统计分片里的 token 数，并不能还原各 token 的真实到达时刻。零输出的失败或取消请求保留在请求能量和成功率统计中。
 
-<!-- gracker-diagram: ch05-06-energy-denominators -->
-![LLM 能量指标的分母与窗口](../../assets/diagrams/ch05/ch05-06-energy-denominators.png)
-
-图：能量必须来自相同测量口径与时间窗。零输出请求不计算焦耳/输出 token，但仍计入请求成本、成功率和浪费统计。
 
 ## 一次请求经过哪些硬件
 
@@ -204,10 +200,6 @@ AIDL 接口 `IPower` 支持创建性能提示会话（hint session）。Framewor
 6. **热与功率上限**：观测到的低频可能来自 thermal clamp 或平台功率预算，不一定是 governor 低估了利用率；
 7. **后台竞争**：相机、显示、网络、系统服务和其他应用会共同消耗 CPU、内存带宽与热余量。
 
-<!-- gracker-diagram: ch05-06-prefill-decode-shapes -->
-![Prefill 与自回归 Decode 的工作形态](../../assets/diagrams/ch05/ch05-06-prefill-decode-shapes.png)
-
-图：Prefill 较易形成批量计算，decode 多轮有数据依赖；计算、带宽、提交与同步均可能成为瓶颈，不能只按利用率高低判断。
 
 所以诊断要从 token 时间线开始，再关联 CPU 放置、CPU / GPU 频率、调度、内存、功耗和温度。单张利用率（utilization）截图说明不了升频策略的问题。
 
@@ -276,10 +268,6 @@ AIDL 接口 `IPower` 支持创建性能提示会话（hint session）。Framewor
 
 普通应用应通过模型、上下文长度、线程数和请求队列等参数改变工作负载，并向系统描述时间目标；指定硬件频率这件事不在应用侧。Power HAL、调度参数、GPU / 内存策略和 thermal 配置适合由系统团队评估。两类结论需要分开记录，避免把 root 实验结果写成 SDK 能力。
 
-<!-- gracker-diagram: ch05-06-application-system-root-scope -->
-![应用、系统与 root 实验的控制边界](../../assets/diagrams/ch05/ch05-06-application-system-root-scope.png)
-
-图：普通 App 可调模型与请求负载，并使用公开 HintSession/热接口；系统负责策略集成，root 调试接口不构成 SDK 能力，写 min/max 也不保证绕过热限制。
 
 ## 用 ADPF 描述周期工作
 
@@ -361,10 +349,6 @@ KV bytes ≈ 2 × layers × tokens
 
 上下文越长，cache 容量与访问成本通常越高，也更容易触发内存压力。我们应记录运行时真实分配、RSS 和 PSS，只按模型配置推算是靠不住的。
 
-<!-- gracker-diagram: ch05-06-kv-capacity-boundary -->
-![KV cache 的容量估算边界](../../assets/diagrams/ch05/ch05-06-kv-capacity-boundary.png)
-
-图：同长度 batch 可再乘 batch size，不同长度逐序列求和。分页、预分配、滑窗、量化或特殊 attention 需重算；单个公式不能代表 runtime 总内存。
 
 产品可以控制历史消息长度、检索片段数量、system prompt 大小和最大输出 token 数。截断规则要与语义评测一起验证，避免以明显降低回答质量为代价换取更高的 tokens/s。
 
@@ -390,10 +374,6 @@ KV bytes ≈ 2 × layers × tokens
 - 取消请求后 worker、缓冲区（buffer）和 hint session 的清理；
 - 低内存回调和设备热状态变化。
 
-<!-- gracker-diagram: ch05-06-runtime-work-reduction -->
-![从模型与运行时减少无效工作](../../assets/diagrams/ch05/ch05-06-runtime-work-reduction.png)
-
-图：更低位宽不保证后端更快，资源复用也需要容量上限和明确生命周期。按设备、模型和版本记录覆盖、失败和持续能量。
 
 ## 建立可复现的能效实验
 
@@ -414,10 +394,6 @@ KV bytes ≈ 2 × layers × tokens
 
 结果要按这些维度分组。将 32-token prompt 和 2K-token prompt 的 TTFT 混合求平均，所得数值很难用于指导优化。
 
-<!-- gracker-diagram: ch05-06-energy-experiment-protocol -->
-![可复现的端侧 LLM 能效实验](../../assets/diagrams/ch05/ch05-06-energy-experiment-protocol.png)
-
-图：32-token 与 2K-token 输入不混成一组平均值。冷/热路径、充放电与模型后端分开记录，持续实验按时间窗口报告。
 
 ### 2. 用应用 trace 标记请求阶段
 
@@ -507,10 +483,6 @@ E_request = ∫ V(t) × I(t) dt
 
 每组配置都需要多次重复，并随机安排测试顺序，免得所有“高性能配置”都赶在设备尚未升温时运行，而“节能配置”全在设备已经升温后运行。至少报告样本数、中心趋势、离散程度和失败请求；长时间测试还应按时间窗口分别展示结果。
 
-<!-- gracker-diagram: ch05-06-energy-integration-validation -->
-![从采样到请求能量](../../assets/diagrams/ch05/ch05-06-energy-integration-validation.png)
-
-图：短请求的低频采样和基线扣除可能放大误差。已提供累计能量的同一通道，可按一致时间窗取差，不要再当瞬时功率重复积分。
 
 ## 把温控纳入性能结论
 
@@ -524,10 +496,6 @@ E_request = ∫ V(t) × I(t) dt
 
 “尽快完成后进入空闲”（race to idle）只有在更高瞬时功率被更短执行时间抵消，并且没有提前触发温控或占用其他部件预算时，才有能效优势。判断依据是请求总能量、持续 TPOT、热状态和恢复时间，别只看峰值频率。
 
-<!-- gracker-diagram: ch05-06-sustained-thermal-validation -->
-![持续热约束与 race to idle 的验证](../../assets/diagrams/ch05/ch05-06-sustained-thermal-validation.png)
-
-图：更高频率只有在更短执行时间抵消瞬时功率、且不提前触发热限制时才可能节能。结论需要请求总能量、持续 TPOT 和恢复成本共同支持。
 
 应用可以按产品目标采取降载措施：
 
