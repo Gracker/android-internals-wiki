@@ -102,10 +102,6 @@ init 会用 `ro.boottime.<service-name>` 记录 service 第一次启动的 `CLOC
 
 `ro.boottime.event.<event-name>` 记录相应 event 的第一条 Action 命令开始执行的时间。Action 是 init 中一组 `on <trigger>` 条件及其 command；这个属性只有在功能开关 `com.android.init.flags.enable_init_event_timestamp` 开启时才生成。分析时把 event property 缺失当作正常情况：缺值只说明这条属性没有生成，Zygote 是否启动，按 `ro.boottime.zygote` 和 init 日志确认。
 
-<!-- gracker-diagram: ch18-06-02-property-clocks -->
-![service、event 与产品事件使用不同的时钟证据](../../assets/diagrams/ch18/ch18-06-02-property-clocks.png)
-
-图：init service 和 event 属性记录首次起点，产品指标还需自己的终点与时钟。 event 时间戳受 flag 与写入成功约束，缺值只说明属性未生成；CLOCK_BOOTTIME 包含休眠，与 wall clock 之间要走显式换算。
 
 实验报告应把起点和终点写进指标名。例如：
 
@@ -114,10 +110,6 @@ init 会用 `ro.boottime.<service-name>` 记录 service 第一次启动的 `CLOC
 - `boot_completed_to_launcher_shown_ms` 反映 property 之后的桌面尾部。
 - `power_on_to_first_interaction_ms` 接近用户体验，但依赖可靠的外部输入和画面判定。
 
-<!-- gracker-diagram: ch18-06-01-endpoints -->
-![从上电到可交互，分别记录每个终点](../../assets/diagrams/ch18/ch18-06-01-endpoints.png)
-
-图：同一轮分别记录 kernel、init、Zygote、boot completion、桌面显示和交互里程碑。 图不规定 property 与桌面显示的先后；每个指标按实际事件计算，上电起点需外部或 bootloader 证据。
 
 ## 冷启动样本也要分类
 
@@ -136,10 +128,6 @@ checkpoint 是文件系统更新状态的可提交或可回退点，OTA 后首�
 
 `DexOptHelper.performPackageDexOptUpgradeIfNeeded()` 只在 first boot、device upgrade 或 Boot Classpath APEX 发生变化时调用 `ArtManagerLocal.onBoot()`。源码注释明确说明这个调用会阻塞，耗时可能达到 30 秒以上；普通启动会直接返回。版本看板若不区分这些类型，P90（90% 样本不超过的值）很容易被少量升级样本主导。
 
-<!-- gracker-diagram: ch18-06-03-sample-types -->
-![普通启动、升级首启与 userspace reboot 分组](../../assets/diagrams/ch18/ch18-06-03-sample-types.png)
-
-图：普通启动、特殊升级启动与 userspace reboot 各自建立分布，boot dexopt 只在相应条件下进入。 first boot、OTA、BCP APEX 变化由源码门控；阻塞时长来自源码注释，存储和用户状态仍须另记。
 
 ## 一套实用的证据层级
 
@@ -155,10 +143,6 @@ checkpoint 是文件系统更新状态的可提交或可回退点，OTA 后首�
 
 单份 trace 适合解释一次慢启动；要证明版本回归，还要靠同条件的分布对比。阶段统计在没有原始 trace 时只能提示方向，指导 rc、kernel 或 profile 修改要回到具体证据。
 
-<!-- gracker-diagram: ch18-06-04-evidence -->
-![统计、日志分段、并发 trace 与源码逐层核实](../../assets/diagrams/ch18/ch18-06-04-evidence.png)
-
-图：从分布确认回归，再把阶段、责任进程、线程等待和代码依赖关联。 一份 trace 只解释其样本；日志缺点或不同启动类型要先行排除，再下回归结论。
 
 ## bootanalyze：它读什么，输出什么
 
@@ -171,10 +155,6 @@ bootanalyze 位于 system/extras/boottime_tools/bootanalyze/，把匹配到的�
 | `bootanalyze.sh` | 设置循环、重启方式、bootchart、Automotive 和登录流程 |
 | `README.md` | 快速说明，但有文档漂移 |
 
-<!-- gracker-diagram: ch18-06-05-bootanalyze-input -->
-![bootanalyze 将不同日志与属性整理成观测点](../../assets/diagrams/ch18/ch18-06-05-bootanalyze-input.png)
-
-图：bootanalyze 用配置匹配 logcat/dmesg，并读取 boottime 属性，最后整理可用观测。 README 有漂移；匹配事件名、原始时钟和实际产品终点必须一起保存。
 
 ### README 与 r1 脚本存在漂移
 
@@ -220,10 +200,6 @@ r1 wrapper 会无条件尝试 touch /data/bootchart/enabled；该命令没有套
 
 wrapper 在每轮之间固定等待 20 秒；这段时间算不上统一的设备温度、关机静置或缓存控制。脚本返回成功后，我们仍要逐轮核对有效数据和全部必要终点：LOOPS=10 只说明跑满十轮，有效的 first-interactive 样本要按终点逐轮清点。
 
-<!-- gracker-diagram: ch18-06-07-wrapper -->
-![wrapper 的循环成功之后还要核对有效交互样本](../../assets/diagrams/ch18/ch18-06-07-wrapper.png)
-
-图：r1 wrapper 尝试启用 bootchart，再调用采集脚本并按返回码循环。 touch 未套 su 且未检查成功；每轮固定休息 20 秒，温度与缓存要另行控制，有效数据和产品终点必须另核对。
 
 ### 时间修正
 
@@ -283,10 +259,6 @@ bootanalyze 给出阶段，Perfetto 负责解释阶段内部的并发和等待�
 `SystemServer.run()` 显式调用 `Producer.init(..., 4 * 1024)`，源码注释把它定义为 4 MiB 的 Perfetto producer shared-memory buffer。
 producer 是向 Perfetto 写入事件的一端；这块内存只服务于 system_server producer，trace 的其余部分走中央 buffer。“追踪精度提升多少”“固定增加多少 CPU 开销”这类换算，要落在中央 buffer、采集事件、落盘和丢数据上。
 
-<!-- gracker-diagram: ch18-06-11-producer-buffer -->
-![system_server 的 4 MiB 是 producer 共享内存](../../assets/diagrams/ch18/ch18-06-11-producer-buffer.png)
-
-图：SystemServer 显式配置 producer shared-memory，事件随后进入 Perfetto 的数据流与中央 buffer。 4 MiB 只约束这里的 producer；中央 buffer、采集事件、落盘和丢数据分别检查，固定 CPU 开销要由实测得出。
 
 ## `init` 的串行队列与进程并发
 
@@ -331,10 +303,6 @@ on property:vendor.prepare_cache.ready=1
 
 这种写法允许 `vendor_prepare_cache` 与其他 service 并发。这个片段只定义了 producer，vendor_consumer 还需在其他 rc 中定义并设为 disabled，避免随 class main 提前启动；producer 成功完成后才应设置 ready。还要为重复启动清理旧 ready 值，并为失败设置超时、降级或错误传播。
 
-<!-- gracker-diagram: ch18-06-13-ready-dependency -->
-![用 ready 状态表达 producer 到 consumer 的依赖](../../assets/diagrams/ch18/ch18-06-13-ready-dependency.png)
-
-图：两个 disabled service 不随 class 自动启动，producer 完成后通过明确状态放行 consumer。 图表示依赖条件；厂商程序和 SELinux 策略需配套，重复启动清旧状态，失败需有超时或降级。
 
 ### `class_start` 的分组语义
 
@@ -344,10 +312,6 @@ on property:vendor.prepare_cache.ready=1
 - 单个 service 启动失败会记日志，遍历仍会继续。
 - class 只提供分组，service 之间的依赖图要另行表达。
 
-<!-- gracker-diagram: ch18-06-14-class-limits -->
-![class_start 只有分组语义与明确的禁用门](../../assets/diagrams/ch18/ch18-06-14-class-limits.png)
-
-图：class_start 先看整组禁用，再遍历服务调用 StartIfNotDisabled。 disabled 不随 class 自动启动，某个启动失败会记录后继续；class 不提供服务依赖拓扑。
 
 把 service 移到更早 class 前，应核对分区挂载、SELinux domain（安全策略中的进程域）、设备节点、APEX 激活、Binder service 和 HAL 依赖。service 能否提前启动，以上面这些依赖的就绪时点为准；rc 里没有显式 wait 这一点，并不足以作为提前启动的依据。
 
@@ -366,10 +330,6 @@ on boot && property:x=y 这类组合条件，只在 boot 事件匹配时检查�
 
 init 会处理 /apex/*/etc/*rc，按相同基名选择不超过当前 SDK 的最高 .#rc，无版本 .rc 按 SDK 0。这套版本化选择只作用于 APEX 内的 rc，vendor/system 目录照旧。标记为 `updatable` 的 service 如果在 APEX 激活完成前收到启动请求，init 会把启动延后；APEX 中的定义只覆盖带 `updatable` 标记的 service。
 
-<!-- gracker-diagram: ch18-06-16-apex-rc -->
-![APEX rc 的版本选择与 service 激活约束分开](../../assets/diagrams/ch18/ch18-06-16-apex-rc.png)
-
-图：APEX 内同基名 rc 选择最高适用 SDK 版本，updatable service 的执行还受激活状态约束。 版本化规则限定 APEX rc；声明可覆盖、选中 rc 与服务已执行是三层条件。
 
 查启动回归时，`/system/etc/init/hw/init.rc` 只是起点，vendor、odm、APEX 和硬件专用 rc 都可能新增 Action、service 或 property 等待，要一并纳入检查。
 
@@ -415,10 +375,6 @@ Android 官方 kernel boot-time 指南给出的优化方向，落到 6.18 这条
 CPUfreq 控制 CPU 频率，devfreq 用同类机制控制 DRAM、互连等设备频率。它们过晚上线，会让早期串行工作长期运行在 bootloader 留下的低频状态。
 提前 probe 前要确认 clock、regulator 和 thermal supplier 已就绪。频率上升带来的功耗和温升也要纳入回归，验收时把 boot time 与两者放在一起看。
 
-<!-- gracker-diagram: ch18-06-18-kernel-stages -->
-![module 位置与频率设备都受 supplier 就绪约束](../../assets/diagrams/ch18/ch18-06-18-kernel-stages.png)
-
-图：按 normal/recovery 需求划分 module 加载阶段，并核对频率控制设备的前置资源。 ramdisk 中留有文件与 first-stage 是否加载是两件事；后移须有 ready 条件，提前频率还要回归温升与功耗。
 
 ## Zygote：预加载成本放在哪个阶段
 
@@ -438,10 +394,6 @@ primary Zygote 负责设备主 ABI（应用二进制接口，例如 `arm64-v8a`�
 
 preload 会增加 boot 阶段的 CPU、I/O 和 page fault，同时让 fork 后进程复用更多已初始化状态。删减预加载项时要同时测系统 boot、首个 App、首个 WebView、PSS（按共享页比例折算的进程内存）和连续启动。
 
-<!-- gracker-diagram: ch18-06-19-zygote-preload -->
-![Zygote preload 提前支付成本并共享初始化状态](../../assets/diagrams/ch18/ch18-06-19-zygote-preload.png)
-
-图：primary Zygote 在 fork SystemServer 前完成配置要求的 preload，后续进程共享已初始化状态。 HAL/graphics/HttpEngine 有自身条件；WebViewFactory 共享准备之后专用 Zygote 仍要另行创建，删改须回归首个应用和内存。
 
 [Boot image profiles](https://source.android.com/docs/core/runtime/boot-image-profiles) 文档把 boot classpath Profile、system_server Profile 和 Zygote 预加载类清单放在同一套设备调优流程中。
 这些数据应来自真实 CUJ（critical user journey，关键用户路径）并随系统镜像发布；它们不同于应用安装时的 Baseline Profile。删类或扩充清单都应由目标设备采样与回归结果驱动。
@@ -476,10 +428,6 @@ lazy 模式跳过启动期 preload，收到首次 preload 请求时由 `ZygoteCo
 6. 依次进入 bootstrap、core、other、APEX service 分组；
 7. 进入各个 boot phase，直到 AMS 完成 boot。
 
-<!-- gracker-diagram: ch18-06-21-systemserver -->
-![SystemServer 既有主线分组，也有早期后台工作](../../assets/diagrams/ch18/ch18-06-21-systemserver.png)
-
-图：SystemServer 初始化环境与线程池，尽早提交 SystemConfig，再启动各 service 分组。 这是主线顺序概览，boot phase 会穿插在实际初始化中；宽 slice 可包含锁、Binder、future 等等待。
 
 主线程上的 `startService()` 调用顺序仍然重要，但某些 service 会把工作提交到线程池。判断某个 slice 是否阻塞关键路径时，要同时看主线程是否等待 future（异步任务的结果句柄）、Binder reply、锁或 property；slice 宽度只给出总耗时，其中多少是 CPU 执行，要按等待对象拆开看。
 
@@ -506,10 +454,6 @@ r1 在正常 SystemServer 初始化主线无条件调用 startSystemConfigInit()
 - first boot、OTA 或 Boot Classpath APEX 变化时，`ArtManagerLocal.onBoot()` 才执行阻塞式包 dexopt。
 - 普通 cold boot 不走这轮 boot dexopt。
 
-<!-- gracker-diagram: ch18-06-23-art-stages -->
-![ART 早期 class linking 与特殊 boot dexopt 分开](../../assets/diagrams/ch18/ch18-06-23-art-stages.png)
-
-图：早期引用 ART 模块可避开后续 GC 竞争，升级类启动才进入相应阻塞式 boot dexopt。 源码说明的是初始化与调度结构；固定收益要实测，普通 boot 与升级首启要分开归因。
 
 ### APEX system service 的分组位置
 
@@ -518,10 +462,6 @@ r1 在正常 SystemServer 初始化主线无条件调用 startSystemConfigInit()
 
 我们把它当架构约束看：APEX service 压在末组，保障的是依赖方向与更新稳定性，“APEX 并行挂载带来固定收益”这类结论要靠专门实验。bootanalyze 默认配置只提供 `apexd_activated`、`apexd_bootstrapping_done` 和 `apexd_ready` 三个 apexd 日志事件；挂载 namespace（进程可见的挂载视图）、单个 APEX 校验和单个 service 初始化仍要靠更细的 trace 或自定义日志。
 
-<!-- gracker-diagram: ch18-06-24-apex-services -->
-![APEX service 是最后注册组，seal 后禁止新增](../../assets/diagrams/ch18/ch18-06-24-apex-services.png)
-
-图：SystemServer 完成前面的 platform service 分组后启动 APEX 声明的 service，最后封闭注册集合。 这是服务依赖与更新稳定性约束，APEX 挂载并行的收益要另行证明；apexd 日志三点仍需更细证据解释。
 
 ### Boot phase 的分组与可选并行
 
@@ -587,10 +527,6 @@ adb shell su root bootstat -l
 
 -r 记录执行命令时的 CLOCK_BOOTTIME 整数秒；命令需有事件目录的读写权限，以上示例使用 su root。这个主机下发的自定义点有 ADB 延迟与秒级量化，当作粗略标记用，精确的显示 ready 硬件时间要另取。r1 的 `-l` 实现会把已支持的事件映射到 bootstats atoms；atom 是 statsd 使用的结构化事件类型。README 中“EventLog/Tron histogram”的描述已经落后于当前实现。自定义事件仍可持久化和打印，带 `kBootEventToAtomInfo` 映射的才会作为受支持 atom 写出。
 
-<!-- gracker-diagram: ch18-06-27-bootstat -->
-![bootstat 的事件单位和 atom 上报分别核对](../../assets/diagrams/ch18/ch18-06-27-bootstat.png)
-
-图：bootstat 先持久化事件值，打印与受支持 atom 上报再按各自规则处理。 自定义 -r 是含休眠的整数秒，boot_complete 是毫秒并可减容器 offset；自定义名要先有映射，才会作为受支持 atom 写出。
 
 ## I/O、page fault 与文件布局
 
@@ -611,10 +547,6 @@ adb shell su root bootstat -l
 
 OTA 后 checkpoint、pre-reboot dexopt artifact 提交、APEX 切换和首次包扫描要单独标记。pre-reboot dexopt artifact 是重启前为更新后的系统预先生成、待更新生效时提交的 ART 编译产物。它们属于升级成本，评估时按升级首启单独设目标，与普通 cold boot 分开算。
 
-<!-- gracker-diagram: ch18-06-28-io-layers -->
-![文件、块设备与缺页证据需要逐层关联](../../assets/diagrams/ch18/ch18-06-28-io-layers.png)
-
-图：bootio 提示进程计数，文件访问、块 I/O 与映射缺页分别解释更细责任和等待。 保留 boot completion 前后两个窗口；后移读取只是把成本挪后，升级提交与首次扫描须单独标记。
 
 ## 16 KB page size 是设备级基线变化
 
@@ -622,10 +554,6 @@ page size 是内核管理虚拟内存和文件映射的基本页粒度。Android
 
 比较 4 KB 与 16 KB 时，页表、mmap 和 page fault 的粒度与成本可能变化，还需满足 native ELF 与 ZIP 对齐要求；文件系统和存储硬件是否随页大小改变，要看具体方案。将 page size 写入样本维度，在同一硬件并尽量固定文件系统、存储、镜像功能和启动类型下比较两个可用构建，另列为支持 16 KB 必须做的构建差异。别把跨设备或其他配置差异算到某个 SystemServer service 头上。
 
-<!-- gracker-diagram: ch18-06-29-page-size -->
-![16 KB 实验固定硬件并列明必要构建差异](../../assets/diagrams/ch18/ch18-06-29-page-size.png)
-
-图：4 KB 与 16 KB 比较是设备级基线实验，需要兼容构建与独立样本分组。 官方 8%/约950ms 是其测试样本；文件系统按各自方案处理，这份收益外推到所有 Android17 设备之前先过设备实测。
 
 ## 从慢阶段回到处理动作
 
@@ -664,10 +592,6 @@ page size 是内核管理虚拟内存和文件映射的基本页粒度。Android
 
 KeyMint 管理硬件支持的密钥与密码操作，Gatekeeper 负责锁屏凭据验证；两者都不会为缩短首屏时间而随意后移，要动它们先过安全评估。
 
-<!-- gracker-diagram: ch18-06-30-regression -->
-![从单一假设到受控改动，再验收用户可用](../../assets/diagrams/ch18/ch18-06-30-regression.png)
-
-图：每次依据阶段证据验证一个假设，保留同条件分布，并回归功能、安全与首屏之后的成本。 验收单除 phase 或 property 提前外，恢复/OTA、加密解锁、关键硬件、失败超时和首个应用都要实测。
 
 关闭日志和 trace 可以减少测试机上的开销，但量产配置与可观测性要分别评估。没有可回放证据的优化，一旦在后续版本回归，定位成本通常高于省下的少量启动时间。
 

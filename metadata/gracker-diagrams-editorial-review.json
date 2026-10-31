@@ -50706,9 +50706,305 @@
       "before_count": 30,
       "before_all_images": 30,
       "sha256_before": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch18-06-02-property-clocks",
+          "title": "service、event 与产品事件使用不同的时钟证据",
+          "decision": "remove",
+          "reason": "三种属性/产品事件时钟已在终点表及后文具体解释，平行卡片重复，无换算关系；保留实际校正路径图8。",
+          "original_line": 105,
+          "heading": "## 先固定“启动完成”的含义"
+        },
+        {
+          "original_id": "ch18-06-01-endpoints",
+          "title": "从上电到可交互，分别记录每个终点",
+          "decision": "remove",
+          "reason": "六个终点均已由完整表格列出，独立方框无新增顺序或数据，删除以免占据整屏重复定义。",
+          "original_line": 117,
+          "heading": "## 先固定“启动完成”的含义"
+        },
+        {
+          "original_id": "ch18-06-03-sample-types",
+          "title": "普通启动、升级首启与 userspace reboot 分组",
+          "decision": "remove",
+          "reason": "样本类型表和DexOptHelper条件正文已覆盖普通/特殊/userspace分组，三列卡片复述；保留ART阶段的正文边界。",
+          "original_line": 139,
+          "heading": "## 冷启动样本也要分类"
+        },
+        {
+          "original_id": "ch18-06-04-evidence",
+          "title": "统计、日志分段、并发 trace 与源码逐层核实",
+          "decision": "remove",
+          "reason": "统计到源码的五项证据层级清单已有，通用诊断流程再总结没有新增等待结构。",
+          "original_line": 158,
+          "heading": "## 一套实用的证据层级"
+        },
+        {
+          "original_id": "ch18-06-05-bootanalyze-input",
+          "title": "bootanalyze 将不同日志与属性整理成观测点",
+          "decision": "remove",
+          "reason": "工具输入、文件角色与处理步骤已经表格和后文展开，流水线概览重复具体events/timings及校正图。",
+          "original_line": 174,
+          "heading": "## bootanalyze：它读什么，输出什么"
+        },
+        {
+          "original_id": "ch18-06-06-events-timings",
+          "title": "停止条件、时间点与子阶段耗时分别解释",
+          "decision": "keep",
+          "reason": "将logcat等齐与dmesg任一停止、events重复处理、timings的-t与单位转换并列区分，避免把采集停止条件当可交互终点。",
+          "original_line": 201,
+          "heading": "### `events` 与 `timings` 的含义不同"
+        },
+        {
+          "original_id": "ch18-06-07-wrapper",
+          "title": "wrapper 的循环成功不等于有效交互样本",
+          "decision": "remove",
+          "reason": "wrapper命令和三段说明已逐项覆盖CONFIG_YMAL、未检查touch、失败退出与20秒休息，步骤卡片重复。",
+          "original_line": 223,
+          "heading": "### 多轮采集"
+        },
+        {
+          "original_id": "ch18-06-08-clock-align",
+          "title": "日志校时和跨源对齐保留近似与缺点",
+          "decision": "keep",
+          "reason": "保留校正早期logcat、跨源锚点估计偏移、共同点优先dmesg再换算的依赖顺序，配合正文保留误差和缺锚点边界。",
+          "original_line": 234,
+          "heading": "### 时间修正"
+        },
+        {
+          "original_id": "ch18-06-09-bootio",
+          "title": "bootio 用进程快照观察服务运行后的窗口",
+          "decision": "keep",
+          "reason": "bootio的控制文件、main-class起始窗口、初始快照加samples次间隔采样、完成后人工打印清理形成具体采集时序。",
+          "original_line": 261,
+          "heading": "## bootio：先找 I/O 责任进程"
+        },
+        {
+          "original_id": "ch18-06-10-perfetto-coverage",
+          "title": "标准 boottrace 的覆盖始于持久属性就绪之后",
+          "decision": "keep",
+          "reason": "重启前配置与新一轮/data、持久属性、traced就绪门之后才启动session，能直接解释早期启动为何未覆盖。",
+          "original_line": 278,
+          "heading": "## Perfetto：解释等待发生在哪里"
+        },
+        {
+          "original_id": "ch18-06-11-producer-buffer",
+          "title": "system_server 的 4 MiB 是 producer 共享内存",
+          "decision": "remove",
+          "reason": "producer共享内存与中央buffer的区别已由相邻两段精确说明，四步框图不增加缓冲容量或丢失机制。",
+          "original_line": 286,
+          "heading": "## Perfetto：解释等待发生在哪里"
+        },
+        {
+          "original_id": "ch18-06-12-init-queue",
+          "title": "init 串行执行 command，启动的 service 可以并发",
+          "decision": "keep",
+          "reason": "从串行ExecuteOneCommand分出start/class_start、exec_background和阻塞等待三类行为，明确进程并发不等于Action并发。",
+          "original_line": 302,
+          "heading": "## `init` 的串行队列与进程并发"
+        },
+        {
+          "original_id": "ch18-06-13-ready-dependency",
+          "title": "用 ready 状态表达 producer 到 consumer 的依赖",
+          "decision": "remove",
+          "reason": "20行rc已完整展示disabled producer和consumer及ready依赖，四步图不再补充错误/重启门控，相关说明和代码保留。",
+          "original_line": 334,
+          "heading": "## `init` 的串行队列与进程并发"
+        },
+        {
+          "original_id": "ch18-06-14-class-limits",
+          "title": "class_start 只有分组语义与明确的禁用门",
+          "decision": "remove",
+          "reason": "整组禁用、disabled与单个失败继续已用三项列表明确，分支卡片重复，服务依赖与ready另由正文表达。",
+          "original_line": 347,
+          "heading": "### `class_start` 的分组语义"
+        },
+        {
+          "original_id": "ch18-06-15-trigger-gates",
+          "title": "property 初始检查与 event 条件的时点不同",
+          "decision": "keep",
+          "reason": "纯property初始检查门与后续值变更、组合event只在event时检查的并列关系，帮助识别早期ready及错过事件的问题。",
+          "original_line": 358,
+          "heading": "### event trigger 与 property trigger"
+        },
+        {
+          "original_id": "ch18-06-16-apex-rc",
+          "title": "APEX rc 的版本选择与 service 激活约束分开",
+          "decision": "remove",
+          "reason": "APEX rc版本选择、激活延后与updatable覆盖三条独立规则已由正文完整限定，三列复述不构成新的依赖结构。",
+          "original_line": 369,
+          "heading": "### APEX rc 与 `updatable` service"
+        },
+        {
+          "original_id": "ch18-06-17-async-probe",
+          "title": "probe_type 优先于命令行和 module 异步请求",
+          "decision": "keep",
+          "reason": "明确强制同步和偏好异步的优先分支，只有默认类型才检查driver/module请求；避免把异步probe当整个module_init后台化。",
+          "original_line": 385,
+          "heading": "### 选择性异步 probe"
+        },
+        {
+          "original_id": "ch18-06-18-kernel-stages",
+          "title": "module 位置与频率设备都受 supplier 就绪约束",
+          "decision": "remove",
+          "reason": "模块清单、normal/recovery区别及频率supplier前置条件已在三节正文展开，三列主题卡不增加就绪关系。",
+          "original_line": 418,
+          "heading": "### CPUfreq/devfreq 的启动顺序"
+        },
+        {
+          "original_id": "ch18-06-19-zygote-preload",
+          "title": "Zygote preload 提前支付成本并共享初始化状态",
+          "decision": "remove",
+          "reason": "preload项目清单及成本/共享页说明已齐全，概览重复下一张primary/lazy对比，保留20的支付时点机制。",
+          "original_line": 441,
+          "heading": "## Zygote：预加载成本放在哪个阶段"
+        },
+        {
+          "original_id": "ch18-06-20-lazy-preload",
+          "title": "lazy preload 改变完整预加载的支付时点",
+          "decision": "keep",
+          "reason": "对比primary启动期完整preload和secondary lazy请求期完整preload，保留支付时点变化而非增量工作的机制。",
+          "original_line": 455,
+          "heading": "### lazy preload 与 64/32 配置"
+        },
+        {
+          "original_id": "ch18-06-21-systemserver",
+          "title": "SystemServer 既有主线分组，也有早期后台工作",
+          "decision": "remove",
+          "reason": "SystemServer七步主线列表已给出，概览重复后文具体SystemConfig、ART、APEX和phase机制图。",
+          "original_line": 479,
+          "heading": "## SystemServer：从 trace slice 看同步点"
+        },
+        {
+          "original_id": "ch18-06-22-systemconfig",
+          "title": "SystemConfig 的并发点与类锁等待分别观察",
+          "decision": "keep",
+          "reason": "图示后台SystemConfig单例构造的类锁与consumer条件等待，提交slice和实际扫描、类锁与Future join边界由邻文明确。",
+          "original_line": 490,
+          "heading": "### SystemConfig 早期并发"
+        },
+        {
+          "original_id": "ch18-06-23-art-stages",
+          "title": "ART 早期 class linking 与特殊 boot dexopt 分开",
+          "decision": "remove",
+          "reason": "ART早期class-linking与特殊boot dexopt已有明确四项对比，三列再复述；不合并为普通启动固定成本。",
+          "original_line": 509,
+          "heading": "### ART Mainline 的早期初始化"
+        },
+        {
+          "original_id": "ch18-06-24-apex-services",
+          "title": "APEX service 是最后注册组，seal 后禁止新增",
+          "decision": "remove",
+          "reason": "APEX末组与seal禁止新注册已用两段正文解释，四步图重复SystemServer列表且非挂载并发机制。",
+          "original_line": 521,
+          "heading": "### APEX system service 的分组位置"
+        },
+        {
+          "original_id": "ch18-06-25-phase-barrier",
+          "title": "boot phase 可选并行：串行组之后有完成屏障",
+          "decision": "keep",
+          "reason": "分组后的串行callback先执行，剩余并行任务汇入全部Future完成屏障；扇出汇合比单句步骤更能说明阶段不能提前结束。",
+          "original_line": 530,
+          "heading": "### Boot phase 的分组与可选并行"
+        },
+        {
+          "original_id": "ch18-06-26-finish-boot",
+          "title": "AMS 收尾顺序跨越动画、checkpoint 和 property",
+          "decision": "keep",
+          "reason": "保留动画门、checkpoint、phase/hold进程、property及lmkd/用户收尾的明确顺序，解释平台终点后仍有工作且不假定早期LMKD状态。",
+          "original_line": 555,
+          "heading": "## `finishBooting()` 内还有哪些工作"
+        },
+        {
+          "original_id": "ch18-06-27-bootstat",
+          "title": "bootstat 的事件单位和 atom 上报分别核对",
+          "decision": "remove",
+          "reason": "自定义秒值、boot_complete毫秒/offset和atom映射已由相邻三段与命令解释，三列说明图再次复述，不包含实际测值。",
+          "original_line": 590,
+          "heading": "## bootstat：适合版本看板的持久化事件"
+        },
+        {
+          "original_id": "ch18-06-28-io-layers",
+          "title": "文件、块设备与缺页证据需要逐层关联",
+          "decision": "remove",
+          "reason": "文件、block/fs与内存映射已有紧邻四列表格完整比较，三列卡片是表格缩写。",
+          "original_line": 614,
+          "heading": "## I/O、page fault 与文件布局"
+        },
+        {
+          "original_id": "ch18-06-29-page-size",
+          "title": "16 KB 实验固定硬件并列明必要构建差异",
+          "decision": "remove",
+          "reason": "同硬件、必要构建差异、兼容对齐与独立统计已明确写在正文，通用实验检查图不增加4KB/16KB实测数据。",
+          "original_line": 625,
+          "heading": "## 16 KB page size 是设备级基线变化"
+        },
+        {
+          "original_id": "ch18-06-30-regression",
+          "title": "从单一假设到受控改动，再验收用户可用",
+          "decision": "remove",
+          "reason": "实验元数据、安全功能门禁及单一假设例子已经详细列出，通用回归五步图重复前文诊断流程。",
+          "original_line": 667,
+          "heading": "## 实验与回归门禁"
+        }
+      ],
+      "sha256_after": "d9f67b5d33eb70d42ddc345990faf050bd79e8b29ebb75f31eff455a0382b8be",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:35:27.806850+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 30,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a194/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a194/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 194,
+        "article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
+        "registered_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
+        "frozen_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
+        "review_input_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a194/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a194/external-source.diff",
+        "diff_sha256": "ee0fa4ceb0647f124b530be9195b3dad7a42539b562913074e65eafa6b561637",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 361, \"characters\": 28780, \"svg_labels_read\": 30, \"actual_pngs_viewed\": 30, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 5, \"code_lines\": 36, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
+      "retired_diagrams": [
+        "ch18-06-01-endpoints",
+        "ch18-06-02-property-clocks",
+        "ch18-06-03-sample-types",
+        "ch18-06-04-evidence",
+        "ch18-06-05-bootanalyze-input",
+        "ch18-06-07-wrapper",
+        "ch18-06-11-producer-buffer",
+        "ch18-06-13-ready-dependency",
+        "ch18-06-14-class-limits",
+        "ch18-06-16-apex-rc",
+        "ch18-06-18-kernel-stages",
+        "ch18-06-19-zygote-preload",
+        "ch18-06-21-systemserver",
+        "ch18-06-23-art-stages",
+        "ch18-06-24-apex-services",
+        "ch18-06-27-bootstat",
+        "ch18-06-28-io-layers",
+        "ch18-06-29-page-size",
+        "ch18-06-30-regression"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-194/retired-assets.json"
     },
     {
       "index": 195,
@@ -51602,8 +51898,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 125,
-  "next_article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
+  "reviewed_articles": 126,
+  "next_article": "src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -51613,7 +51909,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:33:13.976523+08:00",
+  "updated_at": "2026-10-31T15:35:27.806850+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -51676,13 +51972,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
-      "registered_sha256": "2223a0d5ee812c50206cb9ae752a26c3cd0fb8726f2f50c4cb75691b1bb1b652",
-      "observed_sha256": "f25a84bd623de91c476ca6ea4f9ca9bbae6319a18a2affb84ff71dafb3cc8052",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -51847,9 +52136,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4156,
-  "reviewed_placements_after": 1774,
-  "net_removed_placements": 2382,
+  "reviewed_placements_before": 4186,
+  "reviewed_placements_after": 1785,
+  "net_removed_placements": 2401,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -51873,5 +52162,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 125
+  "currently_matching_reviewed_source_count": 126
 }
