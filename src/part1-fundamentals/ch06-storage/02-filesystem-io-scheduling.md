@@ -325,10 +325,6 @@ F2FS 和 ext4 都可以承载 Android 所需的配额、大小写无关目录与
 
 检查设备行为时，我们要读的是实际的 superblock feature（超级块特性）、mount options（挂载选项） 和内核配置；这些细节都藏在里面，文件系统类型只给出一个起点。
 
-<!-- gracker-diagram: ch06-02-filesystem-feature-gates -->
-![quota、casefold、fscrypt 的启用门槛](../../assets/diagrams/ch06/ch06-02-filesystem-feature-gates.png)
-
-图：从内核支持到磁盘 feature、挂载/目录/策略状态逐层核对，才能解释某个目标文件的行为。
 
 ### EROFS：面向不可变镜像的只读文件系统
 
@@ -395,10 +391,6 @@ POSIX（可移植操作系统接口）语义可以简化为：
 - `fsync(fd)`：同步文件数据，以及恢复该文件状态所需的元数据。
 - `fdatasync(fd)`：可以跳过不影响后续数据读取的元数据，例如仅修改时间戳；文件大小变化仍需持久化。
 
-<!-- gracker-diagram: ch06-02-fsync-fdatasync-scope -->
-![fsync 与 fdatasync 的持久化范围](../../assets/diagrams/ch06/ch06-02-fsync-fdatasync-scope.png)
-
-图：两者都要保证数据可恢复；fdatasync 可省略不影响数据读取的元数据，文件大小变化仍属于必要状态。
 
 “`fdatasync()` 固定少一次元数据写”是常见的预期，实际两者最终走到哪些写回和 flush，取决于文件修改类型与文件系统实现。F2FS 甚至会在 `fdatasync()` 路径设置 `FI_NEED_IPU`——前面我们已经见过这个标志——单看 syscall（系统调用） 名称，估不出一次调用的成本。
 
@@ -630,10 +622,6 @@ done'
 
 方括号包围的名称是当前选择。某个设备只显示 `[none]`，可能源于驱动能力、queue 类型或内核配置；要谈“Android 17 的统一默认值”，得先把多台设备的读数摆在一起。
 
-<!-- gracker-diagram: ch06-02-scheduler-device-evidence -->
-![从 GKI 能力找到实机 scheduler](../../assets/diagrams/ch06/ch06-02-scheduler-device-evidence.png)
-
-图：先确认设备配置，再沿 dm 映射找到承载请求的叶子设备；queue/scheduler 中方括号标出当前选择。
 
 ### I/O priority：先问谁消费它
 
@@ -704,10 +692,6 @@ Android 允许 API-level 和 vendor 文件覆盖默认 `cgroups.json` / `task_pr
 
 不要混用 blkio v1 的 `blkio.*` 示例和 cgroup v2 的 `io.*` 示例。应先确认层级版本，再解释 `blkio.weight`、`io.weight`、`io.max`、`io.prio.class` 或 `io.pressure`。
 
-<!-- gracker-diagram: ch06-02-cgroup-runtime-check -->
-![I/O cgroup：先确认层级，再读参数](../../assets/diagrams/ch06/ch06-02-cgroup-runtime-check.png)
-
-图：r1 AOSP 默认仍将 blkio 配置为 v1；产品可覆盖。先看实际挂载与线程归属，再解释对应版本的控制文件。
 
 ### Buffered I/O、Page Cache 与 cgroup writeback
 
@@ -746,10 +730,6 @@ AOSP 只在 low-RAM（低内存） 或 batteryless（无电池） 等特定条�
 
 `swappiness` 描述 swap I/O 与 filesystem paging（文件页换入换出） 的相对成本，范围为 0–200，100 表示两者成本相同。它影响匿名页与 file-backed page 的回收权衡，并不表示 Page Cache 的最大占比。Android 通常使用 zram（内存压缩交换设备），合适的取值仍要结合压缩成本、refault 和产品内存容量测量。
 
-<!-- gracker-diagram: ch06-02-dirty-swap-psi -->
-![dirty 控制、swappiness 与 PSI 的分工](../../assets/diagrams/ch06/ch06-02-dirty-swap-psi.png)
-
-图：dirty 参数调节回写，swappiness 影响匿名页与文件页回收权衡，PSI 观测资源停顿；三者不是同一组容量配额。
 
 下面的命令用于采集现场内存与 I/O 控制参数：
 
@@ -775,10 +755,6 @@ Page Cache 可以合并小写、提供 readahead，并让热点数据复用，�
 
 `O_DIRECT` 尝试让文件数据 I/O 绕过 Page Cache。它适合自身管理缓存、访问模式明确、能够满足对齐约束的系统软件。Linux 6.18 可以通过 `statx(..., STATX_DIOALIGN)` 请求文件系统报告 direct-I/O 对齐要求；还要检查返回的 `stx_mask` 是否包含该位，再解释 `stx_dio_mem_align` 和 `stx_dio_offset_align`。接口存在不保证每种文件系统都返回这组信息。
 
-<!-- gracker-diagram: ch06-02-direct-io-gates -->
-![O_DIRECT 的缓存、对齐与持久化边界](../../assets/diagrams/ch06/ch06-02-direct-io-gates.png)
-
-图：O_DIRECT 尝试绕过文件数据 Page Cache；使用前检查返回的对齐能力、访问模式和混用成本，持久化仍需单独保证。
 
 使用时要记住几个限制：
 
@@ -907,10 +883,6 @@ CPU iowait 因此适合作为系统级线索；定位时还要结合线程 `io_w
 4. **SharedPreferences**：`apply()` 把磁盘写排到后台，连续调用仍制造 I/O，生命周期切换也可能等待排队任务。
 5. **开发期检查**：StrictMode 可以发现主线程磁盘访问；release（发布版本） 的性能仍需通过 Perfetto、数据库统计和现场分位数验证。
 
-<!-- gracker-diagram: ch06-02-app-sync-work -->
-![减少事务与移出 UI 等待](../../assets/diagrams/ch06/ch06-02-app-sync-work.png)
-
-图：先减少不必要的同步工作，再安排执行线程；WAL、apply 与底层原子写都保留各自的同步及生命周期成本。
 
 AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时还要由 Unix VFS 探测文件系统 ioctl，并满足 pager 的条件。它可以减少部分 journal 工作；剩下的同步与块层竞争，还要靠事务本身的安排来压低。
 
@@ -918,10 +890,6 @@ AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时还要由 Unix V
 
 6.18 Kconfig 默认提供 `IO_URING`，GKI 也启用了 FUSE（Filesystem in Userspace，用户空间文件系统）和 FUSE BPF（借助内核可编程机制处理部分 FUSE 操作）。由此只能确认内核具备相关能力；若要声称 Android 17 的某条 MediaProvider、外部存储或 OTA 路径用上了 io_uring，需要找到对应的 AOSP 调用点、进程权限、设备配置与 trace 事件。
 
-<!-- gracker-diagram: ch06-02-io-uring-usage-evidence -->
-![从 io_uring 能力到实际收益的证据](../../assets/diagrams/ch06/ch06-02-io-uring-usage-evidence.png)
-
-图：kernel 支持不能直接推出某条 FUSE、MediaProvider 或 OTA 路径已使用；收益还需对照具体实现和负载验证。
 
 “io_uring 让 FUSE 快 40%”“dm-verity 并行哈希让冷读快 35%”这类数字都缺少可迁移到所有 Android 17 设备的前提，当不了平台结论。
 
