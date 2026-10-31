@@ -49400,9 +49400,340 @@
       "before_count": 36,
       "before_all_images": 36,
       "sha256_before": "d7c716d9570fcca8864fa84492073d0c4f7c9dccd962e86528e1045cba46ff47",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 14,
+      "decisions": [
+        {
+          "original_id": "ch18-01-01-platform-triage",
+          "title": "从公共路径证据决定排查层级",
+          "decision": "keep",
+          "reason": "Retain userendpoint -> same-device/app comparison -> isolatedplatformvariables -> responsibility validation, anchoring platform attribution rather than temporalcoincidence.",
+          "original_line": 159,
+          "heading": "### 先判断问题是否属于平台"
+        },
+        {
+          "original_id": "ch18-01-02-layers",
+          "title": "五层坐标与跨层等待的根因追踪",
+          "decision": "remove",
+          "reason": "Five-layer vertical stack repeats the exact numbered layer list; even with caption the arrows can suggest every dependency passes all five serially.",
+          "original_line": 176,
+          "heading": "### 用五层模型定位改动面"
+        },
+        {
+          "original_id": "ch18-01-03-evidence",
+          "title": "文档、固定源码和设备现场互相约束",
+          "decision": "remove",
+          "reason": "Document/source/device evidence columns repeat the three explicit subsections immediately preceding.",
+          "original_line": 199,
+          "heading": "#### 设备运行证据"
+        },
+        {
+          "original_id": "ch18-01-04-delivery",
+          "title": "独立版本轴与交付载体",
+          "decision": "remove",
+          "reason": "Independent delivery/version cards duplicate the detailed deliverycarrier table and versionaxis paragraphs.",
+          "original_line": 220,
+          "heading": "### 把版本与交付路径拆开"
+        },
+        {
+          "original_id": "ch18-01-05-platform-validation",
+          "title": "平台优化从端点定义到可回滚交付",
+          "decision": "remove",
+          "reason": "Six-stage optimizationvalidation summary repeats six detailed subsections and checklist; retain opening attribution1 and actual mechanisms.",
+          "original_line": 259,
+          "heading": "#### 6. 把回滚路径作为实现的一部分"
+        },
+        {
+          "original_id": "ch18-01-06-optimization-patterns",
+          "title": "四类平台优化与对应代价",
+          "decision": "remove",
+          "reason": "Four independent optimization cards directly repeat four headed pattern explanations; no dependency or quantitative cost exchange shown.",
+          "original_line": 284,
+          "heading": "#### 用反馈信号代替固定策略"
+        },
+        {
+          "original_id": "ch18-01-07-device-sampling",
+          "title": "按瓶颈覆盖设备样本",
+          "decision": "remove",
+          "reason": "Device sampling columns duplicate the detailed bottleneck-dimension table and source caveats.",
+          "original_line": 305,
+          "heading": "### 设备样本按瓶颈维度选择"
+        },
+        {
+          "original_id": "ch18-01-08-version-axes",
+          "title": "平台版本、目标版本与能力分别判断",
+          "decision": "keep",
+          "reason": "Retain branching allAppOS rules versus OS+target behavior versus runtimeAPI/device capability, central to interpreting the following version catalog.",
+          "original_line": 344,
+          "heading": "### 为什么版本号必须进入性能结论"
+        },
+        {
+          "original_id": "ch18-01-09-android12",
+          "title": "Android 12 的后台执行与提示接口",
+          "decision": "remove",
+          "reason": "Android12 fourtopic cards repeat adjacent FGS/alarm/notification/hint subsections and migration checklist.",
+          "original_line": 391,
+          "heading": "#### Stretch Overscroll 与性能提示"
+        },
+        {
+          "original_id": "ch18-01-10-android13",
+          "title": "Android 13 的权限、模块与帧关联",
+          "decision": "remove",
+          "reason": "Android13 permission/ART/frame columns repeat exact adjacent version subsections without new relationships.",
+          "original_line": 414,
+          "heading": "#### 文本断字与 FrameTimeline（描述一帧预期与实际显示时序）"
+        },
+        {
+          "original_id": "ch18-01-11-android14",
+          "title": "Android 14 生命周期与执行回调的边界",
+          "decision": "remove",
+          "reason": "Android14 cached/FGS/job/font cards repeat exact four subsections; precise state/permission exceptions remain in prose.",
+          "original_line": 443,
+          "heading": "#### 非线性字体缩放"
+        },
+        {
+          "original_id": "ch18-01-12-android15",
+          "title": "Android 15 的诊断与负载提示能力",
+          "decision": "remove",
+          "reason": "Android15 profiling/start/hint inventory duplicates adjacent paragraphs and common API table.",
+          "original_line": 466,
+          "heading": "#### ADPF（Android Dynamic Performance Framework，应用与系统协同调整性能） 会话扩展"
+        },
+        {
+          "original_id": "ch18-01-13-fgs-budget",
+          "title": "Android 15 前台服务配额按类型共享",
+          "decision": "remove",
+          "reason": "FGS type/shared6h/onTimeout/reset sequence directly restates two local paragraphs without showing actual shared service accumulation.",
+          "original_line": 477,
+          "heading": "#### 前台服务时间配额"
+        },
+        {
+          "original_id": "ch18-01-14-android16-diagnostics",
+          "title": "Android 16 的诊断 API 各回答什么",
+          "decision": "remove",
+          "reason": "Android16 fourdiagnostic cards repeat four precise API paragraphs and the common API table.",
+          "original_line": 512,
+          "heading": "#### SystemHealthManager headroom"
+        },
+        {
+          "original_id": "ch18-01-15-android16-ui",
+          "title": "Android 16 的界面与定期任务迁移",
+          "decision": "remove",
+          "reason": "Android16 interface/fixedrate cards duplicate specific migration subsections; no actual layout, callback or missedperiod timeline.",
+          "original_line": 531,
+          "heading": "#### 预测性返回、定期任务与 edge-to-edge"
+        },
+        {
+          "original_id": "ch18-01-16-npu-boundary",
+          "title": "NPU 能力声明与推理性能分别验证",
+          "decision": "remove",
+          "reason": "NPU declaration-to-runtime-to-fixedbenchmark loop is a generic measurement checklist, already explicit in the adjacent NPU/NNAPI boundary text.",
+          "original_line": 578,
+          "heading": "#### Android 17 的 NPU 与 NNAPI 边界"
+        },
+        {
+          "original_id": "ch18-01-17-api-gates",
+          "title": "新 API 从符号到真实能力的检查链",
+          "decision": "remove",
+          "reason": "Generic API/service/permission/result gates repeat exact API table boundary column and single followup paragraph.",
+          "original_line": 599,
+          "heading": "### 新增性能 API 的演进脉络"
+        },
+        {
+          "original_id": "ch18-01-18-target-migration",
+          "title": "target 升级按触发条件做受控对照",
+          "decision": "remove",
+          "reason": "Target migration fourstep checklist duplicates the full pertarget checklists and same-devicecompat paragraph.",
+          "original_line": 668,
+          "heading": "#### target 37"
+        },
+        {
+          "original_id": "ch18-01-19-trace-evidence",
+          "title": "Perfetto 与平台诊断数据相互补证",
+          "decision": "remove",
+          "reason": "Trace/API/version evidence columns repeat six precise observability bullets and deviceidentity paragraph.",
+          "original_line": 686,
+          "heading": "### Perfetto 与平台数据如何配合"
+        },
+        {
+          "original_id": "ch18-01-20-legacy-queue",
+          "title": "旧 MessageQueue 的共享 monitor 争用",
+          "decision": "remove",
+          "reason": "Three oldqueue roles repeat the two sharedmonitor paragraphs but do not draw actual sharedlock contention; retain real newqueue dataflow21 with oldmodel described in prose.",
+          "original_line": 717,
+          "heading": "#### 旧队列为何会阻塞主线程"
+        },
+        {
+          "original_id": "ch18-01-21-new-queue",
+          "title": "r1 DeliQueue 的发布、drain 与有序选择",
+          "decision": "keep",
+          "reason": "Retain cross-thread CASstack -> Looperdrain -> twoorderedsets -> when/insertSeq/barrier selection plus separate Looper selfpost fastpath.",
+          "original_line": 753,
+          "heading": "#### 博客概念模型与 r1 源码组织的差异"
+        },
+        {
+          "original_id": "ch18-01-22-queue-acceptance",
+          "title": "队列启用、兼容依赖与业务指标共同验收",
+          "decision": "remove",
+          "reason": "Queue enablement/privateAPI/businessacceptance columns repeat compatibility paragraphs, officialresult table and triplemetric acceptance rule.",
+          "original_line": 800,
+          "heading": "#### 公开性能数据该怎样使用"
+        },
+        {
+          "original_id": "ch18-01-23-gc-generations",
+          "title": "分代 CMC 的 young、mid、old 与跨代引用",
+          "decision": "keep",
+          "reason": "Retain young -> survivingmid -> survivingold generation movement and old-to-young card/root responsibility, not a promise of skipping old references.",
+          "original_line": 839,
+          "heading": "#### r1 的 young、mid、old 模型"
+        },
+        {
+          "original_id": "ch18-01-24-gc-gates",
+          "title": "分代回收的三项顶层门槛与 CMC 附加条件",
+          "decision": "keep",
+          "reason": "Retain three distinct top-level generation eligibility conditions and extraUFFD CMCflag/property default, explicitly AND in caption and adjacent schematic code.",
+          "original_line": 868,
+          "heading": "#### Generational CMC 的启用门槛"
+        },
+        {
+          "original_id": "ch18-01-25-profiling-trigger",
+          "title": "系统 trigger 从注册到产物的条件链",
+          "decision": "keep",
+          "reason": "Retain globallistener registration -> perprocess trigger -> system event/limit conditions -> typedartifact -> errorchecked delivery -> bounded handling.",
+          "original_line": 922,
+          "heading": "#### API 37 主要 trigger 与产物"
+        },
+        {
+          "original_id": "ch18-01-26-job-reasons",
+          "title": "Job 当前原因、有限历史与重叠累计统计",
+          "decision": "remove",
+          "reason": "Current/history/stats definitions repeat the precise three-item list and overlappingDuration caveat; no actual overlap intervals shown.",
+          "original_line": 943,
+          "heading": "### JobScheduler pending reason 统计"
+        },
+        {
+          "original_id": "ch18-01-27-static-final",
+          "title": "static final 的两条失败路径",
+          "decision": "keep",
+          "reason": "Retain sharedOS/target eligibility gate with distinct reflectionexception and JNIfatal outcomes plus explicit-input migration.",
+          "original_line": 961,
+          "heading": "#### `static final` 字段不可修改"
+        },
+        {
+          "original_id": "ch18-01-28-configuration",
+          "title": "大屏约束与配置变化重建的不同条件",
+          "decision": "keep",
+          "reason": "Retain independent target/sw large-screen policy, platformconfiguration events and conflictingrecreate/configChanges conditions, avoiding resize-means-recreate inference.",
+          "original_line": 993,
+          "heading": "#### 大屏方向、尺寸与 Activity 配置变化"
+        },
+        {
+          "original_id": "ch18-01-29-ech-ct",
+          "title": "ECH 配置与证书透明度分别验证",
+          "decision": "remove",
+          "reason": "ECH/CT columns repeat detailed networksecurity paragraphs and explicit enabled/GREASE/trust-anchor rules; no actual handshake or configuration branch beyond text.",
+          "original_line": 1025,
+          "heading": "#### Network Security Configuration、ECH 与 CT"
+        },
+        {
+          "original_id": "ch18-01-30-local-network",
+          "title": "局域网访问按系统 picker 或运行时权限接入",
+          "decision": "keep",
+          "reason": "Retain systempicker selectedtarget path versus directLAN runtimepermission path and separate denied/blockreason diagnostics.",
+          "original_line": 1038,
+          "heading": "#### 局域网访问权限"
+        },
+        {
+          "original_id": "ch18-01-31-page16",
+          "title": "16 KB 兼容同时检查二进制、打包与运行",
+          "decision": "keep",
+          "reason": "Retain allnativeinventory -> build/package -> ZIP+eachELF checks -> runtimepagesizeassumptions -> actual16KB regression, with prebuiltdependency caveats.",
+          "original_line": 1070,
+          "heading": "#### 16KB 页面是延续性发布要求"
+        },
+        {
+          "original_id": "ch18-01-32-memory-limiter",
+          "title": "App 内存限制的现场识别与复现",
+          "decision": "keep",
+          "reason": "Retain actual limiterstatus -> controlledtest -> exitreason/description -> specificAnonSwap classification, not genericOTHER or LMKD.",
+          "original_line": 1083,
+          "heading": "#### App memory limits"
+        },
+        {
+          "original_id": "ch18-01-33-background-audio",
+          "title": "后台音频资格的基础与 target37 附加条件",
+          "decision": "keep",
+          "reason": "Retain cumulative Android17 baseaudio qualification plus conditional target37 backgroundWIU/exemption branch before result validation.",
+          "original_line": 1094,
+          "heading": "#### 后台音频"
+        },
+        {
+          "original_id": "ch18-01-34-native-load",
+          "title": "原生动态加载的来源、写权限与替换顺序",
+          "decision": "keep",
+          "reason": "Retain independentfile write/error/authenticity -> closewrite/readonly/pathcontrol -> safeversionnameswitch -> System.load -> failure/rollback constraints.",
+          "original_line": 1105,
+          "heading": "#### 原生动态代码加载"
+        },
+        {
+          "original_id": "ch18-01-35-stuffing",
+          "title": "Buffer Stuffing Recovery 的等待、延迟与偏移",
+          "decision": "keep",
+          "reason": "Retain bufferreleasewait threshold -> stuffingstate/flags -> optionaldelayvsync -> possibleanimationoffset -> continuedGPU/SF/rootcause checks;100msnotexactcap.",
+          "original_line": 1126,
+          "heading": "### Choreographer Buffer Stuffing Recovery"
+        },
+        {
+          "original_id": "ch18-01-36-final-acceptance",
+          "title": "迁移和性能回归按证据轨道分别验收",
+          "decision": "remove",
+          "reason": "Final acceptance fourstep checklist repeats detailed migration/runtime/performancechecklists and opening workflow; no new evidence relationship.",
+          "original_line": 1163,
+          "heading": "#### 性能验收"
+        }
+      ],
+      "sha256_after": "a549d0dbf09639a98f1dd085f38f41128a9214c6dea4e8c48ebc47b32313249b",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:17:30.510965+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 36,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a189/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a189/visual-review.json",
+      "retired_diagrams": [
+        "ch18-01-02-layers",
+        "ch18-01-03-evidence",
+        "ch18-01-04-delivery",
+        "ch18-01-05-platform-validation",
+        "ch18-01-06-optimization-patterns",
+        "ch18-01-07-device-sampling",
+        "ch18-01-09-android12",
+        "ch18-01-10-android13",
+        "ch18-01-11-android14",
+        "ch18-01-12-android15",
+        "ch18-01-13-fgs-budget",
+        "ch18-01-14-android16-diagnostics",
+        "ch18-01-15-android16-ui",
+        "ch18-01-16-npu-boundary",
+        "ch18-01-17-api-gates",
+        "ch18-01-18-target-migration",
+        "ch18-01-19-trace-evidence",
+        "ch18-01-20-legacy-queue",
+        "ch18-01-22-queue-acceptance",
+        "ch18-01-26-job-reasons",
+        "ch18-01-29-ech-ct",
+        "ch18-01-36-final-acceptance"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-189/retired-assets.json"
     },
     {
       "index": 190,
@@ -50351,8 +50682,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 120,
-  "next_article": "src/part4-system/ch18-aosp/01-aosp-performance-version-changes.md",
+  "reviewed_articles": 121,
+  "next_article": "src/part4-system/ch18-aosp/02-aosp-build.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -50362,7 +50693,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:12:43.101217+08:00",
+  "updated_at": "2026-10-31T15:17:30.510965+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -50610,9 +50941,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4027,
-  "reviewed_placements_after": 1727,
-  "net_removed_placements": 2300,
+  "reviewed_placements_before": 4063,
+  "reviewed_placements_after": 1741,
+  "net_removed_placements": 2322,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -50636,5 +50967,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 120
+  "currently_matching_reviewed_source_count": 121
 }

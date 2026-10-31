@@ -173,10 +173,6 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 一次等待还可能跨越多层。同步 Binder 的调用方等待回复时可能显示为 `Sleeping`，但单凭线程状态还不能确认它等的是 Binder，更不能确认根因在调用方。结合事务关联和调用栈确定同步等待后，再追目标线程的 runnable delay（已可运行但仍等 CPU）、服务端锁、TEE（可信执行环境）、块设备或驱动。保留调用方、目标进程、内核等待和硬件状态，把成本落实到具体依赖，再决定修改哪层。
 
-<!-- gracker-diagram: ch18-01-02-layers -->
-![五层坐标与跨层等待的根因追踪](../../assets/diagrams/ch18/ch18-01-02-layers.png)
-
-图：五层模型定位成本和行为边界，同步等待继续追到真正执行者与资源。 Sleeping 不是 Binder 专有状态；分层是排查坐标，不是每次调用的固定串行栈。
 
 ### 三类证据共同约束结论
 
@@ -196,10 +192,6 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 反过来也一样：源码里有某个函数、内核配置项默认 `y`，或系统版本号满足要求，都还证明不了目标设备真的启用了该功能，产品配置、模块版本或运行时开关都可能改变最终状态。
 
-<!-- gracker-diagram: ch18-01-03-evidence -->
-![文档、固定源码和设备现场互相约束](../../assets/diagrams/ch18/ch18-01-03-evidence.png)
-
-图：公开约定、固定源码与设备现场分别回答可依赖行为、实现和实际启用路径。 源码存在、默认值或系统版本满足条件，都不独立证明目标设备走到该路径。
 
 ### 把版本与交付路径拆开
 
@@ -217,10 +209,6 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 再看版本轴本身：Android 17 的官方兼容矩阵包含多条受支持的 GKI 分支，光看大版本推不出设备内核版本；ART 又能作为 Mainline 模块独立更新，版本要单独读取。target SDK 37 只开启文档明确绑定 target 的行为，影响所有 Android 17 App 的变化还要查另一份行为变更清单。所以跨版本实验应把 OS、target、Mainline、kernel 和产品配置当作独立变量记录。
 
-<!-- gracker-diagram: ch18-01-04-delivery -->
-![独立版本轴与交付载体](../../assets/diagrams/ch18/ch18-01-04-delivery.png)
-
-图：OS、target、ART/Mainline、kernel 与产品配置分别记录，交付和回滚也逐项核对。 Android 17 不推出唯一内核；vendor_boot、内核镜像和可加载模块的分区职责不同。
 
 ### 一轮平台优化怎样完成验证与交付
 
@@ -256,10 +244,6 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 可配置优化要定义默认值、分批发布的设备分组、状态观测方式和回滚后的清理动作。涉及持久产物、profile、缓存或文件格式时，还要验证新旧版本交替后不会误用旧状态。
 
-<!-- gracker-diagram: ch18-01-05-platform-validation -->
-![平台优化从端点定义到可回滚交付](../../assets/diagrams/ch18/ch18-01-05-platform-validation.png)
-
-图：定义用户端点、保存环境、统计与取证、隔离变量、回归副作用并验证回滚。 present feedback 是显示栈反馈，触摸到发光需光学测量；示意步骤不表示固定时长。
 
 ### 常见的平台优化模式
 
@@ -281,10 +265,6 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 另一类思路是用反馈信号代替固定策略：ADPF（Android Dynamic Performance Framework）让应用向系统提示性能需求，PSI（Pressure Stall Information）统计 CPU、内存或 I/O 压力造成的停顿，thermal（温度与热节流状态）和 headroom（距离温度或资源上限的余量）提供热状态与余量读数，profile-guided optimization（根据真实执行热点指导编译优化）则把真实热点用于指导编译。这些反馈信号可能延迟、缺失，也会受产品实现影响，所以控制逻辑要有静态回退、滞回和频率限制；滞回指进入和退出某状态使用不同阈值，能避免读数在阈值附近反复切换。
 
-<!-- gracker-diagram: ch18-01-06-optimization-patterns -->
-![四类平台优化与对应代价](../../assets/diagrams/ch18/ch18-01-06-optimization-patterns.png)
-
-图：删工作、移时机、增并发和反馈控制分别改变不同成本。 移出关键路径仍会消耗资源；并发依赖、信号滞后与回退必须单独验证。
 
 ### 设备样本按瓶颈维度选择
 
@@ -302,10 +282,6 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 Android Go 能代表一类低资源配置，覆盖不了所有低性能或特殊瓶颈设备；高刷新率或高分辨率设备也可能更容易暴露图形预算问题。
 
-<!-- gracker-diagram: ch18-01-07-device-sampling -->
-![按瓶颈覆盖设备样本](../../assets/diagrams/ch18/ch18-01-07-device-sampling.png)
-
-图：设备样本按 CPU、内存、存储、图形和系统配置覆盖，而非只贴高低端标签。 同一机型在温度、刷新率、存储状态和模块版本变化后也可能暴露不同瓶颈。
 
 ### 审查清单
 
@@ -388,10 +364,6 @@ Android 12 为所有 App 引入 stretch overscroll（滚动到边界后拉伸内
 
 `PerformanceHintManager` 也在 API 31 提供公开入口，App 可用线程组、目标工作时长和实际工作时长向系统表达持续负载。它属于 ADPF（Android Dynamic Performance Framework，应用与系统协同提示性能需求） 的 CPU 性能提示路径，与 Game Mode 是两套 API：Game Mode 描述游戏偏好的性能或省电模式，替代不了每帧工作时长反馈。
 
-<!-- gracker-diagram: ch18-01-09-android12 -->
-![Android 12 的后台执行与提示接口](../../assets/diagrams/ch18/ch18-01-09-android12.png)
-
-图：后台服务、精确闹钟与通知跳板先核对执行资格，ADPF 则单独提供负载提示。 前台服务和 WorkManager 不互相覆盖全部用途；ADPF 也不直接命令频率。
 
 ### Android 13（API 33）：权限与帧标识能力扩展
 
@@ -411,10 +383,6 @@ Android 13 优化了断字实现，官方文档给出的上限描述是“最多
 
 Android 13 为 Choreographer（UI 帧回调协调类）和 NDK `ASurfaceControl` 增加公开帧时间线能力：应用可读取多个候选呈现时间及对应 deadline，再把选择传给 SurfaceFlinger。Vsync ID 用于关联相应应用帧与显示流水线记录，不是跨进程、跨显示器通用的唯一端到端帧号。Perfetto 的系统 FrameTimeline 早在 Android 12 已出现；API 33 的扩展不能写成整个机制首次出现。按进程、Surface/Layer 和 token 的作用域对齐记录，避免仅凭时间戳邻近猜对应。
 
-<!-- gracker-diagram: ch18-01-10-android13 -->
-![Android 13 的权限、模块与帧关联](../../assets/diagrams/ch18/ch18-01-10-android13.png)
-
-图：通知权限、ART 模块与公开帧时间线能力分别影响可见性、运行时和测量。 系统 FrameTimeline 早于 API 33；Vsync token 需要进程与目标 Surface/Layer 作用域。
 
 ### Android 14（API 34）：缓存进程和前台服务约束
 
@@ -440,10 +408,6 @@ target 34 的 App 若在 `JobService.onStartJob()` 或 `onStopJob()` 里阻塞�
 
 Android 14 支持最高 200% 的字体缩放，并采用非线性曲线：较小文字获得较大相对放大，原本较大的字号增长较缓，以免标题过大。不能用统一 `fontScale` 乘数还原所有 sp 到 px 的转换；使用平台转换 API，并在最大字体下检查布局、测量次数、截断和滚动范围，先定位排版与布局再归因绘制。
 
-<!-- gracker-diagram: ch18-01-11-android14 -->
-![Android 14 生命周期与执行回调的边界](../../assets/diagrams/ch18/ch18-01-11-android14.png)
-
-图：缓存进程、前台服务、Job 回调和字体布局分别按各自规则验证。 cached、frozen、killed 不能互换；非线性字体缩放也不是统一字号乘数。
 
 ### Android 15（API 35）：进程内 Profiling 与 16 KB 页支持
 
@@ -463,10 +427,6 @@ Android 15 交到我们手里的东西有两件：进程内 Profiling 把取数�
 
 API 35 为 `PerformanceHintManager.Session` 增加了 `setPreferPowerEfficiency()` 和基于 `WorkDuration`（一轮工作的起止时间及 CPU/GPU 耗时）的 `reportActualWorkDuration()`：前者表达功耗优先偏好，后者能报告更丰富的工作时长信息。两者都是提示，设备是否支持、系统怎么响应、频点怎么变，由实现和当前热状态决定。
 
-<!-- gracker-diagram: ch18-01-12-android15 -->
-![Android 15 的诊断与负载提示能力](../../assets/diagrams/ch18/ch18-01-12-android15.png)
-
-图：主动 profiling、结构化启动数据和 ADPF 会话提供不同观测或控制信号。 Native heap profile 不是 Java 堆快照；hint、启动字段和产物交付都需按契约处理。
 
 #### 前台服务时间配额
 
@@ -474,10 +434,6 @@ target 35 的 App 在后台运行 `dataSync` 和 `mediaProcessing` 前台服务�
 
 这 6 小时按同一类型的全部服务累计，逐个 Service 实例分别计算会得到错误的结果。迁移时需要盘点并发服务、重启路径和用户回到前台的状态转换。
 
-<!-- gracker-diagram: ch18-01-13-fgs-budget -->
-![Android 15 前台服务配额按类型共享](../../assets/diagrams/ch18/ch18-01-13-fgs-budget.png)
-
-图：target 35 的后台 dataSync 与 mediaProcessing 分别共享 24 小时内 6 小时配额。 同类型多个服务不是各领 6 小时；用户回到前台可重置计时，超时需及时停止。
 
 #### 16 KB 页面大小
 
@@ -509,10 +465,6 @@ Android 16 在 `SystemHealthManager` 提供 CPU 和 GPU headroom API，headroom 
 
 调用方应读取 CPU/GPU 各自的最小查询间隔；API 不支持可抛 `UnsupportedOperationException`，暂时无有效样本可返回 `NaN`，两者与真实的零余量分别处理。合法 headroom 在 0～100，0 表示没有更多资源可授予。对连续读数平滑并设滞回和静态回退，避免根据一个读数反复切换重负载档位。
 
-<!-- gracker-diagram: ch18-01-14-android16-diagnostics -->
-![Android 16 的诊断 API 各回答什么](../../assets/diagrams/ch18/ch18-01-14-android16-diagnostics.png)
-
-图：启动组件、窗口帧 ID、Job 原因和 headroom 分别补充诊断上下文。 headroom 为估计值；不支持、NaN 与真实零余量分别处理，查询频率受限制。
 
 #### 大屏自适应
 
@@ -528,10 +480,6 @@ target 36 的 App 运行在 Android 16 及以上时，系统默认启用 back-to
 
 对运行在 Android 16 且 target 36 的 App，系统不再接受 `windowOptOutEdgeToEdgeEnforcement` 退出配置。edge-to-edge 表示内容可以绘制到状态栏和导航栏所在区域，页面要正确处理 system bar（系统栏）、display cutout（刘海或挖孔区域） 和 IME 提供的 insets（需要避让的边缘距离）。布局区域变化会影响测量、绘制和滚动范围，基准测试必须用迁移后的最终布局。
 
-<!-- gracker-diagram: ch18-01-15-android16-ui -->
-![Android 16 的界面与定期任务迁移](../../assets/diagrams/ch18/ch18-01-15-android16-ui.png)
-
-图：target 36 迁移同时覆盖大屏、返回、insets、文字和遗漏周期。 大屏门槛按显示最小宽度；resize 不必然重建，定期任务也不自动补跑所有遗漏周期。
 
 ### Android 17（API 37）：消息队列、GC 与现场诊断
 
@@ -575,10 +523,6 @@ NNAPI（Neural Networks API）的 NDK App 接口从 Android 15 起已废弃，NN
 
 对端侧推理做版本比较时，至少固定模型、delegate（把算子交给特定加速后端的适配层）、runtime、驱动、量化方案、热状态和功耗窗口。编译缓存是否命中、burst execution（复用执行上下文以减少重复准备开销）是否可用，都要从目标实现和 trace 证据判断，通用的微秒级收益数字不要写。
 
-<!-- gracker-diagram: ch18-01-16-npu-boundary -->
-![NPU 能力声明与推理性能分别验证](../../assets/diagrams/ch18/ch18-01-16-npu-boundary.png)
-
-图：NPU feature 声明与 NNAPI NDK 的废弃状态分别核对，推理性能回到固定后端测量。 NN HAL 源码仍在不表示 Android 17 新增该接口；能力声明也不保证模型被 NPU 加速。
 
 ### 新增性能 API 的演进脉络
 
@@ -596,10 +540,6 @@ NNAPI（Neural Networks API）的 NDK App 接口从 Android 15 起已废弃，NN
 
 API 级别检查只解决符号可用性。设备能力、服务是否存在、权限、配额和厂商实现仍要单独探测。
 
-<!-- gracker-diagram: ch18-01-17-api-gates -->
-![新 API 从符号到真实能力的检查链](../../assets/diagrams/ch18/ch18-01-17-api-gates.png)
-
-图：按 API 级别、服务/能力、权限配额和返回状态依次检查。 能够编译或通过 SDK_INT 判断，都不保证设备支持、请求被接受或一定得到产物。
 
 ### Deprecated API 与替代路径
 
@@ -665,10 +605,6 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 
 每次升级都应分开比较“系统版本变化”和“target 变化”。我们可以在同一 Android 17 设备上用兼容性框架逐项开关行为，再用两个 target 构建复测，减少变量混杂。
 
-<!-- gracker-diagram: ch18-01-18-target-migration -->
-![target 升级按触发条件做受控对照](../../assets/diagrams/ch18/ch18-01-18-target-migration.png)
-
-图：先盘点调用与目标行为，再做同设备 compat 对照和不同 target 构建复测。 compat 只辅助可控制的变更；升级测试还要覆盖所有 App 行为与模块/设备差异。
 
 ### Perfetto 与平台数据如何配合
 
@@ -683,10 +619,6 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 
 一次跨版本实验固定 APK、数据集、操作、温度与电源条件，记录实际 OS build fingerprint、target、ART/Mainline、页大小和内核构建。本文内核分析快照是 `android17-6.18-2026-06_r6`，设备若运行另一 revision，应记录并比对差异；不能要求所有 6.18 设备都与该标签一致。
 
-<!-- gracker-diagram: ch18-01-19-trace-evidence -->
-![Perfetto 与平台诊断数据相互补证](../../assets/diagrams/ch18/ch18-01-19-trace-evidence.png)
-
-图：队列、GC、帧、Job 与权限分别匹配其可观测证据，再对齐实验版本轴。 没有对应 slice 不等于功能未启用；独立 profiling 产物也不自动加入当前会话。
 
 
 ## Android 17 行为、开关与适配验证
@@ -714,10 +646,6 @@ NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及�
 
 旧实现遇到高并发投递时可能出现优先级反转：较低优先级线程在队列维护代码中持锁，主线程等待 monitor。此时我们沿 Perfetto 的 `android.monitor_contention` 事件回到 waiter 与 owner 的调用栈，确认 owner 是否位于 `MessageQueue.enqueueMessage()` 附近；只看主线程处于 Sleeping 状态，说明不了是消息队列锁。
 
-<!-- gracker-diagram: ch18-01-20-legacy-queue -->
-![旧 MessageQueue 的共享 monitor 争用](../../assets/diagrams/ch18/ch18-01-20-legacy-queue.png)
-
-图：旧队列的入队与取出共享 monitor，持锁线程可让主线程等待。 业务回调执行期间不持有这把队列锁，Sleeping 也不独立证明 monitor contention。
 
 #### Android 17 的启用边界
 
@@ -797,10 +725,6 @@ adb shell am force-stop com.example.app
 
 我们做业务验收时同时看三类指标：`android.monitor_contention` 中队列 monitor 等待、消息排队时间、帧或启动端到端指标。若锁等待下降而消息排队时间上升，瓶颈已经转移到 producer 数量、Looper 回调成本或 drain 压力。
 
-<!-- gracker-diagram: ch18-01-22-queue-acceptance -->
-![队列启用、兼容依赖与业务指标共同验收](../../assets/diagrams/ch18/ch18-01-22-queue-acceptance.png)
-
-图：确认实际队列模式、迁移私有依赖，再分别比较锁等待、排队与端到端表现。 官方合成压测和内部测试百分比不能直接作为业务收益，lock-free 也不是单次操作时延上限。
 
 分析 `system_server` 的消息流时，官方博客给出了 `mq` track-event category，也就是名为 `mq` 的 trace 采集类别。下面是可嵌入 Perfetto 配置的最小片段。
 
@@ -940,10 +864,6 @@ API 36 已能查到当前 pending reasons（任务暂时执行不了的原因）
 
 WorkManager 场景还要建立 `WorkSpec` 与系统 job ID 的映射；`WorkSpec` 是 WorkManager 保存的一条内部任务记录。否则，拿错 job ID 会把调度问题变成数据对齐问题。后台调度机制参阅 [5.3 后台执行、任务调度与 App Hibernation](../../part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md)。
 
-<!-- gracker-diagram: ch18-01-26-job-reasons -->
-![Job 当前原因、有限历史与重叠累计统计](../../assets/diagrams/ch18/ch18-01-26-job-reasons.png)
-
-图：按正确 job ID 和 namespace 查询 current、history 与 stats，三者解释不同时间范围。 多个原因可同时成立，累计 Duration 相加可超过 wall time；成功、取消或重启会清理统计。
 
 ### target SDK 37 适配项
 
@@ -1022,10 +942,6 @@ target SDK 37 应用还会默认启用 Certificate Transparency（CT，证书透
 
 CT 校验通常用证书或握手携带的 SCT 完成，“每次连接都会访问 CT log”这个概括过头了。升级前应覆盖生产域名、备用域名、CDN 切换、证书轮换以及自定义 trust anchor。
 
-<!-- gracker-diagram: ch18-01-29-ech-ct -->
-![ECH 配置与证书透明度分别验证](../../assets/diagrams/ch18/ch18-01-29-ech-ct.png)
-
-图：ECH 按网络库与配置选择真实握手或 GREASE，CT 按信任与策略验证证书。 GREASE 不加密真实 SNI；CT 不要求每次连接访问日志服务，自定义信任根和显式设置需单独测试。
 
 #### 局域网访问权限
 
@@ -1160,10 +1076,6 @@ DeliQueue 处理 Java 消息投递争用，Buffer Stuffing Recovery 处理图形
 
 系统与内核的分工参阅 [18.3 Android 17 Kernel 6.18 与 ARM64 安全开销](03-android17-kernel-arm64-security.md)，其中内核版本固定为 `android17-6.18-2026-06_r6`。这是 18.3 为复现实验固定的快照标签，后续发布序列已有更新；API 行为由 kernel tag 单独推导不出来。
 
-<!-- gracker-diagram: ch18-01-36-final-acceptance -->
-![迁移和性能回归按证据轨道分别验收](../../assets/diagrams/ch18/ch18-01-36-final-acceptance.png)
-
-图：迁移先覆盖契约与失败分支，再分别对齐队列、GC、图形、网络和调度证据。 固定分析快照与设备现场分开；官方收益百分比、单一开关或平均帧时间不能替代本场景验收。
 
 
 ## 常见误区
