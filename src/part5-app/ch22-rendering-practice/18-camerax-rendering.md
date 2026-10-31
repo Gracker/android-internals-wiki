@@ -159,14 +159,10 @@ CameraX 是 Jetpack 的相机库。它把预览、拍照、图像分析和录像
 | CameraX 预览版 | 1.7.0-rc01，仅作观察 | 不进入生产基线，也不据此描述稳定能力 |
 | Android common kernel | `android17-6.18-2026-06_r6` | dma-buf、dma-fence 与 sync_file（把 fence 暴露为文件描述符的接口）公共语义 |
 
-截至 2026-10-25，官方发布页与 Google Maven 列出的最新稳定版为 1.6.2（2026-08-26），预览版为 1.7.0-rc01（2026-10-21）。下文源码细节与依赖示例仍固定在 1.6.1；升级后需重新核对实现，不能把旧代码直接标为新版本。1.6.2 修复了较新 JDK 解析传递引入的 JSpecify 注解时的编译问题。
+截至 2026-10-25，官方发布页与 Google Maven 列出的最新稳定版为 1.6.2（2026-08-26），预览版为 1.7.0-rc01（2026-10-21）。下文源码细节与依赖示例仍固定在 1.6.1；升级后需重新核对实现，把旧代码直接标成新版本属于错误标注。1.6.2 修复了较新 JDK 解析传递引入的 JSpecify 注解时的编译问题。
 
 CameraX 与 Android API level 分开发布：Android 17 设备可以运行较旧的 CameraX，旧库却未必认识平台新增的相机元数据（metadata）。CameraX 1.5.1 及更早版本在部分 Android 17 设备上遇到新的 dynamic range（动态范围） profile（动态范围档位）时，可能在绑定阶段崩溃，官方要求升级到 1.5.2、1.6.0 或更高版本。本文采用 1.6.1。
 
-<!-- gracker-diagram: a249-01-four-coordinates -->
-![平台、库、设备与内核分别固定](../../assets/diagrams/ch22/a249-01-four-coordinates.png)
-
-图：同一台设备可运行不同CameraX，不能只写Android版本。
 
 下面的依赖片段用于把相机模块锁定到同一稳定版本。
 
@@ -193,7 +189,7 @@ CameraX 的关键版本变化，我们可以按下面的顺序理解：
 - CameraX 1.5.2 修复 Android 17 新 dynamic range profile（动态范围档位标识） 造成的绑定崩溃；
 - CameraX 1.6 把默认 Camera2 实现迁移到 CameraPipe，录像的 MP4 / 3GPP 封装默认使用 Media3 Muxer，并稳定 `SessionConfig`、`HighSpeedVideoSessionConfig` 与 `isSessionConfigSupported()`；
 - CameraX 1.6.1 修复 1.6.0 的依赖编译问题；
-- CameraX 1.7 截至本次核验已进入 RC 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL（领域专用配置语法） 配置语法，并移除预览与录像镜像控制的实验注解。这些新增接口均不属于 1.6.1 固定基线；1.7.0-rc01 还修复效果 Surface 生命周期、ImageAnalysis 动态旋转/解绑泄漏等问题，不能据此假定 1.6.1 已包含这些修复。
+- CameraX 1.7 截至本次核验已进入 RC 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL（领域专用配置语法） 配置语法，并移除预览与录像镜像控制的实验注解。这些新增接口均不属于 1.6.1 固定基线；1.7.0-rc01 还修复效果 Surface 生命周期、ImageAnalysis 动态旋转/解绑泄漏等问题；1.6.1 是否已包含这些修复，要按各版本说明核对后再下结论。
 
 ## 2. CameraX 1.6 的位置：CameraPipe 仍在 Camera2 与 HAL 之上
 
@@ -224,10 +220,6 @@ flowchart TD
 
 图里的分层同时给出归因规则：用例协商、quirk 与绑定行为属于 CameraX，请求提交和结果分发跨越 CameraPipe 与平台；曝光、ISP 和厂商多帧算法属于设备，分析、编码、封装、存储和显示则各有独立消费者。图中的 Camera2 Binder 指应用进程与 `cameraserver` 之间的调用，Binder 是 Android 的跨进程通信机制。
 
-<!-- gracker-diagram: a249-02-camera-consumer-topology -->
-![CameraPipe配置链与四类输出消费者](../../assets/diagrams/ch22/a249-02-camera-consumer-topology.png)
-
-图：箭头表示接口和输出关系，各消费者有独立队列与开销。
 
 | CameraX 用例 | 主要下游 | 常见限制 |
 |---|---|---|
@@ -237,7 +229,7 @@ flowchart TD
 | `VideoCapture` | 相机输出、编码器、Muxer、文件 | 质量组合、dynamic range、持续吞吐 |
 | Extensions | 扩展会话、厂商算法 | 支持范围、延迟、内存、热与设备差异 |
 
-`Camera3OutputStream` 从 `ANativeWindow` dequeue 缓冲区及 fence fd，再把该 fd 作为 `acquire_fence` 连同 buffer 交给 HAL。HAL 写入前必须满足该同步依赖；不能把它画成 Camera3OutputStream 必然先在 CPU 上等待完成。HAL 返回的 release fence 随输出 buffer queue 给消费者，后续消费同样必须满足同步依赖，可以等待或传递 fence。CameraX API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。
+`Camera3OutputStream` 从 `ANativeWindow` dequeue 缓冲区及 fence fd，再把该 fd 作为 `acquire_fence` 连同 buffer 交给 HAL。HAL 写入前必须满足该同步依赖，把它画成 Camera3OutputStream 必然先在 CPU 上等待完成，与这段同步语义对不上。HAL 返回的 release fence 随输出 buffer queue 给消费者，后续消费同样必须满足同步依赖，可以等待或传递 fence。CameraX API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。
 
 <!-- gracker-diagram: a249-03-hal-fence-ownership -->
 ![输出缓冲区的同步依赖随所有权传递](../../assets/diagrams/ch22/a249-03-hal-fence-ownership.png)
@@ -277,10 +269,6 @@ if (!cameraInfo.isSessionConfigSupported(sessionConfig)) {
 
 `isSessionConfigSupported()` 检查这组会话包含的 Surface、特性和参数，比单独读取 `CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES` 或某个输出尺寸更接近最终配置。不过这个查询发生在绑定前，运行时稳定性、厂商算法耗时和热状态仍要靠实测。
 
-<!-- gracker-diagram: a249-04-session-negotiation -->
-![先用完整UseCase集合协商会话](../../assets/diagrams/ch22/a249-04-session-negotiation.png)
-
-图：支持查询比单项能力更接近组合，但不是运行时性能保证。
 
 ### 3.2 能力查询与运行结果要分开记录
 
@@ -307,21 +295,17 @@ if (!cameraInfo.isSessionConfigSupported(sessionConfig)) {
 
 界面状态变化若只影响覆盖层、焦点框或分析开关，优先保留会话：停止分析可以清除 Analyzer，恢复时再设置回来，无需为每次暂停重建全部用例。
 
-`CameraCaptureSession.updateOutputConfigurations()` 是 Android 17 / API 37 新增的 Camera2 平台接口，可以替换属性兼容的既有输出 Surface，无需重建整个会话；它只用于替换，传入数量必须与现有输出一致，增加或删除输出配置则超出了它的范围。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API，需要精确控制 Android 17 的动态输出更新时，应评估 Camera2。 此调用还会停止目标为被替换 Surface 的活跃请求，框架继续跟踪旧 Surface 以接收在途 buffer；调用方需重新面向新目标组织请求，不能把“不重建会话”理解为请求或画面天然无中断。
+`CameraCaptureSession.updateOutputConfigurations()` 是 Android 17 / API 37 新增的 Camera2 平台接口，可以替换属性兼容的既有输出 Surface，无需重建整个会话；它只用于替换，传入数量必须与现有输出一致，增加或删除输出配置则超出了它的范围。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API，需要精确控制 Android 17 的动态输出更新时，应评估 Camera2。 此调用还会停止目标为被替换 Surface 的活跃请求，框架继续跟踪旧 Surface 以接收在途 buffer；调用方需重新面向新目标组织请求。“不重建会话”只覆盖会话对象本身；请求与画面是否中断，要按换面路径单独验证。
 
-<!-- gracker-diagram: a249-05-session-update-boundaries -->
-![界面更新、用例重绑与平台换面分开](../../assets/diagrams/ch22/a249-05-session-update-boundaries.png)
 
-图：CameraX不承诺把所有用例切换自动映射到平台动态换面。
-
-## 4. Preview：请求模式不等于实际显示路径
+## 4. Preview：请求模式与实际显示路径
 
 ### 4.1 `PERFORMANCE` 与 `COMPATIBLE`
 
 `PreviewView.ImplementationMode.PERFORMANCE` 是默认值。它会尽量使用 `SurfaceView`；`COMPATIBLE` 使用 `TextureView`。
 
 - `SurfaceView` 为预览提供独立 Surface，SurfaceFlinger 可以把它作为独立 layer 参与合成；满足设备条件时，HWC 有机会使用 overlay，从而减少宿主窗口的纹理采样；
-- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI（Android 界面硬件加速渲染器） / GPU 路径。 现代 Android 的 SurfaceView 也支持同步位移及一定范围的 alpha、裁剪，是否需要 TextureView 应按实际变换验证，不能仅凭“有动画”判断。
+- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI（Android 界面硬件加速渲染器） / GPU 路径。 现代 Android 的 SurfaceView 也支持同步位移及一定范围的 alpha、裁剪，是否需要 TextureView 应按实际变换验证，“有动画”本身给不出答案。
 
 overlay 用不用，是 HWC 对当帧 layer 集合逐帧决定的；选 `SurfaceView` 只是让 overlay 成为可能，每帧是否真的走硬件 overlay 仍由 HWC 决定。
 
@@ -340,10 +324,6 @@ val preview = Preview.Builder().build().also {
 
 CameraX 1.6.1 的 `PreviewView` 说明文档把 target rotation（目标旋转角）与显示旋转不一致列为 `TextureView` 回退条件；同版本源码里的决策方法 `shouldUseTextureView()` 尚未实现这项判断，当前判断包含 API 24 及以下、LEGACY camera 与 SurfaceView quirk。工程结论要以锁定版本的源码和设备观测为准，单看枚举名称推断会出错。
 
-<!-- gracker-diagram: a249-06-preview-mode-and-layer -->
-![实现模式是偏好，实际layer才是证据](../../assets/diagrams/ch22/a249-06-preview-mode-and-layer.png)
-
-图：动画需求不能独自决定承载方式，模式名称也不能证明overlay。
 
 ### 4.2 首帧至少分成四段
 
@@ -356,10 +336,6 @@ CameraX 1.6.1 的 `PreviewView` 说明文档把 target rotation（目标旋转�
 
 `PreviewView.getPreviewStreamState()` 可以辅助判断数据流状态，但 `PERFORMANCE` 模式下 `STREAMING` 可能早于画面可见；需要精确首帧指标时，我们要加应用标记，并把 Camera、BufferQueue 与 SurfaceFlinger 轨迹关联起来看。
 
-<!-- gracker-diagram: a249-07-preview-first-visible -->
-![预览初始化与可见首帧分段](../../assets/diagrams/ch22/a249-07-preview-first-visible.png)
-
-图：STREAMING在PERFORMANCE模式下可能早于画面可见。
 
 ### 4.3 分辨率、裁剪与帧率要一起看
 
@@ -373,10 +349,6 @@ CameraX 1.6.1 的 `PreviewView` 说明文档把 target rotation（目标旋转�
 
 先别急着设一条跨设备的“超过多少毫秒就是 CameraX 卡顿”规则：我们把 sensor timestamp（传感器采集时间戳）、相机输出和显示 present 三组间隔统计出来，才能区分相机产帧变化与显示漏帧。
 
-<!-- gracker-diagram: a249-08-camera-and-display-cadence -->
-![相机产帧与显示节奏分别统计](../../assets/diagrams/ch22/a249-08-camera-and-display-cadence.png)
-
-图：不能用显示60Hz直接判定30fps相机漏帧。
 
 ## 5. ImageAnalysis：吞吐、等待时间和归还责任
 
@@ -389,12 +361,8 @@ CameraX 1.6.1 的 `PreviewView` 说明文档把 target rotation（目标旋转�
 
 `KEEP_ONLY_LATEST` 是默认策略。`BLOCK_PRODUCER` 的默认队列深度为 6，深度包含正在分析的图像；加深队列只能吸收短时抖动，还会增加内存占用和结果等待时间，平均处理速度一旦低于输入速度，队列迟早会占满。
 
-<!-- gracker-diagram: a249-09-analysis-backpressure -->
-![两种分析背压策略改变等待位置](../../assets/diagrams/ch22/a249-09-analysis-backpressure.png)
 
-图：加深队列只吸收有限抖动，实时结果仍可能变旧。
-
-下面的 Analyzer 适合同步、耗时有界的实时识别，`analyzeFrame` 必须在返回前结束对图像的访问；`reportAnalysisFailure` 是业务提供的轻量、不抛异常的记录函数。ATrace 在当前线程标出处理区间；若分析是异步任务，应按下文的所有权约定另行组织，不能跨线程复用同一个同步 section。
+下面的 Analyzer 适合同步、耗时有界的实时识别，`analyzeFrame` 必须在返回前结束对图像的访问；`reportAnalysisFailure` 是业务提供的轻量、不抛异常的记录函数。ATrace 在当前线程标出处理区间；分析若走异步任务，要按下文的所有权约定另行组织；同步 section 留在登记它的线程里。
 
 ```kotlin
 val analysis = ImageAnalysis.Builder()
@@ -423,25 +391,21 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
 }
 ```
 
-`ImageProxy.close()` 把底层图像归还 CameraX。应用可以读取包装的 `Media.Image`，归还则必须走 `ImageProxy.close()`，不能直接调用 `Media.Image.close()`。漏关图像会让后续帧被丢弃或停住；在 `BLOCK_PRODUCER` 下，还可能影响 Preview 和其他绑定用例。
+`ImageProxy.close()` 把底层图像归还 CameraX。应用可以读取包装的 `Media.Image`，归还则必须走 `ImageProxy.close()`；直接调用 `Media.Image.close()` 是错误路径。漏关图像会让后续帧被丢弃或停住；在 `BLOCK_PRODUCER` 下，还可能影响 Preview 和其他绑定用例。
 
 <!-- gracker-diagram: a249-10-synchronous-analysis-close -->
 ![同步Analyzer的访问和关闭责任](../../assets/diagrams/ch22/a249-10-synchronous-analysis-close.png)
 
-图：不能直接关闭被包装的Media.Image，也不能提前结束仍在访问的任务。
+图：被包装的 Media.Image 由 ImageProxy.close() 关闭；仍在访问图像的任务，先结束访问再关闭。
 
-异步模型下，只有最后一个消费者确认停止访问之后，owner 才能调用 `ImageProxy.close()`。超时、取消或失败信号本身不保证 GPU、native 或异步模型已停止读图，不能直接把这些信号都接到关闭操作。优先把所需数据复制到自有、有界缓冲区后及早关闭 ImageProxy；若要零复制持有原图，则明确任务接受/拒绝、完成、失败、取消确认和会话退出的回收协议，保证恰好一次关闭，并拒收旧会话结果。
+异步模型下，只有最后一个消费者确认停止访问之后，owner 才能调用 `ImageProxy.close()`。超时、取消或失败信号到来时，GPU、native 或异步模型可能仍在读图，关闭操作要挂在“访问已停止”这个信号上。更省心的做法是先把所需数据复制到自有、有界缓冲区，再及早关闭 ImageProxy；若要零复制持有原图，则明确任务接受/拒绝、完成、失败、取消确认和会话退出的回收协议，保证恰好一次关闭，并拒收旧会话结果。
 
-<!-- gracker-diagram: a249-11-async-image-ownership -->
-![异步图像必须等最后消费者确认结束](../../assets/diagrams/ch22/a249-11-async-image-ownership.png)
-
-图：释放依据是访问已停止，不是业务计时器到期。
 
 ### 5.1 格式转换也属于分析耗时
 
-`YUV_420_888` 是默认输出。请求 `RGBA_8888` 时，CameraX 会在内部执行 YUV 到 RGBA 的转换，把结果放进第一个数据平面（plane），这段转换时间同样要计入分析成本。 1.6.1 还提供 NV21 输出；读取 YUV/NV21 必须依据各 plane 的 rowStride、pixelStride、crop 与旋转信息，不能假设紧密连续的宽×高数组。格式转换和旋转也可能使 ImageProxy 与其底层 Media.Image 的尺寸/布局不同，应按所用 API 的契约取数。
+`YUV_420_888` 是默认输出。请求 `RGBA_8888` 时，CameraX 会在内部执行 YUV 到 RGBA 的转换，把结果放进第一个数据平面（plane），这段转换时间同样要计入分析成本。 1.6.1 还提供 NV21 输出；读取 YUV/NV21 必须依据各 plane 的 rowStride、pixelStride、crop 与旋转信息，紧密连续的宽×高数组只是一种假设。格式转换和旋转也可能使 ImageProxy 与其底层 Media.Image 的尺寸/布局不同，应按所用 API 的契约取数。
 
-分析预算应至少分为：
+我们把分析预算至少分为：
 
 - 等待 Analyzer 开始；
 - 图像旋转、裁剪与格式转换；
@@ -452,14 +416,10 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
 
 只记录模型的 `process()` 耗时，会低估应用消费者对相机管线的占用；实时任务还应记录输入帧数、实际分析帧数、主动跳过帧数和结果年龄。
 
-<!-- gracker-diagram: a249-12-analysis-cost-breakdown -->
-![分析预算覆盖排队到结果显示](../../assets/diagrams/ch22/a249-12-analysis-cost-breakdown.png)
-
-图：YUV读取遵守stride和crop，避免每帧Bitmap复制与分配。
 
 ### 5.2 降低分析负载的顺序
 
-建议按影响范围逐步处理：
+我们按影响范围逐步处理：
 
 1. 改用 `KEEP_ONLY_LATEST`，消除旧结果排队；
 2. 减少输入尺寸，确认识别准确率仍满足产品要求；
@@ -469,7 +429,7 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
 6. 选择更轻的模型，并按所用运行时评估 CPU / GPU 等执行路径；NNAPI 已在 Android 15 废弃，新方案不把它当默认性能建议；
 7. 只有必须逐帧处理时才使用 `BLOCK_PRODUCER`，并对队列等待时间设监控。
 
-## 6. ImageCapture：捕获模式只表达偏好
+## 6. ImageCapture：捕获模式与拍照延迟
 
 `ImageCapture` 的端到端延迟可能包含 3A、曝光、sensor readout（传感器逐行读出）、ISP、厂商多帧处理、JPEG / DNG 编码、应用回调和存储写入。从 `takePicture()` 到回调只拿到一个总数时，我们还得往下拆，才知道是哪一段变慢。
 
@@ -496,10 +456,6 @@ ZSL 这个名称只表达“优先复用历史候选帧”的捕获策略，文�
 
 弱光下曝光时间增长是预期现象，HDR（高动态范围）、夜景、Extensions 等多帧处理也会拉长 ISP / 厂商算法段；文件写入慢时，相机数据可能已经完成，这时优化方向应转向编码、磁盘或 `ContentResolver`。
 
-<!-- gracker-diagram: a249-13-capture-modes-and-latency -->
-![拍照偏好与完成时间不是同一个指标](../../assets/diagrams/ch22/a249-13-capture-modes-and-latency.png)
-
-图：弱光与多帧算法要单独分桶，不编造固定快门时延。
 
 ### 6.3 Android 17 RAW14 与 CameraX RAW 的对应关系
 
@@ -507,10 +463,6 @@ Android 17 / API 37 新增了 `ImageFormat.RAW14`，表示紧密打包的单平�
 
 业务需要指定 `RAW14`、精确管理 RAW Surface、手动请求参数或读取底层格式时，应使用 Camera2 并查询 `StreamConfigurationMap` 与相机特征；普通 DNG 拍摄则先查询 CameraX 的输出格式能力再决定开启，只看 API level 是不够的。
 
-<!-- gracker-diagram: a249-14-raw14-and-dng -->
-![API37 RAW14与CameraX RAW分别查询](../../assets/diagrams/ch22/a249-14-raw14-and-dng.png)
-
-图：不能由API37或支持DNG推断本机支持RAW14流。
 
 ### 6.4 CameraX 1.6.1 ZSL：3 帧 ring 与 CameraPipe 重处理
 
@@ -547,10 +499,6 @@ API 文档还规定最低系统版本为 Android 6.0，即 API 23。这个返回
 
 可以把判定分成三层：
 
-<!-- gracker-diagram: a249-15-zsl-three-gates -->
-![ZSL需要逐层通过设备、会话和单次检查](../../assets/diagrams/ch22/a249-15-zsl-three-gates.png)
-
-图：能力布尔值不能代替完整会话与单次路径证据。
 
 | 层次 | 典型检查 | 失败结果 |
 |---|---|---|
@@ -574,10 +522,6 @@ API 文档还规定最低系统版本为 Android 6.0，即 API 23。这个返回
 
 闪光灯的处理有所不同：CameraX 可以保留已经建立的可重处理会话，只在闪光灯为 `ON` 或 `AUTO` 时提交普通静态拍照；用户切回 `OFF` 后，也无需仅为这一变化重建整个会话。用例配置、设备能力或兼容性特例不允许 ZSL 时，`ZslControlImpl` 会直接跳过输入流的建立。
 
-<!-- gracker-diagram: a249-16-zsl-disable-and-flash -->
-![禁用输入流与单次绕过是不同分支](../../assets/diagrams/ch22/a249-16-zsl-disable-and-flash.png)
-
-图：闪光切回OFF无需仅为该变化重建已存在的重处理会话。
 
 CameraX 1.6.1 的兼容性特例列表包含若干 Samsung Fold4、S22、S24 型号和 Xiaomi Mi 8，原因是重处理图像可能出现颜色异常或变焦冻结；机型名单属于库版本的实现细节，升级 CameraX 后应重新检查相应版本的 `ZslDisablerQuirk`。
 
@@ -601,10 +545,6 @@ getValidOutputFormatsForInput(ImageFormat.PRIVATE)
 
 这些查询解决两个不同问题：
 
-<!-- gracker-diagram: a249-17-zsl-private-selection -->
-![PRIVATE输入尺寸与JPEG映射分别查询](../../assets/diagrams/ch22/a249-17-zsl-private-selection.png)
-
-图：输入尺寸可用与PRIVATE能转JPEG是两个条件。
 
 - 输入尺寸决定哪一种 `PRIVATE` 图像可以送回设备；
 - 输入/输出格式映射决定这种输入能否重处理成 JPEG。
@@ -645,10 +585,6 @@ selected PRIVATE Image
 
 匹配成功后，`ZslRingBuffer` 才读得到相应的 AF、AE、AWB 状态。图像和捕获结果长时间配不上时，旧数据会被清理；所以 `ImageReader` 回调到达，离“环形队列中已有可重处理帧”还差一次成功的匹配。
 
-<!-- gracker-diagram: a249-19-metadata-pairing -->
-![图像与捕获结果先按时间戳匹配](../../assets/diagrams/ch22/a249-19-metadata-pairing.png)
-
-图：收到图像回调不等于已经存在可重处理候选帧。
 
 ##### AF、AE、AWB 决定候选资格
 
@@ -660,10 +596,6 @@ selected PRIVATE Image
 
 任一条件不满足，`ImageProxy` 都会立即关闭，进不了环形队列。这一步只依据枚举状态过滤元数据，并不分析图像内容；弱光下 AE 长时间不收敛、连续对焦扫描、快速切换场景或元数据缺失，都可能让环形队列为空。
 
-<!-- gracker-diagram: a249-20-zsl-three-a-filter -->
-![3A枚举条件决定候选是否入队](../../assets/diagrams/ch22/a249-20-zsl-three-a-filter.png)
-
-图：弱光或对焦扫描可使ring无帧，必须观察实际3A状态。
 
 ##### ring、ImageReader 与 input 的三个上限
 
@@ -677,12 +609,8 @@ CameraX 1.6.1 源码中出现了三个含义不同的缓冲区数量：
 
 “ZSL 缓存 3 帧”只描述环形队列的容量；至于整个相机处理流水线，预览、JPEG、ZSL 输出、HAL 处理中的缓冲区、`ImageReader` 和输入流各有自己的队列约束，`GraphicBuffer` 驻留量要逐条流统计。
 
-<!-- gracker-diagram: a249-21-zsl-buffer-limits -->
-![3、9、1约束不同对象](../../assets/diagrams/ch22/a249-21-zsl-buffer-limits.png)
 
-图：不能用3帧或1个输入槽推断整机只驻留这些buffer。
-
-##### 当前实现没有图像评分器
+##### 当前实现的候选帧选择
 
 `ZslRingBuffer` 继承自 `ArrayRingBuffer`。新帧通过 `addFirst()` 加入，`dequeue()` 通过 `removeLast()` 取出；容量已满时，会先移除并关闭队尾最旧的帧。
 
@@ -702,7 +630,7 @@ CameraX 1.6.1 源码中出现了三个含义不同的缓冲区数量：
 
 #### CameraPipe 怎样构造并回收重处理请求
 
-CameraX 1.6.1 的 Camera2 后端已经迁移到 CameraPipe。较早资料里常见的 `androidx.camera.camera2.internal.*` 路径不能直接代表这个版本，对应的核心实现位于 `androidx.camera.camera2.adapter` 和 `androidx.camera.camera2.pipe.compat`。
+CameraX 1.6.1 的 Camera2 后端已经迁移到 CameraPipe。较早资料里常见的 `androidx.camera.camera2.internal.*` 路径在这个版本已经对不上号，核心实现位于 `androidx.camera.camera2.adapter` 和 `androidx.camera.camera2.pipe.compat`。
 
 ##### `CaptureConfigAdapter` 生成 InputRequest
 
@@ -710,10 +638,6 @@ CameraX 1.6.1 的 Camera2 后端已经迁移到 CameraPipe。较早资料里常�
 
 取帧成功后，它完成三件事：
 
-<!-- gracker-diagram: a249-23-input-request-construction -->
-![InputRequest同时携带图像和源FrameInfo](../../assets/diagrams/ch22/a249-23-input-request-construction.png)
-
-图：Image、FrameInfo的身份必须一致，内部类型错误按失败处理。
 
 1. 从 `ImageProxy.imageInfo` 取回匹配的 `CameraCaptureResult`；
 2. 把底层 `Image` 包装为 CameraPipe 的图像对象；
@@ -746,44 +670,28 @@ cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 
 设备需要原始捕获结果中的曝光、白平衡、镜头、裁剪和厂商元数据，才能按源图像的拍摄条件重处理。Android Camera2 还要求输入图像来自同一台相机设备，并在同一个会话中直接或间接产生；把其他相机或其他会话的图像与结果随意组合起来，是不符合接口约定的。
 
-<!-- gracker-diagram: a249-26-reprocess-image-identity -->
-![源图像、结果与会话必须匹配](../../assets/diagrams/ch22/a249-26-reprocess-image-identity.png)
-
-图：重处理沿用源帧拍摄条件，不是再次触发传感器曝光。
 
 创建请求构建器后，CameraPipe 会添加本次静态拍照的目标 `Surface`，通常是 CameraX 图像流水线的 JPEG 输出端，并写入 JPEG 方向、质量等请求参数。
 
 ##### 成功、失败、取消都要回收 input image
 
-成功 `queueInputImage()` 后，底层 `Image` 的所有权已经交给 ImageWriter/下游，原 Image 不得继续访问，其状态等同已关闭；这不等于物理 buffer 已被下游消费并归还。CameraX 仍需关闭 `ImageProxy` 包装以传播内部关闭通知，并为请求安装监听器，在以下路径共用一个原子引用：
+成功 `queueInputImage()` 后，底层 `Image` 的所有权已经交给 ImageWriter/下游，原 Image 不得继续访问，其状态等同已关闭；物理 buffer 何时被下游消费并归还，属于后续阶段的事。CameraX 仍需关闭 `ImageProxy` 包装以传播内部关闭通知，并为请求安装监听器，在以下路径共用一个原子引用：
 
-<!-- gracker-diagram: a249-27-image-transfer-and-release -->
-![图像移交、包装关闭与buffer归还是三件事](../../assets/diagrams/ch22/a249-27-image-transfer-and-release.png)
-
-图：回调关闭wrapper不能证明HAL已经归还同一物理buffer。
 
 - 请求完成；
 - 请求失败；
 - 请求中止；
 - 完整捕获结果到达。
 
-多个回调可能先后发生，`getAndSet(null)` 保证这一监听器对包装对象最多发起一次关闭。我们若自行实现 Camera2 ZSL，同样要在提交失败、会话关闭、请求中止和异常路径中按当前所有者回收资源；成功 queue 后不能再次读写原 Image，也不能把 wrapper.close 当作下游已释放缓冲区的证明。
+多个回调可能先后发生，`getAndSet(null)` 保证这一监听器对包装对象最多发起一次关闭。我们若自行实现 Camera2 ZSL，同样要在提交失败、会话关闭、请求中止和异常路径中按当前所有者回收资源；成功 queue 之后原 Image 就此封存，再读写属于越界；wrapper.close 只传播包装层的关闭通知，下游是否已释放缓冲区，要另行确认。
 
 失败的位置分两种：拍照时没有候选帧，CameraX 会改用普通静态拍照；而一旦已经构造 `InputRequest`，随后 `ImageWriter.queueInputImage()` 或 `createReprocessCaptureRequest()` 失败，CameraPipe 就会让本次捕获序列构建失败。这一阶段是否还会自动重试普通拍照并没有保证，应按失败处理。
 
-<!-- gracker-diagram: a249-24-zsl-fallback-vs-failure -->
-![无候选降级与构建失败不能混淆](../../assets/diagrams/ch22/a249-24-zsl-fallback-vs-failure.png)
-
-图：只有源码定义的缺候选路径可确认为普通降级。
 
 #### 候选帧也占用 stream buffer
 
 环形队列保存尚未关闭的 `ImageProxy`，候选帧会占用输出资源；满队列淘汰和会话重置会关闭未选中的帧。选中帧在成功 queue 前仍由调用方负责，成功 queue 后 Image 所有权转到输入链路，wrapper 关闭通知与下游真正释放 buffer 是不同阶段。分析驻留量时必须把候选输出与已移交的在途输入分开。
 
-<!-- gracker-diagram: a249-28-zsl-residency-and-pressure -->
-![候选输出与已移交输入分别追踪](../../assets/diagrams/ch22/a249-28-zsl-residency-and-pressure.png)
-
-图：预览正常不能证明ZSL输出与input队列也正常。
 
 如果图像没有按预期关闭，可能出现：
 
@@ -813,12 +721,8 @@ cameraDevice.createReprocessCaptureRequest(totalCaptureResult)
 - 输出图像或捕获结果的传感器时间戳；
 - 成功、失败和错误码。
 
-只记一个 `zsl=true` 布尔值是不够的：会话是否建立了输入流、本次拍照是否从环形队列取得了历史帧，都要靠上面的字段回答。 `SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` 的 sensor timestamp 可与 `elapsedRealtimeNanos()` 比较；UNKNOWN 源不能直接做跨时钟差。ZSL 帧可能早于按键，图像年龄和按键到文件延迟是两个指标，不能把负的时间差当作计时错误。
+只记一个 `zsl=true` 布尔值是不够的：会话是否建立了输入流、本次拍照是否从环形队列取得了历史帧，都要靠上面的字段回答。 `SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` 的 sensor timestamp 可与 `elapsedRealtimeNanos()` 比较；UNKNOWN 源的两个时钟要先建立时基映射，才能做差。ZSL 帧可能早于按键，图像年龄和按键到文件延迟是两个指标，负的时间差可能只是 ZSL 帧早于按键的结果，未必是计时错误。
 
-<!-- gracker-diagram: a249-29-zsl-clock-and-evidence -->
-![ZSL图像年龄与按键到文件时延分开](../../assets/diagrams/ch22/a249-29-zsl-clock-and-evidence.png)
-
-图：公共API能力、内部路径日志和最终文件事件需组合取证。
 
 ##### 检查 CameraX 日志
 
@@ -877,10 +781,6 @@ val videoCapture = VideoCapture.withOutput(recorder)
 
 选择器给出的是优先级和回退规则。绑定后我们仍要记录最终尺寸、帧率、dynamic range、编码器与输出 `MediaFormat`：`FHD` 只表示分辨率等级，具体编码格式和码率由配置与设备能力决定，把它当成固定 codec、码率或色彩格式会出问题。
 
-<!-- gracker-diagram: a249-30-video-quality-selection -->
-![质量列表与回退策略共同决定结果](../../assets/diagrams/ch22/a249-30-video-quality-selection.png)
-
-图：FHD不是固定编码格式或码率，选择规则也不是输出保证。
 
 ### 7.2 丢帧按四段归因
 
@@ -893,19 +793,11 @@ val videoCapture = VideoCapture.withOutput(recorder)
 
 只看最终文件的时间戳间隔，区分不出相机漏产、编码器丢帧或时间戳修正；Perfetto 里我们要同时看 camera、codec、调度、频率和应用标记。
 
-<!-- gracker-diagram: a249-31-recording-four-stages -->
-![录像卡顿按相机、编码、封装和写入分段](../../assets/diagrams/ch22/a249-31-recording-four-stages.png)
-
-图：1.6.1 MP4与3GPP默认Media3MuxerImpl；WebM仍是平台实现。
 
 ### 7.3 高速录像与多路输出
 
 CameraX 1.6 的 `HighSpeedVideoSessionConfig` 已是稳定 API。我们应使用对应 `SessionConfig` 查询支持的帧率范围，再绑定；普通 `CameraInfo.getSupportedFrameRateRanges()` 中出现某个范围，和当前输出组合真的支持它，是两件要分开确认的事。
 
-<!-- gracker-diagram: a249-32-high-speed-combination -->
-![高速录像需要对完整会话查询](../../assets/diagrams/ch22/a249-32-high-speed-combination.png)
-
-图：无跨设备的固定降级优先级或吞吐保证。
 
 高帧率、4K、HDR、稳定、分析与效果会一起竞争 sensor mode、ISP、内存带宽、编码器和热预算。产品降级顺序由业务定义，例如：
 
@@ -919,18 +811,14 @@ CameraX 1.6 的 `HighSpeedVideoSessionConfig` 已是稳定 API。我们应使用
 
 ## 8. Extensions：把厂商算法当作独立工作模式
 
-夜景 Night（夜景）、HDR、背景虚化 Bokeh（背景虚化）、人像润饰 Face Retouch（人像润饰） 等 Extensions 会建立扩展会话，并调用设备厂商实现。它们可能使用多帧采集、额外中间缓冲区和后处理线程，延迟、内存与热表现无法从普通 `ImageCapture` 推导。
+夜景 Night（夜景）、HDR、背景虚化 Bokeh（背景虚化）、人像润饰 Face Retouch（人像润饰） 等 Extensions 会建立扩展会话，并调用设备厂商实现。它们可能使用多帧采集、额外中间缓冲区和后处理线程，延迟、内存与热表现要在扩展会话里单独测，普通 `ImageCapture` 的数据参照价值有限。
 
-CameraX 1.6 提供稳定的 `ExtensionSessionConfig`，可以在绑定前参与 `getCameraInfo()` 和 `isSessionConfigSupported()` 查询，但它不支持 `ImageAnalysis`。需要 Extension 与分析同时运行的产品，要设计模式切换，不能假设普通会话的用例组合可直接搬入扩展会话。
+CameraX 1.6 提供稳定的 `ExtensionSessionConfig`，可以在绑定前参与 `getCameraInfo()` 和 `isSessionConfigSupported()` 查询，但它不支持 `ImageAnalysis`。需要 Extension 与分析同时运行的产品，要设计模式切换；普通会话的用例组合搬入扩展会话前，要按扩展会话的支持范围重新核对。
 
-<!-- gracker-diagram: a249-33-extension-isolated-mode -->
-![Extensions是独立厂商工作模式](../../assets/diagrams/ch22/a249-33-extension-isolated-mode.png)
 
-图：不能从普通拍照推导扩展会话的成本和稳定性。
+Android 17 平台还允许厂商定义 Camera Extension mode，例如超分辨率或厂商 AI 增强，应用可通过 Camera2 的 `isExtensionSupported(int)` 查询这类模式。不过这是平台层能力；CameraX 1.6.1 为厂商自定义模式提供哪些稳定接口，要以库的文档为准。CameraX 表达不了的需求，再评估 Camera2。
 
-Android 17 平台还允许厂商定义 Camera Extension mode，例如超分辨率或厂商 AI 增强，应用可通过 Camera2 的 `isExtensionSupported(int)` 查询这类模式。不过平台有这个能力，不代表 CameraX 1.6.1 已为所有厂商自定义模式提供等价的稳定接口；CameraX 表达不了的需求，再评估 Camera2。
-
-Extensions 的测试记录至少包含：
+我们记录 Extensions 测试时，至少包含：
 
 - extension mode、相机 id 与 CameraX 版本；
 - 预览首帧、拍照 shutter、图像可用与文件完成时间；
@@ -949,20 +837,16 @@ ML Kit 集成通常运行在 `ImageAnalysis` 消费端，CameraEffect 或自研 
 - 逐帧 YUV → RGB 与 Bitmap 分配会增加 CPU、内存和 GC（垃圾回收） 压力；
 - 结果覆盖层若每帧触发复杂 UI 重绘，还会增加宿主窗口的帧耗时。
 
-性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟——即使模型推理很快，输入帧在队列里等得太久，用户看到的仍是旧结果。 跨 timestamp 源的计时先确认时基映射，结果还需带会话/帧身份，旧会话或已过期结果不得更新当前预览；预览镜像只改变显示坐标，不代表分析缓冲区也已镜像。
+性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟——即使模型推理很快，输入帧在队列里等得太久，用户看到的仍是旧结果。 跨 timestamp 源的计时先确认时基映射，结果还需带会话/帧身份，旧会话或已过期结果不得更新当前预览；预览镜像只改变显示坐标，分析缓冲区是否镜像要单独处理。
 
 坐标转换同样要用 CameraX 提供的 rotation、crop rect 与 transformation 信息。直接拿传感器坐标绘制到 `PreviewView`，在裁剪、镜像和旋转场景会错位；为修错位反复复制或旋转 Bitmap，又会引入额外开销。
 
-<!-- gracker-diagram: a249-34-model-effects-and-display -->
-![模型、效果与结果覆盖层是不同消费者](../../assets/diagrams/ch22/a249-34-model-effects-and-display.png)
 
-图：模型推理快也可能显示旧结果；预览镜像不代表分析图像已镜像。
-
-## 10. 热稳定：峰值数据不能代表持续录像
+## 10. 热稳定与长时间测试窗口
 
 相机持续运行会同时用到 sensor、ISP、DDR 内存、CPU、GPU、NPU（神经网络处理器）、编码器、显示与存储。短时间测试可能恰好处于高频状态；几分钟后，系统热管理策略可能调整处理器频率或设备算法，帧率和延迟分布也会随之变化。
 
-长时间场景应固定：
+长时间场景里，我们固定以下条件：
 
 - 室温、充电状态、屏幕亮度和网络活动；
 - 前后摄、分辨率、帧率、dynamic range 与稳定；
@@ -970,12 +854,8 @@ ML Kit 集成通常运行在 `ImageAnalysis` 消费端，CameraEffect 或自研 
 - 录像编码设置与存储位置；
 - 预热时间、总时长和系统热状态。
 
-降级要由状态机控制，按可获得的系统热状态/实测信号使用不同升降级阈值与最短驻留时间，形成滞回，避免温度在阈值附近时反复重绑会话。只降低应用线程优先级，通常解决不了 ISP、GPU、编码器或 DDR 的热限制。 普通应用可使用 PowerManager 热状态监听等公开信号，不应假定能读取所有传感器或厂商温度。
+降级要由状态机控制，按可获得的系统热状态/实测信号使用不同升降级阈值与最短驻留时间，形成滞回，避免温度在阈值附近时反复重绑会话。只降低应用线程优先级，通常解决不了 ISP、GPU、编码器或 DDR 的热限制。 普通应用可使用 PowerManager 热状态监听等公开信号；传感器与厂商温度的可见范围，以这些公开信号为限。
 
-<!-- gracker-diagram: a249-35-thermal-hysteresis -->
-![持续录像降级需要滞回与驻留时间](../../assets/diagrams/ch22/a249-35-thermal-hysteresis.png)
-
-图：线程优先级无法直接解决ISP、编码器或DDR热限制。
 
 公共 kernel 的 dma-buf 与 dma-fence 源码，分别回答“设备间如何共享同一缓冲区”和“设备间如何表达工作完成”。相机 sensor、ISP、频率和带宽策略通常位于厂商驱动、固件与 HAL，所以缺少厂商轨迹时，我们不把 kernel 调度等待直接写成 ISP 结论。
 
@@ -994,7 +874,7 @@ ML Kit 集成通常运行在 `ImageAnalysis` 消费端，CameraEffect 或自研 
 | 拍照延迟 | 用户触发 → shutter / 图像 / 文件 | 拍照回调（capture callback）、sensor timestamp、I/O |
 | 录像稳定性 | 录制开始 → `VideoRecordEvent.Finalize` | camera、codec、Muxer、存储、热状态 |
 
-平均值会隐藏首帧、弱光、切镜头和热限制的长尾，所以至少要报告 p50、p95、p99、最大值、失败数与样本场景。p95 表示 95% 的样本不超过该值，p99 同理；样本量不足时直接说明，不要补造百分位。
+平均值会隐藏首帧、弱光、切镜头和热限制的长尾，所以我们至少报告 p50、p95、p99、最大值、失败数与样本场景。p95 表示 95% 的样本不超过该值，p99 同理；样本量不足时直接说明，不要补造百分位。
 
 ### 11.2 Perfetto 需要哪些轨迹
 
@@ -1026,12 +906,8 @@ FrameTimeline 是系统记录的应用窗口帧时间线，主要解释界面帧
 - GPU、ISP、codec 与厂商私有池；
 - ZSL、Extensions 和多帧算法的候选图像。
 
-进程 RSS（常驻物理内存）的增长不能直接换算成 `ImageAnalysis` 的队列大小。我们先确认未关闭的 `ImageProxy`、Bitmap 分配和 native heap，再结合 dma-buf、Surface 与厂商数据判断。 共享映射可能在多个进程中重复计入 RSS，不能把各进程 RSS 简单相加当唯一物理占用；PRIVATE 格式的步长、对齐、压缩与多平面布局需按实际分配数据核实。
+进程 RSS（常驻物理内存）的增长，要经过归因才能对应到 `ImageAnalysis` 的队列大小。我们先确认未关闭的 `ImageProxy`、Bitmap 分配和 native heap，再结合 dma-buf、Surface 与厂商数据判断。 共享映射可能在多个进程中重复计入 RSS；唯一物理占用以去重后的数据为准。PRIVATE 格式的步长、对齐、压缩与多平面布局需按实际分配数据核实。
 
-<!-- gracker-diagram: a249-37-camera-memory-domains -->
-![内存按分配域、共享和持有对象核查](../../assets/diagrams/ch22/a249-37-camera-memory-domains.png)
-
-图：先查ImageProxy泄漏与逐帧分配，再关联实际共享buffer证据。
 
 ## 12. CameraX、Camera2Interop 与 Camera2 的选择
 
@@ -1044,7 +920,7 @@ FrameTimeline 是系统记录的应用窗口帧时间线，主要解释界面帧
 - 需要 CameraX 的生命周期、quirk 与设备兼容处理；
 - 轨迹显示问题位于 Analyzer、应用 UI、编码或存储，而非抽象能力缺失。
 
-CameraX 1.6 的 CameraPipe 和稳定 `SessionConfig` 已经覆盖比旧版本更宽的高级配置范围，迁移到 Camera2 之前，应先确认当前稳定版是否已有对应能力。
+CameraX 1.6 的 CameraPipe 和稳定 `SessionConfig` 已经覆盖比旧版本更宽的高级配置范围，迁移到 Camera2 之前，我们先确认当前稳定版是否已有对应能力。
 
 ### 12.2 Camera2Interop 的边界
 
@@ -1065,10 +941,6 @@ Interop 选项还可能与 CameraX 自己的 3A、帧率、稳定或特性组配
 
 改用 Camera2，设备能力查询、生命周期、会话恢复、quirk 和错误处理就都交回应用维护。性能收益必须用相同 camera id、输出组合、分辨率、帧率、dynamic range、预热状态和首帧定义来对比。
 
-<!-- gracker-diagram: a249-38-abstraction-choice -->
-![按所需控制范围选择CameraX或Camera2](../../assets/diagrams/ch22/a249-38-abstraction-choice.png)
-
-图：不能仅凭多一层封装推导Camera2一定更快。
 
 ## 13. 一条可执行的排查顺序
 
@@ -1086,10 +958,6 @@ Interop 选项还可能与 CameraX 自己的 3A、帧率、稳定或特性组配
 
 排查结论要能回答三个问题：慢在哪一段、哪个持有方在等待、哪项配置改变了结果。“CameraX 慢”“设备差”或“HAL 卡住”这样的结论，指导不了任何修复。
 
-<!-- gracker-diagram: a249-39-diagnostic-progression -->
-![逐项加入消费者定位性能变化](../../assets/diagrams/ch22/a249-39-diagnostic-progression.png)
-
-图：结论说明哪段变慢、谁持有资源以及哪个变量改变结果。
 
 ## 14. 全文小结
 

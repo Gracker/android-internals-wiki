@@ -62741,9 +62741,391 @@
       "before_count": 39,
       "before_all_images": 39,
       "sha256_before": "604da5c370426caf934588be3ac893d7533aead438ef46addd19b65b6e14b05a",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a249-01-four-coordinates",
+          "title": "平台、库、设备与内核分别固定",
+          "decision": "remove",
+          "reason": "四版本坐标配对重复155–196完整版本表与列表，未新增架构。",
+          "original_line": 166,
+          "heading": "## 1. 先固定四个版本坐标"
+        },
+        {
+          "original_id": "a249-02-camera-consumer-topology",
+          "title": "CameraPipe配置链与四类输出消费者",
+          "decision": "remove",
+          "reason": "与同节保留原生图重复CameraPipe到HAL及四类消费者，原生更完整给出生命周期与显示。",
+          "original_line": 227,
+          "heading": "## 2. CameraX 1.6 的位置：CameraPipe 仍在 Camera2 与 HAL 之上"
+        },
+        {
+          "original_id": "a249-03-hal-fence-ownership",
+          "title": "输出缓冲区的同步依赖随所有权传递",
+          "decision": "keep",
+          "reason": "ANativeWindow取buffer/fd→HAL acquire依赖→release fence→消费者queue的所有权链补足原生架构未展开的同步语义，不画CPU先等信号。",
+          "original_line": 242,
+          "heading": "## 2. CameraX 1.6 的位置：CameraPipe 仍在 Camera2 与 HAL 之上"
+        },
+        {
+          "original_id": "a249-04-session-negotiation",
+          "title": "先用完整UseCase集合协商会话",
+          "decision": "remove",
+          "reason": "完整集合/查询/bind/实测四步由16行代码及249–278完整说明，图无支持与失败分支结构。",
+          "original_line": 280,
+          "heading": "### 3.1 一次绑定完整用例集合"
+        },
+        {
+          "original_id": "a249-05-session-update-boundaries",
+          "title": "界面更新、用例重绑与平台换面分开",
+          "decision": "remove",
+          "reason": "界面/重绑/API37替换/在途四行逐句重述302–315清单与平台限定，不呈现真实请求连接。",
+          "original_line": 312,
+          "heading": "### 3.3 避免无意义的重绑"
+        },
+        {
+          "original_id": "a249-06-preview-mode-and-layer",
+          "title": "实现模式是偏好，实际layer才是证据",
+          "decision": "remove",
+          "reason": "两模式/独立层/旋转差异四行重述321–346和代码，非真实层树。",
+          "original_line": 343,
+          "heading": "### 4.1 `PERFORMANCE` 与 `COMPATIBLE`"
+        },
+        {
+          "original_id": "a249-07-preview-first-visible",
+          "title": "预览初始化与可见首帧分段",
+          "decision": "remove",
+          "reason": "预览四阶段完整重复352–362四项列表，无实际计时轨道。",
+          "original_line": 359,
+          "heading": "### 4.2 首帧至少分成四段"
+        },
+        {
+          "original_id": "a249-08-camera-and-display-cadence",
+          "title": "相机产帧与显示节奏分别统计",
+          "decision": "remove",
+          "reason": "fps/曝光/三种间隔/时基四行重述366–379，未画真实相机与显示节拍。",
+          "original_line": 376,
+          "heading": "### 4.3 分辨率、裁剪与帧率要一起看"
+        },
+        {
+          "original_id": "a249-09-analysis-backpressure",
+          "title": "两种分析背压策略改变等待位置",
+          "decision": "remove",
+          "reason": "两背压策略、默认6与平均吞吐四行重复385–395完整表及段落，图未展示队列替换或阻塞。",
+          "original_line": 392,
+          "heading": "## 5. ImageAnalysis：吞吐、等待时间和归还责任"
+        },
+        {
+          "original_id": "a249-10-synchronous-analysis-close",
+          "title": "同步Analyzer的访问和关闭责任",
+          "decision": "keep",
+          "reason": "Analyzer交付→同步访问→异常记录/finally代理close→嵌套finally结束Trace的生命周期帮助检查24行代码，限定只支持有界同步处理。",
+          "original_line": 428,
+          "heading": "## 5. ImageAnalysis：吞吐、等待时间和归还责任"
+        },
+        {
+          "original_id": "a249-11-async-image-ownership",
+          "title": "异步图像必须等最后消费者确认结束",
+          "decision": "remove",
+          "reason": "复制、零拷贝、取消不等停访、确认关闭四行完整重复433–438所有权段落，图没有异步终态或分支关系。",
+          "original_line": 435,
+          "heading": "## 5. ImageAnalysis：吞吐、等待时间和归还责任"
+        },
+        {
+          "original_id": "a249-12-analysis-cost-breakdown",
+          "title": "分析预算覆盖排队到结果显示",
+          "decision": "remove",
+          "reason": "分析预算四行重复446–470完整清单，图无耗时或分段计量数据。",
+          "original_line": 455,
+          "heading": "### 5.1 格式转换也属于分析耗时"
+        },
+        {
+          "original_id": "a249-13-capture-modes-and-latency",
+          "title": "拍照偏好与完成时间不是同一个指标",
+          "decision": "remove",
+          "reason": "模式与完成时间四行重述478–502三模式和六时间点表，非时序。",
+          "original_line": 499,
+          "heading": "### 6.2 把拍照延迟拆成可解释的时间点"
+        },
+        {
+          "original_id": "a249-14-raw14-and-dng",
+          "title": "API37 RAW14与CameraX RAW分别查询",
+          "decision": "remove",
+          "reason": "RAW14/CameraX/DNG/精确控制四行由506–513完整解释，图无格式布局对照。",
+          "original_line": 510,
+          "heading": "### 6.3 Android 17 RAW14 与 CameraX RAW 的对应关系"
+        },
+        {
+          "original_id": "a249-15-zsl-three-gates",
+          "title": "ZSL需要逐层通过设备、会话和单次检查",
+          "decision": "remove",
+          "reason": "ZSL设备/会话/单次/布尔四行重复555–559分层表，表已有失败结果更完整。",
+          "original_line": 550,
+          "heading": "#### 能力预筛选、会话校验与禁用条件"
+        },
+        {
+          "original_id": "a249-16-zsl-disable-and-flash",
+          "title": "禁用输入流与单次绕过是不同分支",
+          "decision": "remove",
+          "reason": "禁用/quirk/flash/ring四行重述563–582清单与会话保留说明，图没有会话和单次两支实际连接。",
+          "original_line": 577,
+          "heading": "##### CameraX 1.6.1 的禁用与兼容性条件"
+        },
+        {
+          "original_id": "a249-17-zsl-private-selection",
+          "title": "PRIVATE输入尺寸与JPEG映射分别查询",
+          "decision": "remove",
+          "reason": "PRIVATE输入与JPEG映射到会话四步由588–612查询和两项说明完整表达，图不增加映射结构。",
+          "original_line": 604,
+          "heading": "##### 输入格式与合法输出"
+        },
+        {
+          "original_id": "a249-18-zsl-output-input-loop",
+          "title": "候选输出与重处理输入属于同一会话",
+          "decision": "keep",
+          "reason": "常规采集→PRIVATE候选→源图像加匹配结果→ImageWriter会话输入→JPEG重处理的五节点数据流，区别重用历史图像与新曝光/JPEG回送。",
+          "original_line": 635,
+          "heading": "##### 同一 session 的候选输出与重处理输入"
+        },
+        {
+          "original_id": "a249-19-metadata-pairing",
+          "title": "图像与捕获结果先按时间戳匹配",
+          "decision": "remove",
+          "reason": "timestamp匹配四步由644–651两段说明完整覆盖，图没有图像和metadata两输入汇合结构。",
+          "original_line": 648,
+          "heading": "##### 图像与 metadata 先按 timestamp 配对"
+        },
+        {
+          "original_id": "a249-20-zsl-three-a-filter",
+          "title": "3A枚举条件决定候选是否入队",
+          "decision": "remove",
+          "reason": "AF/AE/AWB条件卡片逐项重复657–666三条件及失败关闭段落，无实际筛选分支。",
+          "original_line": 663,
+          "heading": "##### AF、AE、AWB 决定候选资格"
+        },
+        {
+          "original_id": "a249-21-zsl-buffer-limits",
+          "title": "3、9、1约束不同对象",
+          "decision": "remove",
+          "reason": "3/9/1与整机四行完全重复672–683数量/约束表，保留表可避免容量混淆。",
+          "original_line": 680,
+          "heading": "##### ring、ImageReader 与 input 的三个上限"
+        },
+        {
+          "original_id": "a249-22-fifo-candidate-order",
+          "title": "当前ring按FIFO取最早保留候选",
+          "decision": "keep",
+          "reason": "acquireLatest后3A/addFirst、满队列removeLast关闭、拍照removeLast的算法顺序明确区分最新获取与最早保留候选，固定实现不等按快门遍历评分。",
+          "original_line": 698,
+          "heading": "##### 当前实现的候选帧选择"
+        },
+        {
+          "original_id": "a249-23-input-request-construction",
+          "title": "InputRequest同时携带图像和源FrameInfo",
+          "decision": "remove",
+          "reason": "构造InputRequest四步重复709–722三项列表，图未增加图像与FrameInfo汇合。",
+          "original_line": 713,
+          "heading": "##### `CaptureConfigAdapter` 生成 InputRequest"
+        },
+        {
+          "original_id": "a249-25-reprocess-build-order",
+          "title": "先构造builder，再移交输入图像",
+          "decision": "keep",
+          "reason": "源TotalCaptureResult先建builder和加输出，再queueInputImage，最后参数构建提交的顺序解决正文按主题分节可能造成的先后误读，保留输入槽可阻塞限定。",
+          "original_line": 732,
+          "heading": "##### ImageWriter 排入 session input"
+        },
+        {
+          "original_id": "a249-26-reprocess-image-identity",
+          "title": "源图像、结果与会话必须匹配",
+          "decision": "remove",
+          "reason": "源Image/结果/目标/跨session四行重复741–754身份约束，图无实际对象身份关联。",
+          "original_line": 749,
+          "heading": "##### TotalCaptureResult 初始化 reprocess request"
+        },
+        {
+          "original_id": "a249-27-image-transfer-and-release",
+          "title": "图像移交、包装关闭与buffer归还是三件事",
+          "decision": "remove",
+          "reason": "Image移交/Proxyclose/回调/下游释放四行重述758–770所有权说明和回调列表，没有真正生命周期轨道。",
+          "original_line": 760,
+          "heading": "##### 成功、失败、取消都要回收 input image"
+        },
+        {
+          "original_id": "a249-24-zsl-fallback-vs-failure",
+          "title": "无候选降级与构建失败不能混淆",
+          "decision": "remove",
+          "reason": "空候选降级与构造失败四行重复722/772完整失败边界，图未画分支；详细正文仍完整。",
+          "original_line": 774,
+          "heading": "##### 成功、失败、取消都要回收 input image"
+        },
+        {
+          "original_id": "a249-28-zsl-residency-and-pressure",
+          "title": "候选输出与已移交输入分别追踪",
+          "decision": "remove",
+          "reason": "三种持有阶段与背压四行重复779–795段落清单，未画在途buffer数量或释放依赖。",
+          "original_line": 783,
+          "heading": "#### 候选帧也占用 stream buffer"
+        },
+        {
+          "original_id": "a249-29-zsl-clock-and-evidence",
+          "title": "ZSL图像年龄与按键到文件时延分开",
+          "decision": "remove",
+          "reason": "版本/时基/历史帧/事件四行重述803–835日志字段与时间说明，无真实双时钟映射。",
+          "original_line": 818,
+          "heading": "##### 记录应用层条件"
+        },
+        {
+          "original_id": "a249-30-video-quality-selection",
+          "title": "质量列表与回退策略共同决定结果",
+          "decision": "remove",
+          "reason": "质量规则四行由10行代码及861–883说明完整覆盖，图无真实能力选择分支。",
+          "original_line": 880,
+          "heading": "### 7.1 `QualitySelector` 的质量保证范围"
+        },
+        {
+          "original_id": "a249-31-recording-four-stages",
+          "title": "录像卡顿按相机、编码、封装和写入分段",
+          "decision": "remove",
+          "reason": "录像四段链重复887–899三列表及原生图录像消费者，保留表信息更充分。",
+          "original_line": 896,
+          "heading": "### 7.2 丢帧按四段归因"
+        },
+        {
+          "original_id": "a249-32-high-speed-combination",
+          "title": "高速录像需要对完整会话查询",
+          "decision": "remove",
+          "reason": "FPS/高速会话/争用/Finalize四行重述903–918条件与降级清单，无真实会话输出结构。",
+          "original_line": 905,
+          "heading": "### 7.3 高速录像与多路输出"
+        },
+        {
+          "original_id": "a249-33-extension-isolated-mode",
+          "title": "Extensions是独立厂商工作模式",
+          "decision": "remove",
+          "reason": "Extensions四行逐句重述922–940模式范围与测试列表，无独立算法结构。",
+          "original_line": 926,
+          "heading": "## 8. Extensions：把厂商算法当作独立工作模式"
+        },
+        {
+          "original_id": "a249-34-model-effects-and-display",
+          "title": "模型、效果与结果覆盖层是不同消费者",
+          "decision": "remove",
+          "reason": "模型/效果/覆盖层/端到端四行重复944–959消费者与坐标规则，图未画实际竞争关系。",
+          "original_line": 956,
+          "heading": "## 9. ML Kit、CameraEffect 与自研 GPU 管线"
+        },
+        {
+          "original_id": "a249-35-thermal-hysteresis",
+          "title": "持续录像降级需要滞回与驻留时间",
+          "decision": "remove",
+          "reason": "热条件/信号/滞回/复测四行重述963–980，图没有滞回曲线或状态机。",
+          "original_line": 975,
+          "heading": "## 10. 热稳定与长时间测试窗口"
+        },
+        {
+          "original_id": "a249-36-trace-correlation-tracks",
+          "title": "Perfetto按生产、消费者和显示关联",
+          "decision": "keep",
+          "reason": "应用动作、cameraHAL、消费者、预览显示四轨分开，用逻辑阶段表达独立预览与应用帧应分别关联，标明非测量与vendor可见性限定。",
+          "original_line": 1012,
+          "heading": "### 11.2 Perfetto 需要哪些轨迹"
+        },
+        {
+          "original_id": "a249-37-camera-memory-domains",
+          "title": "内存按分配域、共享和持有对象核查",
+          "decision": "remove",
+          "reason": "四内存域卡片重复1023–1034清单，未画共享页或buffer所有者关系。",
+          "original_line": 1031,
+          "heading": "### 11.3 内存必须分域"
+        },
+        {
+          "original_id": "a249-38-abstraction-choice",
+          "title": "按所需控制范围选择CameraX或Camera2",
+          "decision": "remove",
+          "reason": "CameraX/Interop/Camera2/对照四行重述1040–1071选择范围和条件，图不是决策树。",
+          "original_line": 1068,
+          "heading": "### 12.3 需要 Camera2 的明确条件"
+        },
+        {
+          "original_id": "a249-39-diagnostic-progression",
+          "title": "逐项加入消费者定位性能变化",
+          "decision": "remove",
+          "reason": "逐项诊断四步重复1077–1092九项顺序，无新增回路或证据。",
+          "original_line": 1089,
+          "heading": "## 13. 一条可执行的排查顺序"
+        }
+      ],
+      "sha256_after": "813b6ed96707a7fb1f0f777a6308a80b6624a81c279f60b83d3c2a5b3b6a56be",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:07:55.180809+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 39,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a249/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a249/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 249,
+        "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+        "registered_sha256": "604da5c370426caf934588be3ac893d7533aead438ef46addd19b65b6e14b05a",
+        "frozen_sha256": "604da5c370426caf934588be3ac893d7533aead438ef46addd19b65b6e14b05a",
+        "review_input_sha256": "b8a45e79a49b3b0b8b4e5f5b96cf0092fc5f90a12c4485df2926b2d98e83ae6f",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a249/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a249/external-source.diff",
+        "diff_sha256": "5560d71dd7b8dd2de55f10180f1aa07711f2dfdb3ca771b2b7eb442380043486",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 561, \"characters\": 35309, \"svg_labels_read\": 39, \"actual_pngs_viewed\": 39, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 11, \"code_lines\": 91, \"native_mermaid\": 1, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "b8a45e79a49b3b0b8b4e5f5b96cf0092fc5f90a12c4485df2926b2d98e83ae6f",
+      "retired_diagrams": [
+        "a249-01-four-coordinates",
+        "a249-02-camera-consumer-topology",
+        "a249-04-session-negotiation",
+        "a249-05-session-update-boundaries",
+        "a249-06-preview-mode-and-layer",
+        "a249-07-preview-first-visible",
+        "a249-08-camera-and-display-cadence",
+        "a249-09-analysis-backpressure",
+        "a249-11-async-image-ownership",
+        "a249-12-analysis-cost-breakdown",
+        "a249-13-capture-modes-and-latency",
+        "a249-14-raw14-and-dng",
+        "a249-15-zsl-three-gates",
+        "a249-16-zsl-disable-and-flash",
+        "a249-17-zsl-private-selection",
+        "a249-19-metadata-pairing",
+        "a249-20-zsl-three-a-filter",
+        "a249-21-zsl-buffer-limits",
+        "a249-23-input-request-construction",
+        "a249-24-zsl-fallback-vs-failure",
+        "a249-26-reprocess-image-identity",
+        "a249-27-image-transfer-and-release",
+        "a249-28-zsl-residency-and-pressure",
+        "a249-29-zsl-clock-and-evidence",
+        "a249-30-video-quality-selection",
+        "a249-31-recording-four-stages",
+        "a249-32-high-speed-combination",
+        "a249-33-extension-isolated-mode",
+        "a249-34-model-effects-and-display",
+        "a249-35-thermal-hysteresis",
+        "a249-37-camera-memory-domains",
+        "a249-38-abstraction-choice",
+        "a249-39-diagnostic-progression"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-249/retired-assets.json"
     },
     {
       "index": 250,
@@ -63109,8 +63491,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 173,
-  "next_article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+  "reviewed_articles": 174,
+  "next_article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -63120,7 +63502,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:03:51.722903+08:00",
+  "updated_at": "2026-10-31T18:07:55.180809+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -63193,17 +63575,17 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+      "registered_sha256": "0577816a8fb43ef0730bf4ba50e17c0b97bef42b3250603fa414a03e5dbc8f77",
+      "observed_sha256": "5748be61dc3c28bc03f6ac0e01bd037b804a4adb6435e83aefc1840856af71e5",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
-      "registered_sha256": "604da5c370426caf934588be3ac893d7533aead438ef46addd19b65b6e14b05a",
-      "observed_sha256": "b8a45e79a49b3b0b8b4e5f5b96cf0092fc5f90a12c4485df2926b2d98e83ae6f",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -63270,9 +63652,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5314,
-  "reviewed_placements_after": 2089,
-  "net_removed_placements": 3225,
+  "reviewed_placements_before": 5353,
+  "reviewed_placements_after": 2095,
+  "net_removed_placements": 3258,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
