@@ -4,8 +4,9 @@ chapter: '1.8'
 section: '1.8'
 status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-09-12'
-last_source_verified_at: '2026-09-12'
+last_verified: '2026-10-28'
+last_source_verified_at: '2026-10-28'
+last_idle_audit_at: '2026-10-28T14:38:19+08:00'
 last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex, libbinder, AMS/OomAdjuster) + Android 17 official MessageQueue/TestLooperManager docs + Perfetto stdlib + ACK android17-6.18-2026-06_r6
 confidence: high
 sources:
@@ -15,6 +16,8 @@ sources:
   path: frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/android/os/MessageStack.java @ android-17.0.0_r1
+- type: aosp
+  path: libcore/ojluni/src/main/java/java/lang/invoke/VarHandle.java @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/android/os/MessageHeap.java @ android-17.0.0_r1
 - type: aosp
@@ -205,12 +208,12 @@ DeliQueue 的变化集中在 Java 层共享队列的组织方式和唤醒协调�
 
 #### 3.3 IdleHandler：队列准备休眠时执行
 
-`MessageQueue.IdleHandler` 从 API 1 起就存在。当队列没有立即可执行的消息、准备等待下一条消息时，Looper 可以调用已注册的 IdleHandler。回调返回 `false` 时会被移除，返回 `true` 时继续保留。
+`MessageQueue.IdleHandler` 从 API 1 起就存在。队列为空，或最早消息（包括同步屏障）的 `when` 仍在未来时，Looper 才可能调用已注册的 IdleHandler。已到期的同步屏障即使挡住了所有同步消息，也不会因此触发 IdleHandler。回调返回 `false` 时会被移除，返回 `true` 时继续保留。
 
 IdleHandler 与同步屏障解决的是两类问题：
 
 - 同步屏障决定“当前哪些消息可以越过”。
-- IdleHandler 决定“没有立即可执行消息时，是否做一点空闲工作”。
+- IdleHandler 在队列满足空闲条件时执行已注册的回调，不能仅凭“没有可分发消息”判断它会运行。
 
 IdleHandler 运行在 Looper 所在线程，耗时操作照样会阻塞后续消息——它是空闲钩子，当不成后台执行器。
 
@@ -289,7 +292,7 @@ do {
 } while (!sTop.weakCompareAndSetRelease(this, current, m));
 ```
 
-CAS 失败说明栈顶已被其他线程改变，当前线程会重新读取并重试。它免掉了旧实现中“先取得全局监视器锁才能入队”的互斥等待，但入队并不因此变成一条指令：高竞争下仍可能多次重试，还要处理消息计数、插入序号和原生唤醒协调。
+这里使用 `weakCompareAndSetRelease()`；返回 `false` 可能来自栈顶变化，也可能是弱 CAS 允许的伪失败（spurious failure）。两种情况下，当前线程都会重新读取栈顶并重试。它免掉了旧实现中“先取得全局监视器锁才能入队”的互斥等待，但入队并不因此变成一条指令：高竞争下仍可能多次重试，还要处理消息计数、插入序号和原生唤醒协调。
 
 按队列长度衡量，生产者发布栈顶节点的结构操作是 O(1)，无需线性查找插入位置；竞争下 CAS 可能反复重试，因此不能据此保证单次调用的总耗时有常数上界。随后 Looper 把消息放入最小堆时，仍要付出 O(log N) 的排序成本。排序成本没有消失，只是换了承担者：从“生产者在带锁链表中线性查找”，改为“生产者快速提交、由单个消费者集中排序”。
 
@@ -331,7 +334,7 @@ DeliQueue 没有引入业务优先级、机器学习调度或新的线程优先�
 
 Treiber 栈需要处理 ABA 问题：线程第一次看到栈顶是对象 A，暂停期间 A 被移除、复用，又重新成为栈顶；如果只比较对象引用，栈顶看起来仍是 A，线程就可能误判为“没有变化”。
 
-单指针 CAS 本身无法消除 ABA。DeliQueue 的做法是把 ABA 的处理与对象生命周期绑在一起：进入并发队列的 `Message` 可能仍被某次删除遍历引用，因此要推迟回收，等删除遍历结束再考虑放回全局池复用。
+单指针 CAS 本身无法消除 ABA。DeliQueue 的做法是把 ABA 的处理与对象生命周期绑在一起：进入并发队列的 `Message` 可能仍被删除遍历引用，因此 DeliQueue 不再把这些对象放回共享消息池；只要仍有引用，垃圾回收器就会保留对象。
 
 源码中的行为很直接：
 
@@ -1011,6 +1014,7 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 - [AOSP：CombinedDeliMessageQueue README（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/README.md)
 - [AOSP：CombinedDeliMessageQueue/MessageQueue.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)
 - [AOSP：MessageStack.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/MessageStack.java)
+- [AOSP：VarHandle.java（android-17.0.0_r1，弱 CAS 语义）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/invoke/VarHandle.java)
 - [AOSP：MessageHeap.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/MessageHeap.java)
 - [AOSP：Message.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Message.java)
 - [AOSP：Looper.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java)
