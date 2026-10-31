@@ -226,10 +226,6 @@ object JavaHeapPressure {
 
 这段代码提供的是趋势信号：对象能否回收，从比值里看不出来；Native（原生内存）、Graphics（图形内存）等进程分区也在它的覆盖之外；单次超过阈值，离定位泄漏还远。生产监控若采用该信号，还要限制采样频率、合并连续事件，并同时记录场景与缓存命中变化。
 
-<!-- gracker-diagram: a253-01-metric-boundaries -->
-![Java 堆计数、堆限制与 PSS 的口径](../../assets/diagrams/ch23/a253-01-metric-boundaries.png)
-
-图：used/max 比值可以触发有界缓存收缩，却不能单独证明泄漏或覆盖 Native、Graphics 等分区。
 
 ### ART 分配失败与 OOM 触发路径
 
@@ -309,10 +305,6 @@ fun buildVisibleItems(
 
 收益主要来自 `take(limit)` 限制结果数量，以及惰性操作避免完整中间集合。`Sequence` 自身也会创建操作包装对象并增加迭代调用；如果源数据已经完整驻留，或集合很小，它未必更省时。应使用分配记录与基准测试，同时比较分配字节数、对象数和 CPU 时间。
 
-<!-- gracker-diagram: a253-04-streaming-copy -->
-![用分块和消费边界限制峰值](../../assets/diagrams/ch23/a253-04-streaming-copy.png)
-
-图：惰性操作主要减少完整 filter/map 中间列表；业务还要决定是否分页、分块或流式输出，不能仅靠切换容器宣称性能改善。
 
 ### 对象池与缓存策略
 
@@ -354,10 +346,6 @@ class BytePayloadCache(
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/content/ComponentCallbacks2.java`, `frameworks/base/core/java/android/util/LruCache.java`]
 
-<!-- gracker-diagram: a253-05-cache-trim -->
-![状态提示、缓存收缩和 GC 是三件事](../../assets/diagrams/ch23/a253-05-cache-trim.png)
-
-图：ByteArray sizeOf 只计值的内容字节；键、条目和对象头另有成本。未来 put 仍可让缓存长回原最大预算。
 
 对象池只适合满足三个条件的对象：创建频繁、初始化成本高、可安全重置。普通 Kotlin `data class`（数据类）、生命周期复杂的对象、持有 `Context`、View 或回调的对象，不建议放进池。池化后的对象一旦忘记清除字段，可能引入泄漏和残留数据。
 
@@ -537,10 +525,6 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 
 这条队列还承载 HeapTrim（向系统归还可释放堆页）、收集器切换、按时间触发 GC 的阈值复查和部分启动维护。向它注入阻塞任务或暂停守护线程，会一起延迟这些工作。`TaskProcessor::Stop()` 只把处理器标记为停止；`GetTask()` 随后不再等待任务的计划时间，而是继续取出剩余任务，直到队列排空。错误干预可能让未到期任务集中执行。
 
-<!-- gracker-diagram: a253-07-heap-task-queue -->
-![HeapTaskDaemon 串行执行堆维护队列](../../assets/diagrams/ch23/a253-07-heap-task-queue.png)
-
-图：堆任务按计划时间从队列取出，再在守护线程逐个执行。阻塞该线程会推迟整条维护队列；并发收集器的部分工作可以与 mutator 同时发生。
 
 #### 并发 GC 请求如何判定和去重
 
@@ -670,10 +654,6 @@ Android Studio 的 Java/Kotlin 分配记录要求 debuggable（可调试）构�
 
 Perfetto 从 Android 12 起支持 ART allocation profiling，在 `HeapprofdConfig` 中配置 `heaps: "com.android.art"` 后即可采集分配调用栈样本。它记录对象创建时的调用栈与累计分配，对象何时被删除或回收则不在其中；要看对象的保留关系，还是得靠堆转储。在量产 user 系统上，目标应用还必须声明 `debuggable` 或 `profileable`（允许系统分析）。
 
-<!-- gracker-diagram: a253-10-profiling-evidence -->
-![分配画像与堆转储回答不同问题](../../assets/diagrams/ch23/a253-10-profiling-evidence.png)
-
-图：heaps: "com.android.art" 采样创建位置与累计分配；要判断对象为何仍可达，继续看 heap dump。量产 user 系统分析还需应用 debuggable 或 profileable。
 
 #### 按调用频率做分配归因
 
@@ -768,10 +748,6 @@ slot storage 是 Compose Runtime 保存组合层级、节点位置和 `remember`
 
 slot storage（槽位存储）持有 `remember` 值和组合结构。Composition 被宿主继续引用时，其中的值也会继续存活。找主要持有者时，我们看 heap dump 里的 dominator（支配对象，释放它才可能释放其支配的对象集合）。看到 SlotTable 或 LinkTable 出现在引用链中，要继续检查 Activity、Fragment View、`ComposeView`、Navigation destination（导航目的地）、Recomposer（调度重组的运行时对象）或长期协程；内部表结构通常只是引用路径中的一环。
 
-<!-- gracker-diagram: a253-12-slot-storage -->
-![固定 Runtime 版本与实验存储开关](../../assets/diagrams/ch23/a253-12-slot-storage.png)
-
-图：内部对象形态随实现改变，固定 SlotTable 字节数不适用于所有版本。R8 使用规则固定开关时，运行时赋值不会覆盖优化结果。
 
 #### `RecomposeScopeImpl` 会复用
 
@@ -786,10 +762,6 @@ slot storage（槽位存储）持有 `remember` 值和组合结构。Composition
 
 不稳定参数使用引用相等比较，稳定参数使用对象相等比较。调用方每次构造新 `List`、新 UI 数据模型或捕获值不同的新 Lambda，仍可能让比较失败。优化时应检查输入对象是否稳定复用、状态是否在合适的所有者中更新，以及运行时是否出现高频分配；源码中的 Lambda 表达式数量与运行时分配量是两回事，后者要靠分配记录确认。
 
-<!-- gracker-diagram: a253-14-strong-skipping -->
-![Strong Skipping 的参数比较规则](../../assets/diagrams/ch23/a253-14-strong-skipping.png)
-
-图：可组合函数内 lambda 会按捕获值自动缓存；它的键比较同样区分稳定性，与普通 remember 所有键用 equals 的规则有差异。
 
 #### Snapshot 状态记录随写入演进
 
@@ -829,10 +801,6 @@ fun ContactList(
 
 换成 `SnapshotStateList` 后，内容写入可以被观察，但同一个列表对象作为 `remember` 的 key 仍会比较相等，上述排序缓存可能继续返回旧结果。可以把内容读取放进 `derivedStateOf`，或先在组合中调用具体类型的 `SnapshotStateList.toList()` 取得不可变内容快照，再以快照和比较器作为排序缓存的 key。[1.12.0 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateList.kt)说明，这个成员函数为 O(1)，直接返回底层不可变列表，不复制全部元素；普通 `List.toList()` 通常会创建副本，不能混用这两条路径的分配结论。
 
-<!-- gracker-diagram: a253-13-remember-list-keys -->
-![remember 的 key 不等于列表内容版本](../../assets/diagrams/ch23/a253-13-remember-list-keys.png)
-
-图：SnapshotStateList.toList() 成员函数为 O(1) 内容快照，普通 List.toList() 的复制结论不同。remember 缓存生命周期也仍受 Composition 管理。
 
 #### 原始类型状态 API
 
@@ -891,10 +859,6 @@ fun ScrollToTopButton(listState: LazyListState) {
 
 只要 `showButton` 的结果没有变化，读取它的可组合函数就不需要因每次滚动更新而重组。`derivedStateOf` 自身要维护依赖和缓存；普通字符串拼接、两个低频状态的简单组合，以及每次输入变化都会产生新输出的计算，直接计算通常更清楚。
 
-<!-- gracker-diagram: a253-15-derived-state -->
-![derivedStateOf 把高频输入变成较少结果变化](../../assets/diagrams/ch23/a253-15-derived-state.png)
-
-图：滚动索引变化不必等于按钮状态变化。派生状态缓存仍有管理成本，版本修复也不能替代 remember 对对象复用的作用。
 
 Compose Runtime 1.12.0 稳定版已经包含一项潜在内存泄漏修复：未正确 `remember` 的 `derivedStateOf()` 在 forward write（同一轮组合先读取依赖状态，随后又写入该状态）场景中，可能被 Composition 持有到该 Composition 销毁。该问题影响 1.11.4，修复最早记录于 1.12.0-beta01，随后进入 1.12.0 稳定版。处理要点如下：
 
@@ -930,10 +894,6 @@ fun TrackListPosition(
 
 把 `snapshotFlow` 放在 `LaunchedEffect` 中不会自动造成泄漏。风险来自外部协程作用域比界面所有者存活更久、`LaunchedEffect` 的 key 选择错误、回调捕获 Activity/View，或重复启动未受管理的收集任务。heap dump 中只看到 Snapshot 类不足以确认泄漏，还要继续检查协程 Job（可取消任务）、Flow collector（Flow 收集者） 和宿主生命周期。
 
-<!-- gracker-diagram: a253-16-snapshotflow-lifecycle -->
-![snapshotFlow 的收集与释放由任务生命周期约束](../../assets/diagrams/ch23/a253-16-snapshotflow-lifecycle.png)
-
-图：LaunchedEffect key 控制任务重启，rememberUpdatedState 更新现有任务的回调；外部共享 manager 的 dispose 则由调用方管理。
 
 ### Lazy layout 的 key 维护列表项身份
 
@@ -981,10 +941,6 @@ override fun onCreateView(
 
 [Compose in Views 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)把 `DisposeOnViewTreeLifecycleDestroyed` 列为 Fragment View 的适用策略。普通 View 场景默认使用 `DisposeOnDetachedFromWindowOrReleasedFromPool`：View 脱离窗口时释放；若位于 `RecyclerView` 等复用容器中，则在容器脱离或该项被移出对象池时释放。释放策略要按宿主类型选择。
 
-<!-- gracker-diagram: a253-18-composeview-lifecycle -->
-![Fragment View 的销毁要带走 Composition](../../assets/diagrams/ch23/a253-18-composeview-lifecycle.png)
-
-图：应核对 Fragment 的 View 生命周期，而不是仅看 Fragment 是否仍在返回栈。销毁后仍被长生命周期引用持有的界面树需要沿引用链定位。
 
 #### `AndroidView.factory`、`update` 与 View 复用
 
@@ -1070,10 +1026,6 @@ composeCompiler {
 
 [Composition tracing 文档](https://developer.android.com/develop/ui/compose/tooling/tracing)说明，Macrobenchmark（在应用外驱动完整场景的基准测试）可以产出带 Compose tracing 的系统跟踪。滚动、页面切换和启动应写成可重复的 Macrobenchmark；Memory Profiler 用于定位具体分配或持有关系，回归判断还是要靠前面固定场景的重复测量。四类工具提供的是不同侧面，需要按同一时间段、设备和操作关联起来。
 
-<!-- gracker-diagram: a253-20-diagnostic-tools -->
-![编译判断、运行次数、分配与持有分别取证](../../assets/diagrams/ch23/a253-20-diagnostic-tools.png)
-
-图：四类结果按同一设备、构建、时窗和操作关联。release 编译器报告没有运行时分配数，debug Full allocation recording 也不能直接替代发布版性能基线。
 
 #### 先判断分配抖动，再判断泄漏
 

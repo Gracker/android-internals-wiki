@@ -63519,9 +63519,202 @@
       "before_count": 20,
       "before_all_images": 20,
       "sha256_before": "e1e8c2704b5b9bc91919375761239860cf6e5785be8e98e8e4b4fcdadf0337e8",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a253-02-los-allocation",
+          "title": "大对象空间的尝试与失败回退",
+          "decision": "keep",
+          "reason": "LOS字节和对象类型双条件、失败回退普通/非移动空间构成实际分叉，帮助避免把所有大对象等同LOS。",
+          "original_line": 182,
+          "heading": "### Java 堆空间组成与分配策略"
+        },
+        {
+          "original_id": "a253-01-metric-boundaries",
+          "title": "Java 堆计数、堆限制与 PSS 的口径",
+          "decision": "remove",
+          "reason": "used/max/PSS三个术语框重复本节三项指标和术语表，没有进一步内存归属关系。",
+          "original_line": 229,
+          "heading": "### Java 堆空间组成与分配策略"
+        },
+        {
+          "original_id": "a253-03-allocation-oom",
+          "title": "分配失败会逐级回收重试",
+          "decision": "keep",
+          "reason": "快速分配失败后等待已有GC、阻塞GC、完整回收清软引用和可选压缩的顺序骨架有助于解读wall time，图注明确条件化和内部循环。",
+          "original_line": 240,
+          "heading": "### ART 分配失败与 OOM 触发路径"
+        },
+        {
+          "original_id": "a253-04-streaming-copy",
+          "title": "用分块和消费边界限制峰值",
+          "decision": "remove",
+          "reason": "filter/take/map/toList四框重复紧邻Sequence代码的逐项调用，源驻留与包装成本已由正文说明。",
+          "original_line": 312,
+          "heading": "### 大对象与集合优化"
+        },
+        {
+          "original_id": "a253-05-cache-trim",
+          "title": "状态提示、缓存收缩和 GC 是三件事",
+          "decision": "remove",
+          "reason": "状态提示→trim→可能不可达→运行时GC的线性文字重复本节代码解释，不画其他引用或未来put再增长。",
+          "original_line": 357,
+          "heading": "### 对象池与缓存策略"
+        },
+        {
+          "original_id": "a253-06-gc-trigger",
+          "title": "Java 分配请求并发 GC 的条件",
+          "decision": "keep",
+          "reason": "时间featureflag与非零阈值分叉，对比纯字节阈值和时间路径字节兜底，并提示积分/乘积和未来复查，体现实际判定路径。",
+          "original_line": 491,
+          "heading": "### 内存抖动的成因与表现"
+        },
+        {
+          "original_id": "a253-09-gc-frame-tracks",
+          "title": "GC 与慢帧的时间关系需要线程证据",
+          "decision": "keep",
+          "reason": "帧生产、主线程状态与GC三轨表达重叠核验，保留机制示意而非实测且要求Running/Runnable/等待链证据。",
+          "original_line": 521,
+          "heading": "### 频繁 GC 对帧率的影响"
+        },
+        {
+          "original_id": "a253-07-heap-task-queue",
+          "title": "HeapTaskDaemon 串行执行堆维护队列",
+          "decision": "remove",
+          "reason": "runHeapTasks→GetTask→Run/Finalize三步完全由前文队列段落说清；串行与并发的区别正文保留。",
+          "original_line": 540,
+          "heading": "#### HeapTaskDaemon 串行执行整条堆任务队列"
+        },
+        {
+          "original_id": "a253-08-gc-request-dedup",
+          "title": "并发 GC 用序号协议去重",
+          "decision": "keep",
+          "reason": "请求阶段CAS成功者入队与执行阶段完成序号再判两层去重不同，形成顺序协议，非扫描队列。",
+          "original_line": 555,
+          "heading": "#### 并发 GC 请求如何判定和去重"
+        },
+        {
+          "original_id": "a253-10-profiling-evidence",
+          "title": "分配画像与堆转储回答不同问题",
+          "decision": "remove",
+          "reason": "分配画像与heapdump二叉工具摘要重复本节两段诊断解释和后文四类工具表，累计量/live/PSS限制正文保留。",
+          "original_line": 673,
+          "heading": "#### 现象确认：先把 GC 和帧放到同一张图里"
+        },
+        {
+          "original_id": "a253-11-composition-retention",
+          "title": "Composition 的正常持有与生命周期泄漏",
+          "decision": "keep",
+          "reason": "宿主生命周期经Composition持有slot/remember、RecomposeScope和Snapshot分支，帮助沿引用链找真正owner而不凭内部类名判泄漏。",
+          "original_line": 751,
+          "heading": "### Compose Runtime 会长期保存哪些数据"
+        },
+        {
+          "original_id": "a253-12-slot-storage",
+          "title": "固定 Runtime 版本与实验存储开关",
+          "decision": "remove",
+          "reason": "开关false gapbuffer/true LinkTable简单二叉重复正文开关列表，图缺首次setContent前及R8固定等关键限定。",
+          "original_line": 771,
+          "heading": "#### Slot storage 有两种实现"
+        },
+        {
+          "original_id": "a253-14-strong-skipping",
+          "title": "Strong Skipping 的参数比较规则",
+          "decision": "remove",
+          "reason": "稳定equals与不稳定===两路简单比较由正文两条规则和后续解释已清楚，未画lambda捕获键差异。",
+          "original_line": 789,
+          "heading": "#### `RecomposeScopeImpl` 会复用"
+        },
+        {
+          "original_id": "a253-13-remember-list-keys",
+          "title": "remember 的 key 不等于列表内容版本",
+          "decision": "remove",
+          "reason": "不可变List与SnapshotStateList内容快照的选择重复紧邻代码解释，普通List.toList复制和O(1)成员方法区别正文更精确。",
+          "original_line": 832,
+          "heading": "#### 组合阶段的集合加工与格式化"
+        },
+        {
+          "original_id": "a253-15-derived-state",
+          "title": "derivedStateOf 把高频输入变成较少结果变化",
+          "decision": "remove",
+          "reason": "index>0三步逐字对应derivedStateOf代码，无输入/输出实际样例轨道，版本修复已由正文交代。",
+          "original_line": 894,
+          "heading": "#### `derivedStateOf` 减少无效重组"
+        },
+        {
+          "original_id": "a253-16-snapshotflow-lifecycle",
+          "title": "snapshotFlow 的收集与释放由任务生命周期约束",
+          "decision": "remove",
+          "reason": "把收集、回调读取与取消排成单链，未增加真实订阅/并发关系，正文和LaunchedEffect代码更准确表达更新与取消。",
+          "original_line": 933,
+          "heading": "#### `snapshotFlow` 负责把 Snapshot 状态转成事件流"
+        },
+        {
+          "original_id": "a253-17-lazy-key-identity",
+          "title": "Lazy 列表稳定 key 维护业务身份",
+          "decision": "keep",
+          "reason": "重排前后A/B跨位置身份映射用两条独立正交线表示状态随业务key移动，具有文字段落之外的空间对照价值。",
+          "original_line": 950,
+          "heading": "### Lazy layout 的 key 维护列表项身份"
+        },
+        {
+          "original_id": "a253-18-composeview-lifecycle",
+          "title": "Fragment View 的销毁要带走 Composition",
+          "decision": "remove",
+          "reason": "Fragment创建、策略、View销毁与清理四框重复紧邻ComposeView代码和生命周期解释，策略选择正文更完整。",
+          "original_line": 984,
+          "heading": "#### `ComposeView` 应跟随正确的 LifecycleOwner"
+        },
+        {
+          "original_id": "a253-19-androidview-reuse",
+          "title": "AndroidView 的创建、更新、复用与终止",
+          "decision": "keep",
+          "reason": "factory到update后onReset复用回环及onRelease终止分支表达View可多次重绑的生命周期，普通View无通用release边界保留。",
+          "original_line": 1020,
+          "heading": "#### `AndroidView.factory`、`update` 与 View 复用"
+        },
+        {
+          "original_id": "a253-20-diagnostic-tools",
+          "title": "编译判断、运行次数、分配与持有分别取证",
+          "decision": "remove",
+          "reason": "四个独立工具卡片完全重复上方四行工具用途/限制表；同场景验收由后文步骤更易查阅。",
+          "original_line": 1073,
+          "heading": "#### 四类工具回答四个问题"
+        }
+      ],
+      "sha256_after": "5fdfcee5c2ed9f95feef03311f5c764c428b7eb460ef2f7584a095fa48c754ce",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:18:41.042352+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 20,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a253/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a253/visual-review.json",
+      "retired_diagrams": [
+        "a253-01-metric-boundaries",
+        "a253-04-streaming-copy",
+        "a253-05-cache-trim",
+        "a253-07-heap-task-queue",
+        "a253-10-profiling-evidence",
+        "a253-12-slot-storage",
+        "a253-13-remember-list-keys",
+        "a253-14-strong-skipping",
+        "a253-15-derived-state",
+        "a253-16-snapshotflow-lifecycle",
+        "a253-18-composeview-lifecycle",
+        "a253-20-diagnostic-tools"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-253/retired-assets.json"
     },
     {
       "index": 255,
@@ -63865,8 +64058,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 175,
-  "next_article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+  "reviewed_articles": 176,
+  "next_article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -63876,7 +64069,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:15:49.739954+08:00",
+  "updated_at": "2026-10-31T18:18:41.042352+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -64019,9 +64212,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5378,
-  "reviewed_placements_after": 2098,
-  "net_removed_placements": 3280,
+  "reviewed_placements_before": 5398,
+  "reviewed_placements_after": 2106,
+  "net_removed_placements": 3292,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -64045,5 +64238,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 175
+  "currently_matching_reviewed_source_count": 176
 }
