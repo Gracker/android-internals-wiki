@@ -99,10 +99,6 @@ Android 上的“端侧 AI”包含多套职责不同的组件。排查性能问
 
 这四条路径可以同时出现在一台设备上，而应用能控制的部分各不相同：`CompiledModel` 属于 LiteRT，AICore 是系统服务（service），Android 17 的 NPU 调度组件只管直接访问 NPU 的资格和调度信息。排查时先把层次分开再画调用图；混进同一张图里，初始化成本、内存归属和失败后的处理方式都容易看错。
 
-<!-- gracker-diagram: ch05-05-runtime-paths -->
-![端侧 AI 的四条软件路径](../../assets/diagrams/ch05/ch05-05-runtime-paths.png)
-
-图：四条软件路径各有管理边界；Android 17 的 NPU 调度控制可约束直接访问路径，不是第五种模型执行运行时。
 
 ### 为什么端侧推理容易变成性能问题
 
@@ -176,10 +172,6 @@ NPU 适合卷积、大规模张量乘加、attention 等计算。Android 设备�
 
 DSP 擅长低功耗信号处理，也曾是许多 Android 设备的神经网络加速资源。新设备的产品资料更常使用 NPU、APU 或 AI 加速器等名称，但厂商内部实现仍可能组合 DSP 与专用张量单元。delegate 覆盖率要看运行时兼容列表和本机执行结果，营销名称帮不上忙。
 
-<!-- gracker-diagram: ch05-05-backend-tradeoffs -->
-![CPU、GPU、NPU 与 DSP 的选择约束](../../assets/diagrams/ch05/ch05-05-backend-tradeoffs.png)
-
-图：后端没有通用快慢次序；先建立 CPU 基线，再用完整管线、UI 并发和持续温度对照验证。
 
 ### NNAPI 的源码保留与迁移方向
 
@@ -324,10 +316,6 @@ AICore 文档没有将其定义为 `CompiledModel` 的调度器，也未公开�
 
 测量时要标记模型生命周期的各个时间点：模型打开前、runtime 创建后、第一次执行后、稳定运行后、释放后，以及系统出现内存压力时。只截取一次 `dumpsys meminfo` 输出，很难区分一次性准备、可回收缓存和持续泄漏。
 
-<!-- gracker-diagram: ch05-05-memory-lifecycle -->
-![模型文件之外的运行时内存](../../assets/diagrams/ch05/ch05-05-memory-lifecycle.png)
-
-图：模型文件大小不等于推理内存。权重转换、激活、KV cache、工作区和输入输出都可能增加峰值；释放后 RSS 未立刻下降也不能直接判定泄漏。
 
 ### 模型与管线优化
 
@@ -366,10 +354,6 @@ INT8（8 位整数）、FP16（16 位浮点）等量化方式可以减少模型�
 
 结构化裁剪会按通道或模块等规则减少参数，更容易改变张量尺寸；知识蒸馏则让较小的学生模型学习较大教师模型的输出，以增加训练成本换取更小模型。两种方法都要在目标 delegate 和真实输入上重新测量。
 
-<!-- gracker-diagram: ch05-05-model-optimization -->
-![模型压缩到设备收益的验证闭环](../../assets/diagrams/ch05/ch05-05-model-optimization.png)
-
-图：压缩和稀疏不保证按参数减少比例提速；优化后的模型仍要在实际后端验证精度、覆盖和端到端成本。
 
 #### 预热、缓存和批处理（batching）
 
@@ -392,10 +376,6 @@ benchmark 要记录完整的环境和指标，结果才可复现。一次可靠�
 
 建议至少设置以下四组对照：
 
-<!-- gracker-diagram: ch05-05-benchmark-controls -->
-![四组推理性能对照](../../assets/diagrams/ch05/ch05-05-benchmark-controls.png)
-
-图：四组使用可比较的设备、模型与输入。每组都报告质量、端到端分位数、内存及热状态，避免只比较平均 invoke 耗时。
 
 1. CPU 基线；
 2. 目标 delegate，无缓存首次创建；
@@ -455,10 +435,6 @@ Android 17 AOSP 的 NpuManager 带有 constructor、model load / unload、policy
 
 GPU 频率上升、CPU 利用率下降或 NPU feature 存在，都只是间接信号。要确认模型确实用上了加速器，至少要有一项直接记录，例如 delegate 的成功分区记录、厂商 profiler、编译日志或运行时统计。
 
-<!-- gracker-diagram: ch05-05-trace-evidence -->
-![从 App 标记到后端执行证据](../../assets/diagrams/ch05/ch05-05-trace-evidence.png)
-
-图：CPU 利用率下降或 GPU 频率上升不能单独证明使用了 NPU。NpuManager 事件解释控制面，逐算子执行时间仍需运行时或厂商记录。
 
 ### 常见问题的定位顺序
 
@@ -683,10 +659,6 @@ createInputBuffers / createOutputBuffers / run
 
 流程中的 `ModelSelector`、`AiPackModelProvider` 和 `NpuCompatibilityChecker` 负责匹配模型产物与设备；`CompiledModel.Options` 描述候选 accelerator。模型产物选择与执行后端选择虽然相邻，仍是两个不同决定，需要分别记录。
 
-<!-- gracker-diagram: ch05-05-artifact-and-backend -->
-![模型产物选择与执行后端选择](../../assets/diagrams/ch05/ch05-05-artifact-and-backend.png)
-
-图：模型匹配成功不代表 NPU 执行成功；库加载、编译、buffer 创建和首轮执行均需检查。后备模型必须包含目标 CPU/GPU 可执行部分。
 
 #### Fallback 的配置与验证
 
@@ -737,10 +709,6 @@ LiteRT NPU 文档将编译分成 AOT 和设备侧 JIT 两类：
 
 设备侧编译的缓存键至少会受到模型、厂商 compiler plugin、Android build fingerprint（精确标识系统构建的字符串） 和编译选项影响。应用升级、系统 OTA 或模型替换后出现新的编译峰值，可能是缓存正常失效；要把 cache miss 的原因写进诊断日志。
 
-<!-- gracker-diagram: ch05-05-aot-jit-cache -->
-![AOT、JIT 与编译缓存边界](../../assets/diagrams/ch05/ch05-05-aot-jit-cache.png)
-
-图：AOT 减少部分设备端编译工作，仍需初始化。JIT 缓存受模型、编译器、设备构建与选项约束；升级后的新峰值可能来自正常失效。
 
 #### Play AI Pack（按设备交付 AI 模型的资源包） 与 runtime library 是两类产物
 
@@ -753,10 +721,6 @@ LiteRT NPU 文档将编译分成 AOT 和设备侧 JIT 两类：
 
 AI Pack 可以采用 install-time、fast-follow 或 on-demand 等交付方式，具体能力以 Play for On-device AI 文档为准。on-demand 可以减小首次安装下载量，但会增加首次进入功能时的网络等待和失败路径；应用应把“模型尚未下载”与“NPU 编译或执行失败”区分呈现。
 
-<!-- gracker-diagram: ch05-05-model-runtime-delivery -->
-![模型与运行时库的分发](../../assets/diagrams/ch05/ch05-05-model-runtime-delivery.png)
-
-图：AI Pack 交付模型，PFD 可交付 runtime 模块。LiteRT 2.3.0 起 NPU 库以 Maven 包提供，Maven 构建依赖与 PFD 设备交付是不同阶段。
 
 Google Play 交付不覆盖所有渠道。没有 GMS 的设备或其他应用商店需要独立方案，例如：
 
@@ -938,10 +902,6 @@ NPU feature 只描述设备能力与访问资格，不会授予应用额外的�
 6. 做持续功耗、温控、后台与并发测试；
 7. 最终决定哪些设备启用 NPU，哪些设备保留 GPU / CPU。
 
-<!-- gracker-diagram: ch05-05-migration-validation -->
-![迁移到 LiteRT 的逐层验证](../../assets/diagrams/ch05/ch05-05-migration-validation.png)
-
-图：CPU→GPU→NPU 是本文建议的验证顺序，不是运行时通用回退顺序。最终按目标设备证据决定启用范围。
 
 如果目标是缩短首次结果等待时间，就重点比较模型交付、编译和预热；如果目标是降低持续功耗，就比较稳态下的请求能量、温度和吞吐。单个平均延迟值回答不了这两个问题。
 
@@ -1015,10 +975,6 @@ AICore 和 Gemini Nano 不随 Android 17 的 AOSP 标签发布，涉及它们的
 
 两条路径都在设备上执行，但工程责任并不相同。走 AICore 路径，我们要围绕“状态、配额、前台限制和端到端延迟”设计；走 LiteRT-LM 路径，还要自己负责模型文件、内存峰值、后端兼容，以及引擎关闭等资源生命周期工作。
 
-<!-- gracker-diagram: ch05-05-managed-versus-owned -->
-![AICore 与 LiteRT-LM 的资源责任](../../assets/diagrams/ch05/ch05-05-managed-versus-owned.png)
-
-图：AICore 托管 Gemini Nano 的模型生命周期；LiteRT-LM 由 App 管理自选模型和引擎。两条路径都可能影响整机内存、带宽和温度。
 
 Android 17 还包含受权限保护的 OnDeviceIntelligence（ODI）framework。ODI 由 OEM（设备厂商）提供管理 service 和隔离的推理 service，并通过 `Feature`、prepare/process/streaming request、数据补充回调与 `InferenceInfo` 组织系统级能力。它属于 `@SystemApi` 和特权应用的集成接口，普通 App 拿它替代 ML Kit GenAI 是行不通的；AICore 的模型、配额和设备支持契约也套不到 OEM 的 ODI provider 上。
 
@@ -1149,10 +1105,6 @@ AICore 还按 App 执行推理配额：
 
 指数退避必须设置最大重试次数，并提供用户可见的终止状态。交互页面中的无限重试会同时增加耗电、发热和排队时间。App 内还应合并重复请求并限制并发数；这些措施属于调用方的流量控制，别把它说成 AICore 在多个 App 之间采用的调度规则。
 
-<!-- gracker-diagram: ch05-05-genai-gates-quota -->
-![前台限制与配额的处理](../../assets/diagrams/ch05/ch05-05-genai-gates-quota.png)
-
-图：当前 ML Kit GenAI 只允许 top foreground App 推理。前台服务无法绕过；BUSY 可按官方建议退避，长期电量配额耗尽应结束当前重试并给出可恢复状态。
 
 ### 线程、取消与 UI 更新
 
@@ -1234,10 +1186,6 @@ Android 的 `PowerManager.addThermalStatusListener()` 可以通知设备当前�
 
 降级策略可以包括缩短输入、限制最大输出、降低连续请求频率、暂停非必要生成，或切换到规则功能/云端服务。是否从 `THERMAL_STATUS_MODERATE` 开始降级，要由功能的交互要求和目标设备测试决定；写成所有 App 共用的阈值就错了。
 
-<!-- gracker-diagram: ch05-05-thermal-product-policy -->
-![热状态到产品降级策略](../../assets/diagrams/ch05/ch05-05-thermal-product-policy.png)
-
-图：热严重程度和 headroom 不能换算成跨设备通用 token/s。产品动作与阈值需要实测，NONE 也不代表每个硬件域都未受限。
 
 ### 需要自选模型时：LiteRT-LM
 
