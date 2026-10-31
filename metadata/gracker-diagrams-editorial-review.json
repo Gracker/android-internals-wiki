@@ -39715,9 +39715,149 @@
       "before_count": 12,
       "before_all_images": 12,
       "sha256_before": "cb94b960fbc30393e8a4ab84d8022ae92d86cd6ac227510d25ffc43d4edd1b51",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "ch15-01-01-task-lifecycle",
+          "title": "从进程与任务到可复查的记录",
+          "decision": "remove",
+          "reason": "四框逐项重述77一段Home/Tasks/启动附加/PastRecordings与显式导出流程，没有UI实际截图或额外操作分支，完整原文与任务表全留。",
+          "original_line": 79,
+          "heading": "## 当前界面与任务入口"
+        },
+        {
+          "original_id": "ch15-01-02-system-source-coverage",
+          "title": "System Trace 的数据源与覆盖边界",
+          "decision": "keep",
+          "reason": "内核/显式标记/其它原生源三路经实际配置和设备能力汇入产物的真实多源拓扑，直接纠正只靠atrace以及换UI补采的误判，保留。",
+          "original_line": 109,
+          "heading": "### System Trace（系统追踪）"
+        },
+        {
+          "original_id": "ch15-01-03-instrumentation-cost",
+          "title": "方法进入退出事件与测量扰动",
+          "decision": "remove",
+          "reason": "四框逐项摘要126–135方法插桩记录/调用层级/扰动/低扰动复核段，原5s建议与设备构建限制全留，图无具体调用或成本对照，删解释步骤重复。",
+          "original_line": 130,
+          "heading": "### Java Method Trace（方法追踪）"
+        },
+        {
+          "original_id": "ch15-01-04-sample-scope",
+          "title": "从栈样本到热点分布的统计边界",
+          "decision": "remove",
+          "reason": "四框逐项重述141–150周期样本/线程窗口/SelfTotal/等待解释段，5状态选择分支独立保留，所有样本非调用次数、短调用偏差及原生栈说明全文留。",
+          "original_line": 143,
+          "heading": "### Callstack Sample（调用栈采样）"
+        },
+        {
+          "original_id": "ch15-01-05-cpu-decision",
+          "title": "按线程状态选择下一项证据",
+          "decision": "keep",
+          "reason": "同一SystemTrace线程窗口按Running/Runnable/S-D三种实际状态选择栈热点/竞争调度/阻塞依赖的具体分支独立，避免CPU样本替代等待证据。",
+          "original_line": 158,
+          "heading": "### 三种模式怎么选"
+        },
+        {
+          "original_id": "ch15-01-06-memory-evidence-types",
+          "title": "曲线、堆快照与分配栈回答不同问题",
+          "decision": "keep",
+          "reason": "分类曲线/堆快照/分配记录三种不同产物到问题和验证方法的对应关系独立，实际区分何时变化/谁存活/谁分配，完整RSS/PSS口径限制在正文。",
+          "original_line": 179,
+          "heading": "## Memory Profiler：从实时曲线到堆快照"
+        },
+        {
+          "original_id": "ch15-01-07-leak-validation",
+          "title": "从可重复增长到生命周期错误的证据链",
+          "decision": "remove",
+          "reason": "五步骤逐项重述188和206两段重复路径/等价状态/GC/heapdump/Root生命周期方法，8实际支配和共享路径示例保留，比再复画检查流程提供更多关系信息，原方法全留。",
+          "original_line": 190,
+          "heading": "### 实时内存曲线"
+        },
+        {
+          "original_id": "ch15-01-08-retained-dominance",
+          "title": "引用可达性与 Retained Size 的支配边界",
+          "decision": "keep",
+          "reason": "GCroot经Manager持Activity、独占子图与经全局Cache另可达共享R的实际引用图，直观解释retained不等所有reachable及父子不可相加，需生命周期判断而非图上有Activity即泄漏。",
+          "original_line": 201,
+          "heading": "### Heap Dump（堆快照）"
+        },
+        {
+          "original_id": "ch15-01-09-allocation-coverage",
+          "title": "全量分配记录与两种采样口径",
+          "decision": "keep",
+          "reason": "Full/JavaSampled/Native按累计字节三种实际记录粒度与覆盖成本的对应关系独立，RemainingSize窗口净变化公式保留，避免把三种采样当一套统计口径。",
+          "original_line": 222,
+          "heading": "### Allocation Tracking（分配追踪）"
+        },
+        {
+          "original_id": "ch15-01-10-build-capability",
+          "title": "profileable 与 debuggable 的任务能力",
+          "decision": "remove",
+          "reason": "三分支逐项重述235–244完整构建能力表和设备Native/Power限制段，表比概览更精确包含方法与Interactions版本，原profileable/debuggable与菜单入口全文留。",
+          "original_line": 246,
+          "heading": "## 各 Profiler 模式的性能开销与适用场景"
+        },
+        {
+          "original_id": "ch15-01-11-analysis-escalation",
+          "title": "从 IDE 快速定位到系统关联分析",
+          "decision": "remove",
+          "reason": "四框逐项摘录262–265四步完整升级路线，5已有实际按状态选证据分支，全部Perfetto跨进程SQL及缺源须重录正文留，删方法清单重复。",
+          "original_line": 257,
+          "heading": "## Profiler 与 Perfetto 的互补关系"
+        },
+        {
+          "original_id": "ch15-01-12-power-causality",
+          "title": "从设备功耗相关性到可检验的原因",
+          "decision": "remove",
+          "reason": "四框以275同一Cellular例逐项重述关联/无线条件/基线/改请求策略复测，未画实际rail曲线或对照结果；原ODPM设备级、Pixel/API条件、相关非归因与后台信号环境要求全文保留。",
+          "original_line": 277,
+          "heading": "## Power Profiler（Android Studio Hedgehog+）"
+        }
+      ],
+      "sha256_after": "45a29d8cf024cfcb1cae0cf2300ef4acb65b1dae200262f12eed5f89024daf29",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T12:52:56.918729+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 12,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a149/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a149/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 149,
+        "article": "src/part3-tools/ch15-other-tools/01-as-profiler.md",
+        "registered_sha256": "cb94b960fbc30393e8a4ab84d8022ae92d86cd6ac227510d25ffc43d4edd1b51",
+        "frozen_sha256": "cb94b960fbc30393e8a4ab84d8022ae92d86cd6ac227510d25ffc43d4edd1b51",
+        "review_input_sha256": "50ac83aa77a50fedbfd7eba7b1b07dbfac0bc2be14133c1ec34570676856c644",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/01-as-profiler.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a149/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a149/external-source.diff",
+        "diff_sha256": "274395a3291860fc2b8436b26988313b86566d1feb7760f71fbf213cdcaae6e3",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 152 current narrative/table reading rows, 14994 characters, 12 SVG label sets and all 12 original PNGs in 2 contact sheets independently read/viewed; no fenced code or native Mermaid."
+      },
+      "sha256_review_input": "50ac83aa77a50fedbfd7eba7b1b07dbfac0bc2be14133c1ec34570676856c644",
+      "retired_diagrams": [
+        "ch15-01-01-task-lifecycle",
+        "ch15-01-03-instrumentation-cost",
+        "ch15-01-04-sample-scope",
+        "ch15-01-07-leak-validation",
+        "ch15-01-10-build-capability",
+        "ch15-01-11-analysis-escalation",
+        "ch15-01-12-power-causality"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-149/retired-assets.json"
     },
     {
       "index": 150,
@@ -41073,8 +41213,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 83,
-  "next_article": "src/part3-tools/ch15-other-tools/01-as-profiler.md",
+  "reviewed_articles": 84,
+  "next_article": "src/part3-tools/ch15-other-tools/02-simpleperf-arm-topdown.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -41084,7 +41224,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:50:45.857416+08:00",
+  "updated_at": "2026-10-31T12:52:56.918729+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -41133,13 +41273,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/01-as-profiler.md",
-      "registered_sha256": "cb94b960fbc30393e8a4ab84d8022ae92d86cd6ac227510d25ffc43d4edd1b51",
-      "observed_sha256": "50ac83aa77a50fedbfd7eba7b1b07dbfac0bc2be14133c1ec34570676856c644",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/01-as-profiler.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -41479,9 +41612,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3111,
-  "reviewed_placements_after": 1405,
-  "net_removed_placements": 1706,
+  "reviewed_placements_before": 3123,
+  "reviewed_placements_after": 1410,
+  "net_removed_placements": 1713,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -41505,5 +41638,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 83
+  "currently_matching_reviewed_source_count": 84
 }

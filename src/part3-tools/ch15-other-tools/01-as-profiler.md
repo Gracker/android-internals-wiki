@@ -51,7 +51,7 @@ related_chapters:
 
 # Android Studio Profiler（性能分析器）
 
-Android Studio Profiler 适合从应用视角快速关联 CPU、内存、网络和能耗信号，但不同采集模式的开销和时间精度差别很大。用之前先按问题选对任务入口，也想清楚什么时候该转向系统级的 Perfetto。
+Android Studio Profiler 适合从应用视角快速关联 CPU、内存、网络和能耗信号，只是不同采集模式的开销和时间精度差别很大。我们用之前先按问题选对任务入口，也想清楚什么时候该转向系统级的 Perfetto。
 
 ## Profiler 解决什么问题
 
@@ -76,10 +76,6 @@ Profiler 的 IDE 视图围绕所选 App 展开，System Trace 本身仍可包含
 
 从 `View > Tool Windows > Profiler` 打开面板，在 Home 页选择进程，再从 Tasks 区域启动任务。录制既可以覆盖进程启动，也可以附加到已经运行的进程。任务结束后，记录会保留在当前 Android Studio 会话的 Past Recordings 中；需要跨会话保存时就显式导出，部分记录类型没有导出能力。
 
-<!-- gracker-diagram: ch15-01-01-task-lifecycle -->
-![从进程与任务到可复查的记录](../../assets/diagrams/ch15/ch15-01-01-task-lifecycle.png)
-
-图：先固定目标进程与复现场景，再选择任务、录制窗口和保存方式。 启动录制与附加录制覆盖不同；Past Recordings 仅在当前会话保留，导出能力按任务判断。
 
 常用入口与问题类型如下：
 
@@ -100,18 +96,24 @@ Profiler 的 IDE 视图围绕所选 App 展开，System Trace 本身仍可包含
 
 ### System Trace（系统追踪）
 
-Android 10（API 29）及以上的系统追踪文件采用 Perfetto 格式，更早的设备使用旧版 Systrace 格式。Perfetto 可接收多种数据源：内核调度等事件来自 ftrace（Linux 内核跟踪机制）；Framework 和 App 的标记可经 atrace（Android trace 标记通道）或 Perfetto SDK TrackEvent 写入。TrackEvent 还要求目标进程接入 SDK、选择合适后端，并在采集配置中启用对应数据源；只在 IDE 中启动 System Trace 并不保证这些事件已采到。设备支持时，记录还可包含 FrameTimeline、进程内存和 power rail 数据；FrameTimeline 提供 App 与 SurfaceFlinger 帧的预测、实际区间和分类，按 token 等标识关联；它不能独自补齐每个 GPU 内部阶段，也不等于从输入到面板发光的完整测量。所以把 System Trace 概括成“只通过 atrace 抓点”，会漏掉大量调度方面的信息。
+Android 10（API 29）及以上的系统追踪文件采用 Perfetto 格式，更早的设备使用旧版 Systrace 格式。Perfetto 可接收多种数据源：内核调度等事件来自 ftrace（Linux 内核跟踪机制）；Framework 和 App 的标记可经 atrace（Android trace 标记通道）或 Perfetto SDK TrackEvent 写入。
+
+TrackEvent 这一路要额外准备：目标进程接入 SDK、选择合适后端，并在采集配置中启用对应数据源。只在 IDE 中启动 System Trace 时，这些条件未必已经满足，事件有没有采到，要按接入条件确认。设备支持时，记录还可包含 FrameTimeline、进程内存和 power rail 数据。
+
+FrameTimeline 提供 App 与 SurfaceFlinger 帧的预测、实际区间和分类，按 token 等标识关联；每个 GPU 内部阶段它独自补齐不了，从输入到面板发光的完整测量也要另外的手段。所以把 System Trace 概括成“只通过 atrace 抓点”，会漏掉大量调度方面的信息。
 
 <!-- gracker-diagram: ch15-01-02-system-source-coverage -->
 ![System Trace 的数据源与覆盖边界](../../assets/diagrams/ch15/ch15-01-02-system-source-coverage.png)
 
 图：内核、应用标记与平台数据源共同形成 system trace。 TrackEvent 需要 SDK/后端和数据源配置；FrameTimeline 不能替代完整输入到光学测量。
 
-System Trace 通常比全量方法插桩轻，但适用于所有设备和配置的“每个事件固定耗时”并不存在，开销取决于启用的数据源、事件频率、缓冲区大小、自定义标记密度和设备实现。在高频循环里写入成千上万个 tracepoint，同样可能扰动调度和缓存。我们可以在相同设备、相同构建和相同操作脚本下分别运行未录制基线与录制版本，检查指标是否出现一致偏移。
+System Trace 通常比全量方法插桩轻，开销却随配置浮动：启用的数据源、事件频率、缓冲区大小、自定义标记密度和设备实现共同决定成本，跨设备和配置通用的“每个事件固定耗时”并不存在。在高频循环里写入成千上万个 tracepoint，同样可能扰动调度和缓存。我们可以在相同设备、相同构建和相同操作脚本下分别运行未录制基线与录制版本，检查指标是否出现一致偏移。
 
-它擅长回答线程状态和系统上下文：Running 表示线程正在 CPU 上执行，Runnable 表示已经具备运行条件但还在等 CPU，Sleeping（S）表示可中断睡眠，常见于等待条件、锁或事件；状态本身不能说明线程是否“主动”让出 CPU。Uninterruptible Sleep（D）表示不可中断睡眠，具体等待对象仍要用阻塞调用栈、唤醒与依赖事件确认，不能仅凭 D 就断言是磁盘 I/O。我们还可以检查任务运行在哪个 CPU 核、是否被更高优先级线程抢占，以及一帧在 App、RenderThread、GPU 和 SurfaceFlinger 各阶段花了多久。没有 tracepoint 的普通 Java/Kotlin 方法在这里不会自动展开，此时应结合调用栈采样，或只为待查代码添加少量自定义标记。
+它擅长回答线程状态和系统上下文。Running 表示线程正在 CPU 上执行；Runnable 表示已经具备运行条件，只是还在排队等 CPU；Sleeping（S）表示可中断睡眠，常见于等待条件、锁或事件；Uninterruptible Sleep（D）表示不可中断睡眠。状态描述的是线程当下的处境，线程是否“主动”让出 CPU、D 状态具体在等什么，要靠阻塞调用栈、唤醒与依赖事件确认，磁盘 I/O 之类的判断也一样。
 
-Android 10 及以上设备的 System Trace 使用 Perfetto 格式，导出的记录可在 [Perfetto UI](https://ui.perfetto.dev/) 打开；Android Studio 也能导入它支持的既有记录。导出和导入只改变分析入口，采集时未启用的数据源补不回来，缺少的事件要修改配置后重新录制。
+状态之外，我们还可以检查任务运行在哪个 CPU 核、是否被更高优先级线程抢占，以及一帧在 App、RenderThread、GPU 和 SurfaceFlinger 各阶段花了多久。普通 Java/Kotlin 方法在这里展开的前提是埋了 tracepoint；还没埋的方法，要结合调用栈采样，或只为待查代码添加少量自定义标记。
+
+Android 10 及以上设备的 System Trace 使用 Perfetto 格式，导出的记录可在 [Perfetto UI](https://ui.perfetto.dev/) 打开；Android Studio 也能导入它支持的既有记录。导出和导入改变的只是分析入口：采集时未启用的数据源，事后补不回来，缺事件时要修改配置后重新录制。
 
 平台 tracing 的实现在 `android-17.0.0_r1` 的 `external/perfetto`，App 侧同步 trace 标记的入口见 `frameworks/base/core/java/android/os/Trace.java`。前者提供采集基础设施与数据源，后者是 App 和 Framework 写入同步区间标记的一条入口。
 
@@ -121,29 +123,21 @@ Java/Kotlin 方法记录通过运行时插桩，在每次方法进入和退出�
 
 插桩逻辑会增加每次方法调用的工作量，并可能改变线程调度、缓存行为和运行时优化状态。方法越短、调用越密集，扰动占原始工作量的比例越高。Android 官方文档明确提示 trace 中的时间读数会偏离生产环境，并建议把录制控制在 5 秒以内。
 
-<!-- gracker-diagram: ch15-01-03-instrumentation-cost -->
-![方法进入退出事件与测量扰动](../../assets/diagrams/ch15/ch15-01-03-instrumentation-cost.png)
-
-图：方法入口与出口写入时间戳，既提供调用层级，也增加被测路径的工作。 建议把方法录制控制在 5 秒以内；绝对时长须回到无插桩基准或低扰动 trace 复核。
 
 因此，方法记录显示的绝对耗时——某次调用在时间轴上的具体毫秒数——只适合在同一录制条件下辅助排序。要判断优化有没有缩短用户可见时延，应回到无插桩的基准测试或低扰动 System Trace。社区案例给出的固定放大倍数依赖设备、代码形态和录制配置，它只对各自的案例成立，我们把它当参考就好。
 
-录制前先把操作缩成一个可复现片段，并限制录制窗口。Android 7.1 及以下设备的采集量受配置中的 File size limit 约束；Android 8.0（API 26）及以上会忽略该上限。上限被忽略之后录制时长仍要克制：短采样间隔或密集方法调用会快速生成大文件，随后显著增加传输和解析时间。
+录制前先把操作缩成一个可复现片段，并限制录制窗口。Android 7.1 及以下设备的采集量受配置中的 File size limit 约束；Android 8.0（API 26）及以上会忽略该上限，录制时长就更要克制：短采样间隔或密集方法调用会快速生成大文件，随后显著增加传输和解析时间。
 
 ### Callstack Sample（调用栈采样）
 
-调用栈采样要求设备至少为 Android 8.0（API 26）。它周期性截取线程当时的调用栈，再按调用路径聚合。一个调用路径在样本中占比高，表示它在所选线程、时间窗与过滤范围内经常被命中。还要区分 Self（仅自身）与 Total（包含子调用）的统计口径；把父子 Total 直接相加会重复计算。样本分布可辅助定位 CPU 热点，但不等同于该方法的调用次数、单次墙上耗时或整个 App 的 CPU 使用率。采样给出的是统计画面，完整的调用事件流不在其中。
+调用栈采样要求设备至少为 Android 8.0（API 26）。它周期性截取线程当时的调用栈，再按调用路径聚合：一个调用路径在样本中占比高，表示它在所选线程、时间窗与过滤范围内经常被命中。读数时我们分清两件事：一是 Self（仅自身）与 Total（包含子调用）的统计口径，父子 Total 直接相加会重复计算；二是样本分布回答的是命中频率，某方法的调用次数、单次墙上耗时、整个 App 的 CPU 使用率，要分别用对应的读数回答。采样给出的是统计画面；完整的调用事件流，要看 Record Java/Kotlin Methods 那一类记录。
 
-<!-- gracker-diagram: ch15-01-04-sample-scope -->
-![从栈样本到热点分布的统计边界](../../assets/diagrams/ch15/ch15-01-04-sample-scope.png)
-
-图：周期栈样本经线程、时间窗与过滤条件聚合成热点分布。 Self 仅自身，Total 包含子调用；样本比例不等于调用次数、单次耗时或整个 App 的 CPU 使用率。
 
 采样省去了每个方法入口和出口的插桩，开销通常低于方法记录。短于采样间隔的调用可能完全缺席；大量短调用若累计占用 CPU，仍可能通过调用方或偶尔命中的栈表现出来，这类结果受采样时机影响，称为 sampling bias（采样偏差）。采样间隔越短，样本越密，文件增长和采集开销也越高。
 
 Callstack Sample 适合找 CPU 热点。若主线程大部分时间在等 Binder（Android 进程间通信机制）、锁或 I/O（输入输出），CPU 样本较少说明不了路径快慢，等待时间的解释要看 System Trace 的线程状态和唤醒链。分析 Java/Kotlin 程序时，栈中还会出现 JNI、ART（Android Runtime）、`/apex/`、`/system/` 和 `[kernel.kallsyms]` 帧，隐藏这些帧只改变展示，采集结果不变。
 
-Android Studio 对 App 的原生代码采样使用 Simpleperf，可以把它看作 App 原生栈采样的后端；不过 Java/Kotlin 栈帧并不都经由这条原生代码路径生成。
+Android Studio 对 App 的原生代码采样使用 Simpleperf，可以把它看作 App 原生栈采样的后端；Java/Kotlin 栈帧则只有部分经由这条原生代码路径生成。
 
 ### 三种模式怎么选
 
@@ -166,7 +160,7 @@ Android Studio 对 App 的原生代码采样使用 Simpleperf，可以把它看�
 
 ## Memory Profiler：从实时曲线到堆快照
 
-Memory Profiler 把 Java、Native、Graphics、Stack、Code 和无法细分的内存放在同一条时间轴上，任务侧提供 Java/Kotlin allocation、heap dump 与 Native allocation 等。我们先要弄清顶部分类统计的来源：它统计系统报告的 App 私有已提交内存页，与系统或其他 App 共享的页面不计在内，因此和完整的 RSS 或 PSS 对不上。RSS（Resident Set Size）统计进程当前驻留的物理页，PSS（Proportional Set Size）按比例分摊共享页。
+Memory Profiler 把 Java、Native、Graphics、Stack、Code 和余下未细分的内存放在同一条时间轴上，任务侧提供 Java/Kotlin allocation、heap dump 与 Native allocation 等。我们先要弄清顶部分类统计的来源：它统计系统报告的 App 私有已提交内存页，与系统或其他 App 共享的页面不计在内，因此和完整的 RSS 或 PSS 对不上。RSS（Resident Set Size）统计进程当前驻留的物理页，PSS（Proportional Set Size）按比例分摊共享页。
 
 Graphics 一类装的是图形缓冲区队列、GL surface、GL texture 等 CPU/GPU 共享内存，并不是独立的 GPU 显存。来源弄清之后，曲线用来发现异常时段，引用链和分配调用栈用来解释原因。
 
@@ -181,23 +175,19 @@ Graphics 一类装的是图形缓冲区队列、GL surface、GL texture 等 CPU/
 
 排查时我们固定设备和构建，重复同一段用户路径，并在每轮回到等价界面状态，关注对象数、分类内存、GC 事件和多轮操作后的稳定区间。若 Java 对象数或某类实例在多轮 GC 后仍单调增长，再抓 heap dump 检查引用链。进程 RSS 没有立即下降时，先想想堆内的空闲空间：它可能被保留给后续分配，RSS 读数和 Java 对象的存活性是两回事。
 
-<!-- gracker-diagram: ch15-01-07-leak-validation -->
-![从可重复增长到生命周期错误的证据链](../../assets/diagrams/ch15/ch15-01-07-leak-validation.png)
 
-图：重复同一路径并回到等价状态，确认 GC 后存活对象，再核对持有关系。 RSS 未下降或 Activity 数量较多均不足以证明泄漏；引用是否过期要依生命周期判断。
-
-Java/Kotlin allocation 任务默认使用 Full，记录全部分配；也可以切换为 Sampled，按固定间隔抽样。Android 7.1 及以下最多保存最近 65,535 条分配记录；Android 8.0 及以上没有这项上限，这是平台行为，与 LeakCanary 无关。LeakCanary 的专用任务属于 Android Studio 集成能力，与 Android 8.0 的平台分配记录上限无关。关于首发版本，当前 heap dump 指南写作 Panda，2026-07-16 的 Quail 2 发布说明则写作从 Quail 2 开始；两份官方资料表述有差异，本文不据此断定最早版本，使用时以所装 IDE 的任务列表为准。
+Java/Kotlin allocation 任务默认使用 Full，记录全部分配；也可以切换为 Sampled，按固定间隔抽样。Android 7.1 及以下最多保存最近 65,535 条分配记录；Android 8.0 及以上取消了这项上限——这是平台行为，LeakCanary 的专用任务属于 Android Studio 集成能力，两者是两回事。关于首发版本，当前 heap dump 指南写作 Panda，2026-07-16 的 Quail 2 发布说明则写作从 Quail 2 开始；两份官方资料表述有差异，本文不据此断定最早版本，使用时以所装 IDE 的任务列表为准。
 
 ### Heap Dump（堆快照）
 
-`Analyze Memory Usage (Heap Dump)` 会生成 heap dump，也就是抓取时刻 Java 托管堆的对象快照。类表中的 Shallow Size 是该类全部实例自身占用的 Java 内存总量，Retained Size 是该类实例所保留内存的聚合读数；实例面板中的 Shallow Size 才是单个对象自身的 Java 内存。Retained Size 来自 dominator tree（支配树）：如果其他对象必须经过某个实例才能从 GC Root 到达，这些对象就受该实例支配。两项数值都要结合具体实例和引用图解释。父子对象的 retained 集合可能重叠，不能把多行 Retained Size 相加后当作堆总量。抓取发生在 App 进程内，会临时增加 Java 内存并扰动执行，因此不要用同一时段评价性能时延。
+`Analyze Memory Usage (Heap Dump)` 会生成 heap dump，也就是抓取时刻 Java 托管堆的对象快照。类表中的 Shallow Size 是该类全部实例自身占用的 Java 内存总量，Retained Size 是该类实例所保留内存的聚合读数；实例面板中的 Shallow Size 才是单个对象自身的 Java 内存。Retained Size 来自 dominator tree（支配树）：如果其他对象必须经过某个实例才能从 GC Root 到达，这些对象就受该实例支配。两项数值都要结合具体实例和引用图解释；父子对象的 retained 集合可能重叠，把多行 Retained Size 相加当作堆总量，重叠部分会被算两遍。抓取发生在 App 进程内，会临时增加 Java 内存并扰动执行，性能时延的评价要避开抓取的同一时段。
 
 <!-- gracker-diagram: ch15-01-08-retained-dominance -->
 ![引用可达性与 Retained Size 的支配边界](../../assets/diagrams/ch15/ch15-01-08-retained-dominance.png)
 
 图：示例中 Activity 支配其独占子图，共享对象 R 还能沿独立 Cache 路径到达。 普通强引用示意，非实测堆图；Retained 不是所有可达对象之和，父子 retained 也不能重复相加。
 
-检查顺序可从“本应结束生命周期的对象”开始，例如退出页面后仍保留的 Activity、Fragment、View 树、`CoroutineScope`（协程作用域）、监听器或大型业务对象。多个 Activity 实例也可能来自配置变化、返回栈或多窗口，数量本身定性不了。选中实例后沿 References 追到 GC Root——它是垃圾回收器直接认定为可达的起点，例如活动线程栈、静态字段或 JNI 全局引用；只要对象仍能从这些根到达，GC 就不会回收它。最后判断这条持有关系是否符合生命周期设计。
+检查顺序可从“本应结束生命周期的对象”开始，例如退出页面后仍保留的 Activity、Fragment、View 树、`CoroutineScope`（协程作用域）、监听器或大型业务对象。多个 Activity 实例也可能来自配置变化、返回栈或多窗口，数量多寡还要结合来源看。选中实例后沿 References 追到 GC Root——它是垃圾回收器直接认定为可达的起点，例如活动线程栈、静态字段或 JNI 全局引用；只要对象仍能从这些根到达，GC 就不会回收它。最后判断这条持有关系是否符合生命周期设计。
 
 Profiler 的 `Show activity/fragment leaks` 过滤器会列出可疑实例，帮我们缩小候选集合，引用链和复现步骤仍要人工核对。支持 LeakCanary 集成的 Android Studio 版本会把检测结果带到 Profiler 专用任务中，项目要先按 LeakCanary 的接入要求运行检测。
 
@@ -220,7 +210,7 @@ Android Studio 中的 Heap Dump 和 Java/Kotlin allocation 任务要求 debuggab
 
 ## 各 Profiler 模式的性能开销与适用场景
 
-任何采集都会改变被测系统，只是程度不同。设备型号、系统版本、Android Studio 版本、构建类型、采集配置和复现脚本都应记录下来。判断性能回归要保留未录制基线；评价启动、滚动这类用户路径的时延，最终数字交给 AndroidX Macrobenchmark（在独立测试进程中测量完整用户场景）或其他受控基准测试。
+任何采集都会改变被测系统，只是程度不同。设备型号、系统版本、Android Studio 版本、构建类型、采集配置和复现脚本，我们都应记录下来。判断性能回归要保留未录制基线；评价启动、滚动这类用户路径的时延，最终数字交给 AndroidX Macrobenchmark（在独立测试进程中测量完整用户场景）或其他受控基准测试。
 
 Android 10（API 29）加入 manifest `<profileable>`。当前 Android Studio 推荐从 release variant 构建 profileable App，以减少 debug 构建自身带来的性能成本；官方 Profiler 总览给出的推荐环境是 API 29 及以上、带 Google Play 的测试设备，并使用 Android Gradle Plugin（AGP） 7.3 及以上——这个插件把 Android 构建流程接入 Gradle。更旧的设备与旧 Studio 的能力，仍按相应版本文档判断。
 
@@ -235,23 +225,15 @@ Android 10（API 29）加入 manifest `<profileable>`。当前 Android Studio �
 | Heap dump | 不支持 | 支持 |
 | Interaction timeline | 不支持 | API 26+ 支持 |
 
-Native allocation 和 power rail 的可用性还受设备、系统及硬件数据源约束，单看 `profileable` 或 `debuggable` 推断不出来。Android Studio 菜单中的 `Profile 'app' with low overhead` 对应 profileable 路径，`Profile 'app' with complete data` 对应 debuggable 路径。
+Native allocation 和 power rail 的可用性还受设备、系统及硬件数据源约束，单看 `profileable` 或 `debuggable` 判断不全，要以实际设备为准。Android Studio 菜单中的 `Profile 'app' with low overhead` 对应 profileable 路径，`Profile 'app' with complete data` 对应 debuggable 路径。
 
-<!-- gracker-diagram: ch15-01-10-build-capability -->
-![profileable 与 debuggable 的任务能力](../../assets/diagrams/ch15/ch15-01-10-build-capability.png)
-
-图：先按问题选择接近发布的 profileable 构建，需完整开发期堆能力时再切换 debuggable。 Interaction timeline 还要求 API 26+；Native 和 Power 的可用性仍须检查系统、硬件与实际任务。
 
 ## Profiler 与 Perfetto 的互补关系
 
-Android Studio 的优势是任务入口、App 筛选、源码跳转和较低的操作成本；Perfetto UI 更适合系统范围浏览、Track（同类事件的时间轨）分组、自定义 SQL、Trace Processor 指标和跨数据源关联。Profiler 的 System Trace 同样能展示系统活动，“完全看不到系统”的说法站不住，两者的差异主要在展示范围和查询能力。
+Android Studio 的优势是任务入口、App 筛选、源码跳转和较低的操作成本；Perfetto UI 更适合系统范围浏览、Track（同类事件的时间轨）分组、自定义 SQL、Trace Processor 指标和跨数据源关联。Profiler 的 System Trace 同样能展示系统活动，两者的差异主要在展示范围和查询能力。
 
-可按问题逐步升级：
+我们可以按问题逐步升级：
 
-<!-- gracker-diagram: ch15-01-11-analysis-escalation -->
-![从 IDE 快速定位到系统关联分析](../../assets/diagrams/ch15/ch15-01-11-analysis-escalation.png)
-
-图：在 IDE 圈定问题窗口，按需补样本或堆证据，复杂系统关联再进入 Perfetto。 已有 trace 缺少数据源时必须重录；生产设备的 ProfilingManager 另有请求、脱敏和存储约束。
 
 1. 在 Android Studio 录制 System Trace，用 Threads、CPU Cores、Display、Process Memory 和 Power Rails 圈定时间窗。
 2. App 在 Running 状态持续占用 CPU 时，补 Callstack Sample；Java 堆对象异常时，切换 Memory 任务。
@@ -262,22 +244,18 @@ Android Studio 的优势是任务入口、App 筛选、源码跳转和较低的�
 
 ## Power Profiler（Android Studio Hedgehog+）
 
-Android Studio Hedgehog 开始提供 Power Profiler。System Trace 负责记录并显示功耗数据，Power Profiler 用于浏览 On-Device Power Rails Monitor（ODPM，设备端电源轨监控器）的结果。它和旧 Energy Profiler 的数据来源与含义不同，历史估算曲线和 power rail 测量值来自两套体系，直接对比会读错。
+Android Studio Hedgehog 开始提供 Power Profiler。System Trace 负责记录并显示功耗数据，Power Profiler 用于浏览 On-Device Power Rails Monitor（ODPM，设备端电源轨监控器）的结果。它和旧 Energy Profiler 的数据来源与含义不同：历史估算曲线和 power rail 测量值来自两套体系，对比时要分开解读。
 
 ODPM 把设备级功耗分成若干 rail，可能包括 CPU Big/Mid/Little、GPU、Display、Camera、Cellular、WLAN、GPS、UFS（闪存存储） 和 Memory，具体 rail 由设备实现决定。数据表示整个设备子系统的功耗，前台 App、后台进程、系统服务和硬件自身活动都可能贡献读数。
 
 例如，App 启动窗口内 Cellular rail 升高只建立了时间相关性。我们再对照 Network Inspector、线程活动、系统网络事件和无操作基线，排除后台同步与信号环境后，才能把请求策略列为候选原因。
 
-<!-- gracker-diagram: ch15-01-12-power-causality -->
-![从设备功耗相关性到可检验的原因](../../assets/diagrams/ch15/ch15-01-12-power-causality.png)
 
-图：power rail 先建立设备子系统活动的时间相关性，再由同条件对照检验候选原因。 ODPM 是设备级测量；Pixel 6+ 与 API 29+ 是当前官方条件，实际 rail 依设备提供。
-
-官方当前说明中，Power Profiler 的 ODPM 数据要求 Pixel 6 或更新的 Pixel 设备，并运行 Android 10（API 29）及以上。没有 ODPM 的设备仍可能靠电池侧的计量硬件提供容量、剩余电荷与瞬时电流：Coulomb counter（库仑计）累计电荷变化，battery gauge（电池计量器） 是电池计量器；可用字段以连接设备实际返回的结果为准。
+官方当前说明中，Power Profiler 的 ODPM 数据要求 Pixel 6 或更新的 Pixel 设备，并运行 Android 10（API 29）及以上。没有 ODPM 的设备仍可能靠电池侧的计量硬件提供容量、剩余电荷与瞬时电流：Coulomb counter（库仑计）累计电荷变化，battery gauge（电池计量器）负责电池侧的计量；可用字段以连接设备实际返回的结果为准。
 
 ## 生产设备中的受限采集入口
 
-Android Studio Profiler 主要服务于连接设备上的交互式分析。若问题只在真实用户设备或接近发布的构建中出现，可考虑 `ProfilingManager`：Android 15（API 35）的 `requestProfiling()` 支持由 App 主动申请采集，Android 16（API 36）再加入系统事件触发器。请求会被限流，也不保证执行；结果类型和隐私处理要分别判断。例如，脱敏后的 system trace 保留申请进程的详细信息，同时仍可用 OtherProcesses 聚合轨道观察其他进程的 CPU 活动，不能概括成“文件里只有申请进程”。结果回调、文件存储和隐私约束都独立于 IDE 任务。
+Android Studio Profiler 主要服务于连接设备上的交互式分析。若问题只在真实用户设备或接近发布的构建中出现，可考虑 `ProfilingManager`：Android 15（API 35）的 `requestProfiling()` 支持由 App 主动申请采集，Android 16（API 36）再加入系统事件触发器。请求会被限流，执行与否没有保证；结果类型和隐私处理要分别判断。例如，脱敏后的 system trace 保留申请进程的详细信息，其他进程的 CPU 活动则出现在 OtherProcesses 聚合轨道里，两类信息都在同一份文件中。结果回调、文件存储和隐私约束都独立于 IDE 任务。
 
 完整的 API 35—37 演进、`requestProfiling()`、后台 system trace、触发器矩阵、结果文件管理，以及系统不支持或拒绝请求时的处理方式，统一见 [15.7 ProfilingManager](07-profiling-manager.md)。本节只保留工具选择层面的结论，避免两处维护同一套 API 细节。
 
