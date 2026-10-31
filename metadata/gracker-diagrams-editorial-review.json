@@ -19462,7 +19462,7 @@
           "replacement_id": "ed12-01-cdn-protocol-joint-evidence"
         }
       ],
-      "sha256_after": "0577816a8fb43ef0730bf4ba50e17c0b97bef42b3250603fa414a03e5dbc8f77",
+      "sha256_after": "5748be61dc3c28bc03f6ac0e01bd037b804a4adb6435e83aefc1840856af71e5",
       "new_diagrams": [
         {
           "id": "ed12-01-call-consumption-and-content",
@@ -19679,7 +19679,138 @@
         "ch12-01-52-client-server-evidence"
       ],
       "removed_but_shared_diagrams": [],
-      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-117/retired-assets.json"
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-117/retired-assets.json",
+      "sha256_after_initial_editorial": "0577816a8fb43ef0730bf4ba50e17c0b97bef42b3250603fa414a03e5dbc8f77",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 117,
+          "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+          "revision": 1,
+          "accepted_sha256": "0577816a8fb43ef0730bf4ba50e17c0b97bef42b3250603fa414a03e5dbc8f77",
+          "reviewed_sha256": "5748be61dc3c28bc03f6ac0e01bd037b804a4adb6435e83aefc1840856af71e5",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/source.diff",
+          "diff_sha256": "74a2c3a1e54f1ede3003105ae7135ec6ea920b88e8695850dd2ad7a616d06bf6",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/117-20261031-01.json",
+          "report_sha256": "4b6b39132a4fb5ddd5fe2240fb11764c5b296704f9010b19fa27d9138b70983e",
+          "caption_revisions": [
+            {
+              "id": "ch12-01-01-network-stack-layers",
+              "before": "先确定由哪个网络实现管理连接、TLS 与协议状态。 内核接口是概念共用层，省略JNI/Binder细节；OkHttp枚举h3不代表内置HTTP/3实现。",
+              "after": "先确定由哪个网络实现管理连接、TLS 与协议状态。 内核接口是概念共用层，省略JNI/Binder细节；OkHttp枚举h3只是预留枚举，说明不了内置已有HTTP/3实现。",
+              "status": "independently_reviewed",
+              "reason": "保留H3枚举不证明内置传输实现的限定，与OkHttp分支一致。"
+            },
+            {
+              "id": "ed12-01-call-consumption-and-content",
+              "before": "普通顺序HTTP路径的职责与数据依赖合图：业务发起、Call事件、响应消费、解析/存储和UI可展示分别计时。execute返回响应头不等callEnd；读取可受消费背压影响，提前关闭可结束但不证明完整下载或业务成功。流式解析可与读取重叠，两轨无测量时长含义，Call终态与UI可见不强制固定先后。HTTP状态/解析成功不能仅靠failed布尔识别；过期业务取消传到Call，响应体或升级流仍由owner关闭，cancel不替代关闭。双工、100continue、升级需另存实际交错事件。",
+              "after": "普通顺序HTTP路径的职责与数据依赖合图：业务发起、Call事件、响应消费、解析/存储和UI可展示分别计时。execute返回响应头不等callEnd；读取可受消费背压影响，提前关闭也能结束这次调用，完整下载与业务成功要另行确认。流式解析可与读取重叠，两轨无测量时长含义，Call终态与UI可见不强制固定先后。HTTP状态/解析成功不能仅靠failed布尔识别；过期业务取消传到Call，响应体或升级流仍由owner关闭，cancel不替代关闭。双工、100continue、升级需另存实际交错事件。",
+              "status": "independently_reviewed",
+              "reason": "把提前关闭可结束调用改为完整下载和业务成功另判，保留消费背压、时序重叠和资源关闭职责。"
+            },
+            {
+              "id": "ch12-01-11-cronet-provider",
+              "before": "先确认 provider 可加载，再复用 engine 并观察实际协商协议。 Play services18.0.1是接入坐标，不是设备内provider版本或HTTP/3成功证明；Java fallback不能沿用native能力承诺。",
+              "after": "先确认 provider 可加载，再复用 engine 并观察实际协商协议。 Play services18.0.1只是接入坐标，设备内provider版本与HTTP/3成败要看运行时；Java fallback的能力要先单独验证，再决定是否沿用native结论。",
+              "status": "independently_reviewed",
+              "reason": "接入坐标、provider版本、协议结果及Java fallback独立验证仍分开。"
+            },
+            {
+              "id": "ch12-01-16-fast-fallback",
+              "before": "交错尝试TCP路由，选出胜者后再完成TLS等连接准备。 阶段轨道只示意并行关系；固定算法有250ms调度参考间隔，不代表每次实际连接时间，TLS不与所有地址同时竞速。",
+              "after": "交错尝试TCP路由，选出胜者后再完成TLS等连接准备。 阶段轨道只示意并行关系；固定算法的250ms只是调度参考间隔，实际连接时间以每次为准，TLS不与所有地址同时竞速。",
+              "status": "independently_reviewed",
+              "reason": "250ms保持调度参考而非实际连接耗时，TLS仅胜者后续没有改变。"
+            },
+            {
+              "id": "ch12-01-18-warmup-costs",
+              "before": "只有很快需要的同authority、同栈请求才值得验证预热复用收益。 HEAD/GET预热是真实请求，会消耗网络、服务端和电量；DNS预解析不等于TCP/TLS已建立，hint不保证建连成功。",
+              "after": "只有很快需要的同authority、同栈请求才值得验证预热复用收益。 HEAD/GET预热是真实请求，会消耗网络、服务端和电量；DNS预解析只覆盖解析这一步，TCP/TLS仍要另行建立，hint也只是提示，建连结果以运行时为准。",
+              "status": "independently_reviewed",
+              "reason": "DNS预解析只覆盖解析且hint不保证连接，实际预热成本和复用条件保留。"
+            },
+            {
+              "id": "ch12-01-21-domain-and-ip",
+              "before": "解析结果决定连接地址，原始URL域名继续用于HTTP与TLS身份语义。 不能仅把URL改成裸IP再补Host头就假定SNI和主机名验证保持原样；专门设计的IP证书服务须单独处理。",
+              "after": "解析结果决定连接地址，原始URL域名继续用于HTTP与TLS身份语义。 仅把URL改成裸IP再补Host头，SNI和主机名验证是否保持原样要单独核对；专门设计的IP证书服务须单独处理。",
+              "status": "independently_reviewed",
+              "reason": "仍要求核对裸IP+Host后的SNI和验证语义，专门IP证书服务例外单列。"
+            },
+            {
+              "id": "ch12-01-27-http-cache-decision",
+              "before": "先按HTTP策略判断缓存能否使用，再决定验证或本地失败。 onlyIfCached禁止网络；maxStale不越过must-revalidate/no-cache，单个504不能辨别不存在、过旧或需验证。",
+              "after": "先按HTTP策略判断缓存能否使用，再决定验证或本地失败。 onlyIfCached禁止网络；maxStale不越过must-revalidate/no-cache，单个504分辨不出不存在、过旧或需验证。",
+              "status": "independently_reviewed",
+              "reason": "504仍不能分辨缓存不存在、过旧和需验证，onlyIfCached及maxStale边界未变。"
+            },
+            {
+              "id": "ch12-01-32-event-listener-pipeline",
+              "before": "用独立listener维护调用状态，快速入队后由后台批量消费。 事件可跨线程或并行；短排队可舍入0ms，没有事件才为null。队列满时丢弃计数，回调不能阻塞或抛异常。",
+              "after": "用独立listener维护调用状态，快速入队后由后台批量消费。 事件可跨线程或并行；短排队可舍入0ms，没有事件才为null。队列满时丢弃计数，回调须快速返回，阻塞与抛异常都要避免。",
+              "status": "independently_reviewed",
+              "reason": "回调快速返回且避免阻塞/抛异常，有界队列溢出计数与代码一致。"
+            },
+            {
+              "id": "ch12-01-33-trace-causality",
+              "before": "用Call关联号、异步slice和线程证据一起判断UI为何等待。 网络slice重叠只说明相关；nativePollOnce常是Looper空闲，不能单独定为网络卡顿。轨道非真实trace。",
+              "after": "用Call关联号、异步slice和线程证据一起判断UI为何等待。 网络slice重叠只说明相关；nativePollOnce常是Looper空闲，单独拿来定性网络卡顿会出错。轨道非真实trace。",
+              "status": "independently_reviewed",
+              "reason": "nativePollOnce常是空闲，不能单凭重叠定因果，机制轨道非真实trace。"
+            },
+            {
+              "id": "ch12-01-36-tls-full-handshake",
+              "before": "比较完整握手中客户端何时能够发送应用数据。 仅常见协议路径：TLS1.2约2个TLS往返、1.3约1个；不含TCP、HRR、丢包或业务处理，不能推固定性能百分比。",
+              "after": "比较完整握手中客户端何时能够发送应用数据。 仅常见协议路径：TLS1.2约2个TLS往返、1.3约1个；不含TCP、HRR、丢包或业务处理，固定性能百分比推不出来。",
+              "status": "independently_reviewed",
+              "reason": "常见TLS往返数仍排除TCP/HRR等，不能据此推固定性能百分比。"
+            },
+            {
+              "id": "ch12-01-38-session-ticket-lifetime",
+              "before": "客户端持有票据与服务端实际接受恢复是两个条件。 过期、重启、密钥轮换或负载均衡可能使恢复不可用；secureConnect时长本身不能证明是否恢复。",
+              "after": "客户端持有票据与服务端实际接受恢复是两个条件。 过期、重启、密钥轮换或负载均衡可能使恢复不可用；secureConnect时长本身证明不了是否恢复。",
+              "status": "independently_reviewed",
+              "reason": "客户端持票不等服务端接受，secureConnect时长不证明恢复，完整回退路径保留。"
+            },
+            {
+              "id": "ed12-01-zero-rtt-eligibility-and-rejection",
+              "before": "恢复机制与安全门槛合图：需具体provider/协议/服务端支持及可用PSK/恢复状态，且重复执行后果、鉴权材料和服务器保护允许，才发送earlydata。不满足则等正常握手；发送后服务端仍可接受或拒绝，接受不等握手已完成或业务成功，拒绝后按栈/业务语义恢复并受总期限约束。GET/HEAD或客户端幂等键不是重放安全证明，去重须服务端实现；仅PSK保护的0RTT无前向保密，不能自动继承后续握手安全保证。",
+              "after": "恢复机制与安全门槛合图：需具体provider/协议/服务端支持及可用PSK/恢复状态，且重复执行后果、鉴权材料和服务器保护允许，才发送earlydata。不满足则等正常握手；发送后服务端仍可接受或拒绝，接受不等握手已完成或业务成功，拒绝后按栈/业务语义恢复并受总期限约束。GET/HEAD或客户端幂等键不是重放安全证明，去重须服务端实现；仅PSK保护的0RTT无前向保密，后续握手的安全保证要在握好后另算。",
+              "status": "independently_reviewed",
+              "reason": "PSK保护的earlydata仍无前向保密，后续握手安全保证需另判，接受不等业务成功。"
+            },
+            {
+              "id": "ch12-01-42-ech-default-version-difference",
+              "before": "明确记录文档默认enabled与r1内部OPPORTUNISTIC的不同分支。 固定源码默认需兼容性变更和flag开启；OPPORTUNISTIC不发GREASE，显式XML enabled才映射ENABLED，不能合并承诺。",
+              "after": "明确记录文档默认enabled与r1内部OPPORTUNISTIC的不同分支。 固定源码默认需兼容性变更和flag开启；OPPORTUNISTIC不发GREASE，显式XML enabled才映射ENABLED，两者要分开承诺。",
+              "status": "independently_reviewed",
+              "reason": "OPPORTUNISTIC不发GREASE且显式enabled映射ENABLED的两路承诺仍分开。"
+            },
+            {
+              "id": "ch12-01-50-hpke-api-layers",
+              "before": "区分provider SPI、应用加密入口与TLS内部ECH。 Android当前只支持base mode：接收方公钥加密不认证发送方；应用payload加密不能保护ClientHello，也不替代HTTPS。",
+              "after": "区分provider SPI、应用加密入口与TLS内部ECH。 Android当前只支持base mode：接收方公钥加密不认证发送方；应用payload加密保护的是业务载荷，覆盖不到ClientHello，也顶替不了HTTPS。",
+              "status": "independently_reviewed",
+              "reason": "base不认证发送者，业务payload加密覆盖不到ClientHello且不能替代HTTPS。"
+            },
+            {
+              "id": "ed12-01-cdn-protocol-joint-evidence",
+              "before": "CDN与TLS协议诊断共用同一关联方法：客户端单调事件、CDN白名单POP/cache/回源与服务端trace/协议日志按requestID关联，再在同网络/地区/设备/发布组比较延迟和失败分布。单个TTFB不能独自分摊CDN与源站，secureConnect耗时也不证明会话恢复、ECH或CT结果；跨端不同墙钟不直接相减。字段保持低基数和白名单，不记录完整URLquery、凭证、正文、密钥或用户标识。",
+              "after": "CDN与TLS协议诊断共用同一关联方法：客户端单调事件、CDN白名单POP/cache/回源与服务端trace/协议日志按requestID关联，再在同网络/地区/设备/发布组比较延迟和失败分布。单个TTFB分摊不了CDN与源站，secureConnect耗时也证明不了会话恢复、ECH或CT结果；跨端不同墙钟不直接相减。字段保持低基数和白名单，不记录完整URLquery、凭证、正文、密钥或用户标识。",
+              "status": "independently_reviewed",
+              "reason": "requestID关联和同组比较不变，单个TTFB不能拆CDN源站，TLS耗时不证明恢复/ECH/CT。"
+            }
+          ],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/input.md",
+          "external_input_sha256": "5748be61dc3c28bc03f6ac0e01bd037b804a4adb6435e83aefc1840856af71e5",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T18:13:03.212606+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T18:13:03.313456+08:00"
     },
     {
       "index": 118,
@@ -63502,7 +63633,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:07:55.180809+08:00",
+  "updated_at": "2026-10-31T18:13:03.324589+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -63678,5 +63809,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 173
+  "currently_matching_reviewed_source_count": 174
 }

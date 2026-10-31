@@ -1,0 +1,428 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 117,
+  "article": "src/part2-performance/ch12-apk-network/01-android-network-tls-performance.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T18:13:03.061173+08:00",
+  "source_sha256": "5748be61dc3c28bc03f6ac0e01bd037b804a4adb6435e83aefc1840856af71e5",
+  "accepted_before_sha256": "0577816a8fb43ef0730bf4ba50e17c0b97bef42b3250603fa414a03e5dbc8f77",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 432,
+  "reading_characters": 36750,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 30,
+  "current_pngs_actually_viewed": 30,
+  "current_contexts_actually_viewed": 30,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/current-contact-3.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/current-contact-4.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/compact-117-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/compact-117-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/compact-117-3.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/compact-117-4.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/compact-117-5.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 6,
+  "code_lines_preserved": 118,
+  "asset_sha256": {
+    "src/assets/diagrams/ch12/ch12-01-01-network-stack-layers.svg": "870b564cc81b13eeab179876eeb1a6d4a2f6e03e26868f0de0c1fd586ee8b92f",
+    "src/assets/diagrams/ch12/ch12-01-01-network-stack-layers.png": "61b2f0520b27734da32a8216524ad9bb89db0cbed796bf3fe0fc886cfb98dc51",
+    "src/assets/diagrams/ch12/ch12-01-03-call-event-sequence.svg": "f214b4a65545426bce22fe4edc2de21569ea6040076dcb3a9f94c3c25b654494",
+    "src/assets/diagrams/ch12/ch12-01-03-call-event-sequence.png": "8dddc03f2f6c24b3e2d91908b9837c48424d47c3f1773d5e725a9eee165260f0",
+    "src/assets/diagrams/ch12/ed12-01-call-consumption-and-content.svg": "d8275eb908454341be591b267dd2d019afed99966b38d39c7674693ab88012d6",
+    "src/assets/diagrams/ch12/ed12-01-call-consumption-and-content.png": "f6affdc73a77682a1ce995cb0ed2ac020a7aa566c3dfcbfa3b41a09e060c2b8c",
+    "src/assets/diagrams/ch12/ch12-01-05-ttfb-endpoints.svg": "0f505a2e9a6eeaf704455e72e39fc755f793214c7c590f1eea221bffc444946f",
+    "src/assets/diagrams/ch12/ch12-01-05-ttfb-endpoints.png": "78b6c17ab5777cd476ff5947d91e13c4907914a349d74f7f3448b51cdbda0b08",
+    "src/assets/diagrams/ch12/ch12-01-08-loss-and-qpack.svg": "f28ada96726ad36378ab8b04bd562d4a947622c47791e63789e38f3459dd5e81",
+    "src/assets/diagrams/ch12/ch12-01-08-loss-and-qpack.png": "ac1d8da7692c2323c0cd3be314d81732fd3c4d2cac1e5cf8faa7e69cb5835a46",
+    "src/assets/diagrams/ch12/ch12-01-10-quic-migration.svg": "631b44819f7b79500112f189e11eb67344e2b704cc279ab0af86831840dc69d2",
+    "src/assets/diagrams/ch12/ch12-01-10-quic-migration.png": "bedcb2ecd0422a1072392164cac55445530360a1c8980685597d34537590212c",
+    "src/assets/diagrams/ch12/ch12-01-11-cronet-provider.svg": "921abbcfbf33ab94f292f2dab629eb849b80db41b3fcb5079ca894469091631b",
+    "src/assets/diagrams/ch12/ch12-01-11-cronet-provider.png": "b49e0c2cd262c905cf10daed1ef80f8877697bc1307b29548a1c040cfb357a23",
+    "src/assets/diagrams/ch12/ch12-01-15-connection-eligibility.svg": "080f9bd6d105dca7798f67dc931279677adf6ce6485c72e07e7318c4ff71d274",
+    "src/assets/diagrams/ch12/ch12-01-15-connection-eligibility.png": "e4deb42afde117cab719e620166b9f25cfb805ed082c4b5ff6776b24bed0083b",
+    "src/assets/diagrams/ch12/ch12-01-16-fast-fallback.svg": "901046d2e71ce2d61a58016033a0b4b66b2af2dd0fd55e117e3de87eec665e62",
+    "src/assets/diagrams/ch12/ch12-01-16-fast-fallback.png": "cc8e8bc4ee7710cd43c8e54c509a2b002a791e89398856cabf05a080062d8bba",
+    "src/assets/diagrams/ch12/ch12-01-18-warmup-costs.svg": "0c101bdd9d09bf1c855c5ca8c99120e952c37cac1814284b1076d00049d637c2",
+    "src/assets/diagrams/ch12/ch12-01-18-warmup-costs.png": "c3bfc55b63cf264c778c4946a9b332d5a1f7801fdf498d1f19bf403f15c49046",
+    "src/assets/diagrams/ch12/ch12-01-21-domain-and-ip.svg": "8178460e37a4e8ab04a6f6281369788409224aabdbc22affb6178ce4bee230ae",
+    "src/assets/diagrams/ch12/ch12-01-21-domain-and-ip.png": "9f25ce592779084480665adb526458708962d25514ed5e1103f8f1ad5c2a7d55",
+    "src/assets/diagrams/ch12/ch12-01-23-timeout-and-deadline.svg": "77dedf20cf17488abb6a554b4fdc4e665932cafe6bb1e65164e0ff26fcaa181f",
+    "src/assets/diagrams/ch12/ch12-01-23-timeout-and-deadline.png": "bcc8f8a34d92dcbf26222d1e99b117c2fcad316fe302c7455566a869401441d6",
+    "src/assets/diagrams/ch12/ed12-01-retry-classification-and-attempts.svg": "67f17683ab311b4b17fd9820440c2fe62b099fe9a1a49d746c93cadbfa4eb84d",
+    "src/assets/diagrams/ch12/ed12-01-retry-classification-and-attempts.png": "4a2ed233c4a2202a1f05a930ff62c86c498504bcc0fc8ea7ed73f157661b21d1",
+    "src/assets/diagrams/ch12/ed12-01-shared-client-cache-owner.svg": "a41ef635c6ea8156f921852929475c36b20e36acde7a7e8d245d3a2326d8611c",
+    "src/assets/diagrams/ch12/ed12-01-shared-client-cache-owner.png": "9918b6adfdda24de88b46e1aafa38baf28dee863272c3b03315f5f05ee4a74c4",
+    "src/assets/diagrams/ch12/ch12-01-27-http-cache-decision.svg": "12992cadb8d9024da255b01dd41f63543a3fcdc1c5c0ad42ed5ff0562cc5a520",
+    "src/assets/diagrams/ch12/ch12-01-27-http-cache-decision.png": "2348588f27a6f71e7a3488e99a2456ecddfb688ad9a09b43595c0f298bdf6747",
+    "src/assets/diagrams/ch12/ch12-01-30-heartbeat-radio.svg": "90bbe39af925dfaab042e30679a112739d372ce6dcbf226794219008c530a83f",
+    "src/assets/diagrams/ch12/ch12-01-30-heartbeat-radio.png": "04933ac30ac082c9c23f94c470d3c781979da2f0cfdf8a902021388de82e167f",
+    "src/assets/diagrams/ch12/ch12-01-32-event-listener-pipeline.svg": "15ce7af522f9723eb4f7f7d821b3c2fb7dd75bcfcd1a73452181d7247e0ed657",
+    "src/assets/diagrams/ch12/ch12-01-32-event-listener-pipeline.png": "491958e2f66a659fa5629f77687e41db7319983722ab31381d392baab7a1c8eb",
+    "src/assets/diagrams/ch12/ch12-01-33-trace-causality.svg": "316b75986e0a64b3fb6fe26211d66ba6f5d23e67780d6b6c3123e1dbcc2b6cee",
+    "src/assets/diagrams/ch12/ch12-01-33-trace-causality.png": "0f88c3f2c5f9bcc1c1536e7a40c9a461b919cc3965cdee7c94dc7ae5a15220d8",
+    "src/assets/diagrams/ch12/ed12-01-platform-inputs-and-request-quality.svg": "9d59ee451a817f7eaf556bf6dd79fb1a88daee7aa174f6a524d3d5d22fe0afe1",
+    "src/assets/diagrams/ch12/ed12-01-platform-inputs-and-request-quality.png": "cf10fcca6bbe165446b66d3c3e5e02b7d18fcec4819a002fe498460e6588c12a",
+    "src/assets/diagrams/ch12/ch12-01-36-tls-full-handshake.svg": "1f6d67c408f14c849c89db7daf2ee0f79431f7a3e3a03ef0b6ae4a14fce3804f",
+    "src/assets/diagrams/ch12/ch12-01-36-tls-full-handshake.png": "2f5babba39eac33a6d785f8b526e733c8fea49dfc0653bd37deafd1ce055fcff",
+    "src/assets/diagrams/ch12/ch12-01-38-session-ticket-lifetime.svg": "d6d4a855fc3b576378ecc24f0b2c7be048cbb0a10e90cdba75e5e57ece31161b",
+    "src/assets/diagrams/ch12/ch12-01-38-session-ticket-lifetime.png": "a2eacc6a39e21529a147ad03cec57b5f2f4c56a4c2d13212dd6a906e3539ca11",
+    "src/assets/diagrams/ch12/ed12-01-zero-rtt-eligibility-and-rejection.svg": "0375501e1d73df14682e3eb67b7452118c0c663fc78cb0ae2f29b3d84e9c0f94",
+    "src/assets/diagrams/ch12/ed12-01-zero-rtt-eligibility-and-rejection.png": "72f20fd3439a0f2e1b0955fef32ecb1642a3b81bf80ca9a9539c37d8de49590a",
+    "src/assets/diagrams/ch12/ch12-01-42-ech-default-version-difference.svg": "6dbbb17ff8d30ca3eff1fd16597323286f812e4ff1c2039f388849106c783366",
+    "src/assets/diagrams/ch12/ch12-01-42-ech-default-version-difference.png": "b01913be30e875f720352be8e37e78e4baae3c5be4ee83781b5fb6af5cfe7dec",
+    "src/assets/diagrams/ch12/ch12-01-41-ech-inner-outer.svg": "36a1270b63197d84b94e57ab5a9af62bb7182b0128e6b6141ac2a777d668147f",
+    "src/assets/diagrams/ch12/ch12-01-41-ech-inner-outer.png": "d42e63b80d8224fa7ebb9c8265e745c4c67c99b168109c916f003d8707211a69",
+    "src/assets/diagrams/ch12/ch12-01-43-ech-grease-and-retry.svg": "26acaf5f9478d95d3f447e4d2c38c150988f9f5f643313ba9001ed77066be636",
+    "src/assets/diagrams/ch12/ch12-01-43-ech-grease-and-retry.png": "134780f7393d9cefee917caa49517c781d110f0469f85b972330e4a8bec3e263",
+    "src/assets/diagrams/ch12/ch12-01-45-ct-config-precedence.svg": "4f403c14a2a725e5cfe78a619e6aa823523c0609bad9be86a7fd86a992375f2e",
+    "src/assets/diagrams/ch12/ch12-01-45-ct-config-precedence.png": "a22183b16b98544252e65f5b3933fd029bac60175552460d5c5bb439692588a4",
+    "src/assets/diagrams/ch12/ch12-01-46-ct-enforcement-loglist.svg": "4a092e9cb80ae38f806d0e2aca69dd6210ea737338ef3d63d59950cfb0c0810b",
+    "src/assets/diagrams/ch12/ch12-01-46-ct-enforcement-loglist.png": "228021a86b60125383e7d6148f70554ecc80595903a4f48a9c2c794ba1b5aa71",
+    "src/assets/diagrams/ch12/ch12-01-50-hpke-api-layers.svg": "acc2cf4f2ebe2b48f76b9d76eac45c14f23d56ba4faac73df940cb6bd72071c0",
+    "src/assets/diagrams/ch12/ch12-01-50-hpke-api-layers.png": "e3705f1088b707aafe11ea8650f874c5fc9ae8ca59f62bdef331fb87e93f1fe1",
+    "src/assets/diagrams/ch12/ch12-01-51-dns-ech-privacy.svg": "2cdcf9c19441d7473ea996e011806e56096f7a2e6c17e5920a64202e395562a7",
+    "src/assets/diagrams/ch12/ch12-01-51-dns-ech-privacy.png": "bc737a198fe4f9c363cb05d459b6d68d9b9ec68da02e0e43645e6a8957260944",
+    "src/assets/diagrams/ch12/ed12-01-cdn-protocol-joint-evidence.svg": "fbfbddb57c02161a029702f548a5faa7b2255a6c6d96371ad012b55431020c76",
+    "src/assets/diagrams/ch12/ed12-01-cdn-protocol-joint-evidence.png": "4b2404fa80febdb2a56473e38a916fc6f19ea1625199b95987012de1acc2c67c"
+  },
+  "asset_baseline": {
+    "kind": "original_visual_asset_sha256"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch12-01-01-network-stack-layers",
+      "heading": "### 应用网络栈和主线程边界",
+      "line": 134,
+      "decision": "keep",
+      "reason": "按OkHttp、Cronet和HttpEngine划分协议实现落点，修订仍限定OkHttp内置H1/H2而不凭枚举推H3。"
+    },
+    {
+      "id": "ch12-01-03-call-event-sequence",
+      "heading": "### 一次请求应当怎样计时",
+      "line": 162,
+      "decision": "keep",
+      "reason": "普通新连接、复用和follow-up轨道表达可缺席与重复阶段，与单一耗时口径图区分。"
+    },
+    {
+      "id": "ed12-01-call-consumption-and-content",
+      "heading": "#### 需要分开的指标",
+      "line": 181,
+      "decision": "keep",
+      "reason": "Call终态与消费、解析、UI两分支及重叠关系仍成立，提前关闭和cancel所有权限制保留。"
+    },
+    {
+      "id": "ch12-01-05-ttfb-endpoints",
+      "heading": "#### TTFB 的两种起点",
+      "line": 197,
+      "decision": "keep",
+      "reason": "分别标出两个起点、首个头事件和最终头，中间响应早于上传结束的限定仍对应。"
+    },
+    {
+      "id": "ch12-01-08-loss-and-qpack",
+      "heading": "### HTTP/1.1、HTTP/2 与 HTTP/3",
+      "line": 232,
+      "decision": "keep",
+      "reason": "H2共享缺字节与H3独立流对比明确限定无相应依赖，共享拥塞、QPACK和流控未遗漏。"
+    },
+    {
+      "id": "ch12-01-10-quic-migration",
+      "heading": "#### QUIC 连接迁移的条件",
+      "line": 250,
+      "decision": "keep",
+      "reason": "原路径与新路径验证轨道对应切网条件，失败业务恢复和计费网络限制没有被改成必然迁移。"
+    },
+    {
+      "id": "ch12-01-11-cronet-provider",
+      "heading": "#### Android 上怎样使用 HTTP/3",
+      "line": 269,
+      "decision": "keep",
+      "reason": "provider安装成功失败分支与Java fallback独立验证对应，接入坐标不代运行时能力。"
+    },
+    {
+      "id": "ch12-01-15-connection-eligibility",
+      "heading": "#### 共享 OkHttpClient",
+      "line": 327,
+      "decision": "keep",
+      "reason": "同host与跨host分叉保留DIRECT、IP端口和证书等资格，不把共享池当无限复用。"
+    },
+    {
+      "id": "ch12-01-16-fast-fallback",
+      "heading": "#### 共享 OkHttpClient",
+      "line": 334,
+      "decision": "keep",
+      "reason": "交错TCP竞速与仅胜者TLS后续分轨仍对应250ms调度参考及重叠不可求和。"
+    },
+    {
+      "id": "ch12-01-18-warmup-costs",
+      "heading": "#### 预连接的真实成本",
+      "line": 369,
+      "decision": "keep",
+      "reason": "预热收益机会和额外成本、失去复用机会三路对应专用endpoint条件。"
+    },
+    {
+      "id": "ch12-01-21-domain-and-ip",
+      "heading": "#### 自定义 DNS 与系统边界",
+      "line": 395,
+      "decision": "keep",
+      "reason": "URL域名向DNS、HTTP与TLS三路分工清楚，裸IP加Host不保证身份语义等价。"
+    },
+    {
+      "id": "ch12-01-23-timeout-and-deadline",
+      "heading": "#### 各层超时的含义",
+      "line": 434,
+      "decision": "keep",
+      "reason": "业务期限跨排队、执行与退避，异步callTimeout只从运行启动的轨道仍对应。"
+    },
+    {
+      "id": "ed12-01-retry-classification-and-attempts",
+      "heading": "#### 失败分类与重试决策",
+      "line": 457,
+      "decision": "keep",
+      "reason": "库内attempt和业务attempt双层轨道与失败分类、结果未知和抖动新Call对应。"
+    },
+    {
+      "id": "ed12-01-shared-client-cache-owner",
+      "heading": "#### HTTP cache 与业务离线数据",
+      "line": 477,
+      "decision": "keep",
+      "reason": "共享Client/Dispatcher与唯一Cache目录owner汇聚派生策略，未表示任意client自动共享Cache。"
+    },
+    {
+      "id": "ch12-01-27-http-cache-decision",
+      "heading": "#### HTTP cache 与业务离线数据",
+      "line": 505,
+      "decision": "keep",
+      "reason": "新鲜缓存、需验证、onlyIfCached本地504与304/200分叉对应，maxStale限制保留。"
+    },
+    {
+      "id": "ch12-01-30-heartbeat-radio",
+      "heading": "### 长连接、解析与后台流量",
+      "line": 524,
+      "decision": "keep",
+      "reason": "业务动作和radio窗口只作机制示意，tail设备/RAT差异和低频复用系统通道仍对应。"
+    },
+    {
+      "id": "ch12-01-32-event-listener-pipeline",
+      "heading": "#### OkHttp EventListener",
+      "line": 615,
+      "decision": "keep",
+      "reason": "每Call独立状态经非阻塞有界队列到后台消费，与短锁、null排队和失败布尔示例对应。"
+    },
+    {
+      "id": "ch12-01-33-trace-causality",
+      "heading": "#### 用 Perfetto 对齐网络与线程",
+      "line": 630,
+      "decision": "keep",
+      "reason": "网络/主线程两轨用疑问等待要求栈证据，修订保留相关不等因果和nativePollOnce空闲含义。"
+    },
+    {
+      "id": "ed12-01-platform-inputs-and-request-quality",
+      "heading": "#### NetworkCallback 的职责范围",
+      "line": 641,
+      "decision": "keep",
+      "reason": "平台声明、估计、运营商分配、授权与真实请求证据汇聚分层，不重复因果trace图。"
+    },
+    {
+      "id": "ch12-01-36-tls-full-handshake",
+      "heading": "#### 完整握手",
+      "line": 709,
+      "decision": "keep",
+      "reason": "TLS1.2和1.3从握手同起点的阶段轨道对比，排除TCP/HRR/丢包及固定百分比。"
+    },
+    {
+      "id": "ch12-01-38-session-ticket-lifetime",
+      "heading": "#### 连接复用和会话恢复",
+      "line": 731,
+      "decision": "keep",
+      "reason": "票据存在与服务端接受分开且有完整握手回退，单个secureConnect时长不作恢复证明。"
+    },
+    {
+      "id": "ed12-01-zero-rtt-eligibility-and-rejection",
+      "heading": "#### 0-RTT 与可重放风险",
+      "line": 740,
+      "decision": "keep",
+      "reason": "0RTT资格门、正常等待、接受/拒绝分支保留重放、服务端去重和PSK无前向保密边界。"
+    },
+    {
+      "id": "ch12-01-42-ech-default-version-difference",
+      "heading": "#### 四个生效条件",
+      "line": 777,
+      "decision": "keep",
+      "reason": "文档enabled与r1兼容变更/flag的OPPORTUNISTIC两路分开，GREASE承诺未混合。"
+    },
+    {
+      "id": "ch12-01-41-ech-inner-outer",
+      "heading": "#### 四个生效条件",
+      "line": 789,
+      "decision": "keep",
+      "reason": "ECHConfig、接入栈、inner/outer及TLS终止点关系仍对应链路观察者的剩余元数据。"
+    },
+    {
+      "id": "ch12-01-43-ech-grease-and-retry",
+      "heading": "#### 四个生效条件",
+      "line": 798,
+      "decision": "keep",
+      "reason": "显式enabled下有配置、无配置GREASE、配置不匹配retry分支仍成立，不承诺静默回退。"
+    },
+    {
+      "id": "ch12-01-45-ct-config-precedence",
+      "heading": "#### CT 默认值的决定条件",
+      "line": 831,
+      "decision": "keep",
+      "reason": "当前配置显式true/false优先、任一user资源锚、父配置回溯顺序与正文一致。"
+    },
+    {
+      "id": "ch12-01-46-ct-enforcement-loglist",
+      "heading": "#### Android CT Policy 的判定条件",
+      "line": 848,
+      "decision": "keep",
+      "reason": "配置要求经日志表可用及70天判断再执行CT，基础证书验证分支保持。"
+    },
+    {
+      "id": "ch12-01-50-hpke-api-layers",
+      "heading": "### API 35 与 API 37 的 HPKE 位于不同接口层",
+      "line": 884,
+      "decision": "keep",
+      "reason": "HPKE组成、API35SPI、API37应用入口和ECH内部层分开，base不认证发送者限制保留。"
+    },
+    {
+      "id": "ch12-01-51-dns-ech-privacy",
+      "heading": "### 加密 DNS 与 ECH 的关系",
+      "line": 899,
+      "decision": "keep",
+      "reason": "DoT/DoH与ECH分别保护DNS/Hello并保留IP包长时序，不把两者当完整匿名化。"
+    },
+    {
+      "id": "ed12-01-cdn-protocol-joint-evidence",
+      "heading": "#### 服务端指标",
+      "line": 924,
+      "decision": "keep",
+      "reason": "客户端、CDN、服务端按requestID汇聚后同组比较，跨端墙钟不相减及隐私白名单仍对应。"
+    }
+  ],
+  "caption_revisions": [
+    {
+      "id": "ch12-01-01-network-stack-layers",
+      "before": "先确定由哪个网络实现管理连接、TLS 与协议状态。 内核接口是概念共用层，省略JNI/Binder细节；OkHttp枚举h3不代表内置HTTP/3实现。",
+      "after": "先确定由哪个网络实现管理连接、TLS 与协议状态。 内核接口是概念共用层，省略JNI/Binder细节；OkHttp枚举h3只是预留枚举，说明不了内置已有HTTP/3实现。",
+      "status": "independently_reviewed",
+      "reason": "保留H3枚举不证明内置传输实现的限定，与OkHttp分支一致。"
+    },
+    {
+      "id": "ed12-01-call-consumption-and-content",
+      "before": "普通顺序HTTP路径的职责与数据依赖合图：业务发起、Call事件、响应消费、解析/存储和UI可展示分别计时。execute返回响应头不等callEnd；读取可受消费背压影响，提前关闭可结束但不证明完整下载或业务成功。流式解析可与读取重叠，两轨无测量时长含义，Call终态与UI可见不强制固定先后。HTTP状态/解析成功不能仅靠failed布尔识别；过期业务取消传到Call，响应体或升级流仍由owner关闭，cancel不替代关闭。双工、100continue、升级需另存实际交错事件。",
+      "after": "普通顺序HTTP路径的职责与数据依赖合图：业务发起、Call事件、响应消费、解析/存储和UI可展示分别计时。execute返回响应头不等callEnd；读取可受消费背压影响，提前关闭也能结束这次调用，完整下载与业务成功要另行确认。流式解析可与读取重叠，两轨无测量时长含义，Call终态与UI可见不强制固定先后。HTTP状态/解析成功不能仅靠failed布尔识别；过期业务取消传到Call，响应体或升级流仍由owner关闭，cancel不替代关闭。双工、100continue、升级需另存实际交错事件。",
+      "status": "independently_reviewed",
+      "reason": "把提前关闭可结束调用改为完整下载和业务成功另判，保留消费背压、时序重叠和资源关闭职责。"
+    },
+    {
+      "id": "ch12-01-11-cronet-provider",
+      "before": "先确认 provider 可加载，再复用 engine 并观察实际协商协议。 Play services18.0.1是接入坐标，不是设备内provider版本或HTTP/3成功证明；Java fallback不能沿用native能力承诺。",
+      "after": "先确认 provider 可加载，再复用 engine 并观察实际协商协议。 Play services18.0.1只是接入坐标，设备内provider版本与HTTP/3成败要看运行时；Java fallback的能力要先单独验证，再决定是否沿用native结论。",
+      "status": "independently_reviewed",
+      "reason": "接入坐标、provider版本、协议结果及Java fallback独立验证仍分开。"
+    },
+    {
+      "id": "ch12-01-16-fast-fallback",
+      "before": "交错尝试TCP路由，选出胜者后再完成TLS等连接准备。 阶段轨道只示意并行关系；固定算法有250ms调度参考间隔，不代表每次实际连接时间，TLS不与所有地址同时竞速。",
+      "after": "交错尝试TCP路由，选出胜者后再完成TLS等连接准备。 阶段轨道只示意并行关系；固定算法的250ms只是调度参考间隔，实际连接时间以每次为准，TLS不与所有地址同时竞速。",
+      "status": "independently_reviewed",
+      "reason": "250ms保持调度参考而非实际连接耗时，TLS仅胜者后续没有改变。"
+    },
+    {
+      "id": "ch12-01-18-warmup-costs",
+      "before": "只有很快需要的同authority、同栈请求才值得验证预热复用收益。 HEAD/GET预热是真实请求，会消耗网络、服务端和电量；DNS预解析不等于TCP/TLS已建立，hint不保证建连成功。",
+      "after": "只有很快需要的同authority、同栈请求才值得验证预热复用收益。 HEAD/GET预热是真实请求，会消耗网络、服务端和电量；DNS预解析只覆盖解析这一步，TCP/TLS仍要另行建立，hint也只是提示，建连结果以运行时为准。",
+      "status": "independently_reviewed",
+      "reason": "DNS预解析只覆盖解析且hint不保证连接，实际预热成本和复用条件保留。"
+    },
+    {
+      "id": "ch12-01-21-domain-and-ip",
+      "before": "解析结果决定连接地址，原始URL域名继续用于HTTP与TLS身份语义。 不能仅把URL改成裸IP再补Host头就假定SNI和主机名验证保持原样；专门设计的IP证书服务须单独处理。",
+      "after": "解析结果决定连接地址，原始URL域名继续用于HTTP与TLS身份语义。 仅把URL改成裸IP再补Host头，SNI和主机名验证是否保持原样要单独核对；专门设计的IP证书服务须单独处理。",
+      "status": "independently_reviewed",
+      "reason": "仍要求核对裸IP+Host后的SNI和验证语义，专门IP证书服务例外单列。"
+    },
+    {
+      "id": "ch12-01-27-http-cache-decision",
+      "before": "先按HTTP策略判断缓存能否使用，再决定验证或本地失败。 onlyIfCached禁止网络；maxStale不越过must-revalidate/no-cache，单个504不能辨别不存在、过旧或需验证。",
+      "after": "先按HTTP策略判断缓存能否使用，再决定验证或本地失败。 onlyIfCached禁止网络；maxStale不越过must-revalidate/no-cache，单个504分辨不出不存在、过旧或需验证。",
+      "status": "independently_reviewed",
+      "reason": "504仍不能分辨缓存不存在、过旧和需验证，onlyIfCached及maxStale边界未变。"
+    },
+    {
+      "id": "ch12-01-32-event-listener-pipeline",
+      "before": "用独立listener维护调用状态，快速入队后由后台批量消费。 事件可跨线程或并行；短排队可舍入0ms，没有事件才为null。队列满时丢弃计数，回调不能阻塞或抛异常。",
+      "after": "用独立listener维护调用状态，快速入队后由后台批量消费。 事件可跨线程或并行；短排队可舍入0ms，没有事件才为null。队列满时丢弃计数，回调须快速返回，阻塞与抛异常都要避免。",
+      "status": "independently_reviewed",
+      "reason": "回调快速返回且避免阻塞/抛异常，有界队列溢出计数与代码一致。"
+    },
+    {
+      "id": "ch12-01-33-trace-causality",
+      "before": "用Call关联号、异步slice和线程证据一起判断UI为何等待。 网络slice重叠只说明相关；nativePollOnce常是Looper空闲，不能单独定为网络卡顿。轨道非真实trace。",
+      "after": "用Call关联号、异步slice和线程证据一起判断UI为何等待。 网络slice重叠只说明相关；nativePollOnce常是Looper空闲，单独拿来定性网络卡顿会出错。轨道非真实trace。",
+      "status": "independently_reviewed",
+      "reason": "nativePollOnce常是空闲，不能单凭重叠定因果，机制轨道非真实trace。"
+    },
+    {
+      "id": "ch12-01-36-tls-full-handshake",
+      "before": "比较完整握手中客户端何时能够发送应用数据。 仅常见协议路径：TLS1.2约2个TLS往返、1.3约1个；不含TCP、HRR、丢包或业务处理，不能推固定性能百分比。",
+      "after": "比较完整握手中客户端何时能够发送应用数据。 仅常见协议路径：TLS1.2约2个TLS往返、1.3约1个；不含TCP、HRR、丢包或业务处理，固定性能百分比推不出来。",
+      "status": "independently_reviewed",
+      "reason": "常见TLS往返数仍排除TCP/HRR等，不能据此推固定性能百分比。"
+    },
+    {
+      "id": "ch12-01-38-session-ticket-lifetime",
+      "before": "客户端持有票据与服务端实际接受恢复是两个条件。 过期、重启、密钥轮换或负载均衡可能使恢复不可用；secureConnect时长本身不能证明是否恢复。",
+      "after": "客户端持有票据与服务端实际接受恢复是两个条件。 过期、重启、密钥轮换或负载均衡可能使恢复不可用；secureConnect时长本身证明不了是否恢复。",
+      "status": "independently_reviewed",
+      "reason": "客户端持票不等服务端接受，secureConnect时长不证明恢复，完整回退路径保留。"
+    },
+    {
+      "id": "ed12-01-zero-rtt-eligibility-and-rejection",
+      "before": "恢复机制与安全门槛合图：需具体provider/协议/服务端支持及可用PSK/恢复状态，且重复执行后果、鉴权材料和服务器保护允许，才发送earlydata。不满足则等正常握手；发送后服务端仍可接受或拒绝，接受不等握手已完成或业务成功，拒绝后按栈/业务语义恢复并受总期限约束。GET/HEAD或客户端幂等键不是重放安全证明，去重须服务端实现；仅PSK保护的0RTT无前向保密，不能自动继承后续握手安全保证。",
+      "after": "恢复机制与安全门槛合图：需具体provider/协议/服务端支持及可用PSK/恢复状态，且重复执行后果、鉴权材料和服务器保护允许，才发送earlydata。不满足则等正常握手；发送后服务端仍可接受或拒绝，接受不等握手已完成或业务成功，拒绝后按栈/业务语义恢复并受总期限约束。GET/HEAD或客户端幂等键不是重放安全证明，去重须服务端实现；仅PSK保护的0RTT无前向保密，后续握手的安全保证要在握好后另算。",
+      "status": "independently_reviewed",
+      "reason": "PSK保护的earlydata仍无前向保密，后续握手安全保证需另判，接受不等业务成功。"
+    },
+    {
+      "id": "ch12-01-42-ech-default-version-difference",
+      "before": "明确记录文档默认enabled与r1内部OPPORTUNISTIC的不同分支。 固定源码默认需兼容性变更和flag开启；OPPORTUNISTIC不发GREASE，显式XML enabled才映射ENABLED，不能合并承诺。",
+      "after": "明确记录文档默认enabled与r1内部OPPORTUNISTIC的不同分支。 固定源码默认需兼容性变更和flag开启；OPPORTUNISTIC不发GREASE，显式XML enabled才映射ENABLED，两者要分开承诺。",
+      "status": "independently_reviewed",
+      "reason": "OPPORTUNISTIC不发GREASE且显式enabled映射ENABLED的两路承诺仍分开。"
+    },
+    {
+      "id": "ch12-01-50-hpke-api-layers",
+      "before": "区分provider SPI、应用加密入口与TLS内部ECH。 Android当前只支持base mode：接收方公钥加密不认证发送方；应用payload加密不能保护ClientHello，也不替代HTTPS。",
+      "after": "区分provider SPI、应用加密入口与TLS内部ECH。 Android当前只支持base mode：接收方公钥加密不认证发送方；应用payload加密保护的是业务载荷，覆盖不到ClientHello，也顶替不了HTTPS。",
+      "status": "independently_reviewed",
+      "reason": "base不认证发送者，业务payload加密覆盖不到ClientHello且不能替代HTTPS。"
+    },
+    {
+      "id": "ed12-01-cdn-protocol-joint-evidence",
+      "before": "CDN与TLS协议诊断共用同一关联方法：客户端单调事件、CDN白名单POP/cache/回源与服务端trace/协议日志按requestID关联，再在同网络/地区/设备/发布组比较延迟和失败分布。单个TTFB不能独自分摊CDN与源站，secureConnect耗时也不证明会话恢复、ECH或CT结果；跨端不同墙钟不直接相减。字段保持低基数和白名单，不记录完整URLquery、凭证、正文、密钥或用户标识。",
+      "after": "CDN与TLS协议诊断共用同一关联方法：客户端单调事件、CDN白名单POP/cache/回源与服务端trace/协议日志按requestID关联，再在同网络/地区/设备/发布组比较延迟和失败分布。单个TTFB分摊不了CDN与源站，secureConnect耗时也证明不了会话恢复、ECH或CT结果；跨端不同墙钟不直接相减。字段保持低基数和白名单，不记录完整URLquery、凭证、正文、密钥或用户标识。",
+      "status": "independently_reviewed",
+      "reason": "requestID关联和同组比较不变，单个TTFB不能拆CDN源站，TLS耗时不证明恢复/ECH/CT。"
+    }
+  ],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": false,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a117/01/layout-report.json",
+  "layout_report_sha256": "056586cf8f87d88116f89c8d01edd47aba02f995766488ea9a40697d38cb28e5",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "独立通读当前432行阅读稿和6段118行代码；读取30幅SVG全部标签并实看4张原图联系表及6幅复杂合图原图。重建mdbook后实看全部30处上下文的5张联系表，1400/640布局通过。15处图注逐项复核，保留重要条件；当前修订只改措辞，不需新增/退役图。图像路径顺序、原生图0及代码保持，30幅PNG哈希各异；此审查验证图文对应，不声称设备实测或重新技术取证。"
+}
