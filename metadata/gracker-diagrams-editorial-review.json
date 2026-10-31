@@ -37551,9 +37551,496 @@
       "before_count": 39,
       "before_all_images": 39,
       "sha256_before": "3de69fb83be00408a082a0477d6fc278f3dda8b0e23255a531432a36af23b430",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 21,
+      "decisions": [
+        {
+          "original_id": "ch14-08-01-version-dimensions",
+          "title": "主机格式支持与设备采集能力分别核对",
+          "decision": "remove",
+          "reason": "设备/TP/UI三列版本卡逐项重述开篇66和68版本声明；正文完整保留，13留设备权限与主机能力分支，21合图保留实际UI度量版本差异。",
+          "original_line": 70,
+          "heading": "# Perfetto Profile 导入与 Flamegraph 分析"
+        },
+        {
+          "original_id": "ch14-08-02-profile-trace-boundaries",
+          "title": "聚合、时间戳与系统事件是三种信息边界",
+          "decision": "remove",
+          "reason": "三列信息边界直接复制86–94完整输入/保留/不能证明表；具体三入口到真实表的路由3保留，聚合宽度图4保留，删重复概念表图。",
+          "original_line": 81,
+          "heading": "## Profile 与 system trace 的数据边界"
+        },
+        {
+          "original_id": "ch14-08-03-import-table-routing",
+          "title": "按真实导入入口选择 SQL 表",
+          "decision": "keep",
+          "reason": "三种真实导入入口分别指向不同SQL模型的映射独立，pprof指标、Simpleperf无调度和perf可无栈各有具体落点。",
+          "original_line": 98,
+          "heading": "## Profile 与 system trace 的数据边界"
+        },
+        {
+          "original_id": "ch14-08-04-flamegraph-width-depth",
+          "title": "火焰图宽度表达聚合量，纵向表达调用深度",
+          "decision": "keep",
+          "reason": "实际37:63比例叶宽及祖先100累计的调用树可视例，直接解释横轴非时间，覆盖35同一计数示例而不重复放两图。",
+          "original_line": 105,
+          "heading": "## Profile 与 system trace 的数据边界"
+        },
+        {
+          "original_id": "ch14-08-05-frame-state-sample-chain",
+          "title": "先定窗口与状态，再解释调用路径",
+          "decision": "remove",
+          "reason": "四步链与110一段及34/38同义，圈窗口/状态/样本/复查的文字与33证据分工图完整保留，删通用工作流重复。",
+          "original_line": 112,
+          "heading": "## Profile 与 system trace 的数据边界"
+        },
+        {
+          "original_id": "ch14-08-06-pprof-unit-and-order",
+          "title": "pprof 按指标建立聚合树",
+          "decision": "keep",
+          "reason": "pprof叶→根反转成根→叶与按sample_type分指标聚合的具体导入转换关系独立，保留不生成逐样本时间线。",
+          "original_line": 125,
+          "heading": "## pprof：只有聚合值，没有逐样本时间轴"
+        },
+        {
+          "original_id": "ch14-08-07-pprof-evidence-review",
+          "title": "聚合 profile 先确认单位与符号",
+          "decision": "remove",
+          "reason": "四框逐项复写137–140四条检查清单，没有额外数据或关系；单位/符号正文与6/23/24独立机制图完整保留。",
+          "original_line": 132,
+          "heading": "## pprof：只有聚合值，没有逐样本时间轴"
+        },
+        {
+          "original_id": "ch14-08-08-profile-import-export",
+          "title": "pprof 导入与 traceconv 导出方向不同",
+          "decision": "keep",
+          "reason": "pprof直接导入与traceconv从trace导出的相反数据方向并列，实际区分v54自动检测和主机版本，不误当打开pprof前处理。",
+          "original_line": 144,
+          "heading": "## pprof：只有聚合值，没有逐样本时间轴"
+        },
+        {
+          "original_id": "ch14-08-09-simpleperf-generation",
+          "title": "Simpleperf 从设备采样到主机导入",
+          "decision": "merge",
+          "reason": "原图“Simpleperf 从设备采样到主机导入”并入：把设备录制、导出选项、匹配构建产物和导入结果放在同一数据流，保留原始报告的校验分支。；锚点原图10，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 155,
+          "heading": "## Simpleperf protobuf：保留样本时间，不导入调度记录",
+          "replacement_id": "ed14-08-simpleperf-record-export-and-preservation"
+        },
+        {
+          "original_id": "ch14-08-10-callchain-export-guard",
+          "title": "录制和导出都要保留调用链",
+          "decision": "merge",
+          "reason": "原图“录制和导出都要保留调用链”并入：把设备录制、导出选项、匹配构建产物和导入结果放在同一数据流，保留原始报告的校验分支。；锚点原图10，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 176,
+          "heading": "## Simpleperf protobuf：保留样本时间，不导入调度记录",
+          "replacement_id": "ed14-08-simpleperf-record-export-and-preservation"
+        },
+        {
+          "original_id": "ch14-08-11-simpleperf-identity-enumeration",
+          "title": "Simpleperf 进程名可为空，先枚举内部身份",
+          "decision": "keep",
+          "reason": "Thread元数据建立内部身份但process.name可能NULL的具体漏样本机制，解释按包名过滤失败及原采集记录核对，SQL相邻保留。",
+          "original_line": 185,
+          "heading": "## Simpleperf protobuf：保留样本时间，不导入调度记录"
+        },
+        {
+          "original_id": "ch14-08-12-simpleperf-information-loss",
+          "title": "Simpleperf protobuf 有些字段不会进入当前模型",
+          "decision": "keep",
+          "reason": "context_switch、事件权重类型、丢样展开信息分别丢失到不同分析盲区的三列映射，非一般质量清单，具体导入损失关系保留。",
+          "original_line": 211,
+          "heading": "## Simpleperf protobuf：保留样本时间，不导入调度记录"
+        },
+        {
+          "original_id": "ch14-08-13-linux-perf-prerequisites",
+          "title": "linux.perf 设备权限独立于文件格式支持",
+          "decision": "keep",
+          "reason": "设备Android下限、user应用可分析性与主机导入能力的不同条件分支，避免仅据文件格式或主机版本推设备可采。",
+          "original_line": 220,
+          "heading": "## `linux.perf`：把 CPU 样本录进同一条时间轴"
+        },
+        {
+          "original_id": "ch14-08-14-perf-event-open-abi",
+          "title": "perf_event_open 分别请求样本状态",
+          "decision": "keep",
+          "reason": "perf_event_open基础字段、用户寄存器/栈、内核链三个真实ABI请求面和解释目的对应，非周期采样建议重复。",
+          "original_line": 227,
+          "heading": "## `linux.perf`：把 CPU 样本录进同一条时间轴"
+        },
+        {
+          "original_id": "ch14-08-15-per-cpu-rate-and-scope",
+          "title": "100 Hz 是每 CPU 的采样时间基",
+          "decision": "keep",
+          "reason": "每CPU timebase触发当前运行线程再按scope展开的具体采样顺序，区别每CPU100Hz与每进程100个成功栈，配置相邻保留。",
+          "original_line": 234,
+          "heading": "## `linux.perf`：把 CPU 样本录进同一条时间轴"
+        },
+        {
+          "original_id": "ch14-08-16-joint-capture-validation",
+          "title": "联合配置必须在录后验证实际数据",
+          "decision": "remove",
+          "reason": "三源三检查卡重排291一段联合采集后条件及下方305–340真实覆盖查询，3表路由和18记录/栈数图完整保留，删请求不等产出的提醒图。",
+          "original_line": 293,
+          "heading": "## `linux.perf`：把 CPU 样本录进同一条时间轴"
+        },
+        {
+          "original_id": "ch14-08-17-sampling-overhead",
+          "title": "频率、核数与展开成本影响录制",
+          "decision": "remove",
+          "reason": "四框逐项复制298一段频率/核数/展开开销因素，原文没有设备实测且明确未测，保留文字即可，不再把注意清单复画。",
+          "original_line": 300,
+          "heading": "## `linux.perf`：把 CPU 样本录进同一条时间轴"
+        },
+        {
+          "original_id": "ch14-08-18-record-count-versus-stack-count",
+          "title": "perf 样本记录数不等于成功栈数",
+          "decision": "keep",
+          "reason": "4原始记录/3有栈的受控数值与COUNT语义对照独立，非NULL栈数、无栈和severity不同责任映射保留，未声称设备数据。",
+          "original_line": 342,
+          "heading": "## `linux.perf`：把 CPU 样本录进同一条时间轴"
+        },
+        {
+          "original_id": "ch14-08-19-self-versus-cumulative",
+          "title": "self 与累计宽度回答不同问题",
+          "decision": "remove",
+          "reason": "self/cumulative/全局三组摘要与353–356定义段以及比例调用树4重复；4提供实际几何示例，29保留路径身份，删定义复写。",
+          "original_line": 358,
+          "heading": "## 选区 Flamegraph 与 TrackEvent 调用栈"
+        },
+        {
+          "original_id": "ch14-08-20-trackevent-endpoint-selection",
+          "title": "TrackEvent 选区按附带栈的记录点计数",
+          "decision": "merge",
+          "reason": "原图“TrackEvent 选区按附带栈的记录点计数”并入：合并Slice起止栈的独立入选条件与Samples、Weight及数值参数的版本差异，防止把覆盖时长或每Slice一次当统计单位。；锚点原图21，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 367,
+          "heading": "## 选区 Flamegraph 与 TrackEvent 调用栈",
+          "replacement_id": "ed14-08-trackevent-endpoints-and-versioned-measures"
+        },
+        {
+          "original_id": "ch14-08-21-trackevent-weight-version",
+          "title": "Samples、Weight 与数值参数分版本解释",
+          "decision": "merge",
+          "reason": "原图“Samples、Weight 与数值参数分版本解释”并入：合并Slice起止栈的独立入选条件与Samples、Weight及数值参数的版本差异，防止把覆盖时长或每Slice一次当统计单位。；锚点原图21，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 374,
+          "heading": "## 选区 Flamegraph 与 TrackEvent 调用栈",
+          "replacement_id": "ed14-08-trackevent-endpoints-and-versioned-measures"
+        },
+        {
+          "original_id": "ch14-08-22-selection-four-dimensions",
+          "title": "选区分析同时固定四个维度",
+          "decision": "remove",
+          "reason": "时间/实例/场景/指标四卡逐项复制386–389完整清单，没有具体比较或集合实例，保留清单及21合图真实选点度量规则。",
+          "original_line": 381,
+          "heading": "## 选区 Flamegraph 与 TrackEvent 调用栈"
+        },
+        {
+          "original_id": "ch14-08-23-symbols-build-identity",
+          "title": "符号必须对应实际构建",
+          "decision": "keep",
+          "reason": "Native ELF/BuildID与JavaR8映射两个构建身份分别验证的对应关系独立，保留同名文件不是构建证明。",
+          "original_line": 395,
+          "heading": "## 符号、内联函数与 R8 还原"
+        },
+        {
+          "original_id": "ch14-08-24-inline-source-layers",
+          "title": "一个机器地址可以展开多层源码关系",
+          "decision": "keep",
+          "reason": "一个机器采样地址恢复多层源码inline frame的非一对一映射独立，区别机器帧与源码层，缺符号不证明未执行。",
+          "original_line": 402,
+          "heading": "## 符号、内联函数与 R8 还原"
+        },
+        {
+          "original_id": "ch14-08-25-bundle-dataflow",
+          "title": "符号化与去混淆产物和原始 trace 一起交付",
+          "decision": "merge",
+          "reason": "原图“符号化与去混淆产物和原始 trace 一起交付”并入：把原始trace与构建产物的输入关系、固定平台CLI和主机CLI的映射参数分支合为一张归档图。；锚点原图26，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 409,
+          "heading": "## 符号、内联函数与 R8 还原",
+          "replacement_id": "ed14-08-bundle-input-build-and-cli-branches"
+        },
+        {
+          "original_id": "ch14-08-26-bundle-cli-version",
+          "title": "固定 Android 17 与主机 v57.2 CLI 有边界",
+          "decision": "merge",
+          "reason": "原图“固定 Android 17 与主机 v57.2 CLI 有边界”并入：把原始trace与构建产物的输入关系、固定平台CLI和主机CLI的映射参数分支合为一张归档图。；锚点原图26，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 424,
+          "heading": "## 符号、内联函数与 R8 还原",
+          "replacement_id": "ed14-08-bundle-input-build-and-cli-branches"
+        },
+        {
+          "original_id": "ch14-08-27-protobuf-concatenation",
+          "title": "手工富化是拼接 TracePacket 流",
+          "decision": "keep",
+          "reason": "同一原始protobuf流独立生成symbols与deobfuscation包，再与原始流汇合的七节点真实数据拓扑独立，与TAR bundle格式区别保留。",
+          "original_line": 444,
+          "heading": "## 符号、内联函数与 R8 还原"
+        },
+        {
+          "original_id": "ch14-08-28-exploration-to-sql",
+          "title": "探索结论固化为带版本的 SQL",
+          "decision": "remove",
+          "reason": "四步探索到SQL的工作流逐项复制451一段和收尾清单，没有额外数据或交互示例，全部DataGrid功能/TP版本/查询正文保留。",
+          "original_line": 453,
+          "heading": "## SQL 与 DataGrid：从探索走向可复现查询"
+        },
+        {
+          "original_id": "ch14-08-29-summary-tree-path-identity",
+          "title": "同名函数可位于不同调用树节点",
+          "decision": "keep",
+          "reason": "perf_sample→路径id/parent_id→self/cumulative树及预过滤责任独立，解释同名函数不能跨映射/路径盲合并，实际SQL相邻保留。",
+          "original_line": 479,
+          "heading": "## SQL 与 DataGrid：从探索走向可复现查询"
+        },
+        {
+          "original_id": "ch14-08-30-frame-model-identity",
+          "title": "android_frames 是兼容聚合模型",
+          "decision": "keep",
+          "reason": "原始upid/frame到兼容模型聚合、代表ID与回原始Layer的具体模型边界独立，expected_count常量/INNERJOIN遗漏正文完整保留。",
+          "original_line": 486,
+          "heading": "## SQL 与 DataGrid：从探索走向可复现查询"
+        },
+        {
+          "original_id": "ch14-08-31-frame-sample-halfopen",
+          "title": "帧模型窗口按同线程与半开时间匹配样本",
+          "decision": "keep",
+          "reason": "模型窗与三个采样点的实际时间关系图，终点排除/同utid匹配及记录有栈两列计数独立，重叠模型不直接加总限制保留。",
+          "original_line": 527,
+          "heading": "## SQL 与 DataGrid：从探索走向可复现查询"
+        },
+        {
+          "original_id": "ch14-08-32-zero-samples-not-verdict",
+          "title": "零样本需检查采样与执行条件",
+          "decision": "remove",
+          "reason": "零样本三原因分支逐项重述525一段未运行/时间基/窗口/丢样，18质量计数与31边界关系保留，删诊断提醒清单。",
+          "original_line": 532,
+          "heading": "## SQL 与 DataGrid：从探索走向可复现查询"
+        },
+        {
+          "original_id": "ch14-08-33-causal-evidence-responsibilities",
+          "title": "帧、Binder、GC 与采样分担证据",
+          "decision": "keep",
+          "reason": "FrameTimeline/Binder两端/GCpause与样本各自证明责任的对应关系独立，等待客户端不替代服务端热点、GCwall不等STW，跨来源因果边界保留。",
+          "original_line": 542,
+          "heading": "## FrameTimeline、Binder 与 GC 的证据拼接"
+        },
+        {
+          "original_id": "ch14-08-34-profile-hypothesis-control",
+          "title": "函数热点要经过窗口和复现验证",
+          "decision": "remove",
+          "reason": "四步假说对照链与551完整示范结论及5/38通用流程重复，33保留真实证据分工，全部复现和等待链正文保留。",
+          "original_line": 553,
+          "heading": "## FrameTimeline、Binder 与 GC 的证据拼接"
+        },
+        {
+          "original_id": "ch14-08-35-collapsed-stack-counts",
+          "title": "Collapsed Stack 只有路径与聚合计数",
+          "decision": "remove",
+          "reason": "与4使用同一main/render/layout37/draw63例，35仅把两行代码和569加总句重排四框；4实际按比例画宽度且9代码原样保留，删语义重复图。",
+          "original_line": 571,
+          "heading": "## Firefox Profiler 与 Collapsed Stack 迁移"
+        },
+        {
+          "original_id": "ch14-08-36-firefox-marker-import",
+          "title": "Firefox 样本和 marker 按不同结构导入",
+          "decision": "merge",
+          "reason": "原图“Firefox 样本和 marker 按不同结构导入”并入：合并Firefox样本与三种marker处理及重叠/元数据限制，保留系统事件需另行采集的独立边界。；锚点原图37，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 580,
+          "heading": "## Firefox Profiler 与 Collapsed Stack 迁移",
+          "replacement_id": "ed14-08-firefox-samples-markers-and-exclusions"
+        },
+        {
+          "original_id": "ch14-08-37-firefox-import-limits",
+          "title": "Firefox 格式支持不等于 Android 系统事件",
+          "decision": "merge",
+          "reason": "原图“Firefox 格式支持不等于 Android 系统事件”并入：合并Firefox样本与三种marker处理及重叠/元数据限制，保留系统事件需另行采集的独立边界。；锚点原图37，对应入口、UI/CLI版本、数据流及缺失边界在新图图注明确保留。",
+          "original_line": 587,
+          "heading": "## Firefox Profiler 与 Collapsed Stack 迁移",
+          "replacement_id": "ed14-08-firefox-samples-markers-and-exclusions"
+        },
+        {
+          "original_id": "ch14-08-38-large-trace-analysis-order",
+          "title": "大文件按证据依赖顺序分析",
+          "decision": "remove",
+          "reason": "六框逐项摘录601–606六步完整编号清单，和5/34相同分析顺序，不含具体证据关系，删流程复写。",
+          "original_line": 596,
+          "heading": "## 大 trace 的分析顺序"
+        },
+        {
+          "original_id": "ch14-08-39-reviewable-artifacts",
+          "title": "报告保留输入、单位、身份与构建产物",
+          "decision": "remove",
+          "reason": "四卡把615–621收尾核对清单重新分组，无额外输入产物或因果关系，原条目与记录要求全部保留，删清单复写。",
+          "original_line": 610,
+          "heading": "## 大 trace 的分析顺序"
+        }
+      ],
+      "sha256_after": "faa5607837de260b71326e2a605dcdde9132202944de9fb69d068b90d2556b0f",
+      "new_diagrams": [
+        {
+          "id": "ed14-08-simpleperf-record-export-and-preservation",
+          "title": "Simpleperf 调用链要在录制和导出两处保留",
+          "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-08-simpleperf-record-export-and-preservation.svg",
+            "src/assets/diagrams/ch14/ed14-08-simpleperf-record-export-and-preservation.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-08-simpleperf-record-export-and-preservation",
+          "sources": [
+            "https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/cmd_report_sample.cpp",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/getting-started/cpu-profiling.md"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-08-09-simpleperf-generation",
+              "ch14-08-10-callchain-export-guard"
+            ],
+            "boundary": "固定Android17路径先用app_profiler录perf.data，-g获取调用链；report-sample --protobuf须显式--show-callchain，否则IP数组裁为1，已有内联信息不能恢复祖先地址。--symdir递归查找匹配符号，R8映射须同APK构建；100Hz只是示例非合格线。导入cpu_profile_stack_sample保留时间和线程，过程不补采集缺失或导入器丢弃信息；保存perf.data及导出端展开/丢样报告。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a142/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-08-trackevent-endpoints-and-versioned-measures",
+          "title": "TrackEvent 先选栈记录点，再按 UI 版本解释度量",
+          "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-08-trackevent-endpoints-and-versioned-measures.svg",
+            "src/assets/diagrams/ch14/ed14-08-trackevent-endpoints-and-versioned-measures.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-08-trackevent-endpoints-and-versioned-measures",
+          "sources": [
+            "https://raw.githubusercontent.com/google/perfetto/v57.2/ui/src/plugins/dev.perfetto.TrackEvent/index.ts",
+            "https://raw.githubusercontent.com/google/perfetto/v58.2/ui/src/plugins/dev.perfetto.TrackEvent/track_event_callstack_flamegraph.ts"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-08-20-trackevent-endpoint-selection",
+              "ch14-08-21-trackevent-weight-version"
+            ],
+            "boundary": "只对所选轨道和时间选区内真实带栈的记录点统计。Slice开始、结束独立判断，结束栈要求dur>0及对应引用；两端都入选可贡献两次，两端均在外即使区间覆盖选区也不贡献，instant只看自身记录点。固定Android17/UI57.2仅Samples；UI58.2另有callstack_weight的Weight与选定数值参数度量，缺权重或缺键的点不入对应度量，不能以1补齐。属于事件附带栈，不等同周期CPU采样。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a142/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-08-bundle-input-build-and-cli-branches",
+          "title": "按实际 CLI 配置映射，再交付 trace archive",
+          "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-08-bundle-input-build-and-cli-branches.svg",
+            "src/assets/diagrams/ch14/ed14-08-bundle-input-build-and-cli-branches.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-08-bundle-input-build-and-cli-branches",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/trace_to_bundle.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/main.cc",
+            "https://raw.githubusercontent.com/google/perfetto/v57.2/src/traceconv/traceconv.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-08-25-bundle-dataflow",
+              "ch14-08-26-bundle-cli-version"
+            ],
+            "boundary": "针对可富化原生调用栈的Perfetto trace，符号与映射需对应实际被测构建。固定Android17 CLI没有--proguard-map，通过PERFETTO_PROGUARD_MAP提供包名=映射文件，多包冒号分隔；主机v57.2另支持可重复--proguard-map [pkg=]PATH，按实际二进制选配置方式。traceconv bundle输出TAR含trace.perfetto，symbols.pb/deobfuscation.pb取决于收集结果；UI与TP可直接打开，不必手工解包，打包成功不证明符号全还原。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a142/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-08-firefox-samples-markers-and-exclusions",
+          "title": "Firefox 样本与 marker 分路导入，版本和遗漏单列",
+          "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-08-firefox-samples-markers-and-exclusions.svg",
+            "src/assets/diagrams/ch14/ed14-08-firefox-samples-markers-and-exclusions.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-08-firefox-samples-markers-and-exclusions",
+          "sources": [
+            "https://raw.githubusercontent.com/google/perfetto/v57.2/src/trace_processor/importers/gecko/gecko_trace_parser.cc",
+            "https://raw.githubusercontent.com/google/perfetto/v57.2/docs/getting-started/other-formats.md",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/gecko/gecko_trace_parser.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/simpleperf_proto/simpleperf_proto_parser.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-08-36-firefox-marker-import",
+              "ch14-08-37-firefox-import-limits"
+            ],
+            "boundary": "固定Android17 parser仅样本与线程元数据；已核对主机v57.2另支持instant、完整interval和同轨道LIFO的start/end marker。CPU样本进入cpu_profile_stack_sample，受支持marker变Slice，data展开args。非嵌套同名同类别重叠可能被丢，检查slice_drop_overlapping_complete_event等；颜色/tooltip模板、counters/profilerOverhead等未导入，不能据此重建Android sched/FrameTimeline/Binder。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a142/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:29:29.737507+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 39,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a142/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a142/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 142,
+        "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+        "registered_sha256": "3de69fb83be00408a082a0477d6fc278f3dda8b0e23255a531432a36af23b430",
+        "frozen_sha256": "3de69fb83be00408a082a0477d6fc278f3dda8b0e23255a531432a36af23b430",
+        "review_input_sha256": "4cfbb57f0cb7b76238ca01d6fbe150b58f8a74eeebda7bdb3d54b3d53360bb75",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a142/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a142/external-source.diff",
+        "diff_sha256": "1f616d89fda737f7b13689f5f5813aed5a0da638d350e508e29def2738bd20d4",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 206 current narrative/table reading rows, 20284 characters, 39 SVG label sets and all 39 original PNGs in 5 contact sheets independently read/viewed; all 9 non-Mermaid code blocks, 166 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "4cfbb57f0cb7b76238ca01d6fbe150b58f8a74eeebda7bdb3d54b3d53360bb75",
+      "retired_diagrams": [
+        "ch14-08-01-version-dimensions",
+        "ch14-08-02-profile-trace-boundaries",
+        "ch14-08-05-frame-state-sample-chain",
+        "ch14-08-07-pprof-evidence-review",
+        "ch14-08-09-simpleperf-generation",
+        "ch14-08-10-callchain-export-guard",
+        "ch14-08-16-joint-capture-validation",
+        "ch14-08-17-sampling-overhead",
+        "ch14-08-19-self-versus-cumulative",
+        "ch14-08-20-trackevent-endpoint-selection",
+        "ch14-08-21-trackevent-weight-version",
+        "ch14-08-22-selection-four-dimensions",
+        "ch14-08-25-bundle-dataflow",
+        "ch14-08-26-bundle-cli-version",
+        "ch14-08-28-exploration-to-sql",
+        "ch14-08-32-zero-samples-not-verdict",
+        "ch14-08-34-profile-hypothesis-control",
+        "ch14-08-35-collapsed-stack-counts",
+        "ch14-08-36-firefox-marker-import",
+        "ch14-08-37-firefox-import-limits",
+        "ch14-08-38-large-trace-analysis-order",
+        "ch14-08-39-reviewable-artifacts"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-142/retired-assets.json"
     },
     {
       "index": 143,
@@ -38975,8 +39462,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 77,
-  "next_article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
+  "reviewed_articles": 78,
+  "next_article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -38986,7 +39473,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:24:51.062633+08:00",
+  "updated_at": "2026-10-31T12:29:29.737507+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -39035,13 +39522,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
-      "registered_sha256": "3de69fb83be00408a082a0477d6fc278f3dda8b0e23255a531432a36af23b430",
-      "observed_sha256": "4cfbb57f0cb7b76238ca01d6fbe150b58f8a74eeebda7bdb3d54b3d53360bb75",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -39416,9 +39896,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2947,
-  "reviewed_placements_after": 1334,
-  "net_removed_placements": 1613,
+  "reviewed_placements_before": 2986,
+  "reviewed_placements_after": 1355,
+  "net_removed_placements": 1631,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -39442,5 +39922,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 77
+  "currently_matching_reviewed_source_count": 78
 }
