@@ -68607,9 +68607,161 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "513a1dce5e8d6d87ee00759cb53f8de4260fe4697eee581451dc511d11ef6a76",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 4,
+      "decisions": [
+        {
+          "original_id": "a299-01-kernel-and-process-evidence-scopes",
+          "title": "内核审计与应用内轨迹有不同的权限和证据范围",
+          "decision": "remove",
+          "reason": "四个范围卡逐项重复开篇权限边界、部署环境表与文末选型表；没有新增跨层连接。",
+          "original_line": 135,
+          "heading": "# eBPF、ATrace（用户态埋点 API 与事件协议） 与线上系统追踪"
+        },
+        {
+          "original_id": "a299-03-buffer-loss-and-observation-health",
+          "title": "未观察到事件，先排除过滤、权限与丢失",
+          "decision": "remove",
+          "reason": "四类完整性卡与紧邻窗口/丢失/积压/关联健康度表逐项重复，具体失败计数和partial规则已保留。",
+          "original_line": 167,
+          "heading": "### ftrace 的能力与事件丢失边界"
+        },
+        {
+          "original_id": "a299-02-wd-sys-filter-tail-call-reader",
+          "title": "WDSys：内核筛选、分段逻辑、传输与持久化分开验收",
+          "decision": "keep",
+          "reason": "raw_syscalls筛选、分段程序、传输、reader与持久化跨越内核及用户态的链路；保留各层独立验收关系。",
+          "original_line": 188,
+          "heading": "### Android eBPF 系统调用追踪路径"
+        },
+        {
+          "original_id": "a299-04-binder-user-memory-to-signatures",
+          "title": "Binder 语义：用户内存快照不等于驱动接受的事务",
+          "decision": "keep",
+          "reason": "Parcel、ioctl用户地址、驱动复制和版本签名表跨层关系直观标出观察与使用边界；图注保留原型覆盖限制。",
+          "original_line": 228,
+          "heading": "### Binder 语义重建的关键问题"
+        },
+        {
+          "original_id": "a299-05-binder-rpc-observation-tracks",
+          "title": "Binder RPC 要拼多侧区间，单次 ioctl 不代表往返时长",
+          "decision": "keep",
+          "reason": "客户端、驱动排队、服务执行和回复四条时间轨道，直观说明ioctl时长不能当RPC往返时长。",
+          "original_line": 237,
+          "heading": "### Binder 语义重建的关键问题"
+        },
+        {
+          "original_id": "a299-06-unique-event-rate-union-denominator",
+          "title": "UER 是两份日志并集中的独有比例，独立真值仍缺失",
+          "decision": "remove",
+          "reason": "UER公式、两组数字及缺独立真值的四卡总结完整重复紧邻实验表与解释；不改变统计口径正文。",
+          "original_line": 254,
+          "heading": "### 性能开销与完整性指标"
+        },
+        {
+          "original_id": "a299-07-version-bound-semantic-decoding",
+          "title": "语义与参数策略作为同一版本配置发布",
+          "decision": "remove",
+          "reason": "四卡逐项复述本节查策略、版本绑定、未知接口降级与持久化前最小化三个段落；无新增分支关系。",
+          "original_line": 356,
+          "heading": "### 扩展：Binder 参数脱敏策略"
+        },
+        {
+          "original_id": "a299-09-profilo-ring-concurrency-and-wrap",
+          "title": "固定容量环形缓冲：读落后、写绕回各有不同后果",
+          "decision": "remove",
+          "reason": "并发缓冲的四卡解释与紧邻并发语义段落及后文完整性规则重复；未画出writer绕回或reader轨道。",
+          "original_line": 412,
+          "heading": "### Profilo 的组件职责"
+        },
+        {
+          "original_id": "a299-08-profilo-controller-to-private-files",
+          "title": "Profilo：控制、provider、缓冲和文件职责分开",
+          "decision": "remove",
+          "reason": "紧邻已有完整文本架构图，准确保留trigger/provider/logger/buffer/writer以及独立系统链；PNG重复同一结构。",
+          "original_line": 440,
+          "heading": "### Profilo 的组件职责"
+        },
+        {
+          "original_id": "a299-10-android17-trace-backend-branches",
+          "title": "Android 17：公共 Trace 调用不能一概视为 trace_marker 写入",
+          "decision": "keep",
+          "reason": "公共Trace进入ATrace兼容与Track Event的两个实际后端分支，说明单库PLT hook的覆盖边界。",
+          "original_line": 486,
+          "heading": "### ATrace 事件的写入路径"
+        },
+        {
+          "original_id": "a299-11-profilo-hook-parse-and-swallow",
+          "title": "命中 Profilo hook 后：B/E 转写，其他前缀也不再下送",
+          "decision": "remove",
+          "reason": "图把B/E保存和其他前缀丢弃画成串行步骤，而图注又说明互斥；紧邻伪代码和五步说明已准确表达条件，删除易误读图。",
+          "original_line": 527,
+          "heading": "### Profilo ATrace provider 的精确行为"
+        },
+        {
+          "original_id": "a299-12-thread-lifetime-stack-and-partial",
+          "title": "B/E 栈按线程生命周期隔离，缺事件就保留不完整",
+          "decision": "remove",
+          "reason": "四卡重复紧邻TID生命周期、嵌套与不完整规则，已有双线程PUSH/POP文本示例展示独立配对。",
+          "original_line": 556,
+          "heading": "#### B/E 如何配对"
+        },
+        {
+          "original_id": "a299-13-sampling-provider-thread-timers",
+          "title": "stack provider：线程定时器、采样信号与 unwind 是另一数据源",
+          "decision": "remove",
+          "reason": "六框将两类timer、兼容性限制与项目测试串成一链，新增流程信息有限；线程扫描、信号和unwind已由紧邻段落逐步说明，保留原文。",
+          "original_line": 585,
+          "heading": "### ATrace provider 与 stack provider 的分工"
+        },
+        {
+          "original_id": "a299-14-fixed-artifacts-and-hook-capabilities",
+          "title": "私有 hook 验收：源码、构建产物和运行结果逐层对应",
+          "decision": "remove",
+          "reason": "四卡重复固定源码、能力协商与语义测试三个小节及清单，未给出额外状态转换。",
+          "original_line": 638,
+          "heading": "#### 做事件语义测试"
+        },
+        {
+          "original_id": "a299-15-stable-tracing-driver-and-system-scopes",
+          "title": "Tracing 2.0.5 应用内输出与系统 trace 保持独立",
+          "decision": "remove",
+          "reason": "四卡重复前述tracing-wire初始化、Factory/sink和系统级采集范围，工程决策表已有完整对照。",
+          "original_line": 702,
+          "heading": "#### 需要系统级因果分析"
+        }
+      ],
+      "sha256_after": "0d2e1125eed2c1a22675201b06944bcb1074bd3854c2b2ff0341635d6879d417",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:55:30.979232+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a299/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a299/visual-review.json",
+      "retired_diagrams": [
+        "a299-01-kernel-and-process-evidence-scopes",
+        "a299-03-buffer-loss-and-observation-health",
+        "a299-06-unique-event-rate-union-denominator",
+        "a299-07-version-bound-semantic-decoding",
+        "a299-08-profilo-controller-to-private-files",
+        "a299-09-profilo-ring-concurrency-and-wrap",
+        "a299-11-profilo-hook-parse-and-swallow",
+        "a299-12-thread-lifetime-stack-and-partial",
+        "a299-13-sampling-provider-thread-timers",
+        "a299-14-fixed-artifacts-and-hook-capabilities",
+        "a299-15-stable-tracing-driver-and-system-scopes"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-299/retired-assets.json"
     },
     {
       "index": 300,
@@ -68623,8 +68775,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 205,
-  "next_article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+  "reviewed_articles": 206,
+  "next_article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -68634,7 +68786,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:53:36.626920+08:00",
+  "updated_at": "2026-10-31T19:55:30.979232+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -68749,9 +68901,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5833,
-  "reviewed_placements_after": 2267,
-  "net_removed_placements": 3566,
+  "reviewed_placements_before": 5848,
+  "reviewed_placements_after": 2271,
+  "net_removed_placements": 3577,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -68775,7 +68927,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 205,
+  "currently_matching_reviewed_source_count": 206,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

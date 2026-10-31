@@ -132,10 +132,6 @@ WOOTdroid 的正式实验跑在两台已 root（取得超级用户权限） 的 
 
 所以线上系统追踪始终是在信号价值、权限、开销和隐私之间做取舍：eBPF 在内核侧重建调度或 Binder 事件；Profilo 这类端侧框架靠 ATrace 等数据源组织短窗口 Trace——ATrace 既是用户态埋点 API，也是一套事件协议。
 
-<!-- gracker-diagram: a299-01-kernel-and-process-evidence-scopes -->
-![内核审计与应用内轨迹有不同的权限和证据范围](../../assets/diagrams/ch26/a299-01-kernel-and-process-evidence-scopes.png)
-
-图：root Pixel研究结果不能外推Android17量产user；Device Owner也不提供任意BPF加载权。
 
 ## 内核 Hook、Binder 关联与事件预算
 
@@ -164,10 +160,6 @@ WOOTdroid 关注的系统调用审计是另一条路：WDSys 在 eBPF 侧过滤�
 
 这里要分清两件事：“没有观察到事件”只说明这套采集流程没有产出该事件；要进一步认定“事件没有发生”，得先确认丢失计数、过滤规则和权限状态都是完整的。
 
-<!-- gracker-diagram: a299-03-buffer-loss-and-observation-health -->
-![未观察到事件，先排除过滤、权限与丢失](../../assets/diagrams/ch26/a299-03-buffer-loss-and-observation-health.png)
-
-图：没有事件记录不证明事件未发生；没有可读丢失计数也不能默认完整。
 
 ### Android eBPF 系统调用追踪路径
 
@@ -251,10 +243,6 @@ WOOTdroid v1 的数据适合用来理解实验方法，离产品预算还远。�
 
 ftrace 的 UER 非零，说明有些事件只出现在 ftrace 日志里；WDSys 同样有残余缺失，写成“完整捕获”就名不副实。论文摘要里那句“多追踪 33%”也要按 UER 的定义理解，准确说法是两者平均 UER 相差 33.48 个百分点。
 
-<!-- gracker-diagram: a299-06-unique-event-rate-union-denominator -->
-![UER 是两份日志并集中的独有比例，独立真值仍缺失](../../assets/diagrams/ch26/a299-06-unique-event-rate-union-denominator.png)
-
-图：两台root Pixel9、Android16；Geekbench WDSys数据不代表Binder参数解码或本项目开销。
 
 换成我们自己的项目，评估要覆盖四类数据：
 
@@ -353,10 +341,6 @@ WDBind v1 不处理 reply，ioctl enter / exit 又可能混合 write 与 read，
 
 安全实验若必须保留短时间的原始参数，应与生产数据域隔离，并具备明确的设备清单、审批人、加密密钥、到期删除和访问日志。这里容易低估的是匿名化：hash 是把原值映射为固定摘要，geohash 是把经纬度编码为网格字符串，而手机号后四位、未加密钥的普通 hash 和粗粒度 geohash 仍可能成为可关联标识，直接按匿名数据对待有风险。
 
-<!-- gracker-diagram: a299-07-version-bound-semantic-decoding -->
-![语义与参数策略作为同一版本配置发布](../../assets/diagrams/ch26/a299-07-version-bound-semantic-decoding.png)
-
-图：原始Parcel一进reader就扩大暴露面；服务端清洗不能替代端侧先最小化。
 
 ### 源码与文档锚点
 
@@ -409,10 +393,6 @@ Profilo 包含多个协作组件。官方[架构文档](https://github.com/faceb
 
 这张关系图区分应用内 Profilo 数据与系统 trace 数据：
 
-<!-- gracker-diagram: a299-09-profilo-ring-concurrency-and-wrap -->
-![固定容量环形缓冲：读落后、写绕回各有不同后果](../../assets/diagrams/ch26/a299-09-profilo-ring-concurrency-and-wrap.png)
-
-图：图示依据LockFreeRingBuffer源码并发契约；buffer满不自动提供持久化或完整性保证。
 
 ```text
 业务 trigger / 远程配置
@@ -437,10 +417,6 @@ Profilo 包含多个协作组件。官方[架构文档](https://github.com/faceb
 
 图中的上传、限额、脱敏和服务端分析都要接入方自己实现。Profilo 有个名为 `upload` 的文件目录，它只能说明文件处于待处理阶段，从这里推不出“默认会压缩、加密并上传”。
 
-<!-- gracker-diagram: a299-08-profilo-controller-to-private-files -->
-![Profilo：控制、provider、缓冲和文件职责分开](../../assets/diagrams/ch26/a299-08-profilo-controller-to-private-files.png)
-
-图：加密、上传、后端与保留策略由接入方实现；名为upload的目录不证明已联网上传。
 
 ### ATrace 事件的写入路径
 
@@ -524,10 +500,6 @@ ssize_t profilo_write_hook(int fd, const void* data, size_t size) {
 
 hook 对 `S/F/G/H/I/N/C` 同样返回成功，对应记录却没有写进 Profilo，丢失从返回值上看不出来。业务若依赖异步事件、counter、instant event 或自定义 track，必须扩展记录格式与解析器，或者明确声明这些事件不受支持。
 
-<!-- gracker-diagram: a299-11-profilo-hook-parse-and-swallow -->
-![命中 Profilo hook 后：B/E 转写，其他前缀也不再下送](../../assets/diagrams/ch26/a299-11-profilo-hook-parse-and-swallow.png)
-
-图：中间两类是互斥的解析结果；返回成功不代表已保存不支持的事件。
 
 #### 能看到哪些进程
 
@@ -553,10 +525,6 @@ tid 4178: POP
 
 每个进程/线程生命周期内的PUSH与POP按嵌套独立配对。缓冲区回绕指写指针走完一圈后复用旧槽位，可能盖掉还没读取的开始事件；采集正好从一段未结束 slice 的中间开始、进程异常退出，或调用方漏掉配对调用，栈同样会不平衡。分析端要把对应区间标成不完整数据，时长一律不补造。
 
-<!-- gracker-diagram: a299-12-thread-lifetime-stack-and-partial -->
-![B/E 栈按线程生命周期隔离，缺事件就保留不完整](../../assets/diagrams/ch26/a299-12-thread-lifetime-stack-and-partial.png)
-
-图：采集从slice中间开始也会缺begin；名称、深度与端点完整性分别验证。
 
 ### ATrace provider 与 stack provider 的分工
 
@@ -582,10 +550,6 @@ Java 方法采样优先选择 Android Studio CPU Profiler、Simpleperf 或 Perfe
 
 JVMTI 是虚拟机提供的调试与插桩接口，attach 指运行中把 agent 加载进目标进程。Android 的 JVMTI attach 只对可调试应用开放，普通生产构建里当不了默认入口；扫描 ART 私有内存寻找新偏移，同样放不进生产方案。
 
-<!-- gracker-diagram: a299-13-sampling-provider-thread-timers -->
-![stack provider：线程定时器、采样信号与 unwind 是另一数据源](../../assets/diagrams/ch26/a299-13-sampling-provider-thread-timers.png)
-
-图：源码没有Quicken模式，也未靠pthread_create PLT hook维护线程；不把ATrace B/E当成自动堆栈。
 
 ### Android 17 兼容性审计
 
@@ -635,10 +599,6 @@ AAR 是 Android 库的发布归档。上游 README 明确声明 API 不稳定，
 
 Profilo 启用期间会吞掉命中 hook 的 ATrace 写入，并发的 Perfetto system trace 因此可能缺少本进程的 ATrace 事件。工程上应禁止两类采集重叠，或者把这种缺失写进采集模式和分析协议，避免把两份结果都标成完整。
 
-<!-- gracker-diagram: a299-14-fixed-artifacts-and-hook-capabilities -->
-![私有 hook 验收：源码、构建产物和运行结果逐层对应](../../assets/diagrams/ch26/a299-14-fixed-artifacts-and-hook-capabilities.png)
-
-图：扫描.bss猜私有地址会误写内存；不能仅凭hidden API、SELinux或W^X名称断言所有构建必然失败。
 
 #### 用上游工具检查文件
 
@@ -699,10 +659,6 @@ Android 10 及更高版本应优先使用 Perfetto system trace。它能在同�
 
 API 35 及更高版本的 [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager) 允许应用请求系统 trace、堆采样等受平台管理的 profile。平台负责调度、频率限制与结果交付，它也不授予应用任意读取持续系统 trace 的能力。
 
-<!-- gracker-diagram: a299-15-stable-tracing-driver-and-system-scopes -->
-![Tracing 2.0.5 应用内输出与系统 trace 保持独立](../../assets/diagrams/ch26/a299-15-stable-tracing-driver-and-system-scopes.png)
-
-图：截至2026-10-25最新稳定2.0.5；C++17也可用Perfetto SDK in-process，均不自动捕获内核事件。
 
 ### 工程决策
 
