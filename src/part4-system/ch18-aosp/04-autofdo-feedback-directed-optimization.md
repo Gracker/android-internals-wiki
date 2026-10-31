@@ -82,10 +82,6 @@ consolidated_from:
   → 发布 profile 或二进制
 ```
 
-<!-- gracker-diagram: ch18-04-01-feedback-loop -->
-![AutoFDO 从代表性运行反馈到重新发布](../../assets/diagrams/ch18/ch18-04-01-feedback-loop.png)
-
-图：AutoFDO 将运行样本转换为编译输入，再生成、验证和发布新的原生二进制。 用户设备运行已构建的产物；采样、转换和编译各有版本及工具依赖，收益还需 A/B 证明。
 
 Android 17 提供两类接入方式：
 
@@ -107,10 +103,6 @@ PGO（Profile-Guided Optimization，Profile 引导优化）按 Profile 的产生
 
 名称中的 “Automatic” 指 Profile 可以从采样数据自动转换并进入反馈构建，不表示系统可以省略代表性工作负载、符号、工具链和验证。
 
-<!-- gracker-diagram: ch18-04-02-pgo-types -->
-![插桩计数与采样归因的不同输入](../../assets/diagrams/ch18/ch18-04-02-pgo-types.png)
-
-图：插桩 PGO 从计数器取得运行信息，AutoFDO 从样本与二进制还原热点。 采样无需计数器插桩，仍有硬件缓冲、带宽、后处理和丢失成本；Automatic 不消除质量控制。
 
 采样同样有开销。CoreSight 轨迹会产生存放硬件跟踪数据的 AUX 数据流，需要缓冲、压缩和后处理；数据量过大时还可能溢出（overflow），或被 simpleperf 限制采样速率。它不需要在程序中插入计数器，但采集过程仍会影响设备运行。
 
@@ -126,10 +118,6 @@ LLVM 采样 Profile 可以影响：
 
 最终改变的是机器码，不会改变 C/C++ 源码定义的程序语义。Profile 偏差可能造成代码体积膨胀或性能回退，编译器和链接器本身也可能存在缺陷。Android 的发布流程仍要比较 Profile、二进制的代码段（text section）、基准性能和稳定性。
 
-<!-- gracker-diagram: ch18-04-03-compiler-decisions -->
-![Profile 如何改变编译器的优化决策](../../assets/diagrams/ch18/ch18-04-03-compiler-decisions.png)
-
-图：函数、调用与分支分布影响内联、布局和优化预算，最终变化落在机器码中。 这是优化决策链；定义良好的程序语义应保持，样本偏差、体积增长和工具缺陷仍需回归。
 
 ---
 
@@ -168,10 +156,6 @@ Android 17 的固定源码标签（tag）中，以下模块开启了 `afdo: true
 
 Baseline Profile 标记应用中哪些 DEX 路径值得提前编译。AutoFDO 让 `libhwui`、`libart`、Bionic 或内核等原生目标按照真实系统热点重新生成机器码。两者可以同时改善启动，但不能互换。
 
-<!-- gracker-diagram: ch18-04-05-native-art -->
-![LLVM 原生目标与 ART 应用 DEX 分别反馈](../../assets/diagrams/ch18/ch18-04-05-native-art.png)
-
-图：AutoFDO 优化 libhwui、libart 与内核等原生构建，Baseline/Runtime Profile 引导 ART 处理应用 DEX。 libart 自身的机器码优化和 libart 编译应用方法是不同层次，Profile 不能互换。
 
 ---
 
@@ -251,10 +235,6 @@ Android 内核 README 使用的代表性流程包括：
 
 README 的“终止进程并清理缓存”未细分缓存层次，复现时还须记录进程、页缓存与应用数据各自处理方式，不能仅凭 cold 标签认定条件相同。官方博客报告实验室负载与内部 fleet 执行模式约 85% 相似，但未在该文给出完整相似度算法；这不是 85% 代码覆盖率或 OEM 工作负载质量证明。
 
-<!-- gracker-diagram: ch18-04-08-workload -->
-![工作负载覆盖与权重决定 Profile 优化方向](../../assets/diagrams/ch18/ch18-04-08-workload.png)
-
-图：先按产品 CUJ 规划输入与权重，再记录进程和缓存状态及实际采样覆盖。 r6 的 top100/crawler/launch 是既定采集方案；博客 85% 相似度不是代码覆盖率，也不替 OEM 验证代表性。
 
 ---
 
@@ -274,10 +254,6 @@ Android 17 的 simpleperf 文档和当前 ACK README 给出的内核流程可以
 
 地址还原必须使用采集镜像配套的 vmlinux 与模块，先核对 build ID、构建记录和代码布局；未剥离 ELF 不自动证明有可用 DWARF。`--allow-mismatched-build-id` 在 r1 的分支列表路径会清空匹配键里的 build ID，允许不同来源混入，所以下面的默认转换保留严格匹配。源码更新后的 Profile 重应用是后续阶段，不能用它为错误的采集二进制地址还原辩护。
 
-<!-- gracker-diagram: ch18-04-09-binary-binding -->
-![采集二进制与后续目标构建分别匹配](../../assets/diagrams/ch18/ch18-04-09-binary-binding.png)
-
-图：地址还原先绑定采集镜像的原始 ELF、build ID 和调试信息，生成 Profile 后再谈源码漂移。 未剥离不保证有 DWARF；放宽 build ID 会削弱来源约束，不能用目标源码相近解释错误地址还原。
 
 ### 2. 在设备上录制并转换为分支列表
 
@@ -297,10 +273,6 @@ adb shell 'cd /data/local/tmp &&
 
 前面的 `record -z` 只压缩 `perf.data`；如需压缩分支列表，应为 `inject --output branch-list` 另加 `-z`。文档建议多次录制，因为 ETM 指令流在高负载下可能因缓冲区溢出或采样限速而丢失。多份 Profile 能增加覆盖范围，但也可能放大异常工作负载产生的噪声。
 
-<!-- gracker-diagram: ch18-04-10-device-capture -->
-![设备采集与 branch-list 是两个阶段](../../assets/diagrams/ch18/ch18-04-10-device-capture.png)
-
-图：record 在业务窗口采集 perf.data，inject 再生成目标内核的 branch-list。 record 不触发 CUJ；-z 对 record 容器和 branch-list 输出分别配置，失败或空输出不能直接进入下一阶段。
 
 ### 3. 在主机上生成 AutoFDO 文本 Profile
 
@@ -352,10 +324,6 @@ llvm-profdata show --sample --all-functions kernel.afdo
 
 内核 Profile 不可能覆盖所有错误处理、中断和低频管理路径。让未采样函数继续使用标准优化策略，可以降低覆盖不足导致这些函数被错误降级优化的风险，也能避免某些热/冷代码段与初始化代码段不匹配。
 
-<!-- gracker-diagram: ch18-04-13-conversion-switches -->
-![binary、FS 与 symbol list 的不同契约](../../assets/diagrams/ch18/ch18-04-13-conversion-switches.png)
-
-图：配套二进制保证地址归因，FS discriminator 使用已有路径信息，symbol list 影响未覆盖函数的处理。 r6 README 显式要求 prof_sym_list=false；所用工具版本的默认值和 Soong incomplete_coverage 都需分别核对。
 
 ---
 
@@ -383,10 +351,6 @@ AutoFDO 还有一种不容易发现的失败：Profile 已成功接入构建，�
 
 固定源码标签能划定复现范围。分支最新提交（HEAD）中的 `kernel.afdo` 会持续更新；如果不保存所用 Profile 文件的确切内容，就无法解释两次构建之间的差异。
 
-<!-- gracker-diagram: ch18-04-14-profile-drift -->
-![地址还原严格匹配与源码 Profile 漂移分开](../../assets/diagrams/ch18/ch18-04-14-profile-drift.png)
-
-图：采集阶段使用匹配二进制还原地址，后续编译按源码位置匹配 Profile 并验证漂移影响。 relative line 和 stale-profile salvage 只提供一定容忍；Profile 可读不代表仍适合当前代码与产品负载。
 
 ### 覆盖率不等于代表性
 
@@ -415,10 +379,6 @@ Profile 覆盖更多函数并不一定更好。如果后台压力测试、开机
 - 二进制代码段大小；
 - 崩溃、任务长时间无响应（hung task）和看门狗超时。
 
-<!-- gracker-diagram: ch18-04-15-quality-gates -->
-![Profile 验收覆盖输入、输出与业务结果](../../assets/diagrams/ch18/ch18-04-15-quality-gates.png)
-
-图：Profile 质量同时检查代表性、有效样本和构建后的业务分布与稳定性。 几何平均或单个最佳值会掩盖关键回退；代码覆盖更多也不保证 CUJ 权重更接近真实产品。
 
 ---
 
@@ -456,10 +416,6 @@ Perfetto 适合比较：
 
 同一 CUJ 要运行足够多的轮次，并保持相同的缓存和进程状态。只比较一次运行的截图没有统计意义。
 
-<!-- gracker-diagram: ch18-04-17-perfetto -->
-![Perfetto 把业务、执行和等待放在同一时序](../../assets/diagrams/ch18/ch18-04-17-perfetto.png)
-
-图：Perfetto 比较同一 CUJ 的启动、Binder、调度、缺页和 I/O 阶段。 AutoFDO 没有专属 slice；trace 关联执行路径与等待，多轮且缓存、进程状态相同才可解释变化。
 
 ### simpleperf 看函数和硬件事件
 
@@ -477,17 +433,9 @@ adb shell simpleperf stat \
 
 非 root 目标须满足 debuggable/profileable 与设备策略。r1 在 Android 16+ 优先走设备自带 simpleperf 的 simpleperf_app_runner；侧载新 binary 不自动取得同样权限。cache-misses 不自动等于指令缓存未命中，按 SoC 查询事件语义，并检查 PMU 复用与运行时间覆盖。函数变化用 record/report 另采；内核主体、GKI 模块和厂商模块分别归因。
 
-<!-- gracker-diagram: ch18-04-18-stat-scope -->
-![stat 的应用进程计数与系统级范围不同](../../assets/diagrams/ch18/ch18-04-18-stat-scope.png)
-
-图：simpleperf stat 在找到应用进程后计数，函数热点另用 record/report，系统结果还要看其他执行上下文。 duration 不含前置等待且 --app 不启动业务；cache-misses 不自动等于 I-cache，事件权限和 PMU 复用影响解释。
 
 冷启动更快但 CPU 周期更多，可能涉及频率、并行度、I/O 或工作量变化；微基准变快而 CUJ 未变，也可能是该路径不主导关键耗时、差异低于噪声或被其他回退抵消。沿关键路径和多轮分布继续检验，不把单一现象当作唯一根因，也不只挑正向指标。
 
-<!-- gracker-diagram: ch18-04-19-interpretation -->
-![微基准与 CUJ 差异需要继续验证](../../assets/diagrams/ch18/ch18-04-19-interpretation.png)
-
-图：用关键路径与多轮数据解释延迟、周期数和整机 CUJ 的不同变化。 微基准变快而 CUJ 未变并不唯一证明不是瓶颈；噪声、并行、I/O 与其他回退都可能影响结果。
 
 ---
 
@@ -524,10 +472,6 @@ adb shell simpleperf stat \
 
 应用包含大型 C/C++ 库时，也可以建立自己的采样 PGO 流程，但那是针对该原生构建目标的优化，不等同于 Android GKI AutoFDO。
 
-<!-- gracker-diagram: ch18-04-21-roles -->
-![平台、内核和应用分别控制自己的构建目标](../../assets/diagrams/ch18/ch18-04-21-roles.png)
-
-图：平台与 OEM 管理系统原生目标和内核，应用团队管理 DEX Profile 及自有原生库。 应用不控制系统 libart/libhwui/GKI 的发布；Pixel 内核收益不构成某 App 自身收益承诺。
 
 ---
 
@@ -582,10 +526,6 @@ adb shell simpleperf stat \
 
 完整证据需要回答四个问题：Profile 采集了什么工作负载、对应哪个二进制、由哪条构建规则读取、收益通过哪些 A/B 结果确认。缺少任何一项，都只能说明 AutoFDO 选项已经开启，不能证明目标产物获得了收益。
 
-<!-- gracker-diagram: ch18-04-22-release-evidence -->
-![四组证据闭合后才报告优化收益](../../assets/diagrams/ch18/ch18-04-22-release-evidence.png)
-
-图：将工作负载、原始二进制、实际构建采用和当前产品 A/B 结果对应，形成可复核记录。 选项打开、文件存在或构建成功只覆盖其中一环；代码、负载和 Profile 更新后要重新核实适用范围。
 
 
 ## 本次核对的一手入口

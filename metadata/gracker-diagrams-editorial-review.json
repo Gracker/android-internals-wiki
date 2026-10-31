@@ -50234,9 +50234,221 @@
       "before_count": 22,
       "before_all_images": 22,
       "sha256_before": "06f956510d6d52b713079f77af3a0a48fbd50ef457b7fe0ab631aa01b277f3eb",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "ch18-04-01-feedback-loop",
+          "title": "AutoFDO 从代表性运行反馈到重新发布",
+          "decision": "remove",
+          "reason": "Opening feedback diagram duplicates the seven-step plain flow immediately above and later actual build/conversion diagrams.",
+          "original_line": 85,
+          "heading": "# AutoFDO 反馈导向优化与 Android 验证"
+        },
+        {
+          "original_id": "ch18-04-02-pgo-types",
+          "title": "插桩计数与采样归因的不同输入",
+          "decision": "remove",
+          "reason": "Instrumentation-versus-sampling columns duplicate precise PGO comparison table and overhead paragraph.",
+          "original_line": 110,
+          "heading": "## Sample PGO 与 AutoFDO"
+        },
+        {
+          "original_id": "ch18-04-03-compiler-decisions",
+          "title": "Profile 如何改变编译器的优化决策",
+          "decision": "remove",
+          "reason": "Compiler optimization checklist repeats five concrete influence bullets and machinecode/regression paragraph; no actualIR/codeexample.",
+          "original_line": 129,
+          "heading": "### 编译器如何使用 Profile"
+        },
+        {
+          "original_id": "ch18-04-04-soong",
+          "title": "Soong 从模块属性到真实 sample-use",
+          "decision": "keep",
+          "reason": "Retain Soong afdo declaration -> eng/coverage/host branch -> eligibledevice archprofile/staticvariants -> actualsampleuse arguments, not attributetruealone.",
+          "original_line": 154,
+          "heading": "## Android 17 的用户空间接入"
+        },
+        {
+          "original_id": "ch18-04-05-native-art",
+          "title": "LLVM 原生目标与 ART 应用 DEX 分别反馈",
+          "decision": "remove",
+          "reason": "AutoFDO-versus-ART columns duplicate complete five-row target/compiler/input/stage/owner table.",
+          "original_line": 171,
+          "heading": "### 与 ART Baseline Profile 的区别"
+        },
+        {
+          "original_id": "ch18-04-06-gki-build",
+          "title": "GKI Profile 从固定快照进入编译与链接",
+          "decision": "keep",
+          "reason": "Retain exactr6 profileprovenance -> BUILDtargetbinding -> C/Rust/ThinLTO actualflags -> artifact/productAB, distinctfromuserspaceSoong.",
+          "original_line": 192,
+          "heading": "## Android 17 GKI 已接入 `kernel.afdo`"
+        },
+        {
+          "original_id": "ch18-04-07-trace-hardware",
+          "title": "指令轨迹源、sink 与 perf 软件接口",
+          "decision": "keep",
+          "reason": "Retain alternative ETM/ETE sources and ETR/TRBE sinks converging on perf/cs-etm, with topology/errata/permissions gate.",
+          "original_line": 236,
+          "heading": "### PMU、ETM/ETE 与 TRBE 的分工"
+        },
+        {
+          "original_id": "ch18-04-08-workload",
+          "title": "工作负载覆盖与权重决定 Profile 优化方向",
+          "decision": "remove",
+          "reason": "Generic workload/weights/multirun/hotspot validation pipeline repeats precise README workload bullets and quality paragraphs; no actualweights plotted.",
+          "original_line": 254,
+          "heading": "### 为什么工作负载比采样时长更重要"
+        },
+        {
+          "original_id": "ch18-04-09-binary-binding",
+          "title": "采集二进制与后续目标构建分别匹配",
+          "decision": "remove",
+          "reason": "Strictcapturebinary -> symbols -> sourceprofile repeats concrete hostaddress11 and conversion13 plus exact matching paragraph; avoid another generic provenance diagram.",
+          "original_line": 277,
+          "heading": "### 1. 准备可还原的构建"
+        },
+        {
+          "original_id": "ch18-04-10-device-capture",
+          "title": "设备采集与 branch-list 是两个阶段",
+          "decision": "remove",
+          "reason": "Device record/inject/checkfile workflow duplicates exactsevenline commands and container/branchlist distinction in adjacent prose; retain concrete hostaddressmapping11.",
+          "original_line": 300,
+          "heading": "### 2. 在设备上录制并转换为分支列表"
+        },
+        {
+          "original_id": "ch18-04-11-host-addresses",
+          "title": "主机合并、内核地址还原和文件偏移",
+          "decision": "keep",
+          "reason": "Retain branchlist runtimeaddress/kernelstart + strictbinaryidentity -> ELFlinkaddress -> fileoffset -> checkedexecution/branchcounts.",
+          "original_line": 325,
+          "heading": "### 3. 在主机上生成 AutoFDO 文本 Profile"
+        },
+        {
+          "original_id": "ch18-04-13-conversion-switches",
+          "title": "binary、FS 与 symbol list 的不同契约",
+          "decision": "remove",
+          "reason": "Three conversionflag columns duplicate exact three-item argument list and explicit false/default/sourcecondition caveats.",
+          "original_line": 355,
+          "heading": "### 4. 转换为 LLVM 采样 Profile"
+        },
+        {
+          "original_id": "ch18-04-12-llvm-convert",
+          "title": "文本计数与 DWARF 合成 LLVM 采样 Profile",
+          "decision": "keep",
+          "reason": "Retain binaryoffsetcounts plus matchingDWARF/inline/discriminator -> create_llvm_prof extbinary -> parsedfunctions/locations/nonzeros, distinguishing formats and nonemptyversusvalid.",
+          "original_line": 364,
+          "heading": "### 4. 转换为 LLVM 采样 Profile"
+        },
+        {
+          "original_id": "ch18-04-14-profile-drift",
+          "title": "地址还原严格匹配与源码 Profile 漂移分开",
+          "decision": "remove",
+          "reason": "Captureidentity-versus-laterprofilesourcedrift pipeline duplicates matching9/11/13 and precise QCparagraph; sourceprofile drift and salvage constraints remain.",
+          "original_line": 386,
+          "heading": "### Profile 必须与二进制版本接近"
+        },
+        {
+          "original_id": "ch18-04-15-quality-gates",
+          "title": "Profile 验收覆盖输入、输出与业务结果",
+          "decision": "remove",
+          "reason": "Input/output/releasequality columns repeat CUJweight list and full metric/regression list without actual distributions.",
+          "original_line": 418,
+          "heading": "### 不能只看几何平均值"
+        },
+        {
+          "original_id": "ch18-04-16-ab-flags",
+          "title": "A/B 保持准备条件并记录伴随优化开关",
+          "decision": "keep",
+          "reason": "Retain commonAFDOpreparation -> profileapplication -> fullcompile/linkflagdifferences -> pairedmultirun, preventing entireAFDOtoggle from silently changing extra variables.",
+          "original_line": 442,
+          "heading": "### 构建变量只保留 Profile"
+        },
+        {
+          "original_id": "ch18-04-17-perfetto",
+          "title": "Perfetto 把业务、执行和等待放在同一时序",
+          "decision": "remove",
+          "reason": "Generic PerfettoCUJ/phase/scheduling/distribution pipeline repeats five named evidencebullets and workload paragraph.",
+          "original_line": 459,
+          "heading": "### Perfetto 看系统结果"
+        },
+        {
+          "original_id": "ch18-04-18-stat-scope",
+          "title": "stat 的应用进程计数与系统级范围不同",
+          "decision": "remove",
+          "reason": "Appstat/functionprofile/systemwide scope columns repeat two precise command-contract paragraphs; no actualexecutioncontext diagram.",
+          "original_line": 480,
+          "heading": "### simpleperf 看函数和硬件事件"
+        },
+        {
+          "original_id": "ch18-04-19-interpretation",
+          "title": "微基准与 CUJ 差异需要继续验证",
+          "decision": "remove",
+          "reason": "Outcome classification tree repeats oneparagraph with alternative explanations and releaseuncertainty; gives no actual data to separate hypotheses.",
+          "original_line": 487,
+          "heading": "### simpleperf 看函数和硬件事件"
+        },
+        {
+          "original_id": "ch18-04-20-modules",
+          "title": "模块 Profile 需要独立 ELF、转换支持和 DDK 接入",
+          "decision": "keep",
+          "reason": "Retain independentmodule.ko identity/DWARF -> moduleaddresssamples -> ET_REL.textmapping -> DDKprofilebinding -> module+CUJ validation.",
+          "original_line": 511,
+          "heading": "### OEM / 平台团队"
+        },
+        {
+          "original_id": "ch18-04-21-roles",
+          "title": "平台、内核和应用分别控制自己的构建目标",
+          "decision": "remove",
+          "reason": "Platform/kernel/application responsibility columns duplicate preceding ownersections and native-versusART table.",
+          "original_line": 527,
+          "heading": "### 应用开发者"
+        },
+        {
+          "original_id": "ch18-04-22-release-evidence",
+          "title": "四组证据闭合后才报告优化收益",
+          "decision": "remove",
+          "reason": "Final four-evidence loop repeats exactfourquestions in preceding paragraph and retained concrete profile/build/conversion/AB diagrams.",
+          "original_line": 585,
+          "heading": "## 源码阅读顺序"
+        }
+      ],
+      "sha256_after": "15fcb505e0dd2270bd16489484dab9f206f38422fdf0a6856a61594ea31ce05e",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:28:48.835683+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 22,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a192/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a192/visual-review.json",
+      "retired_diagrams": [
+        "ch18-04-01-feedback-loop",
+        "ch18-04-02-pgo-types",
+        "ch18-04-03-compiler-decisions",
+        "ch18-04-05-native-art",
+        "ch18-04-08-workload",
+        "ch18-04-09-binary-binding",
+        "ch18-04-10-device-capture",
+        "ch18-04-13-conversion-switches",
+        "ch18-04-14-profile-drift",
+        "ch18-04-15-quality-gates",
+        "ch18-04-17-perfetto",
+        "ch18-04-18-stat-scope",
+        "ch18-04-19-interpretation",
+        "ch18-04-21-roles",
+        "ch18-04-22-release-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-192/retired-assets.json"
     },
     {
       "index": 193,
@@ -51152,8 +51364,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 123,
-  "next_article": "src/part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md",
+  "reviewed_articles": 124,
+  "next_article": "src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -51163,7 +51375,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:25:01.387124+08:00",
+  "updated_at": "2026-10-31T15:28:48.835683+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -51404,9 +51616,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4111,
-  "reviewed_placements_after": 1761,
-  "net_removed_placements": 2350,
+  "reviewed_placements_before": 4133,
+  "reviewed_placements_after": 1768,
+  "net_removed_placements": 2365,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -51430,5 +51642,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 123
+  "currently_matching_reviewed_source_count": 124
 }
