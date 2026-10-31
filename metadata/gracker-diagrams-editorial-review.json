@@ -49947,9 +49947,285 @@
       "before_count": 30,
       "before_all_images": 30,
       "sha256_before": "c83f1ad9df70ea39210a71d94659ac1f869c35ae12de57c26c4c5e99a633865d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 15,
+      "decisions": [
+        {
+          "original_id": "ch18-03-01-baseline",
+          "title": "平台、GKI 与设备运行版本分别固定",
+          "decision": "remove",
+          "reason": "Platform/kernel/device provenance columns repeat opening baseline paragraphs and full feature/evidence table.",
+          "original_line": 106,
+          "heading": "### 平台与内核的版本基线"
+        },
+        {
+          "original_id": "ch18-03-02-eevdf",
+          "title": "EEVDF 从 eligibility 到虚拟截止时间",
+          "decision": "keep",
+          "reason": "Retain runnable -> lag eligibility -> eligible-set virtualdeadline -> chosenentity, without assigningUI semantics or fixedlatency.",
+          "original_line": 135,
+          "heading": "#### EEVDF：fair scheduler 的 lag / deadline 模型"
+        },
+        {
+          "original_id": "ch18-03-03-scx-scope",
+          "title": "sched_ext 加载模式决定任务范围",
+          "decision": "keep",
+          "reason": "Retain loadedBPFscheduler fullversusSWITCH_PARTIAL taskscope and unaffectedRT/DL branches.",
+          "original_line": 157,
+          "heading": "#### sched_ext：用 BPF 实现可扩展调度器"
+        },
+        {
+          "original_id": "ch18-03-04-scx-dsq",
+          "title": "DSQ 与可跳过 enqueue 的分支",
+          "decision": "keep",
+          "reason": "Retain DSQ dispatch path with localfirst/global/dispatch and alternative select_cpu directlocal insertion bypassing enqueue.",
+          "original_line": 166,
+          "heading": "#### sched_ext：用 BPF 实现可扩展调度器"
+        },
+        {
+          "original_id": "ch18-03-05-scx-state",
+          "title": "当前状态、加载历史和故障回退",
+          "decision": "remove",
+          "reason": "Config/current/history/taskstate columns duplicate exact readonlycommands and nonatomicsnapshot paragraph; no state machine drawn.",
+          "original_line": 185,
+          "heading": "#### sched_ext：用 BPF 实现可扩展调度器"
+        },
+        {
+          "original_id": "ch18-03-06-f2fs-merge",
+          "title": "F2FS checkpoint merge 的条件与等待",
+          "decision": "keep",
+          "reason": "Retain mergeenabled/CP_SYNC/unmountowner gates, missingthread synchronousfallback, issue_list wake and callercompletionwait.",
+          "original_line": 200,
+          "heading": "#### F2FS checkpoint merge：先确认挂载选项"
+        },
+        {
+          "original_id": "ch18-03-07-wal",
+          "title": "SQLite WAL 与文件系统 checkpoint 分层",
+          "decision": "keep",
+          "reason": "Retain separate SQLiteFULL/NORMAL WALsync behavior versus filesystemcheckpoint/merge conditions, avoiding mandatory commit-to-merge chain.",
+          "original_line": 207,
+          "heading": "#### F2FS checkpoint merge：先确认挂载选项"
+        },
+        {
+          "original_id": "ch18-03-08-io-uring",
+          "title": "io_uring 从内核能力到应用采用",
+          "decision": "remove",
+          "reason": "io_uring implementation/sandbox/adoption/fallback checklist repeats exact adjacent feature/API-boundary paragraphs without actual peropcode flow.",
+          "original_line": 218,
+          "heading": "#### io_uring 在应用层的可用性"
+        },
+        {
+          "original_id": "ch18-03-09-verity",
+          "title": "r6 实现与 multi-buffer 补丁实验分开",
+          "decision": "remove",
+          "reason": "r6versusv8patchversusdevice columns duplicate explicit two implementation/evidence paragraphs and featuretable; no actual hashing process illustrated.",
+          "original_line": 229,
+          "heading": "#### dm-verity multi-buffer hashing：r6 未合入"
+        },
+        {
+          "original_id": "ch18-03-10-autofdo",
+          "title": "AutoFDO 的配置、profile、构建和产物绑定",
+          "decision": "keep",
+          "reason": "Retain executionprofile provenance -> kernel.afdo -> config/buildtargetbinding -> compileroptimization -> actualartifact/singleprofileAB.",
+          "original_line": 250,
+          "heading": "### AutoFDO Profile-Guided Optimization 的内核应用"
+        },
+        {
+          "original_id": "ch18-03-11-mglru",
+          "title": "MGLRU 的页面代际与回收选择",
+          "decision": "keep",
+          "reason": "Retain memcg/node page recency aging and oldgeneration candidate selection with refault/swappiness/workingset constraints.",
+          "original_line": 267,
+          "heading": "#### generation 表示访问时间窗口"
+        },
+        {
+          "original_id": "ch18-03-12-lmkd",
+          "title": "页面回收通过压力中间量影响 lmkd",
+          "decision": "keep",
+          "reason": "Retain reclaim -> PSI/refault/swap/waterlevel mediators -> lmkdpressure/priority -> actualexit/userresults, no directgeneration-to-kill claim.",
+          "original_line": 297,
+          "heading": "#### 对 lmkd 的影响路径"
+        },
+        {
+          "original_id": "ch18-03-13-observable",
+          "title": "机制状态、时间轨迹和因果实验相互补证",
+          "decision": "remove",
+          "reason": "State/trace/AB evidence columns repeat detailed observability table and exact limitationparagraph.",
+          "original_line": 316,
+          "heading": "### 在 Perfetto 中的可观测性"
+        },
+        {
+          "original_id": "ch18-03-14-ab",
+          "title": "单因素对照与没有检出差异的边界",
+          "decision": "remove",
+          "reason": "Generic singlefactor/interleave/distribution workflow repeats five numbered ABsteps and final isolation rules.",
+          "original_line": 331,
+          "heading": "#### A/B 设计"
+        },
+        {
+          "original_id": "ch18-03-15-security-gates",
+          "title": "安全机制启用必须同时满足三类条件",
+          "decision": "remove",
+          "reason": "Three security condition columns repeat the immediately preceding three-item build/hardware/runtime conjunction and mechanism table.",
+          "original_line": 379,
+          "heading": "### 1. 先确认三个条件"
+        },
+        {
+          "original_id": "ch18-03-16-kaslr",
+          "title": "KASLR 从早期种子到状态与模块范围",
+          "decision": "keep",
+          "reason": "Retain earlyKASLRallowed -> seedread/clear/RNDRfallback -> imageoffset/relocation -> separate status/modulescope checks.",
+          "original_line": 419,
+          "heading": "### 2. KASLR：启动阶段的地址随机化"
+        },
+        {
+          "original_id": "ch18-03-17-kpti",
+          "title": "KPTI 在用户态与内核入口的映射切换",
+          "decision": "keep",
+          "reason": "Retain enabledKPTI userview -> exceptionentry -> trampoline/kernelmapping -> restoreduserview, scoped to actualCPU/runtimepolicy.",
+          "original_line": 440,
+          "heading": "### 3. KPTI：是否执行页表切换由 CPU 判定"
+        },
+        {
+          "original_id": "ch18-03-18-spectre-v1",
+          "title": "Spectre v1 在索引数据依赖处局部限制",
+          "decision": "keep",
+          "reason": "Retain index/size -> architecturemaskgeneration -> CSDB -> indexmaskdata dependency, distinctfromSSBS.",
+          "original_line": 451,
+          "heading": "#### 4.1 Spectre v1：局部代码修复"
+        },
+        {
+          "original_id": "ch18-03-19-speculation-paths",
+          "title": "v2、BHB 与存储绕过各自选择缓解",
+          "decision": "remove",
+          "reason": "v2/BHB/storebypass columns repeat precise subsection explanations and optiontable; no actualCPU-specific selection tree.",
+          "original_line": 470,
+          "heading": "#### 4.3 Spectre-BHB 与 Speculative Store Bypass"
+        },
+        {
+          "original_id": "ch18-03-20-pac",
+          "title": "PAC 密钥生命周期和返回地址保护范围",
+          "decision": "remove",
+          "reason": "PAC keylifecycle/codepolicy/evidence columns repeat three precise localparagraphs; no actual authentication datapath or lifecycle branch drawn.",
+          "original_line": 502,
+          "heading": "#### 5.1 PAC：指针认证码"
+        },
+        {
+          "original_id": "ch18-03-22-dynamic-scs",
+          "title": "r6 动态 SCS 按 PAC/BTI 能力选择",
+          "decision": "keep",
+          "reason": "Retain r6 earlyPAC/BTI capability alternative selecting preservedsequence versus dynamicSCS rewrite; prevents adding all configurations as simultaneouscost.",
+          "original_line": 515,
+          "heading": "#### 5.3 Shadow Call Stack"
+        },
+        {
+          "original_id": "ch18-03-21-bti-kcfi",
+          "title": "BTI 与 KCFI 在间接调用处检查不同条件",
+          "decision": "keep",
+          "reason": "Retain indirectcall KCFItype, target BTIlanding and backwardPAC/SCS return checks as distinct protection sites.",
+          "original_line": 524,
+          "heading": "#### 5.4 KCFI"
+        },
+        {
+          "original_id": "ch18-03-23-elf-evidence",
+          "title": "ELF 属性、指令抽查与运行检查各有边界",
+          "decision": "remove",
+          "reason": "Readelf/objdump/linkedlibrary/runtimeverification checklist repeats exact commands and paragraph with missingcoverage caveats.",
+          "original_line": 539,
+          "heading": "#### 5.4 KCFI"
+        },
+        {
+          "original_id": "ch18-03-24-mte-tags",
+          "title": "MTE 的标签匹配与故障报告模式",
+          "decision": "keep",
+          "reason": "Retain tagcomparison with sync/async/asymmetric reporting branches,16B/4bitformat and asynchronouslocationlimits.",
+          "original_line": 548,
+          "heading": "### 6. MTE 标签粒度与内存开销"
+        },
+        {
+          "original_id": "ch18-03-25-mte-cost",
+          "title": "MTE 配置到性能与内存指标的测量边界",
+          "decision": "remove",
+          "reason": "MTEconfig/allocation/businesscost inventory repeats five exact metricbullets and runtime/Scudo paragraphs; no quantitativecostexample.",
+          "original_line": 565,
+          "heading": "### 6. MTE 标签粒度与内存开销"
+        },
+        {
+          "original_id": "ch18-03-26-gcs",
+          "title": "GCS 的用户态线程启用与返回检查",
+          "decision": "keep",
+          "reason": "Retain kernel+CPU -> AArch64auxvec -> earlyperthreadenable -> protectedcall/return chain, not automatickernelGCS or arbitrarymidstackenable.",
+          "original_line": 580,
+          "heading": "### 7. GCS：Android 17 内核提供用户态 ABI"
+        },
+        {
+          "original_id": "ch18-03-27-device-evidence",
+          "title": "设备构建、启动、能力和进程状态分别读",
+          "decision": "remove",
+          "reason": "Config/boot/auxvec/mapping checklist duplicates readonlycommand explanations and each mechanism adoptionproof boundary.",
+          "original_line": 605,
+          "heading": "#### 8.1 核对构建与启动状态"
+        },
+        {
+          "original_id": "ch18-03-28-pmu",
+          "title": "PMU 计数先核对可用性与分母",
+          "decision": "remove",
+          "reason": "Three PMUformula columns repeat exact paragraph definitions and missingdenominator/coverage constraints; no numericcounterexample drawn.",
+          "original_line": 634,
+          "heading": "#### 8.2 为工作负载建立归因"
+        },
+        {
+          "original_id": "ch18-03-29-patch-state",
+          "title": "安全补丁状态 API 与执行机制状态分层",
+          "decision": "remove",
+          "reason": "SecuritypatchAPI versus availableupdate versus actualmechanism columns repeat two precise adjacent paragraphs; no actualprovider/dataassociation shown.",
+          "original_line": 664,
+          "heading": "#### 8.4 应用侧可见的补丁状态"
+        },
+        {
+          "original_id": "ch18-03-30-app-path",
+          "title": "应用优化从真实热点和可控路径入手",
+          "decision": "remove",
+          "reason": "Generic observehotspot/change/productionconditionretest loop repeats six specific applicationoptimization bullets and finalchecklist.",
+          "original_line": 682,
+          "heading": "### 9. 应用与系统性能优化边界"
+        }
+      ],
+      "sha256_after": "e5267a6a9f3b7f0a84c371dd8c74e1f7e3c478c6da1e27a03384b3320786adc4",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:25:01.387124+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 30,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a191/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a191/visual-review.json",
+      "retired_diagrams": [
+        "ch18-03-01-baseline",
+        "ch18-03-05-scx-state",
+        "ch18-03-08-io-uring",
+        "ch18-03-09-verity",
+        "ch18-03-13-observable",
+        "ch18-03-14-ab",
+        "ch18-03-15-security-gates",
+        "ch18-03-19-speculation-paths",
+        "ch18-03-20-pac",
+        "ch18-03-23-elf-evidence",
+        "ch18-03-25-mte-cost",
+        "ch18-03-27-device-evidence",
+        "ch18-03-28-pmu",
+        "ch18-03-29-patch-state",
+        "ch18-03-30-app-path"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-191/retired-assets.json"
     },
     {
       "index": 192,
@@ -50876,8 +51152,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 122,
-  "next_article": "src/part4-system/ch18-aosp/03-android17-kernel-arm64-security.md",
+  "reviewed_articles": 123,
+  "next_article": "src/part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -50887,7 +51163,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:20:40.388049+08:00",
+  "updated_at": "2026-10-31T15:25:01.387124+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -51128,9 +51404,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4081,
-  "reviewed_placements_after": 1746,
-  "net_removed_placements": 2335,
+  "reviewed_placements_before": 4111,
+  "reviewed_placements_after": 1761,
+  "net_removed_placements": 2350,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -51154,5 +51430,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 122
+  "currently_matching_reviewed_source_count": 123
 }

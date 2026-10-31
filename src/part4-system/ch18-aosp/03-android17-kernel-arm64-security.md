@@ -103,10 +103,6 @@ GKI（Generic Kernel Image，通用内核镜像）把通用内核与板级 vendo
 
 设备真正采用 `android17-6.18-2026-06_r6` release build，还需要相容的 vendor modules、产品配置和启动参数。所以源码 tag 里存在某个功能，只说明代码在仓库里；设备有没有启用它，要按后面各节给出的入口逐项核实。
 
-<!-- gracker-diagram: ch18-03-01-baseline -->
-![平台、GKI 与设备运行版本分别固定](../../assets/diagrams/ch18/ch18-03-01-baseline.png)
-
-图：先固定平台 tag、GKI 快照与 profile，再核对配套模块和设备实际启动产物。 源码包含、构建采用和设备启用是三层证据；用户态 ART 与 MessageQueue 的变化另行记账。
 
 ### 6.18 功能核查表
 
@@ -182,10 +178,6 @@ done'
 
 `state` 表示当前启停状态，`root/ops` 是当前调度器名称，`enable_seq` 大于零只说明本次开机后加载过调度器，不证明它现在仍运行，也不证明目标线程已切入。目标任务可再核对 `/proc/<pid>/sched` 的 ext 状态。以上读取不是原子快照，动态切换时要结合加载序号和采集时刻复查；unavailable 只表示当前无法读到，不能直接推成框架未编入。
 
-<!-- gracker-diagram: ch18-03-05-scx-state -->
-![当前状态、加载历史和故障回退](../../assets/diagrams/ch18/ch18-03-05-scx-state.png)
-
-图：配置、当前 scheduler、加载序号与目标任务状态各回答一个问题，错误退出再回退 fair class。 enable_seq 大于零仅证明加载过；SysRq-D 只 dump，SysRq-S 可终止，无法读取不等于未编入。
 
 ### 存储栈三项核查
 
@@ -215,10 +207,6 @@ r6 的 super.c 解析 `checkpoint_merge`/`nocheckpoint_merge`，默认选项设�
 
 AOSP 的 `external/liburing` 提供 native（原生） 静态库构建规则，这只说明平台把库准备好了；SQLite、Cronet、OkHttp 或 Java I/O 是否默认使用 io_uring，要另行确认。普通应用这条路上还排着 syscall 可用性、seccomp（系统调用过滤）、SELinux、NDK API 与设备内核配置这些关卡。没有调用栈或 syscall 级别的记录，我们就不把 io_uring 计入应用收益。
 
-<!-- gracker-diagram: ch18-03-08-io-uring -->
-![io_uring 从内核能力到应用采用](../../assets/diagrams/ch18/ch18-03-08-io-uring.png)
-
-图：io_uring 是否产生应用收益，要依次核对内核实现、沙箱可达性和真实调用。 liburing 构建规则不是 Java 库采用证明；NO_MMAP 描述 ring 内存，不能单独证明数据零拷贝。
 
 #### dm-verity multi-buffer hashing：r6 未合入
 
@@ -226,10 +214,6 @@ AOSP 的 `external/liburing` 提供 native（原生） 静态库构建规则，�
 
 2025 年发布到邮件列表的 v8 补丁曾报告 ARM64 与 x86_64 cold-cache dm-verity read 吞吐约提升 35%——cold cache 指数据尚未进入内存缓存，作者同时说明指标波动较大。这组数字属于补丁环境的结果：引用时连补丁一起注明，它进不了 `android17-6.18-2026-06_r6` 的收益表，也撑不起「Android 17 安装、冷启动或 OTA 固定提升」这类说法。
 
-<!-- gracker-diagram: ch18-03-09-verity -->
-![r6 实现与 multi-buffer 补丁实验分开](../../assets/diagrams/ch18/ch18-03-09-verity.png)
-
-图：r6 dm-verity 使用既有哈希路径，multi-buffer 的性能数字归属于明确包含补丁的实验。 约 35% 是补丁作者 cold-cache 吞吐结果且波动较大，不能移作 r6 或整机冷启动固定收益。
 
 #### 存储路径如何测
 
@@ -313,10 +297,6 @@ Perfetto 展示运行结果，单看一条 track 回答不了「EEVDF、MGLRU �
 
 这张表也有看不到的东西：`sched_switch` 只反映谁获得了 CPU，`pick_eevdf()` 的全部候选和 virtual deadline 它还原不了；`sched_ext_dump` 服务于错误或主动 dump，不是每次 BPF 调度决定的流水记录。要细看策略，就为目标 BPF scheduler 添加自己的 trace events。
 
-<!-- gracker-diagram: ch18-03-13-observable -->
-![机制状态、时间轨迹和因果实验相互补证](../../assets/diagrams/ch18/ch18-03-13-observable.png)
-
-图：机制状态确定采用范围，trace 确定执行与等待，固定构建 A/B 检验性能差异。 sched_switch 不还原 EEVDF 全候选，sched_ext_dump 也不是每次调度决策记录；细节需专门事件补证。
 
 #### A/B 设计
 
@@ -328,10 +308,6 @@ Perfetto 展示运行结果，单看一条 track 回答不了「EEVDF、MGLRU �
 4. 报告中位数、尾延迟、离散程度、频率驻留与温度；
 5. 把「没有检出差异」和「证明零开销」分开表述。
 
-<!-- gracker-diagram: ch18-03-14-ab -->
-![单因素对照与没有检出差异的边界](../../assets/diagrams/ch18/ch18-03-14-ab.png)
-
-图：固定运行条件，只改变一个因素，交错多轮实验并报告分布。 跨 Android 大版本会同时改变多个子系统；未检出差异不等于证明零开销，关闭缓解仅限正文限定的隔离工程环境。
 
 ### 版本演进：把平台版本和 GKI 分支分开
 
@@ -376,10 +352,6 @@ lmkd 仍按 Android 的压力与进程优先级策略决策；MGLRU 在页面回
 2. **硬件与固件条件**：CPU 实现架构特性，或固件提供内核所需的漏洞缓解调用。
 3. **运行时条件**：内核没有通过启动参数关闭功能；用户态机制还需要二进制或进程显式启用。
 
-<!-- gracker-diagram: ch18-03-15-security-gates -->
-![安全机制启用必须同时满足三类条件](../../assets/diagrams/ch18/ch18-03-15-security-gates.png)
-
-图：最终构建、硬件固件和运行时采用共同决定某项安全机制是否生效。 Kconfig 的 default y 受依赖与覆盖影响；用户态线程、映射与二进制策略还需各自取证。
 
 GKI 的基准配置 `gki_defconfig` 明确设置了 `CONFIG_RANDOMIZE_BASE=y`、`CONFIG_SHADOW_CALL_STACK=y`（SCS） 和 `CONFIG_CFI=y`，同时关闭了 `CONFIG_RANDOMIZE_MODULE_REGION_FULL`。PAC、BTI、MTE 与 GCS 在 `arch/arm64/Kconfig` 中是 `default y`，仍受工具链、硬件和运行时条件约束。
 
@@ -467,10 +439,6 @@ BHB（Branch History Buffer）保存近期分支历史，攻击者可能借此�
 
 Speculative Store Bypass 走另一套控制：`ssbd=` 是 SSBD（Speculative Store Bypass Disable）的启动参数，支持 `force-on`、`force-off` 和 `kernel`；`kernel` 表示内核持续使用缓解，并允许用户线程通过 `prctl()` 按需请求。`prctl()` 是调整进程或线程行为的系统调用，核查时与 Spectre v1、v2、BHB 分头进行。
 
-<!-- gracker-diagram: ch18-03-19-speculation-paths -->
-![v2、BHB 与存储绕过各自选择缓解](../../assets/diagrams/ch18/ch18-03-19-speculation-paths.png)
-
-图：Spectre v2、BHB 和 Speculative Store Bypass 分开核对 CPU、固件与运行时选择。 BTI 不是 Retpoline 或 v2 缓解替代；入口的 BHB 处理也不能预设成固定一条 SB 指令。
 
 设备上的只读状态节点，比按 CPU 名称推断可靠得多；工程机可读取以下信息建立证据链。
 
@@ -499,10 +467,6 @@ PAC（Pointer Authentication Code）把密钥、指针值及上下文计算成�
 
 用户态通过 `HWCAP_PACA` 和 `HWCAP_PACG` 获知相应能力，HWCAP 是内核通过 ELF 辅助向量交给进程的硬件能力位。二进制是否使用 PAC，取决于生成的指令与运行库策略，硬件支持本身并不会给已有代码自动加入函数序言与尾声；ELF note 是二进制中的构建属性记录，可作静态侧的依据，反汇编中的 `PAC*`/`AUT*` 指令才能直接说明目标代码包含认证序列。
 
-<!-- gracker-diagram: ch18-03-20-pac -->
-![PAC 密钥生命周期和返回地址保护范围](../../assets/diagrams/ch18/ch18-03-20-pac.png)
-
-图：PAC 根据密钥、指针和上下文生成认证信息，生成与校验代码必须真实存在。 r6 内核 PAC 选项保护函数返回地址，不能外推成全部函数指针签名；能力与 ELF 属性也不自动生成代码。
 
 #### 5.2 BTI：限制间接分支入口
 
@@ -536,10 +500,6 @@ llvm-objdump -d libexample.so |
 
 ELF note 描述构建属性，反汇编仅抽查若干 BTI/PAC/认证返回形式；没匹配这些例子不证明全部代码没有保护，旧工具还可能把指令显示成兼容 HINT。完整覆盖要看参与链接的静态/共享库、加载映射、AArch64 进程 HWCAP 和运行时页属性；声明、指令存在与硬件实际执行检查分别取证。
 
-<!-- gracker-diagram: ch18-03-23-elf-evidence -->
-![ELF 属性、指令抽查与运行检查各有边界](../../assets/diagrams/ch18/ch18-03-23-elf-evidence.png)
-
-图：将 ELF 构建属性、目标指令与进程实际加载和硬件检查逐层对应。 负向 grep 不是无保护证明；RETAA/RETAB 可融合认证返回，旧工具也可能把某些序列显示为 HINT。
 
 ### 6. MTE 标签粒度与内存开销
 
@@ -562,10 +522,6 @@ MTE 对每 16 字节 allocation granule 保存 4 位 allocation tag，指针携�
 
 PSS 按页共享关系分摊驻留页，RSS 统计驻留集合；Swap/SwapPss 则分别反映换出页与其比例分摊口径，匿名页之外还需留意 tmpfs/shmem 等可交换页。这些指标口径不同，应同时查看；Scudo 是 Android 使用的强化型原生堆分配器，分配与释放策略也会影响 MTE 的观测结果。
 
-<!-- gracker-diagram: ch18-03-25-mte-cost -->
-![MTE 配置到性能与内存指标的测量边界](../../assets/diagrams/ch18/ch18-03-25-mte-cost.png)
-
-图：Android 的 MTE 采用还涉及 runtime 与 Scudo，内存和 CPU 成本需要同业务负载分别测量。 4 位标签格式不能直接换算固定 PSS 百分比；RSS、PSS、Swap 与 SwapPss 是不同统计口径。
 
 [§4.9](../../part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md) 讨论 MTE 的进程配置，[§20.11](../../part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md) 讨论崩溃检测与治理；本节只限定内核能力与性能测量的范围。
 
@@ -602,10 +558,6 @@ adb shell 'grep -E "paca|pacg|bti|mte|gcs" /proc/cpuinfo'
 
 这些只读命令分别读取编译配置、启动命令行和内核公布的 CPU feature。压缩配置不可用时不能当作选项全关；`# CONFIG_… is not set` 与没有输出也要区分。用户态实际能力还应以目标架构进程的 ELF auxiliary vector 为准，PAC/BTI/MTE/GCS 的线程与映射状态需继续核实，不能从 cpuinfo 一步推出执行覆盖。
 
-<!-- gracker-diagram: ch18-03-27-device-evidence -->
-![设备构建、启动、能力和进程状态分别读](../../assets/diagrams/ch18/ch18-03-27-device-evidence.png)
-
-图：最终配置、启动参数、能力位和线程映射状态各自保存，并绑定同一个目标构建。 配置不可读或节点缺失保留未知；cpuinfo 与漏洞状态节点不能替代进程 auxiliary vector 或执行覆盖证据。
 
 #### 8.2 为工作负载建立归因
 
@@ -631,10 +583,6 @@ adb shell simpleperf stat \
 
 拿输出可以算 IPC（instructions per cycle，每周期指令数，此处不是进程间通信）；IPC 用可比较的 instructions/cycles 计数，branch-miss 比例用 branch-misses/branches，分母为零或事件不可用时保留 unknown。每次业务操作的 cycles 还需准确操作数；PMU 复用时核对计数缩放和运行时间覆盖。单次采样撑不起归因，预热、固定业务输入、记录温度与频率状态都要做。
 
-<!-- gracker-diagram: ch18-03-28-pmu -->
-![PMU 计数先核对可用性与分母](../../assets/diagrams/ch18/ch18-03-28-pmu.png)
-
-图：先确认事件可用与计数覆盖，再计算 IPC、分支失败率和每次业务操作的成本。 分母为零或事件不可用时记 unknown；PMU 复用需看缩放与运行时间覆盖，单次计数不完成因果归因。
 
 #### 8.3 A/B 测试的安全边界
 
@@ -661,10 +609,6 @@ AndroidX Security 发布说明显示，`androidx.security:security-state:1.1.0` 
 
 这组 API 适合回答设备当前补丁状态、是否存在可安装的安全更新，以及某个 CVE 是否已由厂商补充补丁记录（vendor supplemental patch records）覆盖；`areCvesPatched()` 会把这类补充记录纳入判断。它接替不了本节前面的 `.config`、启动参数、CPU capability、漏洞状态节点和负载测试：Security State 给出的是软件补丁合规性与可用更新状态，KPTI、BTI、MTE、GCS 等机制在当前内核路径或进程里的启用细节和运行成本，都在它的回答范围之外。
 
-<!-- gracker-diagram: ch18-03-29-patch-state -->
-![安全补丁状态 API 与执行机制状态分层](../../assets/diagrams/ch18/ch18-03-29-patch-state.png)
-
-图：Security State API 汇总补丁合规与可用更新，运行机制仍沿配置、CPU 与进程路径核实。 areCvesPatched 可纳入厂商补充记录；补丁已覆盖不等于每项硬件缓解已启用，也不提供运行成本。
 
 ### 9. 应用与系统性能优化边界
 
@@ -679,10 +623,6 @@ AndroidX Security 发布说明显示，`androidx.security:security-state:1.1.0` 
 
 Android NDK 的 Native APIs 文档没有把 `io_uring` 列为 Android 原生 API；直接调用它，面对的是 Linux kernel UAPI，即内核与用户空间之间的底层接口。某个 GKI 构建即使含有实现，SELinux 强制访问控制、seccomp 系统调用过滤器、系统调用可用性和 Android API 兼容范围仍可能限制普通应用；目标设备、应用沙箱和兼容范围都经过验证后，才能把它作为特定场景方案。
 
-<!-- gracker-diagram: ch18-03-30-app-path -->
-![应用优化从真实热点和可控路径入手](../../assets/diagrams/ch18/ch18-03-30-app-path.png)
-
-图：应用从系统调用、Binder、访存与热点调用栈定位可控成本，再验证修复后的业务结果。 批量、共享内存与 native 调整都须保留语义和生命周期；io_uring 的内核 UAPI 可达性另行核对。
 
 ### 10. 核查清单
 
