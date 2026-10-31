@@ -36678,9 +36678,871 @@
       "before_count": 77,
       "before_all_images": 77,
       "sha256_before": "b5591a2152c13d577624b1612233bf43a9ee65ce4042094f0672aab3d2670745",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 28,
+      "decisions": [
+        {
+          "original_id": "ch14-07-02-coverage-before-absence",
+          "title": "空结果先检查采集与解析覆盖",
+          "decision": "remove",
+          "reason": "四框重述96缺采/空表限定，14.1–14.6已完整数据路径和本文原段全留，删开篇提醒摘要。",
+          "original_line": 98,
+          "heading": "# Perfetto SQL、SPAN_JOIN 与 Jank CUJ"
+        },
+        {
+          "original_id": "ch14-07-01-analysis-route",
+          "title": "从可疑窗口到可复查结论",
+          "decision": "remove",
+          "reason": "四框重述107与后文1467/2693完整分析顺序，和40/77同义重复，删通用路线。",
+          "original_line": 109,
+          "heading": "# Perfetto SQL、SPAN_JOIN 与 Jank CUJ"
+        },
+        {
+          "original_id": "ch14-07-03-version-layers",
+          "title": "设备、分析引擎与界面分别固定版本",
+          "decision": "remove",
+          "reason": "三组六卡摘录122版本段，14.4已保留独立设备/host/platform图；本文UI/TP/设备限定和测试范围原文全留。",
+          "original_line": 124,
+          "heading": "### 查询前先固定分析对象与窗口"
+        },
+        {
+          "original_id": "ch14-07-04-identity-domains",
+          "title": "操作系统编号、实例、轨道与事件不能混用",
+          "decision": "remove",
+          "reason": "四卡逐项复制133–136四类标识清单，没有额外连接例，各领域具体身份图仍保留，删字典。",
+          "original_line": 138,
+          "heading": "#### 四类标识的分工"
+        },
+        {
+          "original_id": "ch14-07-05-choose-instance",
+          "title": "同名进程先拆成不同实例",
+          "decision": "remove",
+          "reason": "四步逐项摘要143发现SQL和169实例选择说明，21行SQL及实际upid占位解释全留，无额外进程复用示例。",
+          "original_line": 171,
+          "heading": "#### 四类标识的分工"
+        },
+        {
+          "original_id": "ch14-07-06-open-interval-boundary",
+          "title": "开放区间的裁剪终点是分析假设",
+          "decision": "remove",
+          "reason": "三组六卡逐项复述178开放区间/分位数限定，原is_open/end_basis/未闭合数量全部留；新SPAN输入图另给实际重叠示例，不复画定义。",
+          "original_line": 180,
+          "heading": "#### 时间、开放区间与窗口裁剪"
+        },
+        {
+          "original_id": "ch14-07-07-halfopen-clipping",
+          "title": "半开窗口按交集长度统计",
+          "decision": "remove",
+          "reason": "一般事件/窗口交集三轨与保留41固定输入/端点的实际示例同义，本文185公式/46行裁剪SQL全留，删简化几何副本。",
+          "original_line": 187,
+          "heading": "#### 时间、开放区间与窗口裁剪"
+        },
+        {
+          "original_id": "ch14-07-08-denominator-and-frame-time",
+          "title": "CPU 比例、回调时长与呈现期限各有口径",
+          "decision": "remove",
+          "reason": "三组六卡逐项摘录247及256–258CPU分母/doFrame/FrameTimeline三概念，正文和9实际时间轴更直接，删口径词典。",
+          "original_line": 251,
+          "heading": "#### 指标的分母、对照与帧时间量"
+        },
+        {
+          "original_id": "ch14-07-09-doframe-wall-cpu",
+          "title": "doFrame 变长后先拆调度状态",
+          "decision": "keep",
+          "reason": "doFrame外层与Running/排队/阻塞内层的实际两轨，不把wall变长等于计算增加，保留采样与threadstate独立证据。",
+          "original_line": 298,
+          "heading": "#### `Choreographer#doFrame` 用于寻找 UI 线程耗时工作"
+        },
+        {
+          "original_id": "ch14-07-10-frame-model-quality",
+          "title": "android_frames 的数量列不是完整采集证明",
+          "decision": "merge",
+          "reason": "原图“android_frames 的数量列不是完整采集证明”并入：合并android_frames代表ID与数量缺陷、唯一闭合overrun闸门和缺判定分类，避免把模型行或NULL当完整无卡顿。；锚点原图12，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 309,
+          "heading": "#### FrameTimeline 给出系统判帧依据",
+          "replacement_id": "ed14-07-frame-model-pairing-and-missing-verdict"
+        },
+        {
+          "original_id": "ch14-07-11-overrun-guard",
+          "title": "超额量先通过唯一闭合配对检查",
+          "decision": "merge",
+          "reason": "原图“超额量先通过唯一闭合配对检查”并入：合并android_frames代表ID与数量缺陷、唯一闭合overrun闸门和缺判定分类，避免把模型行或NULL当完整无卡顿。；锚点原图12，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 363,
+          "heading": "#### FrameTimeline 给出系统判帧依据",
+          "replacement_id": "ed14-07-frame-model-pairing-and-missing-verdict"
+        },
+        {
+          "original_id": "ch14-07-12-missing-verdict",
+          "title": "平台判定缺失与无卡顿分开统计",
+          "decision": "merge",
+          "reason": "原图“平台判定缺失与无卡顿分开统计”并入：合并android_frames代表ID与数量缺陷、唯一闭合overrun闸门和缺判定分类，避免把模型行或NULL当完整无卡顿。；锚点原图12，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 420,
+          "heading": "#### FrameTimeline 给出系统判帧依据",
+          "replacement_id": "ed14-07-frame-model-pairing-and-missing-verdict"
+        },
+        {
+          "original_id": "ch14-07-13-sched-occupancy",
+          "title": "按窗口内 sched 计算单核口径占比",
+          "decision": "remove",
+          "reason": "四步逐项重述55行schedSQL与491分母/采样限定，原代码和CPU占比公式全留，新频率图另区分known分母，删SQL流程复写。",
+          "original_line": 493,
+          "heading": "#### `sched` 回答线程何时占用 CPU"
+        },
+        {
+          "original_id": "ch14-07-14-state-interpretation",
+          "title": "运行、排队与阻塞用不同证据解释",
+          "decision": "remove",
+          "reason": "四卡逐项摘录502–507完整状态清单，14.3完整状态机制已保留，删枚举副本。",
+          "original_line": 509,
+          "heading": "#### `thread_state` 直接给出 `Runnable` 等待"
+        },
+        {
+          "original_id": "ch14-07-15-waker-evidence",
+          "title": "唤醒方标识缺失不代表没有唤醒",
+          "decision": "remove",
+          "reason": "四框逐项重述29行wakerSQL及607缺失解释，14.3身份/flags/因果合图和本文字段说明全留，无新唤醒现场，删查询摘要。",
+          "original_line": 609,
+          "heading": "#### `thread_state` 直接给出 `Runnable` 等待"
+        },
+        {
+          "original_id": "ch14-07-16-binder-pairing",
+          "title": "Binder 同步等待与单向发送分别统计",
+          "decision": "remove",
+          "reason": "三组六卡逐项重述618–622/648同步oneway/标签缺失段，原19行SQL和17两端状态关系保留，删定义重排。",
+          "original_line": 650,
+          "heading": "#### 用 `android_binder_txns` 配对客户端与服务端"
+        },
+        {
+          "original_id": "ch14-07-17-binder-state-decomposition",
+          "title": "Binder 两端分别与调度状态求交",
+          "decision": "keep",
+          "reason": "同步Binder客户端和服务端各自utid/事务区间的分支，保留client睡眠等待正常而serverR排队不同解释。",
+          "original_line": 685,
+          "heading": "#### 把 Binder 墙上时间分解为调度状态"
+        },
+        {
+          "original_id": "ch14-07-18-binder-pool-capacity",
+          "title": "线程池饱和需要容量和并发证据",
+          "decision": "remove",
+          "reason": "三组六卡逐项重述690单段容量/并发/队列/CPU统计限定，无实际池容量实例，正文更全，删检查项副本。",
+          "original_line": 692,
+          "heading": "#### 把 Binder 墙上时间分解为调度状态"
+        },
+        {
+          "original_id": "ch14-07-19-gc-wall-versus-pause",
+          "title": "GC 工作跨度与全线程暂停分开",
+          "decision": "keep",
+          "reason": "GC整段、GC工作线程状态与应用暂停证据三种观测对象并列，保留GCdur非全线程STW且回收量依赖heapcounter。",
+          "original_line": 731,
+          "heading": "#### GC 墙上时间与全线程暂停"
+        },
+        {
+          "original_id": "ch14-07-20-heap-sampling",
+          "title": "Java 堆 Counter 只给离散样本",
+          "decision": "remove",
+          "reason": "堆Counter保持值单轨与保留44同track前向值/首尾假设时轴重复，原单位和heap采样SQL全留。",
+          "original_line": 768,
+          "heading": "#### Java 堆计数器是离散采样点"
+        },
+        {
+          "original_id": "ch14-07-21-startup-measurement",
+          "title": "启动区间、首次显示与完全显示分别读取",
+          "decision": "merge",
+          "reason": "原图“启动区间、首次显示与完全显示分别读取”并入：合并平台启动模型和一次启动多upid重复显示量，区分startup次数、处理进程和最终displayupid。；锚点原图22，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 781,
+          "heading": "#### 平台启动事件优先于手工拼 `slice`",
+          "replacement_id": "ed14-07-startup-identity-and-display-boundaries"
+        },
+        {
+          "original_id": "ch14-07-22-startup-multiple-processes",
+          "title": "一次启动可能映射多个进程实例",
+          "decision": "merge",
+          "reason": "原图“一次启动可能映射多个进程实例”并入：合并平台启动模型和一次启动多upid重复显示量，区分startup次数、处理进程和最终displayupid。；锚点原图22，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 815,
+          "heading": "#### 平台启动事件优先于手工拼 `slice`",
+          "replacement_id": "ed14-07-startup-identity-and-display-boundaries"
+        },
+        {
+          "original_id": "ch14-07-23-startup-breakdown",
+          "title": "启动原因分类来自标准库派生规则",
+          "decision": "remove",
+          "reason": "四框逐项重述822–844标准库reason派生说明和15行SQL，原数据依赖与候选限定全留，删查询步骤。",
+          "original_line": 846,
+          "heading": "#### 标准库分解启动主线程时间"
+        },
+        {
+          "original_id": "ch14-07-24-startup-binder-intersection",
+          "title": "跨启动边界的 Binder 只按交集计窗口时间",
+          "decision": "keep",
+          "reason": "启动窗与跨界Binder完整事务及计入交集三轨，保留startupid→upid身份与并发嵌套不可重复累加。",
+          "original_line": 894,
+          "heading": "#### 启动区间内的 Binder 事务"
+        },
+        {
+          "original_id": "ch14-07-25-anr-timeout-type",
+          "title": "ANR 默认值不能代替现场规则",
+          "decision": "remove",
+          "reason": "三分支逐项摘要903与910超时类型段，原默认5秒非统一/10秒1秒分析参数完整保留，14.5已有ANR窗口机制图。",
+          "original_line": 905,
+          "heading": "#### ANR 超时因类型而异"
+        },
+        {
+          "original_id": "ch14-07-26-anr-identity-resolution",
+          "title": "ANR 的 PID 连接与最近 timer 只是候选",
+          "decision": "remove",
+          "reason": "四步重述912/939身份歧义和56行SQL解析闸门，14.5完整timer/PID图已保留，原ErrorId/候选/生存期代码全留，删流程复写。",
+          "original_line": 914,
+          "heading": "#### ANR 超时因类型而异"
+        },
+        {
+          "original_id": "ch14-07-27-anr-window-states",
+          "title": "ANR 前后窗口按原因选择并报告缺口",
+          "decision": "remove",
+          "reason": "四卡重复14状态枚举并重述1004一段解释，原各state原因证据全留，删状态→检查目录。",
+          "original_line": 1006,
+          "heading": "#### 从 ANR 时刻向前检查主线程"
+        },
+        {
+          "original_id": "ch14-07-28-monitor-owner-information",
+          "title": "锁竞争保留持锁方、竞争方与记录语义",
+          "decision": "keep",
+          "reason": "blockedutid竞争者、blockingutid持锁者和入口旧waitercount不同语义并列，保留0不等线程池总等待为0。",
+          "original_line": 1049,
+          "heading": "#### Monitor contention 提供阻塞方与持锁方"
+        },
+        {
+          "original_id": "ch14-07-29-lock-frame-clipping",
+          "title": "锁竞争与帧按交集关联",
+          "decision": "merge",
+          "reason": "原图“锁竞争与帧按交集关联”并入：合并跨帧边界monitor交集和帧内Binder/锁/GC同类覆盖合并，避免完全包含过滤漏边界和嵌套重复计时。；锚点原图50，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1113,
+          "heading": "#### 锁等待与帧的交集关联",
+          "replacement_id": "ed14-07-frame-event-clipping-and-coverage-union"
+        },
+        {
+          "original_id": "ch14-07-31-span-contract",
+          "title": "SPAN_JOIN 的输入先满足实体与互斥约束",
+          "decision": "merge",
+          "reason": "原图“SPAN_JOIN 的输入先满足实体与互斥约束”并入：合并算子输入契约、空键/列冲突与前序MAX重叠检查，以正文三段嵌套例说明只看LAG会漏检。；锚点原图46，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1124,
+          "heading": "#### `SPAN_JOIN` 计算两个区间流的交集",
+          "replacement_id": "ed14-07-span-input-validation-and-nested-overlap"
+        },
+        {
+          "original_id": "ch14-07-32-sched-frequency",
+          "title": "调度与频率按 ucpu 关联驻留时间",
+          "decision": "merge",
+          "reason": "原图“调度与频率按 ucpu 关联驻留时间”并入：合并sched频率驻留、时间加权、每帧两次交集与已知频率覆盖分母，防止把回调墙钟或缺频率运行当频点份额。；锚点原图49，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1167,
+          "heading": "#### `SPAN_JOIN` 计算两个区间流的交集",
+          "replacement_id": "ed14-07-running-frequency-intersections-and-denominator"
+        },
+        {
+          "original_id": "ch14-07-30-monitor-includes-running",
+          "title": "monitor contention 不是纯睡眠区间",
+          "decision": "keep",
+          "reason": "monitor竞争外层包含前后Running与中间阻塞/排队实际两轨，直观反驳竞争必然与Running互斥，保留ART区间边界。",
+          "original_line": 1176,
+          "heading": "#### 哪些区间流适合做交集"
+        },
+        {
+          "original_id": "ch14-07-33-frame-state-relationships",
+          "title": "按问题选择真正有意义的区间关系",
+          "decision": "remove",
+          "reason": "四分支逐项重排1188–1191四步帧/状态/monitor/frequency清单，具体32/新频率与覆盖图已给机制，不复画步骤。",
+          "original_line": 1183,
+          "heading": "#### 哪些区间流适合做交集"
+        },
+        {
+          "original_id": "ch14-07-35-setup-versus-record-loss",
+          "title": "启用错误和录制丢数分别检查",
+          "decision": "remove",
+          "reason": "三组六卡逐项重述1314 setup汇总/metadata字段与录制overrun段，原名称限定及采集诊断全留，无额外诊断结果，删提醒卡。",
+          "original_line": 1316,
+          "heading": "### I/O：把线程等待与块设备活动分开"
+        },
+        {
+          "original_id": "ch14-07-34-io-attribution",
+          "title": "块设备忙与应用等待不能自动画等号",
+          "decision": "remove",
+          "reason": "三分支逐项摘要1343–1346四类I/O证据清单，线程D与设备忙非归因的1305段和具体查询全留，无实际资源链，删清单复写。",
+          "original_line": 1338,
+          "heading": "### I/O：把线程等待与块设备活动分开"
+        },
+        {
+          "original_id": "ch14-07-36-power-multiple-signals",
+          "title": "频率、运行、空闲与休眠联合观察",
+          "decision": "remove",
+          "reason": "三组六卡重述1354与1445功耗多信号段，原频率非能量/USB/异构CPU与实际配置全留，新频率图保留策略解释界限，删信号目录。",
+          "original_line": 1356,
+          "heading": "### 功耗：联合频率、空闲、Suspend 与唤醒锁"
+        },
+        {
+          "original_id": "ch14-07-37-suspend-fallback",
+          "title": "没有 suspend 记录时的 awake 是回退模型",
+          "decision": "remove",
+          "reason": "三分支逐项摘要1421单段suspend回退/wakelock差分限制，原单机/无事件不证无休眠/末点缺口重置全留，删非互斥分类复写。",
+          "original_line": 1423,
+          "heading": "### 功耗：联合频率、空闲、Suspend 与唤醒锁"
+        },
+        {
+          "original_id": "ch14-07-38-frequency-weight",
+          "title": "频率平均按持续时间加权",
+          "decision": "merge",
+          "reason": "原图“频率平均按持续时间加权”并入：合并sched频率驻留、时间加权、每帧两次交集与已知频率覆盖分母，防止把回调墙钟或缺频率运行当频点份额。；锚点原图49，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1447,
+          "heading": "### 功耗：联合频率、空闲、Suspend 与唤醒锁",
+          "replacement_id": "ed14-07-running-frequency-intersections-and-denominator"
+        },
+        {
+          "original_id": "ch14-07-39-cross-process-identities",
+          "title": "跨进程关联使用各领域稳定身份",
+          "decision": "remove",
+          "reason": "四卡逐项复制1454领域ID段，与4词典及新启动/频率具体身份关系重复，原跨机器时钟1463限定全留。",
+          "original_line": 1458,
+          "heading": "### 跨进程关联使用稳定标识"
+        },
+        {
+          "original_id": "ch14-07-40-evidence-chain",
+          "title": "排名结果保留可复查的证据链",
+          "decision": "remove",
+          "reason": "四框逐项分组1469–1474六步清单，与2/77重复；原示例数字表达与观测推断区分全留。",
+          "original_line": 1478,
+          "heading": "### 从 SQL 排名到可复查结论"
+        },
+        {
+          "original_id": "ch14-07-41-span-toy-intersection",
+          "title": "合成区间的端点与交集",
+          "decision": "keep",
+          "reason": "正文[10,20)/[30,40)与[15,35)/[40,45)固定数值三轨真实交集，端点40接触不计时，替代7一般几何副本。",
+          "original_line": 1550,
+          "heading": "### `SPAN_JOIN` 处理区间交集"
+        },
+        {
+          "original_id": "ch14-07-42-partition-matches",
+          "title": "分区只让同一实体的区间求交",
+          "decision": "remove",
+          "reason": "三组六卡重述1601分区结果及1622–1625实体/HASH限定，没有画出实际数值区间；新SPAN约束图承载同实体与类型分开，不再复画提醒。",
+          "original_line": 1603,
+          "heading": "### `SPAN_JOIN` 处理区间交集"
+        },
+        {
+          "original_id": "ch14-07-43-span-type-and-columns",
+          "title": "算子类型、空键和同名列分别验证",
+          "decision": "merge",
+          "reason": "原图“算子类型、空键和同名列分别验证”并入：合并算子输入契约、空键/列冲突与前序MAX重叠检查，以正文三段嵌套例说明只看LAG会漏检。；锚点原图46，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1614,
+          "heading": "#### 同分区区间的互斥约束",
+          "replacement_id": "ed14-07-span-input-validation-and-nested-overlap"
+        },
+        {
+          "original_id": "ch14-07-44-counter-leading-interval",
+          "title": "计数器点还原成前向保持区间",
+          "decision": "keep",
+          "reason": "同track按ts/id生成前向A/B值和末值外推的实际时轴，保留重复ts最后ID规则/首前未知/项目不接受则歧义。",
+          "original_line": 1633,
+          "heading": "### 用窗口函数把计数器点变成时间段"
+        },
+        {
+          "original_id": "ch14-07-45-ucpu-identity",
+          "title": "多机器 Trace 用 ucpu 区分 CPU",
+          "decision": "keep",
+          "reason": "机器A/B各cpu0却有不同ucpu、频率多track另筛的对照，独立跨机器实体歧义不由HASH或cpu编号解决。",
+          "original_line": 1675,
+          "heading": "### 用窗口函数把计数器点变成时间段"
+        },
+        {
+          "original_id": "ch14-07-46-running-max-overlap-check",
+          "title": "前序最大结束时间能发现嵌套后的重叠",
+          "decision": "merge",
+          "reason": "原图“前序最大结束时间能发现嵌套后的重叠”并入：合并算子输入契约、空键/列冲突与前序MAX重叠检查，以正文三段嵌套例说明只看LAG会漏检。；锚点原图46，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1705,
+          "heading": "### `PARTITIONED` 前的输入验证",
+          "replacement_id": "ed14-07-span-input-validation-and-nested-overlap"
+        },
+        {
+          "original_id": "ch14-07-47-coverage-union-versus-identity",
+          "title": "合并区间保留覆盖但会丢掉事件身份",
+          "decision": "remove",
+          "reason": "三分支和保留52相同输出目标→算子选择，原合并丢源ID限定全留，仅保留更完整52。",
+          "original_line": 1780,
+          "heading": "### `PARTITIONED` 前的输入验证"
+        },
+        {
+          "original_id": "ch14-07-48-frame-frequency-two-stages",
+          "title": "每帧频率驻留分两次交集",
+          "decision": "merge",
+          "reason": "原图“每帧频率驻留分两次交集”并入：合并sched频率驻留、时间加权、每帧两次交集与已知频率覆盖分母，防止把回调墙钟或缺频率运行当频点份额。；锚点原图49，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1793,
+          "heading": "### 案例：每帧运行时间与 CPU 频率",
+          "replacement_id": "ed14-07-running-frequency-intersections-and-denominator"
+        },
+        {
+          "original_id": "ch14-07-49-known-frequency-denominator",
+          "title": "已知频率运行时间不是全部 CPU 时间",
+          "decision": "merge",
+          "reason": "原图“已知频率运行时间不是全部 CPU 时间”并入：合并sched频率驻留、时间加权、每帧两次交集与已知频率覆盖分母，防止把回调墙钟或缺频率运行当频点份额。；锚点原图49，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1897,
+          "heading": "### 案例：每帧运行时间与 CPU 频率",
+          "replacement_id": "ed14-07-running-frequency-intersections-and-denominator"
+        },
+        {
+          "original_id": "ch14-07-50-event-coverage-union",
+          "title": "帧内 Binder、竞争与 GC 分类型合并覆盖",
+          "decision": "merge",
+          "reason": "原图“帧内 Binder、竞争与 GC 分类型合并覆盖”并入：合并跨帧边界monitor交集和帧内Binder/锁/GC同类覆盖合并，避免完全包含过滤漏边界和嵌套重复计时。；锚点原图50，固定版本、实例/源ID、开放区间、缺失与互斥前提详见合图图注。",
+          "original_line": 1910,
+          "heading": "### 帧 × Binder / 锁 / GC 的交叉分析",
+          "replacement_id": "ed14-07-frame-event-clipping-and-coverage-union"
+        },
+        {
+          "original_id": "ch14-07-51-causal-dimensions-overlap",
+          "title": "不同原因维度的覆盖不可直接相加",
+          "decision": "keep",
+          "reason": "Binder、monitor与GC活动三条实际重叠轨道，直观说明不同原因维度不能相加为总阻塞，GC活动不是STW。",
+          "original_line": 2027,
+          "heading": "### 帧 × Binder / 锁 / GC 的交叉分析"
+        },
+        {
+          "original_id": "ch14-07-52-choose-interval-tool",
+          "title": "按输入形状选择区间工具",
+          "decision": "keep",
+          "reason": "互斥流SPAN、需保ID的普通条件/intersect、纯覆盖先合并三种输出目标对照，保留LEFT/OUTER未匹配选项。",
+          "original_line": 2049,
+          "heading": "### 与 Trace Processor 标准库配合"
+        },
+        {
+          "original_id": "ch14-07-53-left-shadow-gaps",
+          "title": "SPAN_LEFT_JOIN 保留左侧无覆盖区间",
+          "decision": "keep",
+          "reason": "LEFT左[10,30)/右[15,20)及三段NULL/值/NULL实际输出，明确shadowspan是占位不是采到事件。",
+          "original_line": 2108,
+          "heading": "### `SPAN_LEFT_JOIN` 与 `SPAN_OUTER_JOIN`"
+        },
+        {
+          "original_id": "ch14-07-54-empty-partition-shapes",
+          "title": "空分区要分 mixed 与双侧同名分区",
+          "decision": "keep",
+          "reason": "mixed空分区LEFT右/OUTER与同名双侧空右表三个真实反例并列，保留同名双侧仍留左不能过度概括。",
+          "original_line": 2115,
+          "heading": "### `SPAN_LEFT_JOIN` 与 `SPAN_OUTER_JOIN`"
+        },
+        {
+          "original_id": "ch14-07-55-query-cost",
+          "title": "成本由输入构造、排序与交集输出共同决定",
+          "decision": "remove",
+          "reason": "四框逐项整理2126–2130五步成本清单，无实测计划或索引例，原窗口/物化/排序/EXPLAIN及索引边界全留，删工作顺序。",
+          "original_line": 2134,
+          "heading": "### 查询成本与索引策略"
+        },
+        {
+          "original_id": "ch14-07-56-ci-reproducibility",
+          "title": "CI 固定输入、分析引擎与比较方法",
+          "decision": "remove",
+          "reason": "四框重述2141–2152CI三段与4行shell命令，14.4门禁和证据机制已保留，原独立进程/缺失/固定场景全文留。",
+          "original_line": 2154,
+          "heading": "### 在 CI 中复用复杂 Perfetto SQL"
+        },
+        {
+          "original_id": "ch14-07-57-interval-invariants",
+          "title": "区间报告先通过输入不变量检查",
+          "decision": "remove",
+          "reason": "四卡逐项分组2163–2172十项核对清单，新SPAN输入/嵌套示例已给独立验证机制，清单全部保留。",
+          "original_line": 2176,
+          "heading": "### 排查清单"
+        },
+        {
+          "original_id": "ch14-07-58-ui-three-layers",
+          "title": "DataGrid、Data Explorer 与 SQL 分别负责什么",
+          "decision": "remove",
+          "reason": "四步UI→TP→DataGrid与保留59真实summarizer/SQLDataSource执行链重复，2207–2209三层职责完整保留。",
+          "original_line": 2211,
+          "heading": "## Jank CUJ 标准库与交互验证"
+        },
+        {
+          "original_id": "ch14-07-59-ui-materialization",
+          "title": "节点图经 summarizer 生成可读取的结果表",
+          "decision": "keep",
+          "reason": "节点StructuredQuery→summarizer→物化表SQLDataSource→DataGrid实际组件执行链，保留临时表名非稳定接口和UI/TP独立版本。",
+          "original_line": 2226,
+          "heading": "### DataGrid 与 Data Explorer 的版本差异"
+        },
+        {
+          "original_id": "ch14-07-60-narrow-table-identity",
+          "title": "窄表先明确一行代表什么",
+          "decision": "remove",
+          "reason": "四框逐项重述2238一段窄表/身份/一对多/透视限定，64与65分别给具体候选和串值例，删通用提醒。",
+          "original_line": 2240,
+          "heading": "### DataGrid 与 Data Explorer 的版本差异"
+        },
+        {
+          "original_id": "ch14-07-61-cuj-three-inputs",
+          "title": "系统 CUJ 指标汇合三类独立证据",
+          "decision": "remove",
+          "reason": "三输入四框逐项复制2254–2258完整产生者/用途表，62保留Java/HWUI/SF来源对照，删表格复写。",
+          "original_line": 2249,
+          "heading": "### 系统 Jank CUJ 的三组输入"
+        },
+        {
+          "original_id": "ch14-07-62-java-frame-tracker-vs-hwui",
+          "title": "Java FrameTracker 与 HWUI JankTracker 不混用",
+          "decision": "keep",
+          "reason": "JavaFrameTracker/C++HWUIJankTracker/SFFrameTimeline三个真实生产者及不同输出并列，避免同名工具混为CUJCounter来源。",
+          "original_line": 2262,
+          "heading": "### 系统 Jank CUJ 的三组输入"
+        },
+        {
+          "original_id": "ch14-07-63-cuj-public-filter",
+          "title": "公共 android_jank_cuj 不是所有交互尝试",
+          "decision": "keep",
+          "reason": "系统process/name/正span/FT状态的实际过滤链，保留canceled及≤4msunknown排除后公共表并非所有尝试分母。",
+          "original_line": 2276,
+          "heading": "### 系统 Jank CUJ 的三组输入"
+        },
+        {
+          "original_id": "ch14-07-64-cuj-render-candidates",
+          "title": "CUJ 与 RenderThread 的关联仍可能一对多",
+          "decision": "keep",
+          "reason": "CUJ到RenderThread0/1/多候选分支，保留LEFTJOIN无候选、多track行放大及需实际DrawFrame/生命周期选定。",
+          "original_line": 2309,
+          "heading": "### 建立可筛选的 CUJ 窄表"
+        },
+        {
+          "original_id": "ch14-07-65-cuj-counter-cross-process",
+          "title": "同名 CUJ 的计数器必须按 upid 隔离",
+          "decision": "keep",
+          "reason": "进程A/B同名CUJ自己的7/11与丢upid串值的具体反例，保留固定原指标都读11的受控范围和按upid/cujid修复。",
+          "original_line": 2330,
+          "heading": "### 基于计数器的加权卡顿"
+        },
+        {
+          "original_id": "ch14-07-68-java-duration-narrowing",
+          "title": "totalAnimTime 的强转顺序会使纳秒回绕",
+          "decision": "keep",
+          "reason": "2.2e9ns先窄int再除1e6得到-2094ms的具体算术链，保留回绕后也可正以及设备源码修复确认，不能反推精确加权总量。",
+          "original_line": 2410,
+          "heading": "### 基于计数器的加权卡顿"
+        },
+        {
+          "original_id": "ch14-07-66-cuj-counter-search-window",
+          "title": "计数器窗口保留候选和歧义",
+          "decision": "remove",
+          "reason": "四框逐项重述68行counterSQL与2415搜索界限/候选唯一不证归属段，65具体7/11串值图保留，删查询步骤。",
+          "original_line": 2417,
+          "heading": "### 基于计数器的加权卡顿"
+        },
+        {
+          "original_id": "ch14-07-67-weighted-jank-rate",
+          "title": "加权速率、帧数与逐帧分数是不同量",
+          "decision": "keep",
+          "reason": "weighted速率整数×1000、experimental missed数量和FrameTimeline逐帧score三种量纲并列，保留分类标志与速率非总帧数。",
+          "original_line": 2424,
+          "heading": "### 基于计数器的加权卡顿"
+        },
+        {
+          "original_id": "ch14-07-69-cuj-metric-differences",
+          "title": "计数器、trace模型与时间线指标分别核对",
+          "decision": "remove",
+          "reason": "三组六卡逐项复制2431–2435三种指标来源清单和差异检查，原文全部留，62来源/70模型筛除/68量纲各有独立图。",
+          "original_line": 2437,
+          "heading": "### 基于计数器的加权卡顿"
+        },
+        {
+          "original_id": "ch14-07-70-cuj-frame-model-filters",
+          "title": "CUJ 帧模型会排除未匹配的关键回调",
+          "decision": "keep",
+          "reason": "CUJframebase要求doFrame/DrawFrame/GPUfence再WHERE排无匹配的实际筛除链，保留最终回调标记补不回已排帧。",
+          "original_line": 2446,
+          "heading": "### 从异常 CUJ 展开到异常帧"
+        },
+        {
+          "original_id": "ch14-07-71-cuj-expected-fallback",
+          "title": "16.6ms 是 expected 缺失时的模型回退",
+          "decision": "remove",
+          "reason": "四框逐项复述2476一个expected缺失→16.6ms回退句，原不证60Hz/缺失比例限定全留，无额外帧例，删规则复写。",
+          "original_line": 2478,
+          "heading": "### 从异常 CUJ 展开到异常帧"
+        },
+        {
+          "original_id": "ch14-07-72-cuj-thread-windows",
+          "title": "各线程要用实际参与的窗口关联状态",
+          "decision": "keep",
+          "reason": "UI、RenderThread/GPU/HWC、SF各自线程身份和真实工作窗的分支，保留不能把UI帧窗直接套所有线程。",
+          "original_line": 2547,
+          "heading": "### 用 thread_state 判断时间花在哪里"
+        },
+        {
+          "original_id": "ch14-07-73-app-custom-interactions",
+          "title": "第三方交互用自有标记和帧证据组合",
+          "decision": "remove",
+          "reason": "四框逐项重述33行customSQL、2558–2560三清单与2616限定，customid多窗口/legacy配对等原文全部留，删代码流程。",
+          "original_line": 2618,
+          "heading": "### 第三方 App 的分析路径"
+        },
+        {
+          "original_id": "ch14-07-74-heap-closest-future",
+          "title": "heap_graph_stats 可能选更近的未来点",
+          "decision": "keep",
+          "reason": "heapgraph覆盖区间与未来≤500ms候选同按起点距离排序的非原子快照算法，保留未来可胜覆盖及来源偏移/NULL。",
+          "original_line": 2650,
+          "heading": "### `heap_graph_stats` 与 DMA-BUF"
+        },
+        {
+          "original_id": "ch14-07-75-version-migration",
+          "title": "版本迁移按schema和接口分别处理",
+          "decision": "remove",
+          "reason": "四卡逐项复制2663–2668完整schema迁移表与2670版本回归段，原空trace非设备验证限定全留，删表格重排。",
+          "original_line": 2672,
+          "heading": "### v54 表结构变化的迁移"
+        },
+        {
+          "original_id": "ch14-07-76-profiling-format-boundaries",
+          "title": "调用栈导入不能补出Android系统事件",
+          "decision": "remove",
+          "reason": "三组六卡逐项重述2681–2684两格式与Android采集差别，无实际导入样例，原缺FrameTimeline等不能补出逐帧归因全文保留，删输入词典。",
+          "original_line": 2686,
+          "heading": "### Collapsed Stack 与 Firefox Profiler 导入"
+        },
+        {
+          "original_id": "ch14-07-77-reviewable-report",
+          "title": "一轮分析保留观测、推断和确认结果",
+          "decision": "remove",
+          "reason": "四框逐项分组2693–2699七步复核清单，与2/40同义，最终观测/推断/确认与源码要求原文全留，删最终流程副本。",
+          "original_line": 2703,
+          "heading": "### 一轮可复核的分析顺序"
+        }
+      ],
+      "sha256_after": "d4a7cb8b9c62b7196a638f5c1cfe6c8c3ddbfedb9a2ccfa90aaf3b80ce72fc41",
+      "new_diagrams": [
+        {
+          "id": "ed14-07-frame-model-pairing-and-missing-verdict",
+          "title": "代表层平台判定、完整性和 overrun 配对分别验收",
+          "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-07-frame-model-pairing-and-missing-verdict.svg",
+            "src/assets/diagrams/ch14/ed14-07-frame-model-pairing-and-missing-verdict.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-07-frame-model-pairing-and-missing-verdict",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/per_frame_metrics.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-07-10-frame-model-quality",
+              "ch14-07-11-overrun-guard",
+              "ch14-07-12-missing-verdict"
+            ],
+            "boundary": "固定android_frames聚合layer、只选首个DrawFrame、actual代表最小sliceid，actual/drawcount仅实际关联数且多条可合法；expectedcount常数1非完整性，需原expected(upid,name)另查原ID，INNERJOIN已排除帧不补回。legacyandroid_frames_overrun按frameid全局聚合选代表，与当前代表层actual差值不必对应。原查询仅原actual/expected按frameid各唯一且指针对应闭合才显示overrun，否则NULL和排除数，平台标签行仍留。正值为actualend晚于expected，负值该配对有余量，缺标签或无效配对不并入NoJank，跨层严谨报告查android_frames_layers与原始id。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a141/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-07-startup-identity-and-display-boundaries",
+          "title": "启动身份先分进程映射，再独立记录 TTID 与 TTFD",
+          "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-07-startup-identity-and-display-boundaries.svg",
+            "src/assets/diagrams/ch14/ed14-07-startup-identity-and-display-boundaries.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-07-startup-identity-and-display-boundaries",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/startups.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/time_to_display.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-07-21-startup-measurement",
+              "ch14-07-22-startup-multiple-processes"
+            ],
+            "boundary": "android_startups的startupid标识启动实例与cold/warm/hot类型，非时长分类。startup_processes可同一startup关联多个死亡重建upid，各行显示同一组TTID/TTFD，计数需按startupid；display.upid是显示模块实际匹配实例。TTID首次显示与TTFDreportFullyDrawn/对应事件不同，缺TTFD保留NULL不取首帧补；启动区间dur不同于两显示量。不可用bindApplication到首doFrame代全跨进程启动，需要system_server/RT/可见帧证据。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a141/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-07-span-input-validation-and-nested-overlap",
+          "title": "SPAN_JOIN 前先验证分区语义、列和所有前序区间",
+          "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-07-span-input-validation-and-nested-overlap.svg",
+            "src/assets/diagrams/ch14/ed14-07-span-input-validation-and-nested-overlap.png"
+          ],
+          "layout": "flow-with-timeline",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-07-span-input-validation-and-nested-overlap",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/intrinsics/operators/span_join_operator.cc",
+            "https://perfetto.dev/docs/analysis/perfetto-sql-getting-started"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-07-31-span-contract",
+              "ch14-07-43-span-type-and-columns",
+              "ch14-07-46-running-max-overlap-check"
+            ],
+            "boundary": "区间分析两侧显式ts/dur>0，开放dur-1先裁明确窗口；底层要求两侧ts至少一侧dur，缺dur侧不自动延续，两侧缺dur失败。分区整数非NULL，同名双侧同实体，NULL被跳过、字符串报错、payload同名需重命名，HASH仅类型不保证实体且有碰撞。一侧分区亦支持但混合空表需特测。每侧同分区须互斥，违反可能静默漏行。排序ts/dur/id，以MAX(ts+dur) over preceding检查当前ts<previousmax，例[1,10)/[2,3)/[9,12)第三段9<10，LAG前行end3漏判。重叠时按目标限定层级、只覆盖则合并或保ID用普通条件/intersect，不直接继续SPAN求和。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a141/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-07-running-frequency-intersections-and-denominator",
+          "title": "先按 ucpu 联运行与频率，再按 utid 裁帧并分清分母",
+          "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-07-running-frequency-intersections-and-denominator.svg",
+            "src/assets/diagrams/ch14/ed14-07-running-frequency-intersections-and-denominator.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-07-running-frequency-intersections-and-denominator",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql",
+            "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/counters/intervals.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/intrinsics/operators/span_join_operator.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-07-32-sched-frequency",
+              "ch14-07-38-frequency-weight",
+              "ch14-07-48-frame-frequency-two-stages",
+              "ch14-07-49-known-frequency-denominator"
+            ],
+            "boundary": "sched用正闭合Running和ucpu，频率选每ucpu单条track，按track(ts,id)生成正区间并查互斥，排除多轨和首前缺口/尾外推；同utid帧亦先验证互斥。第一SPANsched×freq按ucpu，第二与doFrame按utid，输出每frame/ucpu/freq交集dur。doFramewall含等待，总schedrunning是获得CPU时间，knownfrequencyrunning只两证据同时存在子集；frame_running_share以known为分母，另报covered和总运行差，不等CPU占用。加权频率SUM(1.0*freq*dur)/SUMdur先浮点并明kHz/MHz，异构核心MHz不可比能力，频率不是能耗或自动调频错误；同设备配置对照cluster/capacity/idle/suspend/power。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a141/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-07-frame-event-clipping-and-coverage-union",
+          "title": "事件先裁进帧，再按类型合并覆盖，保留源表追因果",
+          "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-07-frame-event-clipping-and-coverage-union.svg",
+            "src/assets/diagrams/ch14/ed14-07-frame-event-clipping-and-coverage-union.png"
+          ],
+          "layout": "flow-with-timeline",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-07-frame-event-clipping-and-coverage-union",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/intrinsics/operators/span_join_operator.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/garbage_collection.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/intervals/overlap.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-07-29-lock-frame-clipping",
+              "ch14-07-50-event-coverage-union"
+            ],
+            "boundary": "先固定frameid/upid/UIutid及doFramets/dur，Binder取同UIclientutid并区分sync等待与asyncsend，monitor取同blockedutid，GC按进程事件gc_ts/gc_dur。普通区间条件允许事件跨窗口边界，max起点min终点取正dur；只按完全包含会漏起前/终后事件。每frame/eventkind合并同类重叠，再SUMcoveredms，源ID需另查原表。不同类型仍可重叠不可相加总阻塞；monitor含Running/Runnable，GC整段非STW，Binderasync非同步阻塞，因果与缺采需threadstate/ART/采样独立验证。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a141/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:24:51.062633+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 77,
+        "contexts_actually_viewed": 8,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a141/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a141/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 141,
+        "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+        "registered_sha256": "b5591a2152c13d577624b1612233bf43a9ee65ce4042094f0672aab3d2670745",
+        "frozen_sha256": "b5591a2152c13d577624b1612233bf43a9ee65ce4042094f0672aab3d2670745",
+        "review_input_sha256": "5774dc318a9c52adb772104c21f8a2ec3c81b9b71190adb5acfaebba626c1af7",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a141/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a141/external-source.diff",
+        "diff_sha256": "0d5fdbfbf88c27fbd1d657c0520e54fed9645d733f26a174599fc77eedffc173",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 634 current narrative/table reading rows, 51625 characters, 77 SVG label sets and all 77 original PNGs in 10 contact sheets independently read/viewed; all 43 non-Mermaid code blocks, 1440 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "5774dc318a9c52adb772104c21f8a2ec3c81b9b71190adb5acfaebba626c1af7",
+      "retired_diagrams": [
+        "ch14-07-01-analysis-route",
+        "ch14-07-02-coverage-before-absence",
+        "ch14-07-03-version-layers",
+        "ch14-07-04-identity-domains",
+        "ch14-07-05-choose-instance",
+        "ch14-07-06-open-interval-boundary",
+        "ch14-07-07-halfopen-clipping",
+        "ch14-07-08-denominator-and-frame-time",
+        "ch14-07-10-frame-model-quality",
+        "ch14-07-11-overrun-guard",
+        "ch14-07-12-missing-verdict",
+        "ch14-07-13-sched-occupancy",
+        "ch14-07-14-state-interpretation",
+        "ch14-07-15-waker-evidence",
+        "ch14-07-16-binder-pairing",
+        "ch14-07-18-binder-pool-capacity",
+        "ch14-07-20-heap-sampling",
+        "ch14-07-21-startup-measurement",
+        "ch14-07-22-startup-multiple-processes",
+        "ch14-07-23-startup-breakdown",
+        "ch14-07-25-anr-timeout-type",
+        "ch14-07-26-anr-identity-resolution",
+        "ch14-07-27-anr-window-states",
+        "ch14-07-29-lock-frame-clipping",
+        "ch14-07-31-span-contract",
+        "ch14-07-32-sched-frequency",
+        "ch14-07-33-frame-state-relationships",
+        "ch14-07-34-io-attribution",
+        "ch14-07-35-setup-versus-record-loss",
+        "ch14-07-36-power-multiple-signals",
+        "ch14-07-37-suspend-fallback",
+        "ch14-07-38-frequency-weight",
+        "ch14-07-39-cross-process-identities",
+        "ch14-07-40-evidence-chain",
+        "ch14-07-42-partition-matches",
+        "ch14-07-43-span-type-and-columns",
+        "ch14-07-46-running-max-overlap-check",
+        "ch14-07-47-coverage-union-versus-identity",
+        "ch14-07-48-frame-frequency-two-stages",
+        "ch14-07-49-known-frequency-denominator",
+        "ch14-07-50-event-coverage-union",
+        "ch14-07-55-query-cost",
+        "ch14-07-56-ci-reproducibility",
+        "ch14-07-57-interval-invariants",
+        "ch14-07-58-ui-three-layers",
+        "ch14-07-60-narrow-table-identity",
+        "ch14-07-61-cuj-three-inputs",
+        "ch14-07-66-cuj-counter-search-window",
+        "ch14-07-69-cuj-metric-differences",
+        "ch14-07-71-cuj-expected-fallback",
+        "ch14-07-73-app-custom-interactions",
+        "ch14-07-75-version-migration",
+        "ch14-07-76-profiling-format-boundaries",
+        "ch14-07-77-reviewable-report"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-141/retired-assets.json"
     },
     {
       "index": 142,
@@ -38113,8 +38975,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 76,
-  "next_article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
+  "reviewed_articles": 77,
+  "next_article": "src/part3-tools/ch14-perfetto/08-perfetto-profiles-flamegraph.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -38124,7 +38986,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:14:44.241264+08:00",
+  "updated_at": "2026-10-31T12:24:51.062633+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -38173,13 +39035,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
-      "registered_sha256": "b5591a2152c13d577624b1612233bf43a9ee65ce4042094f0672aab3d2670745",
-      "observed_sha256": "5774dc318a9c52adb772104c21f8a2ec3c81b9b71190adb5acfaebba626c1af7",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -38561,9 +39416,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2870,
-  "reviewed_placements_after": 1306,
-  "net_removed_placements": 1564,
+  "reviewed_placements_before": 2947,
+  "reviewed_placements_after": 1334,
+  "net_removed_placements": 1613,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -38587,5 +39442,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 76
+  "currently_matching_reviewed_source_count": 77
 }

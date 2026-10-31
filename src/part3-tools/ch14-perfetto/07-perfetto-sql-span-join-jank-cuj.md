@@ -95,10 +95,6 @@ Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问�
 
 查询结果只覆盖 Trace 里已经采集到的事件。FrameTimeline（帧的期望与实际时间线）、调度、Binder（Android 进程间通信） 或 ART（Android Runtime） 事件缺失时，空表只说明“Trace 里没有这条数据”；系统里到底有没有发生过对应行为，要结合采集配置判断。我们拿到一份 Trace，总是先检查数据源，再下结论。
 
-<!-- gracker-diagram: ch14-07-02-coverage-before-absence -->
-![空结果先检查采集与解析覆盖](../../assets/diagrams/ch14/ch14-07-02-coverage-before-absence.png)
-
-图：无结果可能来自未采集、数据丢失、未解析或没有匹配事件。 不能单凭空表证明平台没有发生对应行为。
 
 > 源码基线：Android 17 / API 37 / `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`；查询按该版表结构复核，主机侧固定 Trace Processor v57.2，换版本需重新检查。
 
@@ -106,10 +102,6 @@ Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问�
 
 本文示例优先使用 Perfetto SQL 标准库，需要理解原始数据时再回到 `slice`（时间轴区间事件）、`sched`、`thread_state` 和 `counter` 等基础表。做法上，我们先用表和视图筛出问题窗口，再通过时间跨度关联把线程、帧、调度和业务事件放到同一窗口；Jank CUJ 标准库提供现成语义，DataGrid 负责交互查询和结果检查。
 
-<!-- gracker-diagram: ch14-07-01-analysis-route -->
-![从可疑窗口到可复查结论](../../assets/diagrams/ch14/ch14-07-01-analysis-route.png)
-
-图：先固定对象和问题窗口，再用语义表与区间交集拆解时间。 排名和时间相关性用于提出候选原因，结论仍需原始事件、源码及对照。
 
 ## 数据模型、窗口选择与基础查询
 
@@ -121,10 +113,6 @@ PerfettoSQL 是基于 SQLite 扩展的 SQL 方言，`INCLUDE PERFETTO MODULE`、
 
 标准库随 Trace Processor 二进制发布，版本由分析侧决定：设备运行 Android 17，主机上用的 Trace Processor 仍可能是任意年代的老版本。所以团队查询应固定 Trace Processor 版本；升级二进制时，重新执行语法测试与基准 Trace 回归。
 
-<!-- gracker-diagram: ch14-07-03-version-layers -->
-![设备、分析引擎与界面分别固定版本](../../assets/diagrams/ch14/ch14-07-03-version-layers.png)
-
-图：设备平台、Trace Processor 标准库和 Perfetto UI 是不同版本维度。 设备运行 Android 17 不会自动让主机分析库或网页更新。
 
 #### 四类标识的分工
 
@@ -135,10 +123,6 @@ PerfettoSQL 是基于 SQLite 扩展的 SQL 方言，`INCLUDE PERFETTO MODULE`、
 - `track_id` 表示事件所在轨道；要指认具体事件，还得用帧号、Binder 事务号或 `slice.id` 这些各自的标识。
 - `slice.id`、`frame_id`、`binder_txn_id` 属于对应事件模型，只在该模型规定的关系中关联。
 
-<!-- gracker-diagram: ch14-07-04-identity-domains -->
-![操作系统编号、实例、轨道与事件不能混用](../../assets/diagrams/ch14/ch14-07-04-identity-domains.png)
-
-图：用 upid/utid 关联实例，用模型事件 ID 指认具体对象。 pid/tid 会复用；track_id 不是通用帧号或 Binder 事务号。
 
 我们先查询目标进程、主线程和 Trace 边界，检查对象是否唯一，避免把同名的历史进程实例合并。
 
@@ -168,26 +152,14 @@ ORDER BY process.start_ts, thread.start_ts;
 
 结果可能有多行：同一个包名在采集期间重启时，会出现多个 `upid`。查询中的 `OR` 只是用 `tid = pid` 兼容 `is_main_thread` 信息缺失的 Trace，同一线程同时满足两个条件也只会返回一行。所以正式查询应选定与问题时段相交的 `upid`，并确认主线程候选唯一。下文直接分析进程的 SQL 使用 `123` 作为 upid 占位，必须替换成这条发现查询的实际结果；它不是 Android PID。`10000000000` 到 `15000000000` 同样只是原始纳秒窗口参数，须替换成目标 Trace 中的有效窗口。按包名选择启动实例、按 ErrorId 选择 ANR 与系统 CUJ 的查询另保留各自稳定身份。
 
-<!-- gracker-diagram: ch14-07-05-choose-instance -->
-![同名进程先拆成不同实例](../../assets/diagrams/ch14/ch14-07-05-choose-instance.png)
-
-图：先发现候选进程和主线程，再把实际 upid 写入报告查询。 示例 123 是待替换的 upid 占位，不是 Android PID。
 
 #### 时间、开放区间与窗口裁剪
 
-`ts` 和 `dur` 的单位都是纳秒。毫秒换算使用 `dur / 1e6`，秒换算使用 `dur / 1e9`。`trace_start()` 与 `trace_end()` 返回 Trace 的时间边界。部分正在进行的 `slice` 或调度状态会以 `dur = -1` 表示未闭合。若分析覆盖时长，可暂按窗口末端和 `trace_end()` 裁剪，并保留 `is_open` / `end_basis`：这个终点是分析假设，不能冒充观测到的完成时刻。延迟分位数只纳入已闭合事件，并另报未闭合数量。
+`ts` 和 `dur` 的单位都是纳秒。毫秒换算使用 `dur / 1e6`，秒换算使用 `dur / 1e9`。`trace_start()` 与 `trace_end()` 返回 Trace 的起止时间。部分正在进行的 `slice` 或调度状态会以 `dur = -1` 表示未闭合。若分析覆盖时长，可暂按窗口末端和 `trace_end()` 裁剪，并保留 `is_open` / `end_basis`：这个终点属于分析假设，要和观测到的完成时刻分开记录。延迟分位数只纳入已闭合事件，并另报未闭合数量。
 
-<!-- gracker-diagram: ch14-07-06-open-interval-boundary -->
-![开放区间的裁剪终点是分析假设](../../assets/diagrams/ch14/ch14-07-06-open-interval-boundary.png)
-
-图：闭合事件使用观测结束时间；开放状态可裁到窗口与 Trace 末端。 保留 is_open/end_basis，不能把裁剪假设作为实际完成时刻。
 
 时间窗口采用半开区间 `[start_ts, end_ts)`，也就是包含起点、不包含终点，这样更容易处理首尾相接的事件。两个区间相交的条件是 `a.ts < b.end_ts AND a.end_ts > b.ts`，交集长度为 `MIN(a.end_ts, b.end_ts) - MAX(a.ts, b.ts)`。先按 `upid`、`utid` 与窗口过滤，再做区间关联，可以大幅减少大 Trace 的计算量。
 
-<!-- gracker-diagram: ch14-07-07-halfopen-clipping -->
-![半开窗口按交集长度统计](../../assets/diagrams/ch14/ch14-07-07-halfopen-clipping.png)
-
-图：窗口裁剪使用最大起点和最小终点，只保留正交集。 首尾相接不贡献覆盖时间；图中位置仅作区间关系示意。
 
 下面的模板把主线程状态裁到由分析者给定的窗口；两个数值只是查询参数，与平台超时或性能标准无关。
 
@@ -244,14 +216,10 @@ ORDER BY ts;
 
 #### 指标的分母、对照与帧时间量
 
-读指标先看分母和对照：“主线程 CPU 占用 80%”必须带上窗口才能复查；“Binder 超过 1 ms 就慢”还要交代接口语义、设备负载与调用是否同步。SQL 可以稳定地产生 P50、P90、P99：P50 是中位数，P90 和 P99 分别表示 90% 与 99% 的样本落在该值以内；而分位数要说明问题，还需要同场景、同设备配置、同采集配置的对照组。
+我们读指标时先看分母和对照：“主线程 CPU 占用 80%”必须带上窗口才能复查；“Binder 超过 1 ms 就慢”还要交代接口语义、设备负载与调用是否同步。SQL 可以稳定地产生 P50、P90、P99：P50 是中位数，P90 和 P99 分别表示 90% 与 99% 的样本落在该值以内；而分位数要说明问题，还需要同场景、同设备配置、同采集配置的对照组。
 
 帧分析还要区分三个量：
 
-<!-- gracker-diagram: ch14-07-08-denominator-and-frame-time -->
-![CPU 比例、回调时长与呈现期限各有口径](../../assets/diagrams/ch14/ch14-07-08-denominator-and-frame-time.png)
-
-图：doFrame 是回调墙上时间，FrameTimeline 描述期望/实际帧，刷新周期只作参考。 CPU 比例必须有明确窗口；固定 16.67 ms 不能代替某帧截止时间。
 
 - `Choreographer#doFrame` 的 `dur` 是 UI 线程回调区间，可用于定位 UI 线程工作。
 - FrameTimeline（系统记录的帧期望与实际时间线） 的期望/实际区间用于判断帧是否按期呈现。
@@ -298,20 +266,16 @@ GROUP BY upid;
 <!-- gracker-diagram: ch14-07-09-doframe-wall-cpu -->
 ![doFrame 变长后先拆调度状态](../../assets/diagrams/ch14/ch14-07-09-doframe-wall-cpu.png)
 
-图：doFrame 的墙上时间可以同时包含 Running、Runnable 和阻塞。 P99 增长不能独立证明业务计算量增加，还需线程状态与函数采样。
+图：doFrame 的墙上时间可以同时包含 Running、Runnable 和阻塞。 P99 增长只说明回调变慢，要确认业务计算量，还需线程状态与函数采样。
 
 #### FrameTimeline 给出系统判帧依据
 
 FrameTimeline 从 Android 12 / API 31 开始提供每帧的期望与实际时间线。`actual_frame_timeline_slice` 包含 `jank_type`、`jank_severity_type`、`on_time_finish` 和 `present_type` 等平台判定；`android.frames.timeline` 会把 UI 线程的 `Choreographer#doFrame`、RenderThread（应用渲染线程） 的 `DrawFrame` 与时间线事件整理为 `android_frames`。
 
-`android_frames` 目前有几个已知限制：同一帧可能关联多个 `layer`（由系统合成的显示图层），表会聚合它们；当前实现只选第一个 `DrawFrame`，源码保留了对应待改进项；`actual_frame_timeline_count` 与 `draw_frame_count` 只计入标准库实际关联的不同 slice ID，多层和多次绘制也可能合法；它们不是自动判错字段。固定源码把 `expected_frame_timeline_count` 直接写成常数 1，不能用它发现 expected 缺失或重复，需检查具体 ID 并按原始 expected 表的 `(upid, name)` 另计数。自动化统计应保留关联 ID、数量与数据缺口，且上游 INNER JOIN 已经排除的帧不会由这些列补回。
+`android_frames` 有几个已知限制，用这张表时要心里有数：同一帧可能关联多个 `layer`（由系统合成的显示图层），表会聚合它们；当前实现只选第一个 `DrawFrame`，源码保留了对应待改进项；`actual_frame_timeline_count` 与 `draw_frame_count` 只计入标准库实际关联的不同 slice ID，多层和多次绘制也可能合法，这些列记录的是关联数量，本身没有判错含义。固定源码把 `expected_frame_timeline_count` 直接写成常数 1，要发现 expected 缺失或重复，需检查具体 ID 并按原始 expected 表的 `(upid, name)` 另计数。自动化统计应保留关联 ID、数量与数据缺口，且上游 INNER JOIN 已经排除的帧不会由这些列补回。
 
-<!-- gracker-diagram: ch14-07-10-frame-model-quality -->
-![android_frames 的数量列不是完整采集证明](../../assets/diagrams/ch14/ch14-07-10-frame-model-quality.png)
 
-图：帧模型会聚合图层并选择代表 ID，原始关联数量必须连同具体 ID 解读。 固定 expected_count 是常数 1；多条 actual/DrawFrame 可能合法，INNER JOIN 排除的帧也不在表内。
-
-下面按标准库帧模型列出代表层的平台判定和 legacy 超额量。`actual_frame_timeline_id` 精确指向模型选中的一行，但多层时固定实现选最小 actual slice ID，不能把该行标签当成所有层的共同判定。`android_frames_overrun` 另按 `frame_id` 对 actual 与 expected 做全局分组并选代表 ID，它不等于这里这行 actual 必然对应的逐层差值；严谨的逐层报告应直接核对 `android_frames_layers` 与原始 expected/actual ID。
+下面按标准库帧模型列出代表层的平台判定和 legacy 超额量。`actual_frame_timeline_id` 精确指向模型选中的一行，但多层时固定实现选的是最小 actual slice ID，这行标签只描述代表层。`android_frames_overrun` 另按 `frame_id` 对 actual 与 expected 做全局分组并选代表 ID，这个代表值和这里这行 actual 的逐层差值之间没有必然的对应关系；严谨的逐层报告应直接核对 `android_frames_layers` 与原始 expected/actual ID。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
@@ -358,12 +322,8 @@ WHERE frames.upid = 123
 ORDER BY frames.ts;
 ```
 
-本查询只在原始 expected/actual 对该 frame_id 各有一条、且模型指针对应的区间均已闭合时显示 `deadline_overrun_ms`；否则保留 NULL。正值表示该唯一配对的 actual 结束晚于 expected，负值表示该配对仍有余量。下面的分布另外报告 verified_single_pair_overrun_samples 与 excluded_or_missing_overrun_samples；排除的多层、开放或缺失帧仍保留平台标签行，不能归为“无卡顿”。`jank_type` 由平台记录，可继续区分应用、SurfaceFlinger（Android 的显示合成服务）、调度等类别。表为空时，先检查采集配置、Android 版本与目标进程是否产生了 FrameTimeline 数据。
+本查询只在原始 expected/actual 对该 frame_id 各有一条、且模型指针对应的区间均已闭合时显示 `deadline_overrun_ms`；否则保留 NULL。正值表示该唯一配对的 actual 结束晚于 expected，负值表示该配对仍有余量。下面的分布另外报告 verified_single_pair_overrun_samples 与 excluded_or_missing_overrun_samples；排除的多层、开放或缺失帧仍保留平台标签行，统计“无卡顿”时要把它们排除在外。`jank_type` 由平台记录，可继续区分应用、SurfaceFlinger（Android 的显示合成服务）、调度等类别。表为空时，先检查采集配置、Android 版本与目标进程是否产生了 FrameTimeline 数据。
 
-<!-- gracker-diagram: ch14-07-11-overrun-guard -->
-![超额量先通过唯一闭合配对检查](../../assets/diagrams/ch14/ch14-07-11-overrun-guard.png)
-
-图：本例只对原始 expected/actual 各一条且指针对应区间闭合的配对计算分布。 多层、开放和缺失样本保持 NULL 并报告排除数量，平台标签仍保留。
 
 按平台标签聚合帧数与超额分布，适合比较同一测试方案的多次运行。跨设备通用的“卡顿率及格线”这里不设，需要阈值时结合对照数据另行确定，查询只负责把分布算出来。
 
@@ -417,10 +377,10 @@ ORDER BY frame_count DESC;
 
 缺少平台判定的行应单独保留。这一类行可能来自采集不完整或关联失败，合入“无卡顿”会把这两种情况掩盖掉；比较版本时也应同步记录缺失比例。
 
-<!-- gracker-diagram: ch14-07-12-missing-verdict -->
-![平台判定缺失与无卡顿分开统计](../../assets/diagrams/ch14/ch14-07-12-missing-verdict.png)
+<!-- gracker-diagram: ed14-07-frame-model-pairing-and-missing-verdict -->
+![代表层平台判定、完整性和 overrun 配对分别验收](../../assets/diagrams/ch14/ed14-07-frame-model-pairing-and-missing-verdict.png)
 
-图：缺失判定、关联失败与有效无卡顿行应分开。 代表层标签和 legacy overrun 都有模型边界，不能自动推广为所有层结论。
+图：固定android_frames聚合layer、只选首个DrawFrame、actual代表最小sliceid，actual/drawcount仅实际关联数且多条可合法；expectedcount常数1非完整性，需原expected(upid,name)另查原ID，INNERJOIN已排除帧不补回。legacyandroid_frames_overrun按frameid全局聚合选代表，与当前代表层actual差值不必对应。原查询仅原actual/expected按frameid各唯一且指针对应闭合才显示overrun，否则NULL和排除数，平台标签行仍留。正值为actualend晚于expected，负值该配对有余量，缺标签或无效配对不并入NoJank，跨层严谨报告查android_frames_layers与原始id。
 
 ### 线程调度与 CPU 使用
 
@@ -490,10 +450,6 @@ ORDER BY SUM(dur) DESC;
 
 `one_core_occupancy_pct` 以单个 CPU 核心在查询中的 5 秒可用时间为分母。高占用说明线程经常在运行，要把责任落到函数热点，还需结合采样栈、调用栈或 `slice`；低占用伴随长延迟时，我们把注意力转向 `Runnable` 排队、睡眠、I/O 与同步等待。
 
-<!-- gracker-diagram: ch14-07-13-sched-occupancy -->
-![按窗口内 sched 计算单核口径占比](../../assets/diagrams/ch14/ch14-07-13-sched-occupancy.png)
-
-图：把选定线程的 sched 裁到窗口后累加，再除以同一窗口时长。 开放调度区间使用假设终点时要报告数量；高占用仍不能直接落到函数。
 
 #### `thread_state` 直接给出 `Runnable` 等待
 
@@ -506,10 +462,6 @@ ORDER BY SUM(dur) DESC;
 - `blocked_function`：采集并完成内核符号化时，记录阻塞所在的内核函数。
 - `waker_utid`：记录唤醒方，部分行可能缺失。
 
-<!-- gracker-diagram: ch14-07-14-state-interpretation -->
-![运行、排队与阻塞用不同证据解释](../../assets/diagrams/ch14/ch14-07-14-state-interpretation.png)
-
-图：thread_state 分离实际执行、可运行排队和不同睡眠状态。 S、D 或 blocked_function 仍需业务与内核证据，不能单一归因。
 
 汇总目标主线程在窗口内的调度状态，可以区分 CPU 计算、等待 CPU、等待 I/O 与其他阻塞时间。
 
@@ -606,10 +558,6 @@ LIMIT 30;
 
 `waker_utid` 为空时，先考虑字段缺失：旧 Trace、缺少 wakeup 事件、数据丢失和内核路径差异都会造成这种情况，唤醒本身仍可能发生过。`sched_switch` 与 `sched_waking` 这两个内核追踪点提供原始事件，Trace Processor 再把它们整理成这里的状态区间。
 
-<!-- gracker-diagram: ch14-07-15-waker-evidence -->
-![唤醒方标识缺失不代表没有唤醒](../../assets/diagrams/ch14/ch14-07-15-waker-evidence.png)
-
-图：从长 Runnable 区间回到唤醒时刻，并用 utid 关联唤醒方实例。 缺少 wakeup、丢数或内核差异会造成空字段，不能补造唤醒方。
 
 ### Binder 事务分析
 
@@ -647,10 +595,6 @@ ORDER BY p99_client_ms DESC, call_count DESC;
 
 同步与异步结果的 `client_dur` 含义不同，两组数要分开看延迟分布。接口名缺失的事务也要保留；直接过滤空值的话，最难解释的调用会从报表里消失。
 
-<!-- gracker-diagram: ch14-07-16-binder-pairing -->
-![Binder 同步等待与单向发送分别统计](../../assets/diagrams/ch14/ch14-07-16-binder-pairing.png)
-
-图：android.binder 通过事务关系配对客户端与服务端，按 is_sync 分组。 接口名缺失不等于事务无效；同步和异步 client_dur 的含义不同。
 
 #### 把 Binder 墙上时间分解为调度状态
 
@@ -689,10 +633,6 @@ ORDER BY binder.client_dur DESC, binder.binder_txn_id, state_ms DESC;
 
 所谓“Binder 线程池利用率”也要给出容量与窗口。只累加 Binder 线程 CPU 时间，得到的是运行时间；线程池可能睡眠等待工作，也可能在处理非 Binder `slice`，线程池是否饱和（缺少空闲线程接收新事务），要靠服务端并发事务数、可用 Binder 线程数、事务排队与各线程状态一起判断。
 
-<!-- gracker-diagram: ch14-07-18-binder-pool-capacity -->
-![线程池饱和需要容量和并发证据](../../assets/diagrams/ch14/ch14-07-18-binder-pool-capacity.png)
-
-图：线程池是否饱和，要联合可用线程数、并发事务、排队和各线程状态。 单纯累计 Binder 线程 CPU 时间得到运行量，不能直接当饱和程度。
 
 ### 内存与 GC 分析
 
@@ -765,10 +705,6 @@ ORDER BY counter.ts, counter.id;
 
 这里用 1024 把 KiB 换成 MiB。标准库中的列名采用 `*_mb`，该模块按自身约定换算；跨报表比较时应标明单位，避免把 MB 与 MiB 混在一列。
 
-<!-- gracker-diagram: ch14-07-20-heap-sampling -->
-![Java 堆 Counter 只给离散样本](../../assets/diagrams/ch14/ch14-07-20-heap-sampling.png)
-
-图：堆趋势由离散 Counter 点组成，保持值区间是分析模型。 KB 标签按模块约定解读，跨报表显式标明 KiB/MiB 或 MB。
 
 ### 启动时间分析
 
@@ -778,10 +714,6 @@ ORDER BY counter.ts, counter.id;
 
 `android.startup.startups` 会按 Trace 中记录的 SDK 版本与事件格式选择解析路径，输出 `android_startups` 和 `android_startup_processes`。`android.startup.time_to_display` 继续关联首帧与 `reportFullyDrawn()`，给出 TTID（Time To Initial Display，首次显示耗时） 与 TTFD（Time To Full Display，完全显示耗时）。
 
-<!-- gracker-diagram: ch14-07-21-startup-measurement -->
-![启动区间、首次显示与完全显示分别读取](../../assets/diagrams/ch14/ch14-07-21-startup-measurement.png)
-
-图：平台启动模型关联启动实例和显示事件，区分 TTID 与 TTFD。 reportFullyDrawn 及对应事件缺失时 TTFD 为空，不能用首帧时间替代。
 
 列出目标包的启动区间与显示时间，可以保留平台识别的 `cold`、`warm`、`hot` 分类。这三类对应进程和 Activity 是否已经存在的不同启动路径，命名跟耗时长短无关；查询同时区分启动区间、首次显示与完全显示。
 
@@ -812,10 +744,10 @@ ORDER BY startups.ts;
 
 TTFD 依赖应用调用 `reportFullyDrawn()` 以及对应追踪事件，空值表示未测得，计算时按缺失处理。进程在启动期间死亡并重建时，一个 `startup_id` 可能关联多个进程，查询会保留每个 `upid`，但 TTID / TTFD 仍是该启动实例的一组显示时间，会在这些进程行中重复。要确认标准库最终用哪个进程匹配首帧，同时查看 `android_startup_time_to_display.upid`。
 
-<!-- gracker-diagram: ch14-07-22-startup-multiple-processes -->
-![一次启动可能映射多个进程实例](../../assets/diagrams/ch14/ch14-07-22-startup-multiple-processes.png)
+<!-- gracker-diagram: ed14-07-startup-identity-and-display-boundaries -->
+![启动身份先分进程映射，再独立记录 TTID 与 TTFD](../../assets/diagrams/ch14/ed14-07-startup-identity-and-display-boundaries.png)
 
-图：startup_id 是启动身份，进程映射和最终显示匹配实例要分别保存。 多个进程行会重复同一组 TTID/TTFD，不能直接按结果行累加启动次数。
+图：android_startups的startupid标识启动实例与cold/warm/hot类型，非时长分类。startup_processes可同一startup关联多个死亡重建upid，各行显示同一组TTID/TTFD，计数需按startupid；display.upid是显示模块实际匹配实例。TTID首次显示与TTFDreportFullyDrawn/对应事件不同，缺TTFD保留NULL不取首帧补；启动区间dur不同于两显示量。不可用bindApplication到首doFrame代全跨进程启动，需要system_server/RT/可见帧证据。
 
 #### 标准库分解启动主线程时间
 
@@ -843,10 +775,6 @@ ORDER BY startups.startup_id, SUM(breakdown.dur) DESC;
 
 模块源码明确建议采集 Binder、ART、`am` 和 `view` 事件。缺少这些数据时，原因分类会变粗：查询仍能执行，解释力会打折扣。
 
-<!-- gracker-diagram: ch14-07-23-startup-breakdown -->
-![启动原因分类来自标准库派生规则](../../assets/diagrams/ch14/ch14-07-23-startup-breakdown.png)
-
-图：启动主线程的状态和 Slice 被裁成区间，再按规则生成 reason。 缺少 Binder、ART、am 或 view 数据会降低解释力，reason 仍是候选分类。
 
 #### 启动区间内的 Binder 事务
 
@@ -889,12 +817,12 @@ GROUP BY
 ORDER BY startup.startup_id, summed_overlap_ms DESC;
 ```
 
-各事务可能互相重叠，`summed_full_client_ms` 累加完整事务跨度，`summed_overlap_ms` 只累加与启动窗口的交集；两者都可能因并发或嵌套重复覆盖，均不等于启动窗口内的独占阻塞时间；同步主线程事务更接近直接阻塞候选，后台线程或异步事务需要继续核对依赖关系。
+各事务可能互相重叠，`summed_full_client_ms` 累加完整事务跨度，`summed_overlap_ms` 只累加与启动窗口的交集；两者都可能因并发或嵌套重复覆盖，算独占阻塞时间前要先归并；同步主线程事务更接近直接阻塞候选，后台线程或异步事务需要继续核对依赖关系。
 
 <!-- gracker-diagram: ch14-07-24-startup-binder-intersection -->
 ![跨启动边界的 Binder 只按交集计窗口时间](../../assets/diagrams/ch14/ch14-07-24-startup-binder-intersection.png)
 
-图：完整事务跨度和启动窗口内交集要分列，且并发事务可能重复覆盖。 两种时长之和都不等于启动独占阻塞；后台和异步事务需再核对依赖。
+图：完整事务跨度和启动窗口内交集要分列，且并发事务可能重复覆盖。 两种时长都可能重复覆盖，独占阻塞要另算；后台和异步事务需再核对依赖。
 
 ### ANR（Application Not Responding，应用无响应） 分析
 
@@ -902,19 +830,11 @@ ORDER BY startup.startup_id, summed_overlap_ms DESC;
 
 输入分发超时常见默认值为 5 秒，Broadcast、Service、JobService、前台服务和 `system_server` 看门狗使用不同规则；这里的看门狗是检测系统线程长时间无响应的超时机制。OEM（设备厂商）与前后台状态还可能改写超时。
 
-<!-- gracker-diagram: ch14-07-25-anr-timeout-type -->
-![ANR 默认值不能代替现场规则](../../assets/diagrams/ch14/ch14-07-25-anr-timeout-type.png)
-
-图：ANR 超时由类型、前后台、平台版本及设备配置共同决定。 10 秒回看和 1 秒后看是分析参数，输入常见 5 秒也不是所有 ANR 的统一阈值。
 
 `android.anrs` 模块会从 `system_server` 的 ErrorId、Subject 与计时事件中解析 `anr_type`、`anr_dur_ms` 和 `default_anr_dur_ms`；源码也明确标注默认值仅对应 AOSP（Android Open Source Project） / Pixel 的常见配置。
 
-查询 Trace 中的 ANR，可以集中查看派生的类型、主题和时长，但不能把每列都当成唯一现场事实。固定源码按 PID 连接 process，没有限制生存期；最近 timer 也是 PID 与时间上的候选，未知主题的 duration 还可能回退为 0。应按 ErrorId 检查重复与身份歧义，再核对平台日志、计时器和实际配置。
+查询 Trace 中的 ANR，可以集中查看派生的类型、主题和时长；各列是解析结果，现场认定还要按下述方式核对。固定源码按 PID 连接 process，没有限制生存期；最近 timer 也是 PID 与时间上的候选，未知主题的 duration 还可能回退为 0。应按 ErrorId 检查重复与身份歧义，再核对平台日志、计时器和实际配置。
 
-<!-- gracker-diagram: ch14-07-26-anr-identity-resolution -->
-![ANR 的 PID 连接与最近 timer 只是候选](../../assets/diagrams/ch14/ch14-07-26-anr-identity-resolution.png)
-
-图：按 ErrorId 去重并重新检查进程实例、生存期与主线程唯一性。 固定表按 PID 连接 process，最近 timer 也不自动证明因果；未知 duration 可能回退 0。
 
 ```sql
 INCLUDE PERFETTO MODULE android.anrs;
@@ -1003,10 +923,6 @@ ORDER BY total_ms DESC;
 
 结果的解释依赖状态：大量 `Running` 要结合调用栈和 `slice` 找 CPU 工作；大量 `R` / `R+` 指向调度排队；`D` 且 `io_wait = 1` 指向内核 I/O 等待；`S` 还需检查 Binder 回复、`futex`（用户空间同步原语发生争用时使用的内核等待机制）、monitor contention 与应用等待事件。`blocked_function` 记录的是内核侧阻塞点，Java 层持锁者不在它的视野内。
 
-<!-- gracker-diagram: ch14-07-27-anr-window-states -->
-![ANR 前后窗口按原因选择并报告缺口](../../assets/diagrams/ch14/ch14-07-27-anr-window-states.png)
-
-图：按现场决定窗口后，分别解释执行、排队、I/O 和其他等待。 blocked_function 指向内核阻塞点，不能直接告诉 Java 层持锁者是谁。
 
 ### 锁竞争与同步分析
 
@@ -1044,7 +960,7 @@ ORDER BY dur DESC
 LIMIT 30;
 ```
 
-`waiter_count` 来自 ART 在竞争入口执行 `num_waiters_.fetch_add(1)` 得到的旧计数，0 表示当时此前没有等待者；它不是固定排队编号，也不能当作整个线程池的等待人数。`binder_reply_id` 有值时，持锁工作可能发生在 Binder 服务线程，应继续检查对应事务和持锁线程状态。
+`waiter_count` 来自 ART 在竞争入口执行 `num_waiters_.fetch_add(1)` 得到的旧计数，0 表示当时此前没有等待者；它不是固定排队编号，也代表不了整个线程池的等待人数。`binder_reply_id` 有值时，持锁工作可能发生在 Binder 服务线程，应继续检查对应事务和持锁线程状态。
 
 <!-- gracker-diagram: ch14-07-28-monitor-owner-information -->
 ![锁竞争保留持锁方、竞争方与记录语义](../../assets/diagrams/ch14/ch14-07-28-monitor-owner-information.png)
@@ -1053,7 +969,7 @@ LIMIT 30;
 
 #### 锁等待与帧的交集关联
 
-锁等待可能从 `doFrame` 开始前一直延续到回调内，也可能在回调结束后仍然存在，边界并不整齐。按“contention 完全包含于 `doFrame`”过滤会漏掉两端跨界的事件；我们直接计算两个半开区间的交集，把跨界的部分也接住。
+锁等待可能从 `doFrame` 开始前一直延续到回调内，也可能在回调结束后仍然存在，起止可能跨在回调两侧。按“contention 完全包含于 `doFrame`”过滤会漏掉两端跨界的事件；我们直接计算两个半开区间的交集，把跨界的部分也接住。
 
 统计每个应用帧的 `doFrame` 中，UI 线程被 monitor 锁竞争覆盖的时间，可以识别锁等待与慢帧的时间相关性。查询不预设固定毫秒阈值。
 
@@ -1110,10 +1026,6 @@ ORDER BY lock_overlap_ms DESC;
 
 同一段 `doFrame` 中的多个锁等待通常不会在同一个 UI 线程上重叠，若采集数据或解析结果出现重叠，简单求和可能超过回调时长。遇到这种情况要检查原始 `slice`，或先把重叠区间归并后再求和。
 
-<!-- gracker-diagram: ch14-07-29-lock-frame-clipping -->
-![锁竞争与帧按交集关联](../../assets/diagrams/ch14/ch14-07-29-lock-frame-clipping.png)
-
-图：竞争区间可跨过 doFrame 边界，应计算交集并检查重叠覆盖。 同类竞争若重叠，简单相加会多算；需要时先合并区间。
 
 ### `SPAN_JOIN` 与跨维度时间关联
 
@@ -1121,10 +1033,6 @@ ORDER BY lock_overlap_ms DESC;
 
 `SPAN_JOIN` 接受两张至少含 `ts`、`dur` 的表或视图，并输出它们的时间交集。`PARTITIONED cpu` 会先按 CPU 编号分组，只让编号相同的区间求交。每张输入表在同一分区内必须互不重叠，普通业务 `slice` 经常嵌套，直接交给 `SPAN_JOIN` 会破坏这个前提；而违反约束时 Perfetto 未必报错，结果可能静默出错。
 
-<!-- gracker-diagram: ch14-07-31-span-contract -->
-![SPAN_JOIN 的输入先满足实体与互斥约束](../../assets/diagrams/ch14/ch14-07-31-span-contract.png)
-
-图：同一输入、同一分区的时间段必须互斥，分区键必须表示同一种实体。 违反重叠约束时可能不报错却漏行；普通嵌套 Slice 不能直接送入。
 
 CPU 运行区间和 CPU 频率区间是典型用法。`sched` 已按 CPU 给出不重叠运行片段；`counter` 需要用下一采样点补出 `dur`。把两者交给 `SPAN_JOIN`，可计算目标进程每个线程在各 CPU 频率上的运行时间。
 
@@ -1162,28 +1070,20 @@ GROUP BY process.upid, thread.utid, thread.tid, process.name, thread.name,
 ORDER BY running_ms DESC;
 ```
 
-该脚本会在当前 SQL 会话创建对象，重复执行前要删除对象或更换名称。它只接受每个 ucpu 一条频率轨道；多轨 CPU 被排除，先用 `COUNT(DISTINCT track_id)` 检查被排除范围，并保留覆盖率，不能把无输出当成没有运行。`cpufreq` 只在频率事件或轮询数据存在时有结果；事件驱动采集还可能缺失 Trace 开头的初始频率。空结果先怀疑频率数据缺失，CPU 可能仍在运行。
+该脚本会在当前 SQL 会话创建对象，重复执行前要删除对象或更换名称。它只接受每个 ucpu 一条频率轨道；多轨 CPU 被排除，先用 `COUNT(DISTINCT track_id)` 检查被排除范围，并保留覆盖率。`cpufreq` 只在频率事件或轮询数据存在时有结果；事件驱动采集还可能缺失 Trace 开头的初始频率。空结果先怀疑频率数据缺失，CPU 可能仍在运行。
 
-<!-- gracker-diagram: ch14-07-32-sched-frequency -->
-![调度与频率按 ucpu 关联驻留时间](../../assets/diagrams/ch14/ch14-07-32-sched-frequency.png)
-
-图：sched 与频率区间先在相同 ucpu 上求交，再按线程和频点累加交集时长。 仅使用选定的单条频率轨道；被排除的多轨 CPU 与缺失频率要报告。
 
 #### 哪些区间流适合做交集
 
-monitor contention slice 覆盖 ART 记录的整段竞争过程，并不等于内核中纯睡眠的区间。固定 `Monitor::Lock()` 在改变线程状态、获取锁之前开始 ATrace，在恢复可运行并更新持锁信息后结束；因此同一 `utid` 的 contention slice 可与 `Running` 相交。先与 `thread_state` 分解运行、Runnable 和睡眠，再只给实际 Running 片段关联 CPU 频率。空交集只描述本次窗口，不能据此制定“锁竞争与运行必然互斥”的规则。
+monitor contention slice 覆盖 ART 记录的整段竞争过程，对应到内核状态时，除了睡眠还可能包含别的阶段。固定 `Monitor::Lock()` 在改变线程状态、获取锁之前开始 ATrace，在恢复可运行并更新持锁信息后结束；因此同一 `utid` 的 contention slice 可与 `Running` 相交。先与 `thread_state` 分解运行、Runnable 和睡眠，再只给实际 Running 片段关联 CPU 频率。空交集只描述本次窗口，据此还总结不出“锁竞争与运行必然互斥”的规则。
 
 <!-- gracker-diagram: ch14-07-30-monitor-includes-running -->
 ![monitor contention 不是纯睡眠区间](../../assets/diagrams/ch14/ch14-07-30-monitor-includes-running.png)
 
-图：ART 的竞争 Slice 包住阻塞前后处理，可能与 Running、Runnable 和睡眠相交。 不能预设 contention 与 sched 互斥；只对实际 Running 交集关联频率。
+图：ART 的竞争 Slice 包住阻塞前后处理，可能与 Running、Runnable 和睡眠相交。 contention 与 sched 的互斥关系要按交集验证；只对实际 Running 交集关联频率。
 
 帧分析可以按以下关系组织：
 
-<!-- gracker-diagram: ch14-07-33-frame-state-relationships -->
-![按问题选择真正有意义的区间关系](../../assets/diagrams/ch14/ch14-07-33-frame-state-relationships.png)
-
-图：doFrame 分别关联线程状态、竞争与运行频率，它们回答不同问题。 锁竞争是原因维度，不能直接加到各调度状态时长上。
 
 1. 用 `android_frames` 取得帧窗口、`doFrame` 和 UI / `RenderThread` 的 `utid`。
 2. 把 `doFrame` 与 UI 线程的 `thread_state` 相交，得到 `Running`、`Runnable`、睡眠与 I/O 等待时间。
@@ -1298,7 +1198,7 @@ LEFT JOIN lock_totals
 ORDER BY overrun.overrun DESC, frames.ts;
 ```
 
-状态总量接近 `do_frame_ms`，说明调度事件覆盖较完整；差值较大时应检查 Trace 是否从区间中途开始、是否有数据丢失，或 UI 线程标识是否正确。锁竞争是与调度状态相交的业务原因维度，记录区间还可能包含 Running 和 Runnable；不能直接与各状态时长相加。没有匹配到锁 slice 只表示“未观察到”，还需核对 ART 采集与解析覆盖。
+状态总量接近 `do_frame_ms`，说明调度事件覆盖较完整；差值较大时应检查 Trace 是否从区间中途开始、是否有数据丢失，或 UI 线程标识是否正确。锁竞争是与调度状态相交的业务原因维度，记录区间还可能包含 Running 和 Runnable，与各状态时长相加会重复计数。没有匹配到锁 slice 只表示“未观察到”，还需核对 ART 采集与解析覆盖。
 
 ### I/O：把线程等待与块设备活动分开
 
@@ -1313,10 +1213,6 @@ adb shell 'cat /sys/kernel/tracing/available_events' \
 
 设备输出决定 `ftrace_events` 能配置哪些事件。采集结束后先查 `stats` 中 `name = 'ftrace_setup_errors'` 的汇总，再查看 `metadata` 中同名详情。`unknown_ftrace_events` 与 `failed_ftrace_events` 是 setup 报告字段，不是固定 `stats.name`；还要另查 per-CPU overrun 等录制期间丢数。否则容易把未启用或丢失的数据误读成“没有 I/O”。
 
-<!-- gracker-diagram: ch14-07-35-setup-versus-record-loss -->
-![启用错误和录制丢数分别检查](../../assets/diagrams/ch14/ch14-07-35-setup-versus-record-loss.png)
-
-图：ftrace_setup_errors 统计和 metadata 详情用于启用诊断，运行期丢数另看 CPU 统计。 unknown/failed_ftrace_events 是 setup 报告字段，不是固定 stats.name。
 
 标准库的 `linux.block_io` 模块可以按设备查看仍在队列或设备中的活动请求：
 
@@ -1335,10 +1231,6 @@ ORDER BY ts;
 
 这张表回答“哪台块设备在何时有多少请求”，不含应用进程和文件路径。应用归因至少还需要以下依据中的两类：
 
-<!-- gracker-diagram: ch14-07-34-io-attribution -->
-![块设备忙与应用等待不能自动画等号](../../assets/diagrams/ch14/ch14-07-34-io-attribution.png)
-
-图：应用 I/O 归因需要线程等待、业务操作和存储活动的多种对应证据。 设备队列没有应用路径；D 状态或时间相交单独出现都不够确认存储根因。
 
 - 目标线程的文件、SQLite、资源加载或自定义 Trace slice 与设备活动重叠；
 - 同一区间的 `thread_state` 为 `D`，并且 `sched_blocked_reason` 或内核调用栈指向块层、文件系统或页故障路径；
@@ -1353,10 +1245,6 @@ ORDER BY ts;
 
 CPU 频率高只表示策略选择了较高频点，是否在持续执行大量工作要看运行时间。调度负载、Governor（动态选择 CPU 频率的策略）、Boost（短时提高性能档位的机制）、热限制、CPU 容量和任务所在核心集群都会影响频率。功耗分析至少要联合 CPU 运行时间、频率、空闲状态、Suspend（整机进入低功耗休眠）和唤醒锁；唤醒锁用于要求系统保持唤醒。
 
-<!-- gracker-diagram: ch14-07-36-power-multiple-signals -->
-![频率、运行、空闲与休眠联合观察](../../assets/diagrams/ch14/ch14-07-36-power-multiple-signals.png)
-
-图：CPU 频率是策略结果，功耗解释还需要执行量、空闲、Suspend 与唤醒锁。 高频可能空闲，低频也可能持续执行，频点本身不是能量测量。
 
 下面的配置片段面向单机器 Trace，采集频率、空闲、系统休眠和内核唤醒锁；buffer 与时长仍需按目标设备的数据率调整。后续 suspend/唤醒锁模板在多机器输入上停止输出，需先拆分来源；频率模板则显式保留 ucpu。
 
@@ -1418,12 +1306,8 @@ FROM power_summary
 ORDER BY category, total_dur DESC;
 ```
 
-`android_suspend_state` 从已有 suspend 事件派生区间，再补出 awake 空档；主机器完全没有有效 suspend slice 时，会把整段 Trace 回退为 awake，这不能证明采集完整或设备从未休眠。`android_kernel_wakelocks.held_dur` 来自相邻累计计数值之差，描述采样区间内累计持有时间，不能还原每一次 acquire/release 的确切时刻；末点、缺口、重置和同名不同 type 都需单列。唤醒锁持有与耗电相关，但仍需找到持有者和同一区间中的实际工作。
+`android_suspend_state` 从已有 suspend 事件派生区间，再补出 awake 空档；主机器完全没有有效 suspend slice 时，会把整段 Trace 回退为 awake，这既说明不了采集完整，也说明不了设备从未休眠。`android_kernel_wakelocks.held_dur` 来自相邻累计计数值之差，描述采样区间内累计持有时间，还原不了每一次 acquire/release 的确切时刻；末点、缺口、重置和同名不同 type 都需单列。唤醒锁持有与耗电相关，但仍需找到持有者和同一区间中的实际工作。
 
-<!-- gracker-diagram: ch14-07-37-suspend-fallback -->
-![没有 suspend 记录时的 awake 是回退模型](../../assets/diagrams/ch14/ch14-07-37-suspend-fallback.png)
-
-图：标准库补出 awake 空档，主机器无有效 suspend Slice 时可整段回退为 awake。 这不能证明设备从未休眠；唤醒锁 held_dur 是累计 Counter 差值。
 
 CPU 频率应按区间做时间加权；直接平均离散采样点，会让持续时间不同的频点获得相同权重：
 
@@ -1444,10 +1328,6 @@ ORDER BY ucpu, cpu;
 
 `freq` 的单位是 kHz。加权平均频率适合比较相同设备和场景中的策略结果，做能量估算还不够：CPU 可能高频空闲，也可能低频持续运行。还要关联 `cpu_idle_counters`、`sched`、功率轨（芯片不同供电域的测量通道）和电池电流。系统进不了 Suspend 时，再按时间顺序检查显示状态、用户空间 / 内核唤醒锁、活跃定时器和 `android.wakeups` 给出的唤醒或休眠失败原因。
 
-<!-- gracker-diagram: ch14-07-38-frequency-weight -->
-![频率平均按持续时间加权](../../assets/diagrams/ch14/ch14-07-38-frequency-weight.png)
-
-图：频率平均使用 Σ(freq×dur)/Σdur，并保留 ucpu 和有效覆盖。 首值前未知，尾值保持是假设；异构 CPU 的 MHz 不具有相同计算能力。
 
 ### 跨进程关联使用稳定标识
 
@@ -1455,10 +1335,6 @@ ORDER BY ucpu, cpu;
 
 PID、TID、进程名和线程名只用于筛选与展示，唯一身份交给上面这些稳定标识。
 
-<!-- gracker-diagram: ch14-07-39-cross-process-identities -->
-![跨进程关联使用各领域稳定身份](../../assets/diagrams/ch14/ch14-07-39-cross-process-identities.png)
-
-图：启动、Binder、帧和调度各自采用模型规定的稳定关联键。 跨录制或跨设备还需要可验证时钟同步，不能只把文件起点对齐。
 
 跨进程区间应来自同一录制会话。合并不同设备或不同会话的 Trace 时，必须有可验证的时钟快照和同步事件；时钟快照记录同一已知时刻在不同时间基准下的数值，用于建立换算关系。只按文件起点平移，毫秒级的因果判断就靠不住了。
 
@@ -1475,10 +1351,6 @@ SQL 排名适合缩小范围，性能结论仍要经过时间、线程、事件�
 
 一条可复查的结论应写成：“FrameTimeline 将帧 842 标记为 `App Deadline Missed`；该帧 UI 线程有 6.2 ms 的 `R` 状态，其中最长区间由某线程唤醒；同窗口未发现 monitor 锁竞争。”数字必须来自具体 Trace；教程中的示例参数照抄成产品阈值、时间相关性写成因果关系，都是常见错误。
 
-<!-- gracker-diagram: ch14-07-40-evidence-chain -->
-![排名结果保留可复查的证据链](../../assets/diagrams/ch14/ch14-07-40-evidence-chain.png)
-
-图：报告把平台判定、线程状态、候选原因和确认手段逐层连接。 示例数字只是表达结构，产品阈值和根因必须来自具体 Trace 与对照。
 
 ### 基础查询部分的源码与文档依据
 
@@ -1600,10 +1472,6 @@ ORDER BY part_id, ts;
 
 分区 1 会输出 `[15, 20)` 与 `[30, 35)`，分区 2 会输出 `[12, 16)`。脚本会在当前 Trace Processor 会话创建对象；重复运行前要删除这些对象或更换名称。
 
-<!-- gracker-diagram: ch14-07-42-partition-matches -->
-![分区只让同一实体的区间求交](../../assets/diagrams/ch14/ch14-07-42-partition-matches.png)
-
-图：两侧按相同整数分区键匹配，互不相关的实体不会相交。 列类型相同不代表业务含义相同；HASH 字符串也不能创建真实关联。
 
 #### 同分区区间的互斥约束
 
@@ -1611,14 +1479,10 @@ ORDER BY part_id, ts;
 
 输入还要满足以下条件：
 
-<!-- gracker-diagram: ch14-07-43-span-type-and-columns -->
-![算子类型、空键和同名列分别验证](../../assets/diagrams/ch14/ch14-07-43-span-type-and-columns.png)
-
-图：执行前验证时间列、分区列和透传业务列，避免隐藏丢行或创建错误。 NULL 分区行会跳过；payload 同名列须重命名，两侧都缺 dur 会失败。
 
 - 底层算子要求两侧都有 `ts`，且至少一侧有 `dur`。缺少 `dur` 的一侧只按采样时刻参与匹配，不会自动延续到下一条记录；区间分析应为两侧都显式提供 `dur`。
 - `dur` 应大于零；`dur = -1` 的开放区间要先裁到查询窗口或 `trace_end()`。
-- 分区列必须是整数且不能为空；固定算子会跳过 NULL 分区行，字符串分区会报错。两侧都分区时，列名必须相同；除 `ts`、`dur` 和共同分区键外，两侧同名输出列会使创建失败，需先重命名。
+- 分区列必须是整数、取值非空；固定算子会跳过 NULL 分区行，字符串分区会报错。两侧都分区时，列名必须相同；除 `ts`、`dur` 和共同分区键外，两侧同名输出列会使创建失败，需先重命名。
 - 分区键必须表达同一种实体，例如 `ucpu` 对 `ucpu`、`utid` 对 `utid`。
 - 只给一侧分区也受支持，未分区表会分别与每个分区求交。
 
@@ -1628,7 +1492,7 @@ ORDER BY part_id, ts;
 
 计数器在 `ts` 处记录“数值从此刻开始变为 `value`”。所谓前向有效区间，是把这个值视为从当前 `ts` 持续到下一条记录，即 `[当前 ts, 下一条 ts)`；同一轨道的末条记录延续到明确的窗口末端。
 
-窗口函数 `LEAD()` 必须按 `track_id` 分组，并按 `(ts, id)` 稳定排序。同轨同时间戳的较早记录生成零时长，保留该时刻最后一条记录向前延续；若项目不能接受此 tie-break，需把重复时间戳标成歧义。按 `ucpu` 做交集前，还须确认每个 ucpu 只有一条已选择的频率轨道，避免多轨重叠。
+窗口函数 `LEAD()` 必须按 `track_id` 分组，并按 `(ts, id)` 稳定排序。同轨同时间戳的较早记录生成零时长，保留该时刻最后一条记录向前延续；若这套 tie-break 满足不了项目要求，需把重复时间戳标成歧义。按 `ucpu` 做交集前，还须确认每个 ucpu 只有一条已选择的频率轨道，避免多轨重叠。
 
 <!-- gracker-diagram: ch14-07-44-counter-leading-interval -->
 ![计数器点还原成前向保持区间](../../assets/diagrams/ch14/ch14-07-44-counter-leading-interval.png)
@@ -1702,10 +1566,10 @@ ORDER BY ucpu, ts;
 
 下面的检查使用“前序最大结束时间”寻找同一 `utid` 中的重叠。`LAG()` 只能读取排序后的上一行，运行最大值则保留截至当前行之前出现过的最晚结束时间，因此还能识别 `[1, 10)`、`[2, 3)`、`[9, 12)` 这类嵌套后再次相交的序列。
 
-<!-- gracker-diagram: ch14-07-46-running-max-overlap-check -->
-![前序最大结束时间能发现嵌套后的重叠](../../assets/diagrams/ch14/ch14-07-46-running-max-overlap-check.png)
+<!-- gracker-diagram: ed14-07-span-input-validation-and-nested-overlap -->
+![SPAN_JOIN 前先验证分区语义、列和所有前序区间](../../assets/diagrams/ch14/ed14-07-span-input-validation-and-nested-overlap.png)
 
-图：检查重叠要记住所有前序区间中最晚的结束时间，而不只看上一行。 同 ts/dur 用 ID 稳定排序；发现重叠后先处理输入，再做 SPAN_JOIN。
+图：区间分析两侧显式ts/dur>0，开放dur-1先裁明确窗口；底层要求两侧ts至少一侧dur，缺dur侧不自动延续，两侧缺dur失败。分区整数非NULL，同名双侧同实体，NULL被跳过、字符串报错、payload同名需重命名，HASH仅类型不保证实体且有碰撞。一侧分区亦支持但混合空表需特测。每侧同分区须互斥，违反可能静默漏行。排序ts/dur/id，以MAX(ts+dur) over preceding检查当前ts<previousmax，例[1,10)/[2,3)/[9,12)第三段9<10，LAG前行end3漏判。重叠时按目标限定层级、只覆盖则合并或保ID用普通条件/intersect，不直接继续SPAN求和。
 
 ```sql
 WITH
@@ -1777,10 +1641,6 @@ ORDER BY upid, utid, ts;
 
 合并后就找不回原始 `slice.id`。诊断单个事件时应保留原始表；计算某类事件对窗口的总覆盖时间时，合并可以避免嵌套或重复事件被累计多次。
 
-<!-- gracker-diagram: ch14-07-47-coverage-union-versus-identity -->
-![合并区间保留覆盖但会丢掉事件身份](../../assets/diagrams/ch14/ch14-07-47-coverage-union-versus-identity.png)
-
-图：只计算覆盖时可以合并相交区间，需要追查原始事件时保留源表。 合并结果不能还原每个原始 slice.id 或多重嵌套关系。
 
 ### 案例：每帧运行时间与 CPU 频率
 
@@ -1788,12 +1648,8 @@ ORDER BY upid, utid, ts;
 
 异构 SoC（System on a Chip，系统级芯片）上，不同 CPU 簇的频率范围与每 MHz 性能不同，把所有 CPU 的 kHz 混成一个平均值没有可比性。查询输出每帧、每个 `ucpu`、每个频点的运行驻留时间，也就是线程在该频点累计运行了多久；解释性能时再结合 CPU capacity（核心的相对计算能力）、簇信息和同设备基线。
 
-下面的脚本以两次交集的输入互斥为前提：先对候选 `cookbook_do_frames` 按 utid 检查前序最大结束时间，再检查同一 ucpu 的频率轨道数量与区间重叠。有重叠时先处理或停止计算；不能因为它们来自标准表，就假设目标 Trace 的两层输入一定有效。满足前提后，先关联调度与频率，再按 utid 裁进 doFrame。
+下面的脚本以两次交集的输入互斥为前提：先对候选 `cookbook_do_frames` 按 utid 检查前序最大结束时间，再检查同一 ucpu 的频率轨道数量与区间重叠。有重叠时先处理或停止计算；这两层输入即使来自标准表，有效性也要按目标 Trace 逐项验证。满足前提后，先关联调度与频率，再按 utid 裁进 doFrame。
 
-<!-- gracker-diagram: ch14-07-48-frame-frequency-two-stages -->
-![每帧频率驻留分两次交集](../../assets/diagrams/ch14/ch14-07-48-frame-frequency-two-stages.png)
-
-图：先将 sched 与频率按 ucpu 求交，再把运行片段按 utid 裁进 doFrame。 两个输入阶段都必须互斥；帧或频率轨道异常时先停止或明确排除。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
@@ -1894,10 +1750,10 @@ ORDER BY upid, frame_id, ucpu, freq;
 
 `known_frequency_running_ms` 只累计同时具有 `sched` 和频率数据的运行时间。它小于该帧的主线程总运行时间时，可能存在频率采集缺口。`frame_running_share_pct` 的分母也是已知频率运行时间，与 `doFrame` 的 CPU 占用比例是两回事。
 
-<!-- gracker-diagram: ch14-07-49-known-frequency-denominator -->
-![已知频率运行时间不是全部 CPU 时间](../../assets/diagrams/ch14/ch14-07-49-known-frequency-denominator.png)
+<!-- gracker-diagram: ed14-07-running-frequency-intersections-and-denominator -->
+![先按 ucpu 联运行与频率，再按 utid 裁帧并分清分母](../../assets/diagrams/ch14/ed14-07-running-frequency-intersections-and-denominator.png)
 
-图：频率驻留比例的分母只包含同时具有调度和频率证据的运行时间。 缺失频率或被排除多轨 CPU 会降低覆盖，百分比不能代替总 CPU 占比。
+图：sched用正闭合Running和ucpu，频率选每ucpu单条track，按track(ts,id)生成正区间并查互斥，排除多轨和首前缺口/尾外推；同utid帧亦先验证互斥。第一SPANsched×freq按ucpu，第二与doFrame按utid，输出每frame/ucpu/freq交集dur。doFramewall含等待，总schedrunning是获得CPU时间，knownfrequencyrunning只两证据同时存在子集；frame_running_share以known为分母，另报covered和总运行差，不等CPU占用。加权频率SUM(1.0*freq*dur)/SUMdur先浮点并明kHz/MHz，异构核心MHz不可比能力，频率不是能耗或自动调频错误；同设备配置对照cluster/capacity/idle/suspend/power。
 
 频率低未必是调频故障：线程可能运行在能效核，短任务也可能在升频前完成；温控、ADPF（应用提交性能提示的框架）、线程优先级、CPU affinity（限定线程可用的核心）和厂商调度策略都可能影响选择。判断时应比较同一设备、同一场景和同一采集配置，并把 `ucpu` 映射到 CPU capacity 或簇。
 
@@ -1907,10 +1763,10 @@ ORDER BY upid, frame_id, ucpu, freq;
 
 这条查询分别计算 UI 线程 Binder 客户端区间、UI 线程 monitor 锁等待和进程 GC 活动与 `doFrame` 的重叠。`interval_merge_overlapping_partitioned!` 会在每个帧和事件类型内合并重叠，避免同类嵌套事件重复累计。
 
-<!-- gracker-diagram: ch14-07-50-event-coverage-union -->
-![帧内 Binder、竞争与 GC 分类型合并覆盖](../../assets/diagrams/ch14/ch14-07-50-event-coverage-union.png)
+<!-- gracker-diagram: ed14-07-frame-event-clipping-and-coverage-union -->
+![事件先裁进帧，再按类型合并覆盖，保留源表追因果](../../assets/diagrams/ch14/ed14-07-frame-event-clipping-and-coverage-union.png)
 
-图：先按帧和事件类型裁剪，再在每类内部合并重叠，避免嵌套事件重复累计。 合并仅保留覆盖；原始事务和 GC 身份要回查源表。
+图：先固定frameid/upid/UIutid及doFramets/dur，Binder取同UIclientutid并区分sync等待与asyncsend，monitor取同blockedutid，GC按进程事件gc_ts/gc_dur。普通区间条件允许事件跨窗口边界，max起点min终点取正dur；只按完全包含会漏起前/终后事件。每frame/eventkind合并同类重叠，再SUMcoveredms，源ID需另查原表。不同类型仍可重叠不可相加总阻塞；monitor含Running/Runnable，GC整段非STW，Binderasync非同步阻塞，因果与缺采需threadstate/ART/采样独立验证。
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames.timeline;
@@ -2027,7 +1883,7 @@ ORDER BY upid, frame_id, covered_ms DESC;
 <!-- gracker-diagram: ch14-07-51-causal-dimensions-overlap -->
 ![不同原因维度的覆盖不可直接相加](../../assets/diagrams/ch14/ch14-07-51-causal-dimensions-overlap.png)
 
-图：Binder、锁竞争与 GC 活动可能与同一帧时间重叠。 这些量不是互斥状态；GC 活动也不等于主线程暂停。
+图：Binder、锁竞争与 GC 活动可能与同一帧时间重叠。 这些量不是互斥状态；GC 活动与主线程暂停要分开统计。
 
 确定因果关系还要检查 `thread_state` 和事件层级。帧内出现 GC 活动，只说明时间相关；主线程在同一时段是否停顿，要看主线程状态和 ART 暂停事件。合并后的表也不再保留原始事务或 GC `id`，追踪单个事件时应回查标准库源表。
 
@@ -2108,14 +1964,14 @@ ORDER BY ts;
 <!-- gracker-diagram: ch14-07-53-left-shadow-gaps -->
 ![SPAN_LEFT_JOIN 保留左侧无覆盖区间](../../assets/diagrams/ch14/ch14-07-53-left-shadow-gaps.png)
 
-图：左连接把左区间按右侧覆盖切开，未覆盖部分的右侧业务列为 NULL。 影子时间段是算子补出的占位，不能当作采集到的右侧事件。
+图：左连接把左区间按右侧覆盖切开，未覆盖部分的右侧业务列为 NULL。 影子时间段是算子补出的占位，与采集到的右侧事件要区分开。
 
-空表行为要区分分区形状：固定实现中，只有一侧分区的 mixed partitioning 场景里，空的分区侧参加 SPAN_OUTER_JOIN，或它是 SPAN_LEFT_JOIN 的右侧时，才会使结果为空。两侧按同名键分区时，右表全空仍可保留左侧区间并令右侧业务列为 NULL；未分区右表为空也可保留左侧。固定源码的 InitialEofBehavior 分支和 native 57.2/58.2 合成表测试都区分这些情况，官方文档的概括不能扩展成“所有空分区表都没有输出”。依赖未匹配区间的自动化查询应按实际分区组合测试。
+空表行为要区分分区形状：固定实现中，只有一侧分区的 mixed partitioning 场景里，空的分区侧参加 SPAN_OUTER_JOIN，或它是 SPAN_LEFT_JOIN 的右侧时，才会使结果为空。两侧按同名键分区时，右表全空仍可保留左侧区间并令右侧业务列为 NULL；未分区右表为空也可保留左侧。固定源码的 InitialEofBehavior 分支和 native 57.2/58.2 合成表测试都区分这些情况，官方文档的概括到这里要止步，“所有空分区表都没有输出”是过度推广。依赖未匹配区间的自动化查询应按实际分区组合测试。
 
 <!-- gracker-diagram: ch14-07-54-empty-partition-shapes -->
 ![空分区要分 mixed 与双侧同名分区](../../assets/diagrams/ch14/ch14-07-54-empty-partition-shapes.png)
 
-图：空表输出取决于哪一侧分区及连接种类，不能套普通外连接直觉。 固定代码和 native57/58 测试：同名双侧分区的空右表仍可保留左侧。
+图：空表输出取决于哪一侧分区及连接种类，普通外连接直觉在这里会失真。 固定代码和 native57/58 测试：同名双侧分区的空右表仍可保留左侧。
 
 ### 查询成本与索引策略
 
@@ -2131,10 +1987,6 @@ ORDER BY ts;
 
 Perfetto 原生表的 `id` 查询已有专门优化。需要为物化表加索引时使用 `CREATE PERFETTO INDEX`，并评估内存成本；索引建立从键值到数据行的快速定位结构，帮助筛选和等值关联，`SPAN_JOIN` 所需的时间顺序排序与重叠输入的问题则要另外解决。
 
-<!-- gracker-diagram: ch14-07-55-query-cost -->
-![成本由输入构造、排序与交集输出共同决定](../../assets/diagrams/ch14/ch14-07-55-query-cost.png)
-
-图：先缩小实例和窗口，再物化复用结果，最后用查询计划决定索引。 索引不能修复重叠输入、错误分区或缺失数据。
 
 ### 在 CI 中复用复杂 Perfetto SQL
 
@@ -2151,10 +2003,6 @@ trace_processor_shell \
 
 每次启动独立进程也能避免前一次查询创建的临时表污染当前运行。判断性能是否相对基线变差，应比较同设备、同场景的分布，并在仓库中记录阈值来源；16.67 ms、某个固定 kHz 或任意百分比都不具备跨设备通用性。
 
-<!-- gracker-diagram: ch14-07-56-ci-reproducibility -->
-![CI 固定输入、分析引擎与比较方法](../../assets/diagrams/ch14/ch14-07-56-ci-reproducibility.png)
-
-图：每次独立执行版本化 SQL，保存原始 Trace、配置和结果。 空值和覆盖不足不能改写为零；阈值要来自同设备同场景对照。
 
 ### 排查清单
 
@@ -2173,10 +2021,6 @@ trace_processor_shell \
 
 `SPAN_JOIN` 解决的是互斥区间流的时间交集。把输入约束、采集缺口和分区语义写进查询，结果才具备复查价值。
 
-<!-- gracker-diagram: ch14-07-57-interval-invariants -->
-![区间报告先通过输入不变量检查](../../assets/diagrams/ch14/ch14-07-57-interval-invariants.png)
-
-图：交集正确性依赖时间边界、实体分区、互斥和数据覆盖。 SQL 执行成功不是统计口径正确的证明。
 
 ### 区间关联部分的源码与文档依据
 
@@ -2208,10 +2052,6 @@ CUJ 是 Critical User Journey，指系统重点监控的一段用户交互；Jan
 - Data Explorer 是节点式查询编辑器，负责组织结构化查询和中间结果；
 - PerfettoSQL 标准库与指标脚本定义字段语义，是可复核结论的依据。
 
-<!-- gracker-diagram: ch14-07-58-ui-three-layers -->
-![DataGrid、Data Explorer 与 SQL 分别负责什么](../../assets/diagrams/ch14/ch14-07-58-ui-three-layers.png)
-
-图：Data Explorer 组织查询图，Trace Processor 执行结构化查询，DataGrid 显示结果。 图形界面帮助筛选，不替代字段语义与原始 Trace 证据。
 
 界面帮我们缩小范围，SQL、trace 和源码负责验证结论是否成立。
 
@@ -2228,7 +2068,7 @@ v54.0 标签中已经存在节点式查询插件，插件标识为 `dev.perfetto
 
 图：执行服务把节点转成结构化查询，通过 summarizer 管理物化结果。 临时表名和界面状态不作长期稳定接口，UI 与 TP 版本分别保存。
 
-本节分别核对 v54.0 ExplorePage 与 Android 17 DataExplorer 的源码；UI 与 Trace Processor 可以独立更新，不能仅从分析二进制版本推出当前网页的界面能力。下面只依赖固定 Android 17 的 `android.cujs.base`、`android.cujs.threads` 等明确入口；换用其他 Trace Processor 时，先查配套 schema 并运行样本回归。
+本节分别核对 v54.0 ExplorePage 与 Android 17 DataExplorer 的源码；UI 与 Trace Processor 可以独立更新，当前网页的界面能力以 UI 自己的版本为准，从分析二进制版本是推不出来的。下面只依赖固定 Android 17 的 `android.cujs.base`、`android.cujs.threads` 等明确入口；换用其他 Trace Processor 时，先查配套 schema 并运行样本回归。
 
 这套执行方式带来两个工程约束：
 
@@ -2237,19 +2077,11 @@ v54.0 标签中已经存在节点式查询插件，插件标识为 `dev.perfetto
 
 DataGrid 最适合承载“窄表”：一行表示一个 CUJ、一帧或一段线程状态，一列表示一个可解释维度。宽表通常列多、连接关系也更复杂；未经约束便直接做透视，重复行和多层 FrameTimeline 数据很容易放大计数。
 
-<!-- gracker-diagram: ch14-07-60-narrow-table-identity -->
-![窄表先明确一行代表什么](../../assets/diagrams/ch14/ch14-07-60-narrow-table-identity.png)
-
-图：表中每一行必须有明确 CUJ、帧或线程状态身份，先验证连接基数。 线程或图层一对多会放大行数，透视之前先检查候选数量。
 
 ### 系统 Jank CUJ 的三组输入
 
 系统的 Jank CUJ 指标汇合三组独立数据。FrameTimeline 同时记录一帧原本应在何时完成的 expected timeline，以及它实际完成时刻的 actual timeline；vsync（垂直同步） ID 用于标识对应帧。
 
-<!-- gracker-diagram: ch14-07-61-cuj-three-inputs -->
-![系统 CUJ 指标汇合三类独立证据](../../assets/diagrams/ch14/ch14-07-61-cuj-three-inputs.png)
-
-图：系统 CUJ 标记、结束后 Counter 和逐帧 FrameTimeline 提供不同层次证据。 聚合计数与逐帧模型可能缺采或采用不同分类，不能强行视为同一结果。
 
 | 输入 | 产生者 | 在指标中的用途 |
 |---|---|---|
@@ -2304,12 +2136,12 @@ LEFT JOIN android_jank_cuj_render_thread AS r USING (cuj_id)
 ORDER BY c.ts;
 ```
 
-`LEFT JOIN` 会保留没有 RenderThread 记录的 CUJ；但同一进程有多条同名线程或 track 时可能返回多行，所以本查询仍是候选关联表。`render_thread_candidates` 大于 1 时，应结合生存期与实际 DrawFrame 轨道选定，不能直接按结果行数统计 CUJ。缺失可能来自场景没有走对应 HWUI 路径、线程名不匹配、CUJ 被截断或采集数据不足；我们先按这几种情况排查，再谈 RenderThread 是否参与。
+`LEFT JOIN` 会保留没有 RenderThread 记录的 CUJ；但同一进程有多条同名线程或 track 时可能返回多行，所以本查询仍是候选关联表。`render_thread_candidates` 大于 1 时，应结合生存期与实际 DrawFrame 轨道选定，CUJ 数量要按 cuj_id 统计，结果行数只作参考。缺失可能来自场景没有走对应 HWUI 路径、线程名不匹配、CUJ 被截断或采集数据不足；我们先按这几种情况排查，再谈 RenderThread 是否参与。
 
 <!-- gracker-diagram: ch14-07-64-cuj-render-candidates -->
 ![CUJ 与 RenderThread 的关联仍可能一对多](../../assets/diagrams/ch14/ch14-07-64-cuj-render-candidates.png)
 
-图：公共线程模块按同进程线程名和 track 关联，报告保留候选数。 候选数大于1时要结合生存期与实际 DrawFrame 轨道，不能按结果行数统计 CUJ。
+图：公共线程模块按同进程线程名和 track 关联，报告保留候选数。 候选数大于1时要结合生存期与实际 DrawFrame 轨道选定，CUJ 数量按 cuj_id 统计。
 
 `cuj_id` 是 trace 内的 CUJ 编号，`upid` 和 `utid` 分别是 Trace Processor 在该 trace 中分配的唯一进程与线程 ID，`track_id` 标识承载事件的轨道。它们与操作系统原始的 PID、TID 不属于同一标识域。
 
@@ -2332,7 +2164,7 @@ Java `FrameTracker.finishTraced()` 在 CUJ 收尾后写出：
 
 图：固定取值函数只有名称和时间参数，跨进程同名 CUJ 可能串值。 合成测试本应读取7和11，原指标都读到11；报告改用 upid 与 cuj_id。
 
-下面的查询按进程与 CUJ 实例读取计数器，保留原始记录、匹配候选数量及加权速率。存在歧义时不输出唯一计数；不使用下述有截断风险的时长计数器反推“总量”。
+下面的查询里，我们按进程与 CUJ 实例读取计数器，保留原始记录、匹配候选数量及加权速率。存在歧义时不输出唯一计数；不使用下述有截断风险的时长计数器反推“总量”。
 
 ```sql
 INCLUDE PERFETTO MODULE android.cujs.base;
@@ -2405,26 +2237,22 @@ GROUP BY w.upid, w.cuj_id, w.cuj_name, w.state,
 ORDER BY w.ts, w.upid, w.cuj_id;
 ```
 
-原始 weighted 计数器记录“加权分数 / totalAnimationTime × 10^9 × 1000”的整数化结果，除以 1000 后才是 jank/s。这个分母由帧间隔及非负 present delay 累加，不等于 CUJ slice 的墙上时间。更关键的是，固定 FrameTracker 写 totalAnimTime 时先把纳秒 long 强转 int，再除以 10^6：2.2 秒会得到 -2094 ms；回绕后也可能是正数。因此不能把该计数器无条件用于反推精确加权总量，改版是否修复须另查设备源码。
+原始 weighted 计数器记录“加权分数 / totalAnimationTime × 10^9 × 1000”的整数化结果，除以 1000 后才是 jank/s。这个分母由帧间隔及非负 present delay 累加，和 CUJ slice 的墙上时间对不上。更关键的是，固定 FrameTracker 写 totalAnimTime 时先把纳秒 long 强转 int，再除以 10^6：2.2 秒会得到 -2094 ms；回绕后也可能是正数。这个计数器只能按原样记录，要用它反推精确加权总量，先到设备源码确认改版是否修复。
 
 <!-- gracker-diagram: ch14-07-68-java-duration-narrowing -->
 ![totalAnimTime 的强转顺序会使纳秒回绕](../../assets/diagrams/ch14/ch14-07-68-java-duration-narrowing.png)
 
-图：固定 Java 代码先把纳秒 long 转成32位 int，再换算毫秒。 2.2秒得到 -2094ms；回绕后也可能为正，不能无条件用它反推精确加权总量。
+图：固定 Java 代码先把纳秒 long 转成32位 int，再换算毫秒。 2.2秒得到 -2094ms；回绕后也可能为正，反推精确加权总量前先核对设备源码。
 
 本查询的 `*_jank_per_s`、候选数与质量标记是报告别名，不是原始 metric 表字段。200 ms 是可修改的报告搜索上限，不是平台保证；4 ms 回看沿用固定 SQL 的兼容候选规则。搜索窗采用半开区间，多条候选保留键且该字段为 NULL。即使只有一条候选也只确认“本搜索窗内唯一”，同进程同名交互重叠、迟到或漏采时仍需人工核对归属。[Android 17 计数器指标](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/internal/counters.sql) [Android 17 指标输出](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
 
-<!-- gracker-diagram: ch14-07-66-cuj-counter-search-window -->
-![计数器窗口保留候选和歧义](../../assets/diagrams/ch14/ch14-07-66-cuj-counter-search-window.png)
 
-图：限定进程和 CUJ 实例后，再检查有界搜索窗中的 Counter 候选数量。 200 ms 是报告参数，4 ms 回看是兼容启发式；单候选也只确认窗内唯一。
-
-加权速率、逐帧分数和 missed frame 数是不同统计量；缺失或歧义样本应先分类，不能 COALESCE 成零参与排名。固定 FrameTracker 的 missed 计数使用 experimental 分类，而 weighted 累加受 useNewJankClassificationForJps 标志选择，报告还需记录分类版本；根因仍要展开具体帧、线程与调用栈。
+加权速率、逐帧分数和 missed frame 数是不同统计量；缺失或歧义样本先分类，直接 COALESCE 成零会以正常样本的身份混进排名。固定 FrameTracker 的 missed 计数使用 experimental 分类，而 weighted 累加受 useNewJankClassificationForJps 标志选择，报告还需记录分类版本；根因仍要展开具体帧、线程与调用栈。
 
 <!-- gracker-diagram: ch14-07-67-weighted-jank-rate -->
 ![加权速率、帧数与逐帧分数是不同量](../../assets/diagrams/ch14/ch14-07-67-weighted-jank-rate.png)
 
-图：weighted Counter 除以1000得到 jank/s，missed frame数和逐帧分数另有统计口径。 固定 FrameTracker 的 weighted 分类受标志控制，不能直接与 experimental missed计数等同。
+图：weighted Counter 除以1000得到 jank/s，missed frame数和逐帧分数另有统计口径。 固定 FrameTracker 的 weighted 分类受标志控制，与 experimental missed 计数要分别解读。
 
 指标同时提供计数器指标、trace 指标与时间线指标：
 
@@ -2434,19 +2262,15 @@ ORDER BY w.ts, w.upid, w.cuj_id;
 
 三者不一致时，要检查标记、计数器、FrameTimeline、回调漏采、trace 截断和分类版本；挑一个数盖过另外两个，会把问题掩盖起来。
 
-<!-- gracker-diagram: ch14-07-69-cuj-metric-differences -->
-![计数器、trace模型与时间线指标分别核对](../../assets/diagrams/ch14/ch14-07-69-cuj-metric-differences.png)
-
-图：三类指标使用不同输入和派生路径，不一致时先查覆盖与分类版本。 挑选最有利的一个数不能消除缺采或模型差异。
 
 ### 从异常 CUJ 展开到异常帧
 
-以下查询列出指标模型保留下来的 App missed 或 SF missed 帧，并保留回调漏采标记；它不是全部帧的完整分母。固定 frames.sql 的 frame_base 要求 doFrame、DrawFrame 及匹配 GPU fence，WHERE 条件会排除未匹配的 fence 行，前面的丢失不会由最终回调标记补回。完整性应另从原始 FrameTimeline 和源表核对。
+有了异常 CUJ，我们接下来把它展开成帧。以下查询列出指标模型保留下来的 App missed 或 SF missed 帧，并保留回调漏采标记；它不是全部帧的完整分母。固定 frames.sql 的 frame_base 要求 doFrame、DrawFrame 及匹配 GPU fence，WHERE 条件会排除未匹配的 fence 行，前面的丢失不会由最终回调标记补回。完整性应另从原始 FrameTimeline 和源表核对。
 
 <!-- gracker-diagram: ch14-07-70-cuj-frame-model-filters -->
 ![CUJ 帧模型会排除未匹配的关键回调](../../assets/diagrams/ch14/ch14-07-70-cuj-frame-model-filters.png)
 
-图：固定 frame_base 要求 doFrame、DrawFrame 与匹配 GPU fence，最终帧表不是全部帧分母。 LEFT JOIN 后的 WHERE 可排除无 fence 行，最终回调标记不能补回这些帧。
+图：固定 frame_base 要求 doFrame、DrawFrame 与匹配 GPU fence，最终帧表不是全部帧分母。 LEFT JOIN 后的 WHERE 可排除无 fence 行；这些帧一旦排除，最终回调标记也补不回来。
 
 ```sql
 SELECT RUN_METRIC('android/android_jank_cuj.sql');
@@ -2475,10 +2299,6 @@ LIMIT 50;
 
 Android 17 指标在 expected timeline 缺失时，会用 `16.6 ms` 作为 `dur_expected` 的兼容回退；这个值来自指标源码，设备当时是否运行在 60 Hz，从这里看不出来。所以报告中遇到该回退，应把 expected timeline 缺失列为采集限制。
 
-<!-- gracker-diagram: ch14-07-71-cuj-expected-fallback -->
-![16.6ms 是 expected 缺失时的模型回退](../../assets/diagrams/ch14/ch14-07-71-cuj-expected-fallback.png)
-
-图：固定 CUJ 指标在 expected duration 缺失时使用16.6 ms兼容值。 不能从该回退推断设备正在60Hz运行，报告必须注明 expected 缺口。
 
 FrameTimeline 的 `on_time_finish` 同样只是判据之一：Buffer Stuffing（buffer queue 中积压了过多帧）可能在 App 按期完成时仍被标为 jank；Prediction Error 表示 FrameTimeline 的时序预测出现偏差，语义也与普通超时不同。
 
@@ -2542,12 +2362,12 @@ ORDER BY cuj_id, frame_number, overlap_ms DESC;
 
 `Running` 表示线程正在 CPU 上执行；`R` 与 `R+` 表示 Runnable，其中 `R+` 带有被抢占语义；`D` 表示不可中断睡眠。`io_wait = 1` 和 `blocked_function` 能缩小排查范围；字段缺失时，I/O、锁或内核等待要靠其他线索确认。Running 占比高也只说明 CPU 执行时间多，函数热点仍需采样剖析。
 
-UI 线程只是应用侧的一部分。RenderThread 要改用 `android_jank_cuj_render_thread.utid`；GPU completion、HWC release 与 SurfaceFlinger 线程则使用指标初始化出的相关线程和 slice 表。每条线程都要与它实际参与工作的时间窗求交集，不能把 UI 帧窗口原样套到所有线程。
+UI 线程只是应用侧的一部分。RenderThread 要改用 `android_jank_cuj_render_thread.utid`；GPU completion、HWC release 与 SurfaceFlinger 线程则使用指标初始化出的相关线程和 slice 表。每条线程都要与它实际参与工作的时间窗求交集，UI 帧窗口套用到其他线程前，先核对线程自己的工作窗口。
 
 <!-- gracker-diagram: ch14-07-72-cuj-thread-windows -->
 ![各线程要用实际参与的窗口关联状态](../../assets/diagrams/ch14/ch14-07-72-cuj-thread-windows.png)
 
-图：UI、RenderThread、GPU/HWC 与 SurfaceFlinger 各用自己的线程身份和工作窗口。 UI帧窗口不能不加核对地原样套到所有线程。
+图：UI、RenderThread、GPU/HWC 与 SurfaceFlinger 各用自己的线程身份和工作窗口。 UI 帧窗口套用到其他线程前，先核对线程自己的工作窗口。
 
 ### 第三方 App 的分析路径
 
@@ -2613,16 +2433,12 @@ LEFT JOIN android_frames_overrun AS o USING (frame_id)
 ORDER BY c.custom_cuj_id, f.ts;
 ```
 
-把 upid 占位 123 和标记名称替换为目标实例。每行保留 custom_cuj_id：同一帧可与多个自定义交互窗口相交，不能忽略交互身份后累加行数。这里的 overrun 仍是前文说明的 legacy frame_id 模型值，多层、开放及缺失配对需单独核对；NULL 不能当零。时间相交只表示窗口内相关，不自动证明该交互导致卡顿。这条路径不依赖系统 CUJ 进程白名单，也不会自动获得 Java FrameTracker 的加权计数器。
+把 upid 占位 123 和标记名称替换为目标实例。每行保留 custom_cuj_id：同一帧可与多个自定义交互窗口相交，累加行数前先按交互身份分组。这里的 overrun 仍是前文说明的 legacy frame_id 模型值，多层、开放及缺失配对需单独核对；NULL 按缺失处理。时间相交只说明窗口相关，该交互是否导致卡顿，要回到线程状态和事件层级确认。这条路径不依赖系统 CUJ 进程白名单，也不会自动获得 Java FrameTracker 的加权计数器。
 
-<!-- gracker-diagram: ch14-07-73-app-custom-interactions -->
-![第三方交互用自有标记和帧证据组合](../../assets/diagrams/ch14/ch14-07-73-app-custom-interactions.png)
-
-图：第三方交互保留自定义 Slice ID，与同进程帧窗口求交并核对调度。 一个帧可落在多个自定义窗口内，行数不能直接累加；时间相关也不是因果。
 
 ### `heap_graph_stats` 与 DMA-BUF
 
-Jank 伴随内存上涨时，可以单独引入 `android.memory.heap_graph.heap_graph_stats`。它每行对应一次 ART heap graph，汇总 Java heap、NativeAllocationRegistry（Java 对象的 native 分配记账）、对象数、OOM adj（进程被回收的优先级调整值）、anon RSS + swap（匿名驻留内存与换出量）和 DMA-BUF RSS（共享 DMA buffer 的驻留内存）。
+Jank 伴随内存上涨时，我们可以单独引入 `android.memory.heap_graph.heap_graph_stats`。它每行对应一次 ART heap graph，汇总 Java heap、NativeAllocationRegistry（Java 对象的 native 分配记账）、对象数、OOM adj（进程被回收的优先级调整值）、anon RSS + swap（匿名驻留内存与换出量）和 DMA-BUF RSS（共享 DMA buffer 的驻留内存）。
 
 这条查询把主要内存字段换算成 MiB，便于在 DataGrid 中按采样时间比较。
 
@@ -2645,7 +2461,7 @@ JOIN process AS p USING (upid)
 ORDER BY h.graph_sample_ts;
 ```
 
-模块把“覆盖 dump 时刻的区间”和“dump 之后 500 ms 内的数据点”一起作为候选，再按区间起点与 dump 的绝对距离排序；它没有先保证覆盖候选优先。已有一个较早开始且仍覆盖 dump 的区间时，也可能选中更近的未来点；边界还使用含终点的 BETWEEN。报告应保留时间偏移与来源口径，不能称为严格同时刻的快照。
+模块把“覆盖 dump 时刻的区间”和“dump 之后 500 ms 内的数据点”一起作为候选，再按区间起点与 dump 的绝对距离排序；覆盖候选并没有优先权。已有一个较早开始且仍覆盖 dump 的区间时，也可能选中更近的未来点；边界还使用含终点的 BETWEEN。报告应保留时间偏移与数据来源，把它当严格同时刻的快照会出错。
 
 <!-- gracker-diagram: ch14-07-74-heap-closest-future -->
 ![heap_graph_stats 可能选更近的未来点](../../assets/diagrams/ch14/ch14-07-74-heap-closest-future.png)
@@ -2669,10 +2485,6 @@ v54.0 的变化应按表结构处理，字符串替换靠不住：
 
 标准库、指标与核心表的兼容级别不同。以下划线开头的对象、指标中间表、Data Explorer 物化表都更容易变化。需要长期运行的查询应固定 Trace Processor 版本，入口尽量使用公开表和公开模块，并在升级时运行空 trace 语法测试与代表性 trace 回归。
 
-<!-- gracker-diagram: ch14-07-75-version-migration -->
-![版本迁移按schema和接口分别处理](../../assets/diagrams/ch14/ch14-07-75-version-migration.png)
-
-图：升级时检查字段、机器标识、包加载接口与内部对象，再运行代表性输入回归。 空 Trace 只证明语法与可见schema，不能证明有数据时口径正确。
 
 ### Collapsed Stack 与 Firefox Profiler 导入
 
@@ -2683,10 +2495,6 @@ v54.0 增加了 Collapsed Stack 和 Firefox Profiler preprocessed JSON 导入：
 
 这两类输入通常没有 Android system trace 的 FrameTimeline、Binder、调度、CUJ 标记和设备计数器。它们可以回答 CPU 样本集中在哪些栈；某个 Android 帧为何超时，还要靠重新采集带 FrameTimeline、sched 调度事件、应用 atrace 与必要系统数据源的 Perfetto trace 来做逐帧归因。
 
-<!-- gracker-diagram: ch14-07-76-profiling-format-boundaries -->
-![调用栈导入不能补出Android系统事件](../../assets/diagrams/ch14/ch14-07-76-profiling-format-boundaries.png)
-
-图：Collapsed Stack 和 Firefox Profiler 主要提供采样或聚合栈信息。 输入缺少 FrameTimeline、调度和Binder时，不能做相应逐帧归因。
 
 ### 一轮可复核的分析顺序
 
@@ -2700,10 +2508,6 @@ v54.0 增加了 Collapsed Stack 和 Firefox Profiler preprocessed JSON 导入：
 
 DataGrid 和 Data Explorer 负责提高浏览效率。提交审阅的结论应能由保存的 SQL 在相同 Trace Processor 上复现，并能回到 Android 17 或 v54.0 的明确源码位置解释字段含义。
 
-<!-- gracker-diagram: ch14-07-77-reviewable-report -->
-![一轮分析保留观测、推断和确认结果](../../assets/diagrams/ch14/ch14-07-77-reviewable-report.png)
-
-图：最终报告保存稳定身份、SQL、单位、覆盖与明确源码基线。 观测、候选推断、采集限制和对照确认的原因分别陈述。
 
 ## 小结
 
