@@ -1,0 +1,224 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 108,
+  "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T10:31:14.600672+08:00",
+  "source_sha256": "0019b6407d6cb76b85760f69cea2a9c82f3630b4442c72d457d9e9f179a56a9b",
+  "accepted_before_sha256": "8bc1f79f3bb8987396ee130ac79bb197e081a2da428c88e0caa999cc961f03ba",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 230,
+  "reading_characters": 18129,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 19,
+  "current_pngs_actually_viewed": 19,
+  "current_contexts_actually_viewed": 19,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/compact-108-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/compact-108-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/compact-108-3.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/compact-108-4.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 5,
+  "code_lines_preserved": 37,
+  "asset_sha256": {
+    "src/assets/diagrams/ch10/ch10-03-03-tlab-pointer.svg": "a0e5ef5fd95833d085535f770b71b402f11432542dde868ec007a8b5344ae30a",
+    "src/assets/diagrams/ch10/ch10-03-03-tlab-pointer.png": "f241d86d21ebc2810e3f2b93301f018b5eac4c281856a7f5e04fd2718a4b33f5",
+    "src/assets/diagrams/ch10/ch10-03-05-gc-frame-timeline.svg": "4a2931cb7693882122b4c46bf4c07a229194cb833d4a8094728e8bc397170721",
+    "src/assets/diagrams/ch10/ch10-03-05-gc-frame-timeline.png": "06524efc11d1d988cc6773d8a055db50f39fbca88bedd0a0899821d06ba23e4a",
+    "src/assets/diagrams/ch10/ed10-03-cmc-config-and-process-evidence.svg": "ca1397488834e13c57559389c7a3c108513d1cdfbc899297fcdf34f6dd94f079",
+    "src/assets/diagrams/ch10/ed10-03-cmc-config-and-process-evidence.png": "4d27fb4bf0c13a910f19de03e10fca823877e438f57b58a635cfadd3ce7642b4",
+    "src/assets/diagrams/ch10/ch10-03-08-uffd-fault.svg": "28fdf0c0fd7bffd8a4717672039130a8671ce37b1ca0f1390a8e39056ea11991",
+    "src/assets/diagrams/ch10/ch10-03-08-uffd-fault.png": "c30bc9dcf76f6f5df62685fdef4bf10fb056dde41b09c30b50c554b059981765",
+    "src/assets/diagrams/ch10/ch10-03-09-cmc-phases.svg": "df9849bd0dcea0b1dcdb8d350f3beca7a5e8a84cfd0c415093d5987c2f2501d1",
+    "src/assets/diagrams/ch10/ch10-03-09-cmc-phases.png": "e5346456798c962190321204ab9b6f065090124f607a555121fc2c4594342740",
+    "src/assets/diagrams/ch10/ch10-03-11-studio-columns.svg": "6e0e742b19dd0b70f6b57962790e066e5bd5faad2c742f1d47254ec16540d533",
+    "src/assets/diagrams/ch10/ch10-03-11-studio-columns.png": "5deb93a7e8e52e511493093cd8ac625dfdb7169ca9248eaee77dad8480a3a730",
+    "src/assets/diagrams/ch10/ed10-03-profile-modes-and-art-creation-window.svg": "64a327af218bdb712e951e890c8a5b33751bcb1c161b2fddf8d98e0f0f5d4192",
+    "src/assets/diagrams/ch10/ed10-03-profile-modes-and-art-creation-window.png": "b7de19d89559056da3712d9e539ca601e20a64d58f776f267e443c0ced1497e1",
+    "src/assets/diagrams/ch10/ch10-03-16-gcwatcher.svg": "f54ec024125ce361f2761f7d4b1ee2ef75b2966dea04a0935e8d677d35d9bd43",
+    "src/assets/diagrams/ch10/ch10-03-16-gcwatcher.png": "0901768f0668104c760590365e15c0086bd2ba99fa3e7611de20cc7e55bc0d62",
+    "src/assets/diagrams/ch10/ch10-03-17-view-reuse.svg": "bcd8ed68dda1853920cabc7bdb948c9c9eb0f16e4ed8fd6f323dee6022334a97",
+    "src/assets/diagrams/ch10/ch10-03-17-view-reuse.png": "40ccec488225a96911ec6418db42fb1814881c4a09aff1a3600f1552cf0a3d15",
+    "src/assets/diagrams/ch10/ch10-03-20-boxing-containers.svg": "db867c7d2f7d660eeda2636b67f7f73acdf4736a612808a257dbc14a21ef6ee6",
+    "src/assets/diagrams/ch10/ch10-03-20-boxing-containers.png": "5622d6686367dbab3ceb57a86e06905a920542a0e5110e35c3ec30d4659a604e",
+    "src/assets/diagrams/ch10/ch10-03-23-preallocation.svg": "788dc8899a841668431c93888ffceb288c065b6b313cd44097f4588c4bc8c018",
+    "src/assets/diagrams/ch10/ch10-03-23-preallocation.png": "7d374dff34b50704e7e16ed58cabea2720ce1820106005945408576aaa083176",
+    "src/assets/diagrams/ch10/ch10-03-24-framework-pool-branches.svg": "4e66854e7e0ef8455ccf29d01132c8461787ce9807796a1a622c0496ad0f42ce",
+    "src/assets/diagrams/ch10/ch10-03-24-framework-pool-branches.png": "655ceb894fca1a781f3457fcd4e2799411cf6e8053e037aaec9b7664156e9f45",
+    "src/assets/diagrams/ch10/ed10-03-buffer-pool-return-and-reset.svg": "f2d46c3882f07941dc5045de0350bf5e560d8f588da9f06b1480898bc0f04bab",
+    "src/assets/diagrams/ch10/ed10-03-buffer-pool-return-and-reset.png": "6349d2e5cb57014080fa6e63d5df1204a0c0cea5d093348fbec57f7e50dcc2fe",
+    "src/assets/diagrams/ch10/ch10-03-27-valueclass-representation.svg": "fa782ccda7a8a9922141341924474f98c7f1805825770fa2a989b118bf74c162",
+    "src/assets/diagrams/ch10/ch10-03-27-valueclass-representation.png": "49844a34ea3df99e0a31bf4ca603af7702c64c6f7ad0615f219505f81026334f",
+    "src/assets/diagrams/ch10/ch10-03-28-compose-engines.svg": "3cbed160fef9da632dab21facf1331e922b6d2a567d99147cc6673847e361e0a",
+    "src/assets/diagrams/ch10/ch10-03-28-compose-engines.png": "70030a40962606e18fb8a9ec43112f17e6a6cb5dcc2b8fabd1f7ea89d4243c45",
+    "src/assets/diagrams/ch10/ch10-03-29-remember-lifetime.svg": "7e3a0655aef7443250c6a4d9951a42d27d1319fc9c6cd34556f27f39ee6a4139",
+    "src/assets/diagrams/ch10/ch10-03-29-remember-lifetime.png": "8d5faf16fd9f3db5e02972579593e900b668feafb84f3110bcf06c08ebe82fb0",
+    "src/assets/diagrams/ch10/ed10-03-strong-skip-and-lambda-rules.svg": "60b8f4cc165862df618db52edfcc3a40638bacbf680574b29e8c7790983d1e99",
+    "src/assets/diagrams/ch10/ed10-03-strong-skip-and-lambda-rules.png": "74ffcf643395887a04f461141a618927955bc10e9eac41f7ff8e0e7b18b2a0b6",
+    "src/assets/diagrams/ch10/ch10-03-32-derived-state.svg": "1d12bebca44ab11010f94cad2e8554ca2f92e67114fca261550266f1bee2561c",
+    "src/assets/diagrams/ch10/ch10-03-32-derived-state.png": "8ecb59de1fe3d56bc28cf0367a4c063385a1befcafd662427402894f807b4c14",
+    "src/assets/diagrams/ch10/ch10-03-33-primitive-state.svg": "aeafbba05c567249af4c8cbb2919a29c5d9022250dff9402caa23ccba5400aa4",
+    "src/assets/diagrams/ch10/ch10-03-33-primitive-state.png": "faf26ef613db4269699538991efef7678daad94fb46cf7cb9929412d09edabfe"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a108/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "bff3162ebb0aa4abadb78b8455363078f6279d67030815dfae51974113703980",
+    "git_commit": "81cf835946f3e9539d2f61d84635eabd3041032e"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch10-03-03-tlab-pointer",
+      "heading": "### 分配的快路径与后续成本",
+      "line": 75,
+      "decision": "keep",
+      "reason": "TLAB内旧pos、aligned size、新pos/end的实际空间关系，对应73–78；仅局部快路径，不推广到所有allocator/大对象/插桩。"
+    },
+    {
+      "id": "ch10-03-05-gc-frame-timeline",
+      "heading": "### 分配的快路径与后续成本",
+      "line": 91,
+      "decision": "keep",
+      "reason": "UI与GC线程双轨区分pause、并发竞争、allocation wait，对应80–94；条长不当实测，120Hz理论间隔不替代FrameTimeline。"
+    },
+    {
+      "id": "ed10-03-cmc-config-and-process-evidence",
+      "heading": "### CMC 的源码路径与配置条件",
+      "line": 103,
+      "decision": "keep",
+      "reason": "静态配置与目标进程启动/每轮trace两路证据，对应98–106，未因YoungMarkCompact符号存在推全设备启用分代CMC。"
+    },
+    {
+      "id": "ch10-03-08-uffd-fault",
+      "heading": "### CMC 的源码路径与配置条件",
+      "line": 110,
+      "decision": "keep",
+      "reason": "内核能力→满足注册/缺页条件地址→ART原因/范围校验→按页处理，与108–113一致；不推每次访问SIGBUS或所有故障被接管。"
+    },
+    {
+      "id": "ch10-03-09-cmc-phases",
+      "heading": "### CMC 的源码路径与配置条件",
+      "line": 117,
+      "decision": "keep",
+      "reason": "RunPhases后按本轮是否压缩分支、UFFD条件及Finish汇合，对应115–120；保留根翻转暂停和强制STW例外。"
+    },
+    {
+      "id": "ch10-03-11-studio-columns",
+      "heading": "### Android Studio：记录 Java/Kotlin 分配",
+      "line": 153,
+      "decision": "keep",
+      "reason": "同一录制区间累计创建与创建减释放的净值两分支，对应141–156；不当全进程live snapshot，debuggable和Full开销边界不变。"
+    },
+    {
+      "id": "ed10-03-profile-modes-and-art-creation-window",
+      "heading": "### Perfetto heapprofd：调用栈采样",
+      "line": 178,
+      "decision": "keep",
+      "reason": "native采样/ART创建采样/heap dump三种工具选择，再独立展开ART窗口和累计创建估计，仍与160–181一致；无删除时刻不能扣除当前live。"
+    },
+    {
+      "id": "ch10-03-16-gcwatcher",
+      "heading": "### framework 的 `GcWatcher` 机制",
+      "line": 200,
+      "decision": "keep",
+      "reason": "WeakReference→GC/finalization→内部watcher/rearm机制和应用工具边界，与198–205一致；图注明确最后是App工具选择，不是内部API向App回调。"
+    },
+    {
+      "id": "ch10-03-17-view-reuse",
+      "heading": "### `onDraw()`、布局和动画回调",
+      "line": 236,
+      "decision": "keep",
+      "reason": "同一View创建Paint/RectF后各帧重设边界复用实例，对应Kotlin2及234–239；不承诺整帧零分配或跨线程安全。"
+    },
+    {
+      "id": "ch10-03-20-boxing-containers",
+      "heading": "### 装箱",
+      "line": 288,
+      "decision": "keep",
+      "reason": "已确认装箱热点后HashMap包装key、SparseArray原始key/对象value、原始数值数组并列，对应274–291；没有统一数量切换阈值。"
+    },
+    {
+      "id": "ch10-03-23-preallocation",
+      "heading": "### 优先删除分配",
+      "line": 316,
+      "decision": "keep",
+      "reason": "按需与提前创建双轨的成本落点和持续持有，对应314–319；不预设预分配净收益或实测时长。"
+    },
+    {
+      "id": "ch10-03-24-framework-pool-branches",
+      "heading": "### 对象池的适用条件",
+      "line": 325,
+      "decision": "keep",
+      "reason": "Message getUseConcurrent两分支是否尝试旧池的实际差异，对应323–328；不由obtain命名推所有模式池化，MotionEvent另有recycler。"
+    },
+    {
+      "id": "ed10-03-buffer-pool-return-and-reset",
+      "heading": "### 对象池的适用条件",
+      "line": 339,
+      "decision": "keep",
+      "reason": "buffer acquire→交接→全部消费者完成→归还/重置→容量留池后复用的闭环，与330–342一致；投递不等完成，未把等待默认放主线程。"
+    },
+    {
+      "id": "ch10-03-27-valueclass-representation",
+      "heading": "## Kotlin value class 的边界",
+      "line": 360,
+      "decision": "keep",
+      "reason": "Long底层value class直接/泛型/可空或接口的对象表示分支，与UserId代码及358–363一致；接口必须实际实现，不承诺优化后无新分配。"
+    },
+    {
+      "id": "ch10-03-28-compose-engines",
+      "heading": "## Jetpack Compose 中的分配",
+      "line": 369,
+      "decision": "keep",
+      "reason": "固定RC flag false GapComposer/SlotTable与实验LinkComposer/LinkTable条件选择，与367–372一致；不是串行两级，状态结构本身也有内存成本。"
+    },
+    {
+      "id": "ch10-03-29-remember-lifetime",
+      "heading": "### `remember` 与重组期重建",
+      "line": 395,
+      "decision": "keep",
+      "reason": "remember调用位置保留+locale==未变的复用分支与重建分支汇到format(price)，对应代码5及393–400；结果String仍有成本，不跨进程保存。"
+    },
+    {
+      "id": "ed10-03-strong-skip-and-lambda-rules",
+      "heading": "### strong skipping 的跳过条件",
+      "line": 409,
+      "decision": "keep",
+      "reason": "strong skipping函数资格/参数/运行条件与自动Lambda记忆两并列机制、手写remember规则独立对照，对应404–414；未把参数相等当必跳过或unstable手写key当===。"
+    },
+    {
+      "id": "ch10-03-32-derived-state",
+      "heading": "### `derivedStateOf` 的适用条件",
+      "line": 420,
+      "decision": "keep",
+      "reason": "输入0/1/2/3到阈值false/true/true/true的具体派生例，符合418–425；依赖/计算仍有成本，policy/观察者影响失效，按生命周期remember。"
+    },
+    {
+      "id": "ch10-03-33-primitive-state",
+      "heading": "### 原始类型 state",
+      "line": 431,
+      "decision": "keep",
+      "reason": "原始intValue与泛型value桥接对象语义比较，对应429–434；减少wrapper机会不等消除状态观察或重组，仍由实际profile验证。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a108/01/layout-report.json",
+  "layout_report_sha256": "b8045b5ce47d88a613b98615b759d8ed074dc26eab2f1b2be2630117d6460ed1",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "当前全文230阅读行18129字符、19组SVG标签、3原图联系表全部19PNG与4上下文联系表全部19位置实际复看，5代码块37行完整阅读且逐字保留，原生0。图注/替代文字/标识/路径/顺序与资产严格匹配初审；外部正文修订后，19图分别保留空间关系、GC配置/时序、采样数据口径、所有权闭环及不同Compose机制，无新增重复/错位。1400/640全部加载、顺序、标题/结构归属和无横溢出通过，mdbook构建通过。保留外部正文及原初审历史，不新增或删除有效图。"
+}
