@@ -55404,9 +55404,203 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "18a3dd6dd091f57768b5bfc7fe72fc2e2af539bc3aef8157c3b2db07576d6d4d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a220-01-two-ledgers",
+          "title": "能力供应商视图与最终 release 制品视图共同界定 SDK",
+          "decision": "remove",
+          "reason": "供应商/制品双视图两项定义和完整台账表覆盖实际执行路径，三行分类卡重复。",
+          "original_line": 96,
+          "heading": "## 1. 先定义“SDK”，再讨论数量"
+        },
+        {
+          "original_id": "a220-02-evidence-chain",
+          "title": "观测到 SDK 线索后，还需对照与调用路径确认归因",
+          "decision": "remove",
+          "reason": "四条测量规则与五行弱强证据表完整覆盖A/B、分布、归因及归档，四框摘要重复。",
+          "original_line": 175,
+          "heading": "### 3.2 证据强度"
+        },
+        {
+          "original_id": "a220-03-early-startup",
+          "title": "Provider 自动入口先于 Application.onCreate 执行",
+          "decision": "keep",
+          "reason": "创建Application、Provider、Application.onCreate与首屏的顺序，直观解释只在onCreate计时为何漏掉更早成本。",
+          "original_line": 196,
+          "heading": "### 4.1 Provider 早于 `Application.onCreate`"
+        },
+        {
+          "original_id": "a220-04-benchmark-contract",
+          "title": "固定构建、启动与编译条件后比较初显和全显",
+          "decision": "remove",
+          "reason": "相邻基准代码和release/profileable/编译模式/TTIDTTFD说明完整，四框实验契约卡重复。",
+          "original_line": 236,
+          "heading": "### 4.2 用 Macrobenchmark 建立可比较基线"
+        },
+        {
+          "original_id": "a220-05-initializer-reachability",
+          "title": "移除一个自动入口不保证共享依赖完全不再执行",
+          "decision": "keep",
+          "reason": "关闭A自动根仍有B可达共享依赖C的有向图，解释不能只移除一个Manifest入口。",
+          "original_line": 267,
+          "heading": "### 4.3 App Startup 能解决什么"
+        },
+        {
+          "original_id": "a220-06-boot-milestones",
+          "title": "系统阶段、全局属性与应用 Receiver 完成是不同里程碑",
+          "decision": "keep",
+          "reason": "phase600、finishBooting1000、全局属性和用户Receiver结果的顺序，区分系统里程碑与SDK实际完成。",
+          "original_line": 294,
+          "heading": "### 4.5 `BOOT_COMPLETED` 的触发语义"
+        },
+        {
+          "original_id": "a220-08-memory-observers",
+          "title": "进程内存、对象保留与分配栈不能直接互换",
+          "decision": "remove",
+          "reason": "五种观察工具及错误归因的逐条说明更完整，三行工具能力卡重复。",
+          "original_line": 324,
+          "heading": "### 5.1 先辨认工具的观察对象"
+        },
+        {
+          "original_id": "a220-07-retained-vs-referenced",
+          "title": "被 A 引用不等于被 A 支配，其他根路径仍可保留 C",
+          "decision": "keep",
+          "reason": "两条GCRoot经SDK对象和宿主缓存共同引用C的对象图，具体说明被引用不等于属于retained set。",
+          "original_line": 341,
+          "heading": "### 5.2 推荐的 A/B 内存实验"
+        },
+        {
+          "original_id": "a220-09-network-attribution",
+          "title": "UID 网络量与客户端拦截器各有覆盖范围",
+          "decision": "remove",
+          "reason": "正文UID/客户端覆盖限制及五项网络归因组合完整，三行分类卡重复且移除后组合引导句直接接列表。",
+          "original_line": 391,
+          "heading": "### 6.3 网络字节与 UID 统计"
+        },
+        {
+          "original_id": "a220-10-power-evidence",
+          "title": "功耗工具观察系统窗口，不能直接给每 SDK 分账",
+          "decision": "remove",
+          "reason": "两段正文完整说明系统窗口、设备支持和缺失非零，三行功耗证据卡重复。",
+          "original_line": 410,
+          "heading": "### 6.4 功耗的场景化测量"
+        },
+        {
+          "original_id": "a220-11-android17-gates",
+          "title": "Android 17 兼容检查按 target 与能力条件分别记录",
+          "decision": "remove",
+          "reason": "MemoryLimiter与MessageQueue/音频API17条件段落更精确详尽，三行兼容摘要重复。",
+          "original_line": 425,
+          "heading": "### 6.5 Android 17 的相关兼容点"
+        },
+        {
+          "original_id": "a220-12-fault-attribution",
+          "title": "栈顶相关、对照实验与供应商确认分开记录",
+          "decision": "remove",
+          "reason": "候选/实验/供应商确认三档编号定义及等待链说明完整，四框分类流程重复。",
+          "original_line": 442,
+          "heading": "### 7.1 栈顶信息的归因分档"
+        },
+        {
+          "original_id": "a220-13-delivery-and-r8",
+          "title": "最终交付字节与消费者 R8 规则一并回归",
+          "decision": "remove",
+          "reason": "下载/安装/交付配置和R8规则两套清单完整，四框只是测量检查摘要。",
+          "original_line": 489,
+          "heading": "### 8.2 审查 consumer R8 规则"
+        },
+        {
+          "original_id": "a220-14-admission-budget",
+          "title": "把单 SDK 准入与全部集成后的预算同时验收",
+          "decision": "remove",
+          "reason": "九领域评分表和五阶段准入列表更完整，四框线性摘要没有新增预算结构。",
+          "original_line": 528,
+          "heading": "## 9. 准入：阈值来自应用预算"
+        },
+        {
+          "original_id": "a220-15-serial-consent-gate",
+          "title": "在同一非重入线程中，start 成功后才开放 record",
+          "decision": "keep",
+          "reason": "串行非重入线程中start成功后开门、disable先关门再stop的状态顺序，配合适配器示例解释部分失败边界。",
+          "original_line": 585,
+          "heading": "### 10.1 用应用自己的接口隔离供应商"
+        },
+        {
+          "original_id": "a220-16-two-view-boundary",
+          "title": "依赖视图与公共类型签名共同守住供应商适配边界",
+          "decision": "remove",
+          "reason": "两段规则明确Gradle依赖与公共签名各自捕获的违例，三行分类卡没有实际模块图。",
+          "original_line": 596,
+          "heading": "### 10.2 用双视图测试守住供应商边界"
+        },
+        {
+          "original_id": "a220-17-remote-disable-timing",
+          "title": "远程禁用要早于自动入口，且自身不依赖被禁 SDK",
+          "decision": "remove",
+          "reason": "六项远程开关前提和Provider早于开关段落完整，四框图没有真实重叠时序或额外结构。",
+          "original_line": 614,
+          "heading": "### 10.3 远程开关的适用条件"
+        },
+        {
+          "original_id": "a220-18-runtime-legacy-model",
+          "title": "SDK Runtime 遗留进程与兼容类加载路径隔离程度不同",
+          "decision": "remove",
+          "reason": "遗留Runtime进程与兼容classloader两段准确描述隔离范围并列API37禁用，三行分类图重复。",
+          "original_line": 686,
+          "heading": "### 12.2 遗留隔离路径仍要计算合计成本"
+        }
+      ],
+      "sha256_after": "4068a4de276d5d0824c51032a6f7d21ad361bbe970577499bd44f62b84b00e37",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:39:50.929568+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a220/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a220/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 220,
+        "article": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+        "registered_sha256": "18a3dd6dd091f57768b5bfc7fe72fc2e2af539bc3aef8157c3b2db07576d6d4d",
+        "frozen_sha256": "18a3dd6dd091f57768b5bfc7fe72fc2e2af539bc3aef8157c3b2db07576d6d4d",
+        "review_input_sha256": "38f6222c38e53b5694e3156679505e6b375bc90901fefa846300f13700b39681",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a220/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a220/external-source.diff",
+        "diff_sha256": "18adbe1c9baef366f057130e06641f39adf7dfcdaf848ffb868c89d8d7cf8436",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 373, \"characters\": 22948, \"svg_labels_read\": 18, \"actual_pngs_viewed\": 18, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 4, \"code_lines\": 76, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "38f6222c38e53b5694e3156679505e6b375bc90901fefa846300f13700b39681",
+      "retired_diagrams": [
+        "a220-01-two-ledgers",
+        "a220-02-evidence-chain",
+        "a220-04-benchmark-contract",
+        "a220-08-memory-observers",
+        "a220-09-network-attribution",
+        "a220-10-power-evidence",
+        "a220-11-android17-gates",
+        "a220-12-fault-attribution",
+        "a220-13-delivery-and-r8",
+        "a220-14-admission-budget",
+        "a220-16-two-view-boundary",
+        "a220-17-remote-disable-timing",
+        "a220-18-runtime-legacy-model"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-220/retired-assets.json"
     },
     {
       "index": 222,
@@ -56069,8 +56263,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 146,
-  "next_article": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+  "reviewed_articles": 147,
+  "next_article": "src/part5-app/ch21-startup/01-app-startup-path-monitoring.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -56080,7 +56274,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:38:06.075271+08:00",
+  "updated_at": "2026-10-31T16:39:50.929568+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -56153,13 +56347,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
-      "registered_sha256": "18a3dd6dd091f57768b5bfc7fe72fc2e2af539bc3aef8157c3b2db07576d6d4d",
-      "observed_sha256": "38f6222c38e53b5694e3156679505e6b375bc90901fefa846300f13700b39681",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/14-sdk-performance-governance.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
       "registered_sha256": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
       "observed_sha256": "2f701ca8d683fc3722ca3bbd8163a889d4a753358f06972f863846dd508e9420",
@@ -56218,7 +56405,7 @@
     {
       "article": "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
       "registered_sha256": "ca6c47f543bd260e7baed6903c571de2599f508db526a91c96784c547343b2f4",
-      "observed_sha256": "51589991b45da4fc8b8a932f9a5624d192cc2d57b7a149d80ab8e94ace951715",
+      "observed_sha256": "29c574fb3725684e9c4843318f240c61ff13fcf7e16710dad97f998199b2edaa",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
@@ -56265,9 +56452,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4591,
-  "reviewed_placements_after": 1913,
-  "net_removed_placements": 2678,
+  "reviewed_placements_before": 4609,
+  "reviewed_placements_after": 1918,
+  "net_removed_placements": 2691,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -56291,5 +56478,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 146
+  "currently_matching_reviewed_source_count": 147
 }
