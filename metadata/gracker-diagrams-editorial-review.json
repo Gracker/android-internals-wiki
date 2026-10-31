@@ -66536,9 +66536,266 @@
       "before_count": 27,
       "before_all_images": 27,
       "sha256_before": "b54920547e04273b8d2b943c35ed45b2c5ad7d107381da1610864b96ded29953",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a283-01-four-size-boundaries",
+          "title": "同一应用的四种体积，需要四套可比口径",
+          "decision": "keep",
+          "reason": "四种体积口径总览为三个长分节提供共同归因坐标，明确设备交付和安装运行各看不同数字。",
+          "original_line": 190,
+          "heading": "### 四种体积数字的口径"
+        },
+        {
+          "original_id": "a283-02-dex-index-data-and-reference-limit",
+          "title": "DEX 字节由索引和变长数据共同组成",
+          "decision": "remove",
+          "reason": "DEX头部和各索引宽度四卡复述前文格式说明与方法引用上限，保留正文精确版本和字节表述。",
+          "original_line": 282,
+          "heading": "#### 64K 限制是引用表限制"
+        },
+        {
+          "original_id": "a283-03-source-r8-d8-and-art-products",
+          "title": "R8 与 D8 是构建分支，ART 产物在设备侧生成",
+          "decision": "keep",
+          "reason": "源码经R8直出DEX或D8分支再到AGP交付及设备ART产物的真实分流，纠正串行二次D8压缩误解。",
+          "original_line": 293,
+          "heading": "### 从源码到发布 DEX 的构建路径"
+        },
+        {
+          "original_id": "a283-04-keep-four-dimensions",
+          "title": "Keep 规则保护的是具体运行时协议",
+          "decision": "remove",
+          "reason": "keep三种约束及动态协议四卡重复keep选项表、示例规则与紧邻解释。",
+          "original_line": 356,
+          "heading": "#### Keep 规则的四个维度"
+        },
+        {
+          "original_id": "a283-05-analyzer-score-radius-and-runtime",
+          "title": "R8 Analyzer 定位静态约束，运行时测试确认协议",
+          "decision": "remove",
+          "reason": "Analyzer版本、三分数、BlastRadius和回归四卡重复工具字段与版本分节，没有实际约束传播示例。",
+          "original_line": 419,
+          "heading": "#### R8 Configuration Analyzer"
+        },
+        {
+          "original_id": "a283-06-dependency-and-desugaring-footprint",
+          "title": "依赖和生成代码的贡献，要在发布 DEX 中确认",
+          "decision": "remove",
+          "reason": "依赖、生成代码、minAPI和增量中间产物四卡复述各分节与D8命令说明。",
+          "original_line": 474,
+          "heading": "#### DexArchive 与逐类 DEX"
+        },
+        {
+          "original_id": "a283-07-debug-mapping-and-kotlin-metadata",
+          "title": "调试与元数据按运行时用途保留，并绑定发布版本",
+          "decision": "remove",
+          "reason": "debug、mapping、Metadata和inline四卡复述诊断与生成代码段落，保留精确运行时反射条件。",
+          "original_line": 519,
+          "heading": "#### Inline 与编译器版本"
+        },
+        {
+          "original_id": "a283-08-startup-profile-versus-baseline-profile",
+          "title": "Startup Profile 改布局，Baseline Profile 指导编译",
+          "decision": "keep",
+          "reason": "并列区分Multidex引用索引、Startup构建布局、Baseline安装编译和设备ART空间，避免把启动优化当压缩。",
+          "original_line": 600,
+          "heading": "### Baseline Profile、`.art` 与 `.oat` 的体积边界"
+        },
+        {
+          "original_id": "a283-09-dex-delivery-regression-loop",
+          "title": "DEX 回归从固定发布基线走到同设备 APK 集",
+          "decision": "remove",
+          "reason": "固定基线、归因、设备交付、验收四卡重复完整排查步骤和CI制品表，末尾总报告亦覆盖。",
+          "original_line": 700,
+          "heading": "#### CI 门禁应该保存什么"
+        },
+        {
+          "original_id": "a283-10-elf-loadable-segments-and-sections",
+          "title": "ELF 程序头决定映射，节区解释文件组成",
+          "decision": "remove",
+          "reason": "段、节区、BSS和动态元数据四卡重复紧邻ELF结构及节区表，无实际段节区映射。",
+          "original_line": 870,
+          "heading": "#### 常见节区的体积含义"
+        },
+        {
+          "original_id": "a283-11-same-link-release-and-symbol-artifact",
+          "title": "同一次链接产物，分开交付库与离线符号",
+          "decision": "keep",
+          "reason": "同一次链接产物分流到发布SO和独立符号，再用BuildID汇合线上崩溃，表达不可重新链接替代的身份链。",
+          "original_line": 911,
+          "heading": "### Strip：发布库与符号制品分开管理"
+        },
+        {
+          "original_id": "a283-12-abi-build-set-versus-device-set",
+          "title": "ABI 构建集合、支持设备和单设备交付分别管理",
+          "decision": "remove",
+          "reason": "ABI过滤、AAB交付、安装选择、跨ABI对比四卡复述独立分节和固定条件列表。",
+          "original_line": 999,
+          "heading": "#### 安装期如何选择 ABI"
+        },
+        {
+          "original_id": "a283-13-compile-link-gc-and-thinlto",
+          "title": "先给链接器可删除边界，再比较优化强度",
+          "decision": "remove",
+          "reason": "优化级别、独立节区、GC和ThinLTO四卡重复CMake示例与前后说明，未展示可达性删除关系。",
+          "original_line": 1058,
+          "heading": "#### 函数/数据独立节区与 GC"
+        },
+        {
+          "original_id": "a283-14-jni-export-protocol-and-icf",
+          "title": "可见性与链接折叠必须服从 Native 协议",
+          "decision": "remove",
+          "reason": "可见性、RegisterNatives、ICF及异常四卡重复版本脚本与JNI、地址身份和回溯边界段落。",
+          "original_line": 1111,
+          "heading": "#### ICF、模板和内联的边界"
+        },
+        {
+          "original_id": "a283-15-static-duplicate-and-shared-cpp-runtime",
+          "title": "静态库重复拷贝与共享运行时是两类依赖问题",
+          "decision": "remove",
+          "reason": "静态拷贝、共享库、libc++和pickFirsts四卡重复依赖取舍列表及后续去重说明。",
+          "original_line": 1130,
+          "heading": "### 静态库、共享库与 `libc++` 的取舍"
+        },
+        {
+          "original_id": "a283-16-elf-and-zip-independent-16kb-alignment",
+          "title": "16KB 兼容要同时检查 ELF 布局与 APK ZIP 偏移",
+          "decision": "keep",
+          "reason": "ELF段与APK ZIP条目两条独立对齐检验路径，末端汇合设备运行验证，防止一项通过替代另一项。",
+          "original_line": 1168,
+          "heading": "#### 对齐为什么可能增大文件"
+        },
+        {
+          "original_id": "a283-17-native-dcl-readonly-publication",
+          "title": "Native 动态加载先建立只读可信文件，再发布并加载",
+          "decision": "keep",
+          "reason": "排他FD先撤路径写权再写入校验关闭发布加载的时序，以及可写文件失败回退，避免只读加固顺序错误。",
+          "original_line": 1236,
+          "heading": "#### Android 17 的 Safer Native DCL"
+        },
+        {
+          "original_id": "a283-18-native-regression-artifact-chain",
+          "title": "Native 回归报告从发布库回到链接来源",
+          "decision": "remove",
+          "reason": "输入、制品、结构、设备四卡重复SO回归报告制品表和八步排查。",
+          "original_line": 1362,
+          "heading": "#### 认为更少的 SO 一定加载更快"
+        },
+        {
+          "original_id": "a283-19-aapt2-res-and-assets-separate-paths",
+          "title": "res 进入编译与资源图，assets 按原始路径接入打包",
+          "decision": "keep",
+          "reason": "res经compile/link及引用图与assets原路径直入打包两路汇合，再到设备资源选择，表达编译职责边界。",
+          "original_line": 1448,
+          "heading": "### AAPT2 从源资源到运行时资源表"
+        },
+        {
+          "original_id": "a283-20-resource-overlay-versus-content-duplicates",
+          "title": "覆盖、值去重与异名文件合并是不同操作",
+          "decision": "remove",
+          "reason": "覆盖、值去重、内容重复和限定符四卡复述原文两类重复、AAPT2值去重和动态名称协议说明。",
+          "original_line": 1483,
+          "heading": "#### 资源合并与内容去重"
+        },
+        {
+          "original_id": "a283-21-resource-names-paths-and-sparse-tables",
+          "title": "资源名、路径与表编码分别有优化入口",
+          "decision": "remove",
+          "reason": "资源ID、名称、路径和稀疏编码四卡重复逐项工具说明，保留原文no_collapse协议及签名前要求。",
+          "original_line": 1556,
+          "heading": "#### 用 AAPT2 查看发布资源"
+        },
+        {
+          "original_id": "a283-22-resource-shrinking-reachability-and-dynamic-name",
+          "title": "资源缩减先让静态引用图可靠，再覆盖动态协议",
+          "decision": "remove",
+          "reason": "AGP版本、引用图、动态名称与strict四卡复述DSL、动态入口清单和规则示例，无实际可达子图。",
+          "original_line": 1639,
+          "heading": "#### Safe mode 与 strict mode"
+        },
+        {
+          "original_id": "a283-23-image-format-and-runtime-cost",
+          "title": "图片选择同时约束解码版本、画质与运行成本",
+          "decision": "remove",
+          "reason": "WebP、AVIF、Vector及密度四卡重复格式兼容与解码性能分节，正文限定更完整。",
+          "original_line": 1697,
+          "heading": "#### 屏幕密度资源"
+        },
+        {
+          "original_id": "a283-24-locale-filter-language-split-and-user-choice",
+          "title": "语言过滤、设备拆分和应用内切换要一起设计",
+          "decision": "remove",
+          "reason": "语言过滤、拆分、选择、localeConfig四卡重复两策略列表和Gradle配置，无补装失败分支。",
+          "original_line": 1751,
+          "heading": "#### 应用内语言选择与语言拆分"
+        },
+        {
+          "original_id": "a283-25-zip-compression-versus-direct-access",
+          "title": "目录名不决定压缩，交付压缩与直接访问分别权衡",
+          "decision": "remove",
+          "reason": "目录、Deflate、noCompress和已压缩资源四卡复述压缩权衡五项与原文协议解释。",
+          "original_line": 1792,
+          "heading": "#### 音频与视频"
+        },
+        {
+          "original_id": "a283-26-fonts-features-and-asset-delivery",
+          "title": "字形与低频资产可以改变交付集合，但要有回退",
+          "decision": "remove",
+          "reason": "字体子集、可变字体、DynamicFeature和PAD四卡重复字体条件与PAD交付模式表。",
+          "original_line": 1856,
+          "heading": "### Dynamic Feature 与 Play Asset Delivery"
+        },
+        {
+          "original_id": "a283-27-final-size-ci-and-compatibility-gate",
+          "title": "最后用同一发布基线同时验体积、性能与兼容",
+          "decision": "remove",
+          "reason": "结构、交付、兼容和追溯四卡重复三组CI表及全文总结，不增加验收关系。",
+          "original_line": 1998,
+          "heading": "## 全文小结"
+        }
+      ],
+      "sha256_after": "7b757a3ecf55ee5f6f863db66df2241ea107830065be62c89c547709ed174aa9",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:24:54.789748+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 27,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a283/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a283/visual-review.json",
+      "retired_diagrams": [
+        "a283-02-dex-index-data-and-reference-limit",
+        "a283-04-keep-four-dimensions",
+        "a283-05-analyzer-score-radius-and-runtime",
+        "a283-06-dependency-and-desugaring-footprint",
+        "a283-07-debug-mapping-and-kotlin-metadata",
+        "a283-09-dex-delivery-regression-loop",
+        "a283-10-elf-loadable-segments-and-sections",
+        "a283-12-abi-build-set-versus-device-set",
+        "a283-13-compile-link-gc-and-thinlto",
+        "a283-14-jni-export-protocol-and-icf",
+        "a283-15-static-duplicate-and-shared-cpp-runtime",
+        "a283-18-native-regression-artifact-chain",
+        "a283-20-resource-overlay-versus-content-duplicates",
+        "a283-21-resource-names-paths-and-sparse-tables",
+        "a283-22-resource-shrinking-reachability-and-dynamic-name",
+        "a283-23-image-format-and-runtime-cost",
+        "a283-24-locale-filter-language-split-and-user-choice",
+        "a283-25-zip-compression-versus-direct-access",
+        "a283-26-fonts-features-and-asset-delivery",
+        "a283-27-final-size-ci-and-compatibility-gate"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-283/retired-assets.json"
     },
     {
       "index": 284,
@@ -66673,8 +66930,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 194,
-  "next_article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+  "reviewed_articles": 195,
+  "next_article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -66684,7 +66941,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:18:39.581787+08:00",
+  "updated_at": "2026-10-31T19:24:54.789748+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -66764,13 +67021,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
-      "registered_sha256": "5c85ed3edc3ac719eb25ddffe2a994fec15ad9f091748890eca7c1e68514f2b8",
-      "observed_sha256": "ad65812758c545f28ead6bf85382fba7056c042f9441d649d6f54c72a78b08a5",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
       "registered_sha256": "f288a321e459b5f30a7bbec00e073c8678d4193f49ebff0be66a66415a864941",
       "observed_sha256": "158d08bd15c3d1727638754a8dec87df432d4946be74eb44c5a62ac3eabd1d74",
@@ -66820,9 +67070,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5651,
-  "reviewed_placements_after": 2219,
-  "net_removed_placements": 3432,
+  "reviewed_placements_before": 5678,
+  "reviewed_placements_after": 2226,
+  "net_removed_placements": 3452,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -66846,7 +67096,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 194,
+  "currently_matching_reviewed_source_count": 195,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
