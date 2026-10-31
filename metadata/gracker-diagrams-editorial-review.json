@@ -38049,9 +38049,602 @@
       "before_count": 43,
       "before_all_images": 43,
       "sha256_before": "a3b970aad91d03ae5f33f0fab3504de72d4866672209de60215d5a925a24674a",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 17,
+      "decisions": [
+        {
+          "original_id": "ch14-09-01-question-scope",
+          "title": "先限定线程、窗口和软件频率证据",
+          "decision": "remove",
+          "reason": "四框按52问题和755小结重述实例/Running/保持/求交，11同一分析顺序重复；新SPAN与保持图区分具体模型，删总览工作流复写。",
+          "original_line": 56,
+          "heading": "# Perfetto CPU 频率与 DVFS 关联分析"
+        },
+        {
+          "original_id": "ch14-09-02-kernel-reporting",
+          "title": "普通和快速切换报告不同软件值",
+          "decision": "merge",
+          "reason": "原图“普通和快速切换报告不同软件值”并入：合并普通/快速切换与轮询具体字段，明确同版本文档路径和实际实现的差别及硬件反馈边界。；锚点原图6，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 63,
+          "heading": "# Perfetto CPU 频率与 DVFS 关联分析",
+          "replacement_id": "ed14-09-software-frequency-sources-and-hardware-boundary"
+        },
+        {
+          "original_id": "ch14-09-03-three-baselines",
+          "title": "平台、内核与论文实验分别绑定版本",
+          "decision": "remove",
+          "reason": "三列逐项摘要68一段三层来源及54基线声明，所有版本与论文适用边界原文保留，不重复把来源清单画成图。",
+          "original_line": 70,
+          "heading": "# Perfetto CPU 频率与 DVFS 关联分析"
+        },
+        {
+          "original_id": "ch14-09-04-cpufreq-control",
+          "title": "policy、governor 与 driver 的职责链",
+          "decision": "merge",
+          "reason": "原图“policy、governor 与 driver 的职责链”并入：把policy/governor/driver职责与vendor hook零/非零分支并入同一控制路径，保留缓存复用和最终硬件边界。；锚点原图5，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 83,
+          "heading": "## 频率轨记录的是什么",
+          "replacement_id": "ed14-09-cpufreq-policy-governor-hook-and-driver"
+        },
+        {
+          "original_id": "ch14-09-05-schedutil-resolution",
+          "title": "schedutil 映射经过 vendor hook 和频点解析",
+          "decision": "merge",
+          "reason": "原图“schedutil 映射经过 vendor hook 和频点解析”并入：把policy/governor/driver职责与vendor hook零/非零分支并入同一控制路径，保留缓存复用和最终硬件边界。；锚点原图5，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 90,
+          "heading": "## 频率轨记录的是什么",
+          "replacement_id": "ed14-09-cpufreq-policy-governor-hook-and-driver"
+        },
+        {
+          "original_id": "ch14-09-06-sysfs-implementation",
+          "title": "固定版本轮询读取 scaling_cur_freq",
+          "decision": "merge",
+          "reason": "原图“固定版本轮询读取 scaling_cur_freq”并入：合并普通/快速切换与轮询具体字段，明确同版本文档路径和实际实现的差别及硬件反馈边界。；锚点原图6，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 107,
+          "heading": "## 频率轨记录的是什么",
+          "replacement_id": "ed14-09-software-frequency-sources-and-hardware-boundary"
+        },
+        {
+          "original_id": "ch14-09-07-collection-channels",
+          "title": "事件、快照和可用频点提供不同数据",
+          "decision": "merge",
+          "reason": "原图“事件、快照和可用频点提供不同数据”并入：合并三种采集路径与初值/轮询缺口/末值延续，区分counter保持模型和开放调度记录。；锚点原图22，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 167,
+          "heading": "## 采集入口：事件、轮询和系统信息",
+          "replacement_id": "ed14-09-collection-and-frequency-hold-model"
+        },
+        {
+          "original_id": "ch14-09-08-event-poll-gaps",
+          "title": "事件开头空白和轮询间隙不等于零频率",
+          "decision": "merge",
+          "reason": "原图“事件开头空白和轮询间隙不等于零频率”并入：合并三种采集路径与初值/轮询缺口/末值延续，区分counter保持模型和开放调度记录。；锚点原图22，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 174,
+          "heading": "## 采集入口：事件、轮询和系统信息",
+          "replacement_id": "ed14-09-collection-and-frequency-hold-model"
+        },
+        {
+          "original_id": "ch14-09-09-limits-not-request",
+          "title": "policy 上下限没有记录 governor 目标请求",
+          "decision": "keep",
+          "reason": "policy上下限报告与governor目标请求不是同一数据的真实责任差异，保留重复上报前值比较与来源另查，避免从上限反推请求。",
+          "original_line": 181,
+          "heading": "## 采集入口：事件、轮询和系统信息"
+        },
+        {
+          "original_id": "ch14-09-10-state-evidence",
+          "title": "线程状态决定频率关联的含义",
+          "decision": "keep",
+          "reason": "Running/Runnable/S-D三种状态与频率/排队/阻塞三类证据对应关系独立，不让关联频率替代未获CPU时间或等待原因。",
+          "original_line": 201,
+          "heading": "## Running、Runnable、idle 与频率"
+        },
+        {
+          "original_id": "ch14-09-11-jank-reading-order",
+          "title": "从异常帧和状态分解推进 DVFS 假设",
+          "decision": "remove",
+          "reason": "五框逐项复制208–212五步编号清单并与1/43同义，原顺序与前向workload窗口要求完整保留，具体SPAN和迁核机制新图承担。",
+          "original_line": 214,
+          "heading": "## Running、Runnable、idle 与频率"
+        },
+        {
+          "original_id": "ch14-09-12-idle-normalization",
+          "title": "CPUIdle 原始退出值被规范为 active",
+          "decision": "keep",
+          "reason": "原始idle退出值4294967295转标准-1的实际编码变换独立，保留非负状态设备定义、原始与派生模型区别。",
+          "original_line": 221,
+          "heading": "## Running、Runnable、idle 与频率"
+        },
+        {
+          "original_id": "ch14-09-13-idle-exit-boundary",
+          "title": "target residency 与 exit latency 是不同约束",
+          "decision": "keep",
+          "reason": "进入/停留/退出与进入中唤醒的具体时间关系独立，明确targetresidency和exitlatency各自边界及进入中唤醒需要覆盖的阶段。",
+          "original_line": 228,
+          "heading": "## Running、Runnable、idle 与频率"
+        },
+        {
+          "original_id": "ch14-09-14-policy-topology",
+          "title": "CPUFreq 控制域与 cluster 拓扑分别确认",
+          "decision": "keep",
+          "reason": "policy共享控制接口、cluster拓扑与同步轨迹三个身份/证据边界对照独立，保留实际成员与默认cluster/capacity限制。",
+          "original_line": 237,
+          "heading": "## policy、cluster 与 CPU 标识"
+        },
+        {
+          "original_id": "ch14-09-15-policy-members",
+          "title": "related_cpus 与 affected_cpus 的集合范围",
+          "decision": "remove",
+          "reason": "四框逐项复制257一段related在线离线/affected在线及242设备命令字段，14已保留policy成员和拓扑区别，正文集合定义与命令完整保留。",
+          "original_line": 259,
+          "heading": "## policy、cluster 与 CPU 标识"
+        },
+        {
+          "original_id": "ch14-09-16-cpu-identity-domains",
+          "title": "按字段语义统一成 ucpu 再关联",
+          "decision": "keep",
+          "reason": "sched兼容ucpu别名、counter逻辑CPU+machine和cpu表真实身份转换三路独立，多机错误连接不能靠列同名判断，保留。",
+          "original_line": 272,
+          "heading": "## policy、cluster 与 CPU 标识"
+        },
+        {
+          "original_id": "ch14-09-17-public-view-version",
+          "title": "公开 SQL 与运行时 schema 一起核对",
+          "decision": "remove",
+          "reason": "四步逐项重述288一段metadata声明与公开prelude/运行时sqlite_master差异，没有实际schema输出对比，表名/版本/可执行性文字全留，16真实身份映射保留。",
+          "original_line": 290,
+          "heading": "## policy、cluster 与 CPU 标识"
+        },
+        {
+          "original_id": "ch14-09-18-startup-short-burst",
+          "title": "启动短突发先排除低频的其他原因",
+          "decision": "remove",
+          "reason": "四框重述299–307两段和五条排除清单，未画具体启动/升频观测时序；所有假说与减少首帧工作、设备对照要求全文留，删通用诊断步骤图。",
+          "original_line": 309,
+          "heading": "### 启动短突发"
+        },
+        {
+          "original_id": "ch14-09-19-render-phase",
+          "title": "连续渲染按帧和线程拆开对齐",
+          "decision": "remove",
+          "reason": "三组分别对应316一段UI/RT、GPUfence、SFdisplay与323限制说明，无实际帧或阶段时序，正文及13章引用全留，不再把实体清单重排六框。",
+          "original_line": 318,
+          "heading": "### 连续渲染负载"
+        },
+        {
+          "original_id": "ch14-09-20-batch-efficiency",
+          "title": "持续批处理要联合吞吐、能耗和热状态",
+          "decision": "remove",
+          "reason": "四卡重组327–329批处理吞吐/频率/热/计量因素，原文无设备结果，全部实验条件和能耗证据段保留，删评价清单复写。",
+          "original_line": 331,
+          "heading": "### 后台批处理"
+        },
+        {
+          "original_id": "ch14-09-21-raw-counter-check",
+          "title": "先确认轨道身份、单位与无效零值",
+          "decision": "remove",
+          "reason": "四步逐项摘录353一段单位/无效0/缺轨/SQL与UI显示差异，原counter SQL和具体零值来源在新报告源图保留，12已有idle真实编码关系。",
+          "original_line": 355,
+          "heading": "## 用 SQL 重建频率时间线"
+        },
+        {
+          "original_id": "ch14-09-22-counter-leading-intervals",
+          "title": "频率尾值延续到 trace_end 是保持模型",
+          "decision": "merge",
+          "reason": "原图“频率尾值延续到 trace_end 是保持模型”并入：合并三种采集路径与初值/轮询缺口/末值延续，区分counter保持模型和开放调度记录。；锚点原图22，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 384,
+          "heading": "## 用 SQL 重建频率时间线",
+          "replacement_id": "ed14-09-collection-and-frequency-hold-model"
+        },
+        {
+          "original_id": "ch14-09-23-span-preflight",
+          "title": "SPAN_JOIN 前检查轨道唯一、正值与不重叠",
+          "decision": "merge",
+          "reason": "原图“SPAN_JOIN 前检查轨道唯一、正值与不重叠”并入：合并两侧输入约束、全局重叠闸门和时间求交示意，确保未知频率运行段仍留在覆盖分母。；锚点原图25，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 451,
+          "heading": "## 用 SQL 重建频率时间线",
+          "replacement_id": "ed14-09-span-validation-and-running-intersections"
+        },
+        {
+          "original_id": "ch14-09-24-process-instance",
+          "title": "先选 upid 再验证唯一主线程",
+          "decision": "remove",
+          "reason": "四框逐项重述456实例选择段和7行枚举SQL，没有重启实例具体数据，保留完整upid/PID区别与唯一候选条件，删查询步骤摘要。",
+          "original_line": 458,
+          "heading": "## 用 SQL 重建频率时间线"
+        },
+        {
+          "original_id": "ch14-09-25-span-time-intersection",
+          "title": "只统计 Running 与正频率保持区间的交集",
+          "decision": "merge",
+          "reason": "原图“只统计 Running 与正频率保持区间的交集”并入：合并两侧输入约束、全局重叠闸门和时间求交示意，确保未知频率运行段仍留在覆盖分母。；锚点原图25，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 475,
+          "heading": "## 用 SQL 重建频率时间线",
+          "replacement_id": "ed14-09-span-validation-and-running-intersections"
+        },
+        {
+          "original_id": "ch14-09-26-two-denominators",
+          "title": "覆盖率和频率分布使用两个分母",
+          "decision": "keep",
+          "reason": "55ms闭合Running/40ms频率覆盖与10/20/10频点的受控具体算式分母对照独立，72.73与25/50/25说明不同问题，明确非设备实测。",
+          "original_line": 514,
+          "heading": "## 用 SQL 重建频率时间线"
+        },
+        {
+          "original_id": "ch14-09-27-frame-model-coverage",
+          "title": "帧模型保留代表ID、计数与覆盖缺口",
+          "decision": "keep",
+          "reason": "帧模型→UIRunning→两路独立聚合→LEFT保留缺口的连接关系独立，解释乘法累加和NULL边界，代表ID/模型常量/缺帧正文全留。",
+          "original_line": 521,
+          "heading": "## 用 SQL 重建频率时间线"
+        },
+        {
+          "original_id": "ch14-09-28-frame-overlap-boundary",
+          "title": "逐帧覆盖不能直接相加为全局总量",
+          "decision": "keep",
+          "reason": "两模型窗重叠同一Running的实际三轨反例，说明逐帧行不能直接加成全局，独立于单帧分母与原始帧模型质量。",
+          "original_line": 568,
+          "heading": "## 用 SQL 重建频率时间线"
+        },
+        {
+          "original_id": "ch14-09-29-migration-before-frequency",
+          "title": "先从原始调度识别迁核再关联频率",
+          "decision": "merge",
+          "reason": "原图“先从原始调度识别迁核再关联频率”并入：合并迁核查询顺序与原始运行段/中间状态/频率切分示意，避免把counter切分当新迁核或把空隙当Runnable。；锚点原图30，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 575,
+          "heading": "## 用 SQL 重建频率时间线",
+          "replacement_id": "ed14-09-migration-from-original-sched-and-frequency"
+        },
+        {
+          "original_id": "ch14-09-30-migration-observation",
+          "title": "迁核观测起点与两段间隙都有限制",
+          "decision": "merge",
+          "reason": "原图“迁核观测起点与两段间隙都有限制”并入：合并迁核查询顺序与原始运行段/中间状态/频率切分示意，避免把counter切分当新迁核或把空隙当Runnable。；锚点原图30，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 624,
+          "heading": "## 用 SQL 重建频率时间线",
+          "replacement_id": "ed14-09-migration-from-original-sched-and-frequency"
+        },
+        {
+          "original_id": "ch14-09-31-paper-test-boundary",
+          "title": "论文设备、模型和实验条件共同限定结论",
+          "decision": "remove",
+          "reason": "四卡逐项重组631一段设备/推理栈/模型/实验环境，全文保留root/旁路/外部功耗等边界，32具体百分比与33机制图独立保留。",
+          "original_line": 633,
+          "heading": "## 端侧 AI 推理中的 governor 协同"
+        },
+        {
+          "original_id": "ch14-09-32-paper-percent-base",
+          "title": "延迟下降与反向增加的百分比分母不同",
+          "decision": "keep",
+          "reason": "100→59.6归一化数值与正反向百分比的实际分母变换反例独立，明确40.4下降不等反向增加40.4且非设备绝对延迟。",
+          "original_line": 640,
+          "heading": "## 端侧 AI 推理中的 governor 协同"
+        },
+        {
+          "original_id": "ch14-09-33-fuse-two-step",
+          "title": "FUSE 先GPU后CPU，内存保持默认",
+          "decision": "keep",
+          "reason": "GPU候选→至多两组CPU搜索→运行时阶段组合的真实两阶段搜索控制顺序独立，内存governor默认及论文实验扩展边界保留。",
+          "original_line": 647,
+          "heading": "## 端侧 AI 推理中的 governor 协同"
+        },
+        {
+          "original_id": "ch14-09-34-inference-domains",
+          "title": "CPU、GPU与内存依赖要联合观测",
+          "decision": "remove",
+          "reason": "CPU/GPU/内存三实体汇入请求结果，只重复652依赖视角段，未具体画提交/访存相互依赖，全文CPU提交/KV权重与NPU适用限制全留。",
+          "original_line": 654,
+          "heading": "## 端侧 AI 推理中的 governor 协同"
+        },
+        {
+          "original_id": "ch14-09-35-inference-measurement",
+          "title": "推理实验把性能、状态与计量放在一起",
+          "decision": "remove",
+          "reason": "四卡逐项复制659同一实验需采集的信号清单，原文完整计量/GPU-DDR缺失边界全留，删字段清单图。",
+          "original_line": 661,
+          "heading": "## 端侧 AI 推理中的 governor 协同"
+        },
+        {
+          "original_id": "ch14-09-36-cross-validation",
+          "title": "结果频率要与放置、约束和效率交叉核对",
+          "decision": "remove",
+          "reason": "四卡逐项分组670–674完整EAS/uclamp/policy/thermal/效率清单，没有额外因果例或实测，所有章节引用与证据要求全留。",
+          "original_line": 676,
+          "heading": "## 与 EAS、uclamp、thermal 交叉验证"
+        },
+        {
+          "original_id": "ch14-09-37-vendor-scope",
+          "title": "通用内核与设备实现的证据层次",
+          "decision": "remove",
+          "reason": "四框逐项摘要681单段通用内核→厂商实现→现场→实验界限，与3来源图重复，正文设备源码/sysfs/trace与闭源限制完整保留。",
+          "original_line": 683,
+          "heading": "## 与 EAS、uclamp、thermal 交叉验证"
+        },
+        {
+          "original_id": "ch14-09-38-tool-recording-scope",
+          "title": "工具入口名称不能替代实际采集检查",
+          "decision": "merge",
+          "reason": "原图“工具入口名称不能替代实际采集检查”并入：合并本地完整配置、工具预设和线上平台受限配置三路，保留条件栈采样不补DVFS源的边界。；锚点原图39，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 692,
+          "heading": "## 线上与工具预设的采集边界",
+          "replacement_id": "ed14-09-local-tools-and-online-preset-capabilities"
+        },
+        {
+          "original_id": "ch14-09-39-online-preset-limits",
+          "title": "ProfilingManager system trace 没有补齐DVFS源",
+          "decision": "merge",
+          "reason": "原图“ProfilingManager system trace 没有补齐DVFS源”并入：合并本地完整配置、工具预设和线上平台受限配置三路，保留条件栈采样不补DVFS源的边界。；锚点原图39，固定来源/标识域、有效区间、覆盖分母、原始段身份及采集能力边界在新图图注明确保留。",
+          "original_line": 699,
+          "heading": "## 线上与工具预设的采集边界",
+          "replacement_id": "ed14-09-local-tools-and-online-preset-capabilities"
+        },
+        {
+          "original_id": "ch14-09-40-online-evidence-level",
+          "title": "线上缺失关键轨道时保留结论层次",
+          "decision": "remove",
+          "reason": "四框逐项重述704已有/缺失/相关性/根因的单段报告边界，新工具预设合图保留同一限制，删相关性提醒流程复写。",
+          "original_line": 706,
+          "heading": "## 线上与工具预设的采集边界"
+        },
+        {
+          "original_id": "ch14-09-41-misreading-checks",
+          "title": "缺口、空闲残留、USB与硬件反馈分别排除",
+          "decision": "remove",
+          "reason": "四卡把713–722十条误判清单重分组，无USB/idle实际对比数据，全部原始误判条目完整保留，具体保持/报告源/身份/状态图已承担关系。",
+          "original_line": 724,
+          "heading": "## 误判清单"
+        },
+        {
+          "original_id": "ch14-09-42-report-artifacts",
+          "title": "报告保存可复核的条件、身份和分母",
+          "decision": "remove",
+          "reason": "四卡把733–739七条报告清单重分组，没有具体报告产物或参数例，原完整清单和746因果对照方法保留，删条目复写。",
+          "original_line": 741,
+          "heading": "## 查询结果应怎样写进报告"
+        },
+        {
+          "original_id": "ch14-09-43-causal-control",
+          "title": "从频率相关性到因果结论需要对照",
+          "decision": "remove",
+          "reason": "四步逐项重述746完整对照段，和1/11通用分析流程重复，原实验变量/稳定变化/状态依赖要求全留，不重复画结论流程。",
+          "original_line": 748,
+          "heading": "## 查询结果应怎样写进报告"
+        }
+      ],
+      "sha256_after": "e79f5bd932cd5113336232051cc5f08681fabf9480e2f2f91b8dd5a053331558",
+      "new_diagrams": [
+        {
+          "id": "ed14-09-software-frequency-sources-and-hardware-boundary",
+          "title": "三种频率来源都先按软件报告解释",
+          "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-09-software-frequency-sources-and-hardware-boundary.svg",
+            "src/assets/diagrams/ch14/ed14-09-software-frequency-sources-and-hardware-boundary.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-09-software-frequency-sources-and-hardware-boundary",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/cpufreq/cpufreq.c",
+            "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpufreq.rst",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traced/probes/common/cpu_freq_info.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/data-sources/cpu-freq.md"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-09-02-kernel-reporting",
+              "ch14-09-06-sysfs-implementation"
+            ],
+            "boundary": "固定内核普通切换完成CPUFREQ_POSTCHANGE写freqs->new，fast_switch写driver返回freq，同policy在线CPU可分别产生事件。固定Perfetto ReadCpuCurrFreq实际读scaling_cur_freq，文档/proto注释cpuinfo_cur_freq差异需记录；读取失败/空值/解析失败可填0，先按缺失无效候选，不证明停钟。多数scaling_cur_freq为driver最近请求状态，硬件有效频率/执行周期/能耗另要设备支持的硬件反馈与计量，不能用软件保持曲线替代。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a143/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-09-cpufreq-policy-governor-hook-and-driver",
+          "title": "policy 约束下的 schedutil 映射与驱动解析",
+          "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-09-cpufreq-policy-governor-hook-and-driver.svg",
+            "src/assets/diagrams/ch14/ed14-09-cpufreq-policy-governor-hook-and-driver.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-09-cpufreq-policy-governor-hook-and-driver",
+          "sources": [
+            "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpufreq.rst",
+            "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/cpufreq/cpufreq.c",
+            "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-09-04-cpufreq-control",
+              "ch14-09-05-schedutil-resolution"
+            ],
+            "boundary": "policy定义共享控制域和min/max；schedutil用util、capacity、参考频率计算候选，vendor map hook非零结果替代默认映射，零值走map_util_freq。缓存可复用目标，否则cpufreq_driver_resolve_freq解析支持频点，仍受policy和driver限制。更新间隔来自各policy transition delay，非跨设备固定周期；最终硬件/固件响应另需反馈，不把控制链画成有效频率保证。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a143/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-09-collection-and-frequency-hold-model",
+          "title": "事件、轮询与系统信息先分源，再建立保持区间",
+          "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-09-collection-and-frequency-hold-model.svg",
+            "src/assets/diagrams/ch14/ed14-09-collection-and-frequency-hold-model.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-09-collection-and-frequency-hold-model",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/data-sources/cpu-freq.md",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traced/probes/sys_stats/sys_stats_data_source.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traced/probes/system_info/system_info_data_source.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/counters/intervals.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/idle.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-09-07-collection-channels",
+              "ch14-09-08-event-poll-gaps",
+              "ch14-09-22-counter-leading-intervals"
+            ],
+            "boundary": "ftrace切换事件记录时序，sys_stats500ms仅示例快照不能还原点间切换，system_info启动时一次读取可用频点/CPU信息。counter_leading_intervals把样本延到下次样本，尾值到trace_end，首样本之前未知；保持不是硬件连续测量。原始sched.dur=-1另行处理，本章仅闭合Running并报告开放记录；缺失/无效频率不补0。轨道为关系示意，无设备时间数值。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a143/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-09-span-validation-and-running-intersections",
+          "title": "先验证 SPAN 输入，再对 Running 和已知正频率求交",
+          "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-09-span-validation-and-running-intersections.svg",
+            "src/assets/diagrams/ch14/ed14-09-span-validation-and-running-intersections.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-09-span-validation-and-running-intersections",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/cpu_scheduling.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/counters/intervals.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-09-23-span-preflight",
+              "ch14-09-25-span-time-intersection"
+            ],
+            "boundary": "两侧按ucpu分区：sched只取dur>0并保留sched_id/utid，频率仅取单轨CPU、dur>0和freq>0；多轨歧义及无效值保留缺口。各侧用runningMAX前序end查重叠，任一输入重叠时整体SPAN输入清空并停止统计；诊断为空才求交。指定窗口须同一半开范围裁剪两侧。SPAN结果为闭合Running与已知正频率交集，保留原始counter/track/sched身份；全部闭合Running另作为覆盖分母，不能把无频率段补0。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a143/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-09-migration-from-original-sched-and-frequency",
+          "title": "迁核先认原始调度段，再关联目标段频率",
+          "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-09-migration-from-original-sched-and-frequency.svg",
+            "src/assets/diagrams/ch14/ed14-09-migration-from-original-sched-and-frequency.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-09-migration-from-original-sched-and-frequency",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/cpu_scheduling.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-09-29-migration-before-frequency",
+              "ch14-09-30-migration-observation"
+            ],
+            "boundary": "先在原始闭合Running按utid分区、(ts,sched_id)排序LAG前一ucpu，ucpu变化成为候选；其ts仅首次观测到新CPU闭合Running起点，不是精确迁核决策时刻。两段间隙可含Runnable/Sleeping/开放段/缺口，不直接等Runnable。之后LEFT JOIN目标段频率保留未知频率候选，同sched_id可多频点行仍是同调度段。迁核原因需状态、唤醒、约束与负载另证，默认cluster_id不证拓扑。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a143/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-09-local-tools-and-online-preset-capabilities",
+          "title": "采集入口决定可请求范围，实际产出仍要核对",
+          "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-09-local-tools-and-online-preset-capabilities.svg",
+            "src/assets/diagrams/ch14/ed14-09-local-tools-and-online-preset-capabilities.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-09-local-tools-and-online-preset-capabilities",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/data-sources/cpu-freq.md",
+            "https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java",
+            "https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-09-38-tool-recording-scope",
+              "ch14-09-39-online-preset-limits"
+            ],
+            "boundary": "本地adb perfetto在权限允许内可提交完整TraceConfig；Studio由工具版本与入口决定预设；固定Android17 ProfilingManager由Configs生成受限system trace，应用不能提交任意配置，KEY_COLLECT_STACK_SAMPLING与对应flag可条件扩展linux.perf。固定预设含compact sched/进程/应用atrace/FrameTimeline，未启用freq、idle、sys_stats、system_info，且redaction、rate limiter、参数与设备配置仍约束交付。可选栈不补DVFS缺失源，交付后枚举真实轨道。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a143/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:34:43.780815+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 43,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a143/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a143/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 143,
+        "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+        "registered_sha256": "a3b970aad91d03ae5f33f0fab3504de72d4866672209de60215d5a925a24674a",
+        "frozen_sha256": "a3b970aad91d03ae5f33f0fab3504de72d4866672209de60215d5a925a24674a",
+        "review_input_sha256": "281226d7268568d6a331d3b0e9116e474dd23232af05f77539e5de832d43bbaa",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a143/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a143/external-source.diff",
+        "diff_sha256": "e093dd92511ecdc06f18b18147750481ffd1b5465600b198cd4753c2245cf7f7",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 231 current narrative/table reading rows, 22549 characters, 43 SVG label sets and all 43 original PNGs in 6 contact sheets independently read/viewed; all 10 non-Mermaid code blocks, 256 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "281226d7268568d6a331d3b0e9116e474dd23232af05f77539e5de832d43bbaa",
+      "retired_diagrams": [
+        "ch14-09-01-question-scope",
+        "ch14-09-02-kernel-reporting",
+        "ch14-09-03-three-baselines",
+        "ch14-09-04-cpufreq-control",
+        "ch14-09-05-schedutil-resolution",
+        "ch14-09-06-sysfs-implementation",
+        "ch14-09-07-collection-channels",
+        "ch14-09-08-event-poll-gaps",
+        "ch14-09-11-jank-reading-order",
+        "ch14-09-15-policy-members",
+        "ch14-09-17-public-view-version",
+        "ch14-09-18-startup-short-burst",
+        "ch14-09-19-render-phase",
+        "ch14-09-20-batch-efficiency",
+        "ch14-09-21-raw-counter-check",
+        "ch14-09-22-counter-leading-intervals",
+        "ch14-09-23-span-preflight",
+        "ch14-09-24-process-instance",
+        "ch14-09-25-span-time-intersection",
+        "ch14-09-29-migration-before-frequency",
+        "ch14-09-30-migration-observation",
+        "ch14-09-31-paper-test-boundary",
+        "ch14-09-34-inference-domains",
+        "ch14-09-35-inference-measurement",
+        "ch14-09-36-cross-validation",
+        "ch14-09-37-vendor-scope",
+        "ch14-09-38-tool-recording-scope",
+        "ch14-09-39-online-preset-limits",
+        "ch14-09-40-online-evidence-level",
+        "ch14-09-41-misreading-checks",
+        "ch14-09-42-report-artifacts",
+        "ch14-09-43-causal-control"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-143/retired-assets.json"
     },
     {
       "index": 144,
@@ -39462,8 +40055,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 78,
-  "next_article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
+  "reviewed_articles": 79,
+  "next_article": "src/part3-tools/ch14-perfetto/10-bufferqueue-blocking-perfetto.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -39473,7 +40066,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:29:29.737507+08:00",
+  "updated_at": "2026-10-31T12:34:43.780815+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -39522,13 +40115,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
-      "registered_sha256": "a3b970aad91d03ae5f33f0fab3504de72d4866672209de60215d5a925a24674a",
-      "observed_sha256": "281226d7268568d6a331d3b0e9116e474dd23232af05f77539e5de832d43bbaa",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/09-cpu-frequency-dvfs-analysis.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -39896,9 +40482,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2986,
-  "reviewed_placements_after": 1355,
-  "net_removed_placements": 1631,
+  "reviewed_placements_before": 3029,
+  "reviewed_placements_after": 1372,
+  "net_removed_placements": 1657,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -39922,5 +40508,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 78
+  "currently_matching_reviewed_source_count": 79
 }
