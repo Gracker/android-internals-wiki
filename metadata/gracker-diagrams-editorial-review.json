@@ -65087,9 +65087,158 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "6e222d76ffe22d8d556741783f8a0914481711432431bb13f04e0004d92217a1",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a269-01-independent-network-signals",
+          "title": "卫星、约束与计费分别形成预算",
+          "decision": "keep",
+          "reason": "卫星传输、带宽约束和计费/验证三路独立输入汇入同一预算，避免单一卫星布尔值的错误模型。",
+          "original_line": 141,
+          "heading": "### 平台版本与公开能力"
+        },
+        {
+          "original_id": "a269-02-opt-in-and-operator",
+          "title": "宿主优化声明与运营商服务资格分别确认",
+          "decision": "remove",
+          "reason": "宿主适配、元数据和运营商服务条件串行四框重复清单示例与接入/产品规则段落。",
+          "original_line": 165,
+          "heading": "### AndroidManifest.xml 的接入声明"
+        },
+        {
+          "original_id": "a269-03-coherent-budget-publication",
+          "title": "切网先失效旧预算再合并回调快照",
+          "decision": "remove",
+          "reason": "四框顺序与紧邻137行监听器和能力/blocked到齐发布、null停用的逐段解释重复。",
+          "original_line": 320,
+          "heading": "### 以“最佳匹配网络”驱动应用预算"
+        },
+        {
+          "original_id": "a269-04-priority-and-byte-budget",
+          "title": "请求按用户价值分级并共享数据预算",
+          "decision": "remove",
+          "reason": "四张优先级卡逐项重复紧邻请求类别/操作/策略表，图没有额外调度或字节分配关系。",
+          "original_line": 365,
+          "heading": "### 先定义数据预算，再调整网络参数"
+        },
+        {
+          "original_id": "a269-05-retry-eligibility-and-deadline",
+          "title": "重试受幂等、服务端退避和任务期限约束",
+          "decision": "keep",
+          "reason": "任务尝试、服务端Retry-After和业务期限三轨显示重试等待必须同时满足两个时间界限。",
+          "original_line": 386,
+          "heading": "### 超时、重试与退避"
+        },
+        {
+          "original_id": "a269-06-fcm-two-conditions",
+          "title": "FCM投递标记与业务数据拉取分别控制",
+          "decision": "keep",
+          "reason": "两个独立FCM开关从相同目标分叉再汇入预算检查，防止把约束和受限卫星当成一个投递条件。",
+          "original_line": 437,
+          "heading": "### Firebase Cloud Messaging（FCM）的约束网络投递"
+        },
+        {
+          "original_id": "a269-07-durable-delivery-states",
+          "title": "本地队列与服务端回执区分交付状态",
+          "decision": "remove",
+          "reason": "紧邻已完整列出本地保存、待发送、确认和失败状态；图把失败接在服务端确认后容易误示必经顺序，文字更准确。",
+          "original_line": 466,
+          "heading": "### 本地队列与投递状态"
+        },
+        {
+          "original_id": "a269-08-subscription-route-matching",
+          "title": "流媒体上限先匹配实际承载订阅",
+          "decision": "remove",
+          "reason": "订阅可见性、实际承载匹配和未知值处理逐步复述紧邻代码及三段边界说明。",
+          "original_line": 681,
+          "heading": "#### 匹配承载媒体的订阅"
+        },
+        {
+          "original_id": "a269-09-media-plan-and-abr",
+          "title": "运营商上限约束候选而实时ABR继续择档",
+          "decision": "keep",
+          "reason": "运营商上限过滤候选与实时吞吐/缓冲独立汇入ABR择档，显示两个输入作用不同。",
+          "original_line": 707,
+          "heading": "### 把运营商上限接入 ABR"
+        },
+        {
+          "original_id": "a269-10-lan-protection-scope",
+          "title": "本地网络保护按接口和地址范围判定",
+          "decision": "remove",
+          "reason": "接口、地址、协议和例外的枚举图重复本节列表，不增加权限判定的条件关系。",
+          "original_line": 736,
+          "heading": "### 本地网络的界定范围"
+        },
+        {
+          "original_id": "a269-11-lan-target-migration",
+          "title": "Android16测试与Android17目标升级分步验证",
+          "decision": "remove",
+          "reason": "Android16测试与17新旧target行为完整重复迁移表，保留表与兼容测试命令。",
+          "original_line": 760,
+          "heading": "### Android 16 到 Android 17 的迁移"
+        },
+        {
+          "original_id": "a269-13-nsd-grant-and-refresh",
+          "title": "NSD服务授权可持久但连接地址必须刷新",
+          "decision": "remove",
+          "reason": "服务授权与最新地址四框重复紧邻NSD代码和重连/撤销/互斥标志段落。",
+          "original_line": 817,
+          "heading": "#### 路径一：系统设备选择器"
+        },
+        {
+          "original_id": "a269-12-lan-two-authorizations",
+          "title": "设备选择授权与广泛局域网权限两条路径",
+          "decision": "keep",
+          "reason": "单台设备服务授权与广泛局域网权限分成两路，清楚呈现取消选择和拒绝权限的不同结果。",
+          "original_line": 861,
+          "heading": "#### 路径二：运行时权限"
+        },
+        {
+          "original_id": "a269-15-network-to-ui-delay",
+          "title": "数据到达、播放器消费与界面提交分别计时",
+          "decision": "keep",
+          "reason": "网络接收、播放器消费、主线程排队/提交三轨帮助定位数据到达后的额外等待，区别于链路时延。",
+          "original_line": 943,
+          "heading": "#### 区分回调延迟与网络传输延迟"
+        },
+        {
+          "original_id": "a269-14-lnp-error-evidence",
+          "title": "TCP超时需明确阻断原因才能归因LNP",
+          "decision": "keep",
+          "reason": "UDP和TCP诊断分支再区分明确LNP与未知结果，能避免将TCP超时直接当权限拒绝；移到失败分类段落末尾，紧接阻断原因说明。",
+          "original_line": 963,
+          "heading": "### `android-17.0.0_r1` 源码锚点"
+        }
+      ],
+      "sha256_after": "c8792392edcfe6b3e9bde7e3f9b6100954124703e02f8e37ccebf8805f6d1701",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:52:39.236913+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 4,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a269/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a269/visual-review.json",
+      "retired_diagrams": [
+        "a269-02-opt-in-and-operator",
+        "a269-03-coherent-budget-publication",
+        "a269-04-priority-and-byte-budget",
+        "a269-07-durable-delivery-states",
+        "a269-08-subscription-route-matching",
+        "a269-10-lan-protection-scope",
+        "a269-11-lan-target-migration",
+        "a269-13-nsd-grant-and-refresh"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-269/retired-assets.json"
     },
     {
       "index": 272,
@@ -65323,8 +65472,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 185,
-  "next_article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+  "reviewed_articles": 186,
+  "next_article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -65334,7 +65483,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:50:08.743838+08:00",
+  "updated_at": "2026-10-31T18:52:39.236913+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -65470,9 +65619,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5520,
-  "reviewed_placements_after": 2160,
-  "net_removed_placements": 3360,
+  "reviewed_placements_before": 5535,
+  "reviewed_placements_after": 2167,
+  "net_removed_placements": 3368,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -65496,7 +65645,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 185,
+  "currently_matching_reviewed_source_count": 186,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

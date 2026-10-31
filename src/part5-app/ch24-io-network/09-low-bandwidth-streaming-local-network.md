@@ -162,10 +162,6 @@ Android 应用默认绕开约束卫星网络，完成数据预算适配之后，
 
 遥测事件是应用为分析运行情况而记录并上传的行为或性能数据。这项元数据要由宿主应用自己加入：声明代表完整应用已经控制数据量和访问频率，而图片、视频、遥测事件和后台任务都握在宿主手里，网络库替它作不了这个承诺。
 
-<!-- gracker-diagram: a269-02-opt-in-and-operator -->
-![宿主优化声明与运营商服务资格分别确认](../../assets/diagrams/ch24/a269-02-opt-in-and-operator.png)
-
-图：优化声明允许仅剩约束卫星网络时接入，并供系统设置识别；不能显示成服务已开通。
 
 ### 以“最佳匹配网络”驱动应用预算
 
@@ -317,10 +313,6 @@ class ConstrainedNetworkMonitor(
 
 `onAvailable()` 先发布 `null` 使旧网络预算失效，消费者此时应暂停依赖预算的自动传输；随后等按序到达的 `onCapabilitiesChanged()`，再等 `onBlockedStatusChanged()` 报告的应用身份限制状态，两样都到齐才发布快照，避免回调与同步查询读取到不同时间点的状态；UID 是系统分配给应用的 Linux 用户标识，这里的 `blocked` 状态表示系统当前限制该 UID 使用这条网络。
 
-<!-- gracker-diagram: a269-03-coherent-budget-publication -->
-![切网先失效旧预算再合并回调快照](../../assets/diagrams/ch24/a269-03-coherent-budget-publication.png)
-
-图：null 表示暂时没有可用预算；消费者暂停自动传输，不能将旧 Network 快照继续当作当前状态。
 
 自动传输还要确认网络已通过公网验证、没有暂停，且当前 UID 未被限制。`onLost()` 只清除当前网络，防止旧网络的丢失事件覆盖刚出现的新网络。
 
@@ -362,10 +354,6 @@ NTN 是 non-terrestrial network，即非地面网络。Android 15 的 [`ServiceS
 
 “用户关键”给的是发送优先级，重试的账照样要算：每次尝试都会消耗握手、请求头和载荷字节。客户端要把排队状态、最近一次错误和下一次允许尝试的时间写入持久化存储，进程重启后继续遵守同一策略。
 
-<!-- gracker-diagram: a269-04-priority-and-byte-budget -->
-![请求按用户价值分级并共享数据预算](../../assets/diagrams/ch24/a269-04-priority-and-byte-budget.png)
-
-图：优先级不豁免字节与重试成本；持久保存排队、错误和下次允许尝试时间。
 
 ### 超时、重试与退避
 
@@ -463,10 +451,6 @@ FCM HTTP v1 的 Android 配置支持 `bandwidth_constrained_ok`。项目内可�
 
 卫星覆盖可能间歇中断，本地入队离“已送达”还有一段网络路径，界面要把这两件事分开。删除、支付、权限修改等敏感操作要显示服务端确认结果：客户端把请求写了出去，只说明发送流程启动了。
 
-<!-- gracker-diagram: a269-07-durable-delivery-states -->
-![本地队列与服务端回执区分交付状态](../../assets/diagrams/ch24/a269-07-durable-delivery-states.png)
-
-图：界面状态与协议证据对应；离线缓存不是网络投递凭证，恢复后也要分批放行。
 
 ### 协议选型
 
@@ -678,10 +662,6 @@ Wi-Fi、虚拟专用网络（VPN）、企业专用网络，以及应用主动绑
 
 默认或活动数据订阅变化、飞行模式恢复以及媒体连接从 Wi-Fi 切到蜂窝时，都要重新计算。`subscriptionId` 只在设备本地用于匹配，当作稳定用户标识上传是靠不住的。
 
-<!-- gracker-diagram: a269-08-subscription-route-matching -->
-![流媒体上限先匹配实际承载订阅](../../assets/diagrams/ch24/a269-08-subscription-route-matching.png)
-
-图：默认数据订阅可能不是活动数据订阅；切网与订阅变化后重新匹配，订阅ID不作稳定用户标识。
 
 ### 把运营商上限接入 ABR
 
@@ -733,10 +713,6 @@ WebView 沿用宿主应用的权限状态。
 
 系统配置的 DNS 服务器位于本地网络时，发往其 53 端口的域名解析流量属于官方列出的例外。这个例外只保证系统 DNS 可用，不允许应用绕过权限访问其他本地 DNS 服务或端口。
 
-<!-- gracker-diagram: a269-10-lan-protection-scope -->
-![本地网络保护按接口和地址范围判定](../../assets/diagrams/ch24/a269-10-lan-protection-scope.png)
-
-图：系统 DNS 例外仅限配置的服务器与 53 端口；手动输入IP或换网络库都不能绕过LNP。
 
 ### Android 16 到 Android 17 的迁移
 
@@ -757,10 +733,6 @@ adb reboot
 
 启用后，应用进程中的本地网络套接字会受到限制。Android 16 文档同时指出，`NsdManager` 等由系统服务代替应用执行网络操作的框架 API，不在这次主动测试的完整覆盖范围内。系统设备选择器和权限拒绝路径仍要在 Android 17 / API 37 真机上复测。
 
-<!-- gracker-diagram: a269-11-lan-target-migration -->
-![Android16测试与Android17目标升级分步验证](../../assets/diagrams/ch24/a269-11-lan-target-migration.png)
-
-图：target SDK 固定在安装包中；对比靠不同构建版本，不能在同一包内按用户随机切换。
 
 ### 两条授权路径
 
@@ -814,10 +786,6 @@ fun showNsdServicePicker(
 
 系统会记住用户批准的服务，授权可跨重启保留，但用户或系统仍可能撤销。再次连接前可用 `checkPermissionForService()` 查询权限，并通过 `registerServiceInfoCallback(NsdServiceInfo, ...)` 获取最新地址。需要在不显示选择界面的情况下查找已批准服务时，使用 `FLAG_USER_APPROVED_ONLY`；它与 `FLAG_SHOW_PICKER` 互斥。
 
-<!-- gracker-diagram: a269-13-nsd-grant-and-refresh -->
-![NSD服务授权可持久但连接地址必须刷新](../../assets/diagrams/ch24/a269-13-nsd-grant-and-refresh.png)
-
-图：USER_APPROVED_ONLY 用于不弹选择器地查找已批准服务；没有服务授权时不能改用保存IP绕过。
 
 #### 路径二：运行时权限
 
@@ -884,6 +852,11 @@ Android 17 官方迁移文档把 `android_getnetworkblockedreason(sockFd)` 称�
 - Connectivity 的 C/C++ 接口读取套接字的 `SO_ANDROID_DROP_REASON`，只在阻断原因包含本地网络保护时返回 `ANDROID_NETWORK_BLOCKED_REASON_LNP`。
 
 保护位于操作系统网络栈，更换 OkHttp、Cronet 或 Java Socket 不会改变权限结果。
+
+<!-- gracker-diagram: a269-14-lnp-error-evidence -->
+![TCP超时需明确阻断原因才能归因LNP](../../assets/diagrams/ch24/a269-14-lnp-error-evidence.png)
+
+图：权限经 PermissionMonitor 进入 BPF 策略；更换 OkHttp/Cronet/Socket 不改变系统授权结论。
 
 ## 跨路径诊断、验证与发布
 
@@ -960,10 +933,6 @@ Android 17 为目标 API 37 及以上应用把 ECH 默认模式设为 `enabled`�
 
 这张表用于核对 Android 17 首发版本的实现范围。应用代码仍应调用公开 SDK，并记录设备系统构建、SDK Extension、播放器与网络库版本；隐藏接口与具体 BPF 映射布局留给源码核对，业务代码以公开接口为准。
 
-<!-- gracker-diagram: a269-14-lnp-error-evidence -->
-![TCP超时需明确阻断原因才能归因LNP](../../assets/diagrams/ch24/a269-14-lnp-error-evidence.png)
-
-图：权限经 PermissionMonitor 进入 BPF 策略；更换 OkHttp/Cronet/Socket 不改变系统授权结论。
 
 ### 发布前检查清单
 
