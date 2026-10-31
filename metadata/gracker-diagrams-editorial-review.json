@@ -68382,9 +68382,223 @@
       "before_count": 22,
       "before_all_images": 22,
       "sha256_before": "01340c9939bf1cd15c38b69304af497fd624e3d43d86851f4f6c33192cf3a970",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a298-01-evidence-objects-and-permission-scopes",
+          "title": "分配、CPU 与缺页分别观察不同对象",
+          "decision": "remove",
+          "reason": "三类对象和权限四卡重复开头定义与三篇分工。",
+          "original_line": 208,
+          "heading": "# heapprofd、procfs CPU 与 Page Fault 分析"
+        },
+        {
+          "original_id": "a298-02-native-heap-visibility-and-residency",
+          "title": "libc.malloc 存活估计与 RSS/PSS 保持不同口径",
+          "decision": "remove",
+          "reason": "窗口覆盖、attach旧量、free驻留和PSS四卡重复六行可见性表。",
+          "original_line": 236,
+          "heading": "### heapprofd 记录什么"
+        },
+        {
+          "original_id": "a298-03-running-process-attach-and-buffer",
+          "title": "运行期 attach：信号触发安装，分配事件进入共享缓冲",
+          "decision": "keep",
+          "reason": "运行期attach从配置、SIGRT触发专用安装线程、共享buffer到unwinder与dump输出链，区分信号入口和真正加载。",
+          "original_line": 259,
+          "heading": "### heapprofd 的一次采集流程"
+        },
+        {
+          "original_id": "a298-04-profileable-session-and-uid-authorization",
+          "title": "user build 的 profileable 与可信发起者是不同权限维度",
+          "decision": "remove",
+          "reason": "两发起者、UID和installer四卡重复权限表及三段其他UID/过滤/SELinux条件。",
+          "original_line": 341,
+          "heading": "### daemon、SELinux 与能力边界"
+        },
+        {
+          "original_id": "a298-05-native-name-matching-and-process-lifetimes",
+          "title": "native 进程名精确匹配，分析保留独立进程生命周期",
+          "decision": "remove",
+          "reason": "规范化、native精确、Java glob和upid四卡重复三项匹配规则及多进程说明。",
+          "original_line": 365,
+          "heading": "### native 目标的进程名匹配"
+        },
+        {
+          "original_id": "a298-06-manager-shell-and-platform-collection",
+          "title": "三种采集主体决定可配置范围与可验证路径",
+          "decision": "remove",
+          "reason": "App、shell、平台和旧版四卡重复四个部署分节及具体配置。",
+          "original_line": 494,
+          "heading": "#### 手写 Perfetto textproto"
+        },
+        {
+          "original_id": "a298-07-sampling-buffer-and-daemon-guardrails",
+          "title": "采样、共享缓冲和 daemon guardrail 分别控制不同成本",
+          "decision": "remove",
+          "reason": "间隔、buffer、guardrail和周期四卡重复八参数表及成本对照解释。",
+          "original_line": 520,
+          "heading": "### 参数怎样影响开销和证据质量"
+        },
+        {
+          "original_id": "a298-08-delta-table-to-cumulative-live-estimate",
+          "title": "分配表是 dump 间 delta，当前净存活估计需要完整前缀",
+          "decision": "keep",
+          "reason": "累计ProfilePacket导入delta表后先选完整会话，再累加此前全部delta保留旧callsite，说明单ts净变化不等当前存活。",
+          "original_line": 611,
+          "heading": "### 如何判断 native heap 是否持续增长"
+        },
+        {
+          "original_id": "a298-09-art-allocation-only-and-leak-confounders",
+          "title": "分配增长、存活增长与物理驻留增长分别查证",
+          "decision": "remove",
+          "reason": "ART allocation、native前缀、allocator和图形四卡重复三误判与Java仅分配限定。",
+          "original_line": 626,
+          "heading": "#### 三类常见误判"
+        },
+        {
+          "original_id": "a298-10-profile-failure-symbols-and-safe-archive",
+          "title": "先核采集完整性，再看符号与增长来源",
+          "decision": "remove",
+          "reason": "请求、缺profile、提前结束及归档四卡重复四失败分节和数据安全清单。",
+          "original_line": 718,
+          "heading": "### 发布前检查表"
+        },
+        {
+          "original_id": "a298-11-procfs-access-and-dynamic-snapshot",
+          "title": "procfs 是动态接口，自身与全机读取有不同权限",
+          "decision": "remove",
+          "reason": "自身、特权、动态节点和策略四卡重复访问表及procfs四限制。",
+          "original_line": 786,
+          "heading": "#### 普通应用读不到全局 CPU 节点"
+        },
+        {
+          "original_id": "a298-12-cpu-denominators-and-sleep-clocks",
+          "title": "CPU 百分比必须连同分母、睡眠与归一化次数解释",
+          "decision": "remove",
+          "reason": "uptime、elapsed、全局分母和guest四卡重复CPU定义公式及采样器说明。",
+          "original_line": 910,
+          "heading": "#### 整机容量占比"
+        },
+        {
+          "original_id": "a298-13-proc-stat-parsing-and-counter-validation",
+          "title": "stat 先界定 comm，再解析稳定字段前缀",
+          "decision": "remove",
+          "reason": "comm、字段、失败和身份四卡重复字段表与纯解析代码和错误校验。",
+          "original_line": 972,
+          "heading": "### `/proc/<pid>/stat` 的解析规则"
+        },
+        {
+          "original_id": "a298-14-framework-cpu-tracker-private-semantics",
+          "title": "ProcessCpuTracker 的内部实现不能当公开通用 CPU 公式",
+          "decision": "remove",
+          "reason": "update、base/rel、分母和回退四卡重复内部类步骤六项及三个分节。",
+          "original_line": 1057,
+          "heading": "#### Framework 为什么能用，应用为什么不能照搬"
+        },
+        {
+          "original_id": "a298-15-load-average-pressure-and-real-runtime",
+          "title": "load average 是活跃任务负载，不能当 CPU 利用率",
+          "decision": "remove",
+          "reason": "load算法、线程、第四列与对照四卡重复格式原文和压力四项。",
+          "original_line": 1085,
+          "heading": "### `/proc/loadavg` 记录任务负载"
+        },
+        {
+          "original_id": "a298-16-cpu-running-runnable-and-wait-tracks",
+          "title": "累计 CPU 不能重建线程在何时运行或等待",
+          "decision": "keep",
+          "reason": "业务wall、运行可运行和阻塞、proc前后累计与sched切换四轨，展示计数不能还原等待时序。",
+          "original_line": 1135,
+          "heading": "#### CPU 调度分析用 `linux.ftrace`"
+        },
+        {
+          "original_id": "a298-17-arm64-fault-branches-and-failure",
+          "title": "arm64 fault 先校验映射，再按页面来源修复或返回信号",
+          "decision": "keep",
+          "reason": "arm64从ESR分发、VMA权限到通用内存各来源分支，前置失败与修复失败回到信号路径，不虚构第三类proc计数。",
+          "original_line": 1216,
+          "heading": "### arm64 的处理路径"
+        },
+        {
+          "original_id": "a298-18-fault-counters-and-counting-boundaries",
+          "title": "page-faults、PGFAULT 与 min/maj 的计数边界不同",
+          "decision": "remove",
+          "reason": "架构入口、PGFAULT、minmaj和GUP四卡重复三计数时机说明，原文更精确先后与失败限定。",
+          "original_line": 1229,
+          "heading": "### arm64 的处理路径"
+        },
+        {
+          "original_id": "a298-19-minor-cow-pagecache-and-swap-sources",
+          "title": "按页来源与缓存状态解释 minor / major",
+          "decision": "remove",
+          "reason": "minor、major、zRAM和MMD四卡重复各来源分节与缓存规则。",
+          "original_line": 1269,
+          "heading": "#### Android 17 的 zRAM 与 MMD"
+        },
+        {
+          "original_id": "a298-20-fault-parser-page-size-and-allocation",
+          "title": "fault 差值先验身份与时间，页大小也换算不出对象分配",
+          "decision": "remove",
+          "reason": "fault字段、校验、页大小和分配四卡重复代码及四项不能换算原因。",
+          "original_line": 1369,
+          "heading": "#### fault 数与分配字节的换算"
+        },
+        {
+          "original_id": "a298-21-fault-count-to-critical-path-causality",
+          "title": "从计数到关键路径因果，需要时间线、对象和对照",
+          "decision": "keep",
+          "reason": "阶段计数、实际工具能力、映射来源、关键线程等待、针对改动及冷暖对照串联，防止计数变化直接判因果。",
+          "original_line": 1443,
+          "heading": "#### 预取建议的使用条件"
+        },
+        {
+          "original_id": "a298-22-art-userfaultfd-negotiation-and-fallback",
+          "title": "userfaultfd 是主动内存管理，不是低干扰 fault 计数器",
+          "decision": "remove",
+          "reason": "userfaultfd、ART、协商和fallback四卡重复生产用例三段与两项使用约束，无额外分支示例。",
+          "original_line": 1463,
+          "heading": "### `userfaultfd` 与 ART 的生产用例"
+        }
+      ],
+      "sha256_after": "a9ffa42a2a767a3fdb0d4b00c5442ca98b1f184120765b1c91cb234facd4698e",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:53:36.626920+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 22,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a298/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a298/visual-review.json",
+      "retired_diagrams": [
+        "a298-01-evidence-objects-and-permission-scopes",
+        "a298-02-native-heap-visibility-and-residency",
+        "a298-04-profileable-session-and-uid-authorization",
+        "a298-05-native-name-matching-and-process-lifetimes",
+        "a298-06-manager-shell-and-platform-collection",
+        "a298-07-sampling-buffer-and-daemon-guardrails",
+        "a298-09-art-allocation-only-and-leak-confounders",
+        "a298-10-profile-failure-symbols-and-safe-archive",
+        "a298-11-procfs-access-and-dynamic-snapshot",
+        "a298-12-cpu-denominators-and-sleep-clocks",
+        "a298-13-proc-stat-parsing-and-counter-validation",
+        "a298-14-framework-cpu-tracker-private-semantics",
+        "a298-15-load-average-pressure-and-real-runtime",
+        "a298-18-fault-counters-and-counting-boundaries",
+        "a298-19-minor-cow-pagecache-and-swap-sources",
+        "a298-20-fault-parser-page-size-and-allocation",
+        "a298-22-art-userfaultfd-negotiation-and-fallback"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-298/retired-assets.json"
     },
     {
       "index": 299,
@@ -68409,8 +68623,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 204,
-  "next_article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+  "reviewed_articles": 205,
+  "next_article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -68420,7 +68634,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:47:24.891594+08:00",
+  "updated_at": "2026-10-31T19:53:36.626920+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -68535,9 +68749,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5811,
-  "reviewed_placements_after": 2262,
-  "net_removed_placements": 3549,
+  "reviewed_placements_before": 5833,
+  "reviewed_placements_after": 2267,
+  "net_removed_placements": 3566,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -68561,7 +68775,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 204,
+  "currently_matching_reviewed_source_count": 205,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

@@ -205,10 +205,6 @@ native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART（Android Ru
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 Android Common Kernel `android17-6.18-2026-06_r39`（procfs、CPU 记账与 Page Fault 实现）。设备可能使用其他内核分支。
 
-<!-- gracker-diagram: a298-01-evidence-objects-and-permission-scopes -->
-![分配、CPU 与缺页分别观察不同对象](../../assets/diagrams/ch26/a298-01-evidence-objects-and-permission-scopes.png)
-
-图：Android10起heapprofd，API35起App受控请求；工具存在与当前调用方有权限是两项检查。
 
 ## Native 分配采样、权限与开销
 
@@ -233,10 +229,6 @@ heapprofd 是 Perfetto 的 native heap 采样器：allocator（内存分配器�
 
 所以，heapprofd 最适合回答的问题是“采集窗口内，哪些调用栈产生了仍未释放的 native 分配”。想知道 PSS 为什么增长，或想找出保住 native 对象的某个 Java 引用，还要配其他证据：PSS（Proportional Set Size）按比例计入共享页，估算的是可归属到进程的物理内存。
 
-<!-- gracker-diagram: a298-02-native-heap-visibility-and-residency -->
-![libc.malloc 存活估计与 RSS/PSS 保持不同口径](../../assets/diagrams/ch26/a298-02-native-heap-visibility-and-residency.png)
-
-图：C++ new/delete只有经过目标dispatch才可见；Java引用关系另用heap dump。
 
 ### heapprofd 的一次采集流程
 
@@ -338,10 +330,6 @@ adb shell dumpsys package com.example.app |
 
 `/dev/socket/heapprofd` 的 socket mode 只控制文件系统层面的连接条件，授权判定发生在连接建立之后：producer 读取对端的 peer UID（连接对端的 UID）、目标 UID 和 `packages.list`，再执行 `CanProfile()`。到这里我们把整条权限链收拢一下：文件 mode、Linux capability、SELinux 和 Perfetto 会话身份，四层共同决定一次采集能否通过。
 
-<!-- gracker-diagram: a298-04-profileable-session-and-uid-authorization -->
-![user build 的 profileable 与可信发起者是不同权限维度](../../assets/diagrams/ch26/a298-04-profileable-session-and-uid-authorization.png)
-
-图：ProfilingManager先验Binder UID/包名，再由系统生成配置；普通App不靠自写TRUSTED_SYSTEM越权。
 
 ### native 目标的进程名匹配
 
@@ -362,10 +350,6 @@ process_cmdline: "com.example.app:remote"
 
 heapprofd 会分别为匹配到的 PID 建立记录。`upid` 是 trace processor 为一次进程生命周期分配的唯一进程 ID，系统 PID 被复用后也不会混淆。分析时我们按 `upid` 区分进程；两个进程的分配要分开看，直接相加再归到主进程会得出错误的总量。
 
-<!-- gracker-diagram: a298-05-native-name-matching-and-process-lifetimes -->
-![native 进程名精确匹配，分析保留独立进程生命周期](../../assets/diagrams/ch26/a298-05-native-name-matching-and-process-lifetimes.png)
-
-图：默认ProfilingManager配置只写调用包名；自定义进程名与次要进程不自动纳入。
 
 ### 三种采集入口
 
@@ -491,10 +475,6 @@ adb pull /data/misc/perfetto-traces/heapprofd.pftrace
 
 `perfetto` 会运行到 `duration_ms` 结束。若目标不满足 profileable 条件，trace 仍可能生成，却不包含该进程的 heap profile；这时要同时检查 heapprofd 日志与 trace 中的 profile 错误。
 
-<!-- gracker-diagram: a298-06-manager-shell-and-platform-collection -->
-![三种采集主体决定可配置范围与可验证路径](../../assets/diagrams/ch26/a298-06-manager-shell-and-platform-collection.png)
-
-图：CancellationSignal请求提前结束，不延长系统时长；请求函数返回不表示client已安装。
 
 ### 参数怎样影响开销和证据质量
 
@@ -517,10 +497,6 @@ memory 和 CPU guardrail 每 30 秒检查一次。阈值触发后，producer 会
 
 固定的“CPU 增加 1%”或“daemon RSS 80 MB”拿到别的设备上并不可靠。开销受分配速率、采样间隔、调用栈深度、ABI、符号信息、目标进程数和 CPU 性能影响；ABI 规定二进制代码的调用约定和数据布局，例如 `arm64-v8a`。可靠的做法，是在相同操作序列下分别测量无采集、目标采样间隔和更大间隔三组数据。
 
-<!-- gracker-diagram: a298-07-sampling-buffer-and-daemon-guardrails -->
-![采样、共享缓冲和 daemon guardrail 分别控制不同成本](../../assets/diagrams/ch26/a298-07-sampling-buffer-and-daemon-guardrails.png)
-
-图：脚本默认block-client与手写proto默认值不同，线上避免为完整性无条件阻塞业务。
 
 ### 采集主体与部署位置
 
@@ -623,10 +599,6 @@ ORDER BY dump_ts, net_live_bytes DESC;
 
 heapprofd 与 PSS 要并排解释。两者趋势一致时，可以把调用栈当作主要线索；趋势分离时，先确定增长落在哪个内存类别。
 
-<!-- gracker-diagram: a298-09-art-allocation-only-and-leak-confounders -->
-![分配增长、存活增长与物理驻留增长分别查证](../../assets/diagrams/ch26/a298-09-art-allocation-only-and-leak-confounders.png)
-
-图：同调用栈跨dump累计估计不回落需多轮操作/稳定窗口复现；单一时间点不足判泄漏。
 
 ### 失败场景排查
 
@@ -715,10 +687,6 @@ heapprofd 不会把 heap payload（堆中对象或缓冲区的原始内容）复
 - [ ] heapprofd 与 PSS、mmap、DMA-BUF 等口径分开解释；
 - [ ] 原始 trace、符号文件和分析结果有访问与删除策略。
 
-<!-- gracker-diagram: a298-10-profile-failure-symbols-and-safe-archive -->
-![先核采集完整性，再看符号与增长来源](../../assets/diagrams/ch26/a298-10-profile-failure-symbols-and-safe-archive.png)
-
-图：仅上传allocation表不是脱敏等价物，缺完整栈/错误/会话信息时结论受限。
 
 
 ## procfs CPU 计数器与采样窗口
@@ -783,10 +751,6 @@ heapprofd 不会把 heap payload（堆中对象或缓冲区的原始内容）复
 - [`first_stage_init.cpp` 的 procfs 挂载参数](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/first_stage_init.cpp)
 - [Android 10 对 `/proc/net` 的公开说明](https://developer.android.com/about/versions/10/privacy/changes#restriction-access-proc-net)
 
-<!-- gracker-diagram: a298-11-procfs-access-and-dynamic-snapshot -->
-![procfs 是动态接口，自身与全机读取有不同权限](../../assets/diagrams/ch26/a298-11-procfs-access-and-dynamic-snapshot.png)
-
-图：Android10的/proc/net限制与/proc进程隔离不是同一开关；降低target不恢复全局CPU权限。
 
 ### `/proc/stat`：全机 CPU 容量口径
 
@@ -907,10 +871,6 @@ class SelfCpuSampler {
 
 若产品为了跨设备比较而把核等价利用率除以 CPU 数量，必须先定义分母：物理核心、当前在线 CPU、进程 cpuset 允许的 CPU，或者按调度容量加权的 CPU。cpuset 是限制一组进程可以在哪些 CPU 上运行的内核机制。移动设备会热插拔，大小核性能也不同，简单除以 `Runtime.availableProcessors()` 只能得到近似值。
 
-<!-- gracker-diagram: a298-12-cpu-denominators-and-sleep-clocks -->
-![CPU 百分比必须连同分母、睡眠与归一化次数解释](../../assets/diagrams/ch26/a298-12-cpu-denominators-and-sleep-clocks.png)
-
-图：内核getElapsedCpuTime失败返回0，与真实零不能区分；保守丢弃并重建基线防止伪尖峰。
 
 ### `/proc/<pid>/stat` 的解析规则
 
@@ -969,10 +929,6 @@ fun clockTicksPerSecond(): Long? = runCatching {
 
 内核可能在末尾追加字段，所以我们别把 `/proc/<pid>/stat` 写死成 44 个字段；按需要解析稳定前缀，比校验总字段数更兼容。生成这些字段的代码位于 [`fs/proc/array.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)。
 
-<!-- gracker-diagram: a298-13-proc-stat-parsing-and-counter-validation -->
-![stat 先界定 comm，再解析稳定字段前缀](../../assets/diagrams/ch26/a298-13-proc-stat-parsing-and-counter-validation.png)
-
-图：纯解析器与文件读取分开；任务名可含右括号，不能直接按空格切整行。
 
 ### 线程级采集
 
@@ -1054,10 +1010,6 @@ Stats
 
 所以第三方 APM 应使用公开 API 采集自身进程 CPU，把系统级诊断交给 Perfetto、bugreport（系统诊断包） 或受控的平台服务。
 
-<!-- gracker-diagram: a298-14-framework-cpu-tracker-private-semantics -->
-![ProcessCpuTracker 的内部实现不能当公开通用 CPU 公式](../../assets/diagrams/ch26/a298-14-framework-cpu-tracker-private-semantics.png)
-
-图：隐藏类和平台proc权限是两道边界；反射既不承诺兼容也不绕SELinux。
 
 ### `/proc/loadavg` 记录任务负载
 
@@ -1082,10 +1034,6 @@ Android 17 内核将 load average 定义为 `nr_running + nr_uninterruptible` �
 
 生成第四列的代码位于 [`fs/proc/loadavg.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/loadavg.c)，负载平均算法位于 [`kernel/sched/loadavg.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/loadavg.c)。普通应用在 AOSP 上读不到该节点。
 
-<!-- gracker-diagram: a298-15-load-average-pressure-and-real-runtime -->
-![load average 是活跃任务负载，不能当 CPU 利用率](../../assets/diagrams/ch26/a298-15-load-average-pressure-and-real-runtime.png)
-
-图：CPU低仍可锁/Binder/I/O等待而卡顿；高内核CPU也不等于线程在等待I/O。
 
 ### 采样器的工程约束
 
@@ -1226,10 +1174,6 @@ do_mem_abort()
 
 所以 `page-faults` 与 `minor-faults + major-faults` 出现差值是有源码依据的，解释差值时需要同时检查失败访问、统计区间和工具权限。
 
-<!-- gracker-diagram: a298-18-fault-counters-and-counting-boundaries -->
-![page-faults、PGFAULT 与 min/maj 的计数边界不同](../../assets/diagrams/ch26/a298-18-fault-counters-and-counting-boundaries.png)
-
-图：比较不同工具计数须对齐线程/进程、区间与入口；不能机械假定三类计数恒相等。
 
 ### Minor Fault：能在内存中完成的映射修复
 
@@ -1266,10 +1210,6 @@ Android 17 起，[Memory Management Daemon（MMD）](https://source.android.com/
 
 MMD 由系统策略调用，普通应用没有可移植的直接控制接口；zRAM 大小、压缩算法、writeback 开关、后备设备和预取策略都由产品配置决定。设备分析时我们应读取实际配置和内核统计，而不是假定某套默认值。
 
-<!-- gracker-diagram: a298-19-minor-cow-pagecache-and-swap-sources -->
-![按页来源与缓存状态解释 minor / major](../../assets/diagrams/ch26/a298-19-minor-cow-pagecache-and-swap-sources.png)
-
-图：一次fault、基础页数、folio和I/O请求并非一对一；UAF也未必马上产生页权限错误。
 
 ### 失败访问与 native crash
 
@@ -1366,10 +1306,6 @@ fun delta(previous: FaultSnapshot, current: FaultSnapshot): FaultDelta? {
 
 Java/Kotlin 可按 [AOSP 页大小指南](https://source.android.com/docs/core/architecture/16kb-page-size/getting-page-size) 调用 `Os.sysconf(OsConstants._SC_PAGE_SIZE)`，原生代码使用 `getpagesize()`。页大小只适合换算明确以 page 为单位的内核字段；对象或原生分配应使用 Heap Profile、heapprofd，或通过 JVMTI（Java Virtual Machine Tool Interface）对分配事件采样。
 
-<!-- gracker-diagram: a298-20-fault-parser-page-size-and-allocation -->
-![fault 差值先验身份与时间，页大小也换算不出对象分配](../../assets/diagrams/ch26/a298-20-fault-parser-page-size-and-allocation.png)
-
-图：cminflt/cmajflt是已等待子进程，不是本进程的其他线程；Δfaults×页大小不是分配字节。
 
 ### 从计数建立因果证据
 
@@ -1460,10 +1396,6 @@ ART 先通过 `UFFDIO_API` 查询可用 feature，完成能力协商，并检查
 
 普通应用只需 Page Fault 指标时，读取 `/proc/self/stat` 或使用设备支持的 perf 工具即可；系统组件确需 `userfaultfd` 时，应像 ART 一样完成能力协商、失败降级和逐版本验证。
 
-<!-- gracker-diagram: a298-22-art-userfaultfd-negotiation-and-fallback -->
-![userfaultfd 是主动内存管理，不是低干扰 fault 计数器](../../assets/diagrams/ch26/a298-22-art-userfaultfd-negotiation-and-fallback.png)
-
-图：接管fault改变线程阻塞与页面到达行为；普通App只需指标时优先自身stat或受控perf工具。
 
 ### 判读清单
 
