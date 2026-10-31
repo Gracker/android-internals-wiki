@@ -51686,9 +51686,324 @@
       "before_count": 32,
       "before_all_images": 32,
       "sha256_before": "ba976e27fbc456e2d8b89a0afc099c4bad763f7274d8a964ae9b9b4486e507bc",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 10,
+      "decisions": [
+        {
+          "original_id": "ch18-09-01-evidence-layers",
+          "title": "论文设计、固定实现与标准平台分别取证",
+          "decision": "remove",
+          "reason": "四类证据在开头清单与NOTE已明确区分，三列取证卡重复，无新增实现关系。",
+          "original_line": 103,
+          "heading": "# AOHP 研究原型：将 Android 改造为 Agent 原生 OS"
+        },
+        {
+          "original_id": "ch18-09-02-harness-control",
+          "title": "跨应用任务需要能力、状态与动作的统一控制",
+          "decision": "remove",
+          "reason": "服务组合/高效接口/信息流已有三项完整定义，三列作用卡重复后文各机制。",
+          "original_line": 132,
+          "heading": "## 1. AOHP 要解决什么问题"
+        },
+        {
+          "original_id": "ch18-09-03-architecture",
+          "title": "四层研究架构依赖 Android 兼容生态",
+          "decision": "remove",
+          "reason": "四层模型已有紧邻三列表格，折线连接依赖的四框重复层次，未标具体服务依赖。",
+          "original_line": 156,
+          "heading": "### 2.1 四层模型"
+        },
+        {
+          "original_id": "ch18-09-04-generated-entrance",
+          "title": "任务入口从输入契约到可验证结果",
+          "decision": "remove",
+          "reason": "task schema/service graph/presentation policy已三项定义及副作用段落解释，四步概览重复。",
+          "original_line": 173,
+          "heading": "### 2.2 生成式服务入口"
+        },
+        {
+          "original_id": "ch18-09-05-memory-scopes",
+          "title": "长期偏好、任务状态与敏感引用各有作用域",
+          "decision": "remove",
+          "reason": "三类记忆的作用域和风险已有表格，三列卡片重复且不增加真实持久化路径；保留实际vault图15。",
+          "original_line": 192,
+          "heading": "### 2.3 跨服务记忆"
+        },
+        {
+          "original_id": "ch18-09-06-display-authority",
+          "title": "虚拟显示 flag 与系统权限分开核对",
+          "decision": "remove",
+          "reason": "公开显示限制列表、flags代码及每flag解释已齐全，三列权限提示重复，不增加具体owner机制。",
+          "original_line": 225,
+          "heading": "### 3.1 虚拟显示与后台交互"
+        },
+        {
+          "original_id": "ch18-09-07-display-owner",
+          "title": "多个 display 仍共享一份当前 owner 状态",
+          "decision": "keep",
+          "reason": "具体展示全局sOwnerUid被registerSession更新、display集合验证及单项/整组清理，说明多个display并不提供独立agent/user租户。",
+          "original_line": 232,
+          "heading": "### 3.1 虚拟显示与后台交互"
+        },
+        {
+          "original_id": "ch18-09-08-display-buffers",
+          "title": "ImageReader 提供输出 Surface 并及时消费帧",
+          "decision": "keep",
+          "reason": "ImageReader Surface承接虚拟显示缓冲队列、后台获取最新帧再close释放的资源路径，解释maxImages并非持久截图数。",
+          "original_line": 241,
+          "heading": "### 3.1 虚拟显示与后台交互"
+        },
+        {
+          "original_id": "ch18-09-09-structured-ui",
+          "title": "结构化观察仍要检查覆盖与执行结果",
+          "decision": "remove",
+          "reason": "SUI导出字段、未知package保原树与异常空nodes及覆盖列表已有正文，四步图未画关键失败分支，重复观察回读流程。",
+          "original_line": 271,
+          "heading": "### 3.2 Structured UI"
+        },
+        {
+          "original_id": "ch18-09-10-event-queue",
+          "title": "事件共享队列配合每会话读取游标",
+          "decision": "keep",
+          "reason": "共享mEvents/全局seq与每session nextSeq的读取生命周期，对应注册从当前序号、drain推进及最后退出清空，非每session独立队列。",
+          "original_line": 290,
+          "heading": "### 3.3 Event Stream"
+        },
+        {
+          "original_id": "ch18-09-11-event-privacy",
+          "title": "Toast、其他字符串与截图走不同的隐私路径",
+          "decision": "keep",
+          "reason": "并列画出Toast明文/解token、通知选定字符串启发式、原始截图不经字符串脱敏三个不同路径，防止全入口脱敏误读。",
+          "original_line": 297,
+          "heading": "### 3.3 Event Stream"
+        },
+        {
+          "original_id": "ch18-09-12-file-objects",
+          "title": "文件桥先定位元数据，跨应用传递另按授权",
+          "decision": "remove",
+          "reason": "FileBridge当前元数据范围与后续交接五项约束已有两段和列表，四框混合现状与建议需图注解释，去掉重复概览更清楚。",
+          "original_line": 316,
+          "heading": "### 3.4 文件桥"
+        },
+        {
+          "original_id": "ch18-09-13-sandbox-boundaries",
+          "title": "chroot、mount namespace 与 cgroup 都需检查失败路径",
+          "decision": "keep",
+          "reason": "mount namespace和cgroup均best effort、root chroot子进程仍共享network且未降权的边界分列，避免仅凭sandbox名称误判隔离。",
+          "original_line": 331,
+          "heading": "### 3.5 本地沙箱"
+        },
+        {
+          "original_id": "ch18-09-14-flow-design",
+          "title": "论文设计把明文控制放在 source 与 sink 两端",
+          "decision": "keep",
+          "reason": "保留论文source替换/token/可信executor/sink的设计目标路径，供下一张15的当前内存映射实现对照；图注明确非全入口已执行。",
+          "original_line": 355,
+          "heading": "### 4.1 论文提出的处理流程"
+        },
+        {
+          "original_id": "ch18-09-15-vault-implementation",
+          "title": "当前 vault 是进程内映射，用途只记录到审计",
+          "decision": "keep",
+          "reason": "当前store/UUID进程内Map/opaque引用/特权resolve和purpose仅审计组成具体实现链，与设计图14区分且不声称重启持久或用途授权。",
+          "original_line": 373,
+          "heading": "### 4.2 当前 vault 是内存 token 表"
+        },
+        {
+          "original_id": "ch18-09-16-taint-scope",
+          "title": "来源元数据不等于任意值变换的自动传播",
+          "decision": "remove",
+          "reason": "来源登记、选定检查和未做通用传播已在相邻三段完整说明，三列只是范围分类，图片本身有效但与列表重复。",
+          "original_line": 388,
+          "heading": "### 4.3 当前 taint tracker 的传播范围"
+        },
+        {
+          "original_id": "ch18-09-17-policy-coverage",
+          "title": "文件与 skill 检查需按规则状态逐项解释",
+          "decision": "remove",
+          "reason": "policy stub代码与文件路径标注、skill缺规则放行及审计容量已用正文精确解释，三列检查范围重复且无真实策略分支。",
+          "original_line": 414,
+          "heading": "### 4.4 策略检查与已知缺口"
+        },
+        {
+          "original_id": "ch18-09-18-action-consent",
+          "title": "语义 tap、原始 tap 与临时批准的范围不同",
+          "decision": "keep",
+          "reason": "带target语义tap、原始坐标tap直接注入与十分钟package/resourceId/kind批准三路，凸显实际入口差异和绑定不足。",
+          "original_line": 423,
+          "heading": "### 4.4 策略检查与已知缺口"
+        },
+        {
+          "original_id": "ch18-09-19-security-results",
+          "title": "五项历史 Pass 还需在目标 commit 逐条复测",
+          "decision": "remove",
+          "reason": "五项历史Pass及commit未绑定的范围已由段落与开放问题列表交代，四步再验证清单重复。",
+          "original_line": 441,
+          "heading": "### 4.5 五个 security case 怎样解读"
+        },
+        {
+          "original_id": "ch18-09-20-completion-metric",
+          "title": "30 个任务的 checkpoint 加权与完整成功数分开",
+          "decision": "remove",
+          "reason": "完成率加权口径、完整/部分成功及百分点已有紧邻数字表和解释，三列复述不是新的数据图。",
+          "original_line": 462,
+          "heading": "### 5.1 任务完成率"
+        },
+        {
+          "original_id": "ch18-09-21-cost-subset",
+          "title": "执行成本只比较共同完整成功的 11 个任务",
+          "decision": "remove",
+          "reason": "共同完整成功11任务的范围和成本表、缺失条件及无消融已有明确段落，四步实验摘要重复。",
+          "original_line": 490,
+          "heading": "### 5.2 执行成本"
+        },
+        {
+          "original_id": "ch18-09-22-provider-forms",
+          "title": "两种 provider 的 XML 位置、scope 与生命周期不同",
+          "decision": "remove",
+          "reason": "两provider形态表及XML位置/scope/context说明已完整比较，三列卡片重复；具体注册生命周期保留24。",
+          "original_line": 514,
+          "heading": "### 6.1 API 演进"
+        },
+        {
+          "original_id": "ch18-09-23-permission-v2",
+          "title": "执行权限还需结合 V2 allowlist 与其他校验",
+          "decision": "remove",
+          "reason": "DISCOVER与两执行权限/V2 allowlist差异已由相邻段落完整说明，三列只是权限表摘要，不增加后续校验链。",
+          "original_line": 523,
+          "heading": "### 6.1 API 演进"
+        },
+        {
+          "original_id": "ch18-09-26-runtime-lifecycle",
+          "title": "runtime 注册随 context、进程和冻结状态变化",
+          "decision": "keep",
+          "reason": "XML声明、context绑定注册、执行查注册和冻结状态、销毁/死亡/unregister清理形成runtime生命周期，说明非任意后台GUI workspace。",
+          "original_line": 530,
+          "heading": "### 6.1 API 演进"
+        },
+        {
+          "original_id": "ch18-09-24-service-gates",
+          "title": "主服务、权限 V2 与交互扩展各有 gate",
+          "decision": "remove",
+          "reason": "主服务双flag检查有五行代码，独立V2/access/interaction门有正文；线性概览反而容易把独立gate读成顺序，删除图保留准确文本。",
+          "original_line": 553,
+          "heading": "### 6.2 system_server 如何启动服务"
+        },
+        {
+          "original_id": "ch18-09-25-metadata-execution",
+          "title": "metadata 查询与 Binder 执行是两条相接的路径",
+          "decision": "remove",
+          "reason": "metadata/AppSearch/执行校验/provider/回调七步已有编号清单，五框压缩流程没有新增路由分支。",
+          "original_line": 572,
+          "heading": "### 6.3 metadata、搜索与动态注册"
+        },
+        {
+          "original_id": "ch18-09-27-config-read-times",
+          "title": "DeviceConfig getter 与消费者取值时机分开",
+          "decision": "keep",
+          "reason": "DeviceConfig读取、搜索分页测试覆盖/范围校验与消费者构造时取cache容量三层区别，防止将getter实时读取外推所有对象热更新。",
+          "original_line": 594,
+          "heading": "### 6.4 DeviceConfig 参数的准确含义"
+        },
+        {
+          "original_id": "ch18-09-28-standard-vs-fork",
+          "title": "结构化平台能力与研究 harness 按边界组合",
+          "decision": "remove",
+          "reason": "AOHP/AppFunctions九维对照已有完整表格，三列组合要求重复身份/权限/生命周期内容。",
+          "original_line": 621,
+          "heading": "## 7. AOHP 与 AppFunctions 的准确对照"
+        },
+        {
+          "original_id": "ch18-09-29-application-integration",
+          "title": "应用接入先提供明确能力与可验证结果",
+          "decision": "remove",
+          "reason": "应用接入七项具体建议已列出，四步通用契约/确认/结果/验收图只是摘要。",
+          "original_line": 644,
+          "heading": "### 8.1 应用开发者"
+        },
+        {
+          "original_id": "ch18-09-30-system-authority-budget",
+          "title": "系统控制面拆分权力并管理并行资源",
+          "decision": "remove",
+          "reason": "系统权力拆分、绑定和display资源管理已有两份详细列表，三列分类图重复。",
+          "original_line": 673,
+          "heading": "### 8.2 系统与 ROM 开发者"
+        },
+        {
+          "original_id": "ch18-09-31-security-audit",
+          "title": "评审沿 source、派生、sink 与生命周期逐段追踪",
+          "decision": "remove",
+          "reason": "安全评审十问已明确覆盖source、派生、sink及生命周期，通用四步图没有新增审计证据或规则。",
+          "original_line": 693,
+          "heading": "### 8.3 安全评审"
+        },
+        {
+          "original_id": "ch18-09-32-reproduction-controls",
+          "title": "四组实验分别度量接口收益与安全代价",
+          "decision": "remove",
+          "reason": "四组复现实验已有紧邻表格，串行箭头图重复对照分组且不是单任务执行时序。",
+          "original_line": 711,
+          "heading": "## 9. 如何复现与扩展这些结论"
+        }
+      ],
+      "sha256_after": "6d201ef0d938e68a7b099bc7e4f551485bef294387678ae0c44dddfa530c0d4d",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:46:21.944987+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 32,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a197/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a197/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 197,
+        "article": "src/part4-system/ch18-aosp/09-agent-native-os.md",
+        "registered_sha256": "ba976e27fbc456e2d8b89a0afc099c4bad763f7274d8a964ae9b9b4486e507bc",
+        "frozen_sha256": "ba976e27fbc456e2d8b89a0afc099c4bad763f7274d8a964ae9b9b4486e507bc",
+        "review_input_sha256": "56e6265fe737d7ca2356189ee973a3f041bcc134a3d12db21c11df80311797a8",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part4-system/ch18-aosp/09-agent-native-os.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a197/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a197/external-source.diff",
+        "diff_sha256": "82e9e00cb1e07431652c858960711326e91c7e5733546f2e9f460e9cf0640792",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 395, \"characters\": 32353, \"svg_labels_read\": 32, \"actual_pngs_viewed\": 32, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 4, \"code_lines\": 15, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "56e6265fe737d7ca2356189ee973a3f041bcc134a3d12db21c11df80311797a8",
+      "retired_diagrams": [
+        "ch18-09-01-evidence-layers",
+        "ch18-09-02-harness-control",
+        "ch18-09-03-architecture",
+        "ch18-09-04-generated-entrance",
+        "ch18-09-05-memory-scopes",
+        "ch18-09-06-display-authority",
+        "ch18-09-09-structured-ui",
+        "ch18-09-12-file-objects",
+        "ch18-09-16-taint-scope",
+        "ch18-09-17-policy-coverage",
+        "ch18-09-19-security-results",
+        "ch18-09-20-completion-metric",
+        "ch18-09-21-cost-subset",
+        "ch18-09-22-provider-forms",
+        "ch18-09-23-permission-v2",
+        "ch18-09-24-service-gates",
+        "ch18-09-25-metadata-execution",
+        "ch18-09-28-standard-vs-fork",
+        "ch18-09-29-application-integration",
+        "ch18-09-30-system-authority-budget",
+        "ch18-09-31-security-audit",
+        "ch18-09-32-reproduction-controls"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-197/retired-assets.json"
     },
     {
       "index": 199,
@@ -52549,8 +52864,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 128,
-  "next_article": "src/part4-system/ch18-aosp/09-agent-native-os.md",
+  "reviewed_articles": 129,
+  "next_article": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -52560,7 +52875,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:43:34.873559+08:00",
+  "updated_at": "2026-10-31T15:46:21.944987+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -52623,20 +52938,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
-      "registered_sha256": "f000841ee99b708cabe616231266fe379e72b4edcf8db6a566643197c499e432",
-      "observed_sha256": "2fdfb3371ff8e2ac68c3b4c8ed5305d0893163008242e3572cf892823c575f37",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch18-aosp/09-agent-native-os.md",
-      "registered_sha256": "ba976e27fbc456e2d8b89a0afc099c4bad763f7274d8a964ae9b9b4486e507bc",
-      "observed_sha256": "56e6265fe737d7ca2356189ee973a3f041bcc134a3d12db21c11df80311797a8",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/09-agent-native-os.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -52780,9 +53081,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4241,
-  "reviewed_placements_after": 1800,
-  "net_removed_placements": 2441,
+  "reviewed_placements_before": 4273,
+  "reviewed_placements_after": 1810,
+  "net_removed_placements": 2463,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -52806,5 +53107,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 128
+  "currently_matching_reviewed_source_count": 129
 }

@@ -100,10 +100,6 @@ AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型�
 > AOHP 没有进入 Android 17。AOHP 仓库以 Android 16 QPR2 作为构建基线；
 > 标准平台对照为 Android 17 / API 37 / `android-17.0.0_r1`。AOHP 自己的 framework fork 不能当作 Android 17 源码。
 
-<!-- gracker-diagram: ch18-09-01-evidence-layers -->
-![论文设计、固定实现与标准平台分别取证](../../assets/diagrams/ch18/ch18-09-01-evidence-layers.png)
-
-图：论文提出目标，固定 AOHP commit 说明实现，Android17 r1 作为独立平台对照。 AOHP 的构建基线为 Android16 QPR2；论文的五项 Pass 没有绑定本文检查的 commit，不能迁移成当前所有路径均通过。
 
 ## 1. AOHP 要解决什么问题
 
@@ -129,10 +125,6 @@ AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型�
 
 “OS 级”三个字在这里有具体含义：AOHP 直接修改 `frameworks/base`、`system/core`、SELinux policy、Launcher3 和 system app。普通 APK 只靠几个公开 API，复制不出同等权限。
 
-<!-- gracker-diagram: ch18-09-02-harness-control -->
-![跨应用任务需要能力、状态与动作的统一控制](../../assets/diagrams/ch18/ch18-09-02-harness-control.png)
-
-图：AOHP 在研究系统中组合服务入口、结构化观察和敏感数据边界，支撑跨应用任务。 底层 Binder、权限、AppOps 和 URI grant 仍存在；普通 APK 不自动取得这套定制系统权限。
 
 ## 2. 从论文架构到代码路径
 
@@ -149,14 +141,10 @@ AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型�
 
 几个名词先交代：这里的 system memory 指 OS 管理的偏好与任务状态，与物理内存无关；skill 指可复用的能力描述和执行步骤；task schema 规定任务输入，service graph 描述服务发现与组合，presentation policy 决定结果的呈现方式。
 
-这是一张研究架构图；哪个框有稳定 API，图本身说明不了。仓库中的 `AohpVirtualDisplayService`、`AohpEventStreamService`、`AohpContainerService`、`AohpFileBridgeService`、`AohpVaultService` 和 `AohpSecurityBridgeService` 提供了可追踪的实现入口。
+这是一张研究架构图；哪个框有稳定 API，要从仓库代码看：`AohpVirtualDisplayService`、`AohpEventStreamService`、`AohpContainerService`、`AohpFileBridgeService`、`AohpVaultService` 和 `AohpSecurityBridgeService` 提供了可追踪的实现入口。
 
 服务组合的质量，则仍取决于 skill 描述、应用适配和 agent 规划。
 
-<!-- gracker-diagram: ch18-09-03-architecture -->
-![四层研究架构依赖 Android 兼容生态](../../assets/diagrams/ch18/ch18-09-03-architecture.png)
-
-图：兼容生态承接应用和硬件，交互层归一化调用，能力层组织状态与技能，组合层生成任务入口。 箭头表达层间依赖，非固定运行时顺序；架构中的 system memory 也不是物理内存，稳定 API 与实现完整性另查。
 
 ### 2.2 生成式服务入口
 
@@ -168,12 +156,8 @@ AOHP（Android Open Harness Project）是一套基于 AOSP fork 的研究原型�
 
 能力描述需要写清输入/输出 schema、前置条件、副作用和策略标签。搜索商品这类动作可以并行执行，付款和外发敏感文件则要经过确认——这样区分，有助于把“会读取数据”和“会改变外部状态”分开。
 
-AOHP 也允许 legacy 应用通过 GUI 或结构化 UI 参与；legacy 在这里指没有为 AOHP 或 AppFunctions 专门改造的既有应用。它们的能力发现仍处于研究阶段，论文把更强的自动推断列为后续工作。写工程文档时，别把任意页面说成已经自动转换成了可靠函数。
+AOHP 也允许 legacy 应用通过 GUI 或结构化 UI 参与；legacy 在这里指没有为 AOHP 或 AppFunctions 专门改造的既有应用。它们的能力发现仍处于研究阶段，论文把更强的自动推断列为后续工作；写工程文档时，未经适配的页面按普通 GUI 记录即可。
 
-<!-- gracker-diagram: ch18-09-04-generated-entrance -->
-![任务入口从输入契约到可验证结果](../../assets/diagrams/ch18/ch18-09-04-generated-entrance.png)
-
-图：任务入口连接输入、能力依赖、呈现与完成条件，既有应用可通过适配后的 UI 路径参与。 这是研究设计；并行读取、付款确认等是工程约束，任意页面尚不能自动变成可靠函数。
 
 ### 2.3 跨服务记忆
 
@@ -187,30 +171,26 @@ AOHP 也允许 legacy 应用通过 GUI 或结构化 UI 参与；legacy 在这里
 
 这里的 profile 是长期偏好档案，不是性能 profile；task-local 表示状态只在当前任务内有效；vault token 是对敏感明文的间接引用，当前实现的限制后文会说明。
 
-这套 memory 是论文里由 OS 管理的状态，和 LLM context window 是两回事：context window 是一次模型请求可容纳的输入范围，本身也起不了跨任务持久存储的作用。它同样不是 Android 17 的 `OnDeviceIntelligenceManager`——后者在标准 AOSP 17 中是受权限管理的 `@SystemApi` 推理服务接口，部分能力还受 feature flag（功能开关）约束；API 37 公开文档里没有 `FoundationModelManager` 这个平台类，`OnDeviceIntelligenceManager` 也没有定义 AOHP 的跨应用记忆协议。
+这套 memory 是论文里由 OS 管理的状态，容易和两个概念混淆。一个是 LLM context window：它是一次模型请求可容纳的输入范围，跨任务的持久存储要靠别的机制。另一个是 Android 17 的 `OnDeviceIntelligenceManager`：它在标准 AOSP 17 中是受权限管理的 `@SystemApi` 推理服务接口，部分能力还受 feature flag（功能开关）约束；API 37 公开文档里没有 `FoundationModelManager` 这个平台类，它的接口里也没有 AOHP 的跨应用记忆协议。
 
-<!-- gracker-diagram: ch18-09-05-memory-scopes -->
-![长期偏好、任务状态与敏感引用各有作用域](../../assets/diagrams/ch18/ch18-09-05-memory-scopes.png)
-
-图：论文区分跨任务偏好、任务内状态和敏感值引用，生命周期与访问策略分别管理。 这套跨服务状态不是 LLM context window，也不是物理内存或标准 OnDeviceIntelligence 推理接口；当前 vault 限制另看实现。
 
 ## 3. 高效 agent 接口的实现边界
 
-论文的第二部分是高效 agent 接口：虚拟显示、结构化 UI、事件流、文件桥和本地沙箱。这一节逐个看它们在原型里对应哪条代码路径、又受哪些系统权限约束。
+论文的第二部分是高效 agent 接口：虚拟显示、结构化 UI、事件流、文件桥和本地沙箱。这一节我们逐个看它们在原型里对应哪条代码路径、又受哪些系统权限约束。
 
 ### 3.1 虚拟显示与后台交互
 
 Android 公共 `DisplayManager.createVirtualDisplay()` 从早期版本就已存在，但公共 API 创建的 display 默认是 private、non-secure：private display 主要限制其他 UID 在其上放置 Activity，non-secure display 显示不了受 `FLAG_SECURE` 保护的内容；安全显示、自动镜像、可信显示和输入注入还受系统权限限制。
 
-所以，创建一个 `VirtualDisplay` 并不会自动获得以下能力：
+所以，创建一个 `VirtualDisplay` 之后，下面这些约束仍然原样生效：
 
-- 在后台随意启动其他应用 Activity；
-- 绕过 private display 的 UID 放置规则；
-- 读取 `FLAG_SECURE` 窗口；
-- 向任意应用注入输入；
-- 豁免进程冻结、后台启动、前台服务和资源限制。
+- 后台启动其他应用 Activity 仍受后台启动规则管；
+- private display 的 UID 放置规则照常适用；
+- `FLAG_SECURE` 窗口的保护照常有效；
+- 向其他应用注入输入，需要另外的权限；
+- 进程冻结、后台启动、前台服务和资源限制依旧全部适用。
 
-AOHP 通过 `signature|privileged` 权限 `MANAGE_AOHP_VIRTUAL_DISPLAY` 和 framework 内部接口扩展了这条路径，这类权限只会授予使用系统签名或位于特权分区且进入许可名单的应用。原型在调用参数 `flags=0` 时采用下面的默认 flag 组合，并始终追加 `OWN_FOCUS`；传入非零 flags 时并不会自动补齐其他默认 flag。以下是 framework 内部片段，不是普通应用可直接照用的公开 SDK 示例：
+AOHP 通过 `signature|privileged` 权限 `MANAGE_AOHP_VIRTUAL_DISPLAY` 和 framework 内部接口扩展了这条路径；这类权限只授予使用系统签名、或位于特权分区且进入许可名单的应用。原型在调用参数 `flags=0` 时采用下面的默认 flag 组合，并始终追加 `OWN_FOCUS`；传入非零 flags 时，其余默认 flag 由调用方自己负责。下面的片段来自 framework 内部；阅读时按内部实现对待，公开 SDK 的写法另查官方文档。
 
 ```java
 effectiveFlags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -220,28 +200,24 @@ effectiveFlags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
 effectiveFlags |= DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_FOCUS;
 ```
 
-我们逐个看这些 flag：`PUBLIC` 允许其他 UID 的 Activity 按策略进入 display；`OWN_CONTENT_ONLY` 禁止在无内容时回退到默认屏幕镜像；`TRUSTED` 让 display 参与可信显示策略，允许承载相应受限窗口，但不等于 `SECURE`，也不自动赋予读取 `FLAG_SECURE` 内容的能力；`SUPPORTS_TOUCH` 声明它支持触摸；`OWN_FOCUS` 给它独立输入焦点。这些 flag 仍依赖系统权限与内部 display policy，`SUPPORTS_TOUCH` 本身不会授予调用方输入注入权限。
+我们逐个看这些 flag：`PUBLIC` 允许其他 UID 的 Activity 按策略进入 display；`OWN_CONTENT_ONLY` 禁止在无内容时回退到默认屏幕镜像；`TRUSTED` 让 display 参与可信显示策略，允许承载相应受限窗口——它与 `SECURE` 是两回事，读取 `FLAG_SECURE` 内容需要另外的授权；`SUPPORTS_TOUCH` 声明它支持触摸；`OWN_FOCUS` 给它独立输入焦点。这些 flag 仍依赖系统权限与内部 display policy；`SUPPORTS_TOUCH` 只声明触摸支持，输入注入走另外的权限。
 
-<!-- gracker-diagram: ch18-09-06-display-authority -->
-![虚拟显示 flag 与系统权限分开核对](../../assets/diagrams/ch18/ch18-09-06-display-authority.png)
 
-图：AOHP 用特权入口和内部 display/Activity policy 运行后台界面；默认 flags 仅适用于 flags=0。 PUBLIC、TRUSTED、OWN_FOCUS 与输入注入是不同条件；TRUSTED 不等于 SECURE，普通 API 创建 display 不会自动豁免后台或安全内容规则。
-
-`AohpVirtualDisplayService` 通过 `DisplayManagerInternal` 创建 display，并用 system_server 内部 Activity 启动路径把应用放到目标 display。固定 commit 的 `AohpVirtualDisplayPolicy` 用全局 `sOwnerUid` 加一组 display ID 表示当前 session：支持同一 owner 的多个 display，但不是每个 display、agent 或 user 独立一份 owner 表；另一次 `registerSession()` 会更新全局 owner。普通应用调用公共 `VirtualDisplay` API 得不到这组能力，产品化也不能据此宣称多 agent 已充分隔离。
+`AohpVirtualDisplayService` 通过 `DisplayManagerInternal` 创建 display，并用 system_server 内部 Activity 启动路径把应用放到目标 display。固定 commit 的 `AohpVirtualDisplayPolicy` 用全局 `sOwnerUid` 加一组 display ID 表示当前 session：同一 owner 可以挂多个 display，owner 表却全局只有一份，display、agent、user 各自的租户映射并不存在；另一次 `registerSession()` 会更新全局 owner。这组能力依托特权路径，普通应用拿公共 `VirtualDisplay` API 复现不出；产品化要谈多 agent 隔离，至少先把 owner 表按租户拆开。
 
 <!-- gracker-diagram: ch18-09-07-display-owner -->
 ![多个 display 仍共享一份当前 owner 状态](../../assets/diagrams/ch18/ch18-09-07-display-owner.png)
 
-图：当前策略保存一组 display ID 和一个全局 owner UID，输入入口据此校验调用方。 同一 owner 可管理多个 display；新的 registerSession 会更新全局 owner，这不是独立的每 agent/user 租户映射。
+图：当前策略保存一组 display ID 和一个全局 owner UID，输入入口据此校验调用方。 同一 owner 可管理多个 display；新的 registerSession 会更新全局 owner，每 agent/user 的独立租户映射在这里还谈不上。
 
-AOHP 为每个虚拟显示挂接一个 RGBA 像素格式的 `ImageReader`，把 `maxImages` 设为 3，在后台线程持续获取并关闭最新帧。`maxImages` 限制的是同时被获取、尚未释放的 image 数量，从这个数字推不出系统会长期保存 3 张截图。
+AOHP 为每个虚拟显示挂接一个 RGBA 像素格式的 `ImageReader`，把 `maxImages` 设为 3，在后台线程持续获取并关闭最新帧。`maxImages` 管的是同一时刻已获取、未释放的 image 数量；系统会不会长期保存 3 张截图，要从别的证据判断。
 
 这个 `ImageReader` 同时向 display 暴露一个 producer surface，也就是显示帧写入缓冲队列的端点，避免 display 因为没有输出 surface 而进入 `STATE_OFF`；`ImageReader` 在另一端消费并及时关闭这些帧。代价也在这里：WindowManager、SurfaceFlinger、应用进程、图形 buffer、GPU 合成和输入分发都要工作。
 
 <!-- gracker-diagram: ch18-09-08-display-buffers -->
 ![ImageReader 提供输出 Surface 并及时消费帧](../../assets/diagrams/ch18/ch18-09-08-display-buffers.png)
 
-图：AOHP 的 ImageReader Surface 接住虚拟显示输出，后台线程获取并关闭最新 image。 maxImages=3 限制同时已获取未关闭的 image，不是长期保存三张截图；图形 buffer、合成和应用工作仍需独立测量。
+图：AOHP 的 ImageReader Surface 接住虚拟显示输出，后台线程获取并关闭最新 image。 maxImages=3 限制同时已获取未关闭的 image，与长期保存三张截图是两回事；图形 buffer、合成和应用工作仍需独立测量。
 
 论文没有报告虚拟显示的 CPU、GPU、内存、thermal 和能量开销，并把资源调度列为 future work。做工程评估时，至少要记录：
 
@@ -256,9 +232,9 @@ AOHP 为每个虚拟显示挂接一个 RGBA 像素格式的 `ImageReader`，把 
 
 AOHP 的 Structured UI（SUI）从 Android accessibility tree（可访问性节点树） 导出节点类型、文本、层级、resource ID、可操作性、bounds 和 display 信息——resource ID 是应用为 View 声明的资源标识，bounds 是节点在屏幕上的矩形坐标。相比截图，这种表示省去了纹理、阴影和其他像素细节。
 
-仓库中的 `AohpUiTreeDumper` 负责导出这棵树，`AohpUiTreeSanitizer` 在结果进入 agent 视野前处理敏感字段。当前 sanitizer 只处理导出节点的 `text` 与 `contentDescription`：按 resource ID 查询应用声明，再用形似 11 位手机号、16 位银行卡号的正则补充；它们不校验真实号码，也不覆盖所有敏感文本。`filterUiTreeTrusted()` 在前台 package 无法确定时会标记错误并保留原树，正常过滤路径抛异常时才返回空 nodes，不能概括成所有未知状态都先脱敏再返回。
+仓库中的 `AohpUiTreeDumper` 负责导出这棵树，`AohpUiTreeSanitizer` 在结果进入 agent 视野前处理敏感字段。当前 sanitizer 只处理导出节点的 `text` 与 `contentDescription`：按 resource ID 查询应用声明，再用形似 11 位手机号、16 位银行卡号的正则补充；正则只认形态，真实号码校验与全量敏感文本覆盖都在它能力之外。`filterUiTreeTrusted()` 的行为分情况：前台 package 无法确定时标记错误并保留原树；正常过滤路径抛异常时才返回空 nodes。把“所有未知状态都先脱敏再返回”当结论，与这两种情况都对不上。
 
-SUI 覆盖不了全部 Android UI：
+SUI 的覆盖有边界，下面几处要当心：
 
 - Canvas、OpenGL、游戏引擎和视频可能没有完整语义节点；
 - WebView、Compose 和自定义 accessibility semantics 的质量取决于应用，semantics 是应用暴露给辅助功能与自动化工具的节点语义；
@@ -266,44 +242,40 @@ SUI 覆盖不了全部 Android UI：
 - resource ID、文本和 bounds 会随版本、语言和布局改变；
 - 登录、支付、验证码等界面可能主动限制自动化。
 
-所以 SUI 适合作为结构化观察通道，GUI 则是节点语义不足时的兼容回退。执行动作后，我们仍要验证目标状态，别把“命令返回成功”直接当成业务完成。
+所以 SUI 适合作为结构化观察通道，GUI 则是节点语义不足时的兼容回退。执行动作后，我们仍要验证目标状态；“命令返回成功”只是执行层面的信号，业务完成要靠对目标状态的回读来确认。
 
-<!-- gracker-diagram: ch18-09-09-structured-ui -->
-![结构化观察仍要检查覆盖与执行结果](../../assets/diagrams/ch18/ch18-09-09-structured-ui.png)
-
-图：导出可访问性树的节点与字段，按声明和启发式过滤，再供 agent 选择动作并回读状态。 仅处理选定字符串；未知前台 package 可保留原树，正常过滤异常才返回空 nodes。自绘与语义缺失仍需兼容路径，动作返回不等于业务完成。
 
 ### 3.3 Event Stream
 
-论文的 Event Stream 覆盖瞬态 UI 事件和传感器流。当前 `AohpEventStreamService` 有一个共享 `mEvents` 队列，各 session 只维护自己的 `nextSeq` 游标；入口包括 Toast、notification posted/removed 和 heads-up。它不是每个会话独立保存并隔离的一份事件队列：
+论文的 Event Stream 覆盖瞬态 UI 事件和传感器流。我们先看队列结构：当前 `AohpEventStreamService` 有一个共享 `mEvents` 队列，各 session 只维护自己的 `nextSeq` 游标；入口包括 Toast、notification posted/removed 和 heads-up。队列是全服务共享的，由此带来的语义细节逐条看：
 
-- 注册选项的条数限制在 1–2000，但共享队列的实际容量取 `max(200, 各会话 maxEvents)`，较小选项不会把队列缩到 200 以下；
-- 注册 TTL 选项限制在 10 秒到 1 小时，共享队列实际 TTL 取 `max(10分钟, 各会话 ttlMs)`；它限制事件保留，不会自动注销 session，清理在新增事件或 drain 时执行；
+- 注册选项的条数限制在 1–2000；共享队列的实际容量取 `max(200, 各会话 maxEvents)`，选项再小也保持在 200 以上；
+- 注册 TTL 选项限制在 10 秒到 1 小时，共享队列实际 TTL 取 `max(10分钟, 各会话 ttlMs)`；这个 TTL 只管事件保留，session 的注销走显式 unregister，清理在新增事件或 drain 时执行；
 - `register` 从当前全局序号开始订阅，`drain` 推进本会话游标，`unregister` 移除会话；最后一个会话退出时清空事件；
-- notification 与 heads-up 在这些入口写入 `displayId=0`，相关 activity 可另行尽力匹配；不是已可靠推断通知所属 display；
-- 可附截图；2 MiB 是决定是否内联的原始 JPEG 字节阈值，Base64 后会更大。超过阈值只是不内联，不能据此推断捕获缓存或返回 JSON 总大小不超 2 MiB。
+- notification 与 heads-up 在这些入口写入 `displayId=0`，相关 activity 可另行尽力匹配；通知所属 display 的可靠推断，目前还给不出；
+- 可附截图；2 MiB 是决定是否内联的原始 JPEG 字节阈值，Base64 后会更大。超过阈值的截图转为不内联，捕获缓存和返回 JSON 的总大小是否也压在 2 MiB 内，要另外核查。
 
-AOHP 在 NotificationManagerService、SystemUI 和 Toast 路径加入了 system_server hook；hook 是插入原有系统路径的回调点。这种实现，第三方 `NotificationListenerService` 复制不出来：标准应用走后者，要先拿到用户授予的通知访问权，靠该 API 也完整捕获不了其他应用的 Toast。
+AOHP 在 NotificationManagerService、SystemUI 和 Toast 路径加入了 system_server hook；hook 是插入原有系统路径的回调点。这条路线的能力来自系统位置：第三方 `NotificationListenerService` 走标准应用路径，先要拿到用户授予的通知访问权，对其他应用的 Toast 也捕获不全。
 
-事件流能减少轮询，但消费者仍要处理积压、丢弃和重试，并按 `seq` 与时间戳使动作幂等。空 events 表示暂无可读事件，`unknown_session` 表示会话不存在；当前代码没有按 TTL 自动注销 session。`dropped` 是共享队列的累计丢弃量，不等于某一个消费者遗漏的事件数。
+事件流能减少轮询，但消费者仍要处理积压、丢弃和重试，并按 `seq` 与时间戳使动作幂等。回读结果的语义要分清：空 events 表示暂无可读事件，`unknown_session` 表示会话不存在；`dropped` 是共享队列的累计丢弃量，单个消费者遗漏了多少，要看它自己的游标。
 
 <!-- gracker-diagram: ch18-09-10-event-queue -->
 ![事件共享队列配合每会话读取游标](../../assets/diagrams/ch18/ch18-09-10-event-queue.png)
 
-图：系统 hook 写入共享事件队列，注册保存当前序号，drain 独立推进每个会话游标。 实际容量至少200、事件TTL至少10分钟，并取各会话较大值；TTL不自动注销会话，dropped 是全局累计值。
+图：系统 hook 写入共享事件队列，注册保存当前序号，drain 独立推进每个会话游标。 实际容量至少200、事件TTL至少10分钟，并取各会话较大值；TTL 只管事件保留，会话注销走显式路径，dropped 是全局累计值。
 
-敏感事件还有明确例外：`sanitizeEventJsonInner()` 跳过 Toast 顶层 `text`，`drain()` 的 `resolveToastVaultText()` 还会把可解析的 Toast vault 引用恢复为明文，再写入 summary。通知的选定字符串才按号码形态或长度启发式替换。截图像素并不经过这套字符串脱敏，安全 bridge 不存在时事件入口也可保留原始 JSON；不能把论文“敏感事件脱敏”的测试结果当作这些路径无例外的保证。
+敏感事件这条线上，几类内容的路径要分开看：`sanitizeEventJsonInner()` 跳过 Toast 顶层 `text`；`drain()` 的 `resolveToastVaultText()` 会把可解析的 Toast vault 引用恢复为明文，再写入 summary；通知的选定字符串才按号码形态或长度启发式替换。截图像素在这套字符串脱敏之外，安全 bridge 缺位时事件入口也可保留原始 JSON——论文“敏感事件脱敏”的测试结果，覆盖的是它实际测试的路径，这些例外要单独对待。
 
 <!-- gracker-diagram: ch18-09-11-event-privacy -->
 ![Toast、其他字符串与截图走不同的隐私路径](../../assets/diagrams/ch18/ch18-09-11-event-privacy.png)
 
-图：当前 Toast 顶层文本可保留明文，drain 还可解析 Toast token；其他选定字符串才经过启发式替换。 截图像素不经过字符串 sanitizer；2MiB是原始JPEG的内联阈值，Base64会变大，超限不内联也不证明未缓存或未捕获。
+图：当前 Toast 顶层文本可保留明文，drain 还可解析 Toast token；其他选定字符串才经过启发式替换。 截图像素不经过字符串 sanitizer；2MiB是原始JPEG的内联阈值，Base64会变大，超限转为不内联，缓存与捕获状态要另查。
 
 ### 3.4 文件桥
 
-AOHP 把 GUI 产生的文件与 CLI/API 消费的文件归一成任务对象，减少 agent 从截图猜路径的行为。这个设计依赖 privileged file bridge——具有系统权限的文件服务——以及后续工具与策略协作。固定 commit 的 `AohpFileBridgeService` 主要提供 `stat/list/recent/snapshot/diff` 等有界查找与元数据比对，显式路径限定在公共外部存储；不能把这个类本身画成已经实现任意文件内容转发、跨用户共享和完整信息流检查。
+AOHP 把 GUI 产生的文件与 CLI/API 消费的文件归一成任务对象，减少 agent 从截图猜路径的行为。这个设计依赖 privileged file bridge——具有系统权限的文件服务——以及后续工具与策略协作。固定 commit 的 `AohpFileBridgeService` 主要提供 `stat/list/recent/snapshot/diff` 等有界查找与元数据比对，显式路径限定在公共外部存储；任意文件内容转发、跨用户共享和完整信息流检查，这个类尚未实现。
 
-标准 Android 应用之间传文件，优先走 Storage Access Framework（系统文件选择框架）、`ContentProvider`/`FileProvider`、`content://` URI 与临时 URI grant；grant 是针对具体 URI 和目标组件的临时读写凭证。共享存储的绝对路径还会受到 scoped storage（分区存储）、用户选择、MIME type、provider 生命周期和目标应用支持的影响，别笼统写成“比 Intent 更可靠”。
+标准 Android 应用之间传文件，优先走 Storage Access Framework（系统文件选择框架）、`ContentProvider`/`FileProvider`、`content://` URI 与临时 URI grant；grant 是针对具体 URI 和目标组件的临时读写凭证。共享存储的绝对路径还会受到 scoped storage（分区存储）、用户选择、MIME type、provider 生命周期和目标应用支持的影响，“比 Intent 更可靠”这类笼统判断，换成按上述因素逐项核对更稳妥。
 
 一个可审计的文件交接至少要记录：
 
@@ -313,25 +285,21 @@ AOHP 把 GUI 产生的文件与 CLI/API 消费的文件归一成任务对象，�
 - 目标动作是否会上传、分享、覆盖或删除；
 - 操作完成后 grant 和临时文件怎样回收。
 
-<!-- gracker-diagram: ch18-09-12-file-objects -->
-![文件桥先定位元数据，跨应用传递另按授权](../../assets/diagrams/ch18/ch18-09-12-file-objects.png)
-
-图：当前 FileBridge 做有界查找与 snapshot/diff；真正跨组件交接还需对象标识、最小 URI grant 与目标动作校验。 这张图组合当前查找能力与产品交接约束；不表示该类已实现任意内容转发、跨用户共享或内容级信息流追踪。
 
 ### 3.5 本地沙箱
 
 `AohpContainerService` 通过 init 创建的 Unix domain socket 与设备侧 daemon 通信；daemon 是在后台处理容器命令的 native 进程。当前 CLI 把执行环境描述为 Linux chroot sandbox，skill 文档还说明这些 sandbox 共享设备 network namespace（网络命名空间）。
 
-固定到 `d1fc184b...` 的 daemon 实现会尝试 `unshare(CLONE_NEWNS)` 创建独立 mount namespace，进入每个 sandbox 的 cgroup，再执行 `chroot()`。mount namespace 隔离挂载视图，cgroup 可提供资源分组与限制；但这里两者都是 best effort：namespace 创建失败时继续使用宿主挂载视图，cgroup 创建失败会记录“continuing without limits”，加入 cgroup 的失败也未被调用处作为终止条件。不能把“调用过接口”写成隔离与限额一定生效。
+我们看 daemon 实际做了什么。固定到 `d1fc184b...` 的实现会尝试 `unshare(CLONE_NEWNS)` 创建独立 mount namespace，进入每个 sandbox 的 cgroup，再执行 `chroot()`。mount namespace 隔离挂载视图，cgroup 可提供资源分组与限制，但这两步在当前实现里都是 best effort：namespace 创建失败时继续使用宿主挂载视图，cgroup 创建失败会记录“continuing without limits”，加入 cgroup 失败时调用处也照常往下走。评估时要把“调用过接口”和“隔离与限额已生效”分开，后者的证据要来自失败路径的实测。
 
-init 配置让 daemon 以 root 和多项 Linux capability 启动，当前子进程路径没有再执行 `setuid()`/`setgid()` 降权；capability 是拆分后的 root 特权，seccomp 是系统调用过滤器。结合共享的 network namespace，这套实现有了文件系统视图、挂载和资源分组机制，强身份与网络隔离还没有形成。
+init 配置让 daemon 以 root 和多项 Linux capability 启动，当前子进程路径上未见 `setuid()`/`setgid()` 降权；capability 是拆分后的 root 特权，seccomp 是系统调用过滤器。结合共享的 network namespace，这套实现有了文件系统视图、挂载和资源分组机制，强身份与网络隔离仍是缺口。
 
-还要看到 chroot 的分量：它只改变路径解析的根目录，本身提供不了完整的安全隔离。评价“可安全执行 agent 代码”时，要核对 UID/GID、SELinux domain、mount namespace 失败路径、capability、seccomp、cgroup、网络出口、设备节点和凭据挂载。`AohpSandboxSecurityGate` 只对命令字符串中出现的 `aohp://vault/` 作拒绝检查，不是完整的命令语义、数据流或网络出口策略。当前原型适合受控的 Cuttlefish/userdebug 实验，离不可信代码的生产隔离还有距离。
+chroot 的分量也要放准：它只改变路径解析的根目录，完整的安全隔离要按下面的清单逐项核对——UID/GID、SELinux domain、mount namespace 失败路径、capability、seccomp、cgroup、网络出口、设备节点和凭据挂载。`AohpSandboxSecurityGate` 的检查范围是命令字符串中出现的 `aohp://vault/`，离完整的命令语义、数据流或网络出口策略还有距离。当前原型适合受控的 Cuttlefish/userdebug 实验；不可信代码的生产隔离，还隔着这份清单的距离。
 
 <!-- gracker-diagram: ch18-09-13-sandbox-boundaries -->
 ![chroot、mount namespace 与 cgroup 都需检查失败路径](../../assets/diagrams/ch18/ch18-09-13-sandbox-boundaries.png)
 
-图：AOHP 经特权 Binder 与 Unix socket 调用 root daemon，尝试 namespace、资源分组后进入 chroot 执行。 当前网络 namespace 共享、子路径未降UID；namespace或cgroup失败可继续。命令中拒绝token字面量不等于完整语义或出口策略。
+图：AOHP 经特权 Binder 与 Unix socket 调用 root daemon，尝试 namespace、资源分组后进入 chroot 执行。 当前网络 namespace 共享、子路径未降UID；namespace或cgroup失败可继续。命令中拒绝 token 字面量，离完整语义或出口策略还有距离。
 
 ## 4. 安全信息流：设计目标与原型现状
 
@@ -350,12 +318,12 @@ init 配置让 daemon 以 root 和多项 Linux capability 启动，当前子进�
 
 这里的三个术语：typed placeholder 是带有数据类别但不含明文的占位引用，例如 `<home-address:uuid>`；trusted executor 是获准解析引用并执行敏感操作的系统组件；consent 是绑定 source、用途、目的地和动作的用户确认。
 
-这套模型要控制的是“数据已经交给某个 agent 之后又流向哪里”。Android 已有的机制回答的是别的问题：运行时权限回答某个 UID 能否访问资源，URI grant 回答某个组件能否访问一个对象；对 LLM prompt、tool result 和跨工具派生数据，两者都不会自动理解。
+这套模型要控制的是“数据已经交给某个 agent 之后又流向哪里”。Android 已有的机制回答的是另外两个问题：运行时权限回答某个 UID 能否访问资源，URI grant 回答某个组件能否访问一个对象；至于 LLM prompt、tool result 和跨工具派生数据，两者的语义里都没有这一层。
 
 <!-- gracker-diagram: ch18-09-14-flow-design -->
 ![论文设计把明文控制放在 source 与 sink 两端](../../assets/diagrams/ch18/ch18-09-14-flow-design.png)
 
-图：论文期望先识别敏感 source，以 token 交给 agent，再由可信执行端检查用途与目标并执行动作。 这是设计目标；不能把六步设计直接画成当前所有入口都强制执行，下面还要逐方法核对实现与例外。
+图：论文期望先识别敏感 source，以 token 交给 agent，再由可信执行端检查用途与目标并执行动作。 这是设计目标；六步设计与当前所有入口的强制执行之间，还要逐方法核对实现与例外。
 
 ### 4.2 当前 vault 是内存 token 表
 
@@ -366,14 +334,14 @@ private static final String PREFIX = "aohp://vault/";
 private final Map<String, Entry> mEntries = new ConcurrentHashMap<>();
 ```
 
-`Entry` 直接保存 plaintext（明文）、category、source package 和创建时间。进程一重启，映射就消失了；当前类没有持久加密、硬件密钥绑定、用户切换隔离、自动过期，也没有 secure erase（可验证安全擦除）机制。
+`Entry` 直接保存 plaintext（明文）、category、source package 和创建时间。进程一重启，映射就消失了；持久加密、硬件密钥绑定、用户切换隔离、自动过期和 secure erase（可验证安全擦除），在这个类里都还缺席。
 
-token 的不透明性可以减少 agent 直接接触明文的机会。当前 `resolveVaultToken(token, purpose)` 仅校验共用的特权 permission、记录 purpose 后读取映射；`purpose` 不是已执行的用途限制，也没有在该方法绑定 user、task、目的地或 consent。不能据 opaque token 宣称已有完整的用途授权或凭据存储保护。
+token 的不透明性可以减少 agent 直接接触明文的机会。当前 `resolveVaultToken(token, purpose)` 做的是：校验共用的特权 permission、记录 `purpose`、读取映射；user、task、目的地和 consent 的绑定，这个方法都没有做。完整的用途授权或凭据存储保护，要等这些绑定补齐才能宣称。
 
 <!-- gracker-diagram: ch18-09-15-vault-implementation -->
 ![当前 vault 是进程内映射，用途只记录到审计](../../assets/diagrams/ch18/ch18-09-15-vault-implementation.png)
 
-图：当前实现给明文生成随机 token，并在 ConcurrentHashMap 中保存值与来源元数据。 resolveVaultToken 校验共用特权 permission 后读取，purpose只写审计；未在该方法绑定任务、用户、目的地或consent，重启后映射丢失。
+图：当前实现给明文生成随机 token，并在 ConcurrentHashMap 中保存值与来源元数据。 resolveVaultToken 校验共用特权 permission 后读取，purpose只写审计；任务、用户、目的地和consent的绑定不在该方法内，重启后映射丢失。
 
 ### 4.3 当前 taint tracker 的传播范围
 
@@ -385,10 +353,6 @@ TaintDroid 是 2010 年 OSDI 论文中的 Android 研究原型，修改 Dalvik �
 
 TaintDroid 从未成为 Android 标准安全组件，“后来被 Google 从 AOSP 移除”的说法对不上它的演进历史；AOHP 论文引用的只是这一研究方向。
 
-<!-- gracker-diagram: ch18-09-16-taint-scope -->
-![来源元数据不等于任意值变换的自动传播](../../assets/diagrams/ch18/ch18-09-16-taint-scope.png)
-
-图：当前类为 vault token 建立 taintId，记录来源、类别与敏感标记，并在选定 UI/tool/file 边界检查。 这不同于指令级动态传播；当前这些类未自动跟踪任意ART/native内存、Binder内容、文件内容和派生字符串，不能从taint类名推完整覆盖。
 
 ### 4.4 策略检查与已知缺口
 
@@ -411,35 +375,29 @@ o.put("reason", "file_read_policy_not_implemented");
 
 这段代码只说明这两个 policy 方法的默认行为是 DENY，不能证明所有文件 I/O 都被它们中介。文件列表的 `filterFileListJson()` 实际为路径加风险标签，share 策略主要看路径形态，不扫描文件内容，`targetPackage` 在此只是附带返回。
 
-<!-- gracker-diagram: ch18-09-17-policy-coverage -->
-![文件与 skill 检查需按规则状态逐项解释](../../assets/diagrams/ch18/ch18-09-17-policy-coverage.png)
 
-图：文件读写 policy stub 默认 DENY，文件列表只标记路径风险，skill 则按有无声明走不同分支。 单个DENY返回不证明所有I/O都被中介；无sources的skill输出可原样，无命中规则的输入可ALLOW，512行内存audit也不是持久防篡改记录。
+动作入口的差别要逐个看：`injectTapWithTarget()` 调用语义 tap 策略，原始坐标 `injectTap()` 仅校验特权 permission 与 display owner 后直接注入，`checkTapPolicyInner()` 对空 resource ID 直接 ALLOW。当前临时批准按 package/resourceId/kind 保存 10 分钟，source、destination、金额和 task 都不逐次绑定；论文提出的细粒度 consent 设计，落到这些方法上还差这层绑定。
 
-动作入口也有差别：`injectTapWithTarget()` 调用语义 tap 策略，而原始坐标 `injectTap()` 仅校验特权 permission 与 display owner 后直接注入；`checkTapPolicyInner()` 对空 resource ID 直接 ALLOW。当前临时批准按 package/resourceId/kind 保存 10 分钟，并不逐次绑定 source、destination、金额或 task。论文提出的细粒度 consent 设计，不能直接当作这些方法已经实现的完整约束。skill 也不是缺失声明就统一拒绝：`checkSkillOutputPolicy()` 在没有 sources 时可原样返回，`checkSkillInputPolicy()` 在未命中 sink 且没有触发 action 规则时可 ALLOW。`AohpSecurityAuditLog` 只是最多 512 行的内存环形记录，不是持久、防篡改的审计存储。写安全报告时，我们要逐个 sink 标明状态——implemented（已实现） 是已实现、partial（部分实现） 是部分实现、stub（仅占位） 是仅占位、unobserved（未观测） 是未观测——别用论文架构图盖住代码缺口。
+skill 一侧按规则状态走分支：`checkSkillOutputPolicy()` 在没有 sources 时可原样返回，`checkSkillInputPolicy()` 在未命中 sink 且没有触发 action 规则时可 ALLOW，缺失声明并不自动导向拒绝。`AohpSecurityAuditLog` 是最多 512 行的内存环形记录，持久与防篡改都在它的能力之外。写安全报告时，我们要逐个 sink 标明状态——implemented（已实现）、partial（部分实现）、stub（仅占位）、unobserved（未观测）——以代码现状为准，论文架构图只当目标看。
 
 <!-- gracker-diagram: ch18-09-18-action-consent -->
 ![语义 tap、原始 tap 与临时批准的范围不同](../../assets/diagrams/ch18/ch18-09-18-action-consent.png)
 
-图：带 target 的 tap 可进入语义策略，原始坐标 tap 仅校验特权与 owner；临时批准按包、字段和动作种类复用。 批准有效期10分钟，不逐次绑定source、目标金额、destination或task；空resourceId还可直接ALLOW，不能据有consent界面断言完整动作约束。
+图：带 target 的 tap 可进入语义策略，原始坐标 tap 仅校验特权与 owner；临时批准按包、字段和动作种类复用。 批准有效期10分钟，source、目标金额、destination和task都不逐次绑定；空resourceId还可直接ALLOW，有consent界面离完整动作约束还有距离。
 
 ### 4.5 五个 security case 怎样解读
 
-论文在一个带敏感标注的支付应用上测试了五类行为：敏感显示替换、普通动作放行、敏感动作确认、未支持访问拒绝、敏感事件脱敏。论文报告五项全部通过，支持的是作者当时的原型、标注应用与测试流程；论文未把这些结果绑定到本文检查的 framework commit。当前 commit 的 Toast、空 resource ID、原始 tap 和用途审计等例外需要单独复测，不能将历史 Pass 直接迁移为当前版本每条路径的测试结论。
+论文在一个带敏感标注的支付应用上测试了五类行为：敏感显示替换、普通动作放行、敏感动作确认、未支持访问拒绝、敏感事件脱敏。论文报告五项全部通过，支持的是作者当时的原型、标注应用与测试流程；这些结果与本文检查的 framework commit 之间，论文并未建立绑定。当前 commit 的 Toast、空 resource ID、原始 tap 和用途审计等例外需要单独复测，历史 Pass 迁移成当前版本每条路径的结论，中间隔着这次复测。
 
-这些结果还证明不了：
+这些结果之外，下面这些问题仍然开放：
 
-- 对任意第三方应用的字段识别完整；
-- 隐式流、native code、截图像素和 side channel（侧信道）都被跟踪；
-- prompt injection（提示注入）诱导不了已授权动作；
-- 用户审批不会被混淆、疲劳或界面覆盖攻击影响；
-- vault 在重启、多用户、备份和设备失窃场景安全；
-- framework service 不存在提权、绕过或 denial-of-service（拒绝服务）问题。
+- 任意第三方应用上的字段识别是否完整；
+- 隐式流、native code、截图像素和 side channel（侧信道）的跟踪情况；
+- prompt injection（提示注入）能否诱导已授权动作；
+- 用户审批面对混淆、疲劳或界面覆盖攻击的表现；
+- vault 在重启、多用户、备份和设备失窃场景下的安全性；
+- framework service 的提权、绕过和 denial-of-service（拒绝服务）风险。
 
-<!-- gracker-diagram: ch18-09-19-security-results -->
-![五项历史 Pass 还需在目标 commit 逐条复测](../../assets/diagrams/ch18/ch18-09-19-security-results.png)
-
-图：论文在标注支付应用报告五类 case 通过，当前版本仍需按具体入口与例外重新验证。 论文未将结果绑定本文检查的commit；号码规则、Toast、截图、tap旁路、用途审计和跨用户/重启边界不由历史五例证明。
 
 ## 5. 实验数据：数字成立在哪个范围
 
@@ -457,10 +415,6 @@ o.put("reason", "file_read_policy_not_implemented");
 
 这组结果支持的说法是：同一 agent 在该任务集上使用 AOHP 接口后，完成度提高。再往外推——对所有 Android 应用、设备、模型或 agent 框架同幅度生效——超出了这组数据的支持范围。
 
-<!-- gracker-diagram: ch18-09-20-completion-metric -->
-![30 个任务的 checkpoint 加权与完整成功数分开](../../assets/diagrams/ch18/ch18-09-20-completion-metric.png)
-
-图：论文的30个任务每类五个，按 objective checkpoint 计分，并分别报告完整与部分完成数。 75.56%与54.44%不是完整成功任务数除以30；差值为21.12个百分点，效果限定于该agent和任务集。
 
 ### 5.2 执行成本
 
@@ -478,17 +432,13 @@ o.put("reason", "file_read_policy_not_implemented");
 
 - 模型名称、版本、采样参数和输入计费口径；
 - stock 与 AOHP 的提示词、tool schema（工具参数契约）和重试策略；
-- 每个任务的多次运行分布，别只看单组 aggregate（汇总值）；
+- 每个任务的多次运行分布，光有单组 aggregate（汇总值）不够；
 - 设备/模拟器配置、温度、网络和应用版本；
 - AOHP 系统服务自身的 CPU、内存、GPU、磁盘和能量；
 - 对 AppFunctions、Accessibility 自动化或其他结构化 baseline（对照方案）的比较。
 
-“token 减半”是这 11 个共同成功任务上的测量结果，把它直接归到 SUI 单一机制头上并不成立：文件桥、事件流、CLI、虚拟显示和路径长度都同时变化。论文没有给出消融实验——逐项关闭机制来测量各自贡献——所以各项机制的贡献拆不出来。
+“token 减半”是这 11 个共同成功任务上的测量结果；把它归到 SUI 单一机制头上之前，先看这组对比里同时变化的东西：文件桥、事件流、CLI、虚拟显示和路径长度都在变。拆出各自贡献需要消融实验——逐项关闭机制来测量各自贡献——论文没有给出，各机制的贡献比例目前无从分离。
 
-<!-- gracker-diagram: ch18-09-21-cost-subset -->
-![执行成本只比较共同完整成功的 11 个任务](../../assets/diagrams/ch18/ch18-09-21-cost-subset.png)
-
-图：论文在双方都完整完成的11个任务上汇总工具调用、时长、token与模型请求。 这个子集不同于全30任务；多种接口与执行路径同时变化，不能把token下降直接归因单一SUI机制，论文没有提供机制消融。
 
 ## 6. Android 17 AppFunctions 的标准平台边界
 
@@ -507,28 +457,20 @@ AppFunctions 是目标应用主动发布结构化 function、再由获授权 cal
 | `AppFunctionService` | XML metadata + manifest service | 系统可按调用绑定服务，适合全局能力 |
 | runtime registration | XML metadata + `registerAppFunction(s)` | 只能从 Activity 或 Service context 注册，随 registration/context 生命周期 |
 
-metadata 是 function 的标识、参数、作用域等描述信息。r1 描述的两种形态都在 XML asset 声明 function，但 property 所在位置不同：service-based 放在 `<service>` 下，并要求 `BIND_APP_FUNCTION_SERVICE` 与对应 intent action，scope 始终 global；runtime 放在 `<application>` 下，activity scope 只能从 Activity context 注册。runtime registration 只是为已声明标识绑定实现，不会让 agent 随意执行任意应用方法。identifier、scope、注册状态、权限、package visibility 和 enabled state 都参与校验。
+metadata 是 function 的标识、参数、作用域等描述信息。r1 描述的两种形态都在 XML asset 声明 function，但 property 所在位置不同：service-based 放在 `<service>` 下，并要求 `BIND_APP_FUNCTION_SERVICE` 与对应 intent action，scope 始终 global；runtime 放在 `<application>` 下，activity scope 只能从 Activity context 注册。runtime registration 只是为已声明标识绑定实现，agent 能执行的仍限于应用声明过的 function；identifier、scope、注册状态、权限、package visibility 和 enabled state 都参与校验。
 
-<!-- gracker-diagram: ch18-09-22-provider-forms -->
-![两种 provider 的 XML 位置、scope 与生命周期不同](../../assets/diagrams/ch18/ch18-09-22-provider-forms.png)
-
-图：service-based 在 service 下声明 XML并由系统绑定；runtime 在 application 下声明 XML后绑定当前实现。 service-based scope始终global；activity scope必须从Activity注册，标识和scope校验仍在，注册不会把任意方法公开成function。
 
 搜索其他 package 的 function 时，caller 需要 `EXECUTE_APP_FUNCTIONS`、`EXECUTE_APP_FUNCTIONS_SYSTEM` 或 `DISCOVER_APP_FUNCTIONS` 之一，并且目标 package 对 caller 可见；执行跨包 function 时，`DISCOVER_APP_FUNCTIONS` 不够。r1 的 V2 模型下，`EXECUTE_APP_FUNCTIONS` 还要通过 caller→target 的 allowlist，`EXECUTE_APP_FUNCTIONS_SYSTEM` 可免此 allowlist；V2 关闭时按 legacy 的 `EXECUTE_APP_FUNCTIONS` 路径检查。身份、用户/企业策略、可见性和 enabled state 等后续条件仍须满足。
 
 公开文档把这类 caller 视为受信任调用方，普通应用默认发现和执行不了所有其他应用的 function。
 
-<!-- gracker-diagram: ch18-09-23-permission-v2 -->
-![执行权限还需结合 V2 allowlist 与其他校验](../../assets/diagrams/ch18/ch18-09-23-permission-v2.png)
-
-图：搜索权限与执行权限不同；r1 V2 中普通执行权限还需跨包allowlist，system执行权限可免该allowlist。 V2关闭走legacy执行权限路径；同包与root有专门分支。图示仅为执行权限这一关，身份、用户、可见性、enabled等仍须通过。
 
 API 37 的 runtime function 还有一个容易遗漏的限制：注册进程被冻结时，系统不会进入该实现，注册 context 销毁后 registration 会被移除——context 指发起注册的 Activity 或 Service 生命周期对象。AppFunctions 因此替代不了 AOHP 的虚拟显示后台 GUI session。
 
 <!-- gracker-diagram: ch18-09-26-runtime-lifecycle -->
 ![runtime 注册随 context、进程和冻结状态变化](../../assets/diagrams/ch18/ch18-09-26-runtime-lifecycle.png)
 
-图：runtime function只对已注册的对应scope可调用；注册进程被冻结时返回不可用，销毁或死亡时清理注册。 这不是任意后台GUI workspace；注册方应显式unregister，activity scope也要匹配目标activity，不能用它替代AOHP显示session。
+图：runtime function只对已注册的对应scope可调用；注册进程被冻结时返回不可用，销毁或死亡时清理注册。 任意后台GUI workspace它当不了；注册方应显式unregister，activity scope也要匹配目标activity，AOHP显示session它也替代不了。
 
 ### 6.2 system_server 如何启动服务
 
@@ -544,14 +486,10 @@ if (AppFunctionManagerConfiguration.isSupported(context)) {
 
 `AppFunctionManagerConfiguration.isSupported()` 在该 tag 中返回 `enableAppFunctionManager()` flag，`AppFunctionManagerService.onStart()` 发布 Binder service（跨进程调用入口）前会再次检查相同条件。
 
-代码说明功能受 build/device flag 控制；仅凭这个分支，断言不了所有 AOSP user build 默认开启或关闭。
+代码说明功能受 build/device flag 控制；所有 AOSP user build 的默认开关状态，要按各 build 的 flag 配置逐个确认，仅凭这个分支推不出来。
 
 V2 permission 模型还有独立的 `enableAppFunctionPermissionV2()` gate，`SystemServer` 会据此先启动 `AllowlistService`；allowlist 是明确列出获准主体的许可名单。构造函数中的 access service、`AppInteractionServiceImpl` 和 allowlist reader 也分别受 flag 管理——这些 gate 让权限与交互能力可以分阶段配置。
 
-<!-- gracker-diagram: ch18-09-24-service-gates -->
-![主服务、权限 V2 与交互扩展各有 gate](../../assets/diagrams/ch18/ch18-09-24-service-gates.png)
-
-图：SystemServer 与服务onStart都以主功能flag检查支持，权限V2、access和interaction另有独立gate。 源码分支本身不能证明所有设备默认开关；stats log生成器的minApiLevel也不能推导平台API首引版本。
 
 ### 6.3 metadata、搜索与动态注册
 
@@ -567,10 +505,6 @@ V2 permission 模型还有独立的 `enableAppFunctionPermissionV2()` gate，`Sy
 
 AppFunctions 提供结构化参数和结果，但不会替 provider 自动完成业务授权：创建订单、分享文件、读取账号或修改设备状态，仍要由应用检查登录态、用户确认、数据权限和幂等性。
 
-<!-- gracker-diagram: ch18-09-25-metadata-execution -->
-![metadata 查询与 Binder 执行是两条相接的路径](../../assets/diagrams/ch18/ch18-09-25-metadata-execution.png)
-
-图：应用声明与索引提供metadata，caller通过AppSearch查可见描述，再向system_server提交执行请求。 reader/cache关联运行时状态；系统检查不能代替provider的登录态、业务确认、数据权限和幂等性。
 
 ### 6.4 DeviceConfig 参数的准确含义
 
@@ -585,18 +519,20 @@ AppFunctions 提供结构化参数和结果，但不会替 provider 自动完成
 | <code>app_<wbr>function_<wbr>enabled_<wbr>state_<wbr>change_<wbr>max_<wbr>debounce_<wbr>ms</code> | 1000 ms | debounce 最大等待 |
 | <code>app_<wbr>function_<wbr>allowlist_<wbr>cache_<wbr>size</code> | 5 | 可缓存 allowlist 的 agent package 数量上限 |
 
-debounce（防抖）会在连续变更后等待一小段时间再处理，避免同一批更新触发多次工作。这个类没有注册 `OnPropertiesChangedListener` 或永久缓存一般 getter 结果。搜索分页有例外：先用合法的 `sTestPageSize` 覆盖；否则读 DeviceConfig，仅接受 1–10,000，非法值回退 20。其他 getter 直接读对应键。配置在实际调用 getter 时读取，不必为这个类本身重启服务；但这不等于消费者热更新。例如 `SystemAppFunctionAllowlistReader` 构造 `LruCache` 时读取 cache size，当前类没有监听此配置并对既有 cache 调用 resize；已建立连接和已安排任务也要看各自何时重新取值。
+debounce（防抖）会在连续变更后等待一小段时间再处理，避免同一批更新触发多次工作。这个类读取配置的方式，有两处容易误读。其一，一般 getter 每次调用都直接读对应键，`OnPropertiesChangedListener` 一类的配置监听与永久缓存均未采用；唯一例外是搜索分页——先用合法的 `sTestPageSize` 覆盖，否则读 DeviceConfig，仅接受 1–10,000，非法值回退 20。
+
+其二，配置读取发生在实际调用 getter 时，服务本身无需为此重启；但“读到了新值”和“消费者已热更新”要分开看：`SystemAppFunctionAllowlistReader` 构造 `LruCache` 时读取 cache size，此后该类未监听此配置，也未见对既有 cache 调用 resize；已建立连接和已安排任务同样各有各的取值时机。
 
 <!-- gracker-diagram: ch18-09-27-config-read-times -->
 ![DeviceConfig getter 与消费者取值时机分开](../../assets/diagrams/ch18/ch18-09-27-config-read-times.png)
 
-图：r1 使用 appfunctions 命名空间；一般getter实时读取，搜索page size还有测试覆盖与1–10,000范围校验。 读取新值不等于既有消费者立即重配；allowlist reader构造LruCache时取cache size，已建连接和延迟任务也须看自己的取值点。
+图：r1 使用 appfunctions 命名空间；一般getter实时读取，搜索page size还有测试覆盖与1–10,000范围校验。 读取新值与既有消费者立即重配是两回事；allowlist reader构造LruCache时取cache size，已建连接和延迟任务也须看自己的取值点。
 
-`services/appfunctions/Android.bp` 中 stats log generator 的 `--minApiLevel 35` 只属于生成 `AppFunctionsStatsLog` 的构建命令：它证明不了 API 35 以下“不生成服务”，也推断不出 AppFunctions 主 API 的引入版本。API 的版本边界应以 SDK stubs（SDK 暴露的 API 签名）、`@AddedIn` 文档和 feature flag 为准。
+`services/appfunctions/Android.bp` 中 stats log generator 的 `--minApiLevel 35` 只属于生成 `AppFunctionsStatsLog` 的构建命令：API 35 以下是否“不生成服务”、AppFunctions 主 API 的引入版本，都要另找证据；API 的版本边界以 SDK stubs（SDK 暴露的 API 签名）、`@AddedIn` 文档和 feature flag 为准。
 
 ## 7. AOHP 与 AppFunctions 的准确对照
 
-标准 Android 上常被用于跨应用 agent 的三条入口，我们先分清各自的位置：`AccessibilityService` 面向辅助功能，依据可访问性树观察和操作 UI；`VoiceInteractionService` 是每个用户选择的 assistant 角色入口；AppFunctions 则由目标应用主动发布结构化能力。三者定位不同，不能互换；`BIND_*` 权限约束的也是服务实现者，不是调用方在 manifest 中声明后就能获得的通行证。
+标准 Android 上常被用于跨应用 agent 的三条入口，我们先分清各自的位置：`AccessibilityService` 面向辅助功能，依据可访问性树观察和操作 UI；`VoiceInteractionService` 是每个用户选择的 assistant 角色入口；AppFunctions 则由目标应用主动发布结构化能力。三者定位不同，各守各的位置；`BIND_*` 权限约束的也是服务实现者，调用方在 manifest 中声明之后，通行证并不会随之到手。
 
 产品应优先采用目标应用明确发布的 function；只有业务确属辅助功能或系统 assistant 时，才使用相应服务角色，并把用户授权、可见提示与撤销路径纳入设计。
 
@@ -614,10 +550,6 @@ debounce（防抖）会在连续变更后等待一小段时间再处理，避免
 
 两者也可以组合：AppFunctions 适合让应用主动暴露稳定、类型化的操作，AOHP 探索系统如何容纳 legacy GUI、跨服务记忆、虚拟执行和敏感数据引用。组合之前，先定义单一的身份、consent、审计和撤销模型，免得两个控制面给同一个 agent 重复授权。
 
-<!-- gracker-diagram: ch18-09-28-standard-vs-fork -->
-![结构化平台能力与研究 harness 按边界组合](../../assets/diagrams/ch18/ch18-09-28-standard-vs-fork.png)
-
-图：AppFunctions让应用主动发布受控函数，AOHP研究接口则兼容UI、跨服务状态与虚拟执行。 两者组合仍需统一身份、consent、审计与撤销；标准接口不会自动生成legacy function，也不提供通用跨LLM/tool taint。
 
 ## 8. 对工程团队的建议
 
@@ -637,10 +569,6 @@ debounce（防抖）会在连续变更后等待一小段时间再处理，避免
 
 结构化接口的价值来自少走 GUI 步骤和减少观察噪声。AOHP 实验给出的是方向性证据，单个项目仍要测自己的成功率、延迟、token、回退率和错误后果。
 
-<!-- gracker-diagram: ch18-09-29-application-integration -->
-![应用接入先提供明确能力与可验证结果](../../assets/diagrams/ch18/ch18-09-29-application-integration.png)
-
-图：对稳定业务提供结构化入口，明确副作用、确认与幂等，再以最小URI授权交接对象。 这是工程建议；辅助功能与assistant角色有各自适用规则，用户授权、可见提示与撤销仍是接入条件。
 
 ### 8.2 系统与 ROM 开发者
 
@@ -666,10 +594,6 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` 这一 `signature|pr
 - 对输入注入、截图、secure content 和 clipboard 建立独立审计；
 - 用 `dumpsys display/window/activity`、Perfetto、meminfo 和 power rail 验证；power rail 是设备硬件电源轨的能量计数方式。
 
-<!-- gracker-diagram: ch18-09-30-system-authority-budget -->
-![系统控制面拆分权力并管理并行资源](../../assets/diagrams/ch18/ch18-09-30-system-authority-budget.png)
-
-图：系统实现应拆分观察、输入、解析敏感值、文件与执行权限，并绑定caller、user、display、task和purpose。 当前多服务共用一项特权permission，不是生产级分权证明；display限额、前台优先与owner退出清理属于需要实现并验证的约束。
 
 ### 8.3 安全评审
 
@@ -686,10 +610,6 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` 这一 `signature|pr
 9. 服务重启、设备重启、备份恢复和用户切换时怎样处理；
 10. fail closed 会不会被攻击者反复触发，形成可利用的拒绝服务。
 
-<!-- gracker-diagram: ch18-09-31-security-audit -->
-![评审沿 source、派生、sink 与生命周期逐段追踪](../../assets/diagrams/ch18/ch18-09-31-security-audit.png)
-
-图：从敏感来源识别、token和派生值传播，走到每个sink的实际策略、用户确认和结果审计。 分类implemented/partial/stub/unobserved；还要覆盖未知package、未声明skill、原始tap、Toast、重启和跨用户，类名不能代替测试证据。
 
 ## 9. 如何复现与扩展这些结论
 
@@ -704,10 +624,6 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` 这一 `signature|pr
 
 每个任务运行多次并随机化顺序，固定模型与 tool schema，保存完整的调用 trace（按时间排列的模型、工具和系统调用记录）。资源侧同时采集 system_server、agent driver（驱动任务执行的 agent 进程）、目标应用、SurfaceFlinger 和 sandbox 的 CPU、PSS（按共享页比例折算后的进程内存占用）、GPU 与能量；安全侧加入未标注应用、custom View、WebView、native code、恶意 tool output、过期 token、跨用户和进程重启 case。
 
-<!-- gracker-diagram: ch18-09-32-reproduction-controls -->
-![四组实验分别度量接口收益与安全代价](../../assets/diagrams/ch18/ch18-09-32-reproduction-controls.png)
-
-图：按stock GUI、stock结构化、AOHP接口、AOHP完整安全四组组织对照，并保存同任务的重复运行与系统资源证据。 这四组是本文复现建议；固定模型、工具契约、设备与应用版本，失败样本和安全误拒绝也必须进入报告，不能只比较共同成功成本。
 
 这些测试做完，才能回答某个 AOHP 机制在目标产品上的收益和风险。论文给出可运行原型与初步结果，Android 17 给出标准化 AppFunctions 控制面，两者都还在快速演进。
 
