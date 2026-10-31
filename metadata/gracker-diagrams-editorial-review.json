@@ -51013,9 +51013,282 @@
       "before_count": 27,
       "before_all_images": 27,
       "sha256_before": "7cf8ac1356853e7999411bc8be5da7bf165bca2c52cfa5cab4917e166ab91996",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "ch18-07-01-safety-cost",
+          "title": "编译期安全、运行期检查与业务成本分开评估",
+          "decision": "remove",
+          "reason": "编译期、运行期及端到端成本三类已由导言和本节段落解释，分类卡片不增加实际调用或测量关系。",
+          "original_line": 114,
+          "heading": "### 1.1 版本目标"
+        },
+        {
+          "original_id": "ch18-07-04-avf-two-levels",
+          "title": "AVF 的公开 RpcBinder 与全局 kernel Binder 分层",
+          "decision": "keep",
+          "reason": "AVF公开Java包装层通过UDS RpcBinder连接独立virtmgr，virtmgr另经kernel Binder访问全局资源服务并管理crosvm；分叉清楚地区分两级进程/传输。",
+          "original_line": 133,
+          "heading": "### 1.2 r1 中可核对的代表组件"
+        },
+        {
+          "original_id": "ch18-07-03-keystore",
+          "title": "Keystore2 直接注册 Rust Binder 服务入口",
+          "decision": "keep",
+          "reason": "保留Keystore2从AIDL proxy经一次kernel事务到NDK/libbinder_rs和Rust stub的具体入口，避免凭语言边界虚构第二次IPC或固定C++业务stub。",
+          "original_line": 156,
+          "heading": "### 1.3 Keystore2 的 Binder 入口"
+        },
+        {
+          "original_id": "ch18-07-02-three-boundaries",
+          "title": "同进程 FFI、JNI 与跨进程 IPC 的成本结构不同",
+          "decision": "remove",
+          "reason": "三类边界有明确小节和一句总述，平行卡片重复Keystore2、FFI和JNI具体机制图。",
+          "original_line": 165,
+          "heading": "## 2. 三类边界"
+        },
+        {
+          "original_id": "ch18-07-05-binder-transports",
+          "title": "按本地、kernel 与 socket 传输解释 Binder 调用",
+          "decision": "remove",
+          "reason": "local/kernel/RPC及oneway语义已在相邻段落明确限定，三列概览并非互斥分类且重复具体AVF与计时图。",
+          "original_line": 187,
+          "heading": "### 2.1 Rust AIDL 与 Binder"
+        },
+        {
+          "original_id": "ch18-07-06-ffi-contract",
+          "title": "C ABI 只规定调用，布局和安全仍需接口契约",
+          "decision": "remove",
+          "reason": "调用约定、repr(C)、布局与LTO边界已由正文两段完整解释，三列接口检查事项重复，保留具体借用图7。",
+          "original_line": 203,
+          "heading": "### 2.2 Rust 与 C/C++ 的同进程 FFI"
+        },
+        {
+          "original_id": "ch18-07-07-borrowed-slice",
+          "title": "CXX 借用 slice 传递地址和长度，所有者仍须有效",
+          "decision": "keep",
+          "reason": "明确C++原buffer所有者、地址加长度的slice借用、Rust读取及返回后不得保留悬空引用的时序，补充bridge代码没有展示的生存期。",
+          "original_line": 222,
+          "heading": "### 2.2 Rust 与 C/C++ 的同进程 FFI"
+        },
+        {
+          "original_id": "ch18-07-08-owned-types",
+          "title": "Rust 容器与 C++ opaque 容器的所有权方式不同",
+          "decision": "remove",
+          "reason": "紧邻参数形态表与字符串/容器说明已覆盖所有权、NUL与析构，三列卡片没有新增对象布局。",
+          "original_line": 238,
+          "heading": "### 2.2 Rust 与 C/C++ 的同进程 FFI"
+        },
+        {
+          "original_id": "ch18-07-09-jni-path",
+          "title": "JNI 的线程状态、引用和 buffer 生命周期逐项核对",
+          "decision": "keep",
+          "reason": "JNI线程来源/已附加状态、线程JNIEnv、参数引用和buffer转换、结果与线程退出清理形成独立生命周期；不把每次调用等同attach。",
+          "original_line": 259,
+          "heading": "### 2.3 Rust 与 Java 的 JNI"
+        },
+        {
+          "original_id": "ch18-07-10-error-policy",
+          "title": "预期错误、panic=abort 与 unwind table 各自独立",
+          "decision": "remove",
+          "reason": "预期错误、panic终止与unwind table三个独立概念已分别用三段文字精确解释；卡片表不增加异常传播路径。",
+          "original_line": 278,
+          "heading": "### 3.1 设备端的 `panic=abort`"
+        },
+        {
+          "original_id": "ch18-07-11-ownership",
+          "title": "跨边界对象沿约定的创建、借用和销毁闭环",
+          "decision": "keep",
+          "reason": "拥有对象的创建、受控handle/转移、callback期间使用和配套destroy或wrapper析构组成闭合生命周期，与只读slice借用图7职责不同。",
+          "original_line": 296,
+          "heading": "### 3.2 谁分配，谁释放"
+        },
+        {
+          "original_id": "ch18-07-12-unsafe-contract",
+          "title": "unsafe 前置条件成为 safe 封装可依赖的边界",
+          "decision": "remove",
+          "reason": "unsafe审核六项前置条件已完整列出，三路分类只是检查清单缩写，未表达新的safe封装边界。",
+          "original_line": 314,
+          "heading": "### 3.3 `unsafe` 的审核边界"
+        },
+        {
+          "original_id": "ch18-07-13-allocator-path",
+          "title": "默认 System allocator 与自定义路径分开",
+          "decision": "keep",
+          "reason": "Rust默认System到libc接口再到产品native allocator的真实层次，明确自定义路径例外和释放诊断覆盖；不把Rust当另一套固定堆。",
+          "original_line": 328,
+          "heading": "### 4.1 分配器与 Scudo"
+        },
+        {
+          "original_id": "ch18-07-14-scudo-options",
+          "title": "Scudo 的强化机制与可选 quarantine 不混算",
+          "decision": "remove",
+          "reason": "Scudo机制、默认quarantine=0及secondary/MTE例外已在相邻段落精确说明，三列卡片未提供实测代价或配置路径。",
+          "original_line": 335,
+          "heading": "### 4.1 分配器与 Scudo"
+        },
+        {
+          "original_id": "ch18-07-15-runtime-checks",
+          "title": "先量化检查热点，再以等价语义优化",
+          "decision": "remove",
+          "reason": "采样、等价优化、wrapping/saturating和unchecked审核已有列表，串行卡片还易把可选语义调整读成所有优化的必经步骤。",
+          "original_line": 363,
+          "heading": "### 4.2 边界检查与溢出检查"
+        },
+        {
+          "original_id": "ch18-07-16-concurrency",
+          "title": "类型安全之外仍有锁、线程池和队列等待",
+          "decision": "remove",
+          "reason": "锁、线程池、执行器和channel的具体问题已有六项列表，扇出框只做分类而没有真实等待对象或依赖。",
+          "original_line": 383,
+          "heading": "### 4.3 锁、原子与 async"
+        },
+        {
+          "original_id": "ch18-07-17-linkage-costs",
+          "title": "静态、动态链接与 PSS 各有不同的成本口径",
+          "decision": "remove",
+          "reason": "代码生成、链接和共享页成本已有三段说明，三列说明图重复后面的ELF/内存实证段。",
+          "original_line": 396,
+          "heading": "### 4.4 代码体积与 i-cache（指令缓存）"
+        },
+        {
+          "original_id": "ch18-07-18-build-flags",
+          "title": "固定 tag 的编译默认值还需核对最终命令",
+          "decision": "remove",
+          "reason": "工具链和覆盖规则已在正文、flags代码及strip边界说明齐全，泛化配置到产物步骤图重复。",
+          "original_line": 417,
+          "heading": "## 5. Soong 中容易写错的部分"
+        },
+        {
+          "original_id": "ch18-07-19-module-products",
+          "title": "按最终使用者选择 Rust 与 FFI 产物",
+          "decision": "remove",
+          "reason": "模块类型与产物表已完整列出rlib/cdylib及rust_ffi_static特例，三路产品选择图是表格子集。",
+          "original_line": 439,
+          "heading": "### 5.1 模块类型"
+        },
+        {
+          "original_id": "ch18-07-20-thinlto",
+          "title": "ThinLTO 的属性组、默认值与跨语言边界",
+          "decision": "remove",
+          "reason": "lto属性组、默认值、例外和跨语言边界已由相邻正文给出，四步核验图不增加链接机制。",
+          "original_line": 453,
+          "heading": "### 5.2 ThinLTO 语法与默认值"
+        },
+        {
+          "original_id": "ch18-07-21-crate-management",
+          "title": "受管 crate 再生与产品构建验收是两步",
+          "decision": "remove",
+          "reason": "crate_tool正常再生、补丁许可证、cargo_embargo/metadata-only及产品验收已在两段正文完整解释；流程卡片重复。",
+          "original_line": 465,
+          "heading": "### 5.3 第三方 crate 管理"
+        },
+        {
+          "original_id": "ch18-07-22-experiment-scope",
+          "title": "先固定语义、输入与配置，再比较边界",
+          "decision": "remove",
+          "reason": "实验问题五项与后续各类测量小节已覆盖同进程/跨进程/heap和产物，三列概览重复。",
+          "original_line": 487,
+          "heading": "### 6.1 先定义要回答的问题"
+        },
+        {
+          "original_id": "ch18-07-23-binder-timing",
+          "title": "同步 Binder 的调用方等待与服务执行一起计时",
+          "decision": "keep",
+          "reason": "关联同一同步kernel Binder事务的client、driver排队、runnable/running、服务依赖和reply恢复，明确端到端计时包含调用方等待。",
+          "original_line": 522,
+          "heading": "### 6.3 Binder 端到端"
+        },
+        {
+          "original_id": "ch18-07-24-profiling",
+          "title": "锁定进程代际与权限，再解释 PMU 和调用栈",
+          "decision": "remove",
+          "reason": "simpleperf命令及相邻权限/进程代际/DWARF截栈/符号说明比四步卡片更完整，通用采样流程重复。",
+          "original_line": 549,
+          "heading": "### 6.4 CPU 采样"
+        },
+        {
+          "original_id": "ch18-07-25-artifact-evidence",
+          "title": "section、动态依赖与运行时映射各自回答一问",
+          "decision": "remove",
+          "reason": "size/readelf/showmap命令及三段证据边界说明已覆盖section、动态依赖与RSS/PSS，三列卡片是摘要。",
+          "original_line": 575,
+          "heading": "### 6.5 文件体积、链接与 PSS"
+        },
+        {
+          "original_id": "ch18-07-26-heap-evidence",
+          "title": "heap 采样的来源、覆盖率与延迟测量分开",
+          "decision": "remove",
+          "reason": "heap采样来源、覆盖、方差与非每次分配耗时已有两段清楚说明，扇出检查卡不增加统计或测量关系。",
+          "original_line": 586,
+          "heading": "### 6.6 native heap"
+        },
+        {
+          "original_id": "ch18-07-27-optimization",
+          "title": "按端到端占比决定优化顺序，再回归接口契约",
+          "decision": "remove",
+          "reason": "六项优化顺序与bridge占比条件已完整列出，通用四步再测图复述，批量/取消/背压边界保留在正文。",
+          "original_line": 607,
+          "heading": "### 7.1 先处理架构级成本"
+        }
+      ],
+      "sha256_after": "ee17de53d7a3c1bf6137bc3403910ba37b803a5e452f5909ee08b15c051a2b7f",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:38:03.565794+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 27,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a195/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a195/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 195,
+        "article": "src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
+        "registered_sha256": "7cf8ac1356853e7999411bc8be5da7bf165bca2c52cfa5cab4917e166ab91996",
+        "frozen_sha256": "7cf8ac1356853e7999411bc8be5da7bf165bca2c52cfa5cab4917e166ab91996",
+        "review_input_sha256": "52757ef831136115a359fb593f7e528d65a0c489e30b9a02d074773b5dd673a4",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a195/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a195/external-source.diff",
+        "diff_sha256": "b3b168a6363a43d1ad19156c1a4a8e22bdf6eb9ea656201eb8d166f3ac732f28",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 364, \"characters\": 26251, \"svg_labels_read\": 27, \"actual_pngs_viewed\": 27, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 5, \"code_lines\": 34, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "52757ef831136115a359fb593f7e528d65a0c489e30b9a02d074773b5dd673a4",
+      "retired_diagrams": [
+        "ch18-07-01-safety-cost",
+        "ch18-07-02-three-boundaries",
+        "ch18-07-05-binder-transports",
+        "ch18-07-06-ffi-contract",
+        "ch18-07-08-owned-types",
+        "ch18-07-10-error-policy",
+        "ch18-07-12-unsafe-contract",
+        "ch18-07-14-scudo-options",
+        "ch18-07-15-runtime-checks",
+        "ch18-07-16-concurrency",
+        "ch18-07-17-linkage-costs",
+        "ch18-07-18-build-flags",
+        "ch18-07-19-module-products",
+        "ch18-07-20-thinlto",
+        "ch18-07-21-crate-management",
+        "ch18-07-22-experiment-scope",
+        "ch18-07-24-profiling",
+        "ch18-07-25-artifact-evidence",
+        "ch18-07-26-heap-evidence",
+        "ch18-07-27-optimization"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-195/retired-assets.json"
     },
     {
       "index": 196,
@@ -51898,8 +52171,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 126,
-  "next_article": "src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
+  "reviewed_articles": 127,
+  "next_article": "src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -51909,7 +52182,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:35:27.806850+08:00",
+  "updated_at": "2026-10-31T15:38:03.565794+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -51972,13 +52245,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
-      "registered_sha256": "7cf8ac1356853e7999411bc8be5da7bf165bca2c52cfa5cab4917e166ab91996",
-      "observed_sha256": "52757ef831136115a359fb593f7e528d65a0c489e30b9a02d074773b5dd673a4",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/07-rust-system-services-performance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -52136,9 +52402,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4186,
-  "reviewed_placements_after": 1785,
-  "net_removed_placements": 2401,
+  "reviewed_placements_before": 4213,
+  "reviewed_placements_after": 1792,
+  "net_removed_placements": 2421,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -52162,5 +52428,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 126
+  "currently_matching_reviewed_source_count": 127
 }
