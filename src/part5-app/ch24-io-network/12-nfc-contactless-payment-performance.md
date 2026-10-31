@@ -220,10 +220,6 @@ Reader Mode 只在 Activity 位于前台时有效。API 并未承诺 `ReaderCall
 
 `Tag`、`TagTechnology` 的连接对象同样别存到 Activity 生命周期之外。上述代码只示范注册骨架；生产实现还需在 `onPause()`、标签离场或任务结束时停用旧任务并调用相应 `TagTechnology.close()` 释放连接，后者也会取消其他线程上阻塞的 `connect()` 等 I/O。仅 `disableReaderMode()` 不能替代应用自己的任务与资源清理。
 
-<!-- gracker-diagram: a272-05-reader-lifecycle-and-io -->
-![ReaderMode按前台生命周期管理Tag任务](../../assets/diagrams/ch24/a272-05-reader-lifecycle-and-io.png)
-
-图：SKIP_NDEF_CHECK 仅用于无需NDEF的协议；开启后不枚举Ndef，不能当所有标签的通用加速开关。
 
 标签离场、手机移动和射频噪声都可能让 `connect()` 或 `transceive()` 抛出 I/O 异常；`onTagLost()` 管的是任务取消和界面清理这一层，每次 I/O 自己的异常处理仍然要写。
 
@@ -372,10 +368,6 @@ NFC 终端会循环发送轮询帧（polling frames），找附近可用的卡�
 
 这个方法管的只是 Observe Mode 下的那一笔 HCE 交易，NFC 调度优先级与它无关。普通标签应用本来就在调用资格之外；钱包也要等轮询序列匹配自身过滤规则后再调用，免得对任意终端放行。
 
-<!-- gracker-diagram: a272-08-observe-one-transaction -->
-![ObserveMode按调用资格临时放行一笔HCE交易](../../assets/diagrams/ch24/a272-08-observe-one-transaction.png)
-
-图：退出帧、自动交易过滤和Reader注释帧另查NFCC支持；Android扩展不保证POS识别。
 
 ### 退出帧与注释帧的能力查询
 
@@ -399,10 +391,6 @@ API 37 SDK 提供三个接口：
 
 `NfcService.isPowerSavingModeSupported()` 在 NFC 适配器未开启时直接返回 `false`，开启后才向设备抽象层 `DeviceHost` 查询能力。所以 NFC 关着时拿到的 `false` 只说明当下没开；系统集成代码要等开启后再查，把它长期缓存成“硬件不支持”是要误判的。
 
-<!-- gracker-diagram: a272-09-power-saving-state-and-support -->
-![节电模式能力必须结合适配器状态判断](../../assets/diagrams/ch24/a272-09-power-saving-state-and-support.png)
-
-图：分别测静态功耗、恢复可发现时间与失败；不从“节电”这个名字推导交易更快。
 
 系统集成方评估这个模式，要分开测这几项：
 
@@ -449,10 +437,6 @@ OMAPI（Open Mobile API）是应用访问 SE 的另一套接口，访问规则�
 
 未建立映射时，同一测试序号只能关联事件和各端相对间隔，不能直接相减两个设备的时间戳得到单向分段。时间精度应报告工具、时间戳位置与同步误差，不能一概断言某个亚毫秒精度必然可达或必然不可达。
 
-<!-- gracker-diagram: a272-10-two-clock-measurement -->
-![外部往返与应用处理可各用本端时钟测量](../../assets/diagrams/ch24/a272-10-two-clock-measurement.png)
-
-图：同序号支持事件关联，不会自动同步两个时钟；分位数连同设备、终端、协议和样本条件报告。
 
 ### 8.2 Android 侧只读诊断
 
@@ -520,10 +504,6 @@ HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_a
 
 AID 选择、HCE 服务绑定、`processCommandApdu()` 主线程和钱包角色属于 Android 框架或 NFC 模块的行为，仅凭内核调度器状态是直接推不出来的；跨层排查时保留同一交易序号，应用 Trace、NFC 日志、HAL 日志、内核事件和外部读卡器记录才能相互对应。
 
-<!-- gracker-diagram: a272-11-nfc-evidence-layers -->
-![按分发、服务、控制器与外部终端分层取证](../../assets/diagrams/ch24/a272-11-nfc-evidence-layers.png)
-
-图：共同内核标签只是边界起点；具体驱动、设备树、固件与支付协议仍以目标设备和终端证据为准。
 
 ## 11. 性能改动的安全约束
 

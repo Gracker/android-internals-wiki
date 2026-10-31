@@ -65247,9 +65247,123 @@
       "before_count": 11,
       "before_all_images": 11,
       "sha256_before": "11d7010c5e39efeca9bbf0447612702684dcd5ccaf7b370f119e30b5ca5405d0",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a272-01-host-and-se-routing",
+          "title": "NFCC路由将主机HCE与安全元件交易分流",
+          "decision": "keep",
+          "reason": "NFCC向Host和SE实际分流，并标出声明服务不执行APDU，图补三模式表没有展开的路由层次。",
+          "original_line": 85,
+          "heading": "## 1. 三条 NFC 路径"
+        },
+        {
+          "original_id": "a272-03-host-manager-state-flow",
+          "title": "HostEmulationManager缓存首条命令等待服务就绪",
+          "decision": "keep",
+          "reason": "已绑定直接传输与未绑定缓存首条命令等待两路汇合到XFER，实际状态与分支辅助定位首次慢。",
+          "original_line": 111,
+          "heading": "## 2. HCE 交易的延迟来自哪些阶段"
+        },
+        {
+          "original_id": "a272-02-hce-latency-phases",
+          "title": "HCE延迟按射频、路由绑定、应用与回传拆分",
+          "decision": "keep",
+          "reason": "射频、系统路由/绑定和应用/回传三条轨道区分端到端组成，不与绑定状态分支图重复。",
+          "original_line": 118,
+          "heading": "## 2. HCE 交易的延迟来自哪些阶段"
+        },
+        {
+          "original_id": "a272-04-intent-target-and-url",
+          "title": "目标37的标签Intent保护与URL入口分别处理",
+          "decision": "keep",
+          "reason": "目标37的具体NFC Intent过滤与16/17的URL ACTION_VIEW两条不同入口并列，可避免把新Intent保护套到所有URL和旧target。",
+          "original_line": 181,
+          "heading": "### 3.1 目标 SDK 37 的 NFC `Intent` 适配"
+        },
+        {
+          "original_id": "a272-05-reader-lifecycle-and-io",
+          "title": "ReaderMode按前台生命周期管理Tag任务",
+          "decision": "remove",
+          "reason": "ReaderMode注册、工作线程I/O、取消close及UI回主线程四框复述紧邻示例与逐段生产边界说明。",
+          "original_line": 223,
+          "heading": "### 3.2 Reader Mode 的标签离场回调"
+        },
+        {
+          "original_id": "a272-06-async-apdu-submission-boundary",
+          "title": "异步APDU发送前失效检查与框架排队边界",
+          "decision": "keep",
+          "reason": "应用主线程代次检查与框架再次Handler排队是两层提交边界，后半段不在示例代码中且决定不能撤回旧响应。",
+          "original_line": 322,
+          "heading": "### 4.2 `processCommandApdu()` 的线程模型"
+        },
+        {
+          "original_id": "a272-08-observe-one-transaction",
+          "title": "ObserveMode按调用资格临时放行一笔HCE交易",
+          "decision": "remove",
+          "reason": "Observe放行前提与结束恢复四框逐项重复紧邻检查列表，保留列表更准确的资格和恢复条件。",
+          "original_line": 375,
+          "heading": "### `allowOneTransaction()` 的调用条件"
+        },
+        {
+          "original_id": "a272-09-power-saving-state-and-support",
+          "title": "节电模式能力必须结合适配器状态判断",
+          "decision": "remove",
+          "reason": "支持查询需开启NFC与节电生效状态已由三段说明逐项覆盖；四框未增加真实状态分支。",
+          "original_line": 402,
+          "heading": "## 6. NFC 节电模式"
+        },
+        {
+          "original_id": "a272-10-two-clock-measurement",
+          "title": "外部往返与应用处理可各用本端时钟测量",
+          "decision": "remove",
+          "reason": "两端同钟相减与跨端需校准已由时间点表和公式段落清楚说明，四框串行不是真实两端时间线。",
+          "original_line": 452,
+          "heading": "### 8.1 时间点要来自两端"
+        },
+        {
+          "original_id": "a272-07-trace-command-versus-response",
+          "title": "命令ACK、应用异步工作和响应ACK分别测量",
+          "decision": "keep",
+          "reason": "命令ACK、null后异步和响应ACK三条时间轨道区分系统slice与应用真实工作区间，补充Trace代码不能表达的时间边界。",
+          "original_line": 473,
+          "heading": "### 8.2 Android 侧只读诊断"
+        },
+        {
+          "original_id": "a272-11-nfc-evidence-layers",
+          "title": "按分发、服务、控制器与外部终端分层取证",
+          "decision": "remove",
+          "reason": "分发、应用、回传与厂商取证四框重复故障表和内核线索列表，没有新增跨层证据连线。",
+          "original_line": 523,
+          "heading": "## 10. 内核与厂商实现"
+        }
+      ],
+      "sha256_after": "39f2c9e6274bb69ceff4387fe50525e25afc6fefb42955165cf28bd1c71dee11",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:54:38.969588+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 11,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a272/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a272/visual-review.json",
+      "retired_diagrams": [
+        "a272-05-reader-lifecycle-and-io",
+        "a272-08-observe-one-transaction",
+        "a272-09-power-saving-state-and-support",
+        "a272-10-two-clock-measurement",
+        "a272-11-nfc-evidence-layers"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-272/retired-assets.json"
     },
     {
       "index": 274,
@@ -65472,8 +65586,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 186,
-  "next_article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+  "reviewed_articles": 187,
+  "next_article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -65483,7 +65597,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:52:39.236913+08:00",
+  "updated_at": "2026-10-31T18:54:38.969588+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -65619,9 +65733,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5535,
-  "reviewed_placements_after": 2167,
-  "net_removed_placements": 3368,
+  "reviewed_placements_before": 5546,
+  "reviewed_placements_after": 2173,
+  "net_removed_placements": 3373,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -65645,7 +65759,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 186,
+  "currently_matching_reviewed_source_count": 187,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
