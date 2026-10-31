@@ -56398,9 +56398,223 @@
       "before_count": 22,
       "before_all_images": 22,
       "sha256_before": "d82b7abaf347ee663404efd7e9b87bca24a0351c76877e436f4a1cb18192e4e9",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a225-01-optimization-consumers",
+          "title": "三类 Profile 优化由不同工具消费",
+          "decision": "remove",
+          "reason": "范围段落已区分ART DEX、LLVMnativeAutoFDO与系统构建链路，三行消费方映射卡重复。",
+          "original_line": 93,
+          "heading": "### 1. Baseline Profile 是编译提示"
+        },
+        {
+          "original_id": "a225-02-hrf-to-art",
+          "title": "从可读规则到 ART 编译产物",
+          "decision": "remove",
+          "reason": "九行原生文本链已完整表达HRF重写打包交付到ART，四框PNG为更短同链。",
+          "original_line": 124,
+          "heading": "#### 1.3 构建到设备的链路"
+        },
+        {
+          "original_id": "a225-03-profile-producers",
+          "title": "四种 Profile 的生产与消费位置",
+          "decision": "remove",
+          "reason": "四种Profile生产者/用途/边界表与Cloud时机段落完整，四行分类图重复。",
+          "original_line": 162,
+          "heading": "### 2. 四种 profile 不要混用"
+        },
+        {
+          "original_id": "a225-04-generator-path",
+          "title": "采集场景同时校验页面与启动范围",
+          "decision": "keep",
+          "reason": "同一确定CUJ采集分出全部高频Baseline与仅初显Startup两个输出，突出规则共享生成但消费范围不同。",
+          "original_line": 254,
+          "heading": "#### 4.3 覆盖所有主要启动入口"
+        },
+        {
+          "original_id": "a225-05-generation-artifacts",
+          "title": "生成变体与最终发布产物分工",
+          "decision": "remove",
+          "reason": "生成变体/最终release职责表、重写打包段落和路径大小清单完整，三行产物分类卡重复。",
+          "original_line": 298,
+          "heading": "### 6. 检查 APK/AAB"
+        },
+        {
+          "original_id": "a225-06-delivery-branches",
+          "title": "安装渠道决定 Profile 到达哪个阶段",
+          "decision": "keep",
+          "reason": "发布APK经ProfileInstaller current、支持DM安装器reference或17允许直接读包内三条路径汇入dexopt，解释交付差别。",
+          "original_line": 332,
+          "heading": "#### 7.2 `ProfileVerifier` 能说明什么"
+        },
+        {
+          "original_id": "a225-07-verifier-evidence",
+          "title": "ProfileVerifier 1.4.1 的证据边界",
+          "decision": "remove",
+          "reason": "ProfileVerifier状态列表与1.4.1启发式/版本I/O限制两段更完整，三行检查器证据卡重复。",
+          "original_line": 350,
+          "heading": "#### 7.2 `ProfileVerifier` 能说明什么"
+        },
+        {
+          "original_id": "a225-08-compilation-modes",
+          "title": "Macrobenchmark 编译模式的实验含义",
+          "decision": "remove",
+          "reason": "None/Partial/Full的三段精确实验语义及代码完整，三行模式卡重复。",
+          "original_line": 424,
+          "heading": "#### 8.2 正确解释 `None` 与 `Partial`"
+        },
+        {
+          "original_id": "a225-09-dex-layout",
+          "title": "Startup Profile 把启动代码集中到合适布局",
+          "decision": "keep",
+          "reason": "Startup规则经R8D8分布到启动DEX相邻区与后续其他区的布局图，解释文件局部性和容量分工。",
+          "original_line": 466,
+          "heading": "#### 9.2 验证方式"
+        },
+        {
+          "original_id": "a225-10-layout-proof",
+          "title": "验证最终发布 DEX 保留布局",
+          "decision": "remove",
+          "reason": "五行证据能/不能证明表及checksum段落详尽，四框验证步骤重复。",
+          "original_line": 496,
+          "heading": "#### 9.3 证明 release 产物保留了布局"
+        },
+        {
+          "original_id": "a225-12-cold-protocol",
+          "title": "Macrobenchmark 1.5.0 的 COLD 准备顺序",
+          "decision": "keep",
+          "reason": "1.5.0清shader、杀进程、清页缓存再启动的协议先后，防止手工冷进程与冷缓存混同。",
+          "original_line": 516,
+          "heading": "#### 9.4 用单变量 A/B 隔离布局收益"
+        },
+        {
+          "original_id": "a225-11-layout-ab",
+          "title": "隔离 DEX 布局收益的单变量实验",
+          "decision": "remove",
+          "reason": "单变量布局实验固定项、五类Trace检查和缓存段落完整，三行实验卡重复。",
+          "original_line": 521,
+          "heading": "#### 9.4 用单变量 A/B 隔离布局收益"
+        },
+        {
+          "original_id": "a225-14-validation-stages",
+          "title": "安装接受 DM 与 ART 接受 Profile 是两道检查",
+          "decision": "remove",
+          "reason": "安装ZIP校验与编译格式DEX校验及IGNORE仅安装期的三段说明完整，三行阶段映射卡重复。",
+          "original_line": 622,
+          "heading": "### DM 文件与 ART 编译模式"
+        },
+        {
+          "original_id": "a225-13-dm-inputs",
+          "title": "每个 APK 的外部 Profile 与 DM 输入",
+          "decision": "remove",
+          "reason": "三外部输入和逐APKDM语义已由原生14行架构文本及三个源码要点详述，分类卡重复且前面交付分支保留。",
+          "original_line": 629,
+          "heading": "#### 从安装到编译的执行链路"
+        },
+        {
+          "original_id": "a225-15-art-service-chain",
+          "title": "Android 14+ 的设备端 AOT 执行链路",
+          "decision": "remove",
+          "reason": "紧邻原生14行文本架构有完整PackageManager/ART/artd/dex2oat与后台入口，四框同链重复。",
+          "original_line": 655,
+          "heading": "#### 从安装到编译的执行链路"
+        },
+        {
+          "original_id": "a225-16-filter-and-reason",
+          "title": "请求策略、实际策略与触发原因分别记录",
+          "decision": "remove",
+          "reason": "filter三行表、requested/actual说明与reason两定义完整，三行字段映射卡重复。",
+          "original_line": 676,
+          "heading": "#### compiler filter 与 compilation reason"
+        },
+        {
+          "original_id": "a225-17-shared-private",
+          "title": "Android 17 共享代码的 Profile 与产物权限",
+          "decision": "keep",
+          "reason": "共享代码请求按外部有效、本地有效或都无规则三分支决定产物公开/私有/verify，表达权限与输入选择关系。",
+          "original_line": 699,
+          "heading": "### dex2oat、bg-dexopt-job 与空闲编译"
+        },
+        {
+          "original_id": "a225-18-background-window",
+          "title": "后台 dexopt 的条件与时机",
+          "decision": "remove",
+          "reason": "默认属性列表与idlecharging/热取消/无postboot说明完整，三行后台窗口卡重复。",
+          "original_line": 706,
+          "heading": "### dex2oat、bg-dexopt-job 与空闲编译"
+        },
+        {
+          "original_id": "a225-19-profile-reset-controls",
+          "title": "三类 shell 操作改变的状态不同",
+          "decision": "remove",
+          "reason": "三组shell命令及其清current/reference/保留external/产物差别逐段详述，三行命令映射卡重复。",
+          "original_line": 782,
+          "heading": "#### 第三道检查：构造无 AOT 编译基线"
+        },
+        {
+          "original_id": "a225-20-experiment-groups",
+          "title": "无 AOT、目标 Profile 与设备稳态三组比较",
+          "decision": "remove",
+          "reason": "无AOT/目标profile/稳态三组实验表和条件清单更完整，三行实验分类卡重复。",
+          "original_line": 812,
+          "heading": "#### 三组实验与观测字段"
+        },
+        {
+          "original_id": "a225-21-split-release-audit",
+          "title": "发布与动态模块逐 APK 验收",
+          "decision": "remove",
+          "reason": "四场景逐base/split/secondary核查表及七步排查清单完整，三行模块验收卡重复。",
+          "original_line": 883,
+          "heading": "### 排查手册"
+        },
+        {
+          "original_id": "a225-22-evidence-chain",
+          "title": "Profile 优化的最终证据链",
+          "decision": "remove",
+          "reason": "末段同一场景→发布→交付→接受→状态→收益链已清楚，四框总结并重复前文HRF链，无需再留。",
+          "original_line": 902,
+          "heading": "## 小结"
+        }
+      ],
+      "sha256_after": "a78db40410f4a2ed88050d26eaf17ae4cbf6153aae8cfbd415b9995ca1023a70",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:53:10.209524+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 22,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a225/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a225/visual-review.json",
+      "retired_diagrams": [
+        "a225-01-optimization-consumers",
+        "a225-02-hrf-to-art",
+        "a225-03-profile-producers",
+        "a225-05-generation-artifacts",
+        "a225-07-verifier-evidence",
+        "a225-08-compilation-modes",
+        "a225-10-layout-proof",
+        "a225-11-layout-ab",
+        "a225-13-dm-inputs",
+        "a225-14-validation-stages",
+        "a225-15-art-service-chain",
+        "a225-16-filter-and-reason",
+        "a225-18-background-window",
+        "a225-19-profile-reset-controls",
+        "a225-20-experiment-groups",
+        "a225-21-split-release-audit",
+        "a225-22-evidence-chain"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-225/retired-assets.json"
     },
     {
       "index": 226,
@@ -57019,8 +57233,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 150,
-  "next_article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+  "reviewed_articles": 151,
+  "next_article": "src/part5-app/ch21-startup/05-splash-screen.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -57030,7 +57244,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:47:27.742753+08:00",
+  "updated_at": "2026-10-31T16:53:10.209524+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -57208,9 +57422,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4689,
-  "reviewed_placements_after": 1945,
-  "net_removed_placements": 2744,
+  "reviewed_placements_before": 4711,
+  "reviewed_placements_after": 1950,
+  "net_removed_placements": 2761,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -57234,5 +57448,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 150
+  "currently_matching_reviewed_source_count": 151
 }

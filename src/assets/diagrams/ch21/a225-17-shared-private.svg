@@ -7,7 +7,7 @@
 <path d="M 500 144 L 510 150 L 500 156" stroke="#202020" stroke-width="2.8" fill="none"/>
 <path d="M 390 300 L 450 300 L 450 430 L 510 430" stroke="#202020" stroke-width="2.8" fill="none"/>
 <path d="M 500 424 L 510 430 L 500 436" stroke="#202020" stroke-width="2.8" fill="none"/>
-<path d="M 230 340 L 230 530 L 1165 530 L 1165 340" stroke="#202020" stroke-width="2.8" fill="none"/>
+<path d="M 230 340 L 230 510 L 1165 510 L 1165 340" stroke="#202020" stroke-width="2.8" fill="none"/>
 <path d="M 1159 350 L 1165 340 L 1171 350" stroke="#202020" stroke-width="2.8" fill="none"/>
 <path d="M 74 220 Q 230.0 220.5 386 220 Q 390 220 390 224 L 390 336 Q 390 340 386 340 Q 230.0 340.4 74 340 Q 70 340 70 336 L 70 224 Q 70 220 74 220" fill="white" stroke="#4A90D9" stroke-width="3"/>
 <text x="230.0" y="271.5" text-anchor="middle" style="font-size:25px">
