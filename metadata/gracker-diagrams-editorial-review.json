@@ -42547,9 +42547,274 @@
       "before_count": 26,
       "before_all_images": 26,
       "sha256_before": "1ea4640e8d3cf2a545abeb714cbb5eea3c3ce4540a569988cc4b8da9df361e66",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch15-14-01-four-output-boundaries",
+          "title": "同一 session 的四种输出边界",
+          "decision": "remove",
+          "reason": "四output分支已由紧邻原生完整Camera管线覆盖，正文各consumer责任与共享约束完整留。",
+          "original_line": 118,
+          "heading": "## 基线、设备边界与四类问题"
+        },
+        {
+          "original_id": "ch15-14-02-request-result-consumer",
+          "title": "请求、结果与每路 consumer 的公共路径",
+          "decision": "remove",
+          "reason": "request→HAL→result→consumer重复原生全链，不再保同链第二图；metadata与buffer分批、fence边界正文留。",
+          "original_line": 169,
+          "heading": "## 分析所需的最小 Camera Buffer 模型"
+        },
+        {
+          "original_id": "ch15-14-03-three-fence-roles",
+          "title": "复用前、HAL 写完与 consumer 读完",
+          "decision": "remove",
+          "reason": "三列逐项重画三类fence表，无实际并行等待或signal例；acquire/HALrelease/consumerrelease各角色全文留。",
+          "original_line": 194,
+          "heading": "### Buffer ownership（当前持有者）与三类 fence"
+        },
+        {
+          "original_id": "ch15-14-04-buffer-management-limits",
+          "title": "HAL 管理、framework 管理与 App 持有上限",
+          "decision": "remove",
+          "reason": "三列逐项复制framework/HAL管理及maxBuffers/maxImages段落，无实际buffer流转例；unusedprefetch返还与正常result区别留。",
+          "original_line": 210,
+          "heading": "### HAL buffer management 与每路的 buffer 数量"
+        },
+        {
+          "original_id": "ch15-14-05-preview-carriers",
+          "title": "三种预览承载路径的额外工作",
+          "decision": "remove",
+          "reason": "三种carrier分支已由原生管线覆盖，SV非保证DEVICE及TV两队列、custom第二producer原文完整留。",
+          "original_line": 223,
+          "heading": "### SurfaceView、TextureView 与自研预览"
+        },
+        {
+          "original_id": "ch15-14-06-analysis-backpressure",
+          "title": "ImageReader 与 CameraX 的回压边界",
+          "decision": "remove",
+          "reason": "三列复写analysis回压与close段，未增加真实占用例，latest至少两spare及ImageProxy.close条件原文留。",
+          "original_line": 238,
+          "heading": "### ImageReader 与 CameraX ImageAnalysis 的回压（backpressure）"
+        },
+        {
+          "original_id": "ch15-14-07-metadata-lifetime",
+          "title": "Java 结果引用与 native metadata 生存期",
+          "decision": "keep",
+          "reason": "业务引用缓存→Java CaptureResult→CameraMetadataNative mMetadataPtr→native allocation的实际跨语言引用链独立，避免把Java小对象与native存活混淆。",
+          "original_line": 249,
+          "heading": "### metadata 也会跟随 Java 引用生存"
+        },
+        {
+          "original_id": "ch15-14-08-trace-configuration",
+          "title": "Camera 诊断配置与实际设备数据",
+          "decision": "remove",
+          "reason": "三步复制trace配置与覆盖检查列表，没有实际缺事件分支；完整配置代码与vendor覆盖边界留。",
+          "original_line": 306,
+          "heading": "### 抓取配置"
+        },
+        {
+          "original_id": "ch15-14-09-marker-boundaries",
+          "title": "三类 Camera 标记的起止语义",
+          "decision": "remove",
+          "reason": "三列marker边界重画紧邻完整表，未画真实slice/queue/fence轨；firstfullbuffer在尝试入队前等精确条件原文留。",
+          "original_line": 329,
+          "heading": "### 关键 Track 和 Slice（时间区间）"
+        },
+        {
+          "original_id": "ch15-14-10-event-identity",
+          "title": "先找事件身份，再解释预览帧率",
+          "decision": "remove",
+          "reason": "三步摘要事件发现SQL/owner选择/每帧单marker说明，无新关联关系；多stream重复计数限制和查询完整留。",
+          "original_line": 363,
+          "heading": "### SQL：先发现 Track，再算指标"
+        },
+        {
+          "original_id": "ch15-14-11-frame-count-edge-cases",
+          "title": "帧数与相邻间隔的 SQL 边界",
+          "decision": "keep",
+          "reason": "0帧/1帧/N帧对应0/0/N−1间隔的实际边界样例清楚，保留无足够样本fps为NULL而非0的区别。",
+          "original_line": 393,
+          "heading": "### SQL：量化帧间隔"
+        },
+        {
+          "original_id": "ch15-14-12-track-ownership",
+          "title": "thread track、process track 与归属限制",
+          "decision": "keep",
+          "reason": "thread_track经utid/thread到upid与process_track直达upid的真实schema关联不同，避免将PID或不同owner轨混合。",
+          "original_line": 433,
+          "heading": "### SQL：定位 Event 所属进程和线程"
+        },
+        {
+          "original_id": "ch15-14-13-async-duration-scope",
+          "title": "同步提交、异步请求与下游完成",
+          "decision": "remove",
+          "reason": "同步submit/异步closure/下游三列复写marker表与capture SQL解释，不新增时序，error闭合及fence未完成边界全文留。",
+          "original_line": 458,
+          "heading": "### SQL：观察 request-to-result"
+        },
+        {
+          "original_id": "ch15-14-14-python-analysis",
+          "title": "批量分析的精确过滤与资源清理",
+          "decision": "remove",
+          "reason": "四步逐项重画完整Python脚本流程，不增数据变换实例；materialize/finallyclose/严格递增与p95定义代码原样留。",
+          "original_line": 516,
+          "heading": "### Python SDK 自动化分析"
+        },
+        {
+          "original_id": "ch15-14-15-preview-diagnosis",
+          "title": "预览节奏的五段定位链",
+          "decision": "remove",
+          "reason": "五步直接复制预览定位编号清单和表格，无具体首次变慢样本；AE目标非实际帧周期原文留。",
+          "original_line": 544,
+          "heading": "### 预览帧率不达标"
+        },
+        {
+          "original_id": "ch15-14-16-buffer-owner-diagnosis",
+          "title": "从未归还的 buffer 找回压源",
+          "decision": "remove",
+          "reason": "bufferwait三分支只罗列六条诊断清单中的consumer候选，没有条件证据或实际owner转移；maxBuffers/maxImages与加队列不提升吞吐原文留。",
+          "original_line": 564,
+          "heading": "### Buffer 耗尽与 consumer 回压"
+        },
+        {
+          "original_id": "ch15-14-17-startup-milestones",
+          "title": "Camera 启动的六个测量边界",
+          "decision": "remove",
+          "reason": "六里程碑逐项重画紧邻六行启动表，无实际时间窗，App业务到首次可见与serviceopen范围全文留。",
+          "original_line": 588,
+          "heading": "### Camera 启动性能的分段测量"
+        },
+        {
+          "original_id": "ch15-14-18-platform-statistics",
+          "title": "三种 AOSP 内部统计口径",
+          "decision": "remove",
+          "reason": "三列重画openLatency/mRequestLatency/SessionStatsBuilder定义段，未画实际统计区间；drop0ms与hist分桶及首次非drop非首屏说明全文留。",
+          "original_line": 601,
+          "heading": "### AOSP 内部统计怎样解释"
+        },
+        {
+          "original_id": "ch15-14-19-zsl-reprocessing",
+          "title": "ZSL 历史源帧与后续重处理",
+          "decision": "keep",
+          "reason": "历史sourcebuffer和metadata身份经用户候选选择/普通回退到reprocess和交付的实际数据链独立，与后图数值测量互补。",
+          "original_line": 617,
+          "heading": "### 拍照与 ZSL 的耗时分段"
+        },
+        {
+          "original_id": "ch15-14-20-zsl-time-definitions",
+          "title": "source age、回调延迟与保存延迟",
+          "decision": "keep",
+          "reason": "同一时钟源10/触发30/回调75/文件95ms的20/45/20三轨数值例清楚，保留REALTIME同源、合成非实测和保存后回调限制。",
+          "original_line": 636,
+          "heading": "#### `source_age`、`callback_latency` 与 `save_latency`"
+        },
+        {
+          "original_id": "ch15-14-21-power-and-thermal",
+          "title": "Camera 能量实验与实际工作域",
+          "decision": "remove",
+          "reason": "四工作域分支复写功耗六条清单和度量段，未新增能量结果；sensor模式共享pipeline与热稳定、CPUtime非总能量原文留。",
+          "original_line": 654,
+          "heading": "## Camera 功耗优化"
+        },
+        {
+          "original_id": "ch15-14-22-camera2-camerax-comparison",
+          "title": "Camera2 与 CameraX 的等价实验条件",
+          "decision": "remove",
+          "reason": "三列复制紧邻Camera2/CameraX比较表与等价条件，无实际协商差异例；artifact/quirk/无通用固定ms边界全文留。",
+          "original_line": 676,
+          "heading": "## Camera2 与 CameraX 的性能差异"
+        },
+        {
+          "original_id": "ch15-14-23-hal-bottleneck-attribution",
+          "title": "按首次变慢的边界寻找候选原因",
+          "decision": "remove",
+          "reason": "三列逐项重画首次变慢归因段落，未画单帧重叠请求样例；不能将异步capture全归RequestThread及vendor关联键原文留。",
+          "original_line": 716,
+          "heading": "## HAL3 管线延迟的深度分析"
+        },
+        {
+          "original_id": "ch15-14-24-api37-capabilities",
+          "title": "Android17 的能力变化与性能边界",
+          "decision": "remove",
+          "reason": "三列重画RAW14/扩展/设备类型三个版本条目，没有独立能力分支；每4像素7字节、result动态类型与非公开名称排除全文留。",
+          "original_line": 731,
+          "heading": "### Android 17 的版本边界"
+        },
+        {
+          "original_id": "ch15-14-25-vulkan-capture-boundary",
+          "title": "GFXReconstruct 在 Camera 链上的位置",
+          "decision": "keep",
+          "reason": "外部Camera AHardwareBuffer到App Vulkan调用再到capture/replay的实际观察边界链独立，图注保留外部像素另验、protected与无layer性能基线。",
+          "original_line": 742,
+          "heading": "## GFXReconstruct 辅助检查花屏和 YUV 帧问题"
+        },
+        {
+          "original_id": "ch15-14-26-dump-tool-differences",
+          "title": "HAL plane、参数二进制与重放资源导出",
+          "decision": "remove",
+          "reason": "三列重述HALplane/convert参数/重放资源段落与排查表，未给实际资源例；参数二进制不等于每帧YUV及支持格式限制全文留。",
+          "original_line": 759,
+          "heading": "## GFXReconstruct 辅助检查花屏和 YUV 帧问题"
+        }
+      ],
+      "sha256_after": "875fcee8b036a9d4a3624364272108440fe333ca9738547ed5dbae60af275a90",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:41:56.120223+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 26,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a162/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a162/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 162,
+        "article": "src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
+        "registered_sha256": "1ea4640e8d3cf2a545abeb714cbb5eea3c3ce4540a569988cc4b8da9df361e66",
+        "frozen_sha256": "1ea4640e8d3cf2a545abeb714cbb5eea3c3ce4540a569988cc4b8da9df361e66",
+        "review_input_sha256": "3f11bc012f7b927bc343f891d132f6f717eeb8d8d1af98fb3f2381244539c67c",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a162/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a162/external-source.diff",
+        "diff_sha256": "76c78dfa70195daba832862744f749a0d1841255105a82a0f7e329ba2ec42c5b",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 332, \"characters\": 32782, \"svg_labels_read\": 26, \"actual_pngs_viewed\": 26, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 7, \"code_lines\": 155, \"native_mermaid\": 1, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "3f11bc012f7b927bc343f891d132f6f717eeb8d8d1af98fb3f2381244539c67c",
+      "retired_diagrams": [
+        "ch15-14-01-four-output-boundaries",
+        "ch15-14-02-request-result-consumer",
+        "ch15-14-03-three-fence-roles",
+        "ch15-14-04-buffer-management-limits",
+        "ch15-14-05-preview-carriers",
+        "ch15-14-06-analysis-backpressure",
+        "ch15-14-08-trace-configuration",
+        "ch15-14-09-marker-boundaries",
+        "ch15-14-10-event-identity",
+        "ch15-14-13-async-duration-scope",
+        "ch15-14-14-python-analysis",
+        "ch15-14-15-preview-diagnosis",
+        "ch15-14-16-buffer-owner-diagnosis",
+        "ch15-14-17-startup-milestones",
+        "ch15-14-18-platform-statistics",
+        "ch15-14-21-power-and-thermal",
+        "ch15-14-22-camera2-camerax-comparison",
+        "ch15-14-23-hal-bottleneck-attribution",
+        "ch15-14-24-api37-capabilities",
+        "ch15-14-26-dump-tool-differences"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-162/retired-assets.json"
     },
     {
       "index": 163,
@@ -43762,8 +44027,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 96,
-  "next_article": "src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
+  "reviewed_articles": 97,
+  "next_article": "src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -43773,7 +44038,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:35:51.941177+08:00",
+  "updated_at": "2026-10-31T13:41:56.120223+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -43825,17 +44090,17 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+      "registered_sha256": "0522da16d5eca4b232ff2f7d360838f4210df0180efd03d315958246e3c012df",
+      "observed_sha256": "bb1a60191200b2b8a680422c45cf19ab73b507491e4f9aa74b540eff410d0a2e",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part2-performance/ch10-memory-perf/README.md",
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
-      "registered_sha256": "1ea4640e8d3cf2a545abeb714cbb5eea3c3ce4540a569988cc4b8da9df361e66",
-      "observed_sha256": "3f11bc012f7b927bc343f891d132f6f717eeb8d8d1af98fb3f2381244539c67c",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -44133,9 +44398,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3377,
-  "reviewed_placements_after": 1510,
-  "net_removed_placements": 1867,
+  "reviewed_placements_before": 3403,
+  "reviewed_placements_after": 1516,
+  "net_removed_placements": 1887,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
