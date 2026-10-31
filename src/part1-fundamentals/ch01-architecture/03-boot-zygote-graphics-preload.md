@@ -4,7 +4,10 @@ chapter: '1.3'
 section: '1.3'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-25'
+last_verified: '2026-10-29'
+last_source_verified_at: '2026-10-29T22:40:19+08:00'
+last_idle_audit_at: '2026-10-29T22:40:19+08:00'
+verification_scope_note: '复核固定标签下的 Zygote 预加载与 PostFork 边界、进程事件 tag、子 Zygote 的 ABI 选择、图形预热入口及 Perfetto 启动配置；未进行设备性能实测。'
 last_verified_against: 'AOSP android-17.0.0_r1: system/core init/rootdir/bootstat/init.zygote*, frameworks/base Zygote/ZygoteConnection/ZygoteProcess/SystemServer/UserController/EventLogTags/GraphicsEnvironment/HWUI, external/perfetto perfetto.rc; Android Common Kernel android17-6.18-2026-06_r6: init/main.c and boot-critical kernel paths'
 confidence: high
 sources:
@@ -577,7 +580,7 @@ ZygoteHooks.postForkCommon();
 - 设置进程名、调试与内存安全选项；
 - 运行 ART 在 fork 后为子进程准备的回调。
 
-这些步骤负责建立应用的安全隔离，也会计入进程创建时间。某次启动在 `PostFork` 区段内显著变慢时，应检查挂载操作、文件描述符、SELinux、调度和运行时回调，`fork()` 系统调用本身只是其中一步。
+这些步骤负责建立应用的安全隔离，也会计入进程创建时间。普通 fork 路径在 `nativeForkAndSpecialize()` 返回子进程后才开始 `PostFork`，挂载和 SELinux 安全域切换已在此前的 `SpecializeCommon()` 中完成。`PostFork` 包含网络权限设置、Java 线程优先级调整、`ZygoteHooks.postForkCommon()` 及进入应用入口前的部分清理。排查原生特化耗时，应对齐 Zygote 请求、内核进程创建事件、新进程调度和原生调用栈，不能把整段特化时间算进 `PostFork`。
 
 #### 内核中的 fork 与 COW
 
@@ -616,7 +619,7 @@ USAP 池启用后，主/次 Zygote 可以预先维护一小组尚未绑定具体
 | 普通 Zygote | 是 | `forkAndSpecialize()` | 子进程完成特化并进入应用入口 |
 | USAP 命中 | 否，使用池中现有进程 | `specializeAppProcess()` | 现有进程完成特化并进入应用入口 |
 
-两条路径都会在目标进程中开始名为 `PostFork` 的 Trace 区段。它只说明 fork 后或特化后的准备阶段已经开始；这次启动是不是刚执行了 `fork()`，要再结合上下文判断。
+两条路径都在原生特化返回 Java 后开始名为 `PostFork` 的 Trace 区段。它覆盖特化完成后的子进程准备，不包含此前的挂载和 SELinux 安全域切换；这次启动是否刚执行了 `fork()`，还要结合 USAP 配置与进程事件判断。
 
 <!-- gracker-diagram: ch01-03-usap-selection -->
 ![普通 fork 与 USAP 命中的两条创建路径](../../assets/diagrams/ch01/ch01-03-usap-selection.png)
@@ -683,7 +686,8 @@ ZygoteConnection.handleChildProc()
 | 区间 | 优先怀疑 |
 |---|---|
 | `system_server` 发出请求到 PID 返回 | Zygote 套接字、USAP/fork、父进程调度 |
-| `PostFork` | 原生特化、挂载操作、SELinux、运行时 fork 后回调 |
+| 原生特化开始到 `PostFork` 开始 | 挂载、SELinux、运行时回调与调度；需结合原生调用栈定位 |
+| `PostFork` | 网络权限设置、Java 线程优先级、`postForkCommon()`、套接字清理和进程命名 |
 | `ActivityThreadMain` 到 `attachApplication` | 子进程调度、运行时入口、Binder 初始化 |
 | `bindApplication` | APK/类加载、Application、Provider、配置 |
 | 应用绑定完成到首帧 | Activity、View、资源、RenderThread、Surface |
@@ -696,8 +700,10 @@ ZygoteConnection.handleChildProc()
 |---|---|---|---|---|
 | 主 Zygote（Primary Zygote） | `init` | 主 ABI、`system_server`、普通应用 | 通常立即预加载 | 产品配置可启用 |
 | 次 Zygote（Secondary Zygote） | `init` | 次 ABI 的普通应用 | 64/32 位配置中通常延迟预加载 | 产品配置可启用 |
-| WebView Zygote | `WebViewZygote` 经主 Zygote 创建 | WebView 及其渲染器进程 | 预加载当前 WebView 实现 | 不支持 |
-| App Zygote | `AppZygote` 经主 Zygote 创建 | 声明 `useAppZygote` 的隔离服务 | 调用应用的 `ZygotePreload` 实现 | 不支持 |
+| WebView Zygote | `WebViewZygote` 经 ABI 匹配的主/次 Zygote 创建 | WebView 及其渲染器进程 | 预加载当前 WebView 实现 | 不支持 |
+| App Zygote（Java 隔离服务） | `AppZygote` 经 ABI 匹配的主/次 Zygote 创建 | 声明 `useAppZygote` 的 Java 隔离服务 | 调用应用的 `ZygotePreload` 实现 | 不支持 |
+
+`WebViewZygote` 与 Java App Zygote 都把目标 ABI 传给 `startChildZygote()`，再由 `ZygoteProcess` 匹配主/次套接字。`AppZygote.java` 对原生服务另选 `Process.NATIVE_ZYGOTE_PROCESS`，并跳过这里的 Java `preloadApp()` 路径。
 
 #### App Zygote 与 `ZygotePreload`
 
@@ -734,7 +740,7 @@ ZygoteConnection.handleChildProc()
 - Zygote 进程：`ZygotePreload`、`PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver`；
 - 目标应用：`PostFork`、`ZygoteInit`、`ActivityThreadMain`、`bindApplication`；
 - `system_server`：异步 Trace 区段 `launching: <package>`；
-- EventLog：进程启动/绑定相关事件；AOSP 17 公开 `EventLogTags.logtags` 中部分 tag 名称被脱敏，查询时应以设备 `logcat -b events` 输出和对应构建的 logtags 为准。
+- EventLog：`am_proc_start`（30014）和 `am_proc_bound`（30010）分别是进程启动与绑定的观察入口；解析时以设备 `logcat -b events` 输出和对应构建的 logtags 为准。
 
 只有在性能轨迹启用了 Android 日志并包含 `events` 缓冲区时，才能查询 EventLog；轨迹里查不到这些记录，说明不了进程没有启动。
 
@@ -750,7 +756,7 @@ ZygoteConnection.handleChildProc()
 几个常见结论：
 
 - Zygote 侧等待很久、目标进程尚未运行：检查套接字排队、USAP 池补充、父 Zygote 调度和系统负载；
-- `PostFork` 长：检查原生特化步骤；
+- `PostFork` 长：检查网络权限设置、`postForkCommon()`、套接字清理、进程命名及线程调度；挂载与 SELinux 安全域切换发生在该区段开始前；
 - `PostFork` 已结束，但 `ActivityThreadMain` 或 `attach()` 很晚：检查新进程是否长时间处于 runnable 状态却没得到 CPU，或运行时入口是否阻塞；
 - `bindApplication` 长：优先检查内容提供者、Application、类加载和资源；
 - 目标进程早已存在：本次属于温启动或热启动（warm/hot start），Zygote 不在关键路径上。
@@ -1435,6 +1441,12 @@ adb logcat -v threadtime \
 - [AOSP：Vulkan architecture](https://source.android.com/docs/core/graphics/arch-vulkan)
 - [AOSP：Implement Vulkan](https://source.android.com/docs/core/graphics/implement-vulkan)
 - [Android Developers：Games guidelines / Android 17 ANGLE opt-in](https://developer.android.com/games/guidelines)
+- [AOSP：Zygote.java（fork、USAP 与 PostFork 边界）@ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/Zygote.java)
+- [AOSP：Zygote 原生 fork 与特化 @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/com_android_internal_os_Zygote.cpp)
+- [AOSP：进程启动与绑定的 EventLogTags @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/EventLogTags.logtags)
+- [AOSP：AppZygote.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/AppZygote.java)
+- [AOSP：WebViewZygote.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewZygote.java)
+- [AOSP：ZygoteProcess.java（子 Zygote 与 ABI 选择）@ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java)
 - [AOSP：ZygoteInit.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java)
 - [AOSP：com_android_internal_os_ZygoteInit.cpp（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/com_android_internal_os_ZygoteInit.cpp)
 - [AOSP：zygote_preload_graphics（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/apex/jni_runtime.cpp)
@@ -1444,7 +1456,7 @@ adb logcat -v threadtime \
 - [AOSP：HardwareRenderer.java（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java)
 - [AOSP：RenderProxy.cpp（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp)
 - [AOSP：RenderThread.cpp（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
-- [版本演进：GraphicBufferMapper.cpp（android-14.0.0_r1） @ android-13.0.0_r1](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-13.0.0_r1/libs/ui/GraphicBufferMapper.cpp（android-16.0.0_r1）)
+- [版本演进：GraphicBufferMapper.cpp @ android-13.0.0_r1](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-13.0.0_r1/libs/ui/GraphicBufferMapper.cpp)
 - [版本演进：GraphicBufferMapper.cpp @ android-14.0.0_r1](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-14.0.0_r1/libs/ui/GraphicBufferMapper.cpp)
 - [版本演进：GraphicBufferMapper.cpp @ android-16.0.0_r1](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/libs/ui/GraphicBufferMapper.cpp)
 - [版本演进：zygote_preload_graphics（android-13.0.0_r1） @ android-13.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-13.0.0_r1/libs/hwui/apex/jni_runtime.cpp)
