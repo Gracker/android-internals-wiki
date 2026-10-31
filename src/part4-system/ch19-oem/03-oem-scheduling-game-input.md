@@ -142,10 +142,6 @@ sched_ext、MUSCHED 和 Binder 的优先级传播，都会影响关键线程拿�
 
 ### 阅读前要分开的三件事
 
-<!-- gracker-diagram: a201-01-scx-three-gates -->
-![sched_ext 生效的三层确认](../../assets/diagrams/ch19/a201-01-scx-three-gates.png)
-
-图：确认编译、运行和接管范围后，才能讨论目标线程是否受 BPF 策略影响；enable_seq 只证明本次开机曾成功启用。
 
 拿到一台设备，我们要先分清三件事：内核有没有编译 sched_ext、当前有没有 BPF 调度器在运行、目标线程有没有被它接管。arm64 GKI（Generic Kernel Image，通用内核镜像）配置里含有 `CONFIG_SCHED_CLASS_EXT=y`。sched_ext 是 Linux 的可扩展调度类，允许 eBPF（extended Berkeley Packet Filter）程序提供普通任务的调度策略；eBPF 程序加载前要经过安全校验，再在内核中执行。
 
@@ -161,10 +157,6 @@ sched_ext、MUSCHED 和 Binder 的优先级传播，都会影响关键线程拿�
 
 ### sched_ext 在 Android CPU 调度栈中的位置
 
-<!-- gracker-diagram: a201-02-scheduler-layers -->
-![用户工作、内核策略与硬件约束](../../assets/diagrams/ch19/a201-02-scheduler-layers.png)
-
-图：用户空间调度工作，内核调度线程；sched_ext 不接管 stop、DL 或 RT，也不能绕过亲和性、温控和硬件上限。
 
 先看这些工作进了内核之后归谁管。应用创建的 Java 线程、native 线程（通常承载 C/C++ 代码）和 Binder 线程进入内核后，都以 `task_struct`（Linux 的任务数据结构）表示。线程池、协程调度器和 WorkManager 决定工作怎样映射到线程；到了内核这一层，一个 runnable 的普通任务——工作已就绪，但可能仍在等 CPU——选哪颗 CPU、在队列里排第几、什么时候拿到运行时间，由 sched_ext 决定。两者处在不同层级。
 
@@ -271,10 +263,6 @@ BPF 调度器通过 `struct sched_ext_ops` 提供策略，这个版本的内核�
 
 #### 一次唤醒怎样走到 CPU
 
-<!-- gracker-diagram: a201-05-dsq-cycle -->
-![sched_ext 唤醒与分发路径](../../assets/diagrams/ch19/a201-05-dsq-cycle.png)
-
-图：直接插入 local 的唤醒路径可跳过 enqueue；CPU 消费 local，先从 global 取任务，仍为空时才让 dispatch 补充任务。
 
 下面的流程展示普通任务在 sched_ext 中最常见的调度周期。
 
@@ -358,10 +346,6 @@ full 模式中，`scx_switched_all()` 为真，schedutil 从 sched_ext 的 CPU �
 
 ### Android vendor hook（供厂商模块挂接逻辑的内核钩子） 与 OEM 策略边界
 
-<!-- gracker-diagram: a201-07-vendor-evidence -->
-![OEM 策略证据的强度](../../assets/diagrams/ch19/a201-07-vendor-evidence.png)
-
-图：通用 hook、第三方控制节点和量产实现分别核验；不能从节点命名推出 flag 映射或品牌统一算法。
 
 Android common 内核在 sched_ext 核心实现中放置了一组 `android_vh_*` vendor hook，供厂商模块在内核触发点上挂接自己的逻辑。这个 tag 上能看到的触发点涵盖：
 
@@ -615,10 +599,6 @@ MUSCHED、ADPF 和 Game Mode 分别位于不同控制层：MUSCHED 使用 OEM �
 
 ### 先建立端到端输入路径
 
-<!-- gracker-diagram: a201-11-input-end-to-end -->
-![从触控前端到屏幕呈现的阶段](../../assets/diagrams/ch19/a201-11-input-end-to-end.png)
-
-图：触摸到画面更新跨越采样、路由、应用与渲染、合成显示；输入交付或 ACK 只是其中一段，不能代替完整物理延迟。
 
 我们先把路径铺开。一次触摸变成屏幕上的画面反馈，要经过多段处理：
 
@@ -657,10 +637,6 @@ flowchart LR
 
 ### AOSP Game Mode 提供了什么
 
-<!-- gracker-diagram: a201-10-game-mode-power -->
-![Game Mode 的场景信号和输入路由](../../assets/diagrams/ch19/a201-10-game-mode-power.png)
-
-图：Game Mode 和 Power HAL 影响性能策略；输入窗口选择按 InputDispatcher 的规则执行，标准 API 没有游戏专属输入优先队列。
 
 Game Mode API 和相关干预机制在部分 Android 12 设备上可用；从 Android 13 起，该能力面向运行 Android 13 及以上的设备提供。官方文档要求游戏每次从暂停状态恢复时重新调用 `GameManager#getGameMode()`，因为用户可能在暂停期间切换 Standard、Performance 或 Battery 模式。游戏可据此调整画质、目标帧率和资源使用。
 
@@ -691,10 +667,6 @@ AOSP 的 Power HAL 文档把“提高前台游戏应用的 CPU 优先级”列�
 
 ### InputDispatcher 的事件目标选择
 
-<!-- gracker-diagram: a201-12-window-targets -->
-![InputDispatcher 的目标规则](../../assets/diagrams/ch19/a201-12-window-targets.png)
-
-图：不同输入类型使用不同的目标规则；可触摸窗口未必拥有键盘焦点，观察窗口和安全检查还会附加约束。
 
 `InputDispatcher.cpp` 不依赖 `GameManager`、`GAME_MODE_PERFORMANCE` 或游戏包名，它根据事件类型选择目标：
 
@@ -772,10 +744,6 @@ if (syncMode == InputEventInjectionSync::NONE) {
 
 ### View 层拦截的作用范围
 
-<!-- gracker-diagram: a201-14-view-interception -->
-![ViewGroup 手势拦截的边界](../../assets/diagrams/ch19/a201-14-view-interception.png)
-
-图：requestDisallowInterceptTouchEvent 只约束当前 View 树手势拦截；系统窗口路由、系统手势和受信任 pilfer 仍各按自己的规则运行。
 
 传统 View 层中，父 `ViewGroup` 可以在 `onInterceptTouchEvent()` 中接管原本发给子 View 的手势。父容器开始拦截后，原目标子 View 会收到 `ACTION_CANCEL`，后续事件交给父容器。
 
@@ -886,10 +854,6 @@ ORDER BY event_time;
 
 ### A/B 实验怎样组织
 
-<!-- gracker-diagram: a201-17-ab-attribution -->
-![游戏模式与 OEM 触控增强的对照](../../assets/diagrams/ch19/a201-17-ab-attribution.png)
-
-图：逐项改变条件，按输入交付、线程等待、渲染和呈现分段归因；固定固件、场景、FPS、刷新率和温度并重复采样。
 
 建议至少采集四种条件：
 

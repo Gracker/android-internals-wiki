@@ -52366,9 +52366,175 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "17c2b50ff583cdc404276fa1378fe17fb8cd97eb9e6ee19f25b8fb3fa1b1d3fe",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a201-01-scx-three-gates",
+          "title": "sched_ext 生效的三层确认",
+          "decision": "remove",
+          "reason": "编译/运行/接管三层已有编号清单和独立事实说明，四步检查图重复后面full/partial机制。",
+          "original_line": 145,
+          "heading": "### 阅读前要分开的三件事"
+        },
+        {
+          "original_id": "a201-02-scheduler-layers",
+          "title": "用户工作、内核策略与硬件约束",
+          "decision": "remove",
+          "reason": "同小节紧接的原生Mermaid已画完整task约束、调度类、DSQ和频率双输出；PNG三行分类更粗略，删除重复摘要并保留可折叠原生图。",
+          "original_line": 164,
+          "heading": "### sched_ext 在 Android CPU 调度栈中的位置"
+        },
+        {
+          "original_id": "a201-03-lifecycle-fallback",
+          "title": "BPF 调度器的启用和回退",
+          "decision": "keep",
+          "reason": "loader/struct_ops启用到错误、stall或退出回fair的生命周期，帮助解释不能原地更新及切换窗口需排除。",
+          "original_line": 207,
+          "heading": "### 从 GKI 编译能力到运行时启用"
+        },
+        {
+          "original_id": "a201-04-full-partial",
+          "title": "full、partial 与无调度器状态",
+          "decision": "keep",
+          "reason": "full/partial/无BPF三种状态各自的任务接管映射，明确NORMAL字段不等于未被SCX接管，与sysfs表互补。",
+          "original_line": 238,
+          "heading": "### full 与 partial 决定接管范围"
+        },
+        {
+          "original_id": "a201-05-dsq-cycle",
+          "title": "sched_ext 唤醒与分发路径",
+          "decision": "remove",
+          "reason": "同节原生sequenceDiagram完整显示select_cpu可选、直接local绕enqueue、local/global空才dispatch的交互顺序；PNG重复此周期，保留原生时序及细节正文。",
+          "original_line": 274,
+          "heading": "#### 一次唤醒怎样走到 CPU"
+        },
+        {
+          "original_id": "a201-06-frequency-modes",
+          "title": "full 和 partial 的利用率输入",
+          "decision": "keep",
+          "reason": "full仅SCX target、partial叠加fair util，再进入effective util和boost/CPUFreq的差异路径，对应11行C源码并保留后续约束。",
+          "original_line": 331,
+          "heading": "### sched_ext 与 schedutil 的关系"
+        },
+        {
+          "original_id": "a201-07-vendor-evidence",
+          "title": "OEM 策略证据的强度",
+          "decision": "remove",
+          "reason": "vendor hook与第三方hmbird线索/量产证据边界已有具体两组列表，三行取证分类是摘要，非实际策略。",
+          "original_line": 361,
+          "heading": "### Android vendor hook（供厂商模块挂接逻辑的内核钩子） 与 OEM 策略边界"
+        },
+        {
+          "original_id": "a201-08-vip-budget",
+          "title": "MUSCHED 有界 VIP 服务",
+          "decision": "keep",
+          "reason": "场景语义到BPF Map和每CPU VIP FIFO，再到累计预算撤销的有界服务链，标明论文3ms非平台帧预算及RT优先。",
+          "original_line": 532,
+          "heading": "#### 语义标注与有界 VIP 服务"
+        },
+        {
+          "original_id": "a201-09-dependency-propagation",
+          "title": "等待方、依赖方与优先级生命周期",
+          "decision": "keep",
+          "reason": "锁持有者OEM临时VIP、Binder内置policy/prio保存恢复和OEM VIP另行传播三种不同依赖状态的映射，防止混用标签。",
+          "original_line": 552,
+          "heading": "#### 锁与 Binder 依赖传播"
+        },
+        {
+          "original_id": "a201-11-input-end-to-end",
+          "title": "从触控前端到屏幕呈现的阶段",
+          "decision": "remove",
+          "reason": "同节原生Mermaid从Finger到scanout并标出firmware、power、scheduler、framerate入口，更完整；PNG四阶段摘要重复，保留原生图和七项路径。",
+          "original_line": 618,
+          "heading": "### 先建立端到端输入路径"
+        },
+        {
+          "original_id": "a201-10-game-mode-power",
+          "title": "Game Mode 的场景信号和输入路由",
+          "decision": "remove",
+          "reason": "GameMode应用读取、GAME/GAME_LOADING的PowerHAL链及InputDispatcher独立规则已有两个小节和Java代码，三行摘要重复后面的输入范围与计时。",
+          "original_line": 660,
+          "heading": "### AOSP Game Mode 提供了什么"
+        },
+        {
+          "original_id": "a201-12-window-targets",
+          "title": "InputDispatcher 的目标规则",
+          "decision": "remove",
+          "reason": "焦点/坐标/序列/FOREGROUND四条规则已有五项列表、窗口接受代码和专门小节，四行卡片重复映射。",
+          "original_line": 694,
+          "heading": "### InputDispatcher 的事件目标选择"
+        },
+        {
+          "original_id": "a201-13-async-injection",
+          "title": "异步输入注入的返回边界",
+          "decision": "keep",
+          "reason": "明确校验和入队后NONE调用方返回、后续才正常分发的返回边界，不把异步成功读成送达或零排队。",
+          "original_line": 748,
+          "heading": "### 异步注入的等待语义"
+        },
+        {
+          "original_id": "a201-14-view-interception",
+          "title": "ViewGroup 手势拦截的边界",
+          "decision": "remove",
+          "reason": "父拦截CANCEL、disallow当前序列和新DOWN清标志已有三段及Java条件代码，三行图只是规则摘要。",
+          "original_line": 775,
+          "heading": "### View 层拦截的作用范围"
+        },
+        {
+          "original_id": "a201-15-refresh-votes",
+          "title": "帧率偏好到物理刷新率",
+          "decision": "keep",
+          "reason": "WindowState偏好到SF综合多层投票/屏幕策略再到物理刷新/呈现的协作路径，区分请求、FPS和刷新间隔。",
+          "original_line": 802,
+          "heading": "### 刷新率为什么会改变“跟手”感"
+        },
+        {
+          "original_id": "a201-16-input-latency-tracks",
+          "title": "输入交付、ACK 与关联呈现的区间",
+          "decision": "keep",
+          "reason": "dispatch/handling/ack与read_time到关联present的多轨区间，非实测比例且ACK与呈现先后可变，帮助解释SQL各列及missing/speculative。",
+          "original_line": 846,
+          "heading": "### 用 Perfetto 分段测量延迟"
+        },
+        {
+          "original_id": "a201-17-ab-attribution",
+          "title": "游戏模式与 OEM 触控增强的对照",
+          "decision": "remove",
+          "reason": "四种AB条件已有编号清单和实验参数/观测顺序，四行对照卡没有新实验数据或因果关系。",
+          "original_line": 889,
+          "heading": "### A/B 实验怎样组织"
+        }
+      ],
+      "sha256_after": "6ca8c476bfed2e6a82e3cc4690e9a8a2dcafa3b3dc37ba9b1ff7d8079e0171dd",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:54:06.305216+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a201/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a201/visual-review.json",
+      "retired_diagrams": [
+        "a201-01-scx-three-gates",
+        "a201-02-scheduler-layers",
+        "a201-05-dsq-cycle",
+        "a201-07-vendor-evidence",
+        "a201-10-game-mode-power",
+        "a201-11-input-end-to-end",
+        "a201-12-window-targets",
+        "a201-14-view-interception",
+        "a201-17-ab-attribution"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-201/retired-assets.json"
     },
     {
       "index": 202,
@@ -53207,8 +53373,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 130,
-  "next_article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+  "reviewed_articles": 131,
+  "next_article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -53218,7 +53384,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:49:59.549069+08:00",
+  "updated_at": "2026-10-31T15:54:06.305216+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -53417,9 +53583,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4308,
-  "reviewed_placements_after": 1819,
-  "net_removed_placements": 2489,
+  "reviewed_placements_before": 4325,
+  "reviewed_placements_after": 1827,
+  "net_removed_placements": 2498,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -53443,5 +53609,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 130
+  "currently_matching_reviewed_source_count": 131
 }
