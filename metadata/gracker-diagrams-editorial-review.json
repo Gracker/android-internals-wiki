@@ -64060,9 +64060,133 @@
       "before_count": 12,
       "before_all_images": 12,
       "sha256_before": "df3594b06581caf22d1a26dcb8f7217805efa714d288151b3c4f5f4865178a7e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a262-01-wal-snapshot",
+          "title": "WAL 的单写者与读快照",
+          "decision": "keep",
+          "reason": "写者追加WAL与checkpoint到主库、早晚两个endmark读者分支体现单写者和多快照读取关系，区别连接数不等并行写者。",
+          "original_line": 163,
+          "heading": "### SQLite WAL 模式与并发优化"
+        },
+        {
+          "original_id": "a262-02-checkpoint-progress",
+          "title": "PASSIVE checkpoint 的忙标志与推进差额",
+          "decision": "remove",
+          "reason": "长事务→PASSIVE→部分推进→定位持有者四框重复前文PRAGMA返回三列的精确解释，无读标记或页推进可视化。",
+          "original_line": 210,
+          "heading": "#### Checkpoint（检查点）、长读事务与生效值"
+        },
+        {
+          "original_id": "a262-03-connection-pool-path",
+          "title": "Room 连接池先判断驱动是否自带池",
+          "decision": "keep",
+          "reason": "hasConnectionPool两路分别到framework/driver池和Room自建池，明确平台默认4与Room读写池不是同一个实现口径。",
+          "original_line": 244,
+          "heading": "#### Session、连接池与等待对象"
+        },
+        {
+          "original_id": "a262-04-flow-invalidation",
+          "title": "Room Flow 失效与去重发生的位置",
+          "decision": "keep",
+          "reason": "相关表写入→SQL和对象构造→distinct比较→下游发射的顺序，直观标出distinct之后的去重不能省前置查询工作。",
+          "original_line": 312,
+          "heading": "### Room 执行模型与常见性能问题"
+        },
+        {
+          "original_id": "a262-05-cursor-window-boundaries",
+          "title": "CursorWindow 重填、单行宽度与 Binder 是三件事",
+          "decision": "remove",
+          "reason": "窗口重填步骤和少行/减列文字摘要重复前文三类故障分析，没有画单行占用、分窗或FD/Parcel分支。",
+          "original_line": 357,
+          "heading": "#### CursorWindow 与窗口重填"
+        },
+        {
+          "original_id": "a262-06-keyset-stable-order",
+          "title": "复合索引与稳定排序键分页",
+          "decision": "remove",
+          "reason": "等值过滤、排序、末行和续页四框只是紧邻SQL及索引段落的逐步翻译，没有具体并列键或页边界示例。",
+          "original_line": 456,
+          "heading": "#### Paging 的 OFFSET 与基于排序键的分页"
+        },
+        {
+          "original_id": "a262-08-room3-driver-migration",
+          "title": "Room 3 迁移同时校验工程与运行时",
+          "decision": "remove",
+          "reason": "工程/接口/驱动六个独立卡片重复前面Room2/3迁移表和两驱动比较表，没有连接关系。",
+          "original_line": 626,
+          "heading": "#### 固定依赖、驱动与数据库结构输出"
+        },
+        {
+          "original_id": "a262-07-staged-migration",
+          "title": "大表迁移与应用回退分开验证",
+          "decision": "keep",
+          "reason": "兼容新增→双表示写入→可续回填→历史升级回退验证→结束兼容窗口的顺序帮助理解跨版本迁移不能直接删旧字段。",
+          "original_line": 672,
+          "heading": "#### 数据库结构、跨平台与回退验收"
+        },
+        {
+          "original_id": "a262-09-json-cost-pipeline",
+          "title": "JSON 解码的工作与可选树结构",
+          "decision": "keep",
+          "reason": "token扫描到目标对象的直接路径与可选JsonElement树绕路表达额外中间对象来源，并保留语义和R8对齐前提。",
+          "original_line": 767,
+          "heading": "#### 先验证语义，再比较速度"
+        },
+        {
+          "original_id": "a262-10-benchmark-scope",
+          "title": "稳态解码与首次用户路径分别测量",
+          "decision": "remove",
+          "reason": "稳态基准代码验证/预热/consume步骤已由前后说明完整覆盖，冷启动另测的卡片未提供测量结果或时间关系。",
+          "original_line": 847,
+          "heading": "#### 用可复现的基准测试比较"
+        },
+        {
+          "original_id": "a262-11-binary-format-evolution",
+          "title": "二进制格式的兼容与访问路径",
+          "decision": "remove",
+          "reason": "ProtocolBuffers字段演进和FlatBuffers按字段读取两行重复紧邻格式比较表、proto代码与段落。",
+          "original_line": 888,
+          "heading": "### Protocol Buffers 与 FlatBuffers"
+        },
+        {
+          "original_id": "a262-12-binder-shared-buffer",
+          "title": "Parcel 估算与进程共享 Binder 空间",
+          "decision": "remove",
+          "reason": "Binder公式、4/16页换算与共享说明几个框没画真实缓冲占用，正文更精确区分用户请求/内核上限/元数据/并发失败。",
+          "original_line": 958,
+          "heading": "#### Android 17 Binder 缓冲区容量"
+        }
+      ],
+      "sha256_after": "1aacfa9792248fad45d8cf056ec92701da46785b3ca42217a192e3fc4b2bb3b8",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:26:33.622927+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 12,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a262/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a262/visual-review.json",
+      "retired_diagrams": [
+        "a262-02-checkpoint-progress",
+        "a262-05-cursor-window-boundaries",
+        "a262-06-keyset-stable-order",
+        "a262-08-room3-driver-migration",
+        "a262-10-benchmark-scope",
+        "a262-11-binary-format-evolution",
+        "a262-12-binder-shared-buffer"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-262/retired-assets.json"
     },
     {
       "index": 263,
@@ -64373,8 +64497,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 178,
-  "next_article": "src/part5-app/ch24-io-network/02-database-serialization-performance.md",
+  "reviewed_articles": 179,
+  "next_article": "src/part5-app/ch24-io-network/03-data-cache-offline-first.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -64384,7 +64508,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:23:52.161768+08:00",
+  "updated_at": "2026-10-31T18:26:33.622927+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -64513,9 +64637,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5426,
-  "reviewed_placements_after": 2117,
-  "net_removed_placements": 3309,
+  "reviewed_placements_before": 5438,
+  "reviewed_placements_after": 2122,
+  "net_removed_placements": 3316,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -64539,5 +64663,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 178
+  "currently_matching_reviewed_source_count": 179
 }
