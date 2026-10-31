@@ -203,7 +203,7 @@ sequenceDiagram
 
 </details>
 
-图中的“app windows drawn”是窗口绘制上报触发 Framework 计时的回调点。它不等于 GPU 完成、HWC present 或面板发光；受提交、IPC 和调度影响，与实际 present 的先后应按同一 buffer 的 trace 核对，不能规定它必定早于面板点亮。
+图中的“app windows drawn”是窗口绘制上报触发 Framework 计时的回调点，到这里为止的都还是软件侧的绘制回报，GPU 完成、HWC present 和面板发光各有各的时刻；它和实际 present 谁先谁后，受提交、IPC 和调度影响，要按同一 buffer 的 trace 核对，事先假定它必定早于面板点亮会出错。
 
 #### 启动请求、任务解析与 starting window
 
@@ -332,7 +332,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 }
 ```
 
-所有 reporter 计数移除后，reporter 会经 executor 安排报告；`ComponentActivity` 的实现还与绘制回调配合。这仍不证明已经实际 present。业务必须先提交成功或可交互错误 UI；只在 `finally` 里减计数会把失败、取消但仍停在 loading 的页面误报为就绪。Activity 销毁导致的取消不应为了补一个 TTFD 而报告成功；仍存活页面若用新任务替换旧任务，应正确交接 readiness 条件。异步 Diff、图片等必需 UI 提交也要等到约定条件完成后再移除 reporter。
+所有 reporter 计数移除后，reporter 会经 executor 安排报告；`ComponentActivity` 的实现还与绘制回调配合。这仍不证明已经实际 present。业务必须先提交成功或可交互错误 UI；只在 `finally` 里减计数会把失败、取消但仍停在 loading 的页面误报为就绪。Activity 销毁导致的取消，这次 TTFD 缺席就让它缺席，报告成功只会污染数据；仍存活页面若用新任务替换旧任务，应正确交接 readiness 条件。异步 Diff、图片等必需 UI 提交也要等到约定条件完成后再移除 reporter。
 
 
 Compose 页面可以使用 `ReportDrawn`、`ReportDrawnWhen` 或 `ReportDrawnAfter` 表达相同的就绪条件。判断依据应是用户能否使用页面，无须等待所有后台任务结束。
@@ -394,9 +394,9 @@ fun readStartPhases(info: ApplicationStartInfo): Map<String, Double?> {
 }
 ```
 
-`START_TIMESTAMP_APPLICATION_ONCREATE` 记录回调开始点；`START_TIMESTAMP_BIND_APPLICATION` 是系统发送 bindApplication 时的时间点。因此差值还含 oneway 投递、接收和主线程排队，不能当作纯 `handleBindApplication()` CPU 时间；之后才是 Application 创建与 Provider 安装等回调前工作。`Application.onCreate()` 自身的执行时长要另外测：在回调里加自定义 trace section，或做方法级分析。
+`START_TIMESTAMP_APPLICATION_ONCREATE` 记录回调开始点；`START_TIMESTAMP_BIND_APPLICATION` 是系统发送 bindApplication 时的时间点。因此差值里还混着 oneway 投递、接收和主线程排队，是一段混合耗时，和纯 `handleBindApplication()` CPU 时间要分开看；之后才是 Application 创建与 Provider 安装等回调前工作。`Application.onCreate()` 自身的执行时长要另外测：在回调里加自定义 trace section，或做方法级分析。
 
-同一个 `startupTimestamps` map 中的时间戳可以直接相减。若要把 monotonic 时间戳叠加到 Perfetto，则应使用 trace clock snapshot（时钟快照） 转换时钟域，API 数值与 trace 主时间轴的零点未必一致。`getHistoricalProcessStartReasons()` 可能返回尚未完成的记录，缺少部分字段属于正常状态。文档还注明 Service 启动的 LAUNCH 时间戳在 Android 16（BAKLAVA）及更早版本可能不正确；异常样本要单独标记，不能靠相减得到可信延迟。
+同一个 `startupTimestamps` map 中的时间戳可以直接相减。若要把 monotonic 时间戳叠加到 Perfetto，则应使用 trace clock snapshot（时钟快照） 转换时钟域，API 数值与 trace 主时间轴的零点未必一致。`getHistoricalProcessStartReasons()` 可能返回尚未完成的记录，缺少部分字段属于正常状态。文档还注明 Service 启动的 LAUNCH 时间戳在 Android 16（BAKLAVA）及更早版本可能不正确；异常样本要单独标记，相减得到的延迟按不可信处理。
 
 
 ### 四类测量工具
@@ -451,7 +451,7 @@ fun coldStartup() = benchmarkRule.measureRepeated(
 <!-- gracker-diagram: ch08-02-15-cold-cache-protocol -->
 ![手工强停与 Macrobenchmark COLD 的差别](../../assets/diagrams/ch08/ch08-02-15-cold-cache-protocol.png)
 
-图：本文核对的 AndroidX COLD setup 还尝试清 shader / kernel page cache；记录版本与清理结果，不能只写“冷启动”。
+图：本文核对的 AndroidX COLD setup 还尝试清 shader / kernel page cache；记录版本与清理结果，只写“冷启动”三个字是不够的。
 
 #### Perfetto
 
@@ -485,14 +485,14 @@ WHERE s.package = 'com.example.app'
 ORDER BY s.ts;
 ```
 
-如果应用没有报告 TTFD，或 trace 未覆盖对应帧，`ttfd_ms` 可以为空。r1 `time_to_display.sql` 的端点取 RenderThread `DrawFrame` 切片结束：TTID 取选中的首帧，TTFD 取包含或晚于 fully-drawn 信号的候选帧。这与 Framework 窗口 drawn / Logcat 的计时端点、SF present 和面板发光均不同，不能把三者当成同一个数。
+如果应用没有报告 TTFD，或 trace 未覆盖对应帧，`ttfd_ms` 可以为空。r1 `time_to_display.sql` 的端点取 RenderThread `DrawFrame` 切片结束：TTID 取选中的首帧，TTFD 取包含或晚于 fully-drawn 信号的候选帧。这与 Framework 窗口 drawn / Logcat 的计时端点、SF present 和面板发光均不同，是三个各有定义的数，记录时要分开写。
 
-r1 的查询还要复核：以进程/时间推导关联，若多次启动、同包多个进程或缺少首帧，可能选到不属于该样本的后续帧；部分选帧使用 GROUP BY 搭配非聚合列，再在分组后 ORDER BY，不能据此证明组选中了最早帧。应核对 upid、frame id、目标窗口和样本边界，缺失时保留不确定性。
+r1 的查询还要复核：以进程/时间推导关联，若多次启动、同包多个进程或缺少首帧，可能选到不属于该样本的后续帧；部分选帧使用 GROUP BY 搭配非聚合列，再在分组后 ORDER BY，组里选中的是否为最早帧，从这里看不出来，要另行核对。应核对 upid、frame id、目标窗口和样本边界，缺失时保留不确定性。
 
 <!-- gracker-diagram: ed08-02-display-observation-endpoints -->
 ![启动显示指标的三类观测端点](../../assets/diagrams/ch08/ed08-02-display-observation-endpoints.png)
 
-图：三行分别按工具定义观测：Framework / Logcat 以目标窗口 drawn 与 fully drawn 计时，应用负责业务就绪；本文 r1 Perfetto 指标取选定的 RenderThread DrawFrame 结束作为代理端点，并需复核 startup、进程、窗口与帧；GPU、SF、HWC present 和面板结果另按同一 buffer 追踪。跨行位置不表示固定先后或时长，不能加固定 VSync 偏移互换，跨时钟域叠加还需转换。
+图：三行分别按工具定义观测：Framework / Logcat 以目标窗口 drawn 与 fully drawn 计时，应用负责业务就绪；本文 r1 Perfetto 指标取选定的 RenderThread DrawFrame 结束作为代理端点，并需复核 startup、进程、窗口与帧；GPU、SF、HWC present 和面板结果另按同一 buffer 追踪。跨行位置不表示固定先后或时长，行间换算没有固定的 VSync 偏移可用，跨时钟域叠加还需转换。
 
 ### Application 与 Provider 的启动成本
 
@@ -581,7 +581,7 @@ Compose 首帧包含初始 composition、measure / place 和 draw。启动期间
 
 #### Baseline Profile
 
-Baseline Profile 会随应用或库一起交付热点类和方法规则，ART 可以对覆盖路径进行 AOT（运行前）编译，具体可能发生在安装或后台优化阶段。首次运行是否已获编译收益取决于系统版本、安装渠道和 profile 安装/编译状态；例如 API 26–27 常靠 ProfileInstaller 首次写入后再等待后台优化，不能保证首次启动已完成 AOT。官方文档给出的“覆盖代码路径约有 30% 执行速度提升”是总体经验值；自己的 TTID 能缩短多少，要按应用实测。
+Baseline Profile 会随应用或库一起交付热点类和方法规则，ART 可以对覆盖路径进行 AOT（运行前）编译，具体可能发生在安装或后台优化阶段。首次运行是否已获编译收益取决于系统版本、安装渠道和 profile 安装/编译状态；例如 API 26–27 常靠 ProfileInstaller 首次写入后再等待后台优化，首次启动是否已完成 AOT，要按当时的安装与编译状态确认。官方文档给出的“覆盖代码路径约有 30% 执行速度提升”是总体经验值；自己的 TTID 能缩短多少，要按应用实测。
 
 生成 profile 后要确认：
 
@@ -658,7 +658,7 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 
 前文把启动拆成了一段段能直接测的时间，但跨进程等待还悬着：一笔 Binder 调用迟迟不返回时，要去对面的服务进程找原因。后半部分用 Binder Trace 回答 system_server、PackageManager、WindowManager 或其他服务为什么延迟返回。
 
-冷启动路径上的 Binder 瓶颈可以用 Perfetto 的 `android.binder` 标准库定位：一笔事务在客户端等待、服务端处理和返回调度上各花了多久，Binder 线程池是否饱和，目标进程冻结错误则需补查原始返回命令及进程状态；标准配对表无法独立证明所有失败或线程池拥塞原因。Binder 机制原理见 §1.9 和 §1.10，冷启动阶段划分见前文「从启动请求到首帧」。
+冷启动路径上的 Binder 瓶颈可以用 Perfetto 的 `android.binder` 标准库定位：一笔事务在客户端等待、服务端处理和返回调度上各花了多久，Binder 线程池是否饱和，目标进程冻结错误则需补查原始返回命令及进程状态；失败原因和线程池拥塞的认定，标准配对表独自给不出完整结论。Binder 机制原理见 §1.9 和 §1.10，冷启动阶段划分见前文「从启动请求到首帧」。
 
 ### 一、先把冷启动窗口和 Binder 范围分开
 
@@ -806,7 +806,7 @@ adb shell am start -W -S \
 采集结束后再执行 `adb pull /data/local/tmp/cold-start-binder.pftrace .`。
 
 
-手工 `am start -S` 的“进程冷启动”只保证目标进程已终止并重建；文件页缓存、shader cache 和 ART 编译产物仍可能保留。本文核对的 Macrobenchmark COLD setup 已依次尝试清 shader cache、终止进程和 `dropKernelPageCache()`，不能把它写成“只有终止进程”。缓存清理是否成功取决于库版本、API、设备权限等条件，应记录实际结果；复测还需固定 CompilationMode、温度、动画和迭代次数。
+手工 `am start -S` 的“进程冷启动”只保证目标进程已终止并重建；文件页缓存、shader cache 和 ART 编译产物仍可能保留。本文核对的 Macrobenchmark COLD setup 已依次尝试清 shader cache、终止进程和 `dropKernelPageCache()`，描述这套协议时按实际动作写全，压缩成“只有终止进程”会误导复测。缓存清理是否成功取决于库版本、API、设备权限等条件，应记录实际结果；复测还需固定 CompilationMode、温度、动画和迭代次数。
 
 #### 2.4 atrace 只用于快速查看
 
@@ -876,9 +876,9 @@ fun loadBookmarks(): List<Bookmark> {
 <!-- gracker-diagram: ch08-02-35-binder-four-segments -->
 ![同步 Binder 完整事务的时间分段](../../assets/diagrams/ch08/ch08-02-35-binder-four-segments.png)
 
-图：client_dur 是配对客户端 slice；请求派发、服务端区间和 reply 残差分解完整事务，不能混用窗口裁剪值。
+图：client_dur 是配对客户端 slice；请求派发、服务端区间和 reply 残差分解完整事务，与窗口裁剪值分开使用。
 
-`client_dur` 与 `server_dur` 都是经过时间，包含 Running、Runnable 和阻塞，并非“等待时间之和”。CPU time 可由相同 utid 的 `sched` / `thread_state Running` 区间裁剪求和等方式计算，不必要求另有 CPU time 计数器。序列化、反序列化和调用前后工作可能在内核派生 slice 外，完整 API 耗时应另有业务/API 标记。服务端 CPU time 很少而 `server_dur` 很长时，常见原因是等待锁、I/O、嵌套同步 Binder，或线程在区间内被调度出 CPU。
+`client_dur` 与 `server_dur` 都是经过时间，把 Running、Runnable 和阻塞都算在里面，范围比“等待时间之和”更宽。CPU time 可由相同 utid 的 `sched` / `thread_state Running` 区间裁剪求和等方式计算，不必要求另有 CPU time 计数器。序列化、反序列化和调用前后工作可能在内核派生 slice 外，完整 API 耗时应另有业务/API 标记。服务端 CPU time 很少而 `server_dur` 很长时，常见原因是等待锁、I/O、嵌套同步 Binder，或线程在区间内被调度出 CPU。
 
 <!-- gracker-diagram: ed08-02-binder-duration-scopes -->
 ![Binder经过时间、monotonic时长与CPU运行](../../assets/diagrams/ch08/ed08-02-binder-duration-scopes.png)
@@ -919,7 +919,7 @@ WHERE s.package = 'com.example.app'
 ORDER BY s.ts, p.upid;
 ```
 
-`startup_slice_ms` 是标准库所识别启动 slice 的时长，不能无条件当成另一个工具的 TTID。先用包名、类型、时间和关联 `upid` 确认样本。r1 的进程匹配依赖包元数据与 `bindApplication` / Activity 等标记，缺包元数据时还有进程名前缀回退，故关联结果也要人工复核，不能视为精确身份保证。若无结果，检查 `am`/`wm`、进程/包名数据和分析器版本；不要改用整条 trace 求和来代替目标窗口。
+`startup_slice_ms` 是标准库所识别启动 slice 的时长，要当另一个工具的 TTID 使用，先核对两者的定义。先用包名、类型、时间和关联 `upid` 确认样本。r1 的进程匹配依赖包元数据与 `bindApplication` / Activity 等标记，缺包元数据时还有进程名前缀回退，故关联结果也要人工复核，身份以人工确认为准。若无结果，检查 `am`/`wm`、进程/包名数据和分析器版本；不要改用整条 trace 求和来代替目标窗口。
 
 
 #### 4.2 冷启动窗口内的 Top-N 同步事务
@@ -966,12 +966,12 @@ ORDER BY startup_overlap_ms DESC, full_client_ms DESC
 LIMIT 30;
 ```
 
-结果先按窗口交集排序。`dispatch_ms`、`server_ms`、`reply_residual_ms` 仍按**整笔事务**计算，三者只与 `full_client_ms` 对应，不能从裁剪后的 `startup_overlap_ms` 再机械相减。残差只是排查线索；出现负值应核对事件、区间包含关系与嵌套情况，不能把它当作真实负延迟。
+结果先按窗口交集排序。`dispatch_ms`、`server_ms`、`reply_residual_ms` 仍按**整笔事务**计算，三者只与 `full_client_ms` 对应，从裁剪后的 `startup_overlap_ms` 机械相减得到的并不是这三段。残差只是排查线索；出现负值应核对事件、区间包含关系与嵌套情况，负延迟按数据问题处理。
 
 <!-- gracker-diagram: ed08-02-startup-clip-and-nesting -->
 ![启动窗口裁剪与嵌套事务的重复计时](../../assets/diagrams/ch08/ed08-02-startup-clip-and-nesting.png)
 
-图：先限定目标进程和主线程同步事务，再与半开 startup 窗口求交集；只接触边界不算相交。full_client_ms 保留整笔事务分段，startup_overlap_ms 只表示窗口交集。嵌套事务的交集仍可重叠，累计值用于排查排序，区间并集也不能直接承诺首帧节省时间；条长仅为示意。
+图：先限定目标进程和主线程同步事务，再与半开 startup 窗口求交集；只接触边界不算相交。full_client_ms 保留整笔事务分段，startup_overlap_ms 只表示窗口交集。嵌套事务的交集仍可重叠，累计值用于排查排序，区间并集离“首帧能省多少”还差一步关键路径确认；条长仅为示意。
 
 #### 4.3 按 endpoint 聚合调用压力
 
@@ -1066,7 +1066,7 @@ ORDER BY startup_reason_ms DESC;
 
 #### 4.5 查询 Binder 计数画像
 
-`android_binder_metrics_by_process` 可快速确认每个进程记录到了哪些 Binder slice，适合先检查有哪些 Binder 切片进入了分析；单靠计数不能证明采集完整，还须检查 trace loss、覆盖和无法配对的事件。
+`android_binder_metrics_by_process` 可快速确认每个进程记录到了哪些 Binder slice，适合先检查有哪些 Binder 切片进入了分析；计数只够做第一步筛查，采集是否完整还要看 trace loss、覆盖和配不上的事件。
 
 ```sql
 INCLUDE PERFETTO MODULE android.binder;
@@ -1092,7 +1092,7 @@ ORDER BY event_count DESC;
 
 #### 5.1 PackageManager 查询重复
 
-系统框架已经向新进程传递 `ApplicationInfo` 等启动数据，但应用代码和 SDK 仍可能重复调用 `PackageManager`。若查询确实进入远端 `PackageManagerService`，即使命中服务端 snapshot/cache，也仍有 Binder 往返等开销；部分 API / 参数组合还可能命中客户端缓存，直接避免本次 IPC。因此应按 trace 中实际事务计数，不能把 PackageManager API 调用数直接当成 Binder 次数。
+系统框架已经向新进程传递 `ApplicationInfo` 等启动数据，但应用代码和 SDK 仍可能重复调用 `PackageManager`。若查询确实进入远端 `PackageManagerService`，即使命中服务端 snapshot/cache，也仍有 Binder 往返等开销；部分 API / 参数组合还可能命中客户端缓存，直接避免本次 IPC。因此应按 trace 中实际事务计数；PackageManager API 调用数只是客户端视角，Binder 次数以 trace 里的事务为准。
 
 <!-- gracker-diagram: ch08-02-43-package-cache -->
 ![PackageManager 查询中的两层缓存](../../assets/diagrams/ch08/ch08-02-43-package-cache.png)
@@ -1145,7 +1145,7 @@ Binder 线程池拥塞指的是可处理新事务的 worker（工作线程） �
 
 #### 5.5 本地 I/O 与 Binder 等待混在一起
 
-SharedPreferences、DataStore、数据库和文件读取可能在时间线上紧邻 Binder 调用。`SharedPreferences.apply()` 还会把待完成的磁盘写入登记到 `QueuedWork`，进而影响组件退出时的等待。它们不一定产生 Binder；但若服务端在同步事务内做本地 I/O，I/O 正是 Binder wall time 的组成部分。应区分“进程内独立工作”与“事务内部等待”，不能从 Binder 区间机械扣掉所有 I/O。
+SharedPreferences、DataStore、数据库和文件读取可能在时间线上紧邻 Binder 调用。`SharedPreferences.apply()` 还会把待完成的磁盘写入登记到 `QueuedWork`，进而影响组件退出时的等待。它们不一定产生 Binder；但若服务端在同步事务内做本地 I/O，I/O 正是 Binder wall time 的组成部分。应区分“进程内独立工作”与“事务内部等待”：独立工作可以从 Binder 分析里分开看，服务端同步事务内的 I/O 则计入 wall time，一概扣掉会算错。
 
 <!-- gracker-diagram: ch08-02-47-io-boundaries -->
 ![本地 I/O 与 Binder wall time 的关系](../../assets/diagrams/ch08/ch08-02-47-io-boundaries.png)
@@ -1207,7 +1207,7 @@ libbinder 在 `waitForResponse()` 收到 `BR_FROZEN_REPLY` 后，会根据 froze
 <!-- gracker-diagram: ed08-02-binder-pairing-and-frozen-observation -->
 ![Binder有效配对、冻结拒绝与pending观测](../../assets/diagrams/ch08/ed08-02-binder-pairing-and-frozen-observation.png)
 
-图：有效同步配对依赖 client / flow / server 及完整时长约束；r6 frozen 同步事务拒绝入队，可缺失服务端配对行，应查原始 binder_return 和目标状态；frozen oneway 可排队并报告 pending，不能据此认定已经处理。标准表缺行还可能来自死亡或采集丢失，server_dur=0 不能统计冻结拒绝；原始表也依赖采集与解析。
+图：有效同步配对依赖 client / flow / server 及完整时长约束；r6 frozen 同步事务拒绝入队，可缺失服务端配对行，应查原始 binder_return 和目标状态；frozen oneway 可排队并报告 pending，这只代表进入队列，处理结果要看服务端后续状态。标准表缺行还可能来自死亡或采集丢失，冻结拒绝的统计要以原始 binder_return 为准，server_dur=0 给不出这个答案；原始表也依赖采集与解析。
 
 ```sql
 SELECT
@@ -1293,7 +1293,7 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 这里的 Binder Layer 指从内核驱动事件到 Trace Processor 事务配对的整条观测链路。Android 17 源码里与之相关的能力有两类：
 
 - r6 kernel 的 `binder_command` / `binder_return` 让 `BinderTracker` 在失败、frozen 和 nested transaction（嵌套事务）场景中更可靠地维护事务栈；
-- Android 17 的 Perfetto `android.binder` 表提供 sync/async、client/server、AIDL 名称、OOM score、package metadata（包版本等元数据）与 monotonic-duration（扣除系统 suspend 区间）相关字段。这些不是线程 Running / Runnable 的时长，也不等于 CPU time。
+- Android 17 的 Perfetto `android.binder` 表提供 sync/async、client/server、AIDL 名称、OOM score、package metadata（包版本等元数据）与 monotonic-duration（扣除系统 suspend 区间）相关字段。这些字段描述事务自身的属性；线程 Running / Runnable 的时长和 CPU time，要按前文四段分解的方式另算。
 
 
 因目标冻结而失败的事务，这些能力也补不进 `android_binder_txns`，替代查法见 6.4。分析工具版本升级后，应先阅读所用 tag（源码版本标签） 的表定义，再写 SQL；网页上最新版 stdlib 的列，在按 r1 源码构建或其他版本的 Trace Processor 中未必存在；设备 Android 版本不唯一决定离线分析器版本。
@@ -1315,7 +1315,7 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 - 跨进程缓存的读取成本、一致性和故障模式；
 - 多进程同时启动时，是否同时占用同一系统服务或自有 Binder pool（线程池）。
 
-只在同一进程内的普通 mutex 不能自动协调多个进程。显式进程共享锁、文件锁或中心服务协议若把初始化串行化，才会形成跨进程等待；还要验证超时、崩溃恢复和死锁风险。应先减少不必要的进程、初始化和重复 IPC；确需协调时，协议要明确定义超时、崩溃恢复和进程死亡后的行为。
+普通 mutex 管得住的只有同一进程内的线程，跨进程协调要走别的路。显式进程共享锁、文件锁或中心服务协议若把初始化串行化，才会形成跨进程等待；还要验证超时、崩溃恢复和死锁风险。应先减少不必要的进程、初始化和重复 IPC；确需协调时，协议要明确定义超时、崩溃恢复和进程死亡后的行为。
 
 #### 🔸 真实案例分析
 
