@@ -55858,9 +55858,307 @@
       "before_count": 32,
       "before_all_images": 32,
       "sha256_before": "c1a406cb8288b681942fb52216fbb9398a9782eeec664a43d8c6e733b144aa83",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "a223-01-phase-contract",
+          "title": "任务按必须完成的边界分级，提前不代表更快",
+          "decision": "remove",
+          "reason": "四阶段完成边界表与删任务问题清单完整，三行阶段分类卡重复。",
+          "original_line": 116,
+          "heading": "### 1. 编排前先删任务"
+        },
+        {
+          "original_id": "a223-02-dependency-results",
+          "title": "有向边表示后继等待，结果语义决定能否继续",
+          "decision": "remove",
+          "reason": "硬依赖/软依赖/顺序约束三条定义及结果接口完整，三行映射卡重复。",
+          "original_line": 173,
+          "heading": "#### 2.2 边的语义"
+        },
+        {
+          "original_id": "a223-03-validate-before-run",
+          "title": "任务运行前检查结构、进程、阶段和资源等待",
+          "decision": "remove",
+          "reason": "七项构图校验和DFS/Kahn详细说明完整，四框校验清单重复。",
+          "original_line": 192,
+          "heading": "#### 2.3 构图阶段的输入校验"
+        },
+        {
+          "original_id": "a223-04-critical-path-model",
+          "title": "最长依赖链给出理论下界，非关键分支变快未必缩短结束时间",
+          "decision": "keep",
+          "reason": "两条分支汇入HomeState再FirstFrame的DAG，直接说明max路径计算和43ms仅教学输入。",
+          "original_line": 211,
+          "heading": "#### 3.1 最长依赖链"
+        },
+        {
+          "original_id": "a223-05-priority-layers",
+          "title": "阶段、队列顺序和 Linux nice 分别建模",
+          "decision": "remove",
+          "reason": "三个优先级概念编号定义完整，三行priority分类卡重复。",
+          "original_line": 239,
+          "heading": "#### 3.2 优先级只影响已经就绪的任务"
+        },
+        {
+          "original_id": "a223-06-timeout-late-result",
+          "title": "超时结束等待不等于底层工作已经停止",
+          "decision": "keep",
+          "reason": "等待方超时后底层仍运行、结果门控拒绝晚到副作用的三轨，明确取消和等待的不同生命周期。",
+          "original_line": 252,
+          "heading": "#### 4.1 超时之后的底层操作"
+        },
+        {
+          "original_id": "a223-07-startup-discovery",
+          "title": "App Startup 同步发现、递归依赖、创建并缓存",
+          "decision": "remove",
+          "reason": "前六步发现与后五步DFS说明完整，四框同算法摘要重复。",
+          "original_line": 321,
+          "heading": "#### 5.1 1.2.0 的执行模型"
+        },
+        {
+          "original_id": "a223-08-remaining-eager-roots",
+          "title": "移除一个入口不等于全局禁用该类及其依赖",
+          "decision": "keep",
+          "reason": "移除A自动入口但B仍连到共享C的关系图，保留剩余根导致提前初始化的结构。",
+          "original_line": 339,
+          "heading": "#### 5.2 适用范围与限制"
+        },
+        {
+          "original_id": "a223-09-process-local-graphs",
+          "title": "每个进程有独立任务图和单例，内存依赖边不能跨进程",
+          "decision": "remove",
+          "reason": "进程单例/Provider归属段落与worker专用XML示例更完整，三框协议映射未展示更多实际边界。",
+          "original_line": 375,
+          "heading": "#### 5.3 多进程边界"
+        },
+        {
+          "original_id": "a223-10-alpha-completion-gap",
+          "title": "Alpha 的 run 返回立即完成，抛异常会中断后继通知",
+          "decision": "remove",
+          "reason": "八条固定Alpha实现事实详细列异常缺finally/异步早完成/局部排序，图仅正常四步而没有失败分支，摘要重复。",
+          "original_line": 435,
+          "heading": "#### 6.2 源码中需要补强的部分"
+        },
+        {
+          "original_id": "a223-11-scheduler-contract",
+          "title": "调度器统一拥有状态、资源选择与观测",
+          "decision": "remove",
+          "reason": "四行文本架构已包含验证器/调度器/执行资源和观测分支，PNG同链更简略重复。",
+          "original_line": 479,
+          "heading": "### 7. 什么时候需要自研"
+        },
+        {
+          "original_id": "a223-12-safe-config",
+          "title": "远程配置只能选择本地已验证的安全空间",
+          "decision": "remove",
+          "reason": "远程白名单允许项和六项客户端全图校验完整，四框缓存验证流程重复。",
+          "original_line": 597,
+          "heading": "#### 10.2 客户端验证"
+        },
+        {
+          "original_id": "a223-13-early-failure-safe-graph",
+          "title": "早期失败需要独立状态，下一次启动按条件切安全图",
+          "decision": "keep",
+          "reason": "进入尝试前独立小状态、成功与未成功两路以及下次安全图恢复的分支，解释崩溃前监控未初始化时的兜底。",
+          "original_line": 628,
+          "heading": "#### 10.4 crash loop 与回退"
+        },
+        {
+          "original_id": "a223-14-task-time-boundaries",
+          "title": "依赖就绪、入队、开始和逻辑完成需要分别打点",
+          "decision": "keep",
+          "reason": "ready门控/submit队列/start逻辑区间与CPU挂起片段三轨，区分依赖等待、排队和执行墙时。",
+          "original_line": 650,
+          "heading": "### 11. 可观测性：测量排队和结果"
+        },
+        {
+          "original_id": "a223-15-trigger-and-cost",
+          "title": "异步、延后、首次使用与持久调度改变不同条件",
+          "decision": "remove",
+          "reason": "五种手段改变什么/未解决什么表更完整，三行触发分类卡重复。",
+          "original_line": 732,
+          "heading": "### 1. 异步、延迟与懒加载的区别"
+        },
+        {
+          "original_id": "a223-16-commit-gate",
+          "title": "frame commit 只打开调度门，后续工作仍需资源预算",
+          "decision": "remove",
+          "reason": "五行framecommit只开门代码及API29硬渲染/后续帧/软件不回调限制已有，四框同序重复。",
+          "original_line": 785,
+          "heading": "#### 3.1 首帧提交的判定信号"
+        },
+        {
+          "original_id": "a223-17-feature-gate-state",
+          "title": "FeatureGate 共享成功，普通失败与取消走不同路径",
+          "decision": "keep",
+          "reason": "NotLoaded/Loading/Ready/Failed与普通失败显式retry和超时取消回退NotLoaded的状态转换，配合FeatureGate代码。",
+          "original_line": 882,
+          "heading": "#### 4.1 统一入口的加载状态"
+        },
+        {
+          "original_id": "a223-19-deli-idle-boundaries",
+          "title": "Android 17 DeliQueue 的核心并发不等于所有操作无锁",
+          "decision": "remove",
+          "reason": "legacy/Deli两路径idle判断/handler锁表与私有字段测试工具段落完整，三行版本摘要重复。",
+          "original_line": 933,
+          "heading": "#### 5.2 Android 17 的两条实现路径"
+        },
+        {
+          "original_id": "a223-18-idle-is-signal",
+          "title": "IdleHandler 说明所属队列暂时没有到期消息",
+          "decision": "remove",
+          "reason": "四行IdleHandler代码与返回false/调度器再判断条件正文完整，四框只发信号的流程重复。",
+          "original_line": 951,
+          "heading": "#### 5.3 作为一次性信号使用"
+        },
+        {
+          "original_id": "a223-20-on-demand-install",
+          "title": "收到 session ID 不代表模块已安装和可访问",
+          "decision": "keep",
+          "reason": "sessionID请求、监听确认与下载安装、installedModules验证到SplitCompat访问顺序，强调安装请求不等代码可用。",
+          "original_line": 1013,
+          "heading": "#### 7.1 交付状态机"
+        },
+        {
+          "original_id": "a223-21-base-exported-proxy",
+          "title": "外部入口留在 base，模块安装检查后再转内部能力",
+          "decision": "remove",
+          "reason": "下方base代理四步编号清单与外部资源边界完整，四框相同步骤重复且删除后引导句直接列表。",
+          "original_line": 1026,
+          "heading": "#### 7.2 外部组件与 base module"
+        },
+        {
+          "original_id": "a223-23-executor-admission",
+          "title": "ThreadPoolExecutor 先入队，队列拒收后才尝试扩到最大数",
+          "decision": "keep",
+          "reason": "core创建失败、offer失败、受maximum约束扩容和拒绝的分支图，直观展示队列先于非core扩容。",
+          "original_line": 1190,
+          "heading": "#### 2.1 `execute()` 的三段决策"
+        },
+        {
+          "original_id": "a223-24-queue-rejection",
+          "title": "队列与拒绝策略同时决定延迟、内存和正确性",
+          "decision": "remove",
+          "reason": "四队列表和四拒绝策略含shutdown差异更详细，三行合并卡重复。",
+          "original_line": 1217,
+          "heading": "#### 2.3 拒绝策略属于正确性设计"
+        },
+        {
+          "original_id": "a223-25-same-pool-starvation",
+          "title": "同池父任务占满线程后等待子任务，会形成线程饥饿",
+          "decision": "keep",
+          "reason": "所有父worker等待同池子任务、队列无人取形成循环的结构，并标出改挂起或DAG打破等待。",
+          "original_line": 1228,
+          "heading": "#### 2.4 同池等待会造成饥饿"
+        },
+        {
+          "original_id": "a223-26-java-nice-inheritance",
+          "title": "Java priority 的继承与 Process nice 的修改不能混同",
+          "decision": "remove",
+          "reason": "Java缓存priority与Process nice继承区别段落和ThreadFactory代码完整，三行分类卡重复。",
+          "original_line": 1280,
+          "heading": "#### 4.1 `Process` 优先级对应 Linux nice"
+        },
+        {
+          "original_id": "a223-27-affinity-and-policy",
+          "title": "CPU 选择由多项策略共同约束，硬绑核必须检查结果",
+          "decision": "remove",
+          "reason": "fairEEVDF/cpuset/uclamp与affinity返回值实际mask段落更详尽，三行约束映射重复。",
+          "original_line": 1325,
+          "heading": "#### 4.3 不把业务线程固定到大核"
+        },
+        {
+          "original_id": "a223-28-thread-memory-lifetime",
+          "title": "栈地址空间、驻留内存与线程生命周期分别核对",
+          "decision": "remove",
+          "reason": "FixStackSize四步及虚拟/RSS/所有者生命周期段落清晰，三行内存生命周期卡重复。",
+          "original_line": 1343,
+          "heading": "#### 5.1 ART（Android Runtime） 不采用“每线程固定 1 MB”的模型"
+        },
+        {
+          "original_id": "a223-29-dispatcher-vs-inflight",
+          "title": "limitedParallelism 控制执行片段，不锁住整个挂起任务",
+          "decision": "keep",
+          "reason": "A挂起期间B可进入limitedParallelism视图的三轨，具体说明执行片段串行不锁整个在途请求。",
+          "original_line": 1380,
+          "heading": "#### 6.2 `limitedParallelism` 控制执行片段"
+        },
+        {
+          "original_id": "a223-30-structured-inputs",
+          "title": "结构化并发管理两个独立输入的完成与取消",
+          "decision": "keep",
+          "reason": "父scope拥有两个独立async输入、汇合后才返回及取消传播结构，说明任务生命周期而非线程承诺。",
+          "original_line": 1407,
+          "heading": "#### 6.3 用结构化并发表达依赖"
+        },
+        {
+          "original_id": "a223-22-workmanager-defaults",
+          "title": "WorkManager 2.12.0 负责持久任务，默认执行资源仍有区别",
+          "decision": "remove",
+          "reason": "WorkManager2.12默认Worker/CoroutineWorker/taskexecutor与配置兜底长段落完整，三行映射卡只是摘要。",
+          "original_line": 1428,
+          "heading": "#### 7.2 WorkManager 用于需要持久执行的工作"
+        },
+        {
+          "original_id": "a223-31-executor-vs-cpu-wait",
+          "title": "排在执行器队列与 Runnable 等 CPU 是不同等待",
+          "decision": "remove",
+          "reason": "本篇第14图已表达submit/start/finish与执行片段等待层次，后文六步Perfetto分析完整补充Runnable，不再重复时间轨道图。",
+          "original_line": 1482,
+          "heading": "### 9. 用 Perfetto 区分排队和 CPU 竞争"
+        },
+        {
+          "original_id": "a223-32-legacy-version-edges",
+          "title": "遗留 executor 和 flagged 虚拟线程不能当新启动框架基线",
+          "decision": "remove",
+          "reason": "AsyncTask遗留数值和虚拟线程源码/flag/公开文档边界两节完整，三行版本分类卡重复。",
+          "original_line": 1505,
+          "heading": "#### 10.2 虚拟线程尚不能作为 Android 17 基线"
+        }
+      ],
+      "sha256_after": "93e75303d45c65d6eba8f838af07b5aeae18ccf2037aef490750fe4029ec8c70",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:45:12.861726+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 32,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a223/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a223/visual-review.json",
+      "retired_diagrams": [
+        "a223-01-phase-contract",
+        "a223-02-dependency-results",
+        "a223-03-validate-before-run",
+        "a223-05-priority-layers",
+        "a223-07-startup-discovery",
+        "a223-09-process-local-graphs",
+        "a223-10-alpha-completion-gap",
+        "a223-11-scheduler-contract",
+        "a223-12-safe-config",
+        "a223-15-trigger-and-cost",
+        "a223-16-commit-gate",
+        "a223-18-idle-is-signal",
+        "a223-19-deli-idle-boundaries",
+        "a223-21-base-exported-proxy",
+        "a223-22-workmanager-defaults",
+        "a223-24-queue-rejection",
+        "a223-26-java-nice-inheritance",
+        "a223-27-affinity-and-policy",
+        "a223-28-thread-memory-lifetime",
+        "a223-31-executor-vs-cpu-wait",
+        "a223-32-legacy-version-edges"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-223/retired-assets.json"
     },
     {
       "index": 224,
@@ -56501,8 +56799,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 148,
-  "next_article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+  "reviewed_articles": 149,
+  "next_article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -56512,7 +56810,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:42:07.569949+08:00",
+  "updated_at": "2026-10-31T16:45:12.861726+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -56690,9 +56988,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4634,
-  "reviewed_placements_after": 1926,
-  "net_removed_placements": 2708,
+  "reviewed_placements_before": 4666,
+  "reviewed_placements_after": 1937,
+  "net_removed_placements": 2729,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -56716,5 +57014,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 148
+  "currently_matching_reviewed_source_count": 149
 }
