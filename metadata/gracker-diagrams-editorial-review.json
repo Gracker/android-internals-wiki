@@ -54860,9 +54860,195 @@
       "before_count": 19,
       "before_all_images": 19,
       "sha256_before": "045dfc6d50ba9275d31da2c1df17cacb208f864fc3a3e8f72af9366895290c67",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a217-01-tag-comparison",
+          "title": "CPU 比较指针标签与内存粒度标签",
+          "decision": "keep",
+          "reason": "指针logical tag与16字节allocation tag两来源汇合到CPU访问比较，直观说明MTE实际检查对象及标签碰撞范围。",
+          "original_line": 97,
+          "heading": "## MTE 检查的对象与盲区"
+        },
+        {
+          "original_id": "a217-02-coverage-conditions",
+          "title": "堆、自定义映射、栈与 globals 需要不同启用条件",
+          "decision": "remove",
+          "reason": "同节标准堆/自定义映射/栈globals表更完整列是否manifest足够与附加条件，三行条件卡重复。",
+          "original_line": 110,
+          "heading": "## MTE 检查的对象与盲区"
+        },
+        {
+          "original_id": "a217-03-manifest-values",
+          "title": "manifest 表达请求值，default 不能直接记录为 off",
+          "decision": "remove",
+          "reason": "memtagMode四值语义/用途表和process覆盖/mergedmanifest段落完整，三行配置卡是表格缩写。",
+          "original_line": 144,
+          "heading": "## `android:memtagMode` 的四个值"
+        },
+        {
+          "original_id": "a217-04-sync-async-timing",
+          "title": "SYNC 的访问现场与 ASYNC 的报告点不同",
+          "decision": "keep",
+          "reason": "同一错误访问处SYNC立即报告而ASYNC可能继续直到后续进入内核报告的三轨，解释当前PC证据差别。",
+          "original_line": 177,
+          "heading": "### ASYNC"
+        },
+        {
+          "original_id": "a217-05-requested-effective",
+          "title": "允许的模式集合与逐 CPU 实际模式分开保存",
+          "decision": "remove",
+          "reason": "ASYMM读写、组合控制位退回、逐CPU首选和effectiveunknown三段详述，三行分类卡无新增实际CPU迁移图。",
+          "original_line": 195,
+          "heading": "### ASYMM"
+        },
+        {
+          "original_id": "a217-06-activation-chain",
+          "title": "Zygote 决定新进程标志，分配器管理受保护 heap",
+          "decision": "remove",
+          "reason": "前文9行文本链完整保留ApplicationInfo/request/decide/runtimeflags/native/mallopt/Scudo，四框PNG只是简化同链。",
+          "original_line": 222,
+          "heading": "## 从 manifest 到 Scudo 的生效路径"
+        },
+        {
+          "original_id": "a217-07-support-observation",
+          "title": "支持能力、线程控制与错误报告提供不同证据",
+          "decision": "remove",
+          "reason": "设备cpuinfo与debuggerd/prctl线程控制两步命令和映射/逐CPU限制正文完整，四框只是取证顺序清单。",
+          "original_line": 249,
+          "heading": "## 怎样确认支持与请求状态"
+        },
+        {
+          "original_id": "a217-08-rollout-recovery",
+          "title": "通过构建与分阶段发布控制，修正版随新进程生效",
+          "decision": "remove",
+          "reason": "五步分阶段启用及高versionCode修正新进程生效/远程只能关功能完整，四框发布卡重复。",
+          "original_line": 268,
+          "heading": "## 分批启用：按发布版本和进程控制"
+        },
+        {
+          "original_id": "a217-09-report-evidence",
+          "title": "SYNC 和 ASYNC 使用不同的根因聚合方式",
+          "decision": "remove",
+          "reason": "SYNC/ASYNC五证据对照表及读取/聚合规则清单更完整，三行报告卡重复。",
+          "original_line": 306,
+          "heading": "## 怎样阅读崩溃报告"
+        },
+        {
+          "original_id": "a217-10-collector-cooperation",
+          "title": "应用采集器保存原始现场并保留系统处理路径",
+          "decision": "remove",
+          "reason": "collector六项约束和受控验证用例已有完整列表，三行职责卡是摘要。",
+          "original_line": 350,
+          "heading": "## 与 Native 崩溃采集器协作"
+        },
+        {
+          "original_id": "a217-11-tool-responsibilities",
+          "title": "访问违规检测、堆画像与分配器加固各回答不同问题",
+          "decision": "remove",
+          "reason": "平台层责任表与末尾五工具强项/不负责表完整，三行工具卡重复。",
+          "original_line": 384,
+          "heading": "## 平台与内核的分工"
+        },
+        {
+          "original_id": "a217-12-gwp-two-sampling",
+          "title": "GWP-ASan 先选进程启动，再选少量分配",
+          "decision": "keep",
+          "reason": "进程启动入样再分配SampleRate、命中仍需保护slot到对象元数据的串联门控，说明always仅取消第一层。",
+          "original_line": 399,
+          "heading": "### 两层抽样与覆盖面"
+        },
+        {
+          "original_id": "a217-13-gwp-mode-defaults",
+          "title": "manifest 请求、抽样与 Recoverable 配置分开记录",
+          "decision": "remove",
+          "reason": "gwpAsanMode三值表与源码Recoverable默认/官方always文档差异段落完整，三行配置卡重复。",
+          "original_line": 416,
+          "heading": "### 两层抽样与覆盖面"
+        },
+        {
+          "original_id": "a217-14-dispatch-order",
+          "title": "GWP-ASan 是否装入分派链取决于抽样与安装先后",
+          "decision": "keep",
+          "reason": "Zygote子进程初始化、命中进程且默认dispatch可用、GWP先安装prev指向原allocator、后装画像hook的合法顺序，正文反序失败限制保留。",
+          "original_line": 429,
+          "heading": "### 两层抽样与覆盖面"
+        },
+        {
+          "original_id": "a217-15-guarded-slot",
+          "title": "保护页与释放后隔离暴露抽样对象的非法访问",
+          "decision": "keep",
+          "reason": "不可访问guard/可访问对象槽/另一guard的空间结构及free后隔离说明，区分跨保护页与仍落可访问范围的盲区。",
+          "original_line": 440,
+          "heading": "### 受保护槽位怎样暴露错误"
+        },
+        {
+          "original_id": "a217-16-recoverable-first-report",
+          "title": "平台恢复先报告再处理槽位，进程内后续错误不重复完整输出",
+          "decision": "keep",
+          "reason": "首个GWP池错误pre到完整reporter再post处理，与后续仅pre/post的阶段关系，解释报告计数非全部错误次数。",
+          "original_line": 461,
+          "heading": "### Recoverable 模式下的事件处置"
+        },
+        {
+          "original_id": "a217-17-two-recovery-paths",
+          "title": "Recoverable GWP-ASan 与 Permissive MTE 使用不同入口条件",
+          "decision": "remove",
+          "reason": "同节完整段落准确列GWP地址/池判断与MTE专用sicodemode的不同入口，三行映射卡没有新恢复结构。",
+          "original_line": 468,
+          "heading": "### Recoverable 模式下的事件处置"
+        },
+        {
+          "original_id": "a217-18-gwp-symbols-quality",
+          "title": "GWP 报告由创建、释放与访问三类现场共同解释",
+          "decision": "remove",
+          "reason": "报告读取字段/FP64vs32/metadata传递与缺失排查、聚合键示例和来源去重段落完整，三行字段图重复。",
+          "original_line": 479,
+          "heading": "### 报告、聚合与修复"
+        },
+        {
+          "original_id": "a217-19-fatal-recoverable-denominators",
+          "title": "报告数量、退出数量与缺陷数量分别统计",
+          "decision": "remove",
+          "reason": "紧邻报告数/退出记录/缺陷次数区别与事件分母说明已有，三行统计卡重复，首报机制图保留。",
+          "original_line": 498,
+          "heading": "### 报告、聚合与修复"
+        }
+      ],
+      "sha256_after": "3ed746cbb4bc0572874b7a2ba031e7e6fab30a377702e933f7943051d5827693",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:30:59.299397+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 19,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a217/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a217/visual-review.json",
+      "retired_diagrams": [
+        "a217-02-coverage-conditions",
+        "a217-03-manifest-values",
+        "a217-05-requested-effective",
+        "a217-06-activation-chain",
+        "a217-07-support-observation",
+        "a217-08-rollout-recovery",
+        "a217-09-report-evidence",
+        "a217-10-collector-cooperation",
+        "a217-11-tool-responsibilities",
+        "a217-13-gwp-mode-defaults",
+        "a217-17-two-recovery-paths",
+        "a217-18-gwp-symbols-quality",
+        "a217-19-fatal-recoverable-denominators"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-217/retired-assets.json"
     },
     {
       "index": 218,
@@ -55558,8 +55744,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 143,
-  "next_article": "src/part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md",
+  "reviewed_articles": 144,
+  "next_article": "src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -55569,7 +55755,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:28:35.121513+08:00",
+  "updated_at": "2026-10-31T16:30:59.299397+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -55754,9 +55940,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4541,
-  "reviewed_placements_after": 1895,
-  "net_removed_placements": 2646,
+  "reviewed_placements_before": 4560,
+  "reviewed_placements_after": 1901,
+  "net_removed_placements": 2659,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -55780,5 +55966,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 143
+  "currently_matching_reviewed_source_count": 144
 }
