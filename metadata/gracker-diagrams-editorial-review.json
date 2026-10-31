@@ -40731,9 +40731,222 @@
       "before_count": 22,
       "before_all_images": 22,
       "sha256_before": "65753bd89dd93ff82b106e34ebe2212a7ec30c59e9d5d17acb580ba8ecb5f3ff",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch15-06-01-measurement-levels",
+          "title": "Macro 与 Micro 的进程边界和测量对象",
+          "decision": "remove",
+          "reason": "Macro/Micro三列复写94–100维度表、109进程条件与133热点段落，未实际连外部驱动到目标进程；保留原表及8真实instrument调用链，不保比较表卡片副本。",
+          "original_line": 102,
+          "heading": "### Macrobenchmark 与 Microbenchmark：两种层次，两种用途"
+        },
+        {
+          "original_id": "ch15-06-02-macro-iteration",
+          "title": "Macrobenchmark 的编译、准备和测量循环",
+          "decision": "remove",
+          "reason": "六框只顺序总结编译/setup/measure/产物/汇总段落，未画迭代回环或测量范围；5保留更具体COLD及TTID/TTFD边界，全部迭代与产物文字保留。",
+          "original_line": 113,
+          "heading": "#### Macrobenchmark：端到端的用户体验测量"
+        },
+        {
+          "original_id": "ch15-06-03-micro-hot-loop",
+          "title": "Microbenchmark 的预热与热点测量",
+          "decision": "remove",
+          "reason": "五框逐条摘要133–154预热输入、BlackHole和measurementDisabled说明，未画热点内外循环计量关系，全部代码和AGP/AOT版本条件留存。",
+          "original_line": 156,
+          "heading": "#### Microbenchmark：代码级热点分析"
+        },
+        {
+          "original_id": "ch15-06-04-local-to-global",
+          "title": "局部优化如何回到端到端验收",
+          "decision": "remove",
+          "reason": "四框与165–168四条编号清单完全同序同义，删局部优化工作流副本，原端到端复验要求不变。",
+          "original_line": 172,
+          "heading": "#### 什么时候用哪个？"
+        },
+        {
+          "original_id": "ch15-06-05-startup-boundaries",
+          "title": "冷启动准备与 TTID、TTFD 两个终点",
+          "decision": "keep",
+          "reason": "setup后COLD清理/停进程再measure的真实边界，以及同一起点到首帧TTID和fullydrawn完整帧TTFD两轨跨度独立，保留非测量条长和API29条件。",
+          "original_line": 211,
+          "heading": "#### 测量启动时间"
+        },
+        {
+          "original_id": "ch15-06-06-frame-elapsed-time",
+          "title": "帧的经过时间与 deadline 超期",
+          "decision": "keep",
+          "reason": "UI doFrame到RT DrawFrame终点及Expected/Actual轨道与max(actual.end,RT.end)-expected.end公式的真实时间边界对应独立，保留非占核CPU时间相加/非FPS边界。",
+          "original_line": 252,
+          "heading": "#### 测量滑动帧时间"
+        },
+        {
+          "original_id": "ch15-06-07-compilation-contract",
+          "title": "编译模式与缓存状态的实验选择",
+          "decision": "remove",
+          "reason": "三列重述261–294编译模式代码与DEFAULT/Partial/None/Full/Ignore说明，没有真实Require失败或UseIfAvailable分支；原默认/版本/保数据/Full非上限条件完整留。",
+          "original_line": 285,
+          "heading": "#### CompilationMode：量化编译优化效果"
+        },
+        {
+          "original_id": "ch15-06-08-instrument-call-chain",
+          "title": "am instrument 到 AndroidX 指标的调用链",
+          "decision": "keep",
+          "reason": "adb参数经Am解析Bundle、Instrument watcher和UiAutomation、AMS Binder、runner到Benchmark的真实层级责任链独立，保留-w条件且平台不定义指标。",
+          "original_line": 341,
+          "heading": "### adb（Android Debug Bridge） shell am instrument：性能测试的命令行入口"
+        },
+        {
+          "original_id": "ch15-06-09-ui-drivers",
+          "title": "外部 UI Automator 与进程内 Espresso",
+          "decision": "remove",
+          "reason": "UIAutomator/UiAutomation/Espresso三列重述348–372外部与进程内同步段落，没有真实进程容器或跨进程边；原共享资源扰动、无需常驻普通无障碍、Espresso不可驱动Macro说明完整留。",
+          "original_line": 374,
+          "heading": "#### 两套驱动的分工界限"
+        },
+        {
+          "original_id": "ch15-06-10-stability-tool-roles",
+          "title": "压力、回放和跨端编排的证据边界",
+          "decision": "remove",
+          "reason": "Monkey/SoloPi/Appium三列重述各工具三节用途和限制，未画压力路径或后端时序；seed/版本/兼容性与非Benchmark基线边界留存。",
+          "original_line": 410,
+          "heading": "#### Appium：跨端业务脚本编排"
+        },
+        {
+          "original_id": "ch15-06-11-ci-pipeline",
+          "title": "性能 CI 的五段流水线与证据",
+          "decision": "remove",
+          "reason": "五框与421起五阶段正文标题完全同序，未增加真实产物归属或门禁分支；两APK哈希、固定设备、PR/夜间/发布与原证据清单全留。",
+          "original_line": 461,
+          "heading": "#### 基本架构"
+        },
+        {
+          "original_id": "ch15-06-12-cloud-evidence",
+          "title": "现有 FTL 流程中的设备与产物归属",
+          "decision": "remove",
+          "reason": "四步重述470–531设备目录命令/YAML提交/testmatrix/结果路径段落，没有实际matrix产物实例；弃用日期与迁移重建基线条件全留。",
+          "original_line": 533,
+          "heading": "#### Firebase Test Lab 与 GitHub Actions"
+        },
+        {
+          "original_id": "ch15-06-13-paired-invocation-gate",
+          "title": "独立 invocation 配对与三态门禁",
+          "decision": "remove",
+          "reason": "六框逐项摘要548–556门禁协议，未画独立invocation配对实例或三态判断分支；所有单位/身份校验、缺值不中零、独立配对/置信区间/阈值条件原文保留。",
+          "original_line": 558,
+          "heading": "#### 门禁统计与测量波动"
+        },
+        {
+          "original_id": "ch15-06-14-trace-investigation",
+          "title": "从异常指标回到线程与帧的证据",
+          "decision": "remove",
+          "reason": "五步重述567–588启动与帧trace阅读顺序及四条编号清单，未画具体线程阻塞或依赖实例；时钟/帧对象/版本SQL与CPU等待区别全留。",
+          "original_line": 590,
+          "heading": "### 在 Perfetto 中的表现"
+        },
+        {
+          "original_id": "ch15-06-17-profiler-session",
+          "title": "CLI 系统 Trace 的会话生命周期",
+          "decision": "keep",
+          "reason": "prepare可选、start录制、daemon跨命令保持、stop拉取与恢复或keep-session继续的真实会话生命周期链独立，保留terminate与采集能力非自动门禁边界。",
+          "original_line": 618,
+          "heading": "### Android CLI 在性能工具链里的位置"
+        },
+        {
+          "original_id": "ch15-06-15-version-coordinates",
+          "title": "主机 CLI、平台与设备实现的三个版本坐标",
+          "decision": "remove",
+          "reason": "主机CLI/平台/真实内核vendor三列逐项复写627–629三条版本清单，所有CLI非API37、common源码非实际驱动说明全文留。",
+          "original_line": 633,
+          "heading": "### 源码基线与版本记录"
+        },
+        {
+          "original_id": "ch15-06-16-ui-evidence-flow",
+          "title": "APK、布局树、截图与实际输入的链路",
+          "decision": "keep",
+          "reason": "已有APK部署/实时节点/带编号截图/resolve只输出字符串/调用方执行输入/另取性能证据的实际产物转换与执行边界链独立，保留同serial与截图更新、layout diff无操作。",
+          "original_line": 690,
+          "heading": "### `run`、`layout`、`screen` 在复现流程中的边界"
+        },
+        {
+          "original_id": "ch15-06-18-journey-handoff",
+          "title": "Journey 准备状态与受控测量窗口",
+          "decision": "keep",
+          "reason": "Journey前期准备与后期归档轨、Macro受控操作计量轨分隔，实际呈现窗口职责交接关系，保留自然语言视觉模型差异不能控制基准计时。",
+          "original_line": 710,
+          "heading": "### Journeys 与关键用户路径回归"
+        },
+        {
+          "original_id": "ch15-06-19-ide-evidence",
+          "title": "从 Trace 符号到源码修复的复核链",
+          "decision": "remove",
+          "reason": "五步复制723–735命令表与Compose排查示例，未画实际符号或源码修改结果；IDE版本/混淆mapping与预览不证性能原文留。",
+          "original_line": 737,
+          "heading": "### Android Studio 语义命令与性能排查协作"
+        },
+        {
+          "original_id": "ch15-06-20-skill-reproducibility",
+          "title": "Skill 安装、审核、冻结与更新后复测",
+          "decision": "remove",
+          "reason": "五步复写746–759安装审核冻结升级段落与命令清单，没有具体版本快照关系；所有自定义改名/目录非命令/固定提交和更新范围原文留。",
+          "original_line": 761,
+          "heading": "### Android skills 与性能专项能力"
+        },
+        {
+          "original_id": "ch15-06-21-smoke-workflow",
+          "title": "CLI 冒烟脚本的设备身份守卫",
+          "decision": "remove",
+          "reason": "六框逐项复制784–847完整62行脚本和849解释，没有独立设备身份反例；真实serial/AVD名/boot guards、步骤6待接入、仅冒烟非测量全文留。",
+          "original_line": 851,
+          "heading": "### CI 与本地 agent 工作流模板"
+        },
+        {
+          "original_id": "ch15-06-22-data-destinations",
+          "title": "CLI 遥测、命令产物与 Agent 上下文",
+          "decision": "remove",
+          "reason": "遥测/本地产物/模型上下文三列摘要858–866三类材料与官方开关段落，没画实际数据流，--no-metrics非所有外发及隐私去向原说明保留。",
+          "original_line": 868,
+          "heading": "### 隐私与 Telemetry（遥测）边界"
+        }
+      ],
+      "sha256_after": "0a44c0b26c240a109ded220624bcc02c2635bd7e3aeebbae0ef4b085a2877011",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:09:55.488385+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 22,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a154/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a154/visual-review.json",
+      "retired_diagrams": [
+        "ch15-06-01-measurement-levels",
+        "ch15-06-02-macro-iteration",
+        "ch15-06-03-micro-hot-loop",
+        "ch15-06-04-local-to-global",
+        "ch15-06-07-compilation-contract",
+        "ch15-06-09-ui-drivers",
+        "ch15-06-10-stability-tool-roles",
+        "ch15-06-11-ci-pipeline",
+        "ch15-06-12-cloud-evidence",
+        "ch15-06-13-paired-invocation-gate",
+        "ch15-06-14-trace-investigation",
+        "ch15-06-15-version-coordinates",
+        "ch15-06-19-ide-evidence",
+        "ch15-06-20-skill-reproducibility",
+        "ch15-06-21-smoke-workflow",
+        "ch15-06-22-data-destinations"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-154/retired-assets.json"
     },
     {
       "index": 155,
@@ -42034,8 +42247,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 88,
-  "next_article": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
+  "reviewed_articles": 89,
+  "next_article": "src/part3-tools/ch15-other-tools/07-profiling-manager.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -42045,7 +42258,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:07:24.626027+08:00",
+  "updated_at": "2026-10-31T13:09:55.488385+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -42085,7 +42298,7 @@
     {
       "article": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
       "registered_sha256": "2f01e1235433f7f370869016b8a5af46d53ee702ff190c39efd0d56f060fcd60",
-      "observed_sha256": "42771cd0c6986e1a22e517df546c5b955eb74c04f8b682e0765f1f1787179205",
+      "observed_sha256": "39ccd9034124a0381b5915d95faa782587cc8f1abdeca2558d0d3a383562d45d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
@@ -42426,9 +42639,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3206,
-  "reviewed_placements_after": 1452,
-  "net_removed_placements": 1754,
+  "reviewed_placements_before": 3228,
+  "reviewed_placements_after": 1458,
+  "net_removed_placements": 1770,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -42452,5 +42665,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 88
+  "currently_matching_reviewed_source_count": 89
 }
