@@ -45973,9 +45973,332 @@
       "before_count": 33,
       "before_all_images": 33,
       "sha256_before": "1ce2247a72cbbf9628a56ea557254af12fa170790a80b73f6b3cd290244e43c4",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch17-03-01-questions-and-evidence",
+          "title": "线上现象、引用路径与修复曲线",
+          "decision": "remove",
+          "reason": "三类问题与证据重复紧邻工具分工表，后文系统先行分诊图已具体按内存分区分支。",
+          "original_line": 89,
+          "heading": "### 工具定位与版本基线"
+        },
+        {
+          "original_id": "ch17-03-02-provider-install",
+          "title": "Application 与 Provider 自动安装顺序",
+          "decision": "keep",
+          "reason": "保留Application实例先创建、Provider安装watcher、再onCreate的实际初始化顺序，避免重复手动安装。",
+          "original_line": 113,
+          "heading": "### 工具定位与版本基线"
+        },
+        {
+          "original_id": "ch17-03-03-watch-retained-analysis",
+          "title": "观察记录、retained候选与引用链",
+          "decision": "keep",
+          "reason": "保留弱引用/key/队列到延迟候选、GC复检及有条件dump/Shark的完整流水线，区分retained信号与分析结论。",
+          "original_line": 129,
+          "heading": "### 从 watch 到 leak trace（泄漏引用链）"
+        },
+        {
+          "original_id": "ch17-03-04-dump-conditions",
+          "title": "可见、不可见与用户请求的触发条件",
+          "decision": "keep",
+          "reason": "保留可见5、不见观察窗口后1和用户请求三种触发分支，补充图3策略节点。",
+          "original_line": 136,
+          "heading": "### 从 watch 到 leak trace（泄漏引用链）"
+        },
+        {
+          "original_id": "ch17-03-05-watcher-coverage",
+          "title": "自动观察对象与依赖边界",
+          "decision": "remove",
+          "reason": "三列watcher覆盖与例外重复紧邻四行完整watcher表，原表信息更全。",
+          "original_line": 154,
+          "heading": "### 默认观察对象与依赖条件"
+        },
+        {
+          "original_id": "ch17-03-06-custom-owner",
+          "title": "清理完成后观察业务 owner",
+          "decision": "remove",
+          "reason": "自定义owner清理到观察四框复述15行release代码及异步/复用说明，不增加生命周期实例。",
+          "original_line": 189,
+          "heading": "### 自定义观察的终点"
+        },
+        {
+          "original_id": "ch17-03-07-strong-reference-path",
+          "title": "从静态 owner 到已销毁 Fragment view",
+          "decision": "keep",
+          "reason": "保留具体静态集合经callback.this$0、Fragment.binding到已销毁view的强引用方向与对应修复边。",
+          "original_line": 251,
+          "heading": "### leak trace 要逐行读"
+        },
+        {
+          "original_id": "ch17-03-08-fragment-two-edges",
+          "title": "Fragment view 销毁时断开两组引用",
+          "decision": "remove",
+          "reason": "Fragment/binding/adapter三列是16行teardown及解释的摘抄，具体外部持有路径/注册生命周期由图7与9覆盖。",
+          "original_line": 283,
+          "heading": "#### Fragment：binding 活得比 view 久"
+        },
+        {
+          "original_id": "ch17-03-09-listener-adapter-lifecycle",
+          "title": "每轮 view 生命周期重新建立 adapter 注册",
+          "decision": "keep",
+          "reason": "保留每轮view新建adapter、listener与observer建立、销毁拆绑定dispose及下轮新建的生命周期。",
+          "original_line": 337,
+          "heading": "#### RecyclerView：全局 listener 经 adapter 拖住页面"
+        },
+        {
+          "original_id": "ch17-03-10-flow-view-owner",
+          "title": "Flow 的 STARTED 区间与 view 销毁",
+          "decision": "remove",
+          "reason": "STARTED/低于STARTED/DESTROYED三列直接重复紧邻7行代码与取消重启段落，没有状态往返或时间轨道。",
+          "original_line": 360,
+          "heading": "#### Coroutine / Flow：collector 绑定错生命周期"
+        },
+        {
+          "original_id": "ch17-03-11-callback-owner",
+          "title": "延迟任务与外部引用各有 owner",
+          "decision": "remove",
+          "reason": "Handler/manager/WebView三列重复九行持有模式表和6行Runnable例子，无实际引用链实例。",
+          "original_line": 394,
+          "heading": "### 从“谁持有谁”看常见模式"
+        },
+        {
+          "original_id": "ch17-03-12-classification-versus-failure",
+          "title": "成功分析分类与分析失败的 CI 结果",
+          "decision": "remove",
+          "reason": "三种成功分类/分析失败结果重复其上默认reporter段落，完整失败与Library影响限制均保留。",
+          "original_line": 419,
+          "heading": "### Application Leak 与 Library Leak 的处置"
+        },
+        {
+          "original_id": "ch17-03-13-platform-boundaries",
+          "title": "公开 dump、私有 Service 与最终包边界",
+          "decision": "remove",
+          "reason": "公开dump/私有Service/最终包三列重复该节源码字段、指定AAR范围和设备回归段落。",
+          "original_line": 443,
+          "heading": "### Android 17 / API 37 验证边界"
+        },
+        {
+          "original_id": "ch17-03-14-release-three-costs",
+          "title": "候选计数、堆分析与上传分别受控",
+          "decision": "remove",
+          "reason": "候选到dump/分析/JSON/上传五框重复release依赖表及五项治理清单；没有额外暂停/资源定量关系。",
+          "original_line": 472,
+          "heading": "### Release 边界：计数、分析和上传是三件事"
+        },
+        {
+          "original_id": "ch17-03-15-repair-loop",
+          "title": "线上信号与本地引用链的修复闭环",
+          "decision": "remove",
+          "reason": "六框逐项复述紧邻六步修复流程，有用的具体引用修复和观察/分析机制图已保留。",
+          "original_line": 490,
+          "heading": "### 从线上信号回到本地验证"
+        },
+        {
+          "original_id": "ch17-03-16-instrumentation-sequence",
+          "title": "Instrumentation 的等待、GC 与分析",
+          "decision": "keep",
+          "reason": "保留业务终点到assertion、idle/GC、两次等待及候选分析的真实测试顺序，避免固定sleep等价检测。",
+          "original_line": 501,
+          "heading": "### Instrumentation 测试和 CI 失败条件"
+        },
+        {
+          "original_id": "ch17-03-17-rule-order",
+          "title": "Activity rule 两侧的检查对象不同",
+          "decision": "keep",
+          "reason": "保留Activity teardown两侧assertion与规则清理的嵌套顺序，明确两次检查覆盖不同对象终点。",
+          "original_line": 550,
+          "heading": "### Instrumentation 测试和 CI 失败条件"
+        },
+        {
+          "original_id": "ch17-03-18-config-and-isa",
+          "title": "可覆盖的公共版本门与实际 ISA",
+          "decision": "remove",
+          "reason": "公共门/模块SDK/ISA三列复述兼容性四条详细限制，未画实际条件决策和加载分支。",
+          "original_line": 606,
+          "heading": "### Android 17 可用性结论"
+        },
+        {
+          "original_id": "ch17-03-19-module-evidence",
+          "title": "KOOM 三模块的输入与产物",
+          "decision": "remove",
+          "reason": "Java/native/thread三列重复完整模块表，具体fork及native求交机制后文已保留。",
+          "original_line": 623,
+          "heading": "### 三个模块分别看什么"
+        },
+        {
+          "original_id": "ch17-03-20-tracker-trigger",
+          "title": "定期 tracker 与直接触发的区别",
+          "decision": "remove",
+          "reason": "常规/快速/物理三类tracker是五行详细触发表的缩写，阈值表提供更精确数值。",
+          "original_line": 644,
+          "heading": "#### 源码会在什么条件下 dump"
+        },
+        {
+          "original_id": "ch17-03-21-foreground-budget",
+          "title": "前后台、额度与一次自动尝试",
+          "decision": "remove",
+          "reason": "前台/额度/尝试/文件/服务摘要复述两段预算政策，后续保留图23已覆盖尝试与文件验证交叉内容，避免双画mHasDumped和非零文件链。",
+          "original_line": 655,
+          "heading": "#### 源码会在什么条件下 dump"
+        },
+        {
+          "original_id": "ch17-03-22-fork-and-cow",
+          "title": "父进程恢复与子进程 dump 的资源关系",
+          "decision": "keep",
+          "reason": "保留ART暂停fork后父进程恢复与子进程dump的真实分叉，以及COW写页和CPU/IO独立成本。",
+          "original_line": 664,
+          "heading": "#### fork dump 的停顿与资源开销"
+        },
+        {
+          "original_id": "ch17-03-23-dump-attempt-results",
+          "title": "dump 尝试、文件与分析成功不能合并",
+          "decision": "keep",
+          "reason": "保留尝试标记、dump子进程状态、等待与零长度门、Shark有效性和清理的检查链，说明尝试/非零文件/分析成功不是同一结果。",
+          "original_line": 673,
+          "heading": "#### fork dump 的停顿与资源开销"
+        },
+        {
+          "original_id": "ch17-03-24-native-intersection-consumption",
+          "title": "两份候选输入与跟踪记录消费",
+          "decision": "keep",
+          "reason": "保留Hook活跃记录和系统有界不可达结果双输入求交、报告后消费跟踪项及真实内存未free的分叉。",
+          "original_line": 706,
+          "heading": "### Native leak：候选来自两份数据的交集"
+        },
+        {
+          "original_id": "ch17-03-26-periodic-manual-native",
+          "title": "native 周期检查与手动检查的不同门槛",
+          "decision": "remove",
+          "reason": "周期call/手动checkLeaks/stop三列重复三个短段落的门槛和异步限制，没有队列时序实例。",
+          "original_line": 719,
+          "heading": "### Native leak：候选来自两份数据的交集"
+        },
+        {
+          "original_id": "ch17-03-25-native-allocation-contracts",
+          "title": "失败分配代理与监控自身的内存写入",
+          "decision": "remove",
+          "reason": "失败realloc/posix_memalign及成功memset三列摘抄紧邻同一段源码行为缺口，无实际控制流或旧/新记录示例。",
+          "original_line": 726,
+          "heading": "### Native leak：候选来自两份数据的交集"
+        },
+        {
+          "original_id": "ch17-03-27-thread-resource-state",
+          "title": "运行线程与退出后未回收资源",
+          "decision": "remove",
+          "reason": "运行/退出待回收/成功回收三列重复五行线程覆盖表和joinable定义，正文更精确覆盖限制。",
+          "original_line": 747,
+          "heading": "### Thread leak 的识别范围"
+        },
+        {
+          "original_id": "ch17-03-28-thread-stop-layers",
+          "title": "停止标志、循环退出与 PLT 恢复",
+          "decision": "remove",
+          "reason": "Kotlin/native/PLT三列重复停止实现的完整短段落，未形成真实跨层调用和在途时间线。",
+          "original_line": 754,
+          "heading": "### Thread leak 的识别范围"
+        },
+        {
+          "original_id": "ch17-03-29-system-first-triage",
+          "title": "从退出事实与内存分区选择专项诊断",
+          "decision": "keep",
+          "reason": "保留系统退出/趋势入口按Java、native/RSS、线程FD分诊的分支，说明选择不同专项与独立验证证据。",
+          "original_line": 767,
+          "heading": "### 把系统退出证据放在 KOOM 前面"
+        },
+        {
+          "original_id": "ch17-03-30-exit-record-evidence",
+          "title": "历史退出原因、采样值与 trace 各自的边界",
+          "decision": "remove",
+          "reason": "reason/PSS/trace三列重复三条完整API边界说明，没有同一退出样本的实际证据关联。",
+          "original_line": 784,
+          "heading": "#### `ApplicationExitInfo` 的版本边界"
+        },
+        {
+          "original_id": "ch17-03-31-memory-and-trim-signals",
+          "title": "Java heap、RSS/PSS 与 trim 信号",
+          "decision": "remove",
+          "reason": "Java/RSS/trim三列重复两个短段落，各名词及平台变化文字已完整给出。",
+          "original_line": 795,
+          "heading": "#### `onTrimMemory` 压力信号的变化"
+        },
+        {
+          "original_id": "ch17-03-32-report-governance",
+          "title": "事件类型、构建符号与有界文件治理",
+          "decision": "remove",
+          "reason": "事件/构建/符号/JSON/上传五框重复合成JSON和六项治理清单，原文明确kind、单位和不存在证据不可填。",
+          "original_line": 831,
+          "heading": "### 端侧报告的复现与采集边界"
+        },
+        {
+          "original_id": "ch17-03-33-porting-three-axes",
+          "title": "私有 ABI、16KB 制品与目标运行的验收",
+          "decision": "remove",
+          "reason": "移植五框是十项详细验收清单缩写，没有额外私有ABI/产物/运行机制。",
+          "original_line": 869,
+          "heading": "### Android 17 移植清单"
+        }
+      ],
+      "sha256_after": "0cdb1b3c78bc17e5e794aee08888b779f97ce5375bb60f45ffca74352a9f258c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:33:09.308741+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 33,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a178/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a178/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 178,
+        "article": "src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
+        "registered_sha256": "1ce2247a72cbbf9628a56ea557254af12fa170790a80b73f6b3cd290244e43c4",
+        "frozen_sha256": "1ce2247a72cbbf9628a56ea557254af12fa170790a80b73f6b3cd290244e43c4",
+        "review_input_sha256": "d5efe03254d2c1e10dbcaeea5e00440235315a99a5b8c4b6f9c9b905e94eaf81",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a178/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a178/external-source.diff",
+        "diff_sha256": "74d617c56b791795ce41c5a31557d9a418a83ead21763ea901ca17fa4fae21ec",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 419, \"characters\": 40213, \"svg_labels_read\": 33, \"actual_pngs_viewed\": 33, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 12, \"code_lines\": 157, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "d5efe03254d2c1e10dbcaeea5e00440235315a99a5b8c4b6f9c9b905e94eaf81",
+      "retired_diagrams": [
+        "ch17-03-01-questions-and-evidence",
+        "ch17-03-05-watcher-coverage",
+        "ch17-03-06-custom-owner",
+        "ch17-03-08-fragment-two-edges",
+        "ch17-03-10-flow-view-owner",
+        "ch17-03-11-callback-owner",
+        "ch17-03-12-classification-versus-failure",
+        "ch17-03-13-platform-boundaries",
+        "ch17-03-14-release-three-costs",
+        "ch17-03-15-repair-loop",
+        "ch17-03-18-config-and-isa",
+        "ch17-03-19-module-evidence",
+        "ch17-03-20-tracker-trigger",
+        "ch17-03-21-foreground-budget",
+        "ch17-03-25-native-allocation-contracts",
+        "ch17-03-26-periodic-manual-native",
+        "ch17-03-27-thread-resource-state",
+        "ch17-03-28-thread-stop-layers",
+        "ch17-03-30-exit-record-evidence",
+        "ch17-03-31-memory-and-trim-signals",
+        "ch17-03-32-report-governance",
+        "ch17-03-33-porting-three-axes"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-178/retired-assets.json"
     },
     {
       "index": 179,
@@ -47034,8 +47357,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 110,
-  "next_article": "src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
+  "reviewed_articles": 111,
+  "next_article": "src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -47045,7 +47368,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:30:12.737118+08:00",
+  "updated_at": "2026-10-31T14:33:09.308741+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -47101,13 +47424,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
-      "registered_sha256": "1ce2247a72cbbf9628a56ea557254af12fa170790a80b73f6b3cd290244e43c4",
-      "observed_sha256": "d5efe03254d2c1e10dbcaeea5e00440235315a99a5b8c4b6f9c9b905e94eaf81",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/03-koom-leakcanary-memory-diagnostics.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -47335,9 +47651,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3693,
-  "reviewed_placements_after": 1610,
-  "net_removed_placements": 2083,
+  "reviewed_placements_before": 3726,
+  "reviewed_placements_after": 1621,
+  "net_removed_placements": 2105,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -47361,5 +47677,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 110
+  "currently_matching_reviewed_source_count": 111
 }
