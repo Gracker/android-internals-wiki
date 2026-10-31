@@ -2,7 +2,7 @@
 title: Android Auto 与 Android Automotive OS 性能优化
 chapter: '19.7'
 section: '19.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 tags:
   - android-auto
@@ -59,6 +59,7 @@ sources:
   url: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/automotive/vehicle/aidl/android/hardware/automotive/vehicle/IVehicle.aidl
 last_deep_review_at: 2026-07-31
 last_review_finalize_at: 2026-08-09 04:17:59+08:00
+last_rework_at: '2026-10-31T17:36:49+08:00'
 ---
 
 # Android Auto 与 Android Automotive OS 性能优化

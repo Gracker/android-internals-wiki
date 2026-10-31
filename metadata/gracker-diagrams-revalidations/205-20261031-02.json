@@ -1,0 +1,90 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 205,
+  "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+  "revision": 2,
+  "reviewed_at": "2026-10-31T17:43:38.908465+08:00",
+  "source_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
+  "accepted_before_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 216,
+  "reading_characters": 15484,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 5,
+  "current_pngs_actually_viewed": 5,
+  "current_contexts_actually_viewed": 5,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/02/current-contact-1.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/02/compact-205-1.jpg"
+  ],
+  "native_diagrams_preserved": 1,
+  "native_diagrams_actually_viewed": 1,
+  "code_blocks_preserved": 1,
+  "code_lines_preserved": 5,
+  "asset_sha256": {
+    "src/assets/diagrams/ch19/a205-03-first-template.svg": "68a795e227a9c984d15d825ddd75b21f76acabf1170d956bb6a3db6cfc21aa44",
+    "src/assets/diagrams/ch19/a205-03-first-template.png": "85927771eb7296e9c6518cee30e8be725513e4e38f4b7b7a40208aba4cff5e4c",
+    "src/assets/diagrams/ch19/a205-05-surface-lifecycle.svg": "7b1c7fadc3f1e884b44fd02c0995683be1ffefa81282057ecf6a4612e567e128",
+    "src/assets/diagrams/ch19/a205-05-surface-lifecycle.png": "58f463c672ff38b39abbd320411231841b6a2ec6047d5f6991688e624d03f686",
+    "src/assets/diagrams/ch19/a205-07-media-path.svg": "2fa3ed13e44ee7579e5012a3e027d7e5bb9d33cb3e9e965914d5ce60f501e03b",
+    "src/assets/diagrams/ch19/a205-07-media-path.png": "0aff1bfd837737b4c9e9485477e8f75a18aed7bc234971859c1adac4057a661d",
+    "src/assets/diagrams/ch19/a205-09-watchdog-writes.svg": "d16f6916946fe97224c0c63651404451af255e343055662c5dd226aec2bfb069",
+    "src/assets/diagrams/ch19/a205-09-watchdog-writes.png": "eb1e63bb4176464f974bd6a1824d9658e3f1227d8870f3d54cd1c0b178da6957",
+    "src/assets/diagrams/ch19/a205-11-vehicle-data.svg": "ef773f98ea192a29c5318b878122feec9897c4c6d8235f7bffd7cc75970da01c",
+    "src/assets/diagrams/ch19/a205-11-vehicle-data.png": "1624904b9a1b9a4c14a987a32bf6730e37f665431f218256fda8ff190487afcb"
+  },
+  "asset_baseline": {
+    "kind": "original_visual_asset_sha256"
+  },
+  "figure_reviews": [
+    {
+      "id": "a205-03-first-template",
+      "heading": "### 冷启动路径",
+      "line": 139,
+      "decision": "keep",
+      "reason": "首模板本地快照到后台更新再主线程invalidate的流程与135–150一致，保留STARTED和host节流前提。"
+    },
+    {
+      "id": "a205-05-surface-lifecycle",
+      "heading": "### Surface 生命周期",
+      "line": 191,
+      "decision": "keep",
+      "reason": "Surface可再次Available及Destroyed收尾与185–194一致，宽高DPI及每个实例释放边界仍在。"
+    },
+    {
+      "id": "a205-07-media-path",
+      "heading": "## 媒体应用",
+      "line": 232,
+      "decision": "keep",
+      "reason": "host命令到状态/音频缓冲/声学终点的分段与221–235一致，各阶段宽度不暗示测量时长。"
+    },
+    {
+      "id": "a205-09-watchdog-writes",
+      "heading": "### CarWatchdog 与磁盘写入",
+      "line": 277,
+      "decision": "keep",
+      "reason": "UTC日累计跨同日启动到配置阈值/反复超限动作符合265–280，未将业务下载字节等同底层写入。"
+    },
+    {
+      "id": "a205-11-vehicle-data",
+      "heading": "## VHAL、车辆属性与 ADAS",
+      "line": 305,
+      "decision": "keep",
+      "reason": "车辆属性经CarService权限与VHAL到回调快照、有界后台处理与299–310一致，不套用Auto客户端或安全控制。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/02/layout-report.json",
+  "layout_report_sha256": "088e34fc5a73723196505e1a18ef1f60d0855bf203368b07d537f9f06529f868",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "本次外部差异仅frontmatter status从finalized改ready-for-review并新增last_rework_at；全文、图块、图注、代码和资产均不变。仍完整阅读216行15484字符、5行Kotlin及Mermaid源码，查看全部5张PNG、5个页面上下文和实际原生责任图。原生图区分手机Auto host/网络/车端显示与AAOS本机host/网络/CarService/VHAL；布局未错位、未溢出。1400与640检查及构建通过。保留外部状态更新，不替代技术验证，未执行示例。"
+}

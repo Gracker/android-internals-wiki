@@ -52836,7 +52836,7 @@
           "heading": "### 工具选择"
         }
       ],
-      "sha256_after": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
+      "sha256_after": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
       "new_diagrams": [],
       "reviewed_at": "2026-10-31T15:59:53.812790+08:00",
       "inline_mermaid_blocks_removed": 0,
@@ -52886,18 +52886,30 @@
           "own_caption_corrections": [],
           "revalidated_at": "2026-10-31T16:15:17.826416+08:00",
           "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        },
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 205,
+          "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+          "revision": 2,
+          "accepted_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
+          "reviewed_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/02/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/02/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/02/source.diff",
+          "diff_sha256": "9a4bea3093a0f9941f68fc82da6b81b5aa75c50f419caa2e78e8a5fe48b5eefb",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/205-20261031-02.json",
+          "report_sha256": "8bd50a099600d6c63ea2271c5e1b77a2394fa5e2178367028ad9ab6947300ea5",
+          "caption_revisions": [],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a205/02/input.md",
+          "external_input_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T17:43:39.054692+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
         }
       ],
-      "last_source_revalidated_at": "2026-10-31T16:15:17.915084+08:00",
-      "post_review_source_revalidation_required": {
-        "index": 205,
-        "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
-        "accepted_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
-        "observed_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
-        "observed_at": "2026-10-31T17:42:35.173677+08:00",
-        "status": "requires_independent_revalidation",
-        "diagram_count_unchanged": true
-      }
+      "last_source_revalidated_at": "2026-10-31T17:43:39.149136+08:00"
     },
     {
       "index": 207,
@@ -61171,7 +61183,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:42:35.176337+08:00",
+  "updated_at": "2026-10-31T17:43:39.159960+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -61374,16 +61386,6 @@
       "eligibility_proof": "/tmp/gracker-diagrams-editorial-review-20261028/scope-additions-rendered-proof.json"
     }
   ],
-  "post_review_external_source_revalidations_pending": [
-    {
-      "index": 205,
-      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
-      "accepted_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
-      "observed_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
-      "observed_at": "2026-10-31T17:42:35.173677+08:00",
-      "status": "requires_independent_revalidation",
-      "diagram_count_unchanged": true
-    }
-  ],
-  "currently_matching_reviewed_source_count": 166
+  "post_review_external_source_revalidations_pending": [],
+  "currently_matching_reviewed_source_count": 167
 }
