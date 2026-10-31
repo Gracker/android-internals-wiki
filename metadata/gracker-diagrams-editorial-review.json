@@ -30015,9 +30015,973 @@
       "before_count": 60,
       "before_all_images": 60,
       "sha256_before": "c996195091e6eabeebc45632ae0e3e96ffbff36142dbd24d01dd27944fee5575",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 18,
+      "decisions": [
+        {
+          "original_id": "ch13-12-02-event-vs-loop",
+          "title": "事件驱动与持续游戏循环",
+          "decision": "remove",
+          "reason": "206 View事件/持续loop/共同窗口三组六卡逐格复述204引言和247–254完整对照表，保留267–299原生实际依赖flow，不再重复角色摘要。",
+          "original_line": 206,
+          "heading": "# Android 17 游戏引擎渲染链路"
+        },
+        {
+          "original_id": "ch13-12-01-input-to-display",
+          "title": "从输入使用点追到显示",
+          "decision": "remove",
+          "reason": "213输入→simulation→提交→BLAST→display六框重画267–299保留原生flow以及211完整调查链；原生还区分GPU异步与pacer反馈，删开头简化副本。",
+          "original_line": 213,
+          "heading": "# Android 17 游戏引擎渲染链路"
+        },
+        {
+          "original_id": "ch13-12-03-fixed-step-loop",
+          "title": "固定模拟与可变渲染的循环",
+          "decision": "remove",
+          "reason": "242固定步长六框逐步重复224–238伪代码和240零次/多次模拟/插值解释，原代码精确呈现while分支，不把同段代码再画图。",
+          "original_line": 242,
+          "heading": "## Game Loop 与事件驱动 UI 有什么不同"
+        },
+        {
+          "original_id": "ch13-12-04-fps-simulation-latency",
+          "title": "FPS、模拟频率与延迟分别测量",
+          "decision": "remove",
+          "reason": "258吞吐/模拟/输入三组六卡逐项复述240、254及321在途定义，原文完整，7保留具体跨帧时间轨和新pacing深度图，删除概念对照副本。",
+          "original_line": 258,
+          "heading": "## Game Loop 与事件驱动 UI 有什么不同"
+        },
+        {
+          "original_id": "ch13-12-05-asynchronous-stages",
+          "title": "CPU、GPU 与显示是异步依赖",
+          "decision": "remove",
+          "reason": "301三阶段三轨再次重画267–299原生GPU异步与实际读取依赖，原生未删除；新Vulkan双向fence图包含具体API交接，7保留跨帧轨道。",
+          "original_line": 301,
+          "heading": "## 一帧的完整路径"
+        },
+        {
+          "original_id": "ch13-12-06-three-fences",
+          "title": "生产完成、旧图释放与呈现边界",
+          "decision": "merge",
+          "reason": "原图“生产完成、旧图释放与呈现边界”的独立边界进入合图：合并Vulkan acquire/present双向桥和三类fence/slot复用边界，呈现实际API对应而不是多处分散名词卡。；锚点为原图21，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 308,
+          "heading": "## 一帧的完整路径",
+          "replacement_id": "ed13-12-vulkan-buffer-access-cycle"
+        },
+        {
+          "original_id": "ch13-12-07-cross-frame-overlap",
+          "title": "跨帧并行与在途深度",
+          "decision": "keep",
+          "reason": "Game N+1、Render N、GPU N−1三轨表现允许跨帧并行和在途延迟，原生flow不表示跨帧相位；标明只是示例非固定帧差，保留。",
+          "original_line": 323,
+          "heading": "### 五段职责"
+        },
+        {
+          "original_id": "ch13-12-08-thread-roles",
+          "title": "按工作和依赖识别游戏线程",
+          "decision": "remove",
+          "reason": "332职责三组六卡逐格摘录337–344六行角色表，原表覆盖CPU/GPU/display更多对象；新engine交接图给具体线程与marker、不同于重复词典。",
+          "original_line": 332,
+          "heading": "## 多线程架构：职责比线程名更可靠"
+        },
+        {
+          "original_id": "ch13-12-09-unity-marker-location",
+          "title": "Unity marker 的实际线程归属",
+          "decision": "merge",
+          "reason": "原图“Unity marker 的实际线程归属”的独立边界进入合图：将Unity marker线程归属和Unreal状态交接接到系统trace，保留不同工具采集边界而非相邻四份摘要。；锚点为原图12，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 352,
+          "heading": "### Unity 的典型结构与证据边界",
+          "replacement_id": "ed13-12-engine-markers-and-system-correlation"
+        },
+        {
+          "original_id": "ch13-12-10-unity-system-correlation",
+          "title": "Unity 与系统 trace 如何关联",
+          "decision": "merge",
+          "reason": "原图“Unity 与系统 trace 如何关联”的独立边界进入合图：将Unity marker线程归属和Unreal状态交接接到系统trace，保留不同工具采集边界而非相邻四份摘要。；锚点为原图12，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 365,
+          "heading": "### Unity 的典型结构与证据边界",
+          "replacement_id": "ed13-12-engine-markers-and-system-correlation"
+        },
+        {
+          "original_id": "ch13-12-11-wait-for-present-causes",
+          "title": "Present 等待的三类候选",
+          "decision": "merge",
+          "reason": "原图“Present 等待的三类候选”的独立边界进入合图：合并Main present等待、线程方向和swap阻塞候选，以实际证据区分主动pacing与CPU/GPU/资源依赖。；锚点为原图25，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 372,
+          "heading": "### Unity 的典型结构与证据边界",
+          "replacement_id": "ed13-12-wait-object-and-critical-path"
+        },
+        {
+          "original_id": "ch13-12-12-unreal-dependencies",
+          "title": "Unreal 的线程与跨帧依赖",
+          "decision": "merge",
+          "reason": "原图“Unreal 的线程与跨帧依赖”的独立边界进入合图：将Unity marker线程归属和Unreal状态交接接到系统trace，保留不同工具采集边界而非相邻四份摘要。；锚点为原图12，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 381,
+          "heading": "### Unreal 的典型结构与证据边界",
+          "replacement_id": "ed13-12-engine-markers-and-system-correlation"
+        },
+        {
+          "original_id": "ch13-12-13-interpret-thread-waits",
+          "title": "线程等待如何定位关键路径",
+          "decision": "merge",
+          "reason": "原图“线程等待如何定位关键路径”的独立边界进入合图：合并Main present等待、线程方向和swap阻塞候选，以实际证据区分主动pacing与CPU/GPU/资源依赖。；锚点为原图25，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 396,
+          "heading": "### 线程等待怎样解读",
+          "replacement_id": "ed13-12-wait-object-and-critical-path"
+        },
+        {
+          "original_id": "ch13-12-14-native-window-entry",
+          "title": "游戏取得 native window 的入口",
+          "decision": "remove",
+          "reason": "405 GameActivity/引擎/自研三组六卡逐项复制410–412入口清单，原文生命周期与实际ANativeWindow边界全留，22保留真实销毁重建链。",
+          "original_line": 405,
+          "heading": "## 游戏 Surface、SurfaceView 与 BLAST"
+        },
+        {
+          "original_id": "ch13-12-15-blast-state-pixels",
+          "title": "BLAST 协调状态，游戏生产像素",
+          "decision": "remove",
+          "reason": "420像素/BLAST/合成三组六卡逐项复述414–430责任与WSI步骤，原生flow和新Vulkan实际双向资源链、HWC具体分支图保留，不再做职责卡。",
+          "original_line": 420,
+          "heading": "### Android 17 的 SurfaceView 路径"
+        },
+        {
+          "original_id": "ch13-12-16-vulkan-acquire",
+          "title": "Vulkan acquire 接入旧图释放依赖",
+          "decision": "merge",
+          "reason": "原图“Vulkan acquire 接入旧图释放依赖”的独立边界进入合图：合并Vulkan acquire/present双向桥和三类fence/slot复用边界，呈现实际API对应而不是多处分散名词卡。；锚点为原图21，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 434,
+          "heading": "### Android 17 的 SurfaceView 路径",
+          "replacement_id": "ed13-12-vulkan-buffer-access-cycle"
+        },
+        {
+          "original_id": "ch13-12-17-vulkan-present",
+          "title": "Vulkan present 把写完成 fence 交给下游",
+          "decision": "merge",
+          "reason": "原图“Vulkan present 把写完成 fence 交给下游”的独立边界进入合图：合并Vulkan acquire/present双向桥和三类fence/slot复用边界，呈现实际API对应而不是多处分散名词卡。；锚点为原图21，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 441,
+          "heading": "### Android 17 的 SurfaceView 路径",
+          "replacement_id": "ed13-12-vulkan-buffer-access-cycle"
+        },
+        {
+          "original_id": "ch13-12-18-device-vs-client",
+          "title": "DEVICE 不会免掉游戏本身的 GPU 渲染",
+          "decision": "merge",
+          "reason": "原图“DEVICE 不会免掉游戏本身的 GPU 渲染”的独立边界进入合图：将游戏自身GPU与显示阶段RE区别接到HWC普通/快分支，避免把DEVICE等同游戏不用GPU。；锚点为原图20，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 452,
+          "heading": "### 游戏 Layer 仍要经过 SurfaceFlinger",
+          "replacement_id": "ed13-12-game-render-and-display-composition"
+        },
+        {
+          "original_id": "ch13-12-20-present-or-validate",
+          "title": "presentOrValidate 的三个分支",
+          "decision": "merge",
+          "reason": "原图“presentOrValidate 的三个分支”的独立边界进入合图：将游戏自身GPU与显示阶段RE区别接到HWC普通/快分支，避免把DEVICE等同游戏不用GPU。；锚点为原图20，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 459,
+          "heading": "### 游戏 Layer 仍要经过 SurfaceFlinger",
+          "replacement_id": "ed13-12-game-render-and-display-composition"
+        },
+        {
+          "original_id": "ch13-12-19-hwc-ordinary-order",
+          "title": "HWC 常规协商与 client target 路径",
+          "decision": "merge",
+          "reason": "原图“HWC 常规协商与 client target 路径”的独立边界进入合图：将游戏自身GPU与显示阶段RE区别接到HWC普通/快分支，避免把DEVICE等同游戏不用GPU。；锚点为原图20，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 469,
+          "heading": "### 游戏 Layer 仍要经过 SurfaceFlinger",
+          "replacement_id": "ed13-12-game-render-and-display-composition"
+        },
+        {
+          "original_id": "ch13-12-21-presentation-vs-reuse",
+          "title": "显示呈现、资源复用与像素响应",
+          "decision": "merge",
+          "reason": "原图“显示呈现、资源复用与像素响应”的独立边界进入合图：合并Vulkan acquire/present双向桥和三类fence/slot复用边界，呈现实际API对应而不是多处分散名词卡。；锚点为原图21，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 476,
+          "heading": "### 游戏 Layer 仍要经过 SurfaceFlinger",
+          "replacement_id": "ed13-12-vulkan-buffer-access-cycle"
+        },
+        {
+          "original_id": "ch13-12-22-window-lifecycle",
+          "title": "窗口销毁与 swapchain 重建",
+          "decision": "keep",
+          "reason": "旧window停提交→跨线程停止访问→GPU依赖结束/目标销毁重建→新window恢复的实际生命周期，契约要求回调返回前停止访问，保留。",
+          "original_line": 485,
+          "heading": "### 生命周期和 resize"
+        },
+        {
+          "original_id": "ch13-12-23-40fps-60hz-cadence",
+          "title": "40 FPS 与 60 Hz 的不均匀保持周期",
+          "decision": "keep",
+          "reason": "40FPS在60Hz下内容保持1/2刷新周期的量化时间条，具体呈现平均25ms不能均匀整数刷新，作为节奏反例保留，非实测。",
+          "original_line": 496,
+          "heading": "## Frame pacing：稳定间隔与低延迟要一起看"
+        },
+        {
+          "original_id": "ch13-12-24-queue-stuffing",
+          "title": "Queue stuffing 把输入结果推到旧帧之后",
+          "decision": "merge",
+          "reason": "原图“Queue stuffing 把输入结果推到旧帧之后”的独立边界进入合图：把无节制queue stuffing与Swappy反馈、pipeline/nonpipeline取舍放同一对照和反馈闭环。；锚点为原图27，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 505,
+          "heading": "### Queue-stuffing 为什么会增加延迟",
+          "replacement_id": "ed13-12-pacing-depth-and-pipeline-mode"
+        },
+        {
+          "original_id": "ch13-12-25-blocking-candidates",
+          "title": "swap/present 阻塞的不同来源",
+          "decision": "merge",
+          "reason": "原图“swap/present 阻塞的不同来源”的独立边界进入合图：合并Main present等待、线程方向和swap阻塞候选，以实际证据区分主动pacing与CPU/GPU/资源依赖。；锚点为原图25，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 512,
+          "heading": "### Queue-stuffing 为什么会增加延迟",
+          "replacement_id": "ed13-12-wait-object-and-critical-path"
+        },
+        {
+          "original_id": "ch13-12-26-swappy-feedback",
+          "title": "Swappy 用目标时间和 fence 控制节奏",
+          "decision": "merge",
+          "reason": "原图“Swappy 用目标时间和 fence 控制节奏”的独立边界进入合图：把无节制queue stuffing与Swappy反馈、pipeline/nonpipeline取舍放同一对照和反馈闭环。；锚点为原图27，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 536,
+          "heading": "### Swappy 做了什么",
+          "replacement_id": "ed13-12-pacing-depth-and-pipeline-mode"
+        },
+        {
+          "original_id": "ch13-12-27-pipeline-mode-choice",
+          "title": "Pipeline、non-pipeline 与自动选择",
+          "decision": "merge",
+          "reason": "原图“Pipeline、non-pipeline 与自动选择”的独立边界进入合图：把无节制queue stuffing与Swappy反馈、pipeline/nonpipeline取舍放同一对照和反馈闭环。；锚点为原图27，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 545,
+          "heading": "### Pipeline 与 non-pipeline",
+          "replacement_id": "ed13-12-pacing-depth-and-pipeline-mode"
+        },
+        {
+          "original_id": "ch13-12-28-swappy-tracer",
+          "title": "Swappy 内部阶段需要埋点",
+          "decision": "keep",
+          "reason": "SwappyTracer注入→pre/postWait→pre/postSwap→ATrace带frameid/clock的具体采集接口链，区别引擎工具marker和默认OS数据，保留。",
+          "original_line": 556,
+          "heading": "### Choreographer 与 Swappy 的分工"
+        },
+        {
+          "original_id": "ch13-12-29-timing-capabilities",
+          "title": "Present timing 先查询完整能力",
+          "decision": "merge",
+          "reason": "原图“Present timing 先查询完整能力”的独立边界进入合图：合并扩展/feature/surface/swapchain条件与固定r1三种来源映射，防止把四stage当两路光学读数。；锚点为原图30，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 569,
+          "heading": "### `VK_EXT_present_timing`",
+          "replacement_id": "ed13-12-present-timing-query-and-stage-map"
+        },
+        {
+          "original_id": "ch13-12-30-timing-stage-mapping",
+          "title": "固定 r1 的 stage 时间映射",
+          "decision": "merge",
+          "reason": "原图“固定 r1 的 stage 时间映射”的独立边界进入合图：合并扩展/feature/surface/swapchain条件与固定r1三种来源映射，防止把四stage当两路光学读数。；锚点为原图30，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 576,
+          "heading": "### `VK_EXT_present_timing`",
+          "replacement_id": "ed13-12-present-timing-query-and-stage-map"
+        },
+        {
+          "original_id": "ch13-12-31-throttle-control",
+          "title": "Queue 侧节流与 acquire 显式同步",
+          "decision": "keep",
+          "reason": "queue隐式throttle关闭后显式同步与acquire自然等待的范围关系，保留async设置无效、flag和容量访问约束，并与pacer深度图共同区分等在哪一侧。",
+          "original_line": 587,
+          "heading": "### `Surface.setProducerThrottlingEnabled()`"
+        },
+        {
+          "original_id": "ch13-12-32-queue-count-negotiation",
+          "title": "BufferQueue 数量是协商约束",
+          "decision": "merge",
+          "reason": "原图“BufferQueue 数量是协商约束”的独立边界进入合图：将setBufferCount正数/零分支和校验接默认slot/受控扩展的不同对象口径，保留普通WSI协议边界。；锚点为原图34，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 598,
+          "heading": "### BufferQueue 计数、分辨率切换与显存预算",
+          "replacement_id": "ed13-12-queue-constraints-and-slot-extension"
+        },
+        {
+          "original_id": "ch13-12-33-resize-memory-budget",
+          "title": "分辨率和 image count 的内存预算",
+          "decision": "remove",
+          "reason": "607 renderScale/呈现资源/裸像素三组六卡逐项重述603–605详细说明与7.91MiB算式，原文Unity完整分配、allocator去重更全；22生命周期和新数量约束图保留。",
+          "original_line": 607,
+          "heading": "### BufferQueue 计数、分辨率切换与显存预算"
+        },
+        {
+          "original_id": "ch13-12-34-default-slots-extension",
+          "title": "默认 64 slot 与受控扩展",
+          "decision": "merge",
+          "reason": "原图“默认 64 slot 与受控扩展”的独立边界进入合图：将setBufferCount正数/零分支和校验接默认slot/受控扩展的不同对象口径，保留普通WSI协议边界。；锚点为原图34，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 616,
+          "heading": "### slot 上限与实际 image 数量",
+          "replacement_id": "ed13-12-queue-constraints-and-slot-extension"
+        },
+        {
+          "original_id": "ch13-12-35-three-control-scopes",
+          "title": "Pacer、刷新率与 workload hint 的范围",
+          "decision": "merge",
+          "reason": "原图“Pacer、刷新率与 workload hint 的范围”的独立边界进入合图：将pacer/vote/hint作用域与游戏DEFAULT选择合为并行配置依赖，避免把四个API画成自动串联。；锚点为原图40，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 627,
+          "heading": "## 几组系统调优机制各管什么",
+          "replacement_id": "ed13-12-target-fps-budget-coordination"
+        },
+        {
+          "original_id": "ch13-12-36-hint-session-loop",
+          "title": "Performance Hint 的周期反馈",
+          "decision": "merge",
+          "reason": "原图“Performance Hint 的周期反馈”的独立边界进入合图：把session周期反馈与WorkDuration参数/时钟/重叠范围合并，保留线程安全、null和结束生命周期。；锚点为原图37，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 644,
+          "heading": "### ADPF Performance Hint Session",
+          "replacement_id": "ed13-12-hint-session-and-work-duration"
+        },
+        {
+          "original_id": "ch13-12-37-work-duration-fields",
+          "title": "WorkDuration 的时钟与参数边界",
+          "decision": "merge",
+          "reason": "原图“WorkDuration 的时钟与参数边界”的独立边界进入合图：把session周期反馈与WorkDuration参数/时钟/重叠范围合并，保留线程安全、null和结束生命周期。；锚点为原图37，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 659,
+          "heading": "### ADPF Performance Hint Session",
+          "replacement_id": "ed13-12-hint-session-and-work-duration"
+        },
+        {
+          "original_id": "ch13-12-38-thermal-quality-loop",
+          "title": "持续性能需要有滞回的画质反馈",
+          "decision": "merge",
+          "reason": "原图“持续性能需要有滞回的画质反馈”的独立边界进入合图：将独立执行器/最小间隔与thermal独立趋势、零NaN异常和滞回保持时间接成闭环，避免在关键渲染线程同步Binder。；锚点为原图44，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 666,
+          "heading": "### ADPF Performance Hint Session",
+          "replacement_id": "ed13-12-headroom-and-hysteresis-controller"
+        },
+        {
+          "original_id": "ch13-12-39-frame-rate-compatibility",
+          "title": "游戏 Frame Rate compatibility 选择",
+          "decision": "merge",
+          "reason": "原图“游戏 Frame Rate compatibility 选择”的独立边界进入合图：将pacer/vote/hint作用域与游戏DEFAULT选择合为并行配置依赖，避免把四个API画成自动串联。；锚点为原图40，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 677,
+          "heading": "### Frame Rate API",
+          "replacement_id": "ed13-12-target-fps-budget-coordination"
+        },
+        {
+          "original_id": "ch13-12-40-target-change-coordination",
+          "title": "目标 FPS 改变时同步四个预算",
+          "decision": "merge",
+          "reason": "原图“目标 FPS 改变时同步四个预算”的独立边界进入合图：将pacer/vote/hint作用域与游戏DEFAULT选择合为并行配置依赖，避免把四个API画成自动串联。；锚点为原图40，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 693,
+          "heading": "### Frame Rate API",
+          "replacement_id": "ed13-12-target-fps-budget-coordination"
+        },
+        {
+          "original_id": "ch13-12-41-game-mode-resume",
+          "title": "恢复前台时重新查询 Game Mode",
+          "decision": "merge",
+          "reason": "原图“恢复前台时重新查询 Game Mode”的独立边界进入合图：把onResume用户偏好和GameState独立维度接到PowerHAL场景信号，避免mode同名混用或把loading当OS后台。；锚点为原图43，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 702,
+          "heading": "### Game Mode 与 Game State",
+          "replacement_id": "ed13-12-game-user-mode-and-power-signals"
+        },
+        {
+          "original_id": "ch13-12-42-game-state-dimensions",
+          "title": "Game State 的三个独立信息维度",
+          "decision": "merge",
+          "reason": "原图“Game State 的三个独立信息维度”的独立边界进入合图：把onResume用户偏好和GameState独立维度接到PowerHAL场景信号，避免mode同名混用或把loading当OS后台。；锚点为原图43，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 711,
+          "heading": "### Game Mode 与 Game State",
+          "replacement_id": "ed13-12-game-user-mode-and-power-signals"
+        },
+        {
+          "original_id": "ch13-12-43-game-vs-power-mode",
+          "title": "用户 Game Mode 与 Power HAL mode",
+          "decision": "merge",
+          "reason": "原图“用户 Game Mode 与 Power HAL mode”的独立边界进入合图：把onResume用户偏好和GameState独立维度接到PowerHAL场景信号，避免mode同名混用或把loading当OS后台。；锚点为原图43，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 718,
+          "heading": "### Game Mode 与 Game State",
+          "replacement_id": "ed13-12-game-user-mode-and-power-signals"
+        },
+        {
+          "original_id": "ch13-12-44-headroom-control",
+          "title": "Headroom 查询进入低频控制回路",
+          "decision": "merge",
+          "reason": "原图“Headroom 查询进入低频控制回路”的独立边界进入合图：将独立执行器/最小间隔与thermal独立趋势、零NaN异常和滞回保持时间接成闭环，避免在关键渲染线程同步Binder。；锚点为原图44，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 729,
+          "heading": "### CPU/GPU headroom 进入低频控制回路",
+          "replacement_id": "ed13-12-headroom-and-hysteresis-controller"
+        },
+        {
+          "original_id": "ch13-12-45-intervention-experiment",
+          "title": "把用户模式、intervention 和面板分开测",
+          "decision": "remove",
+          "reason": "740四组单变量实验四框逐项复述738四种条件与745保存恢复/重启说明，原文全部保留，新用户目标/Power信号图已区分机制，不再把实验清单重画。",
+          "original_line": 740,
+          "heading": "### 把用户模式、系统 intervention 与 OEM 面板拆开实验"
+        },
+        {
+          "original_id": "ch13-12-46-draw-optimization-targets",
+          "title": "不同提交优化改变不同成本",
+          "decision": "merge",
+          "reason": "原图“不同提交优化改变不同成本”的独立边界进入合图：将draw优化对象/引擎差异与CPU-GPU-pacing前驱证据合成三分支调查图，避免只用draw数或wait长度下结论。；锚点为原图53，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 751,
+          "heading": "## Draw call、Batching 与 GPU 成本",
+          "replacement_id": "ed13-12-bottleneck-evidence-and-draw-cost"
+        },
+        {
+          "original_id": "ch13-12-47-engine-batching",
+          "title": "SRP Batcher 与 Mesh Draw Commands",
+          "decision": "merge",
+          "reason": "原图“SRP Batcher 与 Mesh Draw Commands”的独立边界进入合图：将draw优化对象/引擎差异与CPU-GPU-pacing前驱证据合成三分支调查图，避免只用draw数或wait长度下结论。；锚点为原图53，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 764,
+          "heading": "## Draw call、Batching 与 GPU 成本",
+          "replacement_id": "ed13-12-bottleneck-evidence-and-draw-cost"
+        },
+        {
+          "original_id": "ch13-12-48-draw-bound-evidence",
+          "title": "CPU 提交慢与 GPU 像素慢的证据",
+          "decision": "merge",
+          "reason": "原图“CPU 提交慢与 GPU 像素慢的证据”的独立边界进入合图：将draw优化对象/引擎差异与CPU-GPU-pacing前驱证据合成三分支调查图，避免只用draw数或wait长度下结论。；锚点为原图53，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 779,
+          "heading": "## Draw call、Batching 与 GPU 成本",
+          "replacement_id": "ed13-12-bottleneck-evidence-and-draw-cost"
+        },
+        {
+          "original_id": "ch13-12-49-capture-settings",
+          "title": "两份 trace 先对齐实验配置",
+          "decision": "remove",
+          "reason": "799四框配置采样链逐项复述790–795六条清单，原文inflight/HDR/输入脚本等更全，删除配置清单副本。",
+          "original_line": 799,
+          "heading": "### 采集前记录配置"
+        },
+        {
+          "original_id": "ch13-12-50-trace-coverage",
+          "title": "基础 Perfetto 命令的证据范围",
+          "decision": "remove",
+          "reason": "818系统/引擎/GPU三组六卡逐项重述816完整数据源与权限边界，28实际SwappyTracer及新engine跨工具/clock图保留具体采集关系。",
+          "original_line": 818,
+          "heading": "### 一次基础系统 trace"
+        },
+        {
+          "original_id": "ch13-12-51-frame-evidence",
+          "title": "用同帧标识连接端到端证据",
+          "decision": "remove",
+          "reason": "837六框再次重画原生完整依赖flow、825–833逐帧证据表与835同帧时钟说明；新engine图具体关联帧号/clock，删除第二份观察坐标总览。",
+          "original_line": 837,
+          "heading": "### 连续三到五帧要标什么"
+        },
+        {
+          "original_id": "ch13-12-52-profilers-clock",
+          "title": "Unity、Insights 与 Perfetto 的配合",
+          "decision": "merge",
+          "reason": "原图“Unity、Insights 与 Perfetto 的配合”的独立边界进入合图：将Unity marker线程归属和Unreal状态交接接到系统trace，保留不同工具采集边界而非相邻四份摘要。；锚点为原图12，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 851,
+          "heading": "### Unity 与 Unreal 的 trace 组合",
+          "replacement_id": "ed13-12-engine-markers-and-system-correlation"
+        },
+        {
+          "original_id": "ch13-12-53-cpu-gpu-pacing",
+          "title": "三类瓶颈需要不同的前驱证据",
+          "decision": "merge",
+          "reason": "原图“三类瓶颈需要不同的前驱证据”的独立边界进入合图：将draw优化对象/引擎差异与CPU-GPU-pacing前驱证据合成三分支调查图，避免只用draw数或wait长度下结论。；锚点为原图53，不将返回描述、signal、旧图复用或光学结果混为一事，完整适用条件见新图图注。",
+          "original_line": 876,
+          "heading": "### Queue / pacing bound",
+          "replacement_id": "ed13-12-bottleneck-evidence-and-draw-cost"
+        },
+        {
+          "original_id": "ch13-12-54-display-thermal",
+          "title": "显示后段与持续热瓶颈",
+          "decision": "remove",
+          "reason": "889显示/热/补证三组六卡逐项复述883/887两段完整症状条件，证据细项正文全留，新headroom闭环与瓶颈图已给不同观察和动作。",
+          "original_line": 889,
+          "heading": "### 稳态 thermal bound"
+        },
+        {
+          "original_id": "ch13-12-55-measurement-metrics",
+          "title": "帧时间、输入延迟与统计定义",
+          "decision": "remove",
+          "reason": "896帧分布/输入/1%low三组六卡逐项复制894完整统计定义，原文最慢1%算法与P99倒数区别保留，跨帧/pacing图给实际时间关系，无需统计清单卡。",
+          "original_line": 896,
+          "heading": "### 稳态 thermal bound"
+        },
+        {
+          "original_id": "ch13-12-56-version-boundaries",
+          "title": "平台 API、库版本和设备能力",
+          "decision": "remove",
+          "reason": "914平台早晚/设备三组六卡逐格压缩903–910六行演进表与912构建限定，表中接口首引更全，新timing查询图保留实际gate，不重复版本表。",
+          "original_line": 914,
+          "heading": "## Android 12 到 Android 17 的关键演进"
+        },
+        {
+          "original_id": "ch13-12-57-scenario-boundaries",
+          "title": "四种场景先确认 Producer 与显示责任",
+          "decision": "remove",
+          "reason": "930小游戏/云游戏/AR/XR四孤立卡逐项摘录923–926四条边界清单，原文runtime不保证普通queue及专题链接全保留，删除无连接关系的目录卡。",
+          "original_line": 930,
+          "heading": "## 小游戏、云游戏、AR 与 XR 的边界"
+        },
+        {
+          "original_id": "ch13-12-58-kernel-sharing-sync",
+          "title": "内核 buffer、fence 与 fd 的角色",
+          "decision": "remove",
+          "reason": "939 dma-buf/dma-fence/syncfile三组六卡逐项复述937完整定义与946–948源码入口，原文fd非全局身份全留，新Vulkan图显示真正访问交接。",
+          "original_line": 939,
+          "heading": "## 内核和驱动侧"
+        },
+        {
+          "original_id": "ch13-12-59-vendor-causality",
+          "title": "Vendor 问题也要沿同帧依赖证明",
+          "decision": "keep",
+          "reason": "同frame/buffer→vendor job/stage→频率/完成fence→等待对象因果/同条件修复的具体取证链，保留从相关性闭合前驱依赖的顺序，睡眠非GPU scheduler证明。",
+          "original_line": 952,
+          "heading": "## 内核和驱动侧"
+        },
+        {
+          "original_id": "ch13-12-60-review-complete-chain",
+          "title": "游戏优化的完整验收链",
+          "decision": "remove",
+          "reason": "1064固定配置→输入→fence→验收四框逐项摘录1053–1061小结，原生完整主线及新具体反馈图已保留，删除结尾另一份摘要。",
+          "original_line": 1064,
+          "heading": "## 小结"
+        }
+      ],
+      "sha256_after": "01d65bc27f694473390b4c1d4f42a21030687017cf4aa047419d90d6bb0d3a1f",
+      "new_diagrams": [
+        {
+          "id": "ed13-12-engine-markers-and-system-correlation",
+          "title": "先识别引擎交接，再用同帧标识与时钟连接系统证据",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-engine-markers-and-system-correlation.svg",
+            "src/assets/diagrams/ch13/ed13-12-engine-markers-and-system-correlation.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-engine-markers-and-system-correlation",
+          "sources": [
+            "https://docs.unity3d.com/Manual/profiler-markers.html",
+            "https://perfetto.dev/docs/concepts/clock-sync",
+            "https://perfetto.dev/docs/data-sources/frametimeline",
+            "https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine",
+            "https://dev.epicgames.com/documentation/en-us/unreal-engine/mesh-drawing-pipeline-in-unreal-engine",
+            "https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-insights-in-unreal-engine"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-09-unity-marker-location",
+              "ch13-12-10-unity-system-correlation",
+              "ch13-12-12-unreal-dependencies",
+              "ch13-12-52-profilers-clock"
+            ],
+            "boundary": "Unity Main PlayerLoop包含Update/FixedUpdate等，Gfx.WaitForPresentOnGfxThread在Main，名称描述等待Render目标；Render包含Gfx.ProcessCommands/Gfx.PresentFrame，具体嵌套按版本。Unreal Game通过状态副本/command queue交Render与可选RHI/Task，不能无同步共享可变状态，Game帧边界限制领先但不是每帧等GPU全部完成。采集Unity Profiler/Insights及Perfetto，关键阶段ATrace/TrackEvent带统一frame id并校准时钟；默认OS trace不保证有引擎marker，统一id也不消除clock偏移。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-wait-object-and-critical-path",
+          "title": "相同的等待外观，需要检查不同前驱对象",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-wait-object-and-critical-path.svg",
+            "src/assets/diagrams/ch13/ed13-12-wait-object-and-critical-path.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-wait-object-and-critical-path",
+          "sources": [
+            "https://docs.unity3d.com/Manual/profiler-markers.html",
+            "https://developer.android.com/games/sdk/frame-pacing",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp",
+            "https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine",
+            "https://developer.android.com/games/develop/vulkan/native-engine-support"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-11-wait-for-present-causes",
+              "ch13-12-13-interpret-thread-waits",
+              "ch13-12-25-blocking-candidates"
+            ],
+            "boundary": "等待候选可并存，单个marker或swap耗时不证明GPU bound。Render等Game先查snapshot和logic，Game等Render/worker查barrier/future；GPU前驱查producer fence/job；Swappy/VSync主动等待看targetinterval和inflight；image仍被显示使用、queue满、resize/mode/present mode查release和生命周期。确认后续是否按预算开工，正常主动控制可降低输入延迟，不能盲删所有wait。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-vulkan-buffer-access-cycle",
+          "title": "同一 image 的旧访问、GPU 写入与下游读取按 fence 交接",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-vulkan-buffer-access-cycle.svg",
+            "src/assets/diagrams/ch13/ed13-12-vulkan-buffer-access-cycle.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-vulkan-buffer-access-cycle",
+          "sources": [
+            "https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-06-three-fences",
+              "ch13-12-16-vulkan-acquire",
+              "ch13-12-17-vulkan-present",
+              "ch13-12-21-presentation-vs-reuse"
+            ],
+            "boundary": "普通非shared swapchain dequeue取得native buffer和旧访问fence，匹配image后复制fd给driver AcquireImageANDROID，导入应用semaphore/fence，满足后才可写image。GPU异步写入后present的QueueSignalReleaseImageANDROID把wait semaphore转sync fd，与buffer queue到BLAST；这里release-image是下游acquire依赖，不是显示旧buffer release。BLAST可先acquire/SF可先latch，实际RE/HWC读前满足写完成。HWC本轮device-layer release通常对应更早的旧buffer，SF合并其他使用方依赖，FREE slot仍可未signal；display present物理开始出现/传输、虚拟输出写完，不等面板扫描响应。shared mode不每帧dequeue，仍需访问同步。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-game-render-and-display-composition",
+          "title": "游戏 GPU 渲染已发生，显示合成再决定是否采样",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-game-render-and-display-composition.svg",
+            "src/assets/diagrams/ch13/ed13-12-game-render-and-display-composition.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-game-render-and-display-composition",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp",
+            "https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/OutputLayer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-18-device-vs-client",
+              "ch13-12-20-present-or-validate",
+              "ch13-12-19-hwc-ordinary-order"
+            ],
+            "boundary": "游戏GLES/Vulkan产生场景像素，SurfaceView可以绕过AppHWUI但仍经SF/HWC。游戏LayerDEVICE只省该Layer被RenderEngine再采样，其他CLIENT和游戏自身GPU仍存在。SF写buffer/acquire/几何/请求类型后协商；无CLIENT且时间允许才可presentOrValidate，成功保存fences后不重复present，返回validate继续changedtypes与clienttarget；常规CLIENT时RE生成target交HWC。预测合成可能并行，此为主要依赖简化，CPU返回非signal或面板发光。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-pacing-depth-and-pipeline-mode",
+          "title": "主动安排提交，减少旧帧积压带来的输入等待",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-pacing-depth-and-pipeline-mode.svg",
+            "src/assets/diagrams/ch13/ed13-12-pacing-depth-and-pipeline-mode.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-pacing-depth-and-pipeline-mode",
+          "sources": [
+            "https://developer.android.com/games/sdk/frame-pacing",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk",
+            "https://developer.android.com/games/sdk/reference/frame-pacing/group/swappy-g-l"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-24-queue-stuffing",
+              "ch13-12-26-swappy-feedback",
+              "ch13-12-27-pipeline-mode-choice"
+            ],
+            "boundary": "尽快present可积累旧帧，input早采样后等这些在途帧，容量/image受限时在acquire/swap/present附近背压。Swappy用目标interval、Choreographer、timestamp/fence反馈限制过早提交与深度，wait可正常改善延迟。pipeline允许CPU/GPU跨周期并行提高吞吐但可能多一轮在途，nonpipeline适合CPU+GPU总量可在interval内完成轻负载，auto依工作量选。实际模式、present间隔与同输入延迟一起验收，条长和固定帧差均非承诺。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-present-timing-query-and-stage-map",
+          "title": "先查询可用 timing 能力，再按实际时间来源解释 stage",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-present-timing-query-and-stage-map.svg",
+            "src/assets/diagrams/ch13/ed13-12-present-timing-query-and-stage-map.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-present-timing-query-and-stage-map",
+          "sources": [
+            "https://developer.android.com/games/develop/vulkan/frame-pacing-extensions",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp",
+            "https://docs.vulkan.org/refpages/latest/refpages/source/VkPresentTimingSurfaceCapabilitiesEXT.html"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-29-timing-capabilities",
+              "ch13-12-30-timing-stage-mapping"
+            ],
+            "boundary": "VK_EXT_present_timing依赖present_id2，创建device/swapchain前枚举扩展feature并查询Surface timing能力和flags；固定r1受present_timing_ext flag，surface声明absolute不列relative。应用请求target/presentid并取pasttiming，不支持可退GOOGLE_display_timing/Swappy。固定映射queue operations end→render complete、request dequeued→composition latch、firstpixelout与visible共用actualpresent，无有效值可0，不等独立光学测量。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-queue-constraints-and-slot-extension",
+          "title": "数量接口改变约束，slot 配置不等于已分配图像",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-queue-constraints-and-slot-extension.svg",
+            "src/assets/diagrams/ch13/ed13-12-queue-constraints-and-slot-extension.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-queue-constraints-and-slot-extension",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-32-queue-count-negotiation",
+              "ch13-12-34-default-slots-extension"
+            ],
+            "boundary": "内部Surface::setBufferCount N>0查询minundequeued，转N-min；N0恢复maxdequeued1不是通式。Producer校验当前已dequeued、最小slots与总上限，可能BADVALUE，不是直接分配N张。默认slot64/初始max是配置非所有队列硬上限或实际图数；Consumer连接前allowUnlimitedSlots授权，Producer extendSlotCount受控扩展。普通游戏仍按VkSurfaceCapabilities/EGL/引擎协商imagecount，resize/减少image需处理旧访问依赖，不直接用隐藏setter改活动队列。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-hint-session-and-work-duration",
+          "title": "周期工作先按契约量测，再反馈给关联线程的 Hint Session",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-hint-session-and-work-duration.svg",
+            "src/assets/diagrams/ch13/ed13-12-hint-session-and-work-duration.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-hint-session-and-work-duration",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/WorkDuration.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-36-hint-session-loop",
+              "ch13-12-37-work-duration-fields"
+            ],
+            "boundary": "API31 HintSession关联同进程长期相关线程与正target，create可null；每周期actual报告上一轮工作，target变化update、API34setThreads，API35WorkDuration含CPU/GPU分量。start/total>0，CPU/GPU各>=0且不能同时0，按uptimeNanos；分量可重叠，total walltime不等二者和。Java session有内部状态，调用方自保线程安全，close后不继续使用。hint帮助CPU放置/频率，系统与thermal仍决定资源，不能锁核锁频。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-headroom-and-hysteresis-controller",
+          "title": "低频查询资源余量，缓存趋势再调节画质",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-headroom-and-hysteresis-controller.svg",
+            "src/assets/diagrams/ch13/ed13-12-headroom-and-hysteresis-controller.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-headroom-and-hysteresis-controller",
+          "sources": [
+            "https://developer.android.com/games/optimize/adpf",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-38-thermal-quality-loop",
+              "ch13-12-44-headroom-control"
+            ],
+            "boundary": "API36支持设备CPU/GPU headroom0..100，有效0为无可授予余量；NaN暂不可用，未实现可UnsupportedOperationException。读取平台最小查询间隔，独立执行器低频同步Binder并缓存；间隔内重复可得缓存，不在关键渲染线程等。thermalheadroom描述热趋势，是独立口径。控制器看持续趋势，按瓶颈调scale/阴影/后处理/LOD/simulation/FPS，设不同升降阈值、最短保持时间，记录资源重建和帧尖峰，平台不规定固定阈值或自动降档。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-target-fps-budget-coordination",
+          "title": "目标 FPS 改变时，四组配置由应用协调",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-target-fps-budget-coordination.svg",
+            "src/assets/diagrams/ch13/ed13-12-target-fps-budget-coordination.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-target-fps-budget-coordination",
+          "sources": [
+            "https://developer.android.com/games/sdk/frame-pacing",
+            "https://developer.android.com/media/optimize/performance/frame-rate",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java",
+            "https://developer.android.com/games/optimize/display-refresh-rate-change"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-35-three-control-scopes",
+              "ch13-12-39-frame-rate-compatibility",
+              "ch13-12-40-target-change-coordination"
+            ],
+            "boundary": "新的目标FPS应协调Surface frame-rate vote、Swappy/引擎interval、HintSessiontarget和qualitybudget。游戏按Surface公开契约DEFAULT，FIXED_SOURCE面向视频且AT_LEAST不适合游戏；专用优化页相反例子不直接照抄。vote是偏好系统可覆盖，pacer管每帧提交和inflight，hint管关联线程工作反馈不锁资源，quality管负载；四API不自动联动。只改部分会产生120Hz仍60FPS或45FPS但hint120预算冲突，须验收真实mode/interval/latency/热。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-game-user-mode-and-power-signals",
+          "title": "用户模式、加载状态与前台游戏是独立信号入口",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-game-user-mode-and-power-signals.svg",
+            "src/assets/diagrams/ch13/ed13-12-game-user-mode-and-power-signals.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-game-user-mode-and-power-signals",
+          "sources": [
+            "https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameManager.java",
+            "https://developer.android.com/games/optimize/adpf/gamemode/fps-throttling",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameState.java",
+            "https://developer.android.com/games/optimize/adpf/gamemode/gamestate-api",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/Mode.aidl",
+            "https://source.android.com/docs/core/perf/boost"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-41-game-mode-resume",
+              "ch13-12-42-game-state-dimensions",
+              "ch13-12-43-game-vs-power-mode"
+            ],
+            "boundary": "GameManager用户GameMode每次onResume重查，应用据Standard/Performance/Battery等调整FPS/quality；OEMintervention与声明另核，FPSthrottle只限不提升。GameState isLoading与gameplaymode独立可并存，label/quality开发者值，资源后台加载非App进入OS后台。isLoading可经服务触发Android13GAME_LOADING，前台游戏可触发Android14GAME，API37Mode均保留；这些PowerHALmode非用户GameMode，boost时长/档位/thermal由OEM决定，不承诺固定提升。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-12-bottleneck-evidence-and-draw-cost",
+          "title": "先确认迟到发生在哪一段，再选择提交或像素优化",
+          "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-12-bottleneck-evidence-and-draw-cost.svg",
+            "src/assets/diagrams/ch13/ed13-12-bottleneck-evidence-and-draw-cost.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-12-bottleneck-evidence-and-draw-cost",
+          "sources": [
+            "https://docs.unity3d.com/6000.0/Documentation/Manual/SRPBatcher.html",
+            "https://dev.epicgames.com/documentation/en-us/unreal-engine/mesh-drawing-pipeline-in-unreal-engine",
+            "https://developer.android.com/games/develop/vulkan/native-engine-support",
+            "https://docs.unity3d.com/Manual/profiler-markers.html",
+            "https://developer.android.com/games/sdk/frame-pacing",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-12-46-draw-optimization-targets",
+              "ch13-12-47-engine-batching",
+              "ch13-12-48-draw-bound-evidence",
+              "ch13-12-53-cpu-gpu-pacing"
+            ],
+            "boundary": "CPU Game/Render/RHI超预算且GPU等上游可查script/prepare/driver/锁/worker，合批instancing减少部分提交但粗culling/内存成本另算；UnitySRPBatcher降低同shader variant兼容材质CPU状态，不等合mesh一次draw，UnrealMeshDrawCommands含缓存排序和条件动态实例化。GPU CPU较早submit后job/producerfence晚需stagecounter区分fragment/vertex/compute/带宽/同步，降render scale不解所有GPU瓶颈。Queue/pacingwait要查interval、release/inflight和主动pacer，不能先删wait。默认draw数阈值无跨设备意义，改变后同时看CPU/GPU和画质。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T11:18:01.953859+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 60,
+        "contexts_actually_viewed": 14,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a131/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a131/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 131,
+        "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+        "registered_sha256": "c996195091e6eabeebc45632ae0e3e96ffbff36142dbd24d01dd27944fee5575",
+        "frozen_sha256": "c996195091e6eabeebc45632ae0e3e96ffbff36142dbd24d01dd27944fee5575",
+        "review_input_sha256": "b445b882829a96e5b602d015575764ec44adf47ef0bc80227eb90b1f038fac40",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a131/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a131/external-source.diff",
+        "diff_sha256": "e9151033f3cf761004d8f80e566ddf6a01ce58295710be73c2203d9c40da3d58",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 482 current narrative/table reading rows, 42478 characters, 60 SVG label sets, 60 original PNGs in 8 contact sheets independently read/viewed; 1 native source and successful original flow actually viewed, including 2400 width DOM-SVG capture; all 2 code blocks, 18 lines independently read."
+      },
+      "sha256_review_input": "b445b882829a96e5b602d015575764ec44adf47ef0bc80227eb90b1f038fac40",
+      "retired_diagrams": [
+        "ch13-12-01-input-to-display",
+        "ch13-12-02-event-vs-loop",
+        "ch13-12-03-fixed-step-loop",
+        "ch13-12-04-fps-simulation-latency",
+        "ch13-12-05-asynchronous-stages",
+        "ch13-12-06-three-fences",
+        "ch13-12-08-thread-roles",
+        "ch13-12-09-unity-marker-location",
+        "ch13-12-10-unity-system-correlation",
+        "ch13-12-11-wait-for-present-causes",
+        "ch13-12-12-unreal-dependencies",
+        "ch13-12-13-interpret-thread-waits",
+        "ch13-12-14-native-window-entry",
+        "ch13-12-15-blast-state-pixels",
+        "ch13-12-16-vulkan-acquire",
+        "ch13-12-17-vulkan-present",
+        "ch13-12-18-device-vs-client",
+        "ch13-12-19-hwc-ordinary-order",
+        "ch13-12-20-present-or-validate",
+        "ch13-12-21-presentation-vs-reuse",
+        "ch13-12-24-queue-stuffing",
+        "ch13-12-25-blocking-candidates",
+        "ch13-12-26-swappy-feedback",
+        "ch13-12-27-pipeline-mode-choice",
+        "ch13-12-29-timing-capabilities",
+        "ch13-12-30-timing-stage-mapping",
+        "ch13-12-32-queue-count-negotiation",
+        "ch13-12-33-resize-memory-budget",
+        "ch13-12-34-default-slots-extension",
+        "ch13-12-35-three-control-scopes",
+        "ch13-12-36-hint-session-loop",
+        "ch13-12-37-work-duration-fields",
+        "ch13-12-38-thermal-quality-loop",
+        "ch13-12-39-frame-rate-compatibility",
+        "ch13-12-40-target-change-coordination",
+        "ch13-12-41-game-mode-resume",
+        "ch13-12-42-game-state-dimensions",
+        "ch13-12-43-game-vs-power-mode",
+        "ch13-12-44-headroom-control",
+        "ch13-12-45-intervention-experiment",
+        "ch13-12-46-draw-optimization-targets",
+        "ch13-12-47-engine-batching",
+        "ch13-12-48-draw-bound-evidence",
+        "ch13-12-49-capture-settings",
+        "ch13-12-50-trace-coverage",
+        "ch13-12-51-frame-evidence",
+        "ch13-12-52-profilers-clock",
+        "ch13-12-53-cpu-gpu-pacing",
+        "ch13-12-54-display-thermal",
+        "ch13-12-55-measurement-metrics",
+        "ch13-12-56-version-boundaries",
+        "ch13-12-57-scenario-boundaries",
+        "ch13-12-58-kernel-sharing-sync",
+        "ch13-12-60-review-complete-chain"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-131/retired-assets.json"
     },
     {
       "index": 132,
@@ -31549,8 +32513,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 67,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
+  "reviewed_articles": 68,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/13-android-xr-spatial-ui-rendering.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -31560,7 +32524,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T11:07:13.579880+08:00",
+  "updated_at": "2026-10-31T11:18:01.953859+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -31609,13 +32573,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
-      "registered_sha256": "c996195091e6eabeebc45632ae0e3e96ffbff36142dbd24d01dd27944fee5575",
-      "observed_sha256": "b445b882829a96e5b602d015575764ec44adf47ef0bc80227eb90b1f038fac40",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -31686,6 +32643,13 @@
       "registered_sha256": "e4da93532c5aa9d6f21775484fb2d6c1b3b171636352094d5d29738d8803e538",
       "observed_sha256": "6b6ce9dc5e979c0c054fef692f9c184c5d189a0898c21b45371a2222f778b772",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
+      "registered_sha256": "717188506307ade4bb579ac616a841bcf45ae55bac4543ebfc22df470ef8d888",
+      "observed_sha256": "ef59b5b6a338acd6a0ba5be24e7ce54558814a422e16f20f0778602bce733785",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -32011,9 +32975,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2422,
-  "reviewed_placements_after": 1127,
-  "net_removed_placements": 1295,
+  "reviewed_placements_before": 2482,
+  "reviewed_placements_after": 1145,
+  "net_removed_placements": 1337,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -32037,5 +33001,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 67
+  "currently_matching_reviewed_source_count": 68
 }
