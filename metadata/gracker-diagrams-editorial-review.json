@@ -43878,9 +43878,143 @@
       "before_count": 13,
       "before_all_images": 13,
       "sha256_before": "993cee9c3ef7d75d14bd260b70e85b94011e5ff51be9ac36e5156c21ea87ee84",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 4,
+      "decisions": [
+        {
+          "original_id": "ch16-02-01-four-attribution-layers",
+          "title": "从观测事实到改动责任",
+          "decision": "keep",
+          "reason": "本篇核心观测事实→直接原因→条件所有者→改动责任四层调查链独立，避免把运行状态或进程名称直接等于责任归属，与后文具体资源分段互补。",
+          "original_line": 98,
+          "heading": "## 归因不能停在“系统”或“App”"
+        },
+        {
+          "original_id": "ch16-02-02-window-state-partition",
+          "title": "同窗单线程分解与指标来源",
+          "decision": "remove",
+          "reason": "三列重述窗口裁剪/互斥状态/未知缺失段和完整线程状态表，未画真实相交区间例；sched汇总不同thread_dur与跨轨非互斥全文留。",
+          "original_line": 139,
+          "heading": "### 把 Wall 时间按线程状态分开"
+        },
+        {
+          "original_id": "ch16-02-03-waking-runnable-running",
+          "title": "晚唤醒、等CPU与执行变慢",
+          "decision": "remove",
+          "reason": "三列逐项重画Runnable五条检查列表，无实际晚唤醒/可运行/执行三段轨，R+可无新wakeup、IRQ不可归被打断线程全文留。",
+          "original_line": 160,
+          "heading": "### Runnable 时间怎样归因"
+        },
+        {
+          "original_id": "ch16-02-04-allowed-cpu-competition",
+          "title": "低总利用率下检查可用CPU",
+          "decision": "remove",
+          "reason": "四框重排allowedCPU与同窗竞争说明，无实际空闲核不可用的CPU拓扑/掩码例；affinitycpusetRTcapacity与策略按设计不同错误全文留。",
+          "original_line": 181,
+          "heading": "### 低总利用率也可能有调度延迟"
+        },
+        {
+          "original_id": "ch16-02-05-binder-dependency-chain",
+          "title": "同步Binder的完整依赖路径",
+          "decision": "keep",
+          "reason": "同步transaction和reply→服务端接收前队列→具体server状态→下游锁IOBinder→调用频率线程池到修复的实际跨进程依赖调查链独立，clientwait包含server不能相加图注保留。",
+          "original_line": 206,
+          "heading": "## Binder 与跨进程等待"
+        },
+        {
+          "original_id": "ch16-02-06-memory-evidence-paths",
+          "title": "回收、进程终止与GC分别取证",
+          "decision": "remove",
+          "reason": "三列逐项复制kswapd/lmkd/GC三个机制段，无实际同窗对照样本；不可由回收推swapkillGC、PSI范围与majorfault非磁盘全文留。",
+          "original_line": 231,
+          "heading": "### GC 要按 App heap 证据分析"
+        },
+        {
+          "original_id": "ch16-02-07-rendering-work-and-wait",
+          "title": "UI、RenderThread和系统显示栈",
+          "decision": "remove",
+          "reason": "三列重画UI/RTGPU/SF三个小节与资源速查表，未画同一帧并行轨或等待关系；RT非全部displaylist录制/独立Surface不能用宿主代替全文留。",
+          "original_line": 248,
+          "heading": "### RenderThread 与 GPU"
+        },
+        {
+          "original_id": "ch16-02-08-frame-classification-boundary",
+          "title": "从帧关联到显示栈归因",
+          "decision": "keep",
+          "reason": "目标Layer的AppSurfaceFrame实际expected/token到同displaySFDisplayFrame，再分类/同帧commitcompositefence证据的真实关联顺序独立，保留SFActual非持续CPU和PredictionError边界。",
+          "original_line": 265,
+          "heading": "### SurfaceFlinger"
+        },
+        {
+          "original_id": "ch16-02-09-thermal-evidence",
+          "title": "温控结论需要关联证据与对照",
+          "decision": "remove",
+          "reason": "四框复写低频现象→温控限制→对照→多侧优化段，没有实际thermal信号值或对照结果，governor低频非必throttling与不造GHz例全文留。",
+          "original_line": 274,
+          "heading": "## Thermal 与频率限制"
+        },
+        {
+          "original_id": "ch16-02-10-anr-event-classification",
+          "title": "先识别ANR类型和FGS异常",
+          "decision": "remove",
+          "reason": "三列摘录ANR类型与FGS段落及五条确认清单，未画具体计时起点/完成/异常分支，shortServiceANR不同startForeground等crash、广播finish与迟抓栈限制全文留。",
+          "original_line": 301,
+          "heading": "## ANR 的归因"
+        },
+        {
+          "original_id": "ch16-02-11-multi-app-attribution",
+          "title": "竞争者如何成为可验证的影响因素",
+          "decision": "remove",
+          "reason": "四框重述资源竞争表和318受控干预段，与核心归因链和12AB流程重复，没有实际竞争者干预样本；高CPU仅候选条件全文留。",
+          "original_line": 320,
+          "heading": "## 多 App 共存时怎样归因"
+        },
+        {
+          "original_id": "ch16-02-12-system-ab-regression",
+          "title": "系统版本回归的受控比较",
+          "decision": "keep",
+          "reason": "固定同App和CUJ→跨buildmodulekernelvendor清单→多轮原始结果→关键阶段差异→源码配置假设→单因素复测完整系统回归调查协议独立，设备差异/刷机恢复编译缓存边界图注留。",
+          "original_line": 347,
+          "heading": "### 用源码差异验证假设"
+        },
+        {
+          "original_id": "ch16-02-13-report-to-handoff",
+          "title": "把归因结果交付为可复查的修复",
+          "decision": "remove",
+          "reason": "四框摘要报告六条模板，与1归因层级和12可复查协议重复，无实际交接报告case；未知缺口与多侧可修复说明完整留。",
+          "original_line": 379,
+          "heading": "## 报告模板"
+        }
+      ],
+      "sha256_after": "21c2f51dc582c0c47c385b8879adb0078d0f28caeb81e6e40a7de3653217b084",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:04:50.303710+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 13,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a168/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a168/visual-review.json",
+      "retired_diagrams": [
+        "ch16-02-02-window-state-partition",
+        "ch16-02-03-waking-runnable-running",
+        "ch16-02-04-allowed-cpu-competition",
+        "ch16-02-06-memory-evidence-paths",
+        "ch16-02-07-rendering-work-and-wait",
+        "ch16-02-09-thermal-evidence",
+        "ch16-02-10-anr-event-classification",
+        "ch16-02-11-multi-app-attribution",
+        "ch16-02-13-report-to-handoff"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-168/retired-assets.json"
     },
     {
       "index": 169,
@@ -45038,8 +45172,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 101,
-  "next_article": "src/part3-tools/ch16-methodology/02-system-vs-app.md",
+  "reviewed_articles": 102,
+  "next_article": "src/part3-tools/ch16-methodology/03-performance-metrics-online-monitoring.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -45049,7 +45183,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:02:44.797783+08:00",
+  "updated_at": "2026-10-31T14:04:50.303710+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -45381,9 +45515,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3497,
-  "reviewed_placements_after": 1541,
-  "net_removed_placements": 1956,
+  "reviewed_placements_before": 3510,
+  "reviewed_placements_after": 1545,
+  "net_removed_placements": 1965,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -45407,5 +45541,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 101
+  "currently_matching_reviewed_source_count": 102
 }
