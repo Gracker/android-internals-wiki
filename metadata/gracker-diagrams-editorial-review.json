@@ -38894,9 +38894,232 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "de680a48d94357b5f2162a8754cfb2d763e3a29b0aea074f09725b6f3f442d71",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "ch14-11-01-investigation-cycle",
+          "title": "把调查写成可重放的输入、查询与证据链",
+          "decision": "merge",
+          "reason": "原图“把调查写成可重放的输入、查询与证据链”并入：合并协议总览、局部到全局复核和停止条件，增加仍可验证候选回到实际查询的明确回路。；锚点原图1，三种出口明确带边界交付/继续查询回路/缺关键证据停止归因补采，不保证已发现不可见瓶颈。",
+          "original_line": 60,
+          "heading": "# Agent 辅助 Perfetto 分析协议",
+          "replacement_id": "ed14-11-investigation-dependencies-and-stop-loop"
+        },
+        {
+          "original_id": "ch14-11-02-version-layers",
+          "title": "设备、采集、主机、UI、skill与SQL包分别固定",
+          "decision": "remove",
+          "reason": "四卡把80–87六层版本表重新分组，footer逐项复述69历史段，没有实际版本差异数据或连接；完整表/版本/主机不能补采数据文字全留。",
+          "original_line": 73,
+          "heading": "# Agent 辅助 Perfetto 分析协议"
+        },
+        {
+          "original_id": "ch14-11-03-skills-and-evidence",
+          "title": "两类skill分别帮助取数与开放式调查",
+          "decision": "remove",
+          "reason": "三组六卡逐项摘要91–95两套skill及四类证据材料说明，原文组织更精确并分官方skill和androidskills，不重复把段落画成目录图。",
+          "original_line": 97,
+          "heading": "## 协议定位：Perfetto 教程之外的调查规范"
+        },
+        {
+          "original_id": "ch14-11-04-input-and-coverage",
+          "title": "先收窄问题，再反查采集是否能回答",
+          "decision": "remove",
+          "reason": "四步逐项重述108–118完整输入/必填/缺失处理表及120–122反向覆盖检查段，新调查回路已有固定输入与缺源出口，删清单复写。",
+          "original_line": 124,
+          "heading": "## 输入约束：分析前先把问题收窄"
+        },
+        {
+          "original_id": "ch14-11-05-facts-hypotheses",
+          "title": "假设、事实、排除与待验证项分开流转",
+          "decision": "keep",
+          "reason": "同一个具体假设经查询支持/不支持/证据不足分别流向事实、有范围排除和待验证的实际状态分支独立，保留空结果不绝对排除机制的边界。",
+          "original_line": 145,
+          "heading": "## Scratchpad：事实和假设分开"
+        },
+        {
+          "original_id": "ch14-11-06-schema-boundary",
+          "title": "公开schema与区间策略先于SQL结论",
+          "decision": "remove",
+          "reason": "四步逐项摘要163–173完整schema/ID/单位/开放/相交/标准库规则表，没有额外区间反例，原字段与所有语义限制完整保留，9时轴独立保留。",
+          "original_line": 154,
+          "heading": "## Perfetto SQL：先查表结构，再写查询"
+        },
+        {
+          "original_id": "ch14-11-07-bounded-state-query",
+          "title": "最长项是探索入口，截尾与缺口必须可见",
+          "decision": "remove",
+          "reason": "三组六卡逐项重述175与236两段实际56行SQL解释，原raw_dur/open/覆盖/NULL/重叠置NULL和最长仅探索均全留，未提供额外具体数据或时轴，删查询提醒卡。",
+          "original_line": 238,
+          "heading": "## Perfetto SQL：先查表结构，再写查询"
+        },
+        {
+          "original_id": "ch14-11-08-six-domain-routing",
+          "title": "六类方向用于收窄调查，而非直接判根因",
+          "decision": "remove",
+          "reason": "六卡直接复制251–256六方向完整表的分类与先查/再查信息，表还含触发与误判更完整，删表格转方框，无需再放第二份相同列表。",
+          "original_line": 260,
+          "heading": "## 六类问题方向：把开放问题改写成可执行动作"
+        },
+        {
+          "original_id": "ch14-11-09-wall-versus-cpu",
+          "title": "墙钟由执行、排队和等待共同组成",
+          "decision": "keep",
+          "reason": "同一slice墙钟跨Running/Runnable/S-D三段的实际两轨关系独立，直观区分标记范围与CPU执行，明确图为分类示意非固定比例、不能只追最大占比。",
+          "original_line": 288,
+          "heading": "## Wall time 与 CPU time 必须分离"
+        },
+        {
+          "original_id": "ch14-11-10-local-to-global",
+          "title": "从局部异常追依赖，再复核同一用户窗口",
+          "decision": "merge",
+          "reason": "原图“从局部异常追依赖，再复核同一用户窗口”并入：合并协议总览、局部到全局复核和停止条件，增加仍可验证候选回到实际查询的明确回路。；锚点原图1，三种出口明确带边界交付/继续查询回路/缺关键证据停止归因补采，不保证已发现不可见瓶颈。",
+          "original_line": 297,
+          "heading": "## 从局部异常到全局复核",
+          "replacement_id": "ed14-11-investigation-dependencies-and-stop-loop"
+        },
+        {
+          "original_id": "ch14-11-11-global-window-identity",
+          "title": "全局候选排序保留身份、窗口来源与嵌套层级",
+          "decision": "remove",
+          "reason": "四步逐项复制309与338两段24行SQL的来源窗口/半开相交/身份层级/关联限制，完整列与线程轨覆盖限制均留，9时轴和新同窗依赖回路分别承担区间/调查关系。",
+          "original_line": 340,
+          "heading": "## 从局部异常到全局复核"
+        },
+        {
+          "original_id": "ch14-11-12-stop-or-collect",
+          "title": "停止调查要回答证据问题，缺关键证据则停止归因",
+          "decision": "merge",
+          "reason": "原图“停止调查要回答证据问题，缺关键证据则停止归因”并入：合并协议总览、局部到全局复核和停止条件，增加仍可验证候选回到实际查询的明确回路。；锚点原图1，三种出口明确带边界交付/继续查询回路/缺关键证据停止归因补采，不保证已发现不可见瓶颈。",
+          "original_line": 355,
+          "heading": "## 从局部异常到全局复核",
+          "replacement_id": "ed14-11-investigation-dependencies-and-stop-loop"
+        },
+        {
+          "original_id": "ch14-11-13-report-replay",
+          "title": "最终报告把观测、依赖和归因边界连接起来",
+          "decision": "remove",
+          "reason": "四卡把366–374九行输出模板表重分组，表中每条要求及376观测依赖归因边界完整保留，新回路交付分支保留证据ID与范围，不重复报告目录。",
+          "original_line": 378,
+          "heading": "## 输出模板：证据表、阻塞方、边界与补采建议"
+        },
+        {
+          "original_id": "ch14-11-14-recording-planner",
+          "title": "从待回答问题反推采集，再用短采检查质量",
+          "decision": "remove",
+          "reason": "五步逐项复制385采集规划完整段与392–399六问题配置表，原短采/stats/setup/权限隐私与无通用常量要求全留，删一般规划流程复写。",
+          "original_line": 387,
+          "heading": "## Trace 采集规划器"
+        },
+        {
+          "original_id": "ch14-11-15-compatibility-layers",
+          "title": "表结构、标准库和设备扩展分三层核对",
+          "decision": "remove",
+          "reason": "三列六卡逐项复制409–411三层兼容性清单，原基础表/模块依赖/Android10-11回退/厂商构建范围及418额外字段条件完整保留，无实际实例，删文字映射重复。",
+          "original_line": 413,
+          "heading": "## Android 版本与厂商轨道差异"
+        },
+        {
+          "original_id": "ch14-11-16-query-regressions",
+          "title": "语法、schema、边界与语义都需要针对性验证",
+          "decision": "remove",
+          "reason": "四卡逐项复制426–429四种测试和431SHA复用/合成语义说明，原固定期望/版本/边界/未做设备实验全文留，删测试清单转方框。",
+          "original_line": 433,
+          "heading": "## SQL 模板测试集"
+        },
+        {
+          "original_id": "ch14-11-17-source-mapping",
+          "title": "从Trace对象映射到同一构建的源码",
+          "decision": "remove",
+          "reason": "四卡逐项复制444–447四种源码映射清单，原marker/Binder/nativeBuildID/图形对象和449构建边界全留，没有实际调用或源位置数据，删分类摘要。",
+          "original_line": 451,
+          "heading": "## 源码与 trace 关联"
+        }
+      ],
+      "sha256_after": "e6b11eca85e4d903c66b3e11fb3acfc8e7b885b26b7fd38cb6aed8791de5dcb7",
+      "new_diagrams": [
+        {
+          "id": "ed14-11-investigation-dependencies-and-stop-loop",
+          "title": "局部取证、同窗口复核与三种调查出口",
+          "article": "src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-11-investigation-dependencies-and-stop-loop.svg",
+            "src/assets/diagrams/ch14/ed14-11-investigation-dependencies-and-stop-loop.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-11-investigation-dependencies-and-stop-loop",
+          "sources": [
+            "https://raw.githubusercontent.com/android/skills/4328beaf36f00265db107eb316f9add6b8764144/profilers/perfetto-trace-analysis/SKILL.md",
+            "https://raw.githubusercontent.com/android/skills/4328beaf36f00265db107eb316f9add6b8764144/profilers/perfetto-sql/SKILL.md",
+            "https://perfetto.dev/docs/getting-started/using-ai",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/cpu_scheduling.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-11-01-investigation-cycle",
+              "ch14-11-10-local-to-global",
+              "ch14-11-12-stop-or-collect"
+            ],
+            "boundary": "先固定可验证问题、Trace SHA、实例/窗口、TP/skill/SQL包等执行环境并检查schema与采集覆盖；实际SQL输出经语义检查后成为证据，局部长slice拆状态，沿flow/token/唤醒/栈等追依赖。回到同一用户可感知窗口比较竞争解释，保留原始身份、层级与缺口。当前可见证据已回答问题才带边界交付；仍有可验证候选继续查询；关键源缺失、截断或时钟不齐则停止具体归因并给补采方案。结论只约束当前Trace/窗口/schema，不承诺已找到所有不可见瓶颈，也不以最长项/最大状态/排行直接定根因。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a145/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:41:45.576751+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a145/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a145/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 145,
+        "article": "src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
+        "registered_sha256": "de680a48d94357b5f2162a8754cfb2d763e3a29b0aea074f09725b6f3f442d71",
+        "frozen_sha256": "de680a48d94357b5f2162a8754cfb2d763e3a29b0aea074f09725b6f3f442d71",
+        "review_input_sha256": "2723a486ec3770db40815d18bc36cc69e988126b9d600ce81a1e21980705827e",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a145/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a145/external-source.diff",
+        "diff_sha256": "55af800436f4c1963f69d2e4484c4f008a421afe9260a9f055b6ad0003407ef6",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 208 current narrative/table reading rows, 19726 characters, 17 SVG label sets and all 17 original PNGs in 3 contact sheets independently read/viewed; all 2 non-Mermaid code blocks, 80 lines read. No native Mermaid."
+      },
+      "sha256_review_input": "2723a486ec3770db40815d18bc36cc69e988126b9d600ce81a1e21980705827e",
+      "retired_diagrams": [
+        "ch14-11-01-investigation-cycle",
+        "ch14-11-02-version-layers",
+        "ch14-11-03-skills-and-evidence",
+        "ch14-11-04-input-and-coverage",
+        "ch14-11-06-schema-boundary",
+        "ch14-11-07-bounded-state-query",
+        "ch14-11-08-six-domain-routing",
+        "ch14-11-10-local-to-global",
+        "ch14-11-11-global-window-identity",
+        "ch14-11-12-stop-or-collect",
+        "ch14-11-13-report-replay",
+        "ch14-11-14-recording-planner",
+        "ch14-11-15-compatibility-layers",
+        "ch14-11-16-query-regressions",
+        "ch14-11-17-source-mapping"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-145/retired-assets.json"
     },
     {
       "index": 146,
@@ -40285,8 +40508,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 80,
-  "next_article": "src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
+  "reviewed_articles": 81,
+  "next_article": "src/part3-tools/ch14-perfetto/12-perfetto-sdk-in-app-tracing.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -40296,7 +40519,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:37:36.797473+08:00",
+  "updated_at": "2026-10-31T12:41:45.576751+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -40345,13 +40568,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
-      "registered_sha256": "de680a48d94357b5f2162a8754cfb2d763e3a29b0aea074f09725b6f3f442d71",
-      "observed_sha256": "2723a486ec3770db40815d18bc36cc69e988126b9d600ce81a1e21980705827e",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/11-agent-perfetto-analysis-protocol.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -40684,6 +40900,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "registered_sha256": "af2630cbe04d31d15629f20bb25e42caa910dea7ba74620cf1202ec78951f1be",
+      "observed_sha256": "b227b349aaaa7249759ce2497095976f6a1ac6968edc6cae5b5a00fef0b481b3",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
       "registered_sha256": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
       "observed_sha256": "9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045",
@@ -40705,9 +40928,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3048,
-  "reviewed_placements_after": 1383,
-  "net_removed_placements": 1665,
+  "reviewed_placements_before": 3065,
+  "reviewed_placements_after": 1386,
+  "net_removed_placements": 1679,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -40731,5 +40954,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 80
+  "currently_matching_reviewed_source_count": 81
 }
