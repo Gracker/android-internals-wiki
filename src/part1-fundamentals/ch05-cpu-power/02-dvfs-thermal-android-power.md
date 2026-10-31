@@ -379,10 +379,6 @@ DDR/LPDDR 内存的控制器与互连，也可能采用动态频率或带宽投�
 
 单看 DDR 频率高低，说明不了内存有没有瓶颈。我们优先用设备提供的内存带宽计数器、LLC 相关计数器、缓存未命中与停顿事件、GPU 计数器和互连轨迹，并核对采样单位。AOSP 也不统一规定厂商的 DDR governor、节点名称或 Perfetto track。
 
-<!-- gracker-diagram: ch05-02-cpu-gpu-memory-bottleneck-domains -->
-![CPU、GPU 与内存各有控制域，数据也要按资源域解释](../../assets/diagrams/ch05/ch05-02-cpu-gpu-memory-bottleneck-domains.png)
-
-图：CPU 侧看调度、policy 与可用能力，GPU 侧看队列、fence 与驱动性能状态，内存侧看带宽、延迟、缓存未命中与发起者竞争。CPU schedutil 不直接选择 GPU 或 DDR 频率。高频未必换来高吞吐，单凭低频也证明不了瓶颈；频率与 counter 还要写清单位、来源和采样窗口。
 
 ### 一套可复现的 DVFS 排障顺序
 
@@ -488,10 +484,6 @@ CPU、GPU、显示、充电和无线子系统消耗的电能，最终会有一�
 
 报告平面让 Framework 和应用知道设备正在接近或已经进入热限制（throttling）。它装不下厂商控制算法的全部细节，一次 severity 变化对应哪个频率上限也没有固定答案。
 
-<!-- gracker-diagram: ch05-02-thermal-control-and-report-planes -->
-![温控执行降载与上报状态是两条并行路径](../../assets/diagrams/ch05/ch05-02-thermal-control-and-report-planes.png)
-
-图：传感器与设备策略既可直接驱动硬件、固件或 thermal core 的降载，也可通过 Thermal HAL 向 Framework 和应用报告状态。前一条路径不必等 ThermalManagerService 下发频率，后一条路径提供状态、headroom 与应用减载入口；两者共享热环境，但 severity 和某个 cooling state、频点没有统一对应表。
 
 ### Linux thermal core
 
@@ -820,10 +812,6 @@ adb shell cmd power set-fixed-performance-mode-enabled false
 
 普通应用不要把这个命令当成产品能力，也不要把固定性能模式与 ADPF 的性能提示会话混成同一个接口。
 
-<!-- gracker-diagram: ch05-02-sustained-versus-fixed-performance -->
-![持续性能需求与测试固定性能模式都不取消保护](../../assets/diagrams/ch05/ch05-02-sustained-versus-fixed-performance.png)
-
-图：Sustained Performance Mode 是受支持设备上通过 Window 提交的长期性能需求，具体 CPU/GPU 策略由厂商实现；固定性能模式是系统测试命令，用于减少动态性能差异。两者都保留温控、电流或安全限制，也不保证轨迹恒定在某 GHz。实验结束必须恢复测试设置，并区分峰值、持续和真实体验对应的热约束范围。
 
 ### 如何控制性能测试中的热变量
 
@@ -926,10 +914,6 @@ VC、热管和石墨材料主要改变热扩散与热容量，最终效果还受
 
 WakeLock 主要回答第二个问题：它解释不了 CPU 为什么繁忙，也覆盖不了显示或无线射频的全部能量。可靠的判断通常要把系统状态、组件活动和能量数据放到同一时间轴上。
 
-<!-- gracker-diagram: ch05-02-energy-suspend-and-work-timing-questions -->
-![能量、阻止挂起、工作时机，是三个互相联系的问题](../../assets/diagrams/ch05/ch05-02-energy-suspend-and-work-timing-questions.png)
-
-图：先分别查资源消耗、阻止挂起的对象和工作的触发条件，再用同一时间窗对齐。WakeLock 解释保持运行的请求；CPU、GPU、显示与无线电的能量还需组件活动和测量数据。后台调度政策决定工作何时有机会执行，耗电或调度原因要把这些观测放到同一时间窗对齐后再下结论。
 
 ### 从 PowerManagerService 到系统挂起
 
@@ -1284,10 +1268,6 @@ Perfetto 能量消费者、Power Profiler 或电源轨数据是否存在，取�
 
 这是 Google Play 的质量政策指标，可能会更新，也不等同于系统强制释放 WakeLock 的阈值。应用内部应采用更严格、与业务时限匹配的预算。
 
-<!-- gracker-diagram: ch05-02-vitals-wakelock-quality-metric -->
-![Vitals 汇总质量指标，不是系统持锁时限](../../assets/diagrams/ch05/ch05-02-vitals-wakelock-quality-metric.png)
-
-图：按 2026 年官方统计方式，仅在应用后台或运行前台服务时统计非豁免 partial WakeLock，24 小时累计达到 2 小时即报告 excessive。再按 28 天受影响会话比例判断质量影响；超过 5% 可能影响 Play 可见性。该指标不会作为 Android 强制释放锁的时间阈值，具体统计政策需持续核对官方文档。
 
 ### 一套可复现的排障方法
 
