@@ -127,7 +127,7 @@ consolidated_from:
 
 **画中画（PiP）** 从 Android 8.0 / API 26 扩展到小屏设备。PiP 窗口面积不大，但里面的视频帧或地图帧往往持续提交。主窗口和小窗同时刷新时，SurfaceFlinger 要在前景主窗口之上继续处理一组持续更新的小窗 layer。
 
-**Freeform（可自由移动、调整尺寸的窗口）/desktop windowing** 与“手机连接外接显示器”是两类能力。桌面窗口指兼容设备上的可调整大小窗口：用户可以同时打开多个应用窗口，底部有 任务栏，窗口顶部有标题栏和最小化、最大化控件。外接显示器能力关注的则是设备接上外屏后，桌面会话如何分布到两块屏幕。
+**Freeform（可自由移动、调整尺寸的窗口）/desktop windowing** 与“手机连接外接显示器”是两类能力。桌面窗口指兼容设备上的可调整大小窗口：用户可以同时打开多个应用窗口，底部有任务栏，窗口顶部有标题栏和最小化、最大化控件。外接显示器能力关注的则是设备接上外屏后，桌面会话如何分布到两块屏幕。
 
 四类场景的会话形态与渲染观察点整理如下：
 
@@ -193,7 +193,7 @@ flowchart LR
 
 普通的 freeform/desktop windowing 是 Task/Window 层面的 windowing mode（窗口形态），走不到 `LogicalDisplayMapper.setDeviceState()` 这条路径。只有扩展坞、上盖或厂商硬件状态真的改变 display layout 时，两条路径才会在同一场景中相遇。
 
-另外，冷启动 trace 里仍可能出现 折叠/展开事件——设备状态可以暂存到 boot completed（启动完成） 之后再应用。
+另外，冷启动 trace 里仍可能出现折叠/展开事件：设备状态可以暂存到 boot completed（启动完成） 之后再应用。
 
 ### 外接显示策略与扩展桌面的启用条件
 
@@ -221,7 +221,7 @@ flowchart LR
 
 ## Window、线程与 Surface 拓扑
 
-多窗口未必对应多进程。一个进程可以有多个顶层 Window，每个 Window 有自己的 `ViewRootImpl`、窗口 Surface 和 BLAST buffer 流；这些窗口仍可能共享 UI Looper 和 HWUI RenderThread。哪些东西共享、哪些独立，直接决定瓶颈长在哪里：
+多窗口未必对应多进程：一个进程可以有多个顶层 Window，每个 Window 有自己的 `ViewRootImpl`、窗口 Surface 和 BLAST buffer 流，但仍可能共享同一个 UI Looper 和 HWUI RenderThread。哪些东西共享、哪些独立，直接决定瓶颈长在哪里，我们按下表逐项核对：
 
 | 证据 | 执行拓扑 | 性能含义 |
 |---|---|---|
@@ -236,7 +236,7 @@ flowchart LR
 
 ### 先确认画面是否对应多个 Window
 
-同一 Activity 内的双栏 View、`SlidingPaneLayout` 或 Compose pane 可能只有一个 `ViewRootImpl` 和一条 App Window buffer 链路。比较可靠的多窗口判断依据是：
+屏幕上看起来像两个窗口，未必真是两个 Window：同一 Activity 内的双栏 View、`SlidingPaneLayout` 或 Compose pane 可能只有一个 `ViewRootImpl` 和一条 App Window buffer 链路。我们判断是不是多窗口，比较可靠的依据是：
 
 - 多个顶层 `ViewRootImpl`；
 - WMS 中存在不同的 `WindowState`、Window token、Task 或 TaskFragment；
@@ -265,11 +265,11 @@ flowchart LR
 <!-- gracker-diagram: ch02-14-shared-execution-separate-buffers -->
 ![窗口可共享执行线程，buffer 与 fence 仍各自独立](../../assets/diagrams/ch02/ch02-14-shared-execution-separate-buffers.png)
 
-图：图假定 A、B 位于同一进程、同一 UI Looper。两者的到期回调在共享 Choreographer 上串行执行，HWUI 任务也进入进程级 RenderThread；它们仍各有窗口 buffer 链路和 acquire/release 依赖。
+图：假定 A、B 位于同一进程、同一 UI Looper。两者的到期回调在共享 Choreographer 上串行执行，HWUI 任务也进入进程级 RenderThread；它们仍各有窗口 buffer 链路和 acquire/release 依赖。
 
 ### 跨进程窗口共享的设备资源
 
-不同进程各有 UI Looper、Choreographer 待处理帧状态、RenderThread、App Surface、GC 和处理 Binder 调用的线程池，并通过各自的 display event connection 接收 VSync 预测，应用任务不会直接排在同一线程。但在同一 Display 上，它们仍共享：
+跨进程之后，每个进程各有自己的 UI Looper、Choreographer 待处理帧状态、RenderThread、App Surface、GC 和处理 Binder 调用的线程池，并通过各自的 display event connection 接收 VSync 预测，应用任务不会直接排在同一线程。但只要落在同一块 Display 上，它们仍共享下面这些资源：
 
 - SurfaceFlinger 处理 transaction 和 layer 的时间预算；
 - CompositionEngine，以及由 RenderEngine 执行的 CLIENT composition（客户端合成）；
@@ -277,20 +277,20 @@ flowchart LR
 - display mode、color mode、present deadline（截止时间） 和显示面板；
 - GPU、CPU、内存带宽、温控与功耗等设备资源。
 
-所以即使 App A 和 App B 的 `doFrame()` 都正常，Shell transition、CLIENT composition（由 GPU 合成）、HWC 或 Display 阶段仍可能让目标 DisplayFrame 迟到。
+所以即使 App A 和 App B 的 `doFrame()` 都正常，Shell transition、CLIENT composition (由 GPU 合成)、HWC 或 Display 阶段仍可能让目标 DisplayFrame 迟到。
 
 ### 多 Display 要分别计时
 
-每个物理 Display 的 mode、HWC output 与 present fence 都要分别分析。窗口从内屏移到外接屏后，先确认目标 output、刷新率和 fence 归属，默认屏的数据不能直接套用。
+窗口一旦跨屏，计时的对象也跟着变：每个物理 Display 的 mode、HWC output 与 present fence 都要分别分析。窗口从内屏移到外接屏后，先确认目标 output、刷新率和 fence 归属，默认屏的数据不能直接套用。
 
-Android 17 r1 的 SurfaceFlinger FrameTimeline 以当前 pacesetter（SurfaceFlinger 调度所采用的节拍显示）为基准。`SurfaceFlinger::commit()` 用 pacesetter 的帧起点和刷新率调用 `setSfWakeUp()`；`onCompositionPresented()` 虽然按物理 Display 收集 present fence，传给 `setSfPresent()` 的却只有 pacesetter 的 present fence 和 GPU composition fence。由此不能推导每块物理屏都有独立的 SurfaceFlinger DisplayFrame。
+Android 17 r1 的 SurfaceFlinger FrameTimeline 以当前 pacesetter（SurfaceFlinger 调度所采用的节拍显示）为基准。`SurfaceFlinger::commit()` 用 pacesetter 的帧起点和刷新率调用 `setSfWakeUp()`；`onCompositionPresented()` 虽然按物理 Display 收集 present fence，传给 `setSfPresent()` 的却只有 pacesetter 的 present fence 和 GPU composition fence。每块物理屏是否各有独立的 SurfaceFlinger DisplayFrame，光凭这段调用链推不出来。
 
-Perfetto 的 `actual_frame_timeline_slice` 也没有 `display_id` 列，`display_frame_token` 用于关联帧，不能直接当作物理显示 ID。排查外屏时，要结合该时刻的 pacesetter、Winscope output、display transaction 和目标屏的 present fence 确认归属；缺少对应证据时，FrameTimeline 的卡顿分类不能单独证明外屏迟到。
+Perfetto 的 `actual_frame_timeline_slice` 也没有 `display_id` 列；`display_frame_token` 用于关联帧，物理显示 ID 要另外确认。排查外屏时，我们结合该时刻的 pacesetter、Winscope output、display transaction 和目标屏的 present fence 确认归属；单凭 FrameTimeline 的卡顿分类，还下不了“外屏迟到”的结论。
 
 Output 指 SurfaceFlinger 面向某个 Display 构造的合成输出，同一个 layer 还可能经镜像、virtual display（虚拟显示） 或投屏进入多个 Output。检查延迟前先确认目标 Display 的 output layer state，全局 layer 存在与否只是第一步。
 
 <!-- gracker-diagram: ch02-14-display-specific-evidence -->
-![全局 Layer 快照不能直接当作每个 Display 的可见集合](../../assets/diagrams/ch02/ch02-14-display-specific-evidence.png)
+![全局 layer 快照与每个 Display 的可见集合要分开确认](../../assets/diagrams/ch02/ch02-14-display-specific-evidence.png)
 
 图：全局 Layer 状态会按目标 Output 的投影、layer stack 与可见性等条件筛选。同一 Layer 可经镜像参与多个输出，而每屏模式、合成类型、deadline 与 present fence 仍需分别保存；仅按 snapshot_id 做表连接会误判归属。
 
@@ -357,7 +357,7 @@ FrameTimeline 里，应用侧和 SurfaceFlinger 侧至少要分三类：
 
 多窗口场景下，优先核对后两类。窗口、display 一多，先把 SurfaceFlinger 侧和应用侧的 deadline miss 分开，再决定是检查应用主线程、RenderThread、图片上传、视频解码，还是沿 SurfaceFlinger、HWC 与 GPU composition 继续向下。
 
-一套可复用的顺序是：在 `actual_frame_timeline_slice` 中找到异常 SurfaceFrame/DisplayFrame token（帧关联标识），对齐目标进程的 `doFrame`、RenderThread 与 buffer transaction；取最接近异常时刻的 layer snapshot，确认 output、可见 layer 和 composition type；再检查 SurfaceFlinger main thread、GPU fence、Composer/HAL 与 present。这样就能区分单个窗口晚交帧与整屏合成延迟。
+一套可复用的顺序是：我们先在 `actual_frame_timeline_slice` 中找到异常 SurfaceFrame/DisplayFrame token（帧关联标识），对齐目标进程的 `doFrame`、RenderThread 与 buffer transaction；取最接近异常时刻的 layer snapshot，确认 output、可见 layer 和 composition type；再检查 SurfaceFlinger main thread、GPU fence、Composer/HAL 与 present。这样就能区分单个窗口晚交帧与整屏合成延迟。
 
 ## 共享线程上的串行执行
 
@@ -387,11 +387,11 @@ trace 显示窗口切换附近变慢时，我们先核对当前 HWUI backend（�
 
 ### 跨进程窗口的竞争位置
 
-跨进程窗口各有 App RenderThread，但仍会在 CPU 调度、GPU 队列、内存和同一 Display 的 HWC 阶段相遇。瓶颈可能落在任一应用进程，也可能落在 SurfaceFlinger、HWC 或底层设备资源。正确顺序是先分别完成每个窗口的应用侧判断，再看同一 Display 的 geometry（几何属性）、SF/HWC 与 present。
+跨进程窗口各有 App RenderThread，但仍会在 CPU 调度、GPU 队列、内存和同一 Display 的 HWC 阶段相遇。瓶颈可能落在任一应用进程，也可能落在 SurfaceFlinger、HWC 或底层设备资源。我们按两步走：先分别完成每个窗口的应用侧判断，再看同一 Display 的 geometry（几何属性）、SF/HWC 与 present。
 
 ## 桌面窗口的 Shell 路径
 
-桌面窗口的 caption（标题栏）、最大化菜单、拖拽和 resize handle（调整大小控件），由 SystemUI 进程里的 WM Shell window decoration（窗口装饰） 子系统管理，与应用 `PhoneWindow` 的 `DecorView` 无关。一扇桌面窗口至少要区分应用窗口、Task/container leash（动画期间承载容器的临时 Surface）、Shell decoration 与 resize 过渡层：leash 是动画期间临时承载容器的 Surface。这些对象可能属于不同进程、Surface 和帧循环。
+桌面窗口的 caption（标题栏）、最大化菜单、拖拽和 resize handle（调整大小控件），由 SystemUI 进程里的 WM Shell window decoration（窗口装饰） 子系统管理，与应用 `PhoneWindow` 的 `DecorView` 无关。一扇桌面窗口至少要区分应用窗口、Task/container leash（动画期间承载容器的临时 Surface）、Shell decoration 与 resize 过渡层。它们可能属于不同进程、不同 Surface 和不同的帧循环。
 
 `DesktopTasksController` 通过 `WindowContainerTransaction`（WCT，窗口容器状态事务）改变 task bounds（任务边界）、windowing mode、层级和 display 归属。后台 task 进入桌面、运行中 task 转为 freeform、freeform 最大化/还原和退出桌面，走的是不同 transition；“画面已经开始动画”距离 WMS active bounds、应用 configuration 和新尺寸 buffer 全部就位，还有一段时间。
 
@@ -403,7 +403,7 @@ Android 17 的 window decoration 可以复用 `ViewHost`，减少 caption 反复
 - fluid resize（实时调整大小）持续改变 leash/bounds，等应用产出匹配新尺寸的内容；
 - veiled resize（遮罩式调整大小）先移动遮罩或预览，结束时提交最终 bounds。
 
-fluid resize 期间，几何先到而新 buffer 未到时，旧内容可能被暂时缩放；veiled resize 则把成本推迟到结束点。排查时要记录当前策略、pointer/input、WCT、transition start/finish transaction、应用 relayout/traversal、BLAST buffer 尺寸和 display present，把“模糊”统一归因于 GPU sampling（纹理采样） 并不可靠，对照这些记录再下判断。
+fluid resize 期间，几何先到而新 buffer 未到时，旧内容可能被暂时缩放；veiled resize 则把成本推迟到结束点。我们排查时记录当前策略、pointer/input、WCT、transition start/finish transaction、应用 relayout/traversal、BLAST buffer 尺寸和 display present；“模糊”要对照这些记录再下判断，直接归因于 GPU sampling（纹理采样） 并不稳妥。
 
 <!-- gracker-diagram: ch02-14-move-fluid-veiled -->
 ![移动、fluid resize 与 veiled resize 更新内容的时机不同](../../assets/diagrams/ch02/ch02-14-move-fluid-veiled.png)
@@ -422,9 +422,9 @@ WMS 内部 `BLASTSyncEngine` 与 transition handler（过渡处理器） 协调�
 | `SurfaceControl.Transaction` | container、transition leash、window layer | position、crop（裁剪）、变换参数、alpha（透明度）、Z 轴顺序、visibility |
 | 应用 BLAST transaction | 应用窗口 buffer layer | 新 buffer、acquire fence、frame number |
 
-Shell transition 常把 Task 或 Activity Surface 临时 reparent 到 leash 上执行动画。此时 position/crop 可能落在 leash，应用的新尺寸 buffer 则由 BLAST 单独到达。新 geometry 配旧 buffer 可能是过渡策略的一部分；要对齐 WCT、leash transaction、应用 relayout/traversal 和 buffer 选择，才能判断黑边、拉伸或跳变来自哪条路径。
+Shell transition 常把 Task 或 Activity Surface 临时 reparent 到 leash 上执行动画。此时 position/crop 可能落在 leash，应用的新尺寸 buffer 则由 BLAST 单独到达。新 geometry 配旧 buffer 可能是过渡策略的一部分；我们把 WCT、leash transaction、应用 relayout/traversal 和 buffer 选择对齐之后，才能判断黑边、拉伸或跳变来自哪条路径。
 
-`ViewRootImpl.performTraversals()` 只在首帧、尺寸、可见性、Insets（系统栏等占用区域）或 `LayoutParams` 等条件变化时才进入 `IWindowSession.relayout()`，稳定的绘制帧里没有这一步。所以稳定绘制帧里没有 relayout slice 时，应用 draw 慢的原因要到 WMS 之外找。
+`ViewRootImpl.performTraversals()` 只在首帧、尺寸、可见性、Insets（系统栏等占用区域）或 `LayoutParams` 等条件变化时才进入 `IWindowSession.relayout()`，稳定的绘制帧里没有这一步。这个特征可以反过来用：稳定 draw 帧里找不到 relayout slice 时，应用 draw 慢的原因就要到 WMS 之外去找。
 
 WMS 内部的 `BLASTSyncEngine` 可以等待一组 WindowContainer 的 draw/transaction；公开的 `SurfaceSyncGroup` 面向应用与嵌入 Surface。两者都只等已注册的参与者，Camera、codec 或游戏引擎的下一业务帧要另外建立同步。
 
@@ -506,19 +506,19 @@ SurfaceFlinger FrontEnd（前端状态层）接收所有窗口、Shell/WMS 几�
 | release fence | 被消费的 layer/buffer | 旧 buffer 何时可以复用 |
 | present fence | 一次 Display present | 该 output 的 present 工作何时到达 Android 显示栈完成边界 |
 
-present fence 不属于某个 Window：内屏与外屏各有自己的 present 结果；刷新率不同时，60 Hz 的帧预算也解释不了 120 Hz output。FrameTimeline 中出现 SurfaceFlinger jank 后，先核对当时的 pacesetter 与目标 output，再用目标屏的 present fence 和相邻 display 状态判断影响范围。仅有 DisplayFrame token，无法断定另一块屏是否也迟到。
+present fence 不属于某个 Window：内屏与外屏各有自己的 present 结果；刷新率不同时，60 Hz 的帧预算也解释不了 120 Hz output。FrameTimeline 中出现 SurfaceFlinger jank 后，我们先核对当时的 pacesetter 与目标 output，再用目标屏的 present fence 和相邻 display 状态判断影响范围；手上只有 DisplayFrame token 时，另一块屏是否一起迟到，要靠各自的 present 结果来判断。
 
 ### 多窗口开销的实测方法
 
-overlay（覆盖层） plane（显示硬件平面）、scaler、分辨率、刷新率、内存带宽和厂商 Composer 都会改变结果，“每增加一个窗口固定多耗时几毫秒”“必然增加多少 PSS（按共享比例分摊后的驻留内存）”这类通用结论得不出来。可复用的做法是在同一设备上固定场景，记录每个 output 的可见 layer、composition type、FrameTimeline、GPU/fence 和 present，前后对比。
+overlay（覆盖层）plane (显示硬件平面)、scaler、分辨率、刷新率、内存带宽和厂商 Composer 都会改变结果，“每增加一个窗口固定多耗时几毫秒”“必然增加多少 PSS（按共享比例分摊后的驻留内存）”这类通用结论得不出来。可复用的做法，是我们在同一设备上固定场景，记录每个 output 的可见 layer、composition type、FrameTimeline、GPU/fence 和 present，前后对比。
 
 ## PiP 与 Freeform 的特殊边界
 
-PiP 和 Freeform 仍走常规的应用绘制链路：普通 View 由 ViewRoot/HWUI 生产窗口 buffer，视频或 Camera 的独立 Surface 由各自的 Producer（内容生产方） 供帧。变化主要发生在 Task/Window bounds、transition leash、layer geometry 和同屏合成策略上。
+PiP 和 Freeform 仍走常规的应用绘制链路：普通 View 由 ViewRoot/HWUI 生产窗口 buffer，视频或 Camera 的独立 Surface 由各自的 Producer（内容生产方） 供帧。我们要看的变化，主要发生在 Task/Window bounds、transition leash、layer geometry 和同屏合成策略上。
 
 ### PiP 进入流程与参数
 
-应用请求进入 PiP 后，WindowManager 把目标 Task 切换到 pinned windowing mode（画中画专用窗口模式），也就是画中画专用的窗口模式。WM Shell 取得 Task leash，在动画过程中持续更新 position、crop、scale、round 和 alpha，结束时提交最终的 WindowContainerTransaction。系统可以先对已有内容做缩放和裁剪，无须等应用在每个动画采样点生成新 buffer。视频以 24/30 fps 供帧、Display 以 60/90/120 Hz present 时，同一视频 buffer 被多次使用是正常行为。
+应用请求进入 PiP 后，WindowManager 把目标 Task 切换到 pinned windowing mode（画中画专用窗口模式）。WM Shell 取得 Task leash，在动画过程中持续更新 position、crop、scale、round 和 alpha，结束时提交最终的 WindowContainerTransaction。系统可以先对已有内容做缩放和裁剪，无须等应用在每个动画采样点生成新 buffer。视频以 24/30 fps 供帧、Display 以 60/90/120 Hz present 时，同一视频 buffer 被多次使用是正常行为。
 
 `PictureInPictureParams` 会直接改变 transition 质量：
 
@@ -531,7 +531,7 @@ PiP 和 Freeform 仍走常规的应用绘制链路：普通 View 由 ViewRoot/HW
 
 Android 17 r1 中，未设置的 `autoEnterEnabled` 返回 `false`。`seamlessResizeEnabled` 的注释与实际调用路径有差异：getter 遇到空值返回 `false`，`PipTaskOrganizer` 又直接用该 getter 决定 resize 结束时是否执行 snapshot cross-fade。
 
-这些隐式默认值不该被依赖：视频场景明确传 `true`，复杂 UI 明确传 `false`，并在旋转、折叠或内容 bounds 变化后更新 params。
+这些隐式默认值靠不住：视频场景明确传 `true`，复杂 UI 明确传 `false`，并在旋转、折叠或内容 bounds 变化后更新 params。
 
 PiP 的常见风险：leash geometry 已变而新 buffer 未到；圆角、alpha、HDR 的组合改变 HWC strategy；旧的大尺寸 buffer 尚未 release，新尺寸 buffer 已开始分配；进入小窗后 Producer 仍维持不必要的高分辨率或高帧率。SurfaceFlinger 缩小 layer 只改变合成时的几何，Producer 的分辨率和供帧节奏并不会跟着变。
 
@@ -558,7 +558,7 @@ WMS 的 `BLASTSyncEngine` 收集已加入 sync group 的 WindowContainer transac
 
 ### lock-free MessageQueue 的作用范围
 
-Android 17 为 target SDK 37 及以上的应用启用 lock-free `MessageQueue`（DeliQueue）。Google 内部 beta trace 报告的 missed-frame（错过截止时间的帧） 降幅，归因于 MessageQueue monitor contention 的减少。这笔收益也说明不了 SurfaceFlinger transaction、WMS `mGlobalLock` 或 DMS `mSyncRoot` 的锁情况，后者的分析仍要单独做。
+Android 17 为 target SDK 37 及以上的应用启用 lock-free `MessageQueue`（DeliQueue）。Google 内部 beta trace 报告的 missed-frame（错过截止时间的帧） 降幅，归因于 MessageQueue monitor contention 的减少。这笔收益也说明不了 SurfaceFlinger transaction、WMS `mGlobalLock` 或 DMS `mSyncRoot` 的锁情况；这几把锁，我们仍要单独分析。
 
 ### 桌面窗口能力的查询方式
 
@@ -600,7 +600,7 @@ Android 16 / API 36 进一步把大屏规则扩展到 `sw >= 600dp`，其中 `sw
 
 这项退出配置只在 API 36 过渡期有效，应用面向 API 37 后它就失效了：Android 17 / API 37 会直接忽略 `sw >= 600dp` 设备上的方向、宽高比和 resizability（可调整大小） 限制。
 
-这条规则管不到 `sw < 600dp` 的屏幕；按 `android:appCategory` 标记的游戏也有例外，系统仍尊重用户为单个应用选择的宽高比。设备厂商还可以调整多窗口行为，所以测试记录要包含 target SDK、目标 display 的 `smallestScreenWidthDp`、应用类别与设备设置。
+这条规则管不到 `sw < 600dp` 的屏幕；按 `android:appCategory` 标记的游戏也有例外，系统仍尊重用户为单个应用选择的宽高比。设备厂商还可以调整多窗口行为，所以我们的测试记录要包含 target SDK、目标 display 的 `smallestScreenWidthDp`、应用类别与设备设置。
 
 大屏上的形态约束减少后，`android:configChanges` 的风险也跟着变化。应用仍可声明自行处理某些配置变化，但窗口被拉伸、旋转或进入分屏、桌面窗口时，Activity 更容易连续收到尺寸、方向、screen layout 变化。声明了 `configChanges` 的应用同样要更新资源、布局和渲染目标；声明缺失时，系统仍可能重建 Activity。
 
