@@ -106,10 +106,6 @@ consolidated_from:
 
 GPU 可观测信号分为执行计数器、频率/利用率、内存当前量和分配时间线。Perfetto、GpuService、eBPF 与 statsd（Android 系统统计守护进程） 各管一段，覆盖的对象和时间粒度都不一样。所以我们动手查数据前，先把要回答的问题定下来，再选对应的那条链路。
 
-<!-- gracker-diagram: ch15-12-01-signal-semantics -->
-![GPU 指标、内存总量与驱动统计](../../assets/diagrams/ch15/ch15-12-01-signal-semantics.png)
-
-图：先确定要回答负载、内存还是驱动路径问题，再选择对应信号。 数值变化、总量变化与加载统计没有可互换的单位或归因范围。
 
 ## GPU Counter、频率与内存事件
 
@@ -172,10 +168,6 @@ groups
 
 `GpuCounterBlock { block_id, block_capacity, name, description, counter_ids }` 描述共享同一硬件计数资源组（block）的 counter，以及它们能同时启用的数量上限；`block_capacity` 未设置时表示不设上限。所以我们写自动化脚本或 UI 选 counter 时，先按 `block_id` / `block_capacity` 校验容量，再决定启用哪些；只按名称一列就全开，很容易撞上这层约束。超限后怎么处理，proto 没有规定：producer 可能拒绝、可能轮转采样，也可能不提示地丢弃部分选择，协议层面给不出统一答案。
 
-<!-- gracker-diagram: ch15-12-02-descriptor-and-capacity -->
-![descriptor 的语义、单位与容量](../../assets/diagrams/ch15/ch15-12-02-descriptor-and-capacity.png)
-
-图：同一 descriptor 分别描述指标含义、结构化单位和同时采集能力。 同组 counter 不保证跨厂商等价；超容量时 producer 如何处理不由 proto 统一规定。
 
 ### `GpuCounterEvent`：descriptor 直挂与 interned descriptor
 
@@ -219,10 +211,6 @@ optional GpuCounterConfig gpu_counter_config = 108 [lazy = true];
 - `instrumented_sampling`：请求在 GPU command buffer（命令缓冲区）中插入计数器采样操作，使用前应检查 descriptor 的 `supports_instrumented_sampling`；
 - `fix_gpu_clock`：请求在 trace 期间固定 GPU 时钟，会改变动态调频条件；这样采到的数据要单独当一份基线看，与日常运行数据分开比较。
 
-<!-- gracker-diagram: ch15-12-04-config-requests -->
-![采集能力、配置与测量条件](../../assets/diagrams/ch15/ch15-12-04-config-requests.png)
-
-图：先核对 descriptor 能力，再选择周期与 ID，并标明插桩和固定频率的条件。 instrumented_sampling 和 fix_gpu_clock 是请求；实际执行受 producer 支持限制。
 
 ### Trace Processor 如何导入事件
 
@@ -256,10 +244,6 @@ ID 作用域和 track 身份还要分开：固定版本的 `InternGpuCounterTrac
 
 `PushGpuCounterValue()` 的写入顺序会影响 trace 首尾的解释。第一条数值事件建立当前时间戳的 0 占位行，其报告的回看值因为没有上一行而无法保存；下一条事件到达后，把该事件报告的 value 写到上一行，同时新建当前时刻的 0 占位行。trace 结束前的末行因此可能仍是占位值。所以我们分析短 trace 或低频采样时，要先检查首尾样本；这个 0 多半只是解析器留下的占位值，单凭它还判断不了 GPU 是否空闲。
 
-<!-- gracker-diagram: ch15-12-05-backwards-looking-values -->
-![当前报告回填上一行的 GPU counter](../../assets/diagrams/ch15/ch15-12-05-backwards-looking-values.png)
-
-图：每次先在当前时间戳放0，再把当前报告值写到上一行。 示例时刻和数值是合成输入；首条报告缺少左边界，末行0也可能只是占位。
 
 ### SQL span 视图：从采样点到区间
 
@@ -285,10 +269,10 @@ WHERE name = '{{counter_name}}' AND gpu_id IS NOT NULL;
 
 这个视图片段只生成区间，不改变导入解析器已写入的 value。末行会延伸到 `trace_end()`；它若仍是解析器留下的 0 占位值，做求和、均值等聚合计算前，我们应按采样语义决定要不要剔除这一行。
 
-<!-- gracker-diagram: ch15-12-06-counter-spans -->
-![LEAD 区间与末行边界](../../assets/diagrams/ch15/ch15-12-06-counter-spans.png)
+<!-- gracker-diagram: ed15-12-counter-backfill-to-span-example -->
+![当前报告回填上一行，再由行时间戳形成区间](../../assets/diagrams/ch15/ed15-12-counter-backfill-to-span-example.png)
 
-图：按 track 排序后用下一时间戳计算区间长度，末行延伸到 trace_end。 合成示例沿用上图；SQL不会修复占位值，也不能按 value=0 删除所有真实零值。
+图：图为原文合成输入，时间仅用同一合成单位，trace_end=45。每条事件先建立当前时刻的0行，再把当前报告值写到上一行；第一条90没有上一行而舍弃。三条导入后t10值4、t20值8、t35值0；LEAD按同track排序形成[10,20)、[20,35)、[35,45)，末段延伸到trace_end而非新增采样。SQL不修复解析器值，末行0应按采样边界单独审查，不能把所有value=0当占位删除，也不能以末行0判断GPU空闲。
 
 `test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto` 展示了测试使用的 counter 名与单位组合，例如：
 
@@ -314,10 +298,6 @@ message GpuMemTotalEvent {
 
 注释明确该事件由 Android 系统的 `GpuService` 生成。Trace Processor 的 `ParseGpuMemTotalEvent()` 按 `gpu_id` 建立 GPU 维度：`pid == 0` 时写入全局 GPU memory counter，其他 pid 则关联进程并写入进程 GPU memory counter。`size` 是该时间点的总量值，读的时候要记得它是快照，而非一次内存分配的增量。
 
-<!-- gracker-diagram: ch15-12-07-gpu-memory-event -->
-![GPU 内存事件的三个坐标](../../assets/diagrams/ch15/ch15-12-07-gpu-memory-event.png)
-
-图：GpuMemTotalEvent 用 GPU、进程归属和当前总量定位内存轨道。 pid0是全局总量，其他PID进入进程轨道；共享buffer不能由此推断单进程独占物理页。
 
 这条平台事件让我们能观察全局或进程归属的 GPU 内存总量；带宽、shader throughput（着色器处理吞吐量）、缓存命中率、功耗阈值这类量，仍要回到厂商 GPU counter 上去拿。事件里的 pid 归属也要多想一层：它只说明驱动把总量记在这个进程名下，物理页未必只有该进程持有；跨进程共享 buffer、驱动保留和显示系统引用，要结合 `GpuService`、dma-buf（Linux 跨设备共享 buffer 的机制） 与厂商工具一起解释。
 
@@ -339,10 +319,6 @@ message GpuMemTotalEvent {
 
 归因时，我们先用时间重叠缩小候选范围，再用 submission、buffer、fence、layer 和 frame token 把关系建立起来。“counter 峰值与卡顿同时出现”提供时间相关线索，还够不上因果结论；既不能直接定责，也不能仅据此断言两者只是巧合。
 
-<!-- gracker-diagram: ch15-12-08-counter-causal-evidence -->
-![从设备级 counter 到同帧证据](../../assets/diagrams/ch15/ch15-12-08-counter-causal-evidence.png)
-
-图：时间重叠缩小候选后，继续用提交、buffer、fence 与 layer 建立同帧关系。 counter 没有PID、TID或帧token；时间相关不足以定责，也不能直接定性为巧合。
 
 #### 不同出图路径的 counter 判读
 
@@ -363,17 +339,9 @@ message GpuMemTotalEvent {
 
 TextureView 与独立 Surface 的差异尤其容易被 counter 隐藏。TextureView 输入进入宿主 HWUI 后，HWC 通常只看到最终 App Window；独立 Surface 保留单独 layer，HWC 可以逐层选择 DEVICE 或 CLIENT。某次 DEVICE→CLIENT 变化可能让 GPU counter 上升，但触发条件也许来自同屏 layer、透明度、变换、HDR（High Dynamic Range，高动态范围）、protected usage（受保护内容的 buffer 使用标记），或多个 layer 竞争有限的 HWC hardware plane（硬件叠加层资源）。这时只盯着目标 App 的 shader 查，很容易漏掉上面这些触发条件。
 
-<!-- gracker-diagram: ch15-12-09-host-versus-surface -->
-![宿主窗口、TextureView 与独立 Surface](../../assets/diagrams/ch15/ch15-12-09-host-versus-surface.png)
-
-图：从内容承载拓扑解释哪些 GPU 工作可能混入同一设备 counter。 DEVICE 说明本轮合成路径，不能推出 Producer 没有GPU成本；同屏图层变化也可触发CLIENT。
 
 Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC 路径完成，GPU counter 可能保持很低，画面仍会因 HAL（Hardware Abstraction Layer，硬件抽象层） 或 codec 输出晚、acquire fence 晚、requested present timestamp（producer 请求的显示时间）、HWC 或 display driver 延迟而错过显示。这些硬件阶段都落在 GPU counter 的覆盖范围之外。
 
-<!-- gracker-diagram: ch15-12-10-mixed-hardware-work -->
-![Camera、游戏与混合页面的证据范围](../../assets/diagrams/ch15/ch15-12-10-mixed-hardware-work.png)
-
-图：同一个 GPU counter 不能覆盖所有 Producer 硬件或区分多个共享 GPU 的来源。 ISP、codec、HWC与显示驱动的迟到可能发生在低GPU活动时；高峰值也不能独立指向目标App。
 
 #### 一次可复用的关联顺序
 
@@ -383,10 +351,6 @@ Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC �
 4. 在已经确定归属的 GPU 工作区间内读取 counter span，使用 descriptor 的名称、单位、group、采样周期和 block 配置解释数值。
 5. 对比相同设备、相同 counter 配置、相同温度和显示模式下的基线。跨厂商、跨驱动或不同 counter 组合不直接比较绝对值。
 
-<!-- gracker-diagram: ch15-12-11-frame-association-order -->
-![先关联对象，再解释 counter](../../assets/diagrams/ch15/ch15-12-11-frame-association-order.png)
-
-图：从异常显示帧反查 Producer 与同步链，最后解释属于该区间的 counter。 跨设备、热状态或counter组合改变后不能直接比较绝对值。
 
 这套顺序把 counter 放在逐帧时间线之后：先有对象和同步关系，再读数值。counter 能回答“已定位的 GPU 区间为什么变重”；“谁让这一帧卡了”这种问题，要回到逐帧时间线上解决。
 
@@ -399,10 +363,6 @@ Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC �
 5. **不要强行跨厂商比较**：仅凭同属 `MEMORY`、`FRAGMENTS` 或 `COMPUTE` 分组不足以证明 counter 可比。若要建立跨设备基准，必须记录厂商 producer、counter 名称、单位和采样频率；若用不同名称作为同类指标，还要写明映射依据。
 6. **控制 trace 体积**：样本数量近似为 `counter 数 × 采样频率 × 时长`，但 protobuf 的 `int_value` 用 varint（按数值大小改变字节数的整数编码） 编码，字节数随数值大小变化；`double_value`、嵌套 message（嵌套消息）、packet framing（数据包边界信息）、descriptor 与 interning 引用也各有额外成本。所以我们不按固定的“每项 12 bytes”推算容量，而是先做一次短时采集，测出生成 trace 的 bytes/s，再为目标时长设置 buffer 和采样周期。
 
-<!-- gracker-diagram: ch15-12-12-trace-volume -->
-![从短采集测量 trace 生成速率](../../assets/diagrams/ch15/ch15-12-12-trace-volume.png)
-
-图：先用短采集测量实际 bytes/s，再按目标时长与采样配置估算 buffer。 counter数×频率×时长只是样本数估计；整数varint、double、descriptor与packet都有不同开销。
 
 ### 范围外主题
 
@@ -458,10 +418,6 @@ GpuService 中与 GPU 内存和驱动状态相关的主体分为三条链路。�
 
 `GpuMem` 持有只读 BPF map，`GpuMemTracer` 通过 `GpuMem::traverseGpuMemTotals()` 遍历它，Perfetto 的 ftrace 更新来自驱动的同一个 tracepoint ABI（事件字段与布局约定）。所以我们排查 GPU 内存增长时，占用趋势看 GpuMem 与 Perfetto 这两条，驱动选择和失败模式的信息再找 GpuStats 补充。
 
-<!-- gracker-diagram: ch15-12-13-three-service-paths -->
-![GpuService 中并列的观测链路](../../assets/diagrams/ch15/ch15-12-13-three-service-paths.png)
-
-图：GpuMem 当前量、Perfetto 时间变化与 GpuStats 驱动统计分别回答不同问题。 GpuService不拥有这些分配；读当前量与累计加载统计不能画成单向管理链。
 
 ### GpuService 的启动与初始化
 
@@ -577,10 +533,6 @@ key 是 `uint64_t = (gpu_id << 32) | pid`：高 32 位放 `gpu_id`，低 32 位�
 
 `dump()` 和 `traverseGpuMemTotals()` 通过 `getFirstKey()` / `getNextKey()` 逐项读取 map。遍历期间驱动仍可更新 map，因此输出是 best-effort（尽力而为、不同 entry 可能取自相邻时刻） 快照，跨 entry 没有原子一致性；中途的 value 或 next-key 读取错误还会提前结束遍历。
 
-<!-- gracker-diagram: ch15-12-17-non-atomic-snapshot -->
-![逐项遍历与瞬时快照的限制](../../assets/diagrams/ch15/ch15-12-17-non-atomic-snapshot.png)
-
-图：遍历时分别读取每个组合，输出是驱动持续更新下的尽力快照。 跨entry不原子，value/next-key错误会提前结束；first-key错误也可能显示为空map。
 
 到这一步，我们能用 GpuMem 回答驱动最近上报的进程总量；再往下问“哪一个 DMA-BUF 或 BufferQueue slot（队列中复用 buffer 的槽位） 占用最大”，它就答不上来了，那要靠后文的 DMA-BUF 数据源。
 
@@ -600,10 +552,6 @@ C++ 组件名是 `GpuService`，注册到 ServiceManager（Binder 系统服务�
 
 `GpuMem::dump()` 中的两个边界输出很适合排查启动问题：
 
-<!-- gracker-diagram: ch15-12-18-dumpsys-routing -->
-![gpu 服务的权限与模块选择](../../assets/diagrams/ch15/ch15-12-18-dumpsys-routing.png)
-
-图：dumpsys按服务名找到gpu，权限通过后由四种已识别模块标志选择输出。 无已识别模块标志时回退全部模块；空map输出不等于证明无占用或无采集错误。
 
 - `Failed to initialize GPU memory eBPF`：`mInitialized` 为 false 或 BPF map 无效，通常意味着 BPF 程序、tracepoint attach 或初始化时序未完成；
 - `GPU memory total usage map is empty`：源码在 `getFirstKey()` 返回任意错误时输出这句话。常见情况是 GPU 驱动尚未上报非零条目或当前没有活跃占用，但该字符串没有区分空 map 与其他 key 枚举错误。未识别的模块选择参数还会令 `dumpAll` 保持 true；拼错 `--gpumem` 可能输出全部模块，不能按输出量猜测选项已生效。
@@ -712,10 +660,6 @@ GpuStats 在第一次收到驱动或目标统计时，才向 statsd 注册 `GPU_
 
 `/system/etc/angle/feature_config_vk.binarypb` 是另一条配置路径，其中 `binarypb` 表示二进制 protobuf 文件。`FeatureOverrideParser` 在 GpuService 构造期间解析一次并缓存，文件后续变化不会自动重载。系统驱动属性、feature override（功能覆盖配置） 与 GpuStats 彼此有关联，但源码没有把它们实现成单向的三阶段处理链。
 
-<!-- gracker-diagram: ch15-12-22-angle-independent-roles -->
-![ANGLE 属性、配置缓存与观测统计](../../assets/diagrams/ch15/ch15-12-22-angle-independent-roles.png)
-
-图：切换系统驱动、读取feature配置和记录使用统计各有独立入口与生命周期。 构造时配置缓存不自动热重载；angleInUse会被最新上报覆盖，不能充当永久历史标志。
 
 ### 从进程总量走到 DMA-BUF
 
@@ -741,19 +685,11 @@ memtrack HAL 是厂商实现的设备内存核算接口，`dumpsys meminfo` 会�
 
 GpuMem、memtrack 与 DMA-BUF 统计的数字因此不要求相等：它们覆盖的对象、共享内存分摊方式和去重规则各不相同。严谨的表述是“多种口径同时增长”或“某口径没有同步回落”，逐字节守恒是要求不出来的。
 
-<!-- gracker-diagram: ch15-12-23-memory-accounting -->
-![GPU 总量、memtrack 与 DMA-BUF 口径](../../assets/diagrams/ch15/ch15-12-23-memory-accounting.png)
-
-图：三种数据覆盖不同对象与共享核算规则，要并列解释变化。 GPU private不一定有DMA-BUF标识，共享PSS也不能与驱动可寻址总量逐字节守恒。
 
 `dmabuf_dump` 来自 `system/memory/libmeminfo`。在 6.18 及更新内核上，VTS（Vendor Test Suite，供应商接口测试） 要求 DMA-BUF BPF iterator 可用；iterator 是由 BPF 实现的内核对象遍历接口。
 
 较早内核还可能通过 `CONFIG_DMABUF_SYSFS_STATS` 提供 per-buffer（逐 buffer）统计。这个 BPF iterator 与 GpuMem 的 `gpu_mem_total_map` 是两套独立机制。
 
-<!-- gracker-diagram: ch15-12-24-two-bpf-mechanisms -->
-![GpuMem map 与 DMA-BUF iterator 分开](../../assets/diagrams/ch15/ch15-12-24-two-bpf-mechanisms.png)
-
-图：总量map和DMA-BUF逐对象遍历是独立机制，不能把一个的可用性当作另一个已启用。 固定VTS要求6.18起支持DMA-BUF iterator；较早内核可有sysfs统计，仍需核对工具与权限。
 
 我们用下面这组命令先找增长进程，再查该进程引用的 DMA-BUF，最后结合 SurfaceFlinger layer 缩小范围。`dmabuf_dump` 读取其他进程和内核对象时通常需要 userdebug/eng（可调试的系统构建变体）环境与 root 权限。
 
@@ -799,10 +735,6 @@ adb shell dumpsys SurfaceFlinger
 
 `adb root` 会重启 adbd（设备侧 adb 守护进程），所以示例在 `adb wait-for-device` 后重新读取 PID。Android 17 的 `SurfaceFlinger::doDump()` 命令表里没有 `--bufferstats`，排查时别指望这个参数；默认的 SurfaceFlinger dump 只提供当前合成与 layer 上下文，做不了完整的 DMA-BUF 引用跟踪。
 
-<!-- gracker-diagram: ch15-12-25-memory-investigation -->
-![从增长进程到具体 buffer 的排查](../../assets/diagrams/ch15/ch15-12-25-memory-investigation.png)
-
-图：先取有效PID和总量，再核对root与新PID，最后结合对象引用和Layer上下文缩小范围。 Bash示例只在PID和root校验通过后继续；SurfaceFlinger没有本基线的--bufferstats选项。
 
 #### 一次增长排查的时间顺序
 
@@ -816,10 +748,6 @@ adb shell dumpsys SurfaceFlinger
 
 进程总量在场景结束后没有立即归零，先别急着定性为泄漏：驱动缓存、对象延迟销毁、异步 fence 和进程仍存活都可能让内存暂时保留。下结论前，我们把稳定窗口、多轮重复和对象生命周期一起纳入判断。
 
-<!-- gracker-diagram: ch15-12-26-leak-evidence -->
-![稳定窗口、重复场景与对象生命周期](../../assets/diagrams/ch15/ch15-12-26-leak-evidence.png)
-
-图：对齐场景前后总量、对象引用与生命周期，重复观察稳定窗口再判断异常保留。 缓存、延迟销毁和异步fence可暂时保留内存；缺失entry与PID复用也不能当作确定释放证据。
 
 ### 各组件的职责分工
 

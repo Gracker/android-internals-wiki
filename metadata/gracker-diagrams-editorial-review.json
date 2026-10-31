@@ -41999,9 +41999,287 @@
       "before_count": 26,
       "before_all_images": 26,
       "sha256_before": "42cff82f1dc80458d2959fca23a7d40d9a556c866c12204a0ae194c5a6c2d2bd",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "ch15-12-01-signal-semantics",
+          "title": "GPU 指标、内存总量与驱动统计",
+          "decision": "remove",
+          "reason": "counter/memory/GpuStats三列复写101–107引言和447–451更完整观测链表，各自单位和归因边界全文留；无额外数据关系。",
+          "original_line": 109,
+          "heading": "# GPU Counter、内存与 GpuService 可观测性"
+        },
+        {
+          "original_id": "ch15-12-02-descriptor-and-capacity",
+          "title": "descriptor 的语义、单位与容量",
+          "decision": "remove",
+          "reason": "spec/单位/block三列重复127–173字段枚举代码及容量说明，未画真实counter选择超容量例，所有peakoneof/旧reserved/group未分类/producer超限行为完整留。",
+          "original_line": 175,
+          "heading": "#### Counter block 容量约束"
+        },
+        {
+          "original_id": "ch15-12-04-config-requests",
+          "title": "采集能力、配置与测量条件",
+          "decision": "remove",
+          "reason": "三框逐项摘要215–220配置字段及能力核对说明，未画实际周期范围或不支持分支，所有插桩与锁频改变测量条件原文留。",
+          "original_line": 222,
+          "heading": "### `GpuCounterEvent`：descriptor 直挂与 interned descriptor"
+        },
+        {
+          "original_id": "ch15-12-03-descriptor-modes",
+          "title": "协议 ID 作用域与导入轨道身份",
+          "decision": "keep",
+          "reason": "Mode1全局ID/Mode2序列IID解析与实际GPU+name建轨三种不同身份口径对应独立，保留同GPU同名可合轨、interned GPU缺省0且ID/单位非dimensions。",
+          "original_line": 250,
+          "heading": "### Trace Processor 如何导入事件"
+        },
+        {
+          "original_id": "ch15-12-05-backwards-looking-values",
+          "title": "当前报告回填上一行的 GPU counter",
+          "decision": "merge",
+          "reason": "与原图6合并同一10/20/35合成例，逐报告90/4/8先建0、跨列回填到前行4/8及末行占位，再直接对齐LEAD区间，避免读者在两张同值图间反复定位。",
+          "original_line": 259,
+          "heading": "### Trace Processor 如何导入事件",
+          "replacement_id": "ed15-12-counter-backfill-to-span-example"
+        },
+        {
+          "original_id": "ch15-12-06-counter-spans",
+          "title": "LEAD 区间与末行边界",
+          "decision": "merge",
+          "reason": "与原图5合并，保留trace_end45、10/15/10实际区间比例及SQL不修复值、末行0需审查但不能删除所有真实零值；锚点原图6位于完整SQL解释后。",
+          "original_line": 288,
+          "heading": "### SQL span 视图：从采样点到区间",
+          "replacement_id": "ed15-12-counter-backfill-to-span-example"
+        },
+        {
+          "original_id": "ch15-12-07-gpu-memory-event",
+          "title": "GPU 内存事件的三个坐标",
+          "decision": "remove",
+          "reason": "gpu_id/pid/size三列逐项复写306–322三字段proto和pid0/进程/总量非增量说明，没有真实多GPU/PID映射案例，精确口径全留。",
+          "original_line": 317,
+          "heading": "### GPU memory event：Android 平台 producer"
+        },
+        {
+          "original_id": "ch15-12-08-counter-causal-evidence",
+          "title": "从设备级 counter 到同帧证据",
+          "decision": "remove",
+          "reason": "三框重复328–340counter无身份字段、按submission/buffer/fence/layer关联段落和证据表，未画实际同帧对应，完整相关非因果说明留。",
+          "original_line": 342,
+          "heading": "#### 设备级 counter 与帧归属"
+        },
+        {
+          "original_id": "ch15-12-09-host-versus-surface",
+          "title": "宿主窗口、TextureView 与独立 Surface",
+          "decision": "remove",
+          "reason": "三列与357–359出图路径/混入工作/证据/误判表前三行逐项同义，未画TextureView到宿主与独立Surface的实际对象拓扑，全部DEVICE非Producer无GPU成本原文留。",
+          "original_line": 366,
+          "heading": "#### 不同出图路径的 counter 判读"
+        },
+        {
+          "original_id": "ch15-12-10-mixed-hardware-work",
+          "title": "Camera、游戏与混合页面的证据范围",
+          "decision": "remove",
+          "reason": "Camera/游戏/混合三列与360–362路径表后三行及371低GPU仍可晚显示段落重复，未画具体多硬件时间轨，所有低高counter均不能独立归因原文留。",
+          "original_line": 373,
+          "heading": "#### 不同出图路径的 counter 判读"
+        },
+        {
+          "original_id": "ch15-12-11-frame-association-order",
+          "title": "先关联对象，再解释 counter",
+          "decision": "remove",
+          "reason": "四框与380–384五条关联清单同顺序同内容，删流程摘要；目标display/layer/producer/fence/descriptor及同条件对照全文保留。",
+          "original_line": 386,
+          "heading": "#### 一次可复用的关联顺序"
+        },
+        {
+          "original_id": "ch15-12-12-trace-volume",
+          "title": "从短采集测量 trace 生成速率",
+          "decision": "remove",
+          "reason": "三框复制400行样本数不同字节数与短采bytes/s估buffer方法，没有实际数据或编码尺寸例，varint/double/framing/descriptor成本和全长丢失验证要求留。",
+          "original_line": 402,
+          "heading": "### 采集与分析建议"
+        },
+        {
+          "original_id": "ch15-12-13-three-service-paths",
+          "title": "GpuService 中并列的观测链路",
+          "decision": "remove",
+          "reason": "三列完全复写447–451链路/组件/输入/输出/问题表，19保留map起始与ftrace后续真正合流；GpuService非分配管理和GpuStats非内存字节原文全留。",
+          "original_line": 461,
+          "heading": "### 三条并列的观测链路"
+        },
+        {
+          "original_id": "ch15-12-14-service-startup",
+          "title": "两条初始化线程与 tracer 生命周期",
+          "decision": "keep",
+          "reason": "构造后两初始化线程并行、GpuMem到GpuMemTracer串行且成功才可读map的真实分叉依赖独立，析构stop/join与detachedtracer常驻边界留。",
+          "original_line": 497,
+          "heading": "### GpuService 的启动与初始化"
+        },
+        {
+          "original_id": "ch15-12-15-bpf-attach-and-map",
+          "title": "BPF 初始化的重试与成功条件",
+          "decision": "keep",
+          "reason": "waitloader/有效pinnedfd、attach成功、有效ROmap、注册tracer的真实必要成功条件独立，失败stop/1秒重试/约30秒结束和不注册数据源限制保留。",
+          "original_line": 526,
+          "heading": "### GpuMem：基于 eBPF 的进程级 GPU 内存快照"
+        },
+        {
+          "original_id": "ch15-12-16-bpf-map-updates",
+          "title": "64 位 key 与总量更新分支",
+          "decision": "keep",
+          "reason": "高32GPU低32PID key后size0删除、非零已有替换、非零新键BPFNOEXIST插入三真实分支独立，1024含PID0/不检查新键返回可能缺失保留。",
+          "original_line": 567,
+          "heading": "#### BPF key 编码与 map 更新语义"
+        },
+        {
+          "original_id": "ch15-12-17-non-atomic-snapshot",
+          "title": "逐项遍历与瞬时快照的限制",
+          "decision": "remove",
+          "reason": "三框复写578逐键和值尽力遍历段及635每entry独立取时，没有实际跨entry混合时刻例；全部非原子与错误提前终止/firstkey错误伪空边界原文留。",
+          "original_line": 580,
+          "heading": "#### BPF key 编码与 map 更新语义"
+        },
+        {
+          "original_id": "ch15-12-18-dumpsys-routing",
+          "title": "gpu 服务的权限与模块选择",
+          "decision": "remove",
+          "reason": "三框重复589–609服务名、权限、四标志完整命令表及错误说明，没有真默认/已识别分支，所有未知选项dumpAll和空map非无占用原文留。",
+          "original_line": 603,
+          "heading": "### `dumpsys gpu`：即时查询入口"
+        },
+        {
+          "original_id": "ch15-12-19-initial-plus-live-updates",
+          "title": "起始快照与会话内事件汇入内存轨道",
+          "decision": "keep",
+          "reason": "同driver总量分别入ftrace后续流与BPFmap最近值，经OnStart初始遍历再同汇TP轨的真实双路径拓扑独立，保留无周期polling/起始非原子/单路缺时证。",
+          "original_line": 660,
+          "heading": "### GpuMemTracer 与 ftrace：初始值加后续更新"
+        },
+        {
+          "original_id": "ch15-12-20-stats-record-capacity",
+          "title": "GpuStats 的记录键与截断、淘汰",
+          "decision": "keep",
+          "reason": "已有record刷新访问/少于100新键插入/满100淘汰旧10再建的真实状态分支独立，GL/Vulkan/ANGLE各前16非滚动且100非互异App边界留。",
+          "original_line": 677,
+          "heading": "### GpuStats：statsd 驱动加载与功能使用统计"
+        },
+        {
+          "original_id": "ch15-12-21-stats-pull-and-clear",
+          "title": "两类 pull 与显式 clear 分别清理",
+          "decision": "keep",
+          "reason": "GLOBALpull只清全局、APPpull只清App、普通dump保留与显式clear选范围的真实独立副作用对应，避免误当同一开机累计窗口，全部截断淘汰影响原文留。",
+          "original_line": 704,
+          "heading": "### GpuStats：statsd 驱动加载与功能使用统计"
+        },
+        {
+          "original_id": "ch15-12-22-angle-independent-roles",
+          "title": "ANGLE 属性、配置缓存与观测统计",
+          "decision": "remove",
+          "reason": "driver属性/feature文件/GpuStats三列重复698–713独立入口与缓存段落，无实际相互流向或变更例，angleInUse被覆盖非永真/构造只解析一次/权限条件留。",
+          "original_line": 715,
+          "heading": "### GpuStats：statsd 驱动加载与功能使用统计"
+        },
+        {
+          "original_id": "ch15-12-23-memory-accounting",
+          "title": "GPU 总量、memtrack 与 DMA-BUF 口径",
+          "decision": "remove",
+          "reason": "三类口径卡片复写724–742数据源表与memtrack AIDL四条约束，没有实际共享buffer核算反例，全部GRAPHICS去重PSS/GL未计smapsGPUprivate与不要求守恒原文留。",
+          "original_line": 744,
+          "heading": "### 从进程总量走到 DMA-BUF"
+        },
+        {
+          "original_id": "ch15-12-24-two-bpf-mechanisms",
+          "title": "GpuMem map 与 DMA-BUF iterator 分开",
+          "decision": "remove",
+          "reason": "GpuMemmap/DMABUFiterator/旧sysfs三列重述749–751两段来源区别，没有具体对象结构或调用路线，6.18VTS与两个BPF机制独立条件原文留。",
+          "original_line": 753,
+          "heading": "### 从进程总量走到 DMA-BUF"
+        },
+        {
+          "original_id": "ch15-12-25-memory-investigation",
+          "title": "从增长进程到具体 buffer 的排查",
+          "decision": "remove",
+          "reason": "四框逐项摘要760–796完整35行PID/root检查与采集脚本及798–800说明，未新增实际inode/Layer关联案例，PID重读/权限失败停止和SF无bufferstats全文留。",
+          "original_line": 802,
+          "heading": "### 从进程总量走到 DMA-BUF"
+        },
+        {
+          "original_id": "ch15-12-26-leak-evidence",
+          "title": "稳定窗口、重复场景与对象生命周期",
+          "decision": "remove",
+          "reason": "三框重排809–817七步复现与缓存/延迟销毁/fence候选解释，未画多轮具体增长/回落时间曲线，所有同进程启动/PID复用/稳定窗口/缺失非释放原文留。",
+          "original_line": 819,
+          "heading": "#### 一次增长排查的时间顺序"
+        }
+      ],
+      "sha256_after": "fc96fefa7f3a016769d455941462259d0a202cc29c327cfdbbfe487e12b177e8",
+      "new_diagrams": [
+        {
+          "id": "ed15-12-counter-backfill-to-span-example",
+          "title": "当前报告回填上一行，再由行时间戳形成区间",
+          "article": "src/part3-tools/ch15-other-tools/12-gpu-counter-memory-observability.md",
+          "assets": [
+            "src/assets/diagrams/ch15/ed15-12-counter-backfill-to-span-example.svg",
+            "src/assets/diagrams/ch15/ed15-12-counter-backfill-to-span-example.png"
+          ],
+          "layout": "上下两排分别表示按时间导入的报告和第三条报告之后的最终行；箭头跨列明确回填上一行，底部一条按10、20、35、45等比例的合成区间轨。",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed15-12-counter-backfill-to-span-example",
+          "sources": [
+            "原文257–291导入顺序、SQL与原图5/6合成例",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch15-12-05-backwards-looking-values",
+              "ch15-12-06-counter-spans"
+            ],
+            "boundary": "图为原文合成输入，时间仅用同一合成单位，trace_end=45。每条事件先建立当前时刻的0行，再把当前报告值写到上一行；第一条90没有上一行而舍弃。三条导入后t10值4、t20值8、t35值0；LEAD按同track排序形成[10,20)、[20,35)、[35,45)，末段延伸到trace_end而非新增采样。SQL不修复解析器值，末行0应按采样边界单独审查，不能把所有value=0当占位删除，也不能以末行0判断GPU空闲。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a160/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T13:32:00.518086+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 26,
+        "contexts_actually_viewed": 4,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a160/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a160/visual-review.json",
+      "retired_diagrams": [
+        "ch15-12-01-signal-semantics",
+        "ch15-12-02-descriptor-and-capacity",
+        "ch15-12-04-config-requests",
+        "ch15-12-05-backwards-looking-values",
+        "ch15-12-06-counter-spans",
+        "ch15-12-07-gpu-memory-event",
+        "ch15-12-08-counter-causal-evidence",
+        "ch15-12-09-host-versus-surface",
+        "ch15-12-10-mixed-hardware-work",
+        "ch15-12-11-frame-association-order",
+        "ch15-12-12-trace-volume",
+        "ch15-12-13-three-service-paths",
+        "ch15-12-17-non-atomic-snapshot",
+        "ch15-12-18-dumpsys-routing",
+        "ch15-12-22-angle-independent-roles",
+        "ch15-12-23-memory-accounting",
+        "ch15-12-24-two-bpf-mechanisms",
+        "ch15-12-25-memory-investigation",
+        "ch15-12-26-leak-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-160/retired-assets.json"
     },
     {
       "index": 161,
@@ -43236,8 +43514,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 94,
-  "next_article": "src/part3-tools/ch15-other-tools/12-gpu-counter-memory-observability.md",
+  "reviewed_articles": 95,
+  "next_article": "src/part3-tools/ch15-other-tools/13-performance-analyzer-gaps.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -43247,7 +43525,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:26:07.269819+08:00",
+  "updated_at": "2026-10-31T13:32:00.518086+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -43607,9 +43885,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3325,
-  "reviewed_placements_after": 1495,
-  "net_removed_placements": 1830,
+  "reviewed_placements_before": 3351,
+  "reviewed_placements_after": 1503,
+  "net_removed_placements": 1848,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -43633,5 +43911,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 94
+  "currently_matching_reviewed_source_count": 95
 }
