@@ -65877,9 +65877,140 @@
       "before_count": 13,
       "before_all_images": 13,
       "sha256_before": "62b7862abdbcbd8046aabc4bcb7422f7b9bd093deae04c8d437b774da0b2dcfc",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a278-01-background-audio-contract-gates",
+          "title": "Android17后台音频先过基础FGS和目标37WIU门槛",
+          "decision": "remove",
+          "reason": "基础FGS、target37WIU和闹钟例外已由版本对照表完整比较，图的可见Activity悬空卡片和其余串行关系不如表格清晰。",
+          "original_line": 151,
+          "heading": "#### 版本差异表"
+        },
+        {
+          "original_id": "a278-02-player-state-versus-audible-output",
+          "title": "播放器正在播放不等于设备正在出声",
+          "decision": "remove",
+          "reason": "播放器状态、许可、输出和资源四卡重复失败表及write/playWhenReady解释，没有额外输出验证关系。",
+          "original_line": 168,
+          "heading": "### 三类 API 的失败表现"
+        },
+        {
+          "original_id": "a278-03-playback-intent-and-resource-lifetime",
+          "title": "播放意图决定临时保留还是完整停止",
+          "decision": "keep",
+          "reason": "临时恢复与播放意图结束从同一入口分叉到保留和完整释放两种后果，避免短暂缓冲被当泄漏清理。",
+          "original_line": 208,
+          "heading": "#### 何时保留或停止 FGS"
+        },
+        {
+          "original_id": "a278-05-async-appops-and-thread-wakeup",
+          "title": "Offload与MMAP也持续受权限状态控制",
+          "decision": "keep",
+          "reason": "partial/full异步回调和音频线程三轨表达40ms内部唤醒传播边界，图注说明非端到端延迟且回调先后不保证。",
+          "original_line": 273,
+          "heading": "#### Offload 与 MMap 的限制适用"
+        },
+        {
+          "original_id": "a278-04-hardening-three-platform-entrypoints",
+          "title": "焦点、音量与播放在不同平台入口检查",
+          "decision": "keep",
+          "reason": "焦点、音量、原生播放三个入口并行映射不同AppOps检查及焦点仲裁，明确并非每个API重复通过Java/C++。",
+          "original_line": 284,
+          "heading": "#### Java 与原生层的权限判断"
+        },
+        {
+          "original_id": "a278-06-hardening-default-and-test-override",
+          "title": "默认兼容策略与强制测试模式分开解释",
+          "decision": "remove",
+          "reason": "默认、enable/throw、disable和清覆盖模式已由命令示例与三段准确解释，三分支总结重复测试操作。",
+          "original_line": 316,
+          "heading": "### 调试命令存在版本差异"
+        },
+        {
+          "original_id": "a278-07-bluetooth-codec-route-versus-authorization",
+          "title": "蓝牙编解码路径与后台发声资格分别取证",
+          "decision": "remove",
+          "reason": "LC3匹配、target_latency、挂起扫描和后台资格四卡重复相邻三段，互不相同的规则未增加额外关联。",
+          "original_line": 366,
+          "heading": "### 长时播放的功耗检查"
+        },
+        {
+          "original_id": "a278-08-offload-versus-low-latency",
+          "title": "长时省电路径与实时低延迟路径按需求选择",
+          "decision": "keep",
+          "reason": "长内容省电与实时低延迟两类用途并列，补充功能回退和可选MMAP PCM Offload的CDD格式/缓冲前提，保留有用的适用范围对照。",
+          "original_line": 434,
+          "heading": "### 场景边界：什么时候值得开启 Offload"
+        },
+        {
+          "original_id": "a278-09-aaudio-probe-request-and-actual-mode",
+          "title": "AAudio请求Offload后读取实际performance mode",
+          "decision": "keep",
+          "reason": "请求并读取实际mode后分授予与失败/换路由回退两路，提醒探测结果不能当正式播放永久保证。",
+          "original_line": 485,
+          "heading": "### AAudio Power Saving Offloaded 的探测流程"
+        },
+        {
+          "original_id": "a278-10-flush-result-before-coordinate-update",
+          "title": "按位置flush先验能力并串行，再看结果码",
+          "decision": "keep",
+          "reason": "AAudio返回码/建议位置与AudioTrack返回错误/异常两套flush契约分叉，避免失败位置被误当成功更新断点。",
+          "original_line": 496,
+          "heading": "### AAudio Power Saving Offloaded 的探测流程"
+        },
+        {
+          "original_id": "a278-11-written-flushed-and-presented-positions",
+          "title": "写入、实际flush与已呈现是三种坐标",
+          "decision": "remove",
+          "reason": "写入、flush、呈现、媒体时间线四卡重复API表和紧邻三坐标列表，没有用同一帧例子呈现不同位置。",
+          "original_line": 526,
+          "heading": "### AudioTrack Offload 的 API 37 新边界"
+        },
+        {
+          "original_id": "a278-12-media3-preference-offload-and-sleep",
+          "title": "Media3偏好、实际Offload与主循环休眠分别观察",
+          "decision": "keep",
+          "reason": "Media3偏好经renderer轨道平台后分为实际offload与主循环sleep两个独立事件，防止把开启偏好当实际休眠。",
+          "original_line": 560,
+          "heading": "### Media3 / ExoPlayer 如何映射到平台 Offload"
+        },
+        {
+          "original_id": "a278-13-energy-experience-and-release-gates",
+          "title": "同机A/B同时验收能量与播放体验",
+          "decision": "remove",
+          "reason": "行为/能量/体验取证与放量总结重复指标表、三档发布表和后文远程关闭清单，未增加实际门槛判定分支。",
+          "original_line": 615,
+          "heading": "### 延迟、音质与兼容性代价"
+        }
+      ],
+      "sha256_after": "d9ba7a2df1c03eefc402502da2ef713b7e64d27f6f30cf6cff937d532d598216",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:05:41.438501+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 13,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a278/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a278/visual-review.json",
+      "retired_diagrams": [
+        "a278-01-background-audio-contract-gates",
+        "a278-02-player-state-versus-audible-output",
+        "a278-06-hardening-default-and-test-override",
+        "a278-07-bluetooth-codec-route-versus-authorization",
+        "a278-11-written-flushed-and-presented-positions",
+        "a278-13-energy-experience-and-release-gates"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-278/retired-assets.json"
     },
     {
       "index": 280,
@@ -66058,8 +66189,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 190,
-  "next_article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+  "reviewed_articles": 191,
+  "next_article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -66069,7 +66200,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:02:44.692440+08:00",
+  "updated_at": "2026-10-31T19:05:41.438501+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -66205,9 +66336,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5594,
-  "reviewed_placements_after": 2196,
-  "net_removed_placements": 3398,
+  "reviewed_placements_before": 5607,
+  "reviewed_placements_after": 2203,
+  "net_removed_placements": 3404,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -66231,7 +66362,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 190,
+  "currently_matching_reviewed_source_count": 191,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

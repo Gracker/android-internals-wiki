@@ -148,10 +148,6 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 
 表中“允许”只表示通过了后台音频硬化检查；焦点是否拿到、路由是否成功、播放是否完成，还要按各自规则另行确认——焦点锁定、设备断开、播放器错误是独立的问题，我们接下来分别看。
 
-<!-- gracker-diagram: a278-01-background-audio-contract-gates -->
-![Android17后台音频先过基础FGS和目标37WIU门槛](../../assets/diagrams/ch25/a278-01-background-audio-contract-gates.png)
-
-图：不要只按系统版本分组；同一Android17设备上的target36和37可能经过不同的默认检查。
 
 ### 三类 API 的失败表现
 
@@ -165,10 +161,6 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 
 拿返回值来说，`AudioTrack.write()` 返回成功，只说明数据被客户端提交了，系统有没有把声音送到输出设备还要另查；Media3 的 `playWhenReady`、`playbackState` 描述的也只是播放器状态机，平台授权状态在别处。所以线上诊断要额外记录焦点结果、前台服务状态、Activity 可见性、音频用途和 `AudioHardening` 日志，这几项拼起来，我们才能还原一次静默失败。
 
-<!-- gracker-diagram: a278-02-player-state-versus-audible-output -->
-![播放器正在播放不等于设备正在出声](../../assets/diagrams/ch25/a278-02-player-state-versus-audible-output.png)
-
-图：确认播放意图结束后，残留解码、网络或持锁才应清理；短暂缓冲与路由切换另行分类。
 
 ### FGS 和 MediaSession（向系统发布播放状态和控制入口的媒体会话） 的正确职责
 
@@ -313,10 +305,6 @@ r1 的测试覆盖状态会同步写入 `system_server`（承载多数 Java 系�
 
 `enable` 会把完整限制应用到所有应用，并取消 target 与闹钟豁免，适合挖掘潜在问题；默认行为下的 target 36/37 对照测试仍要做。`throw` 还会把静默失败改成异常、持续写入错误或崩溃，只用于开发与回归环境。
 
-<!-- gracker-diagram: a278-06-hardening-default-and-test-override -->
-![默认兼容策略与强制测试模式分开解释](../../assets/diagrams/ch25/a278-06-hardening-default-and-test-override.png)
-
-图：throw使静默路径变成异常、写入错误或崩溃，仅用于测试；恢复后再验证默认兼容行为。
 
 ### 取证：把许可状态和功耗放在一条时间线上
 
@@ -363,10 +351,6 @@ Audio offload 改变的是解码与输出所使用的计算资源，后台硬化
 
 Android 17 r1 的 `LeAudioService.setSystemSuspended()` 会在系统进入 suspend（低功耗挂起）时停止后台扫描，恢复且确有扫描需求时再启动，这是平台蓝牙服务的省电行为，第三方播放器调不到这个接口。应用侧把路由和连接事件记录好，让系统状态变化可见，别再用持续扫描或高频重连去掩盖它。
 
-<!-- gracker-diagram: a278-07-bluetooth-codec-route-versus-authorization -->
-![蓝牙编解码路径与后台发声资格分别取证](../../assets/diagrams/ch25/a278-07-bluetooth-codec-route-versus-authorization.png)
-
-图：LC3不匹配或路由断开不能直接证明后台静音；按平台日志、会话与输出路径确认原因。
 
 ### 验证场景与线上指标
 
@@ -523,10 +507,6 @@ codec provenance（原始内容的编解码格式来源） 由应用在 Builder 
 
 断点续播和 seek（跳转） 应以媒体时间线为主，frame 坐标作为底层执行记录；把写入计数直接保存成“用户已经听到的位置”会出错。
 
-<!-- gracker-diagram: a278-11-written-flushed-and-presented-positions -->
-![写入、实际flush与已呈现是三种坐标](../../assets/diagrams/ch25/a278-11-written-flushed-and-presented-positions.png)
-
-图：codecProvenance只是应用提供的原始格式提示；它与写入计数都不能独立证明DSP实际工作。
 
 这些 API 在四类场景中各有用途：
 
@@ -612,10 +592,6 @@ Offload 会把更多数据排入硬件 buffer，也会让部分处理从应用�
 
 复杂功能组合应先按对应路由和格式完成同机 A/B；未满足体验与功耗阈值的组合继续使用 PCM 或低延迟路径。
 
-<!-- gracker-diagram: a278-13-energy-experience-and-release-gates -->
-![同机A/B同时验收能量与播放体验](../../assets/diagrams/ch25/a278-13-energy-experience-and-release-gates.png)
-
-图：Assistant音量、后台发声资格和Offload是三条独立线；Sound Dose与路由规则也不会被Offload免除。
 
 ### Assistant 与后台音频的版本交叉
 
