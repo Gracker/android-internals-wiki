@@ -174,14 +174,14 @@ Android 常用的 dm target（映射目标类型） 包括：
 
 I/O 调度器负责块 request 的排序、合并与派发。Android 设备可能选择 `mq-deadline`、BFQ（Budget Fair Queueing）或 `none`，UFS MCQ 与设备厂商配置都会影响最终选择。`mq-deadline` 同时维护排序队列和 FIFO（先进先出） 到期约束；BFQ 根据预算和权重分配设备服务时间，启用相应 cgroup（控制组） 支持时可以体现组级权重。调度器名字只是起点，前台请求是否真的优先，取决于后面的分组配置。
 
-手机上经常出现前台随机读与后台顺序写竞争。AOSP `android-17.0.0_r1` 的 `libprocessgroup/profiles/cgroups.json` 仍把 v1 `blkio`（块 I/O 控制组）挂载到 `/dev/blkio`；在 `task_profiles.json` 中，`LowIoPriority` 进入 `blkio/background`，`SCHED_SP_FOREGROUND` 与 `SCHED_SP_TOP_APP` 分别组合 `HighIoPriority`、`MaxIoPriority`。这个基线的 `HighIoPriority` 与 `MaxIoPriority` 都加入 blkio 根组，不能由名字推出两个不同的 I/O 优先级档位。我们把这些 profile 理解为用户空间的分组意图；它要转化为实际的设备服务差异，还取决于 active scheduler（当前启用的调度器）、内核 cgroup 支持和厂商的 blkio 属性。
+手机上经常出现前台随机读与后台顺序写竞争。AOSP `android-17.0.0_r1` 的 `libprocessgroup/profiles/cgroups.json` 仍把 v1 `blkio`（块 I/O 控制组）挂载到 `/dev/blkio`；在 `task_profiles.json` 中，`LowIoPriority` 进入 `blkio/background`，`SCHED_SP_FOREGROUND` 与 `SCHED_SP_TOP_APP` 分别组合 `HighIoPriority`、`MaxIoPriority`。这个基线的 `HighIoPriority` 与 `MaxIoPriority` 都加入 blkio 根组，单看名字分不出两个 I/O 优先级档位。我们把这些 profile 理解为用户空间的分组意图；它要转化为实际的设备服务差异，还取决于 active scheduler（当前启用的调度器）、内核 cgroup 支持和厂商的 blkio 属性。
 
 核对时我们可以结合 `/sys/block/<dev>/queue/scheduler`、`/proc/cgroups`、`/dev/blkio` 与设备配置。
 
 <!-- gracker-diagram: ch06-01-io-task-profile-scheduler-gates -->
 ![I/O 分组意图到实际设备服务的条件](../../assets/diagrams/ch06/ch06-01-io-task-profile-scheduler-gates.png)
 
-图：r1 的 High/MaxIoPriority 组路径相同，名字不能证明两个设备优先级档位。mq-deadline、BFQ 或 none 的选择也不能单独保证前台更快；还需核对内核与设备配置。
+图：r1 的 High/MaxIoPriority 组路径相同，单看名字证明不了两个设备优先级档位。mq-deadline、BFQ 或 none 的选择要落到前台是否更快，还需核对内核与设备配置。
 
 ## 分区布局：system、vendor、data 与 metadata
 
@@ -222,7 +222,7 @@ Physical Partition: super
 
 ### 挂载流程：从 bootloader 到用户空间
 
-Android 10+ 设备的常见启动链远比“bootloader 挂分区”复杂。bootloader 完成 Verified Boot 和硬件初始化后，加载 kernel 与启动所需的 ramdisk。首发 Android 13+ 的 GKI 设备把 generic ramdisk 放入独立的 `init_boot`，vendor ramdisk 则来自 `vendor_boot`；不能认定它们都存放在 `boot.img`。
+Android 10+ 设备的常见启动链远比“bootloader 挂分区”复杂。bootloader 完成 Verified Boot 和硬件初始化后，加载 kernel 与启动所需的 ramdisk。首发 Android 13+ 的 GKI 设备把 generic ramdisk 放入独立的 `init_boot`，vendor ramdisk 则来自 `vendor_boot`；核对 ramdisk 位置时别只盯着 `boot.img`。
 
 内核启动后进入 ramdisk 中的 `first-stage init`；`first-stage init` 解析 `super` 分区 metadata，创建 `dm-linear` 逻辑设备，并挂载 `system`、`vendor`、`product` 等 `first_stage_mount` 分区。
 
@@ -260,7 +260,7 @@ SQLite 可以使用 rollback journal（回滚日志）或 WAL（Write-Ahead Logg
 <!-- gracker-diagram: ch06-01-ext4-fsync-data-journal-flush -->
 ![ext4 fsync 的数据、日志与条件 flush](../../assets/diagrams/ch06/ch06-01-ext4-fsync-data-journal-flush.png)
 
-图：图限定常见有 journal、非 data=journal 的路径；无 journal、错误和特殊模式另有分支。需要同步 journal 不代表每次 fsync 都额外发一个设备 flush；延迟分配与后台写入也可能影响等待。
+图：图限定常见有 journal、非 data=journal 的路径；无 journal、错误和特殊模式另有分支。journal 同步是否伴随额外设备 flush，要按这条路径的实际条件确认；延迟分配与后台写入也可能影响等待。
 
 ### f2fs：为闪存优化的文件系统
 
@@ -284,7 +284,7 @@ f2fs 的关键设计包括：
 <!-- gracker-diagram: ch06-01-f2fs-vs-ftl-gc -->
 ![f2fs GC 与 FTL GC 的不同边界](../../assets/diagrams/ch06/ch06-01-f2fs-vs-ftl-gc.png)
 
-图：f2fs 的异地更新和冷热分离作用于主机逻辑块，不能直接规定 NAND 页如何搬移或擦除。两个 GC 层都可能有成本；空间紧张与后台写入影响尾延迟，需要分别观测。
+图：f2fs 的异地更新和冷热分离作用于主机逻辑块，NAND 页怎么搬移、何时擦除由器件 FTL 决定。两个 GC 层都可能有成本；空间紧张与后台写入影响尾延迟，需要分别观测。
 
 ## Scoped Storage：权限模型与 I/O 路径变化
 
@@ -297,7 +297,7 @@ Android 10 引入 Scoped Storage（分区存储），并允许应用通过兼容
 1. App 可以直接访问自己的专属目录（`Android/data/<package_name>/` 和 `Android/media/<package_name>/`），不需要申请存储权限；
 2. 共享媒体通常先通过 MediaStore 查询和定位，再按 Android 版本取得媒体权限或用户选择授权；Android 11+ 获得访问权后，也可以用直接路径的 File / fopen() 访问媒体；
 3. 访问用户的 PDF、文档等任意文件时，通常通过 Storage Access Framework（SAF，存储访问框架）让用户选择；应用自己的专属目录，以及自己通过 MediaStore.Downloads 创建的文件，按相应规则访问；
-4. 遵循 scoped storage 的普通 App 不能任意向 `/sdcard` 根路径直接写文件，应使用相应媒体集合、SAF 或自己的专属目录；特殊的 All Files access 另有权限边界。
+4. 遵循 scoped storage 的普通 App 写共享存储应使用相应媒体集合、SAF 或自己的专属目录，`/sdcard` 根路径没有留任意直接写的入口；特殊的 All Files access 另有权限边界。
 
 
 ### FUSE 层的性能开销
@@ -353,7 +353,7 @@ Android 的存储加密经历了从全盘加密（Full-Disk Encryption，FDE）�
 
 metadata encryption 工作在 userdata block device 层，保护目录项、inode（索引节点）、文件长度等文件系统 metadata，现代设备上的常见实现是 `dm-default-key` 配合 inline crypto / blk-crypto。
 
-FBE 由 ext4/f2fs 集成的 `fscrypt` 实现，保护文件内容与文件名；`vold` 在 `/data` 可以挂载后管理和安装相应密钥，并为目录设置策略。System DE、User DE 和 User CE 的准备时机不同，不能把所有 key 都画成挂载后立即一起安装。
+FBE 由 ext4/f2fs 集成的 `fscrypt` 实现，保护文件内容与文件名；`vold` 在 `/data` 可以挂载后管理和安装相应密钥，并为目录设置策略。System DE、User DE 和 User CE 的准备时机各不相同，画密钥安装时序时要分开标注。
 
 按启动顺序观察会更清楚：系统先挂载 `/metadata`，让 `vold` 取得保护 metadata encryption key 的 key material；随后 `wait_for_keymaster` 与 `mount_all` 协作，使 `/data` 进入可挂载状态；文件系统可用后，`vold` 才继续安装 System DE、User DE 和 User CE key。`dm-default-key` 负责 `/data` block device 的 metadata 保护，与 FBE 分属两个层级。
 
@@ -386,7 +386,7 @@ fscrypt policy 设置在加密目录上，并保存在文件系统 metadata 中�
 
 加密路径会增加密钥准备、crypto mapping（加密映射） 和数据加解密工作，成本取决于设备是否具备 CPU crypto acceleration（加密指令加速）、inline crypto、hardware-wrapped key（硬件封装密钥）以及匹配的驱动。
 
-inline encryption hardware（内联加密硬件） 通常由 UFS 或 eMMC host controller 实现，在数据往返存储器件的路径上执行块加解密。`android17-6.18-2026-06_r6` 的 arm64 GKI 打开了 `CONFIG_BLK_INLINE_ENCRYPTION`、`CONFIG_FS_ENCRYPTION_INLINE_CRYPT`、`CONFIG_DM_DEFAULT_KEY`、`CONFIG_SCSI_UFS_CRYPTO`，也打开了 `CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK`。这些配置说明内核具备相应接口与软件 fallback（回退实现），实际能否使用还取决于密钥类型、算法、设备驱动和 fstab（文件系统挂载配置）。`blk-crypto-fallback` 不支持 hardware-wrapped keys；选择这类密钥而硬件不匹配时，不能假定会自动改用 CPU 加密。
+inline encryption hardware（内联加密硬件） 通常由 UFS 或 eMMC host controller 实现，在数据往返存储器件的路径上执行块加解密。`android17-6.18-2026-06_r6` 的 arm64 GKI 打开了 `CONFIG_BLK_INLINE_ENCRYPTION`、`CONFIG_FS_ENCRYPTION_INLINE_CRYPT`、`CONFIG_DM_DEFAULT_KEY`、`CONFIG_SCSI_UFS_CRYPTO`，也打开了 `CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK`。这些配置说明内核具备相应接口与软件 fallback（回退实现），实际能否使用还取决于密钥类型、算法、设备驱动和 fstab（文件系统挂载配置）。`blk-crypto-fallback` 不支持 hardware-wrapped keys；选择这类密钥而硬件不匹配时，实际走 CPU 还是别的路径，要按设备确认。
 
 Android 17 还把当前版 hardware-wrapped keys 命名为 `wrappedkey`，与旧版 `wrappedkey_v0` 区分。前者使用 android17 内核的 blk-crypto key generate/import/prepare 接口，并与 mainline Linux 方向兼容。是否启用，可从 userdata 的 fstab `fileencryption=` 选项、内核日志和加密测试确认。
 
@@ -395,7 +395,7 @@ Android 17 还把当前版 hardware-wrapped keys 命名为 `wrappedkey`，与旧
 <!-- gracker-diagram: ch06-01-inlinecrypto-hardware-fallback -->
 ![Inline crypto 与软件路径的能力边界](../../assets/diagrams/ch06/ch06-01-inlinecrypto-hardware-fallback.png)
 
-图：r6 GKI 同时启用 inline 接口与 fallback；实际路径还要看 fstab 和驱动。blk-crypto-fallback 不支持 hardware-wrapped keys，没有匹配硬件时不能假定改用 CPU；也不能仅凭 dm-default-key 推断 FBE 已硬件卸载。
+图：r6 GKI 同时启用 inline 接口与 fallback；实际路径还要看 fstab 和驱动。blk-crypto-fallback 不支持 hardware-wrapped keys，没有匹配硬件时的实际路径要按设备确认；dm-default-key 单独证明不了 FBE 已硬件卸载。
 
 ## Dynamic Partition 与 Virtual A/B 的存储布局
 
@@ -405,12 +405,12 @@ Dynamic Partition 通过 `super` 物理分区和 `dm-linear` 在运行时映射�
 
 ### Android 11：kernel COW
 
-Android 11 引入了 Virtual A/B 的早期形态。更新差异使用 kernel COW（Copy-on-Write，写时复制）format，并由 `dm-snapshot` 提供 base partition（基础分区） 与 COW 数据的组合视图。COW 数据会占用 OTA 期间的临时空间。Android 11 的 `PartitionCowCreator` 先使用当前与目标分区布局中都空闲的 `super` 区间，不足部分由 `/data` 上的 COW image 补足；r1 的分配器仍区分 `cow_partition_size` 与 `cow_file_size`。因此不能把 COW 固定画成只在 `super` 或只在 `/data`，但动态分区确实不必常驻一套完整 B 槽。确认新 slot 后，再把变化合并进 base device。一次请求是否产生额外读写，取决于具体操作和 merge 阶段，要按阶段实测来看。
+Android 11 引入了 Virtual A/B 的早期形态。更新差异使用 kernel COW（Copy-on-Write，写时复制）format，并由 `dm-snapshot` 提供 base partition（基础分区） 与 COW 数据的组合视图。COW 数据会占用 OTA 期间的临时空间。Android 11 的 `PartitionCowCreator` 先使用当前与目标分区布局中都空闲的 `super` 区间，不足部分由 `/data` 上的 COW image 补足；r1 的分配器仍区分 `cow_partition_size` 与 `cow_file_size`。所以画 COW 的落点时，`super` 和 `/data` 两侧都要留位置；换来的是动态分区确实无须常驻一套完整 B 槽。确认新 slot 后，再把变化合并进 base device。一次请求是否产生额外读写，取决于具体操作和 merge 阶段，要按阶段实测来看。
 
 <!-- gracker-diagram: ch06-01-vab-cow-allocation -->
 ![COW 在 super 与 /data 之间如何分配](../../assets/diagrams/ch06/ch06-01-vab-cow-allocation.png)
 
-图：Android 11 与 r1 分配器都区分 cow_partition_size 和 cow_file_size。图概括空间分配，不表示每次都同时占用两处，也不意味着压缩 COW 必定主要在 /data；以本次 update metadata 和 backing image 为准。
+图：Android 11 与 r1 分配器都区分 cow_partition_size 和 cow_file_size。图概括空间分配，两处是否同时占用、压缩 COW 以哪侧为主，都以本次 update metadata 和 backing image 为准。
 
 ### Android 12：compressed snapshots 与 dm-snapshot 过渡期
 
@@ -418,12 +418,12 @@ Android 11 引入了 Virtual A/B 的早期形态。更新差异使用 kernel COW
 
 ### Android 13+：userspace merge
 
-Android 13 把 compressed snapshot 的 mount 与 merge 移入用户态的 `snapuserd`，移除了对 kernel COW format 和 `dm-snapshot` 的依赖。首发搭载 Android 13 及以上版本的设备默认启用 userspace merge；从旧版本升级的设备则需要显式启用。Android 17 延续 userspace merge，但 r1 还提供 `dm-user` 与 `ublk` 两种 snapshot 后端，不能把 `snapuserd` 等同于只有 dm-user 的 worker。`IsUblkEnabled()` 同时检查 `ro.virtual_ab.ublk.enabled`、`vabc_with_ublk_support` flag 和内核版本门槛（6.6+），测试模式可覆盖属性；更新 manifest 还可禁用 ublk。实际还须具备内核驱动及相应设备节点。新 slot 确认成功后才启动合并；进入 merge 后不能再承诺回退到未修改的旧系统，合并中断则会在后续启动恢复。
+Android 13 把 compressed snapshot 的 mount 与 merge 移入用户态的 `snapuserd`，移除了对 kernel COW format 和 `dm-snapshot` 的依赖。首发搭载 Android 13 及以上版本的设备默认启用 userspace merge；从旧版本升级的设备则需要显式启用。Android 17 延续 userspace merge，但 r1 还提供 `dm-user` 与 `ublk` 两种 snapshot 后端，`snapuserd` 挂在哪一侧由后面的条件决定。`IsUblkEnabled()` 同时检查 `ro.virtual_ab.ublk.enabled`、`vabc_with_ublk_support` flag 和内核版本门槛（6.6+），测试模式可覆盖属性；更新 manifest 还可禁用 ublk。实际还须具备内核驱动及相应设备节点。新 slot 确认成功后才启动合并；进入 merge 后，回退到未修改旧系统的承诺不再有效，合并中断则会在后续启动恢复。
 
 <!-- gracker-diagram: ch06-01-android17-ublk-selection -->
 ![Android 17 r1 的快照后端选择](../../assets/diagrams/ch06/ch06-01-android17-ublk-selection.png)
 
-图：IsUblkEnabled 的测试 force_mode 可覆盖属性；真正映射 ublk 还需内核驱动、/dev/ublk-control 等节点就绪，节点缺失可使建立失败，并非无条件自动回退。此图限定已经采用 userspace snapshot 的更新。
+图：IsUblkEnabled 的测试 force_mode 可覆盖属性；真正映射 ublk 还需内核驱动、/dev/ublk-control 等节点就绪，节点缺失可使建立失败，自动回退与否取决于具体条件。此图限定已经采用 userspace snapshot 的更新。
 
 下面的简图用于对比三个关键版本的 COW 与 merge 路径。
 
@@ -457,18 +457,18 @@ Android 13+ 的 userspace merge 大多在后台完成；Android 12 设备还要�
 <!-- gracker-diagram: ch06-01-snapshot-view-and-merge -->
 ![快照读取视图与后续 merge 阶段](../../assets/diagrams/ch06/ch06-01-snapshot-view-and-merge.png)
 
-图：实线概括读视图依赖，虚线表示后续合并阶段，并不是每次读都立刻 merge。进入 merge 后 base 已开始改变，不能继续承诺完整回滚；中断后会恢复合并。不同逻辑分区也可能争用同一存储器件。
+图：实线概括读视图依赖，虚线表示后续合并阶段，并不是每次读都立刻 merge。进入 merge 后 base 已开始改变，完整回滚的承诺就此失效；中断后会恢复合并。不同逻辑分区也可能争用同一存储器件。
 
 ## 存储寿命与写入放大
 
-NAND 闪存单元只能承受有限次数的 program/erase cycle（编程/擦除循环）。SLC、MLC、TLC、QLC 每个单元存储的位数不同，耐久度趋势也不同；同一类型还会因工艺、纠错、预留空间和厂商分级产生很大差异。手机存储器件还常使用动态 SLC cache（用单层单元模式提供的高速缓存）、磨损均衡和 over-provisioning（预留空间），寿命估算要落到具体器件的规格上。
+谈存储寿命，我们先从“一次应用写入最终落到 NAND 多少字节”这个问题入手。NAND 闪存单元只能承受有限次数的 program/erase cycle（编程/擦除循环）。SLC、MLC、TLC、QLC 每个单元存储的位数不同，耐久度趋势也不同；同一类型还会因工艺、纠错、预留空间和厂商分级产生很大差异。手机存储器件还常使用动态 SLC cache（用单层单元模式提供的高速缓存）、磨损均衡和 over-provisioning（预留空间），寿命估算要落到具体器件的规格上。
 
-**写入放大（Write Amplification Factor，WAF）**必须先说明测量边界。器件 WAF 是 NAND 实际写入字节数除以主机提交给器件的写入字节数；数据库日志、文件系统 metadata 与 F2FS GC 会先放大“应用有效写入 → 主机块写入”，这些额外字节已经属于器件 WAF 的分母。FTL GC、磨损均衡、SLC 数据搬移等再影响“主机块写入 → NAND program”。因此应用写入 4 KiB 不能直接当作器件 WAF 的分母；具体比值要分别取得主机与 NAND 计数，不能用固定 erase block（擦除块）大小推算。
+**写入放大（Write Amplification Factor，WAF）**的测量先把两段路径分开。器件 WAF 是 NAND 实际写入字节数除以主机提交给器件的写入字节数；数据库日志、文件系统 metadata 与 F2FS GC 放大的是前一段“应用有效写入 → 主机块写入”，这些额外字节已经算进器件 WAF 的分母；FTL GC、磨损均衡、SLC 数据搬移影响的则是后一段“主机块写入 → NAND program”。所以算这个比值，我们要分别取得主机与 NAND 两侧的计数：应用写入的 4 KiB 处在主机侧放大之前，固定 erase block（擦除块）大小也推算不出它。
 
 <!-- gracker-diagram: ch06-01-write-amplification-boundaries -->
 ![应用、主机与 NAND 的写入放大边界](../../assets/diagrams/ch06/ch06-01-write-amplification-boundaries.png)
 
-图：公式用于相同且非零工作量的边界说明，需处理缓存延迟、后台写入和计数窗口。减少应用重写可减少总写入，但不保证器件 N/H 比值必定下降；不能直接拿一次应用 4 KiB 当作设备 WAF 分母。
+图：公式适用于相同且非零的工作量对比，需处理缓存延迟、后台写入和计数窗口。减少应用重写可减少总写入，器件 N/H 比值是否随之下降要另行测量；一次应用 4 KiB 只覆盖主机侧，单独当设备 WAF 分母会把比值算错。
 
 写入放大的常见来源包括：
 
@@ -483,7 +483,7 @@ NAND 闪存单元只能承受有限次数的 program/erase cycle（编程/擦除
 <!-- gracker-diagram: ch06-01-sharedprefs-async-generations -->
 ![SharedPreferences 异步写入的代次跳过](../../assets/diagrams/ch06/ch06-01-sharedprefs-async-generations.png)
 
-图：图限定 r1 的 apply 异步路径与已有文件代次检查。磁盘已有此代次、过时异步中间状态可被跳过；最新需持久状态仍会写 XML 并同步。新文件创建等路径不能机械套用同一跳过条件。
+图：图限定 r1 的 apply 异步路径与已有文件代次检查。磁盘已有此代次、过时异步中间状态可被跳过；最新需持久状态仍会写 XML 并同步。新文件创建等路径按各自条件判断是否跳过。
 
 ## 常见问题与误区
 
@@ -497,7 +497,7 @@ NAND 闪存单元只能承受有限次数的 program/erase cycle（编程/擦除
 
 **“FBE 加密会拖慢存储性能吗？”**
 
-在支持 inline encryption 的设备上，FBE 额外带来的 CPU 成本通常不大；如果设备缺少这类硬件能力，软件加密会让 CPU 承担一部分加解密工作。排查 FBE 要检查 fstab 的 `fileencryption=`、`inlinecrypt`、fscrypt/blk-crypto 能力与驱动实际路径；`dm-default-key` 只说明 metadata encryption，不能单独证明 FBE 是否使用硬件加密。再结合 `vold` / kernel 日志、CPU 活动与块层等待分析具体成本。
+在支持 inline encryption 的设备上，FBE 额外带来的 CPU 成本通常不大；如果设备缺少这类硬件能力，软件加密会让 CPU 承担一部分加解密工作。排查 FBE 要检查 fstab 的 `fileencryption=`、`inlinecrypt`、fscrypt/blk-crypto 能力与驱动实际路径；`dm-default-key` 只说明 metadata encryption，FBE 是否使用硬件加密要由这些检查来回答。再结合 `vold` / kernel 日志、CPU 活动与块层等待分析具体成本。
 
 ## 存储问题观测地图
 
@@ -511,7 +511,7 @@ NAND 闪存单元只能承受有限次数的 program/erase cycle（编程/擦除
 | Mount / encryption | 开机阶段的 `init`、`vold`、`wait_for_keymaster` 日志与 trace slice（事件区间） | `/metadata` 是否已挂载、`vold` 是否提前启动、`mount_all` 是否卡住 | 开机早期反复重试 KeyMint，`/data` 长时间无法挂载，后续 I/O 全部受到影响 |
 | OTA merge | `update_engine`、`snapuserd`、Virtual A/B merge 相关后台写入 | OTA 后台 merge 是否仍在持续、前台 I/O 是否受到挤压 | 重启后长时间存在稳定写入流量，前台 App 随机 I/O 延迟异常 |
 
-`block_rq_issue` 到 `block_rq_complete` 只覆盖请求下发后的区间，不包含全部用户态、文件系统或下发前排队等待，也不能直接当作一次 `fsync()` / `read()` 的总耗时。缓存命中可能不产生 block 事件；要分析调度器中的排队，还需相应的 insert/requeue 等事件与调用区间。
+`block_rq_issue` 到 `block_rq_complete` 只覆盖请求下发后的区间，不包含全部用户态、文件系统或下发前排队等待，一次 `fsync()` / `read()` 的总耗时要把调用区间另算进去。缓存命中可能不产生 block 事件；要分析调度器中的排队，还需相应的 insert/requeue 等事件与调用区间。
 
 除 Perfetto 外，还应结合 `logcat`、`dmesg`、`mount`、`getprop` 交叉验证。存储问题经常横跨内核、init、`vold`、MediaProvider 和 App 线程，把这几层串起来看，结论才站得住。
 
