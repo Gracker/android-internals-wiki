@@ -48404,9 +48404,317 @@
       "before_count": 31,
       "before_all_images": 31,
       "sha256_before": "77108caa51c0e27ec72847ef53624ffc6441256b24925707fe1358ca0238d5f0",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "ch17-10-01-evidence-loop",
+          "title": "用资源事件与温控动作组成诊断闭环",
+          "decision": "remove",
+          "reason": "Opening evidence investigation loop repeats the next evidence table and later actual thermal feedback24.",
+          "original_line": 49,
+          "heading": "# 耗电与发热监控 (Battery & Thermal)"
+        },
+        {
+          "original_id": "ch17-10-02-three-evidence-levels",
+          "title": "请求、可见结果与系统统计的证据强度",
+          "decision": "remove",
+          "reason": "Request/result/system columns duplicate the immediately preceding three-row evidence table.",
+          "original_line": 75,
+          "heading": "## 1. 建立证据等级：请求、回调、系统统计"
+        },
+        {
+          "original_id": "ch17-10-03-lab-tools",
+          "title": "应用事件与实验工具交叉验证",
+          "decision": "remove",
+          "reason": "Lab tool sequence repeats adjacent tool paragraph and device-supported caveats; no actual measurement dataflow shown.",
+          "original_line": 84,
+          "heading": "## 1. 建立证据等级：请求、回调、系统统计"
+        },
+        {
+          "original_id": "ch17-10-04-wakelock-token",
+          "title": "WakeLock 对象如何进入服务端",
+          "decision": "keep",
+          "reason": "Retain private token identity -> acquire IPC -> service policy -> aggregated suspend constraint -> same-token release, separating tag from object identity.",
+          "original_line": 97,
+          "heading": "### 2.1 源码中的对象语义"
+        },
+        {
+          "original_id": "ch17-10-05-object-vs-effective",
+          "title": "对象 held 与系统生效之间的边界",
+          "decision": "keep",
+          "reason": "Retain public result, client mHeld snapshot and service mDisabled as independent evidence scopes; true isHeld does not prove continuous hardware effectiveness.",
+          "original_line": 109,
+          "heading": "### 2.1 源码中的对象语义"
+        },
+        {
+          "original_id": "ch17-10-06-refcount-timeout",
+          "title": "引用计数、超时与公开余额分别记录",
+          "decision": "remove",
+          "reason": "Reference-count/nonreference-count/internaltimeout columns repeat the precise four object-semantics bullets and later publicCallBalance explanation.",
+          "original_line": 116,
+          "heading": "### 2.1 源码中的对象语义"
+        },
+        {
+          "original_id": "ch17-10-07-public-hooks",
+          "title": "公开插桩与弱身份注册表",
+          "decision": "remove",
+          "reason": "Public-hook registration/overload/result checklist duplicates four exact instrumentation points and pseudocode; no weak-reference data structure drawn.",
+          "original_line": 132,
+          "heading": "### 2.2 插桩点与本地对象身份"
+        },
+        {
+          "original_id": "ch17-10-08-uptime-probe",
+          "title": "超时探针与事件时间线使用两种时钟",
+          "decision": "keep",
+          "reason": "Retain framework uptime timeout, later post-return probe deadline and separately recorded elapsed business chronology; probe does not recover release time.",
+          "original_line": 211,
+          "heading": "### 2.2 插桩点与本地对象身份"
+        },
+        {
+          "original_id": "ch17-10-09-wakelock-alerts",
+          "title": "WakeLock 告警结合任务生命周期",
+          "decision": "remove",
+          "reason": "Alert scene/object/owner columns duplicate the six-item alert checklist; retain concrete owner cleanup17.",
+          "original_line": 231,
+          "heading": "### 2.3 告警规则的场景维度"
+        },
+        {
+          "original_id": "ch17-10-10-alarm-four-stages",
+          "title": "Alarm 的四阶段事件链",
+          "decision": "keep",
+          "reason": "Retain schedule result, optional cancel/replace, still-valid condition before actual delivery and explicit parent-task linkage; accepted is not delivered.",
+          "original_line": 251,
+          "heading": "## 3. Alarm：设置、接受、取消、投递是四个事件"
+        },
+        {
+          "original_id": "ch17-10-11-exact-alarm-versions",
+          "title": "精确 Alarm 的系统版本与载体差异",
+          "decision": "remove",
+          "reason": "ExactAlarm version/target/carrier summary duplicates the detailed comparison table and loses lifecycle precision.",
+          "original_line": 268,
+          "heading": "### 3.1 精确 Alarm 的版本差异"
+        },
+        {
+          "original_id": "ch17-10-12-exact-permission",
+          "title": "精确权限授予与撤销的不同通知",
+          "decision": "remove",
+          "reason": "Linear permission result -> granted broadcast -> later revocation repeats the accurate prose and may imply a mandatory broadcast after every call; notifications are conditional.",
+          "original_line": 277,
+          "heading": "### 3.1 精确 Alarm 的版本差异"
+        },
+        {
+          "original_id": "ch17-10-13-doze-work-chain",
+          "title": "Doze、后台工作与唤醒风暴",
+          "decision": "remove",
+          "reason": "Doze-to-worker/retry generic chain repeats retained delivery-parent linkage10 and explicit work/Job event list; no actual repeated storm timeline.",
+          "original_line": 294,
+          "heading": "### 3.2 Doze 配额与后台任务"
+        },
+        {
+          "original_id": "ch17-10-14-radio-windows",
+          "title": "定位和扫描的 API 窗口与结果",
+          "decision": "remove",
+          "reason": "Location/BLE/Wi-Fi request/result columns duplicate the immediately preceding resource table.",
+          "original_line": 311,
+          "heading": "## 4. 定位、扫描、网络与 CPU：请求证据与结果证据"
+        },
+        {
+          "original_id": "ch17-10-15-uid-network",
+          "title": "UID 字节无法直接推出基带尾部能耗",
+          "decision": "keep",
+          "reason": "Retain UID all-interface cumulative bytes versus actual request network versus inaccessible modem/tail observations; prevents assigning whole-window bytes to a default-network snapshot.",
+          "original_line": 331,
+          "heading": "### 4.1 网络侧的基带唤醒风险"
+        },
+        {
+          "original_id": "ch17-10-16-cpu-vs-wall",
+          "title": "任务经过时间与实际 CPU 时间",
+          "decision": "remove",
+          "reason": "CPU/wall/sample columns repeat the simple wait-versus-parallelism paragraph and field template; no actual timeline or CPU accumulation drawn.",
+          "original_line": 353,
+          "heading": "### 4.2 CPU 时间与墙钟时间"
+        },
+        {
+          "original_id": "ch17-10-17-owner-cleanup",
+          "title": "资源 owner 与生命周期的清理边界",
+          "decision": "keep",
+          "reason": "Retain resource owner -> request -> lifecycle cleanup -> residual callback/object observations, grounding suspected leaks in ownership rather than duration alone.",
+          "original_line": 370,
+          "heading": "### 4.3 生命周期与资源归属"
+        },
+        {
+          "original_id": "ch17-10-18-battery-context",
+          "title": "电池属性的单位与设备上下文",
+          "decision": "remove",
+          "reason": "Battery property units and unsupported-state inventory duplicate the adjacent bullet list and explicit measurement restrictions.",
+          "original_line": 396,
+          "heading": "## 5. `BatteryManager` 的设备侧上下文"
+        },
+        {
+          "original_id": "ch17-10-19-thermal-api-versions",
+          "title": "Thermal 公共能力的四阶段演进",
+          "decision": "remove",
+          "reason": "Thermal API version sequence duplicates the complete four-row capability table.",
+          "original_line": 414,
+          "heading": "## 6. Thermal API：状态用于保护设备，headroom 用于提前减小负载"
+        },
+        {
+          "original_id": "ch17-10-20-headroom-meaning",
+          "title": "Headroom 的数值与预测边界",
+          "decision": "remove",
+          "reason": "Above1.0 labelled SEVERE-or-higher can be read as current state even for predicted headroom; precise prose separates current/forecast, threshold crossing and no fixed higher-state mapping.",
+          "original_line": 423,
+          "heading": "## 6. Thermal API：状态用于保护设备，headroom 用于提前减小负载"
+        },
+        {
+          "original_id": "ch17-10-21-headroom-listener",
+          "title": "Headroom 事件与主动预测的分工",
+          "decision": "remove",
+          "reason": "Listener/query/threshold columns repeat precise adjacent paragraphs about significant current/threshold updates, future prediction polling and missing device capabilities.",
+          "original_line": 430,
+          "heading": "## 6. Thermal API：状态用于保护设备，headroom 用于提前减小负载"
+        },
+        {
+          "original_id": "ch17-10-22-budget-hysteresis",
+          "title": "热预算的即时收紧与延迟恢复",
+          "decision": "remove",
+          "reason": "Linear severity progression and stable recovery summary lacks actual immediate-jump/return transitions; detailed policy table and retained code-backed guard23 are clearer.",
+          "original_line": 450,
+          "heading": "### 6.1 状态与动作的映射"
+        },
+        {
+          "original_id": "ch17-10-23-thermal-guard",
+          "title": "温控回调、旧任务与关闭的同步边界",
+          "decision": "keep",
+          "reason": "Retain registration initialcallback, common synchronization/generation cancellation, immediate restriction versus delayed recovery, stale-task rejection and close exclusion.",
+          "original_line": 575,
+          "heading": "### 6.2 注册行为与可恢复状态机"
+        },
+        {
+          "original_id": "ch17-10-24-thermal-feedback",
+          "title": "热节流、重试与减负的反馈回路",
+          "decision": "keep",
+          "reason": "Retain actual feedback: own and external load -> thermal state -> app budget reduction and system throttling -> task/retry load, with independent competing inputs.",
+          "original_line": 586,
+          "heading": "### 6.3 发热与性能的反馈回路"
+        },
+        {
+          "original_id": "ch17-10-25-vitals-holding",
+          "title": "Vitals 的累计过长与单次卡住分别判断",
+          "decision": "remove",
+          "reason": "Vitals cumulative/stuck/quality-threshold columns duplicate precise metric table and28dayappsession paragraph.",
+          "original_line": 607,
+          "heading": "## 7. Android Vitals 与端侧 APM 的互补关系"
+        },
+        {
+          "original_id": "ch17-10-26-vitals-denominators",
+          "title": "电池会话定义不能当成一次充放电",
+          "decision": "remove",
+          "reason": "Wi-Fi/mobile/battery-session columns repeat the metric table and platform-specific denominator paragraph without an actual denominator mapping.",
+          "original_line": 614,
+          "heading": "## 7. Android Vitals 与端侧 APM 的互补关系"
+        },
+        {
+          "original_id": "ch17-10-27-vitals-apm-join",
+          "title": "系统统计与端侧任务上下文的互补",
+          "decision": "remove",
+          "reason": "Vitals-to-APM-to-device validation sequence repeats single precise complementarity paragraph and retained evidence constraints.",
+          "original_line": 621,
+          "heading": "## 7. Android Vitals 与端侧 APM 的互补关系"
+        },
+        {
+          "original_id": "ch17-10-29-clock-domains",
+          "title": "Elapsed、uptime 与日历时间各有作用",
+          "decision": "remove",
+          "reason": "Generic elapsed/uptime/wall lookup repeats field bullets and retained concrete probe-clock8; no new clock conversion is valid or shown.",
+          "original_line": 636,
+          "heading": "## 8. 上报、时钟与隐私边界"
+        },
+        {
+          "original_id": "ch17-10-28-aggregation-privacy",
+          "title": "采集、聚合、异常明细与隐私预算",
+          "decision": "remove",
+          "reason": "Linear aggregate -> anomaly detail can imply ordinary sessions traverse anomaly sampling; prose correctly separates normal summaries and controlled anomalous sessions.",
+          "original_line": 643,
+          "heading": "## 8. 上报、时钟与隐私边界"
+        },
+        {
+          "original_id": "ch17-10-30-validation-matrix",
+          "title": "资源状态机与设备功耗分层验收",
+          "decision": "remove",
+          "reason": "Validation columns duplicate the detailed WakeLock/Alarm/Thermal/device test checklist; no actual outcomes or state transitions drawn.",
+          "original_line": 670,
+          "heading": "## 9. 验证清单"
+        },
+        {
+          "original_id": "ch17-10-31-system-layers",
+          "title": "Java 对象、服务聚合与内核约束的关系",
+          "decision": "remove",
+          "reason": "Final system-layer columns repeat retained token4 and object/service5 plus actual thermal feedback24; no new association mechanism.",
+          "original_line": 699,
+          "heading": "### Kernel `android17-6.18-2026-06_r6`"
+        }
+      ],
+      "sha256_after": "934f68fec98beabcfc5b24a7ff5e059987519e7b9979f4e137a580f203d27a81",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:01:28.364218+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 31,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a185/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a185/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 185,
+        "article": "src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
+        "registered_sha256": "77108caa51c0e27ec72847ef53624ffc6441256b24925707fe1358ca0238d5f0",
+        "frozen_sha256": "77108caa51c0e27ec72847ef53624ffc6441256b24925707fe1358ca0238d5f0",
+        "review_input_sha256": "ab4fa905484bf15d789b2c6574d8563b7dddaecac05df9b4873cd91afd600835",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a185/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a185/external-source.diff",
+        "diff_sha256": "275000ea427eb5eb32a59cff6e44f72c4b3e3b3aff5d0562a1cf493166bd114e",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 293, \"characters\": 24632, \"svg_labels_read\": 31, \"actual_pngs_viewed\": 31, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 3, \"code_lines\": 178, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "ab4fa905484bf15d789b2c6574d8563b7dddaecac05df9b4873cd91afd600835",
+      "retired_diagrams": [
+        "ch17-10-01-evidence-loop",
+        "ch17-10-02-three-evidence-levels",
+        "ch17-10-03-lab-tools",
+        "ch17-10-06-refcount-timeout",
+        "ch17-10-07-public-hooks",
+        "ch17-10-09-wakelock-alerts",
+        "ch17-10-11-exact-alarm-versions",
+        "ch17-10-12-exact-permission",
+        "ch17-10-13-doze-work-chain",
+        "ch17-10-14-radio-windows",
+        "ch17-10-16-cpu-vs-wall",
+        "ch17-10-18-battery-context",
+        "ch17-10-19-thermal-api-versions",
+        "ch17-10-20-headroom-meaning",
+        "ch17-10-21-headroom-listener",
+        "ch17-10-22-budget-hysteresis",
+        "ch17-10-25-vitals-holding",
+        "ch17-10-26-vitals-denominators",
+        "ch17-10-27-vitals-apm-join",
+        "ch17-10-28-aggregation-privacy",
+        "ch17-10-29-clock-domains",
+        "ch17-10-30-validation-matrix",
+        "ch17-10-31-system-layers"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-185/retired-assets.json"
     },
     {
       "index": 186,
@@ -49388,8 +49696,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 117,
-  "next_article": "src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
+  "reviewed_articles": 118,
+  "next_article": "src/part3-tools/ch17-apm/11-hybrid-apm.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -49399,7 +49707,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:58:28.735748+08:00",
+  "updated_at": "2026-10-31T15:01:28.364218+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -49462,13 +49770,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
-      "registered_sha256": "77108caa51c0e27ec72847ef53624ffc6441256b24925707fe1358ca0238d5f0",
-      "observed_sha256": "ab4fa905484bf15d789b2c6574d8563b7dddaecac05df9b4873cd91afd600835",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -49661,9 +49962,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3931,
-  "reviewed_placements_after": 1686,
-  "net_removed_placements": 2245,
+  "reviewed_placements_before": 3962,
+  "reviewed_placements_after": 1694,
+  "net_removed_placements": 2268,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -49687,5 +49988,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 117
+  "currently_matching_reviewed_source_count": 118
 }
