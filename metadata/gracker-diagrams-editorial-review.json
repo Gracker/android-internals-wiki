@@ -47710,9 +47710,340 @@
       "before_count": 34,
       "before_all_images": 34,
       "sha256_before": "8135d67bfc19e1262a44f8fe478ace0ea1e2a28a9b994075d9c29547d77b91a6",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 12,
+      "decisions": [
+        {
+          "original_id": "ch17-08-01-observation-layers",
+          "title": "网络采集的对象与可见范围",
+          "decision": "remove",
+          "reason": "Opening observation-layer summary repeats the precise five-layer capability table immediately following.",
+          "original_line": 62,
+          "heading": "# 网络 APM 底层捕获原理"
+        },
+        {
+          "original_id": "ch17-08-02-coverage-choices",
+          "title": "不同入口补齐不同覆盖",
+          "decision": "remove",
+          "reason": "Three coverage-choice columns duplicate the adjacent entry/coverage/limitation table and final integration checklist.",
+          "original_line": 83,
+          "heading": "## 1. “无侵入”指业务入口免埋点"
+        },
+        {
+          "original_id": "ch17-08-03-four-records",
+          "title": "Call 与连接、交换并非一一对应",
+          "decision": "remove",
+          "reason": "Four-record concept is restated as three independent columns without associations; retain precise collector-model7 and the four-record prose/table.",
+          "original_line": 99,
+          "heading": "## 1. “无侵入”指业务入口免埋点"
+        },
+        {
+          "original_id": "ch17-08-04-listeners-interceptors",
+          "title": "三种 OkHttp 采集入口的分工",
+          "decision": "keep",
+          "reason": "Retain application/cache semantics versus wire-exchange versus per-call phase-state scopes, including application200 versus network304 and cache bypass.",
+          "original_line": 118,
+          "heading": "## 2. OkHttp：事件时间线与请求语义分开采"
+        },
+        {
+          "original_id": "ch17-08-05-event-exceptions",
+          "title": "缓存复用、竞速与交错事件",
+          "decision": "remove",
+          "reason": "Reuse, fast fallback and duplex exception summary duplicates the immediately preceding numbered exception list and later precise boundary diagrams.",
+          "original_line": 132,
+          "heading": "### 2.1 先读懂事件序列的四个例外"
+        },
+        {
+          "original_id": "ch17-08-06-headers-boundary",
+          "title": "响应回调在读取 Header block 之后",
+          "decision": "keep",
+          "reason": "Retain actual header-block read -> readResponseHeaders return -> start callback -> conditional informational-response skipping -> final end boundary; prevents false TTFB naming.",
+          "original_line": 139,
+          "heading": "### 2.1 先读懂事件序列的四个例外"
+        },
+        {
+          "original_id": "ch17-08-07-collector-state",
+          "title": "有界采集与终止快照",
+          "decision": "keep",
+          "reason": "Retain exchange creation separately from retry/follow-up/cache decisions and unassigned TLS/connection evidence, directly summarizing the large collector implementation.",
+          "original_line": 545,
+          "heading": "### 2.2 一份不会覆盖 retry/follow-up 的核心实现"
+        },
+        {
+          "original_id": "ch17-08-09-budget-snapshot",
+          "title": "截断、取消与快照的生命周期",
+          "decision": "keep",
+          "reason": "Retain per-call bounded recording, exhaustion/drop accounting, terminal-once copy/cleanup and nonblocking snapshot queue lifecycle.",
+          "original_line": 552,
+          "heading": "### 2.2 一份不会覆盖 retry/follow-up 的核心实现"
+        },
+        {
+          "original_id": "ch17-08-08-private-correlation",
+          "title": "私有配对键与脱敏样本",
+          "decision": "remove",
+          "reason": "Linear private-match -> sanitize arrow could be mistaken for code order although dimensions are computed on start before pending raw-key pairing; prose/code accurately separate identities without this implied order.",
+          "original_line": 559,
+          "heading": "### 2.2 一份不会覆盖 retry/follow-up 的核心实现"
+        },
+        {
+          "original_id": "ch17-08-10-request-id-order",
+          "title": "Factory 读取 Request tag 的时机",
+          "decision": "keep",
+          "reason": "Retain original Request.tag -> newCall/listener creation -> factory read -> later interceptor execution, making otherwise invisible ID creation timing explicit.",
+          "original_line": 586,
+          "heading": "### 2.2 一份不会覆盖 retry/follow-up 的核心实现"
+        },
+        {
+          "original_id": "ch17-08-11-body-byte-boundary",
+          "title": "Gzip、缓冲与应用消费的计数边界",
+          "decision": "keep",
+          "reason": "Retain protocol body source -> observed byte counter -> transparent gzip -> upper buffered consumption; these distinct layers explain non-equivalent byte counts.",
+          "original_line": 604,
+          "heading": "### 2.3 Interceptor 只做它能证明的事"
+        },
+        {
+          "original_id": "ch17-08-12-network-transitions",
+          "title": "一次 Call 内网络状态也会变化",
+          "decision": "remove",
+          "reason": "Network start/change/end checklist repeats the single adjacent paragraph; no actual migration or transition timeline shown.",
+          "original_line": 626,
+          "heading": "### 3.1 call、DNS、route 与 exchange 字段"
+        },
+        {
+          "original_id": "ch17-08-13-connect-tls-overlap",
+          "title": "Transport connect 已包含 TLS",
+          "decision": "keep",
+          "reason": "Retain total transport interval versus pre-TLS versus TLS scopes and route pairing constraints; avoids adding TLS twice or naming proxy negotiation pureTCP.",
+          "original_line": 654,
+          "heading": "### 3.2 OkHttp 阶段差值"
+        },
+        {
+          "original_id": "ch17-08-14-header-wait-estimate",
+          "title": "Header 等待差值的前提",
+          "decision": "remove",
+          "reason": "Version/sendEnd/order/duplex prerequisites repeat the explicit three-item check and null rule; retained header6 and timing table carry the actual boundaries.",
+          "original_line": 667,
+          "heading": "### 3.2 OkHttp 阶段差值"
+        },
+        {
+          "original_id": "ch17-08-15-informational-response",
+          "title": "临时响应与最终响应分开理解",
+          "decision": "remove",
+          "reason": "Informational-response summary repeats retained actual header sequence6 and the local precise100/102..199/101 prose.",
+          "original_line": 674,
+          "heading": "### 3.2 OkHttp 阶段差值"
+        },
+        {
+          "original_id": "ch17-08-16-body-window",
+          "title": "Body 完成不等于业务处理完成",
+          "decision": "keep",
+          "reason": "Retain internal first-read/body-end versus upper buffer consumption and business-processing completion, separate from the byte-layer path11.",
+          "original_line": 685,
+          "heading": "### 3.2 OkHttp 阶段差值"
+        },
+        {
+          "original_id": "ch17-08-17-null-zero",
+          "title": "缺失、不适用与有效零值",
+          "decision": "remove",
+          "reason": "Zero/missing/not-applicable definitions duplicate the local storage table; no new branching or quantitative example.",
+          "original_line": 700,
+          "heading": "### 3.3 空字段也是结论"
+        },
+        {
+          "original_id": "ch17-08-18-route-retry-followup",
+          "title": "连接候选、重试与后续请求",
+          "decision": "remove",
+          "reason": "Route/retry/follow-up three-column classification duplicates collector-model7 plus the explicit retry bullet list and separate counts.",
+          "original_line": 720,
+          "heading": "## 4. 弱网、重试与 follow-up 的识别"
+        },
+        {
+          "original_id": "ch17-08-19-overhead-scopes",
+          "title": "失败时间并集与最终 Exchange",
+          "decision": "remove",
+          "reason": "Failed-interval union and intermediate/final exchange columns repeat the dashboard field list; no overlapping interval example is drawn, retain precise union rule in prose.",
+          "original_line": 735,
+          "heading": "## 4. 弱网、重试与 follow-up 的识别"
+        },
+        {
+          "original_id": "ch17-08-20-diagnostic-path",
+          "title": "网络症状回到对应层的证据",
+          "decision": "remove",
+          "reason": "Symptom-to-evidence columns directly repeat the four local diagnostic bullets; retain their source caveats.",
+          "original_line": 747,
+          "heading": "## 4. 弱网、重试与 follow-up 的识别"
+        },
+        {
+          "original_id": "ch17-08-21-instrumentation-build",
+          "title": "AGP 在应用调用点重写字节码",
+          "decision": "remove",
+          "reason": "Generic variant/filter/visit/reframe build checklist repeats both code and surrounding AGP paragraphs; retain concrete receiver-stack22.",
+          "original_line": 776,
+          "heading": "## 5. `HttpURLConnection` 与三方 SDK：在调用点插桩"
+        },
+        {
+          "original_id": "ch17-08-22-receiver-stack",
+          "title": "实例 Receiver 变成静态首参数",
+          "decision": "keep",
+          "reason": "Retain exact instance-stack receiver-to-static-first-parameter transformation for three method descriptors, including Proxy and InputStream return differences.",
+          "original_line": 825,
+          "heading": "## 5. `HttpURLConnection` 与三方 SDK：在调用点插桩"
+        },
+        {
+          "original_id": "ch17-08-23-public-url-boundary",
+          "title": "公开 URLConnection 方法的计时能力",
+          "decision": "remove",
+          "reason": "Public URL method capability and build fixture inventory repeats the immediately adjacent prose and already precise call-point explanation.",
+          "original_line": 832,
+          "heading": "## 5. `HttpURLConnection` 与三方 SDK：在调用点插桩"
+        },
+        {
+          "original_id": "ch17-08-24-cronet-metrics",
+          "title": "Cronet 首字节字段与 Header 完成",
+          "decision": "keep",
+          "reason": "Retain Cronet direct TTFB versus final-header completion versus provider-specific redirect byte contract; these fields cannot be silently unified with OkHttp callbacks.",
+          "original_line": 860,
+          "heading": "### 6.1 Cronet 优先使用官方 metrics"
+        },
+        {
+          "original_id": "ch17-08-25-plt-coverage",
+          "title": "动态符号调用才经过 PLT Hook",
+          "decision": "remove",
+          "reason": "Native function capability columns repeat target-function list and explicit coverage limits; the chart draws no actual dynamic/bypass branch.",
+          "original_line": 882,
+          "heading": "### 6.2 PLT/GOT Hook 的覆盖范围"
+        },
+        {
+          "original_id": "ch17-08-26-hook-guard",
+          "title": "Native 代理的故障隔离",
+          "decision": "keep",
+          "reason": "Retain original-call return/errno capture and restoration around bounded observation with recursion protection and disable/rollback constraint.",
+          "original_line": 889,
+          "heading": "### 6.2 PLT/GOT Hook 的覆盖范围"
+        },
+        {
+          "original_id": "ch17-08-27-bpf-capability",
+          "title": "BPF 加载与附着需要系统权限",
+          "decision": "remove",
+          "reason": "BPF capability admission checklist duplicates the precise environment and permission paragraphs; no actual permission decision tree.",
+          "original_line": 905,
+          "heading": "### 6.3 eBPF 适用于系统或受控设备"
+        },
+        {
+          "original_id": "ch17-08-28-tcp-quic-boundary",
+          "title": "内核 TCP 与用户态 QUIC 的边界",
+          "decision": "keep",
+          "reason": "Retain kernelTCP, UDP/socket and user-space QUIC as distinct metric sources, avoiding claims that UDP or syscall hooks reveal QUIC retransmission/HTTP streams.",
+          "original_line": 914,
+          "heading": "### 6.3 eBPF 适用于系统或受控设备"
+        },
+        {
+          "original_id": "ch17-08-29-url-privacy",
+          "title": "URL 在进入样本之前归一化",
+          "decision": "remove",
+          "reason": "Linear template-match then unknown-path box may imply both branches execute in series; the prose explicitly separates matched templates and unknown allowed dimensions.",
+          "original_line": 931,
+          "heading": "### 7.1 URL 与 route"
+        },
+        {
+          "original_id": "ch17-08-30-content-gate",
+          "title": "Header 与 Body 内容的准入流程",
+          "decision": "remove",
+          "reason": "Content admission is already the explicit ordered four-step list plus default/no-content rules; repeat boxes add no data-flow boundary.",
+          "original_line": 954,
+          "heading": "### 7.3 Body 与文件"
+        },
+        {
+          "original_id": "ch17-08-31-identifier-lifecycle",
+          "title": "可关联标识的保留与删除",
+          "decision": "remove",
+          "reason": "Identifier HMAC/isolation/deletion lifecycle repeats the single precise paragraph without showing separate sample/mapping stores or deletion fanout.",
+          "original_line": 963,
+          "heading": "### 7.4 标识符与删除"
+        },
+        {
+          "original_id": "ch17-08-32-collection-budget",
+          "title": "关键路径预算与后台处理",
+          "decision": "remove",
+          "reason": "Generic callback-to-queue-to-background budget diagram duplicates retained concrete collector lifecycle8 and detailed ordered degradation prose.",
+          "original_line": 983,
+          "heading": "## 8. 开销控制与自监控"
+        },
+        {
+          "original_id": "ch17-08-33-quic-overlap",
+          "title": "QUIC 0-RTT 不遵循串行阶段相加",
+          "decision": "remove",
+          "reason": "Cross-protocol timing summary repeats the TCP/QUIC schema table and retained13/24/28; no actual overlapping0RTT timeline drawn.",
+          "original_line": 1006,
+          "heading": "## 9. HTTP/3 / QUIC 的字段要显式区分"
+        },
+        {
+          "original_id": "ch17-08-34-integration-validation",
+          "title": "接入顺序与字段验收",
+          "decision": "remove",
+          "reason": "Final integration sequence repeats the immediately preceding eight-step implementation checklist and earlier detailed diagrams.",
+          "original_line": 1026,
+          "heading": "## 10. 一套可维护的接入顺序"
+        }
+      ],
+      "sha256_after": "5090de94b10c51b4a8ec760238f04a37115fc06672eb21627b7fbf51c7ac97c4",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:55:29.461859+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 34,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a183/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a183/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 183,
+        "article": "src/part3-tools/ch17-apm/08-network-apm-internals.md",
+        "registered_sha256": "8135d67bfc19e1262a44f8fe478ace0ea1e2a28a9b994075d9c29547d77b91a6",
+        "frozen_sha256": "8135d67bfc19e1262a44f8fe478ace0ea1e2a28a9b994075d9c29547d77b91a6",
+        "review_input_sha256": "0d1574ed8990392ac42c4a675019935eee7fd6635867b9b00d4577ed6358203f",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/08-network-apm-internals.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a183/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a183/external-source.diff",
+        "diff_sha256": "cec7784154a8de2fbae0acf820fc927f4a3399b1f0da5616196beb6b707553b8",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 324, \"characters\": 29166, \"svg_labels_read\": 34, \"actual_pngs_viewed\": 34, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 4, \"code_lines\": 457, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "0d1574ed8990392ac42c4a675019935eee7fd6635867b9b00d4577ed6358203f",
+      "retired_diagrams": [
+        "ch17-08-01-observation-layers",
+        "ch17-08-02-coverage-choices",
+        "ch17-08-03-four-records",
+        "ch17-08-05-event-exceptions",
+        "ch17-08-08-private-correlation",
+        "ch17-08-12-network-transitions",
+        "ch17-08-14-header-wait-estimate",
+        "ch17-08-15-informational-response",
+        "ch17-08-17-null-zero",
+        "ch17-08-18-route-retry-followup",
+        "ch17-08-19-overhead-scopes",
+        "ch17-08-20-diagnostic-path",
+        "ch17-08-21-instrumentation-build",
+        "ch17-08-23-public-url-boundary",
+        "ch17-08-25-plt-coverage",
+        "ch17-08-27-bpf-capability",
+        "ch17-08-29-url-privacy",
+        "ch17-08-30-content-gate",
+        "ch17-08-31-identifier-lifecycle",
+        "ch17-08-32-collection-budget",
+        "ch17-08-33-quic-overlap",
+        "ch17-08-34-integration-validation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-183/retired-assets.json"
     },
     {
       "index": 184,
@@ -48716,8 +49047,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 115,
-  "next_article": "src/part3-tools/ch17-apm/08-network-apm-internals.md",
+  "reviewed_articles": 116,
+  "next_article": "src/part3-tools/ch17-apm/09-crash-anr-internals.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -48727,7 +49058,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:52:32.727560+08:00",
+  "updated_at": "2026-10-31T14:55:29.461859+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -48790,13 +49121,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/08-network-apm-internals.md",
-      "registered_sha256": "8135d67bfc19e1262a44f8fe478ace0ea1e2a28a9b994075d9c29547d77b91a6",
-      "observed_sha256": "0d1574ed8990392ac42c4a675019935eee7fd6635867b9b00d4577ed6358203f",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/08-network-apm-internals.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -49003,9 +49327,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3862,
-  "reviewed_placements_after": 1663,
-  "net_removed_placements": 2199,
+  "reviewed_placements_before": 3896,
+  "reviewed_placements_after": 1675,
+  "net_removed_placements": 2221,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -49029,5 +49353,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 115
+  "currently_matching_reviewed_source_count": 116
 }

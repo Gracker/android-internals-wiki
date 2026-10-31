@@ -59,10 +59,6 @@ title: 网络 APM 底层捕获原理
 
 网络 APM（Application Performance Monitoring，应用性能监控）难在采样这一步。一条请求可能经过业务封装、HTTP 客户端、DNS（域名解析）、socket（网络通信端点）、TLS（传输加密协议）和内核网络栈；缓存命中、连接复用与明文 HTTP 会跳过其中部分阶段；WebView、Cronet（Chromium 提供的网络库） 或 C/C++ SDK 还会绕开应用熟悉的 Java 入口。监控图表上的一条“请求耗时”，要先把这一路上发生的事件正确配对，才有诊断价值。
 
-<!-- gracker-diagram: ch17-08-01-observation-layers -->
-![网络采集的对象与可见范围](../../assets/diagrams/ch17/ch17-08-01-observation-layers.png)
-
-图：先确认 HTTP 语义、客户端阶段和连接级统计各自来自哪里。 缓存和连接复用会跳过阶段；跨层时间接近不足以证明同一请求。
 
 > 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核 `android17-6.18-2026-06_r6`。
 
@@ -80,12 +76,10 @@ OkHttp、Cronet 和 Android Gradle Plugin（AGP，Android 构建插件）独立�
 | Native 动态链接层 | 库回调、PLT/GOT Hook（通过动态符号入口拦截函数调用） | libc（C 标准库实现）或动态 TLS 库的调用、返回值和 `errno`（系统调用错误码） | 静态链接、隐藏符号、直接系统调用、HTTP 业务语义 |
 | 系统与内核层 | TrafficStats、系统 BPF（在内核中运行受限程序的机制）、受控测试工具 | UID（应用在 Linux 中的身份编号）/socket 流量、RTT（Round-Trip Time，网络往返时延）、重传和内核错误 | TLS 内的 URL、header（请求或响应元数据）和业务请求边界 |
 
-<!-- gracker-diagram: ch17-08-02-coverage-choices -->
-![不同入口补齐不同覆盖](../../assets/diagrams/ch17/ch17-08-02-coverage-choices.png)
 
-图：先接稳定的客户端回调，再按缺口选择构建插桩或底层观测。 任何一个入口都不能独立覆盖 Java、Native、HTTP 与内核全部语义。
+这些层看到的对象并不重合：HTTP 请求、DNS 查询、建连尝试和 socket 之间，没有一一对应关系。一次调用可能复用现成连接，也可能解析一次域名后并行尝试多个地址；HTTP/2 和 HTTP/3 还允许不同请求通过各自的 stream（连接内的独立逻辑数据流） 共享连接，HTTP/3 用的 QUIC 则是基于 UDP、内置加密与多路复用的传输协议。
 
-这些层看到的对象并不重合。HTTP 请求、DNS 查询、建连尝试和 socket 之间没有一一对应关系：一次调用可能复用连接，也可能解析一次域名后并行尝试多个地址；HTTP/2 和 HTTP/3 还允许不同请求通过各自的 stream（连接内的独立逻辑数据流） 共享连接，HTTP/3 用的 QUIC 则是基于 UDP、内置加密与多路复用的传输协议。所以我们设计采集 schema（样本的字段结构） 时，只放一个 `attempt` 数组是不够的，重试和多路复用很快会让它失真；trace（跨服务串起同一次请求的调用轨迹） id 也要记清它对应 HTTP 的哪一层。
+对应关系这么松，我们设计采集 schema（样本的字段结构） 时就要多留一层结构：只放一个 `attempt` 数组撑不住，重试和多路复用很快会让它失真；trace（跨服务串起同一次请求的调用轨迹） id 也要记清它对应 HTTP 的哪一层。
 
 更稳妥的结构包含四条相互关联的记录：
 
@@ -94,10 +88,6 @@ OkHttp、Cronet 和 Android Gradle Plugin（AGP，Android 构建插件）独立�
 - `route_attempt`：对某个 IP、端口和 proxy（代理服务器） 的一次连接尝试。
 - `exchange`：一轮开始写入 request 的 HTTP 交换尝试。`requestHeadersStart` 不保证数据已发上网络，写入或读取失败时也可能没有 response；重定向、鉴权挑战和部分故障恢复可产生新 exchange。
 
-<!-- gracker-diagram: ch17-08-03-four-records -->
-![Call 与连接、交换并非一一对应](../../assets/diagrams/ch17/ch17-08-03-four-records.png)
-
-图：Call、DNS、route attempt 与 HTTP exchange 分别建记录并保留关联证据。 纯缓存可零 exchange；复用可有 exchange 而无新 route，多路复用不分摊连接指标。
 
 关联键要从同一客户端实例内的事件里取；按时间窗口猜，容易把并发请求配错。底层 socket 数据还原不出可靠的 HTTP/2 stream 或 QUIC stream 时，就只保留连接维度的关联，并把可信度写进样本。
 
@@ -109,7 +99,9 @@ OkHttp 主通道上，我们把 `EventListener`（按阶段通知网络事件的
 - 应用拦截器适合读取 request id（请求关联标识）、业务路由和最终响应语义；正常执行到拦截器链的 `Call` 会经过它，缓存命中也会经过它。需要 listener factory 读取的 id 必须在 `newCall()` 前写入原始请求。
 - 网络拦截器按网络 exchange 执行，可看到发往网络的 request、连接和中间 response；纯缓存命中不会经过它。
 
-Interceptor 一侧没有 `dnsStart`、`connectStart` 或 `secureConnectStart` 这类阶段事件；网络拦截器离传输层更近，看到的仍是一整段 exchange，拆不出 DNS、TCP 和 TLS。原始 request 用回调参数 `call` 的 `request()` 取；重定向或鉴权后发到网络上的 wire request，则要从 `requestHeadersEnd(call, request)` 取。我们在 `newCall()` 前把 `NetworkRequestId` 写入 `Request.tag()`，由 factory 从原始 `call.request()` 读取；应用拦截器读取同一 tag。id 本身不含用户信息或业务内容。在拦截器里临时创建的 tag 不能反向传给已创建的 listener。
+Interceptor 一侧没有 `dnsStart`、`connectStart` 或 `secureConnectStart` 这类阶段事件；网络拦截器离传输层更近，看到的仍是一整段 exchange，拆不出 DNS、TCP 和 TLS。原始 request 用回调参数 `call` 的 `request()` 取；重定向或鉴权后发到网络上的 wire request，则要从 `requestHeadersEnd(call, request)` 取。
+
+request id 的传递还要更早一步：我们在 `newCall()` 前把 `NetworkRequestId` 写入 `Request.tag()`，由 factory 从原始 `call.request()` 读取，应用拦截器读取同一 tag。id 本身不含用户信息或业务内容。在拦截器里临时创建的 tag，传不到已经创建好的 listener。
 
 <!-- gracker-diagram: ch17-08-04-listeners-interceptors -->
 ![三种 OkHttp 采集入口的分工](../../assets/diagrams/ch17/ch17-08-04-listeners-interceptors.png)
@@ -123,19 +115,15 @@ OkHttp 5.3.0 的 `EventListener` 源码把事件顺序写得很明确，我们�
 1. 连接复用时，代理选择、DNS 和 connect 事件可能全部缺席。
 2. retry 与 follow-up（重定向、鉴权等后续请求）——前者是连接故障后的再次尝试，后者是重定向、鉴权等触发的后续请求——会重复产生事件序列。`requestFailed`、`responseFailed` 和 `connectFailed` 出现后，整个 `Call` 仍可能继续。
 3. `Expect: 100-continue` 会先等服务端允许再发送 request body，因此 body 事件可能落在 response headers 事件之间；duplex body（请求和响应可同时传输的双工 body） 还允许两边交错传输。
-4. `canceled` 可以与其他回调并发，甚至晚于 `callEnd`。5.3.0 的 fast fallback 已会错开并发执行 TCP 连接尝试；多个 route 的 connect 回调不能假定严格串行。当前实现选出成功的 TCP plan 后再进行 TLS，但公开 TLS 回调不携带地址，采集器不应按数组末项补出确定的 route 归属。
+4. `canceled` 可以与其他回调并发，甚至晚于 `callEnd`。5.3.0 的 fast fallback 已会错开并发执行 TCP 连接尝试；多个 route 的 connect 回调可能交错到达，先后顺序没有保证。当前实现选出成功的 TCP plan 后再进行 TLS，但公开 TLS 回调不携带地址，采集器别按数组末项补出确定的 route 归属。
 
-<!-- gracker-diagram: ch17-08-05-event-exceptions -->
-![缓存复用、竞速与交错事件](../../assets/diagrams/ch17/ch17-08-05-event-exceptions.png)
-
-图：事件序列会因复用、并发建连、临时响应或双工传输改变。 失败回调不一定终止 Call；取消还可能晚于成功终止。
 
 还有一个容易遗漏的版本点：OkHttp 4.3 以前，`responseHeadersStart` 在“客户端准备读取 header”时就过早触发；4.3 起调整了触发位置。按本文使用的 5.3.0 与 5.4.0 实现，它在 `readResponseHeaders()` 返回后触发，HTTP/1.1 此时已读完一个 header block。这个回调给不出精确的首字节时间；遇到临时响应时，最终响应的起点单凭这一次回调定不下来。后文按这一触发位置计算观测值。`requestHeadersEnd(call, request)` 的签名从 OkHttp 3.9 就存在，但不同版本的响应回调语义要按各自源码核对。
 
 <!-- gracker-diagram: ch17-08-06-headers-boundary -->
 ![响应回调在读取 Header block 之后](../../assets/diagrams/ch17/ch17-08-06-headers-boundary.png)
 
-图：本文版本先完成一次 header block 读取，再触发 responseHeadersStart。 首次 block 可能是临时响应；这个回调不能提供精确首字节时间。
+图：本文版本先完成一次 header block 读取，再触发 responseHeadersStart。 首次 block 可能是临时响应；这个回调给不出精确首字节时间。
 
 ### 2.2 一份不会覆盖 retry/follow-up 的核心实现
 
@@ -536,7 +524,7 @@ private class NetworkMetricEventListener(
 }
 ```
 
-这份实现只在 `requestHeadersStart` 新建 exchange；建连前的 retry 与纯缓存命中的 follow-up 决定单独存入 `decisions`，不会捏造网络请求。DNS 和 route 使用当前 call 内的原始参数配对，脱敏值只作为展示维度；原始键不进入快照，并在终止时清除。TLS 回调独立保留，不按“最近一个 route”附会归属；`connectionAcquired` 保存实际 connection 的 route 与 protocol，但不据最近一次建连就断言新建或复用。确需这种分类时，要补充连接对象生命周期证据。
+这份实现只在 `requestHeadersStart` 新建 exchange；建连前的 retry 与纯缓存命中的 follow-up 决定单独存入 `decisions`，exchange 列表因此只含真实发生过的网络请求。DNS 和 route 使用当前 call 内的原始参数配对，脱敏值只作为展示维度；原始键不进入快照，并在终止时清除。TLS 回调独立保留，免得被附会到“最近一个 route”上；`connectionAcquired` 保存实际 connection 的 route 与 protocol。确需区分新建与复用时，再补充连接对象生命周期证据。
 
 <!-- gracker-diagram: ch17-08-07-collector-state -->
 ![有界采集与终止快照](../../assets/diagrams/ch17/ch17-08-07-collector-state.png)
@@ -550,12 +538,8 @@ private class NetworkMetricEventListener(
 
 图：普通事件共享有限预算，耗尽后冻结字段，终止仍生成一次快照。 丢弃计数影响统计可信度；已入队 DTO 按约定不再修改。
 
-`NetworkDimensions` 的方法必须有明确时间上限、无 I/O 与外部副作用；示例把普通异常转为 `unknown`，并不能替代耗时预算。host 采用允许清单，address/proxy 输出合规前缀或有密钥的摘要；不能把这些可能碰撞的维度用作原始配对键。`NetworkMetricSink.enqueue()` 必须使用有界、非阻塞队列，满时丢弃并计数；示例接口本身不实现队列。
+`NetworkDimensions` 的方法必须有明确时间上限、无 I/O 与外部副作用；示例把普通异常转为 `unknown`，只挡住了异常返回，耗时预算仍要单独设定。host 采用允许清单，address/proxy 输出合规前缀或有密钥的摘要；这些可能碰撞的维度只作展示，原始配对仍要用回调参数。`NetworkMetricSink.enqueue()` 必须使用有界、非阻塞队列，满时丢弃并计数；示例接口本身不实现队列。
 
-<!-- gracker-diagram: ch17-08-08-private-correlation -->
-![私有配对键与脱敏样本](../../assets/diagrams/ch17/ch17-08-08-private-correlation.png)
-
-图：回调参数用于当前 Call 内配对，脱敏维度只进入有限快照。 前缀和摘要可能碰撞；私有原始键不进入日志或上报，终止时清除。
 
 注册必须使用 `eventListenerFactory(...)`：
 
@@ -582,25 +566,29 @@ val call = client.newCall(request)
 <!-- gracker-diagram: ch17-08-10-request-id-order -->
 ![Factory 读取 Request tag 的时机](../../assets/diagrams/ch17/ch17-08-10-request-id-order.png)
 
-图：先设置 tag，再 newCall 创建 listener，执行时拦截器读取同一标识。 拦截器临时生成的 tag 无法反向传给已创建的 factory 状态。
+图：先设置 tag，再 newCall 创建 listener，执行时拦截器读取同一标识。 拦截器临时生成的 tag，到不了已创建的 factory 状态。
 
 ### 2.3 Interceptor 只做它能证明的事
 
 应用拦截器适合建立 request sample 外壳：
 
 - 从业务路由注册表取得 low-cardinality route name，也就是取值数量有限、不会把每个动态 URL 都变成新维度的路由名。
-- 读取在 `newCall()` 前设置的 request id；只有服务端需要时才放入 header。若由应用拦截器生成新的子请求标识，应另存其来源，不能声称 factory 已读取它。
+- 读取在 `newCall()` 前设置的 request id；只有服务端需要时才放入 header。若由应用拦截器生成新的子请求标识，应另存其来源，并注明 factory 读不到它。
 - 记录最终响应码、`priorResponse` 链、缓存语义和业务错误码。
 - 记录已知的 request/response content length；未知长度保留 `null`。
 
-网络拦截器适合观察每个 wire exchange，拿它读 body 来“顺便采样”则行不通：one-shot（只能发送一次）、duplex 和流式 body 可能无法重放，提前 `string()` 或复制整个 buffer 还会改变内存、时序和 backpressure（下游读取速度反过来限制上游发送的机制）。我们确需统计字节时，用 forwarding sink/source（转发数据的同时计数的包装器） 在转发途中计数；内容采集仍按第 7 节的允许清单执行。`responseBodyEnd(byteCount)` 在本文版本的 `Exchange.ResponseBodySource` 计数，位于 `BridgeInterceptor` 的透明 gzip 解压之前，也受缓冲预读影响；它既不是精确的业务已消费字节数，也不是 IP/TLS 链路总字节数。提前 close 可能读到部分或全部数据，不能一概认定小于资源总长度。示例将它命名为 `responseBodyBytesObserved`；业务解压后消费量需要在对应上层另外计数。
+网络拦截器适合观察每个 wire exchange，拿它读 body 来“顺便采样”则行不通：one-shot（只能发送一次）、duplex 和流式 body 可能没法原样重放，提前 `string()` 或复制整个 buffer 还会改变内存、时序和 backpressure（下游读取速度反过来限制上游发送的机制）。
+
+我们确需统计字节时，用 forwarding sink/source（转发数据的同时计数的包装器） 在转发途中计数；内容采集仍按第 7 节的允许清单执行。`responseBodyEnd(byteCount)` 在本文版本的 `Exchange.ResponseBodySource` 计数，位于 `BridgeInterceptor` 的透明 gzip 解压之前，也受缓冲预读影响；这个数对不上精确的业务已消费字节数，也对不上 IP/TLS 链路总字节数。提前 close 时读到的可能是部分，也可能是全部，样本里照实记录。示例将它命名为 `responseBodyBytesObserved`；业务解压后消费量需要在对应上层另外计数。
 
 <!-- gracker-diagram: ch17-08-11-body-byte-boundary -->
 ![Gzip、缓冲与应用消费的计数边界](../../assets/diagrams/ch17/ch17-08-11-body-byte-boundary.png)
 
-图：内部 body source 计数在透明 gzip 解压之前，缓冲预读又早于业务逐字节消费。 回调字节不是 IP/TLS 总字节，也不等于业务已消费量；不得提前读取 body 采样。
+图：内部 body source 计数在透明 gzip 解压之前，缓冲预读又早于业务逐字节消费。 回调字节对不上 IP/TLS 总字节，也对不上业务已消费量；不要提前读取 body 采样。
 
 ## 3. 指标模型：先定义计时边界，再计算差值
+
+事件采上来之后，还要变成能比较的指标。这一节我们先把每条记录的字段与计时位置定义清楚，再计算差值——计时位置定错，差值就会跟着错。
 
 ### 3.1 call、DNS、route 与 exchange 字段
 
@@ -615,14 +603,10 @@ val call = client.newCall(request)
 
 `network_type` 同样要按会变化的量来存。蜂窝与 Wi‑Fi 切换、VPN 或 QUIC connection migration（地址或网络改变后继续沿用连接）都可能发生在一次请求期间。至少记录 call 开始和结束时的 network handle/type（Android 网络对象标识与网络类型）；能监听默认网络变化时，再追加 transition（切换事件） 事件。VPN 下看不到底层网络，就写 `unknown`，别靠猜。
 
-<!-- gracker-diagram: ch17-08-12-network-transitions -->
-![一次 Call 内网络状态也会变化](../../assets/diagrams/ch17/ch17-08-12-network-transitions.png)
-
-图：开始、切换和结束状态按时间记录，不能用一条静态网络类型覆盖整次请求。 VPN 底层网络不可见时保留 unknown；迁移细节由客户端证据确认。
 
 ### 3.2 OkHttp 阶段差值
 
-TTFB（Time to First Byte）要的是“首字节到达”这个时刻。`EventListener` 的响应回调达不到这一精度：在 OkHttp 5.3.0 与 5.4.0 的 `CallServerInterceptor` 中，`responseHeadersStart` 在一次 `readResponseHeaders()` 返回后触发；HTTP/1.1 已经读完状态行和一个 header block。它可能对应 `100 Continue`、`103 Early Hints` 或最终响应，字段命名要体现这一点，直接叫“最终响应 TTFB（Time to First Byte，首字节时间）”会出错。
+TTFB（Time to First Byte）要的是“首字节到达”这个时刻，而 `EventListener` 的响应回调给的是另一个时刻：在 OkHttp 5.3.0 与 5.4.0 的 `CallServerInterceptor` 中，`responseHeadersStart` 在一次 `readResponseHeaders()` 返回后触发，此时 HTTP/1.1 已读完状态行和一个 header block。这次回调对应的可能是 `100 Continue`、`103 Early Hints` 或最终响应，字段命名要体现这一点，直接叫“最终响应 TTFB（Time to First Byte，首字节时间）”会出错。
 
 下表保留回调能证明的区间。`responseHeadersStart` 与 `responseHeadersEnd` 均指采集器收到回调的时刻：
 
@@ -641,12 +625,12 @@ TTFB（Time to First Byte）要的是“首字节到达”这个时刻。`EventL
 
 只有 TLS 事件可唯一配对且能证明属于同一 route 时，才计算或组合相关差值；本文采集器保留原始 TLS 事件，不自动完成这种归属。失败或歧义区间保持 `null` 与原因。
 
-HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → connectEnd` 已经含了 TLS，再当 TCP 握手用、再与 TLS 相加都会算错。直连 HTTPS 可把 `connectStart → secureConnectStart` 作为 TCP 近似；经过 HTTP proxy 时，这段还混着 CONNECT 隧道协商——代理先为客户端和 HTTPS 目标建立字节通道——所以只能叫 pre-TLS transport。
+HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → connectEnd` 已经含了 TLS，再当 TCP 握手用、再与 TLS 相加都会算错。直连 HTTPS 时，我们可把 `connectStart → secureConnectStart` 当作 TCP 近似；经过 HTTP proxy 时，这段还混着 CONNECT 隧道协商——代理先为客户端和 HTTPS 目标建立字节通道——所以只能叫 pre-TLS transport。
 
 <!-- gracker-diagram: ch17-08-13-connect-tls-overlap -->
 ![Transport connect 已包含 TLS](../../assets/diagrams/ch17/ch17-08-13-connect-tls-overlap.png)
 
-图：同一条 HTTPS route 的 transport 总区间包含 TLS，代理隧道还会影响 pre-TLS。 仅在事件可唯一配对且确属同一路由时计算；不能把 connect 与 TLS 重复相加。
+图：同一条 HTTPS route 的 transport 总区间包含 TLS，代理隧道还会影响 pre-TLS。 仅在事件可唯一配对且确属同一路由时计算；connect 与 TLS 别重复相加。
 
 `sendEnd` 有 body 时取 `requestBodyEnd`，无 body 时取 `requestHeadersEnd`。post-write response wait estimate 要满足三个条件：
 
@@ -656,28 +640,20 @@ HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → c
 
 条件不满足时，`post_write_response_wait_ms` 记 `null` 并写明缺失或交错原因；把负数取绝对值或强行归零，都会掩盖协议行为。条件满足时，我们拿到的也只是上述回调差值，把它当精确的“发完请求到响应首字节”还缺依据。
 
-<!-- gracker-diagram: ch17-08-14-header-wait-estimate -->
-![Header 等待差值的前提](../../assets/diagrams/ch17/ch17-08-14-header-wait-estimate.png)
 
-图：先验证版本、sendEnd 与事件交错，再保留可解释的 header 回调差值。 这不是精确 TTFB；负数不取绝对值、不强行归零。
+同一 exchange 可能先收到 `100 Continue` 或 `103 Early Hints`。这两个版本在内部跳过 `100` 和 `102..199` 后，才用最终响应调用一次 `responseHeadersEnd`；`101 Switching Protocols` 则保留为协议升级响应。所以示例里 `responseHeadersEnd` 只计数最终响应，`responseHeadersStart` 也不重标为最终响应起点。仅靠这些公开回调，临时响应数量与最终响应首字节时间都应留空；需要逐个 header block 时，要增加能观察该阶段的客户端探针并验证其版本行为。
 
-同一 exchange 可能先收到 `100 Continue` 或 `103 Early Hints`。这两个版本在内部跳过 `100` 和 `102..199` 后，才用最终响应调用一次 `responseHeadersEnd`；`101 Switching Protocols` 则保留为协议升级响应。因此示例不从 `responseHeadersEnd` 计数临时响应，也不把 `responseHeadersStart` 重标为最终响应起点。仅靠这些公开回调，临时响应数量与最终响应首字节时间都应留空；需要逐个 header block 时，要增加能观察该阶段的客户端探针并验证其版本行为。
 
-<!-- gracker-diagram: ch17-08-15-informational-response -->
-![临时响应与最终响应分开理解](../../assets/diagrams/ch17/ch17-08-15-informational-response.png)
-
-图：首次 header start 可对应临时响应，最终 header end 才带最终响应状态。 100及102至199由内部跳过，101升级保留；公开回调不能统计所有临时 block。
-
-“Server Wait”也不适合直接作为这些端侧差值的名称。写入、缓冲、网络 RTT（往返时延）、服务端排队与执行和 header 处理都可能包含其中。要拆出后端耗时，就要借助服务端自报的 `Server-Timing`（服务端通过响应 header 报告的耗时）、记录跨服务调用轨迹的分布式 trace，或服务端日志，并校验时钟与 request id。
+“Server Wait”这个名称也罩不住这些端侧差值：写入、缓冲、网络 RTT（往返时延）、服务端排队与执行和 header 处理都可能包含其中。要拆出后端耗时，就要借助服务端自报的 `Server-Timing`（服务端通过响应 header 报告的耗时）、记录跨服务调用轨迹的分布式 trace，或服务端日志，并校验时钟与 request id。
 
 排查回调触发位置时，可以用受控 HTTP/1.1 服务先发状态行和部分 header，暂不发结束空行；再测试完整 `103` 后延迟最终 `200`。前者能检查 `responseHeadersStart` 是否等待完整 header block，后者能检查 start 与 end 是否对应不同的响应。不要用只有单个 `200`、一次性写完 header 的样例验证 TTFB 语义。
 
-body 回调还要单独按内部 source 解释：正常读取时，首个 `read()` 返回后才触发 start；零长度或未读即关闭也可能补发 start。内部预读完成可以早于上层缓冲消费与业务处理结束。第 2.3 节所述 gzip 解压前计数、这里的回调时间窗与业务处理终点，需要分别命名，不能用同一个“下载完成”字段代替。
+body 回调还要单独按内部 source 解释：正常读取时，首个 `read()` 返回后才触发 start；零长度或未读即关闭也可能补发 start。内部预读完成可以早于上层缓冲消费与业务处理结束。第 2.3 节所述 gzip 解压前计数、这里的回调时间窗与业务处理终点，需要分别命名，一个“下载完成”字段盖不住三者。
 
 <!-- gracker-diagram: ch17-08-16-body-window -->
-![Body 完成不等于业务处理完成](../../assets/diagrams/ch17/ch17-08-16-body-window.png)
+![Body 完成与业务处理完成是两个边界](../../assets/diagrams/ch17/ch17-08-16-body-window.png)
 
-图：内部回调、上层消费与业务处理有不同完成边界。 正常读取时 start 在首个阻塞 read 返回后触发；零长度或未读关闭也可补发 start，回调差值不等于完整下载时间。
+图：内部回调、上层消费与业务处理有不同完成边界。 正常读取时 start 在首个阻塞 read 返回后触发；零长度或未读关闭也可补发 start，回调差值算不上完整下载时间。
 
 ### 3.3 空字段也是结论
 
@@ -689,18 +665,14 @@ body 回调还要单独按内部 source 解释：正常读取时，首个 `read(
 | `callEnd` 很晚或早于业务处理结束 | 内部 body 完成或关闭影响调用结束；缓冲可先读完数据 | 与 headers、业务消费完成和处理完成分别记录 |
 | DNS 为 0 ms | 客户端或系统缓存快速返回 | 保留 0；不要改为空 |
 
-<!-- gracker-diagram: ch17-08-17-null-zero -->
-![缺失、不适用与有效零值](../../assets/diagrams/ch17/ch17-08-17-null-zero.png)
 
-图：有观测的零时长、没有阶段和不适用是三种状态。 连接级统计不能复制给每个复用请求后相加；流式协议另建生命周期。
-
-另一类不适合套一次性 HTTP 下载模型的是持续流、WebSocket upgrade（把 HTTP 连接升级为 WebSocket） 和 duplex RPC（请求与响应可同时传输的远程调用），它们应改用 stream 生命周期、首消息、消息间隔、backpressure 和关闭原因这类字段。
+持续流、WebSocket upgrade（把 HTTP 连接升级为 WebSocket） 和 duplex RPC（请求与响应可同时传输的远程调用）是另一类：一次性 HTTP 下载模型套不上它们，应改用 stream 生命周期、首消息、消息间隔、backpressure 和关闭原因这类字段。
 
 ## 4. 弱网、重试与 follow-up 的识别
 
 弱网分析的要领是保留失败路径，并把重复事件区分开来，别都叫重试：
 
-- 多次 `connectStart` 表示多个 route attempt，可能来自地址回退，也可能来自类似 Happy Eyeballs 的 fast fallback（类似 Happy Eyeballs，错开启动且可能重叠的连接竞速）。
+- 多次 `connectStart` 表示多个 route attempt，可能来自地址回退，也可能来自 fast fallback（类似 Happy Eyeballs，错开启动且可能重叠的连接竞速）。
 - `connectFailed` 只说明该 route 失败；只要还有 route，整个 `Call` 可以继续。
 - `retryDecision(retry = true)` 是 OkHttp 5.3 及 5.4 连接故障恢复决定的直接依据。
 - `followUpDecision(nextRequest != null)` 表示即将处理重定向、401/407 鉴权、408 或 503 等 follow-up。
@@ -709,10 +681,6 @@ body 回调还要单独按内部 source 解释：正常读取时，首个 `read(
 
 同一域名的 IPv6 与 IPv4 地址可能被依次尝试，fast fallback（错开启动多条候选连接的竞速策略） 还可能让连接尝试重叠。route 配对要用 address、port、proxy 和事件参数去对，靠数组末项猜会配错；已有 API 定不下唯一配对时，上传原始顺序、`pairing_confidence = low（配对可信度低）` 和有限字段即可。
 
-<!-- gracker-diagram: ch17-08-18-route-retry-followup -->
-![连接候选、重试与后续请求](../../assets/diagrams/ch17/ch17-08-18-route-retry-followup.png)
-
-图：连接尝试、故障恢复决定与后续 HTTP 请求分别计数。 多个 connectStart 不等于多次 HTTP 重试，单个失败也不等于 Call 失败。
 
 看板至少分开展示：
 
@@ -724,10 +692,6 @@ body 回调还要单独按内部 source 解释：正常读取时，首个 `read(
 
 “只取最终 attempt 的 server wait”会丢掉连接复用、重定向和请求写入后重试等情况。最终 response 属于 exchange；route attempt 可能早已结束，当前 call 也可能没有发生建连。定位原因时，要用同一层级的事件。
 
-<!-- gracker-diagram: ch17-08-19-overhead-scopes -->
-![失败时间并集与最终 Exchange](../../assets/diagrams/ch17/ch17-08-19-overhead-scopes.png)
-
-图：失败 route 的时间并集与中间 HTTP exchange 开销分别统计，最终响应归到 exchange。 并发区间直接求和会重复计时，最终 Call 也可能没有新建连接。
 
 排查时我们按下面的顺序找线索：
 
@@ -736,16 +700,12 @@ body 回调还要单独按内部 source 解释：正常读取时，首个 `read(
 - post-write response wait estimate 高：先核对 header block 与缓冲语义，再结合 RTT 与服务端 trace 判断等待来自哪里。
 - body 回调区间长：结合具体计数层、吞吐、上层读取间隔和下行丢包判断；需要完整下载区间时另取明确边界。
 
-<!-- gracker-diagram: ch17-08-20-diagnostic-path -->
-![网络症状回到对应层的证据](../../assets/diagrams/ch17/ch17-08-20-diagnostic-path.png)
-
-图：先按解析、传输或 exchange 阶段定位，再与网络和服务端证据交叉验证。 端侧等待包含缓冲、网络和服务端，不能直接归因为服务端执行慢。
 
 ## 5. `HttpURLConnection` 与三方 SDK：在调用点插桩
 
 `java.net.URL` 与 `HttpURLConnection` 的 API 定义在 libcore（Android 的 Java 核心库实现）里，又在 boot classpath（系统启动时加载的核心 class 路径） 上，应用改不动它。我们让构建插件改写应用或依赖的 class 字节码，把这些 API 的调用导向采集桥接层。
 
-AGP 8.0 已移除旧 Transform API。本轮核对的 AGP 官方 API 与迁移路线仍通过通过 `androidComponents` 下的 Instrumentation API 与 `AsmClassVisitorFactory` 修改或检查字节码。下面的代码按每个 build variant（构建变体，例如 debug 或 release） 注册 ASM visitor：
+AGP 8.0 已移除旧 Transform API。本轮核对的 AGP 官方 API 与迁移路线仍通过 `androidComponents` 下的 Instrumentation API 与 `AsmClassVisitorFactory` 修改或检查字节码。下面的代码按每个 build variant（构建变体，例如 debug 或 release） 注册 ASM visitor：
 
 ```kotlin
 androidComponents {
@@ -765,10 +725,6 @@ androidComponents {
 
 ASM visitor 会逐条访问 class 中的方法指令；AGP 随后为受影响方法重算 stack map frame（JVM 验证字节码时使用的栈与局部变量类型信息）。默认用 `PROJECT`，只处理当前项目的 class。官方 API 限定库模块只能插桩本地项目类；应用与测试模块才可选择 `ALL`，把依赖类纳入范围。启用 `ALL` 时，通过 `isInstrumentable()` 的精确包名前缀排除 APM runtime（采集器运行时代码）、生成代码和不兼容依赖。
 
-<!-- gracker-diagram: ch17-08-21-instrumentation-build -->
-![AGP 在应用调用点重写字节码](../../assets/diagrams/ch17/ch17-08-21-instrumentation-build.png)
-
-图：AGP 按变体扫描可插桩类，ASM 重写调用并重算受影响方法的栈帧。 系统 boot classpath 中的 URL 类本身没有被应用插件修改。
 
 下面的 visitor 把实例调用替换成静态桥接调用。`URL` receiver（实例方法的接收对象） 原本在 operand stack（执行字节码时暂存操作数的栈） 上，替换后成为静态方法的第一个参数，因此无需额外插入 `DUP` 或局部变量。
 
@@ -821,10 +777,6 @@ override fun visitMethodInsn(
 
 桥接层可包装 `URLConnection`、input stream 与 output stream，记录公开 API 能证明的时刻和字节数。`connect()` 返回并不等价于“纯 TCP 完成”，`getInputStream()` 又可能同时触发建连、写请求和读 response header。`HttpURLConnection` 没有 OkHttp 那样的 DNS/TLS 回调，几个 Java 方法的时间点拼不出完整的协议阶段；需要 DNS、TLS 或重试细节时，只能结合实现可用的回调、受控 Native 观测或服务端 trace。
 
-<!-- gracker-diagram: ch17-08-23-public-url-boundary -->
-![公开 URLConnection 方法的计时能力](../../assets/diagrams/ch17/ch17-08-23-public-url-boundary.png)
-
-图：桥接层记录公开方法和流读写的边界，协议阶段只填有证据的字段。 getInputStream 可能混合建连、写请求与读头，不能拆出准确 DNS/TLS。
 
 依赖 class 能否被 `InstrumentationScope.ALL` 处理，还受打包形式、动态加载、混淆和插件版本影响。构建时要输出“扫描 class 数、命中调用点数、排除原因”，再用 fixture（固定输入的测试样例）覆盖 AAR/JAR（Android/Java 依赖包格式）、Proxy 重载、异常和 R8（Android 代码压缩与优化工具） 构建。
 
@@ -871,17 +823,13 @@ Native 兜底常见目标包括：
 2. `send/recv` 看不到 TCP 重传：重传发生在内核 TCP 栈，用户态 QUIC 的重传又属于协议库。socket 调用失败和“发生重传”是两回事。
 3. Cronet 常把 BoringSSL（Chromium 使用的 TLS 实现）与网络栈静态链接，Mars 或自研库也可能隐藏符号、内联调用或直接执行 syscall（系统调用）。这时 PLT Hook 对 `SSL_*` 或 libc wrapper（封装函数） 的覆盖率可能很低。
 
-<!-- gracker-diagram: ch17-08-25-plt-coverage -->
-![动态符号调用才经过 PLT Hook](../../assets/diagrams/ch17/ch17-08-25-plt-coverage.png)
-
-图：PLT/GOT 只覆盖经过对应动态入口的调用，观察层决定字节含义。 静态链接、隐藏、内联或直接 syscall 可绕过；send/recv 不提供 TCP 重传数。
 
 Bionic（Android 的 C 标准库）的 `socket()` 仍通过 `NetdClientDispatch` 分派，dynamic linker（动态链接器） 负责 ELF 装载与符号解析。这个源码事实只说明存在潜在调用路径，离“所有网络请求都能 Hook 到”还差得远。Hook 实现还要处理线程局部的递归调用保护、原始函数解析、`errno` 保存恢复、fork（从当前进程创建子进程） 与动态加载、ABI（Application Binary Interface，应用二进制接口） 和 16 KiB page size（内存页大小） 兼容，并在故障时自动关闭采集。
 
 <!-- gracker-diagram: ch17-08-26-hook-guard -->
 ![Native 代理的故障隔离](../../assets/diagrams/ch17/ch17-08-26-hook-guard.png)
 
-图：Native 代理需要递归保护、原函数调用与错误状态保护，并在异常时关闭采集。 源码中存在分派路径不等于全覆盖，ABI 与16KiB页兼容需在目标产物和设备验证。
+图：Native 代理需要递归保护、原函数调用与错误状态保护，并在异常时关闭采集。 源码里存在分派路径，还证明不了全覆盖；ABI 与16KiB页兼容需在目标产物和设备验证。
 
 只要网络库提供稳定回调，就优先接回调；PLT Hook 更适合当作覆盖范围已验证、先向少量设备开放并随时可撤回的后备观测，补回调盖不到的部分。
 
@@ -894,19 +842,15 @@ eBPF（extended Berkeley Packet Filter）允许受验证的小程序在内核事
 - root（取得系统最高权限）/工程机上的诊断工具。
 - CI（持续集成） 实验室或线下复现环境。
 
-<!-- gracker-diagram: ch17-08-27-bpf-capability -->
-![BPF 加载与附着需要系统权限](../../assets/diagrams/ch17/ch17-08-27-bpf-capability.png)
 
-图：BPF loader、capability、SELinux 与对象访问共同决定能否加载和使用探针。 设备管理或用户授权本身不授予这些权限；普通三方 App 不能照搬系统方案。
-
-在这些环境中，先按实际设备的内核、配置和可用探针核对支持范围；本文以 `android17-6.18-2026-06_r6` 为源码锚点，并不表示所有 Android 17 设备都运行 6.18。可借 BPF、tracepoint（内核跟踪点）或 socket 统计观察 UID 流量、TCP RTT、重传和连接错误。但它看到的仍是密文与字节数：URL、header、HTTP/2 stream 或 QUIC stream 都恢复不出来，UID 字节数也没法直接分摊到单个业务请求上。
+在这些环境中，先按实际设备的内核、配置和可用探针核对支持范围：本文以 `android17-6.18-2026-06_r6` 为源码锚点，它只代表这一条内核线，设备实际运行的内核未必是 6.18。可借 BPF、tracepoint（内核跟踪点）或 socket 统计观察 UID 流量、TCP RTT、重传和连接错误。但它看到的仍是密文与字节数：URL、header、HTTP/2 stream 或 QUIC stream 都恢复不出来，UID 字节数也没法直接摊到单个业务请求上。
 
 内核 TCP 重传指标盖不住用户态 QUIC 的协议重传。分析 HTTP/3 时，优先用 Cronet/QUIC 栈暴露的 NetLog（Chromium 网络事件日志）或 metrics，再拿内核 UDP/socket 事件补连接级的线索。
 
 <!-- gracker-diagram: ch17-08-28-tcp-quic-boundary -->
 ![内核 TCP 与用户态 QUIC 的边界](../../assets/diagrams/ch17/ch17-08-28-tcp-quic-boundary.png)
 
-图：TCP 重传来自内核 TCP 栈，QUIC 协议重传要由用户态协议库提供。 加密和多路复用下，UID/socket 字节不能直接恢复或均摊单个 HTTP 请求。
+图：TCP 重传来自内核 TCP 栈，QUIC 协议重传要由用户态协议库提供。 加密和多路复用下，UID/socket 字节没法直接恢复或均摊单个 HTTP 请求。
 
 ## 7. 隐私与安全：原始数据不要进入样本
 
@@ -920,17 +864,13 @@ eBPF（extended Berkeley Packet Filter）允许受验证的小程序在内核事
 - Query（URL 中 `?` 后的参数），value 默认全部丢弃；key 也可能带业务含义，只保留允许清单中的名称。
 - Fragment（URL 中 `#` 后的片段） 本就不发给 HTTP 服务端，APM 也不采集。
 
-<!-- gracker-diagram: ch17-08-29-url-privacy -->
-![URL 在进入样本之前归一化](../../assets/diagrams/ch17/ch17-08-29-url-privacy.png)
-
-图：先匹配受控路由模板，再将允许的维度写入样本。 未知 path 不保留原文，query 默认丢值，fragment 不采集。
 
 ### 7.2 Header
 
 - 默认允许清单可包含 `content-type`、受控的 `content-length` 与专用 trace id。
 - `authorization`、`proxy-authorization`、`cookie`、`set-cookie`、设备 id、用户 id 和位置字段直接丢弃。
 - trace id 也能跨事件关联用户，应设置用途、保留期和访问权限。
-- 不通过中间人证书或绕过 certificate pinning（证书锁定）来获取内容；APM 不能降低原有传输安全。
+- 不通过中间人证书或绕过 certificate pinning（证书锁定）来获取内容；APM 要维持原有的传输安全。
 
 ### 7.3 Body 与文件
 
@@ -943,19 +883,11 @@ eBPF（extended Berkeley Packet Filter）允许受验证的小程序在内核事
 
 满足这些条件后才可以截取 body。对未知文本、二进制、multipart（一个 body 中容纳多个部分的格式） 和文件上传，只记录类型、长度区间和成功/失败；文件名与本地路径留在样本之外。
 
-<!-- gracker-diagram: ch17-08-30-content-gate -->
-![Header 与 Body 内容的准入流程](../../assets/diagrams/ch17/ch17-08-30-content-gate.png)
-
-图：默认不采内容；确需诊断时先按端点和结构清除敏感字段，再限制体积与用途。 截前N字节不等于脱敏，未知文本、文件名和本地路径不进入样本。
 
 ### 7.4 标识符与删除
 
 普通 hash 只是可关联的假名：手机号或邮箱的可能取值有限，攻击者仍可枚举原文并比对结果。优先不采用户标识；确需关联时，改用服务端管理、定期轮换的 HMAC key（计算带密钥摘要所用的密钥），并把用途限制在约定窗口内。request sample 与身份映射放进相互隔离的存储系统，支持按用户删除、到期清理、按法规要求限定数据存储地区和权限审计。
 
-<!-- gracker-diagram: ch17-08-31-identifier-lifecycle -->
-![可关联标识的保留与删除](../../assets/diagrams/ch17/ch17-08-31-identifier-lifecycle.png)
-
-图：优先不采身份标识，必要的关联使用受控密钥与有限窗口，并支持删除。 普通 hash 可被枚举；request id 和 HMAC 结果仍需用途及访问限制。
 
 ## 8. 开销控制与自监控
 
@@ -972,16 +904,12 @@ EventListener 回调在请求的关键路径上，我们要给采集器定性能
 
 对象池不一定比小型 DTO（Data Transfer Object，只承载字段的数据对象） 更省：池本身会带来锁、生命周期和残留数据风险，先用基准测试证明对象分配真是瓶颈再上池。采集器至少自报 callback p50/p95/p99（第 50、95、99 百分位回调耗时），以及分配量、队列深度、丢弃率和上报字节。超出预算时依次停 body 采集、降成功样本率、再降失败样本率，让诊断价值更高的失败样本留得更久。
 
-<!-- gracker-diagram: ch17-08-32-collection-budget -->
-![关键路径预算与后台处理](../../assets/diagrams/ch17/ch17-08-32-collection-budget.png)
-
-图：回调只做有限记录，队列和上报在容量及流量预算内退让。 对象池需先测收益，满队列不能阻塞请求，上报流量要排除递归采集。
 
 ## 9. HTTP/3 / QUIC 的字段要显式区分
 
 QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，支持连接复用、0-RTT 和连接迁移——0-RTT 指恢复既有连接时不等完整往返就先发送早期数据。把 TCP 字段原样搬过来填 0，等于把“不适用”伪装成“瞬间完成”。
 
-推荐保留协议无关的上层字段，同时补充传输语义：
+我们的做法是保留协议无关的上层字段，同时补充传输语义：
 
 | 字段 | TCP + TLS | QUIC |
 | --- | --- | --- |
@@ -995,14 +923,10 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，支持连接复用、0-
 
 0-RTT 下请求发送可能早于握手确认，各阶段也就不再严格按“前一个结束、下一个才开始”的顺序发生。`connectEnd - connectStart` 仍可作为库定义的 transport 区间，只是别强行把它放到 sending 之前。跨 HTTP/2 与 HTTP/3 比较时，优先看定义一致的请求耗时、成功率和吞吐，再按 transport 分组看连接指标。TTFB 只在有首字节观测依据时比较，OkHttp 的 header 回调差值单列。
 
-<!-- gracker-diagram: ch17-08-33-quic-overlap -->
-![QUIC 0-RTT 不遵循串行阶段相加](../../assets/diagrams/ch17/ch17-08-33-quic-overlap.png)
-
-图：QUIC 发送可早于握手确认，SSL 与 connect 还可能描述同一区间。 TCP 字段不适用时留 null，不能填零或把重叠阶段相加。
 
 ## 10. 一套可维护的接入顺序
 
-工程接入可按覆盖率与风险逐步推进：
+工程接入上，我们按覆盖率与风险逐步推进：
 
 1. 在统一 OkHttp client 上接应用拦截器、网络拦截器和 per-call `EventListener.Factory`。
 2. 建立 call、DNS、route、exchange 四条时间线，先在线下验证缓存、连接复用、重定向、401、失败恢复、`Expect: 100-continue` 和 duplex。
@@ -1015,10 +939,6 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，支持连接复用、0-
 
 扩展到 WebView、gRPC（基于 RPC 与 HTTP/2 等协议的调用框架） 或自研 RPC 时，不必把它们伪装成 OkHttp：各客户端先保留原生事件，再映射到共有的 call、route 和 exchange 概念；对不齐的阶段用 `metric_source` 和 `timestamp_semantics` 明示差异。
 
-<!-- gracker-diagram: ch17-08-34-integration-validation -->
-![接入顺序与字段验收](../../assets/diagrams/ch17/ch17-08-34-integration-validation.png)
-
-图：先验证主客户端模型，再补覆盖缺口，每种客户端保留原生来源与语义。 设备权限、协议和版本影响覆盖；证据不足的字段为空并记录原因。
 
 ## 11. 源码锚点与参考资料
 
