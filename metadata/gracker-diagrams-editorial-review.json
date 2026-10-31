@@ -33701,9 +33701,581 @@
       "before_count": 43,
       "before_all_images": 43,
       "sha256_before": "98cc562804c7d61d9110ffc947dcff8995de04f95c52d52d52e92ed4522194e0",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 15,
+      "decisions": [
+        {
+          "original_id": "ch14-02-01-analysis-order",
+          "title": "先确认记录，再解释原因",
+          "decision": "remove",
+          "reason": "六框逐格复述123–128六步读图清单，正文按步骤完整保留，删清单图副本。",
+          "original_line": 130,
+          "heading": "### 一轮分析的读图顺序"
+        },
+        {
+          "original_id": "ch14-02-02-load-backends",
+          "title": "文件加载与分析后端",
+          "decision": "remove",
+          "reason": "三组加载卡逐项复述141–143两段完整加载/合并/后端说明，14.1已完整展开实际后端内存边界，本篇不再做同内容入口卡。",
+          "original_line": 145,
+          "heading": "#### 加载方式与大文件"
+        },
+        {
+          "original_id": "ch14-02-03-area-dimensions",
+          "title": "选区同时包含时间和轨道",
+          "decision": "remove",
+          "reason": "时间/轨道/复现三分支逐项重述165一段完整AreaSelection语义，快捷键表154–163全留，无额外窗口或集合示例，删摘要。",
+          "original_line": 167,
+          "heading": "#### 时间轴、选择与详情抽屉"
+        },
+        {
+          "original_id": "ch14-02-04-visibility-controls",
+          "title": "查找、过滤与固定显示",
+          "decision": "remove",
+          "reason": "三组Finder/Filter/Pin逐项复制176–180三清单和示例，原文Pin不改时间对齐全留，删UI功能目录卡。",
+          "original_line": 182,
+          "heading": "#### 找轨道、过滤和 Pin"
+        },
+        {
+          "original_id": "ch14-02-05-sql-debug-tracks",
+          "title": "查询结果返回时间轴",
+          "decision": "keep",
+          "reason": "Omnibox SQL→结果列语义→Slice/Counter映射→DebugTrack实际回时间轴的操作链独立，列名可映射/非空纳秒语义全留。",
+          "original_line": 189,
+          "heading": "#### 找轨道、过滤和 Pin"
+        },
+        {
+          "original_id": "ch14-02-06-cpu-three-tracks",
+          "title": "CPU 调度、频率和空闲分别解读",
+          "decision": "remove",
+          "reason": "CPU调度/频率/idle三组六卡逐项重述198–202三完整段，真实放置/优先级/资格边界正文更全，9/10/15实际时间关系图保留。",
+          "original_line": 204,
+          "heading": "#### CPU Scheduling、Frequency 与 Idle"
+        },
+        {
+          "original_id": "ch14-02-07-slice-thread-state",
+          "title": "命名区间与调度状态可以重叠",
+          "decision": "remove",
+          "reason": "单Slice覆盖Running/Sleep/Running轨道重复保留10三种时长图的逻辑区间与CPU状态关系，9另保留真实Running求交，删简化副本。",
+          "original_line": 218,
+          "heading": "#### 进程、线程、Slice 与线程状态"
+        },
+        {
+          "original_id": "ch14-02-08-counter-evidence",
+          "title": "Counter 上升还需解释来源",
+          "decision": "remove",
+          "reason": "Counter四框逐项复述227–229样本/来源单位/窗口/内存解释两段，没有额外离散样本或比较结果，删概念摘要。",
+          "original_line": 231,
+          "heading": "#### Counter Track"
+        },
+        {
+          "original_id": "ch14-02-09-running-intersection",
+          "title": "CPU 估计使用半开区间求交",
+          "decision": "keep",
+          "reason": "目标半开窗口与两段Running实际交集的三轨示意，直观显示窗口外运行被裁掉，不与self墙钟剩余同义，保留。",
+          "original_line": 248,
+          "heading": "#### Thread Duration / CPU 时间"
+        },
+        {
+          "original_id": "ch14-02-10-three-durations",
+          "title": "墙上、线程和自身墙上时间",
+          "decision": "keep",
+          "reason": "父区间/直接子/self剩余/CPU状态四轨体现self墙上与线程CPU不同，保留正确嵌套和直接子求和非任意并集约束。",
+          "original_line": 257,
+          "heading": "#### Self Duration"
+        },
+        {
+          "original_id": "ch14-02-11-state-layering",
+          "title": "内核、SQL 与 UI 配色的分层",
+          "decision": "remove",
+          "reason": "内核→TP→详情→配色四框逐项复述288完整分层段及290–298状态表/色彩说明，原文状态字段全留，删颜色词典副本。",
+          "original_line": 300,
+          "heading": "#### 从内核状态到 UI 颜色"
+        },
+        {
+          "original_id": "ch14-02-12-d-state-evidence",
+          "title": "D 状态的原因需要具体证据",
+          "decision": "keep",
+          "reason": "D条件分到blockedfunction/I/O证据/缺失未知三个真实解释边界，不将不可中断睡眠等磁盘慢，保留。",
+          "original_line": 311,
+          "heading": "#### D 状态的常见来源"
+        },
+        {
+          "original_id": "ch14-02-13-lock-owner-chain",
+          "title": "锁竞争要回到持锁线程",
+          "decision": "keep",
+          "reason": "等待者锁证据→真实owner→持锁期间再等待依赖→目标窗口影响跨线程责任链独立，保留避免只看红色。",
+          "original_line": 322,
+          "heading": "#### 红色锁竞争标记的来源"
+        },
+        {
+          "original_id": "ch14-02-14-priority-inversion",
+          "title": "中等优先级工作放大锁等待的路径",
+          "decision": "keep",
+          "reason": "高优先级等同锁、低优先级持锁被其他工作延迟再解锁三轨具体放大路径，保留中等抢占者非所有反转必备条件。",
+          "original_line": 334,
+          "heading": "#### 红色锁竞争标记的来源"
+        },
+        {
+          "original_id": "ch14-02-15-wake-to-running",
+          "title": "唤醒不等于立即执行",
+          "decision": "keep",
+          "reason": "Sleeping→Runnable→Running实际状态轨及wakeup后排队区间，保留waker非业务原点/跨CPU事件位置边界。",
+          "original_line": 345,
+          "heading": "#### Waker 与唤醒路径"
+        },
+        {
+          "original_id": "ch14-02-16-flow-semantics",
+          "title": "Flow 表达显式关联",
+          "decision": "remove",
+          "reason": "四框显式关联链逐项复述352一段Flow定义与356图注，无具体端点例；新帧身份/同步合图保留Flow不证明阻塞或唯一因果边界。",
+          "original_line": 354,
+          "heading": "### Flow Events 与跨进程关联"
+        },
+        {
+          "original_id": "ch14-02-17-binder-roundtrip",
+          "title": "同步 Binder 的等待分段",
+          "decision": "keep",
+          "reason": "客户端同步等待/服务端排队处理/reply唤醒后调度三轨区分墙钟组成，保留oneway无同步reply及嵌套分叉。",
+          "original_line": 365,
+          "heading": "#### Binder transaction"
+        },
+        {
+          "original_id": "ch14-02-18-frame-token-flow",
+          "title": "帧消费关系与同步信息分开核对",
+          "decision": "merge",
+          "reason": "原图“帧消费关系与同步信息分开核对”并入：合并App/displayframe消费关系和独立Surface覆盖缺口，展示宿主token不能直接映射外部producer，Flow也不是fence。；锚点原图22，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 383,
+          "heading": "#### FrameTimeline Flow",
+          "replacement_id": "ed14-02-frame-identities-and-independent-surfaces"
+        },
+        {
+          "original_id": "ch14-02-19-expected-actual",
+          "title": "Expected 与 Actual 的端点不同",
+          "decision": "keep",
+          "reason": "Expected/AppActual/SFActual三轨具体比较端点，App终点max GPUdone/post与SF非光学边界独立，保留。",
+          "original_line": 394,
+          "heading": "### FrameTimeline：从异常帧进入"
+        },
+        {
+          "original_id": "ch14-02-20-frame-fields",
+          "title": "先记录帧字段，再解释颜色",
+          "decision": "remove",
+          "reason": "帧字段三组六卡逐项摘录401–407七项详情清单，颜色表与426具体stuffing定义全保留，删UI字段词典。",
+          "original_line": 413,
+          "heading": "#### FrameTimeline 的颜色"
+        },
+        {
+          "original_id": "ch14-02-21-stuffing-deadline",
+          "title": "队列积压与 deadline 归因分别解释",
+          "decision": "keep",
+          "reason": "连续生产积压、deadline判断和实际帧率/输入延迟三种独立维度对照，保留Android17stuffing与deadline分类分开。",
+          "original_line": 428,
+          "heading": "#### FrameTimeline 的颜色"
+        },
+        {
+          "original_id": "ch14-02-22-surface-coverage",
+          "title": "宿主帧不能代替独立 Surface 证据",
+          "decision": "merge",
+          "reason": "原图“宿主帧不能代替独立 Surface 证据”并入：合并App/displayframe消费关系和独立Surface覆盖缺口，展示宿主token不能直接映射外部producer，Flow也不是fence。；锚点原图22，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 435,
+          "heading": "#### FrameTimeline 的颜色",
+          "replacement_id": "ed14-02-frame-identities-and-independent-surfaces"
+        },
+        {
+          "original_id": "ch14-02-23-sf-loop",
+          "title": "Android 17 SurfaceFlinger 帧循环",
+          "decision": "merge",
+          "reason": "原图“Android 17 SurfaceFlinger 帧循环”并入：合并Android17SF主循环与composite长的多分支归因，将函数关系和实际trace/RE/HWC证据分开。；锚点原图24，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 444,
+          "heading": "### Android 17 SurfaceFlinger 轨道",
+          "replacement_id": "ed14-02-sf-frame-loop-and-composition-evidence"
+        },
+        {
+          "original_id": "ch14-02-24-composition-evidence",
+          "title": "composite 长的归因分支",
+          "decision": "merge",
+          "reason": "原图“composite 长的归因分支”并入：合并Android17SF主循环与composite长的多分支归因，将函数关系和实际trace/RE/HWC证据分开。；锚点原图24，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 460,
+          "heading": "### Android 17 SurfaceFlinger 轨道",
+          "replacement_id": "ed14-02-sf-frame-loop-and-composition-evidence"
+        },
+        {
+          "original_id": "ch14-02-25-logs-clock",
+          "title": "日志与事件缺失先检查采集",
+          "decision": "remove",
+          "reason": "四框逐项复述467–469两段数据源/clockmapping说明，实际来源与时钟要求全留，删除通用检查流程副本。",
+          "original_line": 471,
+          "heading": "### 日志与原始事件"
+        },
+        {
+          "original_id": "ch14-02-26-tool-scope",
+          "title": "System Trace、方法跟踪和采样各有用途",
+          "decision": "remove",
+          "reason": "三组工具卡逐项复制480–485完整工具对照表，原文SystemTrace系统级与方法/采样差别更全，删表格重排版。",
+          "original_line": 489,
+          "heading": "### 与 Android Studio Profiler 的关系"
+        },
+        {
+          "original_id": "ch14-02-27-jank-workflow",
+          "title": "一轮掉帧分析的依赖链",
+          "decision": "remove",
+          "reason": "六框逐项摘录498–505八步掉帧清单，原步骤全部保留，9/10/14/15/17及新SF图给独立时间/依赖关系，不再画工作顺序。",
+          "original_line": 509,
+          "heading": "### 一轮掉帧分析怎么走"
+        },
+        {
+          "original_id": "ch14-02-28-state-capability",
+          "title": "同名能力要检查生产与解析两端",
+          "decision": "merge",
+          "reason": "原图“同名能力要检查生产与解析两端”并入：合并版本三线、语言入口、三种采用路径和backendABI边界，保留主机验证不能推Androidsystembackend成功。；锚点原图41，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 539,
+          "heading": "### 三条版本线",
+          "replacement_id": "ed14-02-versioned-state-adoption-and-backends"
+        },
+        {
+          "original_id": "ch14-02-29-version-lines",
+          "title": "平台、SDK 与分析器分别记录版本",
+          "decision": "merge",
+          "reason": "原图“平台、SDK 与分析器分别记录版本”并入：合并版本三线、语言入口、三种采用路径和backendABI边界，保留主机验证不能推Androidsystembackend成功。；锚点原图41，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 551,
+          "heading": "### 三条版本线",
+          "replacement_id": "ed14-02-versioned-state-adoption-and-backends"
+        },
+        {
+          "original_id": "ch14-02-30-data-model-choice",
+          "title": "Slice、Counter 与 State 的选择",
+          "decision": "merge",
+          "reason": "原图“Slice、Counter 与 State 的选择”并入：合并单值模型、wire编码、C++写入与StateTracker三分支，突出显式空串仍是值、nullptr才清空。；锚点原图34，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 570,
+          "heading": "#### Slice、counter 和 state 各自回答什么",
+          "replacement_id": "ed14-02-state-encoding-and-update-branches"
+        },
+        {
+          "original_id": "ch14-02-31-single-state",
+          "title": "状态转换与 idle 的记录范围",
+          "decision": "merge",
+          "reason": "原图“状态转换与 idle 的记录范围”并入：合并单值模型、wire编码、C++写入与StateTracker三分支，突出显式空串仍是值、nullptr才清空。；锚点原图34，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 577,
+          "heading": "#### Slice、counter 和 state 各自回答什么",
+          "replacement_id": "ed14-02-state-encoding-and-update-branches"
+        },
+        {
+          "original_id": "ch14-02-32-wire-encoding",
+          "title": "StateDescriptor 与事件名编码",
+          "decision": "merge",
+          "reason": "原图“StateDescriptor 与事件名编码”并入：合并单值模型、wire编码、C++写入与StateTracker三分支，突出显式空串仍是值、nullptr才清空。；锚点原图34，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 590,
+          "heading": "#### v57.1 在 trace 二进制格式中增加了什么",
+          "replacement_id": "ed14-02-state-encoding-and-update-branches"
+        },
+        {
+          "original_id": "ch14-02-33-state-tracker",
+          "title": "StateTracker 如何维护区间",
+          "decision": "merge",
+          "reason": "原图“StateTracker 如何维护区间”并入：合并单值模型、wire编码、C++写入与StateTracker三分支，突出显式空串仍是值、nullptr才清空。；锚点原图34，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 621,
+          "heading": "#### Trace Processor 如何形成持续时间",
+          "replacement_id": "ed14-02-state-encoding-and-update-branches"
+        },
+        {
+          "original_id": "ch14-02-34-cpp-emission",
+          "title": "C++ 状态写入与身份复用",
+          "decision": "merge",
+          "reason": "原图“C++ 状态写入与身份复用”并入：合并单值模型、wire编码、C++写入与StateTracker三分支，突出显式空串仍是值、nullptr才清空。；锚点原图34，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 642,
+          "heading": "#### C++ SDK",
+          "replacement_id": "ed14-02-state-encoding-and-update-branches"
+        },
+        {
+          "original_id": "ch14-02-35-language-version",
+          "title": "C++、C 与 Java 的发布版本差异",
+          "decision": "merge",
+          "reason": "原图“C++、C 与 Java 的发布版本差异”并入：合并版本三线、语言入口、三种采用路径和backendABI边界，保留主机验证不能推Androidsystembackend成功。；锚点原图41，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 668,
+          "heading": "#### Android Java SDK 的 release tag 差异",
+          "replacement_id": "ed14-02-versioned-state-adoption-and-backends"
+        },
+        {
+          "original_id": "ch14-02-36-state-schema",
+          "title": "state 表状结果与轨道身份",
+          "decision": "merge",
+          "reason": "原图“state 表状结果与轨道身份”并入：合并state表schema/唯一身份/开放行裁剪/占比分母，防止名称混实例、开放时长当真实终点或空白全补idle。；锚点原图38，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 685,
+          "heading": "#### 先确认分析器版本和表结构",
+          "replacement_id": "ed14-02-state-window-and-denominator"
+        },
+        {
+          "original_id": "ch14-02-37-state-window",
+          "title": "开放状态与观测窗口裁剪",
+          "decision": "merge",
+          "reason": "原图“开放状态与观测窗口裁剪”并入：合并state表schema/唯一身份/开放行裁剪/占比分母，防止名称混实例、开放时长当真实终点或空白全补idle。；锚点原图38，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 725,
+          "heading": "#### 查询转换与已观测时长",
+          "replacement_id": "ed14-02-state-window-and-denominator"
+        },
+        {
+          "original_id": "ch14-02-38-state-denominator",
+          "title": "状态占比的分母选择",
+          "decision": "merge",
+          "reason": "原图“状态占比的分母选择”并入：合并state表schema/唯一身份/开放行裁剪/占比分母，防止名称混实例、开放时长当真实终点或空白全补idle。；锚点原图38，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 765,
+          "heading": "#### 汇总各状态占比",
+          "replacement_id": "ed14-02-state-window-and-denominator"
+        },
+        {
+          "original_id": "ch14-02-39-adoption-options",
+          "title": "采用新能力的三条路径",
+          "decision": "merge",
+          "reason": "原图“采用新能力的三条路径”并入：合并版本三线、语言入口、三种采用路径和backendABI边界，保留主机验证不能推Androidsystembackend成功。；锚点原图41，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 772,
+          "heading": "### 在 Android 17 上采用 v57 能力",
+          "replacement_id": "ed14-02-versioned-state-adoption-and-backends"
+        },
+        {
+          "original_id": "ch14-02-40-backend-boundary",
+          "title": "in-process 与 system backend 的验证边界",
+          "decision": "merge",
+          "reason": "原图“in-process 与 system backend 的验证边界”并入：合并版本三线、语言入口、三种采用路径和backendABI边界，保留主机验证不能推Androidsystembackend成功。；锚点原图41，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 801,
+          "heading": "#### 路径二：应用携带新版 SDK 生产 state track",
+          "replacement_id": "ed14-02-versioned-state-adoption-and-backends"
+        },
+        {
+          "original_id": "ch14-02-41-compat-expression",
+          "title": "旧平台上的兼容状态表达",
+          "decision": "merge",
+          "reason": "原图“旧平台上的兼容状态表达”并入：合并版本三线、语言入口、三种采用路径和backendABI边界，保留主机验证不能推Androidsystembackend成功。；锚点原图41，固定对象/版本/观测窗口和代码验证范围保留，详见合图图注。",
+          "original_line": 817,
+          "heading": "#### 路径三：维持 Android 17 平台兼容",
+          "replacement_id": "ed14-02-versioned-state-adoption-and-backends"
+        },
+        {
+          "original_id": "ch14-02-42-other-version-changes",
+          "title": "其他 v57 变化也要按语义解释",
+          "decision": "remove",
+          "reason": "日志/JSON/关联ID三组六卡逐项摘录824–832九条完整版本变化，原文JSON嵌套和overflow/correlation非方向限定全留，删版本目录卡。",
+          "original_line": 834,
+          "heading": "### v57 系列的其他变化"
+        },
+        {
+          "original_id": "ch14-02-43-review-gates",
+          "title": "状态轨道评审的验证顺序",
+          "decision": "remove",
+          "reason": "四框逐项摘录843–851九项勾选评审清单，实际SDK/后端/窗口三合图已给机制，删清单流程副本。",
+          "original_line": 853,
+          "heading": "### 评审清单"
+        }
+      ],
+      "sha256_after": "d4f8d6960fedf2dbfab6895a13e92bec1c6ae299cf411fd0f3f555c3820f4653",
+      "new_diagrams": [
+        {
+          "id": "ed14-02-frame-identities-and-independent-surfaces",
+          "title": "先识别目标 Surface，再分帧关联与资源同步两路证据",
+          "article": "src/part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-02-frame-identities-and-independent-surfaces.svg",
+            "src/assets/diagrams/ch14/ed14-02-frame-identities-and-independent-surfaces.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-02-frame-identities-and-independent-surfaces",
+          "sources": [
+            "https://perfetto.dev/docs/data-sources/frametimeline"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-02-18-frame-token-flow",
+              "ch14-02-22-surface-coverage"
+            ],
+            "boundary": "FrameTimeline按surfaceframe token关联AppActual与SFdisplayframe，displayframe可含多Appframe；它是消费关系不是同步信号，token非BQframenumber。独立SurfaceView/Camera/video/game/嵌入Producer需自己的Surface/layer/buffer/queue身份，官方FrameTimeline不完整覆盖下不能以宿主token代替。Flow只声明端点相关，不证明同步阻塞/唯一因果/完整链。acquire/present/release fences分别给可读/呈现/复用同步，API返回与显示光学另界。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a136/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-02-sf-frame-loop-and-composition-evidence",
+          "title": "先按帧循环分阶段，再验证 GPU 合成候选",
+          "article": "src/part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-02-sf-frame-loop-and-composition-evidence.svg",
+            "src/assets/diagrams/ch14/ed14-02-sf-frame-loop-and-composition-evidence.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-02-sf-frame-loop-and-composition-evidence",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-02-23-sf-loop",
+              "ch14-02-24-composition-evidence"
+            ],
+            "boundary": "Android17ScheduleronFrameSignal先compositor.commit处理事务/layer准备，满足条件才composite，再CompositionEngineOutputpresent及presentFrameAndReleaseLayers。源码不保证每个函数有同名slice，12/12L旧onMessage入口不能机械套新版本。composite长可能事务/准备/latch、RenderEngineGPU、HWCvalidate/present或显示提交等；GPUClient需drawLayers/RE、compositiontype、layer特征及fence共同支持。条件不满足时不执行composite，不把长composite当自动CLIENT。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a136/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-02-versioned-state-adoption-and-backends",
+          "title": "分析器升级、原生 State 与平台兼容表达走不同验证路径",
+          "article": "src/part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-02-versioned-state-adoption-and-backends.svg",
+            "src/assets/diagrams/ch14/ed14-02-versioned-state-adoption-and-backends.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-02-versioned-state-adoption-and-backends",
+          "sources": [
+            "https://github.com/google/perfetto/releases/tag/v57.1",
+            "https://github.com/google/perfetto/releases/tag/v58.2",
+            "https://github.com/google/perfetto/blob/v57.2/protos/perfetto/trace/track_event/track_event.proto",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/CHANGELOG",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/track_event/track_event.proto",
+            "https://github.com/google/perfetto/blob/v57.2/include/perfetto/tracing/track_event.h",
+            "https://github.com/google/perfetto/blob/v58.2/include/perfetto/public/te_macros.h",
+            "https://github.com/google/perfetto/blob/v58.2/src/android_sdk/java/main/dev/perfetto/sdk/PerfettoTrace.java",
+            "https://github.com/google/perfetto/blob/v57.2/include/perfetto/public/te_macros.h",
+            "https://perfetto.dev/docs/instrumentation/tracing-sdk",
+            "https://perfetto.dev/docs/concepts/service-model",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/perfetto.rc",
+            "https://perfetto.dev/docs/instrumentation/track-events"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-02-28-state-capability",
+              "ch14-02-29-version-lines",
+              "ch14-02-35-language-version",
+              "ch14-02-39-adoption-options",
+              "ch14-02-40-backend-boundary",
+              "ch14-02-41-compat-expression"
+            ],
+            "boundary": "固定Android17platformv54+补丁proto无TYPE_STATE，v57.1引入state/v57.2沿用，本文历史v57.2与复核v58.2不混最新。仅升级TP/UI能新解析/SQL但不能生成旧Producer没录的state；新版SDKstate按实际语言release/artifact编译。原文v57.2C++nullptr主机inprocess验证，v57.2C/Java高层缺口，v58.2C11片段编译/Java仅tag源码不等项目Android构建。Systembackend需目标镜像注册/socket/SELinux/buffer/stats，PerfettoIPCprotobuf-overUnixsocket与SMB按ABI维护，非Binder/AIDL或泛称SDK编译ABI。旧表达slice/counter/instant维护转换字典/区间并标注，不冒充state表。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a136/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-02-state-encoding-and-update-branches",
+          "title": "同一 StateTrack 按不同值、同值与省略名三路更新",
+          "article": "src/part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-02-state-encoding-and-update-branches.svg",
+            "src/assets/diagrams/ch14/ed14-02-state-encoding-and-update-branches.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-02-state-encoding-and-update-branches",
+          "sources": [
+            "https://github.com/google/perfetto/blob/v57.2/protos/perfetto/trace/track_event/track_event.proto",
+            "https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/common/state_tracker.cc",
+            "https://perfetto.dev/docs/instrumentation/track-events",
+            "https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/proto/track_event_event_importer.h",
+            "https://github.com/google/perfetto/blob/v57.2/protos/perfetto/trace/track_event/track_descriptor.proto",
+            "https://github.com/google/perfetto/blob/v57.2/include/perfetto/tracing/track_event.h",
+            "https://github.com/google/perfetto/blob/v57.2/include/perfetto/tracing/track.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-02-30-data-model-choice",
+              "ch14-02-31-single-state",
+              "ch14-02-32-wire-encoding",
+              "ch14-02-33-state-tracker",
+              "ch14-02-34-cpp-emission"
+            ],
+            "boundary": "StateTrack同一时刻至多一个当前值，稳定trackuuid指向带StateDescriptor的TrackDescriptor，v57.1/57.2descriptor为空消息类型标记。TYPE_STATE5使用name/name_iid事件名字段，字段51reserved不是现行state字段。新不同值关旧行并新建dur-1；同值只附args不重建起点；省略name/name_iid或原文验证的C++nullptr关旧不建idle。显式空串在原文v57.2/v58.2形成状态行，不能当清空。尚未下一次转换/清空关闭的行dur-1；不要LEAD重算忽略同值/idle/open语义，独立并行活动用多轨/slice。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a136/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-02-state-window-and-denominator",
+          "title": "先固定唯一轨道与窗口，再分有值、idle 和未知计算占比",
+          "article": "src/part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-02-state-window-and-denominator.svg",
+            "src/assets/diagrams/ch14/ed14-02-state-window-and-denominator.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-02-state-window-and-denominator",
+          "sources": [
+            "https://github.com/google/perfetto/blob/v57.2/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/views.sql",
+            "https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/common/state_tracker.cc",
+            "https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/proto/track_event_event_importer.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-02-36-state-schema",
+              "ch14-02-37-state-window",
+              "ch14-02-38-state-denominator"
+            ],
+            "boundary": "先PRAGMAtable_info(state)，v57.2view有id/ts/dur/track_id/category/value/arg_set_id，状态列value不是state。按trackid/UUID/process/args选唯一实例，同名多匹配/缺失返回空保留歧义。正区间裁剪max(s.ts,start)到min(s.ts+dur,end)，dur-1仅暂裁窗口末尾，非业务结束，第一事件前未知。当前SUMdur分母仅选定有state行的正交集，显式空串也入；省略名清空无idle行不入。完整窗口占比需另取窗口长度，已知idle与首事件前/丢失未知分别统计；丢失/增量状态完整性须验证。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a136/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T11:47:42.068361+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 43,
+        "contexts_actually_viewed": 7,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a136/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a136/visual-review.json",
+      "retired_diagrams": [
+        "ch14-02-01-analysis-order",
+        "ch14-02-02-load-backends",
+        "ch14-02-03-area-dimensions",
+        "ch14-02-04-visibility-controls",
+        "ch14-02-06-cpu-three-tracks",
+        "ch14-02-07-slice-thread-state",
+        "ch14-02-08-counter-evidence",
+        "ch14-02-11-state-layering",
+        "ch14-02-16-flow-semantics",
+        "ch14-02-18-frame-token-flow",
+        "ch14-02-20-frame-fields",
+        "ch14-02-22-surface-coverage",
+        "ch14-02-23-sf-loop",
+        "ch14-02-24-composition-evidence",
+        "ch14-02-25-logs-clock",
+        "ch14-02-26-tool-scope",
+        "ch14-02-27-jank-workflow",
+        "ch14-02-28-state-capability",
+        "ch14-02-29-version-lines",
+        "ch14-02-30-data-model-choice",
+        "ch14-02-31-single-state",
+        "ch14-02-32-wire-encoding",
+        "ch14-02-33-state-tracker",
+        "ch14-02-34-cpp-emission",
+        "ch14-02-35-language-version",
+        "ch14-02-36-state-schema",
+        "ch14-02-37-state-window",
+        "ch14-02-38-state-denominator",
+        "ch14-02-39-adoption-options",
+        "ch14-02-40-backend-boundary",
+        "ch14-02-41-compat-expression",
+        "ch14-02-42-other-version-changes",
+        "ch14-02-43-review-gates"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-136/retired-assets.json"
     },
     {
       "index": 137,
@@ -35191,8 +35763,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 71,
-  "next_article": "src/part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md",
+  "reviewed_articles": 72,
+  "next_article": "src/part3-tools/ch14-perfetto/03-thread-cpu-states.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -35202,7 +35774,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T11:42:21.440964+08:00",
+  "updated_at": "2026-10-31T11:47:42.068361+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -35646,9 +36218,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2661,
-  "reviewed_placements_after": 1209,
-  "net_removed_placements": 1452,
+  "reviewed_placements_before": 2704,
+  "reviewed_placements_after": 1224,
+  "net_removed_placements": 1480,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -35672,5 +36244,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 71
+  "currently_matching_reviewed_source_count": 72
 }

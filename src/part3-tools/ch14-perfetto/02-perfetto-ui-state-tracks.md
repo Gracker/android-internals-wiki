@@ -127,10 +127,6 @@ Perfetto UI 把多个 data source 的事件放在同一时间轴上，data sourc
 5. 沿 Binder、Flow、waker 或帧 token 检查跨线程、跨进程和显示下游。
 6. 需要批量比较时，把 UI 观察写成 PerfettoSQL。
 
-<!-- gracker-diagram: ch14-02-01-analysis-order -->
-![先确认记录，再解释原因](../../assets/diagrams/ch14/ch14-02-01-analysis-order.png)
-
-图：从完整性、窗口和异常对象开始，再解释线程与跨进程路径。 缺失的数据无法由 UI 补出，关联关系需要两侧证据。
 
 > 源码基线：平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`。交互说明按 2026-10-24 官方文档及上游 v58.2 源码核对；state track 的历史行为另按 v57.2 发布 SDK 和 v57.2/v58.2 主机分析器验证。网页 UI、主机工具和设备组件分别记录版本；这些主机核查不代表 Android 真机采集。
 
@@ -142,10 +138,6 @@ Perfetto UI 把多个 data source 的事件放在同一时间轴上，data sourc
 
 浏览器能否顺利处理大文件，取决于 trace 内容、主机内存、浏览器限制和查询复杂度，没有一个固定的体积门槛。加载或交互开始受限时，可以运行 `./trace_processor server http <trace>`，让本机原生 Trace Processor 作为 UI 后端，也可以直接用 `trace_processor_shell` 查询，具体流程见 §14.1。把二进制 trace 全量转成文本通常会扩大体积，还会失去 UI 的索引优势，大文件默认不走这条路。
 
-<!-- gracker-diagram: ch14-02-02-load-backends -->
-![文件加载与分析后端](../../assets/diagrams/ch14/ch14-02-02-load-backends.png)
-
-图：浏览器、原生分析器和合并配置分别解决不同问题。 原生后端仍保存解析状态；文件大小不等于峰值内存。
 
 #### 时间轴、选择与详情抽屉
 
@@ -164,10 +156,6 @@ Perfetto UI 把多个 data source 的事件放在同一时间轴上，data sourc
 
 Area Selection 除了起止时间，还包含所选轨道。修改 track shell（轨道左侧的名称和控制区域）上的勾选项会改变统计范围；分享截图或结论时，把选区范围和轨道集合一起写明，统计范围才说得清楚。
 
-<!-- gracker-diagram: ch14-02-03-area-dimensions -->
-![选区同时包含时间和轨道](../../assets/diagrams/ch14/ch14-02-03-area-dimensions.png)
-
-图：Area Selection 的统计范围由时间边界和轨道集合共同决定。 截图和结论需记录这两部分，不能只保留高亮宽度。
 
 #### 找轨道、过滤和 Pin
 
@@ -179,10 +167,6 @@ Area Selection 除了起止时间，还包含所选轨道。修改 track shell�
 
 分析一帧时，常用组合是 App 主线程、RenderThread、FrameTimeline、`surfaceflinger` 主线程和相关 CPU。分析同步 Binder 时，把客户端线程与服务端 Binder 线程一起 Pin。Pin 只改变显示位置，不改变数据或时间对齐。
 
-<!-- gracker-diagram: ch14-02-04-visibility-controls -->
-![查找、过滤与固定显示](../../assets/diagrams/ch14/ch14-02-04-visibility-controls.png)
-
-图：Finder、Filter 和 Pin 改变浏览方式。 这些操作不能补采事件或改变原始时间对齐。
 
 Omnibox 是页面顶部的统一搜索和命令输入框，输入 `:` 进入 SQL 模式。查询结果能否生成 Debug Track 取决于列的语义：Slice Track 至少要选名称、非空时间戳和 duration 列，Counter Track 至少要选时间戳和数值列；列名可以在创建界面里映射，写法无需固定为 `name`、`ts`、`dur` 或 `value`。复杂查询留到 §14.7，这里先把它当作“将查询结果放回时间轴”的入口。
 
@@ -201,10 +185,6 @@ CPU Frequency 轨道来自设备提供的频率事件，能看到记录到的频
 
 CPU Idle 轨道描述 CPU 的空闲状态。线程处于 Sleeping 或 D 状态时本来就没有资格运行，此时看到部分 CPU idle 属于正常；只有线程已经 Runnable，并且在 affinity（线程允许运行的 CPU 集合）和 cpuset（系统为一组任务限定的 CPU 集合）等约束下有可用 CPU，却长期没有进入 Running，我们才需要继续查优先级、系统负载和调度策略。
 
-<!-- gracker-diagram: ch14-02-06-cpu-three-tracks -->
-![CPU 调度、频率和空闲分别解读](../../assets/diagrams/ch14/ch14-02-06-cpu-three-tracks.png)
-
-图：CPU 运行区间、频率样本与空闲状态回答不同问题。 是否具备运行资格、放置约束和全机负载要结合检查。
 
 #### 进程、线程、Slice 与线程状态
 
@@ -215,10 +195,6 @@ CPU Idle 轨道描述 CPU 的空闲状态。线程处于 Sleeping 或 D 状态�
 
 App 主线程负责 Looper 消息、输入分发、生命周期和 View/Compose 工作；`Choreographer#doFrame` 是传统 View/HWUI 帧的重要入口。RenderThread 负责 HWUI 渲染工作的记录、准备与图形提交，其中可能包含 CPU 执行、GPU 工作排队和 fence（表示前序图形工作何时完成的同步对象）等待。名称相同的 Slice 在不同 Android 版本、渲染后端和厂商实现中可能覆盖不同子阶段，要结合子 Slice 与源码核对。
 
-<!-- gracker-diagram: ch14-02-07-slice-thread-state -->
-![命名区间与调度状态可以重叠](../../assets/diagrams/ch14/ch14-02-07-slice-thread-state.png)
-
-图：Slice 表达逻辑活动，Thread State 表达调度状态。 doFrame 或 DrawFrame 变长时，CPU 执行和等待需要分别取证。 时序条长与间隔为示意，非设备测量。
 
 Binder 线程名能帮助定位服务端执行线程，但 Binder transaction 本身不保证包含 Java 方法名。方法名是否可见取决于平台或业务是否在服务端路径添加了 ATrace / Track Event 标记。
 
@@ -228,10 +204,6 @@ Counter 由一组“时间戳 + 数值”样本组成，例如频率、RSS（进
 
 内存 Counter 持续上升时，要区分采样区间、GC、缓存上限、映射文件、共享内存和进程生命周期。GPU Counter 是否存在、含义是什么，也受 GPU 数据源和厂商支持限制。报告中应记录 Counter 名称、单位、数据源和比较窗口。
 
-<!-- gracker-diagram: ch14-02-08-counter-evidence -->
-![Counter 上升还需解释来源](../../assets/diagrams/ch14/ch14-02-08-counter-evidence.png)
-
-图：Counter 样本需要单位、来源、采样间隔与比较窗口。 曲线上升不能单独证明泄漏或导致一帧变慢。
 
 ### Slice 的三种时间
 
@@ -297,10 +269,6 @@ Android 17 Trace Processor 按内核 `prev_state` 解码调度状态，`android1
 
 当前稳定版 UI 通常用不同深浅的绿色区分 Running 与 Runnable，Sleeping/Idle 显示为低对比度色块，D 状态用暖色。具体色值随主题和 UI 实现变化，谈不上稳定的数据接口；FrameTimeline 的绿、浅绿、红、黄、蓝是另一套帧结果编码，套不到线程状态上。分析结论记录状态值和详情字段即可。
 
-<!-- gracker-diagram: ch14-02-11-state-layering -->
-![内核、SQL 与 UI 配色的分层](../../assets/diagrams/ch14/ch14-02-11-state-layering.png)
-
-图：调度状态先按内核和处理器语义读取，再使用当前 UI 配色。 线程状态色、锁竞争标记和 FrameTimeline 颜色属于不同编码。
 
 #### D 状态的常见来源
 
@@ -351,10 +319,6 @@ Android 17 Trace Processor 按内核 `prev_state` 解码调度状态，`android1
 
 Flow 是 trace 显式记录的跨 track 关联关系，用箭头连接不同轨道上的相关事件。选中带 Flow 的事件后，UI 会突出相关箭头，未选中时可能为了可读性减少显示。箭头说的是“trace 数据声明两者相关”；至于同步阻塞还是单一因果，还得我们沿两侧事件核实。
 
-<!-- gracker-diagram: ch14-02-16-flow-semantics -->
-![Flow 表达显式关联](../../assets/diagrams/ch14/ch14-02-16-flow-semantics.png)
-
-图：Flow 把 trace 已声明相关的端点连接起来。 箭头本身不能证明同步阻塞、唯一业务起因或完整调用链。
 
 #### Binder transaction
 
@@ -380,10 +344,6 @@ Android 17 的 `stdlib/android/binder.sql` 会把 Binder transaction 与 reply�
 
 Flow 与 BufferQueue frame number 是两套标识，替代不了 acquire、present 和 release fence 提供的同步信息。SurfaceView 这类独立 Surface 路径还受 FrameTimeline 覆盖范围的限制，具体范围见 §14.13 和 §15。
 
-<!-- gracker-diagram: ch14-02-18-frame-token-flow -->
-![帧消费关系与同步信息分开核对](../../assets/diagrams/ch14/ch14-02-18-frame-token-flow.png)
-
-图：surface frame token 和 display frame 关系用于识别被合成的帧。 它们不是 BufferQueue frame number，也不能替代 acquire/present/release fence。
 
 ### FrameTimeline：从异常帧进入
 
@@ -410,10 +370,6 @@ Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actu
 
 官方 UI 为 FrameTimeline 定义了独立颜色语义：
 
-<!-- gracker-diagram: ch14-02-20-frame-fields -->
-![先记录帧字段，再解释颜色](../../assets/diagrams/ch14/ch14-02-20-frame-fields.png)
-
-图：帧结果需要字段、layer 和 token 联合解释。 图中颜色只区分类别，不复刻 UI 的五种帧结果色值。
 
 | 颜色 | 含义 |
 | --- | --- |
@@ -432,19 +388,15 @@ Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actu
 
 官方文档仍提示 SurfaceView 不在 FrameTimeline 的完整支持范围内。Camera、视频、游戏和跨进程嵌入常有独立的 Producer / Surface / layer，宿主窗口的帧 token 代替不了这些路径的逐帧信息。
 
-<!-- gracker-diagram: ch14-02-22-surface-coverage -->
-![宿主帧不能代替独立 Surface 证据](../../assets/diagrams/ch14/ch14-02-22-surface-coverage.png)
+<!-- gracker-diagram: ed14-02-frame-identities-and-independent-surfaces -->
+![先识别目标 Surface，再分帧关联与资源同步两路证据](../../assets/diagrams/ch14/ed14-02-frame-identities-and-independent-surfaces.png)
 
-图：独立 Producer、Surface 与 layer 需要各自的逐帧关联。 官方 FrameTimeline 覆盖限制下，宿主窗口 token 不能补齐视频或相机帧。
+图：FrameTimeline按surfaceframe token关联AppActual与SFdisplayframe，displayframe可含多Appframe；它是消费关系不是同步信号，token非BQframenumber。独立SurfaceView/Camera/video/game/嵌入Producer需自己的Surface/layer/buffer/queue身份，官方FrameTimeline不完整覆盖下不能以宿主token代替。Flow只声明端点相关，不证明同步阻塞/唯一因果/完整链。acquire/present/release fences分别给可读/呈现/复用同步，API返回与显示光学另界。
 
 ### Android 17 SurfaceFlinger 轨道
 
 Android 17 的主循环由 `Scheduler::onFrameSignal()` 组织。`Scheduler.cpp` 在同一帧信号中调用 `compositor.commit()` 处理事务、layer 状态和本帧准备工作；满足合成条件后，再调用 `compositor.composite()` 组织合成。对应实现位于 `SurfaceFlinger::commit()` 和 `SurfaceFlinger::composite()`。显示输出阶段继续进入 CompositionEngine 的 `Output::present()` 与 `presentFrameAndReleaseLayers()`。
 
-<!-- gracker-diagram: ch14-02-23-sf-loop -->
-![Android 17 SurfaceFlinger 帧循环](../../assets/diagrams/ch14/ch14-02-23-sf-loop.png)
-
-图：按 onFrameSignal、commit、composite 与输出阶段追踪同一轮工作。 composite 有条件执行；源码函数不保证都有同名 trace Slice。
 
 旧 trace 的 Slice 名称因版本而异，对照下表：
 
@@ -457,10 +409,10 @@ Slice 名称受埋点和版本影响，不必指望每份 Android 17 trace 都�
 
 `composite` 变长先别急着归为 GPU Client Composition：要同时找到 RenderEngine/`drawLayers` 等 GPU 合成痕迹、HWC（Hardware Composer，硬件显示合成器）的 composition type、layer 特征和 fence 时间。事务处理变重、latch（选定本轮要合成的 buffer）等待、HWC validate/present 或显示提交，都可能拉长 SurfaceFlinger 的一帧。
 
-<!-- gracker-diagram: ch14-02-24-composition-evidence -->
-![composite 长的归因分支](../../assets/diagrams/ch14/ch14-02-24-composition-evidence.png)
+<!-- gracker-diagram: ed14-02-sf-frame-loop-and-composition-evidence -->
+![先按帧循环分阶段，再验证 GPU 合成候选](../../assets/diagrams/ch14/ed14-02-sf-frame-loop-and-composition-evidence.png)
 
-图：SurfaceFlinger 长帧可能来自多种阶段与依赖。 GPU Client Composition 要由 RenderEngine、composition type 和 fence 共同支持。
+图：Android17ScheduleronFrameSignal先compositor.commit处理事务/layer准备，满足条件才composite，再CompositionEngineOutputpresent及presentFrameAndReleaseLayers。源码不保证每个函数有同名slice，12/12L旧onMessage入口不能机械套新版本。composite长可能事务/准备/latch、RenderEngineGPU、HWCvalidate/present或显示提交等；GPUClient需drawLayers/RE、compositiontype、layer特征及fence共同支持。条件不满足时不执行composite，不把长composite当自动CLIENT。
 
 ### 日志与原始事件
 
@@ -468,10 +420,6 @@ Slice 名称受埋点和版本影响，不必指望每份 Android 17 trace 都�
 
 日志适合标记业务阶段和错误点，时间线用于验证线程、调度与依赖关系。日志时间戳、trace 时钟和跨文件合并可能使用不同时间基准；要先确认时钟转换和对齐误差，再做毫秒级因果判断。
 
-<!-- gracker-diagram: ch14-02-25-logs-clock -->
-![日志与事件缺失先检查采集](../../assets/diagrams/ch14/ch14-02-25-logs-clock.png)
-
-图：日志、ftrace 与跨文件时间线先确认来源和时钟。 看不到轨道不能直接等同事件未发生，跨时钟因果须先对齐。
 
 ### 与 Android Studio Profiler 的关系
 
@@ -486,10 +434,6 @@ Android Studio 的 System Trace 也是系统级视图，能够展示 CPU 核心�
 
 Android Studio 的 System Trace 与 Java Method Trace 是不同的录制类型，一个 `.trace` 扩展名区分不了两者。复杂系统问题可以从 Android Studio 导出 System Trace，再放到 Perfetto UI 做 SQL 与跨进程分析。
 
-<!-- gracker-diagram: ch14-02-26-tool-scope -->
-![System Trace、方法跟踪和采样各有用途](../../assets/diagrams/ch14/ch14-02-26-tool-scope.png)
-
-图：先按要回答的问题选择系统时间线或调用信息。 Android Studio System Trace 也是系统视图，扩展名不决定录制语义。
 
 ### 一轮掉帧分析怎么走
 
@@ -506,10 +450,6 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同的录制类型�
 
 这条主线用来判断手上的信息指向应用、调度、跨进程调用、合成还是显示末端；修复之后仍要回到对应代码、配置和设备上复现验证，FrameTimeline 的分类替代不了源码与 fence 这一层的核对。
 
-<!-- gracker-diagram: ch14-02-27-jank-workflow -->
-![一轮掉帧分析的依赖链](../../assets/diagrams/ch14/ch14-02-27-jank-workflow.png)
-
-图：先固定异常帧，再区分线程、跨进程与显示下游。 平台分类帮助定位，修复仍需在目标代码和设备上复现验证。
 
 ### Android 17 源码核对点
 
@@ -536,10 +476,6 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同的录制类型�
 
 Perfetto **v57.1** 于 2026 年 7 月 2 日发布，state track 从这一系列引入。**v57.2** 于 7 月 7 日发布；其历史修复针对内嵌 proto descriptor 的兼容性，state wire format 延续 v57.1。本文保留这组历史基线；截至本次复核，官方已发布 [v58.2](https://github.com/google/perfetto/releases/tag/v58.2)，不能再把 v57.2 称为当前最新版本。上游 SDK、Trace Processor 和 UI 更新，不会自动升级设备中的 `/system/bin/perfetto`、`traced`、`traced_probes` 或 Android Framework API。
 
-<!-- gracker-diagram: ch14-02-28-state-capability -->
-![同名能力要检查生产与解析两端](../../assets/diagrams/ch14/ch14-02-28-state-capability.png)
-
-图：state 的历史版本与当前工具版本需要分别确认。 v57.2 是本文历史基线；v58.2 已发布，平台组件不会自动更新。
 
 | 对象 | 采用的版本 | 在哪里运行 | 能否直接提供 v57 状态轨道 |
 |---|---|---|---|
@@ -548,10 +484,6 @@ Perfetto **v57.1** 于 2026 年 7 月 2 日发布，state track 从这一系列�
 
 这个拆分会影响方案选择：
 
-<!-- gracker-diagram: ch14-02-29-version-lines -->
-![平台、SDK 与分析器分别记录版本](../../assets/diagrams/ch14/ch14-02-29-version-lines.png)
-
-图：三条版本线决定数据能否生产、搬运与解释。 升级主机不会补出旧 Producer 未录制的 TYPE_STATE。
 
 - 只升级开发机分析器：可以读取新版 schema（trace 的字段与类型定义）和 PerfettoSQL 标准库，但不会补出设备未录制的数据。
 - 想在 trace 中得到原生 `state` 表：producer（生产事件的一端）和 Trace Processor（解析事件的一端）都要具备 v57 state track 能力。
@@ -567,17 +499,9 @@ Perfetto **v57.1** 于 2026 年 7 月 2 日发布，state track 从这一系列�
 | Counter | 时间戳加数值 | “这一刻的频率、字节数或队列深度是多少？” | 用整数枚举表达状态，却遗漏枚举表 |
 | State | 时间戳加字符串状态，单轨道至多一个当前值 | “这个子系统在这段时间处于什么状态？” | 把同一时间可并存的多个活动塞进单条 state track |
 
-<!-- gracker-diagram: ch14-02-30-data-model-choice -->
-![Slice、Counter 与 State 的选择](../../assets/diagrams/ch14/ch14-02-30-data-model-choice.png)
-
-图：按活动区间、数值样本和单值状态分别建模。 可并行的活动不能挤进同一条单值 state track。
 
 state track 表达单值状态机：一条轨道在任一时刻最多有一个当前值，没有当前值时称为 idle。播放器的 `Buffering → Playing → Paused` 适合 state track。并行的下载任务、解码任务和渲染任务可以同时存在，应分别使用 slice 或多条轨道。
 
-<!-- gracker-diagram: ch14-02-31-single-state -->
-![状态转换与 idle 的记录范围](../../assets/diagrams/ch14/ch14-02-31-single-state.png)
-
-图：单条 state track 在一个时刻最多有一个当前值。 图中 idle 是清空后无状态行的间隔；显式空字符串值需要另辨。 时序条长与间隔为示意，非设备测量。
 
 #### v57.1 在 trace 二进制格式中增加了什么
 
@@ -587,10 +511,6 @@ v57.1 的 `TrackEvent.Type` 增加 `TYPE_STATE = 5`，v57.2 延续同一 wire fo
 
 ⚠️ 实现差异：不能把“空字符串”和“省略事件名”视为同一编码。本次用 v57.2 发布 C++ SDK 录制，再由 v57.2/v58.2 主机分析器读取，`TRACE_STATE(..., "", track)` 产生了空字符串状态行；`TRACE_STATE(..., nullptr, track)` 才关闭当前状态且不生成 idle 行。手工生成 packet 时，省略 `name` / `name_iid` 表达清空；显式 `name: ""` 在这两个分析器中仍是状态值。该结论来自固定版本源码与主机合成/SDK trace，见 [ParseStateEvent](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/proto/track_event_event_importer.h) 与 [StateTracker](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/common/state_tracker.cc)。
 
-<!-- gracker-diagram: ch14-02-32-wire-encoding -->
-![StateDescriptor 与事件名编码](../../assets/diagrams/ch14/ch14-02-32-wire-encoding.png)
-
-图：TYPE_STATE 事件通过轨道描述和事件名表达状态。 固定 v57.2/v58.2 实测：省略名可清空，显式空串会保留状态行。
 
 下面节选只用于展示枚举范围，省略了 proto 中的大段注释和其他字段：
 
@@ -618,10 +538,6 @@ v57.2 的 `StateTracker::UpdateState()` 展示了几条容易遗漏的语义：
 
 这也解释了查询 `state` 表时为什么无需再用 `LEAD(ts)` 计算时长：`LEAD()` 只是读取下一行值的 SQL 窗口函数，而 Trace Processor 已经在维护 `dur`；手工拿下一行时间戳相减，相同状态合并、显式清空和开放区间的语义就都被丢掉了。
 
-<!-- gracker-diagram: ch14-02-33-state-tracker -->
-![StateTracker 如何维护区间](../../assets/diagrams/ch14/ch14-02-33-state-tracker.png)
-
-图：处理器直接维护同一 track_id 的状态区间。 未关闭行保留 dur=-1；同值更新参数，不重建起点。
 
 ### 写入 state 事件
 
@@ -639,10 +555,10 @@ TRACE_STATE("player", nullptr, player_state);  // 清空当前状态，进入 id
 
 第三次调用传入 `nullptr`，关闭 `Playing` 并进入 idle。这个更正后的片段已放入常规 in-process 会话初始化代码，用官方 v57.2 C++ SDK 发布归档在主机编译运行；分析器只得到 `Buffering` 与 `Playing` 两行。它不构成 Android system backend 兼容性验证。同一逻辑轨道需要复用稳定 `StateTrack` 身份，并让更新指向同一个 `track_uuid`；这个身份应在当前 trace 的作用域内区分实例。状态值宜来自有限枚举：请求 ID、文件名等高基数字符串宜放在参数中；若把它们当作状态值，会产生大量难以聚合的不同状态。
 
-<!-- gracker-diagram: ch14-02-34-cpp-emission -->
-![C++ 状态写入与身份复用](../../assets/diagrams/ch14/ch14-02-34-cpp-emission.png)
+<!-- gracker-diagram: ed14-02-state-encoding-and-update-branches -->
+![同一 StateTrack 按不同值、同值与省略名三路更新](../../assets/diagrams/ch14/ed14-02-state-encoding-and-update-branches.png)
 
-图：用稳定 StateTrack 连续更新，并通过 nullptr 结束当前值。 已在 v57.2 发布 SDK 主机 in-process 验证；不代表设备 system backend 通过。
+图：StateTrack同一时刻至多一个当前值，稳定trackuuid指向带StateDescriptor的TrackDescriptor，v57.1/57.2descriptor为空消息类型标记。TYPE_STATE5使用name/name_iid事件名字段，字段51reserved不是现行state字段。新不同值关旧行并新建dur-1；同值只附args不重建起点；省略name/name_iid或原文验证的C++nullptr关旧不建idle。显式空串在原文v57.2/v58.2形成状态行，不能当清空。尚未下一次转换/清空关闭的行dur-1；不要LEAD重算忽略同值/idle/open语义，独立并行活动用多轨/slice。
 
 #### C high-level API：v57.2 与 v58.2
 
@@ -665,10 +581,6 @@ v57.1 发布了 state track，但各语言 SDK 的高层 API 并未在同一个 
 
 工程上以项目解析到的 Java artifact 和对应源码 commit 为准：锁定依赖，查看公共方法并编译完整使用代码。本次只核对 Java tag 源码，没有运行 Android Java 构建；若项目 artifact 没有 state API，可选已验证的 v57.2 C++ 路径，或升级到明确包含接口的 Java SDK 版本。
 
-<!-- gracker-diagram: ch14-02-35-language-version -->
-![C++、C 与 Java 的发布版本差异](../../assets/diagrams/ch14/ch14-02-35-language-version.png)
-
-图：语言高层 API 需要按真实 release 和 artifact 检查。 C11 片段编译和 Java tag 源码核对是不同验证范围。
 
 ### 查询 `state` 表
 
@@ -682,10 +594,6 @@ PRAGMA table_info(state);
 
 v57.2 的公开 view（由 SQL 查询定义、读取时计算的表状结果）包含 `id`、`ts`、`dur`、`track_id`、`category`、`value` 和 `arg_set_id`。`ts` 与 `dur` 的单位都是纳秒，`arg_set_id` 可关联该状态附带的参数。状态列名是 `value`，不存在名为 `state` 的列。
 
-<!-- gracker-diagram: ch14-02-36-state-schema -->
-![state 表状结果与轨道身份](../../assets/diagrams/ch14/ch14-02-36-state-schema.png)
-
-图：先确认分析器的 state 视图及列，再选择目标身份。 列名是 value；同名 track 可能有多个，名称不能替代 track_id。
 
 #### 查询转换与已观测时长
 
@@ -722,10 +630,6 @@ ORDER BY ts;
 
 `CROSS JOIN trace_bounds` 把同一 trace 范围附到每条记录。结果是从已记录状态事件开始、落在边界内的观测时长；开放状态可能在 trace 结束后继续，第一条已知状态之前则保持未知。即便业务早已进入该状态，分析器也不能凭后来的同名值推断其真实开始时间。更细的业务比较应把这里的边界改为明确的目标窗口，并验证事件与增量状态未丢失。
 
-<!-- gracker-diagram: ch14-02-37-state-window -->
-![开放状态与观测窗口裁剪](../../assets/diagrams/ch14/ch14-02-37-state-window.png)
-
-图：明细查询按目标身份，对区间和窗口取交集。 dur=-1 只裁到窗口终点；首事件前未知，不能推算真实业务起点。 时序条长与间隔为示意，非设备测量。
 
 #### 汇总各状态占比
 
@@ -762,17 +666,13 @@ ORDER BY total_ms DESC;
 
 `SUM(SUM(dur)) OVER ()` 汇总所有状态值的合计时长。该分母只包含查询选定轨道中有 `state` 行且与窗口相交的区间；省略状态名的显式清空不会创建 idle 行，显式空字符串值则会进入分母。若要计算整个观测窗口占比，应另用窗口长度做分母，并把明确清空后的 idle 与首条事件前、丢包造成的未知区间分开；不能把所有空白都补成 idle。
 
-<!-- gracker-diagram: ch14-02-38-state-denominator -->
-![状态占比的分母选择](../../assets/diagrams/ch14/ch14-02-38-state-denominator.png)
+<!-- gracker-diagram: ed14-02-state-window-and-denominator -->
+![先固定唯一轨道与窗口，再分有值、idle 和未知计算占比](../../assets/diagrams/ch14/ed14-02-state-window-and-denominator.png)
 
-图：有值状态、明确 idle 和未知区间需要分别统计。 当前 SQL 分母只含选定轨道的有值正区间，显式空串也属于值。
+图：先PRAGMAtable_info(state)，v57.2view有id/ts/dur/track_id/category/value/arg_set_id，状态列value不是state。按trackid/UUID/process/args选唯一实例，同名多匹配/缺失返回空保留歧义。正区间裁剪max(s.ts,start)到min(s.ts+dur,end)，dur-1仅暂裁窗口末尾，非业务结束，第一事件前未知。当前SUMdur分母仅选定有state行的正交集，显式空串也入；省略名清空无idle行不入。完整窗口占比需另取窗口长度，已知idle与首事件前/丢失未知分别统计；丢失/增量状态完整性须验证。
 
 ### 在 Android 17 上采用 v57 能力
 
-<!-- gracker-diagram: ch14-02-39-adoption-options -->
-![采用新能力的三条路径](../../assets/diagrams/ch14/ch14-02-39-adoption-options.png)
-
-图：按所需能力选择分析器升级、SDK 写入或平台兼容表达。 每条路径有独立验证范围，不能用主机解析成功证明设备连接成功。
 
 #### 路径一：只升级开发机分析器
 
@@ -798,10 +698,6 @@ backend 是 SDK 写入 trace 的目标：in-process backend 在本进程管理�
 
 平台采集服务的升级应随产品镜像整体验证：`traced` / `traced_probes` 与 init、Unix socket 权限、SELinux、Producer/Consumer IPC 协议和系统测试一起交付。它们的 Perfetto IPC 不应混称为 AIDL/Binder。离线主机 Trace Processor 可以独立升级；若把工具放进产品镜像，则仍按该镜像的权限、构建和兼容性要求交付，不能由主机解析成功推导设备服务兼容。
 
-<!-- gracker-diagram: ch14-02-40-backend-boundary -->
-![in-process 与 system backend 的验证边界](../../assets/diagrams/ch14/ch14-02-40-backend-boundary.png)
-
-图：SDK、采集服务连接和离线分析器分开验证。 平台服务使用 Perfetto IPC；镜像升级还受 init、socket、SELinux 与测试约束。
 
 #### 路径三：维持 Android 17 平台兼容
 
@@ -814,10 +710,10 @@ backend 是 SDK 写入 trace 的目标：in-process backend 在本进程管理�
 
 这种兼容表达缺少 state track 的单值约束和专用 UI 展示。生产代码要自行保证状态转换合法，文档、SQL 和指标名称也应标明所用替代方案，避免与原生 `state` 表混用。
 
-<!-- gracker-diagram: ch14-02-41-compat-expression -->
-![旧平台上的兼容状态表达](../../assets/diagrams/ch14/ch14-02-41-compat-expression.png)
+<!-- gracker-diagram: ed14-02-versioned-state-adoption-and-backends -->
+![分析器升级、原生 State 与平台兼容表达走不同验证路径](../../assets/diagrams/ch14/ed14-02-versioned-state-adoption-and-backends.png)
 
-图：无法使用原生 state 时，按事件语义选择兼容表达。 生产端自行保证转换合法，指标和 SQL 必须注明替代方案。
+图：固定Android17platformv54+补丁proto无TYPE_STATE，v57.1引入state/v57.2沿用，本文历史v57.2与复核v58.2不混最新。仅升级TP/UI能新解析/SQL但不能生成旧Producer没录的state；新版SDKstate按实际语言release/artifact编译。原文v57.2C++nullptr主机inprocess验证，v57.2C/Java高层缺口，v58.2C11片段编译/Java仅tag源码不等项目Android构建。Systembackend需目标镜像注册/socket/SELinux/buffer/stats，PerfettoIPCprotobuf-overUnixsocket与SMB按ABI维护，非Binder/AIDL或泛称SDK编译ABI。旧表达slice/counter/instant维护转换字典/区间并标注，不冒充state表。
 
 ### v57 系列的其他变化
 
@@ -831,10 +727,6 @@ backend 是 SDK 写入 trace 的目标：in-process backend 在本进程管理�
 - Adreno 是 Qualcomm GPU 系列。它的 `adreno_cmdbatch_retired`、`adreno_cmdbatch_sync` ftrace 事件在 v57.1 中可解析为 GPU timeline slice；目标设备是否提供这些内核事件仍取决于系统 build 与 GPU 驱动。
 - v57.2 只修复携带自有 proto descriptor 的 trace 在 wire-compatible schema 变化后可能解析失败的问题。wire-compatible 表示字段变更仍遵守 protobuf 的序列化兼容规则；这项修复不改变 state track 的数据模型。
 
-<!-- gracker-diagram: ch14-02-42-other-version-changes -->
-![其他 v57 变化也要按语义解释](../../assets/diagrams/ch14/ch14-02-42-other-version-changes.png)
-
-图：日志源、JSON 区间和关联 ID 是三类不同能力。 同线程嵌套 X 合法；交叉完整事件有 overflow 警告；关联 ID 不声明因果方向。
 
 ### 评审清单
 
@@ -850,10 +742,6 @@ backend 是 SDK 写入 trace 的目标：in-process backend 在本进程管理�
 - [ ] C high-level 与 Java 调用由项目实际 artifact 编译验证，注明 v57.2 与 v58.2 的 API 差异；源码核对不冒充 Java 编译
 - [ ] trace 上传、公开 URL 和提供给 AI 模型的方式符合数据处理规则
 
-<!-- gracker-diagram: ch14-02-43-review-gates -->
-![状态轨道评审的验证顺序](../../assets/diagrams/ch14/ch14-02-43-review-gates.png)
-
-图：评审从平台和依赖版本走到编码、区间和实际构建。 项目 artifact、采集路径与数据处理范围都要有实际证据。
 
 ### 源码与官方资料
 
