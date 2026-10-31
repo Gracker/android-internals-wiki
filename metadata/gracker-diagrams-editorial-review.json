@@ -56167,9 +56167,229 @@
       "before_count": 23,
       "before_all_images": 23,
       "sha256_before": "ccc068487b8bde2cb2dca7c50ac7f93372b4692ff559b65857cb397ef70e045d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a224-01-bind-install-order",
+          "title": "Application 先创建，普通 Provider 安装早于 Application.onCreate",
+          "decision": "remove",
+          "reason": "七行原生文本顺序已完整保留Application/Provider/Instrumentation，PNG同链重复。",
+          "original_line": 101,
+          "heading": "#### 1.1 进程绑定时的调用顺序"
+        },
+        {
+          "original_id": "a224-02-batch-publish",
+          "title": "逐个实例化与初始化，当前批次 holder 一次发布",
+          "decision": "keep",
+          "reason": "逐个组件实例化attach/onCreate再汇总holder一次发布的阶段关系，突出不是每Provider一次publish Binder。",
+          "original_line": 114,
+          "heading": "#### 1.1 进程绑定时的调用顺序"
+        },
+        {
+          "original_id": "a224-03-provider-cost-layers",
+          "title": "固定组件入口、业务工作、后台竞争和进程创建分层取证",
+          "decision": "remove",
+          "reason": "四层成本/工作/证据三列表更完整，三行工具映射卡重复。",
+          "original_line": 157,
+          "heading": "### 2. 启动成本从哪里来"
+        },
+        {
+          "original_id": "a224-04-manifest-provenance",
+          "title": "发布 APK 的合并结果决定 Provider 身份和进程",
+          "decision": "remove",
+          "reason": "发布变体/placeholder/合并报告与文本XML脚本说明完整，四框溯源清单重复。",
+          "original_line": 198,
+          "heading": "#### 3.1 检查最终合并结果"
+        },
+        {
+          "original_id": "a224-05-equivalent-provider-ab",
+          "title": "A/B 同时保留等价业务能力，才能分开入口与 SDK 成本",
+          "decision": "remove",
+          "reason": "五步闭源Provider等价A/B实验准确列相同SDK业务与入口成本拆分，三行实验卡重复。",
+          "original_line": 270,
+          "heading": "#### 4.2 第三方 Provider"
+        },
+        {
+          "original_id": "a224-06-remote-provider-wait",
+          "title": "同步获取远端 Provider 可能把进程冷启动串回调用方",
+          "decision": "keep",
+          "reason": "调用方等待与systemserver拉进程、承载进程初始化发布三轨，解释远程隔离如何把成本串回Main。",
+          "original_line": 286,
+          "heading": "#### 4.3 观察跨进程等待"
+        },
+        {
+          "original_id": "a224-07-necessity-and-owner",
+          "title": "按用户可见完成条件分阶段，预算来自目标与余量",
+          "decision": "remove",
+          "reason": "五类必要性表和owner结果要求完整，三行阶段分类卡重复。",
+          "original_line": 307,
+          "heading": "### 5. 按用户可见时机分类"
+        },
+        {
+          "original_id": "a224-08-remove-entry-verify",
+          "title": "删除合并节点后，显式能力和所有入口都要回归",
+          "decision": "remove",
+          "reason": "官方开关/合并匹配名与selector、七项回归列表更完整，四框移除验证摘要重复。",
+          "original_line": 351,
+          "heading": "#### 6.2 删除后的验证"
+        },
+        {
+          "original_id": "a224-09-explicit-init-results",
+          "title": "移除 Provider 的隐式时序后，用结果状态机表达完成",
+          "decision": "keep",
+          "reason": "NotStarted到Initializing后按结果分Ready/Degraded/Failed的结构，强调共享完成与失败路径，较文本链更直观。",
+          "original_line": 368,
+          "heading": "### 7. 显式初始化的状态机"
+        },
+        {
+          "original_id": "a224-10-commit-and-fallback",
+          "title": "硬件提交信号与软件 post 兜底的证据强度不同",
+          "decision": "keep",
+          "reason": "doOnPreDraw后硬件framecommit与软件post两条路径汇入调度门，区分信号证据强度。",
+          "original_line": 411,
+          "heading": "### 8. “首帧后”的观测点"
+        },
+        {
+          "original_id": "a224-11-startup-synchronous-deps",
+          "title": "共享一个 InitializationProvider，依赖同步执行后才创建根",
+          "decision": "remove",
+          "reason": "九行initializer代码和依赖先同步完成/进程缓存说明完整，四节点同序重复。",
+          "original_line": 453,
+          "heading": "#### 9.2 自动初始化"
+        },
+        {
+          "original_id": "a224-12-direct-boot-storage",
+          "title": "Direct Boot 能力按用户解锁状态与存储域划分",
+          "decision": "remove",
+          "reason": "DirectBoot段落明确首解锁前存储与依赖限制，三行存储分类卡重复。",
+          "original_line": 518,
+          "heading": "#### 10.2 Direct Boot"
+        },
+        {
+          "original_id": "a224-13-local-provider-eligibility",
+          "title": "canRunHere 同时检查进程条件与 UID 身份",
+          "decision": "keep",
+          "reason": "进程匹配或multiprocess条件之后再检查同UID的双条件分支，清楚区分本地实例与Binder路径。",
+          "original_line": 529,
+          "heading": "#### 10.3 `multiprocess` 与同 UID（Linux 用户 ID，Android 用它隔离应用身份） 多实例"
+        },
+        {
+          "original_id": "a224-14-provider-security-surface",
+          "title": "入口移动也会改变暴露面和权限执行位置",
+          "decision": "remove",
+          "reason": "六项安全验收清单完整覆盖authority/exported/权限/URIgrant及接口，三行分类卡重复。",
+          "original_line": 547,
+          "heading": "### 11. 性能改动下的 Provider 安全"
+        },
+        {
+          "original_id": "a224-15-process-isolation-cost",
+          "title": "普通私有进程隔离内存，isolated service 还改变 UID",
+          "decision": "remove",
+          "reason": "普通远程与isolated形式身份权限表及固定成本清单更完整，三行摘要卡重复。",
+          "original_line": 603,
+          "heading": "### 1. 先确认拆进程的目的"
+        },
+        {
+          "original_id": "a224-16-component-process-start",
+          "title": "组件请求可触发新进程，Application 分支晚于 Provider",
+          "decision": "remove",
+          "reason": "九行组件到进程的原生文本链已保留且前节解释Provider阶段，PNG同链重复。",
+          "original_line": 640,
+          "heading": "### 2. 应用进程的启动链路"
+        },
+        {
+          "original_id": "a224-17-role-before-class-use",
+          "title": "先按进程角色选择最小图，再主动使用 SDK 和类",
+          "decision": "remove",
+          "reason": "角色分支29行代码及四项最小能力清单完整，三行角色映射卡重复。",
+          "original_line": 693,
+          "heading": "### 3. 给每个进程定义最小初始化集"
+        },
+        {
+          "original_id": "a224-18-prewarm-tradeoff",
+          "title": "远程预热同时比较入口等待、UI竞争和常驻资源",
+          "decision": "remove",
+          "reason": "四时机表和三组预热实验列表及指标段落完整，三行方案卡重复。",
+          "original_line": 726,
+          "heading": "### 4. 控制远程进程的拉起时机"
+        },
+        {
+          "original_id": "a224-19-binder-generation-race",
+          "title": "旧 Binder 的晚到死亡通知不能覆盖新一代 Ready",
+          "decision": "keep",
+          "reason": "BinderA通知晚于B新generation出现，短锁内按代次及对象门控忽略旧通知的三轨，配合连接代码。",
+          "original_line": 869,
+          "heading": "### 5. 把 Binder ready 建模为异步能力"
+        },
+        {
+          "original_id": "a224-20-blocking-binder-timeout",
+          "title": "协程 deadline 不会强行终止已经阻塞的同步 Binder",
+          "decision": "keep",
+          "reason": "协程deadline发取消时同步transcode底层仍可阻塞的三轨，解释超时不是事务硬上限。",
+          "original_line": 890,
+          "heading": "### 5. 把 Binder ready 建模为异步能力"
+        },
+        {
+          "original_id": "a224-21-single-state-owner",
+          "title": "跨进程静态变量不共享，状态需要唯一写入者与版本协议",
+          "decision": "keep",
+          "reason": "两个客户端进程汇入唯一状态所有者与数据/控制分流，表达跨进程快照版本和受控写结构。",
+          "original_line": 911,
+          "heading": "### 6. 跨进程状态要有唯一所有者"
+        },
+        {
+          "original_id": "a224-22-death-and-recovery",
+          "title": "远端会消失，恢复依赖请求描述与持久检查点",
+          "decision": "remove",
+          "reason": "五项死亡恢复清单与各ServiceConnection回调区别完整，四框恢复步骤重复。",
+          "original_line": 932,
+          "heading": "### 7. 面向进程死亡的恢复设计"
+        },
+        {
+          "original_id": "a224-23-memory-and-readiness-metrics",
+          "title": "主进程看首帧，远程看协议 ready，内存按同口径聚合",
+          "decision": "remove",
+          "reason": "六维观测字段表及主远程ready与PSSRSS解释段落更完整，三行指标分类卡重复。",
+          "original_line": 958,
+          "heading": "### 8. 多进程的观测方法"
+        }
+      ],
+      "sha256_after": "84e241f6c6be02de63293c8a8b19a9ca86eb554ecac75ec4270e1f4c8dad33e1",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:47:27.742753+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 23,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a224/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a224/visual-review.json",
+      "retired_diagrams": [
+        "a224-01-bind-install-order",
+        "a224-03-provider-cost-layers",
+        "a224-04-manifest-provenance",
+        "a224-05-equivalent-provider-ab",
+        "a224-07-necessity-and-owner",
+        "a224-08-remove-entry-verify",
+        "a224-11-startup-synchronous-deps",
+        "a224-12-direct-boot-storage",
+        "a224-14-provider-security-surface",
+        "a224-15-process-isolation-cost",
+        "a224-16-component-process-start",
+        "a224-17-role-before-class-use",
+        "a224-18-prewarm-tradeoff",
+        "a224-22-death-and-recovery",
+        "a224-23-memory-and-readiness-metrics"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-224/retired-assets.json"
     },
     {
       "index": 225,
@@ -56799,8 +57019,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 149,
-  "next_article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+  "reviewed_articles": 150,
+  "next_article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -56810,7 +57030,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:45:12.861726+08:00",
+  "updated_at": "2026-10-31T16:47:27.742753+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -56988,9 +57208,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4666,
-  "reviewed_placements_after": 1937,
-  "net_removed_placements": 2729,
+  "reviewed_placements_before": 4689,
+  "reviewed_placements_after": 1945,
+  "net_removed_placements": 2744,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -57014,5 +57234,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 149
+  "currently_matching_reviewed_source_count": 150
 }
