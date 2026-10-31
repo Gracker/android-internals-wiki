@@ -11300,6 +11300,91 @@
       "summary": "on-device signing 官方资料的受保护虚拟机隔离编译分支未交代，易把产物重编都归入开机阶段",
       "type": "missing-source-availability-boundary",
       "updated_at": "2026-10-31T10:42:59.184508+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/04-gesture-recognition-performance.md",
+      "close_note": "已限定 ID 稳定性到该指针活跃期间，标明单指代码节选及多指 POINTER_DOWN/UP 扩展入口；MotionEvent 与原生 clearPointer 分支静态核对通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-143520-idle-audit-2827583f",
+      "created_at": "2026-10-31T14:40:12.631774+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-143520-idle-audit-2827583f",
+      "details": "原文写成在整个手势内稳定，且生命周期代码未标明单指范围。MotionEvent.java:71-90 仅保证指针 active 期间 ID 不变；VelocityTracker.cpp:290-296 在 ACTION_POINTER_DOWN 清理新指针历史。限定示例为单指节选，保留多指支持说明并交代扩展入口。",
+      "id": "finding-139b1e950b2c",
+      "log_path": "logs/audit/2026-10-31-20261031-143520-idle-audit-2827583f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/MotionEvent.java#71",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/VelocityTracker.cpp#290"
+      ],
+      "status": "verified",
+      "summary": "指针 ID 稳定性的保证应限定到该指针按下至抬起或取消期间",
+      "type": "pointer-lifetime-boundary",
+      "updated_at": "2026-10-31T14:43:50.356265+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/04-gesture-recognition-performance.md",
+      "close_note": "已改为双击触摸容差等于 TouchSlop、与双击位置容差区分；取消仅回收 VelocityTracker，MotionEvent 副本后续替换时回收；补全 DOWN 调度和 UP 延迟确认时机。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-143520-idle-audit-2827583f",
+      "created_at": "2026-10-31T14:40:12.696605+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-143520-idle-audit-2827583f",
+      "details": "ViewConfiguration.java:558 的 mDoubleTapTouchSlop = mTouchSlop，不能称范围更大；它与两次 DOWN 之间的 doubleTapSlop 是不同阈值。GestureDetector.cancel():883-899 不回收保存的 MotionEvent 副本，只移除消息、回收 VelocityTracker 并清理识别状态。同步交代 TAP 确认消息从首次 DOWN 调度及仍按下时延至 UP，避免将双击资格窗口和回调时机混为一谈。",
+      "id": "finding-405e0b8d7729",
+      "log_path": "logs/audit/2026-10-31-20261031-143520-idle-audit-2827583f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/GestureDetector.java#883",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewConfiguration.java#558"
+      ],
+      "status": "verified",
+      "summary": "GestureDetector 双击触摸容差和取消时对象回收的描述与 Android 17 源码不符",
+      "type": "gesture-detector-source-mismatch",
+      "updated_at": "2026-10-31T14:43:50.413877+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/04-gesture-recognition-performance.md",
+      "close_note": "已保留 obtain(String) 弃用及隐藏接口迁移边界、轴支持检查，并交代 viewconfigurationApis 标志与静态 API 回退；Android 14/17 签名及 Android 17 实现核对通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-143520-idle-audit-2827583f",
+      "created_at": "2026-10-31T14:40:12.764640+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-143520-idle-audit-2827583f",
+      "details": "VelocityTracker.java:246-277 明示 obtain(String) 已弃用，隐藏调用方迁移到 obtain(int)，两者均非公开 SDK。getAxisVelocity 文档要求先检查 isAxisSupported。ViewConfiguration.java:744-746 的实例长按超时 API 带 @FlaggedApi；GestureDetector.java:914-917 在 viewconfigurationApis 未开启时仍回退静态 getLongPressTimeout。原文将新 API 概述为无条件实例取值。",
+      "id": "finding-e81497cfffde",
+      "log_path": "logs/audit/2026-10-31-20261031-143520-idle-audit-2827583f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/VelocityTracker.java#246",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewConfiguration.java#744",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/GestureDetector.java#914"
+      ],
+      "status": "verified",
+      "summary": "隐藏策略接口的弃用提示及 ViewConfiguration 实例超时接口的标志边界缺失",
+      "type": "api-lifecycle-boundary",
+      "updated_at": "2026-10-31T14:43:50.471857+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/04-gesture-recognition-performance.md",
+      "close_note": "已限定按下序列的命中链复用、补悬停例外；用 clickable 说明附加能力，取消所有手势修饰符统一具备焦点/语义等的概括；英文官方文档对照通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-143520-idle-audit-2827583f",
+      "created_at": "2026-10-31T14:40:12.832234+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-143520-idle-audit-2827583f",
+      "details": "官方 Understand gestures 的 Event dispatching and hit-testing 明确悬停按当前位置重新命中，不复用按下链；Different levels 明确 clickable 额外提供语义、视觉指示、焦点与键盘支持，不能把这些能力全部概括为 scrollable/draggable/transformable 的统一保证。限定按下序列，补悬停例外，并以 clickable 为具体能力示例。",
+      "id": "finding-d7b8f2e14b99",
+      "log_path": "logs/audit/2026-10-31-20261031-143520-idle-audit-2827583f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures?hl=en#different-levels",
+        "https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures?hl=en#event-dispatching"
+      ],
+      "status": "verified",
+      "summary": "Compose 命中链复用缺少悬停例外且高层修饰符能力被统一泛化",
+      "type": "compose-input-scope-boundary",
+      "updated_at": "2026-10-31T14:43:50.529945+08:00"
     }
   ],
   "schema_version": 1
