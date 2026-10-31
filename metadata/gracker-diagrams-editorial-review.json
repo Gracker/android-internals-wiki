@@ -46659,9 +46659,316 @@
       "before_count": 31,
       "before_all_images": 31,
       "sha256_before": "3745930bee7581466b89c422c0c7a43cabf2d2f31e0d9fd2ce89bd71df1326be",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "ch17-05-01-evaluation-evidence",
+          "title": "从信号语义到目标版本验证",
+          "decision": "remove",
+          "reason": "评估四框复述前方四项评估维度，没有实际信号验证实例。",
+          "original_line": 112,
+          "heading": "## 这些项目适合看设计取舍"
+        },
+        {
+          "original_id": "ch17-05-02-source-release-build",
+          "title": "源码、发布tag与构建属性",
+          "decision": "remove",
+          "reason": "三项目源码/tag/构建属性逐项重复版本表及两段坐标差异说明。",
+          "original_line": 132,
+          "heading": "## 这些项目适合看设计取舍"
+        },
+        {
+          "original_id": "ch17-05-03-block-sampling-window",
+          "title": "dispatch窗口内的延迟采样",
+          "decision": "keep",
+          "reason": "保留阈值1000/间隔300/dispatch1200的有标注合成采样顺序，解释首次0.8阈值和后续延迟。",
+          "original_line": 156,
+          "heading": "### 真实采样窗口与盲区"
+        },
+        {
+          "original_id": "ch17-05-04-wall-cpu-candidates",
+          "title": "墙钟、线程CPU与后续证据",
+          "decision": "remove",
+          "reason": "wall/CPU/时钟三列重复紧邻两个短段落，未画具体调度区间或数值差。",
+          "original_line": 163,
+          "heading": "### 真实采样窗口与盲区"
+        },
+        {
+          "original_id": "ch17-05-05-single-logger-hub",
+          "title": "单槽位logger与受控分发",
+          "decision": "remove",
+          "reason": "单槽logger、停止null和hub三列重复单段完整共存说明，未画观察者之间真实转发关系。",
+          "original_line": 170,
+          "heading": "### 真实采样窗口与盲区"
+        },
+        {
+          "original_id": "ch17-05-06-argus-data-flow",
+          "title": "编译织入、Provider汇总与宿主上传",
+          "decision": "keep",
+          "reason": "保留旧织入到Task、宿主Provider、缓存事务、SQLite记录和上传的真实分层数据流。",
+          "original_line": 191,
+          "heading": "## ArgusAPM：完整架构样本与迁移对象"
+        },
+        {
+          "original_id": "ch17-05-07-argus-durability",
+          "title": "缓存触发阈值与持久化边界",
+          "decision": "remove",
+          "reason": "入队/触发/事务三列是紧邻持久化段落的配对摘抄，主数据流图6已保留层次；正文仍明确ACK和回滚缺口。",
+          "original_line": 212,
+          "heading": "## ArgusAPM：完整架构样本与迁移对象"
+        },
+        {
+          "original_id": "ch17-05-08-argus-final-batch-ack",
+          "title": "满批与末批上传失败的不同删除行为",
+          "decision": "keep",
+          "reason": "保留满1000成功/满批失败/不足1000末批三种游标推进与删除行为的对比，揭示末批失败丢失。",
+          "original_line": 219,
+          "heading": "## ArgusAPM：完整架构样本与迁移对象"
+        },
+        {
+          "original_id": "ch17-05-09-argus-network-boundaries",
+          "title": "请求独立状态与响应Body测量边界",
+          "decision": "remove",
+          "reason": "并发状态、cost结算、Body预读三列复述同一短段落，没有并发交错或测量窗口图。",
+          "original_line": 226,
+          "heading": "## ArgusAPM：完整架构样本与迁移对象"
+        },
+        {
+          "original_id": "ch17-05-10-godeye-data-ui",
+          "title": "采集模块、观察者与浏览器看板",
+          "decision": "keep",
+          "reason": "保留Core→subject观察者→Monitor→HTTP/WebSocket→浏览器的数据展示链，分开采集与UI。",
+          "original_line": 255,
+          "heading": "## AndroidGodEye：浏览器看板式调试平台"
+        },
+        {
+          "original_id": "ch17-05-11-collie-stall-two-queues",
+          "title": "5000ms从何时开始计时",
+          "decision": "keep",
+          "reason": "保留dispatch先入FpsThread再排Handler5000延时的两队列顺序和共享invalid检查，不能等同起点后精确5秒。",
+          "original_line": 273,
+          "heading": "### Looper 卡顿与 ANR 判定的来源"
+        },
+        {
+          "original_id": "ch17-05-12-collie-fps-dispatch",
+          "title": "把消息累计误作帧率的计算路径",
+          "decision": "remove",
+          "reason": "快消息/慢消息/现代指标三列重复公式段落，没有真实dispatch与frame样本对照。",
+          "original_line": 288,
+          "heading": "### FPS 计算的 60 Hz 假设"
+        },
+        {
+          "original_id": "ch17-05-13-startup-timepoints",
+          "title": "初始化、绘制与完整显示的不同节点",
+          "decision": "remove",
+          "reason": "初始化/onDraw/focus/系统启动三列重复相邻三条启动边界和Provider说明。",
+          "original_line": 305,
+          "heading": "### 启动、流量与泄漏的指标命名"
+        },
+        {
+          "original_id": "ch17-05-14-collie-rx-counter",
+          "title": "共享基线与重复累计",
+          "decision": "keep",
+          "reason": "保留create基线、pause累计、resume不重置再pause的重复区间顺序，解释页面RX二次累计。",
+          "original_line": 312,
+          "heading": "### 启动、流量与泄漏的指标命名"
+        },
+        {
+          "original_id": "ch17-05-15-collie-strong-weak-gc",
+          "title": "监控器强引用与弱键候选",
+          "decision": "remove",
+          "reason": "强map/弱map/GC三列重复前后两段具体实现，未把同一Activity的强弱持有边真正连起来。",
+          "original_line": 323,
+          "heading": "### 启动、流量与泄漏的指标命名"
+        },
+        {
+          "original_id": "ch17-05-16-collie-worker-shutdown",
+          "title": "背压与停止是两项独立职责",
+          "decision": "remove",
+          "reason": "队列/worker/stop三列复述紧邻背压与停止段落，最小SDK架构图27已呈现有界替代。",
+          "original_line": 332,
+          "heading": "### 启动、流量与泄漏的指标命名"
+        },
+        {
+          "original_id": "ch17-05-17-rabbit-three-lifetimes",
+          "title": "Release、现场诊断与构建分析",
+          "decision": "remove",
+          "reason": "三类生命周期逐项重复紧邻三行能力运行位置表。",
+          "original_line": 347,
+          "heading": "## Rabbit：运行时工具与构建期检查的分工"
+        },
+        {
+          "original_id": "ch17-05-18-transform-migration",
+          "title": "按处理粒度选择现代构建接口",
+          "decision": "remove",
+          "reason": "逐类/全产物/验收三列重复迁移段落与四条检查清单，没有具体构建任务依赖。",
+          "original_line": 361,
+          "heading": "## Rabbit：运行时工具与构建期检查的分工"
+        },
+        {
+          "original_id": "ch17-05-19-rabbit-crash-delegation",
+          "title": "异常捕获与默认处理链",
+          "decision": "keep",
+          "reason": "保留isOpen及主/后台异常的真实决策分叉，展示关闭不恢复handler和后台未交还原处理链。",
+          "original_line": 370,
+          "heading": "## Rabbit：运行时工具与构建期检查的分工"
+        },
+        {
+          "original_id": "ch17-05-20-reuse-levels",
+          "title": "借鉴概念、移植源码与接入二进制",
+          "decision": "remove",
+          "reason": "概念/源码/二进制三列重复横向表后的单段复用层级解释。",
+          "original_line": 386,
+          "heading": "## 横向对比"
+        },
+        {
+          "original_id": "ch17-05-21-matrix-artifact-boundaries",
+          "title": "Matrix运行时模块与Trace构建插件",
+          "decision": "remove",
+          "reason": "Canary/插件/组合三列重复本节三段Matrix构建与模块边界，17.2已详述机制。",
+          "original_line": 401,
+          "heading": "## Matrix、轻量方案、官方 SDK、商业平台的分工"
+        },
+        {
+          "original_id": "ch17-05-22-platform-signal-layers",
+          "title": "帧、启动退出与按需重样本",
+          "decision": "remove",
+          "reason": "帧/启动退出/重样本三列重复八行平台版本表，没有实际演进时间轴。",
+          "original_line": 432,
+          "heading": "## Android 版本与 APM 能力演进"
+        },
+        {
+          "original_id": "ch17-05-23-profiling-artifact-types",
+          "title": "Android17触发类型与产物",
+          "decision": "remove",
+          "reason": "冷启动/OOM/异常类三列重复四项产物边界列表，未绘不同实际文件或采集时间。",
+          "original_line": 444,
+          "heading": "## Android 版本与 APM 能力演进"
+        },
+        {
+          "original_id": "ch17-05-24-anr-warning-correlation",
+          "title": "预警、系统ANR与退出记录关联",
+          "decision": "keep",
+          "reason": "保留warning listener、预警小现场anrId到后续退出AnrInfo同ID匹配的跨阶段关联，预警不等同最终ANR/死亡。",
+          "original_line": 453,
+          "heading": "## Android 版本与 APM 能力演进"
+        },
+        {
+          "original_id": "ch17-05-25-major-minor-feature-gates",
+          "title": "大版本、次版本与能力结果",
+          "decision": "remove",
+          "reason": "旧/35–36/36.1–37三列重复版本表和fullSDK守卫段落，无实际分支代码额外说明。",
+          "original_line": 462,
+          "heading": "## Android 版本与 APM 能力演进"
+        },
+        {
+          "original_id": "ch17-05-26-platform-capacity-switch",
+          "title": "从事件率与留存估算平台工作量",
+          "decision": "remove",
+          "reason": "容量五框只把一行会话事件字节乘法公式拆开，没有真实容量或不同采样单位对照数据。",
+          "original_line": 479,
+          "heading": "## 轻量方案和商业平台的切换点"
+        },
+        {
+          "original_id": "ch17-05-27-minimal-sdk-data-flow",
+          "title": "最小SDK的线程与持久化职责",
+          "decision": "keep",
+          "reason": "保留三类普通生产者经有界队列后台持久化上传，以及Crash尺寸受控直接持久化的独立旁路架构。",
+          "original_line": 516,
+          "heading": "## 从这些项目提炼最小 APM SDK"
+        },
+        {
+          "original_id": "ch17-05-28-event-ids-and-clocks",
+          "title": "事件身份与跨域时钟",
+          "decision": "remove",
+          "reason": "事件/进程/时钟三列重复唯一JSON和紧邻完整时钟域解释。",
+          "original_line": 565,
+          "heading": "### 统一事件协议"
+        },
+        {
+          "original_id": "ch17-05-29-bounded-queue-worker",
+          "title": "有界队列、磁盘与上传背压",
+          "decision": "remove",
+          "reason": "队列、后台、存储、上传与健康指标流程和保留图27语义重复，附加预算/自监控已由六条文字完整说明。",
+          "original_line": 583,
+          "heading": "## 轻量 APM 的线程模型"
+        },
+        {
+          "original_id": "ch17-05-30-config-controls",
+          "title": "配置快照与四层采集控制",
+          "decision": "remove",
+          "reason": "六框摘要四层控制清单且把预解析快照排在开关/采样/预算之后，正文明确异常前预解析更准确，避免按箭头误读。",
+          "original_line": 601,
+          "heading": "## 线上开关设计"
+        },
+        {
+          "original_id": "ch17-05-31-migration-continuity",
+          "title": "保持指标语义连续的迁移",
+          "decision": "remove",
+          "reason": "六框逐项复述七步迁移清单与后方映射表，没有额外兼容入口或互斥分组结构。",
+          "original_line": 627,
+          "heading": "## 从旧开源工具迁移到官方 SDK / 平台的 checklist（检查清单）"
+        }
+      ],
+      "sha256_after": "66823c964b212e6b1b1eeb4b3c1699c4153386cece5b8d1027833d9a45255078",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:39:50.574691+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 31,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a180/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a180/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 180,
+        "article": "src/part3-tools/ch17-apm/05-open-source-apm-history.md",
+        "registered_sha256": "3745930bee7581466b89c422c0c7a43cabf2d2f31e0d9fd2ce89bd71df1326be",
+        "frozen_sha256": "3745930bee7581466b89c422c0c7a43cabf2d2f31e0d9fd2ce89bd71df1326be",
+        "review_input_sha256": "07346d69192ad9b4febc777da4befd76e033660d4bbf4c0fbb8b38a1711f6dca",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/05-open-source-apm-history.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a180/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a180/external-source.diff",
+        "diff_sha256": "4bc064380d880d917a24ab7194373a67d0adb855b64585fd9ab701a752b0219a",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 339, \"characters\": 30483, \"svg_labels_read\": 31, \"actual_pngs_viewed\": 31, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 1, \"code_lines\": 31, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "07346d69192ad9b4febc777da4befd76e033660d4bbf4c0fbb8b38a1711f6dca",
+      "retired_diagrams": [
+        "ch17-05-01-evaluation-evidence",
+        "ch17-05-02-source-release-build",
+        "ch17-05-04-wall-cpu-candidates",
+        "ch17-05-05-single-logger-hub",
+        "ch17-05-07-argus-durability",
+        "ch17-05-09-argus-network-boundaries",
+        "ch17-05-12-collie-fps-dispatch",
+        "ch17-05-13-startup-timepoints",
+        "ch17-05-15-collie-strong-weak-gc",
+        "ch17-05-16-collie-worker-shutdown",
+        "ch17-05-17-rabbit-three-lifetimes",
+        "ch17-05-18-transform-migration",
+        "ch17-05-20-reuse-levels",
+        "ch17-05-21-matrix-artifact-boundaries",
+        "ch17-05-22-platform-signal-layers",
+        "ch17-05-23-profiling-artifact-types",
+        "ch17-05-25-major-minor-feature-gates",
+        "ch17-05-26-platform-capacity-switch",
+        "ch17-05-28-event-ids-and-clocks",
+        "ch17-05-29-bounded-queue-worker",
+        "ch17-05-30-config-controls",
+        "ch17-05-31-migration-continuity"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-180/retired-assets.json"
     },
     {
       "index": 181,
@@ -47698,8 +48005,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 112,
-  "next_article": "src/part3-tools/ch17-apm/05-open-source-apm-history.md",
+  "reviewed_articles": 113,
+  "next_article": "src/part3-tools/ch17-apm/06-jetpack-benchmark-baseline-profiles.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -47709,7 +48016,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:36:18.214291+08:00",
+  "updated_at": "2026-10-31T14:39:50.574691+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -47761,17 +48068,17 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+      "registered_sha256": "efd07971e0b27d8662cbf035baecbd90a1fbd390f8132d7e719155273e3f3918",
+      "observed_sha256": "5f7944fe526bb5a693fc15f78413c537031e969f5e80db898a2ca4dbc2cfc52f",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part2-performance/ch10-memory-perf/README.md",
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/05-open-source-apm-history.md",
-      "registered_sha256": "3745930bee7581466b89c422c0c7a43cabf2d2f31e0d9fd2ce89bd71df1326be",
-      "observed_sha256": "07346d69192ad9b4febc777da4befd76e033660d4bbf4c0fbb8b38a1711f6dca",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/05-open-source-apm-history.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -47985,9 +48292,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3761,
-  "reviewed_placements_after": 1632,
-  "net_removed_placements": 2129,
+  "reviewed_placements_before": 3792,
+  "reviewed_placements_after": 1641,
+  "net_removed_placements": 2151,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
