@@ -4,10 +4,11 @@ chapter: '1.4'
 section: '1.4'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-09-15'
-last_source_verified_at: '2026-09-15'
-last_verified_against: AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / Android Developers Baseline & Startup Profile docs checked 2026-09-15 / source.android.com Boot Image Profiles and on-device signing docs checked 2026-09-15
+last_verified: '2026-10-31'
+last_source_verified_at: '2026-10-31'
+last_verified_against: AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / Android Developers Baseline & Startup Profile and Macrobenchmark CompilationMode docs checked 2026-10-31 / source.android.com Boot Image Profiles and on-device signing docs checked 2026-10-31 / RemoteCompose remote-core and remote-player-view 1.0.0-alpha15 Google Maven sources
 confidence: high
+last_idle_audit_at: '2026-10-31T10:39:41+08:00'
 sources:
 - type: aosp
   path: libcore/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java
@@ -77,6 +78,16 @@ sources:
   path: https://source.android.com/docs/security/features/verifiedboot/on-device-signing-architecture
 - type: official
   path: https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode.Partial
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/compose-remote
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/compose/remote/remote-core/1.0.0-alpha15/remote-core-1.0.0-alpha15-sources.jar
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/compose/remote/remote-player-view/1.0.0-alpha15/remote-player-view-1.0.0-alpha15-sources.jar
 - type: article
   path: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md
   role: 插件同进程 ClassLoader 与 SurfaceControlViewHost 跨进程方案的边界对照
@@ -285,7 +296,9 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
 
 失败路径可能进入 `kErrorUnresolved` 或 `kErrorResolved`；编译期软验证失败还可能记录 `kRetryVerificationAtRuntime` 或 `kVerifiedNeedsAccessChecks`。
 
-OAT 中记录的 class status 可用 `kSuperclassValidated` 表示父类描述符已经校验，但运行时类对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制到正式对象后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
+OAT 中记录的 class status 可用 `kSuperclassValidated` 表示：当前类的虚方法签名所引用的类型，与它重写的父类方法、实现的接口方法中对应的类型一致。这里检查的是方法签名中的类型身份，涉及不同类加载器对同名类型的解析。`InitializeClass()` 可以依据有效 OAT 中的状态跳过 `ValidateSuperClassDescriptors()`；运行时类对象无需把 `kSuperclassValidated` 作为每次初始化都经历的固定节点。源码仍用 TODO 标注这项检查弱于完整的加载约束，不能据此保证自定义委派模型的类型安全。
+
+临时类在确定最终大小并复制到正式对象后会进入 `kRetired`。诊断代码不应假设每个类都会逐项经历同一组状态。
 
 `kInitialized` 表示执行初始化的线程已经完成工作，但其他线程仍需通过 acquire 内存语义取得此前写入的值；`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码因而可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`。其他路径先记录 `kInitialized`，再由批处理回调建立可见性：要么调用 `membarrier()`（Linux 内存屏障系统调用），要么走线程 checkpoint（让目标线程运行一段 ART 检查代码）。
 
@@ -353,13 +366,15 @@ LoadedApk.makeApplicationInner()
 
 #### 插件加载与进程隔离
 
-把插件 APK 追加到宿主的 `DexClassLoader`、`PathClassLoader` 或其他 `BaseDexClassLoader` 链路，改变的是宿主进程内的 DEX 查找路径和类定义归属；插件的静态初始化、View/Compose 运行时代码和崩溃，仍都发生在宿主进程里。外部材料中的车载多 App 同屏案例把这种 ClassLoader 方案当作第一版：插件 APK 被加载进宿主进程，插件 View 直接挂在宿主视图树，集成简单，代价是插件崩溃会带崩宿主，Compose 版本也必须与宿主对齐。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；已验证: libcore/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java 与 frameworks/base/core/java/android/app/ApplicationLoaders.java @ android-17.0.0_r1]
+把插件 APK 追加到宿主的 `DexClassLoader`、`PathClassLoader` 或其他 `BaseDexClassLoader` 链路，改变的是宿主进程内的 DEX 查找路径和类定义归属；插件的静态初始化、View/Compose 运行时代码仍在宿主进程里执行，进程级崩溃也会影响宿主。外部材料中的车载多 App 同屏案例把这种 ClassLoader 方案当作第一版：插件 APK 被加载进宿主进程，插件 View 直接挂在宿主视图树，该集成方式要求插件与宿主的 Compose 版本一致。这个要求适用于材料中的共享运行时方案；独立加载器可以隔离部分依赖版本，但共享接口和跨加载器传递的对象仍须满足类型身份与兼容性约束。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；源码: libcore/dalvik/src/main/java/dalvik/system/DelegateLastClassLoader.java 与 art/runtime/class_linker.cc 的 ValidateSuperClassDescriptors() @ android-17.0.0_r1]
 
-所以，优化或重排类加载路径，降的是查找、定义、验证和初始化这四类成本；故障隔离和依赖版本隔离，它给不了。需要“插件独立进程渲染、宿主只展示结果”的场景，应切到 IPC 与跨进程 UI 嵌入：前一篇材料用 `SurfaceControlViewHost` 对照说明，宿主通过 AIDL 传出 `hostToken`，Provider 在自己的进程中创建内容并把 `SurfacePackage` 回传，最终由 SurfaceFlinger 合成到同一屏；这解决的是进程隔离和图层嵌入，不是一个更快的 ClassLoader。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md]
+类加载器的依赖隔离不提供进程级故障隔离。需要“插件独立进程渲染、宿主只展示结果”的场景，应使用 IPC 与跨进程 UI 嵌入：材料中的 `SurfaceControlViewHost` 方案由宿主通过 AIDL 传出 `hostToken`，Provider 在自己的进程中创建内容并把 `SurfacePackage` 回传，最终由 SurfaceFlinger 合成到同一屏。分析时要分别测量宿主与 Provider 的类加载、初始化和通信成本。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md]
 
-如果场景只是展示型卡片，RemoteCompose 这类数据化方案把隔离做得更彻底：Provider 把 UI 描述序列化成字节文档，通过 AIDL 交给宿主；宿主用自己的播放器解释并绘制这份文档，插件 View 不进宿主视图树，也不共享 Provider 的实时 `Surface`，插件代码不在宿主进程执行。Provider 交付文档后无需持续持有渲染面，崩溃的表现也不再是宿主类加载失败或嵌入图层黑屏；代价是交互被收敛到预声明动作、回传 `actionId`、重新生成文档这类有限往返，滚动、拖拽等连续交互不适合它。
+展示型卡片也可以用 RemoteCompose 传递 UI 描述：Provider 把 UI 描述序列化成字节文档，通过 AIDL 交给宿主；宿主用自己的播放器解释并绘制这份文档，插件 View 不进宿主视图树，也不共享 Provider 的实时 `Surface`，插件代码不在宿主进程执行。Provider 交付文档后无需持续持有渲染面；已有文档可以继续由宿主绘制，新的远端业务处理和数据更新仍依赖 Provider 可用。
 
-该材料使用的是应用层 `androidx.compose.remote:*` alpha 实现，并提醒平台侧 `com.android.internal.widget.remotecompose.*` 属于隐藏实现，写结论时别把示例 API 当成 Android 17 稳定 SDK 契约。[来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md]
+交互能力取决于文档指令和播放器。材料示例通过预声明动作、回传 `actionId`、重新生成文档处理业务更新；`1.0.0-alpha15` 的 `remote-core` 已有 `ScrollModifierOperation` 和 `TouchExpression`，同版本 `remote-player-view` 的 `RemoteComposeView.onTouchEvent()` 会把移动事件交给文档的 `touchDrag()`，支持在宿主侧处理文档内的滚动和触摸状态。连续交互是否可用，应核对创建端生成的操作、播放器支持范围和两端版本，不能仅凭按钮往返示例判断。[源码: remote-core 与 remote-player-view 的 1.0.0-alpha15 Google Maven sources.jar]
+
+该材料使用的是应用层 `androidx.compose.remote:*` alpha 实现；上述内部类在 `1.0.0-alpha15` 中仍有 `@RestrictTo(LIBRARY_GROUP)` 限制。平台侧 `com.android.internal.widget.remotecompose.*` 属于隐藏实现，应用层库与平台隐藏类均不能当作 Android 17 稳定 SDK 契约。[来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md；官方版本说明: https://developer.android.com/jetpack/androidx/releases/compose-remote]
 
 排查这类方案时，我们先确认代码运行在哪个进程：同进程插件的类加载、`<clinit>` 和崩溃栈会出现在宿主进程，SIGQUIT/Perfetto 中也应在宿主进程看到对应加载器、DEX 路径或类加载 slice；SCVH 这类跨进程嵌入则要同时观察宿主进程、Provider 进程、Binder 连接和 surface 可见性，Provider 死亡可能导致嵌入区域黑屏或停更；RemoteCompose 这类字节文档路径，优先核对宿主播放器、Binder 文档传输和 Provider 重新生成文档的时机，若宿主出现插件 DEX 加载或插件 `<clinit>` 热点，应先怀疑架构中混入了同进程加载，而不是把它归因于 RemoteCompose 文档渲染。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md；已验证: system/core/debuggerd/debuggerd.cpp 与 art/runtime/class_linker.cc @ android-17.0.0_r1]
 
@@ -439,8 +454,10 @@ API 37 的 `debuggerd` 实现要求 root 权限，量产 `user` 构建不应依�
 - 生成覆盖真实启动入口的 Baseline Profile；
 - 只把首帧所需路径纳入 Startup Profile，避免主 DEX 被低优先级路径挤满；
 - 用 release/R8 构建检查最终 DEX，不要只检查尚未经过压缩、优化和混淆的 profile 生成变体；
-- 通过 Macrobenchmark 分别测 `None`、`BaselineProfile` 等明确编译模式；
+- 通过 Macrobenchmark 分别测 `CompilationMode.None()` 与 `CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require)`：前者不做预编译，后者要求使用 APK 内的 Baseline Profile；两种模式都允许测量期间发生 JIT，比较时须固定预热与迭代设置；
 - 用 `pm art dump` 确认设备采用了预期产物。
+
+`CompilationMode.Partial` 从 Macrobenchmark 1.1.0 提供。使用 `BaselineProfileMode.Require` 时，目标 APK 需要包含 ProfileInstaller，并由 AGP 7.0+ 打包 Baseline Profile；这组条件针对设备侧 profile 安装，不替代 Startup Profile 的构建要求。`warmupIterations` 默认为 `0`，若另行设置，会在预编译前增加用于收集 profile 的预热运行，比较两种模式时要记录该参数。[官方 API: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode.Partial]
 
 Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也可能让 profile 覆盖的类从 app image（包含预初始化类对象的 ART 镜像产物）——预先初始化好类对象的 ART 镜像产物——中更快恢复。它不保证消除所有 `Class` 对象的建立工作，也不会自动缩短应用写在 `<clinit>` 中的 I/O 或锁等待。
 
@@ -688,6 +705,8 @@ Android 12 起，ART 是可更新的 Mainline 模块。早期启动阶段的 `od
 - 已生成产物及 `cache-info.xml` 的一致性。
 
 检查失败时，`odrefresh` 可以重新生成主 Boot Image、Mainline Extension 和需要更新的 System Server 产物，默认输出目录是 `/data/misc/apexdata/com.android.art/dalvik-cache`。完整主镜像编译失败时，源码还会尝试生成只覆盖 ART 模块 JAR 的最小镜像，并在后续启动重试完整编译。
+
+支持 Android Virtualization Framework（AVF）受保护虚拟机的设备还可以使用 Isolated Compilation（隔离编译），把耗时编译移到重启前。重启后，`odsign` 校验虚拟机对产物的签名，并确认编译环境（例如 APEX 版本）与当前启动环境一致；不匹配时回退到重新运行 `odrefresh`。排查开机编译耗时时，需要先区分设备是否采用这条分支。[官方说明: https://source.android.com/docs/security/features/verifiedboot/on-device-signing-architecture]
 
 profile 输入和运行时产物的关系分开看：
 
