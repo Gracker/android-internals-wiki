@@ -90,10 +90,6 @@ consolidated_from:
 
 三类问题可以在广义流畅性范围内一起治理，诊断时仍要分开对待：渲染慢帧未必引发 ANR，平均 FPS（Frames Per Second，每秒帧数） 正常也排除不了输入延迟。
 
-<!-- gracker-diagram: ch07-01-three-symptoms -->
-![把卡顿描述拆成三类问题](../../assets/diagrams/ch07/ch07-01-three-symptoms.png)
-
-图：同一阻塞可能同时影响三类现象，但诊断口径不同；高 FPS 不能单独排除输入延迟，慢帧也不自动等于 ANR。
 
 ### FrameTimeline 如何判定一帧异常
 
@@ -118,10 +114,6 @@ FrameTimeline（逐帧时间线）结合预测有效性、完成时间、实际�
 
 同一个应用还可能有多条出图路径。标准 App Window 的像素生产者通常在应用进程；SurfaceView、Camera、Video、Native Graphics、Flutter 或游戏则可能使用独立 Surface、独立 layer（图层） 或另外的生产线程。所以动手分析之前，我们先确认四件事：谁生产 buffer（图形缓冲区）、buffer 进入哪个 Surface、对应哪个 layer，以及相关合成由 HWC 还是 RenderEngine（GPU 合成引擎）完成。出图类型一旦判断错，只盯着主线程或 RenderThread 分析，就会漏掉画面里由其他路径生产的部分。
 
-<!-- gracker-diagram: ch07-01-identify-producer -->
-![先识别像素生产者与图层](../../assets/diagrams/ch07/ch07-01-identify-producer.png)
-
-图：先确认 producer、Surface、layer 与合成方式，再选择线程与轨道。引擎、Camera、Video 等可能使用自己的生产线程或独立 Surface。
 
 ### FrameTimeline 如何描述一帧
 
@@ -164,10 +156,6 @@ Perfetto SQL 同时提供 `surface_frame_token` 和 `display_frame_token`。toke
 
 分析这类 trace 时，我们要回到实际的出图对象，检查目标 layer、buffer 更新、acquire fence（等待生产完成的同步栅栏）、SurfaceFlinger latch（锁定本帧 buffer）、composition type（合成类型）、display present fence（显示完成栅栏） 与 release fence（buffer 可再次使用的栅栏）。只有标准 HWUI 窗口适合把 App timeline、`doFrame` 和 RenderThread 当作一条完整主线。
 
-<!-- gracker-diagram: ch07-01-coverage-boundary -->
-![App timeline 缺失时的调查路径](../../assets/diagrams/ch07/ch07-01-coverage-boundary.png)
-
-图：工具关联不到某条生产路径时，改从实际 layer、buffer、producer 和 fence 取证；缺少 App timeline 本身不能证明没有渲染，也不能证明应用无责。
 
 ### JankType 位标志
 
@@ -226,10 +214,6 @@ trace 定级由 calculateJankSeverity() 完成。设 T 为传入的 frame interv
 
 `PredictionError`、`Dropped`、`Unknown` 和 `BufferStuffing` 这几位要结合 SurfaceFrame、DisplayFrame 及相邻帧才能解释。直接把结果归到单一进程，会漏掉它依赖的前后帧条件。
 
-<!-- gracker-diagram: ch07-01-jank-bit-navigation -->
-![JankType 位标志的调查导航](../../assets/diagrams/ch07/ch07-01-jank-bit-navigation.png)
-
-图：位标志可组合。先按 App、SF、Display 与跨帧状态找证据，再核对实际依赖；一个标志不能直接替代线程、fence 与时序分析。
 
 #### Perfetto 中的帧颜色
 
@@ -260,10 +244,6 @@ Android vitals（Google Play 质量指标）对 View / Canvas UI 的传统渲染
 
 一帧超过 700 ms，系统可能仍未触发 ANR；ANR 发生时，应用也未必正在绘制某一帧。两者可以由同一次主线程阻塞共同引发，但结论要分开引用：渲染一侧看 FrameTimeline 或渲染统计，ANR 一侧看 ANR reason 与系统栈。
 
-<!-- gracker-diagram: ch07-01-metric-boundaries -->
-![逐帧归因、Vitals 与 ANR 分开解释](../../assets/diagrams/ch07/ch07-01-metric-boundaries.png)
-
-图：FrameTimeline 按本帧计划与实际结果分类；Vitals 为 View UI 记录 slow/frozen 指标；ANR 按响应义务与平台策略触发。三者的分母、覆盖面与阈值需分别确认。
 
 ### 用户感知与毫秒阈值
 
@@ -283,19 +263,11 @@ Android vitals（Google Play 质量指标）对 View / Canvas UI 的传统渲染
 
 这份列表反复出现同一个原则：Binder transaction（Binder 调用）、GC 或某个长 slice 与帧窗口重叠，只说明时间上撞在一起；要认定为根因，还得证明它位于责任线程或依赖路径，并能解释 finish/present 的偏差。详细的 SQL 与因果分析见 [7.2 卡顿分析方法、典型场景与案例](02-jank-methodology-scenarios-cases.md)。
 
-<!-- gracker-diagram: ch07-01-read-trace-order -->
-![FrameTimeline 的读取顺序](../../assets/diagrams/ch07/ch07-01-read-trace-order.png)
-
-图：先锁定出图对象、帧与显示关联，再在对应窗口内检查依赖。长事件与帧重叠只是候选线索，还需证明它解释了 finish 或 present 偏差。
 
 ### JankStats 的角色
 
 AndroidX `JankStats` 面向应用内逐帧监测，可以把页面、交互状态等 UI context（界面上下文） 随 `FrameData`（单帧数据） 一起上报。这里固定核对 androidx.metrics:metrics-performance:1.0.0：发布 AAR 的 minSdk 为 23。源码仍有名为 Api16Impl 的旧计时后端，但不能据类名声称这个发布包支持 API 16；API 23 使用该后端，API 24/26 使用 FrameMetrics 后端，API 31+ 再使用更丰富的 deadline 等信息。
 
-<!-- gracker-diagram: ch07-01-jankstats-backends -->
-![JankStats 1.0.0 的发布与计时后端](../../assets/diagrams/ch07/ch07-01-jankstats-backends.png)
-
-图：1.0.0 AAR 的 minSdk 是 23。Api16Impl 是内部类名；API 23、24/26、31+ 选择不同后端，不能据名称推断发布包支持 API 16。
 
 1.0.0 的 jankHeuristicMultiplier 默认是 2，但阈值来源随后端变化：旧后端按显示刷新率估算 expected duration，API 31+ 的 getExpectedFrameDuration() 改取 FrameMetrics.DEADLINE。isJank 比较的是 UI 阶段合计时长是否严格大于 expectedDuration × multiplier；不是直接比较整帧 TOTAL_DURATION 或 GPU 总时长。API 31 另报的 frameOverrunNanos 则使用 TOTAL_DURATION − DEADLINE，不应用这个 multiplier。它们都与 SurfaceFlinger 的 FrameTimeline 分类分开解释。
 
@@ -396,10 +368,6 @@ DeliQueue 的 producer（消息生产者） 通过 `MessageStack` 的 CAS（Comp
 
 首次显示大 Bitmap 时，我们要区分后台 decode（解码）、MainThread 状态更新、RenderThread texture upload（纹理上传） 和 GPU 采样四段；等 trace 或 GPU 工具指出具体哪段变长，再决定调整解码尺寸、缓存、预热还是绘制方式。
 
-<!-- gracker-diagram: ch07-01-bitmap-four-stages -->
-![首次大图显示的四段成本](../../assets/diagrams/ch07/ch07-01-bitmap-four-stages.png)
-
-图：按四段定位变长的位置，再决定尺寸、缓存、预热或绘制方案；后台解码是一种业务安排，不能据它推断主线程、上传与 GPU 已没有成本。
 
 #### GPU 执行与 fence
 
@@ -455,10 +423,6 @@ FrameTimeline 的 `jank_type`、`present_type`、`layer_name` 和 `on_time_finis
 
 `DisplayHAL` 表示 SF 已经按时准备好，晚的是显示末端的呈现。我们接着检查 Composer HAL 调用、present fence、显示驱动、刷新率或分辨率切换，以及 power mode。CPU 频率下降或某个 App 方法变长即使与之同时发生，也只是背景信息。
 
-<!-- gracker-diagram: ch07-01-sf-display-triage -->
-![SF 与显示末端的不同调查入口](../../assets/diagrams/ch07/ch07-01-sf-display-triage.png)
-
-图：三个框是调查入口，不表示先后执行或互斥根因。分类位帮助缩小范围，仍需用实际线程、GPU、HWC 调用与 fence 时序证明责任。
 
 ### 系统级放大因素
 
@@ -492,10 +456,6 @@ FrameTimeline 的 `jank_type`、`present_type`、`layer_name` 和 `on_time_finis
 
 ADPF（Android Dynamic Performance Framework，Android 动态性能框架）的 `PerformanceHintManager` 向系统报告线程组、目标时长和实际工作时长，系统据此分配资源。performance hint（性能提示） 换来的资源不保证固定频率或固定核心，也越不过 thermal（温控） safety limit（温控安全限制）。遇到持续温控压力，还要靠降低画质、分辨率、更新率或工作量，把性能维持在设备能长期承受的范围内。
 
-<!-- gracker-diagram: ch07-01-thermal-hints-workload -->
-![温控约束下的资源与工作量反馈](../../assets/diagrams/ch07/ch07-01-thermal-hints-workload.png)
-
-图：性能提示报告目标与实际工作时长，系统在温控等约束下分配资源。持续压力下仍需降低工作量；频率下降或温度高本身不足以证明某帧根因。
 
 ### WebView、多窗口与交互场景
 
@@ -503,10 +463,6 @@ WebView 横跨宿主 App 与 Chromium 渲染路径：browser 与 GPU service 位
 
 多窗口和分屏会增加可见 layer、transaction、分辨率变化和多个应用的 CPU/GPU 工作负载，却未必触发 CLIENT composition。我们比较进入多窗口前后的 HWC 决策、DisplayFrame、GPU queue，以及每个可见应用的 SurfaceFrame；独立路径详见 [Android View 多窗口渲染](../../part1-fundamentals/ch02-rendering/14-multiwindow-desktop-rendering.md)。
 
-<!-- gracker-diagram: ch07-01-webview-window-producers -->
-![WebView 与多窗口先定位实际出图对象](../../assets/diagrams/ch07/ch07-01-webview-window-producers.png)
-
-图：WebView 的 browser/GPU service 位于宿主进程，renderer 路径按实际配置确认。多窗口增加并发与图层条件，但是否变为 CLIENT 要核对本帧 HWC 决策。
 
 跟手滑动、手写和手势导航还要量 input-to-display latency（输入到显示延迟）。把 InputDispatcher（系统输入分发器） 送达、应用消费、状态更新、目标 layer 变化与 present 串成一条链，才能得到端到端结论；`doFrame` 时长呈锯齿状，只描述了 App slice 的波动，解释不了输入链路或显示末端。
 
@@ -564,10 +520,6 @@ flowchart TD
 | 相关现象 | 温度高、CPU 频率低、某后台线程很忙 | 需要 workload 与时序对照 |
 | 无效捷径 | FPS 低、颜色变红、线程数多 | 无法单独定位根因 |
 
-<!-- gracker-diagram: ch07-01-evidence-retest -->
-![从候选原因到可复核修复](../../assets/diagrams/ch07/ch07-01-evidence-retest.png)
-
-图：证据要落在目标帧的责任链上。修复后保持设备状态、刷新率、场景脚本与采集配置一致，再比较具体异常与依赖区间；平均 FPS 只能作为其中一个聚合指标。
 
 修复之后，用相同的设备状态、刷新率、场景脚本和 trace 配置复测，比较异常类型、帧间隔分布和责任 slice；只比较平均 FPS，看不出这些差别。
 
