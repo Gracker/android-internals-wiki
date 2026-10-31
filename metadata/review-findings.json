@@ -11640,6 +11640,68 @@
       "summary": "模式切换概述遗漏请求合并、强制标志与旧 HAL 无缝参数边界",
       "type": "modeset-action-preconditions",
       "updated_at": "2026-10-31T22:20:47.936526+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md",
+      "close_note": "已统一三处为 DrawFrames <vsyncId>，解释 VSync id 来源并链接固定 r1 DrawFrameTask::run；源码断言、标题/代码/括注保护与本地三项 gate 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-223519-idle-audit-f5a1be37",
+      "created_at": "2026-10-31T22:38:40.602262+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-223519-idle-audit-f5a1be37",
+      "details": "DrawFrameTask.cpp:89-91 使用 ATRACE_FORMAT(\"DrawFrames %\" PRId64, vsyncId)。Trace 表、耗时解释与结论中的精确区间名需要统一，避免按错误名称检索。",
+      "id": "AIW-13.1-P2-r1-renderthread-trace-name",
+      "log_path": "logs/audit/2026-10-31-20261031-223519-idle-audit-f5a1be37-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp#89"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 r1 的 RenderThread 帧区间应为 DrawFrames <vsyncId>，正文仍写 DrawFrame",
+      "type": "trace-name-mismatch",
+      "updated_at": "2026-10-31T22:41:02.891351+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md",
+      "close_note": "已原位替换过宽的 Jank 定义，要求结合 jank_type、present_type、on_time_finish 和区间末端，并给出固定 r1 按时完成但提前 present 的源码反例；未改动 SQL 或捏造 trace。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-223519-idle-audit-f5a1be37",
+      "created_at": "2026-10-31T22:38:40.665532+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-223519-idle-audit-f5a1be37",
+      "details": "正文四个关口把 Jank 概括为未满足预期时间。固定 r1 的 classifyJankLegacyLocked 在 OnTimeFinish + EarlyPresent 时也可给出 PredictionError/SurfaceFlingerScheduling；getJankType 与 getFrameReadyMetadata/getFramePresentMetadata 是独立信息。需结合 present_type、on_time_finish 与区间末端判读。",
+      "id": "AIW-13.1-P2-frametimeline-jank-deadline",
+      "log_path": "logs/audit/2026-10-31-20261031-223519-idle-audit-f5a1be37-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp#724",
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql#271"
+      ],
+      "status": "fixed",
+      "summary": "FrameTimeline 非 None 分类不能直接等同于 App 超过 deadline",
+      "type": "misleading-classification",
+      "updated_at": "2026-10-31T22:41:02.954014+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md",
+      "close_note": "已将 runnable 原位改为通过 postVsyncCallback 注册的 TraversalCallback，明确固定 r1 实现 Choreographer.VsyncCallback；保留屏障、合帧与调度限制。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261031-223519-idle-audit-f5a1be37",
+      "created_at": "2026-10-31T22:38:40.732191+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261031-223519-idle-audit-f5a1be37",
+      "details": "ViewRootImpl.java:3329-3331 通过 postVsyncCallback 注册 mTraversalCallback；11445-11451 的 TraversalCallback 实现 Choreographer.VsyncCallback。保留同步屏障和帧申请合并解释，修正回调类型及注册入口。",
+      "id": "AIW-13.1-P2-r1-traversal-vsync-callback",
+      "log_path": "logs/audit/2026-10-31-20261031-223519-idle-audit-f5a1be37-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java#3329",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java#11445"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 r1 traversal 注册使用 VsyncCallback，正文仍称 Runnable",
+      "type": "source-implementation-mismatch",
+      "updated_at": "2026-10-31T22:41:03.016985+08:00"
     }
   ],
   "schema_version": 1
