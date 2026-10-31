@@ -244,21 +244,10 @@ App 收到的 VSync 回调，是系统从目标呈现时刻往前倒推出的唤
 
 下面这张图按数据和调度方向组织组件：
 
-```mermaid
-flowchart LR
-    A["显示时序来源<br/>HWC VSync / present fence"] --> B["VSyncReactor<br/>接收反馈、判断是否继续采样"]
-    B --> C["VSyncPredictor<br/>维护周期与相位预测"]
-    C --> D["VSyncDispatchTimerQueue<br/>计算目标 VSync 和唤醒时刻"]
-    D --> E["SurfaceFlinger MessageQueue<br/>SF frame callback"]
-    D --> F["EventThread#lpar;app#rpar;<br/>VSync event"]
-    F --> G["BitTube / DisplayEventReceiver"]
-    G --> H["Choreographer<br/>doFrame()"]
-    E --> I["latch / composition / HWC present"]
-    H --> J["App buffer production"]
-    J --> I
-    I --> K["present fence"]
-    K --> B
-```
+<!-- gracker-diagram: ch02-03-predict-dispatch-feedback -->
+![显示反馈校准模型，App 与 SF 分别定时唤醒](../../assets/diagrams/ch02/ch02-03-predict-dispatch-feedback.png)
+
+图：VSyncReactor 接收适用的硬件样本和 present fence，VSyncPredictor 维护预测；Dispatch 用各注册项的预算安排 App 与 SF 回调。present fence 可以反馈校准，App/SF 回调无需每次等待一个刚到达的硬件脉冲再逐级转发。
 
 图中的 BitTube 是由一对本地 socketpair 构成的跨进程事件通道，DisplayEventReceiver 用它接收 VSync 等显示事件，无须每帧重新发起一次 Binder（Android 跨进程通信机制） 调用。
 
@@ -270,10 +259,6 @@ flowchart LR
 
 每个物理显示都有自己的时序状态；多显示场景下，我们要按屏分别建立时间线，一条全局 VSync 时间线在这里并不存在。
 
-<!-- gracker-diagram: ch02-03-predict-dispatch-feedback -->
-![显示反馈校准模型，App 与 SF 分别定时唤醒](../../assets/diagrams/ch02/ch02-03-predict-dispatch-feedback.png)
-
-图：VSyncReactor 接收适用的硬件样本和 present fence，VSyncPredictor 维护预测；Dispatch 用各注册项的预算安排 App 与 SF 回调。present fence 可以反馈校准，App/SF 回调无需每次等待一个刚到达的硬件脉冲再逐级转发。
 
 ---
 
@@ -874,10 +859,6 @@ CALLBACK_INPUT
 
 五类回调各自解决不同问题：
 
-<!-- gracker-diagram: ch02-03-five-callback-stages -->
-![doFrame 的五类回调有固定顺序与不同职责](../../assets/diagrams/ch02/ch02-03-five-callback-stages.png)
-
-图：五阶段按顺序分发已经到期的回调。公开 FrameCallback 和 VsyncCallback 默认进入 ANIMATION；TRAVERSAL 按状态决定测量、布局和绘制工作，COMMIT 也无法证明 GPU 或显示已经完成。
 
 | 阶段 | Android 17 trace 子切片 | 主要工作 | 容易误解的地方 |
 |------|--------------------------|----------|----------------|
@@ -927,30 +908,13 @@ Choreographer 的注释明确指出：Traversal 若很重并跨过多个帧，CO
 
 下面的流程图把 Android 17 的关键分支放在一条线上：
 
-```mermaid
-flowchart TD
-    A["FrameDisplayEventReceiver.onVsync()"] --> B["投递异步 Handler 消息"]
-    B --> C["run() → Choreographer.doFrame()"]
-    C --> D["更新 buffer stuffing 状态"]
-    D --> E{"需要主动延迟一帧？"}
-    E -- "是" --> F["scheduleVsyncLocked() 后返回"]
-    E -- "否" --> G["FrameData.update() 选择 preferred timeline"]
-    G --> H{"mFrameScheduled？"}
-    H -- "否" --> I["返回：本次没有工作"]
-    H -- "是" --> J["计算 jitter / 必要时重同步 frame time"]
-    J --> K{"frame time 倒退或 FPS divisor 跳帧？"}
-    K -- "是" --> L["申请下一次 VSync 后返回"]
-    K -- "否" --> M["写入 FrameInfo，清除 mFrameScheduled"]
-    M --> N["INPUT → ANIMATION → INSETS_ANIMATION"]
-    N --> O["TRAVERSAL → COMMIT"]
-```
-
-收到 VSync event 后，`doFrame()` 仍可能因为四种情况提前返回：没有待处理工作、正在恢复 buffer backlog（缓冲区积压）、frame time 异常，或 FPS divisor（按固定倍数降低应用回调频率） 正在生效。流程图里的几个提前返回出口就是为这些情况准备的。
-
 <!-- gracker-diagram: ch02-03-doframe-early-exits -->
 ![收到 VSync 后，doFrame 仍可提前返回](../../assets/diagrams/ch02/ch02-03-doframe-early-exits.png)
 
 图：这里只画影响本轮回调是否执行的关键检查。buffer recovery 的主动延迟发生在 FrameData 更新之前；无待处理工作直接返回，时间倒退或 divisor 条件则请求下一次 VSync。正常路径写入 FrameInfo 后才分发五阶段。
+
+收到 VSync event 后，`doFrame()` 仍可能因为四种情况提前返回：没有待处理工作、正在恢复 buffer backlog（缓冲区积压）、frame time 异常，或 FPS divisor（按固定倍数降低应用回调频率） 正在生效。流程图里的几个提前返回出口就是为这些情况准备的。
+
 
 #### 5.2 FrameData 先选择 preferred timeline
 
@@ -1464,21 +1428,8 @@ FrameTimeline 记录一帧何时开始、何时到达截止时间、何时显示
 
 `Scheduler` 再把显示级策略、`EventThread`、SurfaceFlinger `MessageQueue` 和这些 per-display schedule（各显示设备的调度器） 连接起来。多显示场景下，SurfaceFlinger 的主合成循环及 EventThread 使用 pacesetter display（节拍基准显示设备） 的 schedule；pacesetter 变化时，`Scheduler::promotePacesetterDisplay()` 会替换它们使用的 `VsyncSchedule`。
 
-我们用下面这张图确定硬件样本、预测和回调各自停留在哪一层：
+硬件样本、预测和回调的总体关系见前文“组件关系”图。
 
-```mermaid
-flowchart LR
-    HWC["HWC VSync callback"] --> SAMPLE["Scheduler::addResyncSample()"]
-    FENCE["present fence"] --> REACTOR["VSyncReactor"]
-    SAMPLE --> REACTOR
-    REACTOR --> TRACKER["VSyncPredictor"]
-    APPREQ["EventThread request"] --> DISPATCH["VSyncDispatchTimerQueue"]
-    SFREQ["SurfaceFlinger scheduleFrame()"] --> DISPATCH
-    DISPATCH --> TRACKER
-    TRACKER --> TARGET["predicted present time"]
-    TARGET --> APPCB["EventThread callback"]
-    TARGET --> SFCB["MessageQueue callback"]
-```
 
 HWC 回调的入口是 `SurfaceFlinger::onComposerHalVsync()`，随后进入 `Scheduler::addResyncSample(displayId, timestamp, period, source)`。回调可能同时携带 HWC 估算的 period，也可能只有时间戳；`VSyncReactor` 再根据当前模式和采样状态决定是否继续启用硬件 VSync。
 
@@ -1590,16 +1541,6 @@ nextReady = nextVsync - readyDuration
 
 App UI 路径从 `DisplayEventReceiver::requestNextVsync()` 开始，经 Binder 请求到 `EventThreadConnection`，再由 `EventThread` 标记该连接需要一次 VSync。EventThread 的 VSync callback 由 pacesetter schedule 的 Dispatch 驱动，事件最终回到 `DisplayEventReceiver`，由 Choreographer 组织 input、animation、traversal 等工作。
 
-```mermaid
-flowchart LR
-    CH["Choreographer"] --> DER["DisplayEventReceiver::requestNextVsync()"]
-    DER --> CONN["EventThreadConnection"]
-    CONN --> ET["EventThread request state"]
-    ET --> VD["VSyncDispatch registration"]
-    VD --> VP["VSyncPredictor"]
-    VP --> ET2["EventThread VSync event"]
-    ET2 --> CH2["Choreographer#doFrame"]
-```
 
 连续 VSync 与 one-shot request（单次请求） 在 EventThread 内有不同状态；`requestNextVsync()` 不会无限叠加已经待处理的请求。App 侧发生阻塞时，我们可以沿 `Choreographer`、`DisplayEventReceiver`、EventThread connection（连接） 和 Dispatch registration（注册项） 逐级确认。
 
