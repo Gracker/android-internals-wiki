@@ -48723,9 +48723,318 @@
       "before_count": 32,
       "before_all_images": 32,
       "sha256_before": "d49348a7f063ff1b4b902089e28df4c426dea96862b569fb7db101a73ac55ceb",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 16,
+      "decisions": [
+        {
+          "original_id": "ch17-11-01-runtime-evidence",
+          "title": "三套运行时的证据与独立版本轴",
+          "decision": "remove",
+          "reason": "Runtime/version inventory repeats opening three-runtime explanation and later precise identity/version tables.",
+          "original_line": 55,
+          "heading": "# 混合栈与跨平台 APM (WebView / Flutter)"
+        },
+        {
+          "original_id": "ch17-11-02-load-stages",
+          "title": "一次文档加载的五个观察阶段",
+          "decision": "remove",
+          "reason": "Linear document lifecycle -> FCP order can imply load completion precedes content paint; phases overlap and the precise local table/text retain their different boundaries.",
+          "original_line": 74,
+          "heading": "### 1.1 一次加载的阶段划分"
+        },
+        {
+          "original_id": "ch17-11-03-three-readiness",
+          "title": "文档完成、内容绘制与业务可用",
+          "decision": "remove",
+          "reason": "Three readiness definitions repeat the immediately preceding table and FCP/LCP/appready paragraphs without actual intervals.",
+          "original_line": 85,
+          "heading": "### 1.1 一次加载的阶段划分"
+        },
+        {
+          "original_id": "ch17-11-04-navigation-scopes",
+          "title": "新文档、SPA 与历史恢复的指标归属",
+          "decision": "keep",
+          "reason": "Retain branching newdocument versus same-document SPA versus bfcache, with distinct navigation/route/calibration and oldmetric replay rules.",
+          "original_line": 94,
+          "heading": "### 1.1 一次加载的阶段划分"
+        },
+        {
+          "original_id": "ch17-11-05-clock-calibration",
+          "title": "往返校准与旧导航样本的拒绝",
+          "decision": "keep",
+          "reason": "Retain t0/navigation -> JS now/timeOrigin -> t1/revalidation -> midpointoffset -> same-document mapping/recalibration, with halfRTT caveat in caption.",
+          "original_line": 180,
+          "heading": "### 1.2 `performance.now()` 与 `elapsedRealtime` 需要校准"
+        },
+        {
+          "original_id": "ch17-11-06-observer-drain",
+          "title": "LCP 候选队列与报告时的排空",
+          "decision": "remove",
+          "reason": "Combined firstinput/hidden/pagehide -> report -> removealllisteners sequence conflates flushLcp with finish; code removes all listeners only at document/lifecycle finish, not first input.",
+          "original_line": 300,
+          "heading": "### 1.3 PerformanceObserver 上报要兼容 provider 差异"
+        },
+        {
+          "original_id": "ch17-11-07-capability-fallback",
+          "title": "provider 能力与缺失值的回退",
+          "decision": "remove",
+          "reason": "Provider capability/missing fallback checklist duplicates the immediately adjacent capability paragraph and final schema table.",
+          "original_line": 309,
+          "heading": "### 1.3 PerformanceObserver 上报要兼容 provider 差异"
+        },
+        {
+          "original_id": "ch17-11-08-blank-three-signals",
+          "title": "白屏检测的三类互补信号",
+          "decision": "remove",
+          "reason": "Blank-screen lifecycle/DOM/pixel columns duplicate the local three-signal comparison table; retain actual state/PixelCopy diagrams.",
+          "original_line": 324,
+          "heading": "## 2. H5 白屏：多信号判定与三态像素结论"
+        },
+        {
+          "original_id": "ch17-11-09-draw-commit-copy",
+          "title": "visual state、draw、commit 与 PixelCopy",
+          "decision": "keep",
+          "reason": "Retain visualstate -> realdraw -> supported hardwareframecommit -> boundedPixelCopy, distinguishing framecallback, swapchain and panel boundaries.",
+          "original_line": 333,
+          "heading": "## 2. H5 白屏：多信号判定与三态像素结论"
+        },
+        {
+          "original_id": "ch17-11-10-root-surface-scope",
+          "title": "Window 根 Surface 与屏幕最终合成的区别",
+          "decision": "keep",
+          "reason": "Retain Window root-Surface copy scope versus excluded independentSurface/video/IME/otherWindow/HWC output; not a final-screen capture.",
+          "original_line": 342,
+          "heading": "### 2.1 低分辨率 PixelCopy 与三态结果"
+        },
+        {
+          "original_id": "ch17-11-11-pixel-lifecycle",
+          "title": "区域像素采样的代次检查与回收",
+          "decision": "keep",
+          "reason": "Retain mainthread geometry/navigation -> boundedRect/Bitmap -> async worker -> stale/error check -> classification/finally recycle and pending-handler lifecycle.",
+          "original_line": 448,
+          "heading": "### 2.1 低分辨率 PixelCopy 与三态结果"
+        },
+        {
+          "original_id": "ch17-11-12-blank-state",
+          "title": "白屏状态机与不可判定分支",
+          "decision": "keep",
+          "reason": "Retain loading/visual/suspected/confirmed states with explicit inconclusive exits for background/error/conflicting evidence; evidence insufficiency must not become blank success.",
+          "original_line": 463,
+          "heading": "### 2.2 从“疑似”到“确认”"
+        },
+        {
+          "original_id": "ch17-11-13-renderer-cleanup",
+          "title": "renderer 退出后的逐实例清理",
+          "decision": "keep",
+          "reason": "Retain sharedrenderer exit fanout to each affected WebView and independent safe-report/remove/clear/destroy/business-idempotent recovery.",
+          "original_line": 525,
+          "heading": "### 3.1 API 26+：处理 `onRenderProcessGone()`"
+        },
+        {
+          "original_id": "ch17-11-14-renderer-interval",
+          "title": "无响应的起点、重复与恢复",
+          "decision": "keep",
+          "reason": "Retain one unresponsive interval with repeated callback count, separate responsive closure and optional terminate affecting sharedrenderer/gone handlers.",
+          "original_line": 544,
+          "heading": "### 3.2 API 29+：unresponsive 回调可能重复"
+        },
+        {
+          "original_id": "ch17-11-15-signal-strength",
+          "title": "直接退出证据、状态与间接怀疑",
+          "decision": "remove",
+          "reason": "Direct/state/suspected columns repeat the exact source-strength paragraph and retained concrete renderer/state diagrams.",
+          "original_line": 562,
+          "heading": "### 3.3 组合信号与 `suspected` 标记"
+        },
+        {
+          "original_id": "ch17-11-16-bridge-gates",
+          "title": "来源、消息类型、真实字节与有界队列",
+          "decision": "keep",
+          "reason": "Retain origin/mainframe/type-before-getter/UTF16thenUTF8/boundedworker/schema-navigation gates, with pre-entry serialization costs and same-originXSS limits.",
+          "original_line": 640,
+          "heading": "### 4.1 带 origin 规则的 Web message listener"
+        },
+        {
+          "original_id": "ch17-11-17-legacy-bridge-thread",
+          "title": "旧式 JSInterface 的同步调用与线程边界",
+          "decision": "remove",
+          "reason": "LegacyJSInterface versus evaluateJavascript inventory repeats the five exact thread/security bullets; no actual call-return/thread handoff drawn.",
+          "original_line": 661,
+          "heading": "### 4.2 `addJavascriptInterface()` 的使用限制"
+        },
+        {
+          "original_id": "ch17-11-18-bridge-timing",
+          "title": "Bridge 接收后阶段与完整往返",
+          "decision": "keep",
+          "reason": "Retain JS-source -> Native receive -> queuewait -> worker processing -> independent return timestamp/calibration, separating receiver-side costs from fullroundtrip.",
+          "original_line": 680,
+          "heading": "### 4.3 Bridge 调用的阶段拆解"
+        },
+        {
+          "original_id": "ch17-11-19-flutter-version-model",
+          "title": "Flutter Android 线程模型的版本边界",
+          "decision": "remove",
+          "reason": "Flutter version progression duplicates the detailed four-row version/config table; retain actual parser/init distinctions21.",
+          "original_line": 698,
+          "heading": "### 5.1 merged platform/UI thread 的版本演进"
+        },
+        {
+          "original_id": "ch17-11-21-merged-contention",
+          "title": "合并后主线程上的相互挤占",
+          "decision": "remove",
+          "reason": "Merged-mainthread contention columns repeat the single precise bidirectional-contention paragraph without a scheduling timeline or sharedqueue diagram.",
+          "original_line": 705,
+          "heading": "### 5.1 merged platform/UI thread 的版本演进"
+        },
+        {
+          "original_id": "ch17-11-20-flutter-init-chain",
+          "title": "线程默认值要沿初始化链核对",
+          "decision": "keep",
+          "reason": "Retain perversion memberinitial/defaultparser/JavaNativeflag checks and actual taskrunner outcomes, preventing inference from one initialvalue or removedJava string.",
+          "original_line": 712,
+          "heading": "### 5.1 merged platform/UI thread 的版本演进"
+        },
+        {
+          "original_id": "ch17-11-22-flutter-vsync",
+          "title": "NDK 和 Java vsync 路径汇入 engine",
+          "decision": "remove",
+          "reason": "NDK/Java/engine columns repeat the adjacent exact vsync paragraphs and do not draw actual alternative-path convergence.",
+          "original_line": 723,
+          "heading": "### 5.2 Flutter 与 Android Choreographer 的关系"
+        },
+        {
+          "original_id": "ch17-11-23-frame-phases",
+          "title": "FrameTiming 三个区间的结束边界",
+          "decision": "keep",
+          "reason": "Retain build/raster/totalSpan endpoints, buildnotWidget-only and target-refresh/pipeline caveats; totalSpan stops at rasterfinish notpanel.",
+          "original_line": 741,
+          "heading": "### 5.3 `FrameTiming` 同时看 build、raster 与 total span"
+        },
+        {
+          "original_id": "ch17-11-24-reporter-backpressure",
+          "title": "Flutter 帧上报的单批在途与丢弃",
+          "decision": "keep",
+          "reason": "Retain callbackidentity, boundedbatch/directMap, oneflight/backpressuredrop/finallyreset and explicit stop caveat in caption/prose.",
+          "original_line": 843,
+          "heading": "### 5.3 `FrameTiming` 同时看 build、raster 与 total span"
+        },
+        {
+          "original_id": "ch17-11-25-batched-clock",
+          "title": "批次到达时间与每帧 raw 时间",
+          "decision": "keep",
+          "reason": "Retain raw frame order -> usualbatchdelivery -> extrachannel/pause delay -> Native observation, showing reception cannot replace frame timestamps or justify a symmetric error bound.",
+          "original_line": 862,
+          "heading": "### 5.4 raw timestamp（未经跨运行时时钟映射的原始时间戳） 与 Native 接收时间的时钟差异"
+        },
+        {
+          "original_id": "ch17-11-26-dart-error-boundaries",
+          "title": "framework、root 与 child isolate 的错误路径",
+          "decision": "keep",
+          "reason": "Retain frameworkcaught/rootunhandled/childisolate separate callbacks with delegation/handled semantics and independent childlistener forwarding.",
+          "original_line": 873,
+          "heading": "### 5.5 Dart 异常的“是否已处理”语义"
+        },
+        {
+          "original_id": "ch17-11-27-failure-taxonomy",
+          "title": "Dart 错误、原生崩溃与容器失效",
+          "decision": "remove",
+          "reason": "Failure taxonomy tree duplicates exact five-item error/source list and retained callback26; no new routing mechanism.",
+          "original_line": 888,
+          "heading": "### 5.5 Dart 异常的“是否已处理”语义"
+        },
+        {
+          "original_id": "ch17-11-28-identity-scopes",
+          "title": "Session、容器、导航、路由和 engine 的关联",
+          "decision": "keep",
+          "reason": "Retain root session association with independent logicalsurface/attachgeneration, Webdocument/route and engine lifecycles; logicalID notsystemLayer.",
+          "original_line": 904,
+          "heading": "## 6. Session Timeline：共享关联键，保留各运行时语义"
+        },
+        {
+          "original_id": "ch17-11-29-schema-clocks",
+          "title": "统一 schema 保留来源时间与观察时间",
+          "decision": "remove",
+          "reason": "Source/observed/explanation schema columns duplicate detailed field table plus retained clockcalibration5/batchdelivery25.",
+          "original_line": 928,
+          "heading": "### 6.1 事件 schema"
+        },
+        {
+          "original_id": "ch17-11-30-reuse-generations",
+          "title": "页面复用、重新 attach 与进程重启",
+          "decision": "remove",
+          "reason": "Independent session/document/engine/attach/background/restart changes are serialized as a single path; preserve precise independent lifecycle rules in bullet list and identity28.",
+          "original_line": 944,
+          "heading": "### 6.2 会话 ID 在复用与进程重启下的维护"
+        },
+        {
+          "original_id": "ch17-11-31-collector-validation",
+          "title": "混合栈采集器的四组验收",
+          "decision": "remove",
+          "reason": "Four independent verification groups drawn serially add no relationship beyond the exact four-group checklist.",
+          "original_line": 960,
+          "heading": "### 6.3 上线前验证采集器本身"
+        },
+        {
+          "original_id": "ch17-11-32-privacy-budget",
+          "title": "隐私、采样预算与高价值摘要",
+          "decision": "remove",
+          "reason": "Privacy and budget sequence repeats final precise paragraph and each code-path constraints; no new branching or quantitative budget.",
+          "original_line": 967,
+          "heading": "### 6.3 上线前验证采集器本身"
+        }
+      ],
+      "sha256_after": "8e704642041b1dd56aa1e09740cf8d9cc063f855d2a31cdcc8b28a732fc87403",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:05:13.903937+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 32,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a186/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a186/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 186,
+        "article": "src/part3-tools/ch17-apm/11-hybrid-apm.md",
+        "registered_sha256": "d49348a7f063ff1b4b902089e28df4c426dea96862b569fb7db101a73ac55ceb",
+        "frozen_sha256": "d49348a7f063ff1b4b902089e28df4c426dea96862b569fb7db101a73ac55ceb",
+        "review_input_sha256": "15f3b76de00c0c94491c9cadbfb181d2b6e961a0aba3b4bc19b00981c80abc60",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/11-hybrid-apm.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a186/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a186/external-source.diff",
+        "diff_sha256": "69b1bc0212c5357e92caf3121213b4a5a9d4551ac06b9429098a7ad8a640567c",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 322, \"characters\": 29113, \"svg_labels_read\": 32, \"actual_pngs_viewed\": 32, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 7, \"code_lines\": 444, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "15f3b76de00c0c94491c9cadbfb181d2b6e961a0aba3b4bc19b00981c80abc60",
+      "retired_diagrams": [
+        "ch17-11-01-runtime-evidence",
+        "ch17-11-02-load-stages",
+        "ch17-11-03-three-readiness",
+        "ch17-11-06-observer-drain",
+        "ch17-11-07-capability-fallback",
+        "ch17-11-08-blank-three-signals",
+        "ch17-11-15-signal-strength",
+        "ch17-11-17-legacy-bridge-thread",
+        "ch17-11-19-flutter-version-model",
+        "ch17-11-21-merged-contention",
+        "ch17-11-22-flutter-vsync",
+        "ch17-11-27-failure-taxonomy",
+        "ch17-11-29-schema-clocks",
+        "ch17-11-30-reuse-generations",
+        "ch17-11-31-collector-validation",
+        "ch17-11-32-privacy-budget"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-186/retired-assets.json"
     },
     {
       "index": 187,
@@ -49696,8 +50005,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 118,
-  "next_article": "src/part3-tools/ch17-apm/11-hybrid-apm.md",
+  "reviewed_articles": 119,
+  "next_article": "src/part3-tools/ch17-apm/12-apm-client-architecture.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -49707,7 +50016,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:01:28.364218+08:00",
+  "updated_at": "2026-10-31T15:05:13.903937+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -49770,13 +50079,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/11-hybrid-apm.md",
-      "registered_sha256": "d49348a7f063ff1b4b902089e28df4c426dea96862b569fb7db101a73ac55ceb",
-      "observed_sha256": "15f3b76de00c0c94491c9cadbfb181d2b6e961a0aba3b4bc19b00981c80abc60",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/11-hybrid-apm.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -49962,9 +50264,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3962,
-  "reviewed_placements_after": 1694,
-  "net_removed_placements": 2268,
+  "reviewed_placements_before": 3994,
+  "reviewed_placements_after": 1710,
+  "net_removed_placements": 2284,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -49988,5 +50290,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 118
+  "currently_matching_reviewed_source_count": 119
 }

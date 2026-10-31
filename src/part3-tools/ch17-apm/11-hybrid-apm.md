@@ -52,10 +52,6 @@ title: 混合栈与跨平台 APM (WebView / Flutter)
 
 只记 Android 版本还不够：WebView provider 是实际提供 WebView 内核、可独立于系统更新的软件包，所以要记录它的 Chromium 版本；具体 App 的 Flutter 行为，由 APK 携带的 engine revision（引擎源码版本） 决定。WebView provider 与 Flutter engine 是两条独立的版本轴，排查线上数据时两个都要带上。
 
-<!-- gracker-diagram: ch17-11-01-runtime-evidence -->
-![三套运行时的证据与独立版本轴](../../assets/diagrams/ch17/ch17-11-01-runtime-evidence.png)
-
-图：Native、WebView 与 Flutter 各自记录事件含义，并以容器会话关联。 Android 版本、provider 与 APK engine revision 是独立版本轴，单个首屏值不能解释全部阶段。
 
 ## 1. WebView 加载：用事件时间线计算端到端耗时
 
@@ -71,10 +67,6 @@ title: 混合栈与跨平台 APM (WebView / Flutter)
 | 内容出现 | Window 首帧、visual-state callback | FCP、LCP candidate | 页面开始绘制和主要内容候选 |
 | 业务可用 | Bridge ready、首个可用交互 | 业务 `app_ready` | 产品定义的可操作状态 |
 
-<!-- gracker-diagram: ch17-11-02-load-stages -->
-![一次文档加载的五个观察阶段](../../assets/diagrams/ch17/ch17-11-02-load-stages.png)
-
-图：把容器、导航、文档状态、内容绘制与业务可用依序关联。 这些观察区间可能重叠，图中顺序不表示可把各段耗时直接相加。
 
 表里的 Web 事件用到两个基础概念：Navigation Timing 是浏览器记录顶层文档导航、网络和文档事件时刻的标准性能条目，DOM（Document Object Model） 则是浏览器用节点树表示的当前文档结构。这段里最容易高估的是 `onPageFinished()`——它只表示 main frame 加载完成，官方 API 明确说明下一帧未必已经包含当时的 DOM；内容是否真的可用，要看后面的绘制类信号。
 
@@ -82,19 +74,15 @@ title: 混合栈与跨平台 APM (WebView / Flutter)
 
 TTI（Time to Interactive）想估计页面何时进入可稳定交互状态，但浏览器没有对应的 Performance Entry（标准化的性能记录对象），Lighthouse 10 也已把它移除——它对偶发网络请求和 Long Task（长时间占用网页主线程的任务） 过于敏感。所以线上 WebView 用明确的业务 `app_ready`，再按 provider 支持情况补充 LCP、Long Tasks 或 INP（Interaction to Next Paint，衡量用户交互到下一次绘制的响应延迟）；`loadEventEnd` 推不出一个叫 TTI 的值。
 
-<!-- gracker-diagram: ch17-11-03-three-readiness -->
-![文档完成、内容绘制与业务可用](../../assets/diagrams/ch17/ch17-11-03-three-readiness.png)
-
-图：三类信号分别回答文档状态、内容出现与产品可操作性。 onPageFinished 与 loadEventEnd 均不能证明像素已显示，也推不出标准化 TTI 条目。
 
 SPA（Single Page Application，单页应用）还会带来一类特殊情况：same-document navigation（不创建新文档的页面内导航） 在页面内完成，因此不会自动产生新的 Navigation Timing，也不会重置常规 document 级 LCP。H5 指 WebView 中运行的网页业务，它的路由层需要自己发出 `route_id`、route start 和 route ready。一次 document load 的 LCP 只属于这一次加载，后续每个 soft navigation（不重新加载顶层文档的软导航） 要单独计算。
 
-Chrome 151 文档已公布 `soft-navigation` 与 `interaction-contentful-paint` 两类性能条目；目标 WebView provider 若实际暴露相应能力，可以补充这套浏览器软导航证据。它保留原文档时间轴：软导航耗时需减去相应 soft-navigation 的 `startTime`；绘制候选主要按 `interactionId` 关联，不把条目里可能属于前一个导航的 `navigationId` 直接当归属。浏览器 ID 与 SDK 的 `navigation_id` 也是两个命名空间。下面的简化脚本只收 document 加载指标，未接入这两个新 API；SPA 仍须保留业务 route start/ready。
+Chrome 151 文档已公布 `soft-navigation` 与 `interaction-contentful-paint` 两类性能条目；目标 WebView provider 若实际暴露相应能力，可以补充这套浏览器软导航指标。它保留原文档时间轴：软导航耗时需减去相应 soft-navigation 的 `startTime`；绘制候选主要按 `interactionId` 关联，不把条目里可能属于前一个导航的 `navigationId` 直接当归属。浏览器 ID 与 SDK 的 `navigation_id` 也是两个命名空间。下面的简化脚本只收 document 加载指标，未接入这两个新 API；SPA 仍须保留业务 route start/ready。
 
 <!-- gracker-diagram: ch17-11-04-navigation-scopes -->
 ![新文档、SPA 与历史恢复的指标归属](../../assets/diagrams/ch17/ch17-11-04-navigation-scopes.png)
 
-图：新文档加载、同文档路由和 bfcache 恢复分别建立指标边界。 软导航条目需 provider 实际支持；interactionId 与 SDK navigation_id 分属不同命名空间。
+图：新文档加载、同文档路由和 bfcache 恢复分别对应不同的指标归属。 软导航条目需 provider 实际支持；interactionId 与 SDK navigation_id 分属不同命名空间。
 
 ### 1.2 `performance.now()` 与 `elapsedRealtime` 需要校准
 
@@ -104,8 +92,8 @@ Chrome 151 文档已公布 `soft-navigation` 与 `interaction-contentful-paint` 
 
 1. Native 在调用脚本前记录 `t0`，同时捕获当前导航 ID；脚本返回网页上下文的导航 ID、`performance.now()` 和 `timeOrigin`。
 2. 回调到达 Native 时记录 `t1`；只接受 Native 导航仍一致、网页回传 ID 匹配且数值有限的样本，保存 `timeOrigin`。
-3. 用 `t0 + (t1 - t0) / 2` 估计执行时刻。half RTT 只是“本次往返区间半宽”：同一文档、时钟速率稳定且忽略计时器量化时才可作传输误差参考，不能宣称是全部校准误差的保守上界。
-4. 同一文档内选 RTT 较小的有效样本估计 `nativeElapsed ≈ jsTime + offset`；更小 RTT 有助于减小排队影响，但不证明两方向延迟对称，量化、暂停及漂移仍另记未知边界。
+3. 用 `t0 + (t1 - t0) / 2` 估计执行时刻。half RTT 只是“本次往返区间半宽”：同一文档、时钟速率稳定且忽略计时器量化时才可作传输误差参考，全部校准误差的保守上界还要另找依据。
+4. 同一文档内选 RTT 较小的有效样本估计 `nativeElapsed ≈ jsTime + offset`；更小 RTT 有助于减小排队影响，两方向延迟是否对称它说不上来，量化、暂停及漂移仍按未知项另记。
 5. 每次 main-frame 导航重新校准；进程从长时间后台恢复后再做一次，检查漂移。
 
 下面的 Kotlin 结构展示一个校准样本，它必须在 WebView 所在线程调用，回调也回到该线程。
@@ -297,23 +285,15 @@ fun sampleWebClock(
 
 LCP observer 给出候选序列。示例在可信 pointer/keyboard 输入、页面隐藏或 pagehide 时先 `takeRecords()`，再上报最后一个有效候选，避免队列里尚未派发的候选丢失；没有候选记 `not_observed`，不填0。`finalizationReason` 表示本采集器触发报告的原因，不声称掌握全部浏览器内部结束条件。页面持续可见且无输入时，超时快照只能叫 `lcp_candidate`。
 
-<!-- gracker-diagram: ch17-11-06-observer-drain -->
-![LCP 候选队列与报告时的排空](../../assets/diagrams/ch17/ch17-11-06-observer-drain.png)
 
-图：首次可信输入或生命周期结束时先排空 observer 队列，再报告最后有效候选。 该简化采集器需要文档开始时的可见性历史，晚安装与超时快照都须保留候选边界。
-
-监听器与观察器在文档结束时解除；同一个 document 不重复安装，避免 SPA 或 bfcache 恢复后再次用 buffered 重放旧 FCP/LCP。bfcache 返回是旧文档恢复，需单独记录恢复/业务 ready 与可见状态，不能把旧 document LCP 当成新的加载。合法骨架、轮播和业务内容替换也需要自己的语义，不能仅按最大元素候选判定页面已经可用。
+监听器与观察器在文档结束时解除；同一个 document 不重复安装，避免 SPA 或 bfcache 恢复后再次用 buffered 重放旧 FCP/LCP。bfcache 返回是旧文档恢复，恢复/业务 ready 与可见状态都要单独记一条，旧 document 的 LCP 仍归原来那次加载。合法骨架、轮播和业务内容替换各有各的语义，判定页面可用要把它们考虑进去，最大元素候选只是其中一个输入。
 
 每条样本同时记录 WebView provider 包名、`versionName`、Chromium 主版本、AndroidX WebKit 版本和 `supportedEntryTypes`（当前 provider 支持的性能条目类型）。某项能力缺失时写 `unsupported`，回退到 FCP、业务 ready、DOM 与像素信号；缺失值保持缺失，填成 0 就凭空造出了数据。
 
-<!-- gracker-diagram: ch17-11-07-capability-fallback -->
-![provider 能力与缺失值的回退](../../assets/diagrams/ch17/ch17-11-07-capability-fallback.png)
-
-图：随样本记录 provider 和支持条目，按能力选择浏览器指标与业务信号。 unsupported、not_observed 与 inconclusive 含义不同，缺失值不填0。
 
 ## 2. H5 白屏：多信号判定与三态像素结论
 
-用户报白屏时，单个信号很容易判错，白屏检测至少需要三类信号放在一起看：
+用户报白屏时，单个信号很容易判错；我们至少要把三类信号放在一起看：
 
 | 信号 | 优点 | 容易误判的场景 |
 | --- | --- | --- |
@@ -321,28 +301,24 @@ LCP observer 给出候选序列。示例在可信 pointer/keyboard 输入、页�
 | DOM / 业务 | 可见节点面积、文本/图片、`app_ready` | canvas/WebGL 的程序绘制内容、video、跨域 iframe 与仅用于占位的骨架屏 |
 | 像素 | 目标 Window 根 Surface 中可复制的区域内容 | 合法白页、主题、同窗口遮罩/骨架；独立 Surface、IME 或其他 Window 不属于这份根 Surface 拷贝 |
 
-<!-- gracker-diagram: ch17-11-08-blank-three-signals -->
-![白屏检测的三类互补信号](../../assets/diagrams/ch17/ch17-11-08-blank-three-signals.png)
 
-图：把生命周期、DOM/业务与受控区域像素一起解释，避免单个信号直接判白屏。 背景、骨架、canvas、video 与跨域 iframe 都可能使某类信号不足。
+先看成本最低的生命周期信号，它也最容易误读：`onPageCommitVisible()` 的官方语义是旧导航内容不会再被绘制，下一次 draw 可能只显示 WebView 背景，也可能显示新页面的一部分；单看它，我们确定不了首屏是否有效。
 
-生命周期信号成本最低，也最容易误读：`onPageCommitVisible()` 的官方语义是旧导航内容不会再被绘制，下一次 draw 可能只显示 WebView 背景，也可能显示新页面的一部分；单看它，我们确定不了首屏是否有效。
-
-`postVisualStateCallback()` 承诺调用时的 DOM 更新可反映在回调完成后的下一次 draw 中，不能证明已经显示。`postOnAnimation` 是帧回调，通常早于该帧 draw，因此“在里面立刻 PixelCopy”不能证明新像素已提交。API 29+ 且硬件渲染时可结合 `registerFrameCommitCallback()`，等帧已提交 swap chain 再复制；这仍不证明面板已经呈现。API 26—28 至少观察真实 draw，并把后续 PixelCopy 视作未严格绑定特定帧的快照。visual state 覆盖普通元素、图片、CSS animation、WebGL 和 canvas，video tag 不在其保证范围内。
+`postVisualStateCallback()` 的承诺到“调用时的 DOM 更新可反映在回调完成后的下一次 draw”为止，像素是否已经显示还要看后续。`postOnAnimation` 是帧回调，通常早于该帧 draw，因此在里面立刻 PixelCopy，采到的未必是已提交的新像素。要更接近“已提交”这一步，API 29+ 且硬件渲染时可结合 `registerFrameCommitCallback()`，等帧已提交 swap chain 再复制；这一步也只到 swap chain，面板呈现还在后面。API 26—28 至少观察真实 draw，并把后续 PixelCopy 视作未严格绑定特定帧的快照。visual state 覆盖普通元素、图片、CSS animation、WebGL 和 canvas，video tag 不在其保证范围内。
 
 <!-- gracker-diagram: ch17-11-09-draw-commit-copy -->
 ![visual state、draw、commit 与 PixelCopy](../../assets/diagrams/ch17/ch17-11-09-draw-commit-copy.png)
 
-图：先满足真实绘制前提，再把 PixelCopy 作为受边界约束的像素快照。 postOnAnimation 在绘制前；frame commit 也只到 swap chain 提交，均不等于面板呈现。
+图：先满足真实绘制前提，再把 PixelCopy 作为受约束的像素快照。 postOnAnimation 在绘制前；frame commit 到 swap chain 提交为止，面板呈现都在这两步之后。
 
 ### 2.1 低分辨率 PixelCopy 与三态结果
 
-像素信号用 PixelCopy。Android 8 / API 26 起可复制 Window 指定 Rect 到较小 Bitmap；固定 r1 实际取 `ViewRootImpl.mSurface`，复制该 Surface 的缓冲区内容，并按目标 Bitmap 尺寸缩放。它不把独立 SurfaceView、其他 Window 或硬件合成层一并合成进来。Window 须已有 backing surface，至少观察一次 draw；WebView 也应 attached、可见、尺寸有效，并且采样时仍属于当前导航与活动页面。
+像素信号我们用 PixelCopy 来取。Android 8 / API 26 起可复制 Window 指定 Rect 到较小 Bitmap；固定 r1 实际取 `ViewRootImpl.mSurface`，复制该 Surface 的缓冲区内容，并按目标 Bitmap 尺寸缩放。它不把独立 SurfaceView、其他 Window 或硬件合成层一并合成进来。Window 须已有 backing surface，至少观察一次 draw；WebView 也应 attached、可见、尺寸有效，并且采样时仍属于当前导航与活动页面。
 
 <!-- gracker-diagram: ch17-11-10-root-surface-scope -->
 ![Window 根 Surface 与屏幕最终合成的区别](../../assets/diagrams/ch17/ch17-11-10-root-surface-scope.png)
 
-图：Window 形式的 PixelCopy 固定从 ViewRootImpl 的根 Surface 复制受控区域。 独立 SurfaceView、IME、其他 Window 与硬件合成结果不能从这份快照反推。
+图：Window 形式的 PixelCopy 固定从 ViewRootImpl 的根 Surface 复制受控区域。 独立 SurfaceView、IME、其他 Window 与硬件合成结果，从这份快照里反推不出来。
 
 Kotlin 示例把有效区域的分类结果和 `Inconclusive` 分开。`Classified.blankCandidate` 只代表所采区域的空白候选；PixelCopy error、导航过期、页面不活动、空区域或无效分类分数均不可判定。有效像素本身也不足以确认业务白屏，还要结合 DOM、业务状态、主题和多次采样。
 
@@ -441,9 +417,9 @@ fun sampleWebViewPixels(
 }
 ```
 
-几何信息在主线程读取，结果在 worker Handler 交付；`isSampleCurrent` 必须线程安全、非阻塞，同时校验导航代次、可见状态和容器生命周期。调用方在所有 PixelCopy 请求完成前必须保持这个 Handler/Looper 存活，限制每个容器的在途采样数。分类器运行时异常与 PixelCopy 参数异常都会回收 Bitmap；不能把排队未完成的请求当成已经清理。示例最多取顶端720个窗口像素，Bitmap 宽160、高最多320，这只是受控区域样本。API34新 Request/Result 形式不改变 API26回调形式仍可用的事实。
+几何信息在主线程读取，结果在 worker Handler 交付；`isSampleCurrent` 必须线程安全、非阻塞，同时校验导航代次、可见状态和容器生命周期。调用方在所有 PixelCopy 请求完成前必须保持这个 Handler/Looper 存活，限制每个容器的在途采样数。分类器运行时异常与 PixelCopy 参数异常都会回收 Bitmap；清理是否完成，要以在途请求全部结束为准。示例最多取顶端720个窗口像素，Bitmap 宽160、高最多320，这只是受控区域样本。API34新 Request/Result 形式不改变 API26回调形式仍可用的事实。
 
-区域分类可组合近背景色比例、颜色熵、边缘/有效色块与主题基线。Bitmap 只在设备内分析并释放，截图不上传；已知 Native toolbar、骨架和同窗口遮罩要排除。示例仅适用于事先验证的轴对齐区域，父级裁剪、变换或覆盖关系不清楚时应不可判定；依赖独立 SurfaceView/video 的页面也需单独证据，不能把根 Surface 拷贝里缺少的内容判成白屏。
+区域分类可组合近背景色比例、颜色熵、边缘/有效色块与主题基线。Bitmap 只在设备内分析并释放，截图不上传；已知 Native toolbar、骨架和同窗口遮罩要排除。示例仅适用于事先验证的轴对齐区域，父级裁剪、变换或覆盖关系不清楚时应不可判定；依赖独立 SurfaceView/video 的页面要单独取证，根 Surface 拷贝里缺少的内容只说明这份快照没拍到它，白屏结论要靠它自己的信号。
 
 <!-- gracker-diagram: ch17-11-11-pixel-lifecycle -->
 ![区域像素采样的代次检查与回收](../../assets/diagrams/ch17/ch17-11-11-pixel-lifecycle.png)
@@ -463,7 +439,7 @@ fun sampleWebViewPixels(
 <!-- gracker-diagram: ch17-11-12-blank-state -->
 ![白屏状态机与不可判定分支](../../assets/diagrams/ch17/ch17-11-12-blank-state.png)
 
-图：loading、视觉提交、疑似与确认按预定条件推进，证据不足转入不可判定。 后台 heartbeat 超时和 PixelCopy 无数据不能单独确认白屏；确认仍按业务定义。
+图：loading、视觉提交、疑似与确认按预定条件推进，材料不足转入不可判定。 后台 heartbeat 超时和 PixelCopy 无数据只够记不可判定，确认白屏仍按业务定义。
 
 还要记住后台这个前提：页面进入后台后，JS timer、renderer 和 App 进程都可能被节流或冻结，此时 heartbeat（网页定期发送的存活信号）超时与 PixelCopy 无数据只能记成不可判定。线上按关键超时点采样一到两次，不按帧截图；白屏检测自己的 CPU、Bitmap 字节和执行时长，也要进入 APM 自监控。
 
@@ -482,7 +458,7 @@ WebView 从 Android 8 起可能把网页代码执行与绘制放进独立的 san
 - 该 WebView 已不可用，必须移出视图树、销毁并清除 Activity、Fragment、adapter 和缓存中的引用；
 - 完成旧实例清理并决定后续界面后返回 `true`，表示 App 已处理这次退出。返回 `false` 会让 renderer crash 导致 App crash，或让系统结束 App。
 
-客户端保留退出处理的关键顺序。采集器的运行时异常单独计数，不能妨碍清理；`onDeadWebView` 由容器清除 Activity、adapter、缓存等全部强引用，并决定错误页或重建。它须有界且不抛异常；清理失败时不能假装返回 true。`finally` 保证尝试 destroy，不意味着所有容器引用已经自动消失。
+客户端要守住退出处理的顺序：采集器的运行时异常单独计数，清理流程照常走；`onDeadWebView` 由容器清除 Activity、adapter、缓存等全部强引用，并决定错误页或重建。它须有界且不抛异常；清理失败时返回 true 就等于虚报已处理。`finally` 只保证尝试 destroy，Activity、adapter、缓存里的引用要在这一步之前由容器清掉。
 
 ```kotlin
 class ApmWebViewClient(
@@ -525,7 +501,7 @@ class ApmWebViewClient(
 <!-- gracker-diagram: ch17-11-13-renderer-cleanup -->
 ![renderer 退出后的逐实例清理](../../assets/diagrams/ch17/ch17-11-13-renderer-cleanup.png)
 
-图：每个受影响 WebView 单独记录退出、移出树、清除强引用并尝试销毁。 一个 renderer 可服务多个 WebView；采集失败不能阻止清理，重建需遵守业务幂等性。
+图：每个受影响 WebView 单独记录退出、移出树、清除强引用并尝试销毁。 一个 renderer 可服务多个 WebView；采集失败也照常清理，重建需遵守业务幂等性。
 
 ### 3.2 API 29+：unresponsive 回调可能重复
 
@@ -546,7 +522,7 @@ renderer_responsive
 
 图：把连续无响应回调聚成一个状态区间，重复计数并以 responsive 结束。 重复回调最短间隔5秒，实际间隔可更长；terminate 可能影响共享 renderer 的全部实例。
 
-用 AndroidX WebKit 的兼容接口前，先拿相应 `WebViewFeature` 检查 provider 能力：它能让某些功能在较低 Android API 上由新 provider 提供，所以“API level 不够”和“当前 provider 不支持”是两种不同的结论。
+我们用 AndroidX WebKit 的兼容接口前，先拿相应 `WebViewFeature` 检查 provider 能力：它能让某些功能在较低 Android API 上由新 provider 提供，所以“API level 不够”和“当前 provider 不支持”是两种不同的结论。
 
 ### 3.3 组合信号与 `suspected` 标记
 
@@ -559,10 +535,6 @@ API 26—28 没有平台 `WebViewRenderProcessClient`，provider 又不支持兼
 
 所以我们的样本要明确写 `signal_strength=direct|state|suspected` 和 `signal_source`，三档依次是直接回调、状态变化信号和间接怀疑。只有 `onRenderProcessGone()` 能把 renderer 退出写成直接事件，超时推断到 suspected 为止，冒充 crash 会把归因带偏。
 
-<!-- gracker-diagram: ch17-11-15-signal-strength -->
-![直接退出证据、状态与间接怀疑](../../assets/diagrams/ch17/ch17-11-15-signal-strength.png)
-
-图：退出回调、无响应状态与组合超时分别保留信号来源及强度。 后台节流、合法空页与队列拥塞都可能造成间接超时，不能改写成 renderer crash。
 
 ## 4. JSBridge：先保证来源可信，再测排队和序列化
 
@@ -572,7 +544,7 @@ JSBridge 是网页 JavaScript 与 Android 代码之间的通信接口，它的�
 
 当前 AndroidX WebKit 里我们首选 `WebViewCompat.addWebMessageListener()`：它按 `allowedOriginRules` 注入对象，回调还能拿到 `sourceOrigin` 与 `isMainFrame`。使用前先检查 `WebViewFeature.WEB_MESSAGE_LISTENER`；规则要写完整的 scheme、host 和必要的 port，别用 `*`。
 
-下面按 AndroidX WebKit `1.18.0` 的接口签名核验，受控 HTTPS 主 frame 才能入队。先检查 `message.type`：ArrayBuffer 不能调用字符串 `data` getter，否则会抛异常。字符串长度是 UTF-16 单元数，随后还要检查真实 UTF-8 字节数是否超过64 KiB。worker 须由调用方提供有界队列，满队列拒绝和 worker 解析异常都会增加 drop count；解析、schema 与导航校验继续放在 worker。
+下面按 AndroidX WebKit `1.18.0` 的接口签名核验，受控 HTTPS 主 frame 才能入队。先检查 `message.type`，按类型取载荷：ArrayBuffer 消息调用字符串 `data` getter 会直接抛异常。字符串长度是 UTF-16 单元数，随后还要检查真实 UTF-8 字节数是否超过64 KiB。worker 须由调用方提供有界队列，满队列拒绝和 worker 解析异常都会增加 drop count；解析、schema 与导航校验继续放在 worker。
 
 ```kotlin
 @UiThread
@@ -635,12 +607,12 @@ fun installApmMessageListener(
 }
 ```
 
-这里 allowlist 是第一道来源约束，回调里的 main-frame 与精确 origin 检查是第二道，重复校验的意义在于降低单点配置错误的风险。生产实现还要验证消息 schema（允许的字段、类型和大小规则），验证事件名、session 与 navigation 是否仍有效，并限制 worker queue 容量：队列满时丢掉低价值性能样本、累计 drop count（被丢弃的样本数），让队列保持有界。Native 主动向页面发送 Web message 时，同样要指定精确 `targetOrigin`。 容器负责一次安装与卸载生命周期；`dropCount` 是有限计数，不把被丢弃的载荷保存成日志。入口大小检查不能消除消息在检查前已经发生的跨进程序列化与分配成本，发送侧也必须限频限量。
+这里 allowlist 是第一道来源约束，回调里的 main-frame 与精确 origin 检查是第二道，重复校验的意义在于降低单点配置错误的风险。生产实现还要验证消息 schema（允许的字段、类型和大小规则），验证事件名、session 与 navigation 是否仍有效，并限制 worker queue 容量：队列满时丢掉低价值性能样本、累计 drop count（被丢弃的样本数），让队列保持有界。Native 主动向页面发送 Web message 时，同样要指定精确 `targetOrigin`。 容器负责一次安装与卸载生命周期；`dropCount` 是有限计数，不把被丢弃的载荷保存成日志。跨进程序列化与分配成本发生在入口大小检查之前，入口这一关管不到它，发送侧也必须限频限量。
 
 <!-- gracker-diagram: ch17-11-16-bridge-gates -->
 ![来源、消息类型、真实字节与有界队列](../../assets/diagrams/ch17/ch17-11-16-bridge-gates.png)
 
-图：Bridge 入口按精确来源、主 frame、消息类型和真实大小过滤，再交有界 worker。 同源 XSS 仍需业务授权；入口检查不能消除此前已发生的序列化与内存成本。
+图：Bridge 入口按精确来源、主 frame、消息类型和真实大小过滤，再交有界 worker。 同源 XSS 仍需业务授权；序列化与内存成本发生在入口检查之前，入口只负责过滤。
 
 也要清楚 origin 校验的极限：它拦不住受信任站点自身的 XSS（Cross-Site Scripting，跨站脚本）漏洞调用 Bridge。对敏感 Native 操作，“来自允许域名”只是第一道门，还要再验证消息 schema、业务状态与权限，才谈得上完整授权。
 
@@ -658,10 +630,6 @@ fun installApmMessageListener(
 
 Native 调 JavaScript 这边同样有线程纪律：`evaluateJavascript()` 必须在 WebView 的 UI 线程调用，结果回调也回到 UI 线程。它虽然是异步 API，但调用之前的 UI 排队、renderer 执行、结果序列化和回调派发，每一环都可能慢。
 
-<!-- gracker-diagram: ch17-11-17-legacy-bridge-thread -->
-![旧式 JSInterface 的同步调用与线程边界](../../assets/diagrams/ch17/ch17-11-17-legacy-bridge-thread.png)
-
-图：旧 JSInterface 的 Java 方法在私有后台线程执行，JS 同步等待它返回。 接口注入所有 frame 且无法可靠辨认调用来源，受控文档也应只复制小载荷并异步处理。
 
 ### 4.3 Bridge 调用的阶段拆解
 
@@ -675,12 +643,12 @@ Native 调 JavaScript 这边同样有线程纪律：`evaluateJavascript()` 必�
 - queue wait（进入队列到开始执行的等待时间）、解析、业务处理、结果编码和端到端耗时；
 - queue depth（采样时的排队任务数）、drop count、是否超时或取消。
 
-高频埋点按批发送，动画与滚动期间提高丢弃优先级。有一类内容从一开始就不进 APM：base64（把二进制数据编码成文本、同时会增加体积） 图片，以及完整 HTML、token、URL query 和用户输入。监控代码自己的 CPU、内存分配、queue wait 与主线程占用也要抽样上报，否则 Bridge APM 可能变成新的卡顿来源。 这里的receive/worker/finish只能拆Native接收后的成本；JS发出到结果回传的完整跨运行时耗时，还需要网页来源时刻和同文档时钟校准，不能凭Native三个时间戳反推。
+高频埋点按批发送，动画与滚动期间提高丢弃优先级。有一类内容从一开始就不进 APM：base64（把二进制数据编码成文本、同时会增加体积） 图片，以及完整 HTML、token、URL query 和用户输入。监控代码自己的 CPU、内存分配、queue wait 与主线程占用也要抽样上报，否则 Bridge APM 可能变成新的卡顿来源。 这里的receive/worker/finish只能拆Native接收后的成本；JS发出到结果回传的完整跨运行时耗时，还需要网页来源时刻和同文档时钟校准，Native三个时间戳只覆盖接收之后的一段。
 
 <!-- gracker-diagram: ch17-11-18-bridge-timing -->
 ![Bridge 接收后阶段与完整往返](../../assets/diagrams/ch17/ch17-11-18-bridge-timing.png)
 
-图：Native 的 receive、worker start 与 finish 可拆排队和本地处理，完整往返另需来源时间。 未校准的 JS 时间不能直接减 Native 时间，三个 Native 戳也不能反推全部跨运行时成本。
+图：Native 的 receive、worker start 与 finish 可拆排队和本地处理，完整往返另需来源时间。 未校准的 JS 时间要先做同文档校准才能与 Native 时间相减，三个 Native 戳只覆盖 Native 一侧。
 
 ## 5. Flutter APM：版本决定线程归属，`FrameTiming` 决定诊断语义
 
@@ -695,17 +663,9 @@ Native 调 JavaScript 这边同样有线程纪律：`evaluateJavascript()` 必�
 | 3.38—3.41 | 默认合并；`FlutterLoader` 发现旧 opt-out key 为 `true` 时抛出异常 | 升级前移除旧 key，按合并模型解释主线 engine |
 | 3.44—3.47.0 | 默认合并；旧 key 移入 <code>Flutter<wbr>Engine<wbr>Flags.<wbr>DISABLED_<wbr>FLAGS</code>，`FlutterLoader` 发现该 metadata key 存在即拒绝，并非静默忽略 | 升级前删除旧 key，设成 false 也不能代替删除；Android Native 同样拒绝禁用合并 |
 
-<!-- gracker-diagram: ch17-11-19-flutter-version-model -->
-![Flutter Android 线程模型的版本边界](../../assets/diagrams/ch17/ch17-11-19-flutter-version-model.png)
 
-图：分别按固定 tag 核对默认线程关系与旧 opt-out 配置的处理。 3.44—3.47 旧 metadata key 只要存在就被拒绝，写 false 也不能代替删除。
+task runner 是 engine 向某类线程角色投递工作的执行队列。合并之后，Dart framework 的 build/layout/paint 与 Android Platform、插件回调共享宿主主线程，Raster（把图层数据转成 GPU 可绘制内容）和 IO runner 仍是独立角色。于是线程之间出现新的挤压关系：耗时的 MethodChannel handler（平台通道消息处理器）会挤占 Dart UI 工作，长 Dart build 也会推迟 platform callback。这条因果只对合并模型成立；旧版或定制 engine 中，两类任务可能在不同 OS 线程。 维护者issue在2025-05-20更新中说明3.32stable已默认合并，这描述当时状态，首次默认版本要按各tag的解析器与task runner创建核对，本表另外核对了3.29tag。
 
-task runner 是 engine 向某类线程角色投递工作的执行队列。合并之后，Dart framework 的 build/layout/paint 与 Android Platform、插件回调共享宿主主线程，Raster（把图层数据转成 GPU 可绘制内容）和 IO runner 仍是独立角色。于是线程之间出现新的挤压关系：耗时的 MethodChannel handler（平台通道消息处理器）会挤占 Dart UI 工作，长 Dart build 也会推迟 platform callback。这条因果只对合并模型成立；旧版或定制 engine 中，两类任务可能在不同 OS 线程。 维护者issue在2025-05-20更新中说明3.32stable已默认合并，这描述当时状态，不能单凭它定位首次默认版本；本表另外核对3.29tag的解析器与Android task runner创建。
-
-<!-- gracker-diagram: ch17-11-21-merged-contention -->
-![合并后主线程上的相互挤占](../../assets/diagrams/ch17/ch17-11-21-merged-contention.png)
-
-图：合并模型中 Android Platform、插件与 Dart UI 构帧共享主线程，形成双向排队。 Raster 和 IO 仍是独立 runner；旧模型或定制 engine 不能直接套用该竞争关系。
 
 这里的默认值来自完整初始化链：3.27 的 `Settings` 成员虽初始为 true，Android 的命令行解析又按 enable 开关重设；3.29 则按“没有 disable 开关”得出 true。3.44/3.47 的 Java flag 表和 Native `SettingsFromCommandLine(..., true)` 共同限制旧退出方式。只搜索 `FlutterLoader` 某个字符串是否消失，或只读一个 C++ 成员初值，均会判断错。
 
@@ -720,26 +680,22 @@ vsync 是显示系统按刷新周期发出的垂直同步信号，Flutter 接的
 
 “使用同一个 vsync 源”和“走完整 Android View 绘制阶段”是两回事。FlutterView 完成宿主接入后，纯 Flutter 内容的 build、layer tree（待合成的图层树）与 raster 都在 engine 内部。所以我们拿 Android 的 JankStats、FrameMetrics 或主线程 message 看纯 Flutter 页面时，看到的首先是宿主侧的帧和线程症状，区分不出 Dart build 慢、raster 慢，还是 pipeline latency（从帧开始到最终完成的管线延迟）过高。这三个维度要靠 `FrameTiming`；需要逐帧关联线程时，再采 Perfetto 系统 trace。
 
-<!-- gracker-diagram: ch17-11-22-flutter-vsync -->
-![NDK 和 Java vsync 路径汇入 engine](../../assets/diagrams/ch17/ch17-11-22-flutter-vsync.png)
-
-图：平台 vsync 经可用的 NDK 路径或 Java 回退进入 engine，再驱动 Flutter 构帧与 raster。 共享 vsync 来源不表示纯 Flutter 内容走完整 Android View 绘制阶段。
 
 ### 5.3 `FrameTiming` 同时看 build、raster 与 total span
 
 `SchedulerBinding.addTimingsCallback()` 是适合线上采样的入口：
 
-- `buildDuration` 是 `buildStart` 到 `buildFinish` 的 UI 构帧区间，通常含 framework 的 build/layout/paint，并非只测某次 Widget.build；
+- `buildDuration` 是 `buildStart` 到 `buildFinish` 的 UI 构帧区间，通常覆盖 framework 的 build/layout/paint 整段，单次 Widget.build 只是其中一环；
 - `rasterDuration` 是 raster 阶段耗时；
 - `totalSpan` 从 vsync start 延伸到 raster finish，用于观察端到端 pipeline latency；
 - 回调列表按帧时间升序排列；
 - release 约每 1 秒批量交付，debug/profile 约每 100 ms；首帧立即交付；
 - 同一 callback 添加两次会执行两次，停止采集时要用同一实例移除。
 
-排查帧问题时，先把 build/raster 超过预算记为超预算样本，再与目标设备的实际呈现证据关联。`totalSpan` 只覆盖 vsync start 到 raster finish 的 engine 区间，不能直接代表输入到面板可见延迟，也不证明 GPU、SurfaceFlinger 或显示已经完成。流水并行时，build/raster各自不超预算，totalSpan仍可能超过一个刷新周期。60Hz周期约16.67ms，120Hz约8.33ms；固定16ms并非精确统一阈值，可变刷新率还要记录当帧模式或可观测vsync间隔及其不确定性。
+排查帧问题时，先把 build/raster 超过预算记为超预算样本，再与目标设备的实际呈现结果关联。`totalSpan` 只覆盖 vsync start 到 raster finish 的 engine 区间；输入到面板可见的延迟要另测，GPU、SurfaceFlinger 或显示是否完成也要另外确认。流水并行时，build/raster各自不超预算，totalSpan仍可能超过一个刷新周期。60Hz周期约16.67ms，120Hz约8.33ms；固定16ms并非精确统一阈值，可变刷新率还要记录当帧模式或可观测vsync间隔及其不确定性。
 
 <!-- gracker-diagram: ch17-11-23-frame-phases -->
-![FrameTiming 三个区间的结束边界](../../assets/diagrams/ch17/ch17-11-23-frame-phases.png)
+![FrameTiming 三个区间的结束点](../../assets/diagrams/ch17/ch17-11-23-frame-phases.png)
 
 图：build、raster 与 totalSpan 分别描述 engine 内的不同区间，并按实际刷新周期比较。 totalSpan 结束于 raster finish，不证明 GPU、SurfaceFlinger 或面板完成，也不是输入延迟。
 
@@ -857,12 +813,12 @@ Native 收到 `frameTimings` 时记录：
 - MethodChannel queue wait；
 - 每帧原始 phase timestamp 与时长。
 
-接收时间只说明“这一批最迟此时已经到达”，离每帧真实的发生时刻还有距离：约1秒/100ms只是通常的批量交付节奏，并非最坏时延上限；暂停、冻结、线程拥塞及通道排队可使记录更早。所以误差没有对称的 `±1000 ms` 可写，“至少 1000 ms”这样的下界也给不出；按秒聚合时，用 raw 相对顺序和 duration 就够了。要和 Native ANR、Binder 调用或 SurfaceFlinger 合成帧精确对上，应在同一次测试里检查 Perfetto 的 engine、Choreographer、gfx（图形） 和 sched（线程调度） 轨迹。
+接收时间只说明“这一批最迟此时已经到达”，离每帧真实的发生时刻还有距离：约1秒/100ms只是通常的批量交付节奏；暂停、冻结、线程拥塞及通道排队都可能让记录更早，最坏时延要按这些因素另算。所以误差没有对称的 `±1000 ms` 可写，“至少 1000 ms”这样的下界也给不出；按秒聚合时，用 raw 相对顺序和 duration 就够了。要和 Native ANR、Binder 调用或 SurfaceFlinger 合成帧精确对上，应在同一次测试里检查 Perfetto 的 engine、Choreographer、gfx（图形） 和 sched（线程调度） 轨迹。
 
 <!-- gracker-diagram: ch17-11-25-batched-clock -->
 ![批次到达时间与每帧 raw 时间](../../assets/diagrams/ch17/ch17-11-25-batched-clock.png)
 
-图：按帧 raw 时间排序和做差，Native 另记批次接收时间及通道等待。 约1秒或100ms是通常交付节奏，不能写成最坏延迟或对称校准误差。
+图：按帧 raw 时间排序和做差，Native 另记批次接收时间及通道等待。 约1秒或100ms只是通常交付节奏，最坏延迟与对称校准误差都没有依据可写。
 
 ### 5.5 Dart 异常的“是否已处理”语义
 
@@ -873,7 +829,7 @@ isolate 是 Dart 拥有独立内存和事件循环的执行单元。`PlatformDis
 <!-- gracker-diagram: ch17-11-26-dart-error-boundaries -->
 ![framework、root 与 child isolate 的错误路径](../../assets/diagrams/ch17/ch17-11-26-dart-error-boundaries.png)
 
-图：framework 已捕获错误、root 未捕获错误和 child isolate 错误分别接入并保留原处理语义。 写入监控队列不代表已处理；采集异常不能掩盖原始错误。
+图：framework 已捕获错误、root 未捕获错误和 child isolate 错误分别接入并保留原处理语义。 写入监控队列只算采集到，已处理与否要看原 handler 的返回结果；采集代码自身要绕开原始错误，别把它掩盖掉。
 
 事件类型至少区分：
 
@@ -885,10 +841,6 @@ isolate 是 Dart 拥有独立内存和事件循环的执行单元。`PlatformDis
 
 样本同时保留 Flutter framework 版本、engine revision、线程模型、renderer backend（实际使用的渲染后端）、GPU、route 与 `engine_id`——同一进程可以创建多个 engine，只有 `session_id` 时区分不开它们。
 
-<!-- gracker-diagram: ch17-11-27-failure-taxonomy -->
-![Dart 错误、原生崩溃与容器失效](../../assets/diagrams/ch17/ch17-11-27-failure-taxonomy.png)
-
-图：异常按实际来源归入 Dart、Native crash 或容器/engine 状态管道，并保留 engine 身份。 framework-caught 不自动成为 crash，detach、surface 丢失和 OOM 也不能冒充 Dart exception。
 
 ## 6. Session Timeline：共享关联键，保留各运行时语义
 
@@ -925,10 +877,6 @@ schema 是所有运行时共同遵守的字段名称、类型和含义约定，�
 
 我们把事件时间与观察时间分开存，查询端才不会把 MethodChannel 收包时刻当作 Flutter 单帧发生时刻，或把 `onPageFinished()` 当作像素已经显示。缺失字段使用 `unsupported`、`not_observed` 或 `inconclusive`，不使用 0。
 
-<!-- gracker-diagram: ch17-11-29-schema-clocks -->
-![统一 schema 保留来源时间与观察时间](../../assets/diagrams/ch17/ch17-11-29-schema-clocks.png)
-
-图：统一关联字段和单位，同时保存来源时钟、观察时刻、误差与信号强度。 接收时刻不替代事件发生时刻；unsupported、not_observed、inconclusive 保持不同状态。
 
 ### 6.2 会话 ID 在复用与进程重启下的维护
 
@@ -941,10 +889,6 @@ WebView 返回历史页时，旧 document 可能还在；bfcache、same-document
 - App 进程重启后不续用旧的单调时钟会话；服务端可用业务 trace 做弱关联，两段记录是否连续要另行确认；
 - 页面进入后台时关闭像素判断窗口，恢复后重新校准 Web 时钟与可见状态。
 
-<!-- gracker-diagram: ch17-11-30-reuse-generations -->
-![页面复用、重新 attach 与进程重启](../../assets/diagrams/ch17/ch17-11-30-reuse-generations.png)
-
-图：业务访问、文档导航、路由、engine 与 surface generation 按各自触发条件更新。 进程重启不能续用旧单调会话；后台关闭像素判断，恢复后复核时钟和可见状态。
 
 这样拼出来的一条查询结果，可以按因果顺序展示：容器创建、WebView 导航、FCP/LCP、业务 ready、白屏判定、Bridge 高耗时、Flutter 慢帧、网络与异常；每个 runtime 仍用自己的指标定义。
 
@@ -957,17 +901,9 @@ WebView 返回历史页时，旧 document 可能还在；bfcache、same-document
 3. 时钟：冷启动、长时间后台、系统时间跳变、provider/engine 更新与高负载队列；
 4. 开销：主线程时间、worker queue、Bitmap 峰值、MethodChannel bytes、CPU、drop count 和上传量。
 
-<!-- gracker-diagram: ch17-11-31-collector-validation -->
-![混合栈采集器的四组验收](../../assets/diagrams/ch17/ch17-11-31-collector-validation.png)
-
-图：按页面行为、Flutter 阶段、时钟异常与采集开销验收，再在目标设备检查实际结果。 主机替身和源码契约验证不代替真实 WebView provider、Flutter engine、GPU 与显示验收。
 
 最后是隐私和采样预算：白屏截图不上传，Bridge 参数默认不采集，URL 去掉 query（`?` 后的查询参数）、fragment（`#` 后的页内标识）与用户标识，异常栈按现有隐私策略脱敏。采样器达到 CPU、内存或队列预算时，优先丢正常帧和重复状态，保住 renderer gone、确认白屏与异常摘要。
 
-<!-- gracker-diagram: ch17-11-32-privacy-budget -->
-![隐私、采样预算与高价值摘要](../../assets/diagrams/ch17/ch17-11-32-privacy-budget.png)
-
-图：采集前去除敏感载荷，按 CPU、内存、队列和上传预算保留有用摘要。 像素仅本地分析，Bridge 参数默认不采集，截图与完整 URL 用户信息不进入上报。
 
 ## 参考资料
 
