@@ -61613,9 +61613,480 @@
       "before_count": 51,
       "before_all_images": 51,
       "sha256_before": "d1e6802464796fc10455e34ef39b189a91a746c83cbe16d08438d5c2a3516c8b",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "a246-01-backend-control-ownership",
+          "title": "先按实际图形后端确定控制边界",
+          "decision": "remove",
+          "reason": "后端控制者三行重述133–178路径表和分工，图未画实际Surface并存拓扑。",
+          "original_line": 141,
+          "heading": "### 一、先确认应用走哪条图形路径"
+        },
+        {
+          "original_id": "a246-02-hwui-ganesh-context",
+          "title": "Android17固定HWUI Vulkan仍创建Ganesh上下文",
+          "decision": "remove",
+          "reason": "Ganesh上下文四步重复8行源码和148–172说明，未新增调用分支。",
+          "original_line": 163,
+          "heading": "#### 1. HWUI 仍使用 Ganesh"
+        },
+        {
+          "original_id": "a246-04-angle-backend-verification",
+          "title": "GLES分析前先确认是否使用ANGLE",
+          "decision": "remove",
+          "reason": "GL信息/EGL/采集条件四步是176–183两段排查的缩写，没有后端分支图。",
+          "original_line": 180,
+          "heading": "#### 3. 先确认 ANGLE 后端是否启用"
+        },
+        {
+          "original_id": "a246-05-pipeline-static-inputs",
+          "title": "管线配方的静态输入",
+          "decision": "remove",
+          "reason": "静态输入四行逐项重述189–199输入清单，图不是管线键组合关系。",
+          "original_line": 196,
+          "heading": "### 二、管线创建消耗的是主机端时间"
+        },
+        {
+          "original_id": "a246-03-frontend-driver-compile",
+          "title": "着色器前端与设备管线创建分开",
+          "decision": "remove",
+          "reason": "前端/主机创建/GPU三行定义重复201–208，下一张保留的多轨阶段图表达更清楚。",
+          "original_line": 203,
+          "heading": "### 二、管线创建消耗的是主机端时间"
+        },
+        {
+          "original_id": "a246-06-host-gpu-queue-domains",
+          "title": "主机创建、GPU执行与缓冲排队的时间域",
+          "decision": "keep",
+          "reason": "CPU创建提交、GPU执行与fence、携带acquire排队、系统显示四轨分开，展示重叠可能且不当测量，补足主机编译非GPU队列任务。",
+          "original_line": 221,
+          "heading": "### 二、管线创建消耗的是主机端时间"
+        },
+        {
+          "original_id": "a246-07-uniform-and-variants",
+          "title": "uniform与管线变体来源",
+          "decision": "remove",
+          "reason": "uniform与变体三行重复228–242的完整条件列表，后文原生状态机不依赖此图。",
+          "original_line": 239,
+          "heading": "#### 哪些输入会改变管线键"
+        },
+        {
+          "original_id": "a246-08-hwui-private-cache",
+          "title": "HWUI平台缓存与应用边界",
+          "decision": "remove",
+          "reason": "HWUI私有缓存四步重复250–257平台字段与开关说明，无新增架构。",
+          "original_line": 254,
+          "heading": "#### 1. 平台负责 HWUI 缓存"
+        },
+        {
+          "original_id": "a246-09-runtime-effect-state-snapshot",
+          "title": "RuntimeShader程序复用与RenderEffect状态快照",
+          "decision": "keep",
+          "reason": "RuntimeShader稳定程序→创建时uniform快照→后续原uniform修改不更新旧effect→重建重设的状态链，防止将对象复用误当状态联动。",
+          "original_line": 270,
+          "heading": "#### 2. 应用控制的是变体来源和首次出现时机"
+        },
+        {
+          "original_id": "a246-10-representative-warmup",
+          "title": "预热按真实状态和用户阶段验证",
+          "decision": "remove",
+          "reason": "代表性预热/非关键阶段/对照/基准四步由275–282完整说明，图未新增真实场景或时间分配。",
+          "original_line": 279,
+          "heading": "#### 2. 应用控制的是变体来源和首次出现时机"
+        },
+        {
+          "original_id": "a246-11-baseline-profile-scope",
+          "title": "Baseline Profile和图形缓存覆盖不同对象",
+          "decision": "remove",
+          "reason": "Baseline Profile/原生/图形三行范围重复286–291，删除保留全部ART DEX限定。",
+          "original_line": 288,
+          "heading": "#### 3. Baseline Profile 的覆盖范围"
+        },
+        {
+          "original_id": "a246-12-frame-metrics-owner-lifecycle",
+          "title": "窗口GPU指标采集的单次生命周期",
+          "decision": "keep",
+          "reason": "主线程启动、worker有效GPU指标、主线程closed并移除、finally退worker的所有者链帮助审查47行collector，脚注明确非完成屏障。",
+          "original_line": 353,
+          "heading": "#### 4. `FrameMetrics.GPU_DURATION` 的含义"
+        },
+        {
+          "original_id": "a246-13-hwui-two-queue-roles",
+          "title": "HWUI两条Vulkan队列的实际分工",
+          "decision": "remove",
+          "reason": "两个队列和同族优先级四行重复360–393源码及四项清单，图未画独立上下文/物理引擎关系。",
+          "original_line": 379,
+          "heading": "### 四、HWUI 的两个 Vulkan 队列解决什么问题"
+        },
+        {
+          "original_id": "a246-14-graphite-deduplicated-handles",
+          "title": "Graphite按键查询任务和缓存",
+          "decision": "remove",
+          "reason": "Graphite同键查询四步缩写399–410，图没有已在执行/缓存命中的实际分支。",
+          "original_line": 407,
+          "heading": "#### 1. `PipelineCreationTask` 先处理重复请求"
+        },
+        {
+          "original_id": "a246-15-graphite-synchronous-path",
+          "title": "固定Graphite基础路径的同步调用",
+          "decision": "keep",
+          "reason": "DrawPass创建handle后立即start、当前线程findOrCreate再resolve的调用链明确固定基础路径同步，避免从Task命名推后台执行。",
+          "original_line": 424,
+          "heading": "#### 2. Android 17 标签中的 Vulkan 基础实现是同步调用"
+        },
+        {
+          "original_id": "a246-16-graphite-trace-scope",
+          "title": "Graphite跟踪名称的适用范围",
+          "decision": "remove",
+          "reason": "跟踪名称及HWUI范围三行重复431–445，所有限定和四个检索名仍完整。",
+          "original_line": 442,
+          "heading": "#### 3. Graphite 跟踪名称不能套到 HWUI"
+        },
+        {
+          "original_id": "a246-17-immutable-create-recipe",
+          "title": "编译线程持有稳定键与不可变配方",
+          "decision": "remove",
+          "reason": "稳定键/不可变配方/工作线程重建/发布四步由451–464完整说明，图未呈现浅拷贝失效或内存生命周期。",
+          "original_line": 461,
+          "heading": "#### 1. 构建稳定的管线键"
+        },
+        {
+          "original_id": "a246-18-native-pipeline-state-machine",
+          "title": "原生管线任务状态与前台行为",
+          "decision": "keep",
+          "reason": "真正状态机具有Unknown直接Ready和Queued→Compiling→Ready/Failed分支，补足前台行为表并保留工程示意边界。",
+          "original_line": 480,
+          "heading": "#### 2. 队列只接收缺失且仍需要的任务"
+        },
+        {
+          "original_id": "a246-19-cache-query-flags-guard",
+          "title": "仅缓存查询先确认真正生效的flags",
+          "decision": "remove",
+          "reason": "传统flags/flags2/binary三行由25行代码及521–528详述，图没有pNext覆盖的实际结构。",
+          "original_line": 525,
+          "heading": "#### 3. 用仅缓存查询保护渲染线程"
+        },
+        {
+          "original_id": "a246-20-cache-query-result-branches",
+          "title": "缓存查询结果的三个处理分支",
+          "decision": "remove",
+          "reason": "SUCCESS/COMPILE_REQUIRED/其他错误三行重述521–535，保留18完整状态机和兼容降级正文。",
+          "original_line": 532,
+          "heading": "#### 3. 用仅缓存查询保护渲染线程"
+        },
+        {
+          "original_id": "a246-21-cache-concurrent-access",
+          "title": "共享缓存的并发和发布责任",
+          "decision": "remove",
+          "reason": "默认同步/外部同步/每worker缓存三行逐项重述539–553，无CPU发布或GPU销毁时序。",
+          "original_line": 550,
+          "heading": "#### 4. 控制并发与发布"
+        },
+        {
+          "original_id": "a246-22-cache-header-compatibility",
+          "title": "版本一缓存头与图形身份校验",
+          "decision": "remove",
+          "reason": "头部身份三行由563–611字段列表和30行小端校验代码覆盖，图未增加字节布局。",
+          "original_line": 608,
+          "heading": "#### 1. 缓存数据是不透明的驱动数据"
+        },
+        {
+          "original_id": "a246-23-cache-snapshot-persistence",
+          "title": "管线缓存的受控快照和原子保存",
+          "decision": "remove",
+          "reason": "受控安全点/取数/临时替换/版本标记四步是617–633六步保存流程摘要，INCOMPLETE实际字节限定完整保留。",
+          "original_line": 628,
+          "heading": "#### 2. 写文件要服从 Vulkan 对象生命周期"
+        },
+        {
+          "original_id": "a246-24-pipeline-creation-feedback",
+          "title": "驱动创建反馈与GPU耗时分开",
+          "decision": "remove",
+          "reason": "VALID/duration/cachehit三行重复650–659驱动反馈语义，未画测量数据。",
+          "original_line": 656,
+          "heading": "#### 1. 管线创建反馈"
+        },
+        {
+          "original_id": "a246-25-graphics-pipeline-libraries",
+          "title": "图形管线库的四个复用部分",
+          "decision": "keep",
+          "reason": "四个图形管线库部分实际连到共同可执行pipeline，表达公共部分复用与链接汇合；fastLinking只读及LTO限定保留。",
+          "original_line": 669,
+          "heading": "#### 2. 图形管线库"
+        },
+        {
+          "original_id": "a246-26-stage-aware-scheduling",
+          "title": "把必要管线放到合适的用户阶段",
+          "decision": "remove",
+          "reason": "普通UI/加载/热更三行重述688–721阶段规则，不是任务优先级或依赖图。",
+          "original_line": 705,
+          "heading": "#### 游戏和原生渲染器"
+        },
+        {
+          "original_id": "a246-27-native-trace-correlation",
+          "title": "原生调用点的主机端创建证据",
+          "decision": "remove",
+          "reason": "调用点计时四步重述30行代码和764–769，图没有调用区间与GPU的对齐证据。",
+          "original_line": 766,
+          "heading": "#### 1. 原生 Vulkan：在调用点添加固定跟踪标记"
+        },
+        {
+          "original_id": "a246-28-diagnostic-tool-boundaries",
+          "title": "HWUI、AGI和系统轨迹各有可见范围",
+          "decision": "remove",
+          "reason": "HWUI/AGI/长时跟踪三行由773–793完整排查及工具范围说明保留。",
+          "original_line": 790,
+          "heading": "#### 3. AGI 的适用范围"
+        },
+        {
+          "original_id": "a246-29-buffer-interval-evidence",
+          "title": "缓冲生命周期只能限定责任区间",
+          "decision": "remove",
+          "reason": "三种buffer区间配对完全重复799–810三列表，不是同步依赖图。",
+          "original_line": 807,
+          "heading": "#### 4. 缓冲生命周期的适用范围"
+        },
+        {
+          "original_id": "a246-30-kernel-responsibility",
+          "title": "内核证据定位调度与同步",
+          "decision": "remove",
+          "reason": "内核/同步/业务三行范围重复814–827，图不提供实际调度状态。",
+          "original_line": 824,
+          "heading": "#### 5. 内核证据的责任范围"
+        },
+        {
+          "original_id": "a246-31-impeller-build-runtime-separation",
+          "title": "Impeller离线前端与设备运行时分层",
+          "decision": "remove",
+          "reason": "构建到PSO到显示四步与本节原生8阶段流程重复，原生更完整并配有GLES限定正文。",
+          "original_line": 919,
+          "heading": "### 1. 先区分着色器、图形管线与一帧显示"
+        },
+        {
+          "original_id": "a246-32-impeller-selection-build-branches",
+          "title": "Flutter3.44.7后端选择受构建分支约束",
+          "decision": "remove",
+          "reason": "构建分支四行重述930–945的SLIMPELLER说明与选择表，图未画真正条件决策树。",
+          "original_line": 934,
+          "heading": "#### 2.1 Flutter 3.44.7 的选择分支"
+        },
+        {
+          "original_id": "a246-33-impeller-auto-fallback",
+          "title": "自动选择先做设备条件检查再尝试Vulkan",
+          "decision": "remove",
+          "reason": "预检/成功/失败与最终身份四行由947–954完整解释，配图没有连接的分支结构。",
+          "original_line": 949,
+          "heading": "#### 2.1 Flutter 3.44.7 的选择分支"
+        },
+        {
+          "original_id": "a246-34-impeller-debug-override",
+          "title": "后端覆盖与短期退出的版本边界",
+          "decision": "remove",
+          "reason": "debugprofile/release/退出三行重述964–983开关限定，图无新增生命周期。",
+          "original_line": 980,
+          "heading": "#### 2.2 配置开关用于诊断对照"
+        },
+        {
+          "original_id": "a246-35-offline-backend-work",
+          "title": "离线着色器产物不消除所有后端编译",
+          "decision": "remove",
+          "reason": "VulkanSPIRV/GLESGLSL/SkiaSkSL三行重复989–996及1109，原生流程与正文已保留后端边界。",
+          "original_line": 993,
+          "heading": "#### 3.1 内建着色器在引擎构建阶段处理"
+        },
+        {
+          "original_id": "a246-36-default-handle-and-variants",
+          "title": "常用默认句柄与按需变体",
+          "decision": "remove",
+          "reason": "默认句柄/静态Options/首需三行逐项重复1000–1007，下一张保留队列接管轨道表达关键等待。",
+          "original_line": 1004,
+          "heading": "#### 3.2 常用管线句柄会尽早创建"
+        },
+        {
+          "original_id": "a246-37-compile-queue-eager-handoff",
+          "title": "异步编译任务可被等待方提前执行",
+          "decision": "keep",
+          "reason": "descriptor/future、pending队列、Raster WaitAndGet/TakeJob三条轨道展示等待方可取走尚未被worker拿走的任务，脚注保留worker已取得时只等待的另一条件。",
+          "original_line": 1020,
+          "heading": "#### 3.3 `PipelineCompileQueue` 处理并发、去重与提前执行"
+        },
+        {
+          "original_id": "a246-38-compile-elevation-counter",
+          "title": "提升优先级计数与单次耗时分开",
+          "decision": "remove",
+          "reason": "PrioritiesElevated计数与调用级耗时三行重复1025–1030及1295事件表，不新增证据关系。",
+          "original_line": 1027,
+          "heading": "#### 3.3 `PipelineCompileQueue` 处理并发、去重与提前执行"
+        },
+        {
+          "original_id": "a246-39-impeller-memory-disk-caches",
+          "title": "Impeller内存描述表与磁盘驱动缓存",
+          "decision": "remove",
+          "reason": "内存描述表/磁盘driver/创建剩余成本三行重述1049–1088，无实际缓存生命周期图。",
+          "original_line": 1051,
+          "heading": "#### 4.1 内存中的描述缓存"
+        },
+        {
+          "original_id": "a246-40-impeller-persistence-checkpoint",
+          "title": "固定引擎每50个取得的surface frame检查dirty",
+          "decision": "remove",
+          "reason": "50surfaceframe检查dirty到worker保存四步由1060–1075完整说明，图不是保证全部完成的条件分支，保留正文限制更充分。",
+          "original_line": 1072,
+          "heading": "#### 4.2 磁盘中的 `VkPipelineCache` 数据"
+        },
+        {
+          "original_id": "a246-41-cache-cold-warm-experiments",
+          "title": "Activity重入、进程重启与磁盘冷热分开",
+          "decision": "remove",
+          "reason": "Activity/force-stop/清数据三行对应1081–1093清理范围列表，图无状态前后对照。",
+          "original_line": 1090,
+          "heading": "#### 4.3 缓存命中之后的剩余成本"
+        },
+        {
+          "original_id": "a246-42-fragment-program-future-boundary",
+          "title": "fromAsset的Future与初始管线任务没有完成屏障",
+          "decision": "keep",
+          "reason": "资源读取解析向Dart Future与Raster/worker任务两路分叉，不把await当全部PSO完成屏障，保留并行关系示意。",
+          "original_line": 1117,
+          "heading": "#### 5.2 `FragmentProgram.fromAsset()` 会缓存程序，并异步准备初始管线"
+        },
+        {
+          "original_id": "a246-43-shader-resource-owner",
+          "title": "自定义着色器资源的关闭与迟到结果",
+          "decision": "keep",
+          "reason": "共享load Future、返回后检查关闭、仅活跃时建Shader、dispose拒迟到赋值的所有权链连接45行资源代码，突出失败重试及终态。",
+          "original_line": 1176,
+          "heading": "#### 5.2 `FragmentProgram.fromAsset()` 会缓存程序，并异步准备初始管线"
+        },
+        {
+          "original_id": "a246-44-runtime-effect-state-variants",
+          "title": "运行时效果仍按附件与混合状态创建变体",
+          "decision": "remove",
+          "reason": "Bootstrap/Options/首次尖峰三行重述1183–1198，Future分叉保留图已承担关键异步边界。",
+          "original_line": 1187,
+          "heading": "#### 5.3 运行时效果可以创建按需变体"
+        },
+        {
+          "original_id": "a246-45-shader-warmup-renderer-scope",
+          "title": "ShaderWarmUp面向Skia的诊断与预热",
+          "decision": "remove",
+          "reason": "Skia/Impeller/提前加载三行重复1202–1216四条范围清单，不提供新的预热时序。",
+          "original_line": 1206,
+          "heading": "### 6. `ShaderWarmUp` 与 Impeller 的边界"
+        },
+        {
+          "original_id": "a246-46-flutter-frame-timing-granularity",
+          "title": "FrameTiming阶段指标不等于编译分类",
+          "decision": "remove",
+          "reason": "FrameTiming三类字段与预算重复1222–1261解释和25行日志代码，没有真实阶段轨道。",
+          "original_line": 1258,
+          "heading": "#### 7.1 `FrameTiming` 的阶段粒度"
+        },
+        {
+          "original_id": "a246-47-devtools-phase-routing",
+          "title": "DevTools先分UI、Raster与Android显示阶段",
+          "decision": "remove",
+          "reason": "UI/Raster/Android三行路线逐项重复1267–1276，没有分支树或真实帧数据。",
+          "original_line": 1273,
+          "heading": "#### 7.2 DevTools 先区分 UI 与 Raster 阶段"
+        },
+        {
+          "original_id": "a246-48-system-trace-evidence-join",
+          "title": "系统跟踪同时收集Flutter事件与显示证据",
+          "decision": "remove",
+          "reason": "systrace/Perfetto/业务三行重复1280–1323命令、事件表及业务代码，无新增关联。",
+          "original_line": 1288,
+          "heading": "#### 7.3 Perfetto 需要 Flutter 事件与 Android 显示事件同时存在"
+        },
+        {
+          "original_id": "a246-49-root-view-composition-topology",
+          "title": "Flutter根视图决定Android显示拓扑",
+          "decision": "remove",
+          "reason": "两根视图及外部源三行重述1327–1354，对象关系在已读相邻Surface专篇及本节正文完整保留；图未画真实layer树。",
+          "original_line": 1349,
+          "heading": "### 8. Flutter 一帧与 Android 17 显示链路"
+        },
+        {
+          "original_id": "a246-50-impeller-attribution-criteria",
+          "title": "管线创建归因需要多条一致证据",
+          "decision": "remove",
+          "reason": "归因四步是1397–1408五条判据摘要，无实际对照测量。",
+          "original_line": 1405,
+          "heading": "#### 9.3 归因判据"
+        },
+        {
+          "original_id": "a246-51-pipeline-final-validation-loop",
+          "title": "Vulkan和Impeller优化的验证闭环",
+          "decision": "remove",
+          "reason": "结尾四步重复1510–1517全文小结与两套工程检查清单，无新增闭环关系。",
+          "original_line": 1514,
+          "heading": "## 全文小结"
+        }
+      ],
+      "sha256_after": "5eabfb8a4ffec4e7108552aae5335ea871ec484e5a08a19d640c350382ccb28a",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:56:56.435620+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 51,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a246/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a246/visual-review.json",
+      "retired_diagrams": [
+        "a246-01-backend-control-ownership",
+        "a246-02-hwui-ganesh-context",
+        "a246-03-frontend-driver-compile",
+        "a246-04-angle-backend-verification",
+        "a246-05-pipeline-static-inputs",
+        "a246-07-uniform-and-variants",
+        "a246-08-hwui-private-cache",
+        "a246-10-representative-warmup",
+        "a246-11-baseline-profile-scope",
+        "a246-13-hwui-two-queue-roles",
+        "a246-14-graphite-deduplicated-handles",
+        "a246-16-graphite-trace-scope",
+        "a246-17-immutable-create-recipe",
+        "a246-19-cache-query-flags-guard",
+        "a246-20-cache-query-result-branches",
+        "a246-21-cache-concurrent-access",
+        "a246-22-cache-header-compatibility",
+        "a246-23-cache-snapshot-persistence",
+        "a246-24-pipeline-creation-feedback",
+        "a246-26-stage-aware-scheduling",
+        "a246-27-native-trace-correlation",
+        "a246-28-diagnostic-tool-boundaries",
+        "a246-29-buffer-interval-evidence",
+        "a246-30-kernel-responsibility",
+        "a246-31-impeller-build-runtime-separation",
+        "a246-32-impeller-selection-build-branches",
+        "a246-33-impeller-auto-fallback",
+        "a246-34-impeller-debug-override",
+        "a246-35-offline-backend-work",
+        "a246-36-default-handle-and-variants",
+        "a246-38-compile-elevation-counter",
+        "a246-39-impeller-memory-disk-caches",
+        "a246-40-impeller-persistence-checkpoint",
+        "a246-41-cache-cold-warm-experiments",
+        "a246-44-runtime-effect-state-variants",
+        "a246-45-shader-warmup-renderer-scope",
+        "a246-46-flutter-frame-timing-granularity",
+        "a246-47-devtools-phase-routing",
+        "a246-48-system-trace-evidence-join",
+        "a246-49-root-view-composition-topology",
+        "a246-50-impeller-attribution-criteria",
+        "a246-51-pipeline-final-validation-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-246/retired-assets.json"
     },
     {
       "index": 247,
@@ -62014,8 +62485,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 170,
-  "next_article": "src/part5-app/ch22-rendering-practice/15-vulkan-impeller-shader-compilation.md",
+  "reviewed_articles": 171,
+  "next_article": "src/part5-app/ch22-rendering-practice/16-webview-optimization.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -62025,7 +62496,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:52:37.092146+08:00",
+  "updated_at": "2026-10-31T17:56:56.435620+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -62175,9 +62646,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5197,
-  "reviewed_placements_after": 2068,
-  "net_removed_placements": 3129,
+  "reviewed_placements_before": 5248,
+  "reviewed_placements_after": 2077,
+  "net_removed_placements": 3171,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -62201,5 +62672,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 170
+  "currently_matching_reviewed_source_count": 171
 }

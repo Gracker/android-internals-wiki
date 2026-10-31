@@ -138,10 +138,6 @@ Vulkan 管线创建和着色器编译，可能在首次使用或状态组合变�
 
 同一个 APK 里也可能同时存在多条路径：Activity 的控件由 HWUI 绘制，`SurfaceView` 内的游戏画面由原生 Vulkan 绘制，视频再由独立的缓冲生产者提交。所以我们排查的第一步，是定位发生慢帧的 `Surface` 和进程线程，然后再谈这条路径内部的机制。
 
-<!-- gracker-diagram: a246-01-backend-control-ownership -->
-![先按实际图形后端确定控制边界](../../assets/diagrams/ch22/a246-01-backend-control-ownership.png)
-
-图：同一个APK可以有多条独立渲染路径，先锁定异常Surface和线程。
 
 #### 1. HWUI 仍使用 Ganesh
 
@@ -160,10 +156,6 @@ return GrDirectContexts::MakeVulkan(backendContext, options);
 
 AOSP 仓库里虽然包含 Graphite 源码，标准 HWUI 的 Vulkan 上下文仍由 Ganesh 创建，这两处代码就是依据。所以我们分析普通 View 或 Compose 页面时，`external/skia/src/gpu/graphite` 的实现细节说明不了自己的 `RenderThread` 已经用上 Graphite。
 
-<!-- gracker-diagram: a246-02-hwui-ganesh-context -->
-![Android17固定HWUI Vulkan仍创建Ganesh上下文](../../assets/diagrams/ch22/a246-02-hwui-ganesh-context.png)
-
-图：固定Android17标准窗口使用Ganesh；Graphite机制只能按其独立调用路径分析。
 
 #### 2. Vulkan 后端与原生 Vulkan 应用的分工
 
@@ -177,10 +169,6 @@ OpenGL ES 应用可能用设备的原生 GLES 驱动，也可能经 ANGLE 把 GL
 
 所以我们先把 `GL_VENDOR`、`GL_RENDERER`、`GL_VERSION` 和 EGL 信息记录下来，再结合设备配置或 AGI 采集方式确认后端。后端确认之前，ANGLE 内部的状态缓存只属于当前这条路径，既算不上所有 GLES 应用共有的“四级缓存”，也代替不了应用可持久化的原生 `VkPipelineCache`。
 
-<!-- gracker-diagram: a246-04-angle-backend-verification -->
-![GLES分析前先确认是否使用ANGLE](../../assets/diagrams/ch22/a246-04-angle-backend-verification.png)
-
-图：AGI或开发配置可能改变后端，结论必须保留采集条件。
 
 ### 二、管线创建消耗的是主机端时间
 
@@ -193,17 +181,9 @@ OpenGL ES 应用可能用设备的原生 GLES 驱动，也可能经 ANGLE 把 GL
 - 采样数（sample count）、创建管线时固定的专门化常量（specialization constant），以及未声明为动态状态（dynamic state）的其他状态；
 - 驱动版本、GPU 设备及驱动内部策略。
 
-<!-- gracker-diagram: a246-05-pipeline-static-inputs -->
-![管线配方的静态输入](../../assets/diagrams/ch22/a246-05-pipeline-static-inputs.png)
-
-图：真实管线键覆盖会影响创建与兼容性的字段；普通uniform值通常不属于静态键。
 
 构建时把 GLSL 或 HLSL 编译成 SPIR-V，可以去掉应用进程里的着色器前端编译，但厂商驱动仍可能在 `vkCreateGraphicsPipelines()` 中校验、优化并生成设备指令。所以 SPIR-V 文件在手，只说明前端编译完成了，运行时的创建成本还可能留在驱动里。
 
-<!-- gracker-diagram: a246-03-frontend-driver-compile -->
-![着色器前端与设备管线创建分开](../../assets/diagrams/ch22/a246-03-frontend-driver-compile.png)
-
-图：拥有SPIR-V不能推出设备运行时零创建成本；GPU队列数量不决定CPU编译并行度。
 
 `vkCreateGraphicsPipelines()` 是主机端命令：它可以在 `RenderThread` 或编译线程上消耗 CPU 和驱动时间，这段工作本身并不会作为 GPU 命令提交到某个 `VkQueue`。这也解释了为什么增加图形队列（graphics queue）的数量，不会自动提高管线编译并行度。
 
@@ -236,10 +216,6 @@ SurfaceFlinger / display:                                                     la
 
 动手优化前，我们应先记录管线键由哪些字段组成。把圆角半径、模糊半径或颜色值一概视为“新着色器”，会夸大变体数量；只有这些值被写进着色器源码、专门化常量或其他管线状态时，才会改变对应键。
 
-<!-- gracker-diagram: a246-07-uniform-and-variants -->
-![uniform与管线变体来源](../../assets/diagrams/ch22/a246-07-uniform-and-variants.png)
-
-图：圆角、模糊或颜色只有进入代码、专门化或静态配方时，才会改变对应管线键。
 
 ### 三、标准 View / Compose 应用能做什么
 
@@ -251,10 +227,6 @@ SurfaceFlinger / display:                                                     la
 
 这些是 `android-17.0.0_r1` 的平台实现细节，没有写进任何 SDK 契约；文件格式、上限、写入节奏和失效策略都可能在后续版本变化，这份 HWUI 缓存应用也加载不到。
 
-<!-- gracker-diagram: a246-08-hwui-private-cache -->
-![HWUI平台缓存与应用边界](../../assets/diagrams/ch22/a246-08-hwui-private-cache.png)
-
-图：固定实现保存上限2MiB，路径、上限和保存节奏都属于版本实现细节。
 
 #### 2. 应用控制的是变体来源和首次出现时机
 
@@ -276,19 +248,11 @@ SurfaceFlinger / display:                                                     la
 
 若业务需要预热，应使用与线上相同的页面、尺寸、颜色空间和效果组合，放在用户可接受的非关键阶段，并用 Macrobenchmark 证明首个关键操作改善且启动没有退化；标准 HWUI 也没有公开 API 会保证“预热完成了全部目标管线”。
 
-<!-- gracker-diagram: a246-10-representative-warmup -->
-![预热按真实状态和用户阶段验证](../../assets/diagrams/ch22/a246-10-representative-warmup.png)
-
-图：不可见1×1节点可能不绘制或产生不同状态，不能证明目标管线预热完成。
 
 #### 3. Baseline Profile 的覆盖范围
 
 Baseline Profile（基准配置文件）改善的是ART 管理的应用 DEX 方法（主要由 Java/Kotlin 产生）的编译和执行状态；它不编译 C/C++ 原生机器码；厂商 GPU 指令不在它的覆盖范围内，它也替代不了 Skia 或 Vulkan 管线缓存。一次优化同时加入 Baseline Profile 和页面预热后，我们要分别验证 CPU 方法执行与图形首次使用成本，避免把收益归错原因。
 
-<!-- gracker-diagram: a246-11-baseline-profile-scope -->
-![Baseline Profile和图形缓存覆盖不同对象](../../assets/diagrams/ch22/a246-11-baseline-profile-scope.png)
-
-图：同时加入CPU代码优化和图形预热时，需要分别验证收益，避免归因混淆。
 
 #### 4. `FrameMetrics.GPU_DURATION` 的含义
 
@@ -376,10 +340,6 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 
 这段实现有四个要点：
 
-<!-- gracker-diagram: a246-13-hwui-two-queue-roles -->
-![HWUI两条Vulkan队列的实际分工](../../assets/diagrams/ch22/a246-13-hwui-two-queue-roles.png)
-
-图：上传线程隔离提交状态，但runSync和GrSyncCpu::kYes说明调用不一定立即返回。
 
 1. 两个队列来自同一个队列族；
 2. `queuePriorities` 的两个元素都为 `0.0f`；
@@ -404,10 +364,6 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 
 这个设计避免了并发请求为同一个键重复创建管线。`SkSpinlock` 只保护正在执行的任务表及其短临界区，把它当成管线编译队列，或认为“先到的请求优先级更高”，都是在读它没有提供的语义。
 
-<!-- gracker-diagram: a246-14-graphite-deduplicated-handles -->
-![Graphite按键查询任务和缓存](../../assets/diagrams/ch22/a246-14-graphite-deduplicated-handles.png)
-
-图：SkSpinlock保护任务表，不是有优先级的编译调度队列。
 
 #### 2. Android 17 标签中的 Vulkan 基础实现是同步调用
 
@@ -439,10 +395,6 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 
 Graphite 的 Vulkan 实现仍提供了一种可参考的控制方式：设备支持管线创建缓存控制（pipeline creation cache control）时，它先带 `FAIL_ON_PIPELINE_COMPILE_REQUIRED` 查询缓存；收到 `VK_PIPELINE_COMPILE_REQUIRED` 后，去掉该标志，再执行允许编译的调用。原生 Vulkan 引擎可以采用相同思路，编译线程和降级管线要自己安排。
 
-<!-- gracker-diagram: a246-16-graphite-trace-scope -->
-![Graphite跟踪名称的适用范围](../../assets/diagrams/ch22/a246-16-graphite-trace-scope.png)
-
-图：Graphite可先尝试FAIL_ON_PIPELINE_COMPILE_REQUIRED，再显式允许创建；调度和降级由引擎安排。
 
 ### 六、原生 Vulkan 的任务调度
 
@@ -458,10 +410,6 @@ Graphite 的 Vulkan 实现仍提供了一种可参考的控制方式：设备支
 
 管线键用于任务去重、缓存统计和回归定位。这里最容易踩的坑，是把整个 `VkGraphicsPipelineCreateInfo` 直接浅拷贝进工作队列：它含有大量指针，调用者离开作用域后，编译线程可能读到失效内存。队列应保存 `PipelineKey`，或持有完整、不可变的创建配方，由编译线程在调用时重建创建信息结构（create info）。
 
-<!-- gracker-diagram: a246-17-immutable-create-recipe -->
-![编译线程持有稳定键与不可变配方](../../assets/diagrams/ch22/a246-17-immutable-create-recipe.png)
-
-图：浅拷贝VkGraphicsPipelineCreateInfo不能延长内部指针和数组的生命。
 
 #### 2. 队列只接收缺失且仍需要的任务
 
@@ -522,17 +470,9 @@ VkResult tryCreateCachedGraphicsPipeline(
 
 示例假定 feature 已启用、输出指针非空且只处理传统 `flags` 配方，需包含 `<stdexcept>`，并使用定义 flags2 / pipeline-binary 类型的现代 Vulkan headers。`VkPipelineCreateFlags2CreateInfo` 存在时，旧 `baseInfo.flags` 会被忽略；生产版应从不可变配方重建整条 pNext 链，在真正生效的 flags2 中设置对应位。pipeline-binary 创建也有独立约束，不能照搬本例。此处拒绝这两类输入并抛出参数错误，不把它们伪装成缓存未命中。
 
-<!-- gracker-diagram: a246-19-cache-query-flags-guard -->
-![仅缓存查询先确认真正生效的flags](../../assets/diagrams/ch22/a246-19-cache-query-flags-guard.png)
-
-图：必须修改真正生效的创建标志，不能因一次OR操作就认定渲染线程不会编译。
 
 这个标志只挡住当前调用里的昂贵编译，后台任务和降级管线都要应用自己安排。降级管线必须与渲染过程、管线布局、描述符绑定和资源格式兼容；兼容条件满足不了时就延后绘制，绑定一条错误管线只会更糟。
 
-<!-- gracker-diagram: a246-20-cache-query-result-branches -->
-![缓存查询结果的三个处理分支](../../assets/diagrams/ch22/a246-20-cache-query-result-branches.png)
-
-图：降级管线仍必须匹配layout、绑定、附件和渲染过程；错误绑定不属于可用降级。
 
 #### 4. 控制并发与发布
 
@@ -547,10 +487,6 @@ VkResult tryCreateCachedGraphicsPipeline(
 
 后一种方案会增加内存、合并和持久化复杂度。没有测量结果时，共用默认缓存更容易保持正确。
 
-<!-- gracker-diagram: a246-21-cache-concurrent-access -->
-![共享缓存的并发和发布责任](../../assets/diagrams/ch22/a246-21-cache-concurrent-access.png)
-
-图：管线发布需要CPU可见性，销毁还要等待引用它的GPU工作结束。
 
 ### 七、正确保存 `VkPipelineCache`
 
@@ -605,10 +541,6 @@ bool isCompatiblePipelineCache(
 
 这段代码没有依赖 C++ 结构体的填充字节（padding）。调用文件需要包含 `<cstddef>`、`<cstdint>`、`<cstring>` 和 `<span>`。检查通过后仍要处理 `vkCreatePipelineCache()` 的返回值；文件头兼容只说明数据可以尝试使用，不保证每次创建或后续查询都会命中缓存。
 
-<!-- gracker-diagram: a246-22-cache-header-compatibility -->
-![版本一缓存头与图形身份校验](../../assets/diagrams/ch22/a246-22-cache-header-compatibility.png)
-
-图：文件头兼容只是可尝试初始化，不保证每次创建命中或完整缓存所有目标管线。
 
 #### 2. 写文件要服从 Vulkan 对象生命周期
 
@@ -625,10 +557,6 @@ bool isCompatiblePipelineCache(
 
 `VK_INCOMPLETE` 不等于返回数据损坏：规范允许已写出的有效缓存子集作为后续 `pInitialData`，应按返回的实际 `pDataSize` 处理；空间连文件头都容不下时可写出 0 字节。选择重试还是接受部分缓存是工程策略，不能把未填满的分配容量一起保存。
 
-<!-- gracker-diagram: a246-23-cache-snapshot-persistence -->
-![管线缓存的受控快照和原子保存](../../assets/diagrams/ch22/a246-23-cache-snapshot-persistence.png)
-
-图：VK_INCOMPLETE返回的有效子集仍可用；不能把未初始化的分配容量写入文件。
 
 不要在每一帧写缓存。适合的时机包括加载阶段结束、累计产生新管线后的受控后台时点，以及正常退出流程中仍有足够生命周期时。Android 进程可能被直接终止，缓存正确性指望不上退出回调一定执行。
 
@@ -653,10 +581,6 @@ Vulkan 1.3 核心类型 `VkPipelineCreationFeedback`（或对应的扩展别名�
 
 反馈是驱动对一次创建调用的报告，与 GPU 执行时间是两回事。使用时应同时记录管线键、线程、场景、创建结果、是否命中缓存和调用耗时，但线上日志不要包含着色器源码，也不要生成数量不受控的动态名称。
 
-<!-- gracker-diagram: a246-24-pipeline-creation-feedback -->
-![驱动创建反馈与GPU耗时分开](../../assets/diagrams/ch22/a246-24-pipeline-creation-feedback.png)
-
-图：结合稳定管线键、调用线程和场景统计分布，不设置脱离设备的固定创建耗时门槛。
 
 #### 2. 图形管线库
 
@@ -702,10 +626,6 @@ Vulkan 1.3 核心类型 `VkPipelineCreationFeedback`（或对应的扩展别名�
 
 设备策略应基于运行时功能位、属性和实测分布。按“高端、中端、低端”写死的 SoC 名单很快会失效，同一 GPU 在不同驱动和散热状态下的差异它也反映不了。
 
-<!-- gracker-diagram: a246-26-stage-aware-scheduling -->
-![把必要管线放到合适的用户阶段](../../assets/diagrams/ch22/a246-26-stage-aware-scheduling.png)
-
-图：进度由已完成的必要任务驱动，不用已提交任务数量冒充可用进度。
 
 #### 热更新
 
@@ -763,10 +683,6 @@ PipelineCreateSample createMeasuredGraphicsPipeline(
 
 调用文件需要包含 `<android/trace.h>`、`<chrono>` 和 `<cstdint>`。显式转换保证 `wallTimeNanos` 使用纳秒单位。`ATrace` 区间和调用耗时描述的都是调用线程上的主机端时间；GPU 是否繁忙、该管线后续执行多久，还要靠 GPU 跟踪、时间戳查询（timestamp query）或 AGI 给出独立依据。
 
-<!-- gracker-diagram: a246-27-native-trace-correlation -->
-![原生调用点的主机端创建证据](../../assets/diagrams/ch22/a246-27-native-trace-correlation.png)
-
-图：创建耗时可含驱动锁和线程调度；GPU是否繁忙以及呈现时间需要独立数据。
 
 #### 2. 标准 HWUI：先关联，再谈归因
 
@@ -787,10 +703,6 @@ AGI 的帧分析器（Frame Profiler）可以展示 Vulkan API 调用、管线�
 
 AGI 能看到一帧内的 API 调用和 GPU 工作；长时间加载阶段光靠单帧采集是解释不了的，大量管线预编译要同时用系统跟踪、引擎遥测和阶段统计。
 
-<!-- gracker-diagram: a246-28-diagnostic-tool-boundaries -->
-![HWUI、AGI和系统轨迹各有可见范围](../../assets/diagrams/ch22/a246-28-diagnostic-tool-boundaries.png)
-
-图：首次RenderThread变长也可能来自字形、上传、分配或驱动初始化，缺调用级证据时只报告相关性。
 
 #### 4. 缓冲生命周期的适用范围
 
@@ -804,10 +716,6 @@ AGI 能看到一帧内的 API 调用和 GPU 工作；长时间加载阶段光靠
 
 `queueBuffer()` 返回，只说明缓冲生产者完成了提交动作；`vkQueueSubmit()` 和 `vkQueuePresentKHR()` 的返回同样说明不了 GPU 工作完成或像素已经显示。我们还要看获取、释放和呈现同步栅栏（acquire/release/present fence）、FrameTimeline 与显示事件。
 
-<!-- gracker-diagram: a246-29-buffer-interval-evidence -->
-![缓冲生命周期只能限定责任区间](../../assets/diagrams/ch22/a246-29-buffer-interval-evidence.png)
-
-图：queue、submit和present调用返回都不等于GPU完成或像素上屏。
 
 #### 5. 内核证据的责任范围
 
@@ -821,10 +729,6 @@ AGI 能看到一帧内的 API 调用和 GPU 工作；长时间加载阶段光靠
 
 通用内核代码不认识业务 `PipelineKey`，单凭一个同步栅栏名称也判断不出驱动正在编译哪段着色器。要追到 GPU 指令编译和执行的详细原因，通常得靠厂商驱动跟踪、AGI 或应用自己的调用标记。
 
-<!-- gracker-diagram: a246-30-kernel-responsibility -->
-![内核证据定位调度与同步](../../assets/diagrams/ch22/a246-30-kernel-responsibility.png)
-
-图：通用内核提供机制，无法从一个fence名称推出正在编译哪条业务管线。
 
 ### 十一、工程检查清单
 
@@ -916,10 +820,6 @@ flowchart LR
 
 图中离线完成的只有着色器前端处理和反射；管线创建、GPU 执行、缓冲交付与显示都发生在设备运行期间，我们分析卡顿时要把它们分开看，别合并成一个“着色器编译”标签。
 
-<!-- gracker-diagram: a246-31-impeller-build-runtime-separation -->
-![Impeller离线前端与设备运行时分层](../../assets/diagrams/ch22/a246-31-impeller-build-runtime-separation.png)
-
-图：离线前端与反射不能替代设备PSO创建、GPU工作和Android呈现。
 
 Flutter 官方页面把 Impeller 的目标概括为离线编译着色器、预先构建管线和显式管理缓存。Flutter 3.44.7 的实现仍会按需创建管线变体，也支持运行时片段着色器。“预先构建”表示引擎尽早创建常用管线，并通过异步任务降低关键帧等待它的概率；所有可能的管线不会在首帧前全部完成。
 
@@ -931,10 +831,6 @@ Flutter 3.27 起，官方支持范围是 Android API 29 及以上默认启用 Im
 
 下表描述 `!SLIMPELLER` 构建分支；固定源码的 `SLIMPELLER` 分支直接选择 `kImpellerAutoselect`，不经过这里的软件渲染、显式后端或 Skia 退出分支。引擎自定义构建必须核查开关，不能把默认包的诊断开关当成所有二进制都具备的能力。
 
-<!-- gracker-diagram: a246-32-impeller-selection-build-branches -->
-![Flutter3.44.7后端选择受构建分支约束](../../assets/diagrams/ch22/a246-32-impeller-selection-build-branches.png)
-
-图：诊断开关要和引擎构建匹配，不能把Skia回退能力假定为所有二进制都有。
 
 | 条件 | Flutter 3.44.7 返回的路径 |
 | --- | --- |
@@ -946,10 +842,6 @@ Flutter 3.27 起，官方支持范围是 Android API 29 及以上默认启用 Im
 
 自动选择由 [`AndroidContextDynamicImpeller`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc) 执行。它先按模拟器、系统/SoC 条件判断是否尝试 Vulkan，再构造并校验所需扩展、feature 和上下文有效性；Vulkan 路径不可用时，创建 `AndroidContextGLImpeller`。因此 API 29+ 的自动选择回退通常是 **Impeller OpenGL ES**；API 29 以下、禁用 Impeller 或更早的选择分支才是 **Skia OpenGL ES**。
 
-<!-- gracker-diagram: a246-33-impeller-auto-fallback -->
-![自动选择先做设备条件检查再尝试Vulkan](../../assets/diagrams/ch22/a246-33-impeller-auto-fallback.png)
-
-图：自动选择内部的GLES回退仍可属于Impeller；Skia是更早选择分支或退出路径。
 
 Flutter 官方文档把低版本 Android 或 Vulkan 不可用时的行为概括为回退到旧 OpenGL 渲染器。做源码级诊断时，我们要继续区分 Impeller GLES 与 Skia GLES，因为两者的着色器、管线、轨迹事件和缓存行为不同。设备规避列表属于 Flutter 3.44.7 的实现数据，不宜写成长期兼容性规则。
 
@@ -977,10 +869,6 @@ Flutter 3.44.7 也允许在 `debug` 或 `profile` 模式指定 Impeller 后端�
 
 具有该退出分支的 Flutter 3.44.7 `!SLIMPELLER` 部署版本可通过 `io.flutter.embedding.android.EnableImpeller=false` 停用 Impeller。Flutter 3.44.7 的引擎会输出警告，说明命令行和 Manifest 中的退出选项将在后续版本移除。生产回退适合短期规避已确认的兼容性问题；用它时记得保留可复现样例、设备与驱动信息、性能轨迹，并向 Flutter 问题跟踪器提交证据。
 
-<!-- gracker-diagram: a246-34-impeller-debug-override -->
-![后端覆盖与短期退出的版本边界](../../assets/diagrams/ch22/a246-34-impeller-debug-override.png)
-
-图：后端对照改变的还可能有上传、离屏和驱动缓存，不能直接证明着色器是根因。
 
 ### 3. Impeller 如何减少管线首次创建对帧的影响
 
@@ -990,10 +878,6 @@ Flutter 3.44.7 也允许在 `debug` 或 `profile` 模式指定 Impeller 后端�
 
 这一步把引擎可控制的前端转换和反射前移；Vulkan 的 SPIR-V 可减少相应前端工作，GLES 生成的 GLSL 仍需设备驱动编译/链接。Vulkan 驱动还要处理 `vkCreateGraphicsPipelines` 或 `vkCreateComputePipelines`，所以冷启动或首次使用某个状态组合时可能出现 CPU 峰值。
 
-<!-- gracker-diagram: a246-35-offline-backend-work -->
-![离线着色器产物不消除所有后端编译](../../assets/diagrams/ch22/a246-35-offline-backend-work.png)
-
-图：必须区分离线表示、驱动后端与运行时效果，不能合称“运行时零编译”。
 
 #### 3.2 常用管线句柄会尽早创建
 
@@ -1001,10 +885,6 @@ Flutter 3.44.7 也允许在 `debug` 或 `profile` 模式指定 Impeller 后端�
 
 管线描述还包含着色器之外的状态：颜色附件格式、混合模式、模板状态、采样数和其他固定状态，都可能形成不同描述。`ContentContextOptions` 变化时，引擎可以从默认描述创建变体；未创建过的变体可能在使用时同步生成。所以判断一个页面会不会增加变体，我们看它改的是哪类东西：只修改 `uniform` 变量——绘制时传给着色器的参数——通常可以复用管线，修改管线描述中的状态则可能增加变体。
 
-<!-- gracker-diagram: a246-36-default-handle-and-variants -->
-![常用默认句柄与按需变体](../../assets/diagrams/ch22/a246-36-default-handle-and-variants.png)
-
-图：提前建立默认句柄不表示所有变体都在首帧前可用。
 
 #### 3.3 `PipelineCompileQueue` 处理并发、去重与提前执行
 
@@ -1024,10 +904,6 @@ Flutter 3.44.7 的 [`PipelineCompileQueue`](https://github.com/flutter/flutter/b
 
 `PipelineCompileQueue` 在任务被提前取走时递增 `PrioritiesElevated` 计数器。它适合判断“当前帧需要的管线曾在队列中等待”，但计数器只记录优先级调整次数，单次创建耗时要另找数据，GPU 是否完成相关工作也另有指标。
 
-<!-- gracker-diagram: a246-38-compile-elevation-counter -->
-![提升优先级计数与单次耗时分开](../../assets/diagrams/ch22/a246-38-compile-elevation-counter.png)
-
-图：编译队列的计数器不是耗时轨道，也不能证明GPU完成或单独判定卡顿原因。
 
 #### 3.4 OpenGL ES 与 Vulkan 需要分别观察
 
@@ -1048,10 +924,6 @@ Vulkan 后端的管线对象和显式缓存都摆在明处；OpenGL ES 驱动则
 
 `PipelineLibraryVK` 以完整描述为键，保存图形管线和计算管线的异步结果。在同一个引擎上下文内，相同描述可以复用已经创建或正在创建的对象。这个缓存避免当前进程重复创建同一管线；应用重启后，还需要磁盘缓存协助驱动复用内部数据。
 
-<!-- gracker-diagram: a246-39-impeller-memory-disk-caches -->
-![Impeller内存描述表与磁盘驱动缓存](../../assets/diagrams/ch22/a246-39-impeller-memory-disk-caches.png)
-
-图：重启引擎清掉内存对象不等于删除磁盘缓存；命中缓存不等于创建零成本。
 
 #### 4.2 磁盘中的 `VkPipelineCache` 数据
 
@@ -1069,10 +941,6 @@ Flutter 3.44.7 把数据写入 `flutter.impeller.vkcache`。[`PipelineCacheDataP
 
 当前实现每取得 50 个渲染表面帧（surface frame）检查一次缓存已变更标记（dirty）；标记存在时，再安排磁盘持久化。这是 Flutter 3.44.7 的内部节奏，没有写进公开 API 契约，“运行 50 帧后缓存一定完整”的假定也站不住：应用提前退出、驱动返回不完整数据、上下文重建或任务尚未执行都会改变结果。
 
-<!-- gracker-diagram: a246-40-impeller-persistence-checkpoint -->
-![固定引擎每50个取得的surface frame检查dirty](../../assets/diagrams/ch22/a246-40-impeller-persistence-checkpoint.png)
-
-图：50是固定引擎内部检查节奏，不保证运行50帧后缓存完整或任务已全部完成。
 
 #### 4.3 缓存命中之后的剩余成本
 
@@ -1087,10 +955,6 @@ Vulkan 管线缓存由驱动解释。已有数据可以减少部分内部编译�
 
 生产代码里别依赖 `flutter.impeller.vkcache` 的路径、文件格式或持久化间隔，它们属于引擎私有实现。
 
-<!-- gracker-diagram: a246-41-cache-cold-warm-experiments -->
-![Activity重入、进程重启与磁盘冷热分开](../../assets/diagrams/ch22/a246-41-cache-cold-warm-experiments.png)
-
-图：只用“冷启动”三个字不足以描述缓存状态，需记录清理范围和GPU驱动身份。
 
 ### 5. 应用自定义片段着色器的运行时路径
 
@@ -1184,10 +1048,6 @@ final class BackgroundShaderResources {
 
 即使应用已经执行 `await FragmentProgram.fromAsset()`，页面首次使用某个合成状态时，Raster 阶段仍可能出现耗时尖峰。这时我们要继续检查管线描述变体、纹理首次上传、离屏渲染过程（offscreen pass）与 GPU 工作量——`await` 到这里，还算不上完整预热。
 
-<!-- gracker-diagram: a246-44-runtime-effect-state-variants -->
-![运行时效果仍按附件与混合状态创建变体](../../assets/diagrams/ch22/a246-44-runtime-effect-state-variants.png)
-
-图：await资源加载只是提前准备机会，不能代替与线上状态一致的实际首次绘制验证。
 
 #### 5.4 自定义着色器的优化重点
 
@@ -1203,10 +1063,6 @@ Flutter 框架层保留了 [`ShaderWarmUp`](https://github.com/flutter/flutter/b
 
 适用范围可以这样划：
 
-<!-- gracker-diagram: a246-45-shader-warmup-renderer-scope -->
-![ShaderWarmUp面向Skia的诊断与预热](../../assets/diagrams/ch22/a246-45-shader-warmup-renderer-scope.png)
-
-图：框架warmup在Raster做离屏工作并可能拖延首帧，不能视为免费优化。
 
 - 使用 Skia 回退路径且性能轨迹已证明存在 Skia 着色器编译卡顿时，可以评估自定义 `ShaderWarmUp`。
 - 使用 Impeller 时，不要把 `ShaderWarmUp` 当作 Vulkan 管线缓存的公开控制接口。
@@ -1255,10 +1111,6 @@ void stopFrameTimingReport() {
 
 这里每帧 log 仅示意字段，线上应采样或聚合到有界缓冲，避免日志本身改变 UI/Raster 工作量。ARR 或 frame-rate override 下预算也可能变化，固定显示模式只是一项环境记录；判断 Android 呈现是否超期仍应关联实际 Expected/Actual FrameTimeline。
 
-<!-- gracker-diagram: a246-46-flutter-frame-timing-granularity -->
-![FrameTiming阶段指标不等于编译分类](../../assets/diagrams/ch22/a246-46-flutter-frame-timing-granularity.png)
-
-图：profile/release按实际节奏和Expected期限判断；日志采样与有界聚合避免测量自身干扰。
 
 #### 7.2 DevTools 先区分 UI 与 Raster 阶段
 
@@ -1270,10 +1122,6 @@ void stopFrameTimingReport() {
 
 DevTools 的 `shader compilation`（着色器编译）标记来自工具自己的识别逻辑，替代不了引擎标签对应的源码核对。使用 Impeller 时，应结合具体跟踪区间判断它标注的是着色器、管线，还是其他 Raster 工作。
 
-<!-- gracker-diagram: a246-47-devtools-phase-routing -->
-![DevTools先分UI、Raster与Android显示阶段](../../assets/diagrams/ch22/a246-47-devtools-phase-routing.png)
-
-图：工具标注要与该引擎标签源码匹配，不能仅凭shader compilation文字完成归因。
 
 #### 7.3 Perfetto 需要 Flutter 事件与 Android 显示事件同时存在
 
@@ -1285,10 +1133,6 @@ flutter run --profile --trace-systrace
 
 采集 Perfetto 时还要包含应用与系统调度、CPU 频率、GPU、`gfx` / `view`、SurfaceFlinger、FrameTimeline 和同步栅栏相关数据源。`--trace-systrace` 只负责把 Flutter 时间线事件输出到系统跟踪，不会替 Perfetto 自动补齐所有数据源。
 
-<!-- gracker-diagram: a246-48-system-trace-evidence-join -->
-![系统跟踪同时收集Flutter事件与显示证据](../../assets/diagrams/ch22/a246-48-system-trace-evidence-join.png)
-
-图：命令行开关不会替Perfetto自动补齐所有数据源，业务时间线也不保证后台工作完成。
 
 Flutter 3.44.7 中值得检查的源码级事件包括：
 
@@ -1346,10 +1190,6 @@ Android VSync
 
 `FlutterTextureView` 会多一段从 `SurfaceTexture` 到宿主 HWUI 应用窗口的采样和提交；`PlatformView`、相机或视频外部纹理（external texture）还可能拥有独立的缓冲生产者（producer）和 `Surface`。页面结构中存在这些对象时，需要先画出实际的 `Surface` / 图层树，再判断哪个缓冲对应用户看到的内容。
 
-<!-- gracker-diagram: a246-49-root-view-composition-topology -->
-![Flutter根视图决定Android显示拓扑](../../assets/diagrams/ch22/a246-49-root-view-composition-topology.png)
-
-图：默认合并的platform/UI线程与Raster线程仍分工；Raster完成不等于GPU或present完成。
 
 系统侧的 `SurfaceFlinger`、CompositionEngine 和 HWC 看不懂 Flutter 组件、着色器名称或管线描述，它们处理的是图层、缓冲、事务、同步栅栏、合成类型和呈现时间。Android 内核 `android17-6.18-2026-06_r6` 提供共享缓冲与同步栅栏机制，选哪条 Impeller 管线、保存 Flutter 缓存都超出它的职责。
 
@@ -1402,10 +1242,6 @@ Scenario and iteration count:
 
 只看到 `rasterDuration` 变长，就把结论写成“着色器编译卡顿”还为时过早；只看到 `PipelineVK::Create` 出现，同样证明不了它错过了当前刷新周期。
 
-<!-- gracker-diagram: a246-50-impeller-attribution-criteria -->
-![管线创建归因需要多条一致证据](../../assets/diagrams/ch22/a246-50-impeller-attribution-criteria.png)
-
-图：PipelineVK::Create出现或与慢帧重叠都不独自证明它造成错过当前周期。
 
 ### 10. 常见误判与修正
 
@@ -1511,10 +1347,6 @@ Vulkan 与 Impeller 的运行时成本，都概括不进“着色器已经离线
 
 可靠方案应把变体来源收敛到稳定管线键，在非关键阶段去重创建，并为未就绪或不兼容设备保留明确降级。我们验收时从用户操作对应的慢帧出发，同时固定图形后端、设备驱动、缓存冷热状态和显示条件，避免把相关性写成编译归因。
 
-<!-- gracker-diagram: a246-51-pipeline-final-validation-loop -->
-![Vulkan和Impeller优化的验证闭环](../../assets/diagrams/ch22/a246-51-pipeline-final-validation-loop.png)
-
-图：缓存与预热只移动或复用部分工作，不能把离线产物概括成运行时零成本。
 
 ## 参考资料
 
