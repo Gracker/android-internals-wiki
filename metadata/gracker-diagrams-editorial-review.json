@@ -59187,9 +59187,315 @@
       "before_count": 33,
       "before_all_images": 33,
       "sha256_before": "74988ce4f784454316655a7bdc2eb1087de0adc454c3def7ea985cf22c9e75b0",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 12,
+      "decisions": [
+        {
+          "original_id": "a238-01-window-pipeline",
+          "title": "动画进度与最终呈现的职责分段",
+          "decision": "keep",
+          "reason": "UI动画推进、RT/GPU、BLAST/SF到实际present责任链，给三种动画机制提供同帧跨层归因轴。",
+          "original_line": 107,
+          "heading": "# View、Compose 动画与共享元素性能"
+        },
+        {
+          "original_id": "a238-02-property-models",
+          "title": "每帧改变什么决定动画成本",
+          "decision": "remove",
+          "reason": "五动画模型的每帧工作/场景/风险表及专门写值路径段落完整，三行分类卡重复。",
+          "original_line": 132,
+          "heading": "### 属性动画与帧动画：先看每帧改变什么"
+        },
+        {
+          "original_id": "a238-03-scale-input-coordinates",
+          "title": "缩放的布局、触摸与无障碍坐标",
+          "decision": "keep",
+          "reason": "scale矩阵分别连接未变布局占位、逆矩阵触摸命中、变换裁剪后的a11y屏幕边界三分支，清楚区分三套坐标语义。",
+          "original_line": 165,
+          "heading": "#### 变换属性与布局语义"
+        },
+        {
+          "original_id": "a238-04-hardware-layer",
+          "title": "硬件图层适合内容稳定的属性动画",
+          "decision": "remove",
+          "reason": "withLayer暂存恢复、稳定内容和动态失效成本一段完整，四框生命周期卡重复。",
+          "original_line": 174,
+          "heading": "#### `withLayer()` 的适用条件"
+        },
+        {
+          "original_id": "a238-05-frame-pixel-budget",
+          "title": "逐帧图片先按解码像素估算",
+          "decision": "remove",
+          "reason": "明确假设的237.3MiB算式已以一行列出，四框把算式拆开没有额外几何或规模示例。",
+          "original_line": 187,
+          "heading": "#### 逐帧图片按解码后像素估算"
+        },
+        {
+          "original_id": "a238-06-lottie-mode",
+          "title": "Lottie 6.7.1 自动模式与异步边界",
+          "decision": "remove",
+          "reason": "Lottie自动模式三门禁、模型缓存/解析异步/节点Async独立路径和资源表完整，四行规则卡重复。",
+          "original_line": 208,
+          "heading": "### Lottie：以当前稳定版 6.7.1 解释渲染模式"
+        },
+        {
+          "original_id": "a238-07-effect-fixed-states",
+          "title": "RenderEffect 固定档位与关闭路径",
+          "decision": "remove",
+          "reason": "33行BlurController两正半径固定档与OFFnull代码完整，四框代码步骤卡重复。",
+          "original_line": 272,
+          "heading": "### RenderEffect：控制输入面积、效果状态与降级"
+        },
+        {
+          "original_id": "a238-08-attribution-evidence",
+          "title": "DrawFrame 变长后的归因证据",
+          "decision": "remove",
+          "reason": "五阶段观察点/可推结论/不能推出表与RT等待归因段落更完整，四框排查卡重复。",
+          "original_line": 295,
+          "heading": "### 动画与 UI 线程：按显示阶段归因"
+        },
+        {
+          "original_id": "a238-09-geometry-cache",
+          "title": "把稳定几何准备移出逐帧回调",
+          "decision": "remove",
+          "reason": "前后两个代码和setSamples只数据变更/setProgress仅进度解释完整，四框几何准备卡重复。",
+          "original_line": 331,
+          "heading": "#### 把不变计算移出更新回调"
+        },
+        {
+          "original_id": "a238-10-stuffing-recovery",
+          "title": "缓冲区积压恢复与动画时间基准",
+          "decision": "keep",
+          "reason": "缓冲等待、Choreographer恢复和Negativeoffset动画时间调整三条逻辑轨道，呈现主动延迟与后续动画时间的关联。",
+          "original_line": 346,
+          "heading": "#### 缓冲区积压恢复"
+        },
+        {
+          "original_id": "a238-11-avd-fallback",
+          "title": "AVD 的 RT 与软件 Canvas 回退门禁",
+          "decision": "remove",
+          "reason": "AVD软件Canvas且RT未运行且pending的三条件与Handler回调不改变运行线程正文完整，三行规则卡重复。",
+          "original_line": 357,
+          "heading": "### AnimatedVectorDrawable：先确认运行线程再优化"
+        },
+        {
+          "original_id": "a238-12-transition-capture",
+          "title": "平台转场先捕获再比较目标",
+          "decision": "keep",
+          "reason": "立即start捕获、业务变化、下一次predraw end捕获、目标差异Animator的真实先后链，帮助正确安排begin调用位置。",
+          "original_line": 385,
+          "heading": "### 转场动画：限制捕获范围和目标数量"
+        },
+        {
+          "original_id": "a238-13-compose-read-phase",
+          "title": "动画值在哪里读取就影响哪个阶段",
+          "decision": "remove",
+          "reason": "四种读取位置/工作/代码/判断表更全面，三行阶段卡重复。",
+          "original_line": 446,
+          "heading": "### 1. 用状态读取阶段判断动画成本"
+        },
+        {
+          "original_id": "a238-14-frame-clock",
+          "title": "默认 Android 帧时钟与错帧后的状态",
+          "decision": "remove",
+          "reason": "默认时钟延迟后按新frametime跳进度不补帧段落完整，四框卡无具体错帧例。",
+          "original_line": 483,
+          "heading": "### 2. 动画时钟与帧时间"
+        },
+        {
+          "original_id": "a238-15-animatable-cancellation",
+          "title": "Animatable 中断的是正在运行的变更",
+          "decision": "keep",
+          "reason": "新Animatable变更取消旧调用、finally清理、旧后续不执行到新值/速度延续的中断链，突出协程控制流代价。",
+          "original_line": 500,
+          "heading": "### 3. Animatable：互斥动画与手势跟随"
+        },
+        {
+          "original_id": "a238-16-transition-coordination",
+          "title": "Transition 协调目标与子动画",
+          "decision": "remove",
+          "reason": "Transition更新segment和重定向/完成三输入语义与1.12重载迁移段落完整，四框协调卡重复。",
+          "original_line": 530,
+          "heading": "### 4. Transition 会参与组合"
+        },
+        {
+          "original_id": "a238-17-retained-exit",
+          "title": "退出期间内容、副作用与资源仍可能存活",
+          "decision": "keep",
+          "reason": "visiblefalse、退出动画持续、内容Effect资源仍存活到结束dispose的三轨，明确目标不可见与真实离开组合的时间差。",
+          "original_line": 557,
+          "heading": "### 5. AnimatedVisibility：尺寸变化和退出内容保留"
+        },
+        {
+          "original_id": "a238-18-animated-content",
+          "title": "内容身份与快速切换时的保留",
+          "decision": "remove",
+          "reason": "AnimatedContent新旧共存/快速切换保留与contentKey、Visibility区别正文完整，三行容器卡重复。",
+          "original_line": 579,
+          "heading": "### 6. AnimatedContent：过渡期间新旧内容共存"
+        },
+        {
+          "original_id": "a238-19-state-adapters",
+          "title": "状态生产、观察流与低频派生分别做什么",
+          "decision": "remove",
+          "reason": "producer/snapshotFlow/derived三完整段落精确包含频率与事件语义，三行适配卡重复。",
+          "original_line": 594,
+          "heading": "### 7. produceState、snapshotFlow 与 derivedStateOf"
+        },
+        {
+          "original_id": "a238-22-benchmark-protocol",
+          "title": "可重复动画基准要等待两个空闲边界",
+          "decision": "keep",
+          "reason": "准备折叠且idle、仅测目标toggle、展开目标且idle、汇总同条件的两端完成门禁链，便于和30行基准骨架对照。",
+          "original_line": 699,
+          "heading": "### 12. 用 Macrobenchmark 建立回归门槛"
+        },
+        {
+          "original_id": "a238-20-lazy-infinite",
+          "title": "惰性项与无限动画的所有权",
+          "decision": "remove",
+          "reason": "Lazy与无限动画所有权、时长缩放0暂停、共享循环段落完整，二行规则卡重复。",
+          "original_line": 714,
+          "heading": "### 13. 无限动画、VectorConverter 与资源动画"
+        },
+        {
+          "original_id": "a238-21-pager-values",
+          "title": "Pager 三个页值对应三种语义",
+          "decision": "remove",
+          "reason": "Pager三个page语义与offsetdistance/预取/settled重资源完整三段，三行字段卡重复。",
+          "original_line": 731,
+          "heading": "### 14. Pager 动画：区分当前页、稳定页和目标页"
+        },
+        {
+          "original_id": "a238-23-scope-key-visibility",
+          "title": "共享 scope 内以业务 key 和可见性匹配",
+          "decision": "keep",
+          "reason": "同一SharedScope下退出和进入articleimage42汇合为业务key匹配与目标bounds的真实依赖结构，强调两端可见性职责。",
+          "original_line": 832,
+          "heading": "#### 2.2 key 作为匹配身份"
+        },
+        {
+          "original_id": "a238-24-lookahead-approach",
+          "title": "目标布局与当前动画布局各自的工作",
+          "decision": "keep",
+          "reason": "Lookahead目标、approach当前动画、稳定缩放或重测、图形层绘制的布局到窗口链，便于区分CPU布局遍历与GPU绘制。",
+          "original_line": 928,
+          "heading": "#### 4.2 approach 决定重测还是缩放"
+        },
+        {
+          "original_id": "a238-25-placeholder",
+          "title": "placeholder 控制父布局是否跟随动画",
+          "decision": "remove",
+          "reason": "两种placeholder父级报告尺寸的两个段落完整，二行选项卡没有周边联动具体几何例。",
+          "original_line": 939,
+          "heading": "#### 4.3 placeholder 决定父布局是否跟随"
+        },
+        {
+          "original_id": "a238-26-element-bounds",
+          "title": "相同视觉元素与变化容器的不同路径",
+          "decision": "remove",
+          "reason": "五维sharedElement/sharedBounds表更完整，三行比较卡重复。",
+          "original_line": 960,
+          "heading": "### 5. sharedElement 与 sharedBounds 的性能边界"
+        },
+        {
+          "original_id": "a238-27-graphics-layer-lifecycle",
+          "title": "共享图形层在需要 overlay 时才分配",
+          "decision": "keep",
+          "reason": "attach不分配、需要overlay才创建、drawrecord/drawLayer、退出或detach/reset释放的资源链，明确层命令资源非Bitmap截屏缓存。",
+          "original_line": 975,
+          "heading": "#### 6.1 活跃的 overlay entry 按需持有 GraphicsLayer"
+        },
+        {
+          "original_id": "a238-28-overlay-clip-order",
+          "title": "overlay 绘制边界与 Modifier 顺序",
+          "decision": "remove",
+          "reason": "overlay父效果不继承、四种clip选择与两端Modifier顺序段落完整，三行规则卡重复。",
+          "original_line": 999,
+          "heading": "#### 6.3 modifier 顺序会改变目标 bounds"
+        },
+        {
+          "original_id": "a238-29-scroll-source-lifetime",
+          "title": "共享过渡要等目标可放置再移除源端",
+          "decision": "keep",
+          "reason": "保留退出源、目标组合测量首次Lookahead放置取得bounds、过渡结束才移除的先后链，直接表达源过早detach的问题位置。",
+          "original_line": 1049,
+          "heading": "### 8. LazyList 中的共享元素"
+        },
+        {
+          "original_id": "a238-30-predictive-back-flow",
+          "title": "预测性返回进度经过导航过渡驱动共享元素",
+          "decision": "keep",
+          "reason": "系统手势progress经Navigation/自定义handler送入目的地Transition、完成提交或取消恢复的跨组件链，说明SharedLayout不直接订阅系统返回。",
+          "original_line": 1078,
+          "heading": "#### 9.1 BackHandler 与 PredictiveBackHandler"
+        },
+        {
+          "original_id": "a238-31-debug-evidence",
+          "title": "匹配调试与正式性能证据的分工",
+          "decision": "remove",
+          "reason": "六项trace证据、Inspector五项范围、debug代码与三组对照清单更完整，三行工具卡重复。",
+          "original_line": 1133,
+          "heading": "#### 10.3 Compose 1.12.0 的视觉调试"
+        },
+        {
+          "original_id": "a238-32-config-boundary",
+          "title": "动态禁用与目标移除的不同决策",
+          "decision": "remove",
+          "reason": "动态禁用默认保留在途与移除目标默认取消/替代bounds两个独立规则段落完整，二行规则卡重复。",
+          "original_line": 1162,
+          "heading": "#### 11.2 SharedContentConfig 用于动态启停"
+        },
+        {
+          "original_id": "a238-33-window-boundary",
+          "title": "Compose overlay 仍由宿主窗口提交",
+          "decision": "remove",
+          "reason": "overlay根绘制进同窗口buffer与独立SurfaceControl区别、跨View窗口限制在正文完整，三行窗口规则卡重复。",
+          "original_line": 1245,
+          "heading": "### overlay 不会创建独立 SurfaceFlinger layer"
+        }
+      ],
+      "sha256_after": "d91c408bf7ed4c635f6f9ec21b3ed20d8efd1dd0d8306c78b9bb5c6e8848cd21",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:25:32.822773+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 33,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a238/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a238/visual-review.json",
+      "retired_diagrams": [
+        "a238-02-property-models",
+        "a238-04-hardware-layer",
+        "a238-05-frame-pixel-budget",
+        "a238-06-lottie-mode",
+        "a238-07-effect-fixed-states",
+        "a238-08-attribution-evidence",
+        "a238-09-geometry-cache",
+        "a238-11-avd-fallback",
+        "a238-13-compose-read-phase",
+        "a238-14-frame-clock",
+        "a238-16-transition-coordination",
+        "a238-18-animated-content",
+        "a238-19-state-adapters",
+        "a238-20-lazy-infinite",
+        "a238-21-pager-values",
+        "a238-25-placeholder",
+        "a238-26-element-bounds",
+        "a238-28-overlay-clip-order",
+        "a238-31-debug-evidence",
+        "a238-32-config-boundary",
+        "a238-33-window-boundary"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-238/retired-assets.json"
     },
     {
       "index": 239,
@@ -59676,8 +59982,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 162,
-  "next_article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+  "reviewed_articles": 163,
+  "next_article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -59687,7 +59993,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:22:39.449184+08:00",
+  "updated_at": "2026-10-31T17:25:32.822773+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -59858,9 +60164,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4960,
-  "reviewed_placements_after": 2011,
-  "net_removed_placements": 2949,
+  "reviewed_placements_before": 4993,
+  "reviewed_placements_after": 2023,
+  "net_removed_placements": 2970,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -59884,5 +60190,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 162
+  "currently_matching_reviewed_source_count": 163
 }
