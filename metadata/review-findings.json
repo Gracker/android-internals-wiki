@@ -11512,6 +11512,134 @@
       "summary": "输入窗口路径把 InputMonitor 误作 DisplayContent 内部类并省略实际调度入口",
       "type": "source-symbol-mismatch",
       "updated_at": "2026-10-31T20:44:07.353740+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "close_note": "已统一全文：59.94/60 的 fractional pair 与 24/60 cadence 分开；类别范围外使用周期比例匹配，不套平方距离；保留 Low/Normal/High 的 Android 17 固定范围及 TODO(b/293651105)；明确通用惩罚只作用于相应分支、idle 无触摸条件和 NoVote/NoPreference/Min 提前返回顺序；可见性、活跃性与面积权重分开。对照 RefreshRateSelector.h:55-58,359-361、cpp:416-582,781-855,1770-1778,1825-1833 及 LayerHistory.cpp:172-232,255-367。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261031-220519-ccfc106e",
+      "created_at": "2026-10-31T22:10:59.715810+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261031-220519-ccfc106e",
+      "details": "全文前段把 24 FPS/60 Hz 当作 isFractionalPairOrMultiple；后段又把类别范围外匹配归入平方距离公式，并把纯 NoVote 包含在低候选分支，遗漏 idle 的无触摸条件。LayerHistory 可见性与活跃性也不是简单降低面积权重。需按 RefreshRateSelector.h:359-361、cpp:416-582、781-855 与 LayerHistory.cpp:172-232、255-367 统一说明。",
+      "id": "finding-d56556531f1b",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.h",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp"
+      ],
+      "status": "fixed",
+      "summary": "评分说明混淆 fractional pair、类别范围外评分与提前返回条件",
+      "type": "refresh-rate-score-branch-mismatch",
+      "updated_at": "2026-10-31T22:20:47.641147+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "close_note": "已删除始终不越界的绝对结论；补齐相同模式过滤、空 render range 重试及重试仍为空时的致命检查，保留 TODO(b/292105422) 和准确日志格式。核对 RefreshRateSelector.cpp:1624-1653。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261031-220519-ccfc106e",
+      "created_at": "2026-10-31T22:10:59.777818+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261031-220519-ccfc106e",
+      "details": "候选始终留在应用请求范围内的绝对表述遗漏 constructAvailableRefreshRates 的空候选回退：使用同一 filterModes，以空 render range 再次 createFrameRateModes；物理等过滤保留。源码 TODO(b/292105422) 保留了 DisplayManager 可能下发过低渲染范围的实现边界，重试为空则 fatal。",
+      "id": "finding-57002bdddfbb",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
+      ],
+      "status": "fixed",
+      "summary": "将应用请求渲染范围写成无例外的候选硬约束",
+      "type": "render-range-fallback-boundary",
+      "updated_at": "2026-10-31T22:20:47.700557+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "close_note": "已同步修正 UID 取证表与正文：FrameRateOverride 仅是内容评分计数器，未做 backdoor 优先合并，退出覆盖不保证写零；补充 dumpsys setFrameRate/Backdoor 与回调取证。计算输入明确为 Scheduler 选中的 FrameRateMode::fps，不直接等同 TE 频率。核对 RefreshRateSelector.cpp:1089-1236、FrameRateOverrideMappings.cpp:23-85,102-123、Scheduler.cpp:1667-1672,1809-1815。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261031-220519-ccfc106e",
+      "created_at": "2026-10-31T22:10:59.838537+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261031-220519-ccfc106e",
+      "details": "Perfetto 取证表声称 FrameRateOverride <uid> 包含内容推导与 backdoor 两路。实际计数器由 RefreshRateSelector::getFrameRateOverrides 的内容评分分支写入；FrameRateOverrideMappings 查询和对外合并时 backdoor 优先，该值可能覆盖内容计数器。未生成覆盖时也不自动写零，需要核对 dumpsys 中 setFrameRate/Backdoor 与实际回调。",
+      "id": "finding-d12a52ecfa13",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameRateOverrideMappings.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp"
+      ],
+      "status": "fixed",
+      "summary": "FrameRateOverride 计数器被误作合并后的 UID 生效值",
+      "type": "uid-override-counter-scope",
+      "updated_at": "2026-10-31T22:20:47.758570+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "close_note": "已将 GPU_DURATION 改为纳秒时长并给出 Android 17 两端点；比较 deadline 前排除不可用的 -1，首绘单列；保留 TOTAL_DURATION 并非屏幕 present 的边界。核对 FrameMetrics.java:164-180,286-315,344-376 与官方 API 24/31 说明。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261031-220519-ccfc106e",
+      "created_at": "2026-10-31T22:10:59.900028+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261031-220519-ccfc106e",
+      "details": "表中将 GPU_DURATION 写作 GPU 完成时间，易与完成时间戳混淆；紧随的 TOTAL_DURATION < DEADLINE 未先过滤 getMetric 不可用时返回的 -1，也未保留首绘通常应单列的官方边界。Android 17 FrameMetrics.java:164-180、286-315、344-376 可定位时长端点与返回语义。",
+      "id": "finding-5770025b2ed4",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://developer.android.com/reference/android/view/FrameMetrics#getMetric(int)"
+      ],
+      "status": "fixed",
+      "summary": "FrameMetrics 混用 GPU 时长与时刻且缺少无效值过滤",
+      "type": "framemetrics-duration-and-unavailable-value",
+      "updated_at": "2026-10-31T22:20:47.816585+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "close_note": "已补齐 Display 迁移和 onDisplayChanged 后重新查询、dp/s 与 View px/s 的单位边界，以及 setFrameTimeline 对过期或无效 vsyncId 的忽略行为。官方页面分别确认 API 37、35；并对照 Display.java:1450-1500、SurfaceControl.Transaction#setFrameTimeline 与 View#setFrameContentVelocity。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261031-220519-ccfc106e",
+      "created_at": "2026-10-31T22:10:59.960811+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261031-220519-ccfc106e",
+      "details": "getFrameRateVelocityMapping 只说明与 Display 相关，未交代跨显示迁移及 onDisplayChanged 后重新查询；映射点速度单位 dp/s 与 setFrameContentVelocity 的 px/s 不同。setFrameTimeline 也遗漏过期或无效 vsyncId 会被忽略的契约。需保留 Android 17/API 37 与 API 35 的适用范围。",
+      "id": "finding-b871328f2987",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Display.java",
+        "https://developer.android.com/reference/android/view/Display#getFrameRateVelocityMapping()",
+        "https://developer.android.com/reference/android/view/SurfaceControl.Transaction#setFrameTimeline(long)"
+      ],
+      "status": "fixed",
+      "summary": "Display 速度映射与 SurfaceControl 时间线缺少失效边界",
+      "type": "display-mapping-and-timeline-lifecycle",
+      "updated_at": "2026-10-31T22:20:47.874565+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "close_note": "已同步修改概述和详细动作表，补齐先合并 desired、force=false、新状态机 pending 为空及分辨率匹配的条件；说明旧 HAL 调用点将 seamlessRequired=false，而 DisplayCommand 使用请求值。核对 DisplayModeController.cpp:88-142、SurfaceFlinger.cpp:1768-1775；源码断言与本地 gate 已通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261031-220519-ccfc106e",
+      "created_at": "2026-10-31T22:13:29.179147+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261031-220519-ccfc106e",
+      "details": "setDesiredMode 的概述将同 mode ID 直接等同 render-rate-only，未说明优先合并 desired、force 与新状态机 pending 为空等条件；initiateDisplayModeChanges 的旧 setActiveModeWithConstraints 调用点实际将 seamlessRequired 置为 false，不应仅根据参数名推断此分支把应用无缝偏好直接传给 HAL。以 DisplayModeController.cpp:88-142 和 SurfaceFlinger.cpp:1768-1775 统一各处表述。",
+      "id": "finding-c0e9a3e01291",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Display/DisplayModeController.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+      ],
+      "status": "fixed",
+      "summary": "模式切换概述遗漏请求合并、强制标志与旧 HAL 无缝参数边界",
+      "type": "modeset-action-preconditions",
+      "updated_at": "2026-10-31T22:20:47.936526+08:00"
     }
   ],
   "schema_version": 1
