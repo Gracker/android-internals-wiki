@@ -64952,9 +64952,133 @@
       "before_count": 12,
       "before_all_images": 12,
       "sha256_before": "8d54ec3c46269f1b7342389f8a1af90e1903aaf698095319fe05f635d425c5c1",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a268-01-two-selection-layers",
+          "title": "无线候选选择与请求满足分属两层",
+          "decision": "remove",
+          "reason": "紧邻已有从 Wi-Fi 扫描到应用回调的九步文本链与两层解释，四框概览复述相同控制关系。",
+          "original_line": 115,
+          "heading": "### ConnectivityService 与 Wi-Fi 模块各管一层"
+        },
+        {
+          "original_id": "a268-02-sufficiency-before-filter",
+          "title": "足够好判断先于扫描候选筛选",
+          "decision": "keep",
+          "reason": "实际保持/重选分支保留当前 BSSID 例外的先后顺序，补足过滤清单不易直观看出的提前结束路径。",
+          "original_line": 134,
+          "heading": "#### 扫描结果怎样过滤、候选怎样提名"
+        },
+        {
+          "original_id": "a268-03-scoring-buckets",
+          "title": "候选评分先区分优先区间再比较无线奖励",
+          "decision": "keep",
+          "reason": "候选优先区间、区间内奖励封顶和用户选择特殊提权构成评分层次，补充输入表本身没有表达的区间约束。",
+          "original_line": 156,
+          "heading": "#### 候选如何评分"
+        },
+        {
+          "original_id": "a268-04-ranker-policy-order",
+          "title": "NetworkRanker以策略顺序逐轮保留候选",
+          "decision": "remove",
+          "reason": "六框逐项重复紧邻八行排序规则表及版本表，表格保留更精确的逐轮策略次序。",
+          "original_line": 178,
+          "heading": "### ConnectivityService 与 NetworkRanker 怎样排序请求"
+        },
+        {
+          "original_id": "a268-05-default-callback-order",
+          "title": "默认网络回调在新选择后跟踪新网络",
+          "decision": "keep",
+          "reason": "初始四种回调与后续能力变化的两条时间轨道突出 onLost 不是切换必经阶段，位置紧邻起点定义。",
+          "original_line": 209,
+          "heading": "### 怎样度量连接切换"
+        },
+        {
+          "original_id": "a268-06-call-and-network-timelines",
+          "title": "请求时间线与默认网络时间线只作关联",
+          "decision": "keep",
+          "reason": "Call、TLS 子阶段和默认代次的并行轨道说明嵌套时长与关联范围，和回调顺序图表达不同关系。",
+          "original_line": 336,
+          "heading": "### 怎样度量连接切换"
+        },
+        {
+          "original_id": "a268-07-capability-planes",
+          "title": "无线关联、系统验证与业务成功分别判断",
+          "decision": "remove",
+          "reason": "四层属性串成单一路径容易暗示不成立的必然成功链；正文能力含义/不表示什么表已清晰区分。",
+          "original_line": 355,
+          "heading": "### 弱网与多网络并存时怎样判断"
+        },
+        {
+          "original_id": "a268-08-callback-lifecycle",
+          "title": "同一Handler维护网络代次并及时释放",
+          "decision": "remove",
+          "reason": "注册、Handler、轻量投递与注销的四框完整重复紧邻追踪器代码及其生命周期说明。",
+          "original_line": 503,
+          "heading": "#### 1. 用 NetworkCallback 维护网络状态记录"
+        },
+        {
+          "original_id": "a268-09-recover-by-operation",
+          "title": "切网后的恢复按连接和业务语义推进",
+          "decision": "keep",
+          "reason": "默认网络和显式目标 Network 两路分流并汇入业务恢复，清楚显示 DNS/socket 配对只属于显式绑定路径。",
+          "original_line": 522,
+          "heading": "#### 2. 在连接层附近区分失败原因"
+        },
+        {
+          "original_id": "a268-10-evidence-correlate",
+          "title": "系统与请求证据按编号和时钟对齐",
+          "decision": "remove",
+          "reason": "三类证据与时钟请求关联均已有命令、列表和关联段落；串行四框未新增同步或因果结构。",
+          "original_line": 598,
+          "heading": "#### Perfetto"
+        },
+        {
+          "original_id": "a268-11-oem-scorer-evidence",
+          "title": "OEM评分通道与三层设备证据",
+          "decision": "remove",
+          "reason": "三层 OEM 材料图逐项重复下方材料/边界表与评分器 API 清单，删除卡片版副本。",
+          "original_line": 619,
+          "heading": "### OEM Wi-Fi 评分为何不同"
+        },
+        {
+          "original_id": "a268-12-quic-migration-gates",
+          "title": "HTTP3切网迁移以引擎与协商条件为前提",
+          "decision": "remove",
+          "reason": "QUIC 迁移四框复述前后两段前提和实验观测列表，未画实际不同门槛的失败/回退分支。",
+          "original_line": 640,
+          "heading": "### HTTP/3、QUIC 与网络切换"
+        }
+      ],
+      "sha256_after": "d35158ed92cb48d3b33bd0c9c883377767bff36c871a501ee8665337496f8a71",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:50:08.743838+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 12,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a268/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a268/visual-review.json",
+      "retired_diagrams": [
+        "a268-01-two-selection-layers",
+        "a268-04-ranker-policy-order",
+        "a268-07-capability-planes",
+        "a268-08-callback-lifecycle",
+        "a268-10-evidence-correlate",
+        "a268-11-oem-scorer-evidence",
+        "a268-12-quic-migration-gates"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-268/retired-assets.json"
     },
     {
       "index": 269,
@@ -65199,8 +65323,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 184,
-  "next_article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+  "reviewed_articles": 185,
+  "next_article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -65210,7 +65334,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:48:16.787624+08:00",
+  "updated_at": "2026-10-31T18:50:08.743838+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -65346,9 +65470,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5508,
-  "reviewed_placements_after": 2155,
-  "net_removed_placements": 3353,
+  "reviewed_placements_before": 5520,
+  "reviewed_placements_after": 2160,
+  "net_removed_placements": 3360,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -65372,7 +65496,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 184,
+  "currently_matching_reviewed_source_count": 185,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

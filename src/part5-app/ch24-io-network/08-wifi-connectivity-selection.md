@@ -112,10 +112,6 @@ Wi-Fi 扫描结果
 
 顺着这张图看，Wi-Fi 模块回答“连接哪个 Wi-Fi 网络或 BSSID（basic service set identifier）”，Connectivity 模块回答“哪个 `Network` 满足某个 `NetworkRequest`”。`Network` 是 Android 对一条可用网络路径的句柄，`NetworkRequest` 是传输类型与网络能力等条件的集合。我们平时说的默认网络，只是系统请求中的一类；VPN 还可能让不同 UID（user identifier，Android 中标识应用身份的整数） 看到不同的应用默认网络。
 
-<!-- gracker-diagram: a268-01-two-selection-layers -->
-![无线候选选择与请求满足分属两层](../../assets/diagrams/ch24/a268-01-two-selection-layers.png)
-
-图：Wi-Fi 选择哪个 AP，Connectivity 选择哪个 Network 满足请求；两层分数不能混为一个公式。
 
 ### Wi-Fi 模块怎样决定连哪个网络
 
@@ -175,10 +171,6 @@ Wi-Fi 模块选出自己的网络之后，轮到 Connectivity 排序：先保留
 
 这张表描述的是逐轮筛选，而非把所有属性相加的公式。Connectivity 把验证状态、VPN 和销毁状态等运行时信息整理成 `FullScore`；网络模块用 `NetworkScore` 携带 `POLICY_TRANSPORT_PRIMARY`、`POLICY_EXITING` 等策略属性。顺带一提，“所有网络一律未计费优先”这条规则在通用排序代码里尚未实现，对应位置还留着表示“待实现”的 TODO 注释。
 
-<!-- gracker-diagram: a268-04-ranker-policy-order -->
-![NetworkRanker以策略顺序逐轮保留候选](../../assets/diagrams/ch24/a268-04-ranker-policy-order.png)
-
-图：这些是有顺序的集合筛选；NOT_METERED 可属于请求条件，不能据此推出所有默认网络未计费优先。
 
 `NET_CAPABILITY_NOT_METERED` 能决定带有该能力要求的请求是否得到满足，Wi-Fi 候选评分也会奖励未计费网络。这两个事实各自作用于自己那一层，源码里并没有一条所有默认网络共用的未计费优先公式。
 
@@ -352,10 +344,6 @@ class TimelineEventListener(
 
 这张表帮我们把结论限定在正确的层级：能力字段描述系统掌握的网络属性，业务到底可不可用，要靠一次真实请求回答。
 
-<!-- gracker-diagram: a268-07-capability-planes -->
-![无线关联、系统验证与业务成功分别判断](../../assets/diagrams/ch24/a268-07-capability-planes.png)
-
-图：业务可用性由真实请求证明；计费和传输集合同时记录，不能用 Wi-Fi 标记代替未计费判断。
 
 `NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HTTPS 探测，并根据成功、登录门户、部分连通等结果更新 Connectivity。探测 URL、代理、Private DNS（系统级加密解析配置）与设备配置都可能影响结果。Private DNS 不能一概解释为仅使用 DNS-over-TLS；受支持的系统更新与解析服务组合还可能使用 DNS-over-HTTP/3。据此有一组处理原则：
 
@@ -500,10 +488,6 @@ class DefaultNetworkTracker(
 
 `network.toString()` 只适合关联同一次设备运行中的事件，跨重启后要重新建立关联。`linkDownstreamBandwidthKbps` 是系统估计值，应用的实测吞吐量要另外测。`onEvent` 回调应只把事件快速放入队列；数据库写入、上传等耗时工作交给其他线程。追踪器还要与进程生命周期一致，并确保只注册一次。系统为每个 UID 合计限制 100 个未释放的网络回调与请求。
 
-<!-- gracker-diagram: a268-08-callback-lifecycle -->
-![同一Handler维护网络代次并及时释放](../../assets/diagrams/ch24/a268-08-callback-lifecycle.png)
-
-图：不要在回调内另查同步快照；networkId 只用于当前运行期间关联，带宽字段是估计值。
 
 #### 2. 在连接层附近区分失败原因
 
@@ -595,10 +579,6 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 应用事件、系统追踪与服务端日志至少要共享请求编号，并记录单调时钟与墙上时钟的对应关系。缺少这种关联时，我们最多知道“切网和超时发生在相近时间”，这些关联是定位前提；确认因果还需结合实际失败阶段、系统状态和可控复现，时间接近或共享编号本身都不足以证明切网导致超时。
 
-<!-- gracker-diagram: a268-10-evidence-correlate -->
-![系统与请求证据按编号和时钟对齐](../../assets/diagrams/ch24/a268-10-evidence-correlate.png)
-
-图：快照、时间线和服务端日志各有证据范围；时间接近与共享编号都不能单独证明切网导致超时。
 
 ## OEM 差异与 HTTP/3 切网边界
 
@@ -616,10 +596,6 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 外部评分器的输入可来自 `WifiUsabilityStatsEntry`，包括 RSSI、链路速率、频率和数据包统计。接口存在只说明平台提供了这条通道；具体设备有没有安装外部评分器、有没有启用由功能标志控制的行为，要逐台确认。
 
-<!-- gracker-diagram: a268-11-oem-scorer-evidence -->
-![OEM评分通道与三层设备证据](../../assets/diagrams/ch24/a268-11-oem-scorer-evidence.png)
-
-图：notifyScoreUpdate 用于统计；是否采用可用性与预评估策略，取决于目标系统组件和功能标志。
 
 我们做工程判断时，材料要分三层看：
 
@@ -637,10 +613,6 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 QUIC 用连接 ID 标识一条逻辑连接，连接身份没有完全绑在原来的 IP 地址和端口上，这是连接迁移的协议基础。但迁移并不会因为用了 HTTP/3 就自动发生：`HttpEngine` 和 Cronet 都提供连接迁移选项，只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会在网络变化后继续；允许迁往非默认网络还可能用到按量计费的流量。
 
-<!-- gracker-diagram: a268-12-quic-migration-gates -->
-![HTTP3切网迁移以引擎与协商条件为前提](../../assets/diagrams/ch24/a268-12-quic-migration-gates.png)
-
-图：QUIC连接ID提供迁移基础；引擎设置、网络策略与服务器支持仍决定实际结果。
 
 分批启用 HTTP/3 时，至少分别记录：
 
