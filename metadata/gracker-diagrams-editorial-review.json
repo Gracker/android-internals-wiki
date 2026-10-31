@@ -57298,9 +57298,195 @@
       "before_count": 19,
       "before_all_images": 19,
       "sha256_before": "e06931b127da47e12c683f9843295cb1030ee114dc33c5b4ad6b22fd6df8f3a8",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a230-01-host-hierarchy",
+          "title": "Compose 通过 View 宿主接入 Android 渲染管线",
+          "decision": "keep",
+          "reason": "公开ComposeView到内部AndroidComposeView与ViewRootImpl/HWUI的宿主层次，区分容器和UIowner职责。",
+          "original_line": 59,
+          "heading": "### 1.1 Activity 安装的是 `ComposeView`"
+        },
+        {
+          "original_id": "a230-02-composition-triggers",
+          "title": "setContent 的工作取决于 attach、父 context 与 Lifecycle",
+          "decision": "remove",
+          "reason": "setContent已attach/未attach的完整段落与owner条件说明清楚，三行触发分类卡重复。",
+          "original_line": 66,
+          "heading": "### 1.1 Activity 安装的是 `ComposeView`"
+        },
+        {
+          "original_id": "a230-03-parent-context-search",
+          "title": "父 CompositionContext 按优先级复用，最后才创建窗口调度器",
+          "decision": "keep",
+          "reason": "显式父context、树context、活跃缓存到windowRecomposer的逐级回退顺序，说明不是依次创建四个调度器。",
+          "original_line": 75,
+          "heading": "### 1.2 窗口级 `Recomposer` 受 Lifecycle 驱动"
+        },
+        {
+          "original_id": "a230-04-lifecycle-clock",
+          "title": "初始组合与 Recomposer 帧时钟有不同的生命周期边界",
+          "decision": "remove",
+          "reason": "五项Lifecycle/frameclock/根宿主detach和owner缺失规则列表更完整，三行生命周期卡重复。",
+          "original_line": 86,
+          "heading": "### 1.2 窗口级 `Recomposer` 受 Lifecycle 驱动"
+        },
+        {
+          "original_id": "a230-05-entered-subtree",
+          "title": "首次组合只执行进入的分支和布局请求的 item",
+          "decision": "keep",
+          "reason": "本次进入根→选中分支和请求lazyitem→UI树，与未进入内容无箭头的结构，解释首屏只承担进入的工作。",
+          "original_line": 109,
+          "heading": "### 1.3 初始 composition 做了哪些工作"
+        },
+        {
+          "original_id": "a230-06-composition-to-display",
+          "title": "组合结束以后，仍有布局、绘制与系统呈现",
+          "decision": "keep",
+          "reason": "compositionapply到View遍历、RenderThreadGPU、系统合成呈现的阶段链，与前宿主对象层次表达不同维度。",
+          "original_line": 126,
+          "heading": "### 1.4 composition 完成后仍要经过 View traversal"
+        },
+        {
+          "original_id": "a230-07-remember-key-boundary",
+          "title": "remember 可避免重复计算，首次成本仍在组合里",
+          "decision": "remove",
+          "reason": "8行remember排序代码及key1枚举、首次与重组段落准确完整，三行缓存语义卡重复。",
+          "original_line": 152,
+          "heading": "## 2. 初始 composition 与重组不能混为一谈"
+        },
+        {
+          "original_id": "a230-08-profile-roles",
+          "title": "库规则、应用规则与 Startup Profile 各作用于不同边界",
+          "decision": "remove",
+          "reason": "库/AAR与应用profile/BOM/Startup构建职责几段详述完整，三行profile边界卡重复。",
+          "original_line": 193,
+          "heading": "### 4.2 Startup Profile 是构建期 DEX 布局输入"
+        },
+        {
+          "original_id": "a230-09-unattached-prefetch",
+          "title": "未 attach 预组合仍依赖已 attach 的上下文与清理",
+          "decision": "keep",
+          "reason": "已attach参考View提供owner/上下文到未attach预组合，以及未最终attach的dispose条件，保留资源准备与清理依赖。",
+          "original_line": 216,
+          "heading": "### 5.1 首帧只建立当前需要显示的内容"
+        },
+        {
+          "original_id": "a230-10-effects-and-data",
+          "title": "缓存、后台数据与 Effect 都有各自的成本归属",
+          "decision": "remove",
+          "reason": "重计算列表、rememberSaveable和LaunchedEffect调度段落完整，三行effect数据分类卡重复。",
+          "original_line": 234,
+          "heading": "### 5.2 把重计算移出 composable，但保留状态所有权"
+        },
+        {
+          "original_id": "a230-11-lazy-viewport",
+          "title": "Lazy 请求量来自可见区域与布局约束，零尺寸会误导填充",
+          "decision": "remove",
+          "reason": "ColumnLazy适用段落和五项布局限制完整，三行分类图没有实际viewport几何而重复。",
+          "original_line": 251,
+          "heading": "### 5.3 正确选择 `Column` 与 Lazy layout"
+        },
+        {
+          "original_id": "a230-12-subcompose-layout",
+          "title": "子组合将内容选择放到测量期间，普通 Box 不走此机制",
+          "decision": "remove",
+          "reason": "SubcomposeLayout约束定义与普通Box的两段完整，三行机制对照卡重复。",
+          "original_line": 262,
+          "heading": "### 5.4 `SubcomposeLayout` 的适用场景"
+        },
+        {
+          "original_id": "a230-13-phase-feedback",
+          "title": "把布局尺寸写回组合状态，可能多走一次帧循环",
+          "decision": "keep",
+          "reason": "第一帧旧尺寸布局写state，再下帧重组与布局的三轨反馈，直观说明额外帧循环与一次测量求解替代。",
+          "original_line": 277,
+          "heading": "### 5.5 阶段反馈与首帧后的第二帧"
+        },
+        {
+          "original_id": "a230-14-window-process-boundaries",
+          "title": "窗口约束与进程边界改变组合发生的位置",
+          "decision": "remove",
+          "reason": "窗口约束变化与各进程/RemoteViewsGlance段落完整，三行边界映射卡重复。",
+          "original_line": 290,
+          "heading": "## 6. Android 17 多窗口与多进程边界"
+        },
+        {
+          "original_id": "a230-15-interop-host-lifetime",
+          "title": "混合页面把宿主建立与组合生命周期同时带入首帧",
+          "decision": "remove",
+          "reason": "混合页宿主生命周期与AndroidView反向互操作两段完整，三行分类卡重复。",
+          "original_line": 303,
+          "heading": "## 7. View/Compose 混合页面"
+        },
+        {
+          "original_id": "a230-16-fully-drawn-ready",
+          "title": "充分绘制条件由业务定义，度量终点还需对齐显示帧",
+          "decision": "remove",
+          "reason": "ReportDrawnWhen代码及业务合法空/错误终态与基准帧终点段落完整，三行指标分类卡重复。",
+          "original_line": 329,
+          "heading": "### 8.1 TTID 与 TTFD 回答不同问题"
+        },
+        {
+          "original_id": "a230-17-benchmark-window",
+          "title": "启动采集同时固定编译条件与业务等待边界",
+          "decision": "remove",
+          "reason": "25行基准代码与单参数Byres标记说明、Partial/None条件段落完整，三行实验卡重复。",
+          "original_line": 368,
+          "heading": "### 8.2 Macrobenchmark 固定实验条件"
+        },
+        {
+          "original_id": "a230-18-trace-paths",
+          "title": "粗粒度、细粒度与采集入口要按构建分别配置",
+          "decision": "remove",
+          "reason": "粗细粒度tracing依赖/参数/Studio手动路径段落详尽，三行采集分类卡重复。",
+          "original_line": 389,
+          "heading": "### 8.3 Perfetto 负责归因"
+        },
+        {
+          "original_id": "a230-19-phase-evidence",
+          "title": "症状先映射到同一帧与启动窗口中的阶段证据",
+          "decision": "remove",
+          "reason": "下方七症状/证据/处理表更完整，三行诊断卡重复。",
+          "original_line": 398,
+          "heading": "### 8.3 Perfetto 负责归因"
+        }
+      ],
+      "sha256_after": "21abc6e0e77e6b2a4ba9db54a8322a23f97576207b4cd3f13a67b728e3d84757",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:04:42.525983+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 19,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a230/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a230/visual-review.json",
+      "retired_diagrams": [
+        "a230-02-composition-triggers",
+        "a230-04-lifecycle-clock",
+        "a230-07-remember-key-boundary",
+        "a230-08-profile-roles",
+        "a230-10-effects-and-data",
+        "a230-11-lazy-viewport",
+        "a230-12-subcompose-layout",
+        "a230-14-window-process-boundaries",
+        "a230-15-interop-host-lifetime",
+        "a230-16-fully-drawn-ready",
+        "a230-17-benchmark-window",
+        "a230-18-trace-paths",
+        "a230-19-phase-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-230/retired-assets.json"
     },
     {
       "index": 232,
@@ -57864,8 +58050,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 155,
-  "next_article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+  "reviewed_articles": 156,
+  "next_article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -57875,7 +58061,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:02:08.240101+08:00",
+  "updated_at": "2026-10-31T17:04:42.525983+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -58046,9 +58232,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4772,
-  "reviewed_placements_after": 1968,
-  "net_removed_placements": 2804,
+  "reviewed_placements_before": 4791,
+  "reviewed_placements_after": 1974,
+  "net_removed_placements": 2817,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -58072,5 +58258,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 155
+  "currently_matching_reviewed_source_count": 156
 }
