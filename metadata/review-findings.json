@@ -11388,6 +11388,10 @@
     },
     {
       "chapter": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "close_note": "核验原改写快照、97665478a 中的目标文件、本 run base 140c10a9 中的目标文件及编辑前工作区，UTF-8 文本完全一致，sha256_utf8_16 均为 94ad870811e45b32；97665478a 是当前 HEAD 祖先且是该章最近一次提交。接受该提交作为原改写成果的实际来源，不重做正文、不补造旧提交、不改旧 manifest 的 needs-human-review 失败历史。原 run ID、样式指标和原 commit_message 继续以原 result 留档，完整关联见 logs/rework/2026-10-31-20261031-173520-rework-a652c959-rework.md。仅将本章 finalized 调整为 ready-for-review 并登记 last_rework_at；不重新宣称平台事实已于今日核验。当前 rework 通过独立 manifest 收口；旧 manifest 不重跑。",
+      "closed_by": "aiw-polish-rework",
+      "closed_commit": "97665478a016b0c3da40732436cfc4ff3f354d7f",
+      "closed_run_id": "20261031-173520-rework-a652c959",
       "created_at": "2026-10-31T16:18:31.637811+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261031-160020-cn-rewrite-a652c959b80f8cea",
@@ -11398,10 +11402,10 @@
       "source_paths": [
         "git show 97665478a --stat; shasum worktree vs HEAD both 94ad870811e45b32; aiw-run-complete.py output"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "改写成果被并发的配图复核提交 97665478a 吸收，manifest 无法按 changed 收口",
       "type": "manifest-closure-conflict",
-      "updated_at": "2026-10-31T16:18:31.637811+08:00"
+      "updated_at": "2026-10-31T17:37:11.577238+08:00"
     }
   ],
   "schema_version": 1
