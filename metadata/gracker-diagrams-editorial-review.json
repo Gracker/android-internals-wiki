@@ -43125,9 +43125,272 @@
       "before_count": 28,
       "before_all_images": 28,
       "sha256_before": "abe1babe97c6419dd1cb83332948fbb261b207a41a51a8db5c569513fc4e4dc7",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 10,
+      "decisions": [
+        {
+          "original_id": "ch15-16-01-capability-gates",
+          "title": "源码、产品条件与运行时证据",
+          "decision": "remove",
+          "reason": "四步重述源码/产品/运行时核对清单，并与22/28两轮调试摘要重复，无实际设备判定样例；全部权限Kconfigflagattach边界原文留。",
+          "original_line": 167,
+          "heading": "# Android eBPF 架构与性能观测"
+        },
+        {
+          "original_id": "ch15-16-02-load-pin-attach-consume",
+          "title": "从对象到观测结果的四个边界",
+          "decision": "keep",
+          "reason": "默认pinprogram由consumerattach与autoattach后pinlink/disconnect两个真实生命周期分支独立；移到原生总览处统一加载取数总图，保留ELF、事件触发、授权读取和非自动Perfetto桥接。",
+          "original_line": 213,
+          "heading": "### 加载与取数链路"
+        },
+        {
+          "original_id": "ch15-16-03-hook-context-contract",
+          "title": "三类 context 的读取契约",
+          "decision": "remove",
+          "reason": "三列复写完整ctx附加方式表和rawsyscalls两读法列表，无实际参数内存布局图；args0regs/args1id、常规idargs6与ABI全文留。",
+          "original_line": 257,
+          "heading": "### Attach 点决定了 `ctx` 的结构"
+        },
+        {
+          "original_id": "ch15-16-04-syscall-counter-race",
+          "title": "syscall 计数的身份与并发边界",
+          "decision": "remove",
+          "reason": "四框逐行摘要37行完整教学计数代码，未画两CPU首次lookup的具体竞态时序；TGID高32/TID低32、1024/NOEXIST漏计段全文留。",
+          "original_line": 319,
+          "heading": "#### `raw_syscalls/sys_enter` 的两种读法"
+        },
+        {
+          "original_id": "ch15-16-05-dynamic-probe-lifecycle",
+          "title": "动态探针的配对、版本与偏移",
+          "decision": "remove",
+          "reason": "三列逐项复写kretprobe配对和uprobeELF/版本段，无实际嵌套覆盖或地址换算数值例，所有单值map嵌套风险与JIT/APEX边界全文留。",
+          "original_line": 344,
+          "heading": "#### uprobe 还要理解 ELF 与运行时"
+        },
+        {
+          "original_id": "ch15-16-06-uprobestats-task-lifecycle",
+          "title": "UprobeStats 从订阅到回收",
+          "decision": "keep",
+          "reason": "statsd订阅解析→占用map拒冲突与lazyguard→清陈旧ring/保fd→限时轮询→关闭fd清占用的实际任务资源生命周期独立，API37lazyBinder和user特殊guardrail条件正文留。",
+          "original_line": 359,
+          "heading": "#### uprobe 还要理解 ELF 与运行时"
+        },
+        {
+          "original_id": "ch15-16-07-cumulative-vs-timeline",
+          "title": "累计记账与事件时间线",
+          "decision": "remove",
+          "reason": "三列复写CPU累计/调度时间线/采样热点说明与工具选择表，无实际同一活动三种数据例；map非时间线与procstat非固定10ms全文留。",
+          "original_line": 376,
+          "heading": "#### CPU 时间与调度延迟"
+        },
+        {
+          "original_id": "ch15-16-08-existing-source-routing",
+          "title": "GPU、网络与内存问题的取数方向",
+          "decision": "remove",
+          "reason": "三列摘要GPU/网络/堆系统内存五类选择段及完整数据矩阵，没有实际资源归因链；GPUkey字节非PSS、网络非App抓包与所有权限制全文留。",
+          "original_line": 420,
+          "heading": "#### 内存压力与分配异常"
+        },
+        {
+          "original_id": "ch15-16-09-perfetto-bridge",
+          "title": "ftrace 与 BPF 输出的独立消费链",
+          "decision": "remove",
+          "reason": "三列重画ftrace/BPF桥接五条清单/StatsD独立出口段，无实际packet时钟身份示例；固定tag无linuxebpf和atraceapps非事件过滤全文留。",
+          "original_line": 469,
+          "heading": "### 与 Perfetto 的关系"
+        },
+        {
+          "original_id": "ch15-16-10-probe-overhead-loss",
+          "title": "探针热路径、输出与丢失",
+          "decision": "remove",
+          "reason": "四框摘要开销七条度量清单与减负段，未画实际reserve失败/消费者积压数据；非阻塞丢失及探针AB重测完整留。",
+          "original_line": 500,
+          "heading": "### 开销不能用一个固定数字概括"
+        },
+        {
+          "original_id": "ch15-16-11-sched-ext-state",
+          "title": "sched_ext 的启用、覆盖与回退",
+          "decision": "remove",
+          "reason": "四框重述schedext启用条件/partial范围/回退段，未画真实切换状态图，所有ops无稳定ABI与stateops区别、无加载仍普通类全文留。",
+          "original_line": 526,
+          "heading": "### sched_ext（也简称 SCX）的启用条件"
+        },
+        {
+          "original_id": "ch15-16-12-version-clocks",
+          "title": "平台、Mainline 与设备内核三条时间线",
+          "decision": "remove",
+          "reason": "三列重画平台/Mainline/内核版本表，无实际迁移时间轴，APIlevel非内核能力及A16APEX构建flag全文留。",
+          "original_line": 549,
+          "heading": "### 版本演进的三条时间线"
+        },
+        {
+          "original_id": "ch15-16-13-boot-exec-chain",
+          "title": "启动加载链沿 execve 传递控制",
+          "decision": "keep",
+          "reason": "init→Connectivity→可选UprobeStats→Rust平台→legacyvendor→done同PIDexecve实际控制接力链独立，完整代码树互补并保留noncritical失败仍done条件。",
+          "original_line": 670,
+          "heading": "### 完整启动链"
+        },
+        {
+          "original_id": "ch15-16-14-descriptor-worker",
+          "title": "一个注册对象怎样加载与固定",
+          "decision": "keep",
+          "reason": "Rustworker筛文件/按内核关section→verifierload→逐map和program描述匹配pin权限→critical失败处理的实际逐步状态链独立，内部data例外及无对象回滚正文留。",
+          "original_line": 740,
+          "heading": "### Rust 加载器怎样处理一个 `.bpf` 对象"
+        },
+        {
+          "original_id": "ch15-16-15-program-vs-link",
+          "title": "program pin 与持久 link 的区别",
+          "decision": "remove",
+          "reason": "默认program与autoattachlink两列的真实分工已由保留2总图覆盖，末列仅重述空数据检查；ProgDesc默认false/disconnect保link文字表格留。",
+          "original_line": 765,
+          "heading": "#### load 与 auto-attach 的边界"
+        },
+        {
+          "original_id": "ch15-16-16-conditional-object-selection",
+          "title": "基础清单与条件清单",
+          "decision": "remove",
+          "reason": "三列重述FILEARR静态清单、flag/架构内核条件和构建required段，未画具体对象条件分支；testskipuser与bpftool产品范围全文留。",
+          "original_line": 786,
+          "heading": "#### 基础清单与条件清单"
+        },
+        {
+          "original_id": "ch15-16-17-dac-selinux-boundaries",
+          "title": "路径、传统权限与 SELinux",
+          "decision": "remove",
+          "reason": "四步复写DAC/SELinux与解码段，未画真实mode位或访问判断；root:system不意味着other无权限、cat非稳定协议原文留。",
+          "original_line": 801,
+          "heading": "#### owner、group 与 mode"
+        },
+        {
+          "original_id": "ch15-16-18-timeinstate-map-groups",
+          "title": "timeInState 的十五张 map 分工",
+          "decision": "remove",
+          "reason": "四分树逐项复制15map四组完整表，不画组间数据关系；PERCPU/HASH/ARRAY及slotHASH到ARRAY流程全文留。",
+          "original_line": 819,
+          "heading": "### timeInState：三个程序、十五个 map"
+        },
+        {
+          "original_id": "ch15-16-19-switch-accounting",
+          "title": "sched_switch 的记账顺序与精度",
+          "decision": "keep",
+          "reason": "schedswitch身份一致性→active→当前freqidx→delta更新UID/全机/跟踪TGID的实际记账依赖链独立，调频只改索引不拆段与sandbox双归因完整保留。",
+          "original_line": 852,
+          "heading": "#### `sched_switch` 的计账顺序"
+        },
+        {
+          "original_id": "ch15-16-20-timeinstate-consumer",
+          "title": "libtimeinstate 的初始化和附着",
+          "decision": "keep",
+          "reason": "consumer扫描policyfreq→初始化maps→取得三program分别trace/rawattach→活进程读取的实际初始化依赖链独立，supported非started与死亡须重新跟踪图注留。",
+          "original_line": 874,
+          "heading": "#### 初始化、附着与读取都在 `libtimeinstate`"
+        },
+        {
+          "original_id": "ch15-16-21-gpu-snapshot-event-stream",
+          "title": "GPU memory 的起始快照与后续事件",
+          "decision": "keep",
+          "reason": "GPUmap由driver事件维护、androidgpumemory起始遍历packet与后续ftrace三个不同职责独立，保留key高GPU低PID/size0删除、无循环轮询和驱动事件必需。",
+          "original_line": 909,
+          "heading": "#### Perfetto 看到的是什么"
+        },
+        {
+          "original_id": "ch15-16-22-load-attach-data-triage",
+          "title": "空数据按三层证据排查",
+          "decision": "remove",
+          "reason": "四步复写详细四层检查和六行故障表，无实际最先失败记录，全部done非每对象成功与事件存在非attach成功全文留。",
+          "original_line": 981,
+          "heading": "#### 4. 解释常见故障形态"
+        },
+        {
+          "original_id": "ch15-16-23-four-program-scopes",
+          "title": "四组扩展程序的输出边界",
+          "decision": "remove",
+          "reason": "四分树逐项重画四程序矩阵，无新增数据流，架构flag/BTF及UIDcycles/DMA四字段/并集/白名单锁的不同范围全文留。",
+          "original_line": 1024,
+          "heading": "### 程序矩阵（matrix）"
+        },
+        {
+          "original_id": "ch15-16-24-cycle-energy-model",
+          "title": "UID cycles 与 RAPL 能量估算",
+          "decision": "keep",
+          "reason": "每CPU hardwarecycle→有效switchUID增量→读取RAPLpackage增量→按UIDΔC/总ΔC分摊的实际估算链与公式独立，非直接测量UID能量且x86限定。",
+          "original_line": 1099,
+          "heading": "#### 能量分摊的估算模型"
+        },
+        {
+          "original_id": "ch15-16-25-dmabuf-iterator-boundaries",
+          "title": "DMA-BUF 遍历输出与归因边界",
+          "decision": "remove",
+          "reason": "四步逐项重画iterator四字段、两段命令与边界解释，没有真实输出记录例；31字节/四行/非原子遍历/inode复用/exporter非owner全文留。",
+          "original_line": 1149,
+          "heading": "#### 能做与不能做"
+        },
+        {
+          "original_id": "ch15-16-26-wakelock-union",
+          "title": "全局 wakelock 并集与状态换算",
+          "decision": "keep",
+          "reason": "两源10–40/20–60ms并集50vs相加70实际三轨反例独立，状态跨0边界BOOTTIME符号换算与两个端点分别换算条件保留。",
+          "original_line": 1181,
+          "heading": "### `kernelWakelockDuration`：全局 active 时间并集"
+        },
+        {
+          "original_id": "ch15-16-27-contention-pair-aggregate",
+          "title": "锁等待配对与聚合的丢数边界",
+          "decision": "keep",
+          "reason": "白名单地址→TGIDTID锁保存最后begin→end查删→TGID锁聚合两个不同键实际状态链独立，重复begin覆盖、flagsret不分、容量无漏数计数/minmax竞态图注留。",
+          "original_line": 1234,
+          "heading": "#### 两张 map 的数据语义"
+        },
+        {
+          "original_id": "ch15-16-28-end-to-end-evidence",
+          "title": "从空数据到可解释指标",
+          "decision": "remove",
+          "reason": "四框再次概括调试七条清单，与1/22重复，没有实际缺失证据case；缺维度补来源、无统一丢数计数与非自动Perfetto完整留。",
+          "original_line": 1271,
+          "heading": "### 调试顺序"
+        }
+      ],
+      "sha256_after": "51a267ae0ac6577a549cf1f05814f3fe5eb7b3ec2f868bb13131473506cb506c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:53:02.997619+08:00",
+      "inline_mermaid_blocks_removed": 1,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 28,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a164/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a164/visual-review.json",
+      "retired_diagrams": [
+        "ch15-16-01-capability-gates",
+        "ch15-16-03-hook-context-contract",
+        "ch15-16-04-syscall-counter-race",
+        "ch15-16-05-dynamic-probe-lifecycle",
+        "ch15-16-07-cumulative-vs-timeline",
+        "ch15-16-08-existing-source-routing",
+        "ch15-16-09-perfetto-bridge",
+        "ch15-16-10-probe-overhead-loss",
+        "ch15-16-11-sched-ext-state",
+        "ch15-16-12-version-clocks",
+        "ch15-16-15-program-vs-link",
+        "ch15-16-16-conditional-object-selection",
+        "ch15-16-17-dac-selinux-boundaries",
+        "ch15-16-18-timeinstate-map-groups",
+        "ch15-16-22-load-attach-data-triage",
+        "ch15-16-23-four-program-scopes",
+        "ch15-16-25-dmabuf-iterator-boundaries",
+        "ch15-16-28-end-to-end-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-164/retired-assets.json"
     },
     {
       "index": 165,
@@ -44318,8 +44581,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 98,
-  "next_article": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+  "reviewed_articles": 99,
+  "next_article": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -44329,7 +44592,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:47:39.657265+08:00",
+  "updated_at": "2026-10-31T13:53:02.997619+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -44675,10 +44938,10 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3429,
-  "reviewed_placements_after": 1521,
-  "net_removed_placements": 1908,
-  "removed_inline_mermaid_blocks": 20,
+  "reviewed_placements_before": 3457,
+  "reviewed_placements_after": 1531,
+  "net_removed_placements": 1926,
+  "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
   "selection_basis": "Union of frozen201 Gracker-image-threshold articles plus all other articles whose visible image/inline-diagram count exceeds10; never drop initially eligible articles after pruning.",
@@ -44701,5 +44964,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 98
+  "currently_matching_reviewed_source_count": 99
 }
