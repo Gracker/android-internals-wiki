@@ -46307,9 +46307,350 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "e3488b9374b3d836e4ca9cafb82240e678d8240a5a1693576314c76d41104e29",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch17-04-01-roles-and-evidence",
+          "title": "研发现场、专项验证与生产平台",
+          "decision": "remove",
+          "reason": "DoKit/专项/Measure三列重复导语和后方工具/平台对照表，没有实际联动链路。",
+          "original_line": 107,
+          "heading": "# DoKit 调试工具与 Measure APM 平台"
+        },
+        {
+          "original_id": "ch17-04-02-dokit-four-lines",
+          "title": "文档、发布物与仓库的四条时间线",
+          "decision": "remove",
+          "reason": "四格逐项复述紧邻四行版本时间线表，原表含更完整日期/发布物限制。",
+          "original_line": 137,
+          "heading": "### 公开版本与源码的四条时间线"
+        },
+        {
+          "original_id": "ch17-04-03-runtime-plugin",
+          "title": "运行时工具箱与构建插件的能力边界",
+          "decision": "remove",
+          "reason": "运行时/旧插件/迁移三列重复紧邻四行接入表和两段实现区别。",
+          "original_line": 185,
+          "heading": "### 接入由运行时 AAR（Android Archive，Android 库归档） 和编译插件两部分组成"
+        },
+        {
+          "original_id": "ch17-04-04-variant-isolation",
+          "title": "允许变体、空实现与最终产物",
+          "decision": "remove",
+          "reason": "变体到空实现再包检查重复短依赖/registry代码和后方更具体CI最终包流程。",
+          "original_line": 217,
+          "heading": "### 按构建变体接入依赖"
+        },
+        {
+          "original_id": "ch17-04-05-dashboard-metrics",
+          "title": "FPS、CPU与PSS浮窗各自的算法",
+          "decision": "remove",
+          "reason": "FPS/CPU/PSS三列只是三个专节公式与时间窗口的缩写，未展示实际采样数据。",
+          "original_line": 259,
+          "heading": "#### 内存"
+        },
+        {
+          "original_id": "ch17-04-06-network-counter",
+          "title": "未更新的基线与有限的网络覆盖",
+          "decision": "remove",
+          "reason": "累计量减零基线四框复述两个短段落的一步算式，没有增量读数对照实例。",
+          "original_line": 272,
+          "heading": "#### 网络流量"
+        },
+        {
+          "original_id": "ch17-04-07-block-sampling",
+          "title": "卡顿阈值、延迟采样与单个Looper logger",
+          "decision": "keep",
+          "reason": "保留≤200、200到300盲区、长消息有效采样三种报告结果的对照，强调阈值与首次堆栈采样不同。",
+          "original_line": 291,
+          "heading": "#### 启动、函数耗时与卡顿"
+        },
+        {
+          "original_id": "ch17-04-08-reflection-fallback",
+          "title": "主线程Handler代理与隐藏API回退",
+          "decision": "keep",
+          "reason": "保留主进程安装到包内豁免、失败dex回退、Handler callback代理和失败日志的具体调用路径。",
+          "original_line": 310,
+          "heading": "#### 隐藏 API 与主线程 Handler hook"
+        },
+        {
+          "original_id": "ch17-04-09-manifest-policy",
+          "title": "库清单、宿主目标与实际授权",
+          "decision": "remove",
+          "reason": "清单合并/宿主target/授权/最终包四框重复详细权限清单和两段URI/网络配置说明。",
+          "original_line": 331,
+          "heading": "#### Manifest、权限与前台服务"
+        },
+        {
+          "original_id": "ch17-04-10-dokit-native-alignment",
+          "title": "核心包与可选native模块的静态对齐",
+          "decision": "remove",
+          "reason": "核心无so/GPS64KB/Matrix4KB三列重复指定AAR静态检查列表，范围和目标ZIP/运行限制原文更完整。",
+          "original_line": 347,
+          "heading": "#### Native 库与 16 KB 页"
+        },
+        {
+          "original_id": "ch17-04-11-weak-real-request",
+          "title": "弱网三种模式的真实请求与返回",
+          "decision": "remove",
+          "reason": "三种弱网模式逐项复制紧邻三行详细表，原表已清楚列出真实请求、400及不覆盖异常类型。",
+          "original_line": 366,
+          "heading": "### 弱网模式的执行顺序与真实请求"
+        },
+        {
+          "original_id": "ch17-04-12-mock-replacement",
+          "title": "原请求、规则、第二请求与回退",
+          "decision": "keep",
+          "reason": "保留先proceed原请求、规则后close旧响应、第二GET及成功/失败回退分叉，揭示已关闭旧响应问题。",
+          "original_line": 383,
+          "heading": "### Mock 的执行时机与服务端影响"
+        },
+        {
+          "original_id": "ch17-04-13-reproduce-specialize",
+          "title": "从安全网络场景到专项修复验证",
+          "decision": "remove",
+          "reason": "复现到专项修复五框重复场景表及四步流程，没有实际网络阶段或trace依赖实例。",
+          "original_line": 423,
+          "heading": "### DoKit 面板与专项工具如何分工"
+        },
+        {
+          "original_id": "ch17-04-14-outbound-data",
+          "title": "关闭默认统计与其他出站路径",
+          "decision": "remove",
+          "reason": "出站路径树把平台请求与数据类型混为同级，紧邻目的地址清单和字段说明更精确；disableUpload只关闭一路仍保留。",
+          "original_line": 442,
+          "heading": "### 出站数据与隐私"
+        },
+        {
+          "original_id": "ch17-04-15-release-verification",
+          "title": "CI任务执行、依赖检查与成品验收",
+          "decision": "keep",
+          "reason": "保留CI实际执行check/任务到逐正式变体依赖、成品扫描和行为验证的链，避免把assembleRelease当执行检查。",
+          "original_line": 493,
+          "heading": "### Release 隔离：依赖与最终包都要查"
+        },
+        {
+          "original_id": "ch17-04-16-measure-release-docs",
+          "title": "Measure稳定发布、开发快照与文档门槛",
+          "decision": "remove",
+          "reason": "稳定/快照/官网门槛三列重复该节两段固定版本及三条能力边界。",
+          "original_line": 535,
+          "heading": "### 产品定位与版本现状"
+        },
+        {
+          "original_id": "ch17-04-17-measure-data-flow",
+          "title": "本地持久化、流式缓冲与查询",
+          "decision": "keep",
+          "reason": "保留本地SQLite→Ingest→Iggy→worker→ClickHouse→查询主数据流，并在caption明确对象/符号独立路径。",
+          "original_line": 556,
+          "heading": "### 平台数据怎样流动"
+        },
+        {
+          "original_id": "ch17-04-18-session-lifetime",
+          "title": "前后台切换、会话与错误前窗口",
+          "decision": "remove",
+          "reason": "初始化/后台间隔/replay三列复制会话两个短段落，没有实际会话切分时间线。",
+          "original_line": 573,
+          "heading": "#### Session 的生命周期"
+        },
+        {
+          "original_id": "ch17-04-19-event-span-attachment",
+          "title": "时间点事件、持续span与文件附件",
+          "decision": "remove",
+          "reason": "event/span/附件三列重复两段字段定义和40行关联JSON，未画父子或附件引用结构。",
+          "original_line": 631,
+          "heading": "#### Event 与 span 是两种对象"
+        },
+        {
+          "original_id": "ch17-04-20-timeline-to-cause",
+          "title": "时间线提出假设与专项证据闭环",
+          "decision": "remove",
+          "reason": "四框只是从合成时间线提出假设到深证据的文字摘要，没有呈现正文实际时间点；时间线代码保留。",
+          "original_line": 654,
+          "heading": "#### 一条 ANR 时间线能提供什么"
+        },
+        {
+          "original_id": "ch17-04-23-cpu-memory-source",
+          "title": "CPU与内存曲线的来源和采样条件",
+          "decision": "remove",
+          "reason": "CPU/heap/procstatus三列重复大能力表和动态配置段落，没有采样时间曲线。",
+          "original_line": 682,
+          "heading": "#### 从 0.19.0 到 0.22.0 的行为变化"
+        },
+        {
+          "original_id": "ch17-04-21-anr-api-branches",
+          "title": "ANR两条路径与被丢弃的历史现场",
+          "decision": "keep",
+          "reason": "保留pre30信号路径、30+历史记录及旧session/有效主线程校验三个环节的版本对照，不能把APP_EXIT枚举当全原因覆盖。",
+          "original_line": 689,
+          "heading": "#### 从 0.19.0 到 0.22.0 的行为变化"
+        },
+        {
+          "original_id": "ch17-04-22-http-instrumentation",
+          "title": "直接依赖识别、版本范围与网络插桩",
+          "decision": "keep",
+          "reason": "保留直接依赖识别/版本支持→Components插桩→发布变体实际请求验证的工程链，解释传递OkHttp遗漏。",
+          "original_line": 696,
+          "heading": "#### 从 0.19.0 到 0.22.0 的行为变化"
+        },
+        {
+          "original_id": "ch17-04-24-profiling-trigger-set",
+          "title": "API36与API37的实际注册集合",
+          "decision": "remove",
+          "reason": "API低于36/36+/37+三列直接重复实际注册集合段落和约束清单，无批量失败逐项重试连线。",
+          "original_line": 711,
+          "heading": "#### Android 17 / API 37 的新增机会"
+        },
+        {
+          "original_id": "ch17-04-25-profile-artifact-pipeline",
+          "title": "平台结果、采样、session关联与独立上传",
+          "decision": "keep",
+          "reason": "保留平台结果到SDK有效性采样、时间session关联、独立WorkManager附件和终态/重试清理的交付生命周期。",
+          "original_line": 723,
+          "heading": "#### Android 17 / API 37 的新增机会"
+        },
+        {
+          "original_id": "ch17-04-26-integration-and-cost",
+          "title": "接入、构建绑定与宿主测量",
+          "decision": "remove",
+          "reason": "接入/初始化/符号/测量四框复述稳定依赖示例和五项平台任务，实际符号链后文图29更具体。",
+          "original_line": 756,
+          "heading": "### 接入还包括平台侧工作"
+        },
+        {
+          "original_id": "ch17-04-27-span-exception-close",
+          "title": "父子span在成功与失败路径都收尾",
+          "decision": "keep",
+          "reason": "保留支付父span/令牌化子span在成功及异常两条路径各自finally结束，并仅成功继续提交订单。",
+          "original_line": 811,
+          "heading": "#### 命名与属性"
+        },
+        {
+          "original_id": "ch17-04-28-trace-context-ids",
+          "title": "session、trace与request的跨端关联",
+          "decision": "remove",
+          "reason": "session/trace/request三列重复三项ID职责清单和traceparent构造代码，没有真实跨端父子关联图。",
+          "original_line": 842,
+          "heading": "#### 与 OpenTelemetry 的关系"
+        },
+        {
+          "original_id": "ch17-04-29-mapping-symbolication",
+          "title": "Android mapping经构建API上传与处理",
+          "decision": "keep",
+          "reason": "保留build API获取预签名描述、对象上传和Ingest Worker按构建身份选mapping到Symbolicator的两阶段链。",
+          "original_line": 868,
+          "heading": "#### 数据分别保存在哪里"
+        },
+        {
+          "original_id": "ch17-04-31-retention-restore",
+          "title": "replay、retention与备份恢复的不同窗口",
+          "decision": "remove",
+          "reason": "replay、在线retention、备份期限是独立窗口，被串成流程容易误解；正文两段和恢复清单分别说明更准确。",
+          "original_line": 886,
+          "heading": "#### 保留期、附件与备份"
+        },
+        {
+          "original_id": "ch17-04-30-selfhost-stores",
+          "title": "事件、关系元数据与对象的容量边界",
+          "decision": "remove",
+          "reason": "存储/对象/缓冲三列重复六行数据归属表及容量段落，主数据流图17已保留架构联系。",
+          "original_line": 901,
+          "heading": "#### 小团队也要算的账"
+        },
+        {
+          "original_id": "ch17-04-32-adaptive-capture-cache",
+          "title": "远端配置的下载与下次启动应用",
+          "decision": "keep",
+          "reason": "保留本次启动应用旧缓存、按期限下载写盘、后续启动应用新值的跨启动流程，明确不是即时生效或两次启动时限保证。",
+          "original_line": 910,
+          "heading": "### 隐私策略要先于全量采集"
+        },
+        {
+          "original_id": "ch17-04-33-privacy-paths",
+          "title": "自动数据、附件与历史数据的处理边界",
+          "decision": "remove",
+          "reason": "新事件/附件/历史三列重复十行隐私控制表及clearUserId历史限制段落。",
+          "original_line": 930,
+          "heading": "### 隐私策略要先于全量采集"
+        },
+        {
+          "original_id": "ch17-04-34-platform-selection",
+          "title": "错误覆盖、会话上下文与运营条件",
+          "decision": "remove",
+          "reason": "错误/上下文/运营三分支重复六行平台比较表和五条选择条件，无额外具体决策。",
+          "original_line": 956,
+          "heading": "### Firebase、Sentry 与 Measure 怎样选"
+        },
+        {
+          "original_id": "ch17-04-35-pilot-acceptance",
+          "title": "分阶段试点与可检查的验收证据",
+          "decision": "remove",
+          "reason": "五框逐项摘要三个周次专节和验收表，不增加实际试点数据或依赖关系。",
+          "original_line": 1002,
+          "heading": "#### 第 3～4 周：运营与恢复"
+        }
+      ],
+      "sha256_after": "30d222ae8c4169b19d1264f6359f39b4b7dbbbc8e1dd50cc0681f7d5114e8922",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:36:18.214291+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a179/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a179/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 179,
+        "article": "src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
+        "registered_sha256": "e3488b9374b3d836e4ca9cafb82240e678d8240a5a1693576314c76d41104e29",
+        "frozen_sha256": "e3488b9374b3d836e4ca9cafb82240e678d8240a5a1693576314c76d41104e29",
+        "review_input_sha256": "5fa4a8caf4bfbc75fc39d837b5b9cfa90a405d12d05f208d183c4913c86ace89",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a179/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a179/external-source.diff",
+        "diff_sha256": "88af51a151025375986719f69d8d7eeb8e36974b06ccb250f1c8fd7e99f41d4b",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 530, \"characters\": 44950, \"svg_labels_read\": 35, \"actual_pngs_viewed\": 35, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 9, \"code_lines\": 130, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "5fa4a8caf4bfbc75fc39d837b5b9cfa90a405d12d05f208d183c4913c86ace89",
+      "retired_diagrams": [
+        "ch17-04-01-roles-and-evidence",
+        "ch17-04-02-dokit-four-lines",
+        "ch17-04-03-runtime-plugin",
+        "ch17-04-04-variant-isolation",
+        "ch17-04-05-dashboard-metrics",
+        "ch17-04-06-network-counter",
+        "ch17-04-09-manifest-policy",
+        "ch17-04-10-dokit-native-alignment",
+        "ch17-04-11-weak-real-request",
+        "ch17-04-13-reproduce-specialize",
+        "ch17-04-14-outbound-data",
+        "ch17-04-16-measure-release-docs",
+        "ch17-04-18-session-lifetime",
+        "ch17-04-19-event-span-attachment",
+        "ch17-04-20-timeline-to-cause",
+        "ch17-04-23-cpu-memory-source",
+        "ch17-04-24-profiling-trigger-set",
+        "ch17-04-26-integration-and-cost",
+        "ch17-04-28-trace-context-ids",
+        "ch17-04-30-selfhost-stores",
+        "ch17-04-31-retention-restore",
+        "ch17-04-33-privacy-paths",
+        "ch17-04-34-platform-selection",
+        "ch17-04-35-pilot-acceptance"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-179/retired-assets.json"
     },
     {
       "index": 180,
@@ -47357,8 +47698,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 111,
-  "next_article": "src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
+  "reviewed_articles": 112,
+  "next_article": "src/part3-tools/ch17-apm/05-open-source-apm-history.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -47368,7 +47709,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:33:09.308741+08:00",
+  "updated_at": "2026-10-31T14:36:18.214291+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -47424,13 +47765,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
-      "registered_sha256": "e3488b9374b3d836e4ca9cafb82240e678d8240a5a1693576314c76d41104e29",
-      "observed_sha256": "5fa4a8caf4bfbc75fc39d837b5b9cfa90a405d12d05f208d183c4913c86ace89",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/04-dokit-measure-dev-tools.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -47651,9 +47985,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3726,
-  "reviewed_placements_after": 1621,
-  "net_removed_placements": 2105,
+  "reviewed_placements_before": 3761,
+  "reviewed_placements_after": 1632,
+  "net_removed_placements": 2129,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -47677,5 +48011,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 111
+  "currently_matching_reviewed_source_count": 112
 }

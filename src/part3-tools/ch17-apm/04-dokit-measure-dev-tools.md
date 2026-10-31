@@ -104,10 +104,6 @@ consolidated_from:
 
 DoKit 提供应用内调试面板和多类检查插件，适合 Debug / QA 现场复现；Measure 是覆盖端侧采集、会话时间线、查询告警与自托管服务的生产 APM 平台。两者都能提供性能线索，但各自所处的接入阶段、承担的数据责任和发布要求完全不同。本文分别核对两者的采集能力、工程代价与适用范围：调试工具留在 Debug 现场，完整 APM 平台也不当成局部计时库来用。
 
-<!-- gracker-diagram: ch17-04-01-roles-and-evidence -->
-![研发现场、专项验证与生产平台](../../assets/diagrams/ch17/ch17-04-01-roles-and-evidence.png)
-
-图：调试改变复现条件，专项工具测量原因，生产APM管理持续样本与处置。 三者可联动；浮窗读数和平台聚合都不能单独完成性能归因。
 
 > 源码基线：Android 17 / API 37 / `android-17.0.0_r1`。
 
@@ -119,7 +115,7 @@ DoKit 提供应用内调试面板和多类检查插件，适合 Debug / QA 现�
 
 同时要留意，这些工具本身也在改变被测环境：浮窗增加绘制工作，性能面板定时采样，网络模块插入 interceptor（请求拦截器），部分功能还依赖编译期字节码插桩（构建时改写 class）或 hidden API（应用 SDK 未公开的接口）。所以我们用 DoKit 回答“哪个页面、哪个操作或哪个网络条件值得继续调查”，把浮窗读数当作现场线索；版本级性能结论交给专项测量，生产 APM（Application Performance Monitoring，应用性能监控）的持续采集交给专门的平台。
 
-DoKit 没有面向 API 37 的官方兼容承诺。本次只核对固定源码、指定发布物与静态产物；这不足以给出“可用”结论。团队仍要用自己的 AGP、完整依赖、目标设备和最终安装包验证。
+DoKit 对 API 37 没有官方兼容承诺。本次核对的是固定源码、指定发布物与静态产物；要得出“可用”结论，团队还得用自己的 AGP、完整依赖、目标设备和最终安装包验证。
 
 ### 公开版本与源码的四条时间线
 
@@ -134,10 +130,6 @@ DoKit 没有面向 API 37 的官方兼容承诺。本次只核对固定源码、
 
 3.7.11 的 POM（Maven 依赖描述文件）仍依赖 Kotlin 1.4.32、OkHttp 3.14.7 和较早的 AndroidX 组件。Gradle 能把依赖下载下来，只说明 Maven 坐标可解析；这些旧依赖能否与当前工程的 Kotlin、R8（代码压缩与优化工具）、AndroidX 或 targetSdk 37 正常配合，还要靠实际构建和运行来回答。
 
-<!-- gracker-diagram: ch17-04-02-dokit-four-lines -->
-![文档、发布物与仓库的四条时间线](../../assets/diagrams/ch17/ch17-04-02-dokit-four-lines.png)
-
-图：README、Android发布物和跨平台仓库分别固定，发布版行为由同版制品确认。 iOS release不代表Android新版；master未发布版本不能覆盖3.7.11结论。
 
 审阅第三方调试 SDK 时，我们固定收齐四样材料：
 
@@ -167,7 +159,7 @@ DoKit 负责提供线索和测试条件，可复核的结果由专项工具产�
 
 `dokitx` 是运行时工具箱，`dokitx-plugin` 负责构建期字节码改写。3.7.11 的插件在 `DoKitPlugin.kt` 中取得旧版 `AppExtension` / `LibraryExtension`，随后调用 `registerTransform()`。AGP 8.0 已移除 Transform API，官方替代接口在 AGP 7.2 时已经齐备，因此 AGP 8+ 的项目加载不了这套旧插件实现，出路见下表的迁移选项。
 
-插件有两层基于名称的 Release 判断：入口检查顶层 Gradle task 名是否包含 `release` / `Release`，`AbsClassTransformer.onCommInterceptor()` 等后续路径还检查变体/Transform context 名。`assemble` 聚合任务可能注册 Transform，但不能据此认定标准 Release 变体一定被插桩。自定义正式变体若不含这两个子串，仍需显式隔离；名称启发式不等于完整发布策略。
+插件有两层基于名称的 Release 判断：入口检查顶层 Gradle task 名是否包含 `release` / `Release`，`AbsClassTransformer.onCommInterceptor()` 等后续路径还检查变体/Transform context 名。`assemble` 聚合任务可能注册 Transform，标准 Release 变体是否真的被插桩，要看具体变体名；自定义正式变体一旦不含这两个子串，就游离在这层判断之外，需要显式隔离。名称判断只是启发式，完整的发布隔离策略要另外制定。
 
 可以按能力拆开决策：
 
@@ -182,10 +174,6 @@ DoKit 负责提供线索和测试条件，可复核的结果由专项工具产�
 
 团队若不准备维护插件 fork，在 API 37 工程中更稳妥的选择是只评估运行时 AAR，把字节码类功能交给 Perfetto（Android 系统 trace 分析工具）、Macrobenchmark（Jetpack 场景基准测试）、Profiler，或由网络库显式安装调试 interceptor。
 
-<!-- gracker-diagram: ch17-04-03-runtime-plugin -->
-![运行时工具箱与构建插件的能力边界](../../assets/diagrams/ch17/ch17-04-03-runtime-plugin.png)
-
-图：面板运行时与字节码注入是两条接入路径，旧插件须另行迁移AGP接口。 只接AAR不会自动获得全部插桩能力；私有hook仍需目标设备验证。
 
 ### 按构建变体接入依赖
 
@@ -214,10 +202,6 @@ class NoopDevToolRegistry : DevToolRegistry {
 
 Debug 实现可以把“切换接口环境”“清理指定缓存”“打开当前页面状态”“导出诊断日志”注册为自定义 kit；Release 注入 `NoopDevToolRegistry`。这样可以保留共享业务代码，同时把 DoKit 类型限制在调试模块内。
 
-<!-- gracker-diagram: ch17-04-04-variant-isolation -->
-![允许变体、空实现与最终产物](../../assets/diagrams/ch17/ch17-04-04-variant-isolation.png)
-
-图：调试能力经变体依赖和注册点进入，正式变体使用空实现并核验最终产物。 no-op降低引用成本；依赖声明不能覆盖本地重打包或隐藏入口。
 
 初始化时我们要主动关闭默认的使用统计。下面的调用只放进允许 DoKit 的 source set（例如仅参与 Debug 编译的 `src/debug`）中，`customKits` 接收项目自己的 `AbstractKit` 列表：
 
@@ -246,33 +230,25 @@ DoKit.Builder(this)
 
 #### CPU
 
-CPU 百分比在 Android 8.0 及以上来自 `top -n 1`：后台 Handler 完成本轮采集后再延迟 500 ms 排下一轮，前台时查找当前 PID 所在行，再把 `%CPU` 除以 `availableProcessors()`；更早的系统读取 `/proc/stat` 与 `/proc/<pid>/stat`。实际周期还包含命令执行和排队时间，不能当成精确 500 ms。
+CPU 百分比在 Android 8.0 及以上来自 `top -n 1`：后台 Handler 完成本轮采集后再延迟 500 ms 排下一轮，前台时查找当前 PID 所在行，再把 `%CPU` 除以 `availableProcessors()`；更早的系统读取 `/proc/stat` 与 `/proc/<pid>/stat`。实际周期还包含命令执行和排队时间，间隔只能按约 500 ms 看待。
 
-`top` 的输出格式不属于 Android SDK 兼容契约，执行命令本身也有开销。除以核数后的百分比与 Profiler、Perfetto 或其他监控库未必采用同一算法。它适合发现“某一步骤 CPU 持续升高”，几次浮窗读数不足以支持版本对比。
+`top` 的输出格式在 Android SDK 兼容契约之外，执行命令本身也有开销。除以核数后的百分比，与 Profiler、Perfetto 或其他监控库的算法可能各不相同。它适合发现“某一步骤 CPU 持续升高”；要做版本对比，几次浮窗读数远远不够。
 
 #### 内存
 
-内存面板显示的值来自 PSS：Android 10 及以上调用 `Debug.getMemoryInfo()`，较低版本调用 `ActivityManager.getProcessMemoryInfo()`，再以 `totalPss / 1024` 显示。PSS 原值以 KiB 计，除后实际是 MiB；同样是采集完成后延迟 500 ms，且只在前台执行。不要把 ActivityManager 在 Android 10+ 的限频说明套到这里的 Debug 分支上。
+内存面板显示的值来自 PSS：Android 10 及以上调用 `Debug.getMemoryInfo()`，较低版本调用 `ActivityManager.getProcessMemoryInfo()`，再以 `totalPss / 1024` 显示。PSS 原值以 KiB 计，除后实际是 MiB；同样是采集完成后延迟 500 ms，且只在前台执行。这里的采集走 Debug 分支，ActivityManager 在 Android 10+ 的限频说明是另一条路径的事。
 
 PSS（Proportional Set Size）是进程在采样时刻的驻留内存：私有页全部计入，共享页按比例分摊。要判断哪个对象仍被引用、一次上涨是不是泄漏，我们还得往下走一层：解释 Java/Kotlin 对象看 heap dump（堆转储）和引用链，解释进程整体内存要把 `dumpsys meminfo`、Perfetto 和 native 分配信息放在一起看。
 
-<!-- gracker-diagram: ch17-04-05-dashboard-metrics -->
-![FPS、CPU与PSS浮窗各自的算法](../../assets/diagrams/ch17/ch17-04-05-dashboard-metrics.png)
-
-图：帧回调计数、top进程读数和PSS采样使用不同算法与时间窗口。 采集和浮窗会扰动现场；500ms是完成后延迟，FPS未按真实窗口归一化。
 
 #### 网络流量
 
-网络浮窗不能直接解释为“每 500 ms 的流量增量”。3.7.11 每轮用 `NetworkManager` 累计量减去 `mUpBytes` / `mDownBytes`，但这两个基线字段在该类中没有更新，初值一直为 0；因此它读到的是当前累计计数差，而非上一窗口的差。500 ms 只是重排任务的延迟，也没有据真实时间换算速率。
+网络浮窗的这个数字，含义是当前累计计数差；把它读成“每 500 ms 的流量增量”会读错。3.7.11 每轮用 `NetworkManager` 累计量减去 `mUpBytes` / `mDownBytes`，但这两个基线字段在该类中从未更新，初值一直为 0，于是每轮读到的都是从 0 起算的累计值，而非上一窗口的增量。500 ms 只是重排任务的延迟，也没有据真实时间换算速率。
 
-3.7.11 插件为 OkHttp / HttpURLConnection 路径安装代理或采集逻辑，但覆盖面取决于实际注入与使用路径，不能当成系统 UID 全流量。现代 AGP 项目不加载该插件时还会缩小。健康体检和 Mock 模板保存都存在 `peekBody(Long.MAX_VALUE)` 路径，大响应可能被完整缓冲或复制，干扰内存与网络测试。
+3.7.11 插件为 OkHttp / HttpURLConnection 路径安装代理或采集逻辑，覆盖面取决于实际注入与使用路径，按“系统 UID 全流量”预期它会高估；现代 AGP 项目不加载该插件时，覆盖面还会进一步缩小。健康体检和 Mock 模板保存都存在 `peekBody(Long.MAX_VALUE)` 路径，大响应可能被完整缓冲或复制，干扰内存与网络测试。
 
 网络面板适合确认“哪个请求、哪类 Body（请求或响应内容）值得查”。若要分别测量 DNS 解析、TCP connect、TLS 握手、请求发送和响应读取，应使用 OkHttp `EventListener`、服务端 trace（一次调用链） 或系统 trace。
 
-<!-- gracker-diagram: ch17-04-06-network-counter -->
-![未更新的基线与有限的网络覆盖](../../assets/diagrams/ch17/ch17-04-06-network-counter.png)
-
-图：先核验累计计数与基线，再确认实际注入路径和大Body的监控成本。 3.7.11基线未更新，不能解释成500ms增量或UID总流量。
 
 #### 启动、函数耗时与卡顿
 
@@ -286,7 +262,7 @@ DoKit 自带的卡顿监控按固定机制工作：
 - `MonitorCore` 依赖 `Looper.setMessageLogging()` 在主线程消息执行前后发出的日志，并同时记录墙上时间与主线程 CPU 时间。
 - 堆栈最多保留 100 份，连续相同的堆栈会被过滤。
 
-Android 17 的 `Looper` 仍只有一个 `mLogging` 字段，`setMessageLogging()` 每次都会替换这个 `Printer`。DoKit 的卡顿与 TimeCounter（页面跳转耗时）模块会互相停用，停止时还会把 logger 设为 null；应用内另一个使用相同接口的监控器也可能被覆盖。所以现场没有记录，证明不了没有卡顿；一份堆栈也只代表某个 300 ms 采样时刻。
+Android 17 的 `Looper` 仍只有一个 `mLogging` 字段，`setMessageLogging()` 每次都会替换这个 `Printer`。DoKit 的卡顿与 TimeCounter（页面跳转耗时）模块会互相停用，停止时还会把 logger 设为 null；应用内另一个使用相同接口的监控器也可能被覆盖。所以遇到“现场没有记录”的情况，先查监控是否被停用或覆盖，再判断有没有卡顿；一份堆栈也只代表某个 300 ms 采样时刻。
 
 <!-- gracker-diagram: ch17-04-07-block-sampling -->
 ![卡顿阈值、延迟采样与单个Looper logger](../../assets/diagrams/ch17/ch17-04-07-block-sampling.png)
@@ -297,20 +273,20 @@ Android 17 的 `Looper` 仍只有一个 `mLogging` 字段，`setMessageLogging()
 
 #### 隐藏 API 与主线程 Handler hook
 
-3.7.11 的 `DoKitReal.install()` 在主进程调用 `HandlerHooker.doHook()`。Android 9 及以上先调用包内 `com.didichuxing.doraemonkit.reflection.Reflection.unseal(app)`；这份代码注明源于 FreeReflection，先尝试 `exemptAll()`，失败后再加载内嵌 dex。不能把它等同于宿主解析了一个外部 FreeReflection 2.1.0 依赖。随后反射：
+3.7.11 的 `DoKitReal.install()` 在主进程调用 `HandlerHooker.doHook()`。Android 9 及以上先调用包内 `com.didichuxing.doraemonkit.reflection.Reflection.unseal(app)`；这份代码注明源于 FreeReflection，先尝试 `exemptAll()`，失败后再加载内嵌 dex。这和宿主解析一个外部 FreeReflection 2.1.0 依赖是两回事。随后反射：
 
 - `ActivityThread.currentActivityThread`
 - `ActivityThread.mH`
 - `Handler.mCallback`
 
-`android-17.0.0_r1` 源码中这些成员仍存在，但它们不在公开 SDK 兼容契约内。`HandlerHooker` 没有检查 `unseal()` 的整数返回值，后续反射仍可能失败；它捕获 `Exception` 并打印堆栈，依赖 hook 的功能可能失效。包内 dex 还会经历写入 code cache、`DexFile` 加载和删除，Android 14+ 的动态代码加载只读要求也须在走到该回退分支时核验。API 37 测试要检查具体功能与日志，光看 App 是否崩溃并不够。
+`android-17.0.0_r1` 源码中这些成员仍存在，但它们不在公开 SDK 兼容契约内。`HandlerHooker` 没有检查 `unseal()` 的整数返回值，后续反射仍可能失败；它捕获 `Exception` 并打印堆栈，依赖 hook 的功能可能失效。包内 dex 还会经历写入 code cache、`DexFile` 加载和删除，Android 14+ 的动态代码加载只读要求也须在走到该回退分支时核验。API 37 测试要检查具体功能与日志，只看 App 是否崩溃会漏掉失效的 hook。
 
-公开 3.7.11 还在 Android 12（API 31）及以上跳过 SandHook 全局 runtime hook；SandHook 是一种原生方法 hook 框架，源码注释直接写明 Android S 上会崩溃。API 37 设备至少要覆盖冷启动、Activity 跳转、横竖屏、分屏、前后台切换和加固后的安装包，只验证面板能打开远远不够。
+公开 3.7.11 还在 Android 12（API 31）及以上跳过 SandHook 全局 runtime hook；SandHook 是一种原生方法 hook 框架，源码注释直接写明 Android S 上会崩溃。API 37 设备至少要覆盖冷启动、Activity 跳转、横竖屏、分屏、前后台切换和加固后的安装包，只验证面板能打开的话，覆盖面太窄。
 
 <!-- gracker-diagram: ch17-04-08-reflection-fallback -->
 ![主线程Handler代理与隐藏API回退](../../assets/diagrams/ch17/ch17-04-08-reflection-fallback.png)
 
-图：主进程先尝试隐藏API豁免，再代理ActivityThread主Handler的callback。 忽略unseal返回值不等于豁免成功；私有字段与动态dex均须按系统策略验证。
+图：主进程先尝试隐藏API豁免，再代理ActivityThread主Handler的callback。 忽略unseal返回值时豁免未必成功；私有字段与动态dex均须按系统策略验证。
 
 #### Manifest、权限与前台服务
 
@@ -328,10 +304,6 @@ AAR 还声明了未导出的 `FileProvider`，authority（ContentProvider 的唯
 
 库中附带 `dokit_network_config.xml`，内容允许明文 HTTP 流量，但核心 manifest 没有自动引用它。风险判断应看最终合并 manifest：只有宿主把它设为 `android:networkSecurityConfig` 时，这条明文策略才会生效。
 
-<!-- gracker-diagram: ch17-04-09-manifest-policy -->
-![库清单、宿主目标与实际授权](../../assets/diagrams/ch17/ch17-04-09-manifest-policy.png)
-
-图：库声明先合并到宿主，最终target与组件调用共同决定权限及运行规则。 资源文件存在不代表已启用；宽FileProvider即使不导出也须约束URI授予范围。
 
 #### Native 库与 16 KB 页
 
@@ -340,14 +312,10 @@ AAR 还声明了未导出的 `FileProvider`，authority（ContentProvider 的唯
 - `dokitx-gps-mock` 带多 ABI（CPU 架构）的 native 库。3.7.11 AAR 中 6 个 arm64 `.so` 的 ELF `LOAD` 段对齐均为 `0x10000`（64 KB），满足 16 KB 的 ELF 对齐要求；最终 APK/AAB 的 ZIP 条目对齐和设备安装运行仍要另测。
 - `dokitx-pthread-hook` 会传递依赖 Matrix 2.0.2 的 hooks / fd 模块。`matrix-hooks` 与 `matrix-fd` AAR 中 6 个 arm64 `.so` 的 `LOAD` 对齐均为 `0x1000`（4 KB），不满足 16 KB ELF 对齐要求。
 
-面向 Android 17 的项目如果启用这些可选模块，应展开完整依赖图，替换或重新编译 4 KB native 依赖，再对最终 APK/AAB 做 16 KB 检查，内容分别覆盖 ELF `LOAD` 段、包内 ZIP 对齐和目标设备运行。
+启用这些可选模块的项目，应展开完整依赖图，替换或重新编译 4 KB native 依赖，再对最终 APK/AAB 做 16 KB 检查，内容分别覆盖 ELF `LOAD` 段、包内 ZIP 对齐和目标设备运行。
 
-早期记录中的 `android17-6.18-2026-06_r6`、`r39` 是历史 common kernel 标签，不代表本次最新内核。App 的 ELF 对齐、最终包和实际页大小分别核验；common kernel 标签不能替代 vendor kernel 与目标设备运行结果。
+早期记录中的 `android17-6.18-2026-06_r6`、`r39` 是历史 common kernel 标签，与本次最新内核是两回事。App 的 ELF 对齐、最终包和实际页大小分别核验；common kernel 标签只提供版本线索，vendor kernel 与目标设备运行结果仍要单独核验。
 
-<!-- gracker-diagram: ch17-04-10-dokit-native-alignment -->
-![核心包与可选native模块的静态对齐](../../assets/diagrams/ch17/ch17-04-10-dokit-native-alignment.png)
-
-图：核心包无so与可选库LOAD对齐是独立事实，最终安装包还需ZIP和设备检查。 这里只检查指定AAR；不能推广到完整传递依赖、重编译产物或实际兼容性。
 
 ### 弱网模式的执行顺序与真实请求
 
@@ -359,24 +327,20 @@ AAR 还声明了未导出的 `FileProvider`，authority（ContentProvider 的唯
 | <span style="white-space:nowrap">超时</span> | 先 sleep 配置时长，再执行真实请求；真实请求成功后构造 HTTP 400 | 页面延迟一段时间后收到错误码 | <code>Socket<wbr>Timeout<wbr>Exception</code>、连接超时、读取超时 |
 | <span style="white-space:nowrap">限速</span> | 包装请求/响应 Body，按 KB 窗口 sleep | 大 Body 慢速读写时的 UI 表现 | DNS、TCP、TLS、丢包、切网、无线电状态 |
 
-如果底层真实请求本身抛出异常，异常会向上返回，DoKit 不会生成 HTTP 400。所谓“断网”和“超时”在真实请求成功后才改成 400，因此仍可能产生服务端副作用；上游这两条分支还没有关闭被替换的原响应 Body。支付、下单、创建、删除、上传等状态修改接口不能用它们验证失败，重试可能重复提交；“收到了 400”也不是网络异常。
+如果底层真实请求本身抛出异常，异常会向上返回，这一轮轮不到 DoKit 生成 HTTP 400。所谓“断网”和“超时”在真实请求成功后才改成 400，因此仍可能产生服务端副作用；上游这两条分支还没有关闭被替换的原响应 Body。支付、下单、创建、删除、上传等状态修改接口的失败验证要走别的路；拿它们做重试，还可能重复提交；“收到了 400”在网络异常的语义之外。
 
 要验证 `IOException`、`UnknownHostException`、`SocketTimeoutException` 分支，可使用受控测试服务器、MockWebServer、网络代理或系统级网络条件，按目标异常构造真实失败。DoKit 弱网只适合安全、幂等的接口，幂等表示同一请求重复执行不会产生额外业务结果；它也可用于观察慢 Body 对页面状态的影响。
 
-<!-- gracker-diagram: ch17-04-11-weak-real-request -->
-![弱网三种模式的真实请求与返回](../../assets/diagrams/ch17/ch17-04-11-weak-real-request.png)
-
-图：断网和超时模式在真实请求成功后改写成400，限速仅包装Body读写。 底层异常会向上传播；400不是网络异常，原响应Body还有未关闭缺口。
 
 ### Mock 的执行时机与服务端影响
 
-`DokitMockInterceptor.intercept()` 先执行 `chain.proceed(oldRequest)`；默认 OkHttp 注入把它放在 application interceptor 链，因此这一步可能命中缓存、被前置拦截器短路，或实际访问后端。原响应不是图片、不是 Mock 主机且规则启用并选中场景时，才关闭旧响应，再向 Mock 平台发第二个 GET。平台返回 200 且 Body 非 null 才交付新响应；`newResponseHasData()` 只判断非 null，不能证明内容非空。
+`DokitMockInterceptor.intercept()` 先执行 `chain.proceed(oldRequest)`；默认 OkHttp 注入把它放在 application interceptor 链，因此这一步可能命中缓存、被前置拦截器短路，或实际访问后端。原响应不是图片、不是 Mock 主机且规则启用并选中场景时，才关闭旧响应，再向 Mock 平台发第二个 GET。平台返回 200 且 Body 非 null 才交付新响应；`newResponseHasData()` 只判断非 null，内容是否非空要另行确认。
 
 这带来三个直接后果：
 
-- Mock 规则不会在原请求前短路；真实网络路径可到达业务后端。
-- 满足场景规则才增加一次 Mock GET，失败或旧请求异常不保证得到替换数据。
-- Mock 失败或无 Body 的回退可能返回已经关闭的 `oldResponse`；这份固定实现不能保证透明回退。
+- Mock 规则在原请求之后才介入，真实网络路径可以到达业务后端。
+- 满足场景规则才增加一次 Mock GET；失败或旧请求异常时，能否拿到替换数据没有保证。
+- Mock 失败或无 Body 时，回退可能返回已经关闭的 `oldResponse`，透明回退在这份固定实现中没有保证。
 
 因此，DoKit Mock 适合在无副作用的查询接口上检查空列表、字段缺失、超大列表和错误码页面。对下单、支付、发帖、删数据、上传等接口，应改用测试环境的服务端 Mock、通过依赖注入替换 repository（数据访问层），或使用能在发请求前直接返回的自建 interceptor。
 
@@ -420,10 +384,6 @@ AAR 还声明了未导出的 `FileProvider`，authority（ContentProvider 的唯
 
 DoKit 缩短“发现到复现”的时间，专项工具负责定位原因和比较修复前后的结果。
 
-<!-- gracker-diagram: ch17-04-13-reproduce-specialize -->
-![从安全网络场景到专项修复验证](../../assets/diagrams/ch17/ch17-04-13-reproduce-specialize.png)
-
-图：先用无副作用的场景稳定复现，再取专项证据、修复并以相同条件复测。 浮窗用于线索；真实超时需服务器或代理制造对应异常。
 
 ### 出站数据与隐私
 
@@ -435,14 +395,10 @@ DoKit 缩短“发现到复现”的时间，专项工具负责定位原因和�
 - `https://www.dokit.cn/pointData/addPointData`
 - `https://www.dokit.cn/healthCheck/addCheckData`
 
-空 `productId` 不会自动关闭默认统计，应显式调用 `disableUpload()`。2026-08-14 的证书与握手探测只保留为历史网络记录，本次没有重新探测这些服务，也不把当时结果当作当前服务状态。接入时应核对证书、服务、数据保留和实际出站流量；不使用的平台功能应关闭并抓包验证。
+空 `productId` 不会自动关闭默认统计，应显式调用 `disableUpload()`。2026-08-14 的证书与握手探测只保留为历史网络记录，本次没有重新探测这些服务，当时结果只说明当时状态。接入时应核对证书、服务、数据保留和实际出站流量；不使用的平台功能应关闭并抓包验证。
 
-网络面板还可能记录 URL、Header、token（访问凭据）、Cookie、请求 Body 和响应 Body。截图、日志导出与文件分享会让更多人或系统接触这些数据，测试账号也可能含真实用户信息，包名带 `debug` 替代不了隐私审查。
+网络面板还可能记录 URL、Header、token（访问凭据）、Cookie、请求 Body 和响应 Body。截图、日志导出与文件分享会让更多人或系统接触这些数据，测试账号也可能含真实用户信息；包名带 `debug` 只是命名约定，隐私审查要按数据内容来做。
 
-<!-- gracker-diagram: ch17-04-14-outbound-data -->
-![关闭默认统计与其他出站路径](../../assets/diagrams/ch17/ch17-04-14-outbound-data.png)
-
-图：disableUpload关闭初始化基本信息统计，各平台kit与业务入口仍有独立出站路径。 空productId不关闭默认统计；历史TLS探测不代表当前服务状态。
 
 ### Release 隔离：依赖与最终包都要查
 
@@ -514,7 +470,7 @@ Release 隔离最终要验收签名后的 APK/AAB，Gradle 文件里的依赖声
 
 DoKit 的优势是把调试入口和测试条件带到设备现场。它可以帮助团队更快找到异常页面、稳定复现步骤，并把网络、本地状态和业务诊断入口集中管理。
 
-在 Android 17 / API 37 工程中，接入前要确认几个限制：公开 3.7.11 插件仍依赖已从 AGP 8 移除的 Transform API；运行时使用 hidden API hook；旧 manifest 需要按 target 37 重审；弱网与 Mock 都会先发送真实请求；可选 native 模块还可能引入不满足 16 KB 对齐的依赖。
+接入前要确认几个限制：公开 3.7.11 插件仍依赖已从 AGP 8 移除的 Transform API；运行时使用 hidden API hook；旧 manifest 需要按 target 37 重审；弱网与 Mock 都会先发送真实请求；可选 native 模块还可能引入不满足 16 KB 对齐的依赖。
 
 可执行的接入方式是：Debug / QA 变体按需启用，默认关闭上传，只在安全接口上构造网络条件；DoKit 找到复现路径后，再用 Perfetto、Profiler、JankStats、FrameMetrics 或 Macrobenchmark 验证。Release 是否隔离成功，要以最终 APK/AAB 不含 DoKit 实现、入口、权限、数据和出站行为为准。
 
@@ -528,20 +484,16 @@ Measure 是一套面向移动端的 APM 与问题诊断平台。项目提供 And
 
 Matrix、KOOM 更偏向在设备内完成专项采集与诊断；Measure 还提供事件入库、检索、聚合、告警、附件保存和团队协作。它们解决的问题有交集，部署层次与运维范围不同，可以同时使用。
 
-截至 2026-10-26，Maven Central 最新稳定 Android SDK 为 `0.22.0`，Plugin Portal 最新插件为 `0.14.0`，self-host 最新稳定版为 `v0.13.0`。本文按 SDK 标签提交 `34d2b917156abbd8d6b0f28d717b32f263d48398`、实际 AAR/source JAR、插件发布物和 self-host 提交 `59505fd70be0b728c3bb5682865e7145315daf32` 核对；三者分别发布，不能用同一个版本号互相代替。
+截至 2026-10-26，Maven Central 最新稳定 Android SDK 为 `0.22.0`，Plugin Portal 最新插件为 `0.14.0`，self-host 最新稳定版为 `v0.13.0`。本文按 SDK 标签提交 `34d2b917156abbd8d6b0f28d717b32f263d48398`、实际 AAR/source JAR、插件发布物和 self-host 提交 `59505fd70be0b728c3bb5682865e7145315daf32` 核对；三者分别发布，查证时各认各的版本号。
 
-本次另核对 main 提交 `98a69b904c9def27d54fe1d947ff8e2b71d9461a`（2026-10-25），其 SDK / 插件为 `0.23.0-SNAPSHOT` / `0.15.0-SNAPSHOT`。当前官网的 native crash 说明明确要求 `>=0.23.0` / `>=0.15.0`；不能据此认定稳定 0.22.0 已支持。旧 0.19.0 与两份 7～8 月快照仅保留为历史参考。
+本次另核对 main 提交 `98a69b904c9def27d54fe1d947ff8e2b71d9461a`（2026-10-25），其 SDK / 插件为 `0.23.0-SNAPSHOT` / `0.15.0-SNAPSHOT`。当前官网的 native crash 说明明确要求 `>=0.23.0` / `>=0.15.0`；稳定 0.22.0 是否已覆盖，下文按实际代码核对。旧 0.19.0 与两份 7～8 月快照仅保留为历史参考。
 
-<!-- gracker-diagram: ch17-04-16-measure-release-docs -->
-![Measure稳定发布、开发快照与文档门槛](../../assets/diagrams/ch17/ch17-04-16-measure-release-docs.png)
-
-图：SDK、插件和self-host分开固定；官网新功能必须与其声明版本共同判断。 0.22.0没有native crash；0.23/0.15仍为本次main SNAPSHOT，不能提前认定稳定可用。
 
 评估前我们先记住三件事：
 
-- 本文稳定 SDK 0.22.0 不采集 C/C++ native crash。系统 `ApplicationExitInfo` 有 `REASON_CRASH_NATIVE` 常量，不代表该 SDK 会上传它；0.22.0 的 `AppExitCollector` 实际只处理 ANR。官网要求更高版本的 native 能力需待对应发布物单独验收。
+- 本文稳定 SDK 0.22.0 不采集 C/C++ native crash。系统 `ApplicationExitInfo` 里虽有 `REASON_CRASH_NATIVE` 常量，但 0.22.0 的 `AppExitCollector` 实际只处理 ANR，这条常量留在系统侧；官网要求更高版本的 native 能力需待对应发布物单独验收。
 - Measure 能给出线上问题发生前后的上下文，但 CPU 抖动、对象泄漏、掉帧或调度问题仍需 Perfetto、heap dump 和 Android Studio Profiler 等专项工具继续定位。
-- SDK 0.22.0 仍以 `compileSdk 36` 构建，却已在 API 37 注册 OOM、过量 CPU 退出和冷启动 trigger：代码复制 API 37 的整数常量并按运行版本与注册结果处理。编译版本不足以判断能力，后文按实际注册列表说明。
+- SDK 0.22.0 仍以 `compileSdk 36` 构建，却已在 API 37 注册 OOM、过量 CPU 退出和冷启动 trigger：代码复制 API 37 的整数常量并按运行版本与注册结果处理。编译版本只是线索，能力要看实际注册列表，后文按这个思路说明。
 
 此前流传的 `android.app.Measure`、`MeasureSession` 以及 “Measure → DropBoxManager → statsd → Play Vitals” 链路不存在于 `android-17.0.0_r1`。开源产品 Measure 的入口是 `sh.measure.android.Measure`，数据上传到配置的 Measure ingest 服务，也就是接收 SDK 上报数据的入口。Android 平台的 `DropBoxManager` 位于 `android.os`，`statsd` 是系统统计守护进程，Play Vitals 是 Google Play 的质量指标服务，这些名称都证明不了它们与开源产品 Measure 有调用关系。
 
@@ -551,7 +503,7 @@ Matrix、KOOM 更偏向在设备内完成专项采集与诊断；Measure 还提�
 
 数据分成端侧事件与附件、服务端处理、构建符号上传三类。本图先画事件主路径，符号链路在后文单独说明；箭头只保留主要依赖。
 
-事件经过 Ingest API、Apache Iggy 与 Ingest Worker，再写入供查询的 ClickHouse；团队、应用和构建配置等元数据在 PostgreSQL，附件与符号对象在 self-host 的 MinIO，Valkey 处理缓存。Gradle 插件先调用构建 API 获取上传描述，再按预签名地址上传 mapping；Ingest Worker 的符号化流程按构建身份选取 mapping 并调用 Symbolicator。`Symboloader` 的系统符号同步是另一条职责，不能画成 Android mapping 的接收入口。
+事件经过 Ingest API、Apache Iggy 与 Ingest Worker，再写入供查询的 ClickHouse；团队、应用和构建配置等元数据在 PostgreSQL，附件与符号对象在 self-host 的 MinIO，Valkey 处理缓存。Gradle 插件先调用构建 API 获取上传描述，再按预签名地址上传 mapping；Ingest Worker 的符号化流程按构建身份选取 mapping 并调用 Symbolicator。`Symboloader` 的系统符号同步是另一条职责，与 Android mapping 的接收入口是两回事。
 
 <!-- gracker-diagram: ch17-04-17-measure-data-flow -->
 ![本地持久化、流式缓冲与查询](../../assets/diagrams/ch17/ch17-04-17-measure-data-flow.png)
@@ -560,7 +512,7 @@ Matrix、KOOM 更偏向在设备内完成专项采集与诊断；Measure 还提�
 
 SDK 先把 event 与 span 写入本地 SQLite 数据库，再按批上传；附件走独立上传路径。默认本地空间上限为 50 MB，可配置在 20～1500 MB，达到上限后会先清理旧数据。离线、服务不可达或附件偏大时，本地容量决定故障现场能保留多久，网络重试次数只是其中一个因素。
 
-self-host `v0.13.0` 的 Compose 定义 dashboard、API、agent、ingest、ingest-worker、cleanup、alerts、symboloader、migrator、Symbolicator、PostgreSQL、ClickHouse、MinIO、Apache Iggy 和 Valkey。基础文件的 `debug` profile 还带 ClickStack 与 Iggy Web；生产覆盖移除 ClickStack，默认生产启动也不带 debug profile。服务定义或 profile 存在不代表每次安装都运行全部服务，接入工作仍包含持续运维。
+self-host `v0.13.0` 的 Compose 定义 dashboard、API、agent、ingest、ingest-worker、cleanup、alerts、symboloader、migrator、Symbolicator、PostgreSQL、ClickHouse、MinIO、Apache Iggy 和 Valkey。基础文件的 `debug` profile 还带 ClickStack 与 Iggy Web；生产覆盖移除 ClickStack，默认生产启动也不带 debug profile。服务定义或 profile 的存在只说明“有这个选项”，每次安装实际运行哪些服务，取决于部署与持续运维。
 
 ### 会话、事件、span 与附件
 
@@ -568,16 +520,12 @@ self-host `v0.13.0` 的 Compose 定义 dashboard、API、agent、ingest、ingest
 
 SDK 初始化时创建 session。应用进入后台超过 30 秒后再次回到前台，会创建新 session；更短的前后台切换仍属于原 session。每个 event 和 span 都带 `session_id`，页面、点击、资源曲线、错误与业务耗时由此按时间归入同一次使用过程。
 
-默认动态配置为 fatal error、ANR 和 bug report 各保留问题前 300 秒的 replay 上下文；unhandled/handled error 的 replay 默认关闭。“5 分钟”是错误现场窗口。服务端 retention 是另一项：self-host 关闭计费时可设 30～365 天，默认 30 天；云服务受套餐权益约束，不统一套用自托管范围。
+默认动态配置为 fatal error、ANR 和 bug report 各保留问题前 300 秒的 replay 上下文；unhandled/handled error 的 replay 默认关闭。“5 分钟”是错误现场窗口。服务端 retention 是另一项：self-host 关闭计费时可设 30～365 天，默认 30 天；云服务受套餐权益约束，范围跟着套餐走。
 
-<!-- gracker-diagram: ch17-04-18-session-lifetime -->
-![前后台切换、会话与错误前窗口](../../assets/diagrams/ch17/ch17-04-18-session-lifetime.png)
-
-图：后台超过30秒再回前台创建新session，错误replay窗口与服务端保留期独立。 新进程初始化也建session；fatal/ANR/bug report默认300秒，其他严重级别开关不同。
 
 #### Event 与 span 是两种对象
 
-我们把两类对象分开看。Event 表示一个时间点发生的事情或一次状态采样，它有统一外壳：`id`、`session_id`、时间、类型、类型专属 `data`、系统属性、用户自定义属性、附件引用和采样标记。事件枚举含 `exception`、`anr`、`app_exit`、`gesture_click`、`screen_view`、`http`、`cpu_usage`、`memory_usage`、`cold_launch`、`profile` 等；枚举保留不等于存在自动采集路径，0.22.0 的历史退出 collector 只生成 ANR。
+我们把两类对象分开看。Event 表示一个时间点发生的事情或一次状态采样，它有统一外壳：`id`、`session_id`、时间、类型、类型专属 `data`、系统属性、用户自定义属性、附件引用和采样标记。事件枚举含 `exception`、`anr`、`app_exit`、`gesture_click`、`screen_view`、`http`、`cpu_usage`、`memory_usage`、`cold_launch`、`profile` 等；枚举里有名字是一回事，自动采集路径是另一回事，0.22.0 的历史退出 collector 就只生成 ANR。
 
 Span 表示一段持续时间，单独保存；核心字段是 `trace_id`、`span_id`、`parent_id`、`session_id`、起止时间、耗时、状态、属性与 checkpoints，checkpoint 是 span 内某个阶段完成时的时间标记。一个 trace 可以由多个有父子关系的 span 组成；event 即使出现在同一条时间线上，也不会自动变成 span。
 
@@ -628,10 +576,6 @@ Span 表示一段持续时间，单独保存；核心字段是 `trace_id`、`spa
 
 示例里 `session_id` 把移动端现场归在一起，`trace_id` 标识一次耗时调用树。用户 ID、session ID 与分布式 trace ID 的生命周期和用途各不相同，后文“与 OpenTelemetry 的关系”一节会把三者的分工固定下来。
 
-<!-- gracker-diagram: ch17-04-19-event-span-attachment -->
-![时间点事件、持续span与文件附件](../../assets/diagrams/ch17/ch17-04-19-event-span-attachment.png)
-
-图：session关联现场，span描述持续操作及父子关系，附件文件按事件引用。 正文JSON是关联示例，不是原始上传报文；event不会自动变成span。
 
 #### 一条 ANR 时间线能提供什么
 
@@ -651,10 +595,6 @@ Span 表示一段持续时间，单独保存；核心字段是 `trace_id`、`spa
 
 这段记录能提出“详情页加载、超时回调、内存增长或返回流程是否阻塞主线程”等假设；要坐实根因，下一步应对照 ANR 全线程堆栈、`ApplicationExitInfo` trace 和服务端请求日志，仍定位不了时再复现并采集 Perfetto trace。
 
-<!-- gracker-diagram: ch17-04-20-timeline-to-cause -->
-![时间线提出假设与专项证据闭环](../../assets/diagrams/ch17/ch17-04-20-timeline-to-cause.png)
-
-图：先用会话顺序提出阻塞假设，再用线程、网络与trace证据验证原因。 合成时间线不证明因果；API30+ ANR可在后续启动读取并回填时间戳。
 
 ### Android 端能力与源码核对
 
@@ -679,12 +619,8 @@ Span 表示一段持续时间，单独保存；核心字段是 `trace_id`、`spa
 
 `0.22.0` 的 `DynamicConfig` 默认前台 CPU / 内存间隔均为 5 秒，内存后台间隔为 10 秒；后台内存采集还受 session 采样与进程 importance 筛选。默认 `memoryUsageSessionSamplingRate=0.01f` 表示 0.01%，不是 1%。这些是缺省值，实际运行还要检查远端缓存配置和采集条件。
 
-<!-- gracker-diagram: ch17-04-23-cpu-memory-source -->
-![CPU与内存曲线的来源和采样条件](../../assets/diagrams/ch17/ch17-04-23-cpu-memory-source.png)
 
-图：CPU读进程ticks并按时间核数换算，内存读heap、PSS和proc status。 前台默认5秒；后台内存10秒还受0.01% session采样和importance门限制。
-
-0.22.0 默认 fatal error 截图开启，遮罩为 `AllTextAndMedia`；低于 API 30 的 SIGQUIT ANR 分支可请求截图，API 30+ 的历史 ANR 分支不请求截图。遮罩和截取成功与否都要在目标环境验证。pre-30 的 `ExceptionFactory` 常量虽然为 16，循环却以 `count <= 16` 判断且每个遍历项都加计数，因此不能写成“保证收集全部其他线程”或“精确 16 条”。
+0.22.0 默认 fatal error 截图开启，遮罩为 `AllTextAndMedia`；低于 API 30 的 SIGQUIT ANR 分支可请求截图，API 30+ 的历史 ANR 分支不请求截图。遮罩和截取成功与否都要在目标环境验证。pre-30 的 `ExceptionFactory` 常量虽然为 16，循环却以 `count <= 16` 判断且每个遍历项都加计数，所以“保证收集全部其他线程”“精确 16 条”这类说法都站不住。
 
 <!-- gracker-diagram: ch17-04-21-anr-api-branches -->
 ![ANR两条路径与被丢弃的历史现场](../../assets/diagrams/ch17/ch17-04-21-anr-api-branches.png)
@@ -696,7 +632,7 @@ Span 表示一段持续时间，单独保存；核心字段是 `trace_id`、`spa
 <!-- gracker-diagram: ch17-04-22-http-instrumentation -->
 ![直接依赖识别、版本范围与网络插桩](../../assets/diagrams/ch17/ch17-04-22-http-instrumentation.png)
 
-图：插件按变体识别依赖版本，在支持范围内插入网络与导航采集代码。 版本map只遍历根的直接依赖；代码存在不能替代发布变体的实际采集验证。
+图：插件按变体识别依赖版本，在支持范围内插入网络与导航采集代码。 版本map只遍历根的直接依赖；代码存在只是一半，发布变体的实际采集要另外验证。
 
 #### Android 17 / API 37 的新增机会
 
@@ -706,19 +642,15 @@ Measure 0.22.0 为 pre-30 SIGQUIT 分支仍带 `libmeasure-ndk.so`。CMake 使�
 
 Android 17 为 `ProfilingTrigger` 新增了九种类型。与性能和内存最相关的例子包括 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：冷启动触发器返回新启动的 system trace 与 stack sampling profile（按时间抽样的调用栈），OOM 返回 Java heap dump，anomaly 的附件随异常类型变化，过量 CPU 退出触发器返回 running system trace 快照。
 
-0.22.0 的 `ProfileCollector` 先注册 API 36 的两类 trigger；API 37 再尝试批量加入 OOM=7、过量 CPU 退出=9、冷启动=10。批量失败后逐项重试，不支持的项会记录日志。代码仍 compileSdk 36，但复制的整数值与固定 API 37 `ProfilingTrigger` 一致；未注册的 ANOMALY 等类型不能据文件格式识别能力推定为支持。
+0.22.0 的 `ProfileCollector` 先注册 API 36 的两类 trigger；API 37 再尝试批量加入 OOM=7、过量 CPU 退出=9、冷启动=10。批量失败后逐项重试，不支持的项会记录日志。代码仍 compileSdk 36，但复制的整数值与固定 API 37 `ProfilingTrigger` 一致；ANOMALY 等未注册类型是否支持，看注册代码即可，与文件格式无关。
 
-<!-- gracker-diagram: ch17-04-24-profiling-trigger-set -->
-![API36与API37的实际注册集合](../../assets/diagrams/ch17/ch17-04-24-profiling-trigger-set.png)
-
-图：先注册API36的两项，API37追加三项；追加失败后逐项重试。 整数常量与固定API37一致，compileSdk36不阻止注册；未覆盖全部新类型。
 
 - API 36+ 且宿主依赖 WorkManager 时会启用注册，没有独立的默认关闭开关；缺 WorkManager 则不注册。
-- SDK 为每种 trigger 请求至少间隔 1 小时，平台还有独立限额与特性开关，不能说 Android 一律每小时保证产出一次。
+- SDK 为每种 trigger 请求至少间隔 1 小时，平台还有独立限额与特性开关；这个间隔只是请求侧的下限，每小时稳定产出一次并无保证。
 - OOM 依赖未捕获异常处理器继续调用系统默认处理器；冷启动窗口到 fully drawn 或固定 AOSP 默认 5 秒，实际受平台配置影响。
 - 附件还须通过结果码、文件存在、扩展名、trigger 与 profileSamplingRate 检查；默认采样为 100%，不覆盖系统拒绝或丢失。
 
-0.22.0 按 `.perfetto-trace`、`.perfetto-java-heap-dump`、`.perfetto-heap-profile`、`.perfetto-stack-sample` 判断格式，不能沿用旧 `.hprof` / `.heapprofd` 描述。文件名时间优先用于匹配旧 session；ANR 还有最长 3 分钟的关联窗口，这属于启发式关联。附件由有网络约束的 WorkManager worker 独立上传，服务端拒绝、链接过期与本地清理仍需验收；识别文件不等于已采到可分析的结果。
+0.22.0 按 `.perfetto-trace`、`.perfetto-java-heap-dump`、`.perfetto-heap-profile`、`.perfetto-stack-sample` 判断格式，旧的 `.hprof` / `.heapprofd` 描述已经对不上。文件名时间优先用于匹配旧 session；ANR 还有最长 3 分钟的关联窗口，这属于启发式关联。附件由有网络约束的 WorkManager worker 独立上传，服务端拒绝、链接过期与本地清理仍需验收；识别出文件，离“已采到可分析的结果”还有一段距离。
 
 <!-- gracker-diagram: ch17-04-25-profile-artifact-pipeline -->
 ![平台结果、采样、session关联与独立上传](../../assets/diagrams/ch17/ch17-04-25-profile-artifact-pipeline.png)
@@ -753,10 +685,6 @@ SDK 接好后，平台侧仍有这些工作：
 
 官方在 Pixel 4a / Android 13 的简单样例上用 Macrobenchmark 重复测试 35 次，测得 SDK `0.16.0` 增加约 17.5～31.3 ms TTID，中位数 24.3 ms；识别点击目标并生成 layout snapshot（布局快照）约增加 0.6～1 ms。这组数字只适合作为回归参照，业务应用应使用自己的基准机、启动路径和 release 构建复测，尤其要关注低端机、首装、离线积压和大量 Compose 节点。
 
-<!-- gracker-diagram: ch17-04-26-integration-and-cost -->
-![接入、构建绑定与宿主测量](../../assets/diagrams/ch17/ch17-04-26-integration-and-cost.png)
-
-图：先固定完整依赖和构建身份，再验证初始化、符号与实际成本。 官网0.16样例TTID不是0.22或业务App承诺；本轮没有运行设备性能实验。
 
 ### 自定义 trace 要能聚合，也要能跨端关联
 
@@ -773,7 +701,7 @@ Span 名称上限为 64 个字符，checkpoint 名称上限也是 64 个字符�
 
 单位要写进属性名，例如 `payload_bytes`、`image_width_px`、`queue_wait_ms`。枚举值应受控，布尔量用布尔类型，避免把任意异常文本、完整 URL 或用户输入当成聚合维度。
 
-下面是同步业务片段，使用 0.22.0 的 `SpanBuilder` API；`tokenizeCard()` / `submitOrder()` 由项目提供。父子 span 各自负责成功/失败状态与 `finally` 收尾，不能只结束父 span。
+下面是同步业务片段，使用 0.22.0 的 `SpanBuilder` API；`tokenizeCard()` / `submitOrder()` 由项目提供。父子 span 各自负责成功/失败状态与 `finally` 收尾，父 span 的结束替代不了子 span 的收尾。
 
 ```kotlin
 val payment = Measure.startSpan("checkout.payment.submit")
@@ -806,12 +734,12 @@ try {
 }
 ```
 
-父 span 表示支付提交，子 span 只覆盖令牌化；异常原样抛回业务层，诊断不应吞掉失败。属性仅记录受控错误类型，不写可能含账号或订单信息的 message。`createSpanBuilder()` 在 SDK 未初始化时可能为 null，因此不能把“代码走完”当作 trace 一定已被采集。
+父 span 表示支付提交，子 span 只覆盖令牌化；异常原样抛回业务层，诊断代码不吞失败。属性仅记录受控错误类型，可能含账号或订单信息的 message 不写入。`createSpanBuilder()` 在 SDK 未初始化时可能为 null，“代码走完”也就说明不了 trace 已被采集。
 
 <!-- gracker-diagram: ch17-04-27-span-exception-close -->
 ![父子span在成功与失败路径都收尾](../../assets/diagrams/ch17/ch17-04-27-span-exception-close.png)
 
-图：令牌化子span和支付父span分别设置状态，各自finally结束，异常继续交还业务层。 nullable builder或采样可能没有数据；只结束父span不能替代子span收尾。
+图：令牌化子span和支付父span分别设置状态，各自finally结束，异常继续交还业务层。 nullable builder或采样可能没有数据；父span的结束替代不了子span收尾。
 
 #### 与 OpenTelemetry 的关系
 
@@ -839,10 +767,6 @@ val request = Request.Builder()
 
 如果网关会丢弃未知 header，要把 `traceparent` 加入转发规则，并核对服务端采样策略。采样位表达上游决定，不强制后端保存 trace；远端接收失败、独立采样或导出失败仍可能造成两端缺一。若服务端另起 trace，至少在移动 span 和服务端日志同时记录一个不直接识别用户的 request ID，并通过真实请求验证两端可以互查。
 
-<!-- gracker-diagram: ch17-04-28-trace-context-ids -->
-![session、trace与request的跨端关联](../../assets/diagrams/ch17/ch17-04-28-trace-context-ids.png)
-
-图：调用方管理活动span，构造traceparent并执行请求；服务端提取同trace ID。 构造Request不发送网络；sampled位不强制后端保留，HTTP event也不会自动成为子span。
 
 ### 自托管的成本与故障点
 
@@ -850,7 +774,7 @@ val request = Request.Builder()
 
 当前官方文档把安装脚本定位为单台虚拟机部署，并说明 self-host 更适合云服务不可用、又有资深基础设施工程师持续维护的强监管环境。若需要分布式、安全且可横向扩展的部署，官方推荐其托管云。文档同时警告，配置错误可能造成数据丢失、安全漏洞和停机。最低机器规格是 x86-64 Ubuntu 24.04 / Debian 12、4 vCPU、16 GB RAM、100 GB 系统盘。
 
-这组配置是安装下限，不是容量承诺。上线前至少要用“日活用户数 × 每会话事件数 × 采样率 × 单事件/附件大小 × 保留天数”估算写入量，再测试 ClickHouse 查询、MinIO 增长、Iggy 积压与清理吞吐。
+这组配置是安装下限，容量承诺要从写入量算起：上线前至少用“日活用户数 × 每会话事件数 × 采样率 × 单事件/附件大小 × 保留天数”估算写入量，再测试 ClickHouse 查询、MinIO 增长、Iggy 积压与清理吞吐。
 
 #### 数据分别保存在哪里
 
@@ -863,7 +787,7 @@ val request = Request.Builder()
 | 缓存/短期状态 | Valkey（Compose 服务名为 `redis`） | 丢失后的可恢复性、内存与淘汰策略 |
 | 符号处理 | 构建 API / Ingest Worker / Symbolicator | mapping 与 App version/build 关联；Symboloader 另管系统符号同步 |
 
-Android R8/ProGuard mapping 由插件在 assemble / bundle 之后的 build upload 路径上传，构建 API 与预签名对象上传分开。自托管环境要保证构建上传与事件 ingest 使用同一个 app/API 配置，并以 version name、version code、app identifier（应用包标识）关联。Compose 中存在 Symbolicator 只说明平台具备符号处理服务；本文稳定 SDK 0.22.0 仍不能据此获得 Android native crash reporting。
+Android R8/ProGuard mapping 由插件在 assemble / bundle 之后的 build upload 路径上传，构建 API 与预签名对象上传分开。自托管环境要保证构建上传与事件 ingest 使用同一个 app/API 配置，并以 version name、version code、app identifier（应用包标识）关联。Compose 中存在 Symbolicator 只说明平台具备符号处理服务；Android native crash reporting 在本文稳定 SDK 0.22.0 上仍是缺项。
 
 <!-- gracker-diagram: ch17-04-29-mapping-symbolication -->
 ![Android mapping经构建API上传与处理](../../assets/diagrams/ch17/ch17-04-29-mapping-symbolication.png)
@@ -872,7 +796,7 @@ Android R8/ProGuard mapping 由插件在 assemble / bundle 之后的 build uploa
 
 #### 保留期、附件与备份
 
-self-host `v0.13.0` 关闭计费时，应用 retention 可设 30～365 天，默认取 30 天；开启计费的云环境按套餐权益决定，不能任意沿用这个范围。线上清理之外，附件、数据库备份、对象快照仍需逐项确认期限；Dashboard 配置为 30 天不代表 180 天备份中的数据已删除。
+self-host `v0.13.0` 关闭计费时，应用 retention 可设 30～365 天，默认取 30 天；开启计费的云环境按套餐权益决定，自托管的范围照搬过去会出错。线上清理之外，附件、数据库备份、对象快照仍需逐项确认期限；Dashboard 配置为 30 天，管不到 180 天备份里的数据。
 
 至少进行以下恢复演练：
 
@@ -883,10 +807,6 @@ self-host `v0.13.0` 关闭计费时，应用 retention 可设 30～365 天，默
 
 生产部署要避开 `main`，按自托管文档选择面向部署的稳定 `v*` tag；SDK 与 self-host 也有最低版本配对关系，例如 Android SDK `>=0.16.0` 要求 self-host `>=0.10.0`。
 
-<!-- gracker-diagram: ch17-04-31-retention-restore -->
-![replay、retention与备份恢复的不同窗口](../../assets/diagrams/ch17/ch17-04-31-retention-restore.png)
-
-图：错误前上下文、在线保留与备份到期分别管理，升级按固定部署tag演练恢复。 self-host非计费默认30天且30–365可配，云端按权益；删除配置不自动清除所有备份。
 
 #### 小团队也要算的账
 
@@ -898,14 +818,10 @@ self-host `v0.13.0` 关闭计费时，应用 retention 可设 30～365 天，默
 
 这张表没有给固定金额，因为附件比例、事件采样、日活和查询频率比团队人数更能决定成本。试点要记录每千 session 的 ClickHouse 增量、MinIO 增量和 ingest 峰值，再外推预算。
 
-<!-- gracker-diagram: ch17-04-30-selfhost-stores -->
-![事件、关系元数据与对象的容量边界](../../assets/diagrams/ch17/ch17-04-30-selfhost-stores.png)
-
-图：容量从每会话事件、采样、对象大小与保留期估算，再测缓冲、查询和清理。 官方脚本定位单机；最低机器规格不构成吞吐或恢复承诺。
 
 ### 隐私策略要先于全量采集
 
-Measure 把远端采集配置称为 Adaptive Capture：可以在 Dashboard 修改采样、截图遮罩和日志等选项，无需发布新 APK。Android SDK 启动时先读取并应用磁盘缓存；缓存到期后才请求新配置，成功获取后写入磁盘，留待后续启动应用。离线、缓存未到期或请求失败都会推迟生效，因此不能保证两次启动后采用新配置。这个能力便于在故障期临时提高采集率；反过来，有权限的人也能借它扩大数据范围，相关角色和变更记录都应纳入权限审计。
+Measure 把远端采集配置称为 Adaptive Capture：可以在 Dashboard 修改采样、截图遮罩和日志等选项，无需发布新 APK。Android SDK 启动时先读取并应用磁盘缓存；缓存到期后才请求新配置，成功获取后写入磁盘，留待后续启动应用。离线、缓存未到期或请求失败都会推迟生效，把“两次启动后一定生效”当时间承诺，是会落空的。这个能力便于在故障期临时提高采集率；反过来，有权限的人也能借它扩大数据范围，相关角色和变更记录都应纳入权限审计。
 
 <!-- gracker-diagram: ch17-04-32-adaptive-capture-cache -->
 ![远端配置的下载与下次启动应用](../../assets/diagrams/ch17/ch17-04-32-adaptive-capture-cache.png)
@@ -927,10 +843,6 @@ Measure 把远端采集配置称为 Adaptive Capture：可以在 Dashboard 修�
 
 `clearUserId()` 会清除本地持久化标识，让后续 event 不再带该 ID，已经上传的历史 session 则不会自动删除。公开 API 中可验证的是应用 retention 配置，“按 user ID 擦除所有历史数据”的完整流程目前还验证不到。上线前要用自己的部署版本演练检索、导出、删除、缓存失效、对象删除和备份到期；在这些演练做到位之前，先不上传可直接识别个人的数据。
 
-<!-- gracker-diagram: ch17-04-33-privacy-paths -->
-![自动数据、附件与历史数据的处理边界](../../assets/diagrams/ch17/ch17-04-33-privacy-paths.png)
-
-图：采样、URL规则与遮罩先限制新采集；历史库、对象和备份有独立删除路径。 clearUserId不删除历史session；HPROF、截图、layout和日志都可能包含业务信息。
 
 ### Firebase、Sentry 与 Measure 怎样选
 
@@ -953,10 +865,6 @@ Measure 把远端采集配置称为 Adaptive Capture：可以在 Dashboard 修�
 - 核心需求是 native crash：不要把 Measure 作为唯一稳定性平台。
 - 核心需求是精确掉帧归因：仍要以 FrameTimeline、Perfetto 与源码分析为准，三者的聚合指标都替代不了。
 
-<!-- gracker-diagram: ch17-04-34-platform-selection -->
-![错误覆盖、会话上下文与运营条件](../../assets/diagrams/ch17/ch17-04-34-platform-selection.png)
-
-图：先按专项覆盖和现有平台选试点，再评估移动上下文与自托管运营能力。 比较表表示重心；native crash需求不能只依赖本文稳定Measure0.22。
 
 ### 2～4 周试点怎么验收
 
@@ -997,12 +905,8 @@ Measure 把远端采集配置称为 Adaptive Capture：可以在 Dashboard 修�
 | 平台成本 | 已测每千 session 数据量、附件占比、查询延迟和恢复时间 |
 | Android 17 | API 37 既有采集及 OOM / cold-start / excessive-CPU profile 分别回归，核对注册日志、实际附件与 WorkManager 上传；未收到结果不直接判无故障 |
 
-判断试点是否通过，要看“采到数据”能不能转化为“更快找到根因”，以及团队是否愿意持续投入数据治理和平台维护。
+判断试点是否通过，要看“采到数据”能否转化为“更快找到根因”，以及团队是否愿意持续投入数据治理和平台维护。
 
-<!-- gracker-diagram: ch17-04-35-pilot-acceptance -->
-![分阶段试点与可检查的验收证据](../../assets/diagrams/ch17/ch17-04-35-pilot-acceptance.png)
-
-图：先验证接入和数据边界，再验证会话帮助定位，最后演练运营与恢复。 图为试点顺序；收到事件或profile不等于覆盖和成本均已达标。
 
 ## 参考资料
 
