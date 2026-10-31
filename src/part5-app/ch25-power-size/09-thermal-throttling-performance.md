@@ -82,20 +82,20 @@ last_rework_at: 2026-08-15 16:58:28+08:00
 
 这四个入口逐个补齐，覆盖的都是读取：应用能读取全局热状态和表面温度对应的 thermal headroom，系统当前启用了哪组 CPU、GPU、屏幕或充电限制查不到——`PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作（thermal mitigation）列表”这类公开接口也没有。
 
-先把后面反复用到的三个词定下来：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器，或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
+我们先把后面反复用到的三个词定下来：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器，或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
 
 ## 热治理的系统路径
 
 先看应用可见信号和系统内部动作的关系。图里的 governor（调节器） 是内核选择冷却档位的策略，vendor daemon（厂商常驻进程） 执行厂商策略，firmware policy（固件策略） 运行在设备固件中：
 
-应用可见信号与底层限制动作分属两条路径：底层策略可以先限制资源，Framework再把热状态与headroom送到应用。下图给出默认设备的边界。
+应用可见信号与底层限制动作分属两条路径：底层策略可以先限制资源，Framework再把热状态与headroom送到应用。下图给出默认设备上的分工。
 
 <!-- gracker-diagram: a282-01-thermal-policy-actions-and-public-signals -->
 ![底层热限制先执行，应用接收信号再减少自身工作](../../assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.png)
 
 图：应用读取热压力，不指定MHz、冷却档位或通用画质参数；Thermal HAL与Power HAL接口各自独立。
 
-限制 CPU/GPU、充电或屏幕的动作通常发生在内核、固件和厂商策略层，不需要等应用回调。`PowerManager` 递给应用的是产品级热压力信号，应用拿它决定减多少自己的工作量。
+限制 CPU/GPU、充电或屏幕的动作通常发生在内核、固件和厂商策略层，可以先于任何应用回调生效。`PowerManager` 递给应用的是产品级热压力信号，应用拿它决定减多少自己的工作量。
 
 系统内部的服务是 `ThermalManagerService`：它连接 Thermal HAL，由 HAL 把厂商硬件实现转换成 Android 统一接口。另一组能力来自 Power HAL，覆盖 Performance Hint Session（性能提示会话）与 CPU/GPU capacity headroom。两套 HAL 可以在厂商策略中协同，但 AOSP 接口和 Binder 服务彼此独立。
 
@@ -114,7 +114,7 @@ AIDL 用来生成稳定的 Binder 接口，HIDL 是更早一代的 HAL 接口体
 
 限制等级变化由 `IThermalChangedCallback.notifyThrottling(Temperature)` 推送，AIDL v3 另有低频阈值更新 `notifyThresholdChanged(TemperatureThreshold)`；`sendThermalNotify()` 在这个 AIDL 里并不存在。
 
-`android-17.0.0_r1` 冻结了 AIDL v1、v2、v3，没有 v4：v1 覆盖温度、阈值、冷却设备与热状态回调，v2 增加冷却设备变化回调，v3 增加表面温度预测与阈值变化回调。兼容旧厂商系统镜像（vendor image）的设备仍可能连接 HIDL Thermal HAL 2.0、1.1 或 1.0；AIDL 版本号和旧 HIDL“2.0”属于两套版本体系，别把 AIDL v2 当成 HIDL 2.0。
+`android-17.0.0_r1` 冻结了 AIDL v1、v2、v3，没有 v4：v1 覆盖温度、阈值、冷却设备与热状态回调，v2 增加冷却设备变化回调，v3 增加表面温度预测与阈值变化回调。兼容旧厂商系统镜像（vendor image）的设备仍可能连接 HIDL Thermal HAL 2.0、1.1 或 1.0；AIDL 版本号和旧 HIDL“2.0”属于两套版本体系，对照时按各自的体系读。
 
 ### CoolingDevice 的定位
 
@@ -143,14 +143,10 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 | 5 | `THERMAL_STATUS_EMERGENCY` | 部分平台能力正在关闭 | 停止可选管线，尽快持久化重要状态 |
 | 6 | `THERMAL_STATUS_SHUTDOWN` | 设备需要立即关机 | 不能依赖应用仍有执行机会 |
 
-这张表定义响应强度，不给通用产品参数。游戏从 120 FPS 调到 90、60 还是 30，视频是否降低分辨率，要由目标设备的帧时间、功耗、温升和质量实验决定；某个状态换算不成固定的频率或画质档位。
+这张表定义响应强度，通用产品参数要从目标设备来定。游戏从 120 FPS 调到 90、60 还是 30，视频是否降低分辨率，要由目标设备的帧时间、功耗、温升和质量实验决定；状态与固定的频率或画质档位之间没有通用换算。
 
 任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态） 原因请求关机，BATTERY（电池温度）传感器则使用 battery-thermal（电池过热） 原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾要赶在这一档之前开始。
 
-<!-- gracker-diagram: a282-02-skin-global-status-and-shutdown -->
-![全局状态只聚合SKIN，关机安全检查还覆盖其他热源](../../assets/diagrams/ch25/a282-02-skin-global-status-and-shutdown.png)
-
-图：状态0–6表示产品限制强度；某个severity不能换算为固定摄氏温度、MHz、FPS或码率。
 
 ## Thermal headroom：提前量与读取边界
 
@@ -162,19 +158,11 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 
 另一类返回值是 `NaN`（Not a Number，非数值哨兵），表示设备不支持、数据不足、HAL 未就绪或调用太频繁。
 
-<!-- gracker-diagram: a282-03-thermal-versus-capacity-headroom -->
-![热headroom越高越紧，容量headroom越低越紧](../../assets/diagrams/ch25/a282-03-thermal-versus-capacity-headroom.png)
 
-图：热阈值表由设备提供，缺项时不硬编码0.7/0.8/0.9；不要把capacity数值当未来温度预测。
+`forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提，预测时间越远越容易受场景切换影响，单次预测值因此只作短期趋势参考。
 
-`forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提，预测时间越远越容易受场景切换影响，所以别把一次预测值当成未来温度的承诺。
+HAL 预测缺席时，Framework 的回退实现每秒读取表面温度，每个传感器最多保留 30 个样本，至少攒够三个样本后用线性回归拟合近期变化并外推，连续10秒没有查询就停止采样。样本不足3个时，r1可以先返回当前温度的归一化值，成熟的外推要等样本攒齐；所以非NaN只说明调用有返回，预测可能还在预热。若相应功能开关开启、HAL v3支持 `forecastSkinTemperature()` 且设备只报告一组SKIN阈值，服务会改用 HAL 预测；内部来源由服务自己切换，应用按短期趋势信号处理即可。
 
-没有 HAL 预测时，Framework 的回退实现每秒读取表面温度，每个传感器最多保留 30 个样本，至少有三个样本后用线性回归拟合近期变化并外推，连续10秒没有查询就停止采样。样本不足3个时，r1可以返回当前温度的归一化值，而不是成熟的未来外推；所以拿到非NaN也不能证明预测已经完成预热。若相应功能开关开启、HAL v3支持 `forecastSkinTemperature()` 且设备只报告一组SKIN阈值，服务会改用 HAL 预测；应用不需要识别内部来源，按短期趋势信号处理即可。
-
-<!-- gracker-diagram: a282-04-forecast-hal-versus-framework-regression -->
-![预测可能由HAL提供，也可能是近期温度外推](../../assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.png)
-
-图：forecastSeconds为0读当前位置；更远预测更易受场景变化影响，不能用一次值承诺未来温度。
 
 ### 使用厂商提供的阈值映射表
 
@@ -186,20 +174,20 @@ API 35 的 [`getThermalHeadroomThresholds()`](https://developer.android.com/refe
 
 ### API 36 headroom 监听器
 
-`addThermalHeadroomListener()` 的回调带当前 headroom、预测 headroom、预测秒数和阈值映射表。它在表面温度跨过限制等级阈值，或温度、阈值变化足够明显时触发，并不是周期性的预测数据流。
+`addThermalHeadroomListener()` 的回调带当前 headroom、预测 headroom、预测秒数和阈值映射表。它在表面温度跨过限制等级阈值，或温度、阈值变化足够明显时触发，推送的是事件；周期性的预测数据流要靠主动轮询来补。
 
-服务端仅在“数据没有显著变化，且距上次回调不足5秒”时抑制通知；显著变化可以在5秒内再次通知，不能把5秒写成所有回调的硬下限。r1 用headroom差值0.03、阈值表数值差0.01等判断显著变化。这些数值是 `android-17.0.0_r1` 的实现常量，公开 API 没有把它们承诺给所有版本。
+服务端仅在“数据没有显著变化，且距上次回调不足5秒”时抑制通知；显著变化可以在5秒内再次通知，5秒因此只是相似回调的抑制窗口。r1 用headroom差值0.03、阈值表数值差0.01等判断显著变化。这些数值是 `android-17.0.0_r1` 的实现常量，公开 API 没有把它们承诺给所有版本。
 
 <!-- gracker-diagram: a282-05-headroom-callback-significance-and-throttle -->
 ![5秒只抑制相似回调，显著变化可以更快通知](../../assets/diagrams/ch25/a282-05-headroom-callback-significance-and-throttle.png)
 
-图：API36监听不能完整替代getThermalHeadroom；不要根据缺少回调断言热压力不再变化。
+图：API36监听只推送显著变化事件，持续预测仍靠getThermalHeadroom；缺少回调说明不了热压力已停止变化。
 
 要持续拿到提前预测，仍要按保守间隔调用 `getThermalHeadroom()`。官方游戏兼容建议按 10 秒量级轮询，可减少旧设备因调用过快返回 `NaN` 的情况。
 
 ## 应用监听器的安全封装
 
-下面的 Kotlin 示例只注册一次热状态监听器；API 36起再尝试注册headroom监听器，API 30+在需要持续预测时仍由统一外部调度器低频调用 `pollForecast()`，包含API 36监听注册失败或仅有稀疏事件的情况。阅读时先看 `start()` 里的版本分支，再对照 `stop()` 里成对的注销：
+下面的 Kotlin 示例只注册一次热状态监听器，API 36起再尝试注册headroom监听器；持续预测统一交给外部调度器低频调用 `pollForecast()`，API 30+ 都走这条路，API 36 监听注册失败或事件稀疏时也一样。阅读时先看 `start()` 里的版本分支，再对照 `stop()` 里成对的注销：
 
 ```kotlin
 import android.content.Context
@@ -358,18 +346,14 @@ class AppThermalObserver(
 }
 ```
 
-API 36 的类型被隔离在 `Api36` 中，旧系统不会进入对应分支。使用时我们把 observer（状态观察对象） 绑定到明确的生命周期，避免重复注册；示例要求 `callbackExecutor` 为串行控制执行器，`start()`、`stop()` 和 `pollForecast()` 也必须投递到同一队列；这才保证整组信号快照与生命周期一致，单独给字段加 `volatile` 不能提供组合原子性。回调中只更新状态并投递轻量事件，画质重建、编码器重配交给业务线程。
+API 36 的类型被隔离在 `Api36` 中，旧系统不会进入对应分支。使用时我们把 observer（状态观察对象） 绑定到明确的生命周期，避免重复注册；示例要求 `callbackExecutor` 为串行控制执行器，`start()`、`stop()` 和 `pollForecast()` 也必须投递到同一队列；整组信号快照与生命周期的一致性由这条队列保证，只给单个字段加 `volatile` 替代不了它。回调中只更新状态并投递轻量事件，画质重建、编码器重配交给业务线程。
 
-<!-- gracker-diagram: a282-06-observer-generation-and-fresh-forecast -->
-![监听器生命周期与预测新鲜度都进入同一控制队列](../../assets/diagrams/ch25/a282-06-observer-generation-and-fresh-forecast.png)
 
-图：API30+均可按需要低频轮询；调用失败清预测时间戳，停止后不继续查询，不能把NaN当设备已冷却。
-
-API 30+的 `pollForecast()` 每次只发起一次headroom查询；失败或NaN会发布不可用状态并清除预测时间戳，不继续把旧值当当前预测。调度器统一管理调用频率，避免多个模块各自轮询；若连续得到 `NaN`，策略回退到热状态监听器，不要用无间隔循环反复查询。
+API 30+的 `pollForecast()` 每次只发起一次headroom查询；失败或NaN会发布不可用状态并清除预测时间戳，旧预测随即作废。调度器统一管理调用频率，避免多个模块各自轮询；连续得到 `NaN` 时，策略回退到热状态监听器即可，查询间隔交给调度器掌握。
 
 ## 从信号映射到工作量档位
 
-信号到手，下一步是把它变成工作量档位。这段函数展示一种不写死设备 headroom 阈值的映射方式，判断从最严重的档位依次放宽：
+信号到手，下一步是把它变成工作量档位。这段函数展示一种避免写死设备 headroom 阈值的映射方式，判断从最严重的档位依次放宽：
 
 ```kotlin
 enum class WorkloadTier {
@@ -416,7 +400,7 @@ fun requestedTier(
 }
 ```
 
-调用方传入当前 `SystemClock.elapsedRealtime()` 和按轮询节奏/业务风险设置的 `maxForecastAgeMillis`；过期或不可用预测只退回热状态，不能据此断言设备已冷却。这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量（margin）用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应从产品实验里取值，套用平台常量行不通。
+调用方传入当前 `SystemClock.elapsedRealtime()` 和按轮询节奏/业务风险设置的 `maxForecastAgeMillis`；过期或不可用的预测只把判断交还给热状态，设备是否冷却要看新的有效样本。这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量（margin）用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应从产品实验里取值，套用平台常量行不通。
 
 <!-- gracker-diagram: a282-07-tier-hysteresis-and-cooldown -->
 ![降载可快速，恢复必须有退出余量与冷却驻留](../../assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.png)
@@ -435,14 +419,10 @@ fun requestedTier(
 
 实时处理管线还需要主动丢弃过期输入。热限制把处理速度压低后，相机帧、渲染命令或推理请求若继续无限排队，端到端延迟会一路上升，这时减少工作量也来不及降低当前功耗。
 
-<!-- gracker-diagram: a282-08-shared-tier-and-stale-queue-discard -->
-![热降载同时改变生产速率、消费能力与积压队列](../../assets/diagrams/ch25/a282-08-shared-tier-and-stale-queue-discard.png)
-
-图：只改频率目标或一个模块不够；主动取消过期工作，防CPU/GPU预算下降后持续消耗于无价值结果。
 
 ## CPU、GPU 与应用性能的证据
 
-信号驱动策略，性能退化则要另行取证：热状态升高可能伴随 CPU/GPU 限制，但热状态本身说明不了系统采取了哪项动作。CPU 主线程变慢、GPU 帧延长、充电速度下降、屏幕亮度变化，每一项都要分别取证。
+信号驱动策略，性能退化则要另行取证：热状态升高可能伴随 CPU/GPU 限制，但系统具体采取了哪项动作，热状态本身给不出答案。CPU 主线程变慢、GPU 帧延长、充电速度下降、屏幕亮度变化，每一项都要分别取证。
 
 ### 把热限制与卡顿连成因果链
 
@@ -454,14 +434,14 @@ fun requestedTier(
 4. 工作量保持稳定时，线程执行时间、Runnable（可运行但等待 CPU 调度） 等待时长、GPU 完成时间或帧时间随后恶化；
 5. 设备降温，或主动降低单一负载变量后，限制与性能退化按预测回落。
 
-对照一下缺了哪一环：没有第 2、3 项，观测到的 CPU/GPU 低频可能只是 DVFS 应对普通负载变化的常规选择；没有稳定工作量与对照组，排除不了业务负载本身的变化；没有回落过程，还要检查省电模式、刷新率切换、后台争用和厂商短时提频（boost）策略。
+对照一下缺了哪一环：缺了第 2、3 项，观测到的 CPU/GPU 低频可能只是 DVFS 应对普通负载变化的常规选择；要排除业务负载本身的变化，需要稳定的工作量与对照组；缺了回落过程，还要检查省电模式、刷新率切换、后台争用和厂商短时提频（boost）策略。
 
 Perfetto 取证时，我们把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline（Android 帧时间线）、RenderThread 与 GPU fence 放在同一时间窗口；单条异常帧或一次温度读数撑不起归因。
 
 <!-- gracker-diagram: a282-09-thermal-causality-evidence-tracks -->
 ![热、资源限制、性能退化与降载回落要按时间对齐](../../assets/diagrams/ch25/a282-09-thermal-causality-evidence-tracks.png)
 
-图：频率低不能独立证明热限制；CPU/GPU工作量、上限变化、完成时间和回落都需要证据。
+图：频率低本身证明不了热限制；CPU/GPU工作量、上限变化、完成时间和回落要对齐了看。
 
 时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的 WakeLock、后台 Job 与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计） 窗口。三类结果靠同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，粒度到不了单个 Java 方法。
 
@@ -484,10 +464,6 @@ GPU devfreq 或厂商固件降低预算时，GPU 完成时间延后，FrameTimel
 
 Thermal HAL 指南要求设备把会限制性能的电池功率约束也报告为限制等级；厂商还可能限制充电、显示、相机、modem 或其他热源。公开热状态没有具体缓解原因字段，所以关心充电场景的应用要额外记录是否接电，并在实验中分开充电与电池供电样本。
 
-<!-- gracker-diagram: a282-10-cpu-gpu-and-other-mitigation-evidence -->
-![CPU、GPU和充电限制分别取证再选择减载项](../../assets/diagrams/ch25/a282-10-cpu-gpu-and-other-mitigation-evidence.png)
-
-图：充电和电池供电样本分开；低频可能是普通DVFS，热状态不能反推固定MHz。
 
 ## Thermal API、ADPF 与 Game Mode 的分工
 
@@ -495,7 +471,7 @@ ADPF（Android Dynamic Performance Framework，Android 动态性能框架）把 
 
 ### Performance Hint Session
 
-`PerformanceHintManager.Session` 把一组相关线程当作一个工作单元，逐周期报告目标耗时与实际耗时。它没有 `getThermalHeadroom()`，也不返回 CPU/GPU capacity headroom。
+`PerformanceHintManager.Session` 把一组相关线程当作一个工作单元，逐周期报告目标耗时与实际耗时。它没有 `getThermalHeadroom()`，也不返回 CPU/GPU capacity headroom，这两类值分别走 PowerManager 与 SystemHealthManager。
 
 热策略把游戏从较高 FPS 切到较低 FPS 时，新的每帧目标耗时要通过 `updateTargetWorkDuration()` 跟着更新。继续上报旧截止时间，平台收到的性能需求就与应用当前的质量策略对不上了。
 
@@ -503,7 +479,7 @@ API 36 的 CPU/GPU capacity headroom（容量余量）位于 [`SystemHealthManag
 
 - `getCpuHeadroom()` / `getGpuHeadroom()` 的有效值为0—100，0表示没有更多可分配容量；暂时无数据可为NaN，不支持则抛 `UnsupportedOperationException`，CPU参数/TID/亲和性错误还要按对应异常处理；
 - thermal headroom 的数值方向与 capacity headroom 相反：越高越接近严重热限制；
-- capacity headroom 概括近期的 CPU/GPU 可用容量，低值可能来自高负载、调度或其他约束，不一定由温度造成，也不是未来容量预测；
+- capacity headroom 概括近期的 CPU/GPU 可用容量，低值可能来自高负载、调度或其他约束，温度只是候选之一；它看的是当下，预测不了未来容量；
 - 每次有效查询至少执行一次同步 Binder 调用，可能超过 1 毫秒；调用方应遵守系统报告的最小间隔，并避开渲染等关键线程。
 
 组合信号时可以这样分工：热状态与 thermal headroom 判断要不要减少整机热负载，CPU/GPU capacity headroom 帮我们选先减 CPU 工作还是 GPU 工作，Performance Hint Session 继续准确描述剩余工作的截止时间。
@@ -512,16 +488,12 @@ API 36 的 CPU/GPU capacity headroom（容量余量）位于 [`SystemHealthManag
 
 Game Mode 表达用户选择的偏好：`PERFORMANCE`（性能优先）、`BATTERY`（续航优先）、`STANDARD`（标准）。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
 
-续航优先模式（Battery Game Mode）只影响游戏自己的策略，与系统省电模式是两回事。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
+续航优先模式（Battery Game Mode）只作用于游戏自己的策略，系统省电模式是另一层开关。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
 
 ### Sustained Performance Mode
 
-API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负载。应用先调用 `PowerManager.isSustainedPerformanceModeSupported()`，受支持时通过 `Window.setSustainedPerformanceMode(true)` 请求较稳定的性能区间。它通常降低冷机峰值来换取更平稳的长时表现，但不保证固定频率或固定 FPS，也替代不了应用的工作量档位。Fixed Performance Mode（固定性能模式） 用于基准测试，线上想借它绕过热策略是行不通的。
+API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负载。应用先调用 `PowerManager.isSustainedPerformanceModeSupported()`，受支持时通过 `Window.setSustainedPerformanceMode(true)` 请求较稳定的性能区间。它通常降低冷机峰值来换取更平稳的长时表现，固定频率或固定 FPS 都在承诺范围之外，应用自己的工作量档位仍要另建。Fixed Performance Mode（固定性能模式） 用于基准测试；线上想借它绕过热策略，这条路走不通。
 
-<!-- gracker-diagram: a282-11-thermal-hint-game-and-sustained-roles -->
-![Thermal、Performance Hint、Game Mode各负责不同意图](../../assets/diagrams/ch25/a282-11-thermal-hint-game-and-sustained-roles.png)
-
-图：FixedPerformanceMode用于基准；capacity headroom帮助辨别先减CPU或GPU，但不是热预测。
 
 ## 与后台调度、Doze 和 App Standby（按应用活跃度限制后台任务） 的关系
 
@@ -547,10 +519,6 @@ API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负�
 
 Doze（设备空闲节电）、App Standby、Battery Saver（系统省电模式） 和热限制规则是各自独立的状态机。设备可以同时处于多种限制状态，平台没有面向应用的“叠加系数”。排查延迟任务时，我们把执行/停止原因、设备空闲状态、App Standby bucket（应用待机分桶）、充电状态和热状态放在一起看。
 
-<!-- gracker-diagram: a282-13-independent-power-constraints -->
-![热限制、Doze、待机桶与省电规则独立判断](../../assets/diagrams/ch25/a282-13-independent-power-constraints.png)
-
-图：一次pending或stop事件先看平台原因，再关联热、空闲、bucket、充电和真实任务生命周期。
 
 ## 线上监控
 
@@ -568,10 +536,6 @@ Doze（设备空闲节电）、App Standby、Battery Saver（系统省电模式�
 
 我们在线上看板里按热状态和工作量档位拆分统计。把所有状态混在一起，热机样本会拉高尾延迟，冷机与热机的不同退化模式就看不清了。
 
-<!-- gracker-diagram: a282-15-steady-performance-and-state-duration -->
-![发布验收看热稳定后的吞吐与质量，并记录恢复振荡](../../assets/diagrams/ch25/a282-15-steady-performance-and-state-duration.png)
-
-图：用同次开机elapsed时间计算状态区间；重启分段、回调去重、headroom低频抽样而非逐点高频上传。
 
 ### 有用的指标
 
@@ -608,10 +572,6 @@ adb shell cmd thermalservice reset
 
 `override-status 3` 只覆盖 Framework 全局热状态，用来验证应用在 `SEVERE` 回调下的 UI 和工作量档位切换；它不会让硬件升温，也不会自动压低 CPU/GPU 频率。测试结束必须执行 `reset`，即使中途失败也要先恢复。
 
-<!-- gracker-diagram: a282-14-override-ui-test-versus-hardware-test -->
-![override-status只测试Framework策略，不制造真实热节流](../../assets/diagrams/ch25/a282-14-override-ui-test-versus-hardware-test.png)
-
-图：真实热验收固定设备构建、环境、亮度、网络、充电与输入脚本；同一冷却起点多轮重复。
 
 `dumpsys thermalservice` 能显示 HAL 连接、缓存温度、冷却设备、阈值和全局热状态，所需权限与字段随构建类型变化。正式脚本不要依赖冷却设备的固定编号或名称。
 
@@ -638,11 +598,11 @@ ORDER BY c.ts;
 5. 冷启动温度范围与轮次间冷却条件；
 6. 多轮样本及 P50/P95、状态转换时间和稳态吞吐。
 
-回到最初的问题：性能限制是不是热造成的？只看温度曲线确认不了；只看频率下降，也排除不了普通 DVFS、设备空闲、省电模式、Power HAL 或其他 QoS 请求。热状态、冷却/频率动作与性能退化在时间上对齐，因果判断才站得住。
+回到最初的问题：性能限制是不是热造成的？单看温度曲线，链条还缺一环；单看频率下降，普通 DVFS、设备空闲、省电模式、Power HAL 或其他 QoS 请求也都解释得通。热状态、冷却/频率动作与性能退化在时间上对齐，因果判断才站得住。
 
 ## OEM 差异如何处理
 
-AOSP 定义 HAL、限制等级和公开 API，但 Qualcomm、MediaTek、Samsung 或某家整机厂采用哪个常驻进程、阈值表、豁免列表或频率策略，不在规定之列。用厂商名称制作固定的“激进/保守”表格，缺少可移植性。
+AOSP 定义 HAL、限制等级和公开 API，但 Qualcomm、MediaTek、Samsung 或某家整机厂采用哪个常驻进程、阈值表、豁免列表或频率策略，不在规定之列。用厂商名称制作固定的“激进/保守”表格，可移植性有限。
 
 同一 SoC 在不同机身、散热材料、传感器位置、电池和充电方案中的表现也不同。我们做跨设备策略时依赖热状态与 OEM 阈值映射表，做设备专项优化时则保留系统构建指纹、性能跟踪和实验报告。
 

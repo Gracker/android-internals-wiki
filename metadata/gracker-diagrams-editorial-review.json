@@ -66333,9 +66333,176 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "af2630cbe04d31d15629f20bb25e42caa910dea7ba74620cf1202ec78951f1be",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a282-01-thermal-policy-actions-and-public-signals",
+          "title": "底层热限制先执行，应用接收信号再减少自身工作",
+          "decision": "keep",
+          "reason": "传感器信号分为底层策略先限制资源与HAL/Framework通知应用两路，明确回调不等于限制执行起点。",
+          "original_line": 93,
+          "heading": "## 热治理的系统路径"
+        },
+        {
+          "original_id": "a282-02-skin-global-status-and-shutdown",
+          "title": "全局状态只聚合SKIN，关机安全检查还覆盖其他热源",
+          "decision": "remove",
+          "reason": "SKIN聚合与各类SHUTDOWN四卡重复紧邻全局状态推论、等级表和关机段落，没有新增聚合或安全分支示例。",
+          "original_line": 150,
+          "heading": "## 全局热状态的含义"
+        },
+        {
+          "original_id": "a282-03-thermal-versus-capacity-headroom",
+          "title": "热headroom越高越紧，容量headroom越低越紧",
+          "decision": "remove",
+          "reason": "thermal与capacity值域、方向和NaN四卡重复定义及后文容量说明，保留正文更精确异常与版本条件。",
+          "original_line": 165,
+          "heading": "## Thermal headroom：提前量与读取边界"
+        },
+        {
+          "original_id": "a282-04-forecast-hal-versus-framework-regression",
+          "title": "预测可能由HAL提供，也可能是近期温度外推",
+          "decision": "remove",
+          "reason": "HAL预测前提与Framework样本回归四卡复述紧邻同一段完整实现说明。",
+          "original_line": 174,
+          "heading": "## Thermal headroom：提前量与读取边界"
+        },
+        {
+          "original_id": "a282-05-headroom-callback-significance-and-throttle",
+          "title": "5秒只抑制相似回调，显著变化可以更快通知",
+          "decision": "keep",
+          "reason": "通知判定点分相似且不足5秒抑制、显著或过窗允许两路，明确5秒不是所有通知的硬下限。",
+          "original_line": 193,
+          "heading": "### API 36 headroom 监听器"
+        },
+        {
+          "original_id": "a282-06-observer-generation-and-fresh-forecast",
+          "title": "监听器生命周期与预测新鲜度都进入同一控制队列",
+          "decision": "remove",
+          "reason": "注册代次、轻量回调、停止注销和预测失效四框重复154行实现及随后解释，保留代码更精确一致性守卫。",
+          "original_line": 363,
+          "heading": "## 应用监听器的安全封装"
+        },
+        {
+          "original_id": "a282-07-tier-hysteresis-and-cooldown",
+          "title": "降载可快速，恢复必须有退出余量与冷却驻留",
+          "decision": "keep",
+          "reason": "快速降到目标档位与低于退出阈值且持续冷却后逐级恢复的非对称条件分层，帮助避免把一次低状态或NaN当全量恢复信号。",
+          "original_line": 421,
+          "heading": "## 从信号映射到工作量档位"
+        },
+        {
+          "original_id": "a282-08-shared-tier-and-stale-queue-discard",
+          "title": "热降载同时改变生产速率、消费能力与积压队列",
+          "decision": "remove",
+          "reason": "统一tier、生产消费降载、过期队列和媒体连续性四框重复子系统配置表与积压段落。",
+          "original_line": 438,
+          "heading": "## 从信号映射到工作量档位"
+        },
+        {
+          "original_id": "a282-09-thermal-causality-evidence-tracks",
+          "title": "热、资源限制、性能退化与降载回落要按时间对齐",
+          "decision": "keep",
+          "reason": "稳定业务负载、热压力、资源限制和性能结果四轨按时间对齐，并加入单变量减载回落，辅助区分相关与因果。",
+          "original_line": 461,
+          "heading": "### 把热限制与卡顿连成因果链"
+        },
+        {
+          "original_id": "a282-10-cpu-gpu-and-other-mitigation-evidence",
+          "title": "CPU、GPU和充电限制分别取证再选择减载项",
+          "decision": "remove",
+          "reason": "CPU/GPU/充电三类证据及减载四卡重复紧邻三个分节，证据时间关系已由四轨图表达。",
+          "original_line": 487,
+          "heading": "### 充电与其他缓解动作"
+        },
+        {
+          "original_id": "a282-11-thermal-hint-game-and-sustained-roles",
+          "title": "Thermal、Performance Hint、Game Mode各负责不同意图",
+          "decision": "remove",
+          "reason": "Thermal、Hint、Game、Sustained四卡重复四段职责与API边界说明。",
+          "original_line": 521,
+          "heading": "### Sustained Performance Mode"
+        },
+        {
+          "original_id": "a282-12-job-thermal-restriction-branches",
+          "title": "Job热限制先看TOP_APP，再按热等级和bias分支",
+          "decision": "keep",
+          "reason": "TOP_APP提前放行后再按LIGHT/MODERATE/SEVERE分出不同Job条件，直观区别UIJ、EJ首轮和已运行HIGH。",
+          "original_line": 541,
+          "heading": "## 与后台调度、Doze 和 App Standby（按应用活跃度限制后台任务） 的关系"
+        },
+        {
+          "original_id": "a282-13-independent-power-constraints",
+          "title": "热限制、Doze、待机桶与省电规则独立判断",
+          "decision": "remove",
+          "reason": "热、Doze、Standby和Saver四卡重复独立状态机段落，无实际叠加或判定结构。",
+          "original_line": 550,
+          "heading": "## 与后台调度、Doze 和 App Standby（按应用活跃度限制后台任务） 的关系"
+        },
+        {
+          "original_id": "a282-15-steady-performance-and-state-duration",
+          "title": "发布验收看热稳定后的吞吐与质量，并记录恢复振荡",
+          "decision": "remove",
+          "reason": "测试条件、稳态恢复、质量和分组四框重复线上字段列表、指标表与后文实验六项条件。",
+          "original_line": 571,
+          "heading": "### 记录状态持续时间"
+        },
+        {
+          "original_id": "a282-14-override-ui-test-versus-hardware-test",
+          "title": "override-status只测试Framework策略，不制造真实热节流",
+          "decision": "remove",
+          "reason": "override-status、硬件不升温、SQL与reset四卡重复命令和测试说明，保留原文更明确空轨不代表无热限制。",
+          "original_line": 611,
+          "heading": "## 本地测试与 Perfetto"
+        }
+      ],
+      "sha256_after": "202995198280d3097c2d145e029e5da7d842eb9a7439d2da54cf4ee9c5e3791c",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:14:22.750809+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a282/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a282/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 282,
+        "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+        "registered_sha256": "af2630cbe04d31d15629f20bb25e42caa910dea7ba74620cf1202ec78951f1be",
+        "frozen_sha256": "af2630cbe04d31d15629f20bb25e42caa910dea7ba74620cf1202ec78951f1be",
+        "review_input_sha256": "b227b349aaaa7249759ce2497095976f6a1ac6968edc6cae5b5a00fef0b481b3",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a282/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a282/external-source.diff",
+        "diff_sha256": "ee122b1a68693079a6f4b782916e92ef1a659639b8b51b3bb379f7d7e0effd4f",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 272, \"characters\": 19652, \"svg_labels_read\": 15, \"actual_pngs_viewed\": 15, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 4, \"code_lines\": 207, \"native_mermaid\": 0, \"changed_since_frozen\": true, \"external_diff_lines_read\": 211, \"external_review_input_sha256\": \"b227b349aaaa7249759ce2497095976f6a1ac6968edc6cae5b5a00fef0b481b3\"}"
+      },
+      "sha256_review_input": "b227b349aaaa7249759ce2497095976f6a1ac6968edc6cae5b5a00fef0b481b3",
+      "retired_diagrams": [
+        "a282-02-skin-global-status-and-shutdown",
+        "a282-03-thermal-versus-capacity-headroom",
+        "a282-04-forecast-hal-versus-framework-regression",
+        "a282-06-observer-generation-and-fresh-forecast",
+        "a282-08-shared-tier-and-stale-queue-discard",
+        "a282-10-cpu-gpu-and-other-mitigation-evidence",
+        "a282-11-thermal-hint-game-and-sustained-roles",
+        "a282-13-independent-power-constraints",
+        "a282-14-override-ui-test-versus-hardware-test",
+        "a282-15-steady-performance-and-state-duration"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-282/retired-assets.json"
     },
     {
       "index": 283,
@@ -66481,8 +66648,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 193,
-  "next_article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+  "reviewed_articles": 194,
+  "next_article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -66492,7 +66659,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:10:50.202831+08:00",
+  "updated_at": "2026-10-31T19:14:22.750809+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -66572,6 +66739,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+      "registered_sha256": "5c85ed3edc3ac719eb25ddffe2a994fec15ad9f091748890eca7c1e68514f2b8",
+      "observed_sha256": "ad65812758c545f28ead6bf85382fba7056c042f9441d649d6f54c72a78b08a5",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
       "registered_sha256": "f288a321e459b5f30a7bbec00e073c8678d4193f49ebff0be66a66415a864941",
       "observed_sha256": "158d08bd15c3d1727638754a8dec87df432d4946be74eb44c5a62ac3eabd1d74",
@@ -66600,13 +66774,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
-      "registered_sha256": "af2630cbe04d31d15629f20bb25e42caa910dea7ba74620cf1202ec78951f1be",
-      "observed_sha256": "b227b349aaaa7249759ce2497095976f6a1ac6968edc6cae5b5a00fef0b481b3",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
       "registered_sha256": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
       "observed_sha256": "9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045",
@@ -66628,9 +66795,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5636,
-  "reviewed_placements_after": 2214,
-  "net_removed_placements": 3422,
+  "reviewed_placements_before": 5651,
+  "reviewed_placements_after": 2219,
+  "net_removed_placements": 3432,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
