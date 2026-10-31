@@ -184,7 +184,7 @@ flowchart TD
 <!-- gracker-diagram: ch13-02-04-surface-canvas -->
 ![软件与硬件 Canvas 的目标和执行者](../../assets/diagrams/ch13/ch13-02-04-surface-canvas.png)
 
-图：同样的 lock/post 外形可以对应 CPU 写入或 HWUI/GPU 绘制。 Surface.lockHardwareCanvas 使用该 Surface 的上下文，不能一概看成宿主窗口绘制树。
+图：同样的 lock/post 外形可以对应 CPU 写入或 HWUI/GPU 绘制。 Surface.lockHardwareCanvas 使用该 Surface 的上下文，别把它一概归进宿主窗口绘制树。
 
 #### 单个 View 的 software layer
 
@@ -206,7 +206,7 @@ flowchart TD
 `saveLayer()` 由 CPU 还是 GPU 执行，取决于当前 Canvas 类型，光看 API 名判断不出来。`Canvas.isHardwareAccelerated()` 回答当前 Canvas 是否硬件加速；`View.isHardwareAccelerated()` 只说明 View 所在窗口是否开启硬件加速。所以硬件加速窗口中的 View，仍可能被画到 Bitmap software Canvas 上。
 
 
-GPU 驱动错误、Surface 失效或资源不足各有各自的恢复和错误处理路径，把它们笼统写成“系统会自动把整个窗口降级为软件渲染”，等于跳过了对入口的确认。如果 trace 显示软件路径，我们回到窗口配置、Canvas 类型、`setLayerType()` 和调用栈逐一确认。
+GPU 驱动错误、Surface 失效或资源不足，各有各自的恢复和错误处理路径；“系统会自动把整个窗口降级为软件渲染”这类笼统说法，跳过的恰恰是入口确认这一步。trace 里看到软件路径时，我们回到窗口配置、Canvas 类型、`setLayerType()` 和调用栈逐一确认。
 
 
 ### 完整执行流程
@@ -229,7 +229,7 @@ ViewRootImpl.drawSoftware(...)
       → queueBuffer(buffer, fenceFd)
 ```
 
-这条链不用 App HWUI RenderThread 绘制窗口 buffer，但仍受 BufferQueue slot、release fence、内存映射和下游消费速度约束。CPU 栅格化只发生在 lock 成功到 unlock 之间，覆盖不了整条提交和显示路径，所以归因时我们把 lock、draw、post 这几段分开计时。
+这条链绕开了 App HWUI RenderThread 的 GPU 绘制，但仍受 BufferQueue slot、release fence、内存映射和下游消费速度约束。CPU 栅格化只发生在 lock 成功到 unlock 之间，覆盖不了整条提交和显示路径，所以归因时我们把 lock、draw、post 这几段分开计时。
 
 
 #### Lock：取得可写 buffer
@@ -245,7 +245,7 @@ ViewRootImpl.drawSoftware(...)
 
 #### Draw：CPU 生成像素
 
-software Canvas 的 `drawPath()`、`drawText()`、`drawBitmap()` 等操作由 Skia CPU 后端在调用线程上栅格化，写入锁定像素内存。硬件 Canvas 则记录绘制操作，再由 HWUI RenderThread/GPU 执行；普通 View 使用宿主绘制树，而 `Surface.lockHardwareCanvas()` 使用该 Surface 自己的 `HwuiContext`、`HwuiCanvas` RenderNode 与 HardwareRenderer，不能一概写成“录制宿主窗口 DisplayList”。
+software Canvas 的 `drawPath()`、`drawText()`、`drawBitmap()` 等操作由 Skia CPU 后端在调用线程上栅格化，写入锁定像素内存。硬件 Canvas 则记录绘制操作，再由 HWUI RenderThread/GPU 执行；普通 View 使用宿主绘制树，而 `Surface.lockHardwareCanvas()` 使用该 Surface 自己的 `HwuiContext`、`HwuiCanvas` RenderNode 与 HardwareRenderer，属于另一条独立的录制链，一概写成“录制宿主窗口 DisplayList”并不合适。
 
 CPU 栅格化成本由脏区面积、像素格式、混合、裁剪区域、路径复杂度、文字与图片采样共同决定。“每条命令逐像素串行执行”是对它的常见误解：Skia 和 vendor（设备或芯片厂商）库可以动用 SIMD（单条指令并行处理多个数据）、专用实现或内部任务。不过反过来也一样，别据此假设 Android View 的 software Canvas 会自动把一帧均匀分摊到多个 CPU。
 
@@ -307,7 +307,7 @@ sequenceDiagram
 software Canvas 支持 dirty region（需要重画的区域），也就是只重画需要更新的部分；不过分析要往下再走一步，看看保留的旧像素是怎么补回来的。`Surface::lock()` 比较的是本轮的 back buffer（待写入的后备 buffer）与上一块已提交的 `mPostedBuffer`：
 
 - 上次 `mPostedBuffer` 存在且尺寸、format 兼容时，按内部记录的 `mDirtyRegion.subtract(newDirtyRegion)` 计算需要补回的区域，经 `copyBlt()` 从上一块 buffer 复制到当前 back buffer；
-- 没有兼容的 `mPostedBuffer` 时，把新脏区扩成整个 bounds，并清理 slot 的 dirty-region 记录；源码不能推导出任意 `copyBlt()` 运行失败都会自动全量重绘；
+- 没有兼容的 `mPostedBuffer` 时，把新脏区扩成整个 bounds，并清理 slot 的 dirty-region 记录；至于 `copyBlt()` 运行失败，源码里推不出“任意失败都会自动全量重绘”这样的行为；
 - 随后用最终 dirty bounds 执行 `lockAsync()`，并把实际 dirty bounds 回写给调用方；调用方必须覆盖这个可能扩大的范围。
 
 
@@ -316,7 +316,7 @@ software Canvas 支持 dirty region（需要重画的区域），也就是只重
 <!-- gracker-diagram: ed13-02-copyback-branch-and-total-cost -->
 ![copyback 分支决定保留区域与最终 dirty bounds](../../assets/diagrams/ch13/ed13-02-copyback-branch-and-total-cost.png)
 
-图：固定源码的copyback分支与成本合图：有尺寸/format兼容mPostedBuffer时，按内部mDirtyRegion减去newDirtyRegion的区域copyBlt到backbuffer；没有兼容前buffer才扩为整bounds并清slotdirty记录，不能据此推导任意copyBlt失败都自动全量重画。最终dirtybounds回写调用方，成功lock后须覆盖实际范围。尺寸/format/Surface生命周期变化会削弱收益，CPUdraw和copyback内存流量一起测，不能只看请求小矩形。
+图：固定源码的copyback分支与成本合图：有尺寸/format兼容mPostedBuffer时，按内部mDirtyRegion减去newDirtyRegion的区域copyBlt到backbuffer；没有兼容前buffer才扩为整bounds并清slotdirty记录，任意copyBlt失败都自动全量重画是推不出来的。最终dirtybounds回写调用方，成功lock后须覆盖实际范围。尺寸/format/Surface生命周期变化会削弱收益，CPUdraw和copyback内存流量一起测，别只看请求小矩形。
 
 #### 单 View software layer 的链路
 
@@ -333,7 +333,7 @@ software Canvas 支持 dirty region（需要重画的区域），也就是只重
 
 #### GPU 离屏与 `HardwareBuffer`
 
-`HardwareBufferRenderer` 属于 GPU 离屏生产，与整窗口 software Canvas 是两回事：它把 RenderNode 输出到调用方持有的 `HardwareBuffer`，返回的 completion fence 在满足 signal 条件后才证明像素生产完成；仅收到回调或 fence 对象不等于完成，结果有没有送显，还要到显示链上找证据。复用、清屏、所有权和后续提交的完整规则统一见 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)；本节只借它说明“离屏”与“软件”是两个独立维度。
+`HardwareBufferRenderer` 属于 GPU 离屏生产，与整窗口 software Canvas 是两回事：它把 RenderNode 输出到调用方持有的 `HardwareBuffer`，返回的 completion fence 要满足 signal 条件，才能证明像素生产完成；光收到回调或 fence 对象还算不上完成，结果有没有送显，还要到显示链上找证据。复用、清屏、所有权和后续提交的完整规则统一见 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)；本节只借它说明“离屏”与“软件”是两个独立维度。
 
 
 #### `SurfaceControl.Transaction#setBuffer()` 直接提交
@@ -424,11 +424,11 @@ slice 名会随渲染后端、vendor 和 trace 配置变化。找不到固定 `u
 <!-- gracker-diagram: ed13-02-lock-draw-post-evidence -->
 ![按 lock、draw、post 区间分开查工作与等待](../../assets/diagrams/ch13/ed13-02-lock-draw-post-evidence.png)
 
-图：CPU直写Surface的区间与证据合图，不是固定正常耗时。lock分选槽/数量约束、releasefence和映射fault/reclaim/copyback；无槽可等待、超时或失败，数量上限也可能直接报错。只有成功lock之后的实际softwareCanvas draw才归CPU栅格化；post继续拆grallocunlock、queue、事务和调度，按对应Consumer与buffer看背压。blocked/Running需结合调用栈，不能以post长推CPU画慢或queue返回推已显示。
+图：CPU直写Surface的区间与证据合图，不是固定正常耗时。lock分选槽/数量约束、releasefence和映射fault/reclaim/copyback；无槽可等待、超时或失败，数量上限也可能直接报错。只有成功lock之后的实际softwareCanvas draw才归CPU栅格化；post继续拆grallocunlock、queue、事务和调度，按对应Consumer与buffer看背压。blocked/Running需结合调用栈，post长推不出CPU画慢，queue返回也推不出已显示。
 
 #### 离屏结果的证据链
 
-`HardwareBufferRenderer` 的回调延后时，分别观察同进程 HWUI RenderThread 的排队/提交与回调 Executor 的执行等待；回调中还要检查 `RenderResult` status，并在消费前等待或向下游传递其 completion fence。GPU 执行与 fence signal 可以晚于回调到达，不能把 callback 时间直接当成 GPU 完成。`setBuffer()` 已 apply 但 layer 未更新时，再查 production fence、transaction readiness、desired present time、可见性与旧 buffer 是否沿用。
+`HardwareBufferRenderer` 的回调延后时，分别观察同进程 HWUI RenderThread 的排队/提交与回调 Executor 的执行等待；回调中还要检查 `RenderResult` status，并在消费前等待或向下游传递其 completion fence。GPU 执行与 fence signal 可以晚于回调到达，GPU 完成的判据是 fence signal，而非 callback 时间。`setBuffer()` 已 apply 但 layer 未更新时，再查 production fence、transaction readiness、desired present time、可见性与旧 buffer 是否沿用。
 
 
 纯离屏任务没有目标 SF layer 属于正常现象；这时我们去找编码器、ImageReader、缓存或算法 Consumer，用 buffer id、fence 和 request/callback 把生产和消费关联起来。
@@ -436,7 +436,7 @@ slice 名会随渲染后端、vendor 和 trace 配置变化。找不到固定 `u
 <!-- gracker-diagram: ed13-02-hbr-result-callback-and-gpu-fence -->
 ![HBR 回调的到达，与 GPU 写入完成分开观察](../../assets/diagrams/ch13/ed13-02-hbr-result-callback-and-gpu-fence.png)
 
-图：HBR请求、结果与四轨异步依赖合图：同进程共享HWUI RT先排队/同步/提交GPU工作，Executor另行执行RenderResult，先检查status；只有成功结果才继续按对应completionfence消费或把依赖传给下游。回调可以早于GPU完成，也可因Executor忙而延后；四轨长度非实测，不是三段固定串行时长。回调或fence对象到达不能替代signal，结果是否显示仍由后续Consumer和显示链决定。
+图：HBR请求、结果与四轨异步依赖合图：同进程共享HWUI RT先排队/同步/提交GPU工作，Executor另行执行RenderResult，先检查status；只有成功结果才继续按对应completionfence消费或把依赖传给下游。回调可以早于GPU完成，也可因Executor忙而延后；四轨长度非实测，不是三段固定串行时长。回调或fence对象到达替代不了signal，结果是否显示仍由后续Consumer和显示链决定。
 
 #### 连续帧量化
 
@@ -640,7 +640,7 @@ flowchart TD
 | App Window | attach/detach、relayout、window Surface replacement | host layer id、BLAST queue、FrameTimeline token 改变 |
 
 
-黑屏排查可按“对象与 Producer → 首 buffer transaction → readiness/本轮是否采纳 → layer 可见与几何 → 读取前 fence → composition/present”逐项检查。这是排查顺序，各事件可异步交错，不能据此要求 fence signal 一定先于 latch。`surfaceCreated()` 已回调只说明对象生命周期走到该阶段，离“有可显示 buffer”还有后面几步。
+黑屏排查可按“对象与 Producer → 首 buffer transaction → readiness/本轮是否采纳 → layer 可见与几何 → 读取前 fence → composition/present”逐项检查。这是排查顺序，各事件可异步交错，fence signal 未必先于 latch。`surfaceCreated()` 已回调只说明对象生命周期走到该阶段，离“有可显示 buffer”还有后面几步。
 
 
 ### 并行生产机制
@@ -835,14 +835,14 @@ external producer
 
 #### SurfaceSyncGroup
 
-API 34 的 `SurfaceSyncGroup` 可收集成功加入的 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 和附加 Transaction，并协调跨进程 child sync。正常路径在 `markSyncReady()` 后等待已注册 child 完成，再交付合并 transaction；这不是等待所有实际 Producer 的 GPU 或业务帧。固定 r1 还配置了 transaction-ready 超时：超时分支会清除 pending sync 并主动标记 ready，因此故障时不能把“组已完成”当成所有 child 都按时返回。
+API 34 的 `SurfaceSyncGroup` 可收集成功加入的 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 和附加 Transaction，并协调跨进程 child sync。正常路径在 `markSyncReady()` 后等待已注册 child 完成，再交付合并 transaction；这不是等待所有实际 Producer 的 GPU 或业务帧。固定 r1 还配置了 transaction-ready 超时：超时分支会清除 pending sync 并主动标记 ready，所以故障路径下的“组已完成”也可能出自超时，要回到成员与超时证据逐个核对。
 
 <!-- gracker-diagram: ch13-02-45-sync-group-branches -->
 ![SurfaceSyncGroup 的正常与超时分支](../../assets/diagrams/ch13/ch13-02-45-sync-group-branches.png)
 
 图：正常组等待已注册 child 的结果，故障超时可主动结束等待。 组完成不是全部 Producer 成功返回或 GPU 完成，必须检查成员注册与超时证据。
 
-同步范围只包括成功加入且受控的对象；需检查 `add(...)` 的返回值，并在标记 ready 前组织成员。向已完成组 `addTransaction()` 时，固定 r1 直接 apply 该事务，不能追溯纳入原组。MediaCodec、Camera HAL 或引擎 Producer 若没有通过受控 Surface 接口参与，组也无法预测其下一逻辑帧。`SurfaceView` 的部分直接 sync 接口仍属 framework/internal，不能当作普通应用公开契约。
+同步范围只包括成功加入且受控的对象；需检查 `add(...)` 的返回值，并在标记 ready 前组织成员。向已完成组 `addTransaction()` 时，固定 r1 直接 apply 该事务，这次提交进不了原组的合并范围。MediaCodec、Camera HAL 或引擎 Producer 若没有通过受控 Surface 接口参与，组预测不到其下一逻辑帧。`SurfaceView` 的部分直接 sync 接口仍属 framework/internal，应用侧只宜把它们当内部实现看待。
 
 
 #### committed、completed 与 release
@@ -854,19 +854,19 @@ API 34 的 `SurfaceSyncGroup` 可收集成功加入的 `AttachedSurfaceControl`�
 | buffer release callback/fence | 收到归还通知，并满足有效 release fence 后，才可安全复用目标 buffer | 新内容已在目标时间显示 |
 | display present fence | 本轮 display 到达 Android 显示栈 present 边界 | panel 扫描/像素响应完成 |
 
-`TransactionStats` 中的 latch 时间和 present fence 各有语义；固定 r1 会在 completed listener 返回后关闭该 stats 持有的资源。如需在回调外使用，应在回调内取得独立 `getPresentFence()` 结果并自行关闭；设备不支持 present fence 时可能返回空 fence，不能伪造精确呈现时刻。
+`TransactionStats` 中的 latch 时间和 present fence 各有语义；固定 r1 会在 completed listener 返回后关闭该 stats 持有的资源。如需在回调外使用，应在回调内取得独立 `getPresentFence()` 结果并自行关闭；设备不支持 present fence 时可能返回空 fence，精确呈现时刻也就无从谈起。
 
 
 #### desired present 与 FrameTimeline
 
 API 35 的 `setDesiredPresentTimeNanos()` 请求 transaction 在指定 monotonic clock（不受系统时间校准影响的单调时钟）时间或之后显示；`setFrameTimeline(vsyncId)` 把 Choreographer 提供的 VSync id 交给 SurfaceFlinger，选择对应的 expected presentation timeline（预期呈现时间线）。
 
-这两个 API 提供的是调度目标：buffer 仍要业务自己生成，fence wait 也仍然存在。Android 17 Java 文档明确要求：desired present time 再早，也要等所有 acquire fence 发出 signal 后 transaction 才能显示。固定 r1 中上述两个调度 API 与 completed listener 还受 `sdk_desired_present_time` flag 控制；关闭时 Java 分支记录警告并返回，不会完成对应设置/监听注册。失效或过期 VSync id 会被忽略，较早的 desired time 也不能抢占排在前面的较晚目标事务。
+这两个 API 提供的是调度目标：buffer 仍要业务自己生成，fence wait 也仍然存在。Android 17 Java 文档明确要求：desired present time 再早，也要等所有 acquire fence 发出 signal 后 transaction 才能显示。固定 r1 中上述两个调度 API 与 completed listener 还受 `sdk_desired_present_time` flag 控制；关闭时 Java 分支记录警告并返回，不会完成对应设置/监听注册。失效或过期 VSync id 会被忽略；排在前面的较晚目标事务保持原位，较早的 desired time 抢占不了它。
 
 <!-- gracker-diagram: ch13-02-48-schedule-not-production -->
 ![desired present 与 FrameTimeline 是调度目标](../../assets/diagrams/ch13/ch13-02-48-schedule-not-production.png)
 
-图：请求目标时刻或 VSync timeline 不会代替生产与同步。 固定 r1 相关 flag 关闭时可直接返回；过期 id 被忽略，早目标不能抢占前面较晚事务。
+图：请求目标时刻或 VSync timeline 不会代替生产与同步。 固定 r1 相关 flag 关闭时可直接返回；过期 id 被忽略，早目标抢占不了前面较晚事务。
 
 #### 三类 fence
 
@@ -881,7 +881,7 @@ TextureView 回流多一套 SurfaceTexture acquire/release，宿主窗口还有 
 <!-- gracker-diagram: ch13-02-49-nested-fence-queues -->
 ![Texture 与宿主窗口有两套 buffer 同步](../../assets/diagrams/ch13/ch13-02-49-nested-fence-queues.png)
 
-图：Texture 输入的周转和宿主窗口输出的周转分别对应 buffer 与 fence。 每个 fence 写清队列、Layer、buffer 和方向，句柄或回调到达不等于完成。
+图：Texture 输入的周转和宿主窗口输出的周转分别对应 buffer 与 fence。 每个 fence 写清队列、Layer、buffer 和方向，句柄或回调到达还谈不上完成。
 
 #### AutoSingleLayer 的适用范围
 
@@ -945,7 +945,7 @@ SurfaceFlinger 可能因 sync group、barrier、desired present、acquire fence 
 <!-- gracker-diagram: ch13-02-55-hwc-fast-present -->
 ![HWC 的 fast present 与后续合成路径](../../assets/diagrams/ch13/ch13-02-55-hwc-fast-present.png)
 
-图：无 CLIENT 且时间条件允许时，组合调用可能直接完成 HAL present。 fast-present 成功和重新生成 CLIENT target/再 present 是互斥路径；HAL 返回不等于面板已扫描完。
+图：无 CLIENT 且时间条件允许时，组合调用可能直接完成 HAL present。 fast-present 成功和重新生成 CLIENT target/再 present 是互斥路径；HAL 返回时面板未必扫描完。
 
 ### 性能特征与陷阱
 
