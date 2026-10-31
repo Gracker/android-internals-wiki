@@ -162,17 +162,9 @@ last_consolidated_at: '2026-08-24'
 
 ## Power Hint、schedutil 与 SoC 控制环
 
-<!-- gracker-diagram: a202-01-control-statistics -->
-![电源控制与能量统计的两条路径](../../assets/diagrams/ch19/a202-01-control-statistics.png)
-
-图：Power HAL 传递场景策略，schedutil 形成 CPU 频率请求，Power Stats 报告结果；统计接口不直接参与 schedutil 的选频。
 
 ### 先分清四层职责
 
-<!-- gracker-diagram: a202-02-four-layers -->
-![从应用预算到硬件动作的职责](../../assets/diagrams/ch19/a202-02-four-layers.png)
-
-图：四层接口与能力分别确认；Mode 或 Boost 枚举存在，仍需查询支持并观察设备响应。
 
 功耗问题适合按四层排查：应用层、Framework / HAL 层、内核层、固件 / 硬件层。表格列出了每一层的典型接口和职责，我们先借助它把层次分清，再进入各层的细节。governor 是 CPU 调频策略，HAL 负责连接系统与厂商实现。把层次混在一起，很容易把提示、调度和硬件动作误写成一条固定调用链。
 
@@ -201,10 +193,6 @@ Hint Session 让一组线程持续报告目标时长和实际用时，`IPower` �
 
 #### Mode/Boost 与 Hint Session 是两条入口
 
-<!-- gracker-diagram: a202-03-entry-contracts -->
-![Mode、Boost 与 Hint Session 的入口](../../assets/diagrams/ch19/a202-03-entry-contracts.png)
-
-图：系统场景与应用会话是不同入口；框架校验和厂商支持之后，资源控制仍取决于设备实现。
 
 `Mode` 和 `Boost` 由系统场景或特权调用触发，Hint Session 则由应用主动创建。我们先看系统侧这条：`PowerManagerService` 中的交互、亮灭屏、Device Idle 等事件进入 `setPowerModeInternal()` 或 `setPowerBoostInternal()`，Binder 对外暴露的相应方法要求 `DEVICE_POWER` 权限。省电策略禁用启动加速时，Framework 会过滤 `LAUNCH`：
 
@@ -248,10 +236,6 @@ flowchart TD
 
 ### schedutil 的频率决策
 
-<!-- gracker-diagram: a202-04-scx-input-modes -->
-![SCX 状态改变 schedutil 的输入](../../assets/diagrams/ch19/a202-04-scx-input-modes.png)
-
-图：SCX target 是归一化性能值，既不是 kHz 也不是 OPP 序号；full 与 partial 决定是否叠加 fair 利用率。
 
 `schedutil` 是基于调度器负载的 CPU 调频策略。在内核标签 `android17-6.18-2026-06_r6` 中，它已通过 `sugov_get_util()` 接入 `sched_ext` 的 CPU 性能目标。`sched_ext` 简称 SCX，允许用 BPF 程序定义调度策略，这些 BPF 程序在受约束的内核执行环境中运行；CFS/fair class 是 Linux 普通任务使用的公平调度类。看频率决策时，我们要同时知道 CFS 与 SCX 各自给了多少利用率。
 
@@ -306,10 +290,6 @@ SCX 遇到 BPF 错误、可运行任务长时间得不到执行（runnable task 
 
 ### 三类厂商公开驱动能证明什么
 
-<!-- gracker-diagram: a202-07-driver-boundaries -->
-![公开驱动与量产实现的边界](../../assets/diagrams/ch19/a202-07-driver-boundaries.png)
-
-图：公开驱动解释一类硬件接入方式；品牌、旧款驱动或节点名不足以还原新设备 Power HAL 与固件策略。
 
 公开内核树提供了部分厂商硬件的基础驱动。这些代码能说明某类控制器怎样接入 Linux，也能限定本文可以确认的范围；量产手机的厂商模块、Power HAL 和固件往往还有额外实现。
 
@@ -424,10 +404,6 @@ sysfs 是 Linux 通过虚拟文件暴露内核设备和状态的接口。应用�
 
 ### 功耗测量：先明确物理量
 
-<!-- gracker-diagram: a202-10-energy-measurements -->
-![能量、电流与测量边界](../../assets/diagrams/ch19/a202-10-energy-measurements.png)
-
-图：任务总能量需结合完成时间、温度和帧性能；电池电流与片上供电支路读数的测量范围不同。
 
 “功耗”经常混用三类量：
 
@@ -569,10 +545,6 @@ AOSP 定义稳定的 HAL 接口、Framework 系统服务和数据使用路径；
 
 #### PowerStats HAL 标准架构
 
-<!-- gracker-diagram: a202-11-stats-three-objects -->
-![Power Stats 的三类对象](../../assets/diagrams/ch19/a202-11-stats-three-objects.png)
-
-图：六个 HAL 方法配成三组对象与读数；ID、名称和覆盖由设备定义，服务存在不代表三组数据齐全。
 
 冻结的 `android.hardware.power.stats` AIDL 是 v2，`IPowerStats.aidl` 定义以下 6 个方法：
 
@@ -688,10 +660,6 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 #### 跨厂商比较的统一口径
 
-<!-- gracker-diagram: a202-14-energy-difference -->
-![跨设备能量比较前的对齐](../../assets/diagrams/ch19/a202-14-energy-difference.png)
-
-图：先对齐对象、时钟和实验窗口，再做累计值差分；未提供 UID 数据的设备不能被解释成应用耗电更低。
 
 跨厂商比较前，我们先统一对象映射、计算方式和时间窗口：
 

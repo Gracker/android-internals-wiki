@@ -52543,9 +52543,158 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "4e645e28616bb568d5a8f7a577c7d8f482c4a0d210daa912ffd0b0f2a61f10f5",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a202-01-control-statistics",
+          "title": "电源控制与能量统计的两条路径",
+          "decision": "remove",
+          "reason": "导言已明确控制与统计两路径且后文各有机制，双行摘要不增加反馈或硬件映射。",
+          "original_line": 165,
+          "heading": "## Power Hint、schedutil 与 SoC 控制环"
+        },
+        {
+          "original_id": "a202-02-four-layers",
+          "title": "从应用预算到硬件动作的职责",
+          "decision": "remove",
+          "reason": "紧邻四层职责表已完整列出接口、使用方与职责，四行卡片是表格缩写。",
+          "original_line": 172,
+          "heading": "### 先分清四层职责"
+        },
+        {
+          "original_id": "a202-03-entry-contracts",
+          "title": "Mode、Boost 与 Hint Session 的入口",
+          "decision": "remove",
+          "reason": "同小节保留原生Mermaid完整展示系统Mode/Boost与应用Session双入口、可选厂商映射和schedutil输入，PNG三行重复接口摘要。",
+          "original_line": 204,
+          "heading": "#### Mode/Boost 与 Hint Session 是两条入口"
+        },
+        {
+          "original_id": "a202-04-scx-input-modes",
+          "title": "SCX 状态改变 schedutil 的输入",
+          "decision": "remove",
+          "reason": "同节已有三状态SCX输入表和四行C代码，三行映射卡重复，保留图5的后续频率执行链。",
+          "original_line": 251,
+          "heading": "### schedutil 的频率决策"
+        },
+        {
+          "original_id": "a202-05-frequency-request",
+          "title": "从性能目标到频率执行",
+          "decision": "keep",
+          "reason": "利用率/SCX目标及iowait/uclamp到更新条件速率限制、驱动档位解析再fastswitch或工作线程的执行链，帮助区分目标与真实频率。",
+          "original_line": 281,
+          "heading": "### schedutil 的频率决策"
+        },
+        {
+          "original_id": "a202-06-recovery-lifecycles",
+          "title": "SCX 回退与厂商状态清理",
+          "decision": "keep",
+          "reason": "内核SCX终止、后续schedutil恢复fair输入和OEM额外资源状态自行清理三项生命周期并列，避免把内核回退当外部boost或HAL重连自动完成。",
+          "original_line": 298,
+          "heading": "#### Android 厂商扩展钩子与异常恢复"
+        },
+        {
+          "original_id": "a202-07-driver-boundaries",
+          "title": "公开驱动与量产实现的边界",
+          "decision": "remove",
+          "reason": "Qualcomm/MediaTek/Samsung公开驱动各有具体小节和范围限制，三行卡不展示硬件控制机制只是品牌摘要。",
+          "original_line": 309,
+          "heading": "### 三类厂商公开驱动能证明什么"
+        },
+        {
+          "original_id": "a202-08-hint-session-lifetime",
+          "title": "Hint Session 的周期工作闭环",
+          "decision": "keep",
+          "reason": "本进程长期线程/正目标到可null会话、同钟每周期测报与预算变更/close生命周期，配合Kotlin展示线程组工作边界。",
+          "original_line": 362,
+          "heading": "#### 用 `PerformanceHintManager` 描述周期工作"
+        },
+        {
+          "original_id": "a202-09-headroom-direction",
+          "title": "两类 headroom 的读数方向",
+          "decision": "keep",
+          "reason": "thermal热压力升高与CPU/GPU资源余量升高方向相反，并列对照更便于避免同名headroom误读，保留NaN/关键线程调用成本边界。",
+          "original_line": 397,
+          "heading": "#### thermal headroom 的读数与阈值"
+        },
+        {
+          "original_id": "a202-10-energy-measurements",
+          "title": "能量、电流与测量边界",
+          "decision": "remove",
+          "reason": "功率/能量/电流三个量已有完整列表及电压/时间/测点段落，三行单位卡重复，平均功率计算在后文仍保留。",
+          "original_line": 427,
+          "heading": "### 功耗测量：先明确物理量"
+        },
+        {
+          "original_id": "a202-11-stats-three-objects",
+          "title": "Power Stats 的三类对象",
+          "decision": "remove",
+          "reason": "六HAL方法代码和三项对象/读数定义已有完整对应，三行卡重复，不增实际连接路径。",
+          "original_line": 572,
+          "heading": "#### PowerStats HAL 标准架构"
+        },
+        {
+          "original_id": "a202-12-stats-service-branches",
+          "title": "PowerStatsService 的三条使用路径",
+          "decision": "keep",
+          "reason": "HAL封装之后Logger、独立公开Monitor缓存和LocalService/StatsD三支实际数据路径，明确Monitor不读Logger文件，时钟转换仅落盘。",
+          "original_line": 608,
+          "heading": "#### Framework 的三条数据使用路径"
+        },
+        {
+          "original_id": "a202-13-monitor-cache-noise",
+          "title": "Power Monitor 的缓存与读数",
+          "decision": "keep",
+          "reason": "查询当次对象列表到按权限缓存、需要时HAL刷新再UID随机扰动的读数路径，区分服务新鲜度与硬件采样周期。",
+          "original_line": 657,
+          "heading": "#### Power Monitor 的缓存、权限与随机扰动"
+        },
+        {
+          "original_id": "a202-14-energy-difference",
+          "title": "跨设备能量比较前的对齐",
+          "decision": "remove",
+          "reason": "跨设备累计差分/时钟/覆盖/外部校准已有七项详细步骤，四步清单图只是缩写，不含真实数据。",
+          "original_line": 691,
+          "heading": "#### 跨厂商比较的统一口径"
+        },
+        {
+          "original_id": "a202-15-collection-cadence",
+          "title": "日志触发、公开缓存与设备采样",
+          "decision": "keep",
+          "reason": "TimerTrigger、BatteryTrigger、公开缓存和HAL硬件四层采样节奏映射，帮助避免把2分钟/1小时或20秒250ms当传感器周期。",
+          "original_line": 735,
+          "heading": "### 实战排查：不同手机功耗榜的差异来源"
+        }
+      ],
+      "sha256_after": "960a5725810d27990ae03de9e304216f18ea56ad23470219faaa344386f4b028",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:57:05.901589+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a202/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a202/visual-review.json",
+      "retired_diagrams": [
+        "a202-01-control-statistics",
+        "a202-02-four-layers",
+        "a202-03-entry-contracts",
+        "a202-04-scx-input-modes",
+        "a202-07-driver-boundaries",
+        "a202-10-energy-measurements",
+        "a202-11-stats-three-objects",
+        "a202-14-energy-difference"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-202/retired-assets.json"
     },
     {
       "index": 205,
@@ -53373,8 +53522,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 131,
-  "next_article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+  "reviewed_articles": 132,
+  "next_article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -53384,7 +53533,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:54:06.305216+08:00",
+  "updated_at": "2026-10-31T15:57:05.901589+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -53583,9 +53732,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4325,
-  "reviewed_placements_after": 1827,
-  "net_removed_placements": 2498,
+  "reviewed_placements_before": 4340,
+  "reviewed_placements_after": 1834,
+  "net_removed_placements": 2506,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -53609,5 +53758,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 131
+  "currently_matching_reviewed_source_count": 132
 }
