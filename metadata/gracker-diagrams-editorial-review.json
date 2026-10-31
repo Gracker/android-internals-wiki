@@ -65692,9 +65692,183 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "2b1bed0bf4829b46522bfa6e88fa7e47d986355545c15cd3cb6691a0e866108b",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "a276-01-wake-alarm-work-roles",
+          "title": "WakeLock、Alarm与WorkManager按阶段分工",
+          "decision": "remove",
+          "reason": "三接口职责映射重复紧邻定义和后面的五场景选型表，逐列卡片没有新增关系。",
+          "original_line": 92,
+          "heading": "### 两类机制的职责"
+        },
+        {
+          "original_id": "a276-02-framework-wake-alarm-boundaries",
+          "title": "两条系统路径分别管理休眠阻止与未来投递",
+          "decision": "keep",
+          "reason": "WakeLock与Alarm两条跨应用系统内核路径并列，投递保护锁跨接PowerManagerService，说明两机制协作边界。",
+          "original_line": 107,
+          "heading": "#### 源码中的调用边界"
+        },
+        {
+          "original_id": "a276-03-synchronous-lock-ownership",
+          "title": "持锁范围必须覆盖实际同步工作",
+          "decision": "keep",
+          "reason": "调用返回/持锁释放/异步继续三轨显示异步任务逃离同步所有权范围的反例，单看封装代码不够直观。",
+          "original_line": 178,
+          "heading": "### WakeLock 类型与使用规范"
+        },
+        {
+          "original_id": "a276-04-alarm-shared-lock-delivery",
+          "title": "Alarm投递完成与共享锁释放分别记账",
+          "decision": "keep",
+          "reason": "广播和Listener两种完成路径汇入in-flight计数，再到最后一笔归零才释放共享锁，是真实分支与聚合。",
+          "original_line": 198,
+          "heading": "### WakeLock 泄漏检测与治理"
+        },
+        {
+          "original_id": "a276-05-alarm-clock-base-and-wakeup",
+          "title": "先选时间基准，再选是否唤醒",
+          "decision": "remove",
+          "reason": "RTC与elapsed、WAKEUP与非唤醒四卡重复紧邻三项说明，未呈现时钟跳变或独立维度的额外例子。",
+          "original_line": 245,
+          "heading": "#### 先选时间基准，再选是否唤醒"
+        },
+        {
+          "original_id": "a276-06-alarm-pending-intent-identity",
+          "title": "提醒身份独立于Intent附加字段",
+          "decision": "remove",
+          "reason": "extras不作身份、稳定data URI及取消重建四框复述示例和两段说明，保留正文完整等价字段。",
+          "original_line": 293,
+          "heading": "#### 先选时间基准，再选是否唤醒"
+        },
+        {
+          "original_id": "a276-07-listener-alive-and-timeout",
+          "title": "API37 Listener只适合当前组件内的有界等待",
+          "decision": "remove",
+          "reason": "活跃组件、投递超时、同步ACK和移除四框重复本节代码及四段边界说明，没有实际时间线或分支。",
+          "original_line": 328,
+          "heading": "#### Android 17：允许空闲分发的 Listener Alarm"
+        },
+        {
+          "original_id": "a276-08-exact-alarm-permission-transition",
+          "title": "精确Alarm资格、安排与重建处理竞态",
+          "decision": "remove",
+          "reason": "资格检查、Security重查、授予重建、撤销四框重复完整示例及权限变化列表，串行图不如独立事件文字准确。",
+          "original_line": 421,
+          "heading": "### Exact Alarm 权限变化（Android 12+）"
+        },
+        {
+          "original_id": "a276-09-wake-lock-metrics-not-tag-exemption",
+          "title": "Vitals累计、连续与系统API豁免分开治理",
+          "decision": "remove",
+          "reason": "累计/连续与API豁免四卡重复前后标准段落和内部观测清单。",
+          "original_line": 436,
+          "heading": "#### Android Vitals 的 excessive 与 stuck 判定"
+        },
+        {
+          "original_id": "a276-10-workmanager-durable-and-opportunistic",
+          "title": "WorkManager持久数据库与两种调度路径",
+          "decision": "keep",
+          "reason": "持久数据库分出系统JobScheduler和进程内Greedy两路执行，架构图明确两种调度并存而非串行替代。",
+          "original_line": 528,
+          "heading": "### WorkManager 基础架构"
+        },
+        {
+          "original_id": "a276-11-constraints-and-network-binding",
+          "title": "约束AND满足只是执行资格",
+          "decision": "remove",
+          "reason": "AND约束、运行资格、变化停止和显式网络四框重复六项约束列表与绑定网络段落。",
+          "original_line": 648,
+          "heading": "#### 约束在运行期间也会变化"
+        },
+        {
+          "original_id": "a276-12-regular-expedited-long-work-budgets",
+          "title": "普通、加急与长时Worker分别检查预算",
+          "decision": "keep",
+          "reason": "普通/加急/长时三列对照各自预算和承载方式，横向解释10分钟、配额降级、FGS与Job双约束差异。",
+          "original_line": 744,
+          "heading": "#### 三类工作的时长与配额"
+        },
+        {
+          "original_id": "a276-13-retry-business-operation-key",
+          "title": "幂等键绑定业务操作而非所有周期轮次",
+          "decision": "keep",
+          "reason": "外部副作用后分确认和未确认中断两路，再按同业务键恢复，直观看出本地成功状态与外部结果不在共同事务。",
+          "original_line": 782,
+          "heading": "#### 停止语义与外部副作用"
+        },
+        {
+          "original_id": "a276-14-work-chain-fan-in",
+          "title": "并行前置全部成功后才运行汇聚节点",
+          "decision": "keep",
+          "reason": "两个并行下载汇入Merge再Upload是真实任务DAG，补充链式代码的扇入拓扑。",
+          "original_line": 810,
+          "heading": "#### 串行、并行和汇聚"
+        },
+        {
+          "original_id": "a276-15-unique-periodic-state-semantics",
+          "title": "唯一工作、周期更新与WorkInfo状态分开",
+          "decision": "remove",
+          "reason": "唯一名称、周期UPDATE、阻塞与终态四卡重复前面唯一策略和生命周期各段，分散卡片没有状态迁移关系。",
+          "original_line": 858,
+          "heading": "### 任务生命周期监控"
+        },
+        {
+          "original_id": "a276-16-pending-reasons-overlap",
+          "title": "待执行原因可同时计时，累计和超过实际等待",
+          "decision": "keep",
+          "reason": "实际等待与网络/配额两种原因重叠三轨，直观说明各项统计和可能大于总等待。",
+          "original_line": 935,
+          "heading": "#### Pending Reasons（待执行原因） 与 JobDebugInfo"
+        },
+        {
+          "original_id": "a276-17-custom-initialization-and-executor",
+          "title": "移除默认初始化后Provider配置才生效",
+          "decision": "remove",
+          "reason": "默认/自定义初始化和执行器四卡重复完整Provider、Startup移除示例及初始化契约段落。",
+          "original_line": 986,
+          "heading": "### 初始化与执行资源"
+        },
+        {
+          "original_id": "a276-18-remote-scheduling-versus-worker-process",
+          "title": "远端调度客户端与远端Worker执行是两件事",
+          "decision": "keep",
+          "reason": "非默认进程调度客户端、默认数据库进程与远端执行服务及组件参数分层，帮助区分RemoteWorkManager和RemoteWorker的不同跨进程职责。",
+          "original_line": 1077,
+          "heading": "#### 在指定进程执行 RemoteCoroutineWorker"
+        }
+      ],
+      "sha256_after": "902b9420c54ac898bf1cb38da699490d9ac2de01aeaafc8c0b639daeb1ae9d19",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:02:44.692440+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a276/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a276/visual-review.json",
+      "retired_diagrams": [
+        "a276-01-wake-alarm-work-roles",
+        "a276-05-alarm-clock-base-and-wakeup",
+        "a276-06-alarm-pending-intent-identity",
+        "a276-07-listener-alive-and-timeout",
+        "a276-08-exact-alarm-permission-transition",
+        "a276-09-wake-lock-metrics-not-tag-exemption",
+        "a276-11-constraints-and-network-binding",
+        "a276-15-unique-periodic-state-semantics",
+        "a276-17-custom-initialization-and-executor"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-276/retired-assets.json"
     },
     {
       "index": 278,
@@ -65884,8 +66058,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 189,
-  "next_article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+  "reviewed_articles": 190,
+  "next_article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -65895,7 +66069,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:59:46.955765+08:00",
+  "updated_at": "2026-10-31T19:02:44.692440+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -66031,9 +66205,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5576,
-  "reviewed_placements_after": 2187,
-  "net_removed_placements": 3389,
+  "reviewed_placements_before": 5594,
+  "reviewed_placements_after": 2196,
+  "net_removed_placements": 3398,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -66057,7 +66231,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 189,
+  "currently_matching_reviewed_source_count": 190,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

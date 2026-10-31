@@ -89,10 +89,6 @@ WakeLock（唤醒锁）和 Alarm（定时通知）解决两个不同阶段的问
 
 这两个接口常被误当作进程保活接口，但它们各管一段：WakeLock 只管阻止休眠，进程存活和后台启动资格要交给其他机制；Alarm 回调只完成短小的分发工作，耗时任务要另行调度。
 
-<!-- gracker-diagram: a276-01-wake-alarm-work-roles -->
-![WakeLock、Alarm与WorkManager按阶段分工](../../assets/diagrams/ch25/a276-01-wake-alarm-work-roles.png)
-
-图：持锁不提供后台启动权；未来提醒与可延期同步应按各自生命周期选择接口。
 
 搭配出问题时，代价落在三处：持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
 
@@ -242,10 +238,6 @@ Doze 指设备空闲时的低功耗模式。选择接口时，要同时判断是
 - `ELAPSED_REALTIME` / `ELAPSED_REALTIME_WAKEUP` 使用 `SystemClock.elapsedRealtime()` 表示开机后持续递增的单调时间，不受墙上时钟调整影响，适合同一次开机内的延迟。
 - 带 `WAKEUP` 的类型可以唤醒休眠设备；不带 `WAKEUP` 的类型会等设备下次清醒后分发。业务允许等待时，选择不唤醒设备的类型。
 
-<!-- gracker-diagram: a276-05-alarm-clock-base-and-wakeup -->
-![先选时间基准，再选是否唤醒](../../assets/diagrams/ch25/a276-05-alarm-clock-base-and-wakeup.png)
-
-图：按当地几点提醒需重算时区与夏令时；同次开机延迟用elapsedRealtime避免墙钟跳变。
 
 这个示例把允许在目标时间附近到达的提醒安排成窗口 Alarm，提醒 ID 写入 `Intent.data`，让 `PendingIntent` 身份稳定，且不依赖 `Long.hashCode()`。
 
@@ -290,10 +282,6 @@ fun scheduleReminderWindow(
 
 设备关机后 Alarm 会被清除。需要跨重启保留的提醒，应先将业务记录持久化，再在 `BOOT_COMPLETED` 后重建。每天按当地时间重复的提醒还要处理时区和夏令时变化，通常按下一次日历时间安排单次 Alarm，比固定毫秒间隔更可靠。
 
-<!-- gracker-diagram: a276-06-alarm-pending-intent-identity -->
-![提醒身份独立于Intent附加字段](../../assets/diagrams/ch25/a276-06-alarm-pending-intent-identity.png)
-
-图：Alarm本身不跨重启保留；取消必须重建等价PendingIntent，extras只能携带数据。
 
 #### Android 17：允许空闲分发的 Listener Alarm
 
@@ -325,10 +313,6 @@ fun scheduleProcessLocalIdleAlarm(
 
 Android 17 为这类 Listener 型 Alarm 单独维护允许空闲分发的配额（quota）。AOSP 里的默认值只能当作理解当前实现的参考；业务承诺固定心跳间隔，要以自己的实测为准。每次回调完成后，再按当前协议状态安排下一次一次性 Alarm，并记录请求时间、实际触发时间和回调完成时间，避免形成来路不明的周期唤醒。
 
-<!-- gracker-diagram: a276-07-listener-alive-and-timeout -->
-![API37 Listener只适合当前组件内的有界等待](../../assets/diagrams/ch25/a276-07-listener-alive-and-timeout.png)
-
-图：进程死亡后仍需提醒用PendingIntent；Listener的系统锁不是任意长回调或异步线程的保护。
 
 ### Exact Alarm 权限变化（Android 12+）
 
@@ -418,10 +402,6 @@ UI 层收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精
 - 提醒记录是否持久化，取消、重启、时间变化和权限变化能否得到一致结果。
 - 相邻提醒是否可以合并，接收器是否只做短小工作。
 
-<!-- gracker-diagram: a276-08-exact-alarm-permission-transition -->
-![精确Alarm资格、安排与重建处理竞态](../../assets/diagrams/ch25/a276-08-exact-alarm-permission-transition.png)
-
-图：拒绝后按用户需求降级；权限授予、启动和重建共用持久业务数据，避免漏提醒或重复。
 
 ### WakeLock 与 Alarm 功耗回归守门
 
@@ -433,10 +413,6 @@ UI 层收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精
 
 Vitals 判断豁免看创建锁的平台 API，与手动标签的名称无关。音频、定位或 JobScheduler 用户发起任务（user-initiated job）的系统锁可能在指标中豁免；业务自行调用 `newWakeLock()`，标签哪怕写成 Audio 或 Location，也换不来自动豁免。前台服务持有的锁同样计入统计。
 
-<!-- gracker-diagram: a276-09-wake-lock-metrics-not-tag-exemption -->
-![Vitals累计、连续与系统API豁免分开治理](../../assets/diagrams/ch25/a276-09-wake-lock-metrics-not-tag-exemption.png)
-
-图：音频、定位和用户发起Job等当前豁免不等于标签名豁免；FGS本身不免除非豁免锁统计。
 
 Play Console 给出标签、受影响会话和持续时间分布，端侧还要补充调用现场。
 
@@ -645,10 +621,6 @@ val constraints = Constraints.Builder()
 
 工作开始后，网络断开、电量转低或存储状态变化都可能使约束失效，WorkManager 会停止 Worker，并在条件重新满足后重新调度。因此业务代码必须允许同一项工作从检查点再次进入——任务开始只是第一步，能否执行完成，还要看约束是否一直满足。
 
-<!-- gracker-diagram: a276-11-constraints-and-network-binding -->
-![约束AND满足只是执行资格](../../assets/diagrams/ch25/a276-11-constraints-and-network-binding.png)
-
-图：网络请求的能力约束不会自动改写任意客户端库的默认网络；执行与取消都要传到底层。
 
 ### 加急任务与配额
 
@@ -855,10 +827,6 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 
 `WorkInfo.State` 包含 `ENQUEUED`、`RUNNING`、`BLOCKED`、`SUCCEEDED`、`FAILED` 和 `CANCELLED`，前三项仍会变化，后三项是终态。`BLOCKED` 表示依赖尚未满足，跟设备约束未满足是两回事。
 
-<!-- gracker-diagram: a276-15-unique-periodic-state-semantics -->
-![唯一工作、周期更新与WorkInfo状态分开](../../assets/diagrams/ch25/a276-15-unique-periodic-state-semantics.png)
-
-图：唯一名称避免重复入队，业务幂等仍靠操作ID；WorkInfo状态与一次停止原因不是一回事。
 
 WorkManager 2.9.0 起提供 Kotlin Flow（异步数据流） 查询。这段观察代码绑定到页面可见生命周期，避免 `observeForever()` 留下释放不掉的观察者：
 
@@ -983,10 +951,6 @@ class App : Application(), Configuration.Provider {
 
 完成移除后，由 `Configuration.Provider` 提供配置并在首次获取 WorkManager 时初始化。直接调用 `WorkManager.initialize()` 只保留给用不上 Provider 的特殊启动架构，且整个应用生命周期只能初始化一次。
 
-<!-- gracker-diagram: a276-17-custom-initialization-and-executor -->
-![移除默认初始化后Provider配置才生效](../../assets/diagrams/ch25/a276-17-custom-initialization-and-executor.png)
-
-图：只实现Provider而保留默认initializer会忽略自定义配置；也不能重复手动初始化。
 
 #### 并发的多层限制
 
