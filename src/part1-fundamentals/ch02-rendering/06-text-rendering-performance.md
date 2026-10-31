@@ -146,7 +146,7 @@ flowchart LR
 
 这份清单比“单行无 Span”的直觉细得多：判据落在字符和段落结构上，`CharacterStyle` 就未必让 `isBoring()` 失败。通过资格检查后还有宽度一关——文字宽度和 ellipsize（超宽时截断并显示省略号）条件要适合当前可用宽度，`TextView` 才会构造或复用 `BoringLayout`。
 
-单行配置不保证使用 `BoringLayout`，还要区分两种设置：`maxLines = 1` 限制最大行数；`setSingleLine(true)` 还会启用横向滚动，并安装 `SingleLineTransformationMethod`，把换行符显示为空格、回车符替换为不可见的 `U+FEFF`。原始文本含换行，不能直接判定它会被 `isBoring()` 拒绝，应检查转换后的显示文本。
+单行配置不保证使用 `BoringLayout`，还要区分两种设置：`maxLines = 1` 限制最大行数；`setSingleLine(true)` 还会启用横向滚动，并安装 `SingleLineTransformationMethod`，把换行符显示为空格、回车符替换为不可见的 `U+FEFF`。原始文本含换行时，先看转换后的显示文本，再判断它会不会被 `isBoring()` 拒绝。
 
 显示文本仍包含 RTL、用 UTF-16 代理对表示的 emoji 或段落级样式时，单行显示仍可能落到 `StaticLayout`；反过来，部分 BMP（Unicode 基本多文种平面）文字即使不是拉丁字母，只要满足上述条件，也可能被判定为 boring。
 
@@ -168,9 +168,9 @@ flowchart LR
 
 ## Minikin：字体选择、整形和断行
 
-Layout 选定之后，排版准备进入 Minikin。这一层做三件事：字体选择、整形和断行，三者的开销要分开算。`LayoutPiece` 先调用 `FontCollection.itemize()`，按字体覆盖范围把输入拆成若干 font run（采用同一字体匹配结果的连续文本段），再对每个 script run（采用同一文字体系规则的连续文本段）调用 HarfBuzz 的 `hb_shape()`。`android-17.0.0_r1` 中的 `external/harfbuzz_ng` 对应 HarfBuzz 11.4.1。
+Layout 选定之后，排版准备进入 Minikin。这一层做三件事：字体选择、整形和断行；文字慢的问题落到这一层时，我们要把三者的开销分开算，后面的断行和缓存小节会分别展开。`LayoutPiece` 先调用 `FontCollection.itemize()`，按字体覆盖范围把输入拆成若干 font run（采用同一字体匹配结果的连续文本段），再对每个 script run（采用同一文字体系规则的连续文本段）调用 HarfBuzz 的 `hb_shape()`。`android-17.0.0_r1` 中的 `external/harfbuzz_ng` 对应 HarfBuzz 11.4.1。
 
-整形（shaping）把 Unicode 输入映射成 glyph、cluster（共同参与排版的一组字符）、advance（排版推进距离）和 offset（字形偏移）。按“一个 Unicode 对应一个 glyph”来估整形复杂度会走样：连字、组合附加符号、emoji ZWJ（Zero Width Joiner，零宽连接符）序列、variation selector（变体选择符）和字体 fallback（当前字体缺字时换用其他字体）都会改变码点与 glyph 的关系，不同语言文字体系的开销也没有固定倍数。我们以目标字体、真实语料和设备上的实测为准。
+整形（shaping）把 Unicode 输入映射成 glyph、cluster（共同参与排版的一组字符）、advance（排版推进距离）和 offset（字形偏移）。按“一个 Unicode 对应一个 glyph”来估整形复杂度会走样：连字、组合附加符号、emoji ZWJ（Zero Width Joiner，零宽连接符）序列、variation selector（变体选择符）和字体 fallback（当前字体缺字时换用其他字体）都会改变码点与 glyph 的关系，不同语言文字体系之间也没有固定的开销倍数。所以复杂度这一项，我们以目标字体、真实语料和设备上的实测为准。
 
 ### 断行包含两个阶段
 
@@ -187,22 +187,22 @@ Minikin 的 `WordBreaker` 先用 ICU break iterator（Unicode 文本边界迭代
 <!-- gracker-diagram: ch02-06-shaping-linebreak -->
 ![字体整形产出 glyph，断行还需要宽度与策略](../../assets/diagrams/ch02/ch02-06-shaping-linebreak.png)
 
-图：字体匹配与 HarfBuzz shaping 生成 glyph、位置和推进距离；ICU 规则提供候选断点，LineBreaker 再结合测量、可用宽度和策略确定实际断行。字符数不等于 glyph 数，也不能直接换算复杂文字或 emoji 的成本。
+图：字体匹配与 HarfBuzz shaping 生成 glyph、位置和推进距离；ICU 规则提供候选断点，LineBreaker 再结合测量、可用宽度和策略确定实际断行。字符数与 glyph 数是两个量，复杂文字或 emoji 的成本要按实测来估。
 
 ### LayoutCache 与 StrikeCache
 
 整形结果缓存在 Minikin 的 `LayoutCache` 里：这是进程内单例的 LRU（Least Recently Used，最近最少使用）缓存，当前最多保存 5000 个条目；待整形的 piece（文本片段） 长度达到 128 个 UTF-16 code unit 时，会绕过这层缓存直接计算。
 
-缓存键里装了大量排版参数：文字上下文与 range（范围）、font collection ID（字体集合标识）、字号、scale/skew（缩放与倾斜）、letter/word spacing（字距与词距）、locale（语言区域）、方向、font feature（字体特性）、variation settings（可变字体轴设置） 和 hyphen edit（连字符边界状态） 都在其中。可用宽度恰恰不在键里，于是：
+缓存键里装了大量排版参数：文字上下文与 range（范围）、font collection ID（字体集合标识）、字号、scale/skew（缩放与倾斜）、letter/word spacing（字距与词距）、locale（语言区域）、方向、font feature（字体特性）、variation settings（可变字体轴设置） 和 hyphen edit（连字符边界状态） 都在其中。可用宽度恰恰不在键里，由此得出三条实用判断：
 
 - 宽度变化通常会让 `StaticLayout` 重新断行，但相同 shaping piece 仍可能命中 Minikin 缓存；
 - 文本、字体、locale、方向或 variation settings 改变，会形成不同的缓存键；
 - 两条业务文本只有局部字词相同时未必共享缓存，因为键里还包含传入的文字上下文和 range。
 
-`TextLine` 另有一个容量为 3 的静态对象池，用来减少临时对象分配；它缓存的是可复用对象，排版结果不在里面。再往绘制执行一侧，Skia 的 `StrikeCache` 管理 GPU 文字 strike/glyph 资源，一个 strike 对应同一字体、字号和变换参数下的一组字形。它和 Minikin 的整形缓存处在流水线的不同阶段，我们分开统计各自的命中率，不合成一个笼统的“文字缓存命中率”。
+整形缓存之外，`TextLine` 另有一个容量为 3 的静态对象池，用来减少临时对象分配；它缓存的是可复用对象，排版结果不在里面。再往绘制执行一侧，Skia 的 `StrikeCache` 管理 GPU 文字 strike/glyph 资源，一个 strike 对应同一字体、字号和变换参数下的一组字形。它和 Minikin 的整形缓存处在流水线的不同阶段，我们分开统计各自的命中率，不合成一个笼统的“文字缓存命中率”。
 
 <!-- gracker-diagram: ch02-06-text-cache-scopes -->
-![整形缓存、对象池与 GPU 字形资源不能混算](../../assets/diagrams/ch02/ch02-06-text-cache-scopes.png)
+![整形缓存、对象池与 GPU 字形资源的分工](../../assets/diagrams/ch02/ch02-06-text-cache-scopes.png)
 
 图：Minikin 复用整形结果，TextLine 池复用临时对象，Skia GPU StrikeCache 管理绘制执行侧的字形资源。宽度变化会影响行布局，却不直接成为 Minikin LayoutCache 的键；字体、字号、方向或 variation 等变化则可能打破整形复用。
 
@@ -388,7 +388,7 @@ Traversal 会依据脏标记、`MeasureSpec`（父 View 下发的尺寸约束）
 
 ### 单行文本一定使用 BoringLayout
 
-单行配置还要经过文本转换、字符与方向检查、段落级 Span 检查，以及宽度和 ellipsize 判断。`isBoring()` 检查的是显示文本；`setSingleLine(true)` 会转换换行符，不能用原始文本中的换行直接判断 Layout 类型。
+单行配置还要经过文本转换、字符与方向检查、段落级 Span 检查，以及宽度和 ellipsize 判断。`isBoring()` 检查的是显示文本；`setSingleLine(true)` 会转换换行符，判断 Layout 类型要看转换后的显示文本。
 
 ### 所有 Span 都会让 shaping 成本成倍增加
 
