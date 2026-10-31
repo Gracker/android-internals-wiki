@@ -40307,9 +40307,218 @@
       "before_count": 20,
       "before_all_images": 20,
       "sha256_before": "0a63f08b7f19b57e79dddb836eb2baca59ace8fab332885f36002d42b9e84bc8",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "ch15-04-01-binder-and-output",
+          "title": "dumpsys 的 Binder 调用与输出管道",
+          "decision": "keep",
+          "reason": "客户端全局选项经ServiceManager/Binder到服务写fd、客户端读管道的实际跨进程控制与输出路径独立，超时服务仍运行/退出0非完整性图注保留。",
+          "original_line": 58,
+          "heading": "## 为什么需要 dumpsys"
+        },
+        {
+          "original_id": "ch15-04-02-observation-windows",
+          "title": "先区分当前状态、有限历史与统计窗口",
+          "decision": "remove",
+          "reason": "三类观察窗口摘要重复引言与各服务当前/历史/累计窗口说明，未画实际采样区间；全部PID/user/display/reset/覆盖边界正文完整留。",
+          "original_line": 83,
+          "heading": "## 为什么需要 dumpsys"
+        },
+        {
+          "original_id": "ch15-04-03-oom-evidence",
+          "title": "OOM adj 从字段解释到 LMK 归因",
+          "decision": "remove",
+          "reason": "四步重复OOM字段表、组件关系与PSI/LMKD/退出原因段落，未画具体绑定关系或adj变化，删检查工作流。",
+          "original_line": 127,
+          "heading": "### 读懂 OOM 调整值"
+        },
+        {
+          "original_id": "ch15-04-04-exit-and-blocking",
+          "title": "当前进程、退出历史与阻塞证据",
+          "decision": "remove",
+          "reason": "三列逐项复写activity命令及当前状态、exit-info历史、lastanr/trace现场分工说明，无实际按时间关联案例，文本和命令完整留。",
+          "original_line": 138,
+          "heading": "### ANR 与退出历史"
+        },
+        {
+          "original_id": "ch15-04-05-memory-accounting",
+          "title": "进程内存快照与对象分配证据的分工",
+          "decision": "remove",
+          "reason": "内核页/memtrack/托管分配三列复述指标表及Java/Native/Graphics分类段落，未画共享对象或分配到页的关系，保留15.3链接与全部统计差异原文。",
+          "original_line": 186,
+          "heading": "### 分类行的含义"
+        },
+        {
+          "original_id": "ch15-04-06-memory-trend",
+          "title": "内存趋势的受控复测与分流",
+          "decision": "remove",
+          "reason": "固定条件后Java/Native/Graphics三分支重复203行完整分流段，循环与PID实例、10秒非实际周期、GC缓存重启边界全留。",
+          "original_line": 205,
+          "heading": "### 采样趋势"
+        },
+        {
+          "original_id": "ch15-04-07-gfxinfo-data-path",
+          "title": "gfxinfo 跨进程采集的路径",
+          "decision": "keep",
+          "reason": "AMS经应用线程主线程ThreadedRenderer到多个Window renderer与分段的实际采集责任链独立，精确进程名而非全包匹配与超时边界保留。",
+          "original_line": 229,
+          "heading": "## dumpsys gfxinfo：帧渲染统计与 Jank 定位"
+        },
+        {
+          "original_id": "ch15-04-08-jank-classification-gate",
+          "title": "deadline-aware Jank 的门槛与多标签",
+          "decision": "keep",
+          "reason": "有效且非SurfaceCanvas、调整deadline、GpuCompleted比较、仅miss分支再计四项且允许重叠的真实条件图独立，legacy与直方图边界保留。",
+          "original_line": 252,
+          "heading": "### 聚合统计如何生成"
+        },
+        {
+          "original_id": "ch15-04-09-raw-versus-adjusted",
+          "title": "原始时间差与 HWUI 修正时长",
+          "decision": "keep",
+          "reason": "同一1/5/9/21ms示例把原始8ms、扣4ms等待后4ms和总20扣4为16ms数值并排，补充表格无法替代的具体计算反例。",
+          "original_line": 274,
+          "heading": "### `framestats` 的列"
+        },
+        {
+          "original_id": "ch15-04-10-cpu-delta-window",
+          "title": "cpuinfo 的两个样本与百分比分母",
+          "decision": "keep",
+          "reason": "两次后台样本分别导出进程utime/stime除uptime与系统TOTAL状态增量两个不同分母的实际分支独立，CpuBinder不新开窗口及多核可超100%保留。",
+          "original_line": 305,
+          "heading": "## dumpsys cpuinfo：CPU 占用快速排查"
+        },
+        {
+          "original_id": "ch15-04-11-focus-and-touch",
+          "title": "任务焦点、窗口焦点与触摸命中的不同层次",
+          "decision": "remove",
+          "reason": "ATM/WMS/InputDispatcher三列重复焦点层次段落，未画实际事件路由或不同窗口反例；全部display/IME/overlay/touch区域/通道与键指针区别完整留。",
+          "original_line": 351,
+          "heading": "## dumpsys window：窗口层级与焦点"
+        },
+        {
+          "original_id": "ch15-04-12-battery-test-window",
+          "title": "batterystats 的采集窗口与状态恢复",
+          "decision": "remove",
+          "reason": "五步复写364–393统计命令、恢复开关说明和固定测试条件列表，未画实际reset前后统计窗口；所有有状态副作用和旧状态恢复正文保留，未执行设备命令。",
+          "original_line": 384,
+          "heading": "## dumpsys batterystats：电池使用与功耗分析"
+        },
+        {
+          "original_id": "ch15-04-13-wakelock-cpu-energy",
+          "title": "Wakelock、CPU 工作和能量是三种证据",
+          "decision": "remove",
+          "reason": "三列重述partial锁阻止suspend但CPU可空闲、调度活动和rail估算归属段落，未画锁重叠时间案例；原文全部能量/归因/ODPM设备边界留存。",
+          "original_line": 399,
+          "heading": "### Wakelock 与功耗归因"
+        },
+        {
+          "original_id": "ch15-04-14-surfaceflinger-views",
+          "title": "SurfaceFlinger 文本输出的三个观察视角",
+          "decision": "remove",
+          "reason": "--list/frontend/hwclayers三列逐项重复441–445视角对照表，保留内部完整名称解析、snapshot/input/CLIENT-DEVICE及默认可见输出的精确说明。",
+          "original_line": 449,
+          "heading": "### Layer 列表与合成方式"
+        },
+        {
+          "original_id": "ch15-04-15-frontend-lock-boundary",
+          "title": "FrontEnd 状态转换与 mStateLock 边界",
+          "decision": "keep",
+          "reason": "requested状态和hierarchy更新在mStateLock前、复制drawingState后进入锁并执行display/snapshot的真实跨阶段边界链独立，局部锁/feature省略条件保留。",
+          "original_line": 499,
+          "heading": "### FrontEnd 架构补充（源码级）"
+        },
+        {
+          "original_id": "ch15-04-16-snapshot-fast-path",
+          "title": "Snapshot fast path 与本轮合成的分离",
+          "decision": "keep",
+          "reason": "tryFastUpdate结果及mergeable manager为空的联合作用、完整重算另一分支与是否合成另判的实际条件图独立，caller配置和frontend_caching_v0门槛原文保留。",
+          "original_line": 546,
+          "heading": "### FrontEnd 架构补充（源码级）"
+        },
+        {
+          "original_id": "ch15-04-17-latency-to-frame-evidence",
+          "title": "从 latency 三元组到同帧时间线取证",
+          "decision": "remove",
+          "reason": "五步逐项重画569–573完整latency取证顺序，没有同帧token或时间映射实例；三元组表/时基核对/无token候选关联与period不是各帧deadline说明完整留。",
+          "original_line": 577,
+          "heading": "### 帧延迟信息"
+        },
+        {
+          "original_id": "ch15-04-18-background-service-views",
+          "title": "后台执行问题的三种服务视角",
+          "decision": "remove",
+          "reason": "三类后台服务卡片逐项复制594–596三条package/alarm/jobscheduler分工说明，未画实际调度约束改变或执行历史，删列表副本。",
+          "original_line": 598,
+          "heading": "### dumpsys package / alarm / jobscheduler"
+        },
+        {
+          "original_id": "ch15-04-19-application-service-dump",
+          "title": "应用 Service.dump 的客户端调用路径",
+          "decision": "keep",
+          "reason": "AMS匹配组件找到ServiceRecord经应用Binder复制fd、主线程token到实例dump和回写的实际跨进程路径独立，避免误当顶层已注册服务，保留。",
+          "original_line": 635,
+          "heading": "### 自定义 Service 的 dump 接口"
+        },
+        {
+          "original_id": "ch15-04-20-evidence-workflow",
+          "title": "把 dump 快照转成可复核的调查链",
+          "decision": "remove",
+          "reason": "五框重排642–660常犯错误与七条采集复核清单，没有新证据关系；全部版本/原始分段/统计窗口/口径和第二证据要求留存。",
+          "original_line": 662,
+          "heading": "## 采集复核清单"
+        }
+      ],
+      "sha256_after": "be330d8a615b65b168fce9d028d1e62d29d45b1a754da495e66f8e72d16ba701",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:05:00.287968+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 20,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a152/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a152/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 152,
+        "article": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
+        "registered_sha256": "0a63f08b7f19b57e79dddb836eb2baca59ace8fab332885f36002d42b9e84bc8",
+        "frozen_sha256": "0a63f08b7f19b57e79dddb836eb2baca59ace8fab332885f36002d42b9e84bc8",
+        "review_input_sha256": "97c015f52485f56c65ce7f88dfa4be4e43d08a02e16d3ef271671907a413e2f4",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/04-dumpsys.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a152/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a152/external-source.diff",
+        "diff_sha256": "9bd554ff5144ba7b1cf05a0e888d7ebd314dfe1476dfe603ae788ccf248e8d15",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 276 current narrative/table reading rows, 25907 characters, 20 SVG label sets and all 20 original PNGs in 3 contact sheets independently read/viewed; 16 non-Mermaid code blocks / 160 lines read, no native Mermaid."
+      },
+      "sha256_review_input": "97c015f52485f56c65ce7f88dfa4be4e43d08a02e16d3ef271671907a413e2f4",
+      "retired_diagrams": [
+        "ch15-04-02-observation-windows",
+        "ch15-04-03-oom-evidence",
+        "ch15-04-04-exit-and-blocking",
+        "ch15-04-05-memory-accounting",
+        "ch15-04-06-memory-trend",
+        "ch15-04-11-focus-and-touch",
+        "ch15-04-12-battery-test-window",
+        "ch15-04-13-wakelock-cpu-energy",
+        "ch15-04-14-surfaceflinger-views",
+        "ch15-04-17-latency-to-frame-evidence",
+        "ch15-04-18-background-service-views",
+        "ch15-04-20-evidence-workflow"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-152/retired-assets.json"
     },
     {
       "index": 153,
@@ -41632,8 +41841,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 86,
-  "next_article": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
+  "reviewed_articles": 87,
+  "next_article": "src/part3-tools/ch15-other-tools/05-battery-historian.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -41643,7 +41852,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:02:28.385907+08:00",
+  "updated_at": "2026-10-31T13:05:00.287968+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -41692,13 +41901,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
-      "registered_sha256": "0a63f08b7f19b57e79dddb836eb2baca59ace8fab332885f36002d42b9e84bc8",
-      "observed_sha256": "97c015f52485f56c65ce7f88dfa4be4e43d08a02e16d3ef271671907a413e2f4",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/04-dumpsys.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -42031,9 +42233,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3168,
-  "reviewed_placements_after": 1438,
-  "net_removed_placements": 1730,
+  "reviewed_placements_before": 3188,
+  "reviewed_placements_after": 1446,
+  "net_removed_placements": 1742,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -42057,5 +42259,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 86
+  "currently_matching_reviewed_source_count": 87
 }
