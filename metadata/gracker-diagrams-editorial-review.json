@@ -66804,9 +66804,141 @@
       "before_count": 11,
       "before_all_images": 11,
       "sha256_before": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 4,
+      "decisions": [
+        {
+          "original_id": "a284-01-aab-publish-device-apks-and-platform",
+          "title": "AAB 是发布输入，设备安装匹配的一组 APK",
+          "decision": "keep",
+          "reason": "AAB经过Play生成签名APK与本地bundletool测试两条支路，设备最终通过PackageInstaller安装，区分发布输入和可安装制品。",
+          "original_line": 83,
+          "heading": "## 分发要解决的问题"
+        },
+        {
+          "original_id": "a284-02-three-size-metrics-and-fixed-device-spec",
+          "title": "固定设备规格后，再谈首次下载与安装占用",
+          "decision": "remove",
+          "reason": "三种尺寸及modules依赖四卡重复紧邻三项口径和命令解释。",
+          "original_line": 114,
+          "heading": "## AAB 格式与分包机制"
+        },
+        {
+          "original_id": "a284-03-split-session-consistency-validation",
+          "title": "一次安装会话中的 base 与 splits 必须一致",
+          "decision": "keep",
+          "reason": "一个安装会话依次验证身份、required split和依赖归属，再进入安装事务，表达一致APK集合的消费链。",
+          "original_line": 133,
+          "heading": "### 平台如何接收 split APK"
+        },
+        {
+          "original_id": "a284-04-feature-boundary-and-build-dependencies",
+          "title": "base 保留可立即恢复的入口，feature 承载可等待实现",
+          "decision": "remove",
+          "reason": "base职责、feature内容、单向依赖和插件配置四卡重复模块分工段落及Gradle示例。",
+          "original_line": 182,
+          "heading": "### 交付方式"
+        },
+        {
+          "original_id": "a284-05-feature-delivery-timing-and-fusing",
+          "title": "交付方式影响何时可用，fusing 影响 universal 内容",
+          "decision": "remove",
+          "reason": "交付模式、deferred与fusing四卡重复五行交付表和manifest解释。",
+          "original_line": 204,
+          "heading": "### 交付方式"
+        },
+        {
+          "original_id": "a284-06-on-demand-state-recovery-and-zero-session",
+          "title": "先查已安装，再接回会话；ID 0 不会产生安装事件",
+          "decision": "keep",
+          "reason": "已安装、已有会话、新请求和ID0无会话分流，再以INSTALLED及可访问作为导航门槛，帮助阅读110行恢复代码。",
+          "original_line": 330,
+          "heading": "### 交付方式"
+        },
+        {
+          "original_id": "a284-07-splitcompat-system-entry-and-versioning",
+          "title": "安装完成后，还要让代码、资源与系统入口可用",
+          "decision": "remove",
+          "reason": "SplitCompat、代理入口、系统资源和统一版本四卡复述连续三段配套要求。",
+          "original_line": 341,
+          "heading": "### 交付方式"
+        },
+        {
+          "original_id": "a284-08-asset-pack-three-delivery-timelines",
+          "title": "资源包的三种下载时机，也有不同磁盘形态",
+          "decision": "keep",
+          "reason": "三个并行时间轨区分随安装split、安装后自动下载展开和请求后下载展开，直观表达交付与磁盘形态。",
+          "original_line": 360,
+          "heading": "## Play Asset Delivery 与大资源管理"
+        },
+        {
+          "original_id": "a284-09-asset-update-and-first-use-fallback",
+          "title": "新二进制可先到达，资产更新必须有独立状态",
+          "decision": "remove",
+          "reason": "当前位置、更新中、首屏回退及失败空间四卡重复资产更新与空间说明，无具体失败恢复分支。",
+          "original_line": 373,
+          "heading": "## Play Asset Delivery 与大资源管理"
+        },
+        {
+          "original_id": "a284-10-channel-capability-and-executable-boundary",
+          "title": "按渠道验证分包与签名，非代码资源另建更新协议",
+          "decision": "remove",
+          "reason": "四类渠道四卡重复紧邻四项方案列表与最终制品测试条件。",
+          "original_line": 408,
+          "heading": "## 国内分发场景的 AAB 替代方案"
+        },
+        {
+          "original_id": "a284-11-delivery-ci-same-spec-and-module-dependencies",
+          "title": "体积门禁固定规格，并把首用失败纳入结果",
+          "decision": "remove",
+          "reason": "首装、按需、资产和运行四卡重复CI五项列表与两条同设备命令说明。",
+          "original_line": 440,
+          "heading": "## 按需分发要进入体积门禁"
+        }
+      ],
+      "sha256_after": "6bd02c2845abffd1bf7d805560b606796604d2e6adbfef16a2199c598b82c40b",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:26:18.925846+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 11,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a284/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a284/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 284,
+        "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+        "registered_sha256": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
+        "frozen_sha256": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
+        "review_input_sha256": "9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a284/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a284/external-source.diff",
+        "diff_sha256": "bd2c03240d6aae4096b5ec95848df08206f82b14d46a9768ef7e5b11bac2e584",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 119, \"characters\": 10250, \"svg_labels_read\": 11, \"actual_pngs_viewed\": 11, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 7, \"code_lines\": 161, \"native_mermaid\": 0, \"changed_since_frozen\": true, \"external_diff_lines_read\": 274, \"external_review_input_sha256\": \"9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045\"}"
+      },
+      "sha256_review_input": "9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045",
+      "retired_diagrams": [
+        "a284-02-three-size-metrics-and-fixed-device-spec",
+        "a284-04-feature-boundary-and-build-dependencies",
+        "a284-05-feature-delivery-timing-and-fusing",
+        "a284-07-splitcompat-system-entry-and-versioning",
+        "a284-09-asset-update-and-first-use-fallback",
+        "a284-10-channel-capability-and-executable-boundary",
+        "a284-11-delivery-ci-same-spec-and-module-dependencies"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-284/retired-assets.json"
     },
     {
       "index": 286,
@@ -66930,8 +67062,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 195,
-  "next_article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+  "reviewed_articles": 196,
+  "next_article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -66941,7 +67073,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:24:54.789748+08:00",
+  "updated_at": "2026-10-31T19:26:18.925846+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -67049,13 +67181,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
-      "registered_sha256": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
-      "observed_sha256": "9cec84bbc3183a3de211ea35218a3fa02e1a61fb08f0c5dec63272ad33712045",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
       "registered_sha256": "57b1576547abe3748c0cca9aa5487bdfcd50e9d30df953f693f0766b18e441bf",
       "observed_sha256": "c84f1da287ea7f2f86d61f891ccc3d88556792dea0078ac87fcc9e28e96cbd01",
@@ -67070,9 +67195,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5678,
-  "reviewed_placements_after": 2226,
-  "net_removed_placements": 3452,
+  "reviewed_placements_before": 5689,
+  "reviewed_placements_after": 2230,
+  "net_removed_placements": 3459,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -67096,7 +67221,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 195,
+  "currently_matching_reviewed_source_count": 196,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
