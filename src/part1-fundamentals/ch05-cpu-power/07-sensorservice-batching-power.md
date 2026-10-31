@@ -57,10 +57,6 @@ SensorService 的功耗问题常被简化为“采样频率越低越省电”，
 
 一次传感器请求的成本可以分成三处，它们的影响因素和优化手段并不相同：
 
-<!-- gracker-diagram: ch05-07-three-power-costs -->
-![传感器功耗的三个位置](../../assets/diagrams/ch05/ch05-07-three-power-costs.png)
-
-图：Batching 主要合并交付与 AP 唤醒，不会自动降低传感器采样量。元数据 getPower() 是厂商估算电流，不能代替本次场景实测能量。
 
 | 成本 | 发生位置 | 主要影响因素 | 常见误判 |
 |---|---|---|---|
@@ -93,10 +89,6 @@ frequency_hz ≈ 1_000_000 / samplingPeriodUs
 
 应用应通过 `Sensor.getReportingMode()` 判断模式，不能对所有 sensor 都使用 `1 / period` 计算事件频率。one-shot sensor 应使用 `requestTriggerSensor()`，不应注册到普通 `registerListener()`。
 
-<!-- gracker-diagram: ch05-07-reporting-modes -->
-![上报模式决定采样周期的含义](../../assets/diagrams/ch05/ch05-07-reporting-modes.png)
-
-图：只有合适的连续型场景才可用周期换算请求频率。One-shot 用 requestTriggerSensor，触发后停用；特殊类型遵循自己的定义。
 
 ## 从应用请求到硬件 FIFO
 
@@ -107,20 +99,6 @@ frequency_hz ≈ 1_000_000 / samplingPeriodUs
 
 图：展示普通 listener 路径。配置经服务聚合到 HAL，事件反向进入应用队列；AIDL Event FMQ 位于 HAL→framework，并非 App 直接读取。
 
-```mermaid
-flowchart LR
-    App["App SensorEventListener"] --> SSM["SystemSensorManager"]
-    SSM --> EQ["SensorEventQueue"]
-    EQ --> SS["native SensorService"]
-    SS --> SD["SensorDevice"]
-    SD --> HAL["Sensors AIDL/HIDL HAL"]
-    HAL --> Hub["sensor hub / hardware FIFO"]
-    Hub --> HW["physical / composite sensor"]
-    HAL --> SD
-    SD --> SS
-    SS --> EQ
-    EQ --> App
-```
 
 这条路径中，Android 17 的 `SystemSensorManager.registerListenerImpl()` 为 listener 创建或复用 `SensorEventQueue`，`BaseEventQueue.addSensor()` 再调用原生层启用接口。
 
@@ -177,10 +155,6 @@ fifo_duration_seconds ≈ fifo_event_count / frequency_hz
 
 共享 FIFO 会被其他 sensor 占用，实际容量可能介于保留值（reserved）与最大值（max）之间。如果 50 Hz sensor 只有 100 个可用槽位，即使请求延迟 5 秒，FIFO 也可能在约 2 秒后填满并提前上报。
 
-<!-- gracker-diagram: ch05-07-fifo-capacity-window -->
-![FIFO 容量如何限制批量窗口](../../assets/diagrams/ch05/ch05-07-fifo-capacity-window.png)
-
-图：100 槽与 50 Hz 是正文中的计算示例，实际可用槽数受共享占用影响。Wake-up 与 non-wake-up 事件使用不同 FIFO，挂起时的满队列处理也不同。
 
 ## SensorService 如何合并多个客户端
 
@@ -343,10 +317,6 @@ Android 17 的 `SensorService::enable()` 还有一项避免事件混入新连接
 
 应用不应依赖某一种失败表现，而应声明权限、检查注册结果，并根据实际事件时间戳（event timestamp）验证最终采样率。
 
-<!-- gracker-diagram: ch05-07-high-rate-permission-and-privacy -->
-![高采样率限制的权限与隐私条件](../../assets/diagrams/ch05/ch05-07-high-rate-permission-and-privacy.png)
-
-图：Android 12 起目标 API≥31 的受限六类型适用默认限制；声明高采样权限仍不绕过设备麦克风隐私开关。返回结果与真实事件频率都要检查。
 
 ## Sensor Direct Channel 的适用边界
 
@@ -441,10 +411,6 @@ Perfetto 可按设备能力采集：
 
 公开的性能跟踪（trace）不一定提供独立的 sensor FIFO 轨道（track）。诊断时，应将 sensor timestamp、回调 slice 和 suspend / resume 放在同一时间线上；厂商 sensor hub trace 只能作为特定设备的补充证据。
 
-<!-- gracker-diagram: ch05-07-sensor-observation-evidence -->
-![传感器诊断的三组证据](../../assets/diagrams/ch05/ch05-07-sensor-observation-evidence.png)
-
-图：事件发生时间与回调到达时间使用相同 elapsed realtime 基准。selected 是请求配置；单次持锁快照或 sensor active time 都不能独自证明硬件能量和唤醒原因。
 
 ### 4. 看电池统计
 
@@ -473,10 +439,6 @@ Battery Historian 或 `dumpsys batterystats` 可以观察 UID 的 sensor 使用�
 
 灭屏测试还要区分 wake-up 和 non-wake-up 实例。Non-wake-up 组出现事件缺口可能符合 suspend 规则，不能直接判断为 HAL 丢失数据包。
 
-<!-- gracker-diagram: ch05-07-sensor-three-group-experiment -->
-![采样与 batching 的三组对照](../../assets/diagrams/ch05/ch05-07-sensor-three-group-experiment.png)
-
-图：A/B 保持请求采样周期一致，B/C 再改变采样周期。只有排除其他客户端干扰、确认实际事件率和访问状态后，才能解释 batching 与降采样各自收益。
 
 ## 与应用治理章节的分工
 
