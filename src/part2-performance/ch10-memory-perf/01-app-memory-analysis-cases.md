@@ -149,16 +149,16 @@ last_review_finalize_at: '2026-08-26T20:23:27+08:00'
 
 #### 1.2 `Debug.MemoryInfo` 的字段与读法
 
-`Debug.MemoryInfo` 把统计分成 dalvik、native、other 三个域，另通过公开的 `getMemoryStats()` 提供 App Summary，单位为 kB。摘要里的 `summary.java-heap` 是 `dalvikPrivateDirty + OTHER_ART` 的 private 部分，`summary.native-heap` 是 `nativePrivateDirty`；它们与 `Runtime` 对象堆用量、allocator 已分配字节回答的问题不同。`getTotalPss()` 还汇入受支持的 memtrack 统计及 SwapPss，不能再加一次 Graphics 或 SwapPss，也不能直接当作 Linux smaps 的 resident Pss。
+`Debug.MemoryInfo` 把统计分成 dalvik、native、other 三个域，另通过公开的 `getMemoryStats()` 提供 App Summary，单位为 kB。摘要里的 `summary.java-heap` 是 `dalvikPrivateDirty + OTHER_ART` 的 private 部分，`summary.native-heap` 是 `nativePrivateDirty`；它们各自回答的问题，与 `Runtime` 对象堆用量、allocator 已分配字节并不重合。`getTotalPss()` 已经汇入受支持的 memtrack 统计及 SwapPss，再叠加一次 Graphics 或 SwapPss 就重复计算了；它和 Linux smaps 的 resident Pss 统计范围不同，直接对照会误读。
 
 
 使用这些字段时，有几件事要先记牢：
 
 - `getTotalPss()` 包含 swapped-out PSS，即按比例分摊的已换出页面；
-- r1 内部 `getTotalUss()` 由各域 Private Clean 与 Private Dirty 相加，但该方法标为 `@hide`；普通 SDK 可分别读取公开的 private clean/dirty 总量，不能直接调用隐藏方法；
-- `getMemoryStats()` 提供 App Summary 分类；r1 的 `summary.total-swap` 实际调用 `getTotalSwappedOut()`，不能把这个 key 自动当作 SwapPss；具体 getter 的执行路径比概括性注释更精确；
+- r1 内部 `getTotalUss()` 由各域 Private Clean 与 Private Dirty 相加，但该方法标为 `@hide`；普通 SDK 要拿这两个数，分别读公开的 private clean/dirty 总量即可；
+- `getMemoryStats()` 提供 App Summary 分类；r1 的 `summary.total-swap` 实际调用 `getTotalSwappedOut()`，这个 key 与 SwapPss 是两个含义；具体 getter 的执行路径比概括性注释更精确；
 - `Debug.getMemoryInfo()` 直接读取本进程底层统计，源码注明可能看不到部分受保护的 graphics 分配；
-- 普通应用使用 `ActivityManager.getProcessMemoryInfo()` 时，Android 10 / API 29 起受调用 UID 限制；平台特权与跨用户权限另有条件。r1 对未获准查询的 PID 仍保留一个默认值条目，不能把返回数组长度或零值当作采样成功。高频调用通常返回服务端缓存，shell/root 发起的 instrumentation 另有例外。
+- 普通应用使用 `ActivityManager.getProcessMemoryInfo()` 时，Android 10 / API 29 起受调用 UID 限制；平台特权与跨用户权限另有条件。r1 对未获准查询的 PID 仍保留一个默认值条目，返回数组非空或数值为零都可能只是默认条目。高频调用通常返回服务端缓存，shell/root 发起的 instrumentation 另有例外。
 
 <!-- gracker-diagram: ch10-01-04-am-memory-access -->
 ![AM 内存查询的权限与缓存](../../assets/diagrams/ch10/ch10-01-04-am-memory-access.png)
@@ -222,7 +222,7 @@ fun captureAppMemory(
 }
 ```
 
-示例需导入 `android.app.ActivityManager` 与 `android.os.Debug/Process/SystemClock`，适用于本文 API 26+ 范围。查询失败或键缺失为 `null`，系统返回的零值保留原样；它仍可能表示无有效数据。`observedUptimeMs` 只是本地观察时间，不能充当服务端缓存的实际采样时间。AM 摘要、`Runtime` 与 native allocator 也不是原子快照。把调用放在实验步骤边界或低频诊断任务，避开每帧回调和紧循环。
+示例需导入 `android.app.ActivityManager` 与 `android.os.Debug/Process/SystemClock`，适用于本文 API 26+ 范围。查询失败或键缺失为 `null`，系统返回的零值保留原样；它仍可能表示无有效数据。`observedUptimeMs` 只是本地观察时间，服务端缓存的实际采样时刻要另行确认。AM 摘要、`Runtime` 与 native allocator 三个来源各自取值，合起来看时要当作几次独立采样。把调用放在实验步骤边界或低频诊断任务，避开每帧回调和紧循环。
 
 
 ### 3. Java/Kotlin heap：用引用关系证明泄漏
@@ -278,6 +278,8 @@ Android 8.0 / API 26 及以上，普通软件 Bitmap 的像素位于 native heap
 
 ### 4. Native heap 的两类问题：分配归因与非法访问
 
+增长落在 native heap 时，问题通常分成两类：分配持续增长、要找调用栈，或者越界、释放后使用这类非法访问。我们先看归因。
+
 #### 4.1 heapprofd 用于分配调用栈
 
 heapprofd 在 Android 10 及以上跟踪 `malloc/free`、`new/delete` 分配，并用抽样记录降低目标进程开销。user build（日常发布版本的系统镜像） 只能分析声明为 `profileable` 或 `debuggable` 的 App。
@@ -300,7 +302,7 @@ tools/heap_profile android -n com.example.app
 | Total malloc count | 窗口内全部估算分配次数，包含已经 `free` 的分配 |
 
 
-heapprofd 默认观测开始采样后的分配；启动前分配，以及绕过被跟踪 allocator 的直接 `mmap`、graphics buffer 和 GPU private allocation，通常不在该 native malloc profile 的覆盖范围。它也支持另行配置 ART allocation profiling，不能把两种模式混成一个结果。buffer overrun 会令会话提前结束，不能把实际覆盖缺口当作没有分配；采样间隔、符号与进程启动方式也要随结果保存。
+heapprofd 默认观测开始采样后的分配；启动前分配，以及绕过被跟踪 allocator 的直接 `mmap`、graphics buffer 和 GPU private allocation，通常不在该 native malloc profile 的覆盖范围。它也支持另行配置 ART allocation profiling，两种模式的结果要分开读。buffer overrun 会令会话提前结束，会话早停留下的覆盖缺口要按缺口如实记录；采样间隔、符号与进程启动方式也要随结果保存。
 
 <!-- gracker-diagram: ed10-01-native-profile-window-counters -->
 ![在实际观测窗口内解释 Total 与 Unreleased](../../assets/diagrams/ch10/ed10-01-native-profile-window-counters.png)
@@ -311,7 +313,7 @@ heapprofd 默认观测开始采样后的分配；启动前分配，以及绕过�
 
 #### 4.2 三层统计的覆盖范围
 
-把 heapprofd、allocator 统计和 resident memory 并列看：它们按不同对象、时间和状态记账，不能画成严格包含的三个集合：
+把 heapprofd、allocator 统计和 resident memory 并列看：它们按不同对象、时间和状态记账，三者之间画不出严格包含的集合关系：
 
 
 ```text
@@ -325,7 +327,7 @@ Native Heap RSS / PSS
   已驻留页面，并受 page size、碎片、共享、swap 与采样时刻影响
 ```
 
-即使统一成字节并对齐观察区间，`Native Heap RSS - heapprofd unreleased bytes` 也不能直接命名为碎片。采样估算、启动前分配、allocator cache、对齐、页内空洞、换出/驻留变化和分类差异都会影响两边；直接 `mmap` 还需核对是否被该工具归入 Native Heap。heapprofd 的存活分配量甚至可能大于该分类的 RSS，差值没有通用的正负含义。
+即使统一成字节并对齐观察区间，`Native Heap RSS - heapprofd unreleased bytes` 与碎片之间还隔着好几层因素：采样估算、启动前分配、allocator cache、对齐、页内空洞、换出/驻留变化和分类差异都会影响两边；直接 `mmap` 还需核对是否被该工具归入 Native Heap。heapprofd 的存活分配量甚至可能大于该分类的 RSS，差值没有通用的正负含义。
 
 
 #### 4.3 用 `wrap.sh` 启用 malloc debug
@@ -337,7 +339,7 @@ Native Heap RSS / PSS
 LIBC_DEBUG_MALLOC_OPTIONS=backtrace logwrapper "$@"
 ```
 
-`wrap.sh` 仅适用于 API 27 及以上的 debuggable App，会改变进程启动与分配开销，生产包里没有它的位置。r1 的 `libc.debug.malloc.program` 按 `strstr(getprogname(), program)` 过滤，不是按 PackageManager 查询包名；非空 `LIBC_DEBUG_MALLOC_OPTIONS` 会覆盖这一属性选择分支。App 应按可调试 APK 的 `wrap.sh` 启动路径确认生效，不能仅凭填写包名判断已启用。
+`wrap.sh` 仅适用于 API 27 及以上的 debuggable App，会改变进程启动与分配开销，生产包里没有它的位置。r1 的 `libc.debug.malloc.program` 按 `strstr(getprogname(), program)` 过滤，不是按 PackageManager 查询包名；非空 `LIBC_DEBUG_MALLOC_OPTIONS` 会覆盖这一属性选择分支。App 要确认生效，就沿可调试 APK 的 `wrap.sh` 启动路径实际验证；只填写包名说明不了已启用。
 
 <!-- gracker-diagram: ch10-01-14-wrap-startup -->
 ![wrap.sh 在受控启动中启用 malloc debug](../../assets/diagrams/ch10/ch10-01-14-wrap-startup.png)
@@ -435,7 +437,7 @@ Android 15 起，设备可以使用 16 KB page size（内存页大小）。页�
 
 #### 6.2 用回落条件区分缓存、积压与泄漏
 
-持续增长实验要比普通峰值测试多两个采样点：执行业务释放动作后的状态，以及主动收缩可重建资源后的状态。随后用同一输入再跑一轮，观察波峰、波谷和增长斜率是否重复。只在峰值抓一次 `dumpsys meminfo`，区分不了工作集扩大、缓存保留和生命周期错误。
+设计持续增长实验时，我们要比普通峰值测试多抓两个采样点：执行业务释放动作后的状态，以及主动收缩可重建资源后的状态。随后用同一输入再跑一轮，观察波峰、波谷和增长斜率是否重复。只在峰值抓一次 `dumpsys meminfo`，区分不了工作集扩大、缓存保留和生命周期错误。
 
 | 增长来源 | 释放或收缩动作 | 仍需补充的证据 |
 | --- | --- | --- |
@@ -477,7 +479,7 @@ Android 15 起，设备可以使用 16 KB page size（内存页大小）。页�
 
 图：r1 扫描顺序和同档选择各有条件，不能仅凭 PSS 高推断下一个 victim。
 
-由此可以推出几条判断规则：
+把这套机制放回排查现场，我们得到几条判断规则：
 
 - App PSS 高，下一次未必被杀；
 - 前台/可感知进程与 cached 进程的保护级别不同；
@@ -496,7 +498,7 @@ Android 15 起，设备可以使用 16 KB page size（内存页大小）。页�
 
 `init_psi_monitor()` 会先校验资源类型，再以 `O_WRONLY | O_CLOEXEC` 打开 `/proc/pressure/<resource>`，写入 `"some|full threshold_us window_us"`，成功后直接返回这个 fd。内核写入路径把 trigger（触发器） 绑定到该打开文件；同一个 fd 再写第二个 trigger 会以 `-EBUSY` 拒绝。因此这个 fd 是“何时有压力”的事件通道，不是读取 `avg10/avg60/avg300/total` 的统计通道。[已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#36][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1569][来源: https://juejin.cn/post/7677254638325727242]
 
-`register_psi_monitor()` 只用 `EPOLLPRI` 挂入 epoll，并把调用方传入的 `void* data` 放进 `epev.data.ptr`。内核 `psi_trigger_poll()` 在 trigger 的 `event` 标志从 1 被 `cmpxchg` 消费时加上 `EPOLLPRI`。其基础返回值包含 `DEFAULT_POLLMASK`，所以 `EPOLLIN` 可能一直就绪，不能用来区分新压力事件，还可能形成空转；应监听并识别 `EPOLLPRI`，同时处理错误和关闭。[已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#86][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1489][来源: https://juejin.cn/post/7677254638325727242]
+`register_psi_monitor()` 只用 `EPOLLPRI` 挂入 epoll，并把调用方传入的 `void* data` 放进 `epev.data.ptr`。内核 `psi_trigger_poll()` 在 trigger 的 `event` 标志从 1 被 `cmpxchg` 消费时加上 `EPOLLPRI`。其基础返回值包含 `DEFAULT_POLLMASK`，所以 `EPOLLIN` 可能一直就绪，区分不出新压力事件，还可能形成空转；要监听并识别的是 `EPOLLPRI`，同时处理错误和关闭。[已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#86][已验证: kernel/sched/psi.c@android17-6.18-2026-06_r6#1489][来源: https://juejin.cn/post/7677254638325727242]
 
 
 统计读取走另一组 fd：`psi_parse_mem()`、`psi_parse_io()`、`psi_parse_cpu()` 使用 `reread_file()` 读取 `/proc/pressure/*` 文本，`parse_psi_line()` 解析 `some/full avg10=... total=...`，其中 CPU 只解析 `some` 行。排查 `lmkd` 时，我们把 trigger 唤醒、统计快照和后续 kill decision（查杀决策） 分开看。[已验证: system/memory/lmkd/lmkd.cpp@android-17.0.0_r1#2093][已验证: system/memory/lmkd/libpsi/psi.cpp@android-17.0.0_r1#109][来源: https://juejin.cn/post/7677254638325727242]
@@ -560,7 +562,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 
 ### 8. 线上监控的采集范围
 
-常规线上遥测使用轻量摘要。heap dump、malloc debug 和 sanitizer 的启动条件、额外停顿与内存成本要单独评估；它们不应成为普通告警的无条件同步动作。按配置采样的 Hprof 方案和受系统策略约束的 ProfilingManager 是另一条诊断路径，不能由常规遥测直接保证产物。轻量记录包括：
+线上遥测跑在用户设备上，常规做法是只用轻量摘要。heap dump、malloc debug 和 sanitizer 各有启动条件、额外停顿与内存成本，要单独评估；把它们挂成普通告警的无条件同步动作并不合适。按配置采样的 Hprof 方案和受系统策略约束的 ProfilingManager 是另一条诊断路径，其产物要看这条路径自己的执行结果，常规遥测保证不了。轻量记录包括：
 
 
 - 进程、页面/场景枚举和前后台状态；
@@ -641,7 +643,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 
 #### 现象与数据
 
-我们先看现象。历史文章对比了低内存与正常内存下的冷启动 trace。按原图线程摘要逐行核对，Running 分别为 **682.137 ms** 和 **624.278 ms**；把全部 D 类状态统一相加，分别是 **783.385 ms** 与 **139.417 ms**。D 表示不可中断睡眠，只有带 Block I/O 标注的行同时带有该类等待线索，不能把所有 D 都直接写成磁盘读。正常截图顶部的启动框选约为 1.223 s。
+我们先看现象。历史文章对比了低内存与正常内存下的冷启动 trace。按原图线程摘要逐行核对，Running 分别为 **682.137 ms** 和 **624.278 ms**；把全部 D 类状态统一相加，分别是 **783.385 ms** 与 **139.417 ms**。D 表示不可中断睡眠；带 Block I/O 标注的行才同时带有这类等待线索，把所有 D 一律写成磁盘读会过度归因。正常截图顶部的启动框选约为 1.223 s。
 
 > ⚠️ 矛盾：原文用约 750/130 ms 概括 D 状态，且低内存 Running 另一处写成约 600 ms，与截图不完全一致。这里按截图全部 D 行重算：低内存为 619.033 + 28.417 + 131.776 + 4.159；正常为 106.320 + 32.428 + 0.669，单位均为 ms。两张线程摘要的选择范围分别为 2053.451/1227.232 ms，与顶部框选的 2.044/1.223 s 略有差别，不能混作同一比例轴。
 
@@ -657,7 +659,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 3. 在同一时间窗检查 `kswapd0`、内存回收 tracepoint（跟踪点）、`meminfo`、`vmstat`、swap/ZRAM 和 PSI。
 4. 检查 `lmkd` 与 ActivityManager 事件，确认同一进程是否在短时间内反复被终止，又被业务或系统重新启动。
 
-`mm/vmscan.c` 中的回收路径解释了 `kswapd` 与直接回收的执行位置，`include/trace/events/vmscan.h` 提供回收 tracepoint 定义。`lmkd.cpp` 使用 PSI 监视器感知 stall（资源停顿），并结合进程重要性和内存状态选择要终止的进程。两部分应按时间、进程和请求身份核对；回收繁忙、D 状态和终止记录共现只提供相关性，仍需缺页、回收或 I/O 等待链证明压力如何进入这次启动的关键路径。历史原文中的 QQ 终止—重启记录来自另一段 Monkey 场景，日志写的是 `am_kill`、`empty #3`，不能补写成此次启动的 LMKD kill 证据。
+`mm/vmscan.c` 中的回收路径解释了 `kswapd` 与直接回收的执行位置，`include/trace/events/vmscan.h` 提供回收 tracepoint 定义。`lmkd.cpp` 使用 PSI 监视器感知 stall（资源停顿），并结合进程重要性和内存状态选择要终止的进程。两部分应按时间、进程和请求身份核对；回收繁忙、D 状态和终止记录共现只提供相关性，仍需缺页、回收或 I/O 等待链证明压力如何进入这次启动的关键路径。历史原文中的 QQ 终止—重启记录来自另一段 Monkey 场景，日志写的是 `am_kill`、`empty #3`；它属于那段 Monkey 场景，此次启动的 LMKD kill 证据要另找。
 
 #### 根因判断
 
@@ -669,8 +671,8 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 图：回收、D 等待和进程终止共现只是线索。把原文不同样本分离，再补齐这次关键路径的因果证据。
 
 - `[推断]` 低内存可能增加回收与文件页驱逐，需要同窗水位、回收和 refault/缺页记录。
-- `[推断]` 若启动依赖的 odex、资源或配置页需从存储补入，等待可能进入关键路径；需调用栈与请求时序佐证，D 状态本身不能确定读了哪个文件。
-- `[来源事实]` 另一段 Monkey 记录中有缓存进程反复终止和重启。其资源开销可以作为后续假设，但不能直接合入这次冷启动的因果链。
+- `[推断]` 若启动依赖的 odex、资源或配置页需从存储补入，等待可能进入关键路径；需调用栈与请求时序佐证，D 状态本身说不清读的是哪个文件。
+- `[来源事实]` 另一段 Monkey 记录中有缓存进程反复终止和重启。其资源开销可以作为后续假设，这次冷启动的因果链还要靠本次 trace 内的证据。
 
 主线程与 `kswapd0` 同核运行可能增加竞争，但一次 trace 中的同核现象还不足以证明调度策略存在缺陷。分析报告应分别列出“trace 直接观察到的事实”和“基于内核机制的解释”。
 
@@ -694,14 +696,14 @@ App 侧可在 `TRIM_MEMORY_UI_HIDDEN` 或 `TRIM_MEMORY_BACKGROUND` 到来时释�
 
 #### 现象
 
-Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该位置只表示本次分配失败，回答不了“此前的堆被谁长期占用”。字节跳动 Client Infra 的公开案例采用线上 Hprof（Java 堆快照格式），把分析对象从崩溃点转向对象持有关系。
+Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。这个位置只记录了本次分配失败，回答不了“此前的堆被谁长期占用”。字节跳动 Client Infra 的公开案例采用线上 Hprof（Java 堆快照格式），把分析对象从崩溃点转向对象持有关系；我们沿用这个视角，先找持有者，再看崩溃栈。
 
 #### 采集与分析
 
 公开方案由客户端采集、服务端恢复与自动分析组成：
 
 
-- 原方案默认在 Java OOM 时 dump，另提供可配置高水位的 fork 子进程 dump；这是两条历史实现路径。fork/ART 状态协调、写时复制和子进程清理都带来约束，不能把它当作当前普通 SDK 保证无停顿、低额外内存的通用能力。
+- 原方案默认在 Java OOM 时 dump，另提供可配置高水位的 fork 子进程 dump；这是两条历史实现路径。fork/ART 状态协调、写时复制和子进程清理都带来约束，今天的普通 SDK 拿不到“无停顿、低额外内存”的通用保证。
 - Tailor（该方案的 Hprof 裁剪工具）在 native 层移除字符串内容、Bitmap 像素等分析无需保留的数据。原文公布的头条样本平均文件大小从 355 MB 降至 44 MB。
 - 服务端重建引用图和支配树，计算 Shallow Size、Retained Size 与 GC Root 路径，再按泄漏类、持有业务代码或大对象类聚合。
 - 混淆后的类名和引用路径经 Retrace（根据映射文件恢复原始符号）还原，问题才能分派给代码所有者。
@@ -753,12 +755,12 @@ Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该
 
 #### 从缺失的 Hook 记录找到映射入口
 
-常见 `mmap`、`mmap64`、`mremap`、`__mmap2` Hook（运行时拦截）没有记录到这批映射，`ioctl` 记录也无法解释增长。继续反汇编 vendor（厂商） 库后，团队发现 `libsrv_um.so` 直接调用 `syscall`，系统调用号对应 32 位 ARM 的 `mmap2`。
+常见 `mmap`、`mmap64`、`mremap`、`__mmap2` Hook（运行时拦截）没有记录到这批映射，`ioctl` 记录同样解释不了增长。继续反汇编 vendor（厂商） 库后，团队发现 `libsrv_um.so` 直接调用 `syscall`，系统调用号对应 32 位 ARM 的 `mmap2`。
 
 随后只拦截 `libsrv_um.so` 与 `gralloc.mt6765.so` 对 `syscall` 的调用，映射记录出现。这个证据修正了“映射完全发生在内核驱动内部”的早期猜测：PowerVR 用户态库绕过了 libc 的 `mmap` 符号，直接进入系统调用。
 
 
-调用栈继续指向 `libIMGegl.so` 的 `KEGLGetPoolBuffers`。一次增长会连续调用五次 `PVRSRVAcquireCPUMapping`，五类 buffer 合计约 25 MB，与 View 实验的增量吻合。绘制结束时，`KEGLReleasePoolBuffers` 只把 buffer 标为空闲，没有对应调用 `PVRSRVReleaseCPUMapping`。原文在 EGL surface / `CanvasContext` 销毁相关调用栈中观察到延迟释放，并将该案例归类为 buffer pool 长期保留。存在释放路径本身并不能排除生命周期泄漏；还要确认预期生命周期内是否实际执行释放、引用是否归零，以及新分配是否有上限。
+调用栈继续指向 `libIMGegl.so` 的 `KEGLGetPoolBuffers`。一次增长会连续调用五次 `PVRSRVAcquireCPUMapping`，五类 buffer 合计约 25 MB，与 View 实验的增量吻合。绘制结束时，`KEGLReleasePoolBuffers` 只把 buffer 标为空闲，没有对应调用 `PVRSRVReleaseCPUMapping`。原文在 EGL surface / `CanvasContext` 销毁相关调用栈中观察到延迟释放，并将该案例归类为 buffer pool 长期保留。存在释放路径，本身还排除不了生命周期泄漏；还要确认预期生命周期内是否实际执行释放、引用是否归零，以及新分配是否有上限。
 
 <!-- gracker-diagram: ed10-01-powervr-entry-and-pool-lifetime -->
 ![直接 syscall 的映射入口与池条目归还后的持有关系](../../assets/diagrams/ch10/ed10-01-powervr-entry-and-pool-lifetime.png)
@@ -802,20 +804,20 @@ MemoryThrashing 原文来自抖音直播 iOS 团队。实现通过 Objective-C R
 工具按多个时间点采样，对相邻样本做对象数量差分，定位两类异常：
 
 - **驻留堆积**：原文样本在两个采样周期之间新增 234,024 个对象，样本末仍有 238,800 个 `LivexxxBigDataRead` 实例，截图记录 11,462,400 bytes，约 10.93 MiB。
-- **临时对象洪峰**：开播特效识别人脸后频繁创建轮廓模型；小于 5 秒的采样周期内，原文称临时对象增量峰值约 60,000、累计分配超过百万次；展示的三个累计分配计数为 32,616、73,979、134,731，后两者之差是 60,752 次分配。该差值不是仍存活对象的净增长，百万次为原文另一项概括，不能从这三行截图直接算出。
+- **临时对象洪峰**：开播特效识别人脸后频繁创建轮廓模型；小于 5 秒的采样周期内，原文称临时对象增量峰值约 60,000、累计分配超过百万次；展示的三个累计分配计数为 32,616、73,979、134,731，后两者之差是 60,752 次分配。该差值统计的是累计分配次数，还代表不了仍存活对象的净增长；百万次是原文另一项概括，从这三行截图算不出来。
 
 <!-- gracker-diagram: ed10-01-oc-allocation-and-live-differences -->
 ![OC 两个历史样本分别计算存活净增与累计分配次数](../../assets/diagrams/ch10/ed10-01-oc-allocation-and-live-differences.png)
 
 图：历史iOS工具Hook OC alloc/dealloc并按Class采样，两支是两个独立样本，不拼同一Class/时间窗。左侧存活从4776到238800净增234024个，末值11462400bytes；右侧相邻累计alloc从73979到134731增加60752次，期间对象可已释放，不能称仍存活60752个。原图另有累计32616，三行不直接推出累计百万，百万为原文另一概括。净存活增长仍需区分业务/缓存/泄漏，差分指出类而不回答持有者，继续查引用关系。工具只覆盖OC对象并可影响方法缓存，Android按ART/malloc/映射/图形另选采集器；原文发布时为测试部署，未提供线上OOM收益。
 
-第二类对象可能很快释放，却会增加 CPU 与 allocator 压力；第一类需要继续查询引用关系，区分业务保留、缓存超限和泄漏。对象数量差分只能告诉工程师“哪类对象增长”，要回答“谁在持有”，还需要引用关系数据。
+第二类对象可能很快释放，却会增加 CPU 与 allocator 压力；第一类需要继续查询引用关系，区分业务保留、缓存超限和泄漏。对象数量差分告诉工程师的是“哪类对象在增长”；要回答“谁在持有”，我们还得回到引用关系数据。
 
 原文明确列出限制：只覆盖 Objective-C 对象、分析不了多个内存区域、没有完整引用图，Hook 还会影响方法缓存。文章发布时工具已部署到测试环境，线上部署仍在规划中，因此没有可引用的线上 OOM 降幅或定位耗时改善数据。
 
 #### Android 上如何复用
 
-Android 侧可保留“连续样本差分 + 异常时加深采集”的设计，采集器必须按内存域选择：
+在 Android 侧，我们可以保留“连续样本差分 + 异常时加深采集”的设计，采集器必须按内存域选择：
 
 | 内存域 | 轻量信号 | 深入证据 |
 | --- | --- | --- |

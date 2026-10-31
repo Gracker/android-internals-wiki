@@ -14322,7 +14322,7 @@
           "heading": "#### 内存上涨曲线的机制分类"
         }
       ],
-      "sha256_after": "0522da16d5eca4b232ff2f7d360838f4210df0180efd03d315958246e3c012df",
+      "sha256_after": "bb1a60191200b2b8a680422c45cf19ab73b507491e4f9aa74b540eff410d0a2e",
       "new_diagrams": [
         {
           "id": "ed10-01-native-profile-window-counters",
@@ -14570,7 +14570,32 @@
         "ch10-01-46-case-review-closure"
       ],
       "removed_but_shared_diagrams": [],
-      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-106/retired-assets.json"
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-106/retired-assets.json",
+      "sha256_after_initial_editorial": "0522da16d5eca4b232ff2f7d360838f4210df0180efd03d315958246e3c012df",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 106,
+          "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+          "revision": 1,
+          "accepted_sha256": "0522da16d5eca4b232ff2f7d360838f4210df0180efd03d315958246e3c012df",
+          "reviewed_sha256": "bb1a60191200b2b8a680422c45cf19ab73b507491e4f9aa74b540eff410d0a2e",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/source.diff",
+          "diff_sha256": "cea699eb41bf02c87a24e7e835c119367f61e82b68597d0584e5523460c5c6e2",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/106-20261031-01.json",
+          "report_sha256": "2e7af7ea2df0ba7251626bb7bd385193e1f781f45190e086bda600099e1e3362",
+          "caption_revisions": [],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/input.md",
+          "external_input_sha256": "bb1a60191200b2b8a680422c45cf19ab73b507491e4f9aa74b540eff410d0a2e",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T13:44:39.553262+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T13:44:39.968784+08:00"
     },
     {
       "index": 107,
@@ -44038,7 +44063,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:41:56.120223+08:00",
+  "updated_at": "2026-10-31T13:44:39.987117+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -44424,5 +44449,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 96
+  "currently_matching_reviewed_source_count": 97
 }

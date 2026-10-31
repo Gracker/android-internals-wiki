@@ -1,0 +1,205 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 106,
+  "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T13:44:39.426993+08:00",
+  "source_sha256": "bb1a60191200b2b8a680422c45cf19ab73b507491e4f9aa74b540eff410d0a2e",
+  "accepted_before_sha256": "0522da16d5eca4b232ff2f7d360838f4210df0180efd03d315958246e3c012df",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 441,
+  "reading_characters": 34587,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 17,
+  "current_pngs_actually_viewed": 17,
+  "current_contexts_actually_viewed": 17,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/compact-106-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/compact-106-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/compact-106-3.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 7,
+  "code_lines_preserved": 70,
+  "asset_sha256": {
+    "src/assets/diagrams/ch10/ch10-01-02-shared-page-accounting.svg": "1118e37ba591dcefb5c59b4153f8b87a3994fe21100fc68e6eff4fb4d239ee92",
+    "src/assets/diagrams/ch10/ch10-01-02-shared-page-accounting.png": "be09ebf26acf11c41678fec223a8fdad66b6b66c7d59cb8431a23f47196e4a49",
+    "src/assets/diagrams/ch10/ch10-01-04-am-memory-access.svg": "42a569871573194ed4520ebd49c0d1cf50e308ae317ebfcc135499d444d4491f",
+    "src/assets/diagrams/ch10/ch10-01-04-am-memory-access.png": "02cb36dea0449df3468bc9884a859ead571b00d7f219439f02a93f72625bb630",
+    "src/assets/diagrams/ch10/ch10-01-06-references-and-dominators.svg": "409749eb0cb58a3bf1164f4f1eff58d1608cfdaf26b717caf7a5135f3670fdfc",
+    "src/assets/diagrams/ch10/ch10-01-06-references-and-dominators.png": "a22b6402628de2cce6ba722d5c423ed92fbb43ee18f6744f20e8e8dd0b44eaad",
+    "src/assets/diagrams/ch10/ch10-01-08-bitmap-two-pixel-domains.svg": "1f461e450c221b20010e2f2917785dfe5aee8e3a09cbdf628da6ac99f4ffd668",
+    "src/assets/diagrams/ch10/ch10-01-08-bitmap-two-pixel-domains.png": "36b7f3e6a8afc5ea47a0d4d4309253d23eb9ec750937bef65872da6cfd39fbcc",
+    "src/assets/diagrams/ch10/ed10-01-native-profile-window-counters.svg": "2424bab246722c77819bab80a3262a9983b0c7b91b110a90373f6f4a4a823ea8",
+    "src/assets/diagrams/ch10/ed10-01-native-profile-window-counters.png": "b18c22ddb82917602de17e2ccf60f097febd6c1180e3d3ca5e6df501a7196180",
+    "src/assets/diagrams/ch10/ch10-01-14-wrap-startup.svg": "b4333540d1c21dddddce02d65416529d341b8c4eb5562cc9b19fcd71e614d99d",
+    "src/assets/diagrams/ch10/ch10-01-14-wrap-startup.png": "329b060c312647300647cc68689b54f0475208a8d68c1336c19345bf1cb8c84d",
+    "src/assets/diagrams/ch10/ed10-01-cache-and-resource-owners.svg": "a5fd11a8176306ffe169d23000e257109de3c0971fe4883d69423dabff7dfbb4",
+    "src/assets/diagrams/ch10/ed10-01-cache-and-resource-owners.png": "d1c6c4e61598a7ada47032e2905c57890ec81cff04b8fa247bdbb6ac24c0f75a",
+    "src/assets/diagrams/ch10/ch10-01-22-lmkd-decision.svg": "99d3b1666e1d244b658786fe040d425cd14f67b4dec88cdabf69b7a46bd42fe0",
+    "src/assets/diagrams/ch10/ch10-01-22-lmkd-decision.png": "83c23a52b4433b201308c2fa2554a7f3c9de9db1960da162265b761a48700ec9",
+    "src/assets/diagrams/ch10/ed10-01-psi-event-stat-and-poll.svg": "2194bbc8c3b9b485049120ae8cfb5a014082bfdba7bef563c3b78edc344b0d39",
+    "src/assets/diagrams/ch10/ed10-01-psi-event-stat-and-poll.png": "b6807e6bc040f920280b4d7ba35742550da2aa0475f3e27e3c9dde78907e9db4",
+    "src/assets/diagrams/ch10/ch10-01-24-psi-trigger-gates.svg": "fcea30ed82998522891882a74f36ccbd242c1e262d60b9389e7f854dc242b7ad",
+    "src/assets/diagrams/ch10/ch10-01-24-psi-trigger-gates.png": "a92bf1316cd83873dabe5124623d9ab181ebecc5c99229ed64fefd6c87a1642c",
+    "src/assets/diagrams/ch10/ed10-01-exit-context-and-old-sample.svg": "7db7fe44ebf92ff39ed58453eac82cfe1ace50705ddbf38a63f9c0359a359fd7",
+    "src/assets/diagrams/ch10/ed10-01-exit-context-and-old-sample.png": "ad0786744b04ad031ec4b12b79edb8b5db850a4e3715d130280fe4eefe3efe94",
+    "src/assets/diagrams/ch10/ch10-01-31-case-pressure-causality.svg": "b86cec7874f385a788072287e935176fe7a73bd2a42cf1f1ef6502b28074a6bf",
+    "src/assets/diagrams/ch10/ch10-01-31-case-pressure-causality.png": "b327b26d07bf8c013788e1cb7f3ce4bf41783b2c47790f54ee0a50edbc20876a",
+    "src/assets/diagrams/ch10/ed10-01-historical-hprof-acquisition-and-analysis.svg": "c4614d5c980619a3a321736984402c7ff9b0d2859519a2253a563ed50ca0e509",
+    "src/assets/diagrams/ch10/ed10-01-historical-hprof-acquisition-and-analysis.png": "59295fb910258eccd037845865afd350e7110b65e0b5e90700eeafd25e6b0fad",
+    "src/assets/diagrams/ch10/ch10-01-37-profiling-trigger-gates.svg": "645ed9588b685849bdb6e213c98beae02c17b4fffeff3919ccef6bd5e59178c2",
+    "src/assets/diagrams/ch10/ch10-01-37-profiling-trigger-gates.png": "69656eaf06d9ec52401dde44ba92e14e9a4b4bf7058cd8ed93c2a52a7e768b4c",
+    "src/assets/diagrams/ch10/ed10-01-powervr-entry-and-pool-lifetime.svg": "6dcc6589a2bf6575218f342915a6d8db7bc334a1eaf87eccbaf73ea3e8d4647c",
+    "src/assets/diagrams/ch10/ed10-01-powervr-entry-and-pool-lifetime.png": "be2f204bc65b39852a1c0c13c081c46b3b88abb6e20be4de15ff3323717249ae",
+    "src/assets/diagrams/ch10/ch10-01-41-hwui-promotion-gates.svg": "b365c553db305c6c170f6b5f970bdf6e8d290adea9df90491e918b02e43e1abf",
+    "src/assets/diagrams/ch10/ch10-01-41-hwui-promotion-gates.png": "a46639c08359c852844d8f0309c2ec4d414700351750df51ce085ad71d05c295",
+    "src/assets/diagrams/ch10/ed10-01-oc-allocation-and-live-differences.svg": "0b3ab1abe4e346c091ad24b8bc32c3d1a84725888c9410d3b5199c4e4e3ec262",
+    "src/assets/diagrams/ch10/ed10-01-oc-allocation-and-live-differences.png": "48481b90395a122ba8c56950683483a5723189765acc02ca6c30a797b5966f34"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a106/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "100e6ed073577e19888f9c9bb8f3b49c1a9333217d1deada91f19089e9c9533f",
+    "git_commit": "f34a2fa8a48589dfd2feb7a0128f8da68144c947"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch10-01-02-shared-page-accounting",
+      "heading": "#### 1.1 常用指标的含义",
+      "line": 141,
+      "decision": "keep",
+      "reason": "4KiB普通页A/B各映射一次RSS各4/PSS各2数值例与共享页新正文一致，非AndroidtotalPss严格同义。"
+    },
+    {
+      "id": "ch10-01-04-am-memory-access",
+      "heading": "#### 1.2 `Debug.MemoryInfo` 的字段与读法",
+      "line": 163,
+      "decision": "keep",
+      "reason": "isolated/UID权限/默认条目/缓存节流及shellroot instrumentation例外真实分支与改写161保持一致，非空数组零值不证明采样。"
+    },
+    {
+      "id": "ch10-01-06-references-and-dominators",
+      "heading": "#### 3.1 三个必须分清的概念",
+      "line": 238,
+      "decision": "keep",
+      "reason": "Roots到A/B再到共享C及仅A到D实际引用反例对应Shallow/Retained定义，引用边与独占支配区别未变。"
+    },
+    {
+      "id": "ch10-01-08-bitmap-two-pixel-domains",
+      "heading": "#### 3.2 可复现的泄漏检查",
+      "line": 262,
+      "decision": "keep",
+      "reason": "API26+软件像素native与HARDWARE图形两域分支仍与Bitmap段对应，Java包装引用入口及不同时释放时刻保持。"
+    },
+    {
+      "id": "ed10-01-native-profile-window-counters",
+      "heading": "#### 4.1 heapprofd 用于分配调用栈",
+      "line": 307,
+      "decision": "keep",
+      "reason": "实际观测窗内allocfree与样本末未free两轨及Total/Unreleased两种计数与改写305覆盖缺口说明一致，末条截住非free且非RSS。"
+    },
+    {
+      "id": "ch10-01-14-wrap-startup",
+      "heading": "#### 4.3 用 `wrap.sh` 启用 malloc debug",
+      "line": 344,
+      "decision": "keep",
+      "reason": "API27+debuggable的wrap参数→环境变量→logwrapper实际启动链与新342验证措辞一致，命令代码完整。"
+    },
+    {
+      "id": "ed10-01-cache-and-resource-owners",
+      "heading": "#### 6.2 用回落条件区分缓存、积压与泄漏",
+      "line": 466,
+      "decision": "keep",
+      "reason": "cache与外部View任务consumer两处持有及无人使用才提前销毁两分支仍符合464所有权条件，计数下降不保证回收。"
+    },
+    {
+      "id": "ch10-01-22-lmkd-decision",
+      "heading": "### 7. 系统内存压力与 LMKD",
+      "line": 477,
+      "decision": "keep",
+      "reason": "PSI/内存上下文→策略→adj扫描→同档选择→kill链仍对应475，非全局PSS排序。"
+    },
+    {
+      "id": "ed10-01-psi-event-stat-and-poll",
+      "heading": "#### 7.1 libpsi 与 PSI 事件通道",
+      "line": 506,
+      "decision": "keep",
+      "reason": "pressure trigger事件fd与另组统计路径分别汇入handler并可轮询/策略两职责，对应497–511新EPOLLPRI说明，非先轮询完再kill。"
+    },
+    {
+      "id": "ch10-01-24-psi-trigger-gates",
+      "heading": "#### 7.1 libpsi 与 PSI 事件通道",
+      "line": 513,
+      "decision": "keep",
+      "reason": "固定kernel窗口threshold合法性与privileged及访问权限分层对应511，SELinux编译判断并非普通应用注册保证。"
+    },
+    {
+      "id": "ed10-01-exit-context-and-old-sample",
+      "heading": "#### 7.2 用 `ApplicationExitInfo` 补齐进程退出上下文",
+      "line": 556,
+      "decision": "keep",
+      "reason": "旧系统内存样本与可选摘要两路退出历史上下文到后续查询与541说明一致，128编码bytes和API30门槛/最多16条完整。"
+    },
+    {
+      "id": "ch10-01-31-case-pressure-causality",
+      "heading": "#### 根因判断",
+      "line": 668,
+      "decision": "keep",
+      "reason": "冷启动截图与另段Monkey两路历史证据独立，不补为同次LMKD因果，与新662/675明确分离一致。"
+    },
+    {
+      "id": "ed10-01-historical-hprof-acquisition-and-analysis",
+      "heading": "#### 采集与分析",
+      "line": 711,
+      "decision": "keep",
+      "reason": "默认OOMdump与高水位fork两入口汇Tailor/服务器引用支配/Retrace真实产物链与新706仍有ART/CoW清理且无SDK无停顿保证一致。"
+    },
+    {
+      "id": "ch10-01-37-profiling-trigger-gates",
+      "heading": "#### 原文结果与 Android 17 增量",
+      "line": 743,
+      "decision": "keep",
+      "reason": "OOM默认handler链回与anomaly同UID多包限制两分支仍对应741，flag注册策略及触发不保证产物保留。"
+    },
+    {
+      "id": "ed10-01-powervr-entry-and-pool-lifetime",
+      "heading": "#### 从缺失的 Hook 记录找到映射入口",
+      "line": 765,
+      "decision": "keep",
+      "reason": "直接syscall mmap2入口链与GetPool可复用/不足映射、draw后idle与后续reuse/销毁迟到释放实际状态链对应新758/763，存在路径不足排除泄漏。"
+    },
+    {
+      "id": "ch10-01-41-hwui-promotion-gates",
+      "heading": "#### Android 17 源码中的对应路径",
+      "line": 790,
+      "decision": "keep",
+      "reason": "LayerTypeNone/fitsOnLayer前置→多个promote原因→effective类型→pushLayerUpdate再验链对应788，alpha只是分支不证明旧pool延续。"
+    },
+    {
+      "id": "ed10-01-oc-allocation-and-live-differences",
+      "heading": "#### 原案例的 iOS 背景",
+      "line": 809,
+      "decision": "keep",
+      "reason": "OC两个独立历史样本Δlive238800−4776=234024与Δalloc134731−73979=60752数值分支与新807改写一致，分配次数非净存活且三行不推出百万。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a106/01/layout-report.json",
+  "layout_report_sha256": "087d2f53988f558cf04d6573b9c851eca8024fd8e98229abfa566e04ab97ccf5",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "完整当前全文441阅读行34587字符、17组SVG标签、3原图联系表17PNG、3正文上下文联系表17位置、7代码块70行已独立读看。所有图标识、替代文本、路径、顺序、图注、代码和34资产哈希与初审一致，无原生，无新语义重复或错位。当前改写仍区分Android totalPss与smaps、默认条目/缓存与采样、heapprofd实际窗口缺口及RSS非碎片差值、缓存外持有者、PSI事件与统计/轮询/kill、旧内存样本与退出、两份不同历史启动/Monkey证据、Hprof普通SDK与历史fork约束、PowerVR直接syscall/idle未unmap及生命周期释放条件、OC累计alloc与净存活分母。1400/640图片加载标题结构/无溢出及mdbook通过。外部正文逐字保留，无自行改文改图，不重新执行设备或研究来源；原审核来源链保留。"
+}
