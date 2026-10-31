@@ -254,10 +254,6 @@ bool running_with_mte() {
 
 覆盖来源的优先级固定在 `libc_init_mte.cpp` 里：先 `MEMTAG_OPTIONS`，再 `arm64.memtag.process.<basename>`，然后是 DeviceConfig 里的进程覆盖值，最后是 `persist.arm64.memtag.default`。这些开关面向平台和调试配置，普通应用不要把它们当成稳定 API。
 
-<!-- gracker-diagram: ch04-09-native-executable-initialization -->
-![原生可执行文件：ELF 与覆盖配置汇入 libc 初始化](../../assets/diagrams/ch04/ch04-09-native-executable-initialization.png)
-
-图：动态程序由 linker，静态程序由 libc 启动路径进入 __libc_init_mte。ELF 动态表项或旧 note 提供默认请求；环境与属性按优先级覆盖堆模式。初始化向内核提交线程配置，并通过 __libc_shared_globals 把初始堆级别和栈 ABI 等交给进程 libc，随后 Scudo 决定是否标签分配。
 
 ### 应用进程由 Zygote 决策
 
@@ -372,10 +368,6 @@ DT_AARCH64_MEMTAG_GLOBALSSZ
 
 这一步的代价是失去原有的文件页共享，所以链接器只在 ELF 明确请求全局变量标签、且设备支持 MTE 时才执行重新映射。
 
-<!-- gracker-diagram: ch04-09-globals-tagged-remapping -->
-![全局变量：描述符驱动重映射、分配标签与重定位](../../assets/diagrams/ch04/ch04-09-globals-tagged-remapping.png)
-
-图：ELF 有非空 globals 描述符且进程启用 MTE 时，链接器选择可写、不可执行 PT_LOAD 段并尝试 PROT_MTE。原文件映射不支持时复制成固定地址私有匿名映射，再解码描述符写入标签、给符号和重定位加逻辑标签，恢复保护并命名 VMA。代价包含原有文件页共享的损失。
 
 ### 支持 MTE 的 libc ifunc
 
@@ -439,10 +431,6 @@ SYNC 模式下还要看 `Cause: [MTE]`、内存分配/释放调用栈，以及�
 5. 检查自定义分配器、JNI 指针算术、对象生命周期和跨线程移交。
 6. 修复后用同一工作负载重新测试，并保留 MTE 与内存错误检测工具 ASan/HWASan 的互补测试。
 
-<!-- gracker-diagram: ch04-09-tombstone-diagnosis-and-retest -->
-![先读信号语义，再用同场景 SYNC 补足生命周期证据](../../assets/diagrams/ch04/ch04-09-tombstone-diagnosis-and-retest.png)
-
-图：确认设备能力、进程重启与预期配置后，先按 tombstone 信号代码分类。MTESERR 的故障 PC/地址可直接定位访问，MTEAERR 则需要同场景切 SYNC 复现。再对应分配、释放或栈历史及自定义分配器，修复真实生命周期或边界错误；没有新报告也不等于覆盖所有错误。
 
 ## 标签存储的内存开销与 vMTE 展望
 
@@ -458,10 +446,6 @@ Linux 核心转储（core dump）会把两个 4 位标签压成一个字节，�
 
 “vMTE”常被用来指让标签存储更灵活或虚拟化的后续方案，Android 17 SDK/NDK 和 `android17-6.18-2026-06_r6` 都没有向应用提供这样的接口。评估 Android 17 产品时，我们以设备规格书、内核公布的能力和实测 PSS/RSS 为准，未来架构的设想先不算进当前收益。
 
-<!-- gracker-diagram: ch04-09-tag-capacity-and-detection-limits -->
-![3.125% 是标签信息量，运行成本与检测概率还要另算](../../assets/diagrams/ch04/ch04-09-tag-capacity-and-detection-limits.png)
-
-图：每 16 字节携带 4 位分配标签，理论信息量为数据的 1/32。实际产品成本还含 allocator 对齐、Scudo 元数据与诊断历史、栈历史以及 globals 重映射等。标签碰撞、同粒度错误和侧信道限制检测能力；具体检测概率取决于标签集合与生命周期，不能仅由位宽推得统一数值。
 
 ## MTE 安全攻击面与缓解
 
