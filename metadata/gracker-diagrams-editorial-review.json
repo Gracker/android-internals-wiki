@@ -42288,9 +42288,257 @@
       "before_count": 26,
       "before_all_images": 26,
       "sha256_before": "854c0111b9386dc7ed49995c0a72c805d4294d6ac218edef2a7f7f9836ac87a4",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "ch15-13-01-reach-then-measure",
+          "title": "路径触达、系统测量与因果检验",
+          "decision": "remove",
+          "reason": "四步重复开篇两工具分工及后文599–605七步工程接入清单，未画真实命中与异常同窗例；全部先trace再执行/FAILED非性能样本/无Hook复验条件正文留。",
+          "original_line": 89,
+          "heading": "# Android Performance Analyzer 与 GAPS：性能追踪与目标可达性"
+        },
+        {
+          "original_id": "ch15-13-02-apa-profiler-modes",
+          "title": "System、APA canary Frame 与 AGI 分开",
+          "decision": "remove",
+          "reason": "System/APAcanary/AGI三列逐项复制96–100模式段落和113文件链区别，所有独立版本/GFXR非gfxtrace/逐帧条件原文完整留。",
+          "original_line": 102,
+          "heading": "# Android Performance Analyzer 与 GAPS：性能追踪与目标可达性"
+        },
+        {
+          "original_id": "ch15-13-03-device-desktop-dataflow",
+          "title": "设备产出与桌面查询的分工",
+          "decision": "keep",
+          "reason": "App-framework-kernel事件经设备producer/source、Perfetto service/buffer到桌面APA文件查询的实际责任与数据链独立，设备语义与桌面呈现边界留。",
+          "original_line": 125,
+          "heading": "### 1. APA 在工具链中的位置"
+        },
+        {
+          "original_id": "ch15-13-04-validation-boundaries",
+          "title": "主机、设备与数据源逐层验证",
+          "decision": "remove",
+          "reason": "主机→设备→实际数据三框复制134–143环境清单与validation说明，没有实际失败分支，全部SDK/主机架构/USB/最低版本非实际支持边界留。",
+          "original_line": 145,
+          "heading": "### 2. 安装与设备要求"
+        },
+        {
+          "original_id": "ch15-13-05-measurement-builds",
+          "title": "发布基线与 Vulkan 诊断构建",
+          "decision": "remove",
+          "reason": "Java基线/Vulkan诊断/混合应用三列复写154–163两套构建与实验列表，没有实际对照结果或分支，debug/优化/layer条件不可混比原文留。",
+          "original_line": 165,
+          "heading": "### 3. 被测 App 应该用哪种构建"
+        },
+        {
+          "original_id": "ch15-13-06-recording-lifecycle",
+          "title": "从 Project 到可分析的 trace",
+          "decision": "remove",
+          "reason": "四框摘要174–180完整七步Project录制列表，未增加会话状态或时间范围，全部原操作步骤与Project不证明条件一致说明留。",
+          "original_line": 184,
+          "heading": "### 4. 从 Project 到一份可分析的 trace"
+        },
+        {
+          "original_id": "ch15-13-07-launch-and-triggers",
+          "title": "launch mode 与录制触发条件",
+          "decision": "keep",
+          "reason": "runningapp只Manual、launch startup、launch delay/manual的真实录制选择分支独立，start与end触发条件分开，不误把已运行模式当可OnStartup。",
+          "original_line": 198,
+          "heading": "#### 4.1 Launch mode 与 trigger"
+        },
+        {
+          "original_id": "ch15-13-08-config-and-retention",
+          "title": "数据源能力、容量与保留窗口",
+          "decision": "remove",
+          "reason": "三框逐项摘要207–213自定义配置五条检查清单，没有实际buffer覆盖窗口例；真实data source/marker/周期/停止丢失和非公开CLI字符串限制原文留。",
+          "original_line": 217,
+          "heading": "#### 4.2 默认配置与自定义 `TraceConfig`"
+        },
+        {
+          "original_id": "ch15-13-09-vulkan-layer-evidence",
+          "title": "三类 System Profiler layer 的证据",
+          "decision": "remove",
+          "reason": "CPUtiming/命名/截图三列重画226–238三类layer小节，未画API到GPU/显示实际对应；排除vkCmdDraw/实验性/标准swapchain截图非已present等原文完整留。",
+          "original_line": 240,
+          "heading": "#### 5.3 Screenshots"
+        },
+        {
+          "original_id": "ch15-13-10-slice-counter-flow",
+          "title": "slice、counter 与 flow 的不同含义",
+          "decision": "remove",
+          "reason": "slice/counter/flow三列复制249–251三条定义列表，未画真实区间/样本/跨轨flow，不保定义卡片复本；单位与因果边界原文留。",
+          "original_line": 255,
+          "heading": "### 6. Trace View 中能看到什么"
+        },
+        {
+          "original_id": "ch15-13-12-cpu-gpu-display-times",
+          "title": "CPU 工作量与窗口、GPU、呈现边界",
+          "decision": "keep",
+          "reason": "两线程A0–3和5–8、B1–7在8ms窗各运行6ms的真实并行数值反例独立，12ms工作量不是端到端12ms，GPU完成/latch/present边界图注保留。",
+          "original_line": 316,
+          "heading": "#### 8.1 帧耗时"
+        },
+        {
+          "original_id": "ch15-13-11-scheduling-state-buckets",
+          "title": "工作量、调度延迟与依赖等待",
+          "decision": "remove",
+          "reason": "Running/Runnable/Waiting三列复写339–343状态定义与后续方向段，未画实际状态轨或唤醒依赖，R/R+查询代码与调度证据要求原文留。",
+          "original_line": 345,
+          "heading": "#### 8.3 线程调度"
+        },
+        {
+          "original_id": "ch15-13-14-three-version-layers",
+          "title": "桌面版本、平台与内核驱动分别记录",
+          "decision": "remove",
+          "reason": "APA/平台/kernelvendor三列逐项重复374–376版本清单，没有新增版本依赖关系，所有实际fingerprint/driver与数据源支持全文留。",
+          "original_line": 380,
+          "heading": "### 10. Android 17 平台边界"
+        },
+        {
+          "original_id": "ch15-13-13-controlled-ab-analysis",
+          "title": "视觉对齐与固定查询的 A/B 对照",
+          "decision": "remove",
+          "reason": "三框重排389–398十条复查实验步骤，未画具体A/B量化结果，全部同配置同SQL与证据反例保存原文留。",
+          "original_line": 402,
+          "heading": "### 11. 一轮可复查的 APA 实验"
+        },
+        {
+          "original_id": "ch15-13-15-static-dynamic-performance",
+          "title": "静态路径、动态触达与性能结论",
+          "decision": "remove",
+          "reason": "静态/动态/性能三框与421–424阶段成功条件表及581目标命中非性能证明段重复，没有实际目标证据案例，三类分母与结果字段全文留。",
+          "original_line": 416,
+          "heading": "### 方法可达性有两个判定阶段"
+        },
+        {
+          "original_id": "ch15-13-16-gaps-static-pipeline",
+          "title": "GAPS 的静态表示与指令生成",
+          "decision": "keep",
+          "reason": "APKDEX经Androguard到ICC/callback反向局部图、条件来源、GUIhandler资源ID再JSON指令的实际产物转换链独立，保留非全语义恢复与Compose等输入边界。",
+          "original_line": 456,
+          "heading": "### GAPS 的处理链"
+        },
+        {
+          "original_id": "ch15-13-17-entry-and-input-boundaries",
+          "title": "候选入口与可构造输入的限制",
+          "decision": "remove",
+          "reason": "显式/Intent/动态receiver三列摘要471–473入口与输入限制，没有真实合法/拒绝条件分支，执行器跳过首项intent路径与权限/data/注册先发生原文留。",
+          "original_line": 475,
+          "heading": "#### 2. 识别 Android 入口与 ICC"
+        },
+        {
+          "original_id": "ch15-13-18-path-enumeration-budget",
+          "title": "论文路径算法与复现枚举预算",
+          "decision": "remove",
+          "reason": "论文/当前代码/预算三列复写484路径算法和预算越界段落，未画max1产2的实际枚举图，全部dfs与allshortest不同/入口分配后检查的精确说明留。",
+          "original_line": 486,
+          "heading": "#### 3. 按目标反向生成局部调用图"
+        },
+        {
+          "original_id": "ch15-13-19-conditions-and-gui-ids",
+          "title": "条件回溯与 GUI ID 映射",
+          "decision": "remove",
+          "reason": "四框重复493–512条件来源到GUI ID和JSON阶段，16已保留同一转换链；变量/null/返回值、publicxml映射、动态账号与Compose不支持等全文留。",
+          "original_line": 514,
+          "heading": "#### 5. 找到 GUI 事件和资源 ID"
+        },
+        {
+          "original_id": "ch15-13-20-paper-dynamic-control",
+          "title": "论文 Algorithm 5 的受限补救",
+          "decision": "keep",
+          "reason": "论文当前指令成功/障碍本路径Activity未用PHIL可补救/耗尽失败换路径的真实控制分支独立，明确论文语义并保留下一图代码差异引用。",
+          "original_line": 527,
+          "heading": "### 动态执行：确定性指令加受限 PHIL"
+        },
+        {
+          "original_id": "ch15-13-21-snapshot-executor-control",
+          "title": "复现代码的 PHIL 作用域与失败跳步",
+          "decision": "keep",
+          "reason": "快照动作失败检查实例级llmused后未用调用一次重试/已用i+=1跳后指令的真实分支独立，跨目标路径持久Activity预算与论文每路径范围不同。",
+          "original_line": 537,
+          "heading": "### 动态执行：确定性指令加受限 PHIL"
+        },
+        {
+          "original_id": "ch15-13-23-monitor-and-system-trace",
+          "title": "runtime 命中与系统 trace 的接入顺序",
+          "decision": "remove",
+          "reason": "四步再次摘要599–605七步monitor系统trace工程组合，与1同类总览重复，没有实际marker关联；全部trace先起/recordruntime/去Hook复测条件与非论文内置边界原文留。",
+          "original_line": 607,
+          "heading": "#### 一套可复现的接入顺序"
+        },
+        {
+          "original_id": "ch15-13-22-reset-and-state-lifetime",
+          "title": "run、目标方法与候选路径的重置范围",
+          "decision": "keep",
+          "reason": "run前restart一次、每_process_method可spawn/启动、每非intent路径仅启动主Activity、方法结束force-stop的实际不同层级重置范围链独立，避免误当每路径完整冷启动。",
+          "original_line": 614,
+          "heading": "#### 一套可复现的接入顺序"
+        },
+        {
+          "original_id": "ch15-13-24-synchronous-marker",
+          "title": "同线程 Trace section 的边界",
+          "decision": "remove",
+          "reason": "三框逐行重画623–638十四行Frida try/finally示例，所有同线程成对/实际选定重载/返回异常/Hook成本/异步任务另连条件原文完整留。",
+          "original_line": 642,
+          "heading": "#### 用 Frida 注入时间锚点"
+        },
+        {
+          "original_id": "ch15-13-25-reproducibility-and-result-schema",
+          "title": "触达率与性能分布分别记录",
+          "decision": "remove",
+          "reason": "输入/执行可靠性/性能三列复制710–729三阶段复现清单，没有真实字段值或失败样本，全部版本哈希、三轮、PHIL日志和REACHED子集分布要求原文留。",
+          "original_line": 731,
+          "heading": "### 复现实验检查清单"
+        },
+        {
+          "original_id": "ch15-13-26-paper-device-and-dataset-scope",
+          "title": "论文样本、执行预算与 Android17 外推",
+          "decision": "remove",
+          "reason": "AndroTest/真实应用/设备模型三列重述426–450与656–669两个实验表及741–743版本设备边界，未画新数值对比；原所有分母/消融/三轮与Android17工程外推而非论文实验说明完整留。",
+          "original_line": 745,
+          "heading": "## 版本与实现边界"
+        }
+      ],
+      "sha256_after": "3bfecace1cd2c84a2bae616fbb09ea19c631f476e52b31b170166ab547a235b0",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:35:51.941177+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 26,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a161/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a161/visual-review.json",
+      "retired_diagrams": [
+        "ch15-13-01-reach-then-measure",
+        "ch15-13-02-apa-profiler-modes",
+        "ch15-13-04-validation-boundaries",
+        "ch15-13-05-measurement-builds",
+        "ch15-13-06-recording-lifecycle",
+        "ch15-13-08-config-and-retention",
+        "ch15-13-09-vulkan-layer-evidence",
+        "ch15-13-10-slice-counter-flow",
+        "ch15-13-11-scheduling-state-buckets",
+        "ch15-13-13-controlled-ab-analysis",
+        "ch15-13-14-three-version-layers",
+        "ch15-13-15-static-dynamic-performance",
+        "ch15-13-17-entry-and-input-boundaries",
+        "ch15-13-18-path-enumeration-budget",
+        "ch15-13-19-conditions-and-gui-ids",
+        "ch15-13-23-monitor-and-system-trace",
+        "ch15-13-24-synchronous-marker",
+        "ch15-13-25-reproducibility-and-result-schema",
+        "ch15-13-26-paper-device-and-dataset-scope"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-161/retired-assets.json"
     },
     {
       "index": 162,
@@ -43514,8 +43762,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 95,
-  "next_article": "src/part3-tools/ch15-other-tools/13-performance-analyzer-gaps.md",
+  "reviewed_articles": 96,
+  "next_article": "src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -43525,7 +43773,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:32:00.518086+08:00",
+  "updated_at": "2026-10-31T13:35:51.941177+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -43885,9 +44133,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3351,
-  "reviewed_placements_after": 1503,
-  "net_removed_placements": 1848,
+  "reviewed_placements_before": 3377,
+  "reviewed_placements_after": 1510,
+  "net_removed_placements": 1867,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -43911,5 +44159,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 95
+  "currently_matching_reviewed_source_count": 96
 }

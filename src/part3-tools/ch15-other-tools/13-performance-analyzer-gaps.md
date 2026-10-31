@@ -86,10 +86,6 @@ consolidated_from:
 
 性能调查既要复现目标路径，也要测量路径执行时的行为。Android Performance Analyzer（APA）用系统 trace 观察线程、帧和资源；GAPS 通过静态路径重建与动态执行验证目标方法是否可达。两者解决不同问题：触达目标方法只是测量的前提，它是否就是性能瓶颈，要靠后面的测量来回答。
 
-<!-- gracker-diagram: ch15-13-01-reach-then-measure -->
-![路径触达、系统测量与因果检验](../../assets/diagrams/ch15/ch15-13-01-reach-then-measure.png)
-
-图：先准备路径与状态，在交互前开始录制，再对齐方法命中和系统证据。 GAPS触达与APA性能测量是不同结果；组合流程属于本章工程接入，不是论文内置链。
 
 > 源码基线：设备侧 Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
@@ -99,10 +95,6 @@ System Profiler 在 2026 年 5 月 19 日以 open beta 发布。当前应按 APA
 
 System Profiler 负责录制 system trace（系统追踪）、在 Project（组织多份 trace 的项目容器）中保存多份 trace、查看 CPU/GPU/内存/功耗与 SurfaceFlinger 事件，并运行 PerfettoSQL。APA canary 的 Frame Profiler 则走 GFXR 捕获与逐 render pass 重放测量，还可导出 `.rdc` 交给 RenderDoc；兼容范围与预热、重复测量条件见 15.11。两条流程分别记录版本和测量条件。
 
-<!-- gracker-diagram: ch15-13-02-apa-profiler-modes -->
-![System、APA canary Frame 与 AGI 分开](../../assets/diagrams/ch15/ch15-13-02-apa-profiler-modes.png)
-
-图：系统轨道、GFXR重放性能和AGI命令资源捕获分别固定版本与条件。 本章操作聚焦System Profiler；当前APA主页主要面向游戏和Vulkan，canary逐帧另查设备支持。
 
 ## 统一性能检查与系统证据
 
@@ -142,10 +134,6 @@ APA 首页提供 Windows、macOS 和 Linux 安装包。Quickstart 给出的主�
 
 不同设备、GPU 与驱动暴露的数据各不相同。GPU counter（周期采样的硬件指标）、GPU queue（GPU 硬件执行队列） 或 Vulkan 信息缺失时，先检查设备支持、驱动、App 构建和录制配置；轨道空着只说明这条数据没采到，要下“GPU 没有工作”的结论，光靠一条空轨道还不够。
 
-<!-- gracker-diagram: ch15-13-04-validation-boundaries -->
-![主机、设备与数据源逐层验证](../../assets/diagrams/ch15/ch15-13-04-validation-boundaries.png)
-
-图：先满足主机与设备要求，再通过设备验证并确认目标数据源实际可用。 Android12+只是最低条件；空GPU轨道只表明未获得该证据，不能判定没有GPU工作。
 
 ### 3. 被测 App 应该用哪种构建
 
@@ -162,10 +150,6 @@ APA 首页提供 Windows、macOS 和 Linux 安装包。Quickstart 给出的主�
 
 这两种构建各测各的目标，绝对时间上的结论别直接互换；构建类型一旦变过，我们就要把 APK（Android 安装包）、代码提交、编译选项和 manifest（应用清单） 状态一并记录下来。
 
-<!-- gracker-diagram: ch15-13-05-measurement-builds -->
-![发布基线与 Vulkan 诊断构建](../../assets/diagrams/ch15/ch15-13-05-measurement-builds.png)
-
-图：按系统测量或Vulkan诊断目的选择构建，并分别保留实验条件。 debuggable、优化、资源包与layer变化都会影响结果，绝对时间不能直接互换。
 
 ### 4. 从 Project 到一份可分析的 trace
 
@@ -181,10 +165,6 @@ APA 的基本工作流是：
 
 Project 适合保存同一问题的多份 trace，不过文件进了同一个 Project，采集条件也未必一致；所以每次录制，我们都要记下设备、build fingerprint（系统构建的唯一标识）、GPU driver、App 版本、刷新率、温度、亮度、电量和测试脚本。
 
-<!-- gracker-diagram: ch15-13-06-recording-lifecycle -->
-![从 Project 到可分析的 trace](../../assets/diagrams/ch15/ch15-13-06-recording-lifecycle.png)
-
-图：配置录制并执行固定操作，结束取回trace后保存本次条件与分析产物。 进入同一Project不代表设备、温度、构建或采样配置相同。
 
 #### 4.1 Launch mode 与 trigger
 
@@ -214,10 +194,6 @@ Use custom trace configuration 会把界面当前设置自动展开成 Perfetto 
 
 本轮核对的 System Profiler 录制指南使用 GUI 与自定义 `TraceConfig`，没有将 `/system/etc/perfetto-configs/apa-config.textproto`、`--custom-cpu-freq`、`--custom-gpu` 或 `adb shell apa` 定义为本流程的入口；本章不依赖这些未在所引指南公开的字符串。本文的 APA 操作步骤以独立桌面 GUI 为准；2026 年 5 月发布文还描述了 Android Studio 集成，两种界面都属于交互式工具，脚本化采集交给 Perfetto CLI、Macrobenchmark（Jetpack 性能基准测试框架）或相应测试工具。
 
-<!-- gracker-diagram: ch15-13-08-config-and-retention -->
-![数据源能力、容量与保留窗口](../../assets/diagrams/ch15/ch15-13-08-config-and-retention.png)
-
-图：从界面生成TraceConfig后，核对设备能力、buffer与目标窗口是否被保留。 采样和layer会扰动负载；长trace全开数据源并不保证证据更完整。
 
 ### 5. Vulkan Layers：能力与扰动
 
@@ -237,10 +213,6 @@ Screenshots 也处于 Experimental。它依赖拦截标准 `VK_KHR_swapchain`（
 
 启用 Vulkan layer 会改变运行环境。需要对外报告性能数字时，我们要另录一份未启用 layer 的基线 trace：诊断 trace 用来查找可疑阶段，基线 trace 用来确认修改后的真实收益。
 
-<!-- gracker-diagram: ch15-13-09-vulkan-layer-evidence -->
-![三类 System Profiler layer 的证据](../../assets/diagrams/ch15/ch15-13-09-vulkan-layer-evidence.png)
-
-图：CPU Timing、render pass名称和截图各自补充不同的系统trace线索。 这三类layer的范围不代表整个APA没有逐帧能力；性能收益仍需无layer基线验证。
 
 ### 6. Trace View 中能看到什么
 
@@ -252,10 +224,6 @@ APA 把每条时间轨道（track）上的 trace event 分为三类；我们先�
 
 进下表之前先把几个词认全：command buffer 是提交给 GPU 的命令列表；render pass 定义一组渲染附件及其处理范围；framebuffer 是本次渲染使用的颜色、深度等图像附件集合；submission 是一次 GPU 队列提交。stall 是硬件单元在等数据或资源时的停顿，async event 则是起止可能落在不同时间或线程上的异步事件。
 
-<!-- gracker-diagram: ch15-13-10-slice-counter-flow -->
-![slice、counter 与 flow 的不同含义](../../assets/diagrams/ch15/ch15-13-10-slice-counter-flow.png)
-
-图：用区间、数值和跨轨关联分别理解轨道中的三类事件。 flow是否可用取决于实际关联字段；counter峰值或相邻slice都不能独立证明因果。
 
 当前官方文档列出的主要区域包括：
 
@@ -342,10 +310,6 @@ Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android St
 
 长 Running 指向工作量，长 Runnable 指向调度延迟，长 Blocked 指向依赖等待，我们靠这三类先把排查方向定下来。若线程频繁迁核或落在不合适的 CPU 上，先检查线程优先级、任务划分、负载和 ADPF（Android Dynamic Performance Framework）的 Performance Hint。官方 APA 调度指南建议用 Performance Hint API 向系统表达性能需求；手工 affinity（把线程绑定到指定 CPU）留作个案处理，别当成通用修复。
 
-<!-- gracker-diagram: ch15-13-11-scheduling-state-buckets -->
-![工作量、调度延迟与依赖等待](../../assets/diagrams/ch15/ch15-13-11-scheduling-state-buckets.png)
-
-图：先把目标窗口拆为Running、Runnable和等待，再查对应的工作或依赖。 R与R+都属于可运行未执行；状态分类只缩小方向，优先级、温控与调度约束仍需现场证据。
 
 调度 tracepoint 的语义由内核决定，APA 展示的 `sched_switch`、`sched_wakeup` 反映的是内核调度事实；再往下的 CPU topology（核心层级与大小核布局）、uclamp（调度利用率上下限）、cpuset（任务可使用的 CPU 集合）、thermal（温控限制） 和厂商 scheduler 策略，要结合设备源码与 Perfetto 轨道解释。
 
@@ -377,10 +341,6 @@ Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android St
 
 APA 安装包不属于 `android-17.0.0_r1` framework 源码，在平台 tag 里翻不到它的可执行文件属于正常现象，也不影响这个桌面产品本身的定位。反过来说，APA 文档里出现某项 UI 能力，只代表桌面工具有这个界面；具体某台 Android 17 设备配有哪些 data source，要回到 build fingerprint 与 vendor driver 那两层确认。
 
-<!-- gracker-diagram: ch15-13-14-three-version-layers -->
-![桌面版本、平台与内核驱动分别记录](../../assets/diagrams/ch15/ch15-13-14-three-version-layers.png)
-
-图：GUI能力、平台事件和硬件数据源属于不同版本层，复现实验分别记录。 Android17标签不会自动携带APA安装包，也不保证设备暴露所有GPU数据。
 
 ### 11. 一轮可复查的 APA 实验
 
@@ -399,10 +359,6 @@ APA 安装包不属于 `android-17.0.0_r1` framework 源码，在平台 tag 里�
 
 短 trace 适合定位一轮交互，长时间功耗、温升和降频需要专门实验。为了 Trace View 更丰富而把数据源全开，换来的主要是更多扰动；等记录不到目标事件，再按缺口增加 data source。
 
-<!-- gracker-diagram: ch15-13-13-controlled-ab-analysis -->
-![视觉对齐与固定查询的 A/B 对照](../../assets/diagrams/ch15/ch15-13-13-controlled-ab-analysis.png)
-
-图：先固定采集与场景，再用同一查询或benchmark指标比较修复前后。 分栏对齐方便复盘；定量结论仍要同单位、同窗口与可复查的指标定义。
 
 
 ## 动态目标可达性与路径重建
@@ -413,10 +369,6 @@ APA 安装包不属于 `android-17.0.0_r1` framework 源码，在平台 tag 里�
 
 “静态找到路径”和“设备上执行到目标方法”是两个不同的事件，我们把它们分开判断。这里的 Android 入口指外部可启动的组件或框架回调，和 Java `main()` 是两回事：
 
-<!-- gracker-diagram: ch15-13-15-static-dynamic-performance -->
-![静态路径、动态触达与性能结论](../../assets/diagrams/ch15/ch15-13-15-static-dynamic-performance.png)
-
-图：静态候选、方法被观察到和性能问题成立，需要三个不同的证据门槛。 论文触达率不证明方法耗时、卡顿、ANR或安全影响，三种结果字段分别保存。
 
 | 阶段 | 成功条件 | 不能推出的结论 |
 | --- | --- | --- |
@@ -472,10 +424,6 @@ Android 应用没有单一 `main()` 入口。ICC（Inter-Component Communication
 
 论文也交代了这一步的能力范围：带权限的入口、只能由系统发送的广播，以及要求额外 data 参数的 Intent，可能有静态路径，却构造不出可自动执行的输入。当前实现离“完整求解 action、category（分类）、URI（数据地址）和 extras（附加键值参数）”还有距离。本轮执行器还会过滤掉首项第一字段为 `intent` 的候选路径；静态识别到这类入口，不表示该快照会自动执行相应 Intent。
 
-<!-- gracker-diagram: ch15-13-17-entry-and-input-boundaries -->
-![候选入口与可构造输入的限制](../../assets/diagrams/ch15/ch15-13-17-entry-and-input-boundaries.png)
-
-图：入口识别与运行时能否构造合法输入分开判断。 本轮执行器直接过滤首项第一字段为intent的候选；静态ICC识别不能外推动作覆盖。
 
 #### 3. 按目标反向生成局部调用图
 
@@ -483,10 +431,6 @@ GAPS 从目标方法向调用者反向扩展，按需构建 CHA（Class Hierarch
 
 v3 的 Algorithm 2 把路径提取写成深度优先遍历 `dfs_visit`；同一论文的实现说明与本轮复核的 `path_generation.py` 则使用自定义 `all_shortest_paths()` 枚举最短路径。它的生成器在 `n_paths > max_paths` 时才停止，单次调用可多产一条；调用方还按入口分配预算并在合并后检查数量。因此 `path_limit` 是配置预算，不能当作该快照严格满足的总路径硬上限。复现实验应固定快照文件，只凭伪代码名称去推枚举策略，是靠不住的。
 
-<!-- gracker-diagram: ch15-13-18-path-enumeration-budget -->
-![论文路径算法与复现枚举预算](../../assets/diagrams/ch15/ch15-13-18-path-enumeration-budget.png)
-
-图：按固定论文和代码分别说明路径枚举，预算边界由实际实现验证。 当前生成器max_paths为1可产2条，外层还有入口预算分配与合并后检查，不能承诺严格总上限。
 
 论文将整体分析描述为 target-oriented（围绕目标）、demand-driven（按需扩展）、inter-procedural（跨方法）、context-sensitive（区分调用上下文）。EdgeMiner 与 Soot virtual edges（框架隐式回调边）提供回调映射；不过，未被跟踪的 implicit flow（由框架隐式触发、源码中没有直接调用语句的执行流程）仍会让调用图漏边。
 
@@ -511,10 +455,6 @@ GAPS 识别 `onClick()`、`onItemSelected()` 等 handler（事件处理方法）
 
 XML View 体系能提供稳定资源 ID，正好适合这套分析。Jetpack Compose 通过 Kotlin lambda（匿名函数） 挂接事件，界面节点还会随 recomposition（状态变化后的重组）改变；v3 的 Limitations 明确说明当前不支持 Compose。
 
-<!-- gracker-diagram: ch15-13-19-conditions-and-gui-ids -->
-![条件回溯与 GUI ID 映射](../../assets/diagrams/ch15/ch15-13-19-conditions-and-gui-ids.png)
-
-图：候选条件和触发对象都需映射到可构造输入，GUI资源ID是执行器的重要连接点。 静态候选不是完整可达性证明；Compose、动态布局与运行时账号状态可能切断这条映射。
 
 ### 动态执行：确定性指令加受限 PHIL
 
@@ -604,10 +544,6 @@ GAPS 论文没有把 Perfetto 纳入路径生成、动态执行或 reachability�
 6. 只在 `REACHED` 样本内对齐目标 marker 与性能异常；`FAILED` 样本用来分析自动化可靠性，要和 P50/P95 等性能分位数分开算。
 7. 移除 Frida hook 后复测可疑场景，确认异常不由探针、重打包或调试环境引入。
 
-<!-- gracker-diagram: ch15-13-23-monitor-and-system-trace -->
-![runtime 命中与系统 trace 的接入顺序](../../assets/diagrams/ch15/ch15-13-23-monitor-and-system-trace.png)
-
-图：在交互前录trace，再安装monitor并执行路径，最后把目标marker关联到系统异常。 这是独立工程组合；只打开页面不证明方法执行，单次命中也不证明性能原因。
 
 论文 Algorithm 5 的每路径重启会改变进程冷启动/热启动、JIT、页面缓存、数据库连接和图片缓存；本轮代码在单目标分支或遍历所有目标之前调用一次 `restart_app()`；随后每个 `_process_method()` 可创建 Frida spawn/attach，或通过 monkey 启动应用，处理方法结束后会 `force-stop`。候选路径之间主要重新启动主 `Activity`，没有逐路径完整 `force-stop`。缺包时的安装使用 `adb install -r -g`，也会影响运行时权限初始状态。若待测问题只在长会话、后台恢复或热缓存条件下出现，需要先确认所用版本的重置范围，再修改执行器或使用 `--manual-setup` 准备状态，统一的 clean-state（干净初始状态）策略在这里立不住。
 
@@ -639,10 +575,6 @@ Java.perform(() => {
 
 这个 `Trace` section（同步时间片）包住 Hook 调用期间的方法执行，在应用线程轨道上给出一个时间标记；`beginSection()` 与 `endSection()` 必须在同一线程成对调用。它的职责到打点为止：Perfetto 的启停交给录制流程，帧时间线的判断交给 FrameTimeline。目标方法若被内联、位于 C/C++ 等 native 库、存在多个 overload（同名重载），或进程在 Hook 安装前已执行该方法，需要调整探针并单独验证。
 
-<!-- gracker-diagram: ch15-13-24-synchronous-marker -->
-![同线程 Trace section 的边界](../../assets/diagrams/ch15/ch15-13-24-synchronous-marker.png)
-
-图：同步section包住实际原方法调用，finally确保正常或异常返回都结束标记。 标记包含Hook与桥接开销，只覆盖所选重载的同步调用；异步后续任务要另外关联。
 
 #### jank、ANR 与功耗各看什么
 
@@ -728,10 +660,6 @@ Java.perform(() => {
 - hook、重打包和 release 原包分别建基线。
 - 结论同时给出目标 marker、线程/帧证据和无探针复测。
 
-<!-- gracker-diagram: ch15-13-25-reproducibility-and-result-schema -->
-![触达率与性能分布分别记录](../../assets/diagrams/ch15/ch15-13-25-reproducibility-and-result-schema.png)
-
-图：先固定输入和状态，逐轮保存路径与补救证据，再分别报告触达和性能指标。 性能分布仅描述相应REACHED子集；FAILED不能混作性能样本，模型与探针条件也需保留。
 
 
 ## 版本与实现边界
@@ -742,10 +670,6 @@ GAPS（Graph-based Automated Path Synthesizer，基于图的自动路径合成�
 
 平台集成部分以 Android 17 / API 37 / `android-17.0.0_r1` 为知识库基线。论文自身的动态实验使用 Android 16 x86-64 模拟器；需要 ARM 架构时使用 Pixel 2 / Android 11。论文没有报告过 Android 17 实验；文中的 Android 17 + Perfetto 流程属于工程扩展，写作时应与论文已验证结论区分开。
 
-<!-- gracker-diagram: ch15-13-26-paper-device-and-dataset-scope -->
-![论文样本、执行预算与 Android17 外推](../../assets/diagrams/ch15/ch15-13-26-paper-device-and-dataset-scope.png)
-
-图：把论文数据集、动态预算和实际设备范围与本章Android17工程扩展分开。 AndroTest与真实应用的目标集合不同；Compose等限制仍需验证，论文没有报告Android17实验。
 
 ## 小结
 
