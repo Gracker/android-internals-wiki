@@ -28604,9 +28604,1409 @@
       "before_count": 94,
       "before_all_images": 94,
       "sha256_before": "831145607dbd047adf361d0526280c100b36e33f02a805b4d6119655af17b5ae",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 31,
+      "decisions": [
+        {
+          "original_id": "ch13-11-01-three-carriers",
+          "title": "普通视频、宿主采样与sideband",
+          "decision": "remove",
+          "reason": "315三承载六卡重复313完整三路径引言、864–868承载对照表与824–838保留原生控制/输出flow；具体Texture和sideband机制另合图，删开头摘要。",
+          "original_line": 315,
+          "heading": "# 视频 Overlay、Media3 与专业编解码管线"
+        },
+        {
+          "original_id": "ch13-11-02-versions",
+          "title": "平台、播放器、参考实现与设备",
+          "decision": "remove",
+          "reason": "322平台/库/设备三组六卡逐项复制320固定基线及816–818版本声明，正文commit、内核样本与独立版本边界更全。",
+          "original_line": 322,
+          "heading": "# 视频 Overlay、Media3 与专业编解码管线"
+        },
+        {
+          "original_id": "ch13-11-03-overlay-opportunity",
+          "title": "SurfaceView保留独立视频候选",
+          "decision": "remove",
+          "reason": "335独立Surface→完整栈→协商→类型四框重复333完整段和355–386原生sequence，真实混合合成/快路径合图补分支，不再重复候选总览。",
+          "original_line": 335,
+          "heading": "### SurfaceView 给 Overlay 留下了什么"
+        },
+        {
+          "original_id": "ch13-11-04-ordinary-blast-sequence",
+          "title": "普通视频提交到显示的依赖",
+          "decision": "remove",
+          "reason": "388三节点/三轨直接重画355–386保留原生完整sequence；原生将修复两处分号渲染错误，具体时间门和异步fence另合图，删简化第二份。",
+          "original_line": 388,
+          "heading": "### 普通 Surface 视频的一帧怎样到达屏幕"
+        },
+        {
+          "original_id": "ch13-11-05-release-output-time",
+          "title": "释放输出、目标时间与可见结果",
+          "decision": "merge",
+          "reason": "本图“释放输出、目标时间与可见结果”作为同一机制的输入部分，合并释放输出的时刻、纳秒目标时间和两种调用者门控，具体标出BLAST传0不使用BQC时间门。；合图锚点为原图7，完整作用域与例外写入新图图注。",
+          "original_line": 395,
+          "heading": "### 普通 Surface 视频的一帧怎样到达屏幕",
+          "replacement_id": "ed13-11-output-time-gates"
+        },
+        {
+          "original_id": "ch13-11-06-timestamp-transfer",
+          "title": "BLAST怎样传递显示时间",
+          "decision": "merge",
+          "reason": "本图“BLAST怎样传递显示时间”作为同一机制的输入部分，合并释放输出的时刻、纳秒目标时间和两种调用者门控，具体标出BLAST传0不使用BQC时间门。；合图锚点为原图7，完整作用域与例外写入新图图注。",
+          "original_line": 404,
+          "heading": "#### 时间戳决定“希望何时显示”",
+          "replacement_id": "ed13-11-output-time-gates"
+        },
+        {
+          "original_id": "ch13-11-07-two-time-gates",
+          "title": "BQC通用门控与SF事务门控",
+          "decision": "merge",
+          "reason": "本图“BQC通用门控与SF事务门控”作为同一机制的输入部分，合并释放输出的时刻、纳秒目标时间和两种调用者门控，具体标出BLAST传0不使用BQC时间门。；合图锚点为原图7，完整作用域与例外写入新图图注。",
+          "original_line": 411,
+          "heading": "#### 时间戳决定“希望何时显示”",
+          "replacement_id": "ed13-11-output-time-gates"
+        },
+        {
+          "original_id": "ch13-11-08-three-fences",
+          "title": "acquire、release和present的对象",
+          "decision": "merge",
+          "reason": "本图“acquire、release和present的对象”作为同一机制的输入部分，把三类fence的对象与CPU回传、异步完成及TV层反馈接在同图，避免由拿到fd推内容已可用。；合图锚点为原图9，完整作用域与例外写入新图图注。",
+          "original_line": 430,
+          "heading": "#### 三类 fence 的分工",
+          "replacement_id": "ed13-11-buffer-fences-and-present"
+        },
+        {
+          "original_id": "ch13-11-09-fence-return-signal",
+          "title": "HWC返回fence与设备完成",
+          "decision": "merge",
+          "reason": "本图“HWC返回fence与设备完成”作为同一机制的输入部分，把三类fence的对象与CPU回传、异步完成及TV层反馈接在同图，避免由拿到fd推内容已可用。；合图锚点为原图9，完整作用域与例外写入新图图注。",
+          "original_line": 437,
+          "heading": "#### 三类 fence 的分工",
+          "replacement_id": "ed13-11-buffer-fences-and-present"
+        },
+        {
+          "original_id": "ch13-11-10-sv-independent",
+          "title": "SurfaceView内容与宿主窗口独立",
+          "decision": "keep",
+          "reason": "同一App的独立视频Layer和宿主Window两支允许分别更新，是具体对象/更新责任关系；区别于Texture合入宿主，保留。",
+          "original_line": 448,
+          "heading": "#### SurfaceView：保留独立的合成单元"
+        },
+        {
+          "original_id": "ch13-11-11-device-plus-client",
+          "title": "视频DEVICE与其他GPU工作并存",
+          "decision": "merge",
+          "reason": "本图“视频DEVICE与其他GPU工作并存”作为同一机制的输入部分，合并视频DEVICE与其他CLIENT并存、canSkipValidate前提和presentOrValidate两个真实返回分支。；合图锚点为原图17，完整作用域与例外写入新图图注。",
+          "original_line": 455,
+          "heading": "#### SurfaceView：保留独立的合成单元",
+          "replacement_id": "ed13-11-mixed-composition-and-fast-path"
+        },
+        {
+          "original_id": "ch13-11-12-texture-host",
+          "title": "TextureView先进入应用再到SF",
+          "decision": "merge",
+          "reason": "本图“TextureView先进入应用再到SF”作为同一机制的输入部分，把Texture通知/记录/原生取图和自研不同输出Surface合成真实资源链，消除后文再次画相同timeline。；合图锚点为原图14，完整作用域与例外写入新图图注。",
+          "original_line": 464,
+          "heading": "#### TextureView：视频先成为 App 渲染输入",
+          "replacement_id": "ed13-11-texture-and-final-output"
+        },
+        {
+          "original_id": "ch13-11-13-texture-main-rt",
+          "title": "TextureView主线程与RT的分工",
+          "decision": "merge",
+          "reason": "本图“TextureView主线程与RT的分工”作为同一机制的输入部分，把Texture通知/记录/原生取图和自研不同输出Surface合成真实资源链，消除后文再次画相同timeline。；合图锚点为原图14，完整作用域与例外写入新图图注。",
+          "original_line": 473,
+          "heading": "#### TextureView：视频先成为 App 渲染输入",
+          "replacement_id": "ed13-11-texture-and-final-output"
+        },
+        {
+          "original_id": "ch13-11-14-custom-output",
+          "title": "自定义GPU路径按最终Surface判定",
+          "decision": "merge",
+          "reason": "本图“自定义GPU路径按最终Surface判定”作为同一机制的输入部分，把Texture通知/记录/原生取图和自研不同输出Surface合成真实资源链，消除后文再次画相同timeline。；合图锚点为原图14，完整作用域与例外写入新图图注。",
+          "original_line": 487,
+          "heading": "#### 自定义 GL / Vulkan：按输出 Surface 判定",
+          "replacement_id": "ed13-11-texture-and-final-output"
+        },
+        {
+          "original_id": "ch13-11-15-composition-types",
+          "title": "三类视频合成职责",
+          "decision": "remove",
+          "reason": "502 CLIENT/DEVICE/SIDEBAND六卡逐格摘录496–500完整接口语义表，原生和新sideband数据面/快路径呈现实际关系，删除表格副本。",
+          "original_line": 502,
+          "heading": "### HWC 负责什么"
+        },
+        {
+          "original_id": "ch13-11-16-validate-flow",
+          "title": "一次常规validate与present",
+          "decision": "remove",
+          "reason": "530常规validate六框逐步重述524–528编号流程与355–386原生sequence，真实fast返回分支与mixed输出合图保留，不再第三次常规主线。",
+          "original_line": 530,
+          "heading": "### SurfaceFlinger 怎样做每帧协商"
+        },
+        {
+          "original_id": "ch13-11-17-skip-validate",
+          "title": "presentOrValidate的条件与分支",
+          "decision": "merge",
+          "reason": "本图“presentOrValidate的条件与分支”作为同一机制的输入部分，合并视频DEVICE与其他CLIENT并存、canSkipValidate前提和presentOrValidate两个真实返回分支。；合图锚点为原图17，完整作用域与例外写入新图图注。",
+          "original_line": 546,
+          "heading": "#### `presentOrValidate()` 快路径",
+          "replacement_id": "ed13-11-mixed-composition-and-fast-path"
+        },
+        {
+          "original_id": "ch13-11-18-overlay-constraints",
+          "title": "Overlay候选受哪些条件限制",
+          "decision": "remove",
+          "reason": "570格式/资源/证据三组六卡逐项压缩557–566八行详细约束表与568受控对照要求，原表更精确，删除清单副本。",
+          "original_line": 570,
+          "heading": "### Overlay 为什么会回退"
+        },
+        {
+          "original_id": "ch13-11-19-tunnel-sideband",
+          "title": "sideband控制面与设备数据面",
+          "decision": "merge",
+          "reason": "本图“sideband控制面与设备数据面”作为同一机制的输入部分，合并session转硬件sync、handle绑定清空、音频时钟与sideband数据面职责，分清CPU控制和逐帧设备更新。；合图锚点为原图38，完整作用域与例外写入新图图注。",
+          "original_line": 589,
+          "heading": "### Tunneled playback 与 SIDEBAND",
+          "replacement_id": "ed13-11-sideband-control-clock-and-data"
+        },
+        {
+          "original_id": "ch13-11-20-security-independent",
+          "title": "secure、protected与tunnel分别查询",
+          "decision": "remove",
+          "reason": "598 secure/protected/tunnel三组六卡逐条重述603–607能力清单，21保留受保护实际输出分支，sideband合图保留同步机制，独立能力正文完整。",
+          "original_line": 598,
+          "heading": "### DRM、Secure Video 与 Overlay"
+        },
+        {
+          "original_id": "ch13-11-21-protected-client",
+          "title": "protected client composition的条件",
+          "decision": "keep",
+          "reason": "受保护链和策略满足后分别走protected CLIENT、设备合成或无合规输出的三个真实分支，呈现保护非必DEVICE及禁止降为不安全读取，保留。",
+          "original_line": 611,
+          "heading": "### DRM、Secure Video 与 Overlay"
+        },
+        {
+          "original_id": "ch13-11-23-24-120-cadence",
+          "title": "24fps在120Hz的理想节奏",
+          "decision": "keep",
+          "reason": "内容帧A/B对应十个120Hz刷新周期的具体24/120相位图，直观区分新视频buffer与显示刷新计数；不是单纯数字清单，保留。",
+          "original_line": 629,
+          "heading": "### 帧率匹配与 Overlay 是两条问题线"
+        },
+        {
+          "original_id": "ch13-11-22-framerate-separate",
+          "title": "帧率vote与合成类型两条线",
+          "decision": "remove",
+          "reason": "636帧率vote/HWC/结果三组六卡逐格复制624–625两条问题线及634完整职责说明；22已给具体节奏反例，类型主线有原生和新fast图。",
+          "original_line": 636,
+          "heading": "### 帧率匹配与 Overlay 是两条问题线"
+        },
+        {
+          "original_id": "ch13-11-24-jitter-stages",
+          "title": "周期性顿挫的六个关口",
+          "decision": "remove",
+          "reason": "650六诊断关口逐项重述643–648六步清单，原生完整时序/新时间门/fence具体图和54时钟映射均保留，删除步骤图副本。",
+          "original_line": 650,
+          "heading": "### 帧率匹配与 Overlay 是两条问题线"
+        },
+        {
+          "original_id": "ch13-11-25-snapshot-vs-trace",
+          "title": "dumpsys快照与连续证据",
+          "decision": "remove",
+          "reason": "670稳态/变化/连续三组六卡逐项重述666–676采样要求与命令，原文目标output-layer和瞬时边界全部保留，删除证据清单副本。",
+          "original_line": 670,
+          "heading": "#### dumpsys：适合看某一时刻的快照"
+        },
+        {
+          "original_id": "ch13-11-26-trace-source-gates",
+          "title": "composition证据需要显式采集",
+          "decision": "remove",
+          "reason": "708数据源→字段→权限五框逐项重复690–706说明及完整11行配置代码，配置需合并完整config和主显示限定均留，不画代码摘要。",
+          "original_line": 708,
+          "heading": "#### Perfetto：适合看 composition type 是否随时间变化"
+        },
+        {
+          "original_id": "ch13-11-27-controlled-ab",
+          "title": "视频路径功耗实验的控制变量",
+          "decision": "remove",
+          "reason": "733变量/固定条件/结果三组六卡逐格压缩724–729实验表和731取样字段，原表A/B/C/D更全，删表格副本。",
+          "original_line": 733,
+          "heading": "#### 一套可复现的 A/B 实验"
+        },
+        {
+          "original_id": "ch13-11-28-kernel-boundaries",
+          "title": "内核共享同步与设备显示实现",
+          "decision": "remove",
+          "reason": "742 dma-buf/fence/DRM三组六卡逐条重述747–750四项职责清单，正文源码路径与版权DRM区别更全，fence对象合图已保留具体异步依赖。",
+          "original_line": 742,
+          "heading": "### 内核和驱动侧看什么"
+        },
+        {
+          "original_id": "ch13-11-29-interface-vs-hardware",
+          "title": "Composer接口代际与硬件代际",
+          "decision": "remove",
+          "reason": "772 API/HAL/DPU三组六卡重述763–770演进表与接口不能增加硬件说明，基线和所有硬件限制正文保留，不重复版本对照。",
+          "original_line": 772,
+          "heading": "### HWC2.x 到 Composer3 的接口演进"
+        },
+        {
+          "original_id": "ch13-11-30-player-control-path",
+          "title": "播放器控制与普通和tunnel输出",
+          "decision": "remove",
+          "reason": "840六框逐项压缩824–838保留原生控制面flow，原生同时画AudioTrack和普通/sideband分流更完整，删除同路径第二份。",
+          "original_line": 840,
+          "heading": "### 播放管线的分层责任"
+        },
+        {
+          "original_id": "ch13-11-31-codec2-omx",
+          "title": "Codec2与OMX的诊断对象",
+          "decision": "remove",
+          "reason": "888 Codec2/OMX/Java三组六卡逐格摘录880–886完整对象对照表，原文work/port诊断与真实39OMX/tunnel配置图保留，不把表格再成卡。",
+          "original_line": 888,
+          "heading": "### Android 17 同时保留 Codec2 与 OMX 路径"
+        },
+        {
+          "original_id": "ch13-11-32-low-latency",
+          "title": "低延迟能力与剩余延迟",
+          "decision": "remove",
+          "reason": "911能力/设置/剩余延迟三组六卡逐项复制909/916完整低延迟说明，B-frame/jitter/Surface/VSync限制正文更全，删清单副本。",
+          "original_line": 911,
+          "heading": "#### 低延迟、HDR 与动态元数据属于组合能力"
+        },
+        {
+          "original_id": "ch13-11-33-hdr-metadata",
+          "title": "HDR动态元数据与显示能力",
+          "decision": "remove",
+          "reason": "920内容→库→codec→显示五框逐项重述918完整HDR组合段，原文Eclipsa动态元数据/Camera profile/LUT能力更精确，不重复段落摘要。",
+          "original_line": 920,
+          "heading": "#### 低延迟、HDR 与动态元数据属于组合能力"
+        },
+        {
+          "original_id": "ch13-11-34-tunnel-on-demand",
+          "title": "音频时钟点播的tunnel条件",
+          "decision": "remove",
+          "reason": "933音频点播五框逐条重述938–942接入编号条件，35保留准确selector计数，新sideband图给session转换与实际时钟依赖，不重画清单。",
+          "original_line": 933,
+          "heading": "#### 能力与配置条件"
+        },
+        {
+          "original_id": "ch13-11-35-selector-tunnel",
+          "title": "Media3选择tunnel的门槛",
+          "decision": "keep",
+          "reason": "恰好一个支持tunnel的audio与video renderer及各selection全部tracks三条件共同成立，明确源码计数对象非全部renderer；防止误数，保留。",
+          "original_line": 946,
+          "heading": "#### 能力与配置条件"
+        },
+        {
+          "original_id": "ch13-11-36-session-hw-sync",
+          "title": "audio session与硬件sync ID",
+          "decision": "merge",
+          "reason": "本图“audio session与硬件sync ID”作为同一机制的输入部分，合并session转硬件sync、handle绑定清空、音频时钟与sideband数据面职责，分清CPU控制和逐帧设备更新。；合图锚点为原图38，完整作用域与例外写入新图图注。",
+          "original_line": 977,
+          "heading": "#### audio session 如何变成硬件同步 ID",
+          "replacement_id": "ed13-11-sideband-control-clock-and-data"
+        },
+        {
+          "original_id": "ch13-11-37-ccodec-sync",
+          "title": "CCodec的三种同步选择",
+          "decision": "keep",
+          "reason": "CCodec guard后audio-hw-sync优先、hw-av-sync-id次之、均无REALTIME的具体有序三分支，sideband合图只引用实际同步类型不替代此判断，保留。",
+          "original_line": 986,
+          "heading": "#### CCodec 如何建立 sideband"
+        },
+        {
+          "original_id": "ch13-11-38-handle-binding",
+          "title": "tunnel handle绑定及重置",
+          "decision": "merge",
+          "reason": "本图“tunnel handle绑定及重置”作为同一机制的输入部分，合并session转硬件sync、handle绑定清空、音频时钟与sideband数据面职责，分清CPU控制和逐帧设备更新。；合图锚点为原图38，完整作用域与例外写入新图图注。",
+          "original_line": 998,
+          "heading": "#### CCodec 如何建立 sideband",
+          "replacement_id": "ed13-11-sideband-control-clock-and-data"
+        },
+        {
+          "original_id": "ch13-11-39-omx-sideband",
+          "title": "OMX tunnel的输出端口处理",
+          "decision": "keep",
+          "reason": "OMX tunnel extension→sideband window→输出port计数0→跳过普通nativewindow分配的具体另一实现路径，与CCodec管理对象不同，保留。",
+          "original_line": 1005,
+          "heading": "#### CCodec 如何建立 sideband"
+        },
+        {
+          "original_id": "ch13-11-41-peek-held",
+          "title": "peek关闭时首帧为何仍未显示",
+          "decision": "merge",
+          "reason": "本图“peek关闭时首帧为何仍未显示”作为同一机制的输入部分，将显式peek首帧协议与暂停持帧、render时间样本和面板可见区别画在一条带真实分支的机制链。；合图锚点为原图42，完整作用域与例外写入新图图注。",
+          "original_line": 1020,
+          "heading": "#### 首帧 ready、首帧 render 与 panel 可见是三个时刻",
+          "replacement_id": "ed13-11-held-ready-render-and-visibility"
+        },
+        {
+          "original_id": "ch13-11-40-first-frame-boundaries",
+          "title": "ready、render样本与面板可见",
+          "decision": "merge",
+          "reason": "本图“ready、render样本与面板可见”作为同一机制的输入部分，将显式peek首帧协议与暂停持帧、render时间样本和面板可见区别画在一条带真实分支的机制链。；合图锚点为原图42，完整作用域与例外写入新图图注。",
+          "original_line": 1027,
+          "heading": "#### 首帧 ready、首帧 render 与 panel 可见是三个时刻",
+          "replacement_id": "ed13-11-held-ready-render-and-visibility"
+        },
+        {
+          "original_id": "ch13-11-42-c2-hold-render",
+          "title": "Codec2首帧hold到render回调",
+          "decision": "merge",
+          "reason": "本图“Codec2首帧hold到render回调”作为同一机制的输入部分，将显式peek首帧协议与暂停持帧、render时间样本和面板可见区别画在一条带真实分支的机制链。；合图锚点为原图42，完整作用域与例外写入新图图注。",
+          "original_line": 1040,
+          "heading": "#### 首帧 ready、首帧 render 与 panel 可见是三个时刻",
+          "replacement_id": "ed13-11-held-ready-render-and-visibility"
+        },
+        {
+          "original_id": "ch13-11-43-legacy-peek",
+          "title": "peek公开默认与legacy实现",
+          "decision": "merge",
+          "reason": "本图“peek公开默认与legacy实现”作为同一机制的输入部分，把公开默认/legacy/显式选择与同实例flush和新实例重建放在状态生命周期中。；合图锚点为原图44，完整作用域与例外写入新图图注。",
+          "original_line": 1047,
+          "heading": "#### 首帧 ready、首帧 render 与 panel 可见是三个时刻",
+          "replacement_id": "ed13-11-peek-policy-and-instance-reset"
+        },
+        {
+          "original_id": "ch13-11-44-peek-reset",
+          "title": "flush与stop/start后的peek状态",
+          "decision": "merge",
+          "reason": "本图“flush与stop/start后的peek状态”作为同一机制的输入部分，把公开默认/legacy/显式选择与同实例flush和新实例重建放在状态生命周期中。；合图锚点为原图44，完整作用域与例外写入新图图注。",
+          "original_line": 1054,
+          "heading": "#### 首帧 ready、首帧 render 与 panel 可见是三个时刻",
+          "replacement_id": "ed13-11-peek-policy-and-instance-reset"
+        },
+        {
+          "original_id": "ch13-11-45-audio-clock-stall",
+          "title": "音频时钟停走如何影响tunnel",
+          "decision": "merge",
+          "reason": "本图“音频时钟停走如何影响tunnel”作为同一机制的输入部分，合并session转硬件sync、handle绑定清空、音频时钟与sideband数据面职责，分清CPU控制和逐帧设备更新。；合图锚点为原图38，完整作用域与例外写入新图图注。",
+          "original_line": 1061,
+          "heading": "#### 首帧 ready、首帧 render 与 panel 可见是三个时刻",
+          "replacement_id": "ed13-11-sideband-control-clock-and-data"
+        },
+        {
+          "original_id": "ch13-11-46-abr-two-levels",
+          "title": "候选过滤与ABR实时选档",
+          "decision": "merge",
+          "reason": "本图“候选过滤与ABR实时选档”作为同一机制的输入部分，合并两层ABR关系和初次/排除/升降档buffer真实分支，避免把默认秒数当计时等待。；合图锚点为原图52，完整作用域与例外写入新图图注。",
+          "original_line": 1070,
+          "heading": "### Media3 1.10.1 的 ABR 到底看什么",
+          "replacement_id": "ed13-11-abr-candidates-and-hysteresis"
+        },
+        {
+          "original_id": "ch13-11-47-bw-window",
+          "title": "并行网络传输的吞吐采样",
+          "decision": "merge",
+          "reason": "本图“并行网络传输的吞吐采样”作为同一机制的输入部分，合并窗口字节、正/零耗时分支、加权分位数门槛和初值/切网重置区别。；合图锚点为原图48，完整作用域与例外写入新图图注。",
+          "original_line": 1084,
+          "heading": "#### 默认带宽估计",
+          "replacement_id": "ed13-11-bandwidth-window-and-weighted-estimate"
+        },
+        {
+          "original_id": "ch13-11-48-bw-percentile",
+          "title": "带宽估计的权重和更新门槛",
+          "decision": "merge",
+          "reason": "本图“带宽估计的权重和更新门槛”作为同一机制的输入部分，合并窗口字节、正/零耗时分支、加权分位数门槛和初值/切网重置区别。；合图锚点为原图48，完整作用域与例外写入新图图注。",
+          "original_line": 1093,
+          "heading": "#### 默认带宽估计",
+          "replacement_id": "ed13-11-bandwidth-window-and-weighted-estimate"
+        },
+        {
+          "original_id": "ch13-11-52-abr-discard",
+          "title": "升档丢弃旧chunk的限制",
+          "decision": "keep",
+          "reason": "升档discard按倍速playout保留25s及码率/1279x719/高度比较逐项收紧的实际条件链，独立于ABR实时选档与decoder late-frame drop，保留。",
+          "original_line": 1113,
+          "heading": "#### 选档与 buffer 门槛"
+        },
+        {
+          "original_id": "ch13-11-49-abr-budget",
+          "title": "TTFB已知与未知时的预算",
+          "decision": "merge",
+          "reason": "本图“TTFB已知与未知时的预算”作为同一机制的输入部分，将TTFB未知/已知实际两公式分支接总预算到各路checkpoint插值，保留单位与默认meter边界。；合图锚点为原图51，完整作用域与例外写入新图图注。",
+          "original_line": 1124,
+          "heading": "#### 选档与 buffer 门槛",
+          "replacement_id": "ed13-11-abr-budget-and-shared-checkpoints"
+        },
+        {
+          "original_id": "ch13-11-50-adaptive-shared-budget",
+          "title": "多路adaptive selection分配",
+          "decision": "merge",
+          "reason": "本图“多路adaptive selection分配”作为同一机制的输入部分，将TTFB未知/已知实际两公式分支接总预算到各路checkpoint插值，保留单位与默认meter边界。；合图锚点为原图51，完整作用域与例外写入新图图注。",
+          "original_line": 1135,
+          "heading": "#### 选档与 buffer 门槛",
+          "replacement_id": "ed13-11-abr-budget-and-shared-checkpoints"
+        },
+        {
+          "original_id": "ch13-11-51-abr-hysteresis",
+          "title": "理想档位和buffer滞回",
+          "decision": "merge",
+          "reason": "本图“理想档位和buffer滞回”作为同一机制的输入部分，合并两层ABR关系和初次/排除/升降档buffer真实分支，避免把默认秒数当计时等待。；合图锚点为原图52，完整作用域与例外写入新图图注。",
+          "original_line": 1142,
+          "heading": "#### 选档与 buffer 门槛",
+          "replacement_id": "ed13-11-abr-candidates-and-hysteresis"
+        },
+        {
+          "original_id": "ch13-11-53-abr-decoder-display",
+          "title": "网络、解码与显示瓶颈分开",
+          "decision": "remove",
+          "reason": "1173网络/解码/显示三组六卡逐格压缩1162–1168瓶颈证据表，原表输入PTS/queue/ready/present边界更全，新ABR与时间门和fence机制保留。",
+          "original_line": 1173,
+          "heading": "### ABR、解码和显示瓶颈怎样区分"
+        },
+        {
+          "original_id": "ch13-11-54-clock-mapping",
+          "title": "媒体PTS与系统trace如何对齐",
+          "decision": "keep",
+          "reason": "媒体PTS→播放起点/音频timestamp→系统domain→ClockSnapshot→同帧证据具体映射链，跨时钟迟到计算必须先做这步，保留。",
+          "original_line": 1182,
+          "heading": "### Perfetto 与播放器事件要放在同一时钟上"
+        },
+        {
+          "original_id": "ch13-11-55-incremental-sample",
+          "title": "分片下载与sample解码可重叠",
+          "decision": "keep",
+          "reason": "目标sample已到达解析后可送codec，同时同segment其余字节仍在传的真实并行分支；避免把segment完成当所有sample解码前提，保留。",
+          "original_line": 1193,
+          "heading": "### Perfetto 与播放器事件要放在同一时钟上"
+        },
+        {
+          "original_id": "ch13-11-56-normal-timeline",
+          "title": "普通与TextureView的中间关口",
+          "decision": "merge",
+          "reason": "本图“普通与TextureView的中间关口”作为同一机制的输入部分，把Texture通知/记录/原生取图和自研不同输出Surface合成真实资源链，消除后文再次画相同timeline。；合图锚点为原图14，完整作用域与例外写入新图图注。",
+          "original_line": 1200,
+          "heading": "### Perfetto 与播放器事件要放在同一时钟上",
+          "replacement_id": "ed13-11-texture-and-final-output"
+        },
+        {
+          "original_id": "ch13-11-57-tunnel-clock-timeline",
+          "title": "tunnel的媒体与显示证据",
+          "decision": "merge",
+          "reason": "本图“tunnel的媒体与显示证据”作为同一机制的输入部分，合并session转硬件sync、handle绑定清空、音频时钟与sideband数据面职责，分清CPU控制和逐帧设备更新。；合图锚点为原图38，完整作用域与例外写入新图图注。",
+          "original_line": 1213,
+          "heading": "### Perfetto 与播放器事件要放在同一时钟上",
+          "replacement_id": "ed13-11-sideband-control-clock-and-data"
+        },
+        {
+          "original_id": "ch13-11-58-frametimeline-coverage",
+          "title": "视频独立Surface的FrameTimeline边界",
+          "decision": "remove",
+          "reason": "1231宿主/独立Surface/tunnel三组六卡逐项复述1229覆盖限定及1211设备更新说明，原文与新Texture/sideband图完整保留缺口，不再加第三承载对照。",
+          "original_line": 1231,
+          "heading": "### Perfetto 与播放器事件要放在同一时钟上"
+        },
+        {
+          "original_id": "ch13-11-59-allow-frame-drop",
+          "title": "Surface丢帧策略与反压",
+          "decision": "keep",
+          "reason": "ALLOW_FRAME_DROP默认策略、targetSDK满足的非View输出可退出及consumer反压这一适用范围关系，防止用于View或所有层零丢帧，保留。",
+          "original_line": 1240,
+          "heading": "### `KEY_ALLOW_FRAME_DROP` 的适用边界"
+        },
+        {
+          "original_id": "ch13-11-60-bounded-tunnel-fallback",
+          "title": "tunnel失败后的可控回退",
+          "decision": "keep",
+          "reason": "tunnel失败→保留首diagnostic→受限释放重建普通SurfaceView→记录结果的具体恢复生命周期，区别框架自动fallback且避免无限循环，保留。",
+          "original_line": 1260,
+          "heading": "### 应用侧的稳妥策略"
+        },
+        {
+          "original_id": "ch13-11-61-vvc-platform-vendor",
+          "title": "VVC平台入口与厂商decoder",
+          "decision": "remove",
+          "reason": "1267 VVC平台/vendor/实测三组六卡逐项复述1265完整VVC职责段，MIME/MP4/C2入口和无AOSP编解码兜底原文全保留。",
+          "original_line": 1267,
+          "heading": "### 应用侧的稳妥策略"
+        },
+        {
+          "original_id": "ch13-11-62-live-speed",
+          "title": "直播buffer与倍速解码需求",
+          "decision": "remove",
+          "reason": "1278直播/倍速/operatingrate三组六卡重述1274–1276两段与60x2=120算式，新ABR预算及滞回图保留倍速/live关系，删除段落摘要。",
+          "original_line": 1278,
+          "heading": "### 低延迟直播与倍速播放"
+        },
+        {
+          "original_id": "ch13-11-63-vendor-evidence",
+          "title": "framework与vendor逐帧证据",
+          "decision": "remove",
+          "reason": "1291 framework/kernel/vendor三组六卡逐格复制1287–1289证据边界两段及源码资料清单，sideband图已强调设备数据面与缺BufferTX含义。",
+          "original_line": 1291,
+          "heading": "### Kernel 证据边界"
+        },
+        {
+          "original_id": "ch13-11-64-apv-workflow-purpose",
+          "title": "APV母版与分发格式的分工",
+          "decision": "remove",
+          "reason": "1334母版/代理/导出三组六卡逐项摘录1324–1339用途清单和1767–1774格式表，1653–1665完整原生workflow呈现真实关系，不再重复三角色卡。",
+          "original_line": 1334,
+          "heading": "### APV 解决的是专业素材问题"
+        },
+        {
+          "original_id": "ch13-11-65-apv-three-layers",
+          "title": "APV支持的三层含义",
+          "decision": "remove",
+          "reason": "1351标准/参考/产品三组六卡逐格复制1345–1349完整三层支持表，新软件启用/限制机制图保留真实gate，不重复表格。",
+          "original_line": 1351,
+          "heading": "### “平台支持”要拆成三层"
+        },
+        {
+          "original_id": "ch13-11-67-p210-layout",
+          "title": "P210的位深与内存占用",
+          "decision": "merge",
+          "reason": "本图“P210的位深与内存占用”作为同一机制的输入部分，用两平面的真实布局汇出32bpp并接4K60一遍读取，避免把10bit有效深度当10bit内存占用或当压缩输出码率。；合图锚点为原图81，完整作用域与例外写入新图图注。",
+          "original_line": 1373,
+          "heading": "### Android 16 到 Android 17 的公开接口",
+          "replacement_id": "ed13-11-p210-layout-and-read-bandwidth"
+        },
+        {
+          "original_id": "ch13-11-66-apv-api-evolution",
+          "title": "APV公开入口的版本演进",
+          "decision": "remove",
+          "reason": "1380 API36/36.1/37三组六卡逐项重述1360–1385版本说明，SDK_INT_FULL与prepare前CQ限制正文更全，新CQ实际分支图保留。",
+          "original_line": 1380,
+          "heading": "### Android 16 到 Android 17 的公开接口"
+        },
+        {
+          "original_id": "ch13-11-68-cq-vs-bitrate",
+          "title": "CQ质量与目标码率配置",
+          "decision": "merge",
+          "reason": "本图“CQ质量与目标码率配置”作为同一机制的输入部分，合并XML声明/CQ独立只读flag与MediaRecorder质量/bitrate互斥配置分支，避免静态声明直接通向可用。；合图锚点为原图75，完整作用域与例外写入新图图注。",
+          "original_line": 1387,
+          "heading": "### Android 16 到 Android 17 的公开接口",
+          "replacement_id": "ed13-11-cq-choice-and-runtime-gates"
+        },
+        {
+          "original_id": "ch13-11-69-apv-probe-scope",
+          "title": "基础APV探测与完整配置",
+          "decision": "merge",
+          "reason": "本图“基础APV探测与完整配置”作为同一机制的输入部分，把基础APV探测示例和两种供帧路线接到真实文件验收，保留CQ/性能点独立非联合证明。；合图锚点为原图72，完整作用域与例外写入新图图注。",
+          "original_line": 1396,
+          "heading": "### 能力探测要检查完整 MediaFormat",
+          "replacement_id": "ed13-11-complete-probe-and-input-validation"
+        },
+        {
+          "original_id": "ch13-11-70-apv-level-band",
+          "title": "APV level/band的检查边界",
+          "decision": "keep",
+          "reason": "请求profile→Java legacy常量比较→后续最高level检查→独立规格核算→实际码流的具体能力检查层次，区别基础probe与严格level/band验收，保留。",
+          "original_line": 1516,
+          "heading": "### 能力探测要检查完整 MediaFormat"
+        },
+        {
+          "original_id": "ch13-11-71-performance-points",
+          "title": "性能点列表与探测结果的三态",
+          "decision": "keep",
+          "reason": "性能点null、false压缩空列表/不覆盖、true覆盖三种可观测值与code实际输出对应，保留false不能反推空列表的反例和单实例保证范围。",
+          "original_line": 1527,
+          "heading": "### 能力探测要检查完整 MediaFormat"
+        },
+        {
+          "original_id": "ch13-11-72-apv-two-input-tests",
+          "title": "Surface与P210输入分别验证",
+          "decision": "merge",
+          "reason": "本图“Surface与P210输入分别验证”作为同一机制的输入部分，把基础APV探测示例和两种供帧路线接到真实文件验收，保留CQ/性能点独立非联合证明。；合图锚点为原图72，完整作用域与例外写入新图图注。",
+          "original_line": 1534,
+          "heading": "### 能力探测要检查完整 MediaFormat",
+          "replacement_id": "ed13-11-complete-probe-and-input-validation"
+        },
+        {
+          "original_id": "ch13-11-73-soft-apv-enabling",
+          "title": "AOSP软APV组件的启用关口",
+          "decision": "merge",
+          "reason": "本图“AOSP软APV组件的启用关口”作为同一机制的输入部分，把source存在到只读flag/factory/XML/枚举的控制链与XML/C2更严格上限接一起。；合图锚点为原图74，完整作用域与例外写入新图图注。",
+          "original_line": 1548,
+          "heading": "### AOSP 软件 APV 的启用条件与规格上限",
+          "replacement_id": "ed13-11-software-apv-gates-and-limits"
+        },
+        {
+          "original_id": "ch13-11-74-apv-reference-limits",
+          "title": "标准目标、XML和C2接口上限",
+          "decision": "merge",
+          "reason": "本图“标准目标、XML和C2接口上限”作为同一机制的输入部分，把source存在到只读flag/factory/XML/枚举的控制链与XML/C2更严格上限接一起。；合图锚点为原图74，完整作用域与例外写入新图图注。",
+          "original_line": 1563,
+          "heading": "### AOSP 软件 APV 的启用条件与规格上限",
+          "replacement_id": "ed13-11-software-apv-gates-and-limits"
+        },
+        {
+          "original_id": "ch13-11-75-apv-cq-flags",
+          "title": "XML的CQ声明与组件参数",
+          "decision": "merge",
+          "reason": "本图“XML的CQ声明与组件参数”作为同一机制的输入部分，合并XML声明/CQ独立只读flag与MediaRecorder质量/bitrate互斥配置分支，避免静态声明直接通向可用。；合图锚点为原图75，完整作用域与例外写入新图图注。",
+          "original_line": 1570,
+          "heading": "### AOSP 软件 APV 的启用条件与规格上限",
+          "replacement_id": "ed13-11-cq-choice-and-runtime-gates"
+        },
+        {
+          "original_id": "ch13-11-76-bitrate-int-boundary",
+          "title": "APV码率单位与Java整数边界",
+          "decision": "remove",
+          "reason": "1577理论level/Javaint/实测三组六卡逐项摘录1575单位与Integer.MAX_VALUE完整说明，原文2,000,000,000表达边界完整，不重复数字卡。",
+          "original_line": 1577,
+          "heading": "### AOSP 软件 APV 的启用条件与规格上限"
+        },
+        {
+          "original_id": "ch13-11-77-encoder-conversion",
+          "title": "APV软编码输入转换和复制",
+          "decision": "merge",
+          "reason": "本图“APV软编码输入转换和复制”作为同一机制的输入部分，把输入map/转换/复制与码流profile和解码输出保真接成信息流，不由容器名字推全过程质量。；合图锚点为原图79，完整作用域与例外写入新图图注。",
+          "original_line": 1586,
+          "heading": "#### 422-10 码流的输出像素格式",
+          "replacement_id": "ed13-11-source-information-and-apv-conversion"
+        },
+        {
+          "original_id": "ch13-11-78-decoder-format-selection",
+          "title": "APV解码输出格式选择",
+          "decision": "keep",
+          "reason": "默认420_888→YV12、显式受支持格式、否则按P210/P010/RGBA/YV12选择三条真实分配前策略，明确不是fetch失败逐格式重试，保留。",
+          "original_line": 1596,
+          "heading": "#### 422-10 码流的输出像素格式"
+        },
+        {
+          "original_id": "ch13-11-79-chroma-preservation",
+          "title": "码流profile与输出像素保真",
+          "decision": "merge",
+          "reason": "本图“码流profile与输出像素保真”作为同一机制的输入部分，把输入map/转换/复制与码流profile和解码输出保真接成信息流，不由容器名字推全过程质量。；合图锚点为原图79，完整作用域与例外写入新图图注。",
+          "original_line": 1603,
+          "heading": "#### 422-10 码流的输出像素格式",
+          "replacement_id": "ed13-11-source-information-and-apv-conversion"
+        },
+        {
+          "original_id": "ch13-11-80-storage-arithmetic",
+          "title": "高码率素材的写入容量",
+          "decision": "remove",
+          "reason": "1612 2Gbps→250MB/s→4分钟60GB四框逐步重述1610完整容量算术；不是机制新关系。新66/81保留两平面到单遍读取推导，所有编码输出算式原文保留。",
+          "original_line": 1612,
+          "heading": "### 码率、内存带宽和存储要用同一组规格计算"
+        },
+        {
+          "original_id": "ch13-11-81-p210-bandwidth",
+          "title": "4K60 P210一遍读取的带宽",
+          "decision": "merge",
+          "reason": "本图“4K60 P210一遍读取的带宽”作为同一机制的输入部分，用两平面的真实布局汇出32bpp并接4K60一遍读取，避免把10bit有效深度当10bit内存占用或当压缩输出码率。；合图锚点为原图81，完整作用域与例外写入新图图注。",
+          "original_line": 1623,
+          "heading": "### 码率、内存带宽和存储要用同一组规格计算",
+          "replacement_id": "ed13-11-p210-layout-and-read-bandwidth"
+        },
+        {
+          "original_id": "ch13-11-82-recording-admission",
+          "title": "录制规格的四组准入条件",
+          "decision": "remove",
+          "reason": "1637 codecCamera/存储/温控三组六卡逐项压缩1630–1635四组准入清单，原文长压测边界更精确，新完整输入验证与运行segment图保留实际关系。",
+          "original_line": 1637,
+          "heading": "### 码率、内存带宽和存储要用同一组规格计算"
+        },
+        {
+          "original_id": "ch13-11-83-recording-hysteresis",
+          "title": "写入压力和温控的滞回策略",
+          "decision": "merge",
+          "reason": "本图“写入压力和温控的滞回策略”作为同一机制的输入部分，合并输出积压、滚动压力/滞回、终结旧文件与新segment/项目映射，避免把三幅策略重复放在相邻小节。；合图锚点为原图89，完整作用域与例外写入新图图注。",
+          "original_line": 1644,
+          "heading": "### 码率、内存带宽和存储要用同一组规格计算",
+          "replacement_id": "ed13-11-bounded-queue-and-segment-policy"
+        },
+        {
+          "original_id": "ch13-11-84-professional-workflow",
+          "title": "预览、原片、代理与导出的分工",
+          "decision": "remove",
+          "reason": "1667六框重画1653–1665保留原生完整专业workflow；原生包括pending校验、代理与原片直达导出更全，删除同一路径第二份。",
+          "original_line": 1667,
+          "heading": "### 专业视频 App 应拆开录制、预览、代理和导出"
+        },
+        {
+          "original_id": "ch13-11-85-proxy-association",
+          "title": "代理与原片的稳定关联",
+          "decision": "remove",
+          "reason": "1676原片/代理/项目三组六卡逐项复述1674/1681–1689稳定素材ID、时间映射与角色清理清单，保留原生原片/代理数据关系和所有清理正文。",
+          "original_line": 1676,
+          "heading": "### 专业视频 App 应拆开录制、预览、代理和导出"
+        },
+        {
+          "original_id": "ch13-11-86-pending-mux-validation",
+          "title": "MP4完成与待发布状态",
+          "decision": "keep",
+          "reason": "IS_PENDING1→mux写入→stop/重开→首尾解码→通过再发布的实际文件生命周期，失败进入恢复或删除而非成功素材，保留。",
+          "original_line": 1697,
+          "heading": "### MP4 封装与异常退出"
+        },
+        {
+          "original_id": "ch13-11-87-bounded-output-queue",
+          "title": "muxer变慢时限制输出积压",
+          "decision": "merge",
+          "reason": "本图“muxer变慢时限制输出积压”作为同一机制的输入部分，合并输出积压、滚动压力/滞回、终结旧文件与新segment/项目映射，避免把三幅策略重复放在相邻小节。；合图锚点为原图89，完整作用域与例外写入新图图注。",
+          "original_line": 1704,
+          "heading": "### MP4 封装与异常退出",
+          "replacement_id": "ed13-11-bounded-queue-and-segment-policy"
+        },
+        {
+          "original_id": "ch13-11-88-three-fallbacks",
+          "title": "专业视频的三类降级",
+          "decision": "remove",
+          "reason": "1713规格/格式/工作流三组六卡逐项复述1718–1720三条清单，新83/87/89显示实际文件/段边界，原生显示代理工作流，不再图解同清单。",
+          "original_line": 1713,
+          "heading": "### 降级要同时覆盖规格、格式和工作流"
+        },
+        {
+          "original_id": "ch13-11-89-codec-segments",
+          "title": "更换codec时如何组织录制段",
+          "decision": "merge",
+          "reason": "本图“更换codec时如何组织录制段”作为同一机制的输入部分，合并输出积压、滚动压力/滞回、终结旧文件与新segment/项目映射，避免把三幅策略重复放在相邻小节。；合图锚点为原图89，完整作用域与例外写入新图图注。",
+          "original_line": 1724,
+          "heading": "### 降级要同时覆盖规格、格式和工作流",
+          "replacement_id": "ed13-11-bounded-queue-and-segment-policy"
+        },
+        {
+          "original_id": "ch13-11-90-recording-ui-states",
+          "title": "不支持、暂时受限与运行失败",
+          "decision": "remove",
+          "reason": "1731不支持/暂受限/运行失败三组六卡逐格复制1729三种状态和恢复解释，原文诊断/限制解除边界完整，新segment图保留具体恢复关系。",
+          "original_line": 1731,
+          "heading": "### 降级要同时覆盖规格、格式和工作流"
+        },
+        {
+          "original_id": "ch13-11-91-apv-observability",
+          "title": "从录制事件定位耗时位置",
+          "decision": "remove",
+          "reason": "1758 configure→输出→写入→底层→定位五框逐项重述1747–1756症状证据表及Trace建议，新有界队列/文件生命周期已给实际资源链，删采样清单副本。",
+          "original_line": 1758,
+          "heading": "### Perfetto、媒体指标与 kernel 边界"
+        },
+        {
+          "original_id": "ch13-11-92-openapv-platform",
+          "title": "OpenAPV参考实现与Android契约",
+          "decision": "remove",
+          "reason": "1789 README/应用集成/设备平台三组六卡逐格压缩1778–1787完整项目边界段，原文profile集合、CQP/ABR歧义和4种用途更全。",
+          "original_line": 1789,
+          "heading": "### OpenAPV 的用途与平台边界"
+        },
+        {
+          "original_id": "ch13-11-93-apv-outcome-metrics",
+          "title": "静态能力与每次运行结果",
+          "decision": "remove",
+          "reason": "1808静态/条件/结果三组六卡逐项摘录1798–1806七组字段与指标，完整日志清单和长时验证正文全留，不再做清单卡。",
+          "original_line": 1808,
+          "heading": "### 线上分组统计与启用指标"
+        },
+        {
+          "original_id": "ch13-11-94-video-final-evidence",
+          "title": "合成、媒体与专业工作流的复核",
+          "decision": "remove",
+          "reason": "1891平台/像素/结果三组六卡再次摘录1884–1888结论与前文三层表，删除结尾重复验收摘要；全部结论文字完整保留。",
+          "original_line": 1891,
+          "heading": "### 专业视频格式、能力协商与回退：结论"
+        }
+      ],
+      "sha256_after": "9f0e7df8d31d3da9462e2f9ec58ebf526389ee59411b47cdc7e54e5002269771",
+      "new_diagrams": [
+        {
+          "id": "ed13-11-output-time-gates",
+          "title": "目标时间先传到事务，再由实际调用关口判断",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-output-time-gates.svg",
+            "src/assets/diagrams/ch13/ed13-11-output-time-gates.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-output-time-gates",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecBufferChannel.cpp",
+            "https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferItemConsumer.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-05-release-output-time",
+              "ch13-11-06-timestamp-transfer",
+              "ch13-11-07-two-time-gates"
+            ],
+            "boundary": "releaseOutputBuffer(index,renderTimestampNs)提交Surface渲染请求并放弃App对该输出控制；时间是纳秒的系统目标时间，媒体PTS须先映射。显式timestamp写BufferItem.mTimestamp，常见BLAST expectedPresent=0、waitForFence=false，随后setBuffer/acquire与非自动desiredPresentTime事务。SF过早且处于约一秒保护窗口内可延后，时间门不是BLAST调用BQC等视频时间；通用BQC非零expectedPresent或latest-ready相应分支才可能PRESENT_LATER/丢旧帧。所有调用返回均不证明present或像素可见。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-buffer-fences-and-present",
+          "title": "当前图像读取、旧图像复用与本轮显示各有依赖",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-buffer-fences-and-present.svg",
+            "src/assets/diagrams/ch13/ed13-11-buffer-fences-and-present.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-buffer-fences-and-present",
+          "sources": [
+            "https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-08-three-fences",
+              "ch13-11-09-fence-return-signal"
+            ],
+            "boundary": "当前Layer acquire保护生产写入到读取，实际GPU/HWC读前满足；当前CPU present调用可带未signal的release/present对象返回，device-layer release通常对应上一帧旧buffer，旧图像复用须满足所有使用方依赖。物理present一般是开始出现/开始传面板内存的VSync边界，虚拟显示是输出写完，不等整个panel扫描/像素响应；PRESENT_FENCE_IS_NOT_RELIABLE与TV LayerPresentFence另核对。对象回传顺序不强制硬件访问已结束。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-mixed-composition-and-fast-path",
+          "title": "快路径结果与普通混合合成分别收尾",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-mixed-composition-and-fast-path.svg",
+            "src/assets/diagrams/ch13/ed13-11-mixed-composition-and-fast-path.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-mixed-composition-and-fast-path",
+          "sources": [
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl",
+            "https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-11-device-plus-client",
+              "ch13-11-17-skip-validate"
+            ],
+            "boundary": "framework需要本帧此刻无client composition，并满足earliestPresentTime或由Composer expected-present支持接管时序，才可尝试presentOrValidate；不是能力位自动命中。PresentSucceeded已完成提交，保存release/present fence并跳过后续重复presentDisplay，signal仍可能未来。返回validate或未满足快路径就处理changed types、按需RenderEngine生成client target，再HWC提交。视频DEVICE可与其他CLIENT和GPU client target并存，GPU工作不能替代视频Layer本身composition证据。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-texture-and-final-output",
+          "title": "codec 输入图像与 App 最终输出分两段追踪",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-texture-and-final-output.svg",
+            "src/assets/diagrams/ch13/ed13-11-texture-and-final-output.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-texture-and-final-output",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-12-texture-host",
+              "ch13-11-13-texture-main-rt",
+              "ch13-11-14-custom-output",
+              "ch13-11-56-normal-timeline"
+            ],
+            "boundary": "TextureView外部视频经SurfaceTexture成为App输入，frameavailable标记更新和invalidate，Main记录drawTextureLayer不等RT的DeferredLayerUpdater/ASurfaceTexture_dequeueBuffer原生取图；实际GPU读前满足fence，再生产最终AppWindow。自研GL/Vulkan须按实际AHB导入和同步，各API不通用；最终画到AppWindow则通常与UI合并，画到独立Surface则仍有独立Layer候选，二者都由HWC对最终Layer协商，AppGPU与SFRenderEngine不同。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-sideband-control-clock-and-data",
+          "title": "sideband 绑定控制对象，设备侧按同步时钟更新帧",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-sideband-control-clock-and-data.svg",
+            "src/assets/diagrams/ch13/ed13-11-sideband-control-clock-and-data.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-sideband-control-clock-and-data",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/core/include/C2Config.h",
+            "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl",
+            "https://source.android.com/docs/devices/tv/multimedia-tunneling",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-19-tunnel-sideband",
+              "ch13-11-36-session-hw-sync",
+              "ch13-11-38-handle-binding",
+              "ch13-11-45-audio-clock-stall",
+              "ch13-11-57-tunnel-clock-timeline"
+            ],
+            "boundary": "音频时钟点播共享AudioTrack和video的Java audio session；MediaCodec经AudioSystem.getAudioHwSyncForSession转native audio-hw-sync，二者不可混同。CCodec视频decoder/输出Surface/显式tunnel满足后配置SIDEBAND和实际sync类型，查询component整数handle，本tag分支不含fd，不是逐帧dma-buf。native_window绑定sideband并经BLAST/SF转状态，退出tunnel需清空。SF仍管位置尺寸层级；codec/HWC/设备按audio或tunerclock更新帧，不再靠普通逐帧BufferTX。音频点播静音仍持续PTS audio feed；underrun/pause/route变化可停钟停视频，tuner另查。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-held-ready-render-and-visibility",
+          "title": "首帧 ready 之后仍可能 held，render 样本另有边界",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-held-ready-render-and-visibility.svg",
+            "src/assets/diagrams/ch13/ed13-11-held-ready-render-and-visibility.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-held-ready-render-and-visibility",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/core/include/C2Config.h",
+            "https://source.android.com/docs/devices/tv/multimedia-tunneling",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecBufferChannel.cpp",
+            "https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h",
+            "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecConfig.cpp"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-41-peek-held",
+              "ch13-11-40-first-frame-boundaries",
+              "ch13-11-42-c2-hold-render"
+            ],
+            "boundary": "显式peek模式下首个非CSD/非decode-only输入标tunnel-first-frame，CCodecBufferChannel转C2StreamTunnelHoldRender。component解码并hold，以INCOMPLETE work update报告ready，work可后续更新。peek0且AudioTrack暂停可继续held；peek开启或音频播放时进入render。ready且peek启用时framework发内部trigger映射TunnelStartRender；component用C2PortTunnelSystemTime给MONOTONIC ns样本。render样本非回调到达/面板扫描完成，回调可延迟批量缺失，普通CCodec还可使用SF present或latch样本。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-peek-policy-and-instance-reset",
+          "title": "显式 peek 的策略位与首帧状态分别管理",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-peek-policy-and-instance-reset.svg",
+            "src/assets/diagrams/ch13/ed13-11-peek-policy-and-instance-reset.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-peek-policy-and-instance-reset",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecConfig.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/core/include/C2Config.h",
+            "https://source.android.com/docs/devices/tv/multimedia-tunneling"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-43-legacy-peek",
+              "ch13-11-44-peek-reset"
+            ],
+            "boundary": "公开MediaCodec.java注释写peek默认开启，但未显式设置时native保留LegacyMode并传UNSPECIFIED_PEEK，OEM可决定行为。依赖暂停首帧或seek预览时，在第一次start后、第一块有效视频输入前显式0/1。同实例flush或stop/start保留已显式enable bit，但重置尚无首帧；欲改策略在重置后下一有效输入前设置。新codec实例不继承旧bit，应重新显式设置，不能把公开注释当所有OEMlegacy表现。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-bandwidth-window-and-weighted-estimate",
+          "title": "并行字节先汇入计量窗口，再更新加权估计",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-bandwidth-window-and-weighted-estimate.svg",
+            "src/assets/diagrams/ch13/ed13-11-bandwidth-window-and-weighted-estimate.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-bandwidth-window-and-weighted-estimate",
+          "sources": [
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-47-bw-window",
+              "ch13-11-48-bw-percentile"
+            ],
+            "boundary": "Media3 1.10.1 DefaultBandwidthMeter按符合full-network-speed条件的传输结算窗口，sampleBytes可含并行传输。符合条件传输结束时，正elapsed将bytes*8000/ms按sqrt(bytes)权重加SlidingPercentile，累计时间>=2s或字节>=512KiB才以0.5加权分位数更新estimate；零耗时字节留后续窗口。初值按网络类型/地区选，未知离线初值1Mbps；已运行后切未知/离线可保留旧estimate，不能把默认初值画成所有切网必重置值。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-abr-budget-and-shared-checkpoints",
+          "title": "先修正总预算，再把带宽分给各 selection",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-abr-budget-and-shared-checkpoints.svg",
+            "src/assets/diagrams/ch13/ed13-11-abr-budget-and-shared-checkpoints.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-abr-budget-and-shared-checkpoints",
+          "sources": [
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java",
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter.java",
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/BandwidthMeter.java",
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/experimental/ExperimentalBandwidthMeter.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-49-abr-budget",
+              "ch13-11-50-adaptive-shared-budget"
+            ],
+            "boundary": "固定Media3 1.10.1 cautious=B*0.7；TTFB或下一chunk时长未知时allocatable=cautious/speed，DefaultBandwidthMeter默认TTFB为TIME_UNSET。两者均已知时allocatable=cautious*max(d/speed-TTFB,0)/d，d和TTFB同单位。多adaptive selection经factory adaptation checkpoints相邻插值分配，再用每路预算选允许track，不能把0.7*B看作所有路最终预算，Experimental或自定义meter另说明构造。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-abr-candidates-and-hysteresis",
+          "title": "候选过滤、理想档位与保留当前档分开判断",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-abr-candidates-and-hysteresis.svg",
+            "src/assets/diagrams/ch13/ed13-11-abr-candidates-and-hysteresis.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-abr-candidates-and-hysteresis",
+          "sources": [
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/DefaultTrackSelector.java",
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java",
+            "https://github.com/androidx/media/blob/5fb306449733dd71595700c1227ad6087578c559/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/BandwidthMeter.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-46-abr-two-levels",
+              "ch13-11-51-abr-hysteresis"
+            ],
+            "boundary": "DefaultTrackSelector先按renderer/codec、viewport、用户/MIME/HDR等过滤。AdaptiveTrackSelection按预算求理想档；首次选择或原档已排除直接采用，不套当前档保留条件。其他升档buffer不足10s默认点播门槛时保留，直播结合available duration、下一chunk和0.75比例修正；降档且buffer仍>=25s可暂缓。默认ABR不读HWCcomposition或decoder掉帧，约束解码能力需应用另做候选策略。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-p210-layout-and-read-bandwidth",
+          "title": "P210 的两平面决定有效数据量，再乘画面规格估算读取",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-p210-layout-and-read-bandwidth.svg",
+            "src/assets/diagrams/ch13/ed13-11-p210-layout-and-read-bandwidth.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-p210-layout-and-read-bandwidth",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/ImageFormat.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/components/apv/C2SoftApvEnc.cpp",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-67-p210-layout",
+              "ch13-11-81-p210-bandwidth"
+            ],
+            "boundary": "P210为4:2:2半平面，Y每像素一个16bit样本，CbCr交错、水平两像素共享一对色度，平均另16bit/pixel，样本高10bit有效低6bit为0，紧密payload总32bpp。3840*2160*4byte*60约1.99GB/s十进制单遍读，未含stride/对齐、Camera写入、内部转换、预览等；实际allocator和带宽需读返回布局/计数器。编码2Gbps=250MB/s是另一段压缩输出，不等总内存流量。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-cq-choice-and-runtime-gates",
+          "title": "CQ 声明先核对实际参数，再选择质量或码率路线",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-cq-choice-and-runtime-gates.svg",
+            "src/assets/diagrams/ch13/ed13-11-cq-choice-and-runtime-gates.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-cq-choice-and-runtime-gates",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaRecorder.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/components/apv/C2SoftApvEnc.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/data/media_codecs_google_c2_video.xml",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/aconfig/swcodec_flags.aconfig"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-68-cq-vs-bitrate",
+              "ch13-11-75-apv-cq-flags"
+            ],
+            "boundary": "固定软件APV XML声明VBR/CQ与quality0..100，实际C2 CQ bitrate-mode参数还受apv_software_codec_cq只读flag控制。运行时以所选EncoderCapabilities CQ/qualityRange和真实configure/prepare确认。API37 setVideoEncodingQuality需prepare前且encoder支持CQ，不与video bitrate同时设置，组合行为未指定；质量不跨codec可比。实际format需包含目标输入/HDR等，不用基础supports&&cq布尔值证明完整组合。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-complete-probe-and-input-validation",
+          "title": "基础查询之后仍需按实际输入与完整目标模式验证",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-complete-probe-and-input-validation.svg",
+            "src/assets/diagrams/ch13/ed13-11-complete-probe-and-input-validation.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-complete-probe-and-input-validation",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaRecorder.java",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-69-apv-probe-scope",
+              "ch13-11-72-apv-two-input-tests"
+            ],
+            "boundary": "示例基础检查MIME/size/fps/profile/level/bitrate并与colorFormats交叉检查Surface/P210，未把bitrate mode/quality/HDR keys全加目标format。独立CQ/performance flag不能相与证明完整Surface/HDR/CQ可配置。实际构造完整format configure后Surface路线createInputSurface让Camera等生产；P210路线按Image/ByteBuffer和plane stride供帧，不用createInputSurface替代。两路均需短录stop、重新解封装/抽样decode，并以目标Camera/存储/热状态长时验证，资源与session可失败。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-software-apv-gates-and-limits",
+          "title": "软件 APV 是否可枚举与可用规格分别过关",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-software-apv-gates-and-limits.svg",
+            "src/assets/diagrams/ch13/ed13-11-software-apv-gates-and-limits.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-software-apv-gates-and-limits",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/aconfig/swcodec_flags.aconfig",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/components/apv/C2SoftApvEnc.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/components/apv/C2SoftApvDec.cpp",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/data/media_codecs_google_c2_video.xml",
+            "https://developer.android.com/about/versions/16/features",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-73-soft-apv-enabling",
+              "ch13-11-74-apv-reference-limits"
+            ],
+            "boundary": "固定android17r1软件APV encoder/decoder受apv_software_codec只读flag和>=API36 factory gate，关闭factory返回nullptr。媒体XML默认enabled false、minsdk36、variant !slow-cpu，组件存在不等产品枚举。XML仅422-10最大1920x1920/240Mbps；encoder C2接口尺寸可到4096x4096，实际能力仍受更严格XML/产品/运行约束。2Gbps/4K8K标准设计范围不能由此软件参考兜底，runtime查MediaCodecList完整组合。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-source-information-and-apv-conversion",
+          "title": "422-10 容器不会恢复输入已缺失的像素信息",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-source-information-and-apv-conversion.svg",
+            "src/assets/diagrams/ch13/ed13-11-source-information-and-apv-conversion.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-source-information-and-apv-conversion",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/components/apv/C2SoftApvEnc.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/ImageFormat.java",
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/components/apv/C2SoftApvDec.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-77-encoder-conversion",
+              "ch13-11-79-chroma-preservation"
+            ],
+            "boundary": "固定软APV编码输入支持的implementation-defined/420/P010/P210/RGBA1010102等以实际平台为准，map后转换内部P210；即便已P210仍可逐行复制，Surface减少AppCPU拷贝不保证组件内部零拷贝。8bit/420转42210不恢复源缺色度/位深。APV码流42210也不证明decoder最终像素仍42210，应查output format/Image/HardwareBuffer；P210、P010、YV12、RGBA1010102各有采样/位深边界，HDR metadata另验收。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        },
+        {
+          "id": "ed13-11-bounded-queue-and-segment-policy",
+          "title": "存储反压以有界队列收敛，规格切换落在独立录制段",
+          "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+          "assets": [
+            "src/assets/diagrams/ch13/ed13-11-bounded-queue-and-segment-policy.svg",
+            "src/assets/diagrams/ch13/ed13-11-bounded-queue-and-segment-policy.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed13-11-bounded-queue-and-segment-policy",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/MPEG4Writer.cpp",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java",
+            "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/thermal/thermal_core.c",
+            "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaMuxer.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch13-11-83-recording-hysteresis",
+              "ch13-11-87-bounded-output-queue",
+              "ch13-11-89-codec-segments"
+            ],
+            "boundary": "记录encoder output PTS/bytes，muxer或FS变慢会积压；限制条目与总字节，按实际写入、thermal、空间信号设降档/停止及不同恢复门槛。策略需产品实现，不是Android自动固定阈值或无缝降档。同一track不静默换codec：结束当前codec/muxer、完成校验或标为失败待恢复，再按已验证Camera/codec组合起新segment；项目保存每段时间、规格、PTS映射、原因，导出组织连续时间线。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T11:07:13.579880+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 94,
+        "contexts_actually_viewed": 16,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "native_source_exact_except_declared_semicolon_entities": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a130/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a130/visual-review.json",
+      "inline_mermaid_syntax_repairs": [
+        {
+          "kind": "mermaid_semicolon_entity_escape",
+          "original_ordinal": 1,
+          "before": "```mermaid\nsequenceDiagram\n    participant App as Player / App\n    participant Codec as MediaCodec / Decoder\n    participant BQ as Surface / BufferQueue\n    participant BLAST as BLAST Consumer\n    participant SF as SurfaceFlinger\n    participant RE as RenderEngine\n    participant HWC as Composer HAL / Display\n\n    App->>Codec: queue compressed access unit\n    Codec->>Codec: decode into graphic buffer\n    App->>Codec: releaseOutputBuffer(index, renderTimestampNs)\n    Codec->>BQ: queue buffer + timestamp + write fence\n    BLAST->>BQ: acquireBuffer(expectedPresent=0, waitForFence=false)\n    BQ-->>BLAST: BufferItem and fence\n    BLAST->>SF: setBuffer + acquire fence + desiredPresentTime transaction\n    alt transaction not ready\n        SF->>SF: defer this transaction; retain previous content\n    else transaction eligible for this composition\n        SF->>HWC: layer state + buffer + acquire dependency; validate\n        HWC-->>SF: changed types and display requests\n        opt CLIENT composition needed\n            SF->>RE: compose CLIENT layers after read dependencies\n            RE-->>SF: client target + GPU completion fence\n            SF->>HWC: setClientTarget + acquire fence\n        end\n        SF->>HWC: present submission\n        HWC-->>SF: present fence + prior device-buffer release fences\n        Note over SF,HWC: call return is separate from fence signal and panel scanout\n    end\n```\n",
+          "after": "```mermaid\nsequenceDiagram\n    participant App as Player / App\n    participant Codec as MediaCodec / Decoder\n    participant BQ as Surface / BufferQueue\n    participant BLAST as BLAST Consumer\n    participant SF as SurfaceFlinger\n    participant RE as RenderEngine\n    participant HWC as Composer HAL / Display\n\n    App->>Codec: queue compressed access unit\n    Codec->>Codec: decode into graphic buffer\n    App->>Codec: releaseOutputBuffer(index, renderTimestampNs)\n    Codec->>BQ: queue buffer + timestamp + write fence\n    BLAST->>BQ: acquireBuffer(expectedPresent=0, waitForFence=false)\n    BQ-->>BLAST: BufferItem and fence\n    BLAST->>SF: setBuffer + acquire fence + desiredPresentTime transaction\n    alt transaction not ready\n        SF->>SF: defer this transaction#59; retain previous content\n    else transaction eligible for this composition\n        SF->>HWC: layer state + buffer + acquire dependency#59; validate\n        HWC-->>SF: changed types and display requests\n        opt CLIENT composition needed\n            SF->>RE: compose CLIENT layers after read dependencies\n            RE-->>SF: client target + GPU completion fence\n            SF->>HWC: setClientTarget + acquire fence\n        end\n        SF->>HWC: present submission\n        HWC-->>SF: present fence + prior device-buffer release fences\n        Note over SF,HWC: call return is separate from fence signal and panel scanout\n    end\n```\n",
+          "semicolon_count": 2,
+          "before_sha256": "f38c523e1d4bfb4b1ff2c0bdfa0cefde21fac61fe61bf4cdcb42c9e903beb2db",
+          "after_sha256": "c193c7aec48552b8f9342e7be8fb306b0be149bf7510fd284b0e990257af656a",
+          "reason": "Actual bundled Mermaid parser rejects original sequence messages containing literal ASCII semicolons. Entity escaping preserves visible words, punctuation, nodes and arrows.",
+          "parse_and_render_test": {
+            "original_failed": {
+              "ok": false,
+              "message": "Error: Parse error on line 18:\n...ain previous content    else transactio\n-----------------------^\nExpecting 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'DOTTED_ARROW', 'SOLID_CROSS', 'DOTTED_CROSS', 'SOLID_POINT', 'DOTTED_POINT', got 'NEWLINE'"
+            },
+            "escaped_parse_render_passed": true
+          },
+          "preview": "/tmp/gracker-diagrams-editorial-review-20261028/a130/native-1-repaired-preview.png"
+        }
+      ],
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 130,
+        "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+        "registered_sha256": "831145607dbd047adf361d0526280c100b36e33f02a805b4d6119655af17b5ae",
+        "frozen_sha256": "831145607dbd047adf361d0526280c100b36e33f02a805b4d6119655af17b5ae",
+        "review_input_sha256": "e4a1fee53ba499884cc0e6605c64f9dba867af5a233d42d5e97e6c39d09ad51c",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a130/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a130/external-source.diff",
+        "diff_sha256": "b5edc085f0c7ec67223a99ae139434806fb50fed8f29395aacf65c9afc65f3de",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "All 825 current narrative/table reading rows, 73180 characters, 94 SVG label sets and 94 original PNGs in 12 contact sheets independently read/viewed; all 3 native sources read, 2 successful original flows also viewed at 4500 width, first sequence independently parsed to diagnose 2 unescaped semicolons and repaired preview actually viewed; 5 code blocks, 139 lines independently read."
+      },
+      "sha256_review_input": "e4a1fee53ba499884cc0e6605c64f9dba867af5a233d42d5e97e6c39d09ad51c",
+      "retired_diagrams": [
+        "ch13-11-01-three-carriers",
+        "ch13-11-02-versions",
+        "ch13-11-03-overlay-opportunity",
+        "ch13-11-04-ordinary-blast-sequence",
+        "ch13-11-05-release-output-time",
+        "ch13-11-06-timestamp-transfer",
+        "ch13-11-07-two-time-gates",
+        "ch13-11-08-three-fences",
+        "ch13-11-09-fence-return-signal",
+        "ch13-11-11-device-plus-client",
+        "ch13-11-12-texture-host",
+        "ch13-11-13-texture-main-rt",
+        "ch13-11-14-custom-output",
+        "ch13-11-15-composition-types",
+        "ch13-11-16-validate-flow",
+        "ch13-11-17-skip-validate",
+        "ch13-11-18-overlay-constraints",
+        "ch13-11-19-tunnel-sideband",
+        "ch13-11-20-security-independent",
+        "ch13-11-22-framerate-separate",
+        "ch13-11-24-jitter-stages",
+        "ch13-11-25-snapshot-vs-trace",
+        "ch13-11-26-trace-source-gates",
+        "ch13-11-27-controlled-ab",
+        "ch13-11-28-kernel-boundaries",
+        "ch13-11-29-interface-vs-hardware",
+        "ch13-11-30-player-control-path",
+        "ch13-11-31-codec2-omx",
+        "ch13-11-32-low-latency",
+        "ch13-11-33-hdr-metadata",
+        "ch13-11-34-tunnel-on-demand",
+        "ch13-11-36-session-hw-sync",
+        "ch13-11-38-handle-binding",
+        "ch13-11-40-first-frame-boundaries",
+        "ch13-11-41-peek-held",
+        "ch13-11-42-c2-hold-render",
+        "ch13-11-43-legacy-peek",
+        "ch13-11-44-peek-reset",
+        "ch13-11-45-audio-clock-stall",
+        "ch13-11-46-abr-two-levels",
+        "ch13-11-47-bw-window",
+        "ch13-11-48-bw-percentile",
+        "ch13-11-49-abr-budget",
+        "ch13-11-50-adaptive-shared-budget",
+        "ch13-11-51-abr-hysteresis",
+        "ch13-11-53-abr-decoder-display",
+        "ch13-11-56-normal-timeline",
+        "ch13-11-57-tunnel-clock-timeline",
+        "ch13-11-58-frametimeline-coverage",
+        "ch13-11-61-vvc-platform-vendor",
+        "ch13-11-62-live-speed",
+        "ch13-11-63-vendor-evidence",
+        "ch13-11-64-apv-workflow-purpose",
+        "ch13-11-65-apv-three-layers",
+        "ch13-11-66-apv-api-evolution",
+        "ch13-11-67-p210-layout",
+        "ch13-11-68-cq-vs-bitrate",
+        "ch13-11-69-apv-probe-scope",
+        "ch13-11-72-apv-two-input-tests",
+        "ch13-11-73-soft-apv-enabling",
+        "ch13-11-74-apv-reference-limits",
+        "ch13-11-75-apv-cq-flags",
+        "ch13-11-76-bitrate-int-boundary",
+        "ch13-11-77-encoder-conversion",
+        "ch13-11-79-chroma-preservation",
+        "ch13-11-80-storage-arithmetic",
+        "ch13-11-81-p210-bandwidth",
+        "ch13-11-82-recording-admission",
+        "ch13-11-83-recording-hysteresis",
+        "ch13-11-84-professional-workflow",
+        "ch13-11-85-proxy-association",
+        "ch13-11-87-bounded-output-queue",
+        "ch13-11-88-three-fallbacks",
+        "ch13-11-89-codec-segments",
+        "ch13-11-90-recording-ui-states",
+        "ch13-11-91-apv-observability",
+        "ch13-11-92-openapv-platform",
+        "ch13-11-93-apv-outcome-metrics",
+        "ch13-11-94-video-final-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-130/retired-assets.json"
     },
     {
       "index": 131,
@@ -30149,8 +31549,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 66,
-  "next_article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+  "reviewed_articles": 67,
+  "next_article": "src/part2-performance/ch13-rendering-pipelines/12-game-engine.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -30160,7 +31560,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T10:54:34.003996+08:00",
+  "updated_at": "2026-10-31T11:07:13.579880+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -30209,13 +31609,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
-      "registered_sha256": "831145607dbd047adf361d0526280c100b36e33f02a805b4d6119655af17b5ae",
-      "observed_sha256": "e4a1fee53ba499884cc0e6605c64f9dba867af5a233d42d5e97e6c39d09ad51c",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -30618,9 +32011,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2328,
-  "reviewed_placements_after": 1096,
-  "net_removed_placements": 1232,
+  "reviewed_placements_before": 2422,
+  "reviewed_placements_after": 1127,
+  "net_removed_placements": 1295,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -30644,5 +32037,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 66
+  "currently_matching_reviewed_source_count": 67
 }
