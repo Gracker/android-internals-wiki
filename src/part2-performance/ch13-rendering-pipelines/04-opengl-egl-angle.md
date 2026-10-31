@@ -172,7 +172,7 @@ OpenGL ES（GLES）定义应用如何向 GPU 描述绘制，EGL 则把 GLES cont
 <!-- gracker-diagram: ch13-04-02-native-angle -->
 ![厂商 GLES 与 ANGLE 的两条后端路径](../../assets/diagrams/ch13/ch13-04-02-native-angle.png)
 
-图：两条路径在图形前端不同，窗口输出继续进入 Android 显示系统。 只画职责路径；实际图形库、版本与合成方式须用设备证据确认。
+图：两条路径在图形前端不同，窗口输出继续进入 Android 显示系统。 只画职责路径；实际图形库、版本与合成方式要在目标设备上确认。
 
 ## EGL 上下文、Swap 与 GLES 提交
 
@@ -187,9 +187,9 @@ EGL 是 GLES 与 native window system 之间的绑定层。读代码时，我们
 <!-- gracker-diagram: ed13-04-egl-objects-current-and-sharing -->
 ![EGL 对象、current 绑定与共享资源同步分开确认](../../assets/diagrams/ch13/ed13-04-egl-objects-current-and-sharing.png)
 
-图：EGL对象与共享约束合图。EGLDisplay是实现连接句柄，非Android物理DisplayID；Context保存状态/命名空间，可共享部分GL对象；Surface是默认draw/read目标，window连接ANativeWindow、pbuffer可离屏，另绑FBO不等新EGLSurface。makeCurrent按线程/surface规则绑定，同一context不能同时current两线程。共享对象仍须管理生命周期，并建立跨context的GL/EGL完成与可见性依赖；Java先后不能替GPU同步。箭头为对象/使用关系，非完整调用程序。
+图：EGL对象与共享约束合图。EGLDisplay是实现连接句柄，非Android物理DisplayID；Context保存状态/命名空间，可共享部分GL对象；Surface是默认draw/read目标，window连接ANativeWindow、pbuffer可离屏，另绑FBO不等新EGLSurface。makeCurrent按线程/surface规则绑定，同一context同一时刻只在一条线程current。共享对象仍须管理生命周期，并建立跨context的GL/EGL完成与可见性依赖；Java先后替不了GPU同步。箭头为对象/使用关系，非完整调用程序。
 
-- `EGLDisplay`：连接 EGL 实现的句柄，用于查询配置和创建资源，它表示 EGL display connection，不能把此句柄当作 Android 的物理 Display ID；
+- `EGLDisplay`：连接 EGL 实现的句柄，用于查询配置和创建资源；它对应的是 EGL display connection，Android 的物理 Display ID 要另外查询；
 - `EGLContext`：保存 GLES 状态与资源命名空间。共享 context 可以共享部分 GL 对象，但线程绑定、同步和资源生命周期仍由应用管理。
 - `EGLSurface`：通过 `eglMakeCurrent()` 绑定 context 的默认 framebuffer draw/read surface。window surface 连接 `ANativeWindow`，pbuffer 等用于离屏；应用另绑的 FBO 是 GL 对象，并不是新的 EGLSurface。
 
@@ -251,6 +251,8 @@ GLES 只描述内容怎样生产；这些内容由哪种 Android 组件承载，
 
 
 ### 渲染循环时序
+
+确认了内容由谁生产，我们接着看节奏：先分两种 render mode，再看一帧里 CPU、GPU 与显示各自负责哪一段，最后是 pacing 与过量提交。
 
 #### Continuous 与 When Dirty
 
@@ -329,6 +331,8 @@ Frame Pacing library 中的 Swappy 属于 AGDK 库，不在 `android-17.0.0_r1` 
 
 ### eglSwapBuffers 详解
 
+`eglSwapBuffers()` 是应用与显示系统的交接点：我们先看调用在 libEGL 里经过哪些层，再看耗时的构成、damage 与 buffer age 的用法，最后是错误与生命周期。
+
 #### libEGL 的分发职责
 
 AOSP `libEGL` 的 `eglSwapBuffersImpl()` 会进入 `eglSwapBuffersWithDamageKHRImpl()`。平台层先验证 display/surface，处理 surface metadata 和 damage（本帧更新区域），再把调用分发给已经选中的 EGL 实现：
@@ -338,12 +342,12 @@ AOSP `libEGL` 的 `eglSwapBuffersImpl()` 会进入 `eglSwapBuffersWithDamageKHRI
 - ANGLE 路径进入 ANGLE 的 EGL；
 - 扩展可用时，带 damage 的调用进入 `eglSwapBuffersWithDamageKHR()`；扩展不可用时使用普通 swap。
 
-AOSP wrapper 承担平台验证与分发，但并非始终没有同步工作：固定 r1 的 `traceGpuCompletion` 分支会创建 EGL fence 并交给完成线程，`finishOnSwap` 分支甚至通过 1×1 `glReadPixels()` 强制完成。通常的 dequeue 时机、GPU flush/submit、swap interval 和 fence 生成仍位于 ANGLE 或厂商实现中，所以不存在适用于所有设备和调试配置的固定 swap 内部调用栈。
+AOSP wrapper 承担平台验证与分发，同步工作它也可能做一部分：固定 r1 的 `traceGpuCompletion` 分支会创建 EGL fence 并交给完成线程，`finishOnSwap` 分支甚至通过 1×1 `glReadPixels()` 强制完成。通常的 dequeue 时机、GPU flush/submit、swap interval 和 fence 生成仍位于 ANGLE 或厂商实现中，所以不存在适用于所有设备和调试配置的固定 swap 内部调用栈。
 
 <!-- gracker-diagram: ed13-04-egl-wrapper-dispatch-and-debug -->
 ![libEGL 平台分发与可叠加的调试同步](../../assets/diagrams/ch13/ed13-04-egl-wrapper-dispatch-and-debug.png)
 
-图：libEGL核心分发与调试同步合图：普通swap进零rect的damage实现，平台验证EGL对象与rect参数并按实际分支处理metadata/damage，再分发vendor或ANGLE，扩展不可用时普通swap。虚线表示可叠加职责，非互斥三选一或内部固定先后；traceGpuCompletion可创建EGLfence交完成线程，finishOnSwap可1x1glReadPixels强制完成。分支存在不代表设备启用，不能预设wrapper始终无同步，实际dequeue/submit位置仍看实现。
+图：libEGL核心分发与调试同步合图：普通swap进零rect的damage实现，平台验证EGL对象与rect参数并按实际分支处理metadata/damage，再分发vendor或ANGLE，扩展不可用时普通swap。虚线表示可叠加职责，非互斥三选一或内部固定先后；traceGpuCompletion可创建EGLfence交完成线程，finishOnSwap可1x1glReadPixels强制完成。分支存在只说明平台具备该路径，设备是否启用、wrapper 承担多少同步、dequeue/submit 落在哪里，都以实际实现为准。
 
 调用的职责可用下面的概念骨架理解：
 
@@ -377,12 +381,12 @@ eglSwapBuffers(display, windowSurface)
 
 #### damage 与 buffer age
 
-`eglSwapBuffersWithDamageKHR()` 提供相对上一已提交帧的 surface damage 提示；它不自动修复 back buffer。`EGL_EXT_buffer_age` 返回当前 back buffer 的年龄：age=0 时旧内容不可依赖，应完整重绘；age=N>0 时，修复区域通常包含本帧 damage 与之前 N−1 帧 damage 的并集，还要覆盖尺寸/有效区域等变化。只有正确维护历史并完成修复，才能安全复用旧内容。
+`eglSwapBuffersWithDamageKHR()` 提供相对上一已提交帧的 surface damage 提示，back buffer 的修复要应用自己做。`EGL_EXT_buffer_age` 返回当前 back buffer 的年龄：age=0 时旧内容不可依赖，应完整重绘；age=N>0 时，修复区域通常包含本帧 damage 与之前 N−1 帧 damage 的并集，还要覆盖尺寸/有效区域等变化。只有正确维护历史并完成修复，才能安全复用旧内容。
 
 <!-- gracker-diagram: ch13-04-16-damage-age -->
 ![buffer age 与本帧修复区域](../../assets/diagrams/ch13/ch13-04-16-damage-age.png)
 
-图：先修复当前 back buffer，再提供提交 damage；两个区域口径不同。 age=N 的历史并集须结合有效区域与尺寸变化，不保证硬件只读指定矩形。
+图：先修复当前 back buffer，再提供提交 damage；两个区域指的是两回事。 age=N 的历史并集须结合有效区域与尺寸变化，硬件未必只读指定矩形。
 
 局部 damage 可能减少 tile/load/store 或后续合成工作，但系统不一定只读取指定矩形，HWC composition type 也可能变化。旋转、缩放、透明混合、颜色处理和设备实现都可能扩大最终有效的 damage 区域。
 
@@ -424,7 +428,7 @@ FREE → DEQUEUED → QUEUED → ACQUIRED → FREE
 
 #### 为什么 buffer 数量影响吞吐与时延
 
-较少的 buffer 会更早把显示背压传回 Producer，缩小排队空间，但可能让 CPU/GPU 更容易等待；较多的 buffer 能吸收短时抖动，也允许更多帧同时处于处理中，也可能增加实际分配和排队延迟；配置数量变大并不代表所有 buffer 已分配、已排满或输入时延必然增加。选择时应衡量目标设备上的稳定帧率、时延、内存和功耗，直接拿“GLES 默认三缓冲”当前提会跳过该做的分析。
+较少的 buffer 会更早把显示背压传回 Producer，缩小排队空间，但可能让 CPU/GPU 更容易等待；较多的 buffer 能吸收短时抖动，也允许更多帧同时处于处理中，也可能增加实际分配和排队延迟；配置数量变大只是放宽上限，buffer 是否真的分配、是否排满、输入时延是否上升，仍要看设备实测。选择时应衡量目标设备上的稳定帧率、时延、内存和功耗，直接拿“GLES 默认三缓冲”当前提会跳过该做的分析。
 
 
 #### 诊断等待
@@ -436,7 +440,7 @@ Producer 在 dequeue/swap 中等待时，依次核对：
 
 图：先区分调用结果，再解释返回之后的安全写入依赖。 无槽行为受阻塞/超时/模式影响；超限错误分支有已 queue 过等条件。
 
-1. 是否违反最大 dequeued 限制；固定 r1 已 queue 过后的超限分支可直接返回 `INVALID_OPERATION`，并非一定阻塞；
+1. 是否违反最大 dequeued 限制；固定 r1 已 queue 过后的超限分支可直接返回 `INVALID_OPERATION`，是否阻塞要看具体路径；
 2. 是否没有可用 slot；
 3. Consumer 是否仍 ACQUIRED；
 4. per-layer release fence 是否迟到；
@@ -444,7 +448,7 @@ Producer 在 dequeue/swap 中等待时，依次核对：
 6. swap interval 或 pacing 是否有意等待；
 7. Surface 是否正在重建或不可见。
 
-队列长期高水位、Producer 过量提交、swap/acquire 周期性等待和输入时延上升，是支持 queue-stuffing 的一组证据。它们不是四项缺一不可的规范定义；应沿同一输出队列和帧关联验证，排除 GPU 变慢、显示节拍和资源重建等原因。
+队列长期高水位、Producer 过量提交、swap/acquire 周期性等待和输入时延上升，是支持 queue-stuffing 的一组信号；这组信号四项无须凑齐，下结论前沿同一输出队列和帧关联验证，并排除 GPU 变慢、显示节拍和资源重建等原因。
 
 ### Fence 机制
 
@@ -459,12 +463,12 @@ Android `Surface::dequeueBuffer()` 从 `IGraphicBufferProducer` 取得 slot、Gr
 
 GLES 驱动可以把 GPU 尚未完成写入的 buffer 连同完成 fence 一起 queue 给 BufferQueue。对 SurfaceFlinger 和 BLASTBufferQueue（经 buffer transaction 提交 buffer 的队列）而言，这项依赖就是 acquire fence，合成路径真正读取像素前必须保证它已经满足；允许 unsignaled latch（为本次合成选中） 的受限路径同样消除不了硬件读取依赖。
 
-DEVICE 路径的 HWC release fence 经 SF 返回；CLIENT 路径还可能合并 RenderEngine GPU 的读取完成依赖。反馈对应被替换/释放的旧 buffer，不能简单挂到当前正在 present 的新 buffer。present fence 是整个 Display 的呈现时间基准，既不等于某块 GLES buffer 的写入完成 fence，也不能代替该 buffer 的安全复用依赖。
+DEVICE 路径的 HWC release fence 经 SF 返回；CLIENT 路径还可能合并 RenderEngine GPU 的读取完成依赖。这份反馈对应的是被替换、被释放的旧 buffer，要和当前正在 present 的新 buffer 分开对号。present fence 是整个 Display 的呈现时间基准；某块 GLES buffer 的写入完成和安全复用各有各的依赖，以各自对应的 fence 为准。
 
 <!-- gracker-diagram: ed13-04-async-buffer-read-reuse-and-present -->
 ![queue 可先于 GPU 完成，读取、复用与 present 各有依赖](../../assets/diagrams/ch13/ed13-04-async-buffer-read-reuse-and-present.png)
 
-图：原生GLES与ANGLE的重复异步三轨合图，非固定实现调用栈或实测时长。buffer/dmabuf共享存储，fence不传像素；驱动/WSI可在GPU尚写时queue并传完成依赖。Consumer实际读前须acquire满足，受限先latch不等提前读。release对应旧buffer，CLIENT可合RenderEngine GPU读取条件，FREE/通知不等安全覆写；present是目标Display时间基准，不能代替buffer完成/复用，也非面板光学响应。CPU返回、queue、采纳、GPU完成和显示分别按同buffer/frame/fence关联。
+图：原生GLES与ANGLE的重复异步三轨合图，非固定实现调用栈或实测时长。buffer/dmabuf共享存储，fence不传像素；驱动/WSI可在GPU尚写时queue并传完成依赖。Consumer实际读前须acquire满足，受限先latch不等提前读。release对应旧buffer，CLIENT可合RenderEngine GPU读取条件，FREE/通知不等安全覆写；present是目标Display时间基准，与buffer完成/复用依赖分开对应，也非面板光学响应。CPU返回、queue、采纳、GPU完成和显示分别按同buffer/frame/fence关联。
 
 #### EGL sync 与平台 buffer fence
 
@@ -501,7 +505,7 @@ Android 15 提供 ANGLE 开发者测试入口。Android 17 新增 manifest 元�
 
 #### 怎样确认 backend
 
-建议组合以下证据：
+建议组合以下信息来判断：
 
 - `glGetString(GL_VENDOR/GL_RENDERER/GL_VERSION)` 和 EGL vendor/version；
 - Graphics Driver/ANGLE 日志和包选择信息；
@@ -526,6 +530,8 @@ ANGLE 性能应拆成：
 
 ### Trace 视角
 
+机制讲完，回到排查：从目标 Surface 反查 Producer，按等待位置对照常见原因，再看 FrameTimeline 与 composition 怎么互相印证。
+
 #### 从目标 Surface 找 Producer
 
 先在 SurfaceFlinger layer tree 中找到主体画面对应的可见 Surface，再回到应用进程定位管理该 Surface 的 render thread。`GLThread <id>` 是 `GLSurfaceView` 的常见线程名，原生引擎可能使用 Render、RHI（Render Hardware Interface，渲染硬件接口） 或自定义名称。线程名只能作为线索，`eglMakeCurrent()`、GLES marker、swap 和 BufferQueue connection 更可靠。
@@ -543,7 +549,7 @@ Reuse path:       old buffer release / fence → future dequeue → safe rewrite
 
 这条时间线用于避免把 CPU API 返回误认为 GPU 或显示已经完成。缺少某个标准 slice 时，可以用 engine frame id、buffer id、frame number、fence 和 FrameTimeline token 补齐关联。
 
-#### 常见等待的证据表
+#### 常见等待的对照表
 
 | 现象 | 候选原因 | 应补证据 |
 |---|---|---|
@@ -556,7 +562,7 @@ Reuse path:       old buffer release / fence → future dequeue → safe rewrite
 
 #### FrameTimeline 与 composition
 
-[Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)明确注明 SurfaceView 尚不在支持范围。不能仅凭 Producer 传递了 token/desired-present 就断言 GLSurfaceView 独立 child 具有完整 App expected/actual 时间线；系统版本、Producer 和采集配置也要记录。用 buffer frame number、layer latch、HWC present 与 fence 补齐判断，缺 expected slice 本身不能证明掉帧。
+[Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)明确注明 SurfaceView 尚不在支持范围。Producer 传递了 token/desired-present，只说明应用侧接入了这套机制；GLSurfaceView 独立 child 是否具有完整 App expected/actual 时间线，还要结合系统版本、Producer 和采集配置确认。判断时用 buffer frame number、layer latch、HWC present 与 fence 补齐，缺 expected slice 只说明该信号缺失，掉帧与否要按这些旁证衡量。
 
 
 GLES 生成的 layer 不一定使用 DEVICE composition。alpha、crop、rotation、scale、HDR/SDR、protected usage、同屏其他 layer 和 HWC 资源都会影响策略。如果 GLES 主体已经由 GPU 渲染，又被 SurfaceFlinger 作为 CLIENT layer 采样进 client target，就会增加一段 RenderEngine 工作和相应带宽。
@@ -642,7 +648,7 @@ GPU、BufferQueue、SurfaceFlinger、HWC
 - ANGLE 能绕过部分厂商 GLES frontend 的问题；底层的厂商 Vulkan compiler、内核 GPU 驱动和硬件仍在执行路径上。
 - ANGLE 让 GLES 行为在不同设备上更加一致；性能则要按 workload（工作负载）逐场景测量，换过去不一定更快。
 
-使用 ANGLE 的应用仍然通过 GLES API 编程，Vulkan descriptor、render pass 或 queue 这些对象由 ANGLE backend 管理，通常不把这些内部对象作为应用可控制的原生 Vulkan 资源暴露；特定 interop/扩展需另行查询，不能从 GLES API 推断可任意控制。如果新引擎需要完整控制 Vulkan 资源、命令和同步，应直接使用原生 Vulkan API。
+使用 ANGLE 的应用仍然通过 GLES API 编程，Vulkan descriptor、render pass 或 queue 这些对象由 ANGLE backend 管理，通常不把这些内部对象作为应用可控制的原生 Vulkan 资源暴露；能控制哪些，要通过特定 interop/扩展查询确认，GLES API 这边给不出答案。如果新引擎需要完整控制 Vulkan 资源、命令和同步，应直接使用原生 Vulkan API。
 
 ### 翻译层架构
 
@@ -692,7 +698,7 @@ glDrawArrays()  →  ANGLE 状态同步与兼容处理  →  一组 Vulkan 命�
 <!-- gracker-diagram: ch13-04-35-draw-not-one -->
 ![一个 GLES draw 可产生多种 Vulkan 命令](../../assets/diagrams/ch13/ch13-04-35-draw-not-one.png)
 
-图：按语义和 frame 关联命令，不能按调用名与数量一一对应。 GL_LINE_LOOP 是源码中的具体例子；兼容 pass 取决于功能和设备配置。
+图：命令按语义和 frame 关联，调用名与数量对不上号。 GL_LINE_LOOP 是源码中的具体例子；兼容 pass 取决于功能和设备配置。
 
 #### GLSL ES 到 SPIR-V
 
@@ -714,7 +720,7 @@ ShShaderOutput CompilerVk::getTranslatorOutputType() const
 
 这段工作发生在 shader 编译、program link、cache 恢复或 pipeline 准备阶段，并不会在每次 `glDraw*` 时都从 GLSL ES 文本重新开始。
 
-### Android 17 的运行时选路
+### 运行时选路
 
 #### 决策发生在应用进程启动阶段
 
@@ -734,7 +740,7 @@ ShShaderOutput CompilerVk::getTranslatorOutputType() const
 | 6 | Android 17 manifest metadata | 满足平台条件时请求 ANGLE |
 | 7 | 无匹配项 | 返回 default |
 
-denylist 和 game 分支受 `enableAngleDenyList` flag 控制。另一个 `useQueryAngleChoice` flag 决定如何使用查询结果：启用时，angle 直接请求配置；native 跳过 persist 但仍检查 `ro.hardware.egl` 是否为 angle；default 先查可用的 `persist.graphics.egl`，再查只读默认。旧分支在 `ro.hardware.egl=angle` 时直接配置 ANGLE，甚至不运行查询表。目标设备需记录两项 flag 与属性，不能把表里的 native 当作最终厂商 GLES 证明。
+denylist 和 game 分支受 `enableAngleDenyList` flag 控制。另一个 `useQueryAngleChoice` flag 决定如何使用查询结果：启用时，angle 直接请求配置；native 跳过 persist 但仍检查 `ro.hardware.egl` 是否为 angle；default 先查可用的 `persist.graphics.egl`，再查只读默认。旧分支在 `ro.hardware.egl=angle` 时直接配置 ANGLE，甚至不运行查询表。目标设备需记录两项 flag 与属性；表里的 native 只是查询意图，最终是否落在厂商 GLES，还要看 `setupAngle()` 的后续处理。
 
 <!-- gracker-diagram: ch13-04-39-setup-flags -->
 ![setupAngle 怎样使用查询结果](../../assets/diagrams/ch13/ch13-04-39-setup-flags.png)
@@ -768,20 +774,20 @@ Android 17 允许应用在 manifest 中请求 ANGLE。下面是官方面向 game
 1. debuggable 应用或 debuggable 设备可以通过 `angle_debug_package` 指定开发包；
 2. 否则根据 `android.app.action.ANGLE_FOR_ANDROID` 查询唯一的 system app；
 3. Android 17 的 AOSP manifest 对应包名为 `com.android.angle`；
-4. APK 设置未成功时，Java 尝试配置 system ANGLE；真正加载还会由 loader 检查 APK namespace 与 system 库。`setupAngleFromSystem()` 返回成功不等于库已经装入。
+4. APK 设置未成功时，Java 尝试配置 system ANGLE；真正加载还会由 loader 检查 APK namespace 与 system 库。`setupAngleFromSystem()` 返回成功只说明 Java 配置完成，库是否装入还要看 loader。
 
 ANGLE package 与 vendor updatable graphics driver 是两套独立机制。前者提供 GLES-over-Vulkan 实现；后者通过 `ro.gfx.driver.*`、独立 linker namespace（动态库加载隔离空间）和厂商 driver package 更新 GLES/Vulkan 驱动。看到 “driver from APK” 时，必须先确认它来自 ANGLE namespace 还是 updatable driver namespace。
 
-EGL loader 的 `attempt_to_load_angle()` 会装入 ANGLE 的 `libEGL`、`libGLESv1_CM` 和 `libGLESv2` 实现。源码注释中的 “ANGLE doesn't ship with GLES library”，指的是不提供旧式合并库 `libGLES.so`；拆分库提供 GLES 1.x 与 GLES 2/3 入口，具体 GLES 版本和扩展仍由运行时查询。固定 r1 在已要求 ANGLE 却未装入 EGL 实现时执行 fatal 检查，不能承诺自动回退厂商驱动。
+EGL loader 的 `attempt_to_load_angle()` 会装入 ANGLE 的 `libEGL`、`libGLESv1_CM` 和 `libGLESv2` 实现。源码注释中的 “ANGLE doesn't ship with GLES library”，指的是不提供旧式合并库 `libGLES.so`；拆分库提供 GLES 1.x 与 GLES 2/3 入口，具体 GLES 版本和扩展仍由运行时查询。固定 r1 在已要求 ANGLE 却未装入 EGL 实现时执行 fatal 检查，自动回退厂商驱动并无保证。
 
 <!-- gracker-diagram: ch13-04-41-apk-system-loader -->
 ![ANGLE APK 设置与真正库加载](../../assets/diagrams/ch13/ch13-04-41-apk-system-loader.png)
 
-图：Java 先组织 APK 或 system ANGLE 配置，Loader 才装入拆分实现库。 APK 设置失败可试 system；已要求 ANGLE 却未装入实现时固定 r1 可 fatal，不能承诺 native 回退。
+图：Java 先组织 APK 或 system ANGLE 配置，Loader 才装入拆分实现库。 APK 设置失败可试 system；已要求 ANGLE 却未装入实现时固定 r1 可 fatal，native 回退并无保证。
 
 #### 用 ADB 做包级 A/B
 
-下面是**原先两个包级列表均不存在**时的最小示例。先用 `adb shell settings get global angle_gl_driver_selection_pkgs`、对应 `values` 和 `angle_gl_driver_all_angle` 记录当前值；已有列表时应备份并成对保留其他包条目，测试后精确恢复。以下 `put` 会替换整个列表，不能直接用于已有多人/多包配置。设置后停止并重新启动目标进程。
+下面是**原先两个包级列表均不存在**时的最小示例。先用 `adb shell settings get global angle_gl_driver_selection_pkgs`、对应 `values` 和 `angle_gl_driver_all_angle` 记录当前值；已有列表时应备份并成对保留其他包条目，测试后精确恢复。以下 `put` 会替换整个列表；已有多人/多包配置时，先按上文备份，恢复时成对放回。设置后停止并重新启动目标进程。
 
 ```bash
 adb shell settings put global angle_gl_driver_selection_pkgs com.example.game
@@ -789,7 +795,7 @@ adb shell settings put global angle_gl_driver_selection_values angle
 adb shell am force-stop com.example.game
 ```
 
-仅当前述两个 key 原先均不存在时，测试结束后用以下命令恢复不存在状态；原先有值则恢复所备份的原值。重新启动应用并复核 backend，不能把删除设置等同于已切回 native。
+仅当前述两个 key 原先均不存在时，测试结束后用以下命令恢复不存在状态；原先有值则恢复所备份的原值。重新启动应用并复核 backend；删除设置只是恢复原状，是否切回 native 以复核结果为准。
 
 ```bash
 adb shell settings delete global angle_gl_driver_selection_pkgs
@@ -813,7 +819,7 @@ adb shell am force-stop com.example.game
 <!-- gracker-diagram: ed13-04-deferred-dirty-state-and-cpu-cost -->
 ![后续 draw 可以支付此前积累的状态与资源准备成本](../../assets/diagrams/ch13/ed13-04-deferred-dirty-state-and-cpu-cost.png)
 
-图：dirtybits与后付CPU准备成本合图：前序GL状态/对象/资源变更可先记录，后续draw/dispatch/clear才由ContextVk同步必要状态，集中准备texture/framebuffer/shader/pipeline/descriptor/barrier与commands。阶段轨道非测量，不表示每次API即时同名vkCmd；长draw CPU墙钟可能支付既往工作或等待，需调用栈/线程状态与GPUstage/fence另查，不能由draw名字推GPU慢。具体GL_LINE_LOOP等命令形态仍见独立分支图。
+图：dirtybits与后付CPU准备成本合图：前序GL状态/对象/资源变更可先记录，后续draw/dispatch/clear才由ContextVk同步必要状态，集中准备texture/framebuffer/shader/pipeline/descriptor/barrier与commands。阶段轨道非测量，不表示每次API即时同名vkCmd；长draw CPU墙钟可能支付既往工作或等待，需调用栈/线程状态与GPUstage/fence另查，GPU快慢由GPUstage/fence判断，draw名字定不了。具体GL_LINE_LOOP等命令形态仍见独立分支图。
 
 #### Swap 阶段
 
@@ -830,7 +836,7 @@ Android 上的 `WindowSurfaceVkAndroid::createSurfaceVk()` 会把 `ANativeWindow
 <!-- gracker-diagram: ed13-04-swap-wsi-and-measurement-scope -->
 ![Swappy、完整 EGL API 与 swapImpl 的计时范围不同](../../assets/diagrams/ch13/ed13-04-swap-wsi-and-measurement-scope.png)
 
-图：ANGLEWSI与计时范围合图：ANativeWindow经vkCreateAndroidSurfaceKHR建立VkSurface/swapchain，WindowSurfaceVk按实际阶段组织acquire/submit/layout/present，acquire可前移或延后。固定r1可在present后把CPUthrottle放unlockedtailcall，虽在swapImpl slice外，仍在对应EGLAPI返回前。轨道仅一种可选嵌套，Swappy可不存在；外层Swappy前后pacing不能无条件算内层EGL。完整API墙钟含抢占等待，不是GPUbusy；WSI请求返回不证明GPU完成、SF采纳或光学显示。
+图：ANGLEWSI与计时范围合图：ANativeWindow经vkCreateAndroidSurfaceKHR建立VkSurface/swapchain，WindowSurfaceVk按实际阶段组织acquire/submit/layout/present，acquire可前移或延后。固定r1可在present后把CPUthrottle放unlockedtailcall，虽在swapImpl slice外，仍在对应EGLAPI返回前。轨道仅一种可选嵌套，Swappy可不存在；外层Swappy前后pacing算不算内层EGL，要看计时范围落在哪一层。完整API墙钟含抢占等待，不是GPUbusy；WSI请求返回不证明GPU完成、SF采纳或光学显示。
 
 ```mermaid
 sequenceDiagram
@@ -907,7 +913,7 @@ EGL 侧的 fence 同步到了 ANGLE 里，要落成 Vulkan semaphore 和内核 f
 
 `EGL_ANDROID_native_fence_sync` 让 EGL/GLES 与 Android native fence 互操作。ANGLE 的 `SyncHelperNativeFence::serverWait()` 先检查 fence；已 signal 则直接返回，未完成时才为下一次 Vulkan submit 准备 binary semaphore，并导入一份 duplicated sync fd（复制出的文件描述符）。这里的 server wait 把依赖交给后续 GPU submit，当前 CPU 线程无须先等 fence 完成。
 
-下面摘自 `serverWait()` 的核心路径，省略 semaphore 创建和结构初始化等前文；它是源码片段，不能独立编译。实际 `importFd()` 成功后才把 semaphore 加入后续 submit。
+下面摘自 `serverWait()` 的核心路径，省略 semaphore 创建和结构初始化等前文；它是源码片段，供阅读对照，独立编译缺少上下文。实际 `importFd()` 成功后才把 semaphore 加入后续 submit。
 
 
 ```cpp
@@ -924,12 +930,12 @@ contextVk->addWaitSemaphore(
 contextVk->addGarbage(&waitSemaphore.get());
 ```
 
-Vulkan **成功导入**后接管 duplicated fd，调用方不得继续操作它；导入失败不发生成功转移，需由相应错误清理路径处理。`mExternalFence` 的原 fd 仍由 ANGLE 管理。SYNC_FD 采用 temporary payload import，而非永久共享 semaphore；不能把 client wait 返回或 CPU 不阻塞理解为整个 GPU 依赖已经完成。
+Vulkan **成功导入**后接管 duplicated fd，调用方不得继续操作它；导入失败不发生成功转移，需由相应错误清理路径处理。`mExternalFence` 的原 fd 仍由 ANGLE 管理。SYNC_FD 采用 temporary payload import，而非永久共享 semaphore；client wait 返回、CPU 未阻塞，都说明不了 GPU 依赖已经完成，完成与否要看 fence 状态。
 
 <!-- gracker-diagram: ed13-04-native-server-wait-import-and-fd-owner -->
 ![server wait 成功导入副本后，才把依赖加入后续 submit](../../assets/diagrams/ch13/ed13-04-native-server-wait-import-and-fd-owner.png)
 
-图：固定r1 serverWait与fd所有权合图：已signal快速返，未完成才准备binarysemaphore并dup原syncfd，以SYNC_FD temporary payload导入。原mExternalFencefd仍归ANGLE；仅成功import时Vulkan接管副本，之后调用方不再操作该副本，再addWaitSemaphore(ALL_COMMANDS)交后续submit遵守。失败未成功转移，按实际错误清理路径。serverwait不要求CPU先等signal，也不代表GPU依赖消失；公开EGL扩展查询/flush/导出新fd的close契约以原文为准。
+图：固定r1 serverWait与fd所有权合图：已signal快速返，未完成才准备binarysemaphore并dup原syncfd，以SYNC_FD temporary payload导入。原mExternalFencefd仍归ANGLE；仅成功import时Vulkan接管副本，之后调用方不再操作该副本，再addWaitSemaphore(ALL_COMMANDS)交后续submit遵守。失败未成功转移，按实际错误清理路径。serverwait不要求CPU先等signal，GPU依赖照样挂在后续submit上；公开EGL扩展查询/flush/导出新fd的close契约以原文为准。
 
 #### client wait：调用线程仍在等待
 
@@ -940,7 +946,7 @@ Vulkan **成功导入**后接管 duplicated fd，调用方不得继续操作它�
 <!-- gracker-diagram: ch13-04-50-client-wait -->
 ![client wait 解锁后仍阻塞调用线程](../../assets/diagrams/ch13/ch13-04-50-client-wait.png)
 
-图：未完成且 timeout 非零时，等待放入 API 返回前的 unlocked tail call。 解锁不等于异步 worker；非零小于 1 ms 的 timeout 在此实现提升为 1 ms。
+图：未完成且 timeout 非零时，等待放入 API 返回前的 unlocked tail call。 解锁后仍是调用线程在等；非零小于 1 ms 的 timeout 在此实现提升为 1 ms。
 
 `serverWait()` 本身没有 `ANGLE_TRACE_EVENT`，在 Perfetto 中搜索函数名通常找不到对应 slice，需要结合 Vulkan submit、调用栈采样和后续 GPU 执行确认；`clientWait` 与 `clientWait block (unlocked)` 则带有 `gpu.angle` event。
 
@@ -970,7 +976,7 @@ GPU-bound 场景可能几乎不受 frontend 成本影响，也可能因为兼容
 - 分辨率、刷新率、Game Mode、帧率上限和 thermal 状态；
 - 相同场景，以及相同的 shader/texture cache 冷热状态；
 - 前台窗口、Surface 尺寸、色彩空间和 swap interval；
-- 运行时 backend 证据。
+- 运行时 backend 确认结果。
 
 指标应包含 CPU frame time 分布、GPU stage、present-to-present 间隔、p95/p99 frame-time（注明 CPU 或 present 间隔的统计口径；若报告 1% low，另写清计算方法）、输入延迟、内存和持续温度。只测几十秒的平均 FPS，容易遗漏 pipeline warm-up 和热降频问题。
 
@@ -991,7 +997,7 @@ ANGLE 拒绝某段 GLSL ES 时，先检查 shader 是否符合目标 GLES 版本
 
 选路配置只表达意图；进程里实际加载了什么，要靠运行时检查。
 
-#### 确认 ANGLE 的三类证据
+#### 确认 ANGLE 的三类信息
 
 确认 ANGLE 时，我们应组合检查配置意图、进程实际加载和 API 字符串三类信息：
 
@@ -1041,7 +1047,7 @@ adb shell run-as com.example.game cat "/proc/$pid/maps" \
     | grep -E 'lib(EGL|GLES).*angle'
 ```
 
-上述 `grep` 在主机执行；无匹配只能说明这次未找到对应库名，不能独立证明 native（也可能是权限、进程选择或命名问题）。`angle_debug_package` 只对允许加载调试 package 的进程生效，修改后仍要重启目标进程，并核对 ABI、system app/debug app 身份和实际 maps。
+上述 `grep` 在主机执行；无匹配只说明这次未找到对应库名，离确认 native（也可能是权限、进程选择或命名问题）还差一步排查。`angle_debug_package` 只对允许加载调试 package 的进程生效，修改后仍要重启目标进程，并核对 ABI、system app/debug app 身份和实际 maps。
 
 #### 回归范围
 
@@ -1059,6 +1065,8 @@ ANGLE 与 native GLES 都要覆盖：
 
 
 ### 在 Perfetto 中识别 ANGLE
+
+进程里出现 Vulkan 工作还定不下 ANGLE；判定要把字符串、event 和显示端放到同一条时间线上，再按等待位置归因。
 
 #### backend 判定与 slice 解释
 
@@ -1113,7 +1121,7 @@ WHERE p.name = 'com.example.game'
 ORDER BY s.ts;
 ```
 
-查询结果是目标进程线程轨上的完整 CPU event **墙钟时长**，包含被抢占和等待，不等于 CPU busy time；嵌套 slice 也不能直接求和。同名进程可能有多次生命周期，正式统计应再限定 `p.upid`/时间窗；名称筛选只产生候选，仍需库/当前 context 与 category 佐证。GPU 繁忙另看 GPU render stage/counter，buffer 显示另看 SF/layer 与 Display present；SurfaceView 的 FrameTimeline 支持限制仍适用。
+查询结果是目标进程线程轨上的完整 CPU event **墙钟时长**，包含被抢占和等待，CPU busy time 要另行统计；嵌套 slice 之间的包含关系也要先理清再求和。同名进程可能有多次生命周期，正式统计应再限定 `p.upid`/时间窗；名称筛选只产生候选，仍需库/当前 context 与 category 佐证。GPU 繁忙另看 GPU render stage/counter，buffer 显示另看 SF/layer 与 Display present；SurfaceView 的 FrameTimeline 支持限制仍适用。
 
 
 #### 按等待位置归因
@@ -1127,7 +1135,7 @@ ORDER BY s.ts;
 | queue submit 后 GPU stage 长 | GPU counter、频率、thermal | shader、带宽、overdraw 或降频 |
 | ANGLE present 正常，FrameTimeline 晚 | SF latch、composition、HWC present | 显示端或 acquire fence |
 
-一帧可按“App GLES → ANGLE state/command → Vulkan submit → WSI queue/transaction → SF 采纳 → 合成/Display present”追踪提交路径；GPU 执行与这条 CPU 路径异步，acquire fence 在真正读取前约束依赖，不能固定画成 GPU completion 之后才 WSI queue。HWC 快 present 与 validated/可选 CLIENT 是不同分支，release 还要对应旧 buffer。依据不足的阶段保留为待验证。
+一帧可按“App GLES → ANGLE state/command → Vulkan submit → WSI queue/transaction → SF 采纳 → 合成/Display present”追踪提交路径；GPU 执行与这条 CPU 路径异步，acquire fence 在真正读取前约束依赖，GPU completion 与 WSI queue 的先后以 fence 依赖为准，画图时别固化成一个固定顺序。HWC 快 present 与 validated/可选 CLIENT 是不同分支，release 还要对应旧 buffer。依据不足的阶段保留为待验证。
 
 
 ### Android 10—17 的版本边界
