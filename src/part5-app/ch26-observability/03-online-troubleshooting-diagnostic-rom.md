@@ -181,10 +181,6 @@ consolidated_from:
 
 动态日志级别要控制三类成本。CPU 成本来自字符串构造、序列化和压缩；I/O 成本来自频繁写文件与同步落盘；流量成本来自批量上传。开关应按日志标签或结构化事件类型生效，只覆盖明确的用户分组，并由服务端到期时间和客户端累计预算共同终止。每次下发、命中、续期和撤销都写审计记录；客户端一旦验证不了签名、版本或有效期，就退回安全的默认级别。
 
-<!-- gracker-diagram: a288-02-dynamic-log-budget -->
-![动态日志开关管理的是受限增量证据](../../assets/diagrams/ch26/a288-02-dynamic-log-budget.png)
-
-图：采样预算与本地存储预算、上传预算分别计量，打开日志不等于允许无限采集。
 
 ### 用户反馈与问题复现
 
@@ -229,10 +225,6 @@ Android 15 的 `requestProfiling()` 支持 system trace（系统追踪）、Java
 
 Android 16 的 `ProfilingTrigger` 支持注册 ANR、`APP_FULLY_DRAWN` 等事件。Android 16次要版本36.1增加了 `requestRunningSystemTrace()` 和 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，这个 API 请求的是系统正在后台采集的 trace 快照，系统不会为调用方临时启动不受约束的全局 Trace。Android 17 / API 37 又增加了一批触发类型：OOM（内存不足）、冷启动、异常行为、兼容性问题，以及因过量占用 CPU 被终止。不同类型返回 system trace、stack sample、heap dump 或与异常类型对应的产物。客户端按成员的引入版本检查运行时能力：主API看`SDK_INT`，36.1成员应先确认API≥36，再用`SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`判断。`targetSdk`不是能力探测；[完整版本常量](https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL)与[版本判断说明](https://developer.android.com/studio/publish/versioning)给出了次要版本规则。详细 API 用法见 26.6 节。
 
-<!-- gracker-diagram: a288-03-profiling-sdk-major-and-minor-versions -->
-![ProfilingManager 必须区分 API 36、36.1 与 37](../../assets/diagrams/ch26/a288-03-profiling-sdk-major-and-minor-versions.png)
-
-图：36.1是次要API发布版本；SDK_INT只有36不足以确认36.1成员存在，targetSdk也不是能力检查。
 
 生产环境方案仍要把能力分成三个等级：
 
@@ -270,10 +262,6 @@ Firebase Remote Config rollout 支持编辑或回滚灰度配置；客户端只�
 
 灰度期间，崩溃率只是起点。Android vitals 会评估用户感知崩溃率（user-perceived crash rate）、用户感知 ANR 率（user-perceived ANR rate）、启动、慢渲染、耗电、LMK（Low Memory Killer，低内存终止） 等质量指标；业务侧还要看登录、支付、播放、下载等操作路径指标。我们同时盯两条线：技术指标止住恶化势头，用户操作指标没有冒出新异常。
 
-<!-- gracker-diagram: a288-04-rollout-versus-remote-config -->
-![停止发布、配置隔离与修复版本有不同作用](../../assets/diagrams/ch26/a288-04-rollout-versus-remote-config.png)
-
-图：暂停分发不能把已安装APK远程降级；配置效果与版本分发应在事件中分别记录。
 
 ### 扩展：证据包模板
 
@@ -320,10 +308,6 @@ StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设�
 
 因此，面向 Play 发布的普通 App 应使用自有指标、Android vitals、`ApplicationExitInfo` 和 `ProfilingManager`。平台或 OEM 项目如果已经通过合规审查导出 StatsD 聚合结果，可以把 atom ID（统计事件编号）、config key / version、elapsed timestamp（单调时间戳）、聚合窗口和缺失状态放入证据包，再与 Perfetto 时间线对照。没有权限时明确记录"不可用"，也不要建议用户去授予所谓"特殊权限"，更不要把虚构的业务字段称为系统 atom。
 
-<!-- gracker-diagram: a288-05-statsd-control-and-permission -->
-![StatsD 配置控制链与事件写入链分开核对](../../assets/diagrams/ch26/a288-05-statsd-control-and-permission.png)
-
-图：控制链由Binder连接，权限和事件写入路径另外核对，不套固定的Java/JNI/native三层图。
 
 ### Android 17：StatsD 重启后的注册恢复
 
@@ -382,10 +366,6 @@ Android 安全文档仍建议生产环境使用应用内部、可治理的日志
 
 服务端开关表达的只是采集意图；写入成本、崩溃一致性、文件生命周期、后台执行限制和重试语义都落在端侧，因此采样、存储与上报各自拥有独立策略和指标。
 
-<!-- gracker-diagram: a288-06-sampling-storage-upload-budgets -->
-![采样、存储、上传各有独立预算](../../assets/diagrams/ch26/a288-06-sampling-storage-upload-budgets.png)
-
-图：写入成功不是服务端可查询成功；各阶段分母和预算单独记录。
 
 #### 采样层：保留可解释的时间线
 
@@ -428,10 +408,6 @@ Android 不保证某个应用进程长期存活。各进程可以写自己的文
 
 队列可能在采样、编码、落盘、调度、上传、服务端解析或隐私检查任一阶段失败。每个阶段都需要低基数字段——取值种类有限、便于聚合的字段——并配套稳定错误码，避免仅记录一句"上传失败"。
 
-<!-- gracker-diagram: a288-07-record-integrity-versus-durability -->
-![完整记录、名称提交与掉电持久性是三个问题](../../assets/diagrams/ch26/a288-07-record-integrity-versus-durability.png)
-
-图：mmap只改变文件访问方式；校验能识别恢复内容，不能证明数据已经抗掉电持久化。
 
 ### 多进程写入与单进程上报
 
@@ -532,10 +508,6 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 Perfetto 解释线程、调度、Binder、锁、I/O、渲染与 CPU 时间，App 日志解释业务状态、配置和用户操作。两类文件通过 `command_id`、`trace_session_id`、请求 ID 和单调时间窗关联，且各自保持独立的权限与保留期。
 
-<!-- gracker-diagram: a288-10-profile-callback-and-result-file -->
-![请求、触发、回调、上传是四层结果](../../assets/diagrams/ch26/a288-10-profile-callback-and-result-file.png)
-
-图：结果重投递只是平台尝试；系统trigger只投递全局listener，未收到回调保持未知。
 
 ### 网络诊断命令与 traceId 协同
 
@@ -551,10 +523,6 @@ Perfetto 解释线程、调度、Binder、锁、I/O、渲染与 CPU 时间，App
 
 主机名（host）、CDN 节点、代理、VPN、DNS 与 IP 可能暴露用户位置或网络环境。服务端优先接收内部端点 ID、分类结果和阶段耗时；确需原值时采用更高审批等级、短保留期和严格访问控制。
 
-<!-- gracker-diagram: a288-11-network-phases-and-trace-id -->
-![网络故障按请求与阶段建立可关联证据](../../assets/diagrams/ch26/a288-11-network-phases-and-trace-id.png)
-
-图：请求级关联与阶段耗时帮助区分服务端处理、连接故障和客户端排队，不把单个总耗时当根因。
 
 ### 动态部署与远程调试的风险边界
 
@@ -777,10 +745,6 @@ standby bucket（应用待机分组）是系统按近期使用情况给应用划
 
 示例只查询当前包，因此 `getAppStandbyBucket()` 不需要 `PACKAGE_USAGE_STATS`。服务端还需归并 `Build.MANUFACTURER` 与 `Build.MODEL` 的别名，并按隐私策略限制原始值的保存期限和访问范围。
 
-<!-- gracker-diagram: a288-13-capability-snapshot-unknown-window -->
-![能力快照是逐字段读取窗口，不是原子系统状态](../../assets/diagrams/ch26/a288-13-capability-snapshot-unknown-window.png)
-
-图：一个getter失败不抹掉其他读数；service缺失和sysconf非正值都保留错误类别，不上传异常自由文本。
 
 [`ActivityManager.isBackgroundRestricted()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java) 的文档给出了明确语义。返回 `true` 时，系统至少会阻止作业和闹钟执行，并在应用不处于前台时阻止其启动前台服务；这项用户施加的限制在充电时仍然有效。该值只能证明系统报告了限制状态，具体设置页面、策略模块或厂商组件，要另外排查。
 
@@ -924,10 +888,6 @@ APM 事件中断只说明服务端没有继续收到数据。以下情况都可�
 
 A 级证据可以按字段原义陈述平台报告的事实，扩写则以公共 API 提供的细节为限。B、C、D 级证据用于提出和筛选假设，改写成"该厂商会执行某策略"就越界了。
 
-<!-- gracker-diagram: a288-15-missing-telemetry-versus-process-death -->
-![缺数保留未知，不能直接推断厂商杀进程](../../assets/diagrams/ch26/a288-15-missing-telemetry-versus-process-death.png)
-
-图：最后一次事件只限定观察边界；不要把未收到日志当作精确死亡时刻。
 
 ### 后台任务与前台服务怎么记录
 
@@ -968,10 +928,6 @@ hint session（性能提示会话）把一组应用线程、目标工作时长�
 
 ADPF 是向系统表达负载意图的控制接口，API 返回值只说明能力与请求结果。体验是否改善，要用帧耗时、任务时长、热状态和功耗代理指标验证。若该能力不可用，应用应回到自身已有的质量分级、工作量控制和线程模型，继续记录结果；不要私自写 CPU 频率，也不要把提升线程优先级当成通用替代方案。
 
-<!-- gracker-diagram: a288-16-adpf-session-capability-and-measured-effect -->
-![ADPF 会话成立与性能获益需要分开验证](../../assets/diagrams/ch26/a288-16-adpf-session-capability-and-measured-effect.png)
-
-图：空会话走原有执行路径；只在受控设备、负载和状态下验证效果，不从API成功推导性能提升。
 
 ### ProfilingManager 的请求与结果
 
@@ -1030,10 +986,6 @@ CPU time 表示进程或线程实际占用处理器运行的累计时间。`Proc
 
 dexopt 是 Android 对 dex 字节码进行校验、优化或编译的一组处理。启动变慢推不出"应用商店没有执行 dexopt"，启动变快也证明不了市场执行了预优化；要验证编译因素，就得在受控设备上检查 package 编译状态、安装会话和用于编译决策的运行时 profile，并保持 APK 与数据状态一致。
 
-<!-- gracker-diagram: a288-17-channel-comparison-confounding -->
-![渠道比较：产物与设备结构变化必须进入分析](../../assets/diagrams/ch26/a288-17-channel-comparison-confounding.png)
-
-图：“某市场启动慢”不能单独证明dexopt未执行；要检查受控设备的实际编译与安装证据。
 
 ### 厂商安全中心与用户引导
 
@@ -1083,10 +1035,6 @@ Tinker 是热修复框架，职责是下发代码补丁，与持续采集和分�
 
 这套顺序要求每个判断都能回到记录、API 契约或可重复实验。非 Play 可观测性的难点在于明确数据覆盖范围，以及每个归因所依据的证据等级。
 
-<!-- gracker-diagram: a288-18-rom-evidence-and-apm-selection -->
-![ROM 行为结论和 APM 选型都用可复验样本](../../assets/diagrams/ch26/a288-18-rom-evidence-and-apm-selection.png)
-
-图：品牌、渠道、缺数和一次平均值都不直接构成根因；结论回到API契约、记录与重复实验。
 
 ## 全文小结
 

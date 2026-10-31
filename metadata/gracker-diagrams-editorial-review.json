@@ -67340,9 +67340,187 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "438eacc0d6028ff634685a0091aea91137deace8a4f52dd1c7c8f7d51bf4220d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a288-01-incident-evidence-and-reversible-mitigation",
+          "title": "线上事件：先止损和保存证据，再验证因果",
+          "decision": "keep",
+          "reason": "事件编号、止损、时间线、证据缺口、验证和复验串为闭环，给长篇多个诊断通道提供共同推进顺序。",
+          "original_line": 164,
+          "heading": "### 线上问题排查流程"
+        },
+        {
+          "original_id": "a288-02-dynamic-log-budget",
+          "title": "动态日志开关管理的是受限增量证据",
+          "decision": "remove",
+          "reason": "采样、端侧、回传和控制四卡重复远程日志四层与三类成本说明。",
+          "original_line": 184,
+          "heading": "### 远程日志与动态日志级别"
+        },
+        {
+          "original_id": "a288-03-profiling-sdk-major-and-minor-versions",
+          "title": "ProfilingManager 必须区分 API 36、36.1 与 37",
+          "decision": "remove",
+          "reason": "四个Profiling版本卡重复六行能力表和36.1完整版本检查解释。",
+          "original_line": 232,
+          "heading": "### 线上 Trace 抓取与分析"
+        },
+        {
+          "original_id": "a288-04-rollout-versus-remote-config",
+          "title": "停止发布、配置隔离与修复版本有不同作用",
+          "decision": "remove",
+          "reason": "halt、远程配置、修复APK与分析四卡重复生效延迟和回滚段落。",
+          "original_line": 273,
+          "heading": "### 灰度环境与问题隔离"
+        },
+        {
+          "original_id": "a288-05-statsd-control-and-permission",
+          "title": "StatsD 配置控制链与事件写入链分开核对",
+          "decision": "remove",
+          "reason": "StatsD控制、协作、权限和写入四卡重复Binder原文、权限表与注册恢复三状态。",
+          "original_line": 323,
+          "heading": "### 平台与 OEM 补充：StatsD 的权限边界"
+        },
+        {
+          "original_id": "a288-06-sampling-storage-upload-budgets",
+          "title": "采样、存储、上传各有独立预算",
+          "decision": "remove",
+          "reason": "采样、存储、上报和质量四卡重复后续三层完整分节及自监控指标表。",
+          "original_line": 385,
+          "heading": "### 采样、存储、上报三层架构"
+        },
+        {
+          "original_id": "a288-07-record-integrity-versus-durability",
+          "title": "完整记录、名称提交与掉电持久性是三个问题",
+          "decision": "remove",
+          "reason": "完整性、rename、持久化、恢复四卡重复存储协议、并发写入规则与同步失败限定，无具体提交时序。",
+          "original_line": 431,
+          "heading": "#### 上报层：持久调度与幂等恢复"
+        },
+        {
+          "original_id": "a288-08-multiprocess-writers-and-upload-lease",
+          "title": "多进程独立写入，上传者由可恢复租约决定",
+          "decision": "keep",
+          "reason": "每进程独立写入到完整提交、获取租约、重扫、服务端幂等和ACK回收，表达单执行者并非固定主进程。",
+          "original_line": 454,
+          "heading": "### 多进程写入与单进程上报"
+        },
+        {
+          "original_id": "a288-09-diagnostic-command-state-machine",
+          "title": "诊断命令：授权、持久执行和结果交付分别记状态",
+          "decision": "keep",
+          "reason": "命令送达、校验、持久执行、结果生成、上传和审计串联，并明确校验失败终态不沿成功链执行。",
+          "original_line": 485,
+          "heading": "### 诊断命令通道"
+        },
+        {
+          "original_id": "a288-10-profile-callback-and-result-file",
+          "title": "请求、触发、回调、上传是四层结果",
+          "decision": "remove",
+          "reason": "请求、触发、回调、文件四卡重复Profiling条件、错误码表和结果文件生命周期说明。",
+          "original_line": 535,
+          "heading": "### 与 ProfilingManager / Perfetto 的边界"
+        },
+        {
+          "original_id": "a288-11-network-phases-and-trace-id",
+          "title": "网络故障按请求与阶段建立可关联证据",
+          "decision": "remove",
+          "reason": "端侧、请求ID、服务端和关联四卡重复受限探测五项及逻辑请求attempt定义。",
+          "original_line": 554,
+          "heading": "### 网络诊断命令与 traceId 协同"
+        },
+        {
+          "original_id": "a288-12-separate-telemetry-streams-and-ack",
+          "title": "非 Play 端云证据路径：分类型采集与持久 ACK",
+          "decision": "keep",
+          "reason": "三信号独立预算经过有界持久队列和机会上传到分库，并单独返回持久ACK及稳定ID重试的恢复边。",
+          "original_line": 647,
+          "heading": "### 端云数据路径"
+        },
+        {
+          "original_id": "a288-13-capability-snapshot-unknown-window",
+          "title": "能力快照是逐字段读取窗口，不是原子系统状态",
+          "decision": "remove",
+          "reason": "静态、动态、正常空和窗口四卡重复Readout代码及成功/空/失败和非原子窗口解释。",
+          "original_line": 780,
+          "heading": "### 采集公共能力快照"
+        },
+        {
+          "original_id": "a288-14-exit-history-dedup-before-batch-limit",
+          "title": "退出历史：先重扫与去重，再限制持久入队批次",
+          "decision": "keep",
+          "reason": "读取保留历史、反向最旧优先、字段编码、先去重再take及原子落盘ACK的顺序，直观避免先限查询造成旧项饥饿。",
+          "original_line": 887,
+          "heading": "### 进程退出：用 ApplicationExitInfo 记录事实"
+        },
+        {
+          "original_id": "a288-15-missing-telemetry-versus-process-death",
+          "title": "缺数保留未知，不能直接推断厂商杀进程",
+          "decision": "remove",
+          "reason": "退出、存活、采集失败和证据四卡重复六类缺数情形、A-D证据表与不自动归厂商说明。",
+          "original_line": 927,
+          "heading": "### 缺失数据也要有语义"
+        },
+        {
+          "original_id": "a288-16-adpf-session-capability-and-measured-effect",
+          "title": "ADPF 会话成立与性能获益需要分开验证",
+          "decision": "remove",
+          "reason": "查询、空session、报告和对照四卡重复ADPF返回值限定及五项记录列表。",
+          "original_line": 971,
+          "heading": "### ADPF：能力协商与效果验证"
+        },
+        {
+          "original_id": "a288-17-channel-comparison-confounding",
+          "title": "渠道比较：产物与设备结构变化必须进入分析",
+          "decision": "remove",
+          "reason": "产物、环境、线上和归因四卡重复实验室五条件、分层分析和混杂说明。",
+          "original_line": 1033,
+          "heading": "### 渠道性能比较如何避免误判"
+        },
+        {
+          "original_id": "a288-18-rom-evidence-and-apm-selection",
+          "title": "ROM 行为结论和 APM 选型都用可复验样本",
+          "decision": "remove",
+          "reason": "ROM记录、引导、APM样例、排障四卡重复四引导条件、选型表及七步排障顺序。",
+          "original_line": 1086,
+          "heading": "### 排障顺序"
+        }
+      ],
+      "sha256_after": "08e85966ebaf7b898887734c01e9bde9d97c61d27a5337814250f5d118287b26",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:32:08.955356+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a288/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a288/visual-review.json",
+      "retired_diagrams": [
+        "a288-02-dynamic-log-budget",
+        "a288-03-profiling-sdk-major-and-minor-versions",
+        "a288-04-rollout-versus-remote-config",
+        "a288-05-statsd-control-and-permission",
+        "a288-06-sampling-storage-upload-budgets",
+        "a288-07-record-integrity-versus-durability",
+        "a288-10-profile-callback-and-result-file",
+        "a288-11-network-phases-and-trace-id",
+        "a288-13-capability-snapshot-unknown-window",
+        "a288-15-missing-telemetry-versus-process-death",
+        "a288-16-adpf-session-capability-and-measured-effect",
+        "a288-17-channel-comparison-confounding",
+        "a288-18-rom-evidence-and-apm-selection"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-288/retired-assets.json"
     },
     {
       "index": 290,
@@ -67433,8 +67611,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 198,
-  "next_article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+  "reviewed_articles": 199,
+  "next_article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -67444,7 +67622,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:30:04.274835+08:00",
+  "updated_at": "2026-10-31T19:32:08.955356+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -67566,9 +67744,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5727,
-  "reviewed_placements_after": 2243,
-  "net_removed_placements": 3484,
+  "reviewed_placements_before": 5745,
+  "reviewed_placements_after": 2248,
+  "net_removed_placements": 3497,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -67592,7 +67770,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 198,
+  "currently_matching_reviewed_source_count": 199,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
