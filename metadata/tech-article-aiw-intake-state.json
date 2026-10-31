@@ -6764,6 +6764,102 @@
       "status": "appended",
       "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
     },
+    "source/juejin-android/2026-11-01-76604358-Android架构这些年其实一直在消灭碎片.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "caa7b02b7605e777",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.8538518,
+      "score": 12,
+      "sha256": "d0fa2369545afb2b2d0705d5e748ae27abbbc46bf9f22ec653ca8525cd4619c4",
+      "size": 10248,
+      "status": "appended",
+      "title": "Android 架构这些年，其实一直在消灭碎片化异步很多 Android 开发者刚入行的时候都会觉得： 后来工作几年才"
+    },
+    "source/juejin-android/2026-11-01-76610856-AndroidStudio新版Logcat新版核心变化.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "d2868cc94fb25fb8",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.8580918,
+      "score": 8,
+      "sha256": "436aa58386fb8424611cd08848dd9a2063b6fc1b9e7d9ef7dbfb4ca4bd3a90a5",
+      "size": 7229,
+      "status": "appended",
+      "title": "Android Studio 新版 Logcat 一、新版核心变化（和旧版区别） 采用 字段:值 键值对语法，支持精确匹"
+    },
+    "source/juejin-android/2026-11-01-76648798-你是不是还没用过select实战Kotlin.md": {
+      "chapter": "待分类",
+      "entry_id": "e9df749b6c052534",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.8550565,
+      "score": 9,
+      "sha256": "2604f1c3267dfb08ba3b9fed5755b57a3d49c5942c2b596b8fec6bbc4961d100",
+      "size": 18357,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
+    },
+    "source/juejin-android/2026-11-01-76696126-你敢信吗同样是跨端KMP跟RN居然差.md": {
+      "chapter": "待分类",
+      "entry_id": "d2526e63f6047b6d",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.8565133,
+      "score": 8,
+      "sha256": "774f76a825c430b5e32df7a86138fba8af2d026e7d419ddfc50b98718831ae1f",
+      "size": 7603,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-11-01-76756264-三星安卓系统BUG排查记录云闪付铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "6533f88b6147fc73",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.8511531,
+      "score": 24,
+      "sha256": "f817f9c47118edfe99151dae3835608327cc7dbe6a09676c2fb83070decad44c",
+      "size": 38158,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-01-76782605-我常用的5个Kotlin优化小技巧.md": {
+      "chapter": "待分类",
+      "entry_id": "e699df132cebd7f5",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.8591447,
+      "score": 13,
+      "sha256": "8fe9e862ec1b719c527f380234dc92867ab06ad5b415d4b2447712cc7a4a3e41",
+      "size": 11103,
+      "status": "appended",
+      "title": "我常用的 5 个 Kotlin 优化小技巧今天我先来分享一下最近几年常用的一些 Kotlin 代码优化小技巧，与君共享。"
+    },
+    "source/juejin-android/2026-11-01-76800243-曾经安卓开发人手一个的EventBus为什么.md": {
+      "chapter": "待分类",
+      "entry_id": "46c0eda54bea2abd",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.852401,
+      "score": 9,
+      "sha256": "e46ccee1146b4f4997c6db2d425dbd1888fb604ca2a857ba1862795973362571",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-01-76948663-我开源了一个Android_iOS加固工具顺便.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "3c59020c5a770afc",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793477880.8604887,
+      "score": 7,
+      "sha256": "dbc633b15888c0c76d93a049e3aaa2f868dc35115d5da4de60478242bd6fa9d0",
+      "size": 5034,
+      "status": "appended",
+      "title": "我开源了一个 Android/iOS 加固工具，顺便聊聊加固到底能防住什么市面上的 APK 加固方案大多是黑盒：付费、上"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7723,6 +7819,133 @@
       "sha256": "0e2d1c8d93b403578c3b4a970a8bd1bcd0f6489d781bee3c59c5664bb7117513",
       "size": 7243,
       "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-API-credits-benefit-for-eligible-ChatGPT-subscri.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473351.5707943,
+      "sha256": "84d9687af5a8fa4ec8f336f94cb65fb3118ecdb16ebb9648bfcc06ed7bf39c07",
+      "size": 1125,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Apple-Drops-App-Store-Commission-by-a-Whopping-4.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473357.5782046,
+      "sha256": "4c762e8740fb2923bb9bbe4c9b080917a91c19fe81ebf41800e2e5f935f7ebe1",
+      "size": 1259,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Avoid-Public-Functions-Calling-Other-Public-Fun.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473905.9696257,
+      "sha256": "f414fe26962b4d850465ad868caaed912b7baae302649fd9a608f203bdd43cd7",
+      "size": 3572,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Building-a-multiplayer-game-world-with-autonomou.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473362.589131,
+      "sha256": "228dc22e848dc9b5b5d20fca84cec770def1bdbdfb71295477427d5d71904669",
+      "size": 4901,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Elegance-and-intelligence-are-anticorrelated.md": {
+      "chapter": "待分类",
+      "entry_id": "e48f15bd890dacad",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473347.5648441,
+      "score": 7,
+      "sha256": "d80fd424bbb91f7cea00705ea6d250f768795713aeee0c58cebbf477623f5a15",
+      "size": 6384,
+      "status": "appended",
+      "title": "Elegance and intelligence are anticorrelated"
+    },
+    "source/rss-snapshot/2026-11-01-Extremely-brief-history-of-PDP-computers.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473905.9700558,
+      "sha256": "75d0593b4c3464492ac3498eb4c2987ece4d134b4f7579a792a4870c99b72f15",
+      "size": 5207,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-MacBook-Pro-Pricing-and-Configurations-for-M6-M5.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473328.5921416,
+      "sha256": "6ff24ed2c61ef75aaaa7407ba0ec5f101114a6c6cd7786a2bb9f53821b52260d",
+      "size": 4776,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Pluralistic-Formalities-31-Oct-2026.md": {
+      "chapter": "待分类",
+      "entry_id": "005d003802bc9330",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473314.5585039,
+      "score": 12,
+      "sha256": "e97e729babbfe65345b3c7be132ae4b31279423cea399e336846707b58d73374",
+      "size": 34475,
+      "status": "appended",
+      "title": "Pluralistic: Formalities (31 Oct 2026) – Pluralistic: Daily links from Cory Doctorow"
+    },
+    "source/rss-snapshot/2026-11-01-Quoting-Ben-Hylak.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473385.5592072,
+      "sha256": "d0299cef66bd95157fd15663e9709502cbeadfd09737b97547de2a531e73fb71",
+      "size": 558,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Reading-List-10-31-26.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473320.5874183,
+      "sha256": "43613268b47202f74495d22b2742aedf8d425b3519fa68d91364fd62d2799fcc",
+      "size": 5163,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Report-from-the-Vatican.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473308.596071,
+      "sha256": "74cc91980e60e9002a1a331f9ded0f20673f3e64bb5fce525234466e3f78b950",
+      "size": 22610,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-Steven-Levy-on-the-New-MacBook-Pro-With-Yes-a-To.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473406.5904703,
+      "sha256": "77247079e61c8ed6e13a699365f9b0f2605df87dd9997f99d1d62c959b0240ac",
+      "size": 16213,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-The-Microsoft-building-that-was-reportedly-haunt.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473341.570954,
+      "sha256": "dc45844b57584b8ed06f4ad48d4679cf5a358954877be20c295a66bcf23001e0",
+      "size": 4067,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-The-Space-Shuttle-Discovery-s-Starboard-Side-s-I.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473382.5948493,
+      "sha256": "c228d7c685d4d2ba2ad7e5a4df09b421dcad8944cb8b8cd454caca10fd0ca688",
+      "size": 11596,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-The-Unbalanced-Group-Theorem.md": {
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473905.9698431,
+      "sha256": "9c01ffdcd5302be02fe8adc21a0793b3fa6424f04bb8f23b30aa2f65ed368f2c",
+      "size": 2876,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-01-The-support-case-of-a-customer-who-said-that-all.md": {
+      "chapter": "ch05-cpu-power",
+      "entry_id": "adabafaa5e04ccf0",
+      "last_appended": "2026-11-01T05:25:20.168028+08:00",
+      "last_seen": "2026-11-01T05:25:20.168028+08:00",
+      "mtime": 1793473388.5663526,
+      "score": 11,
+      "sha256": "6444fc1c67b4ae26ec75cf55e3894ab0c9d941ce24d12c8fc95ee5ba19880c41",
+      "size": 3211,
+      "status": "appended",
+      "title": "The support case of a customer who said that all they could see was a black screen"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
@@ -9531,24 +9754,24 @@
     }
   },
   "last_report": {
-    "appended": 9,
-    "considered": 20,
-    "cutoff": "2026-10-30T05:20:20.231684+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-31.md",
+    "appended": 11,
+    "considered": 24,
+    "cutoff": "2026-10-31T05:20:20.247023+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-01.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2333,
+    "scanned": 2357,
     "skipped": {
       "existing_link": 0,
-      "low_score": 11,
+      "low_score": 13,
       "max_files": 0,
       "old_unseen": 1419,
       "path": 31,
-      "unchanged": 863
+      "unchanged": 883
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-31T05:25:20.247023+08:00",
+  "last_run_at": "2026-11-01T05:25:20.168028+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
