@@ -48,15 +48,15 @@ sources:
 
 # BluetoothSocket read() 断开语义与长连接治理
 
-`BluetoothSocket` 输入流中阻塞的 `read()` 会以 EOF、异常或字节数三种结果反映连接状态，每一种结果都要接到自己的处置动作上，把它们一律当作可以立即重连的依据并不可靠。可靠长连接要把读写线程、关闭顺序、状态机和退避预算放进同一套治理。
+`BluetoothSocket` 输入流中阻塞的 `read()` 会以 EOF、异常或字节数三种结果反映连接状态，每一种结果都要接到自己的处置动作上，立即重连只在部分场景下才是正确响应；可靠长连接要把读写线程、关闭顺序、状态机和退避预算放进同一套治理。
 
 > 源码基线：AOSP `android-17.0.0_r1`，实现位于 `packages/modules/Bluetooth` 的 Java 框架层；公开行为以 Android Developers 文档为准。
 
 ## 问题范围
 
-维护蓝牙长连接时，只要有一次返回值处理出错，就可能同时看到读线程不退出、界面仍显示已连接、旧连接事件覆盖新状态，以及重连反复触发扫描。`BluetoothSocket` 是 Android 用于蓝牙连接的套接字 API，而 Android 17 改变了 RFCOMM 输入流结束时的表现，只捕获 `IOException` 的旧代码从此要补上 EOF 这条新退出路径。
+维护蓝牙长连接时，只要有一次返回值处理出错，就可能同时看到读线程不退出、界面仍显示已连接、旧连接事件覆盖新状态，以及重连反复触发扫描。背景是一次版本行为的变化：Android 17 改变了 `BluetoothSocket` 上 RFCOMM 输入流结束时的表现，只捕获 `IOException` 的旧代码从此要补上 EOF 这条新退出路径。
 
-几个术语会贯穿全文。RFCOMM（Radio Frequency Communication，射频通信）是经典蓝牙中面向连接的字节流传输，常用于串行端口规范（Serial Port Profile，SPP）；EOF（end of file）标记输入流已没有后续数据；低功耗蓝牙面向连接信道（LE Credit-based Connection-Oriented Channel，LE CoC）是另一种蓝牙套接字传输类型；目标 SDK（target SDK）指应用声明采用的 Android 行为级别。文中沿用这些协议、API 与版本术语，便于与日志、源码及官方文档对照。
+几个术语会贯穿全文，先在这里约定：RFCOMM（Radio Frequency Communication，射频通信）是经典蓝牙中面向连接的字节流传输，常用于串行端口规范（Serial Port Profile，SPP）；EOF（end of file）标记输入流已没有后续数据；低功耗蓝牙面向连接信道（LE Credit-based Connection-Oriented Channel，LE CoC）是另一种蓝牙套接字传输类型；目标 SDK（target SDK）指应用声明采用的 Android 行为级别。后文沿用这套术语，方便与日志、源码及官方文档对照。
 
 我们需要回答四个工程问题：
 
@@ -171,16 +171,16 @@ class BtReadLoop(
 }
 ```
 
-几个实现细节值得留意。`closeRequested` 是原子布尔值，供关闭线程与读线程安全地共享意图；关闭线程先更新它、再调用 `close()`，读线程的阻塞被 `close()` 终止时就能看见本地意图。EOF 分支按读取 `closeRequested` 时可见的意图保存分类；`read()` 返回与这次原子读取之间仍可能发生关闭请求，代码不能据此恢复真实断线的物理先后。分类一旦保存在 `terminalReason` 中，之后的关闭请求不会回写该分类。
+几个实现细节值得留意。`closeRequested` 是原子布尔值，关闭线程与读线程靠它安全地共享意图：关闭线程先更新它、再调用 `close()`，读线程的阻塞被 `close()` 终止时就能看见本地意图。EOF 分支按读取 `closeRequested` 那一刻可见的意图保存分类；`read()` 返回与这次原子读取之间仍可能插入新的关闭请求，真实断线的物理先后从这段时序里还原不出来，分类以读取时刻看到的意图为准。分类一旦写进 `terminalReason`，之后的关闭请求就不会再改动它。
 
 <!-- gracker-diagram: a271-02-exit-cause-classification -->
 ![EOF与异常先按分类时可见的关闭意图归因](../../assets/diagrams/ch24/a271-02-exit-cause-classification.png)
 
-图：原子变量支持线程间可见性，但不能恢复真实断线的物理时间顺序；分类以代码实际读取时为准。
+图：原子变量保证线程间可见性，恢复不出真实断线的物理时间顺序；分类以代码实际读取时为准。
 
 示例复制有效字节，避免异步消费者继续引用下一次读取会覆盖的数组；高吞吐场景可以改用容量受限的缓冲池，并要求缓冲区归还前只能由一个消费者持有。
 
-`onBytes` 只负责移交字节，并且不抛异常，协议解析错误由独立事件返回状态机；`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。这里的 `onExit` 只移交读任务结果，外层会话所有者还要关闭当前套接字、停用写入口并回收任务资源；它不是完整的会话清理实现，不能只更新界面状态。
+`onBytes` 只负责移交字节，并且不抛异常，协议解析错误由独立事件返回状态机；`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。这里的 `onExit` 只移交读任务结果，会话清理到这一步还没有结束：外层会话所有者要关闭当前套接字、停用写入口并回收任务资源，界面状态的更新只是其中一环。
 
 ### 源码中的生效条件
 
@@ -210,12 +210,12 @@ if (ret < 0) {
 
 [`BluetoothInputStream.java`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothInputStream.java) 的数组读取直接委托给 `BluetoothSocket.read()`。[`sockets.aconfig`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/flags/sockets.aconfig) 则说明 `make_socket_read_behavior_consistent` 的用途是统一 RFCOMM 与 LE CoC 的 EOF 返回值。
 
-LE CoC 在该源码中已经在接收缓冲为空且底层读到 EOF 时直接返回 `-1`。Android 17 的公开行为变更只承诺 RFCOMM 的新语义，同步面向连接（Synchronous Connection-Oriented，SCO）等其他套接字类型的公开契约，要从各自的官方渠道确认，共享实现推不出这些结论；SCO 主要承载蓝牙语音数据。
+LE CoC 在该源码中已经在接收缓冲为空且底层读到 EOF 时直接返回 `-1`。Android 17 的公开行为变更只承诺 RFCOMM 的新语义；同步面向连接（Synchronous Connection-Oriented，SCO）等其他套接字类型即使与 RFCOMM 共享部分实现，公开契约也要从各自的官方渠道确认；SCO 主要承载蓝牙语音数据。
 
 <!-- gracker-diagram: a271-01-rfcomm-eof-gates -->
 ![RFCOMM负返回值由版本、目标与开关共同门控](../../assets/diagrams/ch24/a271-01-rfcomm-eof-gates.png)
 
-图：公开变化只承诺 RFCOMM；兼容工具能覆盖应用门控，不能凭它改变设备版本或模块特性标志。
+图：公开变化只承诺 RFCOMM；兼容工具覆盖的是应用侧门控，设备版本与模块特性标志仍由设备本身决定。
 
 可调试应用可在 Android 17 测试设备上执行这些命令，切换兼容性变更：
 
@@ -231,7 +231,7 @@ adb shell am compat reset 383671392 com.example.app
 
 线程怎么摆，取决于阻塞发生在哪里。[Bluetooth 数据传输指南](https://developer.android.com/develop/connectivity/bluetooth/transfer-data) 明确指出，`read(byte[])` 与 `write(byte[])` 都可能阻塞：读取会等待数据、EOF 或异常；远端读取太慢且中间缓冲区已满时，写入也会因流量控制而阻塞。流量控制是接收方根据处理能力限制发送速度的机制。
 
-[`BluetoothSocket` API](https://developer.android.com/reference/android/bluetooth/BluetoothSocket) 还给出两个取消边界：
+[`BluetoothSocket` API](https://developer.android.com/reference/android/bluetooth/BluetoothSocket) 还给出两条取消规则：
 
 - `connect()` 会阻塞到连接成功或失败，没有公开的超时参数。
 - `BluetoothSocket` 是线程安全的，另一个线程调用 `close()` 会立即中止进行中的操作并关闭套接字。
@@ -252,7 +252,7 @@ adb shell am compat reset 383671392 com.example.app
 <!-- gracker-diagram: a271-03-io-ownership-and-cancel -->
 ![阻塞读写与串行状态机分配独立执行资源](../../assets/diagrams/ch24/a271-03-io-ownership-and-cancel.png)
 
-图：读任务不能和关闭/超时消息共用被阻塞的 HandlerThread；每个活跃连接都有资源预算。
+图：读任务与关闭/超时消息分线程部署，HandlerThread 被阻塞也拖不住取消路径；每个活跃连接都有资源预算。
 
 ### 字节流与消息定界
 
@@ -272,7 +272,7 @@ API 23 及以上的 `getMaxReceivePacketSize()` 与 `getMaxTransmitPacketSize()`
 
 图：InputStream 没有业务帧语义；复制有效字节或明确单消费者所有权，避免下一次read覆盖异步数据。
 
-`isConnected()` 反映的是调用那一刻的套接字连接状态，下一次读写能否成功，它说了不算。业务在线状态应由当前连接代次、读写结果和协议活性共同决定；协议活性通常来自业务心跳，或请求响应是否按时完成。
+`isConnected()` 反映的是调用那一刻的套接字连接状态，下一次读写能否成功，它说了不算。所以业务在线状态，我们交给当前连接代次、读写结果和协议活性共同决定；协议活性通常来自业务心跳，或请求响应是否按时完成。
 
 ## 断线归因与状态机
 
@@ -315,11 +315,11 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 <!-- gracker-diagram: a271-05-connection-generation-fence -->
 ![connectionId阻止旧会话事件覆盖新状态](../../assets/diagrams/ch24/a271-05-connection-generation-fence.png)
 
-图：代次同时约束读退出、写失败和连接回调；旧任务清理不能把新界面改成断线。
+图：代次同时约束读退出、写失败和连接回调；旧任务清理只回收旧资源，新界面维持当前连接的显示。
 
 ## 重连预算与退避
 
-轮到重连时，我们先核对四个前提：业务仍希望保持连接、必要权限仍在、Bluetooth 适配器已开启、当前预算允许重试。任何一项前提消失，重连就停在原地，后台计时器也随之停止创建套接字。状态表中的 `Backoff` 就是失败后等待下一次连接的阶段。
+失败之后先核对前提，再谈重连。我们要核对的有四项：业务仍希望保持连接、必要权限仍在、Bluetooth 适配器已开启、当前预算允许重试；任何一项消失，重连就停在原地，后台计时器也随之停止创建套接字。状态表中的 `Backoff` 就是失败后等待下一次连接的阶段。
 
 <!-- gracker-diagram: a271-06-reconnect-state-gates -->
 ![失败等待与本地关闭走不同状态出口](../../assets/diagrams/ch24/a271-06-reconnect-state-gates.png)
@@ -336,23 +336,23 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 | 扫描 | `scan_reason`、`scan_duration_ms`、`scan_attempts` | 区分重连扫描与用户主动配网 |
 | 写入重放 | `pending_request_count`、`replay_decision` | 只重放协议允许且幂等的请求 |
 
-等待时间可以用有上限的指数退避：每次失败后成倍延长等待，封顶在设定上限；再加入少量随机时间偏移，也就是重连抖动，可以减少多台设备或大量客户端同时发起连接。
+等待时间可以用有上限的指数退避：每次失败后成倍延长等待，封顶在设定上限；再加入少量随机时间偏移，也就是重连抖动，减少多台设备或大量客户端同时发起连接的概率。
 
 初始等待、上限和尝试次数属于产品参数，由设备类型、前后台状态和用户等待预期决定。失败计数的清零也要挑时机：等连接持续稳定，或完成一次有效业务交换后再重置，更能减少短连接反复建立和断开。
 
-对已配对且地址已知的经典蓝牙（Bluetooth Classic）设备，断线后通常直接创建新的 RFCOMM 套接字即可。全量设备发现要扫描周围设备，只在确需时进行：带过滤条件、截止时间和停止条件，并把原因标记为 `reconnect`。执行 `connect()` 前还要调用 `BluetoothAdapter.cancelDiscovery()`，官方 API 文档说明，进行中的设备发现会显著拖慢新连接。
+对已配对且地址已知的经典蓝牙（Bluetooth Classic）设备，我们断线后通常直接创建新的 RFCOMM 套接字即可。全量设备发现要扫描周围设备，只在确需时进行：带过滤条件、截止时间和停止条件，并把原因标记为 `reconnect`。执行 `connect()` 前还要调用 `BluetoothAdapter.cancelDiscovery()`，官方 API 文档说明，进行中的设备发现会显著拖慢新连接。
 
 协议层也要决定断线后的数据处理：
 
 - 已写入只代表字节交了出去，远端是否已处理需要确认，重放决策等确认结果再做。
 - 请求携带业务序号或幂等键，重连后由双方确认进度。幂等键是用于识别同一业务请求的唯一标识，使重复提交可以复用已有结果。
-- 不能安全重复执行的操作，需要先查询结果或让用户确认。
-- 旧连接写队列中的任务不能自动转移到新 `connectionId`。
+- 重复执行有风险的操作，需要先查询结果或让用户确认。
+- 旧连接写队列中的任务留在旧 `connectionId` 里，不随新连接自动转移。
 
 <!-- gracker-diagram: a271-07-retry-window-and-replay -->
 ![退避、扫描和重放共享会话预算](../../assets/diagrams/ch24/a271-07-retry-window-and-replay.png)
 
-图：已写出不证明远端已处理；幂等键或业务序号决定重放，不能安全重复时先查询结果。
+图：已写出只代表字节交了出去；幂等键或业务序号决定重放，重放有风险时先查询结果。
 
 ### 后台连续连接
 
@@ -365,7 +365,7 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 <!-- gracker-diagram: a271-08-background-execution-and-permissions -->
 ![后台连续连接与蓝牙授权分别满足前提](../../assets/diagrams/ch24/a271-08-background-execution-and-permissions.png)
 
-图：前台服务改善执行条件，不保证不被停止，也不能豁免蓝牙权限、用户断开和重试预算。
+图：前台服务只改善执行条件，进程仍可能被停止，蓝牙权限、用户断开和重试预算照常生效。
 
 ## 性能与功耗监控字段
 
@@ -381,7 +381,7 @@ API 34 及以上的 `BluetoothSocketException.getErrorCode()` 提供结构化整
 | 扫描 | `scan_reason`、`scan_duration_ms`、`filter_present` | 与 11.4 的扫描功耗分析关联 |
 | 系统 | `adapter_state`、`permission_state`、`app_importance`、`battery_saver` | 区分系统状态与传输失败 |
 
-遥测是应用自动采集并上报的运行指标。`connection_id` 用应用生成的短期随机标识。若必须按设备族聚合，优先上传非唯一的产品型号或固件大版本；需要识别同一设备产生的重复事件时，用定期更换的密钥生成一个标识，它只在指定业务范围内有效，且无法还原设备地址。`build_fingerprint_group` 同样取粗粒度构建分组，完整构建指纹留在端上。完整 MAC、设备名、广播负载和业务数据也一律留在端上。
+遥测是应用自动采集并上报的运行指标。`connection_id` 用应用生成的短期随机标识。若必须按设备族聚合，优先上传非唯一的产品型号或固件大版本；需要识别同一设备产生的重复事件时，用定期更换的密钥生成一个标识，它只在指定业务范围内有效，从它也推不回设备地址。`build_fingerprint_group` 同样取粗粒度构建分组，完整构建指纹留在端上。完整 MAC、设备名、广播负载和业务数据也一律留在端上。
 
 Perfetto 是 Android 的系统跟踪工具，BatteryStats 统计设备电量使用；把二者与应用跟踪放到一起，我们可以核对断线后的线程、唤醒锁、扫描和重连是否仍在运行。Perfetto 中的 Bluetooth 与电源时间轴随设备实现变化，测试脚本先枚举当前设备可用数据源，再选择分析字段，时间轴名称以当场枚举结果为准。
 
@@ -390,7 +390,7 @@ Perfetto 是 Android 的系统跟踪工具，BatteryStats 统计设备电量使�
 <!-- gracker-diagram: a271-09-disconnect-work-versus-idle -->
 ![空闲阻塞与关闭后残留线程要区分](../../assets/diagrams/ch24/a271-09-disconnect-work-versus-idle.png)
 
-图：以用户关闭与代次为观测边界；指标保留socket_type和阶段，不能混进HTTP DNS或读取超时。
+图：以用户关闭与代次划分观测范围；指标保留socket_type和阶段，与 HTTP 的 DNS、读取超时分开统计。
 
 ## Android 17 适配测试表
 
@@ -411,13 +411,13 @@ Perfetto 是 Android 的系统跟踪工具，BatteryStats 统计设备电量使�
 | 写入阻塞 | 对端暂停读取、写队列达到容量限制 | 主线程不阻塞，截止时间和拒绝策略生效 |
 | 协议分帧 | 半包、粘包、超长长度、校验失败 | 解析器不把一次 `read()` 当作一帧，错误路径可关闭会话 |
 
-每个用例至少记录 `sdk_int`、`target_sdk`、兼容性开关状态、`connection_id`、`read_exit_reason` 和重试终止原因。远端关闭在不同蓝牙控制器芯片、固件和时序下可能表现为 EOF 或异常，所以断言检查的是状态机结果，底层表现为 EOF 还是异常都算通过。
+每个用例至少记录 `sdk_int`、`target_sdk`、兼容性开关状态、`connection_id`、`read_exit_reason` 和重试终止原因。远端关闭在不同蓝牙控制器芯片、固件和时序下可能表现为 EOF 或异常，所以我们的断言检查的是状态机结果，底层表现为 EOF 还是异常都算通过。
 
 ## 与相邻章节的分工
 
 11.4 节负责 Bluetooth 扫描、连接和功耗分析；我们只在断线扫描、重连预算和套接字线程处引用它，低功耗蓝牙（Bluetooth Low Energy，BLE）的扫描限制放到那一章讲。
 
-24.5 节负责公网请求的弱网处理和重试预算。Bluetooth 套接字可以复用失败分类、安全重试规则和总时间预算，但错误仍需独立建模，不能归入 HTTP 的 DNS、连接或读取超时。
+24.5 节负责公网请求的弱网处理和重试预算。Bluetooth 套接字可以复用失败分类、安全重试规则和总时间预算，但错误仍需独立建模，与 HTTP 的 DNS、连接或读取超时分开归类。
 
 26.10 节负责线上网络质量监控，Bluetooth 套接字在那里作为独立通道上报，原始事件保留 `socket_type`、`read_exit_reason`、`connection_id` 和 `retry_stop_reason`。
 
