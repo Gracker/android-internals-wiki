@@ -101,10 +101,6 @@ Android common kernel `android17-6.18-2026-06_r6` 的 arm64 `arch/arm64/include/
 
 这个内核基线按 64 字节 L1 cache line 构建。同一文件还从 `CTR_EL0.CWG` 读取 cache 写回粒度，并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节。也就是说，CPU L1 cache line、DMA 安全对齐、跨 CPU 避免互相干扰所需的间隔，是三件不同的事，各有各的常量。
 
-<!-- gracker-diagram: ch05-08-cache-line-dma-and-interference -->
-![Cache line、写回粒度与 DMA 对齐](../../assets/diagrams/ch05/ch05-08-cache-line-dma-and-interference.png)
-
-图：常量按 android17-6.18-2026-06_r6 核对。避免伪共享所需的字段间隔要结合实际一致性粒度和并发模式验证，不能只套一个宏。
 
 应用代码可以把 64 字节当作当前常见设备的实验起点；至于 Armv8/Armv9 规范保证，它给不了。涉及共享库、DMA 或多代设备时，我们还要结合目标 ABI、设备资料和测量来决定布局。
 
@@ -215,10 +211,6 @@ static_assert(sizeof(CounterSlot) == 64);
 
 Java/Kotlin 的对象布局属于 ART 实现细节，靠添加若干 `long` 字段保证不了字段独占 cache line；`@Contended` 也不是 Android 公共 SDK 契约。应用层更稳的路线是减少共享可变对象、分片计数、批量提交，再以基准测试验证。
 
-<!-- gracker-diagram: ch05-08-false-sharing-mitigation-order -->
-![从共享写入到字段隔离](../../assets/diagrams/ch05/ch05-08-false-sharing-mitigation-order.png)
-
-图：Padding 需已有热点证据，并会增加内存、cache/TLB 占用。MessageQueue 源码中的相邻声明不能证明实际共行；内核对齐宏也不能直接当 App 布局契约。
 
 ### MessageQueue 案例
 
@@ -298,10 +290,6 @@ struct RenderItemCold {
 
 `std::vector` 和 Binder `Parcel` 使用连续缓冲区，顺序读写的空间局部性很好，但容量增长可能触发重新分配和复制。已知大小时合理调用 `reserve()` 可以减少扩容，过度预留会扩大容器保留容量，并可能增加实际触页后的 RSS（常驻内存）；容量、已初始化元素数与驻留页数不能直接画等号。
 
-<!-- gracker-diagram: ch05-08-reserve-capacity-versus-rss -->
-![连续容器的容量与扩容成本](../../assets/diagrams/ch05/ch05-08-reserve-capacity-versus-rss.png)
-
-图：reserve 不等于 RSS 立即按同样字节数增长，也不保证整体更快。保留容量与实际触页、allocator 行为及峰值需要一起测量。
 
 `frameworks/native/libs/binder/Parcel.cpp` 中，`mData`、`mDataSize`、`mDataCapacity` 和 `mDataPos` 管理连续数据区，写入按 4 字节 padding，增长路径使用 `realloc` 或分配并复制。Parcel 另有对象偏移数组，读取时也可以调整 data position，所以“Parcel 只能从头顺序读”这个说法并不成立。Parcel 字段与增长路径的完整说明见本章「Binder Parcel：连续数据与独立对象表」。
 
@@ -329,10 +317,6 @@ ART 的线程局部分配路径很快，存活时间短的对象也能在 GC 年
 
 `Message.obtain()` 的回收池只说明 framework 在这个场景采用了特定复用策略，推广到“所有临时对象都适合池化”就过了。先用 allocation profiler（分配分析器）、GC pause（垃圾回收停顿）、CPU 和内存数据确认分配成本，再比较“直接分配”“批量分配”“复用”三种方案。
 
-<!-- gracker-diagram: ch05-08-object-pool-evaluation -->
-![对象池的局部性与总成本](../../assets/diagrams/ch05/ch05-08-object-pool-evaluation.png)
-
-图：对象池可能减少分配，也可能增加 live set、状态重置和锁竞争。Message.obtain 的局部策略不能推广为所有对象的通用答案。
 
 ### 分支与 cache 要分开归因
 
@@ -346,10 +330,6 @@ ART 的线程局部分配路径很快，存活时间短的对象也能在 GC 年
 
 prefetch 距离太近，数据可能来不及到达；距离太远，又可能提前挤出仍在使用的 cache line。目标地址不在页表中时，还可能增加地址转换工作。把改动放进通用库之前，我们至少要在两类核心、冷/热数据和有/无并发负载下比较，并检查能耗；单次 microbenchmark（微基准）的 p50（中位数）结果撑不起这个决定。
 
-<!-- gracker-diagram: ch05-08-branch-and-prefetch-separation -->
-![分支预测与数据预取的不同作用](../../assets/diagrams/ch05/ch05-08-branch-and-prefetch-separation.png)
-
-图：分支预测错误与 data-cache miss 是不同机制。Prefetch 只是提示；地址表达式仍须合法，过近可能来不及，过远可能挤出热数据。两者都需看机器码和业务时间。
 
 ## DEX 局部性：Startup Profile 与构建配置
 
@@ -457,10 +437,6 @@ IPC 低的原因不止 memory-bound（主要受内存访问限制）一种：
 
 Perfetto 的 sched、CPU frequency、thread state 和应用 slice（带起止时间的自定义事件区间）可以提供时间上下文。默认 trace 不会自动产生每线程 instructions/cycles，也没有一段可以直接套用的通用 SQL，能把任意 counter 按线程换算成 IPC。可以用相同 workload 的时间窗口关联 Simpleperf 与 Perfetto，但需注明数据来自两次采集还是同一次采集。
 
-<!-- gracker-diagram: ch05-08-simpleperf-evidence-pipeline -->
-![Simpleperf 从事件支持到时间上下文](../../assets/diagrams/ch05/ch05-08-simpleperf-evidence-pipeline.png)
-
-图：同组事件需尽量同时调度，counter 不足可能 multiplex。不同核心 PMU 和迁移影响解释；默认 Perfetto trace 不会自动给出每线程 instructions/cycles，不能凭通用 SQL 补造 IPC。
 
 ### False sharing 需要地址级证据
 
@@ -576,10 +552,6 @@ ART 的 `CardTable`（卡表）定义 `kCardShift = 10`，卡表里每个 byte �
 
 业务指标在代表性设备和输入上稳定改善了，改动才值得保留。
 
-<!-- gracker-diagram: ch05-08-cache-optimization-validation-loop -->
-![Cache 优化的验证顺序](../../assets/diagrams/ch05/ch05-08-cache-optimization-validation-loop.png)
-
-图：实验记录实际核心、频率、温度与编译状态；不要把降频差异认成 cache 收益，也不要把用于受控实验的绑核策略直接固化进生产代码。
 
 ## 结论
 
