@@ -111,10 +111,6 @@ Manifest 可以声明：
 
 宿主要通过受约束的 Binder 接口，只传完成一次请求所需的内容：fd、只读共享区和最少的元数据。需要 GPU、编解码器或其他硬件服务时，还要确认设备为对应的隔离安全域（isolated domain）配置了哪些服务和设备权限——AOSP 给 `isolated_compute_app` 单独写了 SELinux 规则，普通 `isolated_app` 并不会因此获得相同能力。
 
-<!-- gracker-diagram: ch04-10-deployment-identity-and-isolation -->
-![推理部署到哪个 PID，先决定记账与隔离边界](../../assets/diagrams/ch04/ch04-10-deployment-identity-and-isolation.png)
-
-图：进程内推理与主进程共享故障和内存；:inference 通常仍用应用 UID，只分开地址空间与进程故障。isolated service 获得隔离 UID，依赖获准 IPC 与句柄拿数据；系统或厂商服务的权限、cgroup 和硬件能力则看具体实现。优先级由状态和绑定依赖决定，推理名称不构成固定 adj 或保护。
 
 ## 4.10.2 RSS、PSS 与共享页怎样记账
 
@@ -371,10 +367,6 @@ kv_bytes
 
 这只是示例。MHA、GQA、MQA 对 KV 头的共享方式不同：MHA 为各注意力头保留独立 KV，GQA 让一组查询头共享 KV，MQA 则让所有查询头共享 KV。分页 KV、滑动窗口、量化 KV、候选序列数（beam）和多会话并发也会改变结果。评估具体模型时，我们应从模型配置和推理运行时分配日志中取参数，单靠参数量或层数是估不准的。
 
-<!-- gracker-diagram: ch04-10-weights-kv-and-workspace-budget -->
-![模型参数量只给权重下限，KV 与工作区需要另算](../../assets/diagrams/ch04/ch04-10-weights-kv-and-workspace-budget.png)
-
-图：2B 参数、4 bit 权重的纯数据下限是 10^9 字节，约 0.93 GiB，尚未包含 scale、元数据、重排与设备副本。标准注意力的 K/V 缓存按层数、KV 头、头维度、token、batch 与元素字节相乘。正文示例 FP16、26 层、4 个 KV 头、维度 256，1024/4096 token 分别约 104/416 MiB；工作区与并发峰值还要实测。
 
 ### 工作区与内存峰值
 
@@ -490,10 +482,6 @@ Perfetto 中可启用：
 
 heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部驻留页，也替代不了 dma-buf 和加速器驱动统计；Java 堆还要结合 ART 堆转储、内存分配采样或 `dumpsys meminfo` 分析。
 
-<!-- gracker-diagram: ch04-10-pid-fd-phase-measurement -->
-![测量按所有权与阶段交叉记录，再解释共享与峰值](../../assets/diagrams/ch04/ch04-10-pid-fd-phase-measurement.png)
-
-图：先列组件身份、状态、模型与缓冲持有者，再按初始化、映射、预热、预填充、解码、释放和后台状态采样。进程与系统统计给规模和压力，heapprofd 查受支持的原生堆分配，堆图查对象，驱动统计查设备资源；没有任何一个工具独自覆盖全部模型成本。修复后重复同输入与同后端场景，验证峰值、长尾及生命周期。
 
 ## 4.10.11 设计评审清单
 
