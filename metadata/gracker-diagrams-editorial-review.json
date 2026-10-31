@@ -44708,9 +44708,211 @@
       "before_count": 19,
       "before_all_images": 19,
       "sha256_before": "555342870b20dfb529d015890e7c5157e193e4dca326f34440e2abdfbc890beb",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch16-06-01-experiment-records",
+          "title": "竞品比较需要的四类记录",
+          "decision": "remove",
+          "reason": "四框逐项重画实验四份记录编号清单，无实际双App对照记录；观测不同内实现原因与适用范围全文留。",
+          "original_line": 72,
+          "heading": "## 竞品性能对比的方法论"
+        },
+        {
+          "original_id": "ch16-06-02-matched-conditions",
+          "title": "控制变量与自然热响应",
+          "decision": "remove",
+          "reason": "三列复写同设备同场景同网络同热四原则，未画具体ABBA与热携带样本，持续负载自然热不应事后删等完整段落留。",
+          "original_line": 87,
+          "heading": "### 控制变量的四项基本原则"
+        },
+        {
+          "original_id": "ch16-06-03-state-reset-manifest",
+          "title": "每个测试维度有自己的复位",
+          "decision": "remove",
+          "reason": "三列摘要runmanifest六条清单和每维复位说明，未画具体初态恢复分支；完整split签名hash/ART/动画/killall非设备复位正文留。",
+          "original_line": 107,
+          "heading": "### 测试前的设备准备"
+        },
+        {
+          "original_id": "ch16-06-04-paired-sampling",
+          "title": "配对、相关层级与停止规则",
+          "decision": "keep",
+          "reason": "试采噪声检出目标→预先顺序停止→按设备block完整AB配对→按实际抽样层级估计效应区间的竞品核心协议独立，差值中位数不同中位数之差和相关帧边界留。",
+          "original_line": 126,
+          "heading": "### 采样、顺序与停止条件"
+        },
+        {
+          "original_id": "ch16-06-05-startup-completion-boundaries",
+          "title": "TTID、TTFD与业务就绪分别测量",
+          "decision": "remove",
+          "reason": "三列重画TTID/TTFD/等价业务成功三个边界段，无实际起止轨，竞品TTFD埋点未知不得排名/缺失非0与UI另区间全文留。",
+          "original_line": 140,
+          "heading": "## 竞品启动速度对比"
+        },
+        {
+          "original_id": "ch16-06-06-am-start-wait-path",
+          "title": "正常绘制路径怎样回填TotalTime",
+          "decision": "keep",
+          "reason": "shellstartActivityAndWait→ActivityRecordonWindowsDrawn→MetricsLogger生成windowsDrawnDelay→TaskSupervisor回填WaitResultnotify实际系统控制/数据链独立，仅正常跟踪路径且非光学业务完成。",
+          "original_line": 149,
+          "heading": "### adb am start -W 的原理与正确使用"
+        },
+        {
+          "original_id": "ch16-06-07-shell-output-validity",
+          "title": "启动状态与两个时间字段的边界",
+          "decision": "remove",
+          "reason": "三列逐项复制LaunchStateTotalTimeWaitTime三个完整字段段，无真实时间轴例；WaitTime在-SforceStop及250ms等待后且不含完整adb、缺失/旧ThisTime等全文留。",
+          "original_line": 187,
+          "heading": "### adb am start -W 的原理与正确使用"
+        },
+        {
+          "original_id": "ch16-06-08-launch-state-objects",
+          "title": "启动分类保留哪些对象",
+          "decision": "remove",
+          "reason": "三列摘要五项ColdWarmHotRelaunchUnknown定义，未画实际状态判断树，Unknown不自动Hot/组件重定向多进程与pagecache独立全文留。",
+          "original_line": 202,
+          "heading": "### 冷启动 vs 温启动 vs 热启动"
+        },
+        {
+          "original_id": "ch16-06-09-art-state-protocols",
+          "title": "商店状态与统一实验状态",
+          "decision": "remove",
+          "reason": "三列逐项重画商店现实/统一实验两条协议与speed参数说明，未画实际profile状态对照；speed非最快及speedprofile已有profile质量/类初始化限制全文留。",
+          "original_line": 226,
+          "heading": "### 启动对比的注意事项"
+        },
+        {
+          "original_id": "ch16-06-10-frametimeline-object-join",
+          "title": "从目标Layer关联Surface与Display",
+          "decision": "keep",
+          "reason": "场景与目标Layer→SurfaceFrame的expectedactual/token→同displayDisplayFrame多Surface关系→同帧线程GPU呈现调查实际对象关联链独立，缺轨空集非不卡与独立Surface支持验证保留。",
+          "original_line": 250,
+          "heading": "### 抓 Trace 对比帧耗时分布"
+        },
+        {
+          "original_id": "ch16-06-11-frame-metric-population",
+          "title": "先固定帧集合再解释分布",
+          "decision": "remove",
+          "reason": "三列重排五个帧统计关键指标段，无真实连续miss序列或不同deadline例；各overrun/present/jank条件不同与两侧排除分母预定义全文留。",
+          "original_line": 271,
+          "heading": "### 帧耗时分析的关键指标"
+        },
+        {
+          "original_id": "ch16-06-12-framemetrics-listener",
+          "title": "Window帧报告与显示掉帧的区别",
+          "decision": "remove",
+          "reason": "三列逐项重述FrameMetrics12行监听代码与两段字段/质量解释，无实际复用对象生命周期图；只自有Window可注入/立即取值/drop报告非显示掉帧/严格比较/ns/负缺失全文留。",
+          "original_line": 303,
+          "heading": "### FrameMetrics 能做什么"
+        },
+        {
+          "original_id": "ch16-06-13-package-size-objects",
+          "title": "发布包、设备安装集与下载量",
+          "decision": "remove",
+          "reason": "四框摘要包体比较对象三段，未画实际设备split交付集合关系；AABuniversalbase/同ABI密度语言/缺split/按需后续下载分开记账全文留。",
+          "original_line": 314,
+          "heading": "## 竞品包体积对比"
+        },
+        {
+          "original_id": "ch16-06-14-apk-size-measurements",
+          "title": "Raw与下载估算分别回答什么",
+          "decision": "remove",
+          "reason": "三列重画Raw/downloadSize两种口径和四命令示例，未画具体ZIPentry大小例；Raw非解压大小/download估算非Play实交付/fileslist无size全文留。",
+          "original_line": 330,
+          "heading": "### APK Analyzer 的使用"
+        },
+        {
+          "original_id": "ch16-06-15-package-component-evidence",
+          "title": "分类字节不能直接解释实现质量",
+          "decision": "remove",
+          "reason": "三列摘要DEXnativeResourcesAssets五类原段，未画实际字节分布，功能量/配置/压缩不同实现质量和runtime矢量成本全文留。",
+          "original_line": 362,
+          "heading": "### 包体积对比的关键维度"
+        },
+        {
+          "original_id": "ch16-06-16-observations-to-causes",
+          "title": "观测、候选原因与验证",
+          "decision": "remove",
+          "reason": "四框逐项重述观测/候选原因/验证结论段，与4协议和17验收总线重复，没有实际被证伪原因case，未知竞品设计动机全文留。",
+          "original_line": 395,
+          "heading": "### 误区六：把相关性写成实现原因"
+        },
+        {
+          "original_id": "ch16-06-17-automated-evidence-pipeline",
+          "title": "自动比较按证据和失败分类验收",
+          "decision": "keep",
+          "reason": "获取版本split/设备初态→预定随机执行断言→原始shellTrace安装包解析→分层效应区间和报告的本篇自动化证据交付主线独立，指标各自有效证据不同及profileable29–30条件保留。",
+          "original_line": 416,
+          "heading": "### 基本架构"
+        },
+        {
+          "original_id": "ch16-06-18-power-software-observations",
+          "title": "行为时间线、系统rails与电荷变化",
+          "decision": "keep",
+          "reason": "行为batterystats/Historian、railsPowerEnergy、Battery电荷三种不同实取对象与解释边界对应独立，ChannelId真支持/系统其他负载/电压条件防单位混算。",
+          "original_line": 442,
+          "heading": "### 软件测量方案"
+        },
+        {
+          "original_id": "ch16-06-19-external-power-integration",
+          "title": "从同步电压电流积分到能量",
+          "decision": "keep",
+          "reason": "明确供电测量点和USB→同步V/I场景窗→P=VI与积分E→同协议交错AB总量和修正区间的实际单位计算链独立，mAh不同能量与原始总量保留。",
+          "original_line": 459,
+          "heading": "### 硬件测量方案"
+        }
+      ],
+      "sha256_after": "319ca84269a56754296bc78ff70226c72ce785e002e39b51e0641f702cb7d0bb",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:20:30.829261+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 19,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a172/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a172/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 172,
+        "article": "src/part3-tools/ch16-methodology/06-competitive-analysis.md",
+        "registered_sha256": "555342870b20dfb529d015890e7c5157e193e4dca326f34440e2abdfbc890beb",
+        "frozen_sha256": "555342870b20dfb529d015890e7c5157e193e4dca326f34440e2abdfbc890beb",
+        "review_input_sha256": "28f0df5b0940f3958d92e10c1dc540f78a10a49924c75d5489e2ddae77f221d3",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch16-methodology/06-competitive-analysis.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a172/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a172/external-source.diff",
+        "diff_sha256": "2d29955b78973ac172d0fa431d0d40b30ae6f8362b4f6692ee019d3bd9a99e7a",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 227, \"characters\": 18832, \"svg_labels_read\": 19, \"actual_pngs_viewed\": 19, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 6, \"code_lines\": 32, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "28f0df5b0940f3958d92e10c1dc540f78a10a49924c75d5489e2ddae77f221d3",
+      "retired_diagrams": [
+        "ch16-06-01-experiment-records",
+        "ch16-06-02-matched-conditions",
+        "ch16-06-03-state-reset-manifest",
+        "ch16-06-05-startup-completion-boundaries",
+        "ch16-06-07-shell-output-validity",
+        "ch16-06-08-launch-state-objects",
+        "ch16-06-09-art-state-protocols",
+        "ch16-06-11-frame-metric-population",
+        "ch16-06-12-framemetrics-listener",
+        "ch16-06-13-package-size-objects",
+        "ch16-06-14-apk-size-measurements",
+        "ch16-06-15-package-component-evidence",
+        "ch16-06-16-observations-to-causes"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-172/retired-assets.json"
     },
     {
       "index": 173,
@@ -45824,8 +46026,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 105,
-  "next_article": "src/part3-tools/ch16-methodology/06-competitive-analysis.md",
+  "reviewed_articles": 106,
+  "next_article": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -45835,7 +46037,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:14:56.429568+08:00",
+  "updated_at": "2026-10-31T14:20:30.829261+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -45891,13 +46093,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch16-methodology/06-competitive-analysis.md",
-      "registered_sha256": "555342870b20dfb529d015890e7c5157e193e4dca326f34440e2abdfbc890beb",
-      "observed_sha256": "28f0df5b0940f3958d92e10c1dc540f78a10a49924c75d5489e2ddae77f221d3",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/06-competitive-analysis.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -46153,9 +46348,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3573,
-  "reviewed_placements_after": 1571,
-  "net_removed_placements": 2002,
+  "reviewed_placements_before": 3592,
+  "reviewed_placements_after": 1577,
+  "net_removed_placements": 2015,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -46179,5 +46374,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 105
+  "currently_matching_reviewed_source_count": 106
 }
