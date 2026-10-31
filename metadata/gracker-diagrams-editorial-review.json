@@ -57495,9 +57495,240 @@
       "before_count": 24,
       "before_all_images": 24,
       "sha256_before": "3740a3d00d9f27b97f159477c928eef839097acbbdfed6de73285cb6ad7dac64",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a232-01-frame-pipeline",
+          "title": "布局与自绘都要回到同一帧的提交和呈现链路",
+          "decision": "keep",
+          "reason": "主线程脏标记遍历到RenderNode同步、图形与实际present的总链路，为布局和自绘两部分提供同帧定位框架。",
+          "original_line": 73,
+          "heading": "# View 布局与自定义绘制优化"
+        },
+        {
+          "original_id": "a232-02-layout-request-passes",
+          "title": "requestLayout 合并调度后，一帧仍可能执行第二轮布局",
+          "decision": "keep",
+          "reason": "帧前request合并、首轮内有效请求同帧二轮、二轮再次请求延后的三轨，解释合并调度不等单次布局。",
+          "original_line": 88,
+          "heading": "### 布局层级对渲染性能的影响"
+        },
+        {
+          "original_id": "a232-03-measure-contract",
+          "title": "MeasureSpec 约束向下，测量结果供父容器决定尺寸",
+          "decision": "remove",
+          "reason": "父子MeasureSpec介绍与后半三模式定义完整，三行模式卡重复且并非实际父子往返图。",
+          "original_line": 95,
+          "heading": "### 布局层级对渲染性能的影响"
+        },
+        {
+          "original_id": "a232-04-hierarchy-costs",
+          "title": "重复测量、列表高频创建与低频内容预建分别治理",
+          "decision": "remove",
+          "reason": "重复测量/高频item/GONE三项成本列表更详细，三行分类图重复。",
+          "original_line": 108,
+          "heading": "### 布局层级对渲染性能的影响"
+        },
+        {
+          "original_id": "a232-05-constraint-evidence",
+          "title": "ConstraintLayout 的选型依赖结构和等价页面证据",
+          "decision": "remove",
+          "reason": "复杂/简单/列表三规则与2017实验具体环境数值段落完整，三行选型卡重复。",
+          "original_line": 129,
+          "heading": "### ConstraintLayout vs 传统布局的性能对比"
+        },
+        {
+          "original_id": "a232-06-viewstub-replacement",
+          "title": "ViewStub 把子树创建推到首次需要时，并被真实根节点替换",
+          "decision": "keep",
+          "reason": "轻stub首次同步inflate、原位替换移除原stub、缓存真实根后切换的生命周期，明确只推迟首次创建。",
+          "original_line": 156,
+          "heading": "### ViewStub、merge、include 的正确使用"
+        },
+        {
+          "original_id": "a232-07-merge-include",
+          "title": "merge 去掉冗余根，include 复用结构，两者条件不同",
+          "decision": "remove",
+          "reason": "工具用途表与merge有父attachtrue/无独立根、include仍构造三段完整，三行分类卡重复。",
+          "original_line": 195,
+          "heading": "### ViewStub、merge、include 的正确使用"
+        },
+        {
+          "original_id": "a232-08-inflater-factories",
+          "title": "LayoutInflater 选择 Factory2 或 Factory，再按空结果回退",
+          "decision": "keep",
+          "reason": "Factory2存在与仅Factory两互斥分支、无工厂和返回空的回退汇合，避免误读Factory2空后必普通Factory。",
+          "original_line": 210,
+          "heading": "### `LayoutInflater` 的构造成本与构造器缓存"
+        },
+        {
+          "original_id": "a232-09-parent-layoutparams",
+          "title": "inflate 的 root 同时决定 attach 与布局参数来源",
+          "decision": "remove",
+          "reason": "三种inflate调用/返回/attach/LayoutParams四列表完整，三行映射卡重复。",
+          "original_line": 225,
+          "heading": "### `LayoutInflater` 的构造成本与构造器缓存"
+        },
+        {
+          "original_id": "a232-10-async-inflate-tracks",
+          "title": "异步 inflate 移动构造，回调仍需主线程与生命周期检查",
+          "decision": "keep",
+          "reason": "UI提交与检查attachbind、InflateThread成功、失败UI重做三轨，展示移动构造与回退后的成本位置。",
+          "original_line": 270,
+          "heading": "### 布局预加载与异步 Inflate"
+        },
+        {
+          "original_id": "a232-11-async-backpressure",
+          "title": "AsyncLayoutInflater 不是无限队列，也不自动取消旧页面结果",
+          "decision": "remove",
+          "reason": "1.1单线程容量10阻塞put和generation失效非取消的段落与代码完整，三行背压卡重复。",
+          "original_line": 277,
+          "heading": "### 布局预加载与异步 Inflate"
+        },
+        {
+          "original_id": "a232-12-layout-observers",
+          "title": "布局回调、充分绘制报告与实际呈现分别提供不同证据",
+          "decision": "remove",
+          "reason": "四项回调选择和observer生命周期段落完整，三行观察证据卡重复。",
+          "original_line": 295,
+          "heading": "### `ViewTreeObserver` 布局回调的观察范围"
+        },
+        {
+          "original_id": "a232-13-interop-surface",
+          "title": "混合页先区分宿主窗口工作与独立内容 Producer",
+          "decision": "remove",
+          "reason": "三项混合页风险与独立producer归因段落完整，三行边界分类卡重复。",
+          "original_line": 314,
+          "heading": "### Compose 与 View 混合布局的性能陷阱"
+        },
+        {
+          "original_id": "a232-14-measure-cache-inputs",
+          "title": "测量缓存需要完整输入，并继续遵守尺寸输出契约",
+          "decision": "remove",
+          "reason": "34行完整输入缓存示例与字体locale方向子测量契约段落完整，三行缓存卡重复。",
+          "original_line": 412,
+          "heading": "#### `onMeasure()` 缓存的完整输入"
+        },
+        {
+          "original_id": "a232-15-layout-changed",
+          "title": "父 bounds 不变，子节点仍可能需要重新摆放",
+          "decision": "remove",
+          "reason": "changed仅bounds与子布局输入、重复request调用栈两段完整，三行坐标卡重复。",
+          "original_line": 423,
+          "heading": "#### `onLayout()` 的输入与坐标缓存"
+        },
+        {
+          "original_id": "a232-16-drawing-hot-path",
+          "title": "onDraw 记录命令，几何与对象准备按数据变化更新",
+          "decision": "remove",
+          "reason": "49行波形类及UI稳定数据、复杂Path非分配成本段落完整，三行绘制热路径卡重复。",
+          "original_line": 494,
+          "heading": "### `onDraw()`：移除热路径分配"
+        },
+        {
+          "original_id": "a232-17-canvas-backend",
+          "title": "当前 Canvas 决定绘制后端，API 支持范围逐项检查",
+          "decision": "remove",
+          "reason": "当前Canvas与View窗口区别及逐API支持段落精确完整，三行后端卡重复。",
+          "original_line": 507,
+          "heading": "#### 以当前 Canvas 判断绘制后端"
+        },
+        {
+          "original_id": "a232-18-displaylist-layers",
+          "title": "DisplayList 复用与额外离屏图层有不同成本",
+          "decision": "remove",
+          "reason": "三图层类型/语义/场景/代价表更完整，三行DisplayList卡重复。",
+          "original_line": 526,
+          "heading": "#### `LAYER_TYPE_NONE` 与默认 DisplayList 复用"
+        },
+        {
+          "original_id": "a232-19-will-not-draw",
+          "title": "WILL_NOT_DRAW 与实际 SKIP_DRAW 还受背景等内容影响",
+          "decision": "remove",
+          "reason": "WILLNOTDRAW与SKIPDRAW受背景前景焦点限制、恢复自身绘制的段落完整，三行标记卡重复。",
+          "original_line": 561,
+          "heading": "#### `setWillNotDraw(true)` 的实际跳过范围"
+        },
+        {
+          "original_id": "a232-20-invalidate-layout",
+          "title": "像素失效和尺寸失效分别触发绘制与布局工作",
+          "decision": "remove",
+          "reason": "三刷新API的线程/变化/边界表及13行setter完整，三行失效分类卡重复。",
+          "original_line": 596,
+          "heading": "### `invalidate()`、动画刷新与 `requestLayout()`"
+        },
+        {
+          "original_id": "a232-21-animation-stops",
+          "title": "连续自绘要有运行状态，并在生命周期结束时停止",
+          "decision": "remove",
+          "reason": "13行动画骨架及detach之外可见性/业务停止缺口和Animator段落完整，三行停止规则卡重复。",
+          "original_line": 627,
+          "heading": "#### 连续动画的运行状态与停止"
+        },
+        {
+          "original_id": "a232-22-rendernode-partition",
+          "title": "静态网格与动态波形各自记录，只重录失效节点",
+          "decision": "keep",
+          "reason": "静态网格与动态波形各自dirty输入、分别重录继续复用的两路对应，便于理解52行节点缓存代码的更新分区。",
+          "original_line": 699,
+          "heading": "### 手动 `RenderNode`：按更新频率划分节点"
+        },
+        {
+          "original_id": "a232-23-rendernode-fallback",
+          "title": "RenderNode 的版本路由与软件绘制回退都要覆盖",
+          "decision": "remove",
+          "reason": "API29独立实现路由与软件Canvas直接画的段落和代码完整，三行回退版本卡重复。",
+          "original_line": 706,
+          "heading": "### 手动 `RenderNode`：按更新频率划分节点"
+        },
+        {
+          "original_id": "a232-24-frame-attribution",
+          "title": "按同一帧证据区分 UI 记录、渲染等待与显示后段",
+          "decision": "remove",
+          "reason": "四步UI/RenderThread/BufferTXlatch/present诊断列表及GC因果段落更完整，三行阶段证据卡重复。",
+          "original_line": 739,
+          "heading": "### Perfetto：区分 UI 记录、RenderThread 与显示出口"
+        }
+      ],
+      "sha256_after": "dcac6248d32f36cc354af329a0cc9179a00f6ff34389b1f67447b7d60bd9580b",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:07:42.406960+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 24,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a232/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a232/visual-review.json",
+      "retired_diagrams": [
+        "a232-03-measure-contract",
+        "a232-04-hierarchy-costs",
+        "a232-05-constraint-evidence",
+        "a232-07-merge-include",
+        "a232-09-parent-layoutparams",
+        "a232-11-async-backpressure",
+        "a232-12-layout-observers",
+        "a232-13-interop-surface",
+        "a232-14-measure-cache-inputs",
+        "a232-15-layout-changed",
+        "a232-16-drawing-hot-path",
+        "a232-17-canvas-backend",
+        "a232-18-displaylist-layers",
+        "a232-19-will-not-draw",
+        "a232-20-invalidate-layout",
+        "a232-21-animation-stops",
+        "a232-23-rendernode-fallback",
+        "a232-24-frame-attribution"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-232/retired-assets.json"
     },
     {
       "index": 233,
@@ -58050,8 +58281,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 156,
-  "next_article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+  "reviewed_articles": 157,
+  "next_article": "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -58061,7 +58292,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:04:42.525983+08:00",
+  "updated_at": "2026-10-31T17:07:42.406960+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -58096,6 +58327,13 @@
       "registered_sha256": "4312d7f32f4a0cd03a32f6a4210bafafc628bb7b05178207d939301854def972",
       "observed_sha256": "35f4f52776aaea2dc66ac2719ae618ea909e7b5b3f07b710c0cb6f8ecf6bef32",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part1-fundamentals/ch02-rendering/06-text-rendering-performance.md",
+      "registered_sha256": "98d9dd3d8397f57b8709a2ae05e4525c65ad4134e8ae6e367d735ecdb544c6be",
+      "observed_sha256": "519e05870aebe5de7007b28fca008a217bdbc63bb15b647e39164ea7ea1f05e2",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch02-rendering/06-text-rendering-performance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -58232,9 +58470,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4791,
-  "reviewed_placements_after": 1974,
-  "net_removed_placements": 2817,
+  "reviewed_placements_before": 4815,
+  "reviewed_placements_after": 1980,
+  "net_removed_placements": 2835,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -58258,5 +58496,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 156
+  "currently_matching_reviewed_source_count": 157
 }

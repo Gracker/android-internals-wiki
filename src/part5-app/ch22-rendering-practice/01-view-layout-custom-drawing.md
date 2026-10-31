@@ -92,10 +92,6 @@ View 侧的性能工作分两条线：布局侧减少层级、无效遍历和过
 
 Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是精确值、上限还是未指定，子节点报告测量结果，父容器再据此确定自己的尺寸；Layout 随后为各子节点分配位置。所以节点越多、嵌套越深、父容器规则越复杂，主线程执行的代码通常越多，多轮测量还会进一步放大这部分成本。判断要不要动手优化时，我们看的仍是当前页面的调用次数、单节点工作量和 FrameTimeline（记录每帧目标与实际时间的系统轨道） deadline。
 
-<!-- gracker-diagram: a232-03-measure-contract -->
-![MeasureSpec 约束向下，测量结果供父容器决定尺寸](../../assets/diagrams/ch22/a232-03-measure-contract.png)
-
-图：父容器生成子 MeasureSpec，读取子 measured size/state，再决定自身大小与摆放；重复测量须按调用证据判断。
 
 布局层级不只涉及深度。更常见的成本来自三类结构：
 
@@ -105,10 +101,6 @@ Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是
 
 判断一个布局要不要优化，看的是 trace 里的时间与调用次数。`performMeasure()` 和 `performLayout()` 在 framework trace 里分别是 `measure`、`layout` 两个切片名；`FrameMetrics.LAYOUT_MEASURE_DURATION` 合并报告本帧中被标记需要更新的 View 树部分所花的测量与布局时间。“3～5 ms 即异常”这类阈值并不跨刷新率通用，我们要把这两段放回 FrameTimeline 的 deadline、同场景分位数和完整 `Choreographer#doFrame` 里判断。
 
-<!-- gracker-diagram: a232-04-hierarchy-costs -->
-![重复测量、列表高频创建与低频内容预建分别治理](../../assets/diagrams/ch22/a232-04-hierarchy-costs.png)
-
-图：Layout Inspector 解释结构，Perfetto 与完整帧指标决定收益；父容器自定义规则仍可能不同。
 
 反过来，如果慢帧主要耗在 `performDraw()`、UI 等待 RenderThread、RenderThread 的 `dequeueBuffer` / `queueBuffer`、GPU 工作队列或显示侧，压平布局的收益会很小。`queueBuffer()` 按时只说明 Producer（内容生产者） 把一块 buffer 提交进了队列；要确认这帧确实按时上了屏，还要核对 `BufferTX - <layerName>` 这类 buffer 事务切片、latch（SurfaceFlinger 选定本帧 buffer）、FrameTimeline actual slice（实际完成轨道） 和 present timing（呈现时间）。
 
@@ -126,10 +118,6 @@ Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLay
 
 这个实验支持的是“压平该页面层级有收益”，换到自己的项目里还要重新测：设备、AndroidX 版本、布局复杂度和刷新率都会改变结果。
 
-<!-- gracker-diagram: a232-05-constraint-evidence -->
-![ConstraintLayout 的选型依赖结构和等价页面证据](../../assets/diagrams/ch22/a232-05-constraint-evidence.png)
-
-图：现代 AndroidX、设备与页面都要重新测量；列表 item 比较完整帧与布局分布。
 
 选型时用三条规则：
 
@@ -192,10 +180,6 @@ fun showError(root: View) {
 
 `<include>` 更偏工程复用。它不会自动让布局更快，`LayoutInflater.parseInclude()` 仍要解析被 include 的资源并创建 View。被 include 的布局可以用 `<merge>` 去掉冗余根容器，也可以把 `<include>` 放进 `ViewStub` 指向的低频子树；是否有收益取决于运行时少创建、少测量了什么。
 
-<!-- gracker-diagram: a232-07-merge-include -->
-![merge 去掉冗余根，include 复用结构，两者条件不同](../../assets/diagrams/ch22/a232-07-merge-include.png)
-
-图：正确的父容器还负责生成 LayoutParams；结构简化需保持尺寸、主题和布局关系一致。
 
 ### `LayoutInflater` 的构造成本与构造器缓存
 
@@ -222,10 +206,6 @@ fun showError(root: View) {
 
 所以“先传 `null`，稍后再 `addView()`”并不等价于传入真实 parent；而 `<merge>` 因为没有独立根节点，只能在已有 parent 且 `attachToRoot=true` 时展开。
 
-<!-- gracker-diagram: a232-09-parent-layoutparams -->
-![inflate 的 root 同时决定 attach 与布局参数来源](../../assets/diagrams/ch22/a232-09-parent-layoutparams.png)
-
-图：merge 是例外：没有独立根返回，只允许非空 parent 且 attach=true。
 
 ### 布局预加载与异步 Inflate
 
@@ -274,10 +254,6 @@ fun discardPendingFilterPanel() {
 
 验收时我们对比使用前后的 trace：使用前，`Activity.onCreate()` 或点击事件后方有较长的 `inflate` 区间；使用后，这段区间应移到后台线程，主线程只保留较短的 `addView` / bind 区间。主线程仍出现完整 `inflate`，可能是布局触发了回退；主线程只剩 bind 却依然超时，说明瓶颈已经转到回调工作。还要记录预加载未使用比例与被丢弃结果数，避免为低命中投入更多 CPU 和内存。1.1.0 只有一个 InflateThread，内部队列容量为 10，入队使用阻塞 `put()`；UI 线程批量提交把队列填满时，`inflate()` 本身也可能等待。限制预取窗口，不能把它理解成无限并行或永不阻塞的 API。实现见 [1.1.0 源码归档](https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar)。
 
-<!-- gracker-diagram: a232-11-async-backpressure -->
-![AsyncLayoutInflater 不是无限队列，也不自动取消旧页面结果](../../assets/diagrams/ch22/a232-11-async-backpressure.png)
-
-图：入口构造与 inflate 都在 UI 线程；布局必须满足线程安全条件，页面转向时明确使旧结果失效。
 
 ### `ViewTreeObserver` 布局回调的观察范围
 
@@ -292,10 +268,6 @@ fun discardPendingFilterPanel() {
 
 `getViewTreeObserver()` 返回的对象也要看生命周期：未 attach 的 View 使用 floating observer，attach 时 listener 会合并到窗口 observer，旧对象随后失效，跨整个 View 生命周期保存同一个引用并不可靠。长期持有引用时要检查 `isAlive()`，移除 listener 时重新取得当前 observer 更稳妥。
 
-<!-- gracker-diagram: a232-12-layout-observers -->
-![布局回调、充分绘制报告与实际呈现分别提供不同证据](../../assets/diagrams/ch22/a232-12-layout-observers.png)
-
-图：floating observer attach 后会合并并失效；移除时重新取当前存活 observer，避免跨生命周期缓存。
 
 ### Compose 与 View 混合布局的性能陷阱
 
@@ -311,10 +283,6 @@ View/Compose 混合场景里，我们要同时盯着两套体系：`ComposeView`
 
 混合方案要少留交界、理清生命周期，trace 也要分开看。Perfetto 里先确认慢帧落在 framework 的 `measure` / `layout`，Compose runtime / drawing，还是独立 Producer 与 Surface，再决定改 View 结构、Compose 状态读取或子组件管线。trace 还没指到谁身上时，先别急着归因给 Compose 或 View。
 
-<!-- gracker-diagram: a232-13-interop-surface -->
-![混合页先区分宿主窗口工作与独立内容 Producer](../../assets/diagrams/ch22/a232-13-interop-surface.png)
-
-图：Android17 platform tag 不定义 AndroidX Compose 行为；归因需记录项目实际库版本。
 
 ### 验收清单
 
@@ -409,10 +377,6 @@ protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 
 数据、字体、语言与地区设置或布局方向发生变化，并且会影响期望尺寸时，更新 `mContentVersion` 后调用 `requestLayout()`；只改颜色的场合保持测量版本不变。自定义 `ViewGroup` 还要为每个子 View 生成正确的 `MeasureSpec`、合并 measured state（子 View 报告的尺寸状态），并处理内边距、外边距和最小尺寸，这些契约都要照做，缓存跳不过去。
 
-<!-- gracker-diagram: a232-14-measure-cache-inputs -->
-![测量缓存需要完整输入，并继续遵守尺寸输出契约](../../assets/diagrams/ch22/a232-14-measure-cache-inputs.png)
-
-图：View.measure 本身也会按标记与 MeasureSpec 使用缓存；常规 requestLayout 会清缓存并设置强制布局。
 
 #### `onLayout()` 的输入与坐标缓存
 
@@ -420,10 +384,6 @@ protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 
 若 trace 显示同一帧发生多轮测量与摆放，要查调用栈和请求源。常见原因包括在 `onLayout()` 中再次调用 `requestLayout()`、父子约束互相依赖、权重或 `wrap_content` 协商，以及 Adapter 更新时同时改变布局参数。
 
-<!-- gracker-diagram: a232-15-layout-changed -->
-![父 bounds 不变，子节点仍可能需要重新摆放](../../assets/diagrams/ch22/a232-15-layout-changed.png)
-
-图：坐标依赖布局方向与子内容，不只父宽高；波形 bounds 缓存也需处理固定外框下的 padding 变化。
 
 ### `onDraw()`：移除热路径分配
 
@@ -491,10 +451,6 @@ public final class WaveformView extends View {
 
 `Canvas.save()` / `restore()` 管理的是 Canvas 状态栈，和 Java 对象分配是两回事。嵌套 layer（离屏层）、复杂 clip（裁剪）和 transform（几何变换）仍有执行成本，把状态保存范围限制在需要隔离的绘制段即可。
 
-<!-- gracker-diagram: a232-16-drawing-hot-path -->
-![onDraw 记录命令，几何与对象准备按数据变化更新](../../assets/diagrams/ch22/a232-16-drawing-hot-path.png)
-
-图：分配记录只做归因，再与同一窗口 GC、线程状态和帧指标对齐；Canvas save/restore 是状态栈操作。
 
 ### 硬件加速、图层与 `setWillNotDraw`
 
@@ -504,10 +460,6 @@ public final class WaveformView extends View {
 
 本文覆盖 API 21–37，需要逐项区分：硬件 Canvas 的 `clipPath()` 从 API 18 支持，`drawPicture()` 从 API 23 支持，`drawVertices()` 从 API 29 支持。API 21–22 不能套用后两项的现代硬件支持结论。兼容性仍要按当前官方表逐项核对，官方表就把 `Paint.setLinearText()` 和 `setMaskFilter()` 标为不支持。这类问题的表现可能是空白、异常或像素错误，系统也不会为所有不支持的调用统一切到软件绘制。
 
-<!-- gracker-diagram: a232-17-canvas-backend -->
-![当前 Canvas 决定绘制后端，API 支持范围逐项检查](../../assets/diagrams/ch22/a232-17-canvas-backend.png)
-
-图：Paint.setLinearText / setMaskFilter 的支持按官方表核对，并用真实设备检查像素输出。
 
 #### `LAYER_TYPE_NONE` 与默认 DisplayList 复用
 
@@ -523,10 +475,6 @@ public final class WaveformView extends View {
 
 静态 View 在默认模式下已经能复用 DisplayList，没有必要仅因“内容复杂”长期强制硬件图层。硬件图层适合内容保持不变、外层 `alpha` / `translation` / `scale` / `rotation` 持续变化的短时动画。动画同时修改 View 内容并频繁 `invalidate()` 时，图层仍要重新栅格化，收益可能消失。栅格化指把绘制命令转换成像素。
 
-<!-- gracker-diagram: a232-18-displaylist-layers -->
-![DisplayList 复用与额外离屏图层有不同成本](../../assets/diagrams/ch22/a232-18-displaylist-layers.png)
-
-图：图层选择按内容更新频率、面积和内存验证；withLayer 结束或取消后恢复原 layer type。
 
 `ViewPropertyAnimator.withLayer()` 会在动画前启用硬件图层，并在结束后恢复原来的图层类型。先用 trace 确认属性动画的主要成本来自重复栅格化，再考虑下面的局部优化。
 
@@ -558,10 +506,6 @@ public final class FlowLayout extends ViewGroup {
 
 给 ViewGroup 设置背景时，框架可能调整绘制标记，`setWillNotDraw(true)` 覆盖不了所有背景行为；增加自身绘制后应明确改为 `false` 并验证结果。
 
-<!-- gracker-diagram: a232-19-will-not-draw -->
-![WILL_NOT_DRAW 与实际 SKIP_DRAW 还受背景等内容影响](../../assets/diagrams/ch22/a232-19-will-not-draw.png)
-
-图：hasOverlappingRendering=false 也必须满足内容确实不重叠，否则会改变 alpha 合成结果。
 
 ### `invalidate()`、动画刷新与 `requestLayout()`
 
@@ -593,10 +537,6 @@ public void setLabelText(String text) {
 
 `requestLayout()` 不保证自动补齐所有业务绘制状态，因此尺寸与像素都变化时可以同时调用两者。若文字变化但固定边界与现有基线能容纳新内容，只需重建文字布局并调用 `invalidate()`；是否调用 `requestLayout()` 由尺寸契约决定。
 
-<!-- gracker-diagram: a232-20-invalidate-layout -->
-![像素失效和尺寸失效分别触发绘制与布局工作](../../assets/diagrams/ch22/a232-20-invalidate-layout.png)
-
-图：API21 起公开 dirty-rectangle 重载不作为精确局部绘制契约；独立更新区域可拆 View 或 RenderNode。
 
 #### 连续动画的运行状态与停止
 
@@ -624,10 +564,6 @@ protected void onDetachedFromWindow() {
 
 `ValueAnimator` 能提供基于时钟的进度和取消机制，但它的更新回调仍可能每帧触发重绘。我们选择 Animator，图的是它明确的时间模型和生命周期，刷新次数该多少还是多少。
 
-<!-- gracker-diagram: a232-21-animation-stops -->
-![连续自绘要有运行状态，并在生命周期结束时停止](../../assets/diagrams/ch22/a232-21-animation-stops.png)
-
-图：postInvalidateOnAnimation 负责对齐帧节奏，状态、数据线程安全和停止条件仍由组件负责。
 
 #### `ViewCompat.postInvalidateOnAnimation()` 的版本位置
 
@@ -703,10 +639,6 @@ protected void onDraw(Canvas canvas) {
 
 RenderNode 的 `translation`、`scale`、`rotation` 和 `alpha` 属性可以在不重录 DisplayList 的情况下更新。`setUseCompositingLayer(true, paint)` 会强制增加中间合成缓冲区，公开文档推荐保留默认值 `false`。当中间层能降低开销，或 `alpha` 与重叠绘制的组合要求使用中间层时，RenderNode 会自行建立合成层。只有特效要求或测量结果能证明收益时才应强制开启。
 
-<!-- gracker-diagram: a232-23-rendernode-fallback -->
-![RenderNode 的版本路由与软件绘制回退都要覆盖](../../assets/diagrams/ch22/a232-23-rendernode-fallback.png)
-
-图：setUseCompositingLayer 的默认 false 保留自动策略；强制中间层需特效需求或测量证据。
 
 ### Perfetto：区分 UI 记录、RenderThread 与显示出口
 
@@ -736,10 +668,6 @@ protected void onDraw(Canvas canvas) {
 
 对象分配要用 allocation recording 找调用栈，再与同一时间窗的 GC、主线程状态和 FrameTimeline 对齐。HeapTaskDaemon 是 Android Runtime 的后台堆任务线程，它出现 GC 工作只说明进程正在回收内存；要判断该帧是不是 `onDraw()` 分配拖慢的，还缺主线程暂停或资源竞争的证据。
 
-<!-- gracker-diagram: a232-24-frame-attribution -->
-![按同一帧证据区分 UI 记录、渲染等待与显示后段](../../assets/diagrams/ch22/a232-24-frame-attribution.png)
-
-图：queueBuffer 按时只说明提交入队；FrameMetrics 与FrameTimeline等工具需按可用API使用。
 
 ### 验收清单
 
