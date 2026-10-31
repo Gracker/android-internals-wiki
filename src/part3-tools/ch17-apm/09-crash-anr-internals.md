@@ -48,14 +48,10 @@ status: finalized
 
 稳定性 APM（Application Performance Monitoring，应用性能监控）要处理的“崩溃”不止一种：Java 未捕获异常、Native（C/C++ 等本地代码）致命信号、系统判定的 ANR、lmkd（low memory killer daemon，Android 用户态低内存终止服务） 杀进程和资源耗尽。这几类现场发生时，进程的线程状态、权限和剩余执行时间各不相同。我们做采集器，第一件事是回答“现在还能安全做什么”，再决定采哪些数据。
 
-<!-- gracker-diagram: ch17-09-01-incident-kinds -->
-![不同稳定性现场需要不同采集边界](../../assets/diagrams/ch17/ch17-09-01-incident-kinds.png)
-
-图：先识别 Java、Native、系统 ANR 或资源终止，再决定当前能安全保存的证据。 Native 报告未必证明进程死亡，现场采集能力取决于状态和权限。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
-Android 8—10 的兼容路径会保留；厂商权限、root 或旧系统上可读的文件，本文不把它们写成普通应用的通用能力。
+Android 8—10 的兼容路径会保留；厂商权限、root 或旧系统上可读的文件，本文按它们各自的适用范围描述，与普通应用的通用能力分开。
 
 ## 1. 四类现场，四种证据强度
 
@@ -76,26 +72,22 @@ Android 8—10 的兼容路径会保留；厂商权限、root 或旧系统上可
 
 所以我们在每条稳定性样本里保存 `evidence_source`（证据来源）与 `confidence`（结论可信度），防止服务端把应用推测写成系统结论。
 
-<!-- gracker-diagram: ch17-09-02-evidence-strength -->
-![观察、报告与系统结论的区别](../../assets/diagrams/ch17/ch17-09-02-evidence-strength.png)
-
-图：证据来源与可信度随样本保存，避免把应用观察直接转成系统结论。 疑似 ANR、可能 LMK 和可恢复 Native 报告分别保留含义。
 
 ## 2. Java Crash：代理默认处理器与系统终止链
 
 ### 2.1 默认处理路径
 
-`RuntimeInit.commonInit()` 安装两层处理器。下文的 handler 指异常或信号到达后执行的处理回调：
+先看系统自己怎么处理 Java 未捕获异常：`RuntimeInit.commonInit()` 安装两层处理器，下文的 handler 指异常或信号到达后执行的处理回调：
 
 - `LoggingHandler` 是 VM 内部的 uncaught-exception pre-handler（前置处理器），负责输出 fatal exception 日志。
 - `KillApplicationHandler` 是 `Thread` 的 default handler（默认处理器），向 ActivityManager 报告崩溃并终止进程。
 
-应用调用 `Thread.setDefaultUncaughtExceptionHandler()` 替换的是默认处理器，内部 pre-handler 仍由 VM 掌握。实际分派会先执行 pre-handler，再找线程显式 handler；未设置时才经 `ThreadGroup` 回退到 default handler。线程或线程组自行处理且不转交时，全局默认代理可能收不到异常。所以 APM（Application Performance Monitoring，这里指应用性能与稳定性监控） 安装前必须保存当前 default handler，采集结束后把异常交回给它。`ProfilingTrigger.TRIGGER_TYPE_OOM` 也明确要求自定义 handler 继续调用 default handler——少了这一步，`OutOfMemoryError`（OOM，内存不足异常） 路径上的触发式 Java heap（Java 对象堆） dump（堆快照）就产不出来。
+应用调用 `Thread.setDefaultUncaughtExceptionHandler()` 替换的是默认处理器，内部 pre-handler 仍由 VM 掌握。实际分派先执行 pre-handler，再找线程显式 handler；未设置时才经 `ThreadGroup` 回退到 default handler。线程或线程组自行处理且不转交时，全局默认代理可能就收不到这次异常。所以 APM（Application Performance Monitoring，这里指应用性能与稳定性监控） 安装前必须保存当前 default handler，采集结束后把异常交回给它。`ProfilingTrigger.TRIGGER_TYPE_OOM` 也明确要求自定义 handler 继续调用 default handler——少了这一步，`OutOfMemoryError`（OOM，内存不足异常） 路径上的触发式 Java heap（Java 对象堆） dump（堆快照）就产不出来。
 
 <!-- gracker-diagram: ch17-09-03-java-dispatch -->
 ![Pre-handler、线程处理器与全局代理](../../assets/diagrams/ch17/ch17-09-03-java-dispatch.png)
 
-图：运行时先调用 pre-handler，再按线程和线程组分派，只有转交 default 时全局代理才参与。 显式线程 handler 或线程组不转交时，默认代理不能保证覆盖。
+图：运行时先调用 pre-handler，再按线程和线程组分派，只有转交 default 时全局代理才参与。 显式线程 handler 或线程组不转交时，默认代理可能覆盖不到。
 
 下面的代码展示 Java 层代理的最小骨架。`CrashEnvelopeStore.tryWriteBounded()` 表示项目预先初始化的有界存储；崩溃当下它只完成这次有界写入，开数据库、创建线程、等待网络都留给正常运行期。
 
@@ -149,50 +141,38 @@ class ChainedCrashHandler private constructor(
 }
 ```
 
-这段代理把系统默认 handler 保留在链上，并用 CAS（compare-and-set，原子比较并设置）阻止采集器重复进入。`previous` 自身若返回，代码才执行防御性终止；正常的 Android 路径会在系统 handler 里结束进程。示例已避免在顶层重复安装自身；`@Synchronized` 只协调这个安装入口，不能阻止其他 SDK 同时覆盖全局 handler。跨 SDK 循环仍需统一接管与集成测试，并覆盖 Java exception、Java heap OOM、后台线程崩溃和多个 SDK 的安装顺序。
+这段代理把系统默认 handler 保留在链上，并用 CAS（compare-and-set，原子比较并设置）阻止采集器重复进入。`previous` 自身若返回，代码才执行防御性终止；正常的 Android 路径会在系统 handler 里结束进程。示例已避免在顶层重复安装自身；`@Synchronized` 只协调这个安装入口，其他 SDK 仍可能同时覆盖全局 handler。跨 SDK 循环仍需统一接管与集成测试，并覆盖 Java exception、Java heap OOM、后台线程崩溃和多个 SDK 的安装顺序。
 
-<!-- gracker-diagram: ch17-09-04-chained-handler -->
-![崩溃代理的一次采集与转交](../../assets/diagrams/ch17/ch17-09-04-chained-handler.png)
-
-图：本 SDK 重复安装不包裹自身，进入崩溃处理后只做有限记录并转交 previous。 CAS 防重入不能保证所有同时崩溃都留档，其他 SDK 的覆盖仍需集成验证。
 
 ### 2.2 崩溃当下的轻量记录 envelope
 
 这里的 envelope 是一条字段受限、字节数有上限的崩溃记录。Java handler 比 Native signal（信号） handler 宽裕一些，但堆和锁这时未必可用：`Throwable.printStackTrace()`、JSON 序列化、数据库事务和压缩都会分配对象，遇到 OOM 或运行时已经损坏时可能再次失败。
 
-推荐的采集分工按时机拆开：
+我们把采集分工按时机拆开：
 
 - 正常运行期维护固定容量的 breadcrumb ring buffer（环形缓冲区），并周期写入版本、进程、前后台、资源使用量等已脱敏快照。
 - crash handler 只写 magic（识别文件格式的固定标记）、schema version、时间、线程 id、异常类型和预存 breadcrumb 的序号；栈序列化要限制深度、cause（异常原因链）数量和总字节数。
 - 冷启动后校验 checksum（发现内容损坏的校验值）与完整标记，再补齐符号化所需字段，随后压缩、去重和上传。
 - crash store（崩溃记录存储区）用独立小文件或预分配区域，和业务数据库分开锁与事务。
 
-“立即发网络请求确保上报”成功率低，还会拉长系统崩溃处理。存储接口必须在正常期设计为有限操作、非阻塞锁和有界写入；给任意同步函数外包一层计时，并不能中断已阻塞的 I/O 或锁等待。队列满或采集失败时丢掉 APM 附件，尽快进入系统终止链，不把“设置了超时”当成可强制返回的证明。
+“立即发网络请求确保上报”成功率低，还会拉长系统崩溃处理。存储接口要在正常期设计为有限操作、非阻塞锁和有界写入；给同步函数外包一层计时，量得到耗时，中断不了已阻塞的 I/O 或锁等待——超时只决定愿意等多久，决定不了调用何时返回。队列满或采集失败时丢掉 APM 附件，尽快进入系统终止链。
 
-<!-- gracker-diagram: ch17-09-05-envelope-timing -->
-![正常期、崩溃期与恢复期的分工](../../assets/diagrams/ch17/ch17-09-05-envelope-timing.png)
-
-图：预存低成本快照，崩溃时只完成有限写入，正常执行恢复流程后再处理附件。 任意同步 I/O 或锁都不能靠外包计时强制中断，存储接口须事先验证。
 
 ## 3. Native Crash：signal handler 只负责交接
 
 ### 3.1 debuggerd（Native 崩溃诊断服务）、tombstone 与 Crashpad
 
-signal 是操作系统通知进程发生事件的机制；Native 崩溃可能来自同步硬件故障、`abort()` 主动终止或异步送达等路径。常见致命信号包括 `SIGSEGV`、`SIGABRT`、`SIGBUS`、`SIGILL`、`SIGFPE` 和 `SIGTRAP`。系统的处理路径由 Bionic（Android 的 C 标准库）和 debuggerd 构成：debuggerd 是 Native 崩溃诊断服务，负责采集寄存器、线程、maps（进程内存映射）、backtrace（调用栈） 和 abort message（主动终止说明），再由 `tombstoned` 服务保存 tombstone。
+Native 崩溃的入口是信号。signal 是操作系统通知进程发生事件的机制，Native 崩溃可能来自同步硬件故障、`abort()` 主动终止或异步送达等路径。常见致命信号包括 `SIGSEGV`、`SIGABRT`、`SIGBUS`、`SIGILL`、`SIGFPE` 和 `SIGTRAP`。系统的处理路径由 Bionic（Android 的 C 标准库）和 debuggerd 构成：debuggerd 是 Native 崩溃诊断服务，负责采集寄存器、线程、maps（进程内存映射）、backtrace（调用栈） 和 abort message（主动终止说明），再由 `tombstoned` 服务保存 tombstone。
 
 <!-- gracker-diagram: ch17-09-06-native-signal-path -->
 ![Native 致命信号与系统报告](../../assets/diagrams/ch17/ch17-09-06-native-signal-path.png)
 
-图：Native 故障可来自同步硬件异常、主动 abort 或异步信号，交由系统采集诊断。 信号编号本身不能证明触发方式；普通应用不能直接读取系统 tombstone 目录。
+图：Native 故障可来自同步硬件异常、主动 abort 或异步信号，交由系统采集诊断。 信号编号本身说明不了触发方式；普通应用也读不到系统 tombstone 目录。
 
 `/data/tombstones` 普通应用读不到；Android 12 / API 31 起，我们改从 `ApplicationExitInfo.REASON_CRASH_NATIVE` 的 `getTraceInputStream()` 里取对应的 tombstone protobuf。protobuf 指 Protocol Buffers 二进制编码；这份记录也可能在我们读取前，就被系统环形存储里的新记录覆盖。
 
-Breakpad 常由进程内 handler 生成 minidump；Crashpad 的 Linux/Android 设计将客户端与独立 handler 进程分开：预启动路径中，客户端注册通信端点，崩溃时通知 handler 读取目标进程并写 dump。库还提供崩溃时启动 handler 的路径，初始化、权限和开销边界不同，必须固定所用版本及配置验证。这种 out-of-process（进程外）设计减少了对损坏堆和锁的依赖；所选启动策略、注册、权限与生命周期要在正常运行期配置和验收，不能据此认为崩溃路径没有风险或开销。
+Breakpad 常由进程内 handler 生成 minidump；Crashpad 的 Linux/Android 设计将客户端与独立 handler 进程分开：预启动路径中，客户端注册通信端点，崩溃时通知 handler 读取目标进程并写 dump。库还提供崩溃时启动 handler 的路径，初始化、权限和开销的边界各不相同，必须固定所用版本及配置验证。这种 out-of-process（进程外）设计减少了对损坏堆和锁的依赖；崩溃路径剩下的风险和开销，则要按所选启动策略、注册、权限与生命周期在正常运行期配置和验收。
 
-<!-- gracker-diagram: ch17-09-07-out-of-process -->
-![Crashpad 将复杂工作移出故障进程](../../assets/diagrams/ch17/ch17-09-07-out-of-process.png)
-
-图：选择固定的 Crashpad 启动策略，客户端传交异常上下文，外部 handler 生成 dump。 独立进程减少损坏堆锁依赖，但启动、注册、权限与生命周期仍需验证。
 
 下面三类文件各有用途：
 
@@ -218,21 +198,13 @@ Breakpad 常由进程内 handler 生成 minidump；Crashpad 的 Linux/Android �
 
 handler 可以读 `siginfo_t`、`ucontext_t` 与当前 tid（thread id，线程 ID），把定长结构写入预先打开的 pipe/socket，或通知 Crashpad handler。完整的 unwind（逐层还原调用栈）、maps 读取和 minidump 生成，交给受控的外部 handler 或系统 debuggerd。
 
-<!-- gracker-diagram: ch17-09-08-signal-safe -->
-![Signal 上下文只保留安全的交接](../../assets/diagrams/ch17/ch17-09-08-signal-safe.png)
 
-图：故障信号上下文只使用提前准备的有限结构与受验证的安全通知路径。 分配、普通锁、JNI、数据库、复杂 unwind 与网络上传都不放入通用 signal handler。
+如果自研 reporter（崩溃报告器） 必须与前一个 handler 共存，还有一串 POSIX 细节要处理：`SA_SIGINFO` 回调签名、`SIG_DFL`（默认动作）、`SIG_IGN`（忽略信号）、`SA_RESETHAND`（处理一次后恢复默认动作）、signal mask（信号屏蔽集合）、备用栈和重入。POSIX 把忽略非 `kill/sigqueue/raise` 产生的 `SIGFPE/SIGILL/SIGSEGV/SIGBUS` 定义为未定义行为，`SIG_IGN` 也就当不了恢复策略。库的恢复与重发还要区分会再次触发的同步故障和异步信号，并保留原始 `siginfo`。几行没经过系统版本与 ABI（application binary interface，应用二进制接口） 测试的 `sigaction()` 链式代码，谈不上生产可靠性。
 
-如果自研 reporter（崩溃报告器） 必须与前一个 handler 共存，还有一串 POSIX 细节要处理：`SA_SIGINFO` 回调签名、`SIG_DFL`（默认动作）、`SIG_IGN`（忽略信号）、`SA_RESETHAND`（处理一次后恢复默认动作）、signal mask（信号屏蔽集合）、备用栈和重入。POSIX 对忽略非 `kill/sigqueue/raise` 产生的 `SIGFPE/SIGILL/SIGSEGV/SIGBUS` 定义为未定义行为；`SIG_IGN` 不能作为恢复策略。库的恢复与重发还要区分会再次触发的同步故障和异步信号，并保留原始 `siginfo`。几行没经过系统版本与 ABI（application binary interface，应用二进制接口） 测试的 `sigaction()` 链式代码，谈不上生产可靠性。
-
-<!-- gracker-diagram: ch17-09-09-signal-restoration -->
-![信号恢复需要保留原始语义](../../assets/diagrams/ch17/ch17-09-09-signal-restoration.png)
-
-图：区分同步重触发与异步送达，按已验证库恢复处理器并保留原始 siginfo。 忽略硬件故障属于未定义行为，不能把 SIG_IGN 或简单 sigaction 链当作恢复。
 
 ### 3.3 从 fault 到上报的顺序
 
-以下采用预启动 handler 的 Crashpad 路径；崩溃时启动的模式需要另行核对实现：
+我们按预启动 handler 的 Crashpad 路径走一遍；崩溃时启动的模式需要另行核对实现：
 
 1. 应用正常运行时启动并注册 handler，准备通信端点、备用栈与 annotation（随 dump 保存的注解）；异常上下文的位置按所用实现传递，不把共享内存写成必需条件。
 2. 崩溃线程收到致命信号，客户端 handler 读取 signal、fault address 与寄存器上下文。
@@ -252,69 +224,50 @@ handler 可以读 `siginfo_t`、`ucontext_t` 与当前 tid（thread id，线程 
 
 ### 4.1 `/data/anr` 的访问权限
 
-旧版调试资料常拿 `/data/anr/traces.txt` 当入口，较新的系统则是在 `/data/anr/` 下保存独立的 trace 文件。`init.rc` 以 `0775 system system` 创建目录，但具体 trace 仍由系统侧控制：目录权限位只说明目录本身的开放范围；普通应用读得到哪些内部文件，要再看 SELinux 强制访问控制、文件 owner/mode（属主与权限位）和系统服务检查这三道限制。
+ANR 的系统证据放在哪里、谁能读，先从目录说起。旧版调试资料常拿 `/data/anr/traces.txt` 当入口，较新的系统则是在 `/data/anr/` 下保存独立的 trace 文件。`init.rc` 以 `0775 system system` 创建目录，但具体 trace 仍由系统侧控制：目录权限位只说明目录本身的开放范围，普通应用能读到哪些内部文件，还要过 SELinux 强制访问控制、文件 owner/mode（属主与权限位）和系统服务检查这三道限制。
 
-因此：
+取证入口因此分成两档：adb/bugreport、root 权限、userdebug 系统镜像或厂商系统组件在系统侧，可以直接取证；三方生产应用手里的轮询、inotify（Linux 文件变化通知）和反射调用系统服务，撑不起一个稳定方案。文件名、压缩方式和保留数量都属于实现细节，端侧协议要避开对这些细节的依赖。
 
-- adb/bugreport、root 权限、userdebug 系统镜像或厂商系统组件可以直接取证。
-- 三方生产应用把轮询、inotify（Linux 文件变化通知）或反射调用系统服务当稳定方案，是走不通的。
-- 文件名、压缩方式和保留数量都属于实现细节，端侧协议里不要依赖它们。
-
-<!-- gracker-diagram: ch17-09-12-anr-permissions -->
-![目录权限不等于 ANR 文件可读](../../assets/diagrams/ch17/ch17-09-12-anr-permissions.png)
-
-图：系统目录、文件权限、SELinux 和服务检查共同决定能否取到 ANR 证据。 root、userdebug、bugreport 与系统组件的能力不能当成普通生产应用能力。
 
 ### 4.2 SIGQUIT 与 ART（Android Runtime） SignalCatcher
 
-我们先看系统怎么收集 Java 线程 dump：向目标进程发送 `SIGQUIT`，ART 由专门的 `SignalCatcher` 线程接收。固定 r1 先屏蔽该信号，再由 `SignalSet.Wait(info)` 调用 `sigwaitinfo64()` 同步等待并取得 `siginfo`；`signal_catcher.cc` 的注释仍笼统称 `sigwait()`，具体调用以 `signal_set.h` 为准。普通 `sigaction` handler 不会在这条等待路径上执行。
+我们先看系统怎么收集 Java 线程 dump：向目标进程发送 `SIGQUIT`，由 ART 专门的 `SignalCatcher` 线程接收。这条线程先屏蔽该信号，再经 `SignalSet.Wait(info)` 调用 `sigwaitinfo64()` 同步等待并取得 `siginfo`；`signal_catcher.cc` 的注释仍笼统称 `sigwait()`，具体调用以 `signal_set.h` 为准。
 
-这解释了两个看似矛盾的现象：
-
-- ANR 取证路径确实在用 `SIGQUIT`。
-- 应用自己再注册一个 `SIGQUIT` handler，系统 ANR dump 信号的接收并不稳定。
+这就解释了一个看似矛盾的现象：ANR 取证路径在用 `SIGQUIT`，但应用自己再注册一个 `SIGQUIT` handler，未必接得到系统的 dump 信号——这条等待路径上，普通 `sigaction` handler 没有执行机会。
 
 <!-- gracker-diagram: ch17-09-13-sigquit-sigwait -->
 ![SIGQUIT 经 ART 等待线程同步接收](../../assets/diagrams/ch17/ch17-09-13-sigquit-sigwait.png)
 
-图：固定 r1 中，ART 屏蔽相关信号后由等待线程调用 sigwaitinfo64 同步接收，再执行线程转储。 再次安装普通 SIGQUIT handler 不能保证接到系统 dump 路径，dump 本身也不证明已判定 ANR。
+图：ART 屏蔽相关信号后由等待线程调用 sigwaitinfo64 同步接收，再执行线程转储。 再次安装普通 SIGQUIT handler 接不稳系统 dump 路径，dump 本身也说明不了已判定 ANR。
 
 所谓 Signal Catcher Hook，是通过拦截或改写 ART 内部调用路径来取得线程 dump。它往往要改信号掩码、拦截 ART 内部符号、修改 libsigchain 或参与系统 ANR 流程，与 Android 版本、ART 实现和其他 SDK 强耦合。这类手段适合厂商 ROM、root/userdebug 诊断或可回滚实验；普通应用的默认能力，应放在应用端自己的 watchdog（定时检查线程是否响应的监视器） 上。
 
 main-looper watchdog 定时检查主线程消息循环是否还能响应，可以在卡顿期间多次采主线程栈，提前发现耗时消息、锁等待和 Binder（Android 跨进程调用机制） 阻塞。它拿不到 `system_server`（承载核心 Android 系统服务的进程） 掌握的输入分发、广播、service、content provider 等超时上下文，所以只能标记 `suspected_anr`；系统 ANR 结论，仍以后续 `ApplicationExitInfo`、Vitals 或系统 trace 为准。
 
-<!-- gracker-diagram: ch17-09-14-watchdog-vs-system -->
-![主线程未响应与系统 ANR 的证据差别](../../assets/diagrams/ch17/ch17-09-14-watchdog-vs-system.png)
-
-图：Watchdog 提供早期样本，系统原因与 trace 提供对应的 ANR 判定上下文。 固定秒数的主线程探针不掌握输入、广播和服务的全部系统超时条件。
 
 ### 4.3 Android 11+ 的 ApplicationExitInfo
 
-API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 提供当前 UID（Android 为应用或隔离进程分配的用户标识）/包的历史退出记录。常用字段包括 reason、status、importance、process name、timestamp、description、PSS/RSS 和 process state summary（应用退出前主动保存的少量状态摘要）。
+系统目录和信号路径都受限之后，普通应用能拿到的官方入口是退出历史。API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 提供当前 UID（Android 为应用或隔离进程分配的用户标识）/包的历史退出记录。常用字段包括 reason、status、importance、process name、timestamp、description、PSS/RSS 和 process state summary（应用退出前主动保存的少量状态摘要）。
 
 读取时我们要记住几件事：
 
 - `REASON_ANR` 的 trace 通常是系统 ANR 文本流；流可能为空。
-- API 31 起，`REASON_CRASH_NATIVE` 可返回按 `tombstone.proto` 编码的 protobuf，要按二进制处理，当成 UTF-8 文本解析会出错。
+- API 31 起，`REASON_CRASH_NATIVE` 可返回按 `tombstone.proto` 编码的 protobuf，按二进制处理即可，按 UTF-8 文本解析会出错。
 - trace 位于独立的全局环形存储，容量用完后会覆盖较旧记录；其他应用产生的新记录也会占用这份容量。
-- 一个进程曾发生 ANR、随后恢复并因其他原因退出时，该退出记录仍可能带 ANR trace；看到 trace 就断定 `reason == REASON_ANR`，是误读。
-- PSS/RSS 是系统最近采样值，未必等于死亡前一刻；0 也可能只是来不及采样。
-- `description` 是给人看的说明，系统并未承诺格式跨设备或版本稳定，解析逻辑避开字符串切片。
-- 不支持 LMK report 的设备会把低内存 kill 记为 `REASON_SIGNALED + SIGKILL`；这个组合只够标成“可能 LMK”，写成确定的 LMK 就过头了。
+- 一个进程曾发生 ANR、随后恢复并因其他原因退出时，该退出记录仍可能带 ANR trace；退出原因以 reason 字段为准，看到 trace 就断定 `reason == REASON_ANR` 是误读。
+- PSS/RSS 记录的是系统最近一次采样，离死亡时刻可能还有距离；0 也可能只是没来得及采样。
+- `description` 是给人看的说明，格式跨设备、跨版本都可能变，解析逻辑要避开字符串切片。
+- 缺少 LMK report 支持的设备会把低内存 kill 记为 `REASON_SIGNALED + SIGKILL`；这个组合只够标成“可能 LMK”，要再写成确定的 LMK，证据就不够了。
 
-固定 API 37 的 `NativeTombstoneManager` 还能把没有匹配到真实退出记录的 tombstone 合成为 `REASON_CRASH_NATIVE` 条目；合成条目的 status、PSS/RSS 可为 0，importance 也只是填入值。Recoverable GWP-ASan 报告可以在进程继续运行时出现。因此本章把这类入口先记为 `NATIVE_REPORT`，保留系统 reason，另行确认是否发生致命退出；不能把每条 Native 报告直接计为一次进程死亡。
+API 37 的 `NativeTombstoneManager` 还能把没有匹配到真实退出记录的 tombstone 合成为 `REASON_CRASH_NATIVE` 条目；合成条目的 status、PSS/RSS 可为 0，importance 也只是填入值。Recoverable GWP-ASan 报告可以在进程继续运行时出现。因此本章把这类入口先记为 `NATIVE_REPORT`，保留系统 reason，是否真的发生致命退出，另行确认后再计数。
 
 <!-- gracker-diagram: ch17-09-15-native-report-not-death -->
-![合成 Native 报告不等于进程死亡](../../assets/diagrams/ch17/ch17-09-15-native-report-not-death.png)
+![合成 Native 报告未必对应进程死亡](../../assets/diagrams/ch17/ch17-09-15-native-report-not-death.png)
 
 图：NativeTombstoneManager 可合成报告条目，Recoverable 故障还能在进程存续时产生报告。 status、PSS/RSS 为0和填入 GONE 都不证明真实退出现场，先保留报告来源。
 
 API 37 新增 `ApplicationExitInfo.getAnrInfo()`，只在 `reason == REASON_ANR` 时有值。从中我们可以读到 `getAnrType()`（输入分发、广播、service、content provider、job 或应用启动等类型）、`getAnrId()`、`getTimeoutMillis()`（系统等待到判定 ANR 的总时长），以及 `isUserPerceptible()`（是否向用户显示 ANR 对话框）。`getAnrId()` 只保证在同一种 ANR 类型内唯一，全局去重键要配合其他字段构造；其他退出原因调用 `getAnrInfo()` 会得到 `null`。
 
-<!-- gracker-diagram: ch17-09-16-api37-anr-info -->
-![API37 ANR 类型与事件属性](../../assets/diagrams/ch17/ch17-09-16-api37-anr-info.png)
-
-图：仅在 ANR reason 下读取 AnrInfo，再保存类型、受限作用域的 ID、等待时长与用户可感知属性。 ID 只在同一类型内唯一，其他退出原因返回 null，不能构造全局ID假象。
 
 下面的代码展示 API 30+ 通用路径里的启动后拉取、去重和有界读取。`ExitEnvelope` 与 `ExitKind` 是项目自己的上传 DTO（data transfer object，数据传输对象）和枚举；trace 保持原始字节前缀并显式记录是否截断；未截断也要由解析器校验格式和 schema，`traceFormatHint` 只是预期类型。应用端不把 tombstone protobuf 直接转为字符串。API 37 的生产实现可以在这份兼容基线上另行读取 `getAnrInfo()`。
 
@@ -417,12 +370,12 @@ private fun InputStream.readBounded(limit: Int): TraceReadResult {
 }
 ```
 
-这段代码仍会分配内存，并执行 Binder 调用和文件 I/O，所以仅在 `SDK_INT >= 30` 时放到后台任务执行。示例限制请求记录数、单条与总保留字节；为判断截断，每条流还可能额外读 1 字节。它没有强制中断同步 Binder/I/O 的能力，任务时长需另外按可取消、可观测的执行机制控制。`seen` 只保存已成功持久化的记录；批内 key 去重不等于系统承诺的全局故障 ID，补拉到信息更完整的同一事件还需按证据合并。生产实现要限制总记录数、单条 trace 大小、单次任务时长和本地磁盘占用；解析失败时保存 schema/version 与少量摘要，避免反复上传同一条损坏记录。
+这段代码仍会分配内存，并执行 Binder 调用和文件 I/O，所以仅在 `SDK_INT >= 30` 时放到后台任务执行。示例限制请求记录数、单条与总保留字节；为判断截断，每条流还可能额外读 1 字节。它没有强制中断同步 Binder/I/O 的能力，任务时长需另外按可取消、可观测的执行机制控制。`seen` 只保存已成功持久化的记录；批内 key 去重算不上系统承诺的全局故障 ID，补拉到信息更完整的同一事件还需按证据合并。生产实现要限制总记录数、单条 trace 大小、单次任务时长和本地磁盘占用；解析失败时保存 schema/version 与少量摘要，避免反复上传同一条损坏记录。
 
 <!-- gracker-diagram: ch17-09-17-bounded-exit-reader -->
 ![退出历史的有界读取与格式验证](../../assets/diagrams/ch17/ch17-09-17-bounded-exit-reader.png)
 
-图：后台读取先查重，再限制每条与总保留字节，明确记录截断、缺失和读取失败。 格式提示不是解析成功，截断 protobuf 不能按完整报告处理，计时不能强制打断同步I/O。
+图：后台读取先查重，再限制每条与总保留字节，明确记录截断、缺失和读取失败。 格式提示只是预期，截断 protobuf 按截断样本处理，同步 I/O 的时长要靠任务机制控制。
 
 ## 5. 资源耗尽与多种 OOM
 
@@ -439,30 +392,18 @@ OOM 常被理解成 Java heap 装不下新对象，但进程还可能耗尽的�
 | VMA/地址空间 | `mmap` 返回 `ENOMEM` | <code>/<wbr>proc/<wbr>self/<wbr>maps</code> 条目、`VmSize`、ABI、映射来源 | 64 位 `VmSize` 含大块预留地址，不能单独作为内存压力 |
 | 系统低内存 kill | 进程无回调地消失 | <code>Application<wbr>Exit<wbr>Info</code>、Vitals、预存资源使用量 | `SIGKILL` 还可能来自 force-stop、shell 或其他系统策略 |
 
-<!-- gracker-diagram: ch17-09-18-memory-resources -->
-![Java Heap、Native RSS 与地址预留](../../assets/diagrams/ch17/ch17-09-18-memory-resources.png)
-
-图：先识别耗尽的是哪类资源，再选择相应趋势和失败信号。 RSS 增长不自动证明泄漏，Java heap 正常也不能排除 Native 或图形资源问题。
 
 表中的 `errno` 是 Native 系统调用失败时的错误码：`EMFILE` 表示当前进程打开的 FD 过多，`ENOMEM` 表示没有足够内存或虚拟地址空间。
 
-这几类资源里先看 FD。FD 泄漏最先破坏的是 socket、文件、eventfd（内核事件计数器）、pipe 和 Binder 辅助资源这些创建路径。`RLIMIT_NOFILE` 是进程可打开 FD 数量的上限，预警阈值应按当前使用量与该上限的比例计算，并保留 FD 类型分布；固定写死“超过 1024”，适配不了不同设备和进程配置。
+这几类资源里，我们先看 FD。FD 泄漏最先破坏的是 socket、文件、eventfd（内核事件计数器）、pipe 和 Binder 辅助资源这些创建路径。`RLIMIT_NOFILE` 是进程可打开 FD 数量的上限，预警阈值应按当前使用量与该上限的比例计算，并保留 FD 类型分布；固定写死“超过 1024”，适配不了不同设备和进程配置。
 
 线程这边，耗尽常由无界 executor（任务执行器）、每个请求新建线程、阻塞任务堆积或 Native 库自行建线程引起；每个线程还要占用用户栈映射、内核 task（调度实体） 资源与 CPU 调度时间。Android/内核最终可能返回 `EAGAIN`（资源暂时不可用）或内存失败，把这类失败一律标成 Java heap OOM，会盖住线程、栈和调度上的线索。
 
-<!-- gracker-diagram: ch17-09-19-fd-thread-limits -->
-![FD 与线程风险绑定实际资源上限](../../assets/diagrams/ch17/ch17-09-19-fd-thread-limits.png)
-
-图：FD 和线程故障按当前限制、资源类型与创建路径诊断，避免固定数量阈值。 扫描FD会临时占FD，线程失败还涉及栈、地址空间和调度，不能都归为Java堆OOM。
 
 VMA 风险在 32 位进程暴露得更早：有限的地址空间要同时装下 `.so`、JIT（just-in-time，即时编译） 代码、线程栈、ashmem（Android 匿名共享内存）、图形内存映射和碎片。64 位进程也可能碰到异常映射增长，或撞上 `vm.max_map_count`（单进程可拥有的 VMA 数量上限） 这样的限制；很大的 `VmSize` 可能只是预留了地址范围，对应的物理内存未必真的驻留。
 
 现代设备的低内存处置，主要由用户态 lmkd 结合 PSI（Pressure Stall Information，内核压力停顿指标）、内存压力、swap（交换空间） 状态和 `oom_score_adj` 来选择目标。早期 kernel lowmemorykiller 那套固定 minfree 阈值的模型，只能解释一部分现代设备的行为。`oom_score_adj` 也只是选择终止目标时的优先级输入之一，把它读成“达到该值就立即杀进程”，等于丢掉了同一决策里的其他输入。
 
-<!-- gracker-diagram: ch17-09-20-lmk-policy -->
-![LMKD 根据压力和优先级选择目标](../../assets/diagrams/ch17/ch17-09-20-lmk-policy.png)
-
-图：现代 LMKD 结合内存压力、swap 和优先级等信息决策，退出证据另行关联。 oom_score_adj 只是输入之一，SIGKILL 也不是 LMK 的充分证明。
 
 ### 5.2 预警靠正常运行期采样
 
@@ -477,10 +418,6 @@ VMA 风险在 32 位进程暴露得更早：有限的地址空间要同时装下
 
 资源使用量接近限制后，采样器要主动降频、停掉高成本分类：继续频繁扫描 `/proc`、抓 heap dump 或拼接大日志，反而可能成为进程的额外负担。
 
-<!-- gracker-diagram: ch17-09-21-periodic-warning -->
-![健康期预采样与临界点降频](../../assets/diagrams/ch17/ch17-09-21-periodic-warning.png)
-
-图：正常运行期按场景低频采样，接近资源限制时主动降低诊断开销。 异常期大量扫proc、抓堆或拼大日志会加重故障，采样趋势也不独立证明根因。
 
 ### 5.3 Android 8—10 没有退出历史时
 
@@ -496,10 +433,6 @@ API 26—29 没有 `ApplicationExitInfo`。Java crash、Native crash 仍可由 h
 
 “低版本下次启动继续补拉 ANR/LMK”的通用端侧接口并不存在。把未知退出硬归为 LMK，稳定性率看起来完整了，诊断可信度也丢了。
 
-<!-- gracker-diagram: ch17-09-22-legacy-evidence -->
-![API26至29 的未知退出保留未知](../../assets/diagrams/ch17/ch17-09-22-legacy-evidence.png)
-
-图：没有官方退出历史时，探针、存活标记和服务端系统数据保持各自证据强度。 异常消失可能来自多种原因，低版本不存在通用的本地补拉 ANR/LMK 接口。
 
 ## 6. 现场快照：把高成本信息提前准备
 
@@ -516,10 +449,6 @@ API 26—29 没有 `ApplicationExitInfo`。Java crash、Native crash 仍可由 h
 
 寄存器来自 `ucontext_t` 或系统 tombstone，让 Java handler 伪造寄存器没有意义。RSS/PSS、FD、线程数适合用崩溃前最近一次采样；在 signal handler 里临时扫描 `/proc`，风险很高。
 
-<!-- gracker-diagram: ch17-09-23-four-times -->
-![四种采集时机与安全任务](../../assets/diagrams/ch17/ch17-09-23-four-times.png)
-
-图：健康期准备、Java 异常、Native 信号和恢复任务分别承担不同工作。 寄存器来自实际上下文，临界点不临时扫描高成本信息，策略不是库自动保证。
 
 ### 6.2 Breadcrumb 与日志
 
@@ -537,18 +466,14 @@ Logcat 当不了稳定的私有 crash store：权限、ring buffer 覆盖和设�
 
 图：按低基数事件与隐私规则维护应用内有限日志，崩溃记录引用已存片段的序号。 logcat 受权限、覆盖与设备策略限制，输入文本、账号和网络内容不进入默认样本。
 
-每条附件要有 schema（字段结构版本）、长度、checksum（用于发现内容损坏的校验值）、complete flag（写入完成标记）和隐私规则版本。payload → checksum → complete flag 是逻辑格式顺序；单靠这个顺序不能保证进程崩溃或掉电时的原子性与持久性。存储协议还需校验长度、代次及提交状态，并按实际文件系统验证发布、同步和恢复；冷启动不处理校验失败或未提交记录。高成本同步安排在正常期，不能临时把完整持久化流程塞进致命 signal handler。
+每条附件要有 schema（字段结构版本）、长度、checksum（用于发现内容损坏的校验值）、complete flag（写入完成标记）和隐私规则版本。payload → checksum → complete flag 是逻辑格式顺序；进程崩溃或掉电时的原子性与持久性，还要靠存储协议来保证——校验长度、代次及提交状态，并按实际文件系统验证发布、同步和恢复。冷启动跳过校验失败或未提交的记录。高成本同步安排在正常期，致命 signal handler 里只留有限写入。
 
-<!-- gracker-diagram: ch17-09-25-record-commit -->
-![逻辑完成标记不等于持久化保证](../../assets/diagrams/ch17/ch17-09-25-record-commit.png)
-
-图：字段、校验与提交状态共同组成恢复协议，再按实际文件系统验证发布和同步行为。 payload/checksum/flag 的书写顺序不能独立保证原子性或掉电持久化，signal路径不临时做完整同步。
 
 ## 7. 多 SDK 的 handler 冲突
 
 ### 7.1 Java default handler
 
-后安装的 SDK 会覆盖先安装者。即使每家都保存 `previous`，链上仍可能出现：
+我们先看 Java default handler 上的冲突：后安装的 SDK 会覆盖先安装者。即使每家都保存 `previous`，链上仍可能出现：
 
 - A → B → A 的循环链。
 - 多个 handler 依次等待 I/O，超过系统容忍时间。
@@ -563,12 +488,12 @@ Logcat 当不了稳定的私有 crash store：权限、ring buffer 覆盖和设�
 4. 接管关不掉时，固定初始化顺序，并在启动后和首个 Activity 创建后校验当前 handler 的对象身份。
 5. 测试崩溃进程是否按预期退出、系统退出历史是否存在、各 SDK 是否各收到一次。
 
-多个 Java crash sink 不要并行调用：它们可能访问同一日志锁、数据库或 executor。崩溃线程只调用事先验证为非阻塞且有限操作的 sink，在调用之间检查剩余预算并跳过非必需附件；计时不能打断已卡住的同步 sink。原始异常最终交给保存的系统链，正常期用集成测试验证这一前提。
+多个 Java crash sink 要串行调用：它们可能访问同一日志锁、数据库或 executor。崩溃线程只调用事先验证为非阻塞且有限操作的 sink，在调用之间检查剩余预算并跳过非必需附件；已经卡住的同步 sink，计时也拉不回来。原始异常最终交给保存的系统链，这一前提在正常期用集成测试验证。
 
 <!-- gracker-diagram: ch17-09-26-java-sdk-hub -->
 ![多 SDK 由统一稳定性模块转交](../../assets/diagrams/ch17/ch17-09-26-java-sdk-hub.png)
 
-图：统一代理协调 SDK，正常期确认 handler 身份与初始化顺序，崩溃时只调用有限 sink。 时间预算不能中断已阻塞的同步 sink，循环和后来覆盖必须靠集成验证发现。
+图：统一代理协调 SDK，正常期确认 handler 身份与初始化顺序，崩溃时只调用有限 sink。 时间预算中断不了已阻塞的同步 sink，循环和后来覆盖必须靠集成验证发现。
 
 ### 7.2 Native signal handler
 
@@ -581,10 +506,6 @@ Native 冲突更难靠安装顺序解决：
 
 所以“万能 signal hub”这种同步回调所有 SDK 的设计要放弃：我们选定一个经过 Android 版本验证的 Native reporter，其他 SDK 改为导入它生成的 tombstone/minidump，或只做启动后处理。第三方库控制不住时，至少在 CI（continuous integration，持续集成） 测试里枚举已安装的 signal action、制造各类 fault，验证系统 tombstone 和 build-id 符号化没有丢失。
 
-<!-- gracker-diagram: ch17-09-27-native-sdk-conflicts -->
-![Native 信号链不能按普通回调总线处理](../../assets/diagrams/ch17/ch17-09-27-native-sdk-conflicts.png)
-
-图：选择经过版本验证的 Native reporter，其他 SDK 共享报告或延后处理。 sigaction签名、mask、备用栈和内存标记工具各有语义，同步回调全部SDK不能保证兼容。
 
 ## 8. GWP-ASan：Android 17 默认走 Recoverable 抽样
 
@@ -595,7 +516,7 @@ GWP-ASan 是 Native 堆内存错误抽样检测器：随机挑选少量 allocati
 <!-- gracker-diagram: ch17-09-28-gwp-sampling -->
 ![GWP-ASan 在进程和分配两层抽样](../../assets/diagrams/ch17/ch17-09-28-gwp-sampling.png)
 
-图：选中进程后仍只把少量 allocation 放入受保护区域，再记录命中的真实内存错误。 不需要重编译不等于全面覆盖，抽样检测也不是内存安全防护。
+图：选中进程后仍只把少量 allocation 放入受保护区域，再记录命中的真实内存错误。 免重编译仍是抽样覆盖，抽样检测也提供不了内存安全防护。
 
 公开配置应使用 manifest：
 
@@ -605,12 +526,8 @@ GWP-ASan 是 Native 堆内存错误抽样检测器：随机挑选少量 allocati
 | `always` | 每次启动启用 Recoverable GWP-ASan，仍只抽样 allocation；默认不因该报告终止进程 | 专项诊断，单独评估覆盖与开销 |
 | `never` | 按 manifest 禁用；系统属性或环境的受控覆写仍可能强制启用 | 仅在兼容故障明确且有替代诊断时使用 |
 
-这里需要区分指南与固定版本源码：官方指南的 `always` 段落仍写命中后终止，但 [Android 17 Bionic 模式定义](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/platform/bionic/malloc.h) 明确说明，Android 15 起 `always` 默认也是 recoverable，只是不做进程启动抽样。固定 r1 的 wrapper 同样默认 `Recoverable=true`；系统属性和环境覆写另行核对。本表按该固定实现且无覆写解释，不能把“always”直接等同于“必然崩溃”。
+这里要区分指南与固定版本源码：官方指南的 `always` 段落仍写命中后终止，但 [Android 17 Bionic 模式定义](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/platform/bionic/malloc.h) 明确说明，Android 15 起 `always` 默认也是 recoverable，只是不做进程启动抽样。同一版本的 wrapper 同样默认 `Recoverable=true`；系统属性和环境覆写另行核对。本表按该固定实现且无覆写解释，“always”读作“必然崩溃”就偏了。
 
-<!-- gracker-diagram: ch17-09-29-gwp-modes -->
-![Android15以后 Always 也默认可恢复](../../assets/diagrams/ch17/ch17-09-29-gwp-modes.png)
-
-图：固定 Android17 无覆写时，default 与 always 都可恢复，区别在是否抽样选择进程。 指南always段落仍含旧终止说明；本图按已核验源码，allocation仍会抽样。
 
 Recoverable 模式命中后会生成 Native crash report（tombstone），然后允许进程继续；此时内存已经损坏，后续行为没有保证，进程可能稍后以另一个症状崩溃。一次进程生命周期只生成一份 Recoverable 报告。官方文档还明确指出：代表 Recoverable GWP-ASan fault 的 `SIGSEGV` 全程绕开应用自定义 signal handler。所以“自己的 `SIGSEGV` handler 先判断并放行”这条路走不通；我们在这里要做的是收下报告、保留现场，进程的存续交给系统的 Recoverable 语义。
 
@@ -632,10 +549,6 @@ Recoverable 模式命中后会生成 Native crash report（tombstone），然后
 
 源码中的 recoverable path 会在 fault 前后调用 GWP-ASan 的 pre/post crash hook，并通过 `recoverable_crash` 标记避免按普通致命 signal 再次发送。Permissive MTE（允许记录内存标记错误后继续运行的 MTE 模式）也走 recoverable 出口，但 fault 识别和恢复逻辑独立。APM 要保留的是系统 tombstone、GWP-ASan cause（错误类型）、模块 build id，以及 allocation/deallocation/access trace（分配、释放和非法访问调用栈）；系统 handler 的内部实现，不要复制进应用 signal handler。
 
-<!-- gracker-diagram: ch17-09-31-gwp-wrapper -->
-![Bionic 默认参数与系统报告交接](../../assets/diagrams/ch17/ch17-09-31-gwp-wrapper.png)
-
-图：Bionic 抽样参数、无独立信号处理器设置和 debuggerd 的恢复路径共同形成报告机制。 2500/128/32是固定r1内部默认，系统覆写与manifest路径会改变实际行为。
 
 ## 9. ProfilingTrigger 提供的补充证据
 
@@ -650,28 +563,18 @@ Recoverable 模式命中后会生成 Native crash report（tombstone），然后
 | API 37 | <code>TRIGGER_<wbr>TYPE_<wbr>KILL_<wbr>EXCESSIVE_<wbr>CPU_<wbr>USAGE</code> | 因 CPU 使用过高且退出原因是 <code>REASON_<wbr>EXCESSIVE_<wbr>RESOURCE_<wbr>USAGE</code> 时，返回运行中 system trace 的快照 |
 | API 37 | <code>TRIGGER_<wbr>TYPE_<wbr>COLD_<wbr>START</code> | 冷启动时新建 system trace，并周期抽取线程调用栈（stack sampling）；持续到 <code>report<wbr>Fully<wbr>Drawn()</code>，未调用时默认 5 秒，缓冲区满后保留最早事件 |
 
-<!-- gracker-diagram: ch17-09-34-cold-start-profile -->
-![冷启动 Trigger 的结束和缓冲规则](../../assets/diagrams/ch17/ch17-09-34-cold-start-profile.png)
-
-图：冷启动触发器新建 trace 与栈采样，到 fully drawn 或默认期限结束。 启动采集可能有延迟，discard缓冲满时丢新事件，不能声称完整覆盖所有启动活动。
 
 触发器要先注册好，并同时受应用设置与系统 rate limit（频率限制）约束。`getRateLimitingPeriodHours()` 表示同一种 trigger 再次返回结果前，系统至少应等待多少小时；实际间隔可能更长，系统还会额外限流。我们拿触发器提高“事故前后有 trace”的概率；Java handler、Native tombstone 和 `ApplicationExitInfo` 仍是基础，触发器是补充。
 
-<!-- gracker-diagram: ch17-09-32-profiling-versions -->
-![系统触发式 Profiling 的版本边界](../../assets/diagrams/ch17/ch17-09-32-profiling-versions.png)
-
-图：预注册系统 trigger 后由系统按类型提供证据，版本与限流分别检查。 36.1是minor SDK，不能只用SDK_INT>=36判断；触发不保证一定产出文件。
 
 API 37 的 OOM trigger 有一条容易被多 SDK 破坏的前置条件：自定义 `UncaughtExceptionHandler` 必须调用 default handler。稳定性 SDK 一旦吞掉 `OutOfMemoryError`，系统 trigger 就会失效；应用只能在资源尚可时自行调用 `requestProfiling()`，crash 当下再请求通常太晚。
 
-<!-- gracker-diagram: ch17-09-33-oom-trigger-chain -->
-![OOM Trigger 依赖系统异常处理链](../../assets/diagrams/ch17/ch17-09-33-oom-trigger-chain.png)
-
-图：OOM 系统触发器要求自定义未捕获异常处理器继续调用默认系统链。 崩溃现场再临时请求堆分析通常太晚，主动Profiling安排在资源尚可的阶段。
 
 Profiling API 的完整请求、回调、36.1 minor SDK 判断与 rate-limit 处理见第 15.7 章；本章只把 Profiling 结果作为稳定性证据源，关联到同一个 incident id（一次故障的关联标识）。判断 36.1 API 可用性时，使用 `SDK_INT_FULL`/`VERSION_CODES_FULL.BAKLAVA_1` 或对应 minor SDK API；只检查 `SDK_INT >= 36` 是不够的。
 
 ## 10. 版本化接入建议
+
+把前面各节的入口按系统版本排开，接入策略如下：
 
 | 版本 | Java / Native Crash | ANR | LMK / 资源耗尽 |
 | --- | --- | --- | --- |
@@ -684,10 +587,6 @@ Profiling API 的完整请求、回调、36.1 minor SDK 判断与 rate-limit 处
 
 上线前，我们要准备一张故障用例表：Java exception、Java OOM、Native UAF/abort/SEGV、后台与前台 ANR、FD 上限、线程创建失败、mmap 失败、LMK、force-stop，以及多个 SDK 的不同初始化顺序。每个用例同时核对进程是否按预期终止、系统 reason、trace/dump、APM envelope、重复上报和隐私裁剪。
 
-<!-- gracker-diagram: ch17-09-35-rollout-tests -->
-![按系统版本验证稳定性证据链](../../assets/diagrams/ch17/ch17-09-35-rollout-tests.png)
-
-图：按部署版本选择入口，再用故障矩阵验证终止、系统记录、附件与去重。 源码与主机示例检查不能替代设备故障验收，权限和Native工具组合分别核对。
 
 ## 11. Android 17 与 6.18 r6 源码锚点
 

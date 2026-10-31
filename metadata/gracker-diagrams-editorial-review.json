@@ -48052,9 +48052,350 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "969cada7a2ece84bb8506bcf5914562e36487b6391bc7b1bd0cb9245839edf0e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 11,
+      "decisions": [
+        {
+          "original_id": "ch17-09-01-incident-kinds",
+          "title": "不同稳定性现场需要不同采集边界",
+          "decision": "remove",
+          "reason": "Incident-kind branching duplicates the precise four-row evidence/entry/process-state table immediately following.",
+          "original_line": 51,
+          "heading": "# 崩溃与 ANR（Application Not Responding，应用无响应） 捕获机制"
+        },
+        {
+          "original_id": "ch17-09-02-evidence-strength",
+          "title": "观察、报告与系统结论的区别",
+          "decision": "remove",
+          "reason": "Evidence-strength columns repeat local caveats and later precise native-report15 and watchdog discussion; avoid introductory repeated classification.",
+          "original_line": 79,
+          "heading": "## 1. 四类现场，四种证据强度"
+        },
+        {
+          "original_id": "ch17-09-03-java-dispatch",
+          "title": "Pre-handler、线程处理器与全局代理",
+          "decision": "keep",
+          "reason": "Retain pre-handler -> explicit thread/group dispatch -> conditional default/APM -> previous/system chain, with OOM trigger dependency.",
+          "original_line": 95,
+          "heading": "### 2.1 默认处理路径"
+        },
+        {
+          "original_id": "ch17-09-04-chained-handler",
+          "title": "崩溃代理的一次采集与转交",
+          "decision": "remove",
+          "reason": "Installation/CAS/write/delegate/fallback is already explicit in47line handler and adjacent failure/concurrency explanation; diagram lacks actual CAS alternative branches.",
+          "original_line": 154,
+          "heading": "### 2.1 默认处理路径"
+        },
+        {
+          "original_id": "ch17-09-05-envelope-timing",
+          "title": "正常期、崩溃期与恢复期的分工",
+          "decision": "remove",
+          "reason": "Three collection phases duplicate the explicit adjacent list and later four-time table; retain concrete breadcrumb lifecycle24 instead.",
+          "original_line": 172,
+          "heading": "### 2.2 崩溃当下的轻量记录 envelope"
+        },
+        {
+          "original_id": "ch17-09-06-native-signal-path",
+          "title": "Native 致命信号与系统报告",
+          "decision": "keep",
+          "reason": "Retain direct Bionic/debuggerd -> tombstoned -> API31 exit-history protobuf evidence route, separate from optional Crashpad minidump path.",
+          "original_line": 183,
+          "heading": "### 3.1 debuggerd（Native 崩溃诊断服务）、tombstone 与 Crashpad"
+        },
+        {
+          "original_id": "ch17-09-07-out-of-process",
+          "title": "Crashpad 将复杂工作移出故障进程",
+          "decision": "remove",
+          "reason": "Out-of-process roles and startup strategy columns repeat the prose; retain the concrete chosen prelaunch sequence11.",
+          "original_line": 192,
+          "heading": "### 3.1 debuggerd（Native 崩溃诊断服务）、tombstone 与 Crashpad"
+        },
+        {
+          "original_id": "ch17-09-11-symbol-identity",
+          "title": "模块身份、符号化与分组",
+          "decision": "keep",
+          "reason": "Retain per-module buildid+PC -> exact symbol artifact -> unwind/symbolize -> validated grouping with originaldump retained for recomputation.",
+          "original_line": 205,
+          "heading": "### 3.1 debuggerd（Native 崩溃诊断服务）、tombstone 与 Crashpad"
+        },
+        {
+          "original_id": "ch17-09-08-signal-safe",
+          "title": "Signal 上下文只保留安全的交接",
+          "decision": "remove",
+          "reason": "Signal safety/preparation/external-handler columns repeat the detailed disallowed-action list and concrete prelaunch handoff11; no new execution path.",
+          "original_line": 221,
+          "heading": "### 3.2 signal 上下文的硬边界"
+        },
+        {
+          "original_id": "ch17-09-09-signal-restoration",
+          "title": "信号恢复需要保留原始语义",
+          "decision": "remove",
+          "reason": "Generic signal restoration sequence does not branch synchronous refault versus asynchronous resend; precise POSIX/callback/mask/ABI caveats in prose are clearer.",
+          "original_line": 228,
+          "heading": "### 3.2 signal 上下文的硬边界"
+        },
+        {
+          "original_id": "ch17-09-10-crashpad-prelaunch",
+          "title": "预启动 Crashpad Handler 的采集顺序",
+          "decision": "keep",
+          "reason": "Retain explicitly selected prelaunch initialization -> signal context handoff -> readable stopped target -> external dump -> restored system path -> deferred upload/symbolization.",
+          "original_line": 244,
+          "heading": "### 3.3 从 fault 到上报的顺序"
+        },
+        {
+          "original_id": "ch17-09-12-anr-permissions",
+          "title": "目录权限不等于 ANR 文件可读",
+          "decision": "remove",
+          "reason": "Directory/file/SELinux/service conditions and public fallback repeat the two local permission paragraphs; chart does not show independent authorization predicates.",
+          "original_line": 259,
+          "heading": "### 4.1 `/data/anr` 的访问权限"
+        },
+        {
+          "original_id": "ch17-09-13-sigquit-sigwait",
+          "title": "SIGQUIT 经 ART 等待线程同步接收",
+          "decision": "keep",
+          "reason": "Retain blockedSIGQUIT -> synchronous sigwaitinfo64 waiter -> ART dump -> system trace, explaining why ordinary sigaction registration does not reliably intercept the path.",
+          "original_line": 270,
+          "heading": "### 4.2 SIGQUIT 与 ART（Android Runtime） SignalCatcher"
+        },
+        {
+          "original_id": "ch17-09-14-watchdog-vs-system",
+          "title": "主线程未响应与系统 ANR 的证据差别",
+          "decision": "remove",
+          "reason": "Watchdog/system/reconciled evidence summary repeats precise adjacent paragraphs and opening evidence table; no actual crossprocess association shown.",
+          "original_line": 279,
+          "heading": "### 4.2 SIGQUIT 与 ART（Android Runtime） SignalCatcher"
+        },
+        {
+          "original_id": "ch17-09-15-native-report-not-death",
+          "title": "合成 Native 报告不等于进程死亡",
+          "decision": "keep",
+          "reason": "Retain matched exit versus synthetic native report versus recoverable live process scopes; zeros and report presence do not establish actual death.",
+          "original_line": 300,
+          "heading": "### 4.3 Android 11+ 的 ApplicationExitInfo"
+        },
+        {
+          "original_id": "ch17-09-16-api37-anr-info",
+          "title": "API37 ANR 类型与事件属性",
+          "decision": "remove",
+          "reason": "AnrInfo getter inventory duplicates the single paragraph with reason gate, scopedID, timeout and perceptibility; no actual compound-key construction shown.",
+          "original_line": 307,
+          "heading": "### 4.3 Android 11+ 的 ApplicationExitInfo"
+        },
+        {
+          "original_id": "ch17-09-17-bounded-exit-reader",
+          "title": "退出历史的有界读取与格式验证",
+          "decision": "keep",
+          "reason": "Retain background exit query -> persisted/batchdedup -> perrecord/total retained-byte budgets -> truncation/missing/error/expectedformat -> validate/persistthen seen.",
+          "original_line": 415,
+          "heading": "### 4.3 Android 11+ 的 ApplicationExitInfo"
+        },
+        {
+          "original_id": "ch17-09-18-memory-resources",
+          "title": "Java Heap、Native RSS 与地址预留",
+          "decision": "remove",
+          "reason": "Heap/RSS/VMA distinction repeats detailed resource table and following paragraphs without actual sampled trends.",
+          "original_line": 435,
+          "heading": "### 5.1 Java heap、Native RSS、FD、线程和 VMA"
+        },
+        {
+          "original_id": "ch17-09-19-fd-thread-limits",
+          "title": "FD 与线程风险绑定实际资源上限",
+          "decision": "remove",
+          "reason": "FD/thread/stack limits columns duplicate the resource table and exact adjacent diagnosis paragraphs; no measured limit ratios or trends drawn.",
+          "original_line": 446,
+          "heading": "### 5.1 Java heap、Native RSS、FD、线程和 VMA"
+        },
+        {
+          "original_id": "ch17-09-20-lmk-policy",
+          "title": "LMKD 根据压力和优先级选择目标",
+          "decision": "remove",
+          "reason": "LMKD input columns repeat the exact paragraph and do not show a real policy decision; retain PSI/swap/priority caveats in source.",
+          "original_line": 455,
+          "heading": "### 5.1 Java heap、Native RSS、FD、线程和 VMA"
+        },
+        {
+          "original_id": "ch17-09-21-periodic-warning",
+          "title": "健康期预采样与临界点降频",
+          "decision": "remove",
+          "reason": "Low-frequency resource sampling/reduction pipeline repeats the six sampling bullets and critical-point paragraph; no observed growth or budget example.",
+          "original_line": 473,
+          "heading": "### 5.2 预警靠正常运行期采样"
+        },
+        {
+          "original_id": "ch17-09-22-legacy-evidence",
+          "title": "API26至29 的未知退出保留未知",
+          "decision": "remove",
+          "reason": "Legacy evidence columns directly repeat the API26-29 list, preserving unknown/possibleLMK in prose and final version table.",
+          "original_line": 492,
+          "heading": "### 5.3 Android 8—10 没有退出历史时"
+        },
+        {
+          "original_id": "ch17-09-23-four-times",
+          "title": "四种采集时机与安全任务",
+          "decision": "remove",
+          "reason": "Four-time tree duplicates the immediately preceding four-row can/cannot-do table and earlier exact Java/Native paths.",
+          "original_line": 512,
+          "heading": "### 6.1 按四种时机采集"
+        },
+        {
+          "original_id": "ch17-09-24-breadcrumb-privacy",
+          "title": "Breadcrumb 先限定内容再进入存储",
+          "decision": "keep",
+          "reason": "Retain finite event policy -> presample sanitization -> bounded persisted ring -> crash envelope sequence reference -> recovery validation, showing why crash-time logcat is unnecessary.",
+          "original_line": 528,
+          "heading": "### 6.2 Breadcrumb 与日志"
+        },
+        {
+          "original_id": "ch17-09-25-record-commit",
+          "title": "逻辑完成标记不等于持久化保证",
+          "decision": "remove",
+          "reason": "Linear recovery complete-record then damaged-record rejection boxes obscure alternative outcomes; precise prose states checksum/commit logic does not prove atomicity/durability.",
+          "original_line": 535,
+          "heading": "### 6.2 Breadcrumb 与日志"
+        },
+        {
+          "original_id": "ch17-09-26-java-sdk-hub",
+          "title": "多 SDK 由统一稳定性模块转交",
+          "decision": "keep",
+          "reason": "Retain singleowner handler installation and identity checks -> bounded serial crash sinks -> original system chain and integration verification.",
+          "original_line": 561,
+          "heading": "### 7.1 Java default handler"
+        },
+        {
+          "original_id": "ch17-09-27-native-sdk-conflicts",
+          "title": "Native 信号链不能按普通回调总线处理",
+          "decision": "remove",
+          "reason": "Native SDK conflict inventory repeats the immediately preceding signature/mask/stack/specialfault list and single validated reporter policy.",
+          "original_line": 577,
+          "heading": "### 7.2 Native signal handler"
+        },
+        {
+          "original_id": "ch17-09-28-gwp-sampling",
+          "title": "GWP-ASan 在进程和分配两层抽样",
+          "decision": "keep",
+          "reason": "Retain nested process-start then allocation sampling, protected-slot fault observation and system report path; distinguishes the two rates and finite coverage.",
+          "original_line": 588,
+          "heading": "## 8. GWP-ASan：Android 17 默认走 Recoverable 抽样"
+        },
+        {
+          "original_id": "ch17-09-29-gwp-modes",
+          "title": "Android15以后 Always 也默认可恢复",
+          "decision": "remove",
+          "reason": "Manifest mode columns duplicate local default/always/never table and implementation-versus-guide caveat; retained28 plus prose carry sampling semantics.",
+          "original_line": 603,
+          "heading": "## 8. GWP-ASan：Android 17 默认走 Recoverable 抽样"
+        },
+        {
+          "original_id": "ch17-09-30-recoverable-report",
+          "title": "可恢复报告保留真实错误但不承诺安全",
+          "decision": "keep",
+          "reason": "Retain recoverable fault -> special system path bypassing apphandler -> tombstone -> detection disabled/allowedcontinue -> no guarantee after corruption.",
+          "original_line": 610,
+          "heading": "## 8. GWP-ASan：Android 17 默认走 Recoverable 抽样"
+        },
+        {
+          "original_id": "ch17-09-31-gwp-wrapper",
+          "title": "Bionic 默认参数与系统报告交接",
+          "decision": "remove",
+          "reason": "Wrapper2500/128/32/options inventory repeats the detailed internal-defaults table and retained sampling28/report30 diagrams.",
+          "original_line": 628,
+          "heading": "## 8. GWP-ASan：Android 17 默认走 Recoverable 抽样"
+        },
+        {
+          "original_id": "ch17-09-34-cold-start-profile",
+          "title": "冷启动 Trigger 的结束和缓冲规则",
+          "decision": "remove",
+          "reason": "Linear trace-stop -> full-discard-buffer order can imply buffer exhaustion happens after collection stops; buffering applies while collecting, correctly stated in caption/table/prose.",
+          "original_line": 646,
+          "heading": "## 9. ProfilingTrigger 提供的补充证据"
+        },
+        {
+          "original_id": "ch17-09-32-profiling-versions",
+          "title": "系统触发式 Profiling 的版本边界",
+          "decision": "remove",
+          "reason": "Profiling version columns duplicate the detailed trigger/type/result table, including minorSDK and rate-limit caveats in text.",
+          "original_line": 653,
+          "heading": "## 9. ProfilingTrigger 提供的补充证据"
+        },
+        {
+          "original_id": "ch17-09-33-oom-trigger-chain",
+          "title": "OOM Trigger 依赖系统异常处理链",
+          "decision": "remove",
+          "reason": "OOM trigger default-handler dependency already appears in retained dispatch3 and SDK chain26 plus the precise triggerparagraph; avoid a third chain diagram.",
+          "original_line": 660,
+          "heading": "## 9. ProfilingTrigger 提供的补充证据"
+        },
+        {
+          "original_id": "ch17-09-35-rollout-tests",
+          "title": "按系统版本验证稳定性证据链",
+          "decision": "remove",
+          "reason": "Version rollout sequence duplicates the six-version table and faultmatrix paragraph; actual paths are already retained where explained.",
+          "original_line": 682,
+          "heading": "## 10. 版本化接入建议"
+        }
+      ],
+      "sha256_after": "9665772d1ead3a13d4db9da264c1b7f99e357accb243cae01e18f9a3acd113d8",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:58:28.735748+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a184/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a184/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 184,
+        "article": "src/part3-tools/ch17-apm/09-crash-anr-internals.md",
+        "registered_sha256": "969cada7a2ece84bb8506bcf5914562e36487b6391bc7b1bd0cb9245839edf0e",
+        "frozen_sha256": "969cada7a2ece84bb8506bcf5914562e36487b6391bc7b1bd0cb9245839edf0e",
+        "review_input_sha256": "b7e945ec58ec1be34a877349122dce7cff2b2c81cb3b62e1d7f95da940d2efd6",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/09-crash-anr-internals.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a184/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a184/external-source.diff",
+        "diff_sha256": "ed9922f278cdcdc8a65819eacc0cd088b6bf0da84d72e51c46f281fd4d3e132c",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 299, \"characters\": 29326, \"svg_labels_read\": 35, \"actual_pngs_viewed\": 35, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 2, \"code_lines\": 143, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "b7e945ec58ec1be34a877349122dce7cff2b2c81cb3b62e1d7f95da940d2efd6",
+      "retired_diagrams": [
+        "ch17-09-01-incident-kinds",
+        "ch17-09-02-evidence-strength",
+        "ch17-09-04-chained-handler",
+        "ch17-09-05-envelope-timing",
+        "ch17-09-07-out-of-process",
+        "ch17-09-08-signal-safe",
+        "ch17-09-09-signal-restoration",
+        "ch17-09-12-anr-permissions",
+        "ch17-09-14-watchdog-vs-system",
+        "ch17-09-16-api37-anr-info",
+        "ch17-09-18-memory-resources",
+        "ch17-09-19-fd-thread-limits",
+        "ch17-09-20-lmk-policy",
+        "ch17-09-21-periodic-warning",
+        "ch17-09-22-legacy-evidence",
+        "ch17-09-23-four-times",
+        "ch17-09-25-record-commit",
+        "ch17-09-27-native-sdk-conflicts",
+        "ch17-09-29-gwp-modes",
+        "ch17-09-31-gwp-wrapper",
+        "ch17-09-32-profiling-versions",
+        "ch17-09-33-oom-trigger-chain",
+        "ch17-09-34-cold-start-profile",
+        "ch17-09-35-rollout-tests"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-184/retired-assets.json"
     },
     {
       "index": 185,
@@ -49047,8 +49388,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 116,
-  "next_article": "src/part3-tools/ch17-apm/09-crash-anr-internals.md",
+  "reviewed_articles": 117,
+  "next_article": "src/part3-tools/ch17-apm/10-battery-thermal-apm.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -49058,7 +49399,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:55:29.461859+08:00",
+  "updated_at": "2026-10-31T14:58:28.735748+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -49121,13 +49462,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/09-crash-anr-internals.md",
-      "registered_sha256": "969cada7a2ece84bb8506bcf5914562e36487b6391bc7b1bd0cb9245839edf0e",
-      "observed_sha256": "b7e945ec58ec1be34a877349122dce7cff2b2c81cb3b62e1d7f95da940d2efd6",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/09-crash-anr-internals.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -49327,9 +49661,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3896,
-  "reviewed_placements_after": 1675,
-  "net_removed_placements": 2221,
+  "reviewed_placements_before": 3931,
+  "reviewed_placements_after": 1686,
+  "net_removed_placements": 2245,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -49353,5 +49687,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 116
+  "currently_matching_reviewed_source_count": 117
 }
