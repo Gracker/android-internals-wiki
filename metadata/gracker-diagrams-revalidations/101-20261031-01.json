@@ -1,0 +1,218 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 101,
+  "article": "src/part2-performance/ch09-anr/04-case-studies.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T10:29:29.592398+08:00",
+  "source_sha256": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
+  "accepted_before_sha256": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 340,
+  "reading_characters": 23868,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 16,
+  "current_pngs_actually_viewed": 16,
+  "current_contexts_actually_viewed": 16,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/current-contact-2.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/compact-101-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/compact-101-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/compact-101-3.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 19,
+  "code_lines_preserved": 132,
+  "asset_sha256": {
+    "src/assets/diagrams/ch09/ch09-04-04-pressure-time-windows.svg": "9669ea7fd748ae2c69c65e131a21463991d0ca79c20c5eab76bff6e461a49ea4",
+    "src/assets/diagrams/ch09/ch09-04-04-pressure-time-windows.png": "3a4c6cf825f06a2a22d36c163617aacfb1007841fef11ea6f16c150c1403eb37",
+    "src/assets/diagrams/ch09/ch09-04-06-channel-owner.svg": "e1d70a18299cf8a17eaaaf8d10e4b6a46513ab92a3cd42e3700c3cdabd58deb1",
+    "src/assets/diagrams/ch09/ch09-04-06-channel-owner.png": "31c81f6a45287ff446af0431d8eecaa418fd9f95412775e6a9204d6daf10c892",
+    "src/assets/diagrams/ch09/ch09-04-07-notifier-clock-gap.svg": "97167cfbac7ef24501f0fe633be1f6fdd6abe81206bdc3d4d6b4c03fc90ad771",
+    "src/assets/diagrams/ch09/ch09-04-07-notifier-clock-gap.png": "61db6bd633869ed503d97816246c57a611563eb550615f07850ffd9fc2f97d19",
+    "src/assets/diagrams/ch09/ch09-04-12-sp-work-finisher.svg": "cb76b3b5808d08550516dca75c33ba7489534e53ccacc3e80c22c54341c92de5",
+    "src/assets/diagrams/ch09/ch09-04-12-sp-work-finisher.png": "18b6927ce18a0bbb258244042a3714b87674f10f48d9d12a6395f32dbad8df81",
+    "src/assets/diagrams/ch09/ch09-04-13-sp-two-waits.svg": "551e9e8b710ac541c1bd58a59af50d4cb2f1442d14f60d15df2165665a213c30",
+    "src/assets/diagrams/ch09/ch09-04-13-sp-two-waits.png": "e0240c2844ac445636643d09c3e7cefab659ad6543ad654ad1460157cee9320e",
+    "src/assets/diagrams/ch09/ed09-04-freezer-event-and-finish.svg": "5e04f3e1df4aeb914a941ec5f9f72664f4a29ba70ca957e7d4be29b8dbd46730",
+    "src/assets/diagrams/ch09/ed09-04-freezer-event-and-finish.png": "9a2496da8e7ea177e55fcb7a1b1c8df76942f359a9b27450fd83f6741adf1ccb",
+    "src/assets/diagrams/ch09/ch09-04-19-start-event-sequence.svg": "2ae4823074648c477fe9e6617d63d17a230f6c6a5dc4b01edf74f76abace2571",
+    "src/assets/diagrams/ch09/ch09-04-19-start-event-sequence.png": "f8e2525a9cf3138f117d49308b8af137f75eafdc779f7c70c8359353f882ef63",
+    "src/assets/diagrams/ch09/ch09-04-20-attach-java-boundary.svg": "0088a21cc97250c39bd2fddc268732aab7126a684432478d8b8b90db163ccf83",
+    "src/assets/diagrams/ch09/ch09-04-20-attach-java-boundary.png": "ccbb05973e9bc12b2975673cc862e84dbcc22f757d757a70330bafb9201832a6",
+    "src/assets/diagrams/ch09/ch09-04-22-lock-cycle.svg": "1e3b1f97eaa9f866f7848ea056d9675130bc351469a66976a463d5985e29bb34",
+    "src/assets/diagrams/ch09/ch09-04-22-lock-cycle.png": "bbfa12d64443cc046f3e8abbd9b5b650d986d3de58d14257244f6bc2dfbd34e2",
+    "src/assets/diagrams/ch09/ch09-04-24-lock-release-snapshot.svg": "19382355e02136b3efff03d074055dc564fb964179d94353c933728efa38ecc7",
+    "src/assets/diagrams/ch09/ch09-04-24-lock-release-snapshot.png": "11a31ebc416793d102ce382ae9eca92e11b471b5c224ffc1567d40b6f2321a4c",
+    "src/assets/diagrams/ch09/ch09-04-25-binder-reentry.svg": "e0b6409b386c34010e5b3c406151e285caf31bacd4a6ee49cdc354c112762919",
+    "src/assets/diagrams/ch09/ch09-04-25-binder-reentry.png": "71d71cd0ce35346a026dd57597552cfb5a656601890832b77060ba771ae0e023",
+    "src/assets/diagrams/ch09/ed09-04-finished-recovery-loop.svg": "a9576c4ec5359a203d4a2a3c7484625d3e9cefa76b660ab8a88d45f23a4c3f7c",
+    "src/assets/diagrams/ch09/ed09-04-finished-recovery-loop.png": "614ec80965f417839fd4e5aee4a0b25580aea75aff63eca14c913b45be262c64",
+    "src/assets/diagrams/ch09/ch09-04-30-input-queue-protocol.svg": "25caaecf976d8134b193aca4f9cefbf481e99e6e2b7791c0b91f855d9ee8ac61",
+    "src/assets/diagrams/ch09/ch09-04-30-input-queue-protocol.png": "b4c4cf78a89bea6b6a1e10656b9ece9860cced5dda26b2bbc878d39bc37dc7d4",
+    "src/assets/diagrams/ch09/ch09-04-31-deadline-not-head.svg": "3443475a1698a919446299027223e4e9990e9adfb83232534acd7add2c5b05fc",
+    "src/assets/diagrams/ch09/ch09-04-31-deadline-not-head.png": "62f3974ddab253ada067b28d0eb7c527a3eb9333d46a5d4faf86beeca5dc59b4",
+    "src/assets/diagrams/ch09/ed09-04-exit-trace-selection-and-bounds.svg": "e8c285d9a30bcf1ed0d2eac35e37fafae7078376cbf1ea6df2680138858b5af5",
+    "src/assets/diagrams/ch09/ed09-04-exit-trace-selection-and-bounds.png": "3c814e811955ff7f609182a7466ef6a6ed860b747e4e6f6d0d9504747ae9a18d",
+    "src/assets/diagrams/ch09/ch09-04-38-ring-history.svg": "144bdbf742aec84f4ad9f5510e4f90a262063ffcb15d546a71099d7ca27e43b1",
+    "src/assets/diagrams/ch09/ch09-04-38-ring-history.png": "7981d9153eeecf359060f7b4a604a2fafc202a0ff27af36c9d42635f8d2c4122"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a101/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "719201497046a4d49a92061ab098bab64d7d808f80ecd3049f7b1846e2621cb7",
+    "git_commit": "146d2d827ea6e71b2173172bd1420a857aead679"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch09-04-04-pressure-time-windows",
+      "heading": "### 压力证据",
+      "line": 123,
+      "decision": "keep",
+      "reason": "CPU统计、main栈/am_anr、较晚PSI输出三条时间轨保留不同观察窗口，与121/126现文一致，不由avg10反推逐秒ANR窗口。"
+    },
+    {
+      "id": "ch09-04-06-channel-owner",
+      "heading": "### ANR 信息",
+      "line": 177,
+      "decision": "keep",
+      "reason": "InputChannel→connection/窗口/monitor→消费者PID→Looper/完成协议是独立对象追踪链；现文175仍明确server后缀不证明system_server归属。"
+    },
+    {
+      "id": "ch09-04-07-notifier-clock-gap",
+      "heading": "### 时间线对齐",
+      "line": 194,
+      "decision": "keep",
+      "reason": "推算慢dispatch区间、旧栈和较晚am_anr三个事件对应192–207，51.977秒缺口仍未知，未将旧慢消息作为当前ANR已确认根因。"
+    },
+    {
+      "id": "ch09-04-12-sp-work-finisher",
+      "heading": "### 组件收尾处的调用位置",
+      "line": 265,
+      "decision": "keep",
+      "reason": "apply内存更新/登记finisher、写盘work、收尾waitToFinish是三个不同任务阶段，仍与263和268及组件表一致。"
+    },
+    {
+      "id": "ch09-04-13-sp-two-waits",
+      "heading": "### 两种等待的区别",
+      "line": 274,
+      "decision": "keep",
+      "reason": "实例加载awaitLoadedLocked与全进程QueuedWork两分支保留不同根因和取证入口；与279–288一致，不将所有QueuedWork等待归SP。"
+    },
+    {
+      "id": "ed09-04-freezer-event-and-finish",
+      "heading": "### 根因结论",
+      "line": 340,
+      "decision": "keep",
+      "reason": "同一PID/eventTime来源日志与finished协议连接，仍区别于内核精确冻结时刻；333–347现文保留来源A/B与本次未复现的边界。"
+    },
+    {
+      "id": "ch09-04-19-start-event-sequence",
+      "heading": "### 用 event log 还原启动与焦点",
+      "line": 394,
+      "decision": "keep",
+      "reason": "25.131启动/25.138离焦、35.143超时/35.153kill和49.544后续ANR三轨，仍保留离散记录不能证明中间焦点连续缺失。"
+    },
+    {
+      "id": "ch09-04-20-attach-java-boundary",
+      "heading": "### start timeout 的源码定义",
+      "line": 405,
+      "decision": "keep",
+      "reason": "ProcessList与应用Java入口并行推进，attach→AMS bind→移除timer→应用初始化的跨进程边界与401–408一致；未将start timeout归onCreate。"
+    },
+    {
+      "id": "ch09-04-22-lock-cycle",
+      "heading": "### 从两份线程栈画出等待环",
+      "line": 478,
+      "decision": "keep",
+      "reason": "同一教学构造的两个线程、两把锁及申请者→锁→持有者四边闭环，准确对应代码13/14及476，仍明确非真实线上采样。"
+    },
+    {
+      "id": "ch09-04-24-lock-release-snapshot",
+      "heading": "### 根因与修复",
+      "line": 525,
+      "decision": "keep",
+      "reason": "DB锁内read+可转交snapshot、锁外buildCursor两个区段对应Java17和523；无改变保护monitor与其他数据库路径一致性前提。"
+    },
+    {
+      "id": "ch09-04-25-binder-reentry",
+      "heading": "### Binder 场景的同类问题",
+      "line": 549,
+      "decision": "keep",
+      "reason": "直接同一同步事务栈可回原A线程与独立worker切栈后跨线程等待两分支，与542–552一致；替代文字闭环→成环没有改变对象或机制。"
+    },
+    {
+      "id": "ed09-04-finished-recovery-loop",
+      "heading": "## 案例 7：InputTransport finished signal 的历史平台缺陷",
+      "line": 581,
+      "decision": "keep",
+      "reason": "旧恢复循环2→1与修复2→1→0对照，明确仅部分finished发送失败后的恢复分支；584新图注和源码历史边界仍相符，初始0旧do执行一次不被误写漏0。"
+    },
+    {
+      "id": "ch09-04-30-input-queue-protocol",
+      "heading": "## 如何用 InputDispatcher WaitQueue 分析以上案例",
+      "line": 595,
+      "decision": "keep",
+      "reason": "inbound→connection outbound→waitQueue→按sequence finished移除的协议链，与593–603一致；新图注要求读条目内容，未由长度直接归因。"
+    },
+    {
+      "id": "ch09-04-31-deadline-not-head",
+      "heading": "## 如何用 InputDispatcher WaitQueue 分析以上案例",
+      "line": 605,
+      "decision": "keep",
+      "reason": "先入A长预算与后入B先到deadline的对照，准确对应603–608，仍区分reason取队首与遍历所有条目判断超时，不是实测事件值。"
+    },
+    {
+      "id": "ed09-04-exit-trace-selection-and-bounds",
+      "heading": "### 官方退出信息的覆盖范围",
+      "line": 692,
+      "decision": "keep",
+      "reason": "系统目标trace段、公开权限/保留限制和Kotlin首个REASON_ANR/nullable流/字节上限链，逐项对应代码19与690/695；不混淆timestamp与ANR时刻或承诺完整覆盖。"
+    },
+    {
+      "id": "ch09-04-38-ring-history",
+      "heading": "### 主线程历史",
+      "line": 704,
+      "decision": "keep",
+      "reason": "环形历史里已完成、未闭合和其他证据三个轨道，对应699–707；未见Finished仍可能异常退出/丢日志/进行中，不推定已返回或持续运行。"
+    }
+  ],
+  "caption_revisions": [
+    {
+      "id": "ed09-04-finished-recovery-loop",
+      "before": "只有部分finished signal发送失败后的恢复尚未完成链分支涉及这处历史缺陷，并非每次正常发送丢回执。图以构造chainIndex=2比较两个版本：2015旧循环执行2→1，从非零递减到0时漏head那一轮；2017修复执行2→1→0再退出。初始索引已为0时旧do也运行一次，不能笼统说一概漏0。172237/396876提交证明历史缺陷机制，产品是否含该代码、具体事件是否由此触发仍需镜像、sequence/finish日志和系统A/B分别验证；当前r1查询InputConsumer.cpp，不套旧InputTransport行号。",
+      "after": "只有部分finished signal发送失败后的恢复尚未完成链分支涉及这处历史缺陷，正常发送不走这个出缺陷的分支。图以构造chainIndex=2比较两个版本：2015旧循环执行2→1，从非零递减到0时漏head那一轮；2017修复执行2→1→0再退出。初始索引已为0时旧do也运行一次，一概漏0的说法不成立。172237/396876提交证明历史缺陷机制，产品是否含该代码、具体事件是否由此触发仍需镜像、sequence/finish日志和系统A/B分别验证；当前r1查询InputConsumer.cpp，不套旧InputTransport行号。",
+      "status": "independently_reviewed",
+      "reason": "改写为正常发送不走恢复缺陷分支，仍限定部分finished失败和非零递减漏head；初始0旧do执行一次及产品归因另核验，语义与图面相同。"
+    },
+    {
+      "id": "ch09-04-30-input-queue-protocol",
+      "before": "连接条目与消费者处理回调不是一一等同；事件合并和不同期限会影响观察，不能用队列长度直接判根因。",
+      "after": "连接条目与消费者处理回调要分开看；事件合并和不同期限都会影响观察，队列长度只能说明积压，判根因还要看条目内容。",
+      "status": "independently_reviewed",
+      "reason": "新措辞仍区分connection条目与消费者回调，队列长度仅积压数量，须检查条目时序和身份，不新增根因断言。"
+    }
+  ],
+  "alt_revisions": [
+    {
+      "id": "ch09-04-25-binder-reentry",
+      "before": "直接嵌套回调与跨线程闭环分开",
+      "after": "直接嵌套回调与跨线程成环分开",
+      "status": "independently_reviewed",
+      "reason": "闭环改成成环只替换同义词，仍对比直接同步嵌套可重入与独立worker切断事务栈后跨线程形成等待环；图路径/标识/顺序和实际资产完全相同。"
+    }
+  ],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": false,
+  "figure_image_prefix_order_byte_identical": false,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/layout-report.json",
+  "layout_report_sha256": "ad695c79263792febcf0d62b61c08e15c7f3fbf721a7248e49a0ec54aa98868a",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "当前全文340阅读行23868字符、16组SVG标签、全部16PNG及16上下文实际完整复看，19代码块132行完整阅读且逐字保留，原生图0。16图各有独立对象/具体样本时序/协议边界，无新增重复和错位；2图注、1替代文字修订逐项审核。当前资产与原SVG bounds及包含accepted正文的固定Git资产逐字一致，当前PNG另独立实际查看，未补写原审核。1400/640加载、顺序、标题和结构位置及无横溢出通过，mdbook构建通过。外部正文原样保留；没有新增/删除图，原初审历史保持不动。"
+}

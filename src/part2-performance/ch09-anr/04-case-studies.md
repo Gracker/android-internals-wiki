@@ -49,7 +49,7 @@ last_idle_audit_at: 2026-08-30T18:41:21+08:00
 
 相关基础定义见 §9.1（ANR 机制、类型与触发条件）、§9.2（ANR 与 Kernel Trace 联合诊断）和 §9.3（特殊与跨边界 ANR）。
 
-## 先给证据分级
+## 证据分级
 
 案例分析最容易犯的错误，是在时间线上找到一个可疑点，便把它写成根因。所以下面每个案例，我们都先标明结论的证据强度：
 
@@ -60,7 +60,7 @@ last_idle_audit_at: 2026-08-30T18:41:21+08:00
 | 未闭合 | 只找到相关日志、异常负载或静态堆栈，时间或对象无法对齐，因果链仍有缺口 | 保留线索，继续取证 |
 
 
-以下依据五组来源报告、一个教学构造的锁顺序示例，以及一个有 AOSP 提交记录支撑的历史平台缺陷展开。案例日志是整理摘录，省略字段不代表完整原始记录；案例 6 的包名、时刻、锁地址和代码均为教学构造。来源报告的结论与本次独立核验范围分别注明。原材料隐藏了完整 build fingerprint，不能仅凭日志年代或栈行号确认设备 Android 版本。
+下面七个案例来自五组来源报告、一个教学构造的锁顺序示例，以及一个有 AOSP 提交记录支撑的历史平台缺陷。案例日志是整理摘录，完整记录以原始来源为准；案例 6 的包名、时刻、锁地址和代码均为教学构造。来源报告的结论与本次独立核验范围分别注明。原材料隐藏了完整 build fingerprint，要确认设备 Android 版本，还得另找依据，单看日志年代或栈行号是不够的。
 
 | 案例 | ANR 表象 | 结论强度 | 能学到什么 |
 |---|---|---|---|
@@ -106,7 +106,7 @@ Java 栈顶显示 `nativePollOnce`，native 栈却还位于 VSync（垂直同步
 
 ### 压力证据
 
-ANR 报告里的 PSI 和 load（系统平均负载） 数据如下：
+主线程在等什么有了线索，系统当时承受的压力是另一条线。ANR 报告里的 PSI 和 load（系统平均负载） 数据如下：
 
 ```text
 Load: 56.48 / 30.74 / 22.68
@@ -118,7 +118,7 @@ some avg10=85.37 avg60=63.13 avg300=23.13
 full avg10=38.46 avg60=20.76 avg300=7.13
 ```
 
-三个 load 值依次对应 1、5、15 分钟，所以 1 分钟 load 是 `56.48`。PSI（Pressure Stall Information，资源压力停顿信息）的 `some` 表示至少有任务因该资源停顿的时间占比，memory/I/O 的 `full` 表示所有非 idle（非空闲）任务同时停顿的时间占比；avg10/60/300 是近期平滑趋势，不是该 ANR 前固定窗口的逐秒精确占比。来源中这些 PSI 行在 `03:13:57.910` 输出，而 CPU 统计窗口为 `03:13:39.965–03:13:49.418`，不要把两者当成同一采样区间。
+三个 load 值依次对应 1、5、15 分钟，所以 1 分钟 load 是 `56.48`。PSI（Pressure Stall Information，资源压力停顿信息）的 `some` 表示至少有任务因该资源停顿的时间占比，memory/I/O 的 `full` 表示所有非 idle（非空闲）任务同时停顿的时间占比；avg10/60/300 反映的是近期平滑趋势，该 ANR 前固定窗口的逐秒精确占比要另行查看。另外留意时点：这些 PSI 行在 `03:13:57.910` 输出，CPU 统计窗口却是 `03:13:39.965–03:13:49.418`，两者分属不同的采样区间。
 
 <!-- gracker-diagram: ch09-04-04-pressure-time-windows -->
 ![CPU 窗口、抓栈与 PSI 输出时点](../../assets/diagrams/ch09/ch09-04-04-pressure-time-windows.png)
@@ -136,7 +136,7 @@ full avg10=38.46 avg60=20.76 avg300=7.13
 
 `kswapd0`（内核后台内存回收线程）活跃、major fault（需要从存储载入页面的缺页） 频出，再加上 memory PSI、I/O PSI 和 `43% iowait`，几组数据同时出现，足以确认设备正承受严重的内存与存储压力。
 
-上面是省略日志前缀及 faults 字段的摘录，TOTAL 和各项按来源的显示精度保留，不强行补齐成精确的 100%。`iowait` 是 CPU 时间记账中的 I/O 等待相关项，不是 CPU 正在执行 I/O 指令的比例，也不能换算成某个线程的 I/O 耗时；内核文档还说明多核下这一统计有局限。load 包含可运行和不可中断等待的任务，不能用“load 除以 CPU 核数”替代 CPU 使用率。
+上面是省略日志前缀及 faults 字段的摘录，TOTAL 和各项按来源的显示精度保留，没有强行补齐成精确的 100%。读 `iowait` 时要清楚它是什么：CPU 时间记账中的 I/O 等待相关项。CPU 正在执行 I/O 指令的比例、某个线程的 I/O 耗时，都要从别的数据来；内核文档还说明多核下这一统计有局限。load 统计的是可运行和不可中断等待的任务，CPU 使用率请直接读各项占比，“load 除以 CPU 核数”算出来的数没有这个含义。
 
 
 ### 根因结论
@@ -189,7 +189,7 @@ full avg10=38.46 avg60=20.76 avg300=7.13
  h=com.android.server.power.Notifier$NotifierHandler
 ```
 
-`Slow dispatch took 10578ms` 在回调返回后输出，`15:00:45.316` 接近结束时刻；在日志时钟一致且没有跳变的假设下，开始时刻约为 `15:00:34.738`。慢消息结束与 `15:01:37.293` 的 am_anr 记录相差 `51.977` 秒，无法直接解释后一次输入超时。精确 detector 区间应以同一连接条目的单调时钟 deliveryTime/timeoutTime 重建，不能只用 am_anr 的墙钟减 5 秒认定。
+`Slow dispatch took 10578ms` 在回调返回后输出，`15:00:45.316` 接近结束时刻；在日志时钟一致且没有跳变的假设下，开始时刻约为 `15:00:34.738`。慢消息结束与 `15:01:37.293` 的 am_anr 记录相差 `51.977` 秒，隔着这么久，前者难以直接解释后一次输入超时。精确 detector 区间应以同一连接条目的单调时钟 deliveryTime/timeoutTime 重建，只拿 am_anr 的墙钟减 5 秒去认定，是靠不住的。
 
 <!-- gracker-diagram: ch09-04-07-notifier-clock-gap -->
 ![慢 dispatch 的结束日志与 52 秒缺口](../../assets/diagrams/ch09/ch09-04-07-notifier-clock-gap.png)
@@ -245,10 +245,10 @@ at android.app.ActivityThread.handleServiceArgs(ActivityThread.java:4166)
 at android.os.HandlerThread.run(HandlerThread.java:65)
 ```
 
-截图支持 SP 写盘、fsync 与 `waitToFinish()` 的调用关系，但末端为 HandlerThread，且包含业务插桩帧，不能只凭 `handleServiceArgs` 方法名把它认定为主线程。原文另展示了 pause 兼容分支源码；它不是这张栈图中的调用。
+截图支持 SP 写盘、fsync 与 `waitToFinish()` 的调用关系，但末端为 HandlerThread，且包含业务插桩帧；要认定主线程身份，还得看线程头，`handleServiceArgs` 这个方法名本身说了不算。原文另展示了 pause 兼容分支源码；这张栈图里并没有它。
 
 
-### Android 17 的调用位置
+### 组件收尾处的调用位置
 
 以 `android-17.0.0_r1` 为核对版本，组件收尾与 `QueuedWork` 的关系如下：
 
@@ -260,7 +260,7 @@ at android.os.HandlerThread.run(HandlerThread.java:65)
 | manifest Receiver 的 `PendingResult.finish()` | `TYPE_COMPONENT` 且 `hasPendingWork()` 为真时，用普通 `QueuedWork.queue(r, false)` 任务延后 `sendFinished()`；没有调用 `addFinisher()` |
 
 
-`SharedPreferencesImpl.apply()` 会先更新内存，再创建写盘任务和 finisher。Android 17 的 `QueuedWork.waitToFinish()` 会在当前调用线程执行尚未处理的 work（任务），随后等待并运行所有 finisher。于是，原本排给 `queued-work-looper` HandlerThread 的写入，可能在组件收尾点变成主线程上的同步操作。
+`SharedPreferencesImpl.apply()` 会先更新内存，再创建写盘任务和 finisher。`QueuedWork.waitToFinish()` 会在当前调用线程执行尚未处理的 work（任务），随后等待并运行所有 finisher。于是，原本排给 `queued-work-looper` HandlerThread 的写入，可能在组件收尾点变成主线程上的同步操作。
 
 <!-- gracker-diagram: ch09-04-12-sp-work-finisher -->
 ![apply 的 work 与 finisher 是两类任务](../../assets/diagrams/ch09/ch09-04-12-sp-work-finisher.png)
@@ -330,19 +330,19 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
 | 25.283 | 该 monitor 未响应，reason 报告 Waited 5000ms |
 
 
-来源文字报告：关闭 freezer 后不能复现，重新开启后容易复现，每次 ANR 前可见 screenshot 冻结日志。本次核对了原文与上述截图，没有重新运行该设备的 A/B，也没有拿到完整日志文件与单调时钟 trace。因此不把几个日志的毫秒差直接写成精确“冻结延迟”。
+来源文字报告：关掉 freezer 后就复现不出来，重新开启后容易复现，每次 ANR 前都能看到 screenshot 冻结日志。本次核对了原文与上述截图，没有重新运行该设备的 A/B，也没有拿到完整日志文件与单调时钟 trace；几个日志之间的毫秒差，我们先不写成精确的“冻结延迟”。
 
 
 ### 根因结论
 
-**结论强度：来源报告已确认；本次独立核验限于原文、截图和机制。** 原作者据同 PID 的输入、冻结日志及 freezer 开关实验，将该系统分支的问题归因于输入消费者被冻结。冻结期间线程缺少运行机会，能够解释完成回执无法及时返回。
+**结论强度：来源报告已确认；本次独立核验限于原文、截图和机制。** 原作者据同 PID 的输入、冻结日志及 freezer 开关实验，将该系统分支的问题归因于输入消费者被冻结。冻结期间线程缺少运行机会，能够解释完成回执为何没能及时返回。
 
 <!-- gracker-diagram: ed09-04-freezer-event-and-finish -->
 ![冻结案例：同一输入事件的日志与完成协议](../../assets/diagrams/ch09/ed09-04-freezer-event-and-finish.png)
 
 图：同一来源PID3930、Screenshot monitor与eventTime39032316052000用于关联：20.276只是最后一次onInputEvent打印，20.280/.281才是目标派发；20.289/.290分别是freezing/am_freeze日志，不能当内核精确冻结完成时刻或换算冻结延迟。图将已派发事件等待finished与消费者冻结影响运行机会两项关系连接到WaitQueue未完成和25.283的Waited5000ms报告，没有画成dispatch导致freezing。原作者报告开关freezer的A/B结果；本次只核对原文、截图与机制，未重新设备实验。新样本仍须完整冻结/解冻、连接事件和PID生命周期。
 
-这一产品结论不能外推到所有 Android/OEM 系统；新样本仍需检查完整冻结/解冻区间、connection 与 PID 生命周期、未完成事件及对照实验。
+这一结论只覆盖该系统分支；换到别的 Android/OEM 系统，新样本仍要检查完整冻结/解冻区间、connection 与 PID 生命周期、未完成事件及对照实验。
 
 在 Android 17 源码里，event log tag 仍明确记录 `am_freeze` 和 `am_unfreeze`，字段是 PID 与进程名。复核新平台时，还应同时记录 freeze/unfreeze reason（冻结或解冻原因）、目标 cgroup（控制组） 状态、输入连接身份和 event ID，防止 PID 复用或旧事件干扰判断。
 
@@ -389,14 +389,14 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
   [0,2758,com.android.launcher,... Application does not have a focused window]
 ```
 
-系统在 `12:15:25` 创建 Dialer 进程并让焦点离开 Launcher。约 10 秒后，Dialer 因 process start timeout 被杀；再过约 14.4 秒，日志记录 Launcher 的无焦点窗口 ANR；这些离散日志本身不能证明中间焦点持续缺失，也未给出整个阶段的 focused application 身份。
+系统在 `12:15:25` 创建 Dialer 进程并让焦点离开 Launcher。约 10 秒后，Dialer 因 process start timeout 被杀；再过约 14.4 秒，日志记录 Launcher 的无焦点窗口 ANR；焦点在中间是否持续缺失、整个阶段的 focused application 是谁，这些离散日志回答不了，要靠后续时间线补上。
 
 <!-- gracker-diagram: ch09-04-19-start-event-sequence -->
 ![Dialer 启动超时与后续无焦点记录](../../assets/diagrams/ch09/ch09-04-19-start-event-sequence.png)
 
 图：两段间隔分别约10秒与14.4秒；focused application身份及进程被杀后的恢复过程仍待WindowManager证据。
 
-### Android 17 源码怎样定义 start timeout
+### start timeout 的源码定义
 
 在 `android-17.0.0_r1` 中，`ProcessList` 启动进程后安排 `PROC_START_TIMEOUT_MSG`。应用进程通过 Binder attach（向系统注册）到 `ActivityManagerService`；AMS 接受 attach 并发出 `bindApplication` 等处理后，会移除这条 timeout 消息；普通路径仅在进程尚未 attach 时安排它，wrapper 路径还有不同预算。计时一旦到期，系统就以 `ApplicationExitInfo.REASON_INITIALIZATION_FAILURE` 和 `start timeout` 终止进程。
 
@@ -419,7 +419,7 @@ Dialer attach 失败时，我们要检查 attach 之前的这些环节：
 - native runtime 启动、seccomp/SELinux 安全策略拒绝和崩溃信号；
 - Binder attach（向系统注册并建立连接） 事务。
 
-这不证明进程从未运行 Java：`RuntimeInit`、`ActivityThread.main()` 都在正常 attach 之前。它说明 AMS 未完成有效 attach/启动握手，不能直接据此归因随后 `handleBindApplication()` 中的 `Application.onCreate()`。
+`RuntimeInit`、`ActivityThread.main()` 都在正常 attach 之前，所以 start timeout 说明不了进程从未运行 Java；它指向的是 AMS 未完成有效 attach/启动握手。至于随后 `handleBindApplication()` 中的 `Application.onCreate()` 有没有问题，要归因到它还得单独取证。
 
 ### 修复方案
 
@@ -520,7 +520,7 @@ public Cursor query(String table, String selection) {
 }
 ```
 
-这是业务接口伪代码：`copyForTransfer()` 需实现为按业务语义复制、可安全转交的快照，不能只复制外层引用。示例继续使用该 DatabaseHelper 的 `this` monitor，释放后才进入 DataManager；其他数据库路径也必须遵守同一保护规则，且 `readLocked/copyForTransfer` 内不能再回调 DataManager。如此才移除本例的反向嵌套边，并保持数据一致性。
+这是业务接口伪代码：`copyForTransfer()` 要按业务语义复制出可安全转交的快照，只复制外层引用是不行的。示例继续使用该 DatabaseHelper 的 `this` monitor，释放后才进入 DataManager；其他数据库路径也必须遵守同一保护规则，且 `readLocked/copyForTransfer` 内不得再回调 DataManager。做到这些，才移除了本例的反向嵌套边，数据一致性也保得住。
 
 <!-- gracker-diagram: ch09-04-24-lock-release-snapshot -->
 ![先复制并解锁，再跨对象调用](../../assets/diagrams/ch09/ch09-04-24-lock-release-snapshot.png)
@@ -544,16 +544,16 @@ public Cursor query(String table, String selection) {
 3. B worker 同步调用 A，调用由 A 的另一个 Binder 线程处理，该线程等待锁 L；
 4. A 主线程等 B、B 事务线程等 worker、worker 等 A 回调、回调线程等 L，闭合等待环。
 
-这里特意加入独立 worker。直接同一同步事务链的 A→B→A 嵌套调用，可由 Binder 驱动定向回到原 A 调用线程；Java monitor 允许同线程重入，因此不能仅凭“回调 A”就断言它一定落到另一个 A 线程并死锁。
+这里特意加入独立 worker。直接同一同步事务链的 A→B→A 嵌套调用，可由 Binder 驱动定向回到原 A 调用线程；Java monitor 允许同线程重入，“回调 A”落回原线程时锁可以直接重入；要断言它落到另一个 A 线程并死锁，还得先看清线程分配。
 
 <!-- gracker-diagram: ch09-04-25-binder-reentry -->
-![直接嵌套回调与跨线程闭环分开](../../assets/diagrams/ch09/ch09-04-25-binder-reentry.png)
+![直接嵌套回调与跨线程成环分开](../../assets/diagrams/ch09/ch09-04-25-binder-reentry.png)
 
 图：独立worker切断原同步事务栈关系；具体分配仍按实际事务和线程证据核对。
 
 即便还有空闲 Binder 线程，这个锁等待循环也不会自行解除。另一种形态是所有处理线程都被嵌套事务或外部等待占用，新回调分配不到执行线程。
 
-Android 17 的 `ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并把它作为 Binder driver（内核驱动） 可以请求的默认最大线程数。线程要不要主动加入线程池、已经启动了多少线程、Binder 实现细节，都会影响我们在进程里观察到的线程总数。
+`ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并把它作为 Binder driver（内核驱动） 可以请求的默认最大线程数。线程要不要主动加入线程池、已经启动了多少线程、Binder 实现细节，都会影响我们在进程里观察到的线程总数。
 
 
 `15` 是可请求的默认上限，实际线程数会随上面这些因素浮动；“再留一个线程”也换不来免死锁的保证。诊断时我们要画出事务方向、同步或异步属性、线程状态、锁持有关系，以及 executor 或线程池的容量。
@@ -581,9 +581,9 @@ AOSP Gerrit 给出了更强的源码证据：
 <!-- gracker-diagram: ed09-04-finished-recovery-loop -->
 ![finished 部分发送失败后，两版恢复循环的区别](../../assets/diagrams/ch09/ed09-04-finished-recovery-loop.png)
 
-图：只有部分finished signal发送失败后的恢复尚未完成链分支涉及这处历史缺陷，并非每次正常发送丢回执。图以构造chainIndex=2比较两个版本：2015旧循环执行2→1，从非零递减到0时漏head那一轮；2017修复执行2→1→0再退出。初始索引已为0时旧do也运行一次，不能笼统说一概漏0。172237/396876提交证明历史缺陷机制，产品是否含该代码、具体事件是否由此触发仍需镜像、sequence/finish日志和系统A/B分别验证；当前r1查询InputConsumer.cpp，不套旧InputTransport行号。
+图：只有部分finished signal发送失败后的恢复尚未完成链分支涉及这处历史缺陷，正常发送不走这个出缺陷的分支。图以构造chainIndex=2比较两个版本：2015旧循环执行2→1，从非零递减到0时漏head那一轮；2017修复执行2→1→0再退出。初始索引已为0时旧do也运行一次，一概漏0的说法不成立。172237/396876提交证明历史缺陷机制，产品是否含该代码、具体事件是否由此触发仍需镜像、sequence/finish日志和系统A/B分别验证；当前r1查询InputConsumer.cpp，不套旧InputTransport行号。
 
-**结论强度：平台缺陷已确认，具体产品事件为强推断。** AOSP 提交足以确认历史代码缺陷及其机制；产品日志与这一机制吻合，只是缺少完整原始现场，“每个事件都对应缺陷代码”这一步还走不到。Android 17 的 InputChannel 代码已拆分；当前消费与完成信号应查 `InputConsumer.cpp`，不能再按旧 `InputTransport.cpp` 的行号套补丁。历史修复与目标产品是否含缺陷，需要分别核对提交和目标源码。
+**结论强度：平台缺陷已确认，具体产品事件为强推断。** AOSP 提交足以确认历史代码缺陷及其机制；产品日志与这一机制吻合，只是缺少完整原始现场，“每个事件都对应缺陷代码”这一步还走不到。Android 17 的 InputChannel 代码已拆分；当前消费与完成信号应查 `InputConsumer.cpp`，旧 `InputTransport.cpp` 的行号在这里对不上号。历史修复与目标产品是否含缺陷，需要分别核对提交和目标源码。
 
 
 这个案例给出一套平台归因方法，我们可以照着走：先从 reason 确认存在未完成事件，再检查 App 侧是否有足以耗尽期限的长任务；随后用 sequence（序号）/finish 动态日志缩小范围，以源码补丁解释队列为何不下降；最后在修补前后的系统镜像上运行同一输入压力测试。走完这些验证，才能区分“系统把 ANR 记在哪个应用名下”和“问题实际产生在哪一层”。
@@ -595,7 +595,7 @@ AOSP Gerrit 给出了更强的源码证据：
 <!-- gracker-diagram: ch09-04-30-input-queue-protocol -->
 ![入站、待派发与等待完成三个队列](../../assets/diagrams/ch09/ch09-04-30-input-queue-protocol.png)
 
-图：连接条目与消费者处理回调不是一一等同；事件合并和不同期限会影响观察，不能用队列长度直接判根因。
+图：连接条目与消费者处理回调要分开看；事件合并和不同期限都会影响观察，队列长度只能说明积压，判根因还要看条目内容。
 
 - `dumpsys input` 输出 connection 的 `status`、`responsive`、`isFocusMonitor`、`WaitQueue: length=` 以及队列条目；
 - atrace counter（时间线计数器） `iq` 表示 inbound queue（入站队列），`oq:<channel>` 表示每个连接的 outbound queue（待派发队列），`wq:<channel>` 表示每个连接的 wait queue。
@@ -635,10 +635,10 @@ AOSP Gerrit 给出了更强的源码证据：
 
 ### 官方退出信息的覆盖范围
 
-线上聚合的第一步是拿到 ANR 现场：Android 11（API 30）加入 `ActivityManager.getHistoricalProcessExitReasons()`，普通应用可以查询自身历史退出记录，找到 `ApplicationExitInfo.REASON_ANR` 后再调用 `getTraceInputStream()`。这个流可能为 `null`，保留时长和数量也受系统实现与存储状态影响。
+前面七个案例讲的都是单次取证；线上治理面对的是成批样本，要把它们归成可比对的簇，第一步仍是拿到 ANR 现场：Android 11（API 30）加入 `ActivityManager.getHistoricalProcessExitReasons()`，普通应用可以查询自身历史退出记录，找到 `ApplicationExitInfo.REASON_ANR` 后再调用 `getTraceInputStream()`。这个流可能为 `null`，保留时长和数量也受系统实现与存储状态影响。
 
 
-现代平台通常按 `/data/anr/anr_*` 保存报告，不应把旧版固定 `traces.txt` 当作通用路径。在 Android 17 的这条保存链中，AppExitInfoTracker 按给定起止偏移复制并压缩目标段；不能把公开流当完整 bugreport，也不能保证包含其他进程或 CPU/PSI/event log。`DUMP` 可授权跨 UID 查询这类接口，但不自动绕过 `/data/anr` 的文件权限和 SELinux。ANR 后恢复、后来因其他原因退出的记录也可能附带 ANR trace；只筛 `REASON_ANR` 会漏掉这类情况。
+现代平台通常按 `/data/anr/anr_*` 保存报告，旧版固定的 `traces.txt` 只是历史路径，别再当作通用入口。在这条保存链中，AppExitInfoTracker 按给定起止偏移复制并压缩目标段，公开流里拿到的是这一段；完整 bugreport、其他进程或 CPU/PSI/event log 有没有包含在内并无保证，需要时应另行采集。`DUMP` 可授权跨 UID 查询这类接口，但 `/data/anr` 的文件权限和 SELinux 仍要单独过。ANR 后恢复、后来因其他原因退出的记录也可能附带 ANR trace；只筛 `REASON_ANR` 会漏掉这类情况。
 
 
 采集器可以按下面的公开 API 入口筛选 ANR：
@@ -699,7 +699,7 @@ fun readLatestAnrTrace(context: Context, maxBytes: Int = 512 * 1024): AnrTraceSa
 ANR 瞬时 trace 采到的状态可能是 `nativePollOnce`、锁等待，也可能是耗时工作已经返回之后的状态。要看清 ANR 之前主线程在做什么，我们可以用公开的 `Looper.setMessageLogging(Printer)` 记录主线程消息的开始和结束。这个接口要在消息分发的热路径上执行，会带来额外开销；输出里也未必有同步屏障（用于暂时阻止同步消息执行的队列标记）、native 回调和每个耗时来源。`Looper.Observer` 属于隐藏接口，绕过 Hidden API 限制后部署到普通应用的做法要避免。
 
 
-历史窗口应按内存预算和目标 ANR 类型配置，并用覆盖最旧记录的环形缓冲区保存。固定“过去 10 秒”只是一种工程选择；Input、前台 Service、后台 Service 和广播的超时预算不同。可记录 Printer 实际暴露的目标/回调文本、开始/结束时间和采集版本，并在回调内额外取线程 CPU 时间以估算该分发的 CPU 消耗。Printer 不直接提供消息入队时间或 Message.when；队列延迟要在受控发送端额外埋点，不能从两条 Printer 日志自动恢复。native poll 回调和未到达结束打印的区间，也需要其他数据源补齐。
+历史窗口应按内存预算和目标 ANR 类型配置，并用覆盖最旧记录的环形缓冲区保存。固定“过去 10 秒”只是一种工程选择；Input、前台 Service、后台 Service 和广播的超时预算不同。可记录 Printer 实际暴露的目标/回调文本、开始/结束时间和采集版本，并在回调内额外取线程 CPU 时间以估算该分发的 CPU 消耗。Printer 不直接提供消息入队时间或 Message.when；队列延迟要在受控发送端额外埋点，两条 Printer 日志拼不出这个数。native poll 回调和未到达结束打印的区间，也需要其他数据源补齐。
 
 <!-- gracker-diagram: ch09-04-38-ring-history -->
 ![历史缓冲区保留已完成与进行中状态](../../assets/diagrams/ch09/ch09-04-38-ring-history.png)

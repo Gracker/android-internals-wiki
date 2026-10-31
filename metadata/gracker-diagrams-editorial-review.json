@@ -12223,7 +12223,7 @@
           "heading": "## 检查清单"
         }
       ],
-      "sha256_after": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
+      "sha256_after": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
       "new_diagrams": [
         {
           "id": "ed09-04-freezer-event-and-finish",
@@ -12358,15 +12358,54 @@
       ],
       "removed_but_shared_diagrams": [],
       "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-101/retired-assets.json",
-      "post_review_source_revalidation_required": {
-        "index": 101,
-        "article": "src/part2-performance/ch09-anr/04-case-studies.md",
-        "accepted_sha256": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
-        "observed_sha256": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
-        "observed_at": "2026-10-30T18:56:14.528104+08:00",
-        "status": "requires_independent_revalidation",
-        "diagram_count_unchanged": true
-      }
+      "sha256_after_initial_editorial": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 101,
+          "article": "src/part2-performance/ch09-anr/04-case-studies.md",
+          "revision": 1,
+          "accepted_sha256": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
+          "reviewed_sha256": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/source.diff",
+          "diff_sha256": "b5f9036b0a30e7830dce5a065fd0a7111cb30be7f3306944b700d2c9dea9f1a2",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/101-20261031-01.json",
+          "report_sha256": "fa7b06994eb7ef44452574ad2dafaf6a4429c3c93df172bc6c9445aa343ba8ee",
+          "caption_revisions": [
+            {
+              "id": "ed09-04-finished-recovery-loop",
+              "before": "只有部分finished signal发送失败后的恢复尚未完成链分支涉及这处历史缺陷，并非每次正常发送丢回执。图以构造chainIndex=2比较两个版本：2015旧循环执行2→1，从非零递减到0时漏head那一轮；2017修复执行2→1→0再退出。初始索引已为0时旧do也运行一次，不能笼统说一概漏0。172237/396876提交证明历史缺陷机制，产品是否含该代码、具体事件是否由此触发仍需镜像、sequence/finish日志和系统A/B分别验证；当前r1查询InputConsumer.cpp，不套旧InputTransport行号。",
+              "after": "只有部分finished signal发送失败后的恢复尚未完成链分支涉及这处历史缺陷，正常发送不走这个出缺陷的分支。图以构造chainIndex=2比较两个版本：2015旧循环执行2→1，从非零递减到0时漏head那一轮；2017修复执行2→1→0再退出。初始索引已为0时旧do也运行一次，一概漏0的说法不成立。172237/396876提交证明历史缺陷机制，产品是否含该代码、具体事件是否由此触发仍需镜像、sequence/finish日志和系统A/B分别验证；当前r1查询InputConsumer.cpp，不套旧InputTransport行号。",
+              "status": "independently_reviewed",
+              "reason": "改写为正常发送不走恢复缺陷分支，仍限定部分finished失败和非零递减漏head；初始0旧do执行一次及产品归因另核验，语义与图面相同。"
+            },
+            {
+              "id": "ch09-04-30-input-queue-protocol",
+              "before": "连接条目与消费者处理回调不是一一等同；事件合并和不同期限会影响观察，不能用队列长度直接判根因。",
+              "after": "连接条目与消费者处理回调要分开看；事件合并和不同期限都会影响观察，队列长度只能说明积压，判根因还要看条目内容。",
+              "status": "independently_reviewed",
+              "reason": "新措辞仍区分connection条目与消费者回调，队列长度仅积压数量，须检查条目时序和身份，不新增根因断言。"
+            }
+          ],
+          "alt_revisions": [
+            {
+              "id": "ch09-04-25-binder-reentry",
+              "before": "直接嵌套回调与跨线程闭环分开",
+              "after": "直接嵌套回调与跨线程成环分开",
+              "status": "independently_reviewed",
+              "reason": "闭环改成成环只替换同义词，仍对比直接同步嵌套可重入与独立worker切断事务栈后跨线程形成等待环；图路径/标识/顺序和实际资产完全相同。"
+            }
+          ],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a101/01/input.md",
+          "external_input_sha256": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T10:29:29.728085+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T10:29:30.085608+08:00"
     },
     {
       "index": 102,
@@ -14950,7 +14989,7 @@
         "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
         "accepted_sha256": "67b6818a9bd73a9fb4ca22bb22448d54abee40d45c9e5f6c8721f24bd8338793",
         "observed_sha256": "ff6e55fd7fe3b2f10afd2048f3fd3f4511691d660afd83b8b7e16f545ad4d969",
-        "observed_at": "2026-10-30T18:56:14.528650+08:00",
+        "observed_at": "2026-10-31T10:29:30.092315+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -15413,7 +15452,7 @@
         "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
         "accepted_sha256": "8bc1f79f3bb8987396ee130ac79bb197e081a2da428c88e0caa999cc961f03ba",
         "observed_sha256": "0019b6407d6cb76b85760f69cea2a9c82f3630b4442c72d457d9e9f179a56a9b",
-        "observed_at": "2026-10-30T18:56:14.528873+08:00",
+        "observed_at": "2026-10-31T10:29:30.092628+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -16010,7 +16049,7 @@
         "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
         "accepted_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
         "observed_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
-        "observed_at": "2026-10-30T18:56:14.529094+08:00",
+        "observed_at": "2026-10-31T10:29:30.092915+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -17776,7 +17815,7 @@
         "article": "src/part2-performance/ch11-power/03-wakelock.md",
         "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
         "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-        "observed_at": "2026-10-30T18:56:14.529482+08:00",
+        "observed_at": "2026-10-31T10:29:30.093754+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -28153,7 +28192,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-30T18:56:14.530614+08:00",
+  "updated_at": "2026-10-31T10:29:30.095817+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
@@ -28288,20 +28327,11 @@
   ],
   "post_review_external_source_revalidations_pending": [
     {
-      "index": 101,
-      "article": "src/part2-performance/ch09-anr/04-case-studies.md",
-      "accepted_sha256": "76f100b4ec1f1691f636118e6ac88acfddd4338f46cc2eff23ec6245e3142b6c",
-      "observed_sha256": "acf268032331de93f3c3277171f144357f77fd41898c92ca2f30dafed9fee803",
-      "observed_at": "2026-10-30T18:56:14.528104+08:00",
-      "status": "requires_independent_revalidation",
-      "diagram_count_unchanged": true
-    },
-    {
       "index": 107,
       "article": "src/part2-performance/ch10-memory-perf/02-low-memory-impact.md",
       "accepted_sha256": "67b6818a9bd73a9fb4ca22bb22448d54abee40d45c9e5f6c8721f24bd8338793",
       "observed_sha256": "ff6e55fd7fe3b2f10afd2048f3fd3f4511691d660afd83b8b7e16f545ad4d969",
-      "observed_at": "2026-10-30T18:56:14.528650+08:00",
+      "observed_at": "2026-10-31T10:29:30.092315+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     },
@@ -28310,7 +28340,7 @@
       "article": "src/part2-performance/ch10-memory-perf/03-memory-churn.md",
       "accepted_sha256": "8bc1f79f3bb8987396ee130ac79bb197e081a2da428c88e0caa999cc961f03ba",
       "observed_sha256": "0019b6407d6cb76b85760f69cea2a9c82f3630b4442c72d457d9e9f179a56a9b",
-      "observed_at": "2026-10-30T18:56:14.528873+08:00",
+      "observed_at": "2026-10-31T10:29:30.092628+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     },
@@ -28319,7 +28349,7 @@
       "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
       "accepted_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
       "observed_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
-      "observed_at": "2026-10-30T18:56:14.529094+08:00",
+      "observed_at": "2026-10-31T10:29:30.092915+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     },
@@ -28328,10 +28358,10 @@
       "article": "src/part2-performance/ch11-power/03-wakelock.md",
       "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
       "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-      "observed_at": "2026-10-30T18:56:14.529482+08:00",
+      "observed_at": "2026-10-31T10:29:30.093754+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     }
   ],
-  "currently_matching_reviewed_source_count": 59
+  "currently_matching_reviewed_source_count": 60
 }
