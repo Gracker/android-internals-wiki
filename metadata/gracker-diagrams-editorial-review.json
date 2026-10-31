@@ -67677,9 +67677,171 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "8495ef7933cf42a51c3b3beb141f43d8e39e4d908b2c6a63f08d054afc45c291",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "a291-01-source-events-and-process-identities",
+          "title": "先保留来源，再按身份与时间建立候选关系",
+          "decision": "remove",
+          "reason": "SDK、系统、业务和关联四卡重复六问题字段表、身份解释和跨来源保留说明。",
+          "original_line": 146,
+          "heading": "### 进程退出归因的观测目标"
+        },
+        {
+          "original_id": "a291-02-bounded-history-query-and-api37-guard",
+          "title": "退出历史读取：参数、容量与成员版本分别约束",
+          "decision": "remove",
+          "reason": "参数、容量、后台查询和API37四卡重复查询规则、16条实现限定和元数据代码解释。",
+          "original_line": 216,
+          "heading": "### API 30+ 的 ApplicationExitInfo"
+        },
+        {
+          "original_id": "a291-03-exit-reason-versus-attachment-type",
+          "title": "退出 reason、ANR 栈与 Native protobuf 不能互相替代",
+          "decision": "remove",
+          "reason": "reason、旧ANR、Native格式和附件四卡重复trace三误判及AnrInfo关联分节。",
+          "original_line": 246,
+          "heading": "### ANR 与原生崩溃的现场关联"
+        },
+        {
+          "original_id": "a291-05-koom-fork-dump-versioned-mechanism",
+          "title": "KOOM 2.2.2：fork dump 的父子职责和私有依赖",
+          "decision": "keep",
+          "reason": "固定KOOM commit的fork后父进程恢复ART并等待、子进程转储退出两支汇合，表达ART恢复不等调用方已返回。",
+          "original_line": 273,
+          "heading": "### Android 11 以下的替代路径"
+        },
+        {
+          "original_id": "a291-04-legacy-markers-and-evidence-grade",
+          "title": "API21–29：残留启动标记只能生成候选",
+          "decision": "remove",
+          "reason": "完整崩溃、watchdog、标记和模型四卡重复低版本回退表、六类证据等级表及system/legacy域。",
+          "original_line": 299,
+          "heading": "#### 低版本证据等级与统一事件模型"
+        },
+        {
+          "original_id": "a291-06-metadata-and-attachment-independent-spools",
+          "title": "摘要先入队，后补附件按来源身份独立更新",
+          "decision": "keep",
+          "reason": "元数据upsert后独立摘要队列与策略允许的附件复制发布两路，分别ACK后保留来源键，避免附件失败阻断元数据。",
+          "original_line": 312,
+          "heading": "### 端侧存储与上报设计"
+        },
+        {
+          "original_id": "a291-07-reason-version-and-system-facts",
+          "title": "退出 reason 按版本解释，不由推断改写",
+          "decision": "remove",
+          "reason": "30至33、34、37minor和事实四卡重复reason跨版本原文与四层指标映射表。",
+          "original_line": 367,
+          "heading": "### 退出原因与稳定性指标体系的映射"
+        },
+        {
+          "original_id": "a291-08-native-safety-tool-and-tombstone-association",
+          "title": "Native 内存安全工具与系统转储各保留原始来源",
+          "decision": "remove",
+          "reason": "SDK、工具、tombstone和关联四卡重复内存安全报告两段及Native匹配条件。",
+          "original_line": 378,
+          "heading": "### ApplicationExitInfo 与 GWP-ASan（抽样检测堆内存越界与释放后使用） / MTE（硬件内存标记扩展） 报告拼接"
+        },
+        {
+          "original_id": "a291-09-passive-active-trigger-evidence",
+          "title": "三条路径分别保存退出、请求与系统触发证据",
+          "decision": "remove",
+          "reason": "被动、主动、触发和关联四卡重复三路径表及独立来源例子。",
+          "original_line": 416,
+          "heading": "### 三条诊断路径分别回答什么"
+        },
+        {
+          "original_id": "a291-10-full-sdk-minor-version-and-safe-fallback",
+          "title": "诊断 API 版本分支按成员检查，不只看类存在",
+          "decision": "remove",
+          "reason": "退出版本、Result成员、36.1和37.2四卡重复七行版本表与SDK_INT_FULL说明。",
+          "original_line": 437,
+          "heading": "### 版本能力表"
+        },
+        {
+          "original_id": "a291-11-profiling-request-result-and-member-guard",
+          "title": "主动请求四类型，共用受限结果交付契约",
+          "decision": "remove",
+          "reason": "四请求类型、监听、结果和身份四卡重复类型表与回调交付和成员版本原文。",
+          "original_line": 476,
+          "heading": "### Android 15：应用请求 profiling"
+        },
+        {
+          "original_id": "a291-12-trigger-specific-artifacts-and-requirements",
+          "title": "Trigger 的产物决定它需要什么采集机制",
+          "decision": "remove",
+          "reason": "36快照、37OOM、冷启动和anomaly四卡重复三版trigger表，冷启动并行时序另有保留图。",
+          "original_line": 515,
+          "heading": "#### API 37"
+        },
+        {
+          "original_id": "a291-13-memory-limiter-anomaly-versus-java-oom",
+          "title": "MemoryLimiter 终止与 Java OOM 不是同一个事件",
+          "decision": "remove",
+          "reason": "OTHER标记、anomaly、延迟kill和OOM四卡重复精确标记和两种机制原文与事件关联表。",
+          "original_line": 528,
+          "heading": "#### MemoryLimiter 的退出与触发证据"
+        },
+        {
+          "original_id": "a291-14-cold-start-discard-buffer-and-fully-drawn",
+          "title": "冷启动触发新建采集，discard buffer 保留最早事件",
+          "decision": "keep",
+          "reason": "冷启动识别后新建system trace与stack sampling并行，fullydrawn或默认超时结束；与覆盖旧事件的后台ringbuffer不同。",
+          "original_line": 541,
+          "heading": "#### MemoryLimiter 的退出与触发证据"
+        },
+        {
+          "original_id": "a291-15-request-identity-artifact-hash-and-redelivery",
+          "title": "请求身份、附件内容和每次接收时间分开存",
+          "decision": "remove",
+          "reason": "请求、附件、trigger和接收四卡重复结果字段表及稳定去重键说明。",
+          "original_line": 582,
+          "heading": "#### profiling 结果字段"
+        },
+        {
+          "original_id": "a291-16-versioned-diagnostic-case-and-budget",
+          "title": "版本化证据包按问题选择产物与独立预算",
+          "decision": "remove",
+          "reason": "场景、Native/OOM、预算和交付四卡重复排障矩阵及成本隐私列表。",
+          "original_line": 625,
+          "heading": "### 隐私、限流与采集成本"
+        }
+      ],
+      "sha256_after": "04db05d103d4a86a34788d0b7d769ffa66884b24f5acd83be35dc964bc4378cc",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:36:21.738249+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a291/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a291/visual-review.json",
+      "retired_diagrams": [
+        "a291-01-source-events-and-process-identities",
+        "a291-02-bounded-history-query-and-api37-guard",
+        "a291-03-exit-reason-versus-attachment-type",
+        "a291-04-legacy-markers-and-evidence-grade",
+        "a291-07-reason-version-and-system-facts",
+        "a291-08-native-safety-tool-and-tombstone-association",
+        "a291-09-passive-active-trigger-evidence",
+        "a291-10-full-sdk-minor-version-and-safe-fallback",
+        "a291-11-profiling-request-result-and-member-guard",
+        "a291-12-trigger-specific-artifacts-and-requirements",
+        "a291-13-memory-limiter-anomaly-versus-java-oom",
+        "a291-15-request-identity-artifact-hash-and-redelivery",
+        "a291-16-versioned-diagnostic-case-and-budget"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-291/retired-assets.json"
     },
     {
       "index": 294,
@@ -67748,8 +67910,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 200,
-  "next_article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+  "reviewed_articles": 201,
+  "next_article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -67759,7 +67921,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:34:12.477619+08:00",
+  "updated_at": "2026-10-31T19:36:21.738249+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -67881,9 +68043,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5758,
-  "reviewed_placements_after": 2249,
-  "net_removed_placements": 3509,
+  "reviewed_placements_before": 5774,
+  "reviewed_placements_after": 2252,
+  "net_removed_placements": 3522,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -67907,7 +68069,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 200,
+  "currently_matching_reviewed_source_count": 201,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
