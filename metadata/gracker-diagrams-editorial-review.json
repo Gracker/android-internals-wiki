@@ -53523,9 +53523,178 @@
       "before_count": 17,
       "before_all_images": 17,
       "sha256_before": "05cb28898b8f1fe8347be8b3f1a8136d588daaf705d8d5c5f203b7a8dcb93b72",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a210-01-timers",
+          "title": "不同系统等待由不同计时器判断",
+          "decision": "remove",
+          "reason": "紧邻六类计时器表完整列默认值、硬件系数和边界，三行映射卡是表格子集。",
+          "original_line": 122,
+          "heading": "### 常见计时器"
+        },
+        {
+          "original_id": "a210-02-fgs-boundaries",
+          "title": "FGS 的三套时限对应不同结果",
+          "decision": "remove",
+          "reason": "FGS三类时限/结果表及固定AOSP与当前文档差异已清楚说明，三行图重复表格而无新计时关系。",
+          "original_line": 141,
+          "heading": "### 前台服务的三类时限"
+        },
+        {
+          "original_id": "a210-03-type-thread",
+          "title": "ANR 类型决定要追哪条线程",
+          "decision": "remove",
+          "reason": "六类ANR线程/修复表完整覆盖自定义receiver/worker/provider等路径，三行类型映射图重复。",
+          "original_line": 161,
+          "heading": "### 从类型进入修复路径"
+        },
+        {
+          "original_id": "a210-04-execution-place",
+          "title": "按工作性质选择执行位置和限制",
+          "decision": "remove",
+          "reason": "执行位置和限制五行表加协程调度示例更完整，三行工作分类卡重复。",
+          "original_line": 182,
+          "heading": "### 先按工作性质选择执行位置"
+        },
+        {
+          "original_id": "a210-05-startup-sync",
+          "title": "整理初始化依赖不等于自动移出主线程",
+          "decision": "remove",
+          "reason": "App Startup同步create和Provider在Application之前已有正文与后续Provider案例明确说明，三框只是启动顺序复述。",
+          "original_line": 234,
+          "heading": "### 启动阶段不要制造“异步假象”"
+        },
+        {
+          "original_id": "a210-06-binder-timeout",
+          "title": "业务停止等待与终止 Binder 执行是两件事",
+          "decision": "keep",
+          "reason": "调用方截止后降级与后台同步Binder/远端onTransact仍占用的分支，区分停止等待和停止执行。",
+          "original_line": 267,
+          "heading": "### 调用方要控制等待位置与协议"
+        },
+        {
+          "original_id": "a210-07-binder-lock-cycle",
+          "title": "一把应用内锁也能形成跨进程等待环",
+          "decision": "keep",
+          "reason": "main持锁同步IPC、远端另起线程回调并等任务、应用Binder线程等同一锁的闭环，特别注明不是原线程可重入嵌套回调。",
+          "original_line": 327,
+          "heading": "### 把跨进程调用纳入锁图"
+        },
+        {
+          "original_id": "a210-08-provider-stages",
+          "title": "Provider 治理区分启动发布与并发请求",
+          "decision": "remove",
+          "reason": "发布与远程/同进程请求的线程及并发语义已在同节两段和计时表说明，三行映射重复。",
+          "original_line": 349,
+          "heading": "### ContentProvider：区分发布和请求"
+        },
+        {
+          "original_id": "a210-09-sdk-provider-audit",
+          "title": "SDK 升级后的启动退化按产物和证据定位",
+          "decision": "remove",
+          "reason": "SDK Provider案例已按merged manifest/trace/线程约束/回归质量逐段展开，四框只是调查清单缩写。",
+          "original_line": 390,
+          "heading": "#### 案例：清单合并引入的 SDK Provider"
+        },
+        {
+          "original_id": "a210-10-broadcast-window",
+          "title": "goAsync 延后完成点，沿用原广播窗口",
+          "decision": "keep",
+          "reason": "广播系统窗口跨冷启动排队/onReceive/goAsync/后台工作到finish的多轨图，说明内部withTimeout遗漏前期预算。",
+          "original_line": 401,
+          "heading": "### BroadcastReceiver：`goAsync()` 不增加时间"
+        },
+        {
+          "original_id": "a210-11-receiver-completion",
+          "title": "用 Job 完成契约覆盖未执行协程体的取消",
+          "decision": "keep",
+          "reason": "launch Job在体执行前取消、失败和成功均以invokeOnCompletion唯一finish的共同完成路径，防止只在体内finally遗漏。",
+          "original_line": 430,
+          "heading": "### BroadcastReceiver：`goAsync()` 不增加时间"
+        },
+        {
+          "original_id": "a210-12-watchdog-token",
+          "title": "单探针避免堆积与旧探针误确认",
+          "decision": "keep",
+          "reason": "单待确认token投递/CAS确认/超时仅报一次到下一轮的回路，说明旧探针不能误确认新周期和队列不堆积。",
+          "original_line": 526,
+          "heading": "### 避免探针互相确认"
+        },
+        {
+          "original_id": "a210-13-watchdog-limits",
+          "title": "Watchdog 样本与系统判定分别保存",
+          "decision": "remove",
+          "reason": "Watchdog能力边界五项列表已区分主Looper/receiver/窗口/先后/不必退出，三行风险卡重复。",
+          "original_line": 555,
+          "heading": "### Watchdog 的能力边界"
+        },
+        {
+          "original_id": "a210-14-warning-evidence",
+          "title": "三类信号提供不同阶段的互补证据",
+          "decision": "remove",
+          "reason": "三种信号阶段/证据表和API37代码及关联ID条件更完整，三行信号卡重复且未画出真实时间线。",
+          "original_line": 624,
+          "heading": "### Android 16 及以上：ANR Profiling Trigger"
+        },
+        {
+          "original_id": "a210-15-play-denominators",
+          "title": "Play 的三种 ANR 比率采用相同日活口径",
+          "decision": "remove",
+          "reason": "Play三种比率的三项定义与DAU用户设备说明已清楚列出，三行公式卡重复；阈值正文保持。",
+          "original_line": 649,
+          "heading": "## 后台 ANR 与前台 ANR 的差异化治理"
+        },
+        {
+          "original_id": "a210-16-system-pressure",
+          "title": "系统负载用于解释和分组，保留原始事件",
+          "decision": "remove",
+          "reason": "系统负载多信号列表与保留原始事件/分母/标待确认的段落已完整，四框是取证检查清单复述。",
+          "original_line": 694,
+          "heading": "### 容易误判的信号"
+        },
+        {
+          "original_id": "a210-17-governance-loop",
+          "title": "每个修复对应可重放证据和质量验证",
+          "decision": "remove",
+          "reason": "八项治理验证顺序已有完整编号列表，四框总结无新增等待关系或实测，删除重复结尾图。",
+          "original_line": 714,
+          "heading": "## 治理与验证流程"
+        }
+      ],
+      "sha256_after": "7620270c04e0f4f775aa69859f184b3f79904d46b55a0d3994e2d67adf2643ea",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:12:20.314595+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 17,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a210/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a210/visual-review.json",
+      "retired_diagrams": [
+        "a210-01-timers",
+        "a210-02-fgs-boundaries",
+        "a210-03-type-thread",
+        "a210-04-execution-place",
+        "a210-05-startup-sync",
+        "a210-08-provider-stages",
+        "a210-09-sdk-provider-audit",
+        "a210-13-watchdog-limits",
+        "a210-14-warning-evidence",
+        "a210-15-play-denominators",
+        "a210-16-system-pressure",
+        "a210-17-governance-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-210/retired-assets.json"
     },
     {
       "index": 211,
@@ -54298,8 +54467,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 136,
-  "next_article": "src/part5-app/ch20-stability/04-anr-governance.md",
+  "reviewed_articles": 137,
+  "next_article": "src/part5-app/ch20-stability/05-oom-webview-renderer-recovery.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -54309,7 +54478,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:10:32.107607+08:00",
+  "updated_at": "2026-10-31T16:12:20.314595+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -54379,6 +54548,13 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "registered_sha256": "a70335b2ae03074a10b889d4aaf732ac32dcf387bbdd66535abb61e965bd1448",
+      "observed_sha256": "d32534ead4dfeabda5130980b1407391fa876ee83a2edc0516593bc51fca5c35",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -54508,9 +54684,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4420,
-  "reviewed_placements_after": 1862,
-  "net_removed_placements": 2558,
+  "reviewed_placements_before": 4437,
+  "reviewed_placements_after": 1867,
+  "net_removed_placements": 2570,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,

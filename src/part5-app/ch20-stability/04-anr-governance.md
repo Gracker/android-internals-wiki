@@ -119,10 +119,6 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 
 输入超时也一样，主线程之外还有别的变量：窗口没有焦点、目标窗口迟迟未创建、应用正在等同步 Binder 返回，都会表现成输入没有按时完成。修复前我们从 ANR 类型和 traces 把计时期间发生了什么还原出来，再决定动哪里。
 
-<!-- gracker-diagram: a210-01-timers -->
-![不同系统等待由不同计时器判断](../../assets/diagrams/ch20/a210-01-timers.png)
-
-图：先用ANR主题定类型，再还原计时区间；主线程长任务只是多种原因之一。
 
 ### 前台服务的三类时限
 
@@ -138,10 +134,6 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 
 版本边界必须保留：本篇固定标签里的 `ActiveServices.serviceForegroundTimeout()` 停止服务后，延迟进入 `serviceForegroundTimeoutANR()`；当前 [FGS 故障排查文档](https://developer.android.com/develop/background-work/services/fgs/troubleshooting) 仍说明 `ForegroundServiceDidNotStartInTimeException` 崩溃路径。旧版本或厂商实现不能直接套用本表的 Android 17 默认值与结果，报告分类应结合系统构建、退出原因和实际堆栈确认。
 
-<!-- gracker-diagram: a210-02-fgs-boundaries -->
-![FGS 的三套时限对应不同结果](../../assets/diagrams/ch20/a210-02-fgs-boundaries.png)
-
-图：本图第一行仅描述固定AOSP标签；旧版与厂商转前台失败也可能是异常崩溃，不能统一归为ANR。
 
 ### 从类型进入修复路径
 
@@ -158,10 +150,6 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 
 用这张表时还要留意：一份主线程快照只说明采样那一瞬间。广播可能运行在自定义 `Handler` 上，`goAsync()` 的工作也可能落在后台 worker 线程；主线程栈里出现 `nativePollOnce`，只说明 Looper（线程消息循环） 正在等消息，看到它就把这类 ANR 排除掉，是会漏判的。
 
-<!-- gracker-diagram: a210-03-type-thread -->
-![ANR 类型决定要追哪条线程](../../assets/diagrams/ch20/a210-03-type-thread.png)
-
-图：主线程nativePollOnce只说明采样时空闲；广播worker、焦点或晚采样仍可能解释ANR。
 
 ## 缩短主线程同步工作并异步化
 
@@ -179,10 +167,6 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 
 线程切换改变的只是执行位置：无界队列照样积压，不可取消的 I/O 照样占住 worker，错误地切回 `Dispatchers.Main` 照样阻塞界面。
 
-<!-- gracker-diagram: a210-04-execution-place -->
-![按工作性质选择执行位置和限制](../../assets/diagrams/ch20/a210-04-execution-place.png)
-
-图：协程组织生命周期和取消传播，执行线程仍需指定；切线程不会消除积压或不可取消阻塞。
 
 ### 协程负责结构，线程由我们指定
 
@@ -231,10 +215,6 @@ class ArticleViewModel(
 
 启动优化要记录每个初始化项的调用线程、依赖、可延迟条件、失败处理与完成时刻；只记一句“已经异步”，说明不了主线程预算有任何改善。
 
-<!-- gracker-diagram: a210-05-startup-sync -->
-![整理初始化依赖不等于自动移出主线程](../../assets/diagrams/ch20/a210-05-startup-sync.png)
-
-图：App Startup合并provider、整理依赖与支持按需初始化；同步create本身仍会占用启动线程。
 
 ### 为主线程任务建立预算
 
@@ -346,10 +326,6 @@ provider 发布完成后，`query()`、`insert()`、`call()` 等入口还可能�
 
 publish 基线来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`。`ContentProviderHelper` 中等待 provider 就绪、请求方检测 provider 无响应等路径有各自的条件和时限，所以报告里要保留 ANR 类型和描述，看到 provider 名称就套 10 秒发布结论，容易把另一条检测路径当成 publish 超时。
 
-<!-- gracker-diagram: a210-08-provider-stages -->
-![Provider 治理区分启动发布与并发请求](../../assets/diagrams/ch20/a210-08-provider-stages.png)
-
-图：publish超时不能覆盖全部provider ANR；数据库迁移、文件与IPC等待要按实际入口追踪。
 
 #### 案例：清单合并引入的 SDK Provider
 
@@ -387,10 +363,6 @@ trace 只负责测量，初始化不会因此变快，决定预算的是 `instal
 
 验证时各工具分工明确：Macrobenchmark 批量测量启动性能分布，Perfetto 用时间线确认主线程区间，`ApplicationStartInfo` 对齐系统记录的启动节点，`ApplicationExitInfo` 和 ANR traces 复核进程退出与现场栈。最后还要看质量指标：P95、P99 等高百分位启动延迟降了，SDK 初始化失败率却升了，这个修复不算合格。
 
-<!-- gracker-diagram: a210-09-sdk-provider-audit -->
-![SDK 升级后的启动退化按产物和证据定位](../../assets/diagrams/ch20/a210-09-sdk-provider-audit.png)
-
-图：栈停在SDK Provider只提供候选；结合最终清单、Perfetto和启动系统节点确认，保留升级与并发首次访问回归。
 
 ### BroadcastReceiver：`goAsync()` 不增加时间
 
@@ -552,10 +524,6 @@ Watchdog 报告应包含 token、投递时间、延迟、主线程栈、若干�
 
 所以 Watchdog 事件与系统 ANR 应分开存储，之后按时间、进程、ANR 类型和堆栈签名（由关键栈帧生成的事件指纹）关联。
 
-<!-- gracker-diagram: a210-13-watchdog-limits -->
-![Watchdog 样本与系统判定分别保存](../../assets/diagrams/ch20/a210-13-watchdog-limits.png)
-
-图：内部阈值取自产品基线；系统可能在Watchdog前后判定，不保证提前预警或一定结束进程。
 
 ## ANR 预警与主动发现
 
@@ -621,10 +589,6 @@ API 36 的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在系统识别 ANR 后、可能�
 
 同一个事件用 `anrType + anrId`、进程启动标识、单调时钟时间和堆栈签名关联。单调时钟的绝对值不能跨设备重启直接比较，关联进程重启前后的记录时还要保存启动会话或其他时钟锚点。这里用单调时钟是有讲究的：Wall clock 是可被用户或网络校时调整的日历时间，单调时钟只向前累计，计算同一进程内的时间间隔更适合用它。
 
-<!-- gracker-diagram: a210-14-warning-evidence -->
-![三类信号提供不同阶段的互补证据](../../assets/diagrams/ch20/a210-14-warning-evidence.png)
-
-图：用ANR类型和ID、进程生命周期、时间及签名关联；description格式不可作为长期协议。
 
 ### Looper 与 Binder 的主动监测
 
@@ -646,10 +610,6 @@ Google Play 当前提供三项以 DAU（daily active users，当日活跃用户�
 
 User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital（主要质量指标），官方当前给出的全局不良行为阈值为 0.47%，单设备型号阈值为 8%。这些数值和定义可能调整，发布治理规则前我们再核对一次官方页面。
 
-<!-- gracker-diagram: a210-15-play-denominators -->
-![Play 的三种 ANR 比率采用相同日活口径](../../assets/diagrams/ch20/a210-15-play-denominators.png)
-
-图：2026-10-25复核：全局阈值0.47%，单设备型号8%；用户设备按天计数，不能与事件数或会话率直接比较。
 
 后台 ANR 可能不展示对话框，但仍会进入 overall ANR（全部类型 ANR）数据，也可能揭示共享线程池、锁、广播冷启动或 Service 回调的问题。“用户没看到”影响的只是修复优先级，把它当忽略的理由并不成立。
 
@@ -691,10 +651,6 @@ User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital�
 
 工程上，监控平台可以增加 `system_load_suspected`（疑似系统负载）及证据字段，降低这类事件在告警列表中的排序优先级，或放入单独队列；原始事件、分母和系统确认状态照常保留。多次版本对比后，如果问题只出现在某个设备系统构建、应用栈又分散，我们再把线索交给设备厂商或平台团队联合排查。
 
-<!-- gracker-diagram: a210-16-system-pressure -->
-![系统负载用于解释和分组，保留原始事件](../../assets/diagrams/ch20/a210-16-system-pressure.png)
-
-图：高负载、低RAM、进程死亡日志或freezer单个信号都不能证明本次ANR与业务无关。
 
 ## 治理与验证流程
 
@@ -711,10 +667,6 @@ User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital�
 
 每个高频问题组都应有负责人、证据、修复版本和验证结果。材料不齐时标“原因待确认”即可，为了报表整洁直接归入“系统原因”，是把未知当成了已知。
 
-<!-- gracker-diagram: a210-17-governance-loop -->
-![每个修复对应可重放证据和质量验证](../../assets/diagrams/ch20/a210-17-governance-loop.png)
-
-图：延迟自有Binder、延长持锁或模拟receiver冷启动，检查降级、取消、finish与onTimeout，再比较同口径质量趋势。
 
 ## 小结
 
