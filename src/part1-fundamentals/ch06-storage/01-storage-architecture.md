@@ -62,10 +62,6 @@ last_idle_audit_at: '2026-08-26T22:49:33+08:00'
 
 这类问题有时伴随大量 CPU 工作，有时主要耗在 I/O wait（等待输入/输出完成）。Android 的一次文件访问可能依次经过 VFS（统一文件系统接口）、具体文件系统、fscrypt（文件级加密框架）、device-mapper（块设备映射层）、块层、主机控制器和闪存；共享存储还可能经过 MediaProvider/FUSE。我们要做的，是把等待时间对应到具体层级，再判断延迟来自同步点设计、文件系统回写、设备排队、加密准备，还是共享存储的权限检查路径。
 
-<!-- gracker-diagram: ch06-01-io-wait-causal-layers -->
-![从主线程等待区分存储瓶颈](../../assets/diagrams/ch06/ch06-01-io-wait-causal-layers.png)
-
-图：SQLite 与 SharedPreferences 是不同写入实现，要用调用栈和文件定位 fsync 来源。block issue→complete 只覆盖已下发请求，不能拿它替代整个调用或把所有睡眠都当成闪存延迟。
 
 ## 存储栈全景：从闪存芯片到应用 API
 
@@ -124,10 +120,6 @@ UFS 使用 MIPI M-PHY 差分串行链路和 UniPro 协议，UTP 负责承载 UFS
 
 应用调用 `read()` 时，请求并不会直接变成 UFS Command Set 命令：文件系统与块层先把文件偏移翻译成块请求，按需要合并或拆分，最后由 UFS host driver（主机驱动） 把请求映射为 UTP transfer request。
 
-<!-- gracker-diagram: ch06-01-ufs-protocol-layers -->
-![UFS 的命令、传输与互连层](../../assets/diagrams/ch06/ch06-01-ufs-protocol-layers.png)
-
-图：这是协议职责图，不是 App read 直接生成一个 UFS 命令。文件偏移先由文件系统和块层转换成请求，UFS 驱动再组织传输；设备版本与 UFSHCI 主控能力分别核对。
 
 ### 版本号与实际性能
 
@@ -143,19 +135,11 @@ JEDEC 版本规定的是接口能力，同一版本的量产器件，实际 MB/s
 
 **MCQ（Multi-Circular Queue，多循环队列）是 UFS Host Controller Interface 的能力**，长在主控一侧；设备标称的 “UFS 4.0” 说的是器件接口，两者要分开看。`android17-6.18-2026-06_r6` 的 `drivers/ufs/core/ufs-mcq.c` 会根据主控能力配置读写队列、专用读队列和 polling queue（轮询队列），默认读写队列数还会参考 CPU 数量。要确认设备是否启用了 MCQ，我们还需检查 host controller capability（主机控制器能力）、驱动日志和 `/sys` 队列信息。
 
-<!-- gracker-diagram: ch06-01-mcq-host-queue-capability -->
-![MCQ 属于 UFS 主控能力](../../assets/diagrams/ch06/ch06-01-mcq-host-queue-capability.png)
-
-图：r6 的 ufs-mcq.c 按队列参数、主控资源与 CPU 数配置队列，并保留设备命令资源。图省略各硬件 queue 的一一连线；“UFS 4.0”本身不是本机启用 MCQ 的证据。
 
 ### 验证器件差异
 
 发现 I/O 延迟异常时，我们先记录器件型号、UFS/eMMC 版本、文件系统、可用空间、温度与当前后台负载，再为这台设备建立冷启动、随机读写和 `fsync()` 基线。Perfetto 的 block request 延迟能说明请求在块设备路径上等待了多久；正常与否，对照这台设备自己的基线来判断。
 
-<!-- gracker-diagram: ch06-01-emmc-ufs-ftl-boundary -->
-![eMMC 与 UFS 的接口和器件内部边界](../../assets/diagrams/ch06/ch06-01-emmc-ufs-ftl-boundary.png)
-
-图：链路和并发能力提供潜力，不给应用固定 MB/s、IOPS 或延迟保证。UFS 4.0 对应 JESD220F，3.1 对应 JESD220E；相同版本的器件仍会因 NAND、缓存和固件而不同。
 
 ## 块设备层：设备映射与 I/O 调度
 
@@ -185,10 +169,6 @@ Android 常用的 dm target（映射目标类型） 包括：
 
 这些 dm 目标可以叠加，形成 Android 的分区布局。各分区的职责、挂载方式和性能影响需要分别分析。
 
-<!-- gracker-diagram: ch06-01-dm-target-responsibilities -->
-![Android 常用映射目标的不同职责](../../assets/diagrams/ch06/ch06-01-dm-target-responsibilities.png)
-
-图：这些目标可按卷与状态叠加；只读逻辑分区常见 verity→linear→super，userdata 可能有 default-key。ublk 是用户态块后端，不是名为 dm-ublk 的 target。
 
 ### I/O 调度器
 
@@ -239,10 +219,6 @@ Physical Partition: super
 
 **metadata 分区**：这是启动早期即可使用的独立小分区，AOSP metadata encryption 文档建议容量为 16 MB，通常挂载到 `/metadata`。它保存用于保护 metadata encryption key 的 KeyMint blobs（由 KeyMint 保护的密钥数据），也可能承载 `vold`（Volume Daemon，存储卷守护进程）、checkpoint（检查点）、Virtual A/B 等功能在 `/data` 挂载前必须访问的少量状态。系统先挂载 `/metadata` 取得 key material（密钥材料），随后建立 `/data` 的 metadata-encrypted block device（元数据加密块设备）：取密钥和建加密设备是先后两步，分析时分开看。
 
-<!-- gracker-diagram: ch06-01-partition-role-boundaries -->
-![四类分区的职责与访问特点](../../assets/diagrams/ch06/ch06-01-partition-role-boundaries.png)
-
-图：/metadata 保存保护 metadata encryption key 的 KeyMint blobs 等早期状态；文件系统的 inode、目录项等仍在 userdata 文件系统中。建议 16 MB 的 metadata 分区不是 Android 全部元数据的集中数据库。
 
 ### 挂载流程：从 bootloader 到用户空间
 
@@ -323,10 +299,6 @@ Android 10 引入 Scoped Storage（分区存储），并允许应用通过兼容
 3. 访问用户的 PDF、文档等任意文件时，通常通过 Storage Access Framework（SAF，存储访问框架）让用户选择；应用自己的专属目录，以及自己通过 MediaStore.Downloads 创建的文件，按相应规则访问；
 4. 遵循 scoped storage 的普通 App 不能任意向 `/sdcard` 根路径直接写文件，应使用相应媒体集合、SAF 或自己的专属目录；特殊的 All Files access 另有权限边界。
 
-<!-- gracker-diagram: ch06-01-scoped-access-choices -->
-![Scoped storage 的访问入口与授权](../../assets/diagrams/ch06/ch06-01-scoped-access-choices.png)
-
-图：Android 11 上 target 30+ 使用 scoped storage。共享媒体的 File/fopen 路径访问仍受授权与 FUSE 策略约束；MediaStore、SAF、专属目录各有范围，不能用一个存储权限覆盖所有文件。
 
 ### FUSE 层的性能开销
 
@@ -471,10 +443,6 @@ Android 13+(userspace merge):
 
 图中 Android 12 这一行是格式转换的过渡期，读它时按混合路径来；Android 13+ 才有的 userspace merge，在这一版还没有出现。compressed snapshots 会使用 `/data` 的临时空间，升级完成并合并后可以回收；安装阶段的 COW 写入以及 merge 期间的底层设备流量，都可能与前台 I/O 竞争。
 
-<!-- gracker-diagram: ch06-01-vab-version-timeline -->
-![Virtual A/B 的格式与合并机制演进](../../assets/diagrams/ch06/ch06-01-vab-version-timeline.png)
-
-图：这是版本演进，不是一个运行请求依次穿过四套实现。Virtual A/B 与 Virtual A/B compression（VABC）不同；压缩格式、后端选择与 COW 的物理存放位置也需分别核对。
 
 在 Perfetto trace 中，OTA 升级期间的 Virtual A/B 活动主要集中在三组进程：
 
@@ -551,10 +519,6 @@ NAND 闪存单元只能承受有限次数的 program/erase cycle（编程/擦除
 
 主线程卡在 `fsync()` 上时，我们可以按以下顺序收敛：
 
-<!-- gracker-diagram: ch06-01-fsync-evidence-workflow -->
-![从 fsync 长尾收敛到可验证原因](../../assets/diagrams/ch06/ch06-01-fsync-evidence-workflow.png)
-
-图：箭头是建议的诊断顺序，不是文件 I/O 实际经过的强制调用链。块请求可能拆分、合并、重试或部分完成，需正确匹配事件；未采到事件或缓存命中时，不能制造缺失的器件延迟。
 
 1. **调用层**：确认谁调用了 `fsync()`、同步的是哪个文件，以及这一同步点是否必须位于主线程。
 2. **文件系统层**：确认 ext4/f2fs、mount option，并检查 jbd2、checkpoint、writeback 或 GC 是否与等待区间重合。
