@@ -1,6 +1,6 @@
 {
   "objective": "全篇复审初始超过10张图的全部文章，评估配图信息增量与合理性、合并重复/过度拆分、删除不必要图；10为复审门槛非保留上限",
-  "status": "in_progress",
+  "status": "complete",
   "created_at": "2026-10-28T08:37:54.602671+08:00",
   "work_dir": "/tmp/gracker-diagrams-editorial-review-20261028",
   "selection_frozen": true,
@@ -68974,7 +68974,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:57:44.104498+08:00",
+  "updated_at": "2026-10-31T20:06:24.028095+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -69125,5 +69125,27 @@
       "native_replacement": 1,
       "selected_scope_unchanged": true
     }
-  ]
+  ],
+  "completed_at": "2026-10-31T20:06:24.028095+08:00",
+  "completion_report": "metadata/gracker-diagrams-editorial-completion-20261031.json",
+  "final_validation": {
+    "selected_articles": 207,
+    "reviewed_and_currently_verified": 207,
+    "remaining_articles": 0,
+    "selected_png_placements_before": 5867,
+    "selected_png_placements_after": 2275,
+    "net_removed_png_placements": 3592,
+    "removed_duplicate_inline_mermaid": 21,
+    "all_active_unique_pngs": 2715,
+    "all_active_png_placements_including_unpublished_source_copy": 2735,
+    "all_active_svg_png_files": 5430,
+    "review_threshold": 10,
+    "threshold_is_selection_rule_not_final_diagram_cap": true,
+    "byte_identical_duplicate_png_files": 0,
+    "decoded_pixel_identical_duplicate_png_files": 0,
+    "missing_or_orphan_assets": 0,
+    "source_pages_rendered_at_both_widths": 317,
+    "rendered_native_mermaid_including_folded_sources": 98,
+    "preserved_correction_records": 6077
+  }
 }
