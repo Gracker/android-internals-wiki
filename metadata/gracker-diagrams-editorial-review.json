@@ -40527,9 +40527,202 @@
       "before_count": 18,
       "before_all_images": 18,
       "sha256_before": "52fd33c93ca49461f4c047d993823736a3d45a3db7109ccf455df54093caa02d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch15-05-01-evidence-types",
+          "title": "事件、平台归因与硬件测量的证据分工",
+          "decision": "remove",
+          "reason": "事件/平台归因/硬件测量三列逐项重复43–50四列表格和52行单位示例，保留mAh/J/事件时间不可相加及系统rail非目标UID边界。",
+          "original_line": 54,
+          "heading": "## 按问题选择证据"
+        },
+        {
+          "original_id": "ch15-05-02-bugreport-capture",
+          "title": "受控 BatteryStats 窗口与 bugreport 采集",
+          "decision": "remove",
+          "reason": "五步重述76–88采集代码与reset、USB电池供电、详细history旧开关恢复和历史裁剪说明，无具体时序或窗口数值，所有有状态操作要求留存。",
+          "original_line": 90,
+          "heading": "### 采集一份可比较的 bugreport"
+        },
+        {
+          "original_id": "ch15-05-03-wakelock-evaluation",
+          "title": "合法持锁、本地候选与线上质量阈值",
+          "decision": "remove",
+          "reason": "合法持锁/本地候选/vitals三列重述128–132生命周期与线上阈值段落，未画具体锁重叠或释放案例，保留2小时/24h及28天5%与豁免原文。",
+          "original_line": 134,
+          "heading": "### Wakelock 的判断边界"
+        },
+        {
+          "original_id": "ch15-05-04-raw-output-formats",
+          "title": "文本、history 与 checkin 的不同读取口径",
+          "decision": "remove",
+          "reason": "文本/history/checkin三列复述149–170命令和当前/旧已完成清理语义，格式不稳定、-c不同于--checkin全文完整留。",
+          "original_line": 165,
+          "heading": "## 直接使用 `dumpsys batterystats`"
+        },
+        {
+          "original_id": "ch15-05-05-events-to-code",
+          "title": "从活动色块走到可复测的代码原因",
+          "decision": "remove",
+          "reason": "五步总结176–203四种异常逐项检查，没有真实活动与代码/能量差分关系；原锁tag/任务stopreason/CPU调度/无线请求分工完整留。",
+          "original_line": 205,
+          "heading": "### 网络、定位和传感器"
+        },
+        {
+          "original_id": "ch15-05-06-perfetto-power-path",
+          "title": "Perfetto android.power 的轮询与时间戳",
+          "decision": "keep",
+          "reason": "producer实际轮询经HAL返回能量时间、描述符会话身份入trace、parser按身份生成counter的跨层数据链独立，保留配置非硬件更新率与ring覆盖边界。",
+          "original_line": 236,
+          "heading": "## Perfetto：把 rail 与线程放进同一时间轴"
+        },
+        {
+          "original_id": "ch15-05-07-backward-versus-forward",
+          "title": "power_rails 的向后差值与前向平均功率",
+          "decision": "keep",
+          "reason": "1/2/3秒1000/3000/8000µWs的数值反例明确同一2秒行向后2000但前向5000µWs、5mW，避免把两个区间错误配对。",
+          "original_line": 243,
+          "heading": "## Perfetto：把 rail 与线程放进同一时间轴"
+        },
+        {
+          "original_id": "ch15-05-08-rail-interval-quality",
+          "title": "计算窗口能量前的区间检查",
+          "decision": "remove",
+          "reason": "六步重述266行完整dur/next/回退/跨边界/缺样检查说明以及SQL过滤，未画具体缺口或窗口裁剪案例，全部单位公式和不确定性正文保留。",
+          "original_line": 268,
+          "heading": "## Perfetto：把 rail 与线程放进同一时间轴"
+        },
+        {
+          "original_id": "ch15-05-09-system-rail-attribution",
+          "title": "设备 rail 读数如何与 App 场景关联",
+          "decision": "keep",
+          "reason": "目标App、其他进程与系统环境三种活动真实汇入同一物理rail，再由同窗trace与A/B判断影响的合流关系独立，保留系统级非前台独占。",
+          "original_line": 288,
+          "heading": "## Android Studio Power Profiler"
+        },
+        {
+          "original_id": "ch15-05-10-macrobenchmark-mode",
+          "title": "PowerMetric 的能力检查与模式选择",
+          "decision": "keep",
+          "reason": "设备高精度能力与Power/Energy、较粗Battery两模式真实选择分支独立，TOTAL/BREAKDOWN类别及最低电量、环境要求全部留。",
+          "original_line": 338,
+          "heading": "## Macrobenchmark `PowerMetric`"
+        },
+        {
+          "original_id": "ch15-05-11-monitor-identity-and-delta",
+          "title": "PowerMonitor 的枚举、读取与差分守卫",
+          "decision": "remove",
+          "reason": "五步复制枚举代码与352–400监测身份和差分守卫段落，未画真实对象身份或读数反例；所有同设备同开机同monitor/elapsed时间/无效回退和公式留存。",
+          "original_line": 402,
+          "heading": "## API 35+ `PowerMonitor`"
+        },
+        {
+          "original_id": "ch15-05-12-cache-refresh-policy",
+          "title": "20 秒与 250 毫秒是刷新尝试阈值",
+          "decision": "keep",
+          "reason": "权限选择普通20秒/fine250ms两个缓存后汇合到过龄或0尝试刷新并refresh抽样槽的真实条件分支独立，明确不是硬件采样频率。",
+          "original_line": 416,
+          "heading": "### Android 17 的新鲜度与随机化"
+        },
+        {
+          "original_id": "ch15-05-13-conditional-randomization",
+          "title": "PowerMonitor 随机化的条件与共享抽样槽",
+          "decision": "keep",
+          "reason": "当前和前值都有效才随机化，否则直接返回的真实条件分支、low/high/Beta与UID%17槽复用关系独立，两缓存均有条件随机化及refresh清槽边界保留。",
+          "original_line": 432,
+          "heading": "### Android 17 的新鲜度与随机化"
+        },
+        {
+          "original_id": "ch15-05-14-battery-usage-attribution",
+          "title": "BatteryUsageStats 的平台归因调用链",
+          "decision": "remove",
+          "reason": "五框逐项复刻445–452已有六行文本调用链及紧随职责段，没有新增分支，保留原IBatteryStats/更新等待/按需外部同步/provider链与SystemApi权限，不保同一路副本。",
+          "original_line": 456,
+          "heading": "## `BatteryUsageStats` 是平台归因接口"
+        },
+        {
+          "original_id": "ch15-05-15-query-evolution",
+          "title": "A17 查询开关的实现区别",
+          "decision": "remove",
+          "reason": "三列逐项复写467–473查询方法实现说明，include空操作/modeledOnly仍置位/accumulated跨重启各条全文保留，无新增行为关系。",
+          "original_line": 475,
+          "heading": "### API 37 查询项的变化"
+        },
+        {
+          "original_id": "ch15-05-16-hal-measurement-types",
+          "title": "Power Stats HAL 的三种数据语义",
+          "decision": "remove",
+          "reason": "三列完全复刻489–493的HAL数据语义/典型用途表，保留uWs、驻留时间次数与opaque设备名称边界，删表格图片副本。",
+          "original_line": 497,
+          "heading": "## 归因模型的边界"
+        },
+        {
+          "original_id": "ch15-05-17-controlled-ab-experiment",
+          "title": "固定边界与交错顺序的 A/B 功耗实验",
+          "decision": "remove",
+          "reason": "五框复制508–520窗口定义、五条环境固定与交错A/B建议，没有具体A/B温度/顺序/结果分布实例，所有实验约束原文完整留。",
+          "original_line": 522,
+          "heading": "### 处理顺序效应"
+        },
+        {
+          "original_id": "ch15-05-18-triangulate-evidence",
+          "title": "能量、活动与长期归因的三层交叉检查",
+          "decision": "remove",
+          "reason": "三列逐项复制529–531三层证据清单及冲突排查段，不是可相加账本边界全文保留，删尾部二次工具汇总。",
+          "original_line": 535,
+          "heading": "### 同时保留三层证据"
+        }
+      ],
+      "sha256_after": "231a699b878203e9f15aeeb2ad3c723a788bcf1560c2ef61e0968fb72d9f9b46",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:07:24.626027+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 18,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a153/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a153/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 153,
+        "article": "src/part3-tools/ch15-other-tools/05-battery-historian.md",
+        "registered_sha256": "52fd33c93ca49461f4c047d993823736a3d45a3db7109ccf455df54093caa02d",
+        "frozen_sha256": "52fd33c93ca49461f4c047d993823736a3d45a3db7109ccf455df54093caa02d",
+        "review_input_sha256": "e679613ce588480e780a8b34bd84d7b864403b15189014ace1a3f0b9fb582e85",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/05-battery-historian.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a153/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a153/external-source.diff",
+        "diff_sha256": "bb8103f613c9a3a61aef7356adee88098a779f3cb2f488f90187a11c040ad34d",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 257, \"characters\": 20395, \"svg_labels_read\": 18, \"actual_pngs_viewed\": 18, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 10, \"code_lines\": 125, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "e679613ce588480e780a8b34bd84d7b864403b15189014ace1a3f0b9fb582e85",
+      "retired_diagrams": [
+        "ch15-05-01-evidence-types",
+        "ch15-05-02-bugreport-capture",
+        "ch15-05-03-wakelock-evaluation",
+        "ch15-05-04-raw-output-formats",
+        "ch15-05-05-events-to-code",
+        "ch15-05-08-rail-interval-quality",
+        "ch15-05-11-monitor-identity-and-delta",
+        "ch15-05-14-battery-usage-attribution",
+        "ch15-05-15-query-evolution",
+        "ch15-05-16-hal-measurement-types",
+        "ch15-05-17-controlled-ab-experiment",
+        "ch15-05-18-triangulate-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-153/retired-assets.json"
     },
     {
       "index": 154,
@@ -41841,8 +42034,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 87,
-  "next_article": "src/part3-tools/ch15-other-tools/05-battery-historian.md",
+  "reviewed_articles": 88,
+  "next_article": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -41852,7 +42045,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:05:00.287968+08:00",
+  "updated_at": "2026-10-31T13:07:24.626027+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -41890,6 +42083,13 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
+      "article": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "registered_sha256": "2f01e1235433f7f370869016b8a5af46d53ee702ff190c39efd0d56f060fcd60",
+      "observed_sha256": "42771cd0c6986e1a22e517df546c5b955eb74c04f8b682e0765f1f1787179205",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
       "article": "src/part1-fundamentals/ch02-rendering/14-multiwindow-desktop-rendering.md",
       "registered_sha256": "9e51ca011c58adcee244fb684a12651f29920f740781e858a9b34d8656b4b95d",
       "observed_sha256": "68e729a3e1570a503ae5cfaa9decc15818f333f00c2986d336ad0937af7e28f6",
@@ -41901,13 +42101,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/05-battery-historian.md",
-      "registered_sha256": "52fd33c93ca49461f4c047d993823736a3d45a3db7109ccf455df54093caa02d",
-      "observed_sha256": "e679613ce588480e780a8b34bd84d7b864403b15189014ace1a3f0b9fb582e85",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/05-battery-historian.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -42233,9 +42426,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3188,
-  "reviewed_placements_after": 1446,
-  "net_removed_placements": 1742,
+  "reviewed_placements_before": 3206,
+  "reviewed_placements_after": 1452,
+  "net_removed_placements": 1754,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -42259,5 +42452,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 87
+  "currently_matching_reviewed_source_count": 88
 }
