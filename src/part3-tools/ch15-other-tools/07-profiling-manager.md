@@ -94,7 +94,7 @@ last_review_finalize_at: '2026-07-31T12:07:10+08:00'
 
 heap profile 默认采的是 native allocation（C/C++ 等原生堆分配）。想看 Java/Kotlin 对象的分配，要开 `setTrackJavaAllocations(true)`，同一请求只覆盖其中一类。
 
-再往上看公共参数：四个 builder 都继承 `setTag()` 和 `setCancellationSignal()`。`tag` 用来标识单次采集，放短场景码合适，别指望它装下完整工单信息。持续采集可以由 `CancellationSignal` 提前叫停；时长和取消信号都可触发停止请求；取消是异步操作，不保证立即停止、精确覆盖业务边界或一定产生可用结果。Java heap dump 是某一时刻的快照，所以没有 `durationMs` 参数。
+再往上看公共参数：四个 builder 都继承 `setTag()` 和 `setCancellationSignal()`。`tag` 用来标识单次采集，放短场景码合适，完整工单信息交给服务端的映射去查。持续采集可以由 `CancellationSignal` 提前叫停，时长和取消信号都能触发停止请求；不过取消是异步操作，实际停止点、覆盖到的业务范围、结果是否可用，都要以回调为准。Java heap dump 是某一时刻的快照，所以 builder 里没有 `durationMs` 参数。
 
 ## API 层与版本判断
 
@@ -142,10 +142,10 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-类名归属先分清：`Profiling`、`ProfilingRequest`、`SystemTraceRequestBuilder` 和 `BufferFillPolicy` 来自 `androidx.core.os`，`CancellationSignal` 与 `ProfilingResult` 来自 `android.os`。平台异步执行请求，方法返回不等于采集已开始或最终会成功；服务还可能因配置、并发或配额拒绝。API 没有“已经开始录制”回调；如果目标是某段业务代码，启动要留出余量，并用 `androidx.tracing.Trace` 打上可搜索的 slice（带开始、结束时间的时间线区段），业务段结束后再调 `stopSignal.cancel()` 请求停止。
+类名归属先分清：`Profiling`、`ProfilingRequest`、`SystemTraceRequestBuilder` 和 `BufferFillPolicy` 来自 `androidx.core.os`，`CancellationSignal` 与 `ProfilingResult` 来自 `android.os`。请求是异步执行的：方法返回那一刻，采集可能还没开始，最终成败也还悬着，这两件事都要等回调；服务还可能因配置、并发或配额拒绝。加上 API 并没有“已经开始录制”回调，如果目标是某段业务代码，启动就要留出余量，并用 `androidx.tracing.Trace` 打上可搜索的 slice（带开始、结束时间的时间线区段），业务段结束后再调 `stopSignal.cancel()` 请求停止。
 
 
-本次请求要有专用回调，必须同时提供 `executor`（回调执行器）和 request-specific listener；缺少任一项就不会建立这组专用回调，应用应事先注册全局 listener。固定 r1 在回调列表为空时会同步抛出 `IllegalArgumentException`，不能只等失败回调；显式请求推荐传入完整组合，并处理同步调用异常。回调线程里只做轻量处理，文件压缩、网络上传这类活交给受约束的后台任务。
+本次请求要用专用回调的话，`executor`（回调执行器）和 request-specific listener 要成对提供——这组回调以两者齐全为前提，所以全局 listener 要事先注册好。固定 r1 在回调列表为空时会同步抛出 `IllegalArgumentException`，这种异常发生在调用点，光等失败回调是等不到的；显式请求推荐传入完整组合，并在调用点处理同步异常。回调线程里只做轻量处理，文件压缩、网络上传这类活交给受约束的后台任务。
 
 ## `BufferFillPolicy` 只有两个公开值
 
@@ -161,7 +161,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 <!-- gracker-diagram: ch15-07-04-buffer-retention -->
 ![缓冲区满时保留开头还是近期活动](../../assets/diagrams/ch15/ch15-07-04-buffer-retention.png)
 
-图：RING 保存靠近停止点的近期活动，DISCARD 优先保留采集开头。 条长为示意；策略不扩展允许的数据源，也不保证请求 buffer / 时长原值生效，服务还会按范围裁剪。
+图：RING 保存靠近停止点的近期活动，DISCARD 优先保留采集开头。 条长为示意；允许的数据源集合保持原样，请求的 buffer / 时长以服务端按范围裁剪后的结果为准。
 
 ## 两类 listener 与结果再次投递
 
@@ -172,7 +172,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 | 显式 `requestProfiling()` | 完整配置后收到 | 注册后也可收到同一结果 | API 36+ 为 `TRIGGER_TYPE_NONE`；API 35 不调用该 getter |
 | system-triggered profiling | 没有此通道 | 收到 | 对应的 trigger 常量 |
 
-两条通道一起用时，我们让 request-specific listener 负责更新本次交互状态，global listener 负责持久化结果文件。成功结果用平台返回的完整 `resultFilePath` 字符串去重即可；失败结果必须先按非成功 `errorCode` 处理，路径不能拿来读取：API 合同规定失败路径为 `null`，但固定 r1 的部分服务结果回调直接拼接 `getAppFileDir() + resultFile`，可能形成以 `null` 结尾的字符串；不能以路径非空反推成功。`ProfilingResult` 又没有唯一结果 ID，直接拿 `triggerType + tag + errorCode` 当唯一键会把两次独立失败误合并成一条。失败也要入库的话，固定一个写入通道，并把显式请求的内部 request ID 记在应用自己的请求记录里。
+两条通道一起用时，我们让 request-specific listener 负责更新本次交互状态，global listener 负责持久化结果文件。成功结果用平台返回的完整 `resultFilePath` 字符串去重即可；失败结果要先按非成功 `errorCode` 处理，路径放到一边：API 合同规定失败路径为 `null`，而固定 r1 的部分服务结果回调直接拼接 `getAppFileDir() + resultFile`，可能形成以 `null` 结尾的字符串，所以路径非空推不出成功。`ProfilingResult` 也没有唯一结果 ID，直接拿 `triggerType + tag + errorCode` 当唯一键，会把两次独立失败误合并成一条。失败也要入库的话，固定一个写入通道，并把显式请求的内部 request ID 记在应用自己的请求记录里。
 
 
 还有一类延迟到达的结果：采集完成前进程退出了，平台可在应用下次启动并注册全局 listener 后再次投递。所以全局 listener 要在进程启动早期注册，并在整个进程生命周期内保持可用。trigger 配置倒不用每次都加——系统服务 `ProfilingService` 会把它写入磁盘恢复；listener 属于进程内回调，每次都要重新注册。另外相同 trigger type 只保留一份配置，后添加的会替换旧的。
@@ -182,11 +182,11 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 结果拿到手了，我们先看文件本身。成功时，文件位置只认 `ProfilingResult.getResultFilePath()` 返回的这一条路径，读取、上传完成后删除、重试和留存超时都围绕它实现；外部存储权限也一并省掉，`files/profiling` 之类的目录无需写进代码。
 
-字段方面，`ProfilingResult` 在 API 35 提供 `errorCode`、`errorMessage`、`resultFilePath` 和 `tag`，`triggerType` getter 从 API 36 加入；没有 `profilingType` getter。所以显式请求的采集类型，要在提交请求时就写进应用自己的记录，trigger 结果则按 trigger 与产物的对应规则映射；文件扩展名只能区分一部分类型，剩下的靠记录补齐——多个 profile 都可能装在 Perfetto trace 容器里。
+字段方面，`ProfilingResult` 在 API 35 提供 `errorCode`、`errorMessage`、`resultFilePath` 和 `tag`，`triggerType` getter 从 API 36 加入，`profilingType` getter 则一直缺席。所以显式请求的采集类型，要在提交请求时就写进应用自己的记录；trigger 结果按 trigger 与产物的对应规则映射。文件扩展名只能区分一部分类型，剩下的靠记录补齐——多个 profile 都可能装在 Perfetto trace 容器里。
 
-上传之前，隐私这关必须过。system trace 会移除其他应用和进程的信息，所以 PerfettoSQL（Perfetto 的 SQL 查询接口） 能查到的数据范围比本地完整 trace 小；应用自己的线程名、trace slice、Surface 名或业务 tag 仍可能保留；系统针对无关进程的 redaction 不等于对业务标注做内容脱敏。这里的 Perfetto HeapGraph 主要保留对象身份、类型、大小和引用关系，不能套用普通 HPROF 的完整字段值 / 字符串转储语义；它仍可暴露类型名、字段名、代码位置和对象结构，特定对象还有 NAR 大小、Bitmap 尺寸等专门元数据。heap profile 与 stack sampling 也可能暴露类名、方法名及调用路径。上传前按数据类型把授权、加密、访问控制、保留期限和删除策略都过一遍。
+上传之前，隐私这关必须过。system trace 会移除其他应用和进程的信息，所以 PerfettoSQL（Perfetto 的 SQL 查询接口） 能查到的数据范围比本地完整 trace 小；但系统的 redaction 针对的是无关进程，我们自己应用的线程名、trace slice、Surface 名或业务 tag 依旧可能原样留在文件里。Perfetto HeapGraph 主要保留对象身份、类型、大小和引用关系，和普通 HPROF 的完整字段值 / 字符串转储语义是两回事：它仍可暴露类型名、字段名、代码位置和对象结构，特定对象还有 NAR 大小、Bitmap 尺寸等专门元数据。heap profile 与 stack sampling 同样可能带出类名、方法名及调用路径。所以上传前，我们按数据类型把授权、加密、访问控制、保留期限和删除策略各过一遍。
 
-同理，`tag` 里只放不含用户含义的场景码，由服务端受控映射到内部工单；手机号、订单号、账号、Token、URL 查询参数、地理位置、明文会话标识，一个都别放进去。
+同理，`tag` 里只放不含用户含义的场景码，由服务端受控映射到内部工单；手机号、订单号、账号、Token、URL 查询参数、地理位置、明文会话标识，这些统统留在服务端那侧。
 
 ### 结果文件生命周期
 
@@ -222,15 +222,15 @@ metadata（描述这份文件来源和状态的附加字段） 至少包含：
 - 页面、前后台状态、实验分组、触发原因
 - `result_file_path`、文件大小、内容摘要（用于校验完整性）、上传状态和清理时间
 
-系统侧也会做一点清理。固定 `android-17.0.0_r1` 在 `oldFilesCleanup` 功能开关启用时，`ProfilingManager` 会借用应用提供的 executor，尝试删除文件系统最后修改时间早于 5 天阈值的旧文件；频率按该 manager 实例内的 `mLastCleanupMs` 控制，通常不超过每天一次，但新实例会重置这项状态；但触发依赖相关 API 调用，服务侧另有结果重投与过期处理。这层清理我们只当后备看：调用时机、系统配置、Profiling Mainline 模块或 OEM（设备厂商） 配置都可能变，应用要控制自己的空间预算，还得自己维护容量上限和保留期——上传成功后立即删除，磁盘不足时按年龄淘汰。
+系统侧也会做一点清理。固定 `android-17.0.0_r1` 里，`oldFilesCleanup` 功能开关启用时，`ProfilingManager` 会借用应用提供的 executor，尝试删除文件系统最后修改时间早于 5 天阈值的旧文件；清理频率由该 manager 实例内的 `mLastCleanupMs` 控制，通常每天至多一次，新实例会重置这项状态，而且触发点依赖相关 API 调用，服务侧另有结果重投与过期处理。所以这层清理我们只当后备：调用时机、系统配置、Profiling Mainline 模块或 OEM（设备厂商） 配置都可能变，空间预算、容量上限和保留期要握在应用自己手里——上传成功后立即删除，磁盘不足时按年龄淘汰。
 
-回到 `tag`：平台会把它转成小写、过滤到字母、数字和连字符，再截取前 20 个有效字符写进文件名，这只约束文件名中的那一段；回调返回的原始 tag 不因这项文件名过滤而自动脱敏，所以仍只使用短场景码或随机诊断任务 ID。
+回到 `tag`：平台会把它转成小写、过滤到字母、数字和连字符，再截取前 20 个有效字符写进文件名——这只约束文件名里的那一段，回调返回的原始 tag 原样保留，所以 tag 本身仍只放短场景码或随机诊断任务 ID。
 
 ### Java Heap Dump 的敏感数据风险
 
-先辨认格式：本节 `JavaHeapDumpRequestBuilder` 在固定 r1 使用 `android.java_hprof`，由 ART 的 Perfetto 写出器生成 HeapGraph；它不是 `Debug.dumpHprofData()` 或传统 HPROF。常规对象记录类型、大小和引用，不能据此声称登录 Token、字符串正文、密钥字节或所有 primitive 字段都会原样写出。特殊类型可以额外带 NAR 大小、Bitmap 尺寸等有限元数据，具体以 protobuf 和设备实现为准。
+我们先辨认格式：本节 `JavaHeapDumpRequestBuilder` 在固定 r1 使用 `android.java_hprof`，由 ART 的 Perfetto 写出器生成 HeapGraph，和 `Debug.dumpHprofData()` 或传统 HPROF 是两种东西。常规对象记录的是类型、大小和引用；登录 Token、字符串正文、密钥字节或所有 primitive 字段值，并不保证原样写出。特殊类型可以额外带 NAR 大小、Bitmap 尺寸等有限元数据，具体以 protobuf 和设备实现为准。
 
-对象图仍能暴露内部类名、引用字段名、代码位置及结构关系，与同文件中的其他数据一起可能揭示业务实现。若另行接入原始 HPROF，则必须另外评估字段、数组和字符串内容的风险；两种格式的脱敏规则与分析器不能混用。
+对象图仍能暴露内部类名、引用字段名、代码位置及结构关系，与同文件中的其他数据一起可能揭示业务实现。若另行接入原始 HPROF，字段、数组和字符串内容的风险要另外评估——两种格式各配一套脱敏规则与分析器，使用时分开。
 system trace 的 redactor 不等于覆盖所有产物的数据审查，HeapGraph 与其他 heap 数据仍按真实字段和用途评估。方案按分析方式选：
 
 
@@ -240,16 +240,16 @@ system trace 的 redactor 不等于覆盖所有产物的数据审查，HeapGraph
 4. **备份排除**：`files/` 默认可能进入 Auto Backup。把 `files/profiling/` 同时排除在云备份和设备迁移规则之外，并兼顾旧版 `fullBackupContent` 配置。
 5. **删除可验证**：上传成功、超过保留期、用户撤回同意或诊断任务关闭时，都要有可观测的删除记录。
 
-最后，通用 trace 上传接口别直接拿来传 heap dump：两者的数据敏感度、访问人群、保留期和审计要求各不相同。
+最后，heap dump 与通用 trace 上传接口要分开：两者的数据敏感度、访问人群、保留期和审计要求各不相同。
 
 ## System-triggered profiling 的运行方式
 
-我们再看系统触发这一侧。ANR、APP_FULLY_DRAWN 及部分 kill/request-running 触发器复用周期性、随机启动的后台 ring-buffer trace；事件发生时还要检查注册与限流，且后台 trace 必须正在运行，才能请求 running trace snapshot。这个条件不能概括所有 trigger：COLD_START 新开采集，OOM 请求 Java HeapGraph，ANOMALY / APP_COMPAT 还按子类型走各自路径。注册只表达允许采样，不能保证每次事件都有文件。
+我们再看系统触发这一侧。ANR、APP_FULLY_DRAWN 及部分 kill/request-running 触发器复用周期性、随机启动的后台 ring-buffer trace；事件发生时，系统要先检查注册与限流，后台 trace 也得正在运行，才谈得上请求 running trace snapshot。这套前提只适用于这一类触发器：COLD_START 另开新采集，OOM 请求 Java HeapGraph，ANOMALY / APP_COMPAT 按子类型走各自的路径。注册表达的是允许采样，事件是否留下文件，要看当时的各项条件。
 
 <!-- gracker-diagram: ch15-07-09-trigger-dispatch -->
 ![历史快照、新冷启动与 OOM 的触发分流](../../assets/diagrams/ch15/ch15-07-09-trigger-dispatch.png)
 
-图：多数时序触发器复用后台 trace，COLD_START 新开采集，OOM 使用 Java HeapGraph。 每条路径都需有效注册及相应条件；anomaly / app-compat 按子类型处理，不能用后台 trace 在跑概括所有触发器。
+图：多数时序触发器复用后台 trace，COLD_START 新开采集，OOM 使用 Java HeapGraph。 每条路径都需有效注册及相应条件；anomaly / app-compat 按子类型处理，后台 trace 在跑只是其中一类前提。
 
 trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 
@@ -267,11 +267,11 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 | API 37 | <code>TRIGGER_<wbr>TYPE_<wbr>COLD_<wbr>START</code> | 为本次冷启动新开的 system trace 与 stack sampling |
 | API 37 | <code>TRIGGER_<wbr>TYPE_<wbr>APP_<wbr>COMPAT</code> | 产物随兼容性问题类型变化，<code>tag</code> 携带问题信息 |
 
-注册入口也有版本分层：`addProfilingTriggers()` 从 API 36 可用，`addAllProfilingTriggers()` 与 `requestRunningSystemTrace()` 属于 version 36.1。trigger 结果由全局 listener 接收；普通 trigger 的 `rateLimitingPeriodHours` 是额外最小间隔，一般还受整机 / UID 配额限制。固定 r1 对 anomaly 另有分支：多数 anomaly 绕过这套通用限流，memory-limit anomaly 使用专用限流，不能把所有触发器描述为同一组配额规则。
+注册入口也有版本分层：`addProfilingTriggers()` 从 API 36 可用，`addAllProfilingTriggers()` 与 `requestRunningSystemTrace()` 属于 version 36.1。trigger 结果由全局 listener 接收；普通 trigger 的 `rateLimitingPeriodHours` 是额外最小间隔，一般还受整机 / UID 配额限制。固定 r1 对 anomaly 另有分支：多数 anomaly 绕过这套通用限流，memory-limit anomaly 使用专用限流——做预算和写文档时，把触发器按配额规则分组描述。
 
 ## 两个启动 trigger 的时间窗口
 
-启动排障最常用的是两个 trigger，我们先分清它们各自的时间窗口。`APP_FULLY_DRAWN` 在冷启动完整绘制后请求保存当时已运行的 system trace：它依赖后台 trace 恰好在跑，主要保留触发前的近期 ring-buffer 活动，适合看启动尾段；快照请求异步执行，结束点应以实际 trace 时间为准，不保证恰好等于事件时刻。
+启动排障最常用的是两个 trigger，我们先分清它们各自的时间窗口。`APP_FULLY_DRAWN` 在冷启动完整绘制后请求保存当时已运行的 system trace：它依赖后台 trace 恰好在跑，主要保留触发前的近期 ring-buffer 活动，适合看启动尾段；快照请求异步执行，结束点以实际 trace 时间为准，可能偏离事件时刻。
 
 `COLD_START` 正相反，它是 API 37 为这次冷启动新开的一份 system trace，同时做 stack sampling：应用调用 `reportFullyDrawn()` 时停止，没调用就默认约 5 秒停止；它的 system trace 用 `DISCARD`，为的是留下采集开头。还要记得启动 trace 自身可能给启动带来延迟，做性能阈值判断时把这部分开销算进去。
 
@@ -280,7 +280,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 <!-- gracker-diagram: ch15-07-10-startup-trigger-windows -->
 ![两个启动 trigger 的不同时间窗口](../../assets/diagrams/ch15/ch15-07-10-startup-trigger-windows.png)
 
-图：APP_FULLY_DRAWN 取已有记录的近期窗口，COLD_START 尝试为本次启动新开采集并保留早期事件。 条长不是实测；两者都可能有延迟。冷启动默认时长约 5 秒且可配置，不保证覆盖启动最早指令，两种样本分开统计。
+图：APP_FULLY_DRAWN 取已有记录的近期窗口，COLD_START 尝试为本次启动新开采集并保留早期事件。 条长不是实测；两者都可能有延迟。冷启动默认时长约 5 秒且可配置，启动最早的指令可能落在窗口之外，两种样本分开统计。
 
 ## 三类排障场景
 
@@ -294,7 +294,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 
 ### 内存持续增长
 
-内存持续增长的排查分两步：分配来源未知时先用 heap profile 找高频分配栈，再用 Java heap dump 检查存活对象和 GC Root。API 37 的 `TRIGGER_TYPE_OOM` 只覆盖 Java OOM，`LMKD`（low memory killer daemon，系统低内存杀进程机制） 和 native OOM（C/C++ 等原生堆耗尽） 要另走排查路径。另外，应用装了自定义 `UncaughtExceptionHandler`（未捕获异常处理器） 的话必须继续调用默认 handler，否则 OOM trigger 没法按平台预期完成处理。
+内存持续增长的排查分两步：分配来源未知时先用 heap profile 找高频分配栈，再用 Java heap dump 检查存活对象和 GC Root。API 37 的 `TRIGGER_TYPE_OOM` 只覆盖 Java OOM，`LMKD`（low memory killer daemon，系统低内存杀进程机制） 和 native OOM（C/C++ 等原生堆耗尽） 要另走排查路径。另外，应用装了自定义 `UncaughtExceptionHandler`（未捕获异常处理器） 的话，要继续调用默认 handler，OOM trigger 的处理流程才能按平台预期走完。
 
 
 ## 覆盖全部失败结果
@@ -312,10 +312,10 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 | `ERROR_FAILED_INVALID_REQUEST` | 参数组合或请求内容无效 | 停止重试，修正 builder 参数或版本分支 |
 | `ERROR_UNKNOWN` | 未归入以上类别的失败 | 保存 `errorMessage` 与运行环境，限制重试次数 |
 
-失败日志至少保存应用自己的 request ID、profile 类型、`triggerType`、`tag`、`errorCode`、`errorMessage` 和平台版本。先以 `errorCode == ERROR_NONE` 再检查文件路径及可读性；失败路径即使非空也不使用。系统触发未满足注册、后台窗口或限流等条件时，还可能直接不产出应用结果回调，不能要求每次事件都对应这张错误码表。
+失败日志至少保存应用自己的 request ID、profile 类型、`triggerType`、`tag`、`errorCode`、`errorMessage` 和平台版本。判断顺序是先看 `errorCode == ERROR_NONE`，再检查文件路径及可读性；失败路径即使非空，也不拿来读文件。系统触发的前提是注册、后台窗口、限流这些条件都过关，哪一项没过，应用可能连结果回调都收不到——这张表对应的是有回调的那部分失败。
 
 
-关于限流，再多说两句。次数、时长上限和缓冲区上限来自可更新模块与 `DeviceConfig`；这些服务端配置并不是普通应用可以依赖读取的公开能力，产品应使用保守本地策略，并处理实际拒绝或裁剪结果。实验设备用 `adb shell device_config list profiling` 看当前配置；`adb shell device_config put profiling_testing rate_limiter.disabled true` 在通用 RateLimiter 中只为显式请求绕过限流。系统 trigger 的测试包开关 `system_triggered_profiling.testing_package_name` 会强制其后台 trace，并对该包绕过通用系统限流，但普通 trigger 的应用自定间隔仍另行检查；memory-limit anomaly 还有特殊分支。设置时使用实际包名。修改前记录相关 key 的原值及是否存在，结束后按原值恢复，原本不存在的 key 才删除，不能一律置 false 当作恢复。
+关于限流，再多说两句。次数、时长上限和缓冲区上限来自可更新模块与 `DeviceConfig`；这些服务端配置并不是普通应用可以依赖读取的公开能力，产品侧用保守的本地策略，并准备好应对实际的拒绝或裁剪。实验设备上，`adb shell device_config list profiling` 可以看当前配置；`adb shell device_config put profiling_testing rate_limiter.disabled true` 在通用 RateLimiter 中只为显式请求绕过限流；系统 trigger 的测试包开关 `system_triggered_profiling.testing_package_name` 会强制该包的后台 trace，并对该包绕过通用系统限流——普通 trigger 的应用自定间隔仍另行检查，memory-limit anomaly 还有特殊分支。设置时用实际包名。改前记录相关 key 的原值及是否存在，结束后按原值恢复：原本存在的 key 写回原值，原本不存在的 key 删除即可，一律置 false 并不算恢复。
 
 
 限流比“每小时几次”这个印象细得多：通用限流对显式请求按 profiling 类型计成本，对 system-triggered 请求使用触发式成本；再检查小时、天、周窗口以及应用 UID 与整机预算，任何一项预算见底都可能拒绝请求。应用侧的对策是设更保守的本地冷却时间、保证同类采集串行——额度花完只能等窗口重置，循环重试刷不回来。
@@ -336,7 +336,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 | adb / Perfetto CLI | 实验室压测、定制数据源、自动采集 | 普通应用无法在量产用户设备上任意执行 |
 | APM（Application Performance Monitoring，应用性能监控）SDK | 业务指标、崩溃信息、长期统计 | 是否包含 system trace、heap 数据取决于 SDK，数据责任由接入方评估 |
 
-`ProfilingManager` 生成诊断材料，触发策略、样本元数据、传输、访问权限、留存和删除仍由监控系统负责；线上指标异常用来定位样本，profile 用来解释某次现场，这是两种数据，别混在一起。
+`ProfilingManager` 生成诊断材料，触发策略、样本元数据、传输、访问权限、留存和删除仍由监控系统负责；线上指标异常用来定位样本，profile 用来解释某次现场——两种数据各答各的问题。
 
 ## 设备验证与旧版本降级
 
@@ -360,7 +360,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 | <code>service/<wbr>java/<wbr>com/<wbr>android/<wbr>os/<wbr>profiling/<wbr>Configs.<wbr>java</code> | 参数裁剪、默认范围、Perfetto 数据源和缓冲区策略 |
 | <code>service/<wbr>java/<wbr>com/<wbr>android/<wbr>os/<wbr>profiling/<wbr>Profiling<wbr>Service.<wbr>java</code> | 限流、执行与后处理、脱敏、文件后缀、结果复制和回调 |
 
-把调用链串一遍：应用侧 request 经 Binder 进入 `ProfilingService`，服务依次检查并发状态、限流与参数，再启动 Perfetto。采集完成后，system trace 与受开关控制的 stack sampling 按路径经过 redaction（删除或合并其他进程的信息）；服务请求应用进程创建目标文件，并取得可写文件描述符，复制临时结果后发送 `ProfilingResult`。可回传的失败映射为错误码，但同步异常、未命中的 trigger 或部分拒绝不保证都有结果回调；调用返回也不是采集成功的证明。
+把调用链串一遍：应用侧 request 经 Binder 进入 `ProfilingService`，服务依次检查并发状态、限流与参数，再启动 Perfetto。采集完成后，system trace 与受开关控制的 stack sampling 按路径经过 redaction（删除或合并其他进程的信息）；服务请求应用进程创建目标文件，并取得可写文件描述符，复制临时结果后发送 `ProfilingResult`。可回传的失败映射为错误码，但同步异常、未命中的 trigger 或部分拒绝未必伴随结果回调，调用返回与采集成功也是两回事。
 
 <!-- gracker-diagram: ch15-07-17-service-pipeline -->
 ![请求检查、采集、脱敏与 FD 交付](../../assets/diagrams/ch15/ch15-07-17-service-pipeline.png)
