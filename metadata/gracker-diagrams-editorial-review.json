@@ -64320,9 +64320,166 @@
       "before_count": 16,
       "before_all_images": 16,
       "sha256_before": "72c00c489a5e972f730d0ba8cd0766f324711f8d3ccc24fb7cb4985f6963c3a4",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a264-01-index-and-content",
+          "title": "媒体索引查询与内容读取分段",
+          "decision": "remove",
+          "reason": "query/Binder/Cursor/按需内容四步重复引言和访问入口表，没有画具体查询与内容路径分支。",
+          "original_line": 105,
+          "heading": "### 媒体库的耗时从哪里来"
+        },
+        {
+          "original_id": "a264-02-volume-and-visibility",
+          "title": "可见集合由卷与授权共同决定",
+          "decision": "remove",
+          "reason": "卷和授权两条件汇聚可见集合是前文权限/挂载解释摘要；保留的generation同步图已把两项列为同步前提。",
+          "original_line": 154,
+          "heading": "#### 先确定应用能看到哪些媒体"
+        },
+        {
+          "original_id": "a264-03-keyset-pagination",
+          "title": "媒体分页用排序值与ID定位",
+          "decision": "remove",
+          "reason": "排序、末行锚点、续页谓词和Cursor关闭四框重复紧邻完整分页代码，没有同秒记录与跨页实例。",
+          "original_line": 224,
+          "heading": "#### 只查询所需列，并让分页可取消"
+        },
+        {
+          "original_id": "a264-04-pending-publish",
+          "title": "IS_PENDING 的发布与失败补偿",
+          "decision": "keep",
+          "reason": "pending插入后写入成功到发布、写入/关闭失败和发布失败两路均到补偿清理，明确不完整媒体发布边界。",
+          "original_line": 277,
+          "heading": "#### 用 `IS_PENDING` 发布完整媒体"
+        },
+        {
+          "original_id": "a264-05-generation-checkpoint",
+          "title": "版本、增量与删除补偿共同恢复同步",
+          "decision": "keep",
+          "reason": "version变更全量与不变generation区间两路，再单独删除补偿、全部持久化后二次核version推进checkpoint，表达同步顺序和恢复协议。",
+          "original_line": 366,
+          "heading": "#### `version` 判断是否重建，`generation` 定位增量"
+        },
+        {
+          "original_id": "a264-06-fuse-and-provider",
+          "title": "直接路径仍受 FUSE 访问规则约束",
+          "decision": "keep",
+          "reason": "ContentResolver和合法File/fopen经FUSE汇聚MediaProvider规则，纠正直接路径绕过权限/元数据移除/转码的误解。",
+          "original_line": 397,
+          "heading": "### Scoped Storage、FUSE 与批量操作"
+        },
+        {
+          "original_id": "a264-07-batch-user-requests",
+          "title": "系统确认请求的写权限与已执行操作",
+          "decision": "keep",
+          "reason": "createWriteRequest只获临时授权后应用执行写入，与收藏/回收站/删除系统已经执行的分支分开，区分RESULTOK语义。",
+          "original_line": 438,
+          "heading": "#### targetSdk 36 起的批量请求有 2000 项输入上限"
+        },
+        {
+          "original_id": "a264-08-thumbnail-budget",
+          "title": "缩略图按像素尺寸、内容版本与窗口调度",
+          "decision": "remove",
+          "reason": "窗口→thumbnail→缓存键→失效四框重复紧邻预算与缓存键列表，没有实际并发或窗口范围示意。",
+          "original_line": 487,
+          "heading": "### 缩略图、预览图与解码成本"
+        },
+        {
+          "original_id": "a264-09-capabilities-at-open",
+          "title": "每条媒体访问路径声明自己的能力",
+          "decision": "keep",
+          "reason": "按播放/缩略图支持源格式与上传导出不支持源格式分流，后者调用级能力打开，表达多路径能力声明不能一刀切。",
+          "original_line": 534,
+          "heading": "#### 按调用路径声明媒体能力"
+        },
+        {
+          "original_id": "a264-10-observable-media-phases",
+          "title": "应用可观测的阶段与系统内部工作",
+          "decision": "keep",
+          "reason": "系统选择、应用打开/首字节/复制与云/转码供应三轨，表现打开返回与内容首字节可错开的观测边界，明确非实测时长。",
+          "original_line": 744,
+          "heading": "#### 把一次选择分成五个阶段"
+        },
+        {
+          "original_id": "a264-11-picker-uri-lifetime",
+          "title": "选择授权与后台内容准备分离",
+          "decision": "remove",
+          "reason": "选择→持久授权→打开→释放四步重复API代码及授权段落，没有授权临时/持久不同失效窗口的实际对照。",
+          "original_line": 796,
+          "heading": "#### 临时授权与持久授权"
+        },
+        {
+          "original_id": "a264-12-embedded-selection-state",
+          "title": "嵌入式 Picker 双向维护选择与图形会话",
+          "decision": "keep",
+          "reason": "系统嵌入会话grant/revoke到附件状态，应用主动deselect同时更新附件的双向路径，明确不能等待未承诺的revoke回补。",
+          "original_line": 856,
+          "heading": "#### 连续选择需要双向维护状态"
+        },
+        {
+          "original_id": "a264-13-two-transcoding-entries",
+          "title": "Picker 与 MediaProvider 的两条转码入口",
+          "decision": "remove",
+          "reason": "Picker与MediaProvider两条入口两列框重复紧邻四维转码入口对照表，没有补充限制或缓存关系。",
+          "original_line": 872,
+          "heading": "### 视频转码的时间与存储成本"
+        },
+        {
+          "original_id": "a264-14-three-cache-owners",
+          "title": "系统两种转码缓存与应用副本分别管理",
+          "decision": "remove",
+          "reason": "系统两种缓存与私有副本三列框完全重复上方三层内容/清理者/可依赖性表，所有权限制正文更精确。",
+          "original_line": 941,
+          "heading": "### MediaProvider 与缓存清理"
+        },
+        {
+          "original_id": "a264-15-recoverable-private-copy",
+          "title": "媒体准备以持久状态恢复文件窗口",
+          "decision": "keep",
+          "reason": "partial写完到文件重命名、再数据库ready的先后，及重启文件/任务对账恢复，突出二者非同一事务的崩溃窗口。",
+          "original_line": 979,
+          "heading": "#### 什么时候复制到应用私有目录"
+        },
+        {
+          "original_id": "a264-16-bounded-media-work",
+          "title": "多选工作按资源分队列并逐项取消",
+          "decision": "remove",
+          "reason": "IO/CPU/网络三分支和两张预算卡片重复前文分队列段落，未表达实际调度时序或取消传播路径。",
+          "original_line": 1089,
+          "heading": "#### 云媒体路径"
+        }
+      ],
+      "sha256_after": "c49170ca84a2850b200c2b08566b9d9312f353bde1ea06ade7b1923901c0463d",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:32:44.694846+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 16,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a264/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a264/visual-review.json",
+      "retired_diagrams": [
+        "a264-01-index-and-content",
+        "a264-02-volume-and-visibility",
+        "a264-03-keyset-pagination",
+        "a264-08-thumbnail-budget",
+        "a264-11-picker-uri-lifetime",
+        "a264-13-two-transcoding-entries",
+        "a264-14-three-cache-owners",
+        "a264-16-bounded-media-work"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-264/retired-assets.json"
     },
     {
       "index": 265,
@@ -64611,8 +64768,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 180,
-  "next_article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+  "reviewed_articles": 181,
+  "next_article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -64622,7 +64779,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:29:18.142004+08:00",
+  "updated_at": "2026-10-31T18:32:44.694846+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -64751,9 +64908,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5449,
-  "reviewed_placements_after": 2128,
-  "net_removed_placements": 3321,
+  "reviewed_placements_before": 5465,
+  "reviewed_placements_after": 2136,
+  "net_removed_placements": 3329,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -64777,5 +64934,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 180
+  "currently_matching_reviewed_source_count": 181
 }
