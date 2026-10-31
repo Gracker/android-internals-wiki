@@ -333,10 +333,6 @@ CPU 异常在报告里的样子比较固定：目标 UID 的用户态或内核�
 
 同一个 UID 里的多个库会合并计数，订阅细节还是要靠应用侧日志。定位策略见 §25.4。
 
-<!-- gracker-diagram: a274-04-activity-to-code-ownership -->
-![资源活动分别回到责任入口](../../assets/diagrams/ch25/a274-04-activity-to-code-ownership.png)
-
-图：热点线程、请求、订阅和锁标签是四类责任入口；同UID多个库仍需应用侧记录区分。
 
 #### WakeLock：区分应用锁、内核唤醒源和唤醒原因
 
@@ -352,10 +348,6 @@ CPU 异常在报告里的样子比较固定：目标 UID 的用户态或内核�
 
 [Stuck partial wake lock 口径](https://developer.android.com/google/play/vitals/stuck-wakelock)是：24 小时内至少出现一次在后台连续持有满 1 小时的 Partial WakeLock。Stuck 指标判断一把锁的连续持有时间，excessive 指标计算所有非豁免锁的累计时间，两者条件不同。
 
-<!-- gracker-diagram: a274-05-wake-lock-kernel-and-vitals -->
-![应用锁、内核唤醒源和唤醒原因不能一一对应](../../assets/diagrams/ch25/a274-05-wake-lock-kernel-and-vitals.png)
-
-图：应用锁、驱动对象与一次唤醒只有关联线索；excessive累计口径与stuck连续口径分开记录。
 
 本地诊断可以走在 vitals 门槛之前：锁持续到业务结束之后，或标签对不上责任模块，就该检查了。下面的应用侧示例要求先在 `AndroidManifest.xml` 声明 `<uses-permission android:name="android.permission.WAKE_LOCK" />`；该权限属于普通权限，无须运行时申请。封装使用可定位的标签，并同时设置超时与 `finally` 释放。
 
@@ -482,10 +474,6 @@ CPU 处理器会把频点模型、硬件总量和 UID time-in-bracket（各功�
 
 一次可复核的应用侧实验应把三组增量放在一起保存：监测项的微瓦秒、`HealthStats` 的本 UID CPU/网络/WakeLock 活动，以及完成任务数。设备能量是否变化、应用行为为何变化，分别靠前两组增量回答；系统设置页那种 UID 精确电量，还在这套数据的能力之外。
 
-<!-- gracker-diagram: a274-08-public-power-readings-delta -->
-![三类接口与PowerMonitor窗口差值的条件](../../assets/diagrams/ch25/a274-08-public-power-readings-delta.png)
-
-图：ENERGY_UNAVAILABLE不能参与相减；时间戳未前进或窗口短于分辨率，应更换测量方式。
 
 #### Android 15 到 Android 17 的变化
 
@@ -507,10 +495,6 @@ span（聚合区间）文件名由 19 位补零 ID 和 `.pss` 后缀组成，通
 
 文件是二进制 XML，别按普通文本 XML 或旧资料所说的 Protocol Buffers（Proto）日志去解析；该目录属于系统内部实现，普通应用也不要直接读取。
 
-<!-- gracker-diagram: a274-09-aggregation-store-format -->
-![非唤醒调度聚合后写入二进制XML](../../assets/diagrams/ch25/a274-09-aggregation-store-format.png)
-
-图：典型目录/data/system/power-stats；内部文件格式需按源码解析，不能按Proto或普通文本读取。
 
 #### 唤醒原因如何进入 Perfetto 和 BatteryStats
 
@@ -603,10 +587,6 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 
 这些状态可能同时出现，也可能只有一项变化。单看进程消失、`dumpsys deviceidle` 或设置页里的“允许后台活动”，还定不了原因。
 
-<!-- gracker-diagram: a274-11-background-control-planes -->
-![后台任务失败先定位到具体机制](../../assets/diagrams/ch25/a274-11-background-control-planes.png)
-
-图：限制等级、待机分组、调度任务、网络、FGS和退出原因需要在同一时间窗分别保存。
 
 ### `AppRestrictionController` 怎样形成限制等级
 
@@ -667,10 +647,6 @@ for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
 
 这些数值用来对照同一 package 的 tracker 候选汇总 `Math.max()`。另一个方向的查询不能混用：`getRestrictionLevel(uid)` 对共享 UID 的多个 package 取已知等级中的最宽松值（`Math.min()`）；带 package 的查询才返回该包状态。诊断报告仍要记录包名、UID、名称、变更时间，以及能够取得的 reason、subReason（细分原因）和 source 字段。
 
-<!-- gracker-diagram: a274-12-restriction-candidate-and-uid-query -->
-![tracker候选最大值与共享UID查询最小值分开](../../assets/diagrams/ch25/a274-12-restriction-candidate-and-uid-query.png)
-
-图：策略汇总与最终查询是两个不同操作；诊断必须保留package、UID和调用入口。
 
 表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，把它简单归因成耗电超限会误判；`EXEMPTED` 也免不了 CPU、网络和前台服务规则各自的约束。
 
@@ -858,10 +834,6 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 
 “AOSP 输出一致”离“AOSP 没有影响”还差一步核对：JobScheduler、Alarm、网络和 FGS 都有自己的状态，要在相同时间窗内一起对比。反过来，看到厂商服务包名也只是线索；它是否执行了清理，要有对应的调用、事件或状态变化来落定。
 
-<!-- gracker-diagram: a274-15-oem-evidence-localization -->
-![OEM差异按状态、任务和退出证据逐层定位](../../assets/diagrams/ch25/a274-15-oem-evidence-localization.png)
-
-图：SIGKILL只表明信号终止；设备不支持低内存专门报告时，LMK也可能记为SIGNALED。
 
 ### 限制设置的 XML 存储
 

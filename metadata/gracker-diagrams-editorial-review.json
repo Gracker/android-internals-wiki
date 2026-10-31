@@ -65372,9 +65372,157 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "f4532398a967ec7a9eb7f2a2c459d53c4693a83f27aa17c1a971b5e5291d3354",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "a274-01-three-evidence-layers",
+          "title": "设备能量、UID归因与执行行为相互印证",
+          "decision": "keep",
+          "reason": "固定条件下能量、归因、行为三类证据分流并结合受控消融，补充比较表的协同取证结构。",
+          "original_line": 145,
+          "heading": "### 先分清三类证据"
+        },
+        {
+          "original_id": "a274-02-controlled-measurement-window",
+          "title": "预热、正式测量与冷却分开",
+          "decision": "keep",
+          "reason": "准备、正式采集和下一轮冷却三轨说明测量窗口范围，直观隔离预热及热状态干扰。",
+          "original_line": 156,
+          "heading": "### 设计可比较的测试"
+        },
+        {
+          "original_id": "a274-03-power-metric-capability-gates",
+          "title": "PowerMetric先检查版本、能力和电量",
+          "decision": "keep",
+          "reason": "高精度支持分为Power/Energy与Battery或跳过两路，明确最低电量检查不是高精度检查的同一门槛。",
+          "original_line": 248,
+          "heading": "#### Macrobenchmark 回归测试与精度"
+        },
+        {
+          "original_id": "a274-04-activity-to-code-ownership",
+          "title": "资源活动分别回到责任入口",
+          "decision": "remove",
+          "reason": "CPU网络定位锁四卡重复读数表和四小节定位清单，未新增资源间依赖。",
+          "original_line": 336,
+          "heading": "#### GNSS 与传感器：确认订阅是否越过业务边界"
+        },
+        {
+          "original_id": "a274-05-wake-lock-kernel-and-vitals",
+          "title": "应用锁、内核唤醒源和唤醒原因不能一一对应",
+          "decision": "remove",
+          "reason": "三名词与两种vitals阈值卡片逐项重复紧邻定义和标准段落，图也没有画真实映射关系。",
+          "original_line": 355,
+          "heading": "#### WakeLock：区分应用锁、内核唤醒源和唤醒原因"
+        },
+        {
+          "original_id": "a274-06-lock-timeout-versus-business-cancellation",
+          "title": "WakeLock超时释放与业务取消分开",
+          "decision": "keep",
+          "reason": "业务、持锁与最终退出三轨可直观看到WakeLock超时后业务仍继续的区间，避免将锁时限误认业务取消。",
+          "original_line": 388,
+          "heading": "#### WakeLock：区分应用锁、内核唤醒源和唤醒原因"
+        },
+        {
+          "original_id": "a274-07-platform-attribution-pipeline",
+          "title": "活动历史经聚合归因生成系统查询结果",
+          "decision": "keep",
+          "reason": "活动记录分支到报告消费与查询，聚合再分存储/导出，架构数据流清楚区分Historian职责。",
+          "original_line": 446,
+          "heading": "### Android 17 源码中的功耗归因链"
+        },
+        {
+          "original_id": "a274-08-public-power-readings-delta",
+          "title": "三类接口与PowerMonitor窗口差值的条件",
+          "decision": "remove",
+          "reason": "三接口权限范围已有三列表格，差值条件又有完整说明；图中仅PowerMonitor接流程且其余悬空卡片不能替代表格。",
+          "original_line": 485,
+          "heading": "#### BatteryUsageStats、PowerMonitor 与 HealthStats 的能力边界"
+        },
+        {
+          "original_id": "a274-09-aggregation-store-format",
+          "title": "非唤醒调度聚合后写入二进制XML",
+          "decision": "remove",
+          "reason": "非唤醒Alarm、目录、文件名、二进制XML和AtomicFile四框重复紧邻四段说明，保留更精确源码描述。",
+          "original_line": 510,
+          "heading": "#### PowerStatsScheduler 与 PowerStatsStore"
+        },
+        {
+          "original_id": "a274-10-wakeup-evidence-delivery",
+          "title": "一次唤醒记录进入Trace与功耗统计",
+          "decision": "keep",
+          "reason": "原生唤醒原因经Java分发到Trace instant和统计history两个消费端，展现同一记录的实际扇出关系。",
+          "original_line": 525,
+          "heading": "#### 唤醒原因如何进入 Perfetto 和 BatteryStats"
+        },
+        {
+          "original_id": "a274-11-background-control-planes",
+          "title": "后台任务失败先定位到具体机制",
+          "decision": "remove",
+          "reason": "六种后台控制机制逐格重复前面的机制/状态/影响表，图未表达这些机制如何叠加。",
+          "original_line": 606,
+          "heading": "### AOSP 后台限制的多套机制"
+        },
+        {
+          "original_id": "a274-12-restriction-candidate-and-uid-query",
+          "title": "tracker候选最大值与共享UID查询最小值分开",
+          "decision": "remove",
+          "reason": "同包tracker取最大与共享UID查询取最小是两个独立操作，四框串成一条流程容易误示，正文代码和等级说明更精确。",
+          "original_line": 670,
+          "heading": "#### 限制等级要看名称和来源"
+        },
+        {
+          "original_id": "a274-13-background-exemption-sources",
+          "title": "豁免来源分开读取并核对作用范围",
+          "decision": "keep",
+          "reason": "静态XML、动态配置和身份角色三路汇入控制器，同时将Job/Alarm/FGS/network另列，明确来源可重叠但作用范围独立。",
+          "original_line": 715,
+          "heading": "#### DeviceConfig 与其他豁免来源"
+        },
+        {
+          "original_id": "a274-14-uid-exemption-union-interval",
+          "title": "同UID多个package的豁免状态区间取并集",
+          "decision": "keep",
+          "reason": "同UID两包重叠时间与合并区间三轨展示首包开始到末包结束的并集，补充代码难以直看的去重计量关系。",
+          "original_line": 747,
+          "heading": "### `AppBatteryExemptionTracker` 记录的是耗电扣除区间"
+        },
+        {
+          "original_id": "a274-15-oem-evidence-localization",
+          "title": "OEM差异按状态、任务和退出证据逐层定位",
+          "decision": "remove",
+          "reason": "OEM状态/任务/退出分流总结重复紧邻七行观察结果表，保留表的具体条件和下一步。",
+          "original_line": 861,
+          "heading": "### 按观察结果定位层次"
+        }
+      ],
+      "sha256_after": "f305ed78def09aebb04f5a4d8962a0e8354799a79ceadfe621627ddbd70a6c15",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:57:14.688682+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a274/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a274/visual-review.json",
+      "retired_diagrams": [
+        "a274-04-activity-to-code-ownership",
+        "a274-05-wake-lock-kernel-and-vitals",
+        "a274-08-public-power-readings-delta",
+        "a274-09-aggregation-store-format",
+        "a274-11-background-control-planes",
+        "a274-12-restriction-candidate-and-uid-query",
+        "a274-15-oem-evidence-localization"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-274/retired-assets.json"
     },
     {
       "index": 275,
@@ -65586,8 +65734,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 187,
-  "next_article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+  "reviewed_articles": 188,
+  "next_article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -65597,7 +65745,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:54:38.969588+08:00",
+  "updated_at": "2026-10-31T18:57:14.688682+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -65733,9 +65881,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5546,
-  "reviewed_placements_after": 2173,
-  "net_removed_placements": 3373,
+  "reviewed_placements_before": 5561,
+  "reviewed_placements_after": 2181,
+  "net_removed_placements": 3380,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -65759,7 +65907,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 187,
+  "currently_matching_reviewed_source_count": 188,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
