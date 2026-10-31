@@ -58374,9 +58374,267 @@
       "before_count": 27,
       "before_all_images": 27,
       "sha256_before": "47e82aceb566d993e24828c83e135e5201743dcde02218e8a8fa32b643a55498",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a235-01-phase-dependencies",
+          "title": "读取依赖分别连接到组合、测量、放置与绘制",
+          "decision": "keep",
+          "reason": "Snapshot四条读取依赖各连组合、测量、放置和绘制，横向可能后续工作另作一链，清楚展示失效入口与整段重跑不同。",
+          "original_line": 190,
+          "heading": "#### 1. 组合、布局、绘制三个阶段"
+        },
+        {
+          "original_id": "a235-02-host-entries",
+          "title": "宿主入口消费各自待处理的布局工作",
+          "decision": "remove",
+          "reason": "宿主onMeasure/onLayout/dispatchDraw入口四条列表完整，三行映射卡重复。",
+          "original_line": 210,
+          "heading": "#### 2. Android 宿主如何调用 Compose 布局"
+        },
+        {
+          "original_id": "a235-03-one-pass",
+          "title": "先保存一次测量结果，再按顺序放置",
+          "decision": "remove",
+          "reason": "31行OnePassColumn及Placeable保存、Long总高和外框不自动裁剪解释完整，三行步骤卡重复且未连成一轮测放。",
+          "original_line": 290,
+          "heading": "#### 2. 单次布局过程限制子节点测量次数"
+        },
+        {
+          "original_id": "a235-04-measurement-reuse",
+          "title": "相同约束还需没有待测量标记",
+          "decision": "remove",
+          "reason": "measurePending或约束不同的三条条件及子树pending、独立layout标记段落完整，三行规则卡重复。",
+          "original_line": 315,
+          "heading": "#### 1. 复用条件由约束和失效标记共同决定"
+        },
+        {
+          "original_id": "a235-05-intrinsics",
+          "title": "固有尺寸查询不是第二次正式测量",
+          "decision": "remove",
+          "reason": "固有尺寸三小节及Subcompose直接失败边界完整，三行规则卡重复。",
+          "original_line": 369,
+          "heading": "#### 3. Subcompose 布局与固有尺寸查询"
+        },
+        {
+          "original_id": "a235-06-modifier-structure",
+          "title": "布局树与 Modifier 节点是两层结构",
+          "decision": "remove",
+          "reason": "LayoutNode/ModifierNode两层结构与padding/background/clickable职责列表完整，三行卡未画实际两层树结构。",
+          "original_line": 391,
+          "heading": "#### 1. `LayoutNode` 与 `Modifier.Node` 是两层结构"
+        },
+        {
+          "original_id": "a235-07-modifier-order",
+          "title": "外到内的顺序改变约束与绘制范围",
+          "decision": "remove",
+          "reason": "padding/size和clip/background的并列代码文字示例完整，三行对照卡没有画实际几何差异。",
+          "original_line": 402,
+          "heading": "#### 2. 顺序决定语义，没有通用的“size 放最前”"
+        },
+        {
+          "original_id": "a235-08-subcompose-slots",
+          "title": "槽位身份与离场复用策略分开",
+          "decision": "remove",
+          "reason": "slotId唯一稳定、NoOp离场复用与Lazy叠加策略段落完整，三行规则卡重复。",
+          "original_line": 460,
+          "heading": "### 七、SubcomposeLayout：槽位身份、复用与实际成本"
+        },
+        {
+          "original_id": "a235-09-lookahead",
+          "title": "目标布局与接近阶段有独立状态",
+          "decision": "remove",
+          "reason": "Lookahead独立pending和两项approach完成条件段落完整，三行规则卡重复且没有实际目标/过渡坐标。",
+          "original_line": 467,
+          "heading": "### 七、SubcomposeLayout：槽位身份、复用与实际成本"
+        },
+        {
+          "original_id": "a235-10-force-remeasure",
+          "title": "强制重测走附着 Owner 的同步入口",
+          "decision": "keep",
+          "reason": "关联Remeasurement、schedule=false、附着Owner同步measureAndLayout的内部到宿主调用链，突出立即消费与普通下一轮请求的不同。",
+          "original_line": 478,
+          "heading": "### 八、`Remeasurement.forceRemeasure()` 的适用场景"
+        },
+        {
+          "original_id": "a235-12-sql-metrics",
+          "title": "布局聚合保留线程身份和墙钟含义",
+          "decision": "remove",
+          "reason": "28行SQL和inclusive非CPU、1.5产帧wall非Running和身份边界段落完整，三行聚合卡重复。",
+          "original_line": 542,
+          "heading": "#### 1. 跟踪事件名称与颜色"
+        },
+        {
+          "original_id": "a235-11-tracing-config",
+          "title": "组合事件与详细布局事件各自配置",
+          "decision": "remove",
+          "reason": "宿主、verbose布局和runtime-tracing组合三套配置在正文完整，三行工具卡重复。",
+          "original_line": 568,
+          "heading": "#### 3. 组合跟踪（Composition tracing）的覆盖范围"
+        },
+        {
+          "original_id": "a235-13-layout-triage",
+          "title": "从同一异常帧区分三种布局问题",
+          "decision": "remove",
+          "reason": "三场景各五步诊断及清单更完整，三行问题卡重复。",
+          "original_line": 597,
+          "heading": "#### 场景 B：父布局频繁重新测量"
+        },
+        {
+          "original_id": "a235-14-text-node-gates",
+          "title": "String 简化节点有三个同时满足的条件",
+          "decision": "keep",
+          "reason": "String三条件同时满足与任一能力开启/AnnotatedString两分支，分别落到Simple/Annotated节点与Paragraph/MultiParagraph缓存，是实际实现选择树。",
+          "original_line": 652,
+          "heading": "#### 1. 从 `Text` 到 Android 文本布局"
+        },
+        {
+          "original_id": "a235-15-platform-text",
+          "title": "BoringLayout 是带前置条件的简化路径",
+          "decision": "remove",
+          "reason": "Boring三个同时条件否则StaticLayout与共用宿主链正文完整，三行卡未增加选择树且重复14附近机制。",
+          "original_line": 659,
+          "heading": "#### 1. 从 `Text` 到 Android 文本布局"
+        },
+        {
+          "original_id": "a235-16-text-invalidation",
+          "title": "布局输入与纯绘制输入使用不同失效范围",
+          "decision": "remove",
+          "reason": "六类文本变化/实例/节点动作表更完整，三行失效卡重复。",
+          "original_line": 705,
+          "heading": "#### 1. 节点把布局属性与绘制属性分开处理"
+        },
+        {
+          "original_id": "a235-17-paragraph-reuse",
+          "title": "同宽度与有效字体是段落复用的关键输入",
+          "decision": "remove",
+          "reason": "同宽高度容纳、字体过期、maxLines与方向约束两段完整，三行缓存条件卡重复。",
+          "original_line": 718,
+          "heading": "#### 2. 相同宽度通常比相同高度更有复用价值"
+        },
+        {
+          "original_id": "a235-18-font-resolution",
+          "title": "异步字体返回会让旧排版过期",
+          "decision": "keep",
+          "reason": "回退字体首轮、目标Typeface返回、旧cache过期到重新排版的因果链，说明文本未变仍需测量和周边布局变化。",
+          "original_line": 735,
+          "heading": "#### 4. 字体结果是布局输入"
+        },
+        {
+          "original_id": "a235-19-background-metrics",
+          "title": "可选后台预热只准备度量缓存",
+          "decision": "remove",
+          "reason": "Executor默认null与API28/UTF16长度/处理器缓存门禁完整单段，三行入选卡重复。",
+          "original_line": 742,
+          "heading": "#### 4. 字体结果是布局输入"
+        },
+        {
+          "original_id": "a235-20-auto-size",
+          "title": "自动字号对多个候选执行试排",
+          "decision": "keep",
+          "reason": "候选空间、二分逐候选performLayout、收敛再一步到保留布局的搜索阶段链，避免把二分误读只排版一次。",
+          "original_line": 771,
+          "heading": "#### 2. 自动字号会执行候选字号布局"
+        },
+        {
+          "original_id": "a235-21-text-callback",
+          "title": "稳定回调与首次尺寸哨兵分别保证语义",
+          "decision": "remove",
+          "reason": "23行稳定回调、latest处理器与null哨兵过滤完整代码和反馈依赖解释充分，三行回调卡重复。",
+          "original_line": 812,
+          "heading": "#### 3. `onTextLayout` 的节点类型与反馈更新"
+        },
+        {
+          "original_id": "a235-22-identity-stability",
+          "title": "业务键、可跳过性与文本排版各管一件事",
+          "decision": "remove",
+          "reason": "key身份、StrongSkipping精确分类与Lazy保留集三小节完整，三行职责卡重复。",
+          "original_line": 880,
+          "heading": "#### 3. Lazy 列表的 key 与身份"
+        },
+        {
+          "original_id": "a235-23-rich-text",
+          "title": "按不可变输入缓存昂贵富文本构造",
+          "decision": "remove",
+          "reason": "32行有界高亮代码与不可变范围快照和颜色注解改变输入的段落完整，四框构造链重复。",
+          "original_line": 930,
+          "heading": "#### 1. 缓存昂贵的富文本构造"
+        },
+        {
+          "original_id": "a235-24-measurer-key",
+          "title": "TextMeasurer 缓存布局输入，不缓存全文业务",
+          "decision": "remove",
+          "reason": "TextMeasurer布局键和非布局属性、普通Text已有cache段落完整，三行缓存分类卡重复。",
+          "original_line": 941,
+          "heading": "#### 2. `TextMeasurer` 服务于自定义绘制"
+        },
+        {
+          "original_id": "a235-25-draw-cache-geometry",
+          "title": "绘制文字的可用空间先扣除内边距",
+          "decision": "keep",
+          "reason": "有限Spacer区域先扣双侧padding、测单行Ellipsis、同padding绘制的约束链，帮助对齐代码的测量与绘制坐标协议。",
+          "original_line": 989,
+          "heading": "#### 2. `TextMeasurer` 服务于自定义绘制"
+        },
+        {
+          "original_id": "a235-26-cache-lookup-retention",
+          "title": "跳过查找和不保留缓存是两个选项",
+          "decision": "remove",
+          "reason": "四种容量/skipCache/0cache清单精确完整，三行卡重复且第一行容量1为并列非因果。",
+          "original_line": 1006,
+          "heading": "#### 3. 缓存容量按重复输入数量设置"
+        },
+        {
+          "original_id": "a235-27-text-tracing",
+          "title": "文本节点时间片与组合切片分开收集",
+          "decision": "remove",
+          "reason": "文本直接AndroidTrace不受verbose、组合与布局采集各自条件段落和SQL完整，三行跟踪卡重复。",
+          "original_line": 1031,
+          "heading": "#### 2. 源码中的文本时间片可以辅助定位"
+        }
+      ],
+      "sha256_after": "5edd1fe371d59bef6df41fb6633d88d1812c25d3929dd144517dd3437427bbb7",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:18:01.283998+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 27,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a235/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a235/visual-review.json",
+      "retired_diagrams": [
+        "a235-02-host-entries",
+        "a235-03-one-pass",
+        "a235-04-measurement-reuse",
+        "a235-05-intrinsics",
+        "a235-06-modifier-structure",
+        "a235-07-modifier-order",
+        "a235-08-subcompose-slots",
+        "a235-09-lookahead",
+        "a235-11-tracing-config",
+        "a235-12-sql-metrics",
+        "a235-13-layout-triage",
+        "a235-15-platform-text",
+        "a235-16-text-invalidation",
+        "a235-17-paragraph-reuse",
+        "a235-19-background-metrics",
+        "a235-21-text-callback",
+        "a235-22-identity-stability",
+        "a235-23-rich-text",
+        "a235-24-measurer-key",
+        "a235-26-cache-lookup-retention",
+        "a235-27-text-tracing"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-235/retired-assets.json"
     },
     {
       "index": 236,
@@ -58896,8 +59154,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 159,
-  "next_article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+  "reviewed_articles": 160,
+  "next_article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -58907,7 +59165,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:16:00.941938+08:00",
+  "updated_at": "2026-10-31T17:18:01.283998+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -59085,9 +59343,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4880,
-  "reviewed_placements_after": 1992,
-  "net_removed_placements": 2888,
+  "reviewed_placements_before": 4907,
+  "reviewed_placements_after": 1998,
+  "net_removed_placements": 2909,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -59111,5 +59369,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 159
+  "currently_matching_reviewed_source_count": 160
 }
