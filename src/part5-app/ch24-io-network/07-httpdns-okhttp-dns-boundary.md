@@ -204,10 +204,6 @@ OkHttp 路由规划
 
 刷新线程完成全部校验后，一次性替换不可变快照。这里的“快照”是一份发布后不再修改的地址记录集合；“原子发布”保证读取方只能看到完整的旧集合或新集合，不会读到写了一半的状态。HTTPDNS 命中路径不遍历正在修改的集合，也不等待自建磁盘或刷新任务；未命中后调用系统 DNS 时仍可能等待网络。流程图中的 `network` 指产生这份结果时使用的 Android `Network`。
 
-<!-- gracker-diagram: a267-03-refresh-and-read-paths -->
-![后台刷新与前台同步读取共享完整快照](../../assets/diagrams/ch24/a267-03-refresh-and-read-paths.png)
-
-图：分离的是HTTPDNS刷新等待；系统回退仍可能查询网络，回退策略与总截止时间必须明确。
 
 缓存记录至少需要下列信息：
 
@@ -345,10 +341,6 @@ HTTPDNS 刷新同样要记录实际出站网络。可为刷新任务创建绑定
 
 这些动作不需要在切网瞬间同步清空磁盘，也不会把 Wi-Fi 上得到的 CDN 地址直接当成蜂窝网络结果。新网络的 HTTPDNS 结果尚未准备好时，当前请求使用该网络的系统解析。
 
-<!-- gracker-diagram: a267-06-network-generation-fence -->
-![切网和迟到刷新以网络代次隔离](../../assets/diagrams/ch24/a267-06-network-generation-fence.png)
-
-图：切网不要求瞬间清空全部磁盘；只淘汰或停用对应网络任务，保留其他网络的隔离记录。
 
 ## 失败地址隔离要使用可归因的证据
 
@@ -385,10 +377,6 @@ HTTPDNS 只应替换 `Dns` 返回的连接地址，原始 URL 仍保留域名。
 
 HTTPDNS 响应也属于不可信网络输入。应用至少要校验 HTTPS 端点、响应主机、地址格式和允许的地址范围。公网业务域名若返回回环地址（只指向本机）、链路本地地址（只在当前二层网络有效）、组播地址或未指定地址，应拒绝该结果。企业内网域名可能合法返回私有地址，这类例外需要按域名配置，不能用一条全局规则覆盖。
 
-<!-- gracker-diagram: a267-08-hostname-and-policy -->
-![替换候选地址仍保留HTTPS主机身份](../../assets/diagrams/ch24/a267-08-hostname-and-policy.png)
-
-图：Host 请求头不能修复把URL改成IP后的TLS身份变化；地址格式与范围校验也不可省略。
 
 ## 多地址与 OkHttp 5 Fast Fallback
 
@@ -409,10 +397,6 @@ DNS 参与新路线生成，不管理已经进入连接池的连接。一个 HTT
 
 DNS TTL 约束名称解析记录，不约束现有 TCP/TLS 会话的存活时间。若服务端需要紧急撤下节点，应配合负载均衡、连接排空、服务端关闭连接和客户端版本策略。连接排空是停止把新请求分配给待下线节点，同时等待已有请求结束。`connectionPool.evictAll()` 只驱逐空闲连接，不会立即关闭仍在用的连接；频繁执行会损失复用，并影响共享同一池的无关域名。需要单独处置时，应让特殊业务使用独立客户端和连接池。
 
-<!-- gracker-diagram: a267-10-dns-ttl-versus-connection -->
-![DNS有效期不管理已复用连接的生存期](../../assets/diagrams/ch24/a267-10-dns-ttl-versus-connection.png)
-
-图：TTL、地址隔离和连接池是三种治理范围；清缓存不会强制所有在用连接马上切换节点。
 
 ## 系统 DNS、DoH 与 HTTPDNS 的选择
 
@@ -464,10 +448,6 @@ OkHttp [`EventListener`](https://lysine.dev/okhttp/features/events/) 提供 DNS�
 
 还要通过故障演练确认解析服务完全不可用时的策略：允许系统回退的产品验证该路径能否继续服务，严格解析产品验证明确失败、用户提示与恢复入口。安全和业务恢复条件通过后，再判断平均 DNS 耗时是否改善。
 
-<!-- gracker-diagram: a267-11-dns-evidence-and-tests -->
-![解析决策、尝试结果与业务分母共同验收](../../assets/diagrams/ch24/a267-11-dns-evidence-and-tests.png)
-
-图：按所选解析策略验证故障恢复；允许系统回退时测该路径，严格隐私模式验证明确失败与恢复入口。
 
 ## 工程检查清单
 

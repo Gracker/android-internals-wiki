@@ -64827,9 +64827,123 @@
       "before_count": 11,
       "before_all_images": 11,
       "sha256_before": "319c7ba58e83e1d8ef7289601184df729c52be68279cc696e3c1f32e9a58a271",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a267-01-synchronous-route-boundary",
+          "title": "5.4路由规划中的同步解析与旁路",
+          "decision": "keep",
+          "reason": "实际分支对照早期连接复用、代理/数值地址绕过解析，以及解析后再检查连接合并，帮助确定同步 DNS 的准确位置。",
+          "original_line": 116,
+          "heading": "## `Dns.lookup()` 位于路由规划的同步路径"
+        },
+        {
+          "original_id": "a267-02-nested-dns-wait",
+          "title": "嵌套HTTPDNS的递归与队列饥饿分别分析",
+          "decision": "keep",
+          "reason": "并列显示同步 execute 递归与 enqueue 加 latch 等待的两种失败路径，清楚区分递归和 Dispatcher 槽位饥饿。",
+          "original_line": 156,
+          "heading": "## 在同步回调中请求 HTTPDNS 的故障形态"
+        },
+        {
+          "original_id": "a267-03-refresh-and-read-paths",
+          "title": "后台刷新与前台同步读取共享完整快照",
+          "decision": "remove",
+          "reason": "四个串行框没有真正表达后台与前台的独立执行；紧邻双路径文本及 CachedDns 示例已更准确说明投递刷新不等待。",
+          "original_line": 207,
+          "heading": "## 查询与读取分离"
+        },
+        {
+          "original_id": "a267-04-ttl-refresh-expiry",
+          "title": "TTL内刷新与到期停止返回的时序",
+          "decision": "keep",
+          "reason": "三条时间轨道区分 TTL 内使用、提前刷新和硬过期回退，能直观看清软刷新与硬失效的重叠和先后。",
+          "original_line": 284,
+          "heading": "## TTL 约束记录的最长有效期"
+        },
+        {
+          "original_id": "a267-05-network-paired-dns-sockets",
+          "title": "指定Network时成对约束DNS与套接字",
+          "decision": "keep",
+          "reason": "同一 Network 分叉到解析和 socketFactory，直观表达两端必须成对绑定的约束，图位于相关实现附近。",
+          "original_line": 328,
+          "heading": "## 指定 `Network` 时要同时约束解析和套接字"
+        },
+        {
+          "original_id": "a267-06-network-generation-fence",
+          "title": "切网和迟到刷新以网络代次隔离",
+          "decision": "remove",
+          "reason": "网络代次更新和旧结果隔离的四框复述紧邻的操作清单；保留文字即可覆盖身份有效性与 onLost 边界。",
+          "original_line": 348,
+          "heading": "## 网络切换后只使用对应网络的记录"
+        },
+        {
+          "original_id": "a267-07-attributable-address-failures",
+          "title": "地址隔离只采用可归因的连接证据",
+          "decision": "keep",
+          "reason": "同一判定点分成可归因直连失败与证书、代理、取消等不可归因结果，图中不同后果辅助避免错误隔离。",
+          "original_line": 373,
+          "heading": "## 失败地址隔离要使用可归因的证据"
+        },
+        {
+          "original_id": "a267-08-hostname-and-policy",
+          "title": "替换候选地址仍保留HTTPS主机身份",
+          "decision": "remove",
+          "reason": "域名、SNI、Host、pin 与解析策略串行罗列，未增加正文相邻安全约束的关系信息。",
+          "original_line": 388,
+          "heading": "## 不要把 HTTPS URL 改写为 IP"
+        },
+        {
+          "original_id": "a267-09-dns-before-tcp-race",
+          "title": "完整DNS结果先于TCP候选竞速",
+          "decision": "keep",
+          "reason": "四轨展示完整 DNS 返回在 TCP 候选竞速之前，以及 TCP 获胜后才继续 TLS，补足单纯调用链不能表达的并行时间边界。",
+          "original_line": 401,
+          "heading": "## 多地址与 OkHttp 5 Fast Fallback"
+        },
+        {
+          "original_id": "a267-10-dns-ttl-versus-connection",
+          "title": "DNS有效期不管理已复用连接的生存期",
+          "decision": "remove",
+          "reason": "两列 TTL 与健康连接的独立生命周期已由紧邻两段清晰解释，图中下方建议也重复连接排空段落。",
+          "original_line": 412,
+          "heading": "## TTL 到期不会驱逐已复用连接"
+        },
+        {
+          "original_id": "a267-11-dns-evidence-and-tests",
+          "title": "解析决策、尝试结果与业务分母共同验收",
+          "decision": "remove",
+          "reason": "指标和测试项目的分组罗列重复相邻观察表及测试清单，没有新增因果、时序或定位信息。",
+          "original_line": 467,
+          "heading": "## 验证方案从故障分支开始"
+        }
+      ],
+      "sha256_after": "b40ef9e6649e8863d83acc0cd0b51683f038a56f61ebd553c28805691eb1ebe7",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T18:48:16.787624+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 11,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a267/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a267/visual-review.json",
+      "retired_diagrams": [
+        "a267-03-refresh-and-read-paths",
+        "a267-06-network-generation-fence",
+        "a267-08-hostname-and-policy",
+        "a267-10-dns-ttl-versus-connection",
+        "a267-11-dns-evidence-and-tests"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-267/retired-assets.json"
     },
     {
       "index": 268,
@@ -65085,8 +65199,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 183,
-  "next_article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+  "reviewed_articles": 184,
+  "next_article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -65096,7 +65210,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T18:39:21.661007+08:00",
+  "updated_at": "2026-10-31T18:48:16.787624+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -65159,13 +65273,6 @@
       "registered_sha256": "93428e45586ec29ea3c20598e0c88a9aa5878e7a89a3d331995cc78e37b39f0a",
       "observed_sha256": "cc0cc94e8b511e44593a02535d86dcd5271cde3ecb2c7203a8ad77d461e04033",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch03-input/04-gesture-recognition-performance.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
-      "registered_sha256": "761b954a66804fd547d198201c2a5100c52f5e47384917a8787dcf3ab0ab311b",
-      "observed_sha256": "dcd8b4dbb0e0b1512c12bc27624e096a9d8cdd4bdaf55ac26e172a99a2fcbf3d",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -65239,9 +65346,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5497,
-  "reviewed_placements_after": 2149,
-  "net_removed_placements": 3348,
+  "reviewed_placements_before": 5508,
+  "reviewed_placements_after": 2155,
+  "net_removed_placements": 3353,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -65265,7 +65372,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 183,
+  "currently_matching_reviewed_source_count": 184,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
