@@ -67,10 +67,6 @@ consolidated_from:
 
 这里的控制面负责建立挂载、配置策略、判断权限；数据面负责实际搬运文件内容。分开看，我们才能判断一次慢读取慢在会话准备、访问检查，还是数据搬运。
 
-<!-- gracker-diagram: ch06-04-three-planes -->
-![共享存储的三个职责层](../../assets/diagrams/ch06/ch06-04-three-planes.png)
-
-图：卷会话只在生命周期变化时准备；文件请求与媒体查询各走自己的入口，底层存储仍可能是同一份。
 
 ### `vold` 管卷和挂载会话
 
@@ -161,10 +157,6 @@ SAF URI 走 `DocumentsProvider`，提供者可能是本地文件系统、USB 盘
 
 App 内部目录 `/data/user/<userId>/<package>/` 位于共享存储的 FUSE 挂载之外。App-specific external（App 专属外部存储）目录位于外部存储命名空间，但 AOSP 为 `Android/data` 与 `Android/obb` 准备了专门的绕过或加速路径，具体实现随 FUSE BPF 和 bind mount 配置变化。所以这两类目录的安全与性能模型是两套，排障时要分别确认。
 
-<!-- gracker-diagram: ch06-04-directory-paths -->
-![三类目录的策略边界](../../assets/diagrams/ch06/ch06-04-directory-paths.png)
-
-图：内部私有目录位于共享存储 FUSE 挂载之外；外部专属目录有 bind mount 或 BPF/backing 配套，共享媒体按文件策略处理。
 
 ## FUSE 的成本出现在哪些操作
 
@@ -181,10 +173,6 @@ App 内部目录 `/data/user/<userId>/<package>/` 位于共享存储的 FUSE 挂
 
 所以成本要看比例：文件很大时，底层 I/O 的耗时可能盖过 FUSE overhead（额外开销）；文件数量很多时，元数据和策略判断可能比数据传输本身更耗时。我们做性能实验时，把文件数量、大小分布、操作类型、缓存冷热和授权状态一并记下来，结论才站得住。
 
-<!-- gracker-diagram: ch06-04-cost-amplification -->
-![文件数与字节量放大的不同成本](../../assets/diagrams/ch06/ch06-04-cost-amplification.png)
-
-图：这是归因框架，不是固定耗时公式：大量小文件更容易重复支付查找、打开和策略成本；大文件则要单独量打开耗时与持续吞吐。
 
 ## passthrough 与 FUSE BPF 的边界
 
@@ -197,10 +185,6 @@ App 内部目录 `/data/user/<userId>/<package>/` 位于共享存储的 FUSE 挂
 | FUSE passthrough | 数据路径不使用 FUSE 页缓存 | `open` 需要；获准后的数据 I/O 通常不需要 | 内核通过本次 open 绑定的 backing file（底层文件对象）转发 |
 | FUSE BPF + backing | 取决于操作 | BPF/backing 已处理的操作可以不交给 daemon | inode/dentry（索引节点/目录项）关联 backing path，BPF 决定保留、移除或替换 |
 
-<!-- gracker-diagram: ch06-04-four-io-modes -->
-![四种 FUSE I/O 机制](../../assets/diagrams/ch06/ch06-04-four-io-modes.png)
-
-图：四行是机制对照，不表示执行顺序。direct_io 不能单凭名字推断走 lower-fs 直通；passthrough 与 DIRECT_IO 的组合还要按操作判断。
 
 `direct_io` 改变的只是 FUSE 页缓存语义：没有 passthrough 或 BPF backing 时，请求仍要经 `/dev/fuse` 到 MediaProvider。而 passthrough 缩短的是数据搬运那一段，Scoped Storage（分区存储）的规则仍然生效：open 会检查身份、访问权与脱敏/转码条件，并决定本次打开能否直通；需要 daemon 的读取仍可能在 pf_read() 执行转码和按区间脱敏，不能把全部处理都归到 open。
 
@@ -312,10 +296,6 @@ Android common kernel 为 MediaProvider 的 mixed-mode（混合模式）用例�
 
 反过来，为了拿到“文件路径”先扫一遍整个媒体库、再对每个条目 `stat()` 一遍，会同时引入数据库查询、FUSE 元数据请求和缩略图解码，这条路径我们要避开。确有 native 库只接受 fd 时，可以用 ParcelFileDescriptor.detachFd() 明确移交 fd 所有权，并由接收方在不再使用时 close；库只接受路径时，再评估复制到私有工作目录的成本。
 
-<!-- gracker-diagram: ch06-04-album-query-open -->
-![相册列表与媒体内容分开访问](../../assets/diagrams/ch06/ch06-04-album-query-open.png)
-
-图：先按当前授权查询所需字段，再按需打开具体 URI；detachFd 表示把 fd 所有权交给接收方，接收方需要 close。
 
 ### 图片编辑、视频处理与断点续传
 
@@ -345,10 +325,6 @@ Provider 可能返回管道 fd，它不支持 seek（随机定位）。调用前
 
 Android 11+ 对批量删除、移入回收站、收藏或请求修改其他 App 媒体提供 createDeleteRequest/createTrashRequest/createFavoriteRequest/createWriteRequest。write request 授予写权限后，App 仍需执行实际修改；系统图库、媒体管理特权等例外应按当前 API 与授权判断。每批多少条，要结合目标设备、Binder payload（单次通信携带的数据）、取消粒度和失败恢复测试来定，脱离实际负载的固定数字没有意义。
 
-<!-- gracker-diagram: ch06-04-batch-resume -->
-![迁移与批量媒体操作的恢复流程](../../assets/diagrams/ch06/ch06-04-batch-resume.png)
-
-图：批量请求不能代替业务清单；write request 授予修改能力，App 仍要完成实际写入。批量大小应按设备和恢复成本测试。
 
 ## 诊断：先证明慢在哪一层
 
@@ -413,10 +389,6 @@ grep "^fuse:" "$TRACE/available_events"
 
 反过来，如果只看到 `FUSE_OPEN`、read/write 缺席，可能是 passthrough/BPF backing 在起作用，也可能是页缓存命中、测试没打出预期的 syscall（系统调用）、读取失败或采集窗口不完整。我们要按时间对齐文件来源、冷暖缓存、MediaProvider 日志、应用 syscall，以及底层文件系统和块层事件，再下结论。
 
-<!-- gracker-diagram: ch06-04-missing-data-events -->
-![没有 FUSE_READ/WRITE 时怎样继续取证](../../assets/diagrams/ch06/ch06-04-missing-data-events.png)
-
-图：只见 open、未见 read/write 有多种解释。确认 syscall 成功、窗口完整、缓存状态和可用事件后，再结合设备能力与实际 fd 路径判断。
 
 ### `strace` 的适用环境
 
@@ -486,10 +458,6 @@ const size_t MAX_READ_SIZE = FUSE_MAX_MAX_PAGES * getpagesize();
 
 MediaProvider 是 Mainline 模块，同一个 Android 大版本也可能因模块更新而出现修复或行为差异。写性能报告时，除了 build fingerprint（系统构建指纹），把模块版本一并存下来。
 
-<!-- gracker-diagram: ch06-04-version-device-evidence -->
-![版本信息与运行时证据一起记录](../../assets/diagrams/ch06/ch06-04-version-device-evidence.png)
-
-图：复现条件需要同时记录平台、MediaProvider 模块、内核和访问条件。同一 Android 大版本可能使用不同模块、内核、缓存状态与授权。
 
 ## 常见误区
 
