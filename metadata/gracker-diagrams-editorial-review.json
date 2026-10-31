@@ -53728,9 +53728,203 @@
       "before_count": 20,
       "before_all_images": 20,
       "sha256_before": "b30b75558490786d77deced674c7674e817c0a9c7f76108a64ded618a1d42fa5",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a211-01-failure-evidence",
+          "title": "资源失败先保留类型，再选择证据",
+          "decision": "remove",
+          "reason": "七类资源事件/表现/证据/OOME表已完整，三行分类卡是表格子集且隐藏具体失败契约。",
+          "original_line": 148,
+          "heading": "### OOM 与 OOME 如何出现"
+        },
+        {
+          "original_id": "a211-02-oome-fallback",
+          "title": "异常对象也可能分配失败，ART 预留兜底对象",
+          "decision": "keep",
+          "reason": "首次构造OOME与递归失败使用预分配对象的分支汇合，解释错误文本/栈残缺及兜底非恢复。",
+          "original_line": 175,
+          "heading": "#### ART 如何抛出 OOME"
+        },
+        {
+          "original_id": "a211-04-allocation-retry",
+          "title": "ART 按适用策略 GC 和重试后才报告分配失败",
+          "decision": "remove",
+          "reason": "同节一句已经概括分配/适用GC/重试/失败出口，四框没有展开真正GC条件，源码示例与兜底分支图已承担机制解释。",
+          "original_line": 212,
+          "heading": "#### ART 分配失败路径"
+        },
+        {
+          "original_id": "a211-03-heap-quantities",
+          "title": "heap 空闲量、目标值与增长上限分开解释",
+          "decision": "remove",
+          "reason": "六项heap错误字段定义和碎片诊断源码条件更完整，三行数量卡重复且没有比例图。",
+          "original_line": 247,
+          "heading": "#### ART 分配失败路径"
+        },
+        {
+          "original_id": "a211-05-bitmap-domains",
+          "title": "小型 Java 包装对象不能代表 Bitmap 总成本",
+          "decision": "keep",
+          "reason": "Java包装引用分别指向普通native像素与HARDWARE图形缓冲，再汇入进程整机压力的所有权/成本分支。",
+          "original_line": 286,
+          "heading": "#### 哪些路径会转换为 OOME"
+        },
+        {
+          "original_id": "a211-06-memory-metrics",
+          "title": "虚拟区间、驻留页与共享分摊回答不同问题",
+          "decision": "remove",
+          "reason": "VmSize/RSS/PSS/malloc/heapprofd五行指标能力表更完整，三行指标卡重复。",
+          "original_line": 303,
+          "heading": "#### 先区分虚拟地址、驻留页和比例分摊"
+        },
+        {
+          "original_id": "a211-07-thread-creation",
+          "title": "线程创建失败沿阶段保留原始错误",
+          "decision": "keep",
+          "reason": "ART Thread/JNIEnv到Bionic栈TLS映射再内核task阶段的创建链，说明同EAGAIN可能来自不同阶段且栈无固定1MB。",
+          "original_line": 346,
+          "heading": "#### 线程创建的失败分支"
+        },
+        {
+          "original_id": "a211-08-fd-boundaries",
+          "title": "FD 可分配编号与 select 位集合边界不同",
+          "decision": "remove",
+          "reason": "RLIMIT_NOFILE可分配编号与FD_SETSIZE宏检查两段及日志样例已经明确，三行字段卡不展示编号空洞或区间关系。",
+          "original_line": 379,
+          "heading": "#### FORTIFY（Bionic 的运行时边界检查） 与真实上限"
+        },
+        {
+          "original_id": "a211-09-address-holes",
+          "title": "总剩余地址空间不保证存在足够大的连续空洞",
+          "decision": "keep",
+          "reason": "分离空洞A/B被映射区隔开而无法拼成连续请求的空间示意，直观解释总剩余地址足够仍失败。",
+          "original_line": 423,
+          "heading": "#### 地址空间由哪些映射构成"
+        },
+        {
+          "original_id": "a211-10-early-degrade",
+          "title": "把降级移到资源接近预算且仍健康的阶段",
+          "decision": "remove",
+          "reason": "提前预算/停止预取/检查点/默认退出链已由后续五项降级动作和两阶段说明表达，四框只是列表缩写。",
+          "original_line": 455,
+          "heading": "#### OOM 前的降级与失败处理"
+        },
+        {
+          "original_id": "a211-11-trim-profiling",
+          "title": "生命周期释放与 OOM 自动取证属于不同阶段",
+          "decision": "remove",
+          "reason": "API34 trim级别与代码/API37默认链触发和后续读取条件已由正文分段明确，三行版本卡重复。",
+          "original_line": 497,
+          "heading": "#### `UncaughtExceptionHandler` 与 API 37 OOM 触发器"
+        },
+        {
+          "original_id": "a211-12-webview-domains",
+          "title": "WebView 同时跨平台版本、provider 与进程边界",
+          "decision": "keep",
+          "reason": "宿主browser-side、沙箱Blink/JS、宿主HWUI functor到应用窗口/独立图层/SF/HWC的跨执行域绘制路径，帮助区分宿主仍在与网页可用。",
+          "original_line": 577,
+          "heading": "### 平台、Provider 与进程"
+        },
+        {
+          "original_id": "a211-13-gone-contract",
+          "title": "每个受影响实例都要完成 gone 处理",
+          "decision": "remove",
+          "reason": "同节四项gone约束和true/false表已完整，三行契约卡重复，真正清理/恢复分支另有保留图。",
+          "original_line": 600,
+          "heading": "### `onRenderProcessGone()` 回调契约"
+        },
+        {
+          "original_id": "a211-14-gone-reasons",
+          "title": "didCrash 二分类还不能直接归因 OOM",
+          "decision": "remove",
+          "reason": "didCrash两项定义、请求前termination token协议和false非OOM条件已有正文说明，三行分类图重复而无真实归因证据。",
+          "original_line": 616,
+          "heading": "#### `didCrash()` 的二分类含义"
+        },
+        {
+          "original_id": "a211-15-recovery-gates",
+          "title": "自动重建由可重放性、生命周期和次数共同决定",
+          "decision": "keep",
+          "reason": "销毁旧实例后按Activity/重放性/次数分支创建统一配置新实例或fallback，视觉/业务失败与超时回退，解释受控恢复。",
+          "original_line": 643,
+          "heading": "### 恢复是一段状态迁移"
+        },
+        {
+          "original_id": "a211-16-checkpoint-ownership",
+          "title": "导航和异步回调都要对应当前实例与页面",
+          "decision": "remove",
+          "reason": "114行Activity骨架与后续实例代号、检查点失效、Bundle快照和统一安全配置段落已完整，三行所有权卡是复述。",
+          "original_line": 781,
+          "heading": "### 一个可控的 Activity 恢复骨架"
+        },
+        {
+          "original_id": "a211-17-renderer-priority",
+          "title": "共享 Renderer 采用关联实例请求的最高优先级",
+          "decision": "remove",
+          "reason": "三优先级表、代码和共享Renderer取最大值两段已明确，三行策略卡未画最大值合并，删除重复。",
+          "original_line": 825,
+          "heading": "### Renderer 优先级与低内存策略"
+        },
+        {
+          "original_id": "a211-18-renderer-attribution",
+          "title": "宿主 PSS 不能替代 Renderer 与图形现场",
+          "decision": "remove",
+          "reason": "四资源域列表、gone字段表和宿主PSS不能替Renderer的段落已完整，三行归因卡重复。",
+          "original_line": 841,
+          "heading": "### 怎样判断内存诱因"
+        },
+        {
+          "original_id": "a211-19-unresponsive-terminate",
+          "title": "Renderer 无响应先判断用户退路，再请求终止",
+          "decision": "keep",
+          "reason": "重复unresponsive到用户允许放弃/共享实例可清理、先token断导航再terminate、等待gone再恢复的操作顺序，区别请求成功和恢复成功。",
+          "original_line": 891,
+          "heading": "### WebViewRenderProcessClient 的卡死检测与终止决策"
+        },
+        {
+          "original_id": "a211-20-recovery-milestones",
+          "title": "恢复成功从旧实例清理追踪到业务可用",
+          "decision": "remove",
+          "reason": "同节七状态表和核心指标分母列表、前文完整状态序列及保留恢复门控图均覆盖，四框阶段图重复。",
+          "original_line": 921,
+          "heading": "### 恢复过程的状态指标"
+        }
+      ],
+      "sha256_after": "cc8e6a117ebf366f6c0d0300dca3921ac003a9b6c0a073567a1e40eb16800bfd",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T16:17:38.266222+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 20,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a211/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a211/visual-review.json",
+      "retired_diagrams": [
+        "a211-01-failure-evidence",
+        "a211-03-heap-quantities",
+        "a211-04-allocation-retry",
+        "a211-06-memory-metrics",
+        "a211-08-fd-boundaries",
+        "a211-10-early-degrade",
+        "a211-11-trim-profiling",
+        "a211-13-gone-contract",
+        "a211-14-gone-reasons",
+        "a211-16-checkpoint-ownership",
+        "a211-17-renderer-priority",
+        "a211-18-renderer-attribution",
+        "a211-20-recovery-milestones"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-211/retired-assets.json"
     },
     {
       "index": 212,
@@ -54492,8 +54686,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 137,
-  "next_article": "src/part5-app/ch20-stability/05-oom-webview-renderer-recovery.md",
+  "reviewed_articles": 138,
+  "next_article": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -54503,7 +54697,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T16:15:17.924202+08:00",
+  "updated_at": "2026-10-31T16:17:38.266222+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -54573,13 +54767,6 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
-      "registered_sha256": "a70335b2ae03074a10b889d4aaf732ac32dcf387bbdd66535abb61e965bd1448",
-      "observed_sha256": "d32534ead4dfeabda5130980b1407391fa876ee83a2edc0516593bc51fca5c35",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -54709,9 +54896,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4437,
-  "reviewed_placements_after": 1867,
-  "net_removed_placements": 2570,
+  "reviewed_placements_before": 4457,
+  "reviewed_placements_after": 1874,
+  "net_removed_placements": 2583,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -54735,5 +54922,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 137
+  "currently_matching_reviewed_source_count": 138
 }
