@@ -15827,7 +15827,7 @@
           "heading": "## 8. Android 17 边界与发布检查"
         }
       ],
-      "sha256_after": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
+      "sha256_after": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
       "new_diagrams": [
         {
           "id": "ed10-04-shared-buffer-accounting-views",
@@ -16076,15 +16076,31 @@
       ],
       "removed_but_shared_diagrams": [],
       "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-109/retired-assets.json",
-      "post_review_source_revalidation_required": {
-        "index": 109,
-        "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
-        "accepted_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
-        "observed_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
-        "observed_at": "2026-10-31T10:31:15.146280+08:00",
-        "status": "requires_independent_revalidation",
-        "diagram_count_unchanged": true
-      }
+      "sha256_after_initial_editorial": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 109,
+          "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+          "revision": 1,
+          "accepted_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
+          "reviewed_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/source.diff",
+          "diff_sha256": "e86526c40738ad5431a5f2bdaa99a346883161a3f4b0fd509a56cebaf44987c1",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/109-20261031-01.json",
+          "report_sha256": "426a683f8b31f1cb1bb91097b766e7a715ced8784ca894faf170fe48f52395bd",
+          "caption_revisions": [],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/input.md",
+          "external_input_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T10:32:06.175179+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T10:32:06.564906+08:00"
     },
     {
       "index": 111,
@@ -17847,7 +17863,7 @@
         "article": "src/part2-performance/ch11-power/03-wakelock.md",
         "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
         "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-        "observed_at": "2026-10-31T10:31:15.146759+08:00",
+        "observed_at": "2026-10-31T10:32:06.568363+08:00",
         "status": "requires_independent_revalidation",
         "diagram_count_unchanged": true
       }
@@ -28224,7 +28240,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T10:31:15.147919+08:00",
+  "updated_at": "2026-10-31T10:32:06.569547+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
@@ -28359,23 +28375,14 @@
   ],
   "post_review_external_source_revalidations_pending": [
     {
-      "index": 109,
-      "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
-      "accepted_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
-      "observed_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
-      "observed_at": "2026-10-31T10:31:15.146280+08:00",
-      "status": "requires_independent_revalidation",
-      "diagram_count_unchanged": true
-    },
-    {
       "index": 113,
       "article": "src/part2-performance/ch11-power/03-wakelock.md",
       "accepted_sha256": "79b06c66fe528181f935a82a84c4bed36ccb99d9cc04ba2b632a23808befe5b9",
       "observed_sha256": "7dbf5e91f6d98d0bae5cee2f0b4d59f465190fe2aaaac47d7696b54538c7738f",
-      "observed_at": "2026-10-31T10:31:15.146759+08:00",
+      "observed_at": "2026-10-31T10:32:06.568363+08:00",
       "status": "requires_independent_revalidation",
       "diagram_count_unchanged": true
     }
   ],
-  "currently_matching_reviewed_source_count": 62
+  "currently_matching_reviewed_source_count": 63
 }

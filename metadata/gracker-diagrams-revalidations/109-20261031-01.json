@@ -1,0 +1,214 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 109,
+  "article": "src/part2-performance/ch10-memory-perf/04-gpu-graphics-memory-tracking.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T10:32:06.040228+08:00",
+  "source_sha256": "0ca0176f0f21cab17b0ba9d5993b05425ea3a5ef52e2b9f529248093db71a132",
+  "accepted_before_sha256": "c5f588993bf28215562dcc7baebd9edddea9252ab8afd9b9d00dfcf0128327c2",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 230,
+  "reading_characters": 21236,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 18,
+  "current_pngs_actually_viewed": 18,
+  "current_contexts_actually_viewed": 18,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/compact-109-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/compact-109-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/compact-109-3.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 7,
+  "code_lines_preserved": 66,
+  "asset_sha256": {
+    "src/assets/diagrams/ch10/ed10-04-memtrack-to-graphics-summary.svg": "fd66d1f8c234d8873193f3cf8be390b3a6e1cd7262cfef3af862f7b7648b65d9",
+    "src/assets/diagrams/ch10/ed10-04-memtrack-to-graphics-summary.png": "8d5a7aace709714cb50985e25cacad0c7e819da0b0d8a275954a04ba99c3f45e",
+    "src/assets/diagrams/ch10/ed10-04-shared-buffer-accounting-views.svg": "e37da4521bea4dbd508d293dc05ed449e04395c55e671d0b066aa0a10d1696c0",
+    "src/assets/diagrams/ch10/ed10-04-shared-buffer-accounting-views.png": "d88ed19c66ece496c839a5216fe19e8382d5dddb4f58e22a2598b8cddaa20388",
+    "src/assets/diagrams/ch10/ed10-04-bpf-updates-and-missing-values.svg": "ba824662e2861cdd2bb7b48fc7ac9a7dba5e7d0a9e01e1391f32bfad0559c3b5",
+    "src/assets/diagrams/ch10/ed10-04-bpf-updates-and-missing-values.png": "760f9dd8928111e3953eebcea28d3c06e3b07bd2623178e59321ad0ec4d6622c",
+    "src/assets/diagrams/ch10/ed10-04-initial-traversal-and-ftrace-coverage.svg": "bc1e8d8158c2b792f2f20917d6cd9ec483f56ff441e08b61abb8ad89aaa78255",
+    "src/assets/diagrams/ch10/ed10-04-initial-traversal-and-ftrace-coverage.png": "a64fb66e00c7e7d7043c5ed1c3b6c44f0800edd1dfbfb5d57bebf35a9935bd37",
+    "src/assets/diagrams/ch10/ed10-04-parser-gpu-dimensions-and-sql.svg": "19d508e4a7b1a9e6ff01ff8b05fef29553487c28ccccb83442e112e039010c6d",
+    "src/assets/diagrams/ch10/ed10-04-parser-gpu-dimensions-and-sql.png": "608708fa4ebc616277c277153fce81f8a89f087a42837875e3bf5d0bf893ffea",
+    "src/assets/diagrams/ch10/ed10-04-fdinfo-and-sysfs-inode-correlation.svg": "881bf8d2bcf4222296fa578d9dc534cc67abcc8622112e0fddcff605e2bfc4a4",
+    "src/assets/diagrams/ch10/ed10-04-fdinfo-and-sysfs-inode-correlation.png": "1b54ab19a97e3cf96b498ea4672bc731d37a07e4299b8c866588b0e0ea4657e8",
+    "src/assets/diagrams/ch10/ch10-04-19-deferred-release.svg": "74b13a65f0e8bcebca49491c2a2da97e96f247a10c12c91d06b05a8898bbc74a",
+    "src/assets/diagrams/ch10/ch10-04-19-deferred-release.png": "f3e0a74ae5f24270c210a9fdc469ef96825130b8231910cbd8f86e899c8e258f",
+    "src/assets/diagrams/ch10/ch10-04-22-page-rounding.svg": "2e66e50d68f597893b492fee35dedd12978bfcfda04fc6e3d45330ffe496547f",
+    "src/assets/diagrams/ch10/ch10-04-22-page-rounding.png": "201d3be02163bc023ad293c3156e7b197d7b7109a889b78afa84b7b788f1ceb0",
+    "src/assets/diagrams/ch10/ed10-04-hardware-bitmap-owners-and-release.svg": "b0d74a2f0e9515f61abe28c1af0a093843c5147181f5150ada32f044876cccf8",
+    "src/assets/diagrams/ch10/ed10-04-hardware-bitmap-owners-and-release.png": "0f9585053d28070ca91bc5993dc8f13592eb4270bee0ba61646ffa55f1d76f02",
+    "src/assets/diagrams/ch10/ch10-04-26-prepare-upload.svg": "53ba02fc91d94be4c9c5a16a2f7aec914a9b879840ad7614c5fc74c1fdde49a9",
+    "src/assets/diagrams/ch10/ch10-04-26-prepare-upload.png": "e9b1de0d8ed0cc98b2d4e8a61155111a40552812f33cec0307bdc1ba1190272f",
+    "src/assets/diagrams/ch10/ch10-04-28-texture-callback.svg": "736b65b042a6713cad723aa00551ed068a4d635f17032db533b269cb60f79af9",
+    "src/assets/diagrams/ch10/ch10-04-28-texture-callback.png": "899bf2d1ceb4ae2facece573a08987cc41e5f40ec5fdeb962c7086372a39ffdf",
+    "src/assets/diagrams/ch10/ch10-04-29-bufferqueue-count.svg": "3ffcd4b250d417c1a75d52afdac175ccca839278f26ddb2bfc53f3cdbbd8b93f",
+    "src/assets/diagrams/ch10/ch10-04-29-bufferqueue-count.png": "3e7ee5458c3dd676db923211d37707dece702a0a7e561e52703977e745025ab4",
+    "src/assets/diagrams/ch10/ch10-04-30-gl-objects.svg": "209880d43b6929870985c39c6093c2c83544c8c8f0343e41602053eb4323d316",
+    "src/assets/diagrams/ch10/ch10-04-30-gl-objects.png": "62ad2439d41f5db56e5b4384674b9c81f47ba8556a562370d85c9c34125511bd",
+    "src/assets/diagrams/ch10/ch10-04-31-egl-surface.svg": "da812f304a0781ec3c65596aafb9eef16682de37ab3186a761c88b800bc137e2",
+    "src/assets/diagrams/ch10/ch10-04-31-egl-surface.png": "c6d00047072b86464681eb536011684cc585b888e9b92dc9b083035cad12b75d",
+    "src/assets/diagrams/ch10/ch10-04-32-vulkan-lifetime.svg": "e322b21d596a1b5f560c2d39e9739556c0fb198b067ff803cf45bfac4e273221",
+    "src/assets/diagrams/ch10/ch10-04-32-vulkan-lifetime.png": "b8c224153ae10c33067bb578eec1d181e00f27e28e95660e65195cbef0aefab1",
+    "src/assets/diagrams/ch10/ch10-04-33-wait-idle.svg": "821b785c665b72f1bfe32844aab3fd51e196fc053b3f90fdcf499120b8ae059b",
+    "src/assets/diagrams/ch10/ch10-04-33-wait-idle.png": "f1eec8f7f53baa5773960446180f8a5a39b535bcfe7bde5504b513777f21e9c1",
+    "src/assets/diagrams/ch10/ch10-04-34-view-composition.svg": "8b2581bb409a9cbb4d2bc1cc8297a7d42f6bd1ac76e749a4eb3015417c50b207",
+    "src/assets/diagrams/ch10/ch10-04-34-view-composition.png": "5d4bc069b85139fb7f7c722346455c75970f3b953c689714434fe9cd2d83dcc7",
+    "src/assets/diagrams/ch10/ch10-04-36-camera-budget.svg": "cf03d2e034f620aefab0d1ed08a697219871fd66b221473c5b80ab586939d8d2",
+    "src/assets/diagrams/ch10/ch10-04-36-camera-budget.png": "d8454e7b1b0c297d9156c1123cf65ae0f660ecdf35cd88b6ba07b470ae3e85a9"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a109/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "1fd814f1415381908bc2a6fc43274ec3f8405789d5b38708bda2979bcefbcef6",
+    "git_commit": "6972630874edee881d9a7a3b2094e2882ad2ffe2"
+  },
+  "figure_reviews": [
+    {
+      "id": "ed10-04-memtrack-to-graphics-summary",
+      "heading": "### 2.2 `SMAPS_UNACCOUNTED` 的设计目的",
+      "line": 150,
+      "decision": "keep",
+      "reason": "HAL类型/共享规则→libmemtrack未入smaps求和→JNI同值写三列，再与独立Gfx dev汇成Graphics摘要的数据流，仍对应126–160；Other不入摘要，privateDirty不证明backing私有。"
+    },
+    {
+      "id": "ed10-04-shared-buffer-accounting-views",
+      "heading": "### 2.3 PSS、GPU 映射总量与唯一 buffer 容量",
+      "line": 172,
+      "decision": "keep",
+      "reason": "一个共享DMA-BUF到两进程导入及GPU总量/sysfs容量/PSS三视角，符合164–175；各PID不可求和替pid0，不把对象容量当物理驻留或可回收量。"
+    },
+    {
+      "id": "ed10-04-bpf-updates-and-missing-values",
+      "heading": "### 3.1 `dumpsys gpu --gpumem`",
+      "line": 192,
+      "decision": "keep",
+      "reason": "驱动总量事件→BPF key→非零更新/零删除→逐项dump的分支，符合181–195；1024key、缺项/失败/零值边界完整。"
+    },
+    {
+      "id": "ed10-04-initial-traversal-and-ftrace-coverage",
+      "heading": "### 3.2 Perfetto 的初始值与增量",
+      "line": 225,
+      "decision": "keep",
+      "reason": "android.gpu.memory初始逐条遍历与ftrace变化双路/可重叠时间轨，符合201–228及protobuf；不是原子快照，首样本前不补零，不承诺补回丢事件。"
+    },
+    {
+      "id": "ed10-04-parser-gpu-dimensions-and-sql",
+      "heading": "### 3.2 Perfetto 的初始值与增量",
+      "line": 256,
+      "decision": "keep",
+      "reason": "主机合成双GPU测试中v54丢维度与v58.2独立轨的对照，准确对应SQL4和254–261；按track_id分区，事件PID归属，MiB非PSS，没有混成设备实测。"
+    },
+    {
+      "id": "ed10-04-fdinfo-and-sysfs-inode-correlation",
+      "heading": "### 4.2 全局 sysfs：系统里有哪些唯一 DMA-BUF",
+      "line": 329,
+      "decision": "keep",
+      "reason": "fdinfo与sysfs两个入口经同窗inode关联持有线索的结构，符合脚本5/6和301–332；count非进程数、容量非驻留/回收量，权限/重用/非原子边界保留。"
+    },
+    {
+      "id": "ch10-04-19-deferred-release",
+      "heading": "### 5.1 先辨认缓存、延迟释放与泄漏",
+      "line": 351,
+      "decision": "keep",
+      "reason": "业务退出与设备队列继续执行两轨，符合349–360；延迟释放/缓存/泄漏需多轮同状态比较，不以一次GC要求归零。"
+    },
+    {
+      "id": "ch10-04-22-page-rounding",
+      "heading": "### 5.4 16 KB kernel page 的精确边界",
+      "line": 387,
+      "decision": "keep",
+      "reason": "17KiB请求按4/16KiB页分别20/32KiB的数学算例，符合385–392；只解释取整，不冒充Gralloc实测或固定增长比例。"
+    },
+    {
+      "id": "ed10-04-hardware-bitmap-owners-and-release",
+      "heading": "### 6.1 Hardware Bitmap",
+      "line": 404,
+      "decision": "keep",
+      "reason": "Hardware Bitmap wrapper引用与设备backing使用两路，符合399–407；reconfigure一次draw pass只作独立语义前提注解，不作为任意recycle同步屏障。"
+    },
+    {
+      "id": "ch10-04-26-prepare-upload",
+      "heading": "### 6.1 Hardware Bitmap",
+      "line": 411,
+      "decision": "keep",
+      "reason": "调用线程prepareToDraw返回与RenderThread可能异步上传两轨，对应409–414；未保证首次绘制前上传完成或内存下降。"
+    },
+    {
+      "id": "ch10-04-28-texture-callback",
+      "heading": "### 6.2 Surface、BufferQueue 与媒体资源",
+      "line": 423,
+      "decision": "keep",
+      "reason": "TextureView destroyed回调true/false释放责任两分支，对应421–426；仍另核外部buffer引用，不混本地release与全部backing释放。"
+    },
+    {
+      "id": "ch10-04-29-bufferqueue-count",
+      "heading": "### 6.2 Surface、BufferQueue 与媒体资源",
+      "line": 430,
+      "decision": "keep",
+      "reason": "BufferQueue基础maxAcquired+maxDequeued、async/cannotBlock额外1与最终上限对照，对应428–433；上限/分配/在用数分开，不固定三缓冲。"
+    },
+    {
+      "id": "ch10-04-30-gl-objects",
+      "heading": "### 6.3 OpenGL ES 与 Vulkan",
+      "line": 439,
+      "decision": "keep",
+      "reason": "GL share-group共享对象和context非共享FBO分支，对应437–442；附件共享不使FBO共享，删除名称不等解除全部引用。"
+    },
+    {
+      "id": "ch10-04-31-egl-surface",
+      "heading": "### 6.3 OpenGL ES 与 Vulkan",
+      "line": 446,
+      "decision": "keep",
+      "reason": "EGL current与不再current两分支和pbuffer纹理条件，对应444–449；不承诺所有外部window/buffer引用随返回解除。"
+    },
+    {
+      "id": "ch10-04-32-vulkan-lifetime",
+      "heading": "### 6.3 OpenGL ES 与 Vulkan",
+      "line": 453,
+      "decision": "keep",
+      "reason": "Vulkan对象destroy与DeviceMemory/allocator子分配free两路，对应451–456；相关已提交使用完成和同步规则作为共同前提。"
+    },
+    {
+      "id": "ch10-04-33-wait-idle",
+      "heading": "### 6.3 OpenGL ES 与 Vulkan",
+      "line": 460,
+      "decision": "keep",
+      "reason": "全设备wait-idle、相关fence、其他无依赖队列三轨比较，对应458–463；不伪造时长或固定收益，细粒度同步仍需正确。"
+    },
+    {
+      "id": "ch10-04-34-view-composition",
+      "heading": "### 6.4 SurfaceView 与 TextureView",
+      "line": 471,
+      "decision": "keep",
+      "reason": "SurfaceView独立layer/HWC与TextureView SurfaceTexture→HWUI两路径，对应469–476；无固定内存排序，alpha/HDR/DRM/变换与生命周期一起评估。"
+    },
+    {
+      "id": "ch10-04-36-camera-budget",
+      "heading": "## 7. Game、Camera 与 AR 的预算方法",
+      "line": 487,
+      "decision": "keep",
+      "reason": "预览录制、分析ImageReader、JPEG/RAW各路预算分支，对应485–492；maxImages已获取Image需close，汇总前核对共享/alias而非传感器尺寸乘固定数量。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a109/01/layout-report.json",
+  "layout_report_sha256": "087eaff9cd1272fabad06bca0c550ab58be17ac612e9f6875fb261ecf44fd943",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "当前全文230阅读行21236字符、18组SVG标签、3原图联系表全部18PNG及3上下文联系表18位置实际复看，7代码块66行完整阅读，原生0。图注、替代文字、标识、路径、顺序、代码和资产均严格匹配初审；外部正文修订后仍清楚区分统计视角、BPF更新/覆盖、解析器维度、inode持有关系及不同API生命周期。18图无新增重复和位置错误。1400/640加载、顺序/标题/结构归属、无横溢出及mdbook通过。保留外部正文和原初审证据，本次没有增删有效图。"
+}
