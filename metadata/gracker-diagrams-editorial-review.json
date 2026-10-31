@@ -59798,9 +59798,284 @@
       "before_count": 29,
       "before_all_images": 29,
       "sha256_before": "a55f80550ed00b34c68743f6e04a0120c3829b73031f0748ea25df40b7bc641c",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a240-01-request-to-present",
+          "title": "图片请求成功后仍要进入窗口显示",
+          "decision": "keep",
+          "reason": "同一请求从压缩获取缓存、目标像素、UI/HWUI资源准备到窗口present的跨阶段链，给首图慢掉帧和峰值共同归因轴。",
+          "original_line": 91,
+          "heading": "# 图片加载、Bitmap 解码与 RenderNode"
+        },
+        {
+          "original_id": "a240-02-glide-engine-jobs",
+          "title": "Glide 5.0.9 的内存查询与任务复用条件",
+          "decision": "remove",
+          "reason": "Engine完整缓存/EngineKey/cache-only任务复用条件段落完整，三行卡未画未命中回退真实分支。",
+          "original_line": 118,
+          "heading": "#### Glide 的请求管理与资源释放"
+        },
+        {
+          "original_id": "a240-03-coil-size-network",
+          "title": "Coil 的尺寸解析与网络策略分别配置",
+          "decision": "remove",
+          "reason": "Coil尺寸与四网络配置列表完整，四行规则卡重复。",
+          "original_line": 140,
+          "heading": "#### Coil 的实例与网络配置"
+        },
+        {
+          "original_id": "a240-04-decoded-pixel-budget",
+          "title": "下载字节与解码像素是两种预算",
+          "decision": "remove",
+          "reason": "45.8与2.86MiB和16倍假设算式段落完整，四框卡只拆解标量计算无额外面积示例。",
+          "original_line": 157,
+          "heading": "### 解码尺寸、像素内存与硬件位图"
+        },
+        {
+          "original_id": "a240-05-hardware-cpu-contract",
+          "title": "Hardware Bitmap 是图形存储，不是硬件解码器",
+          "decision": "remove",
+          "reason": "HardwareCPU访问和软件Canvas限制、回读与可变性段落完整，三行契约卡重复。",
+          "original_line": 166,
+          "heading": "### 解码尺寸、像素内存与硬件位图"
+        },
+        {
+          "original_id": "a240-06-bitmapfactory-sampling",
+          "title": "BitmapFactory 先读边界再确定粗采样",
+          "decision": "keep",
+          "reason": "头信息尺寸、溢出保护倍增2幂、两维足够、后台实解码及末端缩放的算法阶段链，帮助读两份采样循环代码。",
+          "original_line": 213,
+          "heading": "#### BitmapFactory：先读边界尺寸，再按 2 的幂采样"
+        },
+        {
+          "original_id": "a240-09-tile-viewport",
+          "title": "超大图以视口、层级和有界分块管理",
+          "decision": "keep",
+          "reason": "缩放方向到源矩形、边界交集与视口优先、同decoder串行取消、有限已解结果的管线，体现大图不是全解裁剪。",
+          "original_line": 310,
+          "heading": "### 大图与 BitmapRegionDecoder"
+        },
+        {
+          "original_id": "a240-10-region-format-versions",
+          "title": "区域解码的格式范围按平台区间核对",
+          "decision": "remove",
+          "reason": "三平台区间区域格式表及整图AVIF31不同段落完整，三行版本卡重复。",
+          "original_line": 325,
+          "heading": "### 大图与 BitmapRegionDecoder"
+        },
+        {
+          "original_id": "a240-11-cache-work-saved",
+          "title": "缓存命中省掉哪一段工作",
+          "decision": "remove",
+          "reason": "六层内容/省去工作/风险四列表更完整，四行缓存卡重复。",
+          "original_line": 349,
+          "heading": "### 内存、磁盘与网络缓存"
+        },
+        {
+          "original_id": "a240-12-cache-identity",
+          "title": "缓存键包含内容身份与输出条件",
+          "decision": "remove",
+          "reason": "内容版本与输出参数、认证目录隔离、跨框架共享原始层的段落完整，四框身份卡把并列key维度串成流程无新增结构。",
+          "original_line": 360,
+          "heading": "#### 缓存键与内容身份"
+        },
+        {
+          "original_id": "a240-13-peak-memory",
+          "title": "图片峰值来自同时存活的多类结果",
+          "decision": "remove",
+          "reason": "五项峰值容量场景清单更完整，四框并列持有类串行排布不是实际存活示例。",
+          "original_line": 373,
+          "heading": "#### 峰值场景下的缓存容量"
+        },
+        {
+          "original_id": "a240-14-format-evaluation",
+          "title": "格式选型同时核对传输与首次可见帧",
+          "decision": "remove",
+          "reason": "格式四列表及六项同内容评测清单更全面，三行格式卡重复。",
+          "original_line": 402,
+          "heading": "### AVIF、WebP、JPEG 与 PNG"
+        },
+        {
+          "original_id": "a240-07-imagedecoder-header",
+          "title": "ImageDecoder 的头信息回调仍在同步调用内",
+          "decision": "keep",
+          "reason": "调用方调度到同步decode、同线程头回调配置、完成返回校验身份的阶段链，明确回调不代表自动后台。",
+          "original_line": 520,
+          "heading": "#### 2.1 ImageDecoder 的后台解码用法"
+        },
+        {
+          "original_id": "a240-08-software-mutability",
+          "title": "软件存储与可写结果是两个配置维度",
+          "decision": "remove",
+          "reason": "CPU读取软件/返回可写mutable/解码期post仍可hardware三个完整段落更精确，四行配置卡重复。",
+          "original_line": 527,
+          "heading": "#### 2.1 ImageDecoder 的后台解码用法"
+        },
+        {
+          "original_id": "a240-15-source-io",
+          "title": "Source 描述来源，真正读取发生在解码时",
+          "decision": "remove",
+          "reason": "FileFD复制到SkFILEStream与content回退等五项Source路径完整，四框把多种适配器合并成泛化链无新增分支。",
+          "original_line": 584,
+          "heading": "### 3. Source 的文件读取路径"
+        },
+        {
+          "original_id": "a240-16-hardware-decode-allocation",
+          "title": "硬件位图把图形分配与上传前移到结果构建",
+          "decision": "keep",
+          "reason": "先CPU可写像素解码并可选post、检查最终hardware要求、再图形分配上传的真实顺序，直接否定HARDWARE等同GPU直接解码。",
+          "original_line": 613,
+          "heading": "### 4. Hardware Bitmap 的图形存储与解码"
+        },
+        {
+          "original_id": "a240-17-allocator-modes",
+          "title": "四种 allocator 描述最终像素存储",
+          "decision": "remove",
+          "reason": "四allocator语义/场景/约束表更完整，四行分配器卡重复。",
+          "original_line": 629,
+          "heading": "#### 4.1 四种分配器的语义"
+        },
+        {
+          "original_id": "a240-18-gainmap-gates",
+          "title": "Ultra HDR 增益图有独立的提取与存储条件",
+          "decision": "keep",
+          "reason": "主图成功、无post且非LOWRAM门禁、提取附着gainmap、可能硬件增益图存储的独立构建链，强调HDR结果不只看主Bitmapconfig。",
+          "original_line": 670,
+          "heading": "#### 5.1 Ultra HDR 与 Gainmap"
+        },
+        {
+          "original_id": "a240-19-gainmap-memory",
+          "title": "基础图、增益图与临时像素分别记账",
+          "decision": "remove",
+          "reason": "基础/增益/临时像素记账与allocationByteCount范围及解除关联非释放正文完整，三行内存卡没有实际双图引用示意。",
+          "original_line": 681,
+          "heading": "#### 5.1 Ultra HDR 与 Gainmap"
+        },
+        {
+          "original_id": "a240-20-bounded-decoding",
+          "title": "解码并发同时受 CPU 调度与内存约束",
+          "decision": "remove",
+          "reason": "三执行模型表和五调节信号与核数非唯一边界完整，四框并发卡重复。",
+          "original_line": 717,
+          "heading": "### 6. 解码线程调度与并发上限"
+        },
+        {
+          "original_id": "a240-21-cancellation-generation",
+          "title": "取消任务与拒绝过期结果是两道防线",
+          "decision": "remove",
+          "reason": "三取消时机列表及完成代次拒绝段落完整，三行规则卡未画具体旧请求晚到竞速。",
+          "original_line": 732,
+          "heading": "#### 6.1 请求取消的时机与校验"
+        },
+        {
+          "original_id": "a240-22-inbitmap-ownership",
+          "title": "inBitmap 复用容量需要先证明可变与独占",
+          "decision": "remove",
+          "reason": "六inBitmap契约列表及独占不展示/使用返回值段落完整，四行池规则卡重复。",
+          "original_line": 752,
+          "heading": "### 7. inBitmap 的复用规则"
+        },
+        {
+          "original_id": "a240-23-storage-observation",
+          "title": "像素存储、共享句柄与内存统计不能混为一项",
+          "decision": "remove",
+          "reason": "存储历史表与ashmem/HardwareBuffer色域及所有权/dmabuf/PSS细节三小节更完整，三行统计卡重复。",
+          "original_line": 797,
+          "heading": "#### 8.3 怎样看内存统计"
+        },
+        {
+          "original_id": "a240-25-framemetrics-limits",
+          "title": "窗口帧指标与后台解码耗时各看一处",
+          "decision": "remove",
+          "reason": "八公开FrameMetrics与三间接影响列表完整，三行工具卡重复。",
+          "original_line": 825,
+          "heading": "#### 9.1 FrameMetrics 覆盖的阶段"
+        },
+        {
+          "original_id": "a240-24-request-trace-boundaries",
+          "title": "同步解码切片与异步请求区间分别标记",
+          "decision": "remove",
+          "reason": "14行同步trace函数及127UTF16、同线程、async另配cookie解释完整，四框trace卡混串同步异步并非真实栈时序。",
+          "original_line": 861,
+          "heading": "#### 9.2 Perfetto 中的 Android 17 源码切片"
+        },
+        {
+          "original_id": "a240-29-list-scheduling",
+          "title": "列表当前视口、预取与错误恢复一起设计",
+          "decision": "remove",
+          "reason": "八项视口调度与不可信输入五预算限制完整，三行治理卡重复。",
+          "original_line": 897,
+          "heading": "### 10. 九宫格和瀑布流的调度策略"
+        },
+        {
+          "original_id": "a240-26-decode-default-listeners",
+          "title": "API 37 默认监听器与显式监听器的优先级",
+          "decision": "remove",
+          "reason": "默认线程优先跳过进程、显式始终随后三步骤与ThreadLocal全局边界完整，三行规则卡未画互斥默认到显式汇合。",
+          "original_line": 931,
+          "heading": "### 12. Android 17 的 ImageDecoder 新增项"
+        },
+        {
+          "original_id": "a240-27-rendernode-retention",
+          "title": "图片引用与录制命令可能比业务缓存活得更久",
+          "decision": "keep",
+          "reason": "Drawable/View录入命令并被RenderNode持有、业务cache移除仍未结束引用、自建节点discard的所有权链，说明缓存清空不能证明图片资源释放。",
+          "original_line": 949,
+          "heading": "### 13. RenderNode 与首次纹理准备"
+        },
+        {
+          "original_id": "a240-28-prepare-to-draw",
+          "title": "显式纹理准备改变成本发生时机",
+          "decision": "remove",
+          "reason": "prepareToDraw原生投RT条件与硬件跳过、三组固定输入比较段落完整，三行成本时机卡没有实际前移时序。",
+          "original_line": 958,
+          "heading": "### 13. RenderNode 与首次纹理准备"
+        }
+      ],
+      "sha256_after": "fc22c1d570115e9a06de62d63ee143dde9a0902179f5a9cb57874db91299cd7b",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:31:06.215514+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 29,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a240/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a240/visual-review.json",
+      "retired_diagrams": [
+        "a240-02-glide-engine-jobs",
+        "a240-03-coil-size-network",
+        "a240-04-decoded-pixel-budget",
+        "a240-05-hardware-cpu-contract",
+        "a240-08-software-mutability",
+        "a240-10-region-format-versions",
+        "a240-11-cache-work-saved",
+        "a240-12-cache-identity",
+        "a240-13-peak-memory",
+        "a240-14-format-evaluation",
+        "a240-15-source-io",
+        "a240-17-allocator-modes",
+        "a240-19-gainmap-memory",
+        "a240-20-bounded-decoding",
+        "a240-21-cancellation-generation",
+        "a240-22-inbitmap-ownership",
+        "a240-23-storage-observation",
+        "a240-24-request-trace-boundaries",
+        "a240-25-framemetrics-limits",
+        "a240-26-decode-default-listeners",
+        "a240-28-prepare-to-draw",
+        "a240-29-list-scheduling"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-240/retired-assets.json"
     },
     {
       "index": 241,
@@ -60265,8 +60540,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 164,
-  "next_article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+  "reviewed_articles": 165,
+  "next_article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -60276,7 +60551,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:28:20.314890+08:00",
+  "updated_at": "2026-10-31T17:31:06.215514+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -60447,9 +60722,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5023,
-  "reviewed_placements_after": 2031,
-  "net_removed_placements": 2992,
+  "reviewed_placements_before": 5052,
+  "reviewed_placements_after": 2038,
+  "net_removed_placements": 3014,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -60473,5 +60748,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 164
+  "currently_matching_reviewed_source_count": 165
 }
