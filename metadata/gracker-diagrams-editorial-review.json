@@ -43399,9 +43399,211 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "2a4ad4148a5366e6bfcb9a5f7d823e612fdaddc2b57601ac20216c2d0e091f65",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 3,
+      "decisions": [
+        {
+          "original_id": "ch15-17-02-merged-rule-inputs",
+          "title": "合并配置与规则来源",
+          "decision": "remove",
+          "reason": "四框复写合并配置来源和origin/source段，未画多份实际输入汇合，宽规则不能被新增窄规则抵消全文留。",
+          "original_line": 69,
+          "heading": "## 为什么需要单独看 R8 Configuration Analyzer"
+        },
+        {
+          "original_id": "ch15-17-01-three-evidence-scopes",
+          "title": "包体结果、规则约束与运行表现",
+          "decision": "remove",
+          "reason": "三列逐项复写开篇工具分工与末尾APKAnalyzer边界清单，未画同构建关联实例，score非字节/性能全文留。",
+          "original_line": 76,
+          "heading": "## 为什么需要单独看 R8 Configuration Analyzer"
+        },
+        {
+          "original_id": "ch15-17-03-version-and-reproduction",
+          "title": "构建工具、平台库与运行验证",
+          "decision": "remove",
+          "reason": "三列重画构建版本与平台库/运行验证清单，无实际版本依赖图，API37非AGP分析器与版本可复现条件全文留。",
+          "original_line": 92,
+          "heading": "## Android 17 与构建工具版本边界"
+        },
+        {
+          "original_id": "ch15-17-04-three-report-paths",
+          "title": "三条报告入口与对应产物",
+          "decision": "keep",
+          "reason": "AGP独立任务→reportsHTML/pb、完整构建→mappingHTML、旧AGP替换R8→系统属性自选目录三组实际入口产物对应独立，保留独立任务不生成APK/完整构建回归。",
+          "original_line": 128,
+          "heading": "## 三条报告生成路径"
+        },
+        {
+          "original_id": "ch15-17-05-optimization-dsl-and-rules",
+          "title": "优化开关与规则 source set",
+          "decision": "remove",
+          "reason": "三列逐项复制9行DSL和sourceSet说明，无具体main/release输入合并例，AGP新DSL规则位置与旧DSL兼容全文留。",
+          "original_line": 151,
+          "heading": "### AGP 9.3 的 optimization DSL"
+        },
+        {
+          "original_id": "ch15-17-06-score-counting",
+          "title": "三类分数的数量分母与去重",
+          "decision": "merge",
+          "reason": "与7合并成live8项、A3/B2重叠并集3、shrinking公式62.5%的具体教学例，显式每元素只计1；右下独立比较subsumed条件，不从score推覆盖或字节收益。",
+          "original_line": 160,
+          "heading": "## 报告里哪些字段该看",
+          "replacement_id": "ed15-17-r8-overlap-score-and-subsumption"
+        },
+        {
+          "original_id": "ch15-17-07-subsumption-and-constraints",
+          "title": "subsumed 要同时比较集合与修饰符",
+          "decision": "merge",
+          "reason": "与6同一匹配集合合并，保留modifiers相同及class/field/method分别包含；删冗余B时A仍约束3项所以score不变，非实际构建报告/不复刻UI取整。",
+          "original_line": 191,
+          "heading": "## 报告里哪些字段该看",
+          "replacement_id": "ed15-17-r8-overlap-score-and-subsumption"
+        },
+        {
+          "original_id": "ch15-17-08-current-variant-rule-noise",
+          "title": "unused、identical 与 subsumed 的边界",
+          "decision": "remove",
+          "reason": "三列逐项重画unused/identical/subsumed三条定义与variant限制，无实际跨flavor样例；最终新图保留subsumed具体关系，完整条件正文留。",
+          "original_line": 203,
+          "heading": "## 报告里哪些字段该看"
+        },
+        {
+          "original_id": "ch15-17-09-modifiers-follow-runtime-contract",
+          "title": "按运行时契约放开优化能力",
+          "decision": "remove",
+          "reason": "三列复制allow三修饰符定义和四条运行契约清单，没有实际规则前后变化，能力彼此独立与按名JNI/元数据限制全文留。",
+          "original_line": 226,
+          "heading": "## keep 规则的代价分级"
+        },
+        {
+          "original_id": "ch15-17-10-jni-liveness-and-descriptors",
+          "title": "JNI 的存活、名称与成员保护",
+          "decision": "keep",
+          "reason": "Bridge存活前提→names仍可shrinking→upcall成员与descriptor类型→native实际成员补规则→release验证实际依赖链独立，保留keepclassmembers不保类与descriptor不保全成员。",
+          "original_line": 249,
+          "heading": "## keep 规则的代价分级"
+        },
+        {
+          "original_id": "ch15-17-11-risk-priority-investigation",
+          "title": "从体积异常回到运行时入口",
+          "decision": "remove",
+          "reason": "四框复写高风险六条排查顺序及265四文件说明，与15评审流程重复，ServiceLoader受限双参数与同构建证据全文留。",
+          "original_line": 267,
+          "heading": "## 高风险规则的排查顺序"
+        },
+        {
+          "original_id": "ch15-17-12-full-mode-metadata-contracts",
+          "title": "full mode 的三类反射契约",
+          "decision": "remove",
+          "reason": "三列复写fullmode四条契约清单和框架评审表，无真实元数据缺失对象图，TypeToken规则不覆盖所有模型/属性需对象keep全文留。",
+          "original_line": 283,
+          "heading": "## 与 R8 full mode 迁移的配合"
+        },
+        {
+          "original_id": "ch15-17-13-same-build-artifact-evidence",
+          "title": "CI 比较与制品归档",
+          "decision": "remove",
+          "reason": "四步重复CI产物归档完整表与趋势条件，无真实SHA对应或分数变化实例，standalone无mappingseedsusage和跨编译器重建基线全文留。",
+          "original_line": 309,
+          "heading": "## CI 与回归治理"
+        },
+        {
+          "original_id": "ch15-17-14-workflow-and-schema-validation",
+          "title": "工作流入口与数据契约先验收",
+          "decision": "remove",
+          "reason": "四框逐项摘要官方工作流缺脚本/转换器缺陷与proto输入段，未画真实失败分支，缺文件/缩进/按文件名非最新/schema不稳定全文留。",
+          "original_line": 326,
+          "heading": "## CI 与回归治理"
+        },
+        {
+          "original_id": "ch15-17-15-review-to-release-regression",
+          "title": "从候选规则到可发布验证",
+          "decision": "remove",
+          "reason": "四框复制agent评审六步清单和低频回归段，与11/13通用流程重复；人批准keep规则与所有低频契约覆盖全文留。",
+          "original_line": 378,
+          "heading": "## Agent 评审的安全边界"
+        }
+      ],
+      "sha256_after": "fd23e6a20523103c5e507c368737f91757a344da1ab694e50c82c07c70044e19",
+      "new_diagrams": [
+        {
+          "id": "ed15-17-r8-overlap-score-and-subsumption",
+          "title": "重叠规则去重计分，与 subsumed 条件分开判断",
+          "article": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+          "assets": [
+            "src/assets/diagrams/ch15/ed15-17-r8-overlap-score-and-subsumption.svg",
+            "src/assets/diagrams/ch15/ed15-17-r8-overlap-score-and-subsumption.png"
+          ],
+          "layout": "合成live集合在上，两条匹配规则并列输入中部并集，左下由并集计算score，右下独立核对同modifier与三组包含；不给score到subsumed画因果箭头。",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed15-17-r8-overlap-score-and-subsumption",
+          "sources": [
+            "原文158–194分数计数、叠加限制和subsumed条件；以下URL为原文已有来源，本图不作新增源码研究",
+            "https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer",
+            "https://r8.googlesource.com/r8/+/b1e20dd52788b7a226f83e24d49d0a53108bc84a/src/main/java/com/android/tools/r8/keepradius/RootSetKeepRadiusSerializer.java",
+            "https://storage.googleapis.com/r8-releases/raw/9.4.14/r8lib.jar",
+            "https://r8.googlesource.com/r8/+/b1e20dd52788b7a226f83e24d49d0a53108bc84a/src/main/java/com/android/tools/r8/keepradius/KeepRuleSubsumptionAnalysis.java"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch15-17-06-score-counting",
+              "ch15-17-07-subsumption-and-constraints"
+            ],
+            "boundary": "固定正文所述R8 9.4.14口径的合成匹配集合，非实际构建报告。只看一个能力（本例shrinking），A/B均施加该限制，无全局dont选项；live类2、字段3、方法3共8项，每项权重1。A命中C/f/m，B命中C/m，受限并集3项，按正文公式得到62.5%，不是把5条匹配重复相加。B被A subsume还须两者modifiers相同且类/字段/方法三组分别包含；不能从score或总数直接推出包含。只删冗余B仍有A限制这3项，本例score不变；要收窄A先确认真实运行时契约。分数不表示节省DEX字节或运行收益，UI显示取整未在本图复刻。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a165/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T13:59:02.013152+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a165/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a165/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 165,
+        "article": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+        "registered_sha256": "2a4ad4148a5366e6bfcb9a5f7d823e612fdaddc2b57601ac20216c2d0e091f65",
+        "frozen_sha256": "2a4ad4148a5366e6bfcb9a5f7d823e612fdaddc2b57601ac20216c2d0e091f65",
+        "review_input_sha256": "1b942a382dd9e40e52c32bf083c6dc5ccedffe1858bddc4106df3487d4407289",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a165/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a165/external-source.diff",
+        "diff_sha256": "a2b61683b681ed0db4fbbe170acbf90a732bac1563de4a0d5bfee1f9fb06a69c",
+        "rationale": "Full current externally revised article independently reviewed for diagram correspondence, all technical prose/code/tables preserved; source baseline declaration is not new technical verification.",
+        "review_evidence": "{\"narrative_rows\": 187, \"characters\": 18126, \"svg_labels_read\": 15, \"actual_pngs_viewed\": 15, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 6, \"code_lines\": 29, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "1b942a382dd9e40e52c32bf083c6dc5ccedffe1858bddc4106df3487d4407289",
+      "retired_diagrams": [
+        "ch15-17-01-three-evidence-scopes",
+        "ch15-17-02-merged-rule-inputs",
+        "ch15-17-03-version-and-reproduction",
+        "ch15-17-05-optimization-dsl-and-rules",
+        "ch15-17-06-score-counting",
+        "ch15-17-07-subsumption-and-constraints",
+        "ch15-17-08-current-variant-rule-noise",
+        "ch15-17-09-modifiers-follow-runtime-contract",
+        "ch15-17-11-risk-priority-investigation",
+        "ch15-17-12-full-mode-metadata-contracts",
+        "ch15-17-13-same-build-artifact-evidence",
+        "ch15-17-14-workflow-and-schema-validation",
+        "ch15-17-15-review-to-release-regression"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-165/retired-assets.json"
     },
     {
       "index": 167,
@@ -44581,8 +44783,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 99,
-  "next_article": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+  "reviewed_articles": 100,
+  "next_article": "src/part3-tools/ch16-methodology/01-performance-principles-evidence-governance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -44592,7 +44794,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:53:02.997619+08:00",
+  "updated_at": "2026-10-31T13:59:02.013152+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -44648,13 +44850,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
-      "registered_sha256": "2a4ad4148a5366e6bfcb9a5f7d823e612fdaddc2b57601ac20216c2d0e091f65",
-      "observed_sha256": "1b942a382dd9e40e52c32bf083c6dc5ccedffe1858bddc4106df3487d4407289",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -44938,9 +45133,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3457,
-  "reviewed_placements_after": 1531,
-  "net_removed_placements": 1926,
+  "reviewed_placements_before": 3472,
+  "reviewed_placements_after": 1534,
+  "net_removed_placements": 1938,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -44964,5 +45159,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 99
+  "currently_matching_reviewed_source_count": 100
 }
