@@ -34912,9 +34912,636 @@
       "before_count": 42,
       "before_all_images": 42,
       "sha256_before": "09c1371205839fc6684c7f334ecedb4e54bf8ed1b03ac2bb4c1f87ca00ccb34d",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 24,
+      "decisions": [
+        {
+          "original_id": "ch14-04-01-reuse-mechanisms",
+          "title": "四类复用机制的输入与输出",
+          "decision": "remove",
+          "reason": "四卡逐项复制96–101完整四机制输入输出表，无新增依赖/时序/示例，表格和SQL宏/UI宏区别正文全留。",
+          "original_line": 107,
+          "heading": "### 四种可复用能力"
+        },
+        {
+          "original_id": "ch14-04-02-weighted-intervals",
+          "title": "持续时间加权与普通样本平均的区别",
+          "decision": "keep",
+          "reason": "9秒与1秒保持值的实际区间比例直接显示加权对象，区别按样本点算术均值，anon/file缺失和shmem/swap规则原文完整保留。",
+          "original_line": 158,
+          "heading": "#### Trace Summarization 的完整示例"
+        },
+        {
+          "original_id": "ch14-04-03-summary-contract",
+          "title": "从进程区间到统一 TraceSummary",
+          "decision": "remove",
+          "reason": "四框逐项重述129–174规格/upid维度/BYTES/TraceSummary步骤，22行textproto和12行Python完整保留，实际加权区间图2足够承载计算差异，删规格摘要。",
+          "original_line": 176,
+          "heading": "#### Trace Summarization 的完整示例"
+        },
+        {
+          "original_id": "ch14-04-04-legacy-contract",
+          "title": "v1 的文件、扩展字段与输出视图约定",
+          "decision": "keep",
+          "reason": "同基本名SQL/proto、TraceMetrics扩展字段、字段名_output输出视图和CLI的具体命名依赖独立，保留避免文件和根视图约定混淆。",
+          "original_line": 241,
+          "heading": "#### 存量 v1 指标：SQL 与 protobuf 的约定"
+        },
+        {
+          "original_id": "ch14-04-05-cpu-ranking",
+          "title": "CPU 榜单保留实例与排序精度",
+          "decision": "keep",
+          "reason": "按原始纳秒SUM排序后才整数ms展示的精度依赖链独立，保留实例upid/排idle/已调度线程计数边界，不把量化值当排名来源。",
+          "original_line": 285,
+          "heading": "#### 存量 v1 指标：SQL 与 protobuf 的约定"
+        },
+        {
+          "original_id": "ch14-04-06-result-states",
+          "title": "零、NULL、空表与执行失败分开处理",
+          "decision": "keep",
+          "reason": "测得0、SQLNULL、成功空表与执行失败四种互不替代状态并列，适用于本节各指标，与平台DataEnvelope特定3状态不混为同一枚举。",
+          "original_line": 316,
+          "heading": "#### 指标空结果与采集条件"
+        },
+        {
+          "original_id": "ch14-04-07-sql-macro-expansion",
+          "title": "SQL 宏在执行前展开表与表达式参数",
+          "decision": "merge",
+          "reason": "原图“SQL 宏在执行前展开表与表达式参数”并入：合并两个宏的输入、执行时机、错误传播与输出，用并列链防止把SQL展开和UI自动化配置互换。；锚点原图8，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 349,
+          "heading": "#### PerfettoSQL 宏",
+          "replacement_id": "ed14-04-sql-and-ui-macro-execution"
+        },
+        {
+          "original_id": "ch14-04-08-ui-command-sequence",
+          "title": "UI 宏逐条等待执行并传播异常",
+          "decision": "merge",
+          "reason": "原图“UI 宏逐条等待执行并传播异常”并入：合并两个宏的输入、执行时机、错误传播与输出，用并列链防止把SQL展开和UI自动化配置互换。；锚点原图8，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 391,
+          "heading": "#### UI 命令宏",
+          "replacement_id": "ed14-04-sql-and-ui-macro-execution"
+        },
+        {
+          "original_id": "ch14-04-09-trend-backtrace",
+          "title": "趋势异常点回查原始测量与 Trace",
+          "decision": "keep",
+          "reason": "趋势异常点→样本文件→工具规格版本→对应迭代Trace的反向回查入口独立，图中聚合值不可替代单次现场，保留。",
+          "original_line": 415,
+          "heading": "#### 单轨迹仪表板与跨轨迹仪表板"
+        },
+        {
+          "original_id": "ch14-04-10-python-native-pinning",
+          "title": "Python 包与原生工具分别锁定",
+          "decision": "merge",
+          "reason": "原图“Python 包与原生工具分别锁定”并入：合并Python/native固定和设备/主机/SmartPerfetto三条独立版本线，把真实二进制清单与回归边界画在一条证据链。；锚点原图25，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 426,
+          "heading": "#### 固定二进制与工具版本记录",
+          "replacement_id": "ed14-04-independent-version-axes-and-toolchain"
+        },
+        {
+          "original_id": "ch14-04-11-slice-sum-overlap",
+          "title": "Slice 的累计时长不等于墙钟或 CPU 时间",
+          "decision": "keep",
+          "reason": "父Slice包围子Slice的实际轨道示意直接说明SUMdur重复覆盖，不能叫互斥业务耗时或CPU时间，保留具体包含关系。",
+          "original_line": 486,
+          "heading": "#### 批量查询"
+        },
+        {
+          "original_id": "ch14-04-12-batch-memory",
+          "title": "批处理实例与结果合并的生命周期",
+          "decision": "keep",
+          "reason": "多个独立驻留TP实例执行同查询后合并resolver元数据的扇出/汇合拓扑独立，保留worker不限制驻留总数、需分批关闭的生命周期。",
+          "original_line": 493,
+          "heading": "#### 批量查询"
+        },
+        {
+          "original_id": "ch14-04-13-native-rpc",
+          "title": "UI 经回环 RPC 访问原生 Trace Processor",
+          "decision": "keep",
+          "reason": "UI/封装客户端→回环HTTPRPC→原生TP→已解析数据的进程/传输链独立，保留回环监听、实际协议版本及主机内存限制。",
+          "original_line": 512,
+          "heading": "#### 远程 Trace Processor 服务"
+        },
+        {
+          "original_id": "ch14-04-14-ci-measurement-evidence",
+          "title": "门禁数值、诊断轨迹与条件记录分工",
+          "decision": "merge",
+          "reason": "原图“门禁数值、诊断轨迹与条件记录分工”并入：合并Benchmark数值/迭代Trace/条件分工与轻量门禁/详细复测两条路径，避免用诊断结果替换原门禁样本。；锚点原图16，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 528,
+          "heading": "#### 测量值与诊断证据的分工",
+          "replacement_id": "ed14-04-gate-evidence-and-diagnostic-capture"
+        },
+        {
+          "original_id": "ch14-04-15-finite-gate",
+          "title": "标量门禁先验证输入，再比较中位数",
+          "decision": "keep",
+          "reason": "标量门禁各输入验证后才计算正基线中位数比值及退出状态的算法路径独立，88行脚本逐字保留，正式样本数/场景/编译条件检查不冒充已实现。",
+          "original_line": 657,
+          "heading": "#### 门禁阈值与设备噪声"
+        },
+        {
+          "original_id": "ch14-04-16-measurement-diagnostic",
+          "title": "常规门禁与深度诊断分开采集",
+          "decision": "merge",
+          "reason": "原图“常规门禁与深度诊断分开采集”并入：合并Benchmark数值/迭代Trace/条件分工与轻量门禁/详细复测两条路径，避免用诊断结果替换原门禁样本。；锚点原图16，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 673,
+          "heading": "#### 门禁采集与深度诊断的分离",
+          "replacement_id": "ed14-04-gate-evidence-and-diagnostic-capture"
+        },
+        {
+          "original_id": "ch14-04-17-instrumentation-kinds",
+          "title": "同步、异步与计数器的不同语义",
+          "decision": "remove",
+          "reason": "三分类四框逐项复制682一段及689–696API表，同步/异步/计数器语义和API级别全留，19另保留跨线程cookie配对链，删目录卡。",
+          "original_line": 684,
+          "heading": "#### 选择平台 API 还是 Perfetto SDK"
+        },
+        {
+          "original_id": "ch14-04-18-try-finally",
+          "title": "同步 Trace 用 finally 保持线程内平衡",
+          "decision": "remove",
+          "reason": "try/finally四框逐行重述12行Kotlin包装代码，未给独立嵌套实例，700同线程/717名称UTF16约束和代码全留，删代码流程复写。",
+          "original_line": 719,
+          "heading": "#### Java/Kotlin 同步时间片"
+        },
+        {
+          "original_id": "ch14-04-19-async-cookie",
+          "title": "异步区间用名称与 cookie 找回起点",
+          "decision": "keep",
+          "reason": "开始名+cookie跨线程/回调完成再同键结束的实际关联链独立，明确同名重叠不同cookie，保留不能把cookie当业务敏感标识。",
+          "original_line": 742,
+          "heading": "#### Java/Kotlin 同步时间片"
+        },
+        {
+          "original_id": "ch14-04-20-atrace-collection",
+          "title": "平台 ATrace 事件进入系统 Trace 的条件",
+          "decision": "merge",
+          "reason": "原图“平台 ATrace 事件进入系统 Trace 的条件”并入：合并平台ATrace进入系统采集的链和SDK两个backend边界，避免用atrace_apps代替track_event启用。；锚点原图21，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 799,
+          "heading": "#### NDK `ATrace_*`",
+          "replacement_id": "ed14-04-event-source-and-session-matching"
+        },
+        {
+          "original_id": "ch14-04-21-sdk-backends",
+          "title": "ATrace、system SDK 与进程内 SDK 的会话边界",
+          "decision": "merge",
+          "reason": "原图“ATrace、system SDK 与进程内 SDK 的会话边界”并入：合并平台ATrace进入系统采集的链和SDK两个backend边界，避免用atrace_apps代替track_event启用。；锚点原图21，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 831,
+          "heading": "#### Native（C/C++） Perfetto SDK",
+          "replacement_id": "ed14-04-event-source-and-session-matching"
+        },
+        {
+          "original_id": "ch14-04-22-typed-import",
+          "title": "结构化业务字段需要可识别的导入路径",
+          "decision": "keep",
+          "reason": "类型定义/受支持编码descriptor→写包→导入→可查询args实际数据路径独立，独立proto不会自动扩展上游TracePacket的失败条件正文保留。",
+          "original_line": 842,
+          "heading": "#### Native（C/C++） Perfetto SDK"
+        },
+        {
+          "original_id": "ch14-04-23-release-trace-governance",
+          "title": "团队可选埋点的构建期治理",
+          "decision": "remove",
+          "reason": "四框逐项重述860/878团队包装+常量+R8+实际产物验证和13行代码，名称/敏感内容/设备开销治理清单完整保留，删构建步骤摘要。",
+          "original_line": 880,
+          "heading": "#### 生产包治理"
+        },
+        {
+          "original_id": "ch14-04-24-golden-knowledge",
+          "title": "查询知识库随工具与语义一起回归",
+          "decision": "merge",
+          "reason": "原图“查询知识库随工具与语义一起回归”并入：合并团队查询知识库、Skill质量闸门和章节反馈，把测试契约及工具变更差异放在同一维护循环。；锚点原图40，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 922,
+          "heading": "### 团队级 Perfetto 分析知识库",
+          "replacement_id": "ed14-04-versioned-semantic-regression-loop"
+        },
+        {
+          "original_id": "ch14-04-25-version-axes",
+          "title": "设备、主机和分析平台是独立版本线",
+          "decision": "merge",
+          "reason": "原图“设备、主机和分析平台是独立版本线”并入：合并Python/native固定和设备/主机/SmartPerfetto三条独立版本线，把真实二进制清单与回归边界画在一条证据链。；锚点原图25，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 938,
+          "heading": "## 分析平台的任务、证据与版本治理",
+          "replacement_id": "ed14-04-independent-version-axes-and-toolchain"
+        },
+        {
+          "original_id": "ch14-04-26-analysis-dataflow",
+          "title": "查询结果经过合约再进入解释与持久化",
+          "decision": "merge",
+          "reason": "原图“查询结果经过合约再进入解释与持久化”并入：合并确定性取数到报告的数据流、DataEnvelope状态、QueryReview和数值/因果支持边界，用证据分叉避免元数据冒充证明。；锚点原图31，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 956,
+          "heading": "### 从单次 Trace 问答到可复用分析结果",
+          "replacement_id": "ed14-04-query-metadata-evidence-and-claims"
+        },
+        {
+          "original_id": "ch14-04-27-analysis-modes",
+          "title": "分析模式决定工具与预算，场景另行选择",
+          "decision": "remove",
+          "reason": "fast/full/auto四框逐项重排969–975三行模式表，auto失败走full和reference/私有源强制full/SmartProfile不同设置正文全留，无额外路由实例，删表格复写。",
+          "original_line": 977,
+          "heading": "### Perfetto AI Assistant 的最小工作流"
+        },
+        {
+          "original_id": "ch14-04-28-skill-strategy-template",
+          "title": "Skill、strategy 与 template 分别约束哪一层",
+          "decision": "remove",
+          "reason": "三组六卡逐项复制994–998完整Skill/strategy/template职责-症状-复核表，原表及YAML能力/可测试层次全部保留，新证据和回归图提供真正数据与验证关系。",
+          "original_line": 1002,
+          "heading": "### YAML Skill 与场景策略的分层设计"
+        },
+        {
+          "original_id": "ch14-04-29-envelope-execution",
+          "title": "DataEnvelope 的三个执行状态",
+          "decision": "merge",
+          "reason": "原图“DataEnvelope 的三个执行状态”并入：合并确定性取数到报告的数据流、DataEnvelope状态、QueryReview和数值/因果支持边界，用证据分叉避免元数据冒充证明。；锚点原图31，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1011,
+          "heading": "### YAML Skill 与场景策略的分层设计",
+          "replacement_id": "ed14-04-query-metadata-evidence-and-claims"
+        },
+        {
+          "original_id": "ch14-04-30-query-review-evidence",
+          "title": "查询复核元数据与诊断证据的分工",
+          "decision": "merge",
+          "reason": "原图“查询复核元数据与诊断证据的分工”并入：合并确定性取数到报告的数据流、DataEnvelope状态、QueryReview和数值/因果支持边界，用证据分叉避免元数据冒充证明。；锚点原图31，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1028,
+          "heading": "### SQL guardrail（规则式风险检查）、stdlib 文档与证据来源索引",
+          "replacement_id": "ed14-04-query-metadata-evidence-and-claims"
+        },
+        {
+          "original_id": "ch14-04-31-numeric-causal",
+          "title": "数值成立与因果成立需要不同证据",
+          "decision": "merge",
+          "reason": "原图“数值成立与因果成立需要不同证据”并入：合并确定性取数到报告的数据流、DataEnvelope状态、QueryReview和数值/因果支持边界，用证据分叉避免元数据冒充证明。；锚点原图31，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1039,
+          "heading": "### SQL guardrail（规则式风险检查）、stdlib 文档与证据来源索引",
+          "replacement_id": "ed14-04-query-metadata-evidence-and-claims"
+        },
+        {
+          "original_id": "ch14-04-32-two-comparisons",
+          "title": "原始对照与快照对照的两条路径",
+          "decision": "keep",
+          "reason": "rawreference能再取数与snapshot仅用已存指标两条可用材料分支独立，保留快照缺指标不能重查原始Trace的能力边界。",
+          "original_line": 1050,
+          "heading": "### 多 Trace 对比与性能回归判断"
+        },
+        {
+          "original_id": "ch14-04-33-global-backfill",
+          "title": "v1.3.0 默认回填是全局候选",
+          "decision": "keep",
+          "reason": "全局启动最大dur/全部Actual行→默认回填→全局候选→按目标身份窗口另写SQL的真实失真路径独立，保留v1.3.0无包名/Layer/token去重事实。",
+          "original_line": 1064,
+          "heading": "### 多 Trace 对比与性能回归判断"
+        },
+        {
+          "original_id": "ch14-04-34-highlight-threshold",
+          "title": "变化高亮按单位选择判断分支",
+          "decision": "keep",
+          "reason": "三种单位分组的AND/OR/兜底条件是真正不同判定分支，保留有效assessment、相对NULL/非有限以及两方向幅度，不把UI高亮当统计显著性。",
+          "original_line": 1071,
+          "heading": "### 多 Trace 对比与性能回归判断"
+        },
+        {
+          "original_id": "ch14-04-35-connection-provider-runtime",
+          "title": "后端连接、模型配置和执行适配层",
+          "decision": "keep",
+          "reason": "Connection入口凭证、Provider模型配置与runtime工具适配三层授权对象和不同健康检测并列，保留后端token/providerkey不可换、能对话不保证工具调用。",
+          "original_line": 1084,
+          "heading": "### Provider Manager：模型服务与执行适配层"
+        },
+        {
+          "original_id": "ch14-04-36-new-session-priority",
+          "title": "常规新会话的 provider 与 runtime 优先级",
+          "decision": "merge",
+          "reason": "原图“常规新会话的 provider 与 runtime 优先级”并入：合并新请求provider优先级与历史session恢复，画清错误停止与envQoder快照缺口，避免active变更污染旧会话。；锚点原图37，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1111,
+          "heading": "### Provider Manager：模型服务与执行适配层",
+          "replacement_id": "ed14-04-new-versus-resumed-session-identity"
+        },
+        {
+          "original_id": "ch14-04-37-resume-identity",
+          "title": "历史会话按快照恢复而非重读 active",
+          "decision": "merge",
+          "reason": "原图“历史会话按快照恢复而非重读 active”并入：合并新请求provider优先级与历史session恢复，画清错误停止与envQoder快照缺口，避免active变更污染旧会话。；锚点原图37，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1120,
+          "heading": "### Provider Manager：模型服务与执行适配层",
+          "replacement_id": "ed14-04-new-versus-resumed-session-identity"
+        },
+        {
+          "original_id": "ch14-04-38-private-context-permission",
+          "title": "私有上下文按本次请求与许可进入 runtime",
+          "decision": "keep",
+          "reason": "显式选择→scope/generation/来源许可→受限工具→provider_send双重许可→安全投影的具体授权链独立，保留私有材料不自动进入普通会话及撤权失效范围。",
+          "original_line": 1137,
+          "heading": "### 运行分发、权限与隐私"
+        },
+        {
+          "original_id": "ch14-04-39-skill-regression-gates",
+          "title": "Skill 回归逐层验证取数、契约与证据",
+          "decision": "merge",
+          "reason": "原图“Skill 回归逐层验证取数、契约与证据”并入：合并团队查询知识库、Skill质量闸门和章节反馈，把测试契约及工具变更差异放在同一维护循环。；锚点原图40，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1170,
+          "heading": "### Skill 质量评估与回归测试",
+          "replacement_id": "ed14-04-versioned-semantic-regression-loop"
+        },
+        {
+          "original_id": "ch14-04-40-knowledge-feedback",
+          "title": "机制章节与可执行 Skill 互相校验",
+          "decision": "merge",
+          "reason": "原图“机制章节与可执行 Skill 互相校验”并入：合并团队查询知识库、Skill质量闸门和章节反馈，把测试契约及工具变更差异放在同一维护循环。；锚点原图40，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1201,
+          "heading": "### SmartPerfetto 与技术知识库联动",
+          "replacement_id": "ed14-04-versioned-semantic-regression-loop"
+        },
+        {
+          "original_id": "ch14-04-41-migration-phases",
+          "title": "企业迁移阶段改变 metadata 的权威来源",
+          "decision": "merge",
+          "reason": "原图“企业迁移阶段改变 metadata 的权威来源”并入：合并迁移阶段与切换后404检查，把数据库查询失败不可回FS和快照恢复条件放进同一关系图。；锚点原图42，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1219,
+          "heading": "### 企业版迁移与 404 排查",
+          "replacement_id": "ed14-04-migration-authority-and-scoped-404"
+        },
+        {
+          "original_id": "ch14-04-42-scoped-404",
+          "title": "cutover 后沿 scope、记录与文件排查 404",
+          "decision": "merge",
+          "reason": "原图“cutover 后沿 scope、记录与文件排查 404”并入：合并迁移阶段与切换后404检查，把数据库查询失败不可回FS和快照恢复条件放进同一关系图。；锚点原图42，固定工具/产品版本、输入身份、失败分支和代码验证范围保留，详见合图图注。",
+          "original_line": 1250,
+          "heading": "### 企业版迁移与 404 排查",
+          "replacement_id": "ed14-04-migration-authority-and-scoped-404"
+        }
+      ],
+      "sha256_after": "f000841ee99b708cabe616231266fe379e72b4edcf8db6a566643197c499e432",
+      "new_diagrams": [
+        {
+          "id": "ed14-04-sql-and-ui-macro-execution",
+          "title": "SQL 宏在查询前展开，UI 宏逐条执行命令",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-sql-and-ui-macro-execution.svg",
+            "src/assets/diagrams/ch14/ed14-04-sql-and-ui-macro-execution.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-sql-and-ui-macro-execution",
+          "sources": [
+            "https://perfetto.dev/docs/analysis/perfetto-sql-syntax",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/ui/src/core/command_manager.ts",
+            "https://perfetto.dev/docs/visualization/commands-automation-reference"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-07-sql-macro-expansion",
+              "ch14-04-08-ui-command-sequence"
+            ],
+            "boundary": "SQL宏用CREATE PERFETTO MACRO接收TableOrSubquery和Expr，调用带!，在查询执行前展开；示例dur>=0和8ms为过滤条件非帧deadline。UI宏为JSON命令序列，按registerMacro逐条await runCommand，抛错/rejected中断，命令自行吞错正常返回可继续；Pivot需要ts/dur/name/分组列，以含upid的键区分实例。SQL包与UI扩展共享需固定版本/反向域名命名空间/稳定命令ID，机制与配置不互通。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-04-independent-version-axes-and-toolchain",
+          "title": "设备、主机工具和平台代码分别固定版本",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-independent-version-axes-and-toolchain.svg",
+            "src/assets/diagrams/ch14/ed14-04-independent-version-axes-and-toolchain.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-independent-version-axes-and-toolchain",
+          "sources": [
+            "https://github.com/google/perfetto/blob/v57.2/python/perfetto/trace_processor/api.py",
+            "https://github.com/google/perfetto/blob/v57.2/python/perfetto/prebuilts/manifests/trace_processor_shell.py",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/scripts/trace-processor-pin.env",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/docs/architecture/agent-runtime.md"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-10-python-native-pinning",
+              "ch14-04-25-version-axes"
+            ],
+            "boundary": "Android17设备/内核决定实际数据源和权限，主机TP/Python/UI决定schema/stdlib/RPC，SmartPerfetto固定v1.3.0提交决定runtime/证据/存储实现。perfetto Python0.57.2清单绑定nativev56.1，包号不证明运行v57.2；原文显式bin_path需放置验证所选v57.2。保存实际version/hash/toolchain，升级任何一线用canonical/goldentrace核对输入与contract，最新release不能倒灌旧快照。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-04-gate-evidence-and-diagnostic-capture",
+          "title": "门禁用测量样本判定，详细复测补原因证据",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-gate-evidence-and-diagnostic-capture.svg",
+            "src/assets/diagrams/ch14/ed14-04-gate-evidence-and-diagnostic-capture.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-gate-evidence-and-diagnostic-capture",
+          "sources": [
+            "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci",
+            "https://developer.android.com/topic/performance/measuring-performance"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-14-ci-measurement-evidence",
+              "ch14-04-16-measurement-diagnostic"
+            ],
+            "boundary": "Macrobenchmark JSON是主要门禁数值源，各次迭代Perfetto Trace是诊断证据，保存APK/设备/编译模式/场景/采集/toolchain/策略等条件。自定义Slice重算不能冒充StartupTimingMetric。按设备自然波动与已批准阈值判定，首次超限同设备同提交复测，更密集数据源改变开销，诊断不替换原样本；采集配置更改需新基线。原标量脚本只处理metrics.<id>.runs，sampledMetrics嵌套需另设计。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-04-event-source-and-session-matching",
+          "title": "埋点接口、数据源与会话控制者按三条路径匹配",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-event-source-and-session-matching.svg",
+            "src/assets/diagrams/ch14/ed14-04-event-source-and-session-matching.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-event-source-and-session-matching",
+          "sources": [
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java",
+            "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libcutils/include/cutils/trace.h",
+            "https://perfetto.dev/docs/getting-started/atrace",
+            "https://perfetto.dev/docs/instrumentation/tracing-sdk"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-20-atrace-collection",
+              "ch14-04-21-sdk-backends"
+            ],
+            "boundary": "平台Trace/ATrace属于APP分类，由linux.ftrace和atrace_apps目标包允许采集；RING_BUFFER满覆盖最早数据。SDKsystem连接traced，Initialize/Register仅注册，外部会话需track_event与category。SDKinprocess需本进程创建配置启动session，仅本进程无整机调度；两backend可同时注册但输出不自动合并。请求配置不保证设备实际覆盖，不赋予应用额外系统采集权限。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-04-query-metadata-evidence-and-claims",
+          "title": "查询结果、查询复核元数据与结论证据分别保存",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-query-metadata-evidence-and-claims.svg",
+            "src/assets/diagrams/ch14/ed14-04-query-metadata-evidence-and-claims.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-query-metadata-evidence-and-claims",
+          "sources": [
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/docs/DATA_CONTRACT_DESIGN.md",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/types/evidenceContract.ts",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/docs/architecture/agent-runtime.md",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/agentv3/sqlIncludeInjector.ts"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-26-analysis-dataflow",
+              "ch14-04-29-envelope-execution",
+              "ch14-04-30-query-review-evidence",
+              "ch14-04-31-numeric-causal"
+            ],
+            "boundary": "SQL/YAMLSkill经TP取数，DataEnvelope的meta/data/display保留来源与状态，observed/empty/optional_error不互换。QueryReviewV1记录表/过滤/include/列/时长/行数/截断，静态解析不全partial，用途review_metadata_only；完整SQL留报告，模型compactprojection不含可执行SQL。EvidenceContract另绑定tracecurrent/reference、Skill/step/queryhash/reviewid/artifact、行列实际值/单位/窗口。Runnable120ms的数值证据不能独自证明CPU竞争因果，claim标verified/partial/inference/unsupported。报告/snapshot保留运行身份与缺失原因，模型不直接读取整份trace字节，也不以单条trace推全量用户分布。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-04-versioned-semantic-regression-loop",
+          "title": "机制章节、可执行规则与固定样本组成回归闭环",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-versioned-semantic-regression-loop.svg",
+            "src/assets/diagrams/ch14/ed14-04-versioned-semantic-regression-loop.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-versioned-semantic-regression-loop",
+          "sources": [
+            "https://github.com/google/perfetto/blob/v57.2/python/perfetto/trace_processor/api.py",
+            "https://perfetto.dev/docs/analysis/trace-summary",
+            "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/docs/DATA_CONTRACT_DESIGN.md",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/types/evidenceContract.ts",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/docs/architecture/agent-runtime.md"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-24-golden-knowledge",
+              "ch14-04-39-skill-regression-gates",
+              "ch14-04-40-knowledge-feedback"
+            ],
+            "boundary": "知识库固定toolchain/配置/SQL包/summary/UI宏/门禁策略/goldenmanifest，固定Trace记录来源系统许可预期，敏感样本受控。从机制章节可观察问题写Skillcontract，固定参数/窗口/JOIN/单位/缺失分支；SQL能执行与YAML能解析不证明指标正确。代表样本/空trace/缺字段分别验SQL、DataEnvelope列单位层级状态、golden误差、evidenceanchor行列及claim支持；partial不升级verified。新旧工具/schema/stdlibsymbolindex比较经领域审核，失效条件回写章节/Skill，不能从单次成功推所有厂商版本。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-04-new-versus-resumed-session-identity",
+          "title": "新建会话按当前优先级选择，恢复会话按保存身份",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-new-versus-resumed-session-identity.svg",
+            "src/assets/diagrams/ch14/ed14-04-new-versus-resumed-session-identity.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-new-versus-resumed-session-identity",
+          "sources": [
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/agentRuntime/runtimeSelection.ts",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/docs/architecture/agent-runtime.md",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/services/providerManager/providerSnapshot.ts"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-36-new-session-priority",
+              "ch14-04-37-resume-identity"
+            ],
+            "boundary": "原文SmartPerfettov1.3.0常规新请求限定未传runtimeOverride/未显式providerId:null/未启experimental，依请求providerId→activeprofile→runtimeenv→默认Claude选择，不适用才下一层，显式provider不存在failfast。历史用已保存provider/runtime，绑定provider删除立即失败，env/default保存override优先当前env，不受后来active影响。纯envQoder选择器可运行但snapshot解析没Qoder，不能证明身份保存，修复版本回归或新建。真实身份用鉴权/api/runtime-health核验，公开/health仅存活，backendtoken与providerkey不同。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-04-migration-authority-and-scoped-404",
+          "title": "迁移先改变 metadata 权威来源，再按当前 scope 查 404",
+          "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-04-migration-authority-and-scoped-404.svg",
+            "src/assets/diagrams/ch14/ed14-04-migration-authority-and-scoped-404.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-04-migration-authority-and-scoped-404",
+          "sources": [
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/services/enterpriseMigration.ts",
+            "https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/services/traceMetadataStore.ts"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-04-41-migration-phases",
+              "ch14-04-42-scoped-404"
+            ],
+            "boundary": "固定v1.3.0legacy读写FS；dualwrite读FS写FS+DB且企业启用未设phase默认此；cutover/retired读写DB，cutover需确认开关但开关不证明一致。应先reconciliation和可恢复快照。cutover按RequestContexttenant/workspace/owner查询trace_assets，不命中null不回旧FS，以免绕RBAC。404需查实际阶段、scoped记录、local_path/文件/权限、SSO/keyscope/RBAC和迁移指纹计数快照。若数据不完整停止写入保留现场由负责人维护窗恢复验证FS+SQLite快照；只改回dualwrite无reverseimporter，retired不承诺反向转换。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:01:36.818447+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 42,
+        "contexts_actually_viewed": 9,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a138/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a138/visual-review.json",
+      "retired_diagrams": [
+        "ch14-04-01-reuse-mechanisms",
+        "ch14-04-03-summary-contract",
+        "ch14-04-07-sql-macro-expansion",
+        "ch14-04-08-ui-command-sequence",
+        "ch14-04-10-python-native-pinning",
+        "ch14-04-14-ci-measurement-evidence",
+        "ch14-04-16-measurement-diagnostic",
+        "ch14-04-17-instrumentation-kinds",
+        "ch14-04-18-try-finally",
+        "ch14-04-20-atrace-collection",
+        "ch14-04-21-sdk-backends",
+        "ch14-04-23-release-trace-governance",
+        "ch14-04-24-golden-knowledge",
+        "ch14-04-25-version-axes",
+        "ch14-04-26-analysis-dataflow",
+        "ch14-04-27-analysis-modes",
+        "ch14-04-28-skill-strategy-template",
+        "ch14-04-29-envelope-execution",
+        "ch14-04-30-query-review-evidence",
+        "ch14-04-31-numeric-causal",
+        "ch14-04-36-new-session-priority",
+        "ch14-04-37-resume-identity",
+        "ch14-04-39-skill-regression-gates",
+        "ch14-04-40-knowledge-feedback",
+        "ch14-04-41-migration-phases",
+        "ch14-04-42-scoped-404"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-138/retired-assets.json"
     },
     {
       "index": 139,
@@ -36380,8 +37007,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 73,
-  "next_article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+  "reviewed_articles": 74,
+  "next_article": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -36391,7 +37018,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T11:55:05.889713+08:00",
+  "updated_at": "2026-10-31T12:01:36.818447+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -36828,9 +37455,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2744,
-  "reviewed_placements_after": 1240,
-  "net_removed_placements": 1504,
+  "reviewed_placements_before": 2786,
+  "reviewed_placements_after": 1264,
+  "net_removed_placements": 1522,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -36854,5 +37481,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 73
+  "currently_matching_reviewed_source_count": 74
 }
