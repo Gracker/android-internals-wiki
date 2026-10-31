@@ -52012,9 +52012,352 @@
       "before_count": 35,
       "before_all_images": 35,
       "sha256_before": "a8c60056c0fad846433110d535f9deb0130f07996e8ba521805d8f7bdf2d3cef",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "ch19-01-01-attribution-baseline",
+          "title": "把设备现象与平台、产品和实验条件相互核对",
+          "decision": "remove",
+          "reason": "三个归因问题及源码/产品/运行证据要求已由紧邻段落解释，通用四步图重复后文六阶段归因流程。",
+          "original_line": 163,
+          "heading": "### OEM 优化分析要回答什么"
+        },
+        {
+          "original_id": "ch19-01-02-shared-budget",
+          "title": "五类体验目标竞争同一组设备资源",
+          "decision": "remove",
+          "reason": "五类目标/指标/可调位置/代价已有完整表格，三列摘要只是表格缩写。",
+          "original_line": 180,
+          "heading": "### 五类目标共享同一组资源"
+        },
+        {
+          "original_id": "ch19-01-03-startup-state",
+          "title": "先固定进程、缓存与编译状态再比较启动",
+          "decision": "remove",
+          "reason": "进程/USAP/缓存/编译/等待已有五项列表，四步状态核对图重复具体USAP路径和后文实验条件。",
+          "original_line": 197,
+          "heading": "#### 启动：先分清进程状态"
+        },
+        {
+          "original_id": "ch19-01-04-frame-critical-path",
+          "title": "沿帧截止时间拆分执行与等待",
+          "decision": "remove",
+          "reason": "输入到显示链与deadline等待对象已在相邻两段及链接详细说明，四框泛化渲染图未标新的并发/合成分支。",
+          "original_line": 208,
+          "heading": "#### 流畅性：从 deadline（帧完成时限） 反推瓶颈"
+        },
+        {
+          "original_id": "ch19-01-05-memory-actions",
+          "title": "保留、回收交换、冻结与终止可以组合",
+          "decision": "remove",
+          "reason": "保留、回收交换、冻结、终止的作用与代价已有四项清楚对比，三列图还合并保留和冻结，删除重复分类。",
+          "original_line": 224,
+          "heading": "#### 内存：保留、压缩、冻结与回收是四种动作"
+        },
+        {
+          "original_id": "ch19-01-06-scheduler-thermal",
+          "title": "调度、调频与温控分别观察并共同约束",
+          "decision": "remove",
+          "reason": "EAS、schedutil、资源约束与冷机/稳态已用三段说明，三列观测项没有画控制依赖或反馈。",
+          "original_line": 237,
+          "heading": "#### 功耗与温控的测试窗口"
+        },
+        {
+          "original_id": "ch19-01-07-responsibility-layers",
+          "title": "产品名称要落到具体改动层与执行动作",
+          "decision": "remove",
+          "reason": "内核/native/framework/应用四层各有独立小节及具体控制点，责任四框只是复述且非每次调用必经。",
+          "original_line": 272,
+          "heading": "#### 应用与系统应用：公开 API 和产品能力"
+        },
+        {
+          "original_id": "ch19-01-08-sigstop-versus-freezer",
+          "title": "调试信号与生命周期协调冻结的边界",
+          "decision": "remove",
+          "reason": "SIGSTOP、cgroup freezer及Android Binder协调差异已由两节精确说明，三列摘要重复保留的PID和Binder机制图。",
+          "original_line": 291,
+          "heading": "#### SIGSTOP 方案为什么不够用"
+        },
+        {
+          "original_id": "ch19-01-09-pid-cgroup",
+          "title": "Framework 按 PID 应用 Frozen/Unfrozen profile",
+          "decision": "keep",
+          "reason": "ProcessRecord按PID经JNI/task profile写FreezerState，并由Framework标记更新UID，明确不等待cgroup.events实际完成，防止把UID记账当内核确认。",
+          "original_line": 302,
+          "heading": "#### cgroup v2 freezer 的语义"
+        },
+        {
+          "original_id": "ch19-01-10-binder-freeze-order",
+          "title": "Binder 协调的成功顺序与失败分支",
+          "decision": "keep",
+          "reason": "冻结前Binder协调、冻结后pending复查和正常解冻前状态检查的不同阶段及失败条件并列展示，配合代码/正文保留异常排队kill后仍可能继续的边界。",
+          "original_line": 325,
+          "heading": "#### cgroup v2 freezer 的语义"
+        },
+        {
+          "original_id": "ch19-01-11-freezer-configuration",
+          "title": "默认值、显式覆盖、能力与豁免分别生效",
+          "decision": "remove",
+          "reason": "freezer默认值/覆盖/能力五项列表和豁免段落已完整，三列配置卡片没有实际优先级路径。",
+          "original_line": 342,
+          "heading": "#### 默认值、覆盖项与豁免"
+        },
+        {
+          "original_id": "ch19-01-12-freezer-evidence",
+          "title": "开关、状态与事件互证实际冻结",
+          "decision": "remove",
+          "reason": "配置读取命令、dumpsys/cgroup状态及trace事件条件已有正文具体解释，三列取证清单重复。",
+          "original_line": 378,
+          "heading": "#### 如何确认设备发生了冻结"
+        },
+        {
+          "original_id": "ch19-01-13-zygote-preload",
+          "title": "共享预加载把成本移到开机与常驻页",
+          "decision": "remove",
+          "reason": "preload/COW/成本已由正文和五项验收列表说明，四步概览重复USAP相邻机制且无新增测值。",
+          "original_line": 399,
+          "heading": "#### Zygote 预加载"
+        },
+        {
+          "original_id": "ch19-01-14-usap-launch",
+          "title": "USAP 预先 fork，合格请求到来后才专门化",
+          "decision": "keep",
+          "reason": "主/次Zygote提前fork未专门化成员，合格请求再socket传身份并specialize，直观区分USAP与已初始化目标应用。",
+          "original_line": 423,
+          "heading": "#### USAP Pool 只提前创建进程"
+        },
+        {
+          "original_id": "ch19-01-15-usap-property-order",
+          "title": "Zygote 实际读的是 DeviceConfig 镜像属性",
+          "decision": "keep",
+          "reason": "按非空镜像、dalvik.vm、源码false三种条件分别取值，保留Zygote消费者镜像优先级而非仅查DeviceConfig接口。",
+          "original_line": 437,
+          "heading": "#### USAP Pool 只提前创建进程"
+        },
+        {
+          "original_id": "ch19-01-16-prediction-actions",
+          "title": "预测决策与提前执行的动作分开验证",
+          "decision": "remove",
+          "reason": "预测决策对应六类可能动作已有清单，三列只是分类摘要；保留原文不据现象命名品牌私有策略。",
+          "original_line": 457,
+          "heading": "#### 预测启动要按执行动作验证"
+        },
+        {
+          "original_id": "ch19-01-17-background-api-choice",
+          "title": "按任务持续性、时效与用户可感知性选 API",
+          "decision": "remove",
+          "reason": "后台工作与推荐入口/限制已有六行表格和FGS独立条件说明，三列卡是表格子集。",
+          "original_line": 485,
+          "heading": "#### 应用应该怎样选 API"
+        },
+        {
+          "original_id": "ch19-01-18-background-diagnosis",
+          "title": "先查公开限制与应用错误，再判产品偏差",
+          "decision": "remove",
+          "reason": "五条只读命令及多候选原因/最小复现说明已完整，四步通用排障图重复归因流程。",
+          "original_line": 506,
+          "heading": "#### 区分正常约束和产品偏差"
+        },
+        {
+          "original_id": "ch19-01-19-oem-validation-loop",
+          "title": "OEM 归因从条件固定走到证据分级",
+          "decision": "remove",
+          "reason": "六步归因流程已有六个独立小节和L1/L2/L3定义，六框再次逐项复述，与开头归因图也重复。",
+          "original_line": 544,
+          "heading": "#### 6. 给结论标注证据等级"
+        },
+        {
+          "original_id": "ch19-01-20-case-evidence",
+          "title": "行业案例按事实、机制、设备与复现分层",
+          "decision": "remove",
+          "reason": "案例公开事实/机制/设备/复现已有完整三列表格，四步流程图只是表格内容。",
+          "original_line": 637,
+          "heading": "### 案例能证明到哪一层"
+        },
+        {
+          "original_id": "ch19-01-21-scene-feedback",
+          "title": "SceneSDK 的场景信号与设备约束形成反馈",
+          "decision": "keep",
+          "reason": "场景/目标帧率→合作服务→约束反馈→游戏降载回报形成实际反馈环，明确属于2022合作案例，不推广到所有设备。",
+          "original_line": 661,
+          "heading": "### Samsung：用户模式与合作接口是两条路径"
+        },
+        {
+          "original_id": "ch19-01-22-game-mode-roles",
+          "title": "用户模式、应用适配与系统干预各有职责",
+          "decision": "remove",
+          "reason": "Game Mode三角色、CUSTOM旧target处理及应用/特权override已在编号列表、XML和正文详述，三列摘要重复。",
+          "original_line": 695,
+          "heading": "### Game Mode：用户选择、应用适配与厂商干预"
+        },
+        {
+          "original_id": "ch19-01-23-game-intervention-evidence",
+          "title": "分辨率缩放、限帧与 ANGLE 不能混为已实施策略",
+          "decision": "remove",
+          "reason": "backbuffer/FPS/ANGLE的作用点和r1空占位方法已在相邻段落清楚区分，三列测量卡没有新干预路径。",
+          "original_line": 713,
+          "heading": "#### 厂商干预的测量方法"
+        },
+        {
+          "original_id": "ch19-01-24-thermal-feedback",
+          "title": "温控预测经有效性检查和滞回驱动负载适配",
+          "decision": "keep",
+          "reason": "headroom有限性与阈值检查、滞回/保持时间调档和帧/热时间序列反馈成环，解释预测跨度不等于采样间隔。",
+          "original_line": 759,
+          "heading": "#### Thermal API（温控 API）"
+        },
+        {
+          "original_id": "ch19-01-25-hint-session",
+          "title": "HintSession 报告目标与实际周期时间，系统决定响应",
+          "decision": "keep",
+          "reason": "线程组HintSession的创建、周期上报/更新、系统native/PowerHAL设备响应和close验证生命周期，强调信号非锁频承诺。",
+          "original_line": 782,
+          "heading": "#### Performance Hint API"
+        },
+        {
+          "original_id": "ch19-01-26-game-signals",
+          "title": "模式偏好、离散场景与周期工作目标分开表达",
+          "decision": "remove",
+          "reason": "Mode/State/Hint区别在三个小节分别讲清，三列信号摘要重复，保留Hint及thermal实际反馈图。",
+          "original_line": 793,
+          "heading": "#### Game State API"
+        },
+        {
+          "original_id": "ch19-01-27-tiktok-engineering",
+          "title": "TikTok 案例中的启动、UI 与播放动作分别对应瓶颈",
+          "decision": "remove",
+          "reason": "TikTok启动/UI/播放工程动作已有四项列表，三列卡片重复且没有把案例数据可视化。",
+          "original_line": 821,
+          "heading": "#### TikTok × Android：公开结果与动作"
+        },
+        {
+          "original_id": "ch19-01-28-startup-task-value",
+          "title": "300 多个任务先分类，再按关键路径与资源收益取舍",
+          "decision": "remove",
+          "reason": "抖音历史三类任务及五项价值判断已有段落和列表，三列分类卡重复，不将任务数当耗时。",
+          "original_line": 840,
+          "heading": "#### 抖音归档材料：300 多个启动任务"
+        },
+        {
+          "original_id": "ch19-01-29-provider-startup-order",
+          "title": "正常绑定路径先安装 provider，再调用 Application.onCreate",
+          "decision": "keep",
+          "reason": "保留Application创建attach后先安装同进程provider再Instrumentation/Application回调的正常顺序，代码节选与异常边界由邻文限定。",
+          "original_line": 862,
+          "heading": "### 启动源码中的 ContentProvider（内容提供者组件，下文简称 provider）"
+        },
+        {
+          "original_id": "ch19-01-30-fileprovider-lazy",
+          "title": "实例访问与静态 URI 生成都可能触发路径解析",
+          "decision": "keep",
+          "reason": "FileProvider attach安全检查、静态getUriForFile全局cache和实例访问本地策略三条路径，解释解析可由静态入口提前触发及首次使用成本。",
+          "original_line": 880,
+          "heading": "#### FileProvider 历史技巧：先核对依赖版本"
+        },
+        {
+          "original_id": "ch19-01-31-btrace-versions",
+          "title": "历史方法插桩与 btrace 3 栈采样的观测量不同",
+          "decision": "remove",
+          "reason": "历史插桩与btrace3固定采样、mapping、平台限制和成本已有三段准确说明，三列概览重复且无真实样本图。",
+          "original_line": 893,
+          "heading": "#### Rhea / btrace 的可复用部分"
+        },
+        {
+          "original_id": "ch19-01-32-collaboration-delivery",
+          "title": "协作调优需要独立开关、原始证据与回退条件",
+          "decision": "remove",
+          "reason": "协作三层表与五项交付物已覆盖独立开关、trace、版本和回退，四步流程卡重复。",
+          "original_line": 920,
+          "heading": "### 大型应用与 OEM 的协作方式"
+        },
+        {
+          "original_id": "ch19-01-33-fold-continuity",
+          "title": "折叠与窗口变更沿状态、布局、buffer 与正确内容验证",
+          "decision": "remove",
+          "reason": "折叠变化到状态、Surface和正确帧已有五项时间线列表，四框摘要重复且实际顺序仍可交错。",
+          "original_line": 937,
+          "heading": "### 折叠屏与多窗口：负载随窗口状态变化"
+        },
+        {
+          "original_id": "ch19-01-34-multiwindow-output",
+          "title": "多窗口成本取决于内容、输出能力与生命周期",
+          "decision": "remove",
+          "reason": "窗口尺寸、内容/合成、帧回调生命周期和资源观测已有两段说明，三列检查卡未画实际output映射。",
+          "original_line": 946,
+          "heading": "### 折叠屏与多窗口：负载随窗口状态变化"
+        },
+        {
+          "original_id": "ch19-01-35-form-factor-metrics",
+          "title": "跨设备形态保留验证方法，重新选择体验指标",
+          "decision": "remove",
+          "reason": "Automotive/TV/IoT指标已有三项列表和适用范围说明，三列卡只是重复各形态指标。",
+          "original_line": 961,
+          "heading": "### 汽车、TV 与 IoT：保留机制，替换指标"
+        }
+      ],
+      "sha256_after": "74894dafb18d95a61d8252b4daefbd8ec9bc8270a9a96b53067d94a53aded2ab",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:49:59.549069+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 35,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a199/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a199/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 199,
+        "article": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+        "registered_sha256": "a8c60056c0fad846433110d535f9deb0130f07996e8ba521805d8f7bdf2d3cef",
+        "frozen_sha256": "a8c60056c0fad846433110d535f9deb0130f07996e8ba521805d8f7bdf2d3cef",
+        "review_input_sha256": "600d6a27db272c45e6b99fbda8dfb1e1a30743c01f3efea1e9c43f57c2bc2861",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a199/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a199/external-source.diff",
+        "diff_sha256": "803d62decece7ab816d056a533d9d25b4bc6826710abcb59992ed49775e30f8d",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 466, \"characters\": 36375, \"svg_labels_read\": 35, \"actual_pngs_viewed\": 35, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 9, \"code_lines\": 79, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "600d6a27db272c45e6b99fbda8dfb1e1a30743c01f3efea1e9c43f57c2bc2861",
+      "retired_diagrams": [
+        "ch19-01-01-attribution-baseline",
+        "ch19-01-02-shared-budget",
+        "ch19-01-03-startup-state",
+        "ch19-01-04-frame-critical-path",
+        "ch19-01-05-memory-actions",
+        "ch19-01-06-scheduler-thermal",
+        "ch19-01-07-responsibility-layers",
+        "ch19-01-08-sigstop-versus-freezer",
+        "ch19-01-11-freezer-configuration",
+        "ch19-01-12-freezer-evidence",
+        "ch19-01-13-zygote-preload",
+        "ch19-01-16-prediction-actions",
+        "ch19-01-17-background-api-choice",
+        "ch19-01-18-background-diagnosis",
+        "ch19-01-19-oem-validation-loop",
+        "ch19-01-20-case-evidence",
+        "ch19-01-22-game-mode-roles",
+        "ch19-01-23-game-intervention-evidence",
+        "ch19-01-26-game-signals",
+        "ch19-01-27-tiktok-engineering",
+        "ch19-01-28-startup-task-value",
+        "ch19-01-31-btrace-versions",
+        "ch19-01-32-collaboration-delivery",
+        "ch19-01-33-fold-continuity",
+        "ch19-01-34-multiwindow-output",
+        "ch19-01-35-form-factor-metrics"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-199/retired-assets.json"
     },
     {
       "index": 201,
@@ -52864,8 +53207,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 129,
-  "next_article": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
+  "reviewed_articles": 130,
+  "next_article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -52875,7 +53218,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:46:21.944987+08:00",
+  "updated_at": "2026-10-31T15:49:59.549069+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -52938,13 +53281,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
-      "registered_sha256": "a8c60056c0fad846433110d535f9deb0130f07996e8ba521805d8f7bdf2d3cef",
-      "observed_sha256": "600d6a27db272c45e6b99fbda8dfb1e1a30743c01f3efea1e9c43f57c2bc2861",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/01-oem-performance-app-collaboration.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -53081,9 +53417,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4273,
-  "reviewed_placements_after": 1810,
-  "net_removed_placements": 2463,
+  "reviewed_placements_before": 4308,
+  "reviewed_placements_after": 1819,
+  "net_removed_placements": 2489,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -53107,5 +53443,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 129
+  "currently_matching_reviewed_source_count": 130
 }

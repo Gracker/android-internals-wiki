@@ -108,6 +108,8 @@ sources:
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameManager.java
 - type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java
+- type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java
@@ -115,8 +117,10 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
 - type: source
   path: https://android.googlesource.com/platform/frameworks/support/+/4ea31479e2bd1d24759aad359f60e80ff35beccb/core/core/src/main/java/androidx/core/content/FileProvider.java
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 CachedAppOptimizer/Freezer/Process/ZygoteConfig/ZygoteServer; Android common android17-6.18-2026-06_r6; Android Cached apps freezer and FGS behavior docs
+last_verified: '2026-10-28'
+last_source_verified_at: '2026-10-28'
+last_idle_audit_at: '2026-10-28T22:39:54+08:00'
+last_verified_against: AOSP android-17.0.0_r1 CachedAppOptimizer/Freezer/Process/ZygoteConfig/ZygoteServer/ZygoteProcess/ZygoteInit/GameManager/GameManagerService/PowerManager/PerformanceHintManager/ActivityThread; Android common android17-6.18-2026-06_r6; Android Cached apps freezer and FGS behavior docs; AndroidX FileProvider 4ea31479e2bd; btrace 2ae621f2d84a README
 related_chapters:
 - '5.1'
 - '5.2'
@@ -156,10 +160,6 @@ OEM 在调度、内存、功耗、温控和后台策略上拥有设备实现空�
 
 Pixel 设备的 trace 适合当一组对照数据，当不了所有设备的“标准答案”。可靠的归因要同时有源码位置、设备配置和运行证据；缺哪一项，结论就只能写到哪一步为止。
 
-<!-- gracker-diagram: ch19-01-01-attribution-baseline -->
-![把设备现象与平台、产品和实验条件相互核对](../../assets/diagrams/ch19/ch19-01-01-attribution-baseline.png)
-
-图：从应用和设备现象追到平台责任层，再用产品配置与同条件实验解释差异。 AOSP tag 只是对照源码，Pixel 也只是一个设备样本；品牌、系统模式名或单次 trace 不能独立命名私有策略。
 
 ### 五类目标共享同一组资源
 
@@ -173,10 +173,6 @@ OEM 优化通常覆盖启动、流畅性、内存、功耗和温控五类目标�
 | <span style="white-space:nowrap">功耗</span> | CPU/GPU residency（驻留时间）、唤醒、网络与传感器活动 | EAS、schedutil、cpuidle、Power HAL、任务批处理 | 响应延迟、吞吐下降、通知延后 |
 | <span style="white-space:nowrap">温控</span> | Thermal HAL severity（温控等级）、频率上限、机身温度、长时间稳态帧率 | Thermal HAL、冷却设备、功率预算、场景策略 | 峰值性能受限，短跑分与长稳态分离 |
 
-<!-- gracker-diagram: ch19-01-02-shared-budget -->
-![五类体验目标竞争同一组设备资源](../../assets/diagrams/ch19/ch19-01-02-shared-budget.png)
-
-图：启动、流畅性、内存、功耗与温控共享 CPU、GPU、带宽、功率和散热预算。 这些是目标与代价的联系，不是固定百分比换算；短时提速与持续稳态要分开验收。
 
 #### 启动：先分清进程状态
 
@@ -190,10 +186,6 @@ OEM 优化通常覆盖启动、流畅性、内存、功耗和温控五类目标�
 
 TTID 是首次画面显示耗时，TTFD 是完整内容显示耗时。只拿一次 TTID 比较两台设备，等于把进程状态和缓存状态的差异都记到厂商账上。更完整的应用启动方法见[启动优化](../../part2-performance/ch08-responsiveness/03-launch-optimization.md)。
 
-<!-- gracker-diagram: ch19-01-03-startup-state -->
-![先固定进程、缓存与编译状态再比较启动](../../assets/diagrams/ch19/ch19-01-03-startup-state.png)
-
-图：相同点击操作在进程、USAP、页缓存和编译产物不同的条件下，会形成不同的启动路径。 TTID 与 TTFD 分别记录；没看到 fork 不证明产品提前创建了目标应用，也不能据一次启动差异归因 OEM。
 
 #### 流畅性：从 deadline（帧完成时限） 反推瓶颈
 
@@ -201,10 +193,6 @@ TTID 是首次画面显示耗时，TTFD 是完整内容显示耗时。只拿一�
 
 分析掉帧时，我们围绕 deadline 回看这几项：runnable delay、运行时长、Binder 依赖、GPU fence、合成类型和频率变化。runnable delay 是线程已经可运行、却还没分到 CPU 的等待时间；fence 是 CPU、GPU 和显示模块之间的同步信号。渲染各阶段的职责可结合[渲染管线总览](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)阅读。
 
-<!-- gracker-diagram: ch19-01-04-frame-critical-path -->
-![沿帧截止时间拆分执行与等待](../../assets/diagrams/ch19/ch19-01-04-frame-critical-path.png)
-
-图：输入与 UI 工作进入渲染提交和 GPU，再由 SurfaceFlinger/HWC 组织目标 output 的合成与呈现。 箭头表示依赖，阶段可重叠；SF 与 HWC 协商合成类型，不能从线程跑上大核就断言命中私有白名单。
 
 #### 内存：保留、压缩、冻结与回收是四种动作
 
@@ -217,10 +205,6 @@ TTID 是首次画面显示耗时，TTFD 是完整内容显示耗时。只拿一�
 
 `oom_score_adj` 表示进程在内存压力下的终止优先级，数值越高，越容易被 `lmkd` 选中。PSI（Pressure Stall Information） 记录任务因资源压力而停顿的时间，thrashing 指页面反复回收与换入，watermark 是内核触发内存回收的水位线。相关主线见[`lmkd` 与低内存回收](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)。
 
-<!-- gracker-diagram: ch19-01-05-memory-actions -->
-![保留、回收交换、冻结与终止可以组合](../../assets/diagrams/ch19/ch19-01-05-memory-actions.png)
-
-图：内存治理需区分进程保留、页面回收或交换、停止执行和终止进程，并记录切回代价。 ZRAM 压缩后仍占 DRAM；freezer 直接停止 CPU 执行，不能把冻结本身当作释放全部内存。
 
 #### 功耗与温控的测试窗口
 
@@ -230,10 +214,6 @@ capacity 表示 CPU 的相对算力，uclamp 限制任务的利用率请求，cp
 
 这些机制都工作在当前功率和温度的约束之内。Android Thermal HAL 报告的 severity（温控严重等级） 会影响系统服务、任务调度和冷却动作。所以我们测试游戏或相机时，要同时给出冷机阶段、升温过程和稳态窗口：只截取开局几十秒，测到的只是短时提频与调度加速，说明不了持续性能。
 
-<!-- gracker-diagram: ch19-01-06-scheduler-thermal -->
-![调度、调频与温控分别观察并共同约束](../../assets/diagrams/ch19/ch19-01-06-scheduler-thermal.png)
-
-图：EAS 结合候选 CPU 与 Energy Model 选择位置，schedutil 处理频率请求，温控和硬件约束决定可持续范围。 EAS 有拓扑和过载条件；图不表示系统始终启用 EAS，也不把 governor 请求等同于设备实际频率。
 
 调度、调频和温控的基础可继续阅读[Linux 调度](../../part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md)、[DVFS](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)与[温控机制](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)。
 
@@ -265,10 +245,6 @@ Framework 层主要指 `system_server` 里的 Java 系统服务：AMS/ATMS 负�
 
 应用侧能稳定依赖的是 SDK 行为，例如 WorkManager、JobScheduler、前台服务（foreground service，FGS）、`PerformanceHintManager`、Game Mode 或厂商公开 SDK；cached freezer 没有面向第三方应用的公开控制 API。产品宣传里的“预启动”“内存扩展”“性能引擎”都只是名称，我们要分别查清它控制的到底是编译、缓存、进程、调度、存储还是 UI 展示，名称本身说明不了技术行为。
 
-<!-- gracker-diagram: ch19-01-07-responsibility-layers -->
-![产品名称要落到具体改动层与执行动作](../../assets/diagrams/ch19/ch19-01-07-responsibility-layers.png)
-
-图：应用通过公开 API 表达需求，系统服务决定策略，native/HAL 与内核驱动实施各自的资源动作。 这是责任依赖图，非每次调用必经四层；Binder 驱动位于内核，Rust 系统服务也可独立于 system_server。
 
 ### Cached Apps Freezer：Android 17 的源码边界
 
@@ -284,10 +260,6 @@ Android 14 起，当一个应用的全部进程都进入 frozen 状态，系统�
 
 这条方案缺的是配合：Android 的进程状态、Binder 和组件生命周期都不知情。进程若在持锁或 IPC（进程间通信） 临界区里停住，依赖方可能长时间等待。所以我们把 SIGSTOP 留给调试和受控实验；第三方应用拿它当后台治理接口，是用出了它的设计范围。
 
-<!-- gracker-diagram: ch19-01-08-sigstop-versus-freezer -->
-![调试信号与生命周期协调冻结的边界](../../assets/diagrams/ch19/ch19-01-08-sigstop-versus-freezer.png)
-
-图：SIGSTOP 暂停目标进程线程组，Android cached freezer 还需要处理 Binder、进程和 UID 状态。 其他独立子进程不自动随 SIGSTOP 暂停；普通应用不能把调试信号当公开后台治理接口。
 
 #### cgroup v2 freezer 的语义
 
@@ -335,10 +307,6 @@ public void setProcessFrozen(int pid, int uid, boolean frozen) {
 
 这组默认值仍允许产品 overlay 和运行配置调整。官方文档列出的豁免有条件：文件锁需要阻塞其他非 cached 进程；带 `BIND_WAIVE_PRIORITY` 的入向绑定，在仍有非 cached client 时可阻止 server 冻结，并非任意文件锁或任意这种绑定都永久豁免。至于进程进入 cached 状态后是否真在十秒左右冻结，我们以目标系统版本的 dumpsys 和事件记录为准。
 
-<!-- gracker-diagram: ch19-01-11-freezer-configuration -->
-![默认值、显式覆盖、能力与豁免分别生效](../../assets/diagrams/ch19/ch19-01-11-freezer-configuration.png)
-
-图：r1 默认启用 freezer、默认 debounce 为十秒，但 Settings、DeviceConfig、产品资源和支持检查共同约束结果。 文件锁要阻塞非 cached 进程，WAIVE_PRIORITY 绑定还要看 client 状态；十秒不是所有进程都必然遵守的固定冻结承诺。
 
 #### 如何确认设备发生了冻结
 
@@ -371,10 +339,6 @@ adb shell su 0 cat /sys/fs/cgroup/apps/uid_10123/pid_23456/cgroup.events
 
 Perfetto 中可以把 `Freezer` 轨道、进程调度 slice、已采集的 `am_freeze`/`am_unfreeze` 事件一起判断。r1 还在 `perfettoSdkTracingV3()` 开关开启且类别被采集时发出含 `AndroidFreezerEvent` 的 TrackEvent；freeze 记录此前未冻结时长，unfreeze 记录冻结时长，并带 PID、UID。slice 是带起止时间的区间，TrackEvent 可以是瞬时事件；这些记录都不能假定每份 trace 已采到。线程长期没有 slice 也可能只是正常睡眠，我们要再找显式状态来互证。
 
-<!-- gracker-diagram: ch19-01-12-freezer-evidence -->
-![开关、状态与事件互证实际冻结](../../assets/diagrams/ch19/ch19-01-12-freezer-evidence.png)
-
-图：只读配置解释候选策略，dumpsys 与 cgroup 状态解释进程现状，日志和 tracing 关联状态切换时间。 读取失败可能是权限或路径差异；没有调度 slice 也可能只是睡眠。结构化事件还受 perfettoSdkTracingV3 与采集类别约束。
 
 ### 预加载、USAP 与预测启动
 
@@ -392,10 +356,6 @@ Zygote 在系统启动时读取 `/system/etc/preloaded-classes`，预加载 Fram
 
 只优化一个高频应用，可能把成本分摊给每次开机和每个应用进程。
 
-<!-- gracker-diagram: ch19-01-13-zygote-preload -->
-![共享预加载把成本移到开机与常驻页](../../assets/diagrams/ch19/ch19-01-13-zygote-preload.png)
-
-图：Zygote 预加载平台类、资源与部分库，fork 后共享未写页面；应用写入后形成私有页。 扩大集合可能减少应用加载，也会增加开机工作和内存成本；普通应用业务类不自动进入系统预加载清单。
 
 #### USAP Pool 只提前创建进程
 
@@ -450,10 +410,6 @@ r1 的 `ZygoteConfig.getBool()` 先读取 `persist.device_config.runtime_native.
 
 验证预测策略时，我们设计命中组和未命中组，固定网络、温度、编译状态与页缓存条件，并记录预测前后的进程、I/O、CPU 和内存。策略来自哪里，只有产品文档、系统日志或逆向得到的调用链能回答；trace 主要负责证明动作及其效果。
 
-<!-- gracker-diagram: ch19-01-16-prediction-actions -->
-![预测决策与提前执行的动作分开验证](../../assets/diagrams/ch19/ch19-01-16-prediction-actions.png)
-
-图：同一种预测结果可以触发编译、页预取、保留进程、USAP 填池或产品私有预热，需分别度量成本。 这是可能动作的分类，未宣称任一品牌采用特定方案；trace 证明动作，策略来源还要产品配置或调用链。
 
 ### 后台治理：在系统公开规则内选择工作类型
 
@@ -478,10 +434,6 @@ FGS 也当不了“所有后台任务最稳”的替代品：持久、可延期�
 
 厂商推送通道属于产品集成选项，接不接入按目标市场、系统服务可用性、送达率与隐私要求决策。至于进程互相唤醒、静音音频、透明 Activity、周期性自唤醒这类绕过系统策略的做法，普通应用不要依赖。
 
-<!-- gracker-diagram: ch19-01-17-background-api-choice -->
-![按任务持续性、时效与用户可感知性选 API](../../assets/diagrams/ch19/ch19-01-17-background-api-choice.png)
-
-图：进程内任务、持久可延期工作、定时提醒与持续可见工作各有合适入口，消息送达也需遵守后续启动限制。 WorkManager 不承诺精确时刻；FGS 的后台启动、类型、权限与 while-in-use 条件独立检查，不能由进程存活推任务可继续。
 
 #### 区分正常约束和产品偏差
 
@@ -499,10 +451,6 @@ adb shell dumpsys package com.example.app
 
 若设备行为偏离公开 SDK 规则，就准备最小复现、系统版本信息、完整 bugreport、trace 和同版本对照机结果。bugreport 由 `adb bugreport` 收集，包含服务状态、日志和关键配置。这样一套材料，比要求用户手动加白名单更容易定位问题，也能分清是产品设计还是系统缺陷。
 
-<!-- gracker-diagram: ch19-01-18-background-diagnosis -->
-![先查公开限制与应用错误，再判产品偏差](../../assets/diagrams/ch19/ch19-01-18-background-diagnosis.png)
-
-图：把任务请求、约束、配额、Doze、网络、进程退出和服务端证据按时间对齐，再缩小候选原因。 相同品牌不同构建和用户设置也会不同；缺少配置或 trace 的部分标未知，不能只靠任务晚执行命名厂商策略。
 
 ### 一套可复用的 OEM 归因流程
 
@@ -537,10 +485,6 @@ adb shell dumpsys package com.example.app
 - **L2：官方文档或产品配置，加上运行证据。** 可以描述可观察策略；对未公开的内部实现，判断要留有余地。
 - **L3：仅有 trace 现象或用户反馈。** 只记录现象与候选原因，不命名私有机制。
 
-<!-- gracker-diagram: ch19-01-19-oem-validation-loop -->
-![OEM 归因从条件固定走到证据分级](../../assets/diagrams/ch19/ch19-01-19-oem-validation-loop.png)
-
-图：固定实验条件、建立 r1/r6 对照、读取产品配置、确认执行动作、逐项对照，最后按证据强度限定结论。 L1 需要源码与运行一致；L2 限定公开配置和可观察策略；L3 只保留现象与候选原因，不能命名未证的私有机制。
 
 ### 版本演进到 Android 17
 
@@ -630,10 +574,6 @@ freezer 的直接作用是停止执行。匿名页是否被压缩、换出或回
 
 本篇对 API 语义和建议的核对，以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为准；旧案例保留历史背景，API 层面的结论都按这个版本重新检查过。
 
-<!-- gracker-diagram: ch19-01-20-case-evidence -->
-![行业案例按事实、机制、设备与复现分层](../../assets/diagrams/ch19/ch19-01-20-case-evidence.png)
-
-图：先保留团队公开报告的结果，再用源码解释候选机制，最后核对目标设备实现与本地重复实验。 这是一条验证依赖，不能从公开百分比跨越到自己的收益；设备分布、分母和统计条件不全时只保留案例范围。
 
 ### Samsung：用户模式与合作接口是两条路径
 
@@ -688,10 +628,6 @@ Android 17 的 `GameManager.java` 还保留 Custom 的兼容处理：当模式�
 
 在普通配置路径中声明 `supports*GameMode="true"` 后，游戏负责对应模式策略，平台重置或跳过相关干预；但 r1 的特权 Game Mode config override 会提升覆盖优先级，不能把应用声明视为对所有系统测试或产品覆盖均不可更改的保证。`allowGameDownscaling` 和 `allowGameFpsOverride` 则是两项独立的 opt-out 退出开关（opt-out），分别控制画面降分辨率和帧率覆盖，与 `supports*` 属性各管各的。
 
-<!-- gracker-diagram: ch19-01-22-game-mode-roles -->
-![用户模式、应用适配与系统干预各有职责](../../assets/diagrams/ch19/ch19-01-22-game-mode-roles.png)
-
-图：用户选择偏好，应用按 getGameMode 适配，系统依据配置决定是否执行可用干预；应用声明会改变普通配置路径。 r1 对 targetSdk≤33 的 CUSTOM 返回 STANDARD；特权 config override 可覆盖普通应用声明，声明不等于所有系统覆盖都被禁止。
 
 #### 厂商干预的测量方法
 
@@ -706,10 +642,6 @@ Android 17 的 `GameManager.java` 还保留 Custom 的兼容处理：当模式�
 
 Android 文档里的节能或 GPU 降幅，是文档给定设备与条件下的示例；本项目的验收门槛，要由自己设备上的数据来定。
 
-<!-- gracker-diagram: ch19-01-23-game-intervention-evidence -->
-![分辨率缩放、限帧与 ANGLE 不能混为已实施策略](../../assets/diagrams/ch19/ch19-01-23-game-intervention-evidence.png)
-
-图：Backbuffer resize 改变像素处理量，FPS throttling 限制供帧目标；ANGLE 需要独立确认实现与执行证据。 r1 updateUseAngle 仍为空方法；缩放需应用重启，限帧不会把 60 fps 提升为 120 fps。文档节能数字不是项目通用收益。
 
 ### ADPF：用反馈调节负载与温控余量
 
@@ -748,7 +680,7 @@ fun sampleThermalBudget(powerManager: PowerManager): ThermalSample? {
 }
 ```
 
-这段代码只读取信号，降级幅度由调用方决定。参数 `10` 是预测未来十秒，不是每十秒调用一次的定时器；API 35 以下也不应假定能从 `1.0` 外推每个温控等级。调用方应按秒级节奏运行，并给画质或帧率切换加上滞回控制（降低与恢复使用不同阈值）和最短保持时间，免得 headroom 在阈值附近波动时频繁切档。返回 `null` 时退回保守的默认策略，并记录设备信息。
+这段代码只读取信号，降级幅度由调用方决定。参数 `10` 请求预测十秒后的 headroom，不设置调用间隔。首次调用后，系统需要积累多个温度样本；样本不足期间会忽略这一预测参数，只返回当前 headroom，不能把这些初始读数当作十秒后的预测值。API 35 以下也不应假定能从 `1.0` 外推每个温控等级。调用方应按秒级节奏运行，并给画质或帧率切换加上滞回控制（降低与恢复使用不同阈值）和最短保持时间，免得 headroom 在阈值附近波动时频繁切档。返回 `null` 时退回保守的默认策略，并记录设备信息。
 
 验证温控策略时，我们核对三个时间关系：headroom 何时接近阈值、应用何时降低负载、帧时间与频率何时稳定。只看温度值或平均 FPS，说明不了反馈有没有生效。
 
@@ -786,10 +718,6 @@ Game State API 从 Android 13（API 33）提供，用于告诉系统当前处于
 
 应用只应上报含义稳定、说得出原因的状态转换。把所有场景都标成高负载，状态就失去了区分度，也保证不了系统持续提高 CPU 或 GPU 频率。
 
-<!-- gracker-diagram: ch19-01-26-game-signals -->
-![模式偏好、离散场景与周期工作目标分开表达](../../assets/diagrams/ch19/ch19-01-26-game-signals.png)
-
-图：Game Mode 表达用户偏好，Game State 表达场景或 loading 状态，Performance Hint 描述线程组周期工作目标。 三类信号互补，不是任意提高 CPU/GPU 频率的请求；所有场景都报最高负载会失去区分度。
 
 ### 大型应用的启动案例
 
@@ -814,10 +742,6 @@ Android Developers 2022 年发布的 TikTok 案例报告的是一次单项目的
 
 文章还提到用后台线程加载 View。View 构造、资源访问和自定义 View 行为可能受主线程约束，这项做法直接复制到任意界面是有前提的：先明确哪些步骤可以异步执行，再用线程检查、截图测试和多种设备组合验证。
 
-<!-- gracker-diagram: ch19-01-27-tiktok-engineering -->
-![TikTok 案例中的启动、UI 与播放动作分别对应瓶颈](../../assets/diagrams/ch19/ch19-01-27-tiktok-engineering.png)
-
-图：TikTok 2022 年案例分别优化组件初始化、每帧工作与播放器/网络复用，并用工具和线上指标防回归。 45%、49%、41%、27% 和两个1% 都属于该项目；异步 View 构造需单独验证线程与资源约束，不能复制为任意 UI 的通用做法。
 
 #### 抖音归档材料：300 多个启动任务
 
@@ -833,10 +757,6 @@ Android Developers 2022 年发布的 TikTok 案例报告的是一次单项目的
 
 任务数只是规模描述。减少一个 10 μs 任务，和减少一次主线程磁盘读取，收益完全不同；排期要看关键路径的墙钟耗时（wall time，即包含等待在内的实际经过时间）和资源竞争。
 
-<!-- gracker-diagram: ch19-01-28-startup-task-value -->
-![300 多个任务先分类，再按关键路径与资源收益取舍](../../assets/diagrams/ch19/ch19-01-28-startup-task-value.png)
-
-图：历史抖音案例把任务分为配置、预加载和功能三类，分别做按需化、收益筛选和拆分调度。 任务数不等于时长；延后必须保留功能与线程安全，预加载也可能抢占启动 CPU/I/O/锁，最终以 TTID/TTFD 和 trace 验收。
 
 ### 启动源码中的 ContentProvider（内容提供者组件，下文简称 provider）
 
@@ -882,12 +802,10 @@ mInstrumentation.callApplicationOnCreate(app);
 
 归档 Rhea 的静态字节码插桩与 btrace 3 / RheaTrace3 需要按版本区分。本文固定 btrace commit `2ae621f2d84a`，其 README 描述的是同步采样方案，默认最小采样间隔为 1 ms，使用 ProGuard mapping，而非 btrace 2 的 methodMapping。它把调用栈样本与可采集的 Perfetto 系统轨道关联，样本不是每个方法入口与退出的完整事件记录。
 
+这份固定版本的 README 还列出支持限制：Android 8.0 及以上系统，且设备与应用均须为 64 位；不支持 Perfetto 的设备无法采集 CPU 调度等系统信息，可使用 `simple` 模式采集其支持的记录。Java 对象创建监控尚未适配 Android 15 及以上系统，Android 17 项目不能把这项功能当成可用的分配观测入口。
+
 旧式方法插桩会改变包体和编译过程；btrace 3 的 SDK、采样、缓冲和导出同样有观测成本，但成本模型不同。诊断包应记录具体 commit、SDK/脚本版本、采样间隔或插桩范围和额外开销。聚合栈样本不能直接还原每次方法的精确墙钟耗时；仍要结合调度、I/O 和同步事件区分执行、Runnable 等待与锁阻塞。
 
-<!-- gracker-diagram: ch19-01-31-btrace-versions -->
-![历史方法插桩与 btrace 3 栈采样的观测量不同](../../assets/diagrams/ch19/ch19-01-31-btrace-versions.png)
-
-图：早期 Rhea 通过静态插桩记录方法事件，固定 btrace 3 使用同步采样并与可采集的系统轨道关联。 栈样本不是每次方法的完整起止记录；记录 commit、采样间隔、SDK/脚本和观测成本，不能直接把聚合样本解释为精确方法墙钟时长。
 
 ### 大型应用与 OEM 的协作方式
 
@@ -911,10 +829,6 @@ Samsung SceneSDK 与 TikTok 案例展示了两种合作关系：前者把应用�
 
 一个收益若只能靠私有配置拿到，应用就仍要保留公共路径和安全默认值；设备完成 OTA（系统在线更新）、更换 SoC 或游戏版本升级之后，都要重新验证一遍。
 
-<!-- gracker-diagram: ch19-01-32-collaboration-delivery -->
-![协作调优需要独立开关、原始证据与回退条件](../../assets/diagrams/ch19/ch19-01-32-collaboration-delivery.png)
-
-图：围绕稳定场景建立公共与私有路径的独立对照，交付版本、trace、统计和回退条件，并在 OTA 或硬件变化后复验。 OEM 配置绑定设备与版本，合作案例不替代公共默认路径；每次收益都限定已验证的工作负载与热状态。
 
 ### 折叠屏与多窗口：负载随窗口状态变化
 
@@ -928,19 +842,11 @@ Samsung SceneSDK 与 TikTok 案例展示了两种合作关系：前者把应用�
 
 Jetpack WindowManager 提供 `FoldingFeature`（折叠区域及其姿态信息），Compose 自适应布局 API 用窗口尺寸和姿态信息选择布局。这些 API 并不会自动减少 Compose 重组、图片解码或 GPU 像素处理量，所以大型资源要按当前窗口需求加载，状态恢复也要避免在主线程重复 I/O。
 
-<!-- gracker-diagram: ch19-01-33-fold-continuity -->
-![折叠与窗口变更沿状态、布局、buffer 与正确内容验证](../../assets/diagrams/ch19/ch19-01-33-fold-continuity.png)
-
-图：折叠或尺寸变化可能触发配置变更、Activity 重建和 Surface 更新，需要按新窗口恢复状态与加载资源。 FoldingFeature 和自适应布局不自动降低重组、解码或 GPU 成本；是否重建取决于配置与设备，顺序也可能交错。
 
 多窗口的 GPU 工作量也换算不成固定倍数：每个窗口的可见面积、刷新节奏、内容复杂度、遮挡关系和硬件合成能力，都会改变 SurfaceFlinger 与 GPU 的负载。我们验证时记录各窗口的 bounds 边界尺寸（bounds）、合成层（Layer）、FrameTimeline、GPU 频率、内存和温控状态，再比较单窗口与多窗口。
 
 折叠后我们仍靠 `Choreographer` 驱动帧回调，手写的 `16.6 ms` 定时器顶替不了它。Activity 或 ViewRoot 是否重建取决于配置与设备行为，帧回调要随其生命周期注册和清理；目标帧率、Surface 的 frame-rate vote 帧率请求、动画参数与媒体策略，则要按新的 Display 和窗口状态重算。
 
-<!-- gracker-diagram: ch19-01-34-multiwindow-output -->
-![多窗口成本取决于内容、输出能力与生命周期](../../assets/diagrams/ch19/ch19-01-34-multiwindow-output.png)
-
-图：窗口变化后重算 Surface 尺寸、目标帧率和资源需求，按目标 output 记录合成与 GPU/内存负载。 窗口数不等于固定压力倍数；Choreographer 回调随 ViewRoot/Activity 生命周期管理，外屏归属还需 output 与 present fence 证据。
 
 ### 汽车、TV 与 IoT：保留机制，替换指标
 
@@ -952,17 +858,13 @@ Jetpack WindowManager 提供 `FoldingFeature`（折叠区域及其姿态信息�
 
 每种形态都从用户可感知的指标开始，再用 Perfetto、内核跟踪记录、媒体或图形计数器定位。手机游戏的 60 / 120 fps、触摸延迟和短时升频（boost），不会自动成为车机、TV 或常驻设备的目标。
 
-<!-- gracker-diagram: ch19-01-35-form-factor-metrics -->
-![跨设备形态保留验证方法，重新选择体验指标](../../assets/diagrams/ch19/ch19-01-35-form-factor-metrics.png)
-
-图：Automotive、TV 和 IoT 使用同一套可复现验证方法，但按交互、媒体、长期运行和资源约束选择指标。 这是工程测量建议；手机的 60/120 fps、短时 boost 和案例百分比不能自动成为其他设备形态的目标。
 
 ### 与相关章节的分工
 
 - §5.2 与 §11.1 解释 DVFS（动态电压与频率调节）、Power HAL 与温控机制；这里关注应用如何提供信号并验证 OEM 响应。
 - §2.2 与 §2.7 解释帧率、刷新率和 GPU；这里关注厂商干预、折叠和多窗口实验。
 - §8.2、§8.3 解释启动路径；这里补充 TikTok、抖音与 ContentProvider 的公开案例。
-- §13 解释 Perfetto；案例应附采集配置、原始 trace 和统计脚本。
+- §14 解释 Perfetto；案例应附采集配置、原始 trace 和统计脚本。
 - 本篇前半部分与 §19.2 解释 OEM 与 SoC 差异；这里把差异落到具体设备的实测里。
 
 ### 常见误区：工具、窗口与案例
