@@ -44921,9 +44921,229 @@
       "before_count": 21,
       "before_all_images": 21,
       "sha256_before": "c73cbb565f98d3e4de2e9ed35e3d71983a01e4dc25360e042517f19219d54679",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch16-07-01-runtime-source-coordinates",
+          "title": "把运行证据映射到精确源码坐标",
+          "decision": "remove",
+          "reason": "设备、现场、源码坐标与条件四项已由开头三坐标和现场清单直接说明；末尾产出清单也覆盖，四框无额外定位实例。",
+          "original_line": 89,
+          "heading": "## 阅读源码前，固定三个坐标"
+        },
+        {
+          "original_id": "ch16-07-02-code-search-index-boundary",
+          "title": "搜索与交叉引用各提供哪种证据",
+          "decision": "remove",
+          "reason": "过滤器、静态索引及动态边界限制已由示例查询和紧邻六条说明覆盖；三列只是这些说明配对。",
+          "original_line": 131,
+          "heading": "### 交叉引用提供候选调用关系"
+        },
+        {
+          "original_id": "ch16-07-04-build-selected-implementation",
+          "title": "从源码文件到产品实际选择",
+          "decision": "keep",
+          "reason": "保留候选文件经Android.bp模块依赖、产品架构flag变体到产物/运行对象的选择链，清楚区分搜索命中与被编入。",
+          "original_line": 218,
+          "heading": "### 先读 `Android.bp`"
+        },
+        {
+          "original_id": "ch16-07-03-multi-repository-map",
+          "title": "跨Java、Native与运行时项目阅读",
+          "decision": "remove",
+          "reason": "目录分类重复各Git项目清单和现象入口表，没有实际跨项目调用连线；读者查表更精确。",
+          "original_line": 238,
+          "heading": "### 问题到目录的初始映射"
+        },
+        {
+          "original_id": "ch16-07-05-skipped-frame-warning",
+          "title": "Skipped日志是迟到区间的估算",
+          "decision": "keep",
+          "reason": "保留正常分支原始帧时间到jitter、非零间隔整数商和实际阈值打印的计算链，防止把日志42等同已提交坏帧。",
+          "original_line": 261,
+          "heading": "### 示例：`Choreographer` 跳帧日志"
+        },
+        {
+          "original_id": "ch16-07-06-log-to-source-workflow",
+          "title": "日志反查如何落到触发条件",
+          "decision": "remove",
+          "reason": "流程逐项复述六步日志定位及下方工具命令，具体Skipped计算链已保留。",
+          "original_line": 297,
+          "heading": "### 本地文本搜索"
+        },
+        {
+          "original_id": "ch16-07-07-slice-identity",
+          "title": "同名slice必须先确认作用域",
+          "decision": "remove",
+          "reason": "三列身份、事件和跨事件关联字段重复紧邻采集清单，未呈现真实slice配对实例。",
+          "original_line": 317,
+          "heading": "### 先确定 slice 的轨道和进程"
+        },
+        {
+          "original_id": "ch16-07-08-trace-api-contracts",
+          "title": "内部tag接口与公开Trace接口",
+          "decision": "remove",
+          "reason": "公开/内部API及同步、异步规则是紧邻五条接口说明的缩写；原文版本和嵌套/cookie限制更完整。",
+          "original_line": 344,
+          "heading": "### Java trace：字符串与 tag 都要看"
+        },
+        {
+          "original_id": "ch16-07-09-native-name-and-backend",
+          "title": "SFTRACE命名与后端选择",
+          "decision": "keep",
+          "reason": "保留SFTRACE经tracing_perfetto按shouldPreferAtrace、Perfetto category或均关闭三条互斥输出分支，解释只关atrace仍可见事件。",
+          "original_line": 379,
+          "heading": "### Native trace：识别宏的命名规则"
+        },
+        {
+          "original_id": "ch16-07-10-trace-source-configuration",
+          "title": "缺失事件按实际数据源排查",
+          "decision": "remove",
+          "reason": "三种数据源和各自核对条件重复两段文字；真正的后端选择分支保留图9。",
+          "original_line": 392,
+          "heading": "### 按实际后端核对 atrace 类别"
+        },
+        {
+          "original_id": "ch16-07-11-activitythread-entry",
+          "title": "ActivityThread主入口与组件派发",
+          "decision": "keep",
+          "reason": "保留ActivityThread.main到prepareMainLooper、创建/attach和Looper.loop派发的运行顺序，作为Java入口与更早zygote阶段的边界。",
+          "original_line": 420,
+          "heading": "### `ActivityThread`：应用进程 Java 主入口"
+        },
+        {
+          "original_id": "ch16-07-12-viewroot-traversal",
+          "title": "traversal排定与消息屏障生命周期",
+          "decision": "keep",
+          "reason": "保留traversal排定标记、同步屏障插入/移除到按需performTraversals的生命周期；请求不等于同步布局。",
+          "original_line": 441,
+          "heading": "### `ViewRootImpl`：顶层 View 树与 Window 系统的连接点"
+        },
+        {
+          "original_id": "ch16-07-13-choreographer-callback-order",
+          "title": "正常派发时的五类回调顺序",
+          "decision": "remove",
+          "reason": "五类回调顺序已经由紧邻五项有序列表完整表达，图没有附加时间或条件关系。",
+          "original_line": 466,
+          "heading": "### `Choreographer`：应用 UI 线程的帧回调调度"
+        },
+        {
+          "original_id": "ch16-07-14-surfaceflinger-present-path",
+          "title": "合成调用链跨越多个封装层",
+          "decision": "keep",
+          "reason": "保留SurfaceFlinger、CompositionEngine、Output、Display/HWComposer跨封装正常调用链，帮助从旧入口名迁移到实际层次。",
+          "original_line": 494,
+          "heading": "### `SurfaceFlinger`：显示合成与 present"
+        },
+        {
+          "original_id": "ch16-07-15-present-release-fence-contracts",
+          "title": "present与release各标记哪个边界",
+          "decision": "remove",
+          "reason": "物理/虚拟present和旧buffer release三项是紧邻契约段落的定义摘抄，无缓冲复用/触发时间实例；原文TV例外及CPU返回限制更完整。",
+          "original_line": 503,
+          "heading": "### `SurfaceFlinger`：显示合成与 present"
+        },
+        {
+          "original_id": "ch16-07-16-composition-alternate-branches",
+          "title": "预测、提前present与offload",
+          "decision": "remove",
+          "reason": "策略预测、presentOrValidate与offload三列只配对正文已有分支说明，没有本帧实际决策或交错时间线。",
+          "original_line": 512,
+          "heading": "### `SurfaceFlinger`：显示合成与 present"
+        },
+        {
+          "original_id": "ch16-07-17-cross-boundary-tracing",
+          "title": "Binder、消息与生成代码各自续接",
+          "decision": "remove",
+          "reason": "Binder、投递消费、JNI生成代码三列重复其上三个专节核对清单，没有具体跨边界对象/trace关联实例。",
+          "original_line": 570,
+          "heading": "### JNI、AIDL 与生成代码"
+        },
+        {
+          "original_id": "ch16-07-18-repo-pinned-checkout",
+          "title": "从固定manifest到项目commit记录",
+          "decision": "remove",
+          "reason": "repo init/sync/revision/pinned manifest四框复述命令示例顺序；命令与签名验证限制完整留在正文。",
+          "original_line": 611,
+          "heading": "## 获取 Android 17 源码"
+        },
+        {
+          "original_id": "ch16-07-19-ide-build-configuration",
+          "title": "IDE索引必须与产品构建图一致",
+          "decision": "remove",
+          "reason": "Java工程、Native工程、compdb三列重复对应专节用途及重建限制，没有构建图实例。",
+          "original_line": 656,
+          "heading": "### C/C++：AIDEGen 或 Soong compdb"
+        },
+        {
+          "original_id": "ch16-07-20-git-gerrit-history",
+          "title": "从逐行修改追到评审上下文",
+          "decision": "remove",
+          "reason": "Git历史工具到Gerrit的四框复述命令和各自限制，没有具体提交演变可视化。",
+          "original_line": 699,
+          "heading": "### 从 Change-Id 进入 Gerrit"
+        },
+        {
+          "original_id": "ch16-07-21-reusable-source-explanation",
+          "title": "把一次源码阅读保存成可复核解释",
+          "decision": "remove",
+          "reason": "四框概括紧邻八项阅读产出清单，和开头源码坐标图语义重复；清单保留完整字段。",
+          "original_line": 719,
+          "heading": "## 一次源码阅读应产出什么"
+        }
+      ],
+      "sha256_after": "da2399249bb1f9c626fbeea93f0def4104125a4bbfb3b9822c74cfb3eb469f88",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:22:42.809949+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 21,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a173/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a173/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 173,
+        "article": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
+        "registered_sha256": "c73cbb565f98d3e4de2e9ed35e3d71983a01e4dc25360e042517f19219d54679",
+        "frozen_sha256": "c73cbb565f98d3e4de2e9ed35e3d71983a01e4dc25360e042517f19219d54679",
+        "review_input_sha256": "d70c068eb576966af8dc0251334552c80e1e980c509415c90fdca4f8b3812942",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch16-methodology/07-aosp-reading.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a173/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a173/external-source.diff",
+        "diff_sha256": "822e7fbf3f4b065166a85aac7287f04df256eb23538085468759de45adc05f86",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 407, \"characters\": 27596, \"svg_labels_read\": 21, \"actual_pngs_viewed\": 21, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 13, \"code_lines\": 47, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "d70c068eb576966af8dc0251334552c80e1e980c509415c90fdca4f8b3812942",
+      "retired_diagrams": [
+        "ch16-07-01-runtime-source-coordinates",
+        "ch16-07-02-code-search-index-boundary",
+        "ch16-07-03-multi-repository-map",
+        "ch16-07-06-log-to-source-workflow",
+        "ch16-07-07-slice-identity",
+        "ch16-07-08-trace-api-contracts",
+        "ch16-07-10-trace-source-configuration",
+        "ch16-07-13-choreographer-callback-order",
+        "ch16-07-15-present-release-fence-contracts",
+        "ch16-07-16-composition-alternate-branches",
+        "ch16-07-17-cross-boundary-tracing",
+        "ch16-07-18-repo-pinned-checkout",
+        "ch16-07-19-ide-build-configuration",
+        "ch16-07-20-git-gerrit-history",
+        "ch16-07-21-reusable-source-explanation"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-173/retired-assets.json"
     },
     {
       "index": 174,
@@ -46026,8 +46246,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 106,
-  "next_article": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
+  "reviewed_articles": 107,
+  "next_article": "src/part3-tools/ch16-methodology/08-google-android-bench-ai-coding-evaluation-methodology.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -46037,7 +46257,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:20:30.829261+08:00",
+  "updated_at": "2026-10-31T14:22:42.809949+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -46093,13 +46313,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
-      "registered_sha256": "c73cbb565f98d3e4de2e9ed35e3d71983a01e4dc25360e042517f19219d54679",
-      "observed_sha256": "d70c068eb576966af8dc0251334552c80e1e980c509415c90fdca4f8b3812942",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/07-aosp-reading.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -46348,9 +46561,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3592,
-  "reviewed_placements_after": 1577,
-  "net_removed_placements": 2015,
+  "reviewed_placements_before": 3613,
+  "reviewed_placements_after": 1583,
+  "net_removed_placements": 2030,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -46374,5 +46587,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 106
+  "currently_matching_reviewed_source_count": 107
 }

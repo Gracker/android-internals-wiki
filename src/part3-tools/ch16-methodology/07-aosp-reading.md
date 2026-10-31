@@ -86,10 +86,6 @@ last_rework_at: '2026-10-21T13:37:20+08:00'
 
 这份记录帮我们避开两类误判：用 Android 17 源码解释旧设备行为，或用 AOSP 行为代替厂商实现。厂商可以修改 Framework、SurfaceFlinger、HAL（Hardware Abstraction Layer，硬件抽象层） 和内核；AOSP 是参照系，设备证据决定现场是否走了同一条路径。
 
-<!-- gracker-diagram: ch16-07-01-runtime-source-coordinates -->
-![把运行证据映射到精确源码坐标](../../assets/diagrams/ch16/ch16-07-01-runtime-source-coordinates.png)
-
-图：先固定设备现场，再用平台revision、Git项目和项目内路径定位源码。 AOSP是参照；厂商改动与独立模块版本必须用实际设备证据确认。
 
 ## 在线阅读：Android Code Search
 
@@ -97,7 +93,7 @@ last_rework_at: '2026-10-21T13:37:20+08:00'
 
 ### 固定版本，再打开文件
 
-文件链接应带发布 tag；需要严格复现时，还应保存各 Git 项目的 commit SHA 或 pinned manifest。下面的地址定位到 Android 17 的 `Choreographer.java`：
+文件链接应带发布 tag；需要严格复现时，还应保存各 Git 项目的 commit SHA 或 pinned manifest。下面的地址把版本钉在发布 tag 上，定位到 `Choreographer.java`：
 
 `https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/Choreographer.java`
 
@@ -118,7 +114,7 @@ file:services/surfaceflinger symbol:composite
 
 ### 交叉引用提供候选调用关系
 
-点击已索引的符号可看定义和引用，快捷键 `x` 打开 cross references。交叉引用跳转可能回到该索引构建时的文件版本，不能假定所有结果仍是当前选择的 tag；每次进入新文件要复核 revision、路径和构建变体。还需逐条判断：
+点击已索引的符号可看定义和引用，快捷键 `x` 打开 cross references。交叉引用跳转可能回到该索引构建时的文件版本，所以每次进入新文件，我们先复核 revision、路径和构建变体，再往下读。逐条判断时还要注意：
 
 - 虚方法调用指向静态类型，运行时对象可能是子类；
 - 反射、JNI（Java 与 native 代码之间的接口）、Binder、消息分发和回调会中断普通调用层次；
@@ -128,10 +124,6 @@ file:services/surfaceflinger symbol:composite
 
 所以 Code Search 适合用来生成候选路径；路径是否真的发生，由调用栈、trace、日志和构建配置验证。
 
-<!-- gracker-diagram: ch16-07-02-code-search-index-boundary -->
-![搜索与交叉引用各提供哪种证据](../../assets/diagrams/ch16/ch16-07-02-code-search-index-boundary.png)
-
-图：文本过滤定位候选，交叉引用展开静态关系，运行证据验证本次路径。 交叉引用可跳到索引构建时版本，进入文件后需复核revision；静态引用不证明已执行。
 
 ## AOSP 关键目录
 
@@ -175,7 +167,7 @@ SurfaceFlinger 的实现分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、
 - `libcutils/include/cutils/trace.h`：atrace tag 常量和底层接口；
 - `toolbox/`：仍保留的少量系统命令实现。
 
-日志与 ADB 的实现要进入其他项目：Android 17 的 `logd/`、`liblog/` 位于 `system/logging/`，ADB 的 host、client 与 daemon 位于 `packages/modules/adb/`。这些项目与 checkout 路径的对应关系可在固定 tag 的 [`platform/manifest/default.xml`](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml) 中核对。
+日志与 ADB 的实现要进入其他项目：`logd/`、`liblog/` 位于 `system/logging/`，ADB 的 host、client 与 daemon 位于 `packages/modules/adb/`。这些项目与 checkout 路径的对应关系可在固定 tag 的 [`platform/manifest/default.xml`](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml) 中核对。
 
 shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命令名时，应通过模块名、安装路径和 `Android.bp` 确认提供者，不要只按旧目录印象判断。
 
@@ -235,10 +227,6 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 
 表格给出的只是搜索起点；后续往哪边查，要看问题落在哪个进程、运行证据指向哪里。
 
-<!-- gracker-diagram: ch16-07-03-multi-repository-map -->
-![跨Java、Native与运行时项目阅读](../../assets/diagrams/ch16/ch16-07-03-multi-repository-map.png)
-
-图：按执行角色进入Framework、Native系统组件与运行时/模块，再沿接口跨项目追踪。 这些是并列项目与角色分组，不是一个固定父子目录或每次都走完的调用链。
 
 ## 从 Logcat 反查源码
 
@@ -250,16 +238,18 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 I/Choreographer: Skipped 42 frames!  The application may be doing too much work on its main thread.
 ```
 
-`42` 是运行时变量；日志末尾的 `main thread` 在源码中又被拆成了两个字符串拼接，按整条日志逐字搜索也不会命中。搜索时选取源码中连续的一段：
+`42` 是运行时变量；日志末尾的 `main thread` 在源码中又被拆成了两个字符串拼接，按整条日志逐字搜索也不会命中。搜索时我们选取源码中连续的一段：
 
 `"The application may be doing too much work"`
 
-在 `android-17.0.0_r1` 中，这段文本位于 `frameworks/base/core/java/android/view/Choreographer.java`。在已排定帧且进入相应分支时，代码以 `System.nanoTime() - 原始frameTimeNanos` 得到 jitter；帧间隔非零时用整数商 `jitterNanos / frameIntervalNanos` 计算 skippedFrames，达到 `SKIPPED_FRAME_WARNING_LIMIT` 才打印日志。阈值从属性 `debug.choreographer.skipwarning` 读取，源码默认30，不能代替设备实际值。这描述该 Choreographer 所在线程进入帧处理时的迟到，不能单凭日志判定迟到源自CPU执行、Runnable等待或Binder，更不证明42个已提交坏帧；需结合pid/tid和Trace验证。
+在 `android-17.0.0_r1` 中，这段文本位于 `frameworks/base/core/java/android/view/Choreographer.java`。在已排定帧且进入相应分支时，代码以 `System.nanoTime() - 原始frameTimeNanos` 得到 jitter；帧间隔非零时用整数商 `jitterNanos / frameIntervalNanos` 计算 skippedFrames，达到 `SKIPPED_FRAME_WARNING_LIMIT` 才打印日志。
+
+阈值从属性 `debug.choreographer.skipwarning` 读取，源码默认 30，设备上以属性当时的取值为准。这条日志说明的是该 Choreographer 所在线程进入帧处理时的迟到；迟到落在 CPU 执行、Runnable 等待还是 Binder 上，这 42 帧是否都已提交为坏帧，要结合 pid/tid 和 Trace 验证。
 
 <!-- gracker-diagram: ch16-07-05-skipped-frame-warning -->
 ![Skipped日志是迟到区间的估算](../../assets/diagrams/ch16/ch16-07-05-skipped-frame-warning.png)
 
-图：在已排定帧的相应分支，用原始帧时刻计算jitter，非零间隔下达到阈值才打印。 默认阈值30不等于设备属性值；日志既不是已提交坏帧计数，也不能独自区分运行与等待。
+图：在已排定帧的相应分支，用原始帧时刻计算jitter，非零间隔下达到阈值才打印。 设备属性值可能偏离默认阈值30；日志只标记迟到本身，坏帧计数与迟到来源要靠进一步验证。
 
 ### 可复用的日志定位步骤
 
@@ -292,30 +282,22 @@ repo grep -n 'presentAndGetReleaseFences'
 
 这几个工具各司其职：`rg -F` 按字面量搜索，适合日志；带正则的 `rg` 适合方法形态；`git grep` 可以限定 Git revision；`repo grep` 跨 Repo 项目。它们都只做文本匹配，重载、继承或动态分派要靠我们自己判断。
 
-<!-- gracker-diagram: ch16-07-06-log-to-source-workflow -->
-![日志反查如何落到触发条件](../../assets/diagrams/ch16/ch16-07-06-log-to-source-workflow.png)
-
-图：保存现场后抽取稳定文本，定位固定版本调用点，再追条件和设备执行证据。 tag或字面量只提供候选；拼接、生成事件和厂商实现可能需要其他入口。
 
 ## 从 Perfetto slice 反查源码
 
 ### 先确定 slice 的轨道和进程
 
-再看 trace 这条线。Perfetto 的完整 slice 有起止时间，显示在一条 track（轨道）上；未闭合、截断或丢失结束事件需另记，不能当完整耗时参与统计；同名 slice 可以由多个模块产生。所以搜索源码前，先记录：
+再看 trace 这条线。Perfetto 里的完整 slice 有起止时间，挂在一条 track（轨道）上；遇到未闭合、截断或丢失结束事件的区间，我们要单独标注，统计完整耗时时排除在外——同名 slice 还可能来自不同模块。所以搜索源码前，先记录：
 
 - track 名称；
 - process / thread 名称与 pid / tid；
 - slice 完整名称；
 - 起止时间和相邻 slice；
 - trace 配置里启用的数据源和 atrace 类别；
-- slice args（事件参数）、cookie（异步配对标识）、flow或Binder关联及其作用域；同名或相同数字ID并不自动表示同一对象；
+- slice args（事件参数）、cookie（异步配对标识）、flow或Binder关联及其作用域；同名或相同数字ID核对过作用域，才能当作同一对象；
 
-为什么要记这么全？比如 `measure` 出现在应用 UI 线程时，通常指向 View traversal（measure/layout/draw 调度）；出现在工具进程或厂商线程时，含义可能完全不同。只按名字搜索，容易选错实现。
+为什么要记这么全？比如 `measure` 出现在应用 UI 线程时，通常指向 View traversal（measure/layout/draw 调度）；出现在工具进程或厂商线程时，含义可能完全不同。把轨道和进程对上之后，我们再按名字去源码里找，才不容易选错实现。
 
-<!-- gracker-diagram: ch16-07-07-slice-identity -->
-![同名slice必须先确认作用域](../../assets/diagrams/ch16/ch16-07-07-slice-identity.png)
-
-图：先核对track、执行者、时间和采集配置，再使用名称与标识追埋点。 同名或相同数字ID不自动代表同一事件；未闭合或截断区间不能当完整耗时。
 
 ### Java trace：字符串与 tag 都要看
 
@@ -331,18 +313,14 @@ Perfetto 中我们搜前缀 `Choreographer#doFrame`，动态 VSync ID 不要写�
 
 Java 层反查埋点时，要区分平台内部接口与公开 SDK：
 
-- `Trace.traceBegin()` / `traceEnd()`：Framework 内部可指定 tag，不是普通应用的公开 SDK 接口；
+- `Trace.traceBegin()` / `traceEnd()`：Framework 内部接口，可指定 tag，普通应用走的是下面几条公开 SDK 接口；
 - `Trace.beginSection()` / `endSection()`：API 18 起可用的公开同步区间接口，必须在同一线程正确嵌套并成对调用；区间名最多 127 个 Unicode 代码单元；
-- `Trace.beginAsyncSection()` / `endAsyncSection()`：API 29 起可用的公开异步区间接口，可在同一进程内跨线程，用相同 name 与 cookie 配对；并发事件要区分cookie，每次 begin 对应一次 end，不是跨进程自动配对接口；
+- `Trace.beginAsyncSection()` / `endAsyncSection()`：API 29 起可用的公开异步区间接口，可在同一进程内跨线程，用相同 name 与 cookie 配对；并发事件要区分cookie，每次 begin 对应一次 end，配对只发生在同一进程内；
 - `Trace.instant(long, String)`：平台内部瞬时事件接口，在 Android 17 源码中标为 `@hide`；
 - `Trace.setCounter(String, long)`：API 29 起可用的公开计数器接口。
 
 上面列出的公开区间/计数器接口使用 `TRACE_TAG_APP`；前面的 Framework 节选使用 `TRACE_TAG_VIEW`。异步事件的配对与时间上是否相邻无关。接口可用版本和调用约束见 [`Trace` API 文档](https://developer.android.com/reference/android/os/Trace)，内部接口以固定 tag 的 [`Trace.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java) 为准。
 
-<!-- gracker-diagram: ch16-07-08-trace-api-contracts -->
-![内部tag接口与公开Trace接口](../../assets/diagrams/ch16/ch16-07-08-trace-api-contracts.png)
-
-图：平台内部接口可选tag，公开同步、异步与计数器接口各有可用版本和配对规则。 这里的Framework片段不是普通App公开API示例；同步嵌套与异步cookie不能混用。
 
 ### Native trace：识别宏的命名规则
 
@@ -360,7 +338,7 @@ SFTRACE_NAME(
         ftl::Concat(__func__, ' ', ftl::to_underlying(vsyncId)).c_str());
 ```
 
-`__func__` 在这里得到 `composite`，所以 slice 形如 `composite <vsyncId>`。`SFTRACE_NAME` 只使用调用点传入的名称，不会自动加上 `SurfaceFlinger::` 前缀。同一方法还使用 `SFTRACE_ASYNC_FOR_TRACK_BEGIN` 在 WorkloadTracer 专用 track 上记录 Composition 区间。
+`__func__` 在这里得到 `composite`，所以 slice 形如 `composite <vsyncId>`，我们在 trace 里看到这种名字时，回源码搜 composite 方法就能对上。`SFTRACE_NAME` 只使用调用点传入的名称，前面并不会自动带 `SurfaceFlinger::` 前缀。同一方法还使用 `SFTRACE_ASYNC_FOR_TRACK_BEGIN` 在 WorkloadTracer 专用 track 上记录 Composition 区间。
 
 通用规则如下：
 
@@ -372,7 +350,7 @@ SFTRACE_NAME(
 | async begin/end | name + cookie/track | 同时找 begin 与 end |
 | counter | counter 名与数值 | 搜 counter API 和名称 |
 
-Android 17 的 `SFTRACE_*` 还转到 `libs/tracing_perfetto` 封装。固定 `traceBegin()` 按 `shouldPreferAtrace()` 选择 atrace，或在相应 Perfetto category 启用时直接写 Perfetto；`isTagEnabled()` 同时检查两类启用状态。因此不能仅凭 `SFTRACE` 宏名断言数据一定来自旧 atrace/ftrace 通道，也不能只关 atrace 类别便认定所有同名埋点都关闭。还要核对注册、配置和实际数据源。
+Android 17 的 `SFTRACE_*` 还转到 `libs/tracing_perfetto` 封装。固定 `traceBegin()` 按 `shouldPreferAtrace()` 选择 atrace，或在相应 Perfetto category 启用时直接写 Perfetto；`isTagEnabled()` 同时检查两类启用状态。所以看到 `SFTRACE` 宏名，先要想到它可能走 atrace，也可能直接写 Perfetto；要确认某个埋点是否关闭，只看 atrace 类别开关并不够，还要核对注册、配置和实际数据源。
 
 <!-- gracker-diagram: ch16-07-09-native-name-and-backend -->
 ![SFTRACE命名与后端选择](../../assets/diagrams/ch16/ch16-07-09-native-name-and-backend.png)
@@ -383,14 +361,10 @@ Android 17 的 `SFTRACE_*` 还转到 `libs/tracing_perfetto` 封装。固定 `tr
 
 ### 按实际后端核对 atrace 类别
 
-`ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW` 等 tag 会参与 atrace enable mask（启用位掩码） 判断。预期 slice 缺失时，先检查抓取配置、tag、build flag（构建开关） 和代码分支。
+最常见的问题场景是：预期的 slice 没有抓到。`ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW` 等 tag 的启用与否，由 atrace enable mask（启用位掩码） 判断；这时我们先检查抓取配置、tag、build flag（构建开关） 和代码分支。
 
 另外，Perfetto 还能通过 `ftrace` 采集内核调度（sched）事件，以及 Binder 事件、堆分析数据源 `heapprofd`、应用或 native 埋点 `TrackEvent` 等。某条数据源没有使用 atrace tag 时，启用或关闭 atrace 类别都控制不了它；所以分析缺失事件时，我们要先识别数据源类型。
 
-<!-- gracker-diagram: ch16-07-10-trace-source-configuration -->
-![缺失事件按实际数据源排查](../../assets/diagrams/ch16/ch16-07-10-trace-source-configuration.png)
-
-图：区分atrace、内核ftrace与其他Perfetto数据源，再排查类别、权限、注册与分支。 一种类别开关不能保证控制所有来源的同名事件；缺失不等于代码没有执行。
 
 ## 四个源码入口
 
@@ -429,12 +403,12 @@ Android 17 的 `SFTRACE_*` 还转到 `libs/tracing_perfetto` 封装。固定 `tr
 它的调度关系是：
 
 1. `requestLayout()` 或 invalidate 路径设置状态；
-2. `scheduleTraversals()` 在尚未排定时登记 traversal 并插入同步屏障；屏障限制其后的普通同步消息，异步消息可越过，不能泛化为停止整个线程；
+2. `scheduleTraversals()` 在尚未排定时登记 traversal 并插入同步屏障；屏障挡住其后的普通同步消息，异步消息可越过，线程本身仍在运行；
 3. 它通过 `Choreographer.postVsyncCallback(CALLBACK_TRAVERSAL, mTraversalCallback)` 注册 traversal；
 4. traversal 回调执行 `doTraversal(frameTimeNanos)`，在排定状态下先清标记并移除屏障，再进入 `performTraversals(frameTimeNanos)`；
 5. `performTraversals()` 按窗口和脏状态选择 relayout、measure、layout、draw 等路径，不保证每次都完整执行全部阶段。
 
-这里的 `requestLayout()` 表示请求后续 traversal：调用点不会同步完成布局，把它概括成“直接请求一个 VSync”也并不准确；是否注册新回调，由 `mTraversalScheduled` 等状态决定。
+这里的 `requestLayout()` 表示请求后续 traversal：调用点只负责设置状态，布局要等随后的 traversal 完成，把它概括成“直接请求一个 VSync”也并不准确；是否注册新回调，由 `mTraversalScheduled` 等状态决定。
 
 <!-- gracker-diagram: ch16-07-12-viewroot-traversal -->
 ![traversal排定与消息屏障生命周期](../../assets/diagrams/ch16/ch16-07-12-viewroot-traversal.png)
@@ -461,10 +435,6 @@ Android 17 的 `SFTRACE_*` 还转到 `libs/tracing_perfetto` 封装。固定 `tr
 4. `CALLBACK_TRAVERSAL`
 5. `CALLBACK_COMMIT`
 
-<!-- gracker-diagram: ch16-07-13-choreographer-callback-order -->
-![正常派发时的五类回调顺序](../../assets/diagrams/ch16/ch16-07-13-choreographer-callback-order.png)
-
-图：正常进入派发时，按输入、动画、insets动画、traversal与commit顺序运行各类到期回调。 队列可为空，前置条件可提前返回；外层doFrame区间宽不等于全部时间在CPU运行。
 
 常见入口包括：
 
@@ -496,21 +466,13 @@ Android 17 的 `SFTRACE_*` 还转到 `libs/tracing_perfetto` 封装。固定 `tr
 
 按 HWC 的 fence 契约，物理屏的 present fence 在该帧开始显示（video-mode）或开始向面板内存传输（command-mode）对应的 VSync 触发；虚拟显示则在输出缓冲写完、可安全读取时触发。release fence 表示设备已读完相应旧缓冲，可以重新写入。定义见固定 tag 的 [`hwcomposer2.h`](https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h#1767)。
 
-取得 fence 对象、CPU 提交调用返回与 fence 触发是不同的观察点，不能把 present fence 当作整屏扫描结束。Android 17 的 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl#31) 还允许特定 TV 图像处理场景返回晚于 display fence 的逐层 present fence；注释说明此行为偏离 `SurfaceControl.Transaction` 契约，仅允许用于需要这项能力的 TV 设备。
+取得 fence 对象、CPU 提交调用返回与 fence 触发是三个不同的观察点；present fence 标记的是上面定义的 VSync 边界，和整屏扫描结束是两回事。Android 17 的 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl#31) 还允许特定 TV 图像处理场景返回晚于 display fence 的逐层 present fence；注释说明此行为偏离 `SurfaceControl.Transaction` 契约，仅允许用于需要这项能力的 TV 设备。
 
-<!-- gracker-diagram: ch16-07-15-present-release-fence-contracts -->
-![present与release各标记哪个边界](../../assets/diagrams/ch16/ch16-07-15-present-release-fence-contracts.png)
-
-图：物理显示、虚拟显示的present与旧buffer的release分别表示不同同步边界。 取得fence、CPU调用返回和fence触发不同；present不等于整屏扫描或光学完成，TV逐层fence有特定例外。
 
 Client composition 指 RenderEngine 使用 GPU 完成的客户端合成，device composition 则交给 HWC/HAL 与显示硬件。还要注意 `getDeviceCompositionChanges()` 不保证每帧都单独执行 `validate()`：没有 client composition 且满足提交时序条件时，它会先尝试 `presentOrValidate()`；如果该调用已经完成 present，后续 `presentAndGetReleaseFences()` 会刷新待执行命令并使用已保存的 fences。
 
 `Output::present()` 还可能走几条特殊路径：composition prediction（沿用上一帧策略，同时验证本帧 HWC 结果）、异步 prepare（并行开展 HWC 协商与可能的 GPU 合成准备）和 present offload（把本帧提交临时交给 worker 线程）。一次 trace 中采用哪条分支，要看 output state（输出状态）、composition type、HWC 结果、Fence 与相关 slice。
 
-<!-- gracker-diagram: ch16-07-16-composition-alternate-branches -->
-![预测、提前present与offload](../../assets/diagrams/ch16/ch16-07-16-composition-alternate-branches.png)
-
-图：固定源码中策略预测、HWC快速提交与worker offload分别改变调用时序和观察线程。 分支取决于本帧状态与HWC结果；看见函数名或线程名不能证明某条路径已执行。
 
 旧资料常出现 `onMessageRefresh()`、`composeSurfaces()`、`Layer::onDraw()` 或直接的 `validateDisplay()` / `presentDisplay()`，这些名字适合对应版本。读 Android 17 应从当前的封装层（wrapper）和 CompositionEngine 结构出发；HWC wrapper 内部仍会调用 Composer HAL，只是 Framework 侧入口已经有明确封装。
 
@@ -565,14 +527,10 @@ Java 调用栈停在 Binder proxy（客户端代理对象） 时，我们按以�
 
 Code Search 展示源输入和部分生成结果，本地当前产品的 `out/` 才能反映选定变体。
 
-<!-- gracker-diagram: ch16-07-17-cross-boundary-tracing -->
-![Binder、消息与生成代码各自续接](../../assets/diagrams/ch16/ch16-07-17-cross-boundary-tracing.png)
-
-图：跨进程、线程或语言边界时，分别寻找服务注册、投递/消费与生成接口，再接回运行证据。 普通调用层次会断开；Stub/Proxy、静态投递与生成文件都不能单独证明本次业务耗时。
 
 ## 获取 Android 17 源码
 
-官方流程见 [Download the Android source](https://source.android.com/docs/setup/download)。下面的命令用于检出本文使用的固定版本：
+本地搜索和 IDE 索引都需要一份 checkout。官方流程见 [Download the Android source](https://source.android.com/docs/setup/download)；下面的命令用于检出本文使用的固定版本：
 
 ```bash
 mkdir aosp-android17
@@ -583,7 +541,7 @@ repo init --partial-clone --no-use-superproject \
 repo sync -c -j8
 ```
 
-参数含义：`-b` 接受 tag，`--partial-clone` 按需获取 Git 对象，`repo sync -c` 只从服务端获取 manifest 指定的当前分支。并发数要按网络、内存与服务端响应调整，`-j8` 是官方文档示例，不是固定最优值。
+参数含义：`-b` 接受 tag，`--partial-clone` 按需获取 Git 对象，`repo sync -c` 只从服务端获取 manifest 指定的当前分支。并发数要按网络、内存与服务端响应调整，`-j8` 只是官方文档给出的示例值。
 
 如果我们只做文本阅读，可以按项目路径同步：
 
@@ -591,7 +549,9 @@ repo sync -c -j8
 repo sync -c -j8 frameworks/base frameworks/native system/core art
 ```
 
-只同步这组项目，平台编译未必能完成；调用链进入其他模块时还要同步相应项目。[官方环境要求](https://source.android.com/docs/setup/start/requirements)列出 64 位 x86 Linux、glibc 2.17+、至少 64 GB 内存与 400 GB 可用磁盘空间，其中约 250 GB 用于 checkout、150 GB 用于构建输出；依赖安装按 Ubuntu 18.04 或更高版本的说明执行。官方自 Android 11 起不再支持以 macOS 作为 Android OS 开发平台。真机运行还需要与设备和版本匹配的专有二进制库，不能把 AOSP checkout 直接视为可刷入任意设备的系统。
+只同步这组项目，平台编译未必能完成；调用链进入其他模块时还要同步相应项目。
+
+[官方环境要求](https://source.android.com/docs/setup/start/requirements)列出 64 位 x86 Linux、glibc 2.17+、至少 64 GB 内存与 400 GB 可用磁盘空间，其中约 250 GB 用于 checkout、150 GB 用于构建输出；依赖安装按 Ubuntu 18.04 或更高版本的说明执行。官方自 Android 11 起不再支持以 macOS 作为 Android OS 开发平台。真机运行还需要与设备和版本匹配的专有二进制库，不能把 AOSP checkout 直接视为可刷入任意设备的系统。
 
 同步完成后，可以用这些命令确认项目与 revision：
 
@@ -602,16 +562,12 @@ git -C frameworks/native rev-parse HEAD
 repo manifest -r
 ```
 
-`repo manifest -r` 会把 manifest 中各项目 revision 固定为 commit SHA（提交哈希），适合作为复现记录。要核查 tag 签名，应在相应 Git 项目执行，例如 `git -C frameworks/base tag -v android-17.0.0_r1`，并按官方文档核对可信公钥；命令成功或仅看tag名称都不代替密钥身份验证。
+`repo manifest -r` 会把 manifest 中各项目 revision 固定为 commit SHA（提交哈希），适合作为复现记录。要核查 tag 签名，应在相应 Git 项目执行，例如 `git -C frameworks/base tag -v android-17.0.0_r1`；命令成功退出后，仍要按官方文档核对可信公钥，完成密钥身份验证。
 
-<!-- gracker-diagram: ch16-07-18-repo-pinned-checkout -->
-![从固定manifest到项目commit记录](../../assets/diagrams/ch16/ch16-07-18-repo-pinned-checkout.png)
-
-图：初始化固定tag的manifest，按需要同步项目，再保存各项目revision与设备对应关系。 局部同步不保证可构建；签名验证还需对应项目和可信密钥，移动分支名不等于固定版本。
 
 ## IDE、AIDEGen 与 clangd
 
-想在 IDE 里用上跳转和引用，前提是工具拿到正确的工程结构：Java/Kotlin 靠 AIDEGen 生成工程，C/C++ 还有 compdb 一条路。
+想在 IDE 里用上跳转和引用，前提是工具拿到正确的工程结构：Java/Kotlin 这边我们用 AIDEGen 生成工程，C/C++ 还有 compdb 一条路。
 
 ### Java / Kotlin：使用 AIDEGen 生成项目
 
@@ -649,10 +605,6 @@ m nothing
 
 compdb 是 compilation database（编译数据库） 的简称，只包含本次 Soong 构建图中收集到的编译单元。产品、架构、flag 或模块范围变化后，旧 compdb 可能指向错误的 include path（头文件搜索路径）、宏和变体。
 
-<!-- gracker-diagram: ch16-07-19-ide-build-configuration -->
-![IDE索引必须与产品构建图一致](../../assets/diagrams/ch16/ch16-07-19-ide-build-configuration.png)
-
-图：先选择产品、release配置与变体，再生成Java/native工程或编译数据库供语义工具使用。 产品表和aosp_current别名只是静态声明；本轮未运行lunch、AIDEGen、Soong或完整平台构建。
 
 ## 用 Git 与 Gerrit 追版本
 
@@ -688,14 +640,10 @@ git -C frameworks/base blame -L 1074,1212 \
 
 ### 从 Change-Id 进入 Gerrit
 
-AOSP 提交消息通常包含 `Change-Id: I...`，它是一次 Gerrit 评审在多版提交间保持不变的标识。复制完整 Change-Id，在 [AOSP Gerrit](https://android-review.googlesource.com) 查询，并核对项目与目标分支；同一Change-Id可在不同仓库/分支复用，不是整个实例的全局唯一评审键。
+AOSP 提交消息通常包含 `Change-Id: I...`，它是一次 Gerrit 评审在多版提交间保持不变的标识。复制完整 Change-Id，在 [AOSP Gerrit](https://android-review.googlesource.com) 查询，并核对项目与目标分支；同一Change-Id可在不同仓库/分支复用，靠项目与分支信息才能锁定这次评审。
 
 公开 change 页面可能包含 patch set（同一评审的某一版改动）、测试说明、review comment 和关联 bug。部分历史提交、上游导入或受限讨论没有完整公开信息，此时只能依据 commit message、diff、公开 bug 与代码行为。
 
-<!-- gracker-diagram: ch16-07-20-git-gerrit-history -->
-![从逐行修改追到评审上下文](../../assets/diagrams/ch16/ch16-07-20-git-gerrit-history.png)
-
-图：先进入所属Git项目，再用历史、pickaxe和blame定位提交，结合项目/分支/Change-Id核对评审。 blame不是最初设计归属；Change-Id可跨仓库或分支复用，公开讨论也可能不完整。
 
 ## 一次源码阅读应产出什么
 
@@ -710,18 +658,14 @@ AOSP 提交消息通常包含 `Change-Id: I...`，它是一次 Gerrit 评审在�
 - **验证方式**：trace、日志、断点、测试或代码 diff；
 - **适用范围**：结论从哪个版本开始，到哪个版本经过验证。
 
-所以面向问题阅读就好，不要求预先浏览整个 AOSP。一次分析的完成条件，是证据能够解释当前行为，并明确仍未确认的范围。随着案例积累，目录、调用链和版本历史会逐渐形成可检索的知识。
+所以带着具体问题阅读就好；一次分析的完成条件，是证据能够解释当前行为，并明确仍未确认的范围。AOSP 的目录、调用链和版本历史，会随着案例积累逐渐形成可检索的知识。
 
-<!-- gracker-diagram: ch16-07-21-reusable-source-explanation -->
-![把一次源码阅读保存成可复核解释](../../assets/diagrams/ch16/ch16-07-21-reusable-source-explanation.png)
-
-图：将问题与现场、源码与条件、跨边界关系及验证范围一起保存成可检索记录。 完成的是当前证据支持的解释；未确认分支、厂商差异和修改后的系统实验都要说明。
 
 ## 常见误区
 
 ### 把 `main` 当作设备版本
 
-主干名和移动的最新发布分支都不等同设备实际revision。当前官方FAQ已将 `aosp-main` 标为只读，并引导开发使用 `android-latest-release` 对应的manifest分支；这个别名也不能代替本篇研究用的固定tag/commit。文章引用保留精确源码坐标，设备判断另核对fingerprint、模块版本与厂商信息。
+主干名和移动的最新发布分支，都对不上设备实际的 revision。当前官方FAQ已将 `aosp-main` 标为只读，并引导开发使用 `android-latest-release` 对应的manifest分支；这类移动别名仍随上游更新，本篇研究固定在 tag/commit 上。文章引用保留精确源码坐标，设备判断另核对fingerprint、模块版本与厂商信息。
 
 ### 把搜索命中当作执行证据
 
