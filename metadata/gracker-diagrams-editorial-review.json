@@ -47038,9 +47038,300 @@
       "before_count": 31,
       "before_all_images": 31,
       "sha256_before": "09d919e9e57654b98d3a45e2570eea95fa164f896fb5c89c1d617db0c6085321",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 9,
+      "decisions": [
+        {
+          "original_id": "ch17-06-01-measurement-contract",
+          "title": "可重复实验的五个条件",
+          "decision": "remove",
+          "reason": "五条件总览重复导语及后续完整实验报告表，未增加具体测试结构。",
+          "original_line": 78,
+          "heading": "# Jetpack Benchmark：Microbenchmark、Macrobenchmark 与测量协议"
+        },
+        {
+          "original_id": "ch17-06-02-online-lab-loop",
+          "title": "线上信号与实验室验证",
+          "decision": "remove",
+          "reason": "线上到实验室五框逐项复述紧邻五步列表，后文具体场景与profile流程已保留。",
+          "original_line": 99,
+          "heading": "### Benchmark 给优化结论提供可重复实验"
+        },
+        {
+          "original_id": "ch17-06-03-version-minsdk",
+          "title": "历史复现基线与当前版本",
+          "decision": "remove",
+          "reason": "历史/当前/预发布三列重复版本表和两段artifact/minSdk/默认检查差异说明。",
+          "original_line": 122,
+          "heading": "### 2026 年版本与平台锚点"
+        },
+        {
+          "original_id": "ch17-06-04-micro-macro-scope",
+          "title": "局部工作与端到端路径",
+          "decision": "remove",
+          "reason": "Micro/Macro/fixture三列重复适合/不适合两组列表，原文已给具体输入范围。",
+          "original_line": 143,
+          "heading": "### Microbenchmark：只测可重复的局部工作"
+        },
+        {
+          "original_id": "ch17-06-05-micro-compilation",
+          "title": "构建编译与运行预热分开",
+          "decision": "remove",
+          "reason": "插件/AOT/安装/warmup五框复述三个编译配置条目和对照段落，没有实际编译产物关系。",
+          "original_line": 158,
+          "heading": "#### Warmup、JIT 与 AOT 要写进实验说明"
+        },
+        {
+          "original_id": "ch17-06-06-parser-cost",
+          "title": "固定解析输入与测量循环",
+          "decision": "remove",
+          "reason": "五框顺序逐项镜像32行parser示例，未增加计量内外时间轨道。",
+          "original_line": 204,
+          "heading": "#### 循环里只保留被测工作"
+        },
+        {
+          "original_id": "ch17-06-07-mutable-reset",
+          "title": "暂停测量与恢复可变输入",
+          "decision": "remove",
+          "reason": "暂停复制数组到sort/consume五框镜像紧邻7行代码和泛型/副作用解释。",
+          "original_line": 223,
+          "heading": "#### 循环里只保留被测工作"
+        },
+        {
+          "original_id": "ch17-06-08-macro-window",
+          "title": "Macrobenchmark的迭代窗口",
+          "decision": "keep",
+          "reason": "保留编译后setup、开始采集、measure、提取和跨轮合并的完整迭代窗口，额外warmup不当实测轮。",
+          "original_line": 260,
+          "heading": "### Macrobenchmark：从外部进程测完整用户路径"
+        },
+        {
+          "original_id": "ch17-06-09-startup-modes",
+          "title": "进程与Activity的三种起点",
+          "decision": "remove",
+          "reason": "COLD/WARM/HOT三列重复紧邻三行起点表，COLD实际准备另保留图10。",
+          "original_line": 273,
+          "heading": "#### `StartupMode` 只描述进程和 Activity 起点"
+        },
+        {
+          "original_id": "ch17-06-10-cold-cache-order",
+          "title": "COLD每轮的真实准备顺序",
+          "decision": "keep",
+          "reason": "保留用户setup后shader→kill→pagecache→确认进程不存在的真实顺序，区分冷进程与登录/数据库清空。",
+          "original_line": 280,
+          "heading": "#### `StartupMode` 只描述进程和 Activity 起点"
+        },
+        {
+          "original_id": "ch17-06-11-compilation-modes",
+          "title": "无预编译、按规则与Full对照",
+          "decision": "remove",
+          "reason": "None/Partial/Full三列重复六行CompilationMode表，原表还覆盖DEFAULT/Ignore与API23限制。",
+          "original_line": 300,
+          "heading": "#### `CompilationMode` 决定代码处于什么编译状态"
+        },
+        {
+          "original_id": "ch17-06-12-reset-data-branches",
+          "title": "重置编译时是否保留数据",
+          "decision": "keep",
+          "reason": "保留API34+、旧shellroot、旧非root重装三种重置路径和数据保存差异，防止旧版全要重装的误读。",
+          "original_line": 307,
+          "heading": "#### `CompilationMode` 决定代码处于什么编译状态"
+        },
+        {
+          "original_id": "ch17-06-13-module-processes",
+          "title": "模块与测试进程的分工",
+          "decision": "remove",
+          "reason": "模块树重复四行工程结构代码，没有额外模块依赖或进程通信连线。",
+          "original_line": 325,
+          "heading": "### 工程结构：把测量代码与目标应用隔开"
+        },
+        {
+          "original_id": "ch17-06-14-target-release-shape",
+          "title": "可分析的release目标与控制进程",
+          "decision": "remove",
+          "reason": "App/profileable/testAPK三列重复Gradle/manifest和独立测试进程说明，配置约束完整留正文。",
+          "original_line": 376,
+          "heading": "### 工程结构：把测量代码与目标应用隔开"
+        },
+        {
+          "original_id": "ch17-06-15-micro-module-build",
+          "title": "Microbenchmark构建到执行",
+          "decision": "remove",
+          "reason": "Micro构建五框重复28行配置和插件作用段落，与图5编译流程重叠。",
+          "original_line": 461,
+          "heading": "### 工程结构：把测量代码与目标应用隔开"
+        },
+        {
+          "original_id": "ch17-06-16-startup-readiness",
+          "title": "冷启动、业务就绪与缺样检查",
+          "decision": "keep",
+          "reason": "保留启动、业务ready、fullyDrawn、每项JSONruns及逐轮trace的验收链，等待成功不等于每轮指标完整。",
+          "original_line": 519,
+          "heading": "### 示例一：可判定失败的 cold startup"
+        },
+        {
+          "original_id": "ch17-06-17-fling-done",
+          "title": "列表手势与明确完成条件",
+          "decision": "keep",
+          "reason": "保留setup清旧标记、单次fling、实际移动再idle、显示新完成标记和核对尾帧的测试协议。",
+          "original_line": 599,
+          "heading": "### 示例二：只把列表滚动放进测量窗口"
+        },
+        {
+          "original_id": "ch17-06-18-startup-timepoints",
+          "title": "TTID与TTFD的结束节点",
+          "decision": "remove",
+          "reason": "共同起点/TTID/TTFD三列复述两个指标条目和时机段落，没有真实启动时间线。",
+          "original_line": 617,
+          "heading": "#### `StartupTimingMetric`"
+        },
+        {
+          "original_id": "ch17-06-19-frame-endpoints",
+          "title": "帧经过时间与deadline差值",
+          "decision": "remove",
+          "reason": "duration/overrun/count三列逐项复制紧邻三个精确定义，未画实际UI/RT/Actual/Expected对齐或计算实例。",
+          "original_line": 632,
+          "heading": "#### `FrameTimingMetric`"
+        },
+        {
+          "original_id": "ch17-06-20-trace-section-mode",
+          "title": "按明确模式聚合业务slice",
+          "decision": "remove",
+          "reason": "名称/过滤/mode/重叠/trace五框重复两个短段落，原文完整给所有mode与重入风险。",
+          "original_line": 643,
+          "heading": "#### `TraceSectionMetric`"
+        },
+        {
+          "original_id": "ch17-06-21-power-memory-art",
+          "title": "能耗、内存与ART的证据边界",
+          "decision": "remove",
+          "reason": "Power/Memory/Art三列逐项复述三条来源/API/缺失限制。",
+          "original_line": 656,
+          "heading": "#### `PowerMetric`、`MemoryUsageMetric` 与 `ArtMetric`"
+        },
+        {
+          "original_id": "ch17-06-22-report-source-device",
+          "title": "代码、设备与证据的可追溯关系",
+          "decision": "remove",
+          "reason": "报告五框重复七行报告字段表，原表提供更具体配置字段。",
+          "original_line": 677,
+          "heading": "### 测试条件就是结果的一部分"
+        },
+        {
+          "original_id": "ch17-06-23-noise-control",
+          "title": "同设备配对与环境控制",
+          "decision": "remove",
+          "reason": "设备/输入/热状态三列重复六条环境控制清单和动画/锁频段落。",
+          "original_line": 694,
+          "heading": "### 测试条件就是结果的一部分"
+        },
+        {
+          "original_id": "ch17-06-24-ci-regression-gate",
+          "title": "从噪声带到回归门禁",
+          "decision": "keep",
+          "reason": "保留设备历史噪声到同机交错差值、业务和噪声双预算、重跑证据复核的CI判断流程。",
+          "original_line": 718,
+          "heading": "### CI：先量化噪声，再定义门禁"
+        },
+        {
+          "original_id": "ch17-06-25-sample-pooling",
+          "title": "启动样本与逐帧样本的不同权重",
+          "decision": "keep",
+          "reason": "保留单值启动、跨轮帧样本池化和长窗口功耗三类统计单位的对照，防止把帧分位当轮平均。",
+          "original_line": 729,
+          "heading": "### CI：先量化噪声，再定义门禁"
+        },
+        {
+          "original_id": "ch17-06-26-raw-artifact-archive",
+          "title": "原始JSON与trace归档",
+          "decision": "remove",
+          "reason": "原始归档五框重复两段JSON/trace复制与环境错误抑制说明，图16已强调逐轮runs和trace。",
+          "original_line": 738,
+          "heading": "### CI：先量化噪声，再定义门禁"
+        },
+        {
+          "original_id": "ch17-06-27-online-to-local",
+          "title": "从业务慢帧到局部函数实验",
+          "decision": "remove",
+          "reason": "线上到Macro到局部Micro五框重复具体示例两段与图2通用闭环，未增加实际trace调用证据。",
+          "original_line": 758,
+          "heading": "### 从线上问题构造 Benchmark"
+        },
+        {
+          "original_id": "ch17-06-28-profile-producer-consumer",
+          "title": "Profile生成、打包与测量",
+          "decision": "keep",
+          "reason": "保留producer旅程→规则→consumer当前APK→安装编译→None/Partial收益验证的交付链，生成/打包/收益不能等价。",
+          "original_line": 767,
+          "heading": "### Baseline Profiles：生成与验证是两项任务"
+        },
+        {
+          "original_id": "ch17-06-29-startup-profile-window",
+          "title": "Startup标记不会截断收集窗口",
+          "decision": "remove",
+          "reason": "启动collect/true输出/非启动collect三列重复33行示例及前后collect范围解释，没有额外时间截断图。",
+          "original_line": 810,
+          "heading": "### Baseline Profiles：生成与验证是两项任务"
+        },
+        {
+          "original_id": "ch17-06-30-profile-stability",
+          "title": "规则集合稳定与性能收益分开",
+          "decision": "keep",
+          "reason": "保留过滤前规则集合比较、变化重置计数、连续3次与最多15轮、过滤后输出的稳定性判定过程。",
+          "original_line": 817,
+          "heading": "### Baseline Profiles：生成与验证是两项任务"
+        },
+        {
+          "original_id": "ch17-06-31-profile-benefit-evidence",
+          "title": "Profile安装与收益的分层验证",
+          "decision": "remove",
+          "reason": "同APK/None/Require三列重复收益对照两条及配套门槛段落，与保留producer到收益链28末段重复。",
+          "original_line": 831,
+          "heading": "### Baseline Profiles：生成与验证是两项任务"
+        }
+      ],
+      "sha256_after": "9095b8a44389a846b6d887626ed0218278883590859eedaaf93d5ad68bdb5cab",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:46:07.971139+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 31,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a181/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a181/visual-review.json",
+      "retired_diagrams": [
+        "ch17-06-01-measurement-contract",
+        "ch17-06-02-online-lab-loop",
+        "ch17-06-03-version-minsdk",
+        "ch17-06-04-micro-macro-scope",
+        "ch17-06-05-micro-compilation",
+        "ch17-06-06-parser-cost",
+        "ch17-06-07-mutable-reset",
+        "ch17-06-09-startup-modes",
+        "ch17-06-11-compilation-modes",
+        "ch17-06-13-module-processes",
+        "ch17-06-14-target-release-shape",
+        "ch17-06-15-micro-module-build",
+        "ch17-06-18-startup-timepoints",
+        "ch17-06-19-frame-endpoints",
+        "ch17-06-20-trace-section-mode",
+        "ch17-06-21-power-memory-art",
+        "ch17-06-22-report-source-device",
+        "ch17-06-23-noise-control",
+        "ch17-06-26-raw-artifact-archive",
+        "ch17-06-27-online-to-local",
+        "ch17-06-29-startup-profile-window",
+        "ch17-06-31-profile-benefit-evidence"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-181/retired-assets.json"
     },
     {
       "index": 182,
@@ -48066,8 +48357,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 113,
-  "next_article": "src/part3-tools/ch17-apm/06-jetpack-benchmark-baseline-profiles.md",
+  "reviewed_articles": 114,
+  "next_article": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -48077,7 +48368,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:42:39.039010+08:00",
+  "updated_at": "2026-10-31T14:46:07.971139+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -48129,10 +48420,10 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
-      "registered_sha256": "efd07971e0b27d8662cbf035baecbd90a1fbd390f8132d7e719155273e3f3918",
-      "observed_sha256": "5f7944fe526bb5a693fc15f78413c537031e969f5e80db898a2ca4dbc2cfc52f",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch08-responsiveness/07-play-integrity-api-performance.md",
+      "article": "src/part1-fundamentals/ch03-input/04-gesture-recognition-performance.md",
+      "registered_sha256": "93428e45586ec29ea3c20598e0c88a9aa5878e7a89a3d331995cc78e37b39f0a",
+      "observed_sha256": "cc0cc94e8b511e44593a02535d86dcd5271cde3ecb2c7203a8ad77d461e04033",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part1-fundamentals/ch03-input/04-gesture-recognition-performance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -48353,9 +48644,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3792,
-  "reviewed_placements_after": 1641,
-  "net_removed_placements": 2151,
+  "reviewed_placements_before": 3823,
+  "reviewed_placements_after": 1650,
+  "net_removed_placements": 2173,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -48379,5 +48670,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 113
+  "currently_matching_reviewed_source_count": 114
 }

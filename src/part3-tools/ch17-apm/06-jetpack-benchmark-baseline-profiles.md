@@ -75,10 +75,6 @@ consolidated_from:
 
 Microbenchmark 测量可重复的局部工作，Macrobenchmark 从外部进程测量启动与完整交互。可比较的结果依赖实验结构、编译状态、指标定义、噪声控制和 CI 门禁；BaselineProfileRule 生成的 Profile 可以作为实验输入，但测量时仍需显式控制编译状态。Profile 的生成、打包、渠道交付和 ART 状态验证见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
 
-<!-- gracker-diagram: ch17-06-01-measurement-contract -->
-![可重复实验的五个条件](../../assets/diagrams/ch17/ch17-06-01-measurement-contract.png)
-
-图：同一业务路径固定输入、设备、编译状态与指标，再用 JSON 和 trace 解释差值。 受控实验的数值不能直接代替线上用户分布。
 
 ## Microbenchmark、Macrobenchmark 与测量协议
 
@@ -96,10 +92,6 @@ Jetpack Benchmark 回答的是一个受约束的问题：同一场景、同一�
 
 线上看 P95（95% 的观测值不超过该数值），实验室看 median（中位数）。两边的样本来源、设备分布和负载都不同，能放在一起比较的是它们指向的业务阶段和变化方向；数值门槛要各自维护。
 
-<!-- gracker-diagram: ch17-06-02-online-lab-loop -->
-![线上信号与实验室验证](../../assets/diagrams/ch17/ch17-06-02-online-lab-loop.png)
-
-图：线上定位受影响阶段，实验室复现并解释，发布后再核对线上分布。 两端样本来源不同，各自维护预算与统计口径。
 
 ### 2026 年版本与平台锚点
 
@@ -119,10 +111,6 @@ Jetpack Benchmark 回答的是一个受约束的问题：同一场景、同一�
 
 当前稳定版 1.5.0 的四个 Android AAR 均声明 `minSdkVersion=24`，与此前 1.5.0-rc01 一致。1.5 线采用 UiAutomator 2.4、稳定化 `BlackHole`，并支持合并 AndroidX Tracing 2.0 的进程内 trace。固定 1.4.1 的 `BlackHole` 仍带 experimental 注解，代码需要显式 opt-in。1.5.0 还默认要求 Microbenchmark 已 AOT 编译、普通 `measureRepeated` 不在主线程运行；实际参数名分别是 `androidx.benchmark.requireAot` 与 `androidx.benchmark.throwOnMainThreadMeasureRepeated`。迁移时要连同 minSdk、依赖、选择器和实验条件一起验证。
 
-<!-- gracker-diagram: ch17-06-03-version-minsdk -->
-![历史复现基线与当前版本](../../assets/diagrams/ch17/ch17-06-03-version-minsdk.png)
-
-图：1.4.1 示例和当前 1.5.0 的运行下限、注解及默认检查分别绑定发布物。 升级要重新核对依赖与场景，不能只替换版本号。
 
 ### Microbenchmark：只测可重复的局部工作
 
@@ -140,10 +128,6 @@ Jetpack Benchmark 回答的是一个受约束的问题：同一场景、同一�
 - 强依赖网络、磁盘冷缓存、Binder 或系统调度的端到端路径。
 - 低频且每次行为明显不同的初始化工作。
 
-<!-- gracker-diagram: ch17-06-04-micro-macro-scope -->
-![局部工作与端到端路径](../../assets/diagrams/ch17/ch17-06-04-micro-macro-scope.png)
-
-图：按输入是否可恢复、是否依赖完整系统路径选择 Microbenchmark 或 Macrobenchmark。 局部函数收益要回到完整用户旅程验证。
 
 #### Warmup、JIT 与 AOT 要写进实验说明
 
@@ -155,10 +139,6 @@ Jetpack Benchmark 回答的是一个受约束的问题：同一场景、同一�
 
 full AOT 让实验更稳定，但用户设备上的常态编译状态未必是这样。局部优化若依赖 JIT 行为，我们应再补一组关闭强制 AOT 的实验，并在报告里写清这组结果对应的编译条件。
 
-<!-- gracker-diagram: ch17-06-05-micro-compilation -->
-![构建编译与运行预热分开](../../assets/diagrams/ch17/ch17-06-05-micro-compilation.png)
-
-图：插件配置、已安装编译状态和 Benchmark warmup 是三个不同步骤。 关闭强制 AOT 开关不保证已清除旧编译产物。
 
 #### 循环里只保留被测工作
 
@@ -201,10 +181,6 @@ class FeedParserBenchmark {
 
 这个测试量的是固定输入下、经过预热的局部解析；`@Before` 的一次校验也已提前触发解析路径，不代表首次冷调用。循环执行解析与 `BlackHole.consume()`，并由 Benchmark 管理重复次数和指标。准备阶段校验条目数、异常会使测试失败，但不证明所有输出字段正确；正式场景还需在计量外验证结果语义。BlackHole 用于保留计算结果，不应把它理解成任意构建配置下绝对零开销的证明。
 
-<!-- gracker-diagram: ch17-06-06-parser-cost -->
-![固定解析输入与测量循环](../../assets/diagrams/ch17/ch17-06-06-parser-cost.png)
-
-图：准备与正确性验证在计量外，循环保留解析及结果消费。 这是预热后的固定输入成本，准备阶段已提前调用解析。
 
 可变状态要在每轮恢复，而恢复的成本要留在算法时间之外。下面的片段演示对原数组做副本，再只测排序。
 
@@ -220,10 +196,6 @@ benchmarkRule.measureRepeated {
 
 固定 1.4.1 推荐使用 `runWithMeasurementDisabled()`；旧名 `runWithTimingDisabled()` 已弃用，因为它暂停的是整个 measurement（测量指标），计时只是其中一部分。暂停区也会反复执行，里面仍应保持轻量和确定性。 该方法是泛型并返回 block 的值，所以上例可以直接取得数组副本；暂停指标不会撤销分配、GC、缓存和热状态对后续排序的影响。
 
-<!-- gracker-diagram: ch17-06-07-mutable-reset -->
-![暂停测量与恢复可变输入](../../assets/diagrams/ch17/ch17-06-07-mutable-reset.png)
-
-图：每轮在暂停区复制数组，取回泛型返回值，再计量排序与完整结果消费。 暂停不撤销分配、GC、缓存或热状态副作用。
 
 #### 常见测错方式
 
@@ -270,10 +242,6 @@ Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` �
 | `WARM` | 进程存活，需要新建并显示 Activity | 不等于页面数据已缓存 |
 | `HOT` | 进程与 Activity 存活，把现有 Activity 带回前台 | 不等于零工作量 |
 
-<!-- gracker-diagram: ch17-06-09-startup-modes -->
-![进程与Activity的三种起点](../../assets/diagrams/ch17/ch17-06-09-startup-modes.png)
-
-图：COLD、WARM、HOT 描述进程与 Activity 起点，数据和编译状态还要另行控制。 模式名不保证缓存命中，也不等于首次安装。
 
 固定 1.4.1 的 `COLD` 每轮先执行用户 `setupBlock`，随后默认清 shader cache、杀目标进程、尝试清 kernel page cache，最后确认进程不在运行。API 31+ 通过 `perf.drop_caches` 并检查完成；更旧的非 root 设备可能只记录清页缓存失败。shader 清理也有参数与失败策略，报告必须记录实际结果。它仍不会自动清登录态、数据库和应用数据，也不等于首次安装。
 
@@ -297,10 +265,6 @@ Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` �
 
 API 23 只有 `Full()`，而 `Full()` 也未必更快：已编译代码变大后，磁盘读取和 instruction cache（CPU 存放近期执行指令的缓存） 的压力都可能跟着上来。验证 Baseline Profile 时，我们用 `Partial(BaselineProfileMode.Require)` 与 `None()` 成对比较；`DEFAULT` 留给模拟默认体验，严格的收益验证要靠这一对。
 
-<!-- gracker-diagram: ch17-06-11-compilation-modes -->
-![无预编译、按规则与Full对照](../../assets/diagrams/ch17/ch17-06-11-compilation-modes.png)
-
-图：用 None 与要求 Baseline Profile 的 Partial 成对评估，Full 另作 AOT 对照。 DEFAULT允许缺profile；Full并不是性能上限，安装成功也不保证每条规则都编译。
 
 重置能否保留应用数据取决于版本和权限。API 34+ 使用新的 profile reset 路径；API 34 前非 root 环境通常靠卸载重装重置，因此会丢失应用数据，rooted 环境则可走 `cmd package compile --reset`。预置账号或数据库要在可能重装后重新准备；外部脚本也可配合 `Ignore()` 管理编译。不要把“Android 14 之前”一律等同“必须重装”。
 
@@ -322,10 +286,6 @@ API 23 只有 `Full()`，而 `Full()` 也未必更快：已编译代码变大后
 
 `:app` 在 benchmark build type 下要维持工程本来的 release 形态：R8 沿用 release 的设置，日志处理与 release 一致，业务实现原样。build type 是同一应用的构建配置变体；`benchmark` build type 应继承 release 的压缩和优化，仅用本地签名方便安装。
 
-<!-- gracker-diagram: ch17-06-13-module-processes -->
-![模块与测试进程的分工](../../assets/diagrams/ch17/ch17-06-13-module-processes.png)
-
-图：目标 App、局部逻辑模块与两类测试模块各自承担不同运行职责。 测试APK可以可调试，受测App仍保持release形态。
 
 下面是目标应用需要关注的核心配置。
 
@@ -373,10 +333,6 @@ dependencies {
 
 有了它，测试与 profiling 工具就能读取详细 trace，而应用仍是 non-debuggable。Android Studio 的 Benchmark module 模板会自动添加相应配置，手工工程要检查最终合并 manifest。
 
-<!-- gracker-diagram: ch17-06-14-target-release-shape -->
-![可分析的release目标与控制进程](../../assets/diagrams/ch17/ch17-06-14-target-release-shape.png)
-
-图：目标 APK 保持不可调试和 release 优化，同时允许 shell profiling；控制代码留在测试 APK。 profileable配置以最终合并manifest为准。
 
 Macrobenchmark module 使用 `com.android.test`，核心配置如下。
 
@@ -458,10 +414,6 @@ dependencies {
 
 插件会配置 benchmark 输出复制、AOT 默认行为和 rooted（已获得系统 root 权限） 设备的 `lockClocks` task；`lockClocks` 用来固定 CPU 时钟，减少频率变化带来的噪声。被测代码宜放到 `:benchmarkable`，避免为调用应用内部实现而把整个 debug app 拉进测试。
 
-<!-- gracker-diagram: ch17-06-15-micro-module-build -->
-![Microbenchmark构建到执行](../../assets/diagrams/ch17/ch17-06-15-micro-module-build.png)
-
-图：同版本插件和依赖配置 release 测试，输出复制与 AOT 条件随工具版本记录。 lockClocks依赖root；被测逻辑不应因拉入debug App而改变实现。
 
 ### 示例一：可判定失败的 cold startup
 
@@ -614,10 +566,6 @@ class FeedScrollBenchmark {
 
 TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可交互，业务目标要看 TTFD，并审计 `reportFullyDrawn()` 是否过早、过晚或从未调用。
 
-<!-- gracker-diagram: ch17-06-18-startup-timepoints -->
-![TTID与TTFD的结束节点](../../assets/diagrams/ch17/ch17-06-18-startup-timepoints.png)
-
-图：系统 launch 是两者共同起点，首帧与 fullyDrawn 对应帧分别结束 TTID 和 TTFD。 首帧可仍是骨架屏；fullyDrawn时机由业务正确报告。
 
 #### `FrameTimingMetric`
 
@@ -629,10 +577,6 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 变刷新率设备上，我们优先用 `frameOverrunMs` 判断 deadline 表现。定位根因时，把它与 FrameTimeline（记录每帧生命周期的系统时间线）、主线程、RenderThread 和 GPU 轨道放在一起读；单看一个分位数是不够的。
 
-<!-- gracker-diagram: ch17-06-19-frame-endpoints -->
-![帧经过时间与deadline差值](../../assets/diagrams/ch17/ch17-06-19-frame-endpoints.png)
-
-图：1.4.1 的帧时长从 UI slice 起点到 RT 终点，overrun 按 Actual/RT 较晚终点减 Expected 终点。 经过时间含等待与抢占；frameCount只统计成功关联的FrameData。
 
 #### `TraceSectionMetric`
 
@@ -640,10 +584,6 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 使用时必须明确 mode。`First` 只取第一条；`Sum` 遇到递归或重入 section 时可能把重叠时间重复相加。业务 trace 名称要稳定，且要打开每轮 Perfetto trace 确认选中了预期 section。
 
-<!-- gracker-diagram: ch17-06-20-trace-section-mode -->
-![按明确模式聚合业务slice](../../assets/diagrams/ch17/ch17-06-20-trace-section-mode.png)
-
-图：固定包和 section 名后选 First、Sum 或其他模式，并检查闭合与重叠关系。 Sum可能重复累计重叠时间；未闭合slice被过滤。
 
 #### `PowerMetric`、`MemoryUsageMetric` 与 `ArtMetric`
 
@@ -653,10 +593,6 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 功耗实验需要固定设备、亮度、网络、温度、电池电量和操作时长。短场景的功耗差异常被采样噪声掩盖，需延长稳定阶段并用相同物理设备比较。
 
-<!-- gracker-diagram: ch17-06-21-power-memory-art -->
-![能耗、内存与ART的证据边界](../../assets/diagrams/ch17/ch17-06-21-power-memory-art.png)
-
-图：能耗能力、采样内存与 ART tracepoint 各自检查来源和缺失，组合解释性能变化。 计数或零值不能单独证明泄漏、Profile收益或完整连续峰值。
 
 ### 测试条件就是结果的一部分
 
@@ -674,10 +610,6 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 系统源码 tag 是分析基线，实际运行设备必须记录 fingerprint、内核版本与厂商补丁；涉及调度和唤醒时，再匹配该设备对应的内核源码。`android17-6.18-2026-06_r6` 只能作为某个固定内核快照，不能统一代表所有 Android 17 设备。Benchmark 库行为则继续绑定本文的 1.4.1 发布物。
 
-<!-- gracker-diagram: ch17-06-22-report-source-device -->
-![代码、设备与证据的可追溯关系](../../assets/diagrams/ch17/ch17-06-22-report-source-device.png)
-
-图：报告把代码SHA、工具发布物、设备构建与原始结果一起保存，内核源码匹配实际设备。 统一Android版本或某个kernel tag不能代表全部厂商设备。
 
 还要固定这些实验条件：
 
@@ -691,10 +623,6 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 系统动画是否关闭取决于测试目标。若要测应用转场动画，关闭动画会改变被测对象；若只想测布局与列表工作，可关闭系统级无关动画。报告必须写明选择。
 
-<!-- gracker-diagram: ch17-06-23-noise-control -->
-![同设备配对与环境控制](../../assets/diagrams/ch17/ch17-06-23-noise-control.png)
-
-图：同一物理设备交错运行两个版本，同时固定数据、刷新率、动画与热状态。 锁频会改变实验条件；关闭动画也可能改变被测对象。
 
 ### CI：先量化噪声，再定义门禁
 
@@ -735,10 +663,6 @@ Benchmark 结果是连续数值，一次 pass/fail 判断不了回归；门禁�
 
 `androidx.benchmark.suppressErrors` 只抑制显式列出的错误 ID，并不统一忽略所有错误。它可供 smoke job 检查脚本流程；性能门禁应保留环境检查并处理实际根因，避免把不可靠结果当作回归证据。
 
-<!-- gracker-diagram: ch17-06-26-raw-artifact-archive -->
-![原始JSON与trace归档](../../assets/diagrams/ch17/ch17-06-26-raw-artifact-archive.png)
-
-图：按提交、设备与场景保存 JSON、trace 和日志，再确认实际运行环境没有被错误抑制掩盖。 Macro每轮一份trace，Micro通常一测试一份；直接adb运行需自行拉取。
 
 ### 从线上问题构造 Benchmark
 
@@ -755,10 +679,6 @@ Benchmark 结果是连续数值，一次 pass/fail 判断不了回归；门禁�
 
 若 Perfetto 把耗时缩小到纯解析函数，再增加 Microbenchmark。这样端到端测试保护用户路径，局部测试保护算法成本，两者共同指向同一业务阶段。
 
-<!-- gracker-diagram: ch17-06-27-online-to-local -->
-![从业务慢帧到局部函数实验](../../assets/diagrams/ch17/ch17-06-27-online-to-local.png)
-
-图：先用端到端实验保护业务路径，再根据 Perfetto 缩小到可重复局部函数。 局部算法变快不自动保证整条路径或线上尾延迟改善。
 
 ### Baseline Profiles：生成与验证是两项任务
 
@@ -807,10 +727,6 @@ class BaselineProfileGenerator {
 }
 ```
 
-<!-- gracker-diagram: ch17-06-29-startup-profile-window -->
-![Startup标记不会截断收集窗口](../../assets/diagrams/ch17/ch17-06-29-startup-profile-window.png)
-
-图：collect block 的实际路径决定收集范围，true 把这次规则输出为 startup-prof。 fullyDrawn不自动结束收集；滚动旅程另建collect且保持false。
 
 `strictStability=true` 在默认最多 15 轮中要求规则集合连续 3 轮一致，否则失败；比较的是过滤前规则集合，不是耗时稳定或业务覆盖率。它也不检查过滤后的规则必然非空，生成结果仍需检查内容与旅程覆盖。
 
@@ -828,10 +744,6 @@ class BaselineProfileGenerator {
 
 生成后的 profile 要跟着工程走：关键用户旅程、R8 映射（压缩后名称与原始名称的对应关系）、启动依赖或大版本任一变化，都应重新生成。文件存在只说明产物被创建。先确认规则与当前 APK 匹配、安装与编译状态，再把 `Partial(Require)` / `None()` 对照、可用的 `ArtMetric` 和启动/滚动指标结合起来评估收益；安装成功本身不保证变快。
 
-<!-- gracker-diagram: ch17-06-31-profile-benefit-evidence -->
-![Profile安装与收益的分层验证](../../assets/diagrams/ch17/ch17-06-31-profile-benefit-evidence.png)
-
-图：同 APK、输入和设备先核对规则与安装编译状态，再配对评估启动、帧与可用 ART 指标。 Require只要求安装路径成功；运行时间和覆盖仍需独立证据。
 
 应用侧 producer/consumer 配置、`baseline.prof`/`baseline.profm` 位置、ProfileInstaller/Verifier 状态、Cloud Profile 与 DM 边界见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
 
