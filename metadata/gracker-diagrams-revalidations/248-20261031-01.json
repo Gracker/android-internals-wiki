@@ -1,0 +1,99 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 248,
+  "article": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T19:18:39.422809+08:00",
+  "source_sha256": "ad65812758c545f28ead6bf85382fba7056c042f9441d649d6f54c72a78b08a5",
+  "accepted_before_sha256": "5c85ed3edc3ac719eb25ddffe2a994fec15ad9f091748890eca7c1e68514f2b8",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 641,
+  "reading_characters": 39788,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 6,
+  "current_pngs_actually_viewed": 6,
+  "current_contexts_actually_viewed": 6,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a248/01/current-contact-1.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a248/01/compact-248-1.jpg"
+  ],
+  "native_diagrams_preserved": 1,
+  "native_diagrams_actually_viewed": 1,
+  "code_blocks_preserved": 4,
+  "code_lines_preserved": 74,
+  "asset_sha256": {
+    "src/assets/diagrams/ch22/a248-04-adapter-thread-domains.svg": "9524d540e2b09d9dbfa94aeaa89c7ed7d4dbd4c41b8e9cd0a7cf4afec8d77d6b",
+    "src/assets/diagrams/ch22/a248-04-adapter-thread-domains.png": "5687cda8f2f46040b2c76d5f85913a1be056cb5303dadf0af601a63553e6fb14",
+    "src/assets/diagrams/ch22/a248-08-release-decision-order.svg": "7ab3d82eb099b7703bfd005d89969a156e6dd8b6295f759eaa7dad9621f91487",
+    "src/assets/diagrams/ch22/a248-08-release-decision-order.png": "f2605901d954101427bca4795119727bfc7d754232510ee7e6d81d58ca0d81f5",
+    "src/assets/diagrams/ch22/a248-11-surface-timestamp-fence.svg": "9c2394b427ff13014a15549e9a24dad07edbd641b52da7b44b89e3ed03dee255",
+    "src/assets/diagrams/ch22/a248-11-surface-timestamp-fence.png": "5fcb37640e22a29a5c281778b9974c6ddf494312ab382e6cb9f8d0a6b023b122",
+    "src/assets/diagrams/ch22/a248-15-surface-owner-transfer.svg": "da13f82c0f5cce371f9253737858a04f13065a7b389932a2c0ca78bf2ee3729f",
+    "src/assets/diagrams/ch22/a248-15-surface-owner-transfer.png": "b0ec57a85a948efa62a2619086d24fd03f79791e1682c71cd7e28a553856b21b",
+    "src/assets/diagrams/ch22/a248-22-effects-two-surfaces.svg": "af4ebcbc3851d10848850ef9952780dafff8321ade58d284deff73f7bf0490b9",
+    "src/assets/diagrams/ch22/a248-22-effects-two-surfaces.png": "33370ed43345a814f0f5fdf448633c948f8318a236445cbd2cd0aca911269d40",
+    "src/assets/diagrams/ch22/a248-25-tunnel-sideband-topology.svg": "8fab3bd6571d1004f736bc65da4a46318bb0f7affa7d1d15907503c4b0b7f0eb",
+    "src/assets/diagrams/ch22/a248-25-tunnel-sideband-topology.png": "33e059c8478c134636533ff200c1e4c406a64cfd7056924d0b6deb2e531e2ad6"
+  },
+  "asset_baseline": {
+    "kind": "original_visual_asset_sha256"
+  },
+  "figure_reviews": [
+    {
+      "id": "a248-04-adapter-thread-domains",
+      "heading": "### API 31 及以上的默认行为",
+      "line": 143,
+      "decision": "keep",
+      "reason": "线程分域图仍匹配普通异步adapter：callback只记录index/format/error、playback推进renderer、queueing仅常规分支，当前API36crypto同步enqueuer例外仍明示。"
+    },
+    {
+      "id": "a248-08-release-decision-order",
+      "heading": "### renderer 计算的是“还早多少”",
+      "line": 227,
+      "decision": "keep",
+      "reason": "释放判定图仍按earlyUs、前置分支、追赶/late drop、过早/计划释放顺序，最新正文保留同帧命中多个候选与严格不等式边界。"
+    },
+    {
+      "id": "a248-11-surface-timestamp-fence",
+      "heading": "### timestamp 进入 BufferQueue 后会发生什么",
+      "line": 263,
+      "decision": "keep",
+      "reason": "Surface时间戳与fence分开；最新正文仍允许acquire未signal fence及latch-unsignaled、±1秒只是时间戳保护范围，不把codec提交当面板完成。"
+    },
+    {
+      "id": "a248-15-surface-owner-transfer",
+      "heading": "### 优先交给 Player 跟踪生命周期",
+      "line": 355,
+      "decision": "keep",
+      "reason": "Surface owner转移图仍紧接switchTargetView示例，先绑新后解绑旧与rawSurface先清输出后释放匹配当前生命周期说明。"
+    },
+    {
+      "id": "a248-22-effects-two-surfaces",
+      "heading": "### 启用效果后多了一次应用侧处理",
+      "line": 499,
+      "decision": "keep",
+      "reason": "Effects双Surface拓扑仍对应当前graph依赖、纹理导入、多个shader与输入输出fence说明，输入15ms和普通输出30ms的不同层级保留。"
+    },
+    {
+      "id": "a248-25-tunnel-sideband-topology",
+      "heading": "### sideband 仍由 SurfaceFlinger 管理",
+      "line": 615,
+      "decision": "keep",
+      "reason": "Tunnel图仍表达音视频硬同步到sideband/SF/HWC，当前正文保留偏好与实际支持区分、不依赖普通逐帧queue及codec事件非面板present。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a248/01/layout-report.json",
+  "layout_report_sha256": "e61297f99920cf0c88fe74971545c1299cc0bba1b3274b70fad66a665f3ac851",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "完整重新通读当前641行39788字符（含全部表格、清单和1段Mermaid源）、4段74行普通代码及6幅SVG全部标签，实看6幅PNG联系表、6处最终正文上下文、原生图截图和3600宽可读DOM导出。图块路径顺序、alt、图注、普通代码、原生源和所有引用资产SHA均与已接受版一致，唯一PNG字节哈希无重复；本次只接受现有外部正文修订的配图一致性，不新增来源核验或执行示例。当前版仍保留Media3 1.11.0源码与1.11.1修复/平台r1分离、四类async机制分层、crypto36同步enqueuer、严格release阈值顺序/末帧joining、drop与skip及input子集统计、BQ timestamp与fence/latched不等可任意像素消费、非ViewAllowFrameDrop退出非零丢保证、SurfaceView仅独立layer候选非overlay保证/TextureView宿主采样、Player owner与ComposeAPI34同步兼容、generation10bit/PID非永久ID、codec格式DRM复用与prewarm默认关/1.11.1缺陷修复/perstream推进独立、CCodec与ACodec owner优先二选一、默认非BlockModel、effects双Surface和可配置15ms门槛/ANGLE需同进程实际指纹、HDRsecure与HWC组合设备证据、tunnel sideband仍SF管理/默认Media3实际listener另核/firstframe非display、帧率vote非保证、joining5s状态非首帧SLA、PTS/nanoTime/elapsed三时基需映射、processingoffset加权计数/ensureUpdated仅可见性非事务快照、四套ID关联时间近非因果、pipeline各层native与vendor证据边界。1400/640图序、标题、加载、结构、无水平溢出通过，原生1图两视口成功渲染无raw回退。所有当前图仍有独立用途并位于对应说明，无新增或退役文件。"
+}

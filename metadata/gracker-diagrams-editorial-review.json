@@ -62816,7 +62816,7 @@
           "heading": "### HDR 或 DRM 设备分化"
         }
       ],
-      "sha256_after": "5c85ed3edc3ac719eb25ddffe2a994fec15ad9f091748890eca7c1e68514f2b8",
+      "sha256_after": "ad65812758c545f28ead6bf85382fba7056c042f9441d649d6f54c72a78b08a5",
       "new_diagrams": [],
       "reviewed_at": "2026-10-31T18:03:51.722903+08:00",
       "inline_mermaid_blocks_removed": 0,
@@ -62863,7 +62863,32 @@
         "a248-34-regression-matrix"
       ],
       "removed_but_shared_diagrams": [],
-      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-248/retired-assets.json"
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-248/retired-assets.json",
+      "sha256_after_initial_editorial": "5c85ed3edc3ac719eb25ddffe2a994fec15ad9f091748890eca7c1e68514f2b8",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 248,
+          "article": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+          "revision": 1,
+          "accepted_sha256": "5c85ed3edc3ac719eb25ddffe2a994fec15ad9f091748890eca7c1e68514f2b8",
+          "reviewed_sha256": "ad65812758c545f28ead6bf85382fba7056c042f9441d649d6f54c72a78b08a5",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a248/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a248/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a248/01/source.diff",
+          "diff_sha256": "6f9b0a000b8f00cb43d5f59348bd1889e7e65f19bb2fd1ee21d598f42688de99",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/248-20261031-01.json",
+          "report_sha256": "d744d96ba0091d483aac058c5d69c898507ee137fa1c468ff4de51c12ecc1a20",
+          "caption_revisions": [],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a248/01/input.md",
+          "external_input_sha256": "ad65812758c545f28ead6bf85382fba7056c042f9441d649d6f54c72a78b08a5",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T19:18:39.469505+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T19:18:39.568745+08:00"
     },
     {
       "index": 249,
@@ -66659,7 +66684,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:14:22.750809+08:00",
+  "updated_at": "2026-10-31T19:18:39.581787+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -66821,7 +66846,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 193,
+  "currently_matching_reviewed_source_count": 194,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

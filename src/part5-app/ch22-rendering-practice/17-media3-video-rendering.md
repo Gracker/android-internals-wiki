@@ -42,9 +42,9 @@ consolidated_from:
 
 # Media3 视频播放：解码、帧时序与渲染
 
-decoder（解码器）解出视频帧，不代表用户已经看见这一帧。普通 Media3 播放还要经过帧时序判断、`releaseOutputBuffer()`、输出 `Surface`、BufferQueue、SurfaceFlinger、HWC 和面板扫描。任一阶段延迟，都可能表现为首帧慢、画面卡住、声音继续或掉帧。
+decoder（解码器）解出视频帧，离用户看见这一帧还有一整条链路：普通 Media3 播放要经过帧时序判断、`releaseOutputBuffer()`、输出 `Surface`、BufferQueue、SurfaceFlinger、HWC 和面板扫描。任一阶段延迟，都可能表现为首帧慢、画面卡住、声音继续或掉帧。
 
-这些阶段分属不同组件，排查时要先说清证据指向哪一层：播放器事件用于解释 Media3 做了什么；Android 平台 trace 用于解释帧怎样到达合成器；present fence 或设备显示证据才接近“画面何时显示”。三类证据不能相互替代。
+这些阶段分属不同组件，我们排查时要先说清证据指向哪一层：播放器事件解释 Media3 做了什么；Android 平台 trace 解释帧怎样到达合成器；present fence 或设备显示证据才接近“画面何时显示”。三类证据各管一段。
 
 
 正文保留源码、日志和 Perfetto 中可检索的英文名，含义统一如下：
@@ -67,15 +67,15 @@ decoder（解码器）解出视频帧，不代表用户已经看见这一帧。�
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | MediaCodec、CCodec/ACodec、BufferQueue、SurfaceFlinger |
 | Android 内核 | `android17-6.18-2026-06_r6` | dma-buf、dma-fence、sync_file 的共通语义 |
 
-Media3 与 Android 平台独立发布。Android 17 设备可以运行较早的 Media3；升级 Media3 也不会更换设备上的 vendor codec、Composer HAL、显示驱动或固件。涉及常量和默认策略时，必须同时记录库版本与系统 build。
+Media3 与 Android 平台独立发布。Android 17 设备可以运行较早的 Media3；升级 Media3 换不掉设备上的 vendor codec、Composer HAL、显示驱动或固件。涉及常量和默认策略时，要同时记录库版本与系统 build。
 
-截至 2026-10-25，Google Maven 与官方发布页的最新稳定版是 Media3 1.11.1（2026-09-10 发布），另有 1.12.0-alpha01。本文机制与阈值仍固定在 1.11.0 标签，不能把“最新版本”与该源码基线混写。1.11.1 已修复 secondary renderer 预热导致的停播、seek 后 Surface 未归还主 renderer，以及 scrubbing 旧帧问题，遇到这些症状应同时核对修复版本。
+截至 2026-10-25，Google Maven 与官方发布页的最新稳定版是 Media3 1.11.1（2026-09-10 发布），另有 1.12.0-alpha01。本文机制与阈值仍固定在 1.11.0 标签；“最新版本”是另一条线索，引用时与该源码基线分开记。1.11.1 已修复 secondary renderer 预热导致的停播、seek 后 Surface 未归还主 renderer，以及 scrubbing 旧帧问题，遇到这些症状应同时核对修复版本。
 
-系统路径同时沿用 SurfaceView、TextureView 与 video overlay 的通用结论。Android 17 的强证据来自公开源码；vendor codec、HWC plane、secure video path 和驱动等待要靠目标设备补证。
+系统路径同时沿用 SurfaceView、TextureView 与 video overlay 的通用结论。公开源码能给出 Android 17 侧的强证据；vendor codec、HWC plane、secure video path 和驱动等待要靠目标设备补证。
 
 ## 二、普通播放的分层模型
 
-这张图展示一次普通 Surface 输出涉及的主要对象。
+我们先看一次普通 Surface 输出涉及的主要对象。
 
 ```mermaid
 flowchart LR
@@ -94,7 +94,7 @@ flowchart LR
     VSync["Display VSync estimate"] --> Renderer
 ```
 
-图中的 CCodec 与 ACodec 是运行时二选一的 native codec 适配路径；不能把两个分支按顺序相加。Media3 选择 codec、安排输入并决定输出帧何时交给 `Surface`。SurfaceFlinger 与 HWC 决定这一层怎样参与当前显示帧的合成。
+图中的 CCodec 与 ACodec 是运行时二选一的 native codec 适配路径，看图时取其一即可。分工上，Media3 选择 codec、安排输入并决定输出帧何时交给 `Surface`；SurfaceFlinger 与 HWC 决定这一层怎样参与当前显示帧的合成。
 
 
 ### Media3 负责什么
@@ -122,9 +122,11 @@ Android 侧负责：
 - SurfaceFlinger 的 latch、layer composition 与 HWC 提交；
 - fence 在 codec、GPU、合成器、HWC 之间传递完成状态。
 
-`releaseOutputBuffer(index, timestampNs)` 返回，只说明 client 已请求把 buffer 按给定时间送往输出 Surface。它不证明 BufferQueue consumer 已 acquire，也不证明 HWC 已提交或面板已经扫描。
+`releaseOutputBuffer(index, timestampNs)` 返回，只说明 client 已请求把 buffer 按给定时间送往输出 Surface；BufferQueue consumer 是否已 acquire、HWC 是否已提交、面板是否已经扫描，都要另找平台侧证据。
 
 ## 三、Media3 的异步 codec adapter
+
+adapter 是播放器与 codec 之间的封装层，它的线程模型决定了 trace 里会看到哪些线程。我们从默认行为看起。
 
 ### API 31 及以上的默认行为
 
@@ -134,9 +136,9 @@ Media3 1.11.0 的 `DefaultMediaCodecAdapterFactory` 在 API 31 及以上默认�
 异步 adapter 包含两组不同工作：
 
 1. `MediaCodec.Callback` 在专用 callback thread 接收 input/output buffer 可用、format change 与 codec error；
-2. 常规配置中 input buffer 通过另一个 queueing thread 提交；下文 API36+ crypto-async 配置改用同步 enqueuer，并非所有异步 adapter 都必有独立输入排队线程。
+2. 常规配置中 input buffer 通过另一个 queueing thread 提交；下文 API36+ crypto-async 配置改用同步 enqueuer，独立输入排队线程只属于常规配置。
 
-播放器的 playback thread 仍会从 adapter 的内部队列取 index，并执行 renderer 状态机。异步 callback 没有把完整播放器逻辑搬到 codec callback 线程。
+播放器的 playback thread 仍会从 adapter 的内部队列取 index，并执行 renderer 状态机；异步 callback 只把事件送进内部队列，完整播放器逻辑留在 playback thread 上。
 
 <!-- gracker-diagram: a248-04-adapter-thread-domains -->
 ![异步回调、输入排队与playback各司其职](../../assets/diagrams/ch22/a248-04-adapter-thread-domains.png)
@@ -147,20 +149,20 @@ Media3 1.11.0 还默认启用 dynamic scheduling（动态调度）：播放器�
 
 ### Android 17 的 crypto async 分支
 
-Media3 1.11.0 在异步 adapter 中还处理 `CONFIGURE_FLAG_USE_CRYPTO_ASYNC`。`DefaultMediaCodecAdapterFactory(Context)` 默认启用这项实验配置，但源码只在 API 36 及以上设置 flag；此时 input buffer 改由同步 enqueuer 提交，crypto 工作交给 codec 的异步路径。它属于 secure input queueing 行为，不能用来推导图形输出 Surface 的异步状态。
+Media3 1.11.0 在异步 adapter 中还处理 `CONFIGURE_FLAG_USE_CRYPTO_ASYNC`。`DefaultMediaCodecAdapterFactory(Context)` 默认启用这项实验配置，但源码只在 API 36 及以上设置 flag；此时 input buffer 改由同步 enqueuer 提交，crypto 工作交给 codec 的异步路径。它属于 secure input queueing 行为，图形输出 Surface 的异步状态要另行确认。
 
 
 ### Android 17 `MediaCodec.Callback` 的回调边界
 
 Android 17 framework 里的 buffer 回调不是直接在 codec 组件线程执行完整播放器逻辑。native `MediaCodec` 初始化独立的 `mCodecLooper`，把 `CodecBase::BufferCallback` 接到 `kWhatCodecNotify`；`onInputBufferAvailable()` / `onOutputBufferAvailable()` 分别投递 `kWhatFillThisBuffer` / `kWhatDrainThisBuffer`，Java `MediaCodec.EventHandler` 再按 `CB_INPUT_AVAILABLE`、`CB_OUTPUT_AVAILABLE`、`CB_OUTPUT_FORMAT_CHANGE`、`CB_ERROR` 分发到应用注册的 `Callback`。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.1、§2.1、§2.2；Android 17 `MediaCodec.java` / `MediaCodec.cpp`]
 
-Media3 的异步 adapter 在应用侧拿到的，是 framework 整理后的 buffer index、format 与 error 事件。Perfetto 排查应同时标出 Media3 playback thread、adapter callback thread、adapter queueing thread，以及 framework/native codec looper；不要把这些线程上的等待都归到 renderer 决策。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.1、§2.2]
+Media3 的异步 adapter 在应用侧拿到的，是 framework 整理后的 buffer index、format 与 error 事件。Perfetto 排查时我们同时标出 Media3 playback thread、adapter callback thread、adapter queueing thread，以及 framework/native codec looper，把每个等待归到所属线程；renderer 决策只是其中一类。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.1、§2.2]
 
-Android 17 `MediaCodec.java` 还定义了 `CB_LARGE_FRAME_OUTPUT_AVAILABLE`、`CB_REQUIRED_RESOURCES_CHANGE` 等事件码；所选源码调研只核到定义，未追踪常规 Media3 视频播放的触发链路。因此它们只能作为排查时的版本边界线索，不能写成默认播放路径结论。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.1、未验证/待深入]
+Android 17 `MediaCodec.java` 还定义了 `CB_LARGE_FRAME_OUTPUT_AVAILABLE`、`CB_REQUIRED_RESOURCES_CHANGE` 等事件码；所选源码调研只核到定义，未追踪常规 Media3 视频播放的触发链路。因此它们先当排查时的版本线索用；默认播放路径的结论要等触发链路核实。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.1、未验证/待深入]
 
-### 它与 BufferQueue asyncMode 无关
+### 与 BufferQueue asyncMode 的区别
 
-名称相似容易造成误判：
+这四个机制名字相近，所在层和控制对象各不相同：
 
 | 机制 | 所在层 | 控制什么 |
 | --- | --- | --- |
@@ -169,7 +171,7 @@ Android 17 `MediaCodec.java` 还定义了 `CB_LARGE_FRAME_OUTPUT_AVAILABLE`、`C
 | BufferQueue `asyncMode` | native 图形队列 | producer queue 时是否采用可替换的 droppable slot 语义 |
 | EGL swap interval 0 | EGL producer | native GL producer 的交换节奏，可能触发其输出 Surface 的 asyncMode |
 
-普通 `PlayerView` 播放使用异步 codec adapter，不表示 decoder 输出 BufferQueue 被切成 EGL 的 `asyncMode`。`Surface::setSwapInterval(0)` 只与可控制该 native EGL producer 的链路相关；默认 decoder Surface 输出不提供同名 Java 调优开关。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §4.3、§5；Android 17 `Surface.cpp`]
+普通 `PlayerView` 播放使用异步 codec adapter，与 decoder 输出 BufferQueue 的 `asyncMode` 是两件事，对应上表的不同行。`Surface::setSwapInterval(0)` 只与可控制该 native EGL producer 的链路相关；默认 decoder Surface 输出不提供同名 Java 调优开关。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §4.3、§5；Android 17 `Surface.cpp`]
 
 
 ### 何时考虑强制配置
@@ -195,13 +197,15 @@ val player = ExoPlayer.Builder(context, renderersFactory)
 
 ## 四、从 PTS 到 release timestamp
 
+一帧什么时候交给 Surface，由 renderer 按媒体时钟和 VSync 估计逐帧计算。我们从头看这个计算。
+
 ### renderer 计算的是“还早多少”
 
 `VideoFrameReleaseControl` 先计算：
 
 `earlyUs = (framePresentationTimeUs - playerPositionUs) / playbackSpeed - loopElapsedUs`
 
-公式的 `loopElapsedUs` 只在 renderer 已 started 时扣除；实现先按 double 倍速计算后转 long，再按显示节奏调整 release time。首帧、无 Surface、decode-only、是否 started 和 joining 等分支先后参与决策，不能仅凭这个差值机械判断丢帧。
+公式的 `loopElapsedUs` 只在 renderer 已 started 时扣除；实现先按 double 倍速计算后转 long，再按显示节奏调整 release time。首帧、无 Surface、decode-only、是否 started 和 joining 等分支先后参与决策；这个差值只是第一道输入，丢帧判断要沿完整决策链往下看。
 
 正值表示该帧还早，负值表示已经晚。随后 `VideoFrameReleaseHelper` 根据已观测到的帧间隔、播放倍速与显示 VSync 估计调整 release time。
 
@@ -216,9 +220,9 @@ Media3 1.11.0 的普通输出路径包含几组重要阈值：
 | `earlyUs < -30_000`，且 `elapsedSinceLastReleaseUs > 100_000`，并通过 started/时间推进/joining 检查 | 可以强制释放一帧，避免画面长时间停住 |
 | decoder input 预计晚约 15 ms 以上 | 非末帧、无 supplemental data，并由不被依赖标记或 AV1 解析确认安全时，才可提前丢弃全部或部分输入 |
 
-这些值属于 Media3 1.11.0 的 `MediaCodecVideoRenderer` 与 `VideoFrameReleaseControl`，不是 Android 17 平台常量。1.11.0 新增 `MediaCodecVideoRenderer.Builder.setEarlySchedulingThresholdUs()`，也可通过 `DefaultRenderersFactory.setVideoRendererEarlySchedulingThresholdUs()` 调整默认 50 ms 的提前调度门槛；子类仍可覆盖部分决策，实验 API 也可以关闭 input drop 门槛。
+这些值属于 Media3 1.11.0 的 `MediaCodecVideoRenderer` 与 `VideoFrameReleaseControl`，与 Android 17 平台常量分属两个出处。1.11.0 新增 `MediaCodecVideoRenderer.Builder.setEarlySchedulingThresholdUs()`，也可通过 `DefaultRenderersFactory.setVideoRendererEarlySchedulingThresholdUs()` 调整默认 50 ms 的提前调度门槛；子类仍可覆盖部分决策，实验 API 也可以关闭 input drop 门槛。
 
-表中条件是候选规则，不是互斥区间：先判断 decode-only/Surface/强制释放，再判断更大范围追赶与 late drop，最后判断是否过早。完全等于 -30ms、-500ms 或100ms并不满足对应严格不等式；末帧保护、子类覆盖与 joining 会改变最终 action。
+表中条件是候选规则，同一帧可能同时命中多条，最终 action 由判断顺序决定：先判断 decode-only/Surface/强制释放，再判断更大范围追赶与 late drop，最后判断是否过早。取值正好是 -30ms、-500ms 或 100ms 时，对应严格不等式判定为假；末帧保护、子类覆盖与 joining 也会改变最终 action。
 
 <!-- gracker-diagram: a248-08-release-decision-order -->
 ![释放决策有顺序和前置条件](../../assets/diagrams/ch22/a248-08-release-decision-order.png)
@@ -247,14 +251,14 @@ Media3 对计划显示的帧调用：
 
 CCodec 的 `CCodecBufferChannel::renderOutputBuffer()` 会把 graphic block 和 timestamp 交给输出 Surface。ACodec/OMX 通过自己的 port 与 native window 路径完成同类交付。
 
-Android 17 的 `BufferQueueConsumer::acquireBuffer()` 根据 consumer 的 `expectedPresent` 处理队首：
+framework 的 `BufferQueueConsumer::acquireBuffer()` 根据 consumer 的 `expectedPresent` 处理队首：
 
 - 队首目标时间仍在未来时，可以返回 `PRESENT_LATER`；
 - 队列里有多帧且后一帧更适合当前 present 时，可以移除过期的前一帧；
 - 时间戳偏离 expected present 超过合理范围时，不用该异常时间戳驱动常规丢帧；
-- acquire 返回 buffer 与 acquire fence，后续消费方依同步依赖等待或传递 fence；这不意味着 acquireBuffer 必定在 CPU 上阻塞到信号就绪。
+- acquire 返回 buffer 与 acquire fence；对同步依赖的等待或 fence 传递由后续消费方处理，acquireBuffer 未必在 CPU 上阻塞到信号就绪。
 
-源码中的 ±1 秒是 BufferQueue 判断时间戳是否合理的保护范围，不是 `releaseOutputBuffer()` 对 SurfaceView 的公开“必须相差 1 秒”约束，也不是播放器的掉帧门槛。
+源码中的 ±1 秒是 BufferQueue 判断时间戳是否合理的保护范围；把它读成 `releaseOutputBuffer()` 对 SurfaceView 的公开“必须相差 1 秒”约束，或播放器的掉帧门槛，都归错了层。
 
 <!-- gracker-diagram: a248-11-surface-timestamp-fence -->
 ![时间戳与fence是不同约束](../../assets/diagrams/ch22/a248-11-surface-timestamp-fence.png)
@@ -263,7 +267,7 @@ Android 17 的 `BufferQueueConsumer::acquireBuffer()` 根据 consumer 的 `expec
 
 ## 五、一次掉帧可能发生在哪一层
 
-播放系统里至少有六类“没有显示新画面”：
+排查掉帧时，我们先把“没有显示新画面”按层拆开，至少有六类：
 
 | 位置 | 事件 | Media3 counter 能否直接看见 |
 | --- | --- | --- |
@@ -274,19 +278,19 @@ Android 17 的 `BufferQueueConsumer::acquireBuffer()` 根据 consumer 的 `expec
 | HWC composition | 当前层组合导致 client composition 或提交延迟 | 不可见 |
 | display present | present miss 或面板继续扫描旧内容 | 不可见 |
 
-`onDroppedVideoFrames()` 统计的是 renderer 记录的 dropped input/output buffers。它不等于系统从解码到显示的总丢帧数。
+`onDroppedVideoFrames()` 统计的是 renderer 记录的 dropped input/output buffers；系统从解码到显示的总丢帧，还要结合表中“不可见”的那几层才能拼全。
 
 
 ### `KEY_ALLOW_FRAME_DROP` 的准确语义
 
-Android 10 起，Surface 输出默认允许在消费不及时的时候丢弃过量帧。配置格式中没有 `MediaFormat.KEY_ALLOW_FRAME_DROP` 时，Android 17 的 `MediaCodec` 把 `mAllowFrameDroppingBySurface` 设为 `true`；字段存在时，变量读取字段的整数值。
+Android 10 起，Surface 输出默认允许在消费不及时的时候丢弃过量帧。配置格式中没有 `MediaFormat.KEY_ALLOW_FRAME_DROP` 时，framework 的 `MediaCodec` 把 `mAllowFrameDroppingBySurface` 设为 `true`；字段存在时，变量读取字段的整数值。
 
 当值为 `0` 时，`MediaCodec::connectToSurface()` 调用 `disableLegacyBufferDropPostQ(surface)`，选择退出该 legacy surface drop 行为。持续消费不及时会让 decoder 更容易受到背压。
 
-这里有两条使用边界：
+使用时注意两点：
 
 - Android API 文档把可控退出描述为面向非 View Surface，例如独立 `SurfaceTexture` 或 `ImageReader`；
-- `SurfaceView` 与 `TextureView` 的过量帧行为不能靠这一个 key 获得跨设备“零丢帧”保证。
+- 跨设备“零丢帧”保证超出这个 key 的能力范围，`SurfaceView` 与 `TextureView` 的过量帧行为仍要靠目标设备验证。
 
 ### Media3 1.11.0 何时写 `0`
 
@@ -296,14 +300,14 @@ Android 10 起，Surface 输出默认允许在消费不及时的时候丢弃过�
 
 原因是效果管线要在自己的输入端判断晚帧。若 decoder 输出 Surface 提前丢帧，`VideoGraph` 无法按媒体时间掌握完整输入。Media3 同时限制 decoder 允许积压的输出帧数，避免无限背压。
 
-`KEY_ALLOW_FRAME_DROP` 的作用是决定由哪一层做帧取舍，与画质增强或 HWC overlay 开关无关。
+`KEY_ALLOW_FRAME_DROP` 决定由哪一层做帧取舍；画质增强、HWC overlay 开关归其他机制管。
 
 
 ## 六、SurfaceView、TextureView 与 raw Surface
 
 ### PlayerView 默认使用 SurfaceView
 
-Media3 1.11.0 的 `PlayerView` 把 `surface_type` 默认设为 `surface_view`。普通视频通常优先选择它，原因包括：
+Media3 1.11.0 的 `PlayerView` 把 `surface_type` 默认设为 `surface_view`。普通视频为什么通常优先选它？原因包括：
 
 - decoder 输出保持为独立 SurfaceFlinger layer；
 - HWC 可以逐帧评估视频 layer 是否适合 DEVICE composition；
@@ -321,9 +325,9 @@ TextureView 路径为：
 
 它适合普通 View 级的旋转、裁剪、alpha、圆角和复杂层叠。代价包括受宿主帧截止点约束、增加 GPU 纹理采样与 App Window 提交，以及失去独立视频 layer。SurfaceFlinger 看到的是已经包含视频像素的宿主窗口。
 
-SurfaceTexture/HWUI 可取最近输入并丢弃中间帧，所以 renderer 已释放帧也不保证逐帧采样进宿主窗口。SurfaceView 在现代版本也支持同步位移、一定范围的 alpha 与裁剪，不能把“有动画”当作必须选 TextureView 的充分条件；按实际变换、secure/HDR 与设备代价验证。
+SurfaceTexture/HWUI 可取最近输入并丢弃中间帧，所以 renderer 释放的帧还要经宿主采样，进窗口的帧数可能少于释放的帧数。SurfaceView 在现代版本也支持同步位移、一定范围的 alpha 与裁剪，“有动画”单独构不成选 TextureView 的理由；选型按实际变换、secure/HDR 与设备代价验证。
 
-TextureView 也不是“开启视频特效”的必要条件。Media3 的 effects 管线可以用独立输入 Surface 和输出 Surface 完成 GPU 处理；是否选 TextureView，要由最终 UI 变换需求决定。
+开启视频特效未必需要 TextureView：Media3 的 effects 管线可以用独立输入 Surface 和输出 Surface 完成 GPU 处理；是否选 TextureView，由最终 UI 变换需求决定。
 
 
 ### 优先交给 Player 跟踪生命周期
@@ -357,13 +361,13 @@ PlayerView.switchTargetView(
 
 API 34 及以上，Media3 1.11.0 创建默认 `SurfaceView` 时把 Surface 生命周期设为 follows-attachment（跟随 View 附着状态）。暂时不可见但仍 attached 的 View 可以保留 Surface，减少销毁和重建；资源也会相应保留更久。
 
-这项策略改善部分滚动与转场，不能替代明确的 player 生命周期所有者。页面离开、列表回收、进程进入后台或业务停止播放时，仍要按产品生命周期解绑、停止或释放 player。
+这项策略改善部分滚动与转场；player 生命周期仍要有明确的所有者——页面离开、列表回收、进程进入后台或业务停止播放时，按产品生命周期解绑、停止或释放 player。
 
 ### Compose 中使用 PlayerView
 
 `PlayerView` 放入 `AndroidView` 时，SurfaceView 会跨 View/Compose 与 SurfaceFlinger 的同步边界。Media3 提供 `setEnableComposeSurfaceSyncWorkaround()` 处理 API 34 的特定兼容问题，但该兼容方案默认关闭，因为它会影响 XML View 的 shared element transition。
 
-只需要视频承载面时，Media3 1.11.0 的 `media3-ui-compose` 已提供 `PlayerSurface`；需要宽高比、shutter（首帧前的遮挡层）等基础容器能力时可使用 `ContentFrame`。`PlayerSurface` 仍在内部通过 `AndroidView` 创建 SurfaceView 或 TextureView，并负责调用 Player 的 set/clear API；它不会把 decoder buffer 变成 Compose 纹理。其 SurfaceView 分支会在 API 34 自动使用 `SurfaceSyncGroup` 规避尺寸同步问题，API 35 及以上不走该兼容分支。
+只需要视频承载面时，Media3 1.11.0 的 `media3-ui-compose` 已提供 `PlayerSurface`；需要宽高比、shutter（首帧前的遮挡层）等基础容器能力时可使用 `ContentFrame`。`PlayerSurface` 仍在内部通过 `AndroidView` 创建 SurfaceView 或 TextureView，并负责调用 Player 的 set/clear API；decoder buffer 的终点是 Surface，变成 Compose 纹理这一步并不存在。其 SurfaceView 分支会在 API 34 自动使用 `SurfaceSyncGroup` 规避尺寸同步问题，API 35 及以上不走该兼容分支。
 
 Media3 1.11.0 还修复了 `ContentFrame` 在播放中途重组时首帧尺寸错误的问题。这个修复只覆盖对应库内缺陷；应用自己的布局变化、Surface 重建和新尺寸首帧仍要按事件时间线验证。
 
@@ -381,6 +385,8 @@ Surface 与 Compose 生命周期的详细处理见 [Compose ↔ View 互操作�
 
 ## 七、Surface 切换与 decoder 复用
 
+Surface 在播放中途更换时，Media3 先尝试复用现有 codec：条件满足就直接换面，满足不了再释放重建。我们看它的判断顺序。
+
 ### Media3 会先判断能否更新输出面
 
 收到新的 video output 后，`MediaCodecVideoRenderer` 按以下条件处理：
@@ -392,20 +398,20 @@ Surface 与 Compose 生命周期的详细处理见 [Compose ↔ View 互操作�
 5. 对变更的 display Surface 重置“该输出已报告首帧”状态；仅当 renderer 为 `STATE_STARTED` 才 join，是否立即释放下一帧还取决于本次是否无缝换面。effects 的 videoSink 走自己的输出管理分支。
 
 
-API 35 及以上，框架还提供 detached output surface 能力；Media3 只在 codec 报告支持时使用。detach 不能消除 vendor codec 的实现差异。
+API 35 及以上，框架还提供 detached output surface 能力；Media3 只在 codec 报告支持时使用。vendor codec 的实现差异仍要逐设备验证。
 
 ### generation number 解决旧 buffer 归属
 
-Android 17 的 `MediaCodec::connectToSurface()` 为每次连接生成：
+framework 的 `MediaCodec::connectToSurface()` 为每次连接生成：
 
 `generation = (pid << 10) | (++counter & ((1 << 10) - 1))`
 
-低 10 bit 是进程内递增计数，高位来自 PID。连接时还会 disconnect/reconnect 并安装 `OnBufferReleasedListener`。generation number 用于防止旧连接留下的 free buffer 被错误附着到新连接。它解决 buffer 身份归属，不保证新 Surface 立刻有内容。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.3；Android 17 `MediaCodec.cpp`]
+低 10 bit 是进程内递增计数，高位来自 PID。连接时还会 disconnect/reconnect 并安装 `OnBufferReleasedListener`。generation number 用于防止旧连接留下的 free buffer 被错误附着到新连接。它管的是 buffer 身份归属；新 Surface 何时有内容，要看解码与渲染的进度。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §2.3；Android 17 `MediaCodec.cpp`]
 
-低10bit会按1024次循环，PID也可能复用；generation是连接期的归属检查，不是跨进程重启、跨无限次连接永久唯一的业务ID。日志仍需结合进程生命期、Surface身份与连接序号。
+低10bit会按1024次循环，PID也可能复用；generation是连接期的归属检查，跨进程重启、跨无限次连接的永久唯一业务ID要另行设计。日志仍需结合进程生命期、Surface身份与连接序号。
 
 
-### 复用 codec 需要满足格式边界
+### 复用 codec 的格式条件
 
 Media3 的 `MediaCodecInfo.canReuseCodec()` 会检查 MIME、rotation、resolution、color info、初始化数据和已知设备兼容规则。`MediaCodecVideoRenderer` 还检查：
 
@@ -414,7 +420,7 @@ Media3 的 `MediaCodecInfo.canReuseCodec()` 会检查 MIME、rotation、resoluti
 - 某些 frame-rate 变化是否要求丢弃 codec；
 - DRM session、secure decoder 与父类 renderer 状态是否允许复用。
 
-不能把 `setOutputSurface()` 写成通用 codec 池。一次 Surface 切换可以复用当前实例，不等于该实例适合跨内容、跨 DRM session 或跨 profile 长期共享。
+`setOutputSurface()` 解决的是“一次 Surface 切换复用当前实例”；跨内容、跨 DRM session 或跨 profile 的长期共享要回到上面的格式条件判断，它当不了通用 codec 池。
 
 ### playlist transition 与 prewarming
 
@@ -428,10 +434,12 @@ Media3 1.11.0 提供实验性的 secondary `MediaCodecVideoRenderer` prewarming�
 - transition 失败后的清理与回退；
 - 前台功耗和热稳定性。
 
-常规场景先依赖 codec reuse 与准备下一段媒体；transition 尾部延迟仍不可接受时，再评估 prewarming。1.11.0 新增的实验 API `ExoPlayer.Builder.enablePerStreamMediaProgression(true)` 允许音视频流分别向后推进，可减少部分短内容或列表转场等待；它不会创建 secondary renderer，与 prewarming 要分开做 A/B 实验。 secondary renderer prewarming 在1.11.0中的缺陷需结合1.11.1修复记录复测，不能把所有转场停播都当作设备decoder容量不足。
+常规场景先依赖 codec reuse 与准备下一段媒体；transition 尾部延迟仍达不到产品要求时，再评估 prewarming。1.11.0 新增的实验 API `ExoPlayer.Builder.enablePerStreamMediaProgression(true)` 允许音视频流分别向后推进，可减少部分短内容或列表转场等待；它不创建 secondary renderer，与 prewarming 要分开做 A/B 实验。secondary renderer prewarming 在1.11.0中的缺陷需结合1.11.1修复记录复测；转场停播先对照修复清单，再谈设备 decoder 容量问题。
 
 
 ## 八、Codec2/CCodec 与 OMX/ACodec
+
+Java 层的 MediaCodec 背后有两条 native 实现路径；读 vendor codec 的 trace 前，我们先确认设备走的是哪条。
 
 ### Android 17 仍保留两条实现
 
@@ -441,17 +449,17 @@ Stagefright 根据 codec 名称和 owner 字段（组件归属类型）创建 na
 - 没有已识别的 owner 时，名称以 `c2.` 开头创建 CCodec；
 - 没有已识别的 owner 时，名称以 `omx.` 开头创建 ACodec。
 
-Android17公开源码保留CCodec/Codec2与ACodec/OMX两条路径，设备实际使用哪条需按codec owner/名称与日志确认。只展示 ACodec 的 port 配置，无法代表 Android 17 的完整视频 decoder 路径。
+Android17公开源码保留CCodec/Codec2与ACodec/OMX两条路径，设备实际使用哪条按codec owner/名称与日志确认。手头材料只有 ACodec 的 port 配置时，我们看到的只是两条路径之一，离完整的视频 decoder 路径还差另一半。
 
 
 ### CCodec 的输出 Surface 路径
 
 `CCodecBufferChannel::renderOutputBuffer()` 从 `MediaCodecBuffer` 取得 `C2Buffer`，读取 rotation、dataspace、HDR metadata 等信息，构造 `QueueBufferInput`，再调用 component 的 `queueToOutputSurface()`。
 
-这条路径还请求 frame timestamp 回传。输出 Surface 直连显示时，CCodec 可以跟踪 released frame；输出是效果管线的中间 Surface 时，frame-rendered callback 可能在 buffer queue 到该中间面时就触发。此时 callback 更不能解释为 panel present。
+这条路径还请求 frame timestamp 回传。输出 Surface 直连显示时，CCodec 可以跟踪 released frame；输出是效果管线的中间 Surface 时，frame-rendered callback 可能在 buffer queue 到该中间面时就触发。此时的 callback 离 panel present 还隔着显示链路的最后几段。
 
 
-### ACodec 只在命中 OMX 时分析
+### 命中 OMX 时的 ACodec 分析
 
 ACodec 使用 OMX port、buffer ownership 与 native window 协调输出。排查 OMX codec 时可以看：
 
@@ -463,17 +471,17 @@ ACodec 使用 OMX port、buffer ownership 与 native window 协调输出。排�
 
 命中 `c2.vendor.*` 时，应改看 C2Work、CCodecBufferChannel、component store 和 graphic block。两条路径的 Java `MediaCodec` API 相同，native trace 读法不同。
 
-### 不使用 Block Model 推导默认 Media3 路径
+### Block Model 与默认 Media3 路径
 
-Android 17 的 `MediaCodec` 支持 `BUFFER_MODE_BLOCK`、`QueueRequest` 与 block model flag；这是 framework Java API 的能力边界。Media3 1.11.0 的普通 `MediaCodecVideoRenderer` 默认 adapter 并未把视频输入改成这条通用 block model API。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.2；已验证: Media3 1.11.0 `AsynchronousMediaCodecAdapter.java`]
+Android 17 的 `MediaCodec` 支持 `BUFFER_MODE_BLOCK`、`QueueRequest` 与 block model flag；这是 framework Java API 自身的能力。Media3 1.11.0 的普通 `MediaCodecVideoRenderer` 默认 adapter 并未把视频输入改成这条通用 block model API。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.2；已验证: Media3 1.11.0 `AsynchronousMediaCodecAdapter.java`]
 
-异步 adapter 仍通过 `getInputBuffer(index)`、`queueInputBuffer()` 或 `queueSecureInputBuffer()` 工作。看到 AOSP 存在 block model 分支，不能据此宣称 Media3 默认获得“Block Model 零拷贝”。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.2；已验证: Media3 1.11.0 `AsynchronousMediaCodecAdapter.java`]
+异步 adapter 仍通过 `getInputBuffer(index)`、`queueInputBuffer()` 或 `queueSecureInputBuffer()` 工作。看到 AOSP 存在 block model 分支，还要核对 Media3 的 adapter 配置，才能谈“Block Model 零拷贝”。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md §1.2；已验证: Media3 1.11.0 `AsynchronousMediaCodecAdapter.java`]
 
 ## 九、视频效果管线
 
 ### 启用效果后多了一次应用侧处理
 
-调用 `ExoPlayer.setVideoEffects()` 后，Media3 通过 `PlaybackVideoGraphWrapper`、`VideoSink` 与 `VideoFrameProcessor` 建立处理图；应用还要包含对应的 `media3-effect` 依赖，否则 1.11.0 会在设置 effects 时抛出 `IllegalStateException`。典型拓扑为：
+我们先看启用后的拓扑：调用 `ExoPlayer.setVideoEffects()` 后，Media3 通过 `PlaybackVideoGraphWrapper`、`VideoSink` 与 `VideoFrameProcessor` 建立处理图；应用还要包含对应的 `media3-effect` 依赖，否则 1.11.0 会在设置 effects 时抛出 `IllegalStateException`。典型拓扑为：
 
 `decoder → input Surface → VideoGraph / GL processing → display Surface → SurfaceFlinger`
 
@@ -497,9 +505,9 @@ Android 17 的 `MediaCodec` 支持 `BUFFER_MODE_BLOCK`、`QueueRequest` 与 bloc
 
 Media3 1.11.0 的 `PlaybackVideoGraphWrapper` 默认把预计晚 15 ms 以上的输入帧作为可丢候选。这个值是效果输入侧门槛，与普通 renderer 的输出晚 30 ms 门槛属于两个位置。
 
-其实际输入决策还会先预测 early time 并校验对应输入路径；15ms是可配置策略值，并不表示所有效果帧只要晚15ms就必定被丢弃，也不等于显示截止时间。
+其实际输入决策还会先预测 early time 并校验对应输入路径；15ms是可配置策略值，效果帧的实际去留由完整决策给出，显示截止时间另有定义。
 
-1.11.0 还修复了效果管线在 flush 时未清除 redraw 标记（待重绘状态），可能导致 seek 后播放器停住的问题。升级后仍出现同类现象时，要用 input/output Surface 与 GPU 时间线确认是否是新的等待点，不能只按旧缺陷归因。
+1.11.0 还修复了效果管线在 flush 时未清除 redraw 标记（待重绘状态），可能导致 seek 后播放器停住的问题。升级后仍出现同类现象时，用 input/output Surface 与 GPU 时间线确认是否是新的等待点；旧缺陷清单只能排除已知问题。
 
 效果很重时，帧可能在以下任一点迟到：
 
@@ -509,9 +517,9 @@ Media3 1.11.0 的 `PlaybackVideoGraphWrapper` 默认把预计晚 15 ms 以上的
 4. output Surface queue 晚；
 5. SurfaceFlinger/HWC 没赶上目标 present。
 
-只看 renderer dropped counter，无法定位 shader 或输出 Surface 的等待。
+只看 renderer dropped counter，定位 shader 或输出 Surface 的等待还不够，要沿上面这几个迟到点查。
 
-### ANGLE 只在命中时进入归因
+### ANGLE 命中的确认
 
 Media3 的效果组件常以 OpenGL ES 为接口。设备可能使用 vendor GLES driver，也可能通过 ANGLE 落到 Vulkan。是否命中 ANGLE，应从同一播放器进程的 `GL_RENDERER` 与已加载动态库确认。
 
@@ -522,7 +530,7 @@ Media3 的效果组件常以 OpenGL ES 为接口。设备可能使用 vendor GLE
 - EGL native fence 导入 Vulkan semaphore；
 - ANGLE GPU thread 上的 submit 与 wait。
 
-未命中 ANGLE 时，不应把 TranslatorSPIRV、Vulkan semaphore 或 ANGLE shader 缓存列为原因。驱动切换也要以进程冷启动为实验单位，已有 EGL 环境不会在播放中热切换后端。
+未命中 ANGLE 时，TranslatorSPIRV、Vulkan semaphore、ANGLE shader 缓存这些 ANGLE 侧原因可以先从列表里划掉。驱动切换也要以进程冷启动为实验单位，已有 EGL 环境不会在播放中热切换后端。
 
 ### 效果预热要测总成本
 
@@ -540,7 +548,7 @@ Media3 的效果组件常以 OpenGL ES 为接口。设备可能使用 vendor GLE
 
 ### HDR 是一组连续约束
 
-HDR 播放至少涉及：
+我们先把 HDR 播放涉及的环节排一遍，至少有：
 
 - 容器与 bitstream 的 color metadata；
 - decoder 对 MIME、profile、bit depth 的支持；
@@ -550,7 +558,7 @@ HDR 播放至少涉及：
 - HWC、显示器与当前 display mode；
 - UI 与视频混合时的 client/device composition 选择。
 
-Media3 1.11.0 能在支持的 codec 上通过 `PARAMETER_KEY_HDR10_PLUS_INFO` 传递 HDR10+ out-of-band metadata（带外元数据）。传递本身不保证当前帧获得 HWC overlay，也不保证外接显示链路保持动态元数据。
+Media3 1.11.0 能在支持的 codec 上通过 `PARAMETER_KEY_HDR10_PLUS_INFO` 传递 HDR10+ out-of-band metadata（带外元数据）。传递只解决元数据到位；当前帧能否拿到 HWC overlay、外接显示链路能否保持动态元数据，要再看合成与显示侧。
 
 ### secure decoder 与 secure Surface 要成组验证
 
@@ -562,9 +570,9 @@ DRM 内容可能要求 secure decoder、protected graphic buffer、secure Surfac
 - secure HDR + tunnel；
 - secure playback + screenshot、casting 或外接显示。
 
-遇到黑屏时要记录 DRM security level、codec 名、`secure` 后缀、Surface secure 状态、HDCP 与显示路由。只看到 decoder 初始化成功，证据仍不够。
+遇到黑屏时要记录 DRM security level、codec 名、`secure` 后缀、Surface secure 状态、HDCP 与显示路由；decoder 初始化成功只是起点，这些字段补齐后证据链才完整。
 
-### SurfaceView 也不保证 HDR overlay
+### SurfaceView 与 HDR overlay
 
 SurfaceView 让视频保持独立 layer，HWC 每个 display frame 仍会重新决定 composition type。圆角、alpha、旋转、颜色转换、其他 protected layer、plane 资源与显示带宽都可能使视频回到 CLIENT composition，或触发专用 vendor 路径。
 
@@ -573,7 +581,7 @@ SurfaceView 让视频保持独立 layer，HWC 每个 display frame 仍会重新�
 
 ### tunnel 是另一种帧交付模型
 
-普通播放由应用侧 renderer 按帧调用 `releaseOutputBuffer(timestampNs)`。tunneled playback（隧道播放，简称 tunnel）把视频 decoder 与 AudioTrack 的硬件同步关系交给 codec/HAL，并通过 sideband handle（旁带句柄）连接视频 layer；这条旁带路径不依赖应用逐帧提交普通图像 buffer。
+普通播放由应用侧 renderer 按帧调用 `releaseOutputBuffer(timestampNs)`。tunneled playback（隧道播放，简称 tunnel）把视频 decoder 与 AudioTrack 的硬件同步关系交给 codec/HAL，并通过 sideband handle（旁带句柄）连接视频 layer；这条旁带路径上，应用无需逐帧提交普通图像 buffer。
 
 典型条件包括：
 
@@ -602,14 +610,14 @@ val player = ExoPlayer.Builder(context)
 
 ### sideband 仍由 SurfaceFlinger 管理
 
-tunnel 没有绕开 SurfaceFlinger。Surface 的 sideband stream（旁带流）仍对应一个 layer，SurfaceFlinger 管理其几何、层级和合成；HWC 按硬件 A/V sync（音视频硬件同步）获取视频内容。
+tunnel 仍要经过 SurfaceFlinger。Surface 的 sideband stream（旁带流）仍对应一个 layer，SurfaceFlinger 管理其几何、层级和合成；HWC 按硬件 A/V sync（音视频硬件同步）获取视频内容。
 
 <!-- gracker-diagram: a248-25-tunnel-sideband-topology -->
 ![tunnel经sideband连接系统图层](../../assets/diagrams/ch22/a248-25-tunnel-sideband-topology.png)
 
 图：tunnel不依赖应用逐帧普通图像queue作为主证据，但仍受SF图层管理。
 
-因此，Perfetto 中缺少普通逐帧 BufferQueue transaction 可以是 tunnel 的正常表现。黑屏调查要改看：
+因此，Perfetto 中缺少普通逐帧 BufferQueue transaction，在 tunnel 下可能是正常表现。黑屏调查要改看：
 
 - audio session 与 AudioTrack 状态；
 - `feature-tunneled-playback` 配置；
@@ -618,11 +626,11 @@ tunnel 没有绕开 SurfaceFlinger。Surface 的 sideband stream（旁带流）�
 - tunnel peek 与 first-tunnel-frame-ready；
 - vendor codec/HWC 日志。
 
-### tunnel callback 也不是 panel present
+### tunnel callback 的语义
 
 `OnFirstTunnelFrameReadyListener` 表示第一帧已解码并达到 tunnel render 条件。`OnFrameRenderedListener` 表示 codec/HAL 上报 frame rendered。暂停态 tunnel peek、HWC 提交和面板扫描仍可能在它们之后。
 
-这是框架codec事件语义；不能据系统提供该listener就断言默认Media3已为应用暴露并注册它。1.11.0的tunnel renderer使用自己的frame-rendered listener推进状态，诊断需核对实际注册者与事件来源。
+这是框架codec事件语义；系统提供该listener，默认Media3是否为应用暴露并注册它还要核对。1.11.0的tunnel renderer使用自己的frame-rendered listener推进状态，诊断需核对实际注册者与事件来源。
 
 
 产品首帧指标应把“播放器首帧事件”与“用户可见首帧”命名为两个指标，避免把 callback 时间当作显示完成。
@@ -637,7 +645,7 @@ API 30 及以上，`VideoFrameReleaseHelper` 根据 format frame rate 或帧时�
 
 Media3 1.11.0 的默认 `videoChangeFrameRateStrategy` 是 `VIDEO_CHANGE_FRAME_RATE_STRATEGY_ONLY_IF_SEAMLESS`。传入非零帧率时使用 `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE`；停止渲染或 Surface 更换时会清除旧声明。
 
-TextureView路径声明作用于输入Surface时，视频不会因此自动成为独立SF视频layer；实际显示投票还需核查宿主窗口/TextureView向系统传播的路径。倍速变化、估计器收敛和Surface变更都需确认旧声明已清除或更新。
+TextureView路径声明作用于输入Surface时，独立SF视频layer并不会因此自动出现；实际显示投票还需核查宿主窗口/TextureView向系统传播的路径。倍速变化、估计器收敛和Surface变更都需确认旧声明已清除或更新。
 
 这只是给系统的 mode selection 提示。系统还会综合：
 
@@ -648,7 +656,7 @@ TextureView路径声明作用于输入Surface时，视频不会因此自动成�
 - 触控和动画的高刷新率需求；
 - 外接显示支持的模式。
 
-### 出帧节奏与刷新率不要求相等
+### 出帧节奏与刷新率的配合
 
 24 fps 视频可以在 48、72、96 或 120 Hz 上以整数次数重复显示，也可能在 60 Hz 上采用不均匀的重复节奏。SurfaceView 的独立 layer 允许视频 buffer 低频更新，宿主控制条继续以更高刷新率绘制。
 
@@ -666,7 +674,7 @@ TextureView 的视频内容进入宿主应用窗口后，视频更新要赶上�
 - decoder output 与 HWC present；
 - thermal throttling。
 
-显示刷新率提高不能补偿 decoder 在目标倍速下处理不足。
+decoder 在目标倍速下处理不足时，显示刷新率提高也补不上这块短板。
 
 刷新率选择的系统细节见 [Android 17 DisplayMode 与刷新率选择](../../part1-fundamentals/ch02-rendering/02-framerate-refresh-display-mode.md)。
 
@@ -682,18 +690,20 @@ TextureView 的视频内容进入宿主应用窗口后，视频更新要赶上�
 | renderer release | first frame 调用 render=true 或 timestamp release |
 | display present | layer latch、HWC present 或设备可见性证据 |
 
-Media3 的 `onRenderedFirstFrame()` 普通直接输出在 renderer 释放首帧后上报；tunnel/effects等由各自事件路径推进。1.11.0 源码中的 event dispatcher 仍留有 TODO：回调时间使用派发时的 `elapsedRealtime()`，不是 display present time。 重新设置同一个非空输出时，`setOutput()` 还能重新通知已报告的first-frame事件；因此事件次数不等于新的物理首帧次数，指标要按会话、导航/内容、Surface身份和状态去重。
+Media3 的 `onRenderedFirstFrame()` 普通直接输出在 renderer 释放首帧后上报；tunnel/effects等由各自事件路径推进。1.11.0 源码中的 event dispatcher 仍留有 TODO：回调时间使用派发时的 `elapsedRealtime()`，对应的是派发时刻，display present time 要另取显示侧。
+
+重新设置同一个非空输出时，`setOutput()` 还能重新通知已报告的first-frame事件；事件次数与新的物理首帧次数是两个量，指标要按会话、导航/内容、Surface身份和状态去重。
 
 
-### joining 的 5 秒不是首帧超时
+### joining 的 5 秒窗口
 
 `DefaultRenderersFactory.DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS` 为 5000 ms。joining 指新视频流接入正在进行的播放；在这段时间里，renderer 可以短暂报告 ready，避免新视频尚未出帧时播放器进入中间 buffering 状态。
 
-这个窗口用于状态连续性，不表示系统允许首帧慢 5 秒，也不表示 5 秒内画面已经可见。首帧 SLA 应使用独立计时与报警。
+这个窗口服务于状态连续性；首帧 SLA 另用独立计时与报警，5 秒内画面是否可见以显示侧为准。
 
 ### seek 后要识别 decode-only 与追帧
 
-seek 目标常落在关键帧之后。decoder 需要从前一个同步帧开始解码，目标前的 output 被标记为 decode-only 或 skip。若播放位置已经落后很多，renderer 还可能丢到后续关键帧并 flush codec。
+我们 seek 时，目标常落在关键帧之后。decoder 需要从前一个同步帧开始解码，目标前的 output 被标记为 decode-only 或 skip。若播放位置已经落后很多，renderer 还可能丢到后续关键帧并 flush codec。
 
 seek 性能需要记录：
 
@@ -706,10 +716,10 @@ seek 性能需要记录：
 - seek 后 renderer first frame；
 - seek 后 display present。
 
-只统计 `seekTo()` 到 player ready，无法判断用户看到旧画面的时长。
+只统计 `seekTo()` 到 player ready，看不到用户盯着旧画面的时长；这段时长要用列表最后两项补齐：seek 后 renderer first frame 与 seek 后 display present。
 
 
-### 黑屏与旧帧是两种策略
+### 黑屏与旧帧的策略取舍
 
 `PlayerView` 的 shutter、`keep_content_on_player_reset`、旧 Surface 的 last buffer 和新 Surface 首帧共同决定转场画面。保留旧帧可以减少黑屏，也可能在内容已经切换后显示过期画面。
 
@@ -723,7 +733,7 @@ seek 性能需要记录：
 
 ## 十四、播放器侧观测
 
-### AnalyticsListener 的边界
+### AnalyticsListener 能采到什么
 
 这段监听代码用于采集 renderer 级事件，并保留 processing offset（帧相对目标时刻的处理偏移）的微秒总和与帧数，供加权聚合；`videoLog` 是业务接口。
 
@@ -785,9 +795,9 @@ player.addAnalyticsListener(object : AnalyticsListener {
 })
 ```
 
-这些回调应带同一个 playback session id，并与 `SystemClock.elapsedRealtimeNanos()` 或 Perfetto 可对齐的单调时间配对。日志里的 `onRenderedFirstFrame` 要命名为 renderer first frame，不要命名为 display first frame。
+这些回调应带同一个 playback session id，并与 `SystemClock.elapsedRealtimeNanos()` 或 Perfetto 可对齐的单调时间配对。日志里的 `onRenderedFirstFrame` 命名为 renderer first frame；display first frame 这个名字留给显示侧指标。
 
-PTS是媒体时间（微秒）；计划release使用`nanoTime()`时基（纳秒）；事件中的`renderTimeMs`使用`elapsedRealtime()`（毫秒）。这些时基和休眠语义不同，不能只乘1000就直接相减；与Perfetto关联需记录时基映射/同步点。offset正值表示提前、负值表示迟到；平均值应为各批total之和除以各批count之和，平均值本身也不能恢复逐帧P95。监听回调要轻量有界，owner结束时移除listener。
+PTS是媒体时间（微秒）；计划release使用`nanoTime()`时基（纳秒）；事件中的`renderTimeMs`使用`elapsedRealtime()`（毫秒）。这些时基和休眠语义不同，直接乘1000相减会算错；与Perfetto关联需记录时基映射/同步点。offset正值表示提前、负值表示迟到；平均值应为各批total之和除以各批count之和，逐帧P95要回原始批次数据取。监听回调要轻量有界，owner结束时移除listener。
 
 
 ### DecoderCounters 怎么读
@@ -804,7 +814,7 @@ PTS是媒体时间（微秒）；计划release使用`nanoTime()`时基（纳秒�
 - `droppedToKeyframeCount`：严重追帧次数；
 - `totalVideoFrameProcessingOffsetUs` / count：处理提前量。
 
-这些 counter 为调试用途，更新线程写后与读取线程读前都按契约调用 `ensureUpdated()`；其同步屏障提供可见性，不会冻结所有字段成事务快照。线上指标更适合通过 AnalyticsListener 聚合，避免任意线程持续轮询可变对象。 `droppedBufferCount`已包含`droppedInputBufferCount`，不能把两者再次相加当总掉帧。
+这些 counter 为调试用途，更新线程写后与读取线程读前都按契约调用 `ensureUpdated()`；其同步屏障提供可见性，各字段各自更新，读到的并不是一次统一的事务快照。线上指标更适合通过 AnalyticsListener 聚合，避免任意线程持续轮询可变对象。 `droppedBufferCount`已包含`droppedInputBufferCount`，总掉帧直接读前者。
 
 
 ### 每个 session 至少记录什么
@@ -827,7 +837,7 @@ PTS是媒体时间（微秒）；计划release使用`nanoTime()`时基（纳秒�
 
 ### 采集目标
 
-一次可复现采样建议覆盖：
+我们做一次可复现采样时，trace 建议覆盖：
 
 - `sched`、CPU frequency、idle；
 - app 主线程、playback thread、codec callback/queueing thread；
@@ -842,9 +852,9 @@ PTS是媒体时间（微秒）；计划release使用`nanoTime()`时基（纳秒�
 
 ### 普通 SurfaceView 的追帧顺序
 
-按同一媒体 PTS 查：
+我们按同一媒体 PTS 串起整条链路查：
 
-PTS、codec output index、Surface frame number与SF frame token不是同一ID；实际关联需应用标记、元数据或平台可用的映射，不能只凭时间接近就认定同一帧。fence signal与latch可因latch-unsignaled策略重叠，以下是取证项目而非所有设备固定串行时序。
+PTS、codec output index、Surface frame number与SF frame token是四套ID；实际关联靠应用标记、元数据或平台可用的映射，时间接近只算线索。fence signal与latch可因latch-unsignaled策略重叠，以下是取证项目，串行时序以设备实际表现为准。
 
 1. input sample 何时进入 decoder；
 2. output 何时可处理；
@@ -880,7 +890,7 @@ PTS、codec output index、Surface frame number与SF frame token不是同一ID�
 - output acquire fence；
 - SF latch → present。
 
-ANGLE 只在 同进程 GL_RENDERER / 后端库指纹证明命中时加入 GPU backend 分析。
+ANGLE 进入 GPU backend 分析的前提，是同进程 GL_RENDERER / 后端库指纹证明命中。
 
 ### tunnel 要换证据
 
@@ -893,7 +903,7 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 - HWC/vendor tunnel track；
 - seek、pause、peek、route change。
 
-缺少 vendor trace 时，应把结论标为“framework 已完成配置，设备侧逐帧时序不可见”，不能补写一个没有证据的 display 时间。
+缺少 vendor trace 时，结论标为“framework 已完成配置，设备侧逐帧时序不可见”即可，display 时间等证据到位再补。
 
 
 ## 十六、常见症状的排查路线
@@ -912,11 +922,11 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 8. effects 是否发生 shader cold compile；
 9. tunnel 是否停在 first-frame-ready 或 peek。
 
-首帧问题不要仅用 player `STATE_READY` 分类。
+首帧问题仅凭 player `STATE_READY` 分类会漏掉瓶颈段。
 
 ### 声音继续、画面停住
 
-先判断画面停住时 renderer 是否持续 release：
+我们先判断画面停住时 renderer 是否持续 release：
 
 
 - renderer 不再拿到 output：查 decoder、input starvation、resource error；
@@ -954,7 +964,7 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 
 ### HDR 或 DRM 设备分化
 
-按组合建表，不能只按机型：
+按组合建表，机型只是其中一个维度：
 
 - codec + secure；
 - HDR format + bit depth；
@@ -1046,7 +1056,7 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 
 ## 全文小结
 
-Media3 1.11.0 在 API 31+ 默认采用异步 codec adapter，并由 `MediaCodecVideoRenderer` 根据媒体时钟和 VSync 安排输出。这个异步 adapter、BufferQueue asyncMode 与 EGL swap interval 是三套机制，诊断时必须分开；1.11.0 默认启用的动态调度又是播放器工作循环的第四个维度。
+回到全文的线索：Media3 1.11.0 在 API 31+ 默认采用异步 codec adapter，并由 `MediaCodecVideoRenderer` 根据媒体时钟和 VSync 安排输出。这个异步 adapter、BufferQueue asyncMode 与 EGL swap interval 是三套机制，诊断时分开记录；1.11.0 默认启用的动态调度又是播放器工作循环的第四个维度。
 
 普通帧从 `releaseOutputBuffer(timestampNs)` 到可见画面，还要经过 Surface queue、fence、SurfaceFlinger、HWC 与 display present。renderer first-frame 和 dropped-frame 事件只覆盖播放器侧边界；端到端结论需要平台 trace 与显示证据。
 
