@@ -324,10 +324,6 @@ FGS 能否运行取决于五项检查：调用时应用是否具备从后台启�
 
 `camera`、`microphone`、`location` 等类型还会叠加 while-in-use 权限检查。“允许从后台启动 FGS”的豁免，不自动给予这些资源的访问资格；未满足 while-in-use 检查或其单独豁免时仍会失败。系统组件启动、用户通知或 widget 交互等路径有各自的例外，必须分别核对，不能一概写成后台永远无法启动。
 
-<!-- gracker-diagram: ch05-03-foreground-service-independent-gates -->
-![FGS 启动、类型、权限和生命周期需要分别通过](../../assets/diagrams/ch05/ch05-03-foreground-service-independent-gates.png)
-
-图：FGS 要分别满足启动来源、声明类型、权限、while-in-use 资格及通知和时限要求。后台启动豁免与敏感资源豁免不是同一组规则；错误应按异常和调用时状态定位。图按排查顺序排列，不承诺 Framework 内部始终按同一顺序执行检查。
 
 下面以 `dataSync` 服务为例，展示 manifest 中至少需要声明的权限与服务类型：
 
@@ -438,10 +434,6 @@ API 37 新增接收 `OnAlarmListener` 与 `Executor` 的 `setExactAndAllowWhileI
 5. 需要 JobScheduler 的系统级能力或更细的调试接口时，直接使用 JobScheduler
 6. 任务需要持续运行，并且必须让用户清楚知道其内容时，使用 FGS
 
-<!-- gracker-diagram: ch05-03-background-work-api-selection -->
-![先按业务语义选择 API，再核对对应资格](../../assets/diagrams/ch05/ch05-03-background-work-api-selection.png)
-
-图：页面内短计算用进程内并发；可延期且需恢复的工作用 WorkManager；用户刚触发的短急任务可评估 expedited；用户发起的长网络传输可评估 UIDT。持续可感知工作与精确用户提醒各有 FGS、AlarmManager 的资格要求，不能靠叠加所有 API 获得更可靠的调度。
 
 以上规则作用于任务调度。系统还会单独管理缓存进程：应用进入 cached（缓存） 状态后，`CachedAppOptimizer` 决定何时暂停进程执行；缓存进程冻结与 Doze、Standby bucket 是并行生效的不同机制。
 
@@ -528,10 +520,6 @@ API 36 的 `RemoteCallbackList.Builder` 进一步提供被调用端冻结策略�
 
 状态同步通常选择 `ENQUEUE_MOST_RECENT`，可以重新生成的提示事件可以选择 `DROP`。需要暂存有限事件序列时可选择 `ENQUEUE_ALL` 并设置队列上限；r1 队列满时会丢弃最旧回调，所以它不保证完整历史。必须完整保留的业务事件应另行持久化，解冻后再按进度恢复，避免一次交付大量过期回调。
 
-<!-- gracker-diagram: ch05-03-binder-frozen-returns-and-callback-policies -->
-![拒绝同步事务、暂存异步事务，与冻结通知是三种语义](../../assets/diagrams/ch05/ch05-03-binder-frozen-returns-and-callback-policies.png)
-
-图：BR_FROZEN_REPLY 表示同步事务被 frozen 目标拒绝，BR_TRANSACTION_PENDING_FROZEN 表示异步事务已排队，BR_FROZEN_BINDER 是状态通知。API 36 可按远端冻结状态管理回调；RemoteCallbackList 的 DROP、MOST_RECENT 与 ALL 各有取舍，ALL 达到上限会丢最旧项，完整业务历史须另行持久化。
 
 ### 后台执行对前台性能的影响
 
@@ -553,10 +541,6 @@ Perfetto 里后台线程与 RenderThread 同时活跃，只说明两者在并发
 
 排查时同时观察后台负载开始时间、thermal status / 温区、CPU / GPU 频率上限、冷却设备状态和帧耗时。频率下降也可能来自低利用率或省电策略；温度上升与掉帧同时出现时，仍要用只改一个条件的对照实验确认因果。
 
-<!-- gracker-diagram: ch05-03-background-work-front-frame-contention -->
-![后台工作可通过 CPU、内存与热限制影响前台](../../assets/diagrams/ch05/ch05-03-background-work-front-frame-contention.png)
-
-图：后台工作可能争用 CPU，也可能通过回收与 I/O 或整机热限制拉长前台路径。分别核对 Runnable 等待与切换、PSI 与回收、温度与上限变化，再做单变量对照。只看到后台线程、较大 PSS 或升温与掉帧同时出现，都还不足以确定具体因果。
 
 ### 与其他机制的关系
 
@@ -701,10 +685,6 @@ Controller 家族包括 `ConnectivityController`、`BatteryController`、`IdleCo
 
 AlarmManager 的 alarm 默认不会跨重启保留，应用通常在收到设备启动完成广播 `BOOT_COMPLETED` 后重新登记。两种 API 的差异在于调度记录能否由系统恢复，与某个应用组件在重启后是否存在无关。
 
-<!-- gracker-diagram: ch05-03-jobstore-persistence-and-lifecycle-boundaries -->
-![跨重启保留的是调度记录，业务状态还需自行持久化](../../assets/diagrams/ch05/ch05-03-jobstore-persistence-and-lifecycle-boundaries.png)
-
-图：setPersisted(true) 需要 RECEIVE_BOOT_COMPLETED，r1 默认在 /data/system/job/ 下按 UID 保存 jobs_<uid>.xml；配置关闭分文件后使用 jobs.xml。非持久化 Job 与普通 Alarm 不靠这份记录跨重启恢复。持久化不取消 force-stop、卸载或清除数据的影响，业务幂等和进度仍需应用维护。
 
 #### JobService 生命周期与系统 WakeLock
 
@@ -861,10 +841,6 @@ Android 14（API 34）加入 `setUserInitiated(true)`，简称 UIDT。它适用�
 
 UIDT 不使用普通 job 配额，在约束满足且系统状态允许时会尽快开始。用户从系统提供的入口停止任务后，应用重新提交同一项传输前必须先提示用户。自动同步、遥测上传等缺少明确用户动作的任务不属于 UIDT。
 
-<!-- gracker-diagram: ch05-03-user-initiated-transfer-admission-and-stop -->
-![UIDT 用于明确用户传输，通知与停止语义也是契约](../../assets/diagrams/ch05/ch05-03-user-initiated-transfer-admission-and-stop.png)
-
-图：UIDT 把用户发起的网络传输与自动后台维护区分开。提交时检查权限、可见或允许启动 Activity 的状态及网络条件，运行时提供进度通知；系统健康仍可影响开始机会。用户从系统入口停止后，不应自动重新提交同一传输，业务应保存可恢复进度并等待新的用户意图。
 
 ### WorkManager 的架构与性能边界
 
@@ -1187,10 +1163,6 @@ App Hibernation 面向“安装后长期没有被使用”的应用：把包置�
 
 Hibernation 与 Standby Bucket 可以同时存在，AOSP 也没有“必须先进入 RARE 桶才能休眠”的规定；PermissionController 根据 usage stats（应用使用统计）、安装时间、共享 UID、跨 profile 使用情况和豁免规则，独立筛选候选包。
 
-<!-- gracker-diagram: ch05-03-standby-hibernation-archiving-boundaries -->
-![分桶调整机会，休眠改变状态，归档还会移除 APK](../../assets/diagrams/ch05/ch05-03-standby-hibernation-archiving-boundaries.png)
-
-图：Standby bucket 主要调整后台资源预算；Hibernation 对长期未使用应用执行 Force stop、缓存回收和可选编译产物清理，并配合权限重置；Archiving 则移除 APK 与缓存、保留用户数据，由安装器取回 APK 后恢复。它们不是一条必须依次经过的状态链，休眠不要求先进入 RARE 桶。
 
 ### 职责分层
 
@@ -1400,10 +1372,6 @@ Hibernation 后没有原进程可以复用，所以再次打开至少会经历�
 
 `wasForceStopped()` 只能证明此次启动前包处于 force-stopped 状态；用户手动 Force stop、Hibernation，还是其他让包进入 stopped 状态的路径，要靠别的证据区分。
 
-<!-- gracker-diagram: ch05-03-hibernation-cold-start-controlled-comparison -->
-![恢复变慢要用三组对照分离缓存与编译产物成本](../../assets/diagrams/ch05/ch05-03-hibernation-cold-start-controlled-comparison.png)
-
-图：普通冷启动保留缓存与编译状态，用户级休眠组增加 Force stop 与用户缓存回收，全局组再观察 dexopt 产物清理的增量。每组确认异步动作完成，保持构建、输入、温度、网络和编译模式一致，重复测 TTID、TTFD 与 Trace。wasForceStopped、cache 为空或单次变慢都不能独立证明休眠归因。
 
 ### 观测与复现实验
 
@@ -1460,10 +1428,6 @@ cleanup
 
 这条路径会同时经过 usage、豁免、进程重要性、target SDK 和权限自动重置等策略，因此更接近用户设备上的自动休眠。Google 系统镜像若使用 `com.google.android.permissioncontroller`，需要替换命令中的包名。片段用 `delete` 处理原值为 `null` 的 DeviceConfig key，并在异常退出时恢复 hibernation 开关、unused threshold 和检查周期，避免把测试配置遗留在设备上。
 
-<!-- gracker-diagram: ch05-03-hibernation-direct-state-versus-full-policy-test -->
-![直接设置状态与运行完整策略，验证范围不同](../../assets/diagrams/ch05/ch05-03-hibernation-direct-state-versus-full-policy-test.png)
-
-图：cmd app_hibernation set-state 直接改变服务状态并安排动作，不经过完整候选筛选。缩短阈值并运行 PermissionController Job 才覆盖使用、豁免、target、重要性与权限重置。测试后恢复原配置，再分别读取用户级、全局级、stopped、缓存与权限变化；只有一个布尔状态还不能证明所有动作都完成。
 
 #### dumpsys 与 trace
 
@@ -1531,10 +1495,6 @@ future.addListener(
 
 若后台核心能力确需豁免，可先向用户解释影响，再用 `IntentCompat.createManageUnusedAppRestrictionsIntent()` 打开系统设置。不要把设置跳转放在无上下文的首次启动弹窗中。
 
-<!-- gracker-diagram: ch05-03-recover-work-idempotently-and-query-capability -->
-![后台计划从业务状态重建，功能开关查询不等于当前已休眠](../../assets/diagrams/ch05/ch05-03-recover-work-idempotently-and-query-capability.png)
-
-图：初始化和 boot receiver 读取持久业务状态，核对预期 Work、Job 与 Alarm，缺失才补建，并用稳定业务 ID 保证重试幂等。敏感权限在功能入口检查。getUnusedAppRestrictionsStatus 查询功能是否适用或启用，不能判断当前已经 hibernated；确有核心后台需求时，再解释并由用户在设置中选择。
 
 #### 间接特征的归因局限
 
