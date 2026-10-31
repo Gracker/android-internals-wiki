@@ -45152,9 +45152,152 @@
       "before_count": 14,
       "before_all_images": 14,
       "sha256_before": "22d548c604c81d4c384cc1690249fe52bb5e7219b7d38216ffc95c9e813e2fc0",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 4,
+      "decisions": [
+        {
+          "original_id": "ch16-08-01-evaluation-configuration",
+          "title": "分数由整套评测配置共同产生",
+          "decision": "remove",
+          "reason": "四框只是评测配置的泛化摘要，后文隔离执行与评分流程已给出具体链路。",
+          "original_line": 49,
+          "heading": "## Android Bench 测量什么"
+        },
+        {
+          "original_id": "ch16-08-02-version-coordinates",
+          "title": "方法代次、数据包与归档源码分开",
+          "decision": "remove",
+          "reason": "三列逐项复述紧邻版本对照表；原表保留官方2.0、Harbor数据包与归档源码的精确不同坐标。",
+          "original_line": 66,
+          "heading": "## 2.0 和 1.0 不能混用"
+        },
+        {
+          "original_id": "ch16-08-03-oracle-controls",
+          "title": "有效任务先过负对照与阳性对照",
+          "decision": "keep",
+          "reason": "保留固定环境下base负对照失败、oracle阳性对照通过和日志/抖动覆盖再验的完整门槛顺序。",
+          "original_line": 114,
+          "heading": "## 公开 1.0 数据集从哪里来"
+        },
+        {
+          "original_id": "ch16-08-04-isolated-execution",
+          "title": "独立运行与最终计分分母",
+          "decision": "keep",
+          "reason": "保留预排task×run到隔离Docker/KVM AVD、结构化执行、完成/失败纳入的实际执行链，计划150不是有效分母。",
+          "original_line": 125,
+          "heading": "## 2.0 怎样执行和验证"
+        },
+        {
+          "original_id": "ch16-08-05-multifaceted-verification",
+          "title": "确定性断言与模型判断分工",
+          "decision": "remove",
+          "reason": "确定性、多模态、约束三列重复紧邻七项验证器清单和可达性/mock限制，无实际脚本/证据关联实例。",
+          "original_line": 144,
+          "heading": "## 2.0 怎样执行和验证"
+        },
+        {
+          "original_id": "ch16-08-06-completion-and-pass",
+          "title": "连续完成度与完整通过频率",
+          "decision": "keep",
+          "reason": "保留任务权重归一化到BaseScore乘惩罚、单次完成度和另行汇总完整通过频率的计算链，防止把0.4当40%通过。",
+          "original_line": 165,
+          "heading": "## 2.0 分数怎样计算"
+        },
+        {
+          "original_id": "ch16-08-07-task-level-pass-at-one",
+          "title": "pass@1保留任务与重复运行层级",
+          "decision": "remove",
+          "reason": "每任务c_i/n_i及任务层聚合已由紧邻公式段落完整表达，重复层级在后续保留的分层bootstrap图中再次明确。",
+          "original_line": 176,
+          "heading": "## 1.0 的 pass@1 和状态枚举"
+        },
+        {
+          "original_id": "ch16-08-08-hierarchical-bootstrap",
+          "title": "分层bootstrap如何保留重复结构",
+          "decision": "keep",
+          "reason": "保留先抽任务再在任务内抽运行、计算均值分布和取区间的嵌套重采样顺序，区别平铺所有尝试。",
+          "original_line": 183,
+          "heading": "## 1.0 的 pass@1 和状态枚举"
+        },
+        {
+          "original_id": "ch16-08-09-score-status-policy",
+          "title": "分数、诊断状态与排除政策分开",
+          "decision": "remove",
+          "reason": "score、Status、预设纳入政策三列重复详细状态清单和PASSED_FLAKY/预算前缀说明，原文限制更完整。",
+          "original_line": 201,
+          "heading": "## 1.0 的 pass@1 和状态枚举"
+        },
+        {
+          "original_id": "ch16-08-10-resource-denominator",
+          "title": "资源效率必须与完成情况一起读",
+          "decision": "remove",
+          "reason": "四框只把总费用除以通过数的一行公式和零分母规则展开，正文已有成功/失败资源范围。",
+          "original_line": 217,
+          "heading": "## 成本、token 和时延怎么读"
+        },
+        {
+          "original_id": "ch16-08-11-contamination-and-cheating",
+          "title": "污染防护与投机防护作用不同",
+          "decision": "remove",
+          "reason": "污染、投机、复核三列是紧邻三段防护方法的摘抄，没有具体威胁到隔离措施的结构实例。",
+          "original_line": 232,
+          "heading": "## 数据污染与测试投机"
+        },
+        {
+          "original_id": "ch16-08-12-leaderboard-comparison",
+          "title": "比较排行榜先对齐实验坐标",
+          "decision": "remove",
+          "reason": "泛化排行榜对照四步重复同配置、同任务、配对/检验与适用范围段落，和开头评测配置图同义。",
+          "original_line": 247,
+          "heading": "## 怎样读公开排行榜"
+        },
+        {
+          "original_id": "ch16-08-13-private-evaluation-pipeline",
+          "title": "私有评测从任务到隐藏验收",
+          "decision": "remove",
+          "reason": "私有评测管线重复任务选择清单及已保留oracle对照/隔离执行链；独立隐藏验收限制完整留正文。",
+          "original_line": 264,
+          "heading": "### 任务选择"
+        },
+        {
+          "original_id": "ch16-08-14-controlled-comparisons",
+          "title": "每轮改变一个因素并保留配对",
+          "decision": "remove",
+          "reason": "模型、代理、预算三列逐条重复五项对照实验清单，没有实际变量矩阵或交错顺序实例。",
+          "original_line": 279,
+          "heading": "### 对照实验"
+        }
+      ],
+      "sha256_after": "eecd7b763211a567395b0393b5c84371f4c75b1b4c6b204cedf56823f0ef01af",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:24:29.189546+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 14,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a174/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a174/visual-review.json",
+      "retired_diagrams": [
+        "ch16-08-01-evaluation-configuration",
+        "ch16-08-02-version-coordinates",
+        "ch16-08-05-multifaceted-verification",
+        "ch16-08-07-task-level-pass-at-one",
+        "ch16-08-09-score-status-policy",
+        "ch16-08-10-resource-denominator",
+        "ch16-08-11-contamination-and-cheating",
+        "ch16-08-12-leaderboard-comparison",
+        "ch16-08-13-private-evaluation-pipeline",
+        "ch16-08-14-controlled-comparisons"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-174/retired-assets.json"
     },
     {
       "index": 176,
@@ -46246,8 +46389,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 107,
-  "next_article": "src/part3-tools/ch16-methodology/08-google-android-bench-ai-coding-evaluation-methodology.md",
+  "reviewed_articles": 108,
+  "next_article": "src/part3-tools/ch17-apm/01-apm-landscape-firebase-commercial.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -46257,7 +46400,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:22:42.809949+08:00",
+  "updated_at": "2026-10-31T14:24:29.189546+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -46561,9 +46704,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3613,
-  "reviewed_placements_after": 1583,
-  "net_removed_placements": 2030,
+  "reviewed_placements_before": 3627,
+  "reviewed_placements_after": 1587,
+  "net_removed_placements": 2040,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -46587,5 +46730,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 107
+  "currently_matching_reviewed_source_count": 108
 }

@@ -46,10 +46,6 @@ Android Bench 是 Google Android Developers 面向 Android 工程任务的基准
 
 2.0 包含从视觉稿创建新应用的 greenfield 任务，不能笼统说它不考察从零构建应用。其分数仍只代表给定任务、环境和验证器下的完成情况；代码可读性、安全、功耗、长期维护及缺少可执行验收条件的架构取舍，只有协议显式检查时才会进入评分。
 
-<!-- gracker-diagram: ch16-08-01-evaluation-configuration -->
-![分数由整套评测配置共同产生](../../assets/diagrams/ch16/ch16-08-01-evaluation-configuration.png)
-
-图：任务、模型与代理、运行环境及验证器共同定义一个可解释的分数。 2.0包含greenfield应用任务；分数只覆盖协议检查的能力，不自动证明所有工程质量。
 
 ## 2.0 和 1.0 不能混用
 
@@ -63,10 +59,6 @@ Android Bench 2.0 和 1.0 的任务规模、数据公开状态和评分方法都
 
 因此，不能把 2.0 官方方法页里的 30 个长周期任务，和 Harbor Hub 页面上的 100 个公开任务当成同一套「当前组成」。也不能拿 1.0 的 pass@1 排名直接解释 2.0 的 completion rate。
 
-<!-- gracker-diagram: ch16-08-02-version-coordinates -->
-![方法代次、数据包与归档源码分开](../../assets/diagrams/ch16/ch16-08-02-version-coordinates.png)
-
-图：先区分官方方法代次、公开数据包revision/version/tag和固定归档源码，再比较结果。 Harbor的version2.0.3不自动代表官方30任务的2.0；latest是移动标签。
 
 ## 2.0 任务集怎样组成
 
@@ -141,10 +133,6 @@ Android Bench 2.0 基于 Harbor 运行。官方方法页列出的关键环境约
 
 这套验证器允许不同实现路径通过，但仍是协议的一部分。没有写进验证器的质量维度不会自动进入分数；方法页报告的360次视觉判断校准一致性，也不能外推为任意屏幕或模型版本都无误判。
 
-<!-- gracker-diagram: ch16-08-05-multifaceted-verification -->
-![确定性断言与模型判断分工](../../assets/diagrams/ch16/ch16-08-05-multifaceted-verification.png)
-
-图：确定性功能检查、AVD多模态观察和反投机约束共同构成验证证据。 视觉与层级判断有模型参与；脚本可达性、硬件mock与本地后端限制覆盖范围。
 
 ## 2.0 分数怎样计算
 
@@ -173,10 +161,6 @@ Multipliers 是惩罚因子的乘积。官方表格列出：构建失败、作�
 
 归档技术报告把单任务 pass@1 写为 `c_i/n_i`：同一任务的n_i次生成中c_i次通过，再对任务的通过概率求平均。只有各任务运行次数相同且纳入范围一致时，才等于把所有成功运行除以所有运行；它也不是「多次中至少一次成功」的pass@k。报告方法段写每模型10次、指标附录又称至少5次，但实际 `num_runs` 表为3～10次，平均任务数也可少于100；引用以具体行、原始记录和排除规则为准，不能把文字目标当作每行实绩。
 
-<!-- gracker-diagram: ch16-08-07-task-level-pass-at-one -->
-![pass@1保留任务与重复运行层级](../../assets/diagrams/ch16/ch16-08-07-task-level-pass-at-one.png)
-
-图：先算各任务c_i/n_i，再按任务聚合；相同任务的重复尝试仍属于同一层级。 只有各任务次数和纳入范围一致时，才等于全部尝试合并比例；它不是多次择优的pass@k。
 
 该报告的95% CI使用分层bootstrap：先有放回抽任务，再对抽中任务的运行结果有放回抽样，重复1000次后取中间95%。这保留任务与重复运行的层级；不可把同一任务的所有尝试当作独立新任务来夸大样本量。
 
@@ -198,10 +182,6 @@ Multipliers 是惩罚因子的乘积。官方表格列出：构建失败、作�
 
 比较模型时，需同时保留计划task×run清单、实际尝试、有效计分、score=1、infra failure、模型超时/预算耗尽与预设排除数量。归档枚举把部分预算/格式/执行问题放在 `INFRA_FAILURE_AGENT_*` 名下，这种命名不能自动证明它们都是外部基础设施故障；需结合原因及预先协议归类，不能全部剔除来提高分数。重试次数、失败是否计分和未完成样本处理都应在运行前规定。
 
-<!-- gracker-diagram: ch16-08-09-score-status-policy -->
-![分数、诊断状态与排除政策分开](../../assets/diagrams/ch16/ch16-08-09-score-status-policy.png)
-
-图：固定首版的二值分数、状态诊断和报告中的纳入规则是三种不同信息。 PASSED_FLAKY仍可score=1；INFRA_FAILURE_AGENT预算等前缀不自动授权剔除。
 
 ## 成本、token 和时延怎么读
 
@@ -214,10 +194,6 @@ Multipliers 是惩罚因子的乘积。官方表格列出：构建失败、作�
 
 2.0 官方方法页也提醒，汇总所有任务的资源消耗会天然偏向失败更早的模型。团队可补充同一评测范围的 `cost/solved = 总尝试费用 ÷ 通过数`（包含失败尝试费用），另报成功/失败任务时延。它不同于只对成功样本费用求均值；通过数为0时无有限值，应标记未定义，不填0。
 
-<!-- gracker-diagram: ch16-08-10-resource-denominator -->
-![资源效率必须与完成情况一起读](../../assets/diagrams/ch16/ch16-08-10-resource-denominator.png)
-
-图：同一计分范围内保存全部尝试费用，再除以通过数，并分别观察成功与失败时延。 失败更早可能成本更低；通过数为0无有限cost/solved，价格与网络日期也会改变比较。
 
 ## 数据污染与测试投机
 
@@ -229,10 +205,6 @@ canary 不能证明模型从未见过公开仓库。公开数据集发布后，�
 
 测试投机仍然要靠协议和文件权限处理。只在提示内容里写「不要修改测试」不够；应通过只读测试目录、patch allowlist（允许修改的路径清单）、验证前恢复测试文件和静态检查来约束。
 
-<!-- gracker-diagram: ch16-08-11-contamination-and-cheating -->
-![污染防护与投机防护作用不同](../../assets/diagrams/ch16/ch16-08-11-contamination-and-cheating.png)
-
-图：分别处理公开答案记忆风险、验证器被绕过风险和外部审计可复现范围。 canary不能证明训练未见；私有任务不能由公开仓库完整复现，约束也需实际执行。
 
 ## 怎样读公开排行榜
 
@@ -244,10 +216,6 @@ canary 不能证明模型从未见过公开仓库。公开数据集发布后，�
 
 Android Bench 不是 Android 17 compatibility suite（兼容性测试套件），也不验证 AOSP framework 或 kernel 实现。任务跨 Android、Jetpack、Gradle 和第三方库版本；一个模型得分高，可能来自 Kotlin/Gradle 能力，也可能来自编码代理更会搜索、运行测试和保持上下文。
 
-<!-- gracker-diagram: ch16-08-12-leaderboard-comparison -->
-![比较排行榜先对齐实验坐标](../../assets/diagrams/ch16/ch16-08-12-leaderboard-comparison.png)
-
-图：模型、代理、工具预算与任务/验证版本一起定义结果，再按相同任务比较差异。 小分类与历史榜首都受样本和日期限制；高分不证明AOSP或kernel实现质量。
 
 ## 团队怎样建立私有评测
 
@@ -261,10 +229,6 @@ Android Bench 不是 Android 17 compatibility suite（兼容性测试套件）�
 - 将测试、base commit、oracle patch 和环境镜像一并版本化；
 - 让不参与模型运行的人维护隐藏验证。
 
-<!-- gracker-diagram: ch16-08-13-private-evaluation-pipeline -->
-![私有评测从任务到隐藏验收](../../assets/diagrams/ch16/ch16-08-13-private-evaluation-pipeline.png)
-
-图：从团队任务中固定需求、起点和环境，由独立维护者保存隐藏验收，再验证oracle对照。 覆盖低频高风险工作；采样和验收是否代表真实业务，要由任务设计与复核确认。
 
 ### 对照实验
 
@@ -276,10 +240,6 @@ Android Bench 不是 Android 17 compatibility suite（兼容性测试套件）�
 - 每个配置在同一任务集上重复运行，保留task/run配对；随机化或交错配置与任务顺序，避免时间与接口负载混杂；
 - 基础设施错误按预设规则重跑，重跑次数公开。
 
-<!-- gracker-diagram: ch16-08-14-controlled-comparisons -->
-![每轮改变一个因素并保留配对](../../assets/diagrams/ch16/ch16-08-14-controlled-comparisons.png)
-
-图：分别设计模型、代理或预算对照，在同一任务集重复并交错运行，按预设政策报告。 只改一个因素是识别该因素影响的实验设计；仍需记录服务负载、日期和实际失败。
 
 ### 报告字段
 
