@@ -132,10 +132,6 @@ Power Efficiency Mode（能效优先模式）成立的前提，是工作有稳�
 
 我们把三件事依次过一遍：这段工作能否定义周期、周期是否留有余量、线程身份是否稳定。三项全部成立，还要确认当前UID状态允许Session生效，再考虑 Power Efficiency Mode。r1 的 `isUidForeground()` 以 `procState <= PROCESS_STATE_IMPORTANT_FOREGROUND` 判断，进入更低重要级会暂停Session；这里的“后台批处理”是业务任务性质，不等于普通缓存/后台进程必然能使用提示，WorkManager也不会因此获得额外后台额度。
 
-<!-- gracker-diagram: a281-04-uid-state-pauses-session -->
-![业务后台任务不等于后台UID一定能使用ADPF](../../assets/diagrams/ch25/a281-04-uid-state-pauses-session.png)
-
-图：“后台批处理”描述业务性质；普通缓存进程不因创建Session就得到持续资源或保活资格。
 
 落到具体场景：游戏帧循环通常先保证帧 deadline，Power Efficiency Mode 只适合已经确认有稳定余量的子线程，例如资源准备、后台 AI、低优先级物理预计算。后台计算更关注吞吐与能耗的平衡，较长目标耗时、固定处理批次加上能效提示，是比较典型的配置。
 
@@ -220,10 +216,6 @@ class PowerEfficientBatchWorker(
 
 `PerformanceHintManager.Session` 不是线程安全对象。示例的单周期 `block` 特意为不可挂起的同步块，在固定线程上完整执行，防止协程挂起时其他周期或 `close()` 穿插；单线程调度器本身并不提供跨挂起点互斥。调用方在生命周期结束时停止提交新周期，并在 `finally` 中调用 `close()`，关闭后不再调用该实例；清理使用 `kotlinx.coroutines.NonCancellable`。长期循环仍须自行检查取消并拆成有界周期，不能把工作转交到其他线程后提前返回。`finally` 仅上报正的已耗时，上报失败保留原业务异常为主异常；失败/取消/上报失败均需业务记录。
 
-<!-- gracker-diagram: a281-02-session-cycle-and-close-order -->
-![固定线程上创建、完整执行周期，再上报并关闭](../../assets/diagrams/ch25/a281-02-session-cycle-and-close-order.png)
-
-图：主机适配器已验证顺序与取消清理；真实SDK/NDK、HAL效果与设备功耗还需设备验证。
 
 多线程批处理可以登记多个 TID，前提是线程身份已经稳定。`Dispatchers.IO` 这类弹性线程池会在不同 TID 之间迁移协程，直接登记进 Session，系统收到的线程集合就会与真实负载脱节。协程迁移的细节展开在下一小节。
 
@@ -270,10 +262,6 @@ AOSP `android-17.0.0_r1` 里，`SystemHealthManager.getSupportedPowerMonitors()`
 
 `PowerMonitorReadings.getConsumedEnergy(powerMonitor)` 返回本次开机以来的累计能耗，单位是微瓦秒（μWs，数值上等于微焦耳 μJ）；读数从开机重新累计，包含电池供电和插电状态下的总能耗。`getTimestampMillis(powerMonitor)` 返回快照时刻，时间基准采用包含深度睡眠时间的 `SystemClock.elapsedRealtime()`。找不到对应监测项时，r1 的 `getConsumedEnergy()` 返回 `ENERGY_UNAVAILABLE = -1`，`getTimestampMillis()` 则返回 `0`，两种哨兵值不能混同。
 
-<!-- gracker-diagram: a281-06-monitor-consumer-versus-measurement -->
-![PowerMonitor提供监测项，不是应用独立电表](../../assets/diagrams/ch25/a281-06-monitor-consumer-versus-measurement.png)
-
-图：监测项覆盖可能重叠，要分列结果；名称相同不保证跨设备同一硬件范围。
 
 Android 17 r1 的内部实现还给读数规定了新鲜度和精度上限。普通调用方拿到的是 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000` 的缓存；持有隐藏系统权限 `ACCESS_FINE_POWER_MONITORS` 的调用方走另一组状态缓存，最大年龄 `250 ms`。这个权限只面向系统签名、特权或开发场景，普通第三方应用拿不到。20 秒和 250 ms 都是 r1 的实现细节，公开 API 对其他版本与设备没有这样的承诺。
 
@@ -284,10 +272,6 @@ Android 17 r1 的内部实现还给读数规定了新鲜度和精度上限。普
 
 普通路径与精细路径在返回累计值前都会经过 `IntervalRandomNoiseGenerator`，以降低公开读数在时间和数值上的精度。在 r1 中，下界为 `max(上一次原始读数, 当前原始读数 - 10_000_000 μWs)`，系统在该下界与当前读数之间返回按 UID 稳定的随机值；`10_000_000 μWs` 等于 `10 J`。下一次底层刷新前，同一 UID 会得到同一个扰动样本。公开读数适合较长实验窗口和重复对照，一次短任务的前后差值达不到精密能量计的精度。
 
-<!-- gracker-diagram: a281-08-uid-stable-energy-noise-interval -->
-![公开累计值在有界区间内加入按UID稳定的扰动](../../assets/diagrams/ch25/a281-08-uid-stable-energy-noise-interval.png)
-
-图：下一次实验不以零差值判定任务无耗电；有效差异必须超过缓存与扰动带来的误差。
 
 调用方先保证两次快照来自同一次开机、同一组监测项；这个纯函数本身不能可靠识别所有跨重启组合。它再检查采样时刻、有效值和单调性后计算累计值差；同一缓存快照、不可用读数或累计值回退都会返回空结果。
 
@@ -409,10 +393,6 @@ statsd 是 Android 的系统统计服务，atom 是其中一种结构化记录�
 - 热状态进入 thermal throttling 的时间点不早于对照组；长时任务至少运行到温度进入稳定区间后再判断。
 - 按设备型号、SoC、系统版本、刷新率、充电状态和温度起点分别统计结果，不把 Pixel 上的电源轨名称或收益外推到其他厂商设备。
 
-<!-- gracker-diagram: a281-11-ab-unit-energy-and-tail-latency -->
-![能效模式按相同任务数量同时验收能量与尾延迟](../../assets/diagrams/ch25/a281-11-ab-unit-energy-and-tail-latency.png)
-
-图：空列表与无电源轨时收窄结论；不能只凭CPU时间或电池百分比写精确单位任务能耗收益。
 
 如果只能拿到 `PowerMonitor` 空列表，实验仍可继续，结论范围相应收窄：用 Perfetto 电源轨、Android Studio Power Profiler、系统电量统计 `BatteryStats`、CPU 时间和任务耗时互相验证，`PowerMonitor` 读数带来的收益就先不写。
 
@@ -459,10 +439,6 @@ Power Efficiency Mode 的开关同样要按设备型号来。小流量实验中�
 
 热状态进入高档位前主动降低批处理并发，通常比等系统开始 thermal throttling 后再恢复更可控。阈值和收益必须来自具体设备实验，固定温度不具备跨设备意义。
 
-<!-- gracker-diagram: a281-12-thermal-feedback-and-rollout-control -->
-![热状态反馈调节工作量，异常设备及时关闭偏好](../../assets/diagrams/ch25/a281-12-thermal-feedback-and-rollout-control.png)
-
-图：能效偏好不授予温控豁免；能力不支持、线程不稳定或数据不足时先回到普通受控工作。
 
 ## 常见误区
 
@@ -562,10 +538,6 @@ enum SessionMode {
 
 `GRAPHICS_PIPELINE` 属于 `SessionMode`，`SessionTag` 里找不到它。Java SDK 的 `PerformanceHintManager.createHintSession(int[], long)` 不接受 HAL tag 或 mode，`setPreferPowerEfficiency(true)` 由系统映射为能效模式。Android 16 起的 NDK `ASessionCreationConfig` 提供 `setGraphicsPipeline()`、`setUseAutoTiming()` 和 `setPreferPowerEfficiency()` 等高层开关；应用使用这些高层接口，HAL 枚举整数交给编译器处理，公开 NDK 接口里也没有任意挑选 `SessionTag` 或 `AUDIO_PERFORMANCE` 的入口。
 
-<!-- gracker-diagram: a281-13-session-tag-mode-and-boost -->
-![HAL的来源标签、模式与boost是三种不同概念](../../assets/diagrams/ch25/a281-13-session-tag-mode-and-boost.png)
-
-图：图形管线属于mode；Java createHintSession不接受任意HAL tag/mode，普通应用也不直接选音频模式。
 
 ### 电源状态跟踪与统计
 
@@ -600,10 +572,6 @@ Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传�
 
 回调通过 `ConcurrentUtils.DIRECT_EXECUTOR` 执行，再等待 Handler 侧的异步结果，超时上限为 `2_000 ms`；异常、超时或空结果一律返回 `PULL_SKIP`。`ON_DEVICE_POWER_MEASUREMENT` 只接收 `durationMs == timestampMs` 的样本，表示能量累计区间从开机开始；缩写成“两个字段为 0”会丢掉“从开机开始”这层含义。
 
-<!-- gracker-diagram: a281-14-powerstats-public-pull-and-local-paths -->
-![PowerStats同源数据有公开读数、系统异步和statsd路径](../../assets/diagrams/ch25/a281-14-powerstats-public-pull-and-local-paths.png)
-
-图：ON_DEVICE_POWER_MEASUREMENT只接durationMs==timestampMs的开机累计样本；不是要求两个字段为0。
 
 `PowerStatsLogger` 使用三个 Handler 消息，分别采集 meter 直接测量值、model 建模值（model）和 residency 状态驻留时间，存入 `/data/system/powerstats/`；日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，并不固定写成六个 `.pb` 文件。
 
@@ -611,10 +579,6 @@ Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传�
 
 写入前，`adjustTimeSinceBootToEpoch()` 用服务启动时记录的墙钟时间基准，把 HAL 的开机时间戳换算到墙钟时间线，方便事件报告排序。不过 HAL 的能量和状态驻留时间（residency）都以本次开机为起点，累计能量跨重启直接相减，得到的差值没有意义。
 
-<!-- gracker-diagram: a281-15-powerstats-log-rotation-and-metadata -->
-![系统PowerStats日志按类型轮转，元信息变化使旧日志失效](../../assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.png)
-
-图：开机时间戳可换算墙钟方便排序，累计能量跨重启不能直接相减；公开监测项索引也不可跨重启持久化。
 
 再往 HAL 看，`IPowerStats.aidl` 是带 `@VintfStability` 的接口，定义六个方法：`getPowerEntityInfo()`、`getStateResidency()`、`getEnergyConsumerInfo()`、`getEnergyConsumed()`、`getEnergyMeterInfo()` 与 `readEnergyMeter()`。`Channel` 包含 `id`、`name`、`subsystem`；framework 只透传后两个厂商自定义字符串，不解释其含义。`EnergyMeasurement` 包含 `id`、`timestampMs`、`durationMs`、`energyUWs`，其中时间使用 `CLOCK_BOOTTIME`，能量单位是 μWs。
 

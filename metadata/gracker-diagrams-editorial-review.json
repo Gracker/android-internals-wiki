@@ -66172,9 +66172,159 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "037dad2fb049bc66e9b8e20dcab7fcba0e85f88c420c639c1ae546aec2b9b222",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "a281-01-hint-client-fmq-binder-and-hal",
+          "title": "ADPF上报是协作通道，不保证每帧一次Binder",
+          "decision": "keep",
+          "reason": "原生客户端分FMQ直达HAL与Binder管理/回退两路，明确高频提示不必每周期跨Binder的架构关系。",
+          "original_line": 114,
+          "heading": "## API 版本与调用路径"
+        },
+        {
+          "original_id": "a281-04-uid-state-pauses-session",
+          "title": "业务后台任务不等于后台UID一定能使用ADPF",
+          "decision": "remove",
+          "reason": "允许状态和暂停恢复两行完整重复紧邻UID重要级门控段落，没有真正画出状态转换闭环。",
+          "original_line": 135,
+          "heading": "## 适用场景：什么时候该把线程标成节能优先"
+        },
+        {
+          "original_id": "a281-02-session-cycle-and-close-order",
+          "title": "固定线程上创建、完整执行周期，再上报并关闭",
+          "decision": "remove",
+          "reason": "固定线程创建、同步周期、finally上报和清理四框复述60行示例及紧邻所有权/取消说明。",
+          "original_line": 223,
+          "heading": "## ADPF Session 的线程集合与生命周期"
+        },
+        {
+          "original_id": "a281-03-coroutine-tid-migration-versus-fixed-worker",
+          "title": "Session绑定Linux TID，协程身份不能替代线程身份",
+          "decision": "keep",
+          "reason": "协程挂起迁移TIDA到B与固定TID完整周期的并行轨道，直观看出Session登记线程与真实执行脱节。",
+          "original_line": 236,
+          "heading": "### 协程迁移与 TID 所有权"
+        },
+        {
+          "original_id": "a281-05-deadline-slack-and-power-efficiency",
+          "title": "能效优先利用deadline余量，不承诺固定频率",
+          "decision": "keep",
+          "reason": "紧deadline和有余量两周期轨道比较能效偏好的适用前提，补充场景表的时限余量关系。",
+          "original_line": 255,
+          "heading": "## Power Efficiency Mode 的系统语义"
+        },
+        {
+          "original_id": "a281-06-monitor-consumer-versus-measurement",
+          "title": "PowerMonitor提供监测项，不是应用独立电表",
+          "decision": "remove",
+          "reason": "measurement/consumer、单位时间和哨兵值四卡重复类型列表与读数定义段落。",
+          "original_line": 273,
+          "heading": "## PowerMonitor 与 SystemHealthManager 读数模型"
+        },
+        {
+          "original_id": "a281-07-coarse-cache-versus-fine-cache",
+          "title": "高频调用PowerMonitor通常只是重复取缓存",
+          "decision": "keep",
+          "reason": "普通和精细权限缓存两轨与实验窗口对齐，展示连续调用可共享timestamp而非提高HAL采样率。",
+          "original_line": 280,
+          "heading": "## PowerMonitor 与 SystemHealthManager 读数模型"
+        },
+        {
+          "original_id": "a281-08-uid-stable-energy-noise-interval",
+          "title": "公开累计值在有界区间内加入按UID稳定的扰动",
+          "decision": "remove",
+          "reason": "上下界公式和UID稳定扰动四框重复紧邻精确公式段落，没有增加区间数值示例或变化图。",
+          "original_line": 287,
+          "heading": "## PowerMonitor 与 SystemHealthManager 读数模型"
+        },
+        {
+          "original_id": "a281-09-async-readings-delta-validation",
+          "title": "异步快照做差前先排除缺失、缓存与回退",
+          "decision": "keep",
+          "reason": "异步前后快照分为有效差值与缺失同快照回退两路，强调null与0的不同语义。",
+          "original_line": 336,
+          "heading": "## PowerMonitor 与 SystemHealthManager 读数模型"
+        },
+        {
+          "original_id": "a281-10-perfetto-control-behavior-energy",
+          "title": "把提示、调度、任务和能量放进同一实验窗口",
+          "decision": "keep",
+          "reason": "任务、提示、线程热状态和设备能量四轨放到共同窗口，具体表达多层证据如何对齐。",
+          "original_line": 386,
+          "heading": "## 用 Perfetto 电源轨交叉验证"
+        },
+        {
+          "original_id": "a281-11-ab-unit-energy-and-tail-latency",
+          "title": "能效模式按相同任务数量同时验收能量与尾延迟",
+          "decision": "remove",
+          "reason": "AB配置分到体验/能量/环境再验收重复紧邻AB表和四项接受清单。",
+          "original_line": 412,
+          "heading": "## 实验设计：同时看耗时和单位任务能耗"
+        },
+        {
+          "original_id": "a281-12-thermal-feedback-and-rollout-control",
+          "title": "热状态反馈调节工作量，异常设备及时关闭偏好",
+          "decision": "remove",
+          "reason": "热状态分层四框逐项重复常温轻中严重列表与设备关闭策略，未增加反馈回路。",
+          "original_line": 462,
+          "heading": "## 配合 Thermal API 调整长期任务"
+        },
+        {
+          "original_id": "a281-13-session-tag-mode-and-boost",
+          "title": "HAL的来源标签、模式与boost是三种不同概念",
+          "decision": "remove",
+          "reason": "SessionTag/Mode/NDK/Boost四卡重复两枚举源码及HAL版本列表，不能替代精准版本与可访问范围说明。",
+          "original_line": 565,
+          "heading": "### SessionTag 与 SessionMode：两个不同的 HAL 内部枚举"
+        },
+        {
+          "original_id": "a281-14-powerstats-public-pull-and-local-paths",
+          "title": "PowerStats同源数据有公开读数、系统异步和statsd路径",
+          "decision": "remove",
+          "reason": "公开BinderHAL链和LocalService/statsd两行重复本节四段数据路径与返回语义解释，图未画实际合流或依赖。",
+          "original_line": 603,
+          "heading": "### PowerStatsService 完整数据通路（系统服务 → IPowerStats HAL → statsd）"
+        },
+        {
+          "original_id": "a281-15-powerstats-log-rotation-and-metadata",
+          "title": "系统PowerStats日志按类型轮转，元信息变化使旧日志失效",
+          "decision": "remove",
+          "reason": "三日志、目录、轮转和元信息四框复述紧邻三段内部存储说明。",
+          "original_line": 614,
+          "heading": "### PowerStatsService 完整数据通路（系统服务 → IPowerStats HAL → statsd）"
+        }
+      ],
+      "sha256_after": "15d4892abe36ab1789e2a327e056f70c2ecc6b9b410939056e6888e7b3f93709",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T19:10:50.202831+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a281/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a281/visual-review.json",
+      "retired_diagrams": [
+        "a281-02-session-cycle-and-close-order",
+        "a281-04-uid-state-pauses-session",
+        "a281-06-monitor-consumer-versus-measurement",
+        "a281-08-uid-stable-energy-noise-interval",
+        "a281-11-ab-unit-energy-and-tail-latency",
+        "a281-12-thermal-feedback-and-rollout-control",
+        "a281-13-session-tag-mode-and-boost",
+        "a281-14-powerstats-public-pull-and-local-paths",
+        "a281-15-powerstats-log-rotation-and-metadata"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-281/retired-assets.json"
     },
     {
       "index": 282,
@@ -66331,8 +66481,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 192,
-  "next_article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+  "reviewed_articles": 193,
+  "next_article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -66342,7 +66492,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:08:07.220441+08:00",
+  "updated_at": "2026-10-31T19:10:50.202831+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -66478,9 +66628,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5621,
-  "reviewed_placements_after": 2208,
-  "net_removed_placements": 3413,
+  "reviewed_placements_before": 5636,
+  "reviewed_placements_after": 2214,
+  "net_removed_placements": 3422,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -66504,7 +66654,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 192,
+  "currently_matching_reviewed_source_count": 193,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
