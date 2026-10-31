@@ -151,15 +151,6 @@ ART Heap 的性能由对象分配、存活集、GC 算法和后台维护共同�
 
 ART 的 `Heap` 管理多个用途不同的堆空间。下图只画归属关系，各空间在设备上的虚拟地址顺序是另一回事。
 
-```mermaid
-flowchart LR
-    BI["Boot Image Space<br/>启动镜像中的类与对象"] --> H["ART Heap"]
-    Z["Zygote Space<br/>fork 前形成的共享对象"] --> H
-    M["Main Moving Space<br/>CC: RegionSpace<br/>CMC: BumpPointerSpace"] --> H
-    N["Non-moving Space<br/>运行时要求地址稳定的对象"] --> H
-    L["Large Object Space<br/>大 primitive array / String"] --> H
-    H --> G["GC 统一追踪对象可达性"]
-```
 
 这五类空间的差别集中在三点：放什么对象、GC 回收哪些、GC 移动哪些。
 
@@ -323,24 +314,6 @@ Mark-Sweep/CMS 系列收集器仍可使用 RosAlloc。RosAlloc 按尺寸档位�
 
 普通分配返回空指针后，`Heap::AllocateInternalWithGc()` 接管，主要路径如下：
 
-```mermaid
-flowchart TD
-    A["快速分配失败"] --> B["等待正在运行的 GC 完成"]
-    B --> C{"等待期间完成过 GC？"}
-    C -->|是| D["重试分配"]
-    C -->|否| E["按 next_gc_type_ 执行 blocking GC"]
-    D --> F{"成功？"}
-    F -->|是| Z["返回对象"]
-    F -->|否| E
-    E --> G["回收足够时重试"]
-    G --> H{"成功？"}
-    H -->|是| Z
-    H -->|否| I["全堆回收并清除 SoftReference"]
-    I --> J["按收益与运行状态决定重试和规整"]
-    J --> K{"成功？"}
-    K -->|是| Z
-    K -->|否| L["抛出 OutOfMemoryError"]
-```
 
 几个细节会直接影响跟踪数据的解读：
 
@@ -1114,10 +1087,6 @@ Compose 重组的代价因场景而异：编译器可以记忆部分值，稳定
 
 若修改后分配量降了，长尾帧却没改善，原来的 GC 重叠就未必是主因。这时我们回到 Binder、锁、I/O、CPU 调度或 GPU 等方向继续排查。
 
-<!-- gracker-diagram: ch04-02-gc-slow-frame-evidence -->
-![先找问题帧与线程状态，再决定采分配栈还是保留图](../../assets/diagrams/ch04/ch04-02-gc-slow-frame-evidence.png)
-
-图：用同场景 trace 找慢帧，再查看主线程与 RenderThread 是否暂停、等待 GC 或等待 CPU。若有频繁分配证据，采 ART 分配栈；若存活量持续偏高、Full 后释放很少，采 Java 保留图。修改后需同时复测长尾帧、CPU、等待与 RSS，分配量下降本身不证明慢帧问题已解决。
 
 ### 13. 常见问题
 
