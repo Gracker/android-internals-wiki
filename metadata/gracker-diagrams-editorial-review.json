@@ -36720,7 +36720,7 @@
           "heading": "#### SQL 查不到事件"
         }
       ],
-      "sha256_after": "df29d49860051d04ce6c918a8c5a7b8f1460008f06b858d1ba70a01da7127a61",
+      "sha256_after": "6a8c2779f73b8ab7446f753ed87bb1d0517a7cdccc65b6b92439378c82cd31b4",
       "new_diagrams": [
         {
           "id": "ed14-06-buffer-loss-and-retention-layers",
@@ -36852,7 +36852,32 @@
         "ch14-06-48-troubleshooting-map"
       ],
       "removed_but_shared_diagrams": [],
-      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-140/retired-assets.json"
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-140/retired-assets.json",
+      "sha256_after_initial_editorial": "df29d49860051d04ce6c918a8c5a7b8f1460008f06b858d1ba70a01da7127a61",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 140,
+          "article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
+          "revision": 1,
+          "accepted_sha256": "df29d49860051d04ce6c918a8c5a7b8f1460008f06b858d1ba70a01da7127a61",
+          "reviewed_sha256": "6a8c2779f73b8ab7446f753ed87bb1d0517a7cdccc65b6b92439378c82cd31b4",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/source.diff",
+          "diff_sha256": "cb7b174dafe17251b935741da53a865cee0ed1b645e797fe16e3c52441304640",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/140-20261031-01.json",
+          "report_sha256": "140af85c4af51931be30023f7e8a4d5a30a040eecaf88279ed4b08a9b2bf0dbc",
+          "caption_revisions": [],
+          "alt_revisions": [],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/input.md",
+          "external_input_sha256": "6a8c2779f73b8ab7446f753ed87bb1d0517a7cdccc65b6b92439378c82cd31b4",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T17:42:35.063354+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T17:42:35.164034+08:00"
     },
     {
       "index": 141,
@@ -52863,7 +52888,16 @@
           "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
         }
       ],
-      "last_source_revalidated_at": "2026-10-31T16:15:17.915084+08:00"
+      "last_source_revalidated_at": "2026-10-31T16:15:17.915084+08:00",
+      "post_review_source_revalidation_required": {
+        "index": 205,
+        "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+        "accepted_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
+        "observed_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
+        "observed_at": "2026-10-31T17:42:35.173677+08:00",
+        "status": "requires_independent_revalidation",
+        "diagram_count_unchanged": true
+      }
     },
     {
       "index": 207,
@@ -61137,7 +61171,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:40:27.450461+08:00",
+  "updated_at": "2026-10-31T17:42:35.176337+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -61340,6 +61374,16 @@
       "eligibility_proof": "/tmp/gracker-diagrams-editorial-review-20261028/scope-additions-rendered-proof.json"
     }
   ],
-  "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 165
+  "post_review_external_source_revalidations_pending": [
+    {
+      "index": 205,
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "accepted_sha256": "94ad870811e45b32c4fc428ca2c6af9520fac2ad030aab9ae2f66379a8e15bf8",
+      "observed_sha256": "9fb08786dcd46b8483e850572233231701642ae8f40551b3eb40721922bd3353",
+      "observed_at": "2026-10-31T17:42:35.173677+08:00",
+      "status": "requires_independent_revalidation",
+      "diagram_count_unchanged": true
+    }
+  ],
+  "currently_matching_reviewed_source_count": 166
 }

@@ -98,7 +98,9 @@ Perfetto 界面里的调度 Slice（时间轴事件区间）、应用自定义�
 | Perfetto 数据生产者 | 数据生产者（`Producer`）与 `traced` 之间的共享内存 | `traced_probes`、应用 SDK 等数据生产者写入，`traced` 接收提交 | `traced_buf_trace_writer_packet_loss` 非零 |
 | Perfetto 服务 | `TraceConfig.buffers` 定义的中央缓冲区 | `traced` 汇集各数据源，数据使用方（`Consumer`）读取或写文件 | `traced_buf_chunks_overwritten` 或 `traced_buf_chunks_discarded` 非零 |
 
-采用覆盖策略的环形缓冲区写满后会覆盖最早数据；常规采集配置直接控制第一层和第三层；第二层也能由 Producer 初始化参数调节，例如 SDK 的 `TracingInitArgs.shmem_size_hint_kb`。固定 Android 17 平台内部初始化还将共享内存提示设为 1024 KiB。它是生产者级参数，不等于中央缓冲区大小，也不由每份 ftrace 配置独立控制。`ftrace_config.buffer_size_kb` 管第一层，单位是“每个 CPU 的 KiB”；KiB 是 1024 字节。`TraceConfig.buffers.size_kb` 管第三层。两个参数名字相近，控制的内存和失效方式却完全不同，丢数时先按上表确定所在层，再决定动哪个。Perfetto 的[缓冲区说明](https://perfetto.dev/docs/concepts/buffers)给出了三类丢数统计及其语义。
+采用覆盖策略的环形缓冲区写满后会覆盖最早数据。常规采集配置直接控制第一层和第三层；第二层也能由 Producer 初始化参数调节，例如 SDK 的 `TracingInitArgs.shmem_size_hint_kb`，平台内部初始化还会把共享内存提示设为 1024 KiB。这个提示只管 Producer 自己那块共享内存，中央缓冲区大小要由第三层的参数另调，逐份 ftrace 配置也调不到它。
+
+`ftrace_config.buffer_size_kb` 管第一层，单位是“每个 CPU 的 KiB”；KiB 是 1024 字节。`TraceConfig.buffers.size_kb` 管第三层。两个参数名字相近，控制的内存和失效方式却完全不同，丢数时先按上表确定所在层，再决定动哪个。Perfetto 的[缓冲区说明](https://perfetto.dev/docs/concepts/buffers)给出了三类丢数统计及其语义。
 
 
 ### ftrace：事件源与函数 tracer
@@ -120,7 +122,7 @@ tracer 是由 `current_tracer` 选择的一套记录算法，tracepoint 则是�
 
 图：current_tracer 选择函数追踪器，事件开关控制 tracepoint。 current_tracer 为 nop 时，已启用的 tracepoint 仍可记录。
 
-tracepoint 通过 `TRACE_EVENT` 等宏在源码中声明字段。未启用时使用静态分支快速路径；在启用 jump label 且体系结构支持的构建中，关闭路径可被修补为 NOP（空操作指令），不等于每次都执行一次普通条件判断。无 jump label 的回退、调用点参数求值和具体机器指令仍取决于构建，不能承诺统一的零开销。启用后还要分配事件、复制字段并写入当前 CPU 的环形缓冲区，实际成本由事件频率、字段长度和读取方速度共同决定。
+tracepoint 通过 `TRACE_EVENT` 等宏在源码中声明字段。未启用时走静态分支快速路径；在启用 jump label 且体系结构支持的构建中，关闭路径可被修补为 NOP（空操作指令），修补后的调用点走的就是空指令路径，普通条件判断被跳过。至于无 jump label 的回退、调用点参数求值和具体机器指令，开销随构建变化，零开销要按具体构建分别确认。启用后还要分配事件、复制字段并写入当前 CPU 的环形缓冲区，实际成本由事件频率、字段长度和读取方速度共同决定。
 
 <!-- gracker-diagram: ch14-06-04-disabled-fastpath -->
 ![tracepoint 的关闭与开启路径](../../assets/diagrams/ch14/ch14-06-04-disabled-fastpath.png)
@@ -147,7 +149,7 @@ tracepoint 通过 `TRACE_EVENT` 等宏在源码中声明字段。未启用时使
 Perfetto 的 [`Tracefs::EnableEvent()`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/tracefs.cc)启用事件时先向单事件 `enable` 文件写 `1`，写入失败后才把 `group:name` 追加到 `set_event`；停用过程对称，回退内容是 `!group:name`。核对 `set_event` 内容时按这个顺序判断——“Perfetto 会把每个事件写入 `set_event`”的说法与当前源码对不上。
 
 
-tracefs 还支持 `instances/<name>/` 下的命名实例；每个实例拥有自己的事件开关和缓冲区等状态。Perfetto 的 `FtraceController` 可以按 `FtraceConfig.instance_name` 创建并读取次级实例。次级实例可以隔离一部分内核追踪状态，但不能承载 Android atrace 配置：固定 `FtraceConfigMuxer` 会直接拒绝次级实例中的 `atrace_categories` 或 `atrace_apps` 请求，因为它们会影响全局状态。需要这些用户空间事件时，必须使用受支持的主实例配置。
+tracefs 还支持 `instances/<name>/` 下的命名实例；每个实例拥有自己的事件开关和缓冲区等状态。Perfetto 的 `FtraceController` 可以按 `FtraceConfig.instance_name` 创建并读取次级实例。次级实例可以隔离一部分内核追踪状态，Android atrace 配置则始终留在主实例：固定 `FtraceConfigMuxer` 会直接拒绝次级实例中的 `atrace_categories` 或 `atrace_apps` 请求，因为它们会影响全局状态。需要这些用户空间事件时，使用受支持的主实例配置即可。
 
 
 #### 常用事件与设备差异
@@ -263,7 +265,7 @@ data_sources {
 
 - atrace tag 未启用、对应 Perfetto category 已启用：写 Perfetto TrackEvent。
 - atrace tag 已启用、Perfetto category 未启用：调用 `atrace_begin()` 等 libcutils 接口。
-- 两边都启用：`debug.atrace.prefer_sdk` 的 category 位决定是否优先走 Perfetto SDK。该属性由 `atrace --prefer_sdk` 配合 Perfetto 的 `atrace_categories_prefer_sdk` 管理，用于处理并发会话的兼容要求，避免同一埋点在两条路径上重复记录。并发配置汇总时，各会话的 SDK opt-out 取并集，任一会话仍要求某类别走 atrace，就不能仅凭另一会话的 `atrace_categories_prefer_sdk` 保证切到 SDK。
+- 两边都启用：`debug.atrace.prefer_sdk` 的 category 位决定是否优先走 Perfetto SDK。该属性由 `atrace --prefer_sdk` 配合 Perfetto 的 `atrace_categories_prefer_sdk` 管理，用于处理并发会话的兼容要求，避免同一埋点在两条路径上重复记录。并发配置汇总时，各会话的 SDK opt-out 取并集；只要还有一个会话要求某类别走 atrace，另一会话的 `atrace_categories_prefer_sdk` 单独就保证不了切换到 SDK。
 - 两边都未启用：调用直接返回，不产生事件。
 
 <!-- gracker-diagram: ch14-06-14-java-backend-selection -->
@@ -287,7 +289,7 @@ libcutils 生成的常用消息格式如下：
 | 即时事件 | `I\|<pid>\|<name>` |
 | 计数器 | `C\|<pid>\|<name>\|<value>` |
 
-表中的 cookie 是配对异步区间的整数关联 ID。这些字符串进入 ftrace 的 `print` 事件，再由 Perfetto 解析成 Slice、即时事件或计数器。Java JNI 会清理名称中的换行和竖线；经典 libcutils `ATRACE_*` 的 `WRITE_MSG` 不做这项清理，原生调用方应自行避免协议分隔字符。其消息缓冲区容量为 1024 字节，包含前缀、PID、名称、值和字符串终止符，不是名称可占满 1024 字节；应用公开区间 API 还有更短的名称限制。
+表中的 cookie 是配对异步区间的整数关联 ID。这些字符串进入 ftrace 的 `print` 事件，再由 Perfetto 解析成 Slice、即时事件或计数器。Java JNI 会清理名称中的换行和竖线；经典 libcutils `ATRACE_*` 的 `WRITE_MSG` 不做这项清理，原生调用方应自行避免协议分隔字符。其消息缓冲区容量为 1024 字节，前缀、PID、值和字符串终止符都要占其中一部分，留给名称的空间到不了 1024 字节；应用公开区间 API 还有更短的名称限制。
 
 两条路径汇合后的数据流如下图，其中 Perfetto TrackEvent 这一支不经过内核 ftrace 缓冲区。
 
@@ -512,7 +514,7 @@ ORDER BY name, idx;
 - 按问题选择事件。调度延迟需要 `sched_switch` 和唤醒事件，未必需要所有 Binder、I/O、IRQ 和驱动事件。
 - 采集窗口围绕可识别触发点设置。固定宣称某个秒数适合所有问题没有依据；低频故障可以用长时环形缓冲区配合触发器保留故障前窗口。
 - 自定义名称使用稳定、低基数的操作名；低基数表示名称种类有限，不会为每个用户或请求生成新名称。用户输入、URL、账号、消息内容等数据要挡在 Trace 之外。
-- 高频路径先计算事件速率，再决定采样、聚合或缩小区间。源码里一行 Trace 调用并不等于一次固定成本。
+- 高频路径先计算事件速率，再决定采样、聚合或缩小区间。源码里一行 Trace 调用，要乘上命中频率才是它对系统的真实成本。
 - 区分 `user` 量产构建、`userdebug` 调试构建和权限更宽的 `eng` 工程构建。函数图、内核符号和部分系统数据源在 `user` 构建上受 SELinux（Android 强制访问控制机制）、系统属性或 Perfetto 保护规则限制。
 - 每份性能结论都保留 TraceConfig、设备构建号、内核版本、复现步骤和丢数查询结果。缺少这些信息时，后续很难判断差异来自代码还是采集条件。
 
@@ -564,7 +566,7 @@ adb pull /data/misc/perfetto-traces/boottrace.perfetto-trace
 6. Android 15 及以上的 Java Trace 同时考虑 TrackEvent 与 atrace 兼容路径；经典原生 C/C++ `ATRACE_*` 仍检查 `trace_marker`。
 7. 只改动一个采集变量，并用同一复现验证变化。
 
-这套顺序把“事件不存在”“配置没有启用”“采集途中丢失”“解析层没有派生数据”分成四类问题；定位到具体层之后再去调整事件、缓冲区或解析逻辑，每一步结论都有源码和采集证据支撑。
+这套顺序把“事件不存在”“配置没有启用”“采集途中丢失”“解析层没有派生数据”分成四类问题；定位到具体层之后再去调整事件、缓冲区或解析逻辑，每一步都有源码和采集结果作依据。
 
 
 ### ftrace 与 atrace 部分的源码锚点
@@ -579,7 +581,7 @@ adb pull /data/misc/perfetto-traces/boottrace.perfetto-trace
 
 数据路径清楚之后，剩下的问题都在应用和平台代码这一侧：埋点用哪个 API、事件在采集端怎么被识别、名称和生命周期怎么配对。
 
-`android.os.Trace` 给应用代码提供了一组精简的 ATrace 接口。ATrace 是 Android 把应用和系统事件写入系统 trace 的轻量标记机制，能记录三种东西：同步切片（sync slice，同一线程 begin/end 之间的时间区间）、跨线程异步切片（async slice，一项逻辑任务从开始到结束的区间）和数值 Counter（随时间变化的状态值）。抓取系统 trace 时，不同数据源可以使用不同原始时钟。Trace Processor 在具有必要 ClockSnapshot 映射时把事件端点换算到统一的 Trace 时间，随后才能比较业务区间和系统等待。名称或 args 中自行携带的时间戳未必自动换算，不能直接与 `slice.ts` 相减；§14.5 给出了输入事件的具体例子。
+`android.os.Trace` 给应用代码提供了一组精简的 ATrace 接口。ATrace 是 Android 把应用和系统事件写入系统 trace 的轻量标记机制，能记录三种东西：同步切片（sync slice，同一线程 begin/end 之间的时间区间）、跨线程异步切片（async slice，一项逻辑任务从开始到结束的区间）和数值 Counter（随时间变化的状态值）。抓取系统 trace 时，不同数据源可以使用不同原始时钟。Trace Processor 在具有必要 ClockSnapshot 映射时把事件端点换算到统一的 Trace 时间，随后才能比较业务区间和系统等待。我们在名称或 args 里自行携带的时间戳，要先确认时钟换算，再与 `slice.ts` 比较；§14.5 给出了输入事件的具体例子。
 
 埋点只是往代码里插入观测点，本身既不启动采集，也不保存历史；设备上先有一场选中了目标应用的 Perfetto 或系统跟踪会话在运行，事件才会进入 trace。
 
@@ -596,7 +598,7 @@ adb pull /data/misc/perfetto-traces/boottrace.perfetto-trace
 | `setCounter(String, long)` | API 29 | 进程范围的有符号 64 位数值样本 |
 | `isEnabled()` | API 29 | 当前应用 trace tag 是否处于采集状态 |
 
-API 18 只有同步切片。异步切片、Counter 和 `isEnabled()` 都在 API 29 才进入公开 SDK，把它们写成 API 18 能力会让低版本应用在验证或运行阶段失败。
+这组方法分两批进入公开 SDK：API 18 只有同步切片；异步切片、Counter 和 `isEnabled()` 都要等 API 29。按 API 18 声明这三项能力，低版本应用在验证或运行阶段就会失败。
 
 
 源码中的下列方法不属于普通应用 SDK：
@@ -607,7 +609,7 @@ API 18 只有同步切片。异步切片、Counter 和 `isEnabled()` 都在 API 
 - `registerWithPerfetto()`；
 - `setAppTracingAllowed()`。
 
-其中一部分带 `@SystemApi`，另一部分直接标记 `@hide`：`@SystemApi` 面向获准的系统组件，`@hide` 表示它不进入公开 SDK，平台模块、系统应用或 OEM 代码可在相应构建环境中使用。Play 应用想把它们当功能依赖，靠反射或 hidden-API 绕过限制这条路走不通。固定 Android 17 的 `setAppTracingAllowed()` 仍调用 JNI；原来的布尔许可参数已不参与判断，但 native 端会执行 `atrace_update_tags()` 刷新缓存，用于派生进程及时识别追踪状态。因此不能称为完全 no-op，也不能把它当普通应用的业务 trace 开关。AndroidX `forceEnableAppTracing()` 在 API 31 及以上跳过调用，是另一层兼容封装的行为。
+其中一部分带 `@SystemApi`，另一部分直接标记 `@hide`：`@SystemApi` 面向获准的系统组件，`@hide` 表示它不进入公开 SDK，平台模块、系统应用或 OEM 代码可在相应构建环境中使用。Play 应用想把它们当功能依赖，反射和 hidden-API 这两条路都被堵死。平台源码里的 `setAppTracingAllowed()` 仍调用 JNI；原来的布尔许可参数已不参与判断，native 端仍会执行 `atrace_update_tags()` 刷新缓存，让派生进程及时识别追踪状态。它比完全 no-op 多这一步，又管不了普通应用的业务 trace 开关。AndroidX `forceEnableAppTracing()` 在 API 31 及以上跳过调用，是另一层兼容封装的行为。
 
 #### 1.2 应用工程优先使用 AndroidX
 
@@ -643,7 +645,7 @@ fun readCachedFeed(): List<FeedItem> =
     }
 ```
 
-`trace {}` 用 `try/finally` 保证 `endSection()` 一定执行。切片的 wall duration 是现实时间轴上的总时长，包含运行、被抢占、阻塞和睡眠；CPU time 只统计线程实际占用 CPU 的时间。要区分这些成分，还需在 Perfetto 中结合 `thread_state`、`sched` 和 I/O 数据。
+`trace {}` 用 `try/finally` 保证 `endSection()` 一定执行。切片的 wall duration 是现实时间轴上的总时长，包含运行、被抢占、阻塞和睡眠；CPU time 只统计线程实际占用 CPU 的时间。我们想把这几部分拆开看，就得在 Perfetto 中结合 `thread_state`、`sched` 和 I/O 数据。
 
 <!-- gracker-diagram: ch14-06-28-sync-wall-cpu -->
 ![同步 Slice 的墙钟时长包含等待](../../assets/diagrams/ch14/ch14-06-28-sync-wall-cpu.png)
@@ -683,7 +685,7 @@ suspend fun loadProfile(userKey: String): Profile {
 
 异步 begin/end 可以位于不同线程，名称和 cookie 必须一致。elapsed time 指从开始到结束经过的时钟时间，切片里可能装着排队、网络等待、锁等待和多次调度；它计量的是逻辑任务的跨度，某一条线程未必持续执行了这么久。
 
-示例中的 AtomicInteger 仅在它由全进程统一 tracing 组件独占分配时成立；不能让不同模块各自从 0 开始，整数回绕时也不能复用仍活跃的 ID。同一个名称下可能同时有多项任务在跑，cookie 就是用来区分它们的整数标识。Perfetto 的 ATrace 文档把所有异步事件的 cookie 视为进程内共享的整数命名空间，即同一进程里各处代码共用一组整数 ID。应用应由一个受控的 tracing 组件统一分配仍在使用的 cookie，任务完成后才允许复用。`name.hashCode()`、固定常量和多个互不协调的计数器都可能在重叠任务中碰撞。
+示例中的 AtomicInteger 要交给全进程统一的 tracing 组件独占分配才成立：各模块自己从 0 开始数，重叠任务容易撞号；整数回绕之后，也要等旧 ID 的任务结束才轮到复用。同一个名称下可能同时有多项任务在跑，cookie 就是用来区分它们的整数标识。Perfetto 的 ATrace 文档把所有异步事件的 cookie 视为进程内共享的整数命名空间，即同一进程里各处代码共用一组整数 ID。所以我们让一个受控的 tracing 组件统一分配仍在使用的 cookie，任务完成后才允许复用。`name.hashCode()`、固定常量和多个互不协调的计数器都可能在重叠任务中碰撞。
 
 <!-- gracker-diagram: ch14-06-30-async-cookie-lifetime -->
 ![异步 cookie 统一分配到任务结束](../../assets/diagrams/ch14/ch14-06-30-async-cookie-lifetime.png)
@@ -734,7 +736,7 @@ cardinality（基数）是一个字段可能出现的不同取值数量。Trace 
 
 `beginSection()` 的公开约束是最多 127 个 Unicode code unit。这里的 code unit 是 Java UTF-16 字符串中的 16 位编码单元，也是 `String.length()` 计数的基本单位；一个增补平面字符会占两个 code unit，所以 127 这个上限落在编码单元上，可见字符数和字节数都要另行换算。JNI 层会把 `|` 与换行替换为空格，避免破坏 ATrace marker 文本协议。
 
-平台公开异步与 Counter 方法没有与 `beginSection()` 相同的 127 code unit 检查；JNI 和 marker 缓冲仍有截断边界。本文固定的 AndroidX 1.3.0 封装则会把同步、异步和 Counter 标签统一截到 127 个 code unit。长名称截断还可能把不同操作变成相同标签，应主动使用稳定短名称。
+平台公开的异步与 Counter 方法不做 `beginSection()` 那套 127 code unit 检查，截断点要看 JNI 层和 marker 缓冲各自的容量。本文固定的 AndroidX 1.3.0 封装则会把同步、异步和 Counter 标签统一截到 127 个 code unit。长名称截断还可能把不同操作变成相同标签，应主动使用稳定短名称。
 
 <!-- gracker-diagram: ch14-06-34-name-boundaries -->
 ![平台、JNI、AndroidX 与 marker 的长度边界](../../assets/diagrams/ch14/ch14-06-34-name-boundaries.png)
@@ -773,7 +775,7 @@ Trace.beginSection()
 
 `Trace.java` 在调用 JNI 前检查 `TRACE_TAG_APP`。JNI（Java Native Interface）是 Java/ART 与 C/C++ 代码之间的调用桥梁。它的 `withString()` 将 Java 字符串转换为 modified UTF-8（JNI 使用的一种 UTF-8 变体）、清理 marker 协议的分隔字符，再进入 `frameworks/native/libs/tracing_perfetto`。
 
-`tracing_perfetto::traceBegin()` 会根据当前注册和启用状态选择 backend，也就是实际接收和写入事件的实现路径；同一次调用只写进一个 backend，ATrace 与 Perfetto 二选一。`registerWithPerfetto()` 是隐藏的平台初始化入口，第三方应用借它控制这条路径行不通。固定 `Trace.java` 还以 `perfettoSdkTracingV3` 标志控制该入口中的注册动作；不能把“调用了注册方法”当作已开始采集，最终仍取决于实际注册、会话与 category 启用状态。
+`tracing_perfetto::traceBegin()` 会根据当前注册和启用状态选择 backend，也就是实际接收和写入事件的实现路径；同一次调用只写进一个 backend，ATrace 与 Perfetto 二选一。`registerWithPerfetto()` 是隐藏的平台初始化入口，第三方应用借它控制这条路径行不通。`Trace.java` 还以 `perfettoSdkTracingV3` 标志控制该入口中的注册动作；调用注册方法只是第一步，采集是否真的开始，还要看实际注册、会话与 category 启用状态。
 
 #### 4.2 ATrace 路径如何启用
 
@@ -798,7 +800,7 @@ Trace.beginSection()
 
 #### 4.3 开销的量级与实测
 
-启用态开销应按实际 backend 测量。经典 ATrace 路径包含名称处理和 `trace_marker` 写入系统调用，Java 路径还包含 JNI；TrackEvent 路径则直接构造并提交数据包，不能套用 marker 写入成本。begin/end 是两个事件，高频短函数容易让埋点开销接近业务工作，跨设备或跨 backend 的单事件固定耗时不能当预算。
+启用态开销应按实际 backend 测量。经典 ATrace 路径包含名称处理和 `trace_marker` 写入系统调用，Java 路径还包含 JNI；TrackEvent 路径则直接构造并提交数据包，开销模型与 marker 写入是两回事。begin/end 是两个事件，高频短函数容易让埋点开销接近业务工作；单事件耗时预算，要按设备和 backend 分别实测后再定。
 
 trace 关闭时走快速检查，成本低于写入态，但离“零开销”或固定 2–5 ns 还有一段距离——动态标签分配、调用层级、设备 SoC（System on Chip，片上系统）、ART（Android Runtime）编译状态和 backend 都会改变结果。高频路径上的埋点，我们在目标设备上做 A/B 测量：只改变是否启用该埋点，比较两组结果。
 
@@ -845,7 +847,7 @@ python3 record_android_trace \
 
 #### 5.3 `isEnabled()` 的含义
 
-在固定 Android 17 中，`Trace.isEnabled()` 经 native 查询 `TRACE_TAG_APP` 对应的 ATrace tag 或 Perfetto app category 是否启用，任一路成立就可能返回 true；适合避免构造只供 trace 使用的字符串。它回答的是当前启用状态；至于 trace buffer 还剩多少空间、事件是否完整保留到文件、配置里有没有 sched、Binder 或 FrameTimeline、trace 里能不能记敏感信息，都要另外确认。因此它只适合控制观测代码的额外开销，鉴权、隐私判断和业务分支要另找业务自己的机制。
+`Trace.isEnabled()` 经 native 查询 `TRACE_TAG_APP` 对应的 ATrace tag 或 Perfetto app category 是否启用，任一路成立就可能返回 true；适合避免构造只供 trace 使用的字符串。它回答的只有当前启用状态这一件事。trace buffer 还剩多少空间、事件是否完整保留到文件、配置里有没有 sched、Binder 或 FrameTimeline、trace 里适不适合记敏感信息，这些都要靠后面的丢数查询和配置核对来回答。所以我们把它用在控制观测代码的额外开销上；鉴权、隐私判断和业务分支，交给业务自己的机制。
 
 <!-- gracker-diagram: ed14-06-enabled-label-and-retention-boundaries -->
 ![启用状态只控制额外观测工作，事件保留还要逐层核验](../../assets/diagrams/ch14/ed14-06-enabled-label-and-retention-boundaries.png)
@@ -877,7 +879,7 @@ suspend fun loadFeed(cookie: Int): List<FeedItem> =
     }
 ```
 
-`Feed.load` 包含等待和线程切换；`Feed.queryDb` 与 `Feed.mapModels` 各自落在执行线程上。这里明确假定 `feedDao.readAll()` 是不会挂起的同步 DAO 方法，映射循环也不挂起，begin/end 才保持同线程。如果实际使用 Room 的 suspend DAO，不能直接套这个同步包装；整段应保留异步区间，并对确定不会挂起的内部阶段单独埋点。
+`Feed.load` 包含等待和线程切换；`Feed.queryDb` 与 `Feed.mapModels` 各自落在执行线程上。这里明确假定 `feedDao.readAll()` 是不会挂起的同步 DAO 方法，映射循环也不挂起，begin/end 才保持同线程。如果实际使用 Room 的 suspend DAO，这套同步包装就要换掉：整段保留异步区间，确定不会挂起的内部阶段再单独埋点。
 
 <!-- gracker-diagram: ch14-06-38-coroutine-two-levels -->
 ![异步任务跨度与线程内同步阶段](../../assets/diagrams/ch14/ch14-06-38-coroutine-two-levels.png)
@@ -936,20 +938,20 @@ DecodedFrame decodeFrame(const EncodedFrame& input) {
 
 `TraceScope` 使用 C++ RAII 惯用法：构造对象时开始切片，对象离开作用域执行析构函数时结束切片。这样无论正常返回还是异常展开，都会执行 `ATrace_endSection()`。名称要避开换行和 `|`；高频调用前可用 `ATrace_isEnabled()` 避免昂贵的标签构造。
 
-平台源码中的 `<cutils/trace.h>` 还提供 `ATRACE_BEGIN`、`ATRACE_INT` 和系统 tag。它们属于平台内部接口。普通 NDK 应用使用 `<android/trace.h>`，事件隐式归入 app tag；`ATRACE_TAG_APP` 在 API 37 源码中的值是 `1 << 12`。固定 NDK `ATrace_*` 实现直接调用 libcutils `atrace_*`，不是前述 Java `tracing_perfetto` 选择入口，不能因为 API 名称对应就假定它也会切到 TrackEvent。
+平台源码中的 `<cutils/trace.h>` 还提供 `ATRACE_BEGIN`、`ATRACE_INT` 和系统 tag。它们属于平台内部接口。普通 NDK 应用使用 `<android/trace.h>`，事件隐式归入 app tag；`ATRACE_TAG_APP` 在 API 37 源码中的值是 `1 << 12`。固定 NDK `ATrace_*` 实现直接调用 libcutils `atrace_*`，写入走的仍是 `trace_marker`；前述 Java `tracing_perfetto` 的 backend 选择是另一套入口，API 名称看起来对应，也带不来 TrackEvent 切换。
 
 
 ### 8. 平台私有能力该怎样理解
 
 #### 8.1 track、instant 与 tag
 
-API 37 的 `Trace.java` 包含 `asyncTraceForTrack*` 和 `instant*`。track 是 Perfetto 时间线上的命名行；前者允许平台代码指定 process track 并表达严格嵌套，后者写入 instant event，即只有时间点、没有持续时间的事件。这些能力停留在平台内部，面向第三方开发者的可编译示例里也就放不进去。
+API 37 的 `Trace.java` 包含 `asyncTraceForTrack*` 和 `instant*`。track 是 Perfetto 时间线上的命名行；前者允许平台代码指定 process track 并表达严格嵌套，后者写入 instant event，即只有时间点、没有持续时间的事件。这些能力停留在平台内部，第三方应用引用会编译失败，面向开发者的示例里也就见不到它们。
 
 同样，`TRACE_TAG_AIDL`、`TRACE_TAG_WINDOW_MANAGER` 等 tag 面向平台代码。应用公开 API 始终使用 `TRACE_TAG_APP`，采集端以包名选择应用事件。
 
 #### 8.2 Binder 自动切片覆盖什么
 
-Binder 是 Android 的进程间通信（IPC）机制，AIDL 是描述 Binder 接口并生成通信代码的语言。`BBinder::transact()` 会在 `ATRACE_TAG_AIDL` 启用时调用 `startTrace()`；只有事务名称生成成功才开始切片，退出时再由 scope guard（作用域退出保护）闭合。配置 `aidl` 并覆盖对应窗口后，可以用这些服务端 AIDL Slice 观察执行线程和区间，但不能保证每次事务都存在这条切片。
+Binder 是 Android 的进程间通信（IPC）机制，AIDL 是描述 Binder 接口并生成通信代码的语言。`BBinder::transact()` 会在 `ATRACE_TAG_AIDL` 启用时调用 `startTrace()`；只有事务名称生成成功才开始切片，退出时再由 scope guard（作用域退出保护）闭合。配置 `aidl` 并覆盖对应窗口后，可以用这些服务端 AIDL Slice 观察执行线程和区间；个别事务可能没有这条切片，统计时给它留出缺口。
 
 这段自动切片与应用的 async section 各走各的：它不带后者的 cookie，也不为业务请求生成跨进程 trace context——trace context 是随调用传递、用于恢复因果关系的一组追踪标识，process-scoped 表示它只在所属进程内有效。应用进程与服务进程各自拥有进程内 async 轨道，两个进程写相同的 name/cookie，得到的仍是两条 slice。
 
@@ -1005,7 +1007,7 @@ ORDER BY dur DESC, ts, id;
 
 #### 9.2 分位数语法
 
-percentile（百分位数）表示有多少比例的样本不大于某个值，例如 P50 是中位数，P90 表示 90% 的样本不超过该值。PerfettoSQL 的 `PERCENTILE` 参数使用 0–100 的百分位值。下面的查询要求进程名恰好匹配一个实例，并默认使用整份 Trace 的半开时间窗，再计算该实例的 P50、P90 和 P99。正式场景应替换起止纳秒；同名多实例时先查明 `upid`，不能任选一个或混算：
+percentile（百分位数）表示有多少比例的样本不大于某个值，例如 P50 是中位数，P90 表示 90% 的样本不超过该值。PerfettoSQL 的 `PERCENTILE` 参数使用 0–100 的百分位值。下面的查询要求进程名恰好匹配一个实例，并默认使用整份 Trace 的半开时间窗，再计算该实例的 P50、P90 和 P99。正式场景应替换起止纳秒；同名多实例时我们先查明 `upid`，只统计匹配到的那一个实例：
 
 ```sql
 INCLUDE PERFETTO MODULE slices.with_context;
@@ -1047,7 +1049,7 @@ WHERE p.name = 'com.example.reader'
 ORDER BY c.track_id, c.ts, c.id;
 ```
 
-Counter 的算术平均值会受到采样频率影响。时间加权平均应先按 `track_id` 把样本展开为 `[ts, next_ts)` 的阶梯区间，再裁到场景窗、进程与 Trace 边界，用有效区间时长作权重。首条样本之前未知，末值保持到边界属于外推假设，采集缺口也不等于连续观测；不要跨同名轨道或进程实例直接相加。§14.5 给出了带 `end_basis` 的完整区间与窗口求交示例。
+Counter 的算术平均值会受到采样频率影响。时间加权平均应先按 `track_id` 把样本展开为 `[ts, next_ts)` 的阶梯区间，再裁到场景窗、进程与 Trace 边界，用有效区间时长作权重。首条样本之前的状态未知，末值保持到边界属于外推假设，采集缺口期间也没有观测；跨同名轨道或进程实例直接相加，得先单独确认再算。§14.5 给出了带 `end_basis` 的完整区间与窗口求交示例。
 
 <!-- gracker-diagram: ch14-06-44-counter-coverage -->
 ![时间加权 Counter 先还原有效区间](../../assets/diagrams/ch14/ch14-06-44-counter-coverage.png)

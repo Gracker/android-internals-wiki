@@ -1,0 +1,248 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 140,
+  "article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T17:42:34.914497+08:00",
+  "source_sha256": "6a8c2779f73b8ab7446f753ed87bb1d0517a7cdccc65b6b92439378c82cd31b4",
+  "accepted_before_sha256": "df29d49860051d04ce6c918a8c5a7b8f1460008f06b858d1ba70a01da7127a61",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 505,
+  "reading_characters": 39587,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 22,
+  "current_pngs_actually_viewed": 22,
+  "current_contexts_actually_viewed": 22,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/compact-140-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/compact-140-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/compact-140-3.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/compact-140-4.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 24,
+  "code_lines_preserved": 250,
+  "asset_sha256": {
+    "src/assets/diagrams/ch14/ch14-06-03-tracer-event-source.svg": "c05f3c9cc125c8ea7b1fa2b4f5e76b3c5b12e5457d824275f1ebe6e31ccc3e55",
+    "src/assets/diagrams/ch14/ch14-06-03-tracer-event-source.png": "633c20e55f6da897f79f39a865336c75f78d89420234be65278e90fe5e2c599a",
+    "src/assets/diagrams/ch14/ch14-06-04-disabled-fastpath.svg": "8866566e35d746f704fb93e0abb098332a45fe64e8fe78597dd9934c31a93414",
+    "src/assets/diagrams/ch14/ch14-06-04-disabled-fastpath.png": "ad686af7395ce58ba349412c437f4d670baa87ea4a1d5df29381093ed3ce0a59",
+    "src/assets/diagrams/ch14/ed14-06-shared-ftrace-requests-and-drain-choice.svg": "52203a58986d330e50a42e5433fe415b36b6f1d6c051adb19212287438b9e7b4",
+    "src/assets/diagrams/ch14/ed14-06-shared-ftrace-requests-and-drain-choice.png": "ac301bd201e8f3b819a32cb12504fa5d545a135b3fc1ba28a23e49eb4afaa607",
+    "src/assets/diagrams/ch14/ch14-06-14-java-backend-selection.svg": "0eca1c77c69141ab675286b9e42ff49c3c33a2952c5df2dd894baab1c8b7e480",
+    "src/assets/diagrams/ch14/ch14-06-14-java-backend-selection.png": "2b8e33aeb26fc0bcd35ed377859eafbc4ccf1ccb95c18e6211e38b27f91b649e",
+    "src/assets/diagrams/ch14/ch14-06-15-producer-dataflow.svg": "e9cf0bd4b9ea3e5b1fcb48a3d69f3e36af98a869dd135fea7e590321d7897015",
+    "src/assets/diagrams/ch14/ch14-06-15-producer-dataflow.png": "71838d50d50534ce60905e69d72169c51c446b59944c25ce9d06fdd0ad61d8af",
+    "src/assets/diagrams/ch14/ch14-06-18-kernel-tracepoint-build.svg": "eea84c5fe3f74a7378c4ea6e2f4e465ab46a35a19f8a17f2d7dd150c42c57354",
+    "src/assets/diagrams/ch14/ch14-06-18-kernel-tracepoint-build.png": "1e0270cd3db523dd1bf9e7f7611a5e2d39addf939e7fcebe4189b2277bf7ddeb",
+    "src/assets/diagrams/ch14/ch14-06-19-generic-event-check.svg": "77fc54ac0069f57254d5e250aefa0b5104d54f976ec2d10fd56fb5d6337b30d5",
+    "src/assets/diagrams/ch14/ch14-06-19-generic-event-check.png": "cc8853a903a9a84c54ded9c93ac9ff9bbf118011759ccba7c9eb7bed98720b96",
+    "src/assets/diagrams/ch14/ed14-06-buffer-loss-and-retention-layers.svg": "a9bbb06d394a7eac10d665e26b185036719331209bf5e9234a514d056cadd123",
+    "src/assets/diagrams/ch14/ed14-06-buffer-loss-and-retention-layers.png": "7cdb66f7f58e687548d82c41ba69bb1ac293e31982582a282257143160f0254f",
+    "src/assets/diagrams/ch14/ch14-06-24-boot-trace-gates.svg": "bb89d109e42c4c2532d049b15537ea69949463b3d9ffd47540e385d5ef955cbc",
+    "src/assets/diagrams/ch14/ch14-06-24-boot-trace-gates.png": "946adc530457b71f39a1835ac29fc6357e415dd10e89af38c58009032968f4e3",
+    "src/assets/diagrams/ch14/ch14-06-27-androidx-paths.svg": "1cbaebf83018c6fdbc9ad8f1560f5aa3dd9c6df03cfd1c5fd1466800b07dc917",
+    "src/assets/diagrams/ch14/ch14-06-27-androidx-paths.png": "6fb62fbc25a0377f02c345c45f1f5a01db13e06f68a1589976a6f7bebe36c528",
+    "src/assets/diagrams/ch14/ch14-06-28-sync-wall-cpu.svg": "24abba6002520c3d092729ac462c05556eb8cb4f0d0c7d0488d4982bbbbdd2c0",
+    "src/assets/diagrams/ch14/ch14-06-28-sync-wall-cpu.png": "647840f4847b19ec33739775de00682702df3d37fee1f6dba65043f3de1d75ee",
+    "src/assets/diagrams/ch14/ch14-06-29-suspend-sync-stack.svg": "2330692e040a1e957b9b2d9775bfbbb7d3a5470d786240adfc95dd19367dbc04",
+    "src/assets/diagrams/ch14/ch14-06-29-suspend-sync-stack.png": "45008c0aa632913fbc200a88cdb19469e49590a449fa176ec6962d59f015f2b3",
+    "src/assets/diagrams/ch14/ch14-06-30-async-cookie-lifetime.svg": "fe5b43b99fda980bbfacc418d748a16adb0e9cb9ff437e6f413741dcb8e68e49",
+    "src/assets/diagrams/ch14/ch14-06-30-async-cookie-lifetime.png": "b043ddaf669468f5056a629494c972351963a6a5d72d4f5338a09be48ed9c3f9",
+    "src/assets/diagrams/ch14/ch14-06-31-async-stacking.svg": "6de65ed20b15cf22bca2c82ad6ffc21c1fc2560c4d281a027053e529e08b5d0b",
+    "src/assets/diagrams/ch14/ch14-06-31-async-stacking.png": "6da580fbd9908817c12eeccbea5d3c9a8938ebb6dc751a160a3755de97f7e7d7",
+    "src/assets/diagrams/ch14/ch14-06-32-counter-absolute-values.svg": "aa8994a49abb21ed4ccacbabb55e4bcc853a2dad866a422de779e7aa0e124e3d",
+    "src/assets/diagrams/ch14/ch14-06-32-counter-absolute-values.png": "6ef713ee64846ec7b389433d0c5cc9b595cf00697ed2c5964029256820d7a969",
+    "src/assets/diagrams/ch14/ch14-06-34-name-boundaries.svg": "466ca1b517246c311f52ce9ba555d2c368cc3f6b1c9b4de9625480f40117e929",
+    "src/assets/diagrams/ch14/ch14-06-34-name-boundaries.png": "855850ce68bfa4b9fc9edde3b1db233e90318027ba782183f5192b1a87b75eab",
+    "src/assets/diagrams/ch14/ed14-06-enabled-label-and-retention-boundaries.svg": "dfa07d5c335c0510e3cc5e651b2e7e2f6776bd6d0d1f208fbaf86fa285f7ba8a",
+    "src/assets/diagrams/ch14/ed14-06-enabled-label-and-retention-boundaries.png": "65d5cd4222e0cbc39b31ad5ab6619e800af329c3de4261bd4b3a1ab58e903dc9",
+    "src/assets/diagrams/ch14/ch14-06-38-coroutine-two-levels.svg": "dcbed57d38c6d528a15d729a254d97077f0a50846b240da0f23f72bee44424df",
+    "src/assets/diagrams/ch14/ch14-06-38-coroutine-two-levels.png": "7755ba51a2c6d3fd72b8ca5da1777adf6d25574d6e654c8bd95c577f92cd0612",
+    "src/assets/diagrams/ch14/ch14-06-39-queue-duration-boundary.svg": "70d0fb05e87e6003e82f27e6d46d90fc03aa7ba4f2a9661e8a0e29f8c50b56a4",
+    "src/assets/diagrams/ch14/ch14-06-39-queue-duration-boundary.png": "45f67291575637936c3cd98de1f93adf7952cf25951c4f0d46b35ca1de4f8573",
+    "src/assets/diagrams/ch14/ch14-06-42-slice-context-views.svg": "f7ef82951fd84420059d8f481e9dffd750463d4cec7301ee99f38983d3805e08",
+    "src/assets/diagrams/ch14/ch14-06-42-slice-context-views.png": "470687e89aa1558c175cd0da5fa7d74d256c4f26fc7c04d2f9806e749b90fbe8",
+    "src/assets/diagrams/ch14/ch14-06-44-counter-coverage.svg": "7c957fa3c0aa8354e671725c1ae40b6b071b4d539cb4fba8f2c7d77b88048fb1",
+    "src/assets/diagrams/ch14/ch14-06-44-counter-coverage.png": "e6cf03867303e81cefbf153edc6de4038e9bc70a62a8e44c9ed8061f9b874eed",
+    "src/assets/diagrams/ch14/ch14-06-45-category-filter.svg": "300b2ea9f9546576b9e6feb76089c6a95fa187aaaa37e3d6865b0bf3d9117a74",
+    "src/assets/diagrams/ch14/ch14-06-45-category-filter.png": "4269de1f804d8b3e9a405d0d17d5915bd755f5d3e5cabd3887895e4d344005f4"
+  },
+  "asset_baseline": {
+    "kind": "original_visual_asset_sha256"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch14-06-03-tracer-event-source",
+      "heading": "#### “三种模式”的准确边界",
+      "line": 120,
+      "decision": "keep",
+      "reason": "函数tracer与事件开关分列，明确nop仍可记录tracepoint，符合112–123的独立控制关系。"
+    },
+    {
+      "id": "ch14-06-04-disabled-fastpath",
+      "heading": "#### “三种模式”的准确边界",
+      "line": 127,
+      "decision": "keep",
+      "reason": "关闭jump label、无jump label回退和实际记录三支，保持参数求值及构建限定，与新125段一致。"
+    },
+    {
+      "id": "ed14-06-shared-ftrace-requests-and-drain-choice",
+      "heading": "#### 一份示例采集配置",
+      "line": 253,
+      "decision": "keep",
+      "reason": "同实例事件并集与SDK opt-out两路汇总，再分显式周期/100ms/全poll1000ms三支，符合203–256及改写后的268。"
+    },
+    {
+      "id": "ch14-06-14-java-backend-selection",
+      "heading": "#### `android.os.Trace` 的当前路径",
+      "line": 271,
+      "decision": "keep",
+      "reason": "ATrace/SDK四种启用组合的单后端选择与266–276对应，没有把注册当已采集。"
+    },
+    {
+      "id": "ch14-06-15-producer-dataflow",
+      "heading": "#### libcutils `ATRACE_*` 仍写 `trace_marker`",
+      "line": 307,
+      "decision": "keep",
+      "reason": "内核/probes共享内存A与TrackEvent共享内存B两支到service汇合，符合294–310及固定NDK仍走marker。"
+    },
+    {
+      "id": "ch14-06-18-kernel-tracepoint-build",
+      "heading": "#### 内核：在 6.18 锚点添加静态 tracepoint",
+      "line": 411,
+      "decision": "keep",
+      "reason": "声明、唯一编译单元、运行时注册、权限启用、实际调用各阶段明确，对应357–414的6.18代码。"
+    },
+    {
+      "id": "ch14-06-19-generic-event-check",
+      "heading": "#### 从 `ftrace_event` 核对自定义事件",
+      "line": 431,
+      "decision": "keep",
+      "reason": "按实际事件名发现再用args展开，保留ts/cpu/utid，对应418–450查询，没有把合成验证当设备采集。"
+    },
+    {
+      "id": "ed14-06-buffer-loss-and-retention-layers",
+      "heading": "### 丢数诊断与配置调整",
+      "line": 505,
+      "decision": "keep",
+      "reason": "内核perCPU、Producer SMB、中央缓冲三列的容量/失效统计与493–508一致；1024KiB是固定helper hint而非通用容量。"
+    },
+    {
+      "id": "ch14-06-24-boot-trace-gates",
+      "heading": "### 启动期 Trace",
+      "line": 550,
+      "decision": "keep",
+      "reason": "准备与就绪门槛后才采集，示意早期缺口，对应530–555，不宣称覆盖完整启动。"
+    },
+    {
+      "id": "ch14-06-27-androidx-paths",
+      "heading": "#### 1.2 应用工程优先使用 AndroidX",
+      "line": 628,
+      "decision": "keep",
+      "reason": "经典1.3.0与进程内2.0.x及支持的合并流程并列，与616–631保持路径区别。"
+    },
+    {
+      "id": "ch14-06-28-sync-wall-cpu",
+      "heading": "#### 2.1 同步切片：当前线程做了什么",
+      "line": 650,
+      "decision": "keep",
+      "reason": "业务wall轨道包含Running与等待/抢占，符合648–659的新表述，未把slice dur当CPU时间。"
+    },
+    {
+      "id": "ch14-06-29-suspend-sync-stack",
+      "heading": "#### 2.1 同步切片：当前线程做了什么",
+      "line": 663,
+      "decision": "keep",
+      "reason": "线程A同步栈与线程B错误end两轨，明确挂起后finally不保同线程，符合661–666。"
+    },
+    {
+      "id": "ch14-06-30-async-cookie-lifetime",
+      "heading": "#### 2.2 异步切片：一项工作经历了多条线程",
+      "line": 690,
+      "decision": "keep",
+      "reason": "统一活跃ID分配到finally收尾复用的生命周期，符合改写688及代码AtomicInteger的全进程协调前提。"
+    },
+    {
+      "id": "ch14-06-31-async-stacking",
+      "heading": "#### 2.2 异步切片：一项工作经历了多条线程",
+      "line": 697,
+      "decision": "keep",
+      "reason": "两个异步任务重叠lane只示时间交叠，符合695–700，不自动建立父子或跨进程配对。"
+    },
+    {
+      "id": "ch14-06-32-counter-absolute-values",
+      "heading": "#### 2.3 Counter：某个状态在这一刻是多少",
+      "line": 716,
+      "decision": "keep",
+      "reason": "1、3、0均是绝对状态样本，与714–719及Int封装代码一致，零不当缺失。"
+    },
+    {
+      "id": "ch14-06-34-name-boundaries",
+      "heading": "#### 3.2 长度和字符约束",
+      "line": 741,
+      "decision": "keep",
+      "reason": "平台127UTF16、AndroidX统一截断、JNI单元、marker总字节四种限制分列，对应737–744改写后边界。"
+    },
+    {
+      "id": "ed14-06-enabled-label-and-retention-boundaries",
+      "heading": "#### 5.3 `isEnabled()` 的含义",
+      "line": 852,
+      "decision": "keep",
+      "reason": "启用与关闭仅分观测成本，同业务block收敛后按生命周期结束，再查缓冲保留与数据源，符合850–855及隐私工作另做。"
+    },
+    {
+      "id": "ch14-06-38-coroutine-two-levels",
+      "heading": "### 6. 协程和线程池怎么埋",
+      "line": 884,
+      "decision": "keep",
+      "reason": "Feed.load任务跨度包含IO与Default不挂起同步阶段，符合882–887新表述及代码中同步DAO前提。"
+    },
+    {
+      "id": "ch14-06-39-queue-duration-boundary",
+      "heading": "### 6. 协程和线程池怎么埋",
+      "line": 896,
+      "decision": "keep",
+      "reason": "提交、出队、执行及其他等待的轨道边界对应889–901，未用async减执行就等同纯排队。"
+    },
+    {
+      "id": "ch14-06-42-slice-context-views",
+      "heading": "#### 9.1 Slice 已经是配对结果",
+      "line": 1003,
+      "decision": "keep",
+      "reason": "线程slice、进程slice、统一视图的上下文三列符合986–1006 SQL，异步线程可空且不自连接begin/end。"
+    },
+    {
+      "id": "ch14-06-44-counter-coverage",
+      "heading": "#### 9.3 Counter 查询",
+      "line": 1054,
+      "decision": "keep",
+      "reason": "同轨阶梯值与加权区间、尾值外推明确，符合1052–1057新表述，未把缺口当连续观测。"
+    },
+    {
+      "id": "ch14-06-45-category-filter",
+      "heading": "#### 9.4 `slice.category` 列的含义",
+      "line": 1063,
+      "decision": "keep",
+      "reason": "TrackEvent category与经典marker两种来源、按实例/名称/track定位三列，符合1061–1066，未强制atrace分类。"
+    }
+  ],
+  "caption_revisions": [],
+  "alt_revisions": [],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": true,
+  "figure_image_prefix_order_byte_identical": true,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a140/01/layout-report.json",
+  "layout_report_sha256": "2cc1507b8a768a7c7e4aba01e5bade354bec2e7fc1f5f570f9ecc15059d971e1",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "完整复核当前505行阅读正文39587字符、24代码块250行、22组SVG标签、全部22张PNG与22个正文上下文；大图另看原图。图片、顺序、图注、代码与原生图均和此前已接受版本相同，正文改写未使图文关系失配。固定Android17/6.18基线仍由开头及图注明确，未把固定实现泛化成所有平台。桌面1400/移动640布局和加载通过，无横向溢出；mdbook构建通过。此次记录外部正文修订来源，不替代技术源码或设备验证，也未执行示例。"
+}
