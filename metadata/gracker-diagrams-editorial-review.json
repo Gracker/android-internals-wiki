@@ -51297,9 +51297,290 @@
       "before_count": 28,
       "before_all_images": 28,
       "sha256_before": "089242234aa4c96658e7f52f0cdabe1c80468ade0e95aa640053a00803d5d232",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 8,
+      "decisions": [
+        {
+          "original_id": "ch18-08-01-joint-control",
+          "title": "AppFlow 在文件、页面与进程三个层面联合调度",
+          "decision": "remove",
+          "reason": "三组件职责在导言和后续三个主节展开，三列摘要不增加联合上下文或控制连接，保留各具体机制图。",
+          "original_line": 72,
+          "heading": "## 证据边界"
+        },
+        {
+          "original_id": "ch18-08-02-critical-costs",
+          "title": "启动成本按运行、文件和回收等待关联",
+          "decision": "remove",
+          "reason": "CPU、文件I/O和分配回收的成本与证据已有完整表格和关键路径说明，三列图重复。",
+          "original_line": 97,
+          "heading": "## 冷启动为什么会变成系统问题"
+        },
+        {
+          "original_id": "ch18-08-03-interference",
+          "title": "单独预读可能引发逐出、重复读取与冷重启",
+          "decision": "remove",
+          "reason": "预读压力、逐出和冷重启的相互抵消已由正文和论文观察表解释，概念链无新数据且不应读成每次预读必经终止。",
+          "original_line": 117,
+          "heading": "## 论文给出的四个观察"
+        },
+        {
+          "original_id": "ch18-08-04-knapsack-budget",
+          "title": "每应用选择一个分界并满足总预读预算",
+          "decision": "keep",
+          "reason": "把每应用离散候选P/V测量接到全局预算下各选一个分界，再执行版本化预读，保留多选背包与每应用而非统一128KB的关系。",
+          "original_line": 134,
+          "heading": "### 启动前：频次优先"
+        },
+        {
+          "original_id": "ch18-08-05-during-launch",
+          "title": "启动前频次优先，启动中吞吐优先",
+          "decision": "remove",
+          "reason": "两阶段预读已在两个小节说明，三列概览重复预算图和后续保留方式图；CPU nice非I/O优先保证仍保留在正文。",
+          "original_line": 143,
+          "heading": "### 启动中：吞吐优先"
+        },
+        {
+          "original_id": "ch18-08-06-profile-invalidation",
+          "title": "启动记录须按版本与运行条件失效",
+          "decision": "remove",
+          "reason": "历史记录的五类失效条件和版本键/停用要求已有列表，四步治理图是缩写清单。",
+          "original_line": 160,
+          "heading": "### 历史访问记录何时失效"
+        },
+        {
+          "original_id": "ch18-08-07-reclaim-guard",
+          "title": "按 Algorithm 1 的条件与顺序理解回收",
+          "decision": "keep",
+          "reason": "双条件守卫分出满足/不满足路径，满足时依次文件页与匿名页回收，明确计数周期与allocation事件而不补造未公开切换状态机。",
+          "original_line": 175,
+          "heading": "### 论文原型的两种控制"
+        },
+        {
+          "original_id": "ch18-08-08-page-retention",
+          "title": "两阶段预读使用不同的页面保留方式",
+          "decision": "keep",
+          "reason": "并列区分启动前触页刷新、启动中内核清单保护及普通readahead/WILLNEED提示，保留清理/停止条件且不把提示当pin。",
+          "original_line": 187,
+          "heading": "### 论文原型的两种控制"
+        },
+        {
+          "original_id": "ch18-08-09-reclaim-baseline",
+          "title": "r6 的扫描选择与通用 hook 仍需运行时核对",
+          "decision": "remove",
+          "reason": "classic/MGLRU/hook范围已由相邻三段具体函数条件说明，三列摘要没有画真实回收分支，不增加机制。",
+          "original_line": 200,
+          "heading": "### Android 17 kernel 6.18 的现状"
+        },
+        {
+          "original_id": "ch18-08-10-page-costs",
+          "title": "文件页与匿名页的回收代价按实际后备区分",
+          "decision": "remove",
+          "reason": "干净文件、脏文件与匿名页的实际后备成本已在相邻正文解释，三列重复分类，不包含测量数据。",
+          "original_line": 207,
+          "heading": "### Android 17 kernel 6.18 的现状"
+        },
+        {
+          "original_id": "ch18-08-11-killer-score",
+          "title": "先约束候选，再估算终止与重启后的净释放",
+          "decision": "keep",
+          "reason": "先用系统角色硬约束限定候选，再结合返回概率、历史relaunch基线与ΔM排序，防止把即时RSS当长期净释放量。",
+          "original_line": 223,
+          "heading": "## Context-Aware Process Killer"
+        },
+        {
+          "original_id": "ch18-08-12-psi-strategies",
+          "title": "新旧 PSI 策略共存，不能混用阈值",
+          "decision": "keep",
+          "reason": "区分旧内核LMK接口检测、新PSI属性值与旧PSI数组初值，并保留LOW关闭及memcg条件，避免把新旧阈值混用。",
+          "original_line": 247,
+          "heading": "### 压力检测"
+        },
+        {
+          "original_id": "ch18-08-13-kill-selection",
+          "title": "压力判定与 adj 分组选择是不同步骤",
+          "decision": "keep",
+          "reason": "压力/kill reason确定min_score_adj后再按adj分组选组内队尾或heaviest，明确adj≤200强制heaviest，不把预测直接等同重要性。",
+          "original_line": 260,
+          "heading": "### 候选进程和 `oom_score_adj`"
+        },
+        {
+          "original_id": "ch18-08-14-priority-protocol",
+          "title": "LMK_PROCS_PRIO 只批量传输进程优先级记录",
+          "decision": "keep",
+          "reason": "具体展示Framework过滤记录、每包三条五字段、内部socket解码与逐条apply的协议边界；不把批量消息误当文件清单/预测策略。",
+          "original_line": 276,
+          "heading": "### `LMK_PROCS_PRIO` 的准确含义"
+        },
+        {
+          "original_id": "ch18-08-15-global-knobs",
+          "title": "全局门槛无法表达一次应用启动的预测",
+          "decision": "remove",
+          "reason": "全局属性的LOW_MEM局部作用、方向与shell查询边界已有两段精确说明，三列摘要重复并未给出逐应用策略。",
+          "original_line": 287,
+          "heading": "### 全局 LMKD 属性与预测器的分工"
+        },
+        {
+          "original_id": "ch18-08-16-cao-profile",
+          "title": "CachedAppOptimizer 的请求 profile 会再次解析",
+          "decision": "keep",
+          "reason": "SOME/FULL请求到NONE/ANON的实际解析及低swap降级并列呈现，区分命名、真正执行和freezer，不把cached compaction当页保护。",
+          "original_line": 298,
+          "heading": "## CachedAppOptimizer 能做什么"
+        },
+        {
+          "original_id": "ch18-08-17-capability-map",
+          "title": "原型组件跨越 Framework 与内核边界",
+          "decision": "remove",
+          "reason": "原型组件与平台已有/待补/权限已有紧邻四列表格，三列能力卡片是表格子集。",
+          "original_line": 314,
+          "heading": "## 原型组件与 Android 17 能力映射"
+        },
+        {
+          "original_id": "ch18-08-18-app-scope",
+          "title": "普通应用以自身资源与启动指标形成闭环",
+          "decision": "remove",
+          "reason": "普通应用可做与不可做范围已有两段完整列出，四步图重复初始化/状态回调/退出观测且易读成同次启动固定链。",
+          "original_line": 327,
+          "heading": "### 普通应用"
+        },
+        {
+          "original_id": "ch18-08-19-framework-scope",
+          "title": "仅改 Framework 只能验证部分预读收益",
+          "decision": "remove",
+          "reason": "特权Framework未改内核的预测预读与留存边界已有两段解释，通用实验流程重复。",
+          "original_line": 338,
+          "heading": "### 特权 Framework 原型"
+        },
+        {
+          "original_id": "ch18-08-20-kernel-scope",
+          "title": "产品实现先审 hook 覆盖，再决定内核改动",
+          "decision": "remove",
+          "reason": "会话文件生命周期、双回收路径、hook/KMI核查与产品验收已有详细两段，四步实施清单不增加实际接口。",
+          "original_line": 349,
+          "heading": "### 产品级 OS 与 kernel 原型"
+        },
+        {
+          "original_id": "ch18-08-21-startup-definition",
+          "title": "进程状态与 page-cache 条件分别定义",
+          "decision": "remove",
+          "reason": "cold/warm/hot定义与独立缓存条件已有正文说明，三列卡片重复，保留不按am start耗时判缓存的边界。",
+          "original_line": 362,
+          "heading": "### 固定启动口径"
+        },
+        {
+          "original_id": "ch18-08-22-experiment-grid",
+          "title": "固定条件后覆盖负载与分位数",
+          "decision": "remove",
+          "reason": "负载组合、控制变量和统计口径已有五项列表，四步实验图没有新增因果或数据。",
+          "original_line": 379,
+          "heading": "### 建立负载组合"
+        },
+        {
+          "original_id": "ch18-08-23-evidence-pairs",
+          "title": "收益与副作用须成对观察",
+          "decision": "remove",
+          "reason": "四组收益/反例证据已在紧邻表格完整列出，三列图只是摘录且少掉部分指标。",
+          "original_line": 395,
+          "heading": "### 同时观察四组证据"
+        },
+        {
+          "original_id": "ch18-08-24-component-controls",
+          "title": "分组实验区分预读、页保留与进程排序",
+          "decision": "remove",
+          "reason": "四组逐级组件对照已有编号列表，图无实验数据；论文独立AMR结果与建议组合仍由正文分别保留。",
+          "original_line": 411,
+          "heading": "### 分离三个组件的贡献"
+        },
+        {
+          "original_id": "ch18-08-25-results-boundary",
+          "title": "先定位实验语境，再解释论文百分比",
+          "decision": "remove",
+          "reason": "论文实验装置、七类场景及限制已有表格和段落，四步阅读百分比的概览重复且非结果可视化。",
+          "original_line": 432,
+          "heading": "## 论文实验结果该怎样阅读"
+        },
+        {
+          "original_id": "ch18-08-26-profile-coexistence",
+          "title": "编译 Profile 与内存联合调度分别控制",
+          "decision": "remove",
+          "reason": "Profile与AppFlow对象、证据及局限已有紧邻四列表格，三列卡片重复。",
+          "original_line": 449,
+          "heading": "## 与 Baseline Profile、Cloud Profile 的关系"
+        },
+        {
+          "original_id": "ch18-08-27-workload-roles",
+          "title": "模型与游戏的页面类型不能由名称推断",
+          "decision": "remove",
+          "reason": "车载、mmap权重/中间张量、游戏GPU与角色硬约束已有三段说明，三列分类卡不增加资源分配图。",
+          "original_line": 462,
+          "heading": "## 车载、端侧模型和大型游戏"
+        },
+        {
+          "original_id": "ch18-08-28-rollback",
+          "title": "异常压力必须清除短时策略并恢复基线",
+          "decision": "remove",
+          "reason": "风险后果/退出条件已有六行表格及明确自动停用段落，四步回滚检查图不增加清理时序或状态。",
+          "original_line": 480,
+          "heading": "## 产品化风险与退出条件"
+        }
+      ],
+      "sha256_after": "76c63540ceb81846e1e758723916ada057d1841f6bca4037508386109fe9ce69",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:40:21.136334+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 28,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a196/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a196/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 196,
+        "article": "src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+        "registered_sha256": "089242234aa4c96658e7f52f0cdabe1c80468ade0e95aa640053a00803d5d232",
+        "frozen_sha256": "089242234aa4c96658e7f52f0cdabe1c80468ade0e95aa640053a00803d5d232",
+        "review_input_sha256": "b46db489ce78df29b147e491b60292830434f72cb8d14fe769afa2a47cab9a4c",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a196/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a196/external-source.diff",
+        "diff_sha256": "31991d8e61bc4943ce9eeda810cb7d4239d707b0ce16bcb0b6750c60b6054614",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 261, \"characters\": 25357, \"svg_labels_read\": 28, \"actual_pngs_viewed\": 28, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 0, \"code_lines\": 0, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "b46db489ce78df29b147e491b60292830434f72cb8d14fe769afa2a47cab9a4c",
+      "retired_diagrams": [
+        "ch18-08-01-joint-control",
+        "ch18-08-02-critical-costs",
+        "ch18-08-03-interference",
+        "ch18-08-05-during-launch",
+        "ch18-08-06-profile-invalidation",
+        "ch18-08-09-reclaim-baseline",
+        "ch18-08-10-page-costs",
+        "ch18-08-15-global-knobs",
+        "ch18-08-17-capability-map",
+        "ch18-08-18-app-scope",
+        "ch18-08-19-framework-scope",
+        "ch18-08-20-kernel-scope",
+        "ch18-08-21-startup-definition",
+        "ch18-08-22-experiment-grid",
+        "ch18-08-23-evidence-pairs",
+        "ch18-08-24-component-controls",
+        "ch18-08-25-results-boundary",
+        "ch18-08-26-profile-coexistence",
+        "ch18-08-27-workload-roles",
+        "ch18-08-28-rollback"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-196/retired-assets.json"
     },
     {
       "index": 197,
@@ -52171,8 +52452,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 127,
-  "next_article": "src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+  "reviewed_articles": 128,
+  "next_article": "src/part4-system/ch18-aosp/09-agent-native-os.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -52182,7 +52463,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:38:03.565794+08:00",
+  "updated_at": "2026-10-31T15:40:21.136334+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -52248,10 +52529,10 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
-      "registered_sha256": "089242234aa4c96658e7f52f0cdabe1c80468ade0e95aa640053a00803d5d232",
-      "observed_sha256": "b46db489ce78df29b147e491b60292830434f72cb8d14fe769afa2a47cab9a4c",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+      "article": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+      "registered_sha256": "f000841ee99b708cabe616231266fe379e72b4edcf8db6a566643197c499e432",
+      "observed_sha256": "2fdfb3371ff8e2ac68c3b4c8ed5305d0893163008242e3572cf892823c575f37",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -52402,9 +52683,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4213,
-  "reviewed_placements_after": 1792,
-  "net_removed_placements": 2421,
+  "reviewed_placements_before": 4241,
+  "reviewed_placements_after": 1800,
+  "net_removed_placements": 2441,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
