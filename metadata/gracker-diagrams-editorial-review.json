@@ -49043,9 +49043,355 @@
       "before_count": 33,
       "before_all_images": 33,
       "sha256_before": "c495b4b8f76ae2e167772a2b854eafcea009d77328cf2280154b36a2e26f8972",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 17,
+      "decisions": [
+        {
+          "original_id": "ch17-12-01-peak-budgets",
+          "title": "峰值故障与三个控制范围",
+          "decision": "remove",
+          "reason": "Peak/budget introductory columns repeat opening paragraphs and final architecture control model.",
+          "original_line": 64,
+          "heading": "# 千万级 DAU（Daily Active Users，日活跃用户数） 的 APM 端侧架构"
+        },
+        {
+          "original_id": "ch17-12-02-worker-boundary",
+          "title": "从业务入口到慢副作用的线程边界",
+          "decision": "merge",
+          "reason": "Merge worker/thread boundary into corrected finalarchitecture33 to avoid two generic end-to-end pipelines.",
+          "original_line": 93,
+          "heading": "## 1. 端侧引擎的职责与不可破坏约束",
+          "replacement_id": "ed17-12-apm-data-control-recovery"
+        },
+        {
+          "original_id": "ch17-12-04-memory-budget",
+          "title": "队列容量与 SDK 总内存分别核算",
+          "decision": "keep",
+          "reason": "Retain independent producer construction, resident4096buffer and worker/workspace memory accounting; capacity is not total SDK memory.",
+          "original_line": 177,
+          "heading": "### 2.1 `trySend()` 的非挂起契约"
+        },
+        {
+          "original_id": "ch17-12-03-channel-admission",
+          "title": "固定 SUSPEND 策略下的准入结果",
+          "decision": "keep",
+          "reason": "Retain exact fixedSUSPEND positivecapacity trySend outcomes and independent full/closed counters, with ACCEPTED notdurable.",
+          "original_line": 188,
+          "heading": "### 2.1 `trySend()` 的非挂起契约"
+        },
+        {
+          "original_id": "ch17-12-05-priority-reserves",
+          "title": "三级优先级与独立故障容量",
+          "decision": "remove",
+          "reason": "P0/P1/P2 policy columns duplicate the exact priority table and corrected totalarchitecture independent reserve.",
+          "original_line": 205,
+          "heading": "### 2.2 三级优先级准入"
+        },
+        {
+          "original_id": "ch17-12-06-spool-states",
+          "title": "单写者提交与上传删除状态",
+          "decision": "remove",
+          "reason": "Broad memory/active/sealed/upload/ack chain repeats precise plain state line, ABcommit12 and acknowledgment25; no extra failure branches drawn.",
+          "original_line": 221,
+          "heading": "### 2.3 单写者简化文件一致性"
+        },
+        {
+          "original_id": "ch17-12-07-process-isolation",
+          "title": "每进程独立写入与统一上传协调",
+          "decision": "keep",
+          "reason": "Retain perprocessinstance independentqueue/writer/spool -> sealnotification -> scan-recoverable shared uploader, including explicit multiprocess scheduling.",
+          "original_line": 240,
+          "heading": "## 3. 多进程与进程退出"
+        },
+        {
+          "original_id": "ch17-12-08-crash-minimum",
+          "title": "故障现场的最小职责与下一次恢复",
+          "decision": "remove",
+          "reason": "Crash-type columns directly repeat safety bullet list and linked dedicated chapter; preserve marker bypass boundaries in corrected totaldiagram.",
+          "original_line": 256,
+          "heading": "### 3.1 crash handler 的最小职责"
+        },
+        {
+          "original_id": "ch17-12-09-exit-evidence",
+          "title": "系统报告与实际死亡分别确认",
+          "decision": "remove",
+          "reason": "Exit-record reconciliation sequence repeats the three precise local paragraphs and does not show a concrete ambiguous record match.",
+          "original_line": 269,
+          "heading": "### 3.2 下次启动补系统退出原因"
+        },
+        {
+          "original_id": "ch17-12-10-mmap-cache",
+          "title": "mmap 热页、缺页与脏页回写",
+          "decision": "remove",
+          "reason": "Mmap heat/pagefault/dirty/writeback sequence repeats local paragraphs; retained persistence11/AB12 show actual commit guarantees.",
+          "original_line": 282,
+          "heading": "### 4.1 缺页、脏页与回写"
+        },
+        {
+          "original_id": "ch17-12-11-durable-rename",
+          "title": "记录同步、名称切换与目录持久性",
+          "decision": "keep",
+          "reason": "Retain mappeddata force -> header/index synchronization -> atomicname publication -> conditional parent-directory durability boundary.",
+          "original_line": 299,
+          "heading": "### 4.1 缺页、脏页与回写"
+        },
+        {
+          "original_id": "ch17-12-12-ab-commit",
+          "title": "A/B superblock 的提交与恢复",
+          "decision": "keep",
+          "reason": "Retain record/checksum/dataforce before next-generation metadataforce, validcommittedprefix selection and olderABfallback on tail failure.",
+          "original_line": 322,
+          "heading": "### 4.2 可恢复分片的文件格式"
+        },
+        {
+          "original_id": "ch17-12-13-preallocation-failures",
+          "title": "预分配、映射失败与截短风险",
+          "decision": "keep",
+          "reason": "Retain sparse logicallength risk versus checked physicalpreallocation versus mappingidentity/truncate/unlink differences; Java catch notgeneralSIGBUSrecovery.",
+          "original_line": 342,
+          "heading": "### 4.3 预分配、磁盘满与 `SIGBUS`"
+        },
+        {
+          "original_id": "ch17-12-14-mapping-lifetime",
+          "title": "映射生命周期与小型 journal 复用",
+          "decision": "keep",
+          "reason": "Retain committed smalljournal -> ordinarysealedcopy synchronization -> successfulpublication before generation-controlled reuse, avoiding implicit synchronous unmap.",
+          "original_line": 351,
+          "heading": "### 4.3 预分配、磁盘满与 `SIGBUS`"
+        },
+        {
+          "original_id": "ch17-12-16-schema-evolution",
+          "title": "字段编号、unknown 与 Lite 能力",
+          "decision": "remove",
+          "reason": "Fieldnumber/reserved/unknown/Lite checklist repeats exact adjacent schema paragraphs; unrelated constraints are not one runtime sequence.",
+          "original_line": 373,
+          "heading": "## 5. 编码与文件 envelope 的选型"
+        },
+        {
+          "original_id": "ch17-12-15-codec-selection",
+          "title": "按读写形状选择事件编码",
+          "decision": "remove",
+          "reason": "Codec-choice columns duplicate the comparison table, including actual read/write and lifecycle costs.",
+          "original_line": 380,
+          "heading": "## 5. 编码与文件 envelope 的选型"
+        },
+        {
+          "original_id": "ch17-12-17-block-envelope",
+          "title": "压缩、AEAD 与可认证的 envelope",
+          "decision": "keep",
+          "reason": "Retain boundedlength-delimitedbatch -> compression -> uniqueIV AEAD -> authenticated envelope, with headerAAD/retransmission caveats.",
+          "original_line": 404,
+          "heading": "## 5. 编码与文件 envelope 的选型"
+        },
+        {
+          "original_id": "ch17-12-18-decode-budget",
+          "title": "认证与解压上限分别执行",
+          "decision": "keep",
+          "reason": "Retain preauthformat/workspace limits -> ciphertextauth -> streameddecompression realoutputcap -> eventvalidation; authentication does not remove resource limits.",
+          "original_line": 411,
+          "heading": "## 5. 编码与文件 envelope 的选型"
+        },
+        {
+          "original_id": "ch17-12-19-codec-benchmark",
+          "title": "真实字段分布与编码成本验收",
+          "decision": "remove",
+          "reason": "Codec benchmark inventory repeats detailed five-item cost checklist and inputdistribution paragraph; no actual measurements drawn.",
+          "original_line": 426,
+          "heading": "## 5. 编码与文件 envelope 的选型"
+        },
+        {
+          "original_id": "ch17-12-20-capability-layers",
+          "title": "端内 trace、系统受控采集与 heap dump",
+          "decision": "remove",
+          "reason": "Capability columns duplicate the detailed releaseApp/version/permission table and OOMhandler caveat.",
+          "original_line": 453,
+          "heading": "### 6.1 Android 8—17 可用的采集能力"
+        },
+        {
+          "original_id": "ch17-12-22-ttl-clock",
+          "title": "同 boot 单调时间与跨重启新鲜度",
+          "decision": "keep",
+          "reason": "Retain authenticatedservertime+elapsed anchor, samebootTTL progression and untrustedreboot/rollback rejection, with durablegeneration/command/budget.",
+          "original_line": 480,
+          "heading": "### 6.2 指令字段与验签顺序"
+        },
+        {
+          "original_id": "ch17-12-21-command-validation",
+          "title": "指令从签名到执行资格的核验",
+          "decision": "keep",
+          "reason": "Retain canonicalsignature/schema -> antirollback/replay -> freshness/cohort/consent -> capability/hardbudget -> durableVERIFIED before arming.",
+          "original_line": 487,
+          "heading": "### 6.2 指令字段与验签顺序"
+        },
+        {
+          "original_id": "ch17-12-23-command-states",
+          "title": "指令验证、布防、预算预留与终止",
+          "decision": "keep",
+          "reason": "Retain command lifecycle and rejection/expiry/budget termination branches, reserve beforeRUNNING and bounded recovery result.",
+          "original_line": 508,
+          "heading": "### 6.3 指令的执行状态机"
+        },
+        {
+          "original_id": "ch17-12-24-upload-two-paths",
+          "title": "前台快路径和 WorkManager 共享批次 claim",
+          "decision": "keep",
+          "reason": "Retain foregroundfastpath and WorkManager sharing atomicclaim, distinct scheduling versus ownership, noowner/cooldown busywait.",
+          "original_line": 526,
+          "heading": "## 7. 网络投递的两条路径"
+        },
+        {
+          "original_id": "ch17-12-25-ack-before-delete",
+          "title": "至少一次投递与确认后删除",
+          "decision": "keep",
+          "reason": "Retain repeatablechunkupload -> exactbatchID+fullhash servercommit -> durablelocalACKED -> file/index deletion.",
+          "original_line": 542,
+          "heading": "## 7. 网络投递的两条路径"
+        },
+        {
+          "original_id": "ch17-12-26-retry-cooldown",
+          "title": "错误分类与持久冷却截止",
+          "decision": "remove",
+          "reason": "Three error/cooldown columns repeat exact retry-policy bullets and durable nextattempt paragraph; no additional branching or timing example.",
+          "original_line": 557,
+          "heading": "## 7. 网络投递的两条路径"
+        },
+        {
+          "original_id": "ch17-12-27-key-envelopes",
+          "title": "本地 Keystore 与服务端解密各自需要密钥材料",
+          "decision": "keep",
+          "reason": "Retain separate server-public-key and deviceKeystore wrappedDEK roles, rawkey memory-only and separate rotations/IDs; same keyID is not server decryption material.",
+          "original_line": 570,
+          "heading": "## 7. 网络投递的两条路径"
+        },
+        {
+          "original_id": "ch17-12-28-circuit-breaker",
+          "title": "断路器的冷却与有限探测",
+          "decision": "keep",
+          "reason": "Retain actual CLOSED/OPEN/HALF_OPEN loop with persistent boundedcooldown, limited probes and success/cost recovery gate.",
+          "original_line": 605,
+          "heading": "## 8. 断路器与自我保护"
+        },
+        {
+          "original_id": "ch17-12-29-self-metrics",
+          "title": "自监控分子、计数层与递归保护",
+          "decision": "remove",
+          "reason": "Counter-to-window-summary pipeline repeats selfmetrics table and nonrecursive summary paragraph; finalarchitecture retains independent countercontrol.",
+          "original_line": 635,
+          "heading": "## 9. APM 监控 APM 的指标口径"
+        },
+        {
+          "original_id": "ch17-12-32-rollout",
+          "title": "按设备分层验证后逐步扩量",
+          "decision": "remove",
+          "reason": "Rollout checklist repeats two precise staged-release paragraphs; percentages are examples rather than graph-derived gates.",
+          "original_line": 644,
+          "heading": "## 9. APM 监控 APM 的指标口径"
+        },
+        {
+          "original_id": "ch17-12-30-storage-backup",
+          "title": "缓存、可靠 spool 与备份排除",
+          "decision": "remove",
+          "reason": "Directory/backup columns duplicate exact path/purpose table and OEMmigration/cleardata caveats.",
+          "original_line": 667,
+          "heading": "## 10. App 私有存储、备份与隐私"
+        },
+        {
+          "original_id": "ch17-12-31-privacy-cleanup",
+          "title": "数据最小化与文件 owner 清理",
+          "decision": "remove",
+          "reason": "Generic privacy-to-ownercleanup path repeats exact minimization list and detailed writer/claim/generation cleanup paragraph.",
+          "original_line": 683,
+          "heading": "## 10. App 私有存储、备份与隐私"
+        },
+        {
+          "original_id": "ch17-12-33-architecture",
+          "title": "APM 端侧的数据、控制与恢复总图",
+          "decision": "merge",
+          "reason": "Replace totalarchitecture and workerboundary2 with seven-component data/control/recovery graph; originalACK-to-remotecommand edge incorrectly serializes independent flows.",
+          "original_line": 694,
+          "heading": "## 11. 完整架构与排查入口",
+          "replacement_id": "ed17-12-apm-data-control-recovery"
+        }
+      ],
+      "sha256_after": "67531e2023d35dbf43db7f072443df39fc0d2e634a6ecb43ffee0fc3881d9294",
+      "new_diagrams": [
+        {
+          "id": "ed17-12-apm-data-control-recovery",
+          "title": "APM 数据流、控制与恢复",
+          "article": "src/part3-tools/ch17-apm/12-apm-client-architecture.md",
+          "assets": [
+            "src/assets/diagrams/ch17/ed17-12-apm-data-control-recovery.svg",
+            "src/assets/diagrams/ch17/ed17-12-apm-data-control-recovery.png"
+          ],
+          "layout": "hierarchical-layers：上部六个数据模块蛇形连续；下部独立控制恢复模块以青色虚线指向准入、提交和claim，不从服务端ACK接入控制。",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed17-12-apm-data-control-recovery",
+          "sources": [
+            "本篇正文第1/2/3/6/7/8/9/11节；仅整理当前提供内容，不作新增版本或源码研究"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch17-12-02-worker-boundary",
+              "ch17-12-33-architecture"
+            ],
+            "boundary": "正文的SDK设计模型，非实际运行采样。P0独立容量仍有限，fatal signal预留marker不走普通队列。每进程实例独立writer/spool；SEALED已提交不修改。上传共用持久owner/attempt，服务端完整batchID/hash确认后本地持久ACKED才清理。签名指令须TTL/能力/授权/本地预算，不依赖批次ACK；计数器独立不递归，自保离线仍有效，启动修复提交/owner/冷却。rename非自动掉电持久，设备成本与故障恢复另验。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a187/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T15:12:43.101217+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 33,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a187/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a187/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 187,
+        "article": "src/part3-tools/ch17-apm/12-apm-client-architecture.md",
+        "registered_sha256": "c495b4b8f76ae2e167772a2b854eafcea009d77328cf2280154b36a2e26f8972",
+        "frozen_sha256": "c495b4b8f76ae2e167772a2b854eafcea009d77328cf2280154b36a2e26f8972",
+        "review_input_sha256": "e79630c0d2357c6f51d51a0d3c088aee253f3230a2544198025c23783c1578ae",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch17-apm/12-apm-client-architecture.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a187/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a187/external-source.diff",
+        "diff_sha256": "82cbc2d0abf5334ba7d916542ef71eef87176bde252aa3dfc1ae422e01423b21",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 356, \"characters\": 29526, \"svg_labels_read\": 33, \"actual_pngs_viewed\": 33, \"contact_sheets_viewed\": 5, \"non_mermaid_code_blocks\": 7, \"code_lines\": 87, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "e79630c0d2357c6f51d51a0d3c088aee253f3230a2544198025c23783c1578ae",
+      "retired_diagrams": [
+        "ch17-12-01-peak-budgets",
+        "ch17-12-02-worker-boundary",
+        "ch17-12-05-priority-reserves",
+        "ch17-12-06-spool-states",
+        "ch17-12-08-crash-minimum",
+        "ch17-12-09-exit-evidence",
+        "ch17-12-10-mmap-cache",
+        "ch17-12-15-codec-selection",
+        "ch17-12-16-schema-evolution",
+        "ch17-12-19-codec-benchmark",
+        "ch17-12-20-capability-layers",
+        "ch17-12-26-retry-cooldown",
+        "ch17-12-29-self-metrics",
+        "ch17-12-30-storage-backup",
+        "ch17-12-31-privacy-cleanup",
+        "ch17-12-32-rollout",
+        "ch17-12-33-architecture"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-187/retired-assets.json"
     },
     {
       "index": 189,
@@ -50005,8 +50351,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 119,
-  "next_article": "src/part3-tools/ch17-apm/12-apm-client-architecture.md",
+  "reviewed_articles": 120,
+  "next_article": "src/part4-system/ch18-aosp/01-aosp-performance-version-changes.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -50016,7 +50362,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:05:13.903937+08:00",
+  "updated_at": "2026-10-31T15:12:43.101217+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -50079,13 +50425,6 @@
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch17-apm/12-apm-client-architecture.md",
-      "registered_sha256": "c495b4b8f76ae2e167772a2b854eafcea009d77328cf2280154b36a2e26f8972",
-      "observed_sha256": "e79630c0d2357c6f51d51a0d3c088aee253f3230a2544198025c23783c1578ae",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/12-apm-client-architecture.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -50163,6 +50502,13 @@
       "registered_sha256": "43b57607ec5740c9d7223adb78fceccd64f6940ddc11b7042587cd390ecd59ce",
       "observed_sha256": "194797d1f8ffdd3ccc95005bd95d19ea18233dec89a46570b87afe26ad99d013",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+      "registered_sha256": "18a3dd6dd091f57768b5bfc7fe72fc2e2af539bc3aef8157c3b2db07576d6d4d",
+      "observed_sha256": "38f6222c38e53b5694e3156679505e6b375bc90901fefa846300f13700b39681",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch20-stability/14-sdk-performance-governance.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -50264,9 +50610,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3994,
-  "reviewed_placements_after": 1710,
-  "net_removed_placements": 2284,
+  "reviewed_placements_before": 4027,
+  "reviewed_placements_after": 1727,
+  "net_removed_placements": 2300,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -50290,5 +50636,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 119
+  "currently_matching_reviewed_source_count": 120
 }
