@@ -114,13 +114,13 @@ last_rework_at: '2026-10-21T21:38:57+08:00'
 
 # 功耗诊断与 OEM（设备厂商） 后台限制
 
-功耗诊断先固定场景和电量窗口，再用 Battery Historian、batterystats、Perfetto 与设备电源数据定位组件活动。OEM 后台策略会改变任务、网络和进程存活，需要与 AOSP（Android Open Source Project，Android 开源项目） 行为分开记录。
+功耗诊断先固定场景和电量窗口，再用 Battery Historian、batterystats、Perfetto 与设备电源数据定位组件活动；OEM 后台策略会改变任务、网络和进程存活，排查时我们要把它与 AOSP（Android Open Source Project，Android 开源项目） 行为分开记录。
 
 ## 场景基线、组件活动与能量证据
 
 ### 从问题描述到可归因证据
 
-“应用掉电快”只是用户的感受，从感受走到修复项，中间是一整段取证。我们先补齐条件：设备、系统版本、前后台状态、网络、温度、测试区间和业务动作。这些条件缺了哪一样，电量百分比下降、某条电源轨峰值、某个 UID（系统分配的 Linux 用户标识，用来区分应用身份） 的 CPU（中央处理器） 时间，都单独证明不了责任归属。
+“应用掉电快”只是用户的感受，从感受走到修复项，中间是一整段取证。我们先补齐条件：设备、系统版本、前后台状态、网络、温度、测试区间和业务动作。这些条件凑齐之前，电量百分比下降、某条电源轨峰值、某个 UID（系统分配的 Linux 用户标识，用来区分应用身份） 的 CPU（中央处理器） 时间，各自都只是单点读数；要指认责任归属，得先把它们放进同一个受控场景。
 
 功耗诊断要完成三次转换：
 
@@ -140,7 +140,7 @@ last_rework_at: '2026-10-21T21:38:57+08:00'
 | 系统归因 | `dumpsys batterystats`、`BatteryUsageStats`、Android vitals（Google Play 的应用质量指标） | 系统把 CPU、网络、WakeLock、传感器等活动记给了哪个 UID | 每项统计与物理能量完全相等 |
 | 执行行为 | Perfetto、应用日志、方法追踪 | 哪个线程、请求或回调在某个时刻运行 | 单次尖峰必然造成可感知续航问题 |
 
-外部电源分析仪更接近整机能量基准；ODPM 和电池计数器仍是设备级读数；BatteryStats 按系统可见的活动和模型做 UID 归因；Perfetto 负责解释时间线上发生了什么。所以可靠结论通常要靠其中两层以上互相印证。
+这几类工具各管一段：外部电源分析仪更接近整机能量基准，ODPM 和电池计数器仍是设备级读数，BatteryStats 按系统可见的活动和模型做 UID 归因，Perfetto 负责解释时间线上发生了什么。任何一层单独都答不了整道题，所以可靠结论通常要靠其中两层以上互相印证。
 
 <!-- gracker-diagram: a274-01-three-evidence-layers -->
 ![设备能量、UID归因与执行行为相互印证](../../assets/diagrams/ch25/a274-01-three-evidence-layers.png)
@@ -291,9 +291,9 @@ rg ',(uid|wl|kwl|wr|nt|sr|jb|sy|apk),' batterystats-checkin.csv
 | GNSS / 传感器时间 | 定位或传感器在 UID 下的活跃情况 | 精度、频率、批处理、前后台状态 |
 | 估算功耗（estimated power） | 系统基于模型和可用硬件数据给出的归因结果 | 设备级测量和同条件对照实验 |
 
-CPU 时间离能量还有一步换算：相同 CPU 时间可能分布在不同核簇和频点上，也可能伴随不同温度。网络字节数同样要小心，批量传输和反复短请求可能带来不同的无线电状态切换。BatteryStats 的功耗汇总适合比较和排查，实验室电源分析仪那种绝对测量它替代不了。
+CPU 时间离能量还有一步换算：相同 CPU 时间可能分布在不同核簇和频点上，也可能伴随不同温度。网络字节数同样要小心，批量传输和反复短请求可能带来不同的无线电状态切换。BatteryStats 的功耗汇总适合做比较和排查；要做绝对测量，还得靠实验室电源分析仪那类设备级仪器。
 
-Android 17 的 `dumpsys batterystats --usage` 仍支持 `--model power-profile`，用于强制采用 `PowerProfile` 功耗模型。不要再依赖旧文档中的 `BatteryConsumer.getPowerModel()` 判断每项究竟来自实测还是模型；Android 17 源码已将该接口标为弃用，并返回未定义值。设备是否提供能量数据，应结合 PowerStats HAL 能力、追踪数据中的电源轨以及目标设备实现判断。
+判断每项究竟来自实测还是模型，先看 `dumpsys batterystats --usage`：它仍支持 `--model power-profile`，可强制采用 `PowerProfile` 功耗模型；旧文档推荐的 `BatteryConsumer.getPowerModel()` 已在源码中弃用并返回未定义值，别再依赖它。设备是否提供能量数据，应结合 PowerStats HAL 能力、追踪数据中的电源轨以及目标设备实现判断。
 
 ### 功耗归因：CPU / 网络 / GNSS（Global Navigation Satellite System，全球卫星导航系统） / WakeLock
 
@@ -429,11 +429,9 @@ suspend fun <T> PowerManager.withPartialWakeLock(
 
 ### Android 17 源码中的功耗归因链
 
-这一节我们对照 AOSP（Android Open Source Project，Android 开源平台） `android-17.0.0_r1` 的源码看功耗归因链。Battery Historian 是独立项目，`frameworks/base` 里没有它；AOSP 平台负责产生 BatteryStats、PowerStats 和 bugreport 数据。
+这一节我们对照 AOSP（Android Open Source Project，Android 开源平台） `android-17.0.0_r1` 的源码看功耗归因链。先分清数据从哪来：Battery Historian 是独立项目，`frameworks/base` 里没有它；AOSP 平台负责产生 BatteryStats、PowerStats 和 bugreport 数据。
 
-图中把活动记录、功耗聚合和结果展示三项职责分开。
-
-活动记录进入聚合、存储与结果查询；Battery Historian 位于诊断报告的消费端。
+下面这张图把活动记录、功耗聚合和结果展示三项职责分开：活动记录先进入聚合与存储，再对外提供结果查询，Battery Historian 站在诊断报告的消费端。
 
 <!-- gracker-diagram: a274-07-platform-attribution-pipeline -->
 ![活动历史经聚合归因生成系统查询结果](../../assets/diagrams/ch25/a274-07-platform-attribution-pipeline.png)
@@ -448,7 +446,7 @@ suspend fun <T> PowerManager.withPartialWakeLock(
 
 #### 归因主路径
 
-主路径从 [`BatteryStatsService.systemServicesReady()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 开始：CPU、WakeLock、屏幕、移动网络、Wi‑Fi、蓝牙、音视频、GNSS、相机及自定义能量消费者等组件在这里启用采集器和归因支持；传感器只在这里启用归因支持。开关为 `true` 不代表设备具备相应的硬件能量计。源码还为 `POWER_COMPONENT_MEMORY` 设置了这两个开关，但紧邻的注释仍是 `Currently unimplemented`，不能据此认定 Android 17 已实现内存组件的功耗归因。
+主路径从 [`BatteryStatsService.systemServicesReady()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 开始：CPU、WakeLock、屏幕、移动网络、Wi‑Fi、蓝牙、音视频、GNSS、相机及自定义能量消费者等组件在这里启用采集器和归因支持；传感器只在这里启用归因支持。开关为 `true` 只说明框架启用了这条路径，硬件能量计是否存在要另行确认。源码还为 `POWER_COMPONENT_MEMORY` 设置了这两个开关，但紧邻的注释仍是 `Currently unimplemented`，不能据此认定 Android 17 已实现内存组件的功耗归因。
 
 [`BatteryUsageStatsProvider`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java) 在构建 `BatteryUsageStats` 时调用 `PowerAttributor.estimatePowerConsumption()`；具体归因由 [`MultiStatePowerAttributor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java) 承担，它配置各功耗组件的处理器，并通过 `PowerStatsExporter` 把聚合结果写入构建器。
 
@@ -470,7 +468,7 @@ CPU 处理器会把频点模型、硬件总量和 UID time-in-bracket（各功�
 
 标准 [`BatteryConsumer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/BatteryConsumer.java) 里没有 GPU 组件，PowerStats AIDL（Android Interface Definition Language，Android 接口定义语言） 的标准 [`EnergyConsumerType`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerType.aidl) 枚举里同样没有 GPU。厂商可以暴露名为 GPU、G3D 或其他名称的监测项，但这些数据只适合在相同设备构建上做差值；跨设备的 UID GPU 电量，彼此之间比不了。
 
-普通应用读取 `PowerMonitor` 时还要处理两个实现细节：设备可以返回空列表；Android 17 [`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 的普通权限路径可能复用 20 秒内的缓存读数，并按调用 UID 加入随机扰动。两次快照只有在监测项相同、时间戳前进、累计值均不为 `PowerMonitorReadings.ENERGY_UNAVAILABLE` 且未回退时才能做差；`ENERGY_UNAVAILABLE` 是不可用标记，不能当作能量值参与计算。短于读数分辨率的启动或单帧场景应改用 Perfetto 电源轨、Power Profiler 或外接仪器。
+普通应用读取 `PowerMonitor` 时还要处理两个实现细节：设备可以返回空列表；[`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 的普通权限路径可能复用 20 秒内的缓存读数，并按调用 UID 加入随机扰动。两次快照要能做差，得同时满足监测项相同、时间戳前进、累计值均不为 `PowerMonitorReadings.ENERGY_UNAVAILABLE` 且未回退；`ENERGY_UNAVAILABLE` 是不可用标记，参与计算前要先剔除。短于读数分辨率的启动或单帧场景，改用 Perfetto 电源轨、Power Profiler 或外接仪器更合适。
 
 一次可复核的应用侧实验应把三组增量放在一起保存：监测项的微瓦秒、`HealthStats` 的本 UID CPU/网络/WakeLock 活动，以及完成任务数。设备能量是否变化、应用行为为何变化，分别靠前两组增量回答；系统设置页那种 UID 精确电量，还在这套数据的能力之外。
 
@@ -493,12 +491,12 @@ CPU 处理器会把频点模型、硬件总量和 UID time-in-bracket（各功�
 
 span（聚合区间）文件名由 19 位补零 ID 和 `.pss` 后缀组成，通过 `Xml.newBinarySerializer()` 写成二进制 XML，并由 `AtomicFile`（原子文件更新）更新。
 
-文件是二进制 XML，别按普通文本 XML 或旧资料所说的 Protocol Buffers（Proto）日志去解析；该目录属于系统内部实现，普通应用也不要直接读取。
+这些文件是二进制 XML：旧资料所说的 Protocol Buffers（Proto）日志是另一种格式，按普通文本 XML 或 Proto 日志去解析都会读错。该目录属于系统内部实现，普通应用也别直接读取。
 
 
 #### 唤醒原因如何进入 Perfetto 和 BatteryStats
 
-Android 17 的 `BatteryStatsService.WakeupReasonThread` 等待原生层返回唤醒原因。原生实现位于 [`com_android_server_am_BatteryStatsService.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_BatteryStatsService.cpp)，通过 `ISuspendControlService` 注册唤醒回调。收到原因后，Java 层会：
+唤醒原因的入口在原生层：`BatteryStatsService.WakeupReasonThread` 等待它返回结果。原生实现位于 [`com_android_server_am_BatteryStatsService.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_BatteryStatsService.cpp)，通过 `ISuspendControlService` 注册唤醒回调。收到原因后，Java 层会：
 
 - 在 `TRACE_TAG_POWER` 的 `wakeup_reason` 轨道写入瞬时事件。
 - 把原因交给 `CpuWakeupStats` 做统计与归因。
@@ -513,9 +511,9 @@ Android 17 的 `BatteryStatsService.WakeupReasonThread` 等待原生层返回唤
 
 #### `WakeLockStats` 的访问限制
 
-Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/WakeLockStats.java) 带有 `@hide` 标记，不属于公开 SDK；它实现 `Parcelable`（Android 跨进程序列化接口），包含逐锁和聚合列表。每条记录有 UID、名称、总持有数据和后台持有数据。`BatteryStatsImpl.getWakeLockStats()` 用主计时器生成总数据，用子计时器生成后台数据。
+[`WakeLockStats`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/WakeLockStats.java) 带有 `@hide` 标记，属于系统内部接口；它实现 `Parcelable`（Android 跨进程序列化接口），包含逐锁和聚合列表。每条记录有 UID、名称、总持有数据和后台持有数据。`BatteryStatsImpl.getWakeLockStats()` 用主计时器生成总数据，用子计时器生成后台数据。
 
-[`BatteryStatsService.getWakeLockStats()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 受 `BATTERY_STATS` 权限保护；Android 17 的 [`AndroidManifest.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml) 将该权限声明为 `signature|privileged|development`，也就是签名、特权或开发级权限。对普通第三方应用它算不上 SDK API——反射这条路，也会被 Binder（Android 跨进程调用机制） 的权限校验拦住。可行方案分三类：
+[`BatteryStatsService.getWakeLockStats()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 受 `BATTERY_STATS` 权限保护；[`AndroidManifest.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml) 将该权限声明为 `signature|privileged|development`，也就是签名、特权或开发级权限。对普通第三方应用它算不上 SDK API——反射这条路，也会被 Binder（Android 跨进程调用机制） 的权限校验拦住。可行方案分三类：
 
 - 普通应用：使用 Play Console 的 Android vitals、测试设备上的 `adb dumpsys`、bugreport、Perfetto 和应用侧 WakeLock 记录。
 - OEM（Original Equipment Manufacturer，设备厂商）、系统应用或测试工具：在拥有相应系统权限并维护版本兼容的前提下使用隐藏接口。
@@ -536,7 +534,7 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 | EnergyConsumer（能量消费者） | IPowerStats HAL | CPU、显示、移动网络等消费者的累计能量 | 可用消费者和 UID 归因能力不同 |
 | StateResidency（状态驻留统计） | IPowerStats HAL | 电源实体在各状态停留的时间和进入次数 | 实体及状态由设备定义 |
 
-[`IPowerStats.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl) 通过 `getEnergyConsumerInfo()`、`getEnergyMeterInfo()` 和 `getPowerEntityInfo()` 暴露设备能力，再通过对应查询接口返回数据。客户端先枚举能力，再按返回结果取数；接口也明确说明，已支持的消费者、电源轨或实体不保证每次查询都返回读数，需要处理缺项。厂商名称不能代替能力检查。
+[`IPowerStats.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl) 通过 `getEnergyConsumerInfo()`、`getEnergyMeterInfo()` 和 `getPowerEntityInfo()` 暴露设备能力，再通过对应查询接口返回数据。客户端先枚举能力，再按返回结果取数；接口也明确说明，已支持的消费者、电源轨或实体不保证每次查询都返回读数，需要处理缺项。能力检查要以这几个接口为准，厂商名称说明不了具体设备有什么。
 
 #### 内核侧能读到什么
 
@@ -560,7 +558,7 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 
 ## 后台限制、豁免与厂商差异
 
-厂商后台限制，应用侧的单独观察只能提供线索，要把设置、系统日志和跨设备对照放在一起才能确认；私有保活策略无法公开验证，应用的存活也别建立在它上面。
+排查厂商后台限制，我们手里最先有的往往是应用侧观察，而它只能提供线索；要把设置、系统日志和跨设备对照放在一起，结论才站得住。私有保活策略没有公开的验证渠道，应用的存活也别建立在它上面。
 
 > 源码基线：Android 17，API 37，AOSP `android-17.0.0_r1`。
 
@@ -570,7 +568,7 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 2. Job、Alarm、前台服务、网络或进程生命周期中的哪一层没有按预期推进？
 3. 两台设备的 AOSP 状态相同时，厂商侧又增加了什么设置、服务、冻结或清理动作？
 
-先校正两个容易误导排查的细节。Android 17 的命令是 `cmd activity get-bg-restriction-level`，没有 `background get-restriction-level` 这一层子命令；`AppRestrictionController` 的 XML 位于每用户的 `/data/system_de/<userId>/apprestriction/settings.xml`，不是 `/data/system/apprestriction/settings.xml`。
+动手前先校正两个容易误导排查的细节：Android 17 的查询命令是 `cmd activity get-bg-restriction-level`，没有 `background get-restriction-level` 这一层子命令；`AppRestrictionController` 的 XML 位于每用户的 `/data/system_de/<userId>/apprestriction/settings.xml`，不是 `/data/system/apprestriction/settings.xml`。
 
 ### AOSP 后台限制的多套机制
 
@@ -585,7 +583,7 @@ Android 17 的 [`WakeLockStats`](https://android.googlesource.com/platform/frame
 | 进程管理 | cached freezer（缓存进程冻结器）、LMKD（低内存终止守护进程）、force-stop、厂商清理 | 进程是否存在、何时可再次启动 |
 | 任务自身 | WorkManager 约束、Job 配额（系统分配的运行额度）、Alarm 类型 | 某项具体任务能否获得执行机会 |
 
-这些状态可能同时出现，也可能只有一项变化。单看进程消失、`dumpsys deviceidle` 或设置页里的“允许后台活动”，还定不了原因。
+这些状态可能同时出现，也可能只有一项变化。所以进程消失、`dumpsys deviceidle` 或设置页里的“允许后台活动”，每一项都只是单点观察，要沿着机制一层层往下查。
 
 
 ### `AppRestrictionController` 怎样形成限制等级
@@ -611,7 +609,7 @@ void initAppStateTrackers(AppRestrictionController controller) {
 }
 ```
 
-这七个 tracker 的职责并不相同：`AppBatteryTracker` 可以依据后台耗电提出限制等级；FGS、媒体会话、权限、广播和绑定服务 tracker 记录相应活动；`AppBatteryExemptionTracker` 用于核算应从后台耗电中排除的部分。出现在 tracker 列表里，和“每个 tracker 都会单独限制应用”是两回事。
+这七个 tracker 的职责并不相同：`AppBatteryTracker` 可以依据后台耗电提出限制等级；FGS、媒体会话、权限、广播和绑定服务 tracker 记录相应活动；`AppBatteryExemptionTracker` 用于核算应从后台耗电中排除的部分。所以一个 tracker 出现在列表里，只说明它参与记录或核算，离“单独限制应用”还隔着汇总规则。
 
 当多个 policy（各 tracker 的规则对象） 提出候选等级时，控制器选择数值更大的等级，并保留对应 tracker 信息：
 
@@ -627,7 +625,7 @@ for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
 }
 ```
 
-这是 tracker 汇总阶段的规则。`calcAppRestrictionLevel()` 先检查应用休眠并返回 `FORCE_STOPPED`，再按 standby bucket、用户后台限制及是否计算 tracker 分支处理；系统豁免等输入由对应状态与 policy 参与计算。tracker 提出 `BACKGROUND_RESTRICTED` 时，只能按条件请求用户确认，并重新计算较低候选，不能直接进入该级。还要保留功能开关边界：`STANDBY_BUCKET_NEVER` 在 `appRestrictionsApi` 未开启的旧分支会直接映射为 `BACKGROUND_RESTRICTED`，不能把 tracker 分支的用户确认规则推广到所有入口。
+这是 tracker 汇总阶段的规则。`calcAppRestrictionLevel()` 先检查应用休眠并返回 `FORCE_STOPPED`，再按 standby bucket、用户后台限制及是否计算 tracker 分支处理；系统豁免等输入由对应状态与 policy 参与计算。tracker 提出 `BACKGROUND_RESTRICTED` 时，要按条件请求用户确认并重新计算较低候选，这一级经用户确认才会生效。功能开关的差别也要留意：`STANDBY_BUCKET_NEVER` 在 `appRestrictionsApi` 未开启的旧分支会直接映射为 `BACKGROUND_RESTRICTED`；用户确认规则出自 tracker 分支，把它推广到所有入口缺少依据。
 
 #### 限制等级要看名称和来源
 
@@ -645,7 +643,7 @@ for (int i = mAppStateTrackers.size() - 1; i >= 0; i--) {
 | 70 | `USER_LAUNCH_ONLY` | 只有用户启动后才能恢复的更严格状态 |
 | 90 | `CUSTOM` | 为定制限制保留的等级 |
 
-这些数值用来对照同一 package 的 tracker 候选汇总 `Math.max()`。另一个方向的查询不能混用：`getRestrictionLevel(uid)` 对共享 UID 的多个 package 取已知等级中的最宽松值（`Math.min()`）；带 package 的查询才返回该包状态。诊断报告仍要记录包名、UID、名称、变更时间，以及能够取得的 reason、subReason（细分原因）和 source 字段。
+这些数值用来对照同一 package 的 tracker 候选汇总 `Math.max()`。反方向的查询要换一套读法：`getRestrictionLevel(uid)` 对共享 UID 的多个 package 取已知等级中的最宽松值（`Math.min()`）；带 package 的查询才返回该包状态。诊断报告仍要记录包名、UID、名称、变更时间，以及能够取得的 reason、subReason（细分原因）和 source 字段。
 
 
 表中名称是源码常量名；`get-bg-restriction-level` 使用另一组输出字符串，例如 `FORCE_STOPPED` 输出 `stopped`，`USER_LAUNCH_ONLY` 输出 `user_only`。`FORCE_STOPPED` 是生命周期状态，把它简单归因成耗电超限会误判；`EXEMPTED` 也免不了 CPU、网络和前台服务规则各自的约束。
@@ -686,12 +684,12 @@ adb shell device_config get \
 adb shell dumpsys deviceidle whitelist
 ```
 
-三条输出来自不同配置源。不要把某个包出现在 Device Idle 白名单中，写成它已经命中 `bg-restriction-exemption`。
+三条输出来自不同配置源。某个包出现在 Device Idle 白名单里，离命中 `bg-restriction-exemption` 还有一步，报告里别把两者写成一件事。
 
 <!-- gracker-diagram: a274-13-background-exemption-sources -->
 ![豁免来源分开读取并核对作用范围](../../assets/diagrams/ch25/a274-13-background-exemption-sources.png)
 
-图：同在某个允许名单中不代表命中静态豁免，更不保证Job、Alarm、FGS或网络均可执行。
+图：允许名单要分开读取、核对作用范围；出现在其中一个名单里，静态豁免是否命中、Job、Alarm、FGS、网络能否执行，都要另外确认。
 
 ### `AppBatteryExemptionTracker` 记录的是耗电扣除区间
 
@@ -718,7 +716,7 @@ if (start) {
 
 这样可以避免同 UID 的两个 package 把同一段状态重复计时。事件还记录开始和结束时的 UID 电量快照，也就是系统到该时刻为止累计的 UID 耗电估算；`getUidBatteryExemptedUsageSince()` 计算这些区间内的用量，`AppBatteryTracker` 再从总后台用量中扣除它。
 
-这里的 exemption 只作用于耗电归因，算不上给 UID 一个固定时长的后台执行许可。“16 ms 生效延迟”和统一“豁免窗口长度”的公共契约，源码里也找不到，诊断文档别据此写时间保证。
+这里的 exemption 只作用于耗电归因，并没有附带固定时长的后台执行许可；“16 ms 生效延迟”和统一“豁免窗口长度”在源码里找不到公共契约，诊断文档里别写这类时间保证。
 
 <!-- gracker-diagram: a274-14-uid-exemption-union-interval -->
 ![同UID多个package的豁免状态区间取并集](../../assets/diagrams/ch25/a274-14-uid-exemption-union-interval.png)
@@ -771,11 +769,11 @@ Log.i(
 )
 ```
 
-`isBackgroundRestricted` 只回答当前应用是否被用户置于后台限制状态，`appStandbyBucket` 返回本应用待机分组；用户后台限制在设备充电时也仍然生效。系统服务内部的完整 restriction level、reason 和 tracker 详情，这两个 API 都拿不到。
+`isBackgroundRestricted` 只回答当前应用是否被用户置于后台限制状态，`appStandbyBucket` 返回本应用待机分组；用户后台限制在设备充电时也仍然生效。系统服务内部的完整 restriction level、reason 和 tracker 详情，就要转到 dumpsys 快照上去取。
 
 #### 保存控制器与子系统快照
 
-`dumpsys` 是导出系统服务内部状态的诊断命令。Android 17 没有 `dumpsys activity bg-restriction exemption-reason`、`dumpsys activity restriction <package>` 或 `restriction trackers` 这些文本子命令。`AppRestrictionController.dump()` 会在完整 `dumpsys activity -a` 的末尾输出 `APP BACKGROUND RESTRICTIONS`，其中包含设置、policy 配置和各 tracker。
+`dumpsys` 是导出系统服务内部状态的诊断命令，限制控制的内部详情就靠它取。Android 17 没有 `dumpsys activity bg-restriction exemption-reason`、`dumpsys activity restriction <package>` 或 `restriction trackers` 这些文本子命令。`AppRestrictionController.dump()` 会在完整 `dumpsys activity -a` 的末尾输出 `APP BACKGROUND RESTRICTIONS`，其中包含设置、policy 配置和各 tracker。
 
 下面的命令保存 AMS（ActivityManagerService，活动与进程管理系统服务）、进程退出、Job、Alarm 和 Device Idle 的现场记录：
 
@@ -816,9 +814,9 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 }
 ```
 
-系统只在环形缓冲区中保留近期退出记录；示例中的 `20` 是返回条数上限，查不到记录不能证明进程没有退出。
+系统只在环形缓冲区中保留近期退出记录；示例中的 `20` 是返回条数上限，查不到记录也说明不了进程没有退出，要结合系统日志判断。
 
-`REASON_LOW_MEMORY`、`REASON_USER_REQUESTED`、`REASON_USER_STOPPED`、`REASON_EXCESSIVE_RESOURCE_USAGE` 和 `REASON_SIGNALED` 指向不同排查方向。设备不一定支持单独报告低内存终止；应先调用 `ActivityManager.isLowMemoryKillReportSupported()` 检查。不支持时，低内存终止也会记成 `REASON_SIGNALED`，且 `status` 为 `OsConstants.SIGKILL`。`REASON_SIGNALED` 只说明进程因信号退出；单凭这一条无法确认厂商清理，也无法排除内存压力。
+`REASON_LOW_MEMORY`、`REASON_USER_REQUESTED`、`REASON_USER_STOPPED`、`REASON_EXCESSIVE_RESOURCE_USAGE` 和 `REASON_SIGNALED` 指向不同排查方向。设备不一定支持单独报告低内存终止；应先调用 `ActivityManager.isLowMemoryKillReportSupported()` 检查。不支持时，低内存终止也会记成 `REASON_SIGNALED`，且 `status` 为 `OsConstants.SIGKILL`。`REASON_SIGNALED` 只说明进程因信号退出；厂商清理和内存压力两种解释这时都还成立，需要更多现场才能分辨。
 
 ### 按观察结果定位层次
 
