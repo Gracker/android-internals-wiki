@@ -155,10 +155,6 @@ NDK 发行包把设备端程序、主机端程序和 Python 脚本放在顶层 `
 
 Android 16/17 上应保持主机采集与报告脚本来自同一套 NDK，并单独记录设备内置 Simpleperf 的版本。应用采样入口在这些系统上优先选择 `simpleperf_app_runner`，由它在受控应用上下文中启动设备内置程序；升级 NDK 不会同时升级设备上的这个程序。A17 源码指出侧载程序获取内核态样本的权限受限，不能把“二进制可执行”当成目标事件可采集的证明；最终仍以运行器、当前 UID 与事件打开结果为准。
 
-<!-- gracker-diagram: ch15-02-02-authorization-gates -->
-![目标授权、运行器与事件权限的三道门](../../assets/diagrams/ch15/ch15-02-02-authorization-gates.png)
-
-图：应用采样先核对构建授权，再由版本分支选择运行器，最后实际打开事件。 A17 在 Android 16+ 优先内置 runner；NDK 脚本版本、设备程序和内核权限必须分别保存。
 
 ### 一条可靠的应用采样路径
 
@@ -194,10 +190,6 @@ Android 16/17 上应保持主机采集与报告脚本来自同一套 NDK，并�
 
 脚本会先结束目标进程、布置采样，再启动 Activity。这里的“从启动前采样”保证的是覆盖进程与 Activity 启动；应用数据和系统文件缓存要靠实验自己控制，所以比较冷启动结果时，应固定应用数据、ART 编译状态、存储状态和业务输入。
 
-<!-- gracker-diagram: ch15-02-03-reproducible-app-flow -->
-![应用采样、符号缓存与复测闭环](../../assets/diagrams/ch15/ch15-02-03-reproducible-app-flow.png)
-
-图：固定场景和采样窗口，保存同构建符号，再检查数据质量和业务扰动。 Activity 启动前布置采样不等于自动控制应用数据、文件缓存和 ART 编译状态。
 
 #### 调用栈开销从低频开始校准
 
@@ -347,10 +339,6 @@ APK 内的 `.so` 动态库通常已经剥离调试信息。`app_profiler.py -lib
 
 生成缓存后重新运行报告。若 `[unknown]` 仍集中在应用库，依次检查 build ID、ABI（Application Binary Interface，二进制接口约定）、拆分 APK，以及被采样进程实际加载的路径。
 
-<!-- gracker-diagram: ch15-02-07-symbol-identity -->
-![符号恢复依赖同构建身份](../../assets/diagrams/ch15/ch15-02-07-symbol-identity.png)
-
-图：将采样映射与同构建二进制、调试信息和混淆映射对应后，再解释源码热点。 文件名相同不能证明匹配；unknown、ABI、拆分 APK 与实际加载路径要一起核对。
 
 ### 多进程、线程与离开 CPU 时间
 
@@ -832,10 +820,6 @@ wait "$stat_adb_pid"
 
 这里的 `stat_adb_pid` 是主机端 adb 进程，不是设备上的 Simpleperf PID。`--app` 单独使用时，别指望它持续纳入全部后续子进程；要动态纳入，得靠 `--monitor-new-thread`。
 
-<!-- gracker-diagram: ch15-02-15-dynamic-process-monitor -->
-![同包名新进程与新线程的增量发现](../../assets/diagrams/ch15/ch15-02-15-dynamic-process-monitor.png)
-
-图：stat 通过周期扫描发现同包名新进程，再为尚未纳入的线程打开事件。 需显式 --monitor-new-thread；扫描可能遗漏短生命周期对象，不是完整进程生命周期审计。
 
 ### `--use-devfreq-counters` 与 `pmu_lib`
 
@@ -988,10 +972,6 @@ Slot 表示一个周期内处理器理论上可以接收或处理的一次操作
 
 表里的几个词：I-cache 与 D-cache 分别保存指令和数据，I-TLB 与 D-TLB 分别缓存两类地址转换，DRAM 指主内存；“发射”表示把操作送往后端执行资源，“执行端口”是操作进入具体执行单元的通道。
 
-<!-- gracker-diagram: ch15-02-18-topdown-categories -->
-![Topdown 一级类别与调查方向](../../assets/diagrams/ch15/ch15-02-18-topdown-categories.png)
-
-图：Topdown 用 CPU 专属公式解释流水线机会的分配，再选择下一轮归因证据。 四个名称不能跨微架构移植公式；Backend 不等于 DRAM，Retiring 也不等于已无可优化工作。
 
 同一次、同一 CPU 上取得的有效计数，代入匹配公式后，四类之和通常应接近 100%。看到负值、明显超过 100% 或相加大幅偏离 100%，先检查 CPU 公式、事件支持、计数复用、线程迁移和采集时段。
 
@@ -1019,10 +999,6 @@ AOSP Android 17 的 `simpleperf/event_table.json` 收录了 Arm64 架构事件�
 
 任何一道门没有通过，就把结果降级为普通 PMU 线索，先别标成完整的 Arm Topdown 百分比。
 
-<!-- gracker-diagram: ch15-02-19-formula-prerequisites -->
-![计算 Topdown 之前的四道门](../../assets/diagrams/ch15/ch15-02-19-formula-prerequisites.png)
-
-图：确认 CPU 身份、全部必需事件、专属公式与一致计数窗口后，才计算一级占比。 Neoverse V1 的 8 与 4 来自该固定定义；缺条件时只保留普通 PMU 线索，不补造百分比。
 
 ### Android 17 各工具的分工
 
@@ -1213,10 +1189,6 @@ adb shell simpleperf report \
 
 “可证伪”的意思是修改前先写出可观察的预测，比如“若主要原因是 I-cache miss，调整布局后耗时与 L1I refill 应同时下降”；结果不符合预测时，就放弃或修改原假设。
 
-<!-- gracker-diagram: ch15-02-21-falsifiable-diagnosis -->
-![从一级方向到可证伪的修改](../../assets/diagrams/ch15/ch15-02-21-falsifiable-diagnosis.png)
-
-图：一级指标给调查方向，再用二级事件、地址与系统上下文区分原因，并提出可观察预测。 保持同设备与工作量，每次只改一个变量；同时检查用户时延、绝对计数和派生占比。
 
 #### Frontend Bound
 

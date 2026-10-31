@@ -39866,9 +39866,213 @@
       "before_count": 22,
       "before_all_images": 22,
       "sha256_before": "a06d87359b692af73a5e955919ef9ba5b89ae1a0ac76a8f91707982b808fa49e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 15,
+      "decisions": [
+        {
+          "original_id": "ch15-02-01-sampling-pipeline",
+          "title": "目标线程、内核采样与主机报告的分工",
+          "decision": "keep",
+          "reason": "Simpleperf配置/perf内核事件/内核缓冲/用户读取展开/主机报告五个实际责任层数据路径独立，明确目标线程是被观测者和样本非每调用。",
+          "original_line": 88,
+          "heading": "### 采样模型"
+        },
+        {
+          "original_id": "ch15-02-02-authorization-gates",
+          "title": "目标授权、运行器与事件权限的三道门",
+          "decision": "remove",
+          "reason": "四步逐项重述121–123授权场景、156版本runner与后文559–566四行实际源码，原profileable/debuggable/root/RunInAppContext/UID打开事件限制完整保留，没有具体版本分支或新结果，删授权检查流程复写。",
+          "original_line": 158,
+          "heading": "### 工具位置与环境检查"
+        },
+        {
+          "original_id": "ch15-02-03-reproducible-app-flow",
+          "title": "应用采样、符号缓存与复测闭环",
+          "decision": "remove",
+          "reason": "五框逐项摘要167–195两条真实采集命令与179/195输入、cache/ART状态、符号/复测说明，全文所有输入要求与默认值完整留，无实际调用或状态比较，删复测流程。",
+          "original_line": 197,
+          "heading": "### 一条可靠的应用采样路径"
+        },
+        {
+          "original_id": "ch15-02-04-stat-record-report",
+          "title": "计数、位置采样与聚合归属的差别",
+          "decision": "keep",
+          "reason": "stat累计量、record离散位置与report已录样本归属三种实际产物映射独立，避免样本period/计数/调用次数/墙钟混用，配原命令保留。",
+          "original_line": 256,
+          "heading": "#### `report`：回答“样本如何归属”"
+        },
+        {
+          "original_id": "ch15-02-05-event-weight-units",
+          "title": "事件权重的单位与可比范围",
+          "decision": "keep",
+          "reason": "taskclock/cycles/instructions三个单位与可比范围、IPC公式的对应关系独立，频率/迁核/微架构限制与用户态排除睡眠边界保留。",
+          "original_line": 282,
+          "heading": "#### 工作量与缓存类事件"
+        },
+        {
+          "original_id": "ch15-02-06-unwind-paths",
+          "title": "DWARF、帧指针与 ART 信息的依赖",
+          "decision": "keep",
+          "reason": "寄存器用户栈映射经libunwindstack与内核FP链、ART运行时信息三种恢复依赖对应独立，原65528B上限/FP断链/Java不保FP/R8映射均保留。",
+          "original_line": 313,
+          "heading": "#### DWARF 与帧指针（FP）"
+        },
+        {
+          "original_id": "ch15-02-07-symbol-identity",
+          "title": "符号恢复依赖同构建身份",
+          "decision": "remove",
+          "reason": "四框逐项摘要331–348同构建mapping、ELF/binarycache/ABI/加载路径和6行cache命令，1主机report数据路径与6展开依赖已覆盖机制；所有精确buildID不是文件名与unknown核对文字全留。",
+          "original_line": 350,
+          "heading": "#### 原生符号"
+        },
+        {
+          "original_id": "ch15-02-08-on-off-cpu",
+          "title": "on-CPU 样本与 off-CPU 时间的证据范围",
+          "decision": "keep",
+          "reason": "onCPU事件权重、offCPU调度时间戳和Perfetto完整系统依赖三类证据不同，实际说明offcpu须单时钟事件且不能凭权重区分排队/阻塞，保留。",
+          "original_line": 410,
+          "heading": "#### 离开 CPU 采样的边界"
+        },
+        {
+          "original_id": "ch15-02-09-buffer-pressure",
+          "title": "两级缓冲与大栈样本的压力处理",
+          "decision": "keep",
+          "reason": "两级buffer及配置大栈充足/低水位裁1KiB/临界前丢sample的真实条件分支独立，原record保留元数据和其它reserve失败限制全留。",
+          "original_line": 442,
+          "heading": "### 丢样、截断栈与缓冲区"
+        },
+        {
+          "original_id": "ch15-02-10-format-boundaries",
+          "title": "Simpleperf 导入、原生 Perfetto 采集与窗口筛选",
+          "decision": "keep",
+          "reason": "Simpleperfprotobuf导入、linux.perf同会话新采和samplefilter仅生成过滤窗三种不同数据路线对应，明确第三路不转换格式、导入不补ContextSwitch等，保留。",
+          "original_line": 494,
+          "heading": "#### 转为 Perfetto/Android Studio 可读格式"
+        },
+        {
+          "original_id": "ch15-02-11-pmu-spe-etm",
+          "title": "PMU、SPE 与 CoreSight 控制流的机制",
+          "decision": "keep",
+          "reason": "PMU溢出计数、SPE统计packet与ETM/ETE经CoreSight sinks的三种硬件输入/输出链不同，保留SPE只实现字段/ETR-TRBE是sink不产SPE及缺口边界。",
+          "original_line": 636,
+          "heading": "### 先分清 PMU、SPE 和 ETM"
+        },
+        {
+          "original_id": "ch15-02-12-spe-record-decoding",
+          "title": "SPE 从设备发现到按事件位生成样本",
+          "decision": "keep",
+          "reason": "sysfs发现→单SPE设备/mininterval→AUXpacket→decoderrecord→每事件位生成sample的真实转换链，记录和packet与多视图非互斥、时间0/无latency字段限制原文保留。",
+          "original_line": 720,
+          "heading": "#### SPE 采样事件的多个视图"
+        },
+        {
+          "original_id": "ch15-02-13-coresight-sink-selection",
+          "title": "通用 cs-etm 与显式 ETR 的 sink 选择",
+          "decision": "keep",
+          "reason": "显式ETR config2、通用cs-etm有TRBE内核按CPU选与无TRBE选ETR的真实条件分支独立，保留config2=0仍需CPU支持集合。",
+          "original_line": 753,
+          "heading": "#### Android 17 的选择逻辑"
+        },
+        {
+          "original_id": "ch15-02-14-background-processes",
+          "title": "后台采集的父子进程与完成边界",
+          "decision": "keep",
+          "reason": "一次fork后父PID返回与子setsid/重定向采集两条真实进程路径独立，先返回不证成功与纯数字设备PID/主机PID区别、正常SIGINT边界全留。",
+          "original_line": 778,
+          "heading": "### `record --background` 的进程语义"
+        },
+        {
+          "original_id": "ch15-02-15-dynamic-process-monitor",
+          "title": "同包名新进程与新线程的增量发现",
+          "decision": "remove",
+          "reason": "四框逐项复制813–816四条动态监控说明和820–831实际命令，未画具体新PID/TID加入或扫描时间，原监控三选项、旧版已有线程监控/新同包进程边界与漏短对象限制全留。",
+          "original_line": 835,
+          "heading": "### `--app` 与新进程跟踪"
+        },
+        {
+          "original_id": "ch15-02-16-devfreq-fallback",
+          "title": "devfreq 与供应商计数器后备路径",
+          "decision": "keep",
+          "reason": "memlatency找到切performance否则pmulib特定值分支与析构恢复汇流的实际状态改变路径独立，特定魔数非通用PMU与崩溃不恢复限制全留，未执行任何设备命令。",
+          "original_line": 864,
+          "heading": "### `--use-devfreq-counters` 与 `pmu_lib`"
+        },
+        {
+          "original_id": "ch15-02-17-kernel-module-autofdo",
+          "title": "从模块运行时地址到 AutoFDO 文件",
+          "decision": "keep",
+          "reason": "模块运行范围首符号/匹配ko重建DSO地址/伪.textsegment偏移/单模块AutoFDO的真实地址转换链独立，保留perfdata直转与branchlist、格式成功非性能收益。",
+          "original_line": 897,
+          "heading": "### 从内核模块 ETM trace 生成 AutoFDO profile"
+        },
+        {
+          "original_id": "ch15-02-18-topdown-categories",
+          "title": "Topdown 一级类别与调查方向",
+          "decision": "remove",
+          "reason": "四分支逐项复制984–987完整Topdown四类/计量/下一证据/误读表，原CPUslot定义/8slot来自专核/四类不等IPC与100异常复核全留，22保留具体数值分母图，不再放类别表转方框。",
+          "original_line": 991,
+          "heading": "#### 四个一级类别"
+        },
+        {
+          "original_id": "ch15-02-19-formula-prerequisites",
+          "title": "计算 Topdown 之前的四道门",
+          "decision": "remove",
+          "reason": "四框逐项复制1015–1018四道门清单，公式1004–1007和所有MIDR/完整事件/匹配telemetry/可信同窗条件原文完整保留，20保留实际计数时间关系，删前提检查清单。",
+          "original_line": 1022,
+          "heading": "### 公式按 CPU 型号定义"
+        },
+        {
+          "original_id": "ch15-02-20-counter-scheduling",
+          "title": "同时计数、复用与跨轮拼接的区别",
+          "decision": "keep",
+          "reason": "完整group同进同出、非group异时段复用、按metric跨轮重跑三种真实PMU调度方式对应，保留硬件放不下、缩放不恢复同步关系和跨轮离散度边界。",
+          "original_line": 1150,
+          "heading": "#### 步骤四：只在完整支持时采集一级事件"
+        },
+        {
+          "original_id": "ch15-02-21-falsifiable-diagnosis",
+          "title": "从一级方向到可证伪的修改",
+          "decision": "remove",
+          "reason": "五步逐项摘要1173–1178二级证据表、1203–1214系统条件与可证伪方法，原具体Icache预测和四类别改动/副作用清单全留，无实际实验差分，删通用诊断工作流。",
+          "original_line": 1216,
+          "heading": "### 从指标到修改：保持假设可证伪"
+        },
+        {
+          "original_id": "ch15-02-22-absolute-and-relative",
+          "title": "百分比升高与绝对成本下降可以同时发生",
+          "decision": "keep",
+          "reason": "同核同公式100→60cycles、800→480slots、backend320→240但40→50%的具体算式反例独立，清楚说明绝对成本与相对分母可以反向，非设备实测。",
+          "original_line": 1274,
+          "heading": "#### 只看百分比"
+        }
+      ],
+      "sha256_after": "a2923047bd87f774141e9e01a497bd6d3aac5256f0c2c59cc5625566b02f3f60",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T12:56:10.342677+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 22,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a150/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a150/visual-review.json",
+      "retired_diagrams": [
+        "ch15-02-02-authorization-gates",
+        "ch15-02-03-reproducible-app-flow",
+        "ch15-02-07-symbol-identity",
+        "ch15-02-15-dynamic-process-monitor",
+        "ch15-02-18-topdown-categories",
+        "ch15-02-19-formula-prerequisites",
+        "ch15-02-21-falsifiable-diagnosis"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-150/retired-assets.json"
     },
     {
       "index": 151,
@@ -41213,8 +41417,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 84,
-  "next_article": "src/part3-tools/ch15-other-tools/02-simpleperf-arm-topdown.md",
+  "reviewed_articles": 85,
+  "next_article": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -41224,7 +41428,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:52:56.918729+08:00",
+  "updated_at": "2026-10-31T12:56:10.342677+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -41612,9 +41816,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3123,
-  "reviewed_placements_after": 1410,
-  "net_removed_placements": 1713,
+  "reviewed_placements_before": 3145,
+  "reviewed_placements_after": 1425,
+  "net_removed_placements": 1720,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -41638,5 +41842,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 84
+  "currently_matching_reviewed_source_count": 85
 }
