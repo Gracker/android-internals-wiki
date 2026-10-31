@@ -42848,9 +42848,275 @@
       "before_count": 26,
       "before_all_images": 26,
       "sha256_before": "1127a4c830a62f4b8e0c8dc2915601de6abcf5f4766b26cd8ecf043d7f8ffd0a",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "ch15-15-01-evidence-scopes",
+          "title": "系统状态、应用结构与执行时序",
+          "decision": "remove",
+          "reason": "三工具三列复写开篇分工与后文完整工具表，无实际组合证据，所有单侧状态非像素/输入/present证明原文留。",
+          "original_line": 96,
+          "heading": "# Winscope、Layout Inspector 与 UI 状态调试"
+        },
+        {
+          "original_id": "ch15-15-02-geometry-buffer-channels",
+          "title": "几何事务与像素提交是两条输入",
+          "decision": "keep",
+          "reason": "WM/Shell几何transaction与Producerbuffer/fence两个独立输入汇SFsnapshot再composition/HWC的实际责任拓扑独立，原子状态不同光学同步边界留。",
+          "original_line": 117,
+          "heading": "### 1. 先明确 Winscope 记录了什么"
+        },
+        {
+          "original_id": "ch15-15-03-tracing-modes",
+          "title": "active、generated 与单快照的触发时机",
+          "decision": "remove",
+          "reason": "三列逐项复写active/generated与停止阶段单dump段落，无实际覆盖时间窗，ring重建和stop时刻非启动快照原文留。",
+          "original_line": 138,
+          "heading": "### 1. 先明确 Winscope 记录了什么"
+        },
+        {
+          "original_id": "ch15-15-04-drawing-topologies",
+          "title": "View、SurfaceView 与 TextureView 拓扑",
+          "decision": "remove",
+          "reason": "三列只逐项摘要三个出图拓扑小节，未画实际宿主/child/queue对象关系；两树非逐节点对应及TV无独立可见layer全文留。",
+          "original_line": 171,
+          "heading": "#### TextureView"
+        },
+        {
+          "original_id": "ch15-15-05-display-object-identities",
+          "title": "从 Display 到实际内容对象",
+          "decision": "remove",
+          "reason": "四步重复Display→WindowTask→layerleash→Producer完整分析顺序和身份段，与8重复；多Display独立present与稳定ID条件留。",
+          "original_line": 182,
+          "heading": "#### 多窗口、PiP、分屏与多 Display"
+        },
+        {
+          "original_id": "ch15-15-06-capture-and-validate",
+          "title": "短时采集的配置、复现与有效性检查",
+          "decision": "remove",
+          "reason": "四步摘要51行完整录制脚本，无实际权限/空数据拒绝分支；root重连核实、schema非设备覆盖和15s非长基准全文留。",
+          "original_line": 300,
+          "heading": "### 5. 一份短时、可复现的采集配置"
+        },
+        {
+          "original_id": "ch15-15-07-frequency-and-flags",
+          "title": "采样频率、buffer 更新与成本",
+          "decision": "remove",
+          "reason": "三列逐项复制logState与flags说明，没有实际合并请求采样轨，FRAME非每显示刷新及ALL不含BUFFERS、成本全文留。",
+          "original_line": 311,
+          "heading": "### 5. 一份短时、可复现的采集配置"
+        },
+        {
+          "original_id": "ch15-15-08-object-search-order",
+          "title": "录像、逻辑窗口与内容 layer 的对齐",
+          "decision": "remove",
+          "reason": "四步重复6.1–6.3详细检查顺序与5对象总览，没有实际同名旧实例反例；title仅入口和bufferchild身份全文留。",
+          "original_line": 334,
+          "heading": "#### 6.3 按出图类型找 SF 对象"
+        },
+        {
+          "original_id": "ch15-15-09-visibility-and-occlusion",
+          "title": "可见标记、遮挡与实际像素",
+          "decision": "remove",
+          "reason": "三列逐项重画可见性六条检查清单，无实际遮挡几何示例，Covered非opaque像素仍可能不透及Vchip限制全文留。",
+          "original_line": 354,
+          "heading": "#### 6.4 解释 SurfaceFlinger 可见性"
+        },
+        {
+          "original_id": "ch15-15-10-requested-calculated-triage",
+          "title": "requested、calculated 与下游问题分流",
+          "decision": "remove",
+          "reason": "三列逐项重画requested/calculated定位段，无实际父层变换或数值例，父继承/crop及状态正确仍有像素时序问题正文留。",
+          "original_line": 363,
+          "heading": "#### 6.5 对比 requested 与 calculated"
+        },
+        {
+          "original_id": "ch15-15-11-transition-transaction-join",
+          "title": "转场与事务的稳定标识关联",
+          "decision": "keep",
+          "reason": "transitionID跨server/Shell再关联startfinishtransaction和window/leashlayer稳定身份的真实关联链独立，entry共享vsync非每client提交时刻图注留。",
+          "original_line": 378,
+          "heading": "#### 6.6 回到 transaction 与 transition"
+        },
+        {
+          "original_id": "ch15-15-12-black-screen-triage",
+          "title": "黑白屏先确认状态还是像素问题",
+          "decision": "remove",
+          "reason": "四步摘要黑白屏六条清单并重复8搜索流程，无实际异常case状态样本；NotificationShade遮挡历史例及protected录像边界全文留。",
+          "original_line": 404,
+          "heading": "#### 白屏或黑屏"
+        },
+        {
+          "original_id": "ch15-15-13-surfaceview-sync-conditions",
+          "title": "SurfaceView 几何与内容的同步条件",
+          "decision": "keep",
+          "reason": "geometry G0→G1而child B7→B7两轨同快照反例独立，不用container宣称新buffer；先暂停再产帧精确绑定和未新帧可能不应用条件图注留。",
+          "original_line": 421,
+          "heading": "#### SurfaceView 一帧错位"
+        },
+        {
+          "original_id": "ch15-15-14-pointer-focus-input",
+          "title": "触摸命中与键盘焦点分开",
+          "decision": "keep",
+          "reason": "指针坐标region/手势target与按键非指针focus分别进入不同Dispatcher函数的实际事件分类分支独立，触摸不必走focus及IME另链保留。",
+          "original_line": 442,
+          "heading": "#### 点击无响应"
+        },
+        {
+          "original_id": "ch15-15-15-search-view-sampling",
+          "title": "Search helper view 与离散状态采样",
+          "decision": "remove",
+          "reason": "四步重画Search helper初始化、3SQL示例和采样对齐解释，无真正区间连接案例，字符串数值转换与不同采样先后非真实延迟全文留。",
+          "original_line": 487,
+          "heading": "### 8. Search viewer 与 Perfetto SQL"
+        },
+        {
+          "original_id": "ch15-15-16-dump-trace-bugreport",
+          "title": "单时刻、连续复现与历史保留",
+          "decision": "remove",
+          "reason": "三列逐项重画dump/trace/bugreport选择段，无实际有效/错误产物反例，重定向空文件与解析成功标准、ring历史覆盖全文留。",
+          "original_line": 503,
+          "heading": "### 9. Dump、bugreport 与 trace"
+        },
+        {
+          "original_id": "ch15-15-17-inspector-entry-and-proof",
+          "title": "Inspector 从可调试进程到节点证据",
+          "decision": "remove",
+          "reason": "四步重述IDE入口段和末尾8条复查清单，没有实际连接错误分支；debbuggable前台/mirroring与snapshot不能还原过去条件原文留。",
+          "original_line": 583,
+          "heading": "### 1. 当前 Layout Inspector 的入口与界面"
+        },
+        {
+          "original_id": "ch15-15-18-live-snapshot-overlay",
+          "title": "实时更新、离线快照与参考图",
+          "decision": "remove",
+          "reason": "三列逐项复制Live/snapshot/overlay三个段落，无实际对照图；不同IDE入口与3D弃用、缩放栅格化边界全文留。",
+          "original_line": 598,
+          "heading": "### 2. Live 检查、snapshot 与参考图"
+        },
+        {
+          "original_id": "ch15-15-19-attribute-flag-lifecycle",
+          "title": "View 属性开关与 Activity 重启",
+          "decision": "remove",
+          "reason": "四步逐行重画19行flag恢复脚本与说明，无新增异常分支，原先unset才delete/EXIT/重启/恢复失败复核全部代码正文留。",
+          "original_line": 635,
+          "heading": "### 3. View 属性检查会重启前台 Activity"
+        },
+        {
+          "original_id": "ch15-15-20-coordinate-and-hit-boundaries",
+          "title": "布局坐标、父层变换与输入区域",
+          "decision": "remove",
+          "reason": "四框把坐标五条记录清单重排，没有真实坐标变换例，translation与layout不同、父scrollmatrix/WindowInsets及输入单查全文留。",
+          "original_line": 656,
+          "heading": "### 4. 读懂坐标、变换与层级"
+        },
+        {
+          "original_id": "ch15-15-21-compose-count-validation",
+          "title": "重组次数用于定位，成本用 trace 验证",
+          "decision": "remove",
+          "reason": "四步逐项重画Reset受控交互五条编号清单，无实际高次数低成本反例；API29Compose1.2metadata及次数非耗时全文留。",
+          "original_line": 675,
+          "heading": "### 5. Compose 层级、重组计数与 semantics"
+        },
+        {
+          "original_id": "ch15-15-22-different-ui-trees",
+          "title": "视觉、composition 与 semantics 树",
+          "decision": "remove",
+          "reason": "三列复写visual/composition/semantics树段未画实际合并前后树，declaredmerged/clear和inline参数缺失全文留。",
+          "original_line": 682,
+          "heading": "### 5. Compose 层级、重组计数与 semantics"
+        },
+        {
+          "original_id": "ch15-15-23-property-export-mechanisms",
+          "title": "XML、typed inspector 与反射导出",
+          "decision": "remove",
+          "reason": "三列逐项重述XML属性、typedcompanion、ViewDebug三个小节，未画实际name→ID→typedvalue数据例，隐藏注解非SDK和反射扰动全文留。",
+          "original_line": 707,
+          "heading": "#### `ViewDebug.ExportedProperty`"
+        },
+        {
+          "original_id": "ch15-15-24-invalidate-to-present",
+          "title": "更新请求、UI 录制与渲染提交",
+          "decision": "keep",
+          "reason": "状态更新→对应请求→UItraversal/displaylist→RT/GPUbuffer→SFpresent跨线程与系统实际检查链独立，重绘布局分开、屏障异步可过与显示另验图注保留。",
+          "original_line": 741,
+          "heading": "### 7. `invalidate()`、`requestLayout()` 与 RenderNode"
+        },
+        {
+          "original_id": "ch15-15-25-accessibility-vs-internal",
+          "title": "内部组件树与可访问性暴露",
+          "decision": "remove",
+          "reason": "三列逐项重画紧邻Inspector/UIAutomator/Accessibility比较表，无实际被合并节点树例，dumpXML非完整View/RenderNode证据全文留。",
+          "original_line": 768,
+          "heading": "### 9. `uiautomator dump`、Accessibility 与 Inspector"
+        },
+        {
+          "original_id": "ch15-15-26-controlled-reproduction",
+          "title": "错误快照与无 Inspector 的性能基线",
+          "decision": "remove",
+          "reason": "四步摘要末尾八条复查清单与联合诊断段，没有实际附着/无附着结果，断开复核flag恢复状态与错误snapshot/trace分开全文留。",
+          "original_line": 816,
+          "heading": "### 12. 连接失败与一轮可复查流程"
+        }
+      ],
+      "sha256_after": "72e41d898f0a798c0d5d8c1601726cdae173c9054199f221b016a904dba1011f",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T13:47:39.657265+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 26,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a163/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a163/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 163,
+        "article": "src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
+        "registered_sha256": "1127a4c830a62f4b8e0c8dc2915601de6abcf5f4766b26cd8ecf043d7f8ffd0a",
+        "frozen_sha256": "1127a4c830a62f4b8e0c8dc2915601de6abcf5f4766b26cd8ecf043d7f8ffd0a",
+        "review_input_sha256": "5e9d433a0c15bab63c399f8c189fc2c967e8d4c2f3d10404916646a732b5949f",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a163/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a163/external-source.diff",
+        "diff_sha256": "928c742b1601c8ca4a93c7305580593121f453882eda691fb445d73d3fe889e0",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 392, \"characters\": 38634, \"svg_labels_read\": 26, \"actual_pngs_viewed\": 26, \"contact_sheets_viewed\": 4, \"non_mermaid_code_blocks\": 8, \"code_lines\": 97, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "5e9d433a0c15bab63c399f8c189fc2c967e8d4c2f3d10404916646a732b5949f",
+      "retired_diagrams": [
+        "ch15-15-01-evidence-scopes",
+        "ch15-15-03-tracing-modes",
+        "ch15-15-04-drawing-topologies",
+        "ch15-15-05-display-object-identities",
+        "ch15-15-06-capture-and-validate",
+        "ch15-15-07-frequency-and-flags",
+        "ch15-15-08-object-search-order",
+        "ch15-15-09-visibility-and-occlusion",
+        "ch15-15-10-requested-calculated-triage",
+        "ch15-15-12-black-screen-triage",
+        "ch15-15-15-search-view-sampling",
+        "ch15-15-16-dump-trace-bugreport",
+        "ch15-15-17-inspector-entry-and-proof",
+        "ch15-15-18-live-snapshot-overlay",
+        "ch15-15-19-attribute-flag-lifecycle",
+        "ch15-15-20-coordinate-and-hit-boundaries",
+        "ch15-15-21-compose-count-validation",
+        "ch15-15-22-different-ui-trees",
+        "ch15-15-23-property-export-mechanisms",
+        "ch15-15-25-accessibility-vs-internal",
+        "ch15-15-26-controlled-reproduction"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-163/retired-assets.json"
     },
     {
       "index": 164,
@@ -44052,8 +44318,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 97,
-  "next_article": "src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
+  "reviewed_articles": 98,
+  "next_article": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -44063,7 +44329,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T13:44:39.987117+08:00",
+  "updated_at": "2026-10-31T13:47:39.657265+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -44115,24 +44381,10 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
-      "registered_sha256": "0522da16d5eca4b232ff2f7d360838f4210df0180efd03d315958246e3c012df",
-      "observed_sha256": "bb1a60191200b2b8a680422c45cf19ab73b507491e4f9aa74b540eff410d0a2e",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part2-performance/ch10-memory-perf/README.md",
       "registered_sha256": "3372625384672f4e3906be736ca03b4f154239cb8bdeba554ec20e23d52e74d4",
       "observed_sha256": "eb219aba02a6e87741b77f001eb705b10b1cbdefaf396cabe4499252836874c9",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part2-performance/ch10-memory-perf/README.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
-      "registered_sha256": "1127a4c830a62f4b8e0c8dc2915601de6abcf5f4766b26cd8ecf043d7f8ffd0a",
-      "observed_sha256": "5e9d433a0c15bab63c399f8c189fc2c967e8d4c2f3d10404916646a732b5949f",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -44423,9 +44675,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3403,
-  "reviewed_placements_after": 1516,
-  "net_removed_placements": 1887,
+  "reviewed_placements_before": 3429,
+  "reviewed_placements_after": 1521,
+  "net_removed_placements": 1908,
   "removed_inline_mermaid_blocks": 20,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -44449,5 +44701,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 97
+  "currently_matching_reviewed_source_count": 98
 }
