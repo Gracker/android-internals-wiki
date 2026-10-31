@@ -11,7 +11,7 @@
 
 图：三个问题互相补充：分类指标定位增长范围，所有权证据说明谁仍持有资源，同一业务窗口的时间线检验体验影响。
 
-本章的平台实现以 Android 17 / API 37 / `android-17.0.0_r1` 为核对版本。涉及 PSI（资源压力导致任务停顿的时间）、cgroup v2（控制组机制）、回收与内核内存统计时，以 `android17-6.18-2026-06_r6` 为内核核对版本。旧版本差异会保留在对应专题中，结论范围不超过 Android 17。
+> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；涉及 PSI（资源压力导致任务停顿的时间）、cgroup v2（控制组机制）、回收与内核内存统计时，内核核对版本为 `android17-6.18-2026-06_r6`；旧版本差异保留在对应专题中，结论范围不超过 Android 17。
 
 ## 内容索引
 
@@ -41,9 +41,11 @@
 
 ## 分析顺序
 
+拿到一个内存问题，我们按固定的顺序推进：先定义业务窗口，再确定内存域，然后区分 live set、churn 与峰值，最后做单变量对照实验。
+
 ### 1. 定义业务窗口
 
-把问题写成可重复的操作序列。记录现场条件：设备、build fingerprint（系统构建标识）、ART Mainline（可独立更新的 ART 系统模块）版本、应用版本、ABI（应用二进制接口）、构建类型、数据集、前后台状态和采样时钟。
+我们先把问题写成一段可重复的操作序列，再记录现场条件：设备、build fingerprint（系统构建标识）、ART Mainline（可独立更新的 ART 系统模块）版本、应用版本、ABI（应用二进制接口）、构建类型、数据集、前后台状态和采样时钟。
 
 <!-- gracker-diagram: ch10-index-03-business-window -->
 ![先固定现场条件，再对齐阶段](../../assets/diagrams/ch10/ch10-index-03-business-window.png)
@@ -52,7 +54,7 @@
 
 ### 2. 确定内存域
 
-至少从以下视角调查；它们存在交叉，并非可直接相加的互斥容量桶。线程和文件描述符是资源线索；PSI 衡量资源压力造成的任务停顿，并非内存字节数（见 [PSI 官方说明](https://docs.kernel.org/accounting/psi.html)）：
+窗口固定后，接下来确定增长落在哪个内存域。我们至少从以下视角调查，它们互相交叉，统计时不能直接相加。线程和文件描述符是资源线索；PSI 衡量资源压力造成的任务停顿，属于时间维度的压力信号（见 [PSI 官方说明](https://docs.kernel.org/accounting/psi.html)）：
 
 - ART managed heap（由 ART 管理的 Java/Kotlin 对象堆）；
 - Native heap；
@@ -66,7 +68,7 @@
 
 图：这些是交叉的调查视角：ART 与 Native 堆可由匿名映射承载，图形资源也可能进入其他统计；线程数、FD 数和 PSI 不是另一套堆字节数。
 
-GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 对象关联的 Native 分配通过 `NativeAllocationRegistry` 登记，在对象不可达后由清理机制调用登记的释放函数（见 [固定 r1 源码](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/util/NativeAllocationRegistry.java)）。这不代表一次 GC 会释放所有 Native、Surface、codec（编解码器）、GPU 或内核资源；仍需核对各自的 owner（资源持有者）、关闭责任、共享引用和异步工作完成条件。
+GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 对象关联的 Native 分配通过 `NativeAllocationRegistry` 登记，对象不可达后由清理机制调用登记的释放函数（见 [固定 r1 源码](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/util/NativeAllocationRegistry.java)）。这条清理路径只覆盖登记过的分配，其余的 Native、Surface、codec（编解码器）、GPU 或内核资源，还需要逐类核对 owner（资源持有者）、关闭责任、共享引用和异步工作完成条件。
 
 <!-- gracker-diagram: ch10-index-05-gc-native-boundary -->
 ![Java 可达性可以关联已登记 Native 清理](../../assets/diagrams/ch10/ch10-index-05-gc-native-boundary.png)
@@ -75,6 +77,8 @@ GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 
 
 ### 3. 区分 live set、churn 与峰值
 
+确定内存域之后，我们用不同工具区分 live set、churn 与峰值：
+
 - heap dump（堆转储）用于分析转储中的对象与引用链；记录采集工具是否先触发 GC 及其对象过滤策略，转储也会扰动进程内存（见 [官方工具说明](https://developer.android.com/studio/profile/capture-heap-dump)）；
 - ART allocation profile（分配剖析）用于分析分配调用栈与分配速率；
 - Native heap profile 用于分析 `malloc`/`free`；
@@ -82,7 +86,7 @@ GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 
 - `dumpsys meminfo` 和 smaps（进程内存映射明细）用于确定统计分类与映射归属；
 - DMA-BUF、memtrack 和 GpuService 分别提供图形对象、分类或驱动上报证据；先确认设备支持、权限、覆盖范围与采集完整性，缺数据不能直接按 0 解释。
 
-工具标签只能缩小调查范围。找到 owner（资源持有者）、生命周期或调用栈后，才能提出可验证的修复方案。
+工具标签能把调查范围缩小到具体的内存域和分配路径；要提出可验证的修复方案，我们还要拿到 owner、对象生命周期或调用栈。
 
 <!-- gracker-diagram: ch10-index-06-tool-evidence -->
 ![按问题选择工具，区分创建与持有](../../assets/diagrams/ch10/ch10-index-06-tool-evidence.png)
@@ -91,9 +95,9 @@ GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 
 
 ### 4. 做单变量对照实验
 
-一次只调整一个变量，例如缓存容量、图片目标尺寸、任务并发数、解析批次或 buffer（缓冲区）规格。比较内存指标时，同时观察 CPU、I/O、GC、frame deadline miss（帧没有按期完成）、缓存命中率和业务尾延迟（少数最慢请求的耗时）。
+我们用单变量对照实验检验调整的效果：一次只调整一个变量，例如缓存容量、图片目标尺寸、任务并发数、解析批次或 buffer（缓冲区）规格。比较内存指标时，同时观察 CPU、I/O、GC、frame deadline miss（帧没有按期完成）、缓存命中率和业务尾延迟（少数最慢请求的耗时）。
 
-内存降低但重建成本、I/O 或卡顿明显增加，说明方案还需要继续调整。
+如果内存降下来了，但重建成本、I/O 或卡顿明显增加，方案就还需要继续调整。
 
 <!-- gracker-diagram: ch10-index-07-single-variable -->
 ![单变量实验同时观察收益与代价](../../assets/diagrams/ch10/ch10-index-07-single-variable.png)
@@ -109,10 +113,10 @@ GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 
 
 ## 证据边界
 
-- 不使用没有源码路径、官方文档或可复现实验支撑的数据。
-- 不把 PSS、RSS、Java heap、Native allocated 和 GPU memory 直接相加为统一口径。
-- 不把 `System.gc()`、`WeakReference`、对象池、WebP、SparseArray 或异步线程写成通用解法。
-- 不用一次快照证明泄漏，不用一次 GC 证明资源已经释放。
+- 数据要有源码路径、官方文档或可复现实验支撑。
+- PSS、RSS、Java heap、Native allocated 和 GPU memory 维持各自的统计范围，直接相加得不出统一口径。
+- `System.gc()`、`WeakReference`、对象池、WebP、SparseArray、异步线程的讨论都限定在具体场景，不当作通用解法。
+- 证明泄漏要靠重复观察，一次快照不够；确认资源已经释放，一次 GC 也不够。
 - 性能收益必须注明设备、构建、负载、指标和对照条件。
 
 
