@@ -44303,9 +44303,175 @@
       "before_count": 15,
       "before_all_images": 15,
       "sha256_before": "982f48dbecddfefcb1e8b128640146a9a463723bed816f954306c2895187d869",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 6,
+      "decisions": [
+        {
+          "original_id": "ch16-04-01-three-policy-lifecycles",
+          "title": "能力、规则与压力分别建模",
+          "decision": "remove",
+          "reason": "三列逐项重画稳定能力/负载规则/会话压力完整表，无实际三个版本或生命周期更新例，设备身份不同动态收缩与命名约束全文留。",
+          "original_line": 59,
+          "heading": "## 先拆成三类信息"
+        },
+        {
+          "original_id": "ch16-04-02-mpc-guarantee-boundaries",
+          "title": "MPC声明、版本与业务保证",
+          "decision": "remove",
+          "reason": "三列复写MPC来源/等级CDD/业务查询三个段，未画具体特性支持分支；MPC0未声明、无32与OTA不必提高、CorePerformance补充周期全文留。",
+          "original_line": 76,
+          "heading": "### Media Performance Class"
+        },
+        {
+          "original_id": "ch16-04-03-memory-domain-budget",
+          "title": "整机内存、应用堆与实际分配域",
+          "decision": "remove",
+          "reason": "三列重排内存字段和分域预算段，没有实际Java/native/shared/graphics占用例；advertisedtotalavailfree各含义、memoryClass非native配额全文留。",
+          "original_line": 94,
+          "heading": "### 内存信号"
+        },
+        {
+          "original_id": "ch16-04-04-feature-versus-budget",
+          "title": "公开特性与实测预算的区别",
+          "decision": "remove",
+          "reason": "三列复制CPU/SoC/特性/屏幕四段，没有具体设备可用CPU或窗口像素预算例；数量可变、ABI非进程位宽与120Hz非实际deadline全文留。",
+          "original_line": 109,
+          "heading": "### CPU、SoC（片上系统）、GPU 与屏幕"
+        },
+        {
+          "original_id": "ch16-04-05-signal-cache-lifecycle",
+          "title": "能力采集与缓存失效",
+          "decision": "keep",
+          "reason": "公开信号采集→来源fingerprint/App/rules缓存→纯策略解析→按源生命周期失效重采的实际缓存依赖链独立，availableCPU快照与动态窗口/服务MPC独立更新图注留。",
+          "original_line": 171,
+          "heading": "## 采集一份稳定能力画像"
+        },
+        {
+          "original_id": "ch16-04-06-independent-policy-mapping",
+          "title": "同一设备的两个独立策略判断",
+          "decision": "keep",
+          "reason": "同一设备能力向量内存与媒体两路互不干涉直接映射到缓存预取和媒体preset的实际分叉独立，不用统一总分；192/MPC35/比例均演示且分域预算仍验。",
+          "original_line": 226,
+          "heading": "## 从能力向量生成工作负载策略"
+        },
+        {
+          "original_id": "ch16-04-07-headroom-directions",
+          "title": "性能余量和热包络占用方向不同",
+          "decision": "keep",
+          "reason": "CPU/GPUheadroom趋0表示可追加容量少与thermal趋1接近严重阈值两种相反方向对应独立，API36/30/NaN不支持缓存轮询与关键线程约束留。",
+          "original_line": 246,
+          "heading": "## 会话期压力单独处理"
+        },
+        {
+          "original_id": "ch16-04-08-quality-hysteresis",
+          "title": "常规驻留与紧急温控降级",
+          "decision": "keep",
+          "reason": "NORMAL↔REDUCED两个状态和不同10%/3%阈值、30s驻留及严重温控可绕过驻留的真实迟滞状态图独立，完整131行示例与图guard一致，invalid非恢复证据。",
+          "original_line": 306,
+          "heading": "## 会话期压力单独处理"
+        },
+        {
+          "original_id": "ch16-04-09-memory-callback-lifecycle",
+          "title": "内存回调保留生命周期语义",
+          "decision": "remove",
+          "reason": "三个来源汇合调整框只是重述trim回调和lowMemory/业务占用段，没有实际资源释放分支；API34不再发送级别/onLowMemory、>=语义与生命周期非压力百分比全文留。",
+          "original_line": 313,
+          "heading": "## 会话期压力单独处理"
+        },
+        {
+          "original_id": "ch16-04-10-workload-specific-actions",
+          "title": "不同工作负载分别收缩成本",
+          "decision": "remove",
+          "reason": "三列逐项摘要启动/渲染/内存媒体四组清单，无实际成本和护栏结果，不能盲目减并发/关闭Profiles/全局RGB565等说明全文留。",
+          "original_line": 349,
+          "heading": "### 媒体"
+        },
+        {
+          "original_id": "ch16-04-11-network-and-job-axes",
+          "title": "网络策略与任务约束独立决策",
+          "decision": "remove",
+          "reason": "三列逐项复制网络及后台三个条目，无实际DataSaver规格选择或Job执行分支；硬件慢非网络慢/App不可改系统配额全文留。",
+          "original_line": 360,
+          "heading": "### 网络与后台任务"
+        },
+        {
+          "original_id": "ch16-04-12-offline-config-rollout",
+          "title": "本地启动与远端更新两条路径",
+          "decision": "keep",
+          "reason": "启动本地有效兼容否则APKdefault与异步远端校验暂存下会话切换两条真实独立控制路径，避免网络阻塞冷启动，离线kill不保证投递/本地安全边界图注保留。",
+          "original_line": 377,
+          "heading": "## 远端策略必须能离线启动"
+        },
+        {
+          "original_id": "ch16-04-13-randomization-and-exposure",
+          "title": "随机分组和实际曝光分别记录",
+          "decision": "remove",
+          "reason": "三列重述随机能力群/分配总体/曝光条件段，未画具体失败筛除或Simpson数值反例；15保留实验分配曝光缺失，所有总体分母与对称预定义条件全文留。",
+          "original_line": 384,
+          "heading": "## 远端策略必须能离线启动"
+        },
+        {
+          "original_id": "ch16-04-14-aging-and-vendor-boundaries",
+          "title": "当前状态、持续性能与历史分档",
+          "decision": "remove",
+          "reason": "三列复制老化/持续性能/YearClass三个段，无实际设备持续输出对照；SDK无通用老化总分/支持后设置/归档库仅历史全文留。",
+          "original_line": 399,
+          "heading": "## 设备老化与厂商模式"
+        },
+        {
+          "original_id": "ch16-04-15-policy-verification-loop",
+          "title": "从瓶颈到灰度收益的闭环",
+          "decision": "keep",
+          "reason": "trace/heap确认成本→代表设备同CUJ基准护栏→能力群内随机及分配曝光缺失→线上分层验收回退的完整本篇策略实验闭环独立，避免高端对低端冒充策略AB。",
+          "original_line": 419,
+          "heading": "## 验证分级有没有收益"
+        }
+      ],
+      "sha256_after": "7e45eea2714bef8aea45d42c104c9dc9e33019fc587ae561bec09aa99b1ebe72",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T14:11:35.624229+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 15,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a170/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a170/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 170,
+        "article": "src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
+        "registered_sha256": "982f48dbecddfefcb1e8b128640146a9a463723bed816f954306c2895187d869",
+        "frozen_sha256": "982f48dbecddfefcb1e8b128640146a9a463723bed816f954306c2895187d869",
+        "review_input_sha256": "ecdb454622d5c670cb379e4fe971eed20c6a5e4bc5f2ca70a9eb184d8defc81f",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a170/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a170/external-source.diff",
+        "diff_sha256": "684fab0ab156633b77dc28160ffdf7a592d57c05392c8f86dfad19df9e0fa088",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 172, \"characters\": 14166, \"svg_labels_read\": 15, \"actual_pngs_viewed\": 15, \"contact_sheets_viewed\": 2, \"non_mermaid_code_blocks\": 3, \"code_lines\": 131, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "ecdb454622d5c670cb379e4fe971eed20c6a5e4bc5f2ca70a9eb184d8defc81f",
+      "retired_diagrams": [
+        "ch16-04-01-three-policy-lifecycles",
+        "ch16-04-02-mpc-guarantee-boundaries",
+        "ch16-04-03-memory-domain-budget",
+        "ch16-04-04-feature-versus-budget",
+        "ch16-04-09-memory-callback-lifecycle",
+        "ch16-04-10-workload-specific-actions",
+        "ch16-04-11-network-and-job-axes",
+        "ch16-04-13-randomization-and-exposure",
+        "ch16-04-14-aging-and-vendor-boundaries"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-170/retired-assets.json"
     },
     {
       "index": 171,
@@ -45441,8 +45607,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 103,
-  "next_article": "src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
+  "reviewed_articles": 104,
+  "next_article": "src/part3-tools/ch16-methodology/05-testing-best-practices.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -45452,7 +45618,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T14:09:02.660271+08:00",
+  "updated_at": "2026-10-31T14:11:35.624229+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -45511,13 +45677,6 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
-      "article": "src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
-      "registered_sha256": "982f48dbecddfefcb1e8b128640146a9a463723bed816f954306c2895187d869",
-      "observed_sha256": "ecdb454622d5c670cb379e4fe971eed20c6a5e4bc5f2ca70a9eb184d8defc81f",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch16-methodology/04-device-tier-performance-strategy.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
       "article": "src/part3-tools/ch16-methodology/05-testing-best-practices.md",
       "registered_sha256": "83c6d3a71aa4ca9f1d5d0393c73d5acb3e7cc0880cb79710f231958c478d7803",
       "observed_sha256": "b3f26a30b3bcae07ef94d0e8ff99fc869d8b79a20186c7bb8e2435c7923d0a85",
@@ -45548,7 +45707,7 @@
     {
       "article": "src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
       "registered_sha256": "80ea11d51c374f6b51ad307d0db46136781857edc271e8ea275b37c36a574f21",
-      "observed_sha256": "53e3646fb6a3f7219843f09905e59b2135f9ee45e09364484dbc53fe9993776f",
+      "observed_sha256": "497d630692f08a6735ae946c7e64dda912cf5226e03c252865d613f38b44d3d1",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch17-apm/02-matrix-btrace-tracing-sdk.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
@@ -45784,9 +45943,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 3537,
-  "reviewed_placements_after": 1556,
-  "net_removed_placements": 1981,
+  "reviewed_placements_before": 3552,
+  "reviewed_placements_after": 1562,
+  "net_removed_placements": 1990,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -45810,5 +45969,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 103
+  "currently_matching_reviewed_source_count": 104
 }
