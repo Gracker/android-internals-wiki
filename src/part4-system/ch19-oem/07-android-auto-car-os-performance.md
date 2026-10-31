@@ -85,10 +85,6 @@ AAOS 还包含 CarService、VHAL、CarWatchdog 和车辆电源状态机。CarSer
 
 下面的图用于定位应用进程、host、网络和车辆接口。Android Auto 子图中的 host 位于手机，末端节点才代表车机显示、输入与音频。
 
-<!-- gracker-diagram: a205-01-platform-placement -->
-![Android Auto 与 AAOS 的实际执行位置](../../assets/diagrams/ch19/a205-01-platform-placement.png)
-
-图：两种平台中的模板都由客户端构建、host 绘制；Android Auto 的应用与 host 同在手机，投射接收端才在车机。
 
 <details>
 <summary>平台责任图的 Mermaid 源码</summary>
@@ -130,10 +126,6 @@ flowchart LR
 
 Android 17 不会自动开启某个 Car App Library 模板，Jetpack 库升级也不会改变旧 host 的能力。产品代码应查询 host 能力和内容限制。当前文档还区分发布阶段：Car App Library 媒体体验在 Android 17 及更高版本 AAOS 上获得完整支持，在 Android Auto 上仍受早期访问与测试轨道限制；停驻游戏已于 2026 年 9 月 14 日在 Android Auto 与 AAOS 上正式开放，可发布到所有 Play 轨道；浏览器仍仅支持 AAOS 的内部测试轨道。不能只用 Android API level 推断类别可用性。
 
-<!-- gracker-diagram: a205-02-version-axes -->
-![车载能力由四个版本轴共同决定](../../assets/diagrams/ch19/a205-02-version-axes.png)
-
-图：排查时同时记录设备 SDK、Car App API、客户端依赖与 host/OEM 构建；类别发布状态还需另查当前文档。
 
 ## 模板应用的性能重点
 
@@ -172,10 +164,6 @@ val visibleItems = items.take(gridLimit)
 
 `ConstraintManager` 返回 host 设定的内容上限，客户端不能修改。按运行时上限准备模型，比按某个车机分辨率或品牌维护固定列表更可靠；分页和“更多”操作也要服从对应模板的驾驶限制。
 
-<!-- gracker-diagram: a205-04-template-quota -->
-![模板配额和列表上限是两类约束](../../assets/diagrams/ch19/a205-04-template-quota.png)
-
-图：模板任务配额约束交互步骤，ConstraintManager 约束内容容量，两者都必须满足。
 
 ### 模板生成应测什么
 
@@ -218,10 +206,6 @@ RenderThread 是 Android 提交绘制命令的专用线程，BufferQueue 在图�
 
 不能把地图刷新率固定为 60 Hz。Surface 尺寸、host 显示模式和车辆产品配置会改变每帧可用时间。以设备报告和 trace 为准，并分别记录平均帧率、jank（迟到或丢失的帧）、帧呈现时间与功耗。
 
-<!-- gracker-diagram: a205-06-map-budget -->
-![地图管线按责任拆开观察](../../assets/diagrams/ch19/a205-06-map-budget.png)
-
-图：后台数据准备、应用提交与车端呈现分别量测；以目标设备显示配置确定预算。
 
 ### 导航状态和语音
 
@@ -259,10 +243,6 @@ Android Auto 的投射传输由手机上的 Android Auto 与车机接收端管�
 
 应用不应通过私有 Wi-Fi 或蓝牙操作重建 Android Auto 连接。它要处理的是 host 会话生命周期和标准网络变化。两者可能独立发生：投射仍在但业务网络断开，或业务网络可用但 host 已离开。
 
-<!-- gracker-diagram: a205-08-independent-connectivity -->
-![投射会话与业务网络独立恢复](../../assets/diagrams/ch19/a205-08-independent-connectivity.png)
-
-图：投射连接由 Android Auto 管理，应用分别维护 host 会话、业务网络和持久状态。
 
 ### 可恢复的数据管线
 
@@ -306,10 +286,6 @@ AAOS 的 `CarPowerManagementService`（CPMS）与 VHAL 协调启动（On）、�
 
 在 `android-17.0.0_r1` 中，`CarPowerStateListenerWithCompletion` 只会为允许等待完成的状态传入非空 `CompletablePowerStateChangeFuture`，其中包括 `STATE_SHUTDOWN_PREPARE`、`STATE_SUSPEND_ENTER` 和 `STATE_HIBERNATION_ENTER` 等状态。特权服务完成清理后应在 `getExpirationTime()` 给出的期限前调用 `complete()`；到期后系统仍会继续转换。挂起或关机准备阶段不应启动大规模同步与缓存整理。
 
-<!-- gracker-diagram: a205-10-power-boundaries -->
-![车辆电源转换区分普通应用和特权服务](../../assets/diagrams/ch19/a205-10-power-boundaries.png)
-
-图：普通应用接受生命周期与能力变化；受 CONTROL_SHUTDOWN_PROCESS 保护的完成回调也受期限约束。
 
 ### 热环境与充电
 
@@ -350,10 +326,6 @@ ADAS（Advanced Driver Assistance Systems，高级驾驶辅助系统）和其他
 
 应用用 `Trace.beginSection()` 标记业务阶段和模板构建，网络层记录请求 ID 与状态版本，媒体层记录 MediaSession 命令与播放器事件。Android Auto 还要在手机与 DHU 或车机日志中记录同一个测试事件。本机单调时钟适合计算本机阶段耗时，但不同设备的起点和漂移不同，不能直接相减；跨设备合并轨迹前需要共同事件或显式时钟同步，记录偏移、漂移与对齐误差。Perfetto 的[时钟同步模型](https://perfetto.dev/docs/concepts/clock-sync)说明了以时钟快照建立时间域映射的方式；无法建立映射时应分别报告各端耗时和外部端到端测量。
 
-<!-- gracker-diagram: a205-12-clock-domains -->
-![跨设备延迟必须先建立时间域映射](../../assets/diagrams/ch19/a205-12-clock-domains.png)
-
-图：单调时间不等于跨设备共享时间；没有时钟映射时不能直接相减两端时间戳。
 
 ### 工具选择
 
@@ -366,10 +338,6 @@ ADAS（Advanced Driver Assistance Systems，高级驾驶辅助系统）和其他
 
 模拟器和 DHU 适合重现逻辑与协议问题，不能代表量产车的 GPU、DSP、触控、无线干扰和散热。性能结论至少要在一台目标硬件上复核。
 
-<!-- gracker-diagram: a205-13-test-layers -->
-![逻辑验证与目标硬件性能验证分层](../../assets/diagrams/ch19/a205-13-test-layers.png)
-
-图：先用可重复环境定位逻辑，再在真实硬件复核分位数、样本数和异常条件。
 
 ### 建议指标
 

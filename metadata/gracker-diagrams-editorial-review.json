@@ -52703,9 +52703,142 @@
       "before_count": 13,
       "before_all_images": 13,
       "sha256_before": "de503406eb4dd664465014105043eb9189495d6661c47d0b1d5438111c739c82",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 5,
+      "decisions": [
+        {
+          "original_id": "a205-01-platform-placement",
+          "title": "Android Auto 与 AAOS 的实际执行位置",
+          "decision": "remove",
+          "reason": "同节紧接的原生Mermaid更完整画出Auto手机客户端/host、AAOS车端、各自网络及VHAL权限和停驻Activity；PNG仅模板路径重复，保留原生完整责任图及正文物理位置解释。",
+          "original_line": 88,
+          "heading": "### AAOS：应用安装在车机"
+        },
+        {
+          "original_id": "a205-02-version-axes",
+          "title": "车载能力由四个版本轴共同决定",
+          "decision": "remove",
+          "reason": "紧邻四版本轴表已列决定能力和记录方式，四行映射图是表格重复。",
+          "original_line": 133,
+          "heading": "## Android 17 不是唯一版本轴"
+        },
+        {
+          "original_id": "a205-03-first-template",
+          "title": "首模板只依赖可立即读取的本地状态",
+          "decision": "keep",
+          "reason": "本地快照同步首模板、后台数据更新、主线程invalidate请求再取模的分段路径，明确首屏不能等待网络且生命周期/合并节流仍有效。",
+          "original_line": 146,
+          "heading": "### 冷启动路径"
+        },
+        {
+          "original_id": "a205-04-template-quota",
+          "title": "模板配额和列表上限是两类约束",
+          "decision": "remove",
+          "reason": "五模板配额/刷新返回重置与ConstraintManager内容上限已有两段说明和Kotlin示例，三行分类卡重复。",
+          "original_line": 175,
+          "heading": "### 模板配额和内容限制"
+        },
+        {
+          "original_id": "a205-05-surface-lifecycle",
+          "title": "每次 Surface 回调都重新确认几何与资源",
+          "decision": "keep",
+          "reason": "available读取几何到更新目标、尺寸/DPI可重复available以及destroyed停止释放的生命周期，强调Surface未销毁也会重新提供且每实例需release。",
+          "original_line": 202,
+          "heading": "### Surface 生命周期"
+        },
+        {
+          "original_id": "a205-06-map-budget",
+          "title": "地图管线按责任拆开观察",
+          "decision": "remove",
+          "reason": "地图预算五项列表和并发/取消/复用/热策略正文已完整，四行分类图只是缩写，没有实际时序或帧数据。",
+          "original_line": 221,
+          "heading": "### 地图渲染预算"
+        },
+        {
+          "original_id": "a205-07-media-path",
+          "title": "媒体控制与声音输出分段观测",
+          "decision": "keep",
+          "reason": "MediaSession命令、播放器状态、首buffer到DSP放大器声学输出的端到端阶段，区分应用可观测范围与真实听到声音。",
+          "original_line": 247,
+          "heading": "## 媒体应用"
+        },
+        {
+          "original_id": "a205-08-independent-connectivity",
+          "title": "投射会话与业务网络独立恢复",
+          "decision": "remove",
+          "reason": "投射与网络独立的两种情况、恢复状态及后续六项网络约束已有段落清单，四行恢复卡重复。",
+          "original_line": 262,
+          "heading": "### 区分投射连接和业务网络"
+        },
+        {
+          "original_id": "a205-09-watchdog-writes",
+          "title": "CarWatchdog 按 UTC 自然日累计写入",
+          "decision": "keep",
+          "reason": "内核按UID统计到UTC日累计、配置通知和反复超限可能停用的链，突出同日重启不归零及业务下载字节不等底层写入。",
+          "original_line": 296,
+          "heading": "### CarWatchdog 与磁盘写入"
+        },
+        {
+          "original_id": "a205-10-power-boundaries",
+          "title": "车辆电源转换区分普通应用和特权服务",
+          "decision": "remove",
+          "reason": "CPMS/VHAL、电源策略、普通应用与特权完成期限已由三段准确说明，四行责任表不提供状态机且重复。",
+          "original_line": 309,
+          "heading": "### 车辆电源状态"
+        },
+        {
+          "original_id": "a205-11-vehicle-data",
+          "title": "车辆属性先过权限，再以有界任务消费",
+          "decision": "keep",
+          "reason": "车辆属性经过CarService权限与VHAL，再由异步回调保存快照、有界后台消费的具体路径，区分AAOS接口和Auto客户端能力。",
+          "original_line": 328,
+          "heading": "## VHAL、车辆属性与 ADAS"
+        },
+        {
+          "original_id": "a205-12-clock-domains",
+          "title": "跨设备延迟必须先建立时间域映射",
+          "decision": "remove",
+          "reason": "本机单调时间、跨设备共同事件/映射和外部端到端测量已在同一段清楚说明，四行检查卡未增加实际同步或误差图。",
+          "original_line": 353,
+          "heading": "### 分段定义延迟"
+        },
+        {
+          "original_id": "a205-13-test-layers",
+          "title": "逻辑验证与目标硬件性能验证分层",
+          "decision": "remove",
+          "reason": "工具选择五项及模拟器/量产限制已有列表，三行测试层次图是子集复述，无新实验数据。",
+          "original_line": 369,
+          "heading": "### 工具选择"
+        }
+      ],
+      "sha256_after": "a70335b2ae03074a10b889d4aaf732ac32dcf387bbdd66535abb61e965bd1448",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T15:59:53.812790+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 13,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a205/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a205/visual-review.json",
+      "retired_diagrams": [
+        "a205-01-platform-placement",
+        "a205-02-version-axes",
+        "a205-04-template-quota",
+        "a205-06-map-budget",
+        "a205-08-independent-connectivity",
+        "a205-10-power-boundaries",
+        "a205-12-clock-domains",
+        "a205-13-test-layers"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-205/retired-assets.json"
     },
     {
       "index": 207,
@@ -53522,8 +53655,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 132,
-  "next_article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+  "reviewed_articles": 133,
+  "next_article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -53533,7 +53666,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T15:57:05.901589+08:00",
+  "updated_at": "2026-10-31T15:59:53.812790+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -53732,9 +53865,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 4340,
-  "reviewed_placements_after": 1834,
-  "net_removed_placements": 2506,
+  "reviewed_placements_before": 4353,
+  "reviewed_placements_after": 1839,
+  "net_removed_placements": 2514,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -53758,5 +53891,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 132
+  "currently_matching_reviewed_source_count": 133
 }
