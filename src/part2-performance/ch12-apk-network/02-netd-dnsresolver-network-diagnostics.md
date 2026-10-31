@@ -105,17 +105,9 @@ Android 应用常用的解析入口包括：
 
 依赖方向也由官方模块文档写明：netd 动态链接 resolver 模块；resolver 依赖 Bionic，其余依赖静态链接，并不反过来依赖 netd 的服务或库。配置 Binder 入口由模块自己提供，系统服务无需让 netd 转发配置。Mainline 允许单独更新模块，动手排查前，我们先记录设备上的实际模块版本。
 
-<!-- gracker-diagram: ch12-02-03-resolver-module-migration -->
-![Resolver 模块迁移与当前服务边界](../../assets/diagrams/ch12/ch12-02-03-resolver-module-migration.png)
-
-图：用版本节点说明旧路径来源，按当前模块与服务边界排错。 版本节点不是运行时长；Mainline可单独更新，设备模块不一定等于固定源码。
 
 模块可以独立更新，全局 DNS 控制权仍在系统手里：清空所有网络的 resolver 缓存、修改别的网络的 DNS server、操纵 Private DNS 校验状态，这些能力都由系统权限和服务分工保护，普通应用拿不到。
 
-<!-- gracker-diagram: ch12-02-04-resolver-privilege-boundary -->
-![普通查询能力与系统配置权限](../../assets/diagrams/ch12/ch12-02-04-resolver-privilege-boundary.png)
-
-图：普通应用按Network查询，系统受权服务才管理全局配置和缓存。 模块可独立更新不授予应用全局DNS控制权，dump也需要DUMP权限。
 
 ## 三、`DnsResolver` API
 
@@ -123,17 +115,13 @@ Android 应用常用的解析入口包括：
 
 Android 17 新增 `DnsResolver(Context, Looper)`；API 29 的 `DnsResolver.getInstance()` 在 API 37 被标记为废弃。`Context` 用于访问系统服务；可空的 `Looper` 监视查询文件描述符事件，传 `null` 时使用主 Looper；传入的 `Executor` 则在普通 `query()` / `rawQuery()` 的 FD 就绪路径上读取结果并执行回调。业务回调跑在哪个线程由 `Executor` 决定，Looper 只管监视，两者要分开看。组合查询的额外等待超时存在下述固定 r1 例外。
 
-<!-- gracker-diagram: ch12-02-05-looper-executor-paths -->
-![Looper、Executor 与组合查询超时回调](../../assets/diagrams/ch12/ch12-02-05-looper-executor-paths.png)
-
-图：普通FD就绪路径经Executor处理，组合查询超时路径须单独核实。 固定r1聚合器Handler直接reportResult，不能把普通路径的线程约定推广到所有终态；null Looper用主Looper。
 
 查询应绑定 `CancellationSignal`。普通 FD 路径的取消会移除监听并关闭查询 fd，已经进入业务层的回调照常走完。固定 r1 的组合查询还多一层：额外等待到期后，`HttpsEndpointAccumulator` 在 Handler 线程直接调用 `reportResult()`，没有重新经过传入的 Executor，报告入口也不会再检查用户取消信号。所以我们在最终回调入口自己重新检查取消和网络会话代次，再自行切换到所需执行环境；“取消后绝不回调”“所有结果均在同一 Executor”这两条假设，一条都靠不住。这是固定源码的控制流核对，未以真机复现代替实际模块验证。[来源：r1 组合查询聚合器](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/util/HttpsEndpointAccumulator.java)。
 
-<!-- gracker-diagram: ch12-02-06-cancel-session-guard -->
-![取消查询与已排定回调的会话校验](../../assets/diagrams/ch12/ch12-02-06-cancel-session-guard.png)
+<!-- gracker-diagram: ed12-02-callback-paths-and-session-guard -->
+![普通 FD 与组合超时回调走不同线程，业务入口统一检查会话](../../assets/diagrams/ch12/ed12-02-callback-paths-and-session-guard.png)
 
-图：取消底层查询后，业务回调入口仍校验取消和网络会话代次。 固定r1超时分支未重查用户取消；图表达源码可能路径，未声称设备复现或每次取消后都会回调。
+图：固定r1两条调度路径与业务取消保护合图：普通FD就绪由Looper监听后交Executor读取/回调，nullLooper用主Looper；组合HTTPS额外等待到期时Handler直接reportResult，未重进Executor，也未再核用户取消。因此最终业务入口自行检查CancellationSignal和网络会话代次，再决定丢旧结果或切换到需要的执行环境。取消底层监听/关闭查询不能追溯终止已进入的业务回调，自有Looper待查询收尾后退出。三轨只示源码可能交错，不声称真机已复现或每次取消后必回调。
 
 迁移到新构造方法后，可按应用生命周期复用 resolver，避免每次创建线程；长期实例使用适当生命周期的 Context。提供自有 Looper 时，要在待处理查询取消或收尾后再退出线程。API 级别或扩展版本判断仍须保留：targetSdk 升级并不会让旧系统自动获得新 API。
 
@@ -143,10 +131,6 @@ Android 17 新增 `DnsResolver(Context, Looper)`；API 29 的 `DnsResolver.getIn
 
 两类 API 都用 `Callback.onAnswer(answer, rcode)` 或 `onError(DnsException)` 回调，rcode 在普通 query 里同样存在。差别在 answer 的类型：地址查询是 `List<InetAddress>`，raw query 是 `byte[]`，组合查询是 `HttpsEndpoint`。A/AAAA 聚合中只要有一项有效成功，最终 rcode 就可为 0，另一项失败可能因此被掩盖；`onAnswer` 也可能携带空结果或非零 rcode。判断解析是否成功，要看结果内容和 rcode，回调名说了不算。
 
-<!-- gracker-diagram: ch12-02-07-query-result-contract -->
-![query、rawQuery 与组合查询的返回类型](../../assets/diagrams/ch12/ch12-02-07-query-result-contract.png)
-
-图：按返回类型与rcode/异常一起解释结果，不用回调名代替成功判定。 普通地址query也有rcode；A/AAAA聚合成功可遮盖另一项失败，空结果与非零rcode都须保留。
 
 常规路径会把失败信息折叠：`InetAddress` 与 OkHttp 经常把多种解析失败统一成 `UnknownHostException`。我们拿到这个异常只知道“解析失败”，至于是 NXDOMAIN（域名不存在）、SERVFAIL（服务器处理失败）、超时还是本地策略拒绝，从异常本身分不出来。
 
@@ -156,10 +140,6 @@ Android 17 新增 `DnsResolver(Context, Looper)`；API 29 的 `DnsResolver.getIn
 
 API 37 与 S 扩展版本 22 增加了 `TYPE_HTTPS`、`HttpsEndpoint` 和 A/AAAA/HTTPS 组合查询。拿到 `HttpsEndpoint` 后，`HttpsEndpoint.getHttpsRecords()` 给出按 SvcPriority 排序的记录列表；`getIpAddresses()` 按 RFC 6724 排序，并限制为当前网络支持的地址族，地址可来自 A/AAAA 或 HTTPS hints。ALPN、端口、目标名称和 ECH 配置这些服务参数挂在每条 `HttpsRecord` 上，Endpoint 一级的接口拿不到它们。另外两点要留意：`getIpAddressHints()` 可包含当前网络不支持的地址族；AliasMode（优先级 0）记录没有普通 ServiceMode 的完整服务参数，连接实现须继续遵循记录语义。
 
-<!-- gracker-diagram: ch12-02-08-https-record-endpoint -->
-![HttpsEndpoint、服务参数与地址 hints](../../assets/diagrams/ch12/ch12-02-08-https-record-endpoint.png)
-
-图：区分Endpoint的可用地址集合与每条HttpsRecord的服务参数。 API37/S扩展22；hints不等于已连通地址，AliasMode优先级0不同于普通ServiceMode，记录语义由连接实现处理。
 
 `httpsTimeoutMillis` 控制地址结果完成后的 HTTPS **额外等待**，提供以下常量与显式时长：
 
@@ -177,19 +157,15 @@ API 37 与 S 扩展版本 22 增加了 `TYPE_HTTPS`、`HttpsEndpoint` 和 A/AAAA
 
 OkHttp 5.3 的 `Dns.lookup()` 只返回 `List<InetAddress>`，`HttpsEndpoint` 上的 ALPN、端口、优先级或 ECH 配置，经自定义 `Dns` 传不过去；要用这些元数据，网络库的连接实现必须显式支持它们。
 
-<!-- gracker-diagram: ch12-02-10-dns-list-metadata-loss -->
-![OkHttp Dns 接口与 HTTPS 元数据](../../assets/diagrams/ch12/ch12-02-10-dns-list-metadata-loss.png)
+<!-- gracker-diagram: ed12-02-endpoint-records-and-connector -->
+![Endpoint 地址集合、逐记录服务参数与连接实现分别接入](../../assets/diagrams/ch12/ed12-02-endpoint-records-and-connector.png)
 
-图：返回IP列表的接口不能独立传递服务优先级、端口、ALPN或ECH。 解析到HttpsEndpoint不等于网络库已使用其服务参数；连接栈必须显式接入，不能把配置开关当协商证据。
+图：API37/S扩展22的数据层次与连接接口合图：Endpoint的可用地址按RFC6724和当前网络地址族形成，逐条HttpsRecord按SvcPriority排序并保存端口/ALPN/target/ECH等；原始hints可能含当前不支持的地址族，AliasMode优先级0不能当普通ServiceMode完整参数。传统OkHttp5.3Dns.lookup只交ListInetAddress，服务元数据须连接实现显式接入；解析成功或得到IP不证明已使用相应协议/ECH，最终以实际路由和握手为准。
 
 ## 四、系统调用路径
 
 我们把一次网络生命周期画成下面的时序图，用它定位网络创建、DNS 配置与应用查询分别由谁处理。
 
-<!-- gracker-diagram: ch12-02-11-network-cache-lifecycle -->
-![Network 与 Resolver 缓存的创建销毁](../../assets/diagrams/ch12/ch12-02-11-network-cache-lifecycle.png)
-
-图：同一netId由两个服务分别管理网络对象与DNS缓存。 固定r1正常路径，分别处理异常而非原子事务；销毁两次调用之间还有地址/socket清理。原Mermaid源码保留在下方。
 
 ```mermaid
 sequenceDiagram
@@ -225,17 +201,13 @@ resolver 按网络隔离缓存，是为了避免 Wi-Fi 与蜂窝共用彼此不�
 
 DNS 配置变化时，`ConnectivityService.updateDnses()` 还会调用 `DnsManager.flushVmDnsCache()`，由后者发送系统保护的 `ACTION_CLEAR_DNS_CACHE` 广播，通知 Java 运行时丢弃进程内 DNS 结果。这条广播直接作用于 Java 运行时；resolver 的每网络 native cache、Java 或应用自己的解析缓存、网络库里的已建连接要分开看，自建缓存要应用自己清。
 
-<!-- gracker-diagram: ch12-02-12-dns-config-update -->
-![LinkProperties 更新到配置 Binder 与 VM 广播](../../assets/diagrams/ch12/ch12-02-12-dns-config-update.png)
-
-图：链路DNS变化通过DnsManager写入每网络配置，并单独通知VM刷新。 配置与刷新不是应用全部缓存的统一失效机制；广播不保证清理自定义resolver缓存，socket生命周期另管。
 
 单独清理 DNS 缓存不会自动关闭 OkHttp 连接池中的 socket。切网后“解析已更新但请求仍访问旧地址”，要同时查已有连接、socket 绑定和其他缓存；“多数由连接复用造成”这类结论需要统计支持。完整网络销毁则是另一条路径，ConnectivityService 可能主动清理相关 socket；此时需联合 connect、实际目标地址和绑定网络判断。
 
-<!-- gracker-diagram: ch12-02-13-dns-caches-connections -->
-![DNS 缓存失效与已有连接的独立生命周期](../../assets/diagrams/ch12/ch12-02-13-dns-caches-connections.png)
+<!-- gracker-diagram: ed12-02-config-update-and-cache-lifetimes -->
+![配置更新与 VM 刷新分两路，自建缓存和 socket 独立管理](../../assets/diagrams/ch12/ed12-02-config-update-and-cache-lifetimes.png)
 
-图：分别观测resolver缓存、进程解析结果和已建立socket。 DNS刷新不等于关闭连接；完整网络销毁可能另行清socket，解析地址更新也不能单独证明请求已换路径。
+图：固定r1配置与失效范围合图：LP的DNS变化经updateDnses交DnsManager，ResolverParamsParcel通过IDnsResolver写入对应netId；另以flushVmDnsCache受保护广播通知Java运行时丢弃进程DNS结果。两路不是App全部缓存/连接统一清理：resolver nativecache、Java结果、自建缓存依各自规则核实，App缓存按网络会话和TTL管理。单独DNS刷新不自动关闭连接池socket；完整网络销毁的socket清理是另一条路径。联合记录connect目标与绑定网络，不由解析配置已变推断请求已换路径。
 
 ### 4.3 服务接口与源码位置
 
@@ -262,10 +234,6 @@ Android 的公开 Private DNS 设置向用户展示的是 DoT 模式和 provider
 
 应用拿到的是解析结果，单次查询走 DoT 还是 DoH，从 `InetAddress`、OkHttp `Dns` 或普通 `DnsResolver.query()` 回调里看不出来。公开状态可以记录 `LinkProperties.isPrivateDnsActive()` 与 `getPrivateDnsServerName()`；已验证服务器详情和实际传输路径，要从有权访问的平台 dump、日志或内部状态核对，`getDnsServers()` 只反映配置，当不成“本次实际使用的加密上游”。写诊断报告时，我们把 Private DNS 状态、配置与单次实际传输分开记。
 
-<!-- gracker-diagram: ch12-02-14-private-dns-signals -->
-![Private DNS 设置、配置与单次实际传输](../../assets/diagrams/ch12/ch12-02-14-private-dns-signals.png)
-
-图：公开状态说明PrivateDNS语境，DoT/DoH实际路径需要平台证据。 getDnsServers不是本次加密上游清单；Java地址回调不能可靠识别DoT/DoH，模块/配置/实验会影响内部选择。
 
 Private DNS 保护的是系统 resolver 到上游 DNS provider 之间的 DNS 流量；HTTPS 流量本身和 TLS ClientHello 中的服务器名称不在它的覆盖范围内，ECH 的适用条件见 12.1。
 
@@ -278,10 +246,6 @@ Private DNS 保护的是系统 resolver 到上游 DNS provider 之间的 DNS 流
 - fallback 是否允许从加密解析切到系统 DNS，应由安全与隐私策略定义；
 - DoH 服务自身的域名解析须另行解决；再次调用同一个业务客户端，会形成走不完的递归依赖。
 
-<!-- gracker-diagram: ch12-02-15-app-doh-bootstrap -->
-![应用 DoH 的 bootstrap、回退与网络策略](../../assets/diagrams/ch12/ch12-02-15-app-doh-bootstrap.png)
-
-图：应用自管上游和缓存时，独立解决bootstrap并明确fallback政策。 不采用VPN DNS命名空间不等于绕开VPN数据隧道；实际路由、隐私和企业域名需要分别核实。
 
 ### 5.3 mDNS 与本地网络权限
 
@@ -326,10 +290,6 @@ targetSdk 37 的广泛本地网络访问需要 `ACCESS_LOCAL_NETWORK` 运行时�
 
 `netId` 只是平台内部标识：它由系统重复分配，同一个值可能先后属于不同网络。线上长期聚合要换稳定的维度，可以用进程内递增的网络会话号，或带定期更换盐值的标识。
 
-<!-- gracker-diagram: ch12-02-18-network-session-context -->
-![按网络会话关联解析与实际连接](../../assets/diagrams/ch12/ch12-02-18-network-session-context.png)
-
-图：一次故障关联请求、网络会话、解析来源与连接结果。 netId可复用，不能当稳定设备属性；VALIDATED是系统探测通过，不能保证业务host正常。
 
 ### 6.3 三组 shell 证据
 
@@ -341,10 +301,6 @@ adb shell dumpsys dnsresolver
 adb shell dumpsys dnsresolver querylog
 ```
 
-<!-- gracker-diagram: ch12-02-19-three-dump-evidence -->
-![三组 dumpsys 证据的用途与范围](../../assets/diagrams/ch12/ch12-02-19-three-dump-evidence.png)
-
-图：系统网络、resolver状态与querylog各自提供不同层次的证据。 受控shell/bugreport取证，服务dump需要DUMP权限；三者都不能替代应用每次请求的阶段计时。
 
 我们逐条看：第一条核对网络、LinkProperties、能力、VPN 与 Private DNS。第二条给出 resolver 的每网络配置、缓存相关信息、上游采样统计与 Private DNS 状态，它是一份状态汇总，完整缓存条目或应用请求清单要另想办法。第三条输出有界 query log：固定 r1 的 DnsProxyListener 跳过反向查询，主要记录存在缓存未命中事件的查询；DnsQueryLog 输出 hostname 首字符和首个 IPv4/IPv6 地址的前缀，同时保留时间、netId、UID/PID 与耗时。这些遮蔽后的字段仍留着关联线索，谈不上匿名。
 
@@ -355,10 +311,6 @@ adb shell dumpsys dnsresolver querylog
 
 `ResolverController::dump()` 的 server 数字由 resolver 保存的样本聚合，包含成功、错误、超时、内部错误、平均 RTT、最近样本时间和可用状态；样本受配置的有效期与数量约束，“total”对应的也只是这些样本，而非设备生命周期内的全部 DNS 请求。它适合观察对应网络和上游的集中失败；应用耗时和分位数要应用侧自己测——应用可能命中其他缓存、等待调度或复用连接。
 
-<!-- gracker-diagram: ch12-02-21-resolver-statistics-scope -->
-![Resolver 上游样本统计与应用分位数](../../assets/diagrams/ch12/ch12-02-21-resolver-statistics-scope.png)
-
-图：按样本窗口解释上游total/平均RTT，并与应用延迟分布分开。 样本受有效期和数量约束；平均RTT不是p99，也不包含应用全部缓存、排队与连接复用的体验。
 
 ### 6.4 NetworkDiagnostics 的探测范围
 
@@ -397,17 +349,13 @@ OkHttp 的 `Dns.lookup(hostname)` 是同步接口，并且可能被多个请求�
 - HTTPDNS 客户端使用独立、最小化的 bootstrap 路径，避开对同一个自定义 `Dns` 的递归调用；
 - 系统 fallback 由产品的可用性、隐私和企业网络策略共同决定。
 
-<!-- gracker-diagram: ch12-02-23-httpdns-cache-bootstrap -->
-![同步 Dns.lookup 的并发缓存与上游路径](../../assets/diagrams/ch12/ch12-02-23-httpdns-cache-bootstrap.png)
+<!-- gracker-diagram: ed12-02-app-resolver-cache-bootstrap-policy -->
+![同步自定义解析先查分区缓存，上游 bootstrap 与回退单独管理](../../assets/diagrams/ch12/ed12-02-app-resolver-cache-bootstrap-policy.png)
 
-图：同步并发lookup优先使用安全的分区缓存，上游访问受bootstrap和回退政策约束。 同步HTTPDNS耗时计入建连前DNS；权威否定与瞬时错误分别缓存，不能无限续用过期地址或递归调用自身。
+图：应用自定义解析的建议职责图：同步且可能并发的lookup先查按host/网络会话分区并检查TTL的线程安全缓存；miss才用独立最小bootstrap访问上游，不能递归调用同一Dns，同步上游耗时计入DNS。有效地址、NXDOMAIN/NODATA权威否定与超时/SERVFAIL/取消/权限等分类，不统一负缓存期限。失败后是否fallback取决于隐私、可用性、企业/VPN/门户策略，解析命名空间与VPN数据路由分别核查。按实际结果交地址或错误，总期限、取消、预取、有界过期续用和来源标记分别管理；不是完整可执行状态机，也不保证解析成功即connect成功。
 
 使用解析得到的 IP 建立连接时，URL 仍应保留原始 hostname，让 TLS SNI（握手中携带的目标主机名）、证书主机名校验和 HTTP Host 保持一致。直接把 URL 改为 IP，再关闭主机名校验，属于安全缺陷。
 
-<!-- gracker-diagram: ch12-02-24-dns-ip-domain-identity -->
-![DNS 地址候选与 HTTPS 域名身份](../../assets/diagrams/ch12/ch12-02-24-dns-ip-domain-identity.png)
-
-图：自定义地址调度保持URL域名，连接地址与身份语义分别处理。 仅替换裸IP并关闭校验是安全缺陷；只补Host头也不能自动恢复SNI和证书验证的目标身份。
 
 连接池会改变 DNS 统计：已有连接直接可用时通常跳过 `lookup()`，但 OkHttp 5.3.0 为检查跨主机 HTTP/2 合并路由，也可能先解析再复用同一连接，所以“有 DNS 事件”推不出“必有新连接”。多地址的尝试与回退由连接策略决定。我们应联合 DNS、connect 与 connectionAcquired 记录来还原实际路径，完整规则见 12.1 与 24.7。
 
@@ -431,10 +379,10 @@ OkHttp 的 `Dns.lookup(hostname)` 是同步接口，并且可能被多个请求�
 
 DNS 分位数以实际发生的解析事件为样本；未解析而复用连接的请求，我们把它记为阶段未发生，填 0 ms 会把它混进分布。另报 DNS 触发率、缓存命中率、样本数和失败率，避免仅用成功样本解释总体体验。“切网后故障”同样不套通用秒数：记录 `elapsed_since_default_network_change_ms`，按线上分布与期限划窗口，并分开复用与新连接。
 
-<!-- gracker-diagram: ch12-02-26-dns-metric-denominators -->
-![DNS 分布、触发率与业务体验的分母](../../assets/diagrams/ch12/ch12-02-26-dns-metric-denominators.png)
+<!-- gracker-diagram: ed12-02-upstream-samples-and-app-denominators -->
+![上游有限样本、实际 DNS 事件与全部业务请求使用不同分母](../../assets/diagrams/ch12/ed12-02-upstream-samples-and-app-denominators.png)
 
-图：先确认解析是否发生，再按来源、网络、类型和结果计算分布。 未解析不填0ms，失败不从体验结论中消失；低样本p99需要样本数，不能把单个平均RTT当尾延迟。
+图：两类统计与业务发生率合图：resolver上游的total/成功错误超时/平均RTT描述受配置有效期和数量限制的保存样本，不是设备所有请求；应用DNS分布只以实际发生的解析事件为样本，未发生阶段单列而不填0ms。按来源/cache/Network/类型/结果分组，报告分位数、样本数和失败率，另报触发率与命中率并关联connect。系统和应用只在同网络同窗关联，不混分母；上游均值非应用p99，低流量尾分位配样本量，失败不能从整体体验结论中消失。
 
 ### 8.2 最小事件字段
 
@@ -454,10 +402,6 @@ DNS 分位数以实际发生的解析事件为样本；未解析而复用连接�
 
 完整 hostname、DNS server、返回 IP 和 provider name 都可能成为敏感网络信息。生产埋点可使用服务端分配的域名类别、受控 allowlist（明确允许采集的列表）、轮换 HMAC（使用定期更换的密钥生成消息认证码）或网段级分类；诊断包的访问权限、保留时间和导出范围也要受控。哈希前若候选域名很少，攻击者仍可能离线枚举并恢复原值，所以无盐散列算不上匿名化。
 
-<!-- gracker-diagram: ch12-02-27-dns-fields-privacy -->
-![解析事件字段与敏感网络数据处理](../../assets/diagrams/ch12/ch12-02-27-dns-fields-privacy.png)
-
-图：关联请求、网络会话和解析结果，并限制可识别网络字段。 无盐散列在低熵域名集合中可被枚举；轮换HMAC或类别化也不自动消除关联风险，诊断包仍按授权范围管理。
 
 ### 8.3 告警要能指向动作
 
@@ -469,10 +413,6 @@ DNS 分位数以实际发生的解析事件为样本；未解析而复用连接�
 | 切网会话错误集中 | 网络变化间隔、缓存来源、连接是否复用 | 修正网络维度缓存或客户端生命周期 |
 | 企业/VPN 用户异常 | VPN、代理、split DNS、应用 resolver 覆盖 | 缩小自定义解析范围 |
 
-<!-- gracker-diagram: ch12-02-28-dns-alert-action -->
-![从告警现象到可验证的处置](../../assets/diagrams/ch12/ch12-02-28-dns-alert-action.png)
-
-图：按来源和失败阶段选择证据，使告警能指向具体动作。 相同UnknownHost或切网标签不自动说明同一根因；调整策略前核实窗口、样本与配置变化。
 
 ## 九、Tethering offload 与本机 DNS 路径的分工
 
