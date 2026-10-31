@@ -36142,9 +36142,534 @@
       "before_count": 48,
       "before_all_images": 48,
       "sha256_before": "ae04e08e3dba5ff2b03f9b3806a1be1c40e4851e7683ee6ee64d82ebeec7c63e",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 22,
+      "decisions": [
+        {
+          "original_id": "ch14-06-01-visibility-layers",
+          "title": "轨道缺失沿完整数据路径排查",
+          "decision": "remove",
+          "reason": "四框逐项重述82开头缺失层次，并与25同一四步图重复；原文完整数据路径和615–627七步排查全留，15具体双Producer拓扑独立保留。",
+          "original_line": 84,
+          "heading": "# Android Tracing 基础设施与自定义 Trace"
+        },
+        {
+          "original_id": "ch14-06-02-buffer-controls",
+          "title": "三层缓冲区的写入者和控制范围",
+          "decision": "merge",
+          "reason": "原图“三层缓冲区的写入者和控制范围”并入：合并三层配置、丢数统计和RING/DISCARD保留方向，让控制字段对应实际失效层。；锚点原图22，固定Android17/内核6.18及库版本、控制字段、丢数与生命周期限定详见合图图注。",
+          "original_line": 107,
+          "heading": "### 三层缓冲区",
+          "replacement_id": "ed14-06-buffer-loss-and-retention-layers"
+        },
+        {
+          "original_id": "ch14-06-03-tracer-event-source",
+          "title": "函数 tracer 与静态事件源独立控制",
+          "decision": "keep",
+          "reason": "function/function_graph使用current_tracer与函数过滤，tracepoint由events独立启停的不同控制面并列，保留nop不关闭静态事件的关键关系。",
+          "original_line": 126,
+          "heading": "#### “三种模式”的准确边界"
+        },
+        {
+          "original_id": "ch14-06-04-disabled-fastpath",
+          "title": "tracepoint 的关闭与开启路径",
+          "decision": "keep",
+          "reason": "jump-label关闭路径、非jump-label回退与启用后字段写入三个实际构建/状态分支并列，避免把所有关闭路径承诺固定NOP或零开销。",
+          "original_line": 133,
+          "heading": "#### “三种模式”的准确边界"
+        },
+        {
+          "original_id": "ch14-06-05-tracefs-enable-fallback",
+          "title": "Tracefs 先写单事件开关再回退",
+          "decision": "remove",
+          "reason": "四框重述155完整优先写enable失败回set_event及对称停用句；连续箭头不如原文明确启用失败与独立停用的条件，接口节点表142–153全留。",
+          "original_line": 157,
+          "heading": "#### tracefs 暴露了哪些控制点"
+        },
+        {
+          "original_id": "ch14-06-06-secondary-instance",
+          "title": "次级 tracefs 实例的隔离边界",
+          "decision": "remove",
+          "reason": "三组六卡逐项摘要162一段主/次级实例及RequiresAtrace直接拒绝限定，没有独立隔离实例，正文更明确全局atrace不能隔离，删条件提醒重排。",
+          "original_line": 164,
+          "heading": "#### tracefs 暴露了哪些控制点"
+        },
+        {
+          "original_id": "ch14-06-07-raw-to-domain",
+          "title": "原始事件索引与领域语义表",
+          "decision": "remove",
+          "reason": "availableevents→原始args→领域→项目视图与19同一验证链重复；19放在实际自定义事件SQL附近保留，184原始/派生分工段完整保留。",
+          "original_line": 186,
+          "heading": "#### 常用事件与设备差异"
+        },
+        {
+          "original_id": "ch14-06-08-category-composition",
+          "title": "atrace category 可同时控制 tag 与内核事件",
+          "decision": "remove",
+          "reason": "配置三分支逐项复制193–204category与事件两种方式清单，没有额外具体category展开实例，gfx兼具tag/事件与freq/idle独立等正文全留。",
+          "original_line": 208,
+          "heading": "### atrace category 的构成与选择"
+        },
+        {
+          "original_id": "ch14-06-09-consumer-control",
+          "title": "Consumer、traced 与 Producer 的控制关系",
+          "decision": "remove",
+          "reason": "四框逐项重述215–220两个服务及Consumer子配置分发段，15保留独立数据拓扑且图注说明控制方向，删通用控制链摘要。",
+          "original_line": 222,
+          "heading": "### `traced` 与 `traced_probes` 如何协作"
+        },
+        {
+          "original_id": "ch14-06-10-ftrace-pipeline",
+          "title": "linux.ftrace 从控制配置到读取二进制页",
+          "decision": "remove",
+          "reason": "六框逐格摘录231–236六步采集清单，所有Muxer/CpuReader/退出行为原文留存，15具体数据路径与新共享请求图分别承担拓扑和并发约束。",
+          "original_line": 238,
+          "heading": "#### `linux.ftrace` 的采集过程"
+        },
+        {
+          "original_id": "ch14-06-11-concurrent-requests",
+          "title": "共享采集状态按活跃请求合并",
+          "decision": "merge",
+          "reason": "原图“共享采集状态按活跃请求合并”并入：合并并发请求约束和watermark默认tick分支，区分配置请求、合并选择与实际唤醒完成。；锚点原图13，固定Android17/内核6.18及库版本、控制字段、丢数与生命周期限定详见合图图注。",
+          "original_line": 245,
+          "heading": "#### `linux.ftrace` 的采集过程",
+          "replacement_id": "ed14-06-shared-ftrace-requests-and-drain-choice"
+        },
+        {
+          "original_id": "ch14-06-12-buffer-defaults",
+          "title": "每 CPU 默认容量与中央容量分别解释",
+          "decision": "remove",
+          "reason": "每CPU默认2/8MiB与中央32768KiB六卡重述280–282两段数字分支；原参数与单位完整保留，新三层图已明确控制范围，删数值段落重排。",
+          "original_line": 284,
+          "heading": "#### 一份示例采集配置"
+        },
+        {
+          "original_id": "ch14-06-13-drain-watermark",
+          "title": "定时读取与水位轮询的配合",
+          "decision": "merge",
+          "reason": "原图“定时读取与水位轮询的配合”并入：合并并发请求约束和watermark默认tick分支，区分配置请求、合并选择与实际唤醒完成。；锚点原图13，固定Android17/内核6.18及库版本、控制字段、丢数与生命周期限定详见合图图注。",
+          "original_line": 291,
+          "heading": "#### 一份示例采集配置",
+          "replacement_id": "ed14-06-shared-ftrace-requests-and-drain-choice"
+        },
+        {
+          "original_id": "ch14-06-14-java-backend-selection",
+          "title": "Java Trace 每次调用的 backend 选择",
+          "decision": "keep",
+          "reason": "ATrace/SDK四种开关组合与偏好位的真实四格选择关系独立，同一次调用最多一backend，保留并发SDKoptout和实际注册限制正文。",
+          "original_line": 309,
+          "heading": "#### `android.os.Trace` 的当前路径"
+        },
+        {
+          "original_id": "ch14-06-15-producer-dataflow",
+          "title": "ATrace 与 TrackEvent 在 service 汇合",
+          "decision": "keep",
+          "reason": "内核→probes→SMBA和应用TrackEvent→SMBB两数据路径汇聚service的七节点真实拓扑，直接表现TrackEvent绕ftrace与各ProducerSMB隔离。",
+          "original_line": 345,
+          "heading": "#### libcutils `ATRACE_*` 仍写 `trace_marker`"
+        },
+        {
+          "original_id": "ch14-06-16-custom-entry-points",
+          "title": "应用、平台与内核各有自定义入口",
+          "decision": "remove",
+          "reason": "三入口四框复制352一段及随后App/Framework/kernel三个小节目录，无具体调用或依赖，公开/私有/内核限制完整保留。",
+          "original_line": 354,
+          "heading": "### App、Framework、内核三层自定义入口"
+        },
+        {
+          "original_id": "ch14-06-17-balanced-scopes",
+          "title": "同步区间用生命周期保护闭合",
+          "decision": "remove",
+          "reason": "四框逐步重述Java finally/C++ RAII代码和392一段，28保留具体wall/Running时间轴、29保留挂起错栈实例，删生命周期通用流程复写。",
+          "original_line": 394,
+          "heading": "#### Framework 原生层：保留 category 语义"
+        },
+        {
+          "original_id": "ch14-06-18-kernel-tracepoint-build",
+          "title": "静态 tracepoint 从声明到启用",
+          "decision": "keep",
+          "reason": "TRACE_EVENT声明、guard外define_trace、唯一CREATE_TRACE_POINTS、运行注册、启用与实际调用的依赖顺序独立，保留模块注册无需先触发及未做目标编译声明。",
+          "original_line": 457,
+          "heading": "#### 内核：在 6.18 锚点添加静态 tracepoint"
+        },
+        {
+          "original_id": "ch14-06-19-generic-event-check",
+          "title": "自定义内核事件先核对原始名称与参数",
+          "decision": "keep",
+          "reason": "先查真实ftrace_event.name再args及CPU/utid再领域封装的具体新增事件验证链保留，放在两条实际SQL旁，替代7重复一般流程。",
+          "original_line": 477,
+          "heading": "#### 从 `ftrace_event` 核对自定义事件"
+        },
+        {
+          "original_id": "ch14-06-20-probe-effect-ab",
+          "title": "追踪开销用同条件交替实验测量",
+          "decision": "remove",
+          "reason": "四框逐项复制510一段同设备AB交替/业务与CPU数据率/丢数复现要求，并与46相同开销工作顺序重复，500–510成本表与原方法全文全留。",
+          "original_line": 512,
+          "heading": "### 追踪开销的构成与实测"
+        },
+        {
+          "original_id": "ch14-06-21-loss-diagnostics",
+          "title": "丢数按层读取，info 也可能记录覆盖",
+          "decision": "merge",
+          "reason": "原图“丢数按层读取，info 也可能记录覆盖”并入：合并三层配置、丢数统计和RING/DISCARD保留方向，让控制字段对应实际失效层。；锚点原图22，固定Android17/内核6.18及库版本、控制字段、丢数与生命周期限定详见合图图注。",
+          "original_line": 545,
+          "heading": "### 丢数诊断与配置调整",
+          "replacement_id": "ed14-06-buffer-loss-and-retention-layers"
+        },
+        {
+          "original_id": "ch14-06-22-retention-strategies",
+          "title": "覆盖与丢弃策略保留不同时间段",
+          "decision": "merge",
+          "reason": "原图“覆盖与丢弃策略保留不同时间段”并入：合并三层配置、丢数统计和RING/DISCARD保留方向，让控制字段对应实际失效层。；锚点原图22，固定Android17/内核6.18及库版本、控制字段、丢数与生命周期限定详见合图图注。",
+          "original_line": 559,
+          "heading": "### 丢数诊断与配置调整",
+          "replacement_id": "ed14-06-buffer-loss-and-retention-layers"
+        },
+        {
+          "original_id": "ch14-06-23-ebpf-semantic-choices",
+          "title": "静态事件、动态探针与内核聚合的分工",
+          "decision": "remove",
+          "reason": "四分类卡摘录577–579两段静态语义、函数符号和BPF聚合的对照，三机制可组合而非简单互斥；文字更完整保留attach现有tracepoint与版本实测限制。",
+          "original_line": 581,
+          "heading": "### eBPF 与静态 tracepoint 的分工"
+        },
+        {
+          "original_id": "ch14-06-24-boot-trace-gates",
+          "title": "启动 Trace 的准备、触发和覆盖窗口",
+          "decision": "keep",
+          "reason": "启动时间轴明确服务就绪前未覆盖区域与后续采集窗，配置/一次性属性/服务条件具体依赖独立，保留preserve不能同时改时钟容量限制。",
+          "original_line": 608,
+          "heading": "### 启动期 Trace"
+        },
+        {
+          "original_id": "ch14-06-25-missing-data-diagnosis",
+          "title": "轨道缺失按四类问题定位",
+          "decision": "remove",
+          "reason": "四框与1开头几乎同义，并逐项分组615–627七步排查清单，原顺序/错误/stat条目/单变量验证完整保留，删重复清单图。",
+          "original_line": 629,
+          "heading": "### 排查顺序"
+        },
+        {
+          "original_id": "ch14-06-26-public-api-boundaries",
+          "title": "公开 API 与平台私有能力按版本分开",
+          "decision": "remove",
+          "reason": "六卡逐项重述656–661完整API方法-版本-语义表及隐藏接口列表，API18/29/平台许可边界与setAppTracingAllowed刷新细节全留，删版本表复写。",
+          "original_line": 665,
+          "heading": "#### 1.1 第三方应用能调用什么"
+        },
+        {
+          "original_id": "ch14-06-27-androidx-paths",
+          "title": "AndroidX 经典系统路径与进程内路径",
+          "decision": "keep",
+          "reason": "AndroidX1.3经典系统与2.0进程内采集以及支持Benchmark合并的独立路径对照，保留Studio不自动采、扩展实际artifact和固定版本范围。",
+          "original_line": 694,
+          "heading": "#### 1.2 应用工程优先使用 AndroidX"
+        },
+        {
+          "original_id": "ch14-06-28-sync-wall-cpu",
+          "title": "同步 Slice 的墙钟时长包含等待",
+          "decision": "keep",
+          "reason": "同一业务Slice跨Running/等待/Running两轨，直接显示wall包含阻塞抢占与CPUtime不同，保留同线程严格栈约束和重叠子区间不累加。",
+          "original_line": 716,
+          "heading": "#### 2.1 同步切片：当前线程做了什么"
+        },
+        {
+          "original_id": "ch14-06-29-suspend-sync-stack",
+          "title": "同步区间跨协程挂起会错位",
+          "decision": "keep",
+          "reason": "线程A begin后挂起、线程B误end的实际两轨错配示例，保留finally不保证同线程、可能弹B别的栈顶，独立于正常28时轴。",
+          "original_line": 729,
+          "heading": "#### 2.1 同步切片：当前线程做了什么"
+        },
+        {
+          "original_id": "ch14-06-30-async-cookie-lifetime",
+          "title": "异步 cookie 统一分配到任务结束",
+          "decision": "keep",
+          "reason": "全进程受控活跃ID分配→同名cookie开始→换线程等待→同键结束后再复用的资源生命周期独立，保留回绕/多个模块各从0/hash碰撞边界。",
+          "original_line": 756,
+          "heading": "#### 2.2 异步切片：一项工作经历了多条线程"
+        },
+        {
+          "original_id": "ch14-06-31-async-stacking",
+          "title": "异步轨道堆叠不表示父子关系",
+          "decision": "keep",
+          "reason": "两条异步任务时间重叠但无父子关系的具体双轨示意，保留publicasync无flow/跨进程同名cookie不配对的因果边界。",
+          "original_line": 763,
+          "heading": "#### 2.2 异步切片：一项工作经历了多条线程"
+        },
+        {
+          "original_id": "ch14-06-32-counter-absolute-values",
+          "title": "Counter 每次写入绝对值",
+          "decision": "keep",
+          "reason": "1→3→0三组具体状态替换例对照非增量语义，0有效不等无样本，便于识别Counter记法，保留。",
+          "original_line": 782,
+          "heading": "#### 2.3 Counter：某个状态在这一刻是多少"
+        },
+        {
+          "original_id": "ch14-06-33-stable-names",
+          "title": "低基数标签便于聚合和跨版本比较",
+          "decision": "remove",
+          "reason": "四框逐项摘要791–798稳定命名与有限后缀例，四个示例操作名/禁止用户信息全文保留，无额外标签集合或聚合结果，删建议清单复写。",
+          "original_line": 800,
+          "heading": "#### 3.1 使用稳定、低 cardinality 名称"
+        },
+        {
+          "original_id": "ch14-06-34-name-boundaries",
+          "title": "平台、JNI、AndroidX 与 marker 的长度边界",
+          "decision": "keep",
+          "reason": "平台127UTF16检查、AndroidX127截断、JNI1024UTF16和marker总1024字节四种不同单位/责任层并列，独立边界对照保留，不将名称可用容量混算。",
+          "original_line": 811,
+          "heading": "#### 3.2 长度和字符约束"
+        },
+        {
+          "original_id": "ch14-06-35-lazy-label-evaluation",
+          "title": "懒标签把构造成本放到启用分支",
+          "decision": "merge",
+          "reason": "原图“懒标签把构造成本放到启用分支”并入：合并懒标签求值分支与isEnabled/缓冲/最终覆盖区别，画出业务block在开关两侧都执行的共同路径。；锚点原图37，固定Android17/内核6.18及库版本、控制字段、丢数与生命周期限定详见合图图注。",
+          "original_line": 831,
+          "heading": "#### 3.3 延迟构造动态标签",
+          "replacement_id": "ed14-06-enabled-label-and-retention-boundaries"
+        },
+        {
+          "original_id": "ch14-06-36-property-cache",
+          "title": "ATrace tag 缓存随属性 serial 刷新",
+          "decision": "remove",
+          "reason": "四框逐项重述861一段propertyserial/tag/app命令行/缓存规则，无独立新条件例；原文明确只有serial变化才刷新且无TLS，删顺序摘要避免读成每次更新。",
+          "original_line": 863,
+          "heading": "#### 4.2 ATrace 路径如何启用"
+        },
+        {
+          "original_id": "ch14-06-37-enabled-vs-retained",
+          "title": "isEnabled 与最终保留数据的区别",
+          "decision": "merge",
+          "reason": "原图“isEnabled 与最终保留数据的区别”并入：合并懒标签求值分支与isEnabled/缓冲/最终覆盖区别，画出业务block在开关两侧都执行的共同路径。；锚点原图37，固定Android17/内核6.18及库版本、控制字段、丢数与生命周期限定详见合图图注。",
+          "original_line": 930,
+          "heading": "#### 5.3 `isEnabled()` 的含义",
+          "replacement_id": "ed14-06-enabled-label-and-retention-boundaries"
+        },
+        {
+          "original_id": "ch14-06-38-coroutine-two-levels",
+          "title": "异步任务跨度与线程内同步阶段",
+          "decision": "keep",
+          "reason": "逻辑Feed.load异步轨包围IO同步DAO和Default同步映射两个线程内阶段的实际组合关系独立，保留DAO不挂起假设及实际suspendDAO不能照套。",
+          "original_line": 962,
+          "heading": "### 6. 协程和线程池怎么埋"
+        },
+        {
+          "original_id": "ch14-06-39-queue-duration-boundary",
+          "title": "排队时间需要提交、出队与执行锚点",
+          "decision": "keep",
+          "reason": "提交→出队/开始→执行/其它等待→完成的实际分段时间轴，独立界定queuewait不是async总时长减执行，保留重叠不能重复减。",
+          "original_line": 974,
+          "heading": "### 6. 协程和线程池怎么埋"
+        },
+        {
+          "original_id": "ch14-06-40-ndk-scope",
+          "title": "公开 NDK 作用域与平台宏分开",
+          "decision": "remove",
+          "reason": "六卡逐项复制985–990完整NDK可用版本表及1017–1019公开/私有接口段，RAII20行代码/NDK直走libcutils非Javabackend全留，删表格重排。",
+          "original_line": 1021,
+          "heading": "### 7. Native 代码的公开 NDK 接口"
+        },
+        {
+          "original_id": "ch14-06-41-binder-causal-context",
+          "title": "Binder 服务端自动切片不传递业务异步上下文",
+          "decision": "remove",
+          "reason": "四框逐项摘录1045–1050客户端/Binder/服务端/调度四证据清单，1036–1038tag/名称生成和跨进程cookie限制及1052requestid正文全留，无具体事务链示例，删目录流程。",
+          "original_line": 1040,
+          "heading": "#### 8.2 Binder 自动切片覆盖什么"
+        },
+        {
+          "original_id": "ch14-06-42-slice-context-views",
+          "title": "同步与异步事件已经是配对后的 Slice",
+          "decision": "keep",
+          "reason": "thread_slice线程归属与process_slice异步进程归属到统一context视图的不同身份模型并列，保留threadnameNULL/dur-1和无需selfjoin配beginend。",
+          "original_line": 1089,
+          "heading": "#### 9.1 Slice 已经是配对结果"
+        },
+        {
+          "original_id": "ch14-06-43-scoped-percentiles",
+          "title": "分位数固定实例、窗口与样本数",
+          "decision": "remove",
+          "reason": "四框逐项重述1096唯一upid/半开窗/闭合样本及19行SQL流程，正文1120的0–100参数和单Trace非独立设备样本完整保留，图内无受控数据比较，删SQL步骤摘要。",
+          "original_line": 1122,
+          "heading": "#### 9.2 分位数语法"
+        },
+        {
+          "original_id": "ch14-06-44-counter-coverage",
+          "title": "时间加权 Counter 先还原有效区间",
+          "decision": "keep",
+          "reason": "同轨道A/B保持值与尾值外推实际阶梯区间，配时间加权公式和裁剪，保留首前未知/进程Trace场景边界/缺口不等观测，和32绝对值语义互补。",
+          "original_line": 1144,
+          "heading": "#### 9.3 Counter 查询"
+        },
+        {
+          "original_id": "ch14-06-45-category-filter",
+          "title": "ATrace Slice 不能靠 category=atrace 识别",
+          "decision": "keep",
+          "reason": "TrackEventcategory与ATracemarker导入字段及实例/名称/trackcontext三路径对照独立，保留category通常NULL不能强制atrace过滤的关键查询失败机制。",
+          "original_line": 1153,
+          "heading": "#### 9.4 `slice.category` 列的含义"
+        },
+        {
+          "original_id": "ch14-06-46-sampling-retention",
+          "title": "减小事件量与扩大 buffer 解决不同问题",
+          "decision": "remove",
+          "reason": "四框重述1170/1184先减少事件再测扰动再调保留容量段，与20重复AB开销流程，正文高频清单、Compose专属边界和buffer诊断全留。",
+          "original_line": 1186,
+          "heading": "#### 10.2 Ring buffer 会覆盖旧事件"
+        },
+        {
+          "original_id": "ch14-06-47-benchmark-evidence",
+          "title": "Macrobenchmark 指标回查对应迭代 Trace",
+          "decision": "remove",
+          "reason": "四框逐项摘要1207–1211五步Macrobenchmark清单，原TraceSectionMetric/variant/compilation/toolchain/同条件复测全部留，14.4专门证据分工合图已保留，不再复画清单。",
+          "original_line": 1215,
+          "heading": "### 11. 与 Macrobenchmark 配合"
+        },
+        {
+          "original_id": "ch14-06-48-troubleshooting-map",
+          "title": "缺事件、错配与缺查询结果分别处理",
+          "decision": "remove",
+          "reason": "四卡逐项按四个小节整理1222–1252完整排错清单，所有包名/线程/异步/SQL条件仍原样，具体错栈图29和context图42/45已给独立关系，删小节目录卡。",
+          "original_line": 1254,
+          "heading": "#### SQL 查不到事件"
+        }
+      ],
+      "sha256_after": "df29d49860051d04ce6c918a8c5a7b8f1460008f06b858d1ba70a01da7127a61",
+      "new_diagrams": [
+        {
+          "id": "ed14-06-buffer-loss-and-retention-layers",
+          "title": "按内核、Producer 与中央缓冲分层定位丢数",
+          "article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-06-buffer-loss-and-retention-layers.svg",
+            "src/assets/diagrams/ch14/ed14-06-buffer-loss-and-retention-layers.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-06-buffer-loss-and-retention-layers",
+          "sources": [
+            "https://perfetto.dev/docs/concepts/buffers",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto_internal.cpp",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/storage/stats.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-06-02-buffer-controls",
+              "ch14-06-21-loss-diagnostics",
+              "ch14-06-22-retention-strategies"
+            ],
+            "boundary": "内核perCPUftrace由buffer_size_kb按每CPUKiB控制，traced_probes读前overrun覆盖/commit_overrun提交异常/dropped_events非覆盖模式满拒收；Producer各有独立SMB，初始化hint非每份ftrace配置，固定平台nativehelper1024KiB非全部实际分配值，traced_buf_trace_writer_packet_loss需查突发/包大小/阻塞/service调度。中央TraceConfig.buffers.size_kb由traced汇总，RINGchunks_overwritten覆盖旧chunk可能符合近期窗口设计，DISCARDchunks_discarded拒新chunk；不控制SMB等待丢弃策略。statsseverity不是完整丢数分类，overrun/中央覆盖丢弃可为info，应显式查名。只扩容不消除探针效应，固定复现改单变量再验窗口及丢数。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a140/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-06-shared-ftrace-requests-and-drain-choice",
+          "title": "共享实例合并活跃请求，读取周期另按显式请求和 poll 状态选择",
+          "article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-06-shared-ftrace-requests-and-drain-choice.svg",
+            "src/assets/diagrams/ch14/ed14-06-shared-ftrace-requests-and-drain-choice.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-06-shared-ftrace-requests-and-drain-choice",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_config_muxer.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_controller.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/config/ftrace/ftrace_config.proto"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-06-11-concurrent-requests",
+              "ch14-06-13-drain-watermark"
+            ],
+            "boundary": "FtraceConfigMuxer同实例事件需求取并集，只有最后需求移除才停用；SDKoptout取并集，任一要求兼容atrace即不能保证另一prefer_sdk切换，函数图等共享状态不兼容可拒绝/独占。buffer_size_kb与drain_period_ms注释并发不保证请求值。显式活跃周期取最小合法值；无显式且非所有实例水位poll默认100ms，全部poll保底1000ms，6.18支持依赖6.9+接口。tick仅安排读取，实际唤醒/读完受调度数据量影响，不能解释为业务时长或保证不丢。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a140/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-06-enabled-label-and-retention-boundaries",
+          "title": "启用状态只控制额外观测工作，事件保留还要逐层核验",
+          "article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-06-enabled-label-and-retention-boundaries.svg",
+            "src/assets/diagrams/ch14/ed14-06-enabled-label-and-retention-boundaries.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-06-enabled-label-and-retention-boundaries",
+          "sources": [
+            "https://dl.google.com/dl/android/maven2/androidx/tracing/tracing-android/1.3.0/tracing-android-1.3.0-sources.jar",
+            "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java",
+            "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp",
+            "https://perfetto.dev/docs/concepts/buffers"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-06-35-lazy-label-evaluation",
+              "ch14-06-37-enabled-vs-retained"
+            ],
+            "boundary": "普通函数入参字符串先求值，关闭trace不能撤销分配；AndroidX懒标签在启用状态成立时才执行lambda，有限枚举避免高基数/敏感名。原文Android17isEnabled检查APP的atracetag或SDKcategory当前状态，不是采集启动/权限/隐私/容量证明；包装分别按真实begin/end生命周期。业务block不能因开关改变结果；已写事件仍可能被覆盖/丢弃，最终需检查窗口/track/字段/stats及sched/Binder/FT数据源。经典1.3API及Java内部backend分开固定，不向进程内新版自动系统合并泛化。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a140/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T12:14:44.241264+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 48,
+        "contexts_actually_viewed": 6,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a140/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a140/visual-review.json",
+      "retired_diagrams": [
+        "ch14-06-01-visibility-layers",
+        "ch14-06-02-buffer-controls",
+        "ch14-06-05-tracefs-enable-fallback",
+        "ch14-06-06-secondary-instance",
+        "ch14-06-07-raw-to-domain",
+        "ch14-06-08-category-composition",
+        "ch14-06-09-consumer-control",
+        "ch14-06-10-ftrace-pipeline",
+        "ch14-06-11-concurrent-requests",
+        "ch14-06-12-buffer-defaults",
+        "ch14-06-13-drain-watermark",
+        "ch14-06-16-custom-entry-points",
+        "ch14-06-17-balanced-scopes",
+        "ch14-06-20-probe-effect-ab",
+        "ch14-06-21-loss-diagnostics",
+        "ch14-06-22-retention-strategies",
+        "ch14-06-23-ebpf-semantic-choices",
+        "ch14-06-25-missing-data-diagnosis",
+        "ch14-06-26-public-api-boundaries",
+        "ch14-06-33-stable-names",
+        "ch14-06-35-lazy-label-evaluation",
+        "ch14-06-36-property-cache",
+        "ch14-06-37-enabled-vs-retained",
+        "ch14-06-40-ndk-scope",
+        "ch14-06-41-binder-causal-context",
+        "ch14-06-43-scoped-percentiles",
+        "ch14-06-46-sampling-retention",
+        "ch14-06-47-benchmark-evidence",
+        "ch14-06-48-troubleshooting-map"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-140/retired-assets.json"
     },
     {
       "index": 141,
@@ -37588,8 +38113,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 75,
-  "next_article": "src/part3-tools/ch14-perfetto/06-android-tracing-infrastructure-custom-trace.md",
+  "reviewed_articles": 76,
+  "next_article": "src/part3-tools/ch14-perfetto/07-perfetto-sql-span-join-jank-cuj.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -37599,7 +38124,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T12:08:47.844628+08:00",
+  "updated_at": "2026-10-31T12:14:44.241264+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -37877,7 +38402,7 @@
     {
       "article": "src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
       "registered_sha256": "a1eb3e88de2f6d7d40ff9396abc1bd32f9fb7b78ac1859f52ff8dc58963ba66a",
-      "observed_sha256": "07dfdf1b1fa9959726be0e9d23c192bf3d48b3da5d3646296d3e08a8d4a56962",
+      "observed_sha256": "46ccf722828adffc9663c617627dbb88d7a035569f60079abbd8d3ac0765e4ac",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch18-aosp/05-profile-dm-sdm-install-compilation.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
@@ -38036,9 +38561,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2822,
-  "reviewed_placements_after": 1284,
-  "net_removed_placements": 1538,
+  "reviewed_placements_before": 2870,
+  "reviewed_placements_after": 1306,
+  "net_removed_placements": 1564,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -38062,5 +38587,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 75
+  "currently_matching_reviewed_source_count": 76
 }
