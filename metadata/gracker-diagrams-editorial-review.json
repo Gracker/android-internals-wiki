@@ -17171,7 +17171,7 @@
           "replacement_id": "ed11-02-aligned-evidence-and-validation"
         }
       ],
-      "sha256_after": "9e2dd85bb78de149990e1e9bf94b95048c0641723062a161c56a823ae0504918",
+      "sha256_after": "4e1c53e0c16e55e5436910ba5ef24bb53ddd0ca1570c3bd51b7619f2acf1793c",
       "new_diagrams": [
         {
           "id": "ed11-02-fgs-and-job-independent-gates",
@@ -17429,7 +17429,104 @@
         "ch11-02-44-case-validation"
       ],
       "removed_but_shared_diagrams": [],
-      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-112/retired-assets.json"
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-112/retired-assets.json",
+      "sha256_after_initial_editorial": "9e2dd85bb78de149990e1e9bf94b95048c0641723062a161c56a823ae0504918",
+      "post_review_source_revalidations": [
+        {
+          "kind": "independently_revalidated_post_review_prose_revision",
+          "index": 112,
+          "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+          "revision": 1,
+          "accepted_sha256": "9e2dd85bb78de149990e1e9bf94b95048c0641723062a161c56a823ae0504918",
+          "reviewed_sha256": "4e1c53e0c16e55e5436910ba5ef24bb53ddd0ca1570c3bd51b7619f2acf1793c",
+          "accepted_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/accepted-before.md",
+          "reviewed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/input.md",
+          "diff": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/source.diff",
+          "diff_sha256": "c2628b292dd3a3f1c73bee5812c3bf8db30882e5f50760aafa489a9714c0b1c4",
+          "report": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-revalidations/112-20261031-01.json",
+          "report_sha256": "0535a9e4c3686bad1a680039c60c2de5b1dacc731c856bba0f261d041abda2e1",
+          "caption_revisions": [
+            {
+              "id": "ch11-02-04-wakelock-owner",
+              "before": "持锁不代表 CPU 始终忙碌、网络可用或必然阻止所有休眠路径。客户端 held 与系统实际 blocker、内核 wakeup source 不是一对一关系。",
+              "after": "持锁之后，CPU 未必始终忙碌，网络未必可用，休眠路径也未必全部被拦下。客户端 held 与系统实际 blocker、内核 wakeup source 之间同样没有一对一关系。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：持锁所有者区间与策略有效性分轨，当前图注仍保留CPU网络和系统blocker非一对一。"
+            },
+            {
+              "id": "ch11-02-07-period-flex",
+              "before": "两条是不同周期的局部示意，不共用绝对时间轴。没有画出固定相位或保证每个窗口都执行；业务时刻敏感时不能把最小周期当 SLA。",
+              "after": "两条是不同周期的局部示意，不共用绝对时间轴。没有画出固定相位或保证每个窗口都执行；业务时刻敏感时，别把最小周期当 SLA。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：不同周期各画尾部flex，不共享绝对相位或每窗执行保证，当前SLA图注更清晰。"
+            },
+            {
+              "id": "ch11-02-10-alarm-process-lifetime",
+              "before": "Listener 的 setExact 不要求 SCHEDULE_EXACT_ALARM，但依赖存活组件。PendingIntent 交付也仍受重启、权限、平台与业务恢复设计约束，不代表任意环境绝不丢失。",
+              "after": "Listener 的 setExact 不要求 SCHEDULE_EXACT_ALARM，但依赖存活组件。PendingIntent 的交付仍受重启、权限、平台与业务恢复设计约束，把它当成任意环境绝不丢失的保证并不成立。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：进程内listener与跨进程提醒PendingIntent按寿命分支，当前图注保留权限与恢复仍可能失败。"
+            },
+            {
+              "id": "ch11-02-11-alarm-three-axes",
+              "before": "九分钟的 Doze 指南量级不能改写成正常运行条件；API 的约一分钟与空闲可能十五分钟也不是统一固定常量或轮询建议。",
+              "after": "九分钟的 Doze 指南量级只描述空闲限制，照搬到正常运行条件就错了；API 的约一分钟与空闲可能十五分钟同样只是节流说明，谈不上统一固定常量或轮询建议。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：Alarm精确性、idle和wakeup三轴独立，最新节流图注没有把分钟量级推广到正常准点。"
+            },
+            {
+              "id": "ch11-02-17-location-owner",
+              "before": "Activity 不可见不等于合格定位 FGS 必须结束。前提仍包括启动资格、类型与位置权限，后台定位或围栏另查相应权限。",
+              "after": "Activity 不可见时，合格的定位 FGS 未必就该结束。前提仍包括启动资格、类型与位置权限，后台定位或围栏另查相应权限。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：UI退出与合格导航FGS继续各轨，当前图注未强求Activity不可见就终止定位。"
+            },
+            {
+              "id": "ch11-02-22-camera-async-close",
+              "before": "轨道展示 CameraCaptureSession.close 的异步完成路径。CameraDevice.close 则直接丢弃剩余请求，不等成功/失败回调；两者都应按关闭事件协调消费者，再释放自有输出，不能释放借用 Surface。",
+              "after": "轨道展示 CameraCaptureSession.close 的异步完成路径。CameraDevice.close 则直接丢弃剩余请求，不等成功/失败回调；两者都应按关闭事件协调消费者，再释放自有输出，借用的 Surface 留给它的所有者释放。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：CameraCaptureSession异步关闭与在途capture分轨，最新文字停止repeating不立即终止在途，借用Surface由owner释放。"
+            },
+            {
+              "id": "ch11-02-32-radio-state-vs-rrc",
+              "before": "不能把 RadioState.ON 当 RRC_CONNECTED，也不能通过 App 看到的一次网络请求推出固定 tail。优化批量后，要用设备 modem / rail / 仪表检查真实变化。",
+              "after": "RadioState.ON 与 RRC_CONNECTED 是两个层面的状态；从 App 看到的一次网络请求，也推不出固定 tail。优化批量后，要用设备 modem / rail / 仪表检查真实变化。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：RadioHAL可用状态与modem网络RRC两层分开，最新图注不由单请求推固定tail。"
+            },
+            {
+              "id": "ed11-02-outbox-scheduling-gaps-and-ack",
+              "before": "outbox业务协议闭环而非平台exactly-once：事务写库与enqueue不能同事务，写后崩溃与Worker收尾附近新记录遇RUNNING KEEP都可能缺调度，另靠低频扫描恢复。获执行机会后读取受限批次，按稳定业务键幂等提交并等待服务端确认，确认后才事务删除/标记；无确认保留记录，按错误可恢复性有界退避。确认后本地事务前崩溃仍可能重发，服务端幂等防副作用；执行额度到且未空按业务retry。虚线表示后续恢复或额度允许的循环，不保证时刻或排空；交互发送保留及时路径，约束/quota/网络超时仍适用。",
+              "after": "outbox串起的是业务协议层的完整链路，而非平台exactly-once：事务写库与enqueue进不了同一事务，写后崩溃与Worker收尾附近新记录遇RUNNING KEEP都可能缺调度，另靠低频扫描恢复。获执行机会后读取受限批次，按稳定业务键幂等提交并等待服务端确认，确认后才事务删除/标记；无确认保留记录，按错误可恢复性有界退避。确认后本地事务前崩溃仍可能重发，服务端幂等防副作用；执行额度到且未空按业务retry。虚线表示后续恢复或额度允许的循环，时刻与排空都没有保证；交互发送保留及时路径，约束/quota/网络超时仍适用。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：outbox业务持久、KEEP调度缺口、低频扫描、受限批次、服务幂等确认后事务删除与失败保留，最新完整链路措辞不暗示平台exactlyonce。"
+            },
+            {
+              "id": "ch11-02-40-lps-effective-state",
+              "before": "这是状态判断顺序概括，具体 active 条件和设备配置按固定 r1 方法核对；LPS 与 Doze 是不同策略，不能把一个状态查询当另一个。",
+              "after": "这是状态判断顺序概括，具体 active 条件和设备配置按固定 r1 方法核对；LPS 与 Doze 是不同策略，一个状态查询替不了另一个。",
+              "status": "independently_reviewed",
+              "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：LPS支持启用到active条件再UID豁免三步，最新正文FGS不自动获得豁免与Doze不同不互代。"
+            }
+          ],
+          "alt_revisions": [
+            {
+              "id": "ed11-02-outbox-scheduling-gaps-and-ack",
+              "before": "持久化 outbox 的调度恢复、服务端确认与事务删除形成闭环",
+              "after": "持久化 outbox 的调度恢复、服务端确认与事务删除串成一条完整链路",
+              "status": "independently_reviewed",
+              "reason": "将闭环改为完整链路的措辞调整，图中仍明确调度缝隙、服务端确认、事务删除和失败恢复，不引入平台无遗漏保证。"
+            }
+          ],
+          "external_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/input.md",
+          "external_input_sha256": "4e1c53e0c16e55e5436910ba5ef24bb53ddd0ca1570c3bd51b7619f2acf1793c",
+          "own_caption_corrections": [],
+          "revalidated_at": "2026-10-31T19:42:15.871148+08:00",
+          "rationale": "已完成配图复审后出现正文/图注修订，完整当前正文、图注、代码、所有图像与位置独立复核。保留原审核历史与外部正文；图像标识/路径/顺序、代码和原生图不变，图注与替代文本变化逐条声明；本任务自行修正的图注单独记录。"
+        }
+      ],
+      "last_source_revalidated_at": "2026-10-31T19:42:16.417328+08:00"
     },
     {
       "index": 113,
@@ -68048,7 +68145,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T19:38:22.540056+08:00",
+  "updated_at": "2026-10-31T19:42:16.430548+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -68203,7 +68300,7 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 201,
+  "currently_matching_reviewed_source_count": 202,
   "external_registry_reconciliations": [
     {
       "article": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",

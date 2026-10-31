@@ -1,0 +1,332 @@
+{
+  "kind": "independently_revalidated_post_review_prose_revision",
+  "status": "passed",
+  "index": 112,
+  "article": "src/part2-performance/ch11-power/02-app-power-optimization-cases.md",
+  "revision": 1,
+  "reviewed_at": "2026-10-31T19:42:15.722290+08:00",
+  "source_sha256": "4e1c53e0c16e55e5436910ba5ef24bb53ddd0ca1570c3bd51b7619f2acf1793c",
+  "accepted_before_sha256": "9e2dd85bb78de149990e1e9bf94b95048c0641723062a161c56a823ae0504918",
+  "full_current_narrative_tables_and_code_read": true,
+  "reading_rows": 469,
+  "reading_characters": 35584,
+  "all_current_svg_labels_read": true,
+  "current_png_count": 23,
+  "current_pngs_actually_viewed": 23,
+  "current_contexts_actually_viewed": 23,
+  "contact_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/current-contact-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/current-contact-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/current-contact-3.jpg"
+  ],
+  "context_sheets_actually_viewed": [
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/compact-112-1.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/compact-112-2.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/compact-112-3.jpg",
+    "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/compact-112-4.jpg"
+  ],
+  "native_diagrams_preserved": 0,
+  "native_diagrams_actually_viewed": 0,
+  "code_blocks_preserved": 14,
+  "code_lines_preserved": 300,
+  "asset_sha256": {
+    "src/assets/diagrams/ch11/ch11-02-04-wakelock-owner.svg": "381eccef55eb5479d3fc6a3fe33ba9b7038f134057f3bce962463d0422621f1f",
+    "src/assets/diagrams/ch11/ch11-02-04-wakelock-owner.png": "85b474b0673350a6f076755984ae3ecd1957df79abebbdb0481441b85984df4f",
+    "src/assets/diagrams/ch11/ch11-02-05-constraints-and-stop.svg": "b911895b031c4d48dee96cb8f48993018f9928288d806d256d41db1d460e792c",
+    "src/assets/diagrams/ch11/ch11-02-05-constraints-and-stop.png": "df5e713efc4cad4169b07bd0a1da32ab9651ab89a028bd4695d20d2eab5733cd",
+    "src/assets/diagrams/ch11/ch11-02-07-period-flex.svg": "7fe0a375b9a83196c1763e44f5eb875b1bb0241acf3b32924c52269280c6a248",
+    "src/assets/diagrams/ch11/ch11-02-07-period-flex.png": "fe56890bccd1890acab189d974c078bc252a1b495f51520d8c22c35e7c662142",
+    "src/assets/diagrams/ch11/ed11-02-fgs-and-job-independent-gates.svg": "f78b9bf86d90a623de68bd6c53839b538300d99a068978d079f45c6c0c9b36b7",
+    "src/assets/diagrams/ch11/ed11-02-fgs-and-job-independent-gates.png": "11303d3a036df0172da5d4952af41cccc79e5403873e8f4526093d2c884af176",
+    "src/assets/diagrams/ch11/ch11-02-10-alarm-process-lifetime.svg": "5713e9770fff98828d9afcfe9592ed7dca7947864445f15dc5657e0d28feae75",
+    "src/assets/diagrams/ch11/ch11-02-10-alarm-process-lifetime.png": "dd3bfac6f2642d48e1f5a281cd9393b722a5cec59ee3d0a298a49984628ed319",
+    "src/assets/diagrams/ch11/ch11-02-11-alarm-three-axes.svg": "11cb1e302253532e85359130b335da37b9ee41a674a2a79cae2f6b2fd97604ab",
+    "src/assets/diagrams/ch11/ch11-02-11-alarm-three-axes.png": "44c26e6a6273fa6510e99ac2aa9299c7706f8f897511b0c77ce94fcd17947a7c",
+    "src/assets/diagrams/ch11/ch11-02-13-fgs-timeout-paths.svg": "c8035da6cf20809a342e7d7aa420428459716bbbb66a83b2b8da49d06f90162f",
+    "src/assets/diagrams/ch11/ch11-02-13-fgs-timeout-paths.png": "9baa5fb42d079440c5f0e6f4811891b84f90e8cd7495f417350772d760b11daa",
+    "src/assets/diagrams/ch11/ch11-02-14-audio-two-gates.svg": "b5f4c0d1f02ef0cb17a5ac66e9fb956225ccce5e5471d2913fbb6fa5f9bcdd7d",
+    "src/assets/diagrams/ch11/ch11-02-14-audio-two-gates.png": "3114b4056d36fdc3c35be0421d7087e33d960c26a7102e89833675aa880b7ea9",
+    "src/assets/diagrams/ch11/ch11-02-16-location-batch-clock.svg": "0cc262f60cd949195e94ae58c127af4445b448b72fe476ad02933dff63037ba1",
+    "src/assets/diagrams/ch11/ch11-02-16-location-batch-clock.png": "9b574b5c62fbcd668efc532db1a18eda3179098e86ebce4ee1318a74519e225b",
+    "src/assets/diagrams/ch11/ch11-02-17-location-owner.svg": "9a44a56ab6b1340f5365114c985c03f01fb5984d15e4f723ff56e478f46760c6",
+    "src/assets/diagrams/ch11/ch11-02-17-location-owner.png": "48b374c549db6db122753c207878dc10162cef3f8c6ce18046ec7d0c18492ae5",
+    "src/assets/diagrams/ch11/ch11-02-20-retry-classification.svg": "76e737001962f03563ecab7cf68d74eb583870db30aa33d579511ee90a9b719d",
+    "src/assets/diagrams/ch11/ch11-02-20-retry-classification.png": "ff9c41f36220a9121d87d44ef1b05a5a13b71256aaed0a177777a1d858c463bf",
+    "src/assets/diagrams/ch11/ch11-02-19-network-batching.svg": "f2c99d3907664080277b7fd38ef02b92f9d06755a856f7dea5cfe06716d220a4",
+    "src/assets/diagrams/ch11/ch11-02-19-network-batching.png": "c125ccd9c7235885c33b7e7434d3dc6aae56149631b324b9d04a7e29cfb4dca3",
+    "src/assets/diagrams/ch11/ch11-02-22-camera-async-close.svg": "c66300f450197fb2ce11ccdc4e9cf2b31270c52f9740f1d48dd6834c1fc26d3d",
+    "src/assets/diagrams/ch11/ch11-02-22-camera-async-close.png": "f25db4edf53c5885603bcc8d473971d6890cc1677001e0674cc47bb5f7d50ac1",
+    "src/assets/diagrams/ch11/ed11-02-aligned-evidence-and-validation.svg": "b66498b33468f9ddb6b1c4f29e2ab489c0abcb5ab7a79b1ea9acb7c37fd036df",
+    "src/assets/diagrams/ch11/ed11-02-aligned-evidence-and-validation.png": "f8044ca292497422da79ab50a2707a2aa2d4ddbfbb6ea0ca637bdfea5635c1c0",
+    "src/assets/diagrams/ch11/ch11-02-26-polling-loop.svg": "ca072de1c7916b0ae5d3b9b418f78570b1881b05f82d00c7be44706ab600bf7e",
+    "src/assets/diagrams/ch11/ch11-02-26-polling-loop.png": "a4962e41bd781f385b9460e559fcfd508f6899881494360dae7ab2f406852ffc",
+    "src/assets/diagrams/ch11/ed11-02-unique-work-and-message-recovery.svg": "7b9bf2a7bf7a106559483ab747463cb3ef873da12c66885ec2bf78288e4d42f5",
+    "src/assets/diagrams/ch11/ed11-02-unique-work-and-message-recovery.png": "000d3a2090d42e07f670a8681bc5344f8d0f7a19e6208d33ecf31edda4bcd7e0",
+    "src/assets/diagrams/ch11/ch11-02-28-pending-overlap.svg": "167c3eecb46ffaf1de13f52f8652851904c038e2d8196da7ce370af13978d610",
+    "src/assets/diagrams/ch11/ch11-02-28-pending-overlap.png": "a7dad0f7a93c3112aae9e72d452c19b997384f7b4d2fbba5bff30a0704560f33",
+    "src/assets/diagrams/ch11/ed11-02-location-policy-and-active-provider.svg": "50708f6bc328af13a3dd65a137a54e0cb35960a14566b6e6c08abfe9d02e6726",
+    "src/assets/diagrams/ch11/ed11-02-location-policy-and-active-provider.png": "e73f77f69edf17eb1193d13352e4fbdac6284be4fcc6b8ebe886a1d6633dd6cd",
+    "src/assets/diagrams/ch11/ch11-02-32-radio-state-vs-rrc.svg": "cbcf6c2b73b0ba83a5c0f05465807cad3c6611fba09710acf1560624568a1189",
+    "src/assets/diagrams/ch11/ch11-02-32-radio-state-vs-rrc.png": "200ddc74e88f1ed320f29d79cf28b69241290cf1498718e9ac91fbaa348ea28e",
+    "src/assets/diagrams/ch11/ed11-02-outbox-scheduling-gaps-and-ack.svg": "61f80a8c37a17ee19efebb0214d52336d00aa0743a531bf34ad873ccd485412f",
+    "src/assets/diagrams/ch11/ed11-02-outbox-scheduling-gaps-and-ack.png": "6c9d52ad1793be6ba9729d8d44d34c5d9994bfe261e7e1c3f867bfd826c9acf4",
+    "src/assets/diagrams/ch11/ed11-02-generation-guards-across-callback-apis.svg": "a2585a9f96e830bdc51b727b48d0227dd15324bd28b941ec2940759d04800b16",
+    "src/assets/diagrams/ch11/ed11-02-generation-guards-across-callback-apis.png": "e35c0b701e097ef80dd4667214b959501075470b3dd46eedee3ce4321251a694",
+    "src/assets/diagrams/ch11/ch11-02-40-lps-effective-state.svg": "ced7404d167474bb7bcd78ca913b9ebc99583b3373f64d1d9d3801c526b26685",
+    "src/assets/diagrams/ch11/ch11-02-40-lps-effective-state.png": "09d27479f78ba83b832c8d6f912744a9f8d8fd3e413f1a418f7034a84cb1cd9a",
+    "src/assets/diagrams/ch11/ed11-02-semantic-merge-and-persisted-workitems.svg": "5c8dbbc9b425461ac45b8859e051a133287b94d7d9028e87d5a5183c8b74a4f9",
+    "src/assets/diagrams/ch11/ed11-02-semantic-merge-and-persisted-workitems.png": "3bb97111874465e610554d5ae7760824d474db7334e80fba1d1fc13b7177bfc8"
+  },
+  "asset_baseline": {
+    "kind": "original_svg_hashes_and_accepted_source_git_assets",
+    "svg_bounds_report": "/tmp/gracker-diagrams-editorial-review-20261028/a112/all-current-svg-bounds.json",
+    "svg_bounds_report_sha256": "eb9c635cfb30b0904019a308dcd3f84cff8c2563e23e5ef376a3969abd6b58f5",
+    "git_commit": "d05badd4041dc80d63cac4428191b47b0c84f463"
+  },
+  "figure_reviews": [
+    {
+      "id": "ch11-02-04-wakelock-owner",
+      "heading": "### WakeLock 的适用窗口",
+      "line": 136,
+      "decision": "keep",
+      "reason": "持锁所有者区间与策略有效性分轨，当前图注仍保留CPU网络和系统blocker非一对一。"
+    },
+    {
+      "id": "ch11-02-05-constraints-and-stop",
+      "heading": "#### 约束表达的是业务条件",
+      "line": 175,
+      "decision": "keep",
+      "reason": "充电与不计量约束AND后才具备条件，运行中失效可停止并存进度，当前代码与取消限定一致。"
+    },
+    {
+      "id": "ch11-02-07-period-flex",
+      "heading": "#### 周期、加急与唯一工作",
+      "line": 190,
+      "decision": "keep",
+      "reason": "不同周期各画尾部flex，不共享绝对相位或每窗执行保证，当前SLA图注更清晰。"
+    },
+    {
+      "id": "ed11-02-fgs-and-job-independent-gates",
+      "heading": "#### Android 16 的 Job runtime quota",
+      "line": 207,
+      "decision": "keep",
+      "reason": "FGS与Job两支独立准入和时间预算，当前Android16配额限定不把通知当Doze豁免。"
+    },
+    {
+      "id": "ch11-02-10-alarm-process-lifetime",
+      "heading": "#### 精确闹钟权限与例外",
+      "line": 231,
+      "decision": "keep",
+      "reason": "进程内listener与跨进程提醒PendingIntent按寿命分支，当前图注保留权限与恢复仍可能失败。"
+    },
+    {
+      "id": "ch11-02-11-alarm-three-axes",
+      "heading": "#### Doze 与 allow-while-idle",
+      "line": 245,
+      "decision": "keep",
+      "reason": "Alarm精确性、idle和wakeup三轴独立，最新节流图注没有把分钟量级推广到正常准点。"
+    },
+    {
+      "id": "ch11-02-13-fgs-timeout-paths",
+      "heading": "#### Android 14 与 Android 15 的超时",
+      "line": 273,
+      "decision": "keep",
+      "reason": "shortService与两个累计类型各轨，不把三分钟ANR与六小时crash合并，当前前后台和同类型共享限定一致。"
+    },
+    {
+      "id": "ch11-02-14-audio-two-gates",
+      "heading": "#### Android 17 后台音频",
+      "line": 289,
+      "decision": "keep",
+      "reason": "普通App基础可见或非shortFGS再检查target37WIU，当前闹钟豁免仅第二层且源码特例另核对。"
+    },
+    {
+      "id": "ch11-02-16-location-batch-clock",
+      "heading": "#### 间隔、批量与生命周期",
+      "line": 332,
+      "decision": "keep",
+      "reason": "位置采样和批量回调分轨，当前文字修为达到两倍可允许批量、提供方仍可不采用，与原图一致。"
+    },
+    {
+      "id": "ch11-02-17-location-owner",
+      "heading": "#### 间隔、批量与生命周期",
+      "line": 339,
+      "decision": "keep",
+      "reason": "UI退出与合格导航FGS继续各轨，当前图注未强求Activity不可见就终止定位。"
+    },
+    {
+      "id": "ch11-02-20-retry-classification",
+      "heading": "#### 合并可延迟请求",
+      "line": 368,
+      "decision": "keep",
+      "reason": "重试按暂时网络、限流、参数鉴权三支分类，最新正文仍要求进度幂等和可恢复性。"
+    },
+    {
+      "id": "ch11-02-19-network-batching",
+      "heading": "#### 合并可延迟请求",
+      "line": 374,
+      "decision": "keep",
+      "reason": "分散和批量两轨只示意空闲机会，不量化tail或收益且交互保即时。"
+    },
+    {
+      "id": "ch11-02-22-camera-async-close",
+      "heading": "#### Camera",
+      "line": 400,
+      "decision": "keep",
+      "reason": "CameraCaptureSession异步关闭与在途capture分轨，最新文字停止repeating不立即终止在途，借用Surface由owner释放。"
+    },
+    {
+      "id": "ed11-02-aligned-evidence-and-validation",
+      "heading": "### 案例分析的共同步骤",
+      "line": 468,
+      "decision": "keep",
+      "reason": "应用、系统、硬件证据同窗并验证业务和能量，当前测量条件和缺轨未知限定全部保留。"
+    },
+    {
+      "id": "ch11-02-26-polling-loop",
+      "heading": "#### 故障代码",
+      "line": 517,
+      "decision": "keep",
+      "reason": "重复onStart可能叠加轮询两轨，当前故障代码与STARTSTICKY非实时可靠保证一致。"
+    },
+    {
+      "id": "ed11-02-unique-work-and-message-recovery",
+      "heading": "#### 按业务时效选择机制",
+      "line": 561,
+      "decision": "keep",
+      "reason": "持久业务状态在KEEP前写入，分已有链忽略与无链登记，当前低频恢复覆盖收尾竞争而非自动读新input。"
+    },
+    {
+      "id": "ch11-02-28-pending-overlap",
+      "heading": "#### 调度限制与应用契约",
+      "line": 595,
+      "decision": "keep",
+      "reason": "pending网络与quota等待重叠区间，当前统计重启/完成清空、namespace和空Map未知限定一致。"
+    },
+    {
+      "id": "ed11-02-location-policy-and-active-provider",
+      "heading": "#### Battery Saver 与 Thermal 的分工",
+      "line": 721,
+      "decision": "keep",
+      "reason": "BatterySaver与App热适配两输入，active请求才聚合且其他客户端独立驱动provider，最新资格说明无冲突。"
+    },
+    {
+      "id": "ch11-02-32-radio-state-vs-rrc",
+      "heading": "#### Android 与 modem 的分工",
+      "line": 741,
+      "decision": "keep",
+      "reason": "RadioHAL可用状态与modem网络RRC两层分开，最新图注不由单请求推固定tail。"
+    },
+    {
+      "id": "ed11-02-outbox-scheduling-gaps-and-ack",
+      "heading": "#### 使用持久化 outbox 合并可延迟上传",
+      "line": 785,
+      "decision": "keep",
+      "reason": "outbox业务持久、KEEP调度缺口、低频扫描、受限批次、服务幂等确认后事务删除与失败保留，最新完整链路措辞不暗示平台exactlyonce。"
+    },
+    {
+      "id": "ed11-02-generation-guards-across-callback-apis",
+      "heading": "#### Android 17 的 listener 型 idle Alarm",
+      "line": 952,
+      "decision": "keep",
+      "reason": "定位网络listenerAlarm三API共有代次模式及各自条件，当前代码均主线程先失效后取消，迟到事件不靠注销必撤回。"
+    },
+    {
+      "id": "ch11-02-40-lps-effective-state",
+      "heading": "#### Doze 与 Low Power Standby",
+      "line": 961,
+      "decision": "keep",
+      "reason": "LPS支持启用到active条件再UID豁免三步，最新正文FGS不自动获得豁免与Doze不同不互代。"
+    },
+    {
+      "id": "ed11-02-semantic-merge-and-persisted-workitems",
+      "heading": "#### 同约束工作使用一个 JobInfo",
+      "line": 1031,
+      "decision": "keep",
+      "reason": "先比较契约再共享稳定persistedJob，dequeue空且已确认时系统自动结束，系统中止另分支重排，当前文字与JobWorkItem API34契约一致。"
+    }
+  ],
+  "caption_revisions": [
+    {
+      "id": "ch11-02-04-wakelock-owner",
+      "before": "持锁不代表 CPU 始终忙碌、网络可用或必然阻止所有休眠路径。客户端 held 与系统实际 blocker、内核 wakeup source 不是一对一关系。",
+      "after": "持锁之后，CPU 未必始终忙碌，网络未必可用，休眠路径也未必全部被拦下。客户端 held 与系统实际 blocker、内核 wakeup source 之间同样没有一对一关系。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：持锁所有者区间与策略有效性分轨，当前图注仍保留CPU网络和系统blocker非一对一。"
+    },
+    {
+      "id": "ch11-02-07-period-flex",
+      "before": "两条是不同周期的局部示意，不共用绝对时间轴。没有画出固定相位或保证每个窗口都执行；业务时刻敏感时不能把最小周期当 SLA。",
+      "after": "两条是不同周期的局部示意，不共用绝对时间轴。没有画出固定相位或保证每个窗口都执行；业务时刻敏感时，别把最小周期当 SLA。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：不同周期各画尾部flex，不共享绝对相位或每窗执行保证，当前SLA图注更清晰。"
+    },
+    {
+      "id": "ch11-02-10-alarm-process-lifetime",
+      "before": "Listener 的 setExact 不要求 SCHEDULE_EXACT_ALARM，但依赖存活组件。PendingIntent 交付也仍受重启、权限、平台与业务恢复设计约束，不代表任意环境绝不丢失。",
+      "after": "Listener 的 setExact 不要求 SCHEDULE_EXACT_ALARM，但依赖存活组件。PendingIntent 的交付仍受重启、权限、平台与业务恢复设计约束，把它当成任意环境绝不丢失的保证并不成立。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：进程内listener与跨进程提醒PendingIntent按寿命分支，当前图注保留权限与恢复仍可能失败。"
+    },
+    {
+      "id": "ch11-02-11-alarm-three-axes",
+      "before": "九分钟的 Doze 指南量级不能改写成正常运行条件；API 的约一分钟与空闲可能十五分钟也不是统一固定常量或轮询建议。",
+      "after": "九分钟的 Doze 指南量级只描述空闲限制，照搬到正常运行条件就错了；API 的约一分钟与空闲可能十五分钟同样只是节流说明，谈不上统一固定常量或轮询建议。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：Alarm精确性、idle和wakeup三轴独立，最新节流图注没有把分钟量级推广到正常准点。"
+    },
+    {
+      "id": "ch11-02-17-location-owner",
+      "before": "Activity 不可见不等于合格定位 FGS 必须结束。前提仍包括启动资格、类型与位置权限，后台定位或围栏另查相应权限。",
+      "after": "Activity 不可见时，合格的定位 FGS 未必就该结束。前提仍包括启动资格、类型与位置权限，后台定位或围栏另查相应权限。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：UI退出与合格导航FGS继续各轨，当前图注未强求Activity不可见就终止定位。"
+    },
+    {
+      "id": "ch11-02-22-camera-async-close",
+      "before": "轨道展示 CameraCaptureSession.close 的异步完成路径。CameraDevice.close 则直接丢弃剩余请求，不等成功/失败回调；两者都应按关闭事件协调消费者，再释放自有输出，不能释放借用 Surface。",
+      "after": "轨道展示 CameraCaptureSession.close 的异步完成路径。CameraDevice.close 则直接丢弃剩余请求，不等成功/失败回调；两者都应按关闭事件协调消费者，再释放自有输出，借用的 Surface 留给它的所有者释放。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：CameraCaptureSession异步关闭与在途capture分轨，最新文字停止repeating不立即终止在途，借用Surface由owner释放。"
+    },
+    {
+      "id": "ch11-02-32-radio-state-vs-rrc",
+      "before": "不能把 RadioState.ON 当 RRC_CONNECTED，也不能通过 App 看到的一次网络请求推出固定 tail。优化批量后，要用设备 modem / rail / 仪表检查真实变化。",
+      "after": "RadioState.ON 与 RRC_CONNECTED 是两个层面的状态；从 App 看到的一次网络请求，也推不出固定 tail。优化批量后，要用设备 modem / rail / 仪表检查真实变化。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：RadioHAL可用状态与modem网络RRC两层分开，最新图注不由单请求推固定tail。"
+    },
+    {
+      "id": "ed11-02-outbox-scheduling-gaps-and-ack",
+      "before": "outbox业务协议闭环而非平台exactly-once：事务写库与enqueue不能同事务，写后崩溃与Worker收尾附近新记录遇RUNNING KEEP都可能缺调度，另靠低频扫描恢复。获执行机会后读取受限批次，按稳定业务键幂等提交并等待服务端确认，确认后才事务删除/标记；无确认保留记录，按错误可恢复性有界退避。确认后本地事务前崩溃仍可能重发，服务端幂等防副作用；执行额度到且未空按业务retry。虚线表示后续恢复或额度允许的循环，不保证时刻或排空；交互发送保留及时路径，约束/quota/网络超时仍适用。",
+      "after": "outbox串起的是业务协议层的完整链路，而非平台exactly-once：事务写库与enqueue进不了同一事务，写后崩溃与Worker收尾附近新记录遇RUNNING KEEP都可能缺调度，另靠低频扫描恢复。获执行机会后读取受限批次，按稳定业务键幂等提交并等待服务端确认，确认后才事务删除/标记；无确认保留记录，按错误可恢复性有界退避。确认后本地事务前崩溃仍可能重发，服务端幂等防副作用；执行额度到且未空按业务retry。虚线表示后续恢复或额度允许的循环，时刻与排空都没有保证；交互发送保留及时路径，约束/quota/网络超时仍适用。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：outbox业务持久、KEEP调度缺口、低频扫描、受限批次、服务幂等确认后事务删除与失败保留，最新完整链路措辞不暗示平台exactlyonce。"
+    },
+    {
+      "id": "ch11-02-40-lps-effective-state",
+      "before": "这是状态判断顺序概括，具体 active 条件和设备配置按固定 r1 方法核对；LPS 与 Doze 是不同策略，不能把一个状态查询当另一个。",
+      "after": "这是状态判断顺序概括，具体 active 条件和设备配置按固定 r1 方法核对；LPS 与 Doze 是不同策略，一个状态查询替不了另一个。",
+      "status": "independently_reviewed",
+      "reason": "当前修订为措辞调整；已对照当前完整正文、SVG标签及实际配图，保留原有条件与结果边界：LPS支持启用到active条件再UID豁免三步，最新正文FGS不自动获得豁免与Doze不同不互代。"
+    }
+  ],
+  "alt_revisions": [
+    {
+      "id": "ed11-02-outbox-scheduling-gaps-and-ack",
+      "before": "持久化 outbox 的调度恢复、服务端确认与事务删除形成闭环",
+      "after": "持久化 outbox 的调度恢复、服务端确认与事务删除串成一条完整链路",
+      "status": "independently_reviewed",
+      "reason": "将闭环改为完整链路的措辞调整，图中仍明确调度缝隙、服务端确认、事务删除和失败恢复，不引入平台无遗漏保证。"
+    }
+  ],
+  "duplicate_png_hash_groups": [],
+  "figure_markup_order_captions_byte_identical": false,
+  "figure_image_prefix_order_byte_identical": false,
+  "layout_report": "/tmp/gracker-diagrams-editorial-review-20261028/post-review-revalidations/a112/01/layout-report.json",
+  "layout_report_sha256": "f09ed97f7d441d5c3b3e24e4a460b855bf809301c0305d3a9aa474fd282d11f5",
+  "build": "passed",
+  "new_diagrams": 0,
+  "retired_asset_files": 0,
+  "findings": "重新通读当前469行35584字符及全部表格清单、14段300行普通代码和23幅SVG完整标签，实看23幅PNG/3张联系表和23处最终上下文。审查中两次外部增量共11行和47行差异均独立阅读，旧未接受输入已归档，当前冻结输入4e1c53e0c16e55e5436910ba5ef24bb53ddd0ca1570c3bd51b7619f2acf1793c。全部图路径顺序及引用资产哈希、普通代码与原生源均与已接受版一致，23幅PNG字节哈希互异；9处图注和1处alt措辞逐一核对通过。当前图仍各有独立分支/时序/生命周期用途且位置匹配，完整保留Work2.12最低24、KEEP非input合并与两类调度竞争缝隙、outbox持久业务键服务幂等ACK事务回收、FGS与Job独立准入预算、音频alltarget基础与target37WIU第二层、三轴Alarm与listener寿命、位置单批有序跨批乱序及两倍可批不保证/合法导航FGS资格/active聚合其他客户端独立、Camera会话和设备关闭不同路径及借用owner、RadioON非RRC与tail实机、Jobpending重叠与清空和namespace、三API主线程generation非取消撤回保证、LPSenabled非active和FGS不豁免、persistedJobWorkItem34稳定JobInfo取空自动结束及系统中止独立等原文限定。1400/640全部顺序标题加载结构无溢出通过，原生0。只接受当前外部正文与图注修订的配图一致性，无新图/无退役文件/无本次技术来源审计或设备示例执行。"
+}
