@@ -3,8 +3,10 @@ title: SoC 平台差异
 chapter: '19.2'
 section: '19.2'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: Qualcomm Snapdragon 8 Elite Gen 5 产品页与产品简报，MediaTek Dimensity 9500、Samsung Exynos 2600、Google Tensor G5、Arm Mali-G1 Ultra 官方资料，AOSP android-17.0.0_r1，Android common android17-6.18-2026-06_r6，Perfetto / AGI / NNAPI 官方文档
+last_verified: '2026-10-30'
+last_source_verified_at: '2026-10-30'
+last_idle_audit_at: '2026-10-30T22:41:11+08:00'
+last_verified_against: Qualcomm Snapdragon 8 Elite Gen 5 产品页与产品简报，MediaTek Dimensity 9500、Samsung Exynos 2600、Google Tensor G5、Arm Mali-G1 Ultra 官方资料，AOSP android-17.0.0_r1，Android common android17-6.18-2026-06_r6，Perfetto / AGI / APA / NNAPI 官方文档与 Android NDK CPU features 指南
 confidence: medium
 sources:
 - type: blog
@@ -71,6 +73,10 @@ sources:
   path: https://developer.android.com/agi/start
 - type: official
   path: https://developer.android.com/android-performance-analyzer
+- type: official
+  path: https://developer.android.com/android-performance-analyzer/quickstart
+- type: official
+  path: https://developer.android.com/ndk/guides/cpu-features
 - type: official
   path: https://learn.arm.com/install-guides/streamline/
 - type: official
@@ -148,7 +154,7 @@ SoC 型号只是硬件拓扑的起点，最终性能还要看设备散热、内�
 - **拓扑**描述核心数量、共享缓存和调频策略域（cpufreq policy，即共享一套调频控制的 CPU 集合）的组织方式。
 - **策略**描述调度器、调频器、Power HAL（负责传递系统性能与功耗策略的硬件抽象层）和 OEM 服务如何使用这些硬件。
 
-两个核心都支持 Armv9，只说明软件可用的指令集相同；IPC（instructions per cycle，每周期完成的指令数）、缓存或能耗仍可能相差很大。同样，两个核心落在同一个调频策略域，也说明不了它们共享某一级缓存。
+两个核心都标注 Armv9，仍可能支持不同的指令扩展。Android 应用可用 `getauxval(AT_HWCAP)` 和 `getauxval(AT_HWCAP2)` 查询系统公开的 CPU 特性；[官方文档](https://developer.android.com/ndk/guides/cpu-features)也提醒，部分旧设备曾错误上报能力，兼容性问题还需结合设备验证。IPC（instructions per cycle，每周期完成的指令数）、缓存或能耗也可能相差很大。同样，两个核心落在同一个调频策略域，也说明不了它们共享某一级缓存。
 
 ### 从目标设备读取拓扑
 
@@ -384,7 +390,9 @@ CPU 频率可能按调频策略域变化，也可能由每核事件上报；温�
 
 ### Android GPU Inspector 与 Android Performance Analyzer
 
-AGI 可在受支持设备上采集 GPU 计数器，执行系统分析与单帧分析，适合检查绘制调用（draw call）、着色器、流水线停顿和 GPU 计数器；使用前要核对设备、GPU 和驱动是否在当前支持范围内。Google 目前把 Android Performance Analyzer（APA）列为系统分析的新推荐工具；AGI 的单帧分析与现有系统分析功能仍有独立用途。
+AGI 可在受支持设备上采集 GPU 计数器，执行系统分析与单帧分析，适合检查绘制调用（draw call）、着色器、流水线停顿和 GPU 计数器；使用前要核对设备、GPU 和驱动是否在当前支持范围内。
+
+Google 在 AGI 文档中推荐用 Android Performance Analyzer（APA）分析游戏，并将下载入口标为公开测试版。APA 当前面向游戏与基于 Vulkan 的图形分析，[系统分析的最低要求](https://developer.android.com/android-performance-analyzer/quickstart)是 Android 12，且设备须受支持并通过校验。其他应用按 APA 首页指引使用 Android Studio 分析器。AGI 的单帧分析与现有系统分析功能仍有独立用途。
 
 ### Arm Streamline
 
@@ -485,6 +493,8 @@ CPU 与 GPU 同时变慢只是线索。可靠判断需要 DRAM 或内存互连�
 - [Android GPU Inspector](https://developer.android.com/agi)
 - [Android GPU Inspector 快速入门与设备校验](https://developer.android.com/agi/start)
 - [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
+- [Android Performance Analyzer 快速入门与设备校验](https://developer.android.com/android-performance-analyzer/quickstart)
+- [Android NDK CPU 特性查询](https://developer.android.com/ndk/guides/cpu-features)
 - [Arm Streamline 安装指南](https://learn.arm.com/install-guides/streamline/)
 - [Snapdragon Profiler](https://developer.qualcomm.com/software/snapdragon-profiler)
 - [NNAPI 迁移指南](https://developer.android.com/ndk/guides/neuralnetworks/migration-guide)
