@@ -248,10 +248,6 @@ consolidated_from:
 
 Perfetto 把内核、系统服务、应用埋点和性能计数器写入统一时间线。可靠分析先定义问题窗口和数据源，再选择抓取方式；超大 Trace 的处理与采集可靠性属于同一证据链。
 
-<!-- gracker-diagram: ch14-01-01-evidence-chain -->
-![从问题到可复核结论](../../assets/diagrams/ch14/ch14-01-01-evidence-chain.png)
-
-图：先确定问题与证据，再组织采集、质量检查和分析。 这是工作顺序；能打开文件不证明数据完整，也不能补出未采集的数据。
 
 ## 数据源、Tracing Service 与 Trace Processor
 
@@ -275,10 +271,6 @@ Perfetto 是 Google 开源的一套 tracing 基础设施，包括 SDK、守护�
 
 采集端、分析端和 UI 可以独立升级。设备侧平台 Perfetto 负责产出 trace，主机上的 Trace Processor 和 UI 可以使用更新版本读取它。排查解析差异时，必须同时记录设备 build fingerprint、采集端版本和分析端版本。
 
-<!-- gracker-diagram: ch14-01-02-version-lines -->
-![设备、主机与界面分别记录版本](../../assets/diagrams/ch14/ch14-01-02-version-lines.png)
-
-图：平台采集端、主机 Trace Processor 和 UI 有各自版本线。 相同 Android 版本不固定当前主机 SQL 能力；升级后按实际程序再验证。
 
 ### 复核基线
 
@@ -322,10 +314,6 @@ Systrace 是 Android 4.1（2012 年）引入的 tracing 工具。它通过 Linux
 | 跨平台 | 主要 Android | Android + Linux + Chrome |
 | 当前定位 | 兼容旧流程 | Android tracing 主线平台 |
 
-<!-- gracker-diagram: ch14-01-03-systrace-shift -->
-![旧事件经验与新的采集分析模型](../../assets/diagrams/ch14/ch14-01-03-systrace-shift.png)
-
-图：ftrace / atrace 经验继续使用，采集组织与分析工具按 Perfetto 核对。 旧格式读取与 traceconv 转换不保证信息无损；长录制仍受数据率约束。
 
 Perfetto UI 和 Trace Processor 可以读取 Systrace/ftrace 文本及旧 HTML 格式，旧文件仍可继续分析。反向转换时使用 `traceconv systrace`；转换只保留目标格式能表达的数据，不能把它当成无损往返。
 
@@ -335,10 +323,6 @@ Perfetto 采用 service-based model。Producer 提供 data source 并写入 trac
 
 下面的图用于区分三层 buffer 和控制方向。配置经 `traced` 发给 Producer，trace packet 则沿相反方向进入 central buffer。
 
-<!-- gracker-diagram: ch14-01-04-control-and-data -->
-![控制方向与 Ftrace 数据方向](../../assets/diagrams/ch14/ch14-01-04-control-and-data.png)
-
-图：上排是采集控制，下排是 ftrace 的三层缓冲路径。 其他 Producer 经自己的 SMB 写入；不要求先经过内核 ftrace buffer。
 
 ```mermaid
 flowchart LR
@@ -362,10 +346,6 @@ flowchart LR
 
 它的工作可以分成三类：
 
-<!-- gracker-diagram: ch14-01-05-traced-jobs -->
-![Tracing Service 的三项职责](../../assets/diagrams/ch14/ch14-01-05-traced-jobs.png)
-
-图：traced 管理会话、搬运 chunk 并按配置交付结果。 完整 packet 可跨 chunk；最终重组和 patch 完成不等于在 SMB 中一次写完。
 
 - **管理采集会话**：接收 Consumer 发来的 `TraceConfig`，创建 buffer，并把各 data source 的配置路由给对应 Producer。
 - **汇聚 trace packet**：Producer 在 shared memory 的 chunk（一段 buffer 空间） 内序列化 packet，再通过 IPC（Inter-Process Communication，进程间通信） 通知 service 提交；service 把已提交的 chunk 搬进目标 central buffer；packet 可跨 chunk，读取输出时再按分片和 patch 状态重组。
@@ -379,10 +359,6 @@ flowchart LR
 
 这里有两个周期，分别管不同的事。`file_write_period_ms` 控制 service 把 central buffer 写入文件的频率；`flush_period_ms` 在采用模式允许时请求 Producer 提交尚未送达 service 的 writer 数据，控制数据进入 service 的新鲜度；提交单元是 chunk，不要求整页 SMB 写满。buffer 至少要容纳一个写文件周期内的峰值数据量。
 
-<!-- gracker-diagram: ch14-01-06-write-versus-flush -->
-![Producer Flush 与周期写文件](../../assets/diagrams/ch14/ch14-01-06-write-versus-flush.png)
-
-图：flush 推进 Producer 数据提交，file write 读取 central buffer。 启用 write_into_file 已有默认周期；这两项都不等于 GPU 或显示 fence。
 
 `perfetto` CLI 的 simple mode 和 normal mode 都要连接 tracing service。simple mode 只是在 CLI 内部用 flags 生成受限配置，并没有绕过 `traced`。Android 9/10 的非 Pixel 设备若服务未启动，应先按官方方式设置 `persist.traced.enable=1`；Android 11 起，大多数设备默认启动 `traced` / `traced_probes`。更老设备或特殊镜像再评估主机脚本的 sideload 模式、atrace 或厂商工具。
 
@@ -392,10 +368,6 @@ flowchart LR
 
 Android 17 的 `traced` 与 `traced_probes` 都以 `nobody` 用户运行，权限差异来自进程所属 group、Linux capability 和 SELinux domain 策略。`traced_probes` 额外加入 `readproc`、`log`、`readtracefs`，拥有 `DAC_READ_SEARCH`、`SYS_NICE` 与 `shared_kallsyms`；其中 log 访问在 `perfetto.rc` 注释中明确受 SELinux 限制，只对 userdebug/eng 等调试系统镜像放行。把这套模型记成“`traced_probes` 以 root 运行”，会直接读错权限来源。
 
-<!-- gracker-diagram: ch14-01-07-probe-permissions -->
-![系统探针权限来自哪些层](../../assets/diagrams/ch14/ch14-01-07-probe-permissions.png)
-
-图：同为 nobody 的进程，仍可因 group、capability 和 SELinux 拥有不同访问范围。 不要用 UID 或源码存在一个 data source 单独推断设备可采。
 
 `traced_probes` 支持的主要数据源包括：
 
@@ -416,19 +388,11 @@ Android 17 的 `traced` 与 `traced_probes` 都以 `nobody` 用户运行，权�
 
 这些组件仍由 `TraceConfig` 控制，并把结果交给 `traced` 的会话 buffer。遇到空结果时，先确认请求的是 Native/ART allocation profile、ART heap dump 还是 CPU sampling，再检查目标进程是否允许被分析、采样配置、符号文件和设备支持。
 
-<!-- gracker-diagram: ch14-01-08-profiling-processes -->
-![三类 Profiling 的角色](../../assets/diagrams/ch14/ch14-01-08-profiling-processes.png)
-
-图：Native / ART 分配、对象图和 CPU 调用栈走不同组件与配置。 heapprofd 同进程可有多个 Producer 连接；空结果先查目标资格与支持。
 
 #### Perfetto UI：可视化界面
 
 Perfetto UI 托管在 `ui.perfetto.dev`，默认在浏览器本地解析文件，不会自动上传 trace。浏览器可用内存通常低于主机物理内存，trace 解析后的内存占用还可能达到二进制文件的数倍。大型 trace 可以执行 `./trace_processor server http <trace>`，让 UI 使用本机原生 Trace Processor；能否直接使用浏览器内的 WebAssembly 分析引擎，要按浏览器、系统和 trace 实际大小判断。
 
-<!-- gracker-diagram: ch14-01-09-ui-backends -->
-![浏览器解析与本机加速后端](../../assets/diagrams/ch14/ch14-01-09-ui-backends.png)
-
-图：UI 可用浏览器 WebAssembly，也可把解析与查询交给本机原生 TP。 本机后端解除浏览器内存约束，仍要完整摄取并保有查询数据。
 
 UI 主要提供三类观察入口：
 
@@ -449,10 +413,6 @@ Trace Processor 是 Perfetto 的分析核心。它检测输入格式，分块解
 
 Trace Processor 的分析能力分为三层，从高层到底层依次是：
 
-<!-- gracker-diagram: ch14-01-11-analysis-levels -->
-![指标、标准库与原始表各自回答什么](../../assets/diagrams/ch14/ch14-01-11-analysis-levels.png)
-
-图：预定义指标、可复用模块与原始表查询有不同抽象范围。 名称、模块和命令随分析端版本变化；普通 Slice 耗时不能直接充当 jank 指标。
 
 1. **内置 Metrics**：`trace_processor_shell --run-metrics android_cpu,android_startup,android_frame_timeline_metric` 可以输出 CPU、启动和 FrameTimeline 等结构化结果。Android 17 对应源码中可核到 `android_frame_timeline_metric`、`android_hwui_metric`、`android_jank_cuj`；`android_jank` 不是同目录下的 metric 名。
 2. **PerfettoSQL Standard Library 与 Trace Summary v2**：Standard Library 把常用分析逻辑封装成可复用模块。Trace Summary v2 是按规范运行查询并输出批量摘要的框架，可以引用这些模块生成结构化结果。模块和命令行参数会随主机 Trace Processor 版本演进，自动化脚本应固定工具版本。
@@ -485,10 +445,6 @@ GROUP BY name;
 
 TraceConfig 至少要回答四个问题：
 
-<!-- gracker-diagram: ch14-01-12-config-questions -->
-![TraceConfig 的四项选择](../../assets/diagrams/ch14/ch14-01-12-config-questions.png)
-
-图：数据源、容量与路由、期限和输出方式共同定义会话。 四项是配置维度，图格不表示执行先后；未请求的数据不会自动出现。
 
 - 启用哪些 data source；
 - buffer 多大，各 data source 写入哪个 buffer；
@@ -524,10 +480,6 @@ duration_ms: 10000
 
 下面的命令展示 Android 9、10/11 与 12+ 的输入差异。Android 9 示例刻意不引用不存在的“PBTX 转换工具”。
 
-<!-- gracker-diagram: ch14-01-13-config-inputs -->
-![Android 版本决定配置输入方式](../../assets/diagrams/ch14/ch14-01-13-config-inputs.png)
-
-图：按设备端版本选择 binary、文本 stdin 或专用配置目录。 记录脚本与设备 CLI 两套版本；不能把主机 sideload 路径当系统自带能力。
 
 ```bash
 # Android 12+：perfetto.rc 创建并放行专用配置目录
@@ -556,10 +508,6 @@ Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 
 
 除了 `linux.ftrace` 之外，入门阶段最容易混淆的是这些能力：
 
-<!-- gracker-diagram: ch14-01-14-profiling-questions -->
-![分配热点、保留关系与调用栈](../../assets/diagrams/ch14/ch14-01-14-profiling-questions.png)
-
-图：先确定要问的是分配、保留关系，还是 CPU 采样。 这些结果模型不能互换；版本、资格和符号条件按数据源检查。
 
 - **Native heap sampling**：按调用栈观察原生内存分配，常见入口是 heapprofd。
 - **Java allocation sampling**：按调用栈观察 Java 对象分配热点，通常也走 heapprofd，但配置里要加 `heaps: "com.android.art"`。
@@ -633,10 +581,6 @@ Track 是事件的容器，具有相同上下文的一组事件会被组织到�
 
 UI 的折叠层级是展示模型，Trace Processor 中的 `track` 表还会通过维度和关联表表达进程、线程或全局作用域。写 SQL 时用 `upid`、`utid` 或对应专用表关联；UI 的视觉缩进只是展示层级，数据库里的父子关系要看关联表。
 
-<!-- gracker-diagram: ch14-01-17-track-scopes -->
-![Track 是事件容器](../../assets/diagrams/ch14/ch14-01-17-track-scopes.png)
-
-图：线程、CPU、进程和领域轨道通过表与标识建立关系。 视觉缩进只是一种展示；SQL 关联依赖 track、utid、upid 和领域表。
 
 #### Slice：时间段内的事件
 
@@ -660,19 +604,11 @@ FrameTimeline / flow
 
 同一 Track 内可以用 `parent_id` 分析嵌套；跨 Track 应依赖 flow（跨 track 关联事件）、frame token、时间关系或领域专用表。把时间上重叠的两个 Slice 直接认作父子关系，会把等待方和执行方混在一起。
 
-<!-- gracker-diagram: ch14-01-18-slice-and-flow -->
-![线程内嵌套与跨线程关联](../../assets/diagrams/ch14/ch14-01-18-slice-and-flow.png)
-
-图：同一线程的嵌套与跨线程的关联采用不同证据。 轨道表示一种可交叠示意，条长非实测；时间重叠不自动建立父子或因果关系。
 
 #### Counter：随时间变化的数值
 
 Counter 由一组“时间戳 + 数值”样本组成，没有 Slice 那样明确的起止区间。UI 会把相邻样本连成折线或阶梯图，但这不代表数据源在两个采样点之间进行了连续测量。
 
-<!-- gracker-diagram: ch14-01-19-counter-meaning -->
-![Counter 样本与区间测量](../../assets/diagrams/ch14/ch14-01-19-counter-meaning.png)
-
-图：Counter 提供时间点数值，区间事件提供明确的持续时间。 相邻样本的 UI 连线不是连续测量，也不能只凭频率低认定长帧根因。
 
 在 Perfetto UI 中，Counter 以折线图的形式显示。常见的 Counter 包括：
 
@@ -699,10 +635,6 @@ Perfetto 最适合回答“多个执行主体在同一个时间窗里各自做�
 
 问题跨越线程、进程或系统层时，Perfetto 通常是第一轮定位工具。日志、FrameMetrics、Android Studio Profiler、AGI 和 heap analyzer 再对已经定位到具体模块的问题补证据。
 
-<!-- gracker-diagram: ch14-01-20-scenario-evidence -->
-![问题类型决定必要证据](../../assets/diagrams/ch14/ch14-01-20-scenario-evidence.png)
-
-图：流畅性、启动和 ANR 都要围绕实际窗口组合证据。 Perfetto 只解释已采到的记录，专用工具用于补足已定位模块。
 
 ### Perfetto 的跨平台能力
 
@@ -726,10 +658,6 @@ Perfetto 提供 C++17 Tracing SDK，允许 App 在代码中写入自定义 trace
 
 大多数应用先使用 SDK 的 Track Event API，Perfetto UI 和 Trace Processor 已理解通用 Track Event schema。只有通用事件无法表达业务数据时，才继承 `perfetto::DataSource` 定义自有 protobuf。
 
-<!-- gracker-diagram: ch14-01-21-sdk-backends -->
-![SDK 进程内与系统后端](../../assets/diagrams/ch14/ch14-01-21-sdk-backends.png)
-
-图：Track Event 描述通用事件，后端决定它们进入哪种 tracing service。 自定义 packet 还需对应 importer 或 UI 支持，不能仅写入 schema 就自动出图。
 
 完全自定义的 packet 字段还需要 Trace Processor importer 或 UI 插件理解其 schema，否则只能看到原始 packet，无法自动生成对应的分析表和轨道。若只需记录方法区间并兼容 Android Java/Kotlin 代码，`android.os.Trace` 通常接入成本更低；需要跨平台 C++、结构化参数、Counter 或 flow 时，再评估 Perfetto SDK。
 
@@ -751,10 +679,6 @@ Perfetto 提供 C++17 Tracing SDK，允许 App 在代码中写入自定义 trace
 
 Android 17 的 `traced` / `traced_probes` 仍由 `external/perfetto` 构建为 `/system/bin` 平台二进制。`packages/modules/Profiling` 另行定义 `com.android.profiling` APEX（可独立更新的系统模块包），其中包含 Profiling framework/service 和负责移除敏感信息的 redactor 等模块。`traced`、`traced_probes` 及整个 Perfetto 项目并没有因此全部迁入该 APEX。判断设备实现时应分别查看 `/system/bin`、`/apex/com.android.profiling`、系统 build manifest 和 feature flag。
 
-<!-- gracker-diagram: ch14-01-22-platform-and-module -->
-![平台采集程序与 Profiling APEX](../../assets/diagrams/ch14/ch14-01-22-platform-and-module.png)
-
-图：Perfetto 平台程序与 Profiling 模块有不同构建和更新边界。 不能由 com.android.profiling APEX 推断整个 Perfetto 已迁入模块。
 
 系统触发 profiling 也不表示设备会持续保存完整 trace。系统按采样窗口运行后台 ring-buffer trace，并施加系统级和 App 自定义限流；事件发生时若没有活跃的后台 trace、额度不足或 feature flag 关闭，都可能拿不到 artifact。
 
@@ -776,10 +700,6 @@ Android 17 的 `traced` / `traced_probes` 仍由 `external/perfetto` 构建为 `
 
 选择入口前，先确认目标是整机时序、单个 App，还是 Linux 主机。这个范围会决定可用命令、权限和结果文件格式。
 
-<!-- gracker-diagram: ch14-01-24-capture-entries -->
-![入口、连接与数据范围](../../assets/diagrams/ch14/ch14-01-24-capture-entries.png)
-
-图：先区分设备系统追踪、目标 App profiling 和 Linux 主机采集。 入口不会绕过 service、权限或设备支持；保存实际生成的配置。
 
 ### 采集前的固定检查
 
@@ -805,10 +725,6 @@ Android 17 的 `traced` / `traced_probes` 仍由 `external/perfetto` 构建为 `
 
 我们抓取前先写下一句待验证的问题。例如：“主线程长帧来自 CPU 执行、Binder 等待，还是长期处于 Runnable 状态却得不到 CPU？”Runnable 表示线程已经可以运行，但仍在调度队列中等待 CPU。这句话会直接决定是否采集 App atrace、Binder tracepoint、`sched_switch`、`sched_wakeup`、线程状态和 FrameTimeline。
 
-<!-- gracker-diagram: ch14-01-25-question-to-config -->
-![从待验证问题反推采集配置](../../assets/diagrams/ch14/ch14-01-25-question-to-config.png)
-
-图：把候选原因拆成可观测信号，再选择最小必要数据。 配置过窄无法追因，过宽会增加数据率和扰动；补采不能恢复旧文件缺失的证据。
 
 抓取完成后还要检查丢包。文件成功生成只说明会话结束、拿到了输出；每个 Producer 和 buffer 是否完整写入，要看后面的丢包检查。
 
@@ -858,10 +774,6 @@ adb pull /data/misc/perfetto-traces/trace.perfetto-trace .
 
 simple mode 会根据短参数生成受限的 `TraceConfig`，仍依赖 `traced` tracing service 和负责系统数据采集的 `traced_probes`。输出路径位于 `/data/misc/perfetto-traces/`；Android 9 若无法直接 `adb pull`，可用 `adb shell cat` 把文件重定向到主机。
 
-<!-- gracker-diagram: ch14-01-26-simple-normal -->
-![Simple 与 Normal 共用采集服务](../../assets/diagrams/ch14/ch14-01-26-simple-normal.png)
-
-图：simple mode 用 flags 生成子集配置，normal mode 接收完整 TraceConfig。 simple mode 仍连接 tracing service；包名、FrameTimeline 和 profiling 不会由入口自动补齐。
 
 `adb shell perfetto` 在非交互 ADB 会话里不一定能可靠接收 `Ctrl+C`。可复现问题宜设置 `-t`；后台会话则要按 Perfetto background tracing 文档保存 PID（进程 ID），并通过该 ID 显式停止采集进程。
 
@@ -945,10 +857,10 @@ cat config.pbtx | adb shell perfetto \
 
 `-c -` 表示从标准输入读取配置。Android 9 没有 `--txt`；只有在主机已经按匹配的 proto schema 生成 binary `TraceConfig` 时，才能用同样的 stdin 方式传入二进制。
 
-<!-- gracker-diagram: ch14-01-27-config-and-result-directions -->
-![配置传入与结果导出分开看](../../assets/diagrams/ch14/ch14-01-27-config-and-result-directions.png)
+<!-- gracker-diagram: ed14-01-configuration-input-and-output -->
+![按设备版本送入配置，结果沿另一方向导出](../../assets/diagrams/ch14/ed14-01-configuration-input-and-output.png)
 
-图：主机把配置送进设备，采集结果再按允许路径导出。 stdin 传配置不改变 data source 资格；输出文件存在也不证明记录完整。
+图：simple用flags生成ftrace/atrace受限配置仍连service；normal接收binaryprotobuf，Android10+可--txtPBTX。Android9系统CLI无--txt，binary需匹配schema预先生成，可stdin；10/11非root宜stdin，12+可专用configs目录。输出走traces目录或ConsumerFD，Android9pull权限不允许时可shellcat。设备CLI与主机脚本sideload路径分别记版本，配置不绕过Producer注册/权限/内核/HAL能力。
 
 #### `buffers`：容量和保留方向
 
@@ -998,10 +910,6 @@ cat config.pbtx | adb shell perfetto \
 
 Android 17 的 `frameworks/native/cmds/atrace/atrace.cpp` 把 `sched` 映射到调度 tracepoint，把 `freq` 映射到 `power/cpu_frequency` 等事件，把 `binder_driver` 映射到 Binder 驱动 tracepoint。common kernel `android17-6.18-2026-06_r6` 的 `sched.h` 和 `power.h` 提供通用定义；设备是否启用某个事件还受内核配置和厂商实现影响。
 
-<!-- gracker-diagram: ch14-01-31-ftrace-atrace-app -->
-![原始事件、平台类别和应用标记](../../assets/diagrams/ch14/ch14-01-31-ftrace-atrace-app.png)
-
-图：ftrace event、atrace category 与 atrace_apps 控制不同选择维度。 类别可能启用 tag、内核事件或两者；源码定义仍需设备接口支持。
 
 下面的命令用于查看当前设备能够启用的 category。
 
@@ -1023,10 +931,6 @@ adb shell atrace --list_categories
 
 表里的组合只负责建立起点。某个问题已经定位到 Binder，就可以删掉无关图形事件；要解释显示末端，则要补 SurfaceFlinger、FrameTimeline、GPU/HWC 或显示侧数据。
 
-<!-- gracker-diagram: ch14-01-32-minimum-evidence -->
-![先收集能区分候选原因的信号](../../assets/diagrams/ch14/ch14-01-32-minimum-evidence.png)
-
-图：长帧、Binder 等待与内存压力需要的证据集合不同。 最小集合是诊断起点，定位到具体边界后再补必需信号。
 
 ### 用 `record_android_trace` 抓取
 
@@ -1058,10 +962,6 @@ python3 ./record_android_trace \
 
 Android 17 tag 的脚本要求提供至少一个 event/category，或使用 `-c/--config` 指定配置文件。它会调用设备端 `perfetto`、把结果拉回主机，并默认打开 Perfetto UI；远程主机可以加 `--no-open` 跳过打开浏览器。
 
-<!-- gracker-diagram: ch14-01-33-record-script-flow -->
-![主机脚本怎样组织设备抓取](../../assets/diagrams/ch14/ch14-01-33-record-script-flow.png)
-
-图：record_android_trace 组织配置、设备命令、结果传输和可选 UI 打开。 固定脚本有自己的版本与低版本 sideload 路径，不等同于系统 perfetto 二进制。
 
 已经准备好 PBTX 时，使用配置模式。下面的命令让时长、buffer、App 和 data source 全部由文件控制。
 
@@ -1073,10 +973,6 @@ python3 ./record_android_trace \
 
 配置模式不要再叠加 `-t`、`-b` 或 `-a`；脚本在 `-c` 分支中直接读取文件，这些短参数不会改写 PBTX。团队复现问题时，应同时保存 PBTX 和脚本版本，避免临时命令丢失隐含配置。
 
-<!-- gracker-diagram: ch14-01-34-flags-versus-config -->
-![脚本配置模式以文件为准](../../assets/diagrams/ch14/ch14-01-34-flags-versus-config.png)
-
-图：固定 record_android_trace 的 -c 分支直接读取配置文件。 额外 -t / -b / -a 不会改写该 PBTX；不要从命令外观推断最终配置。
 
 ### 通过 Perfetto UI 抓取
 
@@ -1084,10 +980,10 @@ python3 ./record_android_trace \
 
 Recording Settings 主要控制三件事：
 
-<!-- gracker-diagram: ch14-01-35-ui-recording -->
-![连接设备与选择 Probes 是两步](../../assets/diagrams/ch14/ch14-01-35-ui-recording.png)
+<!-- gracker-diagram: ed14-01-recording-frontends-and-saved-config -->
+![短参数、配置文件与 UI 录制汇到实际执行的配置](../../assets/diagrams/ch14/ed14-01-recording-frontends-and-saved-config.png)
 
-图：transport 先建立采集连接，probes 和 recording settings 再决定记录什么。 ADB 可见不证明 UI transport 已连通；页面变化后保存当时生成的 PBTX。
+图：固定record_android_trace短参数分支根据events/categories、-t/-b/-a生成配置；-c分支直接读取文件，额外短参数不改写PBTX。UI先验证实际transport授权连接再选probes/buffer/mode/duration，导出Recordingcommand保存PBTX可用-c复现。脚本记录版本，固定Android17脚本API29以下可sideloadtracebox，否则调用设备采集路径；等待停止/pull后默认可开UI，--no-open可跳过。入口不能补齐未启用事件和采集资格。
 
 - **Recording mode**：`Stop when full` 保留较早数据，`Ring buffer` 循环覆盖旧数据以保留停止前的时间窗，`Long trace` 周期写入文件。
 - **In-memory buffer size / Max duration**：定义 central buffer 和会话期限。
@@ -1114,17 +1010,9 @@ try {
 
 `finally` 保证异常路径也能关闭最近打开的 section。抓取配置还要把包名放进 `atrace_apps`，否则 App 的 `ATRACE_TAG_APP` 标记不会进入这次 system trace。
 
-<!-- gracker-diagram: ch14-01-36-sync-marker -->
-![同步标记在同一线程配对](../../assets/diagrams/ch14/ch14-01-36-sync-marker.png)
-
-图：beginSection 和 endSection 在同一线程按嵌套顺序配对。 图示表达生命周期，条长非测量；App tag 未启用或窗口不覆盖时不会形成相应证据。
 
 Android 17 的 `Trace.beginSection()` 在 App trace tag 启用时检查名称长度，上限为 127 个 UTF-16 code unit；补充平面字符占两个单位，超长会抛出 `IllegalArgumentException`。未启用该 tag 时，固定实现会直接跳过这一检查。`|`、换行和空字符由底层协议占用，API 会把它们替换为空格。名称宜使用稳定操作名，动态 ID 放进异步 cookie（整数关联标识） 或 Counter，避免产生大量难以聚合的 Slice 名称。
 
-<!-- gracker-diagram: ch14-01-37-label-and-cost -->
-![名称长度与构造开销](../../assets/diagrams/ch14/ch14-01-37-label-and-cost.png)
-
-图：Java beginSection 在 App tag 启用时检查 127 个 UTF-16 code unit 上限。 不要把该单位套成 UTF-8 字节数；动态名称的构造成本发生在 API 调用前。
 
 格式化 section name 可能创建临时字符串。API 29 及以上可以先用 `Trace.isEnabled()` 判断是否值得构造这类字符串；低版本代码需要按 SDK 版本分支处理。Trace API 内部已经检查开关，普通常量名称不需要重复判断。
 
@@ -1166,10 +1054,10 @@ ATrace_endSection();
 
 这段标记仍走 App tracing tag，抓取时同样要设置 `atrace_apps`。AOSP 平台内部代码常见 `<cutils/trace.h>` 与 `ATRACE_BEGIN`，它们不属于普通 NDK App 的公开集成方式。
 
-<!-- gracker-diagram: ch14-01-39-instrumentation-paths -->
-![公开 ATrace 与 SDK 路径](../../assets/diagrams/ch14/ch14-01-39-instrumentation-paths.png)
+<!-- gracker-diagram: ed14-01-instrumentation-backend-routes -->
+![公开 Trace API 与 SDK 后端沿各自路径进入分析](../../assets/diagrams/ch14/ed14-01-instrumentation-backend-routes.png)
 
-图：Java Trace、公开 NDK ATrace 和 Perfetto SDK 采用不同接入 API。 平台内部 cutils 宏不是普通 NDK 公共接口；数据最终可见性仍取决于所用后端和配置。
+图：JavaTrace同步API18、异步/counter29；公开NDKandroid/trace.h同步23、异步/counter29，普通App不使用平台cutils宏。两者Apptrace tag需atrace_apps和覆盖窗口，经tracefs由ftrace源读取。SDKC++17TrackEvent支持category/flow/counter/annotation，可inprocess仅当前App或systembackend连接设备traced受socket/SELinux/资格约束。自定义DataSourceprotobuf需TPimporter/UI理解，schema写入不自动成轨道。
 
 Perfetto C++ SDK 的 Track Event 可以提供 category、flow、显式轨道和结构化 annotation。它是另一套埋点路径，具体集成见 §14.6 和 §14.12；若只需要 Java/Kotlin 方法区间，`android.os.Trace` 接入更直接。
 
@@ -1212,17 +1100,9 @@ data_sources {
 
 `flush_period_ms` 在采用模式允许时要求 Producer 定期提交尚未填满的 shared-memory page，和 `file_write_period_ms` 的 central buffer 写文件动作不同。Android 17 的 service 会为 long trace 自动处理周期 flush，大多数配置无需手动设置；过于频繁的 flush 会增加开销。
 
-<!-- gracker-diagram: ch14-01-41-flush-freshness -->
-![写盘频率与数据新鲜度](../../assets/diagrams/ch14/ch14-01-41-flush-freshness.png)
-
-图：周期写文件只看到已交付数据，flush 另外请求推进 Producer。 更频繁 flush 会增加扰动；普通 Android 17 long trace 会按 write_flush_mode 自动组织。
 
 这些字段生成一个持续增长的文件，不提供自动轮转。需要多个独立文件时，可以运行一组有时长上限的连续会话，或采用 trigger、clone/periodic snapshot：trigger 在条件满足时执行预设动作，clone/snapshot 在不停止原后台会话的情况下复制当时的 buffer 内容。采集设计要明确分段之间是否允许空窗或重叠。
 
-<!-- gracker-diagram: ch14-01-40-long-file-limits -->
-![Long Trace 写一个持续增长的文件](../../assets/diagrams/ch14/ch14-01-40-long-file-limits.png)
-
-图：周期写盘扩大留存范围，文件上限与自动轮转是不同能力。 会话分段、trigger 或 clone 要定义空窗和重叠；它们不会自动消除采集损失。
 
 长 trace 结束后仍要检查丢包和文件尾部完整性。浏览器受内存上限影响时，可以运行 `./trace_processor server http trace.perfetto-trace`，让本机原生 Trace Processor 作为 UI 后端，详见 §14.1。
 
@@ -1268,10 +1148,6 @@ data_sources {
 
 `sampling_interval_bytes` 在手写 `TraceConfig` 时必须显式设为非零值。4096 表示平均每分配 4 KiB 抽取一个样本；采样按概率进行，并不会机械地记录每第 4096 个字节。间隔越小，小额分配越容易被观察到，client、shared memory、unwinding 和 trace 体积的开销也越高。
 
-<!-- gracker-diagram: ch14-01-43-allocation-sampling -->
-![分配采样间隔的含义](../../assets/diagrams/ch14/ch14-01-43-allocation-sampling.png)
-
-图：sampling_interval_bytes 表达按分配字节量的平均概率间隔。 4096 不是机械地每第 4096 个字节记录；更低间隔提高开销且仍需检查丢样。
 
 没有 `process_cmdline` 或 `pid` 时，普通目标配置不会自动选择进程。`all: true` 可以请求所有符合资格的进程，但在低采样间隔下很容易让 heapprofd 处理不过来。
 
@@ -1296,10 +1172,10 @@ duration_ms: 10000
 
 结果用于 retained graph 与泄漏分析，其中没有传统 `.hprof` 文件里的全部对象字段值。生成对象图会暂停目标进程并消耗额外内存，抓取窗口应避开需要测量原始延迟的区间。
 
-<!-- gracker-diagram: ch14-01-44-heap-graph -->
-![ART 对象图的产出与成本](../../assets/diagrams/ch14/ch14-01-44-heap-graph.png)
+<!-- gracker-diagram: ed14-01-profiling-components-and-results -->
+![先选问题，再区分分配采样、对象图与 CPU 栈采样](../../assets/diagrams/ch14/ed14-01-profiling-components-and-results.png)
 
-图：ART heap graph 用于分析快照中的对象引用和保留关系。 它不等于 allocation sampling 或完整 HPROF 字段；停顿与额外内存会影响原始性能。
+图：Native/ARTallocation采样由目标client与heapprofd处理，ART配置heapscom.android.art；JavaHprofProducer编入同一heapprofd二进制但另建Producer连接，CanProfile检查目标资格和installer等条件后发实时信号，目标ART插件生成引用图并写tracingSMB。traced_perf经perf_event_open按timebase/scope采CPU栈。三者目标资格、平台支持、采样/暂停/符号条件分别核对；retainedgraph不含完整HPROF字段，也不是allocationprofile。
 
 #### `linux.perf` 调用栈采样
 
@@ -1327,10 +1203,6 @@ data_sources {
 
 100 Hz 只是配置示例，不是跨设备建议值。`frequency` 是向内核请求的每 CPU 采样频率，内核可能因负载而降低实际频率；采样结束后应检查丢样统计。`scope` 用于限定目标进程，省略它会保留所有进程的样本，用户空间 unwinder 更容易过载。
 
-<!-- gracker-diagram: ch14-01-45-perf-sampling -->
-![CPU 采样的 Timebase 与 Scope](../../assets/diagrams/ch14/ch14-01-45-perf-sampling.png)
-
-图：timebase 定义采样源与请求频率，scope 限定保留的目标。 100 Hz 不是准点定时或实际样本保证；内核调节、权限与 unwinder 丢样需另查。
 
 Android 13+ 的 `target_cmdline` 支持一个 `*` 通配符，Android 12 则按归一化后的命令行做精确匹配。需要内核栈时可以设置 `kernel_frames: true`，但 user build 仍受 `kptr_restrict`（限制内核地址暴露的安全设置）和平台权限约束。
 
@@ -1353,10 +1225,6 @@ Android 13+ 的 `target_cmdline` 支持一个 `*` 通配符，Android 12 则按�
 
 分析前先确认这五项：
 
-<!-- gracker-diagram: ch14-01-46-capture-quality -->
-![采集后进入分析前的检查](../../assets/diagrams/ch14/ch14-01-46-capture-quality.png)
-
-图：窗口、对象、数据源、质量与版本记录共同决定样本可用范围。 文件成功生成只是一项结果，不单独证明这些条件都成立。
 
 1. trace 的起止时间覆盖了复现动作，设备时间轴上能找到触发点。
 2. 目标进程、线程和 App 自定义标记存在，包名没有写错。
@@ -1408,10 +1276,6 @@ Trace Processor 会把输入 packet 解析成便于查询的列式表——按�
 
 本机原生 Trace Processor 可以使用主机可用内存，并避开浏览器站点的内存上限。它依旧要读取并解析完整 Trace，不会把超大文件自动变成内存占用恒定的流式查询。遇到加载问题时，应先检查主机资源和 Trace 质量，再决定使用本机后端、缩小采集范围或分批处理。
 
-<!-- gracker-diagram: ch14-01-47-file-versus-memory -->
-![文件大小与分析运行时内存](../../assets/diagrams/ch14/ch14-01-47-file-versus-memory.png)
-
-图：原始文件、解析后的表和查询结果占用不同内存。 浏览器或原生后端的容量边界按实际输入测量，不把经验倍数当跨设备常数。
 
 命令行还可以把同一份 SQL 重复运行在一组 Trace 上，适合回归测试和持续集成。Trace 默认留在本机；若文件包含应用标记、进程名、URL 或用户数据，仍须遵守团队的数据分级、访问和保留策略。
 
@@ -1475,10 +1339,10 @@ WHERE type IN ('table', 'view') ORDER BY name;
 
 `server http` 通过 RPC（Remote Procedure Call，远程过程调用）让本机原生进程负责解析和 SQL，UI 负责交互与显示。Trace Processor 自身的完整解析内存需求并不会因此降低。`--port` 可改端口，`--ip-address` 可改绑定地址，`--additional-cors-origins` 可增加通过浏览器跨来源检查的页面地址。除非已有明确的网络隔离和鉴权方案，不要让包含敏感 Trace 的服务监听局域网或公网地址。
 
-<!-- gracker-diagram: ch14-01-50-native-rpc -->
-![Native Accelerator 的职责分工](../../assets/diagrams/ch14/ch14-01-50-native-rpc.png)
+<!-- gracker-diagram: ed14-01-browser-native-parsing-memory -->
+![同一 Trace 可用浏览器或原生解析，完整状态仍占内存](../../assets/diagrams/ch14/ed14-01-browser-native-parsing-memory.png)
 
-图：UI 负责交互展示，本机 TP 执行摄取与查询。 换后端不改变原始证据，也不消除解析内存；绑定地址和访问边界按实际配置核对。
+图：UI默认浏览器本地WASM解析不自动上传，浏览器站点内存限制与文件字节数不同。serverhttp默认127.0.0.1:9001让本机原生TP负责完整摄取/SQL，UI经RPC查询展示，仍需所有解析状态。protobuf经验2–4倍非固定比例，格式/事件密度/工具版本影响；输入可分块读不代表恒定内存或只加载查询Track。UI/native不改变采集质量，SQL过滤减少结果不减少所有原始摄取内存。
 
 ### PerfettoSQL 的数据模型
 
@@ -1523,10 +1387,6 @@ ORDER BY item_type, item_name;
 
 `item_type` 区分表名与 Slice 名称。名称列表只用于发现输入中已有的事件。生产指标应绑定经过验证的系统 Slice、自定义 Trace 标记或标准库模块；事件不存在时保留为缺失值，避免把零误读成“事件存在且测量结果为 0”。
 
-<!-- gracker-diagram: ch14-01-52-missing-zero-error -->
-![缺失、零值和错误分别存储](../../assets/diagrams/ch14/ch14-01-52-missing-zero-error.png)
-
-图：先确认输入中存在必需表和事件，再解释查询数值。 名称发现只是入口；缺失证据不能填成 0，查询失败也不能视为性能值。
 
 #### 先过数据质量门
 
@@ -1606,10 +1466,6 @@ LIMIT 20;
 
 固定“Trace 第 10～20 秒”或“启动后 5 秒”容易把无关工作算入指标。更稳妥的做法是让被测应用写入边界明确的自定义 Trace 标记。下面按进程名限定目标，且只在恰有一个正时长 `cold_start` Slice 时统计其线程状态交集。实际运行先确认并替换 `com.example.myapp`；缺失、重复或跨进程同名标记不会静默选第一条。
 
-<!-- gracker-diagram: ch14-01-54-marker-ambiguity -->
-![启动标记先检查作用域与唯一性](../../assets/diagrams/ch14/ch14-01-54-marker-ambiguity.png)
-
-图：先在目标进程内找到恰好一个正时长标记，再进行状态区间相交。 缺失、歧义和没有状态覆盖都可能得到空结果，必须分开判断。
 
 ```sql
 WITH candidates AS (
@@ -1654,10 +1510,10 @@ ORDER BY overlap_ms DESC;
 
 区间相交条件使用半开时间窗 `[start_ts, end_ts)`，只累计目标 Slice 内真正重叠的状态片段。Linux 的 `D` 表示不可中断睡眠，磁盘 I/O 只是可能原因之一；我们要结合 `io_wait`、`blocked_function`、内核事件和调用栈确认阻塞来源。目标标记缺失或不唯一时，查询返回空集；即使标记唯一，缺少重叠的 `thread_state` 记录也会为空。流水线须分别检查标记计数与状态覆盖，不能把空集当作各状态耗时均为 0。
 
-<!-- gracker-diagram: ch14-01-55-interval-clipping -->
-![线程状态按真实目标窗口裁剪](../../assets/diagrams/ch14/ch14-01-55-interval-clipping.png)
+<!-- gracker-diagram: ed14-01-unique-window-coverage-and-result -->
+![唯一目标窗口与状态覆盖都成立后才计算交集](../../assets/diagrams/ch14/ed14-01-unique-window-coverage-and-result.png)
 
-图：同线程区间按边界计算交集，才能把成本限定在目标操作中。 轨道仅示范一个相交情形，不代表实测时长；D 状态的原因仍要另外取证。
+图：先在目标进程实例内找cold_start正dur，0为缺失、多为歧义，不静默第一条；恰1后还要同utid正durthread_state有实际覆盖，空集不等各state0。交集min(st.end,target.end)-max(st.start,target.start)，仅累计正重叠半开窗；D仅不可中断sleep需io_wait/blocked_function/栈补因。合法输入结果0、未采到、SQL/schema失败分开存。原生SQL38行完整保留。
 
 ### 非交互查询与导出
 
@@ -1676,17 +1532,13 @@ ORDER BY overlap_ms DESC;
 
 SQL 可以包含多条以分号分隔的语句。`android-17.0.0_r1` 的 `query.cc` 会检查前序语句是否产生结果行：只有末尾语句可以返回结果，前面可放不返回行的建表、插入或模块加载语句。非交互结果按 CSV（逗号分隔的结构化文本） 输出，字段可能包含引号、逗号或换行，解析时应使用 CSV 库。
 
-<!-- gracker-diagram: ch14-01-58-csv-result-handling -->
-![查询输出也有结构边界](../../assets/diagrams/ch14/ch14-01-58-csv-result-handling.png)
-
-图：按固定版本执行查询，并用 CSV 解析器读取结构化结果。 引号、逗号和换行可出现在字段内，不能用简单字符串切分替代格式解析。
 
 ⚠️ 版本差异（2026-10-24 复核）：固定 Android 17 的 `query.cc` 与上游 v54.0 shell 要求仅末尾语句返回结果；今天官方启动脚本固定的 v58.2 已能依次输出多个 CSV 结果集。本次对两个主机二进制执行了相同的两条 `SELECT`。原文的 v57.2 记录属于旧版边界，当前自动化应保存实际版本并按其行为拆分或解析结果。
 
-<!-- gracker-diagram: ch14-01-56-query-version-contract -->
-![一次查询能返回几个结果集](../../assets/diagrams/ch14/ch14-01-56-query-version-contract.png)
+<!-- gracker-diagram: ed14-01-query-version-and-csv -->
+![先固定单／多结果集契约，再按 CSV 边界解析](../../assets/diagrams/ch14/ed14-01-query-version-and-csv.png)
 
-图：固定 Android 17 / 上游 v54.0 与当前 v58.2 的结果集规则不同。 本次用相同两条 SELECT 验证主机行为；多结果集不等于一张普通 CSV 表。
+图：固定Android17query.cc/上游v54仅末尾语句可返回行，前序可DDL/include；v58.2本次原文两SELECT试验可依次多个结果集，不能当一张普通CSV。当前任务仅保留原文试验结论未重新跑TP。固定版本/查询文件，保存exitcode/stdout/stderr；CSV字段可引号逗号换行应库解析，核对schema/单位/缺失及结果集边界后入库。DataExplorerQuery节点单SELECT是独立契约。
 
 同一份大 Trace 要连续执行很多查询时，本次核对的 v58.2 可以使用 warm session，避免每条命令都重新解析。`./trace_processor server unix --name mysession --daemonize trace.pftrace` 会在 Linux、macOS 等 POSIX 系统上创建名为 `mysession` 的后台 Unix socket 通信端点；随后用 `./trace_processor query --remote mysession "SELECT COUNT(*) FROM slice"` 查询，完成后执行 `./trace_processor server kill mysession`。会话会一直占用已解析 Trace 所需内存，脚本要处理命名冲突、超时和异常退出后的清理。
 
@@ -1713,10 +1565,6 @@ WHERE severity IN ('data_loss', 'error');
 
 这两个字段是非零统计条目数，覆盖采集记录与分析阶段报告；它们不是丢失事件总数，也不包含所有 `info` 级覆盖项。流水线还须保存带 `name / idx / source / value` 的明细，并检查必需表、标记、场景日志和时间边界。
 
-<!-- gracker-diagram: ch14-01-57-quality-stat-units -->
-![质量汇总统计的是条目](../../assets/diagrams/ch14/ch14-01-57-quality-stat-units.png)
-
-图：非零 data_loss / error 条目数用于提醒进一步检查。 不同统计量单位不同且可能描述同一损失，不能相加后称为丢失事件总数。
 
 下面的脚本逐份处理 `./traces` 中的 Trace，并把结果写到独立文件：
 
@@ -1788,10 +1636,6 @@ with TraceProcessor(
 
 `query()` 返回可迭代结果，SQL 的解析和执行由原生 Trace Processor 完成。把结果转换为 Pandas 或 Polars DataFrame 时，会在 Python 进程中把返回行实际装入内存数据结构。列数很多或行数很大的明细结果会增加内存占用和转换时间；聚合、过滤和列裁剪应尽量在 SQL 中完成。
 
-<!-- gracker-diagram: ch14-01-60-python-result-memory -->
-![SQL 执行与 Python 结果物化](../../assets/diagrams/ch14/ch14-01-60-python-result-memory.png)
-
-图：原生 TP 执行查询，Python 接收结果并可创建 DataFrame。 结果行数、列数和转换方式影响 Python 内存；筛选查询不会只加载所涉及 Track。
 
 `TraceProcessorConfig(bin_path=...)` 适合固定经过审核的原生程序。未指定时，官方包会使用与该 Python 包绑定的版本，只要包版本也被锁定，仍可复现；设置 `fetch_latest_trace_processor=True` 会尝试获取最新预编译程序，不适合作为稳定基线。
 
@@ -1826,10 +1670,6 @@ for path, frame in zip(paths, results):
 
 `query()` 返回与输入 Trace 一一对应的 DataFrame 列表。`query_and_flatten()` 会把各份结果纵向合并，并按所用解析器增加来源列。每份已加载 Trace 都完整驻留内存；官方给出的粗略估算是 `2 × 平均文件大小 × Trace 数量`，内容差异会让实际值明显偏离。官方文档提到可查询约千份 Trace，这只是使用规模示例；批大小要根据样本内容、主机内存和并发配置压测。
 
-<!-- gracker-diagram: ch14-01-61-batch-residency -->
-![批量查询与单份 Trace 内存](../../assets/diagrams/ch14/ch14-01-61-batch-residency.png)
-
-图：BatchTraceProcessor 同时持有多份已解析 Trace，逐份处理则减少同时驻留数量。 粗略内存倍数与千份规模都不是容量保证；输出还须保留来源身份。
 
 ### traceconv 用于格式互操作
 
@@ -1850,10 +1690,6 @@ chmod +x ./traceconv
 
 `profile` 会生成一个或多个 pprof 文件，因此使用 `--output-dir`。`bundle` 要求输入和输出都是实际文件路径；它把 Trace、原生符号和 R8/ProGuard 映射整理成可由 UI 或 Trace Processor 直接打开的 TAR，便于连同符号化资料一起分享和归档。文本与 JSON 输出可能远大于原始 protobuf；格式转换解决的是工具兼容问题；超大 Trace 的解析内存需求并不会因此降低。
 
-<!-- gracker-diagram: ch14-01-62-traceconv-purpose -->
-![格式互操作不等于低内存](../../assets/diagrams/ch14/ch14-01-62-traceconv-purpose.png)
-
-图：traceconv 按目标工具转换或打包数据。 目标格式可能扩大文件或丢失不可表达的语义，不能据转换推断解析内存下降。
 
 ### 可复现的分析流水线
 
@@ -1869,10 +1705,6 @@ chmod +x ./traceconv
 
 这些字段应由采集与分析程序在运行时自动生成。手写设备构建、工具版本或哈希容易抄错，也会让测试环境变化难以与性能变化区分。
 
-<!-- gracker-diagram: ch14-01-63-analysis-manifest -->
-![可复核样本要保留哪些身份](../../assets/diagrams/ch14/ch14-01-63-analysis-manifest.png)
-
-图：输入、采集环境、场景边界、分析版本和输出规范共同定义样本。 只保留截图或指标 CSV 会失去复算所需条件，版本变化需有可追踪记录。
 
 进入历史基线前，至少执行这些检查：
 
@@ -1899,10 +1731,10 @@ chmod +x ./traceconv
 
 拆批只减少多文件同时驻留内存的数量。单份 Trace 仍然过大时，要重新采集或换用内存更大的分析主机；Python `TraceProcessor` 和 `BatchTraceProcessor` 都会加载完整 Trace，而不会只加载查询涉及的 Track。
 
-<!-- gracker-diagram: ch14-01-64-memory-pressure-options -->
-![内存不足先定位哪一层](../../assets/diagrams/ch14/ch14-01-64-memory-pressure-options.png)
+<!-- gracker-diagram: ed14-01-python-batch-and-result-memory -->
+![同时驻留的 Trace 数量与 Python 结果大小分别控制](../../assets/diagrams/ch14/ed14-01-python-batch-and-result-memory.png)
 
-图：浏览器限制、单份 Trace 体量与多文件并驻留要分别处理。 原生或 Python 后端仍要加载输入；单份过大时需要缩小采集或更大分析资源。
+图：TraceProcessor加载完整Trace，Batch同时保有多份完整解析状态，顺序/小批减少同时驻留数量但仍有重复摄取成本。SQL在native执行先过滤聚合列裁剪，再经RPC交Python迭代行或DataFrame，返回行列影响Python内存而非只加载涉及Track。query列表与输入一一对应，flatten纵向合并需保留来源身份。rough2×平均文件×N/约千份示例不是容量保证；单份native过大需重采缩窗/删无关事件或更大资源，批大小按输入峰值测。
 
 ### Android 17 源码落点
 
@@ -1995,10 +1827,6 @@ kernel per-CPU ftrace buffer
 
 把 `TraceConfig.buffers.size_kb` 调大，扩大的只有 central buffer；内核 ftrace buffer 要用 `ftrace_config.buffer_size_kb` 另行设置，SDK producer 的 SMB 则通过 `TracingInitArgs.shmem_size_hint_kb` 等初始化参数请求。所以三层容量要分别评估，调其中一层管不到另外两层。
 
-<!-- gracker-diagram: ch14-01-65-buffer-owners -->
-![三层 Buffer 有各自所有者与容量](../../assets/diagrams/ch14/ch14-01-65-buffer-owners.png)
-
-图：ftrace、Producer SMB 和 central buffer 吸收的延迟不同。 同一进程可有多个 Producer 连接；增大 central buffer 不会同时扩大另外两层。
 
 #### 2.3 一个 packet 如何到达 central buffer
 
@@ -2033,10 +1861,6 @@ producer 中的 `TraceWriter` 取得一个 SMB chunk 后，用 ProtoZero（Perfe
 
 一个 `TraceWriter` sequence 是同一 writer 按顺序生成的一串 packet，该序列保持自身的 packet 写入顺序；这不额外保证每个事件的时间戳单调。多个 writer 会并发提交，文件没有跨 sequence 的全局时间顺序；跨序列的排序由 Trace Processor 导入时在排序窗口内完成。
 
-<!-- gracker-diagram: ch14-01-68-writer-order -->
-![写入顺序与时间戳顺序](../../assets/diagrams/ch14/ch14-01-68-writer-order.png)
-
-图：每个 writer 保持自己的 packet 写入顺序，导入器另外处理时间关系。 writer 的事件时间戳不额外保证单调；文件先后不是跨线程、跨进程的全局时间线。
 
 低频 data source 的当前 writer chunk 可能长时间未提交。若没有 flush，一条较早的事件可能在数分钟后才提交，与其他序列的新事件混在文件后部。长 trace 的乱序跨度超过导入器的排序窗口时，可能出现 out-of-order（事件到达次序与时间戳次序不一致）警告或解析问题。
 
@@ -2056,10 +1880,10 @@ producer 中的 `TraceWriter` 取得一个 SMB chunk 后，用 ProtoZero（Perfe
 
 CPU、GPU 和不同数据源可能采用不同的 clock domain。时间戳同为纳秒，或两个事件使用同一个业务 ID，都不足以直接相减。Perfetto 通过 `timestamp_clock_id` 与 `ClockSnapshot` 建立映射，导入器才能把事件对到统一 trace 时间；缺少可解析的映射时，要检查 clock sync 统计并限制跨源延迟结论。
 
-<!-- gracker-diagram: ch14-01-69-clock-mapping -->
-![时间戳需要 Clock Domain 映射](../../assets/diagrams/ch14/ch14-01-69-clock-mapping.png)
+<!-- gracker-diagram: ed14-01-writer-order-clock-and-sort -->
+![Writer 顺序、Clock 映射与导入排序分别成立](../../assets/diagrams/ch14/ed14-01-writer-order-clock-and-sort.png)
 
-图：Clock ID 与快照建立跨数据源的可验证时间映射。 同为纳秒、同一个业务 ID 或 full-sort 都不能替代缺失的时钟映射。
+图：writersequence保持自身packet写入顺序但事件timestamp不额外单调，多writer并发提交无全局文件时间序。低频writer旧事件延后提交扩大乱序窗口，flush可促提交但增加开销。timestamp_clock_id+ClockSnapshot可解析映射统一trace时域，单位ns/业务id不代clock；BOOTTIME含suspend/MONOTONIC不含，GPU可能独立clock。TP排序窗口或fullsort处理到达乱序，fullsort增加内存不补丢失事件/缺clock映射。
 
 Android 上常见的 `CLOCK_BOOTTIME` 包含 suspend，`CLOCK_MONOTONIC` 不累计这段休眠；GPU 还可能使用独立硬件时钟。先确认 clock ID、快照与转换，再讨论先后和耗时。`--full-sort` 调整事件排序，不能补出丢失事件或缺失的时钟映射。参见 [Clock synchronization](https://perfetto.dev/docs/concepts/clock-sync)。
 
@@ -2071,10 +1895,10 @@ Trace Processor 会检测部分无效增量状态，并跳过依赖缺失 intern
 
 两种常用缓解方式是：
 
-<!-- gracker-diagram: ch14-01-70-incremental-state -->
-![环形覆盖与增量状态依赖](../../assets/diagrams/ch14/ch14-01-70-incremental-state.png)
+<!-- gracker-diagram: ed14-01-incremental-state-loss-and-recovery -->
+![后续 Packet 依赖早期描述，覆盖后只能从有效新状态继续](../../assets/diagrams/ch14/ed14-01-incremental-state-loss-and-recovery.png)
 
-图：后续 packet 可能依赖早先登记的 ID、字符串或对象描述。 覆盖不会自动触发修复；周期 clear 只对声明支持的数据源生效，并增加重复描述。
+图：TrackEventinterning把字符串等映射登记后用ID引用，processstats也提供进线程关系；ring覆盖早期描述可使后续packet缺解释状态，TP可能跳过整段sequence而非仅空名。clear_period_ms仅对handles_incremental_state_clear数据源有效，周期重新发描述增加数据量，不自动由覆盖触发，也不修复旧packet。低频解释数据targetbuffer隔离可降低被高频源覆盖概率，容量仍需复核。
 
 - 设置 `incremental_state_config.clear_period_ms`，让支持该协议的 data source 周期重置增量状态并重新发出描述；
 - 把低频、但决定解释关系的数据源放入单独 target buffer（指定的 central buffer 下标），减少被高频 ftrace 数据覆盖的机会。
@@ -2107,10 +1931,6 @@ ORDER BY
 
 它能捕获 `ftrace_cpu_has_data_loss`、`traced_buf_trace_writer_packet_loss`、`traced_final_flush_failed`，以及 severity 同为 `data_loss` 的 `misplaced_end_event` 等关键项。不过，v54 的 `traced_buf_chunks_overwritten`、`traced_buf_chunks_discarded` 和 `ftrace_cpu_overrun_delta` 在 `stats.h` 中仍标为 `info`。所以这条查询返回空，只说明没有 data_loss 级问题；central buffer 是否覆盖、ftrace 是否 overrun，要用下面的第二条查询确认。
 
-<!-- gracker-diagram: ch14-01-71-quality-two-gates -->
-![严重程度与容量覆盖两级检查](../../assets/diagrams/ch14/ch14-01-71-quality-two-gates.png)
-
-图：data_loss / error 筛选之外，还要按名称检查 info 级覆盖与 overrun。 查询为空不等于没有覆盖；正常 bytes_written 也不能单独当作损失。
 
 第二条查询补查 central buffer 容量与写入状态，以及各 CPU 的 ftrace overrun。其中 `traced_buf_bytes_written` 是正常写入量，用来理解数据规模，不表示发生错误：
 
@@ -2156,19 +1976,15 @@ ORDER BY
 
 `source = 'trace'` 指向 trace 自带的采集统计，`source = 'analysis'` 表示导入或建表阶段发现的问题。前者通常要调整采集配置或 producer，后者还可能来自插桩配对、文件内容或分析器版本。
 
-<!-- gracker-diagram: ch14-01-72-stats-origin -->
-![Stats 的来源、下标与单位](../../assets/diagrams/ch14/ch14-01-72-stats-origin.png)
-
-图：采集统计、分析阶段统计和对象下标分别描述问题的不同维度。 analysis 也可能反映先前采集损失；仅按 source 不能认定是分析器 bug。
 
 #### 4.3 有丢失之后的可分析范围
 
 能否继续分析取决于损失所在的 CPU、buffer、时间段和数据源：
 
-<!-- gracker-diagram: ch14-01-73-loss-scope -->
-![出现损失后限定可分析范围](../../assets/diagrams/ch14/ch14-01-73-loss-scope.png)
+<!-- gracker-diagram: ed14-01-stats-two-gates-and-loss-scope -->
+![严重程度与覆盖统计都检查，再限定结论范围](../../assets/diagrams/ch14/ed14-01-stats-two-gates-and-loss-scope.png)
 
-图：按损失影响的对象、数据源、时间范围和依赖决定结论边界。 既不能忽略相关损失，也不必仅因无关计数就丢弃所有证据。
+图：stats含trace自带采集与analysis导入/建表统计，analysis也可能由采集损失/插桩导致不等解析器bug。第一级非零data_loss/error，第二级按名称检查v54info级overwritten/discarded/overrundelta及正常byteswritten；idx按CPU/buffer解释。非零统计条目数不是事件总损失，不同单位/重复描述不能相加。再检查窗口对象标记clock/data source实际覆盖，按受影响CPU/buffer/sequence/尾部依赖限结论；finalflush失败未见end不证明未结束，无关损失不必废全trace。
 
 - 目标是主线程锁等待，而目标 CPU 的 sched 事件有丢失，调度因果的强结论先缓一缓；
 - 只分析一个应用 Track Event 区间，而丢失发生在无关 target buffer，结论可能仍可用；
@@ -2183,10 +1999,10 @@ ORDER BY
 
 配置 buffer 前，我们先按数据率做个估算。非流式采集近似满足：
 
-<!-- gracker-diagram: ch14-01-74-capacity-models -->
-![容量估算要匹配对应积压](../../assets/diagrams/ch14/ch14-01-74-capacity-models.png)
+<!-- gracker-diagram: ed14-01-buffer-owners-and-backlogs -->
+![三层 Buffer 按各自所有者与积压窗口调容量](../../assets/diagrams/ch14/ed14-01-buffer-owners-and-backlogs.png)
 
-图：Central、per-CPU ftrace 与 SMB 都按各自积压窗口估算。 示例比值用于初始容量，突发速率和实际损失统计决定后续调整。
+图：内核ftrace每CPU一份，buffer_size_kb/drain_period_ms控制目标容量/读取周期，总内存随CPU数；并发会话实际大小不保证等请求。Producer连接SMB，shmem_size_hint_kb是hint，同一进程可多个连接/每连接多datasource，吸收service调度延迟和突发。central由buffers/targetbuffer路由服务持有，非流式容量÷聚合速率≈保留窗口，2MiB/s和32MiB约16s为正文假例；流式覆盖写周期峰值。源每10s写2MiB平均.2MiB/s仍可能瞬时耗尽SMB。三层独立调参并stats验证。
 
 ```text
 可保留时长 ≈ central buffer 字节数 ÷ 聚合写入速率
@@ -2329,10 +2145,10 @@ v54 用 `write_flush_mode` 替换已移除的 `no_flush_before_write_into_file`�
 
 `fflush_post_write: FFLUSH_ENABLED` 会在每轮写入后执行存储同步。字段名虽然含 `fflush`，v54 在 Android/Linux 的实现实际调用 `fdatasync()`，把文件数据从内核缓存同步到存储；这能减少进程或系统崩溃时尚未持久化的数据，同时增加 I/O 延迟与写放大。它对任意硬件掉电场景都没有绝对无损的承诺，一般性能采集默认无需开启。
 
-<!-- gracker-diagram: ch14-01-77-write-and-durability -->
-![提交、写文件与同步到存储](../../assets/diagrams/ch14/ch14-01-77-write-and-durability.png)
+<!-- gracker-diagram: ed14-01-producer-flush-file-and-durability -->
+![Producer 提交、周期写文件与存储同步是三个边界](../../assets/diagrams/ch14/ed14-01-producer-flush-file-and-durability.png)
 
-图：Producer flush、文件写入和同步到存储是不同阶段。 图示聚焦周期写路径；停止写文件时固定 service 还会执行 FlushFile。Android / Linux 使用 fdatasync，仍不保证任意崩溃或掉电绝对无损。
+图：flush请求Producer提交可交付writer数据，service接收已提交chunk到central，完整packet还需分片/patch。file_write_period_ms周期读central写同一输出文件，固定默认5s、有效最小100ms，central需容纳写周期峰值且磁盘跟上。flush_period_ms是否生效取决write_flush_mode，AUTO/ENABLED/DISABLED由保留专图解释。达到max_file_size_bytes停止会话不自动轮转；Consumerduration/stop也可结束。fflush_post_writeFFLUSH_ENABLED在Android/Linux周期写后调用fdatasync，停止写时service还FlushFile；同步增I/O且不保证任意掉电无损。
 
 ### 8. 诊断流程：从问题窗口到证据
 
@@ -2351,10 +2167,6 @@ UI 卡顿排查，我们建议按下面的顺序检查：
 
 Running 表示线程正在 CPU 上执行，Runnable 表示线程具备运行条件却还在调度队列中等待；wall duration 是从开始到结束的现实经过时间，包含运行、调度等待、阻塞和睡眠。我们看到一个帧超过预算时，候选原因有三类：线程没有及时获得 CPU、获得 CPU 后执行过多，或者在 Binder、fence（表示图形工作完成状态的同步原语） 这类同步原语上等待。
 
-<!-- gracker-diagram: ch14-01-78-jank-thread-states -->
-![长帧内运行、排队与阻塞](../../assets/diagrams/ch14/ch14-01-78-jank-thread-states.png)
-
-图：先分解目标线程的状态，再沿依赖解释长帧。 wall duration 包含多种状态；图形后段还要检查 GPU、合成和显示，不能全算 CPU 执行。
 
 #### 8.2 应用启动
 
@@ -2367,19 +2179,11 @@ Running 表示线程正在 CPU 上执行，Runnable 表示线程具备运行条�
 
 某个 `slice.dur` 只是单个区间的时长，完整启动时间以 metric 的定义为准：使用 Android startup metric 或 PerfettoSQL 标准库时，先核对该 metric 对启动类型、起点和终点的定义，再用 slice 解释具体慢在哪里。
 
-<!-- gracker-diagram: ch14-01-79-startup-definition -->
-![启动时间由指标边界定义](../../assets/diagrams/ch14/ch14-01-79-startup-definition.png)
-
-图：启动类型、触发点与完成点由采用的 metric 或模块定义。 一个长 Slice 只是其中一段；冷温热口径和首帧 / fully drawn 终点不能混用。
 
 #### 8.3 ANR
 
 ANR 查询可从 `android_anrs` 获取事件时间、类型、`subject`（原因摘要）、`intent`（触发请求）与 `component`（目标组件），再回到时间线检查：
 
-<!-- gracker-diagram: ch14-01-80-anr-evidence-window -->
-![ANR 事件与前因窗口](../../assets/diagrams/ch14/ch14-01-80-anr-evidence-window.png)
-
-图：先从事件找到原因与窗口，再追主线程、对端与资源依赖。 看不到 reply 或结束回调时，先查窗口、相关 buffer 与尾部 flush，不直接认定从未发生。
 
 - 主线程当时处于 Running、Runnable、Sleeping 还是阻塞态；
 - binder 调用链是否完整；
@@ -2400,10 +2204,6 @@ ANR 查询可从 `android_anrs` 获取事件时间、类型、`subject`（原因
 
 trace 只能解释已经采到的数据。要把调度时长换算成毫瓦时，得先有设备功率计、fuel gauge（电池电量计）或 Wattson（基于设备模型估算功耗的 Perfetto/Android 分析能力）的支持。
 
-<!-- gracker-diagram: ch14-01-81-power-evidence -->
-![活动时间与能量结论](../../assets/diagrams/ch14/ch14-01-81-power-evidence.png)
-
-图：调度、频率、idle 和设备活动用于解释功耗，能量仍需测量或受支持模型。 不能仅把 CPU 时间换成毫瓦时；Wattson 估算和硬件计量也各有适用条件。
 
 ### 9. 插桩的基本约束
 
@@ -2425,10 +2225,6 @@ trace 只能解释已经采到的数据。要把调度时长换算成毫瓦时�
 
 建议做三组同场景重复测试：
 
-<!-- gracker-diagram: ch14-01-82-probe-effect -->
-![无采集、最小与完整配置对照](../../assets/diagrams/ch14/ch14-01-82-probe-effect.png)
-
-图：用相同场景重复比较采集配置对结果分布的影响。 无固定跨设备开销比例；温度、频率、样本数与损失也要同时记录。
 
 1. 不采 trace 的基线；
 2. 最小必要配置；

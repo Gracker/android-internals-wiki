@@ -32536,9 +32536,1163 @@
       "before_count": 83,
       "before_all_images": 83,
       "sha256_before": "917a353004c9f7ef7c3fcf10d5520695725206ef3186938b0c3b7d0b5b334d99",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 32,
+      "decisions": [
+        {
+          "original_id": "ch14-01-01-evidence-chain",
+          "title": "从问题到可复核结论",
+          "decision": "remove",
+          "reason": "六框顺序逐项重复1952–1958五步诊断和249全文导语，正文全保留，删全篇另一份流程摘要。",
+          "original_line": 251,
+          "heading": "# Perfetto 入门、Trace 抓取与可靠性"
+        },
+        {
+          "original_id": "ch14-01-02-version-lines",
+          "title": "设备、主机与界面分别记录版本",
+          "decision": "remove",
+          "reason": "三版本线卡逐项复述276/295和287–293基线表；48具体launcher→nativehash链保留。",
+          "original_line": 278,
+          "heading": "### Perfetto 是什么"
+        },
+        {
+          "original_id": "ch14-01-03-systrace-shift",
+          "title": "旧事件经验与新的采集分析模型",
+          "decision": "remove",
+          "reason": "三组六卡逐格重述303–307及313–323完整Systrace对照表，无额外数据依赖，删表格重排版。",
+          "original_line": 325,
+          "heading": "### 从 Systrace 到 Perfetto：为什么要换"
+        },
+        {
+          "original_id": "ch14-01-04-control-and-data",
+          "title": "控制方向与 Ftrace 数据方向",
+          "decision": "remove",
+          "reason": "控制+ftrace两排重画343–355保留原生架构，原生还分App与probe两种SMB，删简化重复PNG。",
+          "original_line": 338,
+          "heading": "### Perfetto 的架构"
+        },
+        {
+          "original_id": "ch14-01-05-traced-jobs",
+          "title": "Tracing Service 的三项职责",
+          "decision": "remove",
+          "reason": "三组六卡逐项复制370–372三条traced职责，原生架构和66/67实际chunk/fragment机制保留，删职责词典。",
+          "original_line": 365,
+          "heading": "#### traced：核心守护进程"
+        },
+        {
+          "original_id": "ch14-01-06-write-versus-flush",
+          "title": "Producer Flush 与周期写文件",
+          "decision": "merge",
+          "reason": "原图“Producer Flush 与周期写文件”进入合图：合并多处flush/filewrite/longfile描述，画出未提交数据不可被周期写看见、文件上限停止而非轮转及可选fdatasync。；置于原图77，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 382,
+          "heading": "#### traced：核心守护进程",
+          "replacement_id": "ed14-01-producer-flush-file-and-durability"
+        },
+        {
+          "original_id": "ch14-01-07-probe-permissions",
+          "title": "系统探针权限来自哪些层",
+          "decision": "remove",
+          "reason": "UID/capability/SELinux四框逐项复述393完整权限段落，具体groups/caps正文更精确；15实际可用性检查链保留。",
+          "original_line": 395,
+          "heading": "#### traced_probes：系统数据源代理"
+        },
+        {
+          "original_id": "ch14-01-08-profiling-processes",
+          "title": "三类 Profiling 的角色",
+          "decision": "merge",
+          "reason": "原图“三类 Profiling 的角色”进入合图：合并profiling组件与问题模型，并展开JavaHprofProducer同进程但不同连接/目标ART产图的边界。；置于原图44，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 419,
+          "heading": "#### heapprofd 与 traced_perf：专用 profiling 进程",
+          "replacement_id": "ed14-01-profiling-components-and-results"
+        },
+        {
+          "original_id": "ch14-01-09-ui-backends",
+          "title": "浏览器解析与本机加速后端",
+          "decision": "merge",
+          "reason": "原图“浏览器解析与本机加速后端”进入合图：合并浏览器/原生UI后端和输入/解析/查询内存边界，避免把更大主机容量说成恒定内存流式查询。；置于原图49，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 428,
+          "heading": "#### Perfetto UI：可视化界面",
+          "replacement_id": "ed14-01-browser-native-parsing-memory"
+        },
+        {
+          "original_id": "ch14-01-10-processor-stages",
+          "title": "Trace Processor 的摄取与查询",
+          "decision": "keep",
+          "reason": "格式检测→分块tokenization→排序解析→专用列式存储→SQL→输出的实际摄取处理链，区别设备采集hotpath，保留非恒定内存限定。",
+          "original_line": 445,
+          "heading": "#### Trace Processor：SQL 分析引擎"
+        },
+        {
+          "original_id": "ch14-01-11-analysis-levels",
+          "title": "指标、标准库与原始表各自回答什么",
+          "decision": "remove",
+          "reason": "三分析层卡逐项复制457–459完整编号定义，指标名与模块边界正文更全，不再做层次词典。",
+          "original_line": 452,
+          "heading": "#### Trace Processor：SQL 分析引擎"
+        },
+        {
+          "original_id": "ch14-01-12-config-questions",
+          "title": "TraceConfig 的四项选择",
+          "decision": "remove",
+          "reason": "四孤立卡逐项复制493–496四项配置问题，完整PBTX/code保留，删除配置目录摘要。",
+          "original_line": 488,
+          "heading": "#### TraceConfig：采集配置"
+        },
+        {
+          "original_id": "ch14-01-13-config-inputs",
+          "title": "Android 版本决定配置输入方式",
+          "decision": "merge",
+          "reason": "原图“Android 版本决定配置输入方式”进入合图：合并simple/normal与Android9/10/12输入差异，明确配置传入不等数据源授权、文件生成不等完整。；置于原图27，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 527,
+          "heading": "#### TraceConfig：采集配置",
+          "replacement_id": "ed14-01-configuration-input-and-output"
+        },
+        {
+          "original_id": "ch14-01-14-profiling-questions",
+          "title": "分配热点、保留关系与调用栈",
+          "decision": "merge",
+          "reason": "原图“分配热点、保留关系与调用栈”进入合图：合并profiling组件与问题模型，并展开JavaHprofProducer同进程但不同连接/目标ART产图的边界。；置于原图44，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 559,
+          "heading": "#### Data Source：数据的来源",
+          "replacement_id": "ed14-01-profiling-components-and-results"
+        },
+        {
+          "original_id": "ch14-01-15-availability-gates",
+          "title": "数据源有名字之后还要检查什么",
+          "decision": "keep",
+          "reason": "schema请求→Producer注册→目标授权→内核/HAL实现→窗口内真实记录的可用性取证链，按具体源检查，不以名称存在当有数据。",
+          "original_line": 585,
+          "heading": "#### 常见 data source 可用性对照表"
+        },
+        {
+          "original_id": "ch14-01-16-lmk-evidence",
+          "title": "旧 LMK 事件与现代 LMKD 证据",
+          "decision": "keep",
+          "reason": "legacy内核事件/现代lmkd三路结果/压力退出环境并排区分历史映射与当前raw记录，保留合成试验非设备采集及kill不等回收限定。",
+          "original_line": 614,
+          "heading": "#### LMKD 行为追踪"
+        },
+        {
+          "original_id": "ch14-01-17-track-scopes",
+          "title": "Track 是事件容器",
+          "decision": "remove",
+          "reason": "三track作用域卡逐项复述625–634完整归属段落，51实际table身份链保留，删Track词典。",
+          "original_line": 636,
+          "heading": "#### Track：时间线上的一条轨道"
+        },
+        {
+          "original_id": "ch14-01-18-slice-and-flow",
+          "title": "线程内嵌套与跨线程关联",
+          "decision": "remove",
+          "reason": "主线程/RenderThread三轨再次复述649–659完整text树和661跨track关系说明；原text代码精确保留，时间重叠非父子与因果的正文未删。",
+          "original_line": 663,
+          "heading": "#### Slice：时间段内的事件"
+        },
+        {
+          "original_id": "ch14-01-19-counter-meaning",
+          "title": "Counter 样本与区间测量",
+          "decision": "remove",
+          "reason": "样本/区间/因果三组六卡逐项重述670与684完整解释，没有实际离散样本或插值关系，删概念摘要。",
+          "original_line": 672,
+          "heading": "#### Counter：随时间变化的数值"
+        },
+        {
+          "original_id": "ch14-01-20-scenario-evidence",
+          "title": "问题类型决定必要证据",
+          "decision": "remove",
+          "reason": "长帧/启动/ANR三卡逐项摘录690–700五场景正文，原文权限和工具补证更全，删问题目录卡。",
+          "original_line": 702,
+          "heading": "### 哪些问题优先使用 Perfetto"
+        },
+        {
+          "original_id": "ch14-01-21-sdk-backends",
+          "title": "SDK 进程内与系统后端",
+          "decision": "merge",
+          "reason": "原图“SDK 进程内与系统后端”进入合图：合并Java/NDK与SDK不同公共接口及inprocess/systembackend路径，区分普通atrace与自定义packet需要解析支持。；置于原图39，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 729,
+          "heading": "### Perfetto SDK：在 App 中嵌入自定义 Trace",
+          "replacement_id": "ed14-01-instrumentation-backend-routes"
+        },
+        {
+          "original_id": "ch14-01-22-platform-and-module",
+          "title": "平台采集程序与 Profiling APEX",
+          "decision": "remove",
+          "reason": "systembin/APEX/现场三卡逐项复述752完整构建和目录边界，原表API演进及正文全保留。",
+          "original_line": 754,
+          "heading": "#### Android 版本对照表"
+        },
+        {
+          "original_id": "ch14-01-23-trigger-capture",
+          "title": "系统触发不保证每次有产物",
+          "decision": "keep",
+          "reason": "触发配置→事件时后台活跃窗口→系统/App限流→按trigger交付artifact的实际gate链，保留不是每次都有trace。",
+          "original_line": 761,
+          "heading": "#### Android 版本对照表"
+        },
+        {
+          "original_id": "ch14-01-24-capture-entries",
+          "title": "入口、连接与数据范围",
+          "decision": "remove",
+          "reason": "三入口组逐项复制768–775完整入口表及777选择原则，脚本/UI新合图显示实际配置分支，不重复入口词典。",
+          "original_line": 779,
+          "heading": "#### 常见抓取入口对照表"
+        },
+        {
+          "original_id": "ch14-01-25-question-to-config",
+          "title": "从待验证问题反推采集配置",
+          "decision": "remove",
+          "reason": "待验证问题五框逐项展开804–813完整说明，也重复1952–1958诊断次序，删重复总体流程。",
+          "original_line": 808,
+          "heading": "### 抓取配置决定分析上限"
+        },
+        {
+          "original_id": "ch14-01-26-simple-normal",
+          "title": "Simple 与 Normal 共用采集服务",
+          "decision": "merge",
+          "reason": "原图“Simple 与 Normal 共用采集服务”进入合图：合并simple/normal与Android9/10/12输入差异，明确配置传入不等数据源授权、文件生成不等完整。；置于原图27，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 861,
+          "heading": "### 用设备端 `perfetto` 快速抓取",
+          "replacement_id": "ed14-01-configuration-input-and-output"
+        },
+        {
+          "original_id": "ch14-01-27-config-and-result-directions",
+          "title": "配置传入与结果导出分开看",
+          "decision": "merge",
+          "reason": "原图“配置传入与结果导出分开看”进入合图：合并simple/normal与Android9/10/12输入差异，明确配置传入不等数据源授权、文件生成不等完整。；置于原图27，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 948,
+          "heading": "#### 在不同版本上传入配置",
+          "replacement_id": "ed14-01-configuration-input-and-output"
+        },
+        {
+          "original_id": "ch14-01-28-buffer-fill-policy",
+          "title": "Ring 与 Discard 的保留方向",
+          "decision": "keep",
+          "reason": "RING复用早期未读空间、DISCARD拒新但会话不停止和独立会话期限三种作用域值得并排核对，与新增量状态依赖图互补。",
+          "original_line": 959,
+          "heading": "#### `buffers`：容量和保留方向"
+        },
+        {
+          "original_id": "ch14-01-29-duration-clock",
+          "title": "Duration 是否计入 Suspend",
+          "decision": "keep",
+          "reason": "默认duration不累计suspend与布尔字段计入休眠的期限语义对照，保留guardrail/文件上限等其他停止路径，不当事件对钟。",
+          "original_line": 973,
+          "heading": "#### `duration_ms`：活动时间和墙上时间"
+        },
+        {
+          "original_id": "ch14-01-30-target-buffer-route",
+          "title": "Data Source 路由到哪个 Central Buffer",
+          "decision": "keep",
+          "reason": "高频ftrace到buffers[0]和低频映射到buffers[1]两条实际路由，明确从0索引与独立容量，区别新三层容量所有权图。",
+          "original_line": 986,
+          "heading": "#### `data_sources`：名称、专属配置和目标 buffer"
+        },
+        {
+          "original_id": "ch14-01-31-ftrace-atrace-app",
+          "title": "原始事件、平台类别和应用标记",
+          "decision": "remove",
+          "reason": "三组六卡逐项复制995–997三条字段定义及999category映射；实际命令与正文保留，新的公开API/backend图给数据路径。",
+          "original_line": 1001,
+          "heading": "### ftrace event 与 atrace category"
+        },
+        {
+          "original_id": "ch14-01-32-minimum-evidence",
+          "title": "先收集能区分候选原因的信号",
+          "decision": "remove",
+          "reason": "长帧/Binder/内存三卡逐项摘录1016–1022完整五行最小证据表，原表更全，删清单图副本。",
+          "original_line": 1026,
+          "heading": "#### 按问题选择最小证据集"
+        },
+        {
+          "original_id": "ch14-01-33-record-script-flow",
+          "title": "主机脚本怎样组织设备抓取",
+          "decision": "merge",
+          "reason": "原图“主机脚本怎样组织设备抓取”进入合图：把脚本两参数分支与UI连接/生成配置合并，表示-c不改写文件和UItransport不等配置。；置于原图35，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1061,
+          "heading": "### 用 `record_android_trace` 抓取",
+          "replacement_id": "ed14-01-recording-frontends-and-saved-config"
+        },
+        {
+          "original_id": "ch14-01-34-flags-versus-config",
+          "title": "脚本配置模式以文件为准",
+          "decision": "merge",
+          "reason": "原图“脚本配置模式以文件为准”进入合图：把脚本两参数分支与UI连接/生成配置合并，表示-c不改写文件和UItransport不等配置。；置于原图35，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1076,
+          "heading": "### 用 `record_android_trace` 抓取",
+          "replacement_id": "ed14-01-recording-frontends-and-saved-config"
+        },
+        {
+          "original_id": "ch14-01-35-ui-recording",
+          "title": "连接设备与选择 Probes 是两步",
+          "decision": "merge",
+          "reason": "原图“连接设备与选择 Probes 是两步”进入合图：把脚本两参数分支与UI连接/生成配置合并，表示-c不改写文件和UItransport不等配置。；置于原图35，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1087,
+          "heading": "### 通过 Perfetto UI 抓取",
+          "replacement_id": "ed14-01-recording-frontends-and-saved-config"
+        },
+        {
+          "original_id": "ch14-01-36-sync-marker",
+          "title": "同步标记在同一线程配对",
+          "decision": "remove",
+          "reason": "begin→try→finally和单轨完整重复1104–1113代码，代码准确含异常路径，38独立跨线程cookie图保留。",
+          "original_line": 1117,
+          "heading": "#### 同步区间：`beginSection()` / `endSection()`"
+        },
+        {
+          "original_id": "ch14-01-37-label-and-cost",
+          "title": "名称长度与构造开销",
+          "decision": "remove",
+          "reason": "tag/127UTF16/构造开销三卡逐项复述1122与1129两完整段落，替换规则和补充字符单位全部保留。",
+          "original_line": 1124,
+          "heading": "#### 同步区间：`beginSection()` / `endSection()`"
+        },
+        {
+          "original_id": "ch14-01-38-async-cookie",
+          "title": "跨线程异步标记按身份配对",
+          "decision": "keep",
+          "reason": "线程A begin与线程B end两轨通过同name+intcookie建立操作身份，保留同进程、并发冲突及全终止路径约束。",
+          "original_line": 1150,
+          "heading": "#### 异步区间和 Counter"
+        },
+        {
+          "original_id": "ch14-01-39-instrumentation-paths",
+          "title": "公开 ATrace 与 SDK 路径",
+          "decision": "merge",
+          "reason": "原图“公开 ATrace 与 SDK 路径”进入合图：合并Java/NDK与SDK不同公共接口及inprocess/systembackend路径，区分普通atrace与自定义packet需要解析支持。；置于原图39，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1169,
+          "heading": "#### NDK ATrace",
+          "replacement_id": "ed14-01-instrumentation-backend-routes"
+        },
+        {
+          "original_id": "ch14-01-41-flush-freshness",
+          "title": "写盘频率与数据新鲜度",
+          "decision": "merge",
+          "reason": "原图“写盘频率与数据新鲜度”进入合图：合并多处flush/filewrite/longfile描述，画出未提交数据不可被周期写看见、文件上限停止而非轮转及可选fdatasync。；置于原图77，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1215,
+          "heading": "### Long trace：周期写文件",
+          "replacement_id": "ed14-01-producer-flush-file-and-durability"
+        },
+        {
+          "original_id": "ch14-01-40-long-file-limits",
+          "title": "Long Trace 写一个持续增长的文件",
+          "decision": "merge",
+          "reason": "原图“Long Trace 写一个持续增长的文件”进入合图：合并多处flush/filewrite/longfile描述，画出未提交数据不可被周期写看见、文件上限停止而非轮转及可选fdatasync。；置于原图77，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1222,
+          "heading": "### Long trace：周期写文件",
+          "replacement_id": "ed14-01-producer-flush-file-and-durability"
+        },
+        {
+          "original_id": "ch14-01-42-heap-transports",
+          "title": "Heapprofd 的两段共享内存通道",
+          "decision": "keep",
+          "reason": "目标client ring→进程外unwinding→守护进程ProducerSMB→central真实两段共享内存链，避免把两块ring/SMB混画。",
+          "original_line": 1246,
+          "heading": "#### Native 与 ART allocation sampling"
+        },
+        {
+          "original_id": "ch14-01-43-allocation-sampling",
+          "title": "分配采样间隔的含义",
+          "decision": "remove",
+          "reason": "三组六卡逐项重述1269/1276/1278概率间隔、target与ART配置，没有概率分布或额外关系；新profiling图和42传输图保留机制。",
+          "original_line": 1271,
+          "heading": "#### Native 与 ART allocation sampling"
+        },
+        {
+          "original_id": "ch14-01-44-heap-graph",
+          "title": "ART 对象图的产出与成本",
+          "decision": "merge",
+          "reason": "原图“ART 对象图的产出与成本”进入合图：合并profiling组件与问题模型，并展开JavaHprofProducer同进程但不同连接/目标ART产图的边界。；置于原图44，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1299,
+          "heading": "#### Java heap graph",
+          "replacement_id": "ed14-01-profiling-components-and-results"
+        },
+        {
+          "original_id": "ch14-01-45-perf-sampling",
+          "title": "CPU 采样的 Timebase 与 Scope",
+          "decision": "remove",
+          "reason": "timebase/scope/结果三卡逐项复述1306–1337完整配置和限制，17行配置逐字保留，新profiling图包含真实组件/结果模型。",
+          "original_line": 1330,
+          "heading": "#### `linux.perf` 调用栈采样"
+        },
+        {
+          "original_id": "ch14-01-46-capture-quality",
+          "title": "采集后进入分析前的检查",
+          "decision": "remove",
+          "reason": "五框逐项复制1361–1365五项检查，原文与两质量SQL保留，新stats合图展开两级检查和影响范围，不重复清单。",
+          "original_line": 1356,
+          "heading": "### 抓取后的质量检查"
+        },
+        {
+          "original_id": "ch14-01-47-file-versus-memory",
+          "title": "文件大小与分析运行时内存",
+          "decision": "merge",
+          "reason": "原图“文件大小与分析运行时内存”进入合图：合并浏览器/原生UI后端和输入/解析/查询内存边界，避免把更大主机容量说成恒定内存流式查询。；置于原图49，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1411,
+          "heading": "### 大 Trace 的压力来自运行时表示",
+          "replacement_id": "ed14-01-browser-native-parsing-memory"
+        },
+        {
+          "original_id": "ch14-01-48-host-version-pin",
+          "title": "工具名、启动脚本与原生版本",
+          "decision": "keep",
+          "reason": "launcherSHA→prebuiltmanifest→实际nativeversion/hash→固定CLI/bin_path的版本来源链独立，不能用文件名推版本，保留。",
+          "original_line": 1432,
+          "heading": "### 固定主机工具版本"
+        },
+        {
+          "original_id": "ch14-01-50-native-rpc",
+          "title": "Native Accelerator 的职责分工",
+          "decision": "merge",
+          "reason": "原图“Native Accelerator 的职责分工”进入合图：合并浏览器/原生UI后端和输入/解析/查询内存边界，避免把更大主机容量说成恒定内存流式查询。；置于原图49，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1478,
+          "heading": "### 用本机后端保留 Perfetto UI",
+          "replacement_id": "ed14-01-browser-native-parsing-memory"
+        },
+        {
+          "original_id": "ch14-01-52-missing-zero-error",
+          "title": "缺失、零值和错误分别存储",
+          "decision": "merge",
+          "reason": "原图“缺失、零值和错误分别存储”进入合图：合并缺失/零/错误、marker歧义和半开区间裁剪，保留count=1也可能无状态记录的独立缺口。；置于原图54，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1526,
+          "heading": "#### 先确认表和事件",
+          "replacement_id": "ed14-01-unique-window-coverage-and-result"
+        },
+        {
+          "original_id": "ch14-01-51-table-identities",
+          "title": "从线程 Slice 关联到进程实例",
+          "decision": "keep",
+          "reason": "slice.track_id→thread_track.id/utid→thread.utid/upid→process.upid具体外键身份链，与SQL代码一起可查，非线程轨道另核。",
+          "original_line": 1575,
+          "heading": "#### 找出某个进程的长 Slice"
+        },
+        {
+          "original_id": "ch14-01-53-cpu-time-sum",
+          "title": "多核 CPU 时间与墙上时间",
+          "decision": "keep",
+          "reason": "CPU0和CPU1同一1秒墙钟并行运行的两轨形成2秒CPU时间具体反例，保留原文假例非实测与利用率分母限定。",
+          "original_line": 1600,
+          "heading": "#### 按进程实例统计 CPU 运行时间"
+        },
+        {
+          "original_id": "ch14-01-54-marker-ambiguity",
+          "title": "启动标记先检查作用域与唯一性",
+          "decision": "merge",
+          "reason": "原图“启动标记先检查作用域与唯一性”进入合图：合并缺失/零/错误、marker歧义和半开区间裁剪，保留count=1也可能无状态记录的独立缺口。；置于原图54，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1609,
+          "heading": "#### 用真实区间计算线程状态交集",
+          "replacement_id": "ed14-01-unique-window-coverage-and-result"
+        },
+        {
+          "original_id": "ch14-01-55-interval-clipping",
+          "title": "线程状态按真实目标窗口裁剪",
+          "decision": "merge",
+          "reason": "原图“线程状态按真实目标窗口裁剪”进入合图：合并缺失/零/错误、marker歧义和半开区间裁剪，保留count=1也可能无状态记录的独立缺口。；置于原图54，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1657,
+          "heading": "#### 用真实区间计算线程状态交集",
+          "replacement_id": "ed14-01-unique-window-coverage-and-result"
+        },
+        {
+          "original_id": "ch14-01-58-csv-result-handling",
+          "title": "查询输出也有结构边界",
+          "decision": "merge",
+          "reason": "原图“查询输出也有结构边界”进入合图：合并主机版本差异与CSV处理链，保存退出状态和每个结果集各自表头而非字符串切分。；置于原图56，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1679,
+          "heading": "### 非交互查询与导出",
+          "replacement_id": "ed14-01-query-version-and-csv"
+        },
+        {
+          "original_id": "ch14-01-56-query-version-contract",
+          "title": "一次查询能返回几个结果集",
+          "decision": "merge",
+          "reason": "原图“一次查询能返回几个结果集”进入合图：合并主机版本差异与CSV处理链，保存退出状态和每个结果集各自表头而非字符串切分。；置于原图56，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1686,
+          "heading": "### 非交互查询与导出",
+          "replacement_id": "ed14-01-query-version-and-csv"
+        },
+        {
+          "original_id": "ch14-01-49-warm-session",
+          "title": "重复查询复用已加载的 Trace",
+          "decision": "keep",
+          "reason": "加载→命名Unixsession→多次remotequery→kill清理的warm生命周期链，保留持续内存占用、异常清理和v58.2/POSIX限定。",
+          "original_line": 1693,
+          "heading": "### 非交互查询与导出"
+        },
+        {
+          "original_id": "ch14-01-57-quality-stat-units",
+          "title": "质量汇总统计的是条目",
+          "decision": "merge",
+          "reason": "原图“质量汇总统计的是条目”进入合图：合并重复质量提醒、stats来源单位和损失范围，将两级查询汇入对象影响判断。；置于原图73，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1716,
+          "heading": "#### 给批处理建立固定质量输出",
+          "replacement_id": "ed14-01-stats-two-gates-and-loss-scope"
+        },
+        {
+          "original_id": "ch14-01-59-export-format-boundaries",
+          "title": "三种导出格式的消费方",
+          "decision": "keep",
+          "reason": "sqlite/arrow_tar/perfetto三种消费方和可重载契约并排比较，保留静态表非原始无损、Arrow不可重载、同版兼容边界。",
+          "original_line": 1748,
+          "heading": "#### 导出 SQLite 与诊断 Trace Processor"
+        },
+        {
+          "original_id": "ch14-01-60-python-result-memory",
+          "title": "SQL 执行与 Python 结果物化",
+          "decision": "merge",
+          "reason": "原图“SQL 执行与 Python 结果物化”进入合图：合并Python结果物化/Batch驻留/内存排障，区分减少N、减少输出行列与减少单份输入三个杠杆。；置于原图64，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1791,
+          "heading": "### Python API",
+          "replacement_id": "ed14-01-python-batch-and-result-memory"
+        },
+        {
+          "original_id": "ch14-01-61-batch-residency",
+          "title": "批量查询与单份 Trace 内存",
+          "decision": "merge",
+          "reason": "原图“批量查询与单份 Trace 内存”进入合图：合并Python结果物化/Batch驻留/内存排障，区分减少N、减少输出行列与减少单份输入三个杠杆。；置于原图64，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1829,
+          "heading": "#### BatchTraceProcessor",
+          "replacement_id": "ed14-01-python-batch-and-result-memory"
+        },
+        {
+          "original_id": "ch14-01-62-traceconv-purpose",
+          "title": "格式互操作不等于低内存",
+          "decision": "remove",
+          "reason": "三组traceconv格式卡逐项复制1836–1851完整转换/打包命令与说明，代码可执行形式更全，59保留不同exportarchive契约。",
+          "original_line": 1853,
+          "heading": "### traceconv 用于格式互操作"
+        },
+        {
+          "original_id": "ch14-01-63-analysis-manifest",
+          "title": "可复核样本要保留哪些身份",
+          "decision": "remove",
+          "reason": "六框样本身份逐项复述1862–1868七条审计清单与1879–1885质量列表；完整正文更全，删除清单流程化副本。",
+          "original_line": 1872,
+          "heading": "### 可复现的分析流水线"
+        },
+        {
+          "original_id": "ch14-01-64-memory-pressure-options",
+          "title": "内存不足先定位哪一层",
+          "decision": "merge",
+          "reason": "原图“内存不足先定位哪一层”进入合图：合并Python结果物化/Batch驻留/内存排障，区分减少N、减少输出行列与减少单份输入三个杠杆。；置于原图64，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1902,
+          "heading": "### 原生工具也内存不足时",
+          "replacement_id": "ed14-01-python-batch-and-result-memory"
+        },
+        {
+          "original_id": "ch14-01-65-buffer-owners",
+          "title": "三层 Buffer 有各自所有者与容量",
+          "decision": "merge",
+          "reason": "原图“三层 Buffer 有各自所有者与容量”进入合图：合并三层buffer所有者/参数与容量估算，明确修改central不扩大perCPU/SMB、平均数不代替突发。；置于原图74，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 1998,
+          "heading": "#### 2.2 三层 buffer 的分工",
+          "replacement_id": "ed14-01-buffer-owners-and-backlogs"
+        },
+        {
+          "original_id": "ch14-01-66-chunk-state",
+          "title": "共享内存 Chunk 的状态交接",
+          "decision": "keep",
+          "reason": "Free→BeingWritten→Complete→BeingRead→Free真实ABI状态闭环，保留仿真可跳过BeingRead及chunk完整非packet完整边界。",
+          "original_line": 2009,
+          "heading": "#### 2.3 一个 packet 如何到达 central buffer"
+        },
+        {
+          "original_id": "ch14-01-67-packet-fragments",
+          "title": "跨 Chunk Packet 的提交与重组",
+          "decision": "keep",
+          "reason": "packet跨chunk分片→提交→patch→按writer/chunk重组→完整输出的独立协议依赖链，保留各writer可重叠和片段缺口处理。",
+          "original_line": 2023,
+          "heading": "#### 2.3 一个 packet 如何到达 central buffer"
+        },
+        {
+          "original_id": "ch14-01-68-writer-order",
+          "title": "写入顺序与时间戳顺序",
+          "decision": "merge",
+          "reason": "原图“写入顺序与时间戳顺序”进入合图：合并写入顺序和clockmapping，展示同文件并发sequence先后不等时间先后，映射后才排序/计算。；置于原图69，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2036,
+          "heading": "#### 3.1 文件顺序不是全局时间顺序",
+          "replacement_id": "ed14-01-writer-order-clock-and-sort"
+        },
+        {
+          "original_id": "ch14-01-69-clock-mapping",
+          "title": "时间戳需要 Clock Domain 映射",
+          "decision": "merge",
+          "reason": "原图“时间戳需要 Clock Domain 映射”进入合图：合并写入顺序和clockmapping，展示同文件并发sequence先后不等时间先后，映射后才排序/计算。；置于原图69，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2059,
+          "heading": "#### 3.1.1 时钟域还要有可验证的映射",
+          "replacement_id": "ed14-01-writer-order-clock-and-sort"
+        },
+        {
+          "original_id": "ch14-01-70-incremental-state",
+          "title": "环形覆盖与增量状态依赖",
+          "decision": "merge",
+          "reason": "原图“环形覆盖与增量状态依赖”进入合图：改写原来三列摘要，明确状态→引用→保留/丢弃的依赖及支持clear后重新描述而非修复旧数据。；置于原图70，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2074,
+          "heading": "#### 3.2 环形覆盖为何会破坏后续解释",
+          "replacement_id": "ed14-01-incremental-state-loss-and-recovery"
+        },
+        {
+          "original_id": "ch14-01-71-quality-two-gates",
+          "title": "严重程度与容量覆盖两级检查",
+          "decision": "merge",
+          "reason": "原图“严重程度与容量覆盖两级检查”进入合图：合并重复质量提醒、stats来源单位和损失范围，将两级查询汇入对象影响判断。；置于原图73，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2110,
+          "heading": "#### 4.1 `severity = 'data_loss'` 与容量覆盖两级查询",
+          "replacement_id": "ed14-01-stats-two-gates-and-loss-scope"
+        },
+        {
+          "original_id": "ch14-01-72-stats-origin",
+          "title": "Stats 的来源、下标与单位",
+          "decision": "merge",
+          "reason": "原图“Stats 的来源、下标与单位”进入合图：合并重复质量提醒、stats来源单位和损失范围，将两级查询汇入对象影响判断。；置于原图73，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2159,
+          "heading": "#### 4.2 关键统计怎么解释",
+          "replacement_id": "ed14-01-stats-two-gates-and-loss-scope"
+        },
+        {
+          "original_id": "ch14-01-73-loss-scope",
+          "title": "出现损失后限定可分析范围",
+          "decision": "merge",
+          "reason": "原图“出现损失后限定可分析范围”进入合图：合并重复质量提醒、stats来源单位和损失范围，将两级查询汇入对象影响判断。；置于原图73，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2168,
+          "heading": "#### 4.3 有丢失之后的可分析范围",
+          "replacement_id": "ed14-01-stats-two-gates-and-loss-scope"
+        },
+        {
+          "original_id": "ch14-01-74-capacity-models",
+          "title": "容量估算要匹配对应积压",
+          "decision": "merge",
+          "reason": "原图“容量估算要匹配对应积压”进入合图：合并三层buffer所有者/参数与容量估算，明确修改central不扩大perCPU/SMB、平均数不代替突发。；置于原图74，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2186,
+          "heading": "#### 5.1 Central buffer",
+          "replacement_id": "ed14-01-buffer-owners-and-backlogs"
+        },
+        {
+          "original_id": "ch14-01-75-smb-exhaustion",
+          "title": "Drop、Stall 与突发写入",
+          "decision": "keep",
+          "reason": "drop保低扰动但失trace、stall等待且超限可abort、突发hint/分段三方向的策略后果对照独立，与新容量估算互补。",
+          "original_line": 2221,
+          "heading": "#### 5.3 Producer SMB"
+        },
+        {
+          "original_id": "ch14-01-76-flush-auto-modes",
+          "title": "AUTO 与文件写周期的关系",
+          "decision": "keep",
+          "reason": "AUTO写周期≤5秒按5秒flush、>5秒每写前flush和显式模式对照是具体阈值规则，保留AUTO忽略手动flush_period字段。",
+          "original_line": 2325,
+          "heading": "#### 7.2 v54 的 `write_flush_mode`"
+        },
+        {
+          "original_id": "ch14-01-77-write-and-durability",
+          "title": "提交、写文件与同步到存储",
+          "decision": "merge",
+          "reason": "原图“提交、写文件与同步到存储”进入合图：合并多处flush/filewrite/longfile描述，画出未提交数据不可被周期写看见、文件上限停止而非轮转及可选fdatasync。；置于原图77，保留固定版本、对象与缓冲/时钟/内存边界，完整图注给适用条件。",
+          "original_line": 2332,
+          "heading": "#### 7.2 v54 的 `write_flush_mode`",
+          "replacement_id": "ed14-01-producer-flush-file-and-durability"
+        },
+        {
+          "original_id": "ch14-01-78-jank-thread-states",
+          "title": "长帧内运行、排队与阻塞",
+          "decision": "remove",
+          "reason": "Running/Runnable/blocked三组六卡逐项重复2352完整状态段和2343–2350八步UI排查，原文与新窗口状态交集图保留。",
+          "original_line": 2354,
+          "heading": "#### 8.1 UI 卡顿"
+        },
+        {
+          "original_id": "ch14-01-79-startup-definition",
+          "title": "启动时间由指标边界定义",
+          "decision": "remove",
+          "reason": "启动四框逐项重述2363–2368冷温热/起终点/metric说明，属于同段排查清单，不增机制。",
+          "original_line": 2370,
+          "heading": "#### 8.2 应用启动"
+        },
+        {
+          "original_id": "ch14-01-80-anr-evidence-window",
+          "title": "ANR 事件与前因窗口",
+          "decision": "remove",
+          "reason": "ANR四框逐项展开2377和2384–2389完整事件/前因清单，新stats影响图已具体解释尾部flush不等未结束，删另一份工作顺序。",
+          "original_line": 2379,
+          "heading": "#### 8.3 ANR"
+        },
+        {
+          "original_id": "ch14-01-81-power-evidence",
+          "title": "活动时间与能量结论",
+          "decision": "remove",
+          "reason": "能量四框逐项复述2395–2401活动/设备/计量清单，原文Wattson与功率计/单位边界完整保留，无额外时间或数据关系。",
+          "original_line": 2403,
+          "heading": "#### 8.4 功耗"
+        },
+        {
+          "original_id": "ch14-01-82-probe-effect",
+          "title": "无采集、最小与完整配置对照",
+          "decision": "remove",
+          "reason": "三测试组卡逐项复制2433–2435三组清单，2437重复指标/热/丢失和2439样本解释全保留；图不含分布数据，删重复试验目录。",
+          "original_line": 2428,
+          "heading": "### 10. 观测开销怎么评估"
+        },
+        {
+          "original_id": "ch14-01-83-data-explorer-contract",
+          "title": "Data Explorer 的独立区间源",
+          "decision": "keep",
+          "reason": "独立Table/Slices/Query与TimeRange两输入汇入区间操作再聚合展示的具体查询拓扑，保留单SELECT/Join键与行数膨胀边界。",
+          "original_line": 2455,
+          "heading": "### 11. Data Explorer 在这套流程中的位置"
+        }
+      ],
+      "sha256_after": "2e4d78dd626f88e34e2ba011ec5c3ab32b2ea7c8281e445190922a5366108fb8",
+      "new_diagrams": [
+        {
+          "id": "ed14-01-profiling-components-and-results",
+          "title": "先选问题，再区分分配采样、对象图与 CPU 栈采样",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-profiling-components-and-results.svg",
+            "src/assets/diagrams/ch14/ed14-01-profiling-components-and-results.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-profiling-components-and-results",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd.cc",
+            "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+            "https://perfetto.dev/docs/data-sources/java-heap-profiler",
+            "https://perfetto.dev/docs/quickstart/callstack-sampling",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/java_hprof_producer.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-08-profiling-processes",
+              "ch14-01-14-profiling-questions",
+              "ch14-01-44-heap-graph"
+            ],
+            "boundary": "Native/ARTallocation采样由目标client与heapprofd处理，ART配置heapscom.android.art；JavaHprofProducer编入同一heapprofd二进制但另建Producer连接，CanProfile检查目标资格和installer等条件后发实时信号，目标ART插件生成引用图并写tracingSMB。traced_perf经perf_event_open按timebase/scope采CPU栈。三者目标资格、平台支持、采样/暂停/符号条件分别核对；retainedgraph不含完整HPROF字段，也不是allocationprofile。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-configuration-input-and-output",
+          "title": "按设备版本送入配置，结果沿另一方向导出",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-configuration-input-and-output.svg",
+            "src/assets/diagrams/ch14/ed14-01-configuration-input-and-output.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-configuration-input-and-output",
+          "sources": [
+            "https://perfetto.dev/docs/learning-more/android",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace",
+            "https://perfetto.dev/docs/concepts/config"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-13-config-inputs",
+              "ch14-01-26-simple-normal",
+              "ch14-01-27-config-and-result-directions"
+            ],
+            "boundary": "simple用flags生成ftrace/atrace受限配置仍连service；normal接收binaryprotobuf，Android10+可--txtPBTX。Android9系统CLI无--txt，binary需匹配schema预先生成，可stdin；10/11非root宜stdin，12+可专用configs目录。输出走traces目录或ConsumerFD，Android9pull权限不允许时可shellcat。设备CLI与主机脚本sideload路径分别记版本，配置不绕过Producer注册/权限/内核/HAL能力。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-recording-frontends-and-saved-config",
+          "title": "短参数、配置文件与 UI 录制汇到实际执行的配置",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-recording-frontends-and-saved-config.svg",
+            "src/assets/diagrams/ch14/ed14-01-recording-frontends-and-saved-config.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-recording-frontends-and-saved-config",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace",
+            "https://perfetto.dev/docs/learning-more/android",
+            "https://perfetto.dev/docs/getting-started/system-tracing",
+            "https://perfetto.dev/docs/concepts/config"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-33-record-script-flow",
+              "ch14-01-34-flags-versus-config",
+              "ch14-01-35-ui-recording"
+            ],
+            "boundary": "固定record_android_trace短参数分支根据events/categories、-t/-b/-a生成配置；-c分支直接读取文件，额外短参数不改写PBTX。UI先验证实际transport授权连接再选probes/buffer/mode/duration，导出Recordingcommand保存PBTX可用-c复现。脚本记录版本，固定Android17脚本API29以下可sideloadtracebox，否则调用设备采集路径；等待停止/pull后默认可开UI，--no-open可跳过。入口不能补齐未启用事件和采集资格。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-instrumentation-backend-routes",
+          "title": "公开 Trace API 与 SDK 后端沿各自路径进入分析",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-instrumentation-backend-routes.svg",
+            "src/assets/diagrams/ch14/ed14-01-instrumentation-backend-routes.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-instrumentation-backend-routes",
+          "sources": [
+            "https://perfetto.dev/docs/instrumentation/tracing-sdk",
+            "https://perfetto.dev/docs/concepts/service-model",
+            "https://developer.android.com/reference/android/os/Trace",
+            "https://developer.android.com/ndk/reference/group/tracing"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-21-sdk-backends",
+              "ch14-01-39-instrumentation-paths"
+            ],
+            "boundary": "JavaTrace同步API18、异步/counter29；公开NDKandroid/trace.h同步23、异步/counter29，普通App不使用平台cutils宏。两者Apptrace tag需atrace_apps和覆盖窗口，经tracefs由ftrace源读取。SDKC++17TrackEvent支持category/flow/counter/annotation，可inprocess仅当前App或systembackend连接设备traced受socket/SELinux/资格约束。自定义DataSourceprotobuf需TPimporter/UI理解，schema写入不自动成轨道。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-producer-flush-file-and-durability",
+          "title": "Producer 提交、周期写文件与存储同步是三个边界",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-producer-flush-file-and-durability.svg",
+            "src/assets/diagrams/ch14/ed14-01-producer-flush-file-and-durability.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-producer-flush-file-and-durability",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/tracing/service/tracing_service_impl.cc",
+            "https://perfetto.dev/docs/concepts/buffers",
+            "https://perfetto.dev/docs/concepts/config",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/base/file_utils.cc"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-06-write-versus-flush",
+              "ch14-01-41-flush-freshness",
+              "ch14-01-40-long-file-limits",
+              "ch14-01-77-write-and-durability"
+            ],
+            "boundary": "flush请求Producer提交可交付writer数据，service接收已提交chunk到central，完整packet还需分片/patch。file_write_period_ms周期读central写同一输出文件，固定默认5s、有效最小100ms，central需容纳写周期峰值且磁盘跟上。flush_period_ms是否生效取决write_flush_mode，AUTO/ENABLED/DISABLED由保留专图解释。达到max_file_size_bytes停止会话不自动轮转；Consumerduration/stop也可结束。fflush_post_writeFFLUSH_ENABLED在Android/Linux周期写后调用fdatasync，停止写时service还FlushFile；同步增I/O且不保证任意掉电无损。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-browser-native-parsing-memory",
+          "title": "同一 Trace 可用浏览器或原生解析，完整状态仍占内存",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-browser-native-parsing-memory.svg",
+            "src/assets/diagrams/ch14/ed14-01-browser-native-parsing-memory.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-browser-native-parsing-memory",
+          "sources": [
+            "https://perfetto.dev/docs/visualization/large-traces",
+            "https://perfetto.dev/docs/analysis/trace-processor",
+            "https://perfetto.dev/docs/design-docs/trace-processor-architecture"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-09-ui-backends",
+              "ch14-01-47-file-versus-memory",
+              "ch14-01-50-native-rpc"
+            ],
+            "boundary": "UI默认浏览器本地WASM解析不自动上传，浏览器站点内存限制与文件字节数不同。serverhttp默认127.0.0.1:9001让本机原生TP负责完整摄取/SQL，UI经RPC查询展示，仍需所有解析状态。protobuf经验2–4倍非固定比例，格式/事件密度/工具版本影响；输入可分块读不代表恒定内存或只加载查询Track。UI/native不改变采集质量，SQL过滤减少结果不减少所有原始摄取内存。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-python-batch-and-result-memory",
+          "title": "同时驻留的 Trace 数量与 Python 结果大小分别控制",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-python-batch-and-result-memory.svg",
+            "src/assets/diagrams/ch14/ed14-01-python-batch-and-result-memory.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-python-batch-and-result-memory",
+          "sources": [
+            "https://perfetto.dev/docs/analysis/trace-processor-python",
+            "https://perfetto.dev/docs/design-docs/trace-processor-architecture",
+            "https://perfetto.dev/docs/analysis/batch-trace-processor",
+            "https://perfetto.dev/docs/visualization/large-traces"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-60-python-result-memory",
+              "ch14-01-61-batch-residency",
+              "ch14-01-64-memory-pressure-options"
+            ],
+            "boundary": "TraceProcessor加载完整Trace，Batch同时保有多份完整解析状态，顺序/小批减少同时驻留数量但仍有重复摄取成本。SQL在native执行先过滤聚合列裁剪，再经RPC交Python迭代行或DataFrame，返回行列影响Python内存而非只加载涉及Track。query列表与输入一一对应，flatten纵向合并需保留来源身份。rough2×平均文件×N/约千份示例不是容量保证；单份native过大需重采缩窗/删无关事件或更大资源，批大小按输入峰值测。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-unique-window-coverage-and-result",
+          "title": "唯一目标窗口与状态覆盖都成立后才计算交集",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-unique-window-coverage-and-result.svg",
+            "src/assets/diagrams/ch14/ed14-01-unique-window-coverage-and-result.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-unique-window-coverage-and-result",
+          "sources": [
+            "https://perfetto.dev/docs/analysis/sql-tables",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/storage/stats.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-52-missing-zero-error",
+              "ch14-01-54-marker-ambiguity",
+              "ch14-01-55-interval-clipping"
+            ],
+            "boundary": "先在目标进程实例内找cold_start正dur，0为缺失、多为歧义，不静默第一条；恰1后还要同utid正durthread_state有实际覆盖，空集不等各state0。交集min(st.end,target.end)-max(st.start,target.start)，仅累计正重叠半开窗；D仅不可中断sleep需io_wait/blocked_function/栈补因。合法输入结果0、未采到、SQL/schema失败分开存。原生SQL38行完整保留。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-query-version-and-csv",
+          "title": "先固定单／多结果集契约，再按 CSV 边界解析",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-query-version-and-csv.svg",
+            "src/assets/diagrams/ch14/ed14-01-query-version-and-csv.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-query-version-and-csv",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/query.cc",
+            "https://perfetto.dev/docs/analysis/trace-processor",
+            "https://get.perfetto.dev/trace_processor"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-58-csv-result-handling",
+              "ch14-01-56-query-version-contract"
+            ],
+            "boundary": "固定Android17query.cc/上游v54仅末尾语句可返回行，前序可DDL/include；v58.2本次原文两SELECT试验可依次多个结果集，不能当一张普通CSV。当前任务仅保留原文试验结论未重新跑TP。固定版本/查询文件，保存exitcode/stdout/stderr；CSV字段可引号逗号换行应库解析，核对schema/单位/缺失及结果集边界后入库。DataExplorerQuery节点单SELECT是独立契约。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-stats-two-gates-and-loss-scope",
+          "title": "严重程度与覆盖统计都检查，再限定结论范围",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-stats-two-gates-and-loss-scope.svg",
+            "src/assets/diagrams/ch14/ed14-01-stats-two-gates-and-loss-scope.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-stats-two-gates-and-loss-scope",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/storage/stats.h",
+            "https://perfetto.dev/docs/analysis/sql-stats",
+            "https://perfetto.dev/docs/concepts/buffers"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-57-quality-stat-units",
+              "ch14-01-71-quality-two-gates",
+              "ch14-01-72-stats-origin",
+              "ch14-01-73-loss-scope"
+            ],
+            "boundary": "stats含trace自带采集与analysis导入/建表统计，analysis也可能由采集损失/插桩导致不等解析器bug。第一级非零data_loss/error，第二级按名称检查v54info级overwritten/discarded/overrundelta及正常byteswritten；idx按CPU/buffer解释。非零统计条目数不是事件总损失，不同单位/重复描述不能相加。再检查窗口对象标记clock/data source实际覆盖，按受影响CPU/buffer/sequence/尾部依赖限结论；finalflush失败未见end不证明未结束，无关损失不必废全trace。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-buffer-owners-and-backlogs",
+          "title": "三层 Buffer 按各自所有者与积压窗口调容量",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-buffer-owners-and-backlogs.svg",
+            "src/assets/diagrams/ch14/ed14-01-buffer-owners-and-backlogs.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-buffer-owners-and-backlogs",
+          "sources": [
+            "https://perfetto.dev/docs/concepts/buffers",
+            "https://perfetto.dev/docs/concepts/service-model",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd.cc",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/ftrace/ftrace_config.proto"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-65-buffer-owners",
+              "ch14-01-74-capacity-models"
+            ],
+            "boundary": "内核ftrace每CPU一份，buffer_size_kb/drain_period_ms控制目标容量/读取周期，总内存随CPU数；并发会话实际大小不保证等请求。Producer连接SMB，shmem_size_hint_kb是hint，同一进程可多个连接/每连接多datasource，吸收service调度延迟和突发。central由buffers/targetbuffer路由服务持有，非流式容量÷聚合速率≈保留窗口，2MiB/s和32MiB约16s为正文假例；流式覆盖写周期峰值。源每10s写2MiB平均.2MiB/s仍可能瞬时耗尽SMB。三层独立调参并stats验证。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-writer-order-clock-and-sort",
+          "title": "Writer 顺序、Clock 映射与导入排序分别成立",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-writer-order-clock-and-sort.svg",
+            "src/assets/diagrams/ch14/ed14-01-writer-order-clock-and-sort.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-writer-order-clock-and-sort",
+          "sources": [
+            "https://perfetto.dev/docs/concepts/buffers",
+            "https://perfetto.dev/docs/design-docs/trace-processor-architecture",
+            "https://perfetto.dev/docs/concepts/clock-sync",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/storage/stats.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-68-writer-order",
+              "ch14-01-69-clock-mapping"
+            ],
+            "boundary": "writersequence保持自身packet写入顺序但事件timestamp不额外单调，多writer并发提交无全局文件时间序。低频writer旧事件延后提交扩大乱序窗口，flush可促提交但增加开销。timestamp_clock_id+ClockSnapshot可解析映射统一trace时域，单位ns/业务id不代clock；BOOTTIME含suspend/MONOTONIC不含，GPU可能独立clock。TP排序窗口或fullsort处理到达乱序，fullsort增加内存不补丢失事件/缺clock映射。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        },
+        {
+          "id": "ed14-01-incremental-state-loss-and-recovery",
+          "title": "后续 Packet 依赖早期描述，覆盖后只能从有效新状态继续",
+          "article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+          "assets": [
+            "src/assets/diagrams/ch14/ed14-01-incremental-state-loss-and-recovery.svg",
+            "src/assets/diagrams/ch14/ed14-01-incremental-state-loss-and-recovery.png"
+          ],
+          "layout": "structural-breakdown",
+          "prompt_pack": "/tmp/gracker-diagrams-editorial-review-20261028/packs/ed14-01-incremental-state-loss-and-recovery",
+          "sources": [
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto",
+            "https://perfetto.dev/docs/concepts/buffers",
+            "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/storage/stats.h"
+          ],
+          "visual_review": "passed",
+          "article_position_review": "passed",
+          "reviewed_at": "2026-10-31",
+          "editorial_merge": {
+            "merged_from": [
+              "ch14-01-70-incremental-state"
+            ],
+            "boundary": "TrackEventinterning把字符串等映射登记后用ID引用，processstats也提供进线程关系；ring覆盖早期描述可使后续packet缺解释状态，TP可能跳过整段sequence而非仅空名。clear_period_ms仅对handles_incremental_state_clear数据源有效，周期重新发描述增加数据量，不自动由覆盖触发，也不修复旧packet。低频解释数据targetbuffer隔离可降低被高频源覆盖概率，容量仍需复核。",
+            "proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json"
+          }
+        }
+      ],
+      "reviewed_at": "2026-10-31T11:42:21.440964+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 83,
+        "contexts_actually_viewed": 16,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a135/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a135/visual-review.json",
+      "retired_diagrams": [
+        "ch14-01-01-evidence-chain",
+        "ch14-01-02-version-lines",
+        "ch14-01-03-systrace-shift",
+        "ch14-01-04-control-and-data",
+        "ch14-01-05-traced-jobs",
+        "ch14-01-06-write-versus-flush",
+        "ch14-01-07-probe-permissions",
+        "ch14-01-08-profiling-processes",
+        "ch14-01-09-ui-backends",
+        "ch14-01-11-analysis-levels",
+        "ch14-01-12-config-questions",
+        "ch14-01-13-config-inputs",
+        "ch14-01-14-profiling-questions",
+        "ch14-01-17-track-scopes",
+        "ch14-01-18-slice-and-flow",
+        "ch14-01-19-counter-meaning",
+        "ch14-01-20-scenario-evidence",
+        "ch14-01-21-sdk-backends",
+        "ch14-01-22-platform-and-module",
+        "ch14-01-24-capture-entries",
+        "ch14-01-25-question-to-config",
+        "ch14-01-26-simple-normal",
+        "ch14-01-27-config-and-result-directions",
+        "ch14-01-31-ftrace-atrace-app",
+        "ch14-01-32-minimum-evidence",
+        "ch14-01-33-record-script-flow",
+        "ch14-01-34-flags-versus-config",
+        "ch14-01-35-ui-recording",
+        "ch14-01-36-sync-marker",
+        "ch14-01-37-label-and-cost",
+        "ch14-01-39-instrumentation-paths",
+        "ch14-01-40-long-file-limits",
+        "ch14-01-41-flush-freshness",
+        "ch14-01-43-allocation-sampling",
+        "ch14-01-44-heap-graph",
+        "ch14-01-45-perf-sampling",
+        "ch14-01-46-capture-quality",
+        "ch14-01-47-file-versus-memory",
+        "ch14-01-50-native-rpc",
+        "ch14-01-52-missing-zero-error",
+        "ch14-01-54-marker-ambiguity",
+        "ch14-01-55-interval-clipping",
+        "ch14-01-56-query-version-contract",
+        "ch14-01-57-quality-stat-units",
+        "ch14-01-58-csv-result-handling",
+        "ch14-01-60-python-result-memory",
+        "ch14-01-61-batch-residency",
+        "ch14-01-62-traceconv-purpose",
+        "ch14-01-63-analysis-manifest",
+        "ch14-01-64-memory-pressure-options",
+        "ch14-01-65-buffer-owners",
+        "ch14-01-68-writer-order",
+        "ch14-01-69-clock-mapping",
+        "ch14-01-70-incremental-state",
+        "ch14-01-71-quality-two-gates",
+        "ch14-01-72-stats-origin",
+        "ch14-01-73-loss-scope",
+        "ch14-01-74-capacity-models",
+        "ch14-01-77-write-and-durability",
+        "ch14-01-78-jank-thread-states",
+        "ch14-01-79-startup-definition",
+        "ch14-01-80-anr-evidence-window",
+        "ch14-01-81-power-evidence",
+        "ch14-01-82-probe-effect"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-135/retired-assets.json"
     },
     {
       "index": 136,
@@ -34037,8 +35191,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 70,
-  "next_article": "src/part3-tools/ch14-perfetto/01-perfetto-intro-capture-reliability.md",
+  "reviewed_articles": 71,
+  "next_article": "src/part3-tools/ch14-perfetto/02-perfetto-ui-state-tracks.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -34048,7 +35202,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T11:32:07.793760+08:00",
+  "updated_at": "2026-10-31T11:42:21.440964+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -34209,6 +35363,13 @@
       "registered_sha256": "1ea4640e8d3cf2a545abeb714cbb5eea3c3ce4540a569988cc4b8da9df361e66",
       "observed_sha256": "3f11bc012f7b927bc343f891d132f6f717eeb8d8d1af98fb3f2381244539c67c",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/14-camera-performance-analysis.md",
+      "action": "preserved; unrelated prose update not promoted as reviewed"
+    },
+    {
+      "article": "src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
+      "registered_sha256": "1127a4c830a62f4b8e0c8dc2915601de6abcf5f4766b26cd8ecf043d7f8ffd0a",
+      "observed_sha256": "5e9d433a0c15bab63c399f8c189fc2c967e8d4c2f3d10404916646a732b5949f",
+      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part3-tools/ch15-other-tools/15-winscope-layout-inspector-ui-debugging.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -34485,9 +35646,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 2578,
-  "reviewed_placements_after": 1177,
-  "net_removed_placements": 1401,
+  "reviewed_placements_before": 2661,
+  "reviewed_placements_after": 1209,
+  "net_removed_placements": 1452,
   "removed_inline_mermaid_blocks": 19,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -34511,5 +35672,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 70
+  "currently_matching_reviewed_source_count": 71
 }
