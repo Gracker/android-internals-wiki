@@ -60084,9 +60084,255 @@
       "before_count": 24,
       "before_all_images": 24,
       "sha256_before": "59b194ac2298421ba0472c201d43e66f141c6d64d9d6b2977f147929329ce176",
-      "status": "pending",
-      "after_count": null,
-      "decisions": []
+      "status": "reviewed",
+      "after_count": 7,
+      "decisions": [
+        {
+          "original_id": "a241-01-frame-ownership",
+          "title": "帧监控沿应用到显示逐段取证",
+          "decision": "keep",
+          "reason": "应用产帧、BLAST交付、系统合成调度和present四责任段，给五种观测入口说明共同的完整范围。",
+          "original_line": 77,
+          "heading": "## 每种帧指标覆盖到哪一段"
+        },
+        {
+          "original_id": "a241-02-surface-topology",
+          "title": "宿主窗口正常仍可能有独立内容停顿",
+          "decision": "remove",
+          "reason": "独立Surface覆盖缺口两段与后续五行范围表完整，二行拓扑卡并未画实际宿主子层关系。",
+          "original_line": 96,
+          "heading": "## 每种帧指标覆盖到哪一段"
+        },
+        {
+          "original_id": "a241-03-callback-probe",
+          "title": "FrameCallback 探针参与了被观察的调度",
+          "decision": "remove",
+          "reason": "37行自注册探针及参与VSync、非新buffer和非方法执行时间解释完整，四框探针卡未画循环真实关系。",
+          "original_line": 153,
+          "heading": "## Choreographer.FrameCallback：观察调整后的帧时间"
+        },
+        {
+          "original_id": "a241-04-timeline-scalars",
+          "title": "候选帧时间线中的时间戳与时长",
+          "decision": "remove",
+          "reason": "34行timeline标量复制和绝对deadline与durationDEADLINE区别段落完整，二行字段卡重复。",
+          "original_line": 205,
+          "heading": "### API 33+ 用 VsyncCallback 保存帧时间线标识"
+        },
+        {
+          "original_id": "a241-05-jankstats-api-buckets",
+          "title": "JankStats 1.0.0 按平台能力分桶",
+          "decision": "remove",
+          "reason": "四API区间实现/行为表更精确，三行版本卡合并24到30反而省略起点差异。",
+          "original_line": 231,
+          "heading": "### 发布物下限、实现分桶与字段语义"
+        },
+        {
+          "original_id": "a241-06-duration-not-cpu",
+          "title": "时长字段是区间测量，不是 CPU 执行量",
+          "decision": "remove",
+          "reason": "四类字段定义表含两种CPU公式与并行wall限制完整，三行时间卡重复。",
+          "original_line": 248,
+          "heading": "### 发布物下限、实现分桶与字段语义"
+        },
+        {
+          "original_id": "a241-07-volatile-frame-copy",
+          "title": "回调里复制帧数据，再交给有界消费者",
+          "decision": "keep",
+          "reason": "各API回调线程、立即copy保留子类、有界队列拒绝到异步聚合的链，清楚交代易复用对象的安全交接边界。",
+          "original_line": 303,
+          "heading": "### 发布物下限、实现分桶与字段语义"
+        },
+        {
+          "original_id": "a241-08-state-time-intersection",
+          "title": "状态按帧时间区间关联，而非回调到达时读取",
+          "decision": "keep",
+          "reason": "Home/帧UI时间区间/Detail三轨相交，具体表达一个帧可跨状态切换且延迟回调不能读取当前route。",
+          "original_line": 314,
+          "heading": "### `PerformanceMetricsState` 的时间线与 owner"
+        },
+        {
+          "original_id": "a241-09-three-rate-definitions",
+          "title": "同一帧的三种判定必须分别保存",
+          "decision": "remove",
+          "reason": "jankUI两倍预算与total一次预算、frozen外部阈值的四项保存列表及比率分母段落完整，三行定义卡重复。",
+          "original_line": 336,
+          "heading": "### `isJank`、deadline miss 与 frozen frame 的判定差异"
+        },
+        {
+          "original_id": "a241-10-metrics-capability",
+          "title": "FrameMetrics 字段按 API 层级启用",
+          "decision": "remove",
+          "reason": "四API字段集合在四条清单完整，四独立框无结构新信息。",
+          "original_line": 352,
+          "heading": "## FrameMetrics：拆分 Window 帧的应用侧阶段"
+        },
+        {
+          "original_id": "a241-11-parallel-stage-tracks",
+          "title": "TOTAL、GPU 与 swap 的边界不能简单相加",
+          "decision": "keep",
+          "reason": "UI与RT/GPU并行重叠、TOTAL包络四轨，直观显示阶段不简单求和且指标可用不等present。",
+          "original_line": 379,
+          "heading": "### 指标的时间范围与并行间隙"
+        },
+        {
+          "original_id": "a241-12-gpu-version-boundaries",
+          "title": "GPU 时长定义变化需要单独分桶",
+          "decision": "remove",
+          "reason": "24到30无GPU、31到32swap起点、33加submission和36VSyncID的紧邻段落完整，三行版本卡重复。",
+          "original_line": 386,
+          "heading": "### 指标的时间范围与并行间隙"
+        },
+        {
+          "original_id": "a241-13-window-coverage",
+          "title": "不同渲染拓扑的观测缺口",
+          "decision": "remove",
+          "reason": "五类页面内容能看/不能看三列表更全面，三行覆盖卡重复。",
+          "original_line": 403,
+          "heading": "### Window 与独立内容流的覆盖范围"
+        },
+        {
+          "original_id": "a241-14-session-cleanup",
+          "title": "诊断会话的启动与清理保证",
+          "decision": "keep",
+          "reason": "构造已开HandlerThread、start失败也close、幂等拒绝移除监听、后台flush/finallyquit的生命周期链，特别覆盖未start资源清理。",
+          "original_line": 468,
+          "heading": "### Window 与独立内容流的覆盖范围"
+        },
+        {
+          "original_id": "a241-16-public-jank-mask",
+          "title": "公开 JankData 位掩码省略了部分原因",
+          "decision": "remove",
+          "reason": "四公开位列表和JNI省略BufferStuffing等与NONE非流畅边界段落完整，三行映射卡重复。",
+          "original_line": 488,
+          "heading": "## API 36+：关联 FrameMetrics 与系统合成器分类"
+        },
+        {
+          "original_id": "a241-15-compositor-join",
+          "title": "按会话与 VSync ID 关联应用帧和合成器记录",
+          "decision": "keep",
+          "reason": "FrameMetrics和批量JankData两入口按同WindowSurface会话有效VSyncID汇合到有界缓存，超时缺失非NONE的真实join结构。",
+          "original_line": 495,
+          "heading": "## API 36+：关联 FrameMetrics 与系统合成器分类"
+        },
+        {
+          "original_id": "a241-17-listener-stop",
+          "title": "停止监听请求与业务队列收尾分开处理",
+          "decision": "remove",
+          "reason": "stopremoveAfter目标不早于/0停后续/Executor在途与flush重入两段完整，三行停止规则卡未画在途任务时序。",
+          "original_line": 532,
+          "heading": "## API 36+：关联 FrameMetrics 与系统合成器分类"
+        },
+        {
+          "original_id": "a241-18-stuffing-recovery",
+          "title": "队列积压后的主动恢复因果链",
+          "decision": "keep",
+          "reason": "半帧buffer释放等待标stuffed、主动延后一帧、调动画时间到观察队列回落的因果链，区分积压与恢复延迟。",
+          "original_line": 549,
+          "heading": "## buffer-stuffing recovery：队列积压后的主动恢复"
+        },
+        {
+          "original_id": "a241-19-stack-trigger-evidence",
+          "title": "Java 抓栈为异常窗口补充现场",
+          "decision": "remove",
+          "reason": "两抓栈入口与采样干扰、七类配额边界正文完整，三行证据卡重复。",
+          "original_line": 565,
+          "heading": "## 线上卡顿堆栈：按策略采样，为指标补代码现场"
+        },
+        {
+          "original_id": "a241-20-sampler-lifecycle",
+          "title": "采样器状态在拒绝、完成与关闭时恢复",
+          "decision": "remove",
+          "reason": "81行采样器及拒绝/finally恢复、elapsed防溢出、幂等close中断非强停解释完整，四框生命周期卡没有互斥和失败回路。",
+          "original_line": 658,
+          "heading": "## 线上卡顿堆栈：按策略采样，为指标补代码现场"
+        },
+        {
+          "original_id": "a241-21-attribution-branches",
+          "title": "指标指向候选方向，补证据才能归因",
+          "decision": "remove",
+          "reason": "八现象组合/证据判断/下一步表更全面，三行归因卡重复。",
+          "original_line": 682,
+          "heading": "## 从指标到归因"
+        },
+        {
+          "original_id": "a241-22-report-completeness",
+          "title": "先确认监控报告完整，再比较卡顿率",
+          "decision": "remove",
+          "reason": "coverage收到加dropped与queue拒绝/sessioncutoff/用户帧覆盖边界完整段落，三行报告卡重复。",
+          "original_line": 705,
+          "heading": "## 自动告警：用策略、基线和置信区间减少误报"
+        },
+        {
+          "original_id": "a241-23-alert-constraints",
+          "title": "告警同时约束样本、质量与回归幅度",
+          "decision": "remove",
+          "reason": "七行告警规则与零基线倍数无保护/绝对CI门槛解释完整，四框规则卡重复。",
+          "original_line": 724,
+          "heading": "## 自动告警：用策略、基线和置信区间减少误报"
+        },
+        {
+          "original_id": "a241-24-review-evidence-loop",
+          "title": "线上分布与可重复线下复盘形成验证闭环",
+          "decision": "remove",
+          "reason": "七复盘字段表及线上分布到release回放Perfetto按场景复验段落完整，四框流程卡重复。",
+          "original_line": 762,
+          "heading": "## 从监控告警回到一次可复核的渲染复盘"
+        }
+      ],
+      "sha256_after": "379d47b12e1dab3cd654bd0f343f63b8e97b84b9ecd6c32411446a8de8f053e7",
+      "new_diagrams": [],
+      "reviewed_at": "2026-10-31T17:33:31.498689+08:00",
+      "inline_mermaid_blocks_removed": 0,
+      "verification": {
+        "non_diagram_prose_code_tables_headings_preserved": true,
+        "technical_prose_code_tables_preserved": true,
+        "diagram_cross_reference_updates": [],
+        "all_original_figures_and_labels_reviewed": 24,
+        "contexts_actually_viewed": 3,
+        "all_current_heading_order_and_structure": "passed",
+        "desktop_mobile_dom": "passed",
+        "build": "passed",
+        "non_diagram_preservation_baseline": "Explicit preexisting external revision; frozen initial source retained separately"
+      },
+      "change_proof": "/tmp/gracker-diagrams-editorial-review-20261028/a241/change-proof.json",
+      "visual_report": "/tmp/gracker-diagrams-editorial-review-20261028/a241/visual-review.json",
+      "external_source_revision_preserved": {
+        "kind": "preexisting_external_source_revision_preserved",
+        "index": 241,
+        "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+        "registered_sha256": "59b194ac2298421ba0472c201d43e66f141c6d64d9d6b2977f147929329ce176",
+        "frozen_sha256": "59b194ac2298421ba0472c201d43e66f141c6d64d9d6b2977f147929329ce176",
+        "review_input_sha256": "76e6f89726aad6476c3f847ce13bf797594c1e11e5be5ae3b69d6a87c3451f1c",
+        "frozen_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/baseline/src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+        "review_input_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a241/input.md",
+        "diff": "/tmp/gracker-diagrams-editorial-review-20261028/external-reviewed-baselines/a241/external-source.diff",
+        "diff_sha256": "d82f43b781933488ffcc99f7c438055e51076c5f4247d7b2200ce7ddf025966e",
+        "rationale": "Current externally revised full article independently read for diagram editorial review; retain all latest non-diagram prose/code/tables. This declares a source baseline, not an editorial prose rewrite or a technical endorsement of external revisions. Initial frozen scope and original source remain unchanged.",
+        "review_evidence": "{\"narrative_rows\": 262, \"characters\": 24700, \"svg_labels_read\": 24, \"actual_pngs_viewed\": 24, \"contact_sheets_viewed\": 3, \"non_mermaid_code_blocks\": 7, \"code_lines\": 276, \"native_mermaid\": 0, \"changed_since_frozen\": true}"
+      },
+      "sha256_review_input": "76e6f89726aad6476c3f847ce13bf797594c1e11e5be5ae3b69d6a87c3451f1c",
+      "retired_diagrams": [
+        "a241-02-surface-topology",
+        "a241-03-callback-probe",
+        "a241-04-timeline-scalars",
+        "a241-05-jankstats-api-buckets",
+        "a241-06-duration-not-cpu",
+        "a241-09-three-rate-definitions",
+        "a241-10-metrics-capability",
+        "a241-12-gpu-version-boundaries",
+        "a241-13-window-coverage",
+        "a241-16-public-jank-mask",
+        "a241-17-listener-stop",
+        "a241-19-stack-trigger-evidence",
+        "a241-20-sampler-lifecycle",
+        "a241-21-attribution-branches",
+        "a241-22-report-completeness",
+        "a241-23-alert-constraints",
+        "a241-24-review-evidence-loop"
+      ],
+      "removed_but_shared_diagrams": [],
+      "retired_asset_manifest": "/tmp/gracker-diagrams-editorial-review-20261028/batch-241/retired-assets.json"
     },
     {
       "index": 242,
@@ -60540,8 +60786,8 @@
       "decisions": []
     }
   ],
-  "reviewed_articles": 165,
-  "next_article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+  "reviewed_articles": 166,
+  "next_article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
   "rules": [
     "全文及全部图内容复核，每张图记录保留/合并/移除理由",
     "优先删除表格/列表逐字卡片化与多轮重复总结；不可把不同分支和故障状态误删",
@@ -60551,7 +60797,7 @@
     "原配图/位置巡检基线保留，主清单同步活动图、正文SHA和当前统计；历史清单留档",
     "Review threshold counts visible Markdown/HTML images and unfolded native Mermaid/SVG; folded reference source is not a second body illustration. Preserve all previously frozen targets even if later reduced below threshold."
   ],
-  "updated_at": "2026-10-31T17:31:06.215514+08:00",
+  "updated_at": "2026-10-31T17:33:31.498689+08:00",
   "external_article_changes_observed": [
     {
       "article": "src/part1-fundamentals/ch01-architecture/03-boot-zygote-graphics-preload.md",
@@ -60628,13 +60874,6 @@
       "registered_sha256": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
       "observed_sha256": "72d61f627db6f2b719c028905d211757cfddcdbd9f8c97c7055134ca56cd103d",
       "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part4-system/ch19-oem/02-soc-differences.md",
-      "action": "preserved; unrelated prose update not promoted as reviewed"
-    },
-    {
-      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
-      "registered_sha256": "59b194ac2298421ba0472c201d43e66f141c6d64d9d6b2977f147929329ce176",
-      "observed_sha256": "76e6f89726aad6476c3f847ce13bf797594c1e11e5be5ae3b69d6a87c3451f1c",
-      "observed_snapshot": "/tmp/gracker-diagrams-editorial-review-20261028/external-observed/src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
       "action": "preserved; unrelated prose update not promoted as reviewed"
     },
     {
@@ -60722,9 +60961,9 @@
       "action": "preserved; unrelated prose update not promoted as reviewed"
     }
   ],
-  "reviewed_placements_before": 5052,
-  "reviewed_placements_after": 2038,
-  "net_removed_placements": 3014,
+  "reviewed_placements_before": 5076,
+  "reviewed_placements_after": 2045,
+  "net_removed_placements": 3031,
   "removed_inline_mermaid_blocks": 21,
   "initial_gracker_only_selected_articles": 201,
   "selection_revision": 2,
@@ -60748,5 +60987,5 @@
     }
   ],
   "post_review_external_source_revalidations_pending": [],
-  "currently_matching_reviewed_source_count": 165
+  "currently_matching_reviewed_source_count": 166
 }

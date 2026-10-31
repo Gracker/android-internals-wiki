@@ -66,7 +66,7 @@ consolidated_from:
 
 # 帧率监控与线上卡顿治理
 
-线上出现“滑一下偶尔卡住”时，平均 FPS 很难说明责任在哪。可执行的治理要依次回答四个问题：监控覆盖了渲染路径的哪一段，异常集中在哪类设备和交互状态，代码现场反复出现什么，修复后怎样按同一口径验证。我们按这个顺序展开：先划清每种帧指标的覆盖范围，再过一遍 JankStats、FrameMetrics、系统合成器关联、堆栈采样，最后落到告警和复盘协议；卡顿定义与线下证据流程分别见 7.1 和 7.2。
+线上出现“滑一下偶尔卡住”时，平均 FPS 很难说明责任在哪。可执行的治理要依次回答四个问题：监控覆盖了渲染路径的哪一段，异常集中在哪类设备和交互状态，代码现场反复出现什么，修复后怎样用同一套指标复验。我们按这个顺序展开：先划清每种帧指标的覆盖范围，再过一遍 JankStats、FrameMetrics、系统合成器关联、堆栈采样，最后落到告警和复盘协议；卡顿定义与线下取证流程分别见 7.1 和 7.2。
 
 > 源码基线：AOSP `android-17.0.0_r1`；涉及线程调度与 fence（CPU、GPU 和显示设备之间传递完成状态的同步对象） 语义时，另以 Linux 内核 `android17-6.18-2026-06_r6` 为准。
 
@@ -91,12 +91,8 @@ consolidated_from:
 
 页面里一旦出现 `SurfaceView`、Camera、视频、WebView、Flutter 或游戏引擎，我们还要画清 Surface 拓扑：谁向哪个 Surface 图层提供缓冲区，各图层怎样挂到宿主窗口。
 
-这时宿主 App Window 的指标可能很平稳，独立 producer 的内容却在重复显示旧缓冲区。遇到这类页面，我们要到目标 layer（图层） 上补证据：生产者入队、fence、FrameTimeline（帧时间线） 与显示结果；宿主 Window 的 JankStats 管的是宿主自己这一段。
+这时宿主 App Window 的指标可能很平稳，独立 producer 的内容却在重复显示旧缓冲区。遇到这类页面，我们要到目标 layer（图层） 上补几路数据：生产者入队、fence、FrameTimeline（帧时间线） 与显示结果；宿主 Window 的 JankStats 管的是宿主自己这一段。
 
-<!-- gracker-diagram: a241-02-surface-topology -->
-![宿主窗口正常仍可能有独立内容停顿](../../assets/diagrams/ch22/a241-02-surface-topology.png)
-
-图：先辨认谁向哪一个Surface提供缓冲区，避免用宿主窗口统计替代独立内容流。
 
 ## Choreographer.FrameCallback：观察调整后的帧时间
 
@@ -150,10 +146,6 @@ class CallbackCadenceProbe(
 
 这份数据能回答的，是调整后的帧时间序列出现了空档。探针应在主 Looper 上构造，`start()` / `stop()` 也只由该线程调用；`@MainThread` 是静态检查约束，不会自动切线程。自注册回调本身也会申请后续 VSync，观察到的已经是探针参与后的调度节奏。页面没有内容更新时，一串稳定回调后面未必是一串新帧；间隔变大时，CPU 执行、Runnable（等待调度的可运行任务）、锁、Binder 跨进程调用、I/O 等待都在候选之列，要分辨是哪一个，还得配合其他数据。
 
-<!-- gracker-diagram: a241-03-callback-probe -->
-![FrameCallback 探针参与了被观察的调度](../../assets/diagrams/ch22/a241-03-callback-probe.png)
-
-图：探针自注册会参与VSync节奏；时间间隔不等同于新缓冲区数量或实际执行耗时。
 
 刷新率本身会变：display mode（显示模式） 切换、应用 frame-rate vote（帧率请求）、内容类型、节能策略都会动它。把构造时读到的 `Display.getRefreshRate()` 当作整个页面停留期的预算，在自适应刷新设备上会错判。所以 API 31+ 我们优先用 FrameMetrics 的 `DEADLINE` 或 JankStats 对当前帧的判定；低版本保留原始分布，和同设备、同场景的基线比。
 
@@ -200,12 +192,8 @@ class VsyncTimelineProbe(
 }
 ```
 
-这里的 `FrameTimeline.deadlineNanos` 是应用需要完成该帧的绝对时间戳，而回调刚开始时还没有完成时间，所以上述探针在 `onVsync()` 内判不了本帧是否超期；`FrameMetrics.DEADLINE` 表示的是可用时长，两者是不同的量。VSync ID 用来关联同一帧的 FrameMetrics、SurfaceFlinger 数据或自建 `SurfaceControl.Transaction`，该帧最终显示与否要看别的证据。
+这里的 `FrameTimeline.deadlineNanos` 是应用需要完成该帧的绝对时间戳，而回调刚开始时还没有完成时间，所以上述探针在 `onVsync()` 内判不了本帧是否超期；`FrameMetrics.DEADLINE` 表示的是可用时长，两者是不同的量。VSync ID 用来关联同一帧的 FrameMetrics、SurfaceFlinger 数据或自建 `SurfaceControl.Transaction`，这帧最终有没有上屏，要看显示侧的记录。
 
-<!-- gracker-diagram: a241-04-timeline-scalars -->
-![候选帧时间线中的时间戳与时长](../../assets/diagrams/ch22/a241-04-timeline-scalars.png)
-
-图：回调刚开始时尚无帧完成时间；VSync ID可对齐后续记录，不能当作显示完成证明。
 
 ## JankStats：线上默认入口
 
@@ -228,10 +216,6 @@ class VsyncTimelineProbe(
 
 Android 17 / API 37 仍走 Api31Impl：JankStats 1.0.0 到这里都没有 API 36/37 专用实现，`FRAME_TIMELINE_VSYNC_ID` 和 `SurfaceControl.JankData` 也都没暴露到 `FrameDataApi31` 里；要区分应用、合成器和其他系统组件的责任，得走后文 API 36+ 的直接关联。
 
-<!-- gracker-diagram: a241-05-jankstats-api-buckets -->
-![JankStats 1.0.0 按平台能力分桶](../../assets/diagrams/ch22/a241-05-jankstats-api-buckets.png)
-
-图：发布物minSdk23；历史Api16类名不是稳定AAR的最低系统要求，API36/37没有新增专用分支。
 
 常用字段的含义要分开：
 
@@ -245,10 +229,6 @@ Android 17 / API 37 仍走 Api31Impl：JankStats 1.0.0 到这里都没有 API 36
 
 `createAndTrack(window)` 是 UI 线程 API，要求 Window 已激活且 DecorView 非空，所以要在 `setContentView()` 之后创建。实例创建后默认就开始跟踪，我们按页面生命周期开关它：不可见时关闭，恢复可见时再启用。Window 要先开硬件加速，AndroidX Metrics 1.0.0 才能记到底层 FrameMetrics 帧时间。
 
-<!-- gracker-diagram: a241-06-duration-not-cpu -->
-![时长字段是区间测量，不是 CPU 执行量](../../assets/diagrams/ch22/a241-06-duration-not-cpu.png)
-
-图：字段命名与底层计量边界分开理解，进一步归因必须核对线程调度与GPU证据。
 
 这段接入骨架保留原始 `FrameData` 子类型。监听器收到的对象会被后续帧复用，所以要立即 `copy()`；`frameQueue.offer()` 用有界、非阻塞且线程安全的写入。
 
@@ -314,7 +294,7 @@ JankStats 的监听线程随 API 层级变化：稳定 AAR 的 API 23 fallback �
 <!-- gracker-diagram: a241-08-state-time-intersection -->
 ![状态按帧时间区间关联，而非回调到达时读取](../../assets/diagrams/ch22/a241-08-state-time-intersection.png)
 
-图：状态在时间轴上与帧区间求交；同key多次变化时保留最近加入的一项，延迟回调不能读取当前路由补标签。
+图：状态在时间轴上与帧区间求交；同key多次变化时保留最近加入的一项，延迟回调里再读当前路由，会把标签贴到错误的帧上。
 
 同一 View hierarchy 只有一个 `PerformanceMetricsState`，同名 key 会覆盖，所以团队要先划清 owner：页面容器负责 `screen`，交互控制器负责 `interaction`，复用组件用 `feed.list_state` 这类带命名空间的 key，并在离开层级时清理；只标记下一帧的短事件交给 `putSingleFrameState()`。
 
@@ -329,14 +309,10 @@ JankStats 的默认 `jankHeuristicMultiplier` 是 `2.0f`。API 23—30 根据 `D
 - JankStats jank rate：`isJank=true` 帧数 / 同一窗口全部回调帧数；
 - deadline miss rate：API 31+ 中 `frameOverrunNanos > 0` 帧数 / 具有 overrun 字段的帧数；
 - frozen frame rate：超过约定 duration 阈值的帧数 / 具有该 duration 字段的帧数，并注明用 UI 还是 total duration；
-- UI、CPU、total、overrun 各自的 P50、P90、P95、P99，不能只留平均 FPS。
+- UI、CPU、total、overrun 各自的 P50、P90、P95、P99 全都保留，平均 FPS 单独一个数不够用。
 
 Firebase Performance 的 slow rendering frame 用固定 16 ms，frozen frame 用 700 ms，并明确假定 slow 指标面向 60 Hz，可以当作外部兼容标准引入，但要与 JankStats 默认 `isJank` 分开存，别合成同一个 `slow_rate`。任何 multiplier、阈值或 duration 选择都带上策略/schema 版本；分母要靠同一窗口的全部回调帧，只上报异常帧会丢掉它，比例随之失真。
 
-<!-- gracker-diagram: a241-09-three-rate-definitions -->
-![同一帧的三种判定必须分别保存](../../assets/diagrams/ch22/a241-09-three-rate-definitions.png)
-
-图：UI两倍预算、total一次预算和外部固定阈值是不同指标；不能混成一个slow_rate。
 
 ## FrameMetrics：拆分 Window 帧的应用侧阶段
 
@@ -349,10 +325,6 @@ JankStats 已能覆盖多数线上趋势；等某个页面出现可重复的性�
 
 API 31+ 可计算 `TOTAL_DURATION - DEADLINE`：结果大于零就是应用没命中该帧预算，小于零说明还有余量。`TOTAL_DURATION` 与各阶段可能并行，把它当其他时长字段之和会算错。API 29 / 30 没有 `DEADLINE`，`getMetric()` 对不支持的指标 ID 返回 `-1`；低版本别用固定刷新率伪造“精确 deadline”，改用 JankStats 判定、同场景分布与 Perfetto 复核。
 
-<!-- gracker-diagram: a241-10-metrics-capability -->
-![FrameMetrics 字段按 API 层级启用](../../assets/diagrams/ch22/a241-10-metrics-capability.png)
-
-图：不可用字段返回−1，不能补零，也不能在低版本伪造精确DEADLINE。
 
 ### 指标的时间范围与并行间隙
 
@@ -377,16 +349,12 @@ UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数组，`FrameMetri
 字段不可用时 `getMetric()` 返回 `-1`，补零会污染数据。阶段可能并行，公开字段之间还有未单列的间隙，所以 `TOTAL_DURATION - sum(stages)` 这个差值没有“其他耗时”的含义。
 
 <!-- gracker-diagram: a241-11-parallel-stage-tracks -->
-![TOTAL、GPU 与 swap 的边界不能简单相加](../../assets/diagrams/ch22/a241-11-parallel-stage-tracks.png)
+![TOTAL、GPU 与 swap 的区间没有简单加和关系](../../assets/diagrams/ch22/a241-11-parallel-stage-tracks.png)
 
 图：FrameMetrics按里程碑取差；UI、RenderThread、GPU可并行且存在未单列间隙，TOTAL减阶段之和不具有固定归因。
 
 GPU 与 swap 的定义同样按 API 分桶：24—30 没有 GPU/deadline，31—32 的 GPU 从 swap 起算，33—35 改从 command submission complete 起算，36—37 再加 VSync ID。跨桶直接比原始值，会把平台定义变化误判成回归。
 
-<!-- gracker-diagram: a241-12-gpu-version-boundaries -->
-![GPU 时长定义变化需要单独分桶](../../assets/diagrams/ch22/a241-12-gpu-version-boundaries.png)
-
-图：平台字段边界变化会改变数值含义；跨系统版本不能直接把原始值差异认作性能回归。
 
 ### Window 与独立内容流的覆盖范围
 
@@ -400,10 +368,6 @@ GPU 与 swap 的定义同样按 API 分桶：24—30 没有 GPU/deadline，31—
 
 JankStats 在 API 24+ 内部已经注册 FrameMetrics listener。要再直接监听，得先量化双重回调、复制和聚合的开销；常规线上分布留给 JankStats，直接 FrameMetrics 只在分段诊断或 API 36+ compositor join 时对受控样本开启。
 
-<!-- gracker-diagram: a241-13-window-coverage -->
-![不同渲染拓扑的观测缺口](../../assets/diagrams/ch22/a241-13-window-coverage.png)
-
-图：采集范围由窗口和内容图层拓扑决定；同时启用JankStats与FrameMetrics应测量额外回调负担。
 
 延迟回调里同样读不到“当前 route”：API 26+ 靠 `INTENDED_VSYNC_TIMESTAMP` 与应用状态区间关联，API 24—25 只做 Window session 级聚合，或者在路由切换时明确结束旧会话。
 
@@ -463,16 +427,16 @@ class WindowFrameMetricsSession(
 }
 ```
 
-会话由主线程创建、启动和关闭；`close()` 也必须覆盖从未成功 `start()` 的路径。它会停止接受新报告，并在工作线程上完成 flush / quit；返回不代表工作线程已经退出。`FrameMetricsAggregator` 是业务接口（`add(metrics, telemetryReportsDropped)` / `flush()`），并非 AndroidX Core 同名类；它只能在该 HandlerThread 上执行，处理必须有界，关闭边界舍弃的报告另记作 session cutoff。
+会话由主线程创建、启动和关闭；`close()` 也必须覆盖从未成功 `start()` 的路径。它会停止接受新报告，并在工作线程上完成 flush / quit；`close()` 返回时，工作线程可能还在收尾。`FrameMetricsAggregator` 是业务接口（`add(metrics, telemetryReportsDropped)` / `flush()`），跟 AndroidX Core 的同名类是两回事；它只能在该 HandlerThread 上执行，处理必须有界，关闭时舍弃的报告另记作 session cutoff。
 
 <!-- gracker-diagram: a241-14-session-cleanup -->
 ![诊断会话的启动与清理保证](../../assets/diagrams/ch22/a241-14-session-cleanup.png)
 
-图：从未start也必须close；关闭返回不等于后台线程已经退出，主动舍弃报告另计会话边界。
+图：从未start也必须close；close返回只代表清理已发起，后台线程可能仍在收尾，主动舍弃报告另记为session cutoff。
 
 `telemetryReportsDropped` 要独立上报，并进入 coverage（监控报告完整率）计算。数值升高通常意味着监听器或下游聚合过重，样本从这时起已经带偏，之后拿剩余报告推算完整卡顿率，结论站不住。
 
-`FIRST_DRAW_FRAME` 通常不进滚动或动画的卡顿帧分母，但这类帧另有去处：放进 startup / navigation（启动 / 页面导航）首帧分组，交给 21.1 或 26.1 的启动与页面切换指标分析。`TOTAL_DURATION` 只覆盖应用渲染到提交显示子系统的阶段，即使它小于 `DEADLINE`，最终显示时间也要拿系统合成器侧证据来解释。
+`FIRST_DRAW_FRAME` 通常不进滚动或动画的卡顿帧分母，但这类帧另有去处：放进 startup / navigation（启动 / 页面导航）首帧分组，交给 21.1 或 26.1 的启动与页面切换指标分析。`TOTAL_DURATION` 只覆盖应用渲染到提交显示子系统的阶段，即使它小于 `DEADLINE`，最终显示时间还要拿系统合成器侧的数据来解释。
 
 ## API 36+：关联 FrameMetrics 与系统合成器分类
 
@@ -483,12 +447,8 @@ class WindowFrameMetricsSession(
 - `JANK_OTHER`：其他系统组件导致；
 - `JANK_NONE`：公开应用 / 合成器 / 其他原因位均未设置，值为 0。
 
-公开位掩码是精简分类，不是 Perfetto FrameTimeline 原因的完整镜像：AOSP 17 JNI 明确把 `BufferStuffing`、`Dropped`、`NonAnimating`、显示关闭或模式切换等排除在公开原因位外。因此 `JANK_NONE` 不能单独证明内容流畅；还要核对目标图层实际时间线。
+公开位掩码是精简分类，覆盖不了 Perfetto FrameTimeline 原因的全集：AOSP 17 JNI 明确把 `BufferStuffing`、`Dropped`、`NonAnimating`、显示关闭或模式切换等排除在公开原因位外。所以 `JANK_NONE` 只表示公开原因位一个都没命中，内容是否流畅，我们还要核对目标图层的实际时间线。
 
-<!-- gracker-diagram: a241-16-public-jank-mask -->
-![公开 JankData 位掩码省略了部分原因](../../assets/diagrams/ch22/a241-16-public-jank-mask.png)
-
-图：公开分类是JNI的简化映射；精细的FrameTimeline原因和最终显示结果仍要回到目标图层核对。
 
 `JankData.getVsyncId()` 用来与 `FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 关联。`scheduledAppFrameTimeNanos` 是系统分配给应用的时长，CPU / GPU 并行时可能大于 display frame interval（显示刷新周期）；`actualAppFrameTimeNanos` 是应用完成该帧实际所用的时长。
 
@@ -497,7 +457,7 @@ class WindowFrameMetricsSession(
 
 图：应用预算是否超期与合成器分类分开保存；异步数据join要容忍延迟、丢失和会话结束。
 
-下面的会话把系统合成器数据写入有界队列。停止时传入诊断窗口内记录到的有效 VSync ID，可以等该帧的延迟分类送达后再移除监听器；若无需等待，`removeAfter(0)` 请求立即移除，平台契约是停止后续回调；但 `ViewRootImpl` 会先把数据提交给指定 Executor，调用前已排队或已执行中的业务任务仍需按会话 ID / 串行队列收尾，不能把它当作 Executor 排空屏障。
+下面的会话把系统合成器数据写入有界队列。停止时传入诊断窗口内记录到的有效 VSync ID，可以等该帧的延迟分类送达后再移除监听器；若无需等待，`removeAfter(0)` 请求立即移除，平台契约是停止后续回调；但 `ViewRootImpl` 会先把数据提交给指定 Executor，调用前已排队或已执行中的业务任务仍需按会话 ID / 串行队列收尾，它当不了 Executor 的排空屏障。
 
 ```kotlin
 @RequiresApi(36)
@@ -527,12 +487,8 @@ class CompositorJankSession(
 }
 ```
 
-`flush()` 可能在同一调用路径内就触发回调，所以 `sink` 仍要保证线程安全；注册对象由页面或诊断会话强引用，直到目标帧分类到达；`removeAfter(lastVsyncId)` 是“不早于目标帧”的停止请求，批次还可能包含更晚的帧。关联表按同一 Window / Surface 会话和有效 VSync ID 建有界、带过期时间的缓存，允许任意先后顺序，超时未匹配保留为缺失，不能补成 `JANK_NONE`。
+`flush()` 可能在同一调用路径内就触发回调，所以 `sink` 仍要保证线程安全；注册对象由页面或诊断会话强引用，直到目标帧分类到达；`removeAfter(lastVsyncId)` 是“不早于目标帧”的停止请求，批次还可能包含更晚的帧。关联表按同一 Window / Surface 会话和有效 VSync ID 建有界、带过期时间的缓存，允许任意先后顺序，超时未匹配的保留为缺失值，别补成 `JANK_NONE`。
 
-<!-- gracker-diagram: a241-17-listener-stop -->
-![停止监听请求与业务队列收尾分开处理](../../assets/diagrams/ch22/a241-17-listener-stop.png)
-
-图：页面停止需要处理平台监听和在途业务任务两个边界；flush还可能在调用路径内触发数据投递。
 
 这一组 API 面向标准 App Window。页面里的 SurfaceView、Camera、视频、WebView 渲染进程或游戏引擎可能拥有独立缓冲区图层，宿主 root surface（窗口根 Surface）的分类覆盖不到每条独立内容流。遇到“Window 指标正常、内容仍跳动”，我们要去看目标图层的 producer、BufferQueue、fence、FrameTimeline 和 present-to-present（相邻两次显示）间隔。
 
@@ -562,12 +518,8 @@ class CompositorJankSession(
 
 `Thread.getStackTrace()` 会暂停并遍历目标线程，采得太密反而干扰现场，而且它看到的只是采样瞬间的 Java 栈；原生代码执行、GPU、SurfaceFlinger、fence 和 scheduler（内核调度器）这些原因要靠 Perfetto 或受控的原生性能分析。线上采样要有发布构建开关、会话采样率、两次触发之间的冷却时间、单次样本数、栈深、报告字节数和全局每日配额。
 
-<!-- gracker-diagram: a241-19-stack-trigger-evidence -->
-![Java 抓栈为异常窗口补充现场](../../assets/diagrams/ch22/a241-19-stack-trigger-evidence.png)
 
-图：采样会干扰目标线程，限制频率与容量；单个栈只是瞬间现场，不能直接认作根因。
-
-下面的采样器不提供通用默认阈值：所有上限都来自带版本号的远程策略，并须受客户端硬上限约束后再构造策略，防止超大预分配与抓栈深度。调用方另行落实会话命中、冷却时间和字节 / 每日配额；示例本身只限制单次窗口、样本数与深度。采样使用单调时钟的经过时长，提交被拒和任务结束都会恢复状态，`close()` 幂等地拒绝后续请求并中断执行器；已进入 reporter 的工作仍须自行有界，不能把中断当作强制停止任意代码。`StackSample` / `StackSampleBatch` 是业务数据类型。
+下面的采样器不提供通用默认阈值：所有上限都来自带版本号的远程策略，并须受客户端硬上限约束后再构造策略，防止超大预分配与抓栈深度。调用方另行落实会话命中、冷却时间和字节 / 每日配额；示例本身只限制单次窗口、样本数与深度。采样使用单调时钟的经过时长，提交被拒和任务结束都会恢复状态，`close()` 幂等地拒绝后续请求并中断执行器；已进入 reporter 的工作仍须自行有界；强制停止任意代码这件事，中断做不到。`StackSample` / `StackSampleBatch` 是业务数据类型。
 
 ```kotlin
 data class StackSamplingPolicy(
@@ -655,16 +607,12 @@ class MainThreadStackSampler(
 
 端侧按方法序列为连续样本生成稳定签名，也就是不随对象地址等易变信息改变的栈指纹；同一 `app_version + page + ui_state + signature` 只上传少量代表样本。重复命中同一栈，比一次偶发快照更有代表性。多个样本分别落在 Binder proxy（跨进程调用代理）、锁等待和业务方法时，保留分布就好，强行选一个栈当根因会丢信息。
 
-<!-- gracker-diagram: a241-20-sampler-lifecycle -->
-![采样器状态在拒绝、完成与关闭时恢复](../../assets/diagrams/ch22/a241-20-sampler-lifecycle.png)
-
-图：任务拒绝不再永久占用sampling，经过时长避免截止时间加法溢出，sleep可被关闭中断。
 
 报告里不带完整 URL、搜索词、聊天内容、订单号、地理位置，也不带任何可还原用户身份的数据。业务状态用枚举；方法名经过代码混淆时，服务端用受控的 mapping file（混淆映射文件）还原。
 
 ## 从指标到归因
 
-服务端按“版本 + 设备层级 + 页面 + 交互状态 + Surface 拓扑 + 证据范围”分组。平均 FPS 会把偶发长帧和连续慢帧簇都抹平，所以我们至少保留帧数、卡顿帧数、overrun 分布、最长连续卡顿帧数、阶段分布与监控报告丢失数。
+服务端按“版本 + 设备层级 + 页面 + 交互状态 + Surface 拓扑 + 取证范围”分组。平均 FPS 会把偶发长帧和连续慢帧簇都抹平，所以我们至少保留帧数、卡顿帧数、overrun 分布、最长连续卡顿帧数、阶段分布与监控报告丢失数。
 
 | 现象组合 | 当前证据支持的判断 | 下一步 |
 |---|---|---|
@@ -677,16 +625,12 @@ class MainThreadStackSampler(
 | `Buffer stuffing recovery` 与队列积压同时出现 | 系统正在主动降低队列深度 | 追查积压来源和 release fence |
 | `telemetryReportsDropped` 升高 | 监控消费者过重或队列容量不足 | 降低采样、缩短回调、修复报告完整率后再比较 |
 
-主线程处于等待态时，栈顶只是等待位置。trace 显示线程 Runnable（可运行但等待调度） 却长期拿不到 CPU，我们再去查 `android17-6.18-2026-06_r6` 的 scheduler 证据；`dequeueBuffer` 或缓冲区复用被 fence 阻塞时，查 dma-fence / sync_file 与厂商 GPU、显示驱动。应用层证据指向这些方向后再查内核；从一个 Java 样本直接猜内核原因，是猜不准的。
+主线程处于等待态时，栈顶只是等待位置。trace 显示线程 Runnable（可运行但等待调度） 却长期拿不到 CPU，我们再去查 `android17-6.18-2026-06_r6` 的调度实现；`dequeueBuffer` 或缓冲区复用被 fence 阻塞时，查 dma-fence / sync_file 与厂商 GPU、显示驱动。应用层数据指向这些方向后再查内核；从一个 Java 样本直接猜内核原因，是猜不准的。
 
-<!-- gracker-diagram: a241-21-attribution-branches -->
-![指标指向候选方向，补证据才能归因](../../assets/diagrams/ch22/a241-21-attribution-branches.png)
-
-图：墙钟耗时和等待栈只能缩小方向；线程调度、GPU和系统图层证据决定最终解释。
 
 ## 自动告警：用策略、基线和置信区间减少误报
 
-推荐的聚合字段如下：
+告警会不会误报，很大程度取决于聚合字段里有什么。推荐的聚合字段如下：
 
 | 字段组 | 字段示例 | 用途 |
 |---|---|---|
@@ -702,10 +646,6 @@ class MainThreadStackSampler(
 
 下面的规则展示告警需要哪些约束，变量由页面和设备层级对应的策略提供。
 
-<!-- gracker-diagram: a241-22-report-completeness -->
-![先确认监控报告完整，再比较卡顿率](../../assets/diagrams/ch22/a241-22-report-completeness.png)
-
-图：监控数据丢失会使剩余样本带偏；报告完整率不能代表屏幕帧覆盖率或用户采样率。
 
 ```text
 group_by = [app_version, device_tier, page, ui_state, rendering_topology]
@@ -717,12 +657,10 @@ jank_rate >= baseline_jank_rate * policy.min_relative_regression
 overrun_p99 >= baseline_overrun_p99 + policy.min_p99_regression
 ```
 
-这条规则同时约束样本量、监控覆盖、绝对退化、相对退化和尾部分布变化。`policy.min_relative_regression` 是大于 1 的倍数门槛；基线卡顿率为 0 时，该条件不提供保护，必须保留绝对差及置信区间条件。coverage 要注明分母：`received / (received + dropped)` 只是已报告链路的完整率，队列拒绝和会话关闭舍弃另计，不能由此推算屏幕实际帧数或未上报用户的覆盖率。低流量页面用更长的观察窗，或者用贝叶斯 / 分层模型借用同类页面与设备层级的统计信息，高流量首页的瞬时阈值直接搬过去是行不通的。告警命中后，我们附上策略版本、基线窗口、置信区间、问题最集中的设备与状态、jank 类型、阶段分布、栈签名及近期代码变更，负责人才能复现和验收。
+这条规则同时约束样本量、监控覆盖、绝对退化、相对退化和尾部分布变化。`policy.min_relative_regression` 是大于 1 的倍数门槛；基线卡顿率为 0 时，该条件不提供保护，必须保留绝对差及置信区间条件。coverage 要注明分母：`received / (received + dropped)` 只是已报告链路的完整率，队列拒绝和会话关闭舍弃另计；想由此推算屏幕实际帧数或未上报用户的覆盖率，会算错。低流量页面用更长的观察窗，或者用贝叶斯 / 分层模型借用同类页面与设备层级的统计信息，高流量首页的瞬时阈值直接搬过去是行不通的。
 
-<!-- gracker-diagram: a241-23-alert-constraints -->
-![告警同时约束样本、质量与回归幅度](../../assets/diagrams/ch22/a241-23-alert-constraints.png)
+告警命中后，我们附上策略版本、基线窗口、置信区间、问题最集中的设备与状态、jank 类型、阶段分布、栈签名及近期代码变更，负责人才能复现和验收。
 
-图：相对门槛使用当前jank_rate比较基线倍数；零基线依赖绝对差和置信条件，不能只看比值。
 
 ## 端侧接入与验收清单
 
@@ -732,14 +670,14 @@ overrun_p99 >= baseline_overrun_p99 + policy.min_p99_regression
 - API 31+ 用 `TOTAL_DURATION` 与 `DEADLINE` 判断应用侧超期；低版本不伪造精确 deadline。
 - FrameMetrics 复制对象后再处理；`dropCountSinceLastInvocation` 记作监控报告丢失。
 - API 36+ 通过 VSync ID 关联 FrameMetrics 与 `JankData`，并处理批量、延迟回调。
-- 页面含独立 Surface 时登记 `rendering_topology`，为内容 layer 补充对应证据。
+- 页面含独立 Surface 时登记 `rendering_topology`，为内容 layer 补充对应数据。
 - FrameCallback / VsyncCallback 只在短诊断窗口运行，回调只写预分配内存。
 - 堆栈采样具有远程开关、版本化策略、冷却时间、大小与隐私限制。
 - 告警按版本、设备层级、页面、状态和 Surface 拓扑分组，先检查报告完整率再判断趋势。
 - 线下回放至少验证 UI 线程、RenderThread / GPU、系统合成器和独立 Surface 各一个场景。
 - trace 中出现 buffer-stuffing recovery 时，把主动恢复和原始积压分开解释。
 
-验收时我们留一组可复核的证据：异常属于哪个 Window 或 Surface、集中在哪组用户和交互状态、应用是否超过 deadline、系统合成器怎样分类、哪一段耗时或代码栈重复出现。这些信息齐了，才能判断由哪个模块处理，并用同一口径验证修复。
+验收时我们留一组可复核的材料：异常属于哪个 Window 或 Surface、集中在哪组用户和交互状态、应用是否超过 deadline、系统合成器怎样分类、哪一段耗时或代码栈重复出现。这些信息齐了，才能判断由哪个模块处理，并用同一套指标复验修复。
 
 ## 从监控告警回到一次可复核的渲染复盘
 
@@ -757,12 +695,8 @@ overrun_p99 >= baseline_overrun_p99 + policy.min_p99_regression
 
 大型首页、复杂动画、图片列表和 WebView 的表象各不相同，复盘顺序是一样的：先由线上分组找到稳定场景，用 release-like Macrobenchmark（接近发布构建的自动化性能测试）复现，再在 Perfetto 里从异常 App SurfaceFrame / DisplayFrame（应用帧 / 显示帧）反向定位。一次 trace 只解释一次执行，代替不了线上分布；全局平均 FPS 也证明不了某个局部修复有效。
 
-<!-- gracker-diagram: a241-24-review-evidence-loop -->
-![线上分布与可重复线下复盘形成验证闭环](../../assets/diagrams/ch22/a241-24-review-evidence-loop.png)
 
-图：一次trace解释一次执行；修复需要同场景指标、边界证据和可重复脚本共同验收。
-
-结论要写清证据覆盖到哪里为止：`onDraw` 很长，只证明 UI 线程录制绘制命令慢；`queueBuffer()` 返回，只证明 producer 已提交缓冲区；某个 Composable 高频执行，说明不了它让帧错过 deadline。复盘关闭前，把修复固化成可重复的自动化操作脚本、JankStats 状态、阈值与负责人，否则案例只是一次性的排障故事。
+结论要写清取证覆盖到哪里为止：`onDraw` 很长，只证明 UI 线程录制绘制命令慢；`queueBuffer()` 返回，只证明 producer 已提交缓冲区；某个 Composable 高频执行，说明不了它让帧错过 deadline。复盘关闭前，我们把修复固化成可重复的自动化操作脚本、JankStats 状态、阈值与负责人，否则案例只是一次性的排障故事。
 
 ## 源码与文档索引
 
@@ -771,7 +705,7 @@ overrun_p99 >= baseline_overrun_p99 + policy.min_p99_regression
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)：FrameCallback、VsyncCallback、FrameTimeline 与 buffer-stuffing recovery。
 - [`FrameMetrics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)：各阶段时长、`DEADLINE` 与 `FRAME_TIMELINE_VSYNC_ID`。
 - [`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java) 与 [`AttachedSurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/AttachedSurfaceControl.java)：系统合成器卡顿分类与注册接口。
-- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：系统合成器监听器的 Executor 投递封装与在途业务任务边界。
+- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：系统合成器监听器的 Executor 投递封装与在途业务任务的收尾。
 - [`android_view_SurfaceControl.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp)：公开 JANK_* 位掩码的精简映射，以及 BufferStuffing / Dropped 等未映射原因。
 - [metrics-performance:1.0.0 sources JAR](https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar)：实际发布版的六项 UI duration、CPU 公式、状态区间去重与 copy 子类型。
 - [AndroidX Metrics 发布记录](https://developer.android.com/jetpack/androidx/releases/metrics)、[JankStats 指南](https://developer.android.com/topic/performance/jankstats)、[JankStats API](https://developer.android.com/reference/androidx/metrics/performance/JankStats) 与 [`FrameDataApi31`](https://developer.android.com/reference/androidx/metrics/performance/FrameDataApi31)：稳定版本、Window 帧、状态、对象复用与 overrun。
@@ -782,5 +716,5 @@ overrun_p99 >= baseline_overrun_p99 + policy.min_p99_regression
 
 ### Linux 内核 `android17-6.18-2026-06_r6`
 
-- [`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)：UI / RenderThread 处于 Runnable 状态时的调度证据。
+- [`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)：UI / RenderThread 处于 Runnable 状态时的调度实现。
 - [`drivers/dma-buf/dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)：GPU、HWC 与缓冲区生命周期相关的 fence 基础实现。
