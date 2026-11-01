@@ -3,14 +3,22 @@ title: 跨进程内存共享与端侧推理预算
 chapter: '4.10'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
-last_verified: '2026-09-02'
+last_verified: '2026-11-01'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-11-01T14:38:13+08:00'
+last_idle_audit_at: '2026-11-01T14:38:13+08:00'
 last_body_apply_at: '2026-09-02T07:18:25+08:00'
 last_review_finalize_at: '2026-09-02T08:14:47+08:00'
 confidence: high
 sources:
 - type: aosp
   path: frameworks/base/core/java/android/os/SharedMemory.java
+- type: aosp
+  path: frameworks/base/core/java/android/database/CursorWindow.java
+- type: aosp
+  path: frameworks/base/libs/androidfw/CursorWindow.cpp
+- type: aosp
+  path: kernel/common/Documentation/admin-guide/cgroup-v2.rst @ android17-6.18-2026-06_r6
 - type: aosp
   path: frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java
 - type: aosp
@@ -54,7 +62,7 @@ related_chapters:
 
 平台层面能确认的结论如下：
 
-- 内存计入分配、映射或导入它的进程与 cgroup；
+- 进程 RSS/PSS 与 cgroup 内存控制器的记账口径不同；共享页的 cgroup 用量不会按映射者重复计入或按 PSS 分摊；
 - 同一物理页可以出现在多个进程的 RSS 中，PSS 才会按映射者分摊；
 - Binder 适合传递控制消息和小数据，大块内容走 fd、共享缓冲区或受控 URI；
 - `android:process`、隔离服务（isolated service）和系统推理服务提供的隔离强度不同；
@@ -134,6 +142,8 @@ Manifest 可以声明：
 | 加速器私有内存 | 依赖驱动 | 未必能归入调用进程的常规 PSS | 驱动复制、常驻缓存和固件内存 |
 
 分析模型内存时，我们至少要分别记录 Java 堆、原生堆、文件映射、共享内存/dma-buf、交换空间和驱动侧内存。只看 `Debug.MemoryInfo.getTotalPss()`，解释不了每一类内存各自的生命周期。
+
+cgroup v2 内存控制器管理的页面，用量归实际分配页面的 cgroup；已经记账的用量不会随进程迁移到新组。共享页可以被不同 cgroup 的进程使用，但不会按映射者重复计入或按 PSS 分摊。排查 MemoryLimiter 时，应从 `/proc/<pid>/cgroup` 确认归属，再对照该组的 `memory.current`、`memory.stat`，不能用进程 PSS 代替 cgroup 用量。归属规则见内核文档的 [Memory Ownership](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)。
 
 <!-- gracker-diagram: ch04-10-shared-page-rss-pss-accounting -->
 ![同一驻留物理页可以计入两份 RSS，PSS 按映射分摊](../../assets/diagrams/ch04/ch04-10-shared-page-rss-pss-accounting.png)
@@ -267,7 +277,9 @@ try (SharedMemory received = region) {
 
 `ContentProvider` 适合让目标应用保留数据所有权，调用方按 URI、权限和查询条件读取。它提供的是访问控制与数据协议，另一个应用的地址空间并不会因此对智能体敞开。
 
-结构化查询使用的 `CursorWindow` 初始可写；写入 Parcel 后，接收端得到只读视图。原生实现会先创建最多 16 KiB 的进程内区域，写入空间不足时才扩展为 ashmem 共享内存区域；构造参数 `windowSizeBytes` 是扩展后的上限。无参构造使用设备资源 `config_cursorWindowSize`，所以“默认永远是 2 MiB”当不了接口约束。
+结构化查询使用的 `CursorWindow` 初始可写；从 Parcel 还原的接收端窗口只读。`android-17.0.0_r1` 的原生实现会先创建最多 16 KiB 的进程内区域，写入空间不足时才扩展为 ashmem 共享内存区域；`CursorWindow(String name, long windowSizeBytes)` 中的 `windowSizeBytes` 是上限。未显式传入窗口大小的 `CursorWindow(String name)` 使用设备资源 `config_cursorWindowSize`，默认大小可能随设备配置变化。旧的 `CursorWindow(boolean localWindow)` 已弃用，参数也被忽略，应使用 `CursorWindow(String name)`。
+
+内联窗口写入 Parcel 时会复制当前使用的数据，接收端再分配本地存储；已经扩展的窗口传递 fd，由接收端只读映射同一共享区域。接收端只读不代表查询结果总经共享内存传输。
 
 处理大对象时：
 
@@ -535,6 +547,7 @@ heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部�
 | MemoryLimiter 状态映射、交换限制与推理服务豁免 | [`frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)、[`frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp) |
 | lmkd 终止目标选择与 dma-buf 统计 | [`system/memory/lmkd/lmkd.cpp`](https://android.googlesource.com/platform/system/memory/lmkd/+/android-17.0.0_r1/lmkd.cpp) |
 | 隔离进程 / 隔离计算进程策略 | [`system/sepolicy/private/isolated_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_app.te)、[`isolated_compute_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_compute_app.te) |
+| cgroup 内存归属与进程迁移 | [`kernel/common/Documentation/admin-guide/cgroup-v2.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)，Memory Ownership，`android17-6.18-2026-06_r6` |
 | Binder 缓冲区分配 | [`kernel/common/drivers/android/binder_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)，`android17-6.18-2026-06_r6` |
 
 ## 4.10.13 小结
