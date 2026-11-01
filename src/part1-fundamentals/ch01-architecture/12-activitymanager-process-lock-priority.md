@@ -4,7 +4,9 @@ chapter: '1.12'
 section: '1.12'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-17'
+last_verified: '2026-11-01'
+last_source_verified_at: '2026-11-01'
+last_idle_audit_at: '2026-11-01T22:40:23+08:00'
 last_verified_against: AOSP android-17.0.0_r1 + Android Developers + Perfetto
 confidence: high
 sources:
@@ -81,6 +83,8 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/app/ApplicationStartInfo#getStartComponent()
 - type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessStartReasons(int)
+- type: official
   path: https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention
@@ -108,6 +112,8 @@ sources:
   path: platform/frameworks/base/core/java/android/app/IApplicationThread.aidl (android-17.0.0_r1)
 - type: official-docs
   path: https://perfetto.dev/docs/analysis/stdlib-docs#android-monitor_contention
+- type: aosp
+  path: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql @ android-17.0.0_r1
 - type: official
   path: developer.android.com/guide/components/activities/process-lifecycle
 - type: official
@@ -265,7 +271,7 @@ Android 的进程分级远多过“前台”和“后台”两档。AMS 会综�
 | `SERVICE_B_ADJ` | 800 | 较低优先级的旧 Service |
 | `CACHED_APP_MIN_ADJ`～`CACHED_APP_MAX_ADJ` | 900～999 | 缓存进程 |
 
-表中数值是源码常量，具体进程落在哪一档要看当时的依赖关系：Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用（previous app）分配更细的档位。`TOP_SLEEPING` 则是计算分支中的调整类型 `adjType`，常量表里并没有它。
+表中数值是源码常量，具体进程落在哪一档要看当时的依赖关系：Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用（previous app）分配更细的档位。`PROCESS_STATE_TOP_SLEEPING` 是进程状态；`OomAdjusterImpl` 对顶部进程休眠分支设置的调整类型 `adjType` 字符串为 `top-sleeping`。两者都不属于表中的 `adj` 数值常量。
 
 前台 Service 的 `adj` 同样不是“永远 100”。在当前固定源码版本中，常规的非 `shortService` 类型 FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从顶层应用进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
 
@@ -327,7 +333,7 @@ Launcher
 
 这里有两个容易误判的事件：
 
-- `am_proc_start` 记录 AMS/`ProcessList` 发起进程创建的时刻：用户点击在它之前，完整冷启动的终点在它之后；
+- `am_proc_start` 写在 `ProcessList.handleProcessStartedLocked()` 中，此时系统已经取得新进程的 PID。它晚于 fork，不能用作发起进程创建或执行 fork 的时刻；
 - `am_proc_bound` 写在 `attachApplicationLocked()` 中，表示 AMS 已经接受新进程的 `IApplicationThread` 连接。它说明连接已建立；`Application.onCreate()` 是否结束、首帧是否显示，从这里都看不出来。
 
 #### 一次可靠的启动分析
@@ -335,42 +341,46 @@ Launcher
 冷启动至少应对齐这些时刻：
 
 1. 启动请求发出；
-2. `am_proc_start`；
-3. Zygote 创建进程与新进程出现；
+2. Zygote 创建进程与新进程出现；
+3. `am_proc_start`；
 4. `ActivityThread.main()`、`attachApplication`、`bindApplication`；
 5. `Application.onCreate()`；
 6. Activity 生命周期；
 7. 首帧提交与显示。
 
-只算 `am_proc_start` 到 `am_proc_bound`，量到的是进程创建和应用线程 attach 的一段耗时；用户感知的启动时间还要往后对齐到首帧。
+新进程与 `system_server` 并发推进，`ActivityThread.main()` 可能早于 `am_proc_start`；这些记录要按实际跟踪数据对齐，不能把列表当作严格串行时序。
 
-Android 15（API 35）引入 `ApplicationStartInfo`，Android 16（API 36）又增加 `getStartComponent()`。后者可以区分进程由 Activity、Service、BroadcastReceiver、ContentProvider 还是其他组件拉起：
+`am_proc_start` 到 `am_proc_bound` 反映的是系统接收进程启动结果到接受应用线程连接之间的区间，其中也可能包含调度与锁等待。它不包含完整的 Zygote 进程创建过程；用户感知的启动时间还要往前对齐到启动请求、往后对齐到首帧。
+
+Android 15（API 35）引入 `ApplicationStartInfo` 和 `getHistoricalProcessStartReasons()`，Android 16（API 36）又增加 `getStartComponent()`。后者可以区分进程由 Activity、Service、BroadcastReceiver、ContentProvider 还是其他组件拉起。以下示例把历史查询和组件类型读取都放在 API 36 及以上的分支内：
 
 ```kotlin
-val activityManager = getSystemService(ActivityManager::class.java)
-val latest = activityManager
-    .getHistoricalProcessStartReasons(1)
-    .firstOrNull()
+if (Build.VERSION.SDK_INT >= 36) {
+    val activityManager = getSystemService(ActivityManager::class.java)
+    val latest = activityManager
+        .getHistoricalProcessStartReasons(1)
+        .firstOrNull()
 
-if (Build.VERSION.SDK_INT >= 36 && latest != null) {
-    when (latest.startComponent) {
-        ApplicationStartInfo.START_COMPONENT_ACTIVITY -> {
-            // 由 Activity 启动进程
-        }
-        ApplicationStartInfo.START_COMPONENT_SERVICE -> {
-            // 由 Service 启动进程
-        }
-        ApplicationStartInfo.START_COMPONENT_BROADCAST -> {
-            // 由 BroadcastReceiver 启动进程
-        }
-        ApplicationStartInfo.START_COMPONENT_CONTENT_PROVIDER -> {
-            // 由 ContentProvider 启动进程
+    if (latest != null) {
+        when (latest.startComponent) {
+            ApplicationStartInfo.START_COMPONENT_ACTIVITY -> {
+                // 由 Activity 启动进程
+            }
+            ApplicationStartInfo.START_COMPONENT_SERVICE -> {
+                // 由 Service 启动进程
+            }
+            ApplicationStartInfo.START_COMPONENT_BROADCAST -> {
+                // 由 BroadcastReceiver 启动进程
+            }
+            ApplicationStartInfo.START_COMPONENT_CONTENT_PROVIDER -> {
+                // 由 ContentProvider 启动进程
+            }
         }
     }
 }
 ```
 
-这段代码可用于启动诊断，并按启动组件走不同的初始化路径。`getReason()` 提供更细的启动原因，`getStartComponent()` 则直接区分四类应用组件。
+这段代码可用于启动诊断；API 35 可以查询历史记录并读取 `getReason()`，但不能调用 `getStartComponent()`。历史记录存于环形缓冲区，按最近到最早排序，也可能包含尚未完成的启动。用记录判断当前进程的初始化路径前，还要核对 PID 和启动时间，避免把另一条历史记录当成本次启动。`getReason()` 提供更细的启动原因，`getStartComponent()` 则直接区分四类应用组件。
 
 ---
 
@@ -460,7 +470,7 @@ ActivityThread.handleCreateService()
 
 这组数值是 `android-17.0.0_r1` 的默认实现，换版本、换设备都可能变。开发应用时，仍应在 `onCreate()` 中立即建立通知并调用 `startForeground()`，把超时值当作硬期限，别当作可用工作时间。
 
-它也不同于 Android 15 起按前台服务类型计算的总运行时长限制。后者到期会调用 `Service.onTimeout(int, int)`，未及时停止时产生 `RemoteServiceException`；这不属于 Service 执行 ANR。
+它也不同于 Android 15 起对目标 API 35 及以上应用施加的前台服务总运行时长限制。应用在后台时，`dataSync` 与 `mediaProcessing` 分别计时，每种类型的所有服务共享 24 小时内 6 小时的额度；用户将应用带回前台会重置计时。额度到期会调用 `Service.onTimeout(int, int)`，服务有几秒时间调用 `stopSelf()`，未及时停止时产生 `RemoteServiceException`；这不属于 Service 执行 ANR。
 
 #### ContentProvider：三种等待对应三种结果
 
@@ -530,20 +540,21 @@ RootWindowContainer
 - `keyboard`、`keyboardHidden`；
 - `navigation`；
 - `touchscreen`；
-- `colorMode`；
-- `uiMode`，仅限进入或离开 `UI_MODE_TYPE_DESK`。
+- `colorMode`。
 
 如果应用依赖 Activity 重建来重新加载这些资源，需要在 `AndroidManifest.xml` 中显式选择：
 
 ```xml
 <activity
     android:name=".MainActivity"
-    android:recreateOnConfigChanges="keyboard|keyboardHidden|navigation|touchscreen|colorMode|uiMode" />
+    android:recreateOnConfigChanges="keyboard|keyboardHidden|navigation|touchscreen|colorMode" />
 ```
 
 这段配置用于恢复“发生这些变化时重建 Activity”的行为。它不是控制所有配置变化的总开关。
 
-还要注意它与 `android:configChanges` 的关系：同一配置标志若同时出现在两个属性中，Activity 不会因该变化重建。前者要求重建，后者表示应用自行处理；二者同时声明时，以应用自行处理为准。`uiMode` 在 Android 17 桌面模式下的具体行为，还需结合应用目标版本与设备行为测试。
+还要注意它与 `android:configChanges` 的关系：同一配置标志若同时出现在两个属性中，Activity 不会因该变化重建。前者要求重建，后者表示应用自行处理；二者同时声明时，以应用自行处理为准。
+
+桌面模式的 `uiMode` 变化由另一条策略处理。`android-17.0.0_r1` 的 `ActivityRecord` 在跳过桌面模式重建的策略已启用、`uiMode` 仅涉及进入或离开 `UI_MODE_TYPE_DESK`、应用没有 desk 资源时，才跳过该项重建。策略是否启用还受功能开关、应用兼容性配置或设备设置影响。`uiMode` 不属于 `recreateOnConfigChanges` 定义的标志，不能写进该属性。
 
 ---
 
@@ -558,7 +569,7 @@ RootWindowContainer
 | Android 12（API 31） | 后台启动 FGS 默认禁止，仅保留明确豁免 |
 | Android 13（API 33） | 用户可在活跃应用（Active apps）/FGS 管理界面查看并停止服务；通知权限与 FGS 通知展示分开处理 |
 | Android 14（API 34） | 目标版本要求声明 FGS 类型和对应权限；后台创建 FGS 时会同步检查仅在使用应用时有效的权限（while-in-use）是否可用 |
-| Android 15（API 35） | `dataSync` 与 `mediaProcessing` 各自共享每 24 小时 6 小时后台额度，并提供 `Service.onTimeout()` |
+| Android 15（API 35） | 目标 API 35 及以上应用的 `dataSync` 与 `mediaProcessing` 各有每 24 小时 6 小时后台额度，同类型服务共享；用户将应用带回前台会重置计时，到期调用 `Service.onTimeout(int, int)` |
 | Android 16（API 36） | 与 FGS 并发执行的 Job 也计入 `JobScheduler` 运行时配额 |
 | Android 17（API 37） | 后台音频交互增加生命周期、FGS 与 while-in-use（WIU）权限约束 |
 
@@ -619,7 +630,7 @@ Android 14 起，应用处于缓存态（cached state）时，系统可以暂存
 #### 冷启动慢
 
 1. 用启动请求或 `ApplicationStartInfo.START_TIMESTAMP_LAUNCH` 确定起点；
-2. 查看 `am_proc_start` 到 fork 出新进程的时间，判断 `system_server`/Zygote 阶段；
+2. 从启动请求对齐到 Zygote fork 与新进程出现，判断 `system_server`/Zygote 阶段；`am_proc_start` 晚于 fork，只能辅助确认系统已接收进程启动结果；
 3. 查看新进程出现到 `bindApplication` 的时间，判断运行时初始化与进程连接 AMS 的阶段；
 4. 查看 `Application.onCreate()`、ContentProvider 安装和 Activity 生命周期；
 5. 查看渲染线程 `RenderThread`、首帧提交和系统合成服务 SurfaceFlinger 的显示时刻；
@@ -686,6 +697,7 @@ Android 14 起，应用处于缓存态（cached state）时，系统可以暂存
 - [Android 17 release notes](https://developer.android.com/about/versions/17/release-notes)
 - [Android 17 background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)
 - [`ApplicationStartInfo.getStartComponent()`](https://developer.android.com/reference/android/app/ApplicationStartInfo#getStartComponent())
+- [`ActivityManager.getHistoricalProcessStartReasons(int)`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessStartReasons(int))
 - [`android:recreateOnConfigChanges`](https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges)
 - [Perfetto SQL standard library: monitor contention](https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention)
 
@@ -1014,7 +1026,7 @@ SELECT
 FROM android_monitor_contention
 WHERE process_name = 'system_server'
   AND (
-    lock_name GLOB '*ActivityManager*'
+    lock_name IN ('ams', 'proc')
     OR short_blocked_method GLOB '*ActivityManager*'
     OR short_blocked_method GLOB '*OomAdjuster*'
     OR short_blocking_method GLOB '*ActivityManager*'
@@ -1027,7 +1039,7 @@ LIMIT 50;
 
 `dur` 是等待线程被 Java monitor 阻塞的墙钟时间，也就是从等待开始到重新获得执行机会所经过的实际时间。`blocking_thread_name` 与 `short_blocking_method` 指向持锁方，`blocked_thread_name` 与 `short_blocked_method` 指向等待方。
 
-`lock_name` 可用时，优先用它区分 `ActivityManagerService` 对象和 `ActivityManagerProcLock` 对象；类名缺失时，再结合源码位置与 `big_locks` 事件判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 来猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
+`android_monitor_contention.lock_name` 来自同一线程轨道上相邻的 `*_lock_acquire` 与 `*_lock_held` 标记：标准库取两者相同的前缀，AMS 全局锁对应 `ams`，进程锁对应 `proc`。这个字段不存 Java 锁对象的类名；缺少对应标记时，它可能为空，需要再结合竞争方法的源码位置判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 来猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
 
 ### 9. 一次可复用的诊断顺序
 
@@ -1115,7 +1127,7 @@ API 37 源码还包含基于进程图和 bucket priority queue（按优先级分
 
 API 37 用注解给出锁要求：`computeOomAdjLSP()`、`applyResultsLSP()` 等方法由 `@GuardedBy({"mServiceLock", "mProcLock"})` 保护。`updateOomAdjLocked()` 在持有 service lock 时再获取 proc lock，然后进入 LSP 方法。
 
-源码没有把 `LSP` 定义为 “Locked Synchronized Pinned”。排障和改代码时应看 `@GuardedBy`，后缀本身给不出锁语义，臆造全称只会误导。
+源码将 `LSP` 约定为同时持有全局 AM 服务锁与进程锁。这个后缀不会自动加锁；实际锁要求仍须核对 `@GuardedBy` 和调用点。
 
 ### 三、API 37 的 adj 分级
 
@@ -1491,4 +1503,5 @@ ActivityManager 的主线是一条因果链：组件事件改变进程责任，�
 - [Android 17 `PerfettoCategories.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerfettoCategories.java)
 - [Android 17 `LoadedApk.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/LoadedApk.java)
 - [Perfetto SQL 标准库：`android.monitor_contention`](https://perfetto.dev/docs/analysis/stdlib-docs#android-monitor_contention)
+- [Android 17 Perfetto `monitor_contention.sql`：`lock_name` 提取规则](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql#223)
 - [Perfetto Android trace 分析示例](https://perfetto.dev/docs/analysis/common-queries)
