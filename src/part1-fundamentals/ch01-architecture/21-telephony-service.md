@@ -4,8 +4,10 @@ chapter: '1.21'
 section: '1.21'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37); 主锚点 android-17.0.0_r1
-last_verified: '2026-08-18'
+last_verified: '2026-11-01'
 last_verified_against: AOSP android-17.0.0_r1; Android Developers telephony API references
+last_source_verified_at: '2026-11-01'
+last_idle_audit_at: '2026-11-01'
 confidence: high
 sources:
 - type: aosp
@@ -252,6 +254,10 @@ telephonyManager.requestCellInfoUpdate(executor, callback);
 
 `PhoneInterfaceManager` 通过 `sendRequestAsync(CMD_REQUEST_CELL_INFO_UPDATE, ...)` 请求更新，结果从 `ICellInfoCallback` 返回。系统会限制请求频率，而且文档明确说明不保证每次都得到新数据。应用需要处理 `ERROR_TIMEOUT`、`ERROR_MODEM_ERROR`、空列表和旧时间戳。
 
+Android 17 的 `getAllCellInfo()` 与 `requestCellInfoUpdate()` 都要求 `ACCESS_FINE_LOCATION`，并以设备声明 `FEATURE_TELEPHONY_RADIO_ACCESS` 为支持条件；调用前应检查权限与设备能力。同步查询还可能返回 `null`，不能直接遍历结果。接口条件见 [TelephonyManager 文档](https://developer.android.com/reference/android/telephony/TelephonyManager#requestCellInfoUpdate(java.util.concurrent.Executor,%20android.telephony.TelephonyManager.CellInfoCallback))。
+
+空列表也可能来自定位访问限制。[PhoneInterfaceManager 的检查](https://android.googlesource.com/platform/packages/services/Telephony/+/refs/tags/android-17.0.0_r1/src/com/android/phone/PhoneInterfaceManager.java#3471) 对 `DENIED_HARD` 抛出 `SecurityException`，对 `DENIED_SOFT` 则直接返回或回调空列表，不继续请求 Modem。`CellInfoCallback.onError()` 的默认实现也会把错误转成空列表，应用应重写它以保留错误码。收到空列表时，先区分定位访问限制、异步错误与无可用小区信息，再排查 Radio。
+
 ### 3.3 Phone 主 Looper 上的同步桥接
 
 部分仅向特权应用或系统组件开放的 API 会进入 `PhoneInterfaceManager.sendRequest()`。它把命令投递给 Phone 进程的主 Looper（串行处理消息的主事件循环），然后让 Binder 线程等待 `MainThreadRequest.result`：
@@ -381,7 +387,9 @@ Connected
 | --- | --- |
 | `CALL_STATE_IDLE` | 没有响铃、拨号中或通话中的呼叫 |
 | `CALL_STATE_RINGING` | 有来电正在响铃或等待接听 |
-| `CALL_STATE_OFFHOOK` | 至少一个呼叫处于拨号、通话或保持等非空闲状态 |
+| `CALL_STATE_OFFHOOK` | 至少一个呼叫处于拨号、通话或保持状态，且没有呼叫正在响铃或等待接听 |
+
+来电等待可以与已有的活动通话同时存在，此时 `CALL_STATE_RINGING` 不表示原通话已结束。这两个状态的区分条件见 [Android 17 的常量定义](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/TelephonyManager.java#6316)。
 
 Phone 进程内部仍需区分承载通话的 radio domain：
 
@@ -392,7 +400,7 @@ Phone 进程内部仍需区分承载通话的 radio domain：
 
 `CALL_STATE_OFFHOOK` 不能解释成“语音媒体流已经建立”，`CALL_STATE_RINGING` 也不能单独说明呼叫来自 CS、IMS 或卫星相关能力。分析建立时延时，要按阶段记录拨号请求、IMS/CS 信令、radio 状态、Telecom connection 状态、音频模式和首个有效媒体包。
 
-第三方应用通常使用 `TelephonyCallback.CallStateListener` 观察概括状态。读取号码、precise call state、IMS quality 等信息需要更高权限或 carrier privilege（由 SIM 卡规则授予运营商应用的特权），回调内容还会按权限删除敏感字段。
+第三方应用通常使用 `TelephonyCallback.CallStateListener` 观察注册订阅的概括状态，普通应用需要 `READ_PHONE_STATE` 权限。读取号码、precise call state、IMS quality 等信息需要更高权限或 carrier privilege（由 SIM 卡规则授予运营商应用的特权），回调内容还会按权限删除敏感字段。
 
 ## 7. 短信发送与接收
 
@@ -414,7 +422,9 @@ SmsManager
 
 `IccSmsInterfaceManager` 负责权限、AppOps（系统对具体敏感操作的运行时授权记录）、目标订阅和调用方信息检查，再交给 `SmsDispatchersController`。controller 根据 IMS 可用性、语音/数据注册域、短信格式和重试状态选择具体 dispatcher。
 
-`SmsManager.sendTextMessage()` 返回只表示请求已交给系统，不表示网络已接收或对端已收到。应用应使用 `sentIntent` 区分发送结果，并在需要时使用 `deliveryIntent` 观察网络交付报告。长短信分段、重试、IMS 失败后的兼容路径（fallback）、发送限额确认和运营商服务都会改变时序。
+`SmsManager.sendTextMessage()` 正常返回不保证发送请求已交给短信服务，也不表示网络已接收或对端已收到。[Android 17 的实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SmsManager.java#756) 可能先异步等待用户选择订阅；订阅解析失败或向短信服务发送时捕获的 `RemoteException` 会通过非空的 `sentIntent` 回报错误。应用应使用 `sentIntent` 区分发送结果，并在需要时使用 `deliveryIntent` 观察网络交付报告。
+
+普通应用调用该接口需要 `SEND_SMS` 权限，设备还须声明 `FEATURE_TELEPHONY_MESSAGING`。长短信分段、重试、IMS 失败后的兼容路径（fallback）、发送限额确认和运营商服务都会改变时序。
 
 “权限检查固定 5–30 ms”没有测试条件，不能作为平台指标。耗时受 Binder 排队、AppOps、短信分段、默认短信应用策略、IMS 状态和 vendor radio 实现影响，必须在目标设备测量。
 
