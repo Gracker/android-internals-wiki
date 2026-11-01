@@ -11702,6 +11702,67 @@
       "summary": "Android 17 r1 traversal 注册使用 VsyncCallback，正文仍称 Runnable",
       "type": "source-implementation-mismatch",
       "updated_at": "2026-10-31T22:41:03.016985+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "依据 HWComposer.cpp 537–635、658–690 行，补画 PresentSucceeded 快路径与验证后 client composition、present 分支；mmdc 实际渲染成功。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261101-080520-c27f5937",
+      "created_at": "2026-11-01T08:08:43.145474+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261101-080520-c27f5937",
+      "details": "Mermaid 图从 validate 或 presentOrValidate 直接进入 fence 返回，未区分 PresentSucceeded 与仅完成验证的分支；后者必须在必要的客户端合成后另行 present，正文文字已区分但图未表达。以 android-17.0.0_r1 HWComposer.cpp getDeviceCompositionChanges 与 presentAndGetReleaseFences 修正图示。",
+      "id": "finding-6bdd17e3b0c3",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp#537"
+      ],
+      "status": "fixed",
+      "summary": "公共显示时序图漏画验证完成后的 present 调用",
+      "type": "diagram-source-mismatch",
+      "updated_at": "2026-11-01T08:13:17.552690+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "删除每个 layer 每帧固定一份的断言，说明 ReleaseFences 子集、NO_FENCE 与 Output.cpp 客户端合成 fence 合并；补充按 buffer/frame number 追踪的排查方法及两条固定标签来源。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261101-080520-c27f5937",
+      "created_at": "2026-11-01T08:09:26.342798+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261101-080520-c27f5937",
+      "details": "ReleaseFences.aidl 只列出有 release fence 的 layer；HWComposer::getLayerReleaseFence 在查不到条目时返回 NO_FENCE。Output::presentFrameAndReleaseLayers 还可能按功能开关分支合并客户端合成完成 fence。应按 buffer 释放关系解释，不能把 HWC 返回、上游回调与逐层逐帧一一对应。",
+      "id": "finding-b301f2415419",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/ReleaseFences.aidl#39",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp#1748"
+      ],
+      "status": "fixed",
+      "summary": "release fence 表格误写成每个 layer 每帧固定返回一份",
+      "type": "fence-contract",
+      "updated_at": "2026-11-01T08:13:17.610593+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "生命周期图改为 SyncGroup.finishNow → WindowContainer.finishSync → onTransactionReady，与 BLASTSyncEngine.java 198–216、219–292 行对应。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261101-080520-c27f5937",
+      "created_at": "2026-11-01T08:09:26.405013+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261101-080520-c27f5937",
+      "details": "BLASTSyncEngine.SyncGroup.tryFinish 实际调用 finishNow；finishNow 再逐项调用 WindowContainer.finishSync 合并参与者事务。原图直接写 finishSync 易被当作 SyncGroup 方法，阅读源码时无法对应。",
+      "id": "finding-979811232738",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java#198"
+      ],
+      "status": "fixed",
+      "summary": "SyncGroup 生命周期图未区分 finishNow 与 WindowContainer.finishSync",
+      "type": "source-symbol",
+      "updated_at": "2026-11-01T08:13:17.672917+08:00"
     }
   ],
   "schema_version": 1
