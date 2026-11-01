@@ -11805,6 +11805,71 @@
       "summary": "CursorWindow 默认尺寸被归到不存在的无参构造，接收端只读未区分内联复制与共享映射",
       "type": "api-contract",
       "updated_at": "2026-11-01T14:39:52.794511+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/21-telephony-service.md",
+      "close_note": "已补充 CellInfo 权限与 feature 条件、同步 null、DENIED_HARD/DENIED_SOFT 和默认 onError 空列表行为；静态对照 android-17.0.0_r1 源码并通过本地校验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-183520-idle-audit-1af81bcd",
+      "created_at": "2026-11-01T18:41:41.447357+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-183520-idle-audit-1af81bcd",
+      "details": "原第 3.1–3.2 节直接建议调用 CellInfo 接口，但未保留 ACCESS_FINE_LOCATION、FEATURE_TELEPHONY_RADIO_ACCESS 和同步 null 边界。android-17.0.0_r1 的 PhoneInterfaceManager 在 DENIED_SOFT 时直接返回或回调空列表；TelephonyManager.CellInfoCallback.onError 默认实现也将错误转换为空列表。补全这些条件，避免把定位限制或异步错误当成无小区信息。",
+      "id": "finding-4bb4f1ca8218",
+      "log_path": "logs/audit/2026-11-01-20261101-183520-idle-audit-1af81bcd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/TelephonyManager.java#6894",
+        "https://android.googlesource.com/platform/packages/services/Telephony/+/refs/tags/android-17.0.0_r1/src/com/android/phone/PhoneInterfaceManager.java#3471",
+        "https://developer.android.com/reference/android/telephony/TelephonyManager#requestCellInfoUpdate(java.util.concurrent.Executor,%20android.telephony.TelephonyManager.CellInfoCallback)"
+      ],
+      "status": "fixed",
+      "summary": "CellInfo 查询与刷新遗漏定位权限、设备能力及空结果的非 Radio 来源",
+      "type": "missing-api-boundary",
+      "updated_at": "2026-11-01T18:42:12.169214+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/21-telephony-service.md",
+      "close_note": "已直接修正 OFFHOOK 表格定义并说明来电等待与已有活动通话可并存；已补充 CallStateListener 权限与订阅范围，无冲突旧定义保留。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-183520-idle-audit-1af81bcd",
+      "created_at": "2026-11-01T18:41:41.505777+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-183520-idle-audit-1af81bcd",
+      "details": "原通话状态表将任一拨号、活动或保持呼叫直接归为 OFFHOOK，遗漏 TelephonyManager 常量定义中的 and no calls are ringing or waiting。补全条件，解释已有活动通话可以与来电等待并存，并补充 CallStateListener 的订阅范围与普通应用 READ_PHONE_STATE 权限。",
+      "id": "finding-592b471b9411",
+      "log_path": "logs/audit/2026-11-01-20261101-183520-idle-audit-1af81bcd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/TelephonyManager.java#6316",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/telephony/TelephonyCallback.java#989"
+      ],
+      "status": "fixed",
+      "summary": "CALL_STATE_OFFHOOK 定义遗漏无响铃或来电等待的必要条件",
+      "type": "incorrect-state-semantics",
+      "updated_at": "2026-11-01T18:42:12.227368+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/21-telephony-service.md",
+      "close_note": "已删除返回即已交给系统的断言，区分异步订阅解析、非空 sentIntent 的失败通知和 deliveryIntent 交付报告，并补充权限与设备能力。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-183520-idle-audit-1af81bcd",
+      "created_at": "2026-11-01T18:41:41.563872+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-183520-idle-audit-1af81bcd",
+      "details": "android-17.0.0_r1 的 SmsManager 先 resolveSubscriptionForOperation，可能异步等待用户选卡；解析失败不调用 sendTextForSubscriber，发送时捕获 RemoteException 也通过 sentIntent 报错。正常返回不足以确认短信服务已接收发送请求。改写为明确的不保证，并补充 SEND_SMS 与 FEATURE_TELEPHONY_MESSAGING 条件。",
+      "id": "finding-525e622afe17",
+      "log_path": "logs/audit/2026-11-01-20261101-183520-idle-audit-1af81bcd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SmsManager.java#516",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SmsManager.java#756",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SmsManager.java#1869"
+      ],
+      "status": "fixed",
+      "summary": "sendTextMessage 正常返回被误写成发送请求已经交给系统的确认",
+      "type": "incorrect-completion-semantics",
+      "updated_at": "2026-11-01T18:42:12.285400+08:00"
     }
   ],
   "schema_version": 1
