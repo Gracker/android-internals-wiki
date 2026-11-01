@@ -2,7 +2,7 @@
 title: Android 显示架构与 WindowManager
 chapter: '1.19'
 section: '1.19'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
   - architecture
@@ -13,11 +13,11 @@ tags:
   - wms
   - windowmanagerservice
   - surface
-last_verified: '2026-10-31'
-last_source_verified_at: '2026-10-31'
+last_verified: '2026-11-01'
+last_source_verified_at: '2026-11-01'
 last_rework_at: '2026-10-28T09:41:03+08:00'
 last_deep_review_at: '2026-10-31T20:40:22+08:00'
-verification_scope_note: 已复核 Android 17 dequeueBuffer 的槽位所有权、返回 fence、安全覆写时机、分配等待与旧 EGL/弃用包装分支，以及按 Display 持有的 InputMonitor、Handler 调度和立即更新事务；WindowTracingPerfetto 默认实现与旧命令迁移、预测返回迁移边界复核一致。已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。补核 Window/SurfaceView HDR headroom 的 HDR 模式前提、独立作用域、比值及输入范围、自动默认值和 Android 15/16 limited_hdr 注解到 Android 17 移除注解的边界；复核 SurfaceView 四项 API 与 alpha。WebView、Flutter、React Native 和游戏拓扑分别补核到 Chromium 140.0.7339.155、Flutter 3.35.0、React Native 0.82.0 与 Godot 4.5-stable；结论限定于相应承载与合成路径，不外推其他组件版本、插件或设备表现。
+verification_scope_note: 已复核 Android 17 dequeueBuffer 的槽位所有权、返回 fence、安全覆写时机、分配等待与旧 EGL/弃用包装分支，以及按 Display 持有的 InputMonitor、Handler 调度和立即更新事务；WindowTracingPerfetto 默认实现与旧命令迁移、预测返回迁移边界复核一致。已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；Connected Display Desktop 的 Android 16 QPR3 GA 沿用既有核验。另核对 Android 12 BLAST/FrameTimeline、Android 13 AutoSingleLayer 与 Composer AIDL 的弃用及非强制迁移边界、Android 17 latch 配置、ARR 的 QPR/HAL/API 36 查询边界，以及 Android 12/13/14/15/17 固定 r1 标签的 Shell Transitions 启用逻辑。补核 Window/SurfaceView HDR headroom 的 HDR 模式前提、独立作用域、比值及输入范围、自动默认值和 Android 15/16 limited_hdr 注解到 Android 17 移除注解的边界；复核 SurfaceView 四项 API 与 alpha。WebView、Flutter、React Native 和游戏拓扑分别补核到 Chromium 140.0.7339.155、Flutter 3.35.0、React Native 0.82.0 与 Godot 4.5-stable；结论限定于相应承载与合成路径，不外推其他组件版本、插件或设备表现。另核对 HWC 验证与 present 的分支、release fence 返回粒度及客户端合成 fence 合并，以及 SyncGroup.finishNow 与 WindowContainer.finishSync 的调用边界。
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: medium-high
 sources:
@@ -271,6 +271,10 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowTracing.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowTracingPerfetto.java
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/ReleaseFences.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp
 related_chapters:
 - '2.1'
 - '2.9'
@@ -280,7 +284,7 @@ related_chapters:
 - '3.1'
 - '8.2'
 - '8.1'
-last_review_finalize_at: '2026-08-12'
+last_review_finalize_at: '2026-11-01'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/28-rendering-display-architecture.md
@@ -338,11 +342,17 @@ sequenceDiagram
     BQ->>SF: setBuffer transaction
     SF->>SF: flush snapshot and latch
     SF->>HWC: validate or presentOrValidate
-    opt client composition
-        SF->>GPU: RenderEngine draws client target
-        SF->>HWC: setClientTarget
+    alt presentOrValidate returns PresentSucceeded
+        HWC-->>SF: present and release fences
+    else validation completed and present still needed
+        HWC-->>SF: composition type changes and requests
+        opt client composition
+            SF->>GPU: RenderEngine draws client target
+            SF->>HWC: setClientTarget
+        end
+        SF->>HWC: present
+        HWC-->>SF: present and release fences
     end
-    HWC-->>SF: present and release fences
 ```
 
 这里的 buffer 是承载一帧像素的图形缓冲区。从这一步开始，我们就要区分四个时刻：CPU 调用结束、GPU 完成、buffer 被 SurfaceFlinger 采纳、画面提交到显示设备。它们属于不同时间边界；把它们合成一个“渲染完成”时间，排查方向就会被带偏。
@@ -403,7 +413,7 @@ FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，�
 | 对象 | 方向与粒度 | 回答的问题 |
 |---|---|---|
 | acquire fence | 生产者 → 消费者，每个 buffer 一份 | 生产者何时写完，消费者何时可以读取 |
-| release fence | SurfaceFlinger / 消费者 → 生产者，每个 layer、每帧一份 | 旧 buffer 何时可以安全复用 |
+| release fence | 消费者 → 生产者，随 buffer 释放返回；HWC 结果按 display/layer 组织 | 旧 buffer 何时可以安全复用 |
 | present fence | HWC → SurfaceFlinger，每个显示屏、每帧一份 | 本轮显示提交何时越过系统显示边界 |
 
 对应的三个常用观察点各答一个问题：
@@ -411,6 +421,8 @@ FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，�
 - `queueBuffer`：生产者已把 buffer 交回队列，GPU 写入仍可能在进行；
 - `latch`：SurfaceFlinger 已采纳该 layer 的新 buffer；
 - present fence signal：本轮 present 到达用户态可观察的显示时间点。
+
+release fence 要按具体 buffer 的释放关系读取。[`ReleaseFences.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/ReleaseFences.aidl#39) 只列出有返回 fence 的 layer；查不到条目时，`HWComposer::getLayerReleaseFence()` 返回 `Fence::NO_FENCE`。SurfaceFlinger 后续还可能按功能开关分支合并客户端合成的完成 fence，见 [`Output::presentFrameAndReleaseLayers()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp#1748)。排查复用等待时，应关联 buffer、frame number 与最终返回的 fence，不能假定每个可见 layer 每帧都有一份独立的 HWC release fence。
 
 present fence 只标记本轮显示提交的时间点；整块面板是否完成扫描、像素是否响应、用户是否已经感知，还要另行确认。`android-17.0.0_r1` 的 Composer3 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl) 还定义了电视画质处理的受限例外：特定 layer 的 buffer 可能晚于整屏其他内容呈现，由 `LayerPresentFence` 及其延迟字段描述；该例外偏离通常的 `SurfaceControl.Transaction` API 约定，只允许用于需要此能力的电视设备。定位端到端显示延迟时，我们要确认 fence 对应的显示屏和 layer；光学延迟要靠显示驱动、面板数据或外部测量。
 
@@ -1054,7 +1066,8 @@ Transition 创建 SyncGroup
   → setReady(true) 请求一次 surface placement
   → RootWindowContainer placement 末尾调用 onSurfacePlacement()
   → SyncGroup 检查 ready、依赖、各成员 isSyncFinished()
-  → finishSync() 合并 transaction
+  → SyncGroup.finishNow()
+  → WindowContainer.finishSync() 合并各参与者 transaction
   → TransactionReadyListener.onTransactionReady()
 ```
 
