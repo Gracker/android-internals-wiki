@@ -11870,6 +11870,151 @@
       "summary": "sendTextMessage 正常返回被误写成发送请求已经交给系统的确认",
       "type": "incorrect-completion-semantics",
       "updated_at": "2026-11-01T18:42:12.285400+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/12-activitymanager-process-lock-priority.md",
+      "close_note": "已统一事件说明、冷启动列表与模板：AM_PROC_START 写于取得 PID 后，晚于 fork；源码断言及本地门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "created_at": "2026-11-01T22:40:55.002629+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "details": "android-17.0.0_r1 ProcessList 在取得 ProcessStartResult.pid 后调用 handleProcessStartedLocked，再写 AM_PROC_START。正文、冷启动列表及排查模板把该事件放在 fork 前，会误量 Zygote 阶段。",
+      "id": "finding-ch01-12-proc-start-timing",
+      "log_path": "logs/audit/2026-11-01-20261101-223519-idle-audit-c86ac2c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java#2186"
+      ],
+      "status": "verified",
+      "summary": "am_proc_start 被当作 fork 前的进程创建起点",
+      "type": "incorrect-event-timing",
+      "updated_at": "2026-11-01T22:51:04.226698+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/12-activitymanager-process-lock-priority.md",
+      "close_note": "历史查询和组件类型读取均位于 API 36 分支内；补充 API 35/36、环形缓冲区与未完成记录边界；结构检查及官方 API 核验通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "created_at": "2026-11-01T22:40:55.060944+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "details": "getHistoricalProcessStartReasons(int) 从 API 35 提供，getStartComponent() 从 API 36 提供。原示例在 SDK 检查前执行历史查询，在 API 29—34 存在调用不可用方法的风险；还应保留历史环形缓冲区及未完成记录的边界。",
+      "id": "finding-ch01-12-start-info-api-guard",
+      "log_path": "logs/audit/2026-11-01-20261101-223519-idle-audit-c86ac2c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessStartReasons(int)",
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo#getStartComponent()"
+      ],
+      "status": "verified",
+      "summary": "启动诊断示例在版本检查之前调用 API 35 方法",
+      "type": "api-availability",
+      "updated_at": "2026-11-01T22:51:04.287141+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/12-activitymanager-process-lock-priority.md",
+      "close_note": "正文与版本表均补齐目标 API 35、同类型共享、回前台重置及超时停止边界；官方文档核验通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "created_at": "2026-11-01T22:40:55.118333+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "details": "官方 Foreground service timeouts 将 dataSync/mediaProcessing 限额限定到目标 Android 15 及以上应用；同一类型在应用内共享，用户将应用带回前台会重置计时。原版本表及运行时长说明未交代这些条件。",
+      "id": "finding-ch01-12-fgs-timeout-applicability",
+      "log_path": "logs/audit/2026-11-01-20261101-223519-idle-audit-c86ac2c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/develop/background-work/services/fgs/timeout"
+      ],
+      "status": "verified",
+      "summary": "FGS 六小时限额遗漏目标版本与回前台重置条件",
+      "type": "version-applicability",
+      "updated_at": "2026-11-01T22:51:04.347943+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/12-activitymanager-process-lock-priority.md",
+      "close_note": "SQL 按 ams/proc 前缀筛选，正文解释相邻锁标记提取规则与空值条件；固定 Android 17 标准库核验通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "created_at": "2026-11-01T22:43:50.333848+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "details": "android-17.0.0_r1 external/perfetto 的 android.monitor_contention 从相邻 *_lock_acquire / *_lock_held 标记提取前缀作为 lock_name；AMS 对应 ams 或 proc，不是 ActivityManagerService / ActivityManagerProcLock 类名。原查询的 lock_name GLOB 和类名缺失时的解释不符合实际来源。",
+      "id": "finding-ch01-12-monitor-lock-name",
+      "log_path": "logs/audit/2026-11-01-20261101-223519-idle-audit-c86ac2c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql#223",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#922"
+      ],
+      "status": "verified",
+      "summary": "Perfetto lock_name 被按 Java 锁类名解释和筛选",
+      "type": "observability-schema-mismatch",
+      "updated_at": "2026-11-01T22:51:04.407760+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/12-activitymanager-process-lock-priority.md",
+      "close_note": "移除 XML 未定义的 uiMode flag，单列 desk 策略、无 desk 资源与启用条件；XML flag 集合与固定版本源码断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "created_at": "2026-11-01T22:48:23.013059+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "details": "API 26 起的官方属性说明及 android-17.0.0_r1 attrs_manifest.xml 只定义 mcc/mnc/touchscreen/keyboard/keyboardHidden/navigation/colorMode。uiMode 的 desk 重建豁免位于 ActivityRecord，受策略启用、仅 desk 类型变化且无 desk 资源等条件限制，不能作为该 XML 属性的 flag。",
+      "id": "finding-ch01-12-recreate-config-flags",
+      "log_path": "logs/audit/2026-11-01-20261101-223519-idle-audit-c86ac2c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/attrs_manifest.xml#1026",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java#8763",
+        "https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges"
+      ],
+      "status": "verified",
+      "summary": "recreateOnConfigChanges 示例包含未定义的 uiMode flag",
+      "type": "invalid-manifest-flag",
+      "updated_at": "2026-11-01T22:51:04.467558+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/12-activitymanager-process-lock-priority.md",
+      "close_note": "区分 PROCESS_STATE_TOP_SLEEPING 与 adjType 字符串 top-sleeping；两处源码定义核验通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "created_at": "2026-11-01T22:48:23.072383+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "details": "ActivityManager 定义 PROCESS_STATE_TOP_SLEEPING；OomAdjusterImpl 的休眠顶部进程分支设置字符串 adjType 为 top-sleeping。原 adj 常量表说明把大写 TOP_SLEEPING 直接称为 adjType，混淆进程状态与调整原因标签。",
+      "id": "finding-ch01-12-top-sleeping-type",
+      "log_path": "logs/audit/2026-11-01-20261101-223519-idle-audit-c86ac2c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java#847",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java#1377"
+      ],
+      "status": "verified",
+      "summary": "TOP_SLEEPING 进程状态与 top-sleeping adjType 混用",
+      "type": "process-state-type-confusion",
+      "updated_at": "2026-11-01T22:51:04.531344+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/12-activitymanager-process-lock-priority.md",
+      "close_note": "统一 LSP 双锁命名契约与实际锁注解检查要求；AMS 后缀注释及 OomAdjuster 锁入口核验通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "created_at": "2026-11-01T22:50:06.326853+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-223519-idle-audit-c86ac2c6",
+      "details": "ActivityManagerService 明确将 LSP 约定为同时持有 global AM service lock 与 process lock，前文锁模型表已采用该定义。后文却称后缀本身给不出锁语义，应统一为有命名约定、实际要求仍按注解与调用点核对。",
+      "id": "finding-ch01-12-lsp-lock-contract",
+      "log_path": "logs/audit/2026-11-01-20261101-223519-idle-audit-c86ac2c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#800"
+      ],
+      "status": "verified",
+      "summary": "LSP 后缀语义说明与源码及前文锁契约表矛盾",
+      "type": "contradictory-lock-contract",
+      "updated_at": "2026-11-01T22:51:04.592191+08:00"
     }
   ],
   "schema_version": 1
