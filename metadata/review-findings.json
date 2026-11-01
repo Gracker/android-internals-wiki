@@ -11763,6 +11763,48 @@
       "summary": "SyncGroup 生命周期图未区分 finishNow 与 WindowContainer.finishSync",
       "type": "source-symbol",
       "updated_at": "2026-11-01T08:13:17.672917+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
+      "close_note": "已拆分进程 RSS/PSS 与 cgroup 页面归属，补充页面分配、进程迁移和 memory.current/memory.stat 观察入口；对照 android17-6.18-2026-06_r6 cgroup-v2.rst 1299-1304、1523-1534、1938-1954 行复核，metadata/summary-links/diff-check 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-143520-idle-audit-574f7c56",
+      "created_at": "2026-11-01T14:38:12.935369+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-143520-idle-audit-574f7c56",
+      "details": "原句称内存计入分配、映射或导入它的进程与 cgroup；android17-6.18-2026-06_r6 的 cgroup-v2.rst Memory Ownership 明确费用归实例化内存的 cgroup，不因其他组进程映射或进程迁移而按 PSS 分摊。需拆开 RSS/PSS 与 cgroup 口径并给出观测入口。",
+      "id": "finding-400b10763160",
+      "log_path": "logs/audit/2026-11-01-20261101-143520-idle-audit-574f7c56-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst"
+      ],
+      "status": "fixed",
+      "summary": "开篇混合进程映射统计与 cgroup 页面费用归属，易误判共享页记账",
+      "type": "accounting-boundary",
+      "updated_at": "2026-11-01T14:39:52.736824+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
+      "close_note": "已改用实际存在的 CursorWindow(String)/CursorWindow(String,long) 签名，保留 boolean 构造弃用及参数忽略边界；补充内联 Parcel 复制与扩展 ashmem fd 映射差别。对照 r1 Java 146-194、795-802 行与原生 50-125、142-243 行，官方 API 参考已核验；本地三项 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261101-143520-idle-audit-574f7c56",
+      "created_at": "2026-11-01T14:38:13.223726+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261101-143520-idle-audit-574f7c56",
+      "details": "r1 Java 入口为 CursorWindow(String) 与 CursorWindow(String,long)，旧 boolean 构造已弃用并忽略参数；原生 writeToParcel/createFromParcel 对内联区域复制数据，对扩展 ashmem 区域传 fd。需改为有效构造签名，保留大小上限及弃用边界，说明只读不等于共享传输。",
+      "id": "finding-1afb675065a0",
+      "log_path": "logs/audit/2026-11-01-20261101-143520-idle-audit-574f7c56-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/database/CursorWindow.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/CursorWindow.cpp",
+        "https://developer.android.com/reference/android/database/CursorWindow"
+      ],
+      "status": "fixed",
+      "summary": "CursorWindow 默认尺寸被归到不存在的无参构造，接收端只读未区分内联复制与共享映射",
+      "type": "api-contract",
+      "updated_at": "2026-11-01T14:39:52.794511+08:00"
     }
   ],
   "schema_version": 1
