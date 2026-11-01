@@ -6860,6 +6860,114 @@
       "status": "appended",
       "title": "我开源了一个 Android/iOS 加固工具，顺便聊聊加固到底能防住什么市面上的 APK 加固方案大多是黑盒：付费、上"
     },
+    "source/juejin-android/2026-11-02-76696126-你敢信吗？同样是跨端，KMP 跟 RN.md": {
+      "chapter": "待分类",
+      "entry_id": "6cfd5f0cbf006315",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.4936829,
+      "score": 8,
+      "sha256": "326f8608326234d82105ede01a5d26d97cb04a814c76fc2eaf71f2469bf5ee1a",
+      "size": 7603,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-11-02-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "2231ad6489ce5ee3",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.494026,
+      "score": 24,
+      "sha256": "6d119c25fd511b5da47c51c1c541c095d03b3ec1b83cfe70421f6a8e158535a6",
+      "size": 38263,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-02-76782605-我常用的 5 个 Kotlin 优化小技.md": {
+      "chapter": "待分类",
+      "entry_id": "b3eae6f3c2cd4502",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.4942932,
+      "score": 13,
+      "sha256": "f38b66e637842ae5784d108a1dcffd2e9db0c05504be1fe4987b7bbb682b38f8",
+      "size": 11103,
+      "status": "appended",
+      "title": "我常用的 5 个 Kotlin 优化小技巧今天我先来分享一下最近几年常用的一些 Kotlin 代码优化小技巧，与君共享。"
+    },
+    "source/juejin-android/2026-11-02-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "1df1559d430076fb",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.4945354,
+      "score": 9,
+      "sha256": "c4c67f0ee404bb2af988062152c373b984cebeefc3df49df7e8bc3afb8c27a95",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-02-76826281-AI时代下，Android的边界正在消失.md": {
+      "chapter": "待分类",
+      "entry_id": "9d13707a8dab4b5b",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.4947739,
+      "score": 16,
+      "sha256": "918ff7a5d36d472df83ce8948521939ddf479ceb46d8b5bb54a7a17666c26a2f",
+      "size": 20509,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
+    "source/juejin-android/2026-11-02-76933584-AI 时代，我们都将成为通才型开发者：只.md": {
+      "chapter": "待分类",
+      "entry_id": "6c3726a6186d5046",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.49509,
+      "score": 13,
+      "sha256": "0460b7f5d3f2cb549f6217f12878da4f875ce2d9a6029c13e9a1be50d13c6a96",
+      "size": 8007,
+      "status": "appended",
+      "title": "AI 时代，我们都将成为通才型开发者：只懂 Android，已经不够了AI 时代，我们都将成为通才 大家好，今天分享的主"
+    },
+    "source/juejin-android/2026-11-02-76957327-记账 App 我装了删、删了装，最后自己.md": {
+      "chapter": "待分类",
+      "entry_id": "c185b4900b634eb8",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.4953504,
+      "score": 17,
+      "sha256": "2729b72dafe2c75526ab4c19a62252288c0b08262b80b34d6d340c58017c338d",
+      "size": 13870,
+      "status": "appended",
+      "title": "记账 App 我装了删、删了装，最后自己写了一个：本地语音识别 + R8 踩坑复盘记账 App 我装了删、删了装，最后自"
+    },
+    "source/juejin-android/2026-11-02-76966628-汽水music自动看广告领取VIP.md": {
+      "chapter": "待分类",
+      "entry_id": "7c90bde08997e81f",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.495597,
+      "score": 12,
+      "sha256": "7028242d4689f78b4fd5ab9a92c2a2ee4d6b8953303545629ba2a34c923b631c",
+      "size": 10512,
+      "status": "appended",
+      "title": "汽水music自动看广告领取VIP起因是我在小黄鱼闲逛，看到有人卖汽水音乐自动刷 VIP 的软件，我是汽水音乐的用户啊，"
+    },
+    "source/juejin-android/2026-11-02-77005929-不想开会员，我写了一个记账 App.md": {
+      "chapter": "待分类",
+      "entry_id": "8b33331199160dd2",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793564428.496047,
+      "score": 7,
+      "sha256": "99f2d90630161c6d751d60329ce6bd135c0dbad9b18f255e5f5896a234766df0",
+      "size": 12155,
+      "status": "appended",
+      "title": "不想开会员，我写了一个记账 App一个没有账号、广告和云同步的 Android 记账 App，我写了三个月。1300 多"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -7946,6 +8054,133 @@
       "size": 3211,
       "status": "appended",
       "title": "The support case of a customer who said that all they could see was a black screen"
+    },
+    "source/rss-snapshot/2026-11-02-10-Years-on-Mastodon.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793560172.243441,
+      "sha256": "bd92620ba3b033f30e6c552abeac266402cfff2d633cabb17c00849cc0ab4899",
+      "size": 8901,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-API-credits-benefit-for-eligible-ChatGPT-subscri.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559749.565556,
+      "sha256": "84d9687af5a8fa4ec8f336f94cb65fb3118ecdb16ebb9648bfcc06ed7bf39c07",
+      "size": 1125,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-Apple-Drops-App-Store-Commission-by-a-Whopping-4.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559755.581288,
+      "sha256": "4c762e8740fb2923bb9bbe4c9b080917a91c19fe81ebf41800e2e5f935f7ebe1",
+      "size": 1259,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-Elegance-and-intelligence-are-anticorrelated.md": {
+      "chapter": "待分类",
+      "entry_id": "f844dd5b64e9b89f",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793560172.2371342,
+      "score": 7,
+      "sha256": "1cd1c1d49e25be8f95e9057206445a2af202a09e07b43296abe1d1505a031a10",
+      "size": 6297,
+      "status": "appended",
+      "title": "Elegance and intelligence are anticorrelated"
+    },
+    "source/rss-snapshot/2026-11-02-Fast-and-slow-ways-to-improve-your-reputation.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793560172.2403986,
+      "sha256": "85b875502171cd3f87c02f8dace9d8abc6c263526a9f185df534d3903a4bdfe4",
+      "size": 8903,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-How-We-Took-Over-ChatGPT-Accounts.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793560172.22208,
+      "sha256": "b23ce690e19fc8601eb41f4544fb70e81a2330d285b2d61ef3bb2699cd2f308b",
+      "size": 2263,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-MacBook-Pro-Pricing-and-Configurations-for-M6-M5.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559720.5475073,
+      "sha256": "6ff24ed2c61ef75aaaa7407ba0ec5f101114a6c6cd7786a2bb9f53821b52260d",
+      "size": 4776,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-Notes-from-October-2026.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559712.543111,
+      "sha256": "d48df4d4211a82b0b6dc740b7cbc849eeb6db1edb3e60169c803d72454e67093",
+      "size": 4380,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-Pluralistic-Formalities-31-Oct-2026.md": {
+      "chapter": "待分类",
+      "entry_id": "a48dfaa26889ecfe",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559703.5730891,
+      "score": 12,
+      "sha256": "e97e729babbfe65345b3c7be132ae4b31279423cea399e336846707b58d73374",
+      "size": 34475,
+      "status": "appended",
+      "title": "Pluralistic: Formalities (31 Oct 2026) – Pluralistic: Daily links from Cory Doctorow"
+    },
+    "source/rss-snapshot/2026-11-02-Reading-List-10-31-26.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559708.5757575,
+      "sha256": "ef0a5b092389d8637c747537ba72f67f11bf4d7e36e18ecd9fe8b114ec9e68d3",
+      "size": 5164,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-Robert-Caro-The-master-biographer-reflects-at-91.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559734.6189175,
+      "sha256": "aa9f7b616dea5f4845fb145e587b29ac40c4997b1a6231be0bb676010ba3de7b",
+      "size": 54062,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-Signing-and-Attestations-Across-Package-Registri.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793560172.230679,
+      "sha256": "154fa23119194ef3c02b8d176cdb31b229bc7d54c35079002243ab6ff3972ae0",
+      "size": 27831,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-The-Microsoft-building-that-was-reportedly-haunt.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559740.5671406,
+      "sha256": "dc45844b57584b8ed06f4ad48d4679cf5a358954877be20c295a66bcf23001e0",
+      "size": 4067,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-This-Week-in-Package-Management-31-October-2026.md": {
+      "chapter": "待分类",
+      "entry_id": "10714c6d4fdaf22f",
+      "last_appended": "2026-11-02T05:25:20.057613+08:00",
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793560172.2347274,
+      "score": 7,
+      "sha256": "287115f01134f03f05a7f1d547dbcc0a740467a188db22fc09de9f77cdd57c59",
+      "size": 12803,
+      "status": "appended",
+      "title": "This Week in Package Management: 31 October 2026"
+    },
+    "source/rss-snapshot/2026-11-02-datasette-llm-0-1a9.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559699.554655,
+      "sha256": "4f607fef6967f3cd05f69afa5fd06e5e4395f01f9e139d9ab1bc2bad8bc64e5f",
+      "size": 989,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-02-dbreunig-nesformer.md": {
+      "last_seen": "2026-11-02T05:25:20.057613+08:00",
+      "mtime": 1793559716.5803137,
+      "sha256": "8f635d907de53a288538b921dedbb70c0bdd13c468585b927c96f142dc628557",
+      "size": 1561,
+      "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
@@ -9754,24 +9989,24 @@
     }
   },
   "last_report": {
-    "appended": 11,
-    "considered": 24,
-    "cutoff": "2026-10-31T05:20:20.247023+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-01.md",
+    "appended": 12,
+    "considered": 25,
+    "cutoff": "2026-11-01T05:20:20.168028+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-02.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2357,
+    "scanned": 2382,
     "skipped": {
       "existing_link": 0,
       "low_score": 13,
       "max_files": 0,
       "old_unseen": 1419,
       "path": 31,
-      "unchanged": 883
+      "unchanged": 907
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-01T05:25:20.168028+08:00",
+  "last_run_at": "2026-11-02T05:25:20.057613+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
