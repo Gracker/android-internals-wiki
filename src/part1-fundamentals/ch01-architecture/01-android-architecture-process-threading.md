@@ -2,10 +2,10 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-10-18'
-last_source_verified_at: '2026-10-18T10:12:40+08:00'
+last_source_verified_at: '2026-11-03T07:20:19+08:00'
 last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process, SystemServer/SystemServiceManager, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
 confidence: high
 sources:
@@ -164,6 +164,15 @@ sources:
   path: libcore/ojluni/src/main/java/java/lang/ThreadBuilders.java @ android-17.0.0_r1
 - type: aosp
   path: libcore/ojluni/src/main/java/jdk/internal/vm/ContinuationSupport.java @ android-17.0.0_r1
+- type: secondary
+  path: https://juejin.cn/post/7702895830290612251
+  note: AOSP 14 OTA material; only client/service process and callback boundaries are used, rechecked against android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/os/UpdateEngine.java @ android-17.0.0_r1
+- type: aosp
+  path: system/update_engine/update_engine.rc @ android-17.0.0_r1
+- type: aosp
+  path: system/update_engine/aosp/daemon_android.cc @ android-17.0.0_r1
 tags:
 - architecture
 - 分层架构
@@ -206,7 +215,7 @@ related_chapters:
 - '2.3'
 - '2.4'
 last_review_finalize_at: '2026-10-18T10:12:40+08:00'
-last_body_apply_at: '2026-10-18T10:12:40+08:00'
+last_body_apply_at: '2026-11-03T07:20:19+08:00'
 last_rework_at: '2026-10-17T21:36:11+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -335,6 +344,8 @@ Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。`framework
 Binder 事务数据由驱动从发送方用户空间复制到接收方可映射的 Binder 缓冲区，常被概括为“一次拷贝”。但端到端延迟由整条请求决定：文件描述符转换、对象解析、权限检查、线程调度和目标服务执行，都在“一次拷贝”之外各自产生开销。
 
 SELinux 也在 Binder 事务路径上参与授权。ACK `android17-6.18-2026-06_r6` 的 `security/selinux/hooks.c` 中，`selinux_binder_transaction()` 会检查 `BINDER__CALL`；当前线程的 SELinux 安全标识符（SID）与事务发起方凭据的 SID 不同时，还会先检查 `BINDER__IMPERSONATE`，通过后再检查 `BINDER__CALL`。这里比较的就是 SID，结论也就到 SID 为止，推广到任意凭据字段差异并不成立。源码能证明的，是这些检查与条件存在；要写出固定的纳秒开销，需要同设备、同策略与同负载的测量（measure）。
+
+在启用 A/B 系统更新服务的设备上，`android.os.UpdateEngine` 是 Framework 客户端：它通过 `ServiceManager` 获取 `android.os.UpdateEngineService`，再经 Binder 转发请求。服务端由 init 启动为 `/system/bin/update_engine` 原生进程，并在 `DaemonAndroid::OnInit()` 中注册 Binder 服务，执行升级的服务端不在 `system_server`。该 Java 类带有 `@SystemApi` 和 `@hide`，不能按普通 SDK 公开 API 使用。排查时，先在设备进程列表中确认 `update_engine`，再沿 Binder 事务查看调用方和服务端线程；Java 包名不能代替进程证据。[来源: 2026-11-03-77028958-AOSP 14 OTA 升级指导（三）：.md；已验证: frameworks/base/core/java/android/os/UpdateEngine.java、system/update_engine/update_engine.rc 与 system/update_engine/aosp/daemon_android.cc @ android-17.0.0_r1]
 
 #### JNI：同一进程里的托管代码与原生代码边界
 
@@ -824,6 +835,8 @@ public static void main(String[] args) {
 
 “Binder 回调都在主线程”是常见误判。远程 AIDL 调用默认由进程的 Binder 线程池接收；服务代码是否再切回主线程，取决于组件和实现。反过来，主线程主动发起同步 Binder 调用时要等远端返回，卡顿照样可能出在主线程。
 
+`UpdateEngine.bind(callback, handler)` 接收远端回调后，若传入非空 `Handler`，客户端 Binder Stub 会用 `handler.post()` 投递状态与完成回调，业务回调在该 `Handler` 的 `Looper` 线程执行。`bind(callback)` 等价于 `bind(callback, null)`，此时业务回调直接在接收 Binder 事务的线程上执行，不会自动切到主线程。排查进度界面卡顿时，应记录回调线程名、核对 `Handler` 绑定的 `Looper`，再查看对应线程上的回调耗时。[已验证: frameworks/base/core/java/android/os/UpdateEngine.java 的 bind() 两个重载与 IUpdateEngineCallback.Stub @ android-17.0.0_r1]
+
 ### Looper、MessageQueue 与 Handler
 
 一个已经调用 `Looper.prepare()` 的线程拥有一个 `Looper` 和一个 `MessageQueue`，也可以有多个绑定到这个 `Looper` 的 `Handler`。
@@ -1157,6 +1170,7 @@ API 是否公开与运行时是否支持可挂起、恢复的 continuation 是�
 - 系统分层与 HAL：[Android 平台架构](https://developer.android.com/guide/platform)、[HAL 总览](https://source.android.com/docs/core/architecture/hal)、[AIDL HAL 与后端限制](https://source.android.com/docs/core/architecture/aidl/aidl-hals)、[VINTF 清单和兼容性矩阵](https://source.android.com/docs/core/architecture/vintf)。
 - 启动与进程入口：[ZygoteInit.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java)、[app_main.cpp](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/app_process/app_main.cpp)、[SystemServer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)。
 - Binder 线程池与权限检查：[ProcessState.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)、[ACK binder.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)、[SELinux hooks.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/security/selinux/hooks.c)。
+- 系统更新客户端与原生服务边界：[OTA 调用路径材料（Android 14）](https://juejin.cn/post/7702895830290612251)、[Android 17 UpdateEngine.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/UpdateEngine.java)、[update_engine.rc](https://android.googlesource.com/platform/system/update_engine/+/refs/tags/android-17.0.0_r1/update_engine.rc)、[daemon_android.cc](https://android.googlesource.com/platform/system/update_engine/+/refs/tags/android-17.0.0_r1/aosp/daemon_android.cc)。
 - 进程与权限边界：[进程和线程](https://developer.android.com/guide/components/processes-and-threads)、[应用沙箱](https://source.android.com/docs/security/app-sandbox)、[isolatedProcess](https://developer.android.com/guide/topics/manifest/service-element#isolated)、[进程生命周期](https://developer.android.com/guide/components/activities/process-lifecycle)、[BroadcastReceiver.goAsync()](https://developer.android.com/reference/android/content/BroadcastReceiver#goAsync())。
 - 原生调用与兼容性：[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native)、[16 KB 页大小](https://developer.android.com/guide/practices/page-sizes)、[Mainline](https://source.android.com/docs/core/ota/modular-system)、[VNDK 废弃说明](https://source.android.com/docs/core/architecture/vndk)。
 - 内存和调度策略：[Android 17 lmkd.cpp](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)、[mmd 配置与迁移](https://source.android.com/docs/core/perf/mmd)、[task_profiles.json](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json)。
