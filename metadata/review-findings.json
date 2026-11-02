@@ -12018,6 +12018,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/02-version-evolution.md",
+      "close_note": "2026-11-02 已重新抓取官方文档与 android-17.0.0_r1 / android17-6.18-2026-06_r6 源码并核对全文。修复失效 Treble 来源，补齐 HIDL/Mainline/GKI 生命周期、ART Service API 边界、16 KB RELRO、MessageQueue 测试迁移及 Job 等待统计清空条件、后台约束 targetSdk 门槛。文档快照行号和固定标签源码行号及引文见 logs/rework/2026-11-02-20261102-093519-rework-23ce00b2-rework.md 与同 run evidence。三个本地 gate 通过，章节置 ready-for-review，未直接 finalized。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261102-093519-rework-23ce00b2",
       "created_at": "2026-11-02T02:00:20.239546+08:00",
       "created_by": "hermes-aiw-weekly-source-audit",
       "created_run_id": "freshness-2026-11-02",
@@ -12028,10 +12031,10 @@
       "source_paths": [
         "src/part1-fundamentals/ch01-architecture/02-version-evolution.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "last source verification 2026-07-25 older than 90 days",
       "type": "stale-source-verification",
-      "updated_at": "2026-11-02T02:00:20.239546+08:00"
+      "updated_at": "2026-11-02T09:46:32.668829+08:00"
     }
   ],
   "schema_version": 1
