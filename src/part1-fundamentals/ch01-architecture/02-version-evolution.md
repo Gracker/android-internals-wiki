@@ -2,7 +2,7 @@
 title: Android 版本演进中的架构变化
 chapter: '1.2'
 section: '1.2'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
 confidence: high
 tags:
@@ -16,7 +16,7 @@ tags:
   - background-restrictions
 sources:
 - type: official
-  path: https://source.android.com/docs/core/architecture/treble
+  path: https://source.android.com/docs/core/architecture/hal
 - type: official
   path: https://source.android.com/docs/core/architecture/vintf
 - type: official
@@ -55,6 +55,22 @@ sources:
   path: https://developer.android.com/about/versions/17/behavior-changes-17
 - type: official
   path: https://developer.android.com/about/versions/17/changes/messagequeue
+- type: official
+  path: https://developer.android.com/reference/android/app/job/JobScheduler
+- type: official
+  path: https://source.android.com/docs/core/runtime/configure/art-service
+- type: official
+  path: https://developer.android.com/about/versions/oreo/background
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+- type: official
+  path: https://developer.android.com/about/versions/14/changes/fgs-types-required
+- type: official
+  path: https://developer.android.com/about/versions/14/changes/schedule-exact-alarms
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/timeout
+- type: official
+  path: https://developer.android.com/about/versions/16/behavior-changes-all
 - type: aosp
   path: system/libvintf/VintfObject.cpp @ android-17.0.0_r1
 - type: aosp
@@ -73,7 +89,9 @@ sources:
   path: packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java @ android-17.0.0_r1
 - type: kernel
   path: build.config.gki.aarch64 @ android17-6.18-2026-06_r6
-last_verified: '2026-07-25'
+last_verified: '2026-11-02'
+last_source_verified_at: '2026-11-02'
+last_rework_at: '2026-11-02'
 last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; Android Developers; source.android.com
 related_chapters:
 - '1.1'
@@ -149,7 +167,7 @@ Treble 在 Android 8.0 把系统框架（framework）和厂商（vendor）实现
 
 VINTF 就是这份契约的载体：设备一侧的 manifest 声明本机提供哪些 HAL 及版本，系统框架一侧的兼容性矩阵（FCM）声明框架要求哪些 HAL 能力，OTA、启动和兼容性测试再按匹配规则判断组合是否合法。
 
-Android 8.0 初期的跨分区 HAL 主要用硬件接口定义语言（HIDL）描述，新的 HAL 已改用带 VINTF 稳定性的 AIDL。旧设备和旧 HAL 仍可能保留 HIDL，所以我们读 trace 前要先确认接口类型。
+Android 8.0 初期的跨分区 HAL 主要用硬件接口定义语言（HIDL）描述。HIDL 从 Android 13 起已废弃，有对应 AIDL 接口的新 HAL 应使用带 VINTF 稳定性的 AIDL；既有 HIDL HAL 仍受支持，接口版本须满足目标 FCM，所以读 trace 前要先确认接口类型，参见 [HAL 概览](https://source.android.com/docs/core/architecture/hal)。
 
 `/dev/hwbinder` 承载的是独立进程形式的 HIDL HAL 通信。在 trace 里看到它，我们还要记得硬件访问有多条路径：AIDL HAL、同进程 HAL、socket、共享内存和厂商自定义路径，各有自己的调用形态。至于延迟，硬件操作和系统框架 Binder 谁更快，取决于具体服务、设备和工作内容。
 
@@ -171,7 +189,7 @@ Android 15 起废弃 VNDK：在以 Android 15 构建的 `vendor`/`product` 分�
 
 Android 10 的 Project Mainline 把一部分系统组件划为可独立更新的模块。模块可以采用 APK 或 APEX 两种形态：APK 适合普通系统框架组件和权限控制器这类模块；APEX 面向底层系统组件，可以携带原生库，并在启动早期由 `apexd` 验证、激活和挂载。
 
-Mainline 让安全修复和组件更新有了脱离整机 OTA 的通道。模块集合是逐代扩大的：ART 到 Android 12 才进入 Mainline，一台 Android 10 设备能更新哪些模块，要看它实际启用的模块清单。
+Mainline 让安全修复和组件更新有了脱离整机 OTA 的通道。模块集合是逐代扩大的：ART 到 Android 12 才进入 Mainline，Android 10 当时可更新哪些模块，也取决于设备实际启用的模块清单。[Mainline 官方文档](https://source.android.com/docs/core/ota/modular-system) 已注明，Android 11 及以下版本的 Mainline 支持于 2025 年第四季度结束；分析这些旧设备时，要区分历史更新能力和当前维护状态。
 
 这会直接改变我们的复现方法。遇到 ART、加密与安全提供程序 Conscrypt、Media 或 Permission 的行为差异时，构建指纹（build fingerprint）只能说明系统版本，还要把它和当前启用的 APEX/APK 模块版本一起记下；只对比 `Build.VERSION.SDK_INT`，很容易漏掉这层变量。
 
@@ -181,7 +199,7 @@ GKI 把通用内核主体和设备相关模块分开；KMI 规定 GKI 向厂商�
 
 稳定的 KMI 管的是同一代际内的接口兼容。不同 GKI 内核或 KMI 代际之间不承诺模块兼容，厂商模块、设备树、启动配置和厂商功能仍需匹配；同一个 Android 平台还可能同时支持多个历史分支的 Android 通用内核（ACK）。
 
-Android 17 的新内核基线是 `android17-6.18`，本书固定使用 `android17-6.18-2026-06_r6` 这份源码。官方兼容表同时列出 Android 17 可支持的若干较早 GKI 分支；所以看到 Android 17 用户空间时，设备内核要单独确认，6.18 之外还有更早的候选。
+Android 17 的新内核基线是 `android17-6.18`，本书固定使用 `android17-6.18-2026-06_r6` 这份源码。[官方兼容表](https://source.android.com/docs/core/architecture/kernel/android-common#compatibility-matrix) 同时列出 Android 17 可支持的若干较早 GKI 分支，但已注明 `android13-5.10` 与 `android12-5.10` 从 Android 17 QPR1 起不再受支持。看到 Android 17 用户空间时，要单独确认内核分支和系统的 QPR 版本，不能只按大版本判断支持范围。
 
 ### Android 16 的 GBL
 
@@ -233,7 +251,7 @@ ART 从 Android 12 起成为 Mainline 模块，Android 12 及以上的设备可�
 
 图：Android 4.4 的 ART 为可选预览；5.0 成为默认运行时；7.0 引入带画像的混合执行；12 起 ART 模块可独立更新。箭头表示版本演进，不表示每个方法都依次经历这些阶段。
 
-`adb shell cmd package art dump <package>` 可以查看 ART Service 维护的应用包编译状态。命令输出属于诊断接口，字段可能随版本变化，自动化脚本应针对目标构建验证。
+Android 14 起，`adb shell cmd package art dump <package>` 可以查看 ART Service 维护的应用包编译状态；Android 13 及以下没有 ART Service。命令输出属于诊断接口，字段可能随版本变化，自动化脚本应针对目标构建验证。
 
 ## Android 15 到 17：当前需要适配的变化
 
@@ -246,7 +264,11 @@ Android 15 开始支持把平台构建成 16 KB 内存页。更大的页面能�
 - 纯 Java/Kotlin 代码通常不直接依赖页大小，但 SDK 或依赖库可能携带 `.so`；
 - ELF 文件的 `LOAD` 加载段和 APK 内未压缩的原生库都需要正确对齐；
 - 内存映射函数 `mmap()`、共享内存、页掩码和写死的常量 `4096` 都要检查；
-- 应使用当前 NDK 和 AGP 重新构建，并在 16 KB 设备或模拟器上验证。
+- 应使用 NDK r28 及以上、AGP 8.5.1 及以上重新构建，逐一确认预编译依赖的 16 KB 兼容性，并在 16 KB 设备或模拟器上验证。
+
+检查 ELF 时还要看重定位只读保护（RELRO）的 `GNU_RELRO` 程序头。用 `llvm-readelf -Wl <library.so>` 查看程序头；若 RELRO 与后续可写数据共用一个 `LOAD` 段，应满足 `(VirtAddr + MemSiz) % 0x4000 == 0`，避免页级只读保护覆盖可写数据。
+
+若 RELRO 独占一个 `LOAD` 段，且后续可写段从独立的 16 KB 页边界开始，就不能仅凭这个余数非零判为不兼容。具体示例见 [16 KB 页适配指南的 RELRO 检查](https://developer.android.com/guide/practices/page-sizes#relro-flag)。
 
 Android 16 加入 16 KB 向后兼容模式（backcompat mode），让一部分只按 4 KB 对齐的应用先过渡运行，能覆盖到哪些二进制要以实测为准。Android 17 又提供测试属性，可把兼容模式设为 `fatal`，让不兼容二进制立即终止：
 
@@ -267,18 +289,22 @@ Android 16 还调整了 `JobScheduler` 的普通任务和加急任务（expedite
 
 ### Android 17：MessageQueue、ProfilingTrigger 与 Job 诊断
 
-以 API 37 为目标版本的应用在 Android 17 上默认使用新的无锁 `MessageQueue`。目标版本较低的应用可以通过兼容性变更开关测试：
+以 API 37 为目标版本的应用在 Android 17 上默认使用新的无锁 `MessageQueue`。目标版本较低的应用可在可调试（debuggable）构建上通过兼容性变更开关测试；关闭开关可用于对照旧实现：
 
 ```bash
 adb shell am compat enable USE_NEW_MESSAGEQUEUE <package>
 adb shell am compat disable USE_NEW_MESSAGEQUEUE <package>
 ```
 
-它改变的是 `MessageQueue` 内部实现，主线程上的业务、布局和 Binder 等待该怎么走还是怎么走。依赖 `mMessages` 等私有字段的反射代码需要迁移；具体实现见 §1.8。
+它改变的是 `MessageQueue` 内部实现，主线程上的业务、布局和 Binder 等待该怎么走还是怎么走。新实现为二进制兼容保留 `mMessages` 字段，但其值始终为 `null`，不能据此判断队列为空。
+
+依赖私有字段反射的代码需要迁移；使用 Espresso 的 UI 测试应升级到 3.7.0 及以上，Robolectric 应升级到 4.17 及以上并将旧 `LEGACY` Looper 模式迁移到 `PAUSED`，参见 [MessageQueue 迁移说明](https://developer.android.com/about/versions/17/changes/messagequeue)。具体实现见 §1.8。
 
 API 37 扩展了 `ProfilingTrigger`，新增或公开一批触发类型，覆盖冷启动（cold start）、内存不足（OOM）、因 CPU 使用过量被终止、异常和应用兼容性等场景。不同触发器产生的采集结果（artifact）和停止条件各不相同，我们逐类确认之后再下结论。应用仍需注册触发器、接收结果，并遵守系统限额。
 
-`JobScheduler.getPendingJobReasonStats(jobId)` 返回各项待执行原因及其累计等待时长。多个原因可以同时成立，所以各项时长之和可能超过任务实际等待时间。它适合回答“哪类约束长期阻止任务运行”；要还原过程，我们再看 `getPendingJobReasonsHistory()`、`JobParameters.getStopReason()` 和用于识别重复执行的业务日志。
+`JobScheduler.getPendingJobReasonStats(jobId)` 是 API 37 新增接口，返回各项待执行原因及其累计等待时长。多个原因可以同时成立，所以各项时长之和可能超过任务实际等待时间。
+
+统计不会跨设备重启保留，任务成功完成或取消时也会清空；应在任务仍待执行、出现异常等待时查询，无效或已不处于待执行状态的 `jobId` 会触发 `IllegalArgumentException`。它适合回答“哪类约束长期阻止任务运行”；要还原过程，再结合 API 36 引入的 `getPendingJobReasonsHistory()`、`JobParameters.getStopReason()` 和用于识别重复执行的业务日志。历史记录也会被截断且不跨重启保留，采集端需要及时保存，参见 [JobScheduler 接口说明](https://developer.android.com/reference/android/app/job/JobScheduler#getPendingJobReasonStats(int))。
 
 `android-17.0.0_r1` 源码里，部分新增接口和触发器仍由功能开关系统 `aconfig` 和 `@FlaggedApi` 注解管理。应用侧以最终的 API 37 SDK、设备构建和接口可用性为准；预览版或单一产品上的开关状态，只代表那一台设备。
 
@@ -308,11 +334,11 @@ Android 11 对以 API 30 及以上为目标的应用限制包可见性。`Packag
 
 | 版本 | 主要约束 | 设计影响 |
 |---|---|---|
-| Android 8.0 | 后台 Service 和隐式广播受限 | 持久延迟工作迁移到 `JobScheduler`/`WorkManager` |
-| Android 12 | 后台启动前台服务受限；精确闹钟进入特殊权限模型 | 区分用户可见即时任务、持久任务和闹钟 |
-| Android 14 | 面向新版本的前台服务必须声明类型和相应权限；多数新安装应用默认不再预授权精确闹钟能力 | Manifest 类型、运行时权限和 Play 政策一起检查 |
-| Android 15 | `dataSync`、`mediaProcessing` 前台服务引入时间配额 | 长任务需要保存进度并处理超时（timeout）回调 |
-| Android 16 | `JobScheduler` 任务的运行时配额限制继续趋严 | 不把前台服务当作任务配额豁免手段 |
+| Android 8.0 | 默认对目标 API 26 及以上应用限制后台 Service 和 Manifest 隐式广播；部分限制也可由用户为旧目标版本应用启用 | 持久延迟工作迁移到 `JobScheduler`/`WorkManager`，并检查广播与服务的例外条件 |
+| Android 12 | 目标 API 31 及以上应用从后台启动前台服务受限，保留规定的豁免场景；精确闹钟进入特殊权限模型 | 区分用户可见即时任务、持久任务和闹钟 |
+| Android 14 | 目标 API 34 及以上应用的前台服务必须声明类型和相应权限；多数新安装、目标 API 33 及以上且声明 `SCHEDULE_EXACT_ALARM` 的应用默认不获该授权，豁免与预授权场景除外 | Manifest 类型、运行时权限和 Play 政策一起检查 |
+| Android 15 | 目标 API 35 及以上应用在后台运行的 `dataSync`、`mediaProcessing` 前台服务受时间配额约束 | 长任务需要保存进度并处理超时（timeout）回调 |
+| Android 16 | `JobScheduler` 普通任务和加急任务的运行时配额调整适用于所有目标 SDK 版本 | 不把前台服务当作任务配额豁免手段 |
 
 `WorkManager` 适合需要持久调度且允许系统选择执行时机的任务。音频播放、导航、用户发起的数据传输、精确闹钟和短暂进程内任务，各有自己的 API 与政策边界，选型时按任务类型对号入座。
 
