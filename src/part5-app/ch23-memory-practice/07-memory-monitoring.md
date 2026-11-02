@@ -4,7 +4,9 @@ chapter: '23.7'
 section: '23.7'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
+last_verified: '2026-11-02'
+last_source_verified_at: '2026-11-02T14:39:42+08:00'
+last_idle_audit_at: '2026-11-02T14:39:42+08:00'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Debug、ActivityManager、ApplicationExitInfo、ProfilingManager、Android Vitals LMK 与 Memory Advice 官方文档
 last_review_finalize_at: '2026-08-15T08:12:21+08:00'
 confidence: high
@@ -129,7 +131,9 @@ Java 泄漏引用链见 [23.2 内存泄漏检测与治理](02-memory-leak-govern
 
 图：先固定口径、单位、来源和进程，再看趋势；定位具体对象或分配者还需要引用链或调用栈。
 
-单位也要先定死。`Debug.MemoryInfo` 的 PSS 字段以 kB 表示；`Runtime` 和 `Debug.getNativeHeapAllocatedSize()` 返回字节，入库前必须保留单位。`Debug.getMemoryInfo()` 直接读取当前进程，源码注释说明它可能取不到 graphics（图形）等受保护分配；要更完整的进程分类，就用 `ActivityManager.getProcessMemoryInfo()`。
+单位也要先定死。`Debug.MemoryInfo` 的 PSS 字段以 kB 表示；`Runtime` 和 `Debug.getNativeHeapAllocatedSize()` 返回字节，入库前必须保留单位。`Debug.getMemoryInfo()` 直接读取当前进程，源码注释说明它可能取不到 graphics（图形）等受保护分配；使用这一入口时，要记录来源和统计缺口。
+
+调试时需要补查受保护分配，可以使用 `ActivityManager.getProcessMemoryInfo()`。官方文档及 Android 17 r1 源码将该接口定位为调试或用户可见的进程管理界面用途；低频调用也不会改变这一用途边界。常规线上快照采用本进程入口，不能把缺少的图形统计当作零值，也不能与系统服务返回的分类数据直接混为同一条比较基线。
 
 Android 10（API 29）起，普通应用通过 `getProcessMemoryInfo()` 只能取得调用方 UID（应用在系统中的用户标识）下的进程信息，其他 PID（进程编号）的条目只剩零值；平台还会限制采样频率，调用过密时拿到的可能是上一次的结果。所以采样请求时间未必是底层数据的更新时间，高频调用只会制造虚假的高分辨率曲线。
 
@@ -144,7 +148,7 @@ Android 10（API 29）起，普通应用通过 `getProcessMemoryInfo()` 只能�
 
 ### 一个可审计的采样实现
 
-这段实现采集当前进程的低频快照。调用方需要在非主线程执行，并由远程策略决定采样时机；代码没有假设固定周期或固定阈值。
+这段实现采集当前进程的低频快照，PSS 来自 `Debug.getMemoryInfo()`，统计范围受上述图形分配可见性限制。调用方需要在非主线程执行，并由远程策略决定采样时机；代码没有假设固定周期或固定阈值。
 
 ```kotlin
 import android.app.ActivityManager
@@ -189,8 +193,8 @@ private fun readVmRssKb(): Long? = runCatching {
 
 fun collectProcessMemorySample(context: Context): ProcessMemorySample {
     val am = context.getSystemService(ActivityManager::class.java)
-    val processInfo = am.getProcessMemoryInfo(intArrayOf(Process.myPid()))
-        .firstOrNull()
+    val processInfo = Debug.MemoryInfo()
+    Debug.getMemoryInfo(processInfo)
     val runtime = Runtime.getRuntime()
     val systemInfo = ActivityManager.MemoryInfo().also(am::getMemoryInfo)
 
@@ -205,7 +209,7 @@ fun collectProcessMemorySample(context: Context): ProcessMemorySample {
         elapsedRealtimeMs = SystemClock.elapsedRealtime(),
         pid = Process.myPid(),
         processName = Application.getProcessName(),
-        pssKb = processInfo?.totalPss?.takeIf { it > 0 },
+        pssKb = processInfo.totalPss.takeIf { it > 0 },
         rssKb = rssKb,
         rssSource = if (debugRssKb != null) {
             RssSource.DEBUG_API_WITH_MEMTRACK
