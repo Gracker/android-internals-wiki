@@ -4,8 +4,10 @@ chapter: '23.4'
 section: '23.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
+last_verified: '2026-11-02'
 last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android Bitmap、BitmapFactory.Options、Bitmap.Config 与 ImageDecoder 官方文档
+last_source_verified_at: '2026-11-02T18:39:32+08:00'
+last_idle_audit_at: '2026-11-02T18:39:32+08:00'
 last_review_finalize_at: '2026-08-15T07:00:43+08:00'
 confidence: high
 sources:
@@ -241,9 +243,11 @@ fun BitmapDecodeRecord.isSuspiciousLargeBitmap(
 
 `inBitmap` 用于减少反复分配和释放像素内存的成本。列表快速滑动、瀑布流和聊天图片流会持续创建相近尺寸的 Bitmap，每次新分配都会推高原生堆峰值，短时间内反复申请和释放大量像素存储又会带来分配抖动。复用池保留已淘汰、容量合适且不再显示的 mutable Bitmap，下一次解码尝试写入这块内存。
 
-Android 4.4 之后，`BitmapFactory` 的复用条件放宽为：任意 mutable Bitmap 都可以作为候选，只要预计输出所需的字节数小于或等于候选 Bitmap 的 `allocationByteCount`。AOSP `BitmapFactory.Options` 也明确写着，复用失败时解码方法会抛出 `IllegalArgumentException`；调用方必须使用方法返回的 Bitmap，不能假定传入的 `inBitmap` 一定被使用。
+Android 4.4（API 19）起，`BitmapFactory` 的复用条件放宽为：任意 mutable Bitmap 都可以作为候选，只要预计输出所需的字节数小于或等于候选 Bitmap 的 `allocationByteCount`。调用方必须使用解码方法返回的 Bitmap，不能假定传入的 `inBitmap` 一定被使用。
 
-这段代码展示复用池的最小安全形态。候选必须 mutable；按目标字节数筛选；复用失败后移除候选并重试一次普通解码。
+失败处理要区分解码入口。`BitmapFactory.Options.inBitmap` 文档说明，复用失败会抛出 `IllegalArgumentException`；`decodeStream()` 会向调用方抛出这类异常，但 Android 17 的 `decodeFile()` 会在内部捕获解码阶段的异常并返回 `null`。参数校验位于它的 `try` 之外，非法选项仍可能直接抛出异常。文件解码的复用回退不能只依赖 `catch`（[Android 17 源码：decodeFile](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java#527)、[decodeStream](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java#764)）。
+
+这段代码按 `decodeFile()` 的返回值处理回退。候选必须 mutable，并按目标字节数筛选；仅在带候选的解码返回 `null` 时清除 `inBitmap`，再普通解码一次。
 
 ```kotlin
 class BitmapReusePool {
@@ -272,11 +276,6 @@ class BitmapReusePool {
         }
         return null
     }
-
-    @Synchronized
-    fun discard(bitmap: Bitmap) {
-        pool.remove(bitmap)
-    }
 }
 
 fun decodeWithReuse(
@@ -290,21 +289,18 @@ fun decodeWithReuse(
         inBitmap = candidate
     }
 
-    return try {
-        BitmapFactory.decodeFile(path, options)
-    } catch (error: IllegalArgumentException) {
-        candidate?.let(pool::discard)
-        BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inMutable = true })
+    val decoded = BitmapFactory.decodeFile(path, options)
+    if (decoded != null || candidate == null) {
+        return decoded
     }
+    options.inBitmap = null
+    return BitmapFactory.decodeFile(path, options)
 }
 ```
 
+`take()` 已将候选移出池，失败后不再放回。`null` 也可能来自文件无法读取或编码数据损坏，不能据此认定一定是复用不兼容；普通解码仍返回 `null` 时交给调用方处理，不循环重试。
+
 生产实现还要补齐三类约束：复用池必须有总容量上限，避免变成常驻大缓存；候选进入池前必须确认不再显示或被其他解码任务使用；候选选择除字节数外还要考虑宽高、色彩配置和业务场景。把一张超大横图的分配区复用于小图，虽然可能解码成功，却会让 `allocationByteCount` 长期偏大。如果所用图片库已经管理缓存或像素复用，应由图片库统一管理所有权，避免再叠加一套互不知情的自建池。
-
-<!-- gracker-diagram: a256-06-inbitmap-reuse -->
-![inBitmap 候选与失败回退](../../assets/diagrams/ch23/a256-06-inbitmap-reuse.png)
-
-图：候选满足容量条件仍可能复用失败；捕获兼容性异常后普通解码一次，并始终使用解码返回值。
 
 `inBitmap` 不适合和 `Bitmap.Config.HARDWARE` 混用。AOSP `BitmapFactory.Options.validate()` 会拒绝 Hardware Bitmap 作为 `inBitmap`，官方文档也说明 Hardware Bitmap 总是 immutable。需要可变像素、二次绘制或复用池的图片，应走软件 Bitmap。
 
