@@ -16,8 +16,10 @@ related_chapters:
 - '2.9'
 - '2.14'
 - '2.16'
-last_verified: '2026-08-24'
+last_verified: '2026-11-02'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-11-02'
+last_idle_audit_at: '2026-11-02'
 confidence: high
 sources:
 - type: official
@@ -43,11 +45,15 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/display/DisplayPowerController.java
 - type: aosp
+  path: frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java
+- type: aosp
   path: frameworks/base/core/java/android/view/DisplayEventReceiver.java
 - type: aosp
   path: frameworks/base/core/java/android/hardware/display/DisplayManager.java
 - type: aosp
   path: frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp
 - type: aosp
   path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 ---
@@ -219,7 +225,7 @@ DMS 源码明确提醒锁顺序：WMS 可能先持有 `WindowManagerService.mGlo
 单锁不表示所有工作都在锁内执行。Android 17 使用以下方式缩短危险区：
 
 - adapter 事件通过 DisplayThread Handler 投递；
-- `scheduleTraversalLocked()` 只设置 `mPendingTraversal` 并通过 `Handler.post()` 投递，对 WMS 的 out-call（向外部服务发起的调用）稍后执行；
+- `scheduleTraversalLocked()` 用 `mPendingTraversal` 合并请求；不在已有 traversal 中时发送 `MSG_REQUEST_TRAVERSAL`，由 DMS Handler 稍后向 WMS 发起 out-call（向外部服务发起的调用）；
 - Display 回调先在锁内复制 callback 列表，再在锁外通过 Binder 通知；
 - topology 更新复制对象后交给 executor（执行器）；
 - `LocalDisplayDevice.requestDisplayStateLocked()` 只生成 `Runnable`，耗时的 `SurfaceControl.setDisplayPowerMode()` 在锁外执行；
@@ -384,14 +390,18 @@ SurfaceFlinger Scheduler / EventThread
 
 Android 的 `DisplayEventReceiver.onVsync()` 参数包含 physical display ID，SurfaceFlinger 也按 Display 保存 mode 与 timing（时序）信息；这不等于每块屏都有一条可独立调度的 framework VSync 源。
 
-AOSP multi-display 官方文档仍明确说明不支持 per-display VSync（每块屏独立的 VSync），Display 由 primary internal display（主内置屏）的 VSync 驱动。分析双屏或外接屏时，应区分：
+在 `android-17.0.0_r1` 中，`Scheduler.registerDisplay()` 为物理 Display 建立 `VsyncSchedule`，App 的事件连接仍由同一个 `EventThread` 创建。`Scheduler` 选择 pacesetter（调度基准屏），并在基准屏变化时把它的 `VsyncSchedule` 交给 SF MessageQueue（消息队列）和 App EventThread。
 
-- framework 与 SF 的调度基准；
+默认选择逻辑会比较已处于 `ON` 的屏幕刷新率，优先选较快的屏；刷新率近似时可能保留当前基准，也会优先考虑外接屏。源码还支持强制指定基准屏。因此，不能把调度基准固定为 primary internal display（主内置屏）。AOSP Display support 页面中关于 per-display VSync（每块屏独立的 VSync）的限制提醒仍需注意，但其固定主内屏的描述不能直接用于 Android 17。
+
+分析双屏或外接屏时，应区分：
+
+- 当前 pacesetter、其 `VsyncSchedule` 与 App EventThread 的调度基准；
 - 每块屏的 active mode、render frame rate（渲染帧率）与 presentation deadline（显示期限）；
 - 每个 SF Output 和 HWC Display 的 validate、present；
 - 每块屏对应的 present fence 与 driver 行为。
 
-不同 Display 可以有不同 mode 和独立 present 结果，但不能据此推导两个 App 各自获得完全独立的硬件 VSync 时钟。
+不同 Display 可以有不同 mode 和独立 present 结果，按屏保存 `VsyncSchedule` 也不能据此推导两个 App 各自获得完全独立的硬件 VSync 时钟。
 
 ## 7. Display mode 与刷新率切换
 
@@ -432,7 +442,7 @@ SurfaceControl.setDesiredDisplayModeSpecs(applyToken, specs[])
 
 ### 8.1 每个 LogicalDisplay 有一个 controller
 
-DMS 用 `SparseArray<DisplayPowerController>` 按 logical display ID 保存 controller（控制器）。每个 controller 有自己的 request 状态与 `mLock`，但 Android 17 通过传入的 power Handler Looper（消息循环）创建 Handler；多个 DPC（DisplayPowerController）不代表每块屏各有一条独立 Java 线程。
+DMS 用 `SparseArray<DisplayPowerController>` 按 logical display ID 保存 controller（控制器）。每个 controller 有自己的 request 状态与 `mLock`，但 Android 17 通过传入的 power Handler Looper（消息循环）创建 Handler；多个 DPC（DisplayPowerController）的状态机可以共用 Looper。`DisplayPowerState` 另行创建 `PhotonicModulator` 工作线程，用于执行物理状态与亮度请求，不能把状态机 Handler 与该工作线程混为一谈。
 
 controller 负责汇总：
 
@@ -447,31 +457,38 @@ controller 负责汇总：
 
 ### 8.2 从 DPC 到 SurfaceFlinger 的锁边界
 
-power 状态从 DPC 传到物理 Display 的主线如下：
+power 状态从 DPC 经异步线程传到物理 Display 的主线如下：
 
 ```text
-DisplayPowerController#updatePowerState
-  → DisplayBlanker.requestDisplayState(displayId, state, brightness)
+DisplayPowerController#updatePowerState（power Handler Looper）
+  → 更新 DisplayPowerState 的屏幕状态或亮度属性
+    → Handler 执行 mScreenUpdateRunnable
+      → PhotonicModulator.setState() 更新待处理值并唤醒工作线程
+
+PhotonicModulator.run()（独立线程）
+  → DisplayBlanker.requestDisplayState(displayId, state, brightness, sdrBrightness)
     → DMS.requestDisplayStateInternal
       → mSyncRoot 下更新逻辑 state / brightness
       → DisplayDevice.requestDisplayStateLocked 返回 Runnable
     → mSyncRoot 外执行 Runnable
-      → SurfaceControl.setDisplayPowerMode(displayToken, mode)
-      → backlight / brightness 更新
+      → 按新旧状态安排 power mode 与 backlight / brightness 更新
+      → 需要切换物理模式时调用 SurfaceControl.setDisplayPowerMode(displayToken, mode)
 ```
 
-这条路径先在锁内更新逻辑状态并生成 `Runnable`，再在锁外设置物理 power mode。`LocalDisplayAdapter` 注释指出，这项操作可能耗时数百毫秒，因此最慢的 SF 与 HAL 操作必须在 `mSyncRoot` 外执行。Perfetto 中：
+`DisplayPowerState` 通过 Handler 合并屏幕更新，再交给独立的 `PhotonicModulator` 线程调用 `DisplayBlanker`。DMS 在该工作线程上进入 `mSyncRoot`，更新逻辑状态并生成 `Runnable`，退出锁后执行物理 power mode 与亮度调用；具体先后取决于旧状态、目标状态是否处于 suspend（挂起）以及亮度是否变化。
+
+`LocalDisplayAdapter` 注释指出，物理状态设置可能耗时数百毫秒，因此最慢的 SF 与 HAL 操作在 `mSyncRoot` 外执行，也不在 DPC Handler 的当前调用栈上。Perfetto 中：
 
 - `requestDisplayStateInternal:<displayId>` 主要覆盖 DMS 状态更新；
-- `setDisplayState(id=..., state=...)` 才覆盖物理 power mode 调用；
+- `setDisplayState(id=..., state=...)` 覆盖物理 power mode 调用，通常应在 `PhotonicModulator` 线程上查找；
 - `DisplayPowerController#updatePowerState` 覆盖 DPC 状态机。
 
-这三段不能合并为一个 slice 解读。
+这三段之间存在异步交接。排查亮灭屏延迟时，要把 DPC Handler 的状态计算、`PhotonicModulator` 的等待或执行与 SF/HWC 调用分别对齐，不能把它们解读为一个连续的同步 slice。
 
 <!-- gracker-diagram: ch02-13-power-lock-boundary -->
 ![DMS 锁内更新状态，耗时物理 power 操作在锁外](../../assets/diagrams/ch02/ch02-13-power-lock-boundary.png)
 
-图：DPC 的异步状态机发出请求，DMS 在 mSyncRoot 下更新逻辑状态并取得待执行 Runnable；退出锁后才执行物理 power mode 和亮度调用。逻辑请求、物理提交和面板响应是不同边界，应使用对应 trace 与设备证据。
+图：DPC 经 DisplayPowerState 把请求交给 PhotonicModulator 工作线程，DMS 在该线程上进入 mSyncRoot 更新逻辑状态并取得待执行 Runnable；退出锁后才执行物理 power mode 和亮度调用。逻辑请求、线程交接、物理提交和面板响应是不同边界，应使用对应 trace 与设备证据。
 
 ### 8.3 多屏亮度可使用 lead 与 follower
 
@@ -696,7 +713,7 @@ adb shell logcat -b system -s \
 - SF active mode 与 FrameTimeline deadline；
 - buffer 是否 late（迟到）；
 - 目标 Display 的 present cadence（显示节奏）；
-- 外接屏是否受 primary VSync 驱动和 cadence 转换。
+- 当前 pacesetter 的 App VSync 基准与外接屏 present cadence 是否匹配。
 
 mode 变化与 App 逐帧生产是两个阶段：前者完成只说明配置层走完，后者要看 Choreographer 预测周期是否更新、buffer 是否 late。
 
@@ -754,13 +771,15 @@ Android 17 允许部分外接屏在镜像与承载内容之间动态切换，相
 
 - [`LocalDisplayAdapter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LocalDisplayAdapter.java)：physical ID、token、hotplug、mode specs、power mode 与 brightness；
 - [`VirtualDisplayAdapter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/VirtualDisplayAdapter.java)：virtual token、Surface、resize、Binder death 与 release；
-- [`DisplayPowerController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayPowerController.java)：异步 power request、brightness、policy 与状态更新。
+- [`DisplayPowerController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayPowerController.java)：异步 power request、brightness、policy 与状态更新；
+- [`DisplayPowerState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayPowerState.java)：屏幕更新合并、PhotonicModulator 工作线程与 DisplayBlanker 调用。
 
 ### VSync、SurfaceFlinger 与文档
 
 - [`DisplayEventReceiver.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/DisplayEventReceiver.java) 与 [`EventThread.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/EventThread.cpp)：hotplug、VSync event connection 与分发；
+- [`Scheduler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)：按屏保存 VsyncSchedule、选择 pacesetter，以及切换 SF MessageQueue 与 App EventThread 的调度基准；
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：physical 与 virtual Display、mode、Output 与 composition；
-- [AOSP Multi-Display overview](https://source.android.com/docs/core/display/multi_display) 与 [Display support](https://source.android.com/docs/core/display/multi_display/displays)：LogicalDisplay、stable ID、Display 支持和 per-display VSync 限制；
+- [AOSP Multi-Display overview](https://source.android.com/docs/core/display/multi_display) 与 [Display support](https://source.android.com/docs/core/display/multi_display/displays)：LogicalDisplay、stable ID 与 Display 支持；Android 17 的 VSync 调度基准以同一 tag 的 Scheduler 为准；
 - [`DisplayTopology` API](https://developer.android.com/reference/android/hardware/display/DisplayTopology)：version 36.1 与相对位置语义。
 
 ## 小结
