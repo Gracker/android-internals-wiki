@@ -12038,6 +12038,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/02-version-evolution.md",
+      "close_note": "已删除 Android 12 关系维持原样的无依据结论，按兼容双方重画文字示意并补齐 VINTF 双向匹配；KMI 明确同 ACK 分支及代际，GBL 补认证生产版与开发构建不可出货边界。证据 E01/E04/E05/E06；全文及中文门检查、本地三个 gate 通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261102-100520-2e356f15",
       "created_at": "2026-11-02T10:13:22.508312+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261102-100520-2e356f15",
@@ -12050,13 +12053,16 @@
         "https://source.android.com/docs/core/architecture/vintf",
         "https://source.android.com/docs/core/architecture/kernel/android-common"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Android 12 架构叙述与更新契约图混淆了 ART 模块化及 KMI 两端",
       "type": "source-accuracy",
-      "updated_at": "2026-11-02T10:13:22.508312+08:00"
+      "updated_at": "2026-11-02T10:30:39.291342+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/02-version-evolution.md",
+      "close_note": "已区分 FULLY_DRAWN/ANR 后台快照与 API 37 冷启动新采集，补全抽样及系统限额、全局监听器、结果文件入口与脱敏范围；OOM 默认异常处理器、冷启动停止条件、ANOMALY 同 UID 多包限制均已写入。证据 E16/E17/E18，逐条对照官方 API 与 android-17.0.0_r1。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261102-100520-2e356f15",
       "created_at": "2026-11-02T10:13:22.567760+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261102-100520-2e356f15",
@@ -12070,13 +12076,16 @@
         "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture",
         "https://developer.android.com/reference/android/os/ProfilingTrigger"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "性能剖析触发器遗漏后台快照前提、结果回调与 OOM 处理边界",
       "type": "missing-boundary",
-      "updated_at": "2026-11-02T10:13:22.567760+08:00"
+      "updated_at": "2026-11-02T10:30:39.358026+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/02-version-evolution.md",
+      "close_note": "已按 JobSchedulerService.getPendingJobReasonStats 的 JobStore 查询改为 UID/namespace/jobId 找不到任务时抛异常，保留统计不跨重启及完成/取消清空条件，并提示使用调度实例。证据 E21；源代码分支断言通过，无按正在执行状态拒绝查询的判断。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261102-100520-2e356f15",
       "created_at": "2026-11-02T10:13:22.625468+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261102-100520-2e356f15",
@@ -12088,10 +12097,70 @@
         "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java @ android-17.0.0_r1",
         "https://developer.android.com/reference/android/app/job/JobScheduler"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Job 等待原因统计将执行状态误作无效 jobId 条件",
       "type": "source-accuracy",
-      "updated_at": "2026-11-02T10:13:22.625468+08:00"
+      "updated_at": "2026-11-02T10:30:39.425078+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/13-displaymanager-service-lifecycle.md",
+      "close_note": "已用 android-17.0.0_r1 Scheduler.cpp:216-321、583-609、1367-1442 与 EventThread.cpp:860-892 核对并改写 6.3、12.4；保留 App 通道不能按屏独立推导的边界，移除固定主内屏结论。本地门禁和新增行文风扫描通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-103520-idle-audit-a5dc7c0b",
+      "created_at": "2026-11-02T10:39:59.582110+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-103520-idle-audit-a5dc7c0b",
+      "details": "第 6.3 节把通用 Display support 页面的主内屏说明直接用于 Android 17；固定 tag 的 Scheduler.cpp:216-289 会按已点亮屏刷新率选择 pacesetter，并可在近似刷新率下优先外接屏，1367-1442 将新 schedule 交给 MessageQueue/EventThread。第 12.4 节同样需要改为核对当前 pacesetter。",
+      "id": "finding-98abe057b141",
+      "log_path": "logs/audit/2026-11-02-20261102-103520-idle-audit-a5dc7c0b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp"
+      ],
+      "status": "verified",
+      "summary": "Android 17 VSync 调度基准误写为固定主内屏",
+      "type": "source-version-mismatch",
+      "updated_at": "2026-11-02T10:45:19.422179+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/13-displaymanager-service-lifecycle.md",
+      "close_note": "已补全 DisplayPowerState Handler 到 PhotonicModulator 独立线程再到 DisplayBlanker 的交接，修正请求参数并说明亮度与 power mode 顺序取决于新旧状态；对应 DisplayPowerState.java:92-113、376-425、445-565、DMS:1168-1222、LocalDisplayAdapter:912-1004。本地门禁和括注保留检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-103520-idle-audit-a5dc7c0b",
+      "created_at": "2026-11-02T10:39:59.644501+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-103520-idle-audit-a5dc7c0b",
+      "details": "第 8.2 节将 updatePowerState 直接接到 DisplayBlanker，漏掉 DisplayPowerState 的 Handler 更新与独立 PhotonicModulator 线程，容易把耗时 SF/HAL 调用归到 DPC Handler。DisplayPowerState.java:92-113、376-425、445-565 明确给出线程交接；第 8.1 节共享 Looper 说明也需限定为状态机 Handler。",
+      "id": "finding-2920e2ea8d32",
+      "log_path": "logs/audit/2026-11-02-20261102-103520-idle-audit-a5dc7c0b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayPowerState.java"
+      ],
+      "status": "verified",
+      "summary": "DPC 到物理电源调用路径漏掉 DisplayPowerState 和 PhotonicModulator 线程",
+      "type": "missing-thread-boundary",
+      "updated_at": "2026-11-02T10:45:19.480142+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/13-displaymanager-service-lifecycle.md",
+      "close_note": "3.2 已改成 MSG_REQUEST_TRAVERSAL 消息投递与 !inTraversal 边界；核对 DisplayManagerService.java:3985-3991、4699-4700，移除错误 Handler.post 描述。本地门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-103520-idle-audit-a5dc7c0b",
+      "created_at": "2026-11-02T10:42:18.402089+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-103520-idle-audit-a5dc7c0b",
+      "details": "第 3.2 节把具体实现写为 Handler.post；android-17.0.0_r1 DisplayManagerService.java:3985-3991 实际通过 mPendingTraversal 合并请求，且仅在 !inTraversal 时 sendEmptyMessage(MSG_REQUEST_TRAVERSAL)。应直接给出消息名和已有 traversal 的边界。",
+      "id": "finding-45b518d7fac8",
+      "log_path": "logs/audit/2026-11-02-20261102-103520-idle-audit-a5dc7c0b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java"
+      ],
+      "status": "verified",
+      "summary": "scheduleTraversalLocked 错写为 Handler.post 投递",
+      "type": "wrong-api-description",
+      "updated_at": "2026-11-02T10:45:19.537875+08:00"
     }
   ],
   "schema_version": 1
