@@ -6968,6 +6968,222 @@
       "status": "appended",
       "title": "不想开会员，我写了一个记账 App一个没有账号、广告和云同步的 Android 记账 App，我写了三个月。1300 多"
     },
+    "source/juejin-android/2026-11-03-76604358-Android 架构这些年，其实一直在消.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "f3fe36b50c4ba23e",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4545383,
+      "score": 12,
+      "sha256": "bb03c06e77b28de33625798cb5f555b6f397233d29659e5e3ad6ab7832bf64ef",
+      "size": 10248,
+      "status": "appended",
+      "title": "Android 架构这些年，其实一直在消灭碎片化异步很多 Android 开发者刚入行的时候都会觉得： 后来工作几年才"
+    },
+    "source/juejin-android/2026-11-03-76610856-Android Studio 新版 Lo.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "0f3100c7dd37f435",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4554224,
+      "score": 8,
+      "sha256": "fe51abcc3fde929399239cad2371bbd6057c985990ade6c861e7d3e67ea5e9ac",
+      "size": 7229,
+      "status": "appended",
+      "title": "Android Studio 新版 Logcat 一、新版核心变化（和旧版区别） 采用 字段:值 键值对语法，支持精确匹"
+    },
+    "source/juejin-android/2026-11-03-76648798-你是不是还没用过 select？实战 K.md": {
+      "chapter": "待分类",
+      "entry_id": "2e1a886ea0d9b80a",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4563584,
+      "score": 9,
+      "sha256": "b013c53094c2e6bb2cb22927d021b6313b194aff64bda012f0b4a7d4228cdfe0",
+      "size": 17836,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
+    },
+    "source/juejin-android/2026-11-03-76678955-别再只用 Loading、Success.md": {
+      "chapter": "待分类",
+      "entry_id": "e026e896a87b0028",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4531121,
+      "score": 9,
+      "sha256": "16933e84fa76985cc962bf25b0c0443a29b3a601c990434c2d58eb34f1f65403",
+      "size": 33267,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-11-03-76696126-你敢信吗？同样是跨端，KMP 跟 RN .md": {
+      "chapter": "待分类",
+      "entry_id": "0b091b19d5616705",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4573374,
+      "score": 8,
+      "sha256": "fe8749eda112ea7c4dd7196dfce2b9179c98c5b7a9b35473e86c4a098c2bf96d",
+      "size": 6908,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-11-03-76704042-Android 图形系统全景Androi.md": {
+      "chapter": "待分类",
+      "entry_id": "c4d4987eb38db612",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4577217,
+      "score": 24,
+      "sha256": "b936250961d06961f899eb0ca7f97c7fb22a513ce8ed811b4fe991fa960c4230",
+      "size": 15336,
+      "status": "appended",
+      "title": "Android 图形系统全景Android 图形系统横跨应用、系统服务和硬件。本文从 View.draw 到屏幕像素，梳"
+    },
+    "source/juejin-android/2026-11-03-76744618-千万别误用Android Skills解.md": {
+      "chapter": "待分类",
+      "entry_id": "9b5ed096bf9d5308",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4581764,
+      "score": 9,
+      "sha256": "52153b9b04705ab85a477867b39885158bf72606465cf979ad37cf65272d886a",
+      "size": 11731,
+      "status": "appended",
+      "title": "千万别误用Android Skills解析谷歌最新发布的Android Skills，真正理解谷歌全新智能体系统背后的反"
+    },
+    "source/juejin-android/2026-11-03-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "f8ddd09792cdb85f",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.453837,
+      "score": 24,
+      "sha256": "0f85727a363c753059ce56aa43ec6895f75c2b400adf50e483d02cff2622aa0a",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-03-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "633208fcafee32a0",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4501247,
+      "score": 9,
+      "sha256": "bf8dcc58dfed861c78e11bb3ed86eba93095a875e1b74495fdf2a9deceba0b1f",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-03-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "e07a8d752e8d0d1a",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4515905,
+      "score": 15,
+      "sha256": "337a7170b0a769d9f584607a9080df9fcc9abaf2930e4563aeed50a4728df107",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
+    "source/juejin-android/2026-11-03-77020136-点击图标到内容出现，你的 App 在这几.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "9dfca557a7aa747a",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4422066,
+      "score": 28,
+      "sha256": "af3d2f23621b06218461875297548c673a3e13b719939b3de4940c862ec6d941",
+      "size": 52397,
+      "status": "appended",
+      "title": "点击图标到内容出现，你的 App 在这几秒里做了什么：Android 冷启动全链路优化实战从点击图标到第一帧，拆解 An"
+    },
+    "source/juejin-android/2026-11-03-77022843-Android 双开环境底层剖析与风控检.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "ed18087633b7f21e",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4446573,
+      "score": 20,
+      "sha256": "db567c7f8311f58559c6ecaa173520901ba3ee048a61c2e1482631f2b8b38360",
+      "size": 13440,
+      "status": "appended",
+      "title": "Android 双开环境底层剖析与风控检测落地Android 分身/双开原理与对抗检测实战：容器破绽、加固兼容与踩坑总结"
+    },
+    "source/juejin-android/2026-11-03-77024089-我把 0.6B 大模型塞进安卓手机：59.md": {
+      "chapter": "待分类",
+      "entry_id": "6e1a7ff74ff38f6b",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4437659,
+      "score": 10,
+      "sha256": "26394b3584084d3c7375a63469a7c1775d7c71640725d09e20f2992096106bcb",
+      "size": 16482,
+      "status": "appended",
+      "title": "我把 0.6B 大模型塞进安卓手机：596 秒到 10 秒这个 App 是我一个人做的，端侧 OCR 加 0.6B 的小"
+    },
+    "source/juejin-android/2026-11-03-77027378-我把一套完整的 Python Agent.md": {
+      "chapter": "待分类",
+      "entry_id": "c2fb8c469c45e393",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4454236,
+      "score": 18,
+      "sha256": "31563d1fd5d2a7896c39ae2d48fb51702ae4ad741470c75f523e13d111c09116",
+      "size": 13851,
+      "status": "appended",
+      "title": "我把一套完整的 Python Agent 运行时塞进手机 APK：依赖闭包、Rust 轮子和三个真机坑把完整 Pytho"
+    },
+    "source/juejin-android/2026-11-03-77028958-AOSP 14 OTA 升级指导（三）：.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "8cb5c3932dd10c3e",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.447774,
+      "score": 14,
+      "sha256": "78251a0f753c7ebd5637a291c11e7baeaa56e20084580f8b0a5b1c4c509b89c9",
+      "size": 37805,
+      "status": "appended",
+      "title": "AOSP 14 OTA 升级指导（三）：三条升级链路——Java API、自研 HAL 与 TR0690. 本篇要解决什"
+    },
+    "source/juejin-android/2026-11-03-77029846-Android Studio Rabbi.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "4e92e3661223aa8a",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.446287,
+      "score": 9,
+      "sha256": "b2872fa7f0bb5edc21f553bf6a70426ccf6e669043dd8b40b4a3ad2d87503868",
+      "size": 7547,
+      "status": "appended",
+      "title": "Android Studio Rabbit 2 发布：除了Gemini，40+ AI Agent 正式入驻！前言 10"
+    },
+    "source/juejin-android/2026-11-03-77030461-Java 线程自上而下，Kotlin 协.md": {
+      "chapter": "ch05-cpu-power",
+      "entry_id": "b47a85675654649a",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.446934,
+      "score": 12,
+      "sha256": "7cac5becb31968d2e3df19ad89a5c1bfff285df8abe3662b0da6bf35ff8bc813",
+      "size": 10808,
+      "status": "appended",
+      "title": "Java 线程自上而下，Kotlin 协程自下而上在 Android 开发中，我们经常会遇到一个问题： 一个操作应该在哪"
+    },
+    "source/juejin-android/2026-11-03-77033815-Android-GPU压测帧率工具用 2.md": {
+      "chapter": "ch02-rendering",
+      "entry_id": "e59ed64ec2d0e95b",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793650822.4431303,
+      "score": 24,
+      "sha256": "1cb06b8655fc586031c871f5073d33ac4b48013d1a06581c4a37764c8856fa13",
+      "size": 34594,
+      "status": "appended",
+      "title": "Android-GPU压测帧率工具用 200 行 C++ 写一个 Android GPU 压测工具 一、为什么需要它 给"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8180,6 +8396,95 @@
       "mtime": 1793559716.5803137,
       "sha256": "8f635d907de53a288538b921dedbb70c0bdd13c468585b927c96f142dc628557",
       "size": 1561,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-A-unified-view-of-poles-and-polars.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646266.2021434,
+      "sha256": "b91689a217eb4cb82ed96e93f02a1930e705f3f3b54ca285442ba94652963817",
+      "size": 3278,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-Fast-and-slow-ways-to-improve-your-reputation.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646273.5804987,
+      "sha256": "e8a48e4704592fa8cbdabdf5d404f565107f88438cb9eb7701c0c76cafeff735",
+      "size": 10040,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-How-We-Took-Over-ChatGPT-Accounts.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646275.2677174,
+      "sha256": "7279212d81130e7c3bd496dcb1d7f8c138b72a5456abc9b7b2da446fd3d2ee0d",
+      "size": 2377,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-If-in-doubt-delete-the-uv-lock-file.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646263.751268,
+      "sha256": "155e5f68156d98dd418e6bd986fbee3f105eb3786c094a4ce15ca3385dfd4f59",
+      "size": 1173,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-MacBook-Pro-Pricing-and-Configurations-for-M6-M5.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646301.798387,
+      "sha256": "6ff24ed2c61ef75aaaa7407ba0ec5f101114a6c6cd7786a2bb9f53821b52260d",
+      "size": 4776,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-Making-peace-with-the-projective-plane.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646254.410429,
+      "sha256": "e6b82f42ffc64bd716fce59fddc83ae039755e6ec5306b60a1606c3a4a1c6dd3",
+      "size": 3382,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-Notes-from-October-2026.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646295.962142,
+      "sha256": "d48df4d4211a82b0b6dc740b7cbc849eeb6db1edb3e60169c803d72454e67093",
+      "size": 4380,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-Pluralistic-Autodoxing-02-Nov-2026.md": {
+      "chapter": "待分类",
+      "entry_id": "a2a02cd79097c8f8",
+      "last_appended": "2026-11-03T05:25:20.025065+08:00",
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646260.3862915,
+      "score": 8,
+      "sha256": "38fe2f37baf915b564a43aaf0d3831e114d5df38db7efa8ad2bf032c1d3d6a6b",
+      "size": 32740,
+      "status": "appended",
+      "title": "Pluralistic: Autodoxing (02 Nov 2026) – Pluralistic: Daily links from Cory Doctorow"
+    },
+    "source/rss-snapshot/2026-11-03-Quoting-Kyle-Kingsbury.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646268.4890218,
+      "sha256": "71d101dfcc4a79f32241369f3b1c2ecce2f22ddd859348a0eb29a4cce12bcb91",
+      "size": 818,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-Reading-List-10-31-26.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646292.7505407,
+      "sha256": "06ae5a09c1ca3f37c9712d1dab570b3563ded846d065c248b01d019cec95d140",
+      "size": 5164,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-Report-from-the-Vatican.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646283.8500843,
+      "sha256": "d9bd0f5b9d0cce239f3f09e0cb0279ecbe66e6097f5eb359bfd2df5e148de67d",
+      "size": 22604,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-03-Sneaking-into-the-auditorium-for-the-Windows-200.md": {
+      "last_seen": "2026-11-03T05:25:20.025065+08:00",
+      "mtime": 1793646250.09579,
+      "sha256": "839d1abf319fbf91b45c8f953fac7390a3d978f995af873922bc746369bbf63a",
+      "size": 3890,
       "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
@@ -9989,24 +10294,24 @@
     }
   },
   "last_report": {
-    "appended": 12,
-    "considered": 25,
-    "cutoff": "2026-11-01T05:20:20.168028+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-02.md",
+    "appended": 19,
+    "considered": 32,
+    "cutoff": "2026-11-02T05:20:20.057613+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-03.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2382,
+    "scanned": 2414,
     "skipped": {
       "existing_link": 0,
-      "low_score": 13,
-      "max_files": 0,
+      "low_score": 11,
+      "max_files": 2,
       "old_unseen": 1419,
       "path": 31,
-      "unchanged": 907
+      "unchanged": 932
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-02T05:25:20.057613+08:00",
+  "last_run_at": "2026-11-03T05:25:20.025065+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
