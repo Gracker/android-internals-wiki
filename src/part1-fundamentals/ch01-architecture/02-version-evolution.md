@@ -2,7 +2,7 @@
 title: Android 版本演进中的架构变化
 chapter: '1.2'
 section: '1.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
 confidence: high
 tags:
@@ -32,6 +32,8 @@ sources:
 - type: official
   path: https://source.android.com/docs/core/architecture/bootloader/generic-bootloader
 - type: official
+  path: https://source.android.com/docs/core/architecture/bootloader/generic-bootloader/gbl-dev
+- type: official
   path: https://source.android.com/docs/core/runtime
 - type: official
   path: https://source.android.com/docs/core/runtime/configure
@@ -58,6 +60,12 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/app/job/JobScheduler
 - type: official
+  path: https://developer.android.com/reference/android/os/ProfilingManager
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture
+- type: official
   path: https://source.android.com/docs/core/runtime/configure/art-service
 - type: official
   path: https://developer.android.com/about/versions/oreo/background
@@ -83,6 +91,8 @@ sources:
   path: frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java @ android-17.0.0_r1
 - type: aosp
   path: packages/modules/Profiling/framework/java/android/os/ProfilingManager.java @ android-17.0.0_r1
 - type: aosp
@@ -136,25 +146,21 @@ consolidated_from:
 | Android 16 / API 36 | GBL 支持、16 KB 兼容模式、系统触发性能剖析（profiling）、`JobScheduler` 配额调整 | 引导链、原生代码兼容和线上诊断出现新的可选能力 |
 | Android 17 / API 37 | 无锁 `MessageQueue`、更多性能剖析触发条件、`JobScheduler` 等待原因统计 | 目标 SDK 版本与 API 37 新接口直接改变性能诊断路径 |
 
-Material You 是 Android 12 在产品与界面上的重要变化；系统与厂商分区的划分、运行时（Android Runtime，ART）与厂商实现的关系，在这一代维持原样。版本表列出的，是会改变系统分层、二进制兼容或性能分析方法的节点。
+Material You 是 Android 12 在产品与界面上的重要变化；本表关注运行时（Android Runtime，ART）模块化、GKI 等会影响系统分层、二进制兼容或性能分析方法的节点。
 
 ## 从 Treble 到 GKI：更新边界的分层变化
 
-Android 的模块化沿着几条兼容边界一层层推进，每条边界是一份稳定契约，差别只在建成时间。
+Android 的模块化分别处理应用接口、framework/vendor 接口和内核模块接口。下图按兼容双方列出边界，并单列启动关系：
 
 ```text
-App / SDK API
-    |
-Framework 与可更新 Mainline 模块
-    |  VINTF + stable HAL
-Vendor / HAL 实现
-    |  KMI
-GKI 核心内核 + vendor modules
-    |
-Boot firmware / 可选 GBL
+应用 <--> Android 平台                   SDK API
+Framework <--> Vendor / HAL 实现         VINTF + stable HAL
+GKI 通用内核 <--> vendor kernel modules   同分支、同代际 KMI
+
+Boot firmware / 可选 GBL --> 加载内核
 ```
 
-我们先看这张分层图怎么读：SDK API 约束应用与平台，厂商接口（VINTF）约束系统框架与厂商实现，KMI 约束通用内核镜像（Generic Kernel Image，GKI）与厂商内核模块。三者各管一层，合起来支撑起整套分层结构的独立更新。
+SDK API 约束应用与平台，厂商接口（VINTF）约束系统框架与厂商实现，KMI 约束通用内核镜像（Generic Kernel Image，GKI）与厂商内核模块。三者的接口对象和版本范围不同，满足一层的兼容性不能代替其他层的匹配。
 
 <!-- gracker-diagram: ch01-02-update-contracts -->
 ![Android 独立更新的三条兼容边界](../../assets/diagrams/ch01/ch01-02-update-contracts.png)
@@ -165,7 +171,7 @@ Boot firmware / 可选 GBL
 
 Treble 在 Android 8.0 把系统框架（framework）和厂商（vendor）实现分进明确的分区。新版 system 想搭配旧版 vendor 单独升级，前提是双方都满足声明的兼容契约；契约成立，升级才能减少同步修改。
 
-VINTF 就是这份契约的载体：设备一侧的 manifest 声明本机提供哪些 HAL 及版本，系统框架一侧的兼容性矩阵（FCM）声明框架要求哪些 HAL 能力，OTA、启动和兼容性测试再按匹配规则判断组合是否合法。
+VINTF 用清单（manifest）声明提供的能力，用兼容性矩阵声明需求。设备清单声明本机的 HAL 及版本，与框架兼容性矩阵（FCM）匹配；反方向由框架清单声明框架服务，再与设备兼容性矩阵中 vendor 映像的需求匹配。OTA 要协调这两组关系，启动与兼容性测试也按匹配规则检查实际组合，参见 [VINTF 对象设计](https://source.android.com/docs/core/architecture/vintf)。
 
 Android 8.0 初期的跨分区 HAL 主要用硬件接口定义语言（HIDL）描述。HIDL 从 Android 13 起已废弃，有对应 AIDL 接口的新 HAL 应使用带 VINTF 稳定性的 AIDL；既有 HIDL HAL 仍受支持，接口版本须满足目标 FCM，所以读 trace 前要先确认接口类型，参见 [HAL 概览](https://source.android.com/docs/core/architecture/hal)。
 
@@ -195,15 +201,15 @@ Mainline 让安全修复和组件更新有了脱离整机 OTA 的通道。模块
 
 ### GKI 与 KMI
 
-GKI 把通用内核主体和设备相关模块分开；KMI 规定 GKI 向厂商内核模块（vendor kernel modules）开放哪些接口，并在对应代际内维持兼容。
+GKI 把通用内核主体和设备相关模块分开；KMI 规定 GKI 向厂商内核模块（vendor kernel modules）开放哪些接口，并在同一 Android 通用内核（ACK）分支的对应 KMI 代际内维持兼容。
 
-稳定的 KMI 管的是同一代际内的接口兼容。不同 GKI 内核或 KMI 代际之间不承诺模块兼容，厂商模块、设备树、启动配置和厂商功能仍需匹配；同一个 Android 平台还可能同时支持多个历史分支的 Android 通用内核（ACK）。
+稳定的 KMI 管的是同一代际内的接口兼容。不同 GKI 内核或 KMI 代际之间不承诺模块兼容，厂商模块、设备树、启动配置和厂商功能仍需匹配；同一个 Android 平台还可能同时支持多个历史 ACK 分支。
 
 Android 17 的新内核基线是 `android17-6.18`，本书固定使用 `android17-6.18-2026-06_r6` 这份源码。[官方兼容表](https://source.android.com/docs/core/architecture/kernel/android-common#compatibility-matrix) 同时列出 Android 17 可支持的若干较早 GKI 分支，但已注明 `android13-5.10` 与 `android12-5.10` 从 Android 17 QPR1 起不再受支持。看到 Android 17 用户空间时，要单独确认内核分支和系统的 QPR 版本，不能只按大版本判断支持范围。
 
 ### Android 16 的 GBL
 
-通用引导加载程序（GBL）是一个标准化、可更新的 UEFI 应用，里面包含通用的 Android 引导逻辑、Fastboot 和厂商扩展接口。Android 16 引入平台支持，并建议符合条件的新 ARM64 设备集成。
+通用引导加载程序（GBL）是一个标准化、可更新的 UEFI 应用，里面包含通用的 Android 引导逻辑、Fastboot 和厂商扩展接口。Android 16 引入平台支持，官方建议 ARM64 设备集成对应发布分支的最新 Google 认证生产版。开发构建仅用于开发和调试，不能随量产设备出货，参见 [GBL 部署要求](https://source.android.com/docs/core/architecture/bootloader/generic-bootloader/gbl-dev)。
 
 GBL 仍依赖设备启动固件（boot firmware）提供 UEFI、AVB 和必要协议，也允许厂商扩展。它是一套可部署的标准化方案，各台 Android 16 设备实际用什么 Bootloader，以设备自己的启动链为准。我们分析启动时间时，把实际启动链记录下来，再下判断。
 
@@ -283,7 +289,9 @@ adb shell setprop pm.16kb.app_compat.disabled true
 
 ### Android 16：系统触发性能剖析与 Job 配额
 
-Android 15 / API 35 引入 `ProfilingManager` 的应用主动请求接口。Android 16 / API 36 增加系统触发的性能剖析：应用注册关注的触发类型，系统在 `reportFullyDrawn()` 或 ANR 等事件附近采集数据，再把结果交给应用。
+Android 15 / API 35 引入 `ProfilingManager` 的应用主动请求接口。Android 16 / API 36 增加系统触发的性能剖析，应用通过 `addProfilingTriggers()` 注册关注的事件。其中，冷启动中调用 `reportFullyDrawn()` 后的 `TRIGGER_TYPE_APP_FULLY_DRAWN` 和 ANR 触发器获取的是正在运行的后台系统 trace 的快照。后台 trace 按抽样间歇运行；只有采样覆盖触发时刻且系统限额允许时，才可能取得结果，不能期待每次事件都有记录。
+
+系统触发的结果只交给通过 `registerForAllProfilingResults()` 注册的全局监听器，文件位置从 `ProfilingResult.getResultFilePath()` 获取。结果会脱敏，只包含请求进程的相关信息，不能据此还原完整设备 trace，参见 [触发式性能剖析指南](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture) 和 [ProfilingManager 接口说明](https://developer.android.com/reference/android/os/ProfilingManager)。
 
 Android 16 还调整了 `JobScheduler` 的普通任务和加急任务（expedited job）的运行时配额。配额会考虑应用待机分组（standby bucket）、任务启动时应用是否处于顶层（top）状态，以及任务是否在前台服务运行期间执行；前台服务期间执行的任务，同样计入这份配额的考量。所以我们排查任务未运行时，直接读待执行原因（pending reason）、停止原因（stop reason）和约束，比只看是否启动过前台服务可靠得多。
 
@@ -300,11 +308,19 @@ adb shell am compat disable USE_NEW_MESSAGEQUEUE <package>
 
 依赖私有字段反射的代码需要迁移；使用 Espresso 的 UI 测试应升级到 3.7.0 及以上，Robolectric 应升级到 4.17 及以上并将旧 `LEGACY` Looper 模式迁移到 `PAUSED`，参见 [MessageQueue 迁移说明](https://developer.android.com/about/versions/17/changes/messagequeue)。具体实现见 §1.8。
 
-API 37 扩展了 `ProfilingTrigger`，新增或公开一批触发类型，覆盖冷启动（cold start）、内存不足（OOM）、因 CPU 使用过量被终止、异常和应用兼容性等场景。不同触发器产生的采集结果（artifact）和停止条件各不相同，我们逐类确认之后再下结论。应用仍需注册触发器、接收结果，并遵守系统限额。
+API 37 扩展了 `ProfilingTrigger`，新增或公开一批触发类型，覆盖冷启动（cold start）、内存不足（OOM）、因 CPU 使用过量被终止、异常和应用兼容性等场景。采集结果（artifact）和停止条件要按触发类型区分：
+
+- `TRIGGER_TYPE_COLD_START` 新启动系统 trace 和调用栈采样，在应用调用 `reportFullyDrawn()` 后结束；未调用时默认在 5 秒后停止。它使用满后丢弃新事件的缓冲区来保留启动早期数据，采集开始本身仍可能有延迟。
+- `TRIGGER_TYPE_OOM` 在应用出现 `OutOfMemoryError` 时提供 Java 堆转储。自定义 `Thread.UncaughtExceptionHandler` 必须转调默认未捕获异常处理器，否则这个触发器不会生效；应用仍可主动请求堆转储。
+- `TRIGGER_TYPE_ANOMALY` 和 `TRIGGER_TYPE_APP_COMPAT` 的结果随具体异常行为变化，可通过 `ProfilingResult.getTag()` 确认类别。对于 `TRIGGER_TYPE_ANOMALY`，同一 UID 下多个包注册该触发器时，系统可能不提供部分异常行为的采集结果。
+
+这些触发器仍需应用注册，并受系统限额约束；应用自己设置的触发间隔不能取消系统限额，参见 [ProfilingTrigger 接口说明](https://developer.android.com/reference/android/os/ProfilingTrigger)。
 
 `JobScheduler.getPendingJobReasonStats(jobId)` 是 API 37 新增接口，返回各项待执行原因及其累计等待时长。多个原因可以同时成立，所以各项时长之和可能超过任务实际等待时间。
 
-统计不会跨设备重启保留，任务成功完成或取消时也会清空；应在任务仍待执行、出现异常等待时查询，无效或已不处于待执行状态的 `jobId` 会触发 `IllegalArgumentException`。它适合回答“哪类约束长期阻止任务运行”；要还原过程，再结合 API 36 引入的 `getPendingJobReasonsHistory()`、`JobParameters.getStopReason()` 和用于识别重复执行的业务日志。历史记录也会被截断且不跨重启保留，采集端需要及时保存，参见 [JobScheduler 接口说明](https://developer.android.com/reference/android/app/job/JobScheduler#getPendingJobReasonStats(int))。
+统计不会跨设备重启保留，任务成功完成或取消时也会清空，出现异常等待时应及时查询。`android-17.0.0_r1` 中的 `JobSchedulerService` 按调用 UID、命名空间和 `jobId` 查找任务，找不到时抛出 `IllegalArgumentException`；应使用调度该任务的 `JobScheduler` 实例查询，不能仅因任务已开始执行就判断参数无效，见 [查询实现](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java#2292)。
+
+这个接口适合回答“哪类约束长期阻止任务运行”；要还原过程，再结合 API 36 引入的 `getPendingJobReasonsHistory()`、`JobParameters.getStopReason()` 和用于识别重复执行的业务日志。历史记录也会被截断且不跨重启保留，采集端需要及时保存，参见 [JobScheduler 接口说明](https://developer.android.com/reference/android/app/job/JobScheduler#getPendingJobReasonStats(int))。
 
 `android-17.0.0_r1` 源码里，部分新增接口和触发器仍由功能开关系统 `aconfig` 和 `@FlaggedApi` 注解管理。应用侧以最终的 API 37 SDK、设备构建和接口可用性为准；预览版或单一产品上的开关状态，只代表那一台设备。
 
