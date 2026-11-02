@@ -12204,6 +12204,111 @@
       "summary": "decodeFile 吞掉复用解码异常，示例仅捕获异常导致普通解码回退不执行",
       "type": "decodefile-inbitmap-fallback",
       "updated_at": "2026-11-02T18:41:26.378047+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/14-broadcastqueue-scheduling-performance.md",
+      "close_note": "已以 android-17.0.0_r1 固定标签或官方英文文档逐项核实并修复；元数据、SUMMARY 链接、diff 和新增中文硬门均通过。未声称设备实验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "created_at": "2026-11-02T22:45:38.117378+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "details": "原 5.2 表将 urgent 整体列入 -120 s，但 BroadcastRecord.calculateUrgent() 包含 alarm，而 BroadcastProcessQueue.updateRunnableAt() 在未命中更早分支时对 alarm 采用 0。已按实际分支修正表格，补充条件优先次序及闹钟例外。",
+      "id": "finding-2841dcddb289",
+      "log_path": "logs/audit/2026-11-02-20261102-223520-idle-audit-67fce7bb-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastRecord.java#867",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastProcessQueue.java#1247"
+      ],
+      "status": "verified",
+      "summary": "urgent 调度类别被等同于 runnableAt 的 -120 s 默认偏移",
+      "type": "runnable-offset-boundary",
+      "updated_at": "2026-11-02T22:45:38.176744+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/14-broadcastqueue-scheduling-performance.md",
+      "close_note": "已以 android-17.0.0_r1 固定标签或官方英文文档逐项核实并修复；元数据、SUMMARY 链接、diff 和新增中文硬门均通过。未声称设备实验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "created_at": "2026-11-02T22:45:38.236066+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "details": "原 3.2 未保留 registerReceiver 的 Handler scheduler 可指定线程这一边界。ContextImpl 仅在 scheduler 为 null 时取主线程 Handler，LoadedApk.ReceiverDispatcher 将回调投递到该 Handler。已修正正文及相关排障、实验线程观察项，保留默认主线程耗时可能导致其他 ANR 的风险。",
+      "id": "finding-983345d3c4f2",
+      "log_path": "logs/audit/2026-11-02-20261102-223520-idle-audit-67fce7bb-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ContextImpl.java#1980",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/LoadedApk.java#2076"
+      ],
+      "status": "verified",
+      "summary": "无序动态接收者被无条件描述为占用应用主线程",
+      "type": "receiver-callback-thread",
+      "updated_at": "2026-11-02T22:45:38.294573+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/14-broadcastqueue-scheduling-performance.md",
+      "close_note": "已以 android-17.0.0_r1 固定标签或官方英文文档逐项核实并修复；元数据、SUMMARY 链接、diff 和新增中文硬门均通过。未声称设备实验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "created_at": "2026-11-02T22:45:38.353636+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "details": "原 2.3 将四项默认值一并归因于 BroadcastConstants 和 DeviceConfig。单冷启动由 BroadcastQueueImpl.mRunningColdStart 控制，普通进程队列并行度及额外 urgent 槽数才来自相应 BroadcastConstants 配置。已分别说明来源。",
+      "id": "finding-d353fcbe3c44",
+      "log_path": "logs/audit/2026-11-02-20261102-223520-idle-audit-67fce7bb-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java#234",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java#116"
+      ],
+      "status": "verified",
+      "summary": "单广播冷启动槽被归入 BroadcastConstants 的 DeviceConfig 可调参数",
+      "type": "configuration-scope",
+      "updated_at": "2026-11-02T22:45:38.413446+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/14-broadcastqueue-scheduling-performance.md",
+      "close_note": "已以 android-17.0.0_r1 固定标签或官方英文文档逐项核实并修复；元数据、SUMMARY 链接、diff 和新增中文硬门均通过。未声称设备实验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "created_at": "2026-11-02T22:45:38.476456+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "details": "原 8.2 未区分 assumed-delivered 接收者：系统在 scheduleRegisteredReceiver 成功提交后即可标记终态，terminalTime 可能早于 onReceive。已限定等待回执的投递含义，补充应用入口、出口或异步 finish 时间点的测量要求。",
+      "id": "finding-e5d3f587e1bc",
+      "log_path": "logs/audit/2026-11-02-20261102-223520-idle-audit-67fce7bb-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java#1257",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java#2416",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastRecord.java#593"
+      ],
+      "status": "verified",
+      "summary": "finish_delay_ms 被无条件解释为应用执行与完成回执耗时",
+      "type": "broadcast-metric-semantics",
+      "updated_at": "2026-11-02T22:45:38.545148+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/14-broadcastqueue-scheduling-performance.md",
+      "close_note": "已以 android-17.0.0_r1 固定标签或官方英文文档逐项核实并修复；元数据、SUMMARY 链接、diff 和新增中文硬门均通过。未声称设备实验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "created_at": "2026-11-02T22:45:38.614200+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261102-223520-idle-audit-67fce7bb",
+      "details": "原 7.2 将私有 action、权限或发送方校验并列为导出配套措施，未明确 action 命名不能认证发送者。官方广播概览警告导出接收者可收到其他应用的未保护广播且 action 命名空间为全局。已将命名防重名与权限、身份校验分别说明。",
+      "id": "finding-7345d05dc5b5",
+      "log_path": "logs/audit/2026-11-02-20261102-223520-idle-audit-67fce7bb-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/develop/background-work/background-tasks/broadcasts?hl=en#security-considerations"
+      ],
+      "status": "verified",
+      "summary": "私有 action 与权限及发送方校验并列可能被误读为身份保护",
+      "type": "broadcast-export-security",
+      "updated_at": "2026-11-02T22:45:38.679410+08:00"
     }
   ],
   "schema_version": 1
