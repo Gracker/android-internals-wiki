@@ -6220,6 +6220,56 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-03-76704042-Android 图形系统全景Androi.md",
+      "title": "[技术文章] Android 图形系统全景Android 图形系统横跨应用、系统服务和硬件。本文从 View.draw 到屏幕像素，梳",
+      "summary": "> 发布时间: 2026-08-06T01:35:45.000Z > 原文链接: https://juejin.cn/post/7670404221932306474 2026-08-06 858 阅读11分钟 Android 图形系统横跨应用、系统服务和硬件，组件多、术语杂。本文从应用到硬件梳理一遍：六层分层、层间如何协作、典型场景如何接入，只讲整体，不深入实现细节。...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-03T06:20:20.072692+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-03-77020136-点击图标到内容出现，你的 App 在这几.md",
+      "title": "[技术文章] 点击图标到内容出现，你的 App 在这几秒里做了什么：Android 冷启动全链路优化实战从点击图标到第一帧，拆解 An",
+      "summary": "> 发布时间: 2026-10-30T03:12:43.000Z > 原文链接: https://juejin.cn/post/7702013601234436132 2026-10-30 181 阅读28分钟 Android 性能优化 > 本文是「Android 应用性能优化」系列第三篇。前两篇解决的是内容出现**之后**的流畅度（XML 渲染层级与 Overdraw、...",
+      "chapter": "ch02",
+      "processed_at": "2026-11-03T06:20:20.072692+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-03-77028958-AOSP 14 OTA 升级指导（三）：.md",
+      "title": "[技术文章] AOSP 14 OTA 升级指导（三）：三条升级链路——Java API、自研 HAL 与 TR0690. 本篇要解决什",
+      "summary": "> 发布时间: 2026-11-01T12:58:10.000Z > 原文链接: https://juejin.cn/post/7702895830290612251 用户6070975914906 2026-11-01 66 阅读23分钟 > 系列第 3 / 6 篇 · 承接第 2 篇《OTA 包的构成与生成》 > 1. 总览：A/B 无缝升级架构与核心组件 > 2....",
+      "chapter": "ch16",
+      "processed_at": "2026-11-03T06:20:20.072692+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "aosp",
+        "ota",
+        "java",
+        "api",
+        "hal",
+        "juejin.cn"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-03-77033815-Android-GPU压测帧率工具用 2.md",
+      "title": "[技术文章] Android-GPU压测帧率工具用 200 行 C++ 写一个 Android GPU 压测工具 一、为什么需要它 给",
+      "summary": "> 发布时间: 2026-11-02T07:34:42.000Z > 原文链接: https://juejin.cn/post/7703381509637668879 2026-11-02 45 阅读23分钟 > 无窗口、多线程、纯 ALU 负载——一个可以直接在 adb shell 下运行的 EGL/GLES3 离屏渲染压测器。 给 GPU\"烤机\"的工具不少，但大多有一...",
+      "chapter": "ch02",
+      "processed_at": "2026-11-03T06:20:20.072692+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
