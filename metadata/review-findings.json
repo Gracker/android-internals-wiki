@@ -12035,6 +12035,63 @@
       "summary": "last source verification 2026-07-25 older than 90 days",
       "type": "stale-source-verification",
       "updated_at": "2026-11-02T09:46:32.668829+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/02-version-evolution.md",
+      "created_at": "2026-11-02T10:13:22.508312+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261102-100520-2e356f15",
+      "details": "Android 12 的关系维持原样与 ART 在该版本进入 Mainline 的结论冲突；模块化段落把不同边界写成仅建成时间不同，ASCII 图又把 KMI 放在 HAL 与含厂商模块的内核整体之间。应分别说明 SDK、VINTF 与 KMI 的对象和适用范围，并把 KMI 放在 GKI 与厂商内核模块之间。VINTF 还应补齐双向 manifest/matrix 匹配。",
+      "id": "finding-fbf342df2d71",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/ota/modular-system",
+        "https://source.android.com/docs/core/architecture/vintf",
+        "https://source.android.com/docs/core/architecture/kernel/android-common"
+      ],
+      "status": "open",
+      "summary": "Android 12 架构叙述与更新契约图混淆了 ART 模块化及 KMI 两端",
+      "type": "source-accuracy",
+      "updated_at": "2026-11-02T10:13:22.508312+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/02-version-evolution.md",
+      "created_at": "2026-11-02T10:13:22.567760+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261102-100520-2e356f15",
+      "details": "APP_FULLY_DRAWN/ANR 获取已运行的后台 trace 快照，需要后台采样覆盖且受限额约束，并非每次触发后必然启动一次采集；系统触发结果只交给 registerForAllProfilingResults 注册的全局监听器。API 37 的 COLD_START 新开采集，OOM 返回 Java heap dump 且自定义未捕获异常处理器必须转调默认处理器。需区分这些结果和可用条件。",
+      "id": "finding-3139f7c8e495",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java @ android-17.0.0_r1",
+        "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java @ android-17.0.0_r1",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "status": "open",
+      "summary": "性能剖析触发器遗漏后台快照前提、结果回调与 OOM 处理边界",
+      "type": "missing-boundary",
+      "updated_at": "2026-11-02T10:13:22.567760+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/02-version-evolution.md",
+      "created_at": "2026-11-02T10:13:22.625468+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261102-100520-2e356f15",
+      "details": "JobSchedulerService.getPendingJobReasonStats 在 android-17.0.0_r1 按调用 UID、namespace 与 jobId 查 JobStore，只有找不到任务才抛 IllegalArgumentException；不存在因任务从等待转为执行就拒绝查询的状态判断。应说明实例命名空间及查询时机，不能把已不等待笼统当作参数无效。",
+      "id": "finding-b667e991ecb4",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java @ android-17.0.0_r1",
+        "https://developer.android.com/reference/android/app/job/JobScheduler"
+      ],
+      "status": "open",
+      "summary": "Job 等待原因统计将执行状态误作无效 jobId 条件",
+      "type": "source-accuracy",
+      "updated_at": "2026-11-02T10:13:22.625468+08:00"
     }
   ],
   "schema_version": 1
