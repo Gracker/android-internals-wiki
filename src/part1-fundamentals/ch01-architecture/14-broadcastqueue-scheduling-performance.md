@@ -4,8 +4,10 @@ chapter: '1.14'
 section: '1.14'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-16'
+last_verified: '2026-11-02'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-11-02'
+last_idle_audit_at: '2026-11-02'
 confidence: high
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/21-broadcast-performance-cross-process-overhead.md
@@ -34,6 +36,8 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
 - type: aosp
   path: frameworks/base/core/java/android/app/ContextImpl.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/LoadedApk.java
 - type: aosp
   path: frameworks/base/core/java/android/app/BroadcastOptions.java
 - type: aosp
@@ -136,7 +140,7 @@ Android 17 的源码标签里已经找不到 `BroadcastQueueModernImpl.java`，�
 - urgent 广播可额外使用 1 个槽；
 - 同一时刻只允许发起 1 个广播冷启动。
 
-这些值来自 `BroadcastConstants`，可由 `activity_manager_native_boot` DeviceConfig 配置项调整。额外的 urgent 槽解决的是紧急广播被普通槽堵住的情况：普通槽已占满时，紧急广播靠这个槽继续推进，所有广播的并行度并不会因此永久提高到 5。
+普通并行度与额外 urgent 槽数来自 `BroadcastConstants`，可由 `activity_manager_native_boot` DeviceConfig 配置项调整；单冷启动限制由 `BroadcastQueueImpl.mRunningColdStart` 单独控制。额外的 urgent 槽解决的是紧急广播被普通槽堵住的情况：普通槽已占满时，紧急广播靠这个槽继续推进，所有广播的并行度并不会因此永久提高到 5。
 
 <!-- gracker-diagram: ch01-14-process-queues -->
 ![广播记录、进程队列与运行槽的三层结构](../../assets/diagrams/ch01/ch01-14-process-queues.png)
@@ -168,7 +172,7 @@ ContextImpl.sendBroadcast()
   → finishReceiver()（系统需要等待完成的投递）
 ```
 
-这条链说明，广播总延迟至少包含接收者解析、进程队列等待、必要时的进程冷启动、Binder 调度、应用主线程排队和 `onReceive()` 执行。我们评估端到端延迟时，要把这几段加在一起；只测 `onReceive()` 方法体，看到的只是最后一段。
+这条链说明，广播总延迟至少包含接收者解析、进程队列等待、必要时的进程冷启动、Binder 调度、应用回调线程排队（默认主线程）和 `onReceive()` 执行。我们评估端到端延迟时，要把这几段加在一起；只测 `onReceive()` 方法体，看到的只是最后一段。
 
 ### 3.1 冷启动与逐接收者的 Binder 调用
 
@@ -188,7 +192,7 @@ ContextImpl.sendBroadcast()
 - 有序广播接收者；
 - 带完成回调、超出“假定已投递”（assumed-delivered）适用范围的投递。
 
-还有一层容易被看漏：BroadcastQueue 虽然不等这类投递的完成回执，无序动态接收者照样占用自己应用的主线程——这次投递仍会阻塞该应用的 UI 和后续消息，可能触发输入、前台服务等其他类型的 ANR。
+BroadcastQueue 不等这类投递的完成回执，应用侧仍要执行 `onReceive()`。动态接收者默认在主线程回调，耗时操作会阻塞 UI 和后续消息，可能触发输入、前台服务等其他类型的 ANR；通过带 `Handler scheduler` 参数的 `registerReceiver()` 重载，可以将回调交给指定 Handler 所在线程。指定回调线程只改变应用侧执行位置，不改变 `isAssumedDelivered()` 的判断，排查时应核对注册参数和回调线程。
 
 ## 四、优先级、顺序与避免低优先级长期等待
 
@@ -212,7 +216,7 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 
 ### 4.3 有序广播的接收者依赖
 
-有序广播的第 N 个接收者，要等第 N-1 个接收者到达终态或延后（deferred）状态后才能继续；无序广播的接收者没有这条依赖，可以分散到多个进程队列并行推进——不过“并行”到此为止：同时执行的进程数仍受 `running` 槽、单冷启动槽、目标进程主线程和 cached 策略限制。
+有序广播的第 N 个接收者，要等第 N-1 个接收者到达终态或延后（deferred）状态后才能继续；无序广播的接收者没有这条依赖，可以分散到多个进程队列并行推进——不过“并行”到此为止：同时执行的进程数仍受 `running` 槽、单冷启动槽、目标进程的回调线程和 cached 策略限制。
 
 进程队列内部按 `urgent` → `normal` → `offload` 选择下一项，同时用两个上限防止低优先级长期等待：默认连续 3 个 `urgent` 后会考虑更早入队的低优先级项，连续 10 个 `normal` 后也会考虑 `offload` 项。若低优先级项被有序广播依赖挡住，就只能等依赖解除。
 
@@ -226,15 +230,17 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 
 ### 5.2 API 37 如何计算 `runnableAt`
 
-`BroadcastProcessQueue.updateRunnableAt()` 按队列内容和进程状态选择原因，默认调度偏移包括：
+`BroadcastProcessQueue.updateRunnableAt()` 按队列内容和进程状态选择原因，默认调度偏移包括下表。多个条件同时满足时，以源码中先命中的分支为准；有序依赖阻塞和强制延迟需要另行检查。
 
 | 条件 | 默认偏移 | 含义 |
 |---|---:|---|
-| urgent / foreground / instrumented（测试插桩进程） | `-120 s` | 排序时强烈前移，不代表提前执行 |
+| 未标记 `deferUntilActive` 的 foreground 广播 / interactive / instrumented（测试插桩进程）/ 前台或持久进程 | `-120 s` | 排序时强烈前移，不代表提前执行 |
 | ordered / alarm / prioritized / manifest | `0` | 不加普通广播的短暂等待余量 |
-| 普通广播 | `+500 ms` | 给快速变化事件留出调度余量 |
+| 其余普通广播 | `+500 ms` | 给快速变化事件留出调度余量 |
 | cached 且不能无限延后 | `+120 s` | 延后处理 |
 | cached 且全部记录 `deferUntilActive` | `Long.MAX_VALUE` | 等进程变为 active 或条件变化 |
+
+`urgent` 调度类别与 `runnableAt` 偏移分别计算。闹钟广播属于 `urgent`，但若未命中更早的 foreground、interactive 或进程状态分支，会以 `REASON_CONTAINS_ALARM` 使用 `0` 偏移。
 
 我们记住这张表的性质就够了：它们是 DeviceConfig 默认值，不是 API 时延承诺。积压有兜底，队列积压上限 `MAX_PENDING_BROADCASTS` 普通设备默认 256、低内存设备默认 128；达到上限后，代码会绕过已施加的延迟，帮助队列排空。
 
@@ -281,7 +287,7 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 广播 ANR 的 `TimeoutRecord` 描述包含 Intent、接收包名和类名。拿到记录后，我们至少核对这几项：
 
 1. 当前接收者是清单接收者、有序接收者，还是带完成回调的动态接收者；
-2. 主线程在执行 Java/Kotlin 代码、等待锁、Binder 调用还是文件 I/O；
+2. 主线程或指定的接收者回调线程在执行 Java/Kotlin 代码、等待锁、Binder 调用还是文件 I/O；
 3. 是否调用 `goAsync()` 后遗漏 `finish()`；
 4. 广播是否带 `FLAG_RECEIVER_FOREGROUND`，从而使用 10 秒基准；
 5. 系统轨迹中的长时间出现在调度前排队，还是提交给应用后执行。
@@ -298,7 +304,7 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 
 面向 Android 14 的应用注册非纯系统广播接收者时，需要显式选择 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。`RECEIVER_NOT_EXPORTED` 限制的是可向该接收者发送广播的外部身份；它仍然注册在 `system_server` 中，仍然走广播分发路径执行。
 
-如果接收者要接收的系统广播来自 Bluetooth、telephony 这类高权限、不以 system UID 运行的框架组件，官方文档建议使用 `RECEIVER_EXPORTED`；选择导出时又要配套私有 action、权限或发送方校验，因为其他应用也可能向导出接收者发送未保护广播。
+如果接收者要接收的系统广播来自 Bluetooth、telephony 这类高权限、不以 system UID 运行的框架组件，官方文档建议使用 `RECEIVER_EXPORTED`；导出后应通过权限或发送方身份校验限制未保护广播。私有 `action` 的包名前缀可减少重名，其他应用仍能构造同名 `action`，仅凭命名无法验证发送方身份。
 
 `RECEIVER_NOT_EXPORTED` 收紧的是发送方身份，性能上没有附带的好处：它没有把广播自动变成进程内函数调用；省去 PackageManager 查询或 Binder IPC 这笔账，也记不到它头上。若事件只在一个进程内使用，直接回调、`Flow` 或应用自己的事件模型更简单。
 
@@ -357,9 +363,11 @@ API 37 定义了 `broadcasts` Perfetto SDK 分类。启用相关 v3 跟踪功能
 当前进程级实现把 `receive_delay_ms` 记为 0，因为“被进程队列选中”和“提交给应用”之间没有旧实现中的独立阶段。分析时我们重点看两个值：
 
 - `dispatch_delay_ms = scheduledTime - enqueueTime`：包含队列等待及冷启动影响；
-- `finish_delay_ms = terminalTime - scheduledTime`：包含应用侧执行与完成回执。
+- `finish_delay_ms = terminalTime - scheduledTime`：需等待完成回执时，包含应用回调排队、执行与完成回执耗时；假定已投递的接收者只计到系统标记投递完成。
 
-写 SQL 前先在目标轨迹中确认存在 `broadcast_delivered`，再通过 `slice` / `args` 表查看该版本导出的参数名，别照搬依赖不存在字段或别名的语句。没启用 SDK 分类时，仍可结合传统 ActivityManager trace 中 `BroadcastQueue` 的 `enqueueBroadcast`、`updateRunningList`、`scheduleReceiverWarmLocked`、`finishReceiver` 等方法片段，加上 `BroadcastQueue.mRunning[N]` 进程队列片段、应用主线程时间片、`sched` 调度事件和 Binder 轨道还原延迟。
+对“假定已投递”的无序动态接收者，系统可能在 `onReceive()` 执行前就写入 `terminalTime`。测量这类接收者的应用耗时，需要在回调入口、出口或异步 `finish()` 处补充应用侧时间点。
+
+写 SQL 前先在目标轨迹中确认存在 `broadcast_delivered`，再通过 `slice` / `args` 表查看该版本导出的参数名，别照搬依赖不存在字段或别名的语句。没启用 SDK 分类时，仍可结合传统 ActivityManager trace 中 `BroadcastQueue` 的 `enqueueBroadcast`、`updateRunningList`、`scheduleReceiverWarmLocked`、`finishReceiver` 等方法片段，加上 `BroadcastQueue.mRunning[N]` 进程队列片段、应用主线程或指定回调线程的时间片、`sched` 调度事件和 Binder 轨道还原延迟。
 
 ### 8.3 一次可靠的广播性能实验
 
@@ -368,7 +376,7 @@ API 37 定义了 `broadcasts` Perfetto SDK 分类。启用相关 v3 跟踪功能
 1. 记录 `action`、发送 UID、接收者类型、有序 / 前台 / 延后 / delivery group 配置；
 2. 分别测量 warm、cached 和 cold 进程；
 3. 同时记录发送时刻、`onReceive()` 开始、异步 `finish()` 和业务完成时刻；
-4. 用系统轨迹对齐进程启动、`system_server` 队列、Binder 和应用主线程；
+4. 用系统轨迹对齐进程启动、`system_server` 队列、Binder 和应用回调线程；
 5. 报告 P50 / P90 / P99 分位数，并记录设备温度、CPU 负载和构建类型；
 6. 用 `dumpsys` 保存实验时的 BroadcastConstants，避免配置在实验期间变化。
 
@@ -392,6 +400,9 @@ API 37 定义了 `broadcasts` Perfetto SDK 分类。启用相关 v3 跟踪功能
 - 标志与公开选项：
   - `frameworks/base/core/java/android/content/Intent.java`
   - `frameworks/base/core/java/android/app/BroadcastOptions.java`
+- 应用侧回调线程与执行：
+  - `ContextImpl.registerReceiverInternal()`
+  - `frameworks/base/core/java/android/app/LoadedApk.java`（`ReceiverDispatcher`）
 - 跟踪：
   - `frameworks/base/core/java/android/os/PerfettoCategories.java`
   - `BroadcastQueueImpl.logBroadcastDeliveryEventReported()`
