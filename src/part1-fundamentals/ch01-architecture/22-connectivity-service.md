@@ -4,14 +4,22 @@ chapter: '1.22'
 section: '1.22'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
-last_verified: '2026-08-20'
-last_verified_against: AOSP android-17.0.0_r1 (Connectivity, NetworkStack, frameworks/base) + ACK android17-6.18-2026-06_r6; Android Developers API 37 local-network permission/ECH docs checked 2026-08-20
+last_verified: '2026-11-03'
+last_verified_against: AOSP android-17.0.0_r1 (Connectivity, NetworkStack, frameworks/base) + ACK android17-6.18-2026-06_r6; Android Developers ConnectivityManager/NetworkCallback/NetworkCapabilities/SubscriptionInfo API and API 37 local-network permission/ECH docs checked 2026-11-03
+last_source_verified_at: '2026-11-03T18:43:12+08:00'
+last_idle_audit_at: '2026-11-03T18:43:12+08:00'
 confidence: high
 sources:
 - type: aosp
   path: packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java
 - type: aosp
   path: packages/modules/Connectivity/framework/src/android/net/NetworkAgent.java
+- type: aosp
+  path: packages/modules/Connectivity/framework/src/android/net/NetworkProvider.java
+- type: aosp
+  path: packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java
+- type: aosp
+  path: packages/modules/Connectivity/framework/src/android/net/NetworkRequest.java
 - type: aosp
   path: packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java
 - type: aosp
@@ -44,6 +52,8 @@ sources:
   path: frameworks/base/telephony/java/android/telephony/SubscriptionInfo.java
 - type: official
   path: developer.android.com/reference/android/net/ConnectivityManager
+- type: official
+  path: developer.android.com/reference/android/net/NetworkCapabilities
 - type: official
   path: developer.android.com/privacy-and-security/local-network-permission
 - type: official
@@ -134,7 +144,9 @@ agent 的注册和更新通道是 Binder：
 3. agent 通过 registry 的 `sendNetworkCapabilities()`、`sendLinkProperties()`、`sendScore()` 等方法发送更新。
 4. 服务通过 `INetworkAgent` 回告验证状态、带宽更新请求、keepalive 等事件。
 
-到 Android 17，agent 数据通道已经不再使用 `AsyncChannel`。`NetworkProvider` 的传统请求通知仍使用 `Messenger` 投递到构造时指定的 `Looper`；较新的 `offerNetwork()` 则把回调和 `Executor` 绑定到一项网络供给提议（offer）上。这两条通道服务于两个阶段：“系统是否需要提供者建立网络”和“已经建立的网络怎样上报状态”，看日志时先分清事件落在哪一条上。
+到 Android 17，agent 数据通道已经不再使用 `AsyncChannel`。`NetworkProvider` 的传统请求通知仍使用 `Messenger` 投递到构造时指定的 `Looper`；较新的 `NetworkProvider.registerNetworkOffer()` 则把回调和 `Executor` 绑定到一项网络供给提议（offer）上。这两条通道服务于两个阶段：“系统是否需要提供者建立网络”和“已经建立的网络怎样上报状态”，看日志时先分清事件落在哪一条上。
+
+`registerNetworkOffer()` 是要求 `NETWORK_FACTORY` 权限的 `@SystemApi`，普通 SDK 应用不能直接调用它。
 
 注册只让服务认识这个 agent；agent 标记为 connected 后，网络才可出现在公开查询中、满足请求并参与默认网络选择。`unregister()` 才结束它的生命周期。
 
@@ -309,7 +321,7 @@ rematchAllNetworksAndRequests()
 | `registerNetworkCallback(request, ...)` | 被动观察所有匹配网络 | 观察 Wi-Fi、非计费网络等候选，不要求系统为此建网 |
 | `registerBestMatchingNetworkCallback()` | 只跟踪当前最佳匹配 | API 31+ 只需单个候选的观察场景 |
 | `requestNetwork(request, ...)` | 主动请求系统尝试提供最佳匹配网络 | 确实需要系统建立或保持额外网络的短期任务 |
-| `reserveNetwork(request, ...)` | 预留未来由软硬件组件提供的能力 | API 36+ 的专门供给流程，不用于在线状态监听 |
+| `reserveNetwork(request, ...)` | 预留未来由软硬件组件提供的能力 | API 36+ 或 U Extensions 17 的专门供给流程，不用于在线状态监听 |
 
 `requestNetwork()` 可能促使 radio、扫描或数据网络保持活动，轮询网络状态这类事交给回调就好；完成后必须调用 `unregisterNetworkCallback()`。
 
@@ -337,7 +349,7 @@ Android 8.0 起，`onAvailable()` 后保证按顺序派发 `onCapabilitiesChange
 
 图：在本章 Android 14–17 范围内，初始可用通知依次派发 available、capabilities、link properties 和 blocked。应用应使用回调携带的快照，后续属性变化也会单独回调；框架通过应用侧 CallbackHandler 分发。
 
-下面的示例用于维护一个可供 UI 和任务调度读取的快照。耗时探测仍应交给独立执行器。
+下面的示例用于维护一个可供 UI 和任务调度读取的快照；应用需要先在 Manifest 中声明 `android.permission.ACCESS_NETWORK_STATE`，才能注册默认网络回调。耗时探测仍应交给独立执行器。
 
 ```kotlin
 class NetworkStateTracker(
@@ -416,7 +428,7 @@ class NetworkStateTracker(
 - 回调中不做磁盘 I/O、同步网络请求或长时间锁等待；
 - 记录回调处理时长和队列等待，“每次 Binder 都小于几毫秒”这类说法要靠实测支撑。
 
-Android 16 起的 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED` 也是策略输入：缺少它时应限制高带宽传输与访问频率；网络是否受限要看这个能力位，单看 Wi-Fi/蜂窝 transport 推不出来。
+`NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED` 从 Android 16（API 36）起公开，也提供于 U Extensions 16。缺少它时应把带宽用量控制在 `NetworkCapabilities` 报告的上下行带宽以内，并限制访问频率；超量或过频访问可能导致系统阻断应用联网，后台联网也可能进一步受限。网络是否受限要看这个能力位，单看 Wi-Fi/蜂窝 transport 推不出来。
 
 ## 默认网络切换、socket 与 DNS
 
@@ -437,7 +449,7 @@ Android 16 起的 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED` 也是策略输入�
 
 ### linger 与等待替代网络
 
-请求迁到新的 satisfier 后，旧网络可能进入 linger，为旧 socket 留出收尾时间。Android 17 AOSP 的 linger 与 nascent（新网络的短暂观察期）默认延迟分别为 30 秒和 5 秒，但可以由系统配置调整，不属于 SDK 时序承诺。`onLosing()` 只是提示，应用必须容忍它不出现，或几乎与 `onLost()` 同时到达。
+请求迁到新的 satisfier 后，旧网络可能进入 linger，为旧 socket 留出收尾时间。Android 17 AOSP 的 linger 与 nascent（新网络的短暂观察期）默认延迟分别为 30 秒和 5 秒。linger 可通过 `persist.netmon.linger` 系统属性覆盖，源码将其用途限定为测试；nascent 直接使用 5 秒常量，可配置化仍是 TODO。两者都不属于 SDK 时序承诺。`onLosing()` 只是提示，应用必须容忍它不出现，或几乎与 `onLost()` 同时到达。
 
 `NetworkAgent.unregisterAfterReplacement(timeout)` 让旧 agent 先销毁 native network，再短暂保留注册状态等待等价替代者。此时 `POLICY_IS_DESTROYED` 让新网络在其他条件等价时胜出；若超时仍没有替代者，旧 agent 最终注销。linger 到期或 native network 已销毁，都不表示所有旧连接已经由业务正确恢复，重试与幂等仍由连接库和应用负责。
 
@@ -585,7 +597,9 @@ SubscriptionInfo.getStreamingAppMaxUplinkKbps()
 
 这个值是套餐/运营商策略输入，当前链路吞吐量要另测。做码率控制时，我们还要结合播放器缓冲区、实际传输采样、丢包、RTT（网络往返时延）、`NetworkCapabilities` 带宽估计和服务端策略。
 
-Android 17 还加入 `NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS`，面向符合条件的 OTT（通过互联网提供）语音/视频通话。它表示网络可能提供优先通信路径，隔离资源的 5G network slice 要网络真提供才有；普通列表、图片和遥测流量就别去申请它了。显式请求这类能力时，要处理不可用、超时、回到默认网络以及回调注销。
+Android 17（API 37，亦提供于 U Extensions 21）还加入 `NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS`，面向符合条件的 OTT（通过互联网提供）语音/视频通话。它表示网络可能提供优先通信路径，隔离资源的 5G network slice 要网络真提供才有；普通列表、图片和遥测流量就别去申请它了。显式请求这类能力时，要处理不可用、超时、回到默认网络以及回调注销。
+
+targetSdk 34 及以上应用通过 `requestNetwork()` 请求这项能力前，还需要在 Manifest 中用 `PackageManager.PROPERTY_SELF_CERTIFIED_NETWORK_CAPABILITIES` 指向自认证 XML，并在 XML 中声明 `NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS`。漏掉声明会使请求因 `SecurityException` 被拒绝，等待超时或回退网络无法补上这项前置条件。声明格式见 [`NetworkRequest` 的自认证说明](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkRequest.java)。
 
 ### ECH
 
