@@ -2,7 +2,10 @@
 title: VSync、Choreographer 与 SurfaceFlinger 调度
 chapter: '2.3'
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
-last_verified: '2026-09-18'
+last_verified: '2026-11-03'
+last_source_verified_at: '2026-11-03T10:40:31+08:00'
+last_idle_audit_at: '2026-11-03T10:40:31+08:00'
+verification_scope_note: '静态源码核验覆盖 VSync 预测与分发、Choreographer 五阶段与恢复路径、Composer3 帧间隔和 Display API 边界；内核说明沿用原有 android17-6.18 基线，不包含厂商显示驱动、panel 时序或实机 trace 验证。'
 last_verified_against: AOSP android-17.0.0_r1 VsyncSchedule/VSyncPredictor/VSyncReactor/VSyncDispatchTimerQueue/EventThread/Choreographer；kernel android17-6.18-2026-06_r6 DRM vblank
 confidence: high
 sources:
@@ -134,6 +137,16 @@ sources:
   path: frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp
 - type: aosp
   path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/view/Display.java
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h
+- type: aosp
+  path: frameworks/native/libs/gui/include/gui/JankInfo.h
+- type: official
+  path: https://developer.android.com/reference/android/view/Display
 tags:
   - vsync
   - dispsync
@@ -270,7 +283,7 @@ App 收到的 VSync 回调，是系统从目标呈现时刻往前倒推出的唤
 
 - 历史窗口：20 个样本；
 - 开始形成预测所需的最少样本：6 个；
-- 异常点容忍比例：20%。
+- 相位校验、近重复样本判断与拟合周期校验的容差：20%。
 
 `VSyncPredictor::validate()` 会检查新时间戳与当前理想周期的对齐程度，过滤重复或明显不一致的样本。样本足够后，它对“VSync 序号—时间戳”做简单线性回归，斜率代表估计周期，截距描述相位。
 
@@ -353,7 +366,7 @@ wakeup                    ready/deadline              target VSync
 
 #### 4.2 配置层的 Phase Offset
 
-这里的 phase（相位） 表示 App 或 SF 的唤醒点相对目标 VSync 的位置（重采样），offset（相对目标 VSync 的时间偏移） 是这个相对位置的数值表达。
+这里的 phase（相位）表示 App 或 SF 的唤醒点在显示周期中的位置（相对显示时间基准的时序关系），offset（相对显示时间基准的时间偏移）是这个位置的数值表达。旧配置中的 offset 还需要结合周期换算成面向目标 VSync 的工作预算。
 
 运行时是按工作预算调度的，但相位偏移在配置层照样存在。`VsyncConfig` 同时保留：
 
@@ -384,7 +397,7 @@ struct VsyncConfig {
 
 #### 4.4 调 phase 的代价
 
-把 App 或 SF 的唤醒点向目标呈现靠近，可以缩短等待（线程已可运行但尚未获得 CPU 的时间），但可用预算也会随之变紧；向前移动则增加容错，代价是输入到显示的排队时间和功耗可能上升。
+把 App 或 SF 的唤醒点向目标呈现靠近，可以缩短输入到呈现的等待（帧开始生产到目标呈现之间的时间也随之缩短），但可用预算会变紧；向前移动则增加容错，代价是输入到显示的排队时间和功耗可能上升。唤醒后线程能否及时获得 CPU，还要单独检查 runnable 等待。
 
 真到调优时，我们至少要同时观察：
 
@@ -479,7 +492,7 @@ App 与 SF 共享同一物理显示的预测基础，但它们有不同的注册
 | App | `EventThread("app")` → DisplayEventReceiver → Choreographer | 输入、动画、Traversal、RenderThread/GPU、提交 buffer |
 | SF | `MessageQueue` 的 `"sf"` registration | transaction、latch、composition、HWC present |
 
-Perfetto 里 `VSYNC-app` 与 `VSYNC-sf` 分成两条轨迹，原因就在这里：这是两条调度路径（Linux 普通任务的公平调度类），把它们读成两块硬件各自发出的脉冲就走偏了。
+Perfetto 里 `VSYNC-app` 与 `VSYNC-sf` 分成两条轨迹，原因就在这里：这是两条调度路径（分别驱动应用生产与 SF 合成），把它们读成两块硬件各自发出的脉冲就走偏了。
 
 ---
 
@@ -493,7 +506,7 @@ Android 17 tag 同时保留 version 3、4、5 的冻结快照，也就是各版�
 
 - `vsyncPeriod` 表示显示 VSync/TE 节奏；
 - `VrrConfig.minFrameIntervalNs` 约束最快呈现间隔；
-- `DisplayCommand.frameInterval（本次使用的帧间隔）Ns` 提示后续内容 cadence；
+- `DisplayCommand.frameIntervalNs`（本次提示的后续帧间隔）提示后续内容 cadence；
 - `notifyExpectedPresent` 可提前告知下一次预计呈现及后续间隔。
 
 在非 ARR mode 中，`vsyncPeriod` 通常对应当前显示刷新周期。ARR mode 中，两者可以解耦。
@@ -866,7 +879,7 @@ CALLBACK_INPUT
 | ANIMATION | `animation` | 属性动画、`FrameCallback`、公开 `VsyncCallback` 等 | 回调只推进状态，不保证一定产生新 buffer |
 | INSETS_ANIMATION | `insets_animation` | 汇总系统栏、IME（输入法）等 Insets 动画更新 | 它位于 Animation 之后、Traversal 之前 |
 | TRAVERSAL | `traversal` | ViewRoot traversal、measure/layout/draw、HWUI 交接 | 三项工作是否都执行取决于本帧状态 |
-| COMMIT | `commit` | post-draw 收尾与提交后回调 | 该阶段观察到的 frame time 可能因前面迟到而调整 |
+| COMMIT | `commit` | post-draw 收尾与提交后回调 | 本基线与前面各阶段读取同一份 FrameData，不单独重算 frame time |
 
 #### 4.1 INPUT 不等于全部输入处理
 
@@ -896,9 +909,9 @@ Input 和普通 animation 都可能修改 Insets，也就是系统栏、输入�
 - `syncAndDrawFrame()` 等待 RenderThread；
 - 锁、Binder 或 buffer 相关等待。
 
-#### 4.5 COMMIT 的 frame time 可能更新
+#### 4.5 COMMIT 与帧时间的实现边界
 
-Choreographer 的注释明确指出：Traversal 若很重并跨过多个帧，COMMIT 阶段报告的 frame time 可以更新，以更接近这批 UI 状态开始生效的帧。写监控代码时要注意这一点：若混用不同阶段的 frame time，可能把这种调整误判为时钟异常。
+在 `android-17.0.0_r1` 中，`doCallbacks()` 取出到期回调后直接传入 `mFrameData`，没有为 `CALLBACK_COMMIT` 单独重算 frame time 的分支。五个阶段使用分发前选定的帧时间；迟到重同步和 buffer stuffing offset 在 `doFrame()` 分发前处理。`CALLBACK_COMMIT` 的注释仍保留“frame time 可能更新”的描述，但该 tag 的执行路径没有实现这项阶段内调整。核对跨版本监控结果时，要查看对应版本的 `doFrame()` 和 `doCallbacks()` 实现。
 
 ---
 
@@ -1113,7 +1126,7 @@ window.addOnFrameMetricsAvailableListener(
 
 #### 9.4 适用范围
 
-FrameMetrics 面向某个硬件加速 Window。`SurfaceView`、视频、Camera、游戏引擎等可能有独立 Surface 和生产节奏；宿主 Window 的 FrameMetrics 代表不了这些内容 layer 的每一帧，此类场景要结合对应 Producer、layer 和 FrameTimeline。
+FrameMetrics 面向某个硬件加速 Window。`SurfaceView`、视频、Camera、游戏引擎等可能有独立 Surface 和生产节奏；宿主 Window 的 FrameMetrics 代表不了这些内容 layer 的每一帧，此类场景要结合对应 Producer、layer 和设备可提供的帧记录。Perfetto 的 FrameTimeline 文档仍注明不支持 SurfaceView，因此不能预设独立 Surface 一定有可用的 App Expected/Actual 轨迹；先检查实际采集结果，缺失时继续使用 buffer、fence、Producer 和显示侧 trace 定位。
 
 ---
 
@@ -1446,7 +1459,7 @@ HWC 回调的入口是 `SurfaceFlinger::onComposerHalVsync()`，随后进入 `Sc
 | 常量 | Android 17 值 | 负责的机制 |
 |---|---:|---|
 | Predictor history 与 minimum samples | 20（历史容量）、6（最低样本数） | 默认预测模型的样本容量与开始拟合的门槛 |
-| Predictor discard outlier percent | 20% | 时间戳相位校验与近重复样本判断 |
+| Predictor discard outlier percent | 20% | 时间戳相位校验、近重复样本判断与拟合周期偏差校验 |
 | `VSyncTracker::kPredictorThreshold` | 200 ms | 优先选择近期样本，并作为部分 resync 节流的默认时间域 |
 | Reactor period allowance | 10% | 模式切换时确认观测周期是否接近目标周期 |
 | Dispatch timer slack | 500 µs | 合并时间相近的 callback 唤醒 |
@@ -1456,7 +1469,7 @@ HWC 回调的入口是 `SurfaceFlinger::onComposerHalVsync()`，随后进入 `Sc
 
 ### 三、VSyncPredictor 如何建立时间模型
 
-`VsyncSchedule::createTracker()` 在默认路径创建 `VSyncPredictor`：历史容量为 20，至少积累 6 个样本才开始拟合，丢弃离群样本的比例为 20%。此外还有一条条件严格的单样本路径：只有启用 `use_last_vsync_predict` 这个功能开关、使用 VRR config（可变刷新率配置），且 present fence 可用时，历史容量和最少样本数才会都改为 1。
+`VsyncSchedule::createTracker()` 在默认路径创建 `VSyncPredictor`：历史容量为 20，至少积累 6 个样本才开始拟合，相位校验、近重复样本判断和拟合周期校验使用的容差为 20%。此外还有一条条件严格的单样本路径：只有启用 `use_last_vsync_predict` 这个功能开关、使用 VRR config（可变刷新率配置），且 present fence 可用时，历史容量和最少样本数才会都改为 1。
 
 所以系统并不是一直用末次 VSync 预测。调试具体设备前，我们要先在 `dumpsys SurfaceFlinger` 诊断输出、日志和对应产品 flag 中确认它走的是默认模型还是单样本模型。
 
@@ -1478,7 +1491,7 @@ HWC 回调的入口是 `SurfaceFlinger::onComposerHalVsync()`，随后进入 `Sc
 timestamp(n) ≈ intercept + slope × sequence(n)
 ```
 
-这里 `slope` 表示模型估计的周期，`intercept` 表示相位。实现先对时间值做缩放以降低大整数参与运算时的精度风险，最终再恢复纳秒尺度。拟合完成后还会检查各样本与模型之间的误差，超出 20% 容差的模型不会直接采用。
+这里 `slope` 表示模型估计的周期，`intercept` 表示相位。实现先对时间戳减去最老有效样本，再放大序号进行定点运算，以降低截距计算的误差。拟合后比较的是估计周期与理想周期：偏差达到或超过理想周期的 20% 时，恢复理想周期并清空样本。这项检查没有逐个计算样本相对拟合直线的残差，也不规定必须丢弃固定比例的样本。
 
 单样本模式不执行这组回归；它以最新有效 pulse（VSync 脉冲） 为基准，并使用理想 period 预测。分析 trace 时，我们要区分“样本较少”和“预测器失效”这两种情况：前者是正常的模型选择，后者才是故障信号。
 
@@ -1640,6 +1653,8 @@ ARR 不保证支持任意连续帧率：设备通常受离散 VSync step（步�
 | Android 16（API 36） | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`；新系统上的 supported refresh rates 更偏向“可用 render rate”语义 |
 | Android 17（API 37） | `Display.getFrameRateVelocityMapping()`，为 View fling（快速滑动）的速度到帧率映射提供设备建议 |
 
+`getFrameRateVelocityMapping()` 返回的映射属于当前 `Display`。窗口切换到另一块显示器（例如折叠屏的内外屏切换）后，要从窗口当前所在的 Display 重新查询；收到 `DisplayListener.onDisplayChanged()` 时也要重新查询。该 tag 中此方法带有 `FLAG_FRAME_RATE_MAPPING_API` 标记，使用前还需核对目标 SDK 和设备实现，不能把一块屏的映射长期缓存后套到其他显示器上。
+
 API 只能表达意图，落到哪一层调用有讲究：`SurfaceControl.Transaction.setFrameRate()` 适合直接管理 SurfaceControl layer 的系统组件；普通 View 应优先使用 View 或 Window 层 API，让声明随可见性和 View 生命周期传播。
 
 Android 17 源码中还有受 flag 控制的 `Surface.FrameRateParams` overload，但当前 Java 实现仍留有把 desired min 与 max（期望下限与上限） 继续传给原生层的 TODO。只有同时核对目标 SDK、设备 flag 和实现后，才能判断区间控制是否完整生效。
@@ -1769,7 +1784,7 @@ App 收到的是面向 predicted present 的调度事件，之后还有 App 工�
 
 #### “120 Hz 的每一帧都只有 8.33 ms App CPU 时间”
 
-8.33 ms 只是刷新周期。App 实际获得的 CPU 时间由 wakeup VSync config（唤醒配置）和调度目标共同决定；流水线可以跨周期，ARR 还可能让实际 frame interval 与 TE 周期不同。
+8.33 ms 只是刷新周期。App 的工作预算由 wakeup VSync config（唤醒配置）和调度目标共同决定，线程实际何时获得 CPU 还取决于内核调度；流水线可以跨周期，ARR 也可能让实际 frame interval 与 TE 周期不同。
 
 #### “present fence 可以完全替代 HW VSync”
 
