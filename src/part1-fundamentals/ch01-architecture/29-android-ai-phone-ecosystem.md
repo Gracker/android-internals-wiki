@@ -14,8 +14,10 @@ related_chapters:
 - '1.3'
 - '5.4'
 - '5.5'
-last_verified: '2026-08-09'
-last_verified_against: AOSP android-17.0.0_r1; Android/ML Kit/LiteRT official docs current to 2026-08-09
+last_verified: '2026-11-03'
+last_verified_against: AOSP android-17.0.0_r1; Android/ML Kit/LiteRT official docs checked 2026-11-03
+last_source_verified_at: '2026-11-03'
+last_idle_audit_at: '2026-11-03'
 confidence: high
 sources:
 - type: aosp
@@ -34,6 +36,8 @@ sources:
   path: https://developer.android.com/ndk/guides/neuralnetworks
 - type: official-doc
   path: https://developers.google.com/ml-kit/genai
+- type: official-doc
+  path: https://developers.google.com/ml-kit/genai/prompt/android
 - type: official-doc
   path: https://developers.google.com/edge/litert/android
 ---
@@ -80,7 +84,9 @@ Neural Networks HAL 仍然受支持，`android-17.0.0_r1` 也保留 `hardware/in
 
 ## 1.29.3 路线一：AICore 与 ML Kit GenAI
 
-ML Kit GenAI API 通过 AICore 使用设备上的 Gemini Nano。当前公开能力包括摘要、校对、改写、图像描述、语音识别，并提供 Prompt API。模型由设备共享，应用无需把基础模型打进 APK，也不直接管理模型文件。
+ML Kit GenAI API 通过 AICore 使用设备上的 Gemini Nano。当前公开能力包括摘要、校对、改写、图像描述、语音识别。模型由设备共享，应用无需把基础模型打进 APK，也不直接管理模型文件。
+
+通用提示入口由 `com.google.mlkit:genai-prompt` 的 `GenerativeModel` 提供。官方直接模型访问文档将该接口标为 beta：不适用 SLA 或弃用政策，后续变更可能破坏向后兼容。设备与模型可用，不代表接口已有稳定性保障。
 
 如果应用需要的是受支持的端侧生成能力，不需要自己控制底层模型实现，这条路线更合适。接入时必须处理下面的运行条件：
 
@@ -263,5 +269,6 @@ TOPS 表示每秒可执行多少万亿次运算，是硬件理论吞吐指标，
 - [Neural Networks API drivers](https://source.android.com/docs/core/interaction/neural-networks) — NNAPI 弃用后 Neural Networks HAL 仍受支持的边界。
 - [OnDeviceIntelligenceManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/NeuralNetworks/framework/platform/java/android/app/ondeviceintelligence/OnDeviceIntelligenceManager.java) — Android 17 ODI 系统 API 边界，区别于 Google AICore/Gemini Nano 交付。
 - [ML Kit GenAI APIs](https://developers.google.com/ml-kit/genai) — AICore、设备支持、前台限制与配额。
+- [ML Kit direct model access](https://developers.google.com/ml-kit/genai/prompt/android) — `GenerativeModel` 通用提示入口及 beta、SLA、弃用政策与兼容性边界。
 - [LiteRT for Android](https://developers.google.com/edge/litert/android) — `CompiledModel`、`Interpreter` 与硬件加速入口。
 - [LiteRT GPU delegates](https://developers.google.com/edge/litert/performance/gpu) — 算子覆盖、分段执行与缓冲区优化注意事项。
