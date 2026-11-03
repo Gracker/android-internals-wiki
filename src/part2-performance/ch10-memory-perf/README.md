@@ -54,7 +54,7 @@
 
 ### 2. 确定内存域
 
-窗口固定后，接下来确定增长落在哪个内存域。我们至少从以下视角调查，它们互相交叉，统计时不能直接相加。线程和文件描述符是资源线索；PSI 衡量资源压力造成的任务停顿，属于时间维度的压力信号（见 [PSI 官方说明](https://docs.kernel.org/accounting/psi.html)）：
+窗口固定后，接下来确定增长落在哪个内存域。我们至少从以下视角调查；这些视角互相交叉，统计时按域分别记录与比较。其中线程和文件描述符是资源线索，PSI 衡量资源压力造成的任务停顿，属于时间维度的压力信号（见 [PSI 官方说明](https://docs.kernel.org/accounting/psi.html)）：
 
 - ART managed heap（由 ART 管理的 Java/Kotlin 对象堆）；
 - Native heap；
@@ -68,7 +68,7 @@
 
 图：这些是交叉的调查视角：ART 与 Native 堆可由匿名映射承载，图形资源也可能进入其他统计；线程数、FD 数和 PSI 不是另一套堆字节数。
 
-GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 对象关联的 Native 分配通过 `NativeAllocationRegistry` 登记，对象不可达后由清理机制调用登记的释放函数（见 [固定 r1 源码](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/util/NativeAllocationRegistry.java)）。这条清理路径只覆盖登记过的分配，其余的 Native、Surface、codec（编解码器）、GPU 或内核资源，还需要逐类核对 owner（资源持有者）、关闭责任、共享引用和异步工作完成条件。
+视角确定之后，还要弄清各域的回收责任。GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 对象关联的 Native 分配通过 `NativeAllocationRegistry` 登记，对象不可达后由清理机制调用登记的释放函数（见 [固定 r1 源码](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/util/NativeAllocationRegistry.java)）。这条清理路径只覆盖登记过的分配，所以其余的 Native、Surface、codec（编解码器）、GPU 或内核资源，要逐类核对 owner（资源持有者）、关闭责任、共享引用和异步工作完成条件。
 
 <!-- gracker-diagram: ch10-index-05-gc-native-boundary -->
 ![Java 可达性可以关联已登记 Native 清理](../../assets/diagrams/ch10/ch10-index-05-gc-native-boundary.png)
@@ -84,7 +84,7 @@ GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 
 - Native heap profile 用于分析 `malloc`/`free`；
 - Perfetto 用于对齐 GC、调度、frame（帧）、fault（缺页）、PSI 与业务阶段；
 - `dumpsys meminfo` 和 smaps（进程内存映射明细）用于确定统计分类与映射归属；
-- DMA-BUF、memtrack 和 GpuService 分别提供图形对象、分类或驱动上报证据；先确认设备支持、权限、覆盖范围与采集完整性，缺数据不能直接按 0 解释。
+- DMA-BUF、memtrack 和 GpuService 分别提供图形对象、分类或驱动上报证据；先确认设备支持、权限、覆盖范围与采集完整性，缺的数据按未知处理，不计成 0。
 
 工具标签能把调查范围缩小到具体的内存域和分配路径；要提出可验证的修复方案，我们还要拿到 owner、对象生命周期或调用栈。
 
@@ -106,17 +106,21 @@ GC 主要回收 managed heap 中不可达对象占用的堆空间。部分 Java 
 
 ## 阅读建议
 
+入口表按现象分流，这里再补充几条跨专题的读法：
+
 - App 侧排障从 10.1 开始，再按内存域进入对应小节。
 - OOM、GC 抖动和前后台恢复问题，建议与第 4 章的 ART、lmkd、MemoryLimiter、内核回收章节对照。
 - 图形与渲染问题要把 10.4 和渲染专题放在同一时间线分析，避免只看 Java heap。
-- 平台或 OEM（设备厂商）调试还应保存 cgroup、PSI、lmkd（低内存终止守护进程）、MemoryLimiter 与 ART 配置，不能用 API level 代替设备实际状态。
+- 平台或 OEM（设备厂商）调试还应保存 cgroup、PSI、lmkd（低内存终止守护进程）、MemoryLimiter 与 ART 配置，设备实际状态以这些现场配置为准，API level 说明的是框架版本。
 
 ## 证据边界
 
+全章的结论，我们按这几条标准把关：
+
 - 数据要有源码路径、官方文档或可复现实验支撑。
-- PSS、RSS、Java heap、Native allocated 和 GPU memory 维持各自的统计范围，直接相加得不出统一口径。
-- `System.gc()`、`WeakReference`、对象池、WebP、SparseArray、异步线程的讨论都限定在具体场景，不当作通用解法。
-- 证明泄漏要靠重复观察，一次快照不够；确认资源已经释放，一次 GC 也不够。
+- PSS、RSS、Java heap、Native allocated 和 GPU memory 维持各自的统计范围，合计之前先核对口径。
+- `System.gc()`、`WeakReference`、对象池、WebP、SparseArray、异步线程的讨论都限定在具体场景，是否适用要看场景条件。
+- 证明泄漏要靠重复观察，一次快照不够；确认资源已经释放，一次 GC 之后仍要继续观察。
 - 性能收益必须注明设备、构建、负载、指标和对照条件。
 
 
