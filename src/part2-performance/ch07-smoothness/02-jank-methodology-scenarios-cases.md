@@ -205,7 +205,7 @@ duration_ms: 15000
 颜色只用于导航。红色、黄色或浅绿色都只是界面提示，我们读取的是字段本身：`JankType` 是位标志，同一帧可能有多个原因。分析 `BufferStuffing`、Dropped、PredictionError 和显示模式切换时，还要读取相邻帧。
 
 
-SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。这时我们改从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示呈现栅栏）与 release fence（buffer 可复用栅栏）组织证据。这几个对象各管一段：acquire fence（缓冲区可读栅栏）要等生产完成，SF latch 锁定本帧 buffer，按 HWC 接口定义，常见物理屏的 present fence 对应本帧开始扫描显示或开始传到面板内存的 VSync，全屏扫描要在这之后才结束；虚拟显示则对应输出 buffer 写完。release fence 表示相应消费者已读完 buffer，随后才可安全重写，实际仍要遵守缓冲队列的所有权规则。接口语义见 [HWC 基线头文件](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h)。出图类型识别参见 [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
+SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。这时我们改从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示呈现栅栏）与 release fence（buffer 可复用栅栏）组织证据。这几个对象各管一段：acquire fence（缓冲区可读栅栏）等的是生产完成，SF latch 把本帧 buffer 锁定下来。present fence 按 HWC 接口定义，常见物理屏上对应本帧开始扫描显示、或开始向面板内存传送的 VSync，全屏扫描在这之后才结束；虚拟显示则对应输出 buffer 写完。release fence 表示相应消费者已读完 buffer，随后才可安全重写，实际仍要遵守缓冲队列的所有权规则。接口语义见 [HWC 基线头文件](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h)。出图类型识别参见 [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
 
 ### 从帧回到线程与系统
 
@@ -213,7 +213,7 @@ SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径
 
 #### MainThread 与 RenderThread（渲染线程）
 
-`Choreographer#doFrame` 是应用帧调度入口，常见 callback（回调） 顺序为 Input（输入）、Animation（动画）、Insets Animation（系统栏等区域的动画）、Traversal（测量、布局和绘制遍历）、Commit（提交），其中 Traversal 覆盖测量、布局和绘制，Commit 处理 traversal 之后的 post-draw 回调，并可能校正回调可见的 frame time，是应用侧帧工作的收尾阶段；GPU 提交与显示 present 的完成，要另外确认。`DrawFrame` 位于 RenderThread，覆盖 HWUI 的渲染准备与提交工作。这两个 slice 适合作为回溯的起点，帧的完成与呈现结论仍要看 FrameTimeline。
+`Choreographer#doFrame` 是应用帧调度入口，常见 callback（回调） 顺序为 Input（输入）、Animation（动画）、Insets Animation（系统栏等区域的动画）、Traversal（测量、布局和绘制遍历）、Commit（提交），其中 Traversal 覆盖测量、布局和绘制，Commit 处理 traversal 之后的 post-draw 回调，并可能校正回调可见的 frame time，是应用侧帧工作的收尾阶段。GPU 提交与显示 present 是否完成，要另外确认。`DrawFrame` 位于 RenderThread，覆盖 HWUI 的渲染准备与提交工作。这两个 slice 适合作为回溯的起点，帧的完成与呈现结论仍要看 FrameTimeline。
 
 <!-- gracker-diagram: ch07-02-choreographer-boundaries -->
 ![doFrame、DrawFrame 与帧完成边界](../../assets/diagrams/ch07/ch07-02-choreographer-boundaries.png)
@@ -247,7 +247,7 @@ Runnable（可运行但尚未获得 CPU） duration（持续时间）量的是�
 <!-- gracker-diagram: ch07-02-thread-state-waits -->
 ![区间耗时如何拆成运行与等待](../../assets/diagrams/ch07/ch07-02-thread-state-waits.png)
 
-图：统计线程 Running 区间才得到 CPU 执行；Runnable 区间反映等待调度，D/S 需要继续找等待对象。sched_slice.end_state 描述离开 CPU 时的状态，不能直接代替后续等待时长。
+图：统计线程 Running 区间才得到 CPU 执行；Runnable 区间反映等待调度，D/S 需要继续找等待对象。sched_slice.end_state 说明的是线程离开 CPU 时的状态；后续等待了多久，要回到对应状态区间去读。
 
 `D` 状态的范围比存储 I/O 宽：fence、驱动、页错误和其他内核 wait queue（等待队列） 都可能形成不可中断等待。具体在等什么资源，要有 `blocked_function`、`io_wait` 与相邻事件共同支持才写得上去。
 
@@ -272,7 +272,7 @@ Runnable（可运行但尚未获得 CPU） duration（持续时间）量的是�
 
 ### Perfetto SQL：从表结构开始
 
-Trace Processor（跟踪数据处理器）导入并分析 trace；SQL 模块和表结构取决于分析时使用的 Trace Processor 版本，不由采集设备的 Android 版本单独决定。AOSP（Android 开源项目） 参考实现位于 `platform/external/perfetto` 的 `android.frames.timeline`、`android.binder` 与 `android.binder_breakdown` 模块。字段或模块不存在时，应核对查询与分析器的兼容性；数据源未采到或现场没有对应事件时，表也可能只是空表。SQL 报错和零行结果要分别排查。
+这一节的 SQL 查询都运行在 Trace Processor（跟踪数据处理器）上：它导入并分析 trace；SQL 模块和表结构取决于分析时使用的 Trace Processor 版本，不由采集设备的 Android 版本单独决定。AOSP（Android 开源项目） 参考实现位于 `platform/external/perfetto` 的 `android.frames.timeline`、`android.binder` 与 `android.binder_breakdown` 模块。字段或模块不存在时，先核对查询与分析器的兼容性；数据源未采到或现场没有对应事件时，表也可能只是空表。SQL 报错和零行结果，我们分别排查。
 
 本文三段查询已用 Perfetto v58.2 在[官方测试 trace](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/test/data/wattson_jank_cuj.pb.sha256)上运行校验，并分别检查内置标准库与上述 r1 SQL 模块。此校验确认的是示例的执行与区间筛选语义；换一份 trace，数据覆盖要重新确认。
 
@@ -315,7 +315,7 @@ ORDER BY a.ts;
 <!-- gracker-diagram: ch07-02-sql-frame-identity -->
 ![帧查询的联结、去重与缺失值](../../assets/diagrams/ch07/ch07-02-sql-frame-identity.png)
 
-图：先包含模块并检查分析器版本，再由模块提供的 ID 连接 actual/expected。多 DrawFrame 可能使同一 actual slice 重复出现；缺少 expected 时保留 NULL，不能把偏差补成零。
+图：先包含模块并检查分析器版本，再由模块提供的 ID 连接 actual/expected。多 DrawFrame 可能使同一 actual slice 重复出现；缺少 expected 时保留 NULL，缺失照实记，不补成零。
 
 #### 查询主线程与 RenderThread 的等待
 
@@ -409,11 +409,11 @@ ORDER BY b.client_dur DESC;
 <!-- gracker-diagram: ch07-02-binder-frame-overlap -->
 ![同步 Binder 与实际帧窗口的交集](../../assets/diagrams/ch07/ch07-02-binder-frame-overlap.png)
 
-图：重叠筛选会包含帧开始前发起、帧内仍未返回的同步 Binder。它只建立候选依赖；还要看服务端分解、线程状态和嵌套事务，不能用固定时间差认定线程池饱和。
+图：重叠筛选会包含帧开始前发起、帧内仍未返回的同步 Binder。它只建立候选依赖；线程池是否饱和，要看服务端分解、线程状态和嵌套事务，固定时间差给不出这个结论。
 
 #### 大型 trace
 
-分析大型 trace 时，应先用时间窗口、进程/线程条件和 `LIMIT` 缩小查询范围，再考虑使用 `MATERIALIZED` CTE（物化公共表表达式）或临时表。命令行 `trace_processor_shell trace.pb --query-file analysis.sql` 适合离线批处理；SQL 文件应与 trace、Trace Processor 版本和查询参数一起归档，确保结果可以重放。
+分析大型 trace 时，我们先用时间窗口、进程/线程条件和 `LIMIT` 缩小查询范围，再考虑使用 `MATERIALIZED` CTE（物化公共表表达式）或临时表。命令行 `trace_processor_shell trace.pb --query-file analysis.sql` 适合离线批处理；SQL 文件与 trace、Trace Processor 版本和查询参数一起归档，结果才可以重放。
 
 ### 标准化分析检查清单
 
@@ -464,10 +464,10 @@ ORDER BY b.client_dur DESC;
 | App 启动 Perfetto SDK 就能拿系统 trace | 区分进程内 Track Event 与受权限保护的系统数据源 |
 | trace 越长越有价值 | 选择能覆盖复现且数据完整的最小窗口 |
 
-### Android 17 与内核锚点
+### 平台与内核基线
 
-- Platform（平台层）：`android-17.0.0_r1` 的 FrameTimeline、FrameMetrics、HWUI、SurfaceFlinger 和 Perfetto stdlib（标准库）。
-- Kernel（内核）：调度、Binder、blocked reason、dma-fence（设备缓冲同步栅栏）、PSI 与内存回收以 `android17-6.18-2026-06_r6` 为准。
+- Platform（平台层）：FrameTimeline、FrameMetrics、HWUI、SurfaceFlinger 和 Perfetto stdlib（标准库）的机制以文首的源码基线为准。
+- Kernel（内核）：调度、Binder、blocked reason、dma-fence（设备缓冲同步栅栏）、PSI 与内存回收同样以文首的内核基线为准。
 - 版本演进：Android 12 前没有 FrameTimeline；API 24 起有 FrameMetrics，API 31 增加 `GPU_DURATION` / `DEADLINE`，API 36 增加 `FRAME_TIMELINE_VSYNC_ID`。历史工具可保留，分析时优先使用现代字段。
 
 ## 滚动、动画、启动与交互场景
@@ -528,7 +528,7 @@ AndroidX RecyclerView 在系统跟踪中留下了自己的一组 slice；不同�
 | `RV CreateView` | inflate 并创建 ViewHolder | item 树过深、View 类型多、复用不足 | 简化高频 item，按 viewType 检查创建频率 |
 | `RV Prefetch` | GapWorker 执行预取 | 嵌套列表、预取量不合适、共享池边界错误 | 按真实滚动方向和嵌套关系调整参数 |
 
-`onBindViewHolder()` 运行在主线程，但它不一定嵌在名为 measure 或 layout 的 slice 里。判断 bind 是否拖慢一帧，应直接查看 RecyclerView slice 或应用自定义 marker，再观察它与 `Choreographer#doFrame`、traversal（界面遍历） 的时间关系。
+`onBindViewHolder()` 运行在主线程，但它不一定嵌在名为 measure 或 layout 的 slice 里。判断 bind 是否拖慢一帧，我们直接看 RecyclerView slice 或应用自定义 marker，再观察它与 `Choreographer#doFrame`、traversal（界面遍历） 的时间关系。
 
 `onCreateViewHolder()` 偶尔出现是正常行为。只有它在用户可感知的滚动区间反复出现、并与异常帧对齐，创建或复用才需要处理。盲目增大 `RecycledViewPool` 会增加常驻 View 的数量，也可能错误共享配置或语义不同的 ViewHolder；缓存大小由 viewType 分布、窗口尺寸、嵌套列表结构和内存实验共同决定。
 
@@ -548,7 +548,7 @@ AndroidX RecyclerView 在系统跟踪中留下了自己的一组 slice；不同�
 <!-- gracker-diagram: ch07-02-image-display-cost -->
 ![图片后台完成后的显示成本](../../assets/diagrams/ch07/ch07-02-image-display-cost.png)
 
-图：后台下载或解码完成后，图片应用到 View 仍可能触发布局、绘制和纹理成本。稳定尺寸、绑定身份和取消旧请求分别解决不同问题，fixed-size 也不能替代这些检查。
+图：后台下载或解码完成后，图片应用到 View 仍可能触发布局、绘制和纹理成本。稳定尺寸、绑定身份和取消旧请求分别解决不同问题，fixed-size 覆盖不了这些检查，仍要逐项做。
 
 `RecyclerView.setHasFixedSize(true)` 表达的是 RecyclerView 自身尺寸不受 adapter（列表数据适配器） 内容变化影响；bind 照常执行，子项也可能继续请求布局。RecyclerView 1.4.0 会据此选择部分测量和 adapter 更新处理路径，效果仍要按实际布局次数验证。
 
@@ -587,7 +587,7 @@ Activity 跳转可能发生在同一进程，也可能拉起已有进程或新�
 
 #### Fragment transaction
 
-AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它经 `enqueueAction()` / `scheduleCommit()`，通过宿主的 `Handler` 调用 `post`，投递一个 `mExecCommit`，随后由宿主主线程执行 pending actions（待处理操作）。`mExecCommit` 与 Choreographer 帧回调共享同一个主 Looper，实际执行顺序取决于主 MessageQueue（消息队列） 中已有消息、同步屏障、异步 Choreographer 消息，以及 `commit()` 的发生时刻；这条链路与 VSync 之间同样没有对齐承诺，“`execPendingActions()` 必定早于或晚于某次 `doFrame`”的固定顺序并不存在。
+AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它经 `enqueueAction()` / `scheduleCommit()`，通过宿主的 `Handler` 调用 `post`，投递一个 `mExecCommit`，随后由宿主主线程执行 pending actions（待处理操作）。`mExecCommit` 与 Choreographer 帧回调共享同一个主 Looper，实际执行顺序取决于主 MessageQueue（消息队列） 中已有消息、同步屏障、异步 Choreographer 消息，以及 `commit()` 的发生时刻。这条链路与 VSync 之间同样没有对齐承诺，“`execPendingActions()` 必定早于或晚于某次 `doFrame`”的固定顺序并不存在。
 
 使用 `commitNow()` 会把工作放进当前调用栈，改变这一相对位置。一次切换可能把 Fragment 状态推进、View 创建/移除、SpecialEffectsController（转场与动画效果控制器）、measure/layout 和动画准备集中到相邻几帧。
 
@@ -644,7 +644,7 @@ Android 12（API 31）起，系统 SplashScreen API 为冷启动和温启动提�
 <!-- gracker-diagram: ch07-02-splash-handoff-boundaries -->
 ![Splash 交接要分别记录的边界](../../assets/diagrams/ch07/ch07-02-splash-handoff-boundaries.png)
 
-图：启动请求、splash 可见、目标 buffer 可用、相关 DisplayFrame 的 present，以及退出动画结束/移除，都应分别打点。交接期间可能重叠，不能靠一条首帧 slice 解释全部闪顿。
+图：启动请求、splash 可见、目标 buffer 可用、相关 DisplayFrame 的 present，以及退出动画结束/移除，都应分别打点。交接期间各阶段可能重叠，一条首帧 slice 解释不了全部闪顿。
 
 #### Predictive Back
 
@@ -668,7 +668,7 @@ Android 15 移除了预测性返回的开发者选项。应用完成 opt-in（�
 <!-- gracker-diagram: ch07-02-back-progress-cancel -->
 ![返回手势的提交与取消路径](../../assets/diagrams/ch07/ch07-02-back-progress-cancel.png)
 
-图：开始和进度回调要保持短小，取消时恢复状态，提交时执行导航。先查启用与消费规则，再查参与 surfaces 的帧证据；没有预测动画本身不等于发生了渲染掉帧。
+图：开始和进度回调要保持短小，取消时恢复状态，提交时执行导航。先查启用与消费规则，再查参与 surfaces 的帧证据；预测动画缺失与渲染掉帧是两类问题，要分开判断。
 
 Android 16（API 36）起，可以使用 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 观察系统导航而不消费返回，Android 17 继续保留这一能力。默认优先级或 overlay（硬件叠加平面） 优先级回调会参与消费决策。注册方式错误时可能出现“没有预测动画”，这与渲染掉帧属于两类问题。
 
@@ -916,7 +916,7 @@ RecyclerView、Fragment、WebView provider 和地图 SDK 都可以独立更新�
 - 把必须在主线程执行的生命周期工作拆成小段，并保持业务顺序；
 - 避免关闭日志后仍构造昂贵参数。
 
-原案例为了控制消息顺序使用过 `postAtFrontOfQueue()`。这个 API 会把消息插到队首，可能延迟输入、traversal 和其他消息。迁移到新项目时，应把依赖写成明确的状态机（用状态及其转换表达执行顺序）或阶段队列，并为每段工作设置时间预算和取消条件；“插到队首”这一实现细节不适合直接复制。
+原案例为了控制消息顺序使用过 `postAtFrontOfQueue()`。这个 API 会把消息插到队首，可能延迟输入、traversal 和其他消息。迁移到新项目时，我们把依赖写成明确的状态机（用状态及其转换表达执行顺序）或阶段队列，并为每段工作设置时间预算和取消条件；“插到队首”这一实现细节不适合直接复制。
 
 
 #### 效果与证据边界
@@ -1123,7 +1123,7 @@ Thermal API 提供 thermal status 与 headroom。应用需要自行决定降低�
 <!-- gracker-diagram: ch07-02-thermal-feedback-control -->
 ![热反馈怎样改变可持续工作量](../../assets/diagrams/ch07/ch07-02-thermal-feedback-control.png)
 
-图：应用根据热反馈主动调整实际工作量，并用滞回和保持时间稳定档位。Performance Hint 是调度提示；持续帧率还取决于负载、设备容量和热保护，不能把提示当作频率或绑核保证。
+图：应用根据热反馈主动调整实际工作量，并用滞回和保持时间稳定档位。Performance Hint 是调度提示；持续帧率还取决于负载、设备容量和热保护，频率与绑核由系统侧决定，提示本身给不了这个保证。
 
 ADPF Performance Hint Session（性能提示会话） 可以报告参与周期性工作的一组线程，以及 target duration（目标耗时） 和 actual duration（实际耗时）。它向系统提供的是调度提示；频率是否锁定或提高、CPU 是否绑定，都由系统侧决定，热保护仍可能限制性能。
 
