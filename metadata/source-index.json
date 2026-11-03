@@ -6274,6 +6274,34 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://github.com/FareedKhan-dev/kimi-k3-in-c",
+      "title": "[ClawFeed] kimi-k3-in-c: A 2.78-trillion-parameter Kimi K3 running inference on a single CPU in 8.24 GB of RAM",
+      "summary": "可移植 C99 实现的 Kimi K3 推理引擎，仅 6 个 C 文件、176 KB 二进制，依赖只有 libm 与 OpenMP，不用 BLAS、PyTorch、ONNX 或 GPU。checkpoint 1.56 TB，其中 1.45 TB 路由专家永不常驻、按需从打包 4-bit 形态直接展开，稠密 trunk 按层流式读取，因此同一模型在 8 GB 到 224 GB 任意内存档位输出逐字节一致，只有时钟变化：8 GB 笔记本每 token 26.5 秒，128 GB 以上 5.6 秒。工程细节包括编译加 -ffp-contract=off 阻止 FMA 改变舍入，保证标量、OpenMP、AVX2 三路径结果一致；tokenizer 在 Linux gcc 13.3 与 Windows gcc 16.1 上对同一 24499 字节文件产出同样 6862 个 id，md5 仅差一个字节（Windows 文本模式多写换行）。文件头写明三条不变量，每条配一个故意让它失败的 fixture。",
+      "chapter": "ch04",
+      "processed_at": "2026-11-04T06:20:20.056855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/appendix/analysis-checklist.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "cpu",
+        "ram",
+        "二进制",
+        "gpu"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://arxiv.org/abs/2611.02618",
+      "title": "[ClawFeed] USDB: Scaling Storage for Next-Generation Recommender Systems at ByteDance",
+      "summary": "字节跳动与南洋理工 14 人团队 11 月 2 日发布，针对推荐系统每次更新小却要反复读长历史的存储不对称。旧部署为 256 节点、每台 32 核、100 Gbps 接口，存约 20 TB 流式与 600 TB 批数据（含副本）。做法包括 CascadeLSM 按时间窗口压实并分层物化、差异化副本共享持久化文件、partial dump 用近期状态加版本历史重建推理输入、混合列存加速投影读。生产迁移记录显示平均写延迟 123.94 → 17.56 μs（-85.8%）、CPU 利用率 29.04% → 7.95%，读延迟基本不变（409.71 → 406.15 μs）；归一化到每秒 100 万读、50% CPU 时总成本 4.66 → 2.70（-42.1%），CPU 核数 6284 → 4562，内存 62840 → 9124 GiB。聚合下推在 1 Gbit/s 接收预算下 6.22 K QPS，对比扫描路径 0.73 K，差 8.5 倍。",
+      "chapter": "ch03",
+      "processed_at": "2026-11-04T06:20:20.056855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
