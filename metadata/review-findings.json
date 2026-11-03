@@ -12373,6 +12373,126 @@
       "summary": "Mainline 支持说明遗漏 Android 11 及以下版本已结束支持的官方提示",
       "type": "missing-lifecycle-warning",
       "updated_at": "2026-11-03T08:18:50.417282+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
+      "close_note": "已同步修正概述、常量表和回归说明；源码 90-128、198-279 行已核对，静态断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "created_at": "2026-11-03T10:42:18.366001+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "details": "原文把 kOutlierTolerancePercent 写成丢弃 20% 样本，并把拟合后的周期偏差校验描述为逐样本残差检查；源码比较 anticipatedPeriod 与 idealPeriod，偏差达到 20% 即回退理想周期并清样本。定点计算缩放的是序号，时间戳先归一化。",
+      "id": "finding-87e3a1d507a3",
+      "log_path": "logs/audit/2026-11-03-20261103-103519-idle-audit-bf3a94cc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
+      ],
+      "status": "fixed",
+      "summary": "VSyncPredictor 的 20% 被误写为固定丢样比例和逐样本拟合残差校验",
+      "type": "predictor-threshold-semantics",
+      "updated_at": "2026-11-03T10:42:18.437364+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
+      "close_note": "已重写相关小节并同步表格，区分注释与实际执行路径；保留五阶段主题，未更改示例。旧小节锚点未发现引用。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "created_at": "2026-11-03T10:42:18.507140+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "details": "CALLBACK_COMMIT 注释仍描述 frame time 可能更新，但 android-17.0.0_r1 的 doCallbacks 没有 COMMIT 特判或 FrameData.update 调用，各阶段调用 c.run(mFrameData)。原文表格和小节将注释升级为现行机制，与稳定帧时间说明冲突。",
+      "id": "finding-31205f20a014",
+      "log_path": "logs/audit/2026-11-03-20261103-103519-idle-audit-bf3a94cc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "status": "fixed",
+      "summary": "COMMIT 帧时间调整的保留注释被当作 Android 17 当前执行分支",
+      "type": "choreographer-comment-implementation-mismatch",
+      "updated_at": "2026-11-03T10:42:18.573584+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
+      "close_note": "已原位纠正错误括注并保留解释形式，分开工作预算与内核获得 CPU 的时刻；未删掉独立技术信息。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "created_at": "2026-11-03T10:42:18.639575+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "details": "phase 被解释为重采样，App/SF 两条事件路径被解释为 Linux 公平调度类；晚唤醒的输入到呈现等待收益被混同于 runnable 等待，工作预算又被写成实际获得的 CPU 时间。Dispatch、EventThread、MessageQueue 与 VsyncConfiguration 源码可区分这些概念。",
+      "id": "finding-9fb47f7298de",
+      "log_path": "logs/audit/2026-11-03-20261103-103519-idle-audit-bf3a94cc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp"
+      ],
+      "status": "fixed",
+      "summary": "VSync 相位、两条分发路径与 CPU 等待预算存在错配括注",
+      "type": "vsync-glossary-budget-confusion",
+      "updated_at": "2026-11-03T10:42:18.703351+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
+      "close_note": "恢复完整 DisplayCommand.frameIntervalNs，中文括注移至代码之外并保持后续 cadence 提示语义。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "created_at": "2026-11-03T10:42:18.767225+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "details": "原文行内代码为 DisplayCommand.frameInterval（本次使用的帧间隔）Ns；Composer3 v3 冻结快照字段为 int frameIntervalNs，当前 AIDL 注释将其定义为后续帧 cadence 提示。",
+      "id": "finding-1a5cfc8e93c5",
+      "log_path": "logs/audit/2026-11-03-20261103-103519-idle-audit-bf3a94cc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/aidl_api/android.hardware.graphics.composer3/3/android/hardware/graphics/composer3/DisplayCommand.aidl"
+      ],
+      "status": "fixed",
+      "summary": "Composer3 frameIntervalNs 标识符被中文括注拆断",
+      "type": "composer-identifier-corruption",
+      "updated_at": "2026-11-03T10:42:18.834224+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
+      "close_note": "补回文档警告，并要求先检查实机轨迹覆盖；缺失时使用 Producer、buffer、fence 和显示侧 trace，未外推为所有 Android 17 实现均不支持。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "created_at": "2026-11-03T10:42:18.902195+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "details": "官方 FrameTimeline 文档明确注明 SurfaceViews currently not supported，正文却直接建议独立 Surface 场景结合 FrameTimeline，未交代 App Expected/Actual 轨迹可能不可用。",
+      "id": "finding-a654f556a11b",
+      "log_path": "logs/audit/2026-11-03-20261103-103519-idle-audit-bf3a94cc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "status": "fixed",
+      "summary": "独立 Surface 排查建议遗漏 Perfetto FrameTimeline 的 SurfaceView 支持警告",
+      "type": "official-support-boundary-omitted",
+      "updated_at": "2026-11-03T10:42:18.968827+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/03-vsync-choreographer-sf-scheduling.md",
+      "close_note": "在 API 版本表后补充跨屏、显示变化与 SDK/设备实现条件；保留 API 37 边界和 Surface.FrameRateParams 未完成实现的 TODO 限制。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "created_at": "2026-11-03T10:42:19.033542+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-103519-idle-audit-bf3a94cc",
+      "details": "API 37 官方文档与 Android 17 Display.java 要求映射属于当前 Display，跨屏时查询窗口所在 Display，DisplayListener.onDisplayChanged 后重新查询；源码另有 FLAG_FRAME_RATE_MAPPING_API 标记。",
+      "id": "finding-8eaac1b039c6",
+      "log_path": "logs/audit/2026-11-03-20261103-103519-idle-audit-bf3a94cc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/view/Display#getFrameRateVelocityMapping()"
+      ],
+      "status": "fixed",
+      "summary": "Display 帧率速度映射 API 遗漏按显示器查询与变化后重新查询的条件",
+      "type": "display-api-lifecycle-boundary",
+      "updated_at": "2026-11-03T10:42:19.097366+08:00"
     }
   ],
   "schema_version": 1
