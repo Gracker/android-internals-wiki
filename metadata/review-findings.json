@@ -5397,24 +5397,25 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
-      "close_note": "补 HIDL 自 Android 13 废弃但兼容存量、Stable AIDL 的 VINTF 声明与冻结要求、vendor NDK 后端、libbinder 分区限制和 Java 后端警告。 结构化来源证据 claim_id=hal-vintf。",
+      "close_note": "复用同一 HAL 生命周期 finding，重新读取 HAL 总览、HIDL 概述、AIDL for HALs。发现官方废弃起点分别标 Android 13 与 Android 10，正文收窄为 Android 17 下已废弃，不推断首次废弃年份；存量支持、上游仍为 HIDL 的边界及 vendor 后端/VINTF/冻结要求均保留。source_evidence claim_id=hal-deprecation-and-stability。",
       "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261018-100520-34d466a8",
-      "created_at": "2026-10-18T08:10:08.637431+08:00",
+      "closed_run_id": "20261103-080520-2b5f754d",
+      "created_at": "2026-11-03T08:13:32.939783+08:00",
       "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261018-080520-b3e487e8",
-      "details": "HAL 官方总览明确 Android 13 起废弃 HIDL、仍支持既有实现；AIDL HAL 指南警告 vendor 原生代码不能直接依赖不稳定 libbinder C++ 接口，需使用 NDK 后端等稳定接口。需补到接口边界说明，避免 Stable AIDL 被理解为只加稳定性声明。",
+      "created_run_id": "20261103-080520-2b5f754d",
+      "details": "复用既有 HAL 生命周期 finding。官方 HAL 总览写 As of Android 13，官方 HIDL 概述 Caution 写 As of Android 10；二者均已废弃且存量 HIDL 仍受支持，AIDL for HALs 的能力从 Android 11 引入。原文选择 Android 13 作为唯一废弃起点不够稳妥。应限定 Android 17 下已废弃，保留存量兼容、上游仍为 HIDL 时继续使用及 vendor AIDL 后端/VINTF 警告，不从冲突页面推导首个废弃版本。",
       "id": "finding-405f66e31785",
       "log_path": "",
       "severity": "P2",
       "source_paths": [
         "https://source.android.com/docs/core/architecture/hal",
+        "https://source.android.com/docs/core/architecture/hidl",
         "https://source.android.com/docs/core/architecture/aidl/aidl-hals"
       ],
-      "status": "fixed",
-      "summary": "HAL 迁移说明缺少 HIDL 废弃版本与 vendor AIDL 后端限制",
+      "status": "verified",
+      "summary": "HIDL 废弃起点在官方页面存在分歧，正文不应给出唯一确定年份",
       "type": "missing-lifecycle-warning",
-      "updated_at": "2026-10-18T10:12:40.554574+08:00"
+      "updated_at": "2026-11-03T08:16:40.644532+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
@@ -12309,6 +12310,69 @@
       "summary": "私有 action 与权限及发送方校验并列可能被误读为身份保护",
       "type": "broadcast-export-security",
       "updated_at": "2026-11-02T22:45:38.679410+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "已按 Android 17 ZygoteProcess.java:387–499、783–788、1075–1089 改写：先按 ABI 选择主或次 Zygote，未满足 USAP 条件时直接用所选常规 socket，只有 IOException 在此回退，负 PID 的 specialization 失败向上传播。正文与文末引用同步更新。source_evidence claim_id=usap-abi-and-fallback。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261103-080520-2b5f754d",
+      "created_at": "2026-11-03T08:13:32.805870+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261103-080520-2b5f754d",
+      "details": "android-17.0.0_r1 ZygoteProcess.startViaZygote 先按 ABI 选 ZygoteState；zygoteSendArgsAndGetResult 仅捕获 IOException 后调用同一 state 的常规 Zygote socket。USAP 返回负 PID 则抛 ZygoteStartFailedEx(\"USAP specialization failed\") 向上传播，不走此回退。原文主 Zygote与通信失败的笼统表达会误导双 ABI 与启动失败排查。",
+      "id": "finding-0edaef4d8a9f",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java#387",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java#1075"
+      ],
+      "status": "fixed",
+      "summary": "USAP 回退被固定到主 Zygote，且未区分 I/O 异常与 specialize 失败",
+      "type": "process-start-fallback",
+      "updated_at": "2026-11-03T08:16:40.527667+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "已区分没有可分发消息与队列空闲；按 Legacy/Combined/CombinedDeli 三套固定源码写明到期同步屏障可以阻止 IdleHandler，并保留所属线程、返回值和回调阻塞新消息的边界。延迟消息补 uptimeMillis、深度睡眠额外延迟和 postDelayed 返回 true 仅代表入队。source_evidence claim_id=messagequeue-idle、handler-delay。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261103-080520-2b5f754d",
+      "created_at": "2026-11-03T08:13:32.881520+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261103-080520-2b5f754d",
+      "details": "LegacyMessageQueue.next 只有 mMessages==null 或 now<mMessages.when 时准备 IdleHandler；CombinedDeliMessageQueue.looperCheckIsIdle 分别检查同步与异步堆头，到期的同步屏障也会让空闲判断失败。原文把没有可执行消息作为运行条件，易把等屏障误判为空闲初始化的执行机会。延迟消息部分还需把笼统的时钟休眠语义明确为 uptimeMillis 与深度睡眠额外延迟。",
+      "id": "finding-344e4ffacb93",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java#432",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java#997",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Handler.java#540"
+      ],
+      "status": "fixed",
+      "summary": "IdleHandler 空闲条件被等同于没有可执行消息，遗漏到期同步屏障阻止空闲回调的边界",
+      "type": "messagequeue-idle-boundary",
+      "updated_at": "2026-11-03T08:16:40.586111+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "已在 Mainline 小节加入 Android 11 及以下版本的支持于 2025 年第四季度结束的官方提示，保留模块版本、构建指纹和具体更新状态的观察入口。依据新获取官方 Mainline 文档的 Note。source_evidence claim_id=mainline-update-support。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261103-080520-2b5f754d",
+      "created_at": "2026-11-03T08:18:34.575370+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261103-080520-2b5f754d",
+      "details": "官方 Mainline 文档 Note 明确写 Mainline support for Android 11 and lower is concluded as of Q4 of 2025。本章覆盖 Android 8–17，原文只说明模块可独立更新与接口稳定性，未交代旧版本更新支持边界。应补回该提示，并保留具体设备需记录实际模块版本的排查要求。",
+      "id": "finding-4ea458f03570",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/ota/modular-system"
+      ],
+      "status": "fixed",
+      "summary": "Mainline 支持说明遗漏 Android 11 及以下版本已结束支持的官方提示",
+      "type": "missing-lifecycle-warning",
+      "updated_at": "2026-11-03T08:18:50.417282+08:00"
     }
   ],
   "schema_version": 1
