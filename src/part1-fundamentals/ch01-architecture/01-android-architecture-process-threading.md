@@ -2,10 +2,10 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-18'
-last_source_verified_at: '2026-11-03T07:20:19+08:00'
+last_verified: '2026-11-03'
+last_source_verified_at: '2026-11-03T08:22:59+08:00'
 last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process, SystemServer/SystemServiceManager, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
 confidence: high
 sources:
@@ -13,6 +13,9 @@ sources:
   path: https://developer.android.com/guide/platform
 - type: official
   path: https://source.android.com/docs/core/architecture/hal
+- type: official
+  path: https://source.android.com/docs/core/architecture/hidl
+  note: HAL overview and HIDL overview disagree on the first deprecated version; body states deprecation only for the Android 17 baseline and preserves support for existing HIDL HALs.
 - type: official
   path: https://source.android.com/docs/core/architecture/aidl/aidl-hals
 - type: official
@@ -35,6 +38,8 @@ sources:
   path: system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/os/ZygoteProcess.java @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/com/android/internal/os/Zygote.java @ android-17.0.0_r1
 - type: aosp
@@ -214,7 +219,7 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-last_review_finalize_at: '2026-10-18T10:12:40+08:00'
+last_review_finalize_at: '2026-11-03T08:22:59+08:00'
 last_body_apply_at: '2026-11-03T07:20:19+08:00'
 last_rework_at: '2026-10-17T21:36:11+08:00'
 last_consolidated_at: '2026-08-24'
@@ -378,7 +383,7 @@ HIDL 时代需要区分两种传输：
 - 服务化（binderized）HIDL HAL 以服务进程运行，常使用 `/dev/hwbinder`。
 - 直通式（passthrough）HIDL HAL 以共享库加载到调用方进程，调用路径中没有独立 HAL 服务进程。
 
-HIDL 从 Android 13 起废弃，既有实现仍受支持；新 HAL 接口应优先使用 Stable AIDL，上游接口仍为 HIDL 时则按该接口实现。用于 `system`/`vendor` 边界的 AIDL HAL 以 Binder 服务运行，需要在类型上声明 `@VintfStability`，在 `aidl_interface` 中设置 `stability: "vintf"`，加入 VINTF 清单并满足接口冻结等 VTS 检查。旧 HIDL HAL 仍可能为了兼容已有 vendor 镜像而保留；即便在 Android 17 设备上，仅凭系统版本也判断不了全部 HAL 是否都已迁移。
+在 Android 17 基线下，HIDL 已废弃，既有实现仍受支持；新 HAL 接口应优先使用 Stable AIDL，上游接口仍为 HIDL 时则按该接口实现。用于 `system`/`vendor` 边界的 AIDL HAL 以 Binder 服务运行，需要在类型上声明 `@VintfStability`，在 `aidl_interface` 中设置 `stability: "vintf"`，加入 VINTF 清单并满足接口冻结等 VTS 检查。旧 HIDL HAL 仍可能为了兼容已有 vendor 镜像而保留；即便在 Android 17 设备上，仅凭系统版本也判断不了全部 HAL 是否都已迁移。
 
 Stable AIDL 还约束接口所用的语言后端。vendor 原生代码应使用 NDK 后端并链接 `libbinder_ndk`，通过 `/dev/binder` 通信；不稳定的 `libbinder` C++ 接口只对 `system`/`system_ext` 开放。Java 后端从 vendor 分区连不到 ServiceManager；API 34 之后，新增的 System API 也对 vendor 分区关闭。这些分区与后端限制，接口稳定性声明替代不了。
 
@@ -408,6 +413,8 @@ Google Play 当前要求目标版本为 Android 15 / API 35 或更高的应用�
 #### Mainline 模块
 
 Mainline 把一部分系统组件封装为 APEX 或 APK，使它们可以通过 Google Play 系统更新或合作伙伴 OTA 独立更新。`SystemServer.run()` 也明确执行每个进程所需的 Mainline 模块初始化，并在常规服务组之后调用 `startApexServices()`。
+
+官方文档注明，Android 11 及以下版本的 Mainline 支持已于 2025 年第四季度结束。分析旧设备时，还要核对其模块更新支持状态。[Mainline 支持说明](https://source.android.com/docs/core/ota/modular-system)
 
 分析问题时，单看 Android 版本号确定不了 ART、Media、Wi-Fi、Bluetooth 等模块的实现，报告应同时记录构建指纹（build fingerprint）、相关 APEX/APK 版本和复现时间。模块更新可能改变实现，但仍受稳定 SDK/System API、稳定 C API 或 Stable AIDL 的约束。
 
@@ -525,9 +532,11 @@ Android 应用可以创建线程，却不能自行决定进程能活多久。系
 
 服务端端点也不是 Zygote 临时绑定的 TCP 端口：`init.zygote64.rc` 为主 Zygote 声明 `socket zygote stream 660 root system` 和 `socket usap_pool_primary stream 660 root system`。Zygote 继承这些受 init 管理的 Unix domain socket 后，由 `ZygoteServer.runSelectLoop()` 轮询服务端和会话文件描述符；连接进入 `ZygoteConnection.processCommand()`，读取 peer credentials、解析 `ZygoteArguments`、执行参数/身份策略检查，再走 Zygote 侧的 fork 与 specialize 路径。[来源: https://juejin.cn/post/7681511201547255842；已验证: system/core/rootdir/init.zygote64.rc、frameworks/base/core/java/com/android/internal/os/ZygoteServer.java、ZygoteConnection.java 与 Zygote.java @ android-17.0.0_r1]
 
-USAP（Unspecialized App Process）池改变的是“从哪个预备进程完成 specialize”和“是否先走 USAP pool socket”，创建权始终在 Zygote 一侧。`ZygoteProcess` 只有在 USAP pool 受支持、已启用、策略允许且命令形态受支持时才尝试 USAP；USAP 通信失败或请求不适合时会回退主 Zygote socket。
+USAP（Unspecialized App Process）池复用 Zygote 预先 fork、尚未完成应用身份专化（specialize）的进程。`ZygoteProcess.startViaZygote()` 先通过 `openZygoteSocketIfNeeded(abi)` 选择支持目标 ABI 的主或次 Zygote；所选 `ZygoteState` 同时保存常规 socket 和对应的 USAP pool socket。只有池受支持、已启用、策略允许且命令形态受支持时，才尝试 USAP。
 
-无论走主 Zygote 还是 USAP，AMS 仍要维护 `ProcessRecord`、启动序号和 PID 映射；客户端读到 PID，说明 Zygote/USAP 侧返回了创建结果；至于 `Application` 是否已绑定、组件是否已启动、首帧是否完成，这份结果里还没有答案。[来源: https://juejin.cn/post/7681511201547255842；已验证: frameworks/base/core/java/android/os/ZygoteProcess.java 与 frameworks/base/services/core/java/com/android/server/am/ProcessList.java @ android-17.0.0_r1]
+未满足条件时，请求直接走所选 Zygote 的常规 socket；尝试 USAP 时，`zygoteSendArgsAndGetResult()` 只在捕获 `IOException` 后沿该连接状态回退。USAP 返回负 PID 会抛出 `ZygoteStartFailedEx("USAP specialization failed")` 并向上传播，不经过这条回退分支。排查时应区分通信 I/O 异常与身份专化失败，并核对目标 ABI 和对应的 Zygote，不能把回退目标固定为主 Zygote。[已验证: frameworks/base/core/java/android/os/ZygoteProcess.java 的 startViaZygote()、openZygoteSocketIfNeeded()、zygoteSendArgsAndGetResult() 与 attemptUsapSendArgsAndGetResult() @ android-17.0.0_r1]
+
+无论走常规 Zygote socket 还是 USAP pool socket，AMS 仍要维护 `ProcessRecord`、启动序号和 PID 映射；客户端读到 PID，说明 Zygote/USAP 侧返回了创建结果；至于 `Application` 是否已绑定、组件是否已启动、首帧是否完成，这份结果里还没有答案。[来源: https://juejin.cn/post/7681511201547255842；已验证: frameworks/base/core/java/android/os/ZygoteProcess.java 与 frameworks/base/services/core/java/com/android/server/am/ProcessList.java @ android-17.0.0_r1]
 
 这条源码路径能证明的是：AOSP Android 17 的普通应用创建请求走 Zygote/USAP 本地 socket，Zygote 没有被暴露成一个普通 Binder 服务。至于“Binder 从原理上承载不了创建进程命令”，源码推不出这个结论；“启动更早”“socket 天然更安全”这类说法，同样缺少能立为唯一官方原因的依据。
 
@@ -911,15 +920,17 @@ Binder 线程池使用另一条等待路径：Binder 工作线程通过 Binder �
 - 同步屏障（暂时阻止普通同步消息，只允许异步消息越过）对同步消息的阻挡；
 - 线程处于可运行（Runnable）状态，但仍在等待 CPU；
 - 进程冻结、省电策略或系统负载；
-- 系统时钟和休眠语义。
+- `SystemClock.uptimeMillis()` 使用的时间基准：深度睡眠不计入该时钟，会给实际执行增加额外延迟。
 
-如果业务要求持久化、跨进程存活或由系统在约束满足后调度，就换用 `AlarmManager`、`JobScheduler` 或 `WorkManager` 等相应机制，别让主线程 `Handler` 攒着很长的延迟任务。
+`postDelayed()` 返回 `true` 只说明消息成功入队；如果所属 `Looper` 在分发前退出，消息仍可能被丢弃。若业务要求持久化、在进程重建后继续执行或由系统在约束满足后调度，应选择 `AlarmManager`、`JobScheduler` 或 `WorkManager` 等相应机制，避免用主线程 `Handler` 保存长期任务。[已验证: frameworks/base/core/java/android/os/Handler.java 的 postDelayed()、sendMessageDelayed() 与 sendMessageAtTime() @ android-17.0.0_r1]
 
 #### IdleHandler 的适用范围
 
-`MessageQueue.IdleHandler` 在队列暂时没有可执行消息时运行，回调仍发生在所属 `Looper` 线程。系统不会为它预留一段保证可用的“空闲时间”。回调运行期间新消息可以入队，而新消息必须等回调返回。
+`MessageQueue.IdleHandler` 由所属 `Looper` 线程在消息队列满足空闲条件时调用。legacy 路径要求队列为空，或队首消息尚未到期；Android 17 的 `CombinedDeliMessageQueue` 还会分别检查同步与异步队列头。已到期的同步屏障可以使这些空闲检查失败，因此“暂时没有可分发消息”不足以保证回调运行。[已验证: frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java 的 next()、CombinedMessageQueue/MessageQueue.java 的 next() 与 CombinedDeliMessageQueue/MessageQueue.java 的 looperCheckIsIdle() @ android-17.0.0_r1]
 
-适合放入 `IdleHandler` 的是短小、可中断或只做一次的初始化。磁盘扫描、网络访问、大对象反序列化和不可控循环都应移出主线程。返回 `false` 会在本次调用后移除该 `IdleHandler`；返回 `true` 表示以后队列进入空闲状态时仍可调用。
+系统不会为 `IdleHandler` 预留一段保证可用的“空闲时间”。回调运行期间新消息可以入队，但当前回调返回前，所属线程不会开始分发这些消息。
+
+`IdleHandler` 只适合执行时间可控的短任务；一次性初始化也需满足这个条件。磁盘扫描、网络访问、大对象反序列化和不可控循环都应移出主线程。返回 `false` 会在本次调用后移除该 `IdleHandler`；返回 `true` 表示以后队列进入空闲状态时仍可调用。
 
 ### 主线程与 RenderThread 如何分工
 
@@ -1167,12 +1178,13 @@ API 是否公开与运行时是否支持可挂起、恢复的 continuation 是�
 
 ## 参考资料
 
-- 系统分层与 HAL：[Android 平台架构](https://developer.android.com/guide/platform)、[HAL 总览](https://source.android.com/docs/core/architecture/hal)、[AIDL HAL 与后端限制](https://source.android.com/docs/core/architecture/aidl/aidl-hals)、[VINTF 清单和兼容性矩阵](https://source.android.com/docs/core/architecture/vintf)。
-- 启动与进程入口：[ZygoteInit.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java)、[app_main.cpp](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/app_process/app_main.cpp)、[SystemServer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)。
+- 系统分层与 HAL：[Android 平台架构](https://developer.android.com/guide/platform)、[HAL 总览](https://source.android.com/docs/core/architecture/hal)、[HIDL 概述与废弃警告](https://source.android.com/docs/core/architecture/hidl)、[AIDL HAL 与后端限制](https://source.android.com/docs/core/architecture/aidl/aidl-hals)、[VINTF 清单和兼容性矩阵](https://source.android.com/docs/core/architecture/vintf)。
+- 启动与进程入口：[ZygoteInit.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java)、[ZygoteProcess.java：ABI 选择与 USAP 回退](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java)、[app_main.cpp](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/app_process/app_main.cpp)、[SystemServer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)。
 - Binder 线程池与权限检查：[ProcessState.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)、[ACK binder.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)、[SELinux hooks.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/security/selinux/hooks.c)。
 - 系统更新客户端与原生服务边界：[OTA 调用路径材料（Android 14）](https://juejin.cn/post/7702895830290612251)、[Android 17 UpdateEngine.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/UpdateEngine.java)、[update_engine.rc](https://android.googlesource.com/platform/system/update_engine/+/refs/tags/android-17.0.0_r1/update_engine.rc)、[daemon_android.cc](https://android.googlesource.com/platform/system/update_engine/+/refs/tags/android-17.0.0_r1/aosp/daemon_android.cc)。
 - 进程与权限边界：[进程和线程](https://developer.android.com/guide/components/processes-and-threads)、[应用沙箱](https://source.android.com/docs/security/app-sandbox)、[isolatedProcess](https://developer.android.com/guide/topics/manifest/service-element#isolated)、[进程生命周期](https://developer.android.com/guide/components/activities/process-lifecycle)、[BroadcastReceiver.goAsync()](https://developer.android.com/reference/android/content/BroadcastReceiver#goAsync())。
 - 原生调用与兼容性：[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native)、[16 KB 页大小](https://developer.android.com/guide/practices/page-sizes)、[Mainline](https://source.android.com/docs/core/ota/modular-system)、[VNDK 废弃说明](https://source.android.com/docs/core/architecture/vndk)。
 - 内存和调度策略：[Android 17 lmkd.cpp](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)、[mmd 配置与迁移](https://source.android.com/docs/core/perf/mmd)、[task_profiles.json](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json)。
 - 持久后台任务：[Worker 运行时限](https://developer.android.com/reference/androidx/work/Worker)、[长任务、配额与前台服务类型](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running)。
+- 消息延迟与空闲条件：[Handler.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Handler.java)、[LegacyMessageQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java)、[CombinedMessageQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java)、[CombinedDeliMessageQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)。
 - Android 17 线程实现：[目标 API 37 的 MessageQueue 变更](https://developer.android.com/about/versions/17/behavior-changes-17)、[libcore API 文本](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)、[ThreadBuilders.java](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java)、[ContinuationSupport.java](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/jdk/internal/vm/ContinuationSupport.java)。
