@@ -92,7 +92,7 @@ last_idle_audit_at: '2026-10-22T14:42:11+08:00'
 
 Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计的用户都从 Google Play 安装应用、并允许共享使用情况与诊断数据，衡量的是这些用户经历的稳定性、性能和功耗问题。内部应用性能监控（application performance monitoring，APM）负责定位问题所在的版本、场景和调用路径，帮助团队在只向部分用户逐步发布的灰度阶段暂停异常版本。两套数据的采集范围、分母和时效都不同，我们先分别判断各自的趋势，再按版本、设备和错误类型相互校验；直接比较两个百分比的大小，得不出有效结论。
 
-指标口径以2026年10月25日本轮可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略都由 Google Play 服务端制定，`android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约里查不到它们；Android 17 源码能解释的，是应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制这些平台侧机制，要证明 Play 的服务端阈值，只能回到 Play 文档本身。所以升级平台源码锚点时，这些阈值保持原样；Play 文档变更，也推不出 Android 框架同时发生了对应改动。
+指标口径以2026年10月25日本轮可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略都由 Google Play 服务端制定，`android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约里查不到它们；Android 17 源码能解释的，是应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制这些平台侧机制，要证明 Play 的服务端阈值，只能回到 Play 文档本身。所以升级平台源码基线时，这些阈值保持原样；Play 文档变更，也推不出 Android 框架同时发生了对应改动。
 
 ## Android Vitals 的指标层级
 
@@ -107,13 +107,13 @@ Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计�
 | 表盘专项 | watch face excessive battery usage 及 CPU、partial wakelock 贡献因素 | 表盘在非充电、没有其他应用使用设备时的耗电情况 | AoD（常亮显示）配置、刷新频率、Complication（表盘信息组件）更新、资源与动画成本 |
 | 内部 APM | crash-free users（无崩溃用户率）、启动分位数、页面卡顿、内存水位、业务错误率 | 当前版本是否回归，问题发生在什么路径 | 与 Play 维度一致的版本、设备、系统和渠道标识 |
 
-[Android Vitals 总览](https://developer.android.com/google/play/vitals)已把匿名 RSS + swap 和位图内存列为移动应用的 core vitals，并注明：内存、位图内存和代码优化超出相应阈值，可能从 2027 年 2 月起影响商店可见性。引用前先看时间：截至2026年10月25日，这一天还没到，这几条可见性约束按“尚未生效”记录。该日期属于 Play 政策，与 Android 平台版本升级分开判断。
+[Android Vitals 总览](https://developer.android.com/google/play/vitals)已把匿名 RSS + swap 和位图内存列为移动应用的 core vitals，并注明：内存、位图内存和代码优化超出相应阈值，可能从 2027 年 2 月起影响商店可见性。这几条约束的生效要等到 2027 年 2 月：截至2026年10月25日，这个时间点还没到，我们按“尚未生效”记录。该日期属于 Play 政策，与 Android 平台版本升级分开判断。
 
-[匿名 RSS + swap](https://developer.android.com/google/play/vitals/memory-usage)按进程状态和 RAM 桶展示，前台、用户可感知服务、后台和缓存状态要分别分析；内存阈值还区分应用与游戏，我们查数时按进程状态、RAM 桶和应用/游戏类别取对应阈值，套用单一全局数值会出错。进程名拆分可能包含应用使用的 SDK 或系统服务，先核对责任进程，再定位资源占用。[位图内存](https://developer.android.com/google/play/vitals/bitmap-memory-usage)的范围比堆分配宽，还可能包含共享内存或图形缓冲区支持的位图，和匿名 RSS + swap 是两个口径。
+[匿名 RSS + swap](https://developer.android.com/google/play/vitals/memory-usage)按进程状态和 RAM 桶展示，前台、用户可感知服务、后台和缓存状态要分别分析；内存阈值还区分应用与游戏，我们查数时按进程状态、RAM 桶和应用/游戏类别取对应阈值，套用单一全局数值会出错。进程名拆分可能包含应用使用的 SDK 或系统服务，先核对责任进程，再定位资源占用。[位图内存](https://developer.android.com/google/play/vitals/bitmap-memory-usage)的范围比堆分配宽，还可能包含共享内存或图形缓冲区支持的位图，与匿名 RSS + swap 分开统计。
 
 [DEX code optimization](https://developer.android.com/google/play/vitals/code-optimization)检查代码压缩、优化和混淆，与启动表中的运行时 dexopt 分开计量。这些比例的数据来源按构建条件分级：使用 AGP 8.10 或更高版本的最新补丁构建时，Vitals 从随包提供的 `r8.json` 读取这些比例；较低版本或缺少该文件时，会使用可用的 `mapping.txt`，再退到 DEX 启发式分析。对照本地工具时注意：本地 R8 Configuration Analyzer 的优化前得分只是参考，与 Vitals 的读数可能对不上。指标本身可为所有应用和游戏计算，告警和阈值约束则受未压缩 DEX 总大小条件限制；应用与游戏的适用条件不同，以官方页面为准。
 
-引用数据时带上“表盘应用”这个限定：`excessive battery usage` 目前只为具备足够数据的表盘应用提供，其余 Wear OS 应用不在覆盖范围内。Slow Sessions 也只适用于游戏，普通应用应使用 UI 渲染指标和端侧帧证据。其[官方页面](https://developer.android.com/google/play/vitals/slow-session)提到未来将引导用户避开无法达到 20 FPS 的游戏；具体的生效日期和可直接套用的整体不良行为阈值，该页尚未给出，我们引用到“已宣布的方向”为止，按固定比例降权之类的说法超出了页面内容。
+“表盘应用”这个限定要随数据一起引用：`excessive battery usage` 目前只为具备足够数据的表盘应用提供，其余 Wear OS 应用不在覆盖范围内。Slow Sessions 也只适用于游戏，普通应用应使用 UI 渲染指标和端侧帧证据。其[官方页面](https://developer.android.com/google/play/vitals/slow-session)提到未来将引导用户避开达不到 20 FPS 的游戏；具体的生效日期和可直接套用的整体不良行为阈值，该页尚未给出，我们引用到“已宣布的方向”为止，按固定比例降权之类的说法超出了页面内容。
 
 Play 阈值只是发版暂停规则之一。一个版本可能尚未达到该阈值，却已经相对上个版本明显恶化，这时应先由内部灰度指标阻止继续放量。反过来，Play 上的存量问题也可能在 28 天窗口中继续出现；宣布问题结束的依据是整个窗口的数据，当天内部指标恢复还不够。
 
@@ -129,7 +129,7 @@ Play 阈值只是发版暂停规则之一。一个版本可能尚未达到该阈
 
 ## 28 天窗口、整体阈值与机型阈值
 
-进入具体数字前，先看 Play 的统计节奏：Google Play 每天检查 core vitals，通常依据最近 28 天的数据评估质量，Crash 和 ANR 的滚动比例按每日用户数加权。我们还要分清两种约束范围：整体越线可能影响所有设备上的可见性，机型越线主要影响对应设备。下表列出已生效的稳定性与电量阈值；内存指标按设备内存档、进程状态和应用/游戏类别另设阈值，其可见性生效时间见前述政策边界。
+进入具体数字前，先看 Play 的统计节奏：Google Play 每天检查 core vitals，通常依据最近 28 天的数据评估质量，Crash 和 ANR 的滚动比例按每日用户数加权。我们还要分清两种约束范围：整体越线可能影响所有设备上的可见性，机型越线主要影响对应设备。下表列出已生效的稳定性与电量阈值；内存指标按设备内存档、进程状态和应用/游戏类别另设阈值，可见性生效时间沿用前文 2027 年 2 月那条记录。
 
 | Core vital | 整体不良行为阈值 | 机型阈值 | 统计对象 |
 |---|---:|---:|---|
@@ -138,16 +138,16 @@ Play 阈值只是发版暂停规则之一。一个版本可能尚未达到该阈
 | Excessive partial wake locks | > 5% | 无机型阈值 | 发生 excessive partial wake lock 的 app sessions |
 | Excessive battery usage（表盘） | > 1% | 手表机型 > 1% | 电量消耗超过 4.44%/hour 的 watch face sessions |
 
-DAU 是 daily active user（每日活跃用户）的缩写，统计单位是“某一天、某台设备上使用应用的一名用户”，与安装数和启动次数分开计算。同一用户当天使用两台设备会贡献两个 DAU；多人当天共用一台设备只计一个。同一用户多次发生 Crash、ANR 或 LMK，不会让“至少一次”的 rate（受影响比例）分子重复增加。若要观察循环失败，应同时查看 multiple crash rate 和 multiple ANR rate。
+崩溃和 ANR 两行的分母是 DAU。DAU 是 daily active user（每日活跃用户）的缩写，统计单位是“某一天、某台设备上使用应用的一名用户”，与安装数和启动次数分开计算：同一用户当天使用两台设备会贡献两个 DAU，多人当天共用一台设备只计一个。同一用户多次发生 Crash、ANR 或 LMK，“至少一次”的 rate（受影响比例）分子也只记一次；要观察循环失败，我们再同时看 multiple crash rate 和 multiple ANR rate。
 
-Vitals 的 user session（用户会话）按日聚合，与一次 launch（启动）分别计量。官方将其定义为太平洋时间午夜起 24 小时内应用全部使用活动的总和；当天没有记录到使用活动时，不产生 session。涉及 partial wake lock、表盘耗电或其他 session rate 时，我们沿用这一日会话口径；内部的一次启动会话直接拿来当分母，算出来的就是另一个指标了。
+Vitals 的 user session（用户会话）按日聚合，与一次 launch（启动）分别计量。官方将其定义为太平洋时间午夜起 24 小时内应用全部使用活动的总和，当天没有记录到使用活动时，不产生 session。涉及 partial wake lock、表盘耗电或其他 session rate 时，我们沿用这一日会话定义；内部的一次启动会话直接拿来当分母，算出来的就是另一个指标了。
 
 阈值附近还要注意比较符号：Crash 和 ANR 文档使用 “at least”，达到阈值即属于 bad behavior；partial wake lock 与表盘耗电文档使用 “more than”，要严格超过才算。内部暂停阈值可以比官方阈值更严格，字段名上写明它属于团队规则，与 Play 官方阈值分开存放。
 
 <!-- gracker-diagram: a293-02-threshold-operators-device-scopes -->
 ![Crash / ANR 阈值同时绑定设备形态和比较符号](../../assets/diagrams/ch26/a293-02-threshold-operators-device-scopes.png)
 
-图：Crash/ANR使用at least，电池规则使用more than；团队更早暂停线单独命名，不能改写官方门槛。
+图：Crash/ANR使用at least，电池规则使用more than；团队更早的暂停线单独命名，官方门槛保持原文。
 
 ### Partial wake lock 的当前规则
 
@@ -158,16 +158,16 @@ Partial wake lock（局部唤醒锁）在设备屏幕关闭后仍让 CPU 继续�
 <!-- gracker-diagram: a293-03-partial-wake-lock-session-classification -->
 ![Wake lock：先算合格持有时长，再算受影响会话率](../../assets/diagrams/ch26/a293-03-partial-wake-lock-session-classification.png)
 
-图：2026年3月1日起逐步执行可见性约束；统计豁免不意味着资源生命周期可以不受控。
+图：2026年3月1日起逐步执行可见性约束；豁免只放宽统计，资源生命周期仍要受控。
 
 ### 表盘耗电的当前规则
 
-表盘会话的电量消耗超过 4.44%/hour 时，计入 excessive battery usage；官方给出的优化目标是 80% 会话低于 3.2%/hour。控制台还为表盘提供两个贡献因素：CPU 使用达到 90 秒/小时、partial wakelock 达到 18.5 秒/小时。这两个数值的适用范围止步于表盘专项：Play 并未把它们设为所有 Android 应用的独立阈值，它们也顶替不了手机应用的 wakelock 或 CPU 暂停阈值。
+表盘会话的电量消耗超过 4.44%/hour 时，计入 excessive battery usage；官方给出的优化目标是 80% 会话低于 3.2%/hour。控制台还为表盘提供两个贡献因素：CPU 使用达到 90 秒/小时、partial wakelock 达到 18.5 秒/小时。这两个数值只属于表盘专项，Play 也未将它们设为所有 Android 应用的独立阈值；手机应用的 wakelock 或 CPU 暂停，要用各自的指标判断。
 
 <!-- gracker-diagram: a293-04-denominators-dau-session-and-watch-factors -->
 ![用户、日会话、表盘贡献因素不是同一个分母](../../assets/diagrams/ch26/a293-04-denominators-dau-session-and-watch-factors.png)
 
-图：表盘优化目标为80%会话低于3.2%/小时；该专项不能推广所有Wear OS应用或手机应用。
+图：表盘优化目标为80%会话低于3.2%/小时；该专项的覆盖止于表盘应用。
 
 ## User-perceived Crash / ANR 与自建 Crash 上报的差异
 
@@ -182,7 +182,7 @@ Partial wake lock（局部唤醒锁）在设备屏幕关闭后仍让 CPU 继续�
 | 多次问题 | multiple crash / ANR rate 统计一天内至少两次的受影响用户 | 事件表通常保留每次发生记录 |
 | 时效 | 每日更新并受聚合与隐私门槛影响 | 可做到分钟级，但受采样、进程死亡和上传成功率影响 |
 
-Wear OS 的 user-perceived crash 有一项单独规则：官方 crash 文档将前台和后台崩溃都纳入手表的 user-perceived 口径。若把这条手表规则直接套用到手机应用，会高估 Play 在后台崩溃上的统计范围。
+Wear OS 的 user-perceived crash 有一项单独规则：官方 crash 文档将前台和后台崩溃都计入手表的 user-perceived 指标。把这条手表规则直接套到手机应用上，会高估 Play 在后台崩溃上的统计范围。
 
 ### 三层证据如何配合
 
@@ -216,7 +216,7 @@ Wear OS 的 user-perceived crash 有一项单独规则：官方 crash 文档将�
 
 Slow Sessions 的 present-to-present，是按 SurfaceFlinger 采集的应用 surface 相邻帧呈现时间估计出的帧间隔，与应用提交 BufferQueue 的时刻差是两回事。thermal status 表示系统报告的热压力等级，要断言 CPU/GPU 已降到某个频率，还需要频率侧的证据。所以 Slow Sessions 统计的是用户看到的出帧节奏，CPU 或 GPU 的单阶段耗时要另找对应的测量。
 
-Slow startup 的固定秒数适合抓住严重慢开，冷启动从 1.8 秒退化到 2.4 秒这类未达 Play 门槛的回归，它就无能为力了；同样的耗时若出现在温启动中，2.4 秒已经超过其 2 秒门槛。所以灰度暂停规则要比较相同启动类型、相同设备档和相同安装状态下的分布；第 21.1 节给出了启动数据的详细边界。
+Slow startup 的固定秒数适合抓住严重慢开，冷启动从 1.8 秒退化到 2.4 秒这类回归还没碰到 Play 门槛，它就抓不到了；同样的耗时放在温启动里，2.4 秒已经超过其 2 秒门槛。所以灰度暂停规则要比较相同启动类型、相同设备档和相同安装状态下的分布；第 21.1 节给出了启动数据的详细说明。
 
 Frozen frame 与 ANR 的判定条件是两条线：超过 700ms 的一帧会产生明显停顿，要形成 ANR，还得满足相应系统超时条件。渲染归因我们以 FrameTimeline 和线程调度证据为准，“超过 700ms”本身推不出 ANR。
 
@@ -227,7 +227,7 @@ User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 
 <!-- gracker-diagram: a293-06-startup-rendering-slow-session-and-lmk -->
 ![严重症状阈值与根因证据分层解释](../../assets/diagrams/ch26/a293-06-startup-rendering-slow-session-and-lmk.png)
 
-图：Slow Sessions根据SurfaceFlinger呈现间隔估计出帧节奏，不能用CPU frame time代替；700ms一帧也不是ANR判定。
+图：Slow Sessions根据SurfaceFlinger呈现间隔估计出帧节奏，CPU frame time是另一段测量；700ms一帧也推不出ANR判定。
 
 ## 功耗类 vitals 与后台任务治理
 
@@ -243,12 +243,12 @@ User-perceived LMK 常呈现为界面消失或进度丢失，Java crash handler 
 
 `stuckBgWakelockRate` 与 2026 年 `excessive partial wake locks` 使用不同定义。前者属于 Reporting API 指标集（metric set），表示后台持有超过 1 小时的用户率；后者属于 Play core vital，规则是“24 小时累计至少 2 小时且 28 天影响超过 5% 会话”。仓库中可以同时保存两者，但告警标题和字段必须带上具体定义。
 
-音频、定位等豁免也不表示锁可以无限持有：Play 是否豁免取决于其当前分类和用户收益判断，内部这边，我们仍要检查资源生命周期、设备发热和电量。后台调度的 API 选择与系统限制见 25.2 节。
+音频、定位等豁免只作用于 Play 侧的统计判定，Play 是否豁免取决于其当前分类和用户收益判断；到了内部，我们仍要检查资源生命周期、设备发热和电量。后台调度的 API 选择与系统限制见 25.2 节。
 
 
 ## Play 指标与发版暂停规则
 
-官方阈值表示政策边界，团队还需要更早的内部暂停线。我们把发布动作分成“已越过官方阈值”“内部确认新版本回归”“证据不足”三类来讨论；“接近阈值”要写成结论，得先有样本和基线依据。
+官方阈值划的是政策线，团队还需要更早的内部暂停线。我们把发布动作分成“已越过官方阈值”“内部确认新版本回归”“证据不足”三类来讨论；“接近阈值”要写成结论，得先有样本和基线依据。
 
 | 观察结果 | 需要确认的证据 | 建议动作 |
 |---|---|---|
@@ -271,11 +271,11 @@ A/B 实验同样受质量暂停规则约束。内部 crash、ANR、启动、帧�
 
 ## 数据延迟、采样盲区与误判边界
 
-Vitals 覆盖到的只是部分线上用户，范围由一组前置条件决定；读数之前，我们先把这些边界过一遍。
+Vitals 覆盖到的只是部分线上用户，范围由一组前置条件决定；读数之前，我们先把这些条件过一遍。
 
 - 数据来自允许自动共享使用情况与诊断数据的用户，仅覆盖部分设备与系统版本。
 - Vitals 排除未认证设备和通过 Google Play 以外渠道安装的应用版本。国内渠道、企业分发、预装和旁加载必须由其他观测系统覆盖。
-- 指标需要达到隐私展示门槛。低流量应用、小版本或小设备分组可能没有可见数据；“没有数据”不能解释为零问题。
+- 指标需要达到隐私展示门槛。低流量应用、小版本或小设备分组可能没有可见数据；把“没有数据”读成零问题，是一种误读。
 - 数据每日更新，不同系统版本的到达时间可能不同。查询或评审前先读取 freshness，未完成的一天与完整历史日分开比较。
 - Play 的 DAU、daily session、app session 和 watch face session 各有独立分母。跨指标做比例比较前必须记录单位。
 - Play Console 的时间窗口、Reporting API 的聚合周期和内部看板时区可能不同。Reporting API 的 DAILY 数据固定使用 `America/Los_Angeles`，HOURLY 使用 UTC。
@@ -284,7 +284,7 @@ Vitals 覆盖到的只是部分线上用户，范围由一组前置条件决定�
 
 内部 crash-free sessions 与 Play user-perceived crash rate 分属两套口径：前者分母可能是会话，后者分母是 DAU，重复崩溃、后台崩溃和渠道范围也不同。我们先分别判断各自趋势，再用版本、设备和错误聚类验证两边是否指向同一变更；把两个数字放上同一张图直接相减，差值没有对应的意义。
 
-Vitals 未越线，只说明没碰到 Play 的政策边界：固定启动或 frozen frame 边界识别的是明显问题，业务关键路径的分位数和用户完成率，要由内部数据回答。内部指标有可靠对照且确认回归时，我们先按灰度策略处理。
+Vitals 未越线，只说明没碰到 Play 的政策线：固定启动或 frozen frame 边界识别的是明显问题，业务关键路径的分位数和用户完成率，要由内部数据回答。内部指标有可靠对照且确认回归时，我们先按灰度策略处理。
 
 ## Play Developer Reporting API 与内部数据仓库对接
 
@@ -295,7 +295,7 @@ Vitals 未越线，只说明没碰到 Play 的政策边界：固定启动或 fro
 - `timelineSpec`：聚合粒度和时间范围。Crash/ANR 支持 DAILY 与 HOURLY，分别固定使用 `America/Los_Angeles` 和 UTC；`slowstartrate`、`slowrenderingrate` 只支持 DAILY。部分 rolling metric（滚动窗口指标）也只提供 DAILY 数据，小时级请求要先确认目标 metric set 的支持情况。
 - `metrics`：例如 `userPerceivedCrashRate`、`userPerceivedCrashRate28dUserWeighted`、`distinctUsers`。
 - `dimensions`：用于切片的维度，例如版本、机型和地区。每个 metric set 支持的集合可能不同，提交请求前应读取对应 endpoint（具体 API 接口资源）文档。
-- `filter`、分页和 `userCohort`：过滤分组、读取完整结果，并用 user cohort（用户群组）选择数据范围。Crash/ANR 支持公开系统版本、应用测试用户和系统 beta 用户；其中 `OS_BETA` 仅支持 `versionCode` 与 `osBuild` 维度。`slowstartrate`、`slowrenderingrate` 的 `userCohort` 只支持 `OS_PUBLIC`，Crash/ANR 的测试群组查询不能照搬到这里。
+- `filter`、分页和 `userCohort`：过滤分组、读取完整结果，并用 user cohort（用户群组）选择数据范围。Crash/ANR 支持公开系统版本、应用测试用户和系统 beta 用户；其中 `OS_BETA` 仅支持 `versionCode` 与 `osBuild` 维度。`slowstartrate`、`slowrenderingrate` 的 `userCohort` 只支持 `OS_PUBLIC`，Crash/ANR 的测试群组查询到这里要止步。
 
 鉴权使用 `https://www.googleapis.com/auth/playdeveloperreporting` OAuth scope（OAuth 授权范围，用来声明访问权限）。每个 metric set 资源还提供 freshness 查询，可得到各粒度最新可用数据点。入仓任务先按粒度读取 freshness，以最新可用点限制查询终点，并保存抓取时刻、API 版本、cohort 及完整维度。freshness 只说明“这是当前可见的最新点”，历史点仍可能被修订，所以增量回读允许重叠：按事实键 upsert，再配置一段有界历史复核。分页未完整或 API 失败时，完成水位停在原地，失败批次记为缺口等待重试。
 
@@ -329,7 +329,7 @@ Play 与内部系统之间没有共享的事件标识，数据仓库因此把 Pl
 <!-- gracker-diagram: a293-10-aggregation-rounded-users-and-quality-incidents -->
 ![入仓聚合值、内部事实与质量事件分开关联](../../assets/diagrams/ch26/a293-10-aggregation-rounded-users-and-quality-incidents.png)
 
-图：每次分页保留原查询参数；查整体用户数使用独立不拆分查询，计数与率不能套同一聚合公式。
+图：每次分页保留原查询参数；查整体用户数使用独立不拆分查询，计数与率各走各的聚合公式。
 
 ## 技术质量政策与商店可见性风险
 
