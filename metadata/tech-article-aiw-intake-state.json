@@ -7184,6 +7184,66 @@
       "status": "appended",
       "title": "Android-GPU压测帧率工具用 200 行 C++ 写一个 Android GPU 压测工具 一、为什么需要它 给"
     },
+    "source/juejin-android/2026-11-04-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "337c7ea1ed0019e0",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793737239.9170187,
+      "score": 24,
+      "sha256": "ba96405eadc784f08cfd1fe4ee9f9026068e01d50397d5e34affe88579353dd0",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-04-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "c18ad083145f4f8b",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793737239.9187887,
+      "score": 9,
+      "sha256": "91b813914c608ea3368266d2542e56e0890a2c332560b346e361de1381223cef",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-04-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "60b78f8b0d771476",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793737239.917616,
+      "score": 15,
+      "sha256": "a036bc52872ad154806e830d49aa65dc50b33eaecca7b8ae5f5a5560d6216a71",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
+    "source/juejin-android/2026-11-04-76948663-我开源了一个 Android－iOS 加固.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "3953d286a73cf42e",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793737239.9181538,
+      "score": 7,
+      "sha256": "3f060926afdf4fb57f01040eb95d47d1153a71918fef30dc1d6d6b4c2b6e0e36",
+      "size": 5049,
+      "status": "appended",
+      "title": "我开源了一个 Android/iOS 加固工具，顺便聊聊加固到底能防住什么市面上的 APK 加固方案大多是黑盒：付费、上"
+    },
+    "source/juejin-android/2026-11-04-76957327-记账 App 我装了删、删了装，最后自己.md": {
+      "chapter": "待分类",
+      "entry_id": "664098251362c6a6",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793737239.9184396,
+      "score": 17,
+      "sha256": "d4636944d0f6b3250bdfb8318bd7b4bb444dd1398bdc2af5958dfb4dfce91acd",
+      "size": 13870,
+      "status": "appended",
+      "title": "记账 App 我装了删、删了装，最后自己写了一个：本地语音识别 + R8 踩坑复盘记账 App 我装了删、删了装，最后自"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8485,6 +8545,201 @@
       "mtime": 1793646250.09579,
       "sha256": "839d1abf319fbf91b45c8f953fac7390a3d978f995af873922bc746369bbf63a",
       "size": 3890,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Apple-Announces-Record-114-5B-Fourth-Quarter-Res.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733462.4632413,
+      "sha256": "88a1e6d08b9df7b18f268dec0c24f819bb3320a5ac274e01501fbcb8eb71518f",
+      "size": 18876,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Apple-s-Analyst-Calls-Have-Been-Scripted-for-Dec.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733415.4138532,
+      "sha256": "f84580687f273873c5472ae88bcbe953e3161e742f45491cfc0257721de8fe0a",
+      "size": 7923,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Apple-s-New-iPhone-Release-Schedule-Seems-to-Pay.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733423.4021833,
+      "sha256": "8b4c59ee18385baa071c587e4586f8922ce7f4e713e922ff293cca5ee36c3a44",
+      "size": 1448,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Audience-capture.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733474.3877084,
+      "sha256": "812d9652cf8949d9cc8c7455a53490a20eb5afac4dc4e93ae30d3d17d9f5960d",
+      "size": 8916,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Chance-Miller-Reviews-the-New-A20-Pro-iPad-Mini.md": {
+      "chapter": "待分类",
+      "entry_id": "82a57a2929b656d0",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733393.4142704,
+      "score": 9,
+      "sha256": "dd8d6f4507a3ee39e7ef41aa920c94b8777e9b9b86090e6a888ffc3b3d019146",
+      "size": 15903,
+      "status": "appended",
+      "title": "New iPad mini hands-on: Refreshed design, OLED display, more"
+    },
+    "source/rss-snapshot/2026-11-04-Euclidean-Spherical-and-Projective-Geometry.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733433.7039855,
+      "sha256": "e946e929ef905f6bd63e189bf51380335cf693b4c476d3bb938c138c4a2e0af2",
+      "size": 6172,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Fraction-comparison-trick-revisited.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733397.409187,
+      "sha256": "ebd30f610c3680960666fb49378edbb273b54831711e92e363ff19909432d8ec",
+      "size": 2292,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-How-a-programming-might-reinvent-the-projective-.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733436.3823888,
+      "sha256": "0f726d676185965f0943151e66e1dc9ebf3dd39af2cc41a829a4defb6c4aa684",
+      "size": 5191,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-How-do-you-implement-a-random-access-database-wh.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733375.3956835,
+      "sha256": "795db63e3d1f88e5cc5e7b5ec2100d94e2ba6e1380294fe48c567c9395130a22",
+      "size": 3323,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-How-to-install-an-app-on-your-Commodore-64.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733457.4219973,
+      "sha256": "6f58264c001be9f10663154d2a8e98f51c6b7dfb033db29ea7166e609c3d3d98",
+      "size": 12491,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-I-discovered-a-sound-that-leaks-your-exact-locat.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733440.4083757,
+      "sha256": "d15dddc1ca7c7be1e0aa2f217cf6a502413fb528dd7c428d8b4367b96ad7d02e",
+      "size": 939,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Just-a-little-AI-resistance-as-a-treat.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733430.8656151,
+      "sha256": "7f8b5a6c8f27cc4d12e2e5a302706258d973dc3fe5e9844f6f56dec2d55e47c0",
+      "size": 19100,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-LLMs-are-not-superhuman-at-reading-and-writing-n.md": {
+      "chapter": "ch12-apk-network",
+      "entry_id": "b3c8dd50b40fb989",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733470.411837,
+      "score": 8,
+      "sha256": "b6fcf2dfc28406f1c863ddf4fc0dfb6c4f7c1f4367b5dd3e908046b2804e1326",
+      "size": 6871,
+      "status": "appended",
+      "title": "LLMs are not superhuman at reading and writing neural network weights"
+    },
+    "source/rss-snapshot/2026-11-04-Lorem-Ipsum-Dot-Gov-Dot-UK.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733494.953098,
+      "sha256": "a759aaa1e20adf73f52236d524652c5624f6970b9af79cd9527106d7f6af2c54",
+      "size": 14563,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Making-peace-with-the-projective-plane.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733094.3828247,
+      "sha256": "2119ccab43a6c9519c75e277acaa8124aa8534168ae82774cb44cafbb21fb3ec",
+      "size": 3511,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-New-Article-Annual-LFP-Charity-Discount.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733328.3030741,
+      "sha256": "4efef7cf6d72cd8eecf5ca94b563a110a06f79e90dec4084c5dab4c91395e664",
+      "size": 1411,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-October-sponsors-only-newsletter.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733443.3827584,
+      "sha256": "e12b93c6f62a7e4b67bc53bfec8657dcef856678b7c4d434013657978135c890",
+      "size": 910,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Pluralistic-Separable-03-Nov-2026.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733427.3353016,
+      "sha256": "2d7de1a324ba29313c06ed11aeb2cafb91bdd1adce2937670b8aae51fbd43ace",
+      "size": 29162,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Prove-you-are-not-a-child.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733465.4301186,
+      "sha256": "39f5e90e495c58da4430de383d565e21bc54c576ea0de5fabd9133f8e1797f40",
+      "size": 4948,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Pumpkin-Seeds.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733448.2240036,
+      "sha256": "1663936eb03a516c173d356add5839876bba7467dc835c318cba9ed3200e5a13",
+      "size": 16044,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Qwen-3-8-27B-on-my-laptop-can-interpret-model-we.md": {
+      "chapter": "待分类",
+      "entry_id": "d3f999eb53e2b977",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733341.406073,
+      "score": 9,
+      "sha256": "e6c2c81a9949b3c9fc9af5e11e86a30a002f6295c217e33a937f38f589855dde",
+      "size": 10824,
+      "status": "appended",
+      "title": "Qwen 3.8 27B on my laptop can interpret model weights, too"
+    },
+    "source/rss-snapshot/2026-11-04-Running-Dry.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733338.410529,
+      "sha256": "611de885769518acc2aaef082c319c5ded645730ac5b0bf89666f2a1ae8e72d9",
+      "size": 57903,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Runs-scored-in-World-Baseball-Classic.md": {
+      "chapter": "待分类",
+      "entry_id": "31a64acc1a0e6d76",
+      "last_appended": "2026-11-04T05:25:19.943825+08:00",
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733480.4333546,
+      "score": 8,
+      "sha256": "f944c833d0685bea8cdc1102d62556bcb66195d8ea20fd350de663387aca09b5",
+      "size": 15396,
+      "status": "appended",
+      "title": "Runs scored in World Baseball Classic"
+    },
+    "source/rss-snapshot/2026-11-04-Sneaking-into-the-auditorium-for-the-Windows-200.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733488.3394744,
+      "sha256": "839d1abf319fbf91b45c8f953fac7390a3d978f995af873922bc746369bbf63a",
+      "size": 3890,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-04-Sponsor-OurCal.md": {
+      "last_seen": "2026-11-04T05:25:19.943825+08:00",
+      "mtime": 1793733485.4084709,
+      "sha256": "f0430962a49a8526f4807d8c0d09a7e82fca7aaffb9ba489b0f0d3157eac1e55",
+      "size": 18714,
       "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
@@ -10294,24 +10549,24 @@
     }
   },
   "last_report": {
-    "appended": 19,
-    "considered": 32,
-    "cutoff": "2026-11-02T05:20:20.057613+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-03.md",
+    "appended": 9,
+    "considered": 35,
+    "cutoff": "2026-11-03T05:20:20.025065+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-04.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2414,
+    "scanned": 2449,
     "skipped": {
       "existing_link": 0,
-      "low_score": 11,
-      "max_files": 2,
-      "old_unseen": 1419,
+      "low_score": 21,
+      "max_files": 5,
+      "old_unseen": 1421,
       "path": 31,
-      "unchanged": 932
+      "unchanged": 962
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-03T05:25:20.025065+08:00",
+  "last_run_at": "2026-11-04T05:25:19.943825+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
