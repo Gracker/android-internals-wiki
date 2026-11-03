@@ -12597,6 +12597,27 @@
       "summary": "网络预留与新增能力遗漏 SDK Extensions 可用性边界",
       "type": "sdk-extension-availability",
       "updated_at": "2026-11-03T18:43:12.824720+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/29-android-ai-phone-ecosystem.md",
+      "close_note": "已在 1.29.3 同处补齐 GenerativeModel / genai-prompt 通用入口、beta、不适用 SLA 或弃用政策及可能破坏向后兼容的边界，并添加官方参考资料与 sources。2026-11-03 对照官方原文核验；metadata、SUMMARY 链接与 diff 检查通过，新增中文硬门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-223520-idle-audit-e94c3f45",
+      "created_at": "2026-11-03T22:38:14.261004+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-223520-idle-audit-e94c3f45",
+      "details": "1.29.3 将 Prompt API 与其他端侧能力并列，未说明接口稳定性。2026-11-03 官方 direct model access 文档明确：com.google.mlkit:genai-prompt 通过 GenerativeModel 提供入口；API 处于 beta，不适用 SLA 或弃用政策，变更可能破坏向后兼容。应在同处补齐该边界，避免将设备可用性误作接口稳定性保证。",
+      "id": "finding-9361f5623529",
+      "log_path": "logs/audit/2026-11-03-20261103-223520-idle-audit-e94c3f45-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developers.google.com/ml-kit/genai/prompt/android?hl=en",
+        "https://developers.google.com/ml-kit/genai?hl=en"
+      ],
+      "status": "verified",
+      "summary": "ML Kit 通用提示入口缺少 beta 与兼容性政策边界",
+      "type": "missing-lifecycle-boundary",
+      "updated_at": "2026-11-03T22:40:17.807679+08:00"
     }
   ],
   "schema_version": 1
