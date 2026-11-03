@@ -12493,6 +12493,110 @@
       "summary": "Display 帧率速度映射 API 遗漏按显示器查询与变化后重新查询的条件",
       "type": "display-api-lifecycle-boundary",
       "updated_at": "2026-11-03T10:42:19.097366+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/22-connectivity-service.md",
+      "close_note": "已按 ConnectivityService.java:541-544、2268-2270 区分 linger 的测试属性覆盖与 nascent 固定常量；保留 SDK 无时序承诺及上游 TODO。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-183519-idle-audit-f336d155",
+      "created_at": "2026-11-03T18:38:39.725012+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-183519-idle-audit-f336d155",
+      "details": "ConnectivityService.java:541-544、2268-2270 显示仅 linger 从 persist.netmon.linger 读取测试覆盖值；nascent 固定赋值 DEFAULT_NASCENT_DELAY_MS，保留可配置性的 TODO。",
+      "id": "finding-e78892e7b09a",
+      "log_path": "logs/audit/2026-11-03-20261103-183519-idle-audit-f336d155-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java"
+      ],
+      "status": "verified",
+      "summary": "linger 与 nascent 被合并描述为可由系统配置调整",
+      "type": "nascent-config-boundary",
+      "updated_at": "2026-11-03T18:41:41.283290+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/22-connectivity-service.md",
+      "close_note": "已在快照示例之前说明 Manifest 必须声明 ACCESS_NETWORK_STATE；Kotlin 示例保持不变。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-183519-idle-audit-f336d155",
+      "created_at": "2026-11-03T18:38:39.800130+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-183519-idle-audit-f336d155",
+      "details": "ConnectivityManager API 的 Handler 重载 registerDefaultNetworkCallback 明确 Requires ACCESS_NETWORK_STATE；示例前未说明 Manifest 声明。",
+      "id": "finding-ca6ed5ca5356",
+      "log_path": "logs/audit/2026-11-03-20261103-183519-idle-audit-f336d155-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/net/ConnectivityManager#registerDefaultNetworkCallback(android.net.ConnectivityManager.NetworkCallback,%20android.os.Handler)"
+      ],
+      "status": "verified",
+      "summary": "默认网络快照示例缺少 ACCESS_NETWORK_STATE 前置权限说明",
+      "type": "tracker-permission-prerequisite",
+      "updated_at": "2026-11-03T18:41:41.349526+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/22-connectivity-service.md",
+      "close_note": "已补充 targetSdk 34+ 的 Manifest property 与自认证 XML 声明，以及缺失声明的 SecurityException；核对能力注释、兼容变更和服务端校验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-183519-idle-audit-f336d155",
+      "created_at": "2026-11-03T18:38:39.872853+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-183519-idle-audit-f336d155",
+      "details": "NetworkCapabilities.java:800-803 与 NetworkRequest.java:131-148 要求 targetSdk 34+ 显式请求 NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS 时通过 Manifest property 引用 XML 声明；ConnectivityService.java:9571-9656 执行检查，缺失 property 抛出 SecurityException。",
+      "id": "finding-2d0681172236",
+      "log_path": "logs/audit/2026-11-03-20261103-183519-idle-audit-f336d155-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkRequest.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java"
+      ],
+      "status": "verified",
+      "summary": "优先通信网络请求缺少 targetSdk 34+ 自认证声明要求",
+      "type": "uc-self-certification",
+      "updated_at": "2026-11-03T18:41:41.415895+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/22-connectivity-service.md",
+      "close_note": "已将提供者侧 API 更正为 NetworkProvider.registerNetworkOffer()，并补入来源列表。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-183519-idle-audit-f336d155",
+      "created_at": "2026-11-03T18:40:19.910391+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-183519-idle-audit-f336d155",
+      "details": "NetworkProvider.java:286-307 的系统 API 是 registerNetworkOffer(score, caps, executor, callback)；它内部转调 ConnectivityManager.offerNetwork(providerId, score, caps, proxy)。正文把绑定 Executor 的提供者接口称为 offerNetwork，会误导源码定位。",
+      "id": "finding-d27252a7d7c4",
+      "log_path": "logs/audit/2026-11-03-20261103-183519-idle-audit-f336d155-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkProvider.java"
+      ],
+      "status": "verified",
+      "summary": "NetworkProvider 网络供给接口误写为 offerNetwork",
+      "type": "network-offer-api-name",
+      "updated_at": "2026-11-03T18:41:41.484888+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/22-connectivity-service.md",
+      "close_note": "已保留 reserveNetwork 的 API 36/U Extensions 17、受限带宽能力的 API 36/U Extensions 16 和优先通信能力的 API 37/U Extensions 21 边界，并补充违规使用受限网络可能被阻断的官方警告。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261103-183519-idle-audit-f336d155",
+      "created_at": "2026-11-03T18:42:24.222915+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261103-183519-idle-audit-f336d155",
+      "details": "官方 API 页标注 reserveNetwork 同时提供于 U Extensions 17，NOT_BANDWIDTH_CONSTRAINED 提供于 U Extensions 16，PRIORITIZE_UNIFIED_COMMUNICATIONS 提供于 U Extensions 21；正文只写 Android 16/17 或 API 36+，遗漏扩展设备的可用性。能力参考同时警告受限网络上超量或过频访问可能被系统阻断。",
+      "id": "finding-69d768e5e61c",
+      "log_path": "logs/audit/2026-11-03-20261103-183519-idle-audit-f336d155-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/net/ConnectivityManager#reserveNetwork(android.net.NetworkRequest,%20android.os.Handler,%20android.net.ConnectivityManager.NetworkCallback)",
+        "https://developer.android.com/reference/android/net/NetworkCapabilities#NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED",
+        "https://developer.android.com/reference/android/net/NetworkCapabilities#NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS"
+      ],
+      "status": "verified",
+      "summary": "网络预留与新增能力遗漏 SDK Extensions 可用性边界",
+      "type": "sdk-extension-availability",
+      "updated_at": "2026-11-03T18:43:12.824720+08:00"
     }
   ],
   "schema_version": 1
