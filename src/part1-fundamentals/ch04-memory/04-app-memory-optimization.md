@@ -4,8 +4,10 @@ title: App 内存优化与诊断
 section: '4.4'
 chapter: '4.4'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-20'
-last_verified_against: AOSP android-17.0.0_r1; external/perfetto heapprofd data source; Android Developers 16 KB page-size guidance
+last_verified: '2026-11-04'
+last_source_verified_at: '2026-11-04'
+last_idle_audit_at: '2026-11-04T14:40:19+08:00'
+last_verified_against: AOSP android-17.0.0_r1; external/perfetto heapprofd data source; Android Developers 16 KB page-size and NDK sanitizer guidance
 confidence: medium
 sources:
 - type: aosp
@@ -30,6 +32,12 @@ sources:
   path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc
 - type: official
   path: https://developer.android.com/ndk/guides/debug
+- type: official
+  path: https://developer.android.com/ndk/guides/hwasan
+- type: official
+  path: https://developer.android.com/ndk/guides/asan
+- type: aosp
+  path: frameworks/base/core/java/android/app/ApplicationExitInfo.java
 tags:
   - lru-cache
   - cache-pollution
@@ -403,7 +411,9 @@ adb shell dumpsys meminfo --unreachable "$(adb shell pidof com.example.app)"
 
 ### HWASan、ASan 与 GWP-ASan
 
-64 位原生代码的内存错误测试可优先考虑 HWAddressSanitizer（HWASan），它擅长发现越界访问和释放后使用（use-after-free）；设备、ABI 或构建链受限时，AddressSanitizer（ASan）仍是替代方案。两者都更适合测试构建，单次测试没报错，说明不了内存错误不存在。
+原生代码的越界访问和释放后使用（use-after-free）测试可优先考虑 HWAddressSanitizer（HWASan）。它从 NDK r21、Android 10 / API 29 起支持 arm64，其他 64 位 ABI 不在支持范围内。Android 14 / API 34+ 的可调试应用可通过 `wrap.sh` 运行；更早的系统需要 HWASan 系统镜像。
+
+AddressSanitizer（ASan）从 API 27 起可用，但 Android NDK 已自 2023 年起停止支持，官方提醒继续使用可能遇到工具自身的缺陷。受限环境若仍采用 ASan，需要接受这一维护状态；使用 C++ 异常时，还要避开与 `libc++_static` 的已知不兼容组合。两者都更适合测试构建，单次测试没报错，说明不了内存错误不存在。
 
 CMake 目标需要同时添加编译和链接选项。下面以 HWASan 为例：
 
@@ -415,7 +425,7 @@ target_link_options(native-lib PRIVATE
     -fsanitize=hwaddress)
 ```
 
-运行时库、系统镜像、ABI 和最低 API 要求，按所用 NDK 的官方指南配置；`doNotStrip` 只影响符号保留，启用 Sanitizer 靠的还是编译和链接选项。
+使用 libc++ 时，HWASan 还要求共享 STL（`c++_shared`）；`wrap.sh` 路径与 `android:useAppZygote` 不兼容，需要保留后者时，应按官方指南配置 HWASan 系统镜像。运行时库、系统镜像和最低 API 要求仍要按所用 NDK 的官方指南配置；`doNotStrip` 只影响符号保留，启用 Sanitizer 靠的是编译和链接选项。
 
 GWP-ASan 用抽样方式检测部分堆内存错误，开销更适合生产环境。Android 14 / API 34 起，可恢复的 GWP-ASan 默认覆盖所有应用；它抽查的只是部分分配，一次未命中说明不了什么；职责也划得很清楚——发现越界和释放后使用，长期原生内存泄漏的统计归别的工具管。
 
@@ -634,9 +644,11 @@ SLRU（Segmented LRU）把预算拆成两个 access-order 段：
 
 ### `ApplicationExitInfo`
 
-Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 可以回查进程退出记录。`ApplicationExitInfo` 提供原因、重要性、说明、诊断轨迹，以及最终采样到的 PSS/RSS；相应字段名仍是 `reason`、`importance`、`description` 和 `trace`。
+Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 可以回查进程退出记录。`ApplicationExitInfo` 通过 `getReason()`、`getImportance()` 和 `getDescription()` 提供退出原因、重要性和说明，通过 `getPss()`、`getRss()` 提供最后采样的内存值，单位为 kB。说明文本的格式不保证跨设备或版本稳定，程序判断应优先使用原因码。
 
-这些 PSS/RSS 值可能为 0，也不保证等于死亡瞬间峰值。`REASON_LOW_MEMORY` 能说明系统按低内存原因记录了退出，仍需结合设备内存档位、业务场景和版本分布分析。
+诊断轨迹通过 `getTraceInputStream()` 读取，返回的流需要关闭，读取时要处理 `IOException` 和返回 `null` 的情况。它通常可用于 ANR；Android 12 / API 31 起，原生崩溃还可返回 tombstone 的 protobuf 数据。诊断轨迹存放在独立的全局环形缓冲区中，可能被后续记录覆盖，不能假定每条退出记录都有可读轨迹。
+
+PSS/RSS 值可能为 0，也不保证等于死亡瞬间峰值。`REASON_LOW_MEMORY` 能说明系统按低内存原因记录了退出，仍需结合设备内存档位、业务场景和版本分布分析。
 
 Android vitals 的用户可感知低内存终止率适合观察整体影响。它能指出问题规模；我们要定位具体个案，仍要依靠可复现路径、退出信息和内存采样。
 
@@ -655,7 +667,7 @@ Android 15 / API 35 引入 `ProfilingManager`，应用可以请求由系统管�
 | --- | --- |
 | 页面退出后 Java 对象不回落 | LeakCanary、堆转储引用链 |
 | 滚动时分配率高并伴随卡顿 | 分配记录、Perfetto FrameTimeline 与 GC |
-| 原生 PSS 持续上涨 | heapprofd、malloc debug、HWASan/ASan |
+| 原生 PSS 持续上涨 | heapprofd、malloc debug、分配器与内存映射统计 |
 | 图形内存或 DMA-BUF 上涨 | `dumpsys meminfo`、`memtrack`、DMA-BUF/Surface 相关性能轨迹 |
 | 后台进程频繁消失 | `ApplicationExitInfo`、Android vitals、lmkd/系统内存压力 |
 | 文件描述符持续增长 | `/proc/self/fd`、StrictMode、资源所有权审查 |
@@ -774,6 +786,7 @@ Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递级别，�
 - [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 - [Debug native Android platform code](https://developer.android.com/ndk/guides/debug)
 - [HWAddressSanitizer](https://developer.android.com/ndk/guides/hwasan)
+- [AddressSanitizer（已停止支持）](https://developer.android.com/ndk/guides/asan)
 - [GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
 - [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 - [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
