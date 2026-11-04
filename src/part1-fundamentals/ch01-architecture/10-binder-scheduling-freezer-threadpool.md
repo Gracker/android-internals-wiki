@@ -4,10 +4,16 @@ chapter: '1.10'
 section: '1.10'
 status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
-last_verified: '2026-08-19'
+last_verified: '2026-11-04'
 last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android 17 API 37 official documentation
+last_source_verified_at: '2026-11-04'
+last_idle_audit_at: '2026-11-04T22:40:58+08:00'
 confidence: high
 sources:
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java
 - type: official
   path: https://source.android.com/docs/core/perf/cached-apps-freezer
 - type: official
@@ -316,7 +322,7 @@ libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，�
 
 选中线程后，驱动调用 `binder_transaction_priority()`，综合事务携带的优先级、Binder node 允许的最低优先级与 `inherit_rt` 配置，临时调整服务线程的调度属性；事务结束后再恢复此前保存的优先级。至于实时调度策略能否继承，还要看 node 配置和驱动的限制。
 
-同步事务会从调用线程带上可继承的调度信息；普通 `oneway` 则改用 Binder node 的最低优先级策略，调用方优先级不跟着走。`FLAT_BINDER_FLAG_INHERIT_RT` 只决定 node 是否允许继承实时调度策略，并不是给所有事务强制提权。calling UID/PID 这类身份字段里也没有 CPU 调度优先级——身份传播与调度继承是两套机制。
+同步事务会从调用线程带上可继承的调度信息；普通 `oneway` 以目标进程的 `default_priority` 为事务优先级，再由 `binder_transaction_priority()` 结合 Binder node 的最低优先级配置确定 worker 的调度属性，调用方优先级不跟着走。`FLAT_BINDER_FLAG_INHERIT_RT` 只决定 node 是否允许继承实时调度策略，并不是给所有事务强制提权。calling UID/PID 这类身份字段里也没有 CPU 调度优先级——身份传播与调度继承是两套机制。
 
 驱动在事务开始前保存 worker 的原优先级，完成后恢复。`SET`、`PENDING`、`ABORT` 三个状态处理的正是“设置事务优先级”和“恢复原优先级”之间的竞态，也就是两个动作并发交错时结果不定：若恢复请求与设置动作交错，恢复动作会延后或取消，免得旧事务覆盖新事务刚设置的优先级。这套状态约束的是同一 worker 上的事务切换，跨进程的全局优先级仲裁不归它管。
 
@@ -339,7 +345,7 @@ libbinder 对前者返回 `FROZEN_OBJECT` 或兼容的 `FAILED_TRANSACTION`，�
 | 后台 Service 执行 | 通常 200 秒 | 同上，但默认窗口更长 |
 | Broadcast | Android 13 及以下：前台优先级约 10 秒、后台优先级约 60 秒；Android 14+：前台约 10–20 秒、后台约 60–120 秒，是否 CPU-starved 会影响窗口 | 广播线程或主线程等待 IPC，system_server 也可能无法及时调度 |
 
-这些是 AOSP/Pixel 默认值，OEM 可以修改。另外，`startForegroundService()` 后 5 秒内调用 `startForeground()` 的超时属于另一类，写文档时要和前台 Service 的 20 秒执行窗口分开。
+这些是 AOSP/Pixel 默认值，OEM 可以修改。`startForegroundService()` 启动后等待服务调用 `startForeground()` 的超时另由 `mServiceStartForegroundTimeoutMs` 控制：`android-17.0.0_r1` 中默认是 30 秒，`ActiveServices.scheduleServiceForegroundTransitionTimeoutLocked()` 用它启动独立计时器。它与前台 Service 的 20 秒执行窗口分别计时，排查时应核对对应配置和计时起点。
 
 官方说明见 [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)。
 
@@ -414,7 +420,7 @@ LIMIT 50;
 
 `client_dur` 是同步调用方看到的实际经过时间（wall duration），`server_dur` 是服务端对应 Binder reply slice 的实际经过时间。两者之差里可能混着驱动排队、调度、传输和其他开销，直接叫它“排队时间”并不可靠。
 
-若 `aidl_name` 为空，可能是 AIDL trace 没启用、接口没有生成相应的 trace 名称，或这笔事务缺少可关联的时间片。`BBinder::execTransact()` 的 `ATRACE_TAG_AIDL` 能产生接口/方法 slice，但这项能力从哪个版本开始有还缺版本历史证据，先不要标成 Android 17 首次引入。
+若 `aidl_name` 为空，可能是 AIDL trace 没启用、接口没有生成相应的 trace 名称，或这笔事务缺少可关联的时间片。原生服务端的入口位于 `frameworks/native/libs/binder/Binder.cpp`：`BBinder::transact()` 检查 `ATRACE_TAG_AIDL`，再调用 `BBinder::startTrace()` 生成接口/方法 slice。这里确认的是 Android 17 基线中的实现，首次引入版本仍需查提交历史。
 
 随后检查：
 
@@ -938,7 +944,7 @@ Flags.prototypeAggressiveFreezing()
 
 - 常规配置仍以缓存进程边界为基准。
 - 激进冻结（aggressive freezing）实验可把资格范围提前到 `HOME_APP_ADJ`。
-- 即使当前 adj 较低，`maxAdj` 约束也可能让进程继续获得隐式 CPU 时间。
+- 即使当前 adj 已不低于冻结阈值，低于阈值的 `maxAdj` 仍会授予隐式 CPU 时间。
 
 排查“为什么没有冻结”时，adj、CPU 执行资格、功能开关和可在线调整系统参数的 DeviceConfig 要一起看，只盯 `curAdj` 会看漏。
 
@@ -1202,6 +1208,8 @@ callbacks.broadcast(callback -> {
 
 未设置策略的旧构造方式保留兼容行为：照常调用冻结的远端。SDK 36 及以上版本不推荐这种用法。
 
+冻结策略还依赖内核的 frozen notification 支持。`android-17.0.0_r1` 的 `RemoteCallbackList` 在注册冻结通知时会捕获 `UnsupportedOperationException`，随后按未冻结状态继续立即调用远端，排队或丢弃策略不会生效。因此，仅检查 API 级别不足以确认冻结保护有效，还要验证目标设备的通知支持，并为不支持的设备保留限流、合并等业务保护。
+
 ### 8. Freezer 对应用代码的几个隐蔽影响
 
 #### 8.1 固定频率任务可能在解冻后追赶
@@ -1435,6 +1443,8 @@ Perfetto 没有采集 ActivityManager 或线程调度数据时，“没看到事
 
 ## 参考资料
 
+- [Android 17 `Binder.cpp`（原生服务端 AIDL trace 入口）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp)
+- [Android 17 `ActiveServices.java`（Service 独立超时计时器）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
 - [Android 17 `IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
 - [Android 17 `ProcessState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/ProcessState.cpp)
 - [Android 17 `IPCThreadState.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/include/binder/IPCThreadState.h)
