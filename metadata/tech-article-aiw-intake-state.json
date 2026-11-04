@@ -7244,6 +7244,54 @@
       "status": "appended",
       "title": "记账 App 我装了删、删了装，最后自己写了一个：本地语音识别 + R8 踩坑复盘记账 App 我装了删、删了装，最后自"
     },
+    "source/juejin-android/2026-11-05-76678955-别再只用 Loading、Success.md": {
+      "chapter": "待分类",
+      "entry_id": "76d3bf56a3800cb2",
+      "last_appended": "2026-11-05T05:25:20.084243+08:00",
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793823532.169267,
+      "score": 9,
+      "sha256": "b067db0c234d555b599fea5ba6e27f27a462d2d24bbc0ef129b817f57cc6f152",
+      "size": 33267,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-11-05-76696126-你敢信吗？同样是跨端，KMP 跟 RN .md": {
+      "chapter": "待分类",
+      "entry_id": "940d9f0902822c9a",
+      "last_appended": "2026-11-05T05:25:20.084243+08:00",
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793823532.1697998,
+      "score": 8,
+      "sha256": "e73b95b1210cf54b201594bf189c38dc87e32981b6ea2645aff169a03189f5f9",
+      "size": 6908,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-11-05-76744618-千万别误用Android Skills.md": {
+      "chapter": "待分类",
+      "entry_id": "4f6ef8bb1c83458d",
+      "last_appended": "2026-11-05T05:25:20.084243+08:00",
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793823532.1707304,
+      "score": 9,
+      "sha256": "8cffaa14b1ae5b10849887bb43054576c416d26a6ec88f23236c0b9232534ca2",
+      "size": 11731,
+      "status": "appended",
+      "title": "千万别误用Android Skills解析谷歌最新发布的Android Skills，真正理解谷歌全新智能体系统背后的反"
+    },
+    "source/juejin-android/2026-11-05-76826281-AI时代下，Android的边界正在消失.md": {
+      "chapter": "待分类",
+      "entry_id": "d9d7fff7c269766b",
+      "last_appended": "2026-11-05T05:25:20.084243+08:00",
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793823532.1702964,
+      "score": 16,
+      "sha256": "67ff523b893cac410131d04d6314c81ec94984b49e27a5fd931e2a26836aca46",
+      "size": 20509,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8740,6 +8788,203 @@
       "mtime": 1793733485.4084709,
       "sha256": "f0430962a49a8526f4807d8c0d09a7e82fca7aaffb9ba489b0f0d3157eac1e55",
       "size": 18714,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Apple-Announces-Record-114-5B-Fourth-Quarter-Res.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818971.9191964,
+      "sha256": "ee6e51867bd69b8d20134cbb64591240c018c71d83fc3ee39656f861180a2af4",
+      "size": 1980,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Apple-Begins-Opening-Siri-AI-to-Developers.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818922.3885458,
+      "sha256": "5b818684b4f375a716ecea32c59dff7e0cf8570eaa6ccb983da1abffa31b6c88",
+      "size": 4998,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Apple-s-New-iPhone-Release-Schedule-Seems-to-Pay.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818951.2814782,
+      "sha256": "f5840f53231c8c3b6a25d852bd941c3e3268e38776900a788a690750e80c0ab8",
+      "size": 1094,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Audience-capture.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818977.7047594,
+      "sha256": "812d9652cf8949d9cc8c7455a53490a20eb5afac4dc4e93ae30d3d17d9f5960d",
+      "size": 8916,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Book-Review-Practice-by-Rosalind-Brown.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818907.6553042,
+      "sha256": "ff4615da8558b0cda6ad245684099372c4517c351285b0151f79d629c09ccd0b",
+      "size": 12549,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Euclidean-Spherical-and-Projective-Geometry.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818957.8984346,
+      "sha256": "e4e74acccf5eefa652a1770e82358ede873671e0bf380fd0071e2ec9ae1bed20",
+      "size": 5701,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Fraction-comparison-trick-revisited.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818948.1004896,
+      "sha256": "2f6d4b8327b6c4ebf08891dff7e74e4f24cdcf3c74cade4727bf2029b3b95f56",
+      "size": 3508,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-From-a-graphics-hack-to-a-rigorous-model-of-the-.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818959.6893477,
+      "sha256": "0f726d676185965f0943151e66e1dc9ebf3dd39af2cc41a829a4defb6c4aa684",
+      "size": 5191,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Goodhart-s-Law-but-We-Already-Spent-All-Our-Mone.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818916.3217635,
+      "sha256": "fd6a3da9e12319a317c0da32cdc9ec8148e61db31515c87e2457092880405b0b",
+      "size": 6021,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-How-do-you-implement-a-random-access-database-wh.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818945.3431964,
+      "sha256": "795db63e3d1f88e5cc5e7b5ec2100d94e2ba6e1380294fe48c567c9395130a22",
+      "size": 3323,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-I-discovered-a-sound-that-leaks-your-exact-locat.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818962.1200397,
+      "sha256": "d15dddc1ca7c7be1e0aa2f217cf6a502413fb528dd7c428d8b4367b96ad7d02e",
+      "size": 939,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-It-Gives-Great-Demo.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818894.9546244,
+      "sha256": "239436bab169b8d29f62567049ca423a9a60b03be2fe41f543c37f029eef95c9",
+      "size": 1785,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Just-a-little-AI-resistance-as-a-treat.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818954.9872468,
+      "sha256": "fd1873411040e430dbae230fdfdf684050dd73192cac4b4d834073d85cfd9fc0",
+      "size": 19293,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-MKBHD-on-the-New-A20-Pro-iPad-Mini.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818929.9116645,
+      "sha256": "3c443a08bb9d3aa39aac0830790f5a670e7ff4dacd20e2ef38a8f2c67e302e44",
+      "size": 239,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-October-sponsors-only-newsletter.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818963.799096,
+      "sha256": "e12b93c6f62a7e4b67bc53bfec8657dcef856678b7c4d434013657978135c890",
+      "size": 910,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Pluralistic-The-AI-fatfinger-economy-has-come-fo.md": {
+      "chapter": "待分类",
+      "entry_id": "d4b783ee510ab931",
+      "last_appended": "2026-11-05T05:25:20.084243+08:00",
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818910.658182,
+      "score": 7,
+      "sha256": "71e0f05e16f2f03019632912c0f35fa020cca110793b5c2d63404c91d845953f",
+      "size": 25065,
+      "status": "appended",
+      "title": "Pluralistic: The AI fatfinger economy has come for my receipts app (04 Nov 2026) – Pluralistic: Daily links from Cory Do"
+    },
+    "source/rss-snapshot/2026-11-05-Prove-you-are-not-a-child.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818974.904999,
+      "sha256": "94268d42ffba86ad966f246fca65f0a433eaefc1faef7f044a4856ec690a8ad2",
+      "size": 5002,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Pumpkin-Seeds.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818969.3245566,
+      "sha256": "1663936eb03a516c173d356add5839876bba7467dc835c318cba9ed3200e5a13",
+      "size": 16044,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-Runs-scored-in-World-Baseball-Classic.md": {
+      "chapter": "待分类",
+      "entry_id": "d44b1864dd7daceb",
+      "last_appended": "2026-11-05T05:25:20.084243+08:00",
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818985.4524806,
+      "score": 8,
+      "sha256": "5163ea05fbb877a07d15c80e6fb23b70045f5e692fe77fa6ee066d43a282fa8c",
+      "size": 14721,
+      "status": "appended",
+      "title": "2026-11-05-Runs-scored-in-World-Baseball-Classic"
+    },
+    "source/rss-snapshot/2026-11-05-Safari-27-3-Beta-Adds-Vertical-Tabs-and-Adaptive.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818941.7670395,
+      "sha256": "b324f72cab82825c0f857b7a3bb85975559629f64f3ba3bd49131958d8c90890",
+      "size": 4597,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-This-Election-Will-Not-Look-Surprising-in-Histor.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818901.1235578,
+      "sha256": "fc83cffdef5d116a32b0d041c02715bebe6cc782663668237446aaed9cb45de3",
+      "size": 681,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-This-Week-in-Source-Control-4-November-2026.md": {
+      "chapter": "待分类",
+      "entry_id": "d5b2a1ec58c44da6",
+      "last_appended": "2026-11-05T05:25:20.084243+08:00",
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818913.187141,
+      "score": 12,
+      "sha256": "a06a3ab5ec361d444d972b4bdb796f68eb9e4afab56e035874c91101a87ffc1f",
+      "size": 13563,
+      "status": "appended",
+      "title": "2026-11-05-This-Week-in-Source-Control-4-November-2026"
+    },
+    "source/rss-snapshot/2026-11-05-datasette-agent-0-5a0.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818933.3247063,
+      "sha256": "832a28748c7dffc847b39668602f26109e4b73b101874f29c881ac2a69bc6037",
+      "size": 2038,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-datasette-apps-0-3a0.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818918.0281353,
+      "sha256": "9a4d8c2ba4c5d9881a3edee587d68140647ce1cb90409096779861c0f91e00af",
+      "size": 1342,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-datasette-llm-0-1a10.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818897.3166437,
+      "sha256": "deaad12d88f1a0cfcae0b8c7061e4adf2e52dd9bdc7837e3efe3b3fb3d3d0bcf",
+      "size": 730,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-05-iPad-Mini-A20-Pro-Review-Roundup.md": {
+      "last_seen": "2026-11-05T05:25:20.084243+08:00",
+      "mtime": 1793818926.4187675,
+      "sha256": "b3856183453c85ec24b46f7e4fe370849e8153c9949e0df12900c887f985b186",
+      "size": 133656,
       "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
@@ -10549,24 +10794,24 @@
     }
   },
   "last_report": {
-    "appended": 9,
-    "considered": 35,
-    "cutoff": "2026-11-03T05:20:20.025065+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-04.md",
+    "appended": 7,
+    "considered": 32,
+    "cutoff": "2026-11-04T05:20:19.943825+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-05.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2449,
+    "scanned": 2481,
     "skipped": {
       "existing_link": 0,
-      "low_score": 21,
-      "max_files": 5,
-      "old_unseen": 1421,
+      "low_score": 23,
+      "max_files": 2,
+      "old_unseen": 1426,
       "path": 31,
-      "unchanged": 962
+      "unchanged": 992
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-04T05:25:19.943825+08:00",
+  "last_run_at": "2026-11-05T05:25:20.084243+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
