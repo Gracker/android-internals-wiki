@@ -12682,6 +12682,68 @@
       "summary": "ApplicationExitInfo 将诊断流误写为 trace 字段，未说明诊断流可缺失",
       "type": "incorrect-api",
       "updated_at": "2026-11-04T14:43:49.100167+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/07-dynamic-linker-vndk-isolation.md",
+      "close_note": "已按 android-17.0.0_r1 的 do_dlopen/load_library 修正总览：先确定 namespace，在其可访问范围内搜索并解析依赖，再重定位；源码断言与文章本地验证均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-183519-idle-audit-4fe2ca4a",
+      "created_at": "2026-11-04T18:38:57.730059+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-183519-idle-audit-4fe2ca4a",
+      "details": "原正文第68行的先后顺序与 do_dlopen 先确定 caller namespace、load_library 在创建及映射新对象前检查 is_accessible 的执行路径不符。应说明 namespace 先限定搜索和依赖解析范围。",
+      "id": "finding-80d16f4869fc",
+      "log_path": "logs/audit/2026-11-04-20261104-183519-idle-audit-4fe2ca4a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp#2125"
+      ],
+      "status": "verified",
+      "summary": "装载总览把 namespace 与分区约束排在依赖解析和重定位之后",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-04T18:42:28.187801+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/07-dynamic-linker-vndk-isolation.md",
+      "close_note": "已区分 TLS 模块登记与启动期静态 TLS 偏移分配，说明 g_static_tls_finished 后新模块 static_offset=SIZE_MAX；新增固定tag源码引用，源码断言与文章本地验证均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-183519-idle-audit-4fe2ca4a",
+      "created_at": "2026-11-04T18:38:57.791679+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-183519-idle-audit-4fe2ca4a",
+      "details": "原正文第152行把 register_soinfo_tls 一概称为注册静态 TLS 模块；linker_tls.cpp 中仅在 g_static_tls_finished 为假时 reserve_solib_segment，完成静态布局后的新模块 static_offset 为 SIZE_MAX。应区分 TLS 模块登记和启动期静态布局分配。",
+      "id": "finding-349249afcda4",
+      "log_path": "logs/audit/2026-11-04-20261104-183519-idle-audit-4fe2ca4a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_tls.cpp#133",
+        "https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp#1710"
+      ],
+      "status": "verified",
+      "summary": "运行时 dlopen 的 TLS 模块登记被误写为静态 TLS 分配",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-04T18:42:28.255971+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/07-dynamic-linker-vndk-isolation.md",
+      "close_note": "已将缓存作用域改为单 DSO 的一次 relocate，后续相同符号索引可复用，快路径与通用路径均适用；源码断言与文章本地验证均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-183519-idle-audit-4fe2ca4a",
+      "created_at": "2026-11-04T18:38:57.852437+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-183519-idle-audit-4fe2ca4a",
+      "details": "原正文第244行称缓存只服务当前一次查找且属于慢路径。Relocator 在每个 soinfo::relocate 调用中创建，多个重定位循环共享同一实例，lookup_symbol<IsGeneral> 在快慢路径均可复用最近一个 r_sym 结果。应改为单 DSO 本次重定位期间、最近符号索引的缓存。",
+      "id": "finding-e6425217e76b",
+      "log_path": "logs/audit/2026-11-04-20261104-183519-idle-audit-4fe2ca4a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_relocate.cpp#63",
+        "https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_relocate.cpp#593"
+      ],
+      "status": "verified",
+      "summary": "重定位单项符号缓存的作用范围与快慢路径描述不准确",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-04T18:42:28.316766+08:00"
     }
   ],
   "schema_version": 1
