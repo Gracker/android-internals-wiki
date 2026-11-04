@@ -18,8 +18,10 @@ related_chapters:
 - '1.6'
 - '4.5'
 - '8.2'
-last_verified: '2026-08-19'
+last_verified: '2026-11-04'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-11-04T18:40:00+08:00'
+last_idle_audit_at: '2026-11-04T18:40:00+08:00'
 confidence: high
 last_body_apply_at: '2026-08-06T13:15:32+08:00'
 last_review_finalize_at: '2026-08-06T14:07:19+08:00'
@@ -36,6 +38,8 @@ sources:
   path: bionic/linker/linker.cpp
 - type: aosp
   path: bionic/linker/linker_relocate.cpp
+- type: aosp
+  path: bionic/linker/linker_tls.cpp
 - type: aosp
   path: bionic/linker/linker_phdr.cpp
 - type: aosp
@@ -65,7 +69,7 @@ Android 进程执行原生代码之前，要把 ELF（Executable and Linkable Fo
 
 > 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核 `android17-6.18-2026-06_r6`。涉及 `mmap()`、文件缺页和写时复制（Copy-on-Write，COW）的内核行为以该分支为准；设备可能使用其他内核分支。
 
-启动慢、找不到库、符号不匹配，这三类症状都要沿同一条装载路径逐段定位：linker64 先解析依赖、确定命名空间并完成重定位，再受分区隔离与稳定 ABI 规则约束。本文前半部分讲 linker64 的执行顺序，以及各阶段对启动时间、内存和故障定位的影响；VNDK 的可见性规则放在后半部分。
+启动慢、找不到库、符号不匹配，这三类症状都要沿同一条装载路径逐段定位：linker64 先确定调用者的命名空间，在允许的搜索路径与跨 namespace 链接中解析依赖，随后完成重定位；分区隔离与稳定 ABI 规则约束可依赖的库和接口。本文前半部分讲 linker64 的执行顺序，以及各阶段对启动时间、内存和故障定位的影响；VNDK 的可见性规则放在后半部分。
 
 正文沿用 linker 源码里的名称：DSO（Dynamic Shared Object）指 `.so` 动态共享对象，SONAME 是 ELF 内用于依赖匹配的逻辑库名，linker namespace（链接器命名空间） 约束库的搜索路径和可见范围。内存布局方面还会用到几个名字：RELRO（重定位后改为只读的区域） 是“重定位完成后只读”的内存区域，TLS 是每个线程独立保存的数据区，PLT/GOT 是动态函数调用和地址重定位所用的表，ABI 则是二进制接口约定。
 
@@ -149,7 +153,7 @@ linker64 从新任务中生成待映射列表：普通路径会随机化映射�
 - `DT_INIT`、`DT_INIT_ARRAY`、`DT_FINI_ARRAY`、`DT_FINI`；
 - TLS、AArch64 MTE（Memory Tagging Extension，内存标记扩展）和其他处理器相关动态项。
 
-随后注册该 DSO 的静态 TLS 模块。若任一新库通过 `DT_AARCH64_MEMTAG_STACK` 请求 stack MTE，linker 会通知 libc 的对应回调。
+随后调用 `register_soinfo_tls()`，为含有 TLS 且尚未登记的 DSO 注册模块。进程启动时，静态 TLS 布局完成前会为模块预留静态偏移；布局完成后由 `dlopen()` 新注册的模块，其 `static_offset` 为 `SIZE_MAX`，不会再扩展静态 TLS 布局。若任一新库通过 `DT_AARCH64_MEMTAG_STACK` 请求 stack MTE，linker 会通知 libc 的对应回调。
 
 #### 阶段五：构造 global group 与 local group
 
@@ -241,7 +245,7 @@ Android 17 仍从多级来源选择配置，依次考虑：与 APEX 可执行文
 - weak symbol、符号优先查找（symbolic lookup）、跨 namespace 边界等规则；
 - 符号与 hash 表所在页面是否已经驻留。
 
-GNU hash 的 Bloom filter（布隆过滤器）可以迅速筛掉不匹配的库，但总成本并不因此固定为 O(1)。linker 的慢路径带有单符号查找缓存，不过它只服务当前这次查找，算不上面向整个进程、长期保存任意查询结果的通用缓存。
+GNU hash 的 Bloom filter（布隆过滤器）可以迅速筛掉不匹配的库，但总成本并不因此固定为 O(1)。每次 `soinfo::relocate()` 都创建一个 `Relocator`，其中的单项缓存记录最近一次查找的符号索引及结果；同一 DSO 本次重定位中，后续条目查找相同索引时可以复用，快路径和通用路径都能使用。缓存随这次 `relocate()` 结束而失效，不跨 DSO 或后续 `dlsym()` 调用长期保留。
 
 ### GNU RELRO：重定位完成后把页面设为只读
 
@@ -674,6 +678,8 @@ adb shell find /linkerconfig -maxdepth 3 -name ld.config.txt -print
 - [linker namespace 官方说明](https://source.android.com/docs/core/architecture/vndk/linker-namespace)：namespace 图、search/permitted path 与 linkerconfig 的历史边界。
 - [linker_namespaces.cpp @ android-17.0.0_r1](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_namespaces.cpp)：路径与符号可访问性。
 - [linker.cpp @ android-17.0.0_r1](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp)：库搜索、装载、namespace link、relocation 与 `dlopen()` trace。
+- [linker_tls.cpp @ android-17.0.0_r1](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_tls.cpp)：TLS 模块登记与启动期静态 TLS 布局的边界。
+- [linker_relocate.cpp @ android-17.0.0_r1](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_relocate.cpp)：重定位循环与 `Relocator` 单项符号缓存的生命周期。
 - [linker_logger.cpp @ android-17.0.0_r1](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_logger.cpp)：`debug.ld.*` 选项及 dumpable 限制。
 - [linkerconfig README @ android-17.0.0_r1](https://android.googlesource.com/platform/system/linkerconfig/+/android-17.0.0_r1/README.md)：运行时配置输入、APEX public libraries 与输出文件。
 
