@@ -12744,6 +12744,108 @@
       "summary": "重定位单项符号缓存的作用范围与快慢路径描述不准确",
       "type": "technical-accuracy",
       "updated_at": "2026-11-04T18:42:28.316766+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/10-binder-scheduling-freezer-threadpool.md",
+      "close_note": "原文把 startForegroundService 后调用 startForeground 的超时写成 5 秒。android-17.0.0_r1 ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS 为 30*1000，ActiveServices.scheduleServiceForegroundTransitionTimeoutLocked 使用 mServiceStartForegroundTimeoutMs 启动独立计时器。已按当前基线改为 30 秒默认配置，保留 OEM 可变及计时起点边界，不与 20 秒服务执行超时混同。 已核对目标 diff、固定版本源码和本地校验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-223520-idle-audit-a1c06829",
+      "created_at": "2026-11-04T22:43:41.253504+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-223520-idle-audit-a1c06829",
+      "details": "原文把 startForegroundService 后调用 startForeground 的超时写成 5 秒。android-17.0.0_r1 ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS 为 30*1000，ActiveServices.scheduleServiceForegroundTransitionTimeoutLocked 使用 mServiceStartForegroundTimeoutMs 启动独立计时器。已按当前基线改为 30 秒默认配置，保留 OEM 可变及计时起点边界，不与 20 秒服务执行超时混同。",
+      "id": "finding-1495a149dd37",
+      "log_path": "logs/audit/2026-11-04-20261104-223520-idle-audit-a1c06829-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "status": "verified",
+      "summary": "Android 17 前台服务转前台超时沿用了固定 5 秒结论",
+      "type": "version-specific-timeout",
+      "updated_at": "2026-11-04T22:43:41.316061+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/10-binder-scheduling-freezer-threadpool.md",
+      "close_note": "android-17.0.0_r1 Binder.cpp 的实际入口为 BBinder::transact，检查 ATRACE_TAG_AIDL 后调用 BBinder::startTrace。BBinder::execTransact 不存在于该实现；Java Binder.execTransact 是另一层。已替换错误符号并补充源码路径，保留首次引入版本未核实的技术边界。 已核对目标 diff、固定版本源码和本地校验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-223520-idle-audit-a1c06829",
+      "created_at": "2026-11-04T22:43:41.377895+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-223520-idle-audit-a1c06829",
+      "details": "android-17.0.0_r1 Binder.cpp 的实际入口为 BBinder::transact，检查 ATRACE_TAG_AIDL 后调用 BBinder::startTrace。BBinder::execTransact 不存在于该实现；Java Binder.execTransact 是另一层。已替换错误符号并补充源码路径，保留首次引入版本未核实的技术边界。",
+      "id": "finding-9b37d6cbb69d",
+      "log_path": "logs/audit/2026-11-04-20261104-223520-idle-audit-a1c06829-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp"
+      ],
+      "status": "verified",
+      "summary": "原生 AIDL trace 入口误写为不存在的 BBinder::execTransact",
+      "type": "wrong-symbol",
+      "updated_at": "2026-11-04T22:43:41.438790+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/10-binder-scheduling-freezer-threadpool.md",
+      "close_note": "原文第一节写 oneway 改用 node 最低优先级，第二节源码已写 target_proc->default_priority。ACK r6 先为 oneway 选择目标进程默认优先级，再由 binder_transaction_priority 与 node_prio 比较。已统一为这套模型，保留调用方优先级不继承的结论。 已核对目标 diff、固定版本源码和本地校验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-223520-idle-audit-a1c06829",
+      "created_at": "2026-11-04T22:43:41.500175+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-223520-idle-audit-a1c06829",
+      "details": "原文第一节写 oneway 改用 node 最低优先级，第二节源码已写 target_proc->default_priority。ACK r6 先为 oneway 选择目标进程默认优先级，再由 binder_transaction_priority 与 node_prio 比较。已统一为这套模型，保留调用方优先级不继承的结论。",
+      "id": "finding-2395f9708e72",
+      "log_path": "logs/audit/2026-11-04-20261104-223520-idle-audit-a1c06829-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c"
+      ],
+      "status": "verified",
+      "summary": "oneway 优先级总述遗漏目标进程 default_priority 并与后文冲突",
+      "type": "inconsistent-priority-model",
+      "updated_at": "2026-11-04T22:43:41.566812+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/10-binder-scheduling-freezer-threadpool.md",
+      "close_note": "原文把 maxAdj 的独立作用放在当前 adj 较低的场景中，此时 adj 本身已满足授予条件。getImplicitCpuCapability 使用 adj < cutoff OR maxAdj < cutoff。已明确当前 adj 不低于阈值时，较低 maxAdj 仍授予隐式 CPU_TIME，避免遗漏 OR 分支。 已核对目标 diff、固定版本源码和本地校验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-223520-idle-audit-a1c06829",
+      "created_at": "2026-11-04T22:43:41.634945+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-223520-idle-audit-a1c06829",
+      "details": "原文把 maxAdj 的独立作用放在当前 adj 较低的场景中，此时 adj 本身已满足授予条件。getImplicitCpuCapability 使用 adj < cutoff OR maxAdj < cutoff。已明确当前 adj 不低于阈值时，较低 maxAdj 仍授予隐式 CPU_TIME，避免遗漏 OR 分支。",
+      "id": "finding-5b7c8ebc8f5a",
+      "log_path": "logs/audit/2026-11-04-20261104-223520-idle-audit-a1c06829-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjuster.java"
+      ],
+      "status": "verified",
+      "summary": "隐式 CPU_TIME 的 maxAdj 独立保护条件表述不清",
+      "type": "misleading-condition",
+      "updated_at": "2026-11-04T22:43:41.706505+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/10-binder-scheduling-freezer-threadpool.md",
+      "close_note": "原文仅在直接使用 IBinder 冻结回调时提醒 UnsupportedOperationException，没有说明 RemoteCallbackList 内部会捕获该异常，保持 STATE_UNFROZEN 并立即调用远端。API 36 本身不能保证策略生效。已在策略章节补齐内核支持边界和设备验证要求，不修改代码示例及三种策略定义。 已核对目标 diff、固定版本源码和本地校验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-223520-idle-audit-a1c06829",
+      "created_at": "2026-11-04T22:43:41.772534+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-223520-idle-audit-a1c06829",
+      "details": "原文仅在直接使用 IBinder 冻结回调时提醒 UnsupportedOperationException，没有说明 RemoteCallbackList 内部会捕获该异常，保持 STATE_UNFROZEN 并立即调用远端。API 36 本身不能保证策略生效。已在策略章节补齐内核支持边界和设备验证要求，不修改代码示例及三种策略定义。",
+      "id": "finding-0a7c0581baec",
+      "log_path": "logs/audit/2026-11-04-20261104-223520-idle-audit-a1c06829-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/RemoteCallbackList.java",
+        "https://developer.android.com/reference/android/os/IBinder"
+      ],
+      "status": "verified",
+      "summary": "RemoteCallbackList 冻结策略遗漏内核不支持通知时的静默回退",
+      "type": "missing-availability-boundary",
+      "updated_at": "2026-11-04T22:43:41.837269+08:00"
     }
   ],
   "schema_version": 1
