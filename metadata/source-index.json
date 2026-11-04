@@ -6302,6 +6302,44 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://www.mindstudio.ai/blog/linux-nvidia-rtx-spark-laptop",
+      "title": "[ClawFeed] Linux on the Nvidia RTX Spark Laptop: What Actually Works",
+      "summary": "MindStudio 实测 RTX Spark 笔记本（MSI Prestige、Asus ProArt、Dell XPS 同款 DGX Spark GPU 设计）双系统装 Linux：固件默认给 GPU 预留 96GB 统一内存且只有 Windows 能改，改到 4GB 后 Linux 才看得到 120GB；固件功耗表加密、只有 Windows 驱动能解密，插电时 GPU 锁在 790MHz，GPT-OSS-120B 原生 Linux 只有 13.9 token/s，Windows 65.4、WSL 65.1，长跑 37 分钟对 8 分钟，WSL 是当下可行的路。",
+      "chapter": "ch04",
+      "processed_at": "2026-11-05T06:20:19.999948+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part1-fundamentals/ch05-cpu-power/04-adpf.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "linux",
+        "the",
+        "works",
+        "gpu"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 ProfilingManager 新触发器概.md",
+      "title": "[DeepResearch] Android 17 ProfilingManager 新触发器概览",
+      "summary": "# Android 17 ProfilingManager 新触发器概览 Android 17 引入了四类基于系统事件的 ProfilingManager 触发器，用于在关键时刻采集性能数据。这些触发器会在冷启动、ANR、OOM、过量 CPU 等事件发生时启动采样或记录，生成调用栈采样、Perfetto 系统 Trace 或 Java 堆快照等结果文件。官方文档指出，触发器可用于**不可预测事件**的诊断，例如 ANR 或内存泄漏，以及",
+      "chapter": "ch04",
+      "processed_at": "2026-11-05T06:20:19.999948+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part2-performance/ch09-anr/02-anr-kernel-trace-diagnosis.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "profilingmanager",
+        "anr",
+        "cpu",
+        "perfetto",
+        "trace",
+        "java"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
