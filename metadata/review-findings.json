@@ -12640,6 +12640,48 @@
       "summary": "EyeDropper 已定稿正文残留两处旧稿矛盾批注",
       "type": "editorial-residue",
       "updated_at": "2026-11-04T10:40:52.865717+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/04-app-memory-optimization.md",
+      "close_note": "已按 HWASan/ASan 官方文档补全 arm64、NDK/API、镜像/wrap.sh、共享 STL、useAppZygote 和 C++ 异常边界；注明 ASan 自2023年起停止支持，并从原生 PSS 增长首选证据中移除 Sanitizer。正文与来源逐项对照，本地元数据、SUMMARY 与 diff 检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-143519-idle-audit-ee120f4d",
+      "created_at": "2026-11-04T14:39:25.962067+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-143519-idle-audit-ee120f4d",
+      "details": "HWASan 官方指南仅支持 arm64，NDK r21/API29 起可用，Android14+ 可调试应用可用 wrap.sh，早期版本需专用镜像；使用 libc++ 需共享 STL，wrap.sh 路径与 useAppZygote 不兼容。ASan 官方页明示自2023年起 unsupported，仍可用但可能有缺陷。Sanitizer 检测越界/释放后使用，不能代替 heapprofd 与分配器统计归因原生 PSS 增长。",
+      "id": "finding-80152f6ed292",
+      "log_path": "logs/audit/2026-11-04-20261104-143519-idle-audit-ee120f4d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/hwasan",
+        "https://developer.android.com/ndk/guides/asan",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "status": "verified",
+      "summary": "原生诊断工具缺少 HWASan ABI 与 ASan 停止支持边界，并把内存错误检测列为 PSS 增长首选",
+      "type": "tool-applicability",
+      "updated_at": "2026-11-04T14:43:49.038495+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/04-app-memory-optimization.md",
+      "close_note": "已按 android-17.0.0_r1 ApplicationExitInfo.java 改为 getTraceInputStream()，补全 IOException/null、关闭流、ANR/API31原生崩溃、环形缓冲区覆盖、kB采样值与说明文本不稳定边界；无虚构 trace 字段残留。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261104-143519-idle-audit-ee120f4d",
+      "created_at": "2026-11-04T14:39:26.033268+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261104-143519-idle-audit-ee120f4d",
+      "details": "android-17.0.0_r1 ApplicationExitInfo 公开方法为 getTraceInputStream()，没有 trace 字段或 getTrace()；方法可返回 null 并抛出 IOException。诊断流常见于 ANR，API31+ 原生崩溃可提供 tombstone protobuf，环形缓冲区覆盖会使诊断流不可用；PSS/RSS 为 kB、最后采样且可能为0。",
+      "id": "finding-1991450b4f61",
+      "log_path": "logs/audit/2026-11-04-20261104-143519-idle-audit-ee120f4d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "status": "verified",
+      "summary": "ApplicationExitInfo 将诊断流误写为 trace 字段，未说明诊断流可缺失",
+      "type": "incorrect-api",
+      "updated_at": "2026-11-04T14:43:49.100167+08:00"
     }
   ],
   "schema_version": 1
