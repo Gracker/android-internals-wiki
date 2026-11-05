@@ -12930,6 +12930,47 @@
       "summary": "Scheduler 字段清单误将 HAL session 归为自身持有",
       "type": "ownership-boundary",
       "updated_at": "2026-11-05T14:44:56.956550+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch24-io-network/02-database-serialization-performance.md",
+      "close_note": "已对照 Room 2.8.4/3.0.1 官方 sources.jar 核验弃用注解、dropAllTables 参数及默认值；正文补齐删表范围与可丢失数据边界，源码断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261105-183519-idle-audit-4c001dec",
+      "created_at": "2026-11-05T18:38:53.857538+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261105-183519-idle-audit-4c001dec",
+      "details": "Room 2.8.4 的无参 fallbackToDestructiveMigration 已弃用，旧行为只删除 Room 管理的表；Room 3.0.1 的 dropAllTables 默认 true，会包括非 Room 管理表。现有正文未说明，需显式交代参数、版本和数据丢失边界。",
+      "id": "finding-ch24-2-room-destructive-migration-scope",
+      "log_path": "logs/audit/2026-11-05-20261105-183519-idle-audit-4c001dec-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.4/room-runtime-android-2.8.4-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/room3/room3-runtime-android/3.0.1/room3-runtime-android-3.0.1-sources.jar"
+      ],
+      "status": "verified",
+      "summary": "Room 破坏性迁移遗漏无参重载弃用与跨大版本删表范围差异",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-11-05T18:41:04.439671+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch24-io-network/02-database-serialization-performance.md",
+      "close_note": "重新获取 Gson README 核验维护模式、Kotlin 语义及 Android R8 警告；改为核验日期，全文运行过程用语扫描通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261105-183519-idle-audit-4c001dec",
+      "created_at": "2026-11-05T18:38:53.919772+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261105-183519-idle-audit-4c001dec",
+      "details": "将截至本轮复核改为有实际来源核验支持的日期，保留 Gson 维护模式、Kotlin 与 Android R8 警告。",
+      "id": "finding-ch24-2-gson-review-narration",
+      "log_path": "logs/audit/2026-11-05-20261105-183519-idle-audit-4c001dec-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://github.com/google/gson/blob/main/README.md"
+      ],
+      "status": "verified",
+      "summary": "Gson 生命周期段落残留本轮复核表述",
+      "type": "editorial-process-prose",
+      "updated_at": "2026-11-05T18:41:04.504516+08:00"
     }
   ],
   "schema_version": 1
