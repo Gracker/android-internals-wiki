@@ -3,10 +3,12 @@ title: Private Space 与应用锁的兼容性边界
 chapter: '19.6'
 section: '19.6'
 status: finalized
-applicable_versions: Android 15 (API 35) - Android 17 (API 37)；文件转移能力从 Android 16 QPR2 起提供；手持设备通用逐应用锁无公开 SDK，AAOS App Lock 另行说明
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 framework sources; Private space documentation (2026-07-16); Android 16 QPR2 release notes (2026-07-13); Android Enterprise Android 15 FAQ; AndroidX Biometric reference (2026-06-24); AAOS App Lock documentation (2026-06-17)
+applicable_versions: Android 15 (API 35) - Android 17 (API 37)；文件转移能力从 Android 16 QPR2 起提供；Android 17 AOSP App Lock 受功能标记与 LOCK_APPS 权限限制，AAOS App Lock 另行说明
+last_verified: '2026-11-05'
+last_verified_against: AOSP android-17.0.0_r1 public API signatures, PackageManager, ApplicationInfo, ApplicationPackageManager, PackageManagerService, ComputerEngine, AppLockPackageHelper, AppLockActivity, security flags, LauncherApps, LauncherUserInfo, UserManager, Intent and permission declarations; Private space documentation (2026-09-30); Android 15 behavior changes (2026-10-28); Android 16 QPR2 release notes (2026-07-13); Android Enterprise Android 15 FAQ; Android Help Private space; Advanced Protection Mode (2026-07-29); LauncherUserInfo reference (2026-08-03); AndroidX Biometric reference (2026-11-04); AAOS App Lock documentation (2026-09-24); Android 17 feature summary (2026-10-09) and AOSP release notes
+last_source_verified_at: '2026-11-05T22:43:25+08:00'
 confidence: medium-high
+last_idle_audit_at: '2026-11-05T22:47:51+08:00'
 last_review_finalize_at: '2026-08-04T12:08:06+08:00'
 sources:
 - type: official
@@ -47,6 +49,26 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/UserManager.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ApplicationInfo.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationPackageManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/ComputerEngine.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/AppLockPackageHelper.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/app/AppLockActivity.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/security/flags.aconfig
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/Intent.java
 - type: blog
   path: intake/daily-info/2026-05-25.md
 tags:
@@ -68,9 +90,9 @@ related_chapters:
 
 # Private Space 与应用锁的兼容性边界
 
-Private Space、工作资料、厂商应用锁和应用自身认证属于不同隔离模型，生命周期、可见性与通知行为不能类推。兼容性设计要先确认系统身份边界，再检查启动、分享、最近任务和 URI 授权链路。
+Private Space、工作资料、AOSP App Lock、厂商应用锁和应用自身认证采用的保护机制与运行模型不同，生命周期、可见性与通知行为不能类推。兼容性设计要先确认系统身份边界，再检查启动、分享、最近任务和 URI 授权链路。
 
-## 先分清四类“锁”
+## 先分清“锁”保护的对象
 
 <!-- gracker-diagram: a204-01-four-lock-models -->
 ![四类“锁”保护的对象与生命周期](../../assets/diagrams/ch19/a204-01-four-lock-models.png)
@@ -83,12 +105,25 @@ Private Space、工作资料、厂商应用锁和应用自身认证属于不同�
 | --- | --- | --- | --- |
 | AOSP Private Space | 一个独立的 `private profile`（私密资料用户）及其中的数据 | 资料用户停止运行，应用入口、最近任务和通知被隐藏 | 无法通过公开接口列出主空间之外的 `hidden profile`（隐藏资料用户） |
 | App 自有鉴权 | App 内的敏感页面或操作 | 由 App 决定页面遮挡、会话超时和重新认证 | 可以，因为策略由 App 自己实现 |
+| Android 17 AOSP App Lock（功能标记控制） | 符合条件的完整用户中的指定 App | 按 `PackageManager` 接口文档，为启动等入口增加认证，并遮挡敏感内容 | 相关查询与设置入口要求 `LOCK_APPS`，普通业务 App 不能通用调用 |
 | 设备厂商（OEM）手持设备应用锁 | 厂商选定的 App 或入口 | 可能在启动、最近任务、通知或设置页前插入认证 | 没有跨厂商公开 API |
 | Android Automotive App Lock | 车载次用户中的敏感 App | 由平台签名的特权 App 管理锁定清单和认证入口 | 仅适用于 Android Automotive OS（AAOS）集成，不是手持设备 SDK |
 
-在 Android 17 / API 37 上，手持设备 AOSP 没有通用的逐应用锁公开 API；`android-17.0.0_r1` 的 `PackageManager`、`LauncherApps`、通知和设备管理等公开接口里都找不到 `AppLockManager` 一类能力。Android 16 引入的 [Advanced Protection Mode](https://developer.android.com/privacy-and-security/advanced-protection-mode) 是一个整机安全总开关，用于同时启用多项防护限制；它不负责给某个 App 增加启动口令。
+Android 17 / API 37 的 AOSP 源码包含受功能标记控制的逐应用锁接口与平台实现。`android-17.0.0_r1` 的 [`core/api/current.txt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt) 已列出 `@FlaggedApi("android.security.app_lock_apis")` 标注的以下成员：
 
-Android Automotive 的 App Lock 容易造成名称误读。它从 Android 14 起以“非捆绑应用”提供，也就是可以独立于 AAOS 核心平台开发和维护；部署时仍须使用厂商平台密钥签名，作为特权应用放入系统镜像。它只服务于车载次用户，并且与资料用户的锁定状态相互独立。手持设备应用不能据此声称 Android 17 提供了通用 App Lock。
+- `PackageManager.GET_APP_LOCK_INFO`：查询时请求填充应用锁信息，调用者须持有 `android.permission.LOCK_APPS`，否则会抛出 `SecurityException`。它是 `long` 标志，应使用 `ApplicationInfoFlags.of(...)` 等长整型参数；需要同时查询 attribution（应用归因信息）时使用 `GET_ATTRIBUTIONS_LONG`，不能与旧的 `GET_ATTRIBUTIONS` 混用。
+- `ApplicationInfo.isAppLockSupported` 与 `isAppLockEnabled`：分别描述目标 App 是否支持、是否启用了 App Lock。只有使用上述查询标志且调用者有权限时才填充，默认值为 `false`；不能把未填充的值当成“不支持”或“未开启”的证据。`isAppLockEnabled` 也不表示此刻是否正在等待用户解锁。
+- `PackageManager.getEnableAppLockIntentForPackage(packageName, enabled)`：返回用于打开系统认证与启用状态确认界面的 `PendingIntent`，由系统界面要求用户认证后更改启用状态。目标不支持或已处于请求状态时返回 `null`；服务端在 `app_lock_apis` 关闭时也返回 `null`，因此返回空值不能单独证明设备没有这组源码能力。
+
+[`AndroidManifest.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml) 将 `LOCK_APPS` 的保护级别设为 `internal|role|recents`，并注明面向 HOME 角色应用和最近任务组件。普通业务 App 仅在清单中声明它，无法获得通用的逐应用锁控制能力。具体调用经 `ApplicationPackageManager` 转到 `PackageManagerService`，再进入 `AppLockPackageHelper`；不能从 `PackageManager` 基类方法中的 `UnsupportedOperationException` 推断整条链路尚未实现。
+
+运行范围也有限制。[`AppLockPackageHelper`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/AppLockPackageHelper.java) 排除了手表、车载和 Leanback（电视）设备，不支持资料用户、受监督用户、无 Launcher 入口的 App，以及系统配置中的豁免包。这里的完整用户（full user）与 Private Space、工作资料这类资料用户不同，因此不能把这套逐应用锁直接套到私密资料中的 App。
+
+接口存在不保证设备已启用。`app_lock_apis` 与 `app_lock_core` 是两个独立功能标记，`AppLockActivity` 在任一标记关闭时都会退出。该标签的源码还保留了完成 App Lock UI、补齐部分状态失效事件监听的 TODO；这些是实现边界，不能据此承诺所有 API 37 设备都已开放完整功能。系统集成方应核实实际构建的标记、权限和目标包支持条件，并复测认证、通知及最近任务行为；普通业务 App 继续按自身生命周期与访问结果恢复。
+
+Android 16 引入的 [Advanced Protection Mode](https://developer.android.com/privacy-and-security/advanced-protection-mode) 是一个整机安全总开关，用于同时启用多项防护限制；它不负责给某个 App 增加启动口令。
+
+Android Automotive 的 App Lock 容易造成名称误读。它从 Android 14 起以“非捆绑应用”提供，也就是可以独立于 AAOS 核心平台开发和维护；部署时仍须使用厂商平台密钥签名，作为特权应用放入系统镜像。它只服务于车载次用户，不支持 Guest 用户，并且与资料用户的锁定状态相互独立。AAOS 的部署方式、用户范围和 PIN 策略不能直接套到手持设备 AOSP App Lock。
 
 业务代码不能把 `Private Space locked`（私密空间已锁定）、`OEM authentication canceled`（厂商认证已取消）和 `App session expired`（应用内会话已过期）归为同一种状态。三者的生命周期、权限与恢复路径都不同。
 
@@ -204,7 +239,7 @@ fun readPrivateProfileStates(
 
 `locked` 表示私密资料用户是否已锁定；值为 `true` 时，该资料用户不能运行。`hideEntrypointWhenLocked` 表示锁定后 Launcher 是否仍展示解锁入口。若把两者合成一个 `isHidden`，就无法表示“资料用户已锁定，但解锁入口仍可见”。
 
-Launcher 还应监听 `Intent.ACTION_PROFILE_AVAILABLE` 与 `Intent.ACTION_PROFILE_UNAVAILABLE`，并从 `Intent.EXTRA_USER` 读取发生变化的资料用户。这两个广播是系统发出的状态变化通知，表示 quiet mode 已改变。收到广播后仍应重新查询当前值，不要继续使用本地保存的旧结果。`ACTION_MANAGED_PROFILE_AVAILABLE` 一类广播只针对 managed profile，不适合作为 Private Space 的唯一监听入口。
+Launcher 还应通过 `Context.registerReceiver()` 动态注册接收器，监听 `Intent.ACTION_PROFILE_AVAILABLE` 与 `Intent.ACTION_PROFILE_UNAVAILABLE`，并从 `Intent.EXTRA_USER` 读取发生变化的资料用户。[Android 17 的 `Intent.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/Intent.java) 明确规定，这两个广播只发送给动态注册的接收器，不会发送给清单中声明的接收器。它们表示 quiet mode 已改变；收到广播后仍应重新查询当前值。Launcher 进程重建或重新注册接收器时，也应主动查询状态，补齐接收器未注册期间的变化。`ACTION_MANAGED_PROFILE_AVAILABLE` 一类广播只针对 managed profile，不适合作为 Private Space 的唯一监听入口。
 
 ## 启动、最近任务与通知
 
@@ -283,7 +318,7 @@ Android 16 QPR2 增加了从主空间向 Private Space 移动或复制文件的�
 
 手持设备的厂商应用锁可能在 Activity 启动、任务切换、通知展示或厂商安全中心等位置要求认证，也可能只覆盖其中几项。它未必创建独立资料用户；锁定时是否终止进程、暂停后台任务或隐藏通知，都由厂商提供的系统软件版本（设备固件）决定。
 
-Android 17 没有供普通 App 查询“厂商应用锁是否锁了我”的统一 API，也没有统一认证结果码。厂商名只能用于整理测试结果，不能单独决定代码走哪个分支。同一品牌在不同地区的固件、Launcher 版本或安全组件版本上，都可能采用不同策略。
+厂商私有应用锁没有供普通业务 App 跨厂商查询“是否锁了我”的统一 API，也没有统一认证结果码。前述 AOSP 标记接口要求 `LOCK_APPS`，描述的是 AOSP App Lock 的支持与启用状态，不能用来读取任意厂商私有锁的认证结果。厂商名只能用于整理测试结果，不能单独决定代码走哪个分支。同一品牌在不同地区的固件、Launcher 版本或安全组件版本上，都可能采用不同策略。
 
 兼容代码应围绕可观察结果设计：
 
@@ -326,16 +361,18 @@ Private Space 的存在本身带有隐私含义。普通 App 的线上日志不�
 - Launcher、通知、App Link、分享、Photo Picker、DocumentsUI 六类入口。
 - 选择 URI 后立刻锁定空间，再执行同步读取与延迟读取。
 - 厂商应用锁开启与关闭，并分别执行认证成功、取消和超时。
+- 在具备相应标记 API 的受控构建上，检查 AOSP App Lock 的功能标记关闭、权限缺失、目标包不支持、已处于请求状态和认证取消等路径；启用状态与当前锁定状态分开记录。
 
-测试报告要写明设备、Build fingerprint（构建指纹，标识具体固件版本的字符串）、API 级别、QPR 或厂商版本、Launcher 版本和复现入口。只写“Android 17 应用锁异常”无法判断问题来自 AOSP Private Space、AAOS App Lock、厂商策略，还是 App 自有鉴权。
+测试报告要写明设备、Build fingerprint（构建指纹，标识具体固件版本的字符串）、API 级别、QPR 或厂商版本、Launcher 版本和复现入口。只写“Android 17 应用锁异常”无法判断问题来自 AOSP Private Space、AOSP App Lock、AAOS App Lock、厂商策略，还是 App 自有鉴权。
 
 ## Android 17 结论
 
 以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，可确认以下边界：
 
-- 手持设备 AOSP 没有通用逐应用锁的公开 SDK 或平台服务。
-- Private Space 仍是独立的私密资料用户；锁定时整个资料用户停止运行。
-- Launcher 访问隐藏资料需要 HOME 角色与 `ACCESS_HIDDEN_PROFILES`，或系统特权权限 `ACCESS_HIDDEN_PROFILES_FULL`。
+- AOSP 源码包含受 `app_lock_apis` 控制的逐应用锁 API 与平台实现；设置和查询入口要求 `LOCK_APPS`，普通业务 App 不能通用调用。
+- API 声明、功能标记开启和设备完整可用是不同条件；还须核实 `app_lock_core`、完整用户与目标包的支持范围，不能仅凭 API 37 推断功能已开放。
+- Private Space 仍是独立的私密资料用户；锁定时整个资料用户停止运行，AOSP App Lock 的支持范围排除了这类资料用户。
+- Launcher 访问隐藏资料需要 HOME 角色与 `ACCESS_HIDDEN_PROFILES`，或系统特权权限 `ACCESS_HIDDEN_PROFILES_FULL`；状态变化广播须动态注册接收器。
 - 普通 App 不能可靠识别 Private Space，应按当前用户中的常规生命周期和失败结果编程。
 - Android Automotive App Lock 是车载特权组件，不应外推到手持设备。
 - 需要保护 App 内敏感页面时，应统一检查所有页面入口并管理认证会话，同时把它和系统资料用户锁分开测试。
@@ -353,7 +390,17 @@ Private Space 的存在本身带有隐私含义。普通 App 的线上日志不�
 - [`LauncherApps.java` | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherApps.java)
 - [`LauncherUserInfo.java` | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherUserInfo.java)
 - [`UserManager.java` | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/UserManager.java)
-- [`ACCESS_HIDDEN_PROFILES` permission declarations | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml)
+- [`ACCESS_HIDDEN_PROFILES` / `LOCK_APPS` permission declarations | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml)
+- [Public API signatures | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt)
+- [`PackageManager.java`: App Lock API contracts | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java)
+- [`ApplicationInfo.java`: App Lock query fields | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ApplicationInfo.java)
+- [`ApplicationPackageManager.java`: concrete API implementation | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationPackageManager.java)
+- [`PackageManagerService.java`: permission and flag checks | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageManagerService.java)
+- [`ComputerEngine.java`: query flag validation | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/ComputerEngine.java)
+- [`AppLockPackageHelper.java`: supported packages and users | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/AppLockPackageHelper.java)
+- [`AppLockActivity.java`: feature gates and authentication | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/app/AppLockActivity.java)
+- [App Lock feature flags | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/security/flags.aconfig)
+- [`Intent.java`: profile broadcast registration contract | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/Intent.java)
 - [LauncherApps API reference](https://developer.android.com/reference/android/content/pm/LauncherApps)
 - [LauncherUserInfo API reference](https://developer.android.com/reference/android/content/pm/LauncherUserInfo)
 - [UserManager API reference](https://developer.android.com/reference/android/os/UserManager)
