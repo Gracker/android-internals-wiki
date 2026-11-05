@@ -12867,6 +12867,69 @@
       "summary": "MediaPipe maxTokens 的 Android 指南链接已跳转，无法直接复查参数边界",
       "type": "source-drift",
       "updated_at": "2026-11-05T10:42:13.197961+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/24-biometricservice-architecture-performance.md",
+      "close_note": "已区分同实例 mIsPromptShowing 本地拒绝、另一实例进入系统后的替换，以及已认证确认的取消早退；修正快速返回不等于系统接受。固定版本原始 SDK 分支在 Java 21 隔离依赖桩环境下经直接与排队 Executor 两种模式验证，均不二次调用服务，且回调被覆盖；非 Android 设备实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261105-143519-idle-audit-2088b40e",
+      "created_at": "2026-11-05T14:39:58.929107+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261105-143519-idle-audit-2088b40e",
+      "details": "android-17.0.0_r1 的 BiometricPrompt.authenticateInternal 在 mIsPromptShowing 分支先覆盖 callback，再本地投递 BIOMETRIC_ERROR_CANCELED 并返回 -1，不调用 IAuthService；只有实际进入 BiometricService.authenticateInternal 的请求才替换旧会话。原文将公开文档的概括直接推广到所有调用，且把快速返回等同于系统接受。",
+      "id": "finding-6359438366b3",
+      "log_path": "logs/audit/2026-11-05-20261105-143519-idle-audit-2088b40e-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/biometrics/BiometricPrompt.java#1671",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/biometrics/BiometricService.java#1954"
+      ],
+      "status": "verified",
+      "summary": "BiometricPrompt 重复调用未区分同实例本地拒绝与系统会话替换",
+      "type": "request-lifecycle",
+      "updated_at": "2026-11-05T14:44:56.836695+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/24-biometricservice-architecture-performance.md",
+      "close_note": "示例改为 Activity 实例销毁即先清除请求标记再取消，三个回调按 signal 身份过滤；明确配置重建也取消，跨实例保留需独立会话持有者。已对照 Activity 和 BiometricPrompt 固定版本源码并做静态结构断言，未声称完成 Android 设备测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261105-143519-idle-audit-2088b40e",
+      "created_at": "2026-11-05T14:39:58.989248+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261105-143519-idle-audit-2088b40e",
+      "details": "示例仅在 isFinishing 时取消，配置重建时旧实例的 signal 与匿名 callback 没有迁移，新实例的进行中状态为空。BiometricPrompt 保存传入 callback 并经 Executor 交付，可能继续调用旧页面；仅跳过取消无法实现跨实例保留。需要明确采用绑定实例的销毁取消策略并过滤迟到回调。",
+      "id": "finding-94e09e1780be",
+      "log_path": "logs/audit/2026-11-05-20261105-143519-idle-audit-2088b40e-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java#513",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/biometrics/BiometricPrompt.java#873"
+      ],
+      "status": "verified",
+      "summary": "Activity 示例在配置重建时遗留旧实例认证状态和回调",
+      "type": "lifecycle-sample",
+      "updated_at": "2026-11-05T14:44:56.896220+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/24-biometricservice-architecture-performance.md",
+      "close_note": "字段清单改为 mCurrentUserRetriever 与 mUserSwitchProvider，并明确两个模态的 Sensor.mCurrentSession 才持有 HAL session；对照固定版本 scheduler 与 fingerprint/face Sensor 源码验证。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261105-143519-idle-audit-2088b40e",
+      "created_at": "2026-11-05T14:39:59.052200+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261105-143519-idle-audit-2088b40e",
+      "details": "BiometricScheduler 实际持有 mCurrentUserRetriever 与 mUserSwitchProvider；Fingerprint/Face aidl Sensor 持有 mCurrentSession，并将当前用户查询 lambda 交给 scheduler。该处应与前文 session 复用解释保持一致。",
+      "id": "finding-f4bf5fa97cd6",
+      "log_path": "logs/audit/2026-11-05-20261105-143519-idle-audit-2088b40e-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java#132",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/biometrics/sensors/fingerprint/aidl/Sensor.java#133"
+      ],
+      "status": "verified",
+      "summary": "Scheduler 字段清单误将 HAL session 归为自身持有",
+      "type": "ownership-boundary",
+      "updated_at": "2026-11-05T14:44:56.956550+08:00"
     }
   ],
   "schema_version": 1
