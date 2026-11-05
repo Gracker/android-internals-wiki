@@ -4,10 +4,14 @@ chapter: '1.24'
 section: '1.24'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-18'
+last_verified: '2026-11-05'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-11-05'
+last_idle_audit_at: '2026-11-05'
 confidence: high
 sources:
+- type: aosp
+  path: frameworks/base/core/java/android/app/Activity.java
 - type: aosp
   path: frameworks/base/core/java/android/hardware/biometrics/BiometricPrompt.java
 - type: aosp
@@ -194,15 +198,17 @@ final long authId = mService.authenticate(
 
 通过检查后，`AuthService` 清除来访 Binder identity，避免后续系统内部调用继续沿用应用身份，再把请求交给内部 `BiometricService`。
 
-`BiometricServiceWrapper.authenticate()` 只做内部权限、参数和认证器配置检查，然后把后续工作投递到专用 Handler 所在线程。它不会在应用 Binder 调用栈中等待传感器完成，因此 `authenticate()` 返回快，只能说明请求已被系统接受，不能说明认证器已经开始采集。
+`BiometricServiceWrapper.authenticate()` 只做内部权限、参数和认证器配置检查，然后把后续工作投递到专用 Handler 所在线程。它不会在应用 Binder 调用栈中等待传感器完成。公开的 `authenticate()` 快速返回也可能来自应用侧或服务入口的拒绝；即使请求通过入口检查，也不能据此判断认证器已经开始采集。
 
 ### 新请求如何处理旧会话
 
-Android 17 的 `BiometricService` 只有一个 `mAuthSession`。创建新会话时，如果旧会话还在，`authenticateInternal()` 会强制取消旧会话、关闭旧 UI，并向旧客户端返回取消。
+Android 17 的 `BiometricService` 只有一个 `mAuthSession`。新请求通过预认证、进入系统侧 `authenticateInternal()` 创建会话时，如果旧会话还在，系统会先调用它的 `onCancelAuthSession(true)`，再用新会话替换 `mAuthSession`。对仍在认证的旧会话，这会请求取消传感器、关闭旧 UI，并向旧客户端返回取消；已经认证并确认的会话则在取消函数入口直接返回。每个传感器的 `BiometricScheduler` 各有操作队列，Prompt 仲裁层不把这些新会话逐一排队。
 
-这与“所有 App 认证请求都在 BiometricService 排队”不同：队列存在于每个传感器的 `BiometricScheduler`，BiometricPrompt 层则是新会话替换旧会话。公开 API 文档也明确指出，已有认证进行时再次调用 `authenticate()`，旧客户端会收到取消。
+同一个 `BiometricPrompt` 对象还有应用侧限制。在 `android-17.0.0_r1` 中，`authenticateInternal()` 先保存本次传入的 Executor 和 callback；若 `mIsPromptShowing` 已为 `true`，就向该 callback 投递 `BIOMETRIC_ERROR_CANCELED`，内部返回 `-1`，不会调用 `IAuthService.authenticate()`。这一分支没有取消系统中的原会话，后续原会话事件仍会经该对象当前保存的 callback 交付。
 
-应用不应在配置变化、重复点击或状态重组时快速执行“取消—重建—认证”。这种写法会产生界面重建、HAL 取消确认以及 scheduler 队列清理开销，还会让一次用户操作产生多份互相覆盖的回调。
+公开 API 文档把重复调用概括为停止旧客户端、启动新认证；分析这个版本的实际行为时，需要区分上述同实例本地拒绝，以及另一实例发出的请求到达系统后的会话替换。收到一次取消错误，不能据此认定原 HAL operation 已经停止。
+
+应用应在发起请求前阻止重复提交，并避免在配置变化、重复点击或状态重组时快速执行“取消—重建—认证”。反复重建会增加 UI、HAL 取消确认和 scheduler 队列清理开销；同实例重复调用还可能覆盖 callback，让本地错误和原会话结果交给同一个回调对象。
 
 ## 预认证：`PreAuthInfo` 决定谁有资格参与
 
@@ -418,8 +424,10 @@ mExecutor.execute(() -> {
 
 - 一个保存待执行任务的 `Deque<BiometricSchedulerOperation> mPendingOperations`；
 - 一个 `mCurrentOperation`；
-- 当前用户 session；
+- 当前用户查询器 `mCurrentUserRetriever` 和用户切换接口 `mUserSwitchProvider`；
 - 最近的 operation 记录和统计信息。
+
+HAL session 由各模态的 AIDL `Sensor.mCurrentSession` 持有。scheduler 通过查询器取得当前 session 对应的用户；队首任务属于其他用户时，再调度 stop-user/start-user client 完成切换。
 
 队首 operation 分两类：
 
@@ -749,14 +757,14 @@ Android 17 的 `BiometricService`、`AuthSession` 和 `AuthController` 主路径
 
 ## App 侧写法
 
-下面的示例只展示生命周期和回调线程边界。它不把 `canAuthenticate()` 当成认证保证，也不在回调里执行重任务：
+节选中的认证请求绑定到当前 Activity 实例：销毁实例时先清除本地请求标记，再取消认证；三个回调都检查自己是否仍属于当前请求，避免取消后迟到的事件继续操作旧页面。示例使用 framework `android.hardware.biometrics.BiometricPrompt`，宿主应用需声明 `USE_BIOMETRIC` 权限；登录和错误展示函数由应用实现。
 
 ```kotlin
 class LoginActivity : ComponentActivity() {
     private var cancellationSignal: CancellationSignal? = null
 
     fun requestBiometricLogin() {
-        if (cancellationSignal != null) return
+        if (isDestroyed || cancellationSignal != null) return
 
         val signal = CancellationSignal()
         cancellationSignal = signal
@@ -776,6 +784,7 @@ class LoginActivity : ComponentActivity() {
                 override fun onAuthenticationSucceeded(
                     result: BiometricPrompt.AuthenticationResult
                 ) {
+                    if (cancellationSignal !== signal) return
                     cancellationSignal = null
                     continueLogin()
                 }
@@ -784,11 +793,13 @@ class LoginActivity : ComponentActivity() {
                     errorCode: Int,
                     errString: CharSequence
                 ) {
+                    if (cancellationSignal !== signal) return
                     cancellationSignal = null
                     renderAuthenticationError(errorCode, errString)
                 }
 
                 override fun onAuthenticationFailed() {
+                    if (cancellationSignal !== signal) return
                     showTryAgainHint()
                 }
             }
@@ -796,22 +807,23 @@ class LoginActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (isFinishing) {
-            cancellationSignal?.cancel()
-            cancellationSignal = null
-        }
+        val signal = cancellationSignal
+        cancellationSignal = null
+        signal?.cancel()
         super.onDestroy()
     }
 }
 ```
 
-示例用 `mainExecutor`，所以三个回调都应保持短小。若成功后要读数据库、访问网络或执行较重的密码学业务，应把任务交给后台执行器，再把 UI 结果送回主线程。
+示例用 `mainExecutor`，请求标记也只在主线程读写，所以三个回调都应保持短小。若成功后要读数据库、访问网络或执行较重的密码学业务，应把任务交给后台执行器，再把 UI 结果送回主线程。
+
+这段代码在配置重建时也会取消认证，没有实现跨实例保留。需要旋转屏幕后继续认证时，应让独立于 Activity 实例的会话持有者保存请求状态，并把结果交给当前页面。仅在 `onDestroy()` 中跳过取消，会留下旧实例中的 signal 和 callback，新实例不会自动接管它们。API 文档关于避免快速取消重启的提醒仍然适用。
 
 还要注意：
 
 - `onAuthenticationFailed()` 通常不是终止回调，不要在这里立即创建新的 Prompt；
-- 终止后由 success 或 error 清理本地进行中状态；
-- 是否在 `onDestroy()` 取消要结合页面保留策略；配置变化时反复销毁重建会造成不必要的取消；
+- 正常终止时由 success 或 error 清理本地进行中状态，销毁时则先使本地请求失效再取消；
+- 若改用后台 Executor，需同步保护请求状态，涉及 View 的操作仍需切回主线程；
 - `CryptoObject` 使用的认证器要和密钥生成时的授权配置一致。
 
 ## 版本边界
