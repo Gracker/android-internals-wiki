@@ -4,8 +4,10 @@ chapter: '23.6'
 section: '23.6'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: Android 17 / API 37; LiteRT 2.3.0 documentation; MediaPipe LLM Inference maintenance-only; Memory Advice beta deprecated
+last_verified: '2026-11-05'
+last_source_verified_at: '2026-11-05T10:40:05+08:00'
+last_idle_audit_at: '2026-11-05T10:40:05+08:00'
+last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; Android 17 / API 37; LiteRT 2.3.0 documentation; MediaPipe LlmInferenceOptions source 2034af51d32a3b975657c9d281be4ce226bb130d; Memory Advice beta deprecated
 confidence: high
 sources:
 - type: official
@@ -22,6 +24,8 @@ sources:
   path: https://developers.google.com/edge/litert/next/android_kotlin
 - type: official
   path: https://developers.google.com/edge/litert-lm/android
+- type: official
+  path: https://github.com/google-ai-edge/mediapipe/blob/2034af51d32a3b975657c9d281be4ce226bb130d/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/LlmInference.java#L267-L271
 - type: official
   path: https://developers.google.com/edge/litert/next/qualcomm
 - type: official
@@ -133,7 +137,7 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 - 推测解码（speculative decoding）会增加草稿模型的权重和会话状态，内存收益要单独评估，速度收益只是速度收益。
 - 前缀缓存、分页 KV 或会话状态导出/导入都属于引擎能力，Android 端是否具备，要按所用引擎逐项确认。
 
-引擎侧也有现实约束。MediaPipe LLM Inference 目前处于维护模式，官方建议新 Android 项目迁移到 [LiteRT-LM Android Kotlin API](https://developers.google.com/edge/litert-lm/android)。存量项目使用的 [MediaPipe LLM Inference 的 Android 配置](https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/android) 把 `maxTokens` 定义为输入与输出 token 的总上限，会话上下文的上界就由这个参数决定；具体内存仍要由模型结构和后端实测，迁移到 LiteRT-LM 之后，还要按新的模型格式与会话配置重新算一遍。
+引擎侧也有现实约束。MediaPipe LLM Inference 目前处于维护模式，官方建议新 Android 项目迁移到 [LiteRT-LM Android Kotlin API](https://developers.google.com/edge/litert-lm/android)。存量项目使用的 [MediaPipe `LlmInferenceOptions.maxTokens()` 源码注释](https://github.com/google-ai-edge/mediapipe/blob/2034af51d32a3b975657c9d281be4ce226bb130d/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/LlmInference.java#L267-L271)把 `maxTokens` 定义为输入与输出 token 的总上限，会话上下文的上界就由这个参数决定；具体内存仍要由模型结构和后端实测，迁移到 LiteRT-LM 之后，还要按新的模型格式与会话配置重新算一遍。
 
 ### 1.4 文件映射与运行时缓冲区
 
@@ -474,7 +478,7 @@ Native heap 统计与 Scudo 分配器的职责划分详见 [23.3 Native 与虚�
 - [About memory management（含 Memory Advice 弃用说明）](https://developer.android.com/games/optimize/memory-overview)
 - [NNAPI migration guide](https://developer.android.com/ndk/guides/neuralnetworks/migration-guide)
 - [LiteRT `CompiledModel` Kotlin API](https://developers.google.com/edge/litert/next/android_kotlin)
-- [MediaPipe LLM Inference for Android](https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/android)
+- [MediaPipe `LlmInferenceOptions.maxTokens()`（固定提交源码）](https://github.com/google-ai-edge/mediapipe/blob/2034af51d32a3b975657c9d281be4ce226bb130d/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/LlmInference.java#L267-L271)
 - [Android NDK `AHardwareBuffer`](https://developer.android.com/ndk/reference/group/a-hardware-buffer)
 - [Perfetto native heap profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 - [LiteRT-LM Android Kotlin API](https://developers.google.com/edge/litert-lm/android)
