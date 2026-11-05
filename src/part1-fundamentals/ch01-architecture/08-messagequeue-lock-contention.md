@@ -2,10 +2,11 @@
 title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.8'
 section: '1.8'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
 last_verified: '2026-10-28'
-last_source_verified_at: '2026-10-28'
+last_source_verified_at: '2026-11-06'
+verification_scope_note: '2026-11-06 核验 AMS/ATMS/WMS 全局锁对象与 WindowProcessController.appDied() 通知路径；其余源码结论沿用 2026-10-28 核验记录，未执行设备测量。'
 last_idle_audit_at: '2026-10-28T14:38:19+08:00'
 last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex, libbinder, AMS/OomAdjuster) + Android 17 official MessageQueue/TestLooperManager docs + Perfetto stdlib + ACK android17-6.18-2026-06_r6
 confidence: high
@@ -57,6 +58,12 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1
 - type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/WindowProcessController.java @ android-17.0.0_r1
+- type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java @ android-17.0.0_r1
 - type: kernel
   path: kernel/common/drivers/android/binder.c @ android17-6.18-2026-06_r6
@@ -76,6 +83,12 @@ sources:
 - type: article
   path: 技术文章/source/juejin-android/2026-09-10-76826338-Android17 重写 Message.md
   role: 主线程投递入口和旧队列争锁场景提示
+- type: article
+  path: 技术文章/source/juejin-android/2026-11-06-77034107-AMS 为什么越拆越强？从 Androi.md
+  role: ATMS/WMS 共享锁与跨域持锁风险提示；实现结论另按 Android 17 AOSP 核验
+- type: article
+  path: https://juejin.cn/post/7703410754594832410
+  role: AMS/ATMS/WMS 架构材料原文；不沿用其 Android 16 产品默认配置
 tags:
   - looper
   - handler
@@ -93,7 +106,7 @@ related_chapters:
 - '1.9'
 - '9.1'
 last_review_finalize_at: '2026-09-12T12:10:17+08:00'
-last_body_apply_at: '2026-09-10T09:15:21+08:00'
+last_body_apply_at: '2026-11-06T07:19:12+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md
@@ -804,6 +817,20 @@ void updateOomAdjLocked(@OomAdjReason int oomAdjReason) {
 
 这些源码能证明哪些状态由哪些锁保护、锁按什么顺序获取；固定的性能提升比例要另找测量数据，锁持有时间必须来自具体设备的性能轨迹。没有可定位的一手基准时，“从 25ms 降到 8ms”或“吞吐提升 3 倍”这类写法都站不住。
 
+#### 6.2 ATMS/WMS 的窗口锁与跨域通知
+
+ATMS 与 WMS 共享窗口管理全局锁。服务职责分开后，跨服务调用仍需检查持锁范围，尤其是 AMS 与窗口侧相互调用的路径。[来源: 2026-11-06-77034107-AMS 为什么越拆越强？从 Androi.md]
+
+在 `android-17.0.0_r1` 中，几处同名字段对应的锁对象如下：
+
+- `ActivityTaskManagerService.mGlobalLock` 初始化为 `new WindowManagerGlobalLock()`；它的 `getGlobalLock()` 返回这个对象。[已验证: frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java @ android-17.0.0_r1]
+- `WindowManagerService` 在构造时执行 `mGlobalLock = atm.getGlobalLock()`，因此它与 ATMS 持有同一把窗口管理锁。[已验证: frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java @ android-17.0.0_r1]
+- AMS 的 `mGlobalLock` 是上一节的 `ActivityManagerService.this`，与上述窗口管理锁是不同对象。[已验证: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1]
+
+跨域通知里也能看到这条边界。`WindowProcessController.appDied(String reason)` 把 `WindowProcessListener::appDied` 包装成消息，通过 `mAtm.mH.sendMessage()` 投递；源码注释说明，这样安排是为了在调用 AM 时不持有 WM 锁。这里只说明这条进程死亡通知路径，其他跨域调用仍需逐一检查。[已验证: frameworks/base/services/core/java/com/android/server/wm/WindowProcessController.java，appDied(String reason) @ android-17.0.0_r1]
+
+排查慢事务时，先沿 Binder 事务找到服务端线程，再把第 8 节锁竞争查询中的 `lock_name`、等待者方法和持锁者方法对回源码的同步对象。AMS 与窗口侧的字段都叫 `mGlobalLock`，不能据此把两把锁合并；等待者和持锁者分别位于 ATMS、WMS，也不能据此拆成两条无关等待链。确认锁对象后，再检查持锁者的调度状态和嵌套调用范围。[已验证: 上述 AMS/ATMS/WMS 锁初始化位置 @ android-17.0.0_r1；本文第 8 节 Perfetto 查询]
+
 ### 7. 把 DeliQueue 放回等待链中
 
 前半篇已经讲清 DeliQueue 的旧锁、新栈与双堆实现，这里只提炼诊断意义。如果 Android 17 / target API 37 上的测量表明生产者入队争锁明显下降、消息仍然迟到，我们就继续查 Looper 前序任务、执行线程调度、业务锁、Binder 与 I/O；反过来，在旧实现或兼容开关未启用时，MessageQueue 自身的 monitor contention 仍可能是等待链中的关键节点。
@@ -1030,6 +1057,10 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 - [AOSP：bionic pthread_mutex.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_mutex.cpp)
 - [AOSP：libbinder ProcessState.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
 - [AOSP：ActivityManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP：ActivityTaskManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityTaskManagerService.java)
+- [AOSP：WindowManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)
+- [AOSP：WindowProcessController.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowProcessController.java)
+- [掘金：AMS 为什么越拆越强？从 Android 早期“大总管”到 AMS、ATMS、WMS 协同架构](https://juejin.cn/post/7703410754594832410)
 - [AOSP：OomAdjuster.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjuster.java)
 - [ACK：Binder driver（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)
 - [ACK：rt-mutex 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/locking/rt-mutex.rst)
