@@ -6340,6 +6340,81 @@
         "java"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-06-76704042-Android 图形系统全景.md",
+      "title": "[技术文章] Android 图形系统全景Android 图形系统横跨应用、系统服务和硬件。本文从 View.draw 到屏幕像素，梳",
+      "summary": "> 发布时间: 2026-08-06T01:35:45.000Z > 原文链接: https://juejin.cn/post/7670404221932306474 2026-08-06 894 阅读11分钟 Android 图形系统横跨应用、系统服务和硬件，组件多、术语杂。本文从应用到硬件梳理一遍：六层分层、层间如何协作、典型场景如何接入，只讲整体，不深入实现细节。...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-06T06:20:19.923491+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-06-77034107-AMS 为什么越拆越强？从 Androi.md",
+      "title": "[技术文章] AMS 为什么越拆越强？从 Android 早期“大总管”到 AMS、ATMS、WMS 协同架构从早期组件“大总管”到",
+      "summary": "> 发布时间: 2026-11-02T13:42:49.000Z > 原文链接: https://juejin.cn/post/7703410754594832410 2026-11-02 139 阅读12分钟 Android 深入系统内部 如果把早期 Android Framework 看成一家刚起步的公司，AMS 很像那个什么都管的负责人：Activity 怎么启动、...",
+      "chapter": "ch08",
+      "processed_at": "2026-11-06T06:20:19.923491+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "ams",
+        "framework",
+        "activity",
+        "juejin-android",
+        "ch01-architecture"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-06-77034124-Binder 不只是 IPC：从一次跨进.md",
+      "title": "[技术文章] Binder 不只是 IPC：从一次跨进程调用看懂 Android 与 AAOS 的架构演进从一次跨进程调用出发，讲清",
+      "summary": "> 发布时间: 2026-11-02T12:42:57.000Z > 原文链接: https://juejin.cn/post/7703412433470046246 2026-11-02 116 阅读13分钟 Android 深入系统内部 如果把 Android 系统看成一座城市，Binder 很像它的道路系统。 应用通过它寻找系统服务，Framework 通过它调用...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-06T06:20:19.923491+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "binder",
+        "t12",
+        "framework",
+        "juejin-android"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-06-77034742-Flutter Android 性能修复.md",
+      "title": "[技术文章] Flutter Android 性能修复：8 个大核的手机，Raster 居然只跑在 2 个核上？最近 Flutter",
+      "summary": "> 发布时间: 2026-11-03T00:53:12.000Z > 原文链接: https://juejin.cn/post/7703474285394657318 2026-11-03 631 阅读5分钟 Flutter House 最近 Flutter 刚刚合并了 PR #195071，这个 Bug 挺搞笑的，因为 Android Engine 一套沿用上古的 CP...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-06T06:20:19.923491+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-06-77038402-提升 Android Compose 页.md",
+      "title": "[技术文章] 提升 Android Compose 页面的流畅度分析 Compose 页面卡顿的常见原因，介绍监控重组与参数稳定性的工",
+      "summary": "> 发布时间: 2026-11-03T13:03:14.000Z > 原文链接: https://juejin.cn/post/7703840281963003913 2026-11-03 198 阅读4分钟 > 本文译自「Improving the Smoothness of Android Compose Screens」，原文链接proandroiddev.com/...",
+      "chapter": "ch07",
+      "processed_at": "2026-11-06T06:20:19.923491+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "t13",
+        "the",
+        "smoothness",
+        "ch07-smoothness"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
