@@ -4,7 +4,10 @@ chapter: '24.2'
 section: '24.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
+last_verified: '2026-11-05'
+last_idle_audit_at: '2026-11-05T18:39:46+08:00'
+last_source_verified_at: '2026-11-05T18:39:46+08:00'
+verification_scope_note: 全文正文审读；来源抽检限于 AOSP SQLiteGlobal/config.xml/Parcel、Room 2.8.4 与 3.0.1 连接池及破坏性迁移、Room/SQLite 发布与迁移说明、SQLite WAL、Gson 生命周期；未执行 Android 设备测试
 last_verified_against: AOSP android-17.0.0_r1; AndroidX Room 2.8.4 and Room 3.0.1 source/release notes; AndroidX SQLite 2.7.0 source/release notes; SQLite official documentation; MongoDB Atlas Device SDK deprecation and Realm Kotlin repository
 confidence: high
 sources:
@@ -544,7 +547,7 @@ class AppDatabaseMigrationTest {
 
 这个测试只覆盖一条相邻迁移。发布检查还要从所有受支持的历史版本打开当前数据库，走完每条升级路径，并验证关键业务数据。缺少路径时 Room 会在打开阶段抛出异常——分阶段发布已经出现崩溃才发现缺路径，就太晚了。
 
-`fallbackToDestructiveMigration()` 只适合经过产品确认可以重建的数据：缺少迁移路径时，它删除数据库表中的数据并重建。用户草稿、离线内容、支付状态和消息记录走不进这项配置。缓存库采用它时，也应记录触发版本和重建成本。
+Room 2.8.4 的无参 `fallbackToDestructiveMigration()` 已弃用，应使用显式指定 `dropAllTables` 的重载。缺少迁移路径时，`dropAllTables = false` 只删除 Room 管理的表，可能遗留已不受当前实体管理的旧表；`dropAllTables = true` 还会删除非 Room 管理的表。这个选项只适合经过产品确认可以丢弃并重建的数据，用户草稿、离线内容、支付状态和消息记录应保留完整迁移路径。缓存库也要逐表确认可重建范围，并记录触发版本和重建成本（[Room 2.8.4 源码包中的 `RoomDatabase.android.kt`](https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.4/room-runtime-android-2.8.4-sources.jar)）。
 
 迁移发版前的检查：
 
@@ -651,7 +654,7 @@ Room 3 移除了 Room 接口中的 `SupportSQLiteDatabase`、`SupportSQLiteOpenH
 
 每个仍受支持的历史数据库结构都要经过 `MigrationTestHelper`。测试除确认目标结构完全一致外，还应覆盖非空列、默认值、索引、外键、触发器、FTS5 全文检索表、`WITHOUT ROWID` 表、复合关系键、大数据集重建与迁移中断。Room 2 与 Room 3 包名可以共存，迁移同一个数据库文件时只能有一个打开者。
 
-应用版本回退比改回 Maven 依赖版本更困难。新应用把设备上的数据库结构从 N 升到 N+1 后，旧应用必须能识别 N+1，或提供验证过的降级迁移；远程开关撤销不了已经写入数据库的结构变化。`fallbackToDestructiveMigrationOnDowngrade()` 只适用于明确允许丢失的数据。分阶段发布前执行“旧版本写入 → 新版本迁移并读写 → 旧版本重新打开”的完整测试。
+应用版本回退比改回 Maven 依赖版本更困难。新应用把设备上的数据库结构从 N 升到 N+1 后，旧应用必须能识别 N+1，或提供验证过的降级迁移；远程开关撤销不了已经写入数据库的结构变化。`fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)` 只适用于整个库都允许丢弃并重建的场景。Room 3.0.1 的 `dropAllTables` 默认就是 `true`，会连同非 Room 管理的表一起删除，不能沿用 Room 2.8.4 无参方法的删表范围假设（[Room 3.0.1 源码包中的 `RoomDatabase.kt`](https://dl.google.com/dl/android/maven2/androidx/room3/room3-runtime-android/3.0.1/room3-runtime-android-3.0.1-sources.jar)）。分阶段发布前执行“旧版本写入 → 新版本迁移并读写 → 旧版本重新打开”的完整测试。
 
 <!-- gracker-diagram: a262-07-staged-migration -->
 ![大表迁移与应用回退分开验证](../../assets/diagrams/ch24/a262-07-staged-migration.png)
@@ -718,7 +721,7 @@ JSON 便于抓包、日志检查和跨语言协作，解析端要做的事却一
 
 #### 三个库的当前边界
 
-截至本轮复核，Gson 仍处于维护模式：项目会继续修复已有问题，大型功能基本不再增加。其项目说明写得很直白：Gson 以 Java 为主要目标，不支持 Kotlin 非空类型和默认参数等语言语义；它还会在运行时反射任意模型字段，这种开放式反射难以与 Android 发布包的缩减、优化和混淆配合。因此官方不再推荐用 Gson 处理 Android JSON。
+截至 2026-11-05，Gson 仍处于维护模式：项目会继续修复已有问题，大型功能基本不再增加。其项目说明写得很直白：Gson 以 Java 为主要目标，不支持 Kotlin 非空类型和默认参数等语言语义；它还会在运行时反射任意模型字段，这种开放式反射难以与 Android 发布包的缩减、优化和混淆配合。因此官方不再推荐用 Gson 处理 Android JSON。
 
 存量项目不必因这段说明立即重写，但要把允许反射的模型圈出来，用 `@SerializedName` 为字段声明稳定名称，并用经过 R8 处理的发布 APK 或 AAB 验证字段名、构造方式和泛型适配器。新 Kotlin 数据模型，宜先评估代码生成方案。
 
