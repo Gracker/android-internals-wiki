@@ -4,8 +4,10 @@ chapter: '5.1'
 section: '5.1'
 status: finalized
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
-last_verified: '2026-08-19'
-last_verified_against: Linux 6.6 sched-design-CFS + kernel/sched/fair.c/debug.c, bionic pthread.h android-16.0.0_r1, libprocessgroup task_profiles.json android-16.0.0_r1
+last_verified: '2026-11-06'
+last_verified_against: android17-6.18-2026-06_r6 fair.c/cpufreq_schedutil.c 与 capacity/EAS/EEVDF/UClamp 文档；android-17.0.0_r1 bionic pthread.h、task_profiles.json、Process JNI 与 Perfetto CPU stdlib；Perfetto CPU scheduling 文档
+last_source_verified_at: '2026-11-06T18:40:33+08:00'
+last_idle_audit_at: '2026-11-06T18:40:33+08:00'
 confidence: high
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/31-android17-eevdf-scheduler.md
@@ -66,6 +68,10 @@ sources:
   path: https://perfetto.dev/docs/analysis/stdlib-docs#linux-cpu-frequency
 - type: source
   path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql
+- type: source
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/idle.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/pthread.h
 - type: official
   path: https://docs.kernel.org/scheduler/sched-capacity.html
 - type: official
@@ -714,7 +720,7 @@ effective CPUs
   ∩ cpuset / cgroup 允许范围
 ```
 
-`sched_setaffinity()` 为线程设置 CPU 亲和性掩码。在 Linux 接口中传入线程 ID（TID），即可控制单个线程。Android Bionic 也提供 `sched_setaffinity()` / `sched_getaffinity()`；`pthread_setaffinity_np()` / `pthread_getaffinity_np()` 从 API 36 起公开。
+`sched_setaffinity()` 为线程设置 CPU 亲和性掩码。在 Linux 接口中传入线程 ID（TID），即可控制单个线程。Android Bionic 也提供 `sched_setaffinity()` / `sched_getaffinity()`；`pthread_setaffinity_np()` / `pthread_getaffinity_np()` 从 API 36 起公开，编译时还需在包含头文件前定义 `_GNU_SOURCE`。Bionic 头文件建议用 `sched_setaffinity()` / `sched_getaffinity()` 配合 `pthread_gettid_np()` 兼容更早版本。
 
 CPU 亲和性只能进一步缩小允许范围，改不了 cpuset 划定的范围。之后系统调整 cpuset、下线 CPU，或温控策略缩小可用范围时，线程仍可能被迁移。直接把 RenderThread 固定在某个“大核编号”上，会压缩调度器的迁移空间，可能带来排队、温升或能耗回归，所以它只适合作为受控实验，别当成默认优化。
 
@@ -1000,6 +1006,7 @@ EAS 要在一台设备上生效，需要先满足这些条件：
 2. **能量模型可用**：root domain 需要关联已注册的性能域与功耗成本表（power cost table）。
 3. **可缩放的利用率信号**：平台要实现 PELT 频率不变性和 CPU 不变性所需的架构回调。
 4. **schedutil 调频策略**：EAS 假设 OPP 会跟随利用率变化。官方文档把 schedutil 视为符合这一假设的 governor；不推荐搭配其他 governor。
+5. **非 SMT 拓扑**：Linux 6.18 的 EAS 不支持同时多线程（Simultaneous Multithreading，SMT）。它会把硬件线程当成独立 CPU，无法正确利用它们共享执行资源的关系来预测节能效果。
 
 是否满足这些条件要以目标设备为准。Android 公共内核提供的是框架，SoC 的 capacity、EM、cpufreq 和调度域仍由设备内核与固件数据决定。
 
@@ -1229,22 +1236,23 @@ CPU 调度轨道显示每个时刻哪个线程在哪个 CPU 上运行，是观�
 **统计目标线程在各 CPU 上的运行时间：**
 
 ```sql
-WITH target_thread AS (
-  SELECT t.utid, t.tid
-  FROM thread t
-  JOIN process p USING (upid)
-  WHERE p.name = 'com.example.app'
-    AND t.name = 'RenderThread'
-  LIMIT 1
-)
 SELECT
-  cpu,
-  round(sum(dur) / 1e6, 2) AS running_ms
-FROM sched_slice
-WHERE utid = (SELECT utid FROM target_thread)
-GROUP BY cpu
-ORDER BY cpu;
+  p.upid,
+  t.utid,
+  t.tid,
+  s.cpu,
+  round(sum(s.dur) / 1e6, 2) AS running_ms
+FROM sched_slice AS s
+JOIN thread AS t USING (utid)
+JOIN process AS p USING (upid)
+WHERE p.name = 'com.example.app'
+  AND t.name = 'RenderThread'
+  AND s.dur > 0
+GROUP BY p.upid, t.utid, t.tid, s.cpu
+ORDER BY p.upid, t.utid, s.cpu;
 ```
+
+同一进程中可能出现多个同名 RenderThread。查询用 `upid` 和 `utid` 区分进程与线程的生命周期，不用 `LIMIT 1` 隐式挑选其中一个；分析具体线程时，再按目标 `upid` / `utid` 筛选。`dur > 0` 排除了未闭合的切片（`dur = -1`），结果只统计已记录的完整运行片段。
 
 如果 RenderThread 大部分时间位于低 capacity CPU，应把运行时长与帧截止时间对齐，再检查当时的 UClamp、进程组、overutilized 和 thermal pressure。
 
