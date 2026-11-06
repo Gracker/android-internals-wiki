@@ -13015,6 +13015,67 @@
       "summary": "Android 17 无 AOSP 逐应用锁接口与平台实现的结论被同标签源码反证",
       "type": "contradicted-platform-api",
       "updated_at": "2026-11-05T22:51:37.309151+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已修正旧队列竞争入口和 Object.wait() 分类，补充竞争 ID/时间/utid/源码位置、lock_name 的可空标签来源、等待时长与持锁时长区别，以及首个等待者状态表的截短范围；不再由缺失 Monitor 记录推断为原生锁。Android 17 stdlib 源码与公开上游轨迹均已核对。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261106-080520-3219063e",
+      "created_at": "2026-11-06T08:13:12.023493+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261106-080520-3219063e",
+      "details": "首节把旧队列争锁入口限于 next()，遗漏主线程入队、删除和屏障操作；锁查询未说明 lock_name 仅从邻接 *_lock_acquire/*_lock_held 区段提取且可为 NULL，不能当作对象唯一标识；现场三把没有 Monitor 表记录引向原生锁，遗漏 AQS 和未采集到的 ART 竞争。需统一按调用栈、线程与时间区间核对，并区分 wait() 条件等待与重新争锁。",
+      "id": "RF-ch01-08-monitor-attribution-boundaries",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java @ android-17.0.0_r1",
+        "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql @ android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "Monitor 排查混淆竞争入口、锁名来源与缺失记录的解释",
+      "type": "diagnostic-evidence-boundary",
+      "updated_at": "2026-11-06T08:19:27.822482+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "按官方类说明补齐 API 26 类级边界、API 36 非阻塞方法、Instrumentation.acquireLooperManager() 获取、显式 execute() 接管语义、recycle(Message) 和 finally release()；未把测试工具描述成只读生产监控 API。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261106-080520-3219063e",
+      "created_at": "2026-11-06T08:13:12.093703+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261106-080520-3219063e",
+      "details": "迁移节仅建议使用 TestLooperManager 和 API 36 方法，未交代类从 API 26 可用、必须通过 Instrumentation.acquireLooperManager(Looper) 获取、持有期间 Looper 不再自动分发、next()/poll() 返回的消息用 recycle(Message) 归还以及结束时 release()。缺少这些官方生命周期边界容易让测试误把接管工具当作只读观察器。",
+      "id": "RF-ch01-08-testlooper-control-lifecycle",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/TestLooperManager"
+      ],
+      "status": "fixed",
+      "summary": "推荐 TestLooperManager 时遗漏接管消息循环与释放要求",
+      "type": "api-lifecycle-boundary",
+      "updated_at": "2026-11-06T08:19:27.881890+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "查询补入 binder_txn_id、client/server 时间与 utid，说明 interface/method_name 的 AIDL 埋点依赖和 NULL 边界，并按事务 ID 接续线程状态视图；字段对照 Android 17 binder.sql，公开真实测试轨迹已验证可空方法名场景。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261106-080520-3219063e",
+      "created_at": "2026-11-06T08:17:07.674131+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261106-080520-3219063e",
+      "details": "android_binder_txns 的 interface/method_name 仅在存在端点埋点时可用，公开上游轨迹实跑中可为 NULL；原查询未输出 binder_txn_id、时间点或双方 utid，读者难以在无方法名时接续线程状态与竞争表。应保留事务定位字段并说明不因符号缺失判断事务不存在。",
+      "id": "RF-ch01-08-binder-query-source-identity",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql @ android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "Binder 查询缺少事务定位字段及可空方法名边界",
+      "type": "diagnostic-evidence-boundary",
+      "updated_at": "2026-11-06T08:19:27.941698+08:00"
     }
   ],
   "schema_version": 1
