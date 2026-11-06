@@ -2,13 +2,13 @@
 title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.8'
 section: '1.8'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-10-28'
+last_verified: '2026-11-06'
 last_source_verified_at: '2026-11-06'
-verification_scope_note: '2026-11-06 核验 AMS/ATMS/WMS 全局锁对象与 WindowProcessController.appDied() 通知路径；其余源码结论沿用 2026-10-28 核验记录，未执行设备测量。'
+verification_scope_note: '2026-11-06 复核 Android 17 队列、ART Monitor、bionic/PI-futex、Binder 与 AMS/ATMS/WMS 锁边界，核对官方迁移及 API 生命周期说明；Perfetto SQL 已在公开历史测试轨迹执行，不代表 Android 17 设备性能实测。'
 last_idle_audit_at: '2026-10-28T14:38:19+08:00'
-last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex, libbinder, AMS/OomAdjuster) + Android 17 official MessageQueue/TestLooperManager docs + Perfetto stdlib + ACK android17-6.18-2026-06_r6
+last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex/pthread.h, libbinder, AMS/ATMS/WMS/WindowProcessController/OomAdjuster, Perfetto stdlib SQL) + Android 17 official MessageQueue/TestLooperManager/IdleHandler docs + ACK android17-6.18-2026-06_r6
 confidence: high
 sources:
 - type: aosp
@@ -54,6 +54,8 @@ sources:
 - type: aosp
   path: bionic/libc/bionic/pthread_mutex.cpp @ android-17.0.0_r1
 - type: aosp
+  path: bionic/libc/include/pthread.h @ android-17.0.0_r1
+- type: aosp
   path: frameworks/native/libs/binder/ProcessState.cpp @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1
@@ -73,6 +75,10 @@ sources:
   path: kernel/common/Documentation/locking/pi-futex.rst @ android17-6.18-2026-06_r6
 - type: kernel
   path: kernel/common/kernel/futex/pi.c @ android17-6.18-2026-06_r6
+- type: aosp
+  path: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql @ android-17.0.0_r1
+- type: aosp
+  path: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql @ android-17.0.0_r1
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention
 - type: official
@@ -105,7 +111,7 @@ related_chapters:
 - '7.1'
 - '1.9'
 - '9.1'
-last_review_finalize_at: '2026-09-12T12:10:17+08:00'
+last_review_finalize_at: '2026-11-06T08:17:51+08:00'
 last_body_apply_at: '2026-11-06T07:19:12+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -155,7 +161,7 @@ private static boolean loopOnce(final Looper me,
 
 `next()` 返回前，我们关注的是消息排序、屏障、唤醒和队列并发；`dispatchMessage()` 开始后，才进入 `Handler.handleMessage()` 或 `Runnable.run()`。所以：
 
-- 主线程在 `MessageQueue.next()` 附近出现 `monitor contention with ...` 区段，才可能是旧队列的锁竞争。
+- 主线程在 MessageQueue 的入队、取消息、移除或屏障操作中出现 `monitor contention with ...` 区段时，要对照等待者与持锁者方法，确认是否在争用旧队列的共享监视器锁；仅凭类名还排除不了 IdleHandler 等辅助路径的锁。
 - `dispatchMessage()` 下方的 `layout`、I/O 或 Binder 调用耗时很长，说明慢在消息执行这一段，要沿调用栈查业务代码。
 - 一条消息执行太久会推迟下一次 `next()`，但那是排队上的连锁影响；要判断队列内部的锁持有时间，还得回到锁竞争区段本身。
 
@@ -316,6 +322,8 @@ do {
 - `mSyncHeap`：同步消息和同步屏障。
 - `mAsyncHeap`：异步消息。
 
+加入堆后，消息仍链接在共享栈中，直到被分发或物理删除。堆保存的是同一批 `Message` 的引用；其他线程仍可沿栈查找并标记待删除消息，不需要访问 Looper 私有堆。[已验证: frameworks/base/core/java/android/os/CombinedDeliMessageQueue/README.md，Sweeping Messages into the Heap；MessageStack.heapSweep()/removeFromStack() @ android-17.0.0_r1]
+
 `MessageHeap` 是用数组实现的最小堆，主要按 `when` 排序；普通消息执行时间相同时，再用插入序号 `insertSeq` 保持 FIFO。`sendMessageAtFrontOfQueue()` 是例外，源码用递减的负序号让队首消息按 LIFO 顺序排列。只有 Looper 线程会实际调整堆结构，每次向上或向下调整也就无需再取得 Java 锁。
 
 下一条消息的选择仍遵守旧语义：
@@ -449,6 +457,8 @@ Android Developers Blog 给出了 DeliQueue 的内部验证结果：
 - Robolectric 4.17 或更高版本，并从 `@LooperMode(LEGACY)` 迁移到 `@LooperMode(PAUSED)`。
 - 设备端插桩测试（instrumentation test）使用 `TestLooperManager`，包括 Android 16（API 36）引入的 `peekWhen()`、`poll()` 等能力，不再依赖 MessageQueue 私有字段。
 
+`TestLooperManager` 类从 API 26 起可用，通过 `Instrumentation.acquireLooperManager(Looper)` 获取。持有期间，Looper 不再自动分发消息，只有显式调用 `execute(Message)` 才会执行选定消息；它不适合当作持续运行的只读监控器。测试结束时应在 `finally` 中调用 `release()`，否则 Looper 无法恢复正常循环；通过 `next()` 或 `poll()` 取出的消息，也应在处理完后交给 `recycle(Message)`。其中 `next()` 可能阻塞，API 36 的 `peekWhen()` 与 `poll()` 不阻塞。[已验证: https://developer.android.com/reference/android/os/TestLooperManager，类说明及 next()/peekWhen()/poll()/recycle()/release()]
+
 #### 9.3 用兼容性开关做同版本 A/B
 
 在可调试应用上，可以执行：
@@ -525,7 +535,7 @@ Android 16 的并发实现适合用来理解演进脉络，当前源码仍要以
 
 #### “主线程处于休眠状态就是队列锁竞争”
 
-不成立。空闲 Looper 正常阻塞在原生轮询中。只有看到 `android_monitor_contention`、持锁线程和 MessageQueue 调用点，才能确认存在旧版监视器锁竞争。
+不成立。空闲 Looper 正常阻塞在原生轮询中。确认旧版监视器锁竞争时，应结合竞争事件（如 `android_monitor_contention`）、持锁线程和 MessageQueue 调用点；未采集到相应事件时，仅凭休眠状态还下不了判断。
 
 ### 结论
 
@@ -556,7 +566,7 @@ Android 性能轨迹中，下面五类等待最容易混淆。
 
 | 类型 | 常见入口 | 主要实现 | 首要证据 |
 | --- | --- | --- | --- |
-| Java 监视器锁 | `synchronized`、`Object.wait()` | ART Monitor / LockWord | `android_monitor_contention`、等待者与持锁者的方法 |
+| Java 监视器锁 | `synchronized`、`wait()` 返回前重新获取锁 | ART Monitor / LockWord | `android_monitor_contention`、等待者与持锁者的方法 |
 | Java 并发包 | `ReentrantLock`、`Condition`、`LockSupport.park()` | 抽象队列同步器（AQS）、线程挂起/唤醒、原生等待 | Java 调用栈、线程状态、相关业务埋点 |
 | 原生锁 | `pthread_mutex`、`std::mutex`、条件变量 | bionic + futex | 原生调用栈、`blocked_function`、锁埋点 |
 | Binder IPC | 同步 AIDL、服务端线程池 | libbinder + Binder 驱动 | Binder 事务/回复、调用端/服务端线程状态 |
@@ -564,7 +574,7 @@ Android 性能轨迹中，下面五类等待最容易混淆。
 
 它们都可能在内核线程状态里表现为睡眠，但优化方式完全不同。
 
-- Java 监视器锁要找到持有同一对象锁的线程。
+- Java 监视器锁的获取竞争，要找到持有同一对象锁的线程；`Object.wait()` 已释放锁的条件等待段则要先查通知条件，不能整段归到某个持锁者头上。
 - `ReentrantLock` 不属于 ART Monitor，不能指望 `android_monitor_contention` 自动给出持锁者；持锁者要从 Java 调用栈和业务埋点里找。
 - 原生 `futex_wait` 只说明线程走进了 futex 的内核等待路径，对应互斥锁还是启用了优先级继承，要回到锁的初始化代码确认。
 - 同步 Binder 调用的调用端等待服务端回复；服务端内部可能又阻塞在 Java 或原生锁上。
@@ -847,11 +857,18 @@ DeliQueue 因此只解决了队列这一段的锁，谈不上证明“无锁一�
 INCLUDE PERFETTO MODULE android.monitor_contention;
 
 SELECT
+  id AS contention_id,
+  ts,
+  blocked_utid,
+  blocking_utid,
   process_name,
   blocked_thread_name AS waiter,
   blocking_thread_name AS owner,
   short_blocked_method AS waiter_method,
   short_blocking_method AS owner_method,
+  blocked_src AS waiter_source,
+  blocking_src AS owner_source,
+  is_blocked_thread_main,
   lock_name,
   dur / 1e6 AS wait_ms
 FROM android_monitor_contention
@@ -860,9 +877,13 @@ ORDER BY dur DESC
 LIMIT 30;
 ```
 
-查询结果能给出等待线程（waiter）、持锁线程、双方方法、源码位置、是否为主线程、锁名和等待时长。`android_monitor_contention_chain` 还能表达多段锁竞争之间的依赖关系；配套的线程状态表可以继续检查持锁者在锁内的状态：Running、Runnable（可运行但还没分到 CPU），还是又阻塞在其他内核函数中。
+查询保留了竞争区段的 `contention_id`、起点 `ts` 和双方 `utid`，便于按时间区间回查线程状态。`android_monitor_contention_chain` 还能表达多段锁竞争之间的依赖关系；检查持锁者时，可用 `blocking_utid` 关联 `thread_state.utid`，查看与竞争区间相交的状态。但这只是该线程在等待窗口内的状态，不能认定它始终持有同一把锁。`wait_ms` 是等待者经历的墙上时间，不是持锁者完整的临界区时长；多名等待者的重叠区间也不能直接相加当作持锁时间。
 
-这张表有两个限制：
+要分析持锁期间的状态，可继续查 `android_monitor_contention_chain_thread_state` 或聚合视图 `android_monitor_contention_chain_thread_state_by_txn`。标准库只对首个等待者构造这组状态数据，并按同组等待者最早取得锁的时刻截短区间，避免把锁已交给其他等待者之后的时间继续归给原持锁者；因此它们不覆盖每一条竞争记录。[已验证: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql，_first_blocked_contention 与线程状态表说明 @ android-17.0.0_r1]
+
+`lock_name` 来自竞争区段前后的 `*_lock_acquire` / `*_lock_held` 埋点，只有名称匹配时才被提取，否则为 `NULL`。它是埋点标签，不能当作 Java 对象的唯一标识；对回 AMS 或窗口锁时，还要核对双方方法与源码中的锁对象。[已验证: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql，android_monitor_contention 定义及 contention_lock_names @ android-17.0.0_r1]
+
+这张表还有两个限制：
 
 - 表里没有记录，未必代表设备上没有竞争；性能轨迹配置、运行时采样和符号解析都会影响数据完整性；
 - 这张表针对 ART Java Monitor，不覆盖所有 `ReentrantLock` 和原生互斥锁。
@@ -897,6 +918,11 @@ Perfetto 的 `android.binder` 模块可以把事务与回复关联到调用端�
 INCLUDE PERFETTO MODULE android.binder;
 
 SELECT
+  binder_txn_id,
+  client_ts,
+  client_utid,
+  server_ts,
+  server_utid,
   client_process,
   client_thread,
   server_process,
@@ -912,7 +938,9 @@ ORDER BY client_dur DESC
 LIMIT 30;
 ```
 
-找到慢事务后，可以再用 `android_sync_binder_thread_state_by_txn` 或 `android_sync_binder_blocked_functions_by_txn` 分解调用端与服务端的线程状态。若服务端处理区间叠加 Java 监视器锁竞争，就继续查询 `android_monitor_contention` 给出的持锁者。
+`interface` 与 `method_name` 依赖相应的 AIDL 埋点，可能为 `NULL`，不影响已经关联起来的事务与回复。此时用 `binder_txn_id`、双方时间点和 `utid` 回到原始区段与线程状态，不要把“没有方法名”当成“没有事务”。[已验证: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql，android_binder_txns 字段定义 @ android-17.0.0_r1]
+
+找到慢事务后，可以再按 `binder_txn_id` 查询 `android_sync_binder_thread_state_by_txn` 或 `android_sync_binder_blocked_functions_by_txn`，分解调用端与服务端的线程状态。若服务端处理区间叠加 Java 监视器锁竞争，就继续查询 `android_monitor_contention` 给出的持锁者。
 
 “调用端时间长、服务端时间短”可能意味着事务排队、线程调度或回复返回延迟；“服务端时间长”也不等同于一直执行 CPU 计算，服务端可能大部分时间都在等待锁、I/O 或嵌套 Binder 调用。
 
@@ -938,7 +966,7 @@ LIMIT 30;
 
 1. 先确认 Java 调用栈来自 ART Monitor、AQS/线程挂起，还是 JNI/原生代码；
 2. 检查是否有对应的 `android_monitor_contention` 事件；
-3. 没查到 Java Monitor 记录时，按原生锁或条件等待调查；
+3. 没查到 Java Monitor 记录时，先检查采集配置与调用栈：AQS/`park()`、原生锁或条件等待都可能表现为 futex 等待，也不能排除未被采集到的 ART 竞争；
 4. 找到锁的初始化代码，确认它是不是 PI 互斥锁，函数名在这里说了不算；
 5. 如果这是正常的条件变量等待，就继续查“为什么条件迟迟没有满足”，无需优化 futex 本身。
 
@@ -1055,6 +1083,7 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 - [AOSP：ART monitor.cc（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc)
 - [AOSP：ART lock_word.h（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/lock_word.h)
 - [AOSP：bionic pthread_mutex.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_mutex.cpp)
+- [AOSP：bionic pthread.h（API 可用性，android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/pthread.h)
 - [AOSP：libbinder ProcessState.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
 - [AOSP：ActivityManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [AOSP：ActivityTaskManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityTaskManagerService.java)
@@ -1066,6 +1095,8 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 - [ACK：rt-mutex 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/locking/rt-mutex.rst)
 - [ACK：PI-futex 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/locking/pi-futex.rst)
 - [ACK：futex PI 实现（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/pi.c)
+- [AOSP：Perfetto monitor_contention.sql（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql)
+- [AOSP：Perfetto binder.sql（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql)
 - [Perfetto：`android.monitor_contention` stdlib](https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention)
 - [Perfetto：`android.binder` stdlib](https://perfetto.dev/docs/analysis/stdlib-docs#androidbinder)
 - [Android Developers Blog：Android 17 lock-free MessageQueue](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
