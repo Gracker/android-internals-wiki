@@ -1,13 +1,13 @@
 ---
 title: 跨进程内存共享与端侧推理预算
 chapter: '4.10'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-11-01'
 last_verified_against: AOSP android-17.0.0_r1
 last_source_verified_at: '2026-11-01T14:38:13+08:00'
 last_idle_audit_at: '2026-11-01T14:38:13+08:00'
-last_body_apply_at: '2026-09-02T07:18:25+08:00'
+last_body_apply_at: '2026-11-07T07:18:27+08:00'
 last_review_finalize_at: '2026-09-02T08:14:47+08:00'
 confidence: high
 sources:
@@ -33,6 +33,12 @@ sources:
   path: system/sepolicy/ — SELinux 隔离进程策略
 - type: article
   path: https://juejin.cn/post/7675633667490267179
+- type: article
+  path: https://juejin.cn/post/7701979838148722724
+- type: aosp
+  path: kernel/common/drivers/android/Makefile; binder.c; binder_alloc.c @ android17-6.18-2026-06_r6
+- type: official
+  path: https://source.android.com/docs/core/architecture/kernel/android-common
 tags:
 - ai-agent
 - memory
@@ -158,7 +164,7 @@ Binder 这一侧的容量要从原生库看起：libbinder 在 `ProcessState.cpp
 #define BINDER_VM_SIZE ((1 * 1024 * 1024) - sysconf(_SC_PAGE_SIZE) * 2)
 ```
 
-这块接收缓冲区由进程内所有 Binder 线程共享，多个并发事务一起挤在这里，要按“整个进程一块”来理解，别按“每个 Binder 线程各有 1 MiB”来理解。请求、返回值、对象偏移表和并发事务都从这块空间里出。
+这块接收缓冲区由进程内所有 Binder 线程共享，多个并发事务会竞争同一块空间。以一次跨进程调用为例，请求载荷及其对象偏移表占服务端接收区，回复载荷及其对象偏移表占调用方接收区；驱动通过 `binder_alloc_new_buf(&target_proc->alloc, ...)` 向事务接收方分配缓冲区。排查时要分别看两端的并发接收压力，不能按“每个 Binder 线程各有 1 MiB”估算。[已验证: frameworks/native/libs/binder/ProcessState.cpp @ android-17.0.0_r1; kernel/common/drivers/android/binder.c, binder_transaction() @ android17-6.18-2026-06_r6]
 
 `TransactionTooLargeException` 的 Java 文档也强调，它只是大事务失败时抛出的启发式异常。调用方拿到它时，请求到底送没送到是判断不准的：也可能服务端已经处理完请求，只是返回值发送失败。所以接口要按“操作可能已经部分完成”设计幂等性，也就是让同一请求重复执行时不产生额外副作用。
 
@@ -178,6 +184,10 @@ Binder 这一侧的容量要从原生库看起：libbinder 在 `ProcessState.cpp
 ![Binder 传控制与句柄，大块数据由缓冲对象承载](../../assets/diagrams/ch04/ch04-10-binder-control-and-fd-data.png)
 
 图：libbinder 接收映射约为 1 MiB 减两个基础页，由进程内并发事务共享，64 KiB 只是公开 API 的建议大小。控制 Parcel 传长度、版本和 fd 等句柄；载荷放在共享页、硬件缓冲或受控内容对象中。TransactionTooLargeException 不能证明服务未执行，重试还需要请求幂等和状态确认。
+
+Rust Binder 的迁移报道不能直接当作设备已经切换驱动的证据。文章也区分了内核源码变化与设备部署，具体采用哪套实现取决于设备内核和厂商软件。[来源: https://juejin.cn/post/7701979838148722724] 在本文固定的 `android17-6.18-2026-06_r6` 中，`drivers/android/Makefile` 仍把 `binder.o`、`binder_alloc.o` 等 C 实现对象列在 `CONFIG_ANDROID_BINDER_IPC` 下。这只描述该源码标签，不能推及所有 Android 17 设备。[已验证: kernel/common/drivers/android/Makefile; kernel/common/drivers/android/binder.c; kernel/common/drivers/android/binder_alloc.c @ android17-6.18-2026-06_r6]
+
+核实目标设备时，先用 `adb shell uname -r` 记录内核版本，再对照匹配该构建的内核源码、构建配置和厂商补丁确认 Binder 实现；仅有版本字符串还不够。Android 通用内核是上游内核的下游，也会纳入回移和厂商/OEM 补丁，不能直接套用主线报道。[来源: https://source.android.com/docs/core/architecture/kernel/android-common] 排查事务容量则要同时核对 Android 用户态：前面的接收映射大小来自 `ProcessState.cpp`，64 KiB 建议值来自 `IBinder.java`，都应按 `android-17.0.0_r1` 的实现解释。[已验证: frameworks/native/libs/binder/ProcessState.cpp; frameworks/base/core/java/android/os/IBinder.java @ android-17.0.0_r1]
 
 ## 4.10.4 SharedMemory：共享页加上能力句柄
 
@@ -549,6 +559,7 @@ heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部�
 | 隔离进程 / 隔离计算进程策略 | [`system/sepolicy/private/isolated_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_app.te)、[`isolated_compute_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_compute_app.te) |
 | cgroup 内存归属与进程迁移 | [`kernel/common/Documentation/admin-guide/cgroup-v2.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)，Memory Ownership，`android17-6.18-2026-06_r6` |
 | Binder 缓冲区分配 | [`kernel/common/drivers/android/binder_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)，`android17-6.18-2026-06_r6` |
+| Binder 构建选择与事务接收方分配 | [`drivers/android/Makefile`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/Makefile)、[`binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)，`android17-6.18-2026-06_r6` |
 
 ## 4.10.13 小结
 
