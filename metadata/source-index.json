@@ -6410,17 +6410,56 @@
       "summary": "> 发布时间: 2026-11-03T13:03:14.000Z > 原文链接: https://juejin.cn/post/7703840281963003913 2026-11-03 198 阅读4分钟 > 本文译自「Improving the Smoothness of Android Compose Screens」，原文链接proandroiddev.com/...",
       "chapter": "ch07",
       "processed_at": "2026-11-06T06:20:19.923491+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 19,
-      "target_path": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
-      "route_confidence": 16,
+      "action": "quarantined-misroute",
+      "score": 0,
+      "target_path": null,
+      "route_confidence": 0,
       "route_terms": [
         "t13",
         "the",
         "smoothness",
         "ch07-smoothness"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-by-apply",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_status": null,
+      "previous_score": 19,
+      "previous_route_confidence": 16,
+      "previous_route_status": "existing-chapter-routed",
+      "previous_target_path": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "status": "quarantined",
+      "quarantine_reason": "材料讨论 Compose 重组、参数稳定性，以及用 ASM 或 Kotlin IR 注入状态变化日志；目标章节讨论设备能量、BatteryStats/PowerStats 归因和 OEM 后台限制。材料未提供可补入该章的功耗证据、后台限制机制或 Android 17 版本边界。t13、the、smoothness 和历史 ch07-smoothness 路径标签不能证明主题匹配。正文与 frontmatter 保持不变，不推测其他目标章节。",
+      "quarantined_at": "2026-11-06T21:17:06+08:00",
+      "quarantined_run_id": "20261106-211520-3c81c4a2",
+      "body_apply_decision": "quarantined-misroute",
+      "body_apply_decision_at": "2026-11-06T21:17:06+08:00",
+      "body_apply_decision_run_id": "20261106-211520-3c81c4a2",
+      "finding_id": "finding-routing-71c255b1bb4a",
+      "routing_finding": {
+        "id": "finding-routing-71c255b1bb4a",
+        "type": "routing-mismatch",
+        "scope": "source-routing",
+        "severity": "P2",
+        "status": "open",
+        "summary": "Compose 重组监控材料误路由到功耗诊断与 OEM 后台限制章节",
+        "details": "全文的性能因素、重组日志和编译期插桩章节均围绕 Compose 页面更新；没有功耗测量、UID 能量归因、后台限制或豁免的可核验证据。目标章节虽保留 ch07-smoothness 历史合并路径，该路径不能替代正文主题匹配。核验路由前保持隔离，不将该材料标记为已应用。",
+        "target_path": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+        "source_url": "https://juejin.cn/post/7703840281963003913",
+        "source_paths": [
+          "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-06-77038402-提升 Android Compose 页.md"
+        ],
+        "source_evidence": [
+          "所选材料第 25–43 行：Compose 性能因素、参数稳定性和重组日志。",
+          "所选材料第 51–107 行：ASM 与 Kotlin IR 状态监控插桩。",
+          "目标章节第 119–557 行：设备能量、系统归因和功耗诊断；第 559–855 行：后台限制、豁免与 OEM 差异。"
+        ],
+        "created_by": "aiw-body-apply",
+        "created_run_id": "20261106-211520-3c81c4a2",
+        "created_at": "2026-11-06T21:17:06+08:00",
+        "observed_run_id": "20261106-211520-3c81c4a2",
+        "observed_at": "2026-11-06T21:17:06+08:00",
+        "storage_note": "路由 finding 保存在本条允许修改的 source-index 记录内；metadata/review-findings.json 不在本次允许路径中，未写入该文件。"
+      }
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
