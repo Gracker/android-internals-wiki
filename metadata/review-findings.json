@@ -13196,6 +13196,67 @@
       "summary": "Perfetto 全量输入模式遗漏绕过隐私保护和禁止 field tracing 的警告",
       "type": "source-warning-omitted",
       "updated_at": "2026-11-06T10:43:47.628607+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md",
+      "close_note": "已补充 API 36 与包含头文件前定义 _GNU_SOURCE 的双重条件，并保留 Bionic 推荐的更早版本亲和性入口；逐项对照 android-17.0.0_r1 pthread.h 388–411 行。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261106-183520-idle-audit-ccf90362",
+      "created_at": "2026-11-06T18:39:41.807928+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261106-183520-idle-audit-ccf90362",
+      "details": "android-17.0.0_r1 bionic pthread.h 的 pthread_getaffinity_np/pthread_setaffinity_np 同时要求 API 36 与 __USE_GNU；正文只交代 API 36，会让调用者漏掉编译特性宏。应保留 API 36 边界并补全 _GNU_SOURCE。",
+      "id": "finding-b6fa5d508c12",
+      "log_path": "logs/audit/2026-11-06-20261106-183520-idle-audit-ccf90362-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/pthread.h"
+      ],
+      "status": "verified",
+      "summary": "pthread 亲和性接口缺少 _GNU_SOURCE 编译可见性条件",
+      "type": "api-availability",
+      "updated_at": "2026-11-06T18:43:35.376416+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md",
+      "close_note": "已移除隐式 LIMIT 1，输出 upid/utid/tid 按线程与 CPU 独立分组并过滤 dur>0。官方真实 trace 中原查询 8 行，新查询 12 行，显式覆盖同一 GoogleCamera 进程的 995/1014/1017 三个 utid；全部九条正文 SQL 执行返回 0。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261106-183520-idle-audit-ccf90362",
+      "created_at": "2026-11-06T18:39:41.869901+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261106-183520-idle-audit-ccf90362",
+      "details": "正文以进程名与 RenderThread 名过滤后 LIMIT 1，无显式生命周期选择；官方 example_android_trace_30s.pb 中 GoogleCamera 同一 upid=31 有 utid=995/1014/1017 三个 RenderThread。原查询只选其中一个，读者看不到被排除的生命周期；同时 sched_slice 的 dur=-1 不能作为运行时间累加。应输出 upid/utid/tid 并独立分组，过滤 dur>0，说明生命周期筛选。",
+      "id": "finding-d9885caea2de",
+      "log_path": "logs/audit/2026-11-06-20261106-183520-idle-audit-ccf90362-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+        "https://storage.googleapis.com/perfetto-misc/example_android_trace_30s.pb"
+      ],
+      "status": "verified",
+      "summary": "EAS 运行分布 SQL 用 LIMIT 1 隐式挑选同名线程且未过滤未闭合切片",
+      "type": "query-correctness",
+      "updated_at": "2026-11-06T18:43:35.436033+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md",
+      "close_note": "已在 EAS 前提清单补充非 SMT 条件；依据 r6 sched-energy.rst §6.6，保留该 tag 对其他 governor 的 not recommended 原始强度。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261106-183520-idle-audit-ccf90362",
+      "created_at": "2026-11-06T18:39:41.929908+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261106-183520-idle-audit-ccf90362",
+      "details": "所列 android17-6.18-2026-06_r6 Documentation/scheduler/sched-energy.rst §6.6 明确 EAS on SMT is not supported；正文前提清单未保留该条件，容易把异构拓扑与 EM 条件外推到 SMT。补齐非 SMT 边界，不把较新在线文档的 governor not supported 覆盖到 r6 的 not recommended。",
+      "id": "finding-b2d3dd6320d4",
+      "log_path": "logs/audit/2026-11-06-20261106-183520-idle-audit-ccf90362-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-energy.rst"
+      ],
+      "status": "verified",
+      "summary": "EAS 前提清单遗漏 Linux 6.18 不支持 SMT 的适用边界",
+      "type": "version-boundary",
+      "updated_at": "2026-11-06T18:43:35.496030+08:00"
     }
   ],
   "schema_version": 1
