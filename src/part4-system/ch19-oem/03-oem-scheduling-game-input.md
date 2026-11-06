@@ -4,8 +4,10 @@ chapter: '19.3'
 section: '19.3'
 status: finalized
 applicable_versions: Android 16 (GKI 6.12) - Android 17 (API 37); OEM backport 取决于设备内核
-last_verified: '2026-08-14'
-last_verified_against: Android 17 kernel tag android17-6.18-2026-06_r6, OSDI '26 MUSCHED paper, Android 17 Binder driver, third-party hmbird_sched proc source
+last_verified: '2026-11-06'
+last_verified_against: android-17.0.0_r1 GameManagerService / InputDispatcher / ViewGroup / RefreshRatePolicy; android17-6.18-2026-06_r6 sched_ext / schedutil / Binder; OSDI '26 MUSCHED paper; Perfetto input docs; Game Mode docs; third-party hmbird_sched source
+last_source_verified_at: '2026-11-06'
+last_idle_audit_at: '2026-11-06'
 confidence: medium
 sources:
 - type: research
@@ -244,7 +246,7 @@ partial 模式同样要看运行状态：厂商节点 `partial_ctrl` 与 `SCX_OP
 
 ### `struct sched_ext_ops`：回调有默认行为
 
-BPF 调度器通过 `struct sched_ext_ops` 提供策略，这个版本的内核支持选核、入队、分发、运行状态、任务生命周期、CPU 热插拔、cgroup 和调试转储等多类回调。接口还会随内核演进，不宜用固定回调数量描述 ABI（应用二进制接口）。DSQ（dispatch queue，分发队列）是 sched_ext 保存待运行任务的队列，分为每个 CPU 的 local DSQ、共享的 global DSQ 和策略自建队列。
+BPF 调度器通过 `struct sched_ext_ops` 提供策略，这个版本的内核支持选核、入队、分发、运行状态、任务生命周期、CPU 热插拔、cgroup 和调试转储等多类回调。官方文档明确说明，这些回调、常量及 `scx_bpf_*` kfunc 没有稳定性保证，可在不同内核版本之间不经预告变更，因此不能把某个版本的接口当作稳定 ABI（应用二进制接口）。DSQ（dispatch queue，分发队列）是 sched_ext 保存待运行任务的队列，分为每个 CPU 的 local DSQ、共享的 global DSQ 和策略自建队列。
 
 常用回调可以这样理解：
 
@@ -520,7 +522,7 @@ task profile 可能同时改变 cpuset、uclamp 和其他 cgroup 属性。把上
 
 先看问题本身：120 Hz 的显示周期约为 8.33 ms，一次触控可能依次唤醒主线程、RenderThread、窗口动画线程、Binder 服务线程和合成线程。单个线程只需运行很短时间，端到端路径却跨越多个进程和同步点。
 
-`nice` 值是 fair 调度类的权重输入；仅降低发起线程的 `nice` 值，远端 Binder 线程或锁持有者不会跟着加速。把大量线程改成实时策略 `SCHED_FIFO` / `SCHED_RR`，又会带来普通任务饥饿、功耗和温升风险。
+`nice` 值是 fair 调度类的权重输入。Android 17 Binder 驱动会为同步事务继承受支持的调用方调度策略与优先级，再结合服务节点配置和接收线程的权限、资源限制确定实际值；降低调用方的 `nice` 值可能影响远端 Binder 线程，但不保证它更快完成工作。普通锁持有者也不会仅因等待方降低 `nice` 值就自动获得提升，是否传播优先级取决于锁的实现。把大量线程改成实时策略 `SCHED_FIFO` / `SCHED_RR`，又会带来普通任务饥饿、功耗和温升风险。
 
 MUSCHED 把工作分为两侧：
 
@@ -638,9 +640,9 @@ flowchart LR
 ### AOSP Game Mode 提供了什么
 
 
-Game Mode API 和相关干预机制在部分 Android 12 设备上可用；从 Android 13 起，该能力面向运行 Android 13 及以上的设备提供。官方文档要求游戏每次从暂停状态恢复时重新调用 `GameManager#getGameMode()`，因为用户可能在暂停期间切换 Standard、Performance 或 Battery 模式。游戏可据此调整画质、目标帧率和资源使用。
+Game Mode API 和相关干预机制在部分 Android 12 设备上可用；从 Android 13 起，该能力面向运行 Android 13 及以上的设备提供。官方文档要求游戏每次从暂停状态恢复时重新调用 `GameManager#getGameMode()`，因为用户可能在暂停期间切换 Standard、Performance 或 Battery 模式。这里的 Battery 是游戏级省电模式，不改变系统级 Android 省电模式。游戏可据此调整画质、目标帧率和资源使用。
 
-游戏模式干预（Game Mode interventions）是设备厂商为未自行适配的游戏设置的系统侧优化，可包含帧率上限（FPS throttling）和分辨率缩放。游戏声明支持某个 Game Mode 后，需要自行完成对应优化；平台会清除此前针对该模式施加的厂商干预，避免两套策略冲突。这类干预没有定义输入事件的调度顺序。
+游戏模式干预（Game Mode interventions）是设备厂商为未自行适配的游戏设置的系统侧优化，可包含帧率上限（FPS throttling）和分辨率缩放。官方文档提醒，OEM 可能在未征求开发者意见的情况下施加干预。游戏声明支持某个 Game Mode 后，需要自行完成对应优化；平台会清除此前针对该模式施加的厂商干预，避免两套策略冲突。这类干预没有定义输入事件的调度顺序。
 
 #### `GAME` 与 `GAME_LOADING` 是 Power HAL 信号
 
@@ -699,7 +701,7 @@ sp<WindowInfoHandle> DispatcherWindowInfo::findTouchedWindowAt(
 }
 ```
 
-遍历顺序是从前到后，但位于最上层仍不足以成为目标；窗口必须通过 `windowAcceptsTouchAt()` 对显示屏、可见性、可触摸区域和安全条件的检查。游戏模式没有参与这个函数。
+遍历顺序是从前到后，但位于最上层仍不足以成为目标。`windowAcceptsTouchAt()` 检查显示屏、可见性、可触摸配置和坐标是否落在可触摸区域内；后续的 `canWindowReceiveMotion()` 还会检查定向注入目标、连接状态和遮挡可信性等条件。游戏模式没有参与这两个函数。
 
 #### `FOREGROUND` 是目标属性
 
@@ -783,7 +785,7 @@ Unity、Unreal、GameActivity 或主要使用原生代码的游戏，常把输�
 
 刷新率从 60 Hz 提升到 120 Hz，刷新间隔从约 16.67 ms 变为约 8.33 ms；144 Hz 的间隔约为 6.94 ms。游戏若能按时产出帧，输入等待下一次可见更新的时间可能缩短。应用或 GPU 已经积压时，提高刷新率既换不来 `MotionEvent` 更早送达，也补不回已经错过的渲染提交时限。
 
-Game Mode 还可能通过 FPS throttling 干预设置帧率上限；这种干预只能限速，不能把游戏从 60 FPS 提升到 120 FPS。Perfetto 的 `android.game_interventions` 数据源可在 userdebug 构建上记录当前 Game Mode 与干预配置，SQL 中对应 `android_game_intervention_list` 表。分析时要同时核对屏幕刷新率、游戏目标 FPS 和画面呈现节奏，也就是相邻画面实际显示的间隔。
+Android 13 起提供 FPS throttling 游戏模式干预，用来设置帧率上限；它不能把游戏从 60 FPS 提升到 120 FPS。它与应用自身的帧调度同时启用时，最终帧率通常取两者较低的目标值；但应用若靠强制休眠渲染线程控制帧率，官方文档提醒，这项干预无法进一步限速。Perfetto 的 `android.game_interventions` 数据源可在 userdebug 构建上记录当前 Game Mode 与干预配置，SQL 中对应 `android_game_intervention_list` 表。分析时要同时核对屏幕刷新率、游戏目标 FPS 和画面呈现节奏，也就是相邻画面实际显示的间隔。
 
 ### OEM 可能改动的层级
 
@@ -816,7 +818,7 @@ Game Service 没有定义触摸优先级。游戏空间中的肩键映射、防�
 
 图：dispatch、handling 和 ack 组成从分发到确认的区间；end_to_end 从 InputReader 读取延伸到关联帧呈现，缺失或推测关联必须标明。
 
-Android 的 Perfetto 数据源 `android.input.inputevent` 能记录 InputReader 和 InputDispatcher 事件。官方配置明确规定，详细输入跟踪只能在可调试的 userdebug 或 eng 构建上采集，不能用于普通量产 user 构建。该数据源可按规则记录 InputDispatcher 的入站事件、发往各目标窗口的事件和内核 evdev 事件；完整模式还可能包含敏感的坐标或按键内容。
+Android 的 Perfetto 数据源 `android.input.inputevent` 能记录 InputReader 和 InputDispatcher 事件。官方配置明确规定，详细输入跟踪只能在可调试的 userdebug 或 eng 构建上采集，不能用于普通量产 user 构建。该数据源可按规则记录 InputDispatcher 的入站事件、发往各目标窗口的事件和内核 evdev 事件。`TRACE_MODE_TRACE_ALL` 会绕过可调试构建上的全部隐私保护，记录系统处理的所有输入事件，包括敏感的坐标或按键内容；官方限定它只用于本地设备或测试，禁止用于用户现场采集（field tracing）。按规则采集时，`match_all_packages` 适合限定允许记录的目标包；用 `match_any_packages` 放行带 spy window 的 SystemUI 等包，可能把同一显示屏上其他应用的输入一并记录。
 
 Trace Processor 的 `android.input` 标准库提供 `android_input_events` 表。输入通过套接字式通道交付，应用处理后会返回 ACK，因此可以分成以下时间段：
 
