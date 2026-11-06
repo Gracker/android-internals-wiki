@@ -13257,6 +13257,68 @@
       "summary": "EAS 前提清单遗漏 Linux 6.18 不支持 SMT 的适用边界",
       "type": "version-boundary",
       "updated_at": "2026-11-06T18:43:35.496030+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "close_note": "已将 7.2 改为 trigger 生命周期、事件监听及 parse_psi_line 统计行解析；核对 android-17.0.0_r1 psi.cpp:36-121 与 lmkd.cpp:2093-2137，静态验收通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261106-223519-idle-audit-e574f072",
+      "created_at": "2026-11-06T22:39:12.622383+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261106-223519-idle-audit-e574f072",
+      "details": "7.2 首句的“只负责”排除了基线 libpsi/psi.cpp:109-121 已实现、并由 lmkd.cpp:2093-2137 调用的 parse_psi_line；应明确其封装 trigger 生命周期、EPOLLPRI 监听和统计行解析，不承载查杀策略。",
+      "id": "finding-9c1c9f88b7c7",
+      "log_path": "logs/audit/2026-11-06-20261106-223519-idle-audit-e574f072-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/libpsi/psi.cpp",
+        "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp"
+      ],
+      "status": "verified",
+      "summary": "libpsi 职责被缩窄为 trigger 注册与销毁，遗漏统计行解析",
+      "type": "source-mismatch",
+      "updated_at": "2026-11-06T22:43:01.369029+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "close_note": "已补 mmd 默认关闭与 swapon_all/旧配置迁移边界，并按 android-17.0.0_r1 CachedAppOptimizer.java:321,1205-1207,1798-1949,2250-2270 收窄按进程写回的启用、候选筛选及服务支持条件；静态验收通过，未执行设备写回实验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261106-223519-idle-audit-e574f072",
+      "created_at": "2026-11-06T22:39:12.689834+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261106-223519-idle-audit-e574f072",
+      "details": "7.3 将延迟后请求 mmd 写回写成缓存进程的一般后续步骤，未交代 feature flag、默认 false 的 DeviceConfig、Activity/swap/GPU/DMA-BUF 筛选和服务能力检查。官方 mmd 文档另明确 mmd ZRAM setup/writeback/recompression 默认 false，接管 setup 后 swapon_all 的 ZRAM 路径不再执行，旧写回配置被忽略。须收窄流程并保留启用与迁移条件。",
+      "id": "finding-4093f76da63d",
+      "log_path": "logs/audit/2026-11-06-20261106-223519-idle-audit-e574f072-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/perf/mmd",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java"
+      ],
+      "status": "verified",
+      "summary": "mmd 按进程写回叙述遗漏默认关闭、候选筛选和旧 ZRAM 配置迁移边界",
+      "type": "missing-applicability-boundary",
+      "updated_at": "2026-11-06T22:43:01.431010+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "close_note": "已按 android-17.0.0_r1 lmkd.cpp:4175-4199 补明 mlockall EINVAL 被忽略、其余设置失败告警且不中止启动；静态验收通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261106-223519-idle-audit-e574f072",
+      "created_at": "2026-11-06T22:42:25.949095+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261106-223519-idle-audit-e574f072",
+      "details": "7.1 将 mlockall 与 SCHED_FIFO 设置失败统一写为记录 warning；基线 lmkd.cpp:4175-4199 对 mlockall 的 EINVAL 明确忽略，其他失败仅告警且不中止启动。应保留该错误处理边界。",
+      "id": "finding-705a1a8c766b",
+      "log_path": "logs/audit/2026-11-06-20261106-223519-idle-audit-e574f072-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp"
+      ],
+      "status": "verified",
+      "summary": "lmkd 锁页失败日志描述遗漏 EINVAL 静默忽略分支",
+      "type": "source-mismatch",
+      "updated_at": "2026-11-06T22:43:01.493046+08:00"
     }
   ],
   "schema_version": 1
