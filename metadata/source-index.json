@@ -6460,6 +6460,25 @@
         "observed_at": "2026-11-06T21:17:06+08:00",
         "storage_note": "路由 finding 保存在本条允许修改的 source-index 记录内；metadata/review-findings.json 不在本次允许路径中，未写入该文件。"
       }
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-07-77019798-删掉 1.1 万行 C 代码，Rust 正式接手 And.md",
+      "title": "[技术文章] 删掉 1.1 万行 C 代码，Rust 正式接手 Android BinderLinux 正在用 Rust 替换 And",
+      "summary": "> 发布时间: 2026-10-30T00:59:40.000Z > 原文链接: https://juejin.cn/post/7701979838148722724 2026-10-30 1,043 阅读11分钟 Linux 正在用 Rust 替换 Android Binder 驱动的 C 实现。这说明，内存安全正在变成实际的工程选择。 15 年多来，Android 的...",
+      "chapter": "ch04",
+      "processed_at": "2026-11-07T06:20:19.966048+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
+      "route_confidence": 21,
+      "route_terms": [
+        "and",
+        "juejin.cn",
+        "linux",
+        "binder",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
