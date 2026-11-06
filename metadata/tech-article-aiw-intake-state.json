@@ -7491,6 +7491,42 @@
       "status": "appended",
       "title": "Android 架构七条铁律：架构师真正设计的不是代码，而是秩序前段时间，和一个年轻开发者聊 Android 架构。 他"
     },
+    "source/juejin-android/2026-11-07-77019798-删掉 1.1 万行 C 代码，Rust 正式接手 And.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "53c1228bb310fbd3",
+      "last_appended": "2026-11-07T05:25:19.951101+08:00",
+      "last_seen": "2026-11-07T05:25:19.951101+08:00",
+      "mtime": 1793996344.6797385,
+      "score": 20,
+      "sha256": "0cccf616045bd6b131ac952390a345de01ec0808faf99fed60c35f782bf6f801",
+      "size": 11666,
+      "status": "appended",
+      "title": "删掉 1.1 万行 C 代码，Rust 正式接手 Android BinderLinux 正在用 Rust 替换 And"
+    },
+    "source/juejin-android/2026-11-07-77019911-最近 Android 有什么更新：Android De.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "295429d5165dbd11",
+      "last_appended": "2026-11-07T05:25:19.951101+08:00",
+      "last_seen": "2026-11-07T05:25:19.951101+08:00",
+      "mtime": 1793996344.680696,
+      "score": 21,
+      "sha256": "369bc8810bb7f458e8e6ff381009acf2ead021ec153ce29da39a28a01486c663",
+      "size": 8723,
+      "status": "appended",
+      "title": "最近 Android 有什么更新：Android Dev Summit 2026 技术解读Android Studio"
+    },
+    "source/juejin-android/2026-11-07-77038593-Flutter 可以更直接地调用原生 API 了.md": {
+      "chapter": "待分类",
+      "entry_id": "270f6befde6fc8fb",
+      "last_appended": "2026-11-07T05:25:19.951101+08:00",
+      "last_seen": "2026-11-07T05:25:19.951101+08:00",
+      "mtime": 1793996344.681567,
+      "score": 11,
+      "sha256": "37a4a667abaa0d455ad14dc82a018d6a63d910499477e9822f8fad0180ae859b",
+      "size": 4896,
+      "status": "appended",
+      "title": "Flutter 可以更直接地调用原生 API 了，Dart Direct Native Interop最近刚好有网友聊这"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -10993,24 +11029,24 @@
     }
   },
   "last_report": {
-    "appended": 16,
-    "considered": 17,
-    "cutoff": "2026-11-05T05:20:20.084243+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-06.md",
+    "appended": 3,
+    "considered": 3,
+    "cutoff": "2026-11-06T05:20:19.844160+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-07.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2498,
+    "scanned": 2501,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1428,
       "path": 31,
-      "unchanged": 1022
+      "unchanged": 1039
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-06T05:25:19.844160+08:00",
+  "last_run_at": "2026-11-07T05:25:19.951101+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
