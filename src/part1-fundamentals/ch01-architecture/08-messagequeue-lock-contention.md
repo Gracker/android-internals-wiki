@@ -2,13 +2,13 @@
 title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.8'
 section: '1.8'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
 last_verified: '2026-11-06'
 last_source_verified_at: '2026-11-06'
-verification_scope_note: '2026-11-06 复核 Android 17 队列、ART Monitor、bionic/PI-futex、Binder 与 AMS/ATMS/WMS 锁边界，核对官方迁移及 API 生命周期说明；Perfetto SQL 已在公开历史测试轨迹执行，不代表 Android 17 设备性能实测。'
+verification_scope_note: '2026-11-06 复核 Android 17 队列、ART Monitor、bionic/PI-futex、Binder 与 AMS/ATMS/WMS 锁边界，核对官方迁移及 API 生命周期说明；另核对 kernel Binder/RPC 分流、oneway 提交、单节点串行与异步 buffer 限额。Perfetto SQL 已在公开历史测试轨迹执行，不代表 Android 17 设备性能实测。'
 last_idle_audit_at: '2026-10-28T14:38:19+08:00'
-last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex/pthread.h, libbinder, AMS/ATMS/WMS/WindowProcessController/OomAdjuster, Perfetto stdlib SQL) + Android 17 official MessageQueue/TestLooperManager/IdleHandler docs + ACK android17-6.18-2026-06_r6
+last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex/pthread.h, libbinder BpBinder/IPCThreadState/ProcessState, AMS/ATMS/WMS/WindowProcessController/OomAdjuster, Perfetto stdlib SQL) + Android 17 official MessageQueue/TestLooperManager/IdleHandler docs + ACK android17-6.18-2026-06_r6 (binder/binder_alloc)
 confidence: high
 sources:
 - type: aosp
@@ -95,6 +95,20 @@ sources:
 - type: article
   path: https://juejin.cn/post/7703410754594832410
   role: AMS/ATMS/WMS 架构材料原文；不沿用其 Android 16 产品默认配置
+- type: article
+  path: 技术文章/source/juejin-android/2026-11-06-77034124-Binder 不只是 IPC：从一次跨进.md
+  role: oneway 资源与等待边界、kernel Binder/RPC 传输区分提示；实现按 Android 17 与对应 ACK 核验
+- type: article
+  path: https://juejin.cn/post/7703412433470046246
+  role: Binder 与 AAOS 架构材料原文；仅采用与等待链诊断相关的内容
+- type: aosp
+  path: frameworks/native/libs/binder/BpBinder.cpp @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/libs/binder/IPCThreadState.cpp @ android-17.0.0_r1
+- type: kernel
+  path: kernel/common/drivers/android/binder_alloc.c @ android17-6.18-2026-06_r6
+- type: official
+  path: https://source.android.com/docs/core/architecture/ipc/binder-threading
 tags:
   - looper
   - handler
@@ -112,7 +126,7 @@ related_chapters:
 - '1.9'
 - '9.1'
 last_review_finalize_at: '2026-11-06T08:17:51+08:00'
-last_body_apply_at: '2026-11-06T07:19:12+08:00'
+last_body_apply_at: '2026-11-06T09:19:18+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md
@@ -720,7 +734,9 @@ PI 解决的是调度这一段，锁设计本身的问题——临界区过大�
 
 ### 5. Binder 等待与 Java 锁等待是两条不同路径
 
-同步 Binder 调用跨越调用端（client）、Binder 驱动和服务端（server）：
+下面的驱动、线程池和事务查询针对跨进程 kernel Binder。Android 17 的 `BpBinder::transact()` 会区分代理类型：kernel Binder 交给 `IPCThreadState`，RPC Binder 交给 `RpcSession`。分析前先确认实际传输路径，驱动等待队列与事务优先级的解释不直接套用到 Binder RPC。[来源: https://juejin.cn/post/7703412433470046246；已验证: frameworks/native/libs/binder/BpBinder.cpp，BpBinder::transact() @ android-17.0.0_r1]
+
+同步 kernel Binder 调用跨越调用端（client）、Binder 驱动和服务端（server）：
 
 ```text
 Client thread
@@ -774,6 +790,14 @@ Android 17 的 `ProcessState.cpp` 定义：
 - 服务可以在启动线程池前通过 API 配置不同上限。
 
 所以，把 Binder 线程池概括成“固定 15 条”或“固定 16 条”都会误导性能分析。线程数只是容量的一部分；一个工作线程长时间持锁或执行缓慢 I/O，仍可能让其他事务排队。
+
+#### 5.3 `oneway` 的提交、串行与容量边界
+
+跨进程 kernel Binder 的 `oneway` 让调用方不等待业务回复，提交本身仍有成本。Android 17 的 `IPCThreadState::transact()` 在 `TF_ONE_WAY` 分支中也会调用 `waitForResponse(nullptr, nullptr)`；正常提交后，收到 `BR_TRANSACTION_COMPLETE` 就结束提交等待。这个通知不表示服务方法已经执行完，不能据此保证调用方完全不会等待。[来源: https://juejin.cn/post/7703412433470046246；已验证: frameworks/native/libs/binder/IPCThreadState.cpp，transact()/waitForResponse() @ android-17.0.0_r1]
+
+服务端还有单节点串行约束。在 ACK `android17-6.18-2026-06_r6` 中，`binder_proc_transaction()` 发现目标节点已有异步事务时，会把后续事务放入该节点的 `async_todo`；当前事务的 buffer 释放时，`binder_free_buf()` 才推进下一项。因此，增加线程池线程不能让同一个 Binder node 的多个 `oneway` 事务同时执行；不同 node 仍可由不同线程并行处理。[已验证: kernel/common/drivers/android/binder.c，binder_proc_transaction()/binder_free_buf() @ android17-6.18-2026-06_r6；https://source.android.com/docs/core/architecture/ipc/binder-threading，Serialization of asynchronous transactions]
+
+异步队列也受目标进程的 buffer 额度约束：`binder_alloc_new_buf_locked()` 会检查 `free_async_space`，不足时用 `ERR_PTR(-ENOSPC)` 返回分配错误，不会无限接收事务。排查高频回调积压时，既要看服务端处理速度，也要检查提交失败与异步资源压力。合并事件或仅保留最新值前，要先确认业务允许丢弃中间状态。[来源: https://juejin.cn/post/7703412433470046246；已验证: kernel/common/drivers/android/binder_alloc.c，binder_alloc_new_buf_locked() @ android17-6.18-2026-06_r6]
 
 ### 6. `system_server` 的 Binder 等待与服务端锁
 
@@ -944,6 +968,10 @@ LIMIT 30;
 
 “调用端时间长、服务端时间短”可能意味着事务排队、线程调度或回复返回延迟；“服务端时间长”也不等同于一直执行 CPU 计算，服务端可能大部分时间都在等待锁、I/O 或嵌套 Binder 调用。
 
+上述查询的 `WHERE is_sync` 只覆盖同步事务。排查 `oneway` 时，把筛选改为 `WHERE NOT is_sync`；若要找发送到接收间隔较长的候选，再把排序改为 `ORDER BY server_ts - client_ts DESC`，沿事务 flow 核对两端。这个间隔包含事务送达与调度等开销，不能直接当作纯排队时间或调用方阻塞时间。[已验证: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql，_binder_async_txn_raw/_binder_async_txn/android_binder_txns @ android-17.0.0_r1]
+
+异步行中的 `client_dur` 与 `server_dur` 分别来自 `binder transaction async` 和 `binder async rcv` 区段，不能沿用同步事务的耗时解释。服务方法执行范围要结合 `aidl_ts`、`aidl_dur` 或业务埋点确认；方法埋点可能缺失，接收标记的时长也不能替代业务处理时长。[已验证: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql，_async_binder_reply/_binder_async_txn 与 aidl_ts/aidl_dur 字段 @ android-17.0.0_r1]
+
 ### 9. 三个常见现场怎样推理
 
 #### 现场一：主线程出现 `monitor contention with ...`
@@ -1054,7 +1082,7 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 
 ### 结论
 
-锁竞争分析要还原完整的等待链。Java Monitor 用 `android_monitor_contention` 查找等待者与持锁者；原生互斥锁要从 futex 候选回到原生调用栈和初始化代码；Binder 要用事务与回复连起调用端和服务端；MessageQueue 还要区分正常的原生轮询与旧版监视器锁竞争。
+锁竞争分析要还原完整的等待链。Java Monitor 用 `android_monitor_contention` 查找等待者与持锁者；原生互斥锁要从 futex 候选回到原生调用栈和初始化代码。同步 Binder 用事务与回复连起调用端和服务端，`oneway` 则核对发送、接收与服务端业务区段。[已验证: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql @ android-17.0.0_r1] MessageQueue 还要区分正常的原生轮询与旧版监视器锁竞争。
 
 我们找到持锁者后还要继续判断：它正在 CPU 上运行，还是处于 Runnable 状态却没有被调度？它是否阻塞在另一把锁、I/O 或 Binder 上？找到整条等待链中推不动的节点，缩短临界区、拆锁、调整线程模型、启用 PI 或采用无锁结构才有明确目标。
 
@@ -1085,6 +1113,11 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 - [AOSP：bionic pthread_mutex.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_mutex.cpp)
 - [AOSP：bionic pthread.h（API 可用性，android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/pthread.h)
 - [AOSP：libbinder ProcessState.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+- [掘金：Binder 不只是 IPC：从一次跨进程调用看懂 Android 与 AAOS 的架构演进](https://juejin.cn/post/7703412433470046246)
+- [AOSP：libbinder BpBinder.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/BpBinder.cpp)
+- [AOSP：libbinder IPCThreadState.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
+- [AOSP 文档：Binder threading](https://source.android.com/docs/core/architecture/ipc/binder-threading)
+- [ACK：Binder buffer allocator（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)
 - [AOSP：ActivityManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [AOSP：ActivityTaskManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityTaskManagerService.java)
 - [AOSP：WindowManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)
