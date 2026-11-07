@@ -7527,6 +7527,30 @@
       "status": "appended",
       "title": "Flutter 可以更直接地调用原生 API 了，Dart Direct Native Interop最近刚好有网友聊这"
     },
+    "source/juejin-android/2026-11-08-76623252-玩Android×AI Coding：从.md": {
+      "chapter": "待分类",
+      "entry_id": "51cc1c2f3df2b17c",
+      "last_appended": "2026-11-08T05:25:19.930335+08:00",
+      "last_seen": "2026-11-08T05:25:19.930335+08:00",
+      "mtime": 1794082617.8629136,
+      "score": 9,
+      "sha256": "64b53147d9c70b9eff9f001350f309d8ff0d740e4d2e86c2763031b91e28deeb",
+      "size": 30007,
+      "status": "appended",
+      "title": "玩Android×AI Coding：从产品到代码，完整跑通一套 AI 软件研发工作流从产品、UX、视觉设计到工程搭建与"
+    },
+    "source/juejin-android/2026-11-08-76748189-Android 版 MCP 正式登场：A.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "38781a4e4c3b0121",
+      "last_appended": "2026-11-08T05:25:19.930335+08:00",
+      "last_seen": "2026-11-08T05:25:19.930335+08:00",
+      "mtime": 1794082617.862639,
+      "score": 12,
+      "sha256": "c85f329f5cb723503b504627f29a571c36cd2305acca5cd6b12c1b63bbf0da00",
+      "size": 14066,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11029,24 +11053,24 @@
     }
   },
   "last_report": {
-    "appended": 3,
-    "considered": 3,
-    "cutoff": "2026-11-06T05:20:19.844160+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-07.md",
+    "appended": 2,
+    "considered": 2,
+    "cutoff": "2026-11-07T05:20:19.951101+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-08.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2501,
+    "scanned": 2503,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1428,
       "path": 31,
-      "unchanged": 1039
+      "unchanged": 1042
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-07T05:25:19.951101+08:00",
+  "last_run_at": "2026-11-08T05:25:19.930335+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
