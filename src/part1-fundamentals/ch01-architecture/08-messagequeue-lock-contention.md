@@ -4,11 +4,12 @@ chapter: '1.8'
 section: '1.8'
 status: ready-for-review
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-11-06'
-last_source_verified_at: '2026-11-06'
-verification_scope_note: '2026-11-06 复核 Android 17 队列、ART Monitor、bionic/PI-futex、Binder 与 AMS/ATMS/WMS 锁边界，核对官方迁移及 API 生命周期说明；另核对 kernel Binder/RPC 分流、oneway 提交、单节点串行与异步 buffer 限额。Perfetto SQL 已在公开历史测试轨迹执行，不代表 Android 17 设备性能实测。'
+last_verified: '2026-11-07'
+last_source_verified_at: '2026-11-07'
+verification_scope_note: '2026-11-07 复核 DeliQueue 启用与删除协议、Message 池复用、官方迁移及测试 API 生命周期、性能数字；按 Android 17 Perfetto 与对应 ACK 核对 blocked_function 采集边界并修正 futex 查询。其余 Monitor、Binder 与系统服务锁结论沿用 2026-11-06 核验。SQL 仅用公开历史轨迹复跑，不代表 Android 17 设备性能实测。'
+last_deep_review_at: '2026-11-07T20:42:10+08:00'
 last_idle_audit_at: '2026-10-28T14:38:19+08:00'
-last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex/pthread.h, libbinder BpBinder/IPCThreadState/ProcessState, AMS/ATMS/WMS/WindowProcessController/OomAdjuster, Perfetto stdlib SQL) + Android 17 official MessageQueue/TestLooperManager/IdleHandler docs + ACK android17-6.18-2026-06_r6 (binder/binder_alloc)
+last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex/pthread.h, libbinder BpBinder/IPCThreadState/ProcessState, AMS/ATMS/WMS/WindowProcessController/OomAdjuster, Perfetto stdlib SQL/ftrace_parser) + Android 17 official MessageQueue/TestLooperManager/IdleHandler docs + ACK android17-6.18-2026-06_r6 (binder/binder_alloc, sched/core, futex/waitwake)
 confidence: high
 sources:
 - type: aosp
@@ -75,6 +76,12 @@ sources:
   path: kernel/common/Documentation/locking/pi-futex.rst @ android17-6.18-2026-06_r6
 - type: kernel
   path: kernel/common/kernel/futex/pi.c @ android17-6.18-2026-06_r6
+- type: kernel
+  path: kernel/common/kernel/sched/core.c @ android17-6.18-2026-06_r6
+- type: kernel
+  path: kernel/common/kernel/futex/waitwake.c @ android17-6.18-2026-06_r6
+- type: aosp
+  path: external/perfetto/src/trace_processor/importers/ftrace/ftrace_parser.cc @ android-17.0.0_r1
 - type: aosp
   path: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql @ android-17.0.0_r1
 - type: aosp
@@ -582,7 +589,7 @@ Android 性能轨迹中，下面五类等待最容易混淆。
 | --- | --- | --- | --- |
 | Java 监视器锁 | `synchronized`、`wait()` 返回前重新获取锁 | ART Monitor / LockWord | `android_monitor_contention`、等待者与持锁者的方法 |
 | Java 并发包 | `ReentrantLock`、`Condition`、`LockSupport.park()` | 抽象队列同步器（AQS）、线程挂起/唤醒、原生等待 | Java 调用栈、线程状态、相关业务埋点 |
-| 原生锁 | `pthread_mutex`、`std::mutex`、条件变量 | bionic + futex | 原生调用栈、`blocked_function`、锁埋点 |
+| 原生锁 | `pthread_mutex`、`std::mutex`、条件变量 | bionic + futex | 问题时间窗口内的 `thread_state`、等待现场调用栈、锁埋点 |
 | Binder IPC | 同步 AIDL、服务端线程池 | libbinder + Binder 驱动 | Binder 事务/回复、调用端/服务端线程状态 |
 | Looper 等待 | `MessageQueue.next()` | Java 队列 + 原生 Looper + epoll | 是否有到期消息、`nativePollOnce()`、MessageQueue 锁竞争 |
 
@@ -678,7 +685,7 @@ futex（fast userspace mutex）让用户态原子状态与内核等待队列协�
 
 `bionic/libc/bionic/pthread_mutex.cpp` 中未启用优先级继承（Priority Inheritance，PI）的互斥锁，在发生竞争时调用 `__futex_wait_ex()`，释放有等待者的锁时调用 `__futex_wake_ex()`。没有竞争时，不需要每次都进入内核。
 
-这也是 `blocked_function` 里看到 `futex_*` 时要停一步的原因：
+这也是在等待现场的调用栈或系统调用记录里看到 `futex_*` 时，需要继续确认同步对象的原因：
 
 - 它可能来自 `pthread_mutex`；
 - 可能来自条件变量；
@@ -914,25 +921,29 @@ LIMIT 30;
 
 #### 8.2 原生 futex 等待
 
-没有专门的锁埋点时，可以先从 `thread_state.blocked_function` 查找耗时较长的 futex 等待。下面的 SQL 列出最长的 50 个候选区间：
+普通 futex 等待通常表现为可中断睡眠 `S`，不能靠 `thread_state.blocked_function` 的函数名筛选来完整识别。Android 17 的 Perfetto 从 `sched_blocked_reason` 事件解析这个字段；在 ACK `android17-6.18-2026-06_r6` 中，调度器只对含 `TASK_UNINTERRUPTIBLE` 的睡眠状态发出该事件，普通 futex 等待却设置为 `TASK_INTERRUPTIBLE | TASK_FREEZABLE`。因此，筛选 `blocked_function GLOB '*futex*'` 会漏掉这类等待，即使已经启用 `sched_blocked_reason` 采集也一样。[已验证: kernel/common/kernel/sched/core.c，try_to_wake_up()；kernel/common/kernel/futex/waitwake.c，futex_wait_setup() @ android17-6.18-2026-06_r6；external/perfetto/src/trace_processor/importers/ftrace/ftrace_parser.cc，ParseSchedBlockedReason() @ android-17.0.0_r1]
+
+没有锁埋点时，先从 `thread_state` 的 `S` 状态保留候选。下面的查询列出最长的 50 个已结束睡眠区间；用于具体问题时，应在 `WHERE` 中再限定进程、线程和问题发生的时间窗口：
 
 ```sql
 SELECT
+  ts.id AS state_id,
   p.name AS process_name,
   t.name AS thread_name,
+  t.utid,
   ts.ts,
-  ts.dur / 1e6 AS blocked_ms,
+  ts.dur / 1e6 AS sleep_ms,
   ts.state,
   ts.blocked_function
 FROM thread_state ts
 JOIN thread t ON t.utid = ts.utid
 LEFT JOIN process p ON p.upid = t.upid
-WHERE ts.blocked_function GLOB '*futex*'
+WHERE ts.state = 'S' AND ts.dur > 0
 ORDER BY ts.dur DESC
 LIMIT 50;
 ```
 
-这一步只负责找候选，随后要结合原生调用栈或源码，确认它对应互斥锁、条件变量还是其他等待，并找到真正能让它继续的线程。光凭 `futex_wait` 这个函数名，还断定不了 Java 锁竞争。
+结果也会包含正常的 Looper、Binder 和条件等待，不能直接当作 futex 统计。用 `utid` 与时间区间对齐等待现场的 Java/原生调用栈、系统调用记录或锁埋点，再确认同步对象和能让它继续的线程。`blocked_function` 为 `NULL` 或函数名筛选没有结果，都不能排除 futex 等待；只有 `S` 状态或 `futex_wait` 函数名，也还断定不了 Java 锁竞争。
 
 #### 8.3 Binder 调用端与服务端
 
@@ -1128,6 +1139,9 @@ Binder 默认线程配置在历史上容易被误传。在当前 Android 17 锚�
 - [ACK：rt-mutex 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/locking/rt-mutex.rst)
 - [ACK：PI-futex 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/locking/pi-futex.rst)
 - [ACK：futex PI 实现（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/pi.c)
+- [ACK：调度器 blocked reason 触发条件（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)
+- [ACK：普通 futex 等待状态（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/waitwake.c)
+- [AOSP：Perfetto ftrace 解析器（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc)
 - [AOSP：Perfetto monitor_contention.sql（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql)
 - [AOSP：Perfetto binder.sql（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql)
 - [Perfetto：`android.monitor_contention` stdlib](https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention)
