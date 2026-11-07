@@ -3,9 +3,10 @@ title: 跨进程内存共享与端侧推理预算
 chapter: '4.10'
 status: ready-for-review
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
-last_verified: '2026-11-01'
+last_verified: '2026-11-07'
 last_verified_against: AOSP android-17.0.0_r1
-last_source_verified_at: '2026-11-01T14:38:13+08:00'
+last_source_verified_at: '2026-11-07T08:43:18+08:00'
+last_deep_review_at: '2026-11-07T08:43:18+08:00'
 last_idle_audit_at: '2026-11-01T14:38:13+08:00'
 last_body_apply_at: '2026-11-07T07:18:27+08:00'
 last_review_finalize_at: '2026-09-02T08:14:47+08:00'
@@ -39,6 +40,14 @@ sources:
   path: kernel/common/drivers/android/Makefile; binder.c; binder_alloc.c @ android17-6.18-2026-06_r6
 - type: official
   path: https://source.android.com/docs/core/architecture/kernel/android-common
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/appfunctions/GenericDocumentWrapper.java
+- type: aosp
+  path: frameworks/native/libs/binder/Parcel.cpp
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
 tags:
 - ai-agent
 - memory
@@ -98,7 +107,7 @@ adb shell cat /proc/<pid>/oom_score_adj
 
 第一条命令看 AMS 认定的进程状态和依赖关系，第二条确认该时刻写进内核的分值。测量要覆盖前台、转入后台、解绑、冻结和重新绑定这些状态变化。
 
-反过来，进程内存变大并不会直接抬高它的 `oom_score_adj`：内存大小影响的是终止该进程能释放多少内存，还可能影响同一 `adj` 档位内的选择；进程重要性仍由 AMS 的状态模型决定。
+RSS/PSS 与 `oom_score_adj` 没有固定换算关系，AMS 主要依据组件状态和依赖关系计算优先级。不过，`android-17.0.0_r1` 的 `psc/OomAdjusterImpl.java` 保留了按内存样本调整服务 A/B 分组的分支：全量更新（`doingAll`）中，若进程当前为 `SERVICE_ADJ`、尚未归入 B 组、最近内存水平非正常，且最近的 RSS/PSS 样本达到缓存恢复阈值，就会设置 `serviceB`，随后把 `adj` 改为 `SERVICE_B_ADJ`。取 RSS 还是 PSS 及阈值修正受配置控制。因此，排查服务优先级变化时，要同时核对组件状态、绑定关系和这条有条件的内存分支，不能把内存大小视为唯一依据，也不能断言它完全不参与计算。[已验证: frameworks/base/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java, 1802-1839 @ android-17.0.0_r1]
 
 ### `android:process` 的隔离范围
 
@@ -318,18 +327,17 @@ try (SharedMemory received = region) {
 
 目标应用通过 `AppFunctionService.onExecuteFunction()` 接收请求。该回调在主线程触发；模型推理、磁盘读取和网络访问必须切换到后台工作线程，完成后通过回调返回结果，并处理取消信号 `CancellationSignal`。permission-v2 路径会把 `callingPackage` 置为空字符串，把 `callingPackageSigningInfo` 置为 unknown，函数实现要放弃用这两个参数鉴权。
 
-请求中的 `GenericDocument`、`Bundle extras` 和响应对象都实现了 Parcelable，仍受 Binder 事务空间限制。大图像、文档或音频就传受控 URI 或小型句柄描述；App Functions 管的是“谁可以调用哪个函数”，大块数据仍要走合适的内容接口。
+接入时，服务还须声明对应的 action 与函数元数据，同一应用只能有一个活跃的 `AppFunctionService`。目标函数必须处于启用状态；API 版本满足和调用权限通过，不能单独保证本次执行可用。[已验证: frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java, 51-82; AppFunctionManager.java, 354-370 @ android-17.0.0_r1]
+
+请求参数与响应结果中的 `GenericDocument` 在 `android-17.0.0_r1` 中由内部 `GenericDocumentWrapper` 包装：先序列化成字节数组，再调用 `Parcel.writeBlob()`。原生 Parcel 在允许 fd 且 blob 大于 16 KiB 时使用共享区域并传递 fd；否则把 blob 内联写入 Parcel。因此，文档载荷可能不占用同等大小的 Binder 接收缓冲区，`Bundle extras` 等内联字段及句柄元数据仍受接收区容量约束。这个 16 KiB 是该实现的 blob 分流阈值，与 64 KiB 的建议 IPC 大小含义不同。[已验证: frameworks/base/core/java/android/app/appfunctions/GenericDocumentWrapper.java, 139-164; frameworks/native/libs/binder/Parcel.cpp, 117, 1822-1885 @ android-17.0.0_r1]
+
+共享区域分支仍有文档序列化、字节数组和接收端反序列化的内存成本，不能据此宣称端到端零拷贝或无限载荷。大图像、文档或音频仍可优先设计为受控 URI，便于流式读取和独立控制生命周期；App Functions 负责函数调用资格与执行协议。
 
 Android 17 / API 37 新增了 `AppFunctionUriGrant` 和 `ExecuteAppFunctionResponse.getUriGrants()`。permission-v2 开启后，目标函数可以在响应中同时返回 URI 和对应授权。`system_server` 只处理 `content://` URI，接收者固定为本次请求的调用包；目标函数能选的只有 URI 本身，以及读、写、前缀匹配和可持久化这些授权模式。ContentProvider 还必须允许 URI 授权。
 
 临时授权通常持续到设备重启；可持久化标志只表示接收方可以调用 `takePersistableUriPermission()`，不会自动把授权持久化。需要更短的生命周期时，仍要由 ContentProvider 设计一次性 URI、过期检查或主动撤销。
 
 App Functions 也不会自动拿到目标应用的全部数据：目标函数读的是目标应用自己有权访问的内容，返回哪些字段也由函数实现决定。
-
-<!-- gracker-diagram: ch04-10-appfunctions-authorization-and-uri-grants -->
-![App Functions 管资格与函数执行，大结果仍走内容协议](../../assets/diagrams/ch04/ch04-10-appfunctions-authorization-and-uri-grants.png)
-
-图：system_server 校验调用包与 UID、用户及设备策略，并在 permission-v2 下验证跨包权限和调用方—目标允许列表；同包与系统执行权限有对应例外。系统绑定受 BIND_APP_FUNCTION_SERVICE 保护的服务，主线程回调应把重任务转给 worker。响应可附 content URI 授权，系统只发给本次调用包；可持久化标志还需接收方主动领取。
 
 ### 生成式 UI 描述的物化与读取
 
@@ -435,6 +443,12 @@ kv_bytes
 
 `memory.high` 是 cgroup v2 的内存软限制，超过后会增加内存回收和执行节流压力；它不是“到值立即发生内存耗尽（OOM）”的硬上限。JNI 层实际写入的是 `memory.swap.max`，用来限制该 cgroup 可用的交换空间。具体的延迟变化取决于页面类型、工作集、交换空间、存储和内核回收，从阈值推不出固定的 P99（第 99 百分位）延迟倍数。
 
+但 MemoryLimiter 还有独立的应用终止路径。监控启用且高水位事件触发后，原生层会轮询组合指标：`memory.stat` 中的 `anon + shmem`，再加 `memory.swap.current`。它超过配置的 `memHigh + swapMax` 时，上报 `LIMIT_TYPE_ANON_SWAP`；这里使用 cgroup 计数，与进程 PSS 的口径不同。[已验证: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp, 215-218, 441-451, 488-493, 522-547, 972-1009 @ android-17.0.0_r1]
+
+Java 层收到该事件后先解除内存与交换空间限制，再发送延迟的 `MESSAGE_KILL`，通过 AMS 的 `killPids()` 请求终止进程，原因字符串为 `MemoryLimiter:AnonSwap`。该标签的 `KILL_DELAY_MS` 是 30 秒，注释说明延迟用于给可选的诊断采集留时间；代码没有在延迟结束时复查“用量已经回落就取消终止”。运行时 `memory_limiter_disable_kill` 可以阻止这条终止请求，不能把 30 秒当作保证恢复的宽限期。[已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java, 112-114, 343-350, 399-427, 512-519, 799-835 @ android-17.0.0_r1]
+
+排查退出原因时，要分别查 lmkd 终止日志和 MemoryLimiter 的 `onLimitExceeded`、`MemoryLimiter:AnonSwap` 记录，再对照目标 cgroup 的 `memory.events`、`memory.stat`、`memory.swap.current`、`memory.high` 与 `memory.swap.max`。高水位节流、框架主动终止和 lmkd 压力终止是不同路径，不能只凭 RSS/PSS 下降归因。
+
 ### lmkd 的终止目标选择
 
 lmkd 从较高 `oom_score_adj` 向较低档位搜索满足最低阈值的进程。`kill_heaviest_task` 属性以及是否进入用户可感知（perceptible）档位等条件，会影响系统是否在同一档位选择内存占用最大的进程；否则，系统可能按进程队列选择。
@@ -446,11 +460,6 @@ lmkd 从较高 `oom_score_adj` 向较低档位搜索满足最低阈值的进程�
 3. 系统推理服务占用大量内存时，被终止的可能是其他 `adj` 更高的进程；具体结果取决于当时的进程集合和设备配置。
 
 lmkd 终止日志还会读取 RSS、匿名 RSS、交换空间、dma-buf PSS 和 dma-buf RSS。排查硬件推理时，只截 Java 堆或匿名 RSS 是不够的。
-
-<!-- gracker-diagram: ch04-10-memorylimiter-and-lmkd-independent -->
-![MemoryLimiter 管限制与监控，lmkd 按压力和优先级选进程](../../assets/diagrams/ch04/ch04-10-memorylimiter-and-lmkd-independent.png)
-
-图：MemoryLimiter 启用后按状态与厂商 XML 配置 memory.high 和 memory.swap.max，前者增加回收与节流压力，后者限制该 cgroup 的交换容量；高水位并非立即 OOM。默认沙箱推理服务包可被显式豁免。lmkd 独立结合压力与 adj 搜索候选，同档位再按策略比较占用；推理命名、服务拆分和大模型大小都不产生通用 AI 保护。
 
 ## 4.10.10 一套可执行的测量方法
 
@@ -499,10 +508,12 @@ Perfetto 中可启用：
 
 - `linux.process_stats`：采样各进程的统计值；
 - `linux.sys_stats`：观察系统内存与虚拟内存计数；
-- `android.heapprofd`：采样原生内存分配器的分配记录；
+- `android.heapprofd`：默认采样 `malloc/free`（及 `new/delete`）的原生堆分配与释放；
 - Binder、线程调度、缺页和 lmkd 相关的 ftrace/atrace 跟踪事件。
 
-heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部驻留页，也替代不了 dma-buf 和加速器驱动统计；Java 堆还要结合 ART 堆转储、内存分配采样或 `dumpsys meminfo` 分析。
+heapprofd 从 Android 10 起可用。量产 `user` 构建中，目标应用须声明 `<profileable android:shell="true"/>` 或启用 `debuggable`，不满足条件的请求会得到空 profile；`userdebug` 构建也有禁止分析的关键系统服务，不能据此保证任意系统或厂商推理服务都可采样。[来源: https://perfetto.dev/docs/data-sources/native-heap-profiler#heapprofd-targets]
+
+Android 12 起，heapprofd 还可以通过 `heaps: "com.android.art"` 配置采样 Java/ART 分配。它记录对象创建时的分配调用栈，不跟踪这些对象随后何时释放或被 GC 回收，不能代替展示存活对象保留关系的 ART 堆转储。默认原生堆采样同样覆盖不了只读模型文件映射的全部驻留页，也替代不了 dma-buf 和加速器驱动统计；Java 堆分析应按问题组合 ART 堆转储、分配采样或 `dumpsys meminfo`。[来源: https://perfetto.dev/docs/data-sources/native-heap-profiler#art-allocation-profiling]
 
 
 ## 4.10.11 设计评审清单
@@ -547,11 +558,13 @@ heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部�
 | Binder 接收映射大小 | [`frameworks/native/libs/binder/ProcessState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/ProcessState.cpp) |
 | Binder 推荐 IPC 大小 | [`frameworks/base/core/java/android/os/IBinder.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/IBinder.java) |
 | 大事务失败语义 | [`frameworks/base/core/java/android/os/TransactionTooLargeException.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/TransactionTooLargeException.java) |
+| 服务 A/B 分组中的内存样本条件 | [`frameworks/base/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java)，`SERVICE_ADJ` 分支 |
 | HardwareBuffer 格式与用途 | [`frameworks/base/core/java/android/hardware/HardwareBuffer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java) |
 | CursorWindow 远端只读与动态分配 | [`frameworks/base/core/java/android/database/CursorWindow.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/database/CursorWindow.java)、[`frameworks/base/libs/androidfw/CursorWindow.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/CursorWindow.cpp) |
 | App Functions 服务保护 | [`frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionService.java) |
 | App Functions API 版本与执行入口 | [`AppFunctionManager` API reference](https://developer.android.com/reference/android/app/appfunctions/AppFunctionManager)、[`AppFunctionService` API reference](https://developer.android.com/reference/android/app/appfunctions/AppFunctionService)、[`AppFunctionManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionManager.java) |
 | 请求和响应 Parcelable 格式 | [`ExecuteAppFunctionRequest.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/ExecuteAppFunctionRequest.java)、[`ExecuteAppFunctionResponse.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/ExecuteAppFunctionResponse.java) |
+| App Functions 文档的内联/共享区域传输 | [`GenericDocumentWrapper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/GenericDocumentWrapper.java)、[`frameworks/native/libs/binder/Parcel.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/Parcel.cpp)，`writeBlob()` |
 | 调用资格校验 | [`frameworks/base/services/appfunctions/.../CallerValidatorImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/CallerValidatorImpl.java) |
 | Android 17 响应 URI 授权 | [`AppFunctionUriGrant` API reference](https://developer.android.com/reference/android/app/appfunctions/AppFunctionUriGrant)、[`AppFunctionUriGrant.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionUriGrant.java)、[`AppFunctionManagerServiceImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java) |
 | MemoryLimiter 状态映射、交换限制与推理服务豁免 | [`frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)、[`frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp) |
@@ -559,6 +572,7 @@ heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部�
 | 隔离进程 / 隔离计算进程策略 | [`system/sepolicy/private/isolated_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_app.te)、[`isolated_compute_app.te`](https://android.googlesource.com/platform/system/sepolicy/+/android-17.0.0_r1/private/isolated_compute_app.te) |
 | cgroup 内存归属与进程迁移 | [`kernel/common/Documentation/admin-guide/cgroup-v2.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)，Memory Ownership，`android17-6.18-2026-06_r6` |
 | Binder 缓冲区分配 | [`kernel/common/drivers/android/binder_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)，`android17-6.18-2026-06_r6` |
+| heapprofd 准入与 ART 分配采样 | [Perfetto 官方文档](https://perfetto.dev/docs/data-sources/native-heap-profiler)，Target processes、ART Allocation Profiling |
 | Binder 构建选择与事务接收方分配 | [`drivers/android/Makefile`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/Makefile)、[`binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)，`android17-6.18-2026-06_r6` |
 
 ## 4.10.13 小结
@@ -571,5 +585,5 @@ heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部�
 - ContentProvider 与 App Functions 提供访问控制和业务协议，大块数据仍应使用 URI、fd 或共享缓冲区。
 - 预生成/缓存 A2UI 这类生成式 UI 描述属于应用层数据物化：它能把实时模型调用拆到后台生命周期，但读入、解析和智能体状态恢复后的内存仍按持有进程记账，别写成 Android 平台共享内存的新语义。[来源: https://juejin.cn/post/7675633667490267179]
 - 权重、KV 缓存、工作区、文件映射、dma-buf 和驱动内存必须分开估算与测量。
-- MemoryLimiter 的生产阈值来自厂商 XML；源码里的 4 GiB/2 GiB 内存阈值及 2 GiB/2 GiB 交换空间阈值只是测试配置。默认沙箱推理服务还可能被豁免。
+- MemoryLimiter 的生产阈值来自厂商 XML；源码里的 4 GiB/2 GiB 内存阈值及 2 GiB/2 GiB 交换空间阈值只是测试配置。默认沙箱推理服务还可能被豁免。高水位本身只带来回收与节流压力，但组合指标 `anon + shmem + swap` 超限还可经 AMS 请求终止，需与 lmkd 区分。
 - lmkd 不识别“AI”标签。进程状态、`oom_score_adj`、设备策略、当时的进程集合与内存压力共同决定结果。
