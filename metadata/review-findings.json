@@ -13689,6 +13689,67 @@
       "summary": "用 blocked_function 筛选 futex 会漏掉普通可中断睡眠等待",
       "type": "diagnostic-query",
       "updated_at": "2026-11-07T20:45:02.664248+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已按 enqueueMessageUnchecked() 修正期限分支：更早异步消息请求唤醒，同步消息才比较屏障；在决定不唤醒且状态更新成功后屏障变化时重查。正文保留 nativeWake 与已醒计数路径的范围，不把辅助状态说成异步屏障通行判断。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261107-220519-f03887dc",
+      "created_at": "2026-11-07T22:10:26.628410+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261107-220519-f03887dc",
+      "details": "5.5 将独立屏障状态描述为判断新增异步消息是否唤醒；android-17.0.0_r1 enqueueMessageUnchecked() 中，早于唤醒期限的异步消息直接请求唤醒，只有同步消息需要比较 mSyncBarrier，并在屏障变化时重查。应补齐期限、屏障和重查的实际条件。",
+      "id": "RF-ch01-08-deliqueue-barrier-wakeup-branch",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java:430-483 @ android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "DeliQueue 屏障唤醒说明把分支判断对象写成异步消息",
+      "type": "source-mechanism-mismatch",
+      "updated_at": "2026-11-07T22:16:20.137451+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已补齐官方对服务端死亡/冻结可能无本次业务失败通知的警告，明确提交不是业务完成确认；工程建议同时覆盖 oneway 持锁风险和同步嵌套事务重入，未把异步调用误写成同步重入。官方全文与 Android 17/ACK 提交、串行和 buffer 边界均已复核。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261107-220519-f03887dc",
+      "created_at": "2026-11-07T22:10:26.691700+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261107-220519-f03887dc",
+      "details": "已有正文区分 oneway 提交与执行、串行与容量，但未保留官方 threading 指南对服务端死亡或冻结可能无业务失败通知的警告；工程步骤仅列同步 Binder 移出锁，未交代异步调用也应避免持锁以及单线程池仍有同步事务重入风险。需要按官方告警补充，不能把提交成功解释成执行确认。",
+      "id": "RF-ch01-08-binder-oneway-lifecycle-locking",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/architecture/ipc/binder-threading#identify_a_synchronous_or_asynchronous_function",
+        "https://source.android.com/docs/core/architecture/ipc/binder-threading#avoid_deadlocks"
+      ],
+      "status": "fixed",
+      "summary": "Binder 异步调用缺少执行失效与持锁重入边界",
+      "type": "api-lifecycle-boundary",
+      "updated_at": "2026-11-07T22:16:20.206436+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已解释 android-17.0.0_r1 quit(boolean safe) 上游注释保留的并发 post/退出时间读取限制；明确返回 true 不等于回调必定执行，给出停止提交与完成确认的工程边界。只修正文描述，不宣称修复平台竞态或设备复现。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261107-220519-f03887dc",
+      "created_at": "2026-11-07T22:13:39.062110+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261107-220519-f03887dc",
+      "details": "5.5 仅概述 quitSafely 处理到期消息和原生对象释放。android-17.0.0_r1 quit(boolean safe) 的上游 TODO 指出并发 post/quit 各自读取 now，可能出现 post 返回 true 但消息未执行；应向读者交代这是当前版本的源码边界，不把 TODO 当作作者占位删掉，也不承诺成功提交必定完成回调。",
+      "id": "RF-ch01-08-quitsafely-concurrent-post-boundary",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java:1167-1186 @ android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "quitSafely 说明遗漏当前 tag 的并发入队时序限制",
+      "type": "upstream-version-boundary",
+      "updated_at": "2026-11-07T22:16:20.269365+08:00"
     }
   ],
   "schema_version": 1
