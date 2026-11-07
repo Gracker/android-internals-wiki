@@ -3,8 +3,10 @@ title: Android 17 ARM MTE 内存标签扩展实战
 chapter: '4.9'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-21'
-last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; bionic ifuncs.cpp MTE dispatch checked 2026-08-21
+last_verified: '2026-11-07'
+last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; NDK and AOSP MTE docs, Bionic, linker, Zygote, and compat override policy checked 2026-11-07
+last_source_verified_at: '2026-11-07T14:40:56+08:00'
+last_idle_audit_at: '2026-11-07T14:40:56+08:00'
 confidence: high
 tags:
   - mte
@@ -38,6 +40,10 @@ sources:
   path: https://source.android.com/docs/security/test/memory-safety/arm-mte
 - type: official
   path: https://developer.android.com/ndk/guides/arm-mte
+- type: aosp
+  path: bionic/docs/mte.md
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/compat/OverrideValidatorImpl.java
 - type: research
   path: DeepResearch/2026-05-26-android-mte-asymm-auto-enablement-mechanism.md
 ---
@@ -67,7 +73,7 @@ FEAT_MTE4 容易被误当成 Android 的第四种 `memtagMode`。它属于后续
 adb shell grep -w mte /proc/cpuinfo
 ```
 
-输出里出现 `mte`，内核就已经向用户空间公布了这项能力。部分设备还需要在开发者选项里切换并重启，才会进入支持 MTE 的系统配置；开发者选项里没有这一项的设备，应用侧也补齐不了硬件或内核支持。
+输出里出现 `mte`，内核就已经向用户空间公布了这项能力。部分设备还需要在开发者选项里切换并重启，才会进入支持 MTE 的系统配置。NDK 文档把这种重启启用方式列为实验配置：可能降低设备性能或稳定性，适合应用开发测试，不建议用于日常使用。开发者选项里没有这一项的设备，应用侧也补齐不了硬件或内核支持。
 
 ## 标签生成与硬件检测机制
 
@@ -152,7 +158,7 @@ si_addr = fault address
 
 这一次访问就此作废。Android 的原生崩溃报告 tombstone 里，我们能拿到出错的程序计数器 PC 和地址；进程配置为 SYNC 时，Android 还会让 Scudo 记录内存分配与释放的调用栈，给释放后使用（use-after-free）或缓冲区溢出补上上下文。
 
-所以 SYNC 适合开发、测试，以及值得花开销换准确归因的高价值进程。它的成本随 CPU、分配模式、内存访问和调用栈记录而变，3%～30% 只能当作量级参考，具体数字要在自己的设备上测。
+所以 SYNC 适合开发、测试，以及值得花开销换准确归因的高价值进程。它的成本随 CPU、分配模式、内存访问和调用栈记录而变，具体数字要在自己的设备上测。
 
 ### ASYNC：异步报告
 
@@ -331,7 +337,7 @@ target_link_options(
     -march=armv8-a+memtag)
 ```
 
-插桩构建只应在支持 MTE 的设备上运行，官方对它的定位是调试用途。发布包若只打算检查原生堆，启用 manifest 模式就够了，不必把所有原生目标都编成 memtag 插桩版本。
+插桩构建只应在支持 MTE 的设备上运行，官方对它的定位是调试用途，并要求使用更新的 NDK。`-fsanitize=memtag` 同时启用堆、栈与全局变量相关支持；Bionic 文档提醒，旧版 Clang 生成的构建可能无法在已支持全局变量 MTE 运行时的新平台上工作。遇到这类兼容问题，应先更新 NDK 并重新构建。发布包若只打算检查原生堆，启用 manifest 模式就够了，不必把所有原生目标都编成 memtag 插桩版本。
 
 <!-- gracker-diagram: ch04-09-heap-stack-globals-coverage -->
 ![堆、栈、全局变量需要三套配合，manifest 只解决堆入口](../../assets/diagrams/ch04/ch04-09-heap-stack-globals-coverage.png)
@@ -404,7 +410,7 @@ ifunc（indirect function，间接函数）让 libc 在运行时按硬件能力�
 
 ### 无需改包的兼容性验证
 
-manifest 是 `default` 或没写这个属性的应用，也有不改包的验证办法：临时启用兼容性变更开关。
+manifest 是 `default` 或没写这个属性的应用，也有不改包的验证办法：临时启用兼容性变更开关。在普通 `user` 系统上，下面的 MTE 兼容性覆盖要求应用可调试（`android:debuggable="true"`）；`userdebug` / `eng` 系统按调试策略可放宽这项限制。普通 `user` 系统上的不可调试发布包，应通过 manifest 明确配置模式。
 
 ```bash
 adb shell am compat enable NATIVE_MEMTAG_SYNC com.example.app
@@ -492,6 +498,7 @@ MTE 在工程上要和其他措施搭着用：
 - [AOSP android-17.0.0_r1：heap_tagging.cpp](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/heap_tagging.cpp)
 - [AOSP android-17.0.0_r1：linker globals implementation](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp)
 - [AOSP android-17.0.0_r1：Zygote MTE decision](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/Zygote.java)
+- [AOSP android-17.0.0_r1：compat override policy](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/compat/OverrideValidatorImpl.java)
 - [AOSP android-17.0.0_r1：arm64 ifuncs](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/arch-arm64/ifuncs.cpp)
 - [Arm ABI：Memtag Extension to ELF for the Arm 64-bit Architecture](https://github.com/ARM-software/abi-aa/blob/main/memtagabielf64/memtagabielf64.rst)
 - [TIKTAG research paper](https://arxiv.org/abs/2406.08719)
