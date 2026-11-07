@@ -13667,6 +13667,28 @@
       "summary": "条件变量等待者计数遗漏仅在 LP64 存在的 ABI 条件",
       "type": "missing-abi-boundary",
       "updated_at": "2026-11-07T18:44:14.475739+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/08-messagequeue-lock-contention.md",
+      "close_note": "已替换第 8.2 节的 blocked_function 函数名筛选，改为保留 S 睡眠候选、state_id 和 utid，再按现场栈/系统调用记录/锁埋点确认；同步修正首查表与 futex 机制段落，并补齐 ACK/Perfetto 来源。3 段 SQL 均成功执行，分别返回 30/50/0 行；Binder 零行仅证明语法及字段可用，新查询的 50 行不宣称是已确认的 futex 等待。元数据、SUMMARY 链接、diff 与新增中文行 gate 均通过。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261107-203519-deep-review-ee602329",
+      "created_at": "2026-11-07T20:40:14.489640+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261107-203519-deep-review-ee602329",
+      "details": "claim: 第 8.2 节将 thread_state.blocked_function GLOB *futex* 作为原生 futex 等待的首查入口；target_range: 原文 585、681、915–935 行；evidence: ACK android17-6.18-2026-06_r6 的 kernel/sched/core.c:4818–4819 只在 TASK_UNINTERRUPTIBLE 时发出 sched_blocked_reason，kernel/futex/waitwake.c:665–667 的普通 futex 等待却进入 TASK_INTERRUPTIBLE|TASK_FREEZABLE；Android 17 Perfetto FtraceParser::ParseSchedBlockedReason 才以该事件填充 blocked_function。recommended_action: 重写 8.2 节，用 S 状态保留候选区间及 utid，再由问题现场调用栈/系统调用记录或锁埋点确认；明确 NULL 和空结果不能排除 futex 等待，修正前文同一入口。",
+      "id": "finding-ch01-08-futex-blocked-function",
+      "log_path": "logs/deep-review/2026-11-07-20261107-203519-deep-review-ee602329-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/waitwake.c",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc"
+      ],
+      "status": "fixed",
+      "summary": "用 blocked_function 筛选 futex 会漏掉普通可中断睡眠等待",
+      "type": "diagnostic-query",
+      "updated_at": "2026-11-07T20:45:02.664248+08:00"
     }
   ],
   "schema_version": 1
