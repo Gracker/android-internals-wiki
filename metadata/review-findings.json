@@ -13322,36 +13322,37 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
-      "close_note": "已区分 GenericDocumentWrapper.writeBlob 的共享区域分支、extras/其他内联字段及序列化成本，删除重复错误的配图引用，并补充函数/服务启用条件。对照 r1 GenericDocumentWrapper.java 100-110、139-164、Parcel.cpp 117、1822-1885 和请求/响应 writeToParcel 复核；源证据检查及本地四项 gate 通过。",
-      "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261107-080519-4bd9ceb9",
-      "created_at": "2026-11-07T08:11:23.489877+08:00",
-      "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261107-080519-4bd9ceb9",
-      "details": "4.10.7 原文将 GenericDocument、extras 和响应对象一概归入 Binder 事务空间限制；r1 请求和响应实际使用内部 GenericDocumentWrapper，将文档先序列化再经 writeBlob 传输。允许 fd 且 blob 超过 16 KiB 时原生 Parcel 使用共享区域；extras 和其他内联字段仍占接收区。现有配图也重复错误，需移除引用，不能只在后文追加勘误。",
+      "close_note": "已按 r1 GenericDocumentWrapper/Parcel.writeBlob 分支改写，区分允许 fd 且 blob 大于 16 KiB 的共享区域、内联 extras 和序列化成本；移除重复错误配图引用，保留 API/permission-v2 并补充启用与服务声明条件。 metadata、SUMMARY links、git diff --check 与新增行中文硬门禁均通过；沿用原稳定 ID。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261107-083519-deep-review-574f7c56",
+      "created_at": "2026-11-07T08:40:51.550295+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261107-083519-deep-review-574f7c56",
+      "details": "当前候选仍有同一问题，沿用稳定 ID 重新打开。claim=请求中的 GenericDocument、extras 和响应对象一概受 Binder 事务空间限制。; target_range=4.10.7，原 321 行及 329-332 行配图；接入边界; evidence=GenericDocumentWrapper.java:30-41,100-110,139-164; Parcel.cpp:117,1822-1885; ExecuteAppFunctionResponse.java:40-57,185-199; ExecuteAppFunctionRequest.java:192-219; AppFunctionManager.java:354-370; AppFunctionService.java:51-82; recommended_action=重写载荷段，区分 writeBlob 的内联/共享区域、extras 等内联字段和序列化成本；移除重复错误的配图引用；保留 API 36/37 与 permission-v2 边界并补充启用/服务声明条件。",
       "id": "AIW-4.10-P2-appfunctions-document-transport",
-      "log_path": "",
+      "log_path": "logs/deep-review/2026-11-07-20261107-083519-deep-review-574f7c56-deep-review.md",
       "severity": "P2",
       "source_paths": [
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/GenericDocumentWrapper.java",
-        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/Parcel.cpp"
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/Parcel.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionService.java"
       ],
       "status": "fixed",
       "summary": "App Functions 文档载荷被一概计入 Binder 接收区，正文和配图遗漏 writeBlob 共享内存分支",
       "type": "transport-boundary",
-      "updated_at": "2026-11-07T08:23:48.894138+08:00"
+      "updated_at": "2026-11-07T08:46:45.268569+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
-      "close_note": "已补充 anon+shmem+swap 组合指标、原生轮询、LIMIT_TYPE_ANON_SWAP、先解除限制再延后终止的 AMS 路径、30 秒非恢复保证及 disable-kill 条件，新增退出原因和 cgroup 观察入口。对照 r1 JNI 217-218、450-451、488-493、972-1009 及 Java 799-835、512-519、343-350；本地 gate 通过。",
-      "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261107-080519-4bd9ceb9",
-      "created_at": "2026-11-07T08:11:23.588742+08:00",
-      "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261107-080519-4bd9ceb9",
-      "details": "4.10.9 未说明原生层 memory.high 事件后轮询 anon+shmem+swap，及 Java LIMIT_TYPE_ANON_SWAP 解除限制并延后发送 MESSAGE_KILL 的行为；读者易把所有内存终止归到 lmkd。需给出实际统计口径、开关边界、30 秒源码延后与 MemoryLimiter:AnonSwap 诊断入口。",
+      "close_note": "已补充 cgroup anon+shmem+swap 指标、组合阈值、LIMIT_TYPE_ANON_SWAP、解除限制与延迟 AMS killPids 路径、disable-kill 条件及日志观察入口；30 秒不写成保证恢复宽限。 metadata、SUMMARY links、git diff --check 与新增行中文硬门禁均通过；沿用原稳定 ID。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261107-083519-deep-review-574f7c56",
+      "created_at": "2026-11-07T08:40:51.611304+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261107-083519-deep-review-574f7c56",
+      "details": "当前候选仍有同一问题，沿用稳定 ID 重新打开。claim=MemoryLimiter 只解释 memory.high 节流和 swap.max，漏掉 anon+shmem+swap 超限后经 AMS 终止的路径。; target_range=4.10.9，原 436 行之后；4.10.13 机制收尾; evidence=MemoryLimiter.cpp:215-218,441-451,488-493,522-547,972-1009; MemoryLimiter.java:112-114,399-427,512-519,799-835; recommended_action=补齐原生轮询指标、组合阈值、解除限制、30 秒延迟消息和 disable-kill 条件，给出日志与 cgroup 观测入口；不把高水位直接写成内核 OOM，也不把延迟写成恢复宽限。",
       "id": "AIW-4.10-P2-memorylimiter-anonswap-termination",
-      "log_path": "",
+      "log_path": "logs/deep-review/2026-11-07-20261107-083519-deep-review-574f7c56-deep-review.md",
       "severity": "P2",
       "source_paths": [
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
@@ -13360,19 +13361,19 @@
       "status": "fixed",
       "summary": "MemoryLimiter 只解释 cgroup 节流，遗漏 anon+shmem+swap 超限后交给 AMS 终止的独立路径",
       "type": "mechanism-coverage",
-      "updated_at": "2026-11-07T08:23:48.953559+08:00"
+      "updated_at": "2026-11-07T08:46:45.333569+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
-      "close_note": "已补充 user 构建的 profileable shell/debuggable 条件、userdebug 关键服务限制、默认原生采样与 Android 12 起 ART 分配采样的范围；保留分配记录不能代替存活对象图、不能覆盖 mmap/dma-buf/驱动内存的边界。官方 heapprofd 文档 Target processes、ART Allocation Profiling 与 r1 数据源名已核验；本地 gate 通过。",
-      "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261107-080519-4bd9ceb9",
-      "created_at": "2026-11-07T08:11:23.651005+08:00",
-      "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261107-080519-4bd9ceb9",
-      "details": "4.10.10 推荐 heapprofd 却未交代量产 user 构建只允许 profileable/debuggable 应用。官方文档说明默认记录 malloc/free，也可配置 ART allocation profiling；应保留默认原生采样口径、Java 存活对象分析边界和设备权限条件。",
+      "close_note": "已补充 Android 10 起可用、user 构建 profileable shell/debuggable 条件、userdebug 关键服务例外、Android 12 起 ART 分配采样和不跟踪释放/GC 的限制；官方锚点已核对。 metadata、SUMMARY links、git diff --check 与新增行中文硬门禁均通过；沿用原稳定 ID。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261107-083519-deep-review-574f7c56",
+      "created_at": "2026-11-07T08:40:51.672549+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261107-083519-deep-review-574f7c56",
+      "details": "当前候选仍有同一问题，沿用稳定 ID 重新打开。claim=heapprofd 说明只提原生堆，遗漏 user 构建 profileable/debuggable 及 ART 分配采样条件。; target_range=4.10.10，原 502、505 行; evidence=Perfetto 官方 heapprofd 文档 Target processes; Perfetto 官方 heapprofd 文档 ART Allocation Profiling (Churn Profiling); heapprofd.txt:1-16,204-254,275-306; recommended_action=注明默认 malloc/free、user 构建准入、userdebug 关键服务例外及 Android 12 起可配置 ART allocation samples；保留 ART 采样不记录回收、不能代替存活对象图和设备驱动统计的边界。",
       "id": "AIW-4.10-P2-heapprofd-availability",
-      "log_path": "",
+      "log_path": "logs/deep-review/2026-11-07-20261107-083519-deep-review-574f7c56-deep-review.md",
       "severity": "P2",
       "source_paths": [
         "https://perfetto.dev/docs/data-sources/native-heap-profiler"
@@ -13380,19 +13381,19 @@
       "status": "fixed",
       "summary": "heapprofd 使用说明遗漏 user build 的 profileable/debuggable 条件，并把原生堆写成唯一范围",
       "type": "availability-boundary",
-      "updated_at": "2026-11-07T08:23:49.012856+08:00"
+      "updated_at": "2026-11-07T08:46:45.400095+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
-      "close_note": "已改为 RSS/PSS 与 adj 无固定换算关系，明确 r1 OomAdjusterImpl 全量 SERVICE_ADJ 分组参考最近内存样本的条件与 SERVICE_B_ADJ 结果；移除含绝对规则的配图引用，保留全部标题和代码块。对照 psc/OomAdjusterImpl.java 1802-1839 核验；本地四项 gate 通过。",
-      "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261107-080519-4bd9ceb9",
-      "created_at": "2026-11-07T08:16:09.247921+08:00",
-      "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261107-080519-4bd9ceb9",
-      "details": "4.10.1 与 MemoryLimiter/lmkd 配图断言占用变大不直接改高 adj。r1 psc/OomAdjusterImpl.java 1802-1837 在全量更新且原 adj 为 SERVICE_ADJ 时，可能因非正常内存水平与最近 RSS/PSS 达阈值设置 serviceB，继而切到 SERVICE_B_ADJ。需保留条件、改正文并移除含绝对规则的图引用，不能由旧设计文档概括全部设备。",
+      "close_note": "已用 r1 OomAdjusterImpl 1802-1839 的有条件服务 A/B 分组替换绝对断言；保留 RSS/PSS 配置与阈值条件，并移除含绝对规则的配图引用。 metadata、SUMMARY links、git diff --check 与新增行中文硬门禁均通过；沿用原稳定 ID。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261107-083519-deep-review-574f7c56",
+      "created_at": "2026-11-07T08:40:51.734304+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261107-083519-deep-review-574f7c56",
+      "details": "当前候选仍有同一问题，沿用稳定 ID 重新打开。claim=进程内存变大不会直接抬高 oom_score_adj，忽略低内存时 SERVICE_ADJ 服务 A/B 分组参考 RSS/PSS 的分支。; target_range=4.10.1 原 101 行；4.10.9 原 450-453 行配图; evidence=OomAdjusterImpl.java:1802-1839; memorylimiter-diagram.txt:18; recommended_action=改为无固定 RSS/PSS 到 adj 换算；解释 doingAll、SERVICE_ADJ、内存水平非正常、最近样本达阈值时设置 serviceB 并转 SERVICE_B_ADJ；移除含绝对规则的配图引用。",
       "id": "AIW-4.10-P2-oom-adj-memory-exception",
-      "log_path": "",
+      "log_path": "logs/deep-review/2026-11-07-20261107-083519-deep-review-574f7c56-deep-review.md",
       "severity": "P2",
       "source_paths": [
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java"
@@ -13400,7 +13401,7 @@
       "status": "fixed",
       "summary": "内存增长不会抬高 adj 的绝对表述遗漏低内存时服务 A/B 分组参考 RSS/PSS 的分支",
       "type": "conditional-behavior",
-      "updated_at": "2026-11-07T08:23:49.072776+08:00"
+      "updated_at": "2026-11-07T08:46:45.467392+08:00"
     }
   ],
   "schema_version": 1
