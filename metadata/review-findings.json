@@ -13402,6 +13402,48 @@
       "summary": "内存增长不会抬高 adj 的绝对表述遗漏低内存时服务 A/B 分组参考 RSS/PSS 的分支",
       "type": "conditional-behavior",
       "updated_at": "2026-11-07T08:46:45.467392+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
+      "close_note": "已在接收示例后补齐同步 consumeBytes、slice/duplicate 视图失效与异步最后访问者退出条件，并明确发送方 close/unmap/PROT_NONE 不撤销对端已有映射。对照 r1 SharedMemory.java 127-149、253-288、301-325；metadata、SUMMARY links、git diff --check 已通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261107-100519-c4dd0bdb",
+      "created_at": "2026-11-07T10:09:45.999150+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261107-100519-c4dd0bdb",
+      "details": "4.10.4 接收端在 consumeBytes 返回后立即 finally unmap；正文未说明 consumeBytes 不得把 readable/slice/duplicate 留给异步推理。r1 SharedMemory.java 285-288 明确 unmap 会使所有引用失效且不能有在用的 duplicate；127-141、301-305 还明确 setProtect 只影响新映射、close 不撤销现有映射。需补充同步消费前提、异步最后读写者退出后清理，以及发送方 close/unmap/PROT_NONE 不撤销对端已有映射的边界。",
+      "id": "AIW-4.10-P2-sharedmemory-async-lifetime",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/SharedMemory.java"
+      ],
+      "status": "fixed",
+      "summary": "SharedMemory 示例未限定同步消费，遗漏 unmap 后别名视图失效与取消的对端清理边界",
+      "type": "lifecycle-warning",
+      "updated_at": "2026-11-07T10:17:30.312904+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/10-cross-process-memory-ai-inference.md",
+      "close_note": "已删除无版本限定的单服务结论，保留 Android 17 之前多实现未定义行为警告，补充 r1 enableMultiServiceBugfix 开关、按函数元数据取得类名和按包名/类名路由。核对官方 API Important、r1 AppFunctionManagerServiceImpl.java 529-549/627-718 和 ServiceHelperImpl.java 39-68；sources 与源码索引已补齐，三项 gate 通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261107-100519-c4dd0bdb",
+      "created_at": "2026-11-07T10:12:44.978396+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261107-100519-c4dd0bdb",
+      "details": "4.10.7 将同一应用只能有一个活跃 AppFunctionService 写成无版本限定的结论，引用的 r1 AppFunctionService.java 类注释仍保留旧警告。当前官方 API 文档 Important 将该限制及多实现未定义行为限定为 Android 17 之前；r1 AppFunctionManagerServiceImpl.java 529-549 在 enableMultiServiceBugfix 分支选择多服务执行，652-718 按函数元数据取得服务类名；ServiceHelperImpl.java 39-68 支持按包名和类名解析且仍核对绑定权限。需替换原错误句，保留 Android 16 单服务警告，并说明 Android 17 分支与配置边界，不能以一条旧注释盖过当前实现。",
+      "id": "AIW-4.10-P2-appfunctionservice-multiservice-boundary",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/appfunctions/AppFunctionService",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/ServiceHelperImpl.java"
+      ],
+      "status": "fixed",
+      "summary": "AppFunctionService 单服务限制被写成 Android 17 通用规则，遗漏多服务路由开关与官方版本警告",
+      "type": "version-warning",
+      "updated_at": "2026-11-07T10:17:30.372279+08:00"
     }
   ],
   "schema_version": 1
