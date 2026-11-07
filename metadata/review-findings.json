@@ -13527,6 +13527,146 @@
       "summary": "am compat 开启 MTE 的示例遗漏 user 系统的可调试应用前提",
       "type": "missing-debuggable-prerequisite",
       "updated_at": "2026-11-07T14:42:22.578520+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md",
+      "close_note": "已对照本 finding 指定的官方资料或 android-17.0.0_r1 源码直接修正文中原结论；来源断言与 metadata/summary-links/diff-check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-183519-idle-audit-cb26979c",
+      "created_at": "2026-11-07T18:44:13.686813+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-183519-idle-audit-cb26979c",
+      "details": "原文把 nullptr 唯一解释为对象已回收，遗漏 JNI 规范列出的内存不足分支。修订后要求检查待处理异常，并只在取得非空强本地引用后访问对象。",
+      "id": "finding-0e791d4fbbf8",
+      "log_path": "logs/audit/2026-11-07-20261107-183519-idle-audit-cb26979c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://docs.oracle.com/en/java/javase/25/docs/specs/jni/functions.html#newlocalref"
+      ],
+      "status": "verified",
+      "summary": "NewLocalRef 返回空引用不能唯一归因为对象已被回收",
+      "type": "jni-error-semantics",
+      "updated_at": "2026-11-07T18:44:13.747238+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md",
+      "close_note": "已对照本 finding 指定的官方资料或 android-17.0.0_r1 源码直接修正文中原结论；来源断言与 metadata/summary-links/diff-check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-183519-idle-audit-cb26979c",
+      "created_at": "2026-11-07T18:44:13.807270+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-183519-idle-audit-cb26979c",
+      "details": "原文只要求校验任意 UTF-8，容易被读作标准 UTF-8 校验成功即可调用 NewStringUTF。明确需转换成 MUTF-8，或解码成 UTF-16 后调用 NewString，并保留 CheckJNI 无效输入终止进程的警告。",
+      "id": "finding-bd8538a2ca53",
+      "log_path": "logs/audit/2026-11-07-20261107-183519-idle-audit-cb26979c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/jni-tips#utf-8-and-utf-16-strings"
+      ],
+      "status": "verified",
+      "summary": "NewStringUTF 输入要求缺少标准 UTF-8 到 MUTF-8 的转换边界",
+      "type": "encoding-boundary",
+      "updated_at": "2026-11-07T18:44:13.866885+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md",
+      "close_note": "已对照本 finding 指定的官方资料或 android-17.0.0_r1 源码直接修正文中原结论；来源断言与 metadata/summary-links/diff-check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-183519-idle-audit-cb26979c",
+      "created_at": "2026-11-07T18:44:13.927384+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-183519-idle-audit-cb26979c",
+      "details": "JNI tips 的概括性堆外描述与 android-17.0.0_r1 的实现有差异。ByteBuffer.allocateDirect 调用 MemoryRef，后者用 VMRuntime.newNonMovableArray 创建 byte[]；ART 使用 GetCurrentNonMovingAllocator 分配并由 GC 管理。分开说明 allocateDirect 与 NewDirectByteBuffer 的来源和释放责任，避免错误的 Native Heap 归因。",
+      "id": "finding-a0006b511604",
+      "log_path": "logs/audit/2026-11-07-20261107-183519-idle-audit-cb26979c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/nio/DirectByteBuffer.java"
+      ],
+      "status": "verified",
+      "summary": "Android 17 allocateDirect 的不可移动托管数组被误写为堆外存储",
+      "type": "implementation-mismatch",
+      "updated_at": "2026-11-07T18:44:13.990598+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md",
+      "close_note": "已对照本 finding 指定的官方资料或 android-17.0.0_r1 源码直接修正文中原结论；来源断言与 metadata/summary-links/diff-check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-183519-idle-audit-cb26979c",
+      "created_at": "2026-11-07T18:44:14.054774+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-183519-idle-audit-cb26979c",
+      "details": "章节覆盖 API 1 起的版本，但 ATrace_beginSection、ATrace_endSection 和 ATrace_isEnabled 均标注 __INTRODUCED_IN(23)。补齐直接调用示例的 API 23 下限，并提醒低版本避免无保护强引用及跳过插桩。",
+      "id": "finding-eb05e1450104",
+      "log_path": "logs/audit/2026-11-07-20261107-183519-idle-audit-cb26979c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/trace.h"
+      ],
+      "status": "verified",
+      "summary": "NDK ATrace 直接调用示例遗漏 API 23 可用性边界",
+      "type": "missing-availability-boundary",
+      "updated_at": "2026-11-07T18:44:14.115282+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md",
+      "close_note": "已对照本 finding 指定的官方资料或 android-17.0.0_r1 源码直接修正文中原结论；来源断言与 metadata/summary-links/diff-check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-183519-idle-audit-cb26979c",
+      "created_at": "2026-11-07T18:44:14.176262+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-183519-idle-audit-cb26979c",
+      "details": "当前官方指南单列 RELRO 对齐检查：LOAD 对齐通过仍可能因 RELRO 尾页保护覆盖可写数据而崩溃。添加 llvm-readelf 检查及结束地址对齐条件，同时保留无 GNU_RELRO 和同 LOAD 尾部无可写数据的例外，避免错误地对所有 ELF 一刀切。",
+      "id": "finding-656de912330c",
+      "log_path": "logs/audit/2026-11-07-20261107-183519-idle-audit-cb26979c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/guide/practices/page-sizes#relro-flag"
+      ],
+      "status": "verified",
+      "summary": "16 KB 发布验收遗漏 RELRO 尾页覆盖后续可写数据的检查",
+      "type": "incomplete-release-validation",
+      "updated_at": "2026-11-07T18:44:14.235787+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md",
+      "close_note": "已对照本 finding 指定的官方资料或 android-17.0.0_r1 源码直接修正文中原结论；来源断言与 metadata/summary-links/diff-check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-183519-idle-audit-cb26979c",
+      "created_at": "2026-11-07T18:44:14.295983+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-183519-idle-audit-cb26979c",
+      "details": "android-17.0.0_r1 的 malloc_low_memory 分支同时设置 cflags: [\"-UUSE_SCUDO\"]、链接 jemalloc 并排除 libscudo。原摘录遗漏取消宏定义，不能完整解释分支选择；补回真实源码中的关键一行。",
+      "id": "finding-c9989eabce25",
+      "log_path": "logs/audit/2026-11-07-20261107-183519-idle-audit-cb26979c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/Android.bp"
+      ],
+      "status": "verified",
+      "summary": "低内存分配器构建摘录遗漏取消 USE_SCUDO 的编译选项",
+      "type": "incomplete-source-excerpt",
+      "updated_at": "2026-11-07T18:44:14.355664+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/06-jni-ndk-bionic-performance.md",
+      "close_note": "已对照本 finding 指定的官方资料或 android-17.0.0_r1 源码直接修正文中原结论；来源断言与 metadata/summary-links/diff-check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-183519-idle-audit-cb26979c",
+      "created_at": "2026-11-07T18:44:14.415752+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-183519-idle-audit-cb26979c",
+      "details": "android-17.0.0_r1 的 pthread_cond_internal_t.waiters 字段及增减操作均由 __LP64__ 保护。原文把该机制推广到全部 Android 17 ABI；限定所列步骤为 LP64，并说明 32 位仍采用 state/futex 路径但没有 waiters 字段。",
+      "id": "finding-af614e6dc007",
+      "log_path": "logs/audit/2026-11-07-20261107-183519-idle-audit-cb26979c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_cond.cpp"
+      ],
+      "status": "verified",
+      "summary": "条件变量等待者计数遗漏仅在 LP64 存在的 ABI 条件",
+      "type": "missing-abi-boundary",
+      "updated_at": "2026-11-07T18:44:14.475739+08:00"
     }
   ],
   "schema_version": 1
