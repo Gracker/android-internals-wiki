@@ -13444,6 +13444,89 @@
       "summary": "AppFunctionService 单服务限制被写成 Android 17 通用规则，遗漏多服务路由开关与官方版本警告",
       "type": "version-warning",
       "updated_at": "2026-11-07T10:17:30.372279+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md",
+      "close_note": "在设备支持检查段补充实验性、不建议日常使用和性能/稳定性风险。 已通过元数据、目录链接、diff 空白及新增中文行检查；仅源码/文档核验，未声称真机实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "created_at": "2026-11-07T14:40:11.846131+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "details": "章节说明开发者选项重启开启 MTE，但未保留 NDK 官方 Check for support 中实验配置、不建议日常使用、可能降低性能或稳定性的边界。仅补充该入口的警告，不扩大为所有生产 MTE 配置的限制。",
+      "id": "finding-86c17dded997",
+      "log_path": "logs/audit/2026-11-07-20261107-143519-idle-audit-85e7ff51-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/arm-mte#check_for_support"
+      ],
+      "status": "fixed",
+      "summary": "MTE 开发者选项重启模式遗漏实验配置与性能稳定性警告",
+      "type": "missing-official-warning",
+      "updated_at": "2026-11-07T14:42:22.396748+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md",
+      "close_note": "删除不可追溯的数值范围，保留随 CPU、分配模式、访存和调用栈记录变化、需在目标设备测量的结论。 已通过元数据、目录链接、diff 空白及新增中文行检查；仅源码/文档核验，未声称真机实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "created_at": "2026-11-07T14:40:11.905564+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "details": "所列 2025 年 Cubox 文章性能开销节仅称三方论文中从 3% 到 30% 都有人说，未列出论文、设备、工作负载或测量口径；NDK 与 AOSP 官方说明只比较模式取舍，没有提供此通用范围。章节把这段转述作为量级参考，读者无法复核。此发现不声称该区间已被实验反证。",
+      "id": "finding-3ddfb194fb6e",
+      "log_path": "logs/audit/2026-11-07-20261107-143519-idle-audit-85e7ff51-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md#性能开销",
+        "https://source.android.com/docs/security/test/memory-safety/arm-mte"
+      ],
+      "status": "fixed",
+      "summary": "SYNC 性能开销 3%～30% 缺少可复核的原始基准",
+      "type": "untraceable-performance-range",
+      "updated_at": "2026-11-07T14:42:22.458993+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md",
+      "close_note": "补充使用更新的 NDK、旧 Clang 构建可能不兼容新平台全局变量运行时的说明；保留调试用途、设备支持和已有括注。 已通过元数据、目录链接、diff 空白及新增中文行检查；仅源码/文档核验，未声称真机实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "created_at": "2026-11-07T14:40:11.966467+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "details": "NDK 官方 Build with instrumentation 要求使用更新的 NDK；Android 17 bionic docs/mte.md 说明 -fsanitize=memtag 同时开启 heap/stack/globals，旧 Clang 生成的构建可能不能在实现全局变量运行时的新平台上工作。章节已有调试用途与 Android 14 QPR3 起的栈支持边界，但缺少工具链迁移约束。",
+      "id": "finding-dad450e12d9e",
+      "log_path": "logs/audit/2026-11-07-20261107-143519-idle-audit-85e7ff51-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/arm-mte#build_with_instrumentation",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/docs/mte.md"
+      ],
+      "status": "fixed",
+      "summary": "MTE 插桩构建说明遗漏 NDK 更新与旧 Clang 全局变量兼容边界",
+      "type": "missing-toolchain-boundary",
+      "updated_at": "2026-11-07T14:42:22.518070+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/09-android17-memory-tagging-extension-mte.md",
+      "close_note": "在命令前说明普通 user 系统要求应用可调试，userdebug/eng 按调试策略可放宽，非可调试发布包在普通 user 系统应通过 manifest 明确配置。 已通过元数据、目录链接、diff 空白及新增中文行检查；仅源码/文档核验，未声称真机实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "created_at": "2026-11-07T14:40:12.025998+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-143519-idle-audit-85e7ff51",
+      "details": "Android 17 OverrideValidatorImpl 在普通生产系统对未满足特殊覆盖分支的不可调试应用返回 DISABLED_NOT_DEBUGGABLE；Zygote 中 NATIVE_MEMTAG_SYNC/ASYNC 为 @ChangeId @Disabled，没有 @Overridable。章节仅限定 manifest 默认值，容易让读者以为普通 user 系统可直接对任意线上包启用。userdebug/eng 的正常调试配置可放宽此限制。",
+      "id": "finding-77ce6fca4ef7",
+      "log_path": "logs/audit/2026-11-07-20261107-143519-idle-audit-85e7ff51-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/compat/OverrideValidatorImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/Zygote.java"
+      ],
+      "status": "fixed",
+      "summary": "am compat 开启 MTE 的示例遗漏 user 系统的可调试应用前提",
+      "type": "missing-debuggable-prerequisite",
+      "updated_at": "2026-11-07T14:42:22.578520+08:00"
     }
   ],
   "schema_version": 1
