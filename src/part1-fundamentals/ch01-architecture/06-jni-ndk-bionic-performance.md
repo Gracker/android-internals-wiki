@@ -4,7 +4,9 @@ chapter: '1.6'
 section: '1.6'
 status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-08-23'
+last_verified: '2026-11-07'
+last_source_verified_at: '2026-11-07'
+last_idle_audit_at: '2026-11-07T18:40:39+08:00'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: high
 sources:
@@ -22,6 +24,12 @@ sources:
   path: https://perfetto.dev/docs/getting-started/other-formats#simpleperf-proto-format
 - type: spec
   path: https://docs.oracle.com/en/java/javase/25/docs/specs/jni/
+- type: aosp
+  path: libcore/ojluni/src/main/java/java/nio/ByteBuffer.java @ android-17.0.0_r1
+- type: aosp
+  path: libcore/ojluni/src/main/java/java/nio/DirectByteBuffer.java @ android-17.0.0_r1
+- type: aosp
+  path: art/runtime/native/dalvik_system_VMRuntime.cc @ android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/android/os/Binder.java @ android-17.0.0_r1
 - type: aosp
@@ -381,7 +389,7 @@ JNI 规范只要求虚拟机保证至少 16 个本地引用槽位。Android 8 �
 
 - **本地引用**：只在当前线程、当前 JNI 本地引用帧内有效；
 - **全局引用**：跨调用、跨线程保持对象可达，直到调用 `DeleteGlobalRef()`；
-- **弱全局引用**：不阻止 GC 回收对象。使用时应先调用 `NewLocalRef(weak)`，尝试把它提升为强本地引用；返回 `nullptr` 说明对象已经被回收。后续操作都使用这个本地引用，完成后再调用 `DeleteLocalRef()`。
+- **弱全局引用**：不阻止 GC 回收对象。使用时应先调用 `NewLocalRef(weak)`，尝试把它提升为强本地引用。返回 `nullptr` 可能是弱引用已被清除，也可能是创建引用时内存不足；应检查待处理异常，并按失败路径退出。只有取得非空的本地引用后才能访问对象，完成后再调用 `DeleteLocalRef()`。
 
 我们比较两个 JNI 引用时要留意：即使指向同一个 Java 对象，数值也可能不同，`==` 的比较结果并不可靠，要用 `IsSameObject()`；把原始 `jobject` 数值当作长期保存的映射表键同样靠不住。
 
@@ -439,7 +447,7 @@ CheckJNI 的额外检查会改变性能，开启它时采集的轨迹代表的�
 - `GetStringLength()` 返回 UTF-16 编码单元（code unit）数量，不是 Unicode 码点（code point）数量；
 - `GetStringUTFLength()` 返回的也不是标准 UTF-8 字节数。
 
-文件或网络收到的任意 UTF-8，要经过校验再交给 `NewStringUTF()`：无效 MUTF-8 会产生错误结果，CheckJNI 还会直接终止虚拟机进程。
+文件或网络收到的标准 UTF-8，即使编码合法，也不能直接视为 MUTF-8。传给 `NewStringUTF()` 前，应转换成合法 MUTF-8；也可以先解码成 UTF-16，再用 `NewString()` 和明确的长度创建字符串。标准 UTF-8 中的零字节与补充平面字符（码点大于 U+FFFF 的字符）需要特别处理。无效 MUTF-8 会产生错误结果，CheckJNI 还会直接终止虚拟机进程。
 
 Android 8 以后，ART 使用紧凑字符串表示，并采用可能移动对象位置的垃圾回收器（moving GC）。即使调用 `GetStringCritical()`，运行时也可能复制数据；API 名称里的 Critical 并未承诺零拷贝。每个 `Get*Chars()` 都必须与对应的 `Release*Chars()` 配对，原生方法返回时不会自动释放取得的字符指针。
 
@@ -474,7 +482,12 @@ JNI 规范允许 `Get<PrimitiveType>ArrayElements()`：
 
 #### 8.3 直接缓冲区
 
-`ByteBuffer.allocateDirect()` 或 `NewDirectByteBuffer()` 创建的存储不在托管堆中，原生代码可用 `GetDirectBufferAddress()` 取得地址。
+直接缓冲区允许原生代码用 `GetDirectBufferAddress()` 取得地址，但两种创建方式的内存来源与所有权不同：
+
+- 在 Android 17 的 libcore 实现中，`ByteBuffer.allocateDirect()` 通过 `DirectByteBuffer.MemoryRef` 创建 ART 管理的不可移动 `byte[]`，再取得稳定地址；这块存储由 GC 管理，不能一概计作 `malloc` 分配的 Native Heap。
+- `NewDirectByteBuffer(address, capacity)` 包装调用方提供的地址，不分配或接管底层存储。若地址来自 `malloc` 或内存映射，释放责任仍由原生代码承担。
+
+前一条是 `android-17.0.0_r1` 的实现细节，不能推广成所有 JVM 的保证；“direct”也不保证存储一定在托管堆之外。
 
 适合：
 
@@ -498,7 +511,7 @@ Perfetto 的默认系统轨迹（system trace）不会自动为每次 JNI 跨界
 
 #### 9.1 主动插桩
 
-主动插桩是我们在关键路径显式加入轨迹记录的手段。第三方 NDK 代码应使用稳定 API `<android/trace.h>`。下面的代码会记录 `DecodeBatch()` 的完整耗时：
+主动插桩是我们在关键路径显式加入轨迹记录的手段。第三方 NDK 代码应使用稳定 API `<android/trace.h>`；这里的 `ATrace_beginSection()`、`ATrace_endSection()` 和 `ATrace_isEnabled()` 从 Android 6.0 / API 23 起可用。下面的直接调用示例适用于 API 23 及以上，支持更低 API 的库要避免无保护地强引用这些符号，并在低版本跳过插桩。代码记录 `DecodeBatch()` 的完整耗时：
 
 ```cpp
 #include <android/trace.h>
@@ -579,8 +592,9 @@ Android 15 起支持使用 16KB 内存页的设备，内存页是操作系统管
 
 1. **ELF 可加载段对齐**：每个 `.so` 的 `LOAD` segment（装载到内存的文件区段）至少按 `2**14`，也就是 16KB 对齐。
 2. **APK ZIP 对齐**：未压缩的 `.so` 在 APK 这个 ZIP 容器中，也要从 16KB 对齐的文件位置开始存放。
+3. **RELRO 保护边界**：RELRO（重定位完成后设为只读的区域）若与后续可写数据共享同一个 `LOAD` 段，其结束地址也要按 16KB 对齐，避免 linker 把同页的可写数据一并设为只读。
 
-一个 `.so` 内部的 ELF 对齐正确，还保证不了 Android App Bundle（AAB）最终生成的 APK 打包布局；这两层要分别检查。
+一个 `.so` 内部的 ELF 对齐正确，还保证不了 Android App Bundle（AAB）最终生成的 APK 打包布局；这些检查要分别完成。
 
 当前官方建议：
 
@@ -608,9 +622,14 @@ bundletool dump config --bundle=app.aab | grep alignment
 
 # ELF LOAD segment alignment
 llvm-objdump -p libexample.so | grep LOAD
+
+# ELF LOAD / GNU_RELRO 的虚拟地址与内存大小
+llvm-readelf -Wl libexample.so
 ```
 
 设备页大小应返回 `16384`；`llvm-objdump` 显示的 ELF `LOAD` 对齐值至少要达到 `2**14`；`bundletool` 应显示 `PAGE_ALIGNMENT_16K`。`zipalign` 则检查 APK 内每个未压缩 `.so` 的文件位置是否满足 16KB 对齐。
+
+接着对照 `llvm-readelf` 的 `LOAD` 与 `GNU_RELRO` 行：若 RELRO 后面仍有同一 `LOAD` 段中的可写数据，应满足 `(VirtAddr + MemSiz) % 0x4000 == 0`。若没有 `GNU_RELRO`，或 RELRO 已覆盖所在 `LOAD` 段的全部尾部、同页没有后续可写数据，则不因这项取模检查不为零而判定失败。检查发现保护范围会覆盖可写数据时，应按官方指南重新链接；单看 `LOAD` 的对齐值不足以排除这类运行时崩溃。
 
 #### 10.3 Android 17 的立即报错验证
 
@@ -718,6 +737,7 @@ cc_defaults {
     cflags: ["-DUSE_SCUDO"],
     product_variables: {
         malloc_low_memory: {
+            cflags: ["-UUSE_SCUDO"],
             whole_static_libs: [
                 "libjemalloc5",
                 "libc_jemalloc_wrapper",
@@ -844,7 +864,7 @@ PI（Priority Inheritance，优先级继承）可以缓解高优先级线程等�
 
 #### 4.3 Condition variable
 
-`pthread_cond_t` 在 Android 17 中维护原子 `state` 计数和等待者数量。wait 路径的顺序是：
+`pthread_cond_t` 在 Android 17 中维护原子 `state` 计数；LP64 实现另有 `waiters` 字段记录等待者数量，使 `signal`/`broadcast` 在没有等待者时可以直接返回。以 LP64 为例，wait 路径的顺序是：
 
 1. 读取当前 state；
 2. 记录等待者；
@@ -852,7 +872,9 @@ PI（Priority Inheritance，优先级继承）可以缓解高优先级线程等�
 4. 对旧 state 执行 futex wait；
 5. 减少等待者并重新获得 mutex。
 
-`signal`/`broadcast` 会增加 state，再分别唤醒一个或多个等待者。该实现允许虚假唤醒（spurious wakeup），也就是线程可能在条件尚未成立时从等待中返回；POSIX 调用者因此必须使用谓词循环：
+32 位实现没有 `waiters` 字段，也不执行上述等待者增减操作；读取 state、解锁、futex wait 和重新加锁的顺序相同。
+
+`signal`/`broadcast` 的通知路径先增加 state，再分别尝试唤醒一个或多个等待者。该实现允许虚假唤醒（spurious wakeup），也就是线程可能在条件尚未成立时从等待中返回；POSIX 调用者因此必须使用谓词循环：
 
 ```cpp
 pthread_mutex_lock(&mutex);
@@ -1117,6 +1139,12 @@ JNI 优化按这个顺序做：
 - [Android NDK：Simpleperf](https://developer.android.com/ndk/guides/simpleperf)
 - [Perfetto：Simpleperf proto format](https://perfetto.dev/docs/getting-started/other-formats#simpleperf-proto-format)
 - [JNI Specification（Java 25）](https://docs.oracle.com/en/java/javase/25/docs/specs/jni/)
+- [JNI Specification：NewLocalRef](https://docs.oracle.com/en/java/javase/25/docs/specs/jni/functions.html#newlocalref)
+- [AOSP：ByteBuffer.java（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/nio/ByteBuffer.java)
+- [AOSP：DirectByteBuffer.java（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/nio/DirectByteBuffer.java)
+- [AOSP：VMRuntime 原生实现（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMRuntime.cc)
+- [AOSP：Bionic 分配器构建配置（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/Android.bp)
+- [AOSP：pthread_cond.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_cond.cpp)
 - [AOSP：Binder.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java)
 - [AOSP：Parcel.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Parcel.java)
 - [AOSP：SystemProperties.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemProperties.java)
