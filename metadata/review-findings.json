@@ -13750,6 +13750,88 @@
       "summary": "quitSafely 说明遗漏当前 tag 的并发入队时序限制",
       "type": "upstream-version-boundary",
       "updated_at": "2026-11-07T22:16:20.269365+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "close_note": "已对照固定 Android 17/6.18 源码与相关官方 API 文档修正文段；正文回读、局部写作门禁、元数据、SUMMARY 链接和 diff 检查均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-223519-idle-audit-3575c680",
+      "created_at": "2026-11-07T22:41:28.807225+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-223519-idle-audit-3575c680",
+      "details": "原文把采样尚未稳定列为 NaN 原因，并将约每秒一次的调用建议写成传感器固定更新频率。android-17.0.0_r1 PowerManager.java 3294-3387 明确样本不足以预测时返回当前 headroom；API 36 起阈值映射可以变化，功能未启用和服务未就绪分别抛出 UnsupportedOperationException、IllegalStateException。已重写对应两段，保留 NaN、取值方向及跨设备限制。",
+      "id": "finding-6cee09ea0be4",
+      "log_path": "logs/audit/2026-11-07-20261107-223519-idle-audit-3575c680-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+        "https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroomThresholds()"
+      ],
+      "status": "verified",
+      "summary": "thermal headroom 预热期与 NaN 混淆，且缺少动态阈值及异常边界",
+      "type": "api-lifecycle-boundary",
+      "updated_at": "2026-11-07T22:42:50.002521+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "close_note": "已对照固定 Android 17/6.18 源码与相关官方 API 文档修正文段；正文回读、局部写作门禁、元数据、SUMMARY 链接和 diff 检查均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-223519-idle-audit-3575c680",
+      "created_at": "2026-11-07T22:41:28.868579+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-223519-idle-audit-3575c680",
+      "details": "android-17.0.0_r1 SystemHealthManager.java 75-96 明确 headroom 主要反映历史用量，有 TOCTOU 问题，稀疏或不稳定负载可能缺少指导价值，不建议每次轮询都激进调整工作量。原文介绍使用策略时遗漏了这些限制。已在 CPU/GPU headroom 节补充源码支持的限制，不增加性能保证。",
+      "id": "finding-eef4aabc7cff",
+      "log_path": "logs/audit/2026-11-07-20261107-223519-idle-audit-3575c680-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+      ],
+      "status": "verified",
+      "summary": "CPU/GPU headroom 缺少历史负载、查询后变化与振荡警告",
+      "type": "missing-api-warning",
+      "updated_at": "2026-11-07T22:42:50.062437+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "close_note": "已对照固定 Android 17/6.18 源码与相关官方 API 文档修正文段；正文回读、局部写作门禁、元数据、SUMMARY 链接和 diff 检查均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-223519-idle-audit-3575c680",
+      "created_at": "2026-11-07T22:41:28.928821+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-223519-idle-audit-3575c680",
+      "details": "android-17.0.0_r1 PowerMonitorReadings.java 45-63、119-129 将 GRANULARITY_* 与 getGranularity() 标为 @hide/@SystemApi，原文排查步骤和模板没有说明普通应用无法通过公开 SDK 读取。已补充系统组件边界，并为普通应用改用公开 getTimestampMillis()；同步替换 legacy 模板标签，保留服务 20 秒/250 毫秒缓存与两路扰动结论。",
+      "id": "finding-60621fae978d",
+      "log_path": "logs/audit/2026-11-07-20261107-223519-idle-audit-3575c680-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "status": "verified",
+      "summary": "Power Monitor 排查建议未区分隐藏 granularity SystemApi 与普通 SDK",
+      "type": "hidden-api-boundary",
+      "updated_at": "2026-11-07T22:42:50.122581+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "close_note": "已对照固定 Android 17/6.18 源码与相关官方 API 文档修正文段；正文回读、局部写作门禁、元数据、SUMMARY 链接和 diff 检查均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261107-223519-idle-audit-3575c680",
+      "created_at": "2026-11-07T22:41:28.988398+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261107-223519-idle-audit-3575c680",
+      "details": "android17-6.18-2026-06_r6 qcom-cpufreq-hw.c 548-549 通过读取 reg_dcvs_ctrl 寄存器 bit 0 设置 per_core_dcvs，设备匹配数据提供寄存器布局。原文只写设备匹配数据支持该能力，混淆布局与运行态能力检测。已改为初始化读硬件位的实际机制，未承诺每核独立 cpufreq policy。",
+      "id": "finding-347316d67979",
+      "log_path": "logs/audit/2026-11-07-20261107-223519-idle-audit-3575c680-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpufreq/qcom-cpufreq-hw.c"
+      ],
+      "status": "verified",
+      "summary": "qcom-cpufreq-hw 的 per_core_dcvs 检测被误归于设备匹配数据",
+      "type": "source-mismatch",
+      "updated_at": "2026-11-07T22:42:50.183649+08:00"
     }
   ],
   "schema_version": 1
