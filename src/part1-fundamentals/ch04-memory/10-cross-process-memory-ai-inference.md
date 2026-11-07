@@ -1,15 +1,15 @@
 ---
 title: 跨进程内存共享与端侧推理预算
 chapter: '4.10'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-11-07'
 last_verified_against: AOSP android-17.0.0_r1
-last_source_verified_at: '2026-11-07T08:43:18+08:00'
+last_source_verified_at: '2026-11-07T10:17:30+08:00'
 last_deep_review_at: '2026-11-07T08:43:18+08:00'
 last_idle_audit_at: '2026-11-01T14:38:13+08:00'
 last_body_apply_at: '2026-11-07T07:18:27+08:00'
-last_review_finalize_at: '2026-09-02T08:14:47+08:00'
+last_review_finalize_at: '2026-11-07T10:17:30+08:00'
 confidence: high
 sources:
 - type: aosp
@@ -24,6 +24,12 @@ sources:
   path: frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java
 - type: aosp
   path: frameworks/base/core/java/android/app/appfunctions/AppFunctionManager.java
+- type: aosp
+  path: frameworks/base/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java
+- type: aosp
+  path: frameworks/base/services/appfunctions/java/com/android/server/appfunctions/ServiceHelperImpl.java
+- type: official
+  path: https://developer.android.com/reference/android/app/appfunctions/AppFunctionService
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java
 - type: aosp
@@ -239,6 +245,8 @@ try (SharedMemory received = region) {
 }
 ```
 
+`consumeBytes()` 在这个示例里必须同步读完，不能把 `readable` 或它的 `slice()`、`duplicate()` 视图交给异步任务后就返回。`SharedMemory.unmap()` 会使这次映射的所有视图失效。异步推理应在任务完成或取消后，等最后一个读写者退出，再解除映射。[已验证: frameworks/base/core/java/android/os/SharedMemory.java, 253-288 @ android-17.0.0_r1]
+
 `close()` 只关闭当前 `SharedMemory` 对象持有的 fd；已经建立的映射仍然有效。只有等所有 fd 都已关闭、所有映射都已解除，相关物理页才具备释放条件。
 
 <!-- gracker-diagram: ch04-10-sharedmemory-readonly-ownership -->
@@ -272,6 +280,8 @@ try (SharedMemory received = region) {
 - 不在共享区留下上一位用户或上一会话内容；
 - 对长度、偏移量（offset）、格式和校验值做边界检查；
 - 取消请求时关闭不再需要的 fd，并让双方解除映射。
+
+关闭发送方的 fd、解除发送方映射，或补调 `setProtect(PROT_NONE)`，都不会让接收方已经建立的映射失效。取消信号只是协议请求，需要接收方停止访问并清理自己的映射与句柄；发送方清理完自己的资源，不能证明对方也已释放数据。[已验证: frameworks/base/core/java/android/os/SharedMemory.java, 127-141, 285-305 @ android-17.0.0_r1]
 
 ## 4.10.5 HardwareBuffer：硬件互操作能力由契约决定
 
@@ -327,7 +337,9 @@ try (SharedMemory received = region) {
 
 目标应用通过 `AppFunctionService.onExecuteFunction()` 接收请求。该回调在主线程触发；模型推理、磁盘读取和网络访问必须切换到后台工作线程，完成后通过回调返回结果，并处理取消信号 `CancellationSignal`。permission-v2 路径会把 `callingPackage` 置为空字符串，把 `callingPackageSigningInfo` 置为 unknown，函数实现要放弃用这两个参数鉴权。
 
-接入时，服务还须声明对应的 action 与函数元数据，同一应用只能有一个活跃的 `AppFunctionService`。目标函数必须处于启用状态；API 版本满足和调用权限通过，不能单独保证本次执行可用。[已验证: frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java, 51-82; AppFunctionManager.java, 354-370 @ android-17.0.0_r1]
+接入时，服务还须声明对应的 action 与函数元数据，目标函数也必须处于启用状态；API 版本满足和调用权限通过，不能单独保证本次执行可用。[已验证: frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java, 51-82; AppFunctionManager.java, 354-370 @ android-17.0.0_r1]
+
+`AppFunctionService` 的单服务限制也有版本边界：Android 17 之前，同一应用同时启用多个实现会产生未定义行为。`android-17.0.0_r1` 在 `enableMultiServiceBugfix()` 开启时，会从目标函数元数据读取服务类名，并按包名和类名解析目标服务；关闭时仍走只按包名解析的旧路径。声明多个服务前，要核对设备的功能开关和函数元数据，不能只看 API 级别。[来源: https://developer.android.com/reference/android/app/appfunctions/AppFunctionService][已验证: frameworks/base/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java, 529-549, 610-718; ServiceHelperImpl.java, 39-68 @ android-17.0.0_r1]
 
 请求参数与响应结果中的 `GenericDocument` 在 `android-17.0.0_r1` 中由内部 `GenericDocumentWrapper` 包装：先序列化成字节数组，再调用 `Parcel.writeBlob()`。原生 Parcel 在允许 fd 且 blob 大于 16 KiB 时使用共享区域并传递 fd；否则把 blob 内联写入 Parcel。因此，文档载荷可能不占用同等大小的 Binder 接收缓冲区，`Bundle extras` 等内联字段及句柄元数据仍受接收区容量约束。这个 16 KiB 是该实现的 blob 分流阈值，与 64 KiB 的建议 IPC 大小含义不同。[已验证: frameworks/base/core/java/android/app/appfunctions/GenericDocumentWrapper.java, 139-164; frameworks/native/libs/binder/Parcel.cpp, 117, 1822-1885 @ android-17.0.0_r1]
 
@@ -420,7 +432,7 @@ kv_bytes
 
 ### MemoryLimiter 的生产配置
 
-`MemoryLimiter.java` 里带着一份 `sDefaultConfig`：可见组（visible）内存为 4 GiB，不可见组（notVisible）内存为 2 GiB，两组的交换空间都是 2 GiB。源码注释明确说明这份配置用于测试，生产环境要先经过复核再用。生产系统从下面的文件读取配置：
+`MemoryLimiter.java` 里带着一份 `sDefaultConfig`：可见组（visible）内存为 4 GiB，不可见组（notVisible）内存为 2 GiB，两组的交换空间都是 2 GiB。源码注释说明这份配置面向至少 8 GiB RAM 的系统测试，生产环境要先经过复核再用。生产系统从下面的文件读取配置：
 
 ```text
 /vendor/etc/memory-limiter-config.xml
@@ -561,7 +573,7 @@ Android 12 起，heapprofd 还可以通过 `heaps: "com.android.art"` 配置采�
 | 服务 A/B 分组中的内存样本条件 | [`frameworks/base/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java)，`SERVICE_ADJ` 分支 |
 | HardwareBuffer 格式与用途 | [`frameworks/base/core/java/android/hardware/HardwareBuffer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java) |
 | CursorWindow 远端只读与动态分配 | [`frameworks/base/core/java/android/database/CursorWindow.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/database/CursorWindow.java)、[`frameworks/base/libs/androidfw/CursorWindow.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/CursorWindow.cpp) |
-| App Functions 服务保护 | [`frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionService.java) |
+| App Functions 服务保护与多服务路由 | [`frameworks/base/core/java/android/app/appfunctions/AppFunctionService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionService.java)、[`AppFunctionManagerServiceImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/AppFunctionManagerServiceImpl.java)、[`ServiceHelperImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/appfunctions/java/com/android/server/appfunctions/ServiceHelperImpl.java) |
 | App Functions API 版本与执行入口 | [`AppFunctionManager` API reference](https://developer.android.com/reference/android/app/appfunctions/AppFunctionManager)、[`AppFunctionService` API reference](https://developer.android.com/reference/android/app/appfunctions/AppFunctionService)、[`AppFunctionManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/AppFunctionManager.java) |
 | 请求和响应 Parcelable 格式 | [`ExecuteAppFunctionRequest.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/ExecuteAppFunctionRequest.java)、[`ExecuteAppFunctionResponse.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/ExecuteAppFunctionResponse.java) |
 | App Functions 文档的内联/共享区域传输 | [`GenericDocumentWrapper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/appfunctions/GenericDocumentWrapper.java)、[`frameworks/native/libs/binder/Parcel.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/Parcel.cpp)，`writeBlob()` |
