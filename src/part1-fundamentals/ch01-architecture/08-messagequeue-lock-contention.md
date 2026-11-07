@@ -2,11 +2,11 @@
 title: MessageQueue 与锁竞争：从 DeliQueue 到系统等待链
 chapter: '1.8'
 section: '1.8'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
 last_verified: '2026-11-07'
 last_source_verified_at: '2026-11-07'
-verification_scope_note: '2026-11-07 复核 DeliQueue 启用与删除协议、Message 池复用、官方迁移及测试 API 生命周期、性能数字；按 Android 17 Perfetto 与对应 ACK 核对 blocked_function 采集边界并修正 futex 查询。其余 Monitor、Binder 与系统服务锁结论沿用 2026-11-06 核验。SQL 仅用公开历史轨迹复跑，不代表 Android 17 设备性能实测。'
+verification_scope_note: '2026-11-07 按 Android 17 与对应 ACK 核对 DeliQueue、ART Monitor、bionic、Binder、系统服务锁及 Perfetto SQL；核对官方迁移、测试 API 生命周期与性能数字，补齐屏障唤醒、并发退出、oneway 失效与重入边界。SQL 仅在公开历史轨迹复跑，未做 Android 17 设备性能、futex 归因或退出竞态实测。'
 last_deep_review_at: '2026-11-07T20:42:10+08:00'
 last_idle_audit_at: '2026-10-28T14:38:19+08:00'
 last_verified_against: AOSP android-17.0.0_r1 (CombinedDeliMessageQueue/MessageStack/MessageHeap/Message/Looper, ART monitor/lock_word, bionic pthread_mutex/pthread.h, libbinder BpBinder/IPCThreadState/ProcessState, AMS/ATMS/WMS/WindowProcessController/OomAdjuster, Perfetto stdlib SQL/ftrace_parser) + Android 17 official MessageQueue/TestLooperManager/IdleHandler docs + ACK android17-6.18-2026-06_r6 (binder/binder_alloc, sched/core, futex/waitwake)
@@ -132,7 +132,7 @@ related_chapters:
 - '7.1'
 - '1.9'
 - '9.1'
-last_review_finalize_at: '2026-11-06T08:17:51+08:00'
+last_review_finalize_at: '2026-11-07T22:16:20+08:00'
 last_body_apply_at: '2026-11-06T09:19:18+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -397,9 +397,11 @@ public static Message obtain() {
 
 消息容器之外还要处理唤醒竞争。生产者入队时可能让一条更早的消息成为新队首，需要唤醒正在执行原生轮询的 Looper；Looper 准备休眠时，也可能恰好有另一个线程入队。
 
-DeliQueue 使用原子等待状态（wait state）协调“预计睡到何时”和“期间发生过多少次需要重新判断的事件”，避免遗漏唤醒信号。同步屏障也有独立的原子状态，用来判断新增异步消息是否需要唤醒消费者。
+DeliQueue 使用原子等待状态（wait state）协调“预计睡到何时”和“期间发生过多少次需要重新判断的事件”，避免遗漏唤醒信号。Looper 已记录唤醒期限时，早于该期限的异步消息会请求唤醒；同步消息还要结合 `mSyncBarrier` 判断自己是否被屏障挡住，被挡住时可以不唤醒。若生产者据此决定不唤醒，成功更新等待状态后又发现屏障已变化，就会重新判断，防止漏掉该唤醒的消息。[已验证: frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java，enqueueMessageUnchecked() @ android-17.0.0_r1]
 
 退出阶段的竞争更敏感：其他线程可能正在通过 `mPtr` 调用原生唤醒，而 Looper 正准备销毁原生对象。当前实现使用带退出标志的引用计数，确保仍有线程使用时不会销毁 `mPtr` 指向的对象。`quitSafely()` 仍然只处理已经到期的消息并移除未来消息；销毁原生对象则要等正在使用它的线程离开临界阶段。
+
+该 tag 的 `quit(boolean safe)` 源码注释还指出一处并发时序限制：入队和退出分别读取当前时间，可能出现 `Handler.post()` 返回 `true`，消息却未执行的情况。提交成功不能作为退出前必定完成回调的保证；需要可靠收尾的任务，还应协调停止提交与完成确认。[已验证: frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java，quit(boolean safe) @ android-17.0.0_r1]
 
 ### 6. “无锁”指哪一段路径
 
@@ -802,6 +804,8 @@ Android 17 的 `ProcessState.cpp` 定义：
 
 跨进程 kernel Binder 的 `oneway` 让调用方不等待业务回复，提交本身仍有成本。Android 17 的 `IPCThreadState::transact()` 在 `TF_ONE_WAY` 分支中也会调用 `waitForResponse(nullptr, nullptr)`；正常提交后，收到 `BR_TRANSACTION_COMPLETE` 就结束提交等待。这个通知不表示服务方法已经执行完，不能据此保证调用方完全不会等待。[来源: https://juejin.cn/post/7703412433470046246；已验证: frameworks/native/libs/binder/IPCThreadState.cpp，transact()/waitForResponse() @ android-17.0.0_r1]
 
+提交成功也不保证最终执行：服务端进程可能在处理前死亡或被冻结，调用方未必会收到这笔业务调用失败的通知。因此，提交完成不能当作业务完成确认。[已验证: https://source.android.com/docs/core/architecture/ipc/binder-threading，Identify a synchronous or asynchronous function 的 Note]
+
 服务端还有单节点串行约束。在 ACK `android17-6.18-2026-06_r6` 中，`binder_proc_transaction()` 发现目标节点已有异步事务时，会把后续事务放入该节点的 `async_todo`；当前事务的 buffer 释放时，`binder_free_buf()` 才推进下一项。因此，增加线程池线程不能让同一个 Binder node 的多个 `oneway` 事务同时执行；不同 node 仍可由不同线程并行处理。[已验证: kernel/common/drivers/android/binder.c，binder_proc_transaction()/binder_free_buf() @ android17-6.18-2026-06_r6；https://source.android.com/docs/core/architecture/ipc/binder-threading，Serialization of asynchronous transactions]
 
 异步队列也受目标进程的 buffer 额度约束：`binder_alloc_new_buf_locked()` 会检查 `free_async_space`，不足时用 `ERR_PTR(-ENOSPC)` 返回分配错误，不会无限接收事务。排查高频回调积压时，既要看服务端处理速度，也要检查提交失败与异步资源压力。合并事件或仅保留最新值前，要先确认业务允许丢弃中间状态。[来源: https://juejin.cn/post/7703412433470046246；已验证: kernel/common/drivers/android/binder_alloc.c，binder_alloc_new_buf_locked() @ android17-6.18-2026-06_r6]
@@ -1017,9 +1021,11 @@ LIMIT 30;
 
 - 日志格式化和大对象构建；
 - 磁盘、网络和数据库 I/O；
-- 同步 Binder 调用；
+- Binder 调用，包括不等待业务回复的 `oneway`；
 - 可以先在锁内复制输入、锁外计算、再在锁内提交结果的长计算；
 - 不需要共享状态保护的回调。
+
+官方 Binder 线程指南建议 `oneway` 调用同样避免持锁，防止接口改为同步后引入等待和死锁。同步嵌套事务还可能沿调用链回到原线程；即使进程只有一个 Binder 工作线程，也要防止重入调用修改正在遍历的共享状态。[已验证: https://source.android.com/docs/core/architecture/ipc/binder-threading，Asynchronous calls and deadlocks / Single binder thread and deadlocks]
 
 把代码移出锁前，要重新确认临界区保护的不变量，也就是共享状态始终必须满足的约束。盲目缩小范围可能引入竞态（check-then-act race）：在“先检查”和“后操作”之间，共享状态已被其他线程改变。性能改善要以正确性为前提。
 
