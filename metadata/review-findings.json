@@ -13894,6 +13894,110 @@
       "summary": "bootanalyze wrapper 开启 bootchart 后缺少实验结束清理提示",
       "type": "missing-operational-boundary",
       "updated_at": "2026-11-08T14:43:01.191126+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "close_note": "第 5 节改为 v2.2.3 / 2026-11-03，明确发布说明的 ForkDump 15–17 与 native libraries 16 KB 页支持；保留固定依赖和目标设备验证要求，参考资料同步到该 tag。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "created_at": "2026-11-08T22:39:19.202657+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "details": "章节仍以 2026-10-25 的 v2.2.2 为最近正式版。GitHub releases/latest 现返回 2026-11-03 发布的 v2.2.3，发布说明列出 Android 15/16/17 ForkDump 和 native libraries 16 KB 页支持。应更新可追溯版本信息，同时保留目标机型实测边界，不把上游支持声明当成本地兼容验证。",
+      "id": "finding-17b11ba16f73",
+      "log_path": "logs/audit/2026-11-08-20261108-223519-idle-audit-dc01caa9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://api.github.com/repos/KwaiAppTeam/KOOM/releases/latest",
+        "https://github.com/KwaiAppTeam/KOOM/releases/tag/v2.2.3"
+      ],
+      "status": "fixed",
+      "summary": "KOOM 生产选型说明未覆盖已发布的 v2.2.3 及 Android 15–17 ForkDump 支持变更",
+      "type": "stale-tool-release",
+      "updated_at": "2026-11-08T22:43:53.044327+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "close_note": "第 6.1 节补上同 UID 多包注册的条件性限制；第 6.3 节说明 trigger 持久化、listener 需逐进程注册，以及退出抽样或关闭开关时显式移除 trigger。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "created_at": "2026-11-08T22:39:19.264540+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "details": "android-17.0.0_r1 的 ProfilingTrigger.java 明确 TRIGGER_TYPE_ANOMALY 在同 UID 多包注册时部分异常可能不提供产物。官方 trigger lifecycle 文档与基线 ProfilingService 的触发配置持久化实现表明配置跨应用/设备重启保留；只撤回抽样或停止调用 add 不会撤销旧配置。现文仅提及 listener 与移除 API，缺少这两项运行条件。",
+      "id": "finding-ec9119a79574",
+      "log_path": "logs/audit/2026-11-08-20261108-223519-idle-audit-dc01caa9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java"
+      ],
+      "status": "fixed",
+      "summary": "Profiling trigger 缺少共享 UID 产物限制和跨重启注册持久性说明",
+      "type": "missing-trigger-lifecycle-boundary",
+      "updated_at": "2026-11-08T22:43:53.105088+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "close_note": "readRecentExits 在 API 30 以下直接返回空列表；第 7 节明确 description 格式不保证跨设备/版本稳定，MemoryLimiter 文本识别限定目标系统构建并保留原始字段。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "created_at": "2026-11-08T22:39:19.325410+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "details": "文章适用范围从 API 26 开始，但 readRecentExits 无版本分支直接调用 API 30 才提供的历史退出接口。ApplicationExitInfo.getDescription 官方警告其仅供人阅读，格式不保证跨设备或版本稳定；现文对 MemoryLimiter 标识有版本核对要求，但未明确不稳定格式这一契约。",
+      "id": "finding-bb160931a334",
+      "log_path": "logs/audit/2026-11-08-20261108-223519-idle-audit-dc01caa9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/about/versions/17/behavior-changes-all"
+      ],
+      "status": "fixed",
+      "summary": "退出记录示例缺少 API 30 运行时保护且 description 稳定性边界不完整",
+      "type": "missing-exitinfo-api-boundary",
+      "updated_at": "2026-11-08T22:43:53.165934+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "close_note": "第 3.4 节明确 Android 10 / API 29 下限及 user 构建的 debuggable/profileable 条件，保留采样、符号化与开销验证要求。 同页 ART allocation profiling 的 Android 12 / API 31 下限也已明确。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "created_at": "2026-11-08T22:39:19.385443+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "details": "文章覆盖 Android 8 起，但第 3.4 节把 heapprofd 作为原生增长入口时未写 Android 10+ 下限；Perfetto 官方文档还明确 user 构建仅允许 debuggable/profileable 目标。只提生产开销验证不足以说明这些采集可用性边界。",
+      "id": "finding-c72a2adb9191",
+      "log_path": "logs/audit/2026-11-08-20261108-223519-idle-audit-dc01caa9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "status": "fixed",
+      "summary": "heapprofd 工具选择缺少 Android 10 和量产构建 manifest 准入条件",
+      "type": "missing-heapprofd-availability",
+      "updated_at": "2026-11-08T22:43:53.225828+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "close_note": "删除旧稿矛盾的过程叙述，保留原图更靠近 Root 处还有系统单例以及链路简化说明；正确强引用链和案例数字均不变。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "created_at": "2026-11-08T22:39:19.450509+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-223519-idle-audit-dc01caa9",
+      "details": "第 2.9 节在已给出正确强引用链后仍以“矛盾：旧稿……”叙述改稿过程。读者只需当前有效的引用方向及简化路径边界，不需要旧稿纠错记录。",
+      "id": "finding-8d4190076ce9",
+      "log_path": "logs/audit/2026-11-08-20261108-223519-idle-audit-dc01caa9-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://developer.android.com/studio/profile/capture-heap-dump"
+      ],
+      "status": "fixed",
+      "summary": "首页弹窗案例保留旧稿矛盾的编辑过程提示",
+      "type": "editorial-residue",
+      "updated_at": "2026-11-08T22:43:53.286855+08:00"
     }
   ],
   "schema_version": 1
