@@ -7551,6 +7551,44 @@
       "status": "appended",
       "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
     },
+    "source/juejin-android/2026-11-09-76994142-Flutter 官方表示：AI 时代代码越来越.md": {
+      "last_seen": "2026-11-09T05:25:19.749896+08:00",
+      "mtime": 1794169166.8377066,
+      "sha256": "4565b2e5671800b0b8388b3b9ec150358e51db6955701b445bc05762061feeec",
+      "size": 5086,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-11-09-77005929-不想开会员，我写了一个记账 App.md": {
+      "chapter": "待分类",
+      "entry_id": "2cc81561b652b9ea",
+      "last_appended": "2026-11-09T05:25:19.749896+08:00",
+      "last_seen": "2026-11-09T05:25:19.749896+08:00",
+      "mtime": 1794169166.8386595,
+      "score": 7,
+      "sha256": "c0d6c0d1bac2cf21e1ce4691a7c53ca7d7b5da68af3dcd5f15e450cce58bd817",
+      "size": 11691,
+      "status": "appended",
+      "title": "不想开会员，我写了一个记账 App一个没有账号、广告和云同步的 Android 记账 App，我写了三个月。1300 多"
+    },
+    "source/juejin-android/2026-11-09-77015459-现代 Android 架构指南：不要再主动设.md": {
+      "last_seen": "2026-11-09T05:25:19.749896+08:00",
+      "mtime": 1794169166.8371987,
+      "sha256": "0e252b9c1c588690526d8db90c4d6cbf3b2261d996e0a3a7bd1765af5778578b",
+      "size": 14778,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-11-09-77032896-感人，Flutter 居然有了一个超实用提案.md": {
+      "chapter": "待分类",
+      "entry_id": "f2728f77c3413068",
+      "last_appended": "2026-11-09T05:25:19.749896+08:00",
+      "last_seen": "2026-11-09T05:25:19.749896+08:00",
+      "mtime": 1794169166.8381796,
+      "score": 7,
+      "sha256": "3f314bcb005b74e661c7b491ddefa6f9e739d0663c8dbbaadf4884cf511a16c5",
+      "size": 6091,
+      "status": "appended",
+      "title": "感人，Flutter 居然有了一个超实用提案，期待落地Dart language #4827：First version"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11054,23 +11092,23 @@
   },
   "last_report": {
     "appended": 2,
-    "considered": 2,
-    "cutoff": "2026-11-07T05:20:19.951101+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-08.md",
+    "considered": 4,
+    "cutoff": "2026-11-08T05:20:19.930335+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-09.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2503,
+    "scanned": 2507,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 2,
       "max_files": 0,
       "old_unseen": 1428,
       "path": 31,
-      "unchanged": 1042
+      "unchanged": 1044
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-08T05:25:19.930335+08:00",
+  "last_run_at": "2026-11-09T05:25:19.749896+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
