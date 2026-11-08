@@ -12,10 +12,12 @@ related_chapters:
 - '10.1'
 - '23.3'
 - '23.7'
-last_verified: '2026-09-01'
-last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；Android 17 ProfilingManager trigger 与 MemoryLimiter 官方文档；ProfilingManager、ProfilingTrigger 与 ApplicationExitInfo API 参考；LeakCanary 2.14 与 Shark 文档；KOOM 仓库与 release；Perfetto heapprofd 与 ART HPROF 源码
+last_verified: '2026-11-08'
+last_source_verified_at: '2026-11-08T22:40:43+08:00'
+last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；ProfilingManager、ProfilingTrigger 与 ProfilingService 基线源码；MemoryLimiter、ApplicationExitInfo 与 ActivityManager 官方文档；LeakCanary 工作原理文档；KOOM v2.2.3 发布说明与 tag README；Perfetto heapprofd 与 ART HPROF / HeapGraph 源码
 last_review_finalize_at: '2026-08-15T06:44:28+08:00'
-last_idle_audit_at: '2026-09-01T22:35:15+08:00'
+last_idle_audit_at: '2026-11-08T22:40:43+08:00'
+verification_scope_note: 来源核验不包含目标 Android 设备实测；货拉拉案例数字沿用原始复盘，未重新测量。
 confidence: high
 last_draft_polish_at: '2026-08-15T06:44:28+08:00'
 sources:
@@ -25,6 +27,8 @@ sources:
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java
 - type: official
   path: https://developer.android.com/about/versions/17/features
 - type: official
@@ -33,6 +37,8 @@ sources:
   path: https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture
 - type: official
   path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
 - type: reference
@@ -45,6 +51,8 @@ sources:
   path: https://github.com/KwaiAppTeam/KOOM
 - type: reference
   path: https://api.github.com/repos/KwaiAppTeam/KOOM/releases/latest
+- type: reference
+  path: https://github.com/KwaiAppTeam/KOOM/releases/tag/v2.2.3
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
 - type: aosp
@@ -316,7 +324,7 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 heap dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，原图的 References 面板从弹窗 `mView` 等子对象向 `LifecycleRegistry.mObserverMap`、常驻 `MainActivity` 回溯持有者。按强引用方向应读作：`MainActivity → LifecycleRegistry → mObserverMap → Dialog（观察者）→ mView → 布局对象`。
 
-> ⚠️ 矛盾：旧稿沿分析器回溯方向描述引用链，容易被理解为弹窗持有 Activity 才导致弹窗泄漏。本例的保留原因是常驻 Activity 的观察者表仍持有已关闭的 Dialog；原图中更靠近 Root 的路径另含系统单例，本文链路为简化表示。
+> 原图中更靠近 Root 的路径另含系统单例，本文链路为简化表示。
 
 代码审查确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。
 
@@ -384,6 +392,8 @@ heap dump 文件还可能包含账号、页面文本与业务对象，采集、�
 
 Java heap 稳定而 Native Heap 上升时，我们先换工具再看数据：Perfetto `heapprofd` 是原生堆分析器，能记录 native allocation/free（分配/释放） 与调用栈；ART allocation profiling 则面向 Java/Kotlin 分配，这个场景里继续抓 Java HPROF 往往帮不上忙。
 
+`heapprofd` 要求 Android 10（API 29）及以上；在量产 `user` 构建中，目标应用还需设置 `debuggable` 或 `profileable` 标志。Perfetto 的 ART allocation profiling 则要求 Android 12（API 31）及以上。
+
 采样频率、目标进程、持续时间和符号化条件都会影响开销与可读性。生产环境启用前先在目标机型做开销验证，并保留 build ID（构建标识）、native symbols（原生符号文件） 和混淆映射。
 
 ## 4. LeakCanary：开发期 retained-object 检测
@@ -432,7 +442,7 @@ LeakCanary 给出的 leak trace 是定位入口，修复前还要确认：
 
 到生产环境，我们再看 KOOM 这类线上方案。KOOM 官方仓库提供 Java Heap、Native Heap 和 Thread 三类监控模块。Java leak 模块包含基于 fork/COW 的 heap dump 方案；native 模块和 thread 模块则通过 hook（拦截目标函数以记录事件） 来记录事件，各有自己的分析路径。
 
-截至 2026-10-25，KOOM 仓库仍未归档，GitHub 仓库元数据的 `pushed_at` 为 2026-10-20，最新正式版仍是 2024-04-16 发布的 v2.2.2。仓库级推送时间并不指明默认分支具体提交，也不证明某个系统版本已经兼容；接入时固定版本或提交，并在目标 Android 版本、ABI 和厂商设备上实测。
+截至 2026-11-08，KOOM 仓库未归档，最新正式版为 2026-11-03 发布的 [v2.2.3](https://github.com/KwaiAppTeam/KOOM/releases/tag/v2.2.3)。发布说明列出 Android 15、16、17 的 ForkDump 支持，以及原生库的 16 KB 页大小支持。选型时应核对这些变更，固定依赖版本或提交，并在目标 Android 版本、ABI、页大小和厂商设备上实测；上游的支持声明不等于应用已完成兼容性验证。
 
 把 KOOM 简化成“计数器推断泄漏”，或者用一张固定的“精度高低”表格给 KOOM 和 LeakCanary 排名，都偏离了选型该做的事。是否接入取决于：
 
@@ -455,7 +465,7 @@ LeakCanary 给出的 leak trace 是定位入口，修复前还要确认：
 Android 17 / API 37 新增了与内存诊断直接相关的 trigger：
 
 - `ProfilingTrigger.TRIGGER_TYPE_OOM`：应用抛出 `OutOfMemoryError` 时采集 Java heap dump；若应用设置了自定义 `Thread.UncaughtExceptionHandler`，该处理器必须继续调用系统默认处理器，否则这个 trigger 不会生效；
-- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：系统检测到过量内存使用等异常时，可在系统采取处置前提供相应 profile；Android 17 MemoryLimiter 达到上限时，可通过该 trigger 获取 Java heap dump。
+- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：系统检测到过量内存使用等异常时，可在系统采取处置前提供相应 profile；Android 17 MemoryLimiter 达到上限时，可通过该 trigger 获取 Java heap dump。同一 UID（用户标识）下多个包都注册该 trigger 时，部分异常可能不提供产物。
 
 请求受系统 rate limiter（采集频率限制器）、设备状态和采集条件约束，结果交付按“尽力而为”预期：OOM 发生时原进程通常已难以继续可靠工作；如果结果生成时应用不在运行，系统会等到应用下次启动并注册 listener 后再交付。
 
@@ -523,7 +533,7 @@ class MemoryProfileRegistrar(
 }
 ```
 
-应用应在稳定的进程入口尽早注册全局 listener，否则可能错过先前事件的结果交付。示例的 `unregister()` 只解除结果 listener，不删除触发配置；若业务要停止特定类型的触发式采集，还应按目标 API 调用 `removeProfilingTriggersByType(intArrayOf(...))`。上传任务还要检查文件存在性、网络与电量条件、用户同意和服务端去重。不要在回调线程同步上传大型产物。
+trigger 配置会跨应用重启和设备重启保留，结果 listener 则需要在每个新进程中重新注册。应用应在稳定的进程入口尽早注册全局 listener，以接收先前事件的结果。示例的 `unregister()` 只解除结果 listener，不删除触发配置；设备退出抽样范围或采集开关关闭时，仅停止调用 `register()` 无法撤销旧配置，还应调用 `removeProfilingTriggersByType(intArrayOf(...))` 显式移除相应 trigger。上传任务还要检查文件存在性、网络与电量条件、用户同意和服务端去重。不要在回调线程同步上传大型产物。
 
 同一种 trigger 只能保留一个注册项；重复添加会覆盖先前配置。业务若设置 `setRateLimitingPeriodHours()`，该限制会叠加在系统 rate limiter 之上，数值应由样本预算和事件频率确定。
 
@@ -538,7 +548,7 @@ class MemoryProfileRegistrar(
 
 MemoryLimiter 目前只在部分设备启用。按 Android 17 行为变更文档，受限进程的 `reason` 是 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`；同一页还建议注册 `TRIGGER_TYPE_ANOMALY` 获取达到上限时的 heap dump。API 参考中 `REASON_MEMORY_LIMITER` 标为 37.2 版本加入；在 Android 17 上识别受限进程，以上行为变更文档的规则为准。
 
-我们在生产记录里同时保存 reason、status 和 description，并按目标系统版本验证识别规则。
+我们在生产记录里同时保存 reason、status 和 description。`getDescription()` 仅供人阅读，格式不保证跨设备或 Android 版本稳定；`MemoryLimiter:AnonSwap` 的识别规则应限定在核验过的系统构建上，并保留原始字段供复查。
 
 下面的代码读取最近退出记录，并提取内存诊断需要的基础字段：
 
@@ -553,6 +563,8 @@ data class ExitSnapshot(
 )
 
 fun readRecentExits(context: Context): List<ExitSnapshot> {
+    if (Build.VERSION.SDK_INT < 30) return emptyList()
+
     val activityManager =
         context.getSystemService(ActivityManager::class.java)
 
@@ -673,7 +685,7 @@ heap dump、native allocation profile（原生分配分析产物） 和长时间
 - [Capture a heap dump with Android Studio](https://developer.android.com/studio/profile/capture-heap-dump)
 - [LeakCanary: How LeakCanary works](https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/)
 - [KOOM official repository](https://github.com/KwaiAppTeam/KOOM)
-- [KOOM v2.2.2 release](https://github.com/KwaiAppTeam/KOOM/releases/tag/v2.2.2)
+- [KOOM v2.2.3 release](https://github.com/KwaiAppTeam/KOOM/releases/tag/v2.2.3)
 - [Perfetto heapprofd documentation](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 - [ART `SignalCatcher::HandleSigUsr1()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc)
 - [ART HPROF 实现](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/hprof/hprof.cc)
