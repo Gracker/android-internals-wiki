@@ -13832,6 +13832,68 @@
       "summary": "qcom-cpufreq-hw 的 per_core_dcvs 检测被误归于设备匹配数据",
       "type": "source-mismatch",
       "updated_at": "2026-11-07T22:42:50.183649+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
+      "close_note": "已核对官方 Android 15 弃用通知及 r1 PowerManager 固定 false / UnsupportedOperationException 分支；同步修正样本表、bootstat 历史门控解释与实验清单，加入直接来源。静态断言、元数据、SUMMARY 和 diff gate 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-143519-idle-audit-7ae51f75",
+      "created_at": "2026-11-08T14:38:48.624580+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-143519-idle-audit-7ae51f75",
+      "details": "样本表、bootstat 说明和实验清单把 userspace reboot 与当前可用启动类型并列；官方 Soft restart 页注明 Android 15 弃用，r1 PowerManager.isRebootingUserspaceSupportedImpl() 固定返回 false，reboot(userspace) 会抛 UnsupportedOperationException。需把这类样本限定为历史或定制且已确认支持的实现。",
+      "id": "finding-99aec021a25d",
+      "log_path": "logs/audit/2026-11-08-20261108-143519-idle-audit-7ae51f75-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://source.android.com/docs/core/runtime/soft-restart",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+      ],
+      "status": "verified",
+      "summary": "userspace reboot 缺少 Android 15 弃用与 Android 17 标准实现不支持的边界",
+      "type": "version-applicability",
+      "updated_at": "2026-11-08T14:43:01.062753+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
+      "close_note": "已按现有 rc 和 r1 init README 修正说明：producer、consumer 均已定义且 disabled，ready 置位由 producer 程序实现。原代码块逐字保留；静态一致性断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-143519-idle-audit-7ae51f75",
+      "created_at": "2026-11-08T14:38:48.837014+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-143519-idle-audit-7ae51f75",
+      "details": "正文 rc 同时声明 vendor_prepare_cache 和 disabled 的 vendor_consumer，紧接着却说只定义 producer、consumer 需另行定义。按示例和 r1 init README 统一解释，避免引导读者重复定义 service；producer 的 ready 通知仍需程序实现。",
+      "id": "finding-3d7491951f12",
+      "log_path": "logs/audit/2026-11-08-20261108-143519-idle-audit-7ae51f75-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/README.md"
+      ],
+      "status": "verified",
+      "summary": "init 示例已经定义 consumer，说明却要求在其他 rc 再定义",
+      "type": "example-prose-mismatch",
+      "updated_at": "2026-11-08T14:43:01.126652+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-aosp/06-system-boot-time-optimization.md",
+      "close_note": "已按官方 boot-times 的结束后删除要求补充 /data/bootchart/enabled 清理说明；r1 wrapper 第 92 行证明开启开关的行为，未改实验命令。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261108-143519-idle-audit-7ae51f75",
+      "created_at": "2026-11-08T14:41:29.833404+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261108-143519-idle-audit-7ae51f75",
+      "details": "r1 wrapper 无条件 touch /data/bootchart/enabled，原文指出采集扰动但未保留官方 boot-times 文档要求的结束后删除开关提示；残留开关会使后续每次重启继续采集。补充仅针对该开关的清理说明，不改 wrapper 或实验命令。",
+      "id": "finding-36f7cadfaf0d",
+      "log_path": "logs/audit/2026-11-08-20261108-143519-idle-audit-7ae51f75-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/perf/boot-times",
+        "https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.sh"
+      ],
+      "status": "verified",
+      "summary": "bootanalyze wrapper 开启 bootchart 后缺少实验结束清理提示",
+      "type": "missing-operational-boundary",
+      "updated_at": "2026-11-08T14:43:01.191126+08:00"
     }
   ],
   "schema_version": 1
