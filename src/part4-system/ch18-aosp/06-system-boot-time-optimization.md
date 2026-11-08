@@ -4,13 +4,19 @@ chapter: '18.6'
 section: '18.6'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-26'
-last_verified_against: AOSP android-17.0.0_r1 (bootanalyze / bootio / init / bootstat / ZygoteInit / SystemServer / ActivityManagerService / DexOptHelper / ArtManagerLocal); Android Common Kernel android17-6.18-2026-06_r6; current source.android.com boot guidance; current Android Developers 16 KB page-size guidance
+last_verified: '2026-11-08'
+last_verified_against: AOSP android-17.0.0_r1 (bootanalyze / bootio / init / bootstat / ZygoteInit / SystemServer / ActivityManagerService / DexOptHelper / ArtManagerLocal / PowerManager); Android Common Kernel android17-6.18-2026-06_r6; current source.android.com boot guidance and soft restart deprecation notice; current Android Developers 16 KB page-size guidance
 confidence: high
+last_idle_audit_at: '2026-11-08T14:38:48+08:00'
+last_source_verified_at: '2026-11-08T14:38:48+08:00'
 last_review_finalize_at: '2026-10-06T10:05:34+08:00'
 sources:
 - type: official
   path: https://source.android.com/docs/core/perf/boot-times
+- type: official
+  path: https://source.android.com/docs/core/runtime/soft-restart
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java
 - type: official
   path: https://source.android.com/docs/core/architecture/kernel/boot-time-opt
 - type: official
@@ -121,8 +127,10 @@ init 会用 `ro.boottime.<service-name>` 记录 service 第一次启动的 `CLOC
 | factory reset 后首启 | 恢复出厂后的包扫描、初始化、向导和可能的 dexopt | `first_boot` |
 | OTA 后首启 | 更新 checkpoint、APEX/分区切换、dexopt | `post_ota` |
 | Boot Classpath APEX 变化后首启 | 框架核心类路径变化触发 ART boot dexopt | `post_bcp_apex` |
-| userspace reboot | 不经过完整 bootloader/kernel 路径 | `userspace_reboot` |
+| 历史或定制实现的 userspace reboot | 不经过完整 bootloader/kernel 路径；Android 17 标准实现不支持 | `userspace_reboot`（仅适用于已确认支持的实现） |
 | 加密状态或用户状态变化 | CE（凭据加密）与 DE（设备加密）存储的可用时点不同 | `storage_state_*` |
+
+[Soft restart](https://source.android.com/docs/core/runtime/soft-restart) 在 Android 11 引入，Android 15 起已弃用。`android-17.0.0_r1` 的 `PowerManager.isRebootingUserspaceSupportedImpl()` 固定返回 `false`，通过 `PowerManager.reboot("userspace")` 请求会抛出 `UnsupportedOperationException`。Android 17 标准构建不把它列为可执行的启动实验；若分析历史设备或保留该能力的定制实现，应先确认支持情况，再单独采样。
 
 checkpoint 是文件系统更新状态的可提交或可回退点，OTA 后首启会多出相关确认工作。
 
@@ -196,7 +204,7 @@ system/extras/boottime_tools/bootanalyze/bootanalyze.sh -a
 ```
 
 `CONFIG_YMAL` 是源码里已经固化的拼写，照抄即可，写成 `CONFIG_YAML` 脚本就找不到配置。工具需要可执行 `su` 的测试设备，适合允许调试和 root 的 userdebug/eng 构建及实验室环境。
-r1 wrapper 会无条件尝试 touch /data/bootchart/enabled；该命令没有套 su，adb shell 权限不足时可能失败，而且 wrapper 不检查这一步的返回值。-b 只控制后续 bootchart 处理。bootchart 是按进程展示 CPU 与 I/O 活动的启动时间线；做低扰动基线时应评估开启它的影响，或直接调用 `bootanalyze.py` 并自行管理采集开关。
+r1 wrapper 会无条件尝试 touch /data/bootchart/enabled；该命令没有套 su，adb shell 权限不足时可能失败，而且 wrapper 不检查这一步的返回值。-b 只控制后续 bootchart 处理。bootchart 是按进程展示 CPU 与 I/O 活动的启动时间线；做低扰动基线时应评估开启它的影响，或直接调用 `bootanalyze.py` 并自行管理采集开关。实验结束后应清理 `/data/bootchart/enabled`，避免后续每次重启继续采集。
 
 wrapper 在每轮之间固定等待 20 秒；这段时间算不上统一的设备温度、关机静置或缓存控制。脚本返回成功后，我们仍要逐轮核对有效数据和全部必要终点：LOOPS=10 只说明跑满十轮，有效的 first-interactive 样本要按终点逐轮清点。
 
@@ -301,7 +309,7 @@ on property:vendor.prepare_cache.ready=1
     start vendor_consumer
 ```
 
-这种写法允许 `vendor_prepare_cache` 与其他 service 并发。这个片段只定义了 producer，vendor_consumer 还需在其他 rc 中定义并设为 disabled，避免随 class main 提前启动；producer 成功完成后才应设置 ready。还要为重复启动清理旧 ready 值，并为失败设置超时、降级或错误传播。
+这种写法允许 `vendor_prepare_cache` 与其他 service 并发。片段已定义 producer（`vendor_prepare_cache`）和 consumer（`vendor_consumer`），两者都设为 `disabled`，不会随 `class main` 自动启动：前者由 `post-fs-data` 显式启动，后者等待 ready 属性。producer 程序仍需在成功完成后设置 `vendor.prepare_cache.ready=1`；rc 本身没有实现这一步。还要为重复启动清理旧 ready 值，并为失败设置超时、降级或错误传播。
 
 
 ### `class_start` 的分组语义
@@ -507,12 +515,16 @@ lmkd 是 low memory killer daemon，在内存压力下协助选择并结束进�
 
 ## bootstat：适合版本看板的持久化事件
 
-bootstat 可持久化事件名与整数值，单位要按事件解释：-r 自定义事件以 boot_clock/CLOCK_BOOTTIME 的整数秒记录，包含休眠；RecordBootComplete() 用毫秒记录 boot_complete 等值，并减去可选 ro.boot.boottime_offset。两类值要按各自单位解读，把它们都当 uptimeMillis、或在容器内把自定义 -r 与 boot_complete 无条件相减，都并不合适。r1 bootstat.rc 用 sys.bootstat.first_boot_completed 门控，一次完整重启只在首次 sys.boot_completed=1 后提交下列采集；userspace reboot 之下，这组指标不会再自动提交：
+bootstat 可持久化事件名与整数值，单位要按事件解释：-r 自定义事件以 boot_clock/CLOCK_BOOTTIME 的整数秒记录，包含休眠；RecordBootComplete() 用毫秒记录 boot_complete 等值，并减去可选 ro.boot.boottime_offset。两类值要按各自单位解读，把它们都当 uptimeMillis、或在容器内把自定义 -r 与 boot_complete 无条件相减，都并不合适。
+
+r1 bootstat.rc 用 sys.bootstat.first_boot_completed 门控，一次完整重启只在首次 sys.boot_completed=1 后提交下列采集：
 
 - `--record_boot_complete`
 - `--record_boot_reason`
 - `--record_time_since_factory_reset`
 - `-l`
+
+在保留 userspace reboot 的历史或定制实现中，后续重复的 boot completed 触发也不会让这组指标自动重提。r1 保留这段门控及相关注释，不代表 Android 17 标准实现仍支持 userspace reboot。
 
 `RecordBootComplete()` 还会收集一组明确列出的 `ro.boottime.init.*`、`ro.boottime.event.*` 字段，以及 `ro.boot.boottime` 中的 bootloader 分段。
 event 字段只有在 init 的 event timestamp flag 开启并成功写入 property 时才有值。上电到 kernel 的耗时以 bootloader 写入的 `ro.boot.boottime` 为来源；这段来源缺席时，bootstat 侧没有补足手段。
@@ -576,7 +588,7 @@ page size 是内核管理虚拟内存和文件映射的基本页粒度。Android
 
 - build fingerprint、AOSP tag、kernel tag、vendor image；
 - page size、文件系统、存储型号和加密状态；
-- normal/first boot/post-OTA/userspace reboot；
+- normal/first boot/post-OTA；历史或定制实现另记 userspace reboot；
 - 电池、充电、温度和关机静置时间；
 - bootchart、Perfetto、UART 等采集开关；
 - `sys.boot_completed`、Launcher shown、first interactive；
@@ -605,6 +617,8 @@ KeyMint 管理硬件支持的密钥与密码操作，Gatekeeper 负责锁屏凭�
 ## 参考资料
 
 - [AOSP：Optimize boot times](https://source.android.com/docs/core/perf/boot-times)
+- [AOSP：Soft restart（Android 15 起弃用）](https://source.android.com/docs/core/runtime/soft-restart)
+- [AOSP r1：PowerManager 中的 userspace reboot 支持检查](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java)
 - [AOSP：Kernel boot time optimization](https://source.android.com/docs/core/architecture/kernel/boot-time-opt)
 - [AOSP：Boot image profiles](https://source.android.com/docs/core/runtime/boot-image-profiles)
 - [Android Developers：Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
