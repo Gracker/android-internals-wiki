@@ -3,7 +3,9 @@ title: 文件系统与 I/O 调度
 chapter: '6.2'
 section: '6.2'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-19'
+last_verified: '2026-11-09'
+last_source_verified_at: '2026-11-09T10:39:35+08:00'
+last_idle_audit_at: '2026-11-09T10:39:35+08:00'
 last_verified_against: AOSP android-17.0.0_r1 external/sqlite batch atomic write anchors + Android Common Kernel android17-6.18-2026-06_r6 ext4/F2FS/EROFS/GKI anchors + source.android EROFS/16KB page size/Virtual A/B docs + Android Developers SharedPreferences docs + Linux kernel ext4/F2FS/EROFS/VFS docs
 confidence: medium-high
 sources:
@@ -716,6 +718,8 @@ Buffered write（缓冲写） 会先把 folio 标为 dirty，writeback 随后把
 - inode 的 writeback owner（回写归属者） 会根据持续写入来源调整；把每个回写请求都归因于当时运行的 flush 线程，会归错账。
 
 缓冲写转交给后台线程后，原进程的 cgroup 信息并不一定丢失。支持 cgroup writeback 的路径会把 `bio` 关联到 inode owner 所属的 blkcg。
+
+多个 cgroup 同时写同一个 inode 时，可能有相当一部分 I/O 被记到其他组；多个组交叠修改相同页面时，即使按页面归属记账也难以准确区分。[内核文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)建议避免这种写入模式。分析共享文件负载时，要结合实际写入方判断，不能把各组的回写统计当作每个写入方的精确写入量。
 
 <!-- gracker-diagram: ch06-02-cgroup-writeback-owner -->
 ![缓冲回写的 memory 与 blkcg 归属](../../assets/diagrams/ch06/ch06-02-cgroup-writeback-owner.png)
