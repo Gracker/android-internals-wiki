@@ -4,8 +4,10 @@ chapter: '21.4'
 section: '21.4'
 status: finalized
 applicable_versions: Android 7 (API 24) - Android 17 (API 37)
-last_verified: '2026-10-25'
-last_verified_against: Current Android Developers Baseline/Startup Profile and ProfileVerifier docs; AOSP android-17.0.0_r1 art/profman + art/dex2oat + ART Service sources
+last_verified: '2026-11-09'
+last_source_verified_at: '2026-11-09'
+last_idle_audit_at: '2026-11-09'
+last_verified_against: Android Developers Baseline/Startup Profile and ProfileVerifier docs verified 2026-11-09; AOSP android-17.0.0_r1 ART Service sources; Macrobenchmark 1.5.0 and ProfileInstaller 1.4.1 sources
 confidence: medium-high
 sources:
 - type: official
@@ -311,6 +313,8 @@ Android 7～8.1 主要依靠 `ProfileInstaller` 在首次运行后写入 current
 
 侧载、第三方商店、Android Studio、Gradle 和 Play 各有各的行为，互相替代不了。其他安装工具通常由 ProfileInstaller 把规则排入下一次后台 dexopt；非 Play 渠道也可能要等设备空闲时才获得编译收益。AGP 8.4+ 会让 Android Studio 或 Gradle Wrapper 安装的本地不可调试构建（non-debuggable）自动执行设备端编译，但发布验收仍要覆盖目标渠道。
 
+Play 测试渠道还要区分 internal app sharing（内部应用分享）与 internal testing track（内部测试轨道）：[官方已知限制](https://developer.android.com/topic/performance/baselineprofiles/overview)明确说明，前者不支持 Baseline Profile，后者支持。验证 Play 的 profile 交付应使用内部测试轨道，内部应用分享的结果不能代替这项验收。
+
 #### 7.2 `ProfileVerifier` 能说明什么
 
 <!-- gracker-diagram: a225-06-delivery-branches -->
@@ -437,6 +441,8 @@ class BaselineProfileStartupBenchmark {
 
 启用 `saveInSrc` 时，生成后的规则通常位于 `src/<variant>/generated/baselineProfiles/startup-prof.txt`，由 AGP 自动消费。官方文档同样明确：库不知道宿主的入口、主 DEX 容量和完整调用路径，Startup Profile 必须由宿主应用自己贡献。
 
+AGP 8.2 不支持为各 variant 使用独立的 Startup Profile；留在该版本时，应使用 Baseline Profile Gradle plugin 1.2.3+ 自动合并各 variant 的规则。需要 free/paid 等变体各自独立的 Startup Profile 时，应升级到 AGP 8.3+。这个限制针对 Startup Profile，不能从 Baseline Profile 的分变体输出目录推断两者都能独立消费。
+
 #### 9.2 验证方式
 
 <!-- gracker-diagram: a225-09-dex-layout -->
@@ -465,7 +471,9 @@ Startup Profile 在构建时应用，APK/AAB 中没有供 ART 使用的独立 `s
 | AAB 的 `BUNDLE-METADATA/com.android.tools/r8.json` | 哪些 DEX 被标记为 startup DEX | metadata 一定对应最终文件 |
 | metadata checksum 与 DEX SHA-256 | R8 后的 DEX 没有被加固、插桩或重打包悄悄替换 | 布局一定带来可测收益 |
 
-checksum 是用于判断文件内容是否变化的摘要。AGP 8.8+ 可以从 AAB 的 `r8.json` 构建元数据中检查至少一个 DEX 是否带有 `"startup": true`，并将其中 checksum 与包内对应 DEX 的 SHA-256 摘要对齐。两者不一致时，应先定位 R8 之后的处理步骤；依据旧元数据宣称发布包保留了布局，是站不住的。表中的“加固”指 R8 后对应用包追加保护处理，“插桩”指向 DEX 插入监控或统计代码。
+checksum 是用于判断文件内容是否变化的摘要。AGP 8.8+ 可以从 AAB 的 `r8.json` 构建元数据中检查至少一个 DEX 是否带有 `"startup": true`，并将其中 checksum 与包内对应 DEX 的 SHA-256 摘要对齐。两者不一致时，应先定位 R8 之后的处理步骤；依据旧元数据宣称发布包保留了布局，是站不住的。表中的“加固”指 R8 后对应用包追加保护处理，“插桩”指向 DEX 插入监控或统计代码。[官方确认指南](https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles)注明，其中解压、读取 JSON 和计算摘要的命令流程只在 Linux 上测试过；在其他宿主系统执行时，要另行核对工具与命令兼容性。
+
+该指南还给出一个布局例外：应用或依赖库引用 desugared API（由工具链提供兼容实现的 API）时，这些兼容实现位于最后一个 DEX，该 DEX 不参与布局优化。检查启动类分布时，要把它与受 Startup Profile 优化的 DEX 区分开，不能仅因这个末尾 DEX 未被标为 startup 就判定规则失效。
 
 主 DEX 容量也是约束。规则过宽时，初始显示以外的 CUJ 会挤占 `classes.dex`，必要的启动代码反而溢出。单 DEX 应用因布局优化变为两个 DEX 不一定是回归：构建工具可能把启动代码集中在主 DEX，并把非启动代码移到后续 DEX。判断依据应是启动类分布、R8 诊断和测量结果，光看 DEX 个数会误判。
 
