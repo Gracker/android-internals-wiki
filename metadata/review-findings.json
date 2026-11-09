@@ -14120,6 +14120,175 @@
       "summary": "DEX 布局验收缺少 desugared 末尾 DEX 与官方命令宿主边界",
       "type": "source-warning-omission",
       "updated_at": "2026-11-09T18:42:07.919878+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "§4.1/§4.3 改为 low-res 写出后投递回调、再写 high-res；注明 low-res 配置条件与两次身份检查，以已渲染 Mermaid 替换含错误时序的图片引用，并收窄 §13 缓存引用范围。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:40:19.560005+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "§4.1 与配图写成持久化完成才回调；§4.3 固定先 high-res 后 low-res。源码 writeBuffer 在带回调分支先写 low-res、投递回调，再写 high-res；控制器还要求 low-res 配置有效。",
+      "id": "RF-2-17-lowres-persist-order",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskSnapshotController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/SnapshotPersistQueue.java"
+      ],
+      "status": "fixed",
+      "summary": "low-res 回调时序被误写成全部持久化完成之后",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:52.826352+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "§4.4 说明 proto 不保留 capture time、磁盘恢复重设加载时间及进程有效范围；§9.1/§10.3 改为按 snapshot ID 关联原始捕获记录。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:40:19.629993+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "§9.1 与 §10.3 未区分原始捕获和磁盘加载。AppSnapshotLoader 传入加载时的 elapsedRealtimeNanos，proto 未持久化 captureTime；TaskSnapshot 注释还限定字段有效进程。",
+      "id": "RF-2-17-restored-capture-time",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AppSnapshotLoader.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/SnapshotPersistQueue.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/TaskSnapshot.java"
+      ],
+      "status": "fixed",
+      "summary": "磁盘恢复的 capture time 被用于推断旧画面捕获年龄",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:52.886352+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "§8.2 区分 Launcher 背景绘制、TaskSnapshotWindow 背景色记录与 SnapshotSurface 直接设置 buffer；主题装饰归回生成阶段。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:40:19.697558+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "§8.2 把 Launcher 的背景绘制行为外推到 snapshot starting window。固定基线 SnapshotDrawerUtils 的 SnapshotSurface 仅设 buffer、色彩和几何，未调用 SystemBarBackgroundPainter；主题装饰在生成阶段绘入快照。",
+      "id": "RF-2-17-starting-buffer-decoration",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/SnapshotDrawerUtils.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AbsAppSnapshotController.java"
+      ],
+      "status": "fixed",
+      "summary": "snapshot starting window 被误写成额外绘制背景和系统栏",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:52.946560+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "小结保留两条 TaskSnapshot 显示路径并单列 live tile 的真实 Task Surface；§5.3 删除错误进程状态箭头模型。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:40:19.766219+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "开篇与 §5.3 已区分真实 Task Surface 和 TaskSnapshot，但小结把 live tile 列为 TaskSnapshot 显示方式；需保持全文一致并移除错误进程状态箭头模型。",
+      "id": "RF-2-17-livetile-not-snapshot",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/recents/ui/mapper/TaskUiStateMapper.kt",
+        "https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/task/thumbnail/TaskThumbnailView.kt",
+        "https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/task/thumbnail/LiveTileView.kt"
+      ],
+      "status": "fixed",
+      "summary": "小结将 live tile 错归为 TaskSnapshot 的第三种显示方式",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:53.006551+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "§8.1 补充 ColorSpace.getId()<0 时回退 Named.SRGB 的构造边界。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:44:42.955415+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "§8.1 声称 ColorSpace 原样传递，但 TaskSnapshot 构造函数将 getId()<0 的 ColorSpace 回退到 Named.SRGB。",
+      "id": "RF-2-17-colorspace-normalization",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/TaskSnapshot.java"
+      ],
+      "status": "fixed",
+      "summary": "TaskSnapshot 色彩空间传递遗漏自定义空间回退边界",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:53.066340+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "§5.2 按源码区分后台 dispatcher/executor、Task key 失效和分辨率检查；trim 改为追踪回调调用条件，§13 修正进程内 tracker 的注册与分发关系；添加缓存实现源码链接。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:44:43.016450+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "§5.2 错归 TaskImageCache，并把 getAndInvalidateIfModified 说成分辨率切换失效。实际 TaskThumbnailCache 使用 backgroundDispatcher 或 bgExecutor；TaskKeyByLastActiveTimeCache 按 windowingMode 和 lastActiveTime 校验，分辨率另行判断；TaskIconCache 不能作为 trim 回调注册依据。",
+      "id": "RF-2-17-launcher-cache-ownership",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/TaskThumbnailCache.kt",
+        "https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/util/TaskKeyByLastActiveTimeCache.java",
+        "https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/TaskIconCache.kt"
+      ],
+      "status": "fixed",
+      "summary": "Launcher 后台加载、缓存失效与 trim 职责被混用",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:53.129535+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "§3.3 将两项主题策略都限定到非 home/recents/dream Task 的 top Activity，窗口检查范围限于该 Activity。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:44:43.077237+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "§3.3 前段正确注明 top Activity，但后续枚举写为 Task 中窗口；ActivityRecord.shouldUseAppThemeSnapshot 只遍历该 Activity 的窗口。",
+      "id": "RF-2-17-theme-policy-scope",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AbsAppSnapshotController.java"
+      ],
+      "status": "fixed",
+      "summary": "主题快照 secure 判断范围从 top Activity 被扩大到整个 Task",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:53.195823+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/17-tasksnapshot-recents-rendering.md",
+      "close_note": "§2.4 删除仅更新冻结状态的错误概括，保留不存在主动 TaskSnapshot hook 的源码结论。 固定 android-17.0.0_r1 源码与本地文档门禁通过；未进行实机性能测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261109-223519-idle-audit-14bb524a",
+      "created_at": "2026-11-09T22:44:43.138307+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261109-223519-idle-audit-14bb524a",
+      "details": "§2.4 关于不触发 snapshot 的结论成立，但只更新自身冻结状态记录忽略实际进程冻结与 Binder 冻结操作，应只保留已核验的无快照 hook 结论。",
+      "id": "RF-2-17-freezer-operation-scope",
+      "log_path": "logs/audit/2026-11-09-20261109-223519-idle-audit-14bb524a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java"
+      ],
+      "status": "fixed",
+      "summary": "CachedAppOptimizer 的冻结动作被缩减为仅更新状态记录",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-09T22:48:53.263893+08:00"
     }
   ],
   "schema_version": 1
