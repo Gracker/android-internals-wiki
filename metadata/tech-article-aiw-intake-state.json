@@ -7589,6 +7589,61 @@
       "status": "appended",
       "title": "感人，Flutter 居然有了一个超实用提案，期待落地Dart language #4827：First version"
     },
+    "source/juejin-android/2026-11-10-76994278-流式回复结尾的那一下闪：逐帧定位 Compose 聊.md": {
+      "chapter": "ch02-rendering",
+      "entry_id": "3c09409f12001a56",
+      "last_appended": "2026-11-10T05:25:19.868771+08:00",
+      "last_seen": "2026-11-10T05:25:19.868771+08:00",
+      "mtime": 1794255694.0810366,
+      "score": 16,
+      "sha256": "6a678b1b19ab28f1500594ccab770adee600f1655c29fd592cd20ad684cb98f1",
+      "size": 23026,
+      "status": "appended",
+      "title": "流式回复结尾的那一下闪：逐帧定位 Compose 聊天列表的三处布局跳动AI 回复流式输出到结尾时，消息会上下闪一下。用"
+    },
+    "source/juejin-android/2026-11-10-77034597-Kotlin 2.5 Value Class 终于能放多个属性.md": {
+      "last_seen": "2026-11-10T05:25:19.868771+08:00",
+      "mtime": 1794255694.0912707,
+      "sha256": "1b3b9b7236fd83a58bf833bb07b0cae5e4e30af9a313d128e06d11a14922230c",
+      "size": 5125,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-11-10-77045284-AOSP思绎｜Android 17 MediaSession：系统如何.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "69c3a15c547be049",
+      "last_appended": "2026-11-10T05:25:19.868771+08:00",
+      "last_seen": "2026-11-10T05:25:19.868771+08:00",
+      "mtime": 1794255694.0882337,
+      "score": 21,
+      "sha256": "995c900f27d5f3f9b6d729e395990b3f243a81b5ef0a0a2d46f89e616a27df9f",
+      "size": 118516,
+      "status": "appended",
+      "title": "AOSP思绎｜Android 17 MediaSession：系统如何找到播放器、控制播放并同步状态？基于 Androi"
+    },
+    "source/juejin-android/2026-11-10-77051965-Android 悬浮窗藏不住自己：一个标志位与.md": {
+      "chapter": "待分类",
+      "entry_id": "18acb9a6703d4c18",
+      "last_appended": "2026-11-10T05:25:19.868771+08:00",
+      "last_seen": "2026-11-10T05:25:19.868771+08:00",
+      "mtime": 1794255694.0832634,
+      "score": 7,
+      "sha256": "ae582c95688d4630bc724aec54385bc17c251b17080c51f185d53636b6631f97",
+      "size": 8430,
+      "status": "appended",
+      "title": "Android 悬浮窗藏不住自己：一个标志位与 140 毫秒Android 悬浮窗藏不住自己：一个标志位与 140 毫秒"
+    },
+    "source/juejin-android/2026-11-10-77054198-被杀掉之后：我把 Android 的「唤起 + 常驻.md": {
+      "chapter": "待分类",
+      "entry_id": "b8a3ba5572da7518",
+      "last_appended": "2026-11-10T05:25:19.868771+08:00",
+      "last_seen": "2026-11-10T05:25:19.868771+08:00",
+      "mtime": 1794255694.087271,
+      "score": 20,
+      "sha256": "9ee9e576995de8b2e279734f837e2f4cfb0a5ec0fe8c0006c70bb0ac056ffbb3",
+      "size": 74499,
+      "status": "appended",
+      "title": "被杀掉之后：我把 Android 的「唤起 + 常驻」重做了一遍从一条短信链接点进来，到锁屏十分钟之后进程还在不在，中间"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11091,24 +11146,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 4,
-    "cutoff": "2026-11-08T05:20:19.930335+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-09.md",
+    "appended": 4,
+    "considered": 5,
+    "cutoff": "2026-11-09T05:20:19.749896+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-10.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2507,
+    "scanned": 2512,
     "skipped": {
       "existing_link": 0,
-      "low_score": 2,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1428,
       "path": 31,
-      "unchanged": 1044
+      "unchanged": 1048
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-09T05:25:19.749896+08:00",
+  "last_run_at": "2026-11-10T05:25:19.868771+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
