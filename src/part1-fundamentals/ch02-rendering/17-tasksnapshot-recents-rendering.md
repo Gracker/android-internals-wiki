@@ -4,8 +4,10 @@ chapter: '2.17'
 section: '2.17'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-01'
+last_verified: '2026-11-09'
 last_verified_against: AOSP android-17.0.0_r1 + Launcher3 android-17.0.0_r1
+last_source_verified_at: '2026-11-09'
+last_idle_audit_at: '2026-11-09'
 confidence: high
 last_review_finalize_at: '2026-10-01'
 sources:
@@ -22,7 +24,15 @@ sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/AbsAppSnapshotController.java
 - type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java
+- type: aosp
   path: frameworks/base/services/core/java/com/android/server/wm/SnapshotPersistQueue.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/AppSnapshotLoader.java
+- type: aosp
+  path: frameworks/base/core/java/android/window/TaskSnapshot.java
 - type: aosp
   path: frameworks/base/core/java/android/window/SnapshotDrawerUtils.java
 - type: aosp
@@ -143,7 +153,7 @@ Launcher3 在缩略图缺失时会先读取已有 snapshot，仍为空时再请�
 
 ### 2.4 Cached App Freezer 与快照的关系
 
-还有一类常见误解：Cached App Freezer 冻结前会不会自动截一张？不会。`TaskSnapshotController` 没有“每次冻结前先截 Task”的通用 hook（钩子），`CachedAppOptimizer`（缓存应用优化器） 冻结应用时只更新自身的冻结状态记录，不会主动调用 snapshot 入口。快照仍主要由 transition、sleep 和特权主动请求三类路径产生（见 §2.1–2.3）。
+还有一类常见误解：Cached App Freezer 冻结前会不会自动截一张？不会。`TaskSnapshotController` 没有“每次冻结前先截 Task”的通用 hook（钩子），`CachedAppOptimizer`（缓存应用优化器） 的冻结路径也不会主动调用 snapshot 入口。快照仍主要由 transition、sleep 和特权主动请求三类路径产生（见 §2.1–2.3）。
 
 顺序问题同理。WMS visibility（可见性）、ATMS lifecycle transaction（ActivityTaskManagerService 生命周期事务）、Shell transition 和应用主线程各自独立调度，源码没有向应用承诺 `capture snapshot → onPause() → transition start` 的固定顺序；系统只尽量在 Task 关闭前保留可用于过渡的视觉状态。
 
@@ -205,10 +215,10 @@ AOSP 也没有“1080p 必须 5–15 ms”一类的保证：截图策略、SoC�
 
 TV（`FEATURE_LEANBACK`）、IoT（`FEATURE_EMBEDDED`）或设备资源 overlay（覆盖配置） `config_disableTaskSnapshots = true` 也会通过 `shouldDisableSnapshots()` 直接关闭整个快照路径。
 
-以下情况会选择 app-theme snapshot：
+对于 home、recents、dream 以外的 Task，top Activity 满足以下任一条件时会选择 app-theme snapshot：
 
-- Activity 调用 `setRecentsScreenshotEnabled(false)`；
-- Task 中窗口被 `FLAG_SECURE`、敏感内容策略或设备策略判为 secure。
+- 调用 `setRecentsScreenshotEnabled(false)`；
+- 其窗口被 `FLAG_SECURE`、敏感内容策略或设备策略判为 secure。`ActivityRecord.shouldUseAppThemeSnapshot()` 检查的范围限于该 Activity 的窗口。
 
 主题占位由 system_server（承载系统核心服务的进程） 使用 `RenderNode` 和 `ThreadedRenderer.createHardwareBitmap()` 绘制，包含背景色与 system-bar 装饰信息，不含应用的敏感像素。
 
@@ -244,14 +254,25 @@ ArrayMap<Integer, CacheEntry> mRunningCache
 
 进程死亡时，system_server 的运行时 cache entry 会被删掉，已经持久化的磁盘文件还能继续服务后续的 Overview 或启动恢复；Launcher 进程另有自己的缩略图缓存。
 
-low-res 写回还有一段容易想简单的流程。`onlyCacheLowResTaskSnapshot` 这个 feature flag（功能开关） 开启时，`TaskSnapshotController.getRecordSnapshotSupplier()` 会在持久化完成后把 `updateLowResToCacheFunction(task, snapshotId)` 回调 post 到 `mHandler`；回调重新进入全局锁，逐项校验 task 仍 attached、缓存里的 snapshot id 仍是同一份、且仍是高分辨率版本，全部通过才把 low-res 写回 `mCache`，任一条件不满足就调用 `supplier.abort()`，这份 low-res 不进运行时缓存。
+low-res 写回还有一段容易看错的时序。`onlyCacheLowResTaskSnapshot` 这个 feature flag（功能开关） 开启且 low-res 配置有效时，`TaskSnapshotController.getRecordSnapshotSupplier()` 才会给持久化队列传入 `updateLowResToCacheFunction(task, snapshotId)`。队列先生成并写出 low-res 图像，再通过该回调把写回工作 post 到 `mHandler`，随后继续写 high-res 图像；Handler 回调与 high-res 写盘之间没有完成顺序保证。
 
-写回成功时，`TaskSnapshotCache` 会把旧 high-res 从主 `mRunningCache` 替换出去，并在 `DeferRemoveHighResCache` 中短暂保留同一 ID 的 high-res；Android 17 源码里的延迟移除常量是 5000 ms。也就是说，flag 开启后主缓存的目标确实是 low-res，但 high-res buffer 在格式转换、回调排队和延迟移除的窗口内仍可能被引用。我们排查内存时，要按“high-res 延迟一段时间才释放”来记，别写成“生成 low-res 后立即释放”。
+回调先进入全局锁，校验 task 仍 attached、缓存里的 snapshot ID 仍匹配且仍为 high-res；任一条件不满足就调用 `supplier.abort()`。通过后，回调在锁外取得 low-res，再进入全局锁检查 Task 与缓存身份，符合条件才更新 `mCache`；如果同一份 low-res 已由其他读取路径写入缓存，就直接复用。
 
-<!-- gracker-diagram: ch02-17-lowres-cache-update -->
-![low-res 写回需复查身份，high-res 可以延迟释放](../../assets/diagrams/ch02/ch02-17-lowres-cache-update.png)
+写回成功时，`TaskSnapshotCache` 会把旧 high-res 从主 `mRunningCache` 替换出去，并在 `DeferRemoveHighResCache` 中短暂保留同一 ID 的 high-res；Android 17 源码里的延迟移除常量是 5000 ms。主缓存换为 low-res 后，high-res buffer 在写盘、回调排队和延迟移除的窗口内仍可能被引用。我们排查内存时，要区分主缓存替换与底层 buffer 释放。
 
-图：图仅对应 onlyCacheLowResTaskSnapshot 开启时。后台持久化完成后回到 Handler 与全局锁内，检查 Task 仍 attached、snapshot ID 仍匹配且缓存仍为 high-res；成功才替换主缓存，旧 high-res 进入延迟移除缓存。移除缓存引用也不保证所有消费者已释放同一 buffer。
+```mermaid
+flowchart TD
+    A["flag 开启且 low-res 配置有效"] --> B["生成并写出 low-res 图像"]
+    B --> C["投递 Handler 写回回调"]
+    C --> D["Handler：先校验，再取得 low-res 并复查缓存身份"]
+    C --> E["持久化线程：继续写 high-res 图像"]
+    D --> F["条件满足：替换主缓存，旧 high-res 进入延迟缓存"]
+    D --> G["初次校验失败：supplier.abort"]
+    D --> H["已缓存同一份 low-res：直接复用"]
+    F --> I["按延迟任务移除缓存引用；常量 5000 ms"]
+```
+
+图：low-res 回调在 high-res 写盘之前投递，两条执行路径可以交错。缓存替换需要复查 Task、snapshot ID 与分辨率；移除缓存引用也不保证所有消费者已释放同一 buffer。
 
 ### 4.2 内存估算要带上 scale、format 与 stride
 
@@ -280,12 +301,10 @@ AOSP 默认 high-res scale（高分辨率缩放系数） 为 1.0，low-res scale
 
 ### 4.3 持久化在线程队列完成
 
-`SnapshotPersistQueue` 使用名为 `TaskSnapshotPersister` 的后台线程，一次 store（持久化任务） 会：
+`SnapshotPersistQueue` 使用名为 `TaskSnapshotPersister` 的后台线程。一次 store（持久化任务） 先写 snapshot 元数据的 proto（Protocol Buffers） 文件，再把 HardwareBuffer 复制成 software `Bitmap`。图像写入顺序取决于是否带有 low-res 写回回调：
 
-1. 写入 snapshot 元数据的 proto（Protocol Buffers） 文件；
-2. 把 HardwareBuffer 复制成 software `Bitmap`；
-3. 写 high-res 图像；
-4. 配置允许时生成并写 low-res 图像。
+- 没有回调时，先写 high-res 图像，配置允许时再生成并写 low-res 图像；
+- 带有回调时，先生成并写 low-res 图像、投递写回回调，再写 high-res 图像。low-res 缓存更新无需等待 high-res 文件写完。
 
 Android 17 默认路径下，JPEG 压缩质量常量为 `SnapshotPersistQueue.COMPRESS_QUALITY = 95`。当 `onlyCacheLowResTaskSnapshot` flag 开启时，high-res 改用 PNG（lossless），low-res 仍按 JPEG 95 写出；磁盘文件扩展名不会随格式变化。
 
@@ -308,6 +327,8 @@ Android 17 默认路径下，JPEG 压缩质量常量为 `SnapshotPersistQueue.CO
 ### 4.4 从磁盘恢复包含解码和重新上传
 
 `AppSnapshotLoader` 先读取 proto 文件，再用 `BitmapFactory.decodeFile()` 解码图像，随后复制为 `Config.HARDWARE` bitmap 并取得 `HardwareBuffer`。所以磁盘命中也包含文件读取、解码和硬件位图分配的成本。
+
+恢复后的 `capture time` 需要单独解释：proto 保存 snapshot ID，但不保存原始 capture time；`AppSnapshotLoader` 用加载时的 `SystemClock.elapsedRealtimeNanos()` 构造 `TaskSnapshot`。旧画面因此可能带着一个很近的 capture time。`TaskSnapshot.getCaptureTime()` 的源码注释还将有效范围限定在生成该快照对象的进程内，排查缩略图新旧时应关联 snapshot ID 与原始捕获记录，不能把磁盘恢复时间当成画面更新时间。
 
 磁盘恢复与内存命中差别很大：
 
@@ -351,11 +372,11 @@ Launcher3 的 `TaskThumbnailView` 是 Launcher View hierarchy（View 树） 中�
 `TaskThumbnailCache` 的容量来自 Launcher 资源 `recentsThumbnailCacheSize`，与 system_server `SnapshotCache` 无关。它支持：
 
 - 低、高或任意分辨率请求；
-- 后台 executor 加载（`TaskImageCache` 的后台协程 + `WorkerThread`）；
+- 后台加载（协程路径使用 `withContext(backgroundDispatcher)`，回调路径把 `CancellableTask` 交给 `bgExecutor`）；
 - cache size（缓存容量） 变化后裁剪（`updateCacheSizeAndRemoveExcess`）；
 - 进入 Overview 前预加载（由 `enableTaskSnapshotPreloading` 与 `HighResLoadingState.visible` 控制）；
-- 高分辨率转换到低分辨率或反之时的“旧 entry 失效”逻辑（`cache.getAndInvalidateIfModified(key)`）；
-- 进程高负载时的 trim 回调，通常经 Launcher 的 trim dispatcher 清空缩略图与图标 cache。trim 阈值和回调绑定在 Launcher 调度层（`TaskIconCache` / 进程级 `ComponentCallbacks2`），不在 `TaskThumbnailCache` 自身；引用 14.30 章节的 trim 边界时不可外推。
+- 按 Task key 校验旧 entry（`cache.getAndInvalidateIfModified(key)`）。默认的 `TaskKeyByLastActiveTimeCache` 检查 windowing mode 与 last active time；缓存分辨率能否满足请求，由 `TaskThumbnailCache` 另行判断；
+- `clear()` 与 `remove()` 清理入口。内存 trim 是否触发这些入口，需要继续追踪 Launcher 进程级回调的注册与调用，不能从 `TaskThumbnailCache` 或 `TaskIconCache` 的存在推定 trim 阈值。
 
 我们排查内存时，至少要区分三块：system_server 的 TaskSnapshot buffer、Launcher 的 hardware `Bitmap` 引用，以及屏幕上 Launcher App Window buffer。
 
@@ -363,14 +384,7 @@ Launcher3 的 `TaskThumbnailView` 是 Launcher View hierarchy（View 树） 中�
 
 Quickstep 的 `TaskUiStateMapper` 会在当前 running Task（正在运行的任务） 且允许实时显示时选择 `LiveTile`。Recents animation 把真实任务作为 `RemoteAnimationTarget` 交给 Launcher，Launcher 再对 leash 应用 matrix（变换矩阵）、crop（裁剪）、alpha（透明度） 等 transaction。
 
-live tile 与静态缩略图的选择，经常被简化成：
-
-```text
-进程存活 → live tile
-进程冻结或死亡 → snapshot
-```
-
-这个箭头关系是最常见的误读：一个仍存活的后台 Task 完全可以显示静态 snapshot；live tile 通常对应当前正在参与 Recents animation 的 running Task，是否显示 screenshot 还受手势状态、锁定状态、最小化状态和 Launcher 实现影响。
+live tile 的选择不由进程存活、冻结或死亡单独决定。一个仍存活的后台 Task 可以显示静态 snapshot；live tile 通常对应当前正在参与 Recents animation 的 running Task，是否显示 screenshot 还受手势状态、锁定状态、最小化状态和 Launcher 实现影响。
 
 ### 5.4 点击卡片有两类启动路径
 
@@ -483,7 +497,7 @@ AOSP WindowManager 中，一个 Task 在某一时刻归属于一个 `DisplayCont
 
 ### 8.1 ColorSpace 会随 TaskSnapshot 传递
 
-SurfaceFlinger 捕获结果返回 `HardwareBuffer` 和 `ColorSpace`。TaskSnapshot 把这两项原样传给消费端：
+SurfaceFlinger 捕获结果返回 `HardwareBuffer` 和 `ColorSpace`。TaskSnapshot 保存这两项供消费端使用；其中 `ColorSpace.getId() < 0` 的自定义色彩空间会在构造函数中回退为 `ColorSpace.Named.SRGB`，不能假定所有色彩空间对象都原样保留：
 
 - Launcher 把 buffer 包装为 hardware `Bitmap`；
 - starting window 通过 `SurfaceControl.Transaction.setColorSpace()` 标记 Surface 的色彩空间。
@@ -494,7 +508,7 @@ WCG（广色域）Task 的最终 dataspace（像素数据的颜色解释标签�
 
 real snapshot 的 pixel format 可为 RGBA_8888，`TaskSnapshot.isTranslucent()` 记录 Task 是否可能透出背景。Launcher3 会先绘制 `TaskDescription` 指定的背景，再显示 thumbnail，避免透明或局部为空的 snapshot 露出错误内容。
 
-snapshot starting window 同样从 `TaskDescription` 取背景色，并处理 system-bar 区域。只看 screenshot buffer，可能漏掉最终屏幕上的背景和装饰。
+snapshot starting window 在本节基线中直接设置旧 snapshot buffer；`SnapshotDrawerUtils.SnapshotSurface` 处理几何与色彩空间，没有额外调用背景或 system-bar 装饰绘制。`TaskSnapshotWindow` 虽然从 `TaskDescription` 保存背景色供外部查询，但这不等于它把该颜色画到了 starting surface 上。app-theme snapshot 的背景与系统栏装饰已在生成阶段绘入 buffer（见 §3.3）。
 
 ### 8.3 HardwareBuffer 与 composition type（合成类型）
 
@@ -521,7 +535,7 @@ Overview 静态卡片通常已经画入 Launcher App Window；启动 snapshot �
 | Overview 空卡 | Launcher 发起 thumbnail 请求 | `TaskThumbnailView` 所在 Launcher 帧完成显示（present） |
 | 点击最近任务闪烁 | 卡片点击并开始 launch transition | App 新 buffer 在目标 Display 完成显示 |
 | starting window 停留过久 | `TaskSnapshot#addToDisplay` | snapshot starting surface 被移除，且 App 帧完成显示 |
-| 缩略图过旧 | snapshot capture time 或 ID | 用户打开 Overview 的时间 |
+| 缩略图过旧 | 与 snapshot ID 对应的原始捕获记录（磁盘恢复的 capture time 仅表示加载时刻） | 用户打开 Overview 的时间 |
 
 注意分段：捕获耗时、磁盘恢复耗时和显示耗时是三段数据，报告时别压缩成一个“TaskSnapshot latency（延迟）”。
 
@@ -613,7 +627,7 @@ adb shell dumpsys meminfo <launcher-package>
 
 ### 10.3 卡片旧，但 App 已更新
 
-记录 snapshot ID 和 capture time，并确认 Task 最近一次何时转为不可见。后台仍存活，说明不了系统在持续刷新静态缩略图；live tile 也只覆盖正在参与 Recents animation 的目标。
+记录 snapshot ID、获取路径和 capture time，并确认 Task 最近一次何时转为不可见。内存捕获的时间与磁盘恢复时重设的时间需要分开；判断画面是否更新，应把 ID 关联回原始捕获记录，不能仅凭恢复后的 capture time 很近就认定快照新鲜。后台仍存活，说明不了系统在持续刷新静态缩略图；live tile 也只覆盖正在参与 Recents animation 的目标。
 
 ### 10.4 点击卡片后画面跳变
 
@@ -675,6 +689,7 @@ adb shell dumpsys meminfo <launcher-package>
 ### Android 17 Launcher3
 
 - [`TaskThumbnailCache.kt`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/TaskThumbnailCache.kt)：Launcher 高低分辨率缓存与后台加载；
+- [`TaskKeyByLastActiveTimeCache.java`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/util/TaskKeyByLastActiveTimeCache.java)：按 windowing mode 与 last active time 校验缓存 entry；
 - [`TaskUiStateMapper.kt`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/recents/ui/mapper/TaskUiStateMapper.kt)：`LiveTile`、`Snapshot`、锁定与背景状态；
 - [`TaskThumbnailView.kt`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1/quickstep/src/com/android/quickstep/task/thumbnail/TaskThumbnailView.kt)：静态 hardware Bitmap 的 View 绘制；
 - [`PreviewPositionHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/recents/utilities/PreviewPositionHelper.java)：rotation、density、letterbox、split 与裁剪矩阵。
@@ -692,18 +707,19 @@ adb shell dumpsys meminfo <launcher-package>
 1. **transition 路径只记录 `!isVisibleRequested()` 的 Task**。`SnapshotController.onTransactionReady()` 中 `task != null && !task.mCreatedByOrganizer && !task.isVisibleRequested()` 是同一行的复合条件，遗漏否定就是相反结论。
 2. **`getSnapshotMode` 对 home 一律走 REAL**，对 recents / dream 直接 NONE，不能因为是 home 就跳过；对其他 Task 是否走 app-theme 由 top Activity `shouldUseAppThemeSnapshot()` 决定。
 3. **sleep 路径只捕获 `isVisible()` 且 `!isAnimatingByRecents()` 的 leaf Task**；secure keyguard 情况下默认 Display 的 home Task 才被纳入，其他 home Task 在这一路径被显式跳过。
-4. **`DeferRemoveHighResCache` 缓存的 high-res 在 `onlyCacheLowResTaskSnapshot` 关闭时不存在**。flag 关闭时 `TaskSnapshotCache` 构造里 `mDeferRemoveCache` 为 `null`，所有 high-res 引用只在主 `mRunningCache`。
-5. **`TaskThumbnailCache` 不直接订阅 `ITaskSnapshotListener`**。`TaskSnapshotManager.registerTaskSnapshotListener` 是 `TaskSnapshotListenerTracker` 提供的统一入口；highRes / lowRes 状态切换在 `HighResLoadingState` 内部维护，不要把 trim 阈值或 onTaskSnapshotChanged 流程归到 `TaskThumbnailCache` 自身。
+4. **`DeferRemoveHighResCache` 缓存的 high-res 在 `onlyCacheLowResTaskSnapshot` 关闭时不存在**。flag 关闭时 `TaskSnapshotCache` 构造里 `mDeferRemoveCache` 为 `null`；就该类的缓存结构而言，high-res 只保存在主 `mRunningCache`，持久化队列、Launcher 与 starting surface 仍可另持引用。
+5. **`TaskThumbnailCache` 不直接订阅 `ITaskSnapshotListener`**。`TaskSnapshotManager.registerTaskSnapshotListener()` 通过进程内的 `TaskSnapshotListenerTracker` 统一向系统注册，再分发给本地监听器；highRes / lowRes 状态切换在 `HighResLoadingState` 内部维护，不要把 trim 阈值或 onTaskSnapshotChanged 流程归到 `TaskThumbnailCache` 自身。
 6. **`isSnapshotOrientationCompatible` 的 aspect ratio 阈值是 `0.01f`**，且比较的是宽高比（`taskSize.x / taskSize.y` 与 `w / h`），不是宽度差值的绝对比例；折叠后不旋转但宽高比变化超过阈值时 starting window 直接走 splash 或 NONE。
 7. **`FLAG_SECURE` 与 `setRecentsScreenshotEnabled(false)` 的范围在前文 §3.4 已经分别说明**；混用会丢掉 `FLAG_SECURE` 的 Display 限制与截屏防护，是真实工程里经常出现的回归点。
 
 ## 小结
 
-TaskSnapshot 是一次 Task Surface 子树捕获及其元数据容器，它至少有三种不同的显示方式：
+TaskSnapshot 是一次 Task Surface 子树捕获及其元数据容器，主要在两条显示路径中复用：
 
 1. Launcher 把 HardwareBuffer 包装成 hardware Bitmap，作为 Overview 静态卡片绘制；
-2. Recents animation 把真实 Task surface 通过 remote leash 显示为 live tile；
-3. WM Shell 把旧 TaskSnapshot 设置到独立 starting-window Surface，等待 App 内容 ready。
+2. WM Shell 把旧 TaskSnapshot 设置到独立 starting-window Surface，等待 App 内容 ready。
+
+Overview live tile 的实时内容来自 Recents animation 提供的真实 Task Surface 与 remote leash；它需要与这两条使用 TaskSnapshot buffer 的静态快照路径分开观察。
 
 我们检查这条管线时，应把捕获、缓存与磁盘、Binder、Launcher 与 Shell 的几何处理、App 新 buffer 和目标 Display present 分开核对。把它们合并成“snapshot layer 直接交给 HWC”的模型，会漏掉最常见的卡顿、错帧和内存来源。
 
