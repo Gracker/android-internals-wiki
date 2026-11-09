@@ -6482,6 +6482,34 @@
         "ch04-memory"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-10-76994278-流式回复结尾的那一下闪：逐帧定位 Compose 聊.md",
+      "title": "[技术文章] 流式回复结尾的那一下闪：逐帧定位 Compose 聊天列表的三处布局跳动AI 回复流式输出到结尾时，消息会上下闪一下。用",
+      "summary": "> 发布时间: 2026-10-23T01:42:10.000Z > 原文链接: https://juejin.cn/post/7699427841725726771 2026-10-23 317 阅读13分钟 给 chatbase-kmp（一个 KMP 聊天 UI 库）接入 LaTeX 公式渲染后，跑基准测试时发现：**AI 回复流式输出到快结束的时候，整条消息会上下闪...",
+      "chapter": "ch02",
+      "processed_at": "2026-11-10T06:20:19.840018+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-10-77045284-AOSP思绎｜Android 17 MediaSession：系统如何.md",
+      "title": "[技术文章] AOSP思绎｜Android 17 MediaSession：系统如何找到播放器、控制播放并同步状态？基于 Androi",
+      "summary": "> 发布时间: 2026-11-05T09:42:19.000Z > 原文链接: https://juejin.cn/post/7704528431254061098 2026-11-05 176 阅读49分钟 Android 深入系统内部 播放器应用知道怎样播放一首歌，系统界面却还需要回答另一组问题：当前应该控制哪个应用？播放键交给谁？曲名、封面和进度从哪里来？本地音量...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-10T06:20:19.840018+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/04-class-loading-art-boot-image.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "aosp",
+        "androi",
+        "t09",
+        "juejin-android"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
