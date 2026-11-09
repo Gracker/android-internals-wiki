@@ -4,8 +4,8 @@ chapter: '6.1'
 section: '6.1'
 status: finalized
 applicable_versions: Android 9 - Android 17 (API 37)
-last_verified: '2026-08-26'
-last_verified_against: Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, Android Common Kernel android17-6.18 UFS/blk-crypto config, dynamic partitions / metadata encryption / system-as-root / scoped storage / FUSE passthrough / Virtual A/B docs, SQLite compile & WAL docs
+last_verified: '2026-11-09'
+last_verified_against: Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, Android Common Kernel android17-6.18 UFS/blk-crypto source & config, dynamic partitions / metadata encryption / file-based encryption / hardware-wrapped keys / system-as-root / scoped storage / FUSE passthrough / Virtual A/B docs, SQLite compile & WAL docs
 confidence: medium
 sources:
 - type: reference
@@ -24,6 +24,12 @@ sources:
   path: File-based encryption | Android Open Source Project
 - type: reference
   path: Metadata encryption | Android Open Source Project
+- type: reference
+  path: Hardware-wrapped keys | Android Open Source Project
+- type: reference
+  path: Android Common Kernel android17-6.18-2026-06_r6 block/blk-crypto.c / Documentation/block/inline-encryption.rst
+- type: reference
+  path: Scoped storage | Android Open Source Project
 - type: reference
   path: System-as-root | Android Open Source Project
 - type: reference
@@ -45,7 +51,8 @@ related_chapters:
 - '6.2'
 - '4.1'
 - '7.2'
-last_idle_audit_at: '2026-08-26T22:49:33+08:00'
+last_source_verified_at: '2026-11-09T14:39:34+08:00'
+last_idle_audit_at: '2026-11-09T14:39:34+08:00'
 ---
 
 # Android 存储架构
@@ -304,7 +311,7 @@ Android 10 引入 Scoped Storage（分区存储），并允许应用通过兼容
 
 共享存储的权限策略需要一个执行点，Android 11 重新引入 FUSE 来承担：MediaProvider 充当 userspace FUSE handler（用户态 FUSE 处理程序），可以允许、拒绝或按策略对文件访问结果脱敏。首发搭载 Android 11 且使用 5.4 及以上内核的设备改用了 FUSE 路径，不再有 SDCardFS；从旧版本升级的设备则可能在 SDCardFS 上叠加 FUSE。应用内部目录 `/data/user/<user_id>/<package>/` 走的是另一条路径，不经由共享存储的 FUSE 挂载。
 
-Android 11 新增了 shared media 的 direct file paths（直接文件路径）访问方式。取得相应权限后，App 可以继续使用 `File` API 或 `fopen()` 访问媒体文件，从而兼容大量第三方媒体库。它解决的是 API 兼容问题，本身没有承诺绕过 FUSE。官方文档指出，顺序读取时 direct file path 与 MediaStore 的性能接近；随机读写时，direct file path 的耗时反而可能接近 MediaStore 的 2 倍，此类场景更适合继续使用 MediaStore。
+Android 11 新增了 shared media 的 direct file paths（直接文件路径）访问方式。取得相应权限后，App 可以继续使用 `File` API 或 `fopen()` 访问媒体文件，从而兼容大量第三方媒体库。它解决的是 API 兼容问题，本身没有承诺绕过 FUSE。官方文档在 Android 11 的调优 Pixel 2 对比中，记录了 direct file path 与 MediaStore 顺序读取性能接近、随机读写耗时可能接近后者 2 倍的结果。这组结果取决于设备与访问模式，不能据此给 Android 12–17 设定统一倍率；重度随机读写应优先评估 MediaStore。
 
 Android 12 增加了 FUSE passthrough（直通路径），设备需要匹配的 official kernel、MediaProvider 实现与产品属性。文件通过权限与 redaction（内容脱敏）检查后，FUSE driver 可以在 `open()` 之后把后续读写直接转发到 lower file system（底层文件系统）。`android-17.0.0_r1` 的 `MediaProvider/jni/FuseDaemon.cpp` 仍会检查 `persist.sys.fuse.passthrough.enable`、内核 capability（能力支持） 以及文件是否需要 redaction/transform，再决定能否启用 passthrough；源码里还有 FUSE BPF（通过内核 BPF 程序处理部分 FUSE 操作） 路径，由内核 BPF 程序处理部分 FUSE 操作。MediaStore API、Android 11 direct file path、FUSE passthrough 和 FUSE BPF 分属四个不同层次，我们分析共享存储性能时，先要弄清请求落在哪一层。
 
@@ -386,16 +393,16 @@ fscrypt policy 设置在加密目录上，并保存在文件系统 metadata 中�
 
 加密路径会增加密钥准备、crypto mapping（加密映射） 和数据加解密工作，成本取决于设备是否具备 CPU crypto acceleration（加密指令加速）、inline crypto、hardware-wrapped key（硬件封装密钥）以及匹配的驱动。
 
-inline encryption hardware（内联加密硬件） 通常由 UFS 或 eMMC host controller 实现，在数据往返存储器件的路径上执行块加解密。`android17-6.18-2026-06_r6` 的 arm64 GKI 打开了 `CONFIG_BLK_INLINE_ENCRYPTION`、`CONFIG_FS_ENCRYPTION_INLINE_CRYPT`、`CONFIG_DM_DEFAULT_KEY`、`CONFIG_SCSI_UFS_CRYPTO`，也打开了 `CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK`。这些配置说明内核具备相应接口与软件 fallback（回退实现），实际能否使用还取决于密钥类型、算法、设备驱动和 fstab（文件系统挂载配置）。`blk-crypto-fallback` 不支持 hardware-wrapped keys；选择这类密钥而硬件不匹配时，实际走 CPU 还是别的路径，要按设备确认。
+inline encryption hardware（内联加密硬件） 通常由 UFS 或 eMMC host controller 实现，在数据往返存储器件的路径上执行块加解密。`android17-6.18-2026-06_r6` 的 arm64 GKI 打开了 `CONFIG_BLK_INLINE_ENCRYPTION`、`CONFIG_FS_ENCRYPTION_INLINE_CRYPT`、`CONFIG_DM_DEFAULT_KEY`、`CONFIG_SCSI_UFS_CRYPTO`，也打开了 `CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK`。这些配置说明内核具备相应接口与软件 fallback（回退实现），实际能否使用还取决于密钥类型、算法、设备驱动和 fstab（文件系统挂载配置）。`blk-crypto-fallback` 只支持 raw key（原始密钥），不支持 hardware-wrapped keys。在这个内核基线中，`blk_crypto_start_using_key()` 遇到设备不支持的 wrapped key 配置会返回 `-EOPNOTSUPP`，不会把同一密钥交给 CPU 软件回退。
 
-Android 17 还把当前版 hardware-wrapped keys 命名为 `wrappedkey`，与旧版 `wrappedkey_v0` 区分。前者使用 android17 内核的 blk-crypto key generate/import/prepare 接口，并与 mainline Linux 方向兼容。是否启用，可从 userdata 的 fstab `fileencryption=` 选项、内核日志和加密测试确认。
+Android 17 还把当前版 hardware-wrapped keys 命名为 `wrappedkey`，与旧版 `wrappedkey_v0` 区分。前者使用 android17 内核的 blk-crypto key generate/import/prepare 接口，并与 mainline Linux 方向兼容。首发 Android 17 的设备可优先选择 `wrappedkey`；已经以 `wrappedkey_v0` 出货的设备应继续使用旧格式以兼容既有数据，决定磁盘格式的 `fileencryption=` 选项不能通过 OTA 更改。是否启用，可从 userdata 的 fstab `fileencryption=` 选项、内核日志和加密测试确认。
 
-性能分析时，我们先把加密路径确认一遍：软件 fallback 可能增加 CPU 时间；inline crypto 也会受 keyslot（硬件密钥槽）编程、host reset、队列和内存带宽影响。最小验证应包含 fstab、`dmctl table userdata`、内核配置和 `vts_kernel_encryption_test`，再把 CPU 活动与 block trace 对齐。
+性能分析时，我们先把加密路径确认一遍：软件 fallback 可能增加 CPU 时间；inline crypto 也会受 keyslot（硬件密钥槽）编程、host reset、队列和内存带宽影响。最小验证应包含 fstab、`dmctl table userdata`、内核配置和 `vts_kernel_encryption_test`，再把 CPU 活动与 block trace 对齐。核对 VTS 日志时，还要确认 hardware-wrapped key 用例未因未检测到支持而跳过；整体测试通过不能单独证明该能力已启用。
 
 <!-- gracker-diagram: ch06-01-inlinecrypto-hardware-fallback -->
 ![Inline crypto 与软件路径的能力边界](../../assets/diagrams/ch06/ch06-01-inlinecrypto-hardware-fallback.png)
 
-图：r6 GKI 同时启用 inline 接口与 fallback；实际路径还要看 fstab 和驱动。blk-crypto-fallback 不支持 hardware-wrapped keys，没有匹配硬件时的实际路径要按设备确认；dm-default-key 单独证明不了 FBE 已硬件卸载。
+图：r6 GKI 同时启用 inline 接口与 fallback；实际路径还要看 fstab 和驱动。blk-crypto-fallback 不支持 hardware-wrapped keys；设备不支持相应 wrapped key 配置时，内核会拒绝使用该密钥，不能回退到 CPU 解密文件内容。dm-default-key 单独证明不了 FBE 已硬件卸载。
 
 ## Dynamic Partition 与 Virtual A/B 的存储布局
 
@@ -544,6 +551,8 @@ Android 13+ 的 userspace merge 大多在后台完成；Android 12 设备还要�
 - **AOSP `android-17.0.0_r1`** - `system/core/libprocessgroup/profiles/`、`system/vold/FsCrypt.cpp`、`packages/providers/MediaProvider/jni/FuseDaemon.cpp`、`external/sqlite/dist/Android.bp`
 - **[Virtual A/B overview | AOSP](https://source.android.com/docs/core/ota/virtual_ab)** - Android 11 kernel COW、Android 12 格式转换、Android 13+ userspace merge 的官方版本划分
 - **[File-based encryption | AOSP](https://source.android.com/docs/security/features/encryption/file-based)** / **[Metadata encryption | AOSP](https://source.android.com/docs/security/features/encryption/metadata)** - DE/CE、KeyMint、`dm-default-key`、inline encryption 与 `/metadata` 启动依赖
+- **[Hardware-wrapped keys | AOSP](https://source.android.com/docs/security/features/encryption/hw-wrapped-keys)** - `wrappedkey` / `wrappedkey_v0` 的版本与兼容边界，以及 VTS 用例跳过时的验证限制
+- **[r6 blk-crypto.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/blk-crypto.c)** / **[Inline encryption 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/inline-encryption.rst)** - raw key 软件回退与不支持 wrapped key 时的拒绝路径
 - [KIOXIA managed flash protocol analysis](https://americas.kioxia.com/content/dam/kioxia/en-us/business/memory/mlc-nand/asset/KIOXIA_Protocol_Analysis_Tech_Brief.pdf)：UFS 3.1/4.0/4.1 与 JEDEC 规范编号对应表。
 - [MIPI UniPro](https://www.mipi.org/specifications/unipro-specifications)：UFS 互连层与 M-PHY 的分工。
 - [Android 17 snapshot.cpp](https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp) / [capabilities.cpp](https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/capabilities.cpp)：dm-user/ublk 选择、更新 manifest 与 merge 状态。
