@@ -7644,6 +7644,66 @@
       "status": "appended",
       "title": "被杀掉之后：我把 Android 的「唤起 + 常驻」重做了一遍从一条短信链接点进来，到锁屏十分钟之后进程还在不在，中间"
     },
+    "source/juejin-android/2026-11-11-76678955-别再只用Loading、Success、Error表示所有页面状态.md": {
+      "chapter": "待分类",
+      "entry_id": "230c9d9943a99849",
+      "last_appended": "2026-11-11T05:25:19.775854+08:00",
+      "last_seen": "2026-11-11T05:25:19.775854+08:00",
+      "mtime": 1794341840.4227667,
+      "score": 9,
+      "sha256": "ff5e876444f25ea24b3c0c98c0b5b7f2b6487c81f10597ab4f0659ba3a694370",
+      "size": 33733,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-11-11-76748189-Android 版 MCP 正式登场：AppFunctions.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "8491c6179b3867de",
+      "last_appended": "2026-11-11T05:25:19.775854+08:00",
+      "last_seen": "2026-11-11T05:25:19.775854+08:00",
+      "mtime": 1794341840.4235964,
+      "score": 12,
+      "sha256": "fb35e39ec57ae6db6070f000bc636ad529dcf756fd49e9ed4b855c558bd97ac2",
+      "size": 14066,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
+    "source/juejin-android/2026-11-11-76756264-三星安卓系统BUG排查记录：云闪付12306等闪退根因.md": {
+      "chapter": "待分类",
+      "entry_id": "dffc4fa8d9125086",
+      "last_appended": "2026-11-11T05:25:19.775854+08:00",
+      "last_seen": "2026-11-11T05:25:19.775854+08:00",
+      "mtime": 1794341840.4222252,
+      "score": 24,
+      "sha256": "039f3e74e2b669d2b6424b0d1f6ff18ed511f05ddcc354fd00cdb702cc0671ab",
+      "size": 38269,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-11-76809960-腾讯音乐 Android 秒编方案 Jugg 开源.md": {
+      "chapter": "待分类",
+      "entry_id": "abee9c5d9bbba5c3",
+      "last_appended": "2026-11-11T05:25:19.775854+08:00",
+      "last_seen": "2026-11-11T05:25:19.775854+08:00",
+      "mtime": 1794341840.4212093,
+      "score": 19,
+      "sha256": "6623acfe25bdeb4a780231f2db5962a21cdc71bcc37518e9faf74ae344bc88a4",
+      "size": 33822,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
+    "source/juejin-android/2026-11-11-76940645-Android 以后可能不会再有横竖屏适配了.md": {
+      "chapter": "待分类",
+      "entry_id": "0ad4ae6edb810b48",
+      "last_appended": "2026-11-11T05:25:19.775854+08:00",
+      "last_seen": "2026-11-11T05:25:19.775854+08:00",
+      "mtime": 1794341840.4217393,
+      "score": 15,
+      "sha256": "1d796ae12491347696cfabfd5169af9e477ccbd5dc2219facbe9843344b105b8",
+      "size": 15741,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11146,24 +11206,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
+    "appended": 5,
     "considered": 5,
-    "cutoff": "2026-11-09T05:20:19.749896+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-10.md",
+    "cutoff": "2026-11-10T05:20:19.868771+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-11.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2512,
+    "scanned": 2517,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1428,
       "path": 31,
-      "unchanged": 1048
+      "unchanged": 1053
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-10T05:25:19.868771+08:00",
+  "last_run_at": "2026-11-11T05:25:19.775854+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
