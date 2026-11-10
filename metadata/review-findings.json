@@ -14289,6 +14289,26 @@
       "summary": "CachedAppOptimizer 的冻结动作被缩减为仅更新状态记录",
       "type": "technical-accuracy",
       "updated_at": "2026-11-09T22:48:53.263893+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "close_note": "已按 android-17.0.0_r1 Build.java 468–481 行补齐 @hide / MODULE_LIBRARIES 边界，普通应用省略出厂 SDK 字段；范围断言、整篇中文硬门、metadata、SUMMARY 链接与 diff --check 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-103519-idle-audit-2cfba297",
+      "created_at": "2026-11-10T10:38:56.776756+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-103519-idle-audit-2cfba297",
+      "details": "上报表只写“出厂平台，API 可用时记录”，未说明 Android 17 的 Build.VERSION.DEVICE_INITIAL_SDK_INT 带有 @hide、@SystemApi(client = MODULE_LIBRARIES)、@TestApi。普通应用不能仅凭 SDK_INT 判断该字段可调用，需明确省略此项。",
+      "id": "finding-mpc-initial-sdk-api-boundary",
+      "log_path": "logs/audit/2026-11-10-20261110-103519-idle-audit-2cfba297-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Build.java"
+      ],
+      "status": "verified",
+      "summary": "出厂 SDK 上报字段遗漏隐藏模块系统 API 的可用性边界",
+      "type": "api-availability",
+      "updated_at": "2026-11-10T10:40:17.145619+08:00"
     }
   ],
   "schema_version": 1
