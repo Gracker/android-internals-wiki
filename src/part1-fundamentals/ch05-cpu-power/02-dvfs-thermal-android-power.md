@@ -4,9 +4,10 @@ chapter: '5.2'
 section: '5.2'
 status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-08-25'
+last_verified: '2026-11-10'
 last_verified_against: 'AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/{power,thermal}, external/perfetto), Linux kernel android17-6.18-2026-06_r6'
 confidence: medium
+last_source_verified_at: '2026-11-10T22:39:40+08:00'
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md
 - src/part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md
@@ -25,6 +26,15 @@ sources:
   path: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power)
 - type: kernel
   path: kernel/sched/cpufreq_schedutil.c
+- type: kernel
+  path: android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched/cpufreq.h
+  note: map_util_perf 与 map_util_freq 的实现
+- type: aosp
+  path: android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java
+  note: GAME_LOADING 两处超时处理与配置读取
+- type: official
+  path: firebase.google.com/docs/cloud-messaging/send/v2-api
+  note: AndroidConfigV2 迁移、预览状态与旧客户端兼容边界
 - type: official
   path: developer.android.com/games/optimize/adpf
 - type: official
@@ -63,7 +73,7 @@ related_chapters:
 - '5.4'
 - '7.2'
 last_consolidated_at: '2026-08-24'
-last_idle_audit_at: '2026-08-25T14:46:47+08:00'
+last_idle_audit_at: '2026-11-10T22:39:40+08:00'
 ---
 
 # DVFS、Thermal 与 Android 功耗管理
@@ -206,7 +216,9 @@ raw_frequency = reference_frequency * perf / capacity
 next_frequency = resolve_to_driver_supported_frequency(raw_frequency)
 ```
 
-伪代码中的 `perf` 是综合 UClamp、IRQ、DL 带宽等上下界后的性能需求，`capacity` 是当前 CPU 的相对算力尺度。源码会根据频率不变性能力和架构反馈选择参考频率；约 1.25 倍的 DVFS 余量已在 `add_dvfs_headroom()` 所代表的 `map_util_perf()` 步骤施加，后续频率换算直接沿用这个结果，再乘一次等于把余量加了两遍。最终频点由 CPUFreq 驱动在 policy 限制内解析，通常选择不低于目标的受支持频点。这个 headroom 属于调频算法自身的余量，应用能从中获得多少性能提升并没有固定比例。
+伪代码中的 `perf` 是综合 UClamp、IRQ、DL 带宽等上下界后的性能需求，`capacity` 是当前 CPU 的相对算力尺度。`sugov_effective_cpu_perf()` 通过 `map_util_perf()` 对实际利用率加入约 25% 余量，再施加性能上下界；`map_util_freq()` 本身只做频率比例换算。最终频点由 CPUFreq 驱动在 policy 限制内解析，通常选择不低于目标的受支持频点。
+
+参考频率还要单独检查：`get_capacity_ref_freq()` 优先采用架构报告的参考频率；缺少该反馈但支持频率不变性时，使用 `policy->cpuinfo.max_freq`。两者都不具备时，回退到 `policy->cur + (policy->cur >> 2)`，在参考频率上另留约 25% 余量。因此核对计算结果时，要同时检查利用率处理与参考频率分支，不能把“余量只加一次”套到所有设备路径。这些余量属于调频算法，应用能从中获得多少性能提升并没有固定比例。
 
 若一个 policy 覆盖多个 CPU，共享策略路径会遍历 `policy->cpus`，使用能够代表最高性能需求的利用率与 capacity 组合。我们看到某个 CPU 负载不高时，也要回头检查同一 policy 中的其他 CPU。
 
@@ -221,9 +233,9 @@ schedutil 提交目标走哪条路径，要看驱动的能力；“每次都排�
 具体设备走哪条路径，由 CPUFreq 驱动能力与 policy 配置决定。Perfetto 的频率事件本身分不清这次调用走的是 fast switch、固件消息通道（mailbox），还是延后执行的内核线程。
 
 <!-- gracker-diagram: ch05-02-schedutil-update-and-three-submit-paths -->
-![性能余量只加一次，提交目标还有三种驱动路径](../../assets/diagrams/ch05/ch05-02-schedutil-update-and-three-submit-paths.png)
+![频率不变路径的性能余量与三种驱动提交方式](../../assets/diagrams/ch05/ch05-02-schedutil-update-and-three-submit-paths.png)
 
-图：r6 将实际 util、I/O boost 与综合性能上下界组合，先用 map_util_perf 加约 25% 余量，再按 max(min_perf,min(actual,max_perf)) 求目标；共享 policy 汇总最高目标。支持条件不同，可走 fast switch、单 CPU adjust-perf，或 irq_work 加 kthread 延后提交。rate_limit_us 和转换延迟都来自设备，要按具体设备的值来看。
+图：示意架构参考频率可用或具备频率不变性时的路径。r6 将实际 util、I/O boost 与综合性能上下界组合，先用 map_util_perf 加约 25% 余量，再按 max(min_perf,min(actual,max_perf)) 求目标；共享 policy 汇总最高目标。缺少上述参考频率条件时，get_capacity_ref_freq 还会在当前频率上加约 25% 余量。支持条件不同，可走 fast switch、单 CPU adjust-perf，或 irq_work 加 kthread 延后提交。rate_limit_us 和转换延迟都来自设备，要按具体设备的值来看。
 
 #### 更新速率限制与 I/O wait boost
 
@@ -293,7 +305,7 @@ Power HAL 的 AIDL（Android Interface Definition Language，Android 接口定�
 
 `isModeSupported()` 和 `isBoostSupported()` 用于查询支持情况；即使接口存在，厂商也可以不支持或忽略某个提示。HAL 内部把它们映射到 UClamp、CPUFreq、设备调频框架 devfreq、内存带宽还是固件参数，AOSP 没有统一规定。
 
-游戏管理服务 `GameManagerService` 在游戏前台状态变化时控制 `Mode.GAME`；`setGameState()` 和 `notifyGraphicsEnvironmentSetup()` 可触发 `Mode.GAME_LOADING`，源码还为加载模式设置了最长 5 秒的限制。`setGameMode()` 改的主要是用户选择与配置，和一次固定时长的升频是两回事。
+游戏管理服务 `GameManagerService` 在游戏前台状态变化时控制 `Mode.GAME`；`setGameState()` 和 `notifyGraphicsEnvironmentSetup()` 可触发 `Mode.GAME_LOADING`。两处的超时处理不同：`notifyGraphicsEnvironmentSetup()` 会把单次请求的配置时长限制到最多 5 秒，配置为 0 时也取 5 秒；`setGameState()` 的加载分支采用正的 `loadingBoost` 配置，否则回退到 5 秒，没有相同的 5 秒钳制。两处都通过 `Handler` 延时取消加载模式，重复提示可能重排取消时间，这些时长也不保证硬件实际升频多久。`setGameMode()` 改的主要是用户选择与配置，和一次固定时长的升频是两回事。
 
 WakeLock（Userspace Wakelock） 的职责是约束系统挂起或相关电源状态。AOSP 里没有“每次 acquire WakeLock 都调用 `Boost.INTERACTION` 200 毫秒”的通用链路，排障时我们别把两者混为一谈。
 
@@ -1080,7 +1092,9 @@ Doze 期间，普通应用通常会遇到：
 - 普通 Alarm 延后到维护窗口；
 - Wi-Fi 扫描等高成本操作受限。
 
-`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和闹钟提醒（alarm clock）有特定例外，但调用频率与权限仍受限制。FCM 高优先级消息适合会产生用户可见通知的时效消息；用它维持静默心跳可能被降级，还会增加功耗。
+`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和闹钟提醒（alarm clock）有特定例外，但调用频率与权限仍受限制。
+
+FCM 的消息类型需按所用配置区分。旧 `AndroidConfig` 的高优先级消息适合会产生用户可见通知的时效消息，用它维持静默心跳可能被降级，还会增加功耗。当前 App Standby 文档已将这套 v1 消息配置标为 deprecated，并建议迁移到 `AndroidConfigV2`：`RemoteNotification` 用于紧急、用户可见的通知，`BackgroundSync` 用于可延后的后台同步。Firebase 迁移指南仍将 V2 标为预览版（Preview）；它支持各 Android 版本，并可为旧客户端转换消息，采用前仍要核对兼容条件。这里的消息配置 v1/v2 与发送端 HTTP v1 API 的版本是两回事。
 
 Doze 会周期性进入维护窗口，批量执行部分待处理工作。窗口间隔随空闲延长而变化，没有可依赖的固定分钟数，应用要按“间隔可变”来设计。
 
@@ -1358,7 +1372,7 @@ Batterystats 里是记账和模型估算。硬件电源轨、采样周期和归�
 
 ## 参考资料
 
-- Linux 内核 `android17-6.18-2026-06_r6`：`kernel/sched/cpufreq_schedutil.c`
+- Linux 内核 `android17-6.18-2026-06_r6`：`kernel/sched/cpufreq_schedutil.c`、`include/linux/sched/cpufreq.h`
 - Linux 内核：`Documentation/admin-guide/pm/cpufreq.rst`
 - Linux 内核：`Documentation/scheduler/schedutil.rst`
 - Linux 内核：`Documentation/power/opp.rst` 与 `drivers/opp/`
@@ -1381,6 +1395,7 @@ Batterystats 里是记账和模型估算。硬件电源轨、采样周期和归�
 - Linux 内核 `android17-6.18-2026-06_r6`：系统休眠文档与 power 跟踪点（tracepoints）
 - [Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
 - [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
+- [FCM：从 AndroidConfig 迁移到 AndroidConfigV2（Preview）](https://firebase.google.com/docs/cloud-messaging/send/v2-api)
 - [Background optimization](https://developer.android.com/topic/performance/background-optimization)
 - [PowerManager：Low Power Standby](https://developer.android.com/reference/android/os/PowerManager#isLowPowerStandbyEnabled())
 - [Batterystats and Battery Historian setup](https://developer.android.com/topic/performance/power/setup-battery-historian)
