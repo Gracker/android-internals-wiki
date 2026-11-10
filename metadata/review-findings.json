@@ -14411,6 +14411,68 @@
       "summary": "Fence 状态说明暗示每条 fence 都依次经历三个状态",
       "type": "fence-terminal-state",
       "updated_at": "2026-11-10T18:44:01.487966+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md",
+      "close_note": "已区分 map_util_perf 的利用率余量与 get_capacity_ref_freq 的非频率不变回退余量；正文及图注使用同一适用边界。r6 源码断言与整数换算检查通过，未作设备性能推断。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-223519-idle-audit-d3b85a7c",
+      "created_at": "2026-11-10T22:40:05.941590+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-223519-idle-audit-d3b85a7c",
+      "details": "r6 的 sugov_effective_cpu_perf 调用 map_util_perf；get_capacity_ref_freq 在缺少架构参考频率且非频率不变时返回 policy->cur + (policy->cur >> 2)。原文及图注将单次余量推广到所有路径，会使读者误判源码。",
+      "id": "finding-9b8106325765",
+      "log_path": "logs/audit/2026-11-10-20261110-223519-idle-audit-d3b85a7c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched/cpufreq.h"
+      ],
+      "status": "verified",
+      "summary": "schedutil 余量只加一次的表述遗漏非频率不变回退分支",
+      "type": "version-boundary",
+      "updated_at": "2026-11-10T22:43:37.493525+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md",
+      "close_note": "已按 r1 源码拆开两个 GAME_LOADING 调用点的时长处理，保留 Handler 延时与重复提示可重排取消时间的边界；配置读取与两个分支源码断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-223519-idle-audit-d3b85a7c",
+      "created_at": "2026-11-10T22:40:06.002897+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-223519-idle-audit-d3b85a7c",
+      "details": "android-17.0.0_r1 中 notifyGraphicsEnvironmentSetup 将单次配置时长钳制到五秒；SET_GAME_STATE 分支直接使用正的 loadingBoost 配置，否则回退五秒，没有相同上限。重复提示可重排 Handler 取消消息，均不保证实际升频时长。",
+      "id": "finding-54c7ffea45ce",
+      "log_path": "logs/audit/2026-11-10-20261110-223519-idle-audit-d3b85a7c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java"
+      ],
+      "status": "verified",
+      "summary": "GAME_LOADING 的五秒上限被错误推广到 setGameState 路径",
+      "type": "implementation-mismatch",
+      "updated_at": "2026-11-10T22:43:37.553967+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md",
+      "close_note": "已补齐 AndroidConfig 旧配置 deprecated、AndroidConfigV2 Preview、通知与后台同步的类型分工、旧客户端兼容，并明确与 HTTP v1 发送 API 区分；官方页面实读与断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-223519-idle-audit-d3b85a7c",
+      "created_at": "2026-11-10T22:40:06.064116+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-223519-idle-audit-d3b85a7c",
+      "details": "当前 App Standby 官方文档将旧 v1 消息配置标为 deprecated 并建议迁移；Firebase AndroidConfigV2 迁移指南明确 Preview、旧客户端兼容转换，并区分 RemoteNotification 与 BackgroundSync。原文只有高优先级建议，需补齐配置版本边界，避免误解为 HTTP v1 发送 API 已弃用。",
+      "id": "finding-a8b6db762297",
+      "log_path": "logs/audit/2026-11-10-20261110-223519-idle-audit-d3b85a7c-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/appstandby",
+        "https://firebase.google.com/docs/cloud-messaging/send/v2-api?hl=en"
+      ],
+      "status": "verified",
+      "summary": "FCM 高优先级建议未保留旧配置弃用与 V2 预览迁移边界",
+      "type": "source-lifecycle",
+      "updated_at": "2026-11-10T22:43:37.619244+08:00"
     }
   ],
   "schema_version": 1
