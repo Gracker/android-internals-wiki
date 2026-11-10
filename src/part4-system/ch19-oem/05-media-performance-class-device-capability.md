@@ -4,9 +4,11 @@ chapter: '19.5'
 section: '19.5'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37); Android 11 可通过 Jetpack Core / Google Play services 补充读取
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 Build.java; Android 17 CDD and MPC supplemental (2026-06-24); AndroidX androidx-main; Android Developers Performance class; CTS guidance (2026-07-13)
+last_verified: '2026-11-10'
+last_verified_against: AOSP android-17.0.0_r1 Build.java and CTS SequentialRWTest; Android 17 CDD (2026-08-31) and MPC supplemental (2026-06-24); AndroidX androidx-main; Android Developers Performance class (2026-10-23); CTS guidance; Google Maps MPC case
 confidence: high
+last_source_verified_at: '2026-11-10T10:38:56+08:00'
+last_idle_audit_at: '2026-11-10T10:38:56+08:00'
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/performance-class
@@ -357,7 +359,7 @@ Android 17 新增不对应 API 级别的数值后，保留原始 MPC 更有助�
 | `resolved_mpc` | Jetpack / Play services 最终提供的值 |
 | `normalized_mpc_tier` | 产品侧归一化分组 |
 | `sdk_int` | 当前平台 API |
-| `device_initial_sdk_int` | 出厂平台，API 可用时记录 |
+| `device_initial_sdk_int` | 出厂平台；本基线的 `Build.VERSION.DEVICE_INITIAL_SDK_INT` 是隐藏的模块系统 API，普通应用应省略此字段，不能仅按 `SDK_INT` 判断可用性 |
 | 运行时能力位掩码 | 用一组二进制位记录编解码器、相机、显示和 GPU 等关键能力 |
 | 内存 / 低内存设备分组 | 解释缓存、内存不足（OOM）与进程回收 |
 | 温控状态 / 持续时长 | 区分短时峰值与稳定表现 |
