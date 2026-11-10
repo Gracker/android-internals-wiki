@@ -22,9 +22,10 @@ related_chapters:
 - '4.1'
 - '4.2'
 - '1.9'
-last_verified: '2026-09-15'
-last_idle_audit_at: '2026-09-15T10:39:05+08:00'
-last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + Writer rendering_pipelines S01/S02/S05/S06
+last_verified: '2026-11-10'
+last_idle_audit_at: '2026-11-10T18:40:23+08:00'
+last_source_verified_at: '2026-11-10T18:40:23+08:00'
+last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + Writer rendering_pipelines S01/S02/S05/S06 + Android SDK/NDK HardwareBuffer API reference
 confidence: high
 sources:
 - type: aosp
@@ -101,6 +102,8 @@ sources:
   path: https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps
 - type: official
   path: https://developer.android.com/ndk/reference/group/a-hardware-buffer
+- type: official
+  path: https://developer.android.com/reference/android/hardware/HardwareBuffer
 - type: official
   path: https://developer.android.com/guide/practices/page-sizes
 - type: official
@@ -217,7 +220,7 @@ virtual status_t queueBuffer(
         QueueBufferOutput* output) = 0;
 ```
 
-三步分别回答“用哪个 slot”“这个 slot 绑定哪块内存”“本帧何时可供 Consumer 读取”。接口中的 `usage`（预期访问方式） 描述 CPU、GPU、显示或视频等使用方式，`outBufferAge` 则告诉 Producer 这块 buffer 距离上次显示经过了多少帧，可用于决定局部重绘范围。
+三步分别回答“用哪个 slot”“这个 slot 绑定哪块内存”“本帧何时可供 Consumer 读取”。接口中的 `usage`（预期访问方式） 描述 CPU、GPU、显示或视频等使用方式；`outBufferAge` 按该 BufferQueue 的入队帧号计算，复用时为 `mCore->mFrameCounter + 1 - mSlots[found].mFrameNumber`，重新分配时为 0。它可用于决定局部重绘范围，不能直接当作距离上次显示经过的屏幕刷新次数。
 
 #### 1. `dequeueBuffer()`：选出满足约束的 slot
 
@@ -627,7 +630,7 @@ Gralloc 的分配策略和 handle 布局由 SoC（System on Chip，系统级芯�
 
 这个数只用于说明数量级。Gralloc 分配还可能包含每行末尾对齐用的 stride（相邻两行起点之间的跨度） padding（每行末尾的对齐填充）、多个 plane（分别存放亮度、色度等分量的平面）、压缩元数据、对齐区和实现私有区域；拿它推算设备上的准确占用会出错。
 
-若每帧都把像素从应用复制到 SurfaceFlinger，60 fps 时仅这一处跨进程交接就会增加约 593 MiB/s 的读写数据量。Android 因而让参与者共享 buffer，并用 handle 传递访问能力。共享之后仍然有真实的内存流量：GPU 渲染要写，SurfaceFlinger 或 HWC 要读，CLIENT composition（由 RenderEngine/GPU 合成） 还会读取源图层并写入 client target。共享省掉的，是跨进程所有权转移所需的整帧复制。
+若每帧都把像素从应用复制到 SurfaceFlinger，60 fps 时仅这一处跨进程交接就要复制约 593 MiB/s 的像素数据；按源端读取一次、目标端写入一次计算，逻辑读写量合计约 1187 MiB/s。这只是紧密排布下的估算，实际 DRAM 流量还受缓存、压缩和实现影响。Android 因而让参与者共享 buffer，并用 handle 传递访问能力。共享之后仍然有真实的内存流量：GPU 渲染要写，SurfaceFlinger 或 HWC 要读，CLIENT composition（由 RenderEngine/GPU 合成） 还会读取源图层并写入 client target。共享省掉的，是跨进程所有权转移所需的整帧复制。
 
 ### 2. 从 API 到内核的分层
 
@@ -665,7 +668,7 @@ flowchart TD
 
 `GraphicBuffer` 是 framework native 层的包装对象，保存 width、height、stride（相邻两行的跨度）、format、layer count、usage、generation number（区分 Surface 重新配置前后 buffer 的代次）、ID 和 handle；usage 描述的是预期的访问方式。像素本身并不在这个 C++ 对象里。
 
-公开 NDK（Native Development Kit） API 使用 `AHardwareBuffer`，允许 native 应用分配、引用、描述这块 buffer，把 CPU 可访问地址映射出来，再把同一 buffer 导入 EGL 或 Vulkan。Java `HardwareBuffer` 包装同类 native 对象。应用应先用 `AHardwareBuffer_isSupported()` 或 `HardwareBuffer.isSupported()` 检查 format、layer 与 usage 组合；系统版本达到 API 下限，也保证不了任意组合都能分配。
+公开 NDK（Native Development Kit） API 从 Android 8.0/API 26 起提供 `AHardwareBuffer`，允许 native 应用分配、引用、描述这块 buffer，把 CPU 可访问地址映射出来，再把同一 buffer 导入 EGL 或 Vulkan。Java `HardwareBuffer` 从 API 26 起包装同类 native 对象。Android 10/API 29 及以上可先用 `AHardwareBuffer_isSupported()` 或 `HardwareBuffer.isSupported()` 检查 format、layer 与 usage 组合；查询返回支持时，实际分配仍可能因资源耗尽失败。API 26–28 没有这两个查询入口，需要检查分配调用的返回结果；系统版本达到 API 下限，也保证不了任意组合都能分配。
 
 #### 2.2 Gralloc Allocator
 
@@ -866,7 +869,7 @@ Producer 把 GPU 或 CPU 写入完成的 fence 随 buffer 提交给 consumer。c
 
 #### 6.1 CPU lock 也要处理同步与 cache
 
-`AHardwareBuffer_lock()` 接收一个 fence fd。fence 非负时，API 会在 lock 过程中等待；传入负值时，调用者要保证先前写入已经完成。lock 还可能因硬件工作尚未完成、缓存同步或实现条件而阻塞。
+`AHardwareBuffer_lock()` 从 API 26 起可用，要求 buffer 的 layer count 为 1，并接收一个 fence fd。fence 非负时，API 会在 lock 过程中等待；传入负值时，调用者要保证先前写入已经完成。lock 还可能因硬件工作尚未完成、缓存同步或实现条件而阻塞。多 plane（分别存放图像分量的平面）访问可用 API 29 起的 `AHardwareBuffer_lockPlanes()`，它同样不支持多 layer buffer；plane 与 layer 是两个概念。
 
 创建 buffer 时必须声明兼容的 CPU usage；受保护 buffer 与 CPU read/write usage 互斥。CPU 写完后调用 `AHardwareBuffer_unlock()`：若传入 fence 输出指针，函数返回有效 fence fd 或 `-1`，调用者负责关闭有效 fd；若传入 `nullptr`，函数会阻塞到 unlock 工作完成。同一进程里的调用顺序，推不出其他设备何时能看到新内容。
 
@@ -901,11 +904,11 @@ Producer 把 GPU 或 CPU 写入完成的 fence 随 buffer 提交给 consumer。c
 
 内核开启 `CONFIG_DMABUF_SYSFS_STATS` 时，`/sys/kernel/dmabuf/buffers/<inode>/` 可提供 `size` 与 `exporter_name`。有 debugfs（内核调试文件系统） 可用的调试设备上，还可以看 `/sys/kernel/debug/dma_buf/bufinfo`。user build（面向用户发布的系统构建） 是否开放这些节点由内核配置与权限决定。
 
-以下命令用于在有权限的设备上快速查看某个进程的 fd 与 fdinfo。它不会自动识别所有 vendor handle，还需要按 inode 汇总。
+以下命令用于在有权限的设备上快速查看某个进程的 fd 与 fdinfo，执行前先把 `<pid>` 替换为目标进程的数字 PID。它不会自动识别所有 vendor handle，还需要按 inode 汇总。
 
 ```bash
-adb shell 'for f in /proc/<pid>/fd/*; do readlink \"$f\"; done'
-adb shell 'for f in /proc/<pid>/fdinfo/*; do echo \"$f\"; cat \"$f\"; done'
+adb shell 'for f in /proc/<pid>/fd/*; do readlink "$f"; done'
+adb shell 'for f in /proc/<pid>/fdinfo/*; do echo "$f"; cat "$f"; done'
 adb shell 'find /sys/kernel/dmabuf/buffers -maxdepth 2 -type f -print 2>/dev/null'
 ```
 
@@ -1028,7 +1031,7 @@ fence 的名称由观察位置决定：同一个同步对象从 producer 传到 
 
 ### 1. Fence 的三种状态
 
-我们先看 fence 自身的状态。一个 fence 通常要经历三种状态：
+从用户空间查询结果看，fence 初始处于 pending，完成后报告成功或错误：
 
 - pending：异步工作尚未完成；
 - signaled（已发出信号）：工作已完成，依赖可以继续；
@@ -1369,6 +1372,7 @@ Fence 让等待过程变得可见。GPU 工作慢、HWC 持有、display 迟到�
 - [Reduce graphics memory consumption](https://source.android.com/docs/core/graphics/reduce-consumption)
 - [Transition from ION to DMA-BUF Heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
 - [AHardwareBuffer NDK reference](https://developer.android.com/ndk/reference/group/a-hardware-buffer)
+- [HardwareBuffer API reference](https://developer.android.com/reference/android/hardware/HardwareBuffer)
 - [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 - [Perfetto memory profiling：DMA-BUF ftrace event](https://perfetto.dev/docs/quickstart/heap-profiling)
 - [Linux DMA-BUF documentation](https://docs.kernel.org/6.18/driver-api/dma-buf.html)
