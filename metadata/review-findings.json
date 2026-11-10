@@ -14309,6 +14309,108 @@
       "summary": "出厂 SDK 上报字段遗漏隐藏模块系统 API 的可用性边界",
       "type": "api-availability",
       "updated_at": "2026-11-10T10:40:17.145619+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md",
+      "close_note": "已按固定 tag 改为入队帧号公式与重分配为零的边界，保留局部重绘用途；删除原错误显示口径。源码断言和本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "created_at": "2026-11-10T18:44:00.918278+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "details": "原 Producer 接口说明把 outBufferAge 解释为距离上次显示的帧数。android-17.0.0_r1 的 BufferQueueProducer::dequeueBuffer() 使用 mCore->mFrameCounter + 1 - mSlots[found].mFrameNumber，重新分配时置零；queueBuffer() 更新计数。入队帧号差不能直接解释为屏幕刷新次数。",
+      "id": "finding-20b34e73d889",
+      "log_path": "logs/audit/2026-11-10-20261110-183519-idle-audit-2a07f2fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+      ],
+      "status": "fixed",
+      "summary": "outBufferAge 被误写为距离上次显示的帧数",
+      "type": "buffer-age-semantics",
+      "updated_at": "2026-11-10T18:44:00.979140+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md",
+      "close_note": "已区分约593 MiB/s负载与约1187 MiB/s逻辑读写合计，注明紧密排布估算及缓存/压缩/实现边界，不声称实测DRAM带宽。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "created_at": "2026-11-10T18:44:01.040429+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "details": "1080×2400×4×60/2^20=593.26171875 MiB/s 是复制的像素负载；按一次源读和一次目标写计算的逻辑读写量为1186.5234375 MiB/s。原文直接把593 MiB/s称为读写数据量，未区分两种口径。",
+      "id": "finding-31ace2b769ee",
+      "log_path": "logs/audit/2026-11-10-20261110-183519-idle-audit-2a07f2fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "/Users/gracker/.hermes/cache/scratch/aiw-20261110-audit-sources/probes.json"
+      ],
+      "status": "fixed",
+      "summary": "像素复制负载与源读目标写的合计流量口径混淆",
+      "type": "bandwidth-accounting",
+      "updated_at": "2026-11-10T18:44:01.106312+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md",
+      "close_note": "已补API26/29边界、API26–28检查分配返回值、支持查询不排除资源耗尽，以及单layer与multi-plane区别；保留原fence等待和unlock fd所有权约定。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "created_at": "2026-11-10T18:44:01.171469+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "details": "章节覆盖Android4.1至17，却无条件建议先调用AHardwareBuffer_isSupported/HardwareBuffer.isSupported；官方API reference规定二者从API29可用，基础HardwareBuffer/AHardwareBuffer从API26可用。AHardwareBuffer_lock还要求layer count为1；lockPlanes从API29可用且同样不支持多layer。",
+      "id": "finding-a2d332b795d4",
+      "log_path": "logs/audit/2026-11-10-20261110-183519-idle-audit-2a07f2fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/reference/group/a-hardware-buffer",
+        "https://developer.android.com/reference/android/hardware/HardwareBuffer"
+      ],
+      "status": "fixed",
+      "summary": "HardwareBuffer 支持查询与 CPU lock 缺少可用版本和层数边界",
+      "type": "public-api-applicability",
+      "updated_at": "2026-11-10T18:44:01.238045+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md",
+      "close_note": "已在两条远端脚本中使用普通双引号包住$f，并在正文提示先替换数字PID；受控fixture回归通过，保留设备权限及SELinux边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "created_at": "2026-11-10T18:44:01.301801+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "details": "两条adb shell命令的远端脚本被外层单引号保护，内部仍写反斜线双引号，导致远端shell把双引号作为路径字符传给readlink/cat。以原命令提取的脚本在本机POSIX shell受控fixture复现：修复前均返回1，正确引号后均返回0。该实验不等于Android设备实测。",
+      "id": "finding-1aeab60f0ac2",
+      "log_path": "logs/audit/2026-11-10-20261110-183519-idle-audit-2a07f2fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "/Users/gracker/.hermes/cache/scratch/aiw-20261110-audit-sources/probes.json"
+      ],
+      "status": "fixed",
+      "summary": "adb shell 的 fd 枚举命令把双引号转成文件名字符",
+      "type": "shell-command-quoting",
+      "updated_at": "2026-11-10T18:44:01.364515+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md",
+      "close_note": "已改为用户空间查询口径的pending初态与成功/错误两种完成结果，保留原状态列表、单向signal与错误处理边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "created_at": "2026-11-10T18:44:01.426263+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261110-183519-idle-audit-2a07f2fc",
+      "details": "原文称一个fence通常要经历三种状态，容易读成pending到signaled再到error的线性过程。官方Synchronization framework明确初始active，随后转为signaled或error；Fence.cpp也分别处理status为0、1、负数的结果。",
+      "id": "finding-595c45735865",
+      "log_path": "logs/audit/2026-11-10-20261110-183519-idle-audit-2a07f2fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/graphics/sync",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/Fence.cpp"
+      ],
+      "status": "fixed",
+      "summary": "Fence 状态说明暗示每条 fence 都依次经历三个状态",
+      "type": "fence-terminal-state",
+      "updated_at": "2026-11-10T18:44:01.487966+08:00"
     }
   ],
   "schema_version": 1
