@@ -3,9 +3,11 @@ title: Vulkan 原生管线与 HWUI 多队列
 chapter: '13.5'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 section: '13.5'
-last_verified: '2026-10-24'
+last_verified: '2026-11-11'
+last_source_verified_at: '2026-11-11'
+last_idle_audit_at: '2026-11-11T18:39:09+08:00'
 last_verified_against: AOSP android-17.0.0_r1 swapchain.cpp / VP_ANDROID_17_requirements.json / Surface.cpp / BufferQueueProducer.cpp / SurfaceFlinger FrontEnd / HWComposer.cpp / RenderEngine.h / GraphiteVkRenderEngine.cpp / RenderEngineThreaded.cpp + kernel android17-6.18-2026-06_r6 dma-buf.c / sync_file.c / dma-fence.c
-verification_scope_note: 全文复核13.5及固定r1的Android WSI/requirements/HWUI双队列/上传/优先级/标注/fence/damage/SF后段，历史14—17分支分别核对；Khronos规范与官方能力文档补充同步边界。片段与示意不代表完整renderer或实测时长，未做Android真机/GPU/厂商驱动运行时复现。
+verification_scope_note: 全文复核13.5及固定r1的Android WSI/requirements/HWUI双队列/上传/优先级/标注/fence/damage/SF后段，历史14—17分支分别核对；Khronos规范与官方能力文档补充同步边界。2026-11-11通读正文并抽核固定标签关键入口和所列官方文档，补充AGI工具推荐/回放风险与primeCache弃用范围；本日未重验全部历史来源。片段与示意不代表完整renderer或实测时长，未做Android真机/GPU/厂商驱动运行时复现。
 confidence: high
 tags:
   - vulkan
@@ -680,6 +682,8 @@ FrameTimeline 可帮助对齐受支持路径的 App SurfaceFrame 与 SF DisplayF
 
 SurfaceFlinger RenderEngine 包含可选的 Graphite Vulkan backend；`RenderEngineCreationArgs::Builder` 的 backend 字段默认 Ganesh，实际 SF 调用方仍可覆盖；是否启用 Graphite 取决于 flag、property 和 OEM 配置。`RenderEngineThreaded` 尝试应用 `SFRenderEnginePolicy`；`setSchedFifo(true)` 仅在 `disable_sched_fifo_re` 未开启时请求 `SCHED_FIFO` priority 2，否则选择 `SCHED_OTHER`。设置还可能失败；`primeCache` task 在发起预热调用前后尝试切换普通/原策略；源码里的请求与现场线程的实际调度状态，要分开确认。
 
+`RenderEngine.h` 把 `primeCache()` 列在 deprecated（已弃用）接口区，同时注明这组接口在合适的替代方案建成前仍在使用。固定 r1 的预热调度行为仍可据此分析，但不能把该接口当作长期稳定的调用契约。
+
 
 这条 Vulkan 工作只在 SurfaceFlinger 需要 RenderEngine 生成 client target、blur、tone-map 等内容时出现。它属于 SF 的另一套 device/context/queue/线程对象，与 App 侧对象分开管理；两者仍可能竞争同一物理 GPU、带宽和显示资源。如果主体 layer 使用 HWC DEVICE composition，SF 未必会通过 RenderEngine 重绘它。我们 trace 分组时把 App queue、`REThreaded::drawLayers`、Graphite/Ganesh submit 和 HWC present 分开看，SF Graphite 的时间要留在 App command recording 之外。
 
@@ -1127,6 +1131,8 @@ Perfetto 的 GPU data source 由设备或驱动侧 producer（向 Perfetto 写�
 
 
 #### AGI
+
+AGI 的[官方帧分析文档](https://developer.android.com/agi/frame-trace/frame-profiler)已将 Android Performance Analyzer（APA）列为游戏性能分析的新推荐工具，并提供 public beta（公开测试）版本入口。使用现有 AGI 抓帧时，还要核对目标扩展的支持情况；文档警告，启用 “Include Unsupported Extensions” 抓取未支持的扩展，可能在回放时引发错误或崩溃。
 
 AGI frame profiling 可以检查单帧中的 Vulkan API call、render pass、shader、texture、pipeline state 与资源。抓取 HWUI 渲染时，`VK_ANDROID_frame_boundary` 由 AGI capture layer 注入，用于帮助工具划分窗口帧。
 
