@@ -7704,6 +7704,54 @@
       "status": "appended",
       "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
     },
+    "source/juejin-android/2026-11-12-76748189-Android 版 MCP 正式登场：A.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "d1e733fbf601d2ef",
+      "last_appended": "2026-11-12T05:25:19.867005+08:00",
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794428222.4332068,
+      "score": 12,
+      "sha256": "db992c815f5c7fabd6442d1292d210e0377bdc430569fa66d9fe40121485a3d0",
+      "size": 14066,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
+    "source/juejin-android/2026-11-12-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "2c86f06307db9358",
+      "last_appended": "2026-11-12T05:25:19.867005+08:00",
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794428222.4321983,
+      "score": 24,
+      "sha256": "10e43c6b7613c5bf667152c16eeec244f2fb0a2cfb238a3f3b99969aa302a559",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-12-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "21af55cfe72316ff",
+      "last_appended": "2026-11-12T05:25:19.867005+08:00",
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794428222.4317188,
+      "score": 19,
+      "sha256": "c2fe24bf93f19ade8ff56431ac7a666abc5765812c53585324d338a347b660d7",
+      "size": 33822,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
+    "source/juejin-android/2026-11-12-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "3f025220f5693617",
+      "last_appended": "2026-11-12T05:25:19.867005+08:00",
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794428222.4327285,
+      "score": 15,
+      "sha256": "a203e356a06ea382c2f9bfbda176e3abea107e9073565de1b2dc5cf205b3af15",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -9397,6 +9445,198 @@
       "mtime": 1793818926.4187675,
       "sha256": "b3856183453c85ec24b46f7e4fe370849e8153c9949e0df12900c887f985b186",
       "size": 133656,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-20-years-of-blogging.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424060.0345407,
+      "sha256": "862932722b3804d4cf7134da2e73dcb3a04b18b2636603e63cff8a86a035f184",
+      "size": 6059,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Anthropic-s-IPO-roadshow-video.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424037.230197,
+      "sha256": "81b2ff253aaf9bf6adb30d67005dacd12edd22c22b93841cc0b297a6a615248f",
+      "size": 3020,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Austin-Mann-s-iPhone-Duo-Review.md": {
+      "chapter": "待分类",
+      "entry_id": "8515465dacc7a5b1",
+      "last_appended": "2026-11-12T05:25:19.867005+08:00",
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424005.5629988,
+      "score": 8,
+      "sha256": "740dada78dbfac8de63d43bf07ceec9bc6b8a05ff2473f94424f8e000db77b64",
+      "size": 12754,
+      "status": "appended",
+      "title": "2026-11-12-Austin-Mann-s-iPhone-Duo-Review"
+    },
+    "source/rss-snapshot/2026-11-12-Bloomberg-Nvidia-Intervened-in-U-S-Probe-of-Mega.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794423859.9434047,
+      "sha256": "c9f523553cd3485b8634f575422d650ed83d0ae4daa4738a209d00e772a65885",
+      "size": 3244,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Browse-tools-simonwillison-net-by-tag.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424007.8824363,
+      "sha256": "a023bc50e7bcb75d2ad99472758c5d6f9b8f76f6c740e012a5ec9613c7840660",
+      "size": 1675,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Dangerous-or-Unusual.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424027.0268586,
+      "sha256": "c00c3497b09ba4da96da3ab6d88d817da017a2a4bfdbed2cb56c1f9f798bdc93",
+      "size": 11108,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Finally-Payment-by-Bank-Transfer-Comes-to-Have-I.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794423811.5739827,
+      "sha256": "02b285335fecee1b90ddb5d16eeb95b3fdccb585570057f5d00093a5525a4a23",
+      "size": 6730,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Gary-Marcus-Just-Say-No-to-Anthropic-s-IPO.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424063.0118246,
+      "sha256": "365e1318c8bbe3002a3df5b658f709b376686ce0dc74c3994820c00e6f6d2be8",
+      "size": 3703,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Glue-work-is-still-harmful-in-the-age-of-AI.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424057.012973,
+      "sha256": "053befcf795976b05310e3ac6535f91f538fe22b5943c708aaa8210d2e7bd0f6",
+      "size": 5835,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-HowTo-Fix-Eufy-HomeBase-2-Storage-Full-Issues.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424040.7408848,
+      "sha256": "05b17044f5d65b784b52aa9549e5b79dce34b0b0ad7296ae67d3d69efabe589f",
+      "size": 12194,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-It-came-from-the-token-void.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424048.1656907,
+      "sha256": "7d0ba3f2af2090bbc857b716d6dfb1bb0b45f61c588f5f18ddee1fe6e8450c21",
+      "size": 1522,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Jensen-s-Bizarre-Adventure.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424084.5210903,
+      "sha256": "4f67e2fd116508e234916ffde0e322d64a7bf70e82590bd464e1674a3117dd00",
+      "size": 68905,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Making-a-Website-in-2026.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424079.5019379,
+      "sha256": "7a46cd9b23ab6437f0bcf32438faf188bb5165807e0ff621d7fc05c7638a2cf2",
+      "size": 6814,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Microsoft-employee-price-list-from-1987.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424113.4151864,
+      "sha256": "b17a839c6ab45f5aaded973f854ee70b07c745a2aa49841e6662fe265dae84af",
+      "size": 7156,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Monads-in-Lean.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424051.3356035,
+      "sha256": "169bac0dee13848f5a9870d07c073b134f0495619bc47a4f4df87e49325f34ff",
+      "size": 15609,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Ms-Bashkansky-Please-Do-Not-Build-The-Torment-Ne.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424053.9811056,
+      "sha256": "ec217cf9d6c339ce738f24c9602fdc696bca4fd71c39f342d89ad7177608d12c",
+      "size": 11149,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-OurCal.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424111.7276707,
+      "sha256": "6c200e717dbfa40e1498536bb1a4053566e3cafe3574f39103f5a5776dc720ab",
+      "size": 19478,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Pluralistic-The-EU-should-go-big-and-hard-over-b.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424088.6372304,
+      "sha256": "d4484564cad1e9c05d10c9cfc2dcb5602ca3ca53fc73a04987b07d61d16eb7f8",
+      "size": 22153,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Quinn-Nelson-The-iPhone-Duo-Doesn-t-Feel-Like-an.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424011.4552114,
+      "sha256": "846366dca32bdee3321d6e2228738797767fc98ef1b78a9c39f45fbd2eee4567",
+      "size": 223,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Regarding-Graveyards-and-Indispensable-Men.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424100.067061,
+      "sha256": "b24ccd3f366a625acd1afb9a083e827cc60f7c7e31f6b143f813f9ec8b9d24a7",
+      "size": 243,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Revisiting-Leander-v-Sweden-and-Big-Brother-Watc.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424076.8734262,
+      "sha256": "2e2d1d75f3710cea4b699f8887e9903457634d65d27598b16b5d44c318337af8",
+      "size": 18921,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Safari-27-3-Adds-Support-for-Global-Privacy-Cont.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424116.1230044,
+      "sha256": "26408749b5ecd67ebea64bdc7a9284092693723ff92cf853193e4ff7f77c87e2",
+      "size": 1384,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Steven-Levy-on-John-Ternus.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424103.8797338,
+      "sha256": "791ae7f209e3e3aaa4feb6b166953eb8cf2e82e07901363013f08ace49110a6e",
+      "size": 11067,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-This-Week-in-Source-Control-11-November-2026.md": {
+      "chapter": "待分类",
+      "entry_id": "4c7f16fd18fa6e22",
+      "last_appended": "2026-11-12T05:25:19.867005+08:00",
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424045.1430786,
+      "score": 10,
+      "sha256": "8a28986ece55833e02235b567ab615314e7b209b30915eea9a24c3c0590599ba",
+      "size": 10770,
+      "status": "appended",
+      "title": "This Week in Source Control: 11 November 2026"
+    },
+    "source/rss-snapshot/2026-11-12-We-need-more-goat-sacrifices.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424094.1960418,
+      "sha256": "2705f3c6bd1c5dcd4ebded9d09cd875207242000ed5e759d680f6f5033c64f02",
+      "size": 35377,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-12-Who-Runs-the-Ransomware-Group-Qilin.md": {
+      "last_seen": "2026-11-12T05:25:19.867005+08:00",
+      "mtime": 1794424033.8764546,
+      "sha256": "3b2326ed2beb5dd2a7d7dc9a1a77aa0e95b3385cc64e290b3c0b92d5a4ca03f2",
+      "size": 8211,
       "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
@@ -11206,24 +11446,24 @@
     }
   },
   "last_report": {
-    "appended": 5,
-    "considered": 5,
-    "cutoff": "2026-11-10T05:20:19.868771+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-11.md",
+    "appended": 6,
+    "considered": 33,
+    "cutoff": "2026-11-11T05:20:19.775854+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-12.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2517,
+    "scanned": 2551,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
-      "max_files": 0,
+      "low_score": 24,
+      "max_files": 3,
       "old_unseen": 1428,
-      "path": 31,
-      "unchanged": 1053
+      "path": 32,
+      "unchanged": 1058
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-11T05:25:19.775854+08:00",
+  "last_run_at": "2026-11-12T05:25:19.867005+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
