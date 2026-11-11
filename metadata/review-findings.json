@@ -14572,6 +14572,86 @@
       "summary": "RenderEngine primeCache 调度说明遗漏固定 r1 头文件中的 deprecated 接口边界",
       "type": "omitted-deprecation-boundary",
       "updated_at": "2026-11-11T18:41:45.824237+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/20-audio-pipeline-performance.md",
+      "close_note": "已重写 7.1 节并同步故障表：默认静音不报告播放失败；使用 AudioHardening 包名与 partial/full 定位，持续 write 错误限定到 throw 模式。官方文档与本地检查均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "created_at": "2026-11-11T22:39:12.129417+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "details": "第 7.1 节把停止供数、write 错误和回调停滞写成常见识别信号；官方明确默认播放静音且 API 不报告失败，持续写入错误仅列于 throw 测试模式。应改用带包名的 AudioHardening 记录及 partial/full 级别定位。",
+      "id": "finding-ab2d5faa6156",
+      "log_path": "logs/audit/2026-11-11-20261111-223519-idle-audit-7eb48a57-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio"
+      ],
+      "status": "fixed",
+      "summary": "后台音频限制的默认静音行为与 throw 模式写入错误混淆",
+      "type": "behavior-mismatch",
+      "updated_at": "2026-11-11T22:43:23.934306+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/20-audio-pipeline-performance.md",
+      "close_note": "已移除冒充源码原文的简化条件块，仅保留真实 preference 注释；按 r1 写明三项声道掩码条件并保留上游 downmix TODO 边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "created_at": "2026-11-11T22:39:12.191366+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "details": "第 4.1 节把归纳代码称为源码原文，并把声道条件概括为无需高成本 downmix；android-17.0.0_r1 实际检查具体掩码，且保留提取通用转换成本检查的 TODO。应保留真实注释并说明现有条件与 TODO 边界。",
+      "id": "finding-26dc8cf86065",
+      "log_path": "logs/audit/2026-11-11-20261111-223519-idle-audit-7eb48a57-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Threads.cpp"
+      ],
+      "status": "fixed",
+      "summary": "FAST 声道接纳条件被写成已完整排除高成本 downmix",
+      "type": "source-mismatch",
+      "updated_at": "2026-11-11T22:43:23.995859+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/20-audio-pipeline-performance.md",
+      "close_note": "已删除无测量来源的 LDAC/aptX 固定毫秒范围；保留延迟变量、测试条件与原有四步实测方法。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "created_at": "2026-11-11T22:39:12.253319+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "details": "第 10 节虽否定 LDAC/aptX 固定范围，仍在独立代码块展示没有测试来源的毫秒数字；删去虚构数字，保留编解码器名称不能单独决定端到端延迟的解释和原有实测步骤。",
+      "id": "finding-cddc11286a4b",
+      "log_path": "logs/audit/2026-11-11-20261111-223519-idle-audit-7eb48a57-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/audio/audio-latency"
+      ],
+      "status": "fixed",
+      "summary": "蓝牙误区示例保留了无来源的固定延迟数值",
+      "type": "unsupported-numbers",
+      "updated_at": "2026-11-11T22:43:24.057312+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/20-audio-pipeline-performance.md",
+      "close_note": "8.4 节已补充自定义 userdebug/eng 构建、编译及运行时默认关闭、隐私理由、调试后关闭和禁止生产构建保持启用的警告。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "created_at": "2026-11-11T22:40:55.093850+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261111-223519-idle-audit-7eb48a57",
+      "details": "第 8.4 节仅写可控构建，未保留官方调试文档的 custom/userdebug/eng、编译与运行时默认关闭、调试后关闭且不得在生产构建开启的边界；tee sink 会复制音频，应在推荐入口处提示。",
+      "id": "finding-5fd01e1403fe",
+      "log_path": "logs/audit/2026-11-11-20261111-223519-idle-audit-7eb48a57-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/audio/debugging"
+      ],
+      "status": "fixed",
+      "summary": "tee sink 调试入口缺少构建条件和音频隐私警告",
+      "type": "missing-warning",
+      "updated_at": "2026-11-11T22:43:24.118653+08:00"
     }
   ],
   "schema_version": 1
