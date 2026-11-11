@@ -14531,6 +14531,47 @@
       "summary": "FinalizerReference.queue 的元素类型被限定为只有 FinalizerReference",
       "type": "source-body-mismatch",
       "updated_at": "2026-11-11T14:41:53.289209+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+      "close_note": "已在 AGI 小节补充 APA 的新推荐工具定位和 public beta 入口，并保留未支持扩展可能导致回放错误/崩溃的警告；未把 AGI 写成弃用。新增段落与官方页顶部及 Trace Options 对照通过，中文新增行检查和本地 gates 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261111-183519-idle-audit-9d8e09bd",
+      "created_at": "2026-11-11T18:40:14.713292+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261111-183519-idle-audit-9d8e09bd",
+      "details": "所列 AGI Frame Profiler 官方页顶部推荐 Android Performance Analyzer，并提供 public beta 入口；Trace Options 明确警告 Include Unsupported Extensions 可能在回放时触发错误或崩溃。原 AGI 小节未交代这两项工具适用边界。没有证据表明 AGI 已被弃用或 APA beta 等同稳定版。",
+      "id": "finding-dfadcd52e2cd",
+      "log_path": "logs/audit/2026-11-11-20261111-183519-idle-audit-9d8e09bd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/agi/frame-trace/frame-profiler"
+      ],
+      "status": "verified",
+      "summary": "AGI 帧分析说明遗漏 APA 新推荐工具及未支持扩展的回放风险提示",
+      "type": "omitted-official-tool-notice",
+      "updated_at": "2026-11-11T18:41:45.763533+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md",
+      "close_note": "已在 SF Graphite 小节说明 primeCache 位于固定 r1 的 deprecated 接口区且仍在使用，保留现有预热调度事实，未把弃用等同移除。对照 RenderEngine.h 198—211 与 RenderEngineThreaded.cpp 148—172 通过；本地 gates 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261111-183519-idle-audit-9d8e09bd",
+      "created_at": "2026-11-11T18:40:14.775472+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261111-183519-idle-audit-9d8e09bd",
+      "details": "RenderEngine.h 第 198—211 行把 primeCache 放在 DEPRECATED INTERFACE 区，并说明在合适替代方案建成前仍使用该接口组。RenderEngineThreaded.cpp 第 148—172 行仍实现预热调度切换，因此应同时保留现存行为和弃用边界，不能把 deprecated 写成已移除。",
+      "id": "finding-036c654a5357",
+      "log_path": "logs/audit/2026-11-11-20261111-183519-idle-audit-9d8e09bd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/include/renderengine/RenderEngine.h",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/threaded/RenderEngineThreaded.cpp"
+      ],
+      "status": "verified",
+      "summary": "RenderEngine primeCache 调度说明遗漏固定 r1 头文件中的 deprecated 接口边界",
+      "type": "omitted-deprecation-boundary",
+      "updated_at": "2026-11-11T18:41:45.824237+08:00"
     }
   ],
   "schema_version": 1
