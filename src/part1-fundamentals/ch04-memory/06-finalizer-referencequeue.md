@@ -4,8 +4,8 @@ chapter: '4.6'
 section: '4.6'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-25'
-last_verified_against: AOSP android-17.0.0_r1 libcore ReferenceQueue/FinalizerReference/Daemons/Cleaner/CleanerImpl/SystemCleaner + Android Developers API reference (Cleaner/SystemCleaner/CloseGuard/StrictMode.VmPolicy.Builder) + Oracle Java SE 8 ReferenceQueue API
+last_verified: '2026-11-11'
+last_verified_against: AOSP android-17.0.0_r1 libcore ReferenceQueue/FinalizerReference/Daemons/Cleaner/CleanerImpl/SystemCleaner + system/core debuggerd/debuggerd.cpp + Android Developers API reference (Cleaner/SystemCleaner/CloseGuard/StrictMode.VmPolicy.Builder) + Oracle Java SE 8 ReferenceQueue API
 confidence: medium
 sources:
 - type: research
@@ -24,6 +24,8 @@ sources:
   path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/sun/misc/Cleaner.java
 - type: aosp
   path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/android/system/SystemCleaner.java
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/debuggerd.cpp
 - type: official
   path: https://developer.android.com/reference/java/lang/ref/Cleaner
 - type: official
@@ -44,7 +46,7 @@ related_chapters:
 - '4.2'
 - '4.4'
 - '23.2'
-last_idle_audit_at: '2026-08-25T18:35:27+08:00'
+last_idle_audit_at: '2026-11-11T14:39:11+08:00'
 ---
 
 # ART FinalizerDaemon、Cleaner 与 ReferenceQueue
@@ -95,7 +97,7 @@ private T zombie;
 这里有两套独立结构：
 
 - `head` 指向的链表覆盖堆中所有可终结对象，对象此时可能仍然可达。
-- `queue` 只存放已经具备执行终结条件的 `FinalizerReference`。
+- `queue` 保存等待处理的 `FinalizerReference` 和共享 `SystemCleaner` 的 `Cleanable`，两类元素都由 `FinalizerDaemon` 消费。
 
 `FinalizerReference.get()` 返回 `zombie`，而非普通的 `Reference.referent`。`zombie` 是源码字段名，指等待终结方法处理期间用来保留对象的那个引用，并不表示资源已经释放。GC 判定对象需要终结时，会把对象从 `referent` 移到 `zombie`，使它在 `finalize()` 执行前仍保持可访问。
 
@@ -495,12 +497,15 @@ adb shell ls /proc/12345/fd
 - `FinalizerDaemon` 或 `ReferenceQueueDaemon` 超时；
 - 文件描述符、ashmem、gralloc、SQLite 或相机模块的资源失败。
 
-在有权限的可调试环境中，可用下面的命令获取 Java 与原生线程栈：
+在 AOSP Android 17 中，`debuggerd -j` 请求 Java 线程栈，`debuggerd -b` 导出原生线程栈。两种模式都要求 root 权限；应用标记为可调试并不足以运行该命令。在已获得 root 权限的受控测试设备上，分别采集：
 
 ```bash
 # 假设目标 PID 是 12345
+adb shell debuggerd -j 12345
 adb shell debuggerd -b 12345
 ```
+
+这两次采集对应不同时间点。分析线程之间的阻塞关系时，需要多次采样并对齐时间。
 
 判断线程栈时，先看具体执行点：
 
@@ -637,6 +642,8 @@ Android 17 的 `ReferenceQueueDaemon` 负责待处理引用入队，`FinalizerDa
   - `ojluni/src/main/java/jdk/internal/ref/CleanerImpl.java`
   - `ojluni/src/main/java/sun/misc/Cleaner.java`
   - `luni/src/main/java/android/system/SystemCleaner.java`
+- AOSP `platform/system/core`，`android-17.0.0_r1`：`debuggerd/debuggerd.cpp`
+  - <https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/debuggerd.cpp>
 - Android Developers：`java.lang.ref.Cleaner`
   - <https://developer.android.com/reference/java/lang/ref/Cleaner>
 - Android Developers：`android.system.SystemCleaner`
