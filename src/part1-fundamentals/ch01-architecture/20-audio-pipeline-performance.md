@@ -4,8 +4,8 @@ chapter: '1.20'
 section: '1.20'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-13'
-last_verified_against: AOSP android-17.0.0_r1 + Android 17 API 37 official documentation; audio latency, AAudio/MMAP, background audio hardening, AudioTrack flush/provenance, and AAudio.h flush support checked 2026-09-13
+last_verified: '2026-11-11'
+last_verified_against: AOSP android-17.0.0_r1 + Android 17 API 37 official documentation; FAST admission and downmix TODO, AAudio/MMAP and offload API availability, AudioTrack flush/provenance, background hardening default/throw behavior, and tee sink privacy boundaries checked 2026-11-11
 confidence: high
 sources:
 - type: official
@@ -55,7 +55,8 @@ related_chapters:
 - '5.1'
 - '5.2'
 - '18.1'
-last_idle_audit_at: '2026-09-13T14:35:20+08:00'
+last_idle_audit_at: '2026-11-11T22:40:17+08:00'
+last_source_verified_at: '2026-11-11T22:40:17+08:00'
 ---
 
 # 音频链路（Audio Pipeline）延迟与性能
@@ -221,21 +222,10 @@ FastMixer 保留：
 
 ### 4.1 源码里的接纳条件
 
-`android-17.0.0_r1` 的 `PlaybackThread::createTrack_l()` 明确写着：
+`android-17.0.0_r1` 的 `PlaybackThread::createTrack_l()` 在处理 FAST 请求前写着：
 
 ```cpp
 // client expresses a preference for FAST, but we get the final say
-if (*flags & AUDIO_OUTPUT_FLAG_FAST) {
-    if (audio_is_linear_pcm(format)
-            && /* channel conversion is acceptable */
-            sampleRate == mSampleRate
-            && hasFastMixer()
-            && mFastTrackAvailMask != 0) {
-        // 再检查 effect compatibility
-    } else {
-        *flags &= ~AUDIO_OUTPUT_FLAG_FAST;
-    }
-}
 ```
 
 源码注释中的 `preference` 表明 FAST 标志只表达偏好，AudioFlinger 可以清除它。因此，`PERFORMANCE_MODE_LOW_LATENCY`、`AAUDIO_PERFORMANCE_MODE_LOW_LATENCY` 或 `AUDIO_OUTPUT_FLAG_FAST` 都只是请求。最终是否成为快速音轨，要同时满足：
@@ -243,10 +233,12 @@ if (*flags & AUDIO_OUTPUT_FLAG_FAST) {
 1. AudioPolicy 选出的输出支持低延迟或快速路径。
 2. 数据是线性 PCM。
 3. 采样率等于当前输出的硬件采样率。
-4. 声道掩码不需要成本较高的向下混音（downmix）。
+4. 声道掩码通过当前实现的兼容性判断：请求掩码与输出（含触觉声道）一致，或输出掩码不是立体声，或请求音轨为单声道。
 5. 这个混音输出关联了 FastMixer。
 6. 快速音轨槽位仍有空位；一个槽位表示 FastMixer 可同时接纳的一条输入音轨。
 7. 会话、输出级或设备上的音效链不会移除 FAST 标志。
+
+声道条件旁仍保留着一个 TODO：抽取用于检查是否需要高成本向下混音（downmix）的函数。现有掩码判断不能视为完整的声道转换成本检查，排查多声道配置时还要核对实际转换路径。
 
 另一句常见的误写是“帧数不匹配就一定拒绝 FAST”。对流式快速音轨，系统会把缓冲区帧数至少提高到 `mFrameCount * fast_track_multiplier`，调整的是实际缓冲配置，帧数检查不在第一层拒绝条件里。打开音轨后要读取实际配置，builder（构建器）里的请求未必原样生效。
 
@@ -442,7 +434,7 @@ AAudio/Oboe 的数据回调运行在高优先级线程上。回调内应避免�
 - 播放和音量修改通常静默失败。
 - `requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`。
 
-先排除一个误判：这类无声常被当成“AudioFlinger 被系统调度器降频”之类的性能问题；实际更常见的信号是应用停止供数、`write()` 返回错误、数据回调停止推进或音频焦点请求失败。
+默认行为下，播放被静音时 API 不会提供失败消息，因此不能靠 `write()` 报错来识别限制。先在 `dumpsys audio` 或 logcat 中查找带包名的 `AudioHardening` 记录：`level: partial` 表示没有运行前台服务，`level: full` 表示前台服务缺少 WIU 能力。持续的写入错误属于下文 `throw` 测试模式的诊断行为。
 
 下面的命令用于在测试设备上强制切换限制强度，并配合日志与系统状态做对照：
 
@@ -599,7 +591,7 @@ Perfetto 不保证每次 xrun 都出现名为 `underrun` 的标准轨迹区段�
 - `AudioTrack.getUnderrunCount()`。
 - `dumpsys media.audio_flinger` 中音轨或 FastMixer 的欠载计数器。
 - 轨迹中应用供数间隙与服务端线程的消费时点。
-- 可控构建上的 AudioFlinger 日志或 tee sink；后者会复制一份音频流供调试。
+- 可控构建上的 AudioFlinger 日志，或自定义 `userdebug` / `eng` 构建上的 tee sink；后者会复制一份音频流供调试，出于隐私考虑，编译与运行时开关默认均关闭。调试后应关闭 tee sink，不能在生产构建中保持启用。
 
 接下来做一个二分：计数器增长、且回调线程在截止时间前长期停在 Runnable 状态等 CPU，优先检查调度；回调已按时完成而计数器仍在涨，再检查缓冲区、HAL 写入、路由和设备侧。
 
@@ -623,20 +615,13 @@ Perfetto 能解释软件时序；扬声器振膜何时发声、麦克风声学�
 | 同时录放越久越不稳 | 输入、输出时间戳和 FIFO 中的数据量 | 检查时钟漂移与异步重采样 |
 | `LOW_LATENCY` 请求无效 | 打开后的模式、采样率、共享方式和 FAST 标志 | 检查槽位、音效链、设备配置档和 MMAP 回退 |
 | 切换耳机时短暂静音 | 路由以及打开、关闭时序 | 结合 `dumpsys audio` 与 AudioPolicy / AudioFlinger 轨迹 |
-| Android 17 后台突然无声 | 应用生命周期、前台服务、WIU、写入和音频焦点结果 | 检查 `AudioHardening` 日志和强制测试开关 |
+| Android 17 后台突然无声 | 应用生命周期、前台服务、WIU、音频焦点结果 | 检查带包名的 `AudioHardening` 日志与 `partial/full` 级别，并记录强制测试开关 |
 
 ## 10. 蓝牙音频的延迟构成
 
 蓝牙路径会在链路上叠加编码、分包（把音频装入无线传输的数据包）、无线调度、抖动缓冲（吸收数据包到达时间的波动）、耳机解码和本地 DSP。SBC、AAC、aptX、LDAC、LC3 只是其中一部分变量；同一种编解码器在不同缓冲配置、耳机固件、链路质量和模式下也会有明显差异。
 
-因此，下面这种写法可以直接排除：
-
-```text
-LDAC 固定 30–50ms
-aptX 固定 50–80ms
-```
-
-这类数值既代表不了 Android 平台，也容易把音质模式和低延迟模式混为一谈。更可靠的做法是：
+蓝牙编解码器名称不足以给出固定的端到端延迟范围。延迟数值需要注明设备、路由、缓冲配置和测试方法，否则容易把音质模式和低延迟模式混为一谈。排查时可以按下面的步骤复测：
 
 1. 固定手机、耳机、编解码器、蓝牙协议配置与场景模式。
 2. 记录实际蓝牙路由和协商结果。
