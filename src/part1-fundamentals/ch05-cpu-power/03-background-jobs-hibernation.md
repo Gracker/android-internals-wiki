@@ -4,8 +4,10 @@ title: 后台执行、任务调度与 App Hibernation
 chapter: '5.3'
 section: '5.3'
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
-last_verified: '2026-10-04'
-last_verified_against: Android 17 JobDebugInfo/bg-audio docs + WorkManager 2.12.0 release notes + App Hibernation docs + JobScheduler/IBinder API reference + source.android cached apps freezer docs
+last_verified: '2026-11-12'
+last_source_verified_at: '2026-11-12'
+last_idle_audit_at: '2026-11-12T22:42:32+08:00'
+last_verified_against: Android 17 JobScheduler/ProfilingTrigger/bg-audio references + Android 15 FGS startup/timeout docs + WorkManager 2.12.0 release notes + App Hibernation/IntentCompat/Activity Result docs + android-17.0.0_r1 JobScheduler/Profiling/Hibernation sources + cached apps freezer docs
 confidence: medium
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md
@@ -74,6 +76,16 @@ sources:
   path: https://developer.android.com/about/versions/16/behavior-changes-all
 - type: official
   path: https://developer.android.com/about/versions/17/features#job-debugging
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- type: official
+  path: https://developer.android.com/reference/androidx/core/content/IntentCompat
+- type: official
+  path: https://developer.android.com/training/basics/intents/result
+- type: official
+  path: https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.StartActivityForResult
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs
 - type: aosp
@@ -354,7 +366,9 @@ FGS 能否运行取决于五项检查：调用时应用是否具备从后台启�
 
 #### Android 17 的后台音频硬化
 
-API 37 对后台音频操作加了一层约束。在 Android 17 上运行的所有应用，从后台开始播放、请求音频焦点（audio focus，即协调多个应用音频输出优先级的机制）或调节音量时，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS；`targetSdkVersion` 为 37 时，该 FGS 还要具备 WIU 资格。由 `BOOT_COMPLETED`（设备启动完成广播） 等后台触发器启动的 `mediaPlayback` FGS，如果没有用户操作形成的 WIU 资格，调用 `AudioManager.requestAudioFocus()` 会返回 `AUDIOFOCUS_REQUEST_FAILED`，播放和音量 API 也可能不抛异常地失败。
+API 37 对后台音频操作加了一层约束。在 Android 17 上运行的所有应用，从后台开始播放、请求音频焦点（audio focus，即协调多个应用音频输出优先级的机制）或调节音量时，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS；`targetSdkVersion` 为 37 时，该 FGS 还要具备 WIU 资格。合法从后台启动的 FGS 如果缺少 WIU 资格，目标 API 为 37 的应用调用 `AudioManager.requestAudioFocus()` 会返回 `AUDIOFOCUS_REQUEST_FAILED`，播放和音量 API 也可能不抛异常地失败。
+
+FGS 启动本身还要先通过类型与来源检查。Android 15 起，对于 `targetSdkVersion >= 35` 的应用，`BOOT_COMPLETED`（设备启动完成广播）接收器不能启动 `mediaPlayback` FGS，尝试启动会抛出 `ForegroundServiceStartNotAllowedException`。这条路径在启动阶段就会失败，排查时应先检查 FGS 是否成功启动，再检查音频 API 的 WIU 资格。
 
 有一项例外需要单独判断：`targetSdkVersion` 为 37 的应用如果已获得 exact alarm 权限，并且操作的是闹钟用途音频流 `USAGE_ALARM`，官方文档明确豁免 WIU 要求。普通媒体、播客和直播的后台播放，仍应在用户发起播放时启动 `mediaPlayback` FGS，并在播放结束或永久失去音频焦点时停止 FGS。
 
@@ -982,7 +996,9 @@ Android 17 为 `ProfilingTrigger`（达到指定事件时启动性能采集的�
 
 - `TRIGGER_TYPE_COLD_START`：可触发调用栈采样（call stack sample）与系统跟踪（system trace）；
 - `TRIGGER_TYPE_OOM`：可触发 Java 堆转储（heap dump）；
-- `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：在异常 CPU 使用导致进程终止后提供调用栈采样。
+- `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：在异常 CPU 使用导致进程终止后提供运行中系统跟踪的快照。
+
+这些触发类型在 API 37 加入，产物与使用前提见 `ProfilingTrigger` API 参考。冷启动采集的开始可能延迟，调用 `Activity.reportFullyDrawn()` 后结束，未调用时默认采集 5 秒；不能据此假定整个冷启动都已覆盖。使用 OOM 触发器时，自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认异常处理器，否则该触发器不会生效，需要由应用主动调用 `ProfilingManager.requestProfiling()` 请求堆转储。
 
 冷启动触发器可以用来判断 WorkManager 初始化或积压任务有没有占住应用启动的关键路径。excessive CPU kill 与 JobScheduler quota 是两套机制：前者诊断进程因异常 CPU 消耗被终止的事件，后者决定 job 的调度与运行额度。没有公开依据时，固定的 CPU 阈值或检查周期都给不出来，进程终止也归因不到 quota 头上。
 
@@ -1493,7 +1509,9 @@ future.addListener(
 )
 ```
 
-若后台核心能力确需豁免，可先向用户解释影响，再用 `IntentCompat.createManageUnusedAppRestrictionsIntent()` 打开系统设置。不要把设置跳转放在无上下文的首次启动弹窗中。
+该查询只有在应用的 `targetSdkVersion >= 30` 时才会提供应用信息。生产代码还应处理 `ERROR`（状态查询失败）与 `FEATURE_NOT_AVAILABLE`（功能不可用）；后者不能直接继续创建设置 Intent，否则 `IntentCompat.createManageUnusedAppRestrictionsIntent()` 会抛出 `UnsupportedOperationException`。
+
+若后台核心能力确需豁免，先向用户解释影响，并确认设备提供该功能，再用 `IntentCompat.createManageUnusedAppRestrictionsIntent()` 创建设置 Intent。官方契约要求通过 `startActivityForResult()` 路径发送，即使不读取返回结果也不能直接调用 `startActivity()`；新代码可注册 `ActivityResultContracts.StartActivityForResult` 并由对应 launcher 启动。回调应在每次 Activity 或 Fragment 重建时一致注册，启动时生命周期至少已到 `CREATED`。不要把设置跳转放在无上下文的首次启动弹窗中。
 
 
 #### 间接特征的归因局限
@@ -1611,6 +1629,8 @@ future.addListener(
 - [Background Task Inspector](https://developer.android.com/studio/inspect/task)
 - [Android 16 behavior changes](https://developer.android.com/about/versions/16/behavior-changes-all)
 - [Android 17 features and APIs](https://developer.android.com/about/versions/17/features)
+- [ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)：API 37 触发类型、采集产物、冷启动采集边界与 OOM 异常处理器前提。
+- [ProfilingTrigger.java（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)：Profiling 模块中的触发类型定义。
 - [Android Vitals: excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)
 - [Exact alarms](https://developer.android.com/develop/background-work/services/alarms)
 
@@ -1619,6 +1639,9 @@ future.addListener(
 - [PerfettoSQL standard library](https://perfetto.dev/docs/analysis/stdlib-docs)
 
 - [App hibernation](https://developer.android.com/topic/performance/app-hibernation)：影响、使用定义、豁免、退出行为和官方测试命令。
+- [IntentCompat API reference](https://developer.android.com/reference/androidx/core/content/IntentCompat)：unused-app 设置 Intent 的可用性检查与启动契约。
+- [Get a result from an activity](https://developer.android.com/training/basics/intents/result)：AndroidX Activity Result 的注册和启动生命周期。
+- [StartActivityForResult contract](https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.StartActivityForResult)：以原始 Intent 启动 Activity 并接收结果。
 - [Android 15 package stopped state changes](https://developer.android.com/about/versions/15/behavior-changes-all#stopped-state)：PendingIntent、widget、用户解除 stopped 与 `wasForceStopped()`。
 - [Android 15 app archiving](https://developer.android.com/about/versions/15/features#app-archiving)：平台级 archive/unarchive 的 API 与恢复模型。
 - [AppHibernationService.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/apphibernation/AppHibernationService.java)：用户级/全局级状态、Force stop、缓存、dexopt 和恢复广播。
