@@ -2,7 +2,8 @@
 title: 响应速度原理、场景与案例
 chapter: '8.1'
 section: '8.1'
-status: finalized
+status: ready-for-review
+last_body_apply_at: '2026-11-13T07:18:35+08:00'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
   - responsiveness
@@ -51,6 +52,16 @@ sources:
   path: https://developer.android.com/google/play/vitals/launch-time
 - type: official
   path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+- type: blog
+  path: 技术文章/source/juejin-android/2026-11-13-76741036-主线程明明是空闲的，为什么仍然 ANR？.md
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_MessageQueue.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libutils/Looper.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Looper.java
+- type: official
+  path: https://developer.android.com/about/versions/16/qpr2/release-notes
 - type: official
   path: https://developer.android.com/reference/android/view/MotionPredictor
 - type: official
@@ -388,6 +399,24 @@ Android Vitals 将冷启动达到 5 秒、温启动达到 2 秒、热启动达�
 
 
 ANR 同样要按类型分别看。AOSP / Pixel 的 input dispatch 默认超时为 5 秒；`Service`、`BroadcastReceiver`、`ContentProvider`、`JobService` 和前台服务还有各自的规则。Android 14 及更高版本会根据进程是否 CPU-starved（长时间得不到足够 CPU）在一定区间内调整广播超时，OEM 也可能修改默认值。分析响应问题时，应先确认 ANR 类型，再检查对应的计时起点、截止条件和责任线程。
+
+### ANR 栈停在 `nativePollOnce`，先查系统在等什么
+
+ANR 的触发时间和线程栈的采样时间要分开记录。转储较晚时，主线程可能已经回到 poll；但 Java 栈里只有 `nativePollOnce`，也不足以认定采样时线程空闲。r1 的 `NativeMessageQueue::pollOnce()` 会进入 native Looper，`Looper::pollInner()` 既会等待 `epoll_wait()`，也会执行文件描述符回调。应结合 native 栈区分“正在等事件”和“正在处理回调”，再判断这个样本是否覆盖了超时形成的区间。[已验证: Android Developers《Diagnose and fix ANRs》的 nativePollOnce 小节；AOSP `android-17.0.0_r1`，`frameworks/base/core/jni/android_os_MessageQueue.cpp`、`system/core/libutils/Looper.cpp`]
+
+如果完整 Reason 含有 `does not have a focused window`，调查方向就落到了焦点窗口。r1 的 `findFocusedWindowTargetLocked()` 在需要分发依赖焦点的事件、对应 display 已有 focused application 却没有 focused window 时开始等待；超时后，`processNoFocusedWindowAnrLocked()` 还会复查应用焦点是否改变、窗口是否已经出现，再报告 ANR。这与事件已经发到窗口、等待应用 ACK 超时是两条路径。按键等事件需要焦点目标，普通触摸主要按命中测试选窗口，不能把无焦点窗口解释成“所有触摸都堵在主线程点击回调”。[已验证: AOSP `android-17.0.0_r1`，`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` 的 `findFocusedWindowTargetLocked()`、`processNoFocusedWindowAnrLocked()`、两种 `onAnrLocked()`；Android Developers《Diagnose and fix ANRs》的 No focused window 小节]
+
+《主线程明明是空闲的，为什么仍然 ANR？》给出了三组日志片段。材料没有附完整原始 trace 或可核对的系统版本，适合用来比较证据能支持到哪一步，不能把这些历史现场当作 Android 17 的复现实验。[来源: 技术文章/source/juejin-android/2026-11-13-76741036-主线程明明是空闲的，为什么仍然 ANR？.md]
+
+| 日志片段 | 能支持的判断 | 还需要什么 |
+| --- | --- | --- |
+| Reason 明确为无焦点窗口，Java 栈停在 `nativePollOnce` | 直接触发是没有及时等到焦点窗口；同期高 Load 仍只是环境线索 | 同一时间窗的窗口建立、焦点切换和线程调度记录。[来源: 上述材料，案例一] |
+| 主线程在 native poll，但 ANR Reason 丢失 | 只能描述采样时状态；无法据此确定 ANR 类型或断言主线程已经恢复 | 完整 Reason、触发与转储时间，以及该类 ANR 负责线程的活动记录。[来源: 上述材料，案例二] |
+| 主线程栈顶出现 Matrix `LooperMonitor.dispatch()` | 只看到监控入口，不能据此把 Matrix 定为根因 | 监控回调自身的耗时、连续采样或具体锁依赖，再核对是否覆盖超时区间。[来源: 上述材料，案例三] |
+
+监控入口容易被误认成耗时位置。r1 的 `Looper.loopOnce()` 在 `Handler.dispatchMessage()` 前后调用配置的 Printer；入口帧本身没有持续时间信息。要判断监控是否拖慢消息，需把监控回调自身耗时与业务消息耗时分开，不把包裹业务的公共帧当成业务耗时证据。[已验证: AOSP `android-17.0.0_r1`，`frameworks/base/core/java/android/os/Looper.java` 的 `loopOnce()`；来源: 上述材料，案例三]
+
+补采时先保存完整 Reason、事件对应的进程与组件、系统版本，以及触发、转储和上报各自的时间。时钟域按前文规则对齐，再沿 Reason 选择观察对象：无焦点窗口就追窗口 attach、可见状态、焦点和首帧；已分发事件等待 ACK 就追接收线程及其 Binder、锁或调度依赖。可复现时用 bugreport 或 Perfetto 保留超时前后的窗口、输入和线程轨迹。Reason 缺失时先记录“证据不足”，不要把主线程历史慢消息或后台线程死锁补成既定原因。[来源: 上述材料，案例一、二的补采项；已验证: Android Developers《Diagnose and fix ANRs》的 Input dispatch timeout、No focused window、nativePollOnce 小节]
 
 ### 从 Web INP 借鉴交互口径
 
@@ -934,7 +963,7 @@ Macrobenchmark 可以通过 UIAutomator 重复执行点击、滑动和输入，�
 
 Android 17 会为 targetSdk 37 及以上的应用启用 lock-free（无锁） `MessageQueue`。它可能减少消息生产者和 Looper 之间的锁竞争，也会让通过反射读取 `mMessages` 或调用私有方法的旧监控失效。页面切换和点击监控应使用公开 trace、FrameTimeline 和测试 API；队列实现发生变化后，仍需进行应用侧对照测量。
 
-⚠️ 矛盾校正：旧文把 generational Concurrent Mark-Compact GC 的引入归于 Android 17；[Android 16 QPR2 发布说明](https://developer.android.com/about/versions/16/qpr2/release-notes)已明确包含该能力，与第 4 章的版本说明一致。Android 17 继续演进；具体设备的 ART/Mainline 版本与开关仍需核对，仅凭系统大版本推定 collector 并不可靠。这会改变停顿和 CPU 时间分布。看到点击或切换附近出现 GC slice 时，应检查对象分配速率、堆状态和 collector 事件；固定收益要从测量来，单看平台版本推不出来。
+Android 16 QPR2 已包含 generational Concurrent Mark-Compact GC，见 [Android 16 QPR2 发布说明](https://developer.android.com/about/versions/16/qpr2/release-notes)。具体设备使用的 collector 仍需核对 ART/Mainline 版本与开关，不能仅凭系统大版本判定。分析点击或切换附近的 GC slice 时，应检查对象分配速率、堆状态和 collector 事件，再测量停顿及 CPU 时间分布；平台版本本身不能证明固定收益。[来源: Android 16 QPR2 发布说明，More efficient garbage collection；本文既有的设备版本与测量边界]
 
 线程长时间处于 runnable（可运行但未获得 CPU）、频繁被抢占、CPU frequency 不足、input driver 延迟或 I/O wait，是继续进入 `android17-6.18-2026-06_r6` 分析调度和驱动。Activity、View、InputDispatcher、MessageQueue 和配置变更的判断，仍以篇首的平台源码基线为准。
 
@@ -1040,9 +1069,7 @@ Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的�
 
 #### 投入产出比
 
-所引 2024 年一手文章没有披露单条 CUJ 的小时数、观察一周或具体人天。旧文“数小时、一周见效”的成本说法缺少该来源支持，已撤回；本地实施周期要按自己的工程量另行评估。
-
-可以确认的产出包括冷启动与页面切换分位数下降，以及 Profile 能随版本重复生成。原文没有公开具体人天成本、服务器费用和每项工具的独立收益。本地评估时，应把 Profile 生成、基准设备维护、失败用例修复和发布观察都计入投入。
+所引 2024 年一手文章披露了冷启动与页面切换分位数下降，以及 Profile 随版本重复生成的做法，但没有给出具体人天、服务器费用和每项工具的独立收益。本地评估时，应把 Profile 生成、基准设备维护、失败用例修复和发布观察都计入投入，实施周期按自己的工程量估算。[来源: Reddit 与 Android Developers 的 2024 年案例，见本节“优化后数据”链接]
 
 #### 可迁移的做法
 
@@ -1324,6 +1351,9 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：VSync 请求和回调顺序。
 - [`RenderThread.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)：HWUI RenderThread 主循环与帧工作。
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：显示帧调度、合成与提交。
+- [`android_os_MessageQueue.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_MessageQueue.cpp)：`nativePollOnce()` 到 native Looper 的入口。
+- [`Looper.cpp`](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libutils/Looper.cpp)：epoll 等待与文件描述符回调。
+- [`Looper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Looper.java)：消息分发前后的 Printer 调用。
 
 #### 官方文档
 
@@ -1335,6 +1365,7 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 - [App startup time: TTID and TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
 - [Google Play Android vitals：App startup time](https://developer.android.com/google/play/vitals/launch-time)
 - [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [主线程明明是空闲的，为什么仍然 ANR？](https://juejin.cn/post/7674103602086264875)：ANR 小节所比较的三组历史日志片段，未附完整原始 trace。
 - [`MotionPredictor` API](https://developer.android.com/reference/android/view/MotionPredictor)
 - [Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
 - [`Display` API](https://developer.android.com/reference/android/view/Display)
