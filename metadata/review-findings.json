@@ -14840,6 +14840,23 @@
       "summary": "unused-app 设置跳转遗漏可用性检查及带结果的 Activity 启动契约",
       "type": "missing-api-precondition",
       "updated_at": "2026-11-12T22:44:45.714384+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md",
+      "created_at": "2026-11-13T02:00:19.626855+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-11-13",
+      "details": "last source verification 2026-08-13 older than 90 days\nEvidence: 2026-08-13",
+      "id": "AIW-FRESH-aa7976f00cba5a22",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-13-时效性巡检.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part3-tools/ch14-perfetto/13-frametracer-frame-timeline.md"
+      ],
+      "status": "open",
+      "summary": "last source verification 2026-08-13 older than 90 days",
+      "type": "stale-source-verification",
+      "updated_at": "2026-11-13T02:00:19.626855+08:00"
     }
   ],
   "schema_version": 1

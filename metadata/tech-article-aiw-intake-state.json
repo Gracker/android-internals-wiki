@@ -7752,6 +7752,54 @@
       "status": "appended",
       "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
     },
+    "source/juejin-android/2026-11-13-76741036-主线程明明是空闲的，为什么仍然 ANR？.md": {
+      "chapter": "ch13-perfetto",
+      "entry_id": "7b001ef4a116e2c6",
+      "last_appended": "2026-11-13T05:25:19.671477+08:00",
+      "last_seen": "2026-11-13T05:25:19.671477+08:00",
+      "mtime": 1794514668.287112,
+      "score": 25,
+      "sha256": "15cae39a5af047402bd99042eed7d05cfe044b1a1fe53eca53ededca07d31dd4",
+      "size": 19666,
+      "status": "appended",
+      "title": "主线程明明是空闲的，为什么仍然 ANR？3 个真实 Trace 的证据链复盘系统已经判定 ANR，主线程却停在 nati"
+    },
+    "source/juejin-android/2026-11-13-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "c98c0b8d40ee3c00",
+      "last_appended": "2026-11-13T05:25:19.671477+08:00",
+      "last_seen": "2026-11-13T05:25:19.671477+08:00",
+      "mtime": 1794514668.2879288,
+      "score": 9,
+      "sha256": "964586bcd6990e4c75ad4bdf89e1e25d9bbb93efa39a398c34a1ab73b214dd5f",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-13-76826281-AI时代下，Android的边界正在消失.md": {
+      "chapter": "待分类",
+      "entry_id": "9d7bc585127ea8d4",
+      "last_appended": "2026-11-13T05:25:19.671477+08:00",
+      "last_seen": "2026-11-13T05:25:19.671477+08:00",
+      "mtime": 1794514668.2888937,
+      "score": 16,
+      "sha256": "95b22516ae3133b83bde99d3a44236a323f60b52eacc2723f9d2a06054d746f9",
+      "size": 20509,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
+    "source/juejin-android/2026-11-13-77005929-不想开会员，我写了一个记账 App.md": {
+      "chapter": "待分类",
+      "entry_id": "7daf0a8de339d921",
+      "last_appended": "2026-11-13T05:25:19.671477+08:00",
+      "last_seen": "2026-11-13T05:25:19.671477+08:00",
+      "mtime": 1794514668.2896442,
+      "score": 7,
+      "sha256": "bb7d9e4aaa69317bfe6bdf55d8da45f5f18390d950e6a8dacd6499c2d20e2d73",
+      "size": 11691,
+      "status": "appended",
+      "title": "不想开会员，我写了一个记账 App一个没有账号、广告和云同步的 Android 记账 App，我写了三个月。1300 多"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11446,24 +11494,24 @@
     }
   },
   "last_report": {
-    "appended": 6,
-    "considered": 33,
-    "cutoff": "2026-11-11T05:20:19.775854+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-12.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-11-12T05:20:19.867005+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-13.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2551,
+    "scanned": 2555,
     "skipped": {
       "existing_link": 0,
-      "low_score": 24,
-      "max_files": 3,
-      "old_unseen": 1428,
+      "low_score": 0,
+      "max_files": 0,
+      "old_unseen": 1431,
       "path": 32,
-      "unchanged": 1058
+      "unchanged": 1088
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-12T05:25:19.867005+08:00",
+  "last_run_at": "2026-11-13T05:25:19.671477+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
