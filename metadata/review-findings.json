@@ -14652,6 +14652,69 @@
       "summary": "tee sink 调试入口缺少构建条件和音频隐私警告",
       "type": "missing-warning",
       "updated_at": "2026-11-11T22:43:24.118653+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/28-bpf-observability-boundary.md",
+      "close_note": "已修正 §2.1 的稳定性括注，保留 tracepoint 解释并链接固定 ACK BPF 设计问答；源码断言、中文新增行硬门和本地元数据/目录链接/diff 检查均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-143519-idle-audit-2a7a1499",
+      "created_at": "2026-11-12T14:40:20.180161+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-143519-idle-audit-2a7a1499",
+      "details": "正文 §2.1 把 tracepoint 定义为稳定跟踪事件；固定 ACK 的 Documentation/bpf/bpf_design_QA.rst:210-214 明确说明 tracepoint 不属于稳定 ABI，会随内部实现变化。需去掉稳定性承诺并说明升级时重核事件和参数。",
+      "id": "AIW-1.28-TRACEPOINT-STABILITY",
+      "log_path": "logs/audit/2026-11-12-20261112-143519-idle-audit-2a7a1499-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/bpf/bpf_design_QA.rst#210"
+      ],
+      "status": "fixed",
+      "summary": "tracepoint 括注错误地承诺稳定性",
+      "type": "source-boundary",
+      "updated_at": "2026-11-12T14:44:37.361639+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/28-bpf-observability-boundary.md",
+      "close_note": "已在 §7 完整列出四种 state 输出并解释 disabling，链接固定 ACK 状态定义；核对 ext.c 输出函数与停用路径，本地门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-143519-idle-audit-2a7a1499",
+      "created_at": "2026-11-12T14:40:20.374820+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-143519-idle-audit-2a7a1499",
+      "details": "正文 §7 把 state 输出限定为 disabled/enabling/enabled，遗漏固定 ACK kernel/sched/ext_internal.h:1002-1013 定义且 ext.c:3511-3515 输出的 disabling；停用路径 ext.c:3975 会设置该状态。",
+      "id": "AIW-1.28-SCHED-EXT-DISABLING",
+      "log_path": "logs/audit/2026-11-12-20261112-143519-idle-audit-2a7a1499-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext_internal.h#1002",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c#3975"
+      ],
+      "status": "fixed",
+      "summary": "sched_ext 状态节点枚举遗漏 disabling",
+      "type": "technical-accuracy",
+      "updated_at": "2026-11-12T14:44:37.422314+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/28-bpf-observability-boundary.md",
+      "close_note": "已在 §9 区分现有状态读取、权限切换和主动探测，说明程序加载/map 创建/fd 关闭、权限拒绝影响及 default/full 三个 helper 的内核日志警告边界；保留全部原有命令。核对 Android 17 bpftool、libbpf 源码与手册，本地门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-143519-idle-audit-2a7a1499",
+      "created_at": "2026-11-12T14:40:20.443943+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-143519-idle-audit-2a7a1499",
+      "details": "正文 §9 将整组命令描述为只读，其中含 adb root 和 bpftool feature probe kernel。Android 17 的 feature.c:566,633,692 调用 libbpf 探测；libbpf_probes.c:191-194,388-397 会尝试加载程序、创建 map 并关闭 fd；手册还区分默认跳过和 full 启用的两类会打印内核警告的 helper。需要明确主动探测的影响和权限边界。",
+      "id": "AIW-1.28-BPFTOOL-PROBE-SIDE-EFFECTS",
+      "log_path": "logs/audit/2026-11-12-20261112-143519-idle-audit-2a7a1499-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/bpftool/+/refs/tags/android-17.0.0_r1/src/feature.c#548",
+        "https://android.googlesource.com/platform/external/libbpf/+/refs/tags/android-17.0.0_r1/src/libbpf_probes.c#191",
+        "https://android.googlesource.com/platform/external/bpftool/+/refs/tags/android-17.0.0_r1/docs/bpftool-feature.rst#41"
+      ],
+      "status": "fixed",
+      "summary": "主动 BPF 能力探测被归入只读命令",
+      "type": "command-boundary",
+      "updated_at": "2026-11-12T14:44:37.483078+08:00"
     }
   ],
   "schema_version": 1
