@@ -19,10 +19,11 @@ related_chapters:
 - '3.2'
 - '22.1'
 - '22.13'
-last_verified: '2026-10-18'
-last_verified_against: AOSP android-17.0.0_r1 + Android Developers 2026-10-18
-last_source_verified_at: '2026-10-18T14:09:05+08:00'
-verification_scope_note: 按 android-17.0.0_r1 核对显示布局、DeviceState、Shell Transition/BLAST、HWC 与采集入口；核对官方 WindowInfoTracker 生命周期、Espresso Device 可用性及 target 37 边界，补齐 Lifecycle 依赖、Flow 取消与保存状态限制。未作设备性能实验。
+last_verified: '2026-11-12'
+last_verified_against: AOSP android-17.0.0_r1 + Android Developers 2026-11-12
+last_source_verified_at: '2026-11-12T18:39:23+08:00'
+verification_scope_note: 按 android-17.0.0_r1 复核 LogicalDisplay 布尔切换标记、显示布局、Shell Transition 状态与收集/播放独立性、BLAST 同步、HWC present fence 和 Perfetto 采集入口；复核官方 FoldingFeature、WindowInfoTracker、Lifecycle、保存状态、Espresso Device 和 target 37 边界。未作设备性能实验。
+last_idle_audit_at: '2026-11-12T18:39:23+08:00'
 confidence: medium-high
 sources:
 - type: official
@@ -43,6 +44,8 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/display/LogicalDisplay.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java
 - type: aosp
@@ -225,7 +228,9 @@ flowchart TD
 - enabled 状态变化；
 - 同一个物理 DisplayDevice 将映射到新的 logical display id；
 - DisplayDevice 只出现在新旧 layout 的一侧；
-- Display 已处于 transition（`STATE_COLLECTING` 或 `STATE_STARTED`）。
+- LogicalDisplay 已有切换标记（`mIsInTransition == true`，由 `isInTransitionLocked()` 读取）。
+
+这里记录的是 `LogicalDisplay` 的布尔标记，由 `resetLayoutLocked()` 设置或清除。排查黑场时看该标记与物理设备的 `OFF` 状态；WMS `Transition` 的 `STATE_COLLECTING`、`STATE_STARTED` 另用于窗口转场的收集与启动。[源码：`LogicalDisplayMapper.java` L1280–1338；`LogicalDisplay.java` L197–200、L1192–1206；`Transition.java` L165–175]
 
 系统先发送 transition 阶段更新，让相关 Display 关闭。正常推进要求所有 transitioning Display（正在切换的显示设备） 确认 `OFF`，且没有待完成的设备唤醒或休眠——`finishStateTransitionLocked(false)` 检查的就是 `displaysOff && !waitingToWakeDevice && !waitingToSleepDevice`。后两项由设备状态、`mIsInteractive`、启动完成情况及折叠休眠设置等条件决定。这些条件满足后，系统才清除 transition 标记、应用新 layout 并发出后续更新；500 ms 超时则以 `force=true` 强制推进。[源码：`LogicalDisplayMapper.java` L116、L683–705、L720–835、L1748–1752]
 
@@ -365,7 +370,7 @@ STATE_PENDING / STATE_COLLECTING / STATE_STARTED → STATE_ABORT
 
 `startCollectOrQueue()` 先保持已有队列顺序；没有活跃同步时直接开始收集；存在 collecting transition 时，只有 `canStartCollectingNow()` 允许，才把旧的移入 waiting、让新的开始收集。该检查要求当前 collecting 已 populated，并对它及所有 waiting transition 调用 `TransitionController.getCanBeIndependent(collecting, queued)`。
 
-`getCanBeIndependent()` 默认返回 false。该基线的放行分支针对测试用的双方 `PARALLEL_TYPE_MUTUAL`，以及带附加限制的 `PARALLEL_TYPE_RECENTS` 场景；跨 Display 检查位于 recents 分支内部。所以存在第二个 Display，离“允许并行收集”还差得远：即使放行，SyncGroup 依赖或后续播放独立（`getCanBeIndependent()` 返回 true）性检查仍可能让它继续等待。[源码：`TransitionController.java` L188–229、L1303–1364、L1406–1504、L1766–1798]
+`getCanBeIndependent()` 默认返回 false。该基线的放行分支针对测试用的双方 `PARALLEL_TYPE_MUTUAL`，以及带附加限制的 `PARALLEL_TYPE_RECENTS` 场景；跨 Display 检查位于 recents 分支内部。所以存在第二个 Display，离“允许并行收集”还差得远：即使 `getCanBeIndependent()` 返回 true，SyncGroup 依赖仍可能让它等待；播放阶段还要经 `getIsIndependent()` 判断与已播放 transition 的独立性（`true` 表示可独立播放），`assignTrack()` 据此分配 track 或设置同步标记。[源码：`TransitionController.java` L188–229、L1303–1364、L1406–1542、L1766–1798]
 
 <!-- gracker-diagram: ch02-16-transition-collection-queues -->
 ![当前收集、等待同步、排队：三种等待位置](../../assets/diagrams/ch02/ch02-16-transition-collection-queues.png)
@@ -668,7 +673,7 @@ adb shell perfetto \
 
 ### 8.3 功能自动化与性能测试的分工
 
-[Espresso Device API 官方文档](https://developer.android.com/studio/test/espresso-api)更新于 2026-10-16，其中要求 Android Studio Iguana、AGP 8.3、Android Emulator 33.1.10 或各自的后续版本；AVD 需运行 API 24 或以上系统，并具备所测试的设备模式。文档当前示例依赖为 `androidx.test.espresso:espresso-device:1.1.0`。
+[Espresso Device API 官方文档](https://developer.android.com/studio/test/espresso-api)更新于 2026-10-28，其中要求 Android Studio Iguana、AGP 8.3、Android Emulator 33.1.10 或各自的后续版本；AVD 需运行 API 24 或以上系统，并具备所测试的设备模式。文档当前示例依赖为 `androidx.test.espresso:espresso-device:1.1.0`。
 
 测试控制通道需要网络权限，在 `src/androidTest/AndroidManifest.xml` 的 `<manifest>` 内加入以下声明；其中 `ACCESS_LOCAL_NETWORK` 适用于本文的 target SDK 37 测试：
 
@@ -839,7 +844,7 @@ Shell 端没有进度回调时，先沿同一个 transition token 与 sync ID �
 
 - [`DeviceStateProviderImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/policy/DeviceStateProviderImpl.java)：vendor 条件、lid 与 sensor 监听和 state 选择；
 - [`DeviceStateManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java)：pending 与 committed state、trace 和 callback；
-- [`LogicalDisplayMapper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java)：transition、`OFF` 等待、500 ms 超时、logical 与 physical remap；
+- [`LogicalDisplayMapper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java)：transition、`OFF` 等待、500 ms 超时、logical 与 physical remap；[`LogicalDisplay.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplay.java)：设备状态切换的布尔标记与读写入口；
 - [`DeviceStateToLayoutMap.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java) 与 [`Layout.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/layout/Layout.java)：每个 state 的 display layout；
 - [`DisplayManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java)：DeviceState callback、logical display event、Display traversal；
 - [`HingeSensorAngleProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/updates/hinge/HingeSensorAngleProvider.kt) 与 [`PhysicsBasedUnfoldTransitionProgressProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/progress/PhysicsBasedUnfoldTransitionProgressProvider.kt)：可选 angle-to-progress 路径；
