@@ -4,8 +4,8 @@ chapter: '1.28'
 section: '1.28'
 status: finalized
 applicable_versions: Android 17 (API 37) / AOSP android-17.0.0_r1 / ACK android17-6.18-2026-06_r6
-last_verified: '2026-09-27'
-last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; official docs rechecked 2026-09-27; sched_ext ABI instability note preserved; no Android 18/API38+ conclusion
+last_verified: '2026-11-12'
+last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; official docs rechecked 2026-11-12; tracepoint ABI, sched_ext states and bpftool probe side effects checked against fixed sources; no Android 18/API38+ conclusion
 confidence: high
 sources:
 - type: blog
@@ -18,6 +18,10 @@ sources:
   path: system/core/rootdir/init.rc (android-17.0.0_r1)
 - type: kernel
   path: arch/arm64/configs/gki_defconfig, kernel/bpf/arena.c, kernel/sched/ext.c (android17-6.18-2026-06_r6)
+- type: kernel
+  path: Documentation/bpf/bpf_design_QA.rst, kernel/sched/ext_internal.h (android17-6.18-2026-06_r6)
+- type: aosp
+  path: external/bpftool/src/feature.c, external/bpftool/docs/bpftool-feature.rst, external/libbpf/src/libbpf_probes.c (android-17.0.0_r1)
 - type: official
   path: https://source.android.com/docs/core/architecture/kernel/android-common
 - type: official
@@ -44,7 +48,8 @@ related_chapters:
 - '15.16'
 last_body_apply_at: '2026-08-06T15:15:49+08:00'
 last_review_finalize_at: '2026-08-06T16:08:13+08:00'
-last_idle_audit_at: '2026-09-27T10:43:16+08:00'
+last_idle_audit_at: '2026-11-12T14:44:37+08:00'
+last_source_verified_at: '2026-11-12T14:44:37+08:00'
 ---
 
 # Android 17 / ACK 6.18 BPF 可观测性与可编程边界
@@ -147,7 +152,7 @@ CONFIG_DEBUG_INFO_BTF=y
 - **CO-RE（Compile Once – Run Everywhere）** 利用 BTF relocation，让同一个已经编译的 BPF 对象在类型布局发生兼容变化时修正字段访问。
 - **GKI KMI（Kernel Module Interface）** 约束 vendor module 可以依赖哪些内核符号接口。
 
-CO-RE 能降低 BPF 程序适配内核结构布局变化的成本，但不会承诺任意 tracepoint（内核预先定义的稳定跟踪事件）、kfunc 或 vendor hook 永远存在。程序仍需检查目标内核是否提供 attach 点，loader 仍可能根据 `min_kver`、`max_kver` 或功能开关拒绝加载。
+CO-RE 能降低 BPF 程序适配内核结构布局变化的成本。tracepoint（内核预先定义的跟踪事件）属于内核内部实现，[固定 ACK 的 BPF 设计问答](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/bpf/bpf_design_QA.rst#210) 明确说明它不属于稳定 ABI。CO-RE 不保证 tracepoint、kfunc 或 vendor hook 在新内核中保持可用；程序仍需检查目标内核是否提供 attach 点、事件参数是否兼容，loader 仍可能根据 `min_kver`、`max_kver` 或功能开关拒绝加载。
 
 ## 3. Android 17 平台怎样装载 BPF
 
@@ -319,7 +324,7 @@ adb shell 'cat /sys/kernel/sched_ext/root/ops 2>/dev/null'
 adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
 ```
 
-`state` 显示框架当前是 `disabled`、`enabling` 还是 `enabled`；`switch_all` 表示当前调度器是否接管全部符合条件的任务；`root/ops` 在调度器对象存在时显示 ops 名称。
+`state` 可能显示 `disabled`、`enabling`、`enabled` 或 `disabling`；最后一项表示框架正在停用 BPF 调度器（见[固定 ACK 的状态定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext_internal.h#1002)）。`switch_all` 表示当前调度器是否接管全部符合条件的任务；`root/ops` 在调度器对象存在时显示 ops 名称。
 
 `enable_seq` 是只增不减的计数器：值为 0 表示本次启动后从未成功启用 BPF 调度器，非 0 只能证明曾经启用过，不能证明当前仍在运行。节点不存在或访问被拒绝时，应记录内核版本、构建类型和 SELinux 拒绝日志，不能把空输出直接解释成某项能力不存在。
 
@@ -360,7 +365,7 @@ vendor BPF 程序可以放入厂商装载路径，但仍需面对：
 
 ## 9. 设备核查清单
 
-下面的命令用于建立只读的事实清单，不建议在量产设备上尝试加载未知 BPF 程序。
+设备核查包括读取现有状态和主动能力探测；两者对权限的要求和执行影响不同。不建议在量产设备上尝试加载未知 BPF 程序。
 
 先记录内核与 Android 版本：
 
@@ -378,7 +383,7 @@ adb shell 'mount | grep " /sys/fs/bpf "'
 adb shell 'find /sys/fs/bpf -maxdepth 2 -type f 2>/dev/null | sort | head -100'
 ```
 
-userdebug/eng 调试构建设备若安装了 `bpftool` 且具备 root 权限，可以进一步检查：
+userdebug/eng 调试构建设备若安装了 `bpftool` 且具备 root 调试条件，可以进一步检查；以下步骤包含切换调试权限和主动探测：
 
 ```bash
 adb root
@@ -388,7 +393,9 @@ adb shell bpftool map show
 adb shell dmesg | grep -i -E 'bpf|bpfloader|verifier'
 ```
 
-`bpftool feature probe kernel` 用于核对运行内核公开的 BPF 能力，`prog show` 和 `map show` 用于枚举当前对象，最后一条命令则查找加载器或 verifier 报错。这些结果仍不能代替 attach 状态、事件触发和消费方读数检查。
+`bpftool feature probe kernel` 用于主动核对运行内核的 BPF 能力，会尝试加载小型测试程序、创建测试 map，并关闭探测对象的文件描述符（见 Android 17 的 [bpftool 实现](https://android.googlesource.com/platform/external/bpftool/+/refs/tags/android-17.0.0_r1/src/feature.c#548)与 [libbpf 探测实现](https://android.googlesource.com/platform/external/libbpf/+/refs/tags/android-17.0.0_r1/src/libbpf_probes.c#191)）。它会执行 BPF 操作，不能作为只读检查使用；权限或 SELinux 拒绝也可能影响结果。[对应版本手册](https://android.googlesource.com/platform/external/bpftool/+/refs/tags/android-17.0.0_r1/docs/bpftool-feature.rst#41)列出了默认探测与 `full` 的区别；结合上述实现，默认跳过 `bpf_probe_write_user()`、`bpf_trace_printk()` 和 `bpf_trace_vprintk()`，`full` 会包含这些探测，可能向内核日志写入警告。
+
+`prog show` 和 `map show` 用于枚举当前对象，最后一条命令则查找加载器或 verifier 报错。这些结果仍不能代替 attach 状态、事件触发和消费方读数检查。
 
 还要确认消费方是否得到数据。程序已加载但没有 attach、目标 tracepoint 未触发、map 权限不匹配，都会产生“节点存在但数据不更新”的现象。排查时按以下顺序缩小范围：
 
