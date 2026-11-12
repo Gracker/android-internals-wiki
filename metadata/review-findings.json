@@ -14715,6 +14715,67 @@
       "summary": "主动 BPF 能力探测被归入只读命令",
       "type": "command-boundary",
       "updated_at": "2026-11-12T14:44:37.483078+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "已按 LogicalDisplay.java L197–200、L1192–1206 与 LogicalDisplayMapper.java L1280–1338 改为独立布尔标记，并明确 WMS 收集/启动状态另属窗口转场；源码引用、中文新增行和本地三项 gate 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-183519-idle-audit-f691e632",
+      "created_at": "2026-11-12T18:39:23.364938+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-183519-idle-audit-f691e632",
+      "details": "2.3 节第 4 项把 LogicalDisplay 的 in-transition 解释为 STATE_COLLECTING/STATE_STARTED；基线 LogicalDisplay.java L197–200、L1192–1206 使用独立布尔值 mIsInTransition，LogicalDisplayMapper.java L1280–1338 读取和设置该标记，WMS 状态另见 Transition.java L165–191。该混淆会误导黑场排查。",
+      "id": "finding-d71b4abb16eb",
+      "log_path": "logs/audit/2026-11-12-20261112-183519-idle-audit-f691e632-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplay.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java"
+      ],
+      "status": "verified",
+      "summary": "LogicalDisplay 切换标记被误写为 WMS Transition 的收集和启动状态",
+      "type": "state-model-mismatch",
+      "updated_at": "2026-11-12T18:41:29.058287+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "已区分 getCanBeIndependent 的潜在并行收集与 getIsIndependent 的播放独立性，补上 assignTrack 和 L1507–1542 引用；保留并发受限的条件，全部本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-183519-idle-audit-f691e632",
+      "created_at": "2026-11-12T18:39:23.430538+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-183519-idle-audit-f691e632",
+      "details": "3.5.4 节末句将后续播放独立性检查的括注写成 getCanBeIndependent() 返回 true；基线 TransitionController.java L1406–1456 区分潜在并行收集和实际播放独立性，assignTrack() L1507–1542 使用 getIsIndependent() 决定轨道与同步标记。",
+      "id": "finding-e315af13a716",
+      "log_path": "logs/audit/2026-11-12-20261112-183519-idle-audit-f691e632-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TransitionController.java"
+      ],
+      "status": "verified",
+      "summary": "播放独立性检查误标为 getCanBeIndependent 而未指向 getIsIndependent",
+      "type": "api-attribution-mismatch",
+      "updated_at": "2026-11-12T18:41:29.121119+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "官方英文页面 Last updated 2026-10-28 UTC 已实取，正文日期同步修正；工具、API 下限、依赖和 target 37 权限/RuleChain 边界复核一致。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-183519-idle-audit-f691e632",
+      "created_at": "2026-11-12T18:39:23.492322+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-183519-idle-audit-f691e632",
+      "details": "8.3 节使用当前文档的措辞但日期停在 2026-10-16；2026-11-12 获取的英文官方页面标为 Last updated 2026-10-28 UTC。工具版本、API 24 下限、1.1.0 依赖、target 37 本地网络权限与 RuleChain 顺序仍与正文一致。",
+      "id": "finding-f1fa4d71165a",
+      "log_path": "logs/audit/2026-11-12-20261112-183519-idle-audit-f691e632-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://developer.android.com/studio/test/espresso-api?hl=en"
+      ],
+      "status": "verified",
+      "summary": "Espresso Device 文档更新日期仍写为 2026-10-16",
+      "type": "source-date-stale",
+      "updated_at": "2026-11-12T18:41:29.185314+08:00"
     }
   ],
   "schema_version": 1
