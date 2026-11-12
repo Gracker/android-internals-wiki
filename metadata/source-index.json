@@ -6557,6 +6557,26 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-13-76741036-主线程明明是空闲的，为什么仍然 ANR？.md",
+      "title": "[技术文章] 主线程明明是空闲的，为什么仍然 ANR？3 个真实 Trace 的证据链复盘系统已经判定 ANR，主线程却停在 nati",
+      "summary": "> 发布时间: 2026-08-16T10:43:11.000Z > 原文链接: https://juejin.cn/post/7674103602086264875 2026-08-16 535 阅读15分钟 先看第一份现场。系统明确判定发生了输入 ANR，可 Trace 里的主线程既没有卡在业务代码，也没有等待 Java 锁，而是停在 nativePollOnce，看...",
+      "chapter": "ch03",
+      "processed_at": "2026-11-13T06:20:19.701919+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "route_confidence": 22,
+      "route_terms": [
+        "anr",
+        "trace",
+        "nati",
+        "t10",
+        "java",
+        "perfetto"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
