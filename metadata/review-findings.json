@@ -14776,6 +14776,70 @@
       "summary": "Espresso Device 文档更新日期仍写为 2026-10-16",
       "type": "source-date-stale",
       "updated_at": "2026-11-12T18:41:29.185314+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md",
+      "close_note": "已删除 BOOT_COMPLETED 可启动 target 37 mediaPlayback FGS 的错误前提，明确 Android 15 target 35+ 启动禁令和异常，并与合法 FGS 的 WIU 检查分开；官方 Android 15/17 文档交叉核验，本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-223519-idle-audit-59c4f3fc",
+      "created_at": "2026-11-12T22:40:39.255677+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-223519-idle-audit-59c4f3fc",
+      "details": "原文把 target 37 的 BOOT_COMPLETED mediaPlayback FGS 当成已启动后因缺 WIU 导致音频失败；Android 15 target 35+ 规则先禁止该类型从 BOOT_COMPLETED 启动，并抛 ForegroundServiceStartNotAllowedException。应区分 FGS 启动门槛与合法已启动 FGS 的音频资格检查。",
+      "id": "finding-a0f1a7e04710",
+      "log_path": "logs/audit/2026-11-12-20261112-223519-idle-audit-59c4f3fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/15/behavior-changes-15#fgs-boot-completed",
+        "https://developer.android.com/about/versions/17/changes/bg-audio"
+      ],
+      "status": "verified",
+      "summary": "后台音频示例遗漏 target 35+ 的 BOOT_COMPLETED mediaPlayback FGS 启动禁令",
+      "type": "version-boundary",
+      "updated_at": "2026-11-12T22:44:45.590064+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md",
+      "close_note": "已将 CPU 超量终止触发产物改为运行中 system trace 快照，补齐 API 37、冷启动采集可能延迟和默认结束条件、OOM handler 透传前提；API reference 与 android-17.0.0_r1 ProfilingTrigger.java 一致，本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-223519-idle-audit-59c4f3fc",
+      "created_at": "2026-11-12T22:40:39.317267+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-223519-idle-audit-59c4f3fc",
+      "details": "android-17.0.0_r1 ProfilingTrigger.java 与 API 37 参考均规定 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 返回运行中 system trace 的快照，非 stack sampling；同节应保留 OOM 自定义未捕获异常处理器必须透传默认处理器的前提，以及冷启动采集起点可能延迟的提示。",
+      "id": "finding-021358996c70",
+      "log_path": "logs/audit/2026-11-12-20261112-223519-idle-audit-59c4f3fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "status": "verified",
+      "summary": "ProfilingTrigger CPU 超量终止触发器的产物被误写为调用栈采样",
+      "type": "incorrect-api-artifact",
+      "updated_at": "2026-11-12T22:44:45.652951+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md",
+      "close_note": "已补 target 30+ 查询边界、ERROR/FEATURE_NOT_AVAILABLE 分支、不可用时 Intent 创建异常、带结果启动要求及 AndroidX StartActivityForResult 注册/启动生命周期；官方 Core API 与 Activity Result 文档核验，本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261112-223519-idle-audit-59c4f3fc",
+      "created_at": "2026-11-12T22:41:03.664055+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261112-223519-idle-audit-59c4f3fc",
+      "details": "IntentCompat API 契约要求先查 getUnusedAppRestrictionsStatus；FEATURE_NOT_AVAILABLE 时创建 Intent 抛 UnsupportedOperationException；返回 Intent 必须使用 startActivityForResult 路径而非 startActivity。需同时保留查询对 target 30+ 才提供应用信息的边界，并可用 AndroidX Activity Result API 承接带结果的启动契约。",
+      "id": "finding-617e56de0757",
+      "log_path": "logs/audit/2026-11-12-20261112-223519-idle-audit-59c4f3fc-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/app-hibernation",
+        "https://developer.android.com/reference/androidx/core/content/IntentCompat",
+        "https://developer.android.com/training/basics/intents/result"
+      ],
+      "status": "verified",
+      "summary": "unused-app 设置跳转遗漏可用性检查及带结果的 Activity 启动契约",
+      "type": "missing-api-precondition",
+      "updated_at": "2026-11-12T22:44:45.714384+08:00"
     }
   ],
   "schema_version": 1
