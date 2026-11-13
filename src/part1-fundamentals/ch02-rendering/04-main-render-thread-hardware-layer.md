@@ -4,10 +4,12 @@ chapter: '2.4'
 status: finalized
 section: '2.4'
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-09-13'
-last_verified_against: AOSP android-17.0.0_r1 frameworks/base HWUI/View; frameworks/native BufferQueue/BLAST; Compose UI 1.11.4 graphicsLayer; android17-6.18-2026-06_r6 kernel scheduler; historical tags only for version evolution
+last_verified: '2026-11-13'
+last_verified_against: AOSP android-17.0.0_r1 frameworks/base HWUI/View/animation; frameworks/native BufferQueue/BLAST; Compose UI 1.11.4 graphicsLayer; android17-6.18-2026-06_r6 kernel scheduler; historical tags only for version evolution
 confidence: medium
-last_idle_audit_at: '2026-09-13T18:44:51+08:00'
+last_idle_audit_at: '2026-11-13T14:41:54+08:00'
+last_source_verified_at: '2026-11-13'
+verification_scope_note: 2026-11-13 source spot-check covered Android 17 animation drivers and hidden APIs, DrawFrameTask/CanvasContext, Hardware Layer allocation and promotion, and App FrameTimeline semantics; no device benchmark or full kernel/Compose re-verification
 sources:
 - type: aosp
   path: platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp
@@ -59,6 +61,24 @@ sources:
   path: 'AOSP android-17.0.0_r1: frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)'
 - type: aosp
   path: 'AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/ViewPropertyAnimator.java (withLayer)'
+- type: aosp
+  path: platform/frameworks/base/core/java/android/animation/ValueAnimator.java
+- type: aosp
+  path: platform/frameworks/base/core/java/android/animation/AnimationHandler.java
+- type: aosp
+  path: platform/frameworks/base/core/java/android/view/RenderNodeAnimator.java
+- type: aosp
+  path: platform/frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java
+- type: aosp
+  path: platform/frameworks/base/graphics/java/android/graphics/drawable/RippleForeground.java
+- type: aosp
+  path: platform/frameworks/base/core/java/android/view/ViewPropertyAnimator.java
+  ref: android-5.0.0_r1
+  note: historical RT backend only; not the Android 17 implementation
+- type: aosp
+  path: platform/frameworks/base/core/java/android/view/ViewPropertyAnimatorRT.java
+  ref: android-5.0.0_r1
+  note: historical RT backend only; not a public SDK API
 - type: aosp
   path: 'AOSP android-17.0.0_r1: frameworks/base/libs/hwui/RenderProperties.h (promotedToLayer/effectiveLayerType/fitsOnLayer)'
 - type: aosp
@@ -456,21 +476,11 @@ DisplayList 记录的是有顺序与状态语义的绘制操作。只要画面�
 
 ### RenderThread Animations：哪些动画能离开 UI traversal
 
-有一部分动画可以完全离开 UI traversal。这套能力由 Android 5.0 的 `RenderNodeAnimator` 和 `ViewPropertyAnimatorRT` 打底：alpha、translation、scale、rotation 等能直接映射到 RenderNode 属性的动画，有机会由 RenderThread 推进，省掉每帧重新执行完整 View traversal。
+Android 17 的 HWUI 可以继续执行已经交给 RenderThread 的原生动画，省去每帧由 UI 线程重新提交的过程。判断一段动画能否走这条路径，要先查动画由谁创建、在哪里推进；仅凭 alpha、translation、scale、rotation 这些 RenderNode 属性名，还判断不了执行线程。
 
-`RenderThread` 用 `AChoreographer` 的 VSync callback 驱动自己的帧回调。`CanvasContext::prepareTree()` 检测到仍有动画、又不要求 UI redraw（重新执行 UI 绘制记录）时，会继续注册 RenderThread frame callback。
+Android 5.0 的 `ViewPropertyAnimator` 曾通过 `ViewPropertyAnimatorRT` 尝试把符合条件的动画交给 RenderThread；这个历史实现不能直接套到 Android 17。`android-17.0.0_r1` 的 `ViewPropertyAnimator.startAnimation()` 直接创建 `ValueAnimator`，由 `AnimationHandler` 的 Choreographer 回调驱动，`onAnimationUpdate()` 再更新 View/RenderNode 属性并触发失效。普通窗口中，这些工作仍在目标 View 的 UI 线程上执行。
 
-VSync 到达后，`CanvasContext::doFrame()` 调用 `prepareAndDraw(nullptr)`；`prepareAndDraw()` 用 `TreeInfo::MODE_RT_ONLY` 准备树并绘制。`RenderProxy::drawRenderNode()` 同步调用的也是同一个 `prepareAndDraw(node)` 入口。
-
-我们判断一段动画能否持续走 RT 路径，看这几条：
-
-- 属性能否由 RenderNode 表示；
-- 动画是否修改布局尺寸、位置关系或 View 内容；
-- 是否有 update listener 每帧回到 UI 改状态；
-- 动画是否要求重新构建 DisplayList；
-- surface 和渲染上下文是否仍可用。
-
-例如下面的动画只修改 RenderNode 常见属性，具备进入 RT 后端的条件：
+例如下面这段代码在 Android 17 使用上述 UI 驱动路径，即使没有设置 update listener，也不会自动切到历史上的 RT 后端：
 
 ```java
 view.animate()
@@ -480,7 +490,21 @@ view.animate()
         .start();
 ```
 
-最终选择仍由当前版本的实现和动画配置决定：回调里一旦执行 `requestLayout()`、修改文本或重绘内容，UI 线程就回来了。RenderThread 动画也绕不开 GPU、BufferQueue 和 SurfaceFlinger 的帧 deadline。
+内容不变时，这类属性动画通常可以复用 DisplayList，使用 Hardware Layer 时还可能复用已栅格化的内容；这些复用收益不能用来证明动画已脱离 UI 线程。`withLayer()` 管理的是临时 layer 的建立与恢复，也不会改变这里的动画驱动线程。
+
+框架内部仍有 RT 动画入口。例如 `RippleForeground` 的硬件路径创建 `RenderNodeAnimator`，再通过 `RecordingCanvas` 设置目标并启动。Android 17 的 `android.view.RenderNodeAnimator` 及其 `android.graphics.animation` 基类都标有 `@hide`，属于平台内部接口，普通 App 不能把它们当作公开 SDK 方案。
+
+`RenderThread` 用 `AChoreographer` 的 VSync callback 驱动自己的帧回调。`CanvasContext::prepareTree()` 检测到仍有动画时，会检查全局与当前上下文的 RT 动画开关；需要 UI redraw（重新执行 UI 绘制记录）时，要回到 UI 路径，否则可继续注册 RenderThread frame callback。VSync 到达后，`CanvasContext::doFrame()` 调用 `prepareAndDraw(nullptr)`，后者用 `TreeInfo::MODE_RT_ONLY` 准备树并绘制。`RenderProxy::drawRenderNode()` 同步调用的也是同一个 `prepareAndDraw(node)` 入口。
+
+我们检查动画线程归属与缓存收益时，分开看这些证据：
+
+- 动画创建入口与推进回调：是 UI 侧 `ValueAnimator`，还是框架内部注册的原生动画；
+- 属性能否由 RenderNode 表示，以及内容不变时能否复用 DisplayList 或 layer；
+- 动画是否修改布局尺寸、位置关系或 View 内容，是否要求重新构建 DisplayList；
+- 是否有 update listener 每帧回到 UI 改状态，或调用 `requestLayout()`、修改文本；
+- RT 动画开关、`requiresUiRedraw`、surface 和渲染上下文是否允许继续绘制。
+
+Perfetto 中可把 UI 的 animation 回调、traversal 与 RT 的 `prepareAndDraw`、帧标识对齐，确认各自承担了哪些工作。RT 动画仍受 GPU、BufferQueue 和 SurfaceFlinger 的帧 deadline 约束。
 
 ### ADPF：性能提示与频率的关系
 
@@ -641,7 +665,7 @@ GPU 与 display fence 的等待点还涉及 `dma_fence`（内核表示异步硬�
 | Android 12 / API 31 | FrameTimeline 可用于系统级帧追踪；Performance Hint 公开 API | 可用 expected/actual timeline 对齐 App 与 DisplayFrame；hint 不能当成频率保证 |
 | Android 14 / API 34 | 该版本 AOSP HWUI 已有 `HintSessionWrapper` 帧工作时长上报 | 分析 RT 时可检查 ADPF session，同时仍需频率与帧结果证据 |
 | Android 16 / API 36 | CPU/GPU headroom API 扩展性能余量观察能力 | headroom 查询与 HWUI 每帧 hint session 要分别解释 |
-| Android 17 / API 37 | 源码基线：`android-17.0.0_r1`；kernel 基线：`android17-6.18-2026-06_r6` | 方法名、条件分支、BLAST buffer 状态和调度边界均按该版本复核 |
+| Android 17 / API 37 | 源码基线：`android-17.0.0_r1`；kernel 基线：`android17-6.18-2026-06_r6`；`ViewPropertyAnimator` 由 UI 侧 `ValueAnimator` 驱动 | 方法名、条件分支、BLAST buffer 状态和调度边界均按该版本复核；历史 `ViewPropertyAnimatorRT` 不代表当前 `View.animate()` 路径 |
 
 版本表只记录能由对应源码或官方 API 文档支持的变化。当前源码中存在某段逻辑，只能证明 Android 17 有该实现；若要声称它在 Android 17 首次加入，还需要逐个历史 tag 追溯。
 
@@ -682,6 +706,8 @@ buffer 数由 NativeWindow 的最小不可 dequeue 数量和其他队列配置�
 | RenderNode、动画和 buffer 预留 | `libs/hwui/renderthread/CanvasContext.cpp`：`prepareTree()` |
 | HWUI 绘制、异步任务 fence、swap | `CanvasContext.cpp`：`draw()`、`waitOnFences()` |
 | 进程级 RT 与 RT VSync callback | `libs/hwui/renderthread/RenderThread.cpp` |
+| View 属性动画的驱动线程 | `core/java/android/view/ViewPropertyAnimator.java`：`startAnimation()`、`onAnimationUpdate()`；`core/java/android/animation/ValueAnimator.java`、`AnimationHandler.java` |
+| 框架内部 RT 动画与隐藏接口边界 | `graphics/java/android/graphics/drawable/RippleForeground.java`、`graphics/java/android/graphics/animation/RenderNodeAnimator.java`、`core/java/android/view/RenderNodeAnimator.java` |
 | BLAST transaction 与 release callback | `frameworks/native/libs/gui/BLASTBufferQueue.cpp` |
 | Producer slot、queue/dequeue fence | `frameworks/native/libs/gui/BufferQueueProducer.cpp` |
 | runnable delay 与公平调度 | kernel `kernel/sched/core.c`、`kernel/sched/fair.c` |
@@ -1055,7 +1081,7 @@ HWUI 侧我们可以关注这些线索：
 - UI 线程：DisplayList record、View invalidation、Software Layer 的 drawing cache 工作；
 - RenderThread：`buildLayer`、`draw layers`、`drawLayer [name]`、目标帧 `DrawFrame`；
 - GPU：离屏 pass、GPU duration，以及设备支持时的 texture/render-target allocation（设备支持时）；
-- FrameTimeline：App SurfaceFrame 的 expected/actual present time 与 jank type（系统给出的卡顿分类）；
+- FrameTimeline：App SurfaceFrame 的 expected/actual timeline 与 jank type（系统给出的卡顿分类）；显示呈现另看 DisplayFrame 与 present 证据；
 - 内存：memtrack、GPU memory counter 或厂商图形工具。
 
 slice 名会受 build、atrace category（Trace 采集时启用的数据类别） 和 Skia backend 影响。看到 `buildLayer` 一次，只能说明发生过预建或 layer 更新；连续出现也可能来自预期的内容变化，我们对齐 View/RenderNode 名称、dirty 来源和动画阶段再下判断。
@@ -1241,6 +1267,13 @@ Compose 的 `graphicsLayer`、`CompositingStrategy` 与 `rememberGraphicsLayer()
 
 
 - [ViewPropertyAnimator.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java)
+- [ValueAnimator.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/animation/ValueAnimator.java)
+- [AnimationHandler.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/animation/AnimationHandler.java)
+- [android.view.RenderNodeAnimator（平台隐藏接口）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/RenderNodeAnimator.java)
+- [android.graphics.animation.RenderNodeAnimator（平台隐藏接口）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/animation/RenderNodeAnimator.java)
+- [RippleForeground.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/drawable/RippleForeground.java)
+- [Android 5.0 ViewPropertyAnimator.java（历史 RT 后端入口）](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.0_r1/core/java/android/view/ViewPropertyAnimator.java)
+- [Android 5.0 ViewPropertyAnimatorRT.java（历史内部实现）](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.0_r1/core/java/android/view/ViewPropertyAnimatorRT.java)
 - [RenderNode.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java)
 - [RenderProperties.h](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/RenderProperties.h)
 - [RenderNode.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/RenderNode.cpp)
