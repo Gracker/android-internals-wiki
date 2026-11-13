@@ -6580,6 +6580,27 @@
         "perfetto"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "https://juejin.cn/post/7700822035409928246",
+      "title": "[掘金Android]",
+      "summary": "Flutter 3.50：Release 忽略外部 Intent 引擎参数防注入；HCPP 交由 SurfaceControl 合成消除 PlatformView 滚动撕裂（Android 14+ Vulkan 可用）；FFIgen/JNIgen 转 Stable、Pigeon 底层切换；插件强制迁 AGP 内置 Kotlin；Material/Cupertino 拆独立包，存量项目走 dart fix 自动迁移。",
+      "chapter": "ch05",
+      "processed_at": "2026-11-14T06:20:19.802133+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "flutter",
+        "release",
+        "hcpp",
+        "surfacecontrol",
+        "platformview",
+        "stable",
+        "dart"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
