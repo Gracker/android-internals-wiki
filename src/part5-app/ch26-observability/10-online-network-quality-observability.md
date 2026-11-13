@@ -4,10 +4,12 @@ chapter: '26.10'
 section: '26.10'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-25'
-last_source_verified_at: '2026-10-25'
-last_verified_against: Android network-state guide updated 2026-10-01; Android 17 android-17.0.0_r1 Connectivity sources; TrafficStats and NetworkCapabilities API references; OkHttp 5.5.0 Maven metadata and EventListener source; Cronet references updated 2026-07-31, API 143.7445.0, and 500.1.0 artifact migration POMs, reviewed 2026-10-25; OkHttp metadata now release 5.5.1, pinned 5.5.1 EventListener also compared; route/exchange pairing and clock/TTFB boundaries audited; documentation/artifact review only
+last_verified: '2026-11-13'
+last_source_verified_at: '2026-11-13'
+last_verified_against: Android network-state guide updated 2026-11-12; android-17.0.0_r1 TrafficStats, NetworkCapabilities and ConnectivityManager; OkHttp 5.4.0/5.5.0/5.5.1 EventListener and pinned FastFallbackExchangeFinder; Cronet API 143.7445.0 binary/source artifacts and references updated 2026-07-31; Chromium 143.0.7445.0 CronetMetrics, Android adapter and native redirect byte accounting; cronet-api 500.1.0 deprecated migration POM; documentation/artifact/source review only
 confidence: high
+verification_scope_note: Static documentation, API artifact and pinned implementation-source verification; no Android device or provider runtime measurements.
+last_idle_audit_at: '2026-11-13T18:41:37+08:00'
 sources:
 - type: legacy-reference-preserved
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md
@@ -53,6 +55,20 @@ sources:
   path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/500.1.0/cronet-api-500.1.0.pom
 - type: library-api
   path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet/500.1.0/cronet-500.1.0.pom
+- type: library-api
+  path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/143.7445.0/cronet-api-143.7445.0-sources.jar
+- type: library-api
+  path: https://github.com/square/okhttp/blob/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Listener
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback
+- type: library-source
+  path: https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/android/java/src/org/chromium/net/impl/CronetMetrics.java
+- type: library-source
+  path: https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/android/cronet_url_request_adapter.cc
+- type: library-source
+  path: https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/cronet_url_request.cc
 tags:
 - observability
 - network
@@ -104,7 +120,7 @@ last_rework_at: '2026-08-15T21:22:20+08:00'
 
 这四层 ID 规定了怎么把多个事件归到同一次用户操作。同一个 `request_id` 里可能发生多次 DNS、connect 或 `connectionAcquired`，也可能因为复用已有连接，完全没有 DNS、connect 和 TLS 事件。这就带来一个问题：如果采集器只为每个阶段保留一个开始时间，后一次路由尝试就会覆盖前一次失败，算出来的分段之和也可能和调用总耗时对不上。
 
-落到具体采集器，先看 OkHttp。截至2026年10月25日，com.squareup.okhttp3:okhttp的Maven metadata标记release为5.5.1；本轮还核对了固定tag parent-5.5.1的EventListener，其内容与下述5.5.0/5.4.0文件相同。既有固定基线的 [`EventListener` 5.5.0 源码](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与 [`EventListener` 5.4.0 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 一致。
+落到具体采集器，先看 OkHttp。截至2026年10月25日，com.squareup.okhttp3:okhttp的Maven metadata标记release为5.5.1；固定 tag [`parent-5.5.1` 的 `EventListener`](https://github.com/square/okhttp/blob/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 与 [`5.5.0 源码`](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)、[`5.4.0 源码`](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 内容一致。
 
 <!-- gracker-diagram: a295-02-trace-call-route-and-exchange -->
 ![四层身份中，连接尝试与 HTTP 交换不是一对一](../../assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.png)
@@ -118,18 +134,15 @@ last_rework_at: '2026-08-15T21:22:20+08:00'
 
 图：路由A失败与路由B成功可在时间上重叠；HTTP发送只发生在选定连接上，回调仍需按其提供的参数配对。
 
-Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.Listener`。本文逐方法核验的 API 版本为 `143.7445.0`；[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、建连、SSL、发送、响应开始和请求结束时间戳，以及套接字复用、TTFB（time to first byte，收到首个响应字节）、总耗时和可空的传输字节数。没有发生、或者采集不到的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 均为空。Metrics的Date时间戳按请求开始时的系统时钟锚定，内部保证相对差值不倒退；请求中途校准系统时间后，后续Date不必等于当时的日历时钟，不能与其他时钟域直接相减。另须区分getTtfbMs（请求开始至响应头首字节）和getResponseStart（响应头全部收完）；后者减requestStart不是精确TTFB。DNS命中本地缓存但没有复用socket时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”离“访问了远端 DNS”还差一步，要区分开。
+Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.Listener`。本文核对的 API 工件版本为 `143.7445.0`；[`RequestFinishedInfo.Metrics`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics) 提供请求开始、DNS、建连、SSL、发送、响应开始和请求结束时间戳，以及套接字复用、`getTtfbMs()`、总耗时和可空的传输字节数。没有发生、或者采集不到的阶段返回 `null`；复用连接时 DNS、connect 和 SSL 均为空。Metrics 的 Date 时间戳按请求开始时的系统时钟锚定，内部使用不倒退的时钟；请求中途校准系统时间后，后续 Date 不必等于当时的日历时钟，不能与其他时钟域直接相减。DNS 命中本地缓存但没有复用 socket 时，Cronet 仍可给出 DNS 时间戳，所以“存在 DNS 事件”离“访问了远端 DNS”还差一步，要区分开。
+
+`getTtfbMs()` 以 TTFB（time to first byte，收到首个响应字节前的时间）命名，仍需要结合实现理解。API 注释将它描述为请求开始到响应头首字节的时间，将 `getResponseStart()` 描述为响应头全部收完的时刻；固定 Chromium tag `143.0.7445.0` 的 [`CronetMetrics`](https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/android/java/src/org/chromium/net/impl/CronetMetrics.java) 却直接用 `responseStartMs - requestStartMs` 生成 `getTtfbMs()`，其 [Android 适配层](https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/android/cronet_url_request_adapter.cc) 传入的也是 `receive_headers_end`。在这个实现中，这两个值没有提供独立的首字节与响应头完成时间，不能据此计算响应头接收耗时，也不能把 `getTtfbMs()` 当作精确的首字节测量。事件应保留字段来源和引擎版本。API `143.7445.0` 的[源码工件](https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/143.7445.0/cronet-api-143.7445.0-sources.jar) 对 `getTtfbMs()`、`getTotalTimeMs()` 仍留有 `{@hide}` 和替换 TODO；它们存在于该版 API 工件与参考页中，升级或切换 provider 后仍要核对可用性与语义。
 
 还有一个版本陷阱：Google Maven 目前把 `cronet-api:500.1.0` 标为 release，但其 [`POM`](https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/500.1.0/cronet-api-500.1.0.pom) 明确说明这是已废弃的过渡空工件，只负责引入 `org.chromium.net:cronet:500.1.0`；新项目应直接依赖 `cronet`。所以 `cronet-api` 元数据里的最新版本号，离实际引擎版本还差一层，据此假定 143.7445.0 的方法语义原样延续，是靠不住的。事件里应同时记录依赖坐标、API 版本、`provider`（实现提供方） 和引擎版本，升级后重新核对可空字段与字节统计。
 
-字节字段也要注明来源：`Metrics#getReceivedByteCount()` 是当前请求的传输层接收字节，不包含之前的重定向；`UrlResponseInfo#getReceivedByteCount()` 是从请求开始累计到当前响应的最小接收字节估计，包含重定向但不覆盖所有协议开销。这两个字段统计范围不同，我们要分开记，别混进同一指标序列。
+字节字段也要注明来源。`Metrics#getReceivedByteCount()` 的逐方法注释写着“不包含之前的重定向”，而 [`RequestFinishedInfo#getMetrics()`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo) 的总述写着包含重定向，两处文档并不一致。固定 Chromium tag `143.0.7445.0` 的 [`MaybeReportMetrics()`](https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/cronet_url_request.cc) 会把 `received_byte_count_from_redirects_` 加到最终请求的接收字节上，再传给 Metrics；同一实现传给 `UrlResponseInfo` 的接收字节也累计了重定向。因此，在这个实现中，不能用“是否包含重定向”来区分这两个字段。`UrlResponseInfo#getReceivedByteCount()` 按其接口约定是解压前、包含响应头与重定向的最小接收字节估计，不覆盖所有协议开销，并且在请求结束前仍可能变化。采集时分别保存字段名、采集时点、provider 与引擎版本，避免混进同一指标序列或相加造成重复计数；其他实现的口径需要单独核对。
 
 平台这边没有现成入口：AOSP `android-17.0.0_r1` 没有向 App 提供 `android.net.http.RequestFinishedInfo` 这一公共 API，Cronet 独立于平台版本发布，App 应使用 `org.chromium.net` 公共 API，并在事件中记录 Cronet 版本。另外别忘了覆盖面：Cronet 看不到绕过它的 OkHttp、`HttpURLConnection` 或 Native 自研协议。
-
-<!-- gracker-diagram: a295-04-cronet-clock-time-and-byte-boundaries -->
-![Cronet 143 API：同名时间和字节字段仍有不同边界](../../assets/diagrams/ch26/a295-04-cronet-clock-time-and-byte-boundaries.png)
-
-图：公开API工件已逐方法检查；字段可用性、Socket复用与统计范围单独保存。
 
 自研网络库应把阶段事件纳入接口设计。下表用observed表示看到了阶段，not_applicable表示已知无需发生（如确定复用连接而无建连），not_observed表示没拿到事件且原因未知，unsupported表示库无此能力；需要时另记采集失败/丢弃，不把这些状态混成0ms。
 
@@ -142,7 +155,7 @@ Cronet 这边，公开采集入口是 `org.chromium.net.RequestFinishedInfo.List
 | 失败与重试 | `error_domain`、`error_code`、`http_code`、`route_index`、`retry_reason`、`peer_group_id` | Java 异常未必暴露稳定 errno（操作系统错误号）；错误类和库内枚举优先于解析异常文案 |
 | 上报状态 | `sample_rate`、`upload_channel`、`upload_delay_ms`、`dropped_reason` | 网络故障时，上报失败本身也是证据 |
 
-这张表和 26.1 的性能指标模型保持一致：事件回调只记录轻量时间戳、枚举和引用，序列化、压缩、写入本地文件与上传交给后台任务。我们尤其要守住一条底线：在主线程、OkHttp callback（回调函数） 或 Cronet listener（监听器） 里做磁盘 I/O，会直接干扰被测请求。
+这张表和 26.1 的性能指标模型保持一致：请求进行中的采集回调只记录轻量时间戳、枚举和引用，序列化、压缩、写入本地文件与上传交给后台任务。主线程不做监控磁盘 I/O；OkHttp 的 `EventListener`（事件监听器）要求快速返回，I/O 异步执行。Cronet 的 [`UrlRequest.Callback`（请求进度回调）](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback) 要及时调用 `read()` 或 `followRedirect()` 才能继续相应流程，在这些调用前做耗时 I/O 会延迟请求推进。前文的 [`RequestFinishedInfo.Listener`（请求完成监听器）](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Listener) 则接收已结束请求的信息，由其指定的 Executor（任务执行器）派发；这里的磁盘 I/O 不会回头增加该请求已经记录的阶段耗时，但仍应控制任务量，避免阻塞执行器和后续采集。
 
 ## QUIC / HTTP/3 指标口径
 
