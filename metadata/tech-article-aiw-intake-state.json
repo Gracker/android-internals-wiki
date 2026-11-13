@@ -7800,6 +7800,18 @@
       "status": "appended",
       "title": "不想开会员，我写了一个记账 App一个没有账号、广告和云同步的 Android 记账 App，我写了三个月。1300 多"
     },
+    "source/juejin-android/2026-11-14-77008220-AI 会干掉 React Native.md": {
+      "chapter": "待分类",
+      "entry_id": "4b4e6219a3f76fbe",
+      "last_appended": "2026-11-14T05:25:19.860334+08:00",
+      "last_seen": "2026-11-14T05:25:19.860334+08:00",
+      "mtime": 1794601255.943,
+      "score": 9,
+      "sha256": "303c141912e517f83661650e5847996c8889415030e7fbe2a4db89aee45e08c4",
+      "size": 12524,
+      "status": "appended",
+      "title": "AI 会干掉 React Native 吗？各位 Vibe Coder，上午好！ 我最近读到一篇旧文，Shopify 在"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11494,24 +11506,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 4,
-    "cutoff": "2026-11-12T05:20:19.867005+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-13.md",
+    "appended": 1,
+    "considered": 1,
+    "cutoff": "2026-11-13T05:20:19.671477+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-14.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2555,
+    "scanned": 2557,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1431,
-      "path": 32,
-      "unchanged": 1088
+      "path": 33,
+      "unchanged": 1092
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-13T05:25:19.671477+08:00",
+  "last_run_at": "2026-11-14T05:25:19.860334+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
