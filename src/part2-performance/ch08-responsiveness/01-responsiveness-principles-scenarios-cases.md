@@ -64,6 +64,18 @@ sources:
   path: https://developer.android.com/about/versions/16/qpr2/release-notes
 - type: official
   path: https://developer.android.com/reference/android/view/MotionPredictor
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/MotionPredictor.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/MotionPredictor.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_MotionPredictor.cpp
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://developer.android.com/about/versions/17/changes/messagequeue
+- type: official
+  path: https://developer.android.com/reference/android/view/View#registerCalledFromWrongThreadListener(android.view.View.CalledFromWrongThreadListener)
 - type: official
   path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
 - type: official
@@ -96,8 +108,11 @@ sources:
   path: https://developer.android.com/reference/android/os/ProfilingManager
 - type: blog
   path: 性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md
-last_verified: '2026-10-23'
-last_verified_against: AOSP android-17.0.0_r1 Input/Choreographer/View/ActivityInfo and external/perfetto android.input stdlib; Android Developers MotionPredictor/ARR/Display/Vitals/ANR docs; source.android.com eval_perf
+last_verified: '2026-11-13'
+last_source_verified_at: '2026-11-13T08:42:16+08:00'
+last_deep_review_at: '2026-11-13T08:42:16+08:00'
+last_verified_against: AOSP android-17.0.0_r1 InputDispatcher/Looper/ViewRootImpl/View/MotionPredictor/JNI and external/perfetto android.input; Android Developers MotionPredictor/Display/Vitals/ANR/MessageQueue docs; Perfetto FrameTimeline; Reddit/Gmail Wear OS/Disney+/Duolingo primary case reports
+verification_scope_note: 已核对输入时延 SQL、ANR 证据边界、触控笔预测与测试迁移的关键来源；未在 Android 设备上复现实验，历史案例比例不代表当前平台收益。
 last_idle_audit_at: '2026-10-12T10:35:33+08:00'
 related_chapters:
 - '2.3'
@@ -163,7 +178,9 @@ consolidated_from:
 | Idle | 空闲任务分块，每块不超过约 50 ms | 将可延后的工作切片，并在片间返回事件循环，让交互获得执行机会 | 50 ms 的主线程任务仍可能跨过多个高刷新率帧期限 |
 | Load | 慢 3G、中低端手机的首次可交互约 5 s，后续约 2 s | 区分首屏反馈与完整可用状态 | Web 网络条件下的 load 目标不等于 Android 启动告警 |
 
-Android 动画和滚动应以系统为当前帧分配的 deadline（截止时间） 为准。60 Hz 屏幕的刷新周期约为 16.67 ms，120 Hz 约为 8.33 ms；留给应用 CPU 的时间通常更少，因为 RenderThread、GPU、SurfaceFlinger 和显示提交还要继续工作。从 Android 12（API 31）开始，Perfetto FrameTimeline 会同时给出 expected timeline（预期时序） 和 actual timeline（实际时序），也就是系统预期的时序与实际执行的时序；我们直接比较这两条时序，比套用固定的 16 ms 可靠。
+Android 动画和滚动应以系统为当前帧分配的 deadline（截止时间） 为准。60 Hz 屏幕的刷新周期约为 16.67 ms，120 Hz 约为 8.33 ms；留给应用 CPU 的时间通常更少，因为 RenderThread、GPU、SurfaceFlinger 和显示提交还要继续工作。从 Android 12（API 31）开始，Perfetto FrameTimeline 在受支持的窗口路径上给出 expected timeline（预期时序） 和 actual timeline（实际时序），也就是系统预期的时序与实际执行的时序；我们直接比较这两条时序，比套用固定的 16 ms 可靠。
+
+使用前还要确认目标 Surface 的覆盖范围。[FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline) 注明暂不支持 SurfaceView。视频或游戏通过独立 Surface 输出内容时，宿主窗口的帧结束不能证明该内容已经呈现，应另查对应图层的 buffer、fence 和显示呈现记录。
 
 支持 Adaptive Refresh Rate（ARR，自适应刷新率）的设备还会动态改变刷新节奏。ARR 从 Android 15 QPR1 开始面向满足 HAL 等条件并启用该能力的设备提供，是否生效仍取决于设备显示能力、系统策略以及应用或窗口的帧率请求。Android 16 增加了 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate(int)` 等查询能力。解释数据时仍需结合当前帧率、应用请求的帧率和 FrameTimeline——设备未必一直跑在最高刷新率上。
 
@@ -388,12 +405,14 @@ Google Play 的 Android Vitals 提供多类真实用户设备指标，不过公�
 
 | 指标 | 回答的问题 | 边界 |
 | --- | --- | --- |
-| Slow rendering | UI Toolkit 帧是否超过 16 ms；冻结帧另列监控 | 固定 16 ms 是 Vitals 分类口径，诊断仍要结合设备 deadline |
-| Frozen frames | UI Toolkit 帧是否超过 700 ms | 原生 Vulkan、OpenGL、Unity 等路径可能不在这组统计内 |
+| Slow rendering | UI Toolkit 帧是否超过 16 ms；冻结帧另列监控 | 仅适用于 View-based UI toolkit；固定 16 ms 是 Vitals 分类口径，诊断仍要结合设备 deadline |
+| Frozen frames | UI Toolkit 帧是否超过 700 ms | 未采用 View-based UI toolkit 的 Vulkan、OpenGL、Unity 等应用，不提供这组 render time / frozen frame 统计 |
 | User-perceived ANR rate | 用户可感知 ANR 的现场发生率 | ANR 类型和超时规则不同，不能从一个固定数字反推全部原因 |
 | TTID | 启动请求到首帧显示 | 首帧可为应用自己的占位 UI，未必可交互；系统 starting window 本身不是此应用首帧 |
 | TTFD | 启动请求到应用报告 fully drawn | 依赖应用在可用状态调用 `reportFullyDrawn()` |
 | Slow sessions | 游戏会话中慢帧占比 | 游戏专用，统计口径不同于普通 UI Toolkit 帧 |
+
+[Google Play 的统计说明](https://developer.android.com/google/play/vitals/render) 将 View-based UI toolkit 的 render time / frozen frame 与其他渲染路径分开。可先运行 `adb shell dumpsys gfxinfo com.example.app`，检查该设备是否在记录目标应用的帧耗时；统计不可用时，不能把缺少数据解释为没有慢帧。游戏的 Slow sessions 需按其独立口径分析。
 
 Android Vitals 将冷启动达到 5 秒、温启动达到 2 秒、热启动达到 1.5 秒视为 excessive startup（启动时间过长），并使用 TTID 统计告警。TTFD 包含 TTID 以及首帧后的异步内容加载时间，需要应用在内容可用时主动报告。这两个指标描述的是启动的不同阶段：TTID 短只代表首帧快，内容何时完整可用，还要看 TTFD 里首帧之后那段异步加载。
 
@@ -403,6 +422,12 @@ ANR 同样要按类型分别看。AOSP / Pixel 的 input dispatch 默认超时�
 ### ANR 栈停在 `nativePollOnce`，先查系统在等什么
 
 ANR 的触发时间和线程栈的采样时间要分开记录。转储较晚时，主线程可能已经回到 poll；但 Java 栈里只有 `nativePollOnce`，也不足以认定采样时线程空闲。r1 的 `NativeMessageQueue::pollOnce()` 会进入 native Looper，`Looper::pollInner()` 既会等待 `epoll_wait()`，也会执行文件描述符回调。应结合 native 栈区分“正在等事件”和“正在处理回调”，再判断这个样本是否覆盖了超时形成的区间。[已验证: Android Developers《Diagnose and fix ANRs》的 nativePollOnce 小节；AOSP `android-17.0.0_r1`，`frameworks/base/core/jni/android_os_MessageQueue.cpp`、`system/core/libutils/Looper.cpp`]
+
+官方对普通 input dispatch timeout 中的 `nativePollOnce` / main thread idle 聚类，通常建议转查其他包含有效现场的聚类；无焦点窗口、广播和服务类 ANR 仍有应用侧可查的路径。遇到后几类，应检查应用是否从后台线程修改 View。Android 16 及以下的相关实现中，并发安排 traversal 可能插入多个同步屏障，却只保存一个 token；遍历结束只移除保存的屏障，遗留屏障会挡住后续同步消息，主线程可能在 `nativePollOnce` 中等待。单份 poll 栈仍不能证明发生了这类泄漏，需要回查跨线程 View 调用和消息队列的屏障状态。[来源: Android Developers《Diagnose and fix ANRs》的 Input dispatch timeout / nativePollOnce / View Threading Violation / Sync Barrier Leak 小节]
+
+官方文档将这类同步屏障泄漏的修复归于 Android 17；r1 的 `ViewRootImpl` 在 `atomicTraversalBarrier` flag 启用时，原子替换屏障 token 并移除旧屏障。分析具体系统构建时要核对该分支是否启用，跨线程修改 View 的其他风险仍然存在。
+
+Android 17 的 debuggable 应用可用 `adb shell am compat enable ENFORCE_THREAD_CHECKS_ON_VIEW_ROOT_IMPL_APIS com.example.app` 开启相应兼容检查，定位后用同名 `disable` 命令恢复。API 37 的 `View.registerCalledFromWrongThreadListener()` 只覆盖部分 API 的兼容检查路径；直接抛出线程异常的其他 API 不保证通知，未收到回调也不能证明没有违规访问。r1 在违规调用线程上同步执行 listener，回调中应采集栈而避免阻塞，并在不再需要时调用 `View.unregisterCalledFromWrongThreadListener()`。[来源: Android Developers 同节及 View API；AOSP `android-17.0.0_r1`，`ViewRootImpl.postTraversalBarrier()`、`removeTraversalBarrier()`、`checkThreadCompat()` 与 `View` 的 listener 说明]
 
 如果完整 Reason 含有 `does not have a focused window`，调查方向就落到了焦点窗口。r1 的 `findFocusedWindowTargetLocked()` 在需要分发依赖焦点的事件、对应 display 已有 focused application 却没有 focused window 时开始等待；超时后，`processNoFocusedWindowAnrLocked()` 还会复查应用焦点是否改变、窗口是否已经出现，再报告 ANR。这与事件已经发到窗口、等待应用 ACK 超时是两条路径。按键等事件需要焦点目标，普通触摸主要按命中测试选窗口，不能把无焦点窗口解释成“所有触摸都堵在主线程点击回调”。[已验证: AOSP `android-17.0.0_r1`，`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` 的 `findFocusedWindowTargetLocked()`、`processNoFocusedWindowAnrLocked()`、两种 `onAnrLocked()`；Android Developers《Diagnose and fix ANRs》的 No focused window 小节]
 
@@ -475,9 +500,9 @@ binding.submitButton.setOnClickListener {
 
 #### 触摸预测
 
-Android 14（API 34）开始提供公开的 `MotionPredictor` API，用来根据已收到的运动样本预测短时间后的触点位置。应用需要把完整事件序列传给 `record(MotionEvent)`，在调用 `predict(long)` 前使用 `isPredictionAvailable(deviceId, source)` 检查设备和输入源是否支持，并处理预测结果中的 historical samples。预测目标参数使用 uptime 基准的纳秒时间，墙钟或未经换算的 boottime 都要先换算再传。
+Android 14（API 34）开始提供公开的 `MotionPredictor` API，用来根据已收到的运动样本预测后续位置。固定到 `android-17.0.0_r1`，`isPredictionAvailable()` 只接受 stylus（触控笔）输入源，`record()` 还要求单 pointer 和触控笔 tool；普通手指触摸与多 pointer 事件不在这条实现的预测范围内。应用应先用 `isPredictionAvailable(deviceId, source)` 检查支持情况，再把该设备的完整事件序列交给 `record(MotionEvent)`，包括结束手势的 `ACTION_UP` / `ACTION_CANCEL`。同一实例同一时刻只接收一台设备的手势；前一手势未结束就混入另一设备，会因事件流不一致抛出 `IllegalArgumentException`，多设备输入需要隔离事件流。[来源: MotionPredictor 官方 API；AOSP `android-17.0.0_r1`，`MotionPredictor.cpp` 的 `record()` / `isPredictionAvailable()` 及 JNI 异常转换]
 
-预测用估算位置补偿采样到显示之间的空间滞后，不会改变原始事件的分发时间。预测可能返回 `null`，也可能达不到请求的时间点；手势结束、方向突然变化或设备不支持时，应用必须回退到真实样本。Android 不会自动为所有 View 或 Compose 手势启用这项能力。
+处理 `predict(long)` 返回的事件时要保留 historical samples。预测目标参数使用 uptime 基准的纳秒时间，墙钟或未经换算的 boottime 都要先换算再传。预测用估算位置补偿采样到显示之间的空间滞后，不会改变原始事件的分发时间。预测可能返回 `null`，也可能达不到请求的时间点；手势结束、方向突然变化或设备不支持时，应用必须回退到真实样本。Android 不会自动为所有 View 或 Compose 手势启用这项能力。
 
 <!-- gracker-diagram: ch08-01-motion-prediction-fallback -->
 ![触摸预测的输入、时钟与回退](../../assets/diagrams/ch08/ch08-01-motion-prediction-fallback.png)
@@ -937,7 +962,7 @@ remoteViews.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
 1. **Input**：事件何时进入系统、何时送到应用，以及应用何时完成处理。
 2. **Main thread / Binder**：回调前排队、同步调用、锁、I/O、类加载和生命周期。
-3. **FrameTimeline**：哪个 intended frame（原计划承载反馈的帧）包含这次更新，是否迟交，以及延迟来自 App 还是 SurfaceFlinger。
+3. **FrameTimeline**：在受支持的窗口路径中核对候选 intended frame（原计划承载反馈的帧）的 expected / actual timeline 和 jank type，判断迟交来自 App 还是 SurfaceFlinger；再结合业务状态、窗口/图层与采用的 buffer 确认是否包含这次更新。SurfaceView 内容另查独立 Surface 的呈现。
 4. **Business state**：页面、Tab、点击动作或搜索结果何时达到定义的可用状态。
 
 自定义 slice 应使用稳定名称，例如 `Navigation.Detail`、`Tab.Select`、`Search.Query`。使用 `androidx.tracing.trace` 或 try / finally，确保发生异常时也能结束 section。不要把 URI、query、用户 ID 或 item ID 直接拼进 slice 名，以免大量不同取值形成高基数数据，并把敏感信息写入 trace。
@@ -961,7 +986,9 @@ Macrobenchmark 可以通过 UIAutomator 重复执行点击、滑动和输入，�
 
 ### 平台改动与进入内核分析的时机
 
-Android 17 会为 targetSdk 37 及以上的应用启用 lock-free（无锁） `MessageQueue`。它可能减少消息生产者和 Looper 之间的锁竞争，也会让通过反射读取 `mMessages` 或调用私有方法的旧监控失效。页面切换和点击监控应使用公开 trace、FrameTimeline 和测试 API；队列实现发生变化后，仍需进行应用侧对照测量。
+Android 17 会为 targetSdk 37 的应用默认启用 lock-free（无锁） `MessageQueue`。它可能减少消息生产者和 Looper 之间的锁竞争，也会让通过反射读取 `mMessages` 或调用私有方法的旧监控失效。新实现为二进制兼容保留了 `mMessages` 字段，但它恒为 `null`；反射读到空值不能证明队列没有待处理消息。页面切换和点击监控应使用公开 trace、FrameTimeline 和测试 API；队列实现发生变化后，仍需进行应用侧对照测量。
+
+[官方迁移指南](https://developer.android.com/about/versions/17/changes/messagequeue) 还要求更新依赖旧队列实现的测试工具：Espresso 使用 3.7.0 或更新版本，Robolectric 使用 4.17 或更新版本，并将 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`。在 Android 17 的 debuggable 应用上，可用 `adb shell am compat enable USE_NEW_MESSAGEQUEUE com.example.app` 提前启用新实现，再用同名 `disable` 命令做旧实现对照。这组开关用于定位兼容性问题，不替代依赖迁移和当前平台上的性能复测。
 
 Android 16 QPR2 已包含 generational Concurrent Mark-Compact GC，见 [Android 16 QPR2 发布说明](https://developer.android.com/about/versions/16/qpr2/release-notes)。具体设备使用的 collector 仍需核对 ART/Mainline 版本与开关，不能仅凭系统大版本判定。分析点击或切换附近的 GC slice 时，应检查对象分配速率、堆状态和 collector 事件，再测量停顿及 CPU 时间分布；平台版本本身不能证明固定收益。[来源: Android 16 QPR2 发布说明，More efficient garbage collection；本文既有的设备版本与测量边界]
 
@@ -1324,8 +1351,8 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 
 ## 版本与实现边界
 
-- Android 12（API 31）提供 FrameTimeline，应用与 SurfaceFlinger 的 expected / actual frame 关联成为主要诊断依据。
-- Android 14（API 34）加入公开的 `MotionPredictor`；同版本开始，广播 ANR 会对 CPU-starved 进程采用可调整的超时区间。
+- Android 12（API 31）开始提供 FrameTimeline，受支持窗口的应用与 SurfaceFlinger expected / actual frame 关联可用于诊断；官方文档仍注明暂不支持 SurfaceView，独立 Surface 内容另查呈现证据。
+- Android 14（API 34）加入公开的 `MotionPredictor`，r1 实现的预测范围限于单 pointer 的触控笔事件；同版本开始，广播 ANR 会对 CPU-starved 进程采用可调整的超时区间。
 - Android 15 QPR1 在满足 HAL 条件的设备上支持 ARR。
 - Android 16 增加 `Display.hasArrSupport()`、`getSuggestedFrameRate(int)` 等 ARR 查询接口。
 - Android 17（API 37）是本文核对的平台上限。API 37 没有统一的 Android INP / UIL Vitals 指标，厂商私有的输入预测或显示 trace 也不算 AOSP 通用接口。
@@ -1367,6 +1394,9 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 - [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
 - [主线程明明是空闲的，为什么仍然 ANR？](https://juejin.cn/post/7674103602086264875)：ANR 小节所比较的三组历史日志片段，未附完整原始 trace。
 - [`MotionPredictor` API](https://developer.android.com/reference/android/view/MotionPredictor)
+- [r1 `MotionPredictor.cpp`：触控笔、pointer 与单设备事件流条件](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/MotionPredictor.cpp)
+- [r1 `MotionPredictor.java`：公开调用约定](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/MotionPredictor.java) 与 [JNI 异常转换](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_MotionPredictor.cpp)
+- [API 37：View 跨线程调用 listener 的覆盖范围](https://developer.android.com/reference/android/view/View#registerCalledFromWrongThreadListener(android.view.View.CalledFromWrongThreadListener))
 - [Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
 - [`Display` API](https://developer.android.com/reference/android/view/Display)
 - [RAIL performance model](https://web.dev/articles/rail)
