@@ -2,8 +2,8 @@
 title: 响应速度原理、场景与案例
 chapter: '8.1'
 section: '8.1'
-status: ready-for-review
-last_body_apply_at: '2026-11-13T07:18:35+08:00'
+status: finalized
+last_body_apply_at: '2026-11-13T10:23:11+08:00'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
   - responsiveness
@@ -88,31 +88,34 @@ sources:
   path: frameworks/base/core/java/android/view/View.java
 - type: official
   path: https://developer.android.com/topic/performance/vitals
-- type: blog
-  path: https://developer.android.com/guide/fragments
-- type: blog
+- type: official
+  path: https://developer.android.com/guide/fragments/transactions
+- type: official
+  path: https://developer.android.com/guide/fragments/animate
+- type: official
   path: https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2
 - type: official
-  path: https://developer.android.com/blog/posts/the-first-beta-of-android-17
-- type: blog
-  path: 性能优化日报/2026-03-31-性能优化日报.md (Reddit R8 full mode)
-- type: blog
-  path: 性能优化日报/2026-03-13-大厂-抖音启动优化实践2025.md
+  path: https://developer.android.com/training/app-links/create-deeplinks
 - type: official
-  path: developer.android.com/topic/performance/baselineprofiles
-- type: blog
-  path: 性能优化日报/2026-03-14-官方 社区-Android Baseline Profiles 启动优化实战.md
+  path: https://developer.android.com/develop/ui/views/appwidgets/enhance
 - type: official
-  path: android-developers.googleblog.com (Google AutoFDO)
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
 - type: official
-  path: https://developer.android.com/reference/android/os/ProfilingManager
+  path: https://android-developers.googleblog.com/2024/12/reddit-improved-app-startup-speed-using-baseline-profiles-r8.html
+- type: official
+  path: https://developer.android.com/topic/performance/appstartup/case-study-gmail-wear
+- type: official
+  path: https://developer.android.com/blog/posts/use-r8-to-shrink-optimize-and-fast-track-your-app?hl=en
 - type: blog
-  path: 性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md
+  path: https://blog.duolingo.com/android-app-performance/
+- type: reference
+  path: https://web.dev/articles/inp
 last_verified: '2026-11-13'
-last_source_verified_at: '2026-11-13T08:42:16+08:00'
+last_source_verified_at: '2026-11-13T10:23:11+08:00'
+last_review_finalize_at: '2026-11-13T10:23:11+08:00'
 last_deep_review_at: '2026-11-13T08:42:16+08:00'
-last_verified_against: AOSP android-17.0.0_r1 InputDispatcher/Looper/ViewRootImpl/View/MotionPredictor/JNI and external/perfetto android.input; Android Developers MotionPredictor/Display/Vitals/ANR/MessageQueue docs; Perfetto FrameTimeline; Reddit/Gmail Wear OS/Disney+/Duolingo primary case reports
-verification_scope_note: 已核对输入时延 SQL、ANR 证据边界、触控笔预测与测试迁移的关键来源；未在 Android 设备上复现实验，历史案例比例不代表当前平台收益。
+last_verified_against: AOSP android-17.0.0_r1 InputDispatcher/Looper/ViewRootImpl/View/MotionPredictor/JNI and external/perfetto android.input; Android Developers TTID/TTFD/Baseline Profiles/Display/Vitals/ANR/MessageQueue docs; Perfetto FrameTimeline; Reddit/Gmail Wear OS/Disney+/Duolingo primary case reports
+verification_scope_note: 已核对输入时延 SQL、TTFD 报告与 Profile 构建边界、ANR、触控笔预测和平台迁移说明；SQL 在官方历史测试 trace 上执行，搜索 Flow 通过 JVM 虚拟时间测试，未在 Android 设备上复现实验，历史案例比例不代表当前平台收益。
 last_idle_audit_at: '2026-10-12T10:35:33+08:00'
 related_chapters:
 - '2.3'
@@ -416,6 +419,7 @@ Google Play 的 Android Vitals 提供多类真实用户设备指标，不过公�
 
 Android Vitals 将冷启动达到 5 秒、温启动达到 2 秒、热启动达到 1.5 秒视为 excessive startup（启动时间过长），并使用 TTID 统计告警。TTFD 包含 TTID 以及首帧后的异步内容加载时间，需要应用在内容可用时主动报告。这两个指标描述的是启动的不同阶段：TTID 短只代表首帧快，内容何时完整可用，还要看 TTFD 里首帧之后那段异步加载。
 
+没有调用 `reportFullyDrawn()` 时，系统不会报告 TTFD；如果在系统检测到 TTID 前就调用，系统会把两者都记为 TTID。因此，TTFD 与 TTID 相等并不能单独证明首帧内容已完整可用。排查时应对齐调用标记、目标内容就绪与反馈帧，确认没有过早上报。[来源: Android Developers《App startup time》的 Retrieve TTFD 小节]
 
 ANR 同样要按类型分别看。AOSP / Pixel 的 input dispatch 默认超时为 5 秒；`Service`、`BroadcastReceiver`、`ContentProvider`、`JobService` 和前台服务还有各自的规则。Android 14 及更高版本会根据进程是否 CPU-starved（长时间得不到足够 CPU）在一定区间内调整广播超时，OEM 也可能修改默认值。分析响应问题时，应先确认 ANR 类型，再检查对应的计时起点、截止条件和责任线程。
 
@@ -990,9 +994,9 @@ Android 17 会为 targetSdk 37 的应用默认启用 lock-free（无锁） `Mess
 
 [官方迁移指南](https://developer.android.com/about/versions/17/changes/messagequeue) 还要求更新依赖旧队列实现的测试工具：Espresso 使用 3.7.0 或更新版本，Robolectric 使用 4.17 或更新版本，并将 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`。在 Android 17 的 debuggable 应用上，可用 `adb shell am compat enable USE_NEW_MESSAGEQUEUE com.example.app` 提前启用新实现，再用同名 `disable` 命令做旧实现对照。这组开关用于定位兼容性问题，不替代依赖迁移和当前平台上的性能复测。
 
-Android 16 QPR2 已包含 generational Concurrent Mark-Compact GC，见 [Android 16 QPR2 发布说明](https://developer.android.com/about/versions/16/qpr2/release-notes)。具体设备使用的 collector 仍需核对 ART/Mainline 版本与开关，不能仅凭系统大版本判定。分析点击或切换附近的 GC slice 时，应检查对象分配速率、堆状态和 collector 事件，再测量停顿及 CPU 时间分布；平台版本本身不能证明固定收益。[来源: Android 16 QPR2 发布说明，More efficient garbage collection；本文既有的设备版本与测量边界]
+[Android 16 QPR2 Beta 发布说明](https://developer.android.com/about/versions/16/qpr2/release-notes) 列出了 generational Concurrent Mark-Compact GC；该资料对应预发布版本，仍包含稳定性与兼容性提醒。具体设备使用的 collector 需核对 ART/Mainline 版本与开关，不能仅凭系统大版本判定。分析点击或切换附近的 GC slice 时，应检查对象分配速率、堆状态和 collector 事件，再测量停顿及 CPU 时间分布；平台版本本身不能证明固定收益。[来源: Android 16 QPR2 Beta 发布说明，More efficient garbage collection；本文既有的设备版本与测量边界]
 
-线程长时间处于 runnable（可运行但未获得 CPU）、频繁被抢占、CPU frequency 不足、input driver 延迟或 I/O wait，是继续进入 `android17-6.18-2026-06_r6` 分析调度和驱动。Activity、View、InputDispatcher、MessageQueue 和配置变更的判断，仍以篇首的平台源码基线为准。
+线程长时间处于 runnable（可运行但未获得 CPU）、频繁被抢占、CPU frequency 不足、input driver 延迟或 I/O wait 等现象，是继续进入 `android17-6.18-2026-06_r6` 分析调度和驱动的线索。Activity、View、InputDispatcher、MessageQueue 和配置变更的判断，仍以篇首的平台源码基线为准。
 
 
 ### 场景审计清单
@@ -1077,6 +1081,8 @@ Reddit 进行了四项工程改动：
 
 
 Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的热点方法，从而减少关键路径上的解释执行和 JIT（运行时即时编译）。I/O、锁等待或低效布局仍在原地，页面指标还要结合 Perfetto 和帧数据分析。
+
+采集 Profile 的构建与最终 release 构建要分开。[官方概览](https://developer.android.com/topic/performance/baselineprofiles/overview) 要求采集变体关闭 R8 混淆和优化（`isMinifyEnabled = false`），Baseline Profile Gradle plugin 会处理这项配置；最终 release 则启用 R8（`isMinifyEnabled = true`），由 R8 重写规则，使其匹配优化后的代码。生成后应检查文本 Profile，确认类名和方法名仍为未混淆形式；后文 release 开启优化的要求不适用于采集变体。
 
 #### 优化后数据
 
@@ -1403,7 +1409,7 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 
 - [MotionEvent 时间 API 与版本](https://developer.android.com/reference/android/view/MotionEvent#getEventTimeNanos())
 - [Web INP：输入、处理、呈现与页面访问聚合](https://web.dev/articles/inp)
-- [Android 16 QPR2：Generational CMC](https://developer.android.com/about/versions/16/qpr2/release-notes)
+- [Android 16 QPR2 Beta：Generational CMC](https://developer.android.com/about/versions/16/qpr2/release-notes)
 - [r1 配置变更资源策略](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java)
 - [r1 ActivityRecord：desk 资源与重建判定](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java)
 - [r1 InputEventReceiver：输入完成回传](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/InputEventReceiver.java)
