@@ -15064,6 +15064,68 @@
       "summary": "Hardware Layer 排查入口将 App actual timeline 写成实际呈现时间",
       "type": "trace-semantics",
       "updated_at": "2026-11-13T14:43:34.761269+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "close_note": "以固定 Chromium 143.0.7445.0 的 CronetMetrics、Android 适配层及 native 累计源码替换纯注释推断；明确 getTtfbMs 为 responseStart-requestStart，Metrics 接收字节累计重定向；限定 provider/版本并保留 API 生命周期 TODO；移除含旧断言的 a295-04 图片引用，未修改图片文件。静态源码断言及本地三门全部通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261113-183519-idle-audit-1bf52e3b",
+      "created_at": "2026-11-13T18:40:10.323975+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261113-183519-idle-audit-1bf52e3b",
+      "details": "原正文断言 getTtfbMs 与 responseStart-requestStart 不同，并断言 Metrics 接收字节不含重定向。Chromium 143.0.7445.0 的 CronetMetrics 构造器直接以 responseStartMs-requestStartMs 生成 mTtfbMs；native MaybeReportMetrics 将 received_byte_count_from_redirects_ 加入 Metrics。API 143.7445.0 源码内还保留文档更新 TODO，不能将注释当作引擎保证。",
+      "id": "finding-2b88c30d9d72",
+      "log_path": "logs/audit/2026-11-13-20261113-183519-idle-audit-1bf52e3b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/android/java/src/org/chromium/net/impl/CronetMetrics.java",
+        "https://github.com/chromium/chromium/blob/143.0.7445.0/components/cronet/cronet_url_request.cc"
+      ],
+      "status": "fixed",
+      "summary": "Cronet TTFB 与重定向接收字节口径仅依赖接口注释，与固定 Chromium 143 实现不符",
+      "type": "cronet-metric-boundary",
+      "updated_at": "2026-11-13T18:44:55.822162+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "close_note": "区分 UrlRequest.Callback 的 read/followRedirect 推进与 RequestFinishedInfo.Listener 的完成后 Executor 派发；删除磁盘 I/O 会增加已结束请求耗时的错误因果。官方文档与固定 CronetUrlRequest 源码复核通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261113-183519-idle-audit-1bf52e3b",
+      "created_at": "2026-11-13T18:40:10.385788+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261113-183519-idle-audit-1bf52e3b",
+      "details": "正文将所有 Cronet listener 与请求进行中的回调混在一起。RequestFinishedInfo.Listener 接收已结束请求，并提交到其指定 Executor；UrlRequest.Callback 的 read/followRedirect 才决定进行中的请求如何推进。",
+      "id": "finding-ea51e5153b47",
+      "log_path": "logs/audit/2026-11-13-20261113-183519-idle-audit-1bf52e3b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Listener",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback"
+      ],
+      "status": "fixed",
+      "summary": "将 Cronet 请求完成监听器的磁盘 I/O 误归因为延长已结束请求",
+      "type": "callback-lifecycle",
+      "updated_at": "2026-11-13T18:44:55.884732+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "close_note": "移除“本轮”执行叙述，改为三个固定 OkHttp tag 的源码一致性陈述并补 5.5.1 链接；三个文件实际 SHA-256 相同，新增中文行写作门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261113-183519-idle-audit-1bf52e3b",
+      "created_at": "2026-11-13T18:40:10.447106+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261113-183519-idle-audit-1bf52e3b",
+      "details": "正文“本轮还核对了”属于执行过程；固定 tag 比较结论已重新取得三个版本源码且 SHA-256 完全相同，应改为读者可复查的版本陈述。",
+      "id": "finding-d0b1c3a4e9df",
+      "log_path": "logs/audit/2026-11-13-20261113-183519-idle-audit-1bf52e3b-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://github.com/square/okhttp/blob/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "status": "fixed",
+      "summary": "OkHttp 版本说明残留本轮核对过程叙述",
+      "type": "editorial-process-prose",
+      "updated_at": "2026-11-13T18:44:55.947324+08:00"
     }
   ],
   "schema_version": 1
