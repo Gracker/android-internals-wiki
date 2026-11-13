@@ -14857,6 +14857,106 @@
       "summary": "last source verification 2026-08-13 older than 90 days",
       "type": "stale-source-verification",
       "updated_at": "2026-11-13T02:00:19.626855+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "close_note": "已按 r1 MotionPredictor.cpp record/isPredictionAvailable 与公开 API 补齐 stylus source、单 pointer/stylus tool、单设备流、IllegalArgumentException、空结果与 uptime 边界。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261113-080519-52b69190",
+      "created_at": "2026-11-13T08:15:20.190039+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261113-080519-52b69190",
+      "details": "触摸预测小节只说明设备支持探测，未交代 r1 native 实现只接受 stylus source、单 pointer 与 stylus tool；record 的单设备事件流约束及 IllegalArgumentException 也被省略，容易把该 API 当成通用手指预测。证据：MotionPredictor.cpp:174-219,366-379；MotionPredictor.java:82-109。",
+      "id": "finding-a6aca75ffe59",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/MotionPredictor.cpp"
+      ],
+      "status": "fixed",
+      "summary": "MotionPredictor 缺少 r1 的单指触控笔和单设备事件流限制",
+      "type": "motion-prediction-scope",
+      "updated_at": "2026-11-13T08:21:21.113914+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "close_note": "已保留 Perfetto FrameTimeline 文档的 SurfaceView 未支持限定，要求独立 Surface 使用 buffer/fence/display 证据，不能从宿主帧结束推断内容呈现。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261113-080519-52b69190",
+      "created_at": "2026-11-13T08:15:20.282995+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261113-080519-52b69190",
+      "details": "正文将 FrameTimeline 用作输入到呈现的主要证据，但未保留官方 data source 文档开头的 SurfaceViews are currently not supported 限定，可能把宿主窗口帧误当成 SurfaceView 内容的呈现。",
+      "id": "finding-9e851beeedac",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "status": "fixed",
+      "summary": "FrameTimeline 端点说明遗漏 SurfaceView 关联范围",
+      "type": "frametimeline-coverage",
+      "updated_at": "2026-11-13T08:21:21.183577+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "close_note": "已补齐 View 跨线程修改引发同步屏障泄漏的候选路径、r1 atomicTraversalBarrier 清理分支，以及 API37 compat/listener 的部分API覆盖、inline回调与注销边界；不从 nativePollOnce 直接归因。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261113-080519-52b69190",
+      "created_at": "2026-11-13T08:15:20.346193+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261113-080519-52b69190",
+      "details": "新增 ANR 小节已区分晚采样和 native 回调，但排查指引未纳入官方文档的 View 跨线程访问路径。r1 ViewRootImpl 同时包含 checkThreadCompat、受 flag 控制的原子屏障清理；需要说明这些边界，不能把屏障泄漏外推到全部 Android 17 设备。",
+      "id": "finding-6e20805a85fa",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs#view-threading-violation"
+      ],
+      "status": "fixed",
+      "summary": "nativePollOnce 排查遗漏应用侧同步屏障泄漏与诊断入口",
+      "type": "anr-evidence-coverage",
+      "updated_at": "2026-11-13T08:21:21.249255+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "close_note": "已说明新 MessageQueue 的 mMessages 恒为 null、Espresso3.7.0+与Robolectric4.17+/PAUSED 迁移、debuggable USE_NEW_MESSAGEQUEUE 对照的定位用途。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261113-080519-52b69190",
+      "created_at": "2026-11-13T08:15:20.412825+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261113-080519-52b69190",
+      "details": "正文只说反射旧监控失效，未说明新实现 mMessages 保留但恒为 null，可能让空队列检测继续误报。官方同页还要求 Espresso 3.7.0+、Robolectric 4.17+ 以及 LEGACY 到 PAUSED 的迁移。",
+      "id": "finding-d80b2ca3b68d",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/17/changes/messagequeue"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 MessageQueue 监控迁移遗漏恒空字段与测试库边界",
+      "type": "messagequeue-migration",
+      "updated_at": "2026-11-13T08:21:21.316942+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "close_note": "已将非 View-based UI toolkit 应用的 render time/frozen frame 统计不可用写明，保留游戏 slow sessions 为不同统计口径。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261113-080519-52b69190",
+      "created_at": "2026-11-13T08:20:40.989958+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261113-080519-52b69190",
+      "details": "Frozen frames 表格仅写 Vulkan/OpenGL/Unity 可能不在统计内；Google Play Vitals 文档明确说明未使用 View-based UI toolkit 的应用不提供 render time/frozen frame 统计。需明确区分该统计与 SurfaceFlinger 的游戏 slow sessions。",
+      "id": "finding-981351e8cc0c",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/google/play/vitals/render"
+      ],
+      "status": "fixed",
+      "summary": "Vitals 帧统计未明确保留非 View 渲染的不可用边界",
+      "type": "vitals-render-availability",
+      "updated_at": "2026-11-13T08:21:21.385739+08:00"
     }
   ],
   "schema_version": 1
