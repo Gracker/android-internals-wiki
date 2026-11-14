@@ -4,8 +4,10 @@ chapter: '16.2'
 section: '16.2'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-26'
-last_verified_against: AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Perfetto sched/thread_state/slice 表定义及 CPU Scheduling、FrameTimeline、memory counters 官方文档；Android Developers ANR、FGS 故障与 Thermal API 指南。定点源码与文档核对，不代表目标设备实测。
+last_verified: '2026-11-14'
+last_source_verified_at: '2026-11-14'
+last_idle_audit_at: '2026-11-14T10:39:51+08:00'
+last_verified_against: AOSP android-17.0.0_r1：ActiveServices、ActivityManagerService、ServiceRecord、SurfaceFlinger、DrawFrameTask 及 Perfetto sched/slice 表；Android common kernel android17-6.18-2026-06_r6：sched tracepoints、vmscan 与 PSI 文档；Perfetto CPU Scheduling、FrameTimeline、memory counters 及 Android Developers ANR、FGS、Thermal 文档。定点源码与文档核对，不代表目标设备实测。
 confidence: high
 sources:
 - type: aosp
@@ -20,6 +22,12 @@ sources:
 - type: aosp
   tag: android-17.0.0_r1
   path: frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
+- type: aosp
+  tag: android-17.0.0_r1
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: aosp
+  tag: android-17.0.0_r1
+  path: frameworks/base/services/core/java/com/android/server/am/ServiceRecord.java
 - type: aosp
   tag: android-17.0.0_r1
   path: frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java
@@ -262,7 +270,11 @@ thermal 条件成立后，改动责任仍可能分布在多侧：
 
 ## ANR 的归因
 
-ANR 是系统判定某类响应条件在规定窗口内未满足，并不等于 App 主线程独自消耗了整个窗口。输入分发、无焦点窗口、Service 执行和 Broadcast 等类型有不同的计时起点、完成信号及相关线程；异步广播还要追踪工作线程与 `finish()`。部分阈值受 DeviceConfig（运行时系统配置）或厂商配置影响。前台服务问题也要先分事件：shortService 未及时停止可触发 ANR；未及时调用 `startForeground()` 和部分限时 FGS 未停止则走异常/崩溃路径，不能把所有 FGS 超时都归为 ANR。
+ANR 是系统判定某类响应条件在规定窗口内未满足，并不等于 App 主线程独自消耗了整个窗口。输入分发、无焦点窗口、Service 执行和 Broadcast 等类型有不同的计时起点、完成信号及相关线程；异步广播还要追踪工作线程与 `finish()`。部分阈值受 DeviceConfig（运行时系统配置）或厂商配置影响。
+
+前台服务（FGS）问题要按事件区分。在 `android-17.0.0_r1` 中，shortService 未及时停止可触发 ANR；dataSync、mediaProcessing 等限时 FGS 未按要求停止会走异常/崩溃路径。未及时调用 `startForeground()` 也可能触发 `ForegroundServiceDidNotStartInTimeException`（前台服务未按时启动异常）。
+
+同一基线的 `serviceForegroundTimeout()` 还保留延迟 ANR 路径：它请求停止服务后发送 ANR 消息；若 `BIND_AUTO_CREATE`（绑定时自动创建服务）连接使服务仍被需要，停止请求可能跳过服务销毁，也就不会执行销毁时的崩溃分支。进程仍存活时，需要继续检查 `serviceForegroundTimeoutANR()` 的处理结果。报告应写明异常类型或 ANR reason（原因描述），并核对绑定关系和停止/销毁路径，不能把所有 FGS 超时统一归为 ANR 或崩溃。
 
 Android 17 的 `ActivityManagerConstants.java`、`ActiveServices.java` 和 `BroadcastConstants.java` 是核对平台配置的源码入口。分析时至少展示：
 
@@ -378,6 +390,8 @@ App Layer、系统 UI、HWC 选择、GPU 竞争、driver 与 display pipeline（
 - [AOSP android-17.0.0_r1：lmkd.cpp](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)
 - [AOSP android-17.0.0_r1：ActivityManagerConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)
 - [AOSP android-17.0.0_r1：ActiveServices.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+- [AOSP android-17.0.0_r1：ActivityManagerService.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP android-17.0.0_r1：ServiceRecord.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ServiceRecord.java)
 - [AOSP android-17.0.0_r1：BroadcastConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java)
 - [Android common kernel android17-6.18-2026-06_r6：sched tracepoints](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
 - [Android common kernel android17-6.18-2026-06_r6：vmscan.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
