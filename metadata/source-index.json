@@ -6626,6 +6626,26 @@
         "created_at": "2026-11-14T09:20:09+08:00",
         "details": "该问题属于来源索引，不是既有章节的技术缺陷。恢复路由前须找到与 Flutter 摘要一致的可核验原文；当前 run 的白名单不含 metadata/review-findings.json，故在被选中的 source-index 项内记录稳定 finding，不越权修改全局 findings 文件。"
       }
+    },
+    {
+      "path": "https://juejin.cn/post/7664879818412834826",
+      "title": "[掘金Android]",
+      "summary": "Play Console 位图整改的四个触发条件（大图打包、未用 WebP、缺密度适配、未下采样）；Coil/Glide 关键配置、Painter 不稳定导致重组、RGB_565 半内存、硬件位图默认行为、服务端裁剪优先；整改可能来自三方 SDK，先查其更新日志。",
+      "chapter": "ch04",
+      "processed_at": "2026-11-15T06:20:19.711416+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-15-76670971-谷歌的一个优化建议，让我重新学了一.md",
+      "title": "[技术文章] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra",
+      "summary": "> 发布时间: 2026-07-28T02:18:34.000Z > 原文链接: https://juejin.cn/post/7667097178154319912 2026-07-28 2,643 阅读8分钟 谷歌这位哥哥真的会整幺蛾子，好不容易把crash跟anr数据压下来一点，最近发现又给了我一条技术质量类型的整改建议，大致内容是 真的是一点不让我闲着，天天关心着...",
+      "chapter": "ch09",
+      "processed_at": "2026-11-15T06:20:19.711416+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
