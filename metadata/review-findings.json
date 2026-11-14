@@ -15148,6 +15148,27 @@
       "summary": "前台服务未按时调用 startForeground 的归因遗漏仍存活进程的延迟 ANR 路径",
       "type": "factual-overgeneralization",
       "updated_at": "2026-11-14T10:43:19.880979+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/05-input-method-manager-performance.md",
+      "close_note": "已按 android-17.0.0_r1 的 InsetsSourceConsumer.java 第 133–147、286–333 行修正第 2 节：无控制对象时不覆盖服务端可见性，控制对象缺少 leash 时才主动隐藏，控制权收回时恢复服务端状态。已通过本地源码分支断言、全文禁用句式检查及标题/代码/图引用保留检查；未声称执行 Android 设备测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261114-143519-idle-audit-0632f239",
+      "created_at": "2026-11-14T14:39:58.709300+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261114-143519-idle-audit-0632f239",
+      "details": "正文第 2 节称没有控制对象或没有 leash 都会将 IME Insets 源当作不可见。android-17.0.0_r1 的 InsetsSourceConsumer.applyLocalVisibilityOverride() 在 mSourceControl == null 时直接返回，不设置可见性；仅在 IME 控制对象存在但 getLeash() == null 时 setVisible(false)。setControl() 在控制权被收回时恢复最近一次服务端下发的可见状态。此处会让排查者把缺少控制权误判为 IME 不可见。",
+      "id": "AIW-3.5-P2-ime-no-control-visibility",
+      "log_path": "logs/audit/2026-11-14-20261114-143519-idle-audit-0632f239-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/InsetsSourceConsumer.java#133",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/InsetsSourceConsumer.java#286"
+      ],
+      "status": "fixed",
+      "summary": "混同无 Insets 控制对象与控制对象缺少 leash 时的 IME 可见性处理",
+      "type": "source-boundary",
+      "updated_at": "2026-11-14T14:41:45.001386+08:00"
     }
   ],
   "schema_version": 1
