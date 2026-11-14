@@ -2,9 +2,11 @@
 applicable_versions: Android 6.0 (API 23) – Android 17 (API 37)
 chapter: '15.6'
 confidence: medium
-last_verified: '2026-10-25'
-last_source_verified_at: '2026-10-25'
-last_verified_against: AndroidX Benchmark 1.5.0 stable docs + UI Automator 2.4.0 stable + Android CLI command reference 2026-10-25 + AndroidX source d153d87 + Android skills 4ebabf2 + Android 17 / API 37 + android-17.0.0_r1
+last_verified: '2026-11-14'
+last_source_verified_at: '2026-11-14'
+last_idle_audit_at: '2026-11-14'
+last_verified_against: AndroidX Benchmark 1.5.0 release sources (Arguments, Errors, Metric, Gradle plugin) + Benchmark and Android CLI official docs 2026-11-14 + UI Automator 2.4.0 release notes + AndroidX source d153d87 + Android skills 4ebabf2 + Android 17 / API 37 + android-17.0.0_r1
+verification_scope_note: 源码与官方文档核对，未执行设备端基准测试；Benchmark 保持 1.5.0 稳定版边界，不采用 1.6.0-alpha01 的行为变化。
 related_chapters:
 - '21.4'
 - '14.7'
@@ -22,6 +24,16 @@ sources:
   path: developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
 - type: official
   path: developer.android.com/topic/performance/benchmarking/microbenchmark-overview
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0-sources.jar
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-gradle-plugin/1.5.0/benchmark-gradle-plugin-1.5.0-sources.jar
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar
+- type: official
+  path: https://developer.android.com/tools/agents/android-cli/commands/emulator_create
+- type: official
+  path: https://developer.android.com/android-performance-analyzer/quickstart
 - type: official
   path: developer.android.com/topic/performance/benchmarking/benchmarking-in-ci
 - type: official
@@ -115,7 +127,7 @@ Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系�
 |---|---|---|
 | `StartupTimingMetric` | Macrobenchmark 支持 API 23+；`timeToFullDisplayMs` 在 API 29 之前可能不可用 | TTID（Time to Initial Display）对应首帧；TTFD（Time to Full Display）依赖应用在主要内容就绪后调用 `reportFullyDrawn()` |
 | `FrameTimingMetric` | `frameOverrunMs` 仅 API 31+ | 正值表示超过该帧 deadline（应完成时间）；`frameDurationCpuMs` 是 UI doFrame 开始到对应 RenderThread DrawFrame 结束的经过时间 |
-| `TraceSectionMetric` | 实验 API；依赖 Trace 中存在同名 section | section 是应用写入 Trace 的命名时间片；默认只查目标包，并选取测量区间内首次匹配 |
+| `TraceSectionMetric` | 实验 API；依赖 Trace 中存在同名 section | section 是应用写入 Trace 的命名时间片；默认只查目标包，以 `Mode.Sum` 汇总测量区间内匹配 section 的总时长和次数；首次匹配需显式指定 `Mode.First` |
 | `PowerMetric` | 实验 API，最低 API 29 | 高精度 power/energy 是系统总量，依赖设备 power rail（硬件供电通路）；官方限定 Pixel 6、Pixel 6 Pro 及更新机型 |
 
 `PowerMetric` 还提供电池电量差值类型，精度低于 power rail。无论选哪一种，把功耗结果直接归因到单个应用都做不到：测试进程、系统服务、屏幕和网络活动都会进入系统总量。[AndroidX 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/Metric.kt) 对 `PowerMetric` 标注了 `@RequiresApi(29)`，并提供 `deviceSupportsHighPrecisionTracking()` 检查设备能力。
@@ -141,7 +153,9 @@ class JsonBenchmark {
 }
 ```
 
-`measureRepeated` 负责预热、循环次数和计时，报告执行时间与分配次数。AGP 即 Android Gradle Plugin；Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` 插件默认对 Microbenchmark APK 做全量 AOT。想观察 JIT 行为，可在 `gradle.properties` 中设置 `androidx.benchmark.forceaotcompilation=false`。
+`measureRepeated` 负责预热、循环次数和计时，报告执行时间与分配次数。AGP 即 Android Gradle Plugin；Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` 插件默认对 Microbenchmark APK 做全量 AOT。
+
+想观察非全量 AOT 状态下的 JIT 行为，需要分别关闭构建端的强制编译和运行端的 AOT 检查：在 `gradle.properties` 中设置 `androidx.benchmark.forceaotcompilation=false`，并在 Microbenchmark 模块的 `android.defaultConfig` 中设置 `testInstrumentationRunnerArguments["androidx.benchmark.requireAot"] = "false"`。按 [Benchmark 1.5.0 发布源码](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0-sources.jar)，`requireAot` 默认是 `true`；仅关闭强制编译时，非 `speed` 编译状态会触发 `NOT-AOT-COMPILED`，在未抑制该错误的常规测量中使测试失败。这组实验要与默认全量 AOT 基线分开记录，循环预热后的结果也不能代表首次执行性能。
 
 准备输入数据或重置容器时，把不参与测量的部分放进 `runWithMeasurementDisabled {}`。旧名 `runWithTimingDisabled {}` 在 Benchmark 1.4.0 已弃用，因为它暂停的除了计时还有测量。
 
@@ -231,7 +245,7 @@ fun scrollList() = benchmarkRule.measureRepeated(
 
 `killProcess()` 与重新启动发生在测量区间之外，让每次迭代都从列表初始位置开始。`check` 让页面未准备好时直接失败，避免“没有找到列表但测试仍通过”这种假绿灯。`setGestureMargin()` 避开系统返回手势区域，`fling()` 产生可重复的滚动输入。业务场景要求固定距离时可改用 `swipe()`，并把方向、速度、距离和列表初始位置写成稳定条件。
 
-`FrameTimingMetric` 报告 P50、P90、P95、P99。API 31+ 的 `frameOverrunMs` 使用系统为每一帧计算的 deadline，60 Hz、高刷新率和可变刷新率设备都适用；正值表示超期，负值表示仍有余量。按本轮固定 `FrameTimingQuery` 实现，`frameDurationCpuMs = (RenderThread DrawFrame.endTs − UI doFrame.ts) / 10⁶`（Trace 时间戳以 ns 计）：这是跨两个边界的经过时间，可能包含排队、阻塞或未获调度的时间，并非两个线程实际运行的 CPU 时间相加，也不等于最终呈现延迟。GPU 与合成侧问题还要回到 FrameTimeline（系统记录的预期帧与实际帧时序）、线程调度和系统 Trace 判断。FrameTimeline（逐帧预期与实际时间轨道）在后文多处会用到。
+`FrameTimingMetric` 报告 P50、P90、P95、P99。API 31+ 的 `frameOverrunMs` 使用系统为每一帧计算的 deadline，60 Hz、高刷新率和可变刷新率设备都适用；正值表示超期，负值表示仍有余量。按 AndroidX 提交 `d153d87` 中的 `FrameTimingQuery` 实现，`frameDurationCpuMs = (RenderThread DrawFrame.endTs − UI doFrame.ts) / 10⁶`（Trace 时间戳以 ns 计）：这是跨两个边界的经过时间，可能包含排队、阻塞或未获调度的时间，并非两个线程实际运行的 CPU 时间相加，也不等于最终呈现延迟。GPU 与合成侧问题还要回到 FrameTimeline（系统记录的预期帧与实际帧时序）、线程调度和系统 Trace 判断。FrameTimeline（逐帧预期与实际时间轨道）在后文多处会用到。
 
 <!-- gracker-diagram: ch15-06-06-frame-elapsed-time -->
 ![帧的经过时间与 deadline 超期](../../assets/diagrams/ch15/ch15-06-06-frame-elapsed-time.png)
@@ -492,9 +506,9 @@ jobs:
 
 APK 文件名会随 product flavor、AGP 和项目配置变化，`APP_APK`、`TEST_APK` 要按构建产物调整。`additionalTestOutputDir` 把产物写到 `/sdcard/Download`，`--directories-to-pull` 再让 FTL 把该目录收集到结果 bucket（Cloud Storage 存储桶）。
 
-`androidx.benchmark.enabledRules=Macrobenchmark` 只启用 Macrobenchmark 规则，避免同一模块中的 Baseline Profile 规则混进本轮。`no-isolated-storage=true` 临时让 instrumentation 测试跳出 Android 10+ 的默认存储沙箱，以便写入全局目录。
+`androidx.benchmark.enabledRules=Macrobenchmark` 只启用 Macrobenchmark 规则，避免同一模块中的 Baseline Profile 规则混进本轮。按[官方 CI 指南](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci#save-and-locate-files)，Android 10（API 29）及以上的测试默认受存储沙箱限制，向 `/sdcard/Download` 这类全局目录写入产物时，除 `no-isolated-storage=true` 外，还须在测试 APK 的 Manifest 中为 `<application>` 显式设置 `android:requestLegacyExternalStorage="true"`；只设置 instrumentation 参数并不完整。
 
-该参数会改变整场测试的存储行为；scoped storage 兼容性验证，要另安排一场运行来做。
+这组配置会改变整场测试的存储行为；scoped storage 兼容性验证，要另安排一场运行来做。
 
 Google 的 [performance-samples FTL workflow](https://github.com/android/performance-samples/blob/main/.github/workflows/firebase_test_lab.yml) 可作为完整参考。结果路径靠 `bucket/latest/*.json` 去猜并不可靠，应读取本次 gcloud 返回的 test matrix（这次测试的设备与配置组合）信息，或由 Cloud Storage 事件处理对应结果目录。
 
@@ -553,7 +567,7 @@ project_root/module/build/outputs/connected_android_test_additional_output/debug
 
 测试协议稳定之后，剩下的大头是重复步骤：CLI 和 Agent 负责执行、收集产物和生成候选结论。这里我们守一条底线：回不到原始证据的自动结论，进不了门禁。
 
-Android CLI 在 1.0 发布时已统一环境、设备、运行与 IDE 查询；本轮 2026-10-25 命令参考还列出 `build`、`input`、`preview`、`profiler` 和 `signals` 等入口。下文按核对日的命令文档说明，实际实验仍要固定所用 CLI 版本。先约定几个词：本文所说的 agent，是能规划步骤并调用命令或其他工具的 AI 执行程序；CLI 是 command-line interface，即命令行界面；IDE 是 integrated development environment，即集成开发环境。agent 用 CLI 准备实验并重放操作路径，性能数据的采集和计算仍交给 Profiler、Perfetto、APA（Android Performance Analyzer）或 Macrobenchmark。
+Android CLI 在 1.0 发布时已统一环境、设备、运行与 IDE 查询；截至 2026-11-14 的命令参考还列出 `build`、`input`、`preview`、`profiler` 和 `signals` 等入口。下文按核对日的命令文档说明，实际实验仍要固定所用 CLI 版本。先约定几个词：本文所说的 agent，是能规划步骤并调用命令或其他工具的 AI 执行程序；CLI 是 command-line interface，即命令行界面；IDE 是 integrated development environment，即集成开发环境。agent 用 CLI 准备实验并重放操作路径，性能数据的采集和计算仍交给 Profiler、Perfetto、APA（Android Performance Analyzer）或 Macrobenchmark。
 
 ### Android CLI 在性能工具链里的位置
 
@@ -566,6 +580,10 @@ Android CLI 把项目、SDK、设备、APK、UI 状态和 IDE 查询接到同一
 | Android Performance Analyzer | 游戏 / Vulkan 图形工作负载的 CPU、GPU 与相关系统活动 | Trace 项目、GPU counter、截图时间线，详见 15.13 节 | 当前官方定位是游戏与 Vulkan；其他应用优先使用 Android Studio Profiler |
 | Perfetto UI / Trace Processor | Trace 里的线程、slice、counter、帧时间如何定量分析 | `.perfetto-trace`、SQL 查询、表格结果，详见 14.7 和 14.9 节 | 采集、场景复现和项目管理需要另行组织 |
 | Macrobenchmark / Jetpack Benchmark | 同一场景在多次运行里的指标是否稳定 | 启动耗时、帧时间、Baseline Profile 验证结果 | 需要设计可重复场景和设备基线，详见 17.6 节 |
+
+APA 的 [System Profiler Quickstart](https://developer.android.com/android-performance-analyzer/quickstart) 要求受支持的 Android 12（API 31）及以上设备；本文平台范围内对应 Android 12—17。首次连接设备须通过验证，不同设备与 GPU 暴露的数据也不同，部分 Trace 数据可能不可用。macOS 主机要求 macOS 12+ 与 ARM 芯片，不支持 Intel Mac；其他主机要求按 Quickstart 准备。
+
+Vulkan 专项采集还建议将应用设为 `debuggable=true`，以包含 Vulkan 专属数据；Java/Kotlin 应用的性能测量建议使用 `debuggable=false`，让 ART 保持优化执行。这两种配置的产物要分开记录，带调试开销的数据不与非 debuggable 的 Macrobenchmark 基线直接比较。
 
 先把三个词说清：trace 是按时间记录系统与 App 事件的文件；slice 是带时间戳和持续时间的一段事件；counter 是随时间变化的数值轨道。Baseline Profile 则是帮助系统提前编译常用代码路径的规则。一次排查的顺序也就清楚了：我们先用 CLI 固定复现状态，再用 Trace 或 Profiler 采集数据，最后通过 SQL、APA 或 Benchmark 得出可复查的结果。
 
@@ -608,7 +626,7 @@ Android CLI 把项目、SDK、设备、APK、UI 状态和 IDE 查询接到同一
 
 SDK 和设备基线至少记录 Android SDK 路径、`platforms/android-37` package revision（软件包修订号）、build-tools / platform-tools 版本，以及设备 serial 或 emulator profile——serial 是 adb 区分设备的标识，emulator profile 是虚拟设备配置。涉及帧率、启动耗时、功耗和 GPU counter 的测试，还要保存设备型号、build fingerprint、刷新率、电池与温度状态及 GPU driver，这些内容要由测试脚本或人工补齐。
 
-`android emulator create --profile=medium_phone` 用于创建 AVD（Android Virtual Device，Android 虚拟设备），`android emulator start medium_phone` 只能启动已经存在且名称匹配的设备。旧 CI 模板直接调用 `start`，在全新 runner（执行 CI 任务的机器）上会失败，所以虚拟设备的预先创建与配置（AVD provisioning）要在任务开始前完成，或者先用 `emulator list` 检查再按需创建。缺少 API 37 platform 或目标 system image（系统镜像） 时，先通过 `sdk list/install` 安装。
+`android emulator create medium_phone` 用于创建 AVD（Android Virtual Device，Android 虚拟设备），`android emulator start medium_phone` 只能启动已经存在且名称匹配的设备。旧 CI 模板直接调用 `start`，在全新 runner（执行 CI 任务的机器）上会失败，所以虚拟设备的预先创建与配置（AVD provisioning）要在任务开始前完成，或者先用 `emulator list` 检查再按需创建。缺少 API 37 platform 或目标 system image（系统镜像） 时，先通过 `sdk list/install` 安装。
 
 `.androidrc` 把常用全局参数保存在用户目录，例如默认 `--sdk=<path-to-sdk>`。这种配置适合个人机器；团队 CI 的必要配置直接写进任务脚本，显式传入 `--sdk` 后，构建日志也能显示本次使用的环境。
 
@@ -646,7 +664,7 @@ android run --apks=app-debug.apk --type=ACTIVITY --activity=.MainActivity
 
 ### Journeys 与关键用户路径回归
 
-Journeys 用自然语言描述用户在 App 中要完成的路径：agent 把指令转换成界面交互，再依据设备画面判断断言是否成立——断言是对预期结果的可检查描述，例如“详情页标题已经出现”。本轮核对的官方页面（2026 年 9 月 21 日更新），Journey 仍由 agent 和 CLI 附带的 skills 创建和运行，并明确提到可接入 CI/CD。
+Journeys 用自然语言描述用户在 App 中要完成的路径：agent 把指令转换成界面交互，再依据设备画面判断断言是否成立——断言是对预期结果的可检查描述，例如“详情页标题已经出现”。官方页面（2026 年 9 月 21 日更新）说明，Journey 由 agent 和 CLI 附带的 skills 创建和运行，并可接入 CI/CD。
 
 性能场景里的 Journey，只写“打开首页并滑动列表”远远不够。一条可复现的用户路径，至少要补齐这些条件：
 
@@ -702,7 +720,7 @@ Android skills 是供 AI 工具和 agent 使用的指令包：每个 skill 通�
 
 更新规则要写进团队规范。官方文档提醒：修改了已安装的 skill 就换一个名称保存，否则后续执行 `skills add` 时可能被最新版覆盖。项目自定义 skill 放在仓库根目录的 `.skills/` 或 `.agent/skills/` 下，每个 skill 目录都要包含大小写固定的 `SKILL.md`。团队把 Perfetto SQL 模板、R8 检查流程或启动回归脚本写入自定义 skill 时，用内部名称，并记录来源和版本。
 
-本轮将[官方仓库固定在提交 `4ebabf2`](https://github.com/android/skills/tree/4ebabf2b0fd6c04b7150023c8b612f80592a6226)核对：`profilers/android-profiler` 覆盖 trace 录制、分析和临时 PerfettoSQL；`testing/testing-setup` 组织测试策略与基础设施；`performance/r8-analyzer` 审查 R8 keep rules（类和成员保留规则）；`jetpack-compose/jetpack-compose-performance` 调查 Compose 重组与 UI 性能。旧的 `profilers/perfetto-sql` 和 `profilers/perfetto-trace-analysis` 目录已不在该快照中。目录是技能位置，实际安装使用相应 skill ID，不能把目录当作 CLI 子命令。
+在[官方仓库提交 `4ebabf2` 的快照](https://github.com/android/skills/tree/4ebabf2b0fd6c04b7150023c8b612f80592a6226)中，`profilers/android-profiler` 覆盖 trace 录制、分析和临时 PerfettoSQL；`testing/testing-setup` 组织测试策略与基础设施；`performance/r8-analyzer` 审查 R8 keep rules（类和成员保留规则）；`jetpack-compose/jetpack-compose-performance` 调查 Compose 重组与 UI 性能。旧的 `profilers/perfetto-sql` 和 `profilers/perfetto-trace-analysis` 目录已不在该快照中。目录是技能位置，实际安装使用相应 skill ID，不能把目录当作 CLI 子命令。
 
 安装或升级后，先检查 `SKILL.md`、附带脚本和资源，再允许 agent 执行。当前 add/update 参考均更新到最新版，所列参数没有版本锁定选项；要重复同一实验，就在记录中保存已审核内容对应的提交或归档。skill 得出的结论还要复核 trace 表结构、字段单位、编译模式和设备条件。
 
@@ -742,7 +760,7 @@ android describe --project_dir="$PROJECT_ROOT" \
   > "$PERF_OUT_DIR/android-describe.txt"
 
 # 2. AVD 只在 provisioning 阶段创建：
-# android emulator create --profile=medium_phone
+# android emulator create medium_phone
 android emulator list > "$PERF_OUT_DIR/emulator-list.txt"
 android emulator start "$TEST_DEVICE_NAME" \
   > "$PERF_OUT_DIR/emulator.log" 2>&1
@@ -835,6 +853,9 @@ Telemetry 是工具为了解使用情况和故障而发送的数据。Android CL
 - [Macrobenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
 - [Microbenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview)
 - [编写 Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-write)
+- [Benchmark 1.5.0 运行库发布源码（含 Arguments.kt、Errors.kt）](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0-sources.jar)
+- [Benchmark 1.5.0 Gradle 插件发布源码](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-gradle-plugin/1.5.0/benchmark-gradle-plugin-1.5.0-sources.jar)
+- [Macrobenchmark 1.5.0 发布源码（含 Metric.kt）](https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar)
 - [CI/CD 中的基准测试](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci)
 - [Macrobenchmark 指标](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
 - [Baseline Profiles 指南](https://developer.android.com/topic/performance/baselineprofiles/overview)
@@ -851,13 +872,15 @@ Telemetry 是工具为了解使用情况和故障而发送的数据。Android CL
 
 - [Android CLI](https://developer.android.com/tools/agents/android-cli)
 - [Android CLI 当前命令参考](https://developer.android.com/tools/agents/android-cli/commands)
+- [Android CLI 创建 AVD 的参数](https://developer.android.com/tools/agents/android-cli/commands/emulator_create)
 - [AndroidX Benchmark 发布记录](https://developer.android.com/jetpack/androidx/releases/benchmark)
-- [本轮固定 FrameTimingQuery 实现](https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/perfetto/FrameTimingQuery.kt)
-- [本轮固定 Macrobenchmark 编译模式实现](https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt)
+- [AndroidX d153d87 FrameTimingQuery 实现](https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/perfetto/FrameTimingQuery.kt)
+- [AndroidX d153d87 Macrobenchmark 编译模式实现](https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt)
 - [Android CLI support for Journeys](https://developer.android.com/tools/agents/android-cli/journeys)
 - [Android skills](https://developer.android.com/tools/agents/android-skills)
 - [Android CLI 1.0 announcement](https://android-developers.googleblog.com/2026/05/android-cli-stable-1-0-agent-development.html)
 - [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
+- [APA System Profiler 要求与设备验证](https://developer.android.com/android-performance-analyzer/quickstart)
 - [Android Studio performance profilers](https://developer.android.com/studio/profile)
 - [Set up the Android 17 SDK](https://developer.android.com/about/versions/17/setup-sdk)
 - [Perfetto documentation](https://perfetto.dev/docs/)
