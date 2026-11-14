@@ -6587,7 +6587,9 @@
       "summary": "Flutter 3.50：Release 忽略外部 Intent 引擎参数防注入；HCPP 交由 SurfaceControl 合成消除 PlatformView 滚动撕裂（Android 14+ Vulkan 可用）；FFIgen/JNIgen 转 Stable、Pigeon 底层切换；插件强制迁 AGP 内置 Kotlin；Material/Cupertino 拆独立包，存量项目走 dart fix 自动迁移。",
       "chapter": "ch05",
       "processed_at": "2026-11-14T06:20:19.802133+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "previous_action": "indexed-only-chapter-freeze",
+      "action": "quarantine",
+      "status": "quarantine",
       "score": 15,
       "target_path": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
       "route_confidence": 25,
@@ -6600,7 +6602,30 @@
         "stable",
         "dart"
       ],
-      "route_status": "existing-chapter-routed"
+      "previous_route_status": "existing-chapter-routed",
+      "route_status": "quarantined-content-summary-mismatch",
+      "quarantined_at": "2026-11-14T09:20:09+08:00",
+      "quarantined_run_id": "20261114-091520-c7d727e3",
+      "quarantine_reason": "原 URL 实际为《AI 会干掉 React Native 吗？》，正文讨论 Shopify 的 React Native 与原生开发选型。opencli 正文与独立 HTTP 抓取一致，均未提供索引摘要中的 Flutter 3.50、HCPP、SurfaceControl 或 PlatformView 资料；保留原摘要供追查，不据此修改 Flutter 章节，也不猜测替代 URL 或目标章节。",
+      "observed_title": "AI 会干掉 React Native 吗？",
+      "source_verified_at": "2026-11-14T09:20:09+08:00",
+      "source_snapshot_sha256": "757b1d25491f23639f2b14e6dbda6e736a55604aa2c3d424a52d109be0cac328",
+      "summary_verified": false,
+      "routing_finding": {
+        "id": "finding-2d83c08428a8",
+        "type": "routing",
+        "severity": "P2",
+        "status": "open",
+        "summary": "来源摘要与 URL 正文不符，误路由至 Flutter 渲染章节",
+        "source_paths": [
+          "https://juejin.cn/post/7700822035409928246"
+        ],
+        "target_path": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+        "created_by": "aiw-body-apply",
+        "created_run_id": "20261114-091520-c7d727e3",
+        "created_at": "2026-11-14T09:20:09+08:00",
+        "details": "该问题属于来源索引，不是既有章节的技术缺陷。恢复路由前须找到与 Flutter 摘要一致的可核验原文；当前 run 的白名单不含 metadata/review-findings.json，故在被选中的 source-index 项内记录稳定 finding，不越权修改全局 findings 文件。"
+      }
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
