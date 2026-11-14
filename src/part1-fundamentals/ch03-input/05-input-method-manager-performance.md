@@ -16,10 +16,11 @@ related_chapters:
 - '3.2'
 - '2.3'
 - '7.2'
-last_verified: '2026-08-26'
+last_verified: '2026-11-14'
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
-last_idle_audit_at: '2026-08-26T14:35:03+08:00'
+last_idle_audit_at: '2026-11-14T14:39:20+08:00'
+last_source_verified_at: '2026-11-14T14:39:20+08:00'
 sources:
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodManagerService.java
@@ -135,7 +136,7 @@ flowchart TD
 
 条件不足时，ImeTracker 进入 `PHASE_SERVER_WAIT_IME`，请求令牌（token）会被保留，待绑定或会话就绪后继续。条件齐备时才进入 `PHASE_SERVER_HAS_IME`，再由 `performShowIme()` 调用 `IInputMethodInvoker.showSoftInput()`。
 
-第三，输入法接受显示并执行 `showWindow()` 后，应用也不一定立刻开始动画。WMS 的 `ImeInsetsSourceProvider` 需要等输入法 Surface 已绘制、Insets 几何信息可用，并且能把带 leash 的控制权交给目标窗口。没有控制对象，或控制对象中没有 leash 时，客户端 `InsetsSourceConsumer` 会继续把输入法 Insets 源当作不可见处理。
+第三，输入法接受显示并执行 `showWindow()` 后，应用也不一定立刻开始动画。WMS 的 `ImeInsetsSourceProvider` 需要等输入法 Surface 已绘制、Insets 几何信息可用，并且能把带 leash 的控制权交给目标窗口。客户端已收到控制对象、但其中还没有 leash 时，`InsetsSourceConsumer.applyLocalVisibilityOverride()` 会将输入法 Insets 源设为不可见。没有控制对象时，这个方法直接返回，不覆盖服务端下发的可见性；控制权被收回时，`setControl()` 会恢复最近一次服务端下发的可见性。排查时应分别确认控制对象、leash 和 Insets 可见状态，不能仅凭缺少控制权就判定 IME 不可见。
 
 Android 17 已没有独立的 `ImeInsetsSourceConsumer.java`。IME 特殊分支位于通用的 `InsetsSourceConsumer` 和 `InsetsController` 中；旧类名只适合描述早期版本，不能用来解释 `android-17.0.0_r1` 的当前实现。
 
