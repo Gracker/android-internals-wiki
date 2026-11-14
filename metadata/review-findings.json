@@ -9350,53 +9350,43 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已统一位置参数、glob、run 构建引用、layout 弃用/no-op、多设备显式绑定、skills update、Studio 前提及前台启动示例。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
+      "close_note": "按 emulator_create 官方参考，将正文与脚本注释两处 --profile=medium_phone 改为位置参数 medium_phone；没有执行设备端 CLI。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-183520-idle-audit-8c917916",
-      "created_at": "2026-10-25T18:41:47.929510+08:00",
+      "closed_run_id": "20261114-183519-idle-audit-8c917916",
+      "created_at": "2026-11-14T18:44:31.821210+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-183520-idle-audit-8c917916",
-      "details": "重新读取官方命令参考确认：emulator create 使用位置参数；sdk list 使用 glob；run 可接收构建引用；layout --diff 已 deprecated/no-op；layout 和 screen capture 均支持 --device；skills add/remove 使用位置参数且提供 update；emulator start 等待启动完成；Studio 当前要求 Quail 2+。本次目标仍包含这些旧说明，沿用原 finding id 重新打开并修复。",
+      "created_run_id": "20261114-183519-idle-audit-8c917916",
+      "details": "2026-11-14 官方 emulator_create 用位置参数 <profile>，未提供 --profile。当前正文与脚本注释仍为 android emulator create --profile=medium_phone。沿用历史 finding id 重新打开并修复两处，不把 parent emulator 文档的用途描述当作子命令语法。",
       "id": "finding-ch15-6-cli-command-drift",
-      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-11-14-20261114-183519-idle-audit-8c917916-idle-audit.md",
       "severity": "P1",
       "source_paths": [
-        "https://developer.android.com/tools/agents/android-cli/commands/run",
-        "https://developer.android.com/tools/agents/android-cli/commands/layout",
-        "https://developer.android.com/tools/agents/android-cli/commands/screen_capture",
-        "https://developer.android.com/tools/agents/android-cli/commands/emulator_create",
-        "https://developer.android.com/tools/agents/android-cli/commands/emulator_start",
-        "https://developer.android.com/tools/agents/android-cli/commands/sdk_list",
-        "https://developer.android.com/tools/agents/android-cli/commands/skills_add",
-        "https://developer.android.com/tools/agents/android-cli/commands/skills_remove",
-        "https://developer.android.com/tools/agents/android-cli/commands/skills_update",
-        "https://developer.android.com/tools/agents/android-cli/commands/studio"
+        "https://developer.android.com/tools/agents/android-cli/commands/emulator_create"
       ],
       "status": "fixed",
       "summary": "Android CLI 命令参数与当前官方参考不一致",
       "type": "outdated-command-contract",
-      "updated_at": "2026-10-25T18:49:36.283343+08:00"
+      "updated_at": "2026-11-14T18:46:51.819067+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已在首次介绍、工具表、采集选择及脚本说明中限定游戏/Vulkan，补齐 Android 12+ 受支持设备、设备验证、GPU 数据可用性及 debuggable 配置分离。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
+      "close_note": "按 Quickstart 补齐受支持的 Android 12—17 设备、首次连接验证、GPU 数据可用性、macOS ARM/版本限制，以及 Vulkan 与 Java/Kotlin debuggable 配置及基线分离；保持已有游戏/Vulkan 范围。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-183520-idle-audit-8c917916",
-      "created_at": "2026-10-25T18:41:47.987594+08:00",
+      "closed_run_id": "20261114-183519-idle-audit-8c917916",
+      "created_at": "2026-11-14T18:44:32.006692+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-183520-idle-audit-8c917916",
-      "details": "官方首页与 Quickstart 均明确警告 APA 当前面向游戏及 Vulkan 图形；System Profiler 需受支持的 Android 12+ 设备并通过验证，GPU 数据因设备而异。Vulkan 数据采集的 debuggable 建议须与非 debuggable 的 Java/Kotlin 性能基线区分。目标正文仍把 APA 无条件用于通用应用，沿用原 finding id。",
+      "created_run_id": "20261114-183519-idle-audit-8c917916",
+      "details": "现稿已有游戏/Vulkan 范围，但缺少 Quickstart 明示的受支持 Android 12+ 设备、首次连接验证、不同 GPU 数据可用性和 Vulkan debuggable=true 与 Java/Kotlin debuggable=false 的分离边界。沿用历史 finding id 重新打开，只修仍缺失部分，不重做已正确的选型范围。",
       "id": "finding-ch15-6-apa-availability-boundary",
-      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-11-14-20261114-183519-idle-audit-8c917916-idle-audit.md",
       "severity": "P1",
       "source_paths": [
-        "https://developer.android.com/android-performance-analyzer",
         "https://developer.android.com/android-performance-analyzer/quickstart"
       ],
       "status": "fixed",
       "summary": "APA 选型说明遗漏游戏/Vulkan 适用范围与设备验证要求",
       "type": "missing-availability-warning",
-      "updated_at": "2026-10-25T18:49:36.339885+08:00"
+      "updated_at": "2026-11-14T18:46:52.003370+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
@@ -9421,15 +9411,15 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已补齐测试 APK application 的 requestLegacyExternalStorage 声明和官方 CI 来源，保留 scoped storage 独立测试要求。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
+      "close_note": "按官方 CI 指南补齐测试 APK application 的 android:requestLegacyExternalStorage=\"true\"，保留 Android 10+、no-isolated-storage、scoped storage 独立验证及 FTL 弃用迁移边界。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-183520-idle-audit-8c917916",
-      "created_at": "2026-10-25T18:41:48.102202+08:00",
+      "closed_run_id": "20261114-183519-idle-audit-8c917916",
+      "created_at": "2026-11-14T18:44:31.944055+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-183520-idle-audit-8c917916",
-      "details": "重新读取 CI 官方指南确认，在 additionalTestOutputDir=/sdcard/Download 与 no-isolated-storage 之外，还要求测试 APK 的 application 显式配置 android:requestLegacyExternalStorage=\"true\"。目标正文再次省略这项前提，沿用原 finding id。",
+      "created_run_id": "20261114-183519-idle-audit-8c917916",
+      "details": "重新读取 CI 官方指南确认，additionalTestOutputDir=/sdcard/Download 与 no-isolated-storage=true 还需测试 APK application 的 android:requestLegacyExternalStorage=\"true\"。当前正文缺少这项前提，沿用历史 finding id。保留 FTL 弃用、2027-09-30 关闭与新平台 Preview 边界。",
       "id": "finding-ch15-6-ftl-global-output-manifest",
-      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-11-14-20261114-183519-idle-audit-8c917916-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
@@ -9437,7 +9427,7 @@
       "status": "fixed",
       "summary": "FTL 全局产物目录方案遗漏测试 APK 的 legacy storage 声明",
       "type": "missing-configuration-prerequisite",
-      "updated_at": "2026-10-25T18:49:36.450825+08:00"
+      "updated_at": "2026-11-14T18:46:51.941778+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
@@ -9933,24 +9923,23 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已按 Benchmark 1.4.1 固定源码改为默认 Mode.Sum 汇总时长并报告次数，首次匹配需显式 Mode.First。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
+      "close_note": "按 Benchmark 1.5.0 正式发布 sources.jar 中 Metric.kt 的两个构造入口，修正为默认 Mode.Sum 汇总总时长与次数，Mode.First 需显式选择；保留实验 API 与目标包过滤边界。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-183520-idle-audit-8c917916",
-      "created_at": "2026-10-25T18:41:48.269875+08:00",
+      "closed_run_id": "20261114-183519-idle-audit-8c917916",
+      "created_at": "2026-11-14T18:44:31.882469+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-183520-idle-audit-8c917916",
-      "details": "本次下载 Benchmark 1.4.1 固定源码 Metric.kt，构造参数 mode=Mode.Sum、targetPackageOnly=true，默认输出 SumMs 与 Count；首次匹配必须显式指定 Mode.First。目标表格仍写默认首次，沿用原 finding id。",
+      "created_run_id": "20261114-183519-idle-audit-8c917916",
+      "details": "官方 Benchmark 1.5.0 发布源码 Metric.kt 的两个构造入口均默认 Mode.Sum，输出匹配 section 的总时长和次数；当前表格仍称默认首次匹配。沿用历史 finding id 重新打开。",
       "id": "finding-ch15-6-trace-section-default",
-      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-11-14-20261114-183519-idle-audit-8c917916-idle-audit.md",
       "severity": "P2",
       "source_paths": [
-        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar",
-        "https://developer.android.com/jetpack/androidx/releases/benchmark#1.3.0"
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
       ],
       "status": "fixed",
       "summary": "TraceSectionMetric 默认聚合模式误写为首次匹配",
       "type": "incorrect-metric-default",
-      "updated_at": "2026-10-25T18:49:36.622811+08:00"
+      "updated_at": "2026-11-14T18:46:51.880373+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
@@ -15169,6 +15158,50 @@
       "summary": "混同无 Insets 控制对象与控制对象缺少 leash 时的 IME 可见性处理",
       "type": "source-boundary",
       "updated_at": "2026-11-14T14:41:45.001386+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
+      "close_note": "已在正文补齐 Microbenchmark 模块的 androidx.benchmark.requireAot=false，说明与 forceaotcompilation=false 分属运行端和构建端，并解释 NOT-AOT-COMPILED、常规测量失败和基线隔离。已对照官方 1.5.0 sources.jar 中 Arguments.kt、Errors.kt、BenchmarkPlugin.kt 做静态断言；本地三项门禁通过。未声称设备端运行验证。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261114-183519-idle-audit-8c917916",
+      "created_at": "2026-11-14T18:40:13.486661+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261114-183519-idle-audit-8c917916",
+      "details": "正文仅要求设置 androidx.benchmark.forceaotcompilation=false。1.5.0 发布源码 Arguments.kt 默认 requireAot=true，Errors.kt 在编译状态非 speed 时加入 NOT-AOT-COMPILED，并在非 dry-run、未抑制错误时抛出 AssertionError；需要在 Microbenchmark 模块同时设置 instrumentation 参数 androidx.benchmark.requireAot=false，并区分该实验与默认全量 AOT 基线。",
+      "id": "finding-f31ef31b4567",
+      "log_path": "logs/audit/2026-11-14-20261114-183519-idle-audit-8c917916-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/benchmark",
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-common/1.5.0/benchmark-common-1.5.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-gradle-plugin/1.5.0/benchmark-gradle-plugin-1.5.0-sources.jar"
+      ],
+      "status": "fixed",
+      "summary": "Benchmark 1.5.0 非 AOT 实验缺少 requireAot 关闭配置",
+      "type": "incomplete-configuration",
+      "updated_at": "2026-11-14T18:43:10.571634+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
+      "close_note": "已将正文与参考资料中的本轮固定、本轮核对和本轮将快照核对，改为源码提交、文档日期和快照的直接归属。原有标题、代码、URL 与括注保持；已重新读取 d153d87 FrameTimingQuery、Journeys 文档和 4ebabf2 官方仓库树。added-lines 文风门禁和正文流程泄漏检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261114-183519-idle-audit-8c917916",
+      "created_at": "2026-11-14T18:40:13.548902+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261114-183519-idle-audit-8c917916",
+      "details": "FrameTimingQuery、CLI 命令参考、Journeys、Android skills 及两条参考资料混入本轮固定或本轮核对等编辑执行过程。应直接标明已保留的提交、文档日期及来源，不改变技术结论、命令、URL 或括注。",
+      "id": "finding-cd9decb427aa",
+      "log_path": "logs/audit/2026-11-14-20261114-183519-idle-audit-8c917916-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/perfetto/FrameTimingQuery.kt",
+        "https://developer.android.com/tools/agents/android-cli/journeys",
+        "https://github.com/android/skills/tree/4ebabf2b0fd6c04b7150023c8b612f80592a6226"
+      ],
+      "status": "fixed",
+      "summary": "正文以本轮核对叙述来源和源码快照",
+      "type": "editorial-process-leak",
+      "updated_at": "2026-11-14T18:43:10.632726+08:00"
     }
   ],
   "schema_version": 1
