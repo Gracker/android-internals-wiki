@@ -4,10 +4,11 @@ chapter: '5.5'
 section: '5.5'
 status: finalized
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
-last_verified: '2026-09-28'
-last_verified_against: Android API reference API 37 + Android 17 release notes + AOSP android-17.0.0_r1 + LiteRT NPU/Google Tensor/Qualcomm/MediaTek + ML Kit GenAI/AICore docs
+last_verified: '2026-11-15'
+last_verified_against: Android API reference API 37 + Android 17 release notes + AOSP android-17.0.0_r1 + LiteRT NPU/Google Tensor/Qualcomm/MediaTek + LiteRT performance measurement + ML Kit GenAI/AICore docs
 confidence: medium-low
-last_idle_audit_at: '2026-09-28T14:35:02+08:00'
+last_idle_audit_at: '2026-11-15T18:43:42+08:00'
+last_source_verified_at: '2026-11-15T18:43:42+08:00'
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md
 - src/part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md
@@ -21,6 +22,8 @@ sources:
   path: developer.android.com/ai/aicore
 - type: official
   path: ai.google.dev/edge/litert/android/gpu
+- type: official
+  path: developers.google.com/edge/litert/models/measurement
 - type: aosp
   path: frameworks/ml/nn/
 - type: official
@@ -175,7 +178,7 @@ DSP 擅长低功耗信号处理，也曾是许多 Android 设备的神经网络�
 
 ### NNAPI 的源码保留与迁移方向
 
-NNAPI（Neural Networks API）在 Android 8.1 / API 27 引入，允许框架构造计算图，再由系统运行时（runtime）和厂商驱动选择设备并准备执行。Android 15 / API 35 起，官方将 NNAPI 标记为弃用（deprecated），并建议性能敏感的应用迁移。
+NNAPI（Neural Networks API）在 Android 8.1 / API 27 引入，允许框架构造计算图，再由系统运行时（runtime）和厂商驱动选择设备并准备执行。Android 15 / API 35 起，官方将 NNAPI 标记为弃用（deprecated）。官方概览页还警告，后续多数设备预期会使用 CPU 后端，因此建议性能敏感的应用迁移到其他方案；某台 Android 17 设备是否仍提供加速驱动，应以设备枚举和执行记录为准。
 
 Android 17 源码没有删除 NNAPI。当前版本仍包含：
 
@@ -412,15 +415,15 @@ try {
 
 #### LiteRT 内部 tracing
 
-LiteRT 的性能测量文档说明，interpreter internal tracing 从 LiteRT v2.4 起提供。只有应用使用的 runtime 达到相应版本时，下面的系统属性开关才会产生预期效果：
+LiteRT 的性能测量文档说明，interpreter internal tracing 从 LiteRT v2.4 起提供。除运行时版本达到要求外，还必须在启动应用、初始化 `Interpreter` 之前，将 `debug.tflite.trace` 设为 `1`；官方文档以解释器初始化时的属性值作为启用条件：
 
 ```bash
 adb shell setprop debug.tflite.trace 1
-# 录制目标场景
+# 启动应用并创建 Interpreter，再录制目标场景
 adb shell setprop debug.tflite.trace 0
 ```
 
-第一条命令打开 LiteRT 内部跟踪，第二条在目标场景录制完成后把它关掉，免得影响后续测试。部署版本较旧时，就依靠应用记录的分段事件、benchmark 工具和 delegate 日志，系统并不会自动显示每个模型算子。
+若目标进程已经创建过 `Interpreter`，应先结束该进程，再按上述顺序重新启动和录制；仅在应用运行时设置属性，不能保证现有解释器开始记录内部事件。录制结束后将属性恢复为 `0`，避免影响后续测试。部署版本较旧时，就依靠应用记录的分段事件、benchmark 工具和 delegate 日志，系统并不会自动显示每个模型算子。
 
 #### 不同后端的观测重点
 
