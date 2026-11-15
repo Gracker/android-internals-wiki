@@ -15202,6 +15202,46 @@
       "summary": "正文以本轮核对叙述来源和源码快照",
       "type": "editorial-process-leak",
       "updated_at": "2026-11-14T18:43:10.632726+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/05-ondevice-ai-runtime-npu.md",
+      "close_note": "已按官方 measurement 文档补齐启动应用和 Interpreter 初始化前设置属性的前置条件、已初始化进程的重启顺序，以及录制后恢复为 0 的收尾；本地 gate 与新增中文检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261115-183519-idle-audit-09a3b1c3",
+      "created_at": "2026-11-15T18:43:42.328646+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261115-183519-idle-audit-09a3b1c3",
+      "details": "官方 performance measurement 要求在启动应用前将 debug.tflite.trace 设为 1，并说明在 Interpreter 初始化时读取该条件。原文仅限定运行时版本，读者可能对已初始化的解释器直接设置属性而采集不到算子事件。",
+      "id": "finding-0a2cae4d7055",
+      "log_path": "logs/audit/2026-11-15-20261115-183519-idle-audit-09a3b1c3-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developers.google.com/edge/litert/models/measurement"
+      ],
+      "status": "fixed",
+      "summary": "LiteRT 内部 tracing 步骤缺少应用启动前设置属性的要求",
+      "type": "observation-precondition",
+      "updated_at": "2026-11-15T18:46:45.414270+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/05-ondevice-ai-runtime-npu.md",
+      "close_note": "已保留 NNAPI overview 的 CPU 后端生命周期警告，并将后续多数设备的官方预期与具体 Android 17 设备的实测后端区分；API 35 弃用、NN HAL 保留和迁移说明仍一致。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261115-183519-idle-audit-09a3b1c3",
+      "created_at": "2026-11-15T18:43:42.562918+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261115-183519-idle-audit-09a3b1c3",
+      "details": "NNAPI overview 的 Warning 明确预期后续多数设备使用 CPU 后端，并建议性能敏感工作负载迁移。原文说明 API 弃用和源码保留，但没有保留这项硬件加速可用性的生命周期警告。",
+      "id": "finding-4bfac694eacf",
+      "log_path": "logs/audit/2026-11-15-20261115-183519-idle-audit-09a3b1c3-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/neuralnetworks"
+      ],
+      "status": "fixed",
+      "summary": "NNAPI 弃用说明遗漏官方对后续设备 CPU 后端的警告",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-11-15T18:46:45.476288+08:00"
     }
   ],
   "schema_version": 1
