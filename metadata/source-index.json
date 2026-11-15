@@ -6646,6 +6646,56 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7670404221932306474",
+      "title": "[掘金Android]",
+      "summary": "从 View.draw 到屏幕像素的六层全景：应用 UI 层（View/Window）、绘制接口层（Canvas/RenderNode）、渲染引擎层（Skia/GLES/Vulkan）、缓冲通道层（Surface/BufferQueue/GraphicBuffer/Fence）、合成协调层（WindowManager/SurfaceControl/SurfaceFlinger/Layer）、硬件显示层（Gralloc/GPU/HWC/Display）。讲清数据流（指令→DisplayList→RenderThread 回放→Buffer→合成→上屏）与控制流/数据流分离，只讲整体不深入实现。",
+      "chapter": "ch02",
+      "processed_at": "2026-11-16T06:20:19.676965+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
+      "route_confidence": 37,
+      "route_terms": [
+        "view",
+        "window",
+        "canvas",
+        "rendernode",
+        "gles",
+        "surface",
+        "graphicbuffer",
+        "fence"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-16-76704042-Android 图形系统全景.md",
+      "title": "[技术文章] Android 图形系统全景Android 图形系统横跨应用、系统服务和硬件。本文从 View.draw 到屏幕像素，梳",
+      "summary": "> 发布时间: 2026-08-06T01:35:45.000Z > 原文链接: https://juejin.cn/post/7670404221932306474 2026-08-06 960 阅读11分钟 Android 图形系统横跨应用、系统服务和硬件，组件多、术语杂。本文从应用到硬件梳理一遍：六层分层、层间如何协作、典型场景如何接入，只讲整体，不深入实现细节。...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-16T06:20:19.676965+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-11-15-evening-Kitesurf-agent浏览器-研究材料/03-contradictions.md",
+      "title": "[DeepResearch] 03-contradictions",
+      "summary": "--- phase: 1d --- # 03-contradictions 1. **「更省」vs「agent 更快更好」** - 高层：官方 CPU/内存 3–7× 更省（docs/blog）。 - 低层/另一指标：classmethod 同 agent 下 Kitesurf 更慢、步数更多、9 题错 1。 - 处理：分两层写，禁止并句成「开源后 agent 浏览器全面更优」。 2. **stars 数字时间差** - Brief 1",
+      "chapter": "ch04",
+      "processed_at": "2026-11-16T06:20:19.676965+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "phase",
+        "cpu",
+        "docs",
+        "blog"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
