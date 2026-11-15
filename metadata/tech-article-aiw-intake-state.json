@@ -7836,6 +7836,18 @@
       "status": "appended",
       "title": "谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra"
     },
+    "source/juejin-android/2026-11-16-76704042-Android 图形系统全景.md": {
+      "chapter": "待分类",
+      "entry_id": "3864dbc2c4db038e",
+      "last_appended": "2026-11-16T05:25:19.566406+08:00",
+      "last_seen": "2026-11-16T05:25:19.566406+08:00",
+      "mtime": 1794774051.8056808,
+      "score": 24,
+      "sha256": "ee2a5229cbbe22e79e9b948256692209a6ed34b9c4cff68647579c282163eb3a",
+      "size": 15337,
+      "status": "appended",
+      "title": "Android 图形系统全景Android 图形系统横跨应用、系统服务和硬件。本文从 View.draw 到屏幕像素，梳"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11530,24 +11542,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 2,
-    "cutoff": "2026-11-14T05:20:19.860334+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-15.md",
+    "appended": 1,
+    "considered": 1,
+    "cutoff": "2026-11-15T05:20:19.671488+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-16.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2559,
+    "scanned": 2560,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1431,
       "path": 33,
-      "unchanged": 1093
+      "unchanged": 1095
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-15T05:25:19.671488+08:00",
+  "last_run_at": "2026-11-16T05:25:19.566406+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
