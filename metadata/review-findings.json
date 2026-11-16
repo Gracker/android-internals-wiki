@@ -15280,6 +15280,66 @@
       "summary": "章节将 Perfetto v58.2 误写为当前最新版本",
       "type": "stale-version-claim",
       "updated_at": "2026-11-16T10:42:10.138863+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "close_note": "已删除错误类示例，以源码支持的捕获、ready、取消恢复、null 降级及根过渡收尾边界替换；不保留错稿或后置勘误。静态源码合同与全文风格检查通过，未声称真机测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261116-143519-idle-audit-ed42e4e6",
+      "created_at": "2026-11-16T14:46:16.695291+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261116-143519-idle-audit-ed42e4e6",
+      "details": "SingleTransitionBackPreview 在传入 Transition 的每次 onTransitionEnd 中清空 controller 并调用 onSettled。Transition 1.7.0 在手势进度抵达 1 或退回 0 时可触发子 TransitionSet 的结束通知；取消回弹的边界通知也可早于恢复回调，导致提前清理、过早放行新捕获或无法执行后续返回动画。",
+      "id": "finding-cd7ed337af4b",
+      "log_path": "logs/audit/2026-11-16-20261116-143519-idle-audit-ed42e4e6-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar"
+      ],
+      "status": "fixed",
+      "summary": "Transition 预览示例把子过渡结束误当作手势会话收尾",
+      "type": "unsafe-transition-lifecycle",
+      "updated_at": "2026-11-16T14:46:16.788044+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "close_note": "已补充 SurfaceView 官方限制，并要求独立核查生产端提交、图层 buffer、latch 和 present；保留 Android 12+ 可用性边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261116-143519-idle-audit-ed42e4e6",
+      "created_at": "2026-11-16T14:46:16.850155+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261116-143519-idle-audit-ed42e4e6",
+      "details": "Perfetto FrameTimeline 文档声明 Android 12+ 且 SurfaceViews 当前不受支持。正文讨论独立 Surface 内容但未保留此工具可用性限制，容易把宿主窗口帧按时结束误当作视频或相机内容按时更新。",
+      "id": "finding-51e450db06fd",
+      "log_path": "logs/audit/2026-11-16-20261116-143519-idle-audit-ed42e4e6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "status": "fixed",
+      "summary": "FrameTimeline 使用说明遗漏 SurfaceView 不受支持的官方限制",
+      "type": "omitted-source-warning",
+      "updated_at": "2026-11-16T14:46:16.911769+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "close_note": "已移除采集过程措辞，保留官方文档与制品元数据差异及从严配置要求。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261116-143519-idle-audit-ed42e4e6",
+      "created_at": "2026-11-16T14:46:16.975272+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261116-143519-idle-audit-ed42e4e6",
+      "details": "正文使用“本次下载的”描述 Hilt AAR，暴露资料采集过程。重新读取官方 1.4.0 AAR 与发布说明后，确认 minCompileSdk=37、制品 minAGP=9.1.0、文档 Compose AGP>=9.2.0 与 KGP>=2.2.0；应直接交代两套来源值。",
+      "id": "finding-a3660c3a02b9",
+      "log_path": "logs/audit/2026-11-16-20261116-143519-idle-audit-ed42e4e6-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/hilt#1.4.0"
+      ],
+      "status": "fixed",
+      "summary": "Hilt 工具链说明含采集过程叙述",
+      "type": "editorial-process-prose",
+      "updated_at": "2026-11-16T14:46:17.042219+08:00"
     }
   ],
   "schema_version": 1
