@@ -15463,6 +15463,67 @@
       "summary": "Surface 生命周期说明缺少 Consumer 弱引用边界",
       "type": "consumer-lifecycle",
       "updated_at": "2026-11-16T18:24:00.610480+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "close_note": "已对照 BluetoothLeScanner API 21/26 重载修正两种注销路径，保留 FLAG_CANCEL_CURRENT 警告与 target 31+ 权限条件；全文回读及 metadata、SUMMARY、diff 检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261116-223519-idle-audit-f770225d",
+      "created_at": "2026-11-16T22:42:45.281075+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261116-223519-idle-audit-f770225d",
+      "details": "正文推荐 PendingIntent 扫描后要求所有扫描都以原 ScanCallback 停止；官方 API 为两类注册提供不同 stopScan 重载，PendingIntent 路径还警告勿用 FLAG_CANCEL_CURRENT 重建停止凭据，否则停止可能无效。需分别给出注销路径并保留 target 31+ BLUETOOTH_SCAN 与位置推导权限条件。",
+      "id": "finding-e5a89cf30bbb",
+      "log_path": "logs/audit/2026-11-16-20261116-223519-idle-audit-f770225d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/bluetooth/le/BluetoothLeScanner"
+      ],
+      "status": "verified",
+      "summary": "BLE 扫描注销未区分 ScanCallback 与 PendingIntent",
+      "type": "api-lifecycle",
+      "updated_at": "2026-11-16T22:45:40.095324+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "close_note": "已以 android-17.0.0_r1 ScanManager 与 ScanThrottler 替换后台不会降档的错误断言，明确有效档位受 UID/屏幕/开关控制，未引入配额数值或厂商保证。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261116-223519-idle-audit-f770225d",
+      "created_at": "2026-11-16T22:42:45.343824+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261116-223519-idle-audit-f770225d",
+      "details": "android-17.0.0_r1 的 ScanManager.handleUidImportanceChange 调用 ScanThrottler.throttleScanModeBackgroundUid 或开关控制的延迟路径；后者按屏幕状态限制 LOW_POWER/SCREEN_OFF，配额逻辑还可进一步降档。正文否认自动降档会误导功耗排查，需交代请求档位、有效档位与特性开关边界。",
+      "id": "finding-abb611217ad1",
+      "log_path": "logs/audit/2026-11-16-20261116-223519-idle-audit-f770225d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanThrottler.kt"
+      ],
+      "status": "verified",
+      "summary": "BLE 后台扫描不会降档的断言与 Android 17 实现不符",
+      "type": "source-mismatch",
+      "updated_at": "2026-11-16T22:45:40.156711+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "close_note": "已按官方 Background Location Limits 区分普通后台计算频率、FLP 批内更高频历史与每小时少数批交付；保留 Android 8+ 和与 target 无关的边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261116-223519-idle-audit-f770225d",
+      "created_at": "2026-11-16T22:42:45.405397+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261116-223519-idle-audit-f770225d",
+      "details": "后台定位段把所有后台位置计算与交付一并限制为每小时少数几次；官方 Background Location Limits 明确批处理 FLP 可收集更高频历史，仍按每小时少数批交付。需区分采集/历史频率与批量交付频率，避免用普通请求限制推断所有后台批处理。",
+      "id": "finding-0d682e857c8c",
+      "log_path": "logs/audit/2026-11-16-20261116-223519-idle-audit-f770225d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/oreo/background-location-limits"
+      ],
+      "status": "verified",
+      "summary": "后台定位频率结论遗漏 FLP 批处理历史例外",
+      "type": "missing-boundary",
+      "updated_at": "2026-11-16T22:45:40.219140+08:00"
     }
   ],
   "schema_version": 1
