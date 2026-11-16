@@ -1,10 +1,11 @@
 ---
 title: Android 软件、离屏与混合渲染路径
 chapter: '13.2'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 section: '13.2'
 last_verified: '2026-10-24'
+last_body_apply_at: '2026-11-16T17:20:49+08:00'
 last_verified_against: AOSP android-17.0.0_r1 ViewRootImpl/View/Surface/GraphicBuffer/HardwareBufferRenderer/SurfaceControl/SurfaceFlinger + kernel android17-6.18-2026-06_r6
 confidence: high
 sources:
@@ -31,7 +32,7 @@ sources:
   role: RenderNode 到 HardwareBuffer 的离屏 HWUI 路径
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java
-  role: Transaction setBuffer、production fence 与 release callback
+  role: 合成树节点与内部 container/effect 类型；Transaction setBuffer、production fence 与 release callback
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h
   role: NDK buffer fence 与 setBufferWithRelease
@@ -89,6 +90,12 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/window/SurfaceSyncGroup
   role: 公开同步组契约
+- type: article
+  path: https://juejin.cn/post/7670404221932306474
+  role: 数据流与控制流的概念入口；对象和节点类型以 Android 17 源码为准
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java
+  role: Consumer 创建 Surface 并交给 Producer 绘制的类注释
 tags:
   - software-rendering
   - offscreen-rendering
@@ -684,7 +691,11 @@ flowchart TD
 
 #### 谁生产、写到哪里、谁消费
 
-分析混合页从建立对象清单开始，每条内容路径至少记录一行：
+分析混合页从建立对象清单开始。清单要区分数据流与控制流：`Surface` 通常由图像 Consumer 创建，再交给 Producer 绘制；`SurfaceControl` 控制合成树中的节点，`Transaction` 更新位置、裁剪、层级等显示属性，也能通过 `setBuffer()` 提交 buffer。像素的生产、提交和消费，以及图层状态的更新，要分别核对，再关联到同一内容对象。[来源: [Android 图形系统全景 §3：层级之间的关系](https://juejin.cn/post/7670404221932306474)] [已验证: `android-17.0.0_r1` 的 [`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java) 类注释；[`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java) 类注释与 `Transaction#setBuffer()`。]
+
+layer tree 中还包含不承载 buffer 的节点：container layer 本身不渲染，effect layer 没有关联 buffer。统计 Producer 和队列前，先核对节点类型与 parent/child，找到实际承载 buffer 的节点。[已验证: `android-17.0.0_r1`，`SurfaceControl.java` 的内部 `Builder#setContainerLayer()` / `setEffectLayer()`（均为 `@hide` 源码入口），以及 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java) 的 `createBlastSurfaceControls()`。]
+
+每条内容路径至少记录一行：
 
 | 字段 | 要记录的内容 | 常用证据 |
 |---|---|---|
