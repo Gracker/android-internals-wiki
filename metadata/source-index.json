@@ -6730,16 +6730,40 @@
       "summary": "> 发布时间: 2026-07-23T23:59:55.000Z > 原文链接: https://juejin.cn/post/7665574563510140979 2026-07-24 2,335 阅读5分钟 > 我第一次接触 LiveData 的时候，觉得它非常惊艳。 > 在那个时代，Android 开发充满了 Callback、生命周期问题、内存泄漏风险。 > L...",
       "chapter": "ch04",
       "processed_at": "2026-11-17T06:20:19.738494+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-topic-mismatch",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
-      "route_confidence": 14,
+      "route_confidence": 0,
       "route_terms": [
         "callback",
         "juejin-android",
         "ch04-memory"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-topic-mismatch",
+      "status": "quarantined",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_route_confidence": 14,
+      "quarantined_at": "2026-11-17T07:17:44.307315+08:00",
+      "quarantined_run_id": "20261117-071520-8797b739",
+      "quarantine_reason": "材料讨论 LiveData 与 Kotlin Flow 的生命周期观察、数据组合、事件和线程模型，未提供物理页规整、直接回收、PSI、ZRAM 或 lmkd 的新增证据。callback、juejin-android 和 ch04-memory 不能证明主题一致；保留原 target_path 供追溯，不猜测替代章节。",
+      "routing_finding": {
+        "id": "finding-fbacc91ddf59",
+        "chapter": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+        "scope": "source-index-item",
+        "severity": "P2",
+        "type": "routing-mismatch",
+        "summary": "LiveData/Flow 材料误路由到内存规整与直接回收章节",
+        "details": "已通读材料和指定章节。材料第 117–833 行讨论 LiveData、LifecycleOwner、Flow、事件消费与 postValue；章节第 74–741 行讨论 Linux 物理页规整、页面回收、Android 17 内存压力响应及观察方法。材料中的内存泄漏背景和泛化 Callback 用语不能支持内核回收或 ComponentCallbacks2 的版本结论，不能据此补写本章。该项已隔离，章节正文、frontmatter、状态及核验日期保持原样。metadata/review-findings.json 不在本次写入白名单内，路由 finding 保存在本条 source-index 记录和运行证据中。",
+        "status": "open",
+        "created_by": "aiw-body-apply",
+        "created_run_id": "20261117-071520-8797b739",
+        "created_at": "2026-11-17T07:17:44.307315+08:00",
+        "source_paths": [
+          "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-17-76655745-LiveData 的缺陷：为什么我现在越.md"
+        ],
+        "updated_at": "2026-11-17T07:17:44.307315+08:00"
+      }
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-17-76670971-谷歌的一个优化建议，让我重新学了一遍An.md",
