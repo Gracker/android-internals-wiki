@@ -5,8 +5,10 @@ section: '14.2'
 section_title: Perfetto View 解读
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-10-24'
-last_verified_against: AOSP android-17.0.0_r1（external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e、frameworks/native ae266dcb706d083868578cfedce381ef44488a07）+ android17-6.18-2026-06_r6；2026-10-24 官方 UI 文档与 v58.2 交互源码；v57.2 C++ SDK 发布归档、v57.2/v58.2 主机 Trace Processor；C API 按 v57.2/v58.2 发布头文件编译核对，Java 按对应 tag 公共源码核对
+last_verified: '2026-11-16'
+last_verified_against: AOSP android-17.0.0_r1（external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e、frameworks/native ae266dcb706d083868578cfedce381ef44488a07）+ android17-6.18-2026-06_r6；2026-10-24 官方 UI 文档与 v58.2 交互源码；v57.2 C++ SDK 发布归档、v57.2/v58.2 主机 Trace Processor；C API 按 v57.2/v58.2 发布头文件编译核对，Java 按对应 tag 公共源码核对；2026-11-16 抽检官方 UI、FrameTimeline、调度文档及 Android 17 CHANGELOG/TrackEvent/self_dur、v57.2 state 解析源码，最新稳定发布核对到 v59.1；既有 SDK 编译与主机行为实测未重跑
+last_source_verified_at: '2026-11-16'
+last_idle_audit_at: '2026-11-16T10:39:07+08:00'
 confidence: high
 sources:
 - type: internal-reference
@@ -80,6 +82,9 @@ sources:
   role: Android 17 common kernel 线程状态位定义
 - type: official
   path: https://github.com/google/perfetto/releases/tag/v57.1
+- type: official
+  path: https://github.com/google/perfetto/releases/tag/v59.1
+  role: 2026-11-16 最新稳定发布核对；不改变本文 v57.2/v58.2 的验证基线
 - type: aosp
   path: protos/perfetto/trace/track_event/track_event.proto (v57.1 tag)
 - type: aosp
@@ -474,7 +479,7 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同的录制类型�
 
 三条线里先看平台：`android-17.0.0_r1` 的 `external/perfetto/CHANGELOG` 顶部记录了一个尚未进入完整上游版本的 Android `aflags` 补丁；`aflags` 是 Android 的功能开关机制，让平台代码按 flag 启用或停用行为。紧接着的完整上游版本是 **v54.0**，发布于 2026-02-27；同一 Android 标签下的 `track_event.proto` 只定义到 `TYPE_COUNTER = 4`，`TYPE_STATE` 要到 v57 系列才出现。
 
-再看上游这条线：Perfetto **v57.1** 于 2026 年 7 月 2 日发布，state track 从这一系列引入。**v57.2** 于 7 月 7 日发布；其历史修复针对内嵌 proto descriptor 的兼容性，state wire format 延续 v57.1。本文保留这组历史基线；截至本次复核，官方已发布 [v58.2](https://github.com/google/perfetto/releases/tag/v58.2)，当前最新版本是 v58.2，v57.2 只作历史基线引用。上游 SDK、Trace Processor 和 UI 更新之后，设备中的 `/system/bin/perfetto`、`traced`、`traced_probes` 和 Android Framework API 仍随平台镜像走，要单独升级。
+再看上游这条线：Perfetto **v57.1** 于 2026 年 7 月 2 日发布，state track 从这一系列引入。**v57.2** 于 7 月 7 日发布；其历史修复针对内嵌 proto descriptor 的兼容性，state wire format 延续 v57.1。本文的 state 示例保留 v57.2 历史基线，UI 交互与后续语言 API 的版本对照固定到 [v58.2](https://github.com/google/perfetto/releases/tag/v58.2)。截至 2026-11-16，官方最新稳定发布为 [v59.1](https://github.com/google/perfetto/releases/tag/v59.1)；采用更新版本前，还要核对该版本的迁移与兼容性说明。上游 SDK、Trace Processor 和 UI 更新之后，设备中的 `/system/bin/perfetto`、`traced`、`traced_probes` 和 Android Framework API 仍随平台镜像走，要单独升级。
 
 
 | 对象 | 采用的版本 | 在哪里运行 | 能否直接提供 v57 状态轨道 |
