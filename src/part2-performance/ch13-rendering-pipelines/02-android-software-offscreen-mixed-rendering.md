@@ -1,10 +1,10 @@
 ---
 title: Android 软件、离屏与混合渲染路径
 chapter: '13.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 section: '13.2'
-last_verified: '2026-10-24'
+last_verified: '2026-11-16'
 last_body_apply_at: '2026-11-16T17:20:49+08:00'
 last_verified_against: AOSP android-17.0.0_r1 ViewRootImpl/View/Surface/GraphicBuffer/HardwareBufferRenderer/SurfaceControl/SurfaceFlinger + kernel android17-6.18-2026-06_r6
 confidence: high
@@ -15,6 +15,12 @@ sources:
 - type: official
   path: https://developer.android.com/develop/ui/views/graphics/hardware-accel
   role: View layer 与 hardware/software Canvas 公开语义
+- type: official
+  path: https://developer.android.com/reference/android/view/View#buildDrawingCache(boolean)
+  role: API 28 drawing cache 弃用、PixelCopy 截图建议与软件快照兼容性限制
+- type: official
+  path: https://source.android.com/docs/core/graphics/arch-sh
+  role: Surface Canvas 类型与 CPU Producer 连接持续到 Surface 销毁的警告
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
   role: 整窗口 drawSoftware 主链
@@ -95,7 +101,7 @@ sources:
   role: 数据流与控制流的概念入口；对象和节点类型以 Android 17 源码为准
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java
-  role: Consumer 创建 Surface 并交给 Producer 绘制的类注释
+  role: Consumer 创建 Surface 的类注释、CPU Canvas 连接及硬件 Canvas 全量覆盖契约
 tags:
   - software-rendering
   - offscreen-rendering
@@ -186,6 +192,11 @@ flowchart TD
 - `lockHardwareCanvas()` 返回硬件加速 Canvas，走的是 GPU 路径；
 - `SurfaceHolder` 的生产循环可以放在业务线程中，节奏由应用决定，未必跟随宿主窗口 `Choreographer`。
 
+使用这些入口还要遵守两条边界：
+
+- `lockHardwareCanvas()` 每次都必须完整覆盖目标 Surface，buffer 内容不保证跨帧保留，不支持 dirty rect 式局部更新。这个要求写在 Android 17 的 [`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java#606) 方法注释中。
+- `lockCanvas()` 建立的 CPU Producer 连接不会随 `unlockCanvasAndPost()` 解除。[官方说明](https://source.android.com/docs/core/graphics/arch-sh)明确警告：这条连接持续到 Surface 销毁，在此期间不能再把同一 Surface 交给 GLES 或视频解码器。切换 Producer 时，要把 Surface 生命周期重建纳入处理。
+
 在 trace 里看到 lock/post（取得 Canvas 后提交）时，我们要同时确认线程、Surface/layer 和 Canvas 类型：它可能是软件 Producer，也可能是独立硬件 Canvas Producer。
 
 <!-- gracker-diagram: ch13-02-04-surface-canvas -->
@@ -200,7 +211,9 @@ flowchart TD
 合并发生在应用侧，所以 SurfaceFlinger 看不到独立的“software View layer”：这块 Bitmap 已经与其他 View 内容一起进了宿主窗口 buffer，SF 只能观察到 App Window。
 
 
-公开的 `buildDrawingCache()` 从 API 28 起已弃用，业务代码应避免依赖它；源码里出现内部 drawing-cache 分支，也预测不了设备上会有名为 `uploadToTexture` 的固定 Perfetto slice，更稳的证据是 CPU Bitmap 栅格化、缓存失效、宿主 HWUI 帧以及可能的纹理上传成本。
+公开的 `buildDrawingCache()` 从 API 28 起已弃用，业务代码应避免依赖它。[`View` 官方文档](https://developer.android.com/reference/android/view/View#buildDrawingCache(boolean))建议 UI 截图使用 `PixelCopy`；小范围的软件快照可以显式创建 Bitmap Canvas 并调用 `View.draw()`，但这条路径对 `Bitmap.Config.HARDWARE` 图片、实时阴影和 outline clipping（轮廓裁剪）存在兼容性限制。
+
+源码里出现内部 drawing-cache 分支，也预测不了设备上会有名为 `uploadToTexture` 的固定 Perfetto slice，更稳的证据是 CPU Bitmap 栅格化、缓存失效、宿主 HWUI 帧以及可能的纹理上传成本。
 
 #### 三种常被混淆的 layer
 
@@ -336,7 +349,7 @@ software Canvas 支持 dirty region（需要重画的区域），也就是只重
 <!-- gracker-diagram: ed13-02-software-cache-and-host-sampling -->
 ![software layer 的缓存分支汇入宿主硬件帧](../../assets/diagrams/ch13/ed13-02-software-cache-and-host-sampling.png)
 
-图：硬件加速宿主内的software View链路与缓存分支合图：有效Bitmap可复用；失效、尺寸变化等会带来CPU栅格化与缓存更新，分配/上传按实际后端取证，不保证每次上传或固定uploadToTexture slice。两支均由宿主RenderNode引用，再由RT/GPU采样进AppWindowbuffer；SF没有独立softwareViewlayer。它区别于整窗口drawSoftware，公开drawing-cache接口的弃用边界仍以原文为准。
+图：硬件加速宿主内的software View链路与缓存分支合图：有效Bitmap可复用；失效、尺寸变化等会带来CPU栅格化与缓存更新，分配/上传按实际后端取证，不保证每次上传或固定uploadToTexture slice。两支均由宿主RenderNode引用，再由RT/GPU采样进AppWindowbuffer；SF没有独立softwareViewlayer。它区别于整窗口 `drawSoftware()`；公开的 `buildDrawingCache()` 自 API 28 起已弃用，内部缓存分支不改变这一边界。
 
 #### GPU 离屏与 `HardwareBuffer`
 
@@ -345,7 +358,9 @@ software Canvas 支持 dirty region（需要重画的区域），也就是只重
 
 #### `SurfaceControl.Transaction#setBuffer()` 直接提交
 
-`Transaction#setBuffer()` 可以绕过该 layer 的常规 `dequeueBuffer()` / `queueBuffer()` 循环，但绕不过 SurfaceFlinger：仍在生产的 buffer 要携带 production/acquire fence，连续复用要取得对应 release callback，并在其有效 release fence 满足后再写入。usage（buffer 的允许用途标志）只声明这块 buffer 允许被哪些消费者使用，离“HWC 选择 DEVICE（显示硬件合成） composition”还差一轮协商。完整提交与回收协议由 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 维护。
+`Transaction#setBuffer()` 可以绕过该 layer 的常规 `dequeueBuffer()` / `queueBuffer()` 循环，但绕不过 SurfaceFlinger：仍在生产的 buffer 要携带 production/acquire fence，连续复用要取得对应 release callback，并在其有效 release fence 满足后再写入。Android 17 的 Java `setBuffer()` 文档要求 `HardwareBuffer` 同时带有 `HardwareBuffer.USAGE_COMPOSER_OVERLAY` 和 `HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE`，以支持显示硬件或 GPU 消费。
+
+usage（buffer 的允许用途标志）声明的是 buffer 允许的用途，不能保证 HWC 选择 DEVICE（显示硬件合成）composition；实际结果仍要经过本帧的合成协商。完整提交与回收协议由 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 维护。
 
 <!-- gracker-diagram: ch13-02-17-direct-buffer-reuse -->
 ![直接 setBuffer 的提交与回收协议](../../assets/diagrams/ch13/ch13-02-17-direct-buffer-reuse.png)
@@ -486,7 +501,7 @@ FrameTimeline 只覆盖进入相应可见 SurfaceFrame/DisplayFrame 的部分。
 
 可以合理使用 CPU software 或离屏路径的场景包括：
 
-- 生成小尺寸、低频、一次性的 Bitmap 快照；
+- 生成小尺寸、低频、一次性的 Bitmap 快照，且内容能由 software Canvas 表达；
 - 兼容性验证，需要比较 software 与 hardware Canvas 行为；
 - 明确由 CPU 算法写入、随后交给非显示 Consumer 的 buffer；
 - 简单、低刷新率的独立 Surface 绘制，且实测满足功耗和 deadline；
@@ -693,6 +708,8 @@ flowchart TD
 
 分析混合页从建立对象清单开始。清单要区分数据流与控制流：`Surface` 通常由图像 Consumer 创建，再交给 Producer 绘制；`SurfaceControl` 控制合成树中的节点，`Transaction` 更新位置、裁剪、层级等显示属性，也能通过 `setBuffer()` 提交 buffer。像素的生产、提交和消费，以及图层状态的更新，要分别核对，再关联到同一内容对象。[来源: [Android 图形系统全景 §3：层级之间的关系](https://juejin.cn/post/7670404221932306474)] [已验证: `android-17.0.0_r1` 的 [`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java) 类注释；[`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java) 类注释与 `Transaction#setBuffer()`。]
 
+`Surface` 对关联的 Consumer 只起弱引用作用；仅持有 `Surface` 不能防止 Consumer 被回收。维护 Producer 的同时，也要保持 `SurfaceTexture` 等 Consumer 的有效生命周期。[`Surface.java` 类注释](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java#51)明确说明了这一点。
+
 layer tree 中还包含不承载 buffer 的节点：container layer 本身不渲染，effect layer 没有关联 buffer。统计 Producer 和队列前，先核对节点类型与 parent/child，找到实际承载 buffer 的节点。[已验证: `android-17.0.0_r1`，`SurfaceControl.java` 的内部 `Builder#setContainerLayer()` / `setEffectLayer()`（均为 `@hide` 源码入口），以及 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java) 的 `createBlastSurfaceControls()`。]
 
 每条内容路径至少记录一行：
@@ -737,7 +754,7 @@ container 的 position 更新了，content child 未必用上了新 buffer——
 
 图：把几何容器、Producer 内容和可选背景 Layer 分开对应。 几何更新不证明 child 用上新 buffer；背景显隐依格式、Z-order 和配置。
 
-SurfaceView 位于宿主上方时无需对宿主打洞；API 34 起 alpha 规则也区分 Z-above 与 Z-below。`TextureView` 没有独立可见 SurfaceView child：它的内容被宿主 GPU 采样，也就没有这套打洞问题。
+SurfaceView 位于宿主上方时无需对宿主打洞。API 34 起，Z-above 的 alpha 直接作用于 Surface，Z-below 的 alpha 则作用于 hole-punch；由于后者没有直接调制 Surface 内容，宿主下方多个 SurfaceView 重叠时可能无法按预期混合。`TextureView` 没有独立可见 SurfaceView child：它的内容被宿主 GPU 采样，也就没有这套打洞问题。
 
 
 #### SurfaceFlinger/HWC 合成
@@ -905,7 +922,7 @@ Android 13 的 `AutoSingleLayer` latch-unsignaled 模式只适用于满足条件
 
 #### FrontEnd 的对象模型
 
-收到 transaction 后，SurfaceFlinger 把请求合入 `RequestedLayerState`，由 `LayerLifecycleManager` 管理 layer 生命周期和 hierarchy，再由 `LayerSnapshotBuilder` 生成本轮的可见性、几何和效果 snapshot（本轮状态快照）。buffer layer 的 transaction readiness（处理条件检查）、buffer readiness 与 fence 还要单独判断。
+收到 transaction 后，SurfaceFlinger 把请求合入 `RequestedLayerState`，由 `LayerLifecycleManager` 管理请求状态和 layer 生命周期，`LayerHierarchyBuilder` 构建父子层级，再由 `LayerSnapshotBuilder` 生成本轮的可见性、几何和效果 snapshot（本轮状态快照）。buffer layer 的 transaction readiness（处理条件检查）、buffer readiness 与 fence 还要单独判断。
 
 旧资料把流程简化成 `SurfaceFlinger::commit()` 逐层调用 `Layer::latchBuffer()`，已经不足以解释 container/content child、FrontEnd state 与 snapshot 这些现状，读旧教程时要留意。
 
