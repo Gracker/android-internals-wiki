@@ -6723,6 +6723,65 @@
         ],
         "updated_at": "2026-11-16T15:18:30.719130+08:00"
       }
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-17-76655745-LiveData 的缺陷：为什么我现在越.md",
+      "title": "[技术文章] LiveData 的缺陷：为什么我现在越来越少使用 LiveData？ > 我第一次接触 LiveData 的时候，觉得",
+      "summary": "> 发布时间: 2026-07-23T23:59:55.000Z > 原文链接: https://juejin.cn/post/7665574563510140979 2026-07-24 2,335 阅读5分钟 > 我第一次接触 LiveData 的时候，觉得它非常惊艳。 > 在那个时代，Android 开发充满了 Callback、生命周期问题、内存泄漏风险。 > L...",
+      "chapter": "ch04",
+      "processed_at": "2026-11-17T06:20:19.738494+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "callback",
+        "juejin-android",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-17-76670971-谷歌的一个优化建议，让我重新学了一遍An.md",
+      "title": "[技术文章] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra",
+      "summary": "> 发布时间: 2026-07-28T02:18:34.000Z > 原文链接: https://juejin.cn/post/7667097178154319912 2026-07-28 2,646 阅读8分钟 谷歌这位哥哥真的会整幺蛾子，好不容易把crash跟anr数据压下来一点，最近发现又给了我一条技术质量类型的整改建议，大致内容是 真的是一点不让我闲着，天天关心着...",
+      "chapter": "ch09",
+      "processed_at": "2026-11-17T06:20:19.738494+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-17-76741036-主线程明明是空闲的，为什么仍然 ANR？.md",
+      "title": "[技术文章] 主线程明明是空闲的，为什么仍然 ANR？3 个真实 Trace 的证据链复盘系统已经判定 ANR，主线程却停在 nati",
+      "summary": "> 发布时间: 2026-08-16T10:43:11.000Z > 原文链接: https://juejin.cn/post/7674103602086264875 2026-08-16 562 阅读15分钟 先看第一份现场。系统明确判定发生了输入 ANR，可 Trace 里的主线程既没有卡在业务代码，也没有等待 Java 锁，而是停在 nativePollOnce，看...",
+      "chapter": "ch03",
+      "processed_at": "2026-11-17T06:20:19.738494+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "route_confidence": 31,
+      "route_terms": [
+        "主线程明明是空闲的",
+        "为什么仍然",
+        "anr",
+        "trace",
+        "nati",
+        "t10",
+        "java",
+        "juejin-android"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-17-76809960-日常修改，3秒生效：腾讯音乐 Andro.md",
+      "title": "[技术文章] 日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件",
+      "summary": "> 发布时间: 2026-09-03T12:51:33.000Z > 原文链接: https://juejin.cn/post/7680996030843125796 2026-09-03 3,100 阅读29分钟 Android 编译优化 > 本文首发自公众号：腾讯音乐技术团队 > 5 年研发和内部使用，累积 80 万次生产工程编译验证，让大型 Android 工程日常...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-17T06:20:19.738494+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
