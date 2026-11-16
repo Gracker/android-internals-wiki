@@ -6685,17 +6685,41 @@
       "summary": "--- phase: 1d --- # 03-contradictions 1. **「更省」vs「agent 更快更好」** - 高层：官方 CPU/内存 3–7× 更省（docs/blog）。 - 低层/另一指标：classmethod 同 agent 下 Kitesurf 更慢、步数更多、9 题错 1。 - 处理：分两层写，禁止并句成「开源后 agent 浏览器全面更优」。 2. **stars 数字时间差** - Brief 1",
       "chapter": "ch04",
       "processed_at": "2026-11-16T06:20:19.676965+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-topic-mismatch",
       "score": 17,
       "target_path": "src/part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md",
-      "route_confidence": 16,
+      "route_confidence": 0,
       "route_terms": [
         "phase",
         "cpu",
         "docs",
         "blog"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-topic-mismatch",
+      "status": "quarantined",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_route_confidence": 16,
+      "quarantined_at": "2026-11-16T15:18:30.719130+08:00",
+      "quarantined_run_id": "20261116-151520-47b43025",
+      "quarantine_reason": "材料讨论 Kitesurf 浏览器的资源用量、任务耗时、stars 时点和 Workers 计费边界，未提供 Privacy Sandbox、Android SDK Runtime 或广告 SDK 启动治理的新增证据。phase/cpu/docs/blog 这些通用词不能支持当前路由；保留原 target_path 供追溯，不猜测替代章节。",
+      "routing_finding": {
+        "id": "finding-af081a842339",
+        "chapter": "src/part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md",
+        "scope": "source-index-item",
+        "severity": "P2",
+        "type": "routing-mismatch",
+        "summary": "Kitesurf 浏览器矛盾清单误路由到广告 SDK 启动章节",
+        "details": "已通读材料和指定章节。材料第 7–31 行讨论浏览器指标、计费与未决问题；章节讨论 Android 17 Privacy Sandbox 退场、Android 14–16 遗留 SDK Runtime 和嵌入式广告 SDK 启动。两者没有可核验的技术对应关系，不能把浏览器实验数字或 Workers 条件转为 Android 结论。该项已隔离，正文及 frontmatter 保持原样。metadata/review-findings.json 不在本次写入白名单内，因此路由 finding 保存在这条 source-index 记录及运行证据中。",
+        "status": "open",
+        "created_by": "aiw-body-apply",
+        "created_run_id": "20261116-151520-47b43025",
+        "created_at": "2026-11-16T15:18:30.719130+08:00",
+        "source_paths": [
+          "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-11-15-evening-Kitesurf-agent浏览器-研究材料/03-contradictions.md"
+        ],
+        "updated_at": "2026-11-16T15:18:30.719130+08:00"
+      }
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
