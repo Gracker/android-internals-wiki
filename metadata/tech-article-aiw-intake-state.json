@@ -7848,6 +7848,126 @@
       "status": "appended",
       "title": "Android 图形系统全景Android 图形系统横跨应用、系统服务和硬件。本文从 View.draw 到屏幕像素，梳"
     },
+    "source/juejin-android/2026-11-17-76655745-LiveData 的缺陷：为什么我现在越.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "a7d0059dcde772f9",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8710818,
+      "score": 11,
+      "sha256": "4a57ed48d8d812568f4f3c19d3c8d45c428c1236001eb03bd2b8c711207c28bd",
+      "size": 10257,
+      "status": "appended",
+      "title": "LiveData 的缺陷：为什么我现在越来越少使用 LiveData？ > 我第一次接触 LiveData 的时候，觉得"
+    },
+    "source/juejin-android/2026-11-17-76670971-谷歌的一个优化建议，让我重新学了一遍An.md": {
+      "chapter": "ch09-anr",
+      "entry_id": "eeac7fd1390980cc",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8682323,
+      "score": 11,
+      "sha256": "189a1c5a097f1a8f7e52a1e7954811f306d726561a4e2e8f054cec6d69bbe3ef",
+      "size": 11258,
+      "status": "appended",
+      "title": "谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra"
+    },
+    "source/juejin-android/2026-11-17-76678955-别再只用 Loading、Success.md": {
+      "chapter": "待分类",
+      "entry_id": "30e5955b69ee7b42",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8705063,
+      "score": 9,
+      "sha256": "98b27c6acad6dddf2a6b14400753c4eb19288681ded047e758a9b74e759467f0",
+      "size": 33267,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-11-17-76696126-你敢信吗？同样是跨端，KMP 跟 RN .md": {
+      "chapter": "待分类",
+      "entry_id": "53187849d8ca13f6",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8718007,
+      "score": 8,
+      "sha256": "10e5983a88b3a70bcd041423257cfcaf1fb3e6c79f0644a3ddfdc4b876fa8969",
+      "size": 6908,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-11-17-76741036-主线程明明是空闲的，为什么仍然 ANR？.md": {
+      "chapter": "ch13-perfetto",
+      "entry_id": "18cdb4dcaba381ab",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8645835,
+      "score": 25,
+      "sha256": "cd6235fc7717ef2fd246d6d520bd56650073e150a06ea523db8ab4bfc12185f8",
+      "size": 19666,
+      "status": "appended",
+      "title": "主线程明明是空闲的，为什么仍然 ANR？3 个真实 Trace 的证据链复盘系统已经判定 ANR，主线程却停在 nati"
+    },
+    "source/juejin-android/2026-11-17-76748189-Android 版 MCP 正式登场：A.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "d3e5345e66df9bfa",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8641367,
+      "score": 12,
+      "sha256": "0d3608d488bc4af09b0bfa847b81f49f4063129ca97e5faa7ad1dfcf3b29b36e",
+      "size": 14066,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
+    "source/juejin-android/2026-11-17-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "d9d1c3e6baecff93",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.863656,
+      "score": 24,
+      "sha256": "1b96b6a769e12cddb52e0d70a7e1bb7bfca16bca4fa46eb0033cbbab8b814a61",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-17-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "cec47fd18a4b9aec",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8654673,
+      "score": 9,
+      "sha256": "7561a82fbb5fd0abca45ca7027913b4090fdea3a6454594fea87bb1f483d6262",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-17-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "ca389055477497a7",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8625913,
+      "score": 19,
+      "sha256": "c341a3d856cf6e2d033e094f1bd3c8592c094a0a16b2b74bab0da135b8935d77",
+      "size": 33822,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
+    "source/juejin-android/2026-11-17-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "6eed100b62cc407c",
+      "last_appended": "2026-11-17T05:25:19.709992+08:00",
+      "last_seen": "2026-11-17T05:25:19.709992+08:00",
+      "mtime": 1794860281.8616512,
+      "score": 15,
+      "sha256": "d6eb961179b95457772230365a55b251d9f329a4acdc52530c8d743458253724",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11542,24 +11662,24 @@
     }
   },
   "last_report": {
-    "appended": 1,
-    "considered": 1,
-    "cutoff": "2026-11-15T05:20:19.671488+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-16.md",
+    "appended": 10,
+    "considered": 10,
+    "cutoff": "2026-11-16T05:20:19.566406+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-17.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2560,
+    "scanned": 2570,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1431,
       "path": 33,
-      "unchanged": 1095
+      "unchanged": 1096
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-16T05:25:19.566406+08:00",
+  "last_run_at": "2026-11-17T05:25:19.709992+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
