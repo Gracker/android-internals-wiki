@@ -4,9 +4,9 @@ chapter: '25.4'
 section: '25.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-25'
-last_source_verified_at: '2026-10-25'
-last_verified_against: Android Developers location, sensors, FGS, GNSS, Wi-Fi RTT and BLE docs retrieved 2026-08-15 + Google Play services LocationRequest docs + AOSP android-17.0.0_r1
+last_verified: '2026-11-16'
+last_source_verified_at: '2026-11-16'
+last_verified_against: Android Developers and Google Play services location, sensors, FGS, GNSS, Wi-Fi RTT and BLE documentation checked 2026-11-16 + AOSP android-17.0.0_r1 location, sensors and Bluetooth sources
 confidence: high
 consolidated_from:
 - src/part5-app/ch25-power-size/22-location-services-performance.md
@@ -44,6 +44,10 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/bluetooth/le/BluetoothLeScanner
 - type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanThrottler.kt
+- type: aosp
   path: https://source.android.com/devices/sensors/batching
 - type: clippings-structure-ref
   path: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md
@@ -59,6 +63,7 @@ related_chapters:
 - '11.2'
 last_draft_polish_at: '2026-08-15T14:39:53+08:00'
 last_review_finalize_at: '2026-08-15T14:39:53+08:00'
+last_idle_audit_at: '2026-11-16T22:44:00+08:00'
 ---
 
 # 定位与传感器功耗优化
@@ -382,7 +387,7 @@ Android 17 的 `SystemSensorManager` 用 5000 微秒作为 200 Hz 的周期判�
 | Android 12+ | 用户可以只授予大致位置；从后台启动 FGS 还受通用限制 |
 | Android 14+ | 目标版本 34 及以上声明 `FOREGROUND_SERVICE_LOCATION`，创建服务时满足粗略或精确位置权限与使用中权限前提 |
 
-Android 8.0（API 26）起，后台应用的位置计算与交付被限制为每小时少数几次，后台 Geofencing 也按几分钟量级响应。这层限制属于设备行为，与应用的 `targetSdkVersion` 无关；提高请求频率绕不开它，反而会让业务契约与平台行为对不上。
+Android 8.0（API 26）起，普通后台定位请求的位置计算与交付被限制为每小时少数几次；FLP 批处理可以提供更高频的位置历史，但批量交付仍只有每小时少数几次。后台 Geofencing 则按几分钟量级响应。这些边界见[后台定位限制](https://developer.android.com/about/versions/oreo/background-location-limits)，属于设备行为，与应用的 `targetSdkVersion` 无关；提高请求频率绕不开交付限制，业务要分别约定位置历史的密度和批量结果的到达延迟。
 
 权限和前台服务需要按版本分别处理：
 
@@ -412,7 +417,9 @@ adb shell dumpsys powerstats
 
 - GNSS 原始测量需要 `ACCESS_FINE_LOCATION`。API 31 新增的 [full tracking](https://developer.android.com/reference/android/location/GnssMeasurementRequest.Builder) 会要求芯片关闭占空比，也就是停止周期性休眠，只在算法确需连续载波相位时开启。看到某个载波频率只说明本次观测包含该信号，说明不了定位解算用没用双频。
 - Wi-Fi RTT 从扫描得到的真实 `ScanResult` 构建请求。目标版本 33 及以上使用 `NEARBY_WIFI_DEVICES`；测距需应用可见或运行 FGS，并核对设备RTT能力、位置/Wi-Fi扫描开关与权限。若应用从 Wi-Fi API 推导实际位置，不能声明 `neverForLocation`，精确位置功能仍要按用途保留相应授权。回调按 MAC（媒体访问控制）地址关联；Android 17 的 [`STATUS_BUSY_TRY_LATER`](https://developer.android.com/reference/android/net/wifi/rtt/RangingResult) 表示对端忙，要等 `getRetryAfterDurationMillis()` 给出的时间再重试，别立刻循环请求。
-- BLE RSSI（接收信号强度指示）受人体遮挡、姿态、天线和多径影响，适合区域判定或排序，不要用它承诺米级距离。后台运行不会自动把扫描改成 `SCAN_MODE_LOW_POWER`；使用 `ScanCallback`（扫描回调对象） 的无过滤扫描会在熄屏时暂停，进程结束后就收不到回调了。需要在进程未运行时接收匹配结果，可使用带过滤条件的 [`PendingIntent` 扫描](https://developer.android.com/develop/connectivity/bluetooth/ble/background)。所有扫描都要设置结束条件，并用原 `ScanCallback` 显式调用 `stopScan()`。
+- BLE RSSI（接收信号强度指示）受人体遮挡、姿态、天线和多径影响，适合区域判定或排序，不要用它承诺米级距离。Android 17 的 [`ScanManager`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanManager.java) 与 [`ScanThrottler`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_scan/ScanThrottler.kt) 会根据 UID 前后台状态和屏幕状态调整普通扫描的有效档位，例如限制到 `SCAN_MODE_LOW_POWER` 等低占空比模式；扫描配额节流还受特性开关控制。排查时要区分应用请求档位与实际生效档位。使用 `ScanCallback`（扫描回调对象） 的无过滤扫描会在熄屏时暂停，进程结束后就收不到回调了。需要在进程未运行时接收匹配结果，可使用带过滤条件的 [`PendingIntent` 扫描](https://developer.android.com/develop/connectivity/bluetooth/ble/background)。
+
+  所有扫描都要设置结束条件，并按注册方式停止：回调扫描用原 `ScanCallback` 调用 `stopScan(callback)`；`PendingIntent` 扫描用启动时的凭据调用 `stopScan(callbackIntent)`，这个重载自 API 26 提供。停止前不要用 `FLAG_CANCEL_CURRENT` 重建 `PendingIntent`，否则停止可能无效。目标版本为 31 及以上时，开始和停止扫描都需要 `BLUETOOTH_SCAN`；用扫描结果推导位置还需 `ACCESS_FINE_LOCATION`，不能声明 `neverForLocation` 来省略它。重载和权限条件见 [`BluetoothLeScanner`](https://developer.android.com/reference/android/bluetooth/le/BluetoothLeScanner)。
 
 门店场景我们可以先用地理围栏缩小候选区域，再在用户进入相关功能或满足后台条件时启动有界 RTT 或 BLE 会话。每个测量会话都要记录能力检查、权限、开始、停止、样本数、失败和重试，别让定位结束后扫描还在跑。
 
