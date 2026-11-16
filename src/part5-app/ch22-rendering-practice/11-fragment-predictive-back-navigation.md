@@ -4,8 +4,10 @@ chapter: '22.11'
 section: '22.11'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.9 stable; fixed implementation commit as noted
-last_verified: '2026-10-25'
-last_verified_against: AndroidX fragment release branch commit f39ca3510efb2347ebfef231e25a3e804922450d FragmentManager/BackStackRecord/FragmentTransaction + AndroidX Fragment 1.9.1 + Navigation Compose 2.9.8 fixed sources; current Navigation 2 2.10.2 / Navigation 3 1.2.0 + ComposeView/Compose in Views + AsyncLayoutInflater 1.1.0 + Perfetto FrameTimeline Android 12+ docs
+last_verified: '2026-11-16'
+last_source_verified_at: '2026-11-16'
+last_idle_audit_at: '2026-11-16'
+last_verified_against: AndroidX fragment release branch commit f39ca3510efb2347ebfef231e25a3e804922450d FragmentManager/BackStackRecord/FragmentTransaction + AndroidX Fragment 1.9.1 + Navigation Compose 2.9.8 fixed sources; Navigation 2 2.10.2 / Navigation 3 1.2.1 release notes checked 2026-11-16 + Compose UI 1.12.0 / AsyncLayoutInflater 1.1.0 / Transition 1.7.0 fixed sources + Hilt 1.4.0 AAR metadata + Perfetto FrameTimeline Android 12+ and SurfaceView limitations
 confidence: medium-high
 consolidated_from:
 - src/part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md
@@ -345,7 +347,7 @@ sequenceDiagram
 
 读 FrameTimeline 时，App `SurfaceFrame` 和 SF `DisplayFrame` 要分开看。Expected Timeline 表示调度器给出的预计时间预算，Actual Timeline 记录该帧经历的时间。App Actual `SurfaceFrame` 的结束时刻取 buffer post（应用把帧交给 SurfaceFlinger） 与 GPU 完成时刻中的较晚者；后续的合成和上屏要由 SF `DisplayFrame` 覆盖。App Actual 超期，能说明应用未按 deadline 交帧；最终显示时间仍要结合 SF Actual、目标 layer 的 latch 和 present fence 判断。
 
-这个观察点只适用于 Android 12 / API 31+。Android 10/11 设备没有 `android.surfaceflinger.frametimeline` 数据源，排查时要退回 `Choreographer#doFrame`、`performTraversals`、RenderThread 切片和业务 trace。
+这个观察点只适用于 Android 12 / API 31+。Android 10/11 设备没有 `android.surfaceflinger.frametimeline` 数据源，排查时要退回 `Choreographer#doFrame`、`performTraversals`、RenderThread 切片和业务 trace。Perfetto 的 [FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline) 还注明 `SurfaceView` 尚不受支持；宿主窗口的帧按时结束，不能证明视频、相机等 `SurfaceView` 内容也按时更新。这类内容需另查生产端提交、目标图层的 buffer、latch 与 present 证据。
 
 排查时应同时看三段：
 
@@ -607,7 +609,7 @@ Fragment 1.7.0+ 支持应用内预测式返回，但连续按进度定位动画�
 
 Fragment 的官方发布说明中多次记录预测式返回取消、快速连续返回、空白页和生命周期状态不一致等修复。所以接入时除了看 API 是否存在，还要固定最低 Fragment / Transition 版本，并把取消回滚列入测试用例。
 
-2026-10-25 复核，稳定版为 Activity 1.13.0、Fragment 1.9.1、Transition 1.7.2、NavigationEvent 1.2.0、Navigation 3 1.2.0。本文 Transition 行为示例固定复核 1.7.0 源码，Navigation Compose 固定复核 2.9.8；最低版本表仅表示功能入口出现，后续修复要另查。Activity 1.12.2 曾修复生命周期回调的 `isEnabled` 问题；Fragment 与 Transition 已进入仅维护阶段。项目升级后应重新验证快速取消、连续返回和生命周期变化。
+2026-10-25 复核，稳定版为 Activity 1.13.0、Fragment 1.9.1、Transition 1.7.2、NavigationEvent 1.2.0、Navigation 3 1.2.0。本文 Transition 行为固定复核 1.7.0 源码，Navigation Compose 固定复核 2.9.8；最低版本表仅表示功能入口出现，后续修复要另查。Activity 1.12.2 曾修复生命周期回调的 `isEnabled` 问题；Fragment 与 Transition 已进入仅维护阶段。项目升级后应重新验证快速取消、连续返回和生命周期变化。
 
 Fragment 页面切换的性能预算可以分成三段：
 
@@ -617,88 +619,23 @@ Fragment 页面切换的性能预算可以分成三段：
 
 `TransitionManager.controlDelayedTransition()` 的用法与普通 `beginDelayedTransition()` 不同：前者返回可以控制进度的对象，适合把 `BackEvent.progress` 映射到 `currentFraction`；后者启动后由时间驱动，不适合由手势直接定位动画进度。
 
-这段代码只展示如何在同一 View 容器内按进度控制 Transition。FragmentManager 已经接管预测式返回事务时，不要为同一事务再创建一层控制器。
+在同一 View 容器内自定义预览时，导航 owner 要分别管理手势是否结束、控制器是否 ready，以及取消后的界面是否已恢复。FragmentManager 已经接管预测式返回事务时，不要为同一事务再创建一层控制器。自定义会话需要处理以下路径：
 
-```kotlin
-@RequiresApi(34)
-@MainThread
-class SingleTransitionBackPreview(
-    container: ViewGroup,
-    private val restoreCurrentState: () -> Unit,
-    showPreviousStateForPreview: () -> Unit,
-    private val commitPreviousState: () -> Unit,
-    private val onSettled: () -> Unit,
-) {
-    private var terminal = false
-    private var settled = false
-    private var latestProgress = 0f
-    private var controller: TransitionSeekController? = null
+- **捕获起止状态**：调用 `controlDelayedTransition(container, transition)` 捕获当前状态；取得非空控制器后，再把容器改成上一页的预览状态。该方法需要 Android 14+，自定义 Transition 也要明确支持按进度控制。设备版本过低、同一容器正在捕获另一个 Transition，或者容器尚未完成布局时，可能返回 `null`；不支持按进度控制的 Transition 则会抛出 `IllegalArgumentException`。
+- **等待与更新进度**：控制器尚未 ready 时，保存最新的有限进度值，并限制到 `0f..1f`；`addOnReadyListener()` 通知后再写入 `currentFraction`。开始收尾后停止写进度，ready 回调也要检查会话是否已结束。
+- **取消与恢复**：调用 `animateToStart { restoreCurrentState() }`，在回调中恢复当前页状态。固定 1.7.0 实现允许尚未 ready 的控制器先记下取消请求，等动画建立后回到起点；只清空控制器引用会漏掉恢复。控制器为 `null` 时直接恢复当前页，不等待动画通知。
+- **完成与降级**：提交轻量的页面语义状态，再调用 `animateToEnd()`；控制器为 `null` 时也要执行返回动作。容器须存活到动画结束；若提交会销毁容器，应把提交安排在动画结束后。状态回调须轻量、可重复调用。
 
-    init {
-        val transition = TransitionSet()
-            .addTransition(Fade(Fade.MODE_OUT))
-            .addTransition(ChangeBounds())
-            .addTransition(Fade(Fade.MODE_IN))
-            .addListener(object : TransitionListenerAdapter() {
-                override fun onTransitionEnd(transition: Transition) {
-                    settle()
-                }
-            })
-        val active = TransitionManager.controlDelayedTransition(container, transition)
-        controller = active
-        if (active != null) {
-            showPreviousStateForPreview()
-            active.addOnReadyListener { ready ->
-                if (!terminal) ready.currentFraction = latestProgress
-            }
-        }
-    }
+传入 Transition 的 `onTransitionEnd()` 不能无条件当作会话结束信号。固定 1.7.0 中，`currentFraction` 抵达 `1f`，或从正值退回 `0f`，都会把播放时间推过动画边界，并可能触发子 Transition 的结束回调；此时手势仍可能继续。取消回弹也可能先触发边界通知，之后才执行 `restoreCurrentState()`。若在第一个结束回调里清空控制器并放行下一次捕获，会提前丢掉当前会话，或让新会话读到尚未恢复的界面。源码依据见 [Transition 1.7.0 sources](https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar) 中的 `SeekController.setCurrentPlayTimeMillis()`、`ensureAnimation()` 与 `TransitionSet.setCurrentPlayTimeMillis()`。
 
-    fun progress(value: Float) {
-        if (terminal) return
-        latestProgress = value.let {
-            if (it.isFinite()) it.coerceIn(0f, 1f) else 0f
-        }
-        controller?.takeIf { it.isReady }?.currentFraction = latestProgress
-    }
-
-    fun cancel() {
-        if (terminal) return
-        terminal = true
-        val active = controller
-        if (active != null) {
-            active.animateToStart { restoreCurrentState() }
-        } else {
-            restoreCurrentState()
-            settle()
-        }
-    }
-
-    fun commit() {
-        if (terminal) return
-        terminal = true
-        commitPreviousState()
-        val active = controller
-        if (active != null) active.animateToEnd() else settle()
-    }
-
-    private fun settle() {
-        if (settled) return
-        settled = true
-        controller = null
-        onSettled()
-    }
-}
-```
-
-`controlDelayedTransition()` 需要 Android 14+，每次动画只能使用一个控制器，自定义 Transition 也要明确支持按进度控制。设备版本过低、同一容器正在捕获另一个 Transition，或者容器尚未完成布局时，该方法可能返回 `null`。这是单次手势预览会话，不是完整的返回分发器：导航 owner 必须独占容器，把本轮开始、进度、取消、完成映射到同一个实例，并在 `onSettled` 之后的安全 UI 时点才允许下一轮捕获；更快的新手势需要由 owner 等待或整轮采用无预览路径。不要用 `endTransitions()` 后立刻同容器重新 `controlDelayedTransition()` 代替串行化：固定 1.7.0 中，旧 pending pre-draw 监听器可能尚未移除。`animateToStart()` 可在尚未 ready 时排队等待，不能仅清空引用。`commitPreviousState()` 只提交当前容器的语义状态，容器须存活到动画结束；若提交会销毁容器，应改为动画结束后提交。View 销毁时 owner 结束过渡、废弃会话并按生命周期忽略迟到回调；示例不实现 owner 的完整调度。状态回调须轻量、可重复调用。
+导航 owner 必须独占容器，将同一次手势的开始、进度、取消和完成关联起来，并区分进度越界通知与收尾完成：前进收尾要跟踪控制器所在根 Transition 的结束，取消收尾还要确认起始状态恢复回调已经执行。确认收尾后，再在安全 UI 时点允许下一轮捕获；更快的新手势需要等待，或整轮采用无预览路径。不要用 `endTransitions()` 后立刻同容器重新 `controlDelayedTransition()` 代替串行化：固定 1.7.0 中，旧 pending pre-draw 监听器可能尚未移除。View 销毁时，owner 要结束过渡、废弃会话，并按生命周期忽略迟到回调。
 
 <!-- gracker-diagram: a242-17-seek-controller-session -->
 ![Transition 单次预览与 owner 串行化边界](../../assets/diagrams/ch22/a242-17-seek-controller-session.png)
 
 图：未ready也必须正确收尾，null降级不能吞返回；owner负责串行化容器预览并在View销毁时清理。
 
-这里要重点排查 `showPreviousStateForPreview()`：一旦它触发新的 Fragment View 创建、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会占满主线程预算。Fragment 1.7+ 已自行控制预测式返回栈动画时，就别再手动创建第二个控制器或额外调用 `popBackStack()`；事务执行时序见本文第一节。
+这里要重点排查“切换到上一页预览状态”这一步：一旦它触发新的 Fragment View 创建、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会占满主线程预算。Fragment 1.7+ 已自行控制预测式返回栈动画时，就别再手动创建第二个控制器或额外调用 `popBackStack()`；事务执行时序见本文第一节。
 
 ### Compose NavigationEvent：把进度状态限制在动画层
 
@@ -849,7 +786,7 @@ Navigation 2 已进入维护模式，仍会收到关键修复。新的纯 Compos
 - Android 17 提供系统输入、预测返回、负责调度帧回调的 `Choreographer`、HWUI、连接窗口缓冲区与 Surface 事务的 BLAST、系统合成器 `SurfaceFlinger`，以及硬件合成器（Hardware Composer，HWC）等宿主能力。
 - 内核源码标签用于解释 CPU 调度和调频观测；`NavController` 的返回栈规则要另查对应库的实现。
 
-Hilt 示例采用 AndroidX Hilt 1.4.0。从 Hilt 1.3.0 起，Compose 的 `hiltViewModel()` 已迁移到 `androidx.hilt:hilt-lifecycle-viewmodel-compose` 依赖和 `androidx.hilt.lifecycle.viewmodel.compose` 包；旧包中的同名函数已经弃用并指向新包。`hilt-lifecycle-viewmodel-compose:1.4.0` 使用 `compileSdk 37`，官方发布说明要求 Compose 场景至少使用 AGP 9.2.0；本次下载的 1.4.0 AAR 元数据实际声明 minAGP=9.1.0、minCompileSdk=37，两份依据不同，工程配置按文档更严格的要求并由完整依赖解析验收；Hilt 1.4.0 还要求 Kotlin Gradle Plugin（KGP）不低于 2.2.0。[Hilt 发布说明](https://developer.android.com/jetpack/androidx/releases/hilt#1.4.0)
+Hilt 示例采用 AndroidX Hilt 1.4.0。从 Hilt 1.3.0 起，Compose 的 `hiltViewModel()` 已迁移到 `androidx.hilt:hilt-lifecycle-viewmodel-compose` 依赖和 `androidx.hilt.lifecycle.viewmodel.compose` 包；旧包中的同名函数已经弃用并指向新包。`hilt-lifecycle-viewmodel-compose:1.4.0` 使用 `compileSdk 37`，官方发布说明要求 Compose 场景至少使用 AGP 9.2.0；1.4.0 AAR 元数据声明 minAGP=9.1.0、minCompileSdk=37，两份依据不同，工程配置按文档更严格的要求并由完整依赖解析验收；Hilt 1.4.0 还要求 Kotlin Gradle Plugin（KGP）不低于 2.2.0。[Hilt 发布说明](https://developer.android.com/jetpack/androidx/releases/hilt#1.4.0)
 
 源码只能说明生命周期、状态与渲染的行为规律，给不出固定的性能收益。耗时和内存差异都要在目标应用上做基准测试。
 
