@@ -15340,6 +15340,129 @@
       "summary": "Hilt 工具链说明含采集过程叙述",
       "type": "editorial-process-prose",
       "updated_at": "2026-11-16T14:46:17.042219+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
+      "close_note": "在业务线程 Surface 入口处补齐硬件 Canvas 全量覆盖和 CPU Producer 连接持续到 Surface 销毁的约束，并链接固定 Android 17 源码与官方 Caution。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261116-180519-0307aef8",
+      "created_at": "2026-11-16T18:14:00.057579+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261116-180519-0307aef8",
+      "details": "业务线程直接写 Surface 只区分 CPU/GPU，未交代 lockHardwareCanvas 每帧必须完整覆盖且不保留 buffer 内容；也未保留官方 Caution：lockCanvas 的 CPU Producer 连接不会随 unlockCanvasAndPost 解除，不能随后把同一 Surface 交给 GLES 或视频解码器。省略这两条约束容易导致错误的局部更新或 Producer 切换。",
+      "id": "finding-22f0584b3281",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-16-180519-20261116-180519-0307aef8-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java#606",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp#3020",
+        "https://source.android.com/docs/core/graphics/arch-sh"
+      ],
+      "status": "fixed",
+      "summary": "Surface Canvas 缺少硬件全量覆盖与 CPU 生产连接生命周期边界",
+      "type": "api-contract",
+      "updated_at": "2026-11-16T18:18:24.794855+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
+      "close_note": "补齐 UI 截图的 PixelCopy 建议、小范围显式 Bitmap Canvas 的使用方式和硬件专属内容限制；适用场景列表同步保留软件 Canvas 可表达内容这一条件。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261116-180519-0307aef8",
+      "created_at": "2026-11-16T18:14:00.121122+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261116-180519-0307aef8",
+      "details": "正文只说 buildDrawingCache 自 API 28 弃用，仍把 Bitmap 快照作为适用场景，未保留 View 文档的 PixelCopy 截图建议，以及软件 View.draw 对 HARDWARE Bitmap、实时阴影和 outline clipping 的兼容性警告。",
+      "id": "finding-793bd3547595",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-16-180519-20261116-180519-0307aef8-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/view/View#buildDrawingCache(boolean)",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java#24588"
+      ],
+      "status": "fixed",
+      "summary": "drawing cache 弃用说明缺少快照迁移及硬件专属内容限制",
+      "type": "deprecated-api-migration",
+      "updated_at": "2026-11-16T18:18:24.857479+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
+      "close_note": "在 Java Transaction#setBuffer 段落列明两个必需 usage 位，并保留 usage 不保证 HWC DEVICE composition 的原有边界。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261116-180519-0307aef8",
+      "created_at": "2026-11-16T18:14:00.184792+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261116-180519-0307aef8",
+      "details": "直接提交段落只解释 usage 不保证 DEVICE composition，未说明固定 Android 17 Java setBuffer 文档明确要求同时分配 USAGE_COMPOSER_OVERLAY 和 USAGE_GPU_SAMPLED_IMAGE，以支持硬件与 GPU 两种合成路径。",
+      "id": "finding-73f065e65f6c",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-16-180519-20261116-180519-0307aef8-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java#4947"
+      ],
+      "status": "fixed",
+      "summary": "Java Transaction setBuffer 未列明两个必需的 HardwareBuffer usage 位",
+      "type": "buffer-usage-contract",
+      "updated_at": "2026-11-16T18:18:24.918828+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
+      "close_note": "将请求状态及生命周期、父子层级构建、snapshot 生成分别对应到 LayerLifecycleManager、LayerHierarchyBuilder、LayerSnapshotBuilder。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261116-180519-0307aef8",
+      "created_at": "2026-11-16T18:14:00.250927+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261116-180519-0307aef8",
+      "details": "正文写 LayerLifecycleManager 管理生命周期和 hierarchy，遗漏实际构建父子层级的 LayerHierarchyBuilder。固定 r1 updateLayerSnapshots 明确依次调用 LifecycleManager.applyTransactions、HierarchyBuilder.update 和 SnapshotBuilder.update；错误分工会误导源码定位。",
+      "id": "finding-e6c47fa71779",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-16-180519-20261116-180519-0307aef8-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp#2824"
+      ],
+      "status": "fixed",
+      "summary": "FrontEnd 对象模型把层级构建职责归给 LayerLifecycleManager",
+      "type": "source-model-attribution",
+      "updated_at": "2026-11-16T18:18:24.980548+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
+      "close_note": "明确 API 34 起 Z-above 调制 Surface、Z-below 调制 hole-punch，并保留宿主下方多个 SurfaceView 重叠时可能无法按预期混合的限制。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261116-180519-0307aef8",
+      "created_at": "2026-11-16T18:14:00.318343+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261116-180519-0307aef8",
+      "details": "正文只提 API 34 起 alpha 规则区分 Z-above/Z-below，没有写清 Z-below 的 alpha 实际作用于 hole-punch，也没有保留 SurfaceView 类注释关于重叠 SurfaceView 可能无法正确混合的警告。",
+      "id": "finding-b31886414efe",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-16-180519-20261116-180519-0307aef8-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#133"
+      ],
+      "status": "fixed",
+      "summary": "SurfaceView alpha 说明缺少宿主下方重叠时的混合限制",
+      "type": "documented-limitation",
+      "updated_at": "2026-11-16T18:18:25.042686+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
+      "close_note": "在数据流与控制流对象清单处补齐 Surface 对 Consumer 的弱引用边界，明确仍需维持 SurfaceTexture 等 Consumer 的有效生命周期，并链接固定 r1 类注释。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261116-180519-0307aef8",
+      "created_at": "2026-11-16T18:23:31.475776+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261116-180519-0307aef8",
+      "details": "对象模型解释 Surface 由 Consumer 创建并交给 Producer，但遗漏固定 r1 Surface 类注释的 Note：Surface 只起关联 Consumer 弱引用的作用，单独持有 Surface 不能防止 Consumer 回收。这会影响 SurfaceTexture 生命周期和黑屏定位。",
+      "id": "finding-85cd5b76e73b",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-16-180519-20261116-180519-0307aef8-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java#51"
+      ],
+      "status": "fixed",
+      "summary": "Surface 生命周期说明缺少 Consumer 弱引用边界",
+      "type": "consumer-lifecycle",
+      "updated_at": "2026-11-16T18:24:00.610480+08:00"
     }
   ],
   "schema_version": 1
