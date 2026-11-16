@@ -6653,7 +6653,7 @@
       "summary": "从 View.draw 到屏幕像素的六层全景：应用 UI 层（View/Window）、绘制接口层（Canvas/RenderNode）、渲染引擎层（Skia/GLES/Vulkan）、缓冲通道层（Surface/BufferQueue/GraphicBuffer/Fence）、合成协调层（WindowManager/SurfaceControl/SurfaceFlinger/Layer）、硬件显示层（Gralloc/GPU/HWC/Display）。讲清数据流（指令→DisplayList→RenderThread 回放→Buffer→合成→上屏）与控制流/数据流分离，只讲整体不深入实现。",
       "chapter": "ch02",
       "processed_at": "2026-11-16T06:20:19.676965+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 15,
       "target_path": "src/part2-performance/ch13-rendering-pipelines/02-android-software-offscreen-mixed-rendering.md",
       "route_confidence": 37,
@@ -6667,7 +6667,10 @@
         "graphicbuffer",
         "fence"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "status": "body-applied",
+      "applied_at": "2026-11-16T17:20:49+08:00",
+      "applied_run_id": "20261116-171520-fa0f123b"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-16-76704042-Android 图形系统全景.md",
