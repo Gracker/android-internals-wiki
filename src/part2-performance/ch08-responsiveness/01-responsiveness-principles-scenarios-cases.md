@@ -2,8 +2,8 @@
 title: 响应速度原理、场景与案例
 chapter: '8.1'
 section: '8.1'
-status: finalized
-last_body_apply_at: '2026-11-13T10:23:11+08:00'
+status: ready-for-review
+last_body_apply_at: '2026-11-17T09:20:11+08:00'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
   - responsiveness
@@ -54,6 +54,14 @@ sources:
   path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
 - type: blog
   path: 技术文章/source/juejin-android/2026-11-13-76741036-主线程明明是空闲的，为什么仍然 ANR？.md
+- type: blog
+  path: 技术文章/source/juejin-android/2026-11-17-76741036-主线程明明是空闲的，为什么仍然 ANR？.md
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc
+- type: aosp
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-stats.rst
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_MessageQueue.cpp
 - type: aosp
@@ -442,6 +450,10 @@ Android 17 的 debuggable 应用可用 `adb shell am compat enable ENFORCE_THREA
 | Reason 明确为无焦点窗口，Java 栈停在 `nativePollOnce` | 直接触发是没有及时等到焦点窗口；同期高 Load 仍只是环境线索 | 同一时间窗的窗口建立、焦点切换和线程调度记录。[来源: 上述材料，案例一] |
 | 主线程在 native poll，但 ANR Reason 丢失 | 只能描述采样时状态；无法据此确定 ANR 类型或断言主线程已经恢复 | 完整 Reason、触发与转储时间，以及该类 ANR 负责线程的活动记录。[来源: 上述材料，案例二] |
 | 主线程栈顶出现 Matrix `LooperMonitor.dispatch()` | 只看到监控入口，不能据此把 Matrix 定为根因 | 监控回调自身的耗时、连续采样或具体锁依赖，再核对是否覆盖超时区间。[来源: 上述材料，案例三] |
+
+线程头与 GC 摘要还要区分累计量和超时区间。`schedstat` 的三个值分别是线程累计 CPU 运行时间、runqueue 等待时间和运行的时间片数，前两项单位为纳秒。ART 的 `Total GC count`、`Total mutator paused time` 和 `Total blocking GC time` 也是累计统计；单份转储不能说明这些累计值有多少发生在这次超时区间内。[来源: 技术文章/source/juejin-android/2026-11-17-76741036-主线程明明是空闲的，为什么仍然 ANR？.md，案例一、二；已验证: AOSP `android-17.0.0_r1`，`art/runtime/thread.cc`、`art/runtime/gc/heap.cc`；内核 `android17-6.18-2026-06_r6`，`Documentation/scheduler/sched-stats.rst`]
+
+补采时，在同一进程/线程实例、统计未重置的前提下比较区间两端的差值，再与该区间的调度和 GC 轨迹对齐。r1 的 `Heap::ResetGcPerformanceInfo()` 会重置 GC 性能统计；线程转储读取 `schedstat` 失败或内容为空时，会填入 `0 0 0`。因此，跨重置的差值不可直接比较，全零字段也不能独立证明线程没有等待。[已验证: AOSP `android-17.0.0_r1`，`art/runtime/gc/heap.cc` 的 `ResetGcPerformanceInfo()`、`art/runtime/thread.cc` 的调度统计读取与回填；内核基线 `Documentation/scheduler/sched-stats.rst` 的计数器差值说明]
 
 监控入口容易被误认成耗时位置。r1 的 `Looper.loopOnce()` 在 `Handler.dispatchMessage()` 前后调用配置的 Printer；入口帧本身没有持续时间信息。要判断监控是否拖慢消息，需把监控回调自身耗时与业务消息耗时分开，不把包裹业务的公共帧当成业务耗时证据。[已验证: AOSP `android-17.0.0_r1`，`frameworks/base/core/java/android/os/Looper.java` 的 `loopOnce()`；来源: 上述材料，案例三]
 
@@ -1387,6 +1399,9 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 - [`android_os_MessageQueue.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_MessageQueue.cpp)：`nativePollOnce()` 到 native Looper 的入口。
 - [`Looper.cpp`](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libutils/Looper.cpp)：epoll 等待与文件描述符回调。
 - [`Looper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Looper.java)：消息分发前后的 Printer 调用。
+- [`thread.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc)：线程转储中的 `schedstat` 读取与失败回填。
+- [`heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)：GC 累计统计与 `ResetGcPerformanceInfo()`。
+- [内核基线的 Scheduler Statistics](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-stats.rst)：调度计数器的字段与差值读取方法。
 
 #### 官方文档
 
