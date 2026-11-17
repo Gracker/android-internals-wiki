@@ -6818,10 +6818,10 @@
       "summary": "一线 Android 开发者自述 AI 重排工作流：需求描述→Agent 拆任务改工程→Gradle 构建→Android CLI 装设备→读布局验证→人 Review；关注 Android CLI 统一命令入口与官方 Android Skills 仓库，项目约定沉淀进 AGENTS.md；坚持深挖 Android 基本功，卡顿、ANR、Flow 重复收集仍需人来查。",
       "chapter": "ch07",
       "processed_at": "2026-11-18T06:20:19.485114+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "quarantined-topic-mismatch",
       "score": 17,
       "target_path": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "route_confidence": 19,
+      "route_confidence": 0,
       "route_terms": [
         "agent",
         "gradle",
@@ -6829,7 +6829,31 @@
         "skills",
         "flow"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-topic-mismatch",
+      "status": "quarantined",
+      "previous_action": "indexed-only-chapter-freeze",
+      "previous_route_status": "existing-chapter-routed",
+      "previous_route_confidence": 19,
+      "quarantined_at": "2026-11-18T07:17:26.413698+08:00",
+      "quarantined_run_id": "20261118-071520-56be2909",
+      "quarantine_reason": "指定 URL 实际对应《Android 版 MCP 正式登场：AppFunctions》，与索引中 Android CLI、Gradle、Android Skills、AGENTS.md 工作流摘要不符。原文讨论应用通过 AppFunctions 暴露功能，没有提供本章自动化性能测试或主机 CLI 编排的新证据。保留原 URL、摘要和 target_path 供追溯，不猜测正确原文或替代章节。",
+      "routing_finding": {
+        "id": "finding-1a8960cc75da",
+        "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
+        "scope": "source-index-item",
+        "severity": "P2",
+        "type": "routing-mismatch",
+        "summary": "AppFunctions 原文与 CLI 工作流摘要不符，误路由到自动化性能测试章节（7674818950488932398）",
+        "details": "已通读指定原文和目标章节。opencli 抓取的原文第 9–37、91–125、151–219 行讨论 AppFunctions、注解、元数据、Service 与调用验证；全文未出现 Android CLI、Gradle、Android Skills 或 AGENTS.md。独立 HTTP 请求返回 200，最终 URL 未变，HTML 标题同样为 AppFunctions。目标章节第 566–824 行讨论主机 CLI、设备复现、Journeys、skills 与性能证据，不能仅凭 agent 一词接入该材料。隔离的是来源记录，不是章节缺陷；章节正文、frontmatter、状态与核验日期保持原样。metadata/review-findings.json 不在本次写入白名单内，稳定路由 finding 保存在本条记录和运行证据中。重新入队前须核对 URL 与摘要对应关系，并重新确认显式目标。",
+        "status": "open",
+        "created_by": "aiw-body-apply",
+        "created_run_id": "20261118-071520-56be2909",
+        "created_at": "2026-11-18T07:17:26.413698+08:00",
+        "source_paths": [
+          "https://juejin.cn/post/7674818950488932398"
+        ],
+        "updated_at": "2026-11-18T07:17:26.413698+08:00"
+      }
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
