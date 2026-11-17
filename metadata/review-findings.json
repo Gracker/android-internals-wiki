@@ -15524,6 +15524,26 @@
       "summary": "后台定位频率结论遗漏 FLP 批处理历史例外",
       "type": "missing-boundary",
       "updated_at": "2026-11-16T22:45:40.219140+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "close_note": "已在 Perfetto 排查步骤后补充未呈现 buffer 积压、平滑高延迟与 dequeue 阻塞机制，并给出 jank_type、present_type、on_time_finish、layer_name 及交互/图层复核入口。逐项对照 FrameTimeline 官方 BufferStuffing、Color codes、SQL 原文；新增字段查询在官方历史输入 trace 上实际执行成功。该 trace 没有 Buffer Stuffing 样本，未声称已在设备复现此状态；Android12+ 与 SurfaceView 覆盖限制保持不变。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261117-100519-44788179",
+      "created_at": "2026-11-17T10:12:42.041488+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261117-100519-44788179",
+      "details": "正文已经区分应用按时结束与最终呈现，但未解释尚未呈现的 buffer 积压会在帧率平滑、应用按时完成时继续增加输入反馈延迟。Perfetto FrameTimeline 的 Color codes、BufferStuffing 和 SQL 小节明确区分此状态，并提供 jank_type、present_type、on_time_finish、layer_name。应在现有 Perfetto 排查步骤旁补充机制和复核入口，不将低帧执行时长或稳定帧率等同于低时延。",
+      "id": "finding-0b015a53a0b1",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-17-100519-20261117-100519-44788179-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "status": "fixed",
+      "summary": "响应排查缺少 Buffer Stuffing 的平滑高延迟状态与观察入口",
+      "type": "input-latency-diagnostic-coverage",
+      "updated_at": "2026-11-17T10:22:55.794645+08:00"
     }
   ],
   "schema_version": 1
