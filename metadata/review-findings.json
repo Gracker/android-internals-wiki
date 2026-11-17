@@ -15527,7 +15527,7 @@
     },
     {
       "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
-      "close_note": "已在 Perfetto 排查步骤后补充未呈现 buffer 积压、平滑高延迟与 dequeue 阻塞机制，并给出 jank_type、present_type、on_time_finish、layer_name 及交互/图层复核入口。逐项对照 FrameTimeline 官方 BufferStuffing、Color codes、SQL 原文；新增字段查询在官方历史输入 trace 上实际执行成功。该 trace 没有 Buffer Stuffing 样本，未声称已在设备复现此状态；Android12+ 与 SurfaceView 覆盖限制保持不变。",
+      "close_note": "补充段落已对照 FrameTimeline 官方 BufferStuffing、Color codes 和 SQL 原文核验：未呈现 buffer 积压可带来平滑高延迟和 dequeue 阻塞，排查保留 jank_type、present_type、on_time_finish、layer_name 及交互/图层确认入口。新增字段查询实际执行成功；目标 metadata、SUMMARY links 与 git diff --check 均通过。官方历史输入 trace 没有 Buffer Stuffing 样本，本结论不宣称已在 Android 设备上复现该状态；Android12+ 与 SurfaceView 覆盖限制保持不变。",
       "closed_by": "aiw-review-finalize-apply",
       "closed_run_id": "20261117-100519-44788179",
       "created_at": "2026-11-17T10:12:42.041488+08:00",
@@ -15540,10 +15540,90 @@
       "source_paths": [
         "https://perfetto.dev/docs/data-sources/frametimeline"
       ],
-      "status": "fixed",
+      "status": "verified",
       "summary": "响应排查缺少 Buffer Stuffing 的平滑高延迟状态与观察入口",
       "type": "input-latency-diagnostic-coverage",
-      "updated_at": "2026-11-17T10:22:55.794645+08:00"
+      "updated_at": "2026-11-17T10:26:35.883035+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/16-package-distribution-install-verification.md",
+      "close_note": "已按 2026-11-10 官方英文 FAQ 将两处政策最低版本统一为 Android 8 / API 26，并区分政策版本与公开结果 API 36.1。四国、参与商店与旁加载/ADB 边界复核未变。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "created_at": "2026-11-17T10:40:44.538895+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "details": "官方英文 FAQ 的 Android 版本条目于 2026-11-10 更新为 Android 8 / API 26；正文表格和说明仍为 Android 7，且政策快照停在 2026-09-30。",
+      "id": "finding-a599ee148467",
+      "log_path": "logs/audit/2026-11-17-20261117-103519-idle-audit-2ae06b76-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/developer-verification/guides/faq?hl=en"
+      ],
+      "status": "verified",
+      "summary": "开发者验证政策仍将最低适用版本写为 Android 7",
+      "type": "stale-policy-boundary",
+      "updated_at": "2026-11-17T10:43:23.833176+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/16-package-distribution-install-verification.md",
+      "close_note": "已恢复为 Android Studio（IDE，集成开发环境），保留侧载括注与渠道相关编译时机限定；官方 Baseline Profiles 文档与本地断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "created_at": "2026-11-17T10:40:44.604879+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "details": "正文 ID（userId）E 将开发工具与用户标识混淆；官方 Baseline Profiles 文档明确描述 Android Studio 本地安装非调试构建。",
+      "id": "finding-09e34520e363",
+      "log_path": "logs/audit/2026-11-17-20261117-103519-idle-audit-2ae06b76-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview?hl=en"
+      ],
+      "status": "verified",
+      "summary": "Baseline Profile 安装渠道中的 IDE 被错误展开为 userId",
+      "type": "terminology-corruption",
+      "updated_at": "2026-11-17T10:43:23.896186+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/16-package-distribution-install-verification.md",
+      "close_note": "已按 FAQ 多密钥登记说明及固定 tag 升级签名检查，改为分别核验升级关系和包名密钥登记，不再宣称重签必然同时失效。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "created_at": "2026-11-17T10:40:44.669857+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "details": "官方 FAQ 允许一个包名登记多个签名密钥；升级兼容性须另按已有安装的签名及轮换关系检查，不能直接从渠道重签推出登记必然失效。",
+      "id": "finding-b154f453180b",
+      "log_path": "logs/audit/2026-11-17-20261117-103519-idle-audit-2ae06b76-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/developer-verification/guides/faq?hl=en"
+      ],
+      "status": "verified",
+      "summary": "渠道重签被笼统断言同时破坏升级与包名登记",
+      "type": "overstated-signing-boundary",
+      "updated_at": "2026-11-17T10:43:23.958718+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/16-package-distribution-install-verification.md",
+      "close_note": "已对照 StagingManager.java 212-240、425-443 行同步修正表格、失败处理正文及原因文件写入条件；APK-only 同样调用 abortCheckpoint，是否放弃变更取决于 supportsCheckpoint && needsCheckpoint。源码断言、元数据、SUMMARY、diff 检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "created_at": "2026-11-17T10:40:44.738099+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261117-103519-idle-audit-2ae06b76",
+      "details": "android-17.0.0_r1 StagingManager.onInstallationFailure 在检查 containsApexSession 前调用 abortCheckpoint；supportsCheckpoint && needsCheckpoint 时，仅 APK 也会进入放弃文件系统变更的分支。原表格与正文过度隔离失败范围，失败原因文件的条件也缺失。",
+      "id": "finding-cc240768d727",
+      "log_path": "logs/audit/2026-11-17-20261117-103519-idle-audit-2ae06b76-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/StagingManager.java#425"
+      ],
+      "status": "verified",
+      "summary": "仅 APK 的 staged 恢复失败被错误描述为通常只影响当前会话",
+      "type": "checkpoint-failure-scope",
+      "updated_at": "2026-11-17T10:43:24.020743+08:00"
     }
   ],
   "schema_version": 1
