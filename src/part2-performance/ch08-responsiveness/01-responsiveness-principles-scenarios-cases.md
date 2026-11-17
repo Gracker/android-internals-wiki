@@ -2,7 +2,7 @@
 title: 响应速度原理、场景与案例
 chapter: '8.1'
 section: '8.1'
-status: ready-for-review
+status: finalized
 last_body_apply_at: '2026-11-17T09:20:11+08:00'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
@@ -118,12 +118,12 @@ sources:
   path: https://blog.duolingo.com/android-app-performance/
 - type: reference
   path: https://web.dev/articles/inp
-last_verified: '2026-11-13'
-last_source_verified_at: '2026-11-13T10:23:11+08:00'
-last_review_finalize_at: '2026-11-13T10:23:11+08:00'
+last_verified: '2026-11-17'
+last_source_verified_at: '2026-11-17T10:22:55+08:00'
+last_review_finalize_at: '2026-11-17T10:22:55+08:00'
 last_deep_review_at: '2026-11-13T08:42:16+08:00'
-last_verified_against: AOSP android-17.0.0_r1 InputDispatcher/Looper/ViewRootImpl/View/MotionPredictor/JNI and external/perfetto android.input; Android Developers TTID/TTFD/Baseline Profiles/Display/Vitals/ANR/MessageQueue docs; Perfetto FrameTimeline; Reddit/Gmail Wear OS/Disney+/Duolingo primary case reports
-verification_scope_note: 已核对输入时延 SQL、TTFD 报告与 Profile 构建边界、ANR、触控笔预测和平台迁移说明；SQL 在官方历史测试 trace 上执行，搜索 Flow 通过 JVM 虚拟时间测试，未在 Android 设备上复现实验，历史案例比例不代表当前平台收益。
+last_verified_against: AOSP android-17.0.0_r1 InputDispatcher/Looper/ViewRootImpl/View/MotionPredictor/JNI, ART thread/heap dumps and external/perfetto android.input; android17-6.18-2026-06_r6 schedstat; Android Developers TTID/TTFD/Baseline Profiles/Display/Vitals/ANR/MessageQueue docs; Perfetto FrameTimeline including Buffer Stuffing; Reddit/Gmail Wear OS/Disney+/Duolingo primary case reports
+verification_scope_note: 已核对输入时延 SQL、TTFD 报告与 Profile 构建边界、ANR 累计统计、FrameTimeline 缓冲积压、触控笔预测和平台迁移说明；SQL 在官方历史测试 trace 上执行，搜索 Flow 通过 JVM 虚拟时间测试，未在 Android 设备上复现实验，历史案例比例不代表当前平台收益。
 last_idle_audit_at: '2026-10-12T10:35:33+08:00'
 related_chapters:
 - '2.3'
@@ -395,6 +395,8 @@ Perfetto UI 中可按以下顺序核对：
 3. 展开应用 FrameTimeline 的 expected / actual 轨道，确认关联的 frame id 和 jank type。
 4. 查看 `Choreographer#doFrame`、`performTraversals`、RenderThread `DrawFrame`、GPU 工作与 fence。
 5. 延伸到 SurfaceFlinger 和 HWC，确认应用 buffer 是否被该显示帧采用。
+
+画面平滑但输入反馈仍慢时，还要检查 `Buffer Stuffing`。FrameTimeline 用它描述应用持续提交新帧、尚未呈现的 buffer 在队列中积压的状态；这些 buffer 依次呈现，会增加反馈延迟，可用 buffer 耗尽后还可能出现 dequeue 阻塞。因此，应用 `on_time_finish = 1` 或渲染 CPU 耗时很短，都不能排除这类延迟。先结合 `jank_type`、`present_type` 和 `on_time_finish` 找到候选，再按 `layer_name` 对齐 buffer 排队与呈现记录，确认积压是否落在本次交互路径上。[来源: Perfetto FrameTimeline 的 BufferStuffing、Color codes 和 SQL 小节]
 
 没有 input-to-frame 关联时，可以根据事件时间、业务 `Trace.beginSection()` 标记和首个视觉变化帧进行人工对齐，同时在结论中注明这是“推测关联”。两个事件时间接近，只说明时序相邻；查询给出候选关系后，仍需用事件身份、业务阶段、窗口/图层和采用的 buffer 确认是否属于同一次交互。
 
