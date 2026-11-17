@@ -4,8 +4,9 @@ chapter: '1.16'
 section: '1.16'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-02'
-last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android Developers docs checked 2026-10-02, including Developer Verification FAQ updated 2026-09-30
+last_verified: '2026-11-17'
+last_verified_against: AOSP android-17.0.0_r1 (sampled install, developer verification, staged recovery and ART sources); Android Developers and AOSP docs checked 2026-11-17, including Developer Verification FAQ version boundary updated 2026-11-10
+last_source_verified_at: '2026-11-17T10:43:24+08:00'
 confidence: high
 sources:
 - type: aosp
@@ -162,7 +163,7 @@ related_chapters:
 - '24.1'
 last_body_apply_at: '2026-08-06T11:15:29+08:00'
 last_review_finalize_at: '2026-08-06T12:07:15+08:00'
-last_idle_audit_at: '2026-10-02T10:38:26+08:00'
+last_idle_audit_at: '2026-11-17T10:43:24+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/1.67-android17-packagemanager-architecture-performance.md
@@ -370,7 +371,7 @@ IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行
 
 Baseline Profile 通常位于 APK 的 `assets/dexopt/baseline.prof`。安装渠道可以把 Profile 写入 `base.dm` 这类 DEX 元数据文件（例如 `base.dm`）并随 APK 交付；使用 `ProfileInstaller` 的应用也可以在运行后把 Profile 写到 ART 能读取的位置，再等待后台 dexopt。
 
-“APK 带了 Baseline Profile，安装按钮结束前就一定完成 AOT”这个说法要看渠道：Google Play、ADB、ID（`userId`）E、绕过商店直接安装的本地侧载（sideload，即绕过应用商店直接安装），以及 OEM 构建，可以采用不同调度时机。判断时我们检查设备上的 ART 状态和编译原因。
+“APK 带了 Baseline Profile，安装按钮结束前就一定完成 AOT”这个说法要看渠道：Google Play、ADB、Android Studio（IDE，集成开发环境）、绕过商店直接安装的本地侧载（sideload，即绕过应用商店直接安装），以及 OEM 构建，可以采用不同调度时机。判断时我们检查设备上的 ART 状态和编译原因。
 
 Startup Profile 容易和设备端编译混淆。它作用于构建期，影响 R8/D8 怎样把启动相关类和方法排布到 DEX 中，以减少启动时的缺页异常（page fault）和随机读取；设备上并没有一个名叫“Startup Profile 编译”的 PMS 阶段。
 
@@ -606,7 +607,7 @@ APK 是否损坏、升级签名是否匹配、安装器是否有权限、用户�
 
 - 平台源码：AOSP `android-17.0.0_r1`。
 - 平台接口：Android 17 / API 37；相关公开接口最早标记为 Android 16.1 / API 36.1。
-- 产品政策：Android Developer Verification 官方指南、FAQ 与上线博客截至 2026-09-30 的公开说法。
+- 产品政策：Android Developer Verification 官方指南与 FAQ 核对至 2026-11-17；FAQ 的最低 Android 版本条目更新于 2026-11-10。
 
 政策会继续变化，源码标签不会。工程实现应把两者分开管理。
 
@@ -614,11 +615,11 @@ APK 是否损坏、升级签名是否匹配、安装器是否有权限、用户�
 
 | 层次 | 解决的问题 | 载体 | 版本边界 |
 |---|---|---|---|
-| Google 的开发者验证政策 | 哪些设备、区域、渠道和用户路径需要验证 | Android Developer Verifier、Google Play services、开发者管理中心 | 官方称覆盖 Android 7 及以上、经 Google 认证的 Android 设备；分阶段启用 |
+| Google 的开发者验证政策 | 哪些设备、区域、渠道和用户路径需要验证 | Android Developer Verifier、Google Play services、开发者管理中心 | FAQ 当前写明覆盖 Android 8 / API 26 及以上、经 Google 认证的 Android 设备；分阶段启用 |
 | Android 平台机制 | 安装会话如何请求验证、等待结果、触发用户动作并回传错误 | `PackageInstallerSession`、`DeveloperVerifierController`、`PackageInstaller` API | 以 `android-17.0.0_r1` 为源码基准；公开结果 API 自 36.1 提供 |
 | APK 与安装信任链 | APK 是否可解析、签名是否有效、升级证书是否兼容、权限与设备策略是否允许 | APK Signature Scheme、PMS、PackageInstaller、DPM、旧版包验证服务 | 由各自的平台版本和策略决定 |
 
-AOSP 提供了开发者验证服务的接入框架，Google 的身份数据库和判定逻辑并没有随 `frameworks/base` 开源。下文用 verifier 指代设备指定的这项验证服务。在 Google 认证设备上，官方把 Android Developer Verifier 描述为一项新的 Google 系统服务，并说明 Android 7 及以上设备通过 Google Play services 接收相关更新。
+AOSP 提供了开发者验证服务的接入框架，Google 的身份数据库和判定逻辑并没有随 `frameworks/base` 开源。下文用 verifier 指代设备指定的这项验证服务。在 Google 认证设备上，官方把 Android Developer Verifier 描述为一项新的 Google 系统服务；FAQ 当前写明，要求适用于 Android 8 / API 26 及以上设备，相关更新通过 Google Play services 分发。这个政策下限与公开结果 API 的 36.1 下限不同，旧版设备收到服务更新后，也不能据此使用新平台的 SDK 接口。
 
 所以 AOSP 构建里有这些类，离自动执行 Google 的政策还差配置这一步：`PackageInstallerService` 在 Android 17 的默认策略是 `DEVELOPER_VERIFICATION_POLICY_NONE`，设备没有配置 verifier 或功能开关未启用时，安装会话会直接跳过验证。
 
@@ -701,7 +702,7 @@ FAQ 在 2026-07-15 明确补充：
 
 一个 APK 的 v2/v3/v4 签名有效，说明的是 APK 由对应密钥签发且内容未被篡改；开发者有没有完成身份验证、包名有没有登记到对应账号，要由 Developer Verification 这一层回答。
 
-发版资产至少要同时维护包名、当前与历史签名证书、验证账号与状态，以及各渠道最终交付 APK 的证书指纹。渠道重签会同时破坏升级兼容性和包名登记证明。
+发版资产至少要同时维护包名、当前与历史签名证书、验证账号与状态，以及各渠道最终交付 APK 的证书指纹。官方 FAQ 允许为同一个包名添加并验证多个签名密钥。渠道重签后，要分别核对新证书是否满足已有安装的升级关系，以及是否已登记到该包名；这两项检查不能互相替代。
 
 ### 4. Android 17 对普通安装器公开了什么
 
@@ -1285,7 +1286,7 @@ Developer Verification 位于安装会话的通用验证路径中，发生在分
 
 | 类型 | 重启前 | 重启后 | 失败影响 |
 |---|---|---|---|
-| 仅 APK 的分阶段安装 | 完成通用验证与分阶段安装冲突检查 | `installApksInSession()` 进入普通 APK 安装事务 | 通常将当前会话标记为失败 |
+| 仅 APK 的分阶段安装 | 完成通用验证与分阶段安装冲突检查 | `installApksInSession()` 进入普通 APK 安装事务 | 标记会话失败；支持且仍需 checkpoint 时，同样会请求放弃文件系统变更 |
 | 仅 APEX 的分阶段安装 | 额外提交给 `apexd` 并验证 APEX | APEX 已在开机早期激活；随后完成状态检查 | 可能回退已激活的 APEX、放弃 checkpoint 并重启 |
 | APEX 与 APK 混合安装 | APEX 与所有子会话作为一批验证 | 先确认 APEX 激活状态，再安装 APK 子会话 | APEX 失败会传播到同批及其他受影响的分阶段安装会话 |
 | 多包 APK 安装 | 父会话管理多个子会话的一致提交 | 子会话按同一父会话的语义安装 | 任一子会话失败，不能把父会话视为部分成功 |
@@ -1307,11 +1308,13 @@ Developer Verification 位于安装会话的通用验证路径中，发生在分
 | `abortCommittedSession()` | 放弃已经提交但尚未重启的安装会话，并确保相关 APEX 会话被中止 |
 | `abortCheckpoint()` | 记录分阶段安装失败原因、回退已激活的 APEX，并调用 StorageManager 放弃文件系统变更 |
 
-仅 APK 的会话在重启后安装失败时，通常会调用 `setSessionFailed()` 并清理自己的暂存目录。包含 APEX 的失败影响更大：系统可能调用 `revertActiveSessions()`，再通过 checkpoint 回退；如果回退本身失败，还可能触发重启，以免系统继续运行在无法确认一致性的状态中。
+`onInstallationFailure()` 对仅 APK 和含 APEX 的会话都会先调用 `setSessionFailed()`，标记失败并清理会话，再进入 `abortCheckpoint()`。当 `supportsCheckpoint && needsCheckpoint` 为真时，后者会尝试回退活动 APEX（设备支持时），并调用 `StorageManager.abortChanges("abort-staged-install", false)` 放弃文件系统变更；这条分支也适用于仅 APK 的分阶段安装。checkpoint 回退过程中发生异常时，系统还会尝试回退 APEX 并重启设备。
+
+上述处理之后，仅 APK 的会话直接返回；包含 APEX 的会话还会尝试 `revertActiveSessions()`，成功后请求重启。排查失败影响时，应同时核对会话类型、checkpoint 支持与当前状态，不能只按 APK/APEX 分类。
 
 恢复阶段若发现某个 APEX 会话已处于激活失败（activation failed）、状态未知（unknown）、已回退（reverted）、正在回退或回退失败等状态，会阻止相关会话继续应用。出现“一个 APEX 会话失败，其他分阶段安装会话也被标记失败”时，别按普通 APK 的独立失败模型排查：这类失败会传播到同批会话。
 
-失败原因还会写入：
+满足 `supportsCheckpoint && needsCheckpoint` 时，`abortCheckpoint()` 还会尝试把失败原因写入：
 
 ```text
 /metadata/staged-install/failure_reason.txt
