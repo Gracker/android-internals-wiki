@@ -15624,6 +15624,23 @@
       "summary": "仅 APK 的 staged 恢复失败被错误描述为通常只影响当前会话",
       "type": "checkpoint-failure-scope",
       "updated_at": "2026-11-17T10:43:24.020743+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/26-virtualization-framework-pkvm-performance.md",
+      "created_at": "2026-11-18T02:00:19.433422+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-11-18",
+      "details": "last source verification 2026-08-16 older than 90 days\nEvidence: 2026-08-16",
+      "id": "AIW-FRESH-08166b5b95d0fd9b",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-11-18-时效性巡检.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch01-architecture/26-virtualization-framework-pkvm-performance.md"
+      ],
+      "status": "open",
+      "summary": "last source verification 2026-08-16 older than 90 days",
+      "type": "stale-source-verification",
+      "updated_at": "2026-11-18T02:00:19.433422+08:00"
     }
   ],
   "schema_version": 1

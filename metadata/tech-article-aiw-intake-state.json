@@ -7968,6 +7968,85 @@
       "status": "appended",
       "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
     },
+    "source/juejin-android/2026-11-18-76744618-千万别误用Android Skills.md": {
+      "chapter": "待分类",
+      "entry_id": "0fb123417970b5cd",
+      "last_appended": "2026-11-18T05:25:19.725469+08:00",
+      "last_seen": "2026-11-18T05:25:19.725469+08:00",
+      "mtime": 1794946648.9789667,
+      "score": 9,
+      "sha256": "bb80592e60474f21e7b8b131be9335a0b7f2964b0936463f9eb00a7a12d2ec42",
+      "size": 11971,
+      "status": "appended",
+      "title": "千万别误用Android Skills解析谷歌最新发布的Android Skills，真正理解谷歌全新智能体系统背后的反"
+    },
+    "source/juejin-android/2026-11-18-76748189-Android 版 MCP 正式登场：A.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "080a953483d22838",
+      "last_appended": "2026-11-18T05:25:19.725469+08:00",
+      "last_seen": "2026-11-18T05:25:19.725469+08:00",
+      "mtime": 1794946648.9797077,
+      "score": 12,
+      "sha256": "6191422fdf18b6f37ceb4daa6ac0f95ac98e9ecca37184a5dab72179b32aeb2b",
+      "size": 16093,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
+    "source/juejin-android/2026-11-18-76756150-Android 架构进阶：为什么项目越大.md": {
+      "last_seen": "2026-11-18T05:25:19.725469+08:00",
+      "mtime": 1794946648.9779506,
+      "sha256": "8fb7bed76551ac5c2e3414825bd6f96aec6e8480139b14f293f7b82a4670bc2e",
+      "size": 12990,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-11-18-76782605-我常用的 5 个 Kotlin 优化小技.md": {
+      "chapter": "待分类",
+      "entry_id": "7d3f26bb46a54dce",
+      "last_appended": "2026-11-18T05:25:19.725469+08:00",
+      "last_seen": "2026-11-18T05:25:19.725469+08:00",
+      "mtime": 1794946648.9787328,
+      "score": 13,
+      "sha256": "8e0cc954dd6cc207ee3138c5e619bd70319e7e6ee0905ae1b442d3ccb37cf105",
+      "size": 11102,
+      "status": "appended",
+      "title": "我常用的 5 个 Kotlin 优化小技巧今天我先来分享一下最近几年常用的一些 Kotlin 代码优化小技巧，与君共享。"
+    },
+    "source/juejin-android/2026-11-18-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "569f215b4ced40ab",
+      "last_appended": "2026-11-18T05:25:19.725469+08:00",
+      "last_seen": "2026-11-18T05:25:19.725469+08:00",
+      "mtime": 1794946648.9794016,
+      "score": 9,
+      "sha256": "cd596c8f413f6d7c50721c5b87d4e9889ed77e044845c75ffad3dc5682990a83",
+      "size": 9373,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-18-76826281-AI时代下，Android的边界正在消失.md": {
+      "chapter": "待分类",
+      "entry_id": "4f5c52ebe361d3fd",
+      "last_appended": "2026-11-18T05:25:19.725469+08:00",
+      "last_seen": "2026-11-18T05:25:19.725469+08:00",
+      "mtime": 1794946648.9784749,
+      "score": 16,
+      "sha256": "a1a0439b177098726d1134fbbf9d2394dd12001f8b0012b340c9c50a30ca9374",
+      "size": 21462,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
+    "source/juejin-android/2026-11-18-76933584-AI 时代，我们都将成为通才型开发者：只.md": {
+      "chapter": "待分类",
+      "entry_id": "c2fa62f9a7030256",
+      "last_appended": "2026-11-18T05:25:19.725469+08:00",
+      "last_seen": "2026-11-18T05:25:19.725469+08:00",
+      "mtime": 1794946648.978204,
+      "score": 13,
+      "sha256": "b8e6fc3e52e1cc12eede1ae772a4166a87ec23d71bc100a45f0d0b91904f7fd1",
+      "size": 8023,
+      "status": "appended",
+      "title": "AI 时代，我们都将成为通才型开发者：只懂 Android，已经不够了AI 时代，我们都将成为通才 大家好，今天分享的主"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11662,24 +11741,24 @@
     }
   },
   "last_report": {
-    "appended": 10,
-    "considered": 10,
-    "cutoff": "2026-11-16T05:20:19.566406+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-17.md",
+    "appended": 6,
+    "considered": 7,
+    "cutoff": "2026-11-17T05:20:19.709992+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-18.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2570,
+    "scanned": 2577,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1431,
       "path": 33,
-      "unchanged": 1096
+      "unchanged": 1106
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-17T05:25:19.709992+08:00",
+  "last_run_at": "2026-11-18T05:25:19.725469+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
