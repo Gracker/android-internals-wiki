@@ -2,7 +2,7 @@
 title: Flutter 渲染管线：Engine、Impeller 与 Surface
 chapter: '13.7'
 section: '13.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17
 tags:
   - flutter
@@ -141,6 +141,42 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/
 - type: material
   path: rendering_pipelines/S10_flutter_type.md
+- type: material
+  path: https://juejin.cn/post/7698709811564068915
+  role: iOS 文字灰度与字距对照；不外推 Android 像素统计
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/backends/skia/typographer_context_skia.cc
+  role: Skia 字形绘制、CPU 位图与 atlas 上传
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/entity/shaders/glyph_atlas.frag
+  role: atlas 采样与文字颜色应用
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/skia/BUILD.gn
+  role: A8 Gamma 编译宏与固定 Gamma/Contrast 分支
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/font_glyph_pair.h
+  role: ComputeTone 的 macOS 与 iOS 平台边界
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/packages/flutter/lib/src/cupertino/text_theme.dart
+  role: Cupertino 默认正文的字号与字距
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/packages/flutter/lib/src/widgets/text.dart
+  role: Text.build 对 DefaultTextStyle 的继承与合并
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/DEPS
+  role: 固定 Skia revision
+- type: skia
+  path: https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/ports/SkScalerContext_mac_ct.cpp
+  role: CoreGraphics 字形像素与 A8 preblend 查表
+- type: skia
+  path: https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/core/SkMaskGamma.h
+  role: 灰度校正表每行 256 项
+- type: skia
+  path: https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/gn/skia.gni
+  role: fixed Gamma 的 Android 默认值
+last_body_apply_at: '2026-11-19T07:18:20+08:00'
+last_source_verified_at: '2026-11-19'
+verification_scope_note: 文字子路径按固定 Flutter commit 及 DEPS 锁定的 Skia revision 静态核验；未复现 iOS 像素统计，未据此推定 Android 17 文字差异。其余章节来源核验范围仍见 last_verified_against。
 last_verified_against: Flutter docs fetched 2026-10-24 + pinned Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (VsyncWaiterAndroid, VsyncWaiter, Animator, Rasterizer, Android embedding, SurfaceProducer, Impeller, PlatformViewsController/2) / android-17.0.0_r1 (TextureView.java, SurfaceView.java, SurfaceFlinger.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c) + Flutter 3.44.8 unique workflow and 16 KB plugin boundary
 last_verified: '2026-10-24'
 confidence: high
@@ -426,6 +462,22 @@ Impeller 的 shader 资产在 engine 构建期生成并打包。固定 Android V
 - GPU 频率、带宽、thermal throttling（温控降频）和驱动 fence wait。
 
 固定 shader 变体数量、固定毫秒耗时、固定帧率跌幅以及特定 GPU cache 命中率，目前都没有一手基准支持，写报告时先按未知数处理；本节讨论的只是源码能证明的编译、选择与缓存机制。
+
+### Impeller 的文字仍会用到 Skia
+
+启用 Impeller 后，字形生成仍可能经过 Skia。本文固定 commit 的 `TypographerContextSkia` 用 `SkCanvas::drawGlyphs()` 把字形画入 CPU 位图，再通过 blit 上传到 Glyph Atlas（字形纹理缓存）；文字 shader 随后采样 atlas 绘制文字。Renderer 与字形栅格化是两层选择，看到 Impeller 不能据此排除 Skia 对文字像素的影响。[已验证: [typographer_context_skia.cc](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/backends/skia/typographer_context_skia.cc#L253-L376)、[glyph_atlas.frag](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/entity/shaders/glyph_atlas.frag#L25-L49)]
+
+[iOS 文字对照材料](https://juejin.cn/post/7698709811564068915)给出了一个具体例子：CoreGraphics 生成字形像素后，Skia 的灰度处理仍会改变进入 atlas 的覆盖率。固定 Flutter commit 的 `skia/BUILD.gn` 定义了 `SK_GAMMA_APPLY_TO_A8`；其 DEPS 锁定的 Skia revision `6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560` 中，Apple 字形路径在 A8 分支按 `fPreBlend.isApplicable()` 决定是否查表，校正表每行有 256 项。这里调整的是覆盖率到灰度值的映射，不能直接当作字形轮廓变细的证据。[来源: 材料 7698709811564068915；已验证: [BUILD.gn](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/skia/BUILD.gn#L84-L94)、[DEPS](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/DEPS#L19)、[SkScalerContext_mac_ct.cpp](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/ports/SkScalerContext_mac_ct.cpp#L464-L519)、[SkMaskGamma.h](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/core/SkMaskGamma.h#L172-L176)]
+
+这条路径有平台边界。固定 commit 的 `ComputeTone()` 仅在 macOS 非 iOS 分支区分明暗文字，iOS 返回 `Tone::kDark`；这描述的是 atlas 字形的选取，不代表屏幕上只能绘制深色文字。另一个构建开关 `skia_use_fixed_gamma_text` 默认跟随 `is_android`，启用后才设置 Gamma 1.4、Contrast 0.0。不能用这组 Android 默认值解释 iOS 样本，也不能把材料中的 iOS 像素差异外推成 Android 17 的固定损失比例。[已验证: [font_glyph_pair.h](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/font_glyph_pair.h#L39-L55)、[skia.gni](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/gn/skia.gni#L54-L58)、[BUILD.gn](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/skia/BUILD.gn#L88-L94)]
+
+做 Flutter 与原生的截图对比时，建议把检查拆开：
+
+- 先固定 engine revision、实际字体、字号、缩放倍率、文字与背景颜色，再比较字形边缘灰度；这些是材料对照成立的条件。
+- 行宽、换行或按钮布局不同，再单独核对字距。固定 commit 的 Cupertino 默认正文样式显式设置了 `fontSize: 17.0` 和 `letterSpacing: -0.41`；手写 `TextStyle(fontSize: 17)` 时，要检查实际继承的主题，不能默认已有同样的字距。
+- 回到 Android 17 上复现时，使用该 App 的字体、构建配置和截图重新验证。SF Pro、CoreGraphics 与 iOS 原生文字的对照只用于说明这条文字子路径，不替代 Android 侧证据。
+
+[来源: [材料 7698709811564068915](https://juejin.cn/post/7698709811564068915)；已验证: [Cupertino text_theme.dart](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/packages/flutter/lib/src/cupertino/text_theme.dart#L18-L26)、[Text.build 的样式合并](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/packages/flutter/lib/src/widgets/text.dart#L715-L721)]
 
 ## PlatformView：TLHC、HC 与 HCPP
 
