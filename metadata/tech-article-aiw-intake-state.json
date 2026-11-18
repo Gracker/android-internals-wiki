@@ -8047,6 +8047,66 @@
       "status": "appended",
       "title": "AI 时代，我们都将成为通才型开发者：只懂 Android，已经不够了AI 时代，我们都将成为通才 大家好，今天分享的主"
     },
+    "source/juejin-android/2026-11-19-76845736-Kotlin2026：裁员、AI、Rus.md": {
+      "chapter": "待分类",
+      "entry_id": "9b4d4062577f0269",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795033248.7382832,
+      "score": 8,
+      "sha256": "49411ea17600a42152feed8144d6772b0655a405d68ed58d5f1c60375ac664b0",
+      "size": 7853,
+      "status": "appended",
+      "title": "Kotlin 2026：裁员、AI、Rust——黄金时代结束了吗？Jake Wharton 为你解答 > **前言：**"
+    },
+    "source/juejin-android/2026-11-19-76987098-Flutter的文字为什么比SwiftU.md": {
+      "chapter": "待分类",
+      "entry_id": "4487172054c0fb84",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795033248.736191,
+      "score": 12,
+      "sha256": "4310d49dea326acd05aa99689b3c40dfb914e0607130b98581b907d571be49a6",
+      "size": 12403,
+      "status": "appended",
+      "title": "Flutter 的文字为什么比 SwiftUI 更细？问题主要在 Skia 的 256 项查找表里最近看了一篇文章 《W"
+    },
+    "source/juejin-android/2026-11-19-77003806-Flutter紧急发布3.47.8安全升.md": {
+      "chapter": "待分类",
+      "entry_id": "4fcb1b6a43a472c9",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795033248.7366273,
+      "score": 10,
+      "sha256": "c9e188e072806863bc4017bc7714e65c66dc085dff6142bbfee19a7d16999e2e",
+      "size": 2901,
+      "status": "appended",
+      "title": "Flutter 紧急发布 3.47.8 安全升级版本，建议都升级Flutter 周末紧急发布了 Flutter 3.47"
+    },
+    "source/juejin-android/2026-11-19-77008735-一天一个开源项目（第248篇）：Clea.md": {
+      "chapter": "待分类",
+      "entry_id": "6b657bb3d939a67e",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795033248.735554,
+      "score": 18,
+      "sha256": "e4e7a0802010b9bceb45b51b37cfe9e6457e216586e82b920d5a772c5e6da9e7",
+      "size": 21041,
+      "status": "appended",
+      "title": "一天一个开源项目（第248篇）：CleanYourTV —— 让 AI 编程助手通过 Wi-Fi 给安卓电视去广告、换上 Apple TV 风格主屏"
+    },
+    "source/juejin-android/2026-11-19-77029846-AndroidStudioRabbit2.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "8b4184d69c12fe70",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795033248.731317,
+      "score": 9,
+      "sha256": "8ad5baf31407c2bdb8064f85e155b2a17c00c74294318ae1c24a672eaa66fdd0",
+      "size": 11085,
+      "status": "appended",
+      "title": "Android Studio Rabbit 2 发布：除了Gemini，40+ AI Agent 正式入驻！前言 10"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -9934,6 +9994,201 @@
       "size": 8211,
       "status": "skipped-low-score"
     },
+    "source/rss-snapshot/2026-11-19-Apple-Support-Document-on-the-New-Full-Disk-Acce.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028638.2972584,
+      "sha256": "75fba04b6c6bee04d39c257829f7be25458e1a1e32d02aa704e75b9d737f8eba",
+      "size": 6148,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Apple-s-Cloud-Services-Are-Having-a-Bad-Day-Incl.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028597.5162964,
+      "sha256": "7a9bfb3bb5967e6d0d3efafb62f97664f17b892a5d812ea0ad7b485f4c790eef",
+      "size": 2268,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Are-vibe-coded-games-making-me-a-substance-duali.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028579.5840595,
+      "sha256": "39fe01a93dc0fa6564e2fc8c267100e483d389472c09fa039c2f2807cd84d179",
+      "size": 3924,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Attackers-Used-Optimizely-to-A-B-Test-Malware-on.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028574.4412794,
+      "sha256": "2af7eec270979fe2ba1680b31a1c4e1291f38625ff5a97d2167bb9a1df85a37e",
+      "size": 8595,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Beyond-Linux-A-Journey-Through-the-Open-Source-E.md": {
+      "chapter": "待分类",
+      "entry_id": "c04f9bb5c3cb3779",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028630.300104,
+      "score": 13,
+      "sha256": "93bc2f480ecb173d1db1d9429a12f64b9be049d297c5ec0790584313c30feed1",
+      "size": 30467,
+      "status": "appended",
+      "title": "2026-11-19-Beyond-Linux-A-Journey-Through-the-Open-Source-E"
+    },
+    "source/rss-snapshot/2026-11-19-Developers-Continue-to-Optimize-iPhone-Apps-for-.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028649.5288556,
+      "sha256": "06d235b04ba10af4aa770b2cd2700f0fb4b6168112c4acbe8f027396ea82df76",
+      "size": 1015,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-External-sandboxes-for-coding-agents.md": {
+      "chapter": "待分类",
+      "entry_id": "697ddac035a32b33",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028581.273356,
+      "score": 7,
+      "sha256": "92414e229785465a3b133400a2d6b295e9e9f359a96030ec1e2a1e135d9d3594",
+      "size": 2739,
+      "status": "appended",
+      "title": "External sandboxes for coding agents"
+    },
+    "source/rss-snapshot/2026-11-19-GPT-6-2-Astra-and-GPT-6-2-Sol.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028583.1794298,
+      "sha256": "07a96f0d6cdf6692f0bd399828eea3e544a18cc181f4afcc8944bb788927c2fb",
+      "size": 5935,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-HomeAssistant-shrink-a-HAOS-qcow2-filesystem.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028626.6943936,
+      "sha256": "d82a4cd96c6104fb85235d2e1c36ff75ce4c386f002762b67b921fcb491e50a9",
+      "size": 11497,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-How-can-I-ask-a-second-program-to-show-a-dialog-.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028635.8132737,
+      "sha256": "c74c6e8c64e6232bddccf617baaaeda834524efdcd91b0ef15574121b4a16430",
+      "size": 4177,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-I-joined-the-NTP-Pool-but-not-with-my-Stratum-1-.md": {
+      "chapter": "待分类",
+      "entry_id": "a4334cbf700e99c0",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028615.957392,
+      "score": 11,
+      "sha256": "5c294e0c957bdb7fa4bc6f67448138af18ca8b5a6d51b77e16dbb72a65447a63",
+      "size": 9584,
+      "status": "appended",
+      "title": "I joined the NTP Pool, but not with my Stratum 1 Pi"
+    },
+    "source/rss-snapshot/2026-11-19-In-the-Microsoft-employee-price-list-why-did-the.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "3b8ca59961648753",
+      "last_appended": "2026-11-19T05:25:19.610402+08:00",
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028609.8173354,
+      "score": 7,
+      "sha256": "6020359fa43d76a6dcf5c1501da104af94c845062a4533251bd3e97865e1c083",
+      "size": 8851,
+      "status": "appended",
+      "title": "2026-11-19-In-the-Microsoft-employee-price-list-why-did-the"
+    },
+    "source/rss-snapshot/2026-11-19-Irish-Goodbye-French-Leave-Leave-the-English-Way.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028657.825681,
+      "sha256": "278e5dc12556d87ce615b972afe8743fa8bc0bdb95af97b79f9789f8d3b098f9",
+      "size": 4855,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Is-there-a-case-for-impeaching-Trump-over-Jensen.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028678.291189,
+      "sha256": "fc49d7bac07241308b03a66b6f2abbb8a8f033de11f4ca6e906e90e608d9200c",
+      "size": 4360,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Jensen-Huang-Tweets.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028556.9782097,
+      "sha256": "01c7cbd5f19720e11d6199844499e74bef4301af6a257adae97e135b62cc7a65",
+      "size": 2503,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-MacOS-Golden-Gate-27-3b2-Includes-New-Privacy-Co.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028675.3482893,
+      "sha256": "3c78158171cedd5a7b7c03389e5fb2859887104ae90221fc87f1219303ec2f37",
+      "size": 9881,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Meet-the-Anthropic-Researcher-Behind-Silicon-Val.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028643.3419487,
+      "sha256": "beb1682c340449dc77077697cb637c5d9a32eda7fbb2b15977c6d715321cd319",
+      "size": 8059,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-My-Empire-of-Sunshine-and-Roses.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028602.264296,
+      "sha256": "a41c71533ce06b838158533cce00c6f6b1e637090a97b1cb1c3a9bdae4036f12",
+      "size": 3479,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-No-way-to-prevent-this-say-users-of-only-languag.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028577.0328543,
+      "sha256": "5551239222aaba21210d84560b24ff321ef3698426ac0ee10ba1732976134056",
+      "size": 322,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Once-More-Unto-The-Breach-Another-Year-In-Review.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028562.5787354,
+      "sha256": "16caf4575abb4ba2ed018d96ef4db79f1582803be891812cac93a162a40c8cb6",
+      "size": 13564,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Paul-Christiano-We-could-be-12-months-away-from-.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028710.3737643,
+      "sha256": "7fd8d13c52db58abeafb07cec8ba625bae4bf0d9bc85025da506877e6061f9ba",
+      "size": 129727,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Pluralistic-Enshittifiers-groom-us-for-scammers-.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028570.5463083,
+      "sha256": "203918ae487c2102209cd1655e12d75c22924f4f718eced01de784b8b949dabe",
+      "size": 29956,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Pluralistic-Remembrance-of-proteins-past-17-Nov-.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028622.9253702,
+      "sha256": "ebd57477eb838e9b275e87714b64fe6ca258f607a7e73eb15c676155749ddd29",
+      "size": 30111,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Quoting-Daniel-Stenberg.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028553.444077,
+      "sha256": "ad5d6f29c15699f239bc7f80f0cada5ddbbf8566feae3afcdd48c1a292933392",
+      "size": 1680,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-11-19-Quoting-Go-Proverbs.md": {
+      "last_seen": "2026-11-19T05:25:19.610402+08:00",
+      "mtime": 1795028631.9701862,
+      "sha256": "6165b1b4d44a0e7c7848f01b470a299a440bf24188ca977aea70297c45969640",
+      "size": 754,
+      "status": "skipped-low-score"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -11741,24 +11996,24 @@
     }
   },
   "last_report": {
-    "appended": 6,
-    "considered": 7,
-    "cutoff": "2026-11-17T05:20:19.709992+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-18.md",
+    "appended": 9,
+    "considered": 40,
+    "cutoff": "2026-11-18T05:20:19.725469+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-19.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2577,
+    "scanned": 2617,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
-      "max_files": 0,
+      "low_score": 21,
+      "max_files": 10,
       "old_unseen": 1431,
       "path": 33,
-      "unchanged": 1106
+      "unchanged": 1113
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-18T05:25:19.725469+08:00",
+  "last_run_at": "2026-11-19T05:25:19.610402+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
