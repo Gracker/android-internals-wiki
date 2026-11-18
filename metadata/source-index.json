@@ -6854,6 +6854,24 @@
         ],
         "updated_at": "2026-11-18T07:17:26.413698+08:00"
       }
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-19-76987098-Flutter的文字为什么比SwiftU.md",
+      "title": "[技术文章] Flutter 的文字为什么比 SwiftUI 更细？问题主要在 Skia 的 256 项查找表里最近看了一篇文章 《W",
+      "summary": "> 发布时间: 2026-10-21T00:50:38.000Z > 原文链接: https://juejin.cn/post/7698709811564068915 2026-10-21 1,020 阅读7分钟 Flutter House 最近看了一篇文章 《Why Flutter Text Looks Lighter Than SwiftUI on iOS》，写的还挺...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-19T06:20:19.569261+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "flutter",
+        "skia",
+        "text",
+        "ios"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
