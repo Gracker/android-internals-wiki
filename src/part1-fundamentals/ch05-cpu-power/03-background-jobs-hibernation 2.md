@@ -4,8 +4,10 @@ title: 后台执行、任务调度与 App Hibernation
 chapter: '5.3'
 section: '5.3'
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
-last_verified: '2026-10-04'
-last_verified_against: Android 17 JobDebugInfo/bg-audio docs + WorkManager 2.12.0 release notes + App Hibernation docs + JobScheduler/IBinder API reference + source.android cached apps freezer docs
+last_verified: '2026-11-19'
+last_verified_against: Android 15 FGS BOOT_COMPLETED limits + Android 17 background audio + App Hibernation + PackageManagerCompat/IntentCompat API references + power-details + WorkManager 2.12.0 release notes + JobScheduler API + cached apps freezer docs
+last_source_verified_at: '2026-11-19'
+last_idle_audit_at: '2026-11-19T10:39:03+08:00'
 confidence: medium
 consolidated_from:
 - src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md
@@ -118,6 +120,10 @@ sources:
   path: packages/modules/Permission/PermissionController/src/com/android/permissioncontroller/permission/service/AutoRevokePermissions.kt
 - type: official
   path: https://developer.android.com/topic/performance/app-hibernation
+- type: official
+  path: https://developer.android.com/reference/androidx/core/content/PackageManagerCompat
+- type: official
+  path: https://developer.android.com/reference/androidx/core/content/IntentCompat
 - type: official
   path: https://developer.android.com/about/versions/12/behavior-changes-12#app-hibernation
 - type: official
@@ -354,7 +360,9 @@ FGS 能否运行取决于五项检查：调用时应用是否具备从后台启�
 
 #### Android 17 的后台音频硬化
 
-API 37 对后台音频操作加了一层约束。在 Android 17 上运行的所有应用，从后台开始播放、请求音频焦点或调节音量时，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS；`targetSdkVersion` 为 37 时，该 FGS 还要具备 WIU 资格。音频焦点用来协调多个应用的音频输出优先级。由 `BOOT_COMPLETED` 等后台触发器启动的 `mediaPlayback` FGS，如果没有用户操作形成的 WIU 资格，调用 `AudioManager.requestAudioFocus()` 会返回 `AUDIOFOCUS_REQUEST_FAILED`，播放和音量 API 也可能不抛异常地失败。
+API 37 对后台音频操作加了一层约束。在 Android 17 上运行的所有应用，从后台开始播放、请求音频焦点或调节音量时，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS；`targetSdkVersion` 为 37 时，该 FGS 还要具备 WIU 资格。音频焦点用来协调多个应用的音频输出优先级。
+
+FGS 启动资格要先单独检查：Android 15 起，`targetSdkVersion >= 35` 的应用不能从 `BOOT_COMPLETED` 接收器启动 `mediaPlayback` FGS，否则会抛出 `ForegroundServiceStartNotAllowedException`。其他后台路径即使获准启动 FGS，也未必具备 WIU 资格；缺少该资格时，目标 API 为 37 的应用调用 `AudioManager.requestAudioFocus()` 会返回 `AUDIOFOCUS_REQUEST_FAILED`，播放和音量 API 也可能不抛异常地失败。
 
 有一项例外需要单独判断：`targetSdkVersion` 为 37 的应用如果已获得 exact alarm 权限，并且操作的是闹钟用途音频流 `USAGE_ALARM`，官方文档明确豁免 WIU 要求。普通媒体、播客和直播的后台播放，仍应在用户发起播放时启动 `mediaPlayback` FGS，并在播放结束或永久失去音频焦点时停止 FGS。
 
@@ -1472,7 +1480,7 @@ WorkManager 可以简化重启后的持久工作恢复，但仍应验证具体�
 
 #### 查询 unused-app restrictions 功能状态
 
-下面的 Kotlin 示例用于查询“该应用是否受 unused-app restrictions 管理”，不能用来判断应用当前是否已经 hibernated：
+Kotlin 示例查询“该应用是否受 unused-app restrictions 管理”，不能用来判断应用当前是否已经 hibernated。这个 AndroidX API 可跨 Android 版本调用，但只为 `targetSdkVersion >= 30` 的应用提供状态；还应分别处理 `ERROR` 和 `FEATURE_NOT_AVAILABLE`，不能把查询失败或功能不可用当成用户已关闭限制。
 
 ```kotlin
 val future = PackageManagerCompat.getUnusedAppRestrictionsStatus(context)
@@ -1493,7 +1501,7 @@ future.addListener(
 )
 ```
 
-若后台核心能力确需豁免，可先向用户解释影响，再用 `IntentCompat.createManageUnusedAppRestrictionsIntent()` 打开系统设置。不要把设置跳转放在无上下文的首次启动弹窗中。
+若后台核心能力确需豁免，可先向用户解释影响，确认功能可用后，再用 `IntentCompat.createManageUnusedAppRestrictionsIntent()` 创建设置页 Intent。官方要求通过 `startActivityForResult()` 发送该 Intent，直接调用 `startActivity()` 不符合接口要求。不要把设置跳转放在无上下文的首次启动弹窗中。
 
 
 #### 间接特征的归因局限
@@ -1619,6 +1627,8 @@ future.addListener(
 - [PerfettoSQL standard library](https://perfetto.dev/docs/analysis/stdlib-docs)
 
 - [App hibernation](https://developer.android.com/topic/performance/app-hibernation)：影响、使用定义、豁免、退出行为和官方测试命令。
+- [PackageManagerCompat API reference](https://developer.android.com/reference/androidx/core/content/PackageManagerCompat)：unused-app restrictions 查询、目标 SDK 边界和返回状态。
+- [IntentCompat API reference](https://developer.android.com/reference/androidx/core/content/IntentCompat)：设置页 Intent 的可用性检查与 `startActivityForResult()` 要求。
 - [Android 15 package stopped state changes](https://developer.android.com/about/versions/15/behavior-changes-all#stopped-state)：PendingIntent、widget、用户解除 stopped 与 `wasForceStopped()`。
 - [Android 15 app archiving](https://developer.android.com/about/versions/15/features#app-archiving)：平台级 archive/unarchive 的 API 与恢复模型。
 - [AppHibernationService.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/apphibernation/AppHibernationService.java)：用户级/全局级状态、Force stop、缓存、dexopt 和恢复广播。
