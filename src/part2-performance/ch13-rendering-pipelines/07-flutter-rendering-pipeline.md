@@ -223,7 +223,7 @@ Flutter framework、engine 和 Android embedding 不属于 AOSP，系统升到 A
 | Android 默认启用 Impeller | Flutter 3.27，Android API 29+ | API 29+ 仍要核对 Impeller 是否被关闭，以及运行时选择 Vulkan 还是 GLES |
 | HCPP | Flutter 3.44 起提供，当前为实验性 opt-in（显式选择加入） | 还需 Android API 34+、Impeller、Vulkan 和运行时 SurfaceControl swapchain 可用 |
 
-本文以 3.32 stable 的默认合并模型为主线，与 issue #150525 的维护者说明一致；架构文档把合并起点写为 3.29。两者是发布与默认配置的不同口径。落到 3.29—3.31、定制 engine 或显式配置的 App 上，我们记录实际 revision，并在 Perfetto 中确认 Dart UI work 与平台回调的 tid；后续 engine 是否保留相同 opt-out，也以当时的实际配置为准。[来源：线程合并说明](https://github.com/flutter/flutter/issues/150525)
+本文以 3.32 stable 的默认合并模型为主线，与 issue #150525 的维护者说明一致；架构文档把合并起点写为 3.29。两者一个讲合并从哪个版本开始出现，一个讲默认从哪个版本开启。落到 3.29—3.31、定制 engine 或显式配置的 App 上，我们记录实际 revision，并在 Perfetto 中确认 Dart UI work 与平台回调的 tid；后续 engine 是否保留相同 opt-out，也以当时的实际配置为准。[来源：线程合并说明](https://github.com/flutter/flutter/issues/150525)
 
 
 ## 一帧的公共前半段
@@ -418,7 +418,7 @@ API 29+ 的固定源码会取得 `Image.getHardwareBuffer()`，再用 `Bitmap.wr
 <!-- gracker-diagram: ed13-07-surfaceproducer-backing-lifecycle-and-transform -->
 ![SurfaceProducer 的 backing 决定通知与 crop / rotation 契约](../../assets/diagrams/ch13/ed13-07-surfaceproducer-backing-lifecycle-and-transform.png)
 
-图：固定选择：未forceGL、API29+且无已知AHBdefect才ImageReader，否则SurfaceTexture；独立于rootmode/rendererbackend与HCVDfallback。默认manual；仅IR+resetInBackground注册内存压力回调，cleanup前停旧Surface，恢复后getSurface；SurfaceTexture setCallback为空，不能等待同一通知。getSurface按需重新取得，resize/重建后使用新对象，resize没callback可正常。IR handlesCropAndRotation=false，插件按传感器/设备/输出自行处理；ST返回true按其变换契约，避免重复；插件版本须符合SurfaceProducer/API回调演进，旧版本按自己的契约。
+图：固定选择：未forceGL、API29+且无已知AHBdefect才ImageReader，否则SurfaceTexture；独立于rootmode/rendererbackend与HCVDfallback。默认manual；仅IR+resetInBackground注册内存压力回调，cleanup前停旧Surface，恢复后getSurface；SurfaceTexture setCallback为空，同一通知等不到。getSurface按需重新取得，resize/重建后使用新对象，resize没callback可正常。IR handlesCropAndRotation=false，插件按传感器/设备/输出自行处理；ST返回true按其变换契约，避免重复；插件版本须符合SurfaceProducer/API回调演进，旧版本按自己的契约。
 
 在 Perfetto 中分析 external texture 卡顿时，分别记录 texture id、插件输入队列、engine frame 与 root buffer。中间 texture 通常只在 Flutter 内部被采样，在 SF layer tree 里往往找不到对应 layer。固定 ImageReader producer 在 API 33+ 的 `acquireLatestImage()` 路径还会调用 `Image.getFence().awaitForever()`，这可能形成 Raster 调用链中的 CPU 等待；API 29–32 缺少同一 Java fence API，这个调用名只到 33+ 为止。安全读取依赖要按 backing 与 backend 分别核对。[来源：FlutterRenderer](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java)
 
@@ -429,7 +429,7 @@ API 29+ 的固定源码会取得 `Image.getHardwareBuffer()`，再用 `Bitmap.wr
 
 ## Impeller 与 Skia：先辨认 renderer，再讨论成本
 
-Flutter 3.27 起在 Android API 29+ 默认启用 Impeller。固定源码中的运行时选择比“Vulkan 不可用就改用 Skia”这句经验之谈多几个分支：
+讨论 Impeller 与 Skia 的成本之前，我们先把两件事分开：renderer 是 Impeller 还是 Skia，backend 是 Vulkan 还是 GLES。Flutter 3.27 起在 Android API 29+ 默认启用 Impeller，而固定源码中的运行时选择，比“Vulkan 不可用就改用 Skia”这句经验之谈多几个分支：
 
 
 1. 通常构建中，Impeller 启用、API 29+ 且不是 Vivante workaround 分支时，`SelectedRenderingAPI()` 返回动态选择；非 release 还支持显式指定 GLES/Vulkan，需与默认 autoselect 区分；
@@ -437,12 +437,12 @@ Flutter 3.27 起在 Android API 29+ 默认启用 Impeller。固定源码中的�
 3. 模拟器、已知问题 SoC、缺失能力或无效 Vulkan context 会让它改用 **Impeller OpenGLES**；
 4. 默认选择中的低 API、显式关闭 Impeller 或 Vivante workaround 可进入 Skia GLES；软件渲染需按配置与 Impeller 互斥检查，两者同时打开时的回退行为要单独验证。`SLIMPELLER` 等构建条件也会改变可选路径。
 
-因此，没有 Vulkan backend 时也可能在用 Impeller GLES，报告里要分别记录 renderer 与 backend：`Impeller/Vulkan`、`Impeller/OpenGLES` 或 `Skia/OpenGLES`。还要固定 revision：本文 commit 对 MediaTek 优先读取 `ro.vendor.build.version.sdk`，缺失时用 OS API、以有效 API `< 32` 避让 Vulkan；`3.44.8` 对照则使用设备 API `< 31` 避让；vendor/engine 条件要按 revision 逐个核对，OS 版本新旧替代不了。[来源：固定 commit](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc)、[3.44.8 对照](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc)
+所以报告里要把 renderer 与 backend 分开记录：`Impeller/Vulkan`、`Impeller/OpenGLES` 或 `Skia/OpenGLES`——没有 Vulkan backend 时，也可能正在用 Impeller GLES。revision 同样要固定：本文 commit 对 MediaTek 优先读取 `ro.vendor.build.version.sdk`，缺失时用 OS API、以有效 API `< 32` 避让 Vulkan；`3.44.8` 对照则使用设备 API `< 31` 避让；vendor/engine 条件要按 revision 逐个核对，OS 版本新旧替代不了。[来源：固定 commit](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc)、[3.44.8 对照](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc)
 
 <!-- gracker-diagram: ed13-07-renderer-backend-and-mediatek-revision -->
 ![Renderer 与 backend 分开选择，MediaTek 避让条件再按 revision 核对](../../assets/diagrams/ch13/ed13-07-renderer-backend-and-mediatek-revision.png)
 
-图：通常构建Impeller启用/API29+且非Vivante workaround才动态选择，非release强制backend和SLIMPELLER编译条件另查。动态context尝试Vulkan，模拟器/已知SoC/缺能力/无效context可转ImpellerGLES；低API/关闭Impeller/Vivante可走SkiaGLES，software与Impeller互斥配置另验。MediaTek属性存在时，固定8a9f61c commit优先vendorSDK缺失用OS，有效API<32避让；3.44.8对照用设备API<31，不能由Android17推现场backend。图为通常分支，非穷尽全部构建配置；Vulkan不可用不等一定Skia。
+图：通常构建Impeller启用/API29+且非Vivante workaround才动态选择，非release强制backend和SLIMPELLER编译条件另查。动态context尝试Vulkan，模拟器/已知SoC/缺能力/无效context可转ImpellerGLES；低API/关闭Impeller/Vivante可走SkiaGLES，software与Impeller互斥配置另验。MediaTek属性存在时，固定8a9f61c commit优先vendorSDK缺失用OS，有效API<32避让；3.44.8对照用设备API<31，Android17推不出现场backend。图为通常分支，非穷尽全部构建配置；Vulkan不可用不等一定Skia。
 
 ### Impeller 解决了什么
 
@@ -465,16 +465,16 @@ Impeller 的 shader 资产在 engine 构建期生成并打包。固定 Android V
 
 ### Impeller 的文字仍会用到 Skia
 
-启用 Impeller 后，字形生成仍可能经过 Skia。本文固定 commit 的 `TypographerContextSkia` 用 `SkCanvas::drawGlyphs()` 把字形画入 CPU 位图，再通过 blit 上传到 Glyph Atlas（字形纹理缓存）；文字 shader 随后采样 atlas 绘制文字。Renderer 与字形栅格化是两层选择，看到 Impeller 不能据此排除 Skia 对文字像素的影响。[已验证: [typographer_context_skia.cc](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/backends/skia/typographer_context_skia.cc#L253-L376)、[glyph_atlas.frag](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/entity/shaders/glyph_atlas.frag#L25-L49)]
+启用 Impeller 后，字形生成仍可能经过 Skia。本文固定 commit 的 `TypographerContextSkia` 用 `SkCanvas::drawGlyphs()` 把字形画入 CPU 位图，再通过 blit 上传到 Glyph Atlas（字形纹理缓存）；文字 shader 随后采样 atlas 绘制文字。Renderer 与字形栅格化是两层选择；看到 Impeller 时，Skia 对文字像素的影响还要单独核对。[已验证: [typographer_context_skia.cc](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/backends/skia/typographer_context_skia.cc#L253-L376)、[glyph_atlas.frag](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/entity/shaders/glyph_atlas.frag#L25-L49)]
 
-[iOS 文字对照材料](https://juejin.cn/post/7698709811564068915)给出了一个具体例子：CoreGraphics 生成字形像素后，Skia 的灰度处理仍会改变进入 atlas 的覆盖率。固定 Flutter commit 的 `skia/BUILD.gn` 定义了 `SK_GAMMA_APPLY_TO_A8`；其 DEPS 锁定的 Skia revision `6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560` 中，Apple 字形路径在 A8 分支按 `fPreBlend.isApplicable()` 决定是否查表，校正表每行有 256 项。这里调整的是覆盖率到灰度值的映射，不能直接当作字形轮廓变细的证据。[来源: 材料 7698709811564068915；已验证: [BUILD.gn](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/skia/BUILD.gn#L84-L94)、[DEPS](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/DEPS#L19)、[SkScalerContext_mac_ct.cpp](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/ports/SkScalerContext_mac_ct.cpp#L464-L519)、[SkMaskGamma.h](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/core/SkMaskGamma.h#L172-L176)]
+[iOS 文字对照材料](https://juejin.cn/post/7698709811564068915)给出了一个具体例子：CoreGraphics 生成字形像素后，Skia 的灰度处理仍会改变进入 atlas 的覆盖率。固定 Flutter commit 的 `skia/BUILD.gn` 定义了 `SK_GAMMA_APPLY_TO_A8`；其 DEPS 锁定的 Skia revision `6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560` 中，Apple 字形路径在 A8 分支按 `fPreBlend.isApplicable()` 决定是否查表，校正表每行有 256 项。这里调整的是覆盖率到灰度值的映射；字形轮廓有没有变细，它证明不了。[来源: 材料 7698709811564068915；已验证: [BUILD.gn](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/skia/BUILD.gn#L84-L94)、[DEPS](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/DEPS#L19)、[SkScalerContext_mac_ct.cpp](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/ports/SkScalerContext_mac_ct.cpp#L464-L519)、[SkMaskGamma.h](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/src/core/SkMaskGamma.h#L172-L176)]
 
-这条路径有平台边界。固定 commit 的 `ComputeTone()` 仅在 macOS 非 iOS 分支区分明暗文字，iOS 返回 `Tone::kDark`；这描述的是 atlas 字形的选取，不代表屏幕上只能绘制深色文字。另一个构建开关 `skia_use_fixed_gamma_text` 默认跟随 `is_android`，启用后才设置 Gamma 1.4、Contrast 0.0。不能用这组 Android 默认值解释 iOS 样本，也不能把材料中的 iOS 像素差异外推成 Android 17 的固定损失比例。[已验证: [font_glyph_pair.h](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/font_glyph_pair.h#L39-L55)、[skia.gni](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/gn/skia.gni#L54-L58)、[BUILD.gn](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/skia/BUILD.gn#L88-L94)]
+这条路径按平台分叉。固定 commit 的 `ComputeTone()` 仅在 macOS 非 iOS 分支区分明暗文字，iOS 返回 `Tone::kDark`；这只描述 atlas 字形的选取，由它推不出屏幕上只能绘制深色文字。另一个构建开关 `skia_use_fixed_gamma_text` 默认跟随 `is_android`，启用后才设置 Gamma 1.4、Contrast 0.0。这组 Android 默认值解释不了 iOS 样本；材料中的 iOS 像素差异，也外推不成 Android 17 的固定损失比例。[已验证: [font_glyph_pair.h](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/typographer/font_glyph_pair.h#L39-L55)、[skia.gni](https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/gn/skia.gni#L54-L58)、[BUILD.gn](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/skia/BUILD.gn#L88-L94)]
 
 做 Flutter 与原生的截图对比时，建议把检查拆开：
 
 - 先固定 engine revision、实际字体、字号、缩放倍率、文字与背景颜色，再比较字形边缘灰度；这些是材料对照成立的条件。
-- 行宽、换行或按钮布局不同，再单独核对字距。固定 commit 的 Cupertino 默认正文样式显式设置了 `fontSize: 17.0` 和 `letterSpacing: -0.41`；手写 `TextStyle(fontSize: 17)` 时，要检查实际继承的主题，不能默认已有同样的字距。
+- 行宽、换行或按钮布局不同，再单独核对字距。固定 commit 的 Cupertino 默认正文样式显式设置了 `fontSize: 17.0` 和 `letterSpacing: -0.41`；手写 `TextStyle(fontSize: 17)` 时，要检查实际继承的主题，同样的字距要单独确认。
 - 回到 Android 17 上复现时，使用该 App 的字体、构建配置和截图重新验证。SF Pro、CoreGraphics 与 iOS 原生文字的对照只用于说明这条文字子路径，不替代 Android 侧证据。
 
 [来源: [材料 7698709811564068915](https://juejin.cn/post/7698709811564068915)；已验证: [Cupertino text_theme.dart](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/packages/flutter/lib/src/cupertino/text_theme.dart#L18-L26)、[Text.build 的样式合并](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/packages/flutter/lib/src/widgets/text.dart#L715-L721)]
@@ -578,7 +578,7 @@ HCPP 可以降低原始 HC 的同步负担，并避开它的动态 raster/platfo
 <!-- gracker-diagram: ed13-07-hcpp-gates-overlay-and-init-wait -->
 ![HCPP 先过运行条件，单 overlay 与平台初始化等待仍存在](../../assets/diagrams/ch13/ed13-07-hcpp-gates-overlay-and-init-wait.png)
 
-图：HCPP Flutter3.44实验optin，flag/manifest只是请求；还须API34+、Impeller启用、实际kImpellerVulkan且context允许SurfaceControlswapchain。失败回原App配置策略，并非统一固定一种fallback。满足可使用embedder2，避开原始HC动态raster/platformmerge，但仍有平台事务同步。当前一个顶层overlay，以differenceclip处理后续PlatformView矩形，透明复杂穿插可能受限。首次overlay创建会投递platform任务并等初始化latch；这不是消除了CPU等待，也不要和SFbufferlatch混为一谈。普通PlatformView仍可在hostwindow，实际childSurface另确认，Layer不保证DEVICE。
+图：HCPP Flutter3.44实验optin，flag/manifest只是请求；还须API34+、Impeller启用、实际kImpellerVulkan且context允许SurfaceControlswapchain。失败回原App配置策略，fallback并不统一固定。满足可使用embedder2，避开原始HC动态raster/platformmerge，但仍有平台事务同步。当前一个顶层overlay，以differenceclip处理后续PlatformView矩形，透明复杂穿插可能受限。首次overlay创建会投递platform任务并等初始化latch；这不是消除了CPU等待，也不要和SFbufferlatch混为一谈。普通PlatformView仍可在hostwindow，实际childSurface另确认，Layer不保证DEVICE。
 
 AHB 池复用还要分清当前与上一块 buffer：提交 B 的 completion 中查询 previous A 的 release fence，将旧 A 连同 fence 放回池；以后重新取得 A 时把该 fd 导入 Vulkan semaphore，GPU 写入前遵守 Consumer 最后使用依赖。一块 buffer 能否覆写，看它的 release 依赖是否满足；当前 B 自己的提交 callback、Producer 完成依赖说的都只是写入一侧。[来源：AHB swapchain](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/renderer/backend/vulkan/swapchain/ahb/ahb_swapchain_impl_vk.cc)
 
@@ -608,7 +608,7 @@ Flutter widget tree 与 Android View hierarchy 是两套不同的对象树。Pla
 画面位置正确、触摸位置出错时，我们同时检查 Flutter transform、Android View bounds 和 MotionEvent 坐标映射；视觉遮挡出问题时，再对照 Flutter overlay、宿主 View z-order 和 SurfaceFlinger layer tree。
 
 
-## Android 17 的 buffer、fence 与显示边界
+## Buffer、fence 与显示边界
 
 显示端的核对项是固定的：Producer 写入依赖、SF readiness/latch、按 Layer 决定的合成类型和 display present 反馈；CPU 提交可以早于 GPU 完成，条件允许的 latch 也可早于 acquire signal。普通 Surface root 使用 BufferQueue/BLAST，HCPP 的 Impeller AHB swapchain 则通过 buffer transaction 直交 SF——两条提交链都要遵守共享 buffer 的引用与同步，BufferQueue 只是其中一条。
 
