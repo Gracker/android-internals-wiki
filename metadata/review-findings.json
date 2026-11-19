@@ -15706,6 +15706,48 @@
       "summary": "补全 SurfaceProducer 旧销毁回调与新清理回调的通知时机差异",
       "type": "migration-lifecycle-warning",
       "updated_at": "2026-11-19T08:48:44.714062+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "close_note": "已按官方文档补明 --enable-hcpp 不能传给 flutter build、构建必须使用 application manifest；将透明 PlatformView 的已知故障具体到 Flutter canvas→PlatformView→Overlay→透明 PlatformView 四层相交。保留实验性、API34+/Impeller Vulkan、按原配置回退与单 overlay 限制；源码/正文对照及三项本地 gate 已通过，未做设备复现。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261119-100519-7859f9cd",
+      "created_at": "2026-11-19T10:10:18.579169+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261119-100519-7859f9cd",
+      "details": "正文仅写 run/test 可用 flag、release 使用 manifest，未明确官方禁止将 --enable-hcpp 传给任何 flutter build；透明叠放只写复杂穿插可能出问题，未给出官方明确的四层相交条件。官方 platform-views 文档 HCPP Opt in:95-118 和 Limitations:120-126 可直接定位；修复应保留实验性、API34+/Impeller Vulkan、按原配置回退等既有限定。",
+      "id": "finding-ch13-7-hcpp-official-usage-boundaries",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://docs.flutter.dev/platform-integration/android/platform-views#hcpp"
+      ],
+      "status": "verified",
+      "summary": "补全 HCPP 构建 flag 禁用范围与透明叠放已知故障条件",
+      "type": "official-warning-boundary",
+      "updated_at": "2026-11-19T10:18:40.098892+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "close_note": "已补明 TLHC 文字放大镜需要 TextureView root，并同步选型表；新增 SurfaceView/SurfaceTexture 内容自行更新后于绘制/swap 后 invalidate 自身或父 View 的排查入口，同时保留 buffer 完成依赖。官方文档和固定 wrapper/controller 静态对照、正文/表格一致性、中文双 gate 与三项本地 gate 已通过，未声称运行测量。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261119-100519-7859f9cd",
+      "created_at": "2026-11-19T10:10:18.641373+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261119-100519-7859f9cd",
+      "details": "正文列出 TLHC 的 text magnifier 限制，却未写 Flutter 渲染到 TextureView 的官方例外；也没有覆盖 PlatformView 内自行更新 SurfaceView/SurfaceTexture 内容后应在绘制或 swapchain 翻转后 invalidate 自身或父 View 的要求。缺少这些条件会让内容已更新但宿主不重绘、文字放大镜失效的排查入口不完整。官方文档 Texture layer:140-145、Manual view invalidation:496-503，固定 PlatformViewWrapper.java:142-188 与控制器 SurfaceView fallback:223-246 支持限定后的修复。",
+      "id": "finding-ch13-7-platformview-invalidation-magnifier",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://docs.flutter.dev/platform-integration/android/platform-views#texture-layer",
+        "https://docs.flutter.dev/platform-integration/android/platform-views#manual-view-invalidation",
+        "https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewWrapper.java"
+      ],
+      "status": "verified",
+      "summary": "补全 PlatformView 手动 invalidation 要求与 TLHC 文字放大镜的 root 条件",
+      "type": "missing-operational-boundary",
+      "updated_at": "2026-11-19T10:18:40.162018+08:00"
     }
   ],
   "schema_version": 1
