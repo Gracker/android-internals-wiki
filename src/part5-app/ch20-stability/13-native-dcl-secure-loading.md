@@ -4,12 +4,14 @@ chapter: '20.13'
 section: '20.13'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37); System.load writable-file enforcement requires Android 17 with targetSdkVersion 37
-last_verified: '2026-10-25'
+last_verified: '2026-11-19'
+last_source_verified_at: '2026-11-19'
+last_idle_audit_at: '2026-11-19'
 last_verified_against: Android 17 behavior changes and AOSP android-17.0.0_r1 Runtime, VMRuntime and bionic linker; Android 14 safer DCL and current Android DCL security guidance
 confidence: high
 sources:
 - type: official
-  path: https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c
+  path: https://developer.android.com/about/versions/17/behavior-changes-17#safer-dcl
 - type: official
   path: https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading
 - type: official
@@ -361,7 +363,7 @@ Native DCL 的安全，靠的是一条完整的发布事务，“文件能被 li
 
 ## 参考资料
 
-- [Android 17 behavior changes - Safer Native DCL-C](https://developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c)
+- [Android 17 behavior changes - Safer Native DCL-C](https://developer.android.com/about/versions/17/behavior-changes-17#safer-dcl)
 - [AOSP `android-17.0.0_r1`：`java.lang.Runtime`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java)
 - [AOSP `android-17.0.0_r1`：`dalvik.system.VMRuntime`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/libart/src/main/java/dalvik/system/VMRuntime.java)
 - [AOSP Android 17：FileOutputStream FD 所有权](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/io/FileOutputStream.java)、[UnixFileSystem.isReadOnly](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/sun/nio/fs/UnixFileSystem.java) 与 [AtomicFile](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java)。
