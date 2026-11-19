@@ -8107,6 +8107,90 @@
       "status": "appended",
       "title": "Android Studio Rabbit 2 发布：除了Gemini，40+ AI Agent 正式入驻！前言 10"
     },
+    "source/juejin-android/2026-11-20-76748189-Android 版 MCP 正式登场：A.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "5b29712f04ebf093",
+      "last_appended": "2026-11-20T05:25:19.595321+08:00",
+      "last_seen": "2026-11-20T05:25:19.595321+08:00",
+      "mtime": 1795119453.0535557,
+      "score": 12,
+      "sha256": "0d3608d488bc4af09b0bfa847b81f49f4063129ca97e5faa7ad1dfcf3b29b36e",
+      "size": 14066,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
+    "source/juejin-android/2026-11-20-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "83fa394827c91772",
+      "last_appended": "2026-11-20T05:25:19.595321+08:00",
+      "last_seen": "2026-11-20T05:25:19.595321+08:00",
+      "mtime": 1795119453.0510669,
+      "score": 24,
+      "sha256": "1b96b6a769e12cddb52e0d70a7e1bb7bfca16bca4fa46eb0033cbbab8b814a61",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-20-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "808c6508919dbe20",
+      "last_appended": "2026-11-20T05:25:19.595321+08:00",
+      "last_seen": "2026-11-20T05:25:19.595321+08:00",
+      "mtime": 1795119453.0553393,
+      "score": 9,
+      "sha256": "7561a82fbb5fd0abca45ca7027913b4090fdea3a6454594fea87bb1f483d6262",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-20-76809960-日常修改，3秒生效：腾讯音乐 Andro.md": {
+      "chapter": "待分类",
+      "entry_id": "b20bfc0391476186",
+      "last_appended": "2026-11-20T05:25:19.595321+08:00",
+      "last_seen": "2026-11-20T05:25:19.595321+08:00",
+      "mtime": 1795119453.0522728,
+      "score": 19,
+      "sha256": "c341a3d856cf6e2d033e094f1bd3c8592c094a0a16b2b74bab0da135b8935d77",
+      "size": 33822,
+      "status": "appended",
+      "title": "日常修改，3秒生效：腾讯音乐 Android 秒编方案 Jugg 开源腾讯音乐正式开源 Android 秒级增量构建插件"
+    },
+    "source/juejin-android/2026-11-20-76845736-Kotlin 2026：裁员、AI、Ru.md": {
+      "chapter": "待分类",
+      "entry_id": "9b5eeef3e620ed68",
+      "last_appended": "2026-11-20T05:25:19.595321+08:00",
+      "last_seen": "2026-11-20T05:25:19.595321+08:00",
+      "mtime": 1795119453.0557327,
+      "score": 8,
+      "sha256": "718e72828de81421b60f68d6ff664c81cfff46e50f9b7312a9d6489c5511fb41",
+      "size": 7853,
+      "status": "appended",
+      "title": "Kotlin 2026：裁员、AI、Rust——黄金时代结束了吗？Jake Wharton 为你解答 > **前言：**"
+    },
+    "source/juejin-android/2026-11-20-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "22a200ee2664da80",
+      "last_appended": "2026-11-20T05:25:19.595321+08:00",
+      "last_seen": "2026-11-20T05:25:19.595321+08:00",
+      "mtime": 1795119453.0545022,
+      "score": 15,
+      "sha256": "d6eb961179b95457772230365a55b251d9f329a4acdc52530c8d743458253724",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
+    "source/juejin-android/2026-11-20-76948663-我开源了一个 Android_iOS 加.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "b202b317e72bb9bc",
+      "last_appended": "2026-11-20T05:25:19.595321+08:00",
+      "last_seen": "2026-11-20T05:25:19.595321+08:00",
+      "mtime": 1795119453.0560927,
+      "score": 7,
+      "sha256": "f3bdbf0a72d32195dc5b8558d928d120a8e996da36784fe8708a6e6f728c35b3",
+      "size": 5051,
+      "status": "appended",
+      "title": "我开源了一个 Android/iOS 加固工具，顺便聊聊加固到底能防住什么市面上的 APK 加固方案大多是黑盒：付费、上"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -11996,24 +12080,24 @@
     }
   },
   "last_report": {
-    "appended": 9,
-    "considered": 40,
-    "cutoff": "2026-11-18T05:20:19.725469+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-19.md",
+    "appended": 7,
+    "considered": 7,
+    "cutoff": "2026-11-19T05:20:19.610402+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-20.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2617,
+    "scanned": 2624,
     "skipped": {
       "existing_link": 0,
-      "low_score": 21,
-      "max_files": 10,
-      "old_unseen": 1431,
+      "low_score": 0,
+      "max_files": 0,
+      "old_unseen": 1441,
       "path": 33,
-      "unchanged": 1113
+      "unchanged": 1143
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-19T05:25:19.610402+08:00",
+  "last_run_at": "2026-11-20T05:25:19.595321+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
