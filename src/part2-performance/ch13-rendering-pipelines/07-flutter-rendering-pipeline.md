@@ -2,7 +2,7 @@
 title: Flutter 渲染管线：Engine、Impeller 与 Surface
 chapter: '13.7'
 section: '13.7'
-status: ready-for-review
+status: finalized
 applicable_versions: Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17
 tags:
   - flutter
@@ -191,9 +191,10 @@ sources:
   role: OnComplete 与 previous release fence 契约，以及 API 36 起推荐的 buffer release 回调
 last_body_apply_at: '2026-11-19T07:18:20+08:00'
 last_deep_review_at: '2026-11-19T08:43:19+08:00'
+last_review_finalize_at: '2026-11-19T10:18:40+08:00'
 last_source_verified_at: '2026-11-19'
-verification_scope_note: 固定 Flutter commit、DEPS 锁定的 Skia revision 与 Android 17 TextureView、SurfaceView、SurfaceControl 头文件按静态源码核对；覆盖软件渲染冲突、HCPP buffer 回收、SurfaceProducer 回调迁移与文字子路径。未做设备运行、iOS 像素统计或性能测量；其余历史来源范围见 last_verified_against。
-last_verified_against: Flutter docs fetched 2026-10-24 + pinned Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (VsyncWaiterAndroid, VsyncWaiter, Animator, Rasterizer, Android embedding, SurfaceProducer, Impeller, PlatformViewsController/2) / android-17.0.0_r1 (TextureView.java, SurfaceView.java, SurfaceFlinger.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c) + Flutter 3.44.8 unique workflow and 16 KB plugin boundary + 2026-11-19 static review (FlutterMain/FML fatal, AHB swapchain/SurfaceTransaction, Android 17 surface_control.h, SurfaceProducer migration, pinned Skia glyph path)
+verification_scope_note: 静态核对固定 Flutter commit、DEPS 锁定的 Skia revision、Android 17 显示源码和 android17-6.18 同步基础；核对官方 PlatformView 启用与限制、SurfaceProducer 迁移、DevTools 和 Channel 文档。覆盖线程与 VSync、root/外部纹理、renderer 回退与软件渲染冲突、HC/HCPP 事务与 buffer 回收、文字子路径。未做设备运行、iOS 像素复现或性能测量。
+last_verified_against: Flutter official docs source snapshots verified 2026-11-19 (architecture, Impeller, Android platform views, SurfaceProducer migration and breaking-change notices, DevTools, platform channels) / Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (Android task runners, VSync, Animator, Rasterizer, embedding, SurfaceProducer, renderer selection, Impeller cache, PlatformViewsController/2, HCPP transactions and AHB recycling) / Flutter 3.44.8 MediaTek backend-selection contrast / DEPS-pinned Skia 6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560 (glyph preblend and gamma configuration) / android-17.0.0_r1 (TextureView, SurfaceView, SurfaceFlinger, HWComposer, CompositionEngine Output, surface_control.h) / android17-6.18-2026-06_r6 (dma-buf, dma-fence, sync_file) / Perfetto FrameTimeline and Dart Timeline API docs
 last_verified: '2026-11-19'
 confidence: high
 last_idle_audit_at: '2026-07-29T22:35:32+08:00'
@@ -536,6 +537,8 @@ TLHC 把 PlatformView 结果绘入中间 target，交给 Flutter Raster 采样�
 
 TLHC 的优点是 Flutter transform、clip 和 opacity 更容易保持一致，Flutter Raster 可以把 PlatformView texture 与其他 Flutter 内容一起合成。代价包括中间 buffer、texture acquire、invalidate、输入坐标映射和无障碍桥接。快速滚动 WebView 可能出现抖动；PlatformView 内含 `SurfaceView` 时，如何转接独立 Surface 像素与 accessibility 也更复杂。
 
+文字放大镜还有一个 root 条件：官方文档指出，Flutter 内容未渲染到 `TextureView` 时，TLHC 的 text magnifier 会失效。需要文字放大镜时，应核对 root 是否为 `RenderMode.texture`，同时评估宿主 HWUI 采样成本。[来源：Texture layer 限制](https://docs.flutter.dev/platform-integration/android/platform-views#texture-layer)
+
 ### 原始 Hybrid Composition（HC）
 
 HC 会把原生 View 加入 Android View hierarchy。固定源码中的 `PlatformViewsController` 在需要同步时调用 `FlutterView.convertToImageView()`，把 Flutter root 临时切换到 `FlutterImageView`；Flutter overlay 也通过 ImageReader-backed View 绘回宿主层级。`FlutterMutatorView` 负责对原生 View 应用位置、变换、裁剪和可见性。
@@ -563,7 +566,7 @@ HC 会把原生 View 加入 Android View hierarchy。固定源码中的 `Platfor
 
 ### Hybrid Composition++（HCPP）
 
-HCPP 从 Flutter 3.44 起提供，当前仍是实验性 opt-in。运行或测试时可以使用 `--enable-hcpp`；release 构建则应在 `<application>` 下设置 `io.flutter.embedding.android.EnableHcpp=true`。
+HCPP 从 Flutter 3.44 起提供，当前仍是实验性 opt-in。运行或测试时可以使用 `--enable-hcpp`，但该 flag 不能传给 `flutter build`。构建时，应在 `AndroidManifest.xml` 的 `<application>` 下设置 `io.flutter.embedding.android.EnableHcpp=true`。[来源：HCPP 启用方式](https://docs.flutter.dev/platform-integration/android/platform-views#hcpp)
 
 配置写上只是应用提出了请求，固定源码接下来还要过运行时条件：
 
@@ -589,7 +592,9 @@ Impeller AHB swapchain 用 `ASurfaceTransaction_setBuffer()` 提交 root buffer 
 
 HCPP 可以降低原始 HC 的同步负担，并避开它的动态 raster/platform 合并；等待换了位置——固定实现首次建立 overlay 时，仍会把任务投递到 platform runner 并等待 latch。
 
-当前 overlay 仅有单个顶层 Surface，用 difference clip 模拟部分叠放，透明 PlatformView 的复杂穿插可能出问题。旧 Flutter App 想用 HCPP，要自己升级 engine 并显式开启，系统升到 Android 14–17 也不会代劳。[来源：HCPP embedder](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/external_view_embedder/external_view_embedder_2.cc)
+固定实现只使用一个顶层 overlay，并用 difference clip 模拟部分叠放。官方列出的已知问题是：`Flutter canvas → PlatformView → Overlay → 透明 PlatformView` 四层相交时，透明 PlatformView 无法正确显示。使用这种布局时，要把叠放关系列入画面正确性检查。[来源：HCPP 已知限制](https://docs.flutter.dev/platform-integration/android/platform-views#hcpp)
+
+旧 Flutter App 想用 HCPP，要自己升级 engine 并显式开启，系统升到 Android 14–17 也不会代劳。[来源：HCPP embedder](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/external_view_embedder/external_view_embedder_2.cc)
 
 <!-- gracker-diagram: ed13-07-hcpp-gates-overlay-and-init-wait -->
 ![HCPP 先过运行条件，单 overlay 与平台初始化等待仍存在](../../assets/diagrams/ch13/ed13-07-hcpp-gates-overlay-and-init-wait.png)
@@ -609,7 +614,7 @@ Android 17 的 NDK 头文件保留了这套 API 29+ 契约，并从 API 36 起�
 
 | 模式 | 像素路径 | 长处 | 重点代价 |
 |---|---|---|---|
-| TLHC | Native View → texture → Flutter Raster → root | Flutter transform、clip、opacity 较完整；普通 Flutter 渲染性能较稳定 | 快速滚动可能抖动；存在中间 texture；SurfaceView、a11y（无障碍）、text magnifier 有限制 |
+| TLHC | Native View → texture → Flutter Raster → root | Flutter transform、clip、opacity 较完整；普通 Flutter 渲染性能较稳定 | 快速滚动可能抖动；存在中间 texture；SurfaceView、a11y（无障碍）有限制；text magnifier 需要 TextureView root |
 | HC | Native View 保留在宿主 hierarchy；Flutter root/overlay 可转 ImageReader View | 原生输入、无障碍与 View 行为较完整 | raster/platform 动态合并、Flutter image/overlay 同步；Android 10 前 copy 很重 |
 | HCPP | 原生 View/child Surface + Impeller AHB/SurfaceControl → SF | 避免原始 HC 动态 merge，改善同步 | Flutter 3.44+ 实验性；API 34+、Impeller Vulkan；单 overlay 叠放限制 |
 | VD fallback | Native View → VirtualDisplay → 中转 texture → Flutter | 兼容部分无法使用 TLHC 的对象 | buffer、内存、延迟和输入/a11y 桥接成本更高 |
@@ -624,6 +629,8 @@ Flutter widget tree 与 Android View hierarchy 是两套不同的对象树。Pla
 - 嵌入 `SurfaceView` 的 PlatformView 拥有自己的 child Surface，clip、alpha 与 accessibility 要按 child Surface 的规则另查。
 
 画面位置正确、触摸位置出错时，我们同时检查 Flutter transform、Android View bounds 和 MotionEvent 坐标映射；视觉遮挡出问题时，再对照 Flutter overlay、宿主 View z-order 和 SurfaceFlinger layer tree。
+
+对于自行更新 `SurfaceView` / `SurfaceTexture` 内容的 PlatformView，官方还要求在内容绘制后（更具体地说，swapchain 翻转后）对自身或父 View 调用 `invalidate()`。输入 buffer 更新了、宿主却没有重绘时，先检查这个通知是否送达；它只请求 View 更新，实际读取 buffer 仍需满足完成依赖。[来源：PlatformView 手动 invalidation](https://docs.flutter.dev/platform-integration/android/platform-views#manual-view-invalidation)
 
 
 ## Buffer、fence 与显示边界
