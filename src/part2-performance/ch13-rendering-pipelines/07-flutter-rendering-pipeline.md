@@ -174,11 +174,27 @@ sources:
 - type: skia
   path: https://github.com/google/skia/blob/6ecffccd32d5ab4f2818a4d5f0c4744e2fa97560/gn/skia.gni
   role: fixed Gamma 的 Android 默认值
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/flutter_main.cc
+  role: 软件渲染与 Impeller 配置冲突的 fatal check 及 renderer 选择
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/fml/logging.h
+  role: FML_CHECK 的 fatal 日志语义
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/fml/logging.cc
+  role: fatal 日志触发 KillProcess 与 abort
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/renderer/backend/vulkan/swapchain/ahb/ahb_swapchain_impl_vk.cc
+  role: transaction completion、previous release fence 与 AHB 池复用
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h
+  role: OnComplete 与 previous release fence 契约，以及 API 36 起推荐的 buffer release 回调
 last_body_apply_at: '2026-11-19T07:18:20+08:00'
+last_deep_review_at: '2026-11-19T08:43:19+08:00'
 last_source_verified_at: '2026-11-19'
-verification_scope_note: 文字子路径按固定 Flutter commit 及 DEPS 锁定的 Skia revision 静态核验；未复现 iOS 像素统计，未据此推定 Android 17 文字差异。其余章节来源核验范围仍见 last_verified_against。
-last_verified_against: Flutter docs fetched 2026-10-24 + pinned Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (VsyncWaiterAndroid, VsyncWaiter, Animator, Rasterizer, Android embedding, SurfaceProducer, Impeller, PlatformViewsController/2) / android-17.0.0_r1 (TextureView.java, SurfaceView.java, SurfaceFlinger.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c) + Flutter 3.44.8 unique workflow and 16 KB plugin boundary
-last_verified: '2026-10-24'
+verification_scope_note: 固定 Flutter commit、DEPS 锁定的 Skia revision 与 Android 17 TextureView、SurfaceView、SurfaceControl 头文件按静态源码核对；覆盖软件渲染冲突、HCPP buffer 回收、SurfaceProducer 回调迁移与文字子路径。未做设备运行、iOS 像素统计或性能测量；其余历史来源范围见 last_verified_against。
+last_verified_against: Flutter docs fetched 2026-10-24 + pinned Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (VsyncWaiterAndroid, VsyncWaiter, Animator, Rasterizer, Android embedding, SurfaceProducer, Impeller, PlatformViewsController/2) / android-17.0.0_r1 (TextureView.java, SurfaceView.java, SurfaceFlinger.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c) + Flutter 3.44.8 unique workflow and 16 KB plugin boundary + 2026-11-19 static review (FlutterMain/FML fatal, AHB swapchain/SurfaceTransaction, Android 17 surface_control.h, SurfaceProducer migration, pinned Skia glyph path)
+last_verified: '2026-11-19'
 confidence: high
 last_idle_audit_at: '2026-07-29T22:35:32+08:00'
 consolidated_from:
@@ -408,7 +424,7 @@ API 29+ 的固定源码会取得 `Image.getHardwareBuffer()`，再用 `Bitmap.wr
 - 未强制使用 GL texture、API 29+ 且设备不在已知 HardwareBuffer 缺陷列表时，使用 `ImageReaderSurfaceProducer`；
 - 其他情况使用 `SurfaceTextureSurfaceProducer`。
 
-`TextureRegistry.SurfaceProducer` 在 Flutter 3.22 进入源码，官方迁移文档把 3.24 定为插件可以采用的最低稳定版本。`onSurfaceAvailable()` 与 `handlesCropAndRotation()` 的新契约在 3.27 提供，`onSurfaceCleanup()` 在 3.29 取代旧的 `onSurfaceDestroyed()`。审计插件时，我们核对其声明的 Flutter 最低版本和实际实现的回调，旧插件的行为按它发布时的契约查，当前 API 文档只覆盖当前版本。
+`TextureRegistry.SurfaceProducer` 在 Flutter 3.22 进入源码，官方迁移文档把 3.24 定为插件可以采用的最低稳定版本。`onSurfaceAvailable()` 与 `handlesCropAndRotation()` 的新契约在 3.27 提供，3.29 则以销毁前通知的 `onSurfaceCleanup()` 取代旧的 `onSurfaceDestroyed()`；3.28 及更早的旧回调在 Surface 已销毁后才触发，无法用来提前停止绘制。审计插件时，我们核对其声明的 Flutter 最低版本和实际实现的回调，旧插件的行为按它发布时的契约查，当前 API 文档只覆盖当前版本。[来源：Surface 插件迁移说明](https://docs.flutter.dev/release/breaking-changes/android-surface-plugins)
 
 `createSurfaceProducer()` 默认采用 `SurfaceLifecycle.manual`。固定实现只有请求 `resetInBackground` 且选中 ImageReader backing 时，才注册内存压力清理回调；`onSurfaceCleanup()` 在清理前通知调用方停用旧 Surface，恢复后再取得新 Surface。`SurfaceTextureSurfaceProducer.setCallback()` 是空实现。`getSurface()` 的契约要求按需重新取得，resize/重建后以重新取得的 Surface 为准；callback 出现与否跟随 backing 实现，resize 后没有 callback 也属正常。[来源：TextureRegistry](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/view/TextureRegistry.java)
 
@@ -435,14 +451,14 @@ API 29+ 的固定源码会取得 `Image.getHardwareBuffer()`，再用 `Bitmap.wr
 1. 通常构建中，Impeller 启用、API 29+ 且不是 Vivante workaround 分支时，`SelectedRenderingAPI()` 返回动态选择；非 release 还支持显式指定 GLES/Vulkan，需与默认 autoselect 区分；
 2. `AndroidContextDynamicImpeller` 尝试创建 Vulkan context；
 3. 模拟器、已知问题 SoC、缺失能力或无效 Vulkan context 会让它改用 **Impeller OpenGLES**；
-4. 默认选择中的低 API、显式关闭 Impeller 或 Vivante workaround 可进入 Skia GLES；软件渲染需按配置与 Impeller 互斥检查，两者同时打开时的回退行为要单独验证。`SLIMPELLER` 等构建条件也会改变可选路径。
+4. 默认选择中的低 API、显式关闭 Impeller 或 Vivante workaround 可进入 Skia GLES；在 `!SLIMPELLER` 构建中，同时启用软件渲染与 Impeller 会触发 `FML_CHECK`，随后调用 `abort()` 终止进程。排查这种启动失败时，应先核对配置；需要软件渲染时显式关闭 Impeller。`SLIMPELLER` 等构建条件也会改变可选路径。[来源：FlutterMain](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/flutter_main.cc#L267-L302)、[FML fatal 处理](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/fml/logging.cc#L185-L199)
 
 所以报告里要把 renderer 与 backend 分开记录：`Impeller/Vulkan`、`Impeller/OpenGLES` 或 `Skia/OpenGLES`——没有 Vulkan backend 时，也可能正在用 Impeller GLES。revision 同样要固定：本文 commit 对 MediaTek 优先读取 `ro.vendor.build.version.sdk`，缺失时用 OS API、以有效 API `< 32` 避让 Vulkan；`3.44.8` 对照则使用设备 API `< 31` 避让；vendor/engine 条件要按 revision 逐个核对，OS 版本新旧替代不了。[来源：固定 commit](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc)、[3.44.8 对照](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc)
 
 <!-- gracker-diagram: ed13-07-renderer-backend-and-mediatek-revision -->
 ![Renderer 与 backend 分开选择，MediaTek 避让条件再按 revision 核对](../../assets/diagrams/ch13/ed13-07-renderer-backend-and-mediatek-revision.png)
 
-图：通常构建Impeller启用/API29+且非Vivante workaround才动态选择，非release强制backend和SLIMPELLER编译条件另查。动态context尝试Vulkan，模拟器/已知SoC/缺能力/无效context可转ImpellerGLES；低API/关闭Impeller/Vivante可走SkiaGLES，software与Impeller互斥配置另验。MediaTek属性存在时，固定8a9f61c commit优先vendorSDK缺失用OS，有效API<32避让；3.44.8对照用设备API<31，Android17推不出现场backend。图为通常分支，非穷尽全部构建配置；Vulkan不可用不等一定Skia。
+图：通常构建Impeller启用/API29+且非Vivante workaround才动态选择，非release强制backend和SLIMPELLER编译条件另查。动态context尝试Vulkan，模拟器/已知SoC/缺能力/无效context可转ImpellerGLES；低API/关闭Impeller/Vivante可走SkiaGLES，!SLIMPELLER构建同时启用software与Impeller会触发FML_CHECK并终止进程。MediaTek属性存在时，固定8a9f61c commit优先vendorSDK缺失用OS，有效API<32避让；3.44.8对照用设备API<31，Android17推不出现场backend。图为通常分支，非穷尽全部构建配置；Vulkan不可用不等一定Skia。
 
 ### Impeller 解决了什么
 
@@ -580,12 +596,14 @@ HCPP 可以降低原始 HC 的同步负担，并避开它的动态 raster/platfo
 
 图：HCPP Flutter3.44实验optin，flag/manifest只是请求；还须API34+、Impeller启用、实际kImpellerVulkan且context允许SurfaceControlswapchain。失败回原App配置策略，fallback并不统一固定。满足可使用embedder2，避开原始HC动态raster/platformmerge，但仍有平台事务同步。当前一个顶层overlay，以differenceclip处理后续PlatformView矩形，透明复杂穿插可能受限。首次overlay创建会投递platform任务并等初始化latch；这不是消除了CPU等待，也不要和SFbufferlatch混为一谈。普通PlatformView仍可在hostwindow，实际childSurface另确认，Layer不保证DEVICE。
 
-AHB 池复用还要分清当前与上一块 buffer：提交 B 的 completion 中查询 previous A 的 release fence，将旧 A 连同 fence 放回池；以后重新取得 A 时把该 fd 导入 Vulkan semaphore，GPU 写入前遵守 Consumer 最后使用依赖。一块 buffer 能否覆写，看它的 release 依赖是否满足；当前 B 自己的提交 callback、Producer 完成依赖说的都只是写入一侧。[来源：AHB swapchain](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/renderer/backend/vulkan/swapchain/ahb/ahb_swapchain_impl_vk.cc)
+AHB 池复用还要分清当前与上一块 buffer：提交 B 的 transaction completion 是显示端的事务完成通知，固定实现用它查询 previous A 的 release fence，再把旧 A 连同 fence 放回池；以后重新取得 A 时把该 fd 导入 Vulkan semaphore，GPU 写入前遵守 Consumer 最后使用依赖。B 的 completion 不能单独证明 B 已可覆写；Producer fence 的 signal 也只表示写入完成。[来源：AHB swapchain](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/renderer/backend/vulkan/swapchain/ahb/ahb_swapchain_impl_vk.cc)
+
+Android 17 的 NDK 头文件保留了这套 API 29+ 契约，并从 API 36 起推荐 `ASurfaceTransaction_setBufferWithRelease()` 与 `ASurfaceTransaction_OnBufferRelease`。采用新回调后，要继续遵守随回调返回的 release fence，避免再经 `OnComplete` 重复释放同一 buffer。本文固定 Flutter commit 仍使用旧方案，系统升级不会自动替换 engine 的回收实现。[来源：Android 17 SurfaceControl 契约](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h)
 
 <!-- gracker-diagram: ch13-07-36-hcpp-ahb-reuse -->
 ![HCPP AHB 池复用的 fence 依赖](../../assets/diagrams/ch13/ch13-07-36-hcpp-ahb-reuse.png)
 
-图：buffer 提交携带写完成依赖，旧 buffer 回池后仍需遵守 release 依赖。 OnComplete 对应的是 previous buffer，当前 B 的释放另看 release 依赖；GPU wait semaphore 与 CPU 等待发生在不同侧面。
+图：提交 B 时携带 Producer 写完成依赖；B 的 transaction completion 中查询的是 previous A 的 release fence，旧 A 回池后仍要等该依赖满足才能重写。B 自己的可复用时机另看其 release 依赖；GPU wait semaphore 与 CPU 等待分开判断。
 
 ### PlatformView 选型
 
