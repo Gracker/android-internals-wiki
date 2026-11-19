@@ -15641,6 +15641,71 @@
       "summary": "last source verification 2026-08-16 older than 90 days",
       "type": "stale-source-verification",
       "updated_at": "2026-11-18T02:00:19.433422+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "close_note": "已在选定章节中按一手源码修复；静态证据断言、元数据、目录链接、diff 与中文新增行检查均通过。未做 Android 设备运行或 iOS 像素复现。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261119-083519-deep-review-861b7c11",
+      "created_at": "2026-11-19T08:43:19.546822+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261119-083519-deep-review-861b7c11",
+      "details": "{\"claim\": \"软件渲染与 Impeller 同时打开时，正文只要求另行验证回退行为，未说明固定实现会终止进程。\", \"evidence\": [\"固定 Flutter commit 的 flutter_main.cc:271-279 在 !SLIMPELLER 分支对 enable_software_rendering && enable_impeller 执行 FML_CHECK(!settings.enable_impeller)。\", \"同一 commit 的 fml/logging.h:104-108 将 FML_CHECK 映射到 kLogFatal；fml/logging.cc:185-199 在 fatal 日志析构时调用 KillProcess()/abort()。\"], \"target_range\": \"原始正文第 438 行及第 445 行图注；H2 Impeller 与 Skia：先辨认 renderer，再讨论成本\", \"recommended_action\": \"明确 !SLIMPELLER 的适用范围、fatal/abort 结果与启用软件渲染时关闭 Impeller 的配置要求；同步改正图注。\"}",
+      "id": "finding-ch13-7-impeller-software-fatal",
+      "log_path": "logs/deep-review/2026-11-19-20261119-083519-deep-review-861b7c11-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/flutter_main.cc#L271-L299",
+        "https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/fml/logging.h#L104-L108",
+        "https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/fml/logging.cc#L185-L199"
+      ],
+      "status": "verified",
+      "summary": "明确软件渲染与 Impeller 配置冲突触发 fatal check，而非等待回退验证",
+      "type": "runtime-configuration-boundary",
+      "updated_at": "2026-11-19T08:48:44.586659+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "close_note": "已在选定章节中按一手源码修复；静态证据断言、元数据、目录链接、diff 与中文新增行检查均通过。未做 Android 设备运行或 iOS 像素复现。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261119-083519-deep-review-861b7c11",
+      "created_at": "2026-11-19T08:43:19.625140+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261119-083519-deep-review-861b7c11",
+      "details": "{\"claim\": \"AHB 池段落把当前 B 的提交 callback 与 Producer 完成依赖一起归为写入侧，混淆 transaction completion 与 Producer fence；图注也把 OnComplete 本身说成对应 previous buffer。\", \"evidence\": [\"固定 Flutter commit 的 surface_transaction.cc:31-60 注册 ASurfaceTransaction_setOnComplete；ahb_swapchain_impl_vk.cc:361-380 在该回调中获取 previous release fence，替换 currently_displayed_texture_ 并将旧 texture 连同 fence 回池。\", \"android-17.0.0_r1/include/android/surface_control.h:141-161、277-312 定义 completion 为显示端事务更新完成通知，previous release fence 保护被替换的旧 buffer，当前 buffer 的 completion 不等于其 release。\", \"Android 17 同一头文件从 API 36 起推荐 OnBufferRelease/setBufferWithRelease；新回调的 release fence 必须被遵守，启用新回调后不再经 OnComplete 重复释放。\"], \"target_range\": \"原始正文第 583、588 行；H3 Hybrid Composition++（HCPP）\", \"recommended_action\": \"改为 B 的 transaction completion 返回 previous A 的 release 依赖；保留旧 A 回池后 GPU semaphore 等待机制，明确 B 自身另有 release 边界，附 API 36+ 推荐接口与固定 engine 尚未迁移的版本限制。\"}",
+      "id": "finding-ch13-7-hcpp-completion-release",
+      "log_path": "logs/deep-review/2026-11-19-20261119-083519-deep-review-861b7c11-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/toolkit/android/surface_transaction.cc#L31-L60",
+        "https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/renderer/backend/vulkan/swapchain/ahb/ahb_swapchain_impl_vk.cc#L361-L380",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h"
+      ],
+      "status": "verified",
+      "summary": "区分 HCPP transaction completion、previous buffer release 与 Producer 写完成依赖",
+      "type": "fence-semantics",
+      "updated_at": "2026-11-19T08:48:44.649950+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/07-flutter-rendering-pipeline.md",
+      "close_note": "已在选定章节中按一手源码修复；静态证据断言、元数据、目录链接、diff 与中文新增行检查均通过。未做 Android 设备运行或 iOS 像素复现。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261119-083519-deep-review-861b7c11",
+      "created_at": "2026-11-19T08:43:19.694933+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261119-083519-deep-review-861b7c11",
+      "details": "{\"claim\": \"SurfaceProducer 迁移段落记录了 3.29 的回调更名，但遗漏官方提示：3.28 及更早的 onSurfaceDestroyed 在销毁后通知，无法在该回调中提前停止渲染。\", \"evidence\": [\"官方 android-surface-plugins 迁移文档 version-note:80-91 明确 3.26 及更早用 onSurfaceCreated，3.28 及更早用 onSurfaceDestroyed；旧销毁回调在 Surface 已失效后通知，不能提供停止渲染的提前量。\", \"固定 FlutterRenderer.java:737-754 在 cleanup() 前调用 onSurfaceCleanup()，与新契约相符；同文 Timeline:126-142 给出 3.22/3.24/3.27/3.29 稳定版本边界。\"], \"target_range\": \"原始正文第 411 行；H2 External texture 与 SurfaceProducer\", \"recommended_action\": \"在现有版本迁移段落明确旧回调发生在销毁后、新回调发生在销毁前，保留各版本边界并补官方链接。\"}",
+      "id": "finding-ch13-7-surfaceproducer-old-callback",
+      "log_path": "logs/deep-review/2026-11-19-20261119-083519-deep-review-861b7c11-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://docs.flutter.dev/release/breaking-changes/android-surface-plugins",
+        "https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java#L737-L754"
+      ],
+      "status": "verified",
+      "summary": "补全 SurfaceProducer 旧销毁回调与新清理回调的通知时机差异",
+      "type": "migration-lifecycle-warning",
+      "updated_at": "2026-11-19T08:48:44.714062+08:00"
     }
   ],
   "schema_version": 1
