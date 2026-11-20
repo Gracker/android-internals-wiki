@@ -15811,6 +15811,91 @@
       "summary": "Android 17 Native DCL 官方来源锚点无效",
       "type": "source-anchor",
       "updated_at": "2026-11-19T22:42:13.211883+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md",
+      "close_note": "已按 android-17.0.0_r1 源码修正；metadata、SUMMARY、diff-check 与新增中文表达门禁均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261120-103519-idle-audit-f624a63d",
+      "created_at": "2026-11-20T10:43:10.348302+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261120-103519-idle-audit-f624a63d",
+      "details": "5.1 将普通窗口路径接到 InputManager::createInputChannel；android-17.0.0_r1 的该入口注明 Used by tests only 并检查 shell/root。JNI NativeInputManager::createInputChannel 实际通过 getDispatcher() 直接调用分发器。已替换错误路径并交代测试入口的调用身份边界。",
+      "id": "finding-4d7b79e58c65",
+      "log_path": "logs/audit/2026-11-20-20261120-103519-idle-audit-f624a63d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/core/jni/com_android_server_input_InputManagerService.cpp",
+        "frameworks/native/services/inputflinger/InputManager.cpp",
+        "frameworks/base/services/core/java/com/android/server/wm/WindowState.java"
+      ],
+      "status": "fixed",
+      "summary": "普通窗口 InputChannel 创建链误经仅供测试的 InputManager::createInputChannel",
+      "type": "incorrect-call-chain",
+      "updated_at": "2026-11-20T10:44:56.847953+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md",
+      "close_note": "已按 android-17.0.0_r1 源码修正；metadata、SUMMARY、diff-check 与新增中文表达门禁均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261120-103519-idle-audit-f624a63d",
+      "created_at": "2026-11-20T10:43:10.431911+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261120-103519-idle-audit-f624a63d",
+      "details": "3.2 未区分监听链里的 C++/Rust 键盘过滤阶段与由 WMS/IMS 安装的 Java InputFilter；完整链路还写成不存在的 InputDispatcher.filterInputEvent()。已说明前者运动事件透传、键盘辅助功能和独立启用状态；后者经 notifyKey/notifyMotion 中的 mPolicy.filterInputEvent 调用。",
+      "id": "finding-dfe4b40d239c",
+      "log_path": "logs/audit/2026-11-20-20261120-103519-idle-audit-f624a63d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/native/services/inputflinger/InputFilter.cpp",
+        "frameworks/native/services/inputflinger/InputManager.cpp",
+        "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "frameworks/base/core/java/android/view/InputFilter.java"
+      ],
+      "status": "fixed",
+      "summary": "同名 C++/Rust 与 Java InputFilter 的位置和原生策略回调归属不清",
+      "type": "component-identity",
+      "updated_at": "2026-11-20T10:44:56.904654+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md",
+      "close_note": "已按 android-17.0.0_r1 源码修正；metadata、SUMMARY、diff-check 与新增中文表达门禁均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261120-103519-idle-audit-f624a63d",
+      "created_at": "2026-11-20T10:43:10.488537+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261120-103519-idle-audit-f624a63d",
+      "details": "正文提及 @TestApi 和已弃用但未保留 UiAutomation.java 的 CTS 迁移提示。已补充 @hide、uinput/HID/进程内辅助工具，并区分隐藏三参数与公开双参数 injectInputEvent 的弃用状态。",
+      "id": "finding-4e246298f3fd",
+      "log_path": "logs/audit/2026-11-20-20261120-103519-idle-audit-f624a63d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/app/UiAutomation.java"
+      ],
+      "status": "fixed",
+      "summary": "UiAutomation 过滤器测试入口遗漏 CTS 迁移方向与弃用签名边界",
+      "type": "missing-migration-boundary",
+      "updated_at": "2026-11-20T10:44:56.961980+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md",
+      "close_note": "已按 android-17.0.0_r1 源码修正；metadata、SUMMARY、diff-check 与新增中文表达门禁均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261120-103519-idle-audit-f624a63d",
+      "created_at": "2026-11-20T10:43:10.544929+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261120-103519-idle-audit-f624a63d",
+      "details": "注入入口章节只描述注入标志与显示屏，没有交代 AccessibilityService.java 明示的用户/本服务/其他服务手势取消以及放大、触摸探索影响。已加入警告、CANCEL 排查入口及返回 true 不等于完成、可选 GestureResultCallback 的结果边界。",
+      "id": "finding-bf61d3947ac3",
+      "log_path": "logs/audit/2026-11-20-20261120-103519-idle-audit-f624a63d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/accessibilityservice/AccessibilityService.java"
+      ],
+      "status": "fixed",
+      "summary": "dispatchGesture 遗漏取消既有手势的公开合同与完成回调边界",
+      "type": "missing-api-warning",
+      "updated_at": "2026-11-20T10:44:57.019168+08:00"
     }
   ],
   "schema_version": 1
