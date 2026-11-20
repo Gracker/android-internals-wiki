@@ -4,7 +4,8 @@ title: Input 分发、拦截与安全边界
 chapter: '3.1'
 section: '3.1'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-21'
+last_verified: '2026-11-20'
+last_source_verified_at: '2026-11-20T10:45:20+08:00'
 last_verified_against: AOSP android-17.0.0_r1 InputManager/InputThread/EventHub/InputReader/InputProcessor/InputDispatcher/AnrTracker/InputTransport/InputEventReceiver/ViewRootImpl/ViewGroup; kernel android17-6.18-2026-06_r6 evdev.c
 version_note: Android 12/13 使用 InputClassifier，Android 14-17 使用 InputProcessor；正文行为以 Android 17 为准
 confidence: medium
@@ -17,6 +18,10 @@ sources:
   path: frameworks/native/services/inputflinger/reader/InputReader.cpp
 - type: aosp
   path: frameworks/native/services/inputflinger/InputProcessor.cpp
+- type: aosp
+  path: frameworks/native/services/inputflinger/InputFilter.cpp
+- type: aosp
+  path: frameworks/base/services/core/jni/com_android_server_input_InputManagerService.cpp
 - type: aosp
   path: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
 - type: aosp
@@ -61,7 +66,7 @@ related_chapters:
 - '9.1'
 - '14.6'
 last_deep_review_at: '2026-08-21T12:46:33+08:00'
-last_idle_audit_at: '2026-08-07T14:35:13+08:00'
+last_idle_audit_at: '2026-11-20T10:45:20+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md
@@ -215,8 +220,10 @@ InputReader
 - `UnwantedInteractionBlocker` 处理手掌误触、触控笔与手指触摸冲突等策略；
 - `PointerChoreographer` 管理指针图标、控制器等视觉表现；
 - `InputProcessor` 可以接入动作分类；
-- `InputFilter` 可以把事件交给系统输入过滤能力；
+- `InputFilter` 是 inputflinger 内部的 C++/Rust 按键过滤阶段，处理 slow keys、bounce keys、sticky keys 等键盘辅助功能；运动事件在此直接透传；
 - 指标收集器与交互报告器用于统计和交互状态感知。
+
+这里的 `InputFilter` 与后文的 Java `android.view.InputFilter` 是两个组件。Java 过滤器由 WMS/IMS 安装，在 `InputDispatcher` 的策略回调处接收事件；两者的启用状态和处理位置要分别检查。
 
 所以排查触摸延迟时，我们先用输入跟踪、线程状态、`dumpsys` 和功能开关确认目标设备启用了哪些处理阶段，再谈归因。
 
@@ -314,11 +321,14 @@ InputReader
 ```text
 WindowState.openInputChannel()
   → InputManagerService.createInputChannel()
-  → NativeInputManagerService.createInputChannel()
-  → InputManager::createInputChannel()
+  → NativeInputManagerService.NativeImpl.createInputChannel()
+  → nativeCreateInputChannel()（JNI）
+  → NativeInputManager::createInputChannel()
   → InputDispatcher::createInputChannel()
   → InputChannel::openInputChannelPair()
 ```
+
+`NativeInputManager` 通过 `mInputManager->getDispatcher()` 直接调用分发器。`InputManager::createInputChannel()` 是另一个仅供测试使用的 Binder 入口，只接受 shell 或 root 调用，不在普通窗口的创建路径中。
 
 `openInputChannelPair()` 创建：
 
@@ -719,6 +729,8 @@ WMS 的 `mCurrentFocus` 只覆盖键盘焦点，触摸目标可能与它不同�
 - `frameworks/native/services/inputflinger/reader/InputReader.cpp`：读取循环、映射器输出与锁边界
 - `frameworks/native/services/inputflinger/InputManager.cpp`：监听阶段的构造顺序
 - `frameworks/native/services/inputflinger/InputProcessor.cpp`：异步 MotionClassifier
+- `frameworks/native/services/inputflinger/InputFilter.cpp`：C++/Rust 键盘辅助过滤与运动事件透传
+- `frameworks/base/services/core/jni/com_android_server_input_InputManagerService.cpp`：普通窗口输入通道创建的 JNI 与 NativeInputManager 入口
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`：目标选择、队列、发布、ANR、窗口信息更新
 - `frameworks/native/services/inputflinger/dispatcher/AnrTracker.cpp`：按超时时间和令牌排序的超时索引
 - `frameworks/native/services/inputflinger/trace/`：`android.input.inputevent` 数据源
@@ -826,7 +838,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 完整链路如下：
 
-`WindowManagerInternal.setInputFilter()` → `InputManagerService.setInputFilter()` → `filter.install(host)` → `mNative.setInputFilterEnabled(true)` → `InputDispatcher.filterInputEvent()` → `InputFilter` Handler → `InputFilterHost.sendInputEvent()` → `mNative.injectInputEvent(... FLAG_FILTERED)`
+`WindowManagerInternal.setInputFilter()` → `InputManagerService.setInputFilter()` → `filter.install(host)` → `mNative.setInputFilterEnabled(true)` → `InputDispatcher.notifyKey()/notifyMotion()` 中的 `mPolicy.filterInputEvent()` → `InputFilter` Handler → `InputFilterHost.sendInputEvent()` → `mNative.injectInputEvent(... FLAG_FILTERED)`
 
 按键使用同一模型，只是原生判断入口换成 `shouldSendKeyToInputFilterLocked()`。启用或禁用过滤器时，`InputDispatcher#setInputFilterEnabled()` 会调用 `resetAndDropEverythingLocked()` 清理进行中的分发状态；系统选择丢弃当前事件流，是为了避免新旧过滤器状态拼成不一致的手势。
 
@@ -979,7 +991,9 @@ private void syncInputTransactionsAndInjectEventIntoSelf(MotionEvent event) {
 
 ##### 3. UiAutomation.injectInputEventToInputFilter()
 
-这是标为 `@TestApi` 且已弃用的过滤器测试入口。它通过 `UiAutomationConnection` 调到 `AccessibilityManagerService.injectInputEventToInputFilter()`，直接把事件交给无障碍输入过滤器；这是专门留给过滤器测试的入口，与普通测试、应用注入的路径是两回事。
+这是标为 `@TestApi @hide` 且已弃用的过滤器测试入口。它通过 `UiAutomationConnection` 调到 `AccessibilityManagerService.injectInputEventToInputFilter()`，直接把事件交给无障碍输入过滤器；这是专门留给过滤器测试的入口，与普通测试、应用注入的路径是两回事。
+
+Android 17 源码中的 CTS 迁移说明建议改用 uinput（`com.android.cts.input.UinputDevice`）或 HID（`com.android.cts.input.HidDevice`）测试设备，进程内注入也可使用 `com.android.cts.input.InjectInputProcess`。隐藏的三参数 `injectInputEvent(InputEvent, boolean, boolean)` 带有相同的 CTS 弃用说明；公开的双参数 `injectInputEvent(InputEvent, boolean)` 未标为弃用。选择测试入口时应区分这几个签名，不能把测试 API 的弃用范围扩大到全部 UiAutomation 注入能力。
 
 ##### 4. adb shell input
 
@@ -1004,7 +1018,11 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 }
 ```
 
-`displayId` 决定事件注入哪块显示屏，`isAccessibilityTool()` 则决定是否附加“来自无障碍工具”的内部标志。几种入口的差异如下：
+`displayId` 决定事件注入哪块显示屏，`isAccessibilityTool()` 则决定是否附加“来自无障碍工具”的内部标志。
+
+`dispatchGesture()` 的 API 文档还警告：调用会取消当前进行中的手势，包括用户、本服务或其他服务发起的手势；注入事件也可能受到放大和触摸探索功能影响。排查触摸流中的 `CANCEL` 时，应把无障碍注入的调用时间一并对齐。返回 `true` 表示请求已发出；提供 `GestureResultCallback` 时，完成或取消结果由该回调报告。
+
+几种入口的差异如下：
 
 | 方式 | 进入方式 | 与 InputFilter 的关系 | 目标范围 | 普通应用可用的受支持标记 |
 |------|----------|------------------|----------|------------------------|
