@@ -4,8 +4,10 @@ chapter: '20.2'
 section: '20.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-25'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers crash docs; kotlinx.coroutines 1.11.0 API and exception-handling docs current on 2026-10-25
+last_verified: '2026-11-20'
+last_verified_against: AOSP android-17.0.0_r1 fatal-handler, stack, SIGQUIT, exit-info and persistence sources; Android Developers ApplicationExitInfo and WebViewClient; kotlinx.coroutines 1.11.0 API/source; Google Play Device and Network Abuse policy checked on 2026-11-20
+last_source_verified_at: '2026-11-20'
+last_idle_audit_at: '2026-11-20T22:39:40+08:00'
 confidence: medium-high
 sources:
 - type: clippings-structure-ref
@@ -67,6 +69,8 @@ sources:
   path: art/runtime/native/dalvik_system_VMStack.cc (android-17.0.0_r1)
 - type: aosp
   path: art/runtime/signal_catcher.cc (android-17.0.0_r1)
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_set.h
 - type: aosp
   path: frameworks/base/core/java/com/android/internal/os/RuntimeInit.java (android-17.0.0_r1)
 - type: aosp
@@ -561,7 +565,7 @@ handler 再调用 `thread.getStackTrace()` 得到的是较晚的采样，栈顶�
 
 #### 3.1 SignalCatcher 在普通线程上下文中处理 SIGQUIT
 
-ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程通过 `sigwait()` 同步等待这个信号。`sigwait()` 在普通线程控制流里返回信号编号，不会把处理逻辑插入某条业务线程正在执行的指令中。[`SignalCatcher::HandleSigQuit()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc) 调用 `Runtime::DumpForSigQuit()`，后者再进入 `ThreadList::DumpForSigQuit()` 等诊断模块。
+ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程同步等待这个信号。Android 17 的 `SignalCatcher::WaitForSignal()` 调用 [`SignalSet::Wait()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_set.h)，底层使用 `sigwaitinfo64()` 取得信号编号与 `siginfo_t`。等待返回后，诊断逻辑在 SignalCatcher 的普通线程控制流中继续执行，不会插入某条业务线程正在执行的指令中。[`SignalCatcher::HandleSigQuit()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc) 调用 `Runtime::DumpForSigQuit()`，后者再进入 `ThreadList::DumpForSigQuit()` 等诊断模块。
 
 整个流程里，`SIGQUIT` 只由 SignalCatcher 一条线程接收；Java 堆的遍历也不会发生在任意业务线程的异步 signal handler 里。这条线程已附着到 ART，可以按运行时规则使用锁、C++ 输出流和诊断对象；普通应用的 Native fatal handler 缺的就是这些前提。
 
@@ -812,7 +816,7 @@ Java monitor 的解释到 ART 为止，套不到内核上：`android17-6.18-2026
 | `getAllStackTraces()` 会全局暂停并生成原子快照 | Android 17 逐线程调用 `getStackTrace()`，每条栈采样时间不同 |
 | `Thread.getStackTrace()` 只读内存，几乎没有成本 | 跨线程路径会挂起目标线程，并创建 Java 栈对象 |
 | Native Crash 时直接调用 ART `ThreadList::ForEach()` 更完整 | 私有 ABI、运行时锁和对象分配在 fatal signal 下都不安全 |
-| SIGQUIT 会逐个 signal 所有 Java 线程 | ART SignalCatcher 用 `sigwait()` 接收，再通过 checkpoint 组织线程 dump |
+| SIGQUIT 会逐个 signal 所有 Java 线程 | ART SignalCatcher 用 `sigwaitinfo64()` 接收，再通过 checkpoint 组织线程 dump |
 | 公开 `StackTraceElement[]` 能看到锁 owner | 普通公开栈没有 blocked/held object；详细注解来自 ART/platform 私有路径 |
 | `WAITING` 就是等某线程持锁 | `Object.wait()` 已释放 monitor；park、Binder、I/O 也可表现为等待 |
 | 一个 `futex_wait` frame 就能定位 Java 锁 | futex 是底层等待原语，还要用 native/Java 栈和事件关联语义 |
