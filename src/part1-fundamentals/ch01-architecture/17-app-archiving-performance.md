@@ -4,7 +4,7 @@ chapter: '1.17'
 section: '1.17'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-09-11'
+last_verified: '2026-11-21'
 last_verified_against: AOSP android-17.0.0_r1 + Android 17 API 37 official documentation
 confidence: high
 sources:
@@ -61,7 +61,8 @@ related_chapters:
 - '8.2'
 - '25.10'
 - '18.1'
-last_idle_audit_at: '2026-09-11T22:42:48+08:00'
+last_idle_audit_at: '2026-11-21T18:39:28+08:00'
+last_source_verified_at: '2026-11-21T18:39:28+08:00'
 ---
 
 # 应用归档（App Archiving）机制与恢复性能
@@ -248,7 +249,7 @@ APK 和原生库位于包级代码目录，可被多个 Android 用户共用；`
 
 ## 5. 桌面启动器如何把失败启动变成恢复请求
 
-归档入口仍保存原始 `ComponentName`。桌面启动器点击后会照常调用 `startActivity()`，但 APK 已不可用，`ActivityStarter` 找不到 `ActivityInfo`。Android 17 在 `START_CLASS_NOT_FOUND` 分支中增加归档判断：
+归档入口仍保存原始 `ComponentName`。桌面启动器点击后会照常调用 `startActivity()`，但目标包在归档用户下已标记为未安装，`ActivityStarter` 找不到可启动的 `ActivityInfo`。这一判断不要求共享 APK 已被删除。Android 17 在 `START_CLASS_NOT_FOUND` 分支中增加归档判断：
 
 ```text
 aInfo == null
@@ -455,7 +456,7 @@ Perfetto 中至少同时观察：
 
 当前 `PackageArchiver` 没有“归档专用 SDM 签名校验”分支。`.sdm` 是安装时可随 APK 一并处理的编译元数据文件；它或云端生成的编译材料如果参与安装，走的是 `PackageInstallerSession` 的通用能力。没有覆盖完整恢复流程的证据时，不应把这类材料写成归档恢复的强制步骤。
 
-归档也不会为目标应用创建新的 SELinux 安全域。归档状态下没有可执行 APK 和可启动进程；恢复后，系统仍根据包身份、`seinfo` 安全标签和平台策略，把进程放入正常的应用安全域。
+归档也不会为目标应用创建新的 SELinux 安全域。归档用户的 `installed=false`，无法按普通启动流程解析并启动目标应用组件；其他用户仍安装该包时，共享 APK 可以继续保留并供那些用户运行。恢复后，系统仍根据包身份、`seinfo` 安全标签和平台策略，把进程放入正常的应用安全域。
 
 ## 11. 版本边界
 
