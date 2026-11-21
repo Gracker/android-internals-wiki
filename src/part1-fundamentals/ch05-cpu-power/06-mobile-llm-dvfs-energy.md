@@ -4,8 +4,9 @@ chapter: '5.6'
 section: '5.6'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-22'
-last_verified_against: AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android/Perfetto/Google AI Edge docs checked 2026-08-22 + arXiv 2507.02135
+last_verified: '2026-11-21'
+last_verified_against: AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android Session API / Perfetto / LiteRT-LM Android docs checked 2026-11-21 + arXiv 2507.02135v1
+last_source_verified_at: '2026-11-21'
 confidence: medium
 tags:
   - dvfs
@@ -32,9 +33,9 @@ sources:
 - type: official
   path: https://developer.android.com/games/optimize/adpf
 - type: official
-  path: https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/android
+  path: https://developers.google.com/edge/litert-lm/android
 - type: official
-  path: https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/llm_inference/android/README.md
+  path: https://developer.android.com/reference/android/os/PerformanceHintManager.Session
 - type: official
   path: https://github.com/google-ai-edge/LiteRT-LM
 - type: official
@@ -47,7 +48,7 @@ sources:
   path: hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl
 - type: aosp
   path: hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl
-last_idle_audit_at: '2026-08-22T18:35:18+08:00'
+last_idle_audit_at: '2026-11-21T10:39:36+08:00'
 ---
 
 # 移动端 LLM 推理的 DVFS 与能效边界
@@ -297,14 +298,14 @@ try {
 
 这段代码表达“这些线程会周期性完成一轮工作，并希望在目标时间内结束”。`createHintSession()` 可能返回 `null`，所以应用必须保留没有 hint session 时仍可正确执行的路径。线程 ID 应来自被度量 CPU 工作的长期 worker；示例用 `Process.myTid()` 取得 Linux TID，不能用 Java `Thread.getId()`。同一 Session 的更新、上报和关闭要串行化；只有公共 API 明确支持且边界匹配时，才使用 `WorkDuration` 分别报告 CPU/GPU 工作，不能把整个服务请求等待直接当成本进程 CPU 工作。
 
-这个 `Session` 的主要操作包括：
+各方法的最低 API 级别不同，使用时需对照 [Session API 参考](https://developer.android.com/reference/android/os/PerformanceHintManager.Session)：
 
-- `updateTargetWorkDuration(long)`：目标发生变化时更新期限；
-- `reportActualWorkDuration(long)`：每个周期报告实际时长；
-- `setThreads(int[])`：长期 worker 集合变化时更新线程；
-- `setPreferPowerEfficiency(boolean)`：在相应的 flagged API（功能开关（flag）控制可用性）可用时表达能效偏好；
-- `reportActualWorkDuration(WorkDuration)`：在相应 flagged API（由平台功能开关控制是否可用的 API） 可用时报告总时长及 CPU / GPU 时长；
-- `close()`：工作结束后释放 session。
+- `updateTargetWorkDuration(long)`：API 31 起可用，目标发生变化时更新期限；
+- `reportActualWorkDuration(long)`：API 31 起可用，每个周期报告实际时长；
+- `setThreads(int[])`：Android 14（API 34）起可用，长期 worker 集合变化时替换线程列表；Android 12 / 13 需要在集合变化时关闭旧会话，再用新线程列表创建会话；
+- `setPreferPowerEfficiency(boolean)`：Android 15（API 35）起提供的接口；Android 17 固定源码仍有 flagged API（功能开关（flag）控制可用性）注解，使用前核对 SDK 与设备支持，用于表达能效偏好；
+- `reportActualWorkDuration(WorkDuration)`：Android 15（API 35）起提供的接口；Android 17 固定源码仍有 flagged API（由平台功能开关控制是否可用的 API）注解，使用前核对 SDK 与设备支持，用于报告总时长及 CPU / GPU 时长；
+- `close()`：API 31 起可用，工作结束后释放 session。
 
 LLM decode 具有周期性，可以把一个稳定的 token 生成过程或一组 token 作为工作周期，但要满足三个条件：
 
@@ -581,6 +582,8 @@ E_request = ∫ V(t) × I(t) dt
 ### LiteRT-LM 的版本边界
 
 LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行时项目。其公开仓库提供 Kotlin / C++ 接口、`.litertlm` 模型格式，以及 CPU、GPU、NPU 后端支持说明；具体硬件覆盖受版本、模型和设备影响。应用应固定经过验证的 LiteRT-LM 版本和模型产物，并保存运行时日志。
+
+原 MediaPipe LLM Inference Android 文档地址已重定向到 LiteRT-LM 入口，Android 接入应查阅 [LiteRT-LM Android 指南](https://developers.google.com/edge/litert-lm/android)，避免继续依赖已失效的旧示例。现行指南以 `Engine` 和 `.litertlm` 模型为入口；迁移时需重新核对接口与模型产物。指南还提醒，`Engine.initialize()` 可能耗时较长，应在后台线程或协程执行，避免阻塞 UI；使用结束后调用 `close()` 释放资源。迁移后的加载、首轮推理与稳态性能需要重新建立基线。
 
 `android-17.0.0_r1` 能确定的是 Android 平台 API、Framework 与 HAL 的版本；LiteRT-LM 仓库版本要单独查证，AOSP 源码和 LiteRT-LM 发布版本（release）必须分别记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM，二者的模型、权限、更新和资源管理互不相同，详见 5.5 节。
 
