@@ -16090,6 +16090,68 @@
       "summary": "进程退出后 profiling 重投递的引用页面已不包含对应契约",
       "type": "source-claim-mismatch",
       "updated_at": "2026-11-22T18:42:53.110460+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/07-profiling-manager.md",
+      "close_note": "已按 r1 源码修正专用/全局回调的可选关系、同步异常的完整条件及源码表，删除相互冲突旧句；API 文档与固定提交 AndroidX 包装均已核对。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-223519-idle-audit-c7b3087f",
+      "created_at": "2026-11-22T22:39:05.050514+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-223519-idle-audit-c7b3087f",
+      "details": "显式请求段把全局 listener 写成必需，源码表又把无 listener 的固定 r1 行为写成丢弃；r1 requestProfiling 在 executor/listener 均非空时接受专用组合，否则仅在 mCallbacks 为空时同步抛 IllegalArgumentException。官方文档允许专用、全局或两者。",
+      "id": "finding-e0e73eb11470",
+      "log_path": "logs/audit/2026-11-22-20261122-223519-idle-audit-c7b3087f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "status": "verified",
+      "summary": "ProfilingManager 专用回调与全局回调前提表述互相冲突",
+      "type": "callback-contract",
+      "updated_at": "2026-11-22T22:43:40.563103+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/07-profiling-manager.md",
+      "close_note": "已在 trigger 表后补齐 ANR 不等于进程已被杀、共享 UID 多包注册 ANOMALY 可能无产物两项警示；API 文档与 r1 ProfilingTrigger.java 一致。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-223519-idle-audit-c7b3087f",
+      "created_at": "2026-11-22T22:39:05.109091+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-223519-idle-audit-c7b3087f",
+      "details": "ANR 触发不表示进程已被杀；同一 UID 下多个包注册 ANOMALY 时，部分异常可能没有产物。两项警示同时存在于 API 文档和 android-17.0.0_r1 ProfilingTrigger.java，表中未保留。",
+      "id": "finding-ce79390fa903",
+      "log_path": "logs/audit/2026-11-22-20261122-223519-idle-audit-c7b3087f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "status": "verified",
+      "summary": "ProfilingTrigger 表遗漏 ANR 与共享 UID anomaly 的官方限制",
+      "type": "missing-warning",
+      "updated_at": "2026-11-22T22:43:40.619551+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/07-profiling-manager.md",
+      "close_note": "已删除正文与来源标签中的本轮叙述，保留版本、固定提交与全部链接；整篇可见正文流程词扫描通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-223519-idle-audit-c7b3087f",
+      "created_at": "2026-11-22T22:39:05.166028+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-223519-idle-audit-c7b3087f",
+      "details": "版本段含本轮核验的稳定版，参考资料含本轮固定 AndroidX 源码；改成明确版本和固定提交标签，保留技术信息与 URL，不把编辑过程留给读者。",
+      "id": "finding-f46140941081",
+      "log_path": "logs/audit/2026-11-22-20261122-223519-idle-audit-c7b3087f-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "src/part3-tools/ch15-other-tools/07-profiling-manager.md"
+      ],
+      "status": "verified",
+      "summary": "ProfilingManager 正文与来源标签残留本轮核验叙述",
+      "type": "editorial-residue",
+      "updated_at": "2026-11-22T22:43:40.675510+08:00"
     }
   ],
   "schema_version": 1
