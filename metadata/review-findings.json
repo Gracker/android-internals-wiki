@@ -16004,6 +16004,92 @@
       "summary": "strip 后的 ELF 仍可能通过 .dynsym 解析导出函数名，不能一概判为无符号",
       "type": "symbolication-boundary",
       "updated_at": "2026-11-22T14:41:58.737978+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "close_note": "已同步修正产物说明、隐私审批和类型概览：区分 Perfetto ART 引用图与 HPROF，保留敏感访问控制；补入发布构建 profileable 条件。官方指南与 android-17.0.0_r1 源码已对照；metadata/summary/diff 及新增中文行 gate 通过，无设备实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-183519-idle-audit-d9713a40",
+      "created_at": "2026-11-22T18:39:36.185675+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-183519-idle-audit-d9713a40",
+      "details": "正文将 ProfilingManager 的 Perfetto ART heap graph 与原始 HPROF 混为一谈，声称可能含 token/完整对象；官方采集、分析指南与 android-17.0.0_r1 Configs.java、ART perfetto_hprof.cc 表明输出为类、大小、引用关系及有限元数据，不包含字符串正文或原始数组载荷。发布构建的 Java heap dump、heap profile 和 stack sample 还受系统 profileable 配置约束。安全审批与敏感文件保护应保留。",
+      "id": "finding-e8db4edc54e7",
+      "log_path": "logs/audit/2026-11-22-20261122-183519-idle-audit-d9713a40-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc"
+      ],
+      "status": "fixed",
+      "summary": "ProfilingManager Java heap dump 被误写为包含完整对象内容，且缺少 profileable 可用性条件",
+      "type": "profiling-artifact-contract",
+      "updated_at": "2026-11-22T18:42:52.913546+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "close_note": "已补 OOM 默认异常处理链、自行请求仍受限、同 UID 多包 ANOMALY 限制，以及 COLD_START 新 trace+stack、5 秒默认终止、discard 缓冲和启动延迟。官方 API 及固定 Android17 tag 均支持；本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-183519-idle-audit-d9713a40",
+      "created_at": "2026-11-22T18:39:36.250359+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-183519-idle-audit-d9713a40",
+      "details": "已列官方来源与 android-17.0.0_r1 ProfilingTrigger.java 均明确：OOM 触发依赖自定义 UncaughtExceptionHandler 继续调用默认处理器；同一 UID 多包注册 ANOMALY 时部分异常可能不返回产物；COLD_START 新启动 trace 与 stack sampling，有启动延迟、reportFullyDrawn/默认 5 秒及 discard 缓冲边界。现稿仅列产物与通用配额，缺少影响无结果排查的特定条件。",
+      "id": "finding-9322a8ffe1c9",
+      "log_path": "logs/audit/2026-11-22-20261122-183519-idle-audit-d9713a40-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 ProfilingTrigger 缺少 OOM 默认异常处理链与 shared-UID 异常触发限制",
+      "type": "missing-api-preconditions",
+      "updated_at": "2026-11-22T18:42:52.976524+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "close_note": "已补 API34 前更新/组件状态变化复用 REASON_USER_REQUESTED 及 API34 后专用原因码；保留无法仅凭原因码区分用户入口的限制。官方 API 与 android-17.0.0_r1 源码对照通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-183519-idle-audit-d9713a40",
+      "created_at": "2026-11-22T18:39:36.312823+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-183519-idle-audit-d9713a40",
+      "details": "正文将此 reason 仅解释为用户停止动作，但章节覆盖 API30-37。官方 ApplicationExitInfo 与 android-17.0.0_r1 源码说明：API34 之前应用更新或组件状态变化也可复用该 reason；API34 起才有 REASON_PACKAGE_UPDATED 与 REASON_PACKAGE_STATE_CHANGE，不能跨版本据此推断用户主动停止。",
+      "id": "finding-ae29e49bf044",
+      "log_path": "logs/audit/2026-11-22-20261122-183519-idle-audit-d9713a40-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "status": "fixed",
+      "summary": "REASON_USER_REQUESTED 缺少 Android 14 之前兼含更新与组件状态变化的边界",
+      "type": "exit-reason-version-boundary",
+      "updated_at": "2026-11-22T18:42:53.044940+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "close_note": "已将重投递引用改到 ProfilingManager API 的全局监听器契约，并收窄为回调失败后可尝试重投递；不保证下一次启动必定得到文件。来源与正文对应，本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-183519-idle-audit-d9713a40",
+      "created_at": "2026-11-22T18:41:27.717836+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-183519-idle-audit-d9713a40",
+      "details": "现有 retrieve-and-analyze 页面只说明产物分析与堆图格式，正文却用它支持进程退出后重投递。ProfilingManager.registerForAllProfilingResults API 当前仍明确规定失败后可尝试重投递，应将引用改到该 API，保留 may-be-attempted 而非保证交付。",
+      "id": "finding-67a7845e434d",
+      "log_path": "logs/audit/2026-11-22-20261122-183519-idle-audit-d9713a40-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze"
+      ],
+      "status": "fixed",
+      "summary": "进程退出后 profiling 重投递的引用页面已不包含对应契约",
+      "type": "source-claim-mismatch",
+      "updated_at": "2026-11-22T18:42:53.110460+08:00"
     }
   ],
   "schema_version": 1
