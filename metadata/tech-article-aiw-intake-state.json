@@ -8299,6 +8299,18 @@
       "status": "appended",
       "title": "同一个 App，五种手机五种死法：2026 年 Android 五大 ROM 兼容的 8 个真实坑这不是一篇\"适配 ch"
     },
+    "source/juejin-android/2026-11-23-76411428-Android 无障碍服务失效，一次Ac.md": {
+      "chapter": "待分类",
+      "entry_id": "0af28ab6db81647e",
+      "last_appended": "2026-11-23T05:25:19.608424+08:00",
+      "last_seen": "2026-11-23T05:25:19.608424+08:00",
+      "mtime": 1795378674.4023266,
+      "score": 17,
+      "sha256": "dcd5c506706dc77d187656b9bb4f045f705781fd9e6ffe3b252bcb6ff1c598a0",
+      "size": 21186,
+      "status": "appended",
+      "title": "Android 无障碍服务失效，一次AccessibilityService“离奇死亡”的完整破案实录# 从一次无障碍"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -12190,22 +12202,22 @@
   "last_report": {
     "appended": 1,
     "considered": 1,
-    "cutoff": "2026-11-21T05:20:19.617129+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-22.md",
+    "cutoff": "2026-11-22T05:20:19.396434+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-23.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2633,
+    "scanned": 2634,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1441,
       "path": 33,
-      "unchanged": 1158
+      "unchanged": 1159
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-22T05:25:19.396434+08:00",
+  "last_run_at": "2026-11-23T05:25:19.608424+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
