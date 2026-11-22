@@ -61,9 +61,10 @@ related_chapters:
 - '8.2'
 - '22.10'
 - '17.2'
-last_verified: '2026-10-25'
-last_source_verified_at: '2026-10-25'
-last_verified_against: AOSP android-17.0.0_r1 Profiling module + fixed AndroidX d153d87 Profiling.kt + Core 1.19.0/1.19.1 binary API + Tracing 2.0.5 metadata + SDK37 public jar + SDK_INT_FULL 36.1 + Android Developers guides verified 2026-10-25
+last_verified: '2026-11-22'
+last_source_verified_at: '2026-11-22'
+last_verified_against: AOSP android-17.0.0_r1 Manager/Trigger/Result + ProfilingService/Configs/RateLimiter source spot-check + fixed AndroidX d153d87 + ProfilingManager/ProfilingTrigger API notices + Core/Tracing Maven metadata verified 2026-11-22; Core 1.19.0/1.19.1 binary API + SDK37 public jar + SDK_INT_FULL 36.1 checks retained from 2026-10-25
+last_idle_audit_at: '2026-11-22T22:40:41+08:00'
 confidence: medium
 consolidated_from:
 - src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md
@@ -98,7 +99,7 @@ heap profile 默认采的是 native allocation（C/C++ 等原生堆分配）。�
 
 ## API 层与版本判断
 
-接入这个 API，我们第一步把版本范围搞清楚。平台类 `android.os.ProfilingManager` 是 Android 15（API 35）加入的；AndroidX Core 1.15.0 首次提供了 `androidx.core.os.Profiling` 和四个 request builder，免去了直接拼装平台参数的工作，本轮核验的稳定版 1.19.1 仍提供这些封装。注意 AndroidX 回调里的结果类型仍是 `android.os.ProfilingResult`。
+接入这个 API，我们第一步把版本范围搞清楚。平台类 `android.os.ProfilingManager` 是 Android 15（API 35）加入的；AndroidX Core 1.15.0 首次提供了 `androidx.core.os.Profiling` 和四个 request builder，免去了直接拼装平台参数的工作，稳定版 1.19.1 仍提供这些封装。注意 AndroidX 回调里的结果类型仍是 `android.os.ProfilingResult`。
 
 显式请求只要求 API 35。系统触发能力分成 API 36、Android 16 minor release 1（36.1）、API 37 三档。36.1 属于 minor SDK release（主 API 级别内的次要 SDK 版本），不属于通过扩展版本号发布能力的 `SdkExtensions` B Extension；下面的守卫用 `SDK_INT_FULL` 把 API 37 基线和 Android 16 minor release 1 分开处理。
 
@@ -145,7 +146,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 类名归属先分清：`Profiling`、`ProfilingRequest`、`SystemTraceRequestBuilder` 和 `BufferFillPolicy` 来自 `androidx.core.os`，`CancellationSignal` 与 `ProfilingResult` 来自 `android.os`。请求是异步执行的：方法返回那一刻，采集可能还没开始，最终成败也还悬着，这两件事都要等回调；服务还可能因配置、并发或配额拒绝。加上 API 并没有“已经开始录制”回调，如果目标是某段业务代码，启动就要留出余量，并用 `androidx.tracing.Trace` 打上可搜索的 slice（带开始、结束时间的时间线区段），业务段结束后再调 `stopSignal.cancel()` 请求停止。
 
 
-本次请求要用专用回调的话，`executor`（回调执行器）和 request-specific listener 要成对提供——这组回调以两者齐全为前提，所以全局 listener 要事先注册好。固定 r1 在回调列表为空时会同步抛出 `IllegalArgumentException`，这种异常发生在调用点，光等失败回调是等不到的；显式请求推荐传入完整组合，并在调用点处理同步异常。回调线程里只做轻量处理，文件压缩、网络上传这类活交给受约束的后台任务。
+显式请求可以只提供 request-specific listener，也可以只使用已注册的全局 listener，或同时使用两者。使用专用回调时，`executor`（回调执行器）和 listener 必须成对提供；仅依赖全局回调时，要在发请求前完成注册。固定 r1 在未传入完整的专用回调组合、且该 manager 的回调列表为空时，会在调用点同步抛出 `IllegalArgumentException`，不会通过失败回调报告；显式请求推荐传入完整组合，并在调用点处理同步异常。回调线程里只做轻量处理，文件压缩、网络上传这类活交给受约束的后台任务。
 
 ## `BufferFillPolicy` 只有两个公开值
 
@@ -267,6 +268,8 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 | API 37 | <code>TRIGGER_<wbr>TYPE_<wbr>COLD_<wbr>START</code> | 为本次冷启动新开的 system trace 与 stack sampling |
 | API 37 | <code>TRIGGER_<wbr>TYPE_<wbr>APP_<wbr>COMPAT</code> | 产物随兼容性问题类型变化，<code>tag</code> 携带问题信息 |
 
+`ANR` trigger 在系统识别 ANR 后、尝试因此杀进程前触发，收到这类结果不表示进程已被杀。`ANOMALY` 还有限制：同一 UID 下多个包都注册该 trigger 时，部分异常可能不提供产物；排查这类“无文件”时，要同时核对共享 UID 下各包的注册情况。
+
 注册入口也有版本分层：`addProfilingTriggers()` 从 API 36 可用，`addAllProfilingTriggers()` 与 `requestRunningSystemTrace()` 属于 version 36.1。trigger 结果由全局 listener 接收；普通 trigger 的 `rateLimitingPeriodHours` 是额外最小间隔，一般还受整机 / UID 配额限制。固定 r1 对 anomaly 另有分支：多数 anomaly 绕过这套通用限流，memory-limit anomaly 使用专用限流——做预算和写文档时，把触发器按配额规则分组描述。
 
 ## 两个启动 trigger 的时间窗口
@@ -354,7 +357,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 
 | 源码位置 | 可验证的行为 |
 |---|---|
-| <code>framework/<wbr>java/<wbr>android/<wbr>os/<wbr>Profiling<wbr>Manager.<wbr>java</code> | 双层 listener、无 listener 时丢弃请求、<code>files/<wbr>profiling/<wbr></code>、重投提示、旧文件清理 |
+| <code>framework/<wbr>java/<wbr>android/<wbr>os/<wbr>Profiling<wbr>Manager.<wbr>java</code> | 双层 listener、未传入完整专用回调且回调列表为空时同步抛出 <code>IllegalArgumentException</code>、<code>files/<wbr>profiling/<wbr></code>、重投提示、旧文件清理 |
 | <code>framework/<wbr>java/<wbr>android/<wbr>os/<wbr>Profiling<wbr>Trigger.<wbr>java</code> | API 37 trigger 语义、冷启动 5 秒边界、OOM 默认 handler 要求、应用侧限流 |
 | <code>framework/<wbr>java/<wbr>android/<wbr>os/<wbr>Profiling<wbr>Result.<wbr>java</code> | 错误码、路径字段、<code>tag</code> 与 <code>trigger<wbr>Type</code>；失败路径为 null 是 API 合同，实际回调还需核对 Manager 的拼接实现 |
 | <code>service/<wbr>java/<wbr>com/<wbr>android/<wbr>os/<wbr>profiling/<wbr>Configs.<wbr>java</code> | 参数裁剪、默认范围、Perfetto 数据源和缓冲区策略 |
@@ -389,7 +392,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 6. [`android.os.ProfilingManager` API](https://developer.android.com/reference/android/os/ProfilingManager)
 7. [`android.os.ProfilingTrigger` API](https://developer.android.com/reference/android/os/ProfilingTrigger)
 8. [`android.os.ProfilingResult` API](https://developer.android.com/reference/android/os/ProfilingResult)
-9. [本轮固定 AndroidX `Profiling.kt` 源码](https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/core/core/src/main/java/androidx/core/os/Profiling.kt)
+9. [AndroidX `Profiling.kt` 源码（固定提交 `d153d87`）](https://android.googlesource.com/platform/frameworks/support/+/d153d87ed76372ece0c99dac837ff07ab845d495/core/core/src/main/java/androidx/core/os/Profiling.kt)
 10. [AOSP Profiling 模块：`android-17.0.0_r1`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/)
 11. [AOSP `ProfilingManager.java`：结果回调与旧文件清理](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
 12. [AOSP `ProfilingResult.java`：字段与错误码](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java)
