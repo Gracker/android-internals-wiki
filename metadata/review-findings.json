@@ -15983,6 +15983,27 @@
       "summary": "归档用户不可启动被泛化为设备上没有可执行 APK",
       "type": "multiuser-state-boundary",
       "updated_at": "2026-11-21T18:41:19.739366+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
+      "close_note": "已将 strip 后无符号的绝对断言改为动态导出符号与内部符号、源码调试信息的分层说明，新增 llvm-readelf 段检查入口和固定标签源码链接。AOSP libc 样本 strip 后仅有 .dynsym，llvm-symbolizer 返回 malloc / ??:0:0，llvm-addr2line 返回 malloc / ??:0；元数据、SUMMARY 链接、diff 和新增中文硬门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261122-143519-idle-audit-b64e5fb6",
+      "created_at": "2026-11-22T14:40:02.933950+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261122-143519-idle-audit-b64e5fb6",
+      "details": "6.1 ndk-stack 将 APK 中经过 strip 的 .so 一概描述为查不出符号，混淆动态导出符号与完整调试信息。android-17.0.0_r1 ElfInterface.cpp:360 同时读取 SHT_SYMTAB/SHT_DYNSYM；对同标签 AOSP libc 测试样本执行 llvm-strip --strip-unneeded 后，仅保留 .dynsym，llvm-symbolizer 与 llvm-addr2line 仍解析 malloc，但源码位置为 ??:0。",
+      "id": "finding-69838668ea2a",
+      "log_path": "logs/audit/2026-11-22-20261122-143519-idle-audit-b64e5fb6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterface.cpp",
+        "https://developer.android.com/ndk/guides/ndk-stack"
+      ],
+      "status": "verified",
+      "summary": "strip 后的 ELF 仍可能通过 .dynsym 解析导出函数名，不能一概判为无符号",
+      "type": "symbolication-boundary",
+      "updated_at": "2026-11-22T14:41:58.737978+08:00"
     }
   ],
   "schema_version": 1
