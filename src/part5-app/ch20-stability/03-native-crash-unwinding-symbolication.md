@@ -5,8 +5,9 @@ section: '20.3'
 section_title: Native Crash 分析与治理
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-25'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers ApplicationExitInfo, GWP-ASan, memory debugging, C++ support, native symbols and 16 KB page-size docs current on 2026-10-25
+last_verified: '2026-11-22'
+last_verified_against: AOSP android-17.0.0_r1; Android Developers ApplicationExitInfo, GWP-ASan, memory debugging, C++ support, native symbols, ndk-stack, HWASan and 16 KB page-size docs retrieved on 2026-11-22; stripped-ELF symbolication checked with an AOSP test fixture and LLVM 20.1.7
+last_idle_audit_at: '2026-11-22T14:40:02+08:00'
 confidence: medium-high
 consolidated_from:
 - src/part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md
@@ -860,7 +861,7 @@ NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
   -dump tombstone.txt
 ```
 
-`-sym` 要指向未剥离 ELF 目录；指向 APK 里已经 strip 的 `.so`，是查不出符号的。如果输出仍只有模块名和偏移，应检查 ABI、Build ID、输入 tombstone 的分隔头，以及第三方库是否已经丢失调试信息。
+`-sym` 要指向未剥离 ELF 目录。APK 中经过 strip 的 `.so` 可能仍保留 `.dynsym`，因而还能解析部分导出函数名；已经移除的内部符号、文件和行号无法从这份文件恢复。可用 `llvm-readelf -SW` 检查 `.symtab`、`.dynsym` 与 `.debug_*` 等段，确认保留了哪些符号和调试信息；平台的 [`ElfInterface`](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterface.cpp) 也会读取动态符号表。如果输出仍只有模块名和偏移，应检查 ABI、Build ID、输入 tombstone 的分隔头，以及第三方库是否已经丢失调试信息。
 
 #### 6.2 `llvm-symbolizer` 与 `llvm-addr2line`
 
