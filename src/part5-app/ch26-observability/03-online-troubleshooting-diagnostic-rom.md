@@ -4,9 +4,10 @@ chapter: '26.3'
 section: '26.3'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37); ProfilingManager details include Android 16 minor API version 36.1
-last_verified: '2026-10-25'
-last_source_verified_at: '2026-10-25'
-last_verified_against: AOSP android-17.0.0_r1 StatsManagerService/statsd sources and current Android Developers, Firebase Remote Config, and Google Play staged rollout docs reviewed 2026-10-25; SDK 36.1 minor release, profiling result types, failure-aware snapshots and bounded exit-history deduplication rechecked; host stubs only, no Android device test
+last_verified: '2026-11-22'
+last_source_verified_at: '2026-11-22'
+last_verified_against: Targeted source review of AOSP android-17.0.0_r1 ProfilingTrigger, ProfilingManager, Configs, ART perfetto_hprof, ApplicationExitInfo, StatsManagerService and statsd main; Android Developers profiling capture/analysis/API docs, JobScheduler, InstallSourceInfo, logging security, Google Play vitals/staged rollout and Firebase Remote Config docs checked 2026-11-22; heap-graph format, profiling availability, trigger preconditions and pre-API34 exit-reason semantics corrected; source review only, prior host-stub checks not repeated, no Android device test
+last_idle_audit_at: '2026-11-22T18:37:14+08:00'
 confidence: medium
 sources:
 - type: legacy-reference-preserved
@@ -69,6 +70,10 @@ sources:
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc
 - type: official
   path: https://developer.android.com/privacy-and-security/risks/dynamic-code-loading
 - type: android-source
@@ -480,6 +485,7 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 - 请求会被系统限流，也可能因为另一项 profiling 正在执行、磁盘空间不足、请求无效或执行失败而没有文件；提交了请求，系统也未必生成结果。
 - 请求需要成对提供 `Executor`（决定回调在哪个执行线程运行）与结果监听器，或者提前注册全局结果监听器。没有可投递的监听器时，请求没有可靠的结果出口。
 - 未提供 `CancellationSignal`（取消信号）且未设置时长时，系统使用默认时长；两者都存在时，先到达的结束条件生效。
+- 发布构建采集 Java heap dump、heap profile 和 stack sampling，要求应用允许系统 profiling。该能力默认开启；Manifest 显式设置 `<profileable android:enabled="false" />` 会关闭这条采集路径。版本与配额检查通过，也不能替代这项可用性检查。
 - 公开 API 只暴露 Perfetto 配置的一部分。需要任意 Perfetto 配置、设备范围系统追踪或调试构建能力时，应使用受控测试设备上的 Perfetto 工具路径。
 
 [`ProfilingResult`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java)在 Android 17 定义以下结果码：
@@ -498,11 +504,17 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 只有 `error_code == ERROR_NONE` 时才使用 `getResultFilePath()`；错误结果的路径可为空。文件位于请求 App 的数据目录，App 负责读取、上传、保留和删除，路径必须来自回调，别按固定目录拼接。
 
-系统 trace 会按平台规则脱敏，其他进程的 CPU 活动只合并显示在 `OtherProcesses` 中，以隐藏进程身份和具体行为；脱敏之后的文件仍要按敏感材料保管。Java heap dump 仍可能包含对象内容、token 和用户数据，应采用最高敏感级别。
+系统 trace 会按平台规则脱敏，其他进程的 CPU 活动只合并显示在 `OtherProcesses` 中，以隐藏进程身份和具体行为；脱敏之后的文件仍要按敏感材料保管。`ProfilingManager` 的 Java heap dump 输出为 `.perfetto-java-heap-dump`，保存类、对象大小、GC roots（垃圾回收根对象）、引用链与少量框架尺寸元数据，不包含普通对象的原始字段值、字符串正文或原始数组载荷。类名与引用结构仍需访问控制和保留期限。通过 `Debug.dumpHprofData()` 等路径取得的 `.hprof` 则可能包含完整对象数据，应按最高敏感级别保管；两种格式的读取能力与隐私风险要分别评估。
 
-[结果获取说明](https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze)还规定了进程死亡后的行为：若 App 在结果投递前退出，系统会在 App 下次启动并注册全局监听器后尝试投递。端侧必须尽早注册该监听器，同时接受结果因配额、进程生命周期或文件问题而缺失的可能性。
+[全局结果监听器说明](https://developer.android.com/reference/android/os/ProfilingManager)还规定了回调失败后的行为：例如 App 在采集期间退出时，系统可在 App 重新注册全局监听器后尝试重投递。端侧必须尽早注册该监听器，同时接受结果因配额、进程生命周期或文件问题而缺失的可能性。
 
 需要历史system trace的触发类型，依赖系统当时有抽样后台trace及可用配额；不能将这个前提推广到所有触发器。例如API37的`TRIGGER_TYPE_OOM`请求Java heap dump。按[各触发器契约](https://developer.android.com/reference/android/os/ProfilingTrigger)解释产物；结果依赖全局监听器，并区分“触发已登记”“系统产生结果”“结果已上传”。进程不在时的重投递也只是平台尝试。
+
+Android 17 的几类触发器还有各自的限制：
+
+- `TRIGGER_TYPE_OOM` 要求自定义 `Thread.UncaughtExceptionHandler` 继续调用默认未捕获异常处理器；截断这条调用链会使系统 OOM 触发失效。这种情况下，应用仍可通过 `requestProfiling()` 自行请求 Java heap dump，但请求仍受配额与执行条件约束。
+- `TRIGGER_TYPE_ANOMALY` 若被同一 UID 下的多个包注册，系统对部分异常可能不提供产物。排查缺失结果时，要核对同 UID 的注册情况，并保留 `ProfilingResult.getTag()` 给出的异常类型信息。
+- `TRIGGER_TYPE_COLD_START` 会新启动 system trace 与 stack sampling，采集到应用调用 `Activity.reportFullyDrawn()`，未调用时默认在 5 秒后停止。缓冲区满后丢弃新事件，采集开始仍可能延迟，不能据此保证冷启动最早阶段完整可见。
 
 命令回执保存请求参数、平台版本、结果码、错误消息、结果文件 ID 和上传状态。`rate_limited` 这类根据结果码归纳出的字段替代不了原始 `error_code`；请求时长或缓冲设置也应标为 `requested_*`，表示这是请求值，除非系统 API 明确返回实际采用值。
 
@@ -554,7 +566,7 @@ JDWP（Java Debug Wire Protocol，用于调试器与虚拟机通信）、远程�
 日志 SDK 要在数据进入文件前完成约束。服务端脱敏只能补救已上传的数据，本地文件、系统备份、崩溃材料或传输过程中的暴露仍然存在。
 
 - **结构化 allowlist**：字段包含类型、最大长度、采集目的、敏感级别和保留期。自由文本只允许用于经审查的低风险内容；异常 `message`、URL 和序列化对象也按不可信输入处理。
-- **分级审批**：普通状态日志、system trace、stack sample、网络诊断与 heap dump 采用不同审批级别。heap dump 可包含完整对象，应限制到明确授权的受控场景。
+- **分级审批**：普通状态日志、system trace、stack sample、网络诊断与 heap dump 采用不同审批级别。HPROF 可包含完整对象数据，应限制到明确授权的受控场景；`ProfilingManager` 堆图虽省略原始内容，类名、对象大小和引用关系仍需审批、访问控制与保留期限。
 - **本地与服务端期限**：命令、采集开关、文件、索引和备份分别设置 TTL，并验证删除任务。用户撤回授权或政策变更时，要有停止采集与处理遗留文件的规则。
 - **加密按威胁模型设计**：传输使用现代 TLS；落盘加密需定义要防护的攻击者、密钥来源、锁屏状态和轮换策略。字段最小化与访问控制不可省略，加密替代不了它们。
 - **地区与主体政策**：地区、渠道、企业设备、未成年人账号和用户授权状态可能对应不同规则。端侧在执行命令前再次判断，拒绝时只回传必要的政策错误码。
@@ -856,7 +868,7 @@ PSS 是 proportional set size（比例集大小），会把共享内存页按共
 解释退出原因时，有几处容易读错的地方：
 
 - `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等是平台给出的分类，可作为直接信号；
-- `REASON_USER_REQUESTED` 覆盖多种用户发起的停止动作，原因码本身区分不了"设置中的强行停止"和"从最近任务移除"等具体入口；
+- `REASON_USER_REQUESTED` 覆盖多种用户发起的停止动作，原因码本身区分不了"设置中的强行停止"和"从最近任务移除"等具体入口；Android 14 / API 34 之前，应用更新或组件状态变化也可能使用这个原因码。API 34 起才分别提供 `REASON_PACKAGE_UPDATED` 与 `REASON_PACKAGE_STATE_CHANGE`，因此旧版本记录不能单凭 `REASON_USER_REQUESTED` 归因到用户主动停止；
 - 部分设备不支持可靠报告 `REASON_LOW_MEMORY`。先查 `ActivityManager.isLowMemoryKillReportSupported()`；不支持时，低内存终止可能只表现为 `REASON_SIGNALED` 与 `SIGKILL`；
 - `REASON_FREEZER` 表示系统 freezer 相关退出。freezer 是让目标进程暂停执行的一种系统机制，该原因码用于命名某个厂商的后台管理功能并不合适；
 - `REASON_UNKNOWN` 或一般的 `REASON_SIGNALED` 信息不足，不要自动标记为"被安全中心杀死"；
@@ -934,7 +946,7 @@ ADPF 是向系统表达负载意图的控制接口，API 返回值只说明能�
 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager) 从 Android 15 / API 35 开始提供面向应用的性能采样请求。profile 在这里指一份用于定位性能问题的采样产物，四种类型各自回答不同问题：
 
 - system trace 记录进程、线程、调度、CPU 运行和系统或应用事件的时间关系，适合分析延迟与卡顿；
-- Java heap dump 保存某一时刻 Java 堆中的对象及引用关系，适合查找重复对象和内存泄漏；
+- Java heap dump 保存某一时刻 Java 堆的类型、对象大小与引用图，适合查找重复对象和内存泄漏；`ProfilingManager` 的这类产物省略字符串正文等原始对象内容，不用于读取 token 或业务文本；
 - heap profile 在发生内存分配时抽样并关联调用位置，适合观察分配热点和内存抖动；
 - stack sampling 按固定频率抽取正在 CPU 上运行的调用栈，适合定位 CPU 热点和代码执行路径。
 
@@ -1060,3 +1072,7 @@ profiling 与退出记录始终运行在权限、配额和结果缺失的约束�
 - [特权权限许可清单](https://source.android.com/docs/core/permissions/perms-allowlist)
 - [AOSP Android 17：`StatsManagerService`](https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsManagerService.java)
 - [AOSP Android 17：`statsd` 启动入口](https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/statsd/src/main.cpp)
+- [ProfilingManager 采集指南与 profileable 条件](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)
+- [ProfilingManager 产物分析与 ART heap dump 格式](https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze)
+- [AOSP Android 17：Profiling 配置中的 Java heap dump 数据源](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java)
+- [AOSP Android 17：ART Perfetto heap graph 写出实现](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc)
