@@ -6895,6 +6895,43 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://juejin.cn/post/7709778061000441910",
+      "title": "[掘金Android] Jetpack Compose 1.13 发布，憋了这么久终有交代了",
+      "summary": "Compose 1.13（BOM 2026.11.01，Kotlin 2.2+，compileSdk 37.1）实用向收敛：computedStateOf 不缓存结果、按结果相等性跳过重组，适合轻量阈值条件；runtime-tracing 让 Perfetto 从 State 写入追到引发的重组（API 29+，开销大）；LazyLayoutCacheWindow 用 ahead/behind 比例统一预取与离屏保留；CapturedAnimatedVisibility 捕获最后一帧完成退出动画，退出帧耗时低 7%-8%。Compose 版 ConstraintLayout/MotionLayout 开始弃用。Pixel 6+Android 17 锁频实测与 1.12.1 持平，TTFD 仍比 Views 慢 12.5%。",
+      "chapter": "ch13",
+      "processed_at": "2026-11-24T06:20:19.314408+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "route_confidence": 19,
+      "route_terms": [
+        "bom",
+        "kotlin",
+        "runtime-tracing",
+        "api",
+        "lazylayoutcachewindow"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-24-77097780-Jetpack Compose 1.13.md",
+      "title": "[技术文章] Jetpack Compose 1.13 发布，憋了这么久终有交代了Jetpack Compose 1.13 终于来了，",
+      "summary": "> 发布时间: 2026-11-20T01:03:32.000Z > 原文链接: https://juejin.cn/post/7709778061000441910 2026-11-20 982 阅读8分钟 Jetpack Compose 1.13 终于来了，对应 BOM 是 2026.11.01，需要 Kotlin 2.2 或更新版本 和 compileSdk 37....",
+      "chapter": "ch16",
+      "processed_at": "2026-11-24T06:20:19.314408+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "route_confidence": 16,
+      "route_terms": [
+        "t01",
+        "bom",
+        "kotlin",
+        "compilesdk"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
