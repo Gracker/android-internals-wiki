@@ -8311,6 +8311,78 @@
       "status": "appended",
       "title": "Android 无障碍服务失效，一次AccessibilityService“离奇死亡”的完整破案实录# 从一次无障碍"
     },
+    "source/juejin-android/2026-11-24-77041657-Android 架构七条铁律：架构师真正.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "061f2b91151047aa",
+      "last_appended": "2026-11-24T05:25:19.508744+08:00",
+      "last_seen": "2026-11-24T05:25:19.508744+08:00",
+      "mtime": 1795465131.9091918,
+      "score": 8,
+      "sha256": "a5e38a0fcdc680f48c04e453762817e66f6dd7d1f7ad47202fde3fbe507dd67c",
+      "size": 11104,
+      "status": "appended",
+      "title": "Android 架构七条铁律：架构师真正设计的不是代码，而是秩序前段时间，和一个年轻开发者聊 Android 架构。 他"
+    },
+    "source/juejin-android/2026-11-24-77068144-Kotlin 又要加语法糖了：这次轮到 .md": {
+      "chapter": "待分类",
+      "entry_id": "1b56eb25d80c3d55",
+      "last_appended": "2026-11-24T05:25:19.508744+08:00",
+      "last_seen": "2026-11-24T05:25:19.508744+08:00",
+      "mtime": 1795465131.9079573,
+      "score": 7,
+      "sha256": "a3ac8d4554b49ca0b256340b1a8398ff3fa650eb7d8544a4a7cd768762848154",
+      "size": 6887,
+      "status": "appended",
+      "title": "Kotlin 又要加语法糖了：这次轮到 if-elseKotlin 一直在改进。 Kotlin 2.5.0-Beta2"
+    },
+    "source/juejin-android/2026-11-24-77079571-代码越来越便宜，判断力越来越贵：AI 时.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "278c40285c43654b",
+      "last_appended": "2026-11-24T05:25:19.508744+08:00",
+      "last_seen": "2026-11-24T05:25:19.508744+08:00",
+      "mtime": 1795465131.9100597,
+      "score": 10,
+      "sha256": "eddabf3180cc863d62d2bbe8593465eaf30b7e0879a0c97e41cec87f145ba3d4",
+      "size": 25162,
+      "status": "appended",
+      "title": "代码越来越便宜，判断力越来越贵：AI 时代的 Android 架构与协程避坑指南AI 正在改变软件开发。 以前，一个程序"
+    },
+    "source/juejin-android/2026-11-24-77087280-Flutter Native Inter.md": {
+      "chapter": "待分类",
+      "entry_id": "ca64f06704c7f830",
+      "last_appended": "2026-11-24T05:25:19.508744+08:00",
+      "last_seen": "2026-11-24T05:25:19.508744+08:00",
+      "mtime": 1795465131.91075,
+      "score": 14,
+      "sha256": "fc2a022be00aa36259faf8e52bbdd8f77049555425c20b39993f6004d0ca85bc",
+      "size": 3877,
+      "status": "appended",
+      "title": "Flutter Native Interop 稳定了，Platform Channel 要退场了Flutter 3.50"
+    },
+    "source/juejin-android/2026-11-24-77093448-Android 工程师的技术信仰崩塌史.md": {
+      "chapter": "ch06-storage",
+      "entry_id": "f0dadf60692c3db8",
+      "last_appended": "2026-11-24T05:25:19.508744+08:00",
+      "last_seen": "2026-11-24T05:25:19.508744+08:00",
+      "mtime": 1795465131.9086096,
+      "score": 8,
+      "sha256": "d56f451a691e4815873d70b66b11834e397d172391c78148e72df346b5541a8b",
+      "size": 6952,
+      "status": "appended",
+      "title": "Android 工程师的技术信仰崩塌史Android 工程师的技术信仰崩塌史 每一个 Android 工程师， 都曾在某"
+    },
+    "source/juejin-android/2026-11-24-77097780-Jetpack Compose 1.13.md": {
+      "chapter": "待分类",
+      "entry_id": "b3c405307aef9b83",
+      "last_appended": "2026-11-24T05:25:19.508744+08:00",
+      "last_seen": "2026-11-24T05:25:19.508744+08:00",
+      "mtime": 1795465131.9073706,
+      "score": 18,
+      "sha256": "2d333d6685ef8f9bd7f7e1ad0ad6d2f3786e2d08d41df764428db0aca971e5e2",
+      "size": 13959,
+      "status": "appended",
+      "title": "Jetpack Compose 1.13 发布，憋了这么久终有交代了Jetpack Compose 1.13 终于来了，"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -12200,24 +12272,24 @@
     }
   },
   "last_report": {
-    "appended": 1,
-    "considered": 1,
-    "cutoff": "2026-11-22T05:20:19.396434+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-23.md",
+    "appended": 6,
+    "considered": 6,
+    "cutoff": "2026-11-23T05:20:19.608424+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-24.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2634,
+    "scanned": 2640,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1441,
       "path": 33,
-      "unchanged": 1159
+      "unchanged": 1160
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-23T05:25:19.608424+08:00",
+  "last_run_at": "2026-11-24T05:25:19.508744+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
