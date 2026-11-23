@@ -46,6 +46,12 @@ sources:
 - type: reference
   path: https://github.com/sarc-acl/sokatoa
 - type: reference
+  path: https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/README.md
+- type: reference
+  path: https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/docs/user/release-notes.md
+- type: reference
+  path: https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/docs/user/profiles.md
+- type: reference
   path: https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Studio
 - type: reference
   path: https://developer.arm.com/tools-and-software/streamline-performance-analyzer
@@ -67,9 +73,11 @@ sources:
   path: src/part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md
 - type: local
   path: src/part2-performance/ch13-rendering-pipelines/05-vulkan-hwui-multi-queue.md
-last_verified: '2026-10-25'
-last_source_verified_at: '2026-10-25'
-last_verified_against: AOSP android-17.0.0_r1 GPU proto/Vulkan loader and accepted display-pipeline sources; AGI v3.3.3 tag commit 5f97b4fd99a9459320b782203ce2de5351a1e661; current APA 0.10.0-canary Frame Profiler and release notes; Sokatoa commit 92b3fd5ca42f0b8a37936f8458a2dae726838b9a; primary documentation reviewed 2026-10-25
+last_verified: '2026-11-23'
+last_source_verified_at: '2026-11-23'
+last_idle_audit_at: '2026-11-23T22:39:52+08:00'
+last_verified_against: AOSP android-17.0.0_r1 GPU counter config and Vulkan loader; AGI v3.3.3 DEVDOC at 5f97b4fd99a9459320b782203ce2de5351a1e661; APA experimental canary Frame Profiler and compatibility/release notes; Sokatoa v1.2.0 README, release notes and capture modes at ad9539c46785d2d4e955eac9540eb90e2db8ed29; source spot checks 2026-11-23
+verification_scope_note: 2026-11-23 通读正文并抽查上述来源、AGI quickstart、Perfetto FrameTimeline 与 profileable 文档；其他实现细节保留 2026-10-25 的核验基线，未执行真机捕获、重放或全量厂商工具验证。
 related_chapters:
 - '2.7'
 - '14.2'
@@ -119,7 +127,7 @@ GPU 调试工具大致分四类：API 调用捕获、单帧重放、计数器分
 | 系统时间线 | 哪一帧晚，CPU、GPU、SurfaceFlinger、HWC 谁先偏离预算 | Perfetto、Android Performance Analyzer（APA） | 设备未暴露 GPU producer 时，GPU 轨道可能为空 |
 | 系统级 GPU | GPU 频率、render stage、计数器与 CPU 调度如何关联 | APA、AGI System Profiler、厂商 system profiler | counter 名称与语义依赖 GPU 和驱动 |
 | 单帧捕获与重放 | render pass 成本或 draw、pipeline、shader、资源问题 | APA canary Frame Profiler（性能）、AGI Frame Profiler、RenderDoc、Arm Frame Advisor | APA 抓帧为实验性功能；图形调试与逐 pass 测量各有覆盖，不能拿来测正常帧率 |
-| 多帧捕获 | 间歇性 pipeline/state 变化、连续帧资源与 shader 差异 | Sokatoa | 面向 Vulkan，要求 Android 13+，注入 layer 需要 debuggable APK 或 root |
+| 多帧捕获 | 间歇性 pipeline/state 变化、连续帧资源与 shader 差异 | Sokatoa | 面向 Vulkan，要求 Android 13+；v1.2.0 的 layer 注入支持 debuggable APK、`adb shell` 启动的命令行进程或 root 设备 |
 | 微架构分析 | ALU、纹理、tile、cache、带宽、occupancy 受限在哪里 | Arm Streamline、Snapdragon Profiler、厂商工具 | 结论只能绑定对应 GPU 架构与 counter 文档 |
 
 表里这些词后文会反复出现，先把含义说清。在 GPU 侧，render stage（渲染执行阶段） 是 GPU 工作的一个执行阶段；render pass 定义一组 attachment（渲染输入/输出图像） 及其处理过程；pipeline（各渲染阶段的配置） 把着色器与固定功能状态组合成一套渲染配置；shader 就是跑在 GPU 上的程序。再往微架构走一层，ALU 是算术逻辑单元，tile 是分块渲染中的小块区域，occupancy 表示执行资源被并行工作占用的程度——具体怎么算，仍由厂商定义。
@@ -295,14 +303,18 @@ Android 捕获通常要求 debuggable 应用、ADB 连接和受支持的 Vulkan 
 
 Sokatoa 由 Samsung Austin Research Center 发起，并与 Google、LunarG 协作，面向 Android Vulkan 应用提供 system 与 frame 两种视角的多帧捕获、Vulkan API/pipeline/shader 分析和设备端 replay。
 
-项目当前文档列出的使用条件是：
+项目 `v1.2.0` 的 [README](https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/README.md) 列出的使用条件是：
 
 - Android 13 或更高；
-- 注入 GFXR（GFXReconstruct 捕获与回放层）和 Sokatoa Vulkan layer 时，需要 debuggable APK 或已取得 root 权限的设备；
+- 注入 GFXR（GFXReconstruct 捕获与回放层）和 Sokatoa Vulkan layer 时，目标须为 debuggable APK、从 `adb shell` 启动的进程，或运行在已取得 root 权限的设备上；
 - performance view 支持 Xclipse、Mali、Adreno 和 PowerVR；
-- 当前可免费下载；本轮固定 README 的下载线为 `v1.1.0`，开源承诺写作“near future”，没有再承诺具体的 2026 年底日期。
+- 可免费下载；README 的下载版本为 `v1.2.0`，开源时间仍写作“near future”，未给出具体日期。
 
-多帧捕获适合调查间歇性 pipeline 创建、状态变化、资源生命周期和异常帧前后的差异。capture replay 仍受 API feature、extension、格式、driver 和 GPU 能力约束：记录的虽然是标准 Vulkan API，换一台 GPU 未必还能等价回放。
+`v1.2.0` 的[发布说明](https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/docs/user/release-notes.md)新增 `Process (started from adb shell)` 模式，用于启动并捕获 Android 上的命令行 Vulkan 可执行程序，可设置命令、环境变量、工作目录和进程名。这是独立的命令行进程捕获入口，不能据此把任意 release APK 视为可注入。
+
+多帧捕获适合调查间歇性 pipeline 创建、状态变化、资源生命周期和异常帧前后的差异。capture replay 仍受 API feature、extension、格式、driver 和 GPU 能力约束：记录的虽然是标准 Vulkan API，换一台 GPU 未必还能等价回放。发布说明还提示，即使同一设备更换 driver build，也不能保证 GFXR 重放成功；优先使用捕获时的设备与驱动组合。
+
+大型 capture 可能拖慢加载与界面，部分应用也可能与 GFXR 内存跟踪模式不兼容，遇到这类问题时可缩短捕获窗口，并按 GFXR 文档检查内存跟踪模式。
 
 ### 厂商工具的适用范围
 
@@ -327,7 +339,7 @@ Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、�
 
 - AGI quickstart 要求 debuggable 应用；
 - RenderDoc Android capture 通常要求 debuggable 应用；
-- Sokatoa 要求 debuggable APK 或 rooted device（已取得 root 超级用户权限的设备）；
+- Sokatoa `v1.2.0` 要求 debuggable APK、从 `adb shell` 启动的命令行进程，或 rooted device（已取得 root 超级用户权限的设备）；
 - 厂商工具各有设备、包类型和权限条件。
 
 debuggable 会改变运行时优化与安全检查，捕获 layer 还会记录命令、资源和内存。我们的做法是用 profileable/release 包采集低扰动基线，再用 debuggable 包做短窗口详细诊断；两类结果的绝对帧时间要分开解读。
@@ -791,7 +803,7 @@ Android 17 提供 manifest 请求信号，ANGLE 选择仍受设备与系统策�
 
 ### `profileable` 的适用范围
 
-AGI、RenderDoc、Sokatoa 等帧捕获会注入 graphics layer，通常要求 debuggable 或 root。`profileable` 主要服务低扰动 profiling。
+AGI、RenderDoc 等 APK 帧捕获通常要求 debuggable；Sokatoa `v1.2.0` 还支持 root 设备和 `adb shell` 命令行进程入口。`profileable` 主要服务低扰动 profiling，本身不授予 graphics layer 注入权限。
 
 ### GPU 时间与显示路径的关系
 
@@ -830,6 +842,9 @@ GPU 写入完成由 acquire fence 表达，buffer 入队和受限的 SurfaceFlin
 - [Android Vulkan and ANGLE overview](https://developer.android.com/games/develop/vulkan/overview)
 - [`<profileable>` manifest element](https://developer.android.com/guide/topics/manifest/profileable-element)
 - [Sokatoa project and current requirements](https://github.com/sarc-acl/sokatoa)
+- [Sokatoa v1.2.0 README：系统、设备与 layer 注入条件](https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/README.md)
+- [Sokatoa v1.2.0 发布说明与已知限制](https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/docs/user/release-notes.md)
+- [Sokatoa 捕获模式与 GFXR 条件](https://github.com/sarc-acl/sokatoa/blob/ad9539c46785d2d4e955eac9540eb90e2db8ed29/docs/user/profiles.md)
 - [Arm Performance Studio](https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Studio)
 - [Arm Streamline](https://developer.arm.com/tools-and-software/streamline-performance-analyzer)
 - [RenderDoc for Arm GPUs](https://developer.arm.com/tools-and-software/renderdoc-for-arm-gpus)
