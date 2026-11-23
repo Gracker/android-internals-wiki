@@ -4,8 +4,10 @@ chapter: '21.2'
 section: '21.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-25'
-last_verified_against: AOSP android-17.0.0_r1, current Jetpack App Startup guide and 1.2.0 latest stable sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)
+last_verified: '2026-11-23'
+last_source_verified_at: '2026-11-23'
+last_idle_audit_at: '2026-11-23T18:40:11+08:00'
+last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Jetpack App Startup 1.2.0 sources and guide, alibaba/alpha 04fe7f2, kotlinx.coroutines 1.11.0 API, WorkManager 2.12.0 sources and releases
 confidence: medium-high
 sources:
 - type: aosp
@@ -44,6 +46,8 @@ sources:
   path: libcore/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java
 - type: aosp
   path: art/runtime/thread.cc (FixStackSize, CreateNativeThread)
+- type: aosp
+  path: kernel/common/mm/memory.c (android17-6.18-2026-06_r6, do_anonymous_page, wp_page_copy, do_swap_page)
 - type: official
   path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/
 - type: official
@@ -377,7 +381,7 @@ App Startup 会为发现过程和每个 initializer 创建 Trace section，也�
 
 #### 6.1 固定提交中的行为
 
-Alpha 的选定提交 `04fe7f2` 日期为 2018-12-14；本轮 2026-10-25 核对仓库 HEAD 仍指向这一提交，下面的结论只对这份固定源码有效。它提供：
+Alpha 的选定提交 `04fe7f2` 日期为 2018-12-14，以下结论只适用于这份固定源码。它提供：
 
 - `Project.Builder.add(task).after(predecessors)` 构建任务图；
 - `Task(name, true)` 通过 Main `Handler` 执行；
@@ -482,7 +486,7 @@ CPU executor 应：
 
 I/O 任务会阻塞，线程数却要有个上限。启动时大量并发读会放大：
 
-- 存储队列和 page fault（所需内存页尚未驻留，系统必须从文件或交换区载入）；
+- 存储队列和 page fault（缺页异常，可能涉及零页映射、匿名页分配、写时复制或文件/交换页调入）；缺页次数不能直接当作磁盘读次数；
 - 数据库锁与连接池等待；
 - Binder 服务排队；
 - TLS 加密握手、DNS 域名解析和服务端限流；
@@ -838,7 +842,7 @@ loader 要自行选择 `Dispatchers.IO`、受控 CPU dispatcher（协程的执�
 <!-- gracker-diagram: a223-17-feature-gate-state -->
 ![FeatureGate 共享成功，普通失败与取消走不同路径](../../assets/diagrams/ch21/a223-17-feature-gate-state.png)
 
-图：原示例TimeoutCancellationException被CancellationException分支处理：恢复NotLoaded，后续getOrLoad可重新执行。
+图：示例中的 `TimeoutCancellationException` 由 `CancellationException` 分支处理：恢复 `NotLoaded`，后续 `getOrLoad()` 可重新执行。
 
 这个示例在调用者的协程里执行 loader。页面级初始化可以随页面取消；进程级初始化应由 application scope（与应用进程同寿命的作用域）——与 App 进程同生命周期的 `CoroutineScope`——发起，避免第一个 Activity 销毁时把所有等待者一起取消。普通 `Exception` 会缓存为 `Failed`，只有显式 `retry()` 才重新尝试；`withTimeout` 的 `TimeoutCancellationException` 属于 `CancellationException`，和外部取消一样会恢复 `NotLoaded`，后续 `getOrLoad()` 可以再次执行 loader，并不要求先 `retry()`。loader 不得递归调用同一个 gate（Mutex 不可重入），资源需在取消/超时路径清理，尤其不能丢失刚创建的 Closeable；生产实现还要加入逐步延长等待时间的退避策略和重试次数上限。
 
@@ -873,7 +877,7 @@ loader 要自行选择 `Dispatchers.IO`、受控 CPU dispatcher（协程的执�
 
 #### 5.2 Android 17 的两条实现路径
 
-Android 17 的 [`CombinedDeliMessageQueue/MessageQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)同时包含 legacy 与 DeliQueue 分支。DeliQueue 是 Android 17 新的并发消息队列实现。`USE_NEW_MESSAGEQUEUE` 由 `@EnabledAfter(targetSdkVersion = BAKLAVA)` 标注，因此面向 Android 17、`targetSdkVersion >= 37` 的应用默认进入 DeliQueue；开发者选项或 `adb am compat` 仍可临时切换这项兼容变更。官方说明见 [Android 17 MessageQueue 行为变更](https://developer.android.com/about/versions/17/changes/messagequeue)。
+Android 17 的 [`CombinedDeliMessageQueue/MessageQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)同时包含 legacy 与 DeliQueue 分支。DeliQueue 是 Android 17 新的并发消息队列实现。`USE_NEW_MESSAGEQUEUE` 由 `@EnabledAfter(targetSdkVersion = BAKLAVA)` 标注，因此面向 Android 17、`targetSdkVersion >= 37` 的应用默认进入 DeliQueue；对于 debuggable 构建，可通过开发者选项或 `adb am compat` 临时切换这项兼容变更，用于兼容性排查。官方说明见 [Android 17 MessageQueue 行为变更](https://developer.android.com/about/versions/17/changes/messagequeue)。
 
 两条路径的 IdleHandler 外部语义保持一致：
 
@@ -1418,7 +1422,7 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 
 `android-17.0.0_r1` 的 libcore 已引入 OpenJDK 21 风格的 `Thread.Builder`、`ofVirtual()` 和 `startVirtualThread()` 源码，并包含 Android 自己的 `VirtualThreadContext` 路径。不过，`api/current.txt` 把这些入口标成了 `@FlaggedApi(com.android.libcore.virtual_thread_api_v1)`——`FlaggedApi` 表示 API 受平台功能开关控制，直接当作所有 Android 17 设备都可用的 SDK 契约是不行的。运行实现还要检查 ART 的 `virtual_thread_impl_v1` flag。
 
-截至本轮核对，Android 公共参考文档仍没有列出 `ofVirtual()` 与 `startVirtualThread()`；`Thread.isVirtual()` 的文档也仍写明 Android 尚未实现虚拟线程并返回 `false`。源码、flag 和公开契约没有对齐出一条可供普通应用依赖的一致路径，所以应用不要把虚拟线程用于生产启动路径，也别通过反射绕过 SDK 边界去探测内部实现。
+截至 2026-11-23，Android 公共参考文档仍没有列出 `ofVirtual()` 与 `startVirtualThread()`；`Thread.isVirtual()` 自 API 36 公开，文档仍写明 Android 尚未实现虚拟线程并返回 `false`。源码、flag 和公开契约没有对齐出一条可供普通应用依赖的一致路径，所以应用不要把虚拟线程用于生产启动路径，也别通过反射绕过 SDK 边界去探测内部实现。
 
 即使后续版本提供了稳定的虚拟线程，它们降低的也只是大量阻塞任务占用平台线程的成本，CPU 密集任务的可用算力并不会因此提高。资源并发、超时、取消和启动关键路径仍要单独设计。
 
@@ -1493,3 +1497,4 @@ WorkManager 面向应用离开可见状态后仍需执行、需要约束或重�
 - [Linux sched_setaffinity：允许集合与 EINVAL](https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html)
 - [Kotlin withTimeout：协作取消、超时异常与资源归还](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html)
 - [WorkManager 2.12.0 固定源码包](https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.12.0/work-runtime-2.12.0-sources.jar)
+- [Android 17 kernel `memory.c`：匿名页、写时复制与文件缺页](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c)
