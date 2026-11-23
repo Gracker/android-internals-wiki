@@ -1,7 +1,7 @@
 ---
 title: Compose First 与 View/Compose 互操作性能实战
 chapter: '22.6'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - compose
@@ -14,6 +14,9 @@ related_chapters:
 - '22.3'
 - '22.2'
 last_draft_polish_at: '2026-08-15T01:15:55+08:00'
+last_body_apply_at: '2026-11-24T07:19:45+08:00'
+last_source_verified_at: '2026-11-24'
+verification_scope_note: Compose 1.12.0 互操作源码仍为机制基线；Compose 1.13.0 补充构建要求、重组跟踪与焦点 API 的版本边界，未验证目标应用的运行表现。
 last_verified: '2026-10-25'
 last_verified_against: Android android-17.0.0_r1; AndroidX Compose BOM 2026.08.00 / UI Runtime Foundation 1.12.0; Kotlin/Compose compiler plugin 2.4.10; Compose 1.11.4 source artifacts retained as the previous verification baseline; android17-6.18 kernel notes only for device-side mechanisms
 confidence: high
@@ -25,6 +28,14 @@ sources:
   path: AndroidX Compose BOM 2026.08.00; UI, UI ViewBinding, Runtime, Foundation 1.12.0 source artifacts and public API references; 1.11.4 artifacts retained for comparison
 - type: aosp
   path: AOSP android-17.0.0_r1 ViewRootImpl, Choreographer, SurfaceView, TextureView, HWUI WebViewFunctor
+- type: reference
+  path: 技术文章/source/juejin-android/2026-11-24-77097780-Jetpack Compose 1.13.md
+- type: official
+  path: https://developer.android.com/blog/posts/jetpack-compose-november-2026-release
+- type: official
+  path: https://developer.android.com/develop/ui/compose/tooling/tracing#recomposition-tracing
+- type: official
+  path: Google Maven Compose BOM 2026.11.01 POM; UI Android 1.13.0 AAR metadata; Foundation Android 1.13.0 sources FocusedBounds.kt
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md
 ---
@@ -43,7 +54,7 @@ Compose 与 View 互操作有两个方向：
 
 ## 版本基线与术语校正
 
-版本基线如下：
+下表固定本文互操作机制的源码基线；Compose 1.13 的构建要求、跟踪与焦点行为差异在对应位置单列。Android 平台源码仍固定为 `android-17.0.0_r1`。
 
 | 层级 | 基线 | 适用范围 |
 | --- | --- | --- |
@@ -58,9 +69,13 @@ Compose 与 Android 平台分别发布，所以两边的源码要分开核对：
 
 BOM（物料清单）只协调 Compose 库版本，依赖的添加和 Kotlin 编译器插件仍由项目自己管理。Kotlin 2.0 起，Compose Compiler Gradle 插件与 Kotlin 使用同一版本，因此这里都取 2.4.10。
 
-本文仍保留 1.11.4 的源码链接，用于说明上一轮核验的依据，并不表示推荐继续使用旧版本。
+本文保留 1.11.4 的源码链接作版本对照，不表示推荐继续使用旧版本；互操作机制的源码基线为 1.12.0。
 
 本文固定的 `ui-android:1.12.0` AAR 元数据明确要求 `minCompileSdk=37`、`minAndroidGradlePluginVersion=9.1.0`；不能把任意 AGP 9.x 都当作满足要求。`compileSdk` 决定编译时能引用哪些平台 API，应用的 `targetSdk` 行为另由目标版本决定；构建工具一时升不上来的项目，就在自己当前能用的 Compose 版本上核验本文机制和基准数据。
+
+升级到 Compose 1.13 时，要单独核对构建要求：BOM `2026.11.01` 将 UI、Runtime、Foundation 映射到 `1.13.0`，官方要求 Kotlin 2.2 或更新版本及 `compileSdk 37.1`。[来源: 2026-11-24-77097780-Jetpack Compose 1.13.md] [已验证: [官方发布说明](https://developer.android.com/blog/posts/jetpack-compose-november-2026-release)、[BOM 2026.11.01 POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.11.01/compose-bom-2026.11.01.pom)]
+
+`ui-android:1.13.0` 的 AAR 元数据写明 `minCompileSdk=37`、`minCompileMinorSdk=1`、`minAndroidGradlePluginVersion=9.1.0`，只配置整数 `compileSdk=37` 不满足这个构件的最低要求。升级前先检查项目实际使用的 SDK 次版本与 AGP 版本。[已验证: [UI Android 1.13.0 AAR](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.13.0/ui-android-1.13.0.aar) 的 `META-INF/com/android/build/gradle/aar-metadata.properties`]
 
 ### Compose First 路线下的新页面与存量应用
 
@@ -597,6 +612,12 @@ AndroidView(
 
 Compose 运行时跟踪能提供可组合函数级跟踪信息，但某个 `AndroidView` 中的全部 View 方法要我们自己补齐：工厂创建、数据绑定、异步结果处理和资源释放，都应加上自定义时间区段。
 
+### Compose 1.13：从 State 写入追到重组
+
+采用 Compose 1.13 的构建可以引入 `androidx.compose.runtime:runtime-tracing:1.13.0`，用重组跟踪补充导致重组的 State 读写信息。设备或模拟器需 API 29 及以上；按官方示例使用 `record_recomposition_trace.py` 采集后，在 Perfetto 中选中一次 State 写入，就能查看写入调用栈，并沿关联箭头找到它触发的重组。[已验证: [Compose performance tracing — Recomposition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing#recomposition-tracing)]
+
+排查混合页面时，可以先复现滚动或旧 View 的监听器回调，再沿“状态写入 → 重组”检查读取位置，并与 `LegacyMap.update` 等自定义区段对齐。重组跟踪会额外记录状态的字符串表示与调用栈，开销高于普通组合跟踪，适合查触发关系；比较帧耗时时应关闭它，按同一操作脚本重新采样。View 创建、测量、布局和绘制的耗时仍需由前述计数器与自定义区段补齐。[来源: 2026-11-24-77097780-Jetpack Compose 1.13.md] [已验证: [重组跟踪文档的开销说明](https://developer.android.com/develop/ui/compose/tooling/tracing#recomposition-tracing)；View 侧观察方法见本节前文]
+
 ### Perfetto 的阅读顺序
 
 对互操作卡顿，我们按下面的顺序建立判断依据：
@@ -727,6 +748,12 @@ fun legacyButtonUpdatesComposeState() {
 Compose 的虚拟 `MainTestClock` 驱动组合、动画与手势，不控制 Android 平台的 measure/draw 时钟；但这不等于测试规则完全不等布局绘制：`waitForIdle()` 也会等待待处理的布局与绘制。规则无法自动识别未注册的后台请求、播放器回调等外部工作，这些才需要额外的明确空闲条件。等待 View 或外部条件时，用能表达“何时空闲”的 `IdlingResource`，或用 `waitUntil` 轮询明确条件；固定时长的休眠只会把竞态盖住。
 
 
+### Compose 1.13 的焦点回归边界
+
+混合页面升级到 Foundation 1.13.0 时，要检查 `Modifier.onFocusedBoundsChanged` 的使用位置。它在 1.12 已弃用；1.13.0 的 `FocusedBounds.kt` 将其标为 `DeprecationLevel.ERROR`，函数体直接返回 `this`，旧回调不会再执行。不能只压掉弃用错误后继续依赖回调。[来源: 2026-11-24-77097780-Jetpack Compose 1.13.md] [已验证: Foundation Android 1.13.0 sources，`commonMain/androidx/compose/foundation/FocusedBounds.kt`]
+
+自定义容器可从 `Modifier.Node` 按需调用 `FocusTargetModifierNode.getFocusedRect()` 查询边界，用 `onFocusChanged` 响应焦点变化，并配合 `BringIntoViewRequester` 请求滚入可见区域。内置 `LazyColumn` 和 `Modifier.verticalScroll` 的焦点滚动不依赖旧 API。建议用键盘和无障碍操作覆盖 View/Compose 之间的焦点移动，断言目标节点可见，并检查实际滚动位置；旧回调是否触发不能再作为通过条件。[已验证: [官方发布说明 — onFocusedBoundsChanged 行为变更与迁移建议](https://developer.android.com/blog/posts/jetpack-compose-november-2026-release)；测试范围见本节后文]
+
 ### 互操作测试范围
 
 至少覆盖：
@@ -849,9 +876,14 @@ Compose 的虚拟 `MainTestClock` 驱动组合、动画与手势，不控制 And
 - [Views in Compose](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)
 - [Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)
 - [Compose UI releases](https://developer.android.com/jetpack/androidx/releases/compose-ui)
+- [Jetpack Compose 2026 年 11 月官方发布说明](https://developer.android.com/blog/posts/jetpack-compose-november-2026-release)
+- [恋猫de小郭：Jetpack Compose 1.13 发布，憋了这么久终有交代了](https://juejin.cn/post/7709778061000441910)
 - [Compose BOM](https://developer.android.com/develop/ui/compose/bom)
 - [Compose dependencies and compiler setup](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler)
 - [Google Maven：Compose BOM 2026.08.00 POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom)
+- [Google Maven：Compose BOM 2026.11.01 POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.11.01/compose-bom-2026.11.01.pom)
+- [Google Maven：Compose UI Android 1.13.0 AAR（含构建元数据）](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.13.0/ui-android-1.13.0.aar)
+- [Compose Foundation Android 1.13.0 sources（含 FocusedBounds.kt）](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.13.0/foundation-android-1.13.0-sources.jar)
 - [Google Maven：Compose BOM 2026.06.01 POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.06.01/compose-bom-2026.06.01.pom)
 - [`AndroidView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidView.composable)
 - [`AndroidViewBinding` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidViewBinding.composable)
