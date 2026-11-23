@@ -16152,6 +16152,68 @@
       "summary": "ProfilingManager 正文与来源标签残留本轮核验叙述",
       "type": "editorial-residue",
       "updated_at": "2026-11-22T22:43:40.675510+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "close_note": "已根据固定 Android 17 内核 memory.c 改写缺页括注并新增源码引用；零页、匿名分配、COW 与文件/交换路径已逐项回查，旧错误定义已从正文删除；source assertions、元数据、目录链接与 diff gate 均通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261123-183519-idle-audit-dd53ab85",
+      "created_at": "2026-11-23T18:40:11.553039+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261123-183519-idle-audit-dd53ab85",
+      "details": "原正文 I/O 任务节把 page fault 定义为所需页未驻留且系统必须从文件或交换区载入，排除了零页映射、匿名页分配和写时复制，会误导启动 I/O 归因。android17-6.18-2026-06_r6/mm/memory.c 的 do_anonymous_page 5176-5205 和 wp_page_copy 3684-3692 提供反例。改为说明各条缺页路径，并明确缺页次数不能直接当作磁盘读次数。",
+      "id": "finding-ab7714907c71",
+      "log_path": "logs/audit/2026-11-23-20261123-183519-idle-audit-dd53ab85-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c"
+      ],
+      "status": "verified",
+      "summary": "page fault 括注把所有缺页等同于文件或交换页调入",
+      "type": "technical-inaccuracy",
+      "updated_at": "2026-11-23T18:44:35.124608+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "close_note": "已按 Android 17 官方 Test the behavior 段补齐 debuggable 构建和兼容性排查用途；target 37 默认行为、反射风险和 Espresso/Robolectric 迁移要求均保留；source assertions 与本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261123-183519-idle-audit-dd53ab85",
+      "created_at": "2026-11-23T18:40:11.625046+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261123-183519-idle-audit-dd53ab85",
+      "details": "正文把开发者选项或 adb am compat 切换写成无构建条件的操作；Android 17 官方 MessageQueue 指南的 Test the behavior 段明确 enable 操作针对 debuggable build。补齐调试构建和兼容性排查用途，保留 target API 37 默认启用及 Espresso/Robolectric 迁移要求。",
+      "id": "finding-46ff0580e97d",
+      "log_path": "logs/audit/2026-11-23-20261123-183519-idle-audit-dd53ab85-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/17/changes/messagequeue"
+      ],
+      "status": "verified",
+      "summary": "MessageQueue 兼容开关未交代 debuggable 测试构建条件",
+      "type": "missing-applicability-boundary",
+      "updated_at": "2026-11-23T18:44:35.188163+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "close_note": "正文已移除本轮核对、过期 HEAD 核对过程及原示例措辞；Alpha 固定日期重新核验，虚拟线程段用明确日期并补充 isVirtual 的 API 36 可用边界。全文过程信息扫描、原标题/代码/链接保护和 added-line 写作 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261123-183519-idle-audit-dd53ab85",
+      "created_at": "2026-11-23T18:40:11.687339+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261123-183519-idle-audit-dd53ab85",
+      "details": "正文使用本轮核对、原示例等审阅过程表达；Alpha 的仓库 HEAD 核对过程也不属于固定版本契约。用固定提交日期和适用范围替换，虚拟线程使用明确的来源核验日期，FeatureGate 图注明确指向当前代码。已重新取得 Alpha 固定提交、Android 17 API 表和 Thread 公共参考，技术边界不变。",
+      "id": "finding-1011bcb8de66",
+      "log_path": "logs/audit/2026-11-23-20261123-183519-idle-audit-dd53ab85-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://api.github.com/repos/alibaba/alpha/commits/04fe7f22c469de66fed98c341334c954dfabafb2",
+        "https://developer.android.com/reference/java/lang/Thread",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt"
+      ],
+      "status": "verified",
+      "summary": "Alpha 与虚拟线程段落残留本轮核对叙述",
+      "type": "editorial-process-leak",
+      "updated_at": "2026-11-23T18:44:35.252288+08:00"
     }
   ],
   "schema_version": 1
