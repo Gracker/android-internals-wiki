@@ -1,7 +1,7 @@
 ---
 title: Compose First 与 View/Compose 互操作性能实战
 chapter: '22.6'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - compose
@@ -16,11 +16,11 @@ related_chapters:
 last_draft_polish_at: '2026-08-15T01:15:55+08:00'
 last_body_apply_at: '2026-11-24T07:19:45+08:00'
 last_source_verified_at: '2026-11-24'
-verification_scope_note: Compose 1.12.0 互操作源码仍为机制基线；Compose 1.13.0 补充构建要求、重组跟踪与焦点 API 的版本边界，未验证目标应用的运行表现。
-last_verified: '2026-10-25'
-last_verified_against: Android android-17.0.0_r1; AndroidX Compose BOM 2026.08.00 / UI Runtime Foundation 1.12.0; Kotlin/Compose compiler plugin 2.4.10; Compose 1.11.4 source artifacts retained as the previous verification baseline; android17-6.18 kernel notes only for device-side mechanisms
+verification_scope_note: 按 android-17.0.0_r1 与 Compose 1.12.0 源码核验互操作、滚动桥与帧率请求；Compose 1.13.0 仅补充构建要求、重组跟踪和焦点 API 边界。未执行目标应用的编译、仪器化或性能测试。
+last_verified: '2026-11-24'
+last_verified_against: Android android-17.0.0_r1; AndroidX Compose BOM 2026.08.00 / UI Runtime Foundation 1.12.0; Kotlin/Compose compiler plugin 2.4.10; Compose BOM 2026.11.01 / UI and Foundation 1.13.0 for build metadata and focused-bounds behavior; runtime-tracing 1.13.0 official documentation; Compose 1.11.4 links retained for comparison; android17-6.18 kernel reference only
 confidence: high
-last_review_finalize_at: '2026-08-15T01:15:55+08:00'
+last_review_finalize_at: '2026-11-24T08:16:52+08:00'
 sources:
 - type: reference
   path: 'Android developer documentation: Views in Compose / Compose in Views / Compose testing interoperability'
@@ -36,6 +36,14 @@ sources:
   path: https://developer.android.com/develop/ui/compose/tooling/tracing#recomposition-tracing
 - type: official
   path: Google Maven Compose BOM 2026.11.01 POM; UI Android 1.13.0 AAR metadata; Foundation Android 1.13.0 sources FocusedBounds.kt
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/15-compose-first-view-migration-performance.md
 ---
@@ -149,9 +157,11 @@ Compose Multiplatform 属于另一项跨平台决策，Android 页面迁移成�
 
 这条链路上的角色，我们按出现顺序过一遍：`Snapshot` 是 Compose 跟踪状态变化的快照系统，RenderThread 是 HWUI 执行渲染工作的线程，`present` 表示缓冲区进入显示阶段；BLASTBufferQueue 管理应用窗口缓冲区的提交，HWC 是显示硬件合成器。
 
-在这条路径上，桥接本身增加的只是主线程对象与调用，缓冲区流仍是主窗口这一条。要独立缓冲区，得靠特定组件：`SurfaceView` 会维护独立的内容 Surface、`BufferQueue` 和 SurfaceFlinger 子层；`TextureView` 的外部缓冲区由宿主 HWUI 采样进应用主窗口，输入流通常也合在宿主窗口里，看不到独立图层。
+只包装普通 View 时，互操作桥不会自动新增独立的 Surface 或 `BufferQueue`，内容仍提交到主窗口。桥接引起的重新测量、图层失效与绘制记录可能增加主线程、RenderThread 或 GPU 的工作，主窗口图层数量不变也不代表没有额外成本。
 
-标准硬件加速 WebView 的页面主体同样通过 HWUI 接口合入宿主窗口；要等到页面里出现网页视频、受保护内容或自定义 Surface，才可能多出一个媒体覆盖层。
+`SurfaceView` 会维护独立的内容 Surface、`BufferQueue` 和 SurfaceFlinger 子层；`TextureView` 的外部缓冲区由宿主 HWUI 采样进应用主窗口，输入流通常也合在宿主窗口里，看不到独立图层。`TextureView` 只支持硬件加速窗口，软件绘制时不会输出内容。
+
+标准硬件加速 WebView 的页面主体同样通过 HWUI 接口合入宿主窗口；网页视频、受保护内容或自定义 Surface 等内容可能额外使用覆盖层，是否出现独立图层，要从实际图层树确认。
 
 地图、视频、相机控件走哪种结构，取决于控件自身的实现，控件名字说明不了出图结构。排查时要看的，是帧生产者（Producer）、缓冲队列和图层树。
 
@@ -177,7 +187,7 @@ Compose Multiplatform 属于另一项跨平台决策，Android 页面迁移成�
 普通参数捕获走另一条路径：宿主可组合函数重组并提供新的 `update` 函数时，承载器会尝试运行新函数。1.12.0 的 `runUpdate` 还要求 holder 已附着窗口、内部 View 的父节点仍是该 holder，且已安装 update block；未附着或停用时会延后到附着或重新激活后执行。两条路径最后汇到同一处风险上——昂贵的属性设置调用可能把一次轻量状态更新扩大成 View 的重新布局、重绘或资源请求。
 
 
-下面的宿主实现展示一次性监听器、幂等更新和资源释放各自所在的位置。
+下文代码用 `Legacy*`、`ChartModel` 等业务示意类型说明宿主结构，省略导入与控件实现。第一个示例展示一次性监听器、幂等更新和资源释放各自所在的位置。
 
 ```kotlin
 @Composable
@@ -525,7 +535,11 @@ RecyclerView 预取与 Compose 的组合、布局各有调度成本。Compose UI
 
 ### 嵌套滚动桥的传递范围
 
-滚动衔接上，`AndroidViewHolder` 实现了 `NestedScrollingParent3`：内部 View 开启嵌套滚动后，承载器会把滚动前、滚动后和惯性滑动数据交给 Compose 的调度器，常见的嵌套滚动因此可以跨越 View/Compose 边界。
+滚动衔接要先区分方向。View 子组件嵌入 Compose 时，`AndroidViewHolder` 实现了 `NestedScrollingParent3`：内部 View 开启嵌套滚动后，承载器会把滚动前、滚动后和惯性滑动数据交给 Compose 的调度器。
+
+这里的惯性滑动通知有一处限制：1.12.0 的 `onNestedPreFling` 和 `onNestedFling` 通过协程调用 Compose 调度器，两个 View 回调均返回 `false`。速度已经转发，不代表 View 侧同步获得了“已消费”的返回值；排查衔接时，要同时检查两边的速度消费与衰减动画是否继续运行。
+
+反向把 Compose 滚动区域嵌入 View 父容器时，可以用 `rememberNestedScrollInteropConnection()` 配合 `Modifier.nestedScroll(...)`，把 Compose 滚动接到宿主 View。这条连接要求父容器实现 `NestedScrollingParent3`，`CoordinatorLayout` 是典型例子；接入前应确认父容器具备这个协作接口。
 
 控制权的冲突要另外对待，以下情况仍需专项验证：
 
@@ -642,7 +656,7 @@ Compose 运行时跟踪能提供可组合函数级跟踪信息，但某个 `Andr
 
 先看 `PausableComposition`。这个 API 从 `androidx.compose.runtime` 1.8.0 起存在；Foundation 1.12.0 的 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认值为 `true`，Lazy 预取可以把一个列表项的预组合分段执行，避免复杂列表项的全部 Composition 集中在同一个调度片段。
 
-这个开关用于出现回归时暂时关闭新路径，且后续版本可能移除；性能报告应记录 Compose 版本和开关值，不要把该机制推广到所有 Composition。
+`ComposeFoundationFlags` 带有 `ExperimentalFoundationApi` 标记，其中的开关用于出现回归时暂时关闭新路径，后续版本可能移除。若需要切换，应按源码建议在应用初始化时尽早设置；Compose 库代码加载后再修改，可能产生未定义行为。发布构建还要核对 R8 优化后的实际路径。性能报告应记录 Compose 版本、实际开关值和相关优化规则，不要把该机制推广到所有 Composition。
 
 以下成本仍需单独处理：
 
@@ -688,11 +702,14 @@ Android 15 QPR1（首个季度平台更新）起，受支持设备可以使用�
 
 混合树中应遵守这些边界：
 
+- View 的偏好在失效重绘时参与投票，Compose 的偏好在对应内容绘制时生效，并影响后续帧；设置偏好不会让静止内容自动持续出帧；
 - ViewGroup 的帧率请求不会自动传播给子 View；
 - Compose 修饰符的偏好不会自动设置 `AndroidView` 内部 View 的 `requestedFrameRate`；
 - 独立 Surface 的帧生产者还可能需要在 Surface、媒体或图形 API 边界表达自己的帧率；
 - 系统会汇总可见内容的请求，最终显示模式仍受面板能力、功耗策略和其他图层约束；
 - 60/90/120 Hz 的切换结果要从性能跟踪、SurfaceFlinger 信息和设备显示状态确认。
+
+不再需要指定偏好时，Compose 的数值型请求可用 `preferredFrameRate(0f)` 清除，View 则设回 `View.REQUESTED_FRAME_RATE_CATEGORY_DEFAULT`。这两种操作恢复各自的默认请求行为，最终刷新率仍由系统汇总决定。
 
 例如，我们可以让 Compose 外层动画请求高帧率类别，内嵌视频保持 24/30 fps，两条内容节奏各自独立：宿主动画按需触发布局或绘制，不必每帧重组；视频缓冲区仍由视频自己的节奏产生；SurfaceView 的视频更新同样走自己的帧节奏，宿主应用窗口无需跟着重画。
 
@@ -906,6 +923,8 @@ Compose 的虚拟 `MainTestClock` 驱动组合、动画与手势，不控制 And
 - [Compose UI ViewBinding 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-viewbinding/1.11.4/ui-viewbinding-1.11.4-sources.jar)
 - [Compose Foundation Android 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.11.4/foundation-android-1.11.4-sources.jar)
 - [Kotlin releases](https://kotlinlang.org/docs/releases.html)
+- [Android 17 `View` 帧率请求契约](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)
+- [Android 17 `Display.hasArrSupport`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java)
 - [Android 17 `ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
 - [Android 17 `Choreographer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
 - [Android 17 `SurfaceView`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)
