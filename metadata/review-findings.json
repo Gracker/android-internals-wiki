@@ -16318,6 +16318,48 @@
       "summary": "帧率偏好缺少绘制投票有效期与清除请求说明",
       "type": "frame-rate-vote-lifetime",
       "updated_at": "2026-11-24T08:15:37.699661+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "close_note": "已补充 runtime-tracing 1.13.0 enabled setting 跨重启保留、初始化器重新安装观察器、官方脚本 STOP 失败仍可能保存 ZIP 的边界，并给出两类 STOP 广播与 result=1 核验。bash -n 通过，广播标识及成功码逐项匹配官方脚本；未执行设备广播，未声称完成设备清理。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261124-100519-1376f081",
+      "created_at": "2026-11-24T10:11:53.147818+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261124-100519-1376f081",
+      "details": "runtime-tracing 1.13.0 的 RecompositionTracingReceiver.kt:65、RecompositionTracingEnabledReceiver.kt:28-57、ComposeTracingInitializer.kt:45-46 确认启用状态跨进程重启保留。正文只要求测量前停用，没有解释杀进程不足以清理；官方脚本 stop_in_process_tracing() 在 STOP 失败时仅输出错误后继续，产生 ZIP 不证明清理成功。需交代持久标志、明确成功回执，并给出两类 STOP 的异常恢复步骤。",
+      "id": "finding-6d7c47bf3771",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-tracing/1.13.0/runtime-tracing-1.13.0-sources.jar",
+        "https://raw.githubusercontent.com/android/performance-samples/main/RecompositionTracing/record_recomposition_trace.py"
+      ],
+      "status": "fixed",
+      "summary": "Recomposition tracing 缺少跨进程重启保留启用状态与停用失败后的清理边界",
+      "type": "tracing-lifecycle-boundary",
+      "updated_at": "2026-11-24T10:19:02.857692+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "close_note": "已在 Pausable Composition 默认值历史之后明确 Foundation 1.13.0 移除临时开关、预取直接使用可暂停组合路径、升级需删除字段读写。官方 release notes 与 1.13.0 发布源代码互证；1.12.0 的 true 默认值和 R8/尽早配置警告保留。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261124-100519-1376f081",
+      "created_at": "2026-11-24T10:16:22.674351+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261124-100519-1376f081",
+      "details": "官方 Foundation 1.13.0-alpha03 release notes 记录移除 ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled；稳定版 1.13.0 sources.jar 已无该字段，LazyLayoutPrefetchState.kt:638-648 直接使用 performPausableComposition。正文覆盖 1.13 缓存窗口迁移，却没有明确前文 1.10/1.12 开关规则不可外推到 1.13。应在历史默认值之后补足字段移除及应用读写迁移说明。",
+      "id": "finding-ccd16026f160",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.13.0-alpha03",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation/1.13.0/foundation-1.13.0-sources.jar"
+      ],
+      "status": "fixed",
+      "summary": "Foundation 1.13 迁移缺少 Pausable Composition 预取临时开关移除边界",
+      "type": "version-migration-boundary",
+      "updated_at": "2026-11-24T10:19:02.923805+08:00"
     }
   ],
   "schema_version": 1
