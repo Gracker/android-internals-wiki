@@ -16236,6 +16236,88 @@
       "summary": "Sokatoa 注入条件遗漏 adb shell 进程模式并保留过期版本",
       "type": "stale-source",
       "updated_at": "2026-11-23T22:42:22.559018+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "close_note": "已区分主窗口拓扑与主线程/RenderThread/GPU 成本，并补充 TextureView 的硬件加速条件；依据 UI 1.12.0 AndroidViewHolder/AndroidViewsHandler 及 android-17.0.0_r1 TextureView/ViewRootImpl，证据 SE04/SE12。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261124-080519-dd064271",
+      "created_at": "2026-11-24T08:11:21.274621+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261124-080519-dd064271",
+      "details": "主窗口拓扑不变不能证明开销只在主线程；AndroidViewHolder 的图层失效和 draw 转发还会传导到 HWUI 渲染路径。需区分窗口拓扑与 CPU/渲染成本，并保留 TextureView 仅支持硬件加速窗口的条件。",
+      "id": "finding-a14ac40dde0f",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ],
+      "status": "fixed",
+      "summary": "普通互操作的成本被错误限定为主线程对象与调用",
+      "type": "render-cost-scope",
+      "updated_at": "2026-11-24T08:15:37.505572+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "close_note": "已分别说明两种嵌套滚动方向、反向连接所需 NestedScrollingParent3，以及 holder 两个 fling 回调返回 false 的边界；证据 SE09，两个方法源码断言通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261124-080519-dd064271",
+      "created_at": "2026-11-24T08:11:21.391943+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261124-080519-dd064271",
+      "details": "章节只解释 AndroidViewHolder，未给出 Compose 子组件连接协作 View 父容器的方法；1.12.0 的 onNestedPreFling/onNestedFling 均在协程中通知调度器并返回 false，不能把通知等同于同步消费。",
+      "id": "finding-bee81402b3e9",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "status": "fixed",
+      "summary": "混合滚动缺少桥接方向和 fling 消费语义边界",
+      "type": "nested-scroll-contract",
+      "updated_at": "2026-11-24T08:15:37.569216+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "close_note": "已保留实验 API、临时性、初始化尽早设置、加载后改动可能未定义及发布 R8 路径的约束；依据 Foundation 1.12.0 ComposeFoundationFlags.kt 21-54/82-89，证据 SE10。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261124-080519-dd064271",
+      "created_at": "2026-11-24T08:11:21.458400+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261124-080519-dd064271",
+      "details": "ComposeFoundationFlags 标注 ExperimentalFoundationApi；源码警告应在应用初始化时尽早设置，Compose 代码加载后修改可能导致未定义行为，发布构建还需注意优化规则。原文只说明临时性，容易被理解为可在运行中任意切换。",
+      "id": "finding-a85890989820",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar"
+      ],
+      "status": "fixed",
+      "summary": "Pausable 预取回退开关缺少实验性和初始化时机约束",
+      "type": "feature-flag-lifecycle",
+      "updated_at": "2026-11-24T08:15:37.633244+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "close_note": "已说明绘制/失效投票、后续帧生效、不自动持续出帧，及 Compose 0f/View DEFAULT 清除方式；依据 android-17.0.0_r1 View.java 与 Compose UI 1.12.0 FrameRate.kt，证据 SE16。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261124-080519-dd064271",
+      "created_at": "2026-11-24T08:11:21.528842+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261124-080519-dd064271",
+      "details": "View.setRequestedFrameRate 和 Compose preferredFrameRate 都有绘制/失效条件，影响后续帧，不是持续出帧的驱动器；需说明数值型 Compose 请求用 0f 清除，View 回到 DEFAULT 类别。",
+      "id": "finding-616b425e4ccb",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "status": "fixed",
+      "summary": "帧率偏好缺少绘制投票有效期与清除请求说明",
+      "type": "frame-rate-vote-lifetime",
+      "updated_at": "2026-11-24T08:15:37.699661+08:00"
     }
   ],
   "schema_version": 1
