@@ -4,10 +4,11 @@ chapter: '15.16'
 section: '15.16'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-10-25'
+last_verified: '2026-11-24'
 last_rework_at: '2026-10-23T13:36:37+08:00'
-last_source_verified_at: '2026-10-25'
-verification_scope_note: 2026-10-23 按固定 tag 复核加载链、descriptor 与错误策略、timeInState 和 GPU 消费端、UprobeStats、四组扩展程序、Perfetto 配置、heapprofd 及内核事件定义；历史迁移仅对照 Android 15/16 tag。sched_ext ABI、bpffs 读取和锁竞争配对边界已与同一内核 tag 核对，未进行设备侧加载、权限或开销实测。
+last_idle_audit_at: '2026-11-24T18:39:24+08:00'
+last_source_verified_at: '2026-11-24'
+verification_scope_note: 2026-10-23 按固定 tag 复核加载链、descriptor 与错误策略、timeInState 和 GPU 消费端、UprobeStats、四组扩展程序、Perfetto 配置、heapprofd 及内核事件定义；历史迁移仅对照 Android 15/16 tag。sched_ext ABI、bpffs 读取和锁竞争配对边界已与同一内核 tag 核对。2026-11-24 重新获取固定 tag 的 bpfloader、timeInState、GpuMemTracer、kernelWakelockDuration、bpfLockContention、heapprofd 文档、sched_ext 文档和 bpffs 实现，复核 descriptor 权限、附加与消费、初始化和聚合限制、工具可用条件及 ABI 警告，修正 timeInState 的 DAC mode 分组；未进行设备侧加载、权限或开销实测。
 last_verified_against: AOSP android-17.0.0_r1 (system/bpf, system/bpfprogs, system/memory/libmeminfo, packages/modules/UprobeStats, frameworks/native, external/perfetto); Android common kernel android17-6.18-2026-06_r6 (include/trace/events, kernel/bpf, kernel/locking/mutex.c, kernel/sched/ext.c, drivers/base/power/wakeup.c, Documentation/bpf/ringbuf.rst, Documentation/scheduler/sched-ext.rst, Documentation/filesystems/proc.rst); historical comparison only android-15.0.0_r1 / android-16.0.0_r1 / android-16.0.0_r4
 confidence: high
 sources:
@@ -734,11 +735,11 @@ Android 17 的静态 `FILE_ARR` 包含：
 
 #### owner、group 与 mode
 
-Rust `MapDesc::new()` 把 owner 固定为 `AID_ROOT`，descriptor 传入的是 group。`timeInState` 的 map 因而是 `root:system`，读写权限按用途分为 owner-only、group read/write 和 other read/write 等不同组合。
+Rust `MapDesc::new()` 把 owner 固定为 `AID_ROOT`，descriptor 传入的是 group。`timeInState` 的 map 因而都是 `root:system`。该 tag 的状态与配置 map 使用 `PERM_OWO`（`0622`，owner 可读写，group/other 只可写）；`pid_time_in_state_map` 使用 `PERM_ORO`（`0644`，owner 可读写，group/other 只可读）；`total_time_in_state_map` 和三个 `uid_*` map 使用 `PERM_ORW`（`0666`，owner/group/other 均可读写）。
 
 原 BPF C 宏中的 `AID_SYSTEM` 也表达访问组，但 Android 17 的最终 mode 与属主应以 Rust descriptor 为准。
 
-这项设计挡住了普通 App 对平台 BPF 统计的直接读取。即使知道 pin 路径，调用进程仍要通过 DAC（基于 owner/group/mode 的传统自主访问控制）和 SELinux 安全域检查；有 shell 权限并不自动拥有 map 的读写权限。
+这些 mode 只描述 DAC（基于 owner/group/mode 的传统自主访问控制）权限，不能据此判断普通 App 可直接读写平台 BPF 统计。即使知道 pin 路径，调用进程仍要通过 SELinux 安全域检查；有 shell 权限并不自动拥有 map 的读写权限。
 
 
 ### timeInState：三个程序、十五个 map
