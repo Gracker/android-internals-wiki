@@ -2,13 +2,13 @@
 title: Compose 性能、Compiler 与 Modifier.Node 诊断
 chapter: '22.3'
 section: '22.3'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-10-25'
+last_verified: '2026-11-24'
 last_source_verified_at: '2026-11-24'
 last_idle_audit_at: '2026-10-17T10:39:27+08:00'
-verification_scope_note: '2026-11-24: source-only verification of Runtime/Foundation/runtime-tracing 1.13.0 additions and their boundaries against the fixed 1.12.0 baseline; no device tracing, Kotlin example compilation or performance measurement in this update. Previous 2026-10-25 verification: fixed Runtime/Foundation/UI 1.12.0 sources, Kotlin 2.3.20 and 2.4.10 exact minimal compiler report reruns, report parser malformed-input checks, real API compilation and Firebase Auth 24.2.0 signature audit; no device performance measurements.'
-last_verified_against: 'Android 17 android-17.0.0_r1; fixed reproduction baseline: Compose BOM 2026.08.00 (Runtime/Foundation/UI/runtime-tracing 1.12.0), Kotlin/Compose compiler 2.4.10; source-only additions: Runtime/Foundation/runtime-tracing 1.13.0; historical checks: Compose 1.10.0 and Foundation 1.10.6'
+verification_scope_note: '2026-11-24: whole-chapter source review against Android 17 android-17.0.0_r1 and the fixed Runtime/Foundation/UI 1.12.0 baseline; exact Kotlin/Compose compiler 2.3.20 and 2.4.10 report reruns, bytecode comparison and 18 host regression checks; computedStateOf API availability compilation against Runtime 1.12.0 and 1.13.0; source-only verification of Foundation 1.13.0 prefetch-flag removal/cache-window migration and runtime-tracing 1.13.0 persistent enable/STOP cleanup. Firebase Auth 24.2.0 POM/AAR signature audit repeated. No on-device trace, UI lifecycle execution or performance measurement; 2026-10-25 real UI API compilation remains historical evidence.'
+last_verified_against: 'Android 17 android-17.0.0_r1; fixed reproduction baseline: Compose BOM 2026.08.00 (Runtime/Foundation/UI/runtime-tracing 1.12.0), Kotlin/Compose compiler 2.4.10; additions: Runtime 1.13.0 source review and API availability compilation, Foundation/runtime-tracing 1.13.0 source-only review; historical checks: Compose 1.10.0 and Foundation 1.10.6'
 confidence: high
 sources:
 - type: blog
@@ -18,7 +18,7 @@ sources:
   path: https://developer.android.com/blog/posts/jetpack-compose-november-2026-release
 - type: official
   path: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.13.0/runtime-1.13.0-sources.jar
-  note: ComputedState.kt and DerivedState.kt; source-only verification
+  note: ComputedState.kt and DerivedState.kt source semantics; host API availability compilation against Runtime 1.12.0 and 1.13.0
 - type: official
   path: https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation/1.13.0/foundation-1.13.0-sources.jar
   note: LazyDsl.kt, LazyListState.kt and LazyLayoutCacheWindow.kt; source-only verification
@@ -27,6 +27,12 @@ sources:
   note: ComposeTracer.kt and RecompositionTracingReceiver.kt; no device trace captured
 - type: source
   path: https://github.com/android/performance-samples/tree/main/RecompositionTracing
+- type: source
+  path: https://raw.githubusercontent.com/android/performance-samples/main/RecompositionTracing/record_recomposition_trace.py
+  note: Host --help and start/stop/error paths checked; cleanup broadcast syntax and identifiers checked without sending device commands
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.13.0-alpha03
+  note: Removal of the temporary Pausable Composition prefetch flag confirmed in stable 1.13.0 source
 - type: androidx
   path: androidx.compose.runtime:runtime:1.12.0 sources.jar (PausableComposition.kt)
 - type: androidx
@@ -128,7 +134,7 @@ related_chapters:
 - '22.7'
 - '22.2'
 - '22.4'
-last_review_finalize_at: '2026-08-31'
+last_review_finalize_at: '2026-11-24'
 consolidated_from:
 - src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md
 - src/part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md
@@ -308,7 +314,7 @@ val showScrollToTop by remember(listState) {
 }
 ```
 
-计算函数必须只读且没有副作用。`1.13.0` 的实现通过只读 Snapshot 执行计算，在其中写 State 会抛出 `IllegalStateException`；有效性检查也可能额外调用计算函数。因此，计算次数不能充当重组次数。排序、过滤等昂贵计算若需要反复读取同一结果，仍应保留 `derivedStateOf` 的缓存。[已验证: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.13.0/runtime-1.13.0-sources.jar，`ComputedState.kt`、`DerivedState.kt`]
+计算函数必须只读且没有副作用。`1.13.0` 的实现通过只读 Snapshot 执行计算，在其中写 State 会抛出 `IllegalStateException`；有效性检查也可能额外调用计算函数。因此，计算次数不能充当重组次数。自定义 `policy` 时也要保留结果等价的判断；源码明确把 `neverEqualPolicy()` 列为错误用法，因为相等的计算结果也会被判为不等。排序、过滤等昂贵计算若需要反复读取同一结果，仍应保留 `derivedStateOf` 的缓存。[已验证: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.13.0/runtime-1.13.0-sources.jar，`ComputedState.kt`、`DerivedState.kt`]
 
 验证这个条件时，先确认解析后的 Runtime 版本，再在阈值两侧及同侧分别滚动，用 Layout Inspector 观察按钮所在作用域的重组计数。把其他输入保持不变，才能区分条件结果变化与其他状态导致的重组；帧耗时仍按后文的 Macrobenchmark 流程另测。[来源: https://juejin.cn/post/7709778061000441910；来源: https://developer.android.com/develop/ui/compose/performance/stability/diagnose]
 
@@ -366,6 +372,8 @@ Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基
 
 这个默认值经历过反复：Foundation `1.10.0` 默认开启，`1.10.6` 因稳定性问题改为默认关闭，`1.12.0` 源码又恢复为默认开启。所以现场行为取决于 Foundation 的精确版本和该版本中的开关值，看“Compose 1.x”这样的大版本号是不够的。`ComposeFoundationFlags` 的源码注释还提醒：调试环境应尽早设置开关，发布环境若要改写默认值需配合 R8；因此本文只用它界定版本默认行为，不把它当作稳定的应用配置 API。本文保留 BOM `2025.12.00` / Foundation `1.10.0` 作为历史复现点。
 
+
+Foundation `1.13.0` 已移除这个临时开关，Lazy 预取源码直接使用可暂停组合路径。前面的开关取值只适用于 `1.12.0` 及对应历史版本；升级代码时应删除对该字段的读写，不能继续用它切换预取实现。[来源: https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.13.0-alpha03；已验证: https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation/1.13.0/foundation-1.13.0-sources.jar，`ComposeFoundationFlags.kt`、`LazyLayoutPrefetchState.kt`]
 
 这项能力的覆盖面要限定到本文讨论的 Foundation 默认 Lazy 预取路径：它不会自动把普通首帧 Composition、常规重组或非 Lazy 子树切分。Runtime 的公开可暂停子组合 API 可被其他调度器使用，不能据此说该 API 只能用于 Lazy。拆分重组作用域、降低列表项的组合成本、提供稳定 key 和控制状态读取范围，这些手段仍然有效。
 
@@ -1249,7 +1257,7 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 
 本文 `runtime-tracing:1.12.0` 的安装路径通过 AndroidX Startup 设置全局跟踪器，把编译器注入的可组合函数标记送到 Perfetto SDK。激活跟踪器只是让进程具备写入能力，何时收集数据由录制会话（session）决定。该版本从终端采集时，目标进程要成功加载匹配的 `tracing-perfetto` 二进制库，跟踪配置还要订阅用于记录应用事件的 `track_event` 数据源；完整渲染调查还需要 FrameTimeline、内核调度事件（ftrace/sched）、图形与 View 事件、RenderThread 和 SurfaceFlinger 数据源。[已验证: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-tracing/1.12.0/runtime-tracing-1.12.0-sources.jar；来源: https://developer.android.com/develop/ui/compose/tooling/tracing]
 
-用于诊断的构建应可被性能工具分析，且不可调试。`tracing-perfetto-binary` 会明显增加体积，只应放进基准测试或诊断变体；通过 adb 广播激活 `TracingReceiver` 需要 `android.permission.DUMP`，普通线上应用拿它当远程开关是行不通的。API 35 及以上的 `ProfilingManager` 可以请求受限且经过隐私删减的系统跟踪，但能否看到逐个可组合函数，仍取决于目标构建是否保留标记、运行时跟踪是否激活——Runtime Tracing 那套配置要求还是要自己满足。
+用于诊断的构建应可被性能工具分析，且不可调试。`tracing-perfetto-binary` 会明显增加体积，只应放进基准测试或诊断变体；通过 adb 广播激活 `TracingReceiver` 需要 `android.permission.DUMP`，普通线上应用拿它当远程开关是行不通的。API 35 及以上的 `ProfilingManager` 可以请求经过隐私删减的系统跟踪，但请求受限流且不保证获准。能否看到逐个可组合函数，仍取决于目标构建是否保留标记、运行时跟踪是否激活——Runtime Tracing 那套配置要求还是要自己满足。
 
 一条可组合函数切片表示同一线程上的同步区间。`dur` 是切片从开始到结束的墙钟时间，既包含线程正在运行（Running）的时间，也包含已经就绪但等待 CPU（Runnable）和阻塞的时间。父切片包含子切片，把所有包含耗时（`inclusive duration`）直接相加会重复计数；分析时按名称、线程和时间筛选候选，再统计出现次数，分别计算包含耗时与扣除直接子切片后的自耗时（`self time`）。仅有这类区间切片时，可以确认函数在该时间窗执行过，无法从切片本身确定哪个 State 导致失效；它也不覆盖布局、绘制、RenderThread 或 GPU 工作。[来源: https://developer.android.com/develop/ui/compose/tooling/tracing]
 
@@ -1260,6 +1268,20 @@ Runtime Tracing `1.13.0` 的 Recomposition tracing 在函数区间之外，增�
 排查时，先把应用模块的 `runtime-tracing` 解析到 `1.13.0`，启动应用并停在目标交互前，再在配好 adb 和 Python 3.10+ 的主机上使用[官方示例中的 `record_recomposition_trace.py`](https://github.com/android/performance-samples/tree/main/RecompositionTracing)。参数模板为 `record_recomposition_trace.py -p <应用包名> -t 10`，其中 `-t` 的单位是秒；也可以不传时长，复现后按 Control+C 停止。脚本负责启用两类跟踪、录制、停用并输出 ZIP；在 Perfetto 中选中 State 写入，查看修改调用栈，再沿箭头找对应重组。[来源: https://developer.android.com/develop/ui/compose/tooling/tracing#recomposition-tracing；已验证: https://raw.githubusercontent.com/android/performance-samples/main/RecompositionTracing/record_recomposition_trace.py，脚本说明与 `--help`]
 
 State 字符串和调用栈的额外记录开销较高。这份跟踪用于回答“谁改了状态、引发了哪些重组”；测真实帧耗时前应停用 Recomposition tracing，再按相同操作另采 Macrobenchmark 或系统跟踪，不能把带因果记录的耗时直接当作发布性能。[来源: https://developer.android.com/develop/ui/compose/tooling/tracing#recomposition-tracing；已验证: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-tracing/1.13.0/runtime-tracing-1.13.0-sources.jar，`RecompositionTracingReceiver.kt`]
+
+停用还需要确认成功。`1.13.0` 把重组跟踪的启用状态保存在组件的 enabled setting 中，应用重启后，初始化器会按这个标志重新安装状态观察器；杀进程或重启应用都不能代替停用。官方脚本收尾时会发送重组跟踪和进程内跟踪的 STOP 广播，但停用失败后仍可能继续保存 ZIP，文件生成不证明清理成功。[已验证: https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-tracing/1.13.0/runtime-tracing-1.13.0-sources.jar，`RecompositionTracingEnabledReceiver.kt`、`ComposeTracingInitializer.kt`、`RecompositionTracerState.kt`；已验证: https://raw.githubusercontent.com/android/performance-samples/main/RecompositionTracing/record_recomposition_trace.py，`stop_in_process_tracing()`]
+
+若 adb 中断或脚本报告停用失败，恢复连接并启动目标应用后，可以补发下面两条清理命令。把 `com.example.app` 换成实际应用包名，并确认两条广播都返回 `result=1`，再开始性能测量；第一条取消重组观察并清除持久启用标志，第二条停止该脚本使用的进程内跟踪。
+
+```bash
+package=com.example.app
+adb shell am broadcast \
+  -a androidx.compose.tracing.action.STOP_RECOMPOSE_TRACING \
+  "$package/androidx.compose.runtime.tracing.RecompositionTracingReceiver"
+adb shell am broadcast \
+  -a androidx.tracing.profiler.action.STOP \
+  "$package/androidx.tracing.profiler.ConnectedProfilerTracingReceiver"
+```
 
 可靠的排查顺序是：先用 FrameTimeline 定位异常帧，在主线程上把组合切片、状态或业务标记、测量、布局和绘制串起来，再检查线程状态、垃圾回收、Binder 与 I/O；UI 线程按时完成的，继续查看 RenderThread、缓冲区、SurfaceFlinger 与最终呈现。线上 APM 用于筛选页面、设备和操作样本组（cohort）。完整跟踪包含源码位置、线程和用户操作时序，采集系统必须设置配额、保留期、访问控制和隐私策略。
 
