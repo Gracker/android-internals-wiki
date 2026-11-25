@@ -8491,6 +8491,42 @@
       "status": "appended",
       "title": "同一个 App，五种手机五种死法：2026 年 Android 五大 ROM 兼容的 8 个真实坑这不是一篇\"适配 ch"
     },
+    "source/juejin-android/2026-11-26-77054198-被杀掉之后：我把 Android 的「唤起.md": {
+      "chapter": "待分类",
+      "entry_id": "aa080cc8d53eb709",
+      "last_appended": "2026-11-26T05:25:19.309558+08:00",
+      "last_seen": "2026-11-26T05:25:19.309558+08:00",
+      "mtime": 1795637781.210109,
+      "score": 20,
+      "sha256": "2645c730f40e2a257f5ae03eda766b56aeef17a1eba2c2aa3193d2431fef35e8",
+      "size": 74499,
+      "status": "appended",
+      "title": "被杀掉之后：我把 Android 的「唤起 + 常驻」重做了一遍从一条短信链接点进来，到锁屏十分钟之后进程还在不在，中间"
+    },
+    "source/juejin-android/2026-11-26-77089755-MVI 让屏幕一次只有一个状态本文以产品.md": {
+      "chapter": "待分类",
+      "entry_id": "4a6be73823b0df94",
+      "last_appended": "2026-11-26T05:25:19.309558+08:00",
+      "last_seen": "2026-11-26T05:25:19.309558+08:00",
+      "mtime": 1795637781.2103486,
+      "score": 9,
+      "sha256": "16daa8de3da2a02c0741519c6ef15630513836937d9a05670458b5ac6c942ba0",
+      "size": 18823,
+      "status": "appended",
+      "title": "MVI 让屏幕一次只有一个状态本文以产品搜索页为例，讲解如何用 Kotlin、协程与 Jetpack Compose 实"
+    },
+    "source/juejin-android/2026-11-26-77113053-Android Keep Rules 解读，直接影响 Go.md": {
+      "chapter": "待分类",
+      "entry_id": "d4139f8355bf6d5c",
+      "last_appended": "2026-11-26T05:25:19.309558+08:00",
+      "last_seen": "2026-11-26T05:25:19.309558+08:00",
+      "mtime": 1795637781.2098331,
+      "score": 8,
+      "sha256": "c20a855acffda925654ffa29d3f4ba46d9b05cb4758617f712cbb731811827bb",
+      "size": 4979,
+      "status": "appended",
+      "title": "Android Keep Rules 解读，直接影响 Google Play 上架和曝光Google 最近发的 《Shi"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -12380,24 +12416,24 @@
     }
   },
   "last_report": {
-    "appended": 9,
-    "considered": 9,
-    "cutoff": "2026-11-24T05:20:19.508744+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-25.md",
+    "appended": 3,
+    "considered": 3,
+    "cutoff": "2026-11-25T05:20:19.497638+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-26.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2649,
+    "scanned": 2652,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1441,
       "path": 33,
-      "unchanged": 1166
+      "unchanged": 1175
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-25T05:25:19.497638+08:00",
+  "last_run_at": "2026-11-26T05:25:19.309558+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
