@@ -3,12 +3,12 @@ title: 过度绘制
 chapter: '2.5'
 section: '2.5'
 applicable_versions: Android 4.2 (API 17) - Android 17 (API 37)
-last_verified: 2026-09-28
-last_verified_against: AOSP android-17.0.0_r1 Properties.h/Properties.cpp, SkiaPipeline.cpp, RenderNodeDrawable.cpp, Canvas.java; Perfetto FrameTimeline docs (Android 12+, SurfaceView unsupported notice); androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt; kernel android17-6.18-2026-06_r6 dma-buf/dma-fence
-last_source_verified_at: '2026-09-28T18:35:34+08:00'
+last_verified: 2026-11-25
+last_verified_against: AOSP android-17.0.0_r1 Properties.h/Properties.cpp, SkiaPipeline.cpp, RenderNodeDrawable.cpp, Canvas.java; Perfetto FrameTimeline docs (Android 12+, SurfaceView unsupported notice); androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt and Compose graphics modifiers docs; AGI Frame Profiler / APA docs (Vulkan, ANGLE, game-profiling recommendation and public beta notice); kernel android17-6.18-2026-06_r6 dma-buf/dma-fence/sync_file
+last_source_verified_at: '2026-11-25T18:38:16+08:00'
 confidence: high
 status: finalized
-last_idle_audit_at: '2026-09-28T18:35:34+08:00'
+last_idle_audit_at: '2026-11-25T18:38:16+08:00'
 sources:
 - type: aosp
   path: frameworks/base/libs/hwui/Properties.h
@@ -40,6 +40,10 @@ sources:
   path: https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://developer.android.com/agi/frame-trace/frame-profiler
+- type: official
+  path: https://developer.android.com/android-performance-analyzer
 - type: obsidian
   path: Writer/rendering_pipelines/S01_rendering_types_overview.md
 - type: obsidian
@@ -222,7 +226,9 @@ Perfetto 文档同时注明，FrameTimeline 目前不支持 `SurfaceView`。页�
 
 Android GPU Inspector（AGI）的 Frame Profiler 可分析受支持应用的一帧。它能查看 Vulkan API 调用、render pass、draw call（一次绘制提交）、framebuffer（渲染目标及其附件）、shader、纹理和 GPU 性能数据，回答“哪一批命令覆盖了这块区域”“是否多了一次离屏 pass”“某个 shader 或纹理采样是否昂贵”这类问题。
 
-AGI 对 API、设备、驱动和可调试应用的支持各有范围，抓帧也会引入插桩开销。它适合用来分析命令和相对差异；用户正常运行的时延，要在 capture（抓帧采集） 之外测量。
+Frame Profiler 支持直接使用 Vulkan 的应用，以及通过 ANGLE（把 OpenGL ES 调用转换为 Vulkan 调用的兼容层）采集的 OpenGL ES 应用。后者会改变抓帧时的 API 路径。AGI 对设备、驱动和可调试应用的支持各有范围；应用使用未受支持的扩展时，重放可能出错或崩溃。抓帧也会引入插桩开销。它适合用来分析命令和相对差异；用户正常运行的时延，要在 capture（抓帧采集） 之外测量。
+
+官方 AGI 页面目前把 [Android Performance Analyzer（APA）](https://developer.android.com/android-performance-analyzer) 列为游戏性能分析的推荐工具，并提供公开测试版。APA 当前面向游戏与基于 Vulkan 的图形；其他应用应使用 Android Studio 的性能分析工具。
 
 ### GPU counter 的可比条件
 
@@ -390,8 +396,8 @@ Compose 与 View 最终都可能进入 HWUI App Window，像素覆盖的基本�
 
 `SrcOver`（把源内容覆盖到目标内容之上的默认混合模式）是下面几条规则的默认参照。官方 graphics modifiers 文档给出这几条：
 
-- 默认 `CompositingStrategy.Auto` 下，alpha 小于 1 或使用 `RenderEffect` 等场景可能创建离屏 buffer；
-- overscroll（滚出边缘时的视觉反馈）会使用离屏 buffer，不受指定合成策略影响；
+- 默认 `CompositingStrategy.Auto` 下，alpha 小于 1 时会创建离屏 buffer；
+- `RenderEffect` 或 overscroll（滚出边缘时的视觉反馈）会使用离屏 buffer，不受指定合成策略影响。`RenderEffect` 参数仅在 Android 12 及以上生效，旧版本会忽略此参数；
 - 非 `SrcOver` 的 `blendMode` 或非空 `colorFilter` 会强制离屏，行为等价于 Offscreen；
 - `CompositingStrategy.Offscreen` 强制先画入离屏 buffer，再合成到目标，而且内容会按 layer bounds 裁剪；
 - `CompositingStrategy.ModulateAlpha` 在可用时把 alpha 分配到各绘制命令，省去 alpha 离屏层；如果同一 layer 内有重叠绘制，其混合结果可能与 Offscreen 不同。
@@ -485,6 +491,7 @@ counter 的统计单位、render target、pass 范围和上下文都可能不同
 - [Hardware acceleration](https://developer.android.com/develop/ui/views/graphics/hardware-accel)：Canvas 硬件加速模型和早期 API 支持范围。
 - [Profile GPU Rendering](https://developer.android.com/topic/performance/rendering/profile-gpu)：各柱状阶段的语义。
 - [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)：App / SurfaceFlinger jank 分类和 App 帧完成时间。
-- [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)：受支持帧中的 API 调用、render pass、draw call 和 GPU 数据。
+- [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)：Vulkan / OpenGL on ANGLE 抓帧入口、GPU 数据，以及 APA 推荐和公开测试版提示。
+- [Android Performance Analyzer（APA）](https://developer.android.com/android-performance-analyzer)：面向游戏与 Vulkan 图形的工具范围，其他应用使用 Android Studio 性能分析工具的说明。
 - [Compose graphics modifiers](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers)：`graphicsLayer`、离屏合成与 `CompositingStrategy`。
 - [Compose UI 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar)：`GraphicsLayerModifier.kt`、`GraphicsLayerScope.kt` 的版本化语义。
