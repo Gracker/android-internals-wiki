@@ -6958,6 +6958,16 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-11-26-77089755-MVI 让屏幕一次只有一个状态本文以产品.md",
+      "title": "[技术文章] MVI 让屏幕一次只有一个状态本文以产品搜索页为例，讲解如何用 Kotlin、协程与 Jetpack Compose 实",
+      "summary": "> 发布时间: 2026-11-17T14:27:44.000Z > 原文链接: https://juejin.cn/post/7708975511029432371 2026-11-17 374 阅读11分钟 Android开发专家秘籍 > 本文译自「MVI in Android — Designing Screens That Can Only Be in One S...",
+      "chapter": "ch16",
+      "processed_at": "2026-11-26T06:20:19.301381+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
