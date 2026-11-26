@@ -8527,6 +8527,133 @@
       "status": "appended",
       "title": "Android Keep Rules 解读，直接影响 Google Play 上架和曝光Google 最近发的 《Shi"
     },
+    "source/juejin-android/2026-11-27-76681919-FlutterStarling.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "9cfdfefa1527fa21",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.8934565,
+      "score": 13,
+      "sha256": "46f4559fad7c3caa989fc76de944b5c5fa24a99eef661f2182bd2683fc6d33da",
+      "size": 14758,
+      "status": "appended",
+      "title": "Flutter Starling : 用 Swift和 Flutter 写了一个 Linux 桌面系统，震惊我一整年"
+    },
+    "source/juejin-android/2026-11-27-76696126-你敢信吗？同样是跨端，KMP跟.md": {
+      "chapter": "待分类",
+      "entry_id": "c16b1d82ada12952",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.893739,
+      "score": 8,
+      "sha256": "cd7ecbeaf3b98a089cd7098281fdbda16629afe5b8e6d9853d02c4392917a98e",
+      "size": 6908,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-11-27-76748189-Android版MCP正式登场.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "8e27a5acd7d275d2",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.893983,
+      "score": 12,
+      "sha256": "cd9163f63cb7d72fd9886788f2cea15eeb27becc30745f7c173644718d5638d0",
+      "size": 14066,
+      "status": "appended",
+      "title": "Android 版 MCP 正式登场：AppFunctions前言 今日，Google 在 Android Develo"
+    },
+    "source/juejin-android/2026-11-27-76756150-Android架构进阶：为什么.md": {
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.89421,
+      "sha256": "114107fa0148420e6af51884d57fda96d8b2def58dd71c2d6e374838f483027f",
+      "size": 12989,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-11-27-76756264-三星安卓系统BUG排查记录：云.md": {
+      "chapter": "待分类",
+      "entry_id": "0daec47d7b270c4c",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.8944159,
+      "score": 24,
+      "sha256": "45441af13103d0091dd8b91285f7d8b8d757a17b4c2c7983554288f7fd05832c",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-11-27-76782605-我常用的5个Kotlin优化小.md": {
+      "chapter": "待分类",
+      "entry_id": "6a93272d9b7c87e1",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.8947735,
+      "score": 13,
+      "sha256": "0ed724639ed65cddb15ec4443dfe35368059a17072141498a5422af9ab94bee4",
+      "size": 10868,
+      "status": "appended",
+      "title": "我常用的 5 个 Kotlin 优化小技巧今天我先来分享一下最近几年常用的一些 Kotlin 代码优化小技巧，与君共享。"
+    },
+    "source/juejin-android/2026-11-27-76800243-曾经安卓开发人手一个的Even.md": {
+      "chapter": "待分类",
+      "entry_id": "ecb12a84f26f3a5a",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.8950624,
+      "score": 9,
+      "sha256": "69c5fcf1936a20d50a3df8d1e8eb80218f10053bc7c097ea70dcc7eea7c8dafa",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-11-27-76807574-我为什么喜欢Compose？.md": {
+      "chapter": "待分类",
+      "entry_id": "f1a90d6b207217c2",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.895343,
+      "score": 8,
+      "sha256": "7025ee171128880a13fdee42f8c8de700ba5067c4bd371d889c6b8a3752afdaa",
+      "size": 9949,
+      "status": "appended",
+      "title": "我为什么喜欢 Compose ？自 2021 年 7 月发布第一个稳定版本 Compose 1.0 到现在，Compos"
+    },
+    "source/juejin-android/2026-11-27-76826281-AI时代下，Android的边.md": {
+      "chapter": "待分类",
+      "entry_id": "3b688e572395e730",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.8956091,
+      "score": 16,
+      "sha256": "f123772158f9aaa8f0e78ee5befd79b4ac565363180fb98abdb29d8477b76174",
+      "size": 20509,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
+    "source/juejin-android/2026-11-27-76845736-Kotlin2026：裁员、A.md": {
+      "chapter": "待分类",
+      "entry_id": "07752fd5ce86a8c3",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.8958225,
+      "score": 8,
+      "sha256": "4e43d011c61e547b77b8c9da986c3fe073568c7a4fdff75ec02cfb73913e51f7",
+      "size": 7853,
+      "status": "appended",
+      "title": "Kotlin 2026：裁员、AI、Rust——黄金时代结束了吗？Jake Wharton 为你解答 > **前言：**"
+    },
+    "source/juejin-android/2026-11-27-77024089-我把0.6B大模型塞进安卓手机.md": {
+      "chapter": "待分类",
+      "entry_id": "852211d292420def",
+      "last_appended": "2026-11-27T05:25:19.470660+08:00",
+      "last_seen": "2026-11-27T05:25:19.470660+08:00",
+      "mtime": 1795724142.8960288,
+      "score": 10,
+      "sha256": "9f8a2eae67ba1e12502b026587b6fcbd0edc37bc0c2660afca1d347eb7fc53bc",
+      "size": 16484,
+      "status": "appended",
+      "title": "我把 0.6B 大模型塞进安卓手机：596 秒到 10 秒这个 App 是我一个人做的，端侧 OCR 加 0.6B 的小"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -12416,24 +12543,24 @@
     }
   },
   "last_report": {
-    "appended": 3,
-    "considered": 3,
-    "cutoff": "2026-11-25T05:20:19.497638+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-26.md",
+    "appended": 10,
+    "considered": 11,
+    "cutoff": "2026-11-26T05:20:19.309558+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-27.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2652,
+    "scanned": 2663,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1441,
       "path": 33,
-      "unchanged": 1175
+      "unchanged": 1178
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-26T05:25:19.309558+08:00",
+  "last_run_at": "2026-11-27T05:25:19.470660+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
