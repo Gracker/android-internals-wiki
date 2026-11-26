@@ -16425,15 +16425,15 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/13-performance-analyzer-gaps.md",
-      "close_note": "已按 1.0.0-Stable 与 Canary 6 发布说明更新版本段，替换外部 skill 必装说法；保留 System Profiler-only 与 Frame Profiler canary/Vulkan/兼容和 CPU 重放边界。元数据、目录链接、diff 与新增中文 gate 通过。",
+      "close_note": "已按当前 1.0.0-Stable、Canary 6 发布说明统一版本和通道；区分内置 android-profiler 与外部 skill，补 System Profiler-only 及认证入口。 元数据、SUMMARY链接、git diff --check 和新增中文 gate 通过。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "created_at": "2026-11-25T22:40:03.966613+08:00",
+      "closed_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "created_at": "2026-11-26T22:40:51.697290+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "details": "2026 年 11 月发布说明列出 1.0.0-Stable、内置 android-profiler skill 与 ACP 集成；agentic 指南同时限制为 System Profiler。正文版本段与 SQL 后的外部 skill 必装描述需要统一。",
+      "created_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "details": "当前目标仍保留旧版通道说明和外部 skill 必装描述；2026-11-26 取回 1.0.0-Stable 发布说明及 agentic 指南，确认内置 android-profiler 与 ACP，且仅适用于 System Profiler。复用同一稳定 finding id 重新核验修复。",
       "id": "finding-ch15-13-apa-1-0-agentic",
-      "log_path": "logs/audit/2026-11-25-20261125-223519-idle-audit-6317ef1a-idle-audit.md",
+      "log_path": "logs/audit/2026-11-26-20261126-223519-idle-audit-6317ef1a-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://developer.android.com/android-performance-analyzer/release-notes",
@@ -16442,19 +16442,19 @@
       "status": "fixed",
       "summary": "APA 1.0 Stable 已内置 agent，正文仍要求先安装外部 skill",
       "type": "stale-version-boundary",
-      "updated_at": "2026-11-25T22:47:04.859996+08:00"
+      "updated_at": "2026-11-26T22:47:24.726028+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/13-performance-analyzer-gaps.md",
-      "close_note": "已从默认首选列表移除 Battery Historian，保留既有报告用途，并写明不再积极维护与官方三个替代方向。当前 Warning 已取回留证。",
+      "close_note": "已从默认首选列表移除 Battery Historian，保留已有报告用途，明确不再积极维护及官方三个替代方向；保留设备和测试时长限制。 元数据、SUMMARY链接、git diff --check 和新增中文 gate 通过。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "created_at": "2026-11-25T22:40:04.059530+08:00",
+      "closed_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "created_at": "2026-11-26T22:40:52.292991+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "details": "当前表格将 Battery Historian 无条件列为长时间耗电的首选工具；官方页面 Warning 要求优先考虑 system tracing、Macrobenchmark power metric 或 Power Profiler。",
+      "created_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "details": "当前目标仍将 Battery Historian 无条件列为长时间耗电首选。2026-11-26 官方 Warning 仍明确 no longer actively maintained，替代方向为 system tracing、Macrobenchmark power metric 和 Power Profiler。",
       "id": "finding-ch15-13-battery-historian-maintenance",
-      "log_path": "logs/audit/2026-11-25-20261125-223519-idle-audit-6317ef1a-idle-audit.md",
+      "log_path": "logs/audit/2026-11-26-20261126-223519-idle-audit-6317ef1a-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://developer.android.com/topic/performance/power/battery-historian"
@@ -16462,19 +16462,19 @@
       "status": "fixed",
       "summary": "工具分工表遗漏 Battery Historian 不再积极维护的官方警告",
       "type": "missing-lifecycle-warning",
-      "updated_at": "2026-11-25T22:47:04.923256+08:00"
+      "updated_at": "2026-11-26T22:47:24.789386+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/13-performance-analyzer-gaps.md",
-      "close_note": "已补 Android 12+ 与指南 SurfaceView 限制，要求以目标 layer/token 检查帧覆盖；未把指南限制升级为所有 Android 17 构建都不支持的结论。",
+      "close_note": "已补 Android 12+ 与指南 SurfaceView 暂不支持提示，要求核对 layer 与 surface/display frame token 的实际覆盖；未外推为全部 Android 17 构建都不支持。 元数据、SUMMARY链接、git diff --check 和新增中文 gate 通过。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "created_at": "2026-11-25T22:40:04.123577+08:00",
+      "closed_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "created_at": "2026-11-26T22:40:52.359951+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "details": "所引 Perfetto 指南明确 Android 12+，并保留 SurfaceView 暂不支持提示；Vulkan/游戏分析不能仅凭 Android 版本或一条 Actual Timeline 假定目标 surface 已被覆盖。应保留指南限制并要求按目标 layer/token 核验。",
+      "created_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "details": "2026-11-26 取回的所引 Perfetto 指南仍有 Android 12+ 与 SurfaceViews 暂不支持提示；当前正文未保留该可用性边界。需要求按 layer/token 核验实际覆盖，不能推出所有 Android 17 设备不支持。",
       "id": "finding-ch15-13-frametimeline-surfaceview-boundary",
-      "log_path": "logs/audit/2026-11-25-20261125-223519-idle-audit-6317ef1a-idle-audit.md",
+      "log_path": "logs/audit/2026-11-26-20261126-223519-idle-audit-6317ef1a-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://perfetto.dev/docs/data-sources/frametimeline"
@@ -16482,28 +16482,50 @@
       "status": "fixed",
       "summary": "FrameTimeline 归因流程遗漏 SurfaceView 支持限制与目标 layer 覆盖检查",
       "type": "missing-availability-boundary",
-      "updated_at": "2026-11-25T22:47:04.985484+08:00"
+      "updated_at": "2026-11-26T22:47:24.852217+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/13-performance-analyzer-gaps.md",
-      "close_note": "已绑定 2026-11-25 原始内容哈希，补路径结束未命中时 PHIL 补救，统一路径预算和模型请求尝试次数。已用下载函数的纯 helper/模拟执行器验证：预算1产生2条路径；未受阻路径结束触发 path_completed；同 Activity 预算跨目标保留。未做真机实验。",
+      "close_note": "已绑定 2026-11-26 原始内容 SHA-256，统一 PHIL stall/path_completed 入口、实例预算、路径预算及3次含首次的SDK调用；6项抽取函数离线测试通过，未进行真机或真实模型调用实验。 元数据、SUMMARY链接、git diff --check 和新增中文 gate 通过。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "created_at": "2026-11-25T22:40:04.186696+08:00",
+      "closed_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "created_at": "2026-11-26T22:40:52.435571+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261125-223519-idle-audit-6317ef1a",
-      "details": "2026-11-25 公开 README/uv.lock/gaps_run.py 哈希均不同于旧元数据；当前执行器另在路径执行完仍未命中且末 Activity 未用过补救时调用 PHIL。复现清单仍把 path limit 称为硬上限，与生成器 n_paths > max_paths 矛盾。正文多处本轮缺少可复查的取回日期。",
+      "created_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "details": "2026-11-26 原始公开快照 gaps_run.py SHA-256 ac6da9aed805d69faca7f45af52619def4cbd9d22267c23a8c841e16524845a5，取代正文旧 hash。当前代码还在路径结束未命中且末 Activity 预算可用时调用 PHIL；清单错误称路径预算硬上限，模型请求循环3次含首次；本轮文字缺少固定日期。",
       "id": "finding-ch15-13-gaps-snapshot-control-boundary",
-      "log_path": "logs/audit/2026-11-25-20261125-223519-idle-audit-6317ef1a-idle-audit.md",
+      "log_path": "logs/audit/2026-11-26-20261126-223519-idle-audit-6317ef1a-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://anonymous.4open.science/api/repo/GAPS/file/src/gaps/run/gaps_run.py",
-        "https://anonymous.4open.science/api/repo/GAPS/file/src/gaps/static/path_generation.py"
+        "https://anonymous.4open.science/api/repo/GAPS/file/src/gaps/static/path_generation.py",
+        "https://anonymous.4open.science/api/repo/GAPS/file/src/gaps/run/phil.py"
       ],
       "status": "fixed",
       "summary": "GAPS 公开快照变化，PHIL 触发条件与路径预算描述未统一",
       "type": "source-snapshot-mismatch",
-      "updated_at": "2026-11-25T22:47:05.048071+08:00"
+      "updated_at": "2026-11-26T22:47:24.915548+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/13-performance-analyzer-gaps.md",
+      "close_note": "已按当前官方数据定义改为电池流入/流出电流，要求记录USB供电与充电状态；移除持续充电保证及不存在的官方提醒归因。 元数据、SUMMARY链接、git diff --check 和新增中文 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "created_at": "2026-11-26T22:45:20.599938+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261126-223519-idle-audit-6317ef1a",
+      "details": "2026-11-26 取回 APA Quickstart 仅要求 USB；Understand trace data 将 Battery Usage 定义为 current in or out，并列 charge/capacity，未作测试期间持续充电保证。应按电池电流和供电状态解释，删除不存在的来源归因。",
+      "id": "finding-ch15-13-battery-current-source-boundary",
+      "log_path": "logs/audit/2026-11-26-20261126-223519-idle-audit-6317ef1a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/android-performance-analyzer/quickstart",
+        "https://developer.android.com/android-performance-analyzer/view/data"
+      ],
+      "status": "fixed",
+      "summary": "Battery Usage 将 USB 连接等同持续充电并误引官方提醒",
+      "type": "source-claim-mismatch",
+      "updated_at": "2026-11-26T22:47:24.978860+08:00"
     }
   ],
   "schema_version": 1
