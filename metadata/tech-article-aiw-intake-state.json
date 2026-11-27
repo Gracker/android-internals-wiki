@@ -8654,6 +8654,30 @@
       "status": "appended",
       "title": "我把 0.6B 大模型塞进安卓手机：596 秒到 10 秒这个 App 是我一个人做的，端侧 OCR 加 0.6B 的小"
     },
+    "source/juejin-android/2026-11-28-76741036-主线程明明是空闲的，为什么仍然.md": {
+      "chapter": "ch13-perfetto",
+      "entry_id": "af7aae1230997187",
+      "last_appended": "2026-11-28T05:25:19.181335+08:00",
+      "last_seen": "2026-11-28T05:25:19.181335+08:00",
+      "mtime": 1795810550.0038862,
+      "score": 25,
+      "sha256": "fa3a609f9dfd58b6503220103aa0eeba4f454fc9693735faf5e0da68001401d6",
+      "size": 19666,
+      "status": "appended",
+      "title": "主线程明明是空闲的，为什么仍然 ANR？3 个真实 Trace 的证据链复盘系统已经判定 ANR，主线程却停在 nati"
+    },
+    "source/juejin-android/2026-11-28-77005929-不想开会员，我写了一个记账App.md": {
+      "chapter": "待分类",
+      "entry_id": "9e9bb0b20fad2a57",
+      "last_appended": "2026-11-28T05:25:19.181335+08:00",
+      "last_seen": "2026-11-28T05:25:19.181335+08:00",
+      "mtime": 1795810550.004159,
+      "score": 7,
+      "sha256": "a47b94459aaf9a11e40acf6591f9a5336d8220907f19fbbdf2bc1a3020511a20",
+      "size": 12163,
+      "status": "appended",
+      "title": "不想开会员，我写了一个记账 App一个没有账号、广告和云同步的 Android 记账 App，我写了三个月。1300 多"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -12543,24 +12567,24 @@
     }
   },
   "last_report": {
-    "appended": 10,
-    "considered": 11,
-    "cutoff": "2026-11-26T05:20:19.309558+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-27.md",
+    "appended": 2,
+    "considered": 2,
+    "cutoff": "2026-11-27T05:20:19.470660+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-11-28.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2663,
+    "scanned": 2665,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1441,
       "path": 33,
-      "unchanged": 1178
+      "unchanged": 1189
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-11-27T05:25:19.470660+08:00",
+  "last_run_at": "2026-11-28T05:25:19.181335+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
