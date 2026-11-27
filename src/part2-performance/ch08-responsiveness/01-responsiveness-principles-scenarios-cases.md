@@ -2,8 +2,8 @@
 title: 响应速度原理、场景与案例
 chapter: '8.1'
 section: '8.1'
-status: finalized
-last_body_apply_at: '2026-11-17T09:20:11+08:00'
+status: ready-for-review
+last_body_apply_at: '2026-11-28T07:17:03+08:00'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
   - responsiveness
@@ -56,6 +56,12 @@ sources:
   path: 技术文章/source/juejin-android/2026-11-13-76741036-主线程明明是空闲的，为什么仍然 ANR？.md
 - type: blog
   path: 技术文章/source/juejin-android/2026-11-17-76741036-主线程明明是空闲的，为什么仍然 ANR？.md
+- type: blog
+  path: 技术文章/source/juejin-android/2026-11-28-76741036-主线程明明是空闲的，为什么仍然.md
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Object.java
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/monitor.cc
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc
 - type: aosp
@@ -452,6 +458,10 @@ Android 17 的 debuggable 应用可用 `adb shell am compat enable ENFORCE_THREA
 | Reason 明确为无焦点窗口，Java 栈停在 `nativePollOnce` | 直接触发是没有及时等到焦点窗口；同期高 Load 仍只是环境线索 | 同一时间窗的窗口建立、焦点切换和线程调度记录。[来源: 上述材料，案例一] |
 | 主线程在 native poll，但 ANR Reason 丢失 | 只能描述采样时状态；无法据此确定 ANR 类型或断言主线程已经恢复 | 完整 Reason、触发与转储时间，以及该类 ANR 负责线程的活动记录。[来源: 上述材料，案例二] |
 | 主线程栈顶出现 Matrix `LooperMonitor.dispatch()` | 只看到监控入口，不能据此把 Matrix 定为根因 | 监控回调自身的耗时、连续采样或具体锁依赖，再核对是否覆盖超时区间。[来源: 上述材料，案例三] |
+
+案例二还展示了两个 worker 在同一对象上 `Object.wait()` 的片段。`wait()` 会释放该对象的 monitor（对象监视器），返回前再重新获得它；线程已持有的其他对象 monitor 仍保持锁定。因此，多个线程等待同一条件对象，不能单独证明它们互相持锁，也不能排除其他锁依赖。[来源: 技术文章/source/juejin-android/2026-11-28-76741036-主线程明明是空闲的，为什么仍然.md，案例二；已验证: AOSP `android-17.0.0_r1`，`libcore/ojluni/src/main/java/java/lang/Object.java` 的 `wait(long, int)` 约定、`art/runtime/monitor.cc` 的 `Monitor::Wait()`]
+
+排查这类等待时，用完整线程转储和同步代码核对等待对象、仍持有的锁及锁持有者，再查主线程是否依赖这些 worker。若要把 ANR 归因于环形锁等待，还要补出闭合的线程—锁依赖链，并确认等待覆盖了超时区间；材料没有给出这样的证据。[来源: 上述材料，案例二的锁依赖与时间线分析]
 
 线程头与 GC 摘要还要区分累计量和超时区间。`schedstat` 的三个值分别是线程累计 CPU 运行时间、runqueue 等待时间和运行的时间片数，前两项单位为纳秒。ART 的 `Total GC count`、`Total mutator paused time` 和 `Total blocking GC time` 也是累计统计；单份转储不能说明这些累计值有多少发生在这次超时区间内。[来源: 技术文章/source/juejin-android/2026-11-17-76741036-主线程明明是空闲的，为什么仍然 ANR？.md，案例一、二；已验证: AOSP `android-17.0.0_r1`，`art/runtime/thread.cc`、`art/runtime/gc/heap.cc`；内核 `android17-6.18-2026-06_r6`，`Documentation/scheduler/sched-stats.rst`]
 
@@ -1401,6 +1411,8 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 - [`android_os_MessageQueue.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_MessageQueue.cpp)：`nativePollOnce()` 到 native Looper 的入口。
 - [`Looper.cpp`](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libutils/Looper.cpp)：epoll 等待与文件描述符回调。
 - [`Looper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Looper.java)：消息分发前后的 Printer 调用。
+- [`Object.java`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Object.java)：`wait()` 释放当前对象 monitor、保留其他对象 monitor 及返回前重新获取的约定。
+- [`monitor.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/monitor.cc)：`Monitor::Wait()` 加入等待集合、释放及重新获取 monitor 的实现。
 - [`thread.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc)：线程转储中的 `schedstat` 读取与失败回填。
 - [`heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)：GC 累计统计与 `ResetGcPerformanceInfo()`。
 - [内核基线的 Scheduler Statistics](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-stats.rst)：调度计数器的字段与差值读取方法。
