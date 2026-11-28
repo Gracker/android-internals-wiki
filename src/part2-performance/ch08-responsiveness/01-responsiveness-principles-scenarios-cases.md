@@ -2,8 +2,8 @@
 title: 响应速度原理、场景与案例
 chapter: '8.1'
 section: '8.1'
-status: ready-for-review
-last_body_apply_at: '2026-11-28T07:17:03+08:00'
+status: finalized
+last_body_apply_at: '2026-11-28T08:16:13+08:00'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
   - responsiveness
@@ -124,12 +124,12 @@ sources:
   path: https://blog.duolingo.com/android-app-performance/
 - type: reference
   path: https://web.dev/articles/inp
-last_verified: '2026-11-17'
-last_source_verified_at: '2026-11-17T10:22:55+08:00'
-last_review_finalize_at: '2026-11-17T10:22:55+08:00'
+last_verified: '2026-11-28'
+last_source_verified_at: '2026-11-28T08:16:13+08:00'
+last_review_finalize_at: '2026-11-28T08:16:13+08:00'
 last_deep_review_at: '2026-11-13T08:42:16+08:00'
-last_verified_against: AOSP android-17.0.0_r1 InputDispatcher/Looper/ViewRootImpl/View/MotionPredictor/JNI, ART thread/heap dumps and external/perfetto android.input; android17-6.18-2026-06_r6 schedstat; Android Developers TTID/TTFD/Baseline Profiles/Display/Vitals/ANR/MessageQueue docs; Perfetto FrameTimeline including Buffer Stuffing; Reddit/Gmail Wear OS/Disney+/Duolingo primary case reports
-verification_scope_note: 已核对输入时延 SQL、TTFD 报告与 Profile 构建边界、ANR 累计统计、FrameTimeline 缓冲积压、触控笔预测和平台迁移说明；SQL 在官方历史测试 trace 上执行，搜索 Flow 通过 JVM 虚拟时间测试，未在 Android 设备上复现实验，历史案例比例不代表当前平台收益。
+last_verified_against: AOSP android-17.0.0_r1 Object/Monitor/InputDispatcher/Looper/ViewRootImpl/View/MotionEvent/MotionPredictor/JNI and ART thread/heap; android17-6.18-2026-06_r6 schedstat; pinned Perfetto android.input; Android Developers TTID/TTFD/Baseline Profiles build and installation channels/Display/Vitals/ANR/MessageQueue/Fragment/ViewPager2 docs; Perfetto FrameTimeline; Reddit/Gmail Wear OS/Disney+/Duolingo primary case reports
+verification_scope_note: 已核对 wait 的 monitor 释放与重新获取、ANR 状态机和累计统计、同步屏障 flag 分支、Profile 构建与安装渠道边界，并复核全文关键来源；SQL 在官方历史测试 trace 上分别用 v58.2 内置库和 r1 模块执行，搜索 Flow 通过 JVM 虚拟时间测试。未在 Android 设备上复现实验，未验证具体渠道安装后的编译状态，历史案例比例不代表当前平台收益。
 last_idle_audit_at: '2026-10-12T10:35:33+08:00'
 related_chapters:
 - '2.3'
@@ -445,7 +445,7 @@ ANR 的触发时间和线程栈的采样时间要分开记录。转储较晚时�
 
 官方对普通 input dispatch timeout 中的 `nativePollOnce` / main thread idle 聚类，通常建议转查其他包含有效现场的聚类；无焦点窗口、广播和服务类 ANR 仍有应用侧可查的路径。遇到后几类，应检查应用是否从后台线程修改 View。Android 16 及以下的相关实现中，并发安排 traversal 可能插入多个同步屏障，却只保存一个 token；遍历结束只移除保存的屏障，遗留屏障会挡住后续同步消息，主线程可能在 `nativePollOnce` 中等待。单份 poll 栈仍不能证明发生了这类泄漏，需要回查跨线程 View 调用和消息队列的屏障状态。[来源: Android Developers《Diagnose and fix ANRs》的 Input dispatch timeout / nativePollOnce / View Threading Violation / Sync Barrier Leak 小节]
 
-官方文档将这类同步屏障泄漏的修复归于 Android 17；r1 的 `ViewRootImpl` 在 `atomicTraversalBarrier` flag 启用时，原子替换屏障 token 并移除旧屏障。分析具体系统构建时要核对该分支是否启用，跨线程修改 View 的其他风险仍然存在。
+`android-17.0.0_r1` 的 `ViewRootImpl` 在 `atomicTraversalBarrier` flag 启用时，原子替换屏障 token 并移除旧屏障。是否走这条防泄漏路径，应核对具体系统构建的 flag 状态；跨线程修改 View 的其他风险仍然存在。[已验证: AOSP `android-17.0.0_r1`，`ViewRootImpl.postTraversalBarrier()` 与 `removeTraversalBarrier()`]
 
 Android 17 的 debuggable 应用可用 `adb shell am compat enable ENFORCE_THREAD_CHECKS_ON_VIEW_ROOT_IMPL_APIS com.example.app` 开启相应兼容检查，定位后用同名 `disable` 命令恢复。API 37 的 `View.registerCalledFromWrongThreadListener()` 只覆盖部分 API 的兼容检查路径；直接抛出线程异常的其他 API 不保证通知，未收到回调也不能证明没有违规访问。r1 在违规调用线程上同步执行 listener，回调中应采集栈而避免阻塞，并在不再需要时调用 `View.unregisterCalledFromWrongThreadListener()`。[来源: Android Developers 同节及 View API；AOSP `android-17.0.0_r1`，`ViewRootImpl.postTraversalBarrier()`、`removeTraversalBarrier()`、`checkThreadCompat()` 与 `View` 的 listener 说明]
 
@@ -1107,6 +1107,8 @@ Reddit 进行了四项工程改动：
 Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的热点方法，从而减少关键路径上的解释执行和 JIT（运行时即时编译）。I/O、锁等待或低效布局仍在原地，页面指标还要结合 Perfetto 和帧数据分析。
 
 采集 Profile 的构建与最终 release 构建要分开。[官方概览](https://developer.android.com/topic/performance/baselineprofiles/overview) 要求采集变体关闭 R8 混淆和优化（`isMinifyEnabled = false`），Baseline Profile Gradle plugin 会处理这项配置；最终 release 则启用 R8（`isMinifyEnabled = true`），由 R8 重写规则，使其匹配优化后的代码。生成后应检查文本 Profile，确认类名和方法名仍为未混淆形式；后文 release 开启优化的要求不适用于采集变体。
+
+安装渠道也会改变 Profile 的生效时间。非 Google Play 渠道可能不支持安装时使用 Baseline Profile；若渠道不支持，收益要等后台 dexopt 执行后才出现。Play 的 internal app sharing（内部应用分享）不支持 Baseline Profile，internal testing track（内部测试轨道）则支持。做前后对照时，应固定分发、安装和编译条件，确认 Profile 已参与编译，不能只凭 APK 已包含 Profile 就认定首启已经受益。[来源: Baseline Profiles 官方概览的 Known issues 小节]
 
 #### 优化后数据
 
